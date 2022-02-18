@@ -299,7 +299,8 @@ object (self)
   method set_auto_complete flag =
     provider#set_active flag
 
-  (* workaround: GtkSourceView ignores view#editable *)
+  (* workaround: GtkSourceView ignores view#editable.
+     Used to make processed part of script read only while Coq is busy *)
   val mutable editable2 = true
 
   method set_editable2 v = editable2 <- v
@@ -580,7 +581,17 @@ object (self)
     (* keypress_cb and buttonpress_cb are a workaround to allow making the script panel not editable *)
     let keypress_cb ev =
       let ev_key = GdkEvent.Key.keyval ev in
-      not (editable2 || List.mem ev_key nonmod_keys) in
+      let b = view#buffer in
+      let it = b#get_iter (`MARK (b#get_mark (`NAME "insert"))) in
+      (* note code in Session.insert_cb/delete_cb for other tags *)
+      let can_mod = not (it#has_tag Tags.Script.processed) in
+      let discard = not (editable2 || can_mod || List.mem ev_key nonmod_keys) in
+      if discard then begin
+        Ideutils.flash_info "Input discarded";
+        Minilib.log "key discarded: cursor is in processed part of script";
+      end;
+      discard
+    in
     let _ = view#event#connect#key_press ~callback:keypress_cb in
 
     let buttonpress_cb ev = not (editable2 || GdkEvent.Button.button ev = 1) in

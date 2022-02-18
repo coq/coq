@@ -174,11 +174,11 @@ let set_buffer_handlers
     if misc () then Minilib.log ("insert_cb " ^ string_of_int it#offset);
     let text_mark = add_mark it in
     let () = update_prev it in
-    if it#has_tag Tags.Script.to_process then
-      cancel_signal "Altering the script being processed is not implemented"
-    else if it#has_tag Tags.Script.incomplete then
+    if it#has_tag Tags.Script.to_process ||
+       it#has_tag Tags.Script.incomplete then
       cancel_signal "Altering the script being processed is not implemented"
     else if it#has_tag Tags.Script.processed then
+      (* note code in Wg_scriptview.keypress_cb *)
       call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
     else if it#has_tag Tags.Script.error_bg then begin
       match processed_sentence_just_before_error it with
@@ -195,10 +195,9 @@ let set_buffer_handlers
     let text_mark = add_mark min_iter in
     let rec aux min_iter =
       if min_iter#equal max_iter then ()
-      else if min_iter#has_tag Tags.Script.incomplete then
-        cancel_signal "Altering the script being processed in not implemented"
-      else if min_iter#has_tag Tags.Script.to_process then
-        cancel_signal "Altering the script being processed in not implemented"
+      else if min_iter#has_tag Tags.Script.to_process ||
+              min_iter#has_tag Tags.Script.incomplete then
+        cancel_signal "Altering the script being processed is not implemented"
       else if min_iter#has_tag Tags.Script.processed then
         call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
       else if min_iter#has_tag Tags.Script.error_bg then
@@ -410,7 +409,7 @@ let create file coqtop_args =
   let reset () = Coq.reset_coqtop coqtop in
   let buffer = create_buffer () in
   let script = create_script coqtop buffer in
-  Coq.setup_script_editable coqtop (fun v -> script#set_editable v;script#set_editable2 v);
+  Coq.setup_script_editable coqtop (fun v -> script#set_editable2 v);
   let proof = create_proof () in
   incr next_sid;
   let sid = !next_sid in
