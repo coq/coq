@@ -616,7 +616,7 @@ install-extra::
 	@# Extension point
 .PHONY: install install-extra
 
-META: "$(METAFILE)"
+META: $(METAFILE)
 	$(HIDE)if [ "$(METAFILE)" ]; then \
 		cat "$(METAFILE)" | grep -v 'directory.*=.*' > META; \
 	fi
