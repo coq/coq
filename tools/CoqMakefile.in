@@ -616,7 +616,7 @@ install-extra::
 	@# Extension point
 .PHONY: install install-extra
 
-META: $(METAFILE)
+META: "$(METAFILE)"
 	$(HIDE)if [ "$(METAFILE)" ]; then \
 		cat "$(METAFILE)" | grep -v 'directory.*=.*' > META; \
 	fi
@@ -880,7 +880,7 @@ VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLI
 
 $(VDFILE): @PROJECT_FILE@ $(VFILES)
 	$(SHOW)'COQDEP VFILES'
-	$(HIDE)$(COQDEP) $(addprefix -m ,$(METAFILE)) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
+	$(HIDE)$(COQDEP) $(if $(strip $(METAFILE)),-m "$(METAFILE)") -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
 # Misc ########################################################################
 
