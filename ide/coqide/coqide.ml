@@ -1802,6 +1802,20 @@ let main files =
     in the path. Note that the -coqtop option to coqide overrides
     this default coqtop path *)
 
+let coqide_specific_usage = Boot.Usage.{
+  executable_name = "coqide";
+  extra_args = "";
+  extra_options = "\n\
+CoqIDE specific options:\
+\n  -f _CoqProjectFile         set _CoqProject file to _CoqProjectFile\
+\n  -unicode-bindings f1 .. f2 load files f1..f2 with extra unicode bindings\
+\n  -coqtop dir                look for coqidetop in dir\
+\n  -coqtop-flags              extra flags for the coqtop subprocess\
+\n  -debug                     enable debug mode\
+\n  -xml-debug                 enable debug mode and print XML messages to/from CoqIDE\
+\n"
+}
+
 let read_coqide_args argv =
   let set_debug () =
     CDebug.set_debug_all true;
@@ -1815,6 +1829,8 @@ let read_coqide_args argv =
     |"-coqtop" :: prog :: args ->
       if coqtop = None then filter_coqtop (Some prog) project_files bindings_files out args
       else (output_string stderr "Error: multiple -coqtop options"; exit 1)
+    |"-coqtop" :: [] ->
+      output_string stderr "Error: missing argument after -coqtop"; exit 1
     |"-f" :: file :: args ->
       if project_files <> None then
         (output_string stderr "Error: multiple -f options"; exit 1);
@@ -1824,8 +1840,6 @@ let read_coqide_args argv =
       filter_coqtop coqtop (Some (d,p)) out bindings_files args
     |"-f" :: [] ->
       output_string stderr "Error: missing project file name"; exit 1
-    |"-coqtop" :: [] ->
-      output_string stderr "Error: missing argument after -coqtop"; exit 1
     |"-debug"::args ->
       set_debug ();
       filter_coqtop coqtop project_files bindings_files out args
@@ -1837,12 +1851,17 @@ let read_coqide_args argv =
       Coq.ideslave_coqtop_flags := Some flags;
       filter_coqtop coqtop project_files bindings_files out args
     | ("-v" | "--version") :: _ ->
+      (* This does the same thing as Usage.version () but printed differently *)
       Printf.printf "CoqIDE, version %s\n" Coq_config.version;
+      (* Unlike coqtop we don't accumulate queries so we exit immediately *)
       exit 0
-    |arg::args when out = [] && CString.is_prefix "-psn_" arg ->
+    | ("-h"|"-H"|"-?"|"-help"|"--help") :: _ ->
+      Boot.Usage.print_usage stderr coqide_specific_usage;
+      exit 0
+    | arg::args when out = [] && CString.is_prefix "-psn_" arg ->
       (* argument added by MacOS during .app launch *)
       filter_coqtop coqtop project_files bindings_files out args
-    |arg::args -> filter_coqtop coqtop project_files bindings_files (arg::out) args
+    | arg::args -> filter_coqtop coqtop project_files bindings_files (arg::out) args
     |[] -> (coqtop,project_files,bindings_files,List.rev out)
   in
   let coqtop,project_files,bindings_files,argv = filter_coqtop None None [] [] argv in

@@ -664,7 +664,7 @@ let rec parse = function
        x :: parse rest
   | [] -> []
 
-let coqidetop_specific_usage = Usage.{
+let coqidetop_specific_usage = Boot.Usage.{
   executable_name = "coqidetop";
   extra_args = "";
   extra_options = "\n\

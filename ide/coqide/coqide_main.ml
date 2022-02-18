@@ -29,7 +29,7 @@ let catch_gtk_messages () =
     else `INFO
   in
   let handler ~level msg =
-    let header = "Coqide internal error: " in
+    let header = "CoqIDE internal error: " in
     match log_level level with
       |`FATAL ->
         let () = GToolbox.message_box ~title:"Error" (header ^ msg) in

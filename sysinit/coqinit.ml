@@ -55,13 +55,13 @@ let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
     Boot.Env.set_coqlib s
 
 let print_query opts = let open Coqargs in function
-  | PrintVersion -> Usage.version ()
-  | PrintMachineReadableVersion -> Usage.machine_readable_version ()
+  | PrintVersion -> Boot.Usage.version ()
+  | PrintMachineReadableVersion -> Boot.Usage.machine_readable_version ()
   | PrintWhere ->
     let env = Boot.Env.init () in
     let coqlib = Boot.Env.coqlib env |> Boot.Path.to_string in
     print_endline coqlib
-  | PrintHelp h -> Usage.print_usage stderr h
+  | PrintHelp h -> Boot.Usage.print_usage stderr h
   | PrintConfig ->
     let () = init_coqlib opts in
     Envars.print_config stdout

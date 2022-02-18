@@ -76,7 +76,6 @@ let print_usage_common co command =
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\
 \n  -bt                    print OCaml backtraces\
-\n  -xml-debug             debug mode and print XML messages to/from coqide\
 \n  -diffs (on|off|removed) highlight differences between proof steps\
 \n  -impredicative-set     set sort Set impredicative\
 \n  -allow-sprop           allow using the proof irrelevant SProp sort\

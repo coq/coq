@@ -72,7 +72,7 @@ type coqargs_pre = {
 type coqargs_query =
   | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
-  | PrintHelp of Usage.specific_usage
+  | PrintHelp of Boot.Usage.specific_usage
 
 type coqargs_main =
   | Queries of coqargs_query list
@@ -92,7 +92,7 @@ type t = {
 (* Default options *)
 val default : t
 
-val parse_args : usage:Usage.specific_usage -> init:t -> string list -> t * string list
+val parse_args : usage:Boot.Usage.specific_usage -> init:t -> string list -> t * string list
 
 val injection_commands : t -> injection_command list
 val build_load_path : t -> CUnix.physical_path list * Loadpath.vo_path list
