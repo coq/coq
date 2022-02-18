@@ -782,11 +782,15 @@ Number Notation eqO eqO_of_uint eqO_to_uint : nat_scope.
 
 Check 42.
 Check eq_refl (S O).  (* doesn't match eq _ O, printer not called *)
+Check eq_refl O. (* matches eq _ O, printer called *)
+Check eq_refl (id O). (* doesn't match eq _ O, printer not called *)
 
 Notation eq_ := (eq _ _) (only parsing).
 Number Notation eq_ eqO_of_uint eqO_to_uint : nat_scope.
 
-Check eq_refl (S O).  (* matches eq _ _, printer called *)
+Check eq_refl (S O).  (* matches eq _ _, printer called, but type incorrect *)
+Check eq_refl O. (* matches eq _ _, printer called *)
+Check eq_refl (id O). (* matches eq _ _, but contains a global constant, printer not called *)
 
 Inductive extra_list : Type -> Type :=
 | nil (n : nat) (v : Type) : extra_list v

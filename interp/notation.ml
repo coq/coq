@@ -613,6 +613,7 @@ module PrimTokenNotation = struct
 
 let eval_constr env sigma (c : Constr.t) =
   let c = EConstr.of_constr c in
+  let sigma, _ = Typing.type_of env sigma c in
   let c' = Tacred.compute env sigma c in
   EConstr.Unsafe.to_constr c'
 
