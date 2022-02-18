@@ -2,7 +2,7 @@
 
 # Run in a proper install dune env.
 case $1 in
-    checker)
+    coqchk)
         shift
         exe=_build/default/checker/coqchk.bc
         ;;
@@ -19,7 +19,7 @@ case $1 in
         exe=_build/default/topbin/coqtop_byte_bin.bc
         ;;
     *)
-        echo "First argument must be one of {coqc,coqtop,checker,coqide}"
+        echo "First argument must be one of {coqc,coqtop,coqchk,coqide}"
         exit 1
         ;;
 esac
