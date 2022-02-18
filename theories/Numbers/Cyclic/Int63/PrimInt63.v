@@ -77,6 +77,7 @@ Primitive mods := #int63_mods.
 
 (* Comparisons *)
 Primitive eqb := #int63_eq.
+Register eqb as num.int63.eqb.
 
 Primitive ltb := #int63_lt.
 

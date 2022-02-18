@@ -49,7 +49,10 @@ Primitive sqrt := #float64_sqrt.
 
 Primitive opp := #float64_opp.
 
+(** For the record: this is the IEEE754 equality
+    (eqb nan nan = false and eqb +0 -0 = true) *)
 Primitive eqb := #float64_eq.
+Register eqb as num.float.eqb.
 
 Primitive ltb := #float64_lt.
 

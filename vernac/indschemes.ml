@@ -130,7 +130,7 @@ let try_declare_scheme what f internal names kn =
         alarm what internal
           (str "Cannot extract computational content from proposition " ++
            quote (Printer.pr_inductive (Global.env()) ind) ++ str ".")
-    | EqNotFound (ind',ind) ->
+    | EqNotFound ind' ->
         alarm what internal
           (str "Boolean equality on " ++
            quote (Printer.pr_inductive (Global.env()) ind') ++
@@ -158,6 +158,9 @@ let try_declare_scheme what f internal names kn =
            (strbrk "Unsupported constructor with an argument whose type is a non-parametric inductive type." ++
             strbrk " Type " ++ quote (Printer.pr_inductive (Global.env()) ind) ++
             str " is applied to an argument which is not a variable.")
+    | InternalDependencies ->
+         alarm what internal
+           (strbrk "Inductive types with internal dependencies in constructors not supported.")
     | e when CErrors.noncritical e ->
         alarm what internal
           (str "Unexpected error during scheme creation: " ++ CErrors.print e)

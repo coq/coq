@@ -33,24 +33,7 @@ module RelDecl = Context.Rel.Declaration
 (**********************************************************************)
 (* Generic synthesis of boolean equality *)
 
-let quick_chop n l =
-  let rec kick_last = function
-    | t::[] -> []
-    | t::q -> t::(kick_last q)
-    | [] -> failwith "kick_last"
-and aux = function
-    | (0,l') -> l'
-    | (n,h::t) -> aux (n-1,t)
-    | _ -> failwith "quick_chop"
-  in
-  if n > (List.length l) then failwith "quick_chop args"
-  else kick_last (aux (n,l) )
-
-let deconstruct_type t =
-  let l,r = decompose_prod t in
-  (List.rev_map snd l)@[r]
-
-exception EqNotFound of inductive * inductive
+exception EqNotFound of inductive
 exception EqUnknown of string
 exception UndefinedCst of string
 exception InductiveWithProduct
@@ -61,6 +44,21 @@ exception DecidabilityMutualNotSupported
 exception NoDecidabilityCoInductive
 exception ConstructorWithNonParametricInductiveType of inductive
 exception DecidabilityIndicesNotSupported
+exception InternalDependencies
+
+let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
+let name_assumption env = function
+| RelDecl.LocalAssum (na,t) -> RelDecl.LocalAssum (map_annot (named_hd env t) na, t)
+| RelDecl.LocalDef (na,c,t) -> RelDecl.LocalDef (map_annot (named_hd env c) na, c, t)
+let name_context env ctxt =
+  snd
+    (List.fold_left
+       (fun (env,hyps) d ->
+          let d' = name_assumption env d in (Environ.push_rel d' env, d' :: hyps))
+       (env,[]) (List.rev ctxt))
+
+let string_of_constant kn =
+  Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.ConstRef kn))
 
 (* Some pre declaration of constant we are going to use *)
 let andb_prop = fun _ -> UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.andb_prop")
@@ -74,6 +72,7 @@ let bb () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref
 let tt () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.true")
 let ff () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.false")
 let eq () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.eq.type")
+let int63_eqb () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "num.int63.eqb")
 
 let sumbool () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.sumbool.type")
 let andb = fun _ -> UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.andb")
@@ -101,14 +100,16 @@ let my_inj_tac x = Equality.inj inj_flags None false None (EConstr.mkVar x,NoBin
 (* reconstruct the inductive with the correct de Bruijn indexes *)
 let mkFullInd env (ind,u) n =
   let mib = Environ.lookup_mind (fst ind) env in
-  let nparrec = mib.mind_nparams_rec in
-  (* params context divided *)
-  let lnonparrec,lnamesparrec =
-    Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
-  if nparrec > 0
-    then mkApp (mkIndU (ind,u),
-      Array.of_list(Context.Rel.instance_list mkRel (nparrec+n) lnamesparrec))
-    else mkIndU (ind,u)
+  mkApp (mkIndU (ind,u), Context.Rel.instance mkRel n mib.mind_params_ctxt)
+
+let mkPartialInd env (ind,u) n =
+  let mib = Environ.lookup_mind (fst ind) env in
+  let _, recparams_ctx = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
+  mkApp (mkIndU (ind,u), Context.Rel.instance mkRel n recparams_ctx)
+
+let name_X = make_annot (Name (Id.of_string "X")) Sorts.Relevant
+let name_Y = make_annot (Name (Id.of_string "Y")) Sorts.Relevant
+let mk_eqb_over u = mkProd (name_X, u, (mkProd (name_Y, lift 1 u, bb ())))
 
 let check_bool_is_defined () =
   if not (Coqlib.has_ref "core.bool.type")
@@ -118,287 +119,743 @@ let check_no_indices mib =
   if Array.exists (fun mip -> mip.mind_nrealargs <> 0) mib.mind_packets then
     raise DecidabilityIndicesNotSupported
 
+let is_irrelevant env c =
+  match kind (EConstr.Unsafe.to_constr (Retyping.get_type_of env (Evd.from_env env) (EConstr.of_constr c))) with
+  | Sort SProp -> true
+  | _ -> false
+
 let get_scheme handle k ind = match local_lookup_scheme handle k ind with
 | None -> assert false
 | Some c -> c
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
-let get_inductive_deps env kn =
+let get_inductive_deps ~noprop env kn =
   (* fetching the mutual inductive body *)
   let mib = Environ.lookup_mind kn env in
-  (* number of inductives in the mutual *)
-  let nb_ind = Array.length mib.mind_packets in
   (* number of params in the type *)
-  let nparrec = mib.mind_nparams_rec in
   check_no_indices mib;
-  let make_one_eq accu i =
+  let env = Environ.push_rel_context mib.mind_params_ctxt env in
+  let sigma = Evd.from_env env in
+  let get_deps_one accu i mip =
     (* This function is only trying to recursively compute the inductive types
        appearing as arguments of the constructors. This is done to support
        equality decision over hereditarily first-order types. It could be
        performed in a much cleaner way, e.g. using the kernel normal form of
        constructor types and kernel whd_all for the argument types. *)
-    let rec aux accu c =
-      let (c,a) = Reductionops.whd_betaiota_stack env Evd.empty EConstr.(of_constr c) in
-      let (c,a) = EConstr.Unsafe.(to_constr c, List.map to_constr a) in
-      match Constr.kind c with
-      | Cast (x,_,_) -> aux accu (Term.applist (x,a))
+    let rec aux env accu c =
+      let (c,a) = Reductionops.whd_all_stack env sigma c in
+      match EConstr.kind sigma c with
+      | Cast (x,_,_) -> aux env accu (EConstr.applist (x,a))
       | App _ -> assert false
-      | Ind ((kn', _), _) ->
-          if Environ.QMutInd.equal env kn kn' then accu
+      | Ind ((kn', _ as ind), _) ->
+          if Environ.QMutInd.equal env kn kn' then
+            (* Example: Inductive T A := C : T (option A) -> T A. *)
+            List.fold_left (aux env) accu a
           else
-            List.fold_left aux (kn' :: accu) a
+            let _,mip = Inductive.lookup_mind_specif env ind in
+            (* Types in SProp have trivial equality and are skipped *)
+            if match mip.mind_arity with RegularArity {mind_sort = SProp} -> true | _ -> false then
+              List.fold_left (aux env) accu a
+            else
+              List.fold_left (aux env) (kn' :: accu) a
       | Const (kn, u) ->
-        (match Environ.constant_opt_value_in env (kn, u) with
-        | Some c -> aux accu (Term.applist (c,a))
+        (match Environ.constant_opt_value_in env (kn, EConstr.EInstance.kind sigma u) with
+        | Some c -> aux env accu (EConstr.applist (EConstr.of_constr c,a))
         | None -> accu)
       | Rel _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | Proj _
       | Construct _ | Case _ | CoFix _ | Fix _ | Meta _ | Evar _ | Int _
-      | Float _ | Array _ -> accu
+      | Float _ | Array _ -> Termops.fold_constr_with_full_binders env sigma EConstr.push_rel aux env (List.fold_left (aux env) accu a) c
     in
-    let u = Univ.Instance.empty in
-    let constrs n = get_constructors env (make_ind_family (((kn, i), u),
-      Context.Rel.instance_list mkRel (n+nb_ind-1) mib.mind_params_ctxt)) in
-    let constrsi = constrs (3+nparrec) in
-    let fold i accu arg =
-      let fold accu c = aux accu (RelDecl.get_type c) in
-      List.fold_left fold accu arg.cs_args
+    let fold i accu (constr_ctx,_) =
+      let constr_ctx, _ = List.chop mip.mind_consnrealdecls.(i) constr_ctx in
+      let rec fold env accu = function
+        | [] -> env, accu
+        | decl::ctx ->
+           let env, accu = fold env accu ctx in
+           let t = Context.Rel.Declaration.get_type decl in
+           Environ.push_rel decl env,
+           (if noprop && is_irrelevant env t then accu else aux env accu (EConstr.of_constr t))
+      in
+      snd (fold env accu constr_ctx)
     in
-    Array.fold_left_i fold accu constrsi
+    Array.fold_left_i fold accu mip.mind_nf_lc
   in
-  Array.fold_left_i (fun i accu _ -> make_one_eq accu i) [] mib.mind_packets
+  Array.fold_left_i (fun i accu mip -> get_deps_one accu i mip) [] mib.mind_packets
+
+(** A compact data structure to remember for each declaration of the
+    context if it is a type and comes with a Boolean equality; if it
+    comes with an equality we remember the integer to subtract to the
+    de Bruijn indices of the binder to get the equality *)
+
+type eq_status =
+  | End
+  (* int is the number of consecutive declarations without an equality *)
+  | WithoutEq of int * eq_status
+  (* list is the list of shifts for consecutive declarations with an equality *)
+  | WithEq of int list * eq_status
+
+let add_eq_status_no = function
+  | WithEq _ | End as s -> WithoutEq (1, s)
+  | WithoutEq (n, s) -> WithoutEq (n+1, s)
+
+let set_eq_status_yes n q s =
+  let rec aux n = function
+    | WithoutEq (p,End) when Int.equal n p -> WithoutEq (p-1, WithEq ([q],End))
+    | WithoutEq (p,WithEq (l,s)) when Int.equal n p -> WithoutEq (p-1, WithEq (q::l,s))
+    | WithoutEq (p,s) when n < p -> WithoutEq (n-1, WithEq ([q], WithoutEq (p-n, s)))
+    | WithoutEq (p,s) when Int.equal n 1 -> WithEq ([q], WithoutEq (p-1, s))
+    | WithoutEq (p,s) -> WithoutEq (p, aux (n-p) s)
+    | WithEq (l,s) -> WithEq (l,aux (n-List.length l) s)
+    | End -> assert false in
+  aux n s
+
+let rec has_decl_equality n status =
+  match n, status with
+  | p, WithEq (l,s) when p <= List.length l -> Some (List.nth l (p-1))
+  | p, WithEq (l,s) -> has_decl_equality (p-List.length l) s
+  | p, WithoutEq (n,s) when p <= n -> None
+  | p, WithoutEq (n,s) -> has_decl_equality (p-n) s
+  | _, End -> assert false
+
+(** The reallocation of variables to be done during the translation:
+    [env] is the current env at the corresponding step of the translation
+    [lift] is the lift for the original variables
+    [eq_status] tells how to get the equality associated with a variable if any
+    [ind_pos] tells the position of recursive calls (it could have
+      been avoided by replacing the recursive occurrences of ind in an
+      inductive definition by variables *)
+
+type env_lift = {
+  env : Environ.env; (* Gamma *)
+  lift : Esubst.lift; (* lift : Gamma + Gamma_eq |- Gamma *)
+  eq_status : eq_status;
+  ind_pos : ((MutInd.t * int * rel_context * int) * int) option;
+  }
+
+let lift_ind_pos n =
+  Option.map (fun (ind,k) -> (ind,k+n))
+
+let empty_env_lift env = {
+  env = env;
+  lift = Esubst.el_id;
+  eq_status = End;
+  ind_pos = None;
+  }
+
+let push_env_lift decl env_lift = {
+    env = Environ.push_rel decl env_lift.env;
+    lift = Esubst.el_lift env_lift.lift;
+    eq_status = add_eq_status_no env_lift.eq_status;
+    ind_pos = lift_ind_pos 1 env_lift.ind_pos;
+  }
+
+let set_replicate n q env_lift = {
+    env = env_lift.env;
+    lift = env_lift.lift;
+    eq_status = set_eq_status_yes n q env_lift.eq_status;
+    ind_pos = env_lift.ind_pos;
+  }
+
+let shiftn_env_lift n env_lift =
+  { env_lift with lift = Esubst.el_shft n (Esubst.el_liftn n env_lift.lift);
+    ind_pos = lift_ind_pos n env_lift.ind_pos; }
+
+let find_ind_env_lift env_lift (mind,i) =
+  match env_lift.ind_pos with
+  | Some ((mind',nrecparams,recparamsctx,nb_ind),n) when Environ.QMutInd.equal env_lift.env mind mind' ->
+    Some (nrecparams,recparamsctx,n+nb_ind-i)
+  | _ -> None
+
+let shift_fix_env_lift ind nrecparams recparamsctx nb_ind env_lift = {
+    env = env_lift.env;
+    lift = Esubst.el_shft nb_ind env_lift.lift;
+    eq_status = env_lift.eq_status;
+    ind_pos = Some ((ind,nrecparams,recparamsctx,nb_ind),0)
+    }
+
+let push_rec_env_lift recdef env_lift =
+  let n = Array.length (pi1 recdef) in {
+    env = Environ.push_rec_types recdef env_lift.env;
+    lift = Esubst.el_liftn n env_lift.lift;
+    eq_status = add_eq_status_no env_lift.eq_status;
+    ind_pos = lift_ind_pos n env_lift.ind_pos;
+  }
+
+let dest_lam_assum_expand env c =
+  let ctx, c = Reduction.dest_lam_assum env c in
+  if List.is_empty ctx then ctx, c
+  else
+    let t = EConstr.Unsafe.to_constr (Retyping.get_type_of (Environ.push_rel_context ctx env) (Evd.from_env env) (EConstr.of_constr c)) in
+    let ctx', _ = Reduction.dest_prod_assum env t in
+    ctx'@ctx, mkApp (lift (Context.Rel.length ctx') c, Context.Rel.instance mkRel 0 ctx')
+
+let pred_context env ci params u nas =
+  let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl params in
+  let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+  let self =
+    let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
+    let inst = Univ.(Instance.of_array (Array.init (Instance.length u) Level.var)) in
+    mkApp (mkIndU (ci.ci_ind, inst), args)
+  in
+  let realdecls = RelDecl.LocalAssum (Context.anonR, self) :: realdecls in
+  Inductive.instantiate_context u paramsubst nas realdecls
+
+let branch_context env ci params u nas i =
+  let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let paramsubst = Vars.subst_of_rel_context_instance paramdecl params in
+  let ctx, _ = List.chop mip.mind_consnrealdecls.(i) (fst mip.mind_nf_lc.(i)) in
+  Inductive.instantiate_context u paramsubst nas ctx
 
 let build_beq_scheme_deps env kn =
-  let inds = get_inductive_deps env kn in
+  let inds = get_inductive_deps ~noprop:true env kn in
   List.map (fun ind -> SchemeMutualDep (ind, !beq_scheme_kind_aux ())) inds
 
 let build_beq_scheme env handle kn =
   check_bool_is_defined ();
+  (* predef coq's boolean type *)
+  (* here I leave the Naming thingy so that the type of
+     the function is more readable for the user *)
+  let eqName = map_annot (function
+    | Name s -> Name (Id.of_string ("eq_"^(Id.to_string s)))
+    | Anonymous -> Name (Id.of_string "eq_A"))
+  in
+
+  (* The Boolean equality translation is a parametricity translation
+     where each type T is interpreted as the pair of:
+     - a (possibly degenerate) predicate T_R in Type over T (i.e. T_R : T->Type)
+     - when T is decidable, a Boolean equality T_E over (i.e. T_E :
+       option (T->T->bool) where None means not decidable, that is, at
+       worst, unknown to be decidable)
+
+     This generalizes into an interpretation of each term M:T as:
+     - an inhabitant [|M|] of T_R M
+     by setting for sort s:
+     - s_R := \T:s.{R:T->s ; E:option (T->T->bool)} and
+     - s_E := None
+     so that types T:s are indeed interpreted as a pair, namely by:
+     - [|T|] := {R:=T_R; E:=T_E} : s_R T
+     and, in particular:
+     - [|Type(n)|] := {R:=Type(n)_R; E:=Type(n)_E) : Type(n+1)_R Type(n)
+
+     In practice, to have simpler schemes, we won't support here the
+     full hierarchy of sorts. That is, we assume that type parameters
+     of a type will be instantiated only by small types (i.e. not
+     containing sorts). This makes sense since equality on large types
+     is anyway not decidable in the general case [*].
+
+     Now, it happens that several parts of the translation are
+     degenerate. For instance, if T is a small type (not containing
+     sorts), then T_R M, which expresses that M realizes T, is a
+     singleton for all M (we assume functional extensionality to treat
+     the case of dependent product types). Therefore, M_T does not
+     need to be defined in this case. Conversely, if T is not small,
+     it is not decidable and T_E will be None.
+
+     This means that at least T_R is degenerate or T_E is None and
+     this also means that for M:T with degenerate T_R, we don't need
+     to compute [|M|].R
+
+     This further means that when translating a variable x:T with T
+     small, it can just be translated to x:T without requiring the
+     trivial information that T_R x is inhabited.
+
+     Similarly for types T of the form [forall X, (forall Y ...) ... Y args]
+     based on the assumption [*] that Y is instantiated only by small
+     functorial types for which (Y args)_R would be degenerate.
+
+     Similarly, based on the restriction above [*] that parameters are
+     instantiated by small types, when translating a variable x:T with
+     T an arity, i.e. of the form [... -> Type] (or at worst
+     [... -> Type*Type] etc.), we can assume x to be instantiated by a
+     small functorial type whose R translation is degenerate.
+
+     It remains the declarations of the form X:T for T of the form
+     [forall X, ... X args] where X is in negative position of a
+     dependent product. If such X is instantiated by a large type in
+     the definition, as in
+     [Inductive I (F:forall X:Type, X->X) (B:F Type nat) := C : B -> I F B],
+     we give up. Otherwise said, we support only the case when `X`is
+     instantiated by a small type.
+
+     Eventually, we thus need two translations:
+     - T_R when T is large and it does not need to go under
+       applicative subterms since subterms [X args] are considered
+       small by assumption [*]
+     - T_E when T is small which needs to go under subterms and which
+       thus needs to be generalized into a translation M_E : T_R.E
+       whenever T is detected as decidable (in which case, T_R.E is
+       typically of the form T->T->bool or of the form
+       (T.1->T.1->bool)*(T.2->T.2->bool), etc.)
+
+     Below, the first translation is called [translate_type_eq] and
+     the second [translate_term_eq]. Additionally, there is a copy-cat
+     translation called "translate_term" that lifts M in the typing context
+     of M_R.
+
+     The function [translate_type_eq] takes as input a type T and a
+     term M of type T and it returns T_R M.
+
+     For M of type T, the function [translate_term_eq M] returns an
+     object of type term T_R M, that is, when M is itself some type U,
+     an object of type U->U->bool.
+
+     Note that we don't use an option type for non-decidable types but
+     instead raises an exception whenever a type is not detected as
+     decidable.
+
+     Future work might support:
+     - exotic types such as
+       [Inductive I (F:forall X:Type, X->X) (B:F Type nat) := C : B -> I F B]
+     - types with invertible indices like listn
+     - dependent products over finite types (e.g. over bool->bool), and
+       more generally compact types whose equality is decidable (see Escardo-Oliva)
+  *)
+
+  let rec translate_type_eq env_lift na c t =
+    let ctx, t = Reduction.dest_prod_assum env t in
+    let env_lift', ctx_eq = translate_context_eq env_lift ctx in
+    let inst = Array.map (translate_term env_lift') (Context.Rel.instance mkRel 0 ctx) in
+    let env_lift'' = shiftn_env_lift (Context.Rel.length ctx_eq) env_lift in
+    let c = mkApp (translate_term env_lift'' c, inst) in
+    let c = match kind t with
+    | Sort _ -> Some (mk_eqb_over c)
+
+    | Prod _ | LetIn _ -> assert false
+
+    (* [s] is necessaritly a sort *)
+    | Cast (t,k,s) ->
+      begin
+        match translate_type_eq env_lift' na c t with
+        | None -> None
+        | Some t -> Some (mkCast (t, k, mkProd (na, t, c)))
+      end
+
+    (* TODO: take into account situations like (P:Type * Type) which
+       could be translated into (fst P->fst P>bool)*(snd P->snd
+       P->bool); to be done in parallel with preserving the types in
+       Proj/Construct/CoFix *)
+    | Ind _ -> None
+    | Array _ -> None
+
+    (* We assume references to be references to small types and thus
+       to types with singleton realizability predicate; to support
+       references to large types, see comments above for the full
+       translation *)
+    | App _ | Rel _ | Var _ | Const _ -> None
+
+    (* The restricted translation translates only types *)
+    | Lambda _ | Construct _ -> assert false
+
+    | Case (ci, u, pms, (pnames,p), iv, tm, lbr) ->
+      let env_lift_pred = shiftn_env_lift (Array.length pnames) env_lift in
+      let t =
+        mkCase (ci, u,
+          Array.map (translate_term env_lift_pred) pms,
+          translate_term_with_binders env_lift_pred (pnames,p),
+          Constr.map_invert (translate_term env_lift_pred) iv,
+          mkRel 1,
+          Array.map (translate_term_with_binders env_lift_pred) lbr) in
+      (* in the restricted translation, only types are translated and
+         the return predicate is necessarily a type *)
+      let p = mkProd (anonR, t, p) in
+      let lbr = Array.mapi (fun i (names, t) ->
+        let ctx = branch_context env ci pms u names i in
+        let env_lift' = List.fold_right push_env_lift ctx env_lift in
+        match translate_type_eq env_lift' na (mkRel 1) t with
+        | None -> None
+        | Some t_eq -> Some (names, mkLambda (na, t, t_eq))) lbr in
+      if Array.for_all Option.has_some lbr then
+        let lbr = Array.map Option.get lbr in
+        let case = mkCase (ci, u, pms, (pnames, p), iv, translate_term env_lift tm, lbr) in
+        Some (mkApp (case, [|c|]))
+      else
+        None
+
+    (* TODO: in parallel with traversing Fix in translate_term_eq to
+       look for types, traverse Fix to look for Type here *)
+    | Fix _ -> None
+
+    (* Not building a type *)
+    | Proj _ | CoFix _ | Int _ | Float _ -> None
+
+    | Meta _ | Evar _ -> assert false (* kernel terms *)
+    in
+    Option.map (fun c -> Term.it_mkProd_or_LetIn c ctx_eq) c
+
+  and translate_term_eq env_lift c =
+    let ctx, c = dest_lam_assum_expand env_lift.env c in
+    let env_lift, ctx = translate_context_eq env_lift ctx in
+    let c = match Constr.kind c with
+    | Rel x ->
+        (match has_decl_equality x env_lift.eq_status with
+        | Some n -> Some (mkRel (Esubst.reloc_rel x env_lift.lift - n))
+        | None -> None)
+    | Var x ->
+        if Reduction.is_arity env (Typeops.type_of_variable env x) then
+          (* Support for working in a context with "eq_x : x -> x -> bool" *)
+          let eid = Id.of_string ("eq_"^(Id.to_string x)) in
+          let () =
+            try ignore (Environ.lookup_named eid env)
+            with Not_found -> raise (ParameterWithoutEquality (GlobRef.VarRef x))
+          in
+          Some (mkVar eid)
+        else
+          None
+    | Cast (c,k,t) ->
+      begin
+        match translate_term_eq env_lift c, translate_type_eq env_lift anonR c t with
+        | Some c, Some t -> Some (mkCast (c,k,t))
+        | None, None -> None
+        | (None | Some _), _ -> assert false
+      end
+    | Lambda _ | LetIn _ -> assert false
+    | App (f,args) ->
+      begin
+        let f, args =
+          match kind f with
+          | Ind (ind',_) ->
+            (match find_ind_env_lift env_lift ind' with
+            | Some (nrecparams,_,n) when Array.length args >= nrecparams ->
+              Some (mkRel n), Array.sub args nrecparams (Array.length args - nrecparams)
+            | _ -> translate_term_eq env_lift f, args)
+          | Const (kn,u) ->
+             (match Environ.constant_opt_value_in env (kn, u) with
+              | Some c -> translate_term_eq env_lift (mkApp (c,args)), [||]
+              | None -> translate_term_eq env_lift f, args)
+          | _ -> translate_term_eq env_lift f, args
+        in
+        match f with
+        | Some f -> Some (mkApp (f, translate_arguments_eq env_lift args))
+        | None -> None
+      end
+    | Ind (ind',u) ->
+      begin
+        match find_ind_env_lift env_lift ind' with
+        | Some (_,recparamsctx,n) -> Some (it_mkLambda_or_LetIn (mkRel n) (translate_context env_lift recparamsctx))
+        | None ->
+            try Some (mkConstU (get_scheme handle (!beq_scheme_kind_aux()) ind',u))
+            with Not_found -> raise(EqNotFound ind')
+      end
+    | Const (kn,u as cst) ->
+        if Environ.is_int63_type env kn then Some (int63_eqb ()) else
+        if Environ.is_float64_type env kn then raise (EqUnknown (string_of_constant kn)) else
+        if Environ.is_array_type env kn then (* TODO *) raise (ParameterWithoutEquality (GlobRef.ConstRef kn)) else
+        (match Environ.constant_opt_value_in env (kn, u) with
+        | Some c -> translate_term_eq env_lift c
+        | None ->
+        if Reduction.is_arity env (Typeops.type_of_constant_in env cst) then
+          (* Support for working in a context with "eq_x : x -> x -> bool" *)
+          (* Needs Hints, see test suite *)
+          let eq_lbl = Label.make ("eq_" ^ Label.to_string (Constant.label kn)) in
+          let kneq = Constant.change_label kn eq_lbl in
+          if Environ.mem_constant kneq env then
+            let _ = Environ.constant_opt_value_in env (kneq, u) in
+            Some (mkConstU (kneq,u))
+          else raise (ParameterWithoutEquality (GlobRef.ConstRef kn))
+        else None)
+
+    (* TODO: in parallel with preserving Type for Ind in
+       translate_type_eq, preserve the types in Construct/CoFix *)
+    | Proj _ | Construct _ | CoFix _ -> None
+
+    | Case (ci, u, pms, (pnames,p), iv, tm, lbr) ->
+      let pctx = pred_context env ci pms u pnames in
+      let env_lift_pred = List.fold_right push_env_lift pctx env_lift in
+      let n = Array.length pnames in
+      let c =
+        mkCase (ci, u,
+          Array.map (lift n) pms,
+          (pnames, liftn n (n+1) p),
+          Constr.map_invert (lift n) iv,
+          mkRel 1,
+          Array.map (fun (names, br) -> (names, let q = Array.length names in liftn n (n+q+1) br)) lbr) in
+      let p = translate_type_eq env_lift_pred anonR c p in
+      let lbr = Array.mapi (fun i (names, t) ->
+        let ctx = branch_context env ci pms u names i in
+        let env_lift' = List.fold_right push_env_lift ctx env_lift in
+        match translate_term_eq env_lift' t with
+        | None -> None
+        | Some t_eq -> Some (names, t_eq)) lbr in
+      if Array.for_all Option.has_some lbr && Option.has_some p then
+        let lbr = Array.map Option.get lbr in
+        Some (mkCase (ci, u, pms, (pnames, Option.get p), iv, translate_term env_lift tm, lbr))
+      else
+        None
+
+    | Fix ((recindxs,i),(names,typarray,bodies as recdef)) ->
+      let _ =
+        (* Almost work: would need:
+           1. that the generated fix has an eq_status registration
+              telling that an original recursive call should be
+              interpreted as the pair of the whole fix and of the
+              translated recursive call building the equality
+           2. something to do around either packaging the type with
+              its equality, or begin able for a match to have a return
+              predicate different though convertible to itself, namely
+              here a fix of match (see test-suite) *)
+      let mkfix j = mkFix ((recindxs,j),recdef) in
+      let typarray = Array.mapi (fun i -> translate_type_eq env_lift anonR (mkfix i)) typarray in
+      let env_lift_types = push_rec_env_lift recdef env_lift in
+      let bodies = Array.map (translate_term_eq env_lift_types) bodies in
+      if Array.for_all Option.has_some bodies && Array.for_all Option.has_some typarray then
+        let bodies = Array.map Option.get bodies in
+        let typarray = Array.map Option.get typarray in
+        Some (mkFix ((recindxs,i),(names,typarray,bodies)))
+      else
+        None
+      in None
+
+    | Sort _  -> raise InductiveWithSort (* would require a more sophisticated translation *)
+    | Prod _ -> raise InductiveWithProduct (* loss of decidable if uncountable domain *)
+
+    | Meta _ | Evar _ -> None (* assert false! *)
+    | Int _ | Float _ | Array _ -> None
+    in
+    Option.map (fun c -> Term.it_mkLambda_or_LetIn c ctx) c
+
+  (* Translate context by adding a context of Boolean equalities for each type argument
+
+     Example of translated context:
+     (F : (U -> U) -> nat -> U)
+     (eq_F : forall G, (forall A, eq A -> eq (G A)) -> nat -> eq (F G)) *)
+
+  and translate_context_eq env_lift ctx =
+    let ctx = name_context env_lift.env ctx in
+    let (env_lift_ctx,nctx_eq,ctx_with_eq) =
+      List.fold_right (fun decl (env_lift,n,ctx) ->
+        let env_lift = push_env_lift decl env_lift in
+        let env_lift' = shiftn_env_lift (n-1) env_lift in
+        match decl with
+        | RelDecl.LocalDef (na,c,t) ->
+          (match translate_term_eq env_lift' (lift 1 c), translate_type_eq env_lift' na (mkRel 1) (lift 1 t) with
+          | Some eq_c, Some eq_typ ->
+            (set_replicate 1 n env_lift, n, RelDecl.LocalDef (eqName na,eq_c,eq_typ) :: ctx)
+          | None, None -> (env_lift, n-1, ctx)
+          | (None | Some _), _ -> assert false)
+        | RelDecl.LocalAssum (na,t) ->
+           match translate_type_eq env_lift' na (mkRel 1) (lift 1 t) with
+           | Some eq_typ -> (set_replicate 1 n env_lift, n, RelDecl.LocalAssum (eqName na,eq_typ) :: ctx)
+           | None -> (env_lift, n-1, ctx)
+      ) ctx (env_lift, Context.Rel.length ctx, ctx)
+    in
+    shiftn_env_lift nctx_eq env_lift_ctx, ctx_with_eq
+
+  (* Translate arguments by adding Boolean equality when relevant
+
+     Examples of translated applications:
+     F (fun A => A) 0
+     eq_F (fun A => A) (fun A eq_A => eq_A) 0
+
+     F (fun A => list A) 0
+     eq_F (fun A => list A) (fun A eq_A => eq_list A eq_A) 0 *)
+
+  and translate_arguments_eq env_lift args =
+    let args' = Array.map (translate_term env_lift) args in
+    let eq_args = Array.of_list (List.map_filter (translate_term_eq env_lift) (Array.to_list args)) in
+    Array.append args' eq_args
+
+  (* Copy-cat translation with relocation *)
+
+  and translate_term env_lift c =
+    exliftn env_lift.lift c
+
+  and translate_context env_lift ctx =
+    Context.Rel.map_with_binders (fun i -> translate_term (shiftn_env_lift i env_lift)) ctx
+
+  and translate_term_with_binders env_lift (names,c) =
+    (names, translate_term (shiftn_env_lift (Array.length names) env_lift) c)
+
+  in
+  (* Starting translating the inductive block to Boolean equalities;
+     Morally corresponds to the Ind case of translate_term_eq *)
+
   (* fetching the mutual inductive body *)
   let mib = Environ.lookup_mind kn env in
 
+  (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in
   let u, uctx = UnivGen.fresh_instance_from auctx None in
   let uctx = UState.of_context_set uctx in
 
   (* number of inductives in the mutual *)
   let nb_ind = Array.length mib.mind_packets in
-  (* number of params in the type *)
-  let nparrec = mib.mind_nparams_rec in
-  check_no_indices mib;
+  let truly_recursive =
+    let open Declarations in
+    let is_rec ra = match Declareops.dest_recarg ra with Mrec _ | Nested _ -> true | Norec -> false in
+    Array.exists
+      (fun mip -> Array.exists (List.exists is_rec) (Declareops.dest_subterms mip.mind_recargs))
+      mib.mind_packets in
   (* params context divided *)
-  let lnonparrec,lnamesparrec =
-    Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
-  (* predef coq's boolean type *)
-  (* rec name *)
-  let rec_name i =(Id.to_string (Array.get mib.mind_packets i).mind_typename)^
-                    "_eqrec"
-  in
-  (* construct the "fun A B ... N, eqA eqB eqC ... N => fixpoint" part *)
-  let create_input c =
-    let myArrow u v = mkArrow u Sorts.Relevant (lift 1 v)
-    and eqName = function
-      | Name s -> Id.of_string ("eq_"^(Id.to_string s))
-      | Anonymous -> Id.of_string "eq_A"
-    in
-    let ext_rel_list = Context.Rel.instance_list mkRel 0 lnamesparrec in
-    let lift_cnt = ref 0 in
-    let eqs_typ = List.map (fun aa ->
-                      let a = lift !lift_cnt aa in
-                      incr lift_cnt;
-                      myArrow a (myArrow a (bb ()))
-                    ) ext_rel_list in
+  let nonrecparams_ctx,recparams_ctx = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
+  let params_ctx = nonrecparams_ctx @ recparams_ctx in
+  let nparamsdecls = Context.Rel.length params_ctx in
+  check_no_indices mib;
 
-    let eq_input = List.fold_left2
-                     ( fun a b decl -> (* mkLambda(n,b,a) ) *)
-                       (* here I leave the Naming thingy so that the type of
-                  the function is more readable for the user *)
-                       mkNamedLambda (map_annot eqName (RelDecl.get_annot decl)) b a )
-                     c (List.rev eqs_typ) lnamesparrec
-    in
-    List.fold_left (fun a decl ->(* mkLambda(n,t,a)) eq_input rel_list *)
-        (* Same here , hoping the auto renaming will do something good ;)  *)
-        let x = map_annot
-                  (function Name s -> s | Anonymous -> Id.of_string "A")
-                  (RelDecl.get_annot decl)
-        in
-        mkNamedLambda x (RelDecl.get_type decl)  a) eq_input lnamesparrec
+  let env_lift_recparams, recparams_ctx_with_eqs =
+    translate_context_eq (empty_env_lift env) recparams_ctx in
+  let env_lift_recparams_fix, fix_ctx, names, types =
+    match mib.mind_finite with
+    | CoFinite ->
+      raise NoDecidabilityCoInductive
+    | Finite when truly_recursive || nb_ind > 1 (* Hum, there exist non-recursive mutual types... *) ->
+      (* rec name *)
+      let rec_name i =
+        (Id.to_string (Array.get mib.mind_packets i).mind_typename)^"_eqrec"
+      in
+      let names = Array.init nb_ind (fun i -> make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant) in
+      let types = Array.init nb_ind (fun i -> Option.get (translate_type_eq env_lift_recparams anonR (mkPartialInd env ((kn,i),u) 0) (Term.it_mkProd_or_LetIn (*any sort:*) mkSet nonrecparams_ctx))) in
+      let fix_ctx = List.rev (Array.to_list (Array.map2 (fun na t -> RelDecl.LocalAssum (na,t)) names types)) in
+      shift_fix_env_lift kn mib.mind_nparams_rec recparams_ctx nb_ind env_lift_recparams, fix_ctx, names, types
+    | Finite | BiFinite ->
+      env_lift_recparams, [], [||], [||]
   in
+  let env_lift_recparams_fix_nonrecparams, nonrecparams_ctx_with_eqs =
+    translate_context_eq env_lift_recparams_fix nonrecparams_ctx in
   let make_one_eq cur =
+    (* construct the "fun A B ... N, eqA eqB eqC ... N => fixpoint" part *)
     let ind = (kn,cur) in
     let indu = (ind,u) in
+    let tomatch_ctx = RelDecl.[
+        LocalAssum (name_Y,
+                    translate_term (shiftn_env_lift 1 env_lift_recparams_fix_nonrecparams) (mkFullInd env indu 0));
+        LocalAssum (name_X,
+                    translate_term env_lift_recparams_fix_nonrecparams (mkFullInd env indu 0))
+      ] in
+    let env_lift_recparams_fix_nonrecparams_tomatch =
+      shiftn_env_lift 2 env_lift_recparams_fix_nonrecparams in
     (* current inductive we are working on *)
-    let cur_packet = mib.mind_packets.(cur) in
-    (* Inductive toto : [rettyp] := *)
-    let rettyp = Inductive.type_of_inductive ((mib,cur_packet),u) in
-    (* split rettyp in a list without the non rec params and the last ->
-  e.g. Inductive vec (A:Set) : nat -> Set := ... will do [nat] *)
-    let rettyp_l = quick_chop nparrec (deconstruct_type rettyp) in
-    (* give a type A, this function tries to find the equality on A declared
-       previously *)
-    (*  nlist = the number of args (A , B , ... )
-        eqA   = the de Bruijn index of the first eq param
-        ndx   = how much to translate due to the 2nd Case
-     *)
-    let compute_A_equality rel_list nlist eqA ndx t =
-      let lifti = ndx in
-      let rec aux c =
-        let (c,a) = Reductionops.whd_betaiota_stack env Evd.empty EConstr.(of_constr c) in
-        let (c,a) = EConstr.Unsafe.(to_constr c, List.map to_constr a) in
-        match Constr.kind c with
-        | Rel x -> mkRel (x-nlist+ndx)
-        | Var x ->
-           (* Support for working in a context with "eq_x : x -> x -> bool" *)
-           let eid = Id.of_string ("eq_"^(Id.to_string x)) in
-           let () =
-             try ignore (Environ.lookup_named eid env)
-             with Not_found -> raise (ParameterWithoutEquality (GlobRef.VarRef x))
-           in
-           mkVar eid
-        | Cast (x,_,_) -> aux (Term.applist (x,a))
-        | App _ -> assert false
-        | Ind ((kn',i as ind'),u) ->
-           if Environ.QMutInd.equal env kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
-           else begin
-               try
-                 let c = get_scheme handle (!beq_scheme_kind_aux()) ind' in
-                 let eq = mkConstU (c,u) in
-                 let eqa = Array.of_list @@ List.map aux a in
-                 let args =
-                   Array.append
-                     (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
-                 if Int.equal (Array.length args) 0 then eq
-                 else mkApp (eq, args)
-               with Not_found -> raise(EqNotFound (ind', ind))
-             end
-        | Sort _  -> raise InductiveWithSort
-        | Prod _ -> raise InductiveWithProduct
-        | Lambda _-> raise (EqUnknown "abstraction")
-        | LetIn _ -> raise (EqUnknown "let-in")
-        | Const (kn, u) ->
-           (match Environ.constant_opt_value_in env (kn, u) with
-            | Some c -> aux (Term.applist (c,a))
-            | None ->
-               (* Support for working in a context with "eq_x : x -> x -> bool" *)
-               (* Needs Hints, see test suite *)
-               let eq_lbl = Label.make ("eq_" ^ Label.to_string (Constant.label kn)) in
-               let kneq = Constant.change_label kn eq_lbl in
-               if Environ.mem_constant kneq env then
-                 let _ = Environ.constant_opt_value_in env (kneq, u) in
-                 Term.applist (mkConstU (kneq,u),a)
-               else raise (ParameterWithoutEquality (GlobRef.ConstRef kn)))
-        | Proj _ -> raise (EqUnknown "projection")
-        | Construct _ -> raise (EqUnknown "constructor")
-        | Case _ -> raise (EqUnknown "match")
-        | CoFix _ -> raise (EqUnknown "cofix")
-        | Fix _   -> raise (EqUnknown "fix")
-        | Meta _  -> raise (EqUnknown "meta-variable")
-        | Evar _  -> raise (EqUnknown "existential variable")
-        | Int _ -> raise (EqUnknown "int")
-        | Float _ -> raise (EqUnknown "float")
-        | Array _ -> raise (EqUnknown "array")
-      in
-      aux t
-    in
-    (* construct the predicate for the Case part*)
-    let do_predicate rel_list n =
-      List.fold_left (fun a b -> mkLambda(make_annot Anonymous Sorts.Relevant,b,a))
+    let pred =
+      let cur_packet = mib.mind_packets.(cur) in
+      (* Inductive toto : [rettyp] := *)
+      let rettyp = Inductive.type_of_inductive ((mib,cur_packet),u) in
+      (* split rettyp in a list without the non rec params and the last ->
+         e.g. Inductive vec (A:Set) : nat -> Set := ... will do [nat] *)
+      let _, rettyp = decompose_prod_n_assum nparamsdecls rettyp in
+      let rettyp_l, _ = decompose_prod_assum rettyp in
+      (* construct the predicate for the Case part*)
+      it_mkLambda_or_LetIn
         (mkLambda (make_annot Anonymous Sorts.Relevant,
-                   mkFullInd env indu (n+3+(List.length rettyp_l)+nb_ind-1),
+                   mkFullInd env indu (List.length rettyp_l),
                    (bb ())))
-        (List.rev rettyp_l) in
+        rettyp_l in
     (* make_one_eq *)
     (* do the [| C1 ... =>  match Y with ... end
                ...
                Cn => match Y with ... end |]  part *)
-    let rci = Sorts.Relevant in (* TODO relevance *)
-    let ci = make_case_info env ind rci MatchStyle in
-    let constrs n =
-      let params = Context.Rel.instance_list mkRel (n+nb_ind-1) mib.mind_params_ctxt in
+    let rci = Sorts.Relevant in (* returning a boolean, hence relevant *)
+    let constrs =
+      let params = Context.Rel.instance_list mkRel 0 params_ctx in
       get_constructors env (make_ind_family (indu, params))
     in
-    let constrsi = constrs (3+nparrec) in
-    let n = Array.length constrsi in
-    let ar = Array.init n (fun i ->
-      let nb_cstr_args = List.length constrsi.(i).cs_args in
-      let constrsj = constrs (3+nparrec+nb_cstr_args) in
-      let ar2 = Array.init n (fun j ->
-        if Int.equal i j then
-          let cc = match nb_cstr_args with
-            | 0 -> tt ()
-            | _ ->
-               let eqs = Array.init nb_cstr_args (fun ndx ->
-                 let cc = RelDecl.get_type (List.nth constrsi.(i).cs_args ndx) in
-                 let eqA = compute_A_equality rel_list
-                             nparrec
-                             (nparrec+3+2*nb_cstr_args)
-                             (nb_cstr_args+ndx+1)
-                             cc
-                 in
-                 mkApp (eqA, [|mkRel (ndx+1+nb_cstr_args);mkRel (ndx+1)|]))
-               in
-               Array.fold_left
-                 (fun a b -> mkApp (andb(),[|b;a|]))
-                 eqs.(0)
-                 (Array.sub eqs 1 (nb_cstr_args - 1))
+    let make_andb_list = function
+      | [] -> tt ()
+      | eq :: eqs -> List.fold_left (fun eqs eq -> mkApp (andb(),[|eq;eqs|])) eq eqs
+    in
+    let body =
+      match Environ.get_projections env ind with
+      | Some projs ->
+        (* A primitive record *)
+        let nb_cstr_args = List.length constrs.(0).cs_args in
+        let _,_,eqs = List.fold_right (fun decl (ndx,env_lift,l) ->
+          let env_lift' = push_env_lift decl env_lift in
+          match decl with
+          | RelDecl.LocalDef (na,b,t) -> (ndx-1,env_lift',l)
+          | RelDecl.LocalAssum (na,cc) ->
+              if is_irrelevant env_lift.env cc then (ndx-1,env_lift',l)
+              else
+                if noccur_between 1 (nb_cstr_args-ndx) cc then
+                  let cc = lift (ndx-nb_cstr_args) cc in
+                  match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch cc with
+                  | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
+                  | Some eqA ->
+                     let proj = Projection.make projs.(nb_cstr_args-ndx) true in
+                     (ndx-1,env_lift',mkApp (eqA, [|mkProj (proj,mkRel 2);mkProj (proj,mkRel 1)|])::l)
+                else
+                  raise InternalDependencies)
+                        constrs.(0).cs_args (nb_cstr_args,env_lift_recparams_fix_nonrecparams_tomatch,[])
+        in
+        make_andb_list eqs
+      | None ->
+        (* An inductive type *)
+        let ci = make_case_info env ind rci MatchStyle in
+        let nconstr = Array.length constrs in
+        let ar =
+          Array.init nconstr (fun i ->
+          let nb_cstr_args = List.length constrs.(i).cs_args in
+          let env_lift_recparams_fix_nonrecparams_tomatch_csargsi = shiftn_env_lift nb_cstr_args env_lift_recparams_fix_nonrecparams_tomatch in
+          let ar2 = Array.init nconstr (fun j ->
+            let env_lift_recparams_fix_nonrecparams_tomatch_csargsij = shiftn_env_lift nb_cstr_args env_lift_recparams_fix_nonrecparams_tomatch_csargsi in
+            let cc =
+              if Int.equal i j then
+                let _,_,eqs = List.fold_right (fun decl (ndx,env_lift,l) ->
+                   let env_lift' = push_env_lift decl env_lift in
+                   match decl with
+                   | RelDecl.LocalDef (na,b,t) -> (ndx-1,env_lift',l)
+                   | RelDecl.LocalAssum (na,cc) ->
+                     if is_irrelevant env_lift.env cc then (ndx-1,env_lift',l)
+                     else
+                       if noccur_between 1 (nb_cstr_args-ndx) cc then
+                         let cc = lift (ndx-nb_cstr_args) cc in
+                         match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch_csargsij cc with
+                         | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
+                         | Some eqA ->
+                           (ndx-1,env_lift',mkApp (eqA, [|mkRel (ndx+nb_cstr_args);mkRel ndx|])::l)
+                       else
+                         raise InternalDependencies)
+                                constrs.(j).cs_args (nb_cstr_args,env_lift_recparams_fix_nonrecparams_tomatch_csargsij,[])
+                in
+                make_andb_list eqs
+              else
+                ff ()
+            in
+            let cs_argsj = translate_context env_lift_recparams_fix_nonrecparams_tomatch_csargsi constrs.(j).cs_args in
+            it_mkLambda_or_LetIn cc cs_argsj)
           in
-          List.fold_left (fun a decl ->
-              mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
-            cc
-            constrsj.(j).cs_args
-        else
-          List.fold_left (fun a decl ->
-              mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
-            (ff ())
-            (constrsj.(j).cs_args))
-      in
-      let pred = EConstr.of_constr (do_predicate rel_list nb_cstr_args) in
-      let case =
-        simple_make_case_or_project env (Evd.from_env env)
-          ci pred NoInvert (EConstr.mkVar (Id.of_string "Y"))
-          (EConstr.of_constr_array ar2)
-      in
-      List.fold_left (fun a decl -> mkLambda (RelDecl.get_annot decl, RelDecl.get_type decl, a))
-        (EConstr.Unsafe.to_constr case)
-        (constrsi.(i).cs_args))
+          let predj = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch_csargsi pred) in
+          let case =
+            simple_make_case_or_project env (Evd.from_env env)
+              ci predj NoInvert (EConstr.mkRel (nb_cstr_args + 1))
+              (EConstr.of_constr_array ar2)
+          in
+          let cs_argsi = translate_context env_lift_recparams_fix_nonrecparams_tomatch constrs.(i).cs_args in
+          it_mkLambda_or_LetIn (EConstr.Unsafe.to_constr case) cs_argsi)
+        in
+        let predi = EConstr.of_constr (translate_term env_lift_recparams_fix_nonrecparams_tomatch pred) in
+        let case =
+          simple_make_case_or_project env (Evd.from_env env)
+            ci predi NoInvert (EConstr.mkRel 2)
+            (EConstr.of_constr_array ar) in
+        EConstr.Unsafe.to_constr case
     in
-    let pred = EConstr.of_constr (do_predicate rel_list 0) in
-    let case =
-      simple_make_case_or_project env (Evd.from_env env)
-        ci pred NoInvert (EConstr.mkVar (Id.of_string "X"))
-        (EConstr.of_constr_array ar)
-    in
-    mkNamedLambda (make_annot (Id.of_string "X") Sorts.Relevant) (mkFullInd env indu (nb_ind-1+1))  (
-        mkNamedLambda (make_annot (Id.of_string "Y") Sorts.Relevant) (mkFullInd env indu (nb_ind-1+2))  (
-            (EConstr.Unsafe.to_constr case)))
+    it_mkLambda_or_LetIn
+      (it_mkLambda_or_LetIn body tomatch_ctx)
+      nonrecparams_ctx_with_eqs
   in (* build_beq_scheme *)
 
-  let names = Array.make nb_ind (make_annot Anonymous Sorts.Relevant) and
-      types = Array.make nb_ind mkSet and
-      cores = Array.make nb_ind mkSet in
-  for i=0 to (nb_ind-1) do
-    names.(i) <- make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant;
-    types.(i) <- mkArrow (mkFullInd env ((kn,i),u) 0) Sorts.Relevant
-                  (mkArrow (mkFullInd env ((kn,i),u) 1) Sorts.Relevant (bb ()));
-    let c = make_one_eq i in
-    cores.(i) <- c;
-  done;
-  let res = Array.init nb_ind (fun i ->
-    let kelim = Inductive.elim_sort (mib,mib.mind_packets.(i)) in
-    if not (Sorts.family_leq InSet kelim) then
-      raise (NonSingletonProp (kn,i));
-    let fix = match mib.mind_finite with
+  let res =
+    match mib.mind_finite with
       | CoFinite ->
-         raise NoDecidabilityCoInductive;
-      | Finite ->
-         mkFix (((Array.make nb_ind 0),i),(names,types,cores))
-      | BiFinite ->
+         raise NoDecidabilityCoInductive
+      | Finite when truly_recursive || nb_ind > 1 (* Hum... *) ->
+         let cores = Array.init nb_ind make_one_eq in
+         Array.init nb_ind (fun i ->
+            let kelim = Inductive.elim_sort (mib,mib.mind_packets.(i)) in
+            if not (Sorts.family_leq InSet kelim) then
+              raise (NonSingletonProp (kn,i));
+            let decrArg = Context.Rel.length nonrecparams_ctx_with_eqs in
+            let fix = mkFix (((Array.make nb_ind decrArg),i),(names,types,cores)) in
+            it_mkLambda_or_LetIn fix recparams_ctx_with_eqs)
+      | Finite | BiFinite ->
+         assert (Int.equal nb_ind 1);
          (* If the inductive type is not recursive, the fixpoint is
              not used, so let's replace it with garbage *)
-         let subst = List.init nb_ind (fun _ -> mkProp) in
-         Vars.substl subst cores.(i)
-    in
-    create_input fix)
+         let kelim = Inductive.elim_sort (mib,mib.mind_packets.(0)) in
+         if not (Sorts.family_leq InSet kelim) then raise (NonSingletonProp (kn,0));
+         [|it_mkLambda_or_LetIn (make_one_eq 0) recparams_ctx_with_eqs|]
   in
   res, uctx
 
@@ -630,12 +1087,12 @@ let compute_bl_goal env handle (ind,u) lnamesparrec nparrec =
         mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
      create_input (
-        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) nparrec) (
-          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (nparrec+1)) (
+        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
+          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
             mkArrow
               (mkApp(eq (),[|bb ();mkApp(eqI,[|mkVar x;mkVar y|]);tt ()|]))
               Sorts.Relevant
-              (mkApp(eq (),[|mkFullInd env (ind,u) (nparrec+3);mkVar x;mkVar y|]))
+              (mkApp(eq (),[|mkFullInd env (ind,u) (2*nparrec+3);mkVar x;mkVar y|]))
         )))
 
 let compute_bl_tact handle ind lnamesparrec nparrec =
@@ -721,7 +1178,7 @@ let make_bl_scheme env handle mind =
   ([|ans|], uctx)
 
 let make_bl_scheme_deps env ind =
-  let inds = get_inductive_deps env ind in
+  let inds = get_inductive_deps ~noprop:false env ind in
   let map ind = SchemeMutualDep (ind, !bl_scheme_kind_aux ()) in
   SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
@@ -770,10 +1227,10 @@ let compute_lb_goal env handle (ind,u) lnamesparrec nparrec =
           mkNamedProd x (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
       create_input (
-        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) nparrec) (
-          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (nparrec+1)) (
+        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
+          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
             mkArrow
-              (mkApp(eq,[|mkFullInd env (ind,u) (nparrec+2);mkVar x;mkVar y|]))
+              (mkApp(eq,[|mkFullInd env (ind,u) (2*nparrec+2);mkVar x;mkVar y|]))
               Sorts.Relevant
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar x;mkVar y|]);tt|]))
         )))
@@ -849,7 +1306,7 @@ let make_lb_scheme env handle mind =
   ([|ans|], ctx)
 
 let make_lb_scheme_deps env ind =
-  let inds = get_inductive_deps env ind in
+  let inds = get_inductive_deps ~noprop:false env ind in
   let map ind = SchemeMutualDep (ind, !lb_scheme_kind_aux ()) in
   SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
@@ -916,10 +1373,10 @@ let compute_dec_goal env ind lnamesparrec nparrec =
           in
           mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
-        let eqnm = mkApp(eq,[|mkFullInd env ind (2*nparrec+2);mkVar x;mkVar y|]) in
+        let eqnm = mkApp(eq,[|mkFullInd env ind (3*nparrec+2);mkVar x;mkVar y|]) in
         create_input (
-          mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env ind (2*nparrec)) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env ind (2*nparrec+1)) (
+          mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env ind (3*nparrec)) (
+            mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env ind (3*nparrec+1)) (
               mkApp(sumbool(),[|eqnm;mkApp (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.not.type",[|eqnm|])|])
           )
         )

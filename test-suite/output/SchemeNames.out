@@ -251,6 +251,7 @@ Expands to: Constant SchemeNames.fooSet'_caset_nodep
 fooSet_beq : fooSet -> fooSet -> bool
 
 fooSet_beq is not universe polymorphic
+Arguments fooSet_beq X Y
 fooSet_beq is transparent
 Expands to: Constant SchemeNames.fooSet_beq
 fooSet_eq_dec : forall x y : fooSet, {x = y} + {x <> y}
@@ -382,6 +383,7 @@ Expands to: Constant SchemeNames.fooType'_caset_nodep
 fooType_beq : fooType -> fooType -> bool
 
 fooType_beq is not universe polymorphic
+Arguments fooType_beq X Y
 fooType_beq is transparent
 Expands to: Constant SchemeNames.fooType_beq
 fooType_eq_dec : forall x y : fooType, {x = y} + {x <> y}
