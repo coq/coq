@@ -74,7 +74,7 @@ let cook_constant env info cb =
   in
   let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs body in
   let typ = abstract_as_type cache cb.const_type in
-  let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) info.names_info)) cb.const_hyps in
+  let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) (names_info info))) cb.const_hyps in
   {
     const_hyps = hyps;
     const_body = body;
@@ -168,7 +168,7 @@ let cook_inductive info mib =
       PrimRecord data
   in
   let mind_hyps =
-    List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) info.names_info))
+    List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) (names_info info)))
       mib.mind_hyps
   in
   let mind_variance, mind_sec_variance =
