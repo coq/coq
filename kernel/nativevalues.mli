@@ -289,6 +289,7 @@ val feq : t -> t -> t -> t
 val flt : t -> t -> t -> t
 val fle : t -> t -> t -> t
 val fcompare : t -> t -> t -> t
+val fequal : t -> t -> t -> t
 val fclassify : t -> t -> t
 val fadd : t -> t -> t -> t
 val fsub : t -> t -> t -> t
@@ -319,6 +320,9 @@ val no_check_fle : t -> t -> t
 [@@ocaml.inline always]
 
 val no_check_fcompare : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_fequal : t -> t -> t
 [@@ocaml.inline always]
 
 val no_check_fclassify : t -> t

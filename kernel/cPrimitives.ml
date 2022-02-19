@@ -50,6 +50,7 @@ type t =
   | Float64lt
   | Float64le
   | Float64compare
+  | Float64equal
   | Float64classify
   | Float64add
   | Float64sub
@@ -106,6 +107,7 @@ let parse = function
   | "float64_lt" -> Float64lt
   | "float64_le" -> Float64le
   | "float64_compare" -> Float64compare
+  | "float64_equal" -> Float64equal
   | "float64_classify" -> Float64classify
   | "float64_add" -> Float64add
   | "float64_sub" -> Float64sub
@@ -184,6 +186,7 @@ let hash = function
   | Int63mods -> 52
   | Int63asr -> 53
   | Int63compares -> 54
+  | Float64equal -> 55
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -223,6 +226,7 @@ let to_string = function
   | Float64lt -> "flt"
   | Float64le -> "fle"
   | Float64compare -> "fcompare"
+  | Float64equal -> "fequal"
   | Float64classify -> "fclassify"
   | Float64add -> "fadd"
   | Float64sub -> "fsub"
@@ -324,7 +328,7 @@ let types =
       [float_ty], int_ty
   | Float64frshiftexp ->
       [float_ty], PITT_ind (PIT_pair, (float_ty, int_ty))
-  | Float64eq | Float64lt | Float64le ->
+  | Float64eq | Float64lt | Float64le | Float64equal ->
       [float_ty; float_ty], PITT_ind (PIT_bool, ())
   | Float64compare ->
       [float_ty; float_ty], PITT_ind (PIT_f_cmp, ())
@@ -390,6 +394,7 @@ let params = function
   | Float64lt
   | Float64le
   | Float64compare
+  | Float64equal
   | Float64classify
   | Float64add
   | Float64sub
@@ -449,6 +454,7 @@ let univs = function
   | Float64lt
   | Float64le
   | Float64compare
+  | Float64equal
   | Float64classify
   | Float64add
   | Float64sub

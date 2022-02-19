@@ -639,6 +639,13 @@ let fcompare accu x y =
   if is_float x && is_float y then no_check_fcompare x y
   else accu x y
 
+let no_check_fequal x y =
+  mk_bool (Float64.equal (to_float x) (to_float y))
+
+let fequal accu x y =
+  if is_float x && is_float y then no_check_fequal x y
+  else accu x y
+
 type coq_fclass =
   | CFclassAccu of t
   | CFclassPNormal

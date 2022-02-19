@@ -49,6 +49,7 @@ Extract Constant PrimFloat.eqb => "Float64.eq".
 Extract Constant PrimFloat.ltb => "Float64.lt".
 Extract Constant PrimFloat.leb => "Float64.le".
 Extract Constant PrimFloat.compare => "Float64.compare".
+Extract Constant PrimFloat.Leibniz.eqb => "Float64.equal".
 Extract Constant PrimFloat.mul => "Float64.mul".
 Extract Constant PrimFloat.add => "Float64.add".
 Extract Constant PrimFloat.sub => "Float64.sub".

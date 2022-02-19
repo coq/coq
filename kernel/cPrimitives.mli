@@ -45,6 +45,7 @@ type t =
   | Float64lt
   | Float64le
   | Float64compare
+  | Float64equal
   | Float64classify
   | Float64add
   | Float64sub

@@ -60,6 +60,11 @@ Primitive leb := #float64_le.
 
 Primitive compare := #float64_compare.
 
+(** Boolean Leibniz equality *)
+Module Leibniz.
+Primitive eqb := #float64_equal.
+End Leibniz.
+
 Primitive mul := #float64_mul.
 
 Primitive add := #float64_add.
