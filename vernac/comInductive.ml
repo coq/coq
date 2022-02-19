@@ -222,7 +222,7 @@ let is_flexible_sort evd s = match s with
    occur only in the le constraints *)
 
 (*
-   Solve a system of universe constraint of the form
+   Solve a system of universe constraints of the form
 
    u_s11, ..., u_s1p1, w1 <= u1
    ...
