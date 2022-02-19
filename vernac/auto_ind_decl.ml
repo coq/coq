@@ -57,9 +57,6 @@ let name_context env ctxt =
           let d' = name_assumption env d in (Environ.push_rel d' env, d' :: hyps))
        (env,[]) (List.rev ctxt))
 
-let string_of_constant kn =
-  Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.ConstRef kn))
-
 (* Some pre declaration of constant we are going to use *)
 let andb_prop = fun _ -> UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.andb_prop")
 
@@ -73,6 +70,7 @@ let tt () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref
 let ff () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.false")
 let eq () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.eq.type")
 let int63_eqb () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "num.int63.eqb")
+let float64_eqb () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "num.float.leibniz.eqb")
 
 let sumbool () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.sumbool.type")
 let andb = fun _ -> UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.andb")
@@ -542,7 +540,7 @@ let build_beq_scheme env handle kn =
       end
     | Const (kn,u as cst) ->
         if Environ.is_int63_type env kn then Some (int63_eqb ()) else
-        if Environ.is_float64_type env kn then raise (EqUnknown (string_of_constant kn)) else
+        if Environ.is_float64_type env kn then Some (float64_eqb ()) else
         if Environ.is_array_type env kn then (* TODO *) raise (ParameterWithoutEquality (GlobRef.ConstRef kn)) else
         (match Environ.constant_opt_value_in env (kn, u) with
         | Some c -> translate_term_eq env_lift c
