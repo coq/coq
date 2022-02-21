@@ -409,7 +409,7 @@ let saturate_by_linear_equalities sys =
   tr_sys "saturate_by_linear_equalities" saturate_by_linear_equalities sys
 
 let bound_monomials (sys : WithProof.t list) =
-  let l =
+  let (bounds,_) =
     extract_all
       (fun p ->
         match BoundWithProof.make p with
@@ -441,13 +441,13 @@ let bound_monomials (sys : WithProof.t list) =
           match BoundWithProof.mul_bound w1 w2 with
           | None -> None
           | Some b -> Some (i1 + i2, b))
-      (fst l)
+      bounds
   in
   let has_mon (_, b) =
     let Vect.Bound.{cst; var; coeff} = BoundWithProof.bound b in
     if ISet.mem var vars then Some (BoundWithProof.proof b) else None
   in
-  CList.map_filter has_mon bounds @ snd l
+  CList.map_filter has_mon bounds
 
 let bound_monomials = tr_sys "bound_monomials" bound_monomials
 
@@ -1135,14 +1135,13 @@ let rev_concat l =
 let pre_process sys =
   let sys = normalise sys in
   let bnd1 = bound_monomials sys in
-  let sys1 = normalise (subst sys) in
+  let sys1 = normalise (subst (List.rev_append sys bnd1)) in
   let pbnd1 = fourier_small sys1 in
   let sys2 = elim_redundant (List.rev_append pbnd1 sys1) in
   let bnd2 = bound_monomials sys2 in
-  let pbnd2 = [] (*fourier_small sys2*) in
   (* Should iterate ? *)
   let sys =
-    rev_concat [pbnd2; bnd1; bnd2; saturate_by_linear_equalities sys2; sys2]
+    rev_concat [bnd2; saturate_by_linear_equalities sys2; sys2]
   in
   sys
 
