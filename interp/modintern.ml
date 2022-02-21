@@ -100,10 +100,36 @@ let lookup_polymorphism env base kind fqid =
   in
   aux (defunctor m) fqid
 
-let transl_with_decl env base kind = function
+let intern_with_decl = function
   | CWith_Module ({CAst.v=fqid},qid) ->
-      WithMod (fqid,lookup_module qid), Univ.ContextSet.empty
+    WithMod (fqid,lookup_module qid)
   | CWith_Definition ({CAst.v=fqid},udecl,c) ->
+    WithDef (fqid,(udecl,c))
+
+let loc_of_module l = l.CAst.loc
+
+(* Invariant : the returned kind is never ModAny, and it is
+   equal to the input kind when this one isn't ModAny. *)
+
+let rec intern_module_ast kind m = match m with
+  | {CAst.loc;v=CMident qid} ->
+      let (mp,kind) = lookup_module_or_modtype kind qid in
+      (MEident mp, mp, kind)
+  | {CAst.loc;v=CMapply (me1,me2)} ->
+      let me1', base, kind1 = intern_module_ast kind me1 in
+      let mp2, kind2 = lookup_module_or_modtype ModAny me2 in
+      if kind2 == ModType then
+        error_application_to_module_type (loc_of_module me2);
+      (MEapply (me1',mp2), base, kind1)
+  | {CAst.loc;v=CMwith (me,decl)} ->
+      let me,base,kind = intern_module_ast kind me in
+      if kind == Module then error_incorrect_with_in_module m.CAst.loc;
+      let decl = intern_with_decl decl in
+      (MEwith(me,decl), base, kind)
+
+let interp_with_decl env base kind = function
+  | WithMod (fqid,mp) -> WithMod (fqid,mp), Univ.ContextSet.empty
+  | WithDef(fqid,(udecl,c)) ->
     let sigma, udecl = interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
     let poly = lookup_polymorphism env base kind fqid in
@@ -118,28 +144,17 @@ let transl_with_decl env base kind = function
         WithDef (fqid,(c, None)), ctx
     end
 
-let loc_of_module l = l.CAst.loc
+let rec interp_module_ast env kind base m cst = match m with
+| MEident mp ->
+  MEident mp, cst
+| MEapply (me,mp) ->
+  let me', cst = interp_module_ast env kind base me cst in
+  MEapply(me',mp), cst
+| MEwith(me,decl) ->
+  let me, cst = interp_module_ast env kind base me cst in
+  let decl, cst' = interp_with_decl env base kind decl in
+  let cst = Univ.ContextSet.union cst cst' in
+  MEwith(me,decl), cst
 
-(* Invariant : the returned kind is never ModAny, and it is
-   equal to the input kind when this one isn't ModAny. *)
-
-let rec interp_module_ast env kind m cst = match m with
-  | {CAst.loc;v=CMident qid} ->
-      let (mp,kind) = lookup_module_or_modtype kind qid in
-      (MEident mp, mp, kind, cst)
-  | {CAst.loc;v=CMapply (me1,me2)} ->
-      let me1', base, kind1, cst = interp_module_ast env kind me1 cst in
-      let mp2, kind2 = lookup_module_or_modtype ModAny me2 in
-      if kind2 == ModType then
-        error_application_to_module_type (loc_of_module me2);
-      (MEapply (me1',mp2), base, kind1, cst)
-  | {CAst.loc;v=CMwith (me,decl)} ->
-      let me,base,kind,cst = interp_module_ast env kind me cst in
-      if kind == Module then error_incorrect_with_in_module m.CAst.loc;
-      let decl, cst' = transl_with_decl env base kind decl in
-      let cst = Univ.ContextSet.union cst cst' in
-      (MEwith(me,decl), base, kind, cst)
-
-let interp_module_ast env kind m =
-  let me, _, kind, cst = interp_module_ast env kind m Univ.ContextSet.empty in
-  me, kind, cst
+let interp_module_ast env kind base m =
+  interp_module_ast env kind base m Univ.ContextSet.empty

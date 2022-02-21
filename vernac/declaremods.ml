@@ -573,7 +573,8 @@ let intern_arg (acc, cst) (idl,(typ,ann)) =
   let inl = inl2intopt ann in
   let lib_dir = Lib.library_dp() in
   let env = Global.env() in
-  let (mty, _, cst') = Modintern.interp_module_ast env Modintern.ModType typ in
+  let (mty, base, kind) = Modintern.intern_module_ast Modintern.ModType typ in
+  let (mty, cst') = Modintern.interp_module_ast env kind base mty in
   let () = Global.push_context_set ~strict:true cst' in
   let env = Global.env () in
   let sobjs = get_module_sobjs false env inl mty in
@@ -641,7 +642,8 @@ let build_subtypes env mp args mtys =
   let (ctx, ans) = List.fold_left_map
     (fun ctx (m,ann) ->
        let inl = inl2intopt ann in
-       let mte, _, ctx' = Modintern.interp_module_ast env Modintern.ModType m in
+       let mte, base, kind = Modintern.intern_module_ast Modintern.ModType m in
+       let mte, ctx' = Modintern.interp_module_ast env Modintern.ModType base mte in
        let env = Environ.push_context_set ~strict:true ctx' env in
        let ctx = Univ.ContextSet.union ctx ctx' in
        let mtb, cst = Mod_typing.translate_modtype env mp inl (args,mte) in
@@ -688,7 +690,8 @@ let start_module export id args res fs =
   let res_entry_o, subtyps, ctx = match res with
     | Enforce (res,ann) ->
         let inl = inl2intopt ann in
-        let (mte, _, ctx) = Modintern.interp_module_ast env Modintern.ModType res in
+        let (mte, base, kind) = Modintern.intern_module_ast Modintern.ModType res in
+        let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
         let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
@@ -753,7 +756,8 @@ let declare_module id args res mexpr_o fs =
   let mty_entry_o, subs, inl_res, ctx' = match res with
     | Enforce (mty,ann) ->
         let inl = inl2intopt ann in
-        let (mte, _, ctx) = Modintern.interp_module_ast env Modintern.ModType mty in
+        let (mte, base, kind) = Modintern.intern_module_ast Modintern.ModType mty in
+        let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
         let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
@@ -768,7 +772,8 @@ let declare_module id args res mexpr_o fs =
   let mexpr_entry_o, inl_expr, ctx' = match mexpr_o with
     | None -> None, default_inline (), Univ.ContextSet.empty
     | Some (mexpr,ann) ->
-      let (mte, _, ctx) = Modintern.interp_module_ast env Modintern.Module mexpr in
+      let (mte, base, kind) = Modintern.intern_module_ast Modintern.Module mexpr in
+      let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
       Some mte, inl2intopt ann, ctx
   in
   let env = Environ.push_context_set ~strict:true ctx' env in
@@ -845,7 +850,8 @@ let declare_modtype id args mtys (mty,ann) fs =
   let params, arg_ctx = intern_args args in
   let () = Global.push_context_set ~strict:true arg_ctx in
   let env = Global.env () in
-  let mte, _, mte_ctx = Modintern.interp_module_ast env Modintern.ModType mty in
+  let mte, base, kind = Modintern.intern_module_ast Modintern.ModType mty in
+  let mte, mte_ctx = Modintern.interp_module_ast env kind base mte in
   let () = Global.push_context_set ~strict:true mte_ctx in
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
@@ -917,7 +923,8 @@ let type_of_incl env is_mod = function
 
 let declare_one_include (me_ast,annot) =
   let env = Global.env() in
-  let me, kind, cst = Modintern.interp_module_ast env Modintern.ModAny me_ast in
+  let me, base, kind = Modintern.intern_module_ast Modintern.ModAny me_ast in
+  let me, cst = Modintern.interp_module_ast env kind base me in
   let () = Global.push_context_set ~strict:true cst in
   let env = Global.env () in
   let is_mod = (kind == Modintern.Module) in
