@@ -127,7 +127,6 @@ Declaring Coercions
 
 .. cmd:: Coercion @reference : @class >-> @class
          Coercion @ident {? @univ_decl } @def_body
-   :name: Coercion; _
 
   The first form declares the construction denoted by :token:`reference` as a coercion between
   the two given classes.  The second form defines :token:`ident`

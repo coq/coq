@@ -673,29 +673,25 @@ variant_definition: [
 | ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
 ]
 
-singleton_class_definition: [
-| OPT ">" ident_decl LIST0 binder OPT [ ":" sort ] ":=" constructor
-]
-
 record_definition: [
 | OPT ">" ident_decl LIST0 binder OPT [ ":" sort ] OPT ( ":=" OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}" OPT [ "as" ident ] )
 ]
 
 record_field: [
-| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) name OPT field_body OPT [ "|" natural ] OPT decl_notations
+| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) name OPT field_spec OPT [ "|" natural ]
 ]
 
-field_body: [
+field_spec: [
 | LIST0 binder of_type
-| LIST0 binder of_type ":=" term
 | LIST0 binder ":=" term
+| LIST0 binder of_type ":=" term
 ]
 
 term_record: [
-| "{|" LIST0 field_def SEP ";" OPT ";" "|}"
+| "{|" LIST0 field_val SEP ";" OPT ";" "|}"
 ]
 
-field_def: [
+field_val: [
 | qualid LIST0 binder ":=" term
 ]
 
@@ -1063,7 +1059,7 @@ command: [
 | "Variant" variant_definition
 | [ "Record" | "Structure" ] record_definition
 | "Class" record_definition
-| "Class" singleton_class_definition
+| "Class" OPT ">" ident_decl LIST0 binder OPT [ ":" sort ] ":=" constructor
 | "Module" OPT [ "Import" | "Export" ] ident LIST0 module_binder OPT of_module_type OPT ( ":=" LIST1 module_expr_inl SEP "<+" )
 | "Module" "Type" ident LIST0 module_binder LIST0 ( "<:" module_type_inl ) OPT ( ":=" LIST1 module_type_inl SEP "<+" )
 | "Declare" "Module" OPT [ "Import" | "Export" ] ident LIST0 module_binder ":" module_type_inl
@@ -1085,7 +1081,7 @@ command: [
 | "Identity" "Coercion" ident ":" class ">->" class
 | "Coercion" reference ":" class ">->" class
 | "Context" LIST1 binder
-| "Instance" OPT ( ident_decl LIST0 binder ) ":" type OPT hint_info OPT [ ":=" "{" LIST0 field_def "}" | ":=" term ]
+| "Instance" OPT ( ident_decl LIST0 binder ) ":" type OPT hint_info OPT [ ":=" "{" LIST0 field_val "}" | ":=" term ]
 | "Existing" "Instance" qualid OPT hint_info
 | "Existing" "Instances" LIST1 qualid OPT [ "|" natural ]
 | "Existing" "Class" qualid

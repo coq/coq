@@ -115,16 +115,20 @@ Function application
    | ( @natural := @term )
    | @term1
 
-:n:`@term__fun @term` denotes applying the function :n:`@term__fun` to :token:`term`.
+:n:`@term1__fun @term1` denotes applying the function :n:`@term1__fun` to :token:`term1`.
 
-:n:`@term__fun {+ @term__i }` denotes applying
-:n:`@term__fun` to the arguments :n:`@term__i`.  It is
-equivalent to :n:`( … ( @term__fun @term__1 ) … ) @term__n`:
+:n:`@term1__fun {+ @term1__i }` denotes applying
+:n:`@term1__fun` to the arguments :n:`@term1__i`.  It is
+equivalent to :n:`( … ( @term1__fun @term1__1 ) … ) @term1__n`:
 associativity is to the left.
 
+The :n:`@ @qualid_annotated {+ @term1 }` form requires specifying all arguments,
+including implicit ones.  Otherwise, implicit arguments need
+not be given.  See :ref:`ImplicitArguments`.
+
 The notations :n:`(@ident := @term)` and :n:`(@natural := @term)`
-for arguments are used for making explicit the value of implicit arguments (see
-Section :ref:`explicit-applications`).
+for arguments are used for making explicit the value of implicit arguments.
+See :ref:`explicit-applications`.
 
 .. _gallina-assumptions:
 

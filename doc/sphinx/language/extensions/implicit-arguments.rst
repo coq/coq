@@ -3,7 +3,7 @@
 Implicit arguments
 ------------------
 
-An implicit argument of a function is an argument which can be
+An :gdef:`implicit argument` of a function is an argument which can be
 inferred from contextual knowledge. There are different kinds of
 implicit arguments that can be considered implicit in different ways.
 There are also various commands to control the setting or the

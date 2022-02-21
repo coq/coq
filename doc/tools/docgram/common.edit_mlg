@@ -608,6 +608,12 @@ inductive_token: [
 | DELETENT
 ]
 
+(* decl_notations not allowed for Record, Structure or Class *)
+record_field: [
+| REPLACE LIST0 quoted_attributes record_binder OPT [ "|" natural ] decl_notations
+| WITH LIST0 quoted_attributes record_binder OPT [ "|" natural ]
+]
+
 record_fields: [
 | REPLACE record_field ";" record_fields
 | WITH LIST0 record_field SEP ";" OPT ";"
@@ -2759,6 +2765,7 @@ SPLICE: [
 | cofixdecl
 | induction_clause_list
 | as_or_and_ipat
+| singleton_class_definition
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2822,6 +2829,8 @@ RENAME: [
 | delta_flag delta_reductions
 | q_strategy_flag q_reductions
 | destruction_arg induction_arg
+| field_body field_spec
+| field_def field_val
 ]
 
 simple_tactic: [
