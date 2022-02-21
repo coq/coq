@@ -970,7 +970,16 @@ let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 
 let add_vname (vars,uvars) na = add_vname vars na, uvars
 
+let rec insert_impargs impargs r = match impargs with
+  | [] -> r
+  | bk :: rest ->
+    match DAst.get r with
+    | GProd (na,_,t,c) ->
+      DAst.make ?loc:r.loc (GProd (na, bk, t, insert_impargs rest c))
+    | _ -> r
+
 let rec extern inctx ?impargs scopes vars r =
+  let r = Option.cata (fun impargs -> insert_impargs impargs r) r impargs in
   match remove_one_coercion inctx (flatten_application r) with
   | Some (nargs,inctx,r') ->
     (try extern_notations inctx scopes vars (Some nargs) r
