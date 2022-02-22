@@ -201,12 +201,12 @@ module PatternMatching (E:StaticEnvironment) = struct
     m.stream eval ctx
 
   (** Chooses in a list, in the same order as the list *)
-  let rec pick (l:'a list) (e, info) : 'a m = match l with
+  let rec pick (l:'a list) accu (e, info) : ('a list * 'a * 'a list) m = match l with
   | [] -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
   | x :: l ->
-    { stream = fun k ctx -> Proofview.tclOR (k x ctx) (fun e -> (pick l e).stream k ctx) }
+    { stream = fun k ctx -> Proofview.tclOR (k (accu, x, l) ctx) (fun e -> (pick l (x :: accu) e).stream k ctx) }
 
-  let pick l = pick l imatching_error
+  let pick l = pick l [] imatching_error
 
   (** Declares a substitution, a context substitution and a term substitution. *)
   let put subst context terms : unit m =
@@ -288,23 +288,23 @@ module PatternMatching (E:StaticEnvironment) = struct
       [hyps]. Tries the hypotheses in order. For each success returns
       the name of the matched hypothesis. *)
   let hyp_match_type hypname pat hyps =
-    pick hyps >>= fun decl ->
+    pick hyps >>= fun (bef, decl, aft) ->
     let id = NamedDecl.get_id decl in
     pattern_match_term pat (NamedDecl.get_type decl) () <*>
     put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
-    return id
+    return (bef, id, aft)
 
   (** [hyp_match_type hypname bodypat typepat hyps] matches a single
       hypothesis pattern [hypname := bodypat : typepat] against the
       hypotheses in [hyps].Tries the hypotheses in order. For each
       success returns the name of the matched hypothesis. *)
   let hyp_match_body_and_type hypname bodypat typepat hyps =
-    pick hyps >>= function
+    pick hyps >>= function (bef, decl, aft) -> match decl with
       | LocalDef (id,body,hyp) ->
           pattern_match_term bodypat body () <*>
           pattern_match_term typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (EConstr.mkVar id.binder_name) empty_term_subst) <*>
-          return id.binder_name
+          return (bef, id.binder_name, aft)
       | LocalAssum (id,hyp) -> fail
 
   (** [hyp_match pat hyps] dispatches to
@@ -323,12 +323,8 @@ module PatternMatching (E:StaticEnvironment) = struct
   let rec hyp_pattern_list_match pats hyps lhs =
     match pats with
     | pat::pats ->
-        hyp_match pat hyps >>= fun matched_hyp ->
-        (* spiwack: alternatively it is possible to return the list
-           with the matched hypothesis removed directly in
-           [hyp_match]. *)
-        let select_matched_hyp decl = Id.equal (NamedDecl.get_id decl) matched_hyp in
-        let hyps = CList.remove_first select_matched_hyp hyps in
+        hyp_match pat hyps >>= fun (bef, matched_hyp, aft) ->
+        let hyps = List.rev_append bef aft in
         hyp_pattern_list_match pats hyps lhs
     | [] -> return lhs
 
