@@ -2051,14 +2051,16 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                  | CStructRec i -> i
                  | _ -> user_err ?loc Pp.(str "Well-founded induction requires Program Fixpoint or Function.")) recarg
                in
-               let before, after = split_at_annot bl recarg in
-               let (env',rbefore) = List.fold_left intern_local_binder (env,[]) before in
-               let n = Option.map (fun _ -> List.count (fun c -> match DAst.get c with
-                   | GLocalAssum _ -> true
-                   | _ -> false (* remove let-ins *))
-                   rbefore) recarg in
-               let (env',rbl) = List.fold_left intern_local_binder (env',rbefore) after in
-               let bl = List.rev (List.map glob_local_binder_of_extended rbl) in
+               let (env',bl) = List.fold_left intern_local_binder (env,[]) bl in
+               let bl = List.rev_map glob_local_binder_of_extended bl in
+               let n = Option.map (fun recarg ->
+                   List.fold_left_until (fun n (id,_,body,_) -> match body with
+                       | None ->
+                         if Name.equal id (Name recarg.v) then Stop n else Cont (n+1)
+                       | Some _ -> Cont n (* let-ins don't count *))
+                     0 bl)
+                   recarg
+               in
                let bl_impls = remember_binders_impargs env' bl in
                (n, bl, intern_type env' ty, bl_impls)) dl in
         (* We add the recursive functions to the environment *)
