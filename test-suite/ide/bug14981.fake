@@ -1,0 +1,6 @@
+# -*- coq-prog-args: ("-async-proofs-command-error-resilience" "on"); -*-
+
+ADD { Section Foo. }
+ADD { Definition bar := Bar. }
+ADD { End Foo. }
+FAILJOIN
