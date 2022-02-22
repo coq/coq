@@ -828,11 +828,7 @@ success:
 .. tacn:: assert_succeeds @ltac_expr3
 
    If :n:`@ltac_expr3` has at least one success, the proof state is unchanged and
-   no message is printed.  If :n:`@ltac_expr3` fails, the tactic performs
-   a :tacn:`gfail` :n:`0`, printing the following message:
-
-   .. exn:: Tactic failure: <tactic closure> fails.
-      :undocumented:
+   no message is printed.  If :n:`@ltac_expr3` fails, the tactic fails with the same error.
 
 Checking for failure: assert_fails
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

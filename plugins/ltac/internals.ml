@@ -21,6 +21,13 @@ open Tactypes
 open Tactics
 open Proofview.Notations
 
+let assert_succeeds tac =
+  let open Proofview in
+  let exception Succeeded in
+  tclORELSE (tclONCE tac <*> tclZERO Succeeded) (function
+      | Succeeded, _ -> tclUNIT ()
+      | exn, info -> tclZERO ~info exn)
+
 let mytclWithHoles tac with_evars c =
   Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.pf_env gl in

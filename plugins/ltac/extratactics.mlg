@@ -30,6 +30,11 @@ open Vernacextend
 
 DECLARE PLUGIN "coq-core.plugins.ltac"
 
+TACTIC EXTEND assert_succeeds
+| [ "assert_succeeds" tactic3(tac) ]
+  -> { Internals.assert_succeeds (Tacinterp.tactic_of_value ist tac) }
+END
+
 TACTIC EXTEND replace
 | ["replace" uconstr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
 -> { Internals.replace_in_clause_maybe_by ist c1 c2 cl tac }
