@@ -389,7 +389,7 @@ let init () =
       breakpoints := BPSet.empty;
       (hook ()).Intf.submit_answer (Answer.Init);
       while
-        let cmd = (hook ()).Intf.read_cmd () in
+        let cmd = (hook ()).Intf.read_cmd true in
         let open DebugHook.Action in
         match cmd with
         | UpdBpts updates -> upd_bpts updates; true
@@ -405,7 +405,6 @@ open DebugHook.Intf
 open DebugHook.Answer
 
 let prompt p = wrap (fun () -> (hook ()).submit_answer (Prompt p))
-let goals gs = wrap (fun () -> (hook ()).submit_answer (Goal gs))
 let output o = wrap (fun () -> (hook ()).submit_answer (Output o))
 
 (* routines for deferring output; output is sent only if
@@ -446,29 +445,49 @@ let get_vars framenum =
   in
   get_chunk (get_full_stack ()) framenum
 
+let db_fmt_goal gl =
+  let env = Proofview.Goal.env gl in
+  let concl = Proofview.Goal.concl gl in
+  let penv = Termops.Internal.print_named_context env in
+  let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
+    str"  " ++ hv 0 (penv ++ fnl () ++
+                   str "============================" ++ fnl ()  ++
+                   str" "  ++ pc) ++ fnl () ++ fnl ()
+
 let db_fmt_goals () =
-  let db_fmt_goal gl =
-    let env = Proofview.Goal.env gl in
-    let concl = Proofview.Goal.concl gl in
-    let penv = Termops.Internal.print_named_context env in
-    let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
-      str"  " ++ hv 0 (penv ++ fnl () ++
-                     str "============================" ++ fnl ()  ++
-                     str" "  ++ pc) ++ fnl () ++ fnl ()
-  in
   let gls = (get_history !hist_index).goals in
   (* todo: say "No more goals"?  What if they are shelved?  Same behavior in Ltac1 *)
   str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
       Pp.seq (List.map db_fmt_goal gls)
 
+let isTerminal () = (hook ()).isTerminal
+
+let db_pr_goals =  (* todo: drop the "db_" prefix *)
+  let open Proofview in
+  let open Notations in
+  Goal.goals >>= fun gl ->
+  Monad.List.map (fun x -> x) gl >>= fun gls ->
+  let sigma =  match gls with
+    | hd :: tl -> Goal.sigma hd
+    | [] -> Evd.empty
+  in
+  let goals = List.map (fun gl -> Goal.goal gl) gls in
+  DebugHook.debug_proof := Some (sigma, goals);
+  let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
+      Pp.seq (List.map db_fmt_goal gls) in
+    Proofview.tclLIFT (
+      if isTerminal () then output pg
+      else Proofview.NonLogical.make (fun () -> ()))
+
+(*
 let db_pr_goals () =
   let gs = db_fmt_goals () in
   Proofview.tclLIFT (goals gs)   (* TODO: MAYBE DROP THIS LINE? *)
+*)
 
-let isTerminal () = (hook ()).isTerminal
 let read () =
   let rec l () =
-    let cmd = (hook ()).read_cmd () in
+    let cmd = (hook ()).read_cmd true in
     action := cmd;  (* todo: issue being here, don't want to lose initial setting??? *)
 (*    Printf.eprintf "\naction = %s\n%!" (DebugHook.Action.to_string cmd); *)
     let open DebugHook.Action in
@@ -491,7 +510,7 @@ let read () =
     let do_stop () =
       let msg = tag "message.prompt"
             @@ fnl () ++ str (Printf.sprintf "History (%d) > "(-(!hist_index))) in
-      (hook()).submit_answer (Goal (db_fmt_goals ()));
+(*      (hook()).submit_answer (Goal (db_fmt_goals ())); *)
       (hook()).submit_answer (Prompt msg);
       l ()
     in

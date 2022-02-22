@@ -171,7 +171,7 @@ let db_cmd sn cmd =
       (sn.coqops#process_db_cmd cmd ~next:(function | _ -> Coq.return ()))
       (fun () -> Minilib.log "Coq busy, discarding db_cmd")
 
-let forward_db_goals_n_stack = ref ((fun _ -> failwith "forward_db_goals_n_stack")
+let forward_db_stack_n_goals = ref ((fun _ -> failwith "forward_db_stack_n_goals")
                      : session -> unit -> unit)
 let forward_db_vars = ref ((fun _ -> failwith "forward_db_vars")
                      : session -> int -> unit)
@@ -190,18 +190,12 @@ let create_session f =
   sn.debugger#set_forward_get_basename (fun _ -> sn.basename);
   Coq.set_restore_bpts sn.coqtop (fun _ -> !forward_restore_bpts sn);
   (sn.messages#route 0)#set_forward_send_db_cmd (db_cmd sn);
-  (sn.messages#route 0)#set_forward_db_goals_n_stack (!forward_db_goals_n_stack sn);
+  (sn.messages#route 0)#set_forward_db_stack_n_goals (!forward_db_stack_n_goals sn);
   sn.debugger#set_forward_highlight_code (!forward_highlight_code sn);
   sn.debugger#set_forward_clear_db_highlight (clear_db_highlight sn);
   sn.debugger#set_forward_db_vars (!forward_db_vars sn);
   sn.coqops#set_forward_clear_db_highlight (clear_db_highlight ~retn:true sn);
-  sn.coqops#set_forward_set_goals_of_dbg_session
-    (fun msg ->
-      sn.coqops#set_debug_goal msg;
-      sn.last_db_goals <- msg;
-      let osn = (find_secondary_sn sn) in
-      osn.coqops#set_debug_goal msg;
-      osn.last_db_goals <- msg);
+  sn.coqops#set_forward_get_other_proof (fun () -> (find_secondary_sn sn).proof);
   sn.coqops#set_forward_init_db (fun () -> !forward_init_db sn);
   let _ = set_drag sn.script#drag in
   sn
@@ -901,9 +895,16 @@ let _ = Wg_MessageView.forward_keystroke := forward_keystroke
 let _ = Wg_Debugger.forward_keystroke := forward_keystroke
 
 let printopts_callback opts v =
-  let b = v#get_active in
-  let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
-  send_to_coq "show_goals" (fun sn -> sn.coqops#show_goals)
+  if notebook#pages = [] then ()
+  else begin
+    let sn = find_db_sn () in
+    let b = v#get_active in
+    let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
+    Coq.add_do_when_ready sn.coqtop (fun _ ->
+      ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#show_goals true)
+        (fun () -> Minilib.log "Coq busy, discarding show_goals")
+    )
+  end
 
 (** Templates menu *)
 
@@ -1055,8 +1056,6 @@ let highlight_code sn loc =
     clear_db_highlight sn ();
     notebook#current_term.script#set_debugging_highlight bp ep;
     sn.debug_stop_pt <- Some (notebook#current_term, bp, ep);
-    (* also show goal in secondary script goal panel *)
-    notebook#current_term.coqops#set_debug_goal sn.last_db_goals
   in
   if file = "ToplevelInput" then begin
     notebook#goto_term sn;
@@ -1077,7 +1076,8 @@ let highlight_code sn loc =
 
 let _ = forward_highlight_code := highlight_code
 
-let db_goals_n_stack sn _ =
+let db_stack_n_goals sn _ =
+  (* get stack first so goals can be shown in the right buffer *)
   Coq.add_do_when_ready sn.coqtop (fun _ ->
     ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#process_db_stack
       ~next:(function
@@ -1088,9 +1088,13 @@ let db_goals_n_stack sn _ =
             Coq.return ()
           ))
       (fun () -> Minilib.log "Coq busy, discarding db_stack")
+  );
+  Coq.add_do_when_ready sn.coqtop (fun _ ->
+    ignore @@ Coq.try_grab ~db:true sn.coqtop (sn.coqops#show_goals true)
+      (fun () -> Minilib.log "Coq busy, discarding show_goals")
   )
 
-let _ = forward_db_goals_n_stack := db_goals_n_stack
+let _ = forward_db_stack_n_goals := db_stack_n_goals
 
 let db_vars sn line =
   Coq.add_do_when_ready sn.coqtop (fun _ ->
@@ -1522,7 +1526,7 @@ let build_ui () =
         | 1 -> List.iter (fun o -> Opt.set o "on"; diffs#set "on") Opt.diff_item.Opt.opts
         | 2 -> List.iter (fun o -> Opt.set o "removed"; diffs#set "removed") Opt.diff_item.Opt.opts
         | _ -> assert false);
-        send_to_coq "set diffs" (fun sn -> sn.coqops#show_goals)
+        send_to_coq "set diffs" (fun sn -> sn.coqops#show_goals true)
         end
       [
         radio "Unset diff" 0 ~label:"_Don't show diffs";

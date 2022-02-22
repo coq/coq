@@ -231,7 +231,7 @@ object
   method raw_coq_query :
     route_id:int -> next:(query_rty value -> unit task) -> string -> unit task
   method proof_diff : GText.mark -> next:(Pp.t value -> unit task) -> unit task
-  method show_goals : unit task
+  method show_goals : bool -> unit task
   method backtrack_last_phrase : unit task
   method initialize : unit task
   method join_document : unit task
@@ -246,9 +246,8 @@ object
   method destroy : unit -> unit
   method scroll_to_start_of_input : unit -> unit
   method set_forward_clear_db_highlight : (unit -> unit) -> unit
-  method set_forward_set_goals_of_dbg_session : (Pp.t -> unit) -> unit
+  method set_forward_get_other_proof : (unit -> Wg_ProofView.proof_view) -> unit
   method set_forward_init_db : (unit -> unit) -> unit
-  method set_debug_goal : Pp.t -> unit
 end
 
 let flags_to_color f =
@@ -348,8 +347,8 @@ object(self)
   val mutable forward_clear_db_highlight = ((fun x -> failwith "forward_clear_db_highlight")
                   : unit -> unit)
 
-  val mutable forward_set_goals_of_dbg_session = ((fun x -> failwith "forward_set_goals_of_dbg_session")
-                  : Pp.t -> unit)
+  val mutable forward_get_other_proof = ((fun x -> failwith "forward_get_other_proof")
+                  : unit -> Wg_ProofView.proof_view)
 
   val mutable forward_init_db = ((fun x -> failwith "forward_init_db")
                   : unit -> unit)
@@ -419,8 +418,8 @@ object(self)
   method set_forward_clear_db_highlight f =
     forward_clear_db_highlight <- f
 
-  method set_forward_set_goals_of_dbg_session f =
-    forward_set_goals_of_dbg_session <- f
+  method set_forward_get_other_proof f =
+    forward_get_other_proof <- f
 
   method set_forward_init_db f =
     forward_init_db <- f
@@ -458,7 +457,7 @@ object(self)
   method private get_insert =
     buffer#get_iter_at_mark `INSERT
 
-  method private show_goals_aux ?(move_insert=false) () =
+  method private show_goals_aux ?(move_insert=false) db =
     if move_insert then begin
       let dest = self#get_start_of_input in
       if (buffer#get_iter_at_mark `INSERT)#compare dest <= 0 then begin
@@ -473,14 +472,14 @@ object(self)
     | Good v -> f v)
     in
     let call =
-      Coq.subgoals flags >>= begin function
+      Coq.subgoals ~db flags >>= begin function
       | None -> return Wg_ProofView.NoGoals
       | Some { fg_goals = ((_ :: _) as fg); bg_goals = bg } ->
         let bg = flatten (List.rev bg) in
         return (Wg_ProofView.FocusGoals { fg; bg; })
       | Some { fg_goals = []; bg_goals = bg } ->
         let flags = { gf_mode = "short"; gf_fg = false; gf_bg = false; gf_shelved = true; gf_given_up = true } in
-        Coq.subgoals flags >>= fun rem ->
+        Coq.subgoals ~db flags >>= fun rem ->
         let bg = flatten (List.rev bg) in
         let shelved, given_up = match rem with
         | None -> [], []
@@ -494,10 +493,13 @@ object(self)
     | Good goals ->
       proof#set_goals goals;
       proof#refresh ~force:true;
+      let op = forward_get_other_proof () in
+      op#set_goals goals;
+      op#refresh ~force:true;
       Coq.return ()
     end
 
-  method show_goals = self#show_goals_aux ()
+  method show_goals db = self#show_goals_aux db
 
   (* This method is intended to perform stateless commands *)
   method raw_coq_query ~route_id ~next phrase : unit Coq.task =
@@ -577,14 +579,9 @@ object(self)
     match tag with
     | "prompt" ->
       messages#default_route#debug_prompt msg
-    | "goal" ->
-      forward_set_goals_of_dbg_session msg
     | "init" -> forward_init_db ()
     | _ ->
       messages#default_route#push Debug msg
-
-  method set_debug_goal msg =
-    proof#set_debug_goal msg
 
   method private process_feedback msg =
     (* Minilib.log ("Feedback received: " ^ Xml_printer.to_string_fmt Xmlprotocol.(of_feedback Ppcmds msg)); *)
@@ -721,9 +718,9 @@ object(self)
       buffer#place_cursor ~where:stop;
       messages#default_route#clear;
       messages#default_route#push Feedback.Error msg;
-      self#show_goals
+      self#show_goals false
     end else
-      self#show_goals_aux ~move_insert:true ()
+      self#show_goals_aux ~move_insert:true false
     )
 
   (** [fill_command_queue until q] fills a command queue until the [until]
@@ -792,7 +789,7 @@ object(self)
       Ideutils.pop_info ();
       script#recenter_insert;
       match topstack with
-      | [] -> self#show_goals_aux ?move_insert ()
+      | [] -> self#show_goals_aux ?move_insert false
       | (_,s)::_ -> self#backtrack_to_iter (buffer#get_iter_at_mark s.start) in
     let process_queue queue =
       let rec loop tip topstack =
@@ -955,7 +952,7 @@ object(self)
       buffer#remove_tag Tags.Script.incomplete ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
-      self#show_goals in
+      self#show_goals false in
     Coq.bind (Coq.lift opening) (fun () ->
     let rec undo to_id unfocus_needed =
       Coq.bind (Coq.edit_at to_id) (function
@@ -972,7 +969,7 @@ object(self)
       | Fail (safe_id, loc, msg) ->
 (*           if loc <> None then messages#push Feedback.Error (Richpp.richpp_of_string "Fixme LOC"); *)
           messages#default_route#push Feedback.Error msg;
-          if Stateid.equal safe_id Stateid.dummy then self#show_goals
+          if Stateid.equal safe_id Stateid.dummy then self#show_goals false
           else undo safe_id
                  (Doc.focused document && Doc.is_in_focus document safe_id))
     in

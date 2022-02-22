@@ -162,7 +162,7 @@ match e with
   in
   let (>=) = Proofview.tclBIND in
   Proofview.tclTHEN (DebugCommon.save_goals ())
-    ((if stop then (DebugCommon.db_pr_goals ()) >= fun () -> read_loop (); interp ist f  else  interp ist f)   >>= fun f ->
+    ((if stop then (DebugCommon.db_pr_goals) >= fun () -> read_loop (); interp ist f  else  interp ist f)   >>= fun f ->
     Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
     Tac2ffi.apply (Tac2ffi.to_closure f) args)
 | GTacLet (false, el, e) ->

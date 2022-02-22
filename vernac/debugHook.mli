@@ -74,7 +74,6 @@ module Answer : sig
     | Prompt of Pp.t (* output signalling the debugger has stopped
                         Should be printed as a prompt for user input,
                         e.g. in color without a newline at the end *)
-    | Goal of Pp.t   (* goal for the current proof state *)
     | Output of Pp.t (* general output *)
     | Init           (* signals initialization of the debugger *)
     | Stack of stack
@@ -92,8 +91,8 @@ end
 
 module Intf : sig
   type t =
-    { read_cmd : unit -> Action.t
-    (** request a debugger command from the client *)
+    { read_cmd : bool -> Action.t
+    (** request a debugger command from the client.  true = in debugger *)
     ; submit_answer : Answer.t -> unit
     (** receive a debugger answer from Ltac *)
     ; isTerminal : bool
@@ -103,3 +102,9 @@ module Intf : sig
   val set : t -> unit
   val get : unit -> t option
 end
+
+(* for displaying goals when stopped in debugger (only sigma and goals) *)
+val debug_proof : (Evd.evar_map * Evar.t list) option ref
+
+(* tells whether we're in the debugger or not *)
+val set_in_debug : bool -> unit

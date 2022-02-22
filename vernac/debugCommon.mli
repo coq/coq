@@ -47,7 +47,7 @@ val read : unit -> DebugHook.Action.t
 
 val format_stack : string option list -> Loc.t option list -> DebugHook.Answer.stack
 
-val db_pr_goals : unit -> unit Proofview.tactic
+val db_pr_goals : unit Proofview.tactic
 
 val pop_chunk : unit -> unit
 

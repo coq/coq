@@ -56,7 +56,6 @@ type session = {
   mutable abs_file_name : string option;
   mutable debug_stop_pt : (session * int * int) option;
   mutable breakpoints : breakpoint list;
-  mutable last_db_goals : Pp.t
 }
 
 let next_sid = ref 0
@@ -367,7 +366,7 @@ let create_jobpage coqtop coqops : jobpage =
       (fun columns store tp vc ->
         let row = store#get_iter tp in
         let w = store#get ~row ~column:(find_string_col "Worker" columns) in
-        let info () = Minilib.log ("Coq busy, discarding query") in
+        let info () = Minilib.log ("Coq busy, discarding stop_worker") in
         ignore @@ Coq.try_grab coqtop (coqops#stop_worker w) info
       ) in
   let tip = GMisc.label ~text:"Double click to interrupt worker" () in
@@ -482,7 +481,6 @@ let create file coqtop_args =
     abs_file_name = abs_file_name;
     debug_stop_pt = None;
     breakpoints = [];
-    last_db_goals = Pp.mt ()
   }
 
 let kill (sn:session) =

@@ -33,7 +33,7 @@ class type message_view =
     method editable2 : bool
     method set_editable2 : bool -> unit
     method set_forward_send_db_cmd : (string -> unit) -> unit
-    method set_forward_db_goals_n_stack : (unit -> unit) -> unit
+    method set_forward_db_stack_n_goals : (unit -> unit) -> unit
     method set_forward_show_debugger : (unit -> unit) -> unit
   end
 
