@@ -274,7 +274,8 @@ let fold_glob_constr f acc = DAst.with_val (function
   | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc
   )
 let fold_return_type_with_binders f g v acc (na,tyopt) =
-  Option.fold_left (f (Name.fold_right g na v)) acc tyopt
+  (* eta expansion is important if g has effects, eg bound_glob_vars below, see #11959 *)
+  Option.fold_left (fun acc -> f (Name.fold_right g na v) acc) acc tyopt
 
 let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GVar _ -> acc
