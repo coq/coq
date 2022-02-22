@@ -171,7 +171,7 @@ let save_top_chunk tac varmap trace =
 let goal_com tac =
   DebugCommon.new_stop_point ();
   Proofview.tclTHEN
-    (DebugCommon.db_pr_goals ())
+    (DebugCommon.db_pr_goals)
     (if Comm.isTerminal () then
       Proofview.tclLIFT (Comm.output (str "Going to execute:" ++ fnl () ++ prtac tac))
     else
@@ -253,7 +253,7 @@ let rec prompt level =
         runnoprint >> return (DebugOn (level+1))
     | Command _ -> failwith "Command"  (* not possible *)
     | Failed -> prompt level
-    | Ignore -> failwith "Ignore" (* not possible *)
+    | Ignore -> failwith "Ignore" (* not possible *) (* FAILING HERE *)
 
 [@@@ocaml.warning "-32"]
 open Tacexpr
@@ -373,7 +373,7 @@ let entry_stop_check tac =
     DebugCommon.new_stop_point ();
     let goal_com () =
       Proofview.tclTHEN
-        (DebugCommon.db_pr_goals ())
+        (DebugCommon.db_pr_goals)
         (Proofview.tclLIFT (Proofview.NonLogical.return ()))
     in
     Proofview.tclTHEN (goal_com ()) (Proofview.tclIGNORE (Proofview.tclLIFT (prompt 0)))
