@@ -83,7 +83,7 @@ let upd_bpts updates =
   List.iter (fun op ->
     let ((file, offset), opt) = op in
 (*    Printf.printf "Coq upd_bpts %s %d %b\n%!" file offset opt;*)
-    update_bpt file offset opt;
+    update_bpt file offset opt
   ) updates
 
 type debugger_state = {
@@ -257,7 +257,7 @@ module Comm = struct
         breakpoints := BPSet.empty;
         (hook ()).Intf.submit_answer (Answer.Init);
         while
-          let cmd = (hook ()).Intf.read_cmd () in
+          let cmd = (hook ()).Intf.read_cmd true in
           let open DebugHook.Action in
           match cmd with
           | UpdBpts updates -> upd_bpts updates; true
@@ -273,7 +273,6 @@ module Comm = struct
   open DebugHook.Answer
 
   let prompt g = wrap (fun () -> (hook ()).submit_answer (Prompt g))
-  let goal g = wrap (fun () -> (hook ()).submit_answer (Goal g))
   let output g = wrap (fun () -> (hook ()).submit_answer (Output g))
 
   (* routines for deferring output; output is sent only if
@@ -293,7 +292,7 @@ module Comm = struct
   let isTerminal () = (hook ()).isTerminal
   let read = wrap (fun () ->
     let rec l () =
-      let cmd = (hook ()).read_cmd () in
+      let cmd = (hook ()).read_cmd true in
       let open DebugHook.Action in
       match cmd with
       | Ignore -> l ()
@@ -328,9 +327,17 @@ let db_pr_goal =
   let open Notations in
   Goal.goals >>= fun gl ->
   Monad.List.map (fun x -> x) gl >>= fun gls ->
+  let sigma =  match gls with
+    | hd :: tl -> Goal.sigma hd
+    | [] -> Evd.empty
+  in
+  let goals = List.map (fun gl -> Goal.goal gl) gls in
+  DebugHook.debug_proof := Some (sigma, goals);
   let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
       Pp.seq (List.map db_pr_goal gls) in
-  Proofview.tclLIFT (Comm.goal pg)
+    Proofview.tclLIFT (
+      if Comm.isTerminal () then Comm.output pg
+      else Proofview.NonLogical.make (fun () -> ()))
 
 (* Prints the commands *)
 let help () =

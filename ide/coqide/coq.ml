@@ -581,7 +581,7 @@ type 'a query = 'a Interface.value task
 let eval_call ?(db=false) call handle k =
   (* Send messages to coqtop and prepare the decoding of the answer *)
   let in_db = if db then "db " else "" in
-  Minilib.log ("Start " ^ in_db ^ "eval_call " ^ Xmlprotocol.pr_call call);
+  Minilib.log ("Start " ^ in_db ^ "eval_call " ^ Xmlprotocol.pr_call call ^ "\n");
   if db then begin
     assert (handle.alive && handle.db_waiting_for = None);
     handle.db_waiting_for <- Some (mk_ccb (call,k))
@@ -590,7 +590,7 @@ let eval_call ?(db=false) call handle k =
     handle.waiting_for <- Some (mk_ccb (call,k))
   end;
   Xml_printer.print handle.xml_oc (Xmlprotocol.of_call call);
-  Minilib.log ("End " ^ in_db ^ "eval_call");
+  Minilib.log ("Sent " ^ in_db ^ "eval_call");
   Void
 
 let add x = eval_call (Xmlprotocol.add x)
@@ -713,7 +713,7 @@ struct
     let opts = List.sort (fun a b ->
           String.compare (String.concat " " (fst a)) (String.concat " " (fst b)))
         (Hashtbl.fold mkopt current_state []) in
-    eval_call (Xmlprotocol.set_options opts) h
+    eval_call ~db:true (Xmlprotocol.set_options opts) h
       (function
         | Interface.Good () -> k ()
         | _ -> failwith "Cannot set options. Resetting coqtop")
@@ -723,8 +723,8 @@ end
 let goals x h k =
   PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.goals x) h k)
 
-let subgoals x h k =
-  PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.subgoals x) h k)
+let subgoals ?(db=false) x h k =
+  PrintOpt.enforce h (fun () -> eval_call ~db (Xmlprotocol.subgoals x) h k)
 
 let evars x h k =
   PrintOpt.enforce h (fun () -> eval_call (Xmlprotocol.evars x) h k)

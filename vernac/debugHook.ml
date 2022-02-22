@@ -66,7 +66,6 @@ end
 module Answer = struct
   type t =
     | Prompt of Pp.t
-    | Goal of Pp.t
     | Output of Pp.t
     | Init
     | Stack of (string * (string * int list) option) list
@@ -76,8 +75,8 @@ end
 module Intf = struct
 
   type t =
-    { read_cmd : unit -> Action.t
-    (** request a debugger command from the client *)
+    { read_cmd : bool -> Action.t
+    (** request a debugger command from the client.  true = in debugger *)
     ; submit_answer : Answer.t -> unit
     (** receive a debugger answer from Ltac *)
     ; isTerminal : bool
@@ -89,3 +88,10 @@ module Intf = struct
   let get () = !ltac_debug_ref
 
 end
+
+(* for displaying goals when stopped in debugger (only sigma and goals) *)
+let debug_proof = ref None
+
+(* tells whether we're in the debugger or not *)
+let set_in_debug in_debug =
+  if not in_debug then debug_proof := None
