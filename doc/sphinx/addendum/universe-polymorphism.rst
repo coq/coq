@@ -270,30 +270,74 @@ Insufficiently restrictive variance annotations lead to errors:
 
    Fail Polymorphic Cumulative Record bad@{*a} := {p : Type@{a}}.
 
-An example of a proof using cumulativity
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. example:: Demonstration of universe variances
 
-.. coqtop:: in reset
+   .. coqtop:: in
 
-   Set Universe Polymorphism.
-   Set Polymorphic Inductive Cumulativity.
+      Set Printing Universes.
+      Set Universe Polymorphism.
+      Set Polymorphic Inductive Cumulativity.
 
-   Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
+      Inductive Invariant @{=u} : Type@{u}.
+      Inductive Covariant @{+u} : Type@{u}.
+      Inductive Irrelevent@{*u} : Type@{u}.
 
-   Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
-   := forall f g : (forall a, B a),
-                   (forall x, eq@{e} (f x) (g x))
-                   -> eq@{e} f g.
+      Section Universes.
+        Universe low high.
+        Constraint low < high.
 
-   Section down.
-      Universes a b e e'.
-      Constraint e' < e.
-      Lemma funext_down {A B}
-        (H : @funext_type@{a b e} A B) : @funext_type@{a b e'} A B.
-      Proof.
-        exact H.
-      Defined.
-   End down.
+        (* An invariant universe blocks cumulativity from upper or lower levels. *)
+        Axiom inv_low  : Invariant@{low}.
+        Axiom inv_high : Invariant@{high}.
+   .. coqtop:: all
+
+        Fail Check (inv_low : Invariant@{high}).
+        Fail Check (inv_high : Invariant@{low}).
+   .. coqtop:: in
+
+        (* A covariant universe allows cumulativity from a lower level. *)
+        Axiom co_low  : Covariant@{low}.
+        Axiom co_high : Covariant@{high}.
+   .. coqtop:: all
+
+        Check (co_low : Covariant@{high}).
+        Fail Check (co_high : Covariant@{low}).
+   .. coqtop:: in
+
+        (* An invariant universe allows cumulativity from any level *)
+        Axiom irr_low  : Irrelevent@{low}.
+        Axiom irr_high : Irrelevent@{high}.
+   .. coqtop:: all
+
+        Check (irr_low : Irrelevent@{high}).
+        Check (irr_high : Irrelevent@{low}).
+   .. coqtop:: in
+
+      End Universes.
+
+.. example:: A proof using cumulativity
+
+  .. coqtop:: in reset
+
+    Set Universe Polymorphism.
+    Set Polymorphic Inductive Cumulativity.
+
+    Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
+
+    Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
+    := forall f g : (forall a, B a),
+                    (forall x, eq@{e} (f x) (g x))
+                    -> eq@{e} f g.
+
+    Section down.
+        Universes a b e e'.
+        Constraint e' < e.
+        Lemma funext_down {A B}
+          (H : @funext_type@{a b e} A B) : @funext_type@{a b e'} A B.
+        Proof.
+          exact H.
+        Defined.
+    End down.
 
 Cumulativity Weak Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
