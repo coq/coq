@@ -262,6 +262,8 @@ end = struct
 end
 let mark = Mark.mark
 
+type 'a usubs = 'a subs Univ.puniverses
+
 type fconstr = {
   mutable mark : Mark.t;
   mutable term: fterm;
@@ -275,19 +277,19 @@ and fterm =
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * fconstr
-  | FFix of fixpoint * fconstr subs
-  | FCoFix of cofixpoint * fconstr subs
-  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * fconstr subs (* predicate and branches are closures *)
-  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * fconstr subs
-  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr subs
-  | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr subs
-  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr subs
-  | FEvar of existential * fconstr subs
+  | FFix of fixpoint * fconstr usubs
+  | FCoFix of cofixpoint * fconstr usubs
+  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * fconstr usubs (* predicate and branches are closures *)
+  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * fconstr usubs
+  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr usubs
+  | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr usubs
+  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr usubs
+  | FEvar of existential * fconstr usubs
   | FInt of Uint63.t
   | FFloat of Float64.t
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
-  | FCLOS of constr * fconstr subs
+  | FCLOS of constr * fconstr usubs
   | FIrrelevant
   | FLOCKED
 
@@ -347,7 +349,7 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
+  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr usubs
   | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
@@ -378,6 +380,8 @@ let rec stack_args_size = function
   | Zupdate(_)::s -> stack_args_size s
   | (ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | [] -> 0
 
+let usubs_shft (n,(e,u)) = subs_shft (n, e), u
+
 (* Lifting. Preserves sharing (useful only for cell with norm=Red).
    lft_fconstr always create a new cell, while lift_fconstr avoids it
    when the lift is 0. *)
@@ -385,11 +389,11 @@ let rec lft_fconstr n ft =
   match ft.term with
     | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FInt _|FFloat _|FIrrelevant) -> ft
     | FRel i -> {mark=ft.mark;term=FRel(i+n)}
-    | FLambda(k,tys,f,e) -> {mark=mark Cstr; term=FLambda(k,tys,f,subs_shft(n,e))}
+    | FLambda(k,tys,f,e) -> {mark=mark Cstr; term=FLambda(k,tys,f,usubs_shft(n,e))}
     | FFix(fx,e) ->
-      {mark=mark Cstr; term=FFix(fx,subs_shft(n,e))}
+      {mark=mark Cstr; term=FFix(fx,usubs_shft(n,e))}
     | FCoFix(cfx,e) ->
-      {mark=mark Cstr; term=FCoFix(cfx,subs_shft(n,e))}
+      {mark=mark Cstr; term=FCoFix(cfx,usubs_shft(n,e))}
     | FLIFT(k,m) -> lft_fconstr (n+k) m
     | FLOCKED -> assert false
     | FFlex (RelKey _) | FAtom _ | FApp _ | FProj _ | FCaseT _ | FCaseInvert _ | FProd _
@@ -435,30 +439,55 @@ let mk_lambda env t =
   let (rvars,t') = Term.decompose_lam t in
   FLambda(List.length rvars, List.rev rvars, t', env)
 
+let usubs_lift (e,u) = subs_lift e, u
+
+let usubs_liftn n (e,u) = subs_liftn n e, u
+
 let destFLambda clos_fun t =
   match [@ocaml.warning "-4"] t.term with
-      FLambda(_,[(na,ty)],b,e) -> (na,clos_fun e ty,clos_fun (subs_lift e) b)
+      FLambda(_,[(na,ty)],b,e) -> (na,clos_fun e ty,clos_fun (usubs_lift e) b)
     | FLambda(n,(na,ty)::tys,b,e) ->
-        (na,clos_fun e ty,{mark=t.mark;term=FLambda(n-1,tys,b,subs_lift e)})
+        (na,clos_fun e ty,{mark=t.mark;term=FLambda(n-1,tys,b,usubs_lift e)})
     | _ -> assert false
         (* t must be a FLambda and binding list cannot be empty *)
 
+(* We use empty as a special identity value, if we don't check
+   subst_instance_instance will raise array out of bounds. *)
+let usubst_instance (_,u) u' =
+  if Univ.Instance.is_empty u then u'
+  else Univ.subst_instance_instance u u'
+
+let usubst_punivs (_,u) (v,u' as orig) =
+  if Univ.Instance.is_empty u then orig
+  else v, Univ.subst_instance_instance u u'
+
+let usubst_sort (_,u) s = match s with
+  | Sorts.Type su ->
+    if Univ.Instance.is_empty u then s
+    else Sorts.(sort_of_univ (Univ.subst_instance_universe u su))
+  | Sorts.(SProp | Prop | Set) -> s
+
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)
-let mk_clos e t =
+let mk_clos (e:_ usubs) t =
   match kind t with
-    | Rel i -> clos_rel e i
+    | Rel i -> clos_rel (fst e) i
     | Var x -> {mark = mark Red; term = FFlex (VarKey x) }
-    | Const c -> {mark = mark Red; term = FFlex (ConstKey c) }
-    | Meta _ | Sort _ ->  {mark = mark Ntrl; term = FAtom t }
-    | Ind kn -> {mark = mark Ntrl; term = FInd kn }
-    | Construct kn -> {mark = mark Cstr; term = FConstruct kn }
+    | Const c -> {mark = mark Red; term = FFlex (ConstKey (usubst_punivs e c)) }
+    | Sort s ->
+      let s = usubst_sort e s in
+      {mark = mark Ntrl; term = FAtom (mkSort s) }
+    | Meta _ -> {mark = mark Ntrl; term = FAtom t }
+    | Ind kn -> {mark = mark Ntrl; term = FInd (usubst_punivs e kn) }
+    | Construct kn -> {mark = mark Cstr; term = FConstruct (usubst_punivs e kn) }
     | Int i -> {mark = mark Cstr; term = FInt i}
     | Float f -> {mark = mark Cstr; term = FFloat f}
     | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _) ->
         {mark = mark Red; term = FCLOS(t,e)}
 
-let inject c = mk_clos (subs_id 0) c
+let injectu c u = mk_clos (subs_id 0, u) c
+
+let inject c = injectu c Univ.Instance.empty
 
 let mk_irrelevant = { mark = mark Cstr; term = FIrrelevant }
 
@@ -490,11 +519,11 @@ let assoc_defined mode id env = match Environ.lookup_named id env with
   let () = shortcut_irrelevant mode (binder_relevance na) in
   raise Not_found
 
-let constant_value_in mode env (kn, u) =
+let constant_value_in mode env (kn,u) =
   let cb = lookup_constant kn env in
   let () = shortcut_irrelevant mode (cb.const_relevance) in
   match cb.const_body with
-    | Def b -> subst_instance_constr u b
+    | Def b -> injectu b u
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
     | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
@@ -516,18 +545,21 @@ let ref_value_cache env flags mode tab ref =
             in
             (* First check for irrelevance *)
             let () = shortcut_irrelevant mode (get_relevance d) in
-            begin match d with
+            let body = match d with
               | LocalAssum _ -> raise Not_found
               | LocalDef (_, t, _) -> lift n t
-            end
+            in
+            inject body
           | VarKey id ->
-            if TransparentState.is_transparent_variable flags id then assoc_defined mode id env
+            if TransparentState.is_transparent_variable flags id
+            then inject (assoc_defined mode id env)
             else raise Not_found
           | ConstKey cst ->
-            if TransparentState.is_transparent_constant flags (fst cst) then constant_value_in mode env cst
+            if TransparentState.is_transparent_constant flags (fst cst)
+            then constant_value_in mode env cst
             else raise Not_found
         in
-        Def (inject body)
+        Def body
       with
       | Irrelevant -> Def mk_irrelevant
       | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
@@ -538,69 +570,71 @@ let ref_value_cache env flags mode tab ref =
     KeyTable.add tab ref v; v
 
 (* The inverse of mk_clos: move back to constr *)
-let rec to_constr lfts v =
+(* XXX should there be universes in lfts???? *)
+let rec to_constr (lfts, usubst as ulfts) v =
+  let subst_us c = subst_instance_constr usubst c in
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
     | FFlex (RelKey p) -> mkRel (reloc_rel p lfts)
     | FFlex (VarKey x) -> mkVar x
-    | FAtom c -> exliftn lfts c
-    | FFlex (ConstKey op) -> mkConstU op
-    | FInd op -> mkIndU op
-    | FConstruct op -> mkConstructU op
+    | FAtom c -> subst_us (exliftn lfts c)
+    | FFlex (ConstKey op) -> subst_us (mkConstU op)
+    | FInd op -> subst_us (mkIndU op)
+    | FConstruct op -> subst_us (mkConstructU op)
     | FCaseT (ci, u, pms, p, c, ve, env) ->
-      to_constr_case lfts ci u pms p NoInvert c ve env
+      to_constr_case ulfts ci u pms p NoInvert c ve env
     | FCaseInvert (ci, u, pms, p, indices, c, ve, env) ->
-      let iv = CaseInvert {indices=Array.map (to_constr lfts) indices} in
-      to_constr_case lfts ci u pms p iv c ve env
+      let iv = CaseInvert {indices=Array.Fun1.map to_constr ulfts indices} in
+      to_constr_case ulfts ci u pms p iv c ve env
     | FFix ((op,(lna,tys,bds)) as fx, e) ->
-      if is_subs_id e && is_lift_id lfts then
-        mkFix fx
+      if is_subs_id (fst e) && is_lift_id lfts then
+        subst_instance_constr (usubst_instance ulfts (snd e)) (mkFix fx)
       else
         let n = Array.length bds in
-        let subs_ty = comp_subs lfts e in
-        let subs_bd = comp_subs (el_liftn n lfts) (subs_liftn n e) in
+        let subs_ty = comp_subs ulfts e in
+        let subs_bd = comp_subs (on_fst (el_liftn n) ulfts) (on_fst (subs_liftn n) e) in
         let tys = Array.Fun1.map subst_constr subs_ty tys in
         let bds = Array.Fun1.map subst_constr subs_bd bds in
         mkFix (op, (lna, tys, bds))
     | FCoFix ((op,(lna,tys,bds)) as cfx, e) ->
-      if is_subs_id e && is_lift_id lfts then
-        mkCoFix cfx
+      if is_subs_id (fst e) && is_lift_id lfts then
+        subst_instance_constr (usubst_instance ulfts (snd e)) (mkCoFix cfx)
       else
         let n = Array.length bds in
-        let subs_ty = comp_subs lfts e in
-        let subs_bd = comp_subs (el_liftn n lfts) (subs_liftn n e) in
+        let subs_ty = comp_subs ulfts e in
+        let subs_bd = comp_subs (on_fst (el_liftn n) ulfts) (on_fst (subs_liftn n) e) in
         let tys = Array.Fun1.map subst_constr subs_ty tys in
         let bds = Array.Fun1.map subst_constr subs_bd bds in
         mkCoFix (op, (lna, tys, bds))
     | FApp (f,ve) ->
-        mkApp (to_constr lfts f,
-               Array.Fun1.map to_constr lfts ve)
+        mkApp (to_constr ulfts f,
+               Array.Fun1.map to_constr ulfts ve)
     | FProj (p,c) ->
-        mkProj (p,to_constr lfts c)
+        mkProj (p,to_constr ulfts c)
 
     | FLambda (len, tys, f, e) ->
-      if is_subs_id e && is_lift_id lfts then
-        Term.compose_lam (List.rev tys) f
+      if is_subs_id (fst e) && is_lift_id lfts then
+        subst_instance_constr (usubst_instance ulfts (snd e)) (Term.compose_lam (List.rev tys) f)
       else
-        let subs = comp_subs lfts e in
-        let tys = List.mapi (fun i (na, c) -> na, subst_constr (subs_liftn i subs) c) tys in
-        let f = subst_constr (subs_liftn len subs) f in
+        let subs = comp_subs ulfts e in
+        let tys = List.mapi (fun i (na, c) -> na, subst_constr (usubs_liftn i subs) c) tys in
+        let f = subst_constr (usubs_liftn len subs) f in
         Term.compose_lam (List.rev tys) f
     | FProd (n, t, c, e) ->
-      if is_subs_id e && is_lift_id lfts then
-        mkProd (n, to_constr lfts t, c)
+      if is_subs_id (fst e) && is_lift_id lfts then
+        mkProd (n, to_constr ulfts t, subst_instance_constr (usubst_instance ulfts (snd e)) c)
       else
-        let subs' = comp_subs lfts e in
-        mkProd (n, to_constr lfts t, subst_constr (subs_lift subs') c)
+        let subs' = comp_subs ulfts e in
+        mkProd (n, to_constr ulfts t, subst_constr (usubs_lift subs') c)
     | FLetIn (n,b,t,f,e) ->
-      let subs = comp_subs (el_lift lfts) (subs_lift e) in
-        mkLetIn (n, to_constr lfts b,
-                    to_constr lfts t,
+      let subs = comp_subs (on_fst el_lift ulfts) (usubs_lift e) in
+        mkLetIn (n, to_constr ulfts b,
+                    to_constr ulfts t,
                     subst_constr subs f)
     | FEvar ((ev,args),env) ->
-      let subs = comp_subs lfts env in
+      let subs = comp_subs ulfts env in
         mkEvar(ev, List.map (fun a -> subst_constr subs a) args)
-    | FLIFT (k,a) -> to_constr (el_shft k lfts) a
+    | FLIFT (k,a) -> to_constr (el_shft k lfts, usubst) a
 
     | FInt i ->
        Constr.mkInt i
@@ -608,51 +642,65 @@ let rec to_constr lfts v =
         Constr.mkFloat f
 
     | FArray (u,t,ty) ->
-      let ty = to_constr lfts ty in
-      let init i = to_constr lfts (Parray.get t (Uint63.of_int i)) in
-      mkArray(u,Array.init (Parray.length_int t) init, to_constr lfts (Parray.default t),ty)
+      let u = usubst_instance ((),usubst) u in
+      let def = to_constr ulfts (Parray.default t) in
+      let t = Array.init (Parray.length_int t) (fun i ->
+          to_constr ulfts (Parray.get t (Uint63.of_int i)))
+      in
+      let ty = to_constr ulfts ty in
+      mkArray(u, t, def,ty)
 
     | FCLOS (t,env) ->
-      if is_subs_id env && is_lift_id lfts then t
+      if is_subs_id (fst env) && is_lift_id lfts then
+        subst_instance_constr (usubst_instance ulfts (snd env)) t
       else
-        let subs = comp_subs lfts env in
+        let subs = comp_subs ulfts env in
         subst_constr subs t
 
     | FIrrelevant -> assert (!Flags.in_debugger); mkVar(Id.of_string"_IRRELEVANT_")
     | FLOCKED -> assert (!Flags.in_debugger); mkVar(Id.of_string"_LOCKED_")
 
-and to_constr_case lfts ci u pms p iv c ve env =
-  if is_subs_id env && is_lift_id lfts then
-    mkCase (ci, u, pms, p, iv, to_constr lfts c, ve)
+and to_constr_case (lfts,_ as ulfts) ci u pms p iv c ve env =
+  let subs = comp_subs ulfts env in
+  if is_subs_id (fst env) && is_lift_id lfts then
+    mkCase (ci, usubst_instance subs u, pms, p, iv, to_constr ulfts c, ve)
   else
-    let subs = comp_subs lfts env in
     let f_ctx (nas, c) =
-      let c = subst_constr (Esubst.subs_liftn (Array.length nas) subs) c in
+      let c = subst_constr (usubs_liftn (Array.length nas) subs) c in
       (nas, c)
     in
-    mkCase (ci, u, Array.map (fun c -> subst_constr subs c) pms,
-        f_ctx p,
-        iv,
-        to_constr lfts c,
-        Array.map f_ctx ve)
+    mkCase (ci, usubst_instance subs u, Array.map (fun c -> subst_constr subs c) pms,
+            f_ctx p,
+            iv,
+            to_constr ulfts c,
+            Array.map f_ctx ve)
 
-and subst_constr subst c = match [@ocaml.warning "-4"] Constr.kind c with
+and subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.kind c with
 | Rel i ->
   begin match expand_rel i subst with
   | Inl (k, lazy v) -> Vars.lift k v
   | Inr (m, _) -> mkRel m
   end
+| Const _ | Ind _ | Construct _ | Sort _ -> subst_instance_constr usubst c
+| Case (ci, u, pms, p, iv, discr, br) ->
+  let u' = usubst_instance e u in
+  let c = if u == u' then c else mkCase (ci, u', pms, p, iv, discr, br) in
+  Constr.map_with_binders usubs_lift subst_constr e c
+| Array (u,elems,def,ty) ->
+  let u' = usubst_instance e u in
+  let c = if u == u' then c else mkArray (u',elems,def,ty) in
+  Constr.map_with_binders usubs_lift subst_constr e c
 | _ ->
-  Constr.map_with_binders Esubst.subs_lift subst_constr subst c
+  Constr.map_with_binders usubs_lift subst_constr e c
 
-and comp_subs el s =
-  Esubst.lift_subst (fun el c -> lazy (to_constr el c)) el s
+and comp_subs (el,u) (s,u') =
+  Esubst.lift_subst (fun el c -> lazy (to_constr (el,u) c)) el s, u'
 
 (* This function defines the correspondence between constr and
    fconstr. When we find a closure whose substitution is the identity,
    then we directly return the constr to avoid possibly huge
    reallocation. *)
-let term_of_fconstr c = to_constr el_id c
+let term_of_fconstr c = to_constr (el_id, Univ.Instance.empty) c
 
 (* fstrong applies unfreeze_fun recursively on the (freeze) term and
  * yields a term.  Assumes that the unfreeze_fun never returns a
@@ -737,12 +785,16 @@ let get_nth_arg head n stk =
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as s -> (None, List.rev rstk @ s) in
   strip_rec [] head n stk
 
+let usubs_cons x (s,u) = subs_cons x s, u
+
 let rec subs_consn v i n s =
   if Int.equal i n then s
   else subs_consn v (i + 1) n (subs_cons v.(i) s)
 
-let subs_consv v s =
-  subs_consn v 0 (Array.length v) s
+let usubs_consn v i n s = on_fst (subs_consn v i n) s
+
+let usubs_consv v s =
+  usubs_consn v 0 (Array.length v) s
 
 (* Beta reduction: look for an applied argument in the stack.
    Since the encountered update marks are removed, h must be a whnf *)
@@ -752,16 +804,16 @@ let rec get_args n tys f e = function
         let _hd = update ~share:true r (mark Cstr) (FLambda(n,tys,f,e)) in
         get_args n tys f e s
     | Zshift k :: s ->
-        get_args n tys f (subs_shft (k,e)) s
+        get_args n tys f (usubs_shft (k,e)) s
     | Zapp l :: s ->
         let na = Array.length l in
-        if n == na then (Inl (subs_consn l 0 na e), s)
+        if n == na then (Inl (usubs_consn l 0 na e), s)
         else if n < na then (* more arguments *)
           let eargs = Array.sub l n (na-n) in
-          (Inl (subs_consn l 0 n e), Zapp eargs :: s)
+          (Inl (usubs_consn l 0 n e), Zapp eargs :: s)
         else (* more lambdas *)
           let etys = List.skipn na tys in
-          get_args (n-na) etys f (subs_consn l 0 na e) s
+          get_args (n-na) etys f (usubs_consn l 0 na e) s
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as stk ->
       (Inr {mark=mark Cstr; term=FLambda(n,tys,f,e)}, stk)
 
@@ -862,11 +914,10 @@ let inductive_subst mib u pms =
     let subs = mk_pms (i - 1) ctx in
     subs_cons pms.(i) subs
   | RelDecl.LocalDef (_, c, _) :: ctx ->
-    let c = Vars.subst_instance_constr u c in
     let subs = mk_pms i ctx in
-    subs_cons (mk_clos subs c) subs
+    subs_cons (mk_clos (subs,u) c) subs
   in
-  mk_pms (Array.length pms - 1) mib.mind_params_ctxt
+  mk_pms (Array.length pms - 1) mib.mind_params_ctxt, u
 
 (* Iota-reduction: feed the arguments of the constructor to the branch *)
 let get_branch infos depth ci u pms (ind, c) br e args =
@@ -878,7 +929,7 @@ let get_branch infos depth ci u pms (ind, c) br e args =
       environment to know the value of the branch. *)
     let rec push e stk = match stk with
     | [] -> e
-    | Zapp v :: stk -> push (subs_consv v e) stk
+    | Zapp v :: stk -> push (usubs_consv v e) stk
     | (Zshift _ | ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zprimitive _) :: _ ->
       assert false
     in
@@ -908,12 +959,12 @@ let get_branch infos depth ci u pms (ind, c) br e args =
       let ans = push i e ctx in
       let b = subst_instance_constr u b in
       let s = Array.rev_of_list ans in
-      let e = subs_consv s ind_subst in
+      let e = usubs_consv s ind_subst in
       let v = mk_clos e b in
       v :: ans
     in
     let ext = push (Array.length args - 1) [] ctx in
-    (br, subs_consv (Array.rev_of_list ext) e)
+    (br, usubs_consv (Array.rev_of_list ext) e)
 
 (** [eta_expand_ind_stack env ind c s t] computes stacks corresponding
     to the conversion of the eta expansion of t, considered as an inhabitant
@@ -982,7 +1033,7 @@ let contract_fix_vect fix =
     if Int.equal i nfix then env
     else mk_subs (subs_cons (make_body i) env) (i + 1)
   in
-  (mk_subs env 0, thisbody)
+  (on_fst (fun env -> mk_subs env 0) env, thisbody)
 
 let unfold_projection info p =
   if red_projection info.i_flags p
@@ -1377,7 +1428,7 @@ and knht info e t stk =
       else
         knh info { mark = mark Cstr; term = FFix (fx, e) } stk
     | Cast(a,_,_) -> knht info e a stk
-    | Rel n -> knh info (clos_rel e n) stk
+    | Rel n -> knh info (clos_rel (fst e) n) stk
     | Proj (p, c) -> knh info { mark = mark Red; term = FProj (p, mk_clos e c) } stk
     | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _) -> (mk_clos e t, stk)
     | CoFix cfx -> { mark = mark Cstr; term = FCoFix (cfx,e) }, stk
@@ -1454,7 +1505,7 @@ let rec knr info tab m stk =
         | (_,args, ((Zapp _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _) :: _ | [] as s)) -> (m,args@s))
     else (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
-      knit info tab (subs_cons v e) bd stk
+      knit info tab (on_fst (subs_cons v) e) bd stk
   | FEvar(ev,env) ->
     (* FIXME: handle relevance *)
       (match info.i_cache.i_sigma ev with
@@ -1482,6 +1533,7 @@ let rec knr info tab m stk =
      | (_, _, s) -> (m, s))
   | FCaseInvert (ci, u, pms, _p,iv,_c,v,env) when red_set info.i_flags fMATCH ->
     let pms = mk_clos_vect env pms in
+    let u = usubst_instance env u in
     begin match case_inversion info tab ci u pms iv v with
       | Some c -> knit info tab env c stk
       | None -> (m, stk)
@@ -1525,8 +1577,7 @@ and case_inversion info tab ci u params indices v =
     let _ind, expect_args = destApp expect in
     let check_index i index =
       let expected = expect_args.(ci.ci_npar + i) in
-      let expected = Vars.subst_instance_constr u expected in
-      let expected = mk_clos psubst expected in
+      let expected = mk_clos (psubst,u) expected in
       !conv {info with i_flags=all} tab expected index
     in
     if Array.for_all_i check_index 0 indices
@@ -1549,13 +1600,13 @@ let rec kl info tab m =
     zip_term info tab (norm_head info tab nm) s
 
 and klt info tab e t = match kind t with
-| Rel i -> kl info tab (clos_rel e i)
+| Rel i -> kl info tab (clos_rel (fst e) i)
 | Var _ |Const _|CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _ ->
   let share = info.i_cache.i_share in
   let (nm,s) = knit info tab e t [] in
   let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
   zip_term info tab (norm_head info tab nm) s
-| Meta _ | Sort _ | Ind _ | Construct _ | Int _ | Float _ -> t
+| Meta _ | Sort _ | Ind _ | Construct _ | Int _ | Float _ -> subst_instance_constr (snd e) t
 
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
@@ -1566,26 +1617,26 @@ and norm_head info tab m =
         let fold (e, info, ctxt) (na, ty) =
           let ty = klt info tab e ty in
           let info = push_relevance info na in
-          (subs_lift e, info, (na, ty) :: ctxt)
+          (usubs_lift e, info, (na, ty) :: ctxt)
         in
         let (e', info, rvtys) = List.fold_left fold (e,info,[]) tys in
         let bd = klt info tab e' f in
         List.fold_left (fun b (na,ty) -> mkLambda(na,ty,b)) bd rvtys
       | FLetIn(na,a,b,f,e) ->
-          let c = klt (push_relevance info na) tab (subs_lift e) f in
+          let c = klt (push_relevance info na) tab (usubs_lift e) f in
           mkLetIn(na, kl info tab a, kl info tab b, c)
       | FProd(na,dom,rng,e) ->
-        let rng = klt (push_relevance info na) tab (subs_lift e) rng in
+        let rng = klt (push_relevance info na) tab (usubs_lift e) rng in
           mkProd(na, kl info tab dom, rng)
       | FCoFix((n,(na,tys,bds)),e) ->
           let infobd = push_relevances info na in
           let ftys = Array.map (fun ty -> klt info tab e ty) tys in
-          let fbds = Array.map (fun bd -> klt infobd tab (subs_liftn (Array.length na) e) bd) bds in
+          let fbds = Array.map (fun bd -> klt infobd tab (usubs_liftn (Array.length na) e) bd) bds in
           mkCoFix (n, (na, ftys, fbds))
       | FFix((n,(na,tys,bds)),e) ->
           let infobd = push_relevances info na in
           let ftys = Array.map (fun ty -> klt info tab e ty) tys in
-          let fbds = Array.map (fun bd -> klt infobd tab (subs_liftn (Array.length na) e) bd) bds in
+          let fbds = Array.map (fun bd -> klt infobd tab (usubs_liftn (Array.length na) e) bd) bds in
           mkFix (n, (na, ftys, fbds))
       | FEvar((i,args),env) ->
           mkEvar(i, List.map (fun a -> klt info tab env a) args)
@@ -1602,9 +1653,10 @@ and zip_term info tab m stk = match stk with
     zip_term info tab (mkApp(m, Array.map (kl info tab) args)) s
 | ZcaseT(ci, u, pms, p, br, e) :: s ->
     let zip_ctx (nas, c) =
-      let e = Esubst.subs_liftn (Array.length nas) e in
+      let e = usubs_liftn (Array.length nas) e in
       (nas, klt info tab e c)
     in
+    let u = usubst_instance e u in
     let t = mkCase(ci, u, Array.map (fun c -> klt info tab e c) pms, zip_ctx p,
       NoInvert, m, Array.map zip_ctx br) in
     zip_term info tab t s
