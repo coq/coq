@@ -289,14 +289,14 @@ type ('ty,'a) functorize =
     and won't play any role into the kernel after that : they are kept
     only for short module printing and for extraction. *)
 
-type with_declaration =
+type 'uconstr with_declaration =
   | WithMod of Id.t list * ModPath.t
-  | WithDef of Id.t list * (constr * Univ.AbstractContext.t option)
+  | WithDef of Id.t list * 'uconstr
 
-type module_alg_expr =
+type 'uconstr module_alg_expr =
   | MEident of ModPath.t
-  | MEapply of module_alg_expr * ModPath.t
-  | MEwith of module_alg_expr * with_declaration
+  | MEapply of 'uconstr module_alg_expr * ModPath.t
+  | MEwith of 'uconstr module_alg_expr * 'uconstr with_declaration
 
 (** A component of a module structure *)
 
@@ -320,7 +320,7 @@ and module_signature = (module_type_body,structure_body) functorize
 
 (** A module expression is an algebraic expression, possibly functorized. *)
 
-and module_expression = (module_type_body,module_alg_expr) functorize
+and module_expression = (module_type_body, (constr * Univ.AbstractContext.t option) module_alg_expr) functorize
 
 and module_implementation =
   | Abstract (** no accessible implementation *)

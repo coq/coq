@@ -43,7 +43,7 @@ type 'alg translation =
 
 val translate_mse :
   env -> ModPath.t option -> inline -> module_struct_entry ->
-    module_alg_expr translation
+    (Constr.t * Univ.AbstractContext.t option) module_alg_expr translation
 
 (** From an already-translated (or interactive) implementation and
     an (optional) signature entry, produces a final [module_body] *)
