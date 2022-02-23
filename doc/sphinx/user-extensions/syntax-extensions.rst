@@ -462,6 +462,70 @@ Displaying information about notations
 
    :flag:`Printing All` to disable other elements in addition to notations.
 
+.. cmd:: Print Notation @string {? in custom @ident }
+
+   Displays information about the previously reserved notation string
+   :token:`string`. :token:`ident`, if specified, is the name of the associated
+   custom entry. See :cmd:`Declare Custom Entry`.
+
+   .. coqtop:: all
+
+      Reserved Notation "x # y" (at level 123, right associativity).
+      Print Notation "_ # _".
+
+   Variables can be indicated with either `"_"` or names, as long as these can
+   not be confused with notation symbols. When confusion may arise, for example
+   with notation symbols that are entirely made up of letters, use single quotes
+   to delimit those symbols. Using `"_"` is preferred, as it avoids this
+   confusion. Note that there must always be (at least) a space between notation
+   symbols and arguments, even when the notation format does not include those
+   spaces.
+
+   .. example:: :cmd:`Print Notation`
+
+      .. coqtop:: all
+
+         Reserved Notation "x 'mod' y" (at level 40, no associativity).
+         Print Notation "_ mod _".
+         Print Notation "x 'mod' y".
+
+         Reserved Notation "/ x /" (at level 0, format "/ x /").
+         Fail Print Notation "/x/".
+         Print Notation "/ x /".
+
+         Reserved Notation "( x , y , .. , z )" (at level 0).
+         Print Notation "( _ , _ , .. , _ )".
+
+
+         Reserved Notation "x $ y" (at level 50, left associativity).
+
+         Declare Custom Entry expr.
+         Reserved Notation "x $ y"
+           (in custom expr at level 30, x custom expr, y at level 80, no associativity).
+
+         Print Notation "_ $ _".
+         Print Notation "_ $ _" in custom expr.
+
+   .. exn:: @string cannot be interpreted as a known notation. Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by "_".
+
+      Occurs when :cmd:`Print Notation` can't find a notation associated with
+      :token:`string`. This can happen, for example, when the notation does not
+      exist in the current context, :token:`string` is not specific enough,
+      there are missing spaces between symbols, or some symbols need to be
+      quoted with `"'"`.
+
+   .. exn:: @string cannot be interpreted as a known notation in @ident entry. Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by "_".
+      :undocumented:
+
+   .. exn:: Unknown custom entry: @ident.
+
+      Occurs when :cmd:`Print Notation` can't find the custom entry given by the
+      user.
+
+.. seealso::
+
+    :cmd:`Locate` for information on the definitions and scopes associated with
+    a notation.
 
 .. cmd:: Print Grammar @ident
 
@@ -1268,6 +1332,11 @@ Here are the syntax elements used by the various notation commands.
    .. todo: the note above should be removed at the end of deprecation
       phase of ident
    ..
+
+.. exn:: Unknown custom entry: @ident.
+
+   Occurs when :cmd:`Notation` can't find the custom entry given by the user.
+
 .. _Scopes:
 
 Notation scopes
