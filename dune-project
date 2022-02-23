@@ -82,6 +82,21 @@ which allows clients, such as CoqIDE, to interact with Coq in a
 structured way."))
 
 (package
+ (name coqlsp-server)
+ (depends
+  (coq-core (= :version)))
+ (synopsis "The Coq Proof Assistant, Language Server Protocol server")
+ (description "Coq is a formal proof management system. It provides
+a formal language to write mathematical definitions, executable
+algorithms and theorems together with an environment for
+semi-interactive development of machine-checked proofs.
+
+This package provides the `coqlsptop` language server, an
+implementation of [Language Server Protocol](https://microsoft.github.io/language-server-protocol/)
+which allows clients, such as VSCoq, to interact with Coq in a
+structured way."))
+
+(package
  (name coqide)
  (depends
   (coqide-server (= :version)))

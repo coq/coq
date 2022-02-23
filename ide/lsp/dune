@@ -1,0 +1,14 @@
+; LSP Server
+
+(executable
+ (name lsptop)
+ (public_name coqlsptop.opt)
+ (package coqlsp-server)
+ (modes native byte)
+ (libraries coq-core.boot coq-core.lib coq-core.toplevel yojson))
+
+(install
+ (section bin)
+ (package coqlsp-server)
+ (files
+  (lsptop.bc as coqlsptop.byte)))
