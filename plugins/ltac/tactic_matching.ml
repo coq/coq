@@ -201,12 +201,15 @@ module PatternMatching (E:StaticEnvironment) = struct
     m.stream eval ctx
 
   (** Chooses in a list, in the same order as the list *)
-  let rec pick (l:'a list) accu (e, info) : ('a list * 'a * 'a list) m = match l with
-  | [] -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
-  | x :: l ->
-    { stream = fun k ctx -> Proofview.tclOR (k (accu, x, l) ctx) (fun e -> (pick l (x :: accu) e).stream k ctx) }
+  let rec pick (l:'a Int.Map.t) full (e, info) : ('a Int.Map.t * 'a) m = match Int.Map.min_binding l with
+  | exception Not_found -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
+  | (i, x) ->
+    { stream = fun k ctx ->
+      Proofview.tclOR
+        (k (Int.Map.remove i full, x) ctx)
+        (fun e -> (pick (Int.Map.remove i l) full e).stream k ctx) }
 
-  let pick l = pick l [] imatching_error
+  let pick l = pick l l imatching_error
 
   (** Declares a substitution, a context substitution and a term substitution. *)
   let put subst context terms : unit m =
@@ -288,23 +291,23 @@ module PatternMatching (E:StaticEnvironment) = struct
       [hyps]. Tries the hypotheses in order. For each success returns
       the name of the matched hypothesis. *)
   let hyp_match_type hypname pat hyps =
-    pick hyps >>= fun (bef, decl, aft) ->
+    pick hyps >>= fun (rem, decl) ->
     let id = NamedDecl.get_id decl in
     pattern_match_term pat (NamedDecl.get_type decl) () <*>
     put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
-    return (bef, id, aft)
+    return (rem, id)
 
   (** [hyp_match_type hypname bodypat typepat hyps] matches a single
       hypothesis pattern [hypname := bodypat : typepat] against the
       hypotheses in [hyps].Tries the hypotheses in order. For each
       success returns the name of the matched hypothesis. *)
   let hyp_match_body_and_type hypname bodypat typepat hyps =
-    pick hyps >>= function (bef, decl, aft) -> match decl with
+    pick hyps >>= function (rem, decl) -> match decl with
       | LocalDef (id,body,hyp) ->
           pattern_match_term bodypat body () <*>
           pattern_match_term typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (EConstr.mkVar id.binder_name) empty_term_subst) <*>
-          return (bef, id.binder_name, aft)
+          return (rem, id.binder_name)
       | LocalAssum (id,hyp) -> fail
 
   (** [hyp_match pat hyps] dispatches to
@@ -323,8 +326,7 @@ module PatternMatching (E:StaticEnvironment) = struct
   let rec hyp_pattern_list_match pats hyps lhs =
     match pats with
     | pat::pats ->
-        hyp_match pat hyps >>= fun (bef, matched_hyp, aft) ->
-        let hyps = List.rev_append bef aft in
+        hyp_match pat hyps >>= fun (hyps, matched_hyp) ->
         hyp_pattern_list_match pats hyps lhs
     | [] -> return lhs
 
@@ -376,4 +378,5 @@ let match_goal env sigma hyps concl rules =
     let sigma = sigma
   end in
   let module M = PatternMatching(E) in
+  let hyps = CList.fold_left_i (fun i accu x -> Int.Map.add i x accu) 0 Int.Map.empty hyps in
   M.run (M.match_goal imatching_error hyps concl rules)
