@@ -200,16 +200,52 @@ module PatternMatching (E:StaticEnvironment) = struct
     let eval lhs ctx = Proofview.tclUNIT { ctx with lhs } in
     m.stream eval ctx
 
-  (** Chooses in a list, in the same order as the list *)
-  let rec pick (l:'a Int.Map.t) full (e, info) : ('a Int.Map.t * 'a) m = match Int.Map.min_binding l with
-  | exception Not_found -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
-  | (i, x) ->
-    { stream = fun k ctx ->
-      Proofview.tclOR
-        (k (Int.Map.remove i full, x) ctx)
-        (fun e -> (pick (Int.Map.remove i l) full e).stream k ctx) }
+  module FastList :
+  sig
+    type 'a t
+    val of_list : 'a list -> 'a t
 
-  let pick l = pick l l imatching_error
+    val select : 'a t -> 'a m
+    (** Chooses in a list, in the same order as the list. *)
+
+    val pick : 'a t -> ('a t * 'a) m
+    (** Chooses in a list, in the same order as the list.
+        Also returns the list without the element. *)
+  end =
+  struct
+    type 'a node = List of 'a list | Map of 'a Int.Map.t
+    type 'a t = 'a node ref
+    let of_map m = ref (Map m)
+    let of_list l = ref (List l)
+    let get_map r = match !r with
+    | Map m -> m
+    | List l ->
+      let m = CList.fold_left_i (fun i accu x -> Int.Map.add i x accu) 0 Int.Map.empty l in
+      let () = r := Map m in
+      m
+
+    let rec pick (l:'a Int.Map.t) full (e, info) : ('a t * 'a) m = match Int.Map.min_binding l with
+    | exception Not_found -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
+    | (i, x) ->
+      { stream = fun k ctx ->
+        Proofview.tclOR
+          (k (of_map @@ Int.Map.remove i full, x) ctx)
+          (fun e -> (pick (Int.Map.remove i l) full e).stream k ctx) }
+
+    let pick l =
+      let l = get_map l in
+      pick l l imatching_error
+
+    let rec select (l:'a list) (e, info) : 'a m = match l with
+    | [] -> { stream = fun _ _ -> Proofview.tclZERO ~info e }
+    | x :: l ->
+      { stream = fun k ctx -> Proofview.tclOR (k x ctx) (fun e -> (select l e).stream k ctx) }
+
+    let select l = match !l with
+    | Map m -> pick l >>= fun (_, x) -> return x
+    | List l -> select l imatching_error
+
+  end
 
   (** Declares a substitution, a context substitution and a term substitution. *)
   let put subst context terms : unit m =
@@ -286,28 +322,24 @@ module PatternMatching (E:StaticEnvironment) = struct
     }
 
 
-  (** [hyp_match_type hypname pat hyps] matches a single
-      hypothesis pattern [hypname:pat] against the hypotheses in
-      [hyps]. Tries the hypotheses in order. For each success returns
-      the name of the matched hypothesis. *)
-  let hyp_match_type hypname pat hyps =
-    pick hyps >>= fun (rem, decl) ->
+  (** [hyp_match_type hypname pat decl] matches a single
+      hypothesis pattern [hypname:pat] against a hypothesis [decl].
+      For each success returns the name of the matched hypothesis. *)
+  let hyp_match_type hypname pat decl =
     let id = NamedDecl.get_id decl in
     pattern_match_term pat (NamedDecl.get_type decl) () <*>
     put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
-    return (rem, id)
+    return id
 
   (** [hyp_match_type hypname bodypat typepat hyps] matches a single
       hypothesis pattern [hypname := bodypat : typepat] against the
-      hypotheses in [hyps].Tries the hypotheses in order. For each
-      success returns the name of the matched hypothesis. *)
-  let hyp_match_body_and_type hypname bodypat typepat hyps =
-    pick hyps >>= function (rem, decl) -> match decl with
+      hypothesis [decl]. For each success returns the name of the matched hypothesis. *)
+  let hyp_match_body_and_type hypname bodypat typepat decl = match decl with
       | LocalDef (id,body,hyp) ->
           pattern_match_term bodypat body () <*>
           pattern_match_term typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (EConstr.mkVar id.binder_name) empty_term_subst) <*>
-          return (rem, id.binder_name)
+          return id.binder_name
       | LocalAssum (id,hyp) -> fail
 
   (** [hyp_match pat hyps] dispatches to
@@ -325,9 +357,15 @@ module PatternMatching (E:StaticEnvironment) = struct
       returns [lhs]. *)
   let rec hyp_pattern_list_match pats hyps lhs =
     match pats with
+    | [pat] ->
+      (* Fast path, there is no need to build the set of hypotheses *)
+      FastList.select hyps >>= fun decl ->
+      hyp_match pat decl >>= fun _ ->
+      return lhs
     | pat::pats ->
-        hyp_match pat hyps >>= fun (hyps, matched_hyp) ->
-        hyp_pattern_list_match pats hyps lhs
+      FastList.pick hyps >>= fun (hyps, decl) ->
+      hyp_match pat decl >>= fun _ ->
+      hyp_pattern_list_match pats hyps lhs
     | [] -> return lhs
 
   (** [rule_match_goal hyps concl rule] matches the rule [rule]
@@ -378,5 +416,5 @@ let match_goal env sigma hyps concl rules =
     let sigma = sigma
   end in
   let module M = PatternMatching(E) in
-  let hyps = CList.fold_left_i (fun i accu x -> Int.Map.add i x accu) 0 Int.Map.empty hyps in
+  let hyps = M.FastList.of_list hyps in
   M.run (M.match_goal imatching_error hyps concl rules)
