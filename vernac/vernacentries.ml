@@ -1474,8 +1474,15 @@ let vernac_set_end_tac ~pstate tac =
 let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
 
+let warn_add_loadpath = CWarnings.create ~name:"add-loadpath-deprecated" ~category:"deprecated"
+    (fun () -> strbrk "Commands \"Add LoadPath\" and \"Add Rec LoadPath\" are deprecated." ++ spc () ++
+               strbrk "Use command-line \"-Q\" or \"-R\" or put them in your _CoqProject file instead." ++ spc () ++
+               strbrk "If \"Add [Rec] LoadPath\" is an important feature for you, please open an issue at" ++ spc () ++
+               strbrk "https://github.com/coq/coq/issues" ++ spc () ++ strbrk "and explain your workflow.")
+
 let vernac_add_loadpath ~implicit pdir coq_path =
   let open Loadpath in
+  warn_add_loadpath ();
   let pdir = expand pdir in
   add_vo_path { unix_path = pdir; coq_path; has_ml = true; implicit; recursive = true }
 
