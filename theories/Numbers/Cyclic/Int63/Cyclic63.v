@@ -45,7 +45,7 @@ Definition mulc_WW x y :=
     if is_zero l then W0
     else WW h l
   else WW h l.
-Notation "n '*c' m" := (mulc_WW n m) (at level 40, no associativity) : uint63_scope.
+Notation "n '*c' m" := (mulc_WW n m) (at level 40, left associativity) : uint63_scope.
 
 Definition pos_mod p x :=
   if p <=? digits then

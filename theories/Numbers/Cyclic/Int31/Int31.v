@@ -243,7 +243,7 @@ Definition add31c (n m : int31) :=
   | Eq => C0 npm
   | _ => C1 npm
   end.
-Notation "n '+c' m" := (add31c n m) (at level 50, no associativity) : int31_scope.
+Notation "n '+c' m" := (add31c n m) (at level 50, left associativity) : int31_scope.
 
 (**  Addition plus one with carry (the result is thus exact) *)
 
@@ -270,7 +270,7 @@ Definition sub31c (n m : int31) :=
   | Eq => C0 nmm
   | _ => C1 nmm
   end.
-Notation "n '-c' m" := (sub31c n m) (at level 50, no associativity) : int31_scope.
+Notation "n '-c' m" := (sub31c n m) (at level 50, left associativity) : int31_scope.
 
 (** subtraction minus one with carry (thus exact) *)
 
@@ -297,7 +297,7 @@ Notation "n * m" := (mul31 n m) : int31_scope.
 (** multiplication with double word result (thus exact) *)
 
 Definition mul31c (n m : int31) := phi_inv2 ((phi n)*(phi m)).
-Notation "n '*c' m" := (mul31c n m) (at level 40, no associativity) : int31_scope.
+Notation "n '*c' m" := (mul31c n m) (at level 40, left associativity) : int31_scope.
 
 
 (** * Division *)

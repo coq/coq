@@ -136,8 +136,8 @@ Notation addmuldiv := addmuldiv (only parsing).
 
 Module Import Uint63NotationsInternalC.
 Notation "- x" := (opp x) : uint63_scope.
-Notation "n '+c' m" := (addc n m) (at level 50, no associativity) : uint63_scope.
-Notation "n '-c' m" := (subc n m) (at level 50, no associativity) : uint63_scope.
+Notation "n '+c' m" := (addc n m) (at level 50, left associativity) : uint63_scope.
+Notation "n '-c' m" := (subc n m) (at level 50, left associativity) : uint63_scope.
 End Uint63NotationsInternalC.
 
 Definition oppc (i:int) := 0 -c i.
