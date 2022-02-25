@@ -88,9 +88,9 @@ Reserved Notation "(* 69 *)" (at level 69).
 (**  Non ambiguous keyword to check if the SsrSyntax module is imported  **)
 Reserved Notation "(* Use to test if 'SsrSyntax_is_Imported' *)" (at level 8).
 
-Reserved Notation "<hidden n >" (at level 0, n at level 0,
+Reserved Notation "<hidden n >" (at level 0, n at level 0, only printing,
   format "<hidden  n >").
-Reserved Notation "T (* n *)" (at level 200, format "T  (* n *)").
+Reserved Notation "T (* n *)" (at level 200, only printing, format "T  (* n *)").
 
 End SsrSyntax.
 
