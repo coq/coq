@@ -796,7 +796,7 @@ Proof.
  set (o':=find x m') in *; clearbody o'.
  clear Hm Hm' m m'.
  generalize H; clear H.
- match goal with |- ?m=?n -> ?p=?q =>
+ match goal with |- ?m = ?n -> ?p = ?q =>
    assert ((m=n->p=q)/\(m=None -> p=None)); [|intuition] end.
  induction m0; simpl in *; intuition.
  - destruct o; destruct o'; simpl in *; try discriminate; auto.
