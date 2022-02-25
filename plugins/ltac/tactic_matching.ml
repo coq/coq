@@ -282,25 +282,28 @@ module PatternMatching (E:StaticEnvironment) = struct
       Proofview.tclOR (head.stream k ctx) (fun e -> (tail e).stream k ctx)
     }
 
-
   (** [hyp_match_type hypname pat hyps] matches a single
       hypothesis pattern [hypname:pat] against the hypotheses in
       [hyps]. Tries the hypotheses in order. For each success returns
       the name of the matched hypothesis. *)
-  let hyp_match_type hypname pat hyps =
+  let hyp_match_type except hypname pat hyps =
     pick hyps >>= fun decl ->
     let id = NamedDecl.get_id decl in
-    pattern_match_term pat (NamedDecl.get_type decl) () <*>
-    put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
-    return id
+    if Id.Set.mem id except then fail
+    else
+      pattern_match_term pat (NamedDecl.get_type decl) () <*>
+      put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
+      return id
 
   (** [hyp_match_type hypname bodypat typepat hyps] matches a single
       hypothesis pattern [hypname := bodypat : typepat] against the
       hypotheses in [hyps].Tries the hypotheses in order. For each
       success returns the name of the matched hypothesis. *)
-  let hyp_match_body_and_type hypname bodypat typepat hyps =
+  let hyp_match_body_and_type except hypname bodypat typepat hyps =
     pick hyps >>= function
       | LocalDef (id,body,hyp) ->
+        if Id.Set.mem id.binder_name except then fail
+        else
           pattern_match_term bodypat body () <*>
           pattern_match_term typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (EConstr.mkVar id.binder_name) empty_term_subst) <*>
@@ -310,26 +313,22 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** [hyp_match pat hyps] dispatches to
       {!hyp_match_type} or {!hyp_match_body_and_type} depending on whether
       [pat] is [Hyp _] or [Def _]. *)
-  let hyp_match pat hyps =
+  let hyp_match except pat hyps =
     match pat with
     | Hyp ({CAst.v=hypname},typepat) ->
-        hyp_match_type hypname typepat hyps
+        hyp_match_type except hypname typepat hyps
     | Def ({CAst.v=hypname},bodypat,typepat) ->
-        hyp_match_body_and_type hypname bodypat typepat hyps
+        hyp_match_body_and_type except hypname bodypat typepat hyps
 
   (** [hyp_pattern_list_match pats hyps lhs], matches the list of
       patterns [pats] against the hypotheses in [hyps], and eventually
       returns [lhs]. *)
-  let rec hyp_pattern_list_match pats hyps lhs =
+  let rec hyp_pattern_list_match except pats hyps lhs =
     match pats with
     | pat::pats ->
-        hyp_match pat hyps >>= fun matched_hyp ->
-        (* spiwack: alternatively it is possible to return the list
-           with the matched hypothesis removed directly in
-           [hyp_match]. *)
-        let select_matched_hyp decl = Id.equal (NamedDecl.get_id decl) matched_hyp in
-        let hyps = CList.remove_first select_matched_hyp hyps in
-        hyp_pattern_list_match pats hyps lhs
+        hyp_match except pat hyps >>= fun matched_hyp ->
+        let except = Id.Set.add matched_hyp except in
+        hyp_pattern_list_match except pats hyps lhs
     | [] -> return lhs
 
   (** [rule_match_goal hyps concl rule] matches the rule [rule]
@@ -341,7 +340,7 @@ module PatternMatching (E:StaticEnvironment) = struct
            syntax) to the bottommost. *)
         let hyppats = List.rev hyppats in
         pattern_match_term conclpat concl () <*>
-        hyp_pattern_list_match hyppats hyps lhs
+        hyp_pattern_list_match Id.Set.empty hyppats hyps lhs
 
   (** [match_goal hyps concl rules] matches the goal [hyps|-concl]
       with the set of matching rules [rules]. *)
