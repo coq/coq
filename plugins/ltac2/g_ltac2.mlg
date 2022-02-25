@@ -190,7 +190,7 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CTacIft (e, e1, e2) }
       ]
     | "4" LEFTA [ ]
-    | "3" [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
+    | "3" LEFTA [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
         { let el = e0 :: el in
           CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) } ]
     | "2" RIGHTA
@@ -311,7 +311,7 @@ GRAMMAR EXTEND Gram
   ltac2_type:
     [ "5" RIGHTA
       [ t1 = ltac2_type; "->"; t2 = ltac2_type -> { CAst.make ~loc @@ CTypArrow (t1, t2) } ]
-    | "2"
+    | "2" LEFTA
       [ t = ltac2_type; "*"; tl = LIST1 ltac2_type LEVEL "1" SEP "*" ->
       { let tl = t :: tl in
         CAst.make ~loc @@ CTypRef (AbsKn (Tuple (List.length tl)), tl) } ]

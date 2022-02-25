@@ -19,7 +19,7 @@ Module Type Sqrt (Import A : Typ).
 End Sqrt.
 
 Module Type SqrtNotation (A : Typ)(Import B : Sqrt A).
- Notation "√ x" := (sqrt x) (at level 6).
+ Notation "√ x" := (sqrt x) (at level 6, right associativity).
 End SqrtNotation.
 
 Module Type Sqrt' (A : Typ) := Sqrt A <+ SqrtNotation A.

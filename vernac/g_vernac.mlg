@@ -678,7 +678,8 @@ GRAMMAR EXTEND Gram
   ;
   (* Module expressions *)
   module_expr:
-    [ [ me = module_expr_atom -> { CAst.make ~loc @@ CMident me }
+    [ LEFTA
+      [ me = module_expr_atom -> { CAst.make ~loc @@ CMident me }
       | me1 = module_expr; me2 = module_expr_atom -> { CAst.make ~loc @@ CMapply (me1,me2) }
       ] ]
   ;
@@ -693,7 +694,8 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   module_type:
-    [ [ qid = qualid -> { CAst.make ~loc @@ CMident qid }
+    [ LEFTA
+      [ qid = qualid -> { CAst.make ~loc @@ CMident qid }
       | "("; mt = module_type; ")" -> { mt }
       | mty = module_type; me = module_expr_atom ->
           { CAst.make ~loc @@ CMapply (mty,me) }
@@ -716,7 +718,7 @@ GRAMMAR EXTEND Gram
   ssexpr:
     [ "35"
       [ "-"; e = ssexpr -> { SsCompl e } ]
-    | "50"
+    | "50" LEFTA
       [ e1 = ssexpr; "-"; e2 = ssexpr-> { SsSubstr(e1,e2) }
       | e1 = ssexpr; "+"; e2 = ssexpr-> { SsUnion(e1,e2) } ]
     | "0"

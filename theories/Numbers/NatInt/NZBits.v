@@ -19,7 +19,7 @@ Module Type Bits (Import A : Typ).
 End Bits.
 
 Module Type BitsNotation (Import A : Typ)(Import B : Bits A).
- Notation "a .[ n ]" := (testbit a n) (at level 5, format "a .[ n ]").
+ Notation "a .[ n ]" := (testbit a n) (at level 5, format "a .[ n ]", left associativity).
  Infix ">>" := shiftr (at level 30, no associativity).
  Infix "<<" := shiftl (at level 30, no associativity).
 End BitsNotation.

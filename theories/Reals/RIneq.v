@@ -980,7 +980,7 @@ Hint Resolve Rmult_inv_m_id_r Rmult_inv_r_id_l Rmult_inv_r_id_m: real.
 (*********************************************************)
 
 Definition Rsqr r : R := r * r.
-Notation "r ²" := (Rsqr r) (at level 1, format "r ²") : R_scope.
+Notation "r ²" := (Rsqr r) (at level 1, format "r ²", left associativity) : R_scope.
 
 (* Useful to fold Rsqr *)
 Lemma Rsqr_def : forall r, r² = r * r.

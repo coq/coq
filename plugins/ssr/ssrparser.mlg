@@ -1878,7 +1878,7 @@ let tclseq_expr ?loc tac dir arg =
 
 GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
-  ssr_first: [
+  ssr_first: [ LEFTA
     [ tac = ssr_first; ipats = ssrintros_ne -> { tclintros_expr ~loc tac ipats }
     | "["; tacl = LIST0 ltac_expr SEP "|"; "]" -> { CAst.make ~loc (TacFirst tacl) }
     ] ];
