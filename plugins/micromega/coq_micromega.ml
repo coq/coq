@@ -2424,6 +2424,7 @@ let print_lia_profile () =
         ++ str "maximum number of pivots: "
         ++ int maximum_pivots ++ fnl ()))
 
+
 (* Local Variables: *)
 (* coding: utf-8 *)
 (* End: *)

@@ -43,6 +43,8 @@ module Monomial : sig
   val sqrt : t -> t option
   val variables : t -> ISet.t
   val degree : t -> int
+  val subset : t -> t -> bool
+  val output : out_channel -> t -> unit
 end =
 struct
   type t = int array
@@ -54,6 +56,36 @@ struct
   *)
 
   let const = [|0|]
+
+  let subset m1 m2 =
+    m1.(0) <= m2.(0) &&
+
+    let len1 = Array.length m1 in
+    let len2 = Array.length m2 in
+
+    let get_var m c v =
+      v+m.(c) , m.(c+1) in
+
+    let rec xsubset cur1 v1 e1 cur2 v2 e2 =
+      match Int.compare v1 v2 with
+      | 0 -> e1 <= e2 &&
+             (if cur1 + 2 = len1
+              then true
+              else if cur2 + 2 = len2
+              then false
+              else
+                let (v1,e1) = get_var m1 (cur1+2) v1 in
+                let (v2,e2) = get_var m2 (cur2+2) v2 in
+                xsubset (cur1+2) v1 e1 (cur2+2) v2 e2)
+      | -1 -> false
+      |  _ -> if cur2 + 2 = len2
+        then false
+        else  let (v2,e2) = get_var m2 (cur2+2) v2 in
+          xsubset cur1 v1 e1 (cur2+2) v2 e2
+    in
+    if len1 <= 1 then true
+    else if len2 <= 1 then false
+    else xsubset 1 m1.(1) m1.(2) 1 m2.(1) m2.(2)
 
   let is_const (m : t) = match m with [|_|] -> true | _ -> false
 
@@ -172,6 +204,9 @@ struct
         fold accu cur (i + 2)
     in
     fold accu 0 1
+
+  let output o m = fold (fun v i () -> Printf.fprintf o "x%i^%i" v i) m ()
+
 
   let variables (m : t) =
     fold (fun x _ accu -> ISet.add x accu) m ISet.empty

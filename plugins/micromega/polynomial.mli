@@ -22,6 +22,16 @@ module Monomial : sig
 
   (** [degree m] is the sum of the degrees of each variable *)
   val degree : t -> int
+
+  (** [subset m1 m2] holds if the multi-set [m1] is included in [m2] *)
+  val subset : t -> t -> bool
+
+  (** [fold f m acc] folds f over the multiset m *)
+  val fold : (var -> int -> 'a -> 'a) -> t -> 'a -> 'a
+
+  (** [output o m] outputs a textual representation *)
+  val output : out_channel -> t -> unit
+
 end
 
 module MonMap : sig

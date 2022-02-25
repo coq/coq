@@ -374,48 +374,108 @@ let saturate_by_linear_equalities sys0 = WithProof.saturate_subst false sys0
 let saturate_by_linear_equalities sys =
   tr_sys "saturate_by_linear_equalities" saturate_by_linear_equalities sys
 
-let bound_monomials (sys : WithProof.t list) =
-  let (bounds,_) =
-    extract_all
-      (fun p ->
-        match BoundWithProof.make p with
-        | None -> None
-        | Some b ->
-          let Vect.Bound.{cst; var; coeff} = BoundWithProof.bound b in
-          Some (Monomial.degree (LinPoly.MonT.retrieve var), b))
-      sys
-  in
-  let deg =
-    List.fold_left (fun acc ((p, o), _) -> max acc (LinPoly.degree p)) 0 sys
-  in
-  let vars =
+
+let elim_redundant sys =
+  let module VectMap = Map.Make (Vect) in
+  let elim_eq sys =
     List.fold_left
+      (fun acc (((v, o), prf) as wp) ->
+        match o with
+        | Gt -> assert false
+        | Ge -> wp :: acc
+        | Eq -> wp :: WithProof.neg wp :: acc)
+      [] sys
+  in
+  let of_list l =
+    List.fold_left
+      (fun m (((v, o), prf) as wp) ->
+        let q, v' = Vect.decomp_cst v in
+        try
+          let q', wp' = VectMap.find v' m in
+          match Q.compare q q' with
+          | 0 -> if o = Eq then VectMap.add v' (q, wp) m else m
+          | 1 -> m
+          | _ -> VectMap.add v' (q, wp) m
+        with Not_found -> VectMap.add v' (q, wp) m)
+      VectMap.empty l
+  in
+  let to_list m = VectMap.fold (fun _ (_, wp) sys -> wp :: sys) m [] in
+  to_list (of_list (elim_eq sys))
+
+let elim_redundant sys = tr_sys "elim_redundant" elim_redundant sys
+
+let bound_monomials (sys : WithProof.t list) =
+  let (all_bounds,_) = extract_all BoundWithProof.make sys in
+  let mon = List.mapi (fun i b ->
+      let v = (BoundWithProof.bound b).Vect.Bound.var in
+      let m = LinPoly.MonT.retrieve v in
+      (i,(v,m,b))) all_bounds in
+
+  let vars = List.fold_left
       (fun acc ((p, o), _) -> ISet.union (LinPoly.monomials p) acc)
-      ISet.empty sys
-  in
-  let module SetWP = Set.Make (struct
-    type t = int * BoundWithProof.t
+      ISet.empty sys in
 
-    let compare (_, x) (_, y) = BoundWithProof.compare x y
-  end) in
-  let bounds =
-    saturate_bin
-      (module SetWP : Set.S with type elt = int * BoundWithProof.t)
-      (fun (i1, w1) (i2, w2) ->
-        if i1 + i2 > deg then None
-        else
-          match BoundWithProof.mul_bound w1 w2 with
-          | None -> None
-          | Some b -> Some (i1 + i2, b))
-      bounds
+  let rec build_constraints l =
+    match l with
+    |[] -> Linsolve.empty
+    | (i,(_,m',_)) ::l ->
+      let c = build_constraints l in
+      let cm = Monomial.fold (fun x d acc -> Linsolve.make_mon x i d acc) m' Linsolve.empty in
+      Linsolve.merge c cm
   in
-  let has_mon (_, b) =
-    let Vect.Bound.{cst; var; coeff} = BoundWithProof.bound b in
-    if ISet.mem var vars then Some (BoundWithProof.proof b) else None
-  in
-  CList.map_filter has_mon bounds
 
-let bound_monomials = tr_sys "bound_monomials" bound_monomials
+  let eqn = build_constraints mon in
+
+
+  let set_constants_for m e =
+    Monomial.fold (fun x d acc -> Linsolve.set_constant x d e :: acc) m [] in
+
+
+  (* [exp_bound b j] computes the bound at the power j for j >=1.
+     The current algorithm is not complete. It performs iterative multiplications. *)
+  let rec exp_bound b j =
+    if j = 1 then Some b
+    else
+      let b1 = exp_bound b (j/2) in
+      match b1 with
+      | None -> None
+      | Some b1 ->
+        match BoundWithProof.mul_bound b1 b1 with
+        | None -> None
+        | Some b1_b1 ->
+          if j mod 2 = 0
+          then Some b1_b1
+          else BoundWithProof.mul_bound b b1_b1 in
+
+  let rec bound_using_sol sol =
+    match sol with
+    | [] -> None
+    | [x,j] -> let (_,_,b) = List.assoc x mon in
+      exp_bound b j
+    | (x,j)::sol'-> let (_,_,b) = List.assoc x mon in
+      match exp_bound b j with
+      | None -> None
+      | Some b -> match bound_using_sol sol' with
+        |None -> None
+        | Some b' -> BoundWithProof.mul_bound b b' in
+
+  let bound_one_monomial x =
+    let m = LinPoly.MonT.retrieve x in
+    if Monomial.degree m <= 1
+    then []
+    else
+      let eqn = set_constants_for m eqn in
+      if debug then Printf.printf "Equations : %a\n" Linsolve.output_equations eqn ; flush stdout;
+      let sol = Linsolve.solve_and_enum  eqn in
+      if debug then Printf.printf "Solutions %i \n %a\n"  (List.length sol) Linsolve.output_solutions sol;
+      let l = elim_redundant (CList.map_filter (fun s -> Option.map BoundWithProof.proof (bound_using_sol s)) sol) in
+      if debug then Printf.printf "New bounds %a" output_sys l; l
+  in
+
+  ISet.fold (fun m acc -> List.rev_append (bound_one_monomial m) acc) vars []
+
+
+let bound_monomials sys= tr_sys "bound_monomials" bound_monomials sys
 
 let develop_constraints prfdepth n_spec sys =
   LinPoly.MonT.clear ();
@@ -843,34 +903,6 @@ let normalise sys =
 
 let normalise = tr_sys "normalise" normalise
 
-let elim_redundant sys =
-  let module VectMap = Map.Make (Vect) in
-  let elim_eq sys =
-    List.fold_left
-      (fun acc (((v, o), prf) as wp) ->
-        match o with
-        | Gt -> assert false
-        | Ge -> wp :: acc
-        | Eq -> wp :: WithProof.neg wp :: acc)
-      [] sys
-  in
-  let of_list l =
-    List.fold_left
-      (fun m (((v, o), prf) as wp) ->
-        let q, v' = Vect.decomp_cst v in
-        try
-          let q', wp' = VectMap.find v' m in
-          match Q.compare q q' with
-          | 0 -> if o = Eq then VectMap.add v' (q, wp) m else m
-          | 1 -> m
-          | _ -> VectMap.add v' (q, wp) m
-        with Not_found -> VectMap.add v' (q, wp) m)
-      VectMap.empty l
-  in
-  let to_list m = VectMap.fold (fun _ (_, wp) sys -> wp :: sys) m [] in
-  to_list (of_list (elim_eq sys))
-
-let elim_redundant sys = tr_sys "elim_redundant" elim_redundant sys
 
 (** [fourier_small] performs some variable elimination and keeps the cutting planes.
     To decide which elimination to perform, the constraints are sorted according to
