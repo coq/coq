@@ -40,6 +40,16 @@ Reserved Notation "x <= y < z" (at level 70, y at next level).
 Reserved Notation "x < y < z" (at level 70, y at next level).
 Reserved Notation "x < y <= z" (at level 70, y at next level).
 
+(** Notations for boolean comparison *)
+
+Reserved Notation "x =? y" (at level 70, no associativity).
+Reserved Notation "x <=? y" (at level 70, no associativity).
+Reserved Notation "x <? y" (at level 70, no associativity).
+
+(** Notation for ternary comparison *)
+
+Reserved Notation "x ?= y" (at level 70, no associativity).
+
 (** Arithmetical notations (also used for type constructors) *)
 
 Reserved Notation "x + y" (at level 50, left associativity).

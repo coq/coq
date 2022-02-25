@@ -57,7 +57,12 @@ Entry term is
 | "75" RIGHTA
   [ "~"; term LEVEL "75" ]
 | "70" RIGHTA
-  [ SELF; ">"; NEXT
+  [ SELF; "?="; NEXT
+  | SELF; "<?"; NEXT
+  | SELF; "<=?"; NEXT
+  | SELF; "=?"; NEXT
+  | SELF; ">"; NEXT
+  | SELF; ">"; NEXT
   | SELF; ">="; NEXT
   | SELF; "<"; NEXT; "<="; NEXT
   | SELF; "<"; NEXT; "<"; NEXT
