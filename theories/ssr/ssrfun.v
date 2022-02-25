@@ -227,10 +227,8 @@ Unset Printing Implicit Defensive.
 (** Parsing / printing declarations. *)
 Reserved Notation "p .1" (at level 2, left associativity, format "p .1").
 Reserved Notation "p .2" (at level 2, left associativity, format "p .2").
-Reserved Notation "f ^~ y" (at level 10, y at level 8, no associativity,
-  format "f ^~  y").
-Reserved Notation "@^~ x" (at level 10, x at level 8, no associativity,
-  format "@^~  x").
+Reserved Notation "f ^~ y" (at level 10, y at level 8, format "f ^~  y", no associativity).
+Reserved Notation "@^~ x" (at level 10, x at level 8, format "@^~  x", no associativity).
 Reserved Notation "[ 'eta' f ]" (at level 0, format "[ 'eta'  f ]").
 Reserved Notation "'fun' => E" (at level 200, format "'fun' =>  E").
 
@@ -255,7 +253,7 @@ Reserved Notation "f =1 g" (at level 70, no associativity).
 Reserved Notation "f =1 g :> A" (at level 70, g at next level, A at level 90).
 Reserved Notation "f =2 g" (at level 70, no associativity).
 Reserved Notation "f =2 g :> A" (at level 70, g at next level, A at level 90).
-Reserved Notation "f \o g" (at level 50, format "f  \o '/ '  g").
+Reserved Notation "f \o g" (at level 50, format "f  \o '/ '  g", left associativity).
 Reserved Notation "f \; g" (at level 60, right associativity,
   format "f  \; '/ '  g").
 
