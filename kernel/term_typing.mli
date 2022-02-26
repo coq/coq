@@ -41,7 +41,7 @@ val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output -> (C
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : env ->
+val infer_constant : env ->
   constant_entry -> typing_context Discharge.result
 
 val build_constant_declaration :
