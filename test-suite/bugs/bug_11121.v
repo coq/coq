@@ -2,14 +2,14 @@ Declare Custom Entry example.
 
 Module M1.
 Definition stupid (x : nat) : nat := 1.
-Reserved Notation " x '==' 1 " (in custom example at level 0, x constr).
+Reserved Notation " x '==' 1 " (in custom example at level 1, x constr, no associativity).
 Notation " x '==' 1" := (stupid x) (in custom example).
 End M1.
 
 Module M2.
 Definition stupid (x : nat) : nat := 1.
-Notation " x '==' 1" := (stupid x) (in custom example at level 0).
-Fail Notation " x '==' 1" := (stupid x) (in custom example at level 1).
+Notation " x '==' 1" := (stupid x) (in custom example at level 1, no associativity).
+Fail Notation " x '==' 1" := (stupid x) (in custom example at level 2).
 End M2.
 
 Module M3.

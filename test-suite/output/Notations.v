@@ -2,7 +2,7 @@
 
 Module foo.
 Notation compose := (fun g f => g f).
-Notation "g & f" := (compose g f) (at level 10).
+Notation "g & f" := (compose g f) (at level 10, left associativity).
 End foo.
 
 Import foo.
@@ -12,7 +12,7 @@ Import foo.
 (**********************************************************************)
 (* Notations for if and let (submitted by Roland Zumkeller)           *)
 
-Notation "a ? b ; c" := (if a then b else c) (at level 10).
+Notation "a ? b ; c" := (if a then b else c) (at level 10, left associativity).
 
 Check (true ? 0 ; 1).
 Check if true as x return (if x then nat else bool) then 0 else true.

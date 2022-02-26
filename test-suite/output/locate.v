@@ -4,8 +4,8 @@ Locate "&&".
 
 Module M.
 
-Notation "'U' t" := (S t) (at level 0).
-Notation "'_' t" := (S t) (at level 0).
+Notation "'U' t" := (S t) (at level 0, right associativity).
+Notation "'_' t" := (S t) (at level 0, right associativity).
 Locate "U". (* was wrongly returning also "'_' t" *)
 Locate "_".
 

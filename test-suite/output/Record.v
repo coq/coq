@@ -67,7 +67,7 @@ End FormattingIssue13142.
 
 Module ProjectionPrinting.
 
-Notation "a +++ b" := (a * b) (at level 40, format "'[v' a '/' +++ '/' b ']'").
+Notation "a +++ b" := (a * b) (at level 40, format "'[v' a '/' +++ '/' b ']'", left associativity).
 
 Record R := { field : nat -> nat }.
 Set Printing Projections.

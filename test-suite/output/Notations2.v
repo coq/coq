@@ -11,7 +11,7 @@ Check (2 3).
 
 Record Binop := { binop :> nat -> nat -> nat }.
 Class Plusop := { plusop : Binop; zero : nat }.
-Infix "[+]" := plusop (at level 40).
+Infix "[+]" := plusop (at level 40, left associativity).
 #[global]
 Instance Plus : Plusop := {| plusop := {| binop := plus |} ; zero := 0 |}.
 Check 2[+]3.
@@ -71,7 +71,7 @@ Check let' f x y (a:=0) z (b:bool) := x+y+z+1 in f 0 1 2.
 (* In practice, only the printing rule is used here *)
 (* Note: does not work for pattern *)
 Module A.
-Notation "f ( x )" := (f x) (at level 10, format "f ( x )").
+Notation "f ( x )" := (f x) (at level 10, format "f ( x )", left associativity).
 Check fun f x => f x + S x.
 
 Open Scope list_scope.
