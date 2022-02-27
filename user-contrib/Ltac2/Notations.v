@@ -228,12 +228,12 @@ Ltac2 apply0 adv ev cb cl :=
   Std.apply adv ev cb cl.
 
 Ltac2 Notation "eapply"
-  cb(list1(thunk(seq(constr, with_bindings)), ","))
+  cb(list1(thunk(seq(open_constr, with_bindings)), ","))
   cl(opt(seq("in", ident, opt(seq("as", intropattern))))) :=
   apply0 true true cb cl.
 
 Ltac2 Notation "apply"
-  cb(list1(thunk(seq(constr, with_bindings)), ","))
+  cb(list1(thunk(seq(open_constr, with_bindings)), ","))
   cl(opt(seq("in", ident, opt(seq("as", intropattern))))) :=
   apply0 true false cb cl.
 

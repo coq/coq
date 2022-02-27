@@ -33,7 +33,7 @@ Admitted.
 
 Lemma apply l1 l2 v1 v2 u1 u2 : l1 + l2 <= v1 + v2 <= u1 + u2.
 Proof.
-  Fail apply Z_add_bounds.
+  apply Z_add_bounds.
 Admitted.
 
 (** * Test cases for specific notations with special contexts *)
