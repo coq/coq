@@ -39,6 +39,8 @@ To compile Coq yourself, you need:
 
 - [optional] GNU Make (version >= 3.81)
 
+- [optional] [ounit2](https://github.com/gildor478/ounit) >= 2.2.6 for testing.
+
 Primitive floating-point numbers require IEEE-754 compliance
 (`Require Import Floats`). Common sources of incompatibility
 are checked at configure time, preventing compilation. In the
@@ -81,14 +83,8 @@ for more details.
 Choice of Build and Installation Procedure
 ------------------------------------------
 
-There are two partially overlapping infrastructures available to build
-Coq. They are available through `Makefile.make` (legacy / hybrid
-build) and `Makefile.dune` (full Dune build).
-
-You can use the `COQ_USE_DUNE` environment variable to change the one
-to use by default. This is useful for Coq development, where we
-recommend to rely mainly on `Makefile.dune`. Note that mixing the two
-systems is not perfectly supported and may lead to confusing behavior.
+Coq is normally built with `dune`, but a legacy/hybrid build is also
+available via `Makefile.make`.
 
 In both cases, the OCaml parts are built using
 [Dune](https://github.com/ocaml/dune). The main difference between the
@@ -96,13 +92,13 @@ two systems is how the `.vo` files are built.
 
 In the case of `Makefile.make`, `.vo` files are built with a legacy
 Makefile, similar to what `coq_makefile` would do. In the case of
-`Makefile.dune`, `.vo` files are built with Dune, thanks to its
-recently-added, and still experimental, Coq mode.
+`dune`, `.vo` files are built with Dune, thanks to its recently-added,
+and still experimental, Coq mode.
 
 See the documentation for the two infrastructures:
 
+- [Full Dune build](dev/doc/INSTALL.dune.md)
 - [Legacy build](dev/doc/INSTALL.make.md)
-- [Full Dune build](dev/doc/build-system.dune.md)
 
 See also [`dev/doc/README.md`](dev/doc/README.md).
 
