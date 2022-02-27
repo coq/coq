@@ -25,6 +25,17 @@ Proof.
   refine (sl ["left" =? "right"]).
 Qed.
 
+Lemma Z_add_bounds {amin a amax bmin b bmax : Z}:
+  amin <= a <= amax ->
+  bmin <= b <= bmax ->
+  amin + bmin <= a + b <= amax + bmax.
+Admitted.
+
+Lemma apply l1 l2 v1 v2 u1 u2 : l1 + l2 <= v1 + v2 <= u1 + u2.
+Proof.
+  Fail apply Z_add_bounds.
+Admitted.
+
 (** * Test cases for specific notations with special contexts *)
 
 (** ** Test eval ... in / reduction tactics *)
