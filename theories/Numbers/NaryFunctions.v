@@ -25,8 +25,8 @@ Fixpoint nfun A n B :=
   | S n => A -> (nfun A n B)
   end.
 
-Notation " A ^^ n --> B " := (nfun A n B)
-  (at level 50, n at next level) : type_scope.
+Notation "A ^^ n --> B " := (nfun A n B)
+  (at level 99, n at next level, right associativity) : type_scope.
 
 (** [napply_cst _ _ a n f] iterates [n] times the application of a
     particular constant [a] to the [n]-ary function [f]. *)
