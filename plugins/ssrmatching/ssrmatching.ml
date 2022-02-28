@@ -633,58 +633,6 @@ type find_P =
 type conclude = unit ->
   EConstr.t * ssrdir * (bool * Evd.evar_map * UState.t * EConstr.t)
 
-(* upats_origin makes a better error message only            *)
-let mk_tpattern_matcher ?(all_instances=false)
-  ?(raise_NoMatch=false) ?upats_origin sigma0 occ (ise, upats)
-=
-  let nocc = ref 0 and skip_occ = ref false in
-  let use_occ, occ_list = match occ with
-  | Some (true, ol) -> ol = [], ol
-  | Some (false, ol) -> ol <> [], ol
-  | None -> false, [] in
-  let max_occ = List.fold_right max occ_list 0 in
-  let subst_occ =
-    let occ_set = Array.make max_occ (not use_occ) in
-    let _ = List.iter (fun i -> occ_set.(i - 1) <- use_occ) occ_list in
-    let _ = if max_occ = 0 then skip_occ := use_occ in
-    fun () -> incr nocc;
-    if !nocc = max_occ then skip_occ := use_occ;
-    if !nocc <= max_occ then occ_set.(!nocc - 1) else not use_occ in
-  let upat_that_matched = ref None in
-  let match_EQ env sigma u =
-    let open EConstr in
-    match u.up_k with
-    | KpatLet ->
-      let x, pv, t, pb = destLetIn sigma u.up_f in
-      let env' =
-        EConstr.push_rel (Context.Rel.Declaration.LocalAssum(x, t)) env in
-      let match_let f = match EConstr.kind ise f with
-      | LetIn (_, v, _, b) -> unif_EQ env sigma pv v && unif_EQ env' sigma pb b
-      | _ -> false in match_let
-    | KpatFixed -> fun c -> EConstr.eq_constr_nounivs sigma u.up_f c
-    | KpatConst -> fun c -> EConstr.eq_constr_nounivs sigma u.up_f c
-    | KpatLam -> fun c ->
-       (match EConstr.kind sigma c with
-       | Lambda _ -> unif_EQ env sigma u.up_f c
-       | _ -> false)
-    | _ -> unif_EQ env sigma u.up_f in
-let p2t p = EConstr.mkApp(p.up_f,p.up_a) in
-let source env = match upats_origin, upats with
-  | None, [p] ->
-      (if fixed_upat ise p then str"term " else str"partial term ") ++
-      pr_econstr_pat env ise (p2t p) ++ spc()
-  | Some (dir,rule), [p] -> str"The " ++ pr_dir_side dir ++ str" of " ++
-      pr_econstr_pat env ise rule ++ fnl() ++ ws 4 ++ pr_econstr_pat env ise (p2t p) ++ fnl()
-  | Some (dir,rule), _ -> str"The " ++ pr_dir_side dir ++ str" of " ++
-      pr_econstr_pat env ise rule ++ spc()
-  | _, [] | None, _::_::_ ->
-      CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.") in
-let on_instance, instances =
-  let instances = ref [] in
-  (fun x ->
-    if all_instances then instances := !instances @ [x]
-    else raise (FoundUnif x)),
-  (fun () -> !instances) in
 let rec uniquize = function
   | [] -> []
   | (_, sigma,_,{ up_f = f; up_a = a; up_t = t } as x) :: xs ->
@@ -693,9 +641,72 @@ let rec uniquize = function
     let neq (_, sigma1,_,{ up_f = f1; up_a = a1; up_t = t1 }) =
       not (equal sigma sigma1 t t1 &&
            equal sigma sigma1 f f1 && CArray.for_all2 (equal sigma sigma1) a a1) in
-    x :: uniquize (List.filter neq xs) in
+    x :: uniquize (List.filter neq xs)
 
-((fun env c h ~k ->
+type occ_state = {
+  max_occ : int;
+  nocc : int ref;
+  occ_set : bool array;
+  use_occ : bool;
+  skip_occ : bool ref;
+}
+
+let create_occ_state occ =
+  let nocc = ref 0 and skip_occ = ref false in
+  let use_occ, occ_list = match occ with
+  | Some (true, ol) -> ol = [], ol
+  | Some (false, ol) -> ol <> [], ol
+  | None -> false, [] in
+  let max_occ = List.fold_right max occ_list 0 in
+  let occ_set = Array.make max_occ (not use_occ) in
+  let _ = List.iter (fun i -> occ_set.(i - 1) <- use_occ) occ_list in
+  let _ = if max_occ = 0 then skip_occ := use_occ in
+  { max_occ; nocc; occ_set; skip_occ; use_occ }
+
+let subst_occ { nocc; max_occ; occ_set; use_occ; skip_occ } =
+  incr nocc;
+  if !nocc = max_occ then skip_occ := use_occ;
+  if !nocc <= max_occ then occ_set.(!nocc - 1) else not use_occ
+
+let match_EQ env sigma (ise, u) =
+  let open EConstr in
+  match u.up_k with
+  | KpatLet ->
+    let x, pv, t, pb = destLetIn sigma u.up_f in
+    let env' =
+      EConstr.push_rel (Context.Rel.Declaration.LocalAssum(x, t)) env in
+    let match_let f = match EConstr.kind ise f with
+    | LetIn (_, v, _, b) -> unif_EQ env sigma pv v && unif_EQ env' sigma pb b
+    | _ -> false in match_let
+  | KpatFixed -> fun c -> EConstr.eq_constr_nounivs sigma u.up_f c
+  | KpatConst -> fun c -> EConstr.eq_constr_nounivs sigma u.up_f c
+  | KpatLam -> fun c ->
+      (match EConstr.kind sigma c with
+      | Lambda _ -> unif_EQ env sigma u.up_f c
+      | _ -> false)
+  | _ -> unif_EQ env sigma u.up_f
+
+let p2t p = EConstr.mkApp(p.up_f,p.up_a)
+
+let source env ise upats_origin upats = match upats_origin, upats with
+  | None, [p] ->
+      (if fixed_upat ise p then str"term " else str"partial term ") ++
+      pr_econstr_pat env ise (p2t p) ++ spc()
+  | Some (dir,rule), [p] -> str"The " ++ pr_dir_side dir ++ str" of " ++
+      pr_econstr_pat env ise rule ++ fnl() ++ ws 4 ++ pr_econstr_pat env ise (p2t p) ++ fnl()
+  | Some (dir,rule), _ -> str"The " ++ pr_dir_side dir ++ str" of " ++
+      pr_econstr_pat env ise rule ++ spc()
+  | _, [] | None, _::_::_ ->
+      CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.")
+
+let find_tpattern ~raise_NoMatch ~all_instances ~upat_that_matched ~upats_origin ~upats sigma0 ise occ_state : find_P =
+  let on_instance, instances =
+    let instances = ref [] in
+    (fun x ->
+      if all_instances then instances := !instances @ [x]
+      else raise (FoundUnif x)),
+    (fun () -> !instances) in
+  fun env c h ~k ->
   do_once upat_that_matched (fun () ->
     let failed_because_of_TC = ref false in
     try
@@ -707,30 +718,30 @@ let rec uniquize = function
       env, 0, uniquize (instances ())
     | NoMatch when (not raise_NoMatch) ->
       if !failed_because_of_TC then
-        errorstrm (source env ++ strbrk"matches but type classes inference fails")
+        errorstrm (source env ise upats_origin upats ++ strbrk"matches but type classes inference fails")
       else
-        errorstrm (source env ++ str "does not match any subterm of the goal")
+        errorstrm (source env ise upats_origin upats ++ str "does not match any subterm of the goal")
     | NoProgress when (not raise_NoMatch) ->
         let dir = match upats_origin with Some (d,_) -> d | _ ->
           CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.") in
-        errorstrm (str"all matches of "++ source env ++
+        errorstrm (str"all matches of "++ source env ise upats_origin upats ++
           str"are equal to the " ++ pr_dir_side (inv_dir dir))
     | NoProgress -> raise NoMatch);
   let _, sigma, _, ({up_f = pf; up_a = pa} as u) =
     if all_instances then assert_done_multires upat_that_matched
     else List.hd (pi3(assert_done upat_that_matched)) in
 (*   pp(lazy(str"sigma@tmatch=" ++ pr_evar_map None sigma)); *)
-  if !skip_occ then ((*ignore(k env u.up_t 0);*) c) else
-  let match_EQ = match_EQ env sigma u in
+  if !(occ_state.skip_occ) then ((*ignore(k env u.up_t 0);*) c) else
+  let match_EQ = match_EQ env sigma (ise, u) in
   let pn = Array.length pa in
   let rec subst_loop (env,h as acc) c' =
-    if !skip_occ then c' else
+    if !(occ_state.skip_occ) then c' else
     let f, a = splay_app sigma c' in
     if Array.length a >= pn && match_EQ f && unif_EQ_args env sigma pa a then
       let open EConstr in
       let a1, a2 = Array.chop (Array.length pa) a in
       let fa1 = mkApp (f, a1) in
-      let f' = if subst_occ () then k env u.up_t fa1 h else fa1 in
+      let f' = if subst_occ occ_state then k env u.up_t fa1 h else fa1 in
       mkApp (f', Array.map_left (subst_loop acc) a2)
     else
       let open EConstr in
@@ -745,8 +756,9 @@ let rec uniquize = function
       let self acc c = subst_loop acc c in
       let f' = map_constr_with_binders_left_to_right env sigma inc_h self acc f in
       mkApp (f', Array.map_left (subst_loop acc) a) in
-      subst_loop (env,h) c) : find_P),
-((fun () ->
+      subst_loop (env,h) c
+
+let conclude_tpattern ~raise_NoMatch ~upat_that_matched ~upats_origin { max_occ; nocc } : conclude = fun () ->
   let env, (c, sigma, uc, ({up_f = pf; up_a = pa} as u)) =
     match !upat_that_matched with
     | Some (env,_,x) -> env,List.hd x | None when raise_NoMatch -> raise NoMatch
@@ -758,7 +770,16 @@ let rec uniquize = function
         | None -> str" of" ++ spc() ++ pr_econstr_pat env sigma p'
         | Some (dir,rule) -> str" of the " ++ pr_dir_side dir ++ fnl() ++
             ws 4 ++ pr_econstr_pat env sigma p' ++ fnl () ++
-            str"of " ++ pr_econstr_pat env sigma rule)) : conclude)
+            str"of " ++ pr_econstr_pat env sigma rule)
+
+(* upats_origin makes a better error message only            *)
+let mk_tpattern_matcher ?(all_instances=false)
+  ?(raise_NoMatch=false) ?upats_origin sigma0 occ (ise, upats)
+=
+  let occ_state = create_occ_state occ in
+  let upat_that_matched = ref None in
+  find_tpattern ~raise_NoMatch ~all_instances ~upat_that_matched ~upats_origin ~upats sigma0 ise occ_state,
+  conclude_tpattern ~raise_NoMatch ~upat_that_matched ~upats_origin occ_state
 
 type ('ident, 'term) ssrpattern =
   | T of 'term
