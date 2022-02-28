@@ -15,8 +15,16 @@ open Constrexpr
 open Notation_term
 open Environ
 
-(** Adding a (constr) notation in the environment*)
+(** Declare syntax rules for a notation *)
+val add_notation_syntax : local:bool -> infix:bool -> Deprecation.t option -> constr_expr ->
+  (lstring * syntax_modifier CAst.t list) -> unit
 
+(** Declare interpretation for a notation *)
+val add_notation_interp : local:bool -> infix:bool -> Deprecation.t option -> env -> constr_expr ->
+  (lstring * syntax_modifier CAst.t list) -> scope_name option -> unit
+
+(** Declare a (constr) notation. This function is the composition of
+    [add_notation_syntax] and [add_notation_interp]. *)
 val add_notation : local:bool -> infix:bool -> Deprecation.t option -> env -> constr_expr ->
   (lstring * syntax_modifier CAst.t list) -> scope_name option -> unit
 
