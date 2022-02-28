@@ -699,6 +699,42 @@ let source env ise upats_origin upats = match upats_origin, upats with
   | _, [] | None, _::_::_ ->
       CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.")
 
+type ssrmatching_failure =
+| SsrTCFail
+| SsrMatchFail
+| SsrProgressFail
+| SsrOccMissing of int * int * EConstr.t
+
+let pr_ssrmatching_failure env sigma upats_origin upats = function
+| SsrTCFail ->
+  source env sigma upats_origin upats ++ strbrk"matches but type classes inference fails"
+| SsrMatchFail ->
+  source env sigma upats_origin upats ++ str "does not match any subterm of the goal"
+| SsrProgressFail ->
+  let dir = match upats_origin with Some (d,_) -> d | _ ->
+    CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.")
+  in
+  str"all matches of "++ source env sigma upats_origin upats ++ str"are equal to the " ++ pr_dir_side (inv_dir dir)
+| SsrOccMissing (nocc, max_occ, p') ->
+  str"Only " ++ int nocc ++ str" < " ++ int max_occ ++
+  str(String.plural nocc " occurrence") ++ match upats_origin with
+  | None -> str" of" ++ spc() ++ pr_econstr_pat env sigma p'
+  | Some (dir,rule) -> str" of the " ++ pr_dir_side dir ++ fnl() ++
+      ws 4 ++ pr_econstr_pat env sigma p' ++ fnl () ++
+      str"of " ++ pr_econstr_pat env sigma rule
+
+exception SsrMatchingFailure of
+  Environ.env * Evd.evar_map * (ssrdir * EConstr.t) option * tpattern list * ssrmatching_failure
+
+let _ = CErrors.register_handler begin function
+| SsrMatchingFailure (env, sigma, upats_origin, upats, e) ->
+  Some (pr_ssrmatching_failure env sigma upats_origin upats  e)
+| _ -> None
+end
+
+let ssrfail env sigma upats_origin upats e =
+  raise (SsrMatchingFailure (env, sigma, upats_origin, upats, e))
+
 let find_tpattern ~raise_NoMatch ~all_instances ~upat_that_matched ~upats_origin ~upats sigma0 ise occ_state : find_P =
   let on_instance, instances =
     let instances = ref [] in
@@ -717,15 +753,10 @@ let find_tpattern ~raise_NoMatch ~all_instances ~upat_that_matched ~upats_origin
     | (NoMatch|NoProgress) when all_instances && instances () <> [] ->
       env, 0, uniquize (instances ())
     | NoMatch when (not raise_NoMatch) ->
-      if !failed_because_of_TC then
-        errorstrm (source env ise upats_origin upats ++ strbrk"matches but type classes inference fails")
-      else
-        errorstrm (source env ise upats_origin upats ++ str "does not match any subterm of the goal")
+      if !failed_because_of_TC then ssrfail env ise upats_origin upats SsrTCFail
+      else ssrfail env ise upats_origin upats SsrMatchFail
     | NoProgress when (not raise_NoMatch) ->
-        let dir = match upats_origin with Some (d,_) -> d | _ ->
-          CErrors.anomaly (str"mk_tpattern_matcher with no upats_origin.") in
-        errorstrm (str"all matches of "++ source env ise upats_origin upats ++
-          str"are equal to the " ++ pr_dir_side (inv_dir dir))
+      ssrfail env ise upats_origin upats SsrProgressFail
     | NoProgress -> raise NoMatch);
   let _, sigma, _, ({up_f = pf; up_a = pa} as u) =
     if all_instances then assert_done_multires upat_that_matched
@@ -758,19 +789,14 @@ let find_tpattern ~raise_NoMatch ~all_instances ~upat_that_matched ~upats_origin
       mkApp (f', Array.map_left (subst_loop acc) a) in
       subst_loop (env,h) c
 
-let conclude_tpattern ~raise_NoMatch ~upat_that_matched ~upats_origin { max_occ; nocc } : conclude = fun () ->
+let conclude_tpattern ~raise_NoMatch ~upat_that_matched ~upats_origin ~upats { max_occ; nocc } : conclude = fun () ->
   let env, (c, sigma, uc, ({up_f = pf; up_a = pa} as u)) =
     match !upat_that_matched with
     | Some (env,_,x) -> env,List.hd x | None when raise_NoMatch -> raise NoMatch
     | None -> CErrors.anomaly (str"companion function never called.") in
   let p' = EConstr.mkApp (pf, pa) in
   if max_occ <= !nocc then p', u.up_dir, (c, sigma, uc, u.up_t)
-  else errorstrm (str"Only " ++ int !nocc ++ str" < " ++ int max_occ ++
-        str(String.plural !nocc " occurrence") ++ match upats_origin with
-        | None -> str" of" ++ spc() ++ pr_econstr_pat env sigma p'
-        | Some (dir,rule) -> str" of the " ++ pr_dir_side dir ++ fnl() ++
-            ws 4 ++ pr_econstr_pat env sigma p' ++ fnl () ++
-            str"of " ++ pr_econstr_pat env sigma rule)
+  else ssrfail env sigma upats_origin upats (SsrOccMissing (!nocc, max_occ, p'))
 
 (* upats_origin makes a better error message only            *)
 let mk_tpattern_matcher ?(all_instances=false)
@@ -779,7 +805,7 @@ let mk_tpattern_matcher ?(all_instances=false)
   let occ_state = create_occ_state occ in
   let upat_that_matched = ref None in
   find_tpattern ~raise_NoMatch ~all_instances ~upat_that_matched ~upats_origin ~upats sigma0 ise occ_state,
-  conclude_tpattern ~raise_NoMatch ~upat_that_matched ~upats_origin occ_state
+  conclude_tpattern ~raise_NoMatch ~upat_that_matched ~upats_origin ~upats occ_state
 
 type ('ident, 'term) ssrpattern =
   | T of 'term
