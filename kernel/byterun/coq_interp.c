@@ -1697,6 +1697,23 @@ value coq_interprete
         Next;
       }
 
+      Instruct (CHECKEQUALFLOAT) {
+        double x, y;
+        print_instr("CHECKEQUALFLOAT");
+        CheckFloat2();
+        x = Double_val(accu);
+        y = Double_val(*sp++);
+        if (x == y) {
+          accu = (x != 0 || !signbit(x) == !signbit(y)) ? coq_true : coq_false;
+          /* note that the spec of signbit only promises a "nonzero value"
+             so we need to normalize booleans with ! before comparing them */
+        } else {
+          accu = (x != x && y != y) ? coq_true : coq_false;
+          /* is_nan(x) && is_nan(y) */
+        }
+        Next;
+      }
+
       Instruct (CHECKCLASSIFYFLOAT) {
         double x;
         print_instr("CHECKCLASSIFYFLOAT");

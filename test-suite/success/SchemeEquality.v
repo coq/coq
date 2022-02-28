@@ -213,7 +213,7 @@ Inductive prim_int := PI (i : Int63.int).
 Scheme Boolean Equality for prim_int.
 
 Inductive prim_float := PF (f : PrimFloat.float).
-Fail Scheme Boolean Equality for prim_float.
+Scheme Boolean Equality for prim_float.
 
 Record fo_record := { f1 : peano; f2 : bool; }.
 Scheme Equality for fo_record.

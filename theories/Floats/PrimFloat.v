@@ -52,13 +52,18 @@ Primitive opp := #float64_opp.
 (** For the record: this is the IEEE754 equality
     (eqb nan nan = false and eqb +0 -0 = true) *)
 Primitive eqb := #float64_eq.
-Register eqb as num.float.eqb.
 
 Primitive ltb := #float64_lt.
 
 Primitive leb := #float64_le.
 
 Primitive compare := #float64_compare.
+
+(** Boolean Leibniz equality *)
+Module Leibniz.
+Primitive eqb := #float64_equal.
+Register eqb as num.float.leibniz.eqb.
+End Leibniz.
 
 Primitive mul := #float64_mul.
 

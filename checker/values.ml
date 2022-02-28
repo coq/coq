@@ -228,7 +228,7 @@ let v_template_universes =
   v_tuple "template_universes" [|List(Opt v_level);v_context_set|]
 
 let v_primitive =
-  v_enum "primitive" 54 (* Number of constructors of the CPrimitives.t type *)
+  v_enum "primitive" 55 (* Number of constructors of the CPrimitives.t type *)
 
 let v_cst_def =
   v_sum "constant_def" 0

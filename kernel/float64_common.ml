@@ -123,10 +123,8 @@ external next_down : float -> float = "coq_next_down_byte" "coq_next_down"
 [@@unboxed] [@@noalloc]
 
 let equal f1 f2 =
-  match classify_float f1 with
-  | FP_normal | FP_subnormal | FP_infinite -> (f1 = f2)
-  | FP_nan -> is_nan f2
-  | FP_zero -> f1 = f2 && 1. /. f1 = 1. /. f2 (* OCaml consider 0. = -0. *)
+  if f1 = f2 then f1 <> 0. || sign f1 = sign f2 (* OCaml consider 0. = -0. *)
+  else is_nan f1 && is_nan f2
 [@@ocaml.inline always]
 
 let hash =

@@ -51,6 +51,10 @@ Definition flatten_cmp_opt c :=
   end.
 Axiom compare_spec : forall x y, (x ?= y)%float = flatten_cmp_opt (SFcompare (Prim2SF x) (Prim2SF y)).
 
+Module Leibniz.
+Axiom eqb_spec : forall x y, Leibniz.eqb x y = true <-> x = y.
+End Leibniz.
+
 Axiom classify_spec : forall x, classify x = SF64classify (Prim2SF x).
 Axiom mul_spec : forall x y, Prim2SF (x * y)%float = SF64mul (Prim2SF x) (Prim2SF y).
 Axiom add_spec : forall x y, Prim2SF (x + y)%float = SF64add (Prim2SF x) (Prim2SF y).

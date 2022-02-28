@@ -322,6 +322,9 @@ struct
       | Float64.FLt -> E.mkFLt env
       | Float64.FGt -> E.mkFGt env
       | Float64.FNotComparable -> E.mkFNotComparable env)
+    | Float64equal ->
+      let f1, f2 = get_float2 evd args in
+      E.mkBool env (Float64.equal f1 f2)
     | Float64classify ->
       let f = get_float1 evd args in
       (match Float64.classify f with
