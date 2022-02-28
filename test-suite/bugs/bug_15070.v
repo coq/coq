@@ -1,4 +1,4 @@
-Require Import PArray PrimFloat Int63.
+Require Import PArray PrimFloat Uint63.
 
 Goal False.
 Proof.

@@ -65,15 +65,3 @@ Let test : forall x y, 1 + x*y + x*x + 1 = 1*1 + 1 + y*x + 1*x*x.
 intros. ring.
 Qed.
 End TestRing.
-
-#[deprecated(since="8.14",note="Use isUint63cst instead")]
-Ltac isInt63cst := isUint63cst.
-
-#[deprecated(since="8.14",note="Use Uint63cst instead")]
-Ltac Int63cst := Uint63cst.
-
-#[deprecated(since="8.14",note="Use Uint63_canonic instead")]
-Notation Int63_canonic := Uint63_canonic (only parsing).
-
-#[deprecated(since="8.14",note="Use Uint63Ring instead")]
-Notation Int63Ring := Uint63Ring (only parsing).

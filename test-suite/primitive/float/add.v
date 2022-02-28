@@ -2,9 +2,9 @@ Require Import ZArith Uint63 Floats.
 
 Open Scope float_scope.
 
-Definition two := Eval compute in of_int63 2%uint63.
-Definition three := Eval compute in of_int63 3%uint63.
-Definition five := Eval compute in of_int63 5%uint63.
+Definition two := Eval compute in of_uint63 2%uint63.
+Definition three := Eval compute in of_uint63 3%uint63.
+Definition five := Eval compute in of_uint63 5%uint63.
 
 Check (eq_refl : two + three = five).
 Check (eq_refl five <: two + three = five).

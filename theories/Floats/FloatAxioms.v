@@ -70,6 +70,3 @@ Axiom ldshiftexp_spec : forall f e, Prim2SF (ldshiftexp f e) = SFldexp prec emax
 
 Axiom next_up_spec : forall x, Prim2SF (next_up x) = SF64succ (Prim2SF x).
 Axiom next_down_spec : forall x, Prim2SF (next_down x) = SF64pred (Prim2SF x).
-
-#[deprecated(since="8.14",note="Use of_uint63_spec instead.")]
-Notation of_int63_spec := of_uint63_spec (only parsing).

@@ -150,6 +150,3 @@ Module Export PrimFloatNotations.
   Export PrimFloatNotationsInternalA.
   Export PrimFloatNotationsInternalB.
 End PrimFloatNotations.
-
-#[deprecated(since="8.14",note="Use of_uint63 instead.")]
-Notation of_int63 := of_uint63 (only parsing).
