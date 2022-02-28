@@ -27,7 +27,7 @@ val production_level_eq : production_level -> production_level -> bool
 
 type 'a constr_entry_key_gen =
   | ETIdent
-  | ETName of bool (* Temporary: true = user told "name", false = user wrote "ident" *)
+  | ETName
   | ETGlobal
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)

@@ -203,8 +203,7 @@ let pr_strict b = if b then str "strict " else mt ()
 
 let pr_set_entry_type pr = function
   | ETIdent -> str"ident"
-  | ETName false -> str"ident" (* temporary *)
-  | ETName true -> str"name"
+  | ETName -> str"name"
   | ETGlobal -> str"global"
   | ETPattern (b,n) -> pr_strict b ++ str"pattern" ++ pr_at_level (level_of_pattern_level n)
   | ETConstr (s,bko,lev) -> pr_notation_entry s ++ pr lev ++ pr_opt pr_constr_as_binder_kind bko
