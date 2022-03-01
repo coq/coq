@@ -247,3 +247,10 @@ end
 
 module Make (U : UserName) (E : EqualityType) :
   NAMETREE with type user_name = U.t and type elt = E.t
+
+module Modules : sig
+  type t
+  val freeze : unit -> t
+  val unfreeze : t -> unit
+  val summary_tag : t Summary.Dyn.tag
+end
