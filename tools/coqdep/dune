@@ -1,0 +1,13 @@
+(library
+ (name coqdeplib)
+ (modules :standard \ coqdep)
+ (libraries coq-core.boot coq-core.lib findlib.internal))
+
+(executable
+ (name coqdep)
+ (public_name coqdep)
+ (package coq-core)
+ (modules coqdep)
+ (libraries coqdeplib))
+
+(ocamllex lexer)

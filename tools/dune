@@ -27,22 +27,15 @@
  (modules coqworkmgr)
  (libraries coq-core.stm))
 
-(executable
- (name coqdep)
- (public_name coqdep)
- (package coq-core)
- (modules coqdep_lexer coqdep_common coqdep)
- (libraries coq-core.boot coq-core.lib findlib.internal))
-
 ; Bare-bones mllib/mlpack parser
 (executable
  (name ocamllibdep)
  (public_name ocamllibdep)
- (modules ocamllibdep)
  (package coq-core)
+ (modules ocamllibdep)
  (libraries unix))
 
-(ocamllex coqdep_lexer ocamllibdep)
+(ocamllex ocamllibdep)
 
 (executable
  (name coqwc)

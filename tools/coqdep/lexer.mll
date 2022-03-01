@@ -190,7 +190,7 @@ and comment = parse
 and load_file = parse
   | '"' [^ '"']* '"' (*'"'*)
       { let s = lexeme lexbuf in
-	parse_dot lexbuf;
+        parse_dot lexbuf;
         Load (Physical (unquote_vfile_string s)) }
   | coq_ident
       { let s = get_ident lexbuf in skip_to_dot lexbuf; Load (Logical s) }
@@ -271,7 +271,7 @@ and modules mllist = parse
       { comment lexbuf; modules mllist lexbuf }
   | '"' [^'"']* '"'
       { let lex = (Lexing.lexeme lexbuf) in
-	let str = String.sub lex 1 (String.length lex - 2) in
+        let str = String.sub lex 1 (String.length lex - 2) in
         modules (str :: mllist) lexbuf}
   | eof
       { syntax_error lexbuf }
