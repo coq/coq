@@ -368,29 +368,32 @@ module UnivIdMap = HMap.Make(UnivIdOrdered)
 type univrevtab = full_path UnivIdMap.t
 let the_univrevtab = Summary.ref ~name:"univrevtab" (UnivIdMap.empty : univrevtab)
 
-(* Module-related nametab *)
+(** Module-related nametab *)
+module Modules = struct
 
-type modules_nametab = {
-  modtypetab : MPTab.t;
-  modtab : MPDTab.t;
-  dirtab : DirTab.t;
-  modrevtab : mprevtab;
-  modtyperevtab : mptrevtab;
-}
+  type t = {
+    modtypetab : MPTab.t;
+    modtab : MPDTab.t;
+    dirtab : DirTab.t;
+    modrevtab : mprevtab;
+    modtyperevtab : mptrevtab;
+  }
 
-let initial_modules_nametab = {
-  modtypetab = MPTab.empty;
-  modtab = MPDTab.empty;
-  dirtab = DirTab.empty;
-  modrevtab = MPmap.empty;
-  modtyperevtab = MPmap.empty
-}
+  let initial = {
+    modtypetab = MPTab.empty;
+    modtab = MPDTab.empty;
+    dirtab = DirTab.empty;
+    modrevtab = MPmap.empty;
+    modtyperevtab = MPmap.empty
+  }
 
-let modules_nametab, modules_nametab_summary_tag =
-  Summary.ref_tag ~name:"MODULES-NAMETAB" initial_modules_nametab
+  let nametab, summary_tag =
+    Summary.ref_tag ~name:"MODULES-NAMETAB" initial
 
-let freeze_modules_nametab () = !modules_nametab
-let unfreeze_modules_nametab v = modules_nametab := v
+  let freeze () = !nametab
+  let unfreeze v = nametab := v
+
+end
 
 (* Push functions *********************************************************)
 
@@ -427,21 +430,24 @@ let push_abbreviation visibility sp kn =
 let push = push_cci
 
 let push_modtype vis sp kn =
-  modules_nametab := { !modules_nametab with
-    modtypetab = MPTab.push vis sp kn !modules_nametab.modtypetab;
-    modtyperevtab = MPmap.add kn sp !modules_nametab.modtyperevtab;
+  let open Modules in
+  nametab := { !nametab with
+    modtypetab = MPTab.push vis sp kn !nametab.modtypetab;
+    modtyperevtab = MPmap.add kn sp !nametab.modtyperevtab;
   }
 
 let push_module vis dir mp =
-  modules_nametab := { !modules_nametab with
-    modtab = MPDTab.push vis dir mp !modules_nametab.modtab;
-    modrevtab = MPmap.add mp dir !modules_nametab.modrevtab;
+  let open Modules in
+  nametab := { !nametab with
+    modtab = MPDTab.push vis dir mp !nametab.modtab;
+    modrevtab = MPmap.add mp dir !nametab.modrevtab;
   }
 
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
 let push_dir vis dir dir_ref =
-  modules_nametab := { !modules_nametab with
-    dirtab = DirTab.push vis dir dir_ref !modules_nametab.dirtab;
+  let open Modules in
+  nametab := { !nametab with
+    dirtab = DirTab.push vis dir dir_ref !Modules.nametab.dirtab;
   }
 
 (* This is for global universe names *)
@@ -466,16 +472,16 @@ let locate_abbreviation qid = match locate_extended qid with
   | TrueGlobal _ -> raise Not_found
   | Abbrev kn -> kn
 
-let locate_modtype qid = MPTab.locate qid !modules_nametab.modtypetab
-let full_name_modtype qid = MPTab.user_name qid !modules_nametab.modtypetab
+let locate_modtype qid = MPTab.locate qid Modules.(!nametab.modtypetab)
+let full_name_modtype qid = MPTab.user_name qid Modules.(!nametab.modtypetab)
 
 let locate_universe qid = UnivTab.locate qid !the_univtab
 
-let locate_dir qid = DirTab.locate qid !modules_nametab.dirtab
+let locate_dir qid = DirTab.locate qid Modules.(!nametab.dirtab)
 
-let locate_module qid = MPDTab.locate qid !modules_nametab.modtab
+let locate_module qid = MPDTab.locate qid Modules.(!nametab.modtab)
 
-let full_name_module qid = MPDTab.user_name qid !modules_nametab.modtab
+let full_name_module qid = MPDTab.user_name qid Modules.(!nametab.modtab)
 
 let locate_section qid =
   match locate_dir qid with
@@ -488,11 +494,11 @@ let locate_all qid =
 
 let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
 
-let locate_extended_all_dir qid = DirTab.find_prefixes qid !modules_nametab.dirtab
+let locate_extended_all_dir qid = DirTab.find_prefixes qid Modules.(!nametab.dirtab)
 
-let locate_extended_all_modtype qid = MPTab.find_prefixes qid !modules_nametab.modtypetab
+let locate_extended_all_modtype qid = MPTab.find_prefixes qid Modules.(!nametab.modtypetab)
 
-let locate_extended_all_module qid = MPDTab.find_prefixes qid !modules_nametab.modtab
+let locate_extended_all_module qid = MPDTab.find_prefixes qid Modules.(!nametab.modtab)
 
 (* Completion *)
 let completion_canditates qualid =
@@ -528,11 +534,11 @@ let global qid =
 
 let exists_cci sp = ExtRefTab.exists sp !the_ccitab
 
-let exists_dir dir = DirTab.exists dir !modules_nametab.dirtab
+let exists_dir dir = DirTab.exists dir Modules.(!nametab.dirtab)
 
-let exists_module dir = MPDTab.exists dir !modules_nametab.modtab
+let exists_module dir = MPDTab.exists dir Modules.(!nametab.modtab)
 
-let exists_modtype sp = MPTab.exists sp !modules_nametab.modtypetab
+let exists_modtype sp = MPTab.exists sp Modules.(!nametab.modtypetab)
 
 let exists_universe kn = UnivTab.exists kn !the_univtab
 
@@ -554,10 +560,10 @@ let path_of_abbreviation kn =
   ExtRefMap.find (Abbrev kn) !the_globrevtab
 
 let dirpath_of_module mp =
-  MPmap.find mp !modules_nametab.modrevtab
+  MPmap.find mp Modules.(!nametab.modrevtab)
 
 let path_of_modtype mp =
-  MPmap.find mp !modules_nametab.modtyperevtab
+  MPmap.find mp Modules.(!nametab.modtyperevtab)
 
 let path_of_universe mp =
   UnivIdMap.find mp !the_univrevtab
@@ -577,12 +583,12 @@ let shortest_qualid_of_abbreviation ?loc ctx kn =
     ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
 let shortest_qualid_of_module ?loc mp =
-  let dir = MPmap.find mp !modules_nametab.modrevtab in
-  MPDTab.shortest_qualid ?loc Id.Set.empty dir !modules_nametab.modtab
+  let dir = MPmap.find mp Modules.(!nametab.modrevtab) in
+  MPDTab.shortest_qualid ?loc Id.Set.empty dir Modules.(!nametab.modtab)
 
 let shortest_qualid_of_modtype ?loc kn =
-  let sp = MPmap.find kn !modules_nametab.modtyperevtab in
-    MPTab.shortest_qualid ?loc Id.Set.empty sp !modules_nametab.modtypetab
+  let sp = MPmap.find kn Modules.(!nametab.modtyperevtab) in
+    MPTab.shortest_qualid ?loc Id.Set.empty sp Modules.(!nametab.modtypetab)
 
 let shortest_qualid_of_universe ?loc ctx kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
