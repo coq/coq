@@ -325,9 +325,6 @@ module MPTab = Make(FullPath)(MPEqual)
 type ccitab = ExtRefTab.t
 let the_ccitab = Summary.ref ~name:"ccitab" (ExtRefTab.empty : ccitab)
 
-type mptab = MPTab.t
-let the_modtypetab = ref (MPTab.empty : mptab)
-
 module DirPath' =
 struct
   include DirPath
@@ -338,11 +335,6 @@ end
 
 module MPDTab = Make(DirPath')(MPEqual)
 module DirTab = Make(DirPath')(GlobDirRef)
-
-let the_modtab = ref MPDTab.empty
-
-type dirtab = DirTab.t
-let the_dirtab = ref (DirTab.empty : dirtab)
 
 module UnivIdEqual =
 struct
@@ -361,10 +353,8 @@ let the_globrevtab = Summary.ref ~name:"globrevtab" (ExtRefMap.empty : globrevta
 
 
 type mprevtab = DirPath.t MPmap.t
-let the_modrevtab = ref (MPmap.empty : mprevtab)
 
 type mptrevtab = full_path MPmap.t
-let the_modtyperevtab = ref (MPmap.empty : mptrevtab)
 
 module UnivIdOrdered =
 struct
@@ -377,6 +367,30 @@ module UnivIdMap = HMap.Make(UnivIdOrdered)
 
 type univrevtab = full_path UnivIdMap.t
 let the_univrevtab = Summary.ref ~name:"univrevtab" (UnivIdMap.empty : univrevtab)
+
+(* Module-related nametab *)
+
+type modules_nametab = {
+  modtypetab : MPTab.t;
+  modtab : MPDTab.t;
+  dirtab : DirTab.t;
+  modrevtab : mprevtab;
+  modtyperevtab : mptrevtab;
+}
+
+let initial_modules_nametab = {
+  modtypetab = MPTab.empty;
+  modtab = MPDTab.empty;
+  dirtab = DirTab.empty;
+  modrevtab = MPmap.empty;
+  modtyperevtab = MPmap.empty
+}
+
+let modules_nametab, modules_nametab_summary_tag =
+  Summary.ref_tag ~name:"MODULES-NAMETAB" initial_modules_nametab
+
+let freeze_modules_nametab () = !modules_nametab
+let unfreeze_modules_nametab v = modules_nametab := v
 
 (* Push functions *********************************************************)
 
@@ -413,16 +427,22 @@ let push_abbreviation visibility sp kn =
 let push = push_cci
 
 let push_modtype vis sp kn =
-  the_modtypetab := MPTab.push vis sp kn !the_modtypetab;
-  the_modtyperevtab := MPmap.add kn sp !the_modtyperevtab
+  modules_nametab := { !modules_nametab with
+    modtypetab = MPTab.push vis sp kn !modules_nametab.modtypetab;
+    modtyperevtab = MPmap.add kn sp !modules_nametab.modtyperevtab;
+  }
 
 let push_module vis dir mp =
-  the_modtab := MPDTab.push vis dir mp !the_modtab;
-  the_modrevtab := MPmap.add mp dir !the_modrevtab
+  modules_nametab := { !modules_nametab with
+    modtab = MPDTab.push vis dir mp !modules_nametab.modtab;
+    modrevtab = MPmap.add mp dir !modules_nametab.modrevtab;
+  }
 
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
 let push_dir vis dir dir_ref =
-  the_dirtab := DirTab.push vis dir dir_ref !the_dirtab
+  modules_nametab := { !modules_nametab with
+    dirtab = DirTab.push vis dir dir_ref !modules_nametab.dirtab;
+  }
 
 (* This is for global universe names *)
 
@@ -446,16 +466,16 @@ let locate_abbreviation qid = match locate_extended qid with
   | TrueGlobal _ -> raise Not_found
   | Abbrev kn -> kn
 
-let locate_modtype qid = MPTab.locate qid !the_modtypetab
-let full_name_modtype qid = MPTab.user_name qid !the_modtypetab
+let locate_modtype qid = MPTab.locate qid !modules_nametab.modtypetab
+let full_name_modtype qid = MPTab.user_name qid !modules_nametab.modtypetab
 
 let locate_universe qid = UnivTab.locate qid !the_univtab
 
-let locate_dir qid = DirTab.locate qid !the_dirtab
+let locate_dir qid = DirTab.locate qid !modules_nametab.dirtab
 
-let locate_module qid = MPDTab.locate qid !the_modtab
+let locate_module qid = MPDTab.locate qid !modules_nametab.modtab
 
-let full_name_module qid = MPDTab.user_name qid !the_modtab
+let full_name_module qid = MPDTab.user_name qid !modules_nametab.modtab
 
 let locate_section qid =
   match locate_dir qid with
@@ -468,11 +488,11 @@ let locate_all qid =
 
 let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
 
-let locate_extended_all_dir qid = DirTab.find_prefixes qid !the_dirtab
+let locate_extended_all_dir qid = DirTab.find_prefixes qid !modules_nametab.dirtab
 
-let locate_extended_all_modtype qid = MPTab.find_prefixes qid !the_modtypetab
+let locate_extended_all_modtype qid = MPTab.find_prefixes qid !modules_nametab.modtypetab
 
-let locate_extended_all_module qid = MPDTab.find_prefixes qid !the_modtab
+let locate_extended_all_module qid = MPDTab.find_prefixes qid !modules_nametab.modtab
 
 (* Completion *)
 let completion_canditates qualid =
@@ -508,11 +528,11 @@ let global qid =
 
 let exists_cci sp = ExtRefTab.exists sp !the_ccitab
 
-let exists_dir dir = DirTab.exists dir !the_dirtab
+let exists_dir dir = DirTab.exists dir !modules_nametab.dirtab
 
-let exists_module dir = MPDTab.exists dir !the_modtab
+let exists_module dir = MPDTab.exists dir !modules_nametab.modtab
 
-let exists_modtype sp = MPTab.exists sp !the_modtypetab
+let exists_modtype sp = MPTab.exists sp !modules_nametab.modtypetab
 
 let exists_universe kn = UnivTab.exists kn !the_univtab
 
@@ -534,10 +554,10 @@ let path_of_abbreviation kn =
   ExtRefMap.find (Abbrev kn) !the_globrevtab
 
 let dirpath_of_module mp =
-  MPmap.find mp !the_modrevtab
+  MPmap.find mp !modules_nametab.modrevtab
 
 let path_of_modtype mp =
-  MPmap.find mp !the_modtyperevtab
+  MPmap.find mp !modules_nametab.modtyperevtab
 
 let path_of_universe mp =
   UnivIdMap.find mp !the_univrevtab
@@ -557,12 +577,12 @@ let shortest_qualid_of_abbreviation ?loc ctx kn =
     ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
 let shortest_qualid_of_module ?loc mp =
-  let dir = MPmap.find mp !the_modrevtab in
-  MPDTab.shortest_qualid ?loc Id.Set.empty dir !the_modtab
+  let dir = MPmap.find mp !modules_nametab.modrevtab in
+  MPDTab.shortest_qualid ?loc Id.Set.empty dir !modules_nametab.modtab
 
 let shortest_qualid_of_modtype ?loc kn =
-  let sp = MPmap.find kn !the_modtyperevtab in
-    MPTab.shortest_qualid ?loc Id.Set.empty sp !the_modtypetab
+  let sp = MPmap.find kn !modules_nametab.modtyperevtab in
+    MPTab.shortest_qualid ?loc Id.Set.empty sp !modules_nametab.modtypetab
 
 let shortest_qualid_of_universe ?loc ctx kn =
   let sp = UnivIdMap.find kn !the_univrevtab in
@@ -582,28 +602,3 @@ let global_inductive qid =
   | ref ->
       user_err ?loc:qid.CAst.loc
         (pr_qualid qid ++ spc () ++ str "is not an inductive type.")
-
-type modules_frozen_t = MPTab.t * MPDTab.t * DirTab.t * mprevtab * mptrevtab
-
-let freeze_modules ~marshallable =
-  (!the_modtypetab, !the_modtab, !the_dirtab, !the_modrevtab, !the_modtyperevtab)
-
-let unfreeze_modules (modtypetab, modtab, dirtab, modrevtab, modtyperevtab) =
-  the_modtypetab := modtypetab;
-  the_modtab := modtab;
-  the_dirtab := dirtab;
-  the_modrevtab := modrevtab;
-  the_modtyperevtab := modtyperevtab
-
-let init_modules () =
-  the_modtypetab := MPTab.empty;
-  the_modtab := MPDTab.empty;
-  the_dirtab := DirTab.empty;
-  the_modrevtab := MPmap.empty;
-  the_modtyperevtab := MPmap.empty
-
-let modules_nametab_summary_tag =
-  Summary.declare_summary_tag "MODULES-NAMETAB"
-    { Summary.freeze_function = freeze_modules;
-      Summary.unfreeze_function = unfreeze_modules;
-      Summary.init_function = init_modules }

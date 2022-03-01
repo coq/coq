@@ -248,7 +248,7 @@ end
 module Make (U : UserName) (E : EqualityType) :
   NAMETREE with type user_name = U.t and type elt = E.t
 
-type modules_frozen_t
-val freeze_modules : marshallable:bool -> modules_frozen_t
-val unfreeze_modules : modules_frozen_t -> unit
-val modules_nametab_summary_tag : modules_frozen_t Summary.Dyn.tag
+type modules_nametab
+val freeze_modules_nametab : unit -> modules_nametab
+val unfreeze_modules_nametab : modules_nametab -> unit
+val modules_nametab_summary_tag : modules_nametab Summary.Dyn.tag
