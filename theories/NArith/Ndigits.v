@@ -606,23 +606,25 @@ Qed.
 (** To state nonetheless a second result about composition of
  conversions, we define a conversion on a given number of bits : *)
 
-#[deprecated(since = "8.9.0", note = "Use N2Bv_sized instead.")]
-Fixpoint N2Bv_gen (n:nat)(a:N) : Bvector n :=
+Fixpoint N2Bv_gen_deprecated (n:nat)(a:N) : Bvector n :=
  match n return Bvector n with
    | 0 => Bnil
    | S n => match a with
        | N0 => Bvect_false (S n)
        | Npos xH => Bcons true _ (Bvect_false n)
-       | Npos (xO p) => Bcons false _ (N2Bv_gen n (Npos p))
-       | Npos (xI p) => Bcons true _ (N2Bv_gen n (Npos p))
+       | Npos (xO p) => Bcons false _ (N2Bv_gen_deprecated n (Npos p))
+       | Npos (xI p) => Bcons true _ (N2Bv_gen_deprecated n (Npos p))
       end
   end.
 
+#[deprecated(since = "8.9.0", note = "Use N2Bv_sized instead.")]
+Notation N2Bv_gen := N2Bv_gen_deprecated (only parsing).
+
 (** The first [N2Bv] is then a special case of [N2Bv_gen] *)
 
-Lemma N2Bv_N2Bv_gen : forall (a:N), N2Bv a = N2Bv_gen (N.size_nat a) a.
+Lemma N2Bv_N2Bv_gen (a:N) : N2Bv a = N2Bv_gen_deprecated (N.size_nat a) a.
 Proof.
-intro a; destruct a as [|p]; simpl.
+destruct a as [|p]; simpl.
 auto.
 induction p; simpl; intros; auto; congruence.
 Qed.
@@ -631,7 +633,8 @@ Qed.
    [a] plus some zeros. *)
 
 Lemma N2Bv_N2Bv_gen_above : forall (a:N)(k:nat),
- N2Bv_gen (N.size_nat a + k) a = Vector.append (N2Bv a) (Bvect_false k).
+  N2Bv_gen_deprecated (N.size_nat a + k) a
+  = Vector.append (N2Bv a) (Bvect_false k).
 Proof.
 intros a k; destruct a as [|p]; simpl.
 destruct k; simpl; auto.
@@ -641,7 +644,7 @@ Qed.
 (** Here comes now the second composition result. *)
 
 Lemma N2Bv_Bv2N : forall n (bv:Bvector n),
-   N2Bv_gen n (Bv2N n bv) = bv.
+  N2Bv_gen_deprecated n (Bv2N n bv) = bv.
 Proof.
 intros n bv; induction bv as [|h n bv IHbv]; intros.
 auto.
