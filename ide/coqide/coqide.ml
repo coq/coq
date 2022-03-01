@@ -109,6 +109,7 @@ let make_coqtop_args fname =
         with
         | None -> "", base_args
         | Some proj ->
+          Minilib.log ("About to read project file " ^ proj);
           let warning_fn x = Feedback.msg_warning Pp.(str x) in
           proj, coqtop_args_from_project (read_project_file ~warning_fn proj) @ base_args
   in
@@ -1837,7 +1838,7 @@ let read_coqide_args argv =
       let d = CUnix.canonical_path_name (Filename.dirname file) in
       let warning_fn x = Format.eprintf "%s@\n%!" x in
       let p = CoqProject_file.read_project_file ~warning_fn file in
-      filter_coqtop coqtop (Some (d,p)) out bindings_files args
+      filter_coqtop coqtop (Some (d,p)) bindings_files out args
     |"-f" :: [] ->
       output_string stderr "Error: missing project file name"; exit 1
     |"-debug"::args ->
