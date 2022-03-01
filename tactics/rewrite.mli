@@ -11,14 +11,12 @@
 open Names
 open Environ
 open EConstr
-open Constrexpr
 open Evd
 open Tactypes
 
 (** TODO: document and clean me! *)
 
-type rewrite_attributes
-val rewrite_attributes : rewrite_attributes Attributes.attribute
+exception RewriteFailure of Environ.env * Evd.evar_map * Pretype_errors.pretype_error
 
 type unary_strategy =
     Subterms | Subterm | Innermost | Outermost
@@ -81,46 +79,11 @@ val cl_rewrite_clause :
 val is_applied_rewrite_relation :
   env -> evar_map -> rel_context -> constr -> types option
 
-val declare_relation
-  : rewrite_attributes
-  -> ?binders:local_binder_expr list
-  -> constr_expr
-  -> constr_expr
-  -> Id.t
-  -> constr_expr option
-  -> constr_expr option
-  -> constr_expr option
-  -> unit
-
-val add_setoid
-  : rewrite_attributes
-  -> local_binder_expr list
-  -> constr_expr
-  -> constr_expr
-  -> constr_expr
-  -> Id.t
-  -> unit
-
-val add_morphism_interactive : rewrite_attributes -> constr_expr -> Id.t -> Declare.Proof.t
-val add_morphism_as_parameter : rewrite_attributes -> constr_expr -> Id.t -> unit
-
-val add_morphism
-  :  rewrite_attributes
-  -> local_binder_expr list
-  -> constr_expr
-  -> constr_expr
-  -> Id.t
-  -> Declare.Proof.t
-
 val get_reflexive_proof : env -> evar_map -> constr -> constr -> evar_map * constr
 
 val get_symmetric_proof : env -> evar_map -> constr -> constr -> evar_map * constr
 
 val get_transitive_proof : env -> evar_map -> constr -> constr -> evar_map * constr
-
-val default_morphism :
-  (types * constr option) option list * (types * types option) option ->
-  constr -> constr * constr
 
 val setoid_symmetry : unit Proofview.tactic
 
@@ -138,3 +101,17 @@ val apply_strategy :
   constr ->
   bool * constr ->
   evars -> rewrite_result
+
+module Internal :
+sig
+val build_signature :
+  Environ.env -> Evd.evar_map -> constr ->
+  (types * types option) option list ->
+  (types * types option) option ->
+  Evd.evar_map * constr * (constr * t option) list
+val build_morphism_signature : Environ.env -> Evd.evar_map -> Constrexpr.constr_expr -> Evd.evar_map * t
+val default_morphism : Environ.env -> Evd.evar_map ->
+  (types * types option) option list *
+  (types * types option) option ->
+  constr -> constr * t
+end
