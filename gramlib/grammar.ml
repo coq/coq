@@ -1165,7 +1165,7 @@ let continue_parser_of_entry gstate entry levn bp a (strm:_ LStream.t) =
 
 (**
   nlevn: level for Snext
-  alevn: level for recursive calls on the left-hand side of the rule (depending on associativity)
+  alevn: level for recursive calls on the right-hand side of the rule (depending on associativity)
 *)
 let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_tree -> GState.t -> r parser_t =
   fun entry nlevn alevn ->
@@ -1480,7 +1480,7 @@ and parse_top_symb : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> GState.t
     [start_parser_of_levels entry 0 entry.edesc], thus practically
     going from [levn] to the end.
 
-    More schematically, assuming each level has the form
+    More schematically, assuming each level has the normalized form
 
     level n: [ a = SELF; b = suffix_tree_n -> action_n(a,b)
              | a = prefix_tree_n -> action'_n(a) ]
