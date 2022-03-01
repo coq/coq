@@ -13,6 +13,7 @@ cd platform-*
 
 call coq_platform_make_windows.bat ^
   -arch=%ARCH% ^
+  -pick=dev ^
   -destcyg=%CYGROOT% ^
   -cygcache=%CYGCACHE% ^
   -extent=i ^
