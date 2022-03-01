@@ -286,12 +286,10 @@ Definition uncurry {A B C:Type} (f:A -> B -> C)
    on a Notation instead (thus printing deprecation warning when used)
    and should probably be removed in 8.17 as if it had been
    deprecated(since = "8.15", *)
-#[deprecated(since = "8.13", note = "Use curry instead.")]
 Definition prod_uncurry_subdef (A B C:Type) : (A * B -> C) -> A -> B -> C := curry.
 #[deprecated(since = "8.13", note = "Use curry instead.")]
 Notation prod_uncurry := prod_uncurry_subdef.
 
-#[deprecated(since = "8.13", note = "Use uncurry instead.")]
 Definition prod_curry_subdef (A B C:Type) : (A -> B -> C) -> A * B -> C := uncurry.
 #[deprecated(since = "8.13", note = "Use uncurry instead.")]
 Notation prod_curry := prod_curry_subdef.

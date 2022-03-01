@@ -1,0 +1,20 @@
+File "./output/deprecation_definition.v", line 1, characters 0-59:
+The command has indeed failed with message:
+This command does not support this attribute: deprecated (use a notation and deprecate that instead).
+[unsupported-attributes,parsing]
+File "./output/deprecation_definition.v", line 4, characters 0-62:
+The command has indeed failed with message:
+This command does not support this attribute: deprecated (use a notation and deprecate that instead).
+[unsupported-attributes,parsing]
+File "./output/deprecation_definition.v", line 7, characters 0-61:
+The command has indeed failed with message:
+This command does not support this attribute: deprecated (use a notation and deprecate that instead).
+[unsupported-attributes,parsing]
+File "./output/deprecation_definition.v", line 10, characters 0-68:
+The command has indeed failed with message:
+This command does not support this attribute: deprecated (use a notation and deprecate that instead).
+[unsupported-attributes,parsing]
+File "./output/deprecation_definition.v", line 13, characters 0-106:
+The command has indeed failed with message:
+This command does not support this attribute: deprecated (use a notation and deprecate that instead).
+[unsupported-attributes,parsing]
