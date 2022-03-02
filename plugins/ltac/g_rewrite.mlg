@@ -69,7 +69,11 @@ type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
 type glob_strategy = (glob_constr_and_expr, Tacexpr.glob_red_expr) strategy_ast
 
 let interp_strategy ist env sigma s =
-    strategy_of_ast ist s
+  let interp_redexpr r = fun env sigma -> Tacinterp.interp_red_expr ist env sigma r in
+  let interp_constr c = (fst c, fun env sigma -> Tacinterp.interp_open_constr ist env sigma c) in
+  let s = map_strategy interp_constr interp_redexpr s in
+  strategy_of_ast s
+
 let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (Tacintern.intern_red_expr ist) s
 let subst_strategy s str = str
 
@@ -125,7 +129,11 @@ END
 {
 
 let db_strat db = StratUnary (Topdown, StratHints (false, db))
-let cl_rewrite_clause_db ist db = cl_rewrite_clause_strat (strategy_of_ast ist (db_strat db))
+let cl_rewrite_clause_db ist db = cl_rewrite_clause_strat (strategy_of_ast (db_strat db))
+
+let cl_rewrite_clause (ist, c) b occ cl =
+  let c env sigma = Tacinterp.interp_open_constr_with_bindings ist env sigma c in
+  cl_rewrite_clause c b occ cl
 
 }
 

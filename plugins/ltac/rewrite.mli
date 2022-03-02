@@ -13,10 +13,7 @@ open Environ
 open EConstr
 open Constrexpr
 open Evd
-open Genintern
 open Tactypes
-open Tacexpr
-open Tacinterp
 
 (** TODO: document and clean me! *)
 
@@ -65,7 +62,7 @@ type rewrite_result =
 
 type strategy
 
-val strategy_of_ast : interp_sign -> (glob_constr_and_expr, glob_red_expr) strategy_ast -> strategy
+val strategy_of_ast : (Glob_term.glob_constr * constr delayed_open, Redexpr.red_expr delayed_open) strategy_ast -> strategy
 
 val map_strategy : ('a -> 'b) -> ('c -> 'd) ->
   ('a, 'c) strategy_ast -> ('b, 'd) strategy_ast
@@ -78,7 +75,7 @@ val cl_rewrite_clause_strat : strategy -> Id.t option -> unit Proofview.tactic
 
 (** Entry point for user-level "setoid_rewrite" *)
 val cl_rewrite_clause :
-  interp_sign * (glob_constr_and_expr * glob_constr_and_expr bindings) ->
+  EConstr.t with_bindings delayed_open ->
   bool -> Locus.occurrences -> Id.t option -> unit Proofview.tactic
 
 val is_applied_rewrite_relation :

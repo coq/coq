@@ -625,8 +625,8 @@ let general_rewrite_unif_flags () =
     Unification.resolve_evars = true
   }
 
-let refresh_hypinfo env sigma (is, cb) =
-  let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma cb in
+let refresh_hypinfo env sigma (cb : EConstr.t with_bindings delayed_open) =
+  let sigma, cbl = cb env sigma in
   let sigma, hypinfo = decompose_applied_relation env sigma cbl in
   let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
   sigma, (car, rel, prf, c1, c2, holes, sort)
@@ -1674,9 +1674,9 @@ let cl_rewrite_clause l left2right occs clause =
 let cl_rewrite_clause_strat strat clause =
   cl_rewrite_clause_strat false strat clause
 
-let apply_glob_constr ist c l2r occs = (); fun ({ state = () ; env = env } as input) ->
+let apply_glob_constr ((_, c) : _ * EConstr.t delayed_open) l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
-    let (sigma, c) = Tacinterp.interp_open_constr ist env sigma c in
+    let (sigma, c) = c env sigma in
     (sigma, (c, NoBindings))
   in
   let flags = general_rewrite_unif_flags () in
@@ -1756,12 +1756,12 @@ let rec pr_strategy prc prr = function
 | StratEval r -> str "eval" ++ spc () ++ prr r
 | StratFold c -> str "fold" ++ spc () ++ prc c
 
-let rec strategy_of_ast ist = function
+let rec strategy_of_ast = function
   | StratId -> Strategies.id
   | StratFail -> Strategies.fail
   | StratRefl -> Strategies.refl
   | StratUnary (f, s) ->
-    let s' = strategy_of_ast ist s in
+    let s' = strategy_of_ast s in
     let f' = match f with
       | Subterms -> all_subterms
       | Subterm -> one_subterm
@@ -1775,18 +1775,18 @@ let rec strategy_of_ast ist = function
       | Repeat -> Strategies.repeat
     in f' s'
   | StratBinary (f, s, t) ->
-    let s' = strategy_of_ast ist s in
-    let t' = strategy_of_ast ist t in
+    let s' = strategy_of_ast s in
+    let t' = strategy_of_ast t in
     let f' = match f with
       | Compose -> Strategies.seq
     in f' s' t'
   | StratNAry (Choice, strs) ->
-    let strs = List.map (strategy_of_ast ist) strs in
+    let strs = List.map (strategy_of_ast) strs in
     begin match strs with
       | [] -> assert false
       | s::strs -> List.fold_left Strategies.choice s strs
     end
-  | StratConstr (c, b) -> { strategy = apply_glob_constr ist c b AllOccurrences }
+  | StratConstr (c, b) -> { strategy = apply_glob_constr c b AllOccurrences }
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
   | StratTerms l -> { strategy =
     (fun ({ state = () ; env } as input) ->
@@ -1795,7 +1795,7 @@ let rec strategy_of_ast ist = function
                     }
   | StratEval r -> { strategy =
     (fun ({ state = () ; env ; evars } as input) ->
-     let (sigma,r_interp) = Tacinterp.interp_red_expr ist env (goalevars evars) r in
+     let (sigma, r_interp) = r env (goalevars evars) in
      (Strategies.reduce r_interp).strategy { input with
                                              evars = (sigma,cstrevars evars) }) }
   | StratFold c -> Strategies.fold_glob (fst c)
