@@ -110,6 +110,7 @@ type renaming_flags =
   | RenamingForGoal (** avoid all globals (as in intro) *)
   | RenamingElsewhereFor of (Name.t list * constr)
 
+val make_all_rel_context_name_different : env -> evar_map -> rel_context -> env * rel_context
 val make_all_name_different : env -> evar_map -> env
 
 val compute_displayed_name_in :

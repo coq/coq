@@ -13,7 +13,6 @@ open Constr
 open Context
 open Pp
 open Names
-open Environ
 open Declarations
 open Libnames
 open Goptions
@@ -88,45 +87,6 @@ let print_constructors envpar sigma names types =
 let build_ind_type mip =
   Inductive.type_of_inductive mip
 
-let print_one_inductive env sigma mib ((_,i) as ind) =
-  let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
-  let mip = mib.mind_packets.(i) in
-  let params = Inductive.inductive_paramdecls (mib,u) in
-  let nparamdecls = Context.Rel.length params in
-  let args = Context.Rel.instance_list mkRel 0 params in
-  let arity = hnf_prod_applist_assum env nparamdecls (build_ind_type ((mib,mip),u)) args in
-  let cstrtypes = Inductive.type_of_constructors (ind,u) (mib,mip) in
-  let cstrtypes = Array.map (fun c -> hnf_prod_applist_assum env nparamdecls c args) cstrtypes in
-  let envpar = push_rel_context params env in
-  let inst =
-    if Declareops.inductive_is_polymorphic mib then
-      Printer.pr_universe_instance sigma u
-    else mt ()
-  in
-  hov 0 (
-    Id.print mip.mind_typename ++ inst ++ brk(1,4) ++ print_params env sigma params ++
-    str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ str " :=") ++
-  brk(0,2) ++ print_constructors envpar sigma mip.mind_consnames cstrtypes
-
-let print_mutual_inductive env mind mib udecl =
-  let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
-  in
-  let keyword =
-    let open Declarations in
-    match mib.mind_finite with
-    | Finite -> "Inductive"
-    | BiFinite -> "Variant"
-    | CoFinite -> "CoInductive"
-  in
-  let bl = Printer.universe_binders_with_opt_names
-      (Declareops.inductive_polymorphic_context mib) udecl
-  in
-  let sigma = Evd.from_ctx (UState.of_binders bl) in
-  hov 0 (def keyword ++ spc () ++
-         prlist_with_sep (fun () -> fnl () ++ str"  with ")
-           (print_one_inductive env sigma mib) inds ++ str "." ++
-         Printer.pr_universes sigma ?variance:mib.mind_variance mib.mind_universes)
-
 let get_fields =
   let rec prodec_rec l subst c =
     match kind c with
@@ -140,49 +100,62 @@ let get_fields =
   in
   prodec_rec [] []
 
-let print_record env mind mib udecl =
+let print_fields envpar sigma cstrtypes =
+  let fields = get_fields cstrtypes.(0) in
+  hv 2 (str "{ " ++
+    prlist_with_sep (fun () -> str ";" ++ brk(2,0))
+      (fun (id,b,c) ->
+        Id.print id ++ str (if b then " : " else " := ") ++
+        Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }"
+
+let print_one_inductive env sigma isrecord mib ((_,i) as ind) =
   let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
-  assert (Array.length mib.mind_packets = 1);
-  let mip = mib.mind_packets.(0) in
-  let params = Inductive.inductive_paramdecls (mib,u) in
+  let mip = mib.mind_packets.(i) in
+  let paramdecls = Inductive.inductive_paramdecls (mib,u) in
+  let env_params, params = Namegen.make_all_rel_context_name_different env (Evd.from_env env) (EConstr.of_rel_context paramdecls) in
+  let params = EConstr.Unsafe.to_rel_context params in
   let nparamdecls = Context.Rel.length params in
   let args = Context.Rel.instance_list mkRel 0 params in
   let arity = hnf_prod_applist_assum env nparamdecls (build_ind_type ((mib,mip),u)) args in
-  let cstrtypes = Inductive.type_of_constructors ((mind,0),u) (mib,mip) in
-  let cstrtype = hnf_prod_applist_assum env nparamdecls cstrtypes.(0) args in
-  let fields = get_fields cstrtype in
-  let envpar = push_rel_context params env in
-  let bl = Printer.universe_binders_with_opt_names (Declareops.inductive_polymorphic_context mib)
-      udecl
-  in
-  let sigma = Evd.from_ctx (UState.of_binders bl) in
-  let keyword =
-    let open Declarations in
-    match mib.mind_finite with
-    | BiFinite -> "Record"
-    | Finite -> "Inductive"
-    | CoFinite -> "CoInductive"
+  let cstrtypes = Inductive.type_of_constructors (ind,u) (mib,mip) in
+  let cstrtypes = Array.map (fun c -> hnf_prod_applist_assum env nparamdecls c args) cstrtypes in
+  if isrecord then assert (Array.length cstrtypes = 1);
+  let inst =
+    if Declareops.inductive_is_polymorphic mib then
+      Printer.pr_universe_instance sigma u
+    else mt ()
   in
   hov 0 (
-    hov 0 (
-      def keyword ++ spc () ++ Id.print mip.mind_typename ++ brk(1,4) ++
-      print_params env sigma params ++
-      str ": " ++ Printer.pr_lconstr_env envpar sigma arity ++ brk(1,2) ++
-      str ":= " ++ Id.print mip.mind_consnames.(0)) ++
-    brk(1,2) ++
-    hv 2 (str "{ " ++
-      prlist_with_sep (fun () -> str ";" ++ brk(2,0))
-        (fun (id,b,c) ->
-          Id.print id ++ str (if b then " : " else " := ") ++
-          Printer.pr_lconstr_env envpar sigma c) fields) ++ str" }." ++
-    Printer.pr_universes sigma ?variance:mib.mind_variance mib.mind_universes
-  )
+    Id.print mip.mind_typename ++ inst ++ brk(1,4) ++ print_params env sigma params ++
+    str ": " ++ Printer.pr_lconstr_env env_params sigma arity ++ str " :=" ++
+    if isrecord then str " " ++ Id.print mip.mind_consnames.(0) else mt()) ++
+    if not isrecord then
+      brk(0,2) ++ print_constructors env_params sigma mip.mind_consnames cstrtypes
+    else
+      brk(1,2) ++ print_fields env_params sigma cstrtypes
 
 let pr_mutual_inductive_body env mind mib udecl =
-  if mib.mind_record != NotRecord && not !Flags.raw_print then
-    print_record env mind mib udecl
-  else
-    print_mutual_inductive env mind mib udecl
+  let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x)) in
+  let keyword, isrecord =
+    let open Declarations in
+    match mib.mind_finite with
+    | Finite -> "Inductive", false
+    | CoFinite -> "CoInductive", false
+    | BiFinite ->
+       match mib.mind_record with
+       | FakeRecord when not !Flags.raw_print -> "Record", true
+       | PrimRecord _ -> "Record", true
+       | FakeRecord | NotRecord -> "Variant", false
+  in
+  let bl = Printer.universe_binders_with_opt_names
+      (Declareops.inductive_polymorphic_context mib) udecl
+  in
+  let sigma = Evd.from_ctx (UState.of_binders bl) in
+
+  hov 0 (def keyword ++ spc () ++
+         prlist_with_sep (fun () -> fnl () ++ str"  with ")
+           (print_one_inductive env sigma isrecord mib) inds ++ str "." ++
+         Printer.pr_universes sigma ?variance:mib.mind_variance mib.mind_universes)
 
 (** Modpaths *)
 

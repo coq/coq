@@ -176,3 +176,23 @@ End NoAutoNames.
 Require TestSuite.bind_univs.
 Print bind_univs.mono.
 Print bind_univs.poly.
+
+Module MutualTypes.
+
+Inductive MutualR1 (A:Type) := { p1 : MutualR2 A }
+with MutualR2 (A:Type) := { p2 : MutualR1 A }.
+Print MutualR1.
+
+Inductive MutualI1 (A:Type) := C1 (p1 : MutualI2 A)
+with MutualI2 (A:Type) := C2 (p2 : MutualI1 A).
+Print MutualI1.
+
+CoInductive MutualR1' (A:Type) := { p1' : MutualR2' A }
+with MutualR2' (A:Type) := { p2' : MutualR1' A }.
+Print MutualR1'.
+
+CoInductive MutualI1' (A:Type) := C1' (p1 : MutualI2' A)
+with MutualI2' (A:Type) := C2' (p2 : MutualI1' A).
+Print MutualI2'.
+
+End MutualTypes.

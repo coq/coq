@@ -405,6 +405,8 @@ sig
 
   val to_named_context : (t, types) Context.Named.pt -> Constr.named_context
 
+  val to_rel_context : (t, types) Context.Rel.pt -> Constr.rel_context
+
   val to_sorts : ESorts.t -> Sorts.t
   (** Physical identity. Does not care for normalization. *)
 

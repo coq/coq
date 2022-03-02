@@ -907,6 +907,11 @@ let to_named_context =
     = fun Refl x -> x
   in
   gen unsafe_eq
+let to_rel_context =
+  let gen : type a b. (a, b) eq -> (a,a) Context.Rel.pt -> (b,b) Context.Rel.pt
+    = fun Refl x -> x
+  in
+  gen unsafe_eq
 let to_case_invert = unsafe_to_case_invert
 
 let eq = unsafe_eq

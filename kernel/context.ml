@@ -245,6 +245,14 @@ struct
       Outermost declarations are processed first. *)
   let fold_outside f l ~init = List.fold_right f l init
 
+  (** Return the set of all named variables bound in a given rel-context. *)
+  let to_vars l =
+    List.fold_left (fun accu decl ->
+        match Declaration.get_name decl with
+        | Name id -> Id.Set.add id accu
+        | Anonymous -> accu)
+      Id.Set.empty l
+
   (** Map a given rel-context to a list where each {e local assumption} is mapped to [true]
       and each {e local definition} is mapped to [false]. *)
   let to_tags l =
