@@ -1477,7 +1477,14 @@ let solve_constraints env (evars,cstrs) =
 let nf_zeta =
   Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 
-exception RewriteFailure of Pp.t
+exception RewriteFailure of Environ.env * Evd.evar_map * pretype_error
+
+let () = CErrors.register_handler begin function
+| RewriteFailure (env, sigma, e) ->
+  let e = Himsg.explain_pretype_error env sigma e in
+  Some Pp.(str"setoid rewrite failed: " ++ e)
+| _ -> None
+end
 
 type result = (evar_map * constr option * types) option option
 
@@ -1643,7 +1650,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       beta <*> Proofview.shelve_unifiable
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
-      raise (RewriteFailure (Himsg.explain_pretype_error env evd e))
+      raise (RewriteFailure (env, evd, e))
   end
 
 let tactic_init_setoid () =
@@ -1658,8 +1665,6 @@ let cl_rewrite_clause_strat progress strat clause =
    (Proofview.tclOR
       (cl_rewrite_clause_newtac ~progress strat clause)
       (fun (e, info) -> match e with
-       | RewriteFailure e ->
-         tclZEROMSG ~info (str"setoid rewrite failed: " ++ e)
        | Tacticals.FailError (n, pp) ->
          tclFAILn ~info n (str"setoid rewrite failed: " ++ Lazy.force pp)
        | e ->
@@ -2129,8 +2134,6 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
            (Proofview.Unsafe.tclEVARS evd)
             (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
     (fun (e, info) -> match e with
-    | RewriteFailure e ->
-      tclFAIL ~info (str"setoid rewrite failed: " ++ e)
     | e -> Proofview.tclZERO ~info e)
   end
 
