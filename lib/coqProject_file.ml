@@ -84,7 +84,7 @@ let buffer buf =
   ans
 
 let rec parse_string buf s = match Stream.next s with
-| ' ' | '\n' | '\t' -> buffer buf
+| ' ' | '\n' | '\r' | '\t' -> buffer buf
 | '#' ->
   parse_skip_comment s;
   buffer buf
@@ -106,7 +106,7 @@ and parse_skip_comment s = match Stream.next s with
 | exception Stream.Failure -> ()
 
 and parse_args buf accu s = match Stream.next s with
-| ' ' | '\n' | '\t' -> parse_args buf accu s
+| ' ' | '\n' | '\r' | '\t' -> parse_args buf accu s
 | '#' ->
   let () = parse_skip_comment s in
   parse_args buf accu s
@@ -143,6 +143,7 @@ let escape_char c =
   match c with
   | '\'' -> "\'"
   | '\n' -> "\\n"
+  | '\r' -> "\\r"
   | '\t' -> "\\t"
   | c -> String.make 1 c
 
@@ -150,7 +151,7 @@ let check_filename f =
   let a = ref None in
   let check_char c =
     match c with
-    | '\n' | '\t' | '\\' | '\'' | '"' | ' ' | '#' | '$' | '%' -> a := Some c
+    | '\n' | '\r' | '\t' | '\\' | '\'' | '"' | ' ' | '#' | '$' | '%' -> a := Some c
     | _ -> ()
   in
   String.iter check_char f;
@@ -314,14 +315,12 @@ let rec find_project_file ~from ~projfile_name =
     let newdir = Filename.dirname from in
     if newdir = from then None
     else find_project_file ~from:newdir ~projfile_name
-;;
 
 let all_files { v_files; ml_files; mli_files; mlg_files;
                 mllib_files; mlpack_files } =
   v_files @ mli_files @ mlg_files @ ml_files @ mllib_files @ mlpack_files
 
 let map_sourced_list f l = List.map (fun x -> f x.thing) l
-;;
 
 let map_cmdline f l = CList.map_filter (function
     | {thing=x; source=CmdLine} -> Some (f x)
@@ -337,12 +336,10 @@ let coqtop_args_from_project
     map (fun ({ canonical_path = p }, l) -> ["-R"; p; l]) r_includes @
     [map (fun x -> x) extra_args] in
   List.flatten args
-;;
 
 let filter_cmdline l = CList.map_filter
     (function {thing; source=CmdLine} -> Some thing | {source=ProjectFile} -> None)
     l
-;;
 
 let forget_source {thing} = thing
 
