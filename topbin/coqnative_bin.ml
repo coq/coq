@@ -347,7 +347,7 @@ let rec parse_args (args : string list) accu =
     Nativelib.output_dir := dir;
     parse_args rem accu
   | "-coqlib" :: s :: rem ->
-    if not (Minisys.exists_dir s) then
+    if not (System.exists_dir s) then
       fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
     Boot.Env.set_coqlib s;
     parse_args rem accu
