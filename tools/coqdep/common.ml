@@ -10,14 +10,14 @@
 
 open Format
 open Unix
-open Coqdep_lexer
+open Lexer
 (* The whole Minisys module used to be required due to bootstrapping,
    thanks to dune it is not needed anymore and we could just remove it. *)
 open Minisys
 
 (** [coqdep_boot] is a stripped-down version of [coqdep], whose
     behavior is the one of [coqdep -boot]. Its only dependencies
-    are [Coqdep_lexer], [Unix] and [Minisys], and it should stay so.
+    are [Coqdep.Lexer], [Unix] and [Minisys], and it should stay so.
     If it need someday some additional information, pass it via
     options (see for instance [option_dynlink] below).
 *)
@@ -557,7 +557,7 @@ let rec suffixes full = function
   | [name] -> [full,[name]]
   | dir::suffix as l -> (full,l)::suffixes false suffix
 
-(** Compute all the pairs [(from,suffs] such that a logical path
+(** Compute all the pairs [(from,suffs)] such that a logical path
     decomposes into [from @ ... @ suff] for some [suff] in [suffs],
     i.e. such that once [from] is fixed, [From from Require suff]
     refers (in the absence of ambiguity) to this logical path for
