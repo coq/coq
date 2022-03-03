@@ -51,7 +51,7 @@ val status : GMisc.statusbar
 val push_info : string -> unit
 val pop_info : unit -> unit
 val clear_info : unit -> unit
-val flash_info : ?delay:int -> string -> unit
+val flash_info : ?delay:int -> ?if_empty:bool ->string -> unit
 
 val insert_xml : ?mark:GText.mark -> ?tags:GText.tag list ->
   #GText.buffer_skel -> Richpp.richpp -> unit

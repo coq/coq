@@ -66,9 +66,10 @@ let flash_info =
                    queue := pop !queue;
                    process (); false))
     | Nil -> () in
-  fun ?(delay=5000) text ->
+  fun ?(delay=5000) ?(if_empty=false) text ->
     let processing = !queue <> Nil in
-    enqueue (delay,text) queue;
+    if not (processing && if_empty) then
+      enqueue (delay,text) queue;
     if not processing then process ()
 
 (* Note: Setting the same attribute with two separate tags appears to use

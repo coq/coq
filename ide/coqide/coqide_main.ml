@@ -49,7 +49,7 @@ let catch_gtk_messages () =
 let () = catch_gtk_messages ()
 
 let load_prefs () =
-  Preferences.load_pref ~warn:(fun ~delay -> Ideutils.flash_info ~delay)
+  Preferences.load_pref ~warn:(fun ~delay -> Ideutils.flash_info ~delay ~if_empty:false)
 
 let () =
   Ideutils.push_info ("Ready"^ if Preferences.microPG#get then ", [μPG]" else "");

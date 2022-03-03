@@ -17,5 +17,5 @@ class finder : string -> GText.view ->
     method replace_all : unit -> unit
     method find_backward : unit -> unit
     method find_forward : unit -> unit
-    method setup_is_script_editable : (unit -> bool) -> unit
+    method setup_is_script_editable : (bool -> bool) -> unit
   end

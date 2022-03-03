@@ -166,6 +166,23 @@ object(self)
     List.fold_left fold (`OK, `NOOP) lst
   | EndGrp -> assert false
 
+  (* check whether undo/redo would change processed part of buffer *)
+  method can_undo_redo () =
+    let rec can_do = function
+    | Insert ins ->
+      let it = buffer#get_iter (`OFFSET ins.ins_off) in
+      not (it#has_tag Tags.Script.processed)
+    | Delete del ->
+      let it = buffer#get_iter (`OFFSET del.del_off) in
+      not (it#has_tag Tags.Script.processed)
+    | Action lst ->
+      List.fold_left (fun rv act -> rv && (can_do act)) true lst
+    | EndGrp -> true
+    in
+    match history with
+    | [] -> true
+    | action :: rem -> can_do action
+
   method perform_undo () = match history with
   | [] -> ()
   | action :: rem ->
@@ -190,21 +207,27 @@ object(self)
     | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed *)
     end
 
-  method undo () =
-    Minilib.log "UNDO";
-    self#with_lock_undo begin fun () ->
-      buffer#begin_user_action ();
-      self#perform_undo ();
-      buffer#end_user_action ()
-    end ()
+  method undo editable2 =
+    if editable2 || self#can_undo_redo () then begin
+      Minilib.log "UNDO";
+      self#with_lock_undo begin fun () ->
+        buffer#begin_user_action ();
+        self#perform_undo ();
+        buffer#end_user_action ()
+      end ()
+    end else
+      Ideutils.flash_info ~delay:1000 ~if_empty:true "Undo discarded";
 
-  method redo () =
-    Minilib.log "REDO";
-    self#with_lock_undo begin fun () ->
-      buffer#begin_user_action ();
-      self#perform_redo ();
-      buffer#end_user_action ()
-    end ()
+  method redo editable2 =
+    if editable2 || self#can_undo_redo () then begin
+      Minilib.log "REDO";
+      self#with_lock_undo begin fun () ->
+        buffer#begin_user_action ();
+        self#perform_redo ();
+        buffer#end_user_action ()
+      end ()
+    end else
+      Ideutils.flash_info ~delay:1000 ~if_empty:true "Redo discarded";
 
   method process_begin_user_action () =
     (* Push a new level of event on history stack *)
@@ -508,8 +531,8 @@ object (self)
       GtkSignal.stop_emit()
     in
     (* HACK: Redirect the undo/redo signals of the underlying GtkSourceView *)
-    let _ = self#connect#undo ~callback:(supersed self#undo) in
-    let _ = self#connect#redo ~callback:(supersed self#redo) in
+    let _ = self#connect#undo ~callback:(supersed (fun () -> self#undo self#editable2)) in
+    let _ = self#connect#redo ~callback:(supersed (fun () -> self#redo self#editable2)) in
     (* HACK: Redirect the paste signal *)
     let _ = self#connect#paste_clipboard ~callback:(supersed self#paste) in
     (* HACK: Redirect the move_line signal of the underlying GtkSourceView *)
@@ -575,19 +598,21 @@ object (self)
 
     (* todo: gray out cut, paste, undo, replace, [un]comment, Templates in the
       menu when script is not editable *)
-    let nonmod_keys = List.map (fun k -> let (key, _) = GtkData.AccelGroup.parse k in key)
-      [ "Left"; "Right"; "Up"; "Down"; "Home"; "End"; "<Ctrl>A"] in
+    let nonmod_keys = List.map (fun k -> GtkData.AccelGroup.parse k)
+      [ "Left"; "Right"; "Up"; "Down"; "Home"; "End"; "<Ctrl>A"; "Page_Up"; "Page_Down";
+        "<Ctrl>U"; "<Ctrl>Z"; "<Ctrl><Shift>Z"] in
+      (* undo/redo are filtered in the redo manager *)
 
     (* keypress_cb and buttonpress_cb are a workaround to allow making the script panel not editable *)
     let keypress_cb ev =
-      let ev_key = GdkEvent.Key.keyval ev in
+      let ev_key = Ideutils.filter_key ev in
       let b = view#buffer in
       let it = b#get_iter (`MARK (b#get_mark (`NAME "insert"))) in
       (* note code in Session.insert_cb/delete_cb for other tags *)
       let can_mod = not (it#has_tag Tags.Script.processed) in
       let discard = not (editable2 || can_mod || List.mem ev_key nonmod_keys) in
       if discard then begin
-        Ideutils.flash_info "Input discarded";
+        Ideutils.flash_info ~delay:1000 ~if_empty:true "Input discarded";
         Minilib.log "key discarded: cursor is in processed part of script";
       end;
       discard

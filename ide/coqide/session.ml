@@ -421,7 +421,10 @@ let create file coqtop_args =
   let messages = create_messages () in
   let segment = new Wg_Segment.segment () in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
-  finder#setup_is_script_editable (fun _ -> script#editable2);
+  finder#setup_is_script_editable (fun processed ->
+      let it = buffer#get_iter (`MARK (buffer#get_mark (`NAME "insert"))) in
+      (* note code in Session.insert_cb/delete_cb for other tags *)
+      script#editable2 || (processed && not (it#has_tag Tags.Script.processed)));
   let debugger = Wg_Debugger.debugger (Printf.sprintf "Debugger (%s)" basename) sid in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in

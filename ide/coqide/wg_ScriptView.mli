@@ -15,8 +15,8 @@ type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 class script_view : source_view -> Coq.coqtop ->
 object
   inherit GSourceView3.source_view
-  method undo : unit -> unit
-  method redo : unit -> unit
+  method undo : bool -> unit
+  method redo : bool -> unit
   method clear_undo : unit -> unit
   method auto_complete : bool
   method set_auto_complete : bool -> unit

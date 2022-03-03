@@ -1300,7 +1300,11 @@ let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
 (* allowed in script panel, if editable, and elsewhere *)
 let can_paste () =
   on_current_term_val true (fun t ->
-    (t.script#is_focus && t.script#editable2) || not t.script#is_focus)
+    let b = t.script#buffer in
+    let it = b#get_iter (`MARK (b#get_mark (`NAME "insert"))) in
+    (* note code in Session.insert_cb/delete_cb for other tags *)
+    let can_mod = t.script#editable2 || not (it#has_tag Tags.Script.processed) in
+    (t.script#is_focus && can_mod) || not t.script#is_focus)
 
 (* template insert only allowed in script panel *)
 let can_template () =
@@ -1449,10 +1453,10 @@ let build_ui () =
     item "Edit" ~label:"_Edit";
     item "Undo" ~accel:"<Primary>u" ~stock:`UNDO
       ~callback:(cb_on_current_term (fun t -> if can_paste () then
-          t.script#undo ()));
+          t.script#undo t.script#editable2));
     item "Redo" ~stock:`REDO
       ~callback:(cb_on_current_term (fun t -> if can_paste () then
-          t.script#redo ()));
+          t.script#redo  t.script#editable2));
     item "Cut" ~stock:`CUT
       ~callback:(fun _ -> if can_paste () then
           emit_to_focus w GtkText.View.S.cut_clipboard);
