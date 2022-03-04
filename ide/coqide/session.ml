@@ -244,7 +244,13 @@ let set_buffer_handlers
     | Some s -> if misc () then Minilib.log (s^" moved")
     | None -> ()
   in
+  let set_busy b =
+    let prop = `EDITABLE b in
+    let tags = [Tags.Script.processed; Tags.Script.to_process; Tags.Script.incomplete] in
+    List.iter (fun tag -> tag#set_property prop) tags
+  in
   (* Pluging callbacks *)
+  let () = Coq.setup_script_editable coqtop set_busy in
   let _ = buffer#connect#insert_text ~callback:insert_cb in
   let _ = buffer#connect#delete_range ~callback:delete_cb in
   let _ = buffer#connect#begin_user_action ~callback:begin_action_cb in
@@ -409,7 +415,6 @@ let create file coqtop_args =
   let reset () = Coq.reset_coqtop coqtop in
   let buffer = create_buffer () in
   let script = create_script coqtop buffer in
-  Coq.setup_script_editable coqtop (fun v -> script#set_editable2 v);
   let proof = create_proof () in
   incr next_sid;
   let sid = !next_sid in
@@ -421,7 +426,6 @@ let create file coqtop_args =
   let messages = create_messages () in
   let segment = new Wg_Segment.segment () in
   let finder = new Wg_Find.finder basename (script :> GText.view) in
-  finder#setup_is_script_editable (fun _ -> script#editable2);
   let debugger = Wg_Debugger.debugger (Printf.sprintf "Debugger (%s)" basename) sid in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
