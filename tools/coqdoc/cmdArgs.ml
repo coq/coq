@@ -11,6 +11,10 @@
 (* Command-line argument parsing *)
 open Common
 
+let banner () =
+  Printf.eprintf "This is coqdoc version %s\n" Coq_config.version;
+  flush stderr
+
 let normalize_path p =
   (* We use the Unix subsystem to normalize a physical path (relative
      or absolute) and get rid of symbolic links, relative links (like
@@ -97,21 +101,32 @@ let args_options = Arg.align [
   "-o", arg_string (fun p f -> { { p with out_to = File (Filename.basename f) }
                             with output_dir = Filename.dirname f }),
   "<file> Write output to file <file>";
+  "--output", arg_string (fun p f -> { { p with out_to = File (Filename.basename f) }
+                          with output_dir = Filename.dirname f }),
+  "<file> Write output to file <file>";
   "-d", arg_string (fun p f -> { p with output_dir = f }),
   "<dir> Output files into directory <dir>";
   "--directory", arg_string (fun p f -> { p with output_dir = f }),
   "<dir> Output files into directory <dir>";
   "-g", arg_set (fun p -> { p with gallina = true }),
   " Skip proofs (gallina)";
+  "--gallina", arg_set (fun p -> { p with gallina = true }),
+  " Skip proofs";
   "-s", arg_set (fun p -> { p with short = true }),
   " No titles for files (short)";
   "--short", arg_set (fun p -> { p with short = true }),
   " No titles for files";
   "-l", arg_set (fun p -> { { p with gallina = true } with light = true }),
   " Light mode (only defs and statements)";
+  "--light", arg_set (fun p -> { { p with gallina = true } with light = true }),
+  " Light mode (only defs and statements)";
   "-t", arg_string (fun p s -> { p with title = s }),
   "<string> Give a title to the document";
+  "--title", arg_string (fun p s -> { p with title = s }),
+  "<string> Give a title to the document";
   "--body-only", arg_set (fun p -> { p with header_trailer = false }),
+  " Suppress LaTeX/HTML header and trailer";
+  "--no-preamble", arg_set (fun p -> { p with header_trailer = false }),
   " Suppress LaTeX/HTML header and trailer";
   "--with-header", arg_file (fun p f -> { p with header_trailer = true;
                                                  header_file_spec = true;
@@ -129,6 +144,8 @@ let args_options = Arg.align [
   " Set index name (default is index)";
   "--toc", arg_set (fun p -> { p with toc = true }),
   " Output a table of contents";
+  "--table-of-contents", arg_set (fun p -> { p with toc = true }),
+  " Output a table of contents";
   "--vernac-file",
   arg_file (fun p f -> { p with files = Vernac_file (f, coq_module f) :: !prefs.files }),
   "<file> consider <file> as a .v file";
@@ -136,7 +153,12 @@ let args_options = Arg.align [
   "<file> Consider <file> as a .tex file";
   "-p", Arg.String (fun f -> Output.push_in_preamble f),
   "<string> Insert <string> in LaTeX preamble";
+  "--preamble", Arg.String (fun f -> Output.push_in_preamble f),
+  "<string> Insert <string> in LaTeX preamble";
   "--files-from", arg_file (fun p f -> { p with
+    files = List.append (List.map what_file (FileUtil.files_from_file f)) !prefs.files }),
+  "<file> Read file names to process in <file>";
+  "--files", arg_file (fun p f -> { p with
     files = List.append (List.map what_file (FileUtil.files_from_file f)) !prefs.files }),
   "<file> Read file names to process in <file>";
   "--glob-from", arg_file (fun p f -> { p with glob_source = GlobFile f }),
@@ -190,6 +212,7 @@ let args_options = Arg.align [
   " First line comments of the form (** * ModuleName : text *) will be interpreted as subtitles";
   "--inline-notmono", arg_set (fun p -> { p with inline_notmono = true }),
   " Use a proportional width font for inline code (possibly with a different color)";
+  "--version", Arg.Unit (fun () -> banner()), " Display coqdoc version";
 ]
 
 let parse_args () =
