@@ -96,7 +96,7 @@ let error_native_compiler_failed e =
   | Inl (Unix.WEXITED 127) -> Pp.(strbrk "The OCaml compiler was not found. Make sure it is installed, together with findlib.")
   | Inl (Unix.WEXITED n) ->
      Pp.(strbrk "Native compiler exited with status" ++ str" " ++ int n
-         ++ strbrk (if n = 2 then " (in case of stack overflow, increasing stack size (typicaly with \"ulimit -s\") often helps)" else ""))
+         ++ strbrk (if n = 2 then " (in case of stack overflow, increasing stack size (typically with \"ulimit -s\") often helps)" else ""))
   | Inl (Unix.WSIGNALED n) -> Pp.(strbrk "Native compiler killed by signal" ++ str" " ++ int n)
   | Inl (Unix.WSTOPPED n) -> Pp.(strbrk "Native compiler stopped by signal" ++ str" " ++ int n)
   | Inr e -> Pp.(strbrk "Native compiler failed with error: " ++ strbrk (Unix.error_message e))
