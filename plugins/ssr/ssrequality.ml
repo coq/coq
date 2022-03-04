@@ -373,6 +373,13 @@ exception PRtype_error of (Environ.env * Evd.evar_map * Pretype_errors.pretype_e
 
 let id_map_redex _ sigma ~before:_ ~after = sigma, after
 
+(* Invariants expected from the arguments:
+    ⊢ rdx : rdx_ty
+    pattern_id : rdx_ty ⊢ pred : Type@{s}
+    ⊢ new_rdx : rdx_ty
+    ⊢ c : c_ty
+    ⊢ c_ty ≡ EQN rdx_ty rdx new_rdx
+*)
 let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_rdx dir (sigma, c) c_ty =
   let open Tacmach in
   let open Tacticals in
@@ -399,15 +406,26 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
       let c1' = Global.constant_of_delta_kn (Constant.canonical (Constant.make2 mp l')) in
       sigma, EConstr.of_constr (mkConst c1')
   in
-  let proof = EConstr.mkApp (elim, [| rdx_ty; new_rdx; pred; p; rdx; c |]) in
-  (* We check the proof is well typed *)
-  let sigma, proof_ty =
-    try Typing.type_of env sigma proof with
+  (* We check the proof is well typed. We assume that the type of [elim] is of
+     the form [forall (A : Type) (x : A) (P : A -> Type@{s}), T] s.t. the only
+     universes to unify are by checking the [A] and [P] arguments. *)
+  let sigma =
+    try
+      let open EConstr in
+      let elimT = Retyping.get_type_of env sigma elim in
+      let (idA, tA, elimT) = destProd sigma elimT in
+      let (_, _, elimT) = destProd sigma elimT in
+      let (idP, tP, _) = destProd sigma elimT in
+      let sigma = Typing.check env sigma rdx_ty tA in
+      let tP = mkLetIn (idA, rdx_ty, tA, mkLetIn (anonR, mkProp, mkType Univ.Universe.type1, tP)) in
+      let sigma = Typing.check env sigma pred tP in
+      sigma
+    with
     | Pretype_errors.PretypeError (env, sigma, te) -> raise (PRtype_error (Some (env, sigma, te)))
     | e when CErrors.noncritical e -> raise (PRtype_error None)
   in
+  let proof = EConstr.mkApp (elim, [| rdx_ty; new_rdx; pred; p; rdx; c |]) in
   debug_ssr (fun () -> Pp.(str"pirrel_rewrite: proof term: " ++ pr_econstr_env env sigma proof));
-  debug_ssr (fun () -> Pp.(str"pirrel_rewrite of type: " ++ pr_econstr_env env sigma proof_ty));
   Proofview.tclORELSE (refine_with
     ~first_goes_last:(not !ssroldreworder || under) ~with_evars:under (sigma, proof))
   (fun e ->
@@ -452,7 +470,7 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
   let r_n' = abs_cterm env sigma0 n r_n in
   let r' = EConstr.Vars.subst_var pattern_id r_n' in
   let sigma0 = Evd.set_universe_context sigma0 ucst in
-  let rdxt = Retyping.get_type_of env sigma rdx in
+  let sigma, rdxt = Typing.type_of env sigma rdx in
   let () = debug_ssr (fun () -> Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma r)) in
   let cvtac, rwtac, sigma0 =
     if EConstr.Vars.closed0 sigma0 r' then
@@ -463,7 +481,7 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
       match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
-          pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma, r) c_ty, Tacticals.tclIDTAC, sigma0
+          pirrel_rewrite ?under ?map_redex cl rdx a.(0) new_rdx dir (sigma, r) c_ty, Tacticals.tclIDTAC, sigma0
       | _ ->
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
