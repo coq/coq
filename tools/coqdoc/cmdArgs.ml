@@ -215,8 +215,18 @@ let args_options = Arg.align [
   "--version", Arg.Unit (fun () -> banner()), " Display coqdoc version";
 ]
 
+let add_input_files f = prefs := { !prefs with files = what_file f :: !prefs.files }
+let usage_msg = "coqdoc [options] <input file>...\nAvailable options are:"
+
 let parse_args () =
-  Arg.parse
-    args_options
-    (fun s -> raise (Arg.Bad ("Unknown option: " ^ s)))
-    "Available options for coqdoc are: "
+(* Deprecated options *)
+let single_hyphen_opts =
+  ["-html"; "-latex"; "-texmacs"; "-raw"; "-dvi"; "-ps"; "-pdf"; "-stdout"; "-output"; "-directory"; "-gallina"; "-short"; "-light"; "-title"; "-body-only"; "-no-preamble"; "-with-header"; "-with-footer"; "-no-index"; "-multi-index"; "-index"; "-toc"; "-table-of-contents"; "-vernac-file"; "-tex-file"; "-preamble"; "-files-from"; "-files"; "-glob-from"; "-no-glob"; "-quiet"; "-verbose"; "-no-externals"; "-external"; "-coqlib_url"; "-coqlib"; "-latin1"; "-utf8"; "-charset"; "-inputenc"; "-interpolate"; "-raw-comments"; "-parse-comments"; "-plain-comments"; "-toc-depth"; "-no-lib-name"; "-lib-name"; "-lib-subtitles"; "-inline-notmono"; "-version"] in
+  let new_argv = Array.map (fun s -> match List.find_opt (fun m -> m = s) single_hyphen_opts with
+    | Some _ -> Printf.sprintf "-%s" s
+    | None -> s) Sys.argv in
+  try
+    Arg.parse_argv new_argv args_options add_input_files usage_msg
+  with
+  | Arg.Bad s -> Printf.eprintf "%s" s
+  | Arg.Help s -> Printf.printf "%s" s
