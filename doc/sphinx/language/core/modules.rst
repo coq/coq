@@ -30,7 +30,7 @@ type abbreviation.
   structure expressions
 + an application :math:`S~p`, where :math:`S` is a structure expression and :math:`p` an
   access path
-+ a refined structure :math:`S~\with~p := p`′ or :math:`S~\with~p := t:T` where :math:`S` is a
++ a refined structure :math:`S~\with~p := p′` or :math:`S~\with~p := t:T` where :math:`S` is a
   structure expression, :math:`p` and :math:`p′` are access paths, :math:`t` is a term and :math:`T` is
   the type of :math:`t`.
 
@@ -528,13 +528,8 @@ Evaluation of structures to weak head normal form:
    \WTM{E}{p}{S_3}~~~~~ \WS{E}{S_3}{\ovl{S_1}}
    \end{array}
    --------------------------
-   \WEV{E}{S~p}{S_2 \{p/X,t_1 /p_1 .c_1 ,…,t_n /p_n.c_n \}}
+   \WEV{E}{S~p}{\subst{S_2}{X}{p}}
 
-
-In the last rule, :math:`\{t_1 /p_1 .c_1 ,…,t_n /p_n .c_n \}` is the resulting
-substitution from the inlining mechanism. We substitute in :math:`S` the
-inlined fields :math:`p_i .c_i` from :math:`\ModS{X}{S_1 }` by the corresponding
-delta-reduced term :math:`t_i` in :math:`p`.
 
 .. inference:: WEVAL-WITH-MOD
 
@@ -547,7 +542,7 @@ delta-reduced term :math:`t_i` in :math:`p`.
    ----------------------------------
    \begin{array}{c}
    \WEV{E}{S~\with~X := p}{}\\
-   \Struct~e_1 ;…;e_i ; \ModA{X}{p};e_{i+2} \{p/X\} ;…;e_n \{p/X\} ~\End
+   \Struct~e_1 ;…;e_i ; \ModA{X}{p};\subst{e_{i+2}}{X}{p} ;…;\subst{e_n}{X}{p} ~\End
    \end{array}
 
 .. inference:: WEVAL-WITH-MOD-REC
@@ -559,19 +554,19 @@ delta-reduced term :math:`t_i` in :math:`p`.
    --------------------------
    \begin{array}{c}
    \WEV{E}{S~\with~X_1.p := p_1}{} \\
-   \Struct~e_1 ;…;e_i ; \ModS{X}{\ovl{S_2}};e_{i+2} \{p_1 /X_1.p\} ;…;e_n \{p_1 /X_1.p\} ~\End
+   \Struct~e_1 ;…;e_i ; \ModS{X}{\ovl{S_2}};\subst{e_{i+2}}{X_1.p}{p_1} ;…;\subst{e_n}{X_1.p}{p_1} ~\End
    \end{array}
 
 .. inference:: WEVAL-WITH-DEF
 
    \begin{array}{c}
-   \WEV{E}{S}{\Struct~e_1 ;…;e_i ;\Assum{}{c}{T_1};e_{i+2} ;… ;e_n ~\End} \\
-   \WS{E;e_1 ;…;e_i }{\Def{}{c}{t}{T})}{\Assum{}{c}{T_1}}
+   \WEV{E}{S}{\Struct~e_1 ;…;e_i ;(c:T_1);e_{i+2} ;… ;e_n ~\End} \\
+   \WS{E;e_1 ;…;e_i }{(c:=t:T)}{(c:T_1)}
    \end{array}
    --------------------------
    \begin{array}{c}
    \WEV{E}{S~\with~c := t:T}{} \\
-   \Struct~e_1 ;…;e_i ;\Def{}{c}{t}{T};e_{i+2} ;… ;e_n ~\End
+   \Struct~e_1 ;…;e_i ;(c:=t:T);e_{i+2} ;… ;e_n ~\End
    \end{array}
 
 .. inference:: WEVAL-WITH-DEF-REC
@@ -662,22 +657,22 @@ meaning:
   where :math:`e/p` is defined as follows (note that opaque definitions are processed
   as assumptions):
 
-    + :math:`\Def{}{c}{t}{T}/p = \Def{}{c}{t}{T}`
-    + :math:`\Assum{}{c}{U}/p = \Def{}{c}{p.c}{U}`
+    + :math:`(c:=t:T)/p = (c:=t:T)`
+    + :math:`(c:U)/p = (c:=p.c:U)`
     + :math:`\ModS{X}{S}/p = \ModA{X}{p.X}`
     + :math:`\ModA{X}{p′}/p = \ModA{X}{p′}`
-    + :math:`\Ind{}{Γ_P}{Γ_C}{Γ_I}/p = \Indp{}{Γ_P}{Γ_C}{Γ_I}{p}`
-    + :math:`\Indpstr{}{Γ_P}{Γ_C}{Γ_I}{p'}{p} = \Indp{}{Γ_P}{Γ_C}{Γ_I}{p'}`
+    + :math:`\ind{r}{Γ_I}{Γ_C}/p = \Indp{r}{Γ_I}{Γ_C}{p}`
+    + :math:`\Indpstr{r}{Γ_I}{Γ_C}{p'}{p} = \Indp{r}{Γ_I}{Γ_C}{p'}`
 
 + if :math:`S \lra \Functor(X:S′)~S″` then :math:`S/p=S`
 
 
-The notation :math:`\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}`
+The notation :math:`\Indp{r}{Γ_I}{Γ_C}{p}`
 denotes an inductive definition that is definitionally equal to the
 inductive definition in the module denoted by the path :math:`p`. All rules
-which have :math:`\Ind{}{Γ_P}{Γ_C}{Γ_I}` as premises are also valid for
-:math:`\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}`. We give the formation rule for
-:math:`\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}`
+which have :math:`\ind{r}{Γ_I}{Γ_C}` as premises are also valid for
+:math:`\Indp{r}{Γ_I}{Γ_C}{p}`. We give the formation rule for
+:math:`\Indp{r}{Γ_I}{Γ_C}{p}`
 below as well as the equality rules on inductive types and
 constructors.
 
@@ -706,54 +701,49 @@ Structure element subtyping rules:
 
    E[] ⊢ T_1 ≤_{βδιζη} T_2
    --------------------------
-   \WS{E}{\Assum{}{c}{T_1 }}{\Assum{}{c}{T_2 }}
+   \WS{E}{(c:T_1)}{(c:T_2)}
 
 .. inference:: DEF-ASSUM
 
    E[] ⊢ T_1 ≤_{βδιζη} T_2
    --------------------------
-   \WS{E}{\Def{}{c}{t}{T_1 }}{\Assum{}{c}{T_2 }}
+   \WS{E}{(c:=t:T_1)}{(c:T_2)}
 
 .. inference:: ASSUM-DEF
 
    E[] ⊢ T_1 ≤_{βδιζη} T_2
    E[] ⊢ c =_{βδιζη} t_2
    --------------------------
-   \WS{E}{\Assum{}{c}{T_1 }}{\Def{}{c}{t_2 }{T_2 }}
+   \WS{E}{(c:T_1)}{(c:=t_2:T_2)}
 
 .. inference:: DEF-DEF
 
    E[] ⊢ T_1 ≤_{βδιζη} T_2
    E[] ⊢ t_1 =_{βδιζη} t_2
    --------------------------
-   \WS{E}{\Def{}{c}{t_1 }{T_1 }}{\Def{}{c}{t_2 }{T_2 }}
+   \WS{E}{(c:=t_1:T_1)}{(c:=t_2:T_2)}
 
 .. inference:: IND-IND
 
-   E[] ⊢ Γ_P =_{βδιζη} Γ_P'
-   E[Γ_P ] ⊢ Γ_C =_{βδιζη} Γ_C'
-   E[Γ_P ;Γ_C ] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[Γ_I] ⊢ Γ_C =_{βδιζη} Γ_C'
    --------------------------
-   \WS{E}{\ind{Γ_P}{Γ_C}{Γ_I}}{\ind{Γ_P'}{Γ_C'}{Γ_I'}}
+   \WS{E}{\ind{r}{Γ_I}{Γ_C}}{\ind{r}{Γ_I'}{Γ_C'}}
 
 .. inference:: INDP-IND
 
-   E[] ⊢ Γ_P =_{βδιζη} Γ_P'
-   E[Γ_P ] ⊢ Γ_C =_{βδιζη} Γ_C'
-   E[Γ_P ;Γ_C ] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[Γ_I] ⊢ Γ_C =_{βδιζη} Γ_C'
    --------------------------
-   \WS{E}{\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}}{\ind{Γ_P'}{Γ_C'}{Γ_I'}}
+   \WS{E}{\Indp{r}{Γ_I}{Γ_C}{p}}{\ind{r}{Γ_I'}{Γ_C'}}
 
 .. inference:: INDP-INDP
 
-   \begin{array}{c}
-   E[] ⊢ Γ_P =_{βδιζη} Γ_P'
-   E[Γ_P ] ⊢ Γ_C =_{βδιζη} Γ_C' \\
-   E[Γ_P ;Γ_C ] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[] ⊢ Γ_I =_{βδιζη} Γ_I'
+   E[Γ_I] ⊢ Γ_C =_{βδιζη} Γ_C'
    E[] ⊢ p =_{βδιζη} p'
-   \end{array}
    --------------------------
-   \WS{E}{\Indp{}{Γ_P}{Γ_C}{Γ_I}{p}}{\Indp{}{Γ_P'}{Γ_C'}{Γ_I'}{p'}}
+   \WS{E}{\Indp{r}{Γ_I}{Γ_C}{p}}{\Indp{r}{Γ_I'}{Γ_C'}{p'}}
 
 .. inference:: MOD-MOD
 
@@ -826,12 +816,12 @@ New environment formation rules
 .. inference:: WF-IND
 
    \begin{array}{c}
-   \WF{E;\ind{Γ_P}{Γ_C}{Γ_I}}{} \\
-   E[] ⊢ p:~\Struct~e_1 ;…;e_n ;\ind{Γ_P'}{Γ_C'}{Γ_I'};… ~\End \\
-   E[] ⊢ \ind{Γ_P'}{Γ_C'}{Γ_I'} <: \ind{Γ_P}{Γ_C}{Γ_I}
+   \WF{E;\ind{r}{Γ_I}{Γ_C}}{} \\
+   E[] ⊢ p:~\Struct~e_1 ;…;e_n ;\ind{r}{Γ_I'}{Γ_C'};… ~\End \\
+   E[] ⊢ \ind{r}{Γ_I'}{Γ_C'} <: \ind{r}{Γ_I}{Γ_C}
    \end{array}
    --------------------------
-   \WF{E; \Indp{}{Γ_P}{Γ_C}{Γ_I}{p} }{}
+   \WF{E; \Indp{r}{Γ_I}{Γ_C}{p} }{}
 
 
 Component access rules
@@ -839,13 +829,13 @@ Component access rules
 
 .. inference:: ACC-TYPE1
 
-   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\Assum{}{c}{T};… ~\End
+   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;(c:T);… ~\End
    --------------------------
    E[Γ] ⊢ p.c : T
 
 .. inference:: ACC-TYPE2
 
-   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\Def{}{c}{t}{T};… ~\End
+   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;(c:=t:T);… ~\End
    --------------------------
    E[Γ] ⊢ p.c : T
 
@@ -853,36 +843,37 @@ Notice that the following rule extends the delta rule defined in section :ref:`C
 
 .. inference:: ACC-DELTA
 
-    E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\Def{}{c}{t}{U};… ~\End
+    E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;(c:=t:U);… ~\End
     --------------------------
     E[Γ] ⊢ p.c \triangleright_δ t
 
 In the rules below we assume
-:math:`Γ_P` is :math:`[p_1 :P_1 ;…;p_r :P_r ]`,
-:math:`Γ_I` is :math:`[I_1 :A_1 ;…;I_k :A_k ]`,
-and :math:`Γ_C` is :math:`[c_1 :C_1 ;…;c_n :C_n ]`.
+:math:`Γ_P` is :math:`[p_1{:}P_1 ; …; p_r {:}P_r ]`,
+:math:`Γ_I` is :math:`[I_1{:}∀ Γ_P, A_1 ; …; I_k{:}∀ Γ_P, A_k ]`,
+and :math:`Γ_C` is :math:`[c_1{:}∀ Γ_P, C_1 ; …; c_n{:}∀ Γ_P, C_n ]`.
+
 
 .. inference:: ACC-IND1
 
-   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\ind{Γ_P}{Γ_C}{Γ_I};… ~\End
+   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\ind{r}{Γ_I}{Γ_C};… ~\End
    --------------------------
-   E[Γ] ⊢ p.I_j : (p_1 :P_1 )…(p_r :P_r )A_j
+   E[Γ] ⊢ p.I_j : ∀ Γ_P, A_j
 
 .. inference:: ACC-IND2
 
-   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\ind{Γ_P}{Γ_C}{Γ_I};… ~\End
+   E[Γ] ⊢ p :~\Struct~e_1 ;…;e_i ;\ind{r}{Γ_I}{Γ_C};… ~\End
    --------------------------
-   E[Γ] ⊢ p.c_m : (p_1 :P_1 )…(p_r :P_r )C_m I_j (I_j~p_1 …p_r )_{j=1… k}
+   E[Γ] ⊢ p.c_m : ∀ Γ_P, C_m
 
 .. inference:: ACC-INDP1
 
-   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{}{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
+   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{r}{Γ_I}{Γ_C}{p'} ;… ~\End
    --------------------------
    E[] ⊢ p.I_i \triangleright_δ p'.I_i
 
 .. inference:: ACC-INDP2
 
-   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{}{Γ_P}{Γ_C}{Γ_I}{p'} ;… ~\End
+   E[] ⊢ p :~\Struct~e_1 ;…;e_i ; \Indp{r}{Γ_I}{Γ_C}{p'} ;… ~\End
    --------------------------
    E[] ⊢ p.c_i \triangleright_δ p'.c_i
 
