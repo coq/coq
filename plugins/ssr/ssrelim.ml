@@ -160,6 +160,9 @@ let unif_redex env sigma0 nsigma (sigma, r as p) t = (* t is a hint for the rede
       try unify_HO env sigma t (fst (redex_of_pattern env p)), r
       with e when CErrors.noncritical e -> p
 
+let get_nth_arg n args =
+  List.find_map (fun (i, x, _) -> if Int.equal i n then Some x else None) args
+
 let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
   match elim with
   | Some elim ->
@@ -180,7 +183,7 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
     let seed = subgoals_tys sigma ctx_concl in
     let elim, elimty, elim_args, sigma =
       saturate ~beta:is_case env sigma elim ~ty:elimty n_elim_args in
-    let pred = List.assoc pred_id elim_args in
+    let pred = get_nth_arg pred_id elim_args in
     let elimty = Reductionops.whd_all env sigma elimty in
     let cty, sigma =
       if Option.is_empty oc then None, sigma
@@ -235,7 +238,7 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
     let c, c_ty, t_args, sigma = saturate env sigma c ~ty:c_ty n_c_args in
     let elim, elimty, elim_args, sigma =
       saturate ~beta:is_case env sigma elim ~ty:elimty n_elim_args in
-    let pred = List.assoc pred_id elim_args in
+    let pred = get_nth_arg pred_id elim_args in
     let pc = match n_c_args, c_gen with
       | 0, Some p -> interp_cpattern env sigma p None
       | _ -> mkTpat env sigma (sigma, c) in
@@ -278,7 +281,7 @@ let get_head_pattern env sigma elim_is_dep elim_args n_elim_args inf_deps_r cty 
   let try_c_last_arg () =
     (* we try to see if c unifies with the last arg of elim *)
     if elim_is_dep then None else
-    let arg = List.assoc (n_elim_args - 1) elim_args in
+    let arg = get_nth_arg (n_elim_args - 1) elim_args in
     let sigma, arg_ty = Typing.type_of env sigma arg in
     match saturate_until env sigma c c_ty (fun sigma c c_ty ->
       unify_HO env (unify_HO_rigid env sigma c_ty arg_ty) arg c) with
@@ -357,7 +360,7 @@ let generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n
   let sigma, concl, gen_eq_tac, clr = match eqid with
   | Some (IPatId _) when not is_rec ->
       let k = List.length deps in
-      let c = fire_subst sigma (List.assoc (n_elim_args - k - 1) elim_args) in
+      let c = fire_subst sigma (get_nth_arg (n_elim_args - k - 1) elim_args) in
       let sigma, t = Typing.type_of env sigma c in
       let sigma, eq = get_eq_type env sigma in
       let sigma, gen_eq_tac, eq_ty =
@@ -474,12 +477,12 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr sigma
   in
   let sigma, pty = Typing.type_of env sigma elim_pred in
+  let sigma = List.fold_left (fun sigma (_, arg, argty) -> Typing.check env sigma arg argty) sigma elim_args in
   debug_ssr (fun () -> Pp.(str"elim_pred=" ++ pr_econstr_env env sigma elim_pred));
   debug_ssr (fun () -> Pp.(str"elim_pred_ty=" ++ pr_econstr_env env sigma pty));
   let sigma = unify_HO env sigma pred elim_pred in
   let elim = fire_subst sigma elim in
   let sigma = resolve_typeclasses env sigma ~where:elim ~fail:false in
-  let sigma, _ = Typing.type_of env sigma elim in
   (* check that the patterns do not contain non instantiated dependent metas *)
   let () = check_pattern_instantiated env sigma patterns in
   (* the elim tactic, with the eliminator and the predicated we computed *)

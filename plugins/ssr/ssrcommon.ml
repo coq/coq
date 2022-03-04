@@ -782,14 +782,13 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
   if n = 0 then
     let args = List.rev args in
      (if beta then Reductionops.whd_beta env sigma else fun x -> x)
-      (EConstr.mkApp (c, Array.of_list (List.map snd args))), ty, args, sigma
+      (EConstr.mkApp (c, Array.of_list (List.map pi2 args))), ty, args, sigma
   else match kind_of_type sigma ty with
   | ProdType (_, src, tgt) ->
       let sigma = create_evar_defs sigma in
-      let (sigma, x) =
-        Evarutil.new_evar env sigma
-          (if bi_types then Reductionops.nf_betaiota env sigma src else src) in
-      loop (EConstr.Vars.subst1 x tgt) ((m - n,x) :: args) sigma (n-1)
+      let argty = if bi_types then Reductionops.nf_betaiota env sigma src else src in
+      let (sigma, x) = Evarutil.new_evar env sigma argty in
+      loop (EConstr.Vars.subst1 x tgt) ((m - n,x,argty) :: args) sigma (n-1)
   | CastType (t, _) -> loop t args sigma n
   | LetInType (_, v, _, t) -> loop (EConstr.Vars.subst1 v t) args sigma n
   | SortType _ -> assert false
@@ -829,7 +828,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
          right order, so we could just return sigma directly, but explicit is
          better than implicit. *)
       let sigma = Evd.push_future_goals (snd @@ Evd.pop_future_goals sigma) in
-      let fold sigma (_, e) = match EConstr.kind sigma e with
+      let fold sigma (_, e, _) = match EConstr.kind sigma e with
       | Evar (evk, _) -> Evd.declare_future_goal evk sigma
       | _ -> sigma
       in
