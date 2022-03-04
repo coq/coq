@@ -118,34 +118,40 @@ let create_script coqtop source_buffer =
 
 let misc () = CDebug.(get_flag misc)
 
+type action_stack = Gtk.text_mark list option
+
+let call_coq_or_cancel_action coqtop coqops (buffer : GText.buffer) it =
+  let () = try buffer#delete_mark (`NAME "target") with GText.No_such_mark _ -> () in
+  let mark = buffer#create_mark ~name:"target" it in
+  let action = coqops#go_to_mark (`MARK mark) in
+  ignore @@ Coq.try_grab coqtop action (fun () -> ())
+
+let init_user_action (stack : action_stack ref) = match !stack with
+| None -> stack := Some []
+| Some _ -> assert false
+
+let close_user_action (stack : action_stack ref) = match !stack with
+| None -> assert false
+| Some marks ->
+  let () = stack := None in
+  marks
+
+let handle_iter coqtop coqops (buffer : GText.buffer) it stack = match it with
+| None -> ()
+| Some it ->
+  match !stack with
+  | Some marks ->
+    (* We are inside an user action, deferring to its end *)
+    let mark = buffer#create_mark it in
+    stack := Some (mark :: marks)
+  | None ->
+    (* Otherwise we move to the mark now *)
+    call_coq_or_cancel_action coqtop coqops buffer it
+
 let set_buffer_handlers
   (buffer : GText.buffer) script (coqops : CoqOps.ops) coqtop
 =
-  let action_was_cancelled = ref true in
-  let no_coq_action_required = ref true in
-  let cur_action = ref 0 in
-  let new_action_id =
-    let id = ref 0 in
-    fun () -> incr id; !id in
-  let running_action = ref None in
-  let cancel_signal ?(stop_emit=true) reason =
-    Minilib.log ("user_action cancelled: "^reason);
-    action_was_cancelled := true;
-    if stop_emit then GtkSignal.stop_emit () in
-  let del_mark () =
-    try buffer#delete_mark (`NAME "target")
-    with GText.No_such_mark _ -> () in
-  let add_mark it = del_mark (); buffer#create_mark ~name:"target" it in
-  let call_coq_or_cancel_action f =
-    no_coq_action_required := false;
-    let action = !cur_action in
-    let action, fallback =
-      Coq.seq (Coq.lift (fun () -> running_action := Some action)) f,
-      fun () -> (* If Coq is busy due to the current action, we don't cancel *)
-        match !running_action with
-        | Some aid when aid = action -> ()
-        | _ -> cancel_signal ~stop_emit:false "Coq busy" in
-    ignore @@ Coq.try_grab coqtop action fallback in
+  let action_stack = ref None in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
   let get_stop () = buffer#get_iter_at_mark (`NAME "stop_of_input") in
   let ensure_marks_exist () =
@@ -172,63 +178,55 @@ let set_buffer_handlers
     aux it it#copy in
   let insert_cb it s = if String.length s = 0 then () else begin
     if misc () then Minilib.log ("insert_cb " ^ string_of_int it#offset);
-    let text_mark = add_mark it in
     let () = update_prev it in
-    if it#has_tag Tags.Script.to_process ||
-       it#has_tag Tags.Script.incomplete then
-      cancel_signal "Altering the script being processed is not implemented"
-    else if it#has_tag Tags.Script.processed then
-      (* note code in Wg_scriptview.keypress_cb *)
-      call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
-    else if it#has_tag Tags.Script.error_bg then begin
-      match processed_sentence_just_before_error it with
-      | None -> ()
-      | Some prev_sentence_end ->
-          let text_mark = add_mark prev_sentence_end in
-          call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
-    end end in
+    let iter =
+      if it#has_tag Tags.Script.processed then Some it
+      else if it#has_tag Tags.Script.error_bg then
+        processed_sentence_just_before_error it
+      else None
+    in
+    handle_iter coqtop coqops buffer iter action_stack
+    end
+  in
   let delete_cb ~start ~stop =
     if misc () then Minilib.log (Printf.sprintf "delete_cb %d %d" start#offset stop#offset);
     let min_iter, max_iter =
       if start#compare stop < 0 then start, stop else stop, start in
     let () = update_prev min_iter in
-    let text_mark = add_mark min_iter in
-    let rec aux min_iter =
-      if min_iter#equal max_iter then ()
-      else if min_iter#has_tag Tags.Script.to_process ||
-              min_iter#has_tag Tags.Script.incomplete then
-        cancel_signal "Altering the script being processed is not implemented"
-      else if min_iter#has_tag Tags.Script.processed then
-        call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
-      else if min_iter#has_tag Tags.Script.error_bg then
-        match processed_sentence_just_before_error min_iter with
-        | None -> ()
-        | Some prev_sentence_end ->
-            let text_mark = add_mark prev_sentence_end in
-            call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
-      else aux min_iter#forward_char in
-    aux min_iter in
+    let rec aux iter =
+      if iter#equal max_iter then None
+      else if iter#has_tag Tags.Script.processed then
+        Some min_iter
+      else if iter#has_tag Tags.Script.error_bg then
+        processed_sentence_just_before_error iter
+      else aux iter#forward_char
+    in
+    let iter = aux min_iter in
+    handle_iter coqtop coqops buffer iter action_stack
+  in
   let begin_action_cb () =
-    if misc () then Minilib.log "begin_action_cb";
-    action_was_cancelled := false;
-    no_coq_action_required := true;
-    cur_action := new_action_id ();
+    let () = if misc () then Minilib.log "begin_action_cb" in
+    let () = init_user_action action_stack in
     let where = get_insert () in
-    buffer#move_mark (`NAME "prev_insert") ~where in
+    buffer#move_mark (`NAME "prev_insert") ~where
+  in
   let end_action_cb () =
-    if misc () then Minilib.log "end_action_cb";
-    ensure_marks_exist ();
-    if not !action_was_cancelled then begin
+    let () = if misc () then Minilib.log "end_action_cb" in
+    let marks = close_user_action action_stack in
+    let () = ensure_marks_exist () in
+    if CList.is_empty marks then
+      let start, stop = get_start (), get_stop () in
+      let () = List.iter (fun tag -> buffer#remove_tag tag ~start ~stop) Tags.Script.ephemere in
+      Sentence.tag_on_insert buffer
+    else
       (* If coq was asked to backtrack, the cleanup must be done by the
          backtrack_until function, since it may move the stop_of_input
          to a point indicated by coq. *)
-      if !no_coq_action_required then begin
-        let start, stop = get_start (), get_stop () in
-        List.iter (fun tag -> buffer#remove_tag tag ~start ~stop)
-                  Tags.Script.ephemere;
-        Sentence.tag_on_insert buffer
-      end;
-    end in
+      let iters = List.map (fun mark -> buffer#get_iter_at_mark (`MARK mark)) marks in
+      let iter = List.hd @@ List.sort (fun it1 it2 -> it1#compare it2) iters in
+      let () = List.iter (fun mark -> try buffer#delete_mark (`MARK mark) with GText.No_such_mark _ -> ()) marks in
+      call_coq_or_cancel_action coqtop coqops buffer iter
+  in
   let mark_deleted_cb m =
     match GtkText.Mark.get_name m with
     | Some "insert" -> ()
@@ -246,7 +244,7 @@ let set_buffer_handlers
   in
   let set_busy b =
     let prop = `EDITABLE b in
-    let tags = [Tags.Script.processed; Tags.Script.to_process; Tags.Script.incomplete] in
+    let tags = [Tags.Script.processed] in
     List.iter (fun tag -> tag#set_property prop) tags
   in
   (* Pluging callbacks *)

@@ -22,10 +22,10 @@ struct
   let warning = make_tag table ~name:"warning" [`UNDERLINE `SINGLE; `FOREGROUND "blue"]
   let error = make_tag table ~name:"error" [`UNDERLINE `SINGLE]
   let error_bg = make_tag table ~name:"error_bg" []
-  let to_process = make_tag table ~name:"to_process" []
+  let to_process = make_tag table ~name:"to_process" [`EDITABLE false]
   let processed = make_tag table ~name:"processed" []
   let debugging = make_tag table ~name:"debugging" []
-  let incomplete = make_tag table ~name:"incomplete" []
+  let incomplete = make_tag table ~name:"incomplete" [`EDITABLE false]
   let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold"]
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
   let ephemere =
