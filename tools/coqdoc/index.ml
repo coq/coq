@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Printf
-open Cdglobals
+open Common
 
 type loc = int
 
@@ -113,7 +113,7 @@ let find_external_library logicalpath =
         else aux rest
   in aux !external_libraries
 
-let init_coqlib_library () = add_external_library "Coq" !coqlib_url
+let init_coqlib_library () = add_external_library "Coq" !prefs.coqlib_url
 
 let find_module m =
   if Hashtbl.mem local_modules m then
@@ -159,7 +159,7 @@ let display_letter c = if c = '*' then "other" else String.make 1 c
 
 let type_name = function
   | Library ->
-      let ln = !lib_name in
+      let ln = !prefs.lib_name in
         if ln <> "" then String.lowercase_ascii ln else "library"
   | Module -> "module"
   | Definition -> "definition"

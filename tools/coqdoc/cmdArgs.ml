@@ -1,102 +1,5 @@
 (* Command-line argument parsing *)
-type target_language = LaTeX | HTML | TeXmacs | Raw
-
-type output_t =
-| StdOut
-| MultFiles
-| File of string
-
-type file_t =
-| Vernac_file of string * string
-| Latex_file of string
-
-type glob_source_t = NoGlob | DotGlob | GlobFile of string
-
-type encoding_t = {
-  charset : string;
-  inputenc : string;
-  latin1 : bool;
-  utf8 : bool;
-}
-module Prefs = struct
-
-type t = {
-  targetlang : target_language;
-  compile_targets : LatexCompiler.otype list;
-  out_to : output_t;
-  output_dir: string;
-  gallina: bool;
-  short : bool;
-  light : bool;
-  title : string;
-  header_trailer : bool;
-  header_file_spec : bool;
-  header_file : string;
-  footer_file_spec : bool;
-  footer_file : string;
-  index: bool;
-  multi_index : bool;
-  index_name : string;
-  toc: bool;
-  files : file_t list;
-  glob_source : glob_source_t;
-  quiet : bool;
-  externals : bool;
-  coqlib_url: string;
-  paths : (string * string) list;
-  encoding : encoding_t;
-  interpolate : bool;
-  parse_comments : bool;
-  plain_comments : bool;
-  toc_depth : int option;
-  lib_name : string;
-  lib_subtitles : bool;
-  inline_notmono : bool;
-}
-
-end
-
-open Prefs
-let default : t = {
-  targetlang = HTML;
-  compile_targets = [];
-  out_to = MultFiles;
-  output_dir = "";
-  gallina = false;
-  short = false;
-  light = false;
-  title = "";
-  header_trailer = true;
-  header_file_spec = false;
-  header_file = "";
-  footer_file_spec = false;
-  footer_file = "";
-  index = true;
-  multi_index = false;
-  index_name = "index";
-  toc = false;
-  files = [];
-  glob_source = DotGlob;
-  quiet = true;
-  externals = true;
-  coqlib_url = Coq_config.wwwstdlib;
-  paths = [];
-  encoding = {
-    charset = "iso-8859-1";
-    inputenc = "";
-    latin1 = false;
-    utf8 = false;
-  };
-  interpolate = false;
-  parse_comments = false;
-  plain_comments = false;
-  toc_depth = None;
-  lib_name = "Library";
-  lib_subtitles = false;
-  inline_notmono = false;
-}
-
-let prefs = ref default
+open Common
 
 let normalize_path p =
   (* We use the Unix subsystem to normalize a physical path (relative
@@ -171,13 +74,13 @@ let args_options = Arg.align [
   "--raw", arg_set (fun p -> { p with targetlang = Raw }),
   "produce a text document";
   "--dvi", arg_set (fun p -> { { p with targetlang = LaTeX }
-                              with compile_targets = LatexCompiler.Dvi :: !prefs.compile_targets }),
+                              with compile_targets = Dvi :: !prefs.compile_targets }),
   "output the DVI";
   "--ps", arg_set (fun p -> { { p with targetlang = LaTeX }
-                               with compile_targets = LatexCompiler.Ps :: !prefs.compile_targets }),
+                               with compile_targets = Ps :: !prefs.compile_targets }),
   "output the PostScript";
   "--pdf", arg_set (fun p -> { { p with targetlang = LaTeX }
-                              with compile_targets = LatexCompiler.Pdf :: !prefs.compile_targets }),
+                              with compile_targets = Pdf :: !prefs.compile_targets }),
   "output the Pdf";
   "--stdout", arg_set (fun p -> { p with out_to = StdOut }),
   "write output to stdout";
@@ -256,6 +159,8 @@ let args_options = Arg.align [
   "<string> set LaTeX input encoding";
   "--interpolate", arg_set (fun p -> {p with interpolate = true }),
   "try to typeset identifiers in comments using definitions in the same module";
+  "--raw-comments", arg_set (fun p -> {p with raw_comments = true }),
+  "raw comments";
   "--parse-comments", arg_set (fun p -> {p with parse_comments = true }),
   "parse regular comments";
   "--plain-comments", arg_set (fun p -> {p with plain_comments = true }),
@@ -270,4 +175,10 @@ let args_options = Arg.align [
   "first line comments of the form (** * ModuleName : text *) will be interpreted as subtitles";
   "--inline-notmono", arg_set (fun p -> { p with inline_notmono = true }),
   "use a proportional width font for inline code (possibly with a different color)";
-];
+]
+
+let parse_args () =
+  Arg.parse
+    args_options
+    (fun s -> raise (Arg.Bad ("Unknown option: " ^ s)))
+    "Available options for configure are: "

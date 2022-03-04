@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Cdglobals
+open Common
 open Index
 
 (*s Low level output *)
@@ -132,7 +132,7 @@ let token_tree_latex = ref Tokens.empty_ttree
 let token_tree_html = ref Tokens.empty_ttree
 
 let initialize_tex_html () =
-  let if_utf8 = if !Cdglobals.utf8 then fun x -> Some x else fun _ -> None in
+  let if_utf8 = if !prefs.encoding.utf8 then fun x -> Some x else fun _ -> None in
   let (tree_latex, tree_html) = List.fold_right (fun (s,l,l') (tt,tt') ->
       (Tokens.ttree_add tt s l,
        match l' with None -> tt' | Some l' -> Tokens.ttree_add tt' s l'))
@@ -207,16 +207,17 @@ module Latex = struct
     printf "\n"
 
   let header () =
-    if !header_trailer then begin
+    if !prefs.header_trailer then begin
       printf "\\documentclass[12pt]{report}\n";
-      if !inputenc != "" then printf "\\usepackage[%s]{inputenc}\n" !inputenc;
-      if !inputenc = "utf8x" then utf8x_extra_support ();
+      if !prefs.encoding.inputenc != "" then
+        printf "\\usepackage[%s]{inputenc}\n" !prefs.encoding.inputenc;
+      if !prefs.encoding.inputenc = "utf8x" then utf8x_extra_support ();
       printf "\\usepackage[T1]{fontenc}\n";
       printf "\\usepackage{fullpage}\n";
       printf "\\usepackage{coqdoc}\n";
       printf "\\usepackage{amsmath,amssymb}\n";
       printf "\\usepackage{url}\n";
-      (match !toc_depth with
+      (match !prefs.toc_depth with
        | None -> ()
        | Some n -> printf "\\setcounter{tocdepth}{%i}\n" n);
       Queue.iter (fun s -> printf "%s\n" s) preamble;
@@ -233,7 +234,7 @@ module Latex = struct
       "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n"
 
   let trailer () =
-    if !header_trailer then begin
+    if !prefs.header_trailer then begin
       printf "\\end{document}\n"
     end
 
@@ -295,8 +296,8 @@ module Latex = struct
   (*s Latex reference and symbol translation *)
 
   let start_module () =
-    let ln = !lib_name in
-      if not !short then begin
+    let ln = !prefs.lib_name in
+      if not !prefs.short then begin
         printf "\\coqlibrary{";
         label_ident (get_module false);
         printf "}{";
@@ -339,7 +340,7 @@ module Latex = struct
       | Local ->
           printf "\\coqref{"; label_ident id;
           printf "}{\\coqdoc%s{%s}}" (type_name typ) s
-      | External m when !externals ->
+      | External m when !prefs.externals ->
           printf "\\coqexternalref{"; label_ident fid;
           printf "}{%s}{\\coqdoc%s{%s}}" (escaped m) (type_name typ) s
       | External _ | Unknown ->
@@ -420,7 +421,7 @@ module Latex = struct
         printf "\\coqdoctac{%s}" (translate s)
       else if is_keyword s then
         printf "\\coqdockw{%s}" (translate s)
-      else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
+      else if !prefs.interpolate && !in_doc (* always a var otherwise *)
       then
         try
           let tag = Index.find_string s in
@@ -523,9 +524,9 @@ end
 module Html = struct
 
   let header () =
-    if !header_trailer then
-      if !header_file_spec then
-        let cin = open_in !header_file in
+    if !prefs.header_trailer then
+      if !prefs.header_file_spec then
+        let cin = open_in !prefs.header_file in
           try
             while true do
               let s = input_line cin in
@@ -537,7 +538,7 @@ module Html = struct
           printf "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n";
           printf "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
           printf "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n";
-          printf "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=%s\" />\n" !charset;
+          printf "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=%s\" />\n" !prefs.encoding.charset;
           printf "<link href=\"coqdoc.css\" rel=\"stylesheet\" type=\"text/css\" />\n";
           printf "<title>%s</title>\n</head>\n\n" !page_title;
           printf "<body>\n\n<div id=\"page\">\n\n<div id=\"header\">\n</div>\n\n";
@@ -545,8 +546,8 @@ module Html = struct
         end
 
   let trailer () =
-    if !header_trailer && !footer_file_spec then
-        let cin = open_in !footer_file in
+    if !prefs.header_trailer && !prefs.footer_file_spec then
+        let cin = open_in !prefs.footer_file in
           try
             while true do
               let s = input_line cin in
@@ -555,16 +556,16 @@ module Html = struct
           with End_of_file -> close_in cin
     else
       begin
-        if !index && (get_module false) <> "Index" then
-          printf "</div>\n\n<div id=\"footer\">\n<hr/><a href=\"%s.html\">Index</a>" !index_name;
+        if !prefs.index && (get_module false) <> "Index" then
+          printf "</div>\n\n<div id=\"footer\">\n<hr/><a href=\"%s.html\">Index</a>" !prefs.index_name;
         printf "<hr/>This page has been generated by ";
         printf "<a href=\"%s\">coqdoc</a>\n" Coq_config.wwwcoq;
         printf "</div>\n\n</div>\n\n</body>\n</html>"
       end
 
   let start_module () =
-    let ln = !lib_name in
-    if not !short then begin
+    let ln = !prefs.lib_name in
+    if not !prefs.short then begin
       let (m,sub) = !current_module in
         add_toc_entry (Toc_library (m,sub));
         if ln = ""  then
@@ -646,7 +647,7 @@ module Html = struct
     | Local ->
         printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
         printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
-    | External m when !externals ->
+    | External m when !prefs.externals ->
         printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
         printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External _ | Unknown ->
@@ -700,7 +701,7 @@ module Html = struct
         printf "<span class=\"id\" title=\"tactic\">%s</span>" (translate s)
       else if is_keyword s then
         printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
-      else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) then
+      else if !prefs.interpolate && !in_doc (* always a var otherwise *) then
         try reference (translate s) (Index.find_string s)
         with Not_found -> Tokens.output_tagged_ident_string s
       else
@@ -724,17 +725,17 @@ module Html = struct
 
   let stop_item () = reach_item_level 0
 
-  let start_coq () = if not !raw_comments then printf "<div class=\"code\">\n"
+  let start_coq () = if not !prefs.raw_comments then printf "<div class=\"code\">\n"
 
-  let end_coq () = if not !raw_comments then printf "</div>\n"
+  let end_coq () = if not !prefs.raw_comments then printf "</div>\n"
 
   let start_doc () = in_doc := true;
-    if not !raw_comments then
+    if not !prefs.raw_comments then
       printf "\n<div class=\"doc\">\n"
 
   let end_doc () = in_doc := false;
     stop_item ();
-    if not !raw_comments then printf "</div>\n"
+    if not !prefs.raw_comments then printf "</div>\n"
 
   let start_emph () = printf "<i>"
 
@@ -751,7 +752,7 @@ module Html = struct
   let end_comment () = printf "*)</span>"
 
   let start_inline_coq () =
-    if !inline_notmono then printf "<span class=\"inlinecodenm\">"
+    if !prefs.inline_notmono then printf "<span class=\"inlinecodenm\">"
                        else printf "<span class=\"inlinecode\">"
 
   let end_inline_coq () = printf "</span>"
@@ -808,7 +809,7 @@ module Html = struct
   let section lev f =
     let lab = new_label () in
     let r = sprintf "%s.html#%s" (get_module false) lab in
-    (match !toc_depth with
+    (match !prefs.toc_depth with
      | None -> add_toc_entry (Toc_section (lev, f, r))
      | Some n -> if lev <= n then add_toc_entry (Toc_section (lev, f, r))
                    else ());
@@ -822,7 +823,7 @@ module Html = struct
   (* make a HTML index from a list of triples (name,text,link) *)
   let index_ref i c =
     let idxc = sprintf "%s_%c" i.idx_name c in
-    !index_name ^ (if !multi_index then "_" ^ idxc ^ ".html" else ".html#" ^ idxc)
+    !prefs.index_name ^ (if !prefs.multi_index then "_" ^ idxc ^ ".html" else ".html#" ^ idxc)
 
   let letter_index category idx (c,l) =
     if l <> [] then begin
@@ -843,7 +844,7 @@ module Html = struct
     Index.map
       (fun s (m,t) ->
         if t = Library then
-         let ln = !lib_name in
+         let ln = !prefs.lib_name in
            if ln <> "" then
                "[" ^ String.lowercase_ascii ln ^ "]", m ^ ".html", t
            else
@@ -885,12 +886,12 @@ module Html = struct
     (* Attn: make_one_multi_index crée un nouveau fichier... *)
     let idx = i.idx_name in
     let one_letter ((c,l) as cl) =
-      open_out_file (sprintf "%s_%s_%c.html" !index_name idx c);
-      if (!header_trailer) then header ();
+      open_out_file (sprintf "%s_%s_%c.html" !prefs.index_name idx c);
+      if (!prefs.header_trailer) then header ();
       prt_tbl (); printf "<hr/>";
       letter_index true idx cl;
       if List.length l > 30 then begin printf "<hr/>"; prt_tbl () end;
-      if (!header_trailer) then trailer ();
+      if (!prefs.header_trailer) then trailer ();
       close_out_file ()
     in
       List.iter one_letter i.idx_entries
@@ -916,16 +917,16 @@ module Html = struct
       end
     in
       set_module "Index" None;
-      if !title <> "" then printf "<h1>%s</h1>\n" !title;
+      if !prefs.title <> "" then printf "<h1>%s</h1>\n" !prefs.title;
       print_table ();
-      if not (!multi_index) then
+      if not (!prefs.multi_index) then
         begin
           List.iter print_one_index all_index;
           printf "<hr/>"; print_table ()
         end
 
     let make_toc () =
-        let ln = !lib_name in
+        let ln = !prefs.lib_name in
       let make_toc_entry = function
         | Toc_library (m,sub) ->
                 stop_item ();
@@ -1207,7 +1208,7 @@ end
 (*s Generic output *)
 
 let select f1 f2 f3 f4 x =
-  match !target_language with LaTeX -> f1 x | HTML -> f2 x | TeXmacs -> f3 x | Raw -> f4 x
+  match !prefs.targetlang with LaTeX -> f1 x | HTML -> f2 x | TeXmacs -> f3 x | Raw -> f4 x
 
 let push_in_preamble = Latex.push_in_preamble
 

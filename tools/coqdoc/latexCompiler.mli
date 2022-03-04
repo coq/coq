@@ -8,10 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type otype = Dvi | Ps | Pdf
-
 val compile :
-     otypes:otype list
-  -> produce_document:(Cdglobals.file list -> unit)
-  -> Cdglobals.file list
+     otypes:Common.otype list
+  -> produce_document:(Common.file_t list -> unit)
+  -> Common.file_t list
   -> unit
