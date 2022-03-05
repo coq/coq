@@ -485,6 +485,7 @@ let io_read_all chan =
 (** Run an external command asynchronously *)
 
 let run_command display finally cmd =
+  Minilib.log ("Start async command: " ^ cmd);
   let cin = Unix.open_process_in cmd in
   let fd = Unix.descr_of_in_channel cin in
   let () = Unix.set_nonblock fd in
