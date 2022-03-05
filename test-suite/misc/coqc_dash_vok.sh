@@ -10,6 +10,8 @@ OUT="${OUT_VO} ${OUT_VIO} ${OUT_VOS} ${OUT_VOK} ${OUT_GLOB}"
 
 rm -f ${OUT}
 
+set -x
+
 $coqc ${IN_V} -vos
 $coqc ${IN_V} -vok
 if [ ! -f ${OUT_VOK} ]; then
