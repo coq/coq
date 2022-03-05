@@ -251,39 +251,39 @@ let process_cmd_line ~warning_fn orig_dir proj args =
     aux { proj with defs = proj.defs @ [sourced (v,def)] } r
   | "-arg" :: a :: r ->
     aux { proj with extra_args = proj.extra_args @ List.map sourced (process_extra_args a) } r
-  | f' :: r ->
-      let f = CUnix.correct_path f' orig_dir in
+  | f :: r ->
+      let abs_f = CUnix.correct_path f orig_dir in
       let proj =
-        match Filename.extension f with
+        match Filename.extension abs_f with
         | ".v" ->
           check_filename f;
-          { proj with v_files = proj.v_files @ [sourced f] }
+          { proj with v_files = proj.v_files @ [sourced abs_f] }
         | ".ml" ->
           check_filename f;
-          { proj with ml_files = proj.ml_files @ [sourced f] }
+          { proj with ml_files = proj.ml_files @ [sourced abs_f] }
         | ".ml4" ->
-          let msg = Printf.sprintf "camlp5 macro files not supported anymore, please port %s to coqpp" f in
+          let msg = Printf.sprintf "camlp5 macro files not supported anymore, please port %s to coqpp" abs_f in
           raise (Parsing_error msg)
         | ".mlg" ->
           check_filename f;
-          { proj with mlg_files = proj.mlg_files @ [sourced f] }
+          { proj with mlg_files = proj.mlg_files @ [sourced abs_f] }
         | ".mli" ->
           check_filename f;
-          { proj with mli_files = proj.mli_files @ [sourced f] }
+          { proj with mli_files = proj.mli_files @ [sourced abs_f] }
         | ".mllib" ->
           check_filename f;
-          { proj with mllib_files = proj.mllib_files @ [sourced f] }
+          { proj with mllib_files = proj.mllib_files @ [sourced abs_f] }
         | ".mlpack" ->
           check_filename f;
-          { proj with mlpack_files = proj.mlpack_files @ [sourced f] }
+          { proj with mlpack_files = proj.mlpack_files @ [sourced abs_f] }
         | _ ->
-          if CString.is_prefix "META." (Filename.basename f) then
+          if CString.is_prefix "META." (Filename.basename abs_f) then
             if proj.meta_file = Absent then
-              { proj with meta_file = Present f }
+              { proj with meta_file = Present abs_f }
             else
               raise (Parsing_error "only one META.package file can be specified")
           else
-            raise (Parsing_error ("Unknown option "^f')) in
+            raise (Parsing_error ("Unknown option " ^ f)) in
       aux proj r
  in
   let proj = aux proj args in
