@@ -143,6 +143,22 @@ object(self)
     let iter = buffer#get_iter (`OFFSET del.del_off) in
     buffer#insert_interactive ~iter del.del_val
 
+  (** Check that an action can be replayed. *)
+  method private may_perform_action = function
+  | Insert ins ->
+    let iter = buffer#get_iter (`OFFSET ins.ins_off) in
+    iter#can_insert ~default:true
+  | Delete del ->
+    let rec check len iter =
+      if len = 0 then true
+      else iter#editable ~default:true && check (len - 1) iter#forward_char
+    in
+    let iter = buffer#get_iter (`OFFSET del.del_off) in
+    check del.del_len iter
+  | Action lst ->
+    List.for_all self#may_perform_action lst
+  | EndGrp -> assert false
+
   (** We don't care about atomicity. Return:
     1. `OK when there was no error, `FAIL otherwise
     2. `NOOP if no write occurred, `WRITE otherwise
@@ -169,26 +185,30 @@ object(self)
   method perform_undo () = match history with
   | [] -> ()
   | action :: rem ->
-    let ans = self#process_action action in
-    begin match ans with
-    | (`OK, _) ->
-      history <- rem;
-      redo <- (negate_action action) :: redo
-    | (`FAIL, `NOOP) -> () (* we do nothing *)
-    | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed, so start off *)
-    end
+    if self#may_perform_action action then
+      let ans = self#process_action action in
+      begin match ans with
+      | (`OK, _) ->
+        history <- rem;
+        redo <- (negate_action action) :: redo
+      | (`FAIL, `NOOP) -> () (* we do nothing *)
+      | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed, so start off *)
+      end
+    else ()
 
   method perform_redo () = match redo with
   | [] -> ()
   | action :: rem ->
-    let ans = self#process_action action in
-    begin match ans with
-    | (`OK, _) ->
-      redo <- rem;
-      history <- (negate_action action) :: history;
-    | (`FAIL, `NOOP) -> () (* we do nothing *)
-    | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed *)
-    end
+    if self#may_perform_action action then
+      let ans = self#process_action action in
+      begin match ans with
+      | (`OK, _) ->
+        redo <- rem;
+        history <- (negate_action action) :: history;
+      | (`FAIL, `NOOP) -> () (* we do nothing *)
+      | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed *)
+      end
+    else ()
 
   method undo () =
     Minilib.log "UNDO";
