@@ -231,21 +231,32 @@ let interp_prod_item = function
     let symbol = interp_entry_name interp symbol in
     TacNonTerm (loc, (symbol, ido))
 
-let make_fresh_key =
-  let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
-  fun prods ->
-    let cur = incr id; !id in
-    let map = function
-    | TacTerm s -> s
-    | TacNonTerm _ -> "#"
-    in
-    let prods = String.concat "_" (List.map map prods) in
-    (* We embed the hash of the kernel name in the label so that the identifier
-       should be mostly unique. This ensures that including two modules
-       together won't confuse the corresponding labels. *)
-    let hash = (cur lxor (ModPath.hash (Lib.current_mp ()))) land 0x7FFFFFFF in
-    let lbl = Id.of_string_soft (Printf.sprintf "%s_%08X" prods hash) in
-    Lib.make_kn lbl
+(* Voluntary copy from Pptactic to keep control on this *)
+let rec pr_user_symbol = function
+| Extend.Ulist1 tkn -> "ne_" ^ pr_user_symbol tkn ^ "_list"
+| Extend.Ulist1sep (tkn, _) -> "ne_" ^ pr_user_symbol tkn ^ "_list"
+| Extend.Ulist0 tkn -> pr_user_symbol tkn ^ "_list"
+| Extend.Ulist0sep (tkn, _) -> pr_user_symbol tkn ^ "_list"
+| Extend.Uopt tkn -> pr_user_symbol tkn ^ "_opt"
+| Extend.Uentry tag ->
+  let ArgT.Any tag = tag in
+  ArgT.repr tag
+| Extend.Uentryl (_, lvl) -> "tactic" ^ string_of_int lvl
+
+let make_fresh_key prods =
+  let map = function
+  | TacTerm s -> s
+  | TacNonTerm (loc, (arg, ido)) ->
+    let id = match ido with None -> "" | Some id -> Id.to_string id ^ ":" in
+    Printf.sprintf "#(%s%s)" id (pr_user_symbol arg)
+  in
+  let prods = String.concat "_" (List.map map prods) in
+  (* We embed the hash of the kernel name in the label so that the identifier
+      should be mostly unique. This ensures that including two modules
+      together won't confuse the corresponding labels. *)
+  let hash = (ModPath.hash (Lib.current_mp ())) land 0x7FFFFFFF in
+  let lbl = Id.of_string_soft (Printf.sprintf "%s_%08X" prods hash) in
+  Lib.make_kn lbl
 
 type tactic_grammar_obj = {
   tacobj_key : KerName.t;
