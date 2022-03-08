@@ -164,20 +164,20 @@ endif
 # findlib files installation
 ifeq ($(DESTDIR),)
 FINDLIBPREINST= true
-FINDLIBDESTDIR= -destdir $(COQCORELIB)/../
+FINDLIBDESTDIR= -destdir "$(COQCORELIB)/../"
 else
-FINDLIBPREINST= mkdir -p $(DESTDIR)/$(COQCORELIB)/../
-FINDLIBDESTDIR= -destdir $(DESTDIR)/$(COQCORELIB)/../
+FINDLIBPREINST= mkdir -p "$(DESTDIR)/$(COQCORELIB)/../"
+FINDLIBDESTDIR= -destdir "$(DESTDIR)/$(COQCORELIB)/../"
 endif
 # we need to move out of sight $(METAFILE) otherwise findlib thinks the
 # package is already installed
 findlib_install = \
 	$(HIDE)if [ "$(METAFILE)" ]; then \
 	  $(FINDLIBPREINST) && \
-	  mv $(METAFILE) $(METAFILE).skip ; \
+	  mv "$(METAFILE)" "$(METAFILE).skip" ; \
 	  "$(OCAMLFIND)" install $(2) $(FINDLIBDESTDIR) $(FINDLIBPACKAGE) $(1); \
 	  rc=$$?; \
-	  mv $(METAFILE).skip $(METAFILE); \
+	  mv "$(METAFILE).skip" "$(METAFILE)"; \
 	  exit $$rc; \
 	fi
 findlib_remove = \
@@ -618,7 +618,7 @@ install-extra::
 
 META: $(METAFILE)
 	$(HIDE)if [ "$(METAFILE)" ]; then \
-		cat $(METAFILE) | grep -v 'directory.*=.*' > META; \
+		cat "$(METAFILE)" | grep -v 'directory.*=.*' > META; \
 	fi
 
 install-byte:
@@ -880,7 +880,7 @@ VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLI
 
 $(VDFILE): @PROJECT_FILE@ $(VFILES)
 	$(SHOW)'COQDEP VFILES'
-	$(HIDE)$(COQDEP) $(addprefix -m ,$(METAFILE)) -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
+	$(HIDE)$(COQDEP) $(if $(strip $(METAFILE)),-m "$(METAFILE)") -vos -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 
 # Misc ########################################################################
 
