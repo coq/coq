@@ -68,7 +68,7 @@ let get_typeclasses_iterative_deepening =
     used. *)
 let get_typeclasses_filtered_unification =
   Goptions.declare_bool_option_and_ref
-    ~depr:false
+    ~depr:true
     ~key:["Typeclasses";"Filtered";"Unification"]
     ~value:false
 

@@ -571,6 +571,7 @@ Settings
    explicitly appear in the pattern will make it never apply on a goal
    where there is a hole in that place.
 
+   .. deprecated:: 8.16
 
 .. flag:: Typeclasses Limit Intros
 
