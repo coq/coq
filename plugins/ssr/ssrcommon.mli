@@ -231,7 +231,7 @@ val saturate :
            EConstr.constr ->
            ?ty:EConstr.types ->
            int ->
-           EConstr.constr * EConstr.types * (int * EConstr.constr) list * evar_map
+           EConstr.constr * EConstr.types * (int * EConstr.constr * EConstr.types) list * evar_map
 val refine_with :
            ?first_goes_last:bool ->
            ?beta:bool ->
