@@ -66,6 +66,8 @@ module DefAttributes = struct
     let (((((locality, deprecated), polymorphic), program), canonical_instance), typing_flags), using =
       parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance ++ typing_flags ++ using) f
     in
+    if Option.has_some deprecated then
+      Attributes.unsupported_attributes [CAst.make ("deprecated (use a notation and deprecate that instead)",VernacFlagEmpty)];
     let using = Option.map Proof_using.using_from_string using in
     { polymorphic; program; locality; deprecated; canonical_instance; typing_flags; using }
 end

@@ -112,11 +112,10 @@ Proof.
   now destruct (Z.eq_dec b 0) as [->|?]; [destruct a|apply Z.div_mod].
 Qed.
 
-#[deprecated(since="8.14",note="Z_div_mod_eq_full instead")]
-Lemma Z_div_mod_eq a b : b > 0 -> a = b*(a/b) + (a mod b).
-Proof.
-  intros. apply Z_div_mod_eq_full.
-Qed.
+Lemma Z_div_mod_eq_deprecated a b : b > 0 -> a = b*(a/b) + (a mod b).
+Proof. intros. apply Z_div_mod_eq_full. Qed.
+#[deprecated(since="8.14",note="Use Z_div_mod_eq_full instead")]
+Notation Z_div_mod_eq := Z_div_mod_eq_deprecated (only parsing).
 
 Lemma Zmod_eq_full a b : b<>0 -> a mod b = a - (a/b)*b.
 Proof. intros. rewrite Z.mul_comm. now apply Z.mod_eq. Qed.
@@ -736,12 +735,14 @@ Arguments Zdiv_eucl_extended : default implicits.
 
 (** * Division and modulo in Z agree with same in nat: *)
 
-#[deprecated(since="8.14",note="Use Nat2Z.inj_div instead.")]
-Lemma div_Zdiv (n m: nat): m <> O ->
+Lemma div_Zdiv_deprecated (n m: nat): m <> O ->
   Z.of_nat (n / m) = Z.of_nat n / Z.of_nat m.
 Proof. intros. apply Nat2Z.inj_div. Qed.
+#[deprecated(since="8.14",note="Use Nat2Z.inj_div instead.")]
+Notation div_Zdiv := div_Zdiv_deprecated (only parsing).
 
-#[deprecated(since="8.14",note="Use Nat2Z.inj_mod instead.")]
-Lemma mod_Zmod (n m: nat): m <> O ->
+Lemma mod_Zmod_deprecated (n m: nat): m <> O ->
   Z.of_nat (n mod m) = (Z.of_nat n) mod (Z.of_nat m).
 Proof. intros. apply Nat2Z.inj_mod. Qed.
+#[deprecated(since="8.14",note="Use Nat2Z.inj_mod instead.")]
+Notation mod_Zmod := mod_Zmod_deprecated (only parsing).

@@ -317,11 +317,11 @@ Module Uint63Cyclic <: CyclicType.
 End Uint63Cyclic.
 
 Module Int63Cyclic <: CyclicType.
-  #[deprecated(since="8.14",note="Use Uint63Cyclic.t instead.")]
+  (* #[deprecated(since="8.14",note="Use Uint63Cyclic.t instead.")] *)
   Definition t := int.
-  #[deprecated(since="8.14",note="Use Uint63Cyclic.ops instead.")]
+  (* #[deprecated(since="8.14",note="Use Uint63Cyclic.ops instead.")] *)
   Definition ops := int_ops.
-  #[deprecated(since="8.14",note="Use Uint63Cyclic.specs instead.")]
+  (* #[deprecated(since="8.14",note="Use Uint63Cyclic.specs instead.")] *)
   Definition specs := int_specs.
 End Int63Cyclic.
 
