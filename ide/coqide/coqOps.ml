@@ -15,7 +15,19 @@ open Interface
 open Feedback
 
 let b2c = byte_off_to_buffer_off
-let c2b = buffer_off_to_byte_off
+
+(** variant of buffer_off_to_byte_off: convert unicode offset (used by GTK buffer)
+    to UTF-8 byte offset (used by Coq) with size caching for performance *)
+let c2b (buffer : GText.buffer) (s_byte, s_uni) uni_off =
+  if s_uni < 0 then
+    raise (invalid_arg "c2b: s_uni must be >= 0");
+  let rec cvt iter rv =
+    if iter#offset <= s_uni then
+      rv
+    else
+      cvt iter#backward_char (rv + (ulen iter#char))
+  in
+  cvt (buffer#get_iter (`OFFSET uni_off)) s_byte
 
 type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string Loc.located | `WARNING of string Loc.located ]
 type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR | `WARNING ]
@@ -267,6 +279,8 @@ object(self)
   val mutable to_process = 0
   val mutable processed = 0
   val mutable slaves_status = CString.Map.empty
+
+  val mutable last_offsets = (0,0)
 
   val mutable forward_clear_db_highlight = ((fun x -> failwith "forward_clear_db_highlight")
                   : unit -> unit)
@@ -729,9 +743,14 @@ object(self)
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
             let start, _, phrase = self#get_sentence sentence in
-            let bp = c2b buffer start#offset in
+            (* script before last_offsets is not editable because Coq is processing *)
+            let s_offs = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
+            let bp = c2b buffer s_offs start#offset in
             let line_nb = start#line + 1 in
-            let bol_pos = c2b buffer start#line_offset in
+            let bol_uni = start#offset - start#line_offset in
+            let bol_byte = c2b buffer s_offs bol_uni in
+            let bol_pos = bp - bol_byte in
+            last_offsets <- (bol_byte, bol_uni);
             let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
