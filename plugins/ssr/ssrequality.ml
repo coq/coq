@@ -573,7 +573,7 @@ let rwprocess_rule env dir rule =
         let (sigma, x) = Evarutil.new_evar env sigma xt in
         loop d sigma EConstr.(mkApp (r, [|x|])) (EConstr.Vars.subst1 x at) rs 0
       | App (pr, a) when is_ind_ref sigma pr coq_prod.Coqlib.typ ->
-        let r0 = Tacred.hnf_constr env sigma r in
+        let r0 = Reductionops.clos_whd_flags CClosure.all env sigma r in
         let sigma, pL, pR = match EConstr.kind sigma r0 with
         | App (c, ra) when is_construct_ref sigma c coq_prod.Coqlib.intro ->
           (sigma, ra.(2), ra.(3))
