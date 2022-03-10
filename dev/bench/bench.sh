@@ -20,6 +20,8 @@ number_of_processors=$(cat /proc/cpuinfo | grep '^processor *' | wc -l)
 
 program_name="$0"
 program_path=$(readlink -f "${program_name%/*}")
+render_results="dune exec --root $program_path/../.. -- dev/bench/render_results.exe"
+render_line_results="dune exec --root $program_path/../.. -- dev/bench/render_line_results.exe"
 
 coqbot_url_prefix="https://coqbot.herokuapp.com/pendulum/"
 
@@ -379,8 +381,8 @@ old_coq_commit_long="$COQ_HASH_LONG"
 # Deliberately don't include the dummy "coq" package
 installable_coq_opam_packages="coq-core coq-stdlib"
 
-echo "DEBUG: $program_path/render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
-rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
+echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
+rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
 echo "${rendered_results}"
 zulip_edit "Benching continues..."
 
@@ -482,8 +484,8 @@ for coq_opam_package in $sorted_coq_opam_packages; do
         :
     else
 
-        echo "DEBUG: $program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
-        rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
+        echo "DEBUG: $render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
+        rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
         echo "${rendered_results}"
         # update the comment
         coqbot_update_comment "" "${rendered_results}" ""
@@ -535,6 +537,12 @@ du -ha "$working_dir" > "$working_dir/files.listing"
 #
 # The next script processes all these files and prints results in a table.
 
+
+# Print line by line slow downs and speed ups
+cd "$working_dir/html"
+rendered_line_results=$($render_line_results)
+echo "$rendered_line_results"
+
 echo "INFO: workspace = ${CI_JOB_URL}/artifacts/browse/${bench_dirname}"
 
 # Print the final results.
@@ -546,8 +554,8 @@ if [ -z "$installable_coq_opam_packages" ]; then
     exit 1
 fi
 
-echo "DEBUG: $program_path/render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
-rendered_results="$($program_path/render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
+echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
+rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
 echo "${rendered_results}"
 
 echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
