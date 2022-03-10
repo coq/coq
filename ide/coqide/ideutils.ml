@@ -162,6 +162,7 @@ let byte_offset_to_char_offset s byte_offset =
   done;
   byte_offset - !extra_bytes
 
+(* get byte length of a Unicode character *)
 let ulen uni_ch =
   if uni_ch < 0x80 then 1
   else if uni_ch < 0x800 then 2

@@ -19,6 +19,7 @@ val browse_keyword : (string -> unit) -> string -> unit
 val byte_offset_to_char_offset : string -> int -> int
 val byte_off_to_buffer_off : GText.buffer -> int -> int
 val buffer_off_to_byte_off : GText.buffer -> int -> int
+val ulen : int -> int
 
 type timer = { run : ms:int -> callback:(unit->bool) -> unit;
                kill : unit -> unit }
