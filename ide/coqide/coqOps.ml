@@ -14,7 +14,35 @@ open Ideutils
 open Interface
 open Feedback
 
-let b2c = byte_off_to_buffer_off
+let last_b2c_offsets = ref (0,0)
+
+(** variant of byte_off_to_buffer_off: convert UTF-8 byte offset (used by Coq)
+    to unicode offset (used by GTK buffer) with size caching for performance *)
+let b2c buffer byte_off upd =
+  if byte_off < 0 then
+    raise (invalid_arg "b2c: byte_off must be >= 0");
+  let (s_uni, s_byte) = if byte_off >= (snd !last_b2c_offsets) then !last_b2c_offsets else (0,0) in
+  let rec cvt iter cnt =
+    if cnt <= 0 then
+      iter#offset
+    else
+      cvt iter#forward_char (cnt - (ulen iter#char))
+  in
+  let uni_off = cvt (buffer#get_iter (`OFFSET s_uni)) (byte_off - s_byte) in
+  if upd && byte_off > s_byte + 50 then
+    last_b2c_offsets := (uni_off, byte_off);
+  uni_off
+
+type uloc = { bp : int ; ep : int }
+
+(* convert Loc.t byte offsets to char offsets *)
+let loc_to_uni (buffer : GText.buffer) loc =
+  match loc with
+  | None -> None
+  | Some l -> let (start, stop) = Loc.unloc l in
+    let bp = b2c buffer start true in
+    let ep = b2c buffer stop false in
+    Some { bp; ep }
 
 (** variant of buffer_off_to_byte_off: convert unicode offset (used by GTK buffer)
     to UTF-8 byte offset (used by Coq) with size caching for performance *)
@@ -491,16 +519,14 @@ object(self)
     List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
    end
 
-  method private attach_tooltip ?loc sentence text =
+  method private attach_tooltip ?uloc sentence text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
-    let pre_chars, post_chars = Option.cata Loc.unloc (0, String.length phrase) loc in
-    let pre = b2c buffer pre_chars in
-    let post = b2c buffer post_chars in
-    let start = start_sentence#forward_chars pre in
-    let stop = start_sentence#forward_chars post in
+    let { bp; ep } = Option.default { bp=0; ep=(String.length phrase)} uloc in
+    let start = start_sentence#forward_chars bp in
+    let stop = start_sentence#forward_chars ep in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
-    add_tooltip sentence pre post markup
+    add_tooltip sentence bp ep markup
 
   method private debug_prompt ~tag msg =
     match tag with
@@ -568,7 +594,11 @@ object(self)
       | Complete, None ->  msg_wo_sent "Complete"
       | GlobRef(loc, filepath, modpath, ident, ty), Some (id,sentence) ->
           log ?id "GlobRef";
-          self#attach_tooltip ~loc sentence
+          let uloc = match loc_to_uni buffer (Some loc) with
+            | Some uloc -> uloc
+            | _ -> failwith "GlobRef loc"
+          in
+          self#attach_tooltip ~uloc sentence
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | GlobRef (_, _, _, _, _), None -> msg_wo_sent "GlobRef"
       | Message(Error, loc, msg), Some (id,sentence) ->
@@ -577,14 +607,16 @@ object(self)
           let rmsg = Pp.string_of_ppcmds msg in
           add_flag sentence (`ERROR (loc, rmsg));
           self#mark_as_needed sentence;
-          self#attach_tooltip ?loc sentence rmsg;
-          self#position_tag_at_sentence ?loc Tags.Script.error sentence
+          let uloc = loc_to_uni buffer loc in
+          self#attach_tooltip ?uloc sentence rmsg;
+          self#position_tag_at_sentence ?uloc Tags.Script.error sentence
       | Message(Warning, loc, message), Some (id,sentence) ->
           log_pp ?id Pp.(str "WarningMsg " ++ message);
           let rmsg = Pp.string_of_ppcmds message in
           add_flag sentence (`WARNING (loc, rmsg));
-          self#attach_tooltip ?loc sentence rmsg;
-          self#position_tag_at_sentence ?loc Tags.Script.warning sentence;
+          let uloc = loc_to_uni buffer loc in
+          self#attach_tooltip ?uloc sentence rmsg;
+          self#position_tag_at_sentence ?uloc Tags.Script.warning sentence;
           (messages#route msg.route)#push Warning message
       | Message(lvl, loc, message), Some (id,sentence) ->
           log_pp ?id Pp.(str "Msg " ++ message);
@@ -626,27 +658,27 @@ object(self)
     let stop = buffer#get_iter_at_mark sentence.stop in
     buffer#move_mark ~where:stop (`NAME "start_of_input");
 
-  method private position_tag_at_iter ?loc iter_start iter_stop tag phrase = match loc with
+  method private position_tag_at_iter ?uloc iter_start iter_stop tag phrase =
+    match uloc with
     | None ->
       buffer#apply_tag tag ~start:iter_start ~stop:iter_stop
-    | Some loc ->
-      let start, stop = Loc.unloc loc in
+    | Some uloc ->
       buffer#apply_tag tag
-        ~start:(buffer#get_iter (`OFFSET (b2c buffer start)))
-        ~stop:(buffer#get_iter (`OFFSET (b2c buffer stop)))
+        ~start:(buffer#get_iter (`OFFSET uloc.bp))
+        ~stop:(buffer#get_iter (`OFFSET uloc.ep))
 
-  method private position_tag_at_sentence ?loc tag sentence =
+  method private position_tag_at_sentence ?uloc tag sentence =
     let start, stop, phrase = self#get_sentence sentence in
-    self#position_tag_at_iter ?loc start stop tag phrase
+    self#position_tag_at_iter ?uloc start stop tag phrase
 
-  method private process_interp_error ?loc queue sentence msg tip id =
+  method private process_interp_error ?uloc queue sentence msg tip id =
     Coq.bind (Coq.return ()) (function () ->
     let start, stop, phrase = self#get_sentence sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
     pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
-      self#position_tag_at_iter ?loc start stop Tags.Script.error phrase;
+      self#position_tag_at_iter ?uloc start stop Tags.Script.error phrase;
       buffer#place_cursor ~where:stop;
       messages#default_route#clear;
       messages#default_route#push Feedback.Error msg;
@@ -749,9 +781,8 @@ object(self)
             let line_nb = start#line + 1 in
             let bol_uni = start#offset - start#line_offset in
             let bol_byte = c2b buffer s_offs bol_uni in
-            let bol_pos = bp - bol_byte in
             last_offsets <- (bol_byte, bol_uni);
-            let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
+            let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_byte)) in
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
                   Doc.assign_tip_id document id;
@@ -768,7 +799,8 @@ object(self)
               | Fail (id, loc, msg) ->
                   let loc = Option.map Loc.make_loc loc in
                   let sentence = Doc.pop document in
-                  self#process_interp_error ?loc queue sentence msg tip id in
+                  let uloc = loc_to_uni buffer loc in
+                  self#process_interp_error ?uloc queue sentence msg tip id in
             Coq.bind coq_query handle_answer
       in
       let tip =
