@@ -46,6 +46,9 @@ val check_allowed_sort : env -> evar_map -> pinductive -> constr -> constr ->
 val check_type_fixpoint : ?loc:Loc.t -> env -> evar_map ->
   Names.Name.t Context.binder_annot array -> types array -> unsafe_judgment array -> evar_map
 
+(** Variant of {!check} that assumes that the argument term is well-typed. *)
+val check_actual_type : env -> evar_map -> unsafe_judgment -> types -> evar_map
+
 val judge_of_sprop : unsafe_judgment
 val judge_of_prop : unsafe_judgment
 val judge_of_set : unsafe_judgment
