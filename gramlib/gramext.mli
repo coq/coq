@@ -9,3 +9,6 @@ type position =
   | After of string
 
 type g_assoc = NonA | RightA | LeftA
+
+val pr_assoc : g_assoc -> Pp.t
+(** Prints a [g_assoc] value. *)

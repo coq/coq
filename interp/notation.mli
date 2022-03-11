@@ -291,6 +291,9 @@ val is_printing_inactive_rule : interp_rule -> interpretation -> bool
 
 (** {6 Miscellaneous} *)
 
+(** Take a notation string and turn it into a notation key. eg. ["x +  y"] becomes ["_ + _"]. *)
+val interpret_notation_string : string -> string
+
 (** If head is true, also allows applied global references. *)
 val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool -> (GlobRef.t -> bool) ->
       notation_key -> delimiters option -> GlobRef.t

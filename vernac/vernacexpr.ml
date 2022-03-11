@@ -60,6 +60,7 @@ type printable =
   | PrintAssumptions of bool * bool * qualid or_by_notation
   | PrintStrategy of qualid or_by_notation option
   | PrintRegistered
+  | PrintNotation of Constrexpr.notation_entry * string
 
 type glob_search_where = InHyp | InConcl | Anywhere
 

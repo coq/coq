@@ -135,6 +135,12 @@ val pr_opt : ('a -> t) -> 'a option -> t
 val pr_opt_no_spc : ('a -> t) -> 'a option -> t
 (** Same as [pr_opt] but without the leading space. *)
 
+val pr_opt_default : (unit -> t) -> ('a -> t) -> 'a option -> t
+(** Prints [pr v] if [ov] is [Some v], else [prdf ()]. *)
+
+val pr_opt_no_spc_default : (unit -> t) -> ('a -> t) -> 'a option -> t
+(** Same as [pr_opt_default] but without the leading space. *)
+
 val pr_nth : int -> t
 (** Ordinal number with the correct suffix (i.e. "st", "nd", "th", etc.). *)
 

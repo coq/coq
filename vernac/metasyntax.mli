@@ -63,3 +63,10 @@ val pr_custom_grammar : string -> Pp.t
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
 
 val declare_custom_entry : locality_flag -> string -> unit
+(** Declare given string as a custom grammar entry *)
+
+val check_custom_entry : string -> unit
+(** Check that the given string is a valid custom entry that has been declared *)
+
+val pr_level : Constrexpr.notation -> Notation.level -> Extend.constr_entry_key list -> Pp.t
+(** Pretty print level information of a notation and all of its arguments *)

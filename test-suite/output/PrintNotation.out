@@ -1,0 +1,323 @@
+Notation "_ $ _" at level 123 with arguments constr at next level, constr
+at next level, no associativity.
+bar (bar ?f ?f0) ?f1
+     : foo
+where
+?f : [ |- foo]
+?f0 : [ |- foo]
+?f1 : [ |- foo]
+Notation "_ $ _" at level 123 with arguments constr at next level, constr
+at next level, no associativity.
+bar (bar ?f ?f0) ?f1
+     : foo
+where
+?f : [ |- foo]
+?f0 : [ |- foo]
+?f1 : [ |- foo]
+Notation "_ $ _" at level 123 with arguments constr at level 123, constr
+at next level, left associativity.
+bar (bar ?f ?f0) ?f1
+     : foo
+where
+?f : [ |- foo]
+?f0 : [ |- foo]
+?f1 : [ |- foo]
+Notation "_ $ _" at level 123 with arguments constr at next level, constr
+at level 123, right associativity.
+bar ?f (bar ?f0 ?f1)
+     : foo
+where
+?f : [ |- foo]
+?f0 : [ |- foo]
+?f1 : [ |- foo]
+File "./output/PrintNotation.v", line 36, characters 2-30:
+The command has indeed failed with message:
+"_ $ x" cannot be interpreted as a known notation. Make sure that symbols are
+surrounded by spaces and that holes are explicitly denoted by "_".
+File "./output/PrintNotation.v", line 37, characters 2-28:
+The command has indeed failed with message:
+"_ $" cannot be interpreted as a known notation. Make sure that symbols are
+surrounded by spaces and that holes are explicitly denoted by "_".
+File "./output/PrintNotation.v", line 38, characters 2-28:
+The command has indeed failed with message:
+"$ x" cannot be interpreted as a known notation. Make sure that symbols are
+surrounded by spaces and that holes are explicitly denoted by "_".
+File "./output/PrintNotation.v", line 39, characters 2-28:
+The command has indeed failed with message:
+"x$y" cannot be interpreted as a known notation. Make sure that symbols are
+surrounded by spaces and that holes are explicitly denoted by "_".
+File "./output/PrintNotation.v", line 40, characters 2-28:
+The command has indeed failed with message:
+"_$_" cannot be interpreted as a known notation. Make sure that symbols are
+surrounded by spaces and that holes are explicitly denoted by "_".
+Notation "_ $ _" at level 123 with arguments constr at next level, constr
+at level 123, right associativity.
+Notation "_ $ _" at level 123 with arguments constr at next level, constr
+at level 123, right associativity.
+Notation "_ -> _" at level 99 with arguments constr at next level, constr
+at level 200, no associativity.
+Notation "_ <-> _" at level 95 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ /\ _" at level 80 with arguments constr at next level, constr
+at level 80, right associativity.
+Notation "_ \/ _" at level 85 with arguments constr at next level, constr
+at level 85, right associativity.
+Notation "~ _" at level 75 with arguments constr at level 75,
+right associativity.
+Notation "_ = _ :> _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ = _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ = _ = _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ <> _ :> _" at level 70 with arguments constr at next level,
+constr at next level, constr at next level, no associativity.
+Notation "_ <> _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ <= _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ < _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ >= _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ > _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ <= _ <= _" at level 70 with arguments constr at next level,
+constr at next level, constr at next level, no associativity.
+Notation "_ <= _ < _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ < _ < _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ < _ <= _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ + _" at level 50 with arguments constr at level 50, constr
+at next level, left associativity.
+Notation "_ - _" at level 50 with arguments constr at level 50, constr
+at next level, left associativity.
+Notation "_ * _" at level 40 with arguments constr at level 40, constr
+at next level, left associativity.
+Notation "_ / _" at level 40 with arguments constr at level 40, constr
+at next level, left associativity.
+Notation "- _" at level 35 with arguments constr at level 35,
+right associativity.
+Notation "/ _" at level 35 with arguments constr at level 35,
+right associativity.
+Notation "_ ^ _" at level 30 with arguments constr at next level, constr
+at level 30, right associativity.
+Notation "_ || _" at level 50 with arguments constr at level 50, constr
+at next level, left associativity.
+Notation "_ && _" at level 40 with arguments constr at level 40, constr
+at next level, left associativity.
+Notation "( _ , _ , .. , _ )" at level 0 with arguments constr, constr,
+no associativity.
+Notation "{ _ }" at level 0 with arguments constr at level 99,
+no associativity.
+Notation "{ _ } + { _ }" at level 50 with arguments constr, constr,
+left associativity.
+Notation "_ + { _ }" at level 50 with arguments constr at level 50, constr,
+left associativity.
+Notation "{ _ | _ }" at level 0 with arguments constr at level 99, constr,
+no associativity.
+Notation "{ _ | _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, no associativity.
+Notation "{ _ : _ | _ }" at level 0 with arguments constr at level 99,
+constr, constr, no associativity.
+Notation "{ _ : _ | _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, constr, no associativity.
+Notation "{ _ & _ }" at level 0 with arguments constr at level 99, constr,
+no associativity.
+Notation "{ _ & _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, no associativity.
+Notation "{ _ : _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, no associativity.
+Notation "{ _ : _ & _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, constr, no associativity.
+Notation "{ ' _ | _ }" at level 0 with arguments strict pattern at level 0,
+constr, no associativity.
+Notation "{ ' _ | _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, no associativity.
+Notation "{ ' _ : _ | _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, no associativity.
+Notation "{ ' _ : _ | _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, constr, no associativity.
+Notation "{ ' _ & _ }" at level 0 with arguments strict pattern at level 0,
+constr, no associativity.
+Notation "{ ' _ & _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, no associativity.
+Notation "{ ' _ : _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, no associativity.
+Notation "{ ' _ : _ & _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, constr, no associativity.
+Notation "if _ is _ then _ else _" at level 200 with arguments constr,
+pattern at level 100 at level 100, constr, constr at next level,
+no associativity.
+Notation "_ -> _" at level 99 with arguments constr at next level, constr
+at level 200, no associativity.
+Notation "_ <-> _" at level 95 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ /\ _" at level 80 with arguments constr at next level, constr
+at level 80, right associativity.
+Notation "_ \/ _" at level 85 with arguments constr at next level, constr
+at level 85, right associativity.
+Notation "~ _" at level 75 with arguments constr at level 75,
+right associativity.
+Notation "_ = _ :> _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ = _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ = _ = _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ <> _ :> _" at level 70 with arguments constr at next level,
+constr at next level, constr at next level, no associativity.
+Notation "_ <> _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ <= _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ < _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ >= _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ > _" at level 70 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ <= _ <= _" at level 70 with arguments constr at next level,
+constr at next level, constr at next level, no associativity.
+Notation "_ <= _ < _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ < _ < _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ < _ <= _" at level 70 with arguments constr at next level, constr
+at next level, constr at next level, no associativity.
+Notation "_ + _" at level 50 with arguments constr at level 50, constr
+at next level, left associativity.
+Notation "_ - _" at level 50 with arguments constr at level 50, constr
+at next level, left associativity.
+Notation "_ * _" at level 40 with arguments constr at level 40, constr
+at next level, left associativity.
+Notation "_ / _" at level 40 with arguments constr at level 40, constr
+at next level, left associativity.
+Notation "- _" at level 35 with arguments constr at level 35,
+right associativity.
+Notation "/ _" at level 35 with arguments constr at level 35,
+right associativity.
+Notation "_ ^ _" at level 30 with arguments constr at next level, constr
+at level 30, right associativity.
+Notation "_ || _" at level 50 with arguments constr at level 50, constr
+at next level, left associativity.
+Notation "_ && _" at level 40 with arguments constr at level 40, constr
+at next level, left associativity.
+Notation "( _ , _ , .. , _ )" at level 0 with arguments constr, constr,
+no associativity.
+Notation "{ _ }" at level 0 with arguments constr at level 99,
+no associativity.
+Notation "{ _ } + { _ }" at level 50 with arguments constr, constr,
+left associativity.
+Notation "_ + { _ }" at level 50 with arguments constr at level 50, constr,
+left associativity.
+Notation "{ _ | _ }" at level 0 with arguments constr at level 99, constr,
+no associativity.
+Notation "{ _ | _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, no associativity.
+Notation "{ _ : _ | _ }" at level 0 with arguments constr at level 99,
+constr, constr, no associativity.
+Notation "{ _ : _ | _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, constr, no associativity.
+Notation "{ _ & _ }" at level 0 with arguments constr at level 99, constr,
+no associativity.
+Notation "{ _ & _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, no associativity.
+Notation "{ _ : _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, no associativity.
+Notation "{ _ : _ & _ & _ }" at level 0 with arguments constr at level 99,
+constr, constr, constr, no associativity.
+Notation "{ ' _ | _ }" at level 0 with arguments strict pattern at level 0,
+constr, no associativity.
+Notation "{ ' _ | _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, no associativity.
+Notation "{ ' _ : _ | _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, no associativity.
+Notation "{ ' _ : _ | _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, constr, no associativity.
+Notation "{ ' _ & _ }" at level 0 with arguments strict pattern at level 0,
+constr, no associativity.
+Notation "{ ' _ & _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, no associativity.
+Notation "{ ' _ : _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, no associativity.
+Notation "{ ' _ : _ & _ & _ }" at level 0 with arguments strict pattern
+at level 0, constr, constr, constr, no associativity.
+Notation "if _ is _ then _ else _" at level 200 with arguments constr,
+pattern at level 100 at level 100, constr, constr at next level,
+no associativity.
+Notation "{{ _ }}" in Foo at level 0 with arguments custom Foo,
+no associativity.
+Notation "{{ _ }}" in Foo at level 0 with arguments custom Foo,
+no associativity.
+File "./output/PrintNotation.v", line 156, characters 2-46:
+The command has indeed failed with message:
+Unknown custom entry: Bar.
+File "./output/PrintNotation.v", line 157, characters 2-46:
+The command has indeed failed with message:
+Unknown custom entry: Bar.
+File "./output/PrintNotation.v", line 158, characters 2-46:
+The command has indeed failed with message:
+"[[ x ]]" cannot be interpreted as a known notation in Foo entry. Make sure
+that symbols are surrounded by spaces and that holes are explicitly denoted
+by "_".
+File "./output/PrintNotation.v", line 159, characters 2-46:
+The command has indeed failed with message:
+"[[ _ ]]" cannot be interpreted as a known notation in Foo entry. Make sure
+that symbols are surrounded by spaces and that holes are explicitly denoted
+by "_".
+File "./output/PrintNotation.v", line 164, characters 2-32:
+The command has indeed failed with message:
+"x mod y" cannot be interpreted as a known notation. Make sure that symbols
+are surrounded by spaces and that holes are explicitly denoted by "_".
+Notation "_ mod _" at level 40 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ mod _" at level 40 with arguments constr at next level, constr
+at next level, no associativity.
+Notation "_ mod _" at level 40 with arguments constr at next level, constr
+at next level, no associativity.
+bar (bar ?f ?f0) ?f1
+     : foo
+where
+?f : [ |- foo]
+?f0 : [ |- foo]
+?f1 : [ |- foo]
+File "./output/PrintNotation.v", line 176, characters 2-34:
+The command has indeed failed with message:
+"x 'mod' y" cannot be interpreted as a known notation. Make sure that symbols
+are surrounded by spaces and that holes are explicitly denoted by "_".
+Notation "_ 'mod' _" at level 40 with arguments constr at next level, constr
+at next level, no associativity.
+File "./output/PrintNotation.v", line 178, characters 2-34:
+The command has indeed failed with message:
+"_ 'mod' _" cannot be interpreted as a known notation. Make sure that symbols
+are surrounded by spaces and that holes are explicitly denoted by "_".
+Notation "_ 'mod' _" at level 40 with arguments constr at next level, constr
+at next level, no associativity.
+bar (bar ?f ?f0) ?f1
+     : foo
+where
+?f : [ |- foo]
+?f0 : [ |- foo]
+?f1 : [ |- foo]
+File "./output/PrintNotation.v", line 190, characters 2-42:
+The command has indeed failed with message:
+"exists x .. y , p" cannot be interpreted as a known notation. Make sure that
+symbols are surrounded by spaces and that holes are explicitly denoted by
+"_".
+Notation "exists _ .. _ , _" at level 200 with arguments binder, constr
+at level 200, right associativity.
+Notation "exists _ .. _ , _" at level 200 with arguments binder, constr
+at level 200, right associativity.
+File "./output/PrintNotation.v", line 193, characters 2-37:
+The command has indeed failed with message:
+"exists _ , _" cannot be interpreted as a known notation. Make sure that
+symbols are surrounded by spaces and that holes are explicitly denoted by
+"_".
+File "./output/PrintNotation.v", line 194, characters 2-39:
+The command has indeed failed with message:
+"exists _ _ , _" cannot be interpreted as a known notation. Make sure that
+symbols are surrounded by spaces and that holes are explicitly denoted by
+"_".

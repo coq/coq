@@ -222,6 +222,8 @@ let pr_arg pr x = spc () ++ pr x
 let pr_non_empty_arg pr x = let pp = pr x in if ismt pp then mt () else spc () ++ pr x
 let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
 let pr_opt_no_spc pr = function None -> mt () | Some x -> pr x
+let pr_opt_default prdf pr = function None -> prdf () | Some x -> pr_arg pr x
+let pr_opt_no_spc_default prdf pr = function None -> prdf () | Some x -> pr x
 
 (** TODO: merge with CString.ordinal *)
 let pr_nth n =
