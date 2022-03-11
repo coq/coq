@@ -8,19 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open System
 open Format
 open Unix
 open Lexer
-(* The whole Minisys module used to be required due to bootstrapping,
-   thanks to dune it is not needed anymore and we could just remove it. *)
-open Minisys
-
-(** [coqdep_boot] is a stripped-down version of [coqdep], whose
-    behavior is the one of [coqdep -boot]. Its only dependencies
-    are [Coqdep.Lexer], [Unix] and [Minisys], and it should stay so.
-    If it need someday some additional information, pass it via
-    options (see for instance [option_dynlink] below).
-*)
 
 let coqdep_warning args =
   eprintf "*** Warning: @[";
