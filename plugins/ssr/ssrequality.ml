@@ -565,7 +565,7 @@ let rwprocess_rule env dir rule =
     let rec loop d sigma r t0 rs red =
       let t =
         if red = 1 then Tacred.hnf_constr env sigma t0
-        else Reductionops.whd_betaiotazeta env sigma t0 in
+        else Reductionops.clos_whd_flags CClosure.betaiotazeta env sigma t0 in
       debug_ssr (fun () -> Pp.(str"rewrule="++pr_econstr_pat env sigma t));
       match EConstr.kind sigma t with
       | Prod (_, xt, at) ->
@@ -573,25 +573,23 @@ let rwprocess_rule env dir rule =
         let (sigma, x) = Evarutil.new_evar env sigma xt in
         loop d sigma EConstr.(mkApp (r, [|x|])) (EConstr.Vars.subst1 x at) rs 0
       | App (pr, a) when is_ind_ref sigma pr coq_prod.Coqlib.typ ->
-        let sr sigma = match EConstr.kind sigma (Tacred.hnf_constr env sigma r) with
+        let r0 = Reductionops.clos_whd_flags CClosure.all env sigma r in
+        let sigma, pL, pR = match EConstr.kind sigma r0 with
         | App (c, ra) when is_construct_ref sigma c coq_prod.Coqlib.intro ->
-          fun i -> ra.(i + 1), sigma
-        | _ -> let ra = Array.append a [|r|] in
-          function 1 ->
-            let sigma, pi1 = Evd.fresh_global env sigma coq_prod.Coqlib.proj1 in
-            EConstr.mkApp (pi1, ra), sigma
-          | _ ->
-            let sigma, pi2 = Evd.fresh_global env sigma coq_prod.Coqlib.proj2 in
-            EConstr.mkApp (pi2, ra), sigma in
-        let sigma,trty = Evd.fresh_global env sigma Coqlib.(lib_ref "core.True.type") in
-        if EConstr.eq_constr sigma a.(0) trty then
-         let s, sigma = sr sigma 2 in
-         loop (converse_dir d) sigma s a.(1) rs 0
+          (sigma, ra.(2), ra.(3))
+        | _ ->
+          let ra = Array.append a [|r|] in
+          let sigma, pi1 = Evd.fresh_global env sigma coq_prod.Coqlib.proj1 in
+          let sigma, pi2 = Evd.fresh_global env sigma coq_prod.Coqlib.proj2 in
+          let pL = EConstr.mkApp (pi1, ra) in
+          let pR = EConstr.mkApp (pi2, ra) in
+          (sigma, pL, pR)
+        in
+        if EConstr.isRefX sigma Coqlib.(lib_ref "core.True.type") a.(0) then
+         loop (converse_dir d) sigma pR a.(1) rs 0
         else
-         let s, sigma = sr sigma 2 in
-         let sigma, rs2 = loop d sigma s a.(1) rs 0 in
-         let s, sigma = sr sigma 1 in
-         loop d sigma s a.(0) rs2 0
+         let sigma, rs2 = loop d sigma pR a.(1) rs 0 in
+         loop d sigma pL a.(0) rs2 0
       | App (r_eq, a) when Hipattern.match_with_equality_type env sigma t != None ->
         let (ind, u) = EConstr.destInd sigma r_eq and rhs = Array.last a in
         let np = Inductiveops.inductive_nparamdecls env ind in
