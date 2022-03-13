@@ -38,17 +38,18 @@ let general_elim_then_using mk_elim
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sort = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
-    let sigma, elim = match mk_elim with
+    let sigma, elim, elimt = match mk_elim with
     | Case dep ->
       let u = EInstance.kind sigma u in
-      let (sigma, r) = Indrec.build_case_analysis_scheme env sigma (ind, u) dep sort in
-      (sigma, EConstr.of_constr r)
+      let (sigma, r, t) = Indrec.build_case_analysis_scheme env sigma (ind, u) dep sort in
+      (sigma, EConstr.of_constr r, EConstr.of_constr t)
     | Elim ->
       let gr = Indrec.lookup_eliminator env ind sort in
-      Evd.fresh_global env sigma gr
+      let sigma, r = Evd.fresh_global env sigma gr in
+      (sigma, r, Retyping.get_type_of env sigma r)
     in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from env sigma (elim, Retyping.get_type_of env sigma elim) in
+    let elimclause = mk_clenv_from env sigma (elim, elimt) in
     let indmv =
       match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv

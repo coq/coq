@@ -103,75 +103,88 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   (* mais pas très joli ... (mais manque get_sort_of à ce niveau) *)
   let env' = push_rel_context lnamespar env in
 
-  let rec add_branch env k =
-    if Int.equal k (Array.length mip.mind_consnames) then
-      let nbprod = k+1 in
-
-      let indf' = lift_inductive_family nbprod indf in
-      let arsign,sort = get_arity env indf' in
-      let r = Sorts.relevance_of_sort_family sort in
-      let depind = build_dependent_inductive env indf' in
-      let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
-
-      let rci = relevance in
-      let ci = make_case_info env (fst pind) rci RegularStyle in
-      let pbody =
-        appvect
-          (mkRel (ndepar + nbprod),
-           if dep then Context.Rel.instance mkRel 0 deparsign
-           else Context.Rel.instance mkRel 1 arsign) in
-      let p =
-        it_mkLambda_or_LetIn_name env
-          ((if dep then mkLambda_name env else mkLambda)
-           (make_annot Anonymous r,depind,pbody))
-          arsign
-      in
-      let obj =
-        match projs with
-        | None ->
-          let iv = make_case_invert env (find_rectype env sigma (EConstr.of_constr (lift 1 depind))) ci in
-          let iv = EConstr.Unsafe.to_case_invert iv in
-          let ncons = Array.length mip.mind_consnames in
-          let mk_branch i =
-            (* eta-expansion to please branch contraction *)
-            let ft = get_type (lookup_rel (ncons - i) env) in
-            (* we need that to get the generated names for the branch *)
-            let (ctx, _) = decompose_prod_assum ft in
-            let n = mkRel (List.length ctx + 1) in
-            let args = Context.Rel.instance mkRel 0 ctx in
-            let br = it_mkLambda_or_LetIn (mkApp (n, args)) ctx in
-            lift (ndepar + ncons - i - 1) br
-          in
-          let br = Array.init ncons mk_branch in
-          mkCase (Inductive.contract_case env (ci, lift ndepar p,  iv, mkRel 1, br))
-        | Some ps ->
-          let term =
-            mkApp (mkRel 2,
-                    Array.map
-                    (fun p -> mkProj (Projection.make p true, mkRel 1)) ps) in
-            if dep then
-              let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
-                mkCast (term, DEFAULTcast, ty)
-            else term
-      in
-        it_mkLambda_or_LetIn_name env obj deparsign
-    else
-      let cs = lift_constructor (k+1) constrs.(k) in
-      let t = build_branch_type env sigma dep (mkRel (k+1)) cs in
-      let namef = make_name env "f" relevance in
-      mkLambda (namef, t,
-        (add_branch (push_rel (LocalAssum (namef, t)) env) (k+1)))
-  in
   let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma kind in
   let typP = make_arity env' sigma dep indf s in
   let typP = EConstr.Unsafe.to_constr typP in
   let nameP = make_name env' "P" Sorts.Relevant in
-  let c =
-    it_mkLambda_or_LetIn_name env
-    (mkLambda (nameP, typP,
-     (add_branch (push_rel (LocalAssum (nameP,typP)) env') 0))) lnamespar
+
+  let rec get_branches env k accu =
+    if Int.equal k (Array.length mip.mind_consnames) then accu
+    else
+      let cs = lift_constructor (k+1) constrs.(k) in
+      let t = build_branch_type env sigma dep (mkRel (k+1)) cs in
+      let namef = make_name env "f" relevance in
+      let decl = LocalAssum (namef, t) in
+      get_branches (push_rel decl env) (k + 1) (decl :: accu)
   in
-  (sigma, c)
+
+  let branches = get_branches (push_rel (LocalAssum (nameP,typP)) env') 0 [] in
+
+  let sigma, body, bodyT =
+    let env = push_rel_context branches (push_rel (LocalAssum (nameP,typP)) env') in
+    let nbprod = Array.length mip.mind_consnames + 1 in
+
+    let indf' = lift_inductive_family nbprod indf in
+    let arsign,sort = get_arity env indf' in
+    let r = Sorts.relevance_of_sort_family sort in
+    let depind = build_dependent_inductive env indf' in
+    let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
+
+    let rci = relevance in
+    let ci = make_case_info env (fst pind) rci RegularStyle in
+    let pbody =
+      appvect
+        (mkRel (ndepar + nbprod),
+          if dep then Context.Rel.instance mkRel 0 deparsign
+          else Context.Rel.instance mkRel 1 arsign) in
+    let p =
+      it_mkLambda_or_LetIn_name env
+        ((if dep then mkLambda_name env else mkLambda)
+          (make_annot Anonymous r,depind,pbody))
+        arsign
+    in
+    let deparsign = set_names env env deparsign in
+    let sigma, obj, objT =
+      match projs with
+      | None ->
+        let iv = make_case_invert env (find_rectype env sigma (EConstr.of_constr (lift 1 depind))) ci in
+        let iv = EConstr.Unsafe.to_case_invert iv in
+        let ncons = Array.length mip.mind_consnames in
+        let mk_branch i =
+          (* eta-expansion to please branch contraction *)
+          let ft = get_type (lookup_rel (ncons - i) env) in
+          (* we need that to get the generated names for the branch *)
+          let (ctx, _) = decompose_prod_assum ft in
+          let n = mkRel (List.length ctx + 1) in
+          let args = Context.Rel.instance mkRel 0 ctx in
+          let br = it_mkLambda_or_LetIn (mkApp (n, args)) ctx in
+          lift (ndepar + ncons - i - 1) br
+        in
+        let br = Array.init ncons mk_branch in
+        let obj = mkCase (Inductive.contract_case env (ci, lift ndepar p,  iv, mkRel 1, br)) in
+        sigma, obj, pbody
+      | Some ps ->
+        let term =
+          mkApp (mkRel 2,
+                  Array.map
+                  (fun p -> mkProj (Projection.make p true, mkRel 1)) ps) in
+        if dep then
+          let ty = mkApp (mkRel 3, [| mkRel 1 |]) in
+          sigma, mkCast (term, DEFAULTcast, ty), ty
+        else
+          sigma, term, mkRel 3
+    in
+    let body = it_mkLambda_or_LetIn obj deparsign in
+    (* Expand let bindings in the type for backwards compatibility *)
+    let bodyT = it_mkProd_wo_LetIn objT deparsign in
+    (sigma, body, bodyT)
+  in
+  let body = it_mkLambda_or_LetIn body branches in
+  let bodyT = it_mkProd_or_LetIn bodyT branches in
+  let params = set_names env env lnamespar in
+  let c = it_mkLambda_or_LetIn (mkLambda (nameP, typP, body)) params in
+  let cT = it_mkProd_or_LetIn (mkProd (nameP, typP, bodyT)) params in
+  (sigma, c, cT)
 
 (* check if the type depends recursively on one of the inductive scheme *)
 
@@ -515,7 +528,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             lnamesparrec
       else
         let evd = !evdref in
-        let (evd, c) = mis_make_case_com dep env evd (indi,u) (mibi,mipi) kind in
+        let (evd, c, _) = mis_make_case_com dep env evd (indi,u) (mibi,mipi) kind in
           evdref := evd; c
   in
     (* Body of mis_make_indrec *)

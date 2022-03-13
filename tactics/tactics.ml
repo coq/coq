@@ -1583,7 +1583,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let (mind,_) = reduce_to_quantified_ind env sigma t in
   let sort = Tacticals.elimination_sort_of_goal gl in
   let mind = on_snd (fun u -> EInstance.kind sigma u) mind in
-  let (sigma, elim) =
+  let (sigma, elim, _elimty) =
     if dependent sigma c concl then
       build_case_analysis_scheme env sigma mind true sort
     else
@@ -1739,7 +1739,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
           try DefinedRecord (Structures.Structure.find_projections ind)
           with Not_found ->
             let u = EInstance.kind sigma u in
-            let (_, elim) = build_case_analysis_scheme env sigma (ind,u) false sort in
+            let (_, elim, _) = build_case_analysis_scheme env sigma (ind,u) false sort in
             let elim = EConstr.of_constr elim in
             NotADefinedRecordUseScheme elim in
         let or_tac t1 t2 e = Proofview.tclORELSE (t1 e) t2 in
@@ -4259,23 +4259,21 @@ let guess_elim isrec dep s hyp0 gl =
   let (mind, u), _ = Tacmach.pf_reduce_to_quantified_ind gl tmptyp0 in
   let env = Tacmach.pf_env gl in
   let sigma = Tacmach.project gl in
-  let sigma, elimc =
+  let sigma, elimc, elimt =
     if isrec && not (is_nonrec env mind)
     then
       let gr = lookup_eliminator env mind s in
-      Evd.fresh_global env sigma gr
+      let sigma, ind = Evd.fresh_global env sigma gr in
+      (sigma, ind, Retyping.get_type_of env sigma ind)
     else
       let u = EInstance.kind sigma u in
       if dep then
-        let (sigma, ind) = build_case_analysis_scheme env sigma (mind, u) true s in
-        let ind = EConstr.of_constr ind in
-        (sigma, ind)
+        let (sigma, ind, indty) = build_case_analysis_scheme env sigma (mind, u) true s in
+        (sigma, EConstr.of_constr ind, EConstr.of_constr indty)
       else
-        let (sigma, ind) = build_case_analysis_scheme_default env sigma (mind, u) s in
-        let ind = EConstr.of_constr ind in
-        (sigma, ind)
+        let (sigma, ind, indty) = build_case_analysis_scheme_default env sigma (mind, u) s in
+        (sigma, EConstr.of_constr ind, EConstr.of_constr indty)
   in
-  let sigma, elimt = Typing.type_of env sigma elimc in
   let scheme = compute_elim_sig sigma elimt in
   sigma, (elimc, elimt), mkIndU (mind, u), scheme
 
@@ -4822,11 +4820,10 @@ let destruct ev clr c l e =
  * May be they should be integrated into Elim ...
  *)
 
-let elim_scheme_type elim t =
+let elim_scheme_type (elim, elimt) t =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let sigma, elimt = Typing.type_of env sigma elim in
   let clause = mk_clenv_from env sigma (elim,elimt) in
   match EConstr.kind clause.evd (last_arg clause.evd clause.templval.rebus) with
     | Meta mv ->
@@ -4840,11 +4837,13 @@ let elim_scheme_type elim t =
 
 let elim_type t =
   Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let (ind,t) = Tacmach.pf_apply reduce_to_atomic_ind gl t in
   let evd, elimc = Tacmach.pf_apply find_ind_eliminator gl (fst ind)
       (Tacticals.elimination_sort_of_goal gl)
   in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
+  let elimt = Retyping.get_type_of env evd elimc in
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type (elimc, elimt) t)
   end
 
 let case_type t =
@@ -4854,9 +4853,10 @@ let case_type t =
   let ((ind, u), t) = reduce_to_atomic_ind env sigma t in
   let u = EInstance.kind sigma u in
   let s = Tacticals.elimination_sort_of_goal gl in
-  let (evd, elimc) = build_case_analysis_scheme_default env sigma (ind, u) s in
+  let (evd, elimc, elimt) = build_case_analysis_scheme_default env sigma (ind, u) s in
   let elimc = EConstr.of_constr elimc in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
+  let elimt = EConstr.of_constr elimt in
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type (elimc, elimt) t)
   end
 
 

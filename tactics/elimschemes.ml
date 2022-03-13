@@ -124,7 +124,7 @@ let nondep_elim_scheme from_kind to_kind =
 let build_case_analysis_scheme_in_type env dep sort ind =
   let sigma = Evd.from_env env in
   let (sigma, indu) = Evd.fresh_inductive_instance env sigma ind in
-  let (sigma, c) = build_case_analysis_scheme env sigma indu dep sort in
+  let (sigma, c, _) = build_case_analysis_scheme env sigma indu dep sort in
     c, Evd.evar_universe_context sigma
 
 let case_scheme_kind_from_type =
