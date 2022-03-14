@@ -387,6 +387,8 @@ let info_relevances info = info.i_relevances
 (* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *)
 type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
+type zupdate = fconstr
+
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
@@ -1726,3 +1728,14 @@ let infos_with_reds infos reds =
   { infos with i_flags = reds }
 
 let unfold_reference env st tab key = ref_value_cache env st Conversion tab key
+
+let unfold_ref_with_args infos tab fl v =
+  let env = info_env infos in
+  let flags = RedFlags.red_transparent (info_flags infos) in
+  match unfold_reference env flags tab fl with
+  | Def def -> Some (def, v)
+  | Primitive op when check_native_args op v ->
+    let c = match [@ocaml.warning "-4"] fl with ConstKey c -> c | _ -> assert false in
+    let rargs, a, nargs, v = get_native_args1 op c v in
+    Some (a, (zupdate infos a (Zprimitive(op,c,rargs,nargs)::v)))
+  | Undef _ | OpaqueDef _ | Primitive _ -> None

@@ -126,6 +126,9 @@ type fterm =
    [append_stack] one array at a time *)
 type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
+(** Prevent creation of zupdate nodes outside this module. *)
+type zupdate
+
 type stack_member =
   | Zapp of fconstr array
   | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
@@ -134,7 +137,7 @@ type stack_member =
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
        (* operator, constr def, reduced arguments rev, next arguments *)
   | Zshift of int
-  | Zupdate of fconstr
+  | Zupdate of zupdate
 
 and stack = stack_member list
 
@@ -225,6 +228,16 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
 (** [unfold_reference] unfolds references in a [fconstr] *)
 val unfold_reference : Environ.env -> TransparentState.t ->
   clos_tab -> table_key -> (fconstr, Util.Empty.t) constant_def
+
+(** Like [unfold_reference], but handles primitives: if there are not
+   enough arguments, return [None]. Otherwise return [Some] with
+   [ZPrimitive] added to the stack. *)
+val unfold_ref_with_args
+  : clos_infos
+  -> clos_tab
+  -> table_key
+  -> stack
+  -> (fconstr * stack) option
 
 (** Hook for Reduction *)
 val set_conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) -> unit

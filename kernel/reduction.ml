@@ -295,17 +295,6 @@ let conv_table_key infos ~nargs k1 k2 cuniv =
   | RelKey n, RelKey n' when Int.equal n n' -> cuniv
   | _ -> raise NotConvertible
 
-let unfold_ref_with_args infos tab fl v =
-  let env = info_env infos in
-  let flags = RedFlags.red_transparent (info_flags infos) in
-  match unfold_reference env flags tab fl with
-  | Def def -> Some (def, v)
-  | Primitive op when check_native_args op v ->
-    let c = match fl with ConstKey c -> c | _ -> assert false in
-    let rargs, a, nargs, v = get_native_args1 op c v in
-    Some (a, (Zupdate a::(Zprimitive(op,c,rargs,nargs)::v)))
-  | Undef _ | OpaqueDef _ | Primitive _ -> None
-
 let same_args_size sk1 sk2 =
   let n = CClosure.stack_args_size sk1 in
   if Int.equal n (CClosure.stack_args_size sk2) then n
