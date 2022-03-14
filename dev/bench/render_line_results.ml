@@ -71,13 +71,13 @@ let list_timing_data (time1, time2, diff, pdiff, line_num, file) =
   let str_line_num = string_of_int line_num in
   [ str_time1; str_time2; str_diff; str_pdiff; str_line_num; file ]
 
-let top ~slow num table =
+let render_table ?(reverse=false) title num table =
   let open Table.Align in
-  let headers = [Printf.sprintf "TOP %d %s" num (if slow then "SLOW DOWNS" else "SPEED UPS")] in
+  let headers = [title] in
   let top = [["OLD"; "NEW"; "DIFF"; "%DIFF"; "Ln"; "FILE"]] in
   let align_top = [[Middle; Middle; Middle; Middle; Middle; MidLeft]] in
   let align_rows = [[Right; Right; Right; Right; Right; Left]] in
-  (if slow then List.rev table else table)
+  (if reverse then List.rev table else table)
   |> Array.of_list
   |> fun x -> Array.sub x 0 num
   |> Array.to_list
@@ -99,8 +99,23 @@ let main () =
   (* What is a good number to choose? *)
   let num = 25 in
   let num = min num (List.length table) in
-  Printf.printf "%s\n" (top ~slow:true num table);
-  Printf.printf "%s\n" (top ~slow:false num table)
-  (* TODO: dump to file *)
+  let slow_table = render_table (Printf.sprintf "TOP %d SLOW DOWNS" num) ~reverse:true num table in
+  let fast_table = render_table (Printf.sprintf "TOP %d SPEED UPS" num) num table in
+  let timings_table = render_table "Significant line time changes in bench" (List.length table) table in
+  (* Print tables to stdout *)
+  Printf.printf "%s\n%s\n" slow_table fast_table;
+  (* Print slow table to slow_table file *)
+  let oc_slow = open_out "slow_table" in
+  Printf.fprintf oc_slow "%s\n" slow_table;
+  close_out oc_slow;
+  (* Print fast table to fast_table file *)
+  let oc_fast = open_out "fast_table" in
+  Printf.fprintf oc_fast "%s\n" fast_table;
+  close_out oc_fast;
+  (* Print all timing data to line_timings file *)
+  let oc_timings = open_out "timings_table" in
+  Printf.fprintf oc_timings "%s\n" timings_table;
+  close_out oc_timings;
+  ()
 
 let () = main ()

@@ -537,11 +537,15 @@ du -ha "$working_dir" > "$working_dir/files.listing"
 #
 # The next script processes all these files and prints results in a table.
 
+# timings data
+timings=$working_dir/timings
+mkdir -p $timings
 
 # Print line by line slow downs and speed ups
 cd "$working_dir/html"
-rendered_line_results=$($render_line_results)
-echo "$rendered_line_results"
+$render_line_results
+# Move line timing files to timings folder (they will become artifacts)
+mv fast_table slow_table timings_table $timings
 
 echo "INFO: workspace = ${CI_JOB_URL}/artifacts/browse/${bench_dirname}"
 
@@ -557,6 +561,7 @@ fi
 echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
 echo "${rendered_results}"
+echo "${rendered_results}" > $timings/bench_summary
 
 echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
 
