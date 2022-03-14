@@ -20,32 +20,32 @@ type lseqtac= GlobRef.t -> seqtac
 
 type 'a with_backtracking = tactic -> 'a
 
-val wrap : int -> bool -> seqtac
+val wrap : flags:Formula.flags -> int -> bool -> seqtac
 
 val clear_global: GlobRef.t -> tactic
 
 val axiom_tac : constr -> Sequent.t -> tactic
 
-val ll_atom_tac : constr -> lseqtac with_backtracking
+val ll_atom_tac : flags:Formula.flags -> constr -> lseqtac with_backtracking
 
-val and_tac : seqtac with_backtracking
+val and_tac : flags:Formula.flags -> seqtac with_backtracking
 
-val or_tac : seqtac with_backtracking
+val or_tac : flags:Formula.flags -> seqtac with_backtracking
 
-val arrow_tac : seqtac with_backtracking
+val arrow_tac : flags:Formula.flags -> seqtac with_backtracking
 
-val left_and_tac : pinductive -> lseqtac with_backtracking
+val left_and_tac : flags:Formula.flags -> pinductive -> lseqtac with_backtracking
 
-val left_or_tac : pinductive -> lseqtac with_backtracking
+val left_or_tac : flags:Formula.flags -> pinductive -> lseqtac with_backtracking
 
 val left_false_tac : GlobRef.t -> tactic
 
-val ll_ind_tac : pinductive -> constr list -> lseqtac with_backtracking
+val ll_ind_tac : flags:Formula.flags -> pinductive -> constr list -> lseqtac with_backtracking
 
-val ll_arrow_tac : constr -> constr -> constr -> lseqtac with_backtracking
+val ll_arrow_tac : flags:Formula.flags -> constr -> constr -> constr -> lseqtac with_backtracking
 
-val forall_tac : seqtac with_backtracking
+val forall_tac : flags:Formula.flags -> seqtac with_backtracking
 
-val left_exists_tac : pinductive -> lseqtac with_backtracking
+val left_exists_tac : flags:Formula.flags -> pinductive -> lseqtac with_backtracking
 
-val ll_forall_tac : types -> lseqtac with_backtracking
+val ll_forall_tac : flags:Formula.flags -> types -> lseqtac with_backtracking

@@ -125,7 +125,7 @@ let mk_open_instance env sigma id idc m t =
 
 (* tactics   *)
 
-let left_instance_tac (inst,id) continue seq=
+let left_instance_tac ~flags (inst,id) continue seq=
   let open EConstr in
   Proofview.Goal.enter begin fun gl ->
   let sigma = project gl in
@@ -144,7 +144,7 @@ let left_instance_tac (inst,id) continue seq=
                   generalize [mkApp(idc, [|mkVar id0|])]
                 end);
                 introf;
-                tclSOLVE [wrap 1 false continue
+                tclSOLVE [wrap ~flags 1 false continue
                             (deepen (record (id,None) seq))]];
             tclTRY assumption]
     | Real((m,t),_)->
@@ -174,10 +174,10 @@ let left_instance_tac (inst,id) continue seq=
               [special_generalize;
                introf;
                tclSOLVE
-                 [wrap 1 false continue (deepen (record (id,Some c) seq))]]
+                 [wrap ~flags 1 false continue (deepen (record (id,Some c) seq))]]
   end
 
-let right_instance_tac inst continue seq=
+let right_instance_tac ~flags inst continue seq=
   let open EConstr in
   Proofview.Goal.enter begin fun gl ->
   match inst with
@@ -189,26 +189,26 @@ let right_instance_tac inst continue seq=
               let id0 = List.nth (pf_ids_of_hyps gl) 0 in
               split (Tactypes.ImplicitBindings [mkVar id0])
             end;
-            tclSOLVE [wrap 0 true continue (deepen seq)]];
+            tclSOLVE [wrap ~flags 0 true continue (deepen seq)]];
          tclTRY assumption]
     | Real ((0,t),_) ->
         (tclTHEN (split (Tactypes.ImplicitBindings [t]))
-           (tclSOLVE [wrap 0 true continue (deepen seq)]))
+           (tclSOLVE [wrap ~flags 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
         tclFAIL (Pp.str "not implemented ... yet")
   end
 
-let instance_tac inst=
+let instance_tac ~flags inst=
   if (snd inst)==dummy_id then
-    right_instance_tac (fst inst)
+    right_instance_tac ~flags (fst inst)
   else
-    left_instance_tac inst
+    left_instance_tac ~flags inst
 
-let quantified_tac lf backtrack continue seq =
+let quantified_tac ~flags lf backtrack continue seq =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let insts=give_instances env (project gl) lf seq in
     tclORELSE
-      (tclFIRST (List.map (fun inst->instance_tac inst continue seq) insts))
+      (tclFIRST (List.map (fun inst->instance_tac ~flags inst continue seq) insts))
       backtrack
   end
