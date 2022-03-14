@@ -56,51 +56,39 @@ A name ``f`` can be declared as a coercion between a source user-defined class
 conditions holds:
 
  * ``D`` is a user-defined class, then the type of ``f`` must have the form
-   :g:`forall (x₁:A₁)..(xₙ:Aₙ)(y:C x₁..xₙ), D u₁..uₘ` where :math:`m`
+   :g:`forall (x₁:A₁)..(xₖ:Aₖ)(y:C v₁..vₙ), D u₁..uₘ` where :math:`m`
    is the number of parameters of ``D``.
  * ``D`` is ``Funclass``, then the type of ``f`` must have the form
-   :g:`forall (x₁:A₁)..(xₙ:Aₙ)(y:C x₁..xₙ)(x:A), B`.
+   :g:`forall (x₁:A₁)..(xₖ:Aₖ)(y:C v₁..vₙ)(x:A), B`.
  * ``D`` is ``Sortclass``, then the type of ``f`` must have the form
-   :g:`forall (x₁:A₁)..(xₙ:Aₙ)(y:C x₁..xₙ), s` with ``s`` a sort.
+   :g:`forall (x₁:A₁)..(xₖ:Aₖ)(y:C v₁..vₙ), s` with ``s`` a sort.
 
-We then write :g:`f : C >-> D`. The restriction on the type
-of coercions is called *the uniform inheritance condition*.
+We then write :g:`f : C >-> D`.
+
+.. _ambiguous-paths:
+
+When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion
+paths with the same classes as existing ones are ignored. Coq will generate
+a warning when the two paths may be non convertible. When the :g:`x₁..xₖ` are exactly
+the :g:`v₁..vₙ` (in the same order), the coercion is said to satisfy
+the :gdef:`uniform inheritance condition`. When possible, we recommend
+using coercions that satisfy this condition. This guarantees that
+no spurious warning will be generated.
 
 .. note:: The built-in class ``Sortclass`` can be used as a source class, but
           the built-in class ``Funclass`` cannot.
 
 To coerce an object :g:`t:C t₁..tₙ` of ``C`` towards ``D``, we have to
-apply the coercion ``f`` to it; the obtained term :g:`f t₁..tₙ t` is
+apply the coercion ``f`` to it; the obtained term :g:`f _.._ t` is
 then an object of ``D``.
 
 
 Identity Coercions
 -------------------
 
-Identity coercions are special cases of coercions used to go around
-the uniform inheritance condition. Let ``C`` and ``D`` be two classes
-with respectively `n` and `m` parameters and
-:g:`f:forall (x₁:T₁)..(xₖ:Tₖ)(y:C u₁..uₙ), D v₁..vₘ` a function which
-does not verify the uniform inheritance condition. To declare ``f`` as
-coercion, one has first to declare a subclass ``C'`` of ``C``:
-
-  :g:`C' := fun (x₁:T₁)..(xₖ:Tₖ) => C u₁..uₙ`
-
-We then define an *identity coercion* between ``C'`` and ``C``:
-
-  :g:`Id_C'_C  := fun (x₁:T₁)..(xₖ:Tₖ)(y:C' x₁..xₖ) => (y:C u₁..uₙ)`
-
-We can now declare ``f`` as coercion from ``C'`` to ``D``, since we can
-"cast" its type as
-:g:`forall (x₁:T₁)..(xₖ:Tₖ)(y:C' x₁..xₖ),D v₁..vₘ`.
-
-The identity coercions have a special status: to coerce an object
-:g:`t:C' t₁..tₖ`
-of ``C'`` towards ``C``, we do not have to insert explicitly ``Id_C'_C``
-since :g:`Id_C'_C t₁..tₖ t` is convertible with ``t``.  However we
-"rewrite" the type of ``t`` to become an object of ``C``; in this case,
-it becomes :g:`C uₙ'..uₖ'` where each ``uᵢ'`` is the result of the
-substitution in ``uᵢ`` of the variables ``xⱼ`` by ``tⱼ``.
+To make coercions work for both a named class and for
+``Sortclass`` or ``Funclass``, use the :cmd:`Identity Coercion` command.
+There is an example :ref:`here <example-identity-coercion>`.
 
 Inheritance Graph
 ------------------
@@ -152,25 +140,25 @@ Declaring Coercions
   .. exn:: Cannot recognize @class as a source class of @qualid.
      :undocumented:
 
-  .. warn:: @qualid does not respect the uniform inheritance condition.
-     :undocumented:
-
   .. exn:: Found target class ... instead of ...
      :undocumented:
 
+  .. warn:: @qualid does not respect the uniform inheritance condition.
+
+     The :ref:`test for ambiguous coercion paths <ambiguous-paths>`
+     may yield false positives involving the coercion :token:`qualid`.
+
   .. warn:: New coercion path ... is ambiguous with existing ...
 
-     When the coercion :token:`qualid` is added to the inheritance graph, new
-     coercion paths which have the same classes as existing ones are ignored.
-     The :cmd:`Coercion` command tries to check the convertibility of new ones and
-     existing ones. The paths for which this check fails are displayed by a warning
+     The check for :ref:`ambiguous paths <ambiguous-paths>` failed.
+     The paths for which this check fails are displayed by a warning
      in the form :g:`[f₁;..;fₙ] : C >-> D`.
 
      The convertibility checking procedure for coercion paths is complete for
-     paths consisting of coercions satisfying the uniform inheritance condition,
+     paths consisting of coercions satisfying the :term:`uniform inheritance condition`,
      but some coercion paths could be reported as ambiguous even if they are
      convertible with existing ones when they have coercions that don't satisfy
-     the uniform inheritance condition.
+     this condition.
 
   .. warn:: ... is not definitionally an identity function.
 
@@ -193,6 +181,7 @@ Use :n:`:>` instead of :n:`:` before the
    number of parameters of ``D``.  Then we define an identity
    function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,
    and we declare it as an identity coercion between ``C`` and ``D``.
+   See below for an :ref:`example <example-identity-coercion>`.
 
    This command supports the :attr:`local` attribute, which makes the coercion local to the current section.
 
@@ -254,9 +243,8 @@ Classes as Records
 *Structures with Inheritance* may be defined using the :cmd:`Record` command.
 
 Use `>` before the record name to declare the constructor name as
-a coercion from the class of the last field type to the record name
-(this may fail if the uniform inheritance condition is not
-satisfied).  See :token:`record_definition`.
+a coercion from the class of the last field type to the record name.
+See :token:`record_definition`.
 
 Use `:>` in the field type to declare the field as a coercion from the record name
 to the class of the field type.  See :token:`of_type`.
@@ -269,8 +257,7 @@ mechanism. The global classes and coercions defined inside a section
 are redefined after its closing, using their new value and new
 type. The classes and coercions which are local to the section are
 simply forgotten.
-Coercions with a local source class or a local target class, and
-coercions which do not verify the uniform inheritance condition any longer
+Coercions with a local source class or a local target class
 are also forgotten.
 
 Coercions and Modules
@@ -325,20 +312,6 @@ We give an example of coercion between classes with parameters.
   Set Printing Coercions.
   Check (T c).
   Unset Printing Coercions.
-
-We give now an example using identity coercions.
-
-.. coqtop:: all
-
-  Definition D' (b:bool) := D 1 b.
-  Identity Coercion IdD'D : D' >-> D.
-  Print IdD'D.
-  Parameter d' : D' true.
-  Check (T d').
-  Set Printing Coercions.
-  Check (T d').
-  Unset Printing Coercions.
-
 
 In the case of functional arguments, we use the monotonic rule of
 sub-typing. To coerce :g:`t : forall x : A, B` towards
@@ -413,6 +386,32 @@ coercion path between ``A`` and ``Funclass`` if it exists.
   Set Printing Coercions.
   Check (b 0).
   Unset Printing Coercions.
+
+.. _example-identity-coercion:
+
+.. example:: Identity coercions.
+
+  .. coqtop:: in
+
+    Definition fct := nat -> nat.
+    Parameter incr_fct : Set.
+    Parameter fct_of_incr_fct : incr_fct -> fct.
+
+  .. coqtop:: all
+
+    Fail Coercion fct_of_incr_fct : incr_fct >-> Funclass.
+
+  .. coqtop:: in
+
+    Coercion fct_of_incr_fct : incr_fct >-> fct.
+    Parameter f' : incr_fct.
+
+  .. coqtop:: all
+
+    Check f' : fct.
+    Fail Check f' 0.
+    Identity Coercion Id_fct_Funclass : fct >-> Funclass.
+    Check f' 0.
 
 Let us see the resulting graph after all these examples.
 

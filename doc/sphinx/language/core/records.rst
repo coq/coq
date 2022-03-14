@@ -45,9 +45,8 @@ Defining record types
 
    :n:`{? > }`
      If specified, the constructor is declared as
-     a coercion from the class of the last field type to the record name
-     (this may fail if the uniform inheritance condition is not
-     satisfied). See :ref:`coercions`.
+     a coercion from the class of the last field type to the record name.
+     See :ref:`coercions`.
 
    :n:`@ident_decl`
      The :n:`@ident` within is the record name.

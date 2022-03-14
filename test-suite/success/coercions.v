@@ -1,3 +1,5 @@
+Module InitialTest.
+
 (* Interaction between coercions and casts *)
 (*   Example provided by Eduardo Gimenez   *)
 
@@ -126,12 +128,11 @@ Fixpoint l2v2 {A B} {c : coercion A B} (l : list A) : (vect B (size A l)) :=
 
 Local Coercion l2v2 : list >-> vect.
 
-(* This shows that there is still something to do to take full profit
-   of coercions *)
-Fail Check (fun l : list (T1 * T1) => (l : vect _ _)).
+Check (fun l : list (T1 * T1) => (l : vect _ _)).
 Check (fun l : list (T1 * T1) => (l2v2 l : vect _ _)).
 End what_we_could_do.
 
+End InitialTest.
 
 (** Unit test for Prop as source class *)
 
@@ -186,3 +187,82 @@ Module TestTypeAsSourceCoercion.
   Definition ty4 := (Type : Type) : term _.
 
 End TestTypeAsSourceCoercion.
+
+Module NonUniformInheritance.
+
+Parameters (C : nat -> bool-> Type) (D : nat -> Type).
+Parameter c : C O true.
+Parameter T : D O -> nat.
+
+Section Test0.
+
+Parameter f0 : forall (b : bool) (n : nat), C n b -> D n.
+Local Coercion f0 : C >-> D.
+Check T c.
+
+End Test0.
+
+Section Test1.
+
+Parameter f1 : forall (n : nat), C n true -> D n.
+Local Coercion f1 : C >-> D.
+Check T c.
+
+End Test1.
+
+Section Test2.
+
+Parameter f2 : forall (b : bool) (n : nat) (_ : unit), C n b -> D n.
+Local Coercion f2 : C >-> D.
+Check T c.
+
+End Test2.
+
+Section Test3.
+
+Class TC := tc : unit.
+
+Instance i : TC := tt.
+
+Parameter f3 : forall (b : bool) (n : nat) (_ : TC), C n b -> D n.
+Local Coercion f3 : C >-> D.
+Check T c.
+
+End Test3.
+
+End NonUniformInheritance.
+
+Module PhantType.
+
+Variant phant (p : Type) : Prop :=  Phant : phant p.
+
+Section SetType.
+
+Variable T : Type.
+
+Variant set_type : Type := FinSet : T -> set_type.
+Definition set_of (_ : phant T) := set_type.
+Identity Coercion type_of_set_of : set_of >-> set_type.
+
+End SetType.
+
+Definition sort (gT : Type) := set_of _ (Phant gT).
+Identity Coercion GroupSet_of_sort : sort >-> set_of.
+
+Structure group_type (gT : Type) : Type := Group {
+  gval : sort gT;
+}.
+Coercion gval : group_type >-> sort.
+
+Section GroupProp.
+
+Variable G : group_type unit.
+
+Check G : @set_type unit.
+
+Lemma group1 : let y := G : @set_type unit in True.
+Abort.
+
+End GroupProp.
+
+End PhantType.

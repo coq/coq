@@ -244,21 +244,19 @@ let apply_on_class_of env sigma t cont =
     let (cl,u,args) = find_class_type env sigma t in
     let { cl_param = n1 } = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
-    t, cont cl
+    cont cl
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
     let (cl, u, args) = find_class_type env sigma t in
     let { cl_param = n1 } = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
-    t, cont cl
+    cont cl
 
-let lookup_path_between env sigma (s,t) =
-  let (s,(t,p)) =
-    apply_on_class_of env sigma s (fun i ->
+let lookup_path_between env sigma ~src:s ~tgt:t =
+  apply_on_class_of env sigma s (fun i ->
       apply_on_class_of env sigma t (fun j ->
-        lookup_path_between_class (i,j))) in
-  (s,t,p)
+          lookup_path_between_class (i,j)))
 
 let lookup_path_to_fun_from env sigma s =
   apply_on_class_of env sigma s lookup_path_to_fun_from_class
