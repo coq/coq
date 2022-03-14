@@ -70,12 +70,6 @@ let on_current_term f =
   | None -> ()
   | Some t -> ignore (f t)
 
-let on_current_term_val default f =
-  let term = try Some notebook#current_term with Invalid_argument _ -> None in
-  match term with
-  | None -> default
-  | Some t -> f t
-
 let cb_on_current_term f _ = on_current_term f
 
 (** Nota: using && here has the advantage of working both under win32 and unix.
@@ -1295,17 +1289,6 @@ let toggle_items menu_name l =
 
 let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
 
-(* workaround: GTKSourceView3 ignores editable *)
-
-(* allowed in script panel, if editable, and elsewhere *)
-let can_paste () =
-  on_current_term_val true (fun t ->
-    (t.script#is_focus && t.script#editable2) || not t.script#is_focus)
-
-(* template insert only allowed in script panel *)
-let can_template () =
-  on_current_term_val false (fun t -> t.script#is_focus && t.script#editable2)
-
 (** Create alphabetical menu items with elements in sub-items.
     [l] is a list of lists, one per initial letter *)
 
@@ -1328,9 +1311,7 @@ let alpha_items menu_name item_name l =
       Buffer.contents buf
     in
     let callback _ =
-      on_current_term (fun sn ->
-        let text' = if can_template () then text' else "" in
-                      sn.buffer#insert_interactive text')
+      on_current_term (fun sn -> sn.buffer#insert_interactive text')
     in
     item (item_name^" "^(no_under text)) ~label:text ~callback menu_name
   in
@@ -1357,17 +1338,16 @@ let template_item (text, offset, len, key) =
   let label = "_"^name^" __" in
   let negoffset = String.length text - offset - len in
   let callback sn =
-    if can_paste () then
-      let b = sn.buffer in
-      if b#insert_interactive text then begin
-        let iter = b#get_iter_at_mark `INSERT in
-        ignore (iter#nocopy#backward_chars negoffset);
-        b#move_mark `INSERT ~where:iter;
-        ignore (iter#nocopy#backward_chars len);
-        b#move_mark `SEL_BOUND ~where:iter;
-      end
-    in
-    item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
+    let b = sn.buffer in
+    if b#insert_interactive text then begin
+      let iter = b#get_iter_at_mark `INSERT in
+      ignore (iter#nocopy#backward_chars negoffset);
+      b#move_mark `INSERT ~where:iter;
+      ignore (iter#nocopy#backward_chars len);
+      b#move_mark `SEL_BOUND ~where:iter;
+    end
+  in
+  item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
 
 (** Create menu items for pairs (query, shortcut key). *)
 let user_queries_items menu_name item_name l =
@@ -1448,19 +1428,15 @@ let build_ui () =
   menu edit_menu [
     item "Edit" ~label:"_Edit";
     item "Undo" ~accel:"<Primary>u" ~stock:`UNDO
-      ~callback:(cb_on_current_term (fun t -> if can_paste () then
-          t.script#undo ()));
+      ~callback:(cb_on_current_term (fun t -> t.script#undo ()));
     item "Redo" ~stock:`REDO
-      ~callback:(cb_on_current_term (fun t -> if can_paste () then
-          t.script#redo ()));
+      ~callback:(cb_on_current_term (fun t -> t.script#redo ()));
     item "Cut" ~stock:`CUT
-      ~callback:(fun _ -> if can_paste () then
-          emit_to_focus w GtkText.View.S.cut_clipboard);
+      ~callback:(fun _ -> emit_to_focus w GtkText.View.S.cut_clipboard);
     item "Copy" ~stock:`COPY
       ~callback:(fun _ -> emit_to_focus w GtkText.View.S.copy_clipboard);
     item "Paste" ~stock:`PASTE
-      ~callback:(fun _ -> if can_paste () then
-          emit_to_focus w GtkText.View.S.paste_clipboard);
+      ~callback:(fun _ -> emit_to_focus w GtkText.View.S.paste_clipboard);
     item "Find" ~stock:`FIND ~label:"Find / Replace"
       ~callback:(cb_on_current_term (fun t -> t.finder#show ()));
     item "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"
@@ -1590,11 +1566,9 @@ let build_ui () =
   menu tools_menu [
     item "Tools" ~label:"_Tools";
     item "Comment" ~label:"_Comment" ~accel:"<CTRL>D"
-      ~callback:(cb_on_current_term (fun t -> if can_paste () then
-          t.script#comment ()));
+      ~callback:(cb_on_current_term (fun t -> t.script#comment ()));
     item "Uncomment" ~label:"_Uncomment" ~accel:"<CTRL><SHIFT>D"
-      ~callback:(cb_on_current_term (fun t -> if can_paste () then
-          t.script#uncomment ()));
+      ~callback:(cb_on_current_term (fun t -> t.script#uncomment ()));
     item "Coqtop arguments" ~label:"Coqtop _arguments"
       ~callback:MiscMenu.coqtop_arguments;
     item "LaTeX-to-unicode" ~label:"_LaTeX-to-unicode" ~accel:"<Shift>space"
