@@ -12,7 +12,6 @@ open Pp
 open CErrors
 open Util
 open Names
-open Nameops
 open Constr
 open Context
 open EConstr
@@ -21,7 +20,6 @@ open Reduction
 open Tacticals
 open Tactics
 open Pretype_errors
-open Constrexpr
 open Evd
 open Tactypes
 open Locus
@@ -40,14 +38,6 @@ module NamedDecl = Context.Named.Declaration
 module TC = Typeclasses
 
 (** Typeclass-based generalized rewriting. *)
-
-type rewrite_attributes = { polymorphic : bool; global : bool }
-
-let rewrite_attributes =
-  let open Attributes.Notations in
-  Attributes.(polymorphic ++ program ++ locality) >>= fun ((polymorphic, program), locality) ->
-  let global = not (Locality.make_section_locality locality) in
-  Attributes.Notations.return { polymorphic; global }
 
 (** Constants used by the tactic. *)
 
@@ -99,10 +89,6 @@ let new_cstr_evar (evd,cstrs) env t =
   let (evd', t) = Evarutil.new_evar env evd ~typeclass_candidate:false t in
   let ev, _ = destEvar evd' t in
     (evd', Evar.Set.add ev cstrs), t
-
-(** Building or looking up instances. *)
-let e_new_cstr_evar env evars t =
-  let evd', t = new_cstr_evar !evars env t in evars := evd'; t
 
 (** Building or looking up instances. *)
 
@@ -259,7 +245,6 @@ end) = struct
   let pointwise_relation_ref = lazy_find_reference morphisms "pointwise_relation"
 
   let respectful = find_global morphisms "respectful"
-  let respectful_ref = lazy_find_reference morphisms "respectful"
 
   let default_relation = find_global ["Coq"; "Classes"; "SetoidTactics"] "DefaultRelation"
 
@@ -625,8 +610,8 @@ let general_rewrite_unif_flags () =
     Unification.resolve_evars = true
   }
 
-let refresh_hypinfo env sigma (is, cb) =
-  let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma cb in
+let refresh_hypinfo env sigma (cb : EConstr.t with_bindings delayed_open) =
+  let sigma, cbl = cb env sigma in
   let sigma, hypinfo = decompose_applied_relation env sigma cbl in
   let { c1; c2; car; rel; prf; sort; holes } = hypinfo in
   sigma, (car, rel, prf, c1, c2, holes, sort)
@@ -1477,7 +1462,7 @@ let solve_constraints env (evars,cstrs) =
 let nf_zeta =
   Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 
-exception RewriteFailure of Pp.t
+exception RewriteFailure of Environ.env * Evd.evar_map * pretype_error
 
 type result = (evar_map * constr option * types) option option
 
@@ -1643,7 +1628,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       beta <*> Proofview.shelve_unifiable
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
-      raise (RewriteFailure (Himsg.explain_pretype_error env evd e))
+      raise (RewriteFailure (env, evd, e))
   end
 
 let tactic_init_setoid () =
@@ -1658,8 +1643,6 @@ let cl_rewrite_clause_strat progress strat clause =
    (Proofview.tclOR
       (cl_rewrite_clause_newtac ~progress strat clause)
       (fun (e, info) -> match e with
-       | RewriteFailure e ->
-         tclZEROMSG ~info (str"setoid rewrite failed: " ++ e)
        | Tacticals.FailError (n, pp) ->
          tclFAILn ~info n (str"setoid rewrite failed: " ++ Lazy.force pp)
        | e ->
@@ -1674,9 +1657,9 @@ let cl_rewrite_clause l left2right occs clause =
 let cl_rewrite_clause_strat strat clause =
   cl_rewrite_clause_strat false strat clause
 
-let apply_glob_constr ist c l2r occs = (); fun ({ state = () ; env = env } as input) ->
+let apply_glob_constr ((_, c) : _ * EConstr.t delayed_open) l2r occs = (); fun ({ state = () ; env = env } as input) ->
   let c sigma =
-    let (sigma, c) = Tacinterp.interp_open_constr ist env sigma c in
+    let (sigma, c) = c env sigma in
     (sigma, (c, NoBindings))
   in
   let flags = general_rewrite_unif_flags () in
@@ -1756,12 +1739,12 @@ let rec pr_strategy prc prr = function
 | StratEval r -> str "eval" ++ spc () ++ prr r
 | StratFold c -> str "fold" ++ spc () ++ prc c
 
-let rec strategy_of_ast ist = function
+let rec strategy_of_ast = function
   | StratId -> Strategies.id
   | StratFail -> Strategies.fail
   | StratRefl -> Strategies.refl
   | StratUnary (f, s) ->
-    let s' = strategy_of_ast ist s in
+    let s' = strategy_of_ast s in
     let f' = match f with
       | Subterms -> all_subterms
       | Subterm -> one_subterm
@@ -1775,18 +1758,18 @@ let rec strategy_of_ast ist = function
       | Repeat -> Strategies.repeat
     in f' s'
   | StratBinary (f, s, t) ->
-    let s' = strategy_of_ast ist s in
-    let t' = strategy_of_ast ist t in
+    let s' = strategy_of_ast s in
+    let t' = strategy_of_ast t in
     let f' = match f with
       | Compose -> Strategies.seq
     in f' s' t'
   | StratNAry (Choice, strs) ->
-    let strs = List.map (strategy_of_ast ist) strs in
+    let strs = List.map (strategy_of_ast) strs in
     begin match strs with
       | [] -> assert false
       | s::strs -> List.fold_left Strategies.choice s strs
     end
-  | StratConstr (c, b) -> { strategy = apply_glob_constr ist c b AllOccurrences }
+  | StratConstr (c, b) -> { strategy = apply_glob_constr c b AllOccurrences }
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
   | StratTerms l -> { strategy =
     (fun ({ state = () ; env } as input) ->
@@ -1795,87 +1778,10 @@ let rec strategy_of_ast ist = function
                     }
   | StratEval r -> { strategy =
     (fun ({ state = () ; env ; evars } as input) ->
-     let (sigma,r_interp) = Tacinterp.interp_red_expr ist env (goalevars evars) r in
+     let (sigma, r_interp) = r env (goalevars evars) in
      (Strategies.reduce r_interp).strategy { input with
                                              evars = (sigma,cstrevars evars) }) }
   | StratFold c -> Strategies.fold_glob (fst c)
-
-
-(* By default the strategy for "rewrite_db" is top-down *)
-
-let mkappc s l = CAst.make @@ CAppExpl ((qualid_of_ident (Id.of_string s),None),l)
-
-let declare_an_instance n s args =
-  (((CAst.make @@ Name n),None),
-   CAst.make @@ CAppExpl ((qualid_of_string s,None), args))
-
-let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
-
-let get_locality b = if b then Hints.SuperGlobal else Hints.Local
-
-let anew_instance atts binders (name,t) fields =
-  let locality = get_locality atts.global in
-  let _id = Classes.new_instance ~poly:atts.polymorphic
-      name binders t (true, CAst.make @@ CRecord (fields))
-      ~locality Hints.empty_hint_info
-  in
-  ()
-
-let declare_instance_refl atts binders a aeq n lemma =
-  let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
-  in anew_instance atts binders instance
-       [(qualid_of_ident (Id.of_string "reflexivity"),lemma)]
-
-let declare_instance_sym atts binders a aeq n lemma =
-  let instance = declare_instance a aeq (add_suffix n "_Symmetric") "Coq.Classes.RelationClasses.Symmetric"
-  in anew_instance atts binders instance
-       [(qualid_of_ident (Id.of_string "symmetry"),lemma)]
-
-let declare_instance_trans atts binders a aeq n lemma =
-  let instance = declare_instance a aeq (add_suffix n "_Transitive") "Coq.Classes.RelationClasses.Transitive"
-  in anew_instance atts binders instance
-       [(qualid_of_ident (Id.of_string "transitivity"),lemma)]
-
-let declare_relation atts ?(binders=[]) a aeq n refl symm trans =
-  init_setoid ();
-  let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation" in
-  let () = anew_instance atts binders instance [] in
-  match (refl,symm,trans) with
-    (None, None, None) -> ()
-  | (Some lemma1, None, None) ->
-    declare_instance_refl atts binders a aeq n lemma1
-  | (None, Some lemma2, None) ->
-    declare_instance_sym atts binders a aeq n lemma2
-  | (None, None, Some lemma3) ->
-    declare_instance_trans atts binders a aeq n lemma3
-  | (Some lemma1, Some lemma2, None) ->
-    let () = declare_instance_refl atts binders a aeq n lemma1 in
-    declare_instance_sym atts binders a aeq n lemma2
-  | (Some lemma1, None, Some lemma3) ->
-    let () = declare_instance_refl atts binders a aeq n lemma1 in
-    let () = declare_instance_trans atts binders a aeq n lemma3 in
-    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder" in
-    anew_instance atts binders instance
-      [(qualid_of_ident (Id.of_string "PreOrder_Reflexive"), lemma1);
-       (qualid_of_ident (Id.of_string "PreOrder_Transitive"),lemma3)]
-  | (None, Some lemma2, Some lemma3) ->
-    let () = declare_instance_sym atts binders a aeq n lemma2 in
-    let () = declare_instance_trans atts binders a aeq n lemma3 in
-    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER" in
-    anew_instance atts binders instance
-      [(qualid_of_ident (Id.of_string "PER_Symmetric"), lemma2);
-       (qualid_of_ident (Id.of_string "PER_Transitive"),lemma3)]
-  | (Some lemma1, Some lemma2, Some lemma3) ->
-    let () = declare_instance_refl atts binders a aeq n lemma1 in
-    let () = declare_instance_sym atts binders a aeq n lemma2 in
-    let () = declare_instance_trans atts binders a aeq n lemma3 in
-    let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence" in
-    anew_instance atts binders instance
-      [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), lemma1);
-       (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), lemma2);
-       (qualid_of_ident (Id.of_string "Equivalence_Transitive"), lemma3)]
-
-let cHole = CAst.make @@ CHole (None, Namegen.IntroAnonymous, None)
 
 let proper_projection env sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
@@ -1885,43 +1791,6 @@ let proper_projection env sigma r ty =
   let app = mkApp (PropGlobal.proper_proj env sigma,
                   Array.append args [| instarg |]) in
     it_mkLambda_or_LetIn app ctx
-
-let declare_projection name instance_id r =
-  let env = Global.env () in
-  let poly = Environ.is_polymorphic env r in
-  let sigma = Evd.from_env env in
-  let sigma,c = Evd.fresh_global env sigma r in
-  let ty = Retyping.get_type_of env sigma c in
-  let body = proper_projection env sigma c ty in
-  let sigma, typ = Typing.type_of env sigma body in
-  let ctx, typ = decompose_prod_assum sigma typ in
-  let typ =
-    let n =
-      let rec aux t =
-        match EConstr.kind sigma t with
-        | App (f, [| a ; a' ; rel; rel' |])
-            when isRefX sigma (PropGlobal.respectful_ref ()) f ->
-          succ (aux rel')
-        | _ -> 0
-      in
-      let init =
-        match EConstr.kind sigma typ with
-            App (f, args) when isRefX sigma (PropGlobal.respectful_ref ()) f  ->
-              mkApp (f, fst (Array.chop (Array.length args - 2) args))
-          | _ -> typ
-      in aux init
-    in
-    let ctx,ccl = Reductionops.splay_prod_n env sigma (3 * n) typ
-    in it_mkProd_or_LetIn ccl ctx
-  in
-  let types = Some (it_mkProd_or_LetIn typ ctx) in
-  let kind = Decls.(IsDefinition Definition) in
-  let impargs, udecl = [], UState.default_univ_decl in
-  let cinfo = Declare.CInfo.make ~name ~impargs ~typ:types () in
-  let info = Declare.Info.make ~kind ~udecl ~poly () in
-  let _r : GlobRef.t =
-    Declare.declare_definition ~cinfo ~info ~opaque:false ~body sigma
-  in ()
 
 let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
@@ -1942,7 +1811,8 @@ let build_morphism_signature env sigma m =
     (fun (ty, rel) ->
       Option.iter (fun rel ->
         let default = e_app_poly env evd PropGlobal.default_relation [| ty; rel |] in
-          ignore(e_new_cstr_evar env evd default))
+        let evd', t = new_cstr_evar !evd env default in
+        evd := evd')
         rel)
     cstrs
   in
@@ -1950,9 +1820,7 @@ let build_morphism_signature env sigma m =
   let evd = solve_constraints env !evd in
   evd, morph
 
-let default_morphism sign m =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
+let default_morphism env sigma sign m =
   let t = Retyping.get_type_of env sigma m in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
@@ -1960,82 +1828,6 @@ let default_morphism sign m =
   let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
   let evars, mor = TC.resolve_one_typeclass env (goalevars evars) morph in
     mor, proper_projection env sigma mor morph
-
-let add_setoid atts binders a aeq t n =
-  init_setoid ();
-  let () = declare_instance_refl atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
-  let () = declare_instance_sym atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-  let () = declare_instance_trans atts binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
-  let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
-  in
-  anew_instance atts binders instance
-    [(qualid_of_ident (Id.of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
-     (qualid_of_ident (Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
-     (qualid_of_ident (Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])]
-
-let make_tactic name =
-  let open Tacexpr in
-  let tacqid = Libnames.qualid_of_string name in
-  CAst.make @@ TacArg (TacCall (CAst.make (tacqid, [])))
-
-let add_morphism_as_parameter atts m n : unit =
-  init_setoid ();
-  let instance_id = add_suffix n "_Proper" in
-  let env = Global.env () in
-  let evd = Evd.from_env env in
-  let poly = atts.polymorphic in
-  let kind = Decls.(IsAssumption Logical) in
-  let impargs, udecl = [], UState.default_univ_decl in
-  let evd, types = build_morphism_signature env evd m in
-  let evd, pe = Declare.prepare_parameter ~poly ~udecl ~types evd in
-  let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
-  let cst = GlobRef.ConstRef cst in
-  Classes.Internal.add_instance
-    (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst;
-  declare_projection n instance_id cst
-
-let add_morphism_interactive atts m n : Declare.Proof.t =
-  init_setoid ();
-  let instance_id = add_suffix n "_Proper" in
-  let env = Global.env () in
-  let evd = Evd.from_env env in
-  let evd, morph = build_morphism_signature env evd m in
-  let poly = atts.polymorphic in
-  let kind = Decls.(IsDefinition Instance) in
-  let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
-  let hook { Declare.Hook.S.dref; _ } = dref |> function
-    | GlobRef.ConstRef cst ->
-      Classes.Internal.add_instance (PropGlobal.proper_class env evd) Hints.empty_hint_info
-        atts.global (GlobRef.ConstRef cst);
-      declare_projection n instance_id (GlobRef.ConstRef cst)
-    | _ -> assert false
-  in
-  let hook = Declare.Hook.make hook in
-  Flags.silently
-    (fun () ->
-       let cinfo = Declare.CInfo.make ~name:instance_id ~typ:morph () in
-       let info = Declare.Info.make ~poly ~hook ~kind () in
-       let lemma = Declare.Proof.start ~cinfo ~info evd in
-       fst (Declare.Proof.by (Tacinterp.interp tac) lemma)) ()
-
-let add_morphism atts binders m s n =
-  init_setoid ();
-  let instance_id = add_suffix n "_Proper" in
-  let instance_name = (CAst.make @@ Name instance_id),None in
-  let instance_t =
-    CAst.make @@ CAppExpl
-      ((Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper",None),
-       [cHole; s; m])
-  in
-  let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
-  let locality = get_locality atts.global in
-  let _id, lemma = Classes.new_instance_interactive
-      ~locality ~poly:atts.polymorphic
-      instance_name binders instance_t
-      ~tac ~hook:(declare_projection n instance_id)
-      Hints.empty_hint_info None
-  in
-  lemma (* no instance body -> always open proof *)
 
 (** Bind to "rewrite" too *)
 
@@ -2129,8 +1921,6 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
            (Proofview.Unsafe.tclEVARS evd)
             (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
     (fun (e, info) -> match e with
-    | RewriteFailure e ->
-      tclFAIL ~info (str"setoid rewrite failed: " ++ e)
     | e -> Proofview.tclZERO ~info e)
   end
 
@@ -2254,3 +2044,16 @@ let get_symmetric_proof =
 let get_transitive_proof =
   get_lemma_proof PropGlobal.get_transitive_proof
 
+module Internal =
+struct
+
+  let build_signature env sigma m cstr finalcstr =
+    let evars = (sigma, Evar.Set.empty) in
+    let ((sigma, _), _, sig_, cstr) = PropGlobal.build_signature evars env m cstr finalcstr in
+    sigma, sig_, cstr
+
+  let build_morphism_signature = build_morphism_signature
+
+  let default_morphism = default_morphism
+
+end

@@ -20,6 +20,7 @@ open Genintern
 open Geninterp
 open Extraargs
 open Rewrite
+open ComRewrite
 open Stdarg
 open Tactypes
 open Pcoq.Prim
@@ -69,7 +70,11 @@ type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
 type glob_strategy = (glob_constr_and_expr, Tacexpr.glob_red_expr) strategy_ast
 
 let interp_strategy ist env sigma s =
-    strategy_of_ast ist s
+  let interp_redexpr r = fun env sigma -> Tacinterp.interp_red_expr ist env sigma r in
+  let interp_constr c = (fst c, fun env sigma -> Tacinterp.interp_open_constr ist env sigma c) in
+  let s = map_strategy interp_constr interp_redexpr s in
+  strategy_of_ast s
+
 let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (Tacintern.intern_red_expr ist) s
 let subst_strategy s str = str
 
@@ -125,7 +130,11 @@ END
 {
 
 let db_strat db = StratUnary (Topdown, StratHints (false, db))
-let cl_rewrite_clause_db ist db = cl_rewrite_clause_strat (strategy_of_ast ist (db_strat db))
+let cl_rewrite_clause_db ist db = cl_rewrite_clause_strat (strategy_of_ast (db_strat db))
+
+let cl_rewrite_clause (ist, c) b occ cl =
+  let c env sigma = Tacinterp.interp_open_constr_with_bindings ist env sigma c in
+  cl_rewrite_clause c b occ cl
 
 }
 
@@ -272,6 +281,13 @@ END
 let add_setoid atts binders a aeq t n =
   add_setoid atts binders a aeq t n.CAst.v
 
+let morphism_tactic =
+  let open Tacexpr in
+  let name = "Coq.Classes.SetoidTactics.add_morphism_tactic" in
+  let tacqid = Libnames.qualid_of_string name in
+  let tac = CAst.make @@ TacArg (TacCall (CAst.make (tacqid, []))) in
+  Tacinterp.interp tac
+
 }
 
 VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
@@ -287,17 +303,17 @@ VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
     => { VtStartProof(GuaranteesOpacity, [n.CAst.v]) }
     -> { if Lib.is_modtype () then
            CErrors.user_err Pp.(str "Add Morphism cannot be used in a module type. Use Parameter Morphism instead.");
-         add_morphism_interactive atts m n.CAst.v }
+         add_morphism_interactive atts ~tactic:morphism_tactic m n.CAst.v }
   | #[ atts = rewrite_attributes; ] [ "Declare" "Morphism" constr(m) ":" identref(n) ]
     => { VtSideff([n.CAst.v], VtLater) }
     -> { add_morphism_as_parameter atts m n.CAst.v }
   | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" identref(n) ]
     => { VtStartProof(GuaranteesOpacity,[n.CAst.v]) }
-    -> { add_morphism atts [] m s n.CAst.v }
+    -> { add_morphism atts ~tactic:morphism_tactic [] m s n.CAst.v }
   | #[ atts = rewrite_attributes; ] ![ open_proof ] [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
         "with" "signature" lconstr(s) "as" identref(n) ]
     => { VtStartProof(GuaranteesOpacity,[n.CAst.v]) }
-    -> { add_morphism atts binders m s n.CAst.v }
+    -> { add_morphism atts ~tactic:morphism_tactic binders m s n.CAst.v }
 END
 
 TACTIC EXTEND setoid_symmetry
