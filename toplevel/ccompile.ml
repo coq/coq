@@ -122,9 +122,11 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
   let long_f_dot_in, long_f_dot_out =
     ensure_exists_with_prefix f_in f_out ext_in ext_out in
   let dump_empty_vos () =
-    (* Produce an empty .vos file, as a way to ensure that a stale .vos can never be loaded *)
     let long_f_dot_vos = (chop_extension long_f_dot_out) ^ ".vos" in
     create_empty_file long_f_dot_vos in
+  let dump_empty_vok () =
+    let long_f_dot_vok = (chop_extension long_f_dot_out) ^ ".vok" in
+    create_empty_file long_f_dot_vok in
   match mode with
   | BuildVo | BuildVok ->
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
@@ -147,19 +149,19 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs long_f_dot_in;
-      (* In .vo production, dump a complete .vo file.
-         In .vok production, only dump an empty .vok file. *)
+      (* In .vo production, dump a complete .vo file. *)
       if mode = BuildVo
         then Library.save_library_to ~output_native_objects Library.ProofsTodoNone ldir long_f_dot_out;
       Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
-      (* In .vo production, dump an empty .vos file to indicate that the .vo should be loaded,
-         and dump an empty .vok file to indicate that proofs are ok. *)
-      if mode = BuildVo then begin
+      (* Additionally, dump an empty .vos file to make sure that
+        stale ones are never loaded *)
+      if mode = BuildVo then
         dump_empty_vos();
-        create_empty_file (long_f_dot_out ^ "k");
-      end;
+      (* In both .vo, and .vok production mode, dump an empty .vok file to
+         indicate that proofs are ok. *)
+      dump_empty_vok();
       Dumpglob.end_dump_glob ()
 
   | BuildVio | BuildVos ->
