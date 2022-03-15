@@ -541,6 +541,11 @@ object(self)
   method set_debug_goal msg =
     proof#set_debug_goal msg
 
+  method private check_last_b2c_offsets sentence =
+   let s_off = (buffer#get_iter_at_mark sentence.start)#offset in
+   if s_off < (fst !last_b2c_offsets) then
+     last_b2c_offsets := (0,0);
+
   method private process_feedback msg =
     (* Minilib.log ("Feedback received: " ^ Xml_printer.to_string_fmt Xmlprotocol.(of_feedback Ppcmds msg)); *)
     let pr_feedback msg =
@@ -579,6 +584,7 @@ object(self)
       | Processed, None ->  msg_wo_sent "Processed"
       | ProcessingIn _,  Some (id,sentence) ->
           log ?id "ProcessingIn";
+          self#check_last_b2c_offsets sentence;
           add_flag sentence `PROCESSING;
           self#mark_as_needed sentence
       | ProcessingIn _, None ->  msg_wo_sent "ProcessingIn"
@@ -772,6 +778,7 @@ object(self)
             loop tip topstack
         | `Sentence sentence, _ :: _ -> assert false
         | `Sentence ({ edit_id } as sentence), [] ->
+            self#check_last_b2c_offsets sentence;
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
             let start, _, phrase = self#get_sentence sentence in
