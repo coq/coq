@@ -1,0 +1,9 @@
+f nat (pair_foo nat bool nat_foo bool_foo) x : T2 nat
+     : T2 nat
+f ?T ?f x : T2 ?T
+     : T2 ?T
+where
+?T : [ |- Type]
+?f : [ |- foo ?T]
+f bool bool_foo x : T2 bool
+     : T2 bool
