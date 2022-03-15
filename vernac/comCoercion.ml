@@ -299,7 +299,7 @@ let warn_uniform_inheritance =
   CWarnings.create ~name:"uniform-inheritance" ~category:"typechecker"
          (fun g ->
           Printer.pr_global g ++
-            strbrk" does not respect the uniform inheritance condition")
+            strbrk" does not respect the uniform inheritance condition.")
 
 let add_new_coercion_core coef stre poly source target isid : unit =
   check_source source;
@@ -332,7 +332,8 @@ let add_new_coercion_core coef stre poly source target isid : unit =
   | `LOCAL -> true
   | `GLOBAL -> false
   in
-  declare_coercion coef t ~local ~isid ~src:cls ~target:clt ~params:(List.length lvs) ()
+  let params = List.length (Context.Rel.instance_list EConstr.mkRel 0 ctx) in
+  declare_coercion coef t ~local ~isid ~src:cls ~target:clt ~params ()
 
 
 let try_add_new_coercion_core ref ~local c d e f =

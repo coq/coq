@@ -79,12 +79,10 @@ val coercion_info : coe_typ -> coe_info_typ
 (** @raise Not_found in the following functions when no path exists *)
 
 val lookup_path_between_class : cl_typ * cl_typ -> inheritance_path
-val lookup_path_between : env -> evar_map -> types * types ->
-      types * types * inheritance_path
-val lookup_path_to_fun_from : env -> evar_map -> types ->
-      types * inheritance_path
-val lookup_path_to_sort_from : env -> evar_map -> types ->
-      types * inheritance_path
+val lookup_path_between : env -> evar_map -> src:types -> tgt:types ->
+  inheritance_path
+val lookup_path_to_fun_from : env -> evar_map -> types -> inheritance_path
+val lookup_path_to_sort_from : env -> evar_map -> types -> inheritance_path
 val lookup_pattern_path_between :
   env -> inductive * inductive -> (constructor * int) list
 

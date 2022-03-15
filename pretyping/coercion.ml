@@ -44,36 +44,32 @@ let get_use_typeclasses_for_conversion =
 exception NoCoercion
 exception NoCoercionNoUnifier of evar_map * unification_error
 
-(* Here, funj is a coercion therefore already typed in global context *)
-let apply_coercion_args env sigma check isproj argl funj =
-  let rec apply_rec sigma acc typ = function
-    | [] ->
-      (match isproj with
-       | Some p ->
-         let npars = Projection.Repr.npars p in
-         let p = Projection.make p false in
-         let args = List.skipn npars argl in
-         let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
-         sigma, { uj_val = applist (mkProj (p, hd), tl);
-                  uj_type = typ }
-       | None ->
-         sigma, { uj_val = applist (j_val funj,argl);
-                  uj_type = typ })
-    | h::restl -> (* On devrait pouvoir s'arranger pour qu'on n'ait pas a faire hnf_constr *)
-      match EConstr.kind sigma (whd_all env sigma typ) with
-      | Prod (_,c1,c2) ->
-        let sigma =
-          if check then
-            begin match Evarconv.unify_leq_delay env sigma (Retyping.get_type_of env sigma h) c1 with
-              | exception Evarconv.UnableToUnify _ -> raise NoCoercion
-              | sigma -> sigma
-            end
-          else sigma
-        in
-        apply_rec sigma (h::acc) (subst1 h c2) restl
-      | _ -> anomaly (Pp.str "apply_coercion_args.")
-  in
-  apply_rec sigma [] funj.uj_type argl
+let apply_coercion_args env sigma isproj bo ty arg arg_ty nparams =
+  let destProd sigma typ =
+    match EConstr.kind sigma (whd_all env sigma typ) with
+    | Prod (_, c1, c2) -> c1, c2
+    | _ -> anomaly (Pp.str "apply_coercion_args.") in
+  let rec apply_rec sigma acc typ nparams =
+    if nparams <= 0 then sigma, List.rev acc, typ else
+      let c1, c2 = destProd sigma typ in
+      let sigma, x = Evarutil.new_evar env sigma c1 in
+      apply_rec sigma (x :: acc) (subst1 x c2) (nparams - 1) in
+  let sigma, params, typ = apply_rec sigma [] ty nparams in
+  let sigma, args, typ =
+    let c1, c2 = destProd sigma typ in
+    let sigma =
+      let arg_ty = whd_zeta env sigma arg_ty in
+      try Evarconv.unify_leq_delay env sigma arg_ty c1
+      with Evarconv.UnableToUnify _ -> raise NoCoercion in
+    sigma, params @ [arg], subst1 arg c2 in
+  let bo, args =
+    match isproj with None -> bo, args | Some p ->
+      let npars = Projection.Repr.npars p in
+      let p = Projection.make p false in
+      let args = List.skipn npars args in
+      let hd, tl = match args with hd :: tl -> hd, tl | [] -> assert false in
+      mkProj (p, hd), tl in
+  sigma, applist (bo, args), params, typ
 
 (* appliquer le chemin de coercions de patterns p *)
 let apply_pattern_coercion ?loc pat p =
@@ -398,37 +394,28 @@ let instance_of_global_constr sigma c =
   | Const (_,u) | Ind (_,u) | Construct (_,u) -> EInstance.kind sigma u
   | _ -> Univ.Instance.empty
 
-(* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
-let apply_coercion env sigma p hj typ_cl =
-  let j,t,trace,sigma =
+(* Apply coercion path from p to h of type hty; raise NoCoercion if not applicable *)
+let apply_coercion env sigma p h hty =
+  let j, jty, trace, sigma =
     List.fold_left
-      (fun (ja,typ_cl,trace,sigma) i ->
+      (fun (j,jty,trace,sigma) i ->
          let isid = i.coe_is_identity in
          let isproj = i.coe_is_projection in
          let sigma, c = Evd.fresh_global env sigma i.coe_value in
          let u = instance_of_global_constr sigma c in
          let typ = EConstr.of_constr (CVars.subst_instance_constr u i.coe_typ) in
-         let fv = make_judge c typ in
-         let argl = class_args_of env sigma typ_cl in
+         let sigma, j', args, jty =
+           apply_coercion_args env sigma isproj c typ j jty i.coe_param in
          let trace =
            if isid then trace
            else match isproj with
-           | None -> Coe {head=fv.uj_val;args=argl;previous=trace}
+           | None -> Coe {head=c;args;previous=trace}
            | Some proj ->
-             let args = List.skipn (Projection.Repr.npars proj) argl in
-             PrimProjCoe {proj; args; previous=trace }
-         in
-         let argl = argl@[ja.uj_val] in
-         let sigma, jres = apply_coercion_args env sigma true isproj argl fv in
-         let jres =
-         if isid then
-            { uj_val = ja.uj_val; uj_type = jres.uj_type }
-          else
-            jres
-         in
-         jres, jres.uj_type, trace, sigma)
-      (hj,typ_cl,IdCoe,sigma) p
-  in sigma, j, trace
+              let args = List.skipn (Projection.Repr.npars proj) args in
+              PrimProjCoe {proj; args; previous=trace } in
+         (if isid then j else j'), jty, trace, sigma)
+      (h, hty, IdCoe, sigma) p
+  in sigma, j, jty, trace
 
 let remove_subset env sigma t =
   let rec aux v =
@@ -537,10 +524,10 @@ let inh_app_fun_core ~program_mode env sigma body typ =
   | Inl sigma -> sigma, body, typ, IdCoe
   | Inr t ->
     try
-      let t,p = lookup_path_to_fun_from env sigma typ in
-      let j = {uj_val=force_app_body body; uj_type = typ} in
-      let sigma, j, trace = apply_coercion env sigma p j t in
-      sigma, start_app_body sigma j.uj_val, j.uj_type, trace
+      let p = lookup_path_to_fun_from env sigma typ in
+      let body = force_app_body body in
+      let sigma, body, typ, trace = apply_coercion env sigma p body typ in
+      sigma, start_app_body sigma body, typ, trace
     with (Not_found | NoCoercion) as exn ->
       let _, info = Exninfo.capture exn in
       if program_mode then
@@ -568,12 +555,12 @@ let type_judgment env sigma j =
     | Sort s -> {utj_val = j.uj_val; utj_type = ESorts.kind sigma s }
     | _ -> error_not_a_type env sigma j
 
-let inh_tosort_force ?loc env sigma j =
+let inh_tosort_force ?loc env sigma ({ uj_val; uj_type } as j) =
   try
-    let t,p = lookup_path_to_sort_from env sigma j.uj_type in
-    let sigma,j1,_trace = apply_coercion env sigma p j t in
-    let j2 = Environ.on_judgment_type (whd_evar sigma) j1 in
-      (sigma,type_judgment env sigma j2)
+    let p = lookup_path_to_sort_from env sigma uj_type in
+    let sigma, uj_val, uj_type,_trace = apply_coercion env sigma p uj_val uj_type in
+    let j2 = Environ.on_judgment_type (whd_evar sigma) { uj_val ; uj_type } in
+      (sigma, type_judgment env sigma j2)
   with Not_found | NoCoercion ->
     error_not_a_type ?loc env sigma j
 
@@ -595,22 +582,18 @@ let inh_coerce_to_base ?loc ~program_mode env sigma j =
     sigma, res
   else (sigma, j)
 
-let inh_coerce_to_fail flags env sigma rigidonly v t c1 =
-  if rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr c1) && Heads.is_rigid env (EConstr.Unsafe.to_constr t))
+let inh_coerce_to_fail flags env sigma rigidonly v v_ty target_type =
+  if rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr target_type) && Heads.is_rigid env (EConstr.Unsafe.to_constr v_ty))
   then
     raise NoCoercion
   else
-    let sigma, v', t', trace =
+    let sigma, v', v'_ty, trace =
       try
-        let t2,t1,p = lookup_path_between env sigma (t,c1) in
-        let sigma,j,trace =
-          apply_coercion env sigma p
-            {uj_val = v; uj_type = t} t2
-        in
-        sigma, j.uj_val, j.uj_type, trace
+        let c = lookup_path_between env sigma ~src:v_ty ~tgt:target_type in
+        apply_coercion env sigma c v v_ty
       with Not_found -> raise NoCoercion
     in
-    try (unify_leq_delay ~flags env sigma t' c1, v', trace)
+    try unify_leq_delay ~flags env sigma v'_ty target_type, v', trace
     with Evarconv.UnableToUnify _ as exn ->
       let _, info = Exninfo.capture exn in
       Exninfo.iraise (NoCoercion,info)

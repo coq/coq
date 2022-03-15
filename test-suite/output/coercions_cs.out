@@ -1,0 +1,6 @@
+f foo_nat x : T2 nat
+     : T2 nat
+f (foo_A nat ?n) x : T2 nat
+     : T2 nat
+where
+?n : [ |- nat]
