@@ -14,20 +14,39 @@ open Ideutils
 open Interface
 open Feedback
 
-let b2c = byte_off_to_buffer_off
+(* Absolute positions in the buffer.
+   - Utf8 is the number of unicode characters.
+   - Byte is the number of 8-bit characters. *)
+type position = { utf8 : int; byte : int }
 
 (** variant of buffer_off_to_byte_off: convert unicode offset (used by GTK buffer)
     to UTF-8 byte offset (used by Coq) with size caching for performance *)
-let c2b (buffer : GText.buffer) (s_byte, s_uni) uni_off =
-  if s_uni < 0 then
-    raise (invalid_arg "c2b: s_uni must be >= 0");
+let get_iter_position (buffer : GText.buffer) s_pos (iter : GText.iter) =
+  let s_byte = s_pos.byte in
+  let s_iter = buffer#get_iter (`OFFSET s_pos.utf8) in
   let rec cvt iter rv =
-    if iter#offset <= s_uni then
-      rv
-    else
-      cvt iter#backward_char (rv + (ulen iter#char))
+    let c = iter#compare s_iter in
+    if Int.equal c 0 then rv
+    else if c < 0 then cvt iter#forward_char (rv + (ulen iter#char))
+    else cvt iter#backward_char (rv + (ulen iter#char))
   in
-  cvt (buffer#get_iter (`OFFSET uni_off)) s_byte
+  let rv = cvt iter 0 in
+  let byte = if iter#compare s_iter < 0 then s_byte - rv else s_byte + rv in
+  { utf8 = iter#offset; byte }
+
+let get_byte_position (buffer : GText.buffer) s_pos (byte : int) =
+  let s_byte = s_pos.byte in
+  let s_iter = buffer#get_iter (`OFFSET s_pos.utf8) in
+  let rec cvt bwd iter cnt =
+    if cnt <= 0 then iter#offset
+    else
+      let cnt = cnt - ulen iter#char in
+      let iter = if bwd then iter#backward_char else iter#forward_char in
+      cvt bwd iter cnt
+  in
+  let bwd = byte <= s_byte in
+  let utf8 = cvt bwd s_iter (abs (byte - s_byte)) in
+  { utf8; byte }
 
 type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string Loc.located | `WARNING of string Loc.located ]
 type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR | `WARNING ]
@@ -53,6 +72,7 @@ module SentenceId : sig
   type sentence = private {
     start : GText.mark;
     stop : GText.mark;
+    mutable start_position : position;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
@@ -61,7 +81,7 @@ module SentenceId : sig
   }
 
   val mk_sentence :
-    start:GText.mark -> stop:GText.mark -> flag list -> sentence
+    start:GText.mark -> start_position:position -> stop:GText.mark -> flag list -> sentence
 
   val add_flag : sentence -> flag -> unit
   val has_flag : sentence -> mem_flag -> bool
@@ -72,6 +92,8 @@ module SentenceId : sig
 
   val connect : sentence -> signals
 
+  val get_sentence_start_position : GText.buffer -> sentence -> position
+
   val dbg_to_string :
     GText.buffer -> bool -> Stateid.t option -> sentence -> Pp.t
 
@@ -80,6 +102,7 @@ end = struct
   type sentence = {
     start : GText.mark;
     stop : GText.mark;
+    mutable start_position : position;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
@@ -94,15 +117,30 @@ end = struct
     end
 
   let id = ref 0
-  let mk_sentence ~start ~stop flags = decr id; {
+  let mk_sentence ~start ~start_position ~stop flags = decr id; {
     start = start;
     stop = stop;
+    start_position = start_position;
     flags = flags;
     edit_id = !id;
     tooltips = [];
     index = -1;
     changed_sig = new GUtil.signal ();
   }
+
+  let get_sentence_start_position (buffer : GText.buffer) s =
+    let start = buffer#get_iter_at_mark s.start in
+    let off = start#offset in
+    if Int.equal off s.start_position.utf8 then
+      (* Unsound: the length in unicode code points may stay the same despite
+         the length in bytes being different. In practice this should be very
+         uncommon. *)
+      s.start_position
+    else
+      (* Inefficient O(n) computation of the position *)
+      let pos = get_iter_position buffer { byte = 0; utf8 = 0 } start in
+      let () = s.start_position <- pos in
+      pos
 
   let changed s =
     s.changed_sig#call (s.index, List.map mem_flag_of_flag s.flags)
@@ -279,8 +317,6 @@ object(self)
   val mutable to_process = 0
   val mutable processed = 0
   val mutable slaves_status = CString.Map.empty
-
-  val mutable last_offsets = (0,0)
 
   val mutable forward_clear_db_highlight = ((fun x -> failwith "forward_clear_db_highlight")
                   : unit -> unit)
@@ -493,11 +529,14 @@ object(self)
 
   method private attach_tooltip ?loc sentence text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
-    let pre_chars, post_chars = Option.cata Loc.unloc (0, String.length phrase) loc in
-    let pre = b2c buffer pre_chars in
-    let post = b2c buffer post_chars in
-    let start = start_sentence#forward_chars pre in
-    let stop = start_sentence#forward_chars post in
+    let pre, post = match loc with
+    | None -> start_sentence#offset, stop_sentence#offset
+    | Some loc ->
+      let start, stop = self#positions_of_loc sentence loc in
+      start.utf8, stop.utf8
+    in
+    let start = buffer#get_iter (`OFFSET pre) in
+    let stop = buffer#get_iter (`OFFSET post) in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
     add_tooltip sentence pre post markup
@@ -626,18 +665,28 @@ object(self)
     let stop = buffer#get_iter_at_mark sentence.stop in
     buffer#move_mark ~where:stop (`NAME "start_of_input");
 
-  method private position_tag_at_iter ?loc iter_start iter_stop tag phrase = match loc with
+  method private positions_of_loc sentence loc =
+    let (start, stop) = Loc.unloc loc in
+    let s_pos = get_sentence_start_position buffer sentence in
+    let start_pos = get_byte_position buffer s_pos start in
+    let stop_pos = get_byte_position buffer s_pos start in
+    (start_pos, stop_pos)
+
+  method private position_tag_at_iter ?pos iter_start iter_stop tag phrase = match pos with
     | None ->
       buffer#apply_tag tag ~start:iter_start ~stop:iter_stop
-    | Some loc ->
-      let start, stop = Loc.unloc loc in
+    | Some (start, stop) ->
       buffer#apply_tag tag
-        ~start:(buffer#get_iter (`OFFSET (b2c buffer start)))
-        ~stop:(buffer#get_iter (`OFFSET (b2c buffer stop)))
+        ~start:(buffer#get_iter (`OFFSET start.utf8))
+        ~stop:(buffer#get_iter (`OFFSET stop.utf8))
 
   method private position_tag_at_sentence ?loc tag sentence =
     let start, stop, phrase = self#get_sentence sentence in
-    self#position_tag_at_iter ?loc start stop tag phrase
+    let pos = match loc with
+    | None -> None
+    | Some loc -> Some (self#positions_of_loc sentence loc)
+    in
+    self#position_tag_at_iter ?pos start stop tag phrase
 
   method private process_interp_error ?loc queue sentence msg tip id =
     Coq.bind (Coq.return ()) (function () ->
@@ -646,7 +695,11 @@ object(self)
     self#discard_command_queue queue;
     pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
-      self#position_tag_at_iter ?loc start stop Tags.Script.error phrase;
+      let pos = match loc with
+      | None -> None
+      | Some loc -> Some (self#positions_of_loc sentence loc)
+      in
+      self#position_tag_at_iter ?pos start stop Tags.Script.error phrase;
       buffer#place_cursor ~where:stop;
       messages#default_route#clear;
       messages#default_route#push Feedback.Error msg;
@@ -667,7 +720,7 @@ object(self)
   method private fill_command_queue until queue =
     let topstack =
       if Doc.focused document then fst (Doc.context document) else [] in
-    let rec loop n iter =
+    let rec loop n iter pos =
       match Sentence.find buffer iter with
       | None -> ()
       | Some (start, stop) ->
@@ -679,19 +732,25 @@ object(self)
             stop#equal (buffer#get_iter_at_mark s.stop)) topstack
         then begin
           Queue.push (`Skip (start, stop)) queue;
-          loop n stop
+          let stop_pos = get_iter_position buffer pos stop in
+          loop n stop stop_pos
         end else begin
           buffer#apply_tag Tags.Script.to_process ~start ~stop;
+          let start_position = get_iter_position buffer pos start in
+          let stop_position = get_iter_position buffer pos stop in
           let sentence =
             mk_sentence
               ~start:(`MARK (buffer#create_mark start))
               ~stop:(`MARK (buffer#create_mark stop))
+              ~start_position
               [] in
           Queue.push (`Sentence sentence) queue;
-          if not stop#is_end then loop (succ n) stop
+          if not stop#is_end then loop (succ n) stop stop_position
         end
     in
-    loop 0 self#get_start_of_input
+    let iter = self#get_start_of_input in
+    let byte = buffer_off_to_byte_off buffer iter#offset in
+    loop 0 iter { byte; utf8 = iter#offset }
 
   method private discard_command_queue queue =
     while not (Queue.is_empty queue) do
@@ -743,14 +802,10 @@ object(self)
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
             let start, _, phrase = self#get_sentence sentence in
-            (* script before last_offsets is not editable because Coq is processing *)
-            let s_offs = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
-            let bp = c2b buffer s_offs start#offset in
+            let start_pos = get_sentence_start_position buffer sentence in
+            let bp = start_pos.byte in
             let line_nb = start#line + 1 in
-            let bol_uni = start#offset - start#line_offset in
-            let bol_byte = c2b buffer s_offs bol_uni in
-            let bol_pos = bp - bol_byte in
-            last_offsets <- (bol_byte, bol_uni);
+            let bol_pos = 0 in (* Not used by the XML protocol *)
             let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
