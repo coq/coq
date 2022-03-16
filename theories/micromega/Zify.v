@@ -16,7 +16,7 @@ Ltac zify_pre_hook := idtac.
 
 Ltac zify_post_hook := idtac.
 
-Ltac zify_convert_to_euclidean_division_equations_flag := constr:(false).
+Ltac zify_convert_to_euclidean_division_equations_flag := constr:(true).
 
 (** [zify_internal_to_euclidean_division_equations] is bound in [PreOmega] *)
 Ltac zify_internal_to_euclidean_division_equations := idtac.
