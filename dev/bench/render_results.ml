@@ -1,4 +1,3 @@
-#! /usr/bin/env ocaml
 
 (* ASSUMPTIONS:
    - the 1-st command line argument (working directory):
@@ -16,13 +15,7 @@
      - are names of benchamarked Coq OPAM packages for which bench.sh script generated *.time and *.perf files
  *)
 
-#use "topfind";;
-#require "unix";;
-#print_depth 100000000;;
-#print_length 100000000;;
-
 open Printf
-open Unix
 ;;
 
 let _ = Printexc.record_backtrace true
@@ -80,7 +73,7 @@ let ( %> ) f g x = g (f x)
 let run = run_and_read %> snd
 
 module Float = struct
-  let nan = Pervasives.nan
+  let nan = nan
 end
 
 module List = struct
@@ -117,8 +110,8 @@ module List = struct
     | h :: t ->
       fold_left f h t
 
-  let min l = reduce Pervasives.min l
-  let max l = reduce Pervasives.max l
+  let min l = reduce min l
+  let max l = reduce max l
 
 end
 ;;
@@ -136,143 +129,6 @@ module String = struct
 
 end
 ;;
-
-module Table :
-sig
-  type header = string
-  type row = string list list
-  val print : header list -> row -> row list -> string
-end =
-struct
-  type header = string
-
-  type row = string list list
-
-  let val_padding = 2
-  (* Padding between data in the same row *)
-  let row_padding = 1
-  (* Padding between rows *)
-
-  let homogeneous b = if b then () else failwith "Heterogeneous data"
-
-  let vert_split (ls : 'a list list) =
-    let split l = match l with
-    | [] -> failwith "vert_split"
-    | x :: l -> (x, l)
-    in
-    let ls = List.map split ls in
-    List.split ls
-
-  let justify n s =
-    let len = String.length s in
-    let () = assert (len <= n) in
-    let lft = (n - len) / 2 in
-    let rgt = n - lft - len in
-    String.make lft ' ' ^ s ^ String.make rgt ' '
-
-  let justify_row layout data =
-    let map n s =
-      let len = String.length s in
-      let () = assert (len <= n) in
-      (* Right align *)
-      let pad = n - len in
-      String.make pad ' ' ^ s
-    in
-    let data = List.map2 map layout data in
-    String.concat (String.make val_padding ' ') data
-
-  let angle hkind vkind = match hkind, vkind with
-  | `Lft, `Top -> "┌"
-  | `Rgt, `Top -> "┐"
-  | `Mid, `Top -> "┬"
-  | `Lft, `Mid -> "├"
-  | `Rgt, `Mid -> "┤"
-  | `Mid, `Mid -> "┼"
-  | `Lft, `Bot -> "└"
-  | `Rgt, `Bot -> "┘"
-  | `Mid, `Bot -> "┴"
-
-  let print_separator vkind col_size =
-    let rec dashes n = if n = 0 then "" else "─" ^ dashes (n - 1) in
-    let len = List.length col_size in
-    let pad = dashes row_padding in
-    let () = assert (0 < len) in
-    let map n = dashes n in
-    angle `Lft vkind ^ pad ^
-    String.concat (pad ^ angle `Mid vkind ^ pad) (List.map map col_size) ^
-    pad ^ angle `Rgt vkind
-
-  let print_blank col_size =
-    let len = List.length col_size in
-    let () = assert (0 < len) in
-    let pad = String.make row_padding ' ' in
-    let map n = String.make n ' ' in
-    "│" ^ pad ^ String.concat (pad ^ "│" ^ pad) (List.map map col_size) ^ pad ^ "│"
-
-  let print_row row =
-    let len = List.length row in
-    let () = assert (0 < len) in
-    let pad = String.make row_padding ' ' in
-    "│" ^ pad ^ String.concat (pad ^ "│" ^ pad) row ^ pad ^ "│"
-
-  (* Invariant : all rows must have the same shape *)
-
-  let print (headers : header list) (top : row) (rows : row list) =
-    (* Sanitize input *)
-    let ncolums = List.length headers in
-    let shape = ref None in
-    let check row =
-      let () = homogeneous (List.length row = ncolums) in
-      let rshape : int list = List.map (fun data -> List.length data) row in
-      match !shape with
-      | None -> shape := Some rshape
-      | Some s -> homogeneous (rshape = s)
-    in
-    let () = List.iter check rows in
-    (* Compute layout *)
-    let rec layout n (rows : row list) =
-      if n = 0 then []
-      else
-        let (col, rows) = vert_split rows in
-        let ans = layout (n - 1) rows in
-        let data = ref None in
-        let iter args =
-          let size = List.map String.length args in
-          match !data with
-          | None -> data := Some size
-          | Some s ->
-            data := Some (List.map2 (fun len1 len2 -> max len1 len2) s size)
-        in
-        let () = List.iter iter col in
-        let data = match !data with None -> [] | Some s -> s in
-        data :: ans
-    in
-    let layout = layout ncolums (top::rows) in
-    let map hd shape =
-      let data_size = match shape with
-      | [] -> 0
-      | n :: shape -> List.fold_left (fun accu n -> accu + n + val_padding) n shape
-      in
-      max (String.length hd) data_size
-    in
-    let col_size = List.map2 map headers layout in
-    (* Justify the data *)
-    let headers = List.map2 justify col_size headers in
-    let top = List.map2 justify col_size (List.map2 justify_row layout top) in
-    let rows = List.map (fun row -> List.map2 justify col_size (List.map2 justify_row layout row)) rows in
-    (* Print the table *)
-    let lines =
-      print_separator `Top col_size ::
-      print_row headers ::
-      print_blank col_size ::
-      print_row top ::
-      print_separator `Mid col_size ::
-      List.map print_row rows @
-      print_separator `Bot col_size ::
-      []
-    in
-    String.concat "\n" lines
-end
 
 (******************************************************************************)
 (* END Copied from batteries, to remove *)
@@ -426,7 +282,7 @@ coq_opam_packages
     let descr = ["NEW"; "OLD"; "PDIFF"] in
     let top = [ [ "package_name" ]; descr; descr; descr; descr; descr ] in
 
-    printf "%s%!" (Table.print headers top measurements)
+    printf "%s%!" (Table.print headers top measurements ())
 ;
 
 (* ejgallego: disable this as it is very verbose and brings up little info in the log. *)

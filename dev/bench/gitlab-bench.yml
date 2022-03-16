@@ -15,6 +15,7 @@ bench:
     paths:
       - _bench/html/**/*.v.html
       - _bench/logs
+      - _bench/timings/*
       - _bench/files.listing
       - _bench/opam.NEW/**/*.log
       - _bench/opam.NEW/**/*.timing
