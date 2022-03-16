@@ -735,32 +735,38 @@ end
 let ssrfail env sigma upats_origin upats e =
   raise (SsrMatchingFailure (env, sigma, upats_origin, upats, e))
 
-let find_tpattern ~raise_NoMatch ~all_instances ~upat_that_matched ~upats_origin ~upats sigma0 ise occ_state : find_P =
-  let on_instance, instances =
-    let instances = ref [] in
-    (fun x ->
-      if all_instances then instances := !instances @ [x]
-      else raise (FoundUnif x)),
-    (fun () -> !instances) in
+let has_instances = function
+| None -> false
+| Some instances -> not (List.is_empty !instances)
+
+let find_tpattern ~raise_NoMatch ~instances ~upat_that_matched ~upats_origin ~upats sigma0 ise occ_state : find_P =
   fun env c h ~k ->
   do_once upat_that_matched (fun () ->
     let failed_because_of_TC = ref false in
     try
-      if not all_instances then match_upats_FO upats env sigma0 ise c;
+      let () = match instances with
+      | None -> match_upats_FO upats env sigma0 ise c
+      | Some _ -> ()
+      in
+      let on_instance = match instances with
+      | None -> fun x -> raise (FoundUnif x)
+      | Some r -> fun x -> r := !r @ [x]
+      in
       failed_because_of_TC:=match_upats_HO ~on_instance upats env sigma0 ise c;
       raise NoMatch
     with FoundUnif sigma_u -> env,0,[sigma_u]
-    | (NoMatch|NoProgress) when all_instances && instances () <> [] ->
-      env, 0, uniquize (instances ())
+    | (NoMatch|NoProgress) when has_instances instances ->
+      env, 0, uniquize (!(Option.get instances))
     | NoMatch when (not raise_NoMatch) ->
       if !failed_because_of_TC then ssrfail env ise upats_origin upats SsrTCFail
       else ssrfail env ise upats_origin upats SsrMatchFail
     | NoProgress when (not raise_NoMatch) ->
       ssrfail env ise upats_origin upats SsrProgressFail
     | NoProgress -> raise NoMatch);
-  let _, sigma, _, ({up_f = pf; up_a = pa} as u) =
-    if all_instances then assert_done_multires upat_that_matched
-    else List.hd (pi3(assert_done upat_that_matched)) in
+  let _, sigma, _, ({up_f = pf; up_a = pa} as u) = match instances with
+  | Some _ -> assert_done_multires upat_that_matched
+  | None -> List.hd (pi3(assert_done upat_that_matched))
+  in
 (*   pp(lazy(str"sigma@tmatch=" ++ pr_evar_map None sigma)); *)
   if !(occ_state.skip_occ) then ((*ignore(k env u.up_t 0);*) c) else
   let match_EQ = match_EQ env sigma (ise, u) in
@@ -804,7 +810,8 @@ let mk_tpattern_matcher ?(all_instances=false)
 =
   let occ_state = create_occ_state occ in
   let upat_that_matched = ref None in
-  find_tpattern ~raise_NoMatch ~all_instances ~upat_that_matched ~upats_origin ~upats sigma0 ise occ_state,
+  let instances = if all_instances then Some (ref []) else None in
+  find_tpattern ~raise_NoMatch ~instances ~upat_that_matched ~upats_origin ~upats sigma0 ise occ_state,
   conclude_tpattern ~raise_NoMatch ~upat_that_matched ~upats_origin ~upats occ_state
 
 type ('ident, 'term) ssrpattern =
