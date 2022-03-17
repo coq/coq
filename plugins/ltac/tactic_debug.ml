@@ -37,7 +37,7 @@ let explain_logic_error_no_anomaly e = CErrors.print_no_report e
 
 type varmap = Geninterp.Val.t Names.Id.Map.t
 
-let fmt_vars1 : varmap list -> int -> DebugHook.Answer.vars = fun varmaps framenum ->
+let fmt_vars1 : varmap list -> int -> Interface.db_vars_rty = fun varmaps framenum ->
   let varmap = List.nth varmaps framenum in
   let open Names in
   List.map (fun b ->
@@ -241,10 +241,11 @@ let rec prompt level =
     | Skip -> return DebugOff
     | Interrupt -> Proofview.NonLogical.print_char '\b' >> exit  (* todo: why the \b? *)
     | Help -> help () >> prompt level
-    | UpdBpts updates -> failwith "UpdBpts"  (* handled in init() loop *)
+    | UpdBpts updates -> failwith "UpdBpts" (* handled in init() loop *)
     | Configd -> failwith "Configd" (* handled in init() loop *)
     | GetStack -> failwith "GetStack" (* handled in read() loop *)
     | GetVars _ -> failwith "GetVars" (* handled in read() loop *)
+    | Subgoals _ -> failwith "Subgoals" (* handled in read() loop *)
     | RunCnt num -> (skip:=num) >> (skipped:=0) >>
         runnoprint >> return (DebugOn (level+1))
     | RunBreakpoint s -> (idtac_breakpt:=(Some s)) >> (* todo: look in Continue? *)

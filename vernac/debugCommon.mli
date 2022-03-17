@@ -39,13 +39,13 @@ val isTerminal : unit -> bool
 *)
 
 type fmt_stack_f = unit -> string list
-type fmt_vars_f = int -> DebugHook.Answer.vars
+type fmt_vars_f = int -> Interface.db_vars_rty
 type chunk = Loc.t option list * fmt_stack_f * fmt_vars_f  (* todo: record? *)
 val empty_chunk : chunk
 
 val read : unit -> DebugHook.Action.t
 
-val format_stack : string option list -> Loc.t option list -> DebugHook.Answer.stack
+val format_stack : string option list -> Loc.t option list -> Interface.db_stack_rty
 
 val db_pr_goals : unit Proofview.tactic
 

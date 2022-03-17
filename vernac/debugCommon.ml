@@ -4,7 +4,7 @@ let debug = ref false  (* todo: relation to tacinterp.is_traced *)
 
 (* todo: here? *)
 type fmt_stack_f = unit -> string list
-type fmt_vars_f = int -> DebugHook.Answer.vars
+type fmt_vars_f = int -> Interface.db_vars_rty
 type chunk = Loc.t option list * fmt_stack_f * fmt_vars_f
 
 let empty_chunk = [], (fun _ -> []), (fun _ -> [])
@@ -499,6 +499,13 @@ let read () =
         l ()
       | GetVars framenum ->
         ((hook)()).submit_answer (Vars (get_vars framenum));
+        l ()
+      | Subgoals flags ->
+        begin
+          match !DebugHook.debug_proof with
+          | Some _ -> (hook ()).submit_answer (Subgoals (!DebugHook.fwd_db_subgoals flags !DebugHook.debug_proof))
+          | None -> failwith "no proof in debugger"
+        end;
         l ()
       (* should Skip reset hist_index to 0? *)
       | StepIn | StepOver | StepOut | Continue -> hist_loop (-1) (* forwards *)
