@@ -611,6 +611,7 @@ let reduce_projection env sigma p ~npars (recarg'hd,stack') stack =
 
 let rec beta_applist sigma accu c stk = match EConstr.kind sigma c, stk with
 | Lambda (_, _, c), arg :: stk -> beta_applist sigma (arg :: accu) c stk
+| LetIn (_,b,_,c), stk -> beta_applist sigma (Vars.substl accu b :: accu) c stk
 | _ -> Vars.substl accu c, stk
 
 let whd_nothing_for_iota env sigma s =
@@ -749,7 +750,7 @@ and whd_simpl_stack env sigma =
           (match stack with
              | [] -> s'
              | a :: rest -> redrec (beta_applist sigma [a] c rest))
-      | LetIn (n,b,t,c) -> redrec (Vars.substl [b] c, stack)
+      | LetIn (n,b,t,c) -> redrec (beta_applist sigma [b] c stack)
       | App (f,cl) -> assert false (* see push_app above *)
       | Cast (c,_,_) -> redrec (c, stack)
       | Case (ci,u,pms,p,iv,c,lf) ->

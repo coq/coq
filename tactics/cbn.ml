@@ -418,12 +418,14 @@ let safe_meta_value sigma ev =
 
 (* Beta Reduction tools *)
 
-let apply_subst env sigma cst_l t stack =
+let apply_subst flags env sigma cst_l t stack =
   let rec aux env cst_l t stack =
     match (Stack.decomp stack, EConstr.kind sigma t) with
-    | Some (h,stacktl), Lambda (_,_,c) ->
+    | Some (h,stacktl), Lambda (_,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
        let cst_l' = Cst_stack.add_param h cst_l in
        aux (h::env) cst_l' c stacktl
+    | _, LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
+      aux (substl env b::env) cst_l c stack
     | _ -> (cst_l, (substl env t, stack))
   in
   aux env cst_l t stack
@@ -484,10 +486,10 @@ let contract_cofix env sigma ?reference (bodynum,(names,types,bodies as typedbod
   substl closure bodies.(bodynum)
 
 (** Similar to the "fix" case below *)
-let reduce_and_refold_cofix recfun env sigma cst_l cofix sk =
+let reduce_and_refold_cofix recfun flags env sigma cst_l cofix sk =
   let raw_answer =
     contract_cofix env sigma ?reference:(Cst_stack.reference sigma cst_l) cofix in
-  let (x, (t, sk')) = apply_subst [] sigma Cst_stack.empty raw_answer sk in
+  let (x, (t, sk')) = apply_subst flags [] sigma Cst_stack.empty raw_answer sk in
   let t' = Cst_stack.best_replace sigma (mkCoFix cofix) cst_l t in
   recfun x (t', sk')
 
@@ -511,10 +513,10 @@ let contract_fix env sigma ?reference ((recindices,bodynum),(names,types,bodies 
     replace the fixpoint by the best constant from [cst_l]
     Other rels are directly substituted by constants "magically found from the
     context" in contract_fix *)
-let reduce_and_refold_fix recfun env sigma cst_l fix sk =
+let reduce_and_refold_fix recfun flags env sigma cst_l fix sk =
   let raw_answer =
     contract_fix env sigma ?reference:(Cst_stack.reference sigma cst_l) fix in
-  let (x, (t, sk')) = apply_subst [] sigma Cst_stack.empty raw_answer sk in
+  let (x, (t, sk')) = apply_subst flags [] sigma Cst_stack.empty raw_answer sk in
   let t' = Cst_stack.best_replace sigma (mkFix fix) cst_l t in
   recfun x (t', sk')
 
@@ -709,7 +711,7 @@ let whd_state_gen ?csts flags env sigma =
            end)
 
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
-      let (cst_l, p) = apply_subst [b] sigma cst_l c stack in
+      let (cst_l, p) = apply_subst flags [b] sigma cst_l c stack in
       whrec cst_l p
     | Cast (c,_,_) -> whrec cst_l (c, stack)
     | App (f,cl)  ->
@@ -719,7 +721,7 @@ let whd_state_gen ?csts flags env sigma =
     | Lambda (na,t,c) ->
       (match Stack.decomp stack with
       | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
-        let (cst_l, p) = apply_subst [] sigma cst_l x stack in
+        let (cst_l, p) = apply_subst flags [] sigma cst_l x stack in
         whrec cst_l p
       | _ -> fold ())
 
@@ -745,7 +747,7 @@ let whd_state_gen ?csts flags env sigma =
         |args, (Stack.Fix (f,s',cst_l)::s'') when use_fix ->
           let x' = Stack.zip sigma (x, args) in
           let out_sk = s' @ (Stack.append_app [|x'|] s'') in
-          reduce_and_refold_fix whrec env sigma cst_l f out_sk
+          reduce_and_refold_fix whrec flags env sigma cst_l f out_sk
         |args, (Stack.Cst {const;curr;remains;volatile;params=s';cst_l} :: s'') ->
           let x' = Stack.zip sigma (x, args) in
           begin match remains with
@@ -787,7 +789,7 @@ let whd_state_gen ?csts flags env sigma =
       if CClosure.RedFlags.red_set flags CClosure.RedFlags.fCOFIX then
         match Stack.strip_app stack with
         |args, ((Stack.Case _ |Stack.Proj _)::s') ->
-          reduce_and_refold_cofix whrec env sigma cst_l cofix stack
+          reduce_and_refold_cofix whrec flags env sigma cst_l cofix stack
         |_ -> fold ()
       else fold ()
 
