@@ -1940,8 +1940,7 @@ let intern_ind_pattern genv ntnvars env pat =
     | RCPatCstr (head, pl) ->
       let ind = find_inductive_head ?loc head in
       let idslpl = List.map (intern_pat genv ntnvars empty_alias) pl in
-      (true,
-       match product_of_cases_patterns empty_alias idslpl with
+      (match product_of_cases_patterns empty_alias idslpl with
        | ids,[asubst,pl] -> (ind,ids,asubst,chop_params_pattern loc ind pl true)
        | _ -> error_bad_inductive_type ?loc ())
     | x -> error_bad_inductive_type ?loc ()
@@ -2384,7 +2383,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     (* the "in" part *)
     let match_td,typ = match t with
     | Some t ->
-        let with_letin,(ind,ind_ids,alias_subst,l) =
+        let (ind,ind_ids,alias_subst,l) =
           intern_ind_pattern globalenv ntnvars (env_for_pattern (set_type_scope env)) t in
         let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
         let nparams = (List.length (mib.Declarations.mind_params_ctxt)) in
@@ -2400,9 +2399,6 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
               | { CAst.v = Anonymous } -> l
               | { CAst.loc; v = (Name y as x) } -> (y, DAst.make ?loc @@ PatVar x) :: l in
             match case_rel_ctxt,arg_pats with
-              (* LetIn in the rel_context *)
-              | LocalDef _ :: t, l when not with_letin ->
-                canonize_args t l forbidden_names match_acc ((CAst.make Anonymous)::var_acc)
               | [],[] ->
                 (add_name match_acc na, var_acc)
               | (LocalAssum (cano_name,ty) | LocalDef (cano_name,_,ty)) :: t, c::tt ->
