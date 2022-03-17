@@ -23,37 +23,8 @@ type dynlink = Opt | Byte | Both | No | Variable
 
 let option_noglob = ref false
 let option_dynlink = ref Both
-let option_boot = ref false
 
 let meta_files = ref []
-
-type dir = string option
-
-(** [get_extension f l] checks whether [f] has one of the extensions
-    listed in [l]. It returns [f] without its extension, alongside with
-    the extension. When no extension match, [(f,"")] is returned *)
-
-let rec get_extension f = function
-  | [] -> (f, "")
-  | s :: _ when Filename.check_suffix f s -> (Filename.chop_suffix f s, s)
-  | _ :: l -> get_extension f l
-
-(** File comparison *)
-
-let absolute_dir dir =
-  let current = Sys.getcwd () in
-    Sys.chdir dir;
-    let dir' = Sys.getcwd () in
-      Sys.chdir current;
-      dir'
-
-let absolute_file_name basename odir =
-  let dir = match odir with Some dir -> dir | None -> "." in
-  absolute_dir dir // basename
-
-let compare_file f1 f2 =
-  absolute_file_name (Filename.basename f1) (Some (Filename.dirname f1))
-  = absolute_file_name (Filename.basename f2) (Some (Filename.dirname f2))
 
 (** [basename_noext] removes both the directory part and the extension
     (if necessary) of a filename *)
@@ -72,90 +43,6 @@ let vAccu   = ref ([] : (string * string) list)
 (** Queue operations *)
 
 let addQueue q v = q := v :: !q
-
-type dirname = string
-type basename = string
-type filename = string
-type dirpath = string list
-type root = filename * dirpath
-
-type result =
-  | ExactMatches of filename list
-  | PartialMatchesInSameRoot of root * filename list
-
-let add_set f l = f :: CList.remove compare_file f l
-
-let insert_key root (full,f) m =
-  (* An exact match takes precedence over non-exact matches *)
-  match full, m with
-  | true, ExactMatches l -> (* We add a conflict *) ExactMatches (add_set f l)
-  | true, PartialMatchesInSameRoot _ -> (* We give priority to exact match *) ExactMatches [f]
-  | false, ExactMatches l -> (* We keep the exact match *) m
-  | false, PartialMatchesInSameRoot (root',l) ->
-    PartialMatchesInSameRoot (root, if root = root' then add_set f l else [f])
-
-let safe_add_key q root key (full,f as file) =
-  try
-    let l = Hashtbl.find q key in
-    Hashtbl.add q key (insert_key root file l)
-  with Not_found ->
-    Hashtbl.add q key (if full then ExactMatches [f] else PartialMatchesInSameRoot (root,[f]))
-
-let safe_add q root ((from, suffixes), file) =
-  List.iter (fun (full,suff) -> safe_add_key q root (from,suff) (full,file)) suffixes
-
-(** Files found in the loadpaths.
-    For the ML files, the string is the basename without extension.
-*)
-
-let same_path_opt s s' =
-  let nf s = (* ./foo/a.ml and foo/a.ml are the same file *)
-    if Filename.is_implicit s
-    then "." // s
-    else s
-  in
-  let s = match s with None -> "." | Some s -> nf s in
-  let s' = match s' with None -> "." | Some s' -> nf s' in
-  s = s'
-
-let warning_ml_clash x s suff s' suff' =
-  if suff = suff' && not (same_path_opt s s') then
-  coqdep_warning "%s%s already found in %s (discarding %s%s)\n" x suff
-    (match s with None -> "." | Some d -> d)
-    ((match s' with None -> "." | Some d -> d) // x) suff
-
-let mkknown () =
-  let h = (Hashtbl.create 19 : (string, dir * string) Hashtbl.t) in
-  let add x s suff =
-    try let s',suff' = Hashtbl.find h x in warning_ml_clash x s' suff' s suff
-    with Not_found -> Hashtbl.add h x (s,suff)
-  and iter f = Hashtbl.iter (fun x (s,_) -> f x s) h
-  and search x =
-    try Some (fst (Hashtbl.find h x))
-    with Not_found -> None
-  in add, iter, search
-
-let add_mllib_known, _, search_mllib_known = mkknown ()
-let add_mlpack_known, _, search_mlpack_known = mkknown ()
-
-let vKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
-(* The associated boolean is true if this is a root path. *)
-let coqlibKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
-let otherKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
-
-let search_table table ?(from=[]) s =
-  Hashtbl.find table (from, s)
-
-let search_v_known ?from s =
-  try Some (search_table vKnown ?from s)
-  with Not_found -> None
-
-let search_other_known ?from s =
-  try Some (search_table otherKnown ?from s)
-  with Not_found -> None
-
-let is_in_coqlib ?from s =
-  try let _ = search_table coqlibKnown ?from s in true with Not_found -> false
 
 let error_cannot_parse s (i,j) =
   Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
@@ -253,36 +140,21 @@ let warn_if_clash ?(what=Library) exact file dir f1 = function
         end
   | [] -> ()
 
-let warning_cannot_open_dir dir =
-  coqdep_warning "cannot open %s" dir
-
 let safe_assoc ?(what=Library) from verbose file k =
   let search =
     match what with
-    | Library -> search_v_known
-    | External -> search_other_known in
+    | Library -> Loadpath.search_v_known
+    | External -> Loadpath.search_other_known in
   match search ?from k with
   | None -> None
-  | Some (ExactMatches (f :: l)) ->
+  | Some (Loadpath.ExactMatches (f :: l)) ->
     if verbose then warn_if_clash ~what true file k f l; Some [f]
-  | Some (PartialMatchesInSameRoot (root, l)) ->
+  | Some (Loadpath.PartialMatchesInSameRoot (root, l)) ->
     (match List.sort String.compare l with [] -> assert false | f :: l as all ->
     (* If several files match, it will fail at Require;
        To be "fair", in coqdep, we add dependencies on all matching files *)
     if verbose then warn_if_clash ~what false file k f l; Some all)
-  | Some (ExactMatches []) -> assert false
-
-(** [find_dir_logpath dir] Return the logical path of directory [dir]
-    if it has been given one. Raise [Not_found] otherwise. In
-    particular we can check if "." has been attributed a logical path
-    after processing all options and silently give the default one if
-    it hasn't. We may also use this to warn if a physical path is met
-    twice. *)
-let register_dir_logpath,find_dir_logpath =
-  let tbl: (string, string list) Hashtbl.t = Hashtbl.create 19 in
-  let reg physdir logpath = Hashtbl.add tbl (absolute_dir physdir) logpath in
-  let fnd physdir = Hashtbl.find tbl (absolute_dir physdir) in
-  reg,fnd
+  | Some (Loadpath.ExactMatches []) -> assert false
 
 let file_name s = function
   | None     -> s
@@ -320,7 +192,7 @@ let escape =
     Buffer.contents s'
 
 let canonize f =
-  let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
+  let f' = Loadpath.absolute_dir (Filename.dirname f) // Filename.basename f in
   match List.filter (fun (_,full) -> f' = full) !vAccu with
     | (f,_) :: _ -> escape f
     | _ -> escape f
@@ -343,14 +215,14 @@ module Dep = struct
   type t =
   | Require of string (* one basename, to which we later append .vo or .vio or .vos *)
   | Other of string   (* filenames of dependencies, separated by spaces *)
+
+  let to_string ~suffix = function
+    | Require basename -> basename ^ suffix
+    | Other s -> s
 end
 
 let string_of_dependency_list suffix_for_require deps =
-  let string_of_dep = function
-    | Dep.Require basename -> basename ^ suffix_for_require
-    | Dep.Other s -> s
-    in
-  String.concat " " (List.map string_of_dep deps)
+  String.concat " " (List.map (Dep.to_string ~suffix:suffix_for_require) deps)
 
 let parse_META package f =
   try
@@ -445,7 +317,7 @@ let rec find_dependencies basename =
               match safe_assoc from verbose f str with
               | Some files -> List.iter (fun file_str -> add_dep (Dep.Require (canonize file_str))) files
               | None ->
-                  if verbose && not (is_in_coqlib ?from str) then
+                  if verbose && not (Loadpath.is_in_coqlib ?from str) then
                   warning_module_notfound from f str
               end) strl
         | Declare sl ->
@@ -478,10 +350,10 @@ let rec find_dependencies basename =
               let s = basename_noext str in
               if not (StrSet.mem s !visited_ml) then begin
                 visited_ml := StrSet.add s !visited_ml;
-                match search_mllib_known s with
+                match Loadpath.search_mllib_known s with
                   | Some mldir -> declare ".cma" mldir s
                   | None ->
-                    match search_mlpack_known s with
+                    match Loadpath.search_mlpack_known s with
                   | Some mldir -> declare ".cmo" mldir s
                   | None -> warning_declare f str
                 end
@@ -557,136 +429,6 @@ let compute_deps () =
   let mk_dep (name, _) = Dep_info.make name (find_dependencies name) in
   !vAccu |> List.rev |> List.map mk_dep
 
-(** Compute the suffixes of a logical path together with the length of the missing part *)
-let rec suffixes full = function
-  | [] -> assert false
-  | [name] -> [full,[name]]
-  | dir::suffix as l -> (full,l)::suffixes false suffix
-
-(** Compute all the pairs [(from,suffs)] such that a logical path
-    decomposes into [from @ ... @ suff] for some [suff] in [suffs],
-    i.e. such that once [from] is fixed, [From from Require suff]
-    refers (in the absence of ambiguity) to this logical path for
-    exactly the [suff] in [suffs] *)
-let rec cuts recur = function
-  | [] -> []
-  | [dir] ->
-    [[],[true,[dir]]]
-  | dir::tail as l ->
-    ([],if recur then suffixes true l else [true,l]) ::
-    List.map (fun (fromtail,suffixes) -> (dir::fromtail,suffixes)) (cuts true tail)
-
-let add_caml_known _ phys_dir _ f =
-  let basename,suff =
-    get_extension f [".mllib"; ".mlpack"] in
-  match suff with
-    | ".mllib" -> add_mllib_known basename (Some phys_dir) suff
-    | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
-    | _ -> ()
-
-let add_paths recur root table phys_dir log_dir basename =
-  let name = log_dir@[basename] in
-  let file = phys_dir//basename in
-  let paths = cuts recur name in
-  let iter n = safe_add table root (n, file) in
-  List.iter iter paths
-
-let add_coqlib_known recur root phys_dir log_dir f =
-  let root = (phys_dir, log_dir) in
-  match get_extension f [".vo"; ".vio"; ".vos"] with
-    | (basename, (".vo" | ".vio" | ".vos")) ->
-        add_paths recur root coqlibKnown phys_dir log_dir basename
-    | _ -> ()
-
-let add_known recur root phys_dir log_dir f =
-  match get_extension f [".v"; ".vo"; ".vio"; ".vos"] with
-    | (basename,".v") ->
-        add_paths recur root vKnown phys_dir log_dir basename
-    | (basename, (".vo" | ".vio" | ".vos")) when not(!option_boot) ->
-        add_paths recur root vKnown phys_dir log_dir basename
-    | (f,_) ->
-        add_paths recur root otherKnown phys_dir log_dir f
-
-(** Visit all the directories under [dir], including [dir], in the
-    same order as for [coqc]/[coqtop] in [System.all_subdirs], that
-    is, assuming Sys.readdir to have this structure:
-    ├── B
-    │   └── E.v
-    │   └── C1
-    │   │   └── E.v
-    │   │   └── D1
-    │   │       └── E.v
-    │   │   └── F.v
-    │   │   └── D2
-    │   │       └── E.v
-    │   │   └── G.v
-    │   └── F.v
-    │   └── C2
-    │   │   └── E.v
-    │   │   └── D1
-    │   │       └── E.v
-    │   │   └── F.v
-    │   │   └── D2
-    │   │       └── E.v
-    │   │   └── G.v
-    │   └── G.v
-    it goes in this (reverse) order:
-    B.C2.D1.E, B.C2.D2.E,
-    B.C2.E, B.C2.F, B.C2.G
-    B.C1.D1.E, B.C1.D2.E,
-    B.C1.E, B.C1.F, B.C1.G,
-    B.E, B.F, B.G,
-    (see discussion at PR #14718)
-*)
-
-let add_directory recur add_file phys_dir log_dir =
-  let root = (phys_dir, log_dir) in
-  let stack = ref [] in
-  let curdirfiles = ref [] in
-  let subdirfiles = ref [] in
-  let rec aux phys_dir log_dir =
-    if exists_dir phys_dir then
-      begin
-        register_dir_logpath phys_dir log_dir;
-        let f = function
-          | FileDir (phys_f,f) ->
-              if recur then begin
-                stack := (!curdirfiles, !subdirfiles) :: !stack;
-                curdirfiles := []; subdirfiles := [];
-                aux phys_f (log_dir @ [f]);
-                let curdirfiles', subdirfiles' = List.hd !stack in
-                subdirfiles := subdirfiles' @ !subdirfiles @ !curdirfiles;
-                curdirfiles := curdirfiles'; stack := List.tl !stack
-              end
-          | FileRegular f ->
-              curdirfiles := (phys_dir, log_dir, f) :: !curdirfiles
-        in
-        process_directory f phys_dir
-      end
-    else
-      warning_cannot_open_dir phys_dir
-  in
-  aux phys_dir log_dir;
-  List.iter (fun (phys_dir, log_dir, f) -> add_file root phys_dir log_dir f) !subdirfiles;
-  List.iter (fun (phys_dir, log_dir, f) -> add_file root phys_dir log_dir f) !curdirfiles
-
-(** Simply add this directory and imports it, no subdirs. This is used
-    by the implicit adding of the current path (which is not recursive). *)
-let add_norec_dir_import add_file phys_dir log_dir =
-  add_directory false (add_file true) phys_dir log_dir
-
-(** -Q semantic: go in subdirs but only full logical paths are known. *)
-let add_rec_dir_no_import add_file phys_dir log_dir =
-  add_directory true (add_file false) phys_dir log_dir
-
-(** -R semantic: go in subdirs and suffixes of logical paths are known. *)
-let add_rec_dir_import add_file phys_dir log_dir =
-  add_directory true (add_file true) phys_dir log_dir
-
-(** -I semantic: do not go in subdirs. *)
-let add_caml_dir phys_dir =
-  add_directory false add_caml_known phys_dir []
-
 exception Cannot_stat_file of string * Unix.error
 
 let rec treat_file old_dirname old_name =
@@ -714,10 +456,10 @@ let rec treat_file old_dirname old_name =
            in
            Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
     | S_REG ->
-      (match get_extension name [".v"] with
+      (match Loadpath.get_extension name [".v"] with
        | base,".v" ->
          let name = file_name base dirname
-         and absname = absolute_file_name base dirname in
+         and absname = Loadpath.absolute_file_name base dirname in
          addQueue vAccu (name, absname)
        | _ -> ())
     | _ -> ()
@@ -780,11 +522,6 @@ let usage () =
 
 let option_sort = ref false
 
-let split_period = Str.split (Str.regexp (Str.quote "."))
-
-let add_q_include path l = add_rec_dir_no_import add_known path (split_period l)
-let add_r_include path l = add_rec_dir_import add_known path (split_period l)
-
 let treat_coqproject f =
   let open CoqProject_file in
   let iter_sourced f = List.iter (fun {thing} -> f thing) in
@@ -795,25 +532,25 @@ let treat_coqproject f =
     | Parsing_error msg -> error_cannot_parse_project_file f msg
     | UnableToOpenProjectFile msg -> error_cannot_open_project_file msg
   in
-  iter_sourced (fun { path } -> add_caml_dir path) project.ml_includes;
-  iter_sourced (fun ({ path }, l) -> add_q_include path l) project.q_includes;
-  iter_sourced (fun ({ path }, l) -> add_r_include path l) project.r_includes;
+  iter_sourced (fun { path } -> Loadpath.add_caml_dir path) project.ml_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include path l) project.q_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
 let parse args =
   let acc = ref [] in
   let rec parse =
     function
-    | "-boot" :: ll -> option_boot := true; parse ll
+    | "-boot" :: ll -> Options.boot := true; parse ll
     | "-sort" :: ll -> option_sort := true; parse ll
     | "-vos" :: ll -> write_vos := true; parse ll
     | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
     | "-noinit" :: ll -> (* do nothing *) parse ll
     | "-f" :: f :: ll -> treat_coqproject f; parse ll
-    | "-I" :: r :: ll -> add_caml_dir r; parse ll
+    | "-I" :: r :: ll -> Loadpath.add_caml_dir r; parse ll
     | "-I" :: [] -> usage ()
-    | "-R" :: r :: ln :: ll -> add_r_include r ln; parse ll
-    | "-Q" :: r :: ln :: ll -> add_q_include r ln; parse ll
+    | "-R" :: r :: ln :: ll -> Loadpath.add_r_include r ln; parse ll
+    | "-Q" :: r :: ln :: ll -> Loadpath.add_q_include r ln; parse ll
     | "-R" :: ([] | [_]) -> usage ()
     | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
     | "-exclude-dir" :: [] -> usage ()
