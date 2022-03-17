@@ -25,7 +25,6 @@ class type proof_view =
     method refresh : force:bool -> unit
     method clear : unit -> unit
     method set_goals : goals -> unit
-    method set_debug_goal : Pp.t -> unit
   end
 
 val proof_view : unit -> proof_view

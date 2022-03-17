@@ -90,10 +90,11 @@ let ltac_debug_answer = let open DebugHook.Answer in function
     | Init ->
       Format.fprintf !Topfmt.err_ft "@[%a@]@\n%!" Pp.pp_with (str "Init")
     | Stack _
-    | Vars _ -> CErrors.anomaly (str "ltac_debug_answer: unsupported Answer type")
+    | Vars _
+    | Subgoals _ -> CErrors.anomaly (str "ltac_debug_answer: unsupported Answer type")
 
-let ltac_debug_parse in_debug =
-  DebugHook.set_in_debug in_debug;
+let ltac_debug_parse read_in_debug =
+  DebuggerTypes.read_in_debug := read_in_debug;
   let open DebugHook in
   let act =
     try Action.parse (read_line ())

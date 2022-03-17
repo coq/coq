@@ -1,0 +1,6 @@
+(library
+ (name debugger)
+ (synopsis "Ltac* debugger definitions")
+ (public_name coq-core.debugger)
+ (wrapped false)
+ (libraries coq-core.lib))

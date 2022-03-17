@@ -14,11 +14,11 @@ open Ideutils
 
 type goals =
 | NoGoals
-| FocusGoals of { fg : Interface.goal list; bg : Interface.goal list }
+| FocusGoals of { fg : DebuggerTypes.goal list; bg : DebuggerTypes.goal list }
 | NoFocusGoals of {
-  bg : Interface.goal list;
-  shelved : Interface.goal list;
-  given_up : Interface.goal list;
+  bg : DebuggerTypes.goal list;
+  shelved : DebuggerTypes.goal list;
+  given_up : DebuggerTypes.goal list;
 }
 
 class type proof_view =
@@ -29,7 +29,6 @@ class type proof_view =
     method refresh : force:bool -> unit
     method clear : unit -> unit
     method set_goals : goals -> unit
-    method set_debug_goal : Pp.t -> unit
   end
 
 (* tag is the tag to be hooked, item is the item covered by this tag, make_menu
@@ -61,7 +60,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
 
 let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = match goals with
   | [] -> assert false
-  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; Interface.goal_name = cur_name } :: rem_goals ->
+  | DebuggerTypes.{ goal_hyp = hyps; goal_ccl = cur_goal; goal_name = cur_name } :: rem_goals ->
       let on_hover sel_start sel_stop =
         proof#buffer#remove_tag
           ~start:proof#buffer#start_iter
@@ -118,7 +117,7 @@ let mode_tactic sel_cb (proof : #GText.view_skel) goals ~unfoc_goals hints = mat
         proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
-      let fold_goal ?(shownum=false) i _ { Interface.goal_ccl = g; Interface.goal_name = name } =
+      let fold_goal ?(shownum=false) i _ DebuggerTypes.{ goal_ccl = g; goal_name = name } =
         proof#buffer#insert (goal_str ~shownum i goals_cnt name);
         insert_xml proof#buffer (Richpp.richpp_of_pp ~width g);
         proof#buffer#insert "\n"
@@ -156,7 +155,7 @@ let display mode (view : #GText.view_skel) goals hints =
       (* The proof is finished, with the exception of given up goals. *)
       view#buffer#insert "All goals completed except some admitted goals:\n\n";
       let iter goal =
-        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
+        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.DebuggerTypes.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iter iter given_up;
@@ -165,7 +164,7 @@ let display mode (view : #GText.view_skel) goals hints =
       (* All the goals have been resolved but those on the shelf. *)
       view#buffer#insert "All the remaining goals are on the shelf:\n\n";
       let iter goal =
-        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
+        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.DebuggerTypes.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iter iter shelved
@@ -181,8 +180,8 @@ let display mode (view : #GText.view_skel) goals hints =
       in
       view#buffer#insert "This subproof is complete, but there are some unfocused goals:\n\n";
       let iter i goal =
-        let () = view#buffer#insert (goal_str (succ i) goal.Interface.goal_id) in
-        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.Interface.goal_ccl);
+        let () = view#buffer#insert (goal_str (succ i) goal.DebuggerTypes.goal_id) in
+        insert_xml view#buffer (Richpp.richpp_of_pp ~width goal.DebuggerTypes.goal_ccl);
         view#buffer#insert "\n"
       in
       List.iteri iter bg
@@ -212,7 +211,6 @@ let proof_view () =
   let pf = object(self)
     inherit GObj.widget view#as_widget
     val mutable goals = NoGoals
-    val mutable debug_goal = None
     val mutable last_width = -1
 
     method source_buffer = buffer
@@ -221,17 +219,7 @@ let proof_view () =
 
     method clear () = buffer#set_text ""
 
-    method set_goals gls = goals <- gls; debug_goal <- None
-
-    method set_debug_goal msg =
-      (* Appearance is a bit different from the regular goals display.
-         That's probably a feature rather than a bug--it will remind the user
-         they're in the debugger. *)
-      self#clear ();
-      debug_goal <- Some msg;
-      let tags = [] in
-      let width = Ideutils.textview_width view in
-      Ideutils.insert_xml buffer ~tags (Richpp.richpp_of_pp ~width msg);
+    method set_goals gls = goals <- gls
 
     method refresh ~force =
       (* We need to block updates here due to the following race:
@@ -244,11 +232,8 @@ let proof_view () =
       let needed = force || last_width <> width in
       if needed then begin
         last_width <- width;
-        match debug_goal with
-        | None ->
-          let dummy _ () = () in
-          display (mode_tactic dummy) view goals None
-        | Some msg -> self#set_debug_goal msg
+        let dummy _ () = () in
+        display (mode_tactic dummy) view goals None
       end
   end
   in

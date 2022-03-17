@@ -216,7 +216,7 @@ let process_goal short sigma g =
       in
       hyps
   in
-  { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = Proof.goal_uid g; Interface.goal_name = name }
+  DebuggerTypes.{ goal_hyp = List.rev hyps; goal_ccl = ccl; goal_id = Proof.goal_uid g; goal_name = name }
 
 let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
   let env = Global.env () in
@@ -226,11 +226,11 @@ let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
   | None, _ | _, None -> None
   in
   let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal ~short ?og_s (Proof_diffs.make_goal env nsigma ng) in
-  { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp;
-    Interface.goal_id = Proof.goal_uid ng; Interface.goal_name = name }
+  DebuggerTypes.{ goal_hyp = hyps_pp_list; goal_ccl = concl_pp;
+    goal_id = Proof.goal_uid ng; goal_name = name }
 
 let export_pre_goals flags Proof.{ sigma; goals; stack } bg_proof process0 =
-  let open Interface in
+  let open DebuggerTypes in
   let process x = List.map (process0 sigma) x in
   let fg_goals = if flags.gf_fg then process goals else [] in
   let bg_goals =
@@ -251,27 +251,26 @@ let export_pre_goals flags Proof.{ sigma; goals; stack } bg_proof process0 =
   { fg_goals; bg_goals; shelved_goals; given_up_goals }
 
 (* if in the debugger, bg goals must come from "p"; Ltac doesn't change bg goals *)
-let get_proof_data () =
+let get_proof_data debug_proof =
   let p = Proof.data (Vernacstate.Declare.give_me_the_proof ()) in
   let open Proof in
-  match !DebugHook.debug_proof with
+  match debug_proof with
   | Some (sigma, goals) -> { p with sigma; goals }, p
   | None -> p, p
   [@@ocaml.warning "-3"]
 
-let subgoals flags =
+let db_subgoals flags debug_proof =
   let doc = get_doc () in
-  let in_debugger = !DebugHook.debug_proof <> None in
-  if not in_debugger then
+  if not !DebuggerTypes.read_in_debug then
     ignore @@ Stm.finish ~doc;
-  let short = match flags.Interface.gf_mode with
+  let short = match flags.DebuggerTypes.gf_mode with
   | "short" -> true
   | _ -> false
   in
   try
-    let proof_data, bg_proof_data = get_proof_data () in
+    let proof_data, bg_proof_data = get_proof_data debug_proof in
     (* todo: get correct data for diffs in the debugger *)
-    if Proof_diffs.show_diffs () && not in_debugger then begin
+    if Proof_diffs.show_diffs () && not !DebuggerTypes.read_in_debug then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       (try
         let diff_goal_map = match oldp with
@@ -290,17 +289,31 @@ let subgoals flags =
   with Vernacstate.Declare.NoCurrentProof -> None
   [@@ocaml.warning "-3"]
 
+let _ = DebugHook.fwd_db_subgoals := db_subgoals
+
+let debug_cmd = ref DebugHook.Action.Ignore
+
+let subgoals flags =
+  let doc = get_doc () in
+  if !DebuggerTypes.read_in_debug then begin
+    debug_cmd := DebugHook.Action.Subgoals flags;
+    None (* return value passed through DebugHook.Answer *)
+  end else begin
+    ignore @@ Stm.finish ~doc;
+    db_subgoals flags None
+  end
+
 let goals () =
-  let open Interface in
+  let open DebuggerTypes in
   let all = { gf_mode = "full"; gf_fg = true; gf_bg = true; gf_shelved = true; gf_given_up = true } in
   subgoals all
 
 let evars () =
   try
     let doc = get_doc () in
-    if !DebugHook.debug_proof = None then
+    if not !DebuggerTypes.read_in_debug then
       ignore @@ Stm.finish ~doc;
-    let Proof.{ sigma }, _ = get_proof_data () in
+    let Proof.{ sigma }, _ = get_proof_data None in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
@@ -427,8 +440,6 @@ let proof_diff (diff_opt, sid) =
   | Some proof ->
       let old = Stm.get_prev_proof ~doc sid in
       Proof_diffs.diff_proofs ~diff_opt ?old proof
-
-let debug_cmd = ref DebugHook.Action.Ignore
 
 let db_cmd cmd =
   debug_cmd := DebugHook.Action.Command cmd
@@ -663,12 +674,13 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
       | Init -> of_ltac_debug_answer ~tag:"init" (str "")
       | Vars vars -> of_vars vars;
       | Stack s -> of_stack s
+      | Subgoals g -> of_subgoals g
     in
     print_xml xml_oc xml in
 
   (* XXX: no need to have a ref here *)
-  let ltac_debug_parse in_debug =
-    DebugHook.set_in_debug in_debug;
+  let ltac_debug_parse read_in_debug =
+    DebuggerTypes.read_in_debug := read_in_debug;
     let raw_cmd =
       debug_cmd := DebugHook.Action.Ignore;
       process_xml_msg xml_ic xml_oc out_ch;
@@ -690,7 +702,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
       });
 
   while not !quit do
-    DebugHook.set_in_debug false;
+    DebuggerTypes.read_in_debug := false;
     process_xml_msg xml_ic xml_oc out_ch
   done;
   pr_debug "Exiting gracefully.";

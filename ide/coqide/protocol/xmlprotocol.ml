@@ -21,6 +21,7 @@ let msg_format = ref (Richpp { width = 72; depth = max_int })
 
 open Util
 open Interface
+open DebuggerTypes
 open Serialize
 open Xml_datatype
 
@@ -791,7 +792,7 @@ let db_continue x : db_continue_rty call = Db_continue x
 let db_stack x    : db_stack_rty call    = Db_stack x
 let db_vars x     : db_vars_rty call     = Db_vars x
 let db_configd x  : db_configd_rty call  = Db_configd x
-let subgoals x    : subgoals_rty call = Subgoals x
+let subgoals x    : subgoals_rty call    = Subgoals x
 
 let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c ->
   let send = ref true in
@@ -824,7 +825,8 @@ let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c -
     | Db_stack x   -> send := false; mkGood (handler.db_stack x)
     | Db_vars x    -> send := false; mkGood (handler.db_vars x)
     | Db_configd x -> mkGood (handler.db_configd x)
-    | Subgoals x   -> mkGood (handler.subgoals x)
+    | Subgoals x   -> send := not !DebuggerTypes.read_in_debug;
+                      mkGood (handler.subgoals x)
   with any ->
     let any = Exninfo.capture any in
     true, Fail (handler.handle_exn any)
@@ -1170,6 +1172,7 @@ let msg_kind = function
 let of_vars vars = of_value (of_list (of_pair of_string of_pp)) (Good vars)
 let of_stack frames = of_value (of_list (of_pair of_string (of_option
     (of_pair of_string (of_list of_int))))) (Good frames)
+let of_subgoals gs = of_value (of_option of_goals) (Good gs)
 
 (* vim: set foldmethod=marker: *)
 

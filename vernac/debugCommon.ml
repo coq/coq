@@ -1,3 +1,15 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+open DebuggerTypes
+
 (* tells whether Ltac Debug is set *)
 let debug = ref false  (* todo: relation to tacinterp.is_traced *)
 
@@ -6,7 +18,7 @@ let concat_map f l = List.concat (List.map f l)
 
 (* todo: here? *)
 type fmt_stack_f = unit -> string list
-type fmt_vars_f = int -> DebugHook.Answer.vars
+type fmt_vars_f = int -> db_vars_rty
 type chunk = Loc.t option list * fmt_stack_f * fmt_vars_f
 
 let empty_chunk = [], (fun _ -> []), (fun _ -> [])
@@ -461,6 +473,9 @@ let db_fmt_goals () =
 
 let isTerminal () = (hook ()).isTerminal
 
+(* for displaying goals when stopped in debugger (only sigma and goals) *)
+let debug_proof = ref None
+
 let db_pr_goals =  (* todo: drop the "db_" prefix *)
   let open Proofview in
   let open Notations in
@@ -471,7 +486,7 @@ let db_pr_goals =  (* todo: drop the "db_" prefix *)
     | [] -> Evd.empty
   in
   let goals = List.map (fun gl -> Goal.goal gl) gls in
-  DebugHook.debug_proof := Some (sigma, goals);
+  debug_proof := Some (sigma, goals);
   let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
       Pp.seq (List.map db_fmt_goal gls) in
     Proofview.tclLIFT (
@@ -492,12 +507,20 @@ let read () =
     let open DebugHook.Action in
     (* handle operations that don't change Ltac* or history state *)
     begin match cmd with
+      | Ignore -> l ()
       | UpdBpts updates -> upd_bpts updates; l ()
       | GetStack ->
         ((hook)()).submit_answer (Stack (fmt_stack ()));
         l ()
       | GetVars framenum ->
         ((hook)()).submit_answer (Vars (get_vars framenum));
+        l ()
+      | Subgoals flags ->
+        begin
+          match !debug_proof with
+          | Some _ -> (hook ()).submit_answer (Subgoals (!DebugHook.fwd_db_subgoals flags !debug_proof))
+          | None -> failwith "no proof in debugger"
+        end;
         l ()
       (* should Skip reset hist_index to 0? *)
       | StepIn | StepOver | StepOut | Continue -> hist_loop (-1) (* forwards *)
