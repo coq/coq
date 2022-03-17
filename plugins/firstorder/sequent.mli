@@ -28,9 +28,9 @@ module HP: Heap.S with type elt=Formula.t
 
 type t = {redexes:HP.t;
           context: GlobRef.t list CM.t;
-          latoms:constr list;
+          latoms:atom list;
           gl:types;
-          glatom:constr option;
+          glatom:atom option;
           cnt:counter;
           history:History.t;
           depth:int}

@@ -98,9 +98,9 @@ module HP=Heap.Functional(OrderedFormula)
 type t=
     {redexes:HP.t;
      context:(GlobRef.t list) CM.t;
-     latoms:constr list;
+     latoms:atom list;
      gl:types;
-     glatom:constr option;
+     glatom:atom option;
      cnt:counter;
      history:History.t;
      depth:int}
@@ -138,10 +138,10 @@ let add_formula ~flags env sigma side nam t seq =
     | Right t->
         match side with
             Concl ->
-              {seq with gl=t;glatom=Some t}
+              {seq with gl=t.atom;glatom=Some t}
           | _ ->
               {seq with
-                 context=cm_add sigma t nam seq.context;
+                 context=cm_add sigma t.atom nam seq.context;
                  latoms=t::seq.latoms}
 
 let re_add_formula_list sigma lf seq=

@@ -35,7 +35,9 @@ type ('a,'b) sum = Left of 'a | Right of 'b
 
 type counter = bool -> metavariable
 
-exception Is_atom of constr
+type atom = { atom : constr }
+
+exception Is_atom of atom
 
 let meta_succ m = m+1
 
@@ -75,7 +77,7 @@ type kind_of_formula=
   | Or of pinductive*constr list*bool
   | Exists of pinductive*constr list
   | Forall of constr*constr
-  | Atom of constr
+  | Atom of atom
 
 let pop t = Vars.lift (-1) t
 
@@ -104,7 +106,7 @@ let kind_of_formula ~flags env sigma term =
                           if Inductiveops.mis_is_recursive (ind,mib,mip) ||
                             (has_realargs && not is_trivial)
                           then
-                            Atom cciterm
+                            Atom { atom = cciterm }
                           else
                             if Int.equal nconstr 1 then
                               And((ind,u),l,is_trivial)
@@ -116,9 +118,9 @@ let kind_of_formula ~flags env sigma term =
                           let (ind, u) = EConstr.destInd sigma i in
                           let u = EConstr.EInstance.kind sigma u in
                           Exists((ind, u), l)
-                      |_-> Atom (normalize cciterm)
+                      |_-> Atom { atom = normalize cciterm }
 
-type atoms = {positive:constr list;negative:constr list}
+type atoms = {positive:atom list;negative:atom list}
 
 type side = Hyp | Concl | Hint
 
@@ -140,7 +142,7 @@ let build_atoms ~flags env sigma metagen side cciterm =
       | And(i,l,b) | Or(i,l,b)->
           if b then
             begin
-              let unsigned=normalize (substnl subst 0 cciterm) in
+              let unsigned= { atom = normalize (substnl subst 0 cciterm) } in
                 if polarity then
                   positive:= unsigned :: !positive
                 else
@@ -165,8 +167,8 @@ let build_atoms ~flags env sigma metagen side cciterm =
           let var=mkMeta (metagen true) in
             build_rec (var::subst) polarity b
       | Atom t->
-          let unsigned=substnl subst 0 t in
-            if not (isMeta sigma unsigned) then (* discarding wildcard atoms *)
+          let unsigned= { atom = substnl subst 0 t.atom } in
+            if not (isMeta sigma unsigned.atom) then (* discarding wildcard atoms *)
               if polarity then
                 positive:= unsigned :: !positive
               else
@@ -244,11 +246,11 @@ let build_formula ~flags env sigma side nam typ metagen=
                   | Atom a       ->  raise (Is_atom a)
                   | And(i,_,b)         ->
                       if b then
-                        let nftyp=normalize typ in raise (Is_atom nftyp)
+                        let nftyp=normalize typ in raise (Is_atom { atom = nftyp })
                       else Land i
                   | Or(i,_,b)          ->
                       if b then
-                        let nftyp=normalize typ in raise (Is_atom nftyp)
+                        let nftyp=normalize typ in raise (Is_atom { atom = nftyp })
                       else Lor i
                   | Exists (ind,_) ->  Lexists ind
                   | Forall (d,_) ->

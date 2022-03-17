@@ -32,7 +32,9 @@ val construct_nhyps : Environ.env -> pinductive -> int array
 val ind_hyps : Environ.env -> Evd.evar_map -> int -> pinductive ->
   constr list -> EConstr.rel_context array
 
-type atoms = {positive:constr list;negative:constr list}
+type atom = { atom : EConstr.t }
+
+type atoms = { positive:atom list; negative:atom list }
 
 type side = Hyp | Concl | Hint
 
@@ -74,5 +76,4 @@ type t={id: GlobRef.t;
 (*exception Is_atom of constr*)
 
 val build_formula : flags:flags -> Environ.env -> Evd.evar_map -> side -> GlobRef.t -> types ->
-  counter -> (t,types) sum
-
+  counter -> (t, atom) sum
