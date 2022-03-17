@@ -785,36 +785,41 @@ let treat_coqproject f =
   iter_sourced (fun ({ path }, l) -> add_r_include path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
-let rec parse = function
-  | "-boot" :: ll -> option_boot := true; parse ll
-  | "-sort" :: ll -> option_sort := true; parse ll
-  | "-vos" :: ll -> write_vos := true; parse ll
-  | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
-  | "-noinit" :: ll -> (* do nothing *) parse ll
-  | "-f" :: f :: ll -> treat_coqproject f; parse ll
-  | "-I" :: r :: ll -> add_caml_dir r; parse ll
-  | "-I" :: [] -> usage ()
-  | "-R" :: r :: ln :: ll -> add_r_include r ln; parse ll
-  | "-Q" :: r :: ln :: ll -> add_q_include r ln; parse ll
-  | "-R" :: ([] | [_]) -> usage ()
-  | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
-  | "-exclude-dir" :: [] -> usage ()
-  | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse ll
-  | "-coqlib" :: [] -> usage ()
-  | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
-  | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
-  | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
-  | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
-  | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
-  | "-m" :: m :: ll -> meta_files := !meta_files @ [m]; parse ll
-  | ("-h"|"--help"|"-help") :: _ -> usage ()
-  | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
-    coqdep_warning "unknown option %s" opt;
-    parse ll
-  | f :: ll -> treat_file_command_line f; parse ll
-  | [] -> ()
+let parse args =
+  let acc = ref [] in
+  let rec parse =
+    function
+    | "-boot" :: ll -> option_boot := true; parse ll
+    | "-sort" :: ll -> option_sort := true; parse ll
+    | "-vos" :: ll -> write_vos := true; parse ll
+    | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
+    | "-noinit" :: ll -> (* do nothing *) parse ll
+    | "-f" :: f :: ll -> treat_coqproject f; parse ll
+    | "-I" :: r :: ll -> add_caml_dir r; parse ll
+    | "-I" :: [] -> usage ()
+    | "-R" :: r :: ln :: ll -> add_r_include r ln; parse ll
+    | "-Q" :: r :: ln :: ll -> add_q_include r ln; parse ll
+    | "-R" :: ([] | [_]) -> usage ()
+    | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
+    | "-exclude-dir" :: [] -> usage ()
+    | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse ll
+    | "-coqlib" :: [] -> usage ()
+    | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
+    | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
+    | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
+    | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
+    | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
+    | "-m" :: m :: ll -> meta_files := !meta_files @ [m]; parse ll
+    | ("-h"|"--help"|"-help") :: _ -> usage ()
+    | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
+      coqdep_warning "unknown option %s" opt;
+      parse ll
+    | f :: ll -> acc := f :: !acc; parse ll
+    | [] -> ()
+  in
+  parse args;
+  List.rev !acc
 
-let init () =
-  if Array.length Sys.argv < 2 then usage ();
+let init args =
   if not Coq_config.has_natdynlink then option_dynlink := No;
-  parse (List.tl (Array.to_list Sys.argv))
+  parse args

@@ -50,5 +50,12 @@ val add_rec_dir_import :
 
 val sort : unit -> unit
 
-(** Init coqdep, including argument parsing *)
-val init : unit -> unit
+(** [init args] Init coqdep, parsing arguments from [args]; returns
+   the list of .v files passed as arguments *)
+val init : string list -> string list
+
+(*  *)
+val usage : unit -> unit
+
+(** [treat_file_command_line file] Add an input file to be considered  *)
+val treat_file_command_line : string -> unit
