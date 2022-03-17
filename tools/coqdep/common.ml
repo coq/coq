@@ -339,14 +339,16 @@ module VCache = Set.Make(VData)
     (those loaded by [Require]) from other dependencies, e.g. dependencies
     on ".v" files (for [Load]) or ".cmx", ".cmo", etc... (for [Declare]). *)
 
-type dependency =
-  | DepRequire of string (* one basename, to which we later append .vo or .vio or .vos *)
-  | DepOther of string   (* filenames of dependencies, separated by spaces *)
+module Dep = struct
+  type t =
+  | Require of string (* one basename, to which we later append .vo or .vio or .vos *)
+  | Other of string   (* filenames of dependencies, separated by spaces *)
+end
 
 let string_of_dependency_list suffix_for_require deps =
   let string_of_dep = function
-    | DepRequire basename -> basename ^ suffix_for_require
-    | DepOther s -> s
+    | Dep.Require basename -> basename ^ suffix_for_require
+    | Dep.Other s -> s
     in
   String.concat " " (List.map string_of_dep deps)
 
@@ -427,7 +429,7 @@ let rec find_dependencies basename =
     let add_dep dep =
        dependencies := dep::!dependencies in
     let add_dep_other s =
-       add_dep (DepOther s) in
+       add_dep (Dep.Other s) in
 
     (* Reading file contents *)
     let f = basename ^ ".v" in
@@ -441,7 +443,7 @@ let rec find_dependencies basename =
             List.iter (fun str ->
               if should_visit_v_and_mark from str then begin
               match safe_assoc from verbose f str with
-              | Some files -> List.iter (fun file_str -> add_dep (DepRequire (canonize file_str))) files
+              | Some files -> List.iter (fun file_str -> add_dep (Dep.Require (canonize file_str))) files
               | None ->
                   if verbose && not (is_in_coqlib ?from str) then
                   warning_module_notfound from f str
@@ -507,7 +509,7 @@ let rec find_dependencies basename =
               List.iter add_dep deps) l)
         | External(from,str) ->
             begin match safe_assoc ~what:External (Some from) verbose f [str] with
-            | Some (file :: _) -> add_dep (DepOther (canonize file))
+            | Some (file :: _) -> add_dep (Dep.Other (canonize file))
             | Some [] -> assert false
             | None -> warning_module_notfound ~what:External (Some from) f [str]
             end
@@ -526,21 +528,34 @@ let rec find_dependencies basename =
 
 let write_vos = ref false
 
-let coq_dependencies () =
-  List.iter
-    (fun (name,_) ->
-       let ename = escape name in
-       let glob = if !option_noglob then "" else ename^".glob " in
-       let deps = find_dependencies name in
-       printf "%s.vo %s%s.v.beautified %s.required_vo: %s.v %s\n" ename glob ename ename ename
-        (string_of_dependency_list ".vo" deps);
-       printf "%s.vio: %s.v %s\n" ename ename
-         (string_of_dependency_list ".vio" deps);
-       if !write_vos then
-         printf "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
-           (string_of_dependency_list ".vos" deps);
-       printf "%!")
-    (List.rev !vAccu)
+module Dep_info = struct
+
+  type t =
+    { name : string  (* This should become [module : Coq_module.t] eventually *)
+    ; deps : Dep.t list
+    }
+
+  let make name deps = { name; deps }
+
+  open Format
+
+  let print fmt { name; deps } =
+    let ename = escape name in
+    let glob = if !option_noglob then "" else ename^".glob " in
+    fprintf fmt "%s.vo %s%s.v.beautified %s.required_vo: %s.v %s\n" ename glob ename ename ename
+      (string_of_dependency_list ".vo" deps);
+    fprintf fmt "%s.vio: %s.v %s\n" ename ename
+      (string_of_dependency_list ".vio" deps);
+    if !write_vos then
+      fprintf fmt "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
+        (string_of_dependency_list ".vos" deps);
+    fprintf fmt "%!"
+
+end
+
+let compute_deps () =
+  let mk_dep (name, _) = Dep_info.make name (find_dependencies name) in
+  !vAccu |> List.rev |> List.map mk_dep
 
 (** Compute the suffixes of a logical path together with the length of the missing part *)
 let rec suffixes full = function

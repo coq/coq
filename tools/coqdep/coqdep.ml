@@ -40,7 +40,7 @@ let coqdep () =
   if !option_sort then
     sort ()
   else
-    coq_dependencies ()
+    compute_deps () |> List.iter (Dep_info.print Format.std_formatter)
 
 let _ =
   try
