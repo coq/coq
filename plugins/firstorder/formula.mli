@@ -32,7 +32,7 @@ val construct_nhyps : Environ.env -> pinductive -> int array
 val ind_hyps : Environ.env -> Evd.evar_map -> int -> pinductive ->
   constr list -> EConstr.rel_context array
 
-type atom = { atom : EConstr.t }
+type atom = private { atom : EConstr.t }
 
 type atoms = { positive:atom list; negative:atom list }
 
@@ -68,12 +68,10 @@ type left_pattern=
   | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
-type t={id: GlobRef.t;
+type t= private {id: GlobRef.t;
         constr: constr;
         pat: (left_pattern,right_pattern) sum;
         atoms: atoms}
-
-(*exception Is_atom of constr*)
 
 val build_formula : flags:flags -> Environ.env -> Evd.evar_map -> side -> GlobRef.t -> types ->
   counter -> (t, atom) sum

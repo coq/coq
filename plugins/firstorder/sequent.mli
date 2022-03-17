@@ -12,27 +12,20 @@ open Names
 open EConstr
 open Formula
 
-module CM: CSig.MapS with type key=Constr.t
-
 type h_item = GlobRef.t * (int*Constr.t) option
 
-module History: Set.S with type elt = h_item
-
-val cm_add : Evd.evar_map -> constr -> GlobRef.t -> GlobRef.t list CM.t ->
-  GlobRef.t list CM.t
-
-val cm_remove : Evd.evar_map -> constr -> GlobRef.t -> GlobRef.t list CM.t ->
-  GlobRef.t list CM.t
+type history
+type cmap
 
 module HP: Heap.S with type elt=Formula.t
 
-type t = {redexes:HP.t;
-          context: GlobRef.t list CM.t;
+type t = private {redexes:HP.t;
+          context: cmap;
           latoms:atom list;
           gl:types;
           glatom:atom option;
           cnt:counter;
-          history:History.t;
+          history:history;
           depth:int}
 
 val deepen: t -> t
@@ -57,4 +50,4 @@ val extend_with_ref_list : flags:flags -> Environ.env -> Evd.evar_map -> GlobRef
 val extend_with_auto_hints : flags:flags -> Environ.env -> Evd.evar_map -> Hints.hint_db_name list ->
   t -> t * Evd.evar_map
 
-val print_cmap: GlobRef.t list CM.t -> Pp.t
+val print_cmap: cmap -> Pp.t

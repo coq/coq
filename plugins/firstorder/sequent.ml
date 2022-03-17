@@ -76,6 +76,10 @@ module CM=Map.Make(Constr)
 
 module History=Set.Make(Hitem)
 
+type history = History.t
+
+type cmap = GlobRef.t list CM.t
+
 let cm_add sigma typ nam cm=
   let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   try
