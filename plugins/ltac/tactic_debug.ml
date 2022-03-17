@@ -221,6 +221,7 @@ let cmd_to_str cmd =
   | Configd -> "Configd"
   | GetStack -> "GetStack"
   | GetVars _ -> "GetVars"
+  | Subgoals _ -> "Subgoals"
   | RunCnt _ -> "RunCnt"
   | RunBreakpoint _ -> "RunBreakpoint"
   | Command _ -> "Command"
@@ -235,6 +236,9 @@ let break = ref false
 
 let get_break () = !break
 let set_break b = break := b
+
+(* for displaying goals when stopped in debugger (only sigma and goals) *)
+let debug_proof : (Evd.evar_map * Evar.t list) option ref = ref None
 
 (* Communications with the outside world *)
 module Comm = struct
@@ -298,12 +302,19 @@ module Comm = struct
       | Ignore -> l ()
       | UpdBpts updates -> upd_bpts updates; l ()
       | GetStack ->
-        ((hook)()).submit_answer (Stack (format_stack (get_stack ())));
+        (hook ()).submit_answer (Stack (format_stack (get_stack ())));
         l ()
       | GetVars framenum ->
-        ((hook)()).submit_answer (Vars (get_vars framenum));
+        (hook ()).submit_answer (Vars (get_vars framenum));
         l ()
-      | _ -> action := cmd; cmd
+      | Subgoals flags ->
+        begin
+          match !debug_proof with
+          | Some _ -> (hook ()).submit_answer (Subgoals (!DebugHook.fwd_db_subgoals flags !debug_proof))
+          | None -> failwith "no proof in debugger"
+        end;
+        l ()
+      | _ -> debug_proof := None; action := cmd; cmd
     in
     l ())
 
@@ -332,7 +343,7 @@ let db_pr_goal =
     | [] -> Evd.empty
   in
   let goals = List.map (fun gl -> Goal.goal gl) gls in
-  DebugHook.debug_proof := Some (sigma, goals);
+  debug_proof := Some (sigma, goals);
   let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
       Pp.seq (List.map db_pr_goal gls) in
     Proofview.tclLIFT (
@@ -520,10 +531,11 @@ let rec prompt level =
     | Skip -> return DebugOff
     | Interrupt -> Proofview.NonLogical.print_char '\b' >> exit  (* todo: why the \b? *)
     | Help -> help () >> prompt level
-    | UpdBpts updates -> failwith "UpdBpts"  (* handled in init() loop *)
+    | UpdBpts updates -> failwith "UpdBpts" (* handled in init() loop *)
     | Configd -> failwith "Configd" (* handled in init() loop *)
     | GetStack -> failwith "GetStack" (* handled in read() loop *)
     | GetVars _ -> failwith "GetVars" (* handled in read() loop *)
+    | Subgoals _ -> failwith "Subgoals" (* handled in read() loop *)
     | RunCnt num -> (skip:=num) >> (skipped:=0) >>
         runnoprint >> return (DebugOn (level+1))
     | RunBreakpoint s -> (idtac_breakpt:=(Some s)) >> (* todo: look in Continue? *)

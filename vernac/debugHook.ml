@@ -23,6 +23,7 @@ module Action = struct
     | Configd
     | GetStack
     | GetVars of int
+    | Subgoals of Interface.goal_flags
     | RunCnt of int
     | RunBreakpoint of string
     | Command of string
@@ -70,6 +71,7 @@ module Answer = struct
     | Init
     | Stack of (string * (string * int list) option) list
     | Vars of (string * Pp.t) list
+    | Subgoals of Interface.goals_rty
 end
 
 module Intf = struct
@@ -89,9 +91,5 @@ module Intf = struct
 
 end
 
-(* for displaying goals when stopped in debugger (only sigma and goals) *)
-let debug_proof = ref None
-
-(* tells whether we're in the debugger or not *)
-let set_in_debug in_debug =
-  if not in_debug then debug_proof := None
+let fwd_db_subgoals = Interface.(ref ((fun x y -> failwith "fwd_db_subgoals")
+                  : goal_flags -> (Evd.evar_map * Evar.t list) option -> subgoals_rty))

@@ -48,6 +48,7 @@ module Action : sig
                 (* request the variables defined for stack frame N,
                    returned as Answer.Vars.  0 is the topmost frame,
                    followed by 1,2,3, ... *)
+    | Subgoals of Interface.goal_flags
     | RunCnt of int
                 (* legacy: run for N steps *)
     | RunBreakpoint of string
@@ -68,7 +69,8 @@ module Answer : sig
                         e.g. in color without a newline at the end *)
     | Output of Pp.t (* general output *)
     | Init           (* signals initialization of the debugger *)
-    | Stack of (string * (string * int list) option) list
+    | Stack of Interface.db_stack_rty
+                     (* (string * (string * int list) option) list *)
                      (* The call stack, starting from TOS.
                         Values are:
                         - description of the frame
@@ -76,9 +78,11 @@ module Answer : sig
                         - absolute pathname of the file
                         - array containing Loc.bp and Loc.ep of the
                           corresponding code *)
-    | Vars of (string * Pp.t) list
+    | Vars of Interface.db_vars_rty
+                     (* (string * Pp.t) list *)
                      (* The variable values for the specified stack
                         frame.  Values are variable name and variable value *)
+    | Subgoals of Interface.goals_rty
 end
 
 module Intf : sig
@@ -95,8 +99,5 @@ module Intf : sig
   val get : unit -> t option
 end
 
-(* for displaying goals when stopped in debugger (only sigma and goals) *)
-val debug_proof : (Evd.evar_map * Evar.t list) option ref
-
-(* tells whether we're in the debugger or not *)
-val set_in_debug : bool -> unit
+open Interface
+val fwd_db_subgoals : (goal_flags -> (Evd.evar_map * Evar.t list) option -> subgoals_rty) ref
