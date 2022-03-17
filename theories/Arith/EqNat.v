@@ -79,24 +79,24 @@ Notation beq_nat_false_iff := Nat.eqb_neq (only parsing).
 #[local]
 Definition beq_nat_refl_stt := fun n => eq_sym (Nat.eqb_refl n).
 Opaque beq_nat_refl_stt.
-#[deprecated(since="8.16",note="Use Nat.eqb_refl instead.")]
+#[deprecated(since="8.16",note="Use Nat.eqb_refl (with symmetry of equality) instead.")]
 Notation beq_nat_refl := beq_nat_refl_stt.
 
 #[local]
 Definition beq_nat_true_stt := fun n m => proj1 (Nat.eqb_eq n m).
 Opaque beq_nat_true_stt.
-#[deprecated(since="8.16",note="Use Nat.eqb_eq instead.")]
+#[deprecated(since="8.16",note="Use the bidirectional version Nat.eqb_eq instead.")]
 Notation beq_nat_true := beq_nat_true_stt.
 
 #[local]
 Definition beq_nat_false_stt := fun n m => proj1 (Nat.eqb_neq n m).
 Opaque beq_nat_false_stt.
-#[deprecated(since="8.16",note="Use Nat.eqb_neq instead.")]
+#[deprecated(since="8.16",note="Use the bidirectional version Nat.eqb_neq instead.")]
 Notation beq_nat_false := beq_nat_false_stt.
 
 (* previously was given as transparent *)
 #[local]
 Definition beq_nat_eq_stt := fun n m Heq => proj1 (Nat.eqb_eq n m) (eq_sym Heq).
 Opaque beq_nat_eq_stt.
-#[deprecated(since="8.16",note="Use Nat.eqb_eq instead.")]
+#[deprecated(since="8.16",note="Use the bidirectional version Nat.eqb_eq (with symmetry of equality) instead.")]
 Notation beq_nat_eq := beq_nat_eq_stt.
