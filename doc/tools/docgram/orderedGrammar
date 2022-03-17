@@ -1061,7 +1061,7 @@ command: [
 | "Variant" variant_definition
 | [ "Record" | "Structure" ] record_definition
 | "Class" record_definition
-| "Class" OPT ">" ident_decl LIST0 binder OPT [ ":" sort ] ":=" constructor
+| "Class" ident_decl LIST0 binder OPT [ ":" sort ] ":=" constructor
 | "Module" OPT [ "Import" | "Export" ] ident LIST0 module_binder OPT of_module_type OPT ( ":=" LIST1 module_expr_inl SEP "<+" )
 | "Module" "Type" ident LIST0 module_binder LIST0 ( "<:" module_type_inl ) OPT ( ":=" LIST1 module_type_inl SEP "<+" )
 | "Declare" "Module" OPT [ "Import" | "Export" ] ident LIST0 module_binder ":" module_type_inl

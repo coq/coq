@@ -29,7 +29,8 @@ Require Export Coq.Classes.Morphisms.
 
 Class Setoid A := {
   equiv : relation A ;
-  setoid_equiv :> Equivalence equiv }.
+  setoid_equiv : Equivalence equiv }.
+#[global] Existing Instance setoid_equiv.
 
 (* Too dangerous instance *)
 (* Program Instance [ eqa : Equivalence A eqA ] =>  *)
@@ -135,7 +136,8 @@ Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (
 (** Partial setoids don't require reflexivity so we can build a partial setoid on the function space. *)
 
 Class PartialSetoid (A : Type) :=
-  { pequiv : relation A ; pequiv_prf :> PER pequiv }.
+  { pequiv : relation A ; pequiv_prf : PER pequiv }.
+#[global] Existing Instance pequiv_prf.
 
 (** Overloaded notation for partial setoid equivalence. *)
 

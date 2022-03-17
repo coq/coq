@@ -70,14 +70,18 @@ Section Defs.
   (** A [PreOrder] is both Reflexive and Transitive. *)
 
   Class PreOrder (R : crelation A)  := {
-    PreOrder_Reflexive :> Reflexive R | 2 ;
-    PreOrder_Transitive :> Transitive R | 2 }.
+    PreOrder_Reflexive : Reflexive R | 2 ;
+    PreOrder_Transitive : Transitive R | 2 }.
+  #[global] Existing Instance PreOrder_Reflexive.
+  #[global] Existing Instance PreOrder_Transitive.
 
   (** A [StrictOrder] is both Irreflexive and Transitive. *)
 
   Class StrictOrder (R : crelation A)  := {
-    StrictOrder_Irreflexive :> Irreflexive R ;
-    StrictOrder_Transitive :> Transitive R }.
+    StrictOrder_Irreflexive : Irreflexive R ;
+    StrictOrder_Transitive : Transitive R }.
+  #[global] Existing Instance StrictOrder_Irreflexive.
+  #[global] Existing Instance StrictOrder_Transitive.
 
   (** By definition, a strict order is also asymmetric *)
   Global Instance StrictOrder_Asymmetric `(StrictOrder R) : Asymmetric R.
@@ -86,15 +90,20 @@ Section Defs.
   (** A partial equivalence crelation is Symmetric and Transitive. *)
   
   Class PER (R : crelation A)  := {
-    PER_Symmetric :> Symmetric R | 3 ;
-    PER_Transitive :> Transitive R | 3 }.
+    PER_Symmetric : Symmetric R | 3 ;
+    PER_Transitive : Transitive R | 3 }.
+  #[global] Existing Instance PER_Symmetric.
+  #[global] Existing Instance PER_Transitive.
 
   (** Equivalence crelations. *)
 
   Class Equivalence (R : crelation A)  := {
-    Equivalence_Reflexive :> Reflexive R ;
-    Equivalence_Symmetric :> Symmetric R ;
-    Equivalence_Transitive :> Transitive R }.
+    Equivalence_Reflexive : Reflexive R ;
+    Equivalence_Symmetric : Symmetric R ;
+    Equivalence_Transitive : Transitive R }.
+  #[global] Existing Instance Equivalence_Reflexive.
+  #[global] Existing Instance Equivalence_Symmetric.
+  #[global] Existing Instance Equivalence_Transitive.
 
   (** An Equivalence is a PER plus reflexivity. *)
   

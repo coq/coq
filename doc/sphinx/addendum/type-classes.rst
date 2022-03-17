@@ -274,23 +274,25 @@ This declares singleton classes for reflexive and transitive relations,
 (see the :ref:`singleton class <singleton-class>` variant for an
 explanation). These may be used as parts of other classes:
 
+.. coqtop:: none
+
+   Set Warnings "-future-coercion-class-field".
+
 .. coqtop:: all
 
    Class PreOrder (A : Type) (R : relation A) :=
      { PreOrder_Reflexive :> Reflexive A R ;
        PreOrder_Transitive :> Transitive A R }.
 
+.. coqtop:: none
+
+   Set Warnings "+future-coercion-class-field".
+
 The syntax ``:>`` indicates that each ``PreOrder`` can be seen as a
 ``Reflexive`` relation. So each time a reflexive relation is needed, a
 preorder can be used instead. This is very similar to the coercion
 mechanism of ``Structure`` declarations. The implementation simply
 declares each projection as an instance.
-
-.. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
-
-   Using this ``:>`` syntax with a right-hand-side that is not itself a Class
-   has no effect (apart from emitting this warning). In particular, is does not
-   declare a coercion.
 
 One can also declare existing objects or structure projections using
 the Existing Instance command to achieve the same effect.
@@ -300,7 +302,7 @@ Summary of the commands
 -----------------------
 
 .. cmd:: Class @record_definition
-         Class {? > } @ident_decl {* @binder } {? : @sort } := @constructor
+         Class @ident_decl {* @binder } {? : @sort } := @constructor
 
    The first form declares a record and makes the record a typeclass with parameters
    :n:`{* @binder }` and the listed record fields.
@@ -318,6 +320,10 @@ Summary of the commands
    declared rigid during resolution so that the class abstraction is
    maintained.
 
+   The `>` in
+   :token:`record_definition` currently does nothing. In a future version, it will
+   create coercions as it does when used in :cmd:`Record` commands.
+
    Like any command declaring a record, this command supports the
    :attr:`universes(polymorphic)`, :attr:`universes(template)`,
    :attr:`universes(cumulative)` and :attr:`private(matching)` attributes.
@@ -333,6 +339,22 @@ Summary of the commands
       .. warn:: @ident is already declared as a typeclass
 
          This command has no effect when used on a typeclass.
+
+.. _warn-future-coercion-class-field:
+
+   .. warn:: A coercion will be introduced in future versions when using ':>' in 'Class' declarations. Use '#[global] Existing Instance field.' instead if you don't want the coercion.
+
+      In future versions, :g:`:>` will also
+      declare a :ref:`coercion<coercions>`, as it does
+      for other :cmd:`Record` commands.
+      To eliminate the warning or to avoid creating the coercion
+      in the future, use :cmd:`Existing Instance` or :cmd:`Coercion` separately rather
+      than :g:`:>`.
+
+   .. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
+
+      Using this ``:>`` syntax with a right-hand-side that is not itself a Class
+      has no effect (apart from emitting this warning).
 
 .. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_val } %} | := @term } }
 

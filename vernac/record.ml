@@ -654,12 +654,18 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
   [cref, [m]]
 
 let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primitive_proj
-    fields params paramimpls coers id idbuild inhabitant_id =
+    fields params paramimpls is_coercion coers id idbuild inhabitant_id =
   let record_data =
     { Data.id
     ; idbuild
     ; is_coercion = false
-    ; coers = List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields
+    (* to be replaced by the following line after deprecation phase
+       (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
+    (* ; is_coercion *)
+    ; coers = List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) coers
+    (* to be replaced by the following line after deprecation phase
+       (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
+    (* ; coers = List.map (fun c -> { pf_subclass = c <> None ; pf_canonical = true }) coers *)
     ; rdata
     ; inhabitant_id
     } in
@@ -700,7 +706,7 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
 
   *)
 let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild inhabitant_id paramimpls params
-    rdata template ?(kind=Decls.StructureComponent) coers =
+    rdata template ?(kind=Decls.StructureComponent) is_coercion coers =
   let implfs =
     (* Make the class implicit in the projections, and the params if applicable. *)
     let impls = implicits_of_context params in
@@ -712,11 +718,12 @@ let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild i
     match fields with
     | [ LocalAssum ({binder_name=Name proj_name} as binder, field)
       | LocalDef ({binder_name=Name proj_name} as binder, _, field) ] when def ->
+      assert (not is_coercion);  (* should be ensured by caller *)
       let binder = {binder with binder_name=Name inhabitant_id} in
       build_class_constant ~rdata ~univs ~primitive_proj field implfs params paramimpls coers binder id proj_name
     | _ ->
       build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primitive_proj
-        fields params paramimpls coers id idbuild inhabitant_id
+        fields params paramimpls is_coercion coers id idbuild inhabitant_id
   in
   let univs, params, fields =
     match fst univs with
@@ -858,13 +865,30 @@ let extract_record_data records =
   in
   ps, data
 
+(* deprecated in 8.16, to be removed at the end of the deprecation phase
+   (c.f., https://github.com/coq/coq/pull/15802 ) *)
+let warn_future_coercion_class_constructor =
+  CWarnings.create ~name:"future-coercion-class-constructor" ~category:"records"
+    ~default:CWarnings.AsError
+    Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
+
+(* deprecated in 8.16, to be removed at the end of the deprecation phase
+   (c.f., https://github.com/coq/coq/pull/15802 ) *)
+let warn_future_coercion_class_field =
+  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
+      str "A coercion will be introduced in future versions when using ':>' in 'Class' declarations. "
+      ++ str "Use '#[global] Existing Instance field.' instead if you don't want the coercion.")
+
 (* declaring structures, common data to refactor *)
 let class_structure ~cumulative ~template ~impargs ~univs ~params ~primitive_proj def records data =
-  let { Ast.name; cfs; idbuild; default_inhabitant_id; _ }, rdata = match records, data with
+  let { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ }, rdata = match records, data with
     | [r], [d] -> r, d
     | _, _ ->
       CErrors.user_err (str "Mutual definitional classes are not handled.")
   in
+  if is_coercion then warn_future_coercion_class_constructor ();
+  if List.exists (function (_, { rf_subclass = Vernacexpr.BackInstance; _ }) -> true | _ -> false) cfs then
+    warn_future_coercion_class_field ();
   let coers = List.map (fun (_, { rf_subclass; rf_priority }) ->
       match rf_subclass with
       | Vernacexpr.BackInstance -> Some {hint_priority = rf_priority; hint_pattern = None}
@@ -877,7 +901,7 @@ let class_structure ~cumulative ~template ~impargs ~univs ~params ~primitive_pro
     | Some id -> id
   in
   declare_class def ~cumulative ~univs ~primitive_proj name.CAst.v idbuild inhabitant_id
-    impargs params rdata template coers
+    impargs params rdata template is_coercion coers
 
 let regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj
     records data =

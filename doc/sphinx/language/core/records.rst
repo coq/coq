@@ -88,6 +88,12 @@ Defining record types
 
    In :n:`@field_spec`:
 
+     :n:`:>` in :n:`@of_type`
+       If specified, the field is declared as a coercion from the record name
+       to the class of the field type. See :ref:`coercions`.
+       Note that this currently does something else in :cmd:`Class` commands.
+       See :ref:`warning in Class <warn-future-coercion-class-field>`.
+
      - :n:`{+ @binder } : @of_type` is equivalent to
        :n:`: forall {+ @binder } , @of_type`
 
