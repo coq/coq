@@ -143,6 +143,22 @@ object(self)
     let iter = buffer#get_iter (`OFFSET del.del_off) in
     buffer#insert_interactive ~iter del.del_val
 
+  (** Check that an action can be replayed. *)
+  method private may_perform_action = function
+  | Insert ins ->
+    let iter = buffer#get_iter (`OFFSET ins.ins_off) in
+    iter#can_insert ~default:true
+  | Delete del ->
+    let rec check len iter =
+      if len = 0 then true
+      else iter#editable ~default:true && check (len - 1) iter#forward_char
+    in
+    let iter = buffer#get_iter (`OFFSET del.del_off) in
+    check del.del_len iter
+  | Action lst ->
+    List.for_all self#may_perform_action lst
+  | EndGrp -> assert false
+
   (** We don't care about atomicity. Return:
     1. `OK when there was no error, `FAIL otherwise
     2. `NOOP if no write occurred, `WRITE otherwise
@@ -169,26 +185,30 @@ object(self)
   method perform_undo () = match history with
   | [] -> ()
   | action :: rem ->
-    let ans = self#process_action action in
-    begin match ans with
-    | (`OK, _) ->
-      history <- rem;
-      redo <- (negate_action action) :: redo
-    | (`FAIL, `NOOP) -> () (* we do nothing *)
-    | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed, so start off *)
-    end
+    if self#may_perform_action action then
+      let ans = self#process_action action in
+      begin match ans with
+      | (`OK, _) ->
+        history <- rem;
+        redo <- (negate_action action) :: redo
+      | (`FAIL, `NOOP) -> () (* we do nothing *)
+      | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed, so start off *)
+      end
+    else ()
 
   method perform_redo () = match redo with
   | [] -> ()
   | action :: rem ->
-    let ans = self#process_action action in
-    begin match ans with
-    | (`OK, _) ->
-      redo <- rem;
-      history <- (negate_action action) :: history;
-    | (`FAIL, `NOOP) -> () (* we do nothing *)
-    | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed *)
-    end
+    if self#may_perform_action action then
+      let ans = self#process_action action in
+      begin match ans with
+      | (`OK, _) ->
+        redo <- rem;
+        history <- (negate_action action) :: history;
+      | (`FAIL, `NOOP) -> () (* we do nothing *)
+      | (`FAIL, `WRITE) -> self#clear_undo () (* we don't know how we failed *)
+      end
+    else ()
 
   method undo () =
     Minilib.log "UNDO";
@@ -298,14 +318,6 @@ object (self)
 
   method set_auto_complete flag =
     provider#set_active flag
-
-  (* workaround: GtkSourceView ignores view#editable.
-     Used to make processed part of script read only while Coq is busy *)
-  val mutable editable2 = true
-
-  method set_editable2 v = editable2 <- v
-
-  method editable2 = editable2
 
   method recenter_insert =
     let rec fwd iter =
@@ -572,30 +584,6 @@ object (self)
     let () = self#completion#set_accelerators 0 in
     let () = self#completion#set_show_headers false in
     let _ = self#completion#add_provider (provider :> GSourceView3.source_completion_provider) in
-
-    (* todo: gray out cut, paste, undo, replace, [un]comment, Templates in the
-      menu when script is not editable *)
-    let nonmod_keys = List.map (fun k -> let (key, _) = GtkData.AccelGroup.parse k in key)
-      [ "Left"; "Right"; "Up"; "Down"; "Home"; "End"; "<Ctrl>A"] in
-
-    (* keypress_cb and buttonpress_cb are a workaround to allow making the script panel not editable *)
-    let keypress_cb ev =
-      let ev_key = GdkEvent.Key.keyval ev in
-      let b = view#buffer in
-      let it = b#get_iter (`MARK (b#get_mark (`NAME "insert"))) in
-      (* note code in Session.insert_cb/delete_cb for other tags *)
-      let can_mod = not (it#has_tag Tags.Script.processed) in
-      let discard = not (editable2 || can_mod || List.mem ev_key nonmod_keys) in
-      if discard then begin
-        Ideutils.flash_info "Input discarded";
-        Minilib.log "key discarded: cursor is in processed part of script";
-      end;
-      discard
-    in
-    let _ = view#event#connect#key_press ~callback:keypress_cb in
-
-    let buttonpress_cb ev = not (editable2 || GdkEvent.Button.button ev = 1) in
-    let _ = view#event#connect#button_press ~callback:buttonpress_cb in
 
     ()
 
