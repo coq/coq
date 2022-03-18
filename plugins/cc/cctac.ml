@@ -265,7 +265,7 @@ let app_global f args k =
   Tacticals.pf_constr_of_global (Lazy.force f) >>= fun fc -> k (mkApp (fc, args))
 
 let rec gen_holes env sigma t n accu =
-  if Int.equal n 0 then (sigma, List.rev accu)
+  if Int.equal n 0 then (sigma, List.rev accu, t)
   else match EConstr.kind sigma t with
   | Prod (_, u, t) ->
     let (sigma, ev) = Evarutil.new_evar env sigma u in
@@ -279,12 +279,13 @@ let app_global_with_holes f args n =
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     Refine.refine ~typecheck:false begin fun sigma ->
-      let t = Tacmach.pf_get_type_of gl fc in
-      let t = Termops.prod_applist sigma t (Array.to_list args) in
-      let ans = mkApp (fc, args) in
-      let (sigma, holes) = gen_holes env sigma t n [] in
-      let ans = applist (ans, holes) in
-      let sigma = Typing.check env sigma ans concl in
+      let open Environ in
+      let fj = Retyping.get_judgment_of env sigma fc in
+      let argsj = Array.map (fun c -> Retyping.get_judgment_of env sigma c) args in
+      let sigma, fj = Typing.judge_of_apply env sigma fj argsj in
+      let (sigma, holes, ty) = gen_holes env sigma fj.uj_type n [] in
+      let ans = applist (fj.uj_val, holes) in
+      let sigma = Typing.check_actual_type env sigma { uj_val = ans; uj_type = ty } concl in
       (sigma, ans)
     end
   end
