@@ -1589,8 +1589,8 @@ let decomp_tuple_term env sigma c t =
     let iterated_decomp =
     try
       let ({proj1=p1; proj2=p2}),(i,a,p,car,cdr) = find_sigma_data_decompose env sigma ex in
-      let car_code = applist (mkConstU (destConstRef p1,i),[a;p;inner_code])
-      and cdr_code = applist (mkConstU (destConstRef p2,i),[a;p;inner_code]) in
+      let car_code = applist (mkConstU (destConstRef p1,i),[a;p;inner_code]) in
+      let cdr_code = applist (mkConstU (destConstRef p2,i),[a;p;inner_code]) in
       let cdrtyp = beta_applist sigma (p,[car]) in
       List.map (fun l -> ((car,a),car_code)::l) (decomprec cdr_code cdr cdrtyp)
     with Constr_matching.PatternMatchingFailure ->
@@ -1598,7 +1598,7 @@ let decomp_tuple_term env sigma c t =
     in [((ex,exty),inner_code)]::iterated_decomp
   in decomprec (mkRel 1) c t
 
-let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
+let subst_tuple_term env sigma dep_pair1 dep_pair2 body =
   let typ = get_type_of env sigma dep_pair1 in
   (* We find all possible decompositions *)
   let decomps1 = decomp_tuple_term env sigma dep_pair1 typ in
@@ -1612,17 +1612,23 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   (* ... and use dep_pair2 to compute the expected goal *)
   let e2_list,_ = List.split decomp2 in
   (* We build the expected goal *)
-  let abst_B =
-    List.fold_right
-      (fun (e,t) body -> lambda_create env sigma (Sorts.Relevant,t,subst_term sigma e body)) e1_list b in
-  let pred_body = beta_applist sigma (abst_B,proj_list) in
+  let fold (e, t) body = lambda_create env sigma (Sorts.Relevant, t, subst_term sigma e body) in
+  let abst_B = List.fold_right fold e1_list body in
+  let ctx, abst_B = decompose_lam_n_assum sigma (List.length e1_list) abst_B in
+  (* Retype the body, it might be ill-typed if it depends on the abstracted subterms *)
+  let sigma, _ = Typing.type_of (push_rel_context ctx env) sigma abst_B in
+  let sigma =
+    (* FIXME: this should be enforced before. We only have to check the last
+       projection, since all previous ones mention a prefix of the subtypes. *)
+    let env = push_rel (Rel.Declaration.LocalAssum (anonR, typ)) env in
+    let sigma, _ = Typing.type_of env sigma (List.last proj_list) in
+    sigma
+  in
+  let pred_body = Vars.substl (List.rev proj_list) abst_B in
   let body = mkApp (lambda_create env sigma (Sorts.Relevant,typ,pred_body),[|dep_pair1|]) in
-  let expected_goal = beta_applist sigma (abst_B,List.map fst e2_list) in
+  let expected_goal = Vars.substl (List.rev_map fst e2_list) abst_B in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
   let expected_goal = nf_betaiota env sigma expected_goal in
-  (* Retype to get universes right *)
-  let sigma, expected_goal_ty = Typing.type_of env sigma expected_goal in
-  let sigma, _ = Typing.type_of env sigma body in
   (sigma, (body, expected_goal))
 
 (* Like "replace" but decompose dependent equalities                      *)
