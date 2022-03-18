@@ -50,7 +50,7 @@ let map_decl_arity f g = function
   | TemplateArity a -> TemplateArity (g a)
 
 let hcons_template_arity ar =
-  { template_level = Univ.hcons_univ ar.template_level; }
+  { template_level = Sorts.hcons ar.template_level; }
 
 let hcons_template_universe ar =
   { template_param_levels = ar.template_param_levels;

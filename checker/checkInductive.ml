@@ -55,7 +55,7 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
         | TemplateArity ar ->
           let ctx = ind.mind_arity_ctxt in
           let ctx = List.firstn (List.length ctx - nparams) ctx in
-          Term.mkArity (ctx, Sorts.sort_of_univ ar.template_level)
+          Term.mkArity (ctx, ar.template_level)
       in
       {
         mind_entry_typename = ind.mind_typename;
@@ -86,7 +86,7 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
     Constr.equal ar.mind_user_arity mind_user_arity &&
     Sorts.equal ar.mind_sort mind_sort
   | TemplateArity ar, TemplateArity {template_level} ->
-    UGraph.check_leq (universes env) template_level ar.template_level
+    UGraph.check_leq (universes env) (Sorts.univ_of_sort template_level) (Sorts.univ_of_sort ar.template_level)
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
   | (RegularArity _ | TemplateArity _), _ -> assert false
 

@@ -353,7 +353,7 @@ let template_polymorphism_candidate ~ctor_levels uctx params concl =
     let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
     if not concltemplate then false
     else
-      let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
+      let conclu = Option.default Sorts.prop concl in
       Option.has_some @@ IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
   | UState.Polymorphic_entry _ -> false
 

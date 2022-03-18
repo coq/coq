@@ -44,5 +44,5 @@ val template_polymorphic_univs :
   ctor_levels:Univ.Level.Set.t ->
   Univ.ContextSet.t ->
   Constr.rel_context ->
-  Univ.Universe.t ->
+  Sorts.t ->
   (Univ.Level.Set.t * Univ.Level.t option list) option
