@@ -339,14 +339,16 @@ module VCache = Set.Make(VData)
     (those loaded by [Require]) from other dependencies, e.g. dependencies
     on ".v" files (for [Load]) or ".cmx", ".cmo", etc... (for [Declare]). *)
 
-type dependency =
-  | DepRequire of string (* one basename, to which we later append .vo or .vio or .vos *)
-  | DepOther of string   (* filenames of dependencies, separated by spaces *)
+module Dep = struct
+  type t =
+  | Require of string (* one basename, to which we later append .vo or .vio or .vos *)
+  | Other of string   (* filenames of dependencies, separated by spaces *)
+end
 
 let string_of_dependency_list suffix_for_require deps =
   let string_of_dep = function
-    | DepRequire basename -> basename ^ suffix_for_require
-    | DepOther s -> s
+    | Dep.Require basename -> basename ^ suffix_for_require
+    | Dep.Other s -> s
     in
   String.concat " " (List.map string_of_dep deps)
 
@@ -427,7 +429,7 @@ let rec find_dependencies basename =
     let add_dep dep =
        dependencies := dep::!dependencies in
     let add_dep_other s =
-       add_dep (DepOther s) in
+       add_dep (Dep.Other s) in
 
     (* Reading file contents *)
     let f = basename ^ ".v" in
@@ -441,7 +443,7 @@ let rec find_dependencies basename =
             List.iter (fun str ->
               if should_visit_v_and_mark from str then begin
               match safe_assoc from verbose f str with
-              | Some files -> List.iter (fun file_str -> add_dep (DepRequire (canonize file_str))) files
+              | Some files -> List.iter (fun file_str -> add_dep (Dep.Require (canonize file_str))) files
               | None ->
                   if verbose && not (is_in_coqlib ?from str) then
                   warning_module_notfound from f str
@@ -507,7 +509,7 @@ let rec find_dependencies basename =
               List.iter add_dep deps) l)
         | External(from,str) ->
             begin match safe_assoc ~what:External (Some from) verbose f [str] with
-            | Some (file :: _) -> add_dep (DepOther (canonize file))
+            | Some (file :: _) -> add_dep (Dep.Other (canonize file))
             | Some [] -> assert false
             | None -> warning_module_notfound ~what:External (Some from) f [str]
             end
@@ -526,21 +528,34 @@ let rec find_dependencies basename =
 
 let write_vos = ref false
 
-let coq_dependencies () =
-  List.iter
-    (fun (name,_) ->
-       let ename = escape name in
-       let glob = if !option_noglob then "" else ename^".glob " in
-       let deps = find_dependencies name in
-       printf "%s.vo %s%s.v.beautified %s.required_vo: %s.v %s\n" ename glob ename ename ename
-        (string_of_dependency_list ".vo" deps);
-       printf "%s.vio: %s.v %s\n" ename ename
-         (string_of_dependency_list ".vio" deps);
-       if !write_vos then
-         printf "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
-           (string_of_dependency_list ".vos" deps);
-       printf "%!")
-    (List.rev !vAccu)
+module Dep_info = struct
+
+  type t =
+    { name : string  (* This should become [module : Coq_module.t] eventually *)
+    ; deps : Dep.t list
+    }
+
+  let make name deps = { name; deps }
+
+  open Format
+
+  let print fmt { name; deps } =
+    let ename = escape name in
+    let glob = if !option_noglob then "" else ename^".glob " in
+    fprintf fmt "%s.vo %s%s.v.beautified %s.required_vo: %s.v %s\n" ename glob ename ename ename
+      (string_of_dependency_list ".vo" deps);
+    fprintf fmt "%s.vio: %s.v %s\n" ename ename
+      (string_of_dependency_list ".vio" deps);
+    if !write_vos then
+      fprintf fmt "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
+        (string_of_dependency_list ".vos" deps);
+    fprintf fmt "%!"
+
+end
+
+let compute_deps () =
+  let mk_dep (name, _) = Dep_info.make name (find_dependencies name) in
+  !vAccu |> List.rev |> List.map mk_dep
 
 (** Compute the suffixes of a logical path together with the length of the missing part *)
 let rec suffixes full = function
@@ -785,36 +800,41 @@ let treat_coqproject f =
   iter_sourced (fun ({ path }, l) -> add_r_include path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
-let rec parse = function
-  | "-boot" :: ll -> option_boot := true; parse ll
-  | "-sort" :: ll -> option_sort := true; parse ll
-  | "-vos" :: ll -> write_vos := true; parse ll
-  | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
-  | "-noinit" :: ll -> (* do nothing *) parse ll
-  | "-f" :: f :: ll -> treat_coqproject f; parse ll
-  | "-I" :: r :: ll -> add_caml_dir r; parse ll
-  | "-I" :: [] -> usage ()
-  | "-R" :: r :: ln :: ll -> add_r_include r ln; parse ll
-  | "-Q" :: r :: ln :: ll -> add_q_include r ln; parse ll
-  | "-R" :: ([] | [_]) -> usage ()
-  | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
-  | "-exclude-dir" :: [] -> usage ()
-  | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse ll
-  | "-coqlib" :: [] -> usage ()
-  | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
-  | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
-  | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
-  | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
-  | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
-  | "-m" :: m :: ll -> meta_files := !meta_files @ [m]; parse ll
-  | ("-h"|"--help"|"-help") :: _ -> usage ()
-  | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
-    coqdep_warning "unknown option %s" opt;
-    parse ll
-  | f :: ll -> treat_file_command_line f; parse ll
-  | [] -> ()
+let parse args =
+  let acc = ref [] in
+  let rec parse =
+    function
+    | "-boot" :: ll -> option_boot := true; parse ll
+    | "-sort" :: ll -> option_sort := true; parse ll
+    | "-vos" :: ll -> write_vos := true; parse ll
+    | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
+    | "-noinit" :: ll -> (* do nothing *) parse ll
+    | "-f" :: f :: ll -> treat_coqproject f; parse ll
+    | "-I" :: r :: ll -> add_caml_dir r; parse ll
+    | "-I" :: [] -> usage ()
+    | "-R" :: r :: ln :: ll -> add_r_include r ln; parse ll
+    | "-Q" :: r :: ln :: ll -> add_q_include r ln; parse ll
+    | "-R" :: ([] | [_]) -> usage ()
+    | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
+    | "-exclude-dir" :: [] -> usage ()
+    | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse ll
+    | "-coqlib" :: [] -> usage ()
+    | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
+    | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
+    | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
+    | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
+    | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
+    | "-m" :: m :: ll -> meta_files := !meta_files @ [m]; parse ll
+    | ("-h"|"--help"|"-help") :: _ -> usage ()
+    | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
+      coqdep_warning "unknown option %s" opt;
+      parse ll
+    | f :: ll -> acc := f :: !acc; parse ll
+    | [] -> ()
+  in
+  parse args;
+  List.rev !acc
 
-let init () =
-  if Array.length Sys.argv < 2 then usage ();
+let init args =
   if not Coq_config.has_natdynlink then option_dynlink := No;
-  parse (List.tl (Array.to_list Sys.argv))
+  parse args

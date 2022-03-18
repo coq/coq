@@ -9,10 +9,15 @@
 (************************************************************************)
 
 (** The basic parts of coqdep are in [Common]. *)
-open Coqdeplib.Common
 
 let coqdep () =
-  init ();
+  let open Coqdeplib.Common in
+
+  (* Initialize coqdep, add files to dependency computation *)
+  if Array.length Sys.argv < 2 then usage ();
+  let v_files = init (List.tl (Array.to_list Sys.argv)) in
+  List.iter treat_file_command_line v_files;
+
   (* XXX: All the code below is just setting loadpaths, refactor to
      Common coq.boot library *)
   (* Add current dir with empty logical path if not set by options above. *)
@@ -35,7 +40,7 @@ let coqdep () =
   if !option_sort then
     sort ()
   else
-    coq_dependencies ()
+    compute_deps () |> List.iter (Dep_info.print Format.std_formatter)
 
 let _ =
   try
