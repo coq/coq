@@ -1217,6 +1217,10 @@ let one_subterm = subterm false default_flags
 
 let transitivity state env unfresh cstr (res : rewrite_result_info) (next : 'a pure_strategy) :
     'a * rewrite_result =
+  let cstr = match cstr with
+    | _, Some _ -> cstr
+    | prop, None -> prop, get_opt_rew_rel res.rew_prf
+  in
   let state, nextres =
     next.strategy { state; env; unfresh; cstr;
                     term1 = res.rew_to;
