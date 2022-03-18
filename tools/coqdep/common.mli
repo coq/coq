@@ -15,11 +15,14 @@ val coqdep_warning : ('a, Format.formatter, unit, unit) format4 -> 'a
 (** Options *)
 val option_sort : bool ref
 
-val sort : unit -> unit
+module State : sig
+  type t
+  val loadpath : t -> Loadpath.State.t
+end
 
 (** [init args] Init coqdep, parsing arguments from [args]; returns
    the list of .v files passed as arguments *)
-val init : string list -> string list
+val init : string list -> string list * State.t
 
 (** Display the --help documentation *)
 val usage : unit -> unit
@@ -45,4 +48,6 @@ module Dep_info : sig
   val print : Format.formatter -> t -> unit
 end
 
-val compute_deps : unit -> Dep_info.t list
+val sort : State.t -> unit
+
+val compute_deps : State.t -> Dep_info.t list

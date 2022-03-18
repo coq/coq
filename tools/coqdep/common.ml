@@ -140,11 +140,11 @@ let warn_if_clash ?(what=Library) exact file dir f1 = function
         end
   | [] -> ()
 
-let safe_assoc ?(what=Library) from verbose file k =
+let safe_assoc st ?(what=Library) from verbose file k =
   let search =
     match what with
-    | Library -> Loadpath.search_v_known
-    | External -> Loadpath.search_other_known in
+    | Library -> Loadpath.search_v_known st
+    | External -> Loadpath.search_other_known st in
   match search ?from k with
   | None -> None
   | Some (Loadpath.ExactMatches (f :: l)) ->
@@ -284,7 +284,7 @@ let findlib_resolve f package legacy_name plugin =
 
 let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
 
-let rec find_dependencies basename =
+let rec find_dependencies st basename =
   let verbose = true in (* for past/future use? *)
   try
     (* Visited marks *)
@@ -314,10 +314,10 @@ let rec find_dependencies basename =
         | Require (from, strl) ->
             List.iter (fun str ->
               if should_visit_v_and_mark from str then begin
-              match safe_assoc from verbose f str with
+              match safe_assoc st from verbose f str with
               | Some files -> List.iter (fun file_str -> add_dep (Dep.Require (canonize file_str))) files
               | None ->
-                  if verbose && not (Loadpath.is_in_coqlib ?from str) then
+                  if verbose && not (Loadpath.is_in_coqlib st ?from str) then
                   warning_module_notfound from f str
               end) strl
         | Declare sl ->
@@ -350,10 +350,10 @@ let rec find_dependencies basename =
               let s = basename_noext str in
               if not (StrSet.mem s !visited_ml) then begin
                 visited_ml := StrSet.add s !visited_ml;
-                match Loadpath.search_mllib_known s with
+                match Loadpath.search_mllib_known st s with
                   | Some mldir -> declare ".cma" mldir s
                   | None ->
-                    match Loadpath.search_mlpack_known s with
+                    match Loadpath.search_mlpack_known st s with
                   | Some mldir -> declare ".cmo" mldir s
                   | None -> warning_declare f str
                 end
@@ -363,11 +363,11 @@ let rec find_dependencies basename =
             let canon =
               match file with
               | Logical str ->
-                if should_visit_v_and_mark None [str] then safe_assoc None verbose f [str]
+                if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
                 else None
               | Physical str ->
                 if String.equal (Filename.basename str) str then
-                  if should_visit_v_and_mark None [str] then safe_assoc None verbose f [str]
+                  if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
                   else None
                 else
                   Some [canonize str]
@@ -377,10 +377,10 @@ let rec find_dependencies basename =
             | Some l ->
               List.iter (fun canon ->
               add_dep_other (sprintf "%s.v" canon);
-              let deps = find_dependencies canon in
+              let deps = find_dependencies st canon in
               List.iter add_dep deps) l)
         | External(from,str) ->
-            begin match safe_assoc ~what:External (Some from) verbose f [str] with
+            begin match safe_assoc st ~what:External (Some from) verbose f [str] with
             | Some (file :: _) -> add_dep (Dep.Other (canonize file))
             | Some [] -> assert false
             | None -> warning_module_notfound ~what:External (Some from) f [str]
@@ -425,8 +425,15 @@ module Dep_info = struct
 
 end
 
-let compute_deps () =
-  let mk_dep (name, _) = Dep_info.make name (find_dependencies name) in
+module State = struct
+
+  type t = Loadpath.State.t
+  let loadpath x = x
+
+end
+
+let compute_deps st =
+  let mk_dep (name, _) = Dep_info.make name (find_dependencies st name) in
   !vAccu |> List.rev |> List.map mk_dep
 
 exception Cannot_stat_file of string * Unix.error
@@ -475,7 +482,7 @@ let treat_file_coq_project where old_name =
     error_cannot_stat_in where f msg
 
 (* "[sort]" outputs `.v` files required by others *)
-let sort () =
+let sort st =
   let seen = Hashtbl.create 97 in
   let rec loop file =
     let file = canonize file in
@@ -489,7 +496,7 @@ let sort () =
             | Require (from, sl) ->
                 List.iter
                   (fun s ->
-                    match safe_assoc from false file s with
+                    match safe_assoc st from false file s with
                     | None -> ()
                     | Some l -> List.iter loop l)
                 sl
@@ -522,7 +529,7 @@ let usage () =
 
 let option_sort = ref false
 
-let treat_coqproject f =
+let treat_coqproject st f =
   let open CoqProject_file in
   let iter_sourced f = List.iter (fun {thing} -> f thing) in
   let warning_fn x = coqdep_warning "%s" x in
@@ -532,46 +539,80 @@ let treat_coqproject f =
     | Parsing_error msg -> error_cannot_parse_project_file f msg
     | UnableToOpenProjectFile msg -> error_cannot_open_project_file msg
   in
-  iter_sourced (fun { path } -> Loadpath.add_caml_dir path) project.ml_includes;
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include path l) project.q_includes;
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include path l) project.r_includes;
+  iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
-let parse args =
-  let acc = ref [] in
-  let rec parse =
+module Args = struct
+
+  type t =
+    { coqproject : string option
+    ; ml_path : string list
+    ; vo_path : (bool * string * string) list
+    ; files : string list
+    }
+
+  let make () =
+    { coqproject = None
+    ; ml_path = []
+    ; vo_path = []
+    ; files = []
+    }
+
+end
+
+let parse st args =
+  let rec parse st =
     function
-    | "-boot" :: ll -> Options.boot := true; parse ll
-    | "-sort" :: ll -> option_sort := true; parse ll
-    | "-vos" :: ll -> write_vos := true; parse ll
-    | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
-    | "-noinit" :: ll -> (* do nothing *) parse ll
-    | "-f" :: f :: ll -> treat_coqproject f; parse ll
-    | "-I" :: r :: ll -> Loadpath.add_caml_dir r; parse ll
+    | "-boot" :: ll -> Options.boot := true; parse st ll
+    | "-sort" :: ll -> option_sort := true; parse st ll
+    | "-vos" :: ll -> write_vos := true; parse st ll
+    | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse st ll
+    | "-noinit" :: ll -> (* do nothing *) parse st ll
+    | "-f" :: f :: ll -> parse { st with Args.coqproject = Some f } ll
+    | "-I" :: r :: ll -> parse { st with Args.ml_path = r :: st.Args.ml_path } ll
     | "-I" :: [] -> usage ()
-    | "-R" :: r :: ln :: ll -> Loadpath.add_r_include r ln; parse ll
-    | "-Q" :: r :: ln :: ll -> Loadpath.add_q_include r ln; parse ll
+    | "-R" :: r :: ln :: ll -> parse { st with Args.vo_path = (true, r, ln) :: st.Args.vo_path } ll
+    | "-Q" :: r :: ln :: ll -> parse { st with Args.vo_path = (false, r, ln) :: st.Args.vo_path } ll
     | "-R" :: ([] | [_]) -> usage ()
-    | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse ll
+    | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse st ll
     | "-exclude-dir" :: [] -> usage ()
-    | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse ll
+    | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse st ll
     | "-coqlib" :: [] -> usage ()
-    | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
-    | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
-    | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
-    | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
-    | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
-    | "-m" :: m :: ll -> meta_files := !meta_files @ [m]; parse ll
+    | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse st ll
+    | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse st ll
+    | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse st ll
+    | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse st ll
+    | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse st ll
+    | "-m" :: m :: ll -> meta_files := !meta_files @ [m]; parse st ll
     | ("-h"|"--help"|"-help") :: _ -> usage ()
     | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
       coqdep_warning "unknown option %s" opt;
-      parse ll
-    | f :: ll -> acc := f :: !acc; parse ll
-    | [] -> ()
+      parse st ll
+    | f :: ll -> parse { st with Args.files = f :: st.Args.files } ll
+    | [] -> st
   in
-  parse args;
-  List.rev !acc
+  let st = parse st args in
+  let open Args in
+  { st with
+    ml_path = List.rev st.ml_path
+  ; vo_path = List.rev st.vo_path
+  ; files = List.rev st.files
+  }
+
+let add_include st (rc, r, ln) =
+  if rc then
+    Loadpath.add_r_include st r ln
+  else
+    Loadpath.add_q_include st r ln
 
 let init args =
+  vAccu := [];
   if not Coq_config.has_natdynlink then option_dynlink := No;
-  parse args
+  let { Args.coqproject; ml_path; vo_path; files } = parse (Args.make ()) args in
+  let st = Loadpath.State.make () in
+  Option.iter (treat_coqproject st) coqproject;
+  List.iter (Loadpath.add_caml_dir st) ml_path;
+  List.iter (add_include st) vo_path;
+  files, st

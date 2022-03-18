@@ -25,16 +25,24 @@ type result =
   | ExactMatches of filename list
   | PartialMatchesInSameRoot of root * filename list
 
-val search_v_known : ?from:dirpath -> dirpath -> result option
-val search_other_known : ?from:dirpath -> dirpath -> result option
-val search_mllib_known : string -> dir option
-val search_mlpack_known : string -> dir option
+module State : sig
+  type t
 
-val is_in_coqlib : ?from:dirpath -> dirpath -> bool
+  val make : unit -> t
+end
 
-val add_caml_dir : System.unix_path -> unit
-val add_q_include : System.unix_path -> string -> unit
-val add_r_include : System.unix_path -> string -> unit
+val search_v_known : State.t -> ?from:dirpath -> dirpath -> result option
+val search_other_known : State.t -> ?from:dirpath -> dirpath -> result option
+val search_mllib_known : State.t -> string -> dir option
+val search_mlpack_known : State.t -> string -> dir option
+
+val is_in_coqlib : State.t -> ?from:dirpath -> dirpath -> bool
+
+val add_caml_dir : State.t -> System.unix_path -> unit
+
+val add_current_dir : State.t -> System.unix_path -> unit
+val add_q_include : State.t -> System.unix_path -> string -> unit
+val add_r_include : State.t -> System.unix_path -> string -> unit
 
 (* These should disappear in favor of add_q / add_r *)
 
@@ -51,8 +59,8 @@ val add_rec_dir_no_import :
 val add_rec_dir_import :
   (bool -> root -> dirname -> dirpath -> basename -> unit) -> dirname -> dirpath -> unit
 
-val add_known : bool -> root -> dirname -> dirpath -> basename -> unit
-val add_coqlib_known : bool -> root -> dirname -> dirpath -> basename -> unit
+val add_known : State.t -> bool -> root -> dirname -> dirpath -> basename -> unit
+val add_coqlib_known : State.t -> bool -> root -> dirname -> dirpath -> basename -> unit
 
 (** [find_dir_logpath phys_dir] Return the logical path of directory
    [dir] if it has been given one. Raise [Not_found] otherwise. In
