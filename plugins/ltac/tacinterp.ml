@@ -116,8 +116,8 @@ let debug = ref DebugOff
 (* Sets the debugger on or off *)
 let set_debug pos = debug := pos
 
-(* Gives the state of debug *)
-let get_debug () = !debug
+(* Gives the state of debug; disabled in worker processes *)
+let get_debug () = if Flags.async_proofs_is_worker () then DebugOff else !debug
 
 let log_trace = ref false
 
