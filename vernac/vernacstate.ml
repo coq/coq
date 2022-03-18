@@ -103,9 +103,7 @@ let s_lemmas = ref None
 let s_program = ref (NeList.singleton Declare.OblState.empty)
 
 let invalidate_cache () =
-  s_cache := None;
-  s_lemmas := None;
-  s_program := NeList.singleton Declare.OblState.empty
+  s_cache := None
 
 let update_cache rf v =
   rf := Some v; v
