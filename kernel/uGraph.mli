@@ -98,7 +98,7 @@ val constraints_for : kept:Level.Set.t -> t -> Constraints.t
 val domain : t -> Level.Set.t
 (** Known universes *)
 
-val check_subtype : lbound:Bound.t -> AbstractContext.t check_function
+val check_subtype : AbstractContext.t check_function
 (** [check_subtype univ ctx1 ctx2] checks whether [ctx2] is an instance of
     [ctx1]. *)
 

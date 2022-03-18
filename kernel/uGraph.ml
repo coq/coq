@@ -196,13 +196,13 @@ let constraints_for ~kept g = G.constraints_for ~kept:(Level.Set.remove Level.sp
 
 (** Subtyping of polymorphic contexts *)
 
-let check_subtype ~lbound univs ctxT ctx =
+let check_subtype univs ctxT ctx =
   if AbstractContext.size ctxT == AbstractContext.size ctx then
     let uctx = AbstractContext.repr ctx in
     let inst = UContext.instance uctx in
     let cst = UContext.constraints uctx in
     let cstT = UContext.constraints (AbstractContext.repr ctxT) in
-    let push accu v = add_universe v ~lbound ~strict:false accu in
+    let push accu v = add_universe v ~lbound:Bound.Set ~strict:false accu in
     let univs = Array.fold_left push univs (Instance.to_array inst) in
     let univs = merge_constraints cstT univs in
     check_constraints cst univs
