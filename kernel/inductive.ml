@@ -1116,12 +1116,14 @@ let check_one_fix renv recpos trees def =
               let c_0 = whd_all renv.env c_0 in
               let hd, _ = decompose_app c_0 in
               match kind hd with
-              | Construct _ ->
+              | Construct _ | CoFix _ ->
                   (* the call to whd_betaiotazeta will reduce the
                      apparent iota redex away *)
                   check_rec_call renv []
                     (Term.applist (mkCase (ci, u, pms, ret, iv, c_0, br), l))
-              | _ -> Exninfo.iraise exn
+              | Rel _ | Var _ | Const _ | App _ | Lambda _ | Prod _ | LetIn _
+              | Ind _ | Case _ | Fix _ | Proj _ | Sort _ | Cast _
+              | Int _ | Float _ | Array _ | Meta _ | Evar _ -> Exninfo.iraise exn
             end
 
         (* Enables to traverse Fixpoint definitions in a more intelligent
@@ -1167,7 +1169,9 @@ let check_one_fix renv recpos trees def =
                   let before, after = CList.(firstn decrArg l, skipn (decrArg+1) l) in
                   check_rec_call renv []
                     (Term.applist (mkFix ((recindxs,i),recdef), (before @ recArg :: after)))
-              | _ -> Exninfo.iraise exn
+              | Rel _ | Var _ | Const _ | App _ | Lambda _ | Prod _ | LetIn _
+              | Ind _ | Case _ | Fix _ | CoFix _ | Proj _ | Sort _ | Cast _
+              | Int _ | Float _ | Array _ | Meta _ | Evar _ -> Exninfo.iraise exn
             end
 
         | Const (kn,_u as cu) ->
@@ -1209,10 +1213,12 @@ let check_one_fix renv recpos trees def =
               let c = whd_all renv.env c in
               let hd, _ = decompose_app c in
               match kind hd with
-              | Construct _ ->
-                  check_rec_call renv []
+              | Construct _ | CoFix _ ->
+                  check_rec_call renv stack
                     (Term.applist (mkProj(Projection.unfold p,c), l))
-              | _ -> Exninfo.iraise exn
+              | Rel _ | Var _ | Const _ | App _ | Lambda _ | Prod _ | LetIn _
+              | Ind _ | Case _ | Fix _ | Proj _ | Sort _ | Cast _
+              | Int _ | Float _ | Array _ | Meta _ | Evar _ -> Exninfo.iraise exn
             end
 
         | Var id ->
