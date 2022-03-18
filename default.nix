@@ -22,7 +22,7 @@
 # a symlink to where Coq was installed.
 
 { pkgs ? import ./dev/nixpkgs.nix {}
-, ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_09
+, ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_12
 , buildIde ? true
 , buildDoc ? true
 , doInstallCheck ? true
@@ -45,7 +45,7 @@ stdenv.mkDerivation rec {
   ]
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
-    glib gnome3.defaultIconTheme wrapGAppsHook
+    glib gnome3.adwaita-icon-theme wrapGAppsHook
   ]
   ++ optionals buildDoc [
     # Sphinx doc dependencies
