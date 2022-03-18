@@ -68,9 +68,6 @@ end
 
 val add_universe : Level.t -> lbound:Bound.t -> strict:bool -> t -> t
 
-(** Add a universe without (Prop,Set) <= u *)
-val add_universe_unconstrained : Level.t -> t -> t
-
 (** Check that the universe levels are declared. Otherwise
     @raise UndeclaredLevel l for the first undeclared level found. *)
 exception UndeclaredLevel of Univ.Level.t

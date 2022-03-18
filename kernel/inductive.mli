@@ -155,8 +155,6 @@ val check_cofix : env -> cofixpoint -> unit
 
 exception SingletonInductiveBecomesProp of Id.t
 
-val max_inductive_sort : Sorts.t array -> Universe.t
-
 (** {6 Debug} *)
 
 type size = Large | Strict

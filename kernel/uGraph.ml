@@ -186,8 +186,6 @@ let add_universe u ~lbound ~strict g =
   let d = if strict then Lt else Le in
   enforce_constraint (lbound,d,u) {g with graph}
 
-let add_universe_unconstrained u g = {g with graph=G.add u g.graph}
-
 exception UndeclaredLevel = G.Undeclared
 let check_declared_universes g l = G.check_declared g.graph (Level.Set.remove Level.sprop l)
 
