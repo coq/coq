@@ -751,7 +751,7 @@ and cbv_norm_value info = function (* reduction under binders *)
 (* with profiling *)
 let cbv_norm infos constr =
   let constr = EConstr.Unsafe.to_constr constr in
-  EConstr.of_constr (with_stats (lazy (cbv_norm_term infos (subs_id 0) constr)))
+  EConstr.of_constr (with_stats ~whatfor:"cbv" (fun () -> cbv_norm_term infos (subs_id 0) constr))
 
 (* constant bodies are normalized at the first expansion *)
 let create_cbv_infos reds env sigma =

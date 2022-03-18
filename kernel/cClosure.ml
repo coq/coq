@@ -36,7 +36,7 @@ open Esubst
 
 module RelDecl = Context.Rel.Declaration
 
-let stats = ref false
+let stats, _ = CDebug.create_full ~name:"cclosure-stats" ()
 
 (* Profiling *)
 let beta = ref 0
@@ -48,32 +48,34 @@ let fix = ref 0
 let cofix = ref 0
 let prune = ref 0
 
-let reset () =
-  beta := 0; delta := 0; zeta := 0; evar := 0; nb_match := 0; fix := 0;
-  cofix := 0; evar := 0; prune := 0
+let all_stats = [beta;delta;zeta;evar;nb_match;fix;cofix;prune]
 
-let stop() =
-  Feedback.msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
+let reset () =
+  List.map (fun cnt -> let v = !cnt in cnt := 0; v) all_stats
+
+let stop saved whatfor =
+  Feedback.msg_debug (str "[(" ++ str whatfor ++ str ") Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
          str" zeta=" ++ int !zeta ++ str" evar=" ++
          int !evar ++ str" match=" ++ int !nb_match ++ str" fix=" ++ int !fix ++
          str " cofix=" ++ int !cofix ++ str" prune=" ++ int !prune ++
-         str"]")
+         str"]");
+  List.iter2 (:=) all_stats saved
 
 let incr_cnt red cnt =
   if red then begin
-    if !stats then incr cnt;
+    if CDebug.get_flag stats then incr cnt;
     true
   end else
     false
 
-let with_stats c =
-  if !stats then begin
-    reset();
-    let r = Lazy.force c in
-    stop();
+let with_stats ~whatfor c =
+  if CDebug.get_flag stats then begin
+    let saved = reset() in
+    let r = c () in
+    stop saved whatfor;
     r
   end else
-    Lazy.force c
+    c ()
 
 let all_opaque = TransparentState.empty
 
@@ -1673,11 +1675,11 @@ and zip_term info tab m stk = match stk with
 
 (* weak reduction *)
 let whd_val info tab v =
-  with_stats (lazy (term_of_fconstr (kh info tab v [])))
+  with_stats ~whatfor:"whd_val" (fun () -> term_of_fconstr (kh info tab v []))
 
 (* strong reduction *)
 let norm_val info tab v =
-  with_stats (lazy (kl info tab v))
+  with_stats ~whatfor:"norm_val" (fun () -> kl info tab v)
 
 let whd_stack infos tab m stk = match Mark.red_state m.mark with
 | Whnf | Ntrl ->

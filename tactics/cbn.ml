@@ -837,4 +837,4 @@ let norm_cbn flags env sigma t =
   let rec strongrec env t =
     map_constr_with_full_binders env sigma
       push_rel_check_zeta strongrec env (whd_cbn flags env sigma t) in
-  strongrec env t
+  CClosure.with_stats ~whatfor:"cbn" (fun () -> strongrec env t)

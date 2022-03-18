@@ -15,9 +15,7 @@ open Environ
 open Esubst
 
 (** Flags for profiling reductions. *)
-val stats : bool ref
-
-val with_stats: 'a Lazy.t -> 'a
+val with_stats: whatfor:string -> (unit -> 'a) -> 'a
 
 (** {6 ... } *)
 (** Delta implies all consts (both global (= by
