@@ -1472,16 +1472,21 @@ let () =
 let () =
   let interp ?loc ~poly env sigma tycon id =
     let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
+    let env = GlobEnv.renamed_env env in
     let c = Id.Map.find id ist.env_ist in
     let c = Value.to_constr c in
-    let t = Retyping.get_type_of (GlobEnv.renamed_env env) sigma c in
+    let t = Retyping.get_type_of env sigma c in
+    let j = { Environ.uj_val = c; uj_type = t } in
     match tycon with
     | None ->
-      { Environ.uj_val = c; Environ.uj_type = t }, sigma
-    | Some ty ->
-      let sigma = Evarconv.unify_leq_delay (GlobEnv.renamed_env env) sigma t ty in
-      let j = { Environ.uj_val = c; Environ.uj_type = ty } in
       j, sigma
+    | Some ty ->
+      let sigma =
+        try Evarconv.unify_leq_delay env sigma t ty
+        with Evarconv.UnableToUnify (sigma,e) ->
+          Pretype_errors.error_actual_type ?loc env sigma j ty e
+      in
+      {j with Environ.uj_type = ty}, sigma
   in
   GlobEnv.register_constr_interp0 wit_ltac2_quotation interp
 
