@@ -974,7 +974,7 @@ let eq_constr_univs univs m n =
   if m == n then true
   else
     let eq_universes _ = UGraph.check_eq_instances univs in
-    let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+    let eq_sorts s1 s2 = s1 == s2 || Sorts.check_eq_sort univs s1 s2 in
     let rec eq_constr' nargs m n =
       m == n ||	compare_head_gen eq_universes eq_sorts eq_constr' nargs m n
     in compare_head_gen eq_universes eq_sorts eq_constr' 0 m n
@@ -984,9 +984,9 @@ let leq_constr_univs univs m n =
   else
     let eq_universes _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 ||
-      UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+      Sorts.check_eq_sort univs s1 s2 in
     let leq_sorts s1 s2 = s1 == s2 ||
-      UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
+      Sorts.check_leq_sort univs s1 s2 in
     let rec eq_constr' nargs m n =
       m == n || compare_head_gen eq_universes eq_sorts eq_constr' nargs m n
     in
@@ -1003,10 +1003,9 @@ let eq_constr_univs_infer univs m n =
     let eq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
       else
-        let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-        if UGraph.check_eq univs u1 u2 then true
+        if Sorts.check_eq_sort univs s1 s2 then true
         else
-          (cstrs := Univ.enforce_eq u1 u2 !cstrs;
+          (cstrs := Sorts.enforce_eq_sort s1 s2 !cstrs;
            true)
     in
     let rec eq_constr' nargs m n =
@@ -1023,18 +1022,16 @@ let leq_constr_univs_infer univs m n =
     let eq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
       else
-        let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-        if UGraph.check_eq univs u1 u2 then true
-        else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
+        if Sorts.check_eq_sort univs s1 s2 then true
+        else (cstrs := Sorts.enforce_eq_sort s1 s2 !cstrs;
               true)
     in
     let leq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
       else
-        let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-        if UGraph.check_leq univs u1 u2 then true
+        if Sorts.check_leq_sort univs s1 s2 then true
         else
-          (try let c, _ = UGraph.enforce_leq_alg u1 u2 univs in
+          (try let c, _ = Sorts.enforce_leq_alg_sort s1 s2 univs in
             cstrs := Univ.Constraints.union c !cstrs;
             true
           with Univ.UniverseInconsistency _ -> false)

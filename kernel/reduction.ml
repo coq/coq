@@ -872,17 +872,15 @@ let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
 
 
 let check_eq univs u u' =
-  if not (UGraph.check_eq univs u u') then raise NotConvertible
+  if not (Sorts.check_eq_sort univs u u') then raise NotConvertible
 
 let check_leq univs u u' =
-  if not (UGraph.check_leq univs u u') then raise NotConvertible
+  if not (Sorts.check_leq_sort univs u u') then raise NotConvertible
 
 let check_sort_cmp_universes pb s0 s1 univs =
-  let u0 = Sorts.univ_of_sort s0
-  and u1 = Sorts.univ_of_sort s1 in
   match pb with
-  | CUMUL -> check_leq univs u0 u1
-  | CONV -> check_eq univs u0 u1
+  | CUMUL -> check_leq univs s0 s1
+  | CONV -> check_eq univs s0 s1
 
 let checked_sort_cmp_universes _env pb s0 s1 univs =
   check_sort_cmp_universes pb s0 s1 univs; univs
@@ -917,22 +915,20 @@ let () =
   CClosure.set_conv conv
 
 let infer_eq (univs, cstrs as cuniv) u u' =
-  if UGraph.check_eq univs u u' then cuniv
+  if Sorts.check_eq_sort univs u u' then cuniv
   else
-    univs, (Univ.enforce_eq u u' cstrs)
+    univs, (Sorts.enforce_eq_sort u u' cstrs)
 
 let infer_leq (univs, cstrs as cuniv) u u' =
-  if UGraph.check_leq univs u u' then cuniv
+  if Sorts.check_leq_sort univs u u' then cuniv
   else
-    let cstrs', _ = UGraph.enforce_leq_alg u u' univs in
+    let cstrs', _ = Sorts.enforce_leq_alg_sort u u' univs in
       univs, Univ.Constraints.union cstrs cstrs'
 
 let infer_cmp_universes _env pb s0 s1 univs =
-  let u0 = Sorts.univ_of_sort s0
-  and u1 = Sorts.univ_of_sort s1 in
   match pb with
-  | CUMUL -> infer_leq univs u0 u1
-  | CONV -> infer_eq univs u0 u1
+  | CUMUL -> infer_leq univs s0 s1
+  | CONV -> infer_eq univs s0 s1
 
 let infer_convert_instances ~flex u u' (univs,cstrs) =
   let cstrs' =

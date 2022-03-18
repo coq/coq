@@ -46,7 +46,7 @@ val inductive_nonrec_rec_paramdecls : mutual_inductive_body puniverses -> Constr
 val instantiate_inductive_constraints :
   mutual_inductive_body -> Instance.t -> Constraints.t
 
-type param_univs = (unit -> Universe.t) list
+type param_univs = (unit -> Sorts.t) list
 
 val make_param_univs : Environ.env -> constr array -> param_univs
 (** The constr array is the types of the arguments to a template

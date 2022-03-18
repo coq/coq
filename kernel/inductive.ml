@@ -123,6 +123,7 @@ Remark: Set (predicative) is encoded as Type(0)
 (* in the domain or add [u |-> sup x su] if [u] is already mapped *)
 (* to [x]. *)
 let cons_subst u su subst =
+  let su = Sorts.univ_of_sort su in
   try
     Univ.Level.Map.add u (Univ.sup (Univ.Level.Map.find u subst) su) subst
   with Not_found -> Univ.Level.Map.add u su subst
@@ -135,12 +136,10 @@ let remember_subst u subst =
     Univ.Level.Map.add u (Univ.sup (Univ.Level.Map.find u subst) su) subst
   with Not_found -> subst
 
-type param_univs = (unit -> Universe.t) list
+type param_univs = (unit -> Sorts.t) list
 
 let make_param_univs env argtys =
-  Array.map_to_list (fun arg () ->
-      Sorts.univ_of_sort (snd (Reduction.dest_arity env arg)))
-    argtys
+  Array.map_to_list (fun arg () -> (snd (Reduction.dest_arity env arg))) argtys
 
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)

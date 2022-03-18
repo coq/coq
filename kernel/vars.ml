@@ -396,8 +396,7 @@ let universes_of_constr c =
     | Ind ((_mind,_), u) | Construct (((_mind,_),_), u) ->
       Level.Set.fold Level.Set.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) ->
-      let u = Sorts.univ_of_sort u in
-      Level.Set.fold Level.Set.add (Universe.levels u) s
+      Level.Set.fold Level.Set.add (Sorts.levels u) s
     | Array (u,_,_,_) ->
       let s = Level.Set.fold Level.Set.add (Instance.levels u) s in
       Constr.fold aux s c

@@ -73,6 +73,20 @@ let is_small = function
   | SProp | Prop | Set -> true
   | Type _ -> false
 
+let levels s = Universe.levels (univ_of_sort s)
+
+let check_eq_sort ugraph s1 s2 =
+  UGraph.check_eq ugraph (univ_of_sort s1) (univ_of_sort s2)
+
+let check_leq_sort ugraph s1 s2 =
+  UGraph.check_leq ugraph (univ_of_sort s1) (univ_of_sort s2)
+
+let enforce_eq_sort s1 s2 cst =
+  Univ.enforce_eq (univ_of_sort s1) (univ_of_sort s2) cst
+
+let enforce_leq_alg_sort s1 s2 cst =
+  UGraph.enforce_leq_alg (univ_of_sort s1) (univ_of_sort s2) cst
+
 let family = function
   | SProp -> InSProp
   | Prop -> InProp
