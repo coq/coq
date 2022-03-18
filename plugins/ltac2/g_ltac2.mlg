@@ -918,7 +918,7 @@ VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
 | #[ raw_attributes ] [ "Ltac2" ltac2_entry(e) ] => { classify_ltac2 e } -> {
   Tac2entries.register_struct raw_attributes e
   }
-| ![proof_opt_query] [ "Ltac2" "Eval" ltac2_expr(e) ] => { Vernacextend.classify_as_sideeff } -> {
+| ![proof_opt_query] [ "Ltac2" "Eval" ltac2_expr(e) ] => { Vernacextend.classify_as_query } -> {
   fun ~pstate -> Tac2entries.perform_eval ~pstate e
   }
 END
