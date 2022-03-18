@@ -760,7 +760,7 @@ object(self)
            | Some loc ->
              let (iter, _, phrase) = self#get_sentence s in
              let (start, _) = Loc.unloc loc in
-             iter#forward_chars (b2c buffer start)
+             buffer#get_iter (`OFFSET (byte_offset_to_char_offset phrase start))
          end in iter#line + 1, msg
       | _ -> assert false in
     List.rev
