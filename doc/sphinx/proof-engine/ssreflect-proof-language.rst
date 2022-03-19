@@ -203,7 +203,7 @@ with a function definition or Coq’s basic destructuring let. The let:
 construct differs from the latter in that
 
 
-+ The pattern can be nested (deep pattern matching), in particular,
++ The pattern can be nested (deep pattern matching); in particular,
   this allows expression of the form:
 
 .. coqdoc::
@@ -227,7 +227,7 @@ construct differs from the latter in that
        Definition f u := let: (m, n) := u in m + n.
        Check f.
 
-    Using :g:`let:` Coq infers a type for :g:`f`,
+    Using :g:`let:`, Coq infers a type for :g:`f`,
     whereas with a usual ``let`` the same term requires an extra type
     annotation in order to type check.
 
@@ -313,7 +313,7 @@ The latter appears to be marginally shorter, but it is quite
 ambiguous, and indeed often requires an explicit annotation
 ``(term : {_} + {_})`` to type check, which evens the character count.
 
-Therefore, |SSR| restricts by default the condition of a plain if
+Therefore, |SSR| restricts by default the condition of a plain ``if``
 construct to the standard ``bool`` type; this avoids spurious type
 annotations.
 
@@ -323,7 +323,7 @@ annotations.
 
       Definition orb b1 b2 := if b1 then true else b2.
 
-As pointed out in section :ref:`compatibility_issues_ssr`,
+As pointed out in Section :ref:`compatibility_issues_ssr`,
 this restriction can be removed with
 the command:
 
@@ -336,7 +336,7 @@ the dependent match annotations:
 .. prodn::
    term += if @term is @pattern as @ident in @pattern return @term then @term else @term
 
-As in ``let:`` the variable :token:`ident` (and those in the type pattern)
+As in ``let:``, the variable :token:`ident` (and those in the type pattern)
 are bound in the second :token:`term`; :token:`ident` is also bound in the
 third :token:`term` (but not in the fourth :token:`term`), while the
 variables in the first :token:`pattern` are bound only in the third
@@ -358,7 +358,7 @@ Parametric polymorphism
 Unlike ML, polymorphism in core Gallina is explicit: the type
 parameters of polymorphic functions must be declared explicitly, and
 supplied at each point of use. However, Coq provides two features to
-suppress redundant parameters:
+suppress redundant parameters.
 
 
 + Sections are used to provide (possibly implicit) parameters for a
@@ -392,12 +392,12 @@ expressions such as
       Definition all_null (s : list T) := all (@null T) s.
 
 Unfortunately, such higher-order expressions are quite frequent in
-representation functions, especially those which use Coq's
+representation functions, especially those that use Coq's
 ``Structures`` to emulate Haskell typeclasses.
 
 Therefore, |SSR| provides a variant of Coq’s implicit argument
 declaration, which causes Coq to fill in some implicit parameters at
-each point of use, e.g., the above definition can be written:
+each point of use; e.g., the above definition can be written:
 
 .. example::
 
@@ -459,7 +459,7 @@ following extension of the binder syntax:
 
 Caveat: ``& T`` and ``of T`` abbreviations have to appear at the end
 of a binder list. For instance, the usual two-constructor polymorphic
-type list, i.e. the one of the standard ``List`` library, can be
+type list, i.e., the one of the standard ``List`` library, can be
 defined by the following declaration:
 
 .. example::
