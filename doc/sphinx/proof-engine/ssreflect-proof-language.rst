@@ -12,7 +12,7 @@ Introduction
 
 This chapter describes a set of tactics known as |SSR| originally
 designed to provide support for the so-called *small scale reflection*
-proof methodology. Despite the original purpose this set of tactic is
+proof methodology. Despite the original purpose this set of tactics is
 of general interest and is available in Coq starting from version 8.7.
 
 |SSR| was developed independently of the tactics described in
@@ -30,7 +30,7 @@ The first difference between the tactics described in this chapter and the
 tactics described in Chapter :ref:`tactics` is the way hypotheses are managed
 (we call this *bookkeeping*). In Chapter :ref:`tactics` the most common
 approach is to avoid moving explicitly hypotheses back and forth between the
-context and the conclusion of the goal. On the contrary in |SSR| all
+context and the conclusion of the goal. On the contrary, in |SSR| all
 bookkeeping is performed on the conclusion of the goal, using for that
 purpose a couple of syntactic constructions behaving similar to tacticals
 (and often named as such in this chapter). The ``:`` tactical moves hypotheses
@@ -47,8 +47,8 @@ explicit operation performed by ``:``.
 
 .. seealso:: :ref:`bookkeeping_ssr`
 
-Beside the difference of bookkeeping model, this chapter includes
-specific tactics which have no explicit counterpart in Chapter :ref:`tactics`
+Besides the difference of bookkeeping model, this chapter includes
+specific tactics that have no explicit counterpart in Chapter :ref:`tactics`
 such as tactics to mix forward steps and generalizations as
 :tacn:`generally have` or :tacn:`without loss`.
 
@@ -66,7 +66,7 @@ Finally, |SSR| supports so-called reflection steps, typically
 allowing to switch back and forth between the computational view and
 logical view of a concept.
 
-To conclude it is worth mentioning that |SSR| tactics can be mixed
+To conclude, it is worth mentioning that |SSR| tactics can be mixed
 with non-|SSR| tactics in the same proof, or in the same Ltac
 expression. The few exceptions to this statement are described in
 section :ref:`compatibility_issues_ssr`.
@@ -111,8 +111,8 @@ this corresponds to working in the following context:
 Compatibility issues
 ~~~~~~~~~~~~~~~~~~~~
 
-Requiring the above modules creates an environment which is mostly
-compatible with the rest of Coq, up to a few discrepancies:
+Requiring the above modules creates an environment that is mostly
+compatible with the rest of Coq, up to a few discrepancies.
 
 
 + New keywords (``is``) might clash with variable, constant, tactic or
@@ -124,10 +124,10 @@ compatible with the rest of Coq, up to a few discrepancies:
 + Identifiers with both leading and trailing ``_``, such as ``_x_``, are
   reserved by |SSR| and cannot appear in scripts.
 + The extensions to the :tacn:`rewrite` tactic are partly incompatible with those
-  available in current versions of Coq; in particular: ``rewrite .. in
+  available in current versions of Coq; in particular, ``rewrite .. in
   (type of k)`` or ``rewrite .. in *`` or any other variant of :tacn:`rewrite`
   will not work, and the |SSR| syntax and semantics for occurrence selection
-  and rule chaining is different. Use an explicit rewrite direction
+  and rule chaining are different. Use an explicit rewrite direction
   (``rewrite <- …`` or ``rewrite -> …``) to access the Coq rewrite tactic.
 + New symbols (``//``, ``/=``, ``//=``) might clash with adjacent
   existing symbols.
@@ -144,13 +144,13 @@ compatible with the rest of Coq, up to a few discrepancies:
   syntax of |SSR|’s rewrite and reserved identifiers are enabled
   only if the ssreflect module has been required and if ``SsrSyntax`` has
   been imported. Thus a file that requires (without importing) ``ssreflect``
-  and imports ``SsrSyntax``, can be required and imported without
+  and imports ``SsrSyntax`` can be required and imported without
   automatically enabling |SSR|’s extended rewrite syntax and
   reserved identifiers.
 + Some user notations (in particular, defining an infix ``;``) might
-  interfere with the "open term", parenthesis free, syntax of tactics
-  such as have, set and pose.
-+ The generalization of if statements to non-Boolean conditions is turned off
+  interfere with the "open term", parenthesis-free syntax of tactics
+  such as ``have``, ``set`` and ``pose``.
++ The generalization of ``if`` statements to non-Boolean conditions is turned off
   by |SSR|, because it is mostly subsumed by Coercion to ``bool`` of the
   ``sumXXX`` types (declared in ``ssrfun.v``) and the
   :n:`if @term is @pattern then @term else @term` construct
@@ -158,7 +158,7 @@ compatible with the rest of Coq, up to a few discrepancies:
   generalized form, turn off the |SSR| Boolean ``if`` notation using the command:
   ``Close Scope boolean_if_scope``.
 + The following flags can be unset to make |SSR| more compatible with
-  parts of Coq:
+  parts of Coq.
 
 .. flag:: SsrRewrite
 
