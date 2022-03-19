@@ -199,8 +199,8 @@ irrefutable pattern matching, that is, destructuring assignment:
    term += let: @pattern := @term in @term
 
 Note the colon ``:`` after the ``let`` keyword, which avoids any ambiguity
-with a function definition or Coq’s basic destructuring let. The let:
-construct differs from the latter in that
+with a function definition or Coq’s basic destructuring let. The ``let:``
+construct differs from the latter as follows.
 
 
 + The pattern can be nested (deep pattern matching), in particular,
