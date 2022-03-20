@@ -67,7 +67,7 @@ let mind_check_names mie =
 type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
                    ind_min_univ : Sorts.t option; (* Some for template *)
                    ind_univ : Sorts.t;
-                   missing : Universe.Set.t; (* missing u <= ind_univ constraints *)
+                   missing : Sorts.t list; (* missing u <= ind_univ constraints *)
                  }
 
 let sup_sort s1 s2 =
@@ -85,7 +85,7 @@ let check_univ_leq ?(is_real_arg=false) env u info =
   then { info with ind_min_univ = Option.map (sup_sort u) info.ind_min_univ }
   else if is_impredicative_sort env ind_univ
        && Option.is_empty info.ind_min_univ then { info with ind_squashed = true }
-  else {info with missing = Universe.Set.add (Sorts.univ_of_sort u) info.missing}
+  else {info with missing = u :: info.missing}
 
 let check_context_univs ~ctor env info ctx =
   let check_one d (info,env) =
@@ -114,7 +114,7 @@ let check_arity ~template env_params env_ar ind =
     ind_has_relevant_arg=false;
     ind_min_univ;
     ind_univ=ind_sort;
-    missing=Universe.Set.empty;
+    missing=[];
   }
   in
   let univ_info = check_indices_matter env_params univ_info indices in
@@ -296,7 +296,7 @@ let get_template univs params data =
     Some { template_param_levels = params; template_context = ctx }
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
-  if not (Universe.Set.is_empty univ_info.missing)
+  if not (List.is_empty univ_info.missing)
   then raise (InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ)));
   let arity = Vars.subst_univs_level_constr usubst arity in
   let lc = Array.map (Vars.subst_univs_level_constr usubst) lc in

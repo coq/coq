@@ -1249,11 +1249,10 @@ let error_large_non_prop_inductive_not_in_type () =
   str "Large non-propositional inductive types must be in Type."
 
 let error_inductive_missing_constraints (us,ind_univ) =
-  let pr_u = Univ.Universe.pr_with UnivNames.(pr_with_global_universes empty_binders) in
   str "Missing universe constraint declared for inductive type:" ++ spc()
   ++ v 0 (prlist_with_sep spc (fun u ->
-      hov 0 (pr_u u ++ str " <= " ++ Printer.pr_sort Evd.empty ind_univ))
-      (Univ.Universe.Set.elements us))
+      hov 0 (Printer.pr_sort Evd.empty u ++ str " <= " ++ Printer.pr_sort Evd.empty ind_univ))
+      us)
 
 (* Recursion schemes errors *)
 

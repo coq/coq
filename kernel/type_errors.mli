@@ -89,7 +89,7 @@ type inductive_error =
   | NotAnArity of env * constr
   | BadEntry
   | LargeNonPropInductiveNotInType
-  | MissingConstraints of (Universe.Set.t * Sorts.t)
+  | MissingConstraints of (Sorts.t list * Sorts.t)
   (* each universe in the set should have been <= the other one *)
 
 exception InductiveError of inductive_error
