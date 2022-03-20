@@ -619,7 +619,6 @@ val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 val universe_binders : evar_map -> UnivNames.universe_binders
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
-val new_univ_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Universe.t
 val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Sorts.t
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
@@ -637,8 +636,6 @@ val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option
 
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
-(* val normalize_universe_level : evar_map -> Univ.Level.t -> Univ.Level.t *)
-val normalize_universe : evar_map -> Univ.Universe.t -> Univ.Universe.t
 val normalize_universe_instance : evar_map -> Univ.Instance.t -> Univ.Instance.t
 
 val set_leq_sort : env -> evar_map -> Sorts.t -> Sorts.t -> evar_map
@@ -648,8 +645,8 @@ val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_eq_instances : ?flex:bool ->
   evar_map -> Univ.Instance.t -> Univ.Instance.t -> evar_map
 
-val check_eq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
-val check_leq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool
+val check_eq : evar_map -> Sorts.t -> Sorts.t -> bool
+val check_leq : evar_map -> Sorts.t -> Sorts.t -> bool
 
 val check_constraints : evar_map -> Univ.Constraints.t -> bool
 
