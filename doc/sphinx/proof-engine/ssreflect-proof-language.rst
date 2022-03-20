@@ -149,7 +149,7 @@ compatible with the rest of Coq, up to a few discrepancies.
   reserved identifiers.
 + Some user notations (in particular, defining an infix ``;``) might
   interfere with the "open term", parenthesis-free syntax of tactics
-  such as ``have``, ``set`` and ``pose``.
+  such as :tacn:`have`, :tacn:`set (ssreflect)` and :tacn:`pose (ssreflect)`.
 + The generalization of ``if`` statements to non-Boolean conditions is turned off
   by |SSR|, because it is mostly subsumed by Coercion to ``bool`` of the
   ``sumXXX`` types (declared in ``ssrfun.v``) and the
