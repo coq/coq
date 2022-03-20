@@ -695,7 +695,7 @@ field_val: [
 | qualid LIST0 binder ":=" term
 ]
 
-inductive_definition: [
+inductive_or_record_definition: [
 | OPT ">" ident OPT cumul_univ_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] OPT ( ":=" OPT constructors_or_record ) OPT decl_notations
 ]
 
@@ -1042,7 +1042,7 @@ command: [
 | assumption_token OPT ( "Inline" OPT ( "(" natural ")" ) ) [ LIST1 ( "(" assumpt ")" ) | assumpt ]
 | [ "Definition" | "Example" ] ident_decl def_body
 | "Let" ident_decl def_body
-| "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
+| "Inductive" inductive_or_record_definition LIST0 ( "with" inductive_or_record_definition )
 | "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
 | "Let" "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
 | "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
@@ -1056,7 +1056,7 @@ command: [
 | "Universe" LIST1 ident
 | "Universes" LIST1 ident
 | "Constraint" LIST1 univ_constraint SEP ","
-| "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
+| "CoInductive" inductive_or_record_definition LIST0 ( "with" inductive_or_record_definition )
 | "Variant" variant_definition
 | [ "Record" | "Structure" ] record_definition
 | "Class" record_definition

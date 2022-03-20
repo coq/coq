@@ -6,12 +6,12 @@ Inductive types and recursive functions
 Inductive types
 ---------------
 
-.. cmd:: Inductive @inductive_definition {* with @inductive_definition }
+.. cmd:: Inductive @inductive_or_record_definition {* with @inductive_or_record_definition }
 
-   .. insertprodn inductive_definition constructor
+   .. insertprodn inductive_or_record_definition constructor
 
    .. prodn::
-      inductive_definition ::= {? > } @ident {? @cumul_univ_decl } {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
+      inductive_or_record_definition ::= {? > } @ident {? @cumul_univ_decl } {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
       constructors_or_record ::= {? %| } {+| @constructor }
       | {? @ident } %{ {*; @record_field } {? ; } %} {? as @ident }
       constructor ::= @ident {* @binder } {? @of_type }
@@ -41,7 +41,7 @@ Inductive types
    record syntax, if given, the :n:`as @ident` part specifies the name
    to use for inhabitants of the record in the type of projections.
 
-   Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
+   Mutually inductive types can be defined by including multiple :n:`@inductive_or_record_definition`\s.
    The :n:`@ident`\s are simultaneously added to the global environment before
    the types of constructors are checked.  Each :n:`@ident` can be used
    independently thereafter.  However, the induction principles currently generated for

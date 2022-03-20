@@ -577,10 +577,10 @@ gallina: [
 | REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
 | WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
-| REPLACE inductive_token LIST1 inductive_definition SEP "with"
-| WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
-|   "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
-| REPLACE finite_token inductive_definition
+| REPLACE inductive_token LIST1 inductive_or_record_definition SEP "with"
+| WITH "Inductive" inductive_or_record_definition LIST0 ( "with" inductive_or_record_definition )
+|   "CoInductive" inductive_or_record_definition LIST0 ( "with" inductive_or_record_definition )
+| REPLACE finite_token inductive_or_record_definition
 | WITH "Variant" variant_definition
 |   [ "Record" | "Structure" ] record_definition
 |   "Class" record_definition
@@ -1516,7 +1516,7 @@ type_cstr: [
 | WITH ":" type
 ]
 
-inductive_definition: [
+inductive_or_record_definition: [
 | REPLACE opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
 | WITH    opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" type ]    opt_constructors_or_fields decl_notations
 ]
