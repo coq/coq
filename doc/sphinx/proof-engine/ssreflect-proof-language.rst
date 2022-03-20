@@ -12,7 +12,7 @@ Introduction
 
 This chapter describes a set of tactics known as |SSR| originally
 designed to provide support for the so-called *small scale reflection*
-proof methodology. Despite the original purpose this set of tactics is
+proof methodology. Despite the original purpose, this set of tactics is
 of general interest and is available in Coq starting from version 8.7.
 
 |SSR| was developed independently of the tactics described in
