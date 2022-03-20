@@ -1,0 +1,5 @@
+- **Fixed:**
+  anomaly when using proof diffs with no focused goal
+  (`#15633 <https://github.com/coq/coq/pull/15633>`_,
+  fixes `#15578 <https://github.com/coq/coq/issues/15578>`_,
+  by Jim Fehrle).
