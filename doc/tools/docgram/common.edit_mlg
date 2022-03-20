@@ -562,6 +562,11 @@ record_definition: [
 | opt_coercion ident_decl binders OPT [ ":" sort ] OPT ( ":=" OPT [ identref ] "{" record_fields "}" OPT [ "as" identref ] )
 ]
 
+(* No mixed inductive-record definitions, opt_coercion is meaningless for Inductive *)
+inductive_definition: [
+| cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" decl_notations
+]
+
 (* No mutual recursion, no inductive classes, type must be a sort *)
 (* constructor is optional but "Class record_definition" covers that case *)
 singleton_class_definition: [
@@ -578,8 +583,10 @@ gallina: [
 | WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
 | REPLACE inductive_token LIST1 inductive_or_record_definition SEP "with"
-| WITH "Inductive" inductive_or_record_definition LIST0 ( "with" inductive_or_record_definition )
-|   "CoInductive" inductive_or_record_definition LIST0 ( "with" inductive_or_record_definition )
+| WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
+|   "Inductive" record_definition LIST0 ( "with" record_definition )
+|   "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
+|   "CoInductive" record_definition LIST0 ( "with" record_definition )
 | REPLACE finite_token inductive_or_record_definition
 | WITH "Variant" variant_definition
 |   [ "Record" | "Structure" ] record_definition
@@ -1514,11 +1521,6 @@ cofix_definition: [
 type_cstr: [
 | REPLACE ":" lconstr
 | WITH ":" type
-]
-
-inductive_or_record_definition: [
-| REPLACE opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
-| WITH    opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" type ]    opt_constructors_or_fields decl_notations
 ]
 
 (* note that constructor -> identref constructor_type *)
