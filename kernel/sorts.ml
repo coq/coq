@@ -38,18 +38,7 @@ let sort_of_univ u =
   else Type u
 
 let compare s1 s2 =
-  if s1 == s2 then 0 else
-    match s1, s2 with
-    | SProp, SProp -> 0
-    | SProp, _ -> -1
-    | _, SProp -> 1
-    | Prop, Prop -> 0
-    | Prop, _ -> -1
-    | Set, Prop -> 1
-    | Set, Set -> 0
-    | Set, _ -> -1
-    | Type u1, Type u2 -> Universe.compare u1 u2
-    | Type _, _ -> -1
+  if s1 == s2 then 0 else Universe.compare (univ_of_sort s1) (univ_of_sort s2)
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
