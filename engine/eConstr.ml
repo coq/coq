@@ -480,21 +480,18 @@ let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
   let open UnivProblem in
   if not nargs_ok then enforce_eq_instances_univs false u u' cstrs
   else
+    let make u = Sorts.sort_of_univ @@ Univ.Universe.make u in
     CArray.fold_left3
       (fun cstrs v u u' ->
          let open Univ.Variance in
          match v with
          | Irrelevant -> Set.add (UWeak (u,u')) cstrs
          | Covariant ->
-           let u = Univ.Universe.make u in
-           let u' = Univ.Universe.make u' in
            (match cv_pb with
-            | Reduction.CONV -> Set.add (UEq (u,u')) cstrs
-            | Reduction.CUMUL -> Set.add (ULe (u,u')) cstrs)
+            | Reduction.CONV -> Set.add (UEq (make u, make u')) cstrs
+            | Reduction.CUMUL -> Set.add (ULe (make u, make u')) cstrs)
          | Invariant ->
-           let u = Univ.Universe.make u in
-           let u' = Univ.Universe.make u' in
-           Set.add (UEq (u,u')) cstrs)
+           Set.add (UEq (make u, make u')) cstrs)
       cstrs variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
 
 let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
@@ -554,7 +551,7 @@ let test_constr_universes env sigma leq ?(nargs=0) m n =
       let s2 = ESorts.kind sigma s2 in
       if Sorts.equal s1 s2 then true
       else (cstrs := Set.add
-              (UEq (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
+              (UEq (s1, s2)) !cstrs;
             true)
     in
     let leq_sorts s1 s2 =
@@ -563,7 +560,7 @@ let test_constr_universes env sigma leq ?(nargs=0) m n =
       if Sorts.equal s1 s2 then true
       else
         (cstrs := Set.add
-           (ULe (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
+           (ULe (s1, s2)) !cstrs;
          true)
     in
     let rec eq_constr' nargs m n = compare_gen kind eq_universes eq_sorts eq_constr' nargs m n in
@@ -610,7 +607,7 @@ let eq_constr_universes_proj env sigma m n =
       if Sorts.equal s1 s2 then true
       else
         (cstrs := Set.add
-           (UEq (Sorts.univ_of_sort s1, Sorts.univ_of_sort s2)) !cstrs;
+           (UEq (s1, s2)) !cstrs;
          true)
     in
     let rec eq_constr' nargs m n =
@@ -631,8 +628,7 @@ let universes_of_constr sigma c =
       let sort = ESorts.kind sigma u in
       if Sorts.is_small sort then s
       else
-        let u = Sorts.univ_of_sort sort in
-        Level.Set.fold Level.Set.add (Universe.levels u) s
+        Level.Set.fold Level.Set.add (Sorts.levels sort) s
     | Evar (k, args) ->
       let concl = Evd.evar_concl (Evd.find sigma k) in
       fold sigma aux (aux s concl) c

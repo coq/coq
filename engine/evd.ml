@@ -997,11 +997,7 @@ let is_flexible_level evd l =
 
 let is_eq_sort s1 s2 =
   if Sorts.equal s1 s2 then None
-  else
-    let u1 = univ_of_sort s1
-    and u2 = univ_of_sort s2 in
-      if Univ.Universe.equal u1 u2 then None
-      else Some (u1, u2)
+  else Some (s1, s2)
 
 (* Precondition: l is not defined in the substitution *)
 let universe_rigidity evd l =

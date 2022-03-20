@@ -1113,8 +1113,8 @@ let sigma_univ_state =
 let univproblem_compare_sorts env pb s0 s1 uset =
   let open UnivProblem in
   match pb with
-  | Reduction.CONV -> UnivProblem.Set.add (UEq (Sorts.univ_of_sort s0, Sorts.univ_of_sort s1)) uset
-  | Reduction.CUMUL -> UnivProblem.Set.add (ULe (Sorts.univ_of_sort s0, Sorts.univ_of_sort s1)) uset
+  | Reduction.CONV -> UnivProblem.Set.add (UEq (s0, s1)) uset
+  | Reduction.CUMUL -> UnivProblem.Set.add (ULe (s0, s1)) uset
 
 let univproblem_compare_instances ~flex i0 i1 uset =
   UnivProblem.enforce_eq_instances_univs flex i0 i1 uset
@@ -1122,7 +1122,7 @@ let univproblem_compare_instances ~flex i0 i1 uset =
 let univproblem_check_inductive_instances cv_pb variances u u' uset =
   let open UnivProblem in
   let open Univ.Variance in
-  let mk u = Univ.Universe.make u in
+  let mk u = Sorts.sort_of_univ @@ Univ.Universe.make u in
   let fold cstr v u u' = match v with
   | Irrelevant -> Set.add (UWeak (u,u')) cstr
   | Covariant when cv_pb == Reduction.CUMUL -> Set.add (ULe (mk u, mk u')) cstr

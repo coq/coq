@@ -50,6 +50,7 @@ val check_eq_sort : UGraph.t -> t -> t -> bool
 val check_leq_sort : UGraph.t -> t -> t -> bool
 
 val enforce_eq_sort : t -> t -> Univ.Constraints.t -> Univ.Constraints.t
+val enforce_leq_sort : t -> t -> Univ.Constraints.t -> Univ.Constraints.t
 val enforce_leq_alg_sort : t -> t -> UGraph.t -> Univ.Constraints.t * UGraph.t
 
 val super : t -> t

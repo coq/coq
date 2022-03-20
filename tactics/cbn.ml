@@ -459,7 +459,7 @@ let magically_constant_of_fixbody env sigma reference bd = function
                 let l, r = match cst with
                   | ULub (u, v) | UWeak (u, v) -> u, v
                   | UEq (u, v) | ULe (u, v) ->
-                    let get u = Option.get (Universe.level u) in
+                    let get u = Option.get (Universe.level (Sorts.univ_of_sort u)) in
                     get u, get v
                 in
                 Univ.Level.Map.add l r acc)

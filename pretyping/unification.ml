@@ -569,7 +569,7 @@ let force_eqs c =
   Set.fold
     (fun c acc ->
        let c' = match c with
-         | ULub (l, r) -> UEq (Univ.Universe.make l,Univ.Universe.make r)
+         | ULub (l, r) -> UEq (Sorts.sort_of_univ @@ Univ.Universe.make l, Sorts.sort_of_univ @@ Univ.Universe.make r)
          | ULe _ | UEq _ | UWeak _ -> c
        in
         Set.add c' acc)

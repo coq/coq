@@ -888,8 +888,7 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
   let eq_sorts s1 s2 =
     if Sorts.equal s1 s2 then true
     else
-      let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-      try sigma := add_universe_constraints !sigma UnivProblem.(Set.singleton (UEq (u1, u2))); true
+      try sigma := add_universe_constraints !sigma UnivProblem.(Set.singleton (UEq (s1, s2))); true
       with Univ.UniverseInconsistency _ | UniversesDiffer -> false
   in
   let kind1 = kind_of_term_upto evd in

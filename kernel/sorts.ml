@@ -73,6 +73,9 @@ let check_leq_sort ugraph s1 s2 =
 let enforce_eq_sort s1 s2 cst =
   Univ.enforce_eq (univ_of_sort s1) (univ_of_sort s2) cst
 
+let enforce_leq_sort s1 s2 cst =
+  Univ.enforce_leq (univ_of_sort s1) (univ_of_sort s2) cst
+
 let enforce_leq_alg_sort s1 s2 cst =
   UGraph.enforce_leq_alg (univ_of_sort s1) (univ_of_sort s2) cst
 
