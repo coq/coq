@@ -24,6 +24,7 @@ val set_type_in_type : bool -> t -> t
     Checking functions such as [check_leq] always return [true].
 *)
 val type_in_type : t -> bool
+val cumulative_sprop : t -> bool
 
 type 'a check_function = t -> 'a -> 'a -> bool
 

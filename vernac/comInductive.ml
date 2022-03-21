@@ -325,17 +325,23 @@ let inductive_levels env evd arities inds =
           else evd
         in
         let duu = Sorts.univ_of_sort du in
-        let template_prop, evd =
+        let template_prop, evd, arity =
           if not (Sorts.is_small du) && Sorts.equal cu du then
             if is_flexible_sort evd duu && not (Evd.check_leq evd Sorts.set du)
             then if Term.isArity arity
             (* If not a syntactic arity, the universe may be used in a
                polymorphic instance and so cannot be lowered to Prop.
                See #13300. *)
-              then true, Evd.set_eq_sort env evd Sorts.prop du
-              else false, Evd.set_eq_sort env evd Sorts.set du
-            else false, evd
-          else false, Evd.set_eq_sort env evd cu du
+              then
+                (* Workaround: the kernel does not handle non-Prop unbounded
+                   arities. In this situation we have no constraints from the
+                   constructor so we cook up a new type and unify the unbound
+                   universe to a dummy value. *)
+                let evd = Evd.set_eq_sort env evd Sorts.set du in
+                true, evd, Term.mkArity (ctx, Sorts.prop)
+              else false, Evd.set_eq_sort env evd Sorts.set du, arity
+            else false, evd, arity
+          else false, Evd.set_eq_sort env evd cu du, arity
         in
           (evd, (template_prop, arity) :: arities))
     (evd,[]) (Array.to_list levels') destarities sizes
@@ -514,10 +520,9 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let indnames = List.map (fun ind -> ind.ind_name) indl in
   let ninds = List.length indl in
 
-  (* In case of template polymorphism, we need to compute more constraints *)
-  let env0 = if poly then env0 else Environ.set_universes_lbound env0 UGraph.Bound.Prop in
-
   let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl, variances) =
+    (* In case of template polymorphism, we need to compute more constraints *)
+    let env0 = if poly then env0 else Environ.set_universes_lbound env0 UGraph.Bound.Prop in
     interp_params env0 udecl uparamsl paramsl
   in
 

@@ -64,20 +64,60 @@ let is_small = function
 
 let levels s = Universe.levels (univ_of_sort s)
 
-let check_eq_sort ugraph s1 s2 =
+(* The functions below rely on the invariant that no universe in the graph
+   can be unified with Prop / SProp. This is ensured by UGraph, which only
+   contains Set as a "small" level. *)
+
+let check_eq_sort ugraph s1 s2 = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
+| (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) ->
+  UGraph.type_in_type ugraph
+| (Type _ | Set), (Type _ | Set) ->
   UGraph.check_eq ugraph (univ_of_sort s1) (univ_of_sort s2)
 
-let check_leq_sort ugraph s1 s2 =
+let check_leq_sort ugraph s1 s2 = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
+| (SProp, _) -> UGraph.cumulative_sprop ugraph || UGraph.type_in_type ugraph
+| (Prop, SProp) -> UGraph.type_in_type ugraph
+| (Prop, (Set | Type _)) -> true
+| (_, (SProp | Prop)) -> UGraph.type_in_type ugraph
+| (Type _ | Set), (Type _ | Set) ->
   UGraph.check_leq ugraph (univ_of_sort s1) (univ_of_sort s2)
 
-let enforce_eq_sort s1 s2 cst =
+let enforce_eq_sort s1 s2 cst = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  let s1 = univ_of_sort s1 in
+  let s2 = univ_of_sort s2 in
+  raise (Univ.UniverseInconsistency (Eq, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
   Univ.enforce_eq (univ_of_sort s1) (univ_of_sort s2) cst
 
-let enforce_leq_sort s1 s2 cst =
+let enforce_leq_sort s1 s2 cst = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
+| (Prop, (Set | Type _)) -> cst
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  let s1 = univ_of_sort s1 in
+  let s2 = univ_of_sort s2 in
+  raise (Univ.UniverseInconsistency (Le, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
   Univ.enforce_leq (univ_of_sort s1) (univ_of_sort s2) cst
 
-let enforce_leq_alg_sort s1 s2 cst =
-  UGraph.enforce_leq_alg (univ_of_sort s1) (univ_of_sort s2) cst
+let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
+| (Prop, (Set | Type _)) -> Constraints.empty, g
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  if UGraph.cumulative_sprop g && is_sprop s1 then
+    Constraints.empty, g
+  else
+    let s1 = univ_of_sort s1 in
+    let s2 = univ_of_sort s2 in
+    raise (Univ.UniverseInconsistency (Le, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  UGraph.enforce_leq_alg (univ_of_sort s1) (univ_of_sort s2) g
 
 let family = function
   | SProp -> InSProp

@@ -297,18 +297,36 @@ let is_bound l lbound = match lbound with
 let is_minimal ~lbound u =
   Level.is_sprop u || Level.is_prop u || is_bound u lbound
 
+type extra = {
+  weak_constraints : UPairSet.t;
+  above_prop : Univ.Level.Set.t;
+}
+
+let empty_extra = {
+  weak_constraints = UPairSet.empty;
+  above_prop = Univ.Level.Set.empty;
+}
+
+let extra_union a b = {
+  weak_constraints = UPairSet.union a.weak_constraints b.weak_constraints;
+  above_prop = Univ.Level.Set.union a.above_prop b.above_prop;
+}
+
 (* TODO check is_small/sprop *)
-let normalize_context_set ~lbound g ctx us algs weak =
+let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_prop} =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
     Constraints.partition (fun (l,d,r) -> d == Le && is_minimal ~lbound l) csts
   in
   let smallles = if get_set_minimization ()
-    then Constraints.filter (fun (l,d,r) -> Level.Map.mem r us && not (Level.is_sprop l)) smallles
+    then
+      let smallles = Constraints.filter (fun (l,d,r) -> Level.Map.mem r us && not (Level.is_sprop l)) smallles in
+      let smallles = Constraints.map (fun (_,_,r) -> Level.set, Le, r) smallles in
+      let fold u accu = if Level.Map.mem u us then Constraints.add (Level.set, Le, u) accu else accu in
+      Level.Set.fold fold above_prop smallles
     else Constraints.empty
   in
-  let smallles = Constraints.map (fun (_,_,r) -> Level.set, Le, r) smallles in
   let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
        to equalities. *)
