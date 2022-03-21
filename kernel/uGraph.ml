@@ -14,7 +14,6 @@ module G = AcyclicGraph.Make(struct
     type t = Level.t
     module Set = Level.Set
     module Map = Level.Map
-    module Constraints = Constraints
 
     let equal = Level.equal
     let compare = Level.compare
@@ -183,8 +182,12 @@ exception UndeclaredLevel = G.Undeclared
 let check_declared_universes g l =
   G.check_declared g.graph (Level.Set.remove Level.prop (Level.Set.remove Level.sprop l))
 
-let constraints_of_universes g = G.constraints_of g.graph
-let constraints_for ~kept g = G.constraints_for ~kept:(Level.Set.remove Level.prop (Level.Set.remove Level.sprop kept)) g.graph
+let constraints_of_universes g =
+  let add cst accu = Constraints.add cst accu in
+  G.constraints_of g.graph add Constraints.empty
+let constraints_for ~kept g =
+  let add cst accu = Constraints.add cst accu in
+  G.constraints_for ~kept:(Level.Set.remove Level.prop (Level.Set.remove Level.sprop kept)) g.graph add Constraints.empty
 
 (** Subtyping of polymorphic contexts *)
 

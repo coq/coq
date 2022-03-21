@@ -16,8 +16,6 @@ module type Point = sig
   module Set : CSig.SetS with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
 
-  module Constraints : CSet.S with type elt = (t * constraint_type * t)
-
   val equal : t -> t -> bool
   val compare : t -> t -> int
 
@@ -104,7 +102,6 @@ module Make (Point:Point) = struct
 
   module PMap = Index.Map
   module PSet = Index.Set
-  module Constraint = Point.Constraints
 
   type status = NoMark | Visited | WeakVisited | ToMerge
 
@@ -700,7 +697,9 @@ module Make (Point:Point) = struct
 
   (* Normalization *)
 
-  let constraints_of g =
+  type 'a constraint_fold = Point.t * constraint_type * Point.t -> 'a -> 'a
+
+  let constraints_of g fold accu =
     let module UF = Unionfind.Make (Point.Set) (Point.Map) in
     let uf = UF.create () in
     let constraints_of u v acc =
@@ -710,20 +709,20 @@ module Make (Point:Point) = struct
             let typ = if strict then Lt else Le in
             let u = Index.repr u g.table in
             let v = Index.repr v g.table in
-            Constraint.add (u,typ,v) acc) ltle acc
+            fold (u,typ,v) acc) ltle acc
       | Equiv v ->
         let u = Index.repr u g.table in
         let v = Index.repr v g.table in
         UF.union u v uf; acc
     in
-    let csts = PMap.fold constraints_of g.entries Constraint.empty in
+    let csts = PMap.fold constraints_of g.entries accu in
     csts, UF.partition uf
 
   (* domain g.entries = kept + removed *)
-  let constraints_for ~kept g =
+  let constraints_for ~kept g fold accu =
     (* rmap: partial map from canonical points to kept points *)
     let add_cst u knd v cst =
-      Constraint.add (Index.repr u g.table, knd, Index.repr v g.table) cst
+      fold (Index.repr u g.table, knd, Index.repr v g.table) cst
     in
     let kept = Point.Set.fold (fun u accu -> PSet.add (Index.find u g.table) accu) kept PSet.empty in
     let rmap, csts = PSet.fold (fun u (rmap,csts) ->
@@ -737,7 +736,7 @@ module Make (Point:Point) = struct
           match PMap.find arcu.canon rmap with
           | v -> rmap, add_cst u Eq v csts
           | exception Not_found -> PMap.add arcu.canon u rmap, csts)
-        kept (PMap.empty,Constraint.empty)
+        kept (PMap.empty, accu)
     in
     let rec add_from u csts todo = match todo with
       | [] -> csts
