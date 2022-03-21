@@ -95,6 +95,17 @@ Module system
   GH issue number: #3243
   risk: could be exploited by mistake
 
+  component: modules, universes, inductives
+  summary: module subtyping disrespected squashing status of inductives
+  introduced: probably 7.4 (12965209478bd99dfbe57f07d5b525e51b903f22)
+  impacted released versions: until 8.15.0
+  impacted coqchk versions: none
+  fixed in: 8.15.1, 8.16
+  found by: Pédrot
+  exploit: see GitHub issue
+  GH issue number: #15838
+  risk: unlikely (caught by coqchk, needs Unset Elimination Schemes in the module type)
+
 Universes
 
   component: template polymorphism

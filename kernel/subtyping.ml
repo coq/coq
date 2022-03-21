@@ -139,17 +139,16 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     let check f test why = if not (test (f p1) (f p2)) then error why in
       check (fun p -> p.mind_consnames) (Array.equal Id.equal) NotSameConstructorNamesField;
       check (fun p -> p.mind_typename) Id.equal NotSameInductiveNameInBlockField;
+      check (fun p -> p.mind_kelim) Sorts.family_equal (NotConvertibleInductiveField p2.mind_typename);
       (* nf_lc later *)
       (* nf_arity later *)
       (* user_lc ignored *)
       (* user_arity ignored *)
       check (fun p -> p.mind_nrealargs) Int.equal (NotConvertibleInductiveField p2.mind_typename); (* How can it fail since the type of inductive are checked below? [HH] *)
-      (* kelim ignored *)
       (* listrec ignored *)
       (* finite done *)
       (* nparams done *)
       (* params_ctxt done because part of the inductive types *)
-      (* Don't check the sort of the type if polymorphic *)
       let ty1 = type_of_inductive ((mib1, p1), inst) in
       let ty2 = type_of_inductive ((mib2, p2), inst) in
       let cst = check_inductive_type cst p2.mind_typename ty1 ty2 in
