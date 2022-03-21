@@ -161,14 +161,21 @@ ifdef DSTROOT
 DESTDIR := $(DSTROOT)
 endif
 
+# Substitution of the path by appending $(DESTDIR) if needed.
+# The variable $(COQMF_WINDRIVE) can be needed for Cygwin environments.
+windrive_path = $(if $(COQMF_WINDRIVE),$(subst $(COQMF_WINDRIVE),/,$(1)),$(1))
+destination_path = $(if $(DESTDIR),$(DESTDIR)/$(call windrive_path,$(1)),$(1))
+
+# Installation paths of libraries and documentation.
+COQLIBINSTALL ?= $(call destination_path,$(COQLIB)/user-contrib)
+COQDOCINSTALL ?= $(call destination_path,$(DOCDIR)/coq/user-contrib)
+COQPLUGININSTALL ?= $(call destination_path,$(COQCORELIB)/..)
+COQTOPINSTALL ?= $(call destination_path,$(COQLIB)/toploop) # FIXME: Unused variable?
+
 # findlib files installation
-ifeq ($(DESTDIR),)
-FINDLIBPREINST= true
-FINDLIBDESTDIR= -destdir "$(COQCORELIB)/../"
-else
-FINDLIBPREINST= mkdir -p "$(DESTDIR)/$(COQCORELIB)/../"
-FINDLIBDESTDIR= -destdir "$(DESTDIR)/$(COQCORELIB)/../"
-endif
+FINDLIBPREINST= mkdir -p "$(COQPLUGININSTALL)/"
+FINDLIBDESTDIR= -destdir "$(COQPLUGININSTALL)/"
+
 # we need to move out of sight $(METAFILE) otherwise findlib thinks the
 # package is already installed
 findlib_install = \
@@ -185,15 +192,6 @@ findlib_remove = \
 	  "$(OCAMLFIND)" remove $(FINDLIBDESTDIR) $(FINDLIBPACKAGE); \
 	fi
 
-# Substitution of the path by appending $(DESTDIR) if needed.
-# The variable $(COQMF_WINDRIVE) can be needed for Cygwin environments.
-windrive_path = $(if $(COQMF_WINDRIVE),$(subst $(COQMF_WINDRIVE),/,$(1)),$(1))
-destination_path = $(if $(DESTDIR),$(DESTDIR)/$(call windrive_path,$(1)),$(1))
-
-# Installation paths of libraries and documentation.
-COQLIBINSTALL ?= $(call destination_path,$(COQLIB)/user-contrib)
-COQDOCINSTALL ?= $(call destination_path,$(DOCDIR)/coq/user-contrib)
-COQTOPINSTALL ?= $(call destination_path,$(COQLIB)/toploop) # FIXME: Unused variable?
 
 ########## End of parameters ##################################################
 # What follows may be relevant to you only if you need to

@@ -305,10 +305,10 @@ section of the generated makefile. These include:
    override the flags passed to ``coqdoc``. By default ``-interpolate -utf8``.
 :COQDOCEXTRAFLAGS:
    extend the flags passed to ``coqdoc``
-:COQLIBINSTALL, COQDOCINSTALL:
-   specify where the Coq libraries and documentation will be installed.
+:COQLIBINSTALL, COQPLUGININSTALL, COQDOCINSTALL:
+   specify where the Coq libraries, plugins and documentation will be installed.
    By default a combination of ``$(DESTDIR)`` (if defined) with
-   ``$(COQLIB)/user-contrib`` and ``$(DOCDIR)/user-contrib``.
+   ``$(COQLIB)/user-contrib``, ``$(COQCORELIB)/..`` and ``$(DOCDIR)/coq/user-contrib``.
 
 Use :ref:`coqmakefilelocallate` instead to access more variables.
 
