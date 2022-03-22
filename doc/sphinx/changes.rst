@@ -762,6 +762,105 @@ Extraction
   fixes `#15076 <https://github.com/coq/coq/issues/15076>`_,
   by Yishuai Li).
 
+Changes in 8.15.1
+~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+Kernel
+^^^^^^
+
+- **Fixed:**
+  cases of incompletenesses in the guard condition for fixpoints in
+  the presence of cofixpoints or primitive projections
+  (`#15498 <https://github.com/coq/coq/pull/15498>`_,
+  fixes `#15451 <https://github.com/coq/coq/issues/15451>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  inconsistency when using module subtyping with squashed inductives
+  (`#15839 <https://github.com/coq/coq/pull/15839>`_,
+  fixes `#15838 <https://github.com/coq/coq/issues/15838>`_ (reported by Pierre-Marie Pédrot),
+  by Gaëtan Gilbert).
+
+Notations
+^^^^^^^^^
+
+- **Fixed:**
+  Check for prior declaration of a custom entry was missing for notations in only printing mode
+  (`#15628 <https://github.com/coq/coq/pull/15628>`_,
+  fixes `#15619 <https://github.com/coq/coq/issues/15619>`_,
+  by Hugo Herbelin).
+
+Tactics
+^^^^^^^
+
+- **Fixed:**
+  :tacn:`rewrite_strat` regression in 8.15.0 related to `Transitive` instances
+  (`#15577 <https://github.com/coq/coq/pull/15577>`_,
+  fixes `#15568 <https://github.com/coq/coq/issues/15568>`_,
+  by Gaëtan Gilbert).
+- **Fixed:**
+  When :tacn:`setoid_rewrite` succeeds in rewriting at some occurrence but the resulting equality is the identity, it now tries rewriting in subterms of that occurrence instead of giving up
+  (`#15612 <https://github.com/coq/coq/pull/15612>`_,
+  fixes `#8080 <https://github.com/coq/coq/issues/8080>`_,
+  by Gaëtan Gilbert).
+- **Fixed:**
+  Ill-typed goals created by :tacn:`clearbody` in the presence of
+  transitive dependencies in the body of a hypothesis
+  (`#15634 <https://github.com/coq/coq/pull/15634>`_,
+  fixes `#15606 <https://github.com/coq/coq/issues/15606>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  :tacn:`cbn` knows to refold fixpoints when :cmd:`Arguments` with ``/`` and ``!`` was used
+  (`#15653 <https://github.com/coq/coq/pull/15653>`_,
+  fixes `#15567 <https://github.com/coq/coq/issues/15567>`_,
+  by Gaëtan Gilbert).
+
+Command-line tools
+^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  a bug where :n:`coqc -vok` was not creating an empty '.vok' file.
+  (`#15745 <https://github.com/coq/coq/pull/15745>`_,
+  by Ramkumar Ramachandra).
+
+CoqIDE
+^^^^^^
+
+- **Fixed:**
+  Line numbers shown in the Errors panel were incorrect;
+  they didn't match the error locations in the script panel
+  (`#15532 <https://github.com/coq/coq/pull/15532>`_,
+  fixes `#15531 <https://github.com/coq/coq/issues/15531>`_,
+  by Jim Fehrle).
+- **Fixed:**
+  anomaly when using proof diffs with no focused goal
+  (`#15633 <https://github.com/coq/coq/pull/15633>`_,
+  fixes `#15578 <https://github.com/coq/coq/issues/15578>`_,
+  by Jim Fehrle).
+- **Fixed:**
+  Attempted edits to the processed part of a buffer while
+  Coq is busy processing a request are now ignored to
+  ensure "processed" highlighting is accurate
+  (`#15714 <https://github.com/coq/coq/pull/15714>`_,
+  fixes `#15733 <https://github.com/coq/coq/issues/15733>`_
+  and `#15675 <https://github.com/coq/coq/issues/15675>`_
+  and `#15725 <https://github.com/coq/coq/issues/15725>`_,
+  by Jim Fehrle).
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+- **Fixed:**
+  Ensure that the names of arguments of inductive schemes are distinct
+  so that the new Coq 8.15 preservation of argument names in the ``with``
+  clause of tactics in `#13837 <https://github.com/coq/coq/pull/13837>`_
+  works as in Coq 8.14 for these schemes
+  (`#15537 <https://github.com/coq/coq/pull/15537>`_,
+  fixes `#15420 <https://github.com/coq/coq/issues/15420>`_,
+  by Hugo Herbelin).
+
 Version 8.14
 ------------
 
