@@ -456,20 +456,17 @@ let safe_meta_value sigma ev =
 
 (* Beta Reduction tools *)
 
-let apply_subst recfun env sigma t stack =
+let apply_subst env sigma t stack =
   let rec aux env t stack =
     match (Stack.decomp stack, EConstr.kind sigma t) with
     | Some (h,stacktl), Lambda (_,_,c) ->
        aux (h::env) c stacktl
-    | _ -> recfun sigma (substl env t, stack)
-  in aux env t stack
-
-let stacklam recfun env sigma t stack =
-  apply_subst (fun _ s -> recfun s) env sigma t stack
+    | _ -> (substl env t, stack)
+  in
+  aux env t stack
 
 let beta_applist sigma (c,l) =
-  let zip s = Stack.zip sigma s in
-  stacklam zip [] sigma c (Stack.append_app_list l Stack.empty)
+  Stack.zip sigma (apply_subst [] sigma c (Stack.append_app_list l Stack.empty))
 
 (* Iota reduction tools *)
 
@@ -487,35 +484,29 @@ let contract_cofix sigma (bodynum,(names,types,bodies as typedbodies)) =
   substl closure bodies.(bodynum)
 
 (** Similar to the "fix" case below *)
-let reduce_and_refold_cofix recfun env sigma cofix sk =
-  let raw_answer =
-    contract_cofix sigma cofix in
-  apply_subst
-    (fun _ (t,sk') -> recfun (t,sk'))
-    [] sigma raw_answer sk
+let reduce_and_refold_cofix env sigma cofix sk =
+  let raw_answer = contract_cofix sigma cofix in
+  apply_subst [] sigma raw_answer sk
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
 let contract_fix sigma ((recindices,bodynum),(names,types,bodies as typedbodies)) =
-    let nbodies = Array.length recindices in
-    let make_Fi j =
-      let ind = nbodies-j-1 in
-      mkFix ((recindices,ind),typedbodies)
-    in
-    let closure = List.init nbodies make_Fi in
-    substl closure bodies.(bodynum)
+  let nbodies = Array.length recindices in
+  let make_Fi j =
+    let ind = nbodies-j-1 in
+    mkFix ((recindices,ind),typedbodies)
+  in
+  let closure = List.init nbodies make_Fi in
+  substl closure bodies.(bodynum)
 
 (** First we substitute the Rel bodynum by the fixpoint and then we try to
     replace the fixpoint by the best constant from [cst_l]
     Other rels are directly substituted by constants "magically found from the
     context" in contract_fix *)
-let reduce_and_refold_fix recfun env sigma fix sk =
-  let raw_answer =
-    contract_fix sigma fix in
-  apply_subst
-    (fun _ (t,sk') -> recfun (t,sk'))
-    [] sigma raw_answer sk
+let reduce_and_refold_fix env sigma fix sk =
+  let raw_answer = contract_fix sigma fix in
+  apply_subst [] sigma raw_answer sk
 
 open Primred
 
@@ -738,7 +729,7 @@ let whd_state_gen flags env sigma =
       whrec stack'
 
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
-      apply_subst (fun _ -> whrec) [b] sigma c stack
+      whrec (apply_subst [b] sigma c stack)
     | Cast (c,_,_) -> whrec (c, stack)
     | App (f,cl)  ->
       whrec
@@ -746,7 +737,7 @@ let whd_state_gen flags env sigma =
     | Lambda (na,t,c) ->
       (match Stack.decomp stack with
       | Some _ when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
-        apply_subst (fun _ -> whrec) [] sigma x stack
+        whrec (apply_subst [] sigma x stack)
       | _ -> fold ())
 
     | Case (ci,u,pms,p,iv,d,lf) ->
@@ -771,7 +762,7 @@ let whd_state_gen flags env sigma =
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
           let x' = Stack.zip sigma (x, args) in
           let out_sk = s' @ (Stack.append_app [|x'|] s'') in
-          reduce_and_refold_fix whrec env sigma f out_sk
+          whrec (reduce_and_refold_fix env sigma f out_sk)
         |_, (Stack.App _)::_ -> assert false
         |_, _ -> fold ()
       else fold ()
@@ -780,7 +771,7 @@ let whd_state_gen flags env sigma =
       if CClosure.RedFlags.red_set flags CClosure.RedFlags.fCOFIX then
         match Stack.strip_app stack with
         |args, ((Stack.Case _ |Stack.Proj _)::s') ->
-          reduce_and_refold_cofix whrec env sigma cofix stack
+          whrec (reduce_and_refold_cofix env sigma cofix stack)
         |_ -> fold ()
       else fold ()
 
@@ -821,13 +812,13 @@ let local_whd_state_gen flags env sigma =
     let s = (EConstr.of_kind c0, stack) in
     match c0 with
     | LetIn (_,b,_,c) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fZETA ->
-      stacklam whrec [b] sigma c stack
+      whrec (apply_subst [b] sigma c stack)
     | Cast (c,_,_) -> whrec (c, stack)
     | App (f,cl)  -> whrec (f, Stack.append_app cl stack)
     | Lambda (_,_,c) ->
       (match Stack.decomp stack with
       | Some (a,m) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fBETA ->
-        stacklam whrec [a] sigma c m
+        whrec (apply_subst [a] sigma c m)
       | _ -> s)
 
     | Proj (p,c) when CClosure.RedFlags.red_projection flags p ->
