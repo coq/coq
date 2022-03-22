@@ -266,8 +266,6 @@ let is_impredicative_sort env = function
   | Sorts.Set -> is_impredicative_set env
   | Sorts.Type _ -> false
 
-let is_impredicative_univ env u = is_impredicative_sort env (Sorts.sort_of_univ u)
-
 let is_impredicative_family env = function
   | Sorts.InSProp | Sorts.InProp -> true
   | Sorts.InSet -> is_impredicative_set env

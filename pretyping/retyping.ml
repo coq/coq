@@ -208,7 +208,7 @@ let retype ?(polyprop=true) sigma =
       let paramtyps = Array.map_to_list (fun arg () ->
           let t = type_of env arg in
           let s = sort_of_arity_with_constraints env sigma t in
-          Sorts.univ_of_sort (ESorts.kind sigma s))
+          ESorts.kind sigma s)
           args
       in
       EConstr.of_constr

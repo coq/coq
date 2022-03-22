@@ -11,23 +11,23 @@
 open Univ
 
 type t =
-  | ULe of Universe.t * Universe.t
-  | UEq of Universe.t * Universe.t
+  | ULe of Sorts.t * Sorts.t
+  | UEq of Sorts.t * Sorts.t
   | ULub of Level.t * Level.t
   | UWeak of Level.t * Level.t
 
 
 let is_trivial = function
-  | ULe (u, v) | UEq (u, v) -> Universe.equal u v
+  | ULe (u, v) | UEq (u, v) -> Sorts.equal u v
   | ULub (u, v) | UWeak (u, v) -> Level.equal u v
 
 let force = function
   | ULe _ | UEq _ | UWeak _ as cst -> cst
-  | ULub (u,v) -> UEq (Universe.make u, Universe.make v)
+  | ULub (u,v) -> UEq (Sorts.sort_of_univ @@ Universe.make u, Sorts.sort_of_univ @@ Universe.make v)
 
 let check g = function
-  | ULe (u,v) -> UGraph.check_leq g u v
-  | UEq (u,v) -> UGraph.check_eq g u v
+  | ULe (u,v) -> Sorts.check_leq_sort g u v
+  | UEq (u,v) -> Sorts.check_eq_sort g u v
   | ULub (u,v) -> UGraph.check_eq_level g u v
   | UWeak _ -> true
 
@@ -39,13 +39,13 @@ module Set = struct
     let compare x y =
       match x, y with
       | ULe (u, v), ULe (u', v') ->
-        let i = Universe.compare u u' in
-        if Int.equal i 0 then Universe.compare v v'
+        let i = Sorts.compare u u' in
+        if Int.equal i 0 then Sorts.compare v v'
         else i
       | UEq (u, v), UEq (u', v') ->
-        let i = Universe.compare u u' in
-        if Int.equal i 0 then Universe.compare v v'
-        else if Universe.equal u v' && Universe.equal v u' then 0
+        let i = Sorts.compare u u' in
+        if Int.equal i 0 then Sorts.compare v v'
+        else if Sorts.equal u v' && Sorts.equal v u' then 0
         else i
       | ULub (u, v), ULub (u', v') | UWeak (u, v), UWeak (u', v') ->
         let i = Level.compare u u' in
@@ -67,8 +67,8 @@ module Set = struct
     else add cst s
 
   let pr_one = let open Pp in function
-    | ULe (u, v) -> Universe.pr u ++ str " <= " ++ Universe.pr v
-    | UEq (u, v) -> Universe.pr u ++ str " = " ++ Universe.pr v
+    | ULe (u, v) -> Sorts.debug_print u ++ str " <= " ++ Sorts.debug_print v
+    | UEq (u, v) -> Sorts.debug_print u ++ str " = " ++ Sorts.debug_print v
     | ULub (u, v) -> Level.pr u ++ str " /\\ " ++ Level.pr v
     | UWeak (u, v) -> Level.pr u ++ str " ~ " ++ Level.pr v
 
@@ -88,7 +88,8 @@ end
 type 'a constraint_function = 'a -> 'a -> Set.t -> Set.t
 
 let enforce_eq_instances_univs strict x y c =
-  let mk u v = if strict then ULub (u, v) else UEq (Universe.make u, Universe.make v) in
+  let mkU u = Sorts.sort_of_univ @@ Universe.make u in
+  let mk u v = if strict then ULub (u, v) else UEq (mkU u, mkU v) in
   let ax = Instance.to_array x and ay = Instance.to_array y in
     if Array.length ax != Array.length ay then
       CErrors.anomaly Pp.(str "Invalid argument: enforce_eq_instances_univs called with" ++

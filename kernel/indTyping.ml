@@ -65,23 +65,27 @@ let mind_check_names mie =
 (************************************************************************)
 
 type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
-                   ind_min_univ : Universe.t option; (* Some for template *)
-                   ind_univ : Universe.t;
-                   missing : Universe.Set.t; (* missing u <= ind_univ constraints *)
+                   ind_min_univ : Sorts.t option; (* Some for template *)
+                   ind_univ : Sorts.t;
+                   missing : Sorts.t list; (* missing u <= ind_univ constraints *)
                  }
+
+let sup_sort s1 s2 =
+  let open Sorts in
+  sort_of_univ (Universe.sup (univ_of_sort s1) (univ_of_sort s2))
 
 let check_univ_leq ?(is_real_arg=false) env u info =
   let ind_univ = info.ind_univ in
-  let info = if not info.ind_has_relevant_arg && is_real_arg && not (Univ.Universe.is_sprop u)
+  let info = if not info.ind_has_relevant_arg && is_real_arg && not (Sorts.is_sprop u)
     then {info with ind_has_relevant_arg=true}
     else info
   in
   (* Inductive types provide explicit lifting from SProp to other universes, so allow SProp <= any. *)
-  if Univ.Universe.is_sprop u || UGraph.check_leq (universes env) u ind_univ
-  then { info with ind_min_univ = Option.map (Universe.sup u) info.ind_min_univ }
-  else if is_impredicative_univ env ind_univ
+  if Sorts.is_sprop u || Sorts.check_leq_sort (universes env) u ind_univ
+  then { info with ind_min_univ = Option.map (sup_sort u) info.ind_min_univ }
+  else if is_impredicative_sort env ind_univ
        && Option.is_empty info.ind_min_univ then { info with ind_squashed = true }
-  else {info with missing = Universe.Set.add u info.missing}
+  else {info with missing = u :: info.missing}
 
 let check_context_univs ~ctor env info ctx =
   let check_one d (info,env) =
@@ -89,7 +93,7 @@ let check_context_univs ~ctor env info ctx =
       | LocalAssum (_,t) ->
         (* could be retyping if it becomes available in the kernel *)
         let tj = Typeops.infer_type env t in
-        check_univ_leq ~is_real_arg:ctor env (Sorts.univ_of_sort tj.utj_type) info
+        check_univ_leq ~is_real_arg:ctor env tj.utj_type info
       | LocalDef _ -> info
     in
     info, push_rel d env
@@ -104,13 +108,13 @@ let check_indices_matter env_params info indices =
 let check_arity ~template env_params env_ar ind =
   let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
   let indices, ind_sort = Reduction.dest_arity env_params arity in
-  let ind_min_univ = if template then Some Universe.type0m else None in
+  let ind_min_univ = if template then Some Sorts.prop else None in
   let univ_info = {
     ind_squashed=false;
     ind_has_relevant_arg=false;
     ind_min_univ;
-    ind_univ=Sorts.univ_of_sort ind_sort;
-    missing=Universe.Set.empty;
+    ind_univ=ind_sort;
+    missing=[];
   }
   in
   let univ_info = check_indices_matter env_params univ_info indices in
@@ -145,10 +149,10 @@ let check_constructors env_ar_par isrecord params lc (arity,indices,univ_info) =
       then univ_info
       (* 1 constructor with arguments must squash if SProp
          (we could allow arguments in SProp but the reduction rule is a pain) *)
-      else check_univ_leq env_ar_par Univ.Universe.type0m univ_info
+      else check_univ_leq env_ar_par Sorts.prop univ_info
 
     (* More than 1 constructor: must squash if Prop/SProp *)
-    | _ -> check_univ_leq env_ar_par Univ.Universe.type0 univ_info
+    | _ -> check_univ_leq env_ar_par Sorts.set univ_info
   in
   let univ_info = Array.fold_left (check_constructor_univs env_ar_par) univ_info splayed_lc in
   (* generalize the constructors over the parameters *)
@@ -160,7 +164,7 @@ let check_record data =
       (* records must have all projections definable -> equivalent to not being squashed *)
       not info.ind_squashed
       (* relevant records must have at least 1 relevant argument *)
-      && (Univ.Universe.is_sprop info.ind_univ
+      && (Sorts.is_sprop info.ind_univ
           || info.ind_has_relevant_arg)
       && (match splayed_lc with
           (* records must have 1 constructor with at least 1 argument, and no anonymous fields *)
@@ -185,7 +189,7 @@ let check_record data =
 
 let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_;ind_has_relevant_arg=_;missing=_} =
   if not ind_squashed then InType
-  else Sorts.family (Sorts.sort_of_univ ind_univ)
+  else Sorts.family ind_univ
 
 (* For a level to be template polymorphic, it must be introduced
    by the definition (so have no constraint except lbound <= l)
@@ -211,7 +215,10 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
     not (Univ.Level.Set.mem l ctor_levels)
   in
-  let univs = Univ.Universe.levels concl in
+  let univs = match concl with
+  | Prop | Set | SProp -> Univ.Level.Set.empty
+  | Type u -> Univ.Universe.levels u
+  in
   let univs = Univ.Level.Set.filter (fun l -> check_level l) univs in
   let fold acc = function
     | (LocalAssum (_, p)) ->
@@ -225,9 +232,11 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
     | LocalDef _ -> acc
   in
   let params = List.fold_left fold [] paramsctxt in
-  if Universe.is_type0m concl then Some (univs, params)
-  else if not @@ Univ.Level.Set.is_empty univs then Some (univs, params)
-  else None
+  match concl with
+  | Prop -> Some (univs, params)
+  | Set | SProp | Type _ ->
+    if not @@ Univ.Level.Set.is_empty univs then Some (univs, params)
+    else None
 
 let get_param_levels ctx params arity splayed_lc =
   let min_univ = match arity with
@@ -287,7 +296,7 @@ let get_template univs params data =
     Some { template_param_levels = params; template_context = ctx }
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
-  if not (Universe.Set.is_empty univ_info.missing)
+  if not (List.is_empty univ_info.missing)
   then raise (InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ)));
   let arity = Vars.subst_univs_level_constr usubst arity in
   let lc = Array.map (Vars.subst_univs_level_constr usubst) lc in
@@ -298,10 +307,10 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       args,out)
       splayed_lc
   in
-  let ind_univ = Univ.subst_univs_level_universe usubst univ_info.ind_univ in
+  let ind_univ = Sorts.sort_of_univ  (Univ.subst_univs_level_universe usubst (Sorts.univ_of_sort univ_info.ind_univ)) in
 
   let arity = match univ_info.ind_min_univ with
-    | None -> RegularArity {mind_user_arity = arity; mind_sort = Sorts.sort_of_univ ind_univ}
+    | None -> RegularArity {mind_user_arity = arity; mind_sort = ind_univ}
     | Some min_univ -> TemplateArity { template_level = min_univ; }
   in
 
@@ -361,7 +370,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         (* if someone tried to declare a record as SProp but it can't
            be primitive we must squash. *)
         let data = List.map (fun (a,b,univs) ->
-            a,b,check_univ_leq env_ar_par Univ.Universe.type0m univs)
+            a,b,check_univ_leq env_ar_par Sorts.prop univs)
             data
         in
         data, Some None

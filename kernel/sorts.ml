@@ -38,18 +38,7 @@ let sort_of_univ u =
   else Type u
 
 let compare s1 s2 =
-  if s1 == s2 then 0 else
-    match s1, s2 with
-    | SProp, SProp -> 0
-    | SProp, _ -> -1
-    | _, SProp -> 1
-    | Prop, Prop -> 0
-    | Prop, _ -> -1
-    | Set, Prop -> 1
-    | Set, Set -> 0
-    | Set, _ -> -1
-    | Type u1, Type u2 -> Universe.compare u1 u2
-    | Type _, _ -> -1
+  if s1 == s2 then 0 else Universe.compare (univ_of_sort s1) (univ_of_sort s2)
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
@@ -72,6 +61,23 @@ let is_set = function
 let is_small = function
   | SProp | Prop | Set -> true
   | Type _ -> false
+
+let levels s = Universe.levels (univ_of_sort s)
+
+let check_eq_sort ugraph s1 s2 =
+  UGraph.check_eq ugraph (univ_of_sort s1) (univ_of_sort s2)
+
+let check_leq_sort ugraph s1 s2 =
+  UGraph.check_leq ugraph (univ_of_sort s1) (univ_of_sort s2)
+
+let enforce_eq_sort s1 s2 cst =
+  Univ.enforce_eq (univ_of_sort s1) (univ_of_sort s2) cst
+
+let enforce_leq_sort s1 s2 cst =
+  Univ.enforce_leq (univ_of_sort s1) (univ_of_sort s2) cst
+
+let enforce_leq_alg_sort s1 s2 cst =
+  UGraph.enforce_leq_alg (univ_of_sort s1) (univ_of_sort s2) cst
 
 let family = function
   | SProp -> InSProp

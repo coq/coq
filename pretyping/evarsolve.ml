@@ -1404,14 +1404,13 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
       let concl2 = EConstr.Unsafe.to_constr evi2.evar_concl in
       let ctx2, j = Reduction.dest_arity evi2env concl2 in
       let ctx2 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx2 in
-      let ui, uj = univ_of_sort i, univ_of_sort j in
-        if i == j || Evd.check_eq evd ui uj
+        if i == j || Evd.check_eq evd i j
         then (* Shortcut, i = j *)
           evd
-        else if Evd.check_leq evd ui uj then
+        else if Evd.check_leq evd i j then
           let t2 = it_mkProd_or_LetIn (mkSort i) ctx2 in
           downcast evk2 t2 evd
-        else if Evd.check_leq evd uj ui then
+        else if Evd.check_leq evd j i then
           let t1 = it_mkProd_or_LetIn (mkSort j) ctx1 in
           downcast evk1 t1 evd
         else

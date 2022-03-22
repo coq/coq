@@ -125,9 +125,9 @@ let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
 let infer_sort cv_pb variances s =
   match cv_pb with
   | CONV ->
-    Level.Set.fold infer_level_eq (Universe.levels (Sorts.univ_of_sort s)) variances
+    Level.Set.fold infer_level_eq (Sorts.levels s) variances
   | CUMUL ->
-    Level.Set.fold infer_level_leq (Universe.levels (Sorts.univ_of_sort s)) variances
+    Level.Set.fold infer_level_leq (Sorts.levels s) variances
 
 let infer_table_key variances c =
   let open Names in

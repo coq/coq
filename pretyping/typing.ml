@@ -40,7 +40,7 @@ let inductive_type_knowing_parameters env sigma (ind,u) jl =
   let mspec = lookup_mind_specif env ind in
   let paramstyp = Array.map_to_list (fun j () ->
       let s = Reductionops.sort_of_arity env sigma j.uj_type in
-      Sorts.univ_of_sort (EConstr.ESorts.kind sigma s)) jl
+      EConstr.ESorts.kind sigma s) jl
   in
   Inductive.type_of_inductive_knowing_parameters (mspec,u) paramstyp
 

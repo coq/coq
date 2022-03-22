@@ -97,8 +97,7 @@ let check_universes error env u1 u2 =
   match u1, u2 with
   | Monomorphic, Monomorphic -> env
   | Polymorphic auctx1, Polymorphic auctx2 ->
-    let lbound = Environ.universes_lbound env in
-    if not (UGraph.check_subtype ~lbound (Environ.universes env) auctx2 auctx1) then
+    if not (UGraph.check_subtype (Environ.universes env) auctx2 auctx1) then
       error (IncompatibleConstraints { got = auctx1; expect = auctx2; } )
     else
       Environ.push_context ~strict:false (Univ.AbstractContext.repr auctx2) env

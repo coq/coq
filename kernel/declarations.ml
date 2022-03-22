@@ -26,7 +26,7 @@ open Constr
 *)
 
 type template_arity = {
-  template_level : Univ.Universe.t;
+  template_level : Sorts.t;
 }
 
 type template_universes = {

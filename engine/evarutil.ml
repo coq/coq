@@ -832,8 +832,8 @@ let occur_evar_upto sigma n c =
 
 let judge_of_new_Type evd =
   let open EConstr in
-  let (evd', s) = new_univ_variable univ_rigid evd in
-  (evd', { uj_val = mkType s; uj_type = mkType (Univ.super s) })
+  let (evd', s) = new_sort_variable univ_rigid evd in
+  (evd', { uj_val = mkSort s; uj_type = mkSort (Sorts.super s) })
 
 let subterm_source evk ?where (loc,k) =
   let evk = match k with
@@ -888,8 +888,7 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
   let eq_sorts s1 s2 =
     if Sorts.equal s1 s2 then true
     else
-      let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-      try sigma := add_universe_constraints !sigma UnivProblem.(Set.singleton (UEq (u1, u2))); true
+      try sigma := add_universe_constraints !sigma UnivProblem.(Set.singleton (UEq (s1, s2))); true
       with Univ.UniverseInconsistency _ | UniversesDiffer -> false
   in
   let kind1 = kind_of_term_upto evd in

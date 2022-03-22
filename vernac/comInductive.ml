@@ -263,7 +263,7 @@ let solve_constraints_system levels level_bounds =
         (v.(i) <- Universe.sup v.(i) level_bounds.(j));
     done;
   done;
-  v
+  Array.map Sorts.sort_of_univ v
 
 let inductive_levels env evd arities inds =
   let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
@@ -311,13 +311,13 @@ let inductive_levels env evd arities inds =
         (* Constructors contribute. *)
         let evd =
           if Sorts.is_set du then
-            if not (Evd.check_leq evd cu Univ.type0_univ) then
+            if not (Evd.check_leq evd cu Sorts.set) then
               raise (InductiveError LargeNonPropInductiveNotInType)
             else evd
           else evd
         in
         let evd =
-          if len >= 2 && Univ.is_type0m_univ cu then
+          if len >= 2 && Sorts.is_prop cu then
            (* "Polymorphic" type constraint and more than one constructor,
                should not land in Prop. Add constraint only if it would
                land in Prop directly (no informative arguments as well). *)
@@ -326,8 +326,8 @@ let inductive_levels env evd arities inds =
         in
         let duu = Sorts.univ_of_sort du in
         let template_prop, evd =
-          if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
-            if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu)
+          if not (Sorts.is_small du) && Sorts.equal cu du then
+            if is_flexible_sort evd duu && not (Evd.check_leq evd Sorts.set du)
             then if Term.isArity arity
             (* If not a syntactic arity, the universe may be used in a
                polymorphic instance and so cannot be lowered to Prop.
@@ -335,7 +335,7 @@ let inductive_levels env evd arities inds =
               then true, Evd.set_eq_sort env evd Sorts.prop du
               else false, Evd.set_eq_sort env evd Sorts.set du
             else false, evd
-          else false, Evd.set_eq_sort env evd (sort_of_univ cu) du
+          else false, Evd.set_eq_sort env evd cu du
         in
           (evd, (template_prop, arity) :: arities))
     (evd,[]) (Array.to_list levels') destarities sizes
@@ -353,7 +353,7 @@ let template_polymorphism_candidate ~ctor_levels uctx params concl =
     let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
     if not concltemplate then false
     else
-      let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
+      let conclu = Option.default Sorts.prop concl in
       Option.has_some @@ IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
   | UState.Polymorphic_entry _ -> false
 

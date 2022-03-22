@@ -222,7 +222,7 @@ let v_oracle =
   |]
 
 let v_template_arity =
-  v_tuple "template_arity" [|v_univ|]
+  v_tuple "template_arity" [|v_sort|]
 
 let v_template_universes =
   v_tuple "template_universes" [|List(Opt v_level);v_context_set|]

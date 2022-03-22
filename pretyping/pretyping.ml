@@ -934,7 +934,7 @@ struct
              information when typing the body. *)
           let s = Retyping.get_sort_of !!env sigma ty in
           if Environ.is_impredicative_sort !!env s
-             || Evd.check_leq sigma (Univ.Universe.type1) (Sorts.univ_of_sort s)
+             || Evd.check_leq sigma Sorts.type1 s
           then
             let sigma, prod = define_evar_as_product !!env sigma ev in
             let na,dom,rng = destProd sigma prod in

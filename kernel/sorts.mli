@@ -44,6 +44,15 @@ val family_leq : family -> family -> bool
 val univ_of_sort : t -> Univ.Universe.t
 val sort_of_univ : Univ.Universe.t -> t
 
+val levels : t -> Univ.Level.Set.t
+
+val check_eq_sort : UGraph.t -> t -> t -> bool
+val check_leq_sort : UGraph.t -> t -> t -> bool
+
+val enforce_eq_sort : t -> t -> Univ.Constraints.t -> Univ.Constraints.t
+val enforce_leq_sort : t -> t -> Univ.Constraints.t -> Univ.Constraints.t
+val enforce_leq_alg_sort : t -> t -> UGraph.t -> Univ.Constraints.t * UGraph.t
+
 val super : t -> t
 
 (** On binders: is this variable proof relevant *)

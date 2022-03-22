@@ -997,11 +997,7 @@ let is_flexible_level evd l =
 
 let is_eq_sort s1 s2 =
   if Sorts.equal s1 s2 then None
-  else
-    let u1 = univ_of_sort s1
-    and u2 = univ_of_sort s2 in
-      if Univ.Universe.equal u1 u2 then None
-      else Some (u1, u2)
+  else Some (s1, s2)
 
 (* Precondition: l is not defined in the substitution *)
 let universe_rigidity evd l =
@@ -1060,10 +1056,10 @@ let set_leq_sort env evd s1 s2 =
      else evd
 
 let check_eq evd s s' =
-  UGraph.check_eq (UState.ugraph evd.universes) s s'
+  Sorts.check_eq_sort (UState.ugraph evd.universes) s s'
 
 let check_leq evd s s' =
-  UGraph.check_leq (UState.ugraph evd.universes) s s'
+  Sorts.check_leq_sort (UState.ugraph evd.universes) s s'
 
 let check_constraints evd csts =
   UGraph.check_constraints csts (UState.ugraph evd.universes)

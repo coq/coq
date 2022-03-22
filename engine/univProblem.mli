@@ -20,8 +20,8 @@ open Univ
 *)
 
 type t =
-  | ULe of Universe.t * Universe.t
-  | UEq of Universe.t * Universe.t
+  | ULe of Sorts.t * Sorts.t
+  | UEq of Sorts.t * Sorts.t
   | ULub of Level.t * Level.t
   | UWeak of Level.t * Level.t
 

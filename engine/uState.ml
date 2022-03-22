@@ -175,7 +175,7 @@ let universe_binders uctx =
   named
 
 let instantiate_variable l b v =
-  try v := Level.Map.set l (Some b) !v
+  try v := Level.Map.set l (Some (Sorts.univ_of_sort b)) !v
   with Not_found -> assert false
 
 exception UniversesDiffer
@@ -185,6 +185,12 @@ let drop_weak_constraints =
     ~depr:false
     ~key:["Cumulativity";"Weak";"Constraints"]
     ~value:false
+
+let sort_inconsistency cst l r =
+  raise (UniverseInconsistency (cst, Sorts.univ_of_sort l, Sorts.univ_of_sort r, None))
+
+let subst_univs_sort normalize s =
+  Sorts.sort_of_univ (subst_univs_universe normalize (Sorts.univ_of_sort s))
 
 let process_universe_constraints uctx cstrs =
   let open UnivSubst in
@@ -196,12 +202,12 @@ let process_universe_constraints uctx cstrs =
   let nf_constraint = function
     | ULub (u, v) -> ULub (level_subst_of normalize u, level_subst_of normalize v)
     | UWeak (u, v) -> UWeak (level_subst_of normalize u, level_subst_of normalize v)
-    | UEq (u, v) -> UEq (subst_univs_universe normalize u, subst_univs_universe normalize v)
-    | ULe (u, v) -> ULe (subst_univs_universe normalize u, subst_univs_universe normalize v)
+    | UEq (u, v) -> UEq (subst_univs_sort normalize u, subst_univs_sort normalize v)
+    | ULe (u, v) -> ULe (subst_univs_sort normalize u, subst_univs_sort normalize v)
   in
   let is_local l = Level.Map.mem l !vars in
   let varinfo x =
-    match Universe.level x with
+    match Universe.level (Sorts.univ_of_sort x) with
     | None -> Inl x
     | Some l -> Inr l
   in
@@ -216,7 +222,7 @@ let process_universe_constraints uctx cstrs =
         (* Two rigid/global levels, none of them being local,
             one of them being Prop/Set, disallow *)
         if Level.is_small l' || Level.is_small r' then
-          raise (UniverseInconsistency (Eq, l, r, None))
+          sort_inconsistency Eq l r
         else if fo then
           raise UniversesDiffer
     in
@@ -226,17 +232,18 @@ let process_universe_constraints uctx cstrs =
   | Inr l', Inr r' -> equalize_variables false l l' r r' local
   | Inr l, Inl r | Inl r, Inr l ->
     let alg = Level.Set.mem l uctx.univ_algebraic in
-    let inst = univ_level_rem l r r in
+    let ru = Sorts.univ_of_sort r in
+    let inst = univ_level_rem l ru ru in
       if alg && not (Level.Set.mem l (Universe.levels inst)) then
-        (instantiate_variable l inst vars; local)
+        (instantiate_variable l (Sorts.sort_of_univ inst) vars; local)
       else
         let lu = Universe.make l in
-        if univ_level_mem l r then
+        if univ_level_mem l ru then
           enforce_leq inst lu local
-        else raise (UniverseInconsistency (Eq, lu, r, None))
+        else sort_inconsistency Eq (Sorts.sort_of_univ lu) r
   | Inl _, Inl _ (* both are algebraic *) ->
-    if UGraph.check_eq univs l r then local
-    else raise (UniverseInconsistency (Eq, l, r, None))
+    if Sorts.check_eq_sort univs l r then local
+    else sort_inconsistency Eq l r
   in
   let unify_universes cst local =
     let cst = nf_constraint cst in
@@ -244,31 +251,31 @@ let process_universe_constraints uctx cstrs =
       else
           match cst with
           | ULe (l, r) ->
-            begin match Univ.Universe.level r with
+            begin match Univ.Universe.level (Sorts.univ_of_sort r) with
             | None ->
-              if UGraph.check_leq univs l r then local
+              if Sorts.check_leq_sort univs l r then local
               else user_err Pp.(str "Algebraic universe on the right")
             | Some r' ->
               if Level.is_small r' then
-                  if not (Universe.is_levels l)
+                  if not (Universe.is_levels (Sorts.univ_of_sort l))
                   then (* l contains a +1 and r=r' small so l <= r impossible *)
-                    raise (UniverseInconsistency (Le, l, r, None))
+                    sort_inconsistency Le l r
                   else
-                    if UGraph.check_leq univs l r then match Univ.Universe.level l with
+                    if Sorts.check_leq_sort univs l r then match Univ.Universe.level (Sorts.univ_of_sort l) with
                     | Some l ->
                       Univ.Constraints.add (l, Le, r') local
                     | None -> local
                     else
-                    let levels = Universe.levels l in
+                    let levels = Sorts.levels l in
                     let fold l' local =
-                      let l = Universe.make l' in
+                      let l = Sorts.sort_of_univ @@ Universe.make l' in
                       if Level.is_small l' || is_local l' then
                         equalize_variables false l l' r r' local
-                      else raise (UniverseInconsistency (Le, l, r, None))
+                      else sort_inconsistency Le l r
                     in
                     Level.Set.fold fold levels local
               else
-                match Univ.Universe.level l with
+                match Univ.Universe.level (Sorts.univ_of_sort l) with
                 | Some l ->
                   Univ.Constraints.add (l, Le, r') local
                 | None ->
@@ -280,10 +287,10 @@ let process_universe_constraints uctx cstrs =
                      Hence, by doing this, we avoid a costly check here, and
                      make further checks of this constraint easier since it will
                      exist directly in the graph. *)
-                  enforce_leq l r local
+                  Sorts.enforce_leq_sort l r local
               end
           | ULub (l, r) ->
-              equalize_variables true (Universe.make l) l (Universe.make r) r local
+              equalize_variables true (Sorts.sort_of_univ (Universe.make l)) l (Sorts.sort_of_univ (Universe.make r)) r local
           | UWeak (l, r) ->
             if not (drop_weak_constraints ()) then weak := UPairSet.add (l,r) !weak; local
           | UEq (l, r) -> equalize_universes l r local
@@ -300,13 +307,13 @@ let process_universe_constraints uctx cstrs =
 let add_constraints uctx cstrs =
   let univs, old_cstrs = uctx.local in
   let cstrs' = Constraints.fold (fun (l,d,r) acc ->
-    let l = Universe.make l and r = Universe.make r in
+    let l = Universe.make l and r = Sorts.sort_of_univ @@ Universe.make r in
     let cstr' = let open UnivProblem in
       match d with
       | Lt ->
-        ULe (Universe.super l, r)
-      | Le -> ULe (l, r)
-      | Eq -> UEq (l, r)
+        ULe (Sorts.sort_of_univ @@ Universe.super l, r)
+      | Le -> ULe (Sorts.sort_of_univ l, r)
+      | Eq -> UEq (Sorts.sort_of_univ l, r)
     in UnivProblem.Set.add cstr' acc)
     cstrs UnivProblem.Set.empty
   in

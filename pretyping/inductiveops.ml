@@ -675,6 +675,9 @@ let arity_of_case_predicate env (ind,params) dep k =
 (* Inferring the sort of parameters of a polymorphic inductive type
    knowing the sort of the conclusion *)
 
+let univ_level_mem l s = match s with
+| Prop | Set | SProp -> false
+| Type u -> univ_level_mem l u
 
 (* Compute the inductive argument types: replace the sorts
    that appear in the type of the inductive by the sort of the
