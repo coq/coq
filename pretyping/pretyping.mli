@@ -142,7 +142,13 @@ val ise_pretype_gen :
 
 (** {6 Open-recursion style pretyper} *)
 
-type 'a pretype_fun = ?loc:Loc.t -> program_mode:bool -> poly:bool -> bool -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
+type pretype_flags = {
+  poly : bool;
+  resolve_tc : bool;
+  program_mode : bool;
+}
+
+type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a
 
 type pretyper = {
   pretype_ref : pretyper -> GlobRef.t * glob_level list option -> unsafe_judgment pretype_fun;
@@ -176,4 +182,4 @@ type pretyper = {
 val default_pretyper : pretyper
 (** Coq vanilla pretyper. *)
 
-val eval_pretyper : pretyper -> program_mode:bool -> poly:bool -> bool -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment
+val eval_pretyper : pretyper -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment
