@@ -541,7 +541,7 @@ let inh_app_fun_core ~program_mode env sigma body typ =
       else Exninfo.iraise (NoCoercion,info)
 
 (* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
-let inh_app_fun ~program_mode resolve_tc env sigma body typ =
+let inh_app_fun ~program_mode ~resolve_tc env sigma body typ =
   try inh_app_fun_core ~program_mode env sigma body typ
   with
   | NoCoercion when not resolve_tc
@@ -635,7 +635,7 @@ let rec inh_conv_coerce_to_fail ?loc env sigma ?(flags=default_flags_of env) rig
         Exninfo.iraise (NoCoercionNoUnifier (best_failed_sigma,e), info)
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env sigma cj t =
+let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc rigidonly flags env sigma cj t =
   let (sigma, val', otrace) =
     try
       let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc env sigma ~flags rigidonly cj.uj_val cj.uj_type t in
@@ -667,7 +667,7 @@ let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env sig
   in
   (sigma,{ uj_val = val'; uj_type = t },otrace)
 
-let inh_conv_coerce_to ?loc ~program_mode resolve_tc env sigma ?(flags=default_flags_of env) =
-  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc false flags env sigma
-let inh_conv_coerce_rigid_to ?loc ~program_mode resolve_tc env sigma ?(flags=default_flags_of env) =
-  inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc true flags env sigma
+let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc env sigma ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc false flags env sigma
+let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc env sigma ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc true flags env sigma

@@ -44,11 +44,11 @@ val remove_subset : env -> evar_map -> types -> types
     applicable. resolve_tc=false disables resolving type classes (as the last
     resort before failing) *)
 
-val inh_conv_coerce_to : ?loc:Loc.t -> program_mode:bool -> bool ->
+val inh_conv_coerce_to : ?loc:Loc.t -> program_mode:bool -> resolve_tc:bool ->
   env -> evar_map -> ?flags:Evarconv.unify_flags ->
   unsafe_judgment -> types -> evar_map * unsafe_judgment * coercion_trace option
 
-val inh_conv_coerce_rigid_to : ?loc:Loc.t -> program_mode:bool ->bool ->
+val inh_conv_coerce_rigid_to : ?loc:Loc.t -> program_mode:bool -> resolve_tc:bool ->
   env -> evar_map -> ?flags:Evarconv.unify_flags ->
   unsafe_judgment -> types -> evar_map * unsafe_judgment * coercion_trace option
 
@@ -74,5 +74,5 @@ val reapply_coercions_body : evar_map -> coercion_trace -> delayed_app_body -> d
     type a product; it returns [j] if no coercion is applicable.
     resolve_tc=false disables resolving type classes (as the last
     resort before failing) *)
-val inh_app_fun : program_mode:bool -> bool ->
+val inh_app_fun : program_mode:bool -> resolve_tc:bool ->
   env -> evar_map -> delayed_app_body -> types -> evar_map * delayed_app_body * types * coercion_trace

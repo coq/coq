@@ -441,7 +441,7 @@ let adjust_tomatch_to_pattern ~program_mode sigma pb ((current,typ),deps,dep) =
                 | exception Evarconv.UnableToUnify _ -> sigma, current
                 | sigma -> sigma, current
               else
-                let sigma, j, _trace = Coercion.inh_conv_coerce_to ?loc ~program_mode true !!(pb.env) sigma (make_judge current typ) indt in
+                let sigma, j, _trace = Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc:true !!(pb.env) sigma (make_judge current typ) indt in
                 sigma, j.uj_val
             in
             sigma, (current, try_find_ind !!(pb.env) sigma indt names))
@@ -2009,7 +2009,7 @@ let inh_conv_coerce_to_tycon ?loc ~program_mode env sigma j tycon =
   match tycon with
     | Some p ->
       let (evd,v,_trace) =
-        Coercion.inh_conv_coerce_to ?loc ~program_mode true env sigma
+        Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc:true env sigma
           ~flags:(default_flags_of TransparentState.full) j p
       in
       (evd,v)
