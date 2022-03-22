@@ -201,15 +201,16 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
     let ((kn, i),_ as indu), unfolded_c_ty =
       Tacred.reduce_to_quantified_ind env sigma c_ty in
     let sort = Retyping.get_sort_family_of env sigma concl in
-    let sigma, elim =
+    let sigma, elim, elimty =
       if not is_case then
-        Evd.fresh_global env sigma (Indrec.lookup_eliminator env (kn,i) sort)
+        let sigma, elim = Evd.fresh_global env sigma (Indrec.lookup_eliminator env (kn,i) sort) in
+        let elimty = Retyping.get_type_of env sigma elim in
+        sigma, elim, elimty
       else
-          let indu = (fst indu, EConstr.EInstance.kind sigma (snd indu)) in
-          let (sigma, ind) = Indrec.build_case_analysis_scheme env sigma indu true sort in
-          (sigma, EConstr.of_constr ind)
+        let indu = (fst indu, EConstr.EInstance.kind sigma (snd indu)) in
+        let (sigma, ind, indty) = Indrec.build_case_analysis_scheme env sigma indu true sort in
+        (sigma, EConstr.of_constr ind, EConstr.of_constr indty)
     in
-    let sigma, elimty = Typing.type_of env sigma elim in
     let pred_id,n_elim_args,is_rec,elim_is_dep,n_pred_args,ctx_concl =
       analyze_eliminator elimty env sigma in
     let seed =

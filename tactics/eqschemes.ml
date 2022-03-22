@@ -687,7 +687,7 @@ let fix_r2l_forward_rew_scheme env (c, ctx') =
 let build_r2l_rew_scheme dep env ind k =
   let sigma = Evd.from_env env in
   let (sigma, indu) = Evd.fresh_inductive_instance env sigma ind in
-  let (sigma, c) = build_case_analysis_scheme env sigma indu dep k in
+  let (sigma, c, _) = build_case_analysis_scheme env sigma indu dep k in
     c, Evd.evar_universe_context sigma
 
 (**********************************************************************)
