@@ -187,7 +187,7 @@ let drop_weak_constraints =
     ~value:false
 
 let sort_inconsistency cst l r =
-  raise (UGraph.UniverseInconsistency (cst, Sorts.univ_of_sort l, Sorts.univ_of_sort r, None))
+  raise (UGraph.UniverseInconsistency (cst, l, r, None))
 
 let subst_univs_sort normalize s =
   Sorts.sort_of_univ (subst_univs_universe normalize (Sorts.univ_of_sort s))
@@ -315,7 +315,9 @@ let process_universe_constraints uctx cstrs =
   (* Remove constraints mentioning Prop / SProp *)
   let maybe_univ_inconsistency c l r =
     if UGraph.type_in_type univs then false
-    else raise (UGraph.UniverseInconsistency (c, Universe.make l, Universe.make r, None))
+    else
+      let mk u = Sorts.sort_of_univ @@ Universe.make u in
+      raise (UGraph.UniverseInconsistency (c, mk l, mk r, None))
   in
   let filter (l, c, r) = match c with
   | Eq ->

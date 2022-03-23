@@ -33,7 +33,7 @@ type t = {
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-type univ_inconsistency = constraint_type * Universe.t * Universe.t * explanation Lazy.t option
+type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation Lazy.t option
 
 exception UniverseInconsistency of univ_inconsistency
 
@@ -106,7 +106,8 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
   if not (type_in_type g) then
     let (u, c, v) = cst in
     let e = lazy (G.get_explanation cst g.graph) in
-    raise (UniverseInconsistency (c, Universe.make u, Universe.make v, Some e))
+    let mk u = Sorts.sort_of_univ @@ Universe.make u in
+    raise (UniverseInconsistency (c, mk u, mk v, Some e))
   else g
 | Some g -> g
 
@@ -155,7 +156,8 @@ let enforce_leq_alg u v g =
   | Inl x -> x
   | Inr ((u, c, v), g) ->
     let e = lazy (G.get_explanation (u, c, v) g.graph) in
-    let e = UniverseInconsistency (c, Universe.make u, Universe.make v, Some e) in
+    let mk u = Sorts.sort_of_univ @@ Universe.make u in
+    let e = UniverseInconsistency (c, mk u, mk v, Some e) in
     raise e
 
 let enforce_leq_alg u v g =
@@ -164,7 +166,7 @@ let enforce_leq_alg u v g =
   | false, false -> enforce_leq_alg u v g
   | left, _ ->
     if left && g.sprop_cumulative then Constraints.empty, g
-    else raise (UniverseInconsistency (Le, u, v, None))
+    else raise (UniverseInconsistency (Le, Sorts.sort_of_univ u, Sorts.sort_of_univ v, None))
 
 (* sanity check wrapper *)
 let enforce_leq_alg u v g =
@@ -259,8 +261,6 @@ let enforce_eq_sort s1 s2 cst = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
 | (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
 | ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
-  let s1 = Sorts.univ_of_sort s1 in
-  let s2 = Sorts.univ_of_sort s2 in
   raise (UniverseInconsistency (Eq, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   Univ.enforce_eq (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) cst
@@ -270,8 +270,6 @@ let enforce_leq_sort s1 s2 cst = match s1, s2 with
 | (Prop, (Set | Type _)) -> cst
 | (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
 | ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
-  let s1 = Sorts.univ_of_sort s1 in
-  let s2 = Sorts.univ_of_sort s2 in
   raise (UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   Univ.enforce_leq (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) cst
@@ -284,8 +282,6 @@ let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
   if cumulative_sprop g && is_sprop s1 then
     Constraints.empty, g
   else
-    let s1 = Sorts.univ_of_sort s1 in
-    let s2 = Sorts.univ_of_sort s2 in
     raise (UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   enforce_leq_alg (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) g
@@ -321,7 +317,12 @@ let pr_universes prl g = pr_pmap Pp.mt (pr_arc prl) g
 open Pp
 
 let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
-  let pr_uni = Universe.pr_with prl in
+  let pr_uni u = match u with
+  | Sorts.Set -> str "Set"
+  | Sorts.Prop -> str "Prop"
+  | Sorts.SProp -> str "SProp"
+  | Sorts.Type u -> Universe.pr_with prl u
+  in
   let pr_rel = function
     | Eq -> str"=" | Lt -> str"<" | Le -> str"<="
   in
@@ -334,7 +335,7 @@ let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
         str " because" ++ spc() ++ pr_uni v ++
         prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v)
           p ++
-        (if Universe.equal (Universe.make (snd (CList.last p))) u then mt() else
+        (if Sorts.equal (Sorts.sort_of_univ (Universe.make (snd (CList.last p)))) u then mt() else
            (spc() ++ str "= " ++ pr_uni u))
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
