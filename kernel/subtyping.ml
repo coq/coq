@@ -91,7 +91,7 @@ let check_conv_error error why cst poly f env a1 a2 =
         else error (IncompatiblePolymorphism (env, a1, a2))
       else Constraints.union cst cst'
   with NotConvertible -> error why
-     | Univ.UniverseInconsistency e -> error (IncompatibleUniverses e)
+     | UGraph.UniverseInconsistency e -> error (IncompatibleUniverses e)
 
 let check_universes error env u1 u2 =
   match u1, u2 with

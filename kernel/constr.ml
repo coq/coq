@@ -1034,7 +1034,7 @@ let leq_constr_univs_infer univs m n =
           (try let c, _ = UGraph.enforce_leq_alg_sort s1 s2 univs in
             cstrs := Univ.Constraints.union c !cstrs;
             true
-          with Univ.UniverseInconsistency _ -> false)
+          with UGraph.UniverseInconsistency _ -> false)
     in
     let rec eq_constr' nargs m n =
       m == n || compare_head_gen eq_universes eq_sorts eq_constr' nargs m n

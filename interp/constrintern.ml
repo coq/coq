@@ -2809,10 +2809,10 @@ let interp_univ_constraints env evd cstrs =
     let cstrs' = Univ.Constraints.add cstr cstrs in
     try let evd = Evd.add_constraints evd (Univ.Constraints.singleton cstr) in
         evd, cstrs'
-    with Univ.UniverseInconsistency e as exn ->
+    with UGraph.UniverseInconsistency e as exn ->
       let _, info = Exninfo.capture exn in
       CErrors.user_err ~info
-        (Univ.explain_universe_inconsistency (Termops.pr_evd_level evd) e)
+        (UGraph.explain_universe_inconsistency (Termops.pr_evd_level evd) e)
   in
   List.fold_left interp (evd,Univ.Constraints.empty) cstrs
 

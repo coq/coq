@@ -432,7 +432,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
          let () = if irr_flex (info_env infos.cnv_inf) fl1 then raise NotConvertible (* trigger the fallback *) in
          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-       with NotConvertible | Univ.UniverseInconsistency _ ->
+       with NotConvertible | UGraph.UniverseInconsistency _ ->
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
         let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 in
         match r1, r2 with

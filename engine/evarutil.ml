@@ -859,7 +859,7 @@ let compare_cumulative_instances cv_pb variances u u' sigma =
   match Evd.add_constraints sigma cstrs with
   | sigma ->
     Inl (Evd.add_universe_constraints sigma soft)
-  | exception Univ.UniverseInconsistency p -> Inr p
+  | exception UGraph.UniverseInconsistency p -> Inr p
 
 let compare_constructor_instances evd u u' =
   let open UnivProblem in
@@ -889,7 +889,7 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
     if Sorts.equal s1 s2 then true
     else
       try sigma := add_universe_constraints !sigma UnivProblem.(Set.singleton (UEq (s1, s2))); true
-      with Univ.UniverseInconsistency _ | UniversesDiffer -> false
+      with UGraph.UniverseInconsistency _ | UniversesDiffer -> false
   in
   let kind1 = kind_of_term_upto evd in
   let kind2 = kind_of_term_upto extended_evd in

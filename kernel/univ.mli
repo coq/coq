@@ -243,9 +243,6 @@ val enforce_leq_level : Level.t constraint_function
   Constraints.t...
 *)
 type explanation = (constraint_type * Level.t) list
-type univ_inconsistency = constraint_type * Universe.t * Universe.t * explanation Lazy.t option
-
-exception UniverseInconsistency of univ_inconsistency
 
 (** {6 Support for universe polymorphism } *)
 
@@ -537,8 +534,6 @@ val pr_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t array ->
 val pr_abstract_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t array ->
   AbstractContext.t -> Pp.t
 val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
-val explain_universe_inconsistency : (Level.t -> Pp.t) ->
-  univ_inconsistency -> Pp.t
 
 val pr_universe_level_subst : universe_level_subst -> Pp.t
 val pr_universe_subst : universe_subst -> Pp.t

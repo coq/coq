@@ -213,7 +213,7 @@ val eq_constr_univs_test :
    if possible. Returns [Inr p] when the former is impossible. *)
 val compare_cumulative_instances : Reduction.conv_pb -> Univ.Variance.t array ->
   Univ.Instance.t -> Univ.Instance.t -> evar_map ->
-  (evar_map, Univ.univ_inconsistency) Util.union
+  (evar_map, UGraph.univ_inconsistency) Util.union
 
 (** We should only compare constructors at convertible types, so this
    is only an opportunity to unify universes. *)

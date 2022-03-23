@@ -241,11 +241,11 @@ let explain_exn = function
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ guill s ++ report ())
   | Sys.Break ->
     hov 0 (fnl () ++ str "User interrupt.")
-  | Univ.UniverseInconsistency i ->
+  | UGraph.UniverseInconsistency i ->
     let msg =
       if CDebug.(get_flag misc) then
         str "." ++ spc() ++
-          Univ.explain_universe_inconsistency Univ.Level.pr i
+          UGraph.explain_universe_inconsistency Univ.Level.pr i
       else
         mt() in
       hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")

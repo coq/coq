@@ -30,6 +30,13 @@ type t = {
   type_in_type : bool;
 }
 
+(* Universe inconsistency: error raised when trying to enforce a relation
+   that would create a cycle in the graph of universes. *)
+
+type univ_inconsistency = constraint_type * Universe.t * Universe.t * explanation Lazy.t option
+
+exception UniverseInconsistency of univ_inconsistency
+
 type 'a check_function = t -> 'a -> 'a -> bool
 
 let set_cumulative_sprop b g = {g with sprop_cumulative=b}
@@ -148,7 +155,7 @@ let enforce_leq_alg u v g =
   | Inl x -> x
   | Inr ((u, c, v), g) ->
     let e = lazy (G.get_explanation (u, c, v) g.graph) in
-    let e = Univ.UniverseInconsistency (c, Universe.make u, Universe.make v, Some e) in
+    let e = UniverseInconsistency (c, Universe.make u, Universe.make v, Some e) in
     raise e
 
 let enforce_leq_alg u v g =
@@ -254,7 +261,7 @@ let enforce_eq_sort s1 s2 cst = match s1, s2 with
 | ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
   let s1 = Sorts.univ_of_sort s1 in
   let s2 = Sorts.univ_of_sort s2 in
-  raise (Univ.UniverseInconsistency (Eq, s1, s2, None))
+  raise (UniverseInconsistency (Eq, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   Univ.enforce_eq (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) cst
 
@@ -265,7 +272,7 @@ let enforce_leq_sort s1 s2 cst = match s1, s2 with
 | ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
   let s1 = Sorts.univ_of_sort s1 in
   let s2 = Sorts.univ_of_sort s2 in
-  raise (Univ.UniverseInconsistency (Le, s1, s2, None))
+  raise (UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   Univ.enforce_leq (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) cst
 
@@ -279,7 +286,7 @@ let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
   else
     let s1 = Sorts.univ_of_sort s1 in
     let s2 = Sorts.univ_of_sort s2 in
-    raise (Univ.UniverseInconsistency (Le, s1, s2, None))
+    raise (UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   enforce_leq_alg (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) g
 
@@ -310,3 +317,25 @@ type node = G.node =
 let repr g = G.repr g.graph
 
 let pr_universes prl g = pr_pmap Pp.mt (pr_arc prl) g
+
+open Pp
+
+let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
+  let pr_uni = Universe.pr_with prl in
+  let pr_rel = function
+    | Eq -> str"=" | Lt -> str"<" | Le -> str"<="
+  in
+  let reason = match p with
+    | None -> mt()
+    | Some p ->
+      let p = Lazy.force p in
+      if p = [] then mt ()
+      else
+        str " because" ++ spc() ++ pr_uni v ++
+        prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v)
+          p ++
+        (if Universe.equal (Universe.make (snd (CList.last p))) u then mt() else
+           (spc() ++ str "= " ++ pr_uni u))
+  in
+    str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
+      pr_rel o ++ spc() ++ pr_uni v ++ reason

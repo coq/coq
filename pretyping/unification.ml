@@ -583,11 +583,11 @@ let constr_cmp pb env sigma flags ?nargs t u =
   match cstrs with
   | Some cstrs ->
       begin try Some (Evd.add_universe_constraints sigma cstrs)
-      with Univ.UniverseInconsistency _ -> None
+      with UGraph.UniverseInconsistency _ -> None
       | Evd.UniversesDiffer ->
         if is_rigid_head sigma flags t then
           try Some (Evd.add_universe_constraints sigma (force_eqs cstrs))
-          with Univ.UniverseInconsistency _ -> None
+          with UGraph.UniverseInconsistency _ -> None
         else None
       end
   | None ->
@@ -1060,7 +1060,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
           let uprob = UnivProblem.Set.union uprob uprob' in
           begin match Evd.add_universe_constraints sigma uprob with
           | sigma -> Some (sigma, metasubst, evarsubst)
-          | exception (Univ.UniverseInconsistency _ | UniversesDiffer) -> None
+          | exception (UGraph.UniverseInconsistency _ | UniversesDiffer) -> None
           end
         | None ->
           if is_ground_term sigma m1 && is_ground_term sigma n1 then

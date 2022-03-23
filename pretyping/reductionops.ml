@@ -1073,7 +1073,7 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
     let env = Environ.set_universes (Evd.universes sigma) env in
     try f ~reds:ts env ~evars:(existential_opt_value0 sigma) x y; true
     with Reduction.NotConvertible -> false
-    | Univ.UniverseInconsistency _ -> false
+    | UGraph.UniverseInconsistency _ -> false
     | e ->
       let e = Exninfo.capture e in
       report_anomaly e
@@ -1086,7 +1086,7 @@ let sigma_compare_sorts env pb s0 s1 sigma =
 let sigma_compare_instances ~flex i0 i1 sigma =
   try Evd.set_eq_instances ~flex sigma i0 i1
   with Evd.UniversesDiffer
-     | Univ.UniverseInconsistency _ ->
+     | UGraph.UniverseInconsistency _ ->
         raise Reduction.NotConvertible
 
 let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
@@ -1141,7 +1141,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
       | None -> None
       | Some cstr ->
         try Some (Evd.add_universe_constraints sigma cstr)
-        with Univ.UniverseInconsistency _ | Evd.UniversesDiffer -> None
+        with UGraph.UniverseInconsistency _ | Evd.UniversesDiffer -> None
       in
       match ans with
       | Some sigma -> ans
@@ -1155,7 +1155,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
         Some sigma'
   with
   | Reduction.NotConvertible -> None
-  | Univ.UniverseInconsistency _ when catch_incon -> None
+  | UGraph.UniverseInconsistency _ when catch_incon -> None
   | e ->
     let e = Exninfo.capture e in
     report_anomaly e
@@ -1184,7 +1184,7 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
         Some cstr
   with
   | Reduction.NotConvertible -> None
-  | Univ.UniverseInconsistency _ when catch_incon -> None
+  | UGraph.UniverseInconsistency _ when catch_incon -> None
   | e ->
     let e = Exninfo.capture e in
     report_anomaly e
