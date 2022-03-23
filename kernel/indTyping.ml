@@ -81,7 +81,7 @@ let check_univ_leq ?(is_real_arg=false) env u info =
     else info
   in
   (* Inductive types provide explicit lifting from SProp to other universes, so allow SProp <= any. *)
-  if Sorts.is_sprop u || Sorts.check_leq_sort (universes env) u ind_univ
+  if Sorts.is_sprop u || UGraph.check_leq_sort (universes env) u ind_univ
   then { info with ind_min_univ = Option.map (sup_sort u) info.ind_min_univ }
   else if is_impredicative_sort env ind_univ
        && Option.is_empty info.ind_min_univ then { info with ind_squashed = true }

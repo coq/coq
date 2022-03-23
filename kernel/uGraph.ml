@@ -224,6 +224,65 @@ let choose p g u =
 
 let check_universes_invariants g = G.check_invariants ~required_canonical:Level.is_set g.graph
 
+(** Sort comparison *)
+
+(* The functions below rely on the invariant that no universe in the graph
+   can be unified with Prop / SProp. This is ensured by UGraph, which only
+   contains Set as a "small" level. *)
+
+open Sorts
+
+let check_eq_sort ugraph s1 s2 = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
+| (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) ->
+  type_in_type ugraph
+| (Type _ | Set), (Type _ | Set) ->
+  check_eq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+
+let check_leq_sort ugraph s1 s2 = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
+| (SProp, _) -> cumulative_sprop ugraph || type_in_type ugraph
+| (Prop, SProp) -> type_in_type ugraph
+| (Prop, (Set | Type _)) -> true
+| (_, (SProp | Prop)) -> type_in_type ugraph
+| (Type _ | Set), (Type _ | Set) ->
+  check_leq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+
+let enforce_eq_sort s1 s2 cst = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  let s1 = Sorts.univ_of_sort s1 in
+  let s2 = Sorts.univ_of_sort s2 in
+  raise (Univ.UniverseInconsistency (Eq, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  Univ.enforce_eq (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) cst
+
+let enforce_leq_sort s1 s2 cst = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
+| (Prop, (Set | Type _)) -> cst
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  let s1 = Sorts.univ_of_sort s1 in
+  let s2 = Sorts.univ_of_sort s2 in
+  raise (Univ.UniverseInconsistency (Le, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  Univ.enforce_leq (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) cst
+
+let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
+| (Prop, (Set | Type _)) -> Constraints.empty, g
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  if cumulative_sprop g && is_sprop s1 then
+    Constraints.empty, g
+  else
+    let s1 = Sorts.univ_of_sort s1 in
+    let s2 = Sorts.univ_of_sort s2 in
+    raise (Univ.UniverseInconsistency (Le, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  enforce_leq_alg (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) g
+
 (** Pretty-printing *)
 
 let pr_pmap sep pr map =

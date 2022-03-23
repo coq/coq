@@ -32,8 +32,8 @@ let check_eq_level g u v =
   else UGraph.check_eq_level g u v
 
 let check g = function
-  | ULe (u,v) -> Sorts.check_leq_sort g u v
-  | UEq (u,v) -> Sorts.check_eq_sort g u v
+  | ULe (u,v) -> UGraph.check_leq_sort g u v
+  | UEq (u,v) -> UGraph.check_eq_sort g u v
   | ULub (u,v) -> check_eq_level g u v
   | UWeak _ -> true
 

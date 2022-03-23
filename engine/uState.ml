@@ -250,7 +250,7 @@ let process_universe_constraints uctx cstrs =
           enforce_leq inst lu local
         else sort_inconsistency Eq (Sorts.sort_of_univ lu) r
   | Inl _, Inl _ (* both are algebraic *) ->
-    if Sorts.check_eq_sort univs l r then local
+    if UGraph.check_eq_sort univs l r then local
     else sort_inconsistency Eq l r
   in
   let unify_universes cst local =
@@ -261,7 +261,7 @@ let process_universe_constraints uctx cstrs =
           | ULe (l, r) ->
             begin match Univ.Universe.level (Sorts.univ_of_sort r) with
             | None ->
-              if Sorts.check_leq_sort univs l r then local
+              if UGraph.check_leq_sort univs l r then local
               else user_err Pp.(str "Algebraic universe on the right")
             | Some r' ->
               if Level.is_small r' then
@@ -269,7 +269,7 @@ let process_universe_constraints uctx cstrs =
                   then (* l contains a +1 and r=r' small so l <= r impossible *)
                     sort_inconsistency Le l r
                   else
-                    if Sorts.check_leq_sort univs l r then match Univ.Universe.level (Sorts.univ_of_sort l) with
+                    if UGraph.check_leq_sort univs l r then match Univ.Universe.level (Sorts.univ_of_sort l) with
                     | Some l ->
                       Univ.Constraints.add (l, Le, r') local
                     | None -> local
@@ -295,7 +295,7 @@ let process_universe_constraints uctx cstrs =
                      Hence, by doing this, we avoid a costly check here, and
                      make further checks of this constraint easier since it will
                      exist directly in the graph. *)
-                  Sorts.enforce_leq_sort l r local
+                  UGraph.enforce_leq_sort l r local
               end
           | ULub (l, r) ->
               equalize_variables true (Sorts.sort_of_univ (Universe.make l)) l (Sorts.sort_of_univ (Universe.make r)) r local
