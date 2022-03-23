@@ -19,9 +19,6 @@ module type Point = sig
   val equal : t -> t -> bool
   val compare : t -> t -> int
 
-  type explanation = (constraint_type * t) list
-  val error_inconsistency : constraint_type -> t -> t -> explanation lazy_t option -> 'a
-
   val pr : t -> Pp.t
 end
 
@@ -578,9 +575,6 @@ module Make (Point:Point) = struct
     if u == v then [(Eq, Index.repr v.canon g.table)]
     else match traverse strict u with Some exp -> exp | None -> assert false
 
-  let get_explanation strict u v g =
-    Some (lazy (get_explanation strict u v g))
-
   (* To compare two nodes, we simply do a forward search.
      We implement two improvements:
      - we ignore nodes that are higher than the destination;
@@ -658,39 +652,42 @@ module Make (Point:Point) = struct
   let check_leq g u v = check_smaller g false u v
   let check_lt g u v = check_smaller g true u v
 
+  let get_explanation (u, c, v) g = match c with
+  | Eq ->
+    (* Redo the search, not important because this is only used for display. *)
+    if check_lt g u v then get_explanation true u v g else get_explanation true v u g
+  | Le -> get_explanation true v u g
+  | Lt -> get_explanation false v u g
+
   (* enforce_eq g u v will force u=v if possible, will fail otherwise *)
 
   let enforce_eq u v g =
     let ucan = repr_node g u in
     let vcan = repr_node g v in
-    if ucan == vcan then g
+    if ucan == vcan then Some g
     else if topo_compare ucan vcan = 1 then
       let ucan = vcan and vcan = ucan in
       let g = insert_edge false ucan vcan g in  (* Cannot fail *)
-      try insert_edge false vcan ucan g
-      with CycleDetected ->
-        Point.error_inconsistency Eq v u (get_explanation true v u g)
+      try Some (insert_edge false vcan ucan g)
+      with CycleDetected -> None
     else
       let g = insert_edge false ucan vcan g in  (* Cannot fail *)
-      try insert_edge false vcan ucan g
-      with CycleDetected ->
-        Point.error_inconsistency Eq v u (get_explanation true u v g)
+      try Some (insert_edge false vcan ucan g)
+      with CycleDetected -> None
 
   (* enforce_leq g u v will force u<=v if possible, will fail otherwise *)
   let enforce_leq u v g =
     let ucan = repr_node g u in
     let vcan = repr_node g v in
-    try insert_edge false ucan vcan g
-    with CycleDetected ->
-      Point.error_inconsistency Le u v (get_explanation true v u g)
+    try Some (insert_edge false ucan vcan g)
+    with CycleDetected -> None
 
   (* enforce_lt u v will force u<v if possible, will fail otherwise *)
   let enforce_lt u v g =
     let ucan = repr_node g u in
     let vcan = repr_node g v in
-    try insert_edge true ucan vcan g
-    with CycleDetected ->
-      Point.error_inconsistency Lt u v (get_explanation false v u g)
+    try Some (insert_edge true ucan vcan g)
+    with CycleDetected -> None
 
   let empty =
     { entries = PMap.empty; index = 0; n_nodes = 0; n_edges = 0; table = Index.empty }

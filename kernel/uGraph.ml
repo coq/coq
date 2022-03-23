@@ -18,10 +18,6 @@ module G = AcyclicGraph.Make(struct
     let equal = Level.equal
     let compare = Level.compare
 
-    type explanation = Univ.explanation
-    let error_inconsistency d u v p =
-      raise (UniverseInconsistency (d,Universe.make u, Universe.make v, p))
-
     let pr = Level.pr
   end) [@@inlined] (* without inline, +1% ish on HoTT, compcert. See jenkins 594 vs 596 *)
 (* Do not include G to make it easier to control universe specific
@@ -35,11 +31,6 @@ type t = {
 }
 
 type 'a check_function = t -> 'a -> 'a -> bool
-
-let g_map f g =
-  let g' = f g.graph in
-  if g.graph == g' then g
-  else {g with graph=g'}
 
 let set_cumulative_sprop b g = {g with sprop_cumulative=b}
 
@@ -97,12 +88,20 @@ let enforce_constraint (u,d,v) g =
   | Lt -> G.enforce_lt u v g
   | Eq -> G.enforce_eq u v g
 
-let enforce_constraint cst g =
-  g_map (enforce_constraint cst) g
+let enforce_constraint0 cst g = match enforce_constraint cst g.graph with
+| None -> None
+| Some g' ->
+  if g' == g.graph then Some g
+  else Some { g with graph = g' }
 
-let enforce_constraint cst g =
-  if not (type_in_type g) then enforce_constraint cst g
-  else try enforce_constraint cst g with UniverseInconsistency _ -> g
+let enforce_constraint cst g = match enforce_constraint0 cst g with
+| None ->
+  if not (type_in_type g) then
+    let (u, c, v) = cst in
+    let e = lazy (G.get_explanation cst g.graph) in
+    raise (UniverseInconsistency (c, Universe.make u, Universe.make v, Some e))
+  else g
+| Some g -> g
 
 let merge_constraints csts g = Constraints.fold enforce_constraint csts g
 
@@ -130,9 +129,9 @@ let enforce_leq_alg u v g =
       if check_smaller_expr g u v then orig
       else
         (let c = leq_expr u v in
-         match enforce_constraint c g with
-         | g -> Inl (Constraints.add c cstrs,g)
-         | exception (UniverseInconsistency _ as e) -> Inr e)
+         match enforce_constraint0 c g with
+         | Some g -> Inl (Constraints.add c cstrs,g)
+         | None -> Inr (c, g))
   in
   (* max(us) <= max(vs) <-> forall u in us, exists v in vs, u <= v *)
   let c = List.map (fun u -> List.map (fun v -> (u,v)) (Universe.repr v)) (Universe.repr u) in
@@ -147,7 +146,10 @@ let enforce_leq_alg u v g =
   in
   match List.min order c with
   | Inl x -> x
-  | Inr e -> raise e
+  | Inr ((u, c, v), g) ->
+    let e = lazy (G.get_explanation (u, c, v) g.graph) in
+    let e = Univ.UniverseInconsistency (c, Universe.make u, Universe.make v, Some e) in
+    raise e
 
 let enforce_leq_alg u v g =
   match Universe.is_sprop u, Universe.is_sprop v with

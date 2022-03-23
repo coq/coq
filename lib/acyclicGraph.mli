@@ -21,9 +21,6 @@ module type Point = sig
   val equal : t -> t -> bool
   val compare : t -> t -> int
 
-  type explanation = (constraint_type * t) list
-  val error_inconsistency : constraint_type -> t -> t -> explanation lazy_t option -> 'a
-
   val pr : t -> Pp.t
 end
 
@@ -51,9 +48,13 @@ module Make (Point:Point) : sig
   val check_leq : Point.t check_function
   val check_lt : Point.t check_function
 
-  val enforce_eq : Point.t -> Point.t -> t -> t
-  val enforce_leq : Point.t -> Point.t -> t -> t
-  val enforce_lt : Point.t -> Point.t -> t -> t
+  val enforce_eq : Point.t -> Point.t -> t -> t option
+  val enforce_leq : Point.t -> Point.t -> t -> t option
+  val enforce_lt : Point.t -> Point.t -> t -> t option
+
+  val get_explanation : (Point.t * constraint_type * Point.t) -> t -> (constraint_type * Point.t) list
+  (** Assuming that the corresponding call to [enforce_*] returned [None], this
+      will give a trace for the failure. *)
 
   type 'a constraint_fold = Point.t * constraint_type * Point.t -> 'a -> 'a
 
