@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Sorts
 open Util
 open Pp
 open Names
@@ -98,8 +97,8 @@ let define_pure_evar_as_product env evd evk =
         let evd3, (rng, srng) =
           new_type_evar newenv evd1 status ~src ~filter
         in
-        let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
-        let evd3 = Evd.set_leq_sort evenv evd3 (Sorts.sort_of_univ prods) (ESorts.kind evd1 s) in
+        let prods = Typeops.sort_of_product env u1 srng in
+        let evd3 = Evd.set_leq_sort evenv evd3 prods (ESorts.kind evd1 s) in
           evd3, rng
   in
   let prod = mkProd (make_annot (Name id) rdom, dom, subst_var id rng) in
@@ -191,12 +190,13 @@ let define_pure_evar_as_array env sigma evk =
   let evenv = evar_env env evi in
   let evksrc = evar_source evk sigma in
   let src = subterm_source evk ~where:Domain evksrc in
-  let sigma, (ty,u) = new_type_evar evenv sigma univ_flexible ~src ~filter:(evar_filter evi) in
+  let sigma, u = new_univ_level_variable univ_flexible sigma in
+  let s' = Sorts.sort_of_univ @@ Univ.Universe.make u in
+  let sigma, ty = new_evar evenv sigma ~typeclass_candidate:false ~src ~filter:(evar_filter evi) (mkSort s') in
   let concl = Reductionops.whd_all evenv sigma evi.evar_concl in
   let s = destSort sigma concl in
   (* array@{u} ty : Type@{u} <= Type@{s} *)
-  let sigma = Evd.set_leq_sort env sigma u (ESorts.kind sigma s) in
-  let u = Option.get (Univ.Universe.level (Sorts.univ_of_sort u)) in
+  let sigma = Evd.set_leq_sort env sigma s' (ESorts.kind sigma s) in
   let ar = Typeops.type_of_array env (Univ.Instance.of_array [|u|]) in
   let sigma = Evd.define evk (mkApp (EConstr.of_constr ar, [| ty |])) sigma in
   sigma

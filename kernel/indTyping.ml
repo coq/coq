@@ -307,7 +307,10 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       args,out)
       splayed_lc
   in
-  let ind_univ = Sorts.sort_of_univ  (Univ.subst_univs_level_universe usubst (Sorts.univ_of_sort univ_info.ind_univ)) in
+  let ind_univ = match univ_info.ind_univ with
+  | Prop | SProp | Set -> univ_info.ind_univ
+  | Type u -> Sorts.sort_of_univ (Univ.subst_univs_level_universe usubst u)
+  in
 
   let arity = match univ_info.ind_min_univ with
     | None -> RegularArity {mind_user_arity = arity; mind_sort = ind_univ}

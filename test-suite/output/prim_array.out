@@ -4,6 +4,6 @@
      : array nat
 [| | 0 : nat |]@{Set}
      : array@{Set} nat
-[| bool; list nat | nat : Set |]@{prim_array.4}
-     : array@{prim_array.4} Set
-(* {prim_array.4} |= Set < prim_array.4 *)
+[| bool; list nat | nat : Set |]@{prim_array.8}
+     : array@{prim_array.8} Set
+(* {prim_array.8} |= Set < prim_array.8 *)

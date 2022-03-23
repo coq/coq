@@ -194,7 +194,9 @@ let extract_level env evd min tys =
       sign_level env evd (LocalAssum (make_annot Anonymous Sorts.Relevant, concl) :: ctx)) tys
   in sup_list min sorts
 
-let is_flexible_sort evd u =
+let is_flexible_sort evd s = match s with
+| Set | Prop | SProp -> false
+| Type u ->
   match Univ.Universe.level u with
   | Some l -> Evd.is_flexible_level evd l
   | None -> false
@@ -324,10 +326,9 @@ let inductive_levels env evd arities inds =
             Evd.set_leq_sort env evd Sorts.set du
           else evd
         in
-        let duu = Sorts.univ_of_sort du in
         let template_prop, evd, arity =
           if not (Sorts.is_small du) && Sorts.equal cu du then
-            if is_flexible_sort evd duu && not (Evd.check_leq evd Sorts.set du)
+            if is_flexible_sort evd du && not (Evd.check_leq evd Sorts.set du)
             then if Term.isArity arity
             (* If not a syntactic arity, the universe may be used in a
                polymorphic instance and so cannot be lowered to Prop.
