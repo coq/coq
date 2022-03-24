@@ -119,21 +119,28 @@ Remark: Set (predicative) is encoded as Type(0)
 
 (* Template polymorphism *)
 
+let max_template_universe u v = u @ v
+
 (* cons_subst add the mapping [u |-> su] in subst if [u] is not *)
 (* in the domain or add [u |-> sup x su] if [u] is already mapped *)
 (* to [x]. *)
 let cons_subst u su subst =
-  let su = Sorts.univ_of_sort su in
+  let su = match su with
+  | Sorts.SProp -> assert false (* No template on SProp *)
+  | Sorts.Prop -> []
+  | Sorts.Set -> [Universe.type0]
+  | Sorts.Type u -> [u]
+  in
   try
-    Univ.Level.Map.add u (Univ.sup (Univ.Level.Map.find u subst) su) subst
+    Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
   with Not_found -> Univ.Level.Map.add u su subst
 
 (* remember_subst updates the mapping [u |-> x] by [u |-> sup x u] *)
 (* if it is presents and returns the substitution unchanged if not.*)
 let remember_subst u subst =
   try
-    let su = Universe.make u in
-    Univ.Level.Map.add u (Univ.sup (Univ.Level.Map.find u subst) su) subst
+    let su = [Universe.make u] in
+    Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
   with Not_found -> subst
 
 type param_univs = (unit -> Sorts.t) list
@@ -178,11 +185,40 @@ exception SingletonInductiveBecomesProp of Id.t
 
 let subst_univs_sort subs = function
 | Sorts.Prop | Sorts.Set | Sorts.SProp as s -> s
-| Sorts.Type u -> Sorts.sort_of_univ (Univ.subst_univs_universe subs u)
+| Sorts.Type u ->
+  (* We implement by hand a max on universes that handles Prop *)
+  let u = Universe.repr u in
+  let supern u n = iterate Universe.super n u in
+  let map (u, n) =
+    if Level.is_prop u || Level.is_sprop u then assert false
+    else if Level.is_set u then [Universe.type0, n]
+    else match Level.Map.find u subs with
+    | [] ->
+      if Int.equal n 0 then
+        (* This is an instantiation of a template universe by Prop, ignore it *)
+        []
+      else
+        (* Prop + S n actually means Set + S n *)
+        [Universe.type0, n]
+    | _ :: _ as vs ->
+      List.map (fun v -> (v, n)) vs
+    | exception Not_found ->
+      (* Either an unbound template universe due to missing arguments, or a
+         global one appearing in the inductive arity. *)
+      [Universe.make u, n]
+  in
+  let u = List.map_append map u in
+  match u with
+  | [] ->
+    (* No constraints, fall in Prop *)
+    Sorts.prop
+  | (u,n) :: rest ->
+    let fold accu (u, n) = Universe.sup accu (supern u n) in
+    Sorts.sort_of_univ (List.fold_left fold (supern u n) rest)
 
 let instantiate_universes ctx (templ, ar) args =
   let subst = make_subst (ctx,templ.template_param_levels,args) in
-  let ty = subst_univs_sort (Univ.make_subst subst) ar.template_level in
+  let ty = subst_univs_sort subst ar.template_level in
   (ctx, ty)
 
 (* Type of an inductive type *)

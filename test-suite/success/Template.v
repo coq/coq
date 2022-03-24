@@ -172,3 +172,11 @@ Definition B := Set : Type@{u}.
 End S.
 Fail Check box True : Prop.
 End OkNotCovered.
+
+Module BoxBox.
+
+  Inductive Box (A:Type) := box (_:A).
+  Inductive Box' (A:Type) := box' (_:Box A).
+  Check Box' True : Prop.
+
+End BoxBox.

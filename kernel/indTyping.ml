@@ -70,9 +70,12 @@ type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
                    missing : Sorts.t list; (* missing u <= ind_univ constraints *)
                  }
 
-let sup_sort s1 s2 =
-  let open Sorts in
-  sort_of_univ (Universe.sup (univ_of_sort s1) (univ_of_sort s2))
+let sup_sort s1 s2 = match s1, s2 with
+| (_, SProp) -> assert false (* template SProp not allowed *)
+| (SProp, s) | (Prop, s) | (s, Prop) -> s
+| (Set, Set) -> Sorts.set
+| (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Universe.sup u Universe.type0)
+| (Type u, Type v) -> Sorts.sort_of_univ (Universe.sup u v)
 
 let check_univ_leq ?(is_real_arg=false) env u info =
   let ind_univ = info.ind_univ in
