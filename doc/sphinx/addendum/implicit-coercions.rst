@@ -122,6 +122,14 @@ Declaring Coercions
   and then declares :token:`ident` as a coercion between it source and its target.
   Both forms support the :attr:`local` attribute, which makes the coercion local to the current section.
 
+  This command supports the :attr:`local` and :attr:`global` attributes
+  (described :ref:`here <set_unset_scope_qualifiers>`) as well as the
+  :attr:`nonuniform` attribute.
+
+  .. attr:: nonuniform
+
+     Silence the non uniform inheritance warning.
+
   .. exn:: @qualid not declared.
      :undocumented:
 
@@ -147,6 +155,7 @@ Declaring Coercions
 
      The :ref:`test for ambiguous coercion paths <ambiguous-paths>`
      may yield false positives involving the coercion :token:`qualid`.
+     Use the :attr:`nonuniform` attribute to silence this warning.
 
   .. warn:: New coercion path ... is ambiguous with existing ...
 
