@@ -175,6 +175,14 @@ let interp_cstrs env (sigma, ind_rel) impls params ind arity =
   in
   (sigma, pred ind_rel), (cnames, ctyps, cimpls)
 
+(** FIXME: This is a horrible hack, use a saner heuristic *)
+let max_sort s1 s2 = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> s1
+| (SProp, (Prop | Set | Type _ as s)) | ((Prop | Set | Type _) as s, SProp) -> s
+| (Prop, (Set | Type _ as s)) | ((Set | Type _) as s, Prop) -> s
+| (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Univ.Universe.sup Univ.Universe.type0 u)
+| (Type u, Type v) -> Sorts.sort_of_univ (Univ.Universe.sup u v)
+
 let sign_level env evd sign =
   fst (List.fold_right
     (fun d (lev,env) ->
@@ -182,11 +190,10 @@ let sign_level env evd sign =
       | LocalDef _ -> lev, push_rel d env
       | LocalAssum _ ->
         let s = Retyping.get_sort_of env evd (EConstr.of_constr (RelDecl.get_type d)) in
-        let u = univ_of_sort s in
-          (Univ.sup u lev, push_rel d env))
-    sign (Univ.Universe.sprop,env))
+          (max_sort s lev, push_rel d env))
+    sign (Sorts.sprop,env))
 
-let sup_list min = List.fold_left Univ.sup min
+let sup_list min = List.fold_left max_sort min
 
 let extract_level env evd min tys =
   let sorts = List.map (fun ty ->
@@ -222,8 +229,11 @@ where
 *)
 
 let is_direct_sort_constraint s v = match s with
-  | Some u -> Univ.univ_level_mem u v
-  | None -> false
+| None -> false
+| Some u ->
+  match v with
+  | Sorts.Prop | Sorts.Set | Sorts.SProp -> false
+  | Sorts.Type v -> Univ.univ_level_mem u v
 
 let solve_constraints_system levels level_bounds =
   let open Univ in
@@ -233,7 +243,7 @@ let solve_constraints_system levels level_bounds =
       | Some u ->
         (match Universe.level u with
         | Some u -> Some u
-        | _ -> level_bounds.(i) <- Universe.sup level_bounds.(i) u; None)
+        | _ -> level_bounds.(i) <- max_sort level_bounds.(i) (Sorts.sort_of_univ u); None)
       | None -> None)
       levels in
   let v = Array.copy level_bounds in
@@ -262,31 +272,33 @@ let solve_constraints_system levels level_bounds =
   for i=0 to nind-1 do
     for j=0 to nind-1 do
       if not (Int.equal i j) && Int.Set.mem j clos.(i) then
-        (v.(i) <- Universe.sup v.(i) level_bounds.(j));
+        (v.(i) <- max_sort v.(i) level_bounds.(j));
     done;
   done;
-  Array.map Sorts.sort_of_univ v
+  v
 
 let inductive_levels env evd arities inds =
   let destarities = List.map (fun x -> x, Reduction.dest_arity env x) arities in
-  let levels = List.map (fun (x,(ctx,a)) ->
-    if Sorts.is_prop a || Sorts.is_sprop a then None
-    else Some (univ_of_sort a)) destarities
+  let map (x, (ctx, s)) = match s with
+  | Prop | SProp -> None
+  | Set -> Some Univ.Universe.type0
+  | Type u -> Some u
   in
+  let levels = List.map map destarities in
   let cstrs_levels, sizes =
     CList.split (List.map2 (fun (_,tys) (arity,(ctx,du)) ->
         let len = List.length tys in
-        let minlev = Sorts.univ_of_sort du in
+        let minlev = du in
         let minlev =
           if len > 1 && not (is_impredicative_sort env du) then
-            Univ.sup minlev Univ.type0_univ
+            max_sort minlev Sorts.set
           else minlev
         in
         let minlev =
           (* Indices contribute. *)
           if indices_matter env then begin
             let ilev = sign_level env evd ctx in
-            Univ.sup ilev minlev
+            max_sort ilev minlev
           end
           else minlev
         in

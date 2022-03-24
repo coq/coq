@@ -83,15 +83,23 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
   in
   sigma, (impls, newfs)
 
+(** FIXME: This is a horrible hack, use a saner heuristic *)
+let max_sort s1 s2 = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> s1
+| (SProp, (Prop | Set | Type _ as s)) | ((Prop | Set | Type _) as s, SProp) -> s
+| (Prop, (Set | Type _ as s)) | ((Set | Type _) as s, Prop) -> s
+| (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Univ.Universe.sup Univ.Universe.type0 u)
+| (Type u, Type v) -> Sorts.sort_of_univ (Univ.Universe.sup u v)
+
 let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
     let univ =
       if is_local_assum d then
         let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
-          Univ.sup (Sorts.univ_of_sort s) univ
+        max_sort s univ
       else univ
     in (EConstr.push_rel d env, univ))
-    l (env, Univ.Universe.sprop)
+    l (env, Sorts.sprop)
 
 let check_anonymous_type ind =
   match ind with
@@ -135,7 +143,7 @@ type projection_flags = {
    type-inference *)
 module DataR = struct
   type t =
-    { min_univ : Univ.Universe.t
+    { min_univ : Sorts.t
     ; arity : Constr.t
     ; implfs : Impargs.manual_implicits list
     ; fields : Constr.rel_declaration list
@@ -223,16 +231,16 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
   let fold sigma (typ, sort) (_, newfs) =
     let _, univ = compute_constructor_level sigma env_ar newfs in
-    let univ = if Sorts.is_sprop sort then univ else Univ.Universe.sup univ Univ.type0m_univ in
+    let univ = if Sorts.is_sprop sort then univ else max_sort univ Sorts.prop in
       if not def && is_impredicative_sort env0 sort then
         sigma, (univ, typ)
       else
-        let sigma = Evd.set_leq_sort env_ar sigma (Sorts.sort_of_univ univ) sort in
-        if Univ.is_small_univ univ &&
+        let sigma = Evd.set_leq_sort env_ar sigma univ sort in
+        if Sorts.is_small univ &&
            Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma sort) then
            (* We can assume that the level in aritysort is not constrained
                and clear it, if it is flexible *)
-   Evd.set_eq_sort env_ar sigma Sorts.set sort, (univ, EConstr.mkSort (Sorts.sort_of_univ univ))
+   Evd.set_eq_sort env_ar sigma Sorts.set sort, (univ, EConstr.mkSort univ)
         else sigma, (univ, typ)
   in
   let (sigma, typs) = List.fold_left2_map fold sigma typs data in
@@ -473,7 +481,7 @@ let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min
         param_levels fields
     in
     ComInductive.template_polymorphism_candidate ~ctor_levels univs params
-      (Some (Sorts.sort_of_univ min_univ))
+      (Some min_univ)
   in
   match template with
   | Some template, _ ->
