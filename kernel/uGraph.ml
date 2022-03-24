@@ -241,12 +241,17 @@ let check_universes_invariants g = G.check_invariants ~required_canonical:Level.
 
 open Sorts
 
+let get_algebraic = function
+| Prop | SProp -> assert false
+| Set -> Universe.type0
+| Type u -> u
+
 let check_eq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
 | (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) ->
   type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
-  check_eq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+  check_eq ugraph (get_algebraic s1) (get_algebraic s2)
 
 let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
@@ -255,7 +260,7 @@ let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (Prop, (Set | Type _)) -> true
 | (_, (SProp | Prop)) -> type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
-  check_leq ugraph (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2)
+  check_leq ugraph (get_algebraic s1) (get_algebraic s2)
 
 let enforce_eq_sort s1 s2 cst = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
@@ -263,7 +268,7 @@ let enforce_eq_sort s1 s2 cst = match s1, s2 with
 | ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
   raise (UniverseInconsistency (Eq, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
-  Univ.enforce_eq (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) cst
+  Univ.enforce_eq (get_algebraic s1) (get_algebraic s2) cst
 
 let enforce_leq_sort s1 s2 cst = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
@@ -272,7 +277,7 @@ let enforce_leq_sort s1 s2 cst = match s1, s2 with
 | ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
   raise (UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
-  Univ.enforce_leq (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) cst
+  Univ.enforce_leq (get_algebraic s1) (get_algebraic s2) cst
 
 let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
@@ -284,7 +289,7 @@ let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
   else
     raise (UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
-  enforce_leq_alg (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) g
+  enforce_leq_alg (get_algebraic s1) (get_algebraic s2) g
 
 (** Pretty-printing *)
 
