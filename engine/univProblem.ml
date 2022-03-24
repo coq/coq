@@ -25,10 +25,16 @@ let force = function
   | ULe _ | UEq _ | UWeak _ as cst -> cst
   | ULub (u,v) -> UEq (Sorts.sort_of_univ @@ Universe.make u, Sorts.sort_of_univ @@ Universe.make v)
 
+let not_in_graph u = Level.is_prop u || Level.is_sprop u
+
+let check_eq_level g u v =
+  if not_in_graph u || not_in_graph v then UGraph.type_in_type g || Level.equal u v
+  else UGraph.check_eq_level g u v
+
 let check g = function
   | ULe (u,v) -> Sorts.check_leq_sort g u v
   | UEq (u,v) -> Sorts.check_eq_sort g u v
-  | ULub (u,v) -> UGraph.check_eq_level g u v
+  | ULub (u,v) -> check_eq_level g u v
   | UWeak _ -> true
 
 module Set = struct

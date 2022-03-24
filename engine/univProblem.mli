@@ -29,6 +29,9 @@ val is_trivial : t -> bool
 
 val check : UGraph.t -> t -> bool
 
+(** Wrapper around the UGraph function to handle Prop *)
+val check_eq_level : UGraph.t -> Level.t -> Level.t -> bool
+
 module Set : sig
   include Set.S with type elt = t
 

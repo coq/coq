@@ -39,7 +39,7 @@ type t =
    universes : UGraph.t; (** The current graph extended with the local constraints *)
    universes_lbound : UGraph.Bound.t; (** The lower bound on universes (e.g. Set or Prop) *)
    initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
-   weak_constraints : UPairSet.t
+   minim_extra : UnivMinim.extra;
  }
 
 let initial_sprop_cumulative = UGraph.set_cumulative_sprop true UGraph.initial_universes
@@ -53,7 +53,7 @@ let empty =
     universes = initial_sprop_cumulative;
     universes_lbound = UGraph.Bound.Set;
     initial_universes = initial_sprop_cumulative;
-    weak_constraints = UPairSet.empty; }
+    minim_extra = UnivMinim.empty_extra; }
 
 let elaboration_sprop_cumul =
   Goptions.declare_bool_option_and_ref ~depr:false
@@ -89,7 +89,7 @@ let union uctx uctx' =
     let newus = Level.Set.diff (ContextSet.levels uctx'.local)
                                (ContextSet.levels uctx.local) in
     let newus = Level.Set.diff newus (Level.Map.domain uctx.univ_variables) in
-    let weak = UPairSet.union uctx.weak_constraints uctx'.weak_constraints in
+    let extra = UnivMinim.extra_union uctx.minim_extra uctx'.minim_extra in
     let declarenew g =
       Level.Set.fold (fun u g -> UGraph.add_universe u ~lbound:uctx.universes_lbound ~strict:false g) newus g
     in
@@ -107,7 +107,7 @@ let union uctx uctx' =
              let cstrsr = ContextSet.constraints uctx'.local in
              UGraph.merge_constraints cstrsr (declarenew uctx.universes));
         universes_lbound = uctx.universes_lbound;
-        weak_constraints = weak}
+        minim_extra = extra}
 
 let context_set uctx = uctx.local
 
@@ -192,12 +192,20 @@ let sort_inconsistency cst l r =
 let subst_univs_sort normalize s =
   Sorts.sort_of_univ (subst_univs_universe normalize (Sorts.univ_of_sort s))
 
+type level_kind = KProp | KSProp | KLevel
+
+let level_kind l =
+  if Level.is_prop l then KProp
+  else if Level.is_sprop l then KSProp
+  else KLevel (* necessarily Set / Var / UGlobal *)
+
 let process_universe_constraints uctx cstrs =
   let open UnivSubst in
   let open UnivProblem in
   let univs = uctx.universes in
   let vars = ref uctx.univ_variables in
-  let weak = ref uctx.weak_constraints in
+  let extra = ref uctx.minim_extra in
+  let cumulative_sprop = UGraph.cumulative_sprop univs in
   let normalize u = normalize_univ_variable_opt_subst !vars u in
   let nf_constraint = function
     | ULub (u, v) -> ULub (level_subst_of normalize u, level_subst_of normalize v)
@@ -218,7 +226,7 @@ let process_universe_constraints uctx cstrs =
         instantiate_variable l' r vars
       else if is_local r' then
         instantiate_variable r' l vars
-      else if not (UGraph.check_eq_level univs l' r') then
+      else if not (UnivProblem.check_eq_level univs l' r') then
         (* Two rigid/global levels, none of them being local,
             one of them being Prop/Set, disallow *)
         if Level.is_small l' || Level.is_small r' then
@@ -292,7 +300,9 @@ let process_universe_constraints uctx cstrs =
           | ULub (l, r) ->
               equalize_variables true (Sorts.sort_of_univ (Universe.make l)) l (Sorts.sort_of_univ (Universe.make r)) r local
           | UWeak (l, r) ->
-            if not (drop_weak_constraints ()) then weak := UPairSet.add (l,r) !weak; local
+            if not (drop_weak_constraints ())
+            then extra := {!extra with UnivMinim.weak_constraints = UPairSet.add (l,r) !extra.UnivMinim.weak_constraints};
+            local
           | UEq (l, r) -> equalize_universes l r local
   in
   let unify_universes cst local =
@@ -302,7 +312,35 @@ let process_universe_constraints uctx cstrs =
   let local =
     UnivProblem.Set.fold unify_universes cstrs Constraints.empty
   in
-    !vars, !weak, local
+  (* Remove constraints mentioning Prop / SProp *)
+  let maybe_univ_inconsistency c l r =
+    if UGraph.type_in_type univs then false
+    else raise (UniverseInconsistency (c, Universe.make l, Universe.make r, None))
+  in
+  let filter (l, c, r) = match c with
+  | Eq ->
+    begin match level_kind l, level_kind r with
+    | KProp, KProp | KSProp, KSProp -> false
+    | (KSProp | KProp), KLevel | KLevel, (KSProp | KProp) | KProp, KSProp | KSProp, KProp ->
+      maybe_univ_inconsistency c l r
+    | KLevel, KLevel -> true
+    end
+  | Lt | Le ->
+    begin match level_kind l, level_kind r with
+    | KProp, KProp | KSProp, KSProp ->
+      if c == Lt && Level.equal l r then maybe_univ_inconsistency c l r else false
+    | KProp, KSProp -> maybe_univ_inconsistency c l r
+    | KProp, KLevel ->
+      extra := {!extra with UnivMinim.above_prop = Univ.Level.Set.add r !extra.UnivMinim.above_prop};
+      false
+    | KSProp, (KProp | KLevel) ->
+      if cumulative_sprop then false else maybe_univ_inconsistency c l r
+    | KLevel, (KProp | KSProp) -> maybe_univ_inconsistency c l r
+    | KLevel, KLevel -> true
+    end
+  in
+  let local = Constraints.filter filter local in
+  !vars, !extra, local
 
 let add_constraints uctx cstrs =
   let univs, old_cstrs = uctx.local in
@@ -317,21 +355,21 @@ let add_constraints uctx cstrs =
     in UnivProblem.Set.add cstr' acc)
     cstrs UnivProblem.Set.empty
   in
-  let vars, weak, cstrs' = process_universe_constraints uctx cstrs' in
+  let vars, extra, cstrs' = process_universe_constraints uctx cstrs' in
   { uctx with
     local = (univs, Constraints.union old_cstrs cstrs');
     univ_variables = vars;
     universes = UGraph.merge_constraints cstrs' uctx.universes;
-    weak_constraints = weak; }
+    minim_extra = extra; }
 
 let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in
-  let vars, weak, local' = process_universe_constraints uctx cstrs in
+  let vars, extra, local' = process_universe_constraints uctx cstrs in
   { uctx with
     local = (univs, Constraints.union local local');
     univ_variables = vars;
     universes = UGraph.merge_constraints local' uctx.universes;
-    weak_constraints = weak; }
+    minim_extra = extra; }
 
 let constrain_variables diff uctx =
   let univs, local = uctx.local in
@@ -738,7 +776,7 @@ let minimize uctx =
   let lbound = uctx.universes_lbound in
   let ((vars',algs'), us') =
     normalize_context_set ~lbound uctx.universes uctx.local uctx.univ_variables
-      uctx.univ_algebraic uctx.weak_constraints
+      uctx.univ_algebraic uctx.minim_extra
   in
   if ContextSet.equal us' uctx.local then uctx
   else
@@ -753,9 +791,10 @@ let minimize uctx =
         universes = universes;
         universes_lbound = lbound;
         initial_universes = uctx.initial_universes;
-        weak_constraints = UPairSet.empty; (* weak constraints are consumed *) }
+        minim_extra = UnivMinim.empty_extra; (* weak constraints are consumed *) }
 
-let pr_weak prl {weak_constraints=weak} =
+(* XXX print above_prop too *)
+let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak}} =
   let open Pp in
   prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
 

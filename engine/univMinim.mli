@@ -14,6 +14,15 @@ open UnivSubst
 (** Unordered pairs of universe levels (ie (u,v) = (v,u)) *)
 module UPairSet : CSet.S with type elt = (Level.t * Level.t)
 
+type extra = {
+  weak_constraints : UPairSet.t; (* weak equality constraints *)
+  above_prop : Level.Set.t;
+}
+
+val empty_extra : extra
+
+val extra_union : extra -> extra -> extra
+
 (** Simplification and pruning of constraints:
     [normalize_context_set ctx us]
 
@@ -28,5 +37,5 @@ module UPairSet : CSet.S with type elt = (Level.t * Level.t)
 val normalize_context_set : lbound:UGraph.Bound.t -> UGraph.t -> ContextSet.t ->
   universe_opt_subst (* The defined and undefined variables *) ->
   Level.Set.t (* univ variables that can be substituted by algebraics *) ->
-  UPairSet.t (* weak equality constraints *) ->
+  extra ->
   (universe_opt_subst * Level.Set.t) in_universe_context_set

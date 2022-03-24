@@ -47,6 +47,7 @@ let set_cumulative_sprop b g = {g with sprop_cumulative=b}
 let set_type_in_type b g = {g with type_in_type=b}
 
 let type_in_type g = g.type_in_type
+let cumulative_sprop g = g.sprop_cumulative
 
 let check_smaller_expr g (u,n) (v,m) =
   let diff = n - m in
@@ -63,47 +64,42 @@ let exists_bigger g ul l =
 let real_check_leq g u v =
   Universe.for_all (fun ul -> exists_bigger g ul v) u
 
+(** TODO: enforce this by typing *)
+let in_graph u = not (Level.is_prop u) && not (Level.is_sprop u)
+let in_graph_univ u = not (Universe.is_type0m u) && not (Universe.is_sprop u)
+
 let check_leq g u v =
-  type_in_type g ||
-  Universe.equal u v || (g.sprop_cumulative && Universe.is_sprop u) ||
-  (not (Universe.is_sprop u) && not (Universe.is_sprop v) &&
-    (is_type0m_univ u ||
-     real_check_leq g u v))
+  let () = assert (in_graph_univ u && in_graph_univ v) in
+  type_in_type g || Universe.equal u v || (real_check_leq g u v)
 
 let check_eq g u v =
-  type_in_type g ||
-  Universe.equal u v ||
-  (not (Universe.is_sprop u || Universe.is_sprop v) &&
-   (real_check_leq g u v && real_check_leq g v u))
+  let () = assert (in_graph_univ u && in_graph_univ v) in
+  type_in_type g || Universe.equal u v ||
+    (real_check_leq g u v && real_check_leq g v u)
 
 let check_eq_level g u v =
-  u == v ||
-  type_in_type g ||
-  (not (Level.is_sprop u || Level.is_sprop v) && G.check_eq g.graph u v)
+  let () = assert (in_graph u && in_graph v) in
+  u == v || type_in_type g || G.check_eq g.graph u v
 
 let empty_universes = {graph=G.empty; sprop_cumulative=false; type_in_type=false}
 
 let initial_universes =
   let big_rank = 1000000 in
   let g = G.empty in
-  let g = G.add ~rank:big_rank Level.prop g in
   let g = G.add ~rank:big_rank Level.set g in
-  {empty_universes with graph=G.enforce_lt Level.prop Level.set g}
+  {empty_universes with graph=g}
 
 let initial_universes_with g = {g with graph=initial_universes.graph}
 
 let enforce_constraint (u,d,v) g =
+  let () = assert (in_graph u && in_graph v) in
   match d with
   | Le -> G.enforce_leq u v g
   | Lt -> G.enforce_lt u v g
   | Eq -> G.enforce_eq u v g
 
-let enforce_constraint (u,d,v as cst) g =
-  match Level.is_sprop u, d, Level.is_sprop v with
-  | false, _, false -> g_map (enforce_constraint cst) g
-  | true, (Eq|Le), true -> g
-  | true, Le, false when g.sprop_cumulative -> g
-  | _ ->  raise (UniverseInconsistency (d,Universe.make u, Universe.make v, None))
+let enforce_constraint cst g =
+  g_map (enforce_constraint cst) g
 
 let enforce_constraint cst g =
   if not (type_in_type g) then enforce_constraint cst g
@@ -111,18 +107,12 @@ let enforce_constraint cst g =
 
 let merge_constraints csts g = Constraints.fold enforce_constraint csts g
 
-let check_constraint g (u,d,v) =
+let check_constraint { graph = g; _ } (u,d,v) =
+  let () = assert (in_graph u && in_graph v) in
   match d with
   | Le -> G.check_leq g u v
   | Lt -> G.check_lt g u v
   | Eq -> G.check_eq g u v
-
-let check_constraint g (u,d,v as cst) =
-  match Level.is_sprop u, d, Level.is_sprop v with
-  | false, _, false -> check_constraint g.graph cst
-  | true, (Eq|Le), true -> true
-  | true, Le, false -> g.sprop_cumulative || type_in_type g
-  | _ -> type_in_type g
 
 let check_constraints csts g = Constraints.for_all (check_constraint g) csts
 
@@ -180,17 +170,21 @@ struct
 end
 
 exception AlreadyDeclared = G.AlreadyDeclared
-let add_universe u ~lbound ~strict g =
-  let lbound = match lbound with Bound.Prop -> Level.prop | Bound.Set -> Level.set in
+let add_universe u ~lbound ~strict g = match lbound with
+| Bound.Set ->
   let graph = G.add u g.graph in
   let d = if strict then Lt else Le in
-  enforce_constraint (lbound,d,u) {g with graph}
+  enforce_constraint (Level.set, d, u) { g with graph }
+| Bound.Prop ->
+  (* Do not actually add any constraint. This is a hack for template. *)
+  { g with graph = G.add u g.graph }
 
 exception UndeclaredLevel = G.Undeclared
-let check_declared_universes g l = G.check_declared g.graph (Level.Set.remove Level.sprop l)
+let check_declared_universes g l =
+  G.check_declared g.graph (Level.Set.remove Level.prop (Level.Set.remove Level.sprop l))
 
 let constraints_of_universes g = G.constraints_of g.graph
-let constraints_for ~kept g = G.constraints_for ~kept:(Level.Set.remove Level.sprop kept) g.graph
+let constraints_for ~kept g = G.constraints_for ~kept:(Level.Set.remove Level.prop (Level.Set.remove Level.sprop kept)) g.graph
 
 (** Subtyping of polymorphic contexts *)
 
@@ -217,12 +211,13 @@ let check_eq_instances g t1 t2 =
           (Int.equal i (Array.length t1)) || (check_eq_level g t1.(i) t2.(i) && aux (i + 1))
         in aux 0)
 
-let domain g = Level.Set.add Level.sprop (G.domain g.graph)
-let choose p g u = if Level.is_sprop u
-  then if p u then Some u else None
+let domain g = Level.Set.add Level.prop (Level.Set.add Level.sprop (G.domain g.graph))
+let choose p g u =
+  if not (in_graph u) then
+    if p u then Some u else None
   else G.choose p g.graph u
 
-let check_universes_invariants g = G.check_invariants ~required_canonical:Level.is_small g.graph
+let check_universes_invariants g = G.check_invariants ~required_canonical:Level.is_set g.graph
 
 (** Pretty-printing *)
 
