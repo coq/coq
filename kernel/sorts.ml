@@ -25,12 +25,6 @@ let prop = Prop
 let set = Set
 let type1 = Type type1_univ
 
-let univ_of_sort = function
-  | Type u -> u
-  | Set -> Universe.type0
-  | Prop -> Universe.type0m
-  | SProp -> Universe.sprop
-
 let sort_of_univ u =
   if Universe.is_sprop u then sprop
   else if is_type0m_univ u then prop
@@ -38,7 +32,18 @@ let sort_of_univ u =
   else Type u
 
 let compare s1 s2 =
-  if s1 == s2 then 0 else Universe.compare (univ_of_sort s1) (univ_of_sort s2)
+  if s1 == s2 then 0 else
+    match s1, s2 with
+    | SProp, SProp -> 0
+    | SProp, (Prop | Set | Type _) -> -1
+    | (Prop | Set | Type _), SProp -> 1
+    | Prop, Prop -> 0
+    | Prop, (Set | Type _) -> -1
+    | Set, Prop -> 1
+    | Set, Set -> 0
+    | Set, Type _ -> -1
+    | Type u1, Type u2 -> Universe.compare u1 u2
+    | Type _, (Prop | Set) -> 1
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
@@ -62,7 +67,11 @@ let is_small = function
   | SProp | Prop | Set -> true
   | Type _ -> false
 
-let levels s = Universe.levels (univ_of_sort s)
+let levels s = match s with
+| SProp -> Level.Set.singleton Level.sprop
+| Prop -> Level.Set.singleton Level.prop
+| Set -> Level.Set.singleton Level.set
+| Type u -> Universe.levels u
 
 let family = function
   | SProp -> InSProp

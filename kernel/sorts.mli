@@ -41,7 +41,6 @@ val family_compare : family -> family -> int
 val family_equal : family -> family -> bool
 val family_leq : family -> family -> bool
 
-val univ_of_sort : t -> Univ.Universe.t
 val sort_of_univ : Univ.Universe.t -> t
 
 val levels : t -> Univ.Level.Set.t
