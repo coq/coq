@@ -83,24 +83,6 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
   in
   sigma, (impls, newfs)
 
-(** FIXME: This is a horrible hack, use a saner heuristic *)
-let max_sort s1 s2 = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> s1
-| (SProp, (Prop | Set | Type _ as s)) | ((Prop | Set | Type _) as s, SProp) -> s
-| (Prop, (Set | Type _ as s)) | ((Set | Type _) as s, Prop) -> s
-| (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Univ.Universe.sup Univ.Universe.type0 u)
-| (Type u, Type v) -> Sorts.sort_of_univ (Univ.Universe.sup u v)
-
-let compute_constructor_level evars env l =
-  List.fold_right (fun d (env, univ) ->
-    let univ =
-      if is_local_assum d then
-        let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
-        max_sort s univ
-      else univ
-    in (EConstr.push_rel d env, univ))
-    l (env, Sorts.sprop)
-
 let check_anonymous_type ind =
   match ind with
   | { CAst.v = CSort (Glob_term.UAnonymous {rigid=true}) } -> true
@@ -230,8 +212,8 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let sigma =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
   let fold sigma (typ, sort) (_, newfs) =
-    let _, univ = compute_constructor_level sigma env_ar newfs in
-    let univ = if Sorts.is_sprop sort then univ else max_sort univ Sorts.prop in
+    let univ = ComInductive.Internal.compute_constructor_level env_ar sigma newfs in
+    let univ = if Sorts.is_sprop sort then univ else if Sorts.is_sprop univ then Sorts.prop else univ in
       if not def && is_impredicative_sort env0 sort then
         sigma, (univ, typ)
       else

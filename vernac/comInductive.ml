@@ -183,15 +183,18 @@ let max_sort s1 s2 = match s1, s2 with
 | (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Univ.Universe.sup Univ.Universe.type0 u)
 | (Type u, Type v) -> Sorts.sort_of_univ (Univ.Universe.sup u v)
 
-let sign_level env evd sign =
+let compute_constructor_level env evd sign =
   fst (List.fold_right
     (fun d (lev,env) ->
       match d with
-      | LocalDef _ -> lev, push_rel d env
+      | LocalDef _ -> lev, EConstr.push_rel d env
       | LocalAssum _ ->
-        let s = Retyping.get_sort_of env evd (EConstr.of_constr (RelDecl.get_type d)) in
-          (max_sort s lev, push_rel d env))
+        let s = Retyping.get_sort_of env evd (RelDecl.get_type d) in
+          (max_sort s lev, EConstr.push_rel d env))
     sign (Sorts.sprop,env))
+
+let sign_level env sigma sign =
+  compute_constructor_level env sigma (EConstr.of_rel_context sign)
 
 let sup_list min = List.fold_left max_sort min
 
@@ -723,3 +726,10 @@ let make_cases ind =
        let consref = GlobRef.ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
        (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
     mip.mind_nf_lc []
+
+module Internal =
+struct
+
+let compute_constructor_level = compute_constructor_level
+
+end
