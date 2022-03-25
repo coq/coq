@@ -160,20 +160,6 @@ let enforce_leq_alg u v g =
     let e = UniverseInconsistency (c, mk u, mk v, Some e) in
     raise e
 
-let enforce_leq_alg u v g =
-  match Universe.is_sprop u, Universe.is_sprop v with
-  | true, true -> Constraints.empty, g
-  | false, false -> enforce_leq_alg u v g
-  | left, _ ->
-    if left && g.sprop_cumulative then Constraints.empty, g
-    else raise (UniverseInconsistency (Le, Sorts.sort_of_univ u, Sorts.sort_of_univ v, None))
-
-(* sanity check wrapper *)
-let enforce_leq_alg u v g =
-  let _,g as cg = enforce_leq_alg u v g in
-  assert (check_leq g u v);
-  cg
-
 module Bound =
 struct
   type t = Prop | Set
