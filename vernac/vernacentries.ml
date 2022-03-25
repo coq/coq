@@ -411,13 +411,13 @@ let sort_universes g =
   let max_level = Level.Map.fold (fun _ n accu -> max n accu) levels 0 in
   let dummy_mp = Names.DirPath.make [Names.Id.of_string "Type"] in
   let ulevels = Array.init max_level (fun i -> Level.(make (UGlobal.make dummy_mp "" i))) in
-  let ulevels = Array.cons Level.set ulevels in
   (* Add the normal universes *)
   let fold (cur, ans) u =
     let ans = Level.Map.add cur (UGraph.Node (Level.Map.singleton u true)) ans in
     (u, ans)
   in
-  let _, ans = Array.fold_left fold (Level.prop, Level.Map.empty) ulevels in
+  let _, ans = Array.fold_left fold (Level.set, Level.Map.empty) ulevels in
+  let ulevels = Array.cons Level.set ulevels in
   (* Add alias pointers *)
   let fold u _ ans =
     if Level.is_small u then ans
