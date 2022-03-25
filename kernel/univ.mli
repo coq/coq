@@ -30,17 +30,13 @@ sig
       definition or global. *)
 
   val set : t
-  val prop : t
-  val sprop : t
-  (** The set and prop universe levels. *)
+  (** The Set universe level. *)
 
   val is_small : t -> bool
-  (** Is the universe set or prop? *)
+  (** Is the universe Set? *)
 
-  val is_sprop : t -> bool
-  val is_prop : t -> bool
   val is_set : t -> bool
-  (** Is it specifically Prop or Set *)
+  (** Is it specifically Set *)
 
   val compare : t -> t -> int
   (** Comparison function *)
@@ -146,19 +142,12 @@ sig
   val sup   : t -> t -> t
   (** The l.u.b. of 2 universes *)
 
-  val sprop : t
-
-  val type0m : t
-  (** image of Prop in the universes hierarchy *)
-
   val type0 : t
   (** image of Set in the universes hierarchy *)
 
   val type1 : t
   (** the universe of the type of Prop/Set *)
 
-  val is_sprop : t -> bool
-  val is_type0m : t -> bool
   val is_type0 : t -> bool
 
   val exists : (Level.t * int -> bool) -> t -> bool
@@ -174,14 +163,12 @@ end
 
 val pr_uni : Universe.t -> Pp.t
 
-(** The universes hierarchy: Type 0- = Prop <= Type 0 = Set <= Type 1 <= ...
-   Typing of universes: Type 0-, Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
-val type0m_univ : Universe.t
+(** The universes hierarchy: Type 0 = Set <= Type 1 <= ...
+   Typing of universes: Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
 val type0_univ : Universe.t
 val type1_univ : Universe.t
 
 val is_type0_univ : Universe.t -> bool
-val is_type0m_univ : Universe.t -> bool
 val is_univ_variable : Universe.t -> bool
 val is_small_univ : Universe.t -> bool
 
