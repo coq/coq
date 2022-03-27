@@ -20,10 +20,10 @@ The Coq library has two parts:
 
 There are also many libraries provided by Coq users' community.
 These libraries and developments are available
-for download at http://coq.inria.fr (see :ref:`userscontributions`).
+for download at https://coq.inria.fr/ (see :ref:`userscontributions`).
 
 This chapter briefly reviews the Coq libraries whose contents can
-also be browsed at http://coq.inria.fr/stdlib/.
+also be browsed at https://coq.inria.fr/stdlib/.
 
 
 
@@ -733,7 +733,7 @@ Tactics
 
 A few tactics defined at the user level are provided in the initial
 state, in module ``Tactics.v``. They are listed at
-http://coq.inria.fr/stdlib, in paragraph ``Init``, link ``Tactics``.
+https://coq.inria.fr/stdlib/, in paragraph ``Init``, link ``Tactics``.
 
 
 The standard library
@@ -769,7 +769,7 @@ are directly accessible with the command ``Require`` (see
 Section :ref:`compiled-files`).
 
 The different modules of the Coq standard library are documented
-online at https://coq.inria.fr/stdlib.
+online at https://coq.inria.fr/stdlib/.
 
 Peano’s arithmetic (nat)
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1103,7 +1103,7 @@ Users’ contributions
 --------------------
 
 Numerous users' contributions have been collected and are available at
-URL http://coq.inria.fr/opam/www/.  On this web page, you have a list
+URL https://coq.inria.fr/opam/www/.  On this web page, you have a list
 of all contributions with informations (author, institution, quick
 description, etc.) and the possibility to download them one by one.
 You will also find informations on how to submit a new
