@@ -477,7 +477,11 @@ struct
     | _ -> None
 
   let levels l =
-    List.fold_left (fun acc x -> Level.Set.add (Expr.get_level x) acc) Level.Set.empty l
+    let fold acc x =
+      let l = Expr.get_level x in
+      if Level.is_prop l || Level.is_sprop l then acc else Level.Set.add l acc
+    in
+    List.fold_left fold Level.Set.empty l
 
   let is_small u =
     match u with

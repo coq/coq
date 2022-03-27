@@ -68,8 +68,7 @@ let is_small = function
   | Type _ -> false
 
 let levels s = match s with
-| SProp -> Level.Set.singleton Level.sprop
-| Prop -> Level.Set.singleton Level.prop
+| SProp | Prop -> Level.Set.empty
 | Set -> Level.Set.singleton Level.set
 | Type u -> Universe.levels u
 

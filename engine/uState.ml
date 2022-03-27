@@ -292,13 +292,15 @@ let process_universe_constraints uctx cstrs =
               | LAlgebraic ->
                 (* l contains a +1 and r=r' small so l <= r impossible *)
                 sort_inconsistency Le l r
-              | LLevel _ | LMax _ ->
-                if UGraph.check_leq_sort univs l r then match get_levels l with
-                | LLevel l ->
-                  Univ.Constraints.add (l, Le, r') local
-                | LAlgebraic | LMax _ -> local
+              | LLevel l' ->
+                if UGraph.check_leq_sort univs l r then
+                  Univ.Constraints.add (l', Le, r') local
+                else if Level.is_small l' || is_local l' then
+                  equalize_variables false l l' r r' local
+                else sort_inconsistency Le l r
+              | LMax levels ->
+                if UGraph.check_leq_sort univs l r then local
                 else
-                let levels = Sorts.levels l in
                 let fold l' local =
                   let l = Sorts.sort_of_univ @@ Universe.make l' in
                   if Level.is_small l' || is_local l' then
