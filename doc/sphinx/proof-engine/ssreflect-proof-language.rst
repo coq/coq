@@ -12,7 +12,7 @@ Introduction
 
 This chapter describes a set of tactics known as |SSR| originally
 designed to provide support for the so-called *small scale reflection*
-proof methodology. Despite the original purpose this set of tactic is
+proof methodology. Despite the original purpose, this set of tactics is
 of general interest and is available in Coq starting from version 8.7.
 
 |SSR| was developed independently of the tactics described in
@@ -30,7 +30,7 @@ The first difference between the tactics described in this chapter and the
 tactics described in Chapter :ref:`tactics` is the way hypotheses are managed
 (we call this *bookkeeping*). In Chapter :ref:`tactics` the most common
 approach is to avoid moving explicitly hypotheses back and forth between the
-context and the conclusion of the goal. On the contrary in |SSR| all
+context and the conclusion of the goal. On the contrary, in |SSR| all
 bookkeeping is performed on the conclusion of the goal, using for that
 purpose a couple of syntactic constructions behaving similar to tacticals
 (and often named as such in this chapter). The ``:`` tactical moves hypotheses
@@ -47,8 +47,8 @@ explicit operation performed by ``:``.
 
 .. seealso:: :ref:`bookkeeping_ssr`
 
-Beside the difference of bookkeeping model, this chapter includes
-specific tactics which have no explicit counterpart in Chapter :ref:`tactics`
+Besides the difference of bookkeeping model, this chapter includes
+specific tactics that have no explicit counterpart in Chapter :ref:`tactics`
 such as tactics to mix forward steps and generalizations as
 :tacn:`generally have` or :tacn:`without loss`.
 
@@ -66,7 +66,7 @@ Finally, |SSR| supports so-called reflection steps, typically
 allowing to switch back and forth between the computational view and
 logical view of a concept.
 
-To conclude it is worth mentioning that |SSR| tactics can be mixed
+To conclude, it is worth mentioning that |SSR| tactics can be mixed
 with non-|SSR| tactics in the same proof, or in the same Ltac
 expression. The few exceptions to this statement are described in
 section :ref:`compatibility_issues_ssr`.
@@ -111,8 +111,8 @@ this corresponds to working in the following context:
 Compatibility issues
 ~~~~~~~~~~~~~~~~~~~~
 
-Requiring the above modules creates an environment which is mostly
-compatible with the rest of Coq, up to a few discrepancies:
+Requiring the above modules creates an environment that is mostly
+compatible with the rest of Coq, up to a few discrepancies.
 
 
 + New keywords (``is``) might clash with variable, constant, tactic or
@@ -124,10 +124,10 @@ compatible with the rest of Coq, up to a few discrepancies:
 + Identifiers with both leading and trailing ``_``, such as ``_x_``, are
   reserved by |SSR| and cannot appear in scripts.
 + The extensions to the :tacn:`rewrite` tactic are partly incompatible with those
-  available in current versions of Coq; in particular: ``rewrite .. in
+  available in current versions of Coq; in particular, ``rewrite .. in
   (type of k)`` or ``rewrite .. in *`` or any other variant of :tacn:`rewrite`
   will not work, and the |SSR| syntax and semantics for occurrence selection
-  and rule chaining is different. Use an explicit rewrite direction
+  and rule chaining are different. Use an explicit rewrite direction
   (``rewrite <- …`` or ``rewrite -> …``) to access the Coq rewrite tactic.
 + New symbols (``//``, ``/=``, ``//=``) might clash with adjacent
   existing symbols.
@@ -144,13 +144,13 @@ compatible with the rest of Coq, up to a few discrepancies:
   syntax of |SSR|’s rewrite and reserved identifiers are enabled
   only if the ssreflect module has been required and if ``SsrSyntax`` has
   been imported. Thus a file that requires (without importing) ``ssreflect``
-  and imports ``SsrSyntax``, can be required and imported without
+  and imports ``SsrSyntax`` can be required and imported without
   automatically enabling |SSR|’s extended rewrite syntax and
   reserved identifiers.
 + Some user notations (in particular, defining an infix ``;``) might
-  interfere with the "open term", parenthesis free, syntax of tactics
-  such as have, set and pose.
-+ The generalization of if statements to non-Boolean conditions is turned off
+  interfere with the "open term", parenthesis-free syntax of tactics
+  such as :tacn:`have`, :tacn:`set (ssreflect)` and :tacn:`pose (ssreflect)`.
++ The generalization of ``if`` statements to non-Boolean conditions is turned off
   by |SSR|, because it is mostly subsumed by Coercion to ``bool`` of the
   ``sumXXX`` types (declared in ``ssrfun.v``) and the
   :n:`if @term is @pattern then @term else @term` construct
@@ -158,7 +158,7 @@ compatible with the rest of Coq, up to a few discrepancies:
   generalized form, turn off the |SSR| Boolean ``if`` notation using the command:
   ``Close Scope boolean_if_scope``.
 + The following flags can be unset to make |SSR| more compatible with
-  parts of Coq:
+  parts of Coq.
 
 .. flag:: SsrRewrite
 
@@ -199,11 +199,11 @@ irrefutable pattern matching, that is, destructuring assignment:
    term += let: @pattern := @term in @term
 
 Note the colon ``:`` after the ``let`` keyword, which avoids any ambiguity
-with a function definition or Coq’s basic destructuring let. The let:
-construct differs from the latter in that
+with a function definition or Coq’s basic destructuring let. The ``let:``
+construct differs from the latter as follows.
 
 
-+ The pattern can be nested (deep pattern matching), in particular,
++ The pattern can be nested (deep pattern matching); in particular,
   this allows expression of the form:
 
 .. coqdoc::
@@ -227,7 +227,7 @@ construct differs from the latter in that
        Definition f u := let: (m, n) := u in m + n.
        Check f.
 
-    Using :g:`let:` Coq infers a type for :g:`f`,
+    Using :g:`let:`, Coq infers a type for :g:`f`,
     whereas with a usual ``let`` the same term requires an extra type
     annotation in order to type check.
 
@@ -313,7 +313,7 @@ The latter appears to be marginally shorter, but it is quite
 ambiguous, and indeed often requires an explicit annotation
 ``(term : {_} + {_})`` to type check, which evens the character count.
 
-Therefore, |SSR| restricts by default the condition of a plain if
+Therefore, |SSR| restricts by default the condition of a plain ``if``
 construct to the standard ``bool`` type; this avoids spurious type
 annotations.
 
@@ -323,7 +323,7 @@ annotations.
 
       Definition orb b1 b2 := if b1 then true else b2.
 
-As pointed out in section :ref:`compatibility_issues_ssr`,
+As pointed out in Section :ref:`compatibility_issues_ssr`,
 this restriction can be removed with
 the command:
 
@@ -336,7 +336,7 @@ the dependent match annotations:
 .. prodn::
    term += if @term is @pattern as @ident in @pattern return @term then @term else @term
 
-As in ``let:`` the variable :token:`ident` (and those in the type pattern)
+As in ``let:``, the variable :token:`ident` (and those in the type pattern)
 are bound in the second :token:`term`; :token:`ident` is also bound in the
 third :token:`term` (but not in the fourth :token:`term`), while the
 variables in the first :token:`pattern` are bound only in the third
@@ -358,7 +358,7 @@ Parametric polymorphism
 Unlike ML, polymorphism in core Gallina is explicit: the type
 parameters of polymorphic functions must be declared explicitly, and
 supplied at each point of use. However, Coq provides two features to
-suppress redundant parameters:
+suppress redundant parameters.
 
 
 + Sections are used to provide (possibly implicit) parameters for a
@@ -392,12 +392,12 @@ expressions such as
       Definition all_null (s : list T) := all (@null T) s.
 
 Unfortunately, such higher-order expressions are quite frequent in
-representation functions, especially those which use Coq's
+representation functions, especially those that use Coq's
 ``Structures`` to emulate Haskell typeclasses.
 
 Therefore, |SSR| provides a variant of Coq’s implicit argument
 declaration, which causes Coq to fill in some implicit parameters at
-each point of use, e.g., the above definition can be written:
+each point of use; e.g., the above definition can be written:
 
 .. example::
 
@@ -459,7 +459,7 @@ following extension of the binder syntax:
 
 Caveat: ``& T`` and ``of T`` abbreviations have to appear at the end
 of a binder list. For instance, the usual two-constructor polymorphic
-type list, i.e. the one of the standard ``List`` library, can be
+type list, i.e., the one of the standard ``List`` library, can be
 defined by the following declaration:
 
 .. example::
@@ -486,9 +486,9 @@ possibilities of using such wildcards. These holes are in particular
 used as a convenient shorthand for abstractions, especially in local
 definitions or type expressions.
 
-Wildcards may be interpreted as abstractions (see for example sections
+Wildcards may be interpreted as abstractions (see for example Sections
 :ref:`definitions_ssr` and :ref:`structure_ssr`), or their content can be
-inferred from the whole context of the goal (see for example section
+inferred from the whole context of the goal (see for example Section
 :ref:`abbreviations_ssr`).
 
 
@@ -502,7 +502,7 @@ Definitions
 
    This tactic allows to add a defined constant to a proof context.
    |SSR| generalizes this tactic in several ways. In particular, the
-   |SSR| pose tactic supports *open syntax*: the body of the
+   |SSR| :tacn:`pose (ssreflect)` tactic supports *open syntax*: the body of the
    definition does not need surrounding parentheses. For instance:
 
 .. coqdoc::
@@ -511,10 +511,10 @@ Definitions
 
 is a valid tactic expression.
 
-The pose tactic is also improved for the local definition of higher
-order terms. Local definitions of functions can use the same syntax as
+The :tacn:`pose (ssreflect)` tactic is also improved for the local definition of higher-order terms. 
+Local definitions of functions can use the same syntax as
 global ones.
-For example, the tactic :tacn:`pose <pose (ssreflect)>` supports parameters:
+For example, the tactic :tacn:`pose (ssreflect)` supports parameters:
 
 .. example::
 
@@ -530,7 +530,7 @@ For example, the tactic :tacn:`pose <pose (ssreflect)>` supports parameters:
       Lemma test : True.
       pose f x y := x + y.
 
-The |SSR| pose tactic also supports (co)fixpoints, by providing
+The |SSR| :tacn:`pose (ssreflect)` tactic also supports (co)fixpoints, by providing
 the local counterpart of the ``Fixpoint f := …`` and ``CoFixpoint f := …``
 constructs. For instance, the following tactic:
 
@@ -576,7 +576,7 @@ is shorthand for:
 
    pose f n x := x + n.
 
-The interaction of the pose tactic with the interpretation of implicit
+The interaction of the :tacn:`pose (ssreflect)` tactic with the interpretation of implicit
 arguments results in a powerful and concise syntax for local
 definitions involving dependent types. For instance, the tactic:
 
@@ -590,7 +590,7 @@ adds to the context the local definition:
 
    pose f (Tx Ty : Type) (x : Tx) (y : Ty) := (x, y).
 
-The generalization of wildcards makes the use of the pose tactic
+The generalization of wildcards makes the use of the :tacn:`pose (ssreflect)` tactic
 resemble ML-like definitions of polymorphic functions.
 
 
@@ -603,13 +603,13 @@ Abbreviations
 .. tacn:: set @ident {? : @term } := {? @occ_switch } @term
    :name: set (ssreflect)
 
-   The |SSR| ``set`` tactic performs abbreviations: it introduces a
+   The |SSR| ``set`` tactic performs abbreviations; it introduces a
    defined constant for a subterm appearing in the goal and/or in the
    context.
 
    |SSR| extends the :tacn:`set` tactic by supplying:
 
-   + an open syntax, similarly to the :tacn:`pose <pose (ssreflect)>` tactic;
+   + an open syntax, similarly to the :tacn:`pose (ssreflect)` tactic;
    + a more aggressive matching algorithm;
    + an improved interpretation of wildcards, taking advantage of the
      matching algorithm;
@@ -622,18 +622,18 @@ Abbreviations
 where:
 
 + :token:`ident` is a fresh identifier chosen by the user.
-+ term 1 is an optional type annotation. The type annotation term 1
++ :token:`term` 1 is an optional type annotation. The type annotation :token:`term` 1
   can be given in open syntax (no surrounding parentheses). If no
   :token:`occ_switch` (described hereafter) is present,
   it is also the case for the second :token:`term`.
-  On the other hand, in presence of :token:`occ_switch`, parentheses
+  On the other hand, in the presence of :token:`occ_switch`, parentheses
   surrounding the second :token:`term` are mandatory.
 + In the occurrence switch :token:`occ_switch`, if the first element of the
   list is a natural, this element should be a number, and not an Ltac
   variable. The empty list ``{}`` is not interpreted as a valid occurrence
-  switch, it is rather used as a flag to signal the intent of the user to
+  switch; it is rather used as a flag to signal the intent of the user to
   clear the name following it (see :ref:`ssr_rewrite_occ_switch` and
-  :ref:`introduction_ssr`)
+  :ref:`introduction_ssr`).
 
 The tactic:
 
@@ -658,7 +658,7 @@ The tactic:
 
 
 The type annotation may contain wildcards, which will be filled
-with the appropriate value by the matching process.
+with appropriate values by the matching process.
 
 The tactic first tries to find a subterm of the goal matching
 the second :token:`term`
@@ -676,15 +676,15 @@ Matching
 The matching algorithm compares a pattern :token:`term` with a subterm of the
 goal by comparing their heads and then pairwise unifying their
 arguments (modulo conversion). Head symbols match under the following
-conditions:
+conditions.
 
 
 + If the head of :token:`term` is a constant, then it should be syntactically
   equal to the head symbol of the subterm.
 + If this head is a projection of a canonical structure, then
   canonical structure equations are used for the matching.
-+ If the head of term is *not* a constant, the subterm should have the
-  same structure (λ abstraction, let…in structure …).
++ If the head of :token:`term` is *not* a constant, the subterm should have the
+  same structure (λ abstraction, ``let…in`` structure, etc.).
 + If the head of :token:`term` is a hole, the subterm should have at least as
   many arguments as :token:`term`.
 
@@ -702,12 +702,12 @@ conditions:
       Lemma test (x y z : nat) :  x + y = z.
       set t := _ x.
 
-+ In the special case where ``term`` is of the form
-  ``(let f := t0 in f) t1 … tn`` , then the pattern ``term`` is treated
++ In the special case where :token:`term` is of the form
+  ``(let f := t0 in f) t1 … tn`` , then the pattern :token:`term` is treated
   as ``(_ t1 … tn)``. For each
   subterm in the goal having the form ``(A u1 … um)`` with m ≥ n, the
   matching algorithm successively tries to find the largest partial
-  application ``(A u1 … uj)`` convertible to the head ``t0`` of ``term``.
+  application ``(A u1 … uj)`` convertible to the head ``t0`` of :token:`term`.
 
   .. example::
 
@@ -728,7 +728,7 @@ conditions:
 
 Moreover:
 
-+ Multiple holes in ``term`` are treated as independent placeholders.
++ Multiple holes in :token:`term` are treated as independent placeholders.
 
   .. example::
 
@@ -745,9 +745,9 @@ Moreover:
         set t := _ + _.
 
 + The type of the subterm matched should fit the type (possibly casted
-  by some type annotations) of the pattern ``term``.
+  by some type annotations) of the pattern :token:`term`.
 + The replacement of the subterm found by the instantiated pattern
-  should not capture variables. In the example above ``x`` is bound
+  should not capture variables. In the example above, ``x`` is bound
   and should not be captured.
 
   .. example::
@@ -775,12 +775,12 @@ Occurrence selection
 
 |SSR| provides a generic syntax for the selection of occurrences
 by their position indexes. These *occurrence switches* are shared by
-all |SSR| tactics which require control on subterm selection like
+all |SSR| tactics that require control on subterm selection like
 rewriting, generalization, …
 
 An *occurrence switch* can be:
 
-+ A list natural numbers ``{+ n1 … nm}``
++ A list of natural numbers ``{+ n1 … nm}``
   of occurrences affected by the tactic.
 
   .. example::
@@ -820,8 +820,8 @@ An *occurrence switch* can be:
         Lemma test x y : x < y -> S x < S y.
         set t := S x.
 
-+ A list of natural numbers between ``{n1 … nm}``.
-  This is equivalent to the previous ``{+ n1 … nm}`` but the list
++ A list of natural numbers ``{n1 … nm}``.
+  This is equivalent to the previous ``{+ n1 … nm}``, but the list
   should start with a number, and not with an Ltac variable.
 + A list ``{- n1 … nm}`` of occurrences *not* to be affected by the
   tactic.
@@ -844,8 +844,8 @@ An *occurrence switch* can be:
 
   Note that, in this goal, it behaves like ``set x := {1 3}(f 2).``
 + In particular, the switch ``{+}`` selects *all* the occurrences. This
-  switch is useful to turn off the default behavior of a tactic which
-  automatically clears some assumptions (see section :ref:`discharge_ssr` for
+  switch is useful to turn off the default behavior of a tactic that
+  automatically clears some assumptions (see Section :ref:`discharge_ssr` for
   instance).
 + The switch ``{-}`` imposes that *no* occurrences of the term should be
   affected by the tactic. The tactic: ``set x := {-}(f 2).`` leaves the goal
@@ -935,8 +935,8 @@ context of a goal thanks to the ``in`` tactical.
      Indeed, remember that 4 is just a notation for (S 3).
 
 The use of the ``in`` tactical is not limited to the localization of
-abbreviations: for a complete description of the in tactical, see
-section :ref:`bookkeeping_ssr` and :ref:`localization_ssr`.
+abbreviations: for a complete description of the ``in`` tactical, see
+Section :ref:`bookkeeping_ssr` and :ref:`localization_ssr`.
 
 
 .. _basic_tactics_ssr:
@@ -974,7 +974,7 @@ the foundation of the |SSR| proof language.
 Bookkeeping
 ~~~~~~~~~~~
 
-During the course of a proof Coq always present the user with a
+During the course of a proof, Coq always presents the user with a
 *sequent* whose general form is::
 
   ci : Ti
@@ -1002,27 +1002,27 @@ affected by the |SSR| tactics: they only operate on the lower part
 decomposes into a series of (universally) quantified *variables*
 ``(xl : Tl)``, local *definitions*
 ``let ym := bm in``, and *assumptions*
-``P n ->``,
+``Pn ->``,
 and a *conclusion* ``C`` (as in the context, variables, definitions, and
 assumptions can appear in any order). The conclusion is what actually
 needs to be proved — the rest of the goal can be seen as a part of the
 proof context that happens to be “below the line”.
 
 However, although they are logically equivalent, there are fundamental
-differences between constants and facts on the one hand, and variables
-and assumptions on the others. Constants and facts are *unordered*,
+differences between constants and facts, on the one hand, and variables
+and assumptions, on the other. Constants and facts are *unordered*,
 but *named* explicitly in the proof text; variables and assumptions
 are *ordered*, but *unnamed*: the display names of variables may
 change at any time because of α-conversion.
 
-Similarly, basic deductive steps such as apply can only operate on the
+Similarly, basic deductive steps such as ``apply`` can only operate on the
 goal because the Gallina terms that control their action (e.g., the
 type of the lemma used by ``apply``) only provide unnamed bound variables.
 [#2]_ Since the proof script can only refer directly to the context, it
 must constantly shift declarations from the goal to the context and
 conversely in between deductive steps.
 
-In |SSR| these moves are performed by two *tacticals* ``=>`` and
+In |SSR|, these moves are performed by two *tacticals*, ``=>`` and
 ``:``, so that the bookkeeping required by a deductive step can be
 directly associated with that step, and that tactics in an |SSR|
 script correspond to actual logical steps in the proof rather than
@@ -1030,7 +1030,7 @@ merely shuffle facts. Still, some isolated bookkeeping is unavoidable,
 such as naming variables and assumptions at the beginning of a
 proof. |SSR| provides a specific ``move`` tactic for this purpose.
 
-Now ``move`` does essentially nothing: it is mostly a placeholder for
+Now, ``move`` does essentially nothing: it is mostly a placeholder for
 ``=>`` and ``:``. The ``=>`` tactical moves variables, local definitions,
 and assumptions to the context, while the ``:`` tactical moves facts and
 constants to the goal.
@@ -1056,12 +1056,12 @@ constants to the goal.
 
       move=> m n le_n_m.
 
-   where move does nothing, but ``=> m n le_m_n`` changes
+   where ``move`` does nothing, but ``=> m n le_m_n`` changes
    the variables and assumption of the goal in the constants
-   ``m n : nat`` and the fact ``le_n_m : n <=  m``, thus exposing the
+   ``m n : nat`` and the fact ``le_n_m : n <= m``, thus exposing the
    conclusion ``m - n + n = m``.
 
-   The ``:`` tactical is the converse of ``=>``, indeed it removes facts and
+   The ``:`` tactical is the converse of ``=>``; indeed it removes facts and
    constants from the context by turning them into variables and
    assumptions.
 
@@ -1071,7 +1071,7 @@ constants to the goal.
 
    turns back ``m`` and ``le_m_n`` into a variable and an assumption,
    removing them from the proof context, and changing the goal to
-   ``forall m, n <= m -> m - n + n = m``
+   ``forall m, n <= m -> m - n + n = m``,
    which can be proved by induction on ``n`` using ``elim: n``.
 
 Because they are tacticals, ``:`` and ``=>`` can be combined, as in
@@ -1080,23 +1080,23 @@ Because they are tacticals, ``:`` and ``=>`` can be combined, as in
 
    move: m le_n_m => p le_n_p.
 
-simultaneously renames ``m`` and ``le_m_n`` into ``p`` and ``le_n_p``,
+which simultaneously renames ``m`` and ``le_m_n`` into ``p`` and ``le_n_p``,
 respectively, by first turning them into unnamed variables, then
 turning these variables back into constants and facts.
 
 Furthermore, |SSR| redefines the basic Coq tactics ``case``, ``elim``,
 and ``apply`` so that they can take better advantage of
-``:`` and ``=>``. In there
-|SSR| variants, these tactic operate on the first variable or
+``:`` and ``=>``. In these
+|SSR| variants, these tactics operate on the first variable or
 constant of the goal and they do not use or change the proof context.
 The ``:`` tactical is used to operate on an element in the context.
 
 .. example::
 
-   For instance the proof of ``subnK`` could continue with ``elim: n``.
+   For instance, the proof of ``subnK`` could continue with ``elim: n``.
    Instead of ``elim n`` (note, no colon), this has the advantage of
    removing n from the context. Better yet, this ``elim`` can be combined
-   with previous move and with the branching version of the ``=>`` tactical
+   with previous ``move`` and with the branching version of the ``=>`` tactical
    (described in :ref:`introduction_ssr`),
    to encapsulate the inductive step in a single
    command:
@@ -1123,24 +1123,24 @@ The ``:`` and ``=>`` tacticals can be explained very simply if one views
 the goal as a stack of variables and assumptions piled on a conclusion:
 
 + ``tactic : a b c`` pushes the context constants ``a``, ``b``, ``c`` as goal
-  variables *before* performing tactic.
+  variables *before* performing the tactic;
 + ``tactic => a b c`` pops the top three goal variables as context
-  constants ``a``, ``b``, ``c``, *after* tactic has been performed.
+  constants ``a``, ``b``, ``c``, *after* the tactic has been performed.
 
 These pushes and pops do not need to balance out as in the examples
-above, so ``move: m le_n_m => p``
+above; so ``move: m le_n_m => p``
 would rename ``m`` into ``p``, but leave an extra assumption ``n <= p``
 in the goal.
 
-Basic tactics like apply and elim can also be used without the ’:’
-tactical: for example we can directly start a proof of ``subnK`` by
+Basic tactics like ``apply`` and ``elim`` can also be used without the ’:’
+tactical: for example, we can directly start a proof of ``subnK`` by
 induction on the top variable ``m`` with
 
 .. coqdoc::
 
    elim=> [|m IHm] n le_n.
 
-The general form of the localization tactical in is also best
+The general form of the localization tactical ``in`` is also best
 explained in terms of the goal stack::
 
    tactic in a H1 H2 *.
@@ -1152,12 +1152,12 @@ is basically equivalent to
    move: a H1 H2; tactic => a H1 H2.
 
 
-with two differences: the in tactical will preserve the body of an if a
-is a defined constant, and if the ``*`` is omitted it will use a
+with two differences: the ``in`` tactical will preserve the body of ``a``, if ``a``
+is a defined constant, and if the ``*`` is omitted, it will use a
 temporary abbreviation to hide the statement of the goal from
 ``tactic``.
 
-The general form of the in tactical can be used directly with the
+The general form of the ``in`` tactical can be used directly with the
 ``move``, ``case`` and ``elim`` tactics, so that one can write
 
 .. coqdoc::
@@ -1172,8 +1172,8 @@ instead of
 
 This is quite useful for inductive proofs that involve many facts.
 
-See section :ref:`localization_ssr` for
-the general syntax and presentation of the in
+See Section :ref:`localization_ssr` for
+the general syntax and presentation of the ``in``
 tactical.
 
 
@@ -1182,7 +1182,7 @@ tactical.
 The defective tactics
 ~~~~~~~~~~~~~~~~~~~~~
 
-In this section we briefly present the three basic tactics performing
+In this section, we briefly present the three basic tactics performing
 context manipulations and the main backward chaining tool.
 
 
@@ -1203,11 +1203,11 @@ The move tactic.
          move.
 
    More precisely, the :tacn:`move <move (ssreflect)>` tactic inspects the goal and does nothing
-   (:tacn:`idtac`) if an introduction step is possible, i.e. if the goal is a
+   (:tacn:`idtac`) if an introduction step is possible, i.e., if the goal is a
    product or a ``let … in``, and performs :tacn:`hnf` otherwise.
 
    Of course this tactic is most often used in combination with the bookkeeping
-   tacticals (see section :ref:`introduction_ssr` and :ref:`discharge_ssr`).
+   tacticals (see Sections :ref:`introduction_ssr` and :ref:`discharge_ssr`).
    These combinations mostly subsume the :tacn:`intros`, :tacn:`generalize`,
    :tacn:`revert`, :tacn:`rename`, :tacn:`clear` and :tacn:`pattern` tactics.
 
@@ -1224,10 +1224,10 @@ The case tactic
    types; specifically, it destructs the top variable or assumption of
    the goal, exposing its constructor(s) and its arguments, as well as
    setting the value of its type family indices if it belongs to a type
-   family (see section :ref:`type_families_ssr`).
+   family (see Section :ref:`type_families_ssr`).
 
-   The |SSR| case tactic has a special behavior on equalities. If the
-   top assumption of the goal is an equality, the case tactic “destructs”
+   The |SSR| ``case`` tactic has a special behavior on equalities. If the
+   top assumption of the goal is an equality, the ``case`` tactic “destructs”
    it as a set of equalities between the constructor arguments of its
    left and right hand sides, as per the tactic injection. For example,
    ``case`` changes the goal::
@@ -1248,7 +1248,7 @@ The case tactic
    The warning can be silenced or made fatal by using the :opt:`Warnings` option
    and the `spurious-ssr-injection` key.
 
-   Finally the :tacn:`case` tactic of |SSR| performs :g:`False` elimination, even
+   Finally, the :tacn:`case` tactic of |SSR| performs :g:`False` elimination, even
    if no branch is generated by this case operation. Hence the tactic
    :tacn:`case` on a goal of the form :g:`False -> G` will succeed and
    prove the goal.
@@ -1335,7 +1335,7 @@ existential metavariables of sort :g:`Prop`.
       0 < proj1_sig (exist (fun n => n < 3) y H).
 
    Otherwise the missing proof is considered to be irrelevant, and is
-   thus discharged generating the two goals shown above.
+   thus discharged, generating the two goals shown above.
 
    Last, the user can replace the trivial tactic by defining an Ltac
    expression named ``ssrautoprop``.
@@ -1357,52 +1357,52 @@ The general syntax of the discharging tactical ``:`` is:
 .. prodn::
    clear_switch ::= { {+ @ident } }
 
-with the following requirements:
+with the following requirements.
 
 + :token:`tactic` must be one of the four basic tactics described in :ref:`the_defective_tactics_ssr`,
   i.e., ``move``, ``case``, ``elim`` or ``apply``, the ``exact``
   tactic (section :ref:`terminators_ssr`),
-  the ``congr`` tactic (section :ref:`congruence_ssr`),
+  the ``congr`` tactic (Section :ref:`congruence_ssr`),
   or the application of the *view*
-  tactical ‘/’ (section :ref:`interpreting_assumptions_ssr`) to one of move, case, or elim.
-+ The optional :token:`ident` specifies *equation generation* (section :ref:`generation_of_equations_ssr`),
-  and is only allowed if tactic is ``move``, ``case`` or ``elim``, or the
-  application of the view tactical ‘/’ (section :ref:`interpreting_assumptions_ssr`) to ``case`` or ``elim``.
+  tactical ‘/’ (Section :ref:`interpreting_assumptions_ssr`) to one of ``move``, ``case``, or ``elim``.
++ The optional :token:`ident` specifies *equation generation* (Section :ref:`generation_of_equations_ssr`),
+  and is only allowed if :token:`tactic` is ``move``, ``case`` or ``elim``, or the
+  application of the view tactical ‘/’ (Section :ref:`interpreting_assumptions_ssr`) to ``case`` or ``elim``.
 + An :token:`occ_switch` selects occurrences of :token:`term`, as in :ref:`abbreviations_ssr`; :token:`occ_switch`
   is not allowed if :token:`tactic` is ``apply`` or ``exact``.
 + A clear item :token:`clear_switch` specifies facts and constants to be
-  deleted from the proof context (as per the clear tactic).
+  deleted from the proof context (as per the ``clear`` tactic).
 
 
 The ``:`` tactical first *discharges* all the :token:`d_item`, right to left,
-and then performs tactic, i.e., for each :token:`d_item`, starting with the last one :
+and then performs the tactic, i.e., for each :token:`d_item`, starting with the last one :
 
 
-#. The |SSR| matching algorithm described in section :ref:`abbreviations_ssr` is
-   used to find occurrences of term in the goal, after filling any holes
-   ‘_’ in term; however if tactic is apply or exact a different matching
+#. The |SSR| matching algorithm described in Section :ref:`abbreviations_ssr` is
+   used to find occurrences of :token:`term` in the goal, after filling any holes
+   ‘_’ in the term; however if :token:`tactic` is ``apply`` or ``exact``, a different matching
    algorithm, described below, is used [#4]_.
 #. These occurrences are replaced by a new variable; in particular, if
-   term is a fact, this adds an assumption to the goal.
-#. If term is *exactly* the name of a constant or fact in the proof
+   the term is a fact, this adds an assumption to the goal.
+#. If the term is *exactly* the name of a constant or fact in the proof
    context, it is deleted from the context, unless there is an
    :token:`occ_switch`.
 
 
-Finally, tactic is performed just after the first :token:`d_item`
+Finally, the tactic is performed just after the first :token:`d_item`
 has been generalized
 — that is, between steps 2 and 3. The names listed in
 the final :token:`clear_switch` (if it is present) are cleared first, before
 :token:`d_item` n is discharged.
 
-Switches affect the discharging of a :token:`d_item` as follows:
+Switches affect the discharging of a :token:`d_item` as follows.
 
 
 + An :token:`occ_switch` restricts generalization (step 2) to a specific subset
-  of the occurrences of term, as per section :ref:`abbreviations_ssr`, and prevents clearing (step
+  of the occurrences of the term, as per Section :ref:`abbreviations_ssr`, and prevents clearing (step
   3).
 + All the names specified by a :token:`clear_switch` are deleted from the
-  context in step 3, possibly in addition to term.
+  context in step 3, possibly in addition to the term.
 
 
 For example, the tactic:
@@ -1414,9 +1414,9 @@ For example, the tactic:
 + first generalizes ``(refl_equal n : n = n)``;
 + then generalizes the second occurrence of ``n``.
 + finally generalizes all the other occurrences of ``n``, and clears ``n``
-  from the proof context (assuming n is a proof constant).
+  from the proof context (assuming ``n`` is a proof constant).
 
-Therefore this tactic changes any goal ``G`` into
+Therefore, this tactic changes any goal ``G`` into
 
 .. coqdoc::
 
@@ -1429,16 +1429,16 @@ Finally, note that a discharge operation generalizes defined constants
 as variables, and not as local definitions. To override this behavior,
 prefix the name of the local definition with a ``@``, like in ``move: @n``.
 
-This is in contrast with the behavior of the in tactical (see
-section :ref:`localization_ssr`), which preserves local
+This is in contrast with the behavior of the ``in`` tactical (see
+Section :ref:`localization_ssr`), which preserves local
 definitions by default.
 
 
 Clear rules
 ```````````
 
-The clear step will fail if term is a proof constant that appears in
-other facts; in that case either the facts should be cleared
+The clear step will fail if the term is a proof constant that appears in
+other facts; in that case, either the facts should be cleared
 explicitly with a :token:`clear_switch`, or the clear step should be disabled.
 The latter can be done by adding an :token:`occ_switch` or simply by putting
 parentheses around term: both
@@ -1451,17 +1451,17 @@ The clear step will also fail if the :token:`clear_switch` contains a :token:`id
 is not in the *proof* context. Note that |SSR| never clears a
 section constant.
 
-If tactic is ``move`` or ``case`` and an equation :token:`ident` is given, then clear
-(step 3) for :token:`d_item` is suppressed (see section :ref:`generation_of_equations_ssr`).
+If the tactic is ``move`` or ``case`` and an equation :token:`ident` is given, then clearing
+(step 3) for :token:`d_item` is suppressed (see Section :ref:`generation_of_equations_ssr`).
 
-Intro patterns (see section :ref:`introduction_ssr`)
-and the ``rewrite`` tactic (see section :ref:`rewriting_ssr`)
+Intro patterns (see Section :ref:`introduction_ssr`)
+and the ``rewrite`` tactic (see Section :ref:`rewriting_ssr`)
 let one place a :token:`clear_switch` in the middle of other items
 (namely identifiers, views and rewrite rules).  This can trigger the
 addition of proof context items to the ones being explicitly
-cleared, and in turn this can result in clear errors (e.g. if the
+cleared, and in turn this can result in ``clear`` errors (e.g., if the
 context item automatically added occurs in the goal).  The
-relevant sections describe ways to avoid the unintended clear of
+relevant sections describe ways to avoid the unintended clearing of
 context items.
 
 
@@ -1473,15 +1473,15 @@ The matching algorithm for :token:`d_item` of the |SSR|
 tactics exploits the type of the first :token:`d_item` to interpret
 wildcards in the
 other :token:`d_item` and to determine which occurrences of these should be
-generalized. Therefore, occur switches are not needed for apply and
-exact.
+generalized. Therefore, occur switches are not needed for ``apply`` and
+``exact``.
 
 Indeed, the |SSR| tactic ``apply: H x`` is equivalent to
-``refine (@H _ … _ x); clear H x``
+``refine (@H _ … _ x); clear H x``,
 with an appropriate number of wildcards between ``H`` and ``x``.
 
 Note that this means that matching for ``apply`` and ``exact`` has much more
-context to interpret wildcards; in particular it can accommodate the
+context to interpret wildcards; in particular, it can accommodate the
 ``_`` :token:`d_item`, which would always be rejected after ``move:``.
 
 .. example::
@@ -1500,7 +1500,7 @@ context to interpret wildcards; in particular it can accommodate the
       Lemma test (Hfg : forall x, f x = g x) a b : f a = g b.
       apply: trans_equal (Hfg _) _.
 
-This tactic is equivalent (see section
+This tactic is equivalent (see Section
 :ref:`bookkeeping_ssr`) to:
 ``refine (trans_equal (Hfg _) _).``
 and this is a common idiom for applying transitivity on the left hand
@@ -1516,7 +1516,7 @@ The abstract tactic
    :name: abstract (ssreflect)
 
    This tactic assigns an abstract constant previously introduced with the
-   :n:`[: @ident ]` intro pattern (see section :ref:`introduction_ssr`).
+   :n:`[: @ident ]` intro pattern (see Section :ref:`introduction_ssr`).
 
 In a goal like the following::
 
@@ -1527,7 +1527,7 @@ In a goal like the following::
   m < 5 + n
 
 The tactic :g:`abstract: abs n` first generalizes the goal with respect to :g:`n`
-(that is not visible to the abstract constant abs) and then assigns
+(that is not visible to the abstract constant ``abs``) and then assigns
 abs. The resulting goal is::
 
   m : nat
@@ -1535,7 +1535,7 @@ abs. The resulting goal is::
   =============
   m < 5 + n
 
-Once this subgoal is closed, all other goals having abs in their
+Once this subgoal is closed, all other goals having ``abs`` in their
 context see the type assigned to ``abs``. In this case::
 
   m : nat
@@ -1543,8 +1543,8 @@ context see the type assigned to ``abs``. In this case::
   =============
   …
 
-For a more detailed example the reader should refer to
-section :ref:`structure_ssr`.
+For a more detailed example, the reader should refer to
+Section :ref:`structure_ssr`.
 
 
 .. _introduction_ssr:
@@ -1588,13 +1588,13 @@ left to right. An :token:`s_item` specifies a
 simplification operation; a :token:`clear_switch`
 specifies context pruning as in :ref:`discharge_ssr`.
 The :token:`i_pattern`\s can be seen as a variant of *intro patterns*
-(see :tacn:`intros`:) each performs an introduction operation, i.e., pops some
+(see :tacn:`intros`); each performs an introduction operation, i.e., pops some
 variables or assumptions from the goal.
 
 Simplification items
 `````````````````````
 
-An :token:`s_item` can simplify the set of subgoals or the subgoals themselves:
+An :token:`s_item` can simplify the set of subgoals or the subgoals themselves.
 
 + ``//`` removes all the “trivial” subgoals that can be resolved by the
   |SSR| tactic :tacn:`done` described in :ref:`terminators_ssr`, i.e.,
@@ -1615,14 +1615,14 @@ Views
 `````
 
 The first entry in the :token:`i_view` grammar rule, :n:`/@term`,
-represents a view (see section :ref:`views_and_reflection_ssr`).
+represents a view (see Section :ref:`views_and_reflection_ssr`).
 It interprets the top of the stack with the view :token:`term`.
 It is equivalent to :n:`move/@term`.
 
 A :token:`clear_switch` that immediately precedes an :token:`i_view`
 is complemented with the name of the view if an only if the :token:`i_view`
 is a simple proof context entry [#10]_.
-E.g. ``{}/v`` is equivalent to ``/v{v}``.
+E.g., ``{}/v`` is equivalent to ``/v{v}``.
 This behavior can be avoided by separating the :token:`clear_switch`
 from the :token:`i_view` with the ``-`` intro pattern or by putting
 parentheses around the view.
@@ -1656,7 +1656,7 @@ to apply the top of the stack to the next.
 Intro patterns
 ``````````````
 
-|SSR| supports the following :token:`i_pattern`\s:
+|SSR| supports the following :token:`i_pattern`\s.
 
 :token:`ident`
   pops the top variable, assumption, or local definition into
@@ -1666,7 +1666,7 @@ Intro patterns
   A :token:`clear_switch` (even an empty one) immediately preceding an
   :token:`ident` is complemented with that :token:`ident` if and only if
   the identifier is a simple proof context entry [#10]_.
-  As a consequence  by prefixing the
+  As a consequence,  by prefixing the
   :token:`ident` with ``{}`` one can *replace* a context entry.
   This behavior can be avoided by separating the :token:`clear_switch`
   from the :token:`ident` with the ``-`` intro pattern.
@@ -1694,7 +1694,7 @@ Intro patterns
   terms where the constant appears).
 ``*``
   pops all the remaining apparent variables/assumptions as anonymous
-  constants/facts. Unlike ``?`` and ``move`` the ``*``
+  constants/facts. Unlike ``?`` and ``move``, the ``*``
   :token:`i_item` does not
   expand definitions in the goal to expose quantifiers, so it may be useful
   to repeat a ``move=> *`` tactic, e.g., on the goal::
@@ -1717,23 +1717,23 @@ Intro patterns
   (resp. :token:`occ_switch` ``<-``)
   pops the top assumption (which should be a rewritable proposition) into an
   anonymous fact, rewrites (resp. rewrites right to left) the goal with this
-  fact (using the |SSR| ``rewrite`` tactic described in section
+  fact (using the |SSR| ``rewrite`` tactic described in Section
   :ref:`rewriting_ssr`, and honoring the optional occurrence selector), and
   finally deletes the anonymous fact from the context.
 ``[`` :token:`i_item` * ``| … |`` :token:`i_item` * ``]``
   when it is the
-  very *first* :token:`i_pattern` after tactic ``=>`` tactical *and* tactic
-  is not a move, is a *branching*:token:`i_pattern`. It executes the sequence
-  :n:`@i_item__i` on the i-th subgoal produced by tactic. The
-  execution of tactic should thus generate exactly m subgoals, unless the
+  very *first* :token:`i_pattern` after tactic ``=>`` tactical *and* the tactic
+  is not a move, is a *branching* :token:`i_pattern`. It executes the sequence
+  :n:`@i_item__i` on the i-th subgoal produced by the tactic. The
+  execution of the tactic should thus generate exactly m subgoals, unless the
   ``[…]`` :token:`i_pattern` comes after an initial ``//`` or ``//=``
-  :token:`s_item` that closes some of the goals produced by ``tactic``, in
+  :token:`s_item` that closes some of the goals produced by the tactic, in
   which case exactly m subgoals should remain after the :token:`s_item`, or we have
   the trivial branching :token:`i_pattern` [], which always does nothing,
   regardless of the number of remaining subgoals.
 ``[`` :token:`i_item` * ``| … |`` :token:`i_item` * ``]``
   when it is *not*
-  the first :token:`i_pattern` or when tactic is a ``move``, is a
+  the first :token:`i_pattern` or when the tactic is a ``move``, is a
   *destructing* :token:`i_pattern`. It starts by destructing the top
   variable, using the |SSR| ``case`` tactic described in
   :ref:`the_defective_tactics_ssr`. It then behaves as the corresponding
@@ -1792,8 +1792,8 @@ Branching and destructuring
 
 The rules for interpreting branching and destructing :token:`i_pattern` are
 motivated by the fact that it would be pointless to have a branching
-pattern if tactic is a ``move``, and in most of the remaining cases
-tactic is ``case`` or ``elim``, which implies destruction.
+pattern if the tactic is a ``move``, and in most of the remaining cases
+the tactic is ``case`` or ``elim``, which implies destructuring.
 The rules above imply that:
 
 + ``move=> [a b].``
@@ -1817,7 +1817,7 @@ are all equivalent.
 Block introduction
 ``````````````````
 
-|SSR| supports the following :token:`i_block`\s:
+|SSR| supports the following :token:`i_block`\s.
 
 :n:`[^ @ident ]`
   *block destructing* :token:`i_pattern`. It performs a case analysis
@@ -1825,7 +1825,7 @@ Block introduction
   from the case analysis. The names of these variables are obtained by
   taking the names used in the inductive type declaration and prefixing them
   with :token:`ident`. If the intro pattern immediately follows a call
-  to ``elim`` with a custom eliminator (see :ref:`custom_elim_ssr`) then
+  to ``elim`` with a custom eliminator (see :ref:`custom_elim_ssr`), then
   the names are taken from the ones used in the type of the eliminator.
 
   .. example::
@@ -1941,32 +1941,32 @@ be substituted.
    A specific ``/`` switch indicates the type family parameters of the type
    of a :token:`d_item` immediately following this ``/`` switch.
    The :token:`d_item` on the right side of the ``/`` switch are discharged as
-   described in section :ref:`discharge_ssr`. The case analysis or elimination
+   described in Section :ref:`discharge_ssr`. The case analysis or elimination
    will be done on the type of the top assumption after these discharge
    operations.
 
-   Every :token:`d_item` preceding the ``/`` is interpreted as arguments of this
+   Every :token:`d_item` preceding the ``/`` is interpreted as an argument of this
    type, which should be an instance of an inductive type family. These terms
    are not actually generalized, but rather selected for substitution.
    Occurrence switches can be used to restrict the substitution. If a term is
-   left completely implicit (e.g. writing just ``_``), then a pattern is
-   inferred looking at the type of the top assumption. This allows for the
+   left completely implicit (e.g., writing just ``_``), then a pattern is
+   inferred by looking at the type of the top assumption. This allows for the
    compact syntax:
 
    .. coqdoc::
 
       case: {2}_ / eqP.
 
-   where ``_`` is interpreted as ``(_ == _)`` since
-   ``eqP T a b : reflect (a = b) (a == b)`` and reflect is a type family with
+   where ``_`` is interpreted as ``(_ == _)``, since
+   ``eqP T a b : reflect (a = b) (a == b)`` and ``reflect`` is a type family with
    one index.
 
-   Moreover if the :token:`d_item` list is too short, it is padded with an
+   Moreover, if the :token:`d_item` list is too short, it is padded with an
    initial sequence of ``_`` of the right length.
 
    .. example::
 
-      Here is a small example on lists. We define first a function which
+      Here is a small example on lists. We define first a function that
       adds an element at the end of a given list.
 
       .. coqtop:: reset none
@@ -2006,8 +2006,8 @@ be substituted.
          Lemma test l : (length l) * 2 = length (l ++ l).
          case: (lastP l).
 
-      Applied to the same goal, the tactc ``case: l / (lastP l)``
-      generates the same subgoals but ``l`` has been cleared from both contexts:
+      Applied to the same goal, the tactic ``case: l / (lastP l)``
+      generates the same subgoals, but ``l`` has been cleared from both contexts:
 
       .. coqtop:: all restart
 
@@ -2019,8 +2019,8 @@ be substituted.
 
          case: {1 3}l / (lastP l).
 
-      Note that selected occurrences on the left of the ``/``
-      switch have been substituted with l instead of being affected by
+      Note that the selected occurrences on the left of the ``/``
+      switch have been substituted with ``l`` instead of being affected by
       the case analysis.
 
    The equation name generation feature combined with a type family ``/``
@@ -2039,7 +2039,7 @@ be substituted.
 
    There must be at least one :token:`d_item` to the left of the ``/`` switch; this
    prevents any confusion with the view feature. However, the :token:`d_item`
-   to the right of the ``/`` are optional, and if they are omitted the first
+   to the right of the ``/`` are optional, and if they are omitted, the first
    assumption provides the instance of the type family.
 
    The equation always refers to the first :token:`d_item` in the actual tactic
@@ -2070,8 +2070,8 @@ time, |SSR| provides some bullets to highlight the structure of branching
 proofs. The available bullets are ``-``, ``+`` and ``*``.  Combined with
 tabulation, this lets us highlight four nested levels of branching; the most
 we have ever needed is three. Indeed, the use of “simpl and closing”
-switches, of terminators (see above section :ref:`terminators_ssr`) and
-selectors (see section :ref:`selectors_ssr`) is powerful enough to avoid most
+switches, of terminators (see Section :ref:`terminators_ssr`) and
+selectors (see Section :ref:`selectors_ssr`) is powerful enough to avoid most
 of the time more than two levels of indentation.
 
 Here is a fragment of such a structured script::
@@ -2105,10 +2105,10 @@ then have the nice property that an error immediately occurs when a
 closed tactic fails to prove its subgoal.
 
 It is hence recommended practice that the proof of any subgoal should
-end with a tactic which *fails if it does not solve the current goal*,
+end with a tactic that *fails if it does not solve the current goal*,
 like :tacn:`discriminate`, :tacn:`contradiction` or :tacn:`assumption`.
 
-In fact, |SSR| provides a generic tactical which turns any tactic
+In fact, |SSR| provides a generic tactical that turns any tactic
 into a closing one (similar to :tacn:`now`). Its general syntax is:
 
 .. tacn:: by @tactic
@@ -2119,7 +2119,7 @@ The Ltac expression :n:`by [@tactic | @tactic | …]` is equivalent to
 :n:`do [done | by @tactic | by @tactic | …]`, which corresponds to the
 standard Ltac expression :n:`first [done | @tactic; done | @tactic; done | …]`.
 
-In the script provided as example in section :ref:`indentation_ssr`, the
+In the script provided as example in Section :ref:`indentation_ssr`, the
 paragraph corresponding to each sub-case ends with a tactic line prefixed
 with a ``by``, like in:
 
@@ -2130,14 +2130,14 @@ with a ``by``, like in:
 .. tacn:: done
    :name: done
 
-   The :tacn:`by` tactical is implemented using the user-defined, and extensible
+   The :tacn:`by` tactical is implemented using the user-defined, and extensible,
    :tacn:`done` tactic. This :tacn:`done` tactic tries to solve the current goal by some
    trivial means and fails if it doesn’t succeed. Indeed, the tactic
    expression :n:`by @tactic` is equivalent to :n:`@tactic; done`.
 
    Conversely, the tactic ``by [ ]`` is equivalent to :tacn:`done`.
 
-   The default implementation of the done tactic, in the ``ssreflect.v``
+   The default implementation of the :tacn:`done` tactic, in the ``ssreflect.v``
    file, is:
 
    .. coqdoc::
@@ -2150,11 +2150,11 @@ with a ``by``, like in:
          | match goal with H : ~ _ |- _ => solve [case H; trivial] end ].
 
    The lemma :g:`not_locked_false_eq_true` is needed to discriminate
-   *locked* boolean predicates (see section :ref:`locking_ssr`). The iterator
-   tactical do is presented in section :ref:`iteration_ssr`. This tactic can be
+   *locked* boolean predicates (see Section :ref:`locking_ssr`). The iterator
+   tactical ``do`` is presented in Section :ref:`iteration_ssr`. This tactic can be
    customized by the user, for instance to include an :tacn:`auto` tactic.
 
-A natural and common way of closing a goal is to apply a lemma which
+A natural and common way of closing a goal is to apply a lemma that
 is the exact one needed for the goal to be solved. The defective form
 of the tactic:
 
@@ -2182,7 +2182,7 @@ is equivalent to:
 
    by apply: MyLemma.
 
-(see section :ref:`discharge_ssr` for the documentation of the apply: combination).
+(see Section :ref:`discharge_ssr` for the documentation of the apply: combination).
 
 .. warning::
 
@@ -2263,13 +2263,13 @@ then the tactic
 
    tactic ; last k [ tactic1 |…| tacticm ] || tacticn.
 
-where natural denotes the integer :math:`k` as above, applies tactic1 to the
-:math:`n−k+1`\-th goal, … tacticm to the :math:`n−k+2`\-th goal and tacticn
+applies ``tactic1`` to the
+:math:`n−k+1`\-th goal, … ``tacticm`` to the :math:`n−k+m`\-th goal and ``tacticn``
 to the others.
 
 .. example::
 
-   Here is a small example on lists. We define first a function which
+   Here is a small example on lists. We define first a function that
    adds an element at the end of a given list.
 
    .. coqtop:: reset none
@@ -2318,22 +2318,22 @@ is equivalent to the standard Ltac expression:
    first [ tactic 1 | … | tactic n ].
 
 The optional multiplier :token:`mult` specifies how many times the action of
-tactic should be repeated on the current subgoal.
+``tactic`` should be repeated on the current subgoal.
 
 There are four kinds of multipliers:
 
 .. prodn::
    mult ::= {| @natural ! | ! | @natural ? | ? }
 
-Their meaning is:
+Their meaning is as follows.
 
-+ ``n!`` the step tactic is repeated exactly n times (where n is a
++ With ``n!``, the step tactic is repeated exactly ``n`` times (where ``n`` is a
   positive integer argument).
-+ ``!`` the step tactic is repeated as many times as possible, and done
++ With ``!``, the step tactic is repeated as many times as possible, and done
   at least once.
-+ ``?`` the step tactic is repeated as many times as possible,
++ With ``?``, the step tactic is repeated as many times as possible,
   optionally.
-+ ``n?`` the step tactic is repeated up to n times, optionally.
++ Finally, with ``n?``, the step tactic is repeated up to ``n`` times, optionally.
 
 
 For instance, the tactic:
@@ -2350,12 +2350,12 @@ generated by tactic, whereas the tactic:
    tactic; do 2! rewrite mult_comm.
 
 rewrites exactly two times the lemma ``mult_comm`` in all the subgoals
-generated by tactic, and fails if this rewrite is not possible in some
+generated by ``tactic``, and fails if this rewrite is not possible in some
 subgoal.
 
 Note that the combination of multipliers and rewrite is so often used
 that multipliers are in fact integrated to the syntax of the
-|SSR| rewrite tactic, see section :ref:`rewriting_ssr`.
+|SSR| rewrite tactic, see Section :ref:`rewriting_ssr`.
 
 
 .. _localization_ssr:
@@ -2363,8 +2363,8 @@ that multipliers are in fact integrated to the syntax of the
 Localization
 ~~~~~~~~~~~~
 
-In sections :ref:`basic_localization_ssr` and :ref:`bookkeeping_ssr`, we have
-already presented the *localization* tactical in, whose general syntax is:
+In Sections :ref:`basic_localization_ssr` and :ref:`bookkeeping_ssr`, we have
+already presented the *localization* tactical ``in``, whose general syntax is:
 
 .. tacn:: @tactic in {+ @ident} {? * }
    :name: in
@@ -2373,21 +2373,21 @@ already presented the *localization* tactical in, whose general syntax is:
 where :token:`ident` is a name in the
 context. On the left side of ``in``,
 :token:`tactic` can be ``move``, ``case``, ``elim``, ``rewrite``, ``set``,
-or any tactic formed with the general iteration tactical ``do`` (see section
+or any tactic formed with the general iteration tactical ``do`` (see Section
 :ref:`iteration_ssr`).
 
-The operation described by tactic is performed in the facts listed after
+The operation described by the tactic is performed in the facts listed after
 ``in`` and in the goal if a ``*`` ends the list of names.
 
 The ``in`` tactical successively:
 
 + generalizes the selected hypotheses, possibly “protecting” the goal
-  if ``*`` is not present,
-+ performs :token:`tactic`, on the obtained goal,
+  if ``*`` is not present;
++ performs :token:`tactic`, on the obtained goal;
 + reintroduces the generalized facts, under the same names.
 
 This defective form of the ``do`` tactical is useful to avoid clashes
-between standard Ltac in and the |SSR| tactical in.
+between standard Ltac ``in`` and the |SSR| tactical in.
 
 .. example::
 
@@ -2408,7 +2408,7 @@ between standard Ltac in and the |SSR| tactical in.
   the last tactic rewrites the hypothesis ``H2 : y = 3`` both in
   ``H1 : x = y`` and in the goal ``x + y = 6``.
 
-By default ``in`` keeps the body of local definitions. To erase the body
+By default, ``in`` keeps the body of local definitions. To erase the body
 of a local definition during the generalization phase, the name of the
 local definition must be written between parentheses, like in
 ``rewrite H in H1 (def_n) H2.``
@@ -2416,11 +2416,11 @@ local definition must be written between parentheses, like in
 .. tacv:: @tactic in {+ {| @clear_switch | {? @}@ident | ( @ident ) | ( {? @}@ident := @c_pattern ) } } {? * }
 
    This is the most general form of the ``in`` tactical.
-   In its simplest form the last option lets one rename hypotheses that
+   In its simplest form, the last option lets one rename hypotheses that
    can’t be cleared (like section variables). For example, ``(y := x)``
    generalizes over ``x`` and reintroduces the generalized variable under the
    name ``y`` (and does not clear ``x``).
-   For a more precise description of this form of localization refer
+   For a more precise description of this form of localization, refer
    to :ref:`advanced_generalization_ssr`.
 
 
@@ -2432,12 +2432,12 @@ Structure
 Forward reasoning structures the script by explicitly specifying some
 assumptions to be added to the proof context. It is closely associated
 with the declarative style of proof, since an extensive use of these
-highlighted statements make the script closer to a (very detailed)
+highlighted statements makes the script closer to a (very detailed)
 textbook proof.
 
 Forward chaining tactics allow to state an intermediate lemma and start a
 piece of script dedicated to the proof of this statement. The use of closing
-tactics (see section :ref:`terminators_ssr`) and of indentation makes
+tactics (see Section :ref:`terminators_ssr`) and of indentation makes
 syntactically explicit the portion of the script building the proof of the
 intermediate statement.
 
@@ -2457,11 +2457,11 @@ The have tactic.
    generates a first subgoal requiring a proof of :token:`term` in the context of
    ``G``. The second generated subgoal is of the form :n:`term -> G`, where term
    becomes the new top assumption, instead of being introduced with a
-   fresh name. At the proof-term level, the have tactic creates a β
+   fresh name. At the proof-term level, the ``have`` tactic creates a β
    redex, and introduces the lemma under a fresh name, automatically
    chosen.
 
-Like in the case of the :n:`pose <pose (ssreflect)>` tactic (see section :ref:`definitions_ssr`), the types of
+Like in the case of the :n:`pose (ssreflect)` tactic (see Section :ref:`definitions_ssr`), the types of
 the holes are abstracted in term.
 
 .. example::
@@ -2492,7 +2492,7 @@ the holes are abstracted in term.
 
      have: forall n : nat, n * 0 = 0.
 
-The have tactic also enjoys the same abstraction mechanism as the ``pose``
+The ``have`` tactic also enjoys the same abstraction mechanism as the :tacn:`pose (ssreflect)`
 tactic for the non-inferred implicit arguments. For instance, the
 tactic:
 
@@ -2519,7 +2519,7 @@ generalize it in the following general construction:
    :undocumented:
 
 Open syntax is supported for both :token:`term`. For the description
-of :token:`i_item` and :token:`s_item` see section
+of :token:`i_item` and :token:`s_item`, see Section
 :ref:`introduction_ssr`. The first mode of the
 have tactic, which opens a sub-proof for an intermediate result, uses
 tactics of the form:
@@ -2527,7 +2527,7 @@ tactics of the form:
 .. tacv:: have @clear_switch @i_item : @term by @tactic
    :undocumented:
 
-which behave like:
+which behaves like:
 
 .. coqdoc::
 
@@ -2618,7 +2618,7 @@ term for the intermediate lemma, using tactics of the form:
      Lemma test : True.
      have H := forall x, (x, x) = (x, x).
 
-  adds to the context ``H : Type -> Prop.`` This is a schematic example but
+  adds to the context ``H : Type -> Prop.`` This is a schematic example, but
   the feature is specially useful when the proof term to give involves
   for instance a lemma with some hidden implicit arguments.
 
@@ -2651,10 +2651,10 @@ with parentheses even if no type is specified:
    have (x) : 2 * x = x + x by lia.
 
 The :token:`i_item` and :token:`s_item` can be used to interpret the asserted
-hypothesis with views (see section :ref:`views_and_reflection_ssr`) or simplify the resulting
+hypothesis with views (see Section :ref:`views_and_reflection_ssr`) or simplify the resulting
 goals.
 
-The :tacn:`have` tactic also supports a ``suff`` modifier which allows for
+The :tacn:`have` tactic also supports a ``suff`` modifier that allows for
 asserting that a given statement implies the current goal without
 copying the goal itself.
 
@@ -2674,8 +2674,8 @@ compatible with the presence of a list of binders.
 Generating let in context entries with have
 ```````````````````````````````````````````
 
-Since |SSR| 1.5 the :tacn:`have` tactic supports a “transparent” modifier
-to generate let in context entries: the ``@`` symbol in front of the
+Since |SSR| 1.5, the :tacn:`have` tactic supports a “transparent” modifier
+to generate ``let in`` context entries: the ``@`` symbol in front of the
 context entry name.
 
 .. example::
@@ -2695,7 +2695,7 @@ context entry name.
 
 Note that the subterm produced by :tacn:`lia` is in general huge and
 uninteresting, and hence one may want to hide it.
-For this purpose the ``[: name ]`` intro pattern and the tactic
+For this purpose the ``[: name]`` intro pattern and the tactic
 ``abstract`` (see :ref:`abstract_ssr`) are provided.
 
 .. example::
@@ -2709,7 +2709,7 @@ For this purpose the ``[: name ]`` intro pattern and the tactic
   simplifying it. The annotations are there for technical reasons only.
 
 When intro patterns for abstract constants are used in conjunction
-with have and an explicit term, they must be used as follows:
+with`` have`` and an explicit term, they must be used as follows:
 
 .. example::
 
@@ -2719,7 +2719,7 @@ with have and an explicit term, they must be used as follows:
      have [:pm] @i : 'I_n := Sub m pm.
        by lia.
 
-In this case the abstract constant ``pm`` is assigned by using it in
+In this case, the abstract constant ``pm`` is assigned by using it in
 the term that follows ``:=`` and its corresponding goal is left to be
 solved. Goals corresponding to intro patterns for abstract constants
 are opened in the order in which the abstract constants are declared
@@ -2727,7 +2727,7 @@ are opened in the order in which the abstract constants are declared
 
 Note that abstract constants do respect scopes. Hence, if a variable
 is declared after their introduction, it has to be properly
-generalized (i.e. explicitly passed to the abstract constant when one
+generalized (i.e., explicitly passed to the abstract constant when one
 makes use of it).
 
 .. example::
@@ -2738,13 +2738,13 @@ makes use of it).
      have [:pm] @i k : 'I_(n+k) by apply: (Sub m); abstract: pm k; lia.
 
 Last, notice that the use of intro patterns for abstract constants is
-orthogonal to the transparent flag ``@`` for have.
+orthogonal to the transparent flag ``@`` for ``have``.
 
 
 The have tactic and typeclass resolution
 ```````````````````````````````````````````
 
-Since |SSR| 1.5 the ``have`` tactic behaves as follows with respect to
+Since |SSR| 1.5, the ``have`` tactic behaves as follows with respect to
 typeclass inference.
 
   .. coqtop:: none
@@ -2769,7 +2769,7 @@ typeclass inference.
 
   No inference for ``ty``. Unresolved instances are
   quantified in ``ty``. The first subgoal demands a proof of such quantified
-  statement. Note that no proof term follows ``:=``, hence two subgoals are
+  statement. Note that no proof term follows ``:=``; hence two subgoals are
   generated.
 
   .. coqtop:: all restart
@@ -2792,7 +2792,7 @@ typeclass inference.
 Variants: the suff and wlog tactics
 ```````````````````````````````````
 
-As it is often the case in mathematical textbooks, forward reasoning
+As is often the case in mathematical textbooks, forward reasoning
 may be used in slightly different variants. One of these variants is
 to show that the intermediate step L easily implies the initial goal
 G. By easily we mean here that the proof of L ⇒ G is shorter than the
@@ -2805,9 +2805,9 @@ The
 ``have`` and ``suff`` tactics are equivalent and have the same syntax but:
 
 
-+ the order of the generated subgoals is inverted
++ the order of the generated subgoals is inverted;
 + the optional clear item is still performed in the *second*
-  branch. This means that the tactic:
+  branch, which means that the tactic:
 
   .. coqdoc::
 
@@ -2841,7 +2841,7 @@ Another useful construct is reduction, showing that a particular case
 is in fact general enough to prove a general property. This kind of
 reasoning step usually starts with: “Without loss of generality, we
 can suppose that …”. Formally, this corresponds to the proof of a goal
-``G`` by introducing a cut ``wlog_statement -> G``. Hence the user shall
+``G`` by introducing a cut: ``wlog_statement -> G``. Hence the user shall
 provide a proof for both ``(wlog_statement -> G) -> G`` and
 ``wlog_statement -> G``. However, such cuts are usually rather
 painful to perform by
@@ -2851,7 +2851,7 @@ and sometimes even to read.
 |SSR| implements this kind of reasoning step through the :tacn:`without loss`
 tactic, whose short name is :tacn:`wlog`. It offers support to describe
 the shape of the cut statements, by providing the simplifying
-hypothesis and by pointing at the elements of the initial goals which
+hypothesis and by pointing at the elements of the initial goals that
 should be generalized. The general syntax of without loss is:
 
 .. tacn:: wlog {? suff } {? @clear_switch } {? @i_item } : {* @ident } / @term
@@ -2906,9 +2906,9 @@ of ``wlog_statement -> G``. It thus opens the goals
 ``wlog_statement -> G``
 and ``wlog_statement``.
 
-In its simplest form the ``generally have : …`` tactic is equivalent to
-``wlog suff : …`` followed by last first. When the ``have`` tactic is used
-with the ``generally`` (or ``gen``) modifier it accepts an extra identifier
+In its simplest form, the ``generally have : …`` tactic is equivalent to
+``wlog suff : …`` followed by ``last first``. When the ``have`` tactic is used
+with the ``generally`` (or ``gen``) modifier, it accepts an extra identifier
 followed by a comma before the usual intro pattern. The identifier
 will name the new hypothesis in its more general form, while the intro
 pattern will be used to process its instance.
@@ -2951,11 +2951,11 @@ helps in particular avoiding dependency issues while generalizing some
 facts.
 
 If an :token:`ident` is prefixed with the ``@`` mark, then a let-in redex is
-created, which keeps track if its body (if any). The syntax
+created, which keeps track of its body (if any). The syntax
 :n:`(@ident := @c_pattern)` allows to generalize an arbitrary term using a
 given name. Note that its simplest form ``(x := y)`` is just a renaming of
 ``y`` into ``x``. In particular, this can be useful in order to simulate the
-generalization of a section variable, otherwise not allowed. Indeed
+generalization of a section variable, otherwise not allowed. Indeed,
 renaming does not require the original variable to be cleared.
 
 The syntax ``(@x := y)`` generates a let-in abstraction but with the
@@ -2980,8 +2980,8 @@ illustrated in the following example.
      Lemma test : x <= addx x.
      wlog H : (y := x) (@twoy := addx x) / twoy = 2 * y.
 
-  To avoid unfolding the term captured by the pattern add x one can use
-  the pattern ``id (addx x)``, that would produce the following first
+  To avoid unfolding the term captured by the pattern ``add x``, one can use
+  the pattern ``id (addx x)``, which would produce the following first
   subgoal
 
   .. coqtop:: reset none
@@ -3008,10 +3008,10 @@ Rewriting
 
 The generalized use of reflection implies that most of the
 intermediate results handled are properties of effectively computable
-functions. The most efficient mean of establishing such results are
+functions. The most efficient means of establishing such results are
 computation and simplification of expressions involving such
 functions, i.e., rewriting. |SSR| therefore includes an
-extended ``rewrite`` tactic, that unifies and combines most of the
+extended ``rewrite`` tactic that unifies and combines most of the
 rewriting functionalities.
 
 
@@ -3020,12 +3020,12 @@ An extended rewrite tactic
 
 The main features of the rewrite tactic are:
 
-+ It can perform an entire series of such operations in any subset of
++ it can perform an entire series of such operations in any subset of
   the goal and/or context;
-+ It allows to perform rewriting, simplifications, folding/unfolding
++ it allows to perform rewriting, simplifications, folding/unfolding
   of definitions, closing of goals;
-+ Several rewriting operations can be chained in a single tactic;
-+ Control over the occurrence at which rewriting is to be performed is
++ several rewriting operations can be chained in a single tactic;
++ control over the occurrence at which rewriting is to be performed is
   significantly enhanced.
 
 The general form of an |SSR| rewrite tactic is:
@@ -3034,7 +3034,7 @@ The general form of an |SSR| rewrite tactic is:
    :name: rewrite (ssreflect)
    :undocumented:
 
-The combination of a rewrite tactic with the ``in`` tactical (see section
+The combination of a rewrite tactic with the ``in`` tactical (see Section
 :ref:`localization_ssr`) performs rewriting in both the context and the goal.
 
 A rewrite step :token:`rstep` has the general form:
@@ -3052,12 +3052,12 @@ A rewrite step :token:`rstep` has the general form:
    r_item ::= {| {? / } @term | @s_item }
 
 An :token:`r_prefix` contains annotations to qualify where and how the rewrite
-operation should be performed:
+operation should be performed.
 
 + The optional initial ``-`` indicates the direction of the rewriting of
   :token:`r_item`:
-  if present the direction is right-to-left and it is left-to-right otherwise.
-+ The multiplier :token:`mult` (see section :ref:`iteration_ssr`)
+  if present, the direction is right-to-left and it is left-to-right otherwise.
++ The multiplier :token:`mult` (see Section :ref:`iteration_ssr`)
   specifies if and how the
   rewrite operation should be repeated.
 + A rewrite operation matches the occurrences of a *rewrite pattern*,
@@ -3066,55 +3066,55 @@ operation should be performed:
   which should
   always be surrounded by brackets, gives explicitly this rewrite
   pattern. In its simplest form, it is a regular term. If no explicit
-  redex switch is present the rewrite pattern to be matched is inferred
+  redex switch is present, the rewrite pattern to be matched is inferred
   from the :token:`r_item`.
 + This optional term, or the :token:`r_item`, may be preceded by an
-  :token:`occ_switch` (see section :ref:`selectors_ssr`) or a
-  :token:`clear_switch` (see section :ref:`discharge_ssr`),
+  :token:`occ_switch` (see Section :ref:`selectors_ssr`) or a
+  :token:`clear_switch` (see Section :ref:`discharge_ssr`),
   these two possibilities being exclusive.
 
   An occurrence switch selects
-  the occurrences of the rewrite pattern which should be affected by the
+  the occurrences of the rewrite pattern that should be affected by the
   rewrite operation.
 
   A clear switch, even an empty one, is performed *after* the
   :token:`r_item` is actually processed and is complemented with the name of
-  the rewrite rule if an only if it is a simple proof context entry [#10]_.
-  As a consequence one can
+  the rewrite rule if and only if it is a simple proof context entry [#10]_.
+  As a consequence, one can
   write ``rewrite {}H`` to rewrite with ``H`` and dispose ``H`` immediately
   afterwards.
   This behavior can be avoided by putting parentheses around the rewrite rule.
 
-An :token:`r_item` can be:
+A :token:`r_item` can be one of the following.
 
 
 + A *simplification* :token:`r_item`,
-  represented by a :token:`s_item` (see section
+  represented by a :token:`s_item` (see Section
   :ref:`introduction_ssr`). Simplification operations are intertwined with the possible
   other rewrite operations specified by the list of :token:`r_item`.
-+ A *folding/unfolding* :token:`r_item`. The tactic:
++ A *folding/unfolding* :token:`r_item`. The tactic
   ``rewrite /term`` unfolds the
-  head constant of term in every occurrence of the first matching of
-  term in the goal. In particular, if ``my_def`` is a (local or global)
-  defined constant, the tactic: ``rewrite /my_def.`` is analogous to:
+  head constant of ``term`` in every occurrence of the first matching of
+  ``term`` in the goal. In particular, if ``my_def`` is a (local or global)
+  defined constant, the tactic ``rewrite /my_def.`` is analogous to
   ``unfold my_def``.
-  Conversely: ``rewrite -/my_def.`` is equivalent to: ``fold my_def``.
+  Conversely, ``rewrite -/my_def.`` is equivalent to ``fold my_def``.
   When an unfold :token:`r_item` is combined with a
   redex pattern, a conversion
-  operation is performed. A tactic of the form:
+  operation is performed. A tactic of the form
   ``rewrite -[term1]/term2.``
-  is equivalent to: ``change term1 with term2.`` If ``term2`` is a
+  is equivalent to ``change term1 with term2.`` If ``term2`` is a
   single constant and ``term1`` head symbol is not ``term2``, then the head
   symbol of ``term1`` is repeatedly unfolded until ``term2`` appears.
-+ A :token:`term`, which can be:
-    + A term whose type has the form:
-      ``forall (x1 : A1 )…(xn : An ), eq term1 term2`` where
++ A :token:`term` can be:
+    + a term whose type has the form:
+      ``forall (x1 : A1 )…(xn : An ), eq term1 term2``, where
       ``eq`` is the Leibniz equality or a registered setoid
-      equality.
-    + A list of terms ``(t1 ,…,tn)``, each ``ti`` having a type above.
-      The tactic: ``rewrite r_prefix (t1 ,…,tn ).``
-      is equivalent to: ``do [rewrite r_prefix t1 | … | rewrite r_prefix tn ].``
-    + An anonymous rewrite lemma ``(_ : term)``, where term has a type as above.
+      equality;
+    + a list of terms ``(t1 ,…,tn)``, each ``ti`` having a type as above, and
+      the tactic ``rewrite r_prefix (t1 ,…,tn ).``
+      is equivalent to ``do [rewrite r_prefix t1 | … | rewrite r_prefix tn ].``;
+    + an anonymous rewrite lemma ``(_ : term)``, where ``term`` has a type as above.
 
   .. example::
 
@@ -3184,25 +3184,25 @@ In a rewrite tactic of the form:
    rewrite occ_switch [term1]term2.
 
 ``term1`` is the explicit rewrite redex and ``term2`` is the rewrite rule.
-This execution of this tactic unfolds as follows:
+This execution of this tactic unfolds as follows.
 
 
 + First ``term1`` and ``term2`` are βι normalized. Then ``term2``
   is put in head
   normal form if the Leibniz equality constructor ``eq`` is not the head
   symbol. This may involve ζ reductions.
-+ Then, the matching algorithm (see section :ref:`abbreviations_ssr`)
++ Then, the matching algorithm (see Section :ref:`abbreviations_ssr`)
   determines the
   first subterm of the goal matching the rewrite pattern. The rewrite
   pattern is given by ``term1``, if an explicit redex pattern switch is
   provided, or by the type of ``term2`` otherwise. However, matching skips
   over matches that would lead to trivial rewrites. All the occurrences
   of this subterm in the goal are candidates for rewriting.
-+ Then only the occurrences coded by :token:`occ_switch` (see again section
++ Then only the occurrences coded by :token:`occ_switch` (see again Section
   :ref:`abbreviations_ssr`) are finally selected for rewriting.
-+ The left hand side of ``term2`` is unified with the subterm found by
++ The left-hand side of ``term2`` is unified with the subterm found by
   the matching algorithm, and if this succeeds, all the selected
-  occurrences in the goal are replaced by the right hand side of ``term2``.
+  occurrences in the goal are replaced by the right-hand side of ``term2``.
 + Finally the goal is βι normalized.
 
 
@@ -3215,7 +3215,7 @@ Chained rewrite steps
 
 The possibility to chain rewrite operations in a single tactic makes
 scripts more compact and gathers in a single command line a bunch of
-surgical operations which would be described by a one sentence in a
+surgical operations that would be described by a one sentence in a
 pen and paper proof.
 
 Performing rewrite and simplification operations in a single tactic
@@ -3266,7 +3266,7 @@ Explicit redex switches are matched first
 `````````````````````````````````````````
 
 If an :token:`r_prefix` involves a *redex switch*, the first step is to find a
-subterm matching this redex pattern, independently from the left hand
+subterm matching this redex pattern, independently from the left-hand
 side of the equality the user wants to rewrite.
 
 
@@ -3287,7 +3287,7 @@ side of the equality the user wants to rewrite.
 
 Note that if this first pattern matching is not compatible with the
 :token:`r_item`, the rewrite fails, even if the goal contains a
-correct redex matching both the redex switch and the left hand side of
+correct redex matching both the redex switch and the left-hand side of
 the equality.
 
 .. example::
@@ -3305,7 +3305,7 @@ the equality.
      Lemma test (H : forall t u, t + u * 0 = t) x y : x + y * 4 + 2 * 0 = x + 2 * 0.
      Fail rewrite [x + _]H.
 
-  Indeed the left hand side of ``H`` does not match
+  Indeed, the left-hand side of ``H`` does not match
   the redex identified by the pattern ``x + y * 4``.
 
 .. _ssr_rewrite_occ_switch:
@@ -3393,7 +3393,7 @@ rewrite operations prescribed by the rules on the current goal.
      Lemma test : a = a.
      rewrite (eqab, eqac).
 
-  Indeed rule ``eqab`` is the first to apply among the ones
+  Indeed, rule ``eqab`` is the first to apply among the ones
   gathered in the tuple passed to the rewrite tactic. This multirule
   ``(eqab, eqac)`` is actually a Coq term and we can name it with a
   definition:
@@ -3423,10 +3423,10 @@ literal matches have priority.
       Lemma test : d = b.
       rewrite multi2.
 
-   Indeed rule ``eqd0`` applies without unfolding the
+   Indeed, rule ``eqd0`` applies without unfolding the
    definition of ``d``.
 
-For repeated rewrites the selection process is
+For repeated rewrites, the selection process is
 repeated anew.
 
 .. example::
@@ -3442,10 +3442,10 @@ repeated anew.
      rewrite 2!multi3.
 
   It uses ``eq_adda_b`` then ``eqb0`` on the left-hand
-  side only. Without the bound ``2`` one would obtain ``0 = 0``.
+  side only. Without the bound ``2``, one would obtain ``0 = 0``.
 
 The grouping of rules inside a multirule does not affect the selection
-strategy but can make it easier to include one rule set in another or
+strategy, but can make it easier to include one rule set in another or
 to (universally) quantify over the parameters of a subset of rules (as
 there is special code that will omit unnecessary quantifiers for rules
 that can be syntactically extracted). It is also possible to reverse
@@ -3460,12 +3460,12 @@ tactic rewrite ``(=~ multi1)`` is equivalent to ``rewrite multi1_rev``.
      Hypothesis eqca : c = a.
      Definition multi1_rev := (eqba, eqca).
 
-except that the constants ``eqba``, ``eqab``, ``mult1_rev``
+except that the constants ``eqba``, ``eqab`` and ``mult1_rev``
 have not been created.
 
 Rewriting with multirules is useful to implement simplification or
 transformation procedures, to be applied on terms of small to medium
-size. For instance the library `ssrnat` (Mathematical Components library)
+size. For instance, the library `ssrnat` (Mathematical Components library)
 provides two implementations
 for arithmetic operations on natural numbers: an elementary one and a
 tail recursive version, less inefficient but also less convenient for
@@ -3483,9 +3483,9 @@ applied to the same arguments:
      Lemma expE : exp =2 expn.
      Lemma oddE : odd =1 oddn.
 
-The operation on the left hand side of each lemma is the efficient
-version, and the corresponding naive implementation is on the right
-hand side. In order to reason conveniently on expressions involving
+The operation on the left-hand side of each lemma is the efficient
+version, and the corresponding naive implementation is on the right-hand side. 
+In order to reason conveniently on expressions involving
 the efficient operations, we gather all these rules in the definition
 ``trecE``:
 
@@ -3493,16 +3493,16 @@ the efficient operations, we gather all these rules in the definition
 
    Definition trecE := (addE, (doubleE, oddE), (mulE, add_mulE, (expE, mul_expE))).
 
-The tactic: ``rewrite !trecE.``
-restores the naive versions of each operation in a goal involving the
-efficient ones, e.g. for the purpose of a correctness proof.
+The tactic ``rewrite !trecE.``
+restores the naive version of each operation in a goal involving the
+efficient ones, e.g., for the purpose of a correctness proof.
 
 
 Wildcards vs abstractions
 `````````````````````````
 
 The rewrite tactic supports :token:`r_item`\s containing holes. For example, in
-the tactic ``rewrite (_ : _ * 0 = 0).``
+the tactic ``rewrite (_ : _ * 0 = 0).``,
 the term ``_ * 0 = 0`` is interpreted as ``forall n : nat, n * 0 = 0.``
 Anyway this tactic is *not* equivalent to
 ``rewrite (_ : forall x, x * 0 = 0).``.
@@ -3537,8 +3537,8 @@ When |SSR| rewrite fails on standard Coq licit rewrite
 ````````````````````````````````````````````````````````
 
 In a few cases, the |SSR| rewrite tactic fails rewriting some
-redexes which standard Coq successfully rewrites. There are two main
-cases:
+redexes that standard Coq successfully rewrites. There are two main
+cases.
 
 
 + |SSR| never accepts to rewrite indeterminate patterns like:
@@ -3578,7 +3578,7 @@ cases:
        (* we call the standard rewrite tactic here *)
        rewrite -> H.
 
-    This rewriting is not possible in |SSR| because
+    This rewriting is not possible in |SSR|, because
     there is no occurrence of the head symbol ``f`` of the rewrite rule in the
     goal.
 
@@ -3590,13 +3590,13 @@ cases:
     ``f``
     where the substitution is to be performed (here there is a single such
     occurrence), using tactic ``rewrite /f`` (for a global replacement of
-    f by g) or ``rewrite pattern/f``, for a finer selection.
+    ``f`` by ``g``) or ``rewrite pattern/f``, for a finer selection.
 
     .. coqtop:: all restart
 
        rewrite /f H.
 
-    alternatively one can override the pattern inferred from ``H``
+    Alternatively, one can override the pattern inferred from ``H``
 
     .. coqtop:: all restart
 
@@ -3641,7 +3641,7 @@ corresponding new goals will be generated.
      Lemma test (x : 'I_2) y : Some x = insub 2 y.
      rewrite insubT.
 
-  Since the argument corresponding to Px is not supplied by the user, the
+  Since the argument corresponding to ``Px`` is not supplied by the user, the
   resulting goal should be ``Some x = Some (Sub y ?Goal).``
   Instead, |SSR| ``rewrite`` tactic hides the existential variable.
 
@@ -3703,7 +3703,7 @@ complete terms, as shown by the simple example below.
 
    as we need to explicitly provide the non-inferable argument ``F2``,
    which corresponds here to the term we want to obtain *after* the
-   rewriting step. In order to perform the rewrite step one has to
+   rewriting step. In order to perform the rewrite step, one has to
    provide the term by hand as follows:
 
    .. coqtop:: all abort
@@ -3728,7 +3728,7 @@ The convenience :tacn:`under` tactic supports the following syntax:
 .. tacn:: under {? @r_prefix } @term {? => {+ @i_item}} {? do {| @tactic | [ {*| @tactic } ] } }
    :name: under
 
-   Operate under the context proved to be extensional by
+   It operates under the context proved to be extensional by
    lemma :token:`term`.
 
    .. exn:: Incorrect number of tactics (expected N tactics, was given M).
@@ -3737,9 +3737,9 @@ The convenience :tacn:`under` tactic supports the following syntax:
 
    The multiplier part of :token:`r_prefix` is not supported.
 
-We distinguish two modes,
-:ref:`interactive mode <under_interactive>` without a ``do`` clause, and
-:ref:`one-liner mode <under_one_liner>` with a ``do`` clause,
+We distinguish two modes:
+:ref:`interactive mode <under_interactive>`, without a ``do`` clause, and
+:ref:`one-liner mode <under_one_liner>`, with a ``do`` clause,
 which are explained in more detail below.
 
 .. _under_interactive:
@@ -3762,27 +3762,27 @@ The execution of the Ltac expression:
 
 :n:`under @term => [ @i_item__1 | … | @i_item__n ].`
 
-involves the following steps:
+involves the following steps.
 
 1. It performs a :n:`rewrite @term`
    without failing like in the first example with ``rewrite eq_map.``,
    but creating evars (see :tacn:`evar`). If :n:`term` is prefixed by
    a pattern or an occurrence selector, then the modifiers are honoured.
 
-2. As a n-branches intro pattern is provided :tacn:`under` checks that
+2. As an n-branch intro pattern is provided, :tacn:`under` checks that
    n+1 subgoals have been created. The last one is the main subgoal,
    while the other ones correspond to premises of the rewrite rule (such as
    ``forall n, F1 n = F2 n`` for ``eq_map``).
 
-3. If so :tacn:`under` puts these n goals in head normal form (using
+3. If so, :tacn:`under` puts these n goals in head normal form (using
    the defective form of the tactic :tacn:`move <move (ssreflect)>`), then executes
    the corresponding intro pattern :n:`@i_pattern__i` in each goal.
 
-4. Then :tacn:`under` checks that the first n subgoals
+4. Then, :tacn:`under` checks that the first n subgoals
    are (quantified) Leibniz equalities, double implications or
    registered relations (w.r.t. Class ``RewriteRelation``) between a
-   term and an evar, e.g. ``m - m = ?F2 m`` in the running example.
-   (This support for setoid-like relations is enabled as soon as we do
+   term and an evar, e.g., ``m - m = ?F2 m`` in the running example.
+   (This support for setoid-like relations is enabled as soon as one does
    both ``Require Import ssreflect.`` and ``Require Setoid.``)
 
 5. If so :tacn:`under` protects these n goals against an
@@ -3810,7 +3810,7 @@ The over tactic
 +++++++++++++++
 
 Two equivalent facilities (a terminator and a lemma) are provided to
-close intermediate subgoals generated by :tacn:`under` (i.e. goals
+close intermediate subgoals generated by :tacn:`under` (i.e., goals
 displayed as ``'Under[ … ]``):
 
 .. tacn:: over
@@ -3857,8 +3857,8 @@ Notes:
 
 + If the ``do`` clause is provided and the intro pattern is omitted,
   then the default :token:`i_item` ``*`` is applied to each branch.
-  E.g., the Ltac expression:
-  :n:`under @term do [ @tactic__1 | … | @tactic__n ]` is equivalent to:
+  E.g., the Ltac expression
+  :n:`under @term do [ @tactic__1 | … | @tactic__n ]` is equivalent to
   :n:`under @term => [ * | … | * ] do [ @tactic__1 | … | @tactic__n ]`
   (and it can be noted here that the :tacn:`under` tactic performs a
   ``move.`` before processing the intro patterns ``=> [ * | … | * ]``).
@@ -3943,21 +3943,21 @@ Locking, unlocking
 
 As program proofs tend to generate large goals, it is important to be
 able to control the partial evaluation performed by the simplification
-operations that are performed by the tactics. These evaluations can
-for example come from a ``/=`` simplification switch, or from rewrite
-steps which may expand large terms while performing conversion. We
+operations that are performed by the tactics. These evaluations can,
+for example, come from a ``/=`` simplification switch, or from rewrite
+steps, which may expand large terms while performing conversion. We
 definitely want to avoid repeating large subterms of the goal in the
 proof script. We do this by “clamping down” selected function symbols
 in the goal, which prevents them from being considered in
 simplification or rewriting steps. This clamping is accomplished by
-using the occurrence switches (see section :ref:`abbreviations_ssr`)
+using the occurrence switches (see Section :ref:`abbreviations_ssr`)
 together with “term tagging” operations.
 
 |SSR| provides two levels of tagging.
 
 The first one uses auxiliary definitions to introduce a provably equal
-copy of any term t. However this copy is (on purpose) *not
-convertible* to t in the Coq system [#8]_. The job is done by the
+copy of any term ``t``. However this copy is (on purpose) *not
+convertible* to ``t`` in the Coq system [#8]_. The job is done by the
 following construction:
 
 .. coqdoc::
@@ -3991,7 +3991,7 @@ selective rewriting, blocking on the fly the reduction in the term ``t``.
      rewrite {2}[cons]lock /= -lock.
 
 It is sometimes desirable to globally prevent a definition from being
-expanded by simplification; this is done by adding locked in the
+expanded by simplification; this is done by adding ``locked`` in the
 definition.
 
 .. example::
@@ -4015,7 +4015,7 @@ definition.
 .. tacn:: unlock {? @occ_switch } @ident
    :name: unlock
 
-   This tactic unfolds such definitions while removing “locks”, i.e. it
+   This tactic unfolds such definitions while removing “locks”; i.e., it
    replaces the occurrence(s) of :token:`ident` coded by the
    :token:`occ_switch` with the corresponding body.
 
@@ -4069,7 +4069,7 @@ arithmetic operations. We define for instance:
 The operation ``addn`` behaves exactly like ``plus``, except that
 ``(addn (S n) m)`` will not simplify spontaneously to
 ``(S (addn n m))`` (the two terms, however, are convertible).
-In addition, the unfolding step: ``rewrite /addn``
+In addition, the unfolding step ``rewrite /addn``
 will replace ``addn`` directly with ``plus``, so the ``nosimpl`` form is
 essentially invisible.
 
@@ -4096,7 +4096,9 @@ which the function is supplied:
    This tactic:
 
    + checks that the goal is a Leibniz equality;
-   + matches both sides of this equality with “term applied to some arguments”, inferring the right number of arguments from the goal and the type of term. This may expand some definitions or fixpoints;
+   + matches both sides of this equality with “term applied to some arguments”,
+     inferring the right number of arguments from the goal and the type of ``term``
+     (this may expand some definitions or fixpoints);
    + generates the subgoals corresponding to pairwise equalities of the arguments present in the goal.
 
    The goal can be a non-dependent product ``P -> Q``. In that case, the
@@ -4170,7 +4172,7 @@ which the function is supplied:
          Lemma test n m (Hnm : m <= n) : S m + (S n - S m) = S n.
          congr S; rewrite -/plus.
 
-      The tactic ``rewrite -/plus`` folds back the expansion of plus
+      The tactic ``rewrite -/plus`` folds back the expansion of ``plus``,
       which was necessary for matching both sides of the equality with
       an application of ``S``.
 
@@ -4197,18 +4199,18 @@ Contextual patterns
 -------------------
 
 The simple form of patterns used so far, terms possibly containing
-wild cards, often require an additional :token:`occ_switch` to be specified.
+wild cards, often requires an additional :token:`occ_switch` to be specified.
 While this may work pretty fine for small goals, the use of
 polymorphic functions and dependent types may lead to an invisible
 duplication of function arguments. These copies usually end up in
-types hidden by the implicit arguments machinery or by user-defined
-notations. In these situations computing the right occurrence numbers
-is very tedious because they must be counted on the goal as printed
-after setting the :flag:`Printing All` flag. Moreover the resulting script is
+types hidden by the implicit-arguments machinery or by user-defined
+notations. In these situations, computing the right occurrence numbers
+is very tedious, because they must be counted on the goal as printed
+after setting the :flag:`Printing All` flag. Moreover, the resulting script is
 not really informative for the reader, since it refers to occurrence
 numbers he cannot easily see.
 
-Contextual patterns mitigate these issues allowing to specify
+Contextual patterns mitigate these issues by allowing to specify
 occurrences according to the context they occur in.
 
 
@@ -4217,7 +4219,7 @@ Syntax
 
 The following table summarizes the full syntax of :token:`c_pattern` and the
 corresponding subterm(s) identified by the pattern. In the third
-column we use s.m.r. for “the subterms matching the redex” specified
+column, we use s.m.r. for “the subterms matching the redex” specified
 in the second column.
 
 .. list-table::
@@ -4241,12 +4243,12 @@ in the second column.
      - in all the subterms identified by
        ``ident`` in all the occurrences of ``term2``
    * - ``term1 as ident in term2``
-     - ``term 1``
+     - ``term1``
      - in all the subterms identified by ``ident``
-       in all the occurrences of ``term2[term 1 /ident]``
+       in all the occurrences of ``term2[term1 /ident]``
 
 The rewrite tactic supports two more patterns obtained prefixing the
-first two with in. The intended meaning is that the pattern identifies
+first two with ``in``. The intended meaning is that the pattern identifies
 all subterms of the specified context. The ``rewrite`` tactic will infer a
 pattern for the redex looking at the rule used for rewriting.
 
@@ -4276,7 +4278,7 @@ presented in the tables above can contain
 holes.
 
 For a quick glance at what can be expressed with the last
-:token:`r_pattern`
+:token:`r_pattern`,
 consider the goal ``a = b`` and the tactic
 
 .. coqdoc::
@@ -4286,7 +4288,7 @@ consider the goal ``a = b`` and the tactic
 It rewrites all occurrences of the left hand side of ``rule``
 inside ``b``  only (``a``, and the hidden type of the equality, are ignored). Note that the
 variant ``rewrite [X in _ = X]rule`` would have rewritten ``b``
-exactly (i.e., it would only work if ``b`` and the left hand side
+exactly (i.e., it would only work if ``b`` and the left-hand side
 of rule can be unified).
 
 
@@ -4349,7 +4351,7 @@ Examples
 Contextual pattern in set and the : tactical
 ````````````````````````````````````````````
 
-As already mentioned in section :ref:`abbreviations_ssr` the ``set``
+As already mentioned in Section :ref:`abbreviations_ssr`, the ``set``
 tactic takes as an
 argument a term in open syntax. This term is interpreted as the
 simplest form of :token:`c_pattern`. To avoid confusion in the grammar, open
@@ -4374,7 +4376,7 @@ parentheses are required around more complex patterns.
      set t := (a + _ in X in _ = X).
 
 
-Since the user may define an infix notation for ``in`` the result of the former
+Since the user may define an infix notation for ``in``, the result of the former
 tactic may be ambiguous. The disambiguation rule implemented is to prefer
 patterns over simple terms, but to interpret a pattern with double
 parentheses as a simple term. For example, the following tactic would
@@ -4419,19 +4421,19 @@ Contextual patterns in rewrite
 
   Note: the simplification rule ``addSn`` is applied only under the ``f``
   symbol.
-  Then we simplify also the first addition and expand ``0`` into ``0 + 0``.
+  Then, we simplify also the first addition and expand ``0`` into ``0 + 0``.
 
   .. coqtop:: all
 
      rewrite addSn -[X in _ = X]addn0.
 
-  Note that the right hand side of ``addn0`` is undetermined, but the
-  rewrite pattern specifies the redex explicitly. The right hand side
+  Note that the right-hand side of ``addn0`` is undetermined, but the
+  rewrite pattern specifies the redex explicitly. The right-hand side
   of ``addn0`` is unified with the term identified by ``X``, here ``0``.
 
 
   The following pattern does not specify a redex, since it identifies an
-  entire region, hence the rewrite rule has to be instantiated
+  entire region; hence the rewrite rule has to be instantiated
   explicitly. Thus the tactic:
 
   .. coqtop:: all
@@ -4444,20 +4446,20 @@ Contextual patterns in rewrite
 
      rewrite [_.+1 in X in f _ X](addnC x.+1).
 
-  The explicit redex ``_.+1`` is important since its head constant ``S``
+  The explicit redex ``_.+1`` is important, since its head constant ``S``
   differs from the head constant inferred from
   ``(addnC x.+1)`` (that is ``+``).
   Moreover, the pattern ``f _ X`` is important to rule out
   the first occurrence of ``(x + y).+1``.
   Last, only the subterms of ``f _ X``
-  identified by ``X`` are rewritten, thus the first argument of
+  identified by ``X`` are rewritten; thus the first argument of
   ``f`` is skipped too.
-  Also note the pattern ``_.+1`` is interpreted in the context
-  identified by ``X``, thus it gets instantiated to
+  Also note that the pattern ``_.+1`` is interpreted in the context
+  identified by ``X``; thus it gets instantiated to
   ``(y + x).+1`` and not ``(x + y).+1``.
 
   The last rewrite pattern allows to specify exactly the shape of the
-  term identified by X, that is thus unified with the left hand side of
+  term identified by X, which is thus unified with the left-hand side of
   the rewrite rule.
 
   .. coqtop:: all
@@ -4475,7 +4477,7 @@ provides a special notation ``(X in t)`` the user must adopt
 in order to define
 context shortcuts.
 
-The following example is taken from ``ssreflect.v`` where the
+The following example is taken from ``ssreflect.v``, where the
 ``LHS`` and ``RHS`` shortcuts are defined.
 
 .. coqdoc::
@@ -4498,9 +4500,9 @@ Shortcuts defined this way can be freely used in place of the trailing
 Views and reflection
 --------------------
 
-The bookkeeping facilities presented in section :ref:`basic_tactics_ssr` are
+The bookkeeping facilities presented in Section :ref:`basic_tactics_ssr` are
 crafted to ease simultaneous introductions and generalizations of facts and
-operations of casing, naming etc. It also a common practice to make a stack
+operations of casing, naming, etc. It also a common practice to make a stack
 operation immediately followed by an *interpretation* of the fact
 being pushed, that is, to apply a lemma to this fact before passing it
 to a tactic for decomposition, application and so on.
@@ -4516,7 +4518,7 @@ Interpreting eliminations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The view syntax combined with the ``elim`` tactic specifies an elimination
-scheme to be used instead of the default, generated, one. Hence the
+scheme to be used instead of the default, generated, one. Hence, the
 |SSR| tactic:
 
 .. coqdoc::
@@ -4532,7 +4534,7 @@ is a synonym for:
 where top is a fresh name and V any second-order lemma.
 
 Since an elimination view supports the two bookkeeping tacticals of
-discharge and introduction (see section :ref:`basic_tactics_ssr`),
+discharge and introduction (see Section :ref:`basic_tactics_ssr`),
 the |SSR| tactic:
 
 .. coqdoc::
@@ -4552,8 +4554,8 @@ conclusion of the view ``V`` specifies a pattern for its last argument
 (e.g., if ``V`` is a functional induction lemma generated by the
 ``Function`` command).
 
-The elimination view mechanism is compatible with the equation name
-generation (see section :ref:`generation_of_equations_ssr`).
+The elimination view mechanism is compatible with the equation-name
+generation (see Section :ref:`generation_of_equations_ssr`).
 
 
 .. example::
@@ -4584,7 +4586,7 @@ generation (see section :ref:`generation_of_equations_ssr`).
        P nil -> (forall s (x : d), P s -> P (add_last s x)) ->
          forall s : list d, P s.
 
-  Then the combination of elimination views with equation names result
+  Then, the combination of elimination views with equation names results
   in a concise syntax for reasoning inductively using the user-defined
   elimination scheme.
 
@@ -4596,7 +4598,7 @@ generation (see section :ref:`generation_of_equations_ssr`).
 
 User-provided eliminators (potentially generated with Coq’s ``Function``
 command) can be combined with the type family switches described
-in section :ref:`type_families_ssr`.
+in Section :ref:`type_families_ssr`.
 Consider an eliminator ``foo_ind`` of type:
 
 .. coqdoc::
@@ -4609,25 +4611,25 @@ and consider the tactic:
 
    elim/foo_ind: e1 … / en.
 
-The ``elim/`` tactic distinguishes two cases:
+The ``elim/`` tactic distinguishes two cases.
 
 :truncated eliminator:  when ``x`` does not occur in ``P p1 … pm`` and the
   type of ``en`` unifies with ``T`` and ``en`` is not ``_``.
   In that case, ``en`` is
   passed to the eliminator as the last argument (``x`` in ``foo_ind``) and
   ``en−1 … e1`` are used as patterns to select in the goal the occurrences that
-  will be bound by the predicate ``P``, thus it must be possible to unify
+  will be bound by the predicate ``P``; thus it must be possible to unify
   the subterm of the goal matched by ``en−1`` with ``pm`` , the one matched
   by ``en−2`` with ``pm−1`` and so on.
 :regular eliminator: in all the other cases. Here it must be possible
   to unify the term matched by ``en`` with ``pm`` , the one matched by
   ``en−1``
   with ``pm−1`` and so on. Note that standard eliminators have the shape
-  ``…forall x, P … x``, thus ``en`` is the pattern identifying the
+  ``…forall x, P … x``; thus ``en`` is the pattern identifying the
   eliminated term, as expected.
 
 
-As explained in section :ref:`type_families_ssr`, the initial prefix of
+As explained in Section :ref:`type_families_ssr`, the initial prefix of
 ``ei`` can be omitted.
 
 Here is an example of a regular, but nontrivial, eliminator.
@@ -4684,8 +4686,8 @@ Here is an example of a regular, but nontrivial, eliminator.
 
   The two latter examples feature a wildcard pattern: in this case,
   the resulting pattern is inferred from the type of the eliminator.
-  In both these examples, it is ``(plus _ _)``, which matches the subterm
-  ``plus (plus x y) z`` thus instantiating the last ``_`` with ``z``.
+  In both of these examples, it is ``(plus _ _)`` that matches the subterm
+  ``plus (plus x y) z``, thus instantiating the last ``_`` with ``z``.
   Note that the tactic:
 
   .. coqtop:: reset none
@@ -4747,7 +4749,7 @@ Here is an example of a truncated eliminator:
          Pb (\big[op1/idx]_(i <- r | P i) F i).
 
   Since the pattern for the argument of Pb is not specified, the
-  inferred one is used instead: ``big[_/_]_(i <- _ | _ i) _ i``,
+  inferred one, ``big[_/_]_(i <- _ | _ i) _ i``, is used instead,
   and after the introductions, the following goals are generated:
 
   .. coqdoc::
@@ -4770,9 +4772,9 @@ Interpreting assumptions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Interpreting an assumption in the context of a proof consists in
-applying to it a lemma before generalizing, and/or decomposing this
+applying to it a lemma before generalizing and/or decomposing this
 assumption. For instance, with the extensive use of boolean reflection
-(see section :ref:`views_and_reflection_ssr`), it is quite frequent
+(see Section :ref:`views_and_reflection_ssr`), it is quite frequent
 to need to decompose the logical interpretation of (the boolean
 expression of) a fact, rather than the fact itself. This can be
 achieved by a combination of ``move : _ => _`` switches, like in the
@@ -4798,8 +4800,8 @@ disjunction.
      Lemma test a : P (a || a) -> True.
      move=> HPa; move: {HPa}(P2Q HPa) => HQa.
 
-  which transforms the hypothesis ``HPa : P a`` which has been introduced
-  from the initial statement into ``HQa : Q a``.
+  which transforms the hypothesis ``HPa : P a``, which has been introduced
+  from the initial statement, into ``HQa : Q a``.
   This operation is so common that the tactic shell has specific
   syntax for it. The following scripts:
 
@@ -4828,13 +4830,13 @@ disjunction.
 
   are equivalent to the former one. The former script shows how to
   interpret a fact (already in the context), thanks to the discharge
-  tactical (see section :ref:`discharge_ssr`) and the latter, how to interpret the top
+  tactical (see Section :ref:`discharge_ssr`), and the latter, how to interpret the top
   assumption of a goal. Note that the number of wildcards to be inserted
   to find the correct application of the view lemma to the hypothesis
   has been automatically inferred.
 
 The view mechanism is compatible with the ``case`` tactic and with the
-equation name generation mechanism (see section :ref:`generation_of_equations_ssr`):
+equation-name generation mechanism (see Section :ref:`generation_of_equations_ssr`):
 
 .. example::
 
@@ -4933,7 +4935,7 @@ Interpreting goals
 ~~~~~~~~~~~~~~~~~~
 
 In a similar way, it is also often convenient to
-changing a goal by turning it into an equivalent proposition. The view
+change a goal by turning it into an equivalent proposition. The view
 mechanism of |SSR| has a special syntax ``apply/`` for combining  in a
 single tactic simultaneous goal interpretation operations and
 bookkeeping steps.
@@ -4962,19 +4964,19 @@ bookkeeping steps.
 
   thus in this case, the tactic ``apply/PQequiv`` is equivalent to
   ``apply: (iffRL (PQequiv _ _))``, where ``iffRL`` is the analogue of
-  ``iffRL`` for the converse implication.
+  ``iffLR`` for the converse implication.
 
 Any |SSR| term whose type coerces to a double implication can be
 used as a view for goal interpretation.
 
 Note that the goal interpretation view mechanism supports both ``apply``
 and ``exact`` tactics. As expected, a goal interpretation view command
-exact/term should solve the current goal or it will fail.
+``exact``/term should solve the current goal or it will fail.
 
 .. warning::
 
-   Goal interpretation view tactics are *not* compatible with
-   the bookkeeping tactical ``=>`` since this would be redundant with the
+   Goal-interpretation view tactics are *not* compatible with
+   the bookkeeping tactical ``=>``, since this would be redundant with the
    ``apply: term => _`` construction.
 
 
@@ -4983,7 +4985,7 @@ Boolean reflection
 
 In the Calculus of Inductive Constructions, there is an obvious
 distinction between logical propositions and boolean values. On the
-one hand, logical propositions are objects of *sort* ``Prop`` which is
+one hand, logical propositions are objects of *sort* ``Prop``, which is
 the carrier of intuitionistic reasoning. Logical connectives in
 ``Prop`` are *types*, which give precise information on the structure
 of their proofs; this information is automatically exploited by Coq
@@ -4994,7 +4996,7 @@ dually, the tactic ``case`` reduces the goal ``A \/ B => G`` to two
 subgoals ``A => G`` and ``B => G``.
 
 On the other hand, bool is an inductive *datatype* with two
-constructors true and false. Logical connectives on bool are
+constructors: ``true`` and ``false``. Logical connectives on bool are
 *computable functions*, defined by their truth tables, using case
 analysis:
 
@@ -5031,10 +5033,10 @@ analysis
      by case: b.
 
   Once ``b`` is replaced by ``true`` in the first goal and by ``false`` in the
-  second one, the goals reduce by computations to the trivial ``true = true``.
+  second one, the goals reduce by computation to the trivial ``true = true``.
 
 Thus, ``Prop`` and ``bool`` are truly complementary: the former supports
-robust natural deduction, the latter allows brute-force
+robust natural deduction; the latter allows brute-force
 evaluation. |SSR| supplies a generic mechanism to have the best of
 the two worlds and move freely from a propositional version of a
 decidable predicate to its boolean version.
@@ -5049,7 +5051,7 @@ mechanism:
 This allows any boolean formula ``b`` to be used in a context where Coq
 would expect a proposition, e.g., after ``Lemma … :``. It is then
 interpreted as ``(is_true b)``, i.e., the proposition ``b = true``. Coercions
-are elided by the pretty-printer, so they are essentially transparent
+are elided by the pretty-printer; so they are essentially transparent
 to the user.
 
 The reflect predicate
@@ -5095,7 +5097,7 @@ where ``/\`` is a notation for ``and``:
 
    Inductive and (A B:Prop) : Prop := conj : A -> B -> and A B.
 
-This make case analysis very different according to the way an
+This makes case analysis very different according to the way an
 equivalence property has been defined.
 
 .. coqdoc::
@@ -5132,16 +5134,16 @@ Let us compare the respective behaviors of ``andE`` and ``andP``.
 
      case: (@andP b1 b2).
 
-Expressing reflection relation through the ``reflect`` predicate is hence
+Expressing reflection relations through the ``reflect`` predicate is hence
 a very convenient way to deal with classical reasoning, by case
-analysis. Using the ``reflect`` predicate allows moreover to program rich
+analysis. Using the ``reflect`` predicate allows, moreover, to program rich
 specifications inside its two constructors, which will be
 automatically taken into account during destruction. This
 formalisation style gives far more efficient specifications than
 quantified (double) implications.
 
 A naming convention in |SSR| is to postfix the name of view lemmas
-with ``P``. For example, ``orP`` relates ``||`` and ``\/``,
+with ``P``. For example, ``orP`` relates ``||`` and ``\/``;
 ``negP`` relates ``~~`` and ``~``.
 
 The view mechanism is compatible with reflect predicates.
@@ -5170,8 +5172,8 @@ The view mechanism is compatible with reflect predicates.
 
 The same tactics can also be used to perform the converse operation,
 changing a boolean conjunction into a logical one. The view mechanism
-guesses the direction of the transformation to be used i.e., the
-constructor of the reflect predicate which should be chosen.
+guesses the direction of the transformation to be used, i.e., the
+constructor of the reflect predicate that should be chosen.
 
 
 General mechanism for interpreting goals and assumptions
@@ -5204,29 +5206,29 @@ The general form of an assumption view tactic is:
 .. tacv:: {| move | case } / @term
    :undocumented:
 
-The term , called the *view lemma* can be:
+The term, called the *view lemma*, can be:
 
 
 + a (term coercible to a) function;
 + a (possibly quantified) implication;
 + a (possibly quantified) double implication;
 + a (possibly quantified) instance of the reflect predicate (see
-  section :ref:`views_and_reflection_ssr`).
+  Section :ref:`views_and_reflection_ssr`).
 
 
 Let ``top`` be the top assumption in the goal.
 
-There are three steps in the behavior of an assumption view tactic:
+There are three steps in the behavior of an assumption view tactic.
 
 + It first introduces ``top``.
 + If the type of :token:`term` is neither a double implication nor an
   instance of the reflect predicate, then the tactic automatically
-  generalises a term of the form: ``term term1 … termn`` where the
+  generalises a term of the form ``term term1 … termn``, where the
   terms ``term1 … termn`` instantiate the possible quantified variables of
   ``term`` , in order for ``(term term1 … termn top)`` to be well typed.
 + If the type of ``term`` is an equivalence, or an instance of the
-  reflect predicate, it generalises a term of the form:
-  ``(termvh (term term1 … termn ))`` where the term ``termvh``
+  reflect predicate, it generalises a term of the form
+  ``(termvh (term term1 … termn ))``, where the term ``termvh``
   inserted is called an
   *assumption interpretation view hint*.
 + It finally clears top.
@@ -5235,7 +5237,7 @@ There are three steps in the behavior of an assumption view tactic:
 For a ``case/term`` tactic, the generalisation step is replaced by a
 case analysis step.
 
-*View hints* are declared by the user (see section :ref:`views_and_reflection_ssr`) and are
+*View hints* are declared by the user (see Section :ref:`views_and_reflection_ssr`) and
 stored in the Hint View database. The proof engine automatically
 detects from the shape of the top assumption ``top`` and of the view lemma
 ``term`` provided to the tactic the appropriate view hint in the
@@ -5256,7 +5258,7 @@ which transforms a double implication into the left-to-right one, or:
    Lemma iffRL : forall P Q, (P <-> Q) -> Q -> P.
 
 which produces the converse implication. In both cases, the two
-first Prop arguments are implicit.
+first ``Prop`` arguments are implicit.
 
 If ``term`` is an instance of the ``reflect`` predicate, then ``A`` will be one
 of the defined view hints for the ``reflect`` predicate, which are by
@@ -5283,7 +5285,7 @@ but they also allow complex transformation, involving negations.
      Lemma test (a b : bool) (Ha : a) (Hb : b) : ~~ (a && b).
      apply/andP.
 
-  In fact this last script does not
+  In fact, this last script does not
   exactly use the hint ``introN``, but the more general hint:
 
   .. coqtop:: all
@@ -5293,7 +5295,7 @@ but they also allow complex transformation, involving negations.
   The lemma ``introN`` is an instantiation of ``introNF`` using ``c := true``.
 
 Note that views, being part of :token:`i_pattern`, can be used to interpret
-assertions too. For example the following script asserts ``a && b`` but
+assertions too. For example, the following script asserts ``a && b``, but
 actually uses its propositional interpretation.
 
 
@@ -5313,15 +5315,16 @@ actually uses its propositional interpretation.
      have /andP [pa ->] : (a && b) by rewrite andbC.
 
 Interpreting goals
+``````````````````
 
 A goal interpretation view tactic of the form:
 
 .. tacv:: apply/@term
    :undocumented:
 
-applied to a goal ``top`` is interpreted in the following way:
+applied to a goal ``top`` is interpreted in the following way.
 
-+ If the type of ``term`` is not an instance of the ``reflect`` predicate,
++ If the type of ``term`` is not an instance of the reflect predicate,
   nor an equivalence, then the term ``term`` is applied to the current
   goal ``top``, possibly inserting implicit arguments.
 + If the type of ``term`` is an instance of the reflect predicate or an
@@ -5331,8 +5334,8 @@ applied to a goal ``top`` is interpreted in the following way:
 
 
 Like assumption interpretation view hints, goal interpretation ones
-are user-defined lemmas stored (see section :ref:`views_and_reflection_ssr`) in the ``Hint View``
-database bridging the possible gap between the type of ``term`` and the
+are user-defined lemmas stored (see Section :ref:`views_and_reflection_ssr`) in the ``Hint View``
+database, bridging the possible gap between the type of ``term`` and the
 type of the goal.
 
 
@@ -5350,8 +5353,8 @@ The syntax of double views is:
 .. tacv:: apply/@term/@term
    :undocumented:
 
-The first term is the view lemma applied to the left hand side of the
-equality, while the second term is the one applied to the right hand side.
+The first term is the view lemma applied to the left-hand side of the
+equality, while the second term is the one applied to the right-hand side.
 
 In this context, the identity view can be used when no view has to be applied:
 
@@ -5408,16 +5411,16 @@ Declaring new Hint Views
 
    The :token:`ident` is the name of the lemma to be
    declared as a hint. If ``move`` is used as
-   tactic, the hint is declared for assumption interpretation tactics,
+   tactic, the hint is declared for assumption interpretation tactics;
    ``apply`` declares hints for goal interpretations. Goal interpretation
-   view hints are declared for both simple views and left hand side
+   view hints are declared for both simple views and left-hand side
    views. The optional natural number is the number of implicit
    arguments to be considered for the declared hint view lemma.
 
    .. cmdv:: Hint View for apply//@ident {? | @natural }
 
-      This variant with a double slash ``//``, declares hint views for right
-      hand sides of double views.
+      This variant with a double slash ``//`` declares hint views for 
+      right-hand sides of double views.
 
       See the files ``ssreflect.v`` and ``ssrbool.v`` for examples.
 
@@ -5426,7 +5429,7 @@ Multiple views
 ~~~~~~~~~~~~~~
 
 The hypotheses and the goal can be interpreted by applying multiple views
-in sequence. Both move and apply can be followed by an arbitrary
+in sequence. Both ``move`` and ``apply`` can be followed by an arbitrary
 number of ``/term``. The main difference between the following two
 tactics
 
@@ -5471,7 +5474,7 @@ pass a given hypothesis to a lemma.
      move/P2Q/Q2R in p.
 
 If the list of views is of length two, ``Hint Views`` for interpreting
-equivalences are indeed taken into account, otherwise only single
+equivalences are indeed taken into account; otherwise only single
 ``Hint Views`` are used.
 
 
@@ -5499,90 +5502,90 @@ Natural number
 .. prodn:: nat_or_ident ::= {| @natural | @ident }
 
 where :token:`ident` is an Ltac variable denoting a standard Coq number
-(should not be the name of a tactic which can be followed by a
-bracket ``[``, like ``do``, ``have``,…)
+(should not be the name of a tactic that can be followed by a
+bracket ``[``, such as ``do``, ``have``,…)
 
 Items and switches
 ~~~~~~~~~~~~~~~~~~
 
 .. prodn:: ssr_binder ::= {| @ident | ( @ident {? : @term } ) }
 
-binder see :ref:`abbreviations_ssr`.
+binder (see :ref:`abbreviations_ssr`)
 
 .. prodn:: clear_switch ::= { {+ @ident } }
 
-clear switch see :ref:`discharge_ssr`
+clear switch (see :ref:`discharge_ssr`)
 
 .. prodn:: c_pattern ::= {? {| @term in | @term as } } @ident in @term
 
-context pattern see :ref:`contextual_patterns_ssr`
+context pattern (see :ref:`contextual_patterns_ssr`)
 
 .. prodn:: d_item ::= {? {| @occ_switch | @clear_switch } } {? {| @term | ( @c_pattern ) } }
 
-discharge item see :ref:`discharge_ssr`
+discharge item (see :ref:`discharge_ssr`)
 
 .. prodn:: gen_item ::= {| {? @ } @ident | ( @ident ) | ( {? @ } @ident := @c_pattern ) }
 
-generalization item see :ref:`structure_ssr`
+generalization item (see :ref:`structure_ssr`)
 
 .. prodn:: i_pattern ::= {| @ident | > | _ | ? | * | + | {? @occ_switch } {| -> | <- } | [ {?| @i_item } ] | - | [: {+ @ident } ] }
 
-intro pattern :ref:`introduction_ssr`
+intro pattern (see :ref:`introduction_ssr`)
 
 .. prodn:: i_item ::= {| @clear_switch | @s_item | @i_pattern | @i_view | @i_block }
 
-view :ref:`introduction_ssr`
+view (see :ref:`introduction_ssr`)
 
 .. prodn::
    i_view ::= {? %{%} } {| /@term | /ltac:( @tactic ) }
 
-intro block :ref:`introduction_ssr`
+intro block (see :ref:`introduction_ssr`)
 
 .. prodn::
    i_block ::= {| [^ @ident ] | [^~ {| @ident | @natural } ] }
 
-intro item  see :ref:`introduction_ssr`
+intro item (see :ref:`introduction_ssr`)
 
 .. prodn:: int_mult ::= {? @natural } @mult_mark
 
-multiplier  see :ref:`iteration_ssr`
+multiplier (see :ref:`iteration_ssr`)
 
 .. prodn:: occ_switch ::= { {? {| + | - } } {* @natural } }
 
-occur. switch see :ref:`occurrence_selection_ssr`
+occur. switch (see :ref:`occurrence_selection_ssr`)
 
 .. prodn:: mult ::= {? @natural } @mult_mark
 
-multiplier see :ref:`iteration_ssr`
+multiplier (see :ref:`iteration_ssr`)
 
 .. prodn:: mult_mark ::= {| ? | ! }
 
-multiplier mark see :ref:`iteration_ssr`
+multiplier mark (see :ref:`iteration_ssr`)
 
 .. prodn:: r_item ::= {| {? / } @term | @s_item }
 
-rewrite item see :ref:`rewriting_ssr`
+rewrite item (see :ref:`rewriting_ssr`)
 
 .. prodn:: r_prefix ::= {? - } {? @int_mult } {? {| @occ_switch | @clear_switch } } {? [ @r_pattern ] }
 
-rewrite prefix see :ref:`rewriting_ssr`
+rewrite prefix (see :ref:`rewriting_ssr`)
 
 .. prodn:: r_pattern ::= {| @term | @c_pattern | in {? @ident in } @term }
 
-rewrite pattern see :ref:`rewriting_ssr`
+rewrite pattern (see :ref:`rewriting_ssr`)
 
 .. prodn:: r_step ::= {? @r_prefix } @r_item
 
-rewrite step see :ref:`rewriting_ssr`
+rewrite step (see :ref:`rewriting_ssr`)
 
 .. prodn:: s_item ::= {| /= | // | //= }
 
-simplify switch see :ref:`introduction_ssr`
+simplify switch (see :ref:`introduction_ssr`)
 
 Tactics
 ~~~~~~~
 
-*Note*: ``without loss`` and ``suffices`` are synonyms for ``wlog`` and ``suff``
+*Note*: ``without loss`` and ``suffices`` are synonyms for ``wlog`` and ``suff``,
 respectively.
 
 .. tacn:: move
@@ -5598,7 +5601,7 @@ respectively.
 
 .. tacv:: abstract: {+ @d_item}
 
-   see :ref:`abstract_ssr` and :ref:`generating_let_ssr`
+   (see :ref:`abstract_ssr` and :ref:`generating_let_ssr`)
 
 .. tacv:: elim
 
@@ -5677,31 +5680,31 @@ Tacticals
 
 .. prodn:: tactic += @d_tactic {? @ident } : {+ @d_item } {? @clear_switch }
 
-discharge :ref:`discharge_ssr`
+discharge (see :ref:`discharge_ssr`)
 
 .. prodn:: tactic += @tactic => {+ @i_item }
 
-introduction see :ref:`introduction_ssr`
+introduction (see :ref:`introduction_ssr`)
 
 .. prodn:: tactic += @tactic in {+ {| @gen_item | @clear_switch } } {? * }
 
-localization see :ref:`localization_ssr`
+localization (see :ref:`localization_ssr`)
 
 .. prodn:: tactic += do {? @mult } {| @tactic | [ {+| @tactic } ] }
 
-iteration  see :ref:`iteration_ssr`
+iteration (see :ref:`iteration_ssr`)
 
 .. prodn:: tactic += @tactic ; {| first | last } {? @natural } {| @tactic | [ {+| @tactic } ] }
 
-selector  see :ref:`selectors_ssr`
+selector (see :ref:`selectors_ssr`)
 
 .. prodn:: tactic += @tactic ; {| first | last } {? @natural }
 
-rotation see :ref:`selectors_ssr`
+rotation (see :ref:`selectors_ssr`)
 
 .. prodn:: tactic += by {| @tactic | [ {*| @tactic } ] }
 
-closing see :ref:`terminators_ssr`
+closing (see :ref:`terminators_ssr`)
 
 Commands
 ~~~~~~~~
@@ -5731,24 +5734,24 @@ Settings
 
 .. rubric:: Footnotes
 
-.. [#1] Unfortunately, even after a call to the Set Printing All command,
+.. [#1] Unfortunately, even after a call to the ``Set Printing All`` command,
   some occurrences are still not displayed to the user, essentially the
   ones possibly hidden in the predicate of a dependent match structure.
 .. [#2] Thus scripts that depend on bound variable names, e.g., via intros
   or with, are inherently fragile.
-.. [#3] The name ``subnK`` reads as “right cancellation rule for nat
+.. [#3] The name ``subnK`` reads as “right cancellation rule for ``nat``
   subtraction”.
 .. [#4] Also, a slightly different variant may be used for the first :token:`d_item`
-  of case and elim; see section :ref:`type_families_ssr`.
-.. [#5] Except /= does not expand the local definitions created by the
-  |SSR| in tactical.
+  of ``case`` and ``elim``; see Section :ref:`type_families_ssr`.
+.. [#5] Except that ``/=`` does not expand the local definitions created by the
+  |SSR| ``in`` tactical.
 .. [#6] |SSR| reserves all identifiers of the form “_x_”, which is
   used for such generated names.
 .. [#7] More precisely, it should have a quantified inductive type with a
   assumptions and m − a constructors.
 .. [#8] This is an implementation feature: there is no such obstruction
-  in the metatheory
-.. [#9] The current state of the proof shall be displayed by the Show
-  Proof command of Coq proof mode.
-.. [#10] A simple proof context entry is a naked identifier (i.e. not between
+  in the metatheory.
+.. [#9] The current state of the proof shall be displayed by the ``Show
+  Proof`` command of Coq proof mode.
+.. [#10] A simple proof context entry is a naked identifier (i.e., not between
   parentheses) designating a context entry that is not a section variable.
