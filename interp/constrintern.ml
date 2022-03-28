@@ -2797,9 +2797,27 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
 
 (** Local universe and constraint declarations. *)
 
+let known_universe_level_name evd lid =
+  try Evd.universe_of_name evd lid.CAst.v
+  with Not_found ->
+    let u = Nametab.locate_universe (Libnames.qualid_of_lident lid) in
+    Univ.Level.make u
+
+let known_glob_level evd = function
+  | GSProp | GProp ->
+    CErrors.user_err (Pp.str "Universe constraints cannot mention Prop or SProp.")
+  | GSet -> Univ.Level.set
+  | GUniv u -> u
+  | GRawUniv u -> anomaly Pp.(str "Raw universe in known_glob_level.")
+  | GLocalUniv lid ->
+    try known_universe_level_name evd lid
+    with Not_found ->
+      user_err ?loc:lid.CAst.loc
+        (str "Undeclared universe " ++ Id.print lid.CAst.v)
+
 let interp_known_level evd u =
   let u = intern_sort_name ~local_univs:{bound = bound_univs evd; unb_univs=false} u in
-  Pretyping.known_glob_level evd u
+  known_glob_level evd u
 
 let interp_univ_constraints env evd cstrs =
   let interp (evd,cstrs) (u, d, u') =

@@ -394,24 +394,6 @@ let pretype_id pretype loc env sigma id =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let known_universe_level_name evd lid =
-  try Evd.universe_of_name evd lid.CAst.v
-  with Not_found ->
-    let u = Nametab.locate_universe (Libnames.qualid_of_lident lid) in
-    Univ.Level.make u
-
-let known_glob_level evd = function
-  | GSProp -> Univ.Level.sprop
-  | GProp -> Univ.Level.prop
-  | GSet -> Univ.Level.set
-  | GUniv u -> u
-  | GRawUniv u -> anomaly Pp.(str "Raw universe in known_glob_level.")
-  | GLocalUniv lid ->
-    try known_universe_level_name evd lid
-    with Not_found ->
-      user_err ?loc:lid.CAst.loc
-        (str "Undeclared universe " ++ Id.print lid.CAst.v)
-
 let glob_level ?loc evd : glob_level -> _ = function
   | UAnonymous {rigid} -> new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd
   | UNamed s ->
