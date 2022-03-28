@@ -40,7 +40,7 @@ Defining record types
    See :ref:`proofschemes-induction-principles`.
 
    The :cmd:`Class` command can be used to define records that are also
-   :ref`typeclasses`, which permit Coq to automatically infer the inhabitants of
+   :ref:`typeclasses`, which permit Coq to automatically infer the inhabitants of
    the record.
 
    :n:`{? > }`
@@ -86,6 +86,12 @@ Defining record types
        Specifies the priority of the field.  It is only allowed in :cmd:`Class` commands.
 
    In :n:`@field_spec`:
+
+     :n:`:>` in :n:`@of_type`
+       If specified, the field is declared as a coercion from the record name
+       to the class of the field type. See :ref:`coercions`.
+       Note that this currently does something else in :cmd:`Class` commands.
+       See :ref:`warning in Class <warn-future-coercion-class-field>`.
 
      - :n:`{+ @binder } : @of_type` is equivalent to
        :n:`: forall {+ @binder } , @of_type`

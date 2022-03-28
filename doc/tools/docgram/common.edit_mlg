@@ -565,7 +565,7 @@ record_definition: [
 (* No mutual recursion, no inductive classes, type must be a sort *)
 (* constructor is optional but "Class record_definition" covers that case *)
 singleton_class_definition: [
-| opt_coercion ident_decl binders OPT [ ":" sort ] ":=" constructor
+| ident_decl binders OPT [ ":" sort ] ":=" constructor
 ]
 
 (* No record syntax, opt_coercion not supported for Variant, := ... required *)

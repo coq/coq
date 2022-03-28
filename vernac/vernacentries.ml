@@ -913,6 +913,8 @@ let vernac_inductive ~atts kind indl =
       | bl, None -> bl
       | _ -> CErrors.user_err Pp.(str "Definitional classes do not support the \"|\" syntax.")
     in
+    if fst id then
+      user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
     let (coe, (lid, ce)) = l in
     let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
