@@ -262,71 +262,70 @@ let process_universe_constraints uctx cstrs =
   | Inr l, Inl ru | Inl ru, Inr l ->
     let alg = Level.Set.mem l uctx.univ_algebraic in
     let inst = univ_level_rem l ru ru in
-      if alg && not (Level.Set.mem l (Universe.levels inst)) then
-        (instantiate_variable l inst vars; local)
-      else
-        let lu = Universe.make l in
-        if univ_level_mem l ru then
-          enforce_leq inst lu local
-        else sort_inconsistency Eq (Sorts.sort_of_univ lu) r
+    if alg && not (Level.Set.mem l (Universe.levels inst)) then
+      (instantiate_variable l inst vars; local)
+    else
+      let lu = Universe.make l in
+      if univ_level_mem l ru then
+        enforce_leq inst lu local
+      else sort_inconsistency Eq (Sorts.sort_of_univ lu) r
   | Inl _, Inl _ (* both are algebraic *) ->
     if UGraph.check_eq_sort univs l r then local
     else sort_inconsistency Eq l r
   in
   let unify_universes cst local =
     let cst = nf_constraint cst in
-      if UnivProblem.is_trivial cst then local
-      else
-          match cst with
-          | ULe (l, r) ->
-            begin match classify r with
-            | UAlgebraic _ | UMax _ ->
-              if UGraph.check_leq_sort univs l r then local
-              else user_err Pp.(str "Algebraic universe on the right")
-            | USmall r' ->
-              begin match classify l with
-              | UAlgebraic _ ->
-                (* l contains a +1 and r=r' small so l <= r impossible *)
-                sort_inconsistency Le l r
-              | USmall l' | ULevel l' ->
-                if UGraph.check_leq_sort univs l r then
-                  Univ.Constraints.add (l', Le, r') local
-                else if Level.is_small l' || is_local l' then
-                  equalize_variables false l' r' local
-                else sort_inconsistency Le l r
-              | UMax levels ->
-                if UGraph.check_leq_sort univs l r then local
-                else
-                let fold l' local =
-                  let l = Sorts.sort_of_univ @@ Universe.make l' in
-                  if Level.is_small l' || is_local l' then
-                    equalize_variables false l' r' local
-                  else sort_inconsistency Le l r
-                in
-                Level.Set.fold fold levels local
-              end
-            | ULevel r' ->
-              match classify l with
-              | USmall l | ULevel l ->
-                Univ.Constraints.add (l, Le, r') local
-              | UAlgebraic _ | UMax _ ->
-                (* We insert the constraint in the graph even if the graph
-                    already contains it.  Indeed, checking the existance of the
-                    constraint is costly when the constraint does not already
-                    exist directly as a single edge in the graph, but adding an
-                    edge in the graph which is implied by others is cheap.
-                    Hence, by doing this, we avoid a costly check here, and
-                    make further checks of this constraint easier since it will
-                    exist directly in the graph. *)
-                UGraph.enforce_leq_sort l r local
-            end
-          | ULub (l, r) ->
-            equalize_variables true l r local
-          | UWeak (l, r) ->
-            if not (drop_weak_constraints ())
-            then extra := {!extra with UnivMinim.weak_constraints = UPairSet.add (l,r) !extra.UnivMinim.weak_constraints};
-            local
-          | UEq (l, r) -> equalize_universes l r local
+    if UnivProblem.is_trivial cst then local
+    else match cst with
+    | ULe (l, r) ->
+      begin match classify r with
+      | UAlgebraic _ | UMax _ ->
+        if UGraph.check_leq_sort univs l r then local
+        else user_err Pp.(str "Algebraic universe on the right")
+      | USmall r' ->
+        begin match classify l with
+        | UAlgebraic _ ->
+          (* l contains a +1 and r=r' small so l <= r impossible *)
+          sort_inconsistency Le l r
+        | USmall l' | ULevel l' ->
+          if UGraph.check_leq_sort univs l r then
+            Univ.Constraints.add (l', Le, r') local
+          else if Level.is_small l' || is_local l' then
+            equalize_variables false l' r' local
+          else sort_inconsistency Le l r
+        | UMax levels ->
+          if UGraph.check_leq_sort univs l r then local
+          else
+          let fold l' local =
+            let l = Sorts.sort_of_univ @@ Universe.make l' in
+            if Level.is_small l' || is_local l' then
+              equalize_variables false l' r' local
+            else sort_inconsistency Le l r
+          in
+          Level.Set.fold fold levels local
+        end
+      | ULevel r' ->
+        match classify l with
+        | USmall l | ULevel l ->
+          Univ.Constraints.add (l, Le, r') local
+        | UAlgebraic _ | UMax _ ->
+          (* We insert the constraint in the graph even if the graph
+              already contains it.  Indeed, checking the existance of the
+              constraint is costly when the constraint does not already
+              exist directly as a single edge in the graph, but adding an
+              edge in the graph which is implied by others is cheap.
+              Hence, by doing this, we avoid a costly check here, and
+              make further checks of this constraint easier since it will
+              exist directly in the graph. *)
+          UGraph.enforce_leq_sort l r local
+      end
+    | ULub (l, r) ->
+      equalize_variables true l r local
+    | UWeak (l, r) ->
+      if not (drop_weak_constraints ())
+      then extra := {!extra with UnivMinim.weak_constraints = UPairSet.add (l,r) !extra.UnivMinim.weak_constraints};
+      local
+    | UEq (l, r) -> equalize_universes l r local
   in
   let unify_universes cst local =
     if not (UGraph.type_in_type univs) then unify_universes cst local
