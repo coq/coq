@@ -138,27 +138,45 @@ let universe_level_name evd ({CAst.v=id} as lid) =
     else user_err ?loc:lid.CAst.loc
         (Pp.(str "Undeclared universe: " ++ Id.print id ++ str "."))
 
-let sort_name sigma = function
-  | GSProp -> sigma, Univ.Level.sprop
-  | GProp -> sigma, Univ.Level.prop
-  | GSet -> sigma, Univ.Level.set
-  | GUniv u -> sigma, u
+let level_name sigma = function
+  | GSProp | GProp -> None
+  | GSet -> Some (sigma, Univ.Level.set)
+  | GUniv u -> Some (sigma, u)
   | GRawUniv u ->
-    (try Evd.add_global_univ sigma u with UGraph.AlreadyDeclared -> sigma), u
-  | GLocalUniv l -> universe_level_name sigma l
+    let sigma = try Evd.add_global_univ sigma u with UGraph.AlreadyDeclared -> sigma in
+    Some (sigma, u)
+  | GLocalUniv l ->
+    let sigma, u = universe_level_name sigma l in
+    Some (sigma, u)
 
-let sort_info ?loc evd l =
-    List.fold_left (fun (evd, u) (l,n) ->
-      let evd', u' = sort_name evd l in
-      let u' = Univ.Universe.make u' in
-      let u' = match n with
-      | 0 -> u'
-      | 1 -> Univ.Universe.super u'
-      | n ->
-        user_err ?loc
-          (Pp.(str "Cannot interpret universe increment +" ++ int n ++ str "."))
-      in (evd', Univ.sup u u'))
-    (evd, Univ.Universe.type0m) l
+let sort_info ?loc sigma l = match l with
+| [] -> assert false
+| [GSProp, 0] -> sigma, Sorts.sprop
+| [GProp, 0] -> sigma, Sorts.prop
+| (u, n) :: us ->
+  let open Pp in
+  let get_level sigma u n = match level_name sigma u with
+  | None ->
+    user_err ?loc
+      (str "Non-Set small universes cannot be used in algebraic expressions.")
+  | Some (sigma, u) ->
+    let u = Univ.Universe.make u in
+    let u = match n with
+    | 0 -> u
+    | 1 -> Univ.Universe.super u
+    | n ->
+      user_err ?loc
+        (str "Cannot interpret universe increment +" ++ int n ++ str ".")
+    in
+    (sigma, u)
+  in
+  let fold (sigma, u) (l, n) =
+    let sigma, u' = get_level sigma l n in
+    (sigma, Univ.Universe.sup u u')
+  in
+  let (sigma, u) = get_level sigma u n in
+  let (sigma, u) = List.fold_left fold (sigma, u) us in
+  sigma, Sorts.sort_of_univ u
 
 type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
 
@@ -396,7 +414,13 @@ let known_glob_level evd = function
 
 let glob_level ?loc evd : glob_level -> _ = function
   | UAnonymous {rigid} -> new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd
-  | UNamed s -> sort_name evd s
+  | UNamed s ->
+    match level_name evd s with
+    | None ->
+      user_err ?loc
+        (str "Universe instances cannot contain non-Set small levels, polymorphic" ++
+        str " universe instances must be greater or equal to Set.");
+    | Some r -> r
 
 let instance ?loc evd l =
   let evd, l' =
@@ -406,10 +430,6 @@ let instance ?loc evd l =
          (evd, l :: univs)) (evd, [])
       l
   in
-  if List.exists (fun l -> Univ.Level.is_prop l) l' then
-    user_err ?loc
-      (str "Universe instances cannot contain Prop, polymorphic" ++
-       str " universe instances must be greater or equal to Set.");
   evd, Some (Univ.Instance.of_array (Array.of_list (List.rev l')))
 
 let pretype_global ?loc rigid env evd gr us =
@@ -448,12 +468,12 @@ let pretype_ref ?loc sigma env ref us =
 let sort ?loc evd : glob_sort -> _ = function
   | UAnonymous {rigid} ->
     let evd, l = new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd in
-    evd, Univ.Universe.make l
+    evd, Sorts.sort_of_univ (Univ.Universe.make l)
   | UNamed l -> sort_info ?loc evd l
 
 let judge_of_sort ?loc evd s =
   let judge =
-    { uj_val = mkType s; uj_type = mkType (Univ.super s) }
+    { uj_val = mkSort s; uj_type = mkSort (Sorts.super s) }
   in
     evd, judge
 
