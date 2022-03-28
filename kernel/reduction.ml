@@ -432,7 +432,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
          let () = if irr_flex (info_env infos.cnv_inf) fl1 then raise NotConvertible (* trigger the fallback *) in
          convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
-       with NotConvertible | Univ.UniverseInconsistency _ ->
+       with NotConvertible | UGraph.UniverseInconsistency _ ->
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
         let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 in
         match r1, r2 with
@@ -872,10 +872,10 @@ let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
 
 
 let check_eq univs u u' =
-  if not (Sorts.check_eq_sort univs u u') then raise NotConvertible
+  if not (UGraph.check_eq_sort univs u u') then raise NotConvertible
 
 let check_leq univs u u' =
-  if not (Sorts.check_leq_sort univs u u') then raise NotConvertible
+  if not (UGraph.check_leq_sort univs u u') then raise NotConvertible
 
 let check_sort_cmp_universes pb s0 s1 univs =
   match pb with
@@ -915,14 +915,14 @@ let () =
   CClosure.set_conv conv
 
 let infer_eq (univs, cstrs as cuniv) u u' =
-  if Sorts.check_eq_sort univs u u' then cuniv
+  if UGraph.check_eq_sort univs u u' then cuniv
   else
-    univs, (Sorts.enforce_eq_sort u u' cstrs)
+    univs, (UGraph.enforce_eq_sort u u' cstrs)
 
 let infer_leq (univs, cstrs as cuniv) u u' =
-  if Sorts.check_leq_sort univs u u' then cuniv
+  if UGraph.check_leq_sort univs u u' then cuniv
   else
-    let cstrs', _ = Sorts.enforce_leq_alg_sort u u' univs in
+    let cstrs', _ = UGraph.enforce_leq_alg_sort u u' univs in
       univs, Univ.Constraints.union cstrs cstrs'
 
 let infer_cmp_universes _env pb s0 s1 univs =

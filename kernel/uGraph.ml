@@ -14,14 +14,9 @@ module G = AcyclicGraph.Make(struct
     type t = Level.t
     module Set = Level.Set
     module Map = Level.Map
-    module Constraints = Constraints
 
     let equal = Level.equal
     let compare = Level.compare
-
-    type explanation = Univ.explanation
-    let error_inconsistency d u v p =
-      raise (UniverseInconsistency (d,Universe.make u, Universe.make v, p))
 
     let pr = Level.pr
   end) [@@inlined] (* without inline, +1% ish on HoTT, compcert. See jenkins 594 vs 596 *)
@@ -35,12 +30,14 @@ type t = {
   type_in_type : bool;
 }
 
-type 'a check_function = t -> 'a -> 'a -> bool
+(* Universe inconsistency: error raised when trying to enforce a relation
+   that would create a cycle in the graph of universes. *)
 
-let g_map f g =
-  let g' = f g.graph in
-  if g.graph == g' then g
-  else {g with graph=g'}
+type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation Lazy.t option
+
+exception UniverseInconsistency of univ_inconsistency
+
+type 'a check_function = t -> 'a -> 'a -> bool
 
 let set_cumulative_sprop b g = {g with sprop_cumulative=b}
 
@@ -98,12 +95,21 @@ let enforce_constraint (u,d,v) g =
   | Lt -> G.enforce_lt u v g
   | Eq -> G.enforce_eq u v g
 
-let enforce_constraint cst g =
-  g_map (enforce_constraint cst) g
+let enforce_constraint0 cst g = match enforce_constraint cst g.graph with
+| None -> None
+| Some g' ->
+  if g' == g.graph then Some g
+  else Some { g with graph = g' }
 
-let enforce_constraint cst g =
-  if not (type_in_type g) then enforce_constraint cst g
-  else try enforce_constraint cst g with UniverseInconsistency _ -> g
+let enforce_constraint cst g = match enforce_constraint0 cst g with
+| None ->
+  if not (type_in_type g) then
+    let (u, c, v) = cst in
+    let e = lazy (G.get_explanation cst g.graph) in
+    let mk u = Sorts.sort_of_univ @@ Universe.make u in
+    raise (UniverseInconsistency (c, mk u, mk v, Some e))
+  else g
+| Some g -> g
 
 let merge_constraints csts g = Constraints.fold enforce_constraint csts g
 
@@ -131,9 +137,9 @@ let enforce_leq_alg u v g =
       if check_smaller_expr g u v then orig
       else
         (let c = leq_expr u v in
-         match enforce_constraint c g with
-         | g -> Inl (Constraints.add c cstrs,g)
-         | exception (UniverseInconsistency _ as e) -> Inr e)
+         match enforce_constraint0 c g with
+         | Some g -> Inl (Constraints.add c cstrs,g)
+         | None -> Inr (c, g))
   in
   (* max(us) <= max(vs) <-> forall u in us, exists v in vs, u <= v *)
   let c = List.map (fun u -> List.map (fun v -> (u,v)) (Universe.repr v)) (Universe.repr u) in
@@ -148,7 +154,11 @@ let enforce_leq_alg u v g =
   in
   match List.min order c with
   | Inl x -> x
-  | Inr e -> raise e
+  | Inr ((u, c, v), g) ->
+    let e = lazy (G.get_explanation (u, c, v) g.graph) in
+    let mk u = Sorts.sort_of_univ @@ Universe.make u in
+    let e = UniverseInconsistency (c, mk u, mk v, Some e) in
+    raise e
 
 let enforce_leq_alg u v g =
   match Universe.is_sprop u, Universe.is_sprop v with
@@ -156,7 +166,7 @@ let enforce_leq_alg u v g =
   | false, false -> enforce_leq_alg u v g
   | left, _ ->
     if left && g.sprop_cumulative then Constraints.empty, g
-    else raise (UniverseInconsistency (Le, u, v, None))
+    else raise (UniverseInconsistency (Le, Sorts.sort_of_univ u, Sorts.sort_of_univ v, None))
 
 (* sanity check wrapper *)
 let enforce_leq_alg u v g =
@@ -183,8 +193,12 @@ exception UndeclaredLevel = G.Undeclared
 let check_declared_universes g l =
   G.check_declared g.graph (Level.Set.remove Level.prop (Level.Set.remove Level.sprop l))
 
-let constraints_of_universes g = G.constraints_of g.graph
-let constraints_for ~kept g = G.constraints_for ~kept:(Level.Set.remove Level.prop (Level.Set.remove Level.sprop kept)) g.graph
+let constraints_of_universes g =
+  let add cst accu = Constraints.add cst accu in
+  G.constraints_of g.graph add Constraints.empty
+let constraints_for ~kept g =
+  let add cst accu = Constraints.add cst accu in
+  G.constraints_for ~kept:(Level.Set.remove Level.prop (Level.Set.remove Level.sprop kept)) g.graph add Constraints.empty
 
 (** Subtyping of polymorphic contexts *)
 
@@ -219,6 +233,64 @@ let choose p g u =
 
 let check_universes_invariants g = G.check_invariants ~required_canonical:Level.is_set g.graph
 
+(** Sort comparison *)
+
+(* The functions below rely on the invariant that no universe in the graph
+   can be unified with Prop / SProp. This is ensured by UGraph, which only
+   contains Set as a "small" level. *)
+
+open Sorts
+
+let get_algebraic = function
+| Prop | SProp -> assert false
+| Set -> Universe.type0
+| Type u -> u
+
+let check_eq_sort ugraph s1 s2 = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
+| (SProp, _) | (_, SProp) | (Prop, _) | (_, Prop) ->
+  type_in_type ugraph
+| (Type _ | Set), (Type _ | Set) ->
+  check_eq ugraph (get_algebraic s1) (get_algebraic s2)
+
+let check_leq_sort ugraph s1 s2 = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
+| (SProp, _) -> cumulative_sprop ugraph || type_in_type ugraph
+| (Prop, SProp) -> type_in_type ugraph
+| (Prop, (Set | Type _)) -> true
+| (_, (SProp | Prop)) -> type_in_type ugraph
+| (Type _ | Set), (Type _ | Set) ->
+  check_leq ugraph (get_algebraic s1) (get_algebraic s2)
+
+let enforce_eq_sort s1 s2 cst = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  raise (UniverseInconsistency (Eq, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  Univ.enforce_eq (get_algebraic s1) (get_algebraic s2) cst
+
+let enforce_leq_sort s1 s2 cst = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
+| (Prop, (Set | Type _)) -> cst
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  raise (UniverseInconsistency (Le, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  Univ.enforce_leq (get_algebraic s1) (get_algebraic s2) cst
+
+let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
+| (Prop, (Set | Type _)) -> Constraints.empty, g
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  if cumulative_sprop g && is_sprop s1 then
+    Constraints.empty, g
+  else
+    raise (UniverseInconsistency (Le, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  enforce_leq_alg (get_algebraic s1) (get_algebraic s2) g
+
 (** Pretty-printing *)
 
 let pr_pmap sep pr map =
@@ -246,3 +318,30 @@ type node = G.node =
 let repr g = G.repr g.graph
 
 let pr_universes prl g = pr_pmap Pp.mt (pr_arc prl) g
+
+open Pp
+
+let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
+  let pr_uni u = match u with
+  | Sorts.Set -> str "Set"
+  | Sorts.Prop -> str "Prop"
+  | Sorts.SProp -> str "SProp"
+  | Sorts.Type u -> Universe.pr_with prl u
+  in
+  let pr_rel = function
+    | Eq -> str"=" | Lt -> str"<" | Le -> str"<="
+  in
+  let reason = match p with
+    | None -> mt()
+    | Some p ->
+      let p = Lazy.force p in
+      if p = [] then mt ()
+      else
+        str " because" ++ spc() ++ pr_uni v ++
+        prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v)
+          p ++
+        (if Sorts.equal (Sorts.sort_of_univ (Universe.make (snd (CList.last p)))) u then mt() else
+           (spc() ++ str "= " ++ pr_uni u))
+  in
+    str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
+      pr_rel o ++ spc() ++ pr_uni v ++ reason

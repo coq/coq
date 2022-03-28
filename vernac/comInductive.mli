@@ -98,3 +98,8 @@ val variance_of_entry
     universes than originally specified.
     If monomorphic, [cumulative] is treated as [false].
 *)
+
+module Internal :
+sig
+  val compute_constructor_level : Environ.env -> Evd.evar_map -> EConstr.rel_context -> Sorts.t
+end

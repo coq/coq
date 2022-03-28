@@ -70,9 +70,12 @@ type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
                    missing : Sorts.t list; (* missing u <= ind_univ constraints *)
                  }
 
-let sup_sort s1 s2 =
-  let open Sorts in
-  sort_of_univ (Universe.sup (univ_of_sort s1) (univ_of_sort s2))
+let sup_sort s1 s2 = match s1, s2 with
+| (_, SProp) -> assert false (* template SProp not allowed *)
+| (SProp, s) | (Prop, s) | (s, Prop) -> s
+| (Set, Set) -> Sorts.set
+| (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Universe.sup u Universe.type0)
+| (Type u, Type v) -> Sorts.sort_of_univ (Universe.sup u v)
 
 let check_univ_leq ?(is_real_arg=false) env u info =
   let ind_univ = info.ind_univ in
@@ -81,7 +84,7 @@ let check_univ_leq ?(is_real_arg=false) env u info =
     else info
   in
   (* Inductive types provide explicit lifting from SProp to other universes, so allow SProp <= any. *)
-  if Sorts.is_sprop u || Sorts.check_leq_sort (universes env) u ind_univ
+  if Sorts.is_sprop u || UGraph.check_leq_sort (universes env) u ind_univ
   then { info with ind_min_univ = Option.map (sup_sort u) info.ind_min_univ }
   else if is_impredicative_sort env ind_univ
        && Option.is_empty info.ind_min_univ then { info with ind_squashed = true }
@@ -307,7 +310,10 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
       args,out)
       splayed_lc
   in
-  let ind_univ = Sorts.sort_of_univ  (Univ.subst_univs_level_universe usubst (Sorts.univ_of_sort univ_info.ind_univ)) in
+  let ind_univ = match univ_info.ind_univ with
+  | Prop | SProp | Set -> univ_info.ind_univ
+  | Type u -> Sorts.sort_of_univ (Univ.subst_univs_level_universe usubst u)
+  in
 
   let arity = match univ_info.ind_min_univ with
     | None -> RegularArity {mind_user_arity = arity; mind_sort = ind_univ}

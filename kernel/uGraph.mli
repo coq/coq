@@ -47,14 +47,23 @@ val check_eq_instances : Instance.t check_function
   universes graph. It raises the exception [UniverseInconsistency] if the
   constraints are not satisfiable. *)
 
+type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation Lazy.t option
+
+exception UniverseInconsistency of univ_inconsistency
+
 val enforce_constraint : univ_constraint -> t -> t
+
+val enforce_eq_sort : Sorts.t -> Sorts.t -> Univ.Constraints.t -> Univ.Constraints.t
+val enforce_leq_sort : Sorts.t -> Sorts.t -> Univ.Constraints.t -> Univ.Constraints.t
+
 val merge_constraints : Constraints.t -> t -> t
 
 val check_constraint  : t -> univ_constraint -> bool
 val check_constraints : Constraints.t -> t -> bool
-
+val check_eq_sort : t -> Sorts.t  -> Sorts.t -> bool
+val check_leq_sort : t -> Sorts.t -> Sorts.t -> bool
 (** Picks an arbitrary set of constraints sufficient to ensure [u <= v]. *)
-val enforce_leq_alg : Universe.t -> Universe.t -> t -> Constraints.t * t
+val enforce_leq_alg_sort : Sorts.t -> Sorts.t -> t -> Univ.Constraints.t * t
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
    @raise AlreadyDeclared if the level is already declared in the graph. *)
@@ -111,6 +120,9 @@ val repr : t -> node Level.Map.t
 (** {6 Pretty-printing of universes. } *)
 
 val pr_universes : (Level.t -> Pp.t) -> node Level.Map.t -> Pp.t
+
+val explain_universe_inconsistency : (Level.t -> Pp.t) ->
+  univ_inconsistency -> Pp.t
 
 (** {6 Debugging} *)
 val check_universes_invariants : t -> unit

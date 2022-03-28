@@ -46,7 +46,7 @@ type signature_mismatch_error =
   | RecordFieldExpected of bool
   | RecordProjectionsExpected of Name.t list
   | NotEqualInductiveAliases
-  | IncompatibleUniverses of Univ.univ_inconsistency
+  | IncompatibleUniverses of UGraph.univ_inconsistency
   | IncompatiblePolymorphism of env * types * types
   | IncompatibleConstraints of { got : Univ.AbstractContext.t; expect : Univ.AbstractContext.t }
   | IncompatibleVariance

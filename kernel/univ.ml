@@ -1246,31 +1246,3 @@ let hcons_universe_context_set (v, c) =
   (hcons_universe_set v, hcons_constraints c)
 
 let hcons_univ x = Universe.hcons x
-
-(* Universe inconsistency: error raised when trying to enforce a relation
-   that would create a cycle in the graph of universes. *)
-
-type univ_inconsistency = constraint_type * universe * universe * explanation Lazy.t option
-
-(* Do not use in this file as we may be type-in-type *)
-exception UniverseInconsistency of univ_inconsistency
-
-let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
-  let pr_uni = Universe.pr_with prl in
-  let pr_rel = function
-    | Eq -> str"=" | Lt -> str"<" | Le -> str"<="
-  in
-  let reason = match p with
-    | None -> mt()
-    | Some p ->
-      let p = Lazy.force p in
-      if p = [] then mt ()
-      else
-        str " because" ++ spc() ++ pr_uni v ++
-        prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v)
-          p ++
-        (if Universe.equal (Universe.make (snd (List.last p))) u then mt() else
-           (spc() ++ str "= " ++ pr_uni u))
-  in
-    str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
-      pr_rel o ++ spc() ++ pr_uni v ++ reason

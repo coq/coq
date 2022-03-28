@@ -24,7 +24,7 @@ type unification_error =
   | MetaOccurInBody of Evar.t
   | InstanceNotSameType of Evar.t * env * types * types
   | InstanceNotFunctionalType of Evar.t * env * constr * types
-  | UnifUnivInconsistency of Univ.univ_inconsistency
+  | UnifUnivInconsistency of UGraph.univ_inconsistency
   | CannotSolveConstraint of Evd.evar_constraint * unification_error
   | ProblemBeyondCapabilities
 

@@ -18,13 +18,8 @@ module type Point = sig
   module Set : CSig.SetS with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
 
-  module Constraints : CSet.S with type elt = (t * constraint_type * t)
-
   val equal : t -> t -> bool
   val compare : t -> t -> int
-
-  type explanation = (constraint_type * t) list
-  val error_inconsistency : constraint_type -> t -> t -> explanation lazy_t option -> 'a
 
   val pr : t -> Pp.t
 end
@@ -53,13 +48,19 @@ module Make (Point:Point) : sig
   val check_leq : Point.t check_function
   val check_lt : Point.t check_function
 
-  val enforce_eq : Point.t -> Point.t -> t -> t
-  val enforce_leq : Point.t -> Point.t -> t -> t
-  val enforce_lt : Point.t -> Point.t -> t -> t
+  val enforce_eq : Point.t -> Point.t -> t -> t option
+  val enforce_leq : Point.t -> Point.t -> t -> t option
+  val enforce_lt : Point.t -> Point.t -> t -> t option
 
-  val constraints_of : t -> Point.Constraints.t * Point.Set.t list
+  val get_explanation : (Point.t * constraint_type * Point.t) -> t -> (constraint_type * Point.t) list
+  (** Assuming that the corresponding call to [enforce_*] returned [None], this
+      will give a trace for the failure. *)
 
-  val constraints_for : kept:Point.Set.t -> t -> Point.Constraints.t
+  type 'a constraint_fold = Point.t * constraint_type * Point.t -> 'a -> 'a
+
+  val constraints_of : t -> 'a constraint_fold -> 'a -> 'a * Point.Set.t list
+
+  val constraints_for : kept:Point.Set.t -> t -> 'a constraint_fold -> 'a -> 'a
 
   val domain : t -> Point.Set.t
 

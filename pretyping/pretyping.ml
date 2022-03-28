@@ -1299,23 +1299,11 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     in
     let sigma, tycon' = split_as_array !!env sigma tycon in
     let sigma, jty = eval_type_pretyper self ~flags tycon' env sigma ty in
-    (* XXX not sure if we need to be this complex, I wrote this while
-       being confused by broken universe substitutions *)
-    let sigma, u = match Univ.Universe.level (Sorts.univ_of_sort jty.utj_type) with
-      | Some v ->
-        let sigma = Evd.make_nonalgebraic_variable sigma v in
-        let sigma = Option.cata (Evd.set_leq_level sigma v) sigma u in
-        sigma, Option.default v u
-      | None ->
-        let sigma, u = match u with
-          | Some u -> sigma, u
-          | None -> Evd.new_univ_level_variable UState.univ_flexible sigma
-        in
-        let sigma = Evd.set_leq_sort !!env sigma jty.utj_type
-            (Sorts.sort_of_univ (Univ.Universe.make u))
-        in
-        sigma, u
+    let sigma, u = match u with
+    | Some u -> sigma, u
+    | None -> Evd.new_univ_level_variable UState.univ_flexible sigma
     in
+    let sigma = Evd.set_leq_sort !!env sigma jty.utj_type (Sorts.sort_of_univ (Univ.Universe.make u)) in
     let sigma, jdef = eval_pretyper self ~flags (mk_tycon jty.utj_val) env sigma def in
     let pretype_elem = eval_pretyper self ~flags (mk_tycon jty.utj_val) env in
     let sigma, jt = Array.fold_left_map pretype_elem sigma t in

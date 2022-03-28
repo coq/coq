@@ -346,7 +346,7 @@ let explain_unification_error env sigma p1 p2 = function
         strbrk " is expected to have a functional type but it has type " ++ u]
      | UnifUnivInconsistency p ->
        [str "universe inconsistency: " ++
-        Univ.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
+        UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let env = make_all_name_different env sigma in
         (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
@@ -1000,7 +1000,7 @@ let explain_not_match_error = function
         status (not b) ++ str" declaration was found"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
-      Univ.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) incon
+      UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     str "conversion of polymorphic values generates additional constraints: " ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
@@ -1448,9 +1448,9 @@ let explain_exn_default = function
 let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
 
 let rec vernac_interp_error_handler = function
-  | Univ.UniverseInconsistency i ->
+  | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
-    Univ.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) i ++ str "."
+    UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) i ++ str "."
   | TypeError(ctx,te) ->
     let te = map_ptype_error EConstr.of_constr te in
     explain_type_error ctx Evd.empty te

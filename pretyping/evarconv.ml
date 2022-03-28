@@ -374,7 +374,7 @@ let compare_heads env evd ~nargs term term' =
   let check_strict evd u u' =
     let cstrs = Univ.enforce_eq_instances u u' Univ.Constraints.empty in
     try Success (Evd.add_constraints evd cstrs)
-    with Univ.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
+    with UGraph.UniverseInconsistency p -> UnifFailure (evd, UnifUnivInconsistency p)
   in
   match EConstr.kind evd term, EConstr.kind evd term' with
   | Const (c, u), Const (c', u') when QConstant.equal env c c' ->
@@ -553,7 +553,7 @@ let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
   | None ->
     if !has_evar then None
     else Some (UnifFailure (sigma, ConversionFailed (env,t1,t2)))
-  | exception Univ.UniverseInconsistency e ->
+  | exception UGraph.UniverseInconsistency e ->
     if !has_evar then None
     else Some (UnifFailure (sigma, UnifUnivInconsistency e))
 
@@ -661,7 +661,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     else
       ise_and evd [(fun i ->
           try compare_heads env i ~nargs term term'
-          with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
+          with UGraph.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
          (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk sk')]
   in
   let consume l2r (_, skF as apprF) (_,skM as apprM) i =
@@ -957,7 +957,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
               ise_and i [(fun i ->
                 try Success (Evd.add_universe_constraints i univs)
                 with UniversesDiffer -> UnifFailure (i,NotSameHead)
-                | Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
+                | UGraph.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
                          (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
           | None ->
             UnifFailure (i,NotSameHead)
@@ -1069,7 +1069,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                  then Evd.set_eq_sort env evd s1 s2
                  else Evd.set_leq_sort env evd s1 s2
                in Success evd'
-             with Univ.UniverseInconsistency p ->
+             with UGraph.UniverseInconsistency p ->
                UnifFailure (evd,UnifUnivInconsistency p)
              | e when CErrors.noncritical e -> UnifFailure (evd,NotSameHead))
 
