@@ -189,6 +189,10 @@ let drop_weak_constraints =
 let sort_inconsistency cst l r =
   raise (UGraph.UniverseInconsistency (cst, l, r, None))
 
+let level_inconsistency cst l r =
+  let mk u = Sorts.sort_of_univ @@ Universe.make u in
+  raise (UGraph.UniverseInconsistency (cst, mk l, mk r, None))
+
 let subst_univs_sort normalize s = match s with
 | Sorts.Set | Sorts.Prop | Sorts.SProp -> s
 | Sorts.Type u -> Sorts.sort_of_univ (subst_univs_universe normalize u)
@@ -244,8 +248,7 @@ let process_universe_constraints uctx cstrs =
   | Sorts.Set -> Inr Level.set
   | Sorts.Type u -> match Universe.level u with Some l -> Inr l | None -> Inl u
   in
-  let equalize_variables fo l l' r r' local =
-    (* Assumes l = [l',0] and r = [r',0] *)
+  let equalize_variables fo l' r' local =
     let () =
       if is_local l' then
         instantiate_variable l' (Universe.make r') vars
@@ -255,14 +258,14 @@ let process_universe_constraints uctx cstrs =
         (* Two rigid/global levels, none of them being local,
             one of them being Prop/Set, disallow *)
         if Level.is_small l' || Level.is_small r' then
-          sort_inconsistency Eq l r
+          level_inconsistency Eq l' r'
         else if fo then
           raise UniversesDiffer
     in
     enforce_eq_level l' r' local
   in
   let equalize_universes l r local = match varinfo l, varinfo r with
-  | Inr l', Inr r' -> equalize_variables false l l' r r' local
+  | Inr l', Inr r' -> equalize_variables false l' r' local
   | Inr l, Inl ru | Inl ru, Inr l ->
     let alg = Level.Set.mem l uctx.univ_algebraic in
     let inst = univ_level_rem l ru ru in
@@ -296,7 +299,7 @@ let process_universe_constraints uctx cstrs =
                 if UGraph.check_leq_sort univs l r then
                   Univ.Constraints.add (l', Le, r') local
                 else if Level.is_small l' || is_local l' then
-                  equalize_variables false l l' r r' local
+                  equalize_variables false l' r' local
                 else sort_inconsistency Le l r
               | LMax levels ->
                 if UGraph.check_leq_sort univs l r then local
@@ -304,7 +307,7 @@ let process_universe_constraints uctx cstrs =
                 let fold l' local =
                   let l = Sorts.sort_of_univ @@ Universe.make l' in
                   if Level.is_small l' || is_local l' then
-                    equalize_variables false l l' r r' local
+                    equalize_variables false l' r' local
                   else sort_inconsistency Le l r
                 in
                 Level.Set.fold fold levels local
@@ -325,7 +328,7 @@ let process_universe_constraints uctx cstrs =
                 UGraph.enforce_leq_sort l r local
             end
           | ULub (l, r) ->
-              equalize_variables true (Sorts.sort_of_univ (Universe.make l)) l (Sorts.sort_of_univ (Universe.make r)) r local
+            equalize_variables true l r local
           | UWeak (l, r) ->
             if not (drop_weak_constraints ())
             then extra := {!extra with UnivMinim.weak_constraints = UPairSet.add (l,r) !extra.UnivMinim.weak_constraints};
@@ -342,9 +345,7 @@ let process_universe_constraints uctx cstrs =
   (* Remove constraints mentioning Prop / SProp *)
   let maybe_univ_inconsistency c l r =
     if UGraph.type_in_type univs then false
-    else
-      let mk u = Sorts.sort_of_univ @@ Universe.make u in
-      raise (UGraph.UniverseInconsistency (c, mk l, mk r, None))
+    else level_inconsistency c l r
   in
   let filter (l, c, r) = match c with
   | Eq ->
