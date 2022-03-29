@@ -2819,14 +2819,17 @@ let interp_known_level evd u =
   let u = intern_sort_name ~local_univs:{bound = bound_univs evd; unb_univs=false} u in
   known_glob_level evd u
 
+let interp_univ_constraint evd (u,c,v) =
+  let u = interp_known_level evd u in
+  let v = interp_known_level evd v in
+  u,c,v
+
 let interp_univ_constraints env evd cstrs =
-  let interp (evd,cstrs) (u, d, u') =
-    let ul = interp_known_level evd u in
-    let u'l = interp_known_level evd u' in
-    let cstr = (ul,d,u'l) in
-    let cstrs' = Univ.Constraints.add cstr cstrs in
-    try let evd = Evd.add_constraints evd (Univ.Constraints.singleton cstr) in
-        evd, cstrs'
+  let interp (evd,cstrs) cstr =
+    let cstr = interp_univ_constraint evd cstr in
+    try
+      let evd = Evd.add_constraints evd (Univ.Constraints.singleton cstr) in
+      evd, Univ.Constraints.add cstr cstrs
     with UGraph.UniverseInconsistency e as exn ->
       let _, info = Exninfo.capture exn in
       CErrors.user_err ~info

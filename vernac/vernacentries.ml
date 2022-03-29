@@ -360,11 +360,10 @@ let dump_universes_gen prl g s =
 
 let universe_subgraph ?loc kept univ =
   let open Univ in
-  let sigma = Evd.from_env (Global.env()) in
   let parse q =
-    let q = Constrexpr.CType q in
-    (* this function has a nice error message for not found univs *)
-    Constrintern.interp_known_level sigma q
+    try Level.make (Nametab.locate_universe q)
+    with Not_found ->
+      CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid q ++ str".")
   in
   let kept = List.fold_left (fun kept q -> Level.Set.add (parse q) kept) Level.Set.empty kept in
   let csts = UGraph.constraints_for ~kept univ in
