@@ -477,7 +477,7 @@ Creating Hints
    .. cmd:: Hint Extern @natural {? @one_pattern } => @ltac_expr {? : {+ @ident } }
 
       Extends :tacn:`auto` with tactics other than :tacn:`apply` and
-      :tacn:`unfold`. :n:`@natural` is the cost, :n:`@one_term` is the pattern
+      :tacn:`unfold`. :n:`@natural` is the cost, :n:`@one_pattern` is the pattern
       to match and :n:`@ltac_expr` is the action to apply.
 
       .. note::
