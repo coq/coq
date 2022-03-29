@@ -44,9 +44,9 @@ ENV NJOBS="2" \
 ENV COMPILER="4.09.0"
 
 # Common OPAM packages
-ENV BASE_OPAM="zarith.1.11 ounit2.2.2.3 odoc.1.5.3" \
+ENV BASE_OPAM="zarith.1.11 ounit2.2.2.3" \
     CI_OPAM="ocamlgraph.1.8.8 yojson.1.7.0 cppo.1.6.8" \
-    BASE_ONLY_OPAM="dune.2.9.1 elpi.1.15.2 stdlib-shims.0.1.0 ocamlfind.1.8.1"
+    BASE_ONLY_OPAM="dune.2.9.1 elpi.1.15.2 stdlib-shims.0.1.0 ocamlfind.1.8.1 odoc.1.5.3"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
 ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.2"
@@ -64,8 +64,8 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
         opam install $BASE_OPAM
 
 # EDGE switch
-ENV COMPILER_EDGE="4.13.0" \
-    BASE_OPAM_EDGE="dune.2.9.1 dune-release.1.5.0 ocamlfind.1.9.1" \
+ENV COMPILER_EDGE="4.14.0" \
+    BASE_OPAM_EDGE="dune.2.9.1 dune-release.1.5.0 ocamlfind.1.9.1 odoc.2.0.2" \
     COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.2"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
