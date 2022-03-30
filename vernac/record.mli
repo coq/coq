@@ -40,6 +40,7 @@ val definition_structure
     type projection_flags = {
       pf_subclass: bool;
       pf_reversible: bool;
+      pf_priority: int option;
       pf_canonical: bool;
     }
     type raw_data
@@ -91,6 +92,7 @@ module Internal : sig
   type projection_flags = {
     pf_subclass: bool;
     pf_reversible: bool;
+    pf_priority: int option;
     pf_canonical: bool;
   }
 

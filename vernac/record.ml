@@ -131,6 +131,7 @@ module Data = struct
   type projection_flags = {
     pf_subclass: bool;
     pf_reversible: bool;
+    pf_priority: int option;
     pf_canonical: bool;
   }
   type raw_data = DataR.t
@@ -582,6 +583,17 @@ let extract_record_data records =
   in
   ps, data
 
+type kind_class = NotClass | RecordClass | DefClass
+
+let kind_class =
+  let open Vernacexpr in
+  function Class true -> DefClass | Class false -> RecordClass
+  | Inductive_kw | CoInductive | Variant | Record | Structure -> NotClass
+
+let implicits_of_context ctx =
+  List.map (fun name -> CAst.make (Some (name,true)))
+    (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
+
 let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite (records : Ast.t list) =
   let open Vernacexpr in
   let () = check_unique_names records in
@@ -597,7 +609,36 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
         typecheck_params_and_fields (kind = Class true) poly udecl ps data) ()
   in
   let template = template, auto_template in
-  template, impargs, params, univs, variances, data
+  let adjust_impls impls = match kind_class kind with
+    | NotClass -> impargs @ [CAst.make None] @ impls
+    | _ -> implicits_of_context params @ impls in
+  let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
+  let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
+    let coers = List.map (fun (_, { rf_subclass ; rf_reverse ; rf_priority ; rf_canonical }) ->
+      let pf_subclass, pf_reversible =
+        match rf_subclass with
+        | Vernacexpr.BackInstance -> true, Option.default true rf_reverse
+        | Vernacexpr.NoInstance ->
+          if rf_reverse <> None then
+            Attributes.(unsupported_attributes
+              [CAst.make ("reversible (without :>)",VernacFlagEmpty)]);
+          false, false in
+      let pf_priority = rf_priority in
+      { Data.pf_subclass; pf_reversible; pf_priority; pf_canonical = rf_canonical })
+      cfs
+    in
+    let inhabitant_id =
+      match default_inhabitant_id, kind_class kind with
+      | None, NotClass -> data_name name.CAst.v rdata
+      | None, _ -> Namegen.next_ident_away name.CAst.v (Termops.vars_of_env (Global.env()))
+      | Some n, _ -> n
+    in
+    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers; inhabitant_id }
+  in
+  let data = List.map2 map data records in
+  let projections_kind =
+    Decls.(match kind_class kind with NotClass -> StructureComponent | _ -> Method) in
+  template, impargs, params, univs, variances, projections_kind, data
 
 let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params (template, _) ~projections_kind records data =
   let nparams = List.length params in
@@ -661,34 +702,9 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
 
 
 let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records =
-  let open Vernacexpr in
-  let template, impargs, params, univs, variances, data =
+  let template, impargs, params, univs, variances, projections_kind, data =
     pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
-  let adjust_impls impls = impargs @ [CAst.make None] @ impls in
-  let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
-  (* let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } = *)
-  let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
-    let coers = List.map (fun (_, { rf_subclass ; rf_reverse ; rf_canonical }) ->
-      let pf_subclass, pf_reversible =
-        match rf_subclass with
-        | Vernacexpr.BackInstance -> true, Option.default true rf_reverse
-        | Vernacexpr.NoInstance ->
-          if rf_reverse <> None then
-            Attributes.(unsupported_attributes
-              [CAst.make ("reversible (without :>)",VernacFlagEmpty)]);
-          false, false in
-      { Data.pf_subclass; pf_reversible; pf_canonical = rf_canonical })
-      cfs
-    in
-    let inhabitant_id =
-      match default_inhabitant_id with
-      | None -> data_name name.CAst.v rdata
-      | Some n -> n
-    in
-    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers; inhabitant_id }
-  in
-  let data = List.map2 map data records in
-  interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind:Decls.StructureComponent records data
+  interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind records data
 
 let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records } =
   Option.iter (DeclareUctx.declare_universe_context ~poly:false) global_univ_decls;
@@ -703,15 +719,31 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
     let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly ~nonuniform:false ~reversible:true in
     let struc = Structure.make (Global.env ()) rsp projections in
     let () = declare_structure_entry struc in
-    rsp
+    GlobRef.IndRef rsp
   in
-  List.mapi map records
+  List.mapi map records, []
 
-let implicits_of_context ctx =
-  List.map (fun name -> CAst.make (Some (name,true)))
-    (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
+let get_class_params = function
+  | [{ Data.id; idbuild; rdata; is_coercion; coers; inhabitant_id }] ->
+    let hint { Data.pf_subclass; pf_priority } =
+      if pf_subclass then Some { hint_priority = pf_priority; hint_pattern = None } else None in
+    id, idbuild, rdata, is_coercion, List.map hint coers, inhabitant_id
+  | _ ->
+    CErrors.user_err (str "Mutual definitional classes are not supported.")
 
-let build_class_constant ~univs ~rdata ~primitive_proj field implfs params paramimpls coers binder id proj_name =
+(* declare definitional class (typeclasses that are not record) *)
+(* [data] is a list with a single [Data.t] with a single field (in [Data.rdata])
+   and [Data.is_coercion] must be [false] *)
+let declare_class_constant ~univs paramimpls params data =
+  let id, _, rdata, is_coercion, coers, inhabitant_id = get_class_params data in
+  assert (not is_coercion);  (* should be ensured by caller *)
+  let implfs = rdata.DataR.implfs in
+  let field, binder, proj_name = match rdata.DataR.fields with
+    | [ LocalAssum ({binder_name=Name proj_name} as binder, field)
+      | LocalDef ({binder_name=Name proj_name} as binder, _, field) ] ->
+      let binder = {binder with binder_name=Name inhabitant_id} in
+      field, binder, proj_name
+    | _ -> assert false in  (* should be ensured by caller *)
   let class_body = it_mkLambda_or_LetIn field params in
   let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
   let class_entry =
@@ -741,51 +773,35 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
   Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
     [Tacred.EvalConstRef cst] false;
-  let sub = fst (List.hd coers) in
+  let sub = List.hd coers in
   let m = {
     meth_name = Name proj_name;
     meth_info = sub;
     meth_const = Some proj_cst;
   } in
-  [cref, [m]]
+  [cref], [m]
 
-let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primitive_proj
-    fields params paramimpls is_coercion coers id idbuild inhabitant_id =
-  let record_data =
-    { Data.id
-    ; idbuild
-    ; is_coercion = false
-    (* to be replaced by the following line after deprecation phase
-       (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
-    (* ; is_coercion *)
-    ; coers = List.map (fun _ -> { Data.pf_subclass = false ; pf_reversible = false ; pf_canonical = true }) coers
-    (* to be replaced by the following line after deprecation phase
-       (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
-    (* ; coers = List.map (fun (c, rev) -> { pf_subclass = c <> None ; pf_reversible = rev ; pf_canonical = true }) coers *)
-    ; rdata
-    ; inhabitant_id
-    } in
-  let structure =
-    interp_structure_core  ~cumulative Declarations.BiFinite ~univs ~variances ~primitive_proj paramimpls
-      params template ~projections_kind:Decls.Method rdata [record_data] in
-  let inds = declare_structure structure in
-  let map ind =
-    let map decl (b, _) y = {
-      meth_name = RelDecl.get_name decl;
-      meth_info = b;
-      meth_const = y;
-    } in
-    let l = List.map3 map (List.rev fields) coers (Structure.find_projections ind) in
-    GlobRef.IndRef ind, l
-  in
-  List.map map inds
+(* deprecated in 8.16, to be removed at the end of the deprecation phase
+   (c.f., https://github.com/coq/coq/pull/15802 ) *)
+let warn_future_coercion_class_constructor =
+  CWarnings.create ~name:"future-coercion-class-constructor" ~category:"records"
+    ~default:CWarnings.AsError
+    Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
+
+(* deprecated in 8.16, to be removed at the end of the deprecation phase
+   (c.f., https://github.com/coq/coq/pull/15802 ) *)
+let warn_future_coercion_class_field =
+  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
+      str "A coercion will be introduced in future versions when using ':>' in 'Class' declarations. "
+      ++ str "Use '#[global] Existing Instance field.' instead if you don't want the coercion.")
 
 (** [declare_class] will prepare and declare a [Class]. This is done in
    2 steps:
 
   1. two markedly different paths are followed depending on whether the
-   class declaration refers to a constant "definitional classes" or to
-   a record, that is to say:
+   class declaration refers to a constant "definitional classes"
+   (with [declare_class_constant]) or to a record (with [declare_structure]),
+   that is to say:
 
       Class foo := bar : T.
 
@@ -799,29 +815,29 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
 
       Class foo := { ... }.
 
-  2. declare the class, using the information from 1. in the form of [Classes.typeclass]
+  2. now, declare the class, using the information ([inds] and [def]) from 1.
+   in the form of [Classes.typeclass]
 
   *)
-let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild inhabitant_id paramimpls params
-    rdata template ?(kind=Decls.StructureComponent) is_coercion coers =
-  let implfs =
-    (* Make the class implicit in the projections, and the params if applicable. *)
-    let impls = implicits_of_context params in
-      List.map (fun x -> impls @ x) rdata.DataR.implfs
-  in
-  let rdata = { rdata with DataR.implfs } in
+let declare_class ~univs params inds def data =
+  let id, idbuild, rdata, is_coercion, coers, inhabitant_id = get_class_params data in
+  if is_coercion then warn_future_coercion_class_constructor ();
+  if List.exists (fun pf -> pf <> None) coers then
+    warn_future_coercion_class_field ();
   let fields = rdata.DataR.fields in
-  let data =
-    match fields with
-    | [ LocalAssum ({binder_name=Name proj_name} as binder, field)
-      | LocalDef ({binder_name=Name proj_name} as binder, _, field) ] when def ->
-      assert (not is_coercion);  (* should be ensured by caller *)
-      let binder = {binder with binder_name=Name inhabitant_id} in
-      build_class_constant ~rdata ~univs ~primitive_proj field implfs params paramimpls coers binder id proj_name
-    | _ ->
-      build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primitive_proj
-        fields params paramimpls is_coercion coers id idbuild inhabitant_id
+  let map ind =
+    let map decl b y = {
+      meth_name = RelDecl.get_name decl;
+      meth_info = b;
+      meth_const = y;
+    } in
+    let l = match ind with
+      | GlobRef.IndRef ind ->
+         List.map3 map (List.rev fields) coers (Structure.find_projections ind)
+      | _ -> def in
+    ind, l
   in
+  let data = List.map map inds in
   let univs, params, fields =
     match fst univs with
     | UState.Polymorphic_entry uctx ->
@@ -846,9 +862,9 @@ let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild i
     in
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    Classes.add_class env sigma k; impl
+    Classes.add_class env sigma k
   in
-  List.map map data
+  List.iter map data
 
 let add_constant_class env sigma cst =
   let ty, univs = Typeops.type_of_global_in_context env (GlobRef.ConstRef cst) in
@@ -903,72 +919,35 @@ let declare_existing_class g =
     | _ -> user_err
              (Pp.str"Unsupported class type, only constants and inductives are allowed.")
 
-open Vernacexpr
-
-(* deprecated in 8.16, to be removed at the end of the deprecation phase
-   (c.f., https://github.com/coq/coq/pull/15802 ) *)
-let warn_future_coercion_class_constructor =
-  CWarnings.create ~name:"future-coercion-class-constructor" ~category:"records"
-    ~default:CWarnings.AsError
-    Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
-
-(* deprecated in 8.16, to be removed at the end of the deprecation phase
-   (c.f., https://github.com/coq/coq/pull/15802 ) *)
-let warn_future_coercion_class_field =
-  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
-      str "A coercion will be introduced in future versions when using ':>' in 'Class' declarations. "
-      ++ str "Use '#[global] Existing Instance field.' instead if you don't want the coercion.")
-
-(* declaring structures, common data to refactor *)
-let class_structure udecl kind def ~template ~cumulative ~poly ~primitive_proj finite records =
-  let template, impargs, params, univs, variances, data =
-    pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
-  let { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ }, rdata = match records, data with
-    | [r], [d] -> r, d
-    | _, _ ->
-      CErrors.user_err (str "Mutual definitional classes are not handled.")
-  in
-  if is_coercion then warn_future_coercion_class_constructor ();
-  if List.exists (function (_, { rf_subclass = Vernacexpr.BackInstance; _ }) -> true | _ -> false) cfs then
-    warn_future_coercion_class_field ();
-  let coers = List.map (fun (_, { rf_subclass; rf_reverse; rf_priority }) ->
-      if rf_reverse <> None then
-        Attributes.(unsupported_attributes
-          [CAst.make ("reversible (without coercion)",VernacFlagEmpty)]);
-      match rf_subclass with
-      | Vernacexpr.BackInstance -> Some {hint_priority = rf_priority; hint_pattern = None}, Option.default true rf_reverse
-      | Vernacexpr.NoInstance -> None, false)
-      cfs
-  in
-  let inhabitant_id =
-    match default_inhabitant_id with
-    | None -> Namegen.next_ident_away name.CAst.v (Termops.vars_of_env (Global.env()))
-    | Some id -> id
-  in
-  declare_class def ~cumulative ~univs ~primitive_proj ~variances name.CAst.v idbuild inhabitant_id
-    impargs params rdata template is_coercion coers
-
-let regular_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records =
-  let structure = interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
-  let inds = declare_structure structure in
-  List.map (fun ind -> GlobRef.IndRef ind) inds
-
 (** [fs] corresponds to fields and [ps] to parameters; [coers] is a
     list telling if the corresponding fields must me declared as coercions
     or subinstances. *)
 
 let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     finite (records : Ast.t list) : GlobRef.t list =
-  match kind with
-  | Class def ->
-    class_structure udecl kind def ~template ~cumulative ~poly ~primitive_proj finite records
-  | Inductive_kw | CoInductive | Variant | Record | Structure ->
-    regular_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records
+  let template, impargs, params, univs, variances, projections_kind, data =
+    pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
+  let inds, def = match kind_class kind with
+    | DefClass -> declare_class_constant ~univs impargs params data
+    | RecordClass | NotClass ->
+       (* remove the following block after deprecation phase
+          (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
+       let data = if kind_class kind = NotClass then data else
+         List.map (fun d ->
+             { d with
+               Data.is_coercion = false
+             ; coers = List.map (fun _ -> { Data.pf_subclass = false ; pf_reversible = false ; pf_priority = None ; pf_canonical = true }) d.Data.coers
+           }) data in
+       let structure = interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind records data in
+       declare_structure structure in
+  if kind_class kind <> NotClass then declare_class ~univs params inds def data;
+  inds
 
 module Internal = struct
   type nonrec projection_flags = Data.projection_flags = {
     pf_subclass: bool;
     pf_reversible: bool;
+    pf_priority: int option;
     pf_canonical: bool;
   }
   let declare_projections = declare_projections
