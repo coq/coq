@@ -17,7 +17,7 @@ let enforce_univ_constraint (u,d,v) =
   match d with
   | Eq -> enforce_eq u v
   | Le -> enforce_leq u v
-  | Lt -> enforce_leq (super u) v
+  | Lt -> enforce_leq (Universe.super u) v
 
 let subst_univs_level fn l =
   try Some (fn l)

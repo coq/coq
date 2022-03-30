@@ -334,7 +334,7 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
                            ctx g
     in
     let add_soft u g =
-      if not (Level.is_small u || Level.Set.mem u ctx)
+      if not (Level.is_set u || Level.Set.mem u ctx)
       then try UGraph.add_universe ~lbound ~strict:false u g with UGraph.AlreadyDeclared -> g
       else g
     in

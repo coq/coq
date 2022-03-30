@@ -276,7 +276,7 @@ let process_universe_constraints uctx cstrs =
       else if not (UnivProblem.check_eq_level univs l' r') then
         (* Two rigid/global levels, none of them being local,
             one of them being Prop/Set, disallow *)
-        if Level.is_small l' || Level.is_small r' then
+        if Level.is_set l' || Level.is_set r' then
           level_inconsistency Eq l' r'
         else if fo then
           raise UniversesDiffer
@@ -340,7 +340,7 @@ let process_universe_constraints uctx cstrs =
           if is_uset r' then
             let fold l' local =
               let l = Sorts.sort_of_univ @@ Universe.make l' in
-              if Level.is_small l' || is_local l' then
+              if Level.is_set l' || is_local l' then
                 equalize_variables false l' Level.set local
               else sort_inconsistency Le l r
             in
@@ -574,7 +574,7 @@ let restrict_universe_context ~lbound (univs, csts) keep =
   else
   let allunivs = Constraints.fold (fun (u,_,v) all -> Level.Set.add u (Level.Set.add v all)) csts univs in
   let g = UGraph.initial_universes in
-  let g = Level.Set.fold (fun v g -> if Level.is_small v then g else
+  let g = Level.Set.fold (fun v g -> if Level.is_set v then g else
                         UGraph.add_universe v ~lbound ~strict:false g) allunivs g in
   let g = UGraph.merge_constraints csts g in
   let allkept = Level.Set.union (UGraph.domain UGraph.initial_universes) (Level.Set.diff allunivs removed) in
@@ -762,7 +762,7 @@ let make_flexible_nonalgebraic uctx =
 let is_sort_variable uctx s =
   match s with
   | Sorts.Type u ->
-    (match universe_level u with
+    (match Universe.level u with
     | Some l as x ->
         if Level.Set.mem l (ContextSet.levels uctx.local) then x
         else None

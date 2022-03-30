@@ -419,7 +419,7 @@ let sort_universes g =
   let ulevels = Array.cons Level.set ulevels in
   (* Add alias pointers *)
   let fold u _ ans =
-    if Level.is_small u then ans
+    if Level.is_set u then ans
     else
       let n = Level.Map.find (normalize u) levels in
       Level.Map.add u (UGraph.Alias ulevels.(n)) ans

@@ -242,10 +242,6 @@ module Level = struct
 
 end
 
-(* Deprecated *)
-module LMap = Level.Map
-module LSet = Level.Set
-
 type 'a universe_map = 'a Level.Map.t
 
 type universe_level = Level.t
@@ -498,22 +494,6 @@ struct
   let repr x : t = x
 end
 
-type universe = Universe.t
-
-(* The level of predicative Set *)
-let type0_univ = Universe.type0
-let type1_univ = Universe.type1
-let is_type0_univ = Universe.is_type0
-let is_univ_variable l = Universe.level l != None
-let is_small_univ = Universe.is_small
-let pr_uni = Universe.pr
-
-let sup = Universe.sup
-let super = Universe.super
-
-let universe_level = Universe.level
-
-
 type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
 
 type explanation = (constraint_type * Level.t) list
@@ -561,12 +541,6 @@ struct
        (elements c))
 
 end
-
-module Constraint = Constraints
-
-let empty_constraint = Constraints.empty
-let union_constraint = Constraints.union
-let eq_constraint = Constraints.equal
 
 type constraints = Constraints.t
 
@@ -677,7 +651,7 @@ let univ_level_rem u v min =
 type universe_level_subst = universe_level universe_map
 
 (** A full substitution might involve algebraic universes *)
-type universe_subst = universe universe_map
+type universe_subst = Universe.t universe_map
 
 module Variance =
 struct
@@ -953,8 +927,6 @@ struct
 
 end
 
-module AUContext = AbstractContext (* Deprecated *)
-
 type 'a univ_abstracted = {
   univ_abstracted_value : 'a;
   univ_abstracted_binder : AbstractContext.t;
@@ -1082,7 +1054,7 @@ let subst_univs_level_abstract_universe_context subst (inst, csts) =
   inst, subst_univs_level_constraints subst csts
 
 (** With level to universe substitutions. *)
-type universe_subst_fn = universe_level -> universe
+type universe_subst_fn = universe_level -> Universe.t
 
 let make_subst subst = fun l -> Level.Map.find l subst
 
