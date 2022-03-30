@@ -30,7 +30,7 @@
 ; In dev profile, we check the kernel against a more strict set of
 ; warnings.
 (env
- (dev (flags :standard -w +a-4-44-50-70)))
+ (dev (flags :standard -w @a-4-44-50-70)))
 
 (deprecated_library_name
  (old_public_name coq.kernel)
