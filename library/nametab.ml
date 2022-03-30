@@ -338,8 +338,8 @@ module DirTab = Make(DirPath')(GlobDirRef)
 
 module UnivIdEqual =
 struct
-  type t = Univ.Level.UGlobal.t
-  let equal = Univ.Level.UGlobal.equal
+  type t = Univ.UGlobal.t
+  let equal = Univ.UGlobal.equal
 end
 module UnivTab = Make(FullPath)(UnivIdEqual)
 type univtab = UnivTab.t
@@ -358,9 +358,9 @@ type mptrevtab = full_path MPmap.t
 
 module UnivIdOrdered =
 struct
-  type t = Univ.Level.UGlobal.t
-  let hash = Univ.Level.UGlobal.hash
-  let compare = Univ.Level.UGlobal.compare
+  type t = Univ.UGlobal.t
+  let hash = Univ.UGlobal.hash
+  let compare = Univ.UGlobal.compare
 end
 
 module UnivIdMap = HMap.Make(UnivIdOrdered)

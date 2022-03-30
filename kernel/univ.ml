@@ -118,8 +118,6 @@ end
 
 module Level = struct
 
-  module UGlobal = UGlobal
-
   type raw_level = RawLevel.t =
   | Set
   | Level of UGlobal.t

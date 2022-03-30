@@ -23,7 +23,7 @@ exception UniverseLengthMismatch of univ_length_mismatch
 
 (** Side-effecting functions creating new universe levels. *)
 
-val new_univ_global : unit -> Level.UGlobal.t
+val new_univ_global : unit -> UGlobal.t
 val fresh_level : unit -> Level.t
 
 val new_global_univ : unit -> Universe.t in_universe_context_set

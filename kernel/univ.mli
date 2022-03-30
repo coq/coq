@@ -8,21 +8,23 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** Qualified global universe level *)
+module UGlobal :
+sig
+
+  type t
+
+  val make : Names.DirPath.t -> string -> int -> t
+  val repr : t -> Names.DirPath.t * string * int
+  val equal : t -> t -> bool
+  val hash : t -> int
+  val compare : t -> t -> int
+
+end
+
 (** Universes. *)
 module Level :
 sig
-
-  module UGlobal : sig
-    type t
-
-    val make : Names.DirPath.t -> string -> int -> t
-    val repr : t -> Names.DirPath.t * string * int
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val compare : t -> t -> int
-
-  end
-  (** Qualified global universe level *)
 
   type t
   (** Type of universe levels. A universe level is essentially a unique name

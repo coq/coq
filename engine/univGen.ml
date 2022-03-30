@@ -34,7 +34,7 @@ let new_univ_id =
 
 let new_univ_global () =
   let s = if Flags.async_proofs_is_worker() then !Flags.async_proofs_worker_id else "" in
-  Univ.Level.UGlobal.make (Global.current_dirpath ()) s (new_univ_id ())
+  Univ.UGlobal.make (Global.current_dirpath ()) s (new_univ_id ())
 
 let fresh_level () =
   Univ.Level.make (new_univ_global ())
