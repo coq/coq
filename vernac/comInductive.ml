@@ -659,9 +659,22 @@ type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
 
-let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
-  let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
-  let ntns = List.map Metasyntax.prepare_where_notation ntns in
+module Mind_decl = struct
+
+type t = {
+  mie : Entries.mutual_inductive_entry;
+  univ_binders : UnivNames.universe_binders;
+  implicits : DeclareInd.one_inductive_impls list;
+  uctx : Univ.ContextSet.t;
+  where_notations : Metasyntax.where_decl_notation list;
+  coercions : Libnames.qualid list;
+}
+
+end
+
+let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
+  let (params,indl),coercions,ntns = extract_mutual_inductive_declaration_components indl in
+  let where_notations = List.map Metasyntax.prepare_where_notation ntns in
   (* Interpret the types *)
   let indl = match params with
     | uparams, Some params -> (uparams, params, indl)
@@ -669,23 +682,30 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
       | UniformParameters -> (params, [], indl)
       | NonUniformParameters -> ([], params, indl)
   in
-  let env = Global.env () in
   let env = Environ.update_typing_flags ?typing_flags env in
-  let mie,binders,impls,ctx = interp_mutual_inductive_gen env ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
+  let mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen env ~template udecl indl where_notations ~cumulative ~poly ~private_ind finite in
+  let open Mind_decl in
+  { mie; univ_binders; implicits; uctx; where_notations; coercions }
+
+let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
+  let open Mind_decl in
+  let env = Global.env () in
+  let { mie; univ_binders; implicits; uctx; where_notations; coercions } =
+    interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite in
   (* Slightly hackish global universe declaration due to template types. *)
   let binders = match mie.mind_entry_universes with
-  | Monomorphic_ind_entry -> (UState.Monomorphic_entry ctx, binders)
-  | Template_ind_entry ctx -> (UState.Monomorphic_entry ctx, binders)
+  | Monomorphic_ind_entry -> (UState.Monomorphic_entry uctx, univ_binders)
+  | Template_ind_entry ctx -> (UState.Monomorphic_entry ctx, univ_binders)
   | Polymorphic_ind_entry uctx -> (UState.Polymorphic_entry uctx, UnivNames.empty_binders)
   in
   (* Declare the global universes *)
-  DeclareUctx.declare_universe_context ~poly:false ctx;
+  DeclareUctx.declare_universe_context ~poly:false uctx;
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie binders impls);
+  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie binders implicits);
   (* Declare the possible notations of inductive types *)
-  List.iter (Metasyntax.add_notation_interpretation ~local:false (Global.env ())) ntns;
+  List.iter (Metasyntax.add_notation_interpretation ~local:false (Global.env ())) where_notations;
   (* Declare the coercions *)
-  List.iter (fun qid -> ComCoercion.try_add_new_coercion (Nametab.locate qid) ~local:false ~poly ~nonuniform:false) coes
+  List.iter (fun qid -> ComCoercion.try_add_new_coercion (Nametab.locate qid) ~local:false ~poly ~nonuniform:false) coercions
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
