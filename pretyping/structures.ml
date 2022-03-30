@@ -353,14 +353,13 @@ let find env sigma (proj,pat) =
   let us = List.map EConstr.of_constr us in
   let params = List.map EConstr.of_constr params in
   let u, ctx' = UnivGen.fresh_instance_from ctx None in
-  let subst = Univ.make_inverse_instance_subst u in
   let c = EConstr.of_constr c in
-  let c' = EConstr.Vars.subst_univs_level_constr subst c in
+  let c' = EConstr.Vars.subst_instance_constr u c in
   let t' = EConstr.of_constr t' in
-  let t' = EConstr.Vars.subst_univs_level_constr subst t' in
-  let bs' = List.map (EConstr.of_constr %> EConstr.Vars.subst_univs_level_constr subst) bs in
-  let params = List.map (fun c -> EConstr.Vars.subst_univs_level_constr subst c) params in
-  let us = List.map (fun c -> EConstr.Vars.subst_univs_level_constr subst c) us in
+  let t' = EConstr.Vars.subst_instance_constr u t' in
+  let bs' = List.map (EConstr.of_constr %> EConstr.Vars.subst_instance_constr u) bs in
+  let params = List.map (fun c -> EConstr.Vars.subst_instance_constr u c) params in
+  let us = List.map (fun c -> EConstr.Vars.subst_instance_constr u c) us in
   let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
   sigma, { body = t'; constant = c'; abstractions_ty = bs'; nparams; params; cvalue_arguments = us; cvalue_abstraction = n }
 

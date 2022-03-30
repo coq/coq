@@ -443,8 +443,6 @@ val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
 val make_instance_subst : Instance.t -> universe_level_subst
 (** Creates [u(0) ↦ 0; ...; u(n-1) ↦ n - 1] out of [u(0); ...; u(n - 1)] *)
 
-val make_inverse_instance_subst : Instance.t -> universe_level_subst
-
 val abstract_universes : UContext.t -> Instance.t * AbstractContext.t
 (** TODO: move universe abstraction out of the kernel *)
 

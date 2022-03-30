@@ -1081,12 +1081,6 @@ let make_instance_subst i =
       Level.Map.add l (Level.var i) acc)
       Level.Map.empty arr
 
-let make_inverse_instance_subst i =
-  let arr = Instance.to_array i in
-    Array.fold_left_i (fun i acc l ->
-      Level.Map.add (Level.var i) l acc)
-      Level.Map.empty arr
-
 let make_abstract_instance (ctx, _) =
   Array.init (Array.length ctx) (fun i -> Level.var i)
 
