@@ -45,8 +45,8 @@ type abstr_info = {
   (** Canonical renaming represented by its domain made of the
       actual names of the abstracted term variables (e.g. [a,c]);
       the codomain made of de Bruijn indices is implicit *)
-  abstr_ausubst : Univ.universe_level_subst;
-  (** Universe substitution *)
+  abstr_ausubst : Instance.t;
+  (** Universe substitution represented as an instance *)
 }
 
 (** The instantiation to apply to generalized declarations so that
@@ -97,7 +97,7 @@ let empty_cooking_info = {
       abstr_ctx = [];
       abstr_subst = [];
       abstr_auctx = AbstractContext.empty;
-      abstr_ausubst = Level.Map.empty;
+      abstr_ausubst = Instance.empty;
     };
   abstr_inst_info = {
       abstr_rev_inst = [];
@@ -261,7 +261,7 @@ let expand_constr cache modlist top_abst_subst c =
 (** The main expanding/substitution functions, performing the three first steps *)
 let expand_subst cache expand_info abstr_info c =
   let c = expand_constr cache expand_info abstr_info.abstr_subst c in
-  let c = Vars.subst_univs_level_constr abstr_info.abstr_ausubst c in
+  let c = Vars.subst_univs_level_constr (make_instance_subst abstr_info.abstr_ausubst) c in
   c
 
 (** Adding the final abstraction step, term case *)
@@ -311,7 +311,7 @@ let abstract_named_context expand_info abstr_info hyps =
 let make_cooking_info expand_info hyps uctx =
   let abstr_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
   let abstr_uinst, abstr_auctx = abstract_universes uctx in
-  let abstr_ausubst = Univ.make_instance_subst abstr_uinst in
+  let abstr_ausubst = abstr_uinst in
   let abstr_info = { abstr_ctx = []; abstr_subst = []; abstr_auctx; abstr_ausubst } in
   let abstr_info = abstract_named_context expand_info abstr_info hyps in
   let abstr_inst_info = { abstr_rev_inst; abstr_uinst } in
@@ -358,12 +358,12 @@ let discharge_abstract_universe_context abstr auctx =
     abstr, AbstractContext.union abstr.abstr_auctx auctx
   else
     let subst = abstr.abstr_ausubst in
-    let ainst = make_abstract_instance auctx in
-    let substf = Univ.lift_level_subst n (make_instance_subst ainst) in
-    let substf = Univ.merge_level_subst subst substf in
+    let suff = Instance.of_array @@ Array.init (AbstractContext.size auctx) (fun i -> Level.var i) in
+    let ainst = Instance.append subst suff in
+    let substf = make_instance_subst ainst in
     let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
     let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
-    { abstr with abstr_ausubst = substf }, auctx'
+    { abstr with abstr_ausubst = ainst }, auctx'
 
 let lift_mono_univs info ctx =
   assert (AbstractContext.is_empty info.abstr_info.abstr_auctx); (* No monorphic constants in a polymorphic section *)
@@ -386,9 +386,9 @@ let lift_poly_univs info auctx =
 
 let lift_private_mono_univs info a =
   let () = assert (AbstractContext.is_empty info.abstr_info.abstr_auctx) in
-  let () = assert (is_empty_level_subst info.abstr_info.abstr_ausubst) in
+  let () = assert (Instance.is_empty info.abstr_info.abstr_ausubst) in
   a
 
 let lift_private_poly_univs info (inst, cstrs) =
-  let cstrs = Univ.subst_univs_level_constraints info.abstr_info.abstr_ausubst cstrs in
+  let cstrs = Univ.subst_univs_level_constraints (make_instance_subst info.abstr_info.abstr_ausubst) cstrs in
   (inst, cstrs)
