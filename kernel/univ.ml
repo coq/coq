@@ -33,36 +33,37 @@ open Util
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
 
-module RawLevel =
-struct
+module UGlobal = struct
   open Names
 
-  module UGlobal = struct
-    type t = {
-      library : DirPath.t;
-      process : string;
-      uid : int;
-    }
+  type t = {
+    library : DirPath.t;
+    process : string;
+    uid : int;
+  }
 
-    let make library process uid = { library; process; uid }
+  let make library process uid = { library; process; uid }
 
-    let repr x = (x.library, x.process, x.uid)
+  let repr x = (x.library, x.process, x.uid)
 
-    let equal u1 u2 =
-      Int.equal u1.uid u2.uid &&
-      DirPath.equal u1.library u2.library &&
-      String.equal u1.process u2.process
+  let equal u1 u2 =
+    Int.equal u1.uid u2.uid &&
+    DirPath.equal u1.library u2.library &&
+    String.equal u1.process u2.process
 
-    let hash u = Hashset.Combine.combine3 u.uid (String.hash u.process) (DirPath.hash u.library)
+  let hash u = Hashset.Combine.combine3 u.uid (String.hash u.process) (DirPath.hash u.library)
 
-    let compare u1 u2 =
-      let c = Int.compare u1.uid u2.uid in
+  let compare u1 u2 =
+    let c = Int.compare u1.uid u2.uid in
+    if c <> 0 then c
+    else
+      let c = DirPath.compare u1.library u2.library in
       if c <> 0 then c
-      else
-        let c = DirPath.compare u1.library u2.library in
-        if c <> 0 then c
-        else String.compare u1.process u2.process
-  end
+      else String.compare u1.process u2.process
+end
+
+module RawLevel =
+struct
 
   type t =
     | Set
@@ -117,7 +118,7 @@ end
 
 module Level = struct
 
-  module UGlobal = RawLevel.UGlobal
+  module UGlobal = UGlobal
 
   type raw_level = RawLevel.t =
   | Set
@@ -613,15 +614,9 @@ let enforce_eq_level u v c =
   else Constraints.add (u,Eq,v) c
 
 let enforce_eq u v c =
-  match Universe.level u, Universe.level v with
-    | Some u, Some v -> enforce_eq_level u v c
-    | _ -> anomaly (Pp.str "A universe comparison can only happen between variables.")
-
-let check_univ_eq u v = Universe.equal u v
-
-let enforce_eq u v c =
-  if check_univ_eq u v then c
-  else enforce_eq u v c
+  if Universe.equal u v then c else match Universe.level u, Universe.level v with
+  | Some u, Some v -> enforce_eq_level u v c
+  | _ -> CErrors.anomaly (Pp.str "A universe comparison can only happen between variables.")
 
 let constraint_add_leq v u c =
   (* We just discard trivial constraints like u<=u *)
