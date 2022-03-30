@@ -195,7 +195,7 @@ let level_inconsistency cst l r =
 
 let subst_univs_sort normalize s = match s with
 | Sorts.Set | Sorts.Prop | Sorts.SProp -> s
-| Sorts.Type u -> Sorts.sort_of_univ (subst_univs_universe normalize u)
+| Sorts.Type u -> Sorts.sort_of_univ (UnivSubst.subst_univs_universe normalize u)
 
 type small_universe = USet | UProp | USProp
 
@@ -783,6 +783,7 @@ let normalize_variables uctx =
   let normalized_variables, def, subst =
     UnivSubst.normalize_univ_variables uctx.univ_variables
   in
+  let make_subst subst l = Level.Map.find l subst in
   let uctx_local = subst_univs_context_with_def def (make_subst subst) uctx.local in
   let uctx_local', univs = refresh_constraints uctx.initial_universes uctx_local in
   { uctx with

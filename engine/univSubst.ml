@@ -13,6 +13,29 @@ open Util
 open Constr
 open Univ
 
+type 'a universe_map = 'a Level.Map.t
+type universe_subst = Universe.t universe_map
+type universe_subst_fn = Level.t -> Universe.t
+type universe_level_subst_fn = Level.t -> Level.t
+
+let subst_instance fn i =
+  Instance.of_array (Array.Smart.map fn (Instance.to_array i))
+
+let subst_univs_universe fn ul =
+  let addn n u = iterate Universe.super n u in
+  let subst, nosubst =
+    List.fold_right (fun (u, n) (subst,nosubst) ->
+      try let a' = addn n (fn u) in
+            (a' :: subst, nosubst)
+      with Not_found -> (subst, (u, n) :: nosubst))
+      (Universe.repr ul) ([], [])
+  in
+  match subst with
+  | [] -> ul
+  | u :: ul ->
+    let substs = List.fold_left Universe.sup u subst in
+    List.fold_left (fun acc (u, n) -> Universe.sup acc (addn n (Universe.make u))) substs nosubst
+
 let enforce_univ_constraint (u,d,v) =
   match d with
   | Eq -> enforce_eq u v
@@ -84,7 +107,7 @@ let normalize_univ_variables ctx =
   in ctx, def, subst
 
 let subst_univs_fn_puniverses f (c, u as cu) =
-  let u' = Instance.subst_fn f u in
+  let u' = subst_instance f u in
     if u' == u then cu else (c, u')
 
 let nf_evars_and_universes_opt_subst f subst =
@@ -107,14 +130,14 @@ let nf_evars_and_universes_opt_subst f subst =
       let pu' = subst_univs_fn_puniverses lsubst pu in
         if pu' == pu then c else mkConstructU pu'
     | Sort (Type u) ->
-      let u' = Univ.subst_univs_universe subst u in
+      let u' = subst_univs_universe subst u in
       if u' == u then c else mkSort (sort_of_univ u')
     | Case (ci,u,pms,p,iv,t,br) ->
-      let u' = Instance.subst_fn lsubst u in
+      let u' = subst_instance lsubst u in
       if u' == u then Constr.map aux c
       else Constr.map aux (mkCase (ci,u',pms,p,iv,t,br))
     | Array (u,elems,def,ty) ->
-      let u' = Univ.Instance.subst_fn lsubst u in
+      let u' = subst_instance lsubst u in
       let elems' = CArray.Smart.map aux elems in
       let def' = aux def in
       let ty' = aux ty in
@@ -122,3 +145,7 @@ let nf_evars_and_universes_opt_subst f subst =
       else mkArray (u',elems',def',ty')
     | _ -> Constr.map aux c
   in aux
+
+let pr_universe_subst =
+  let open Pp in
+  Level.Map.pr (fun u -> str" := " ++ Universe.pr u ++ spc ())

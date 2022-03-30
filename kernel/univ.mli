@@ -200,17 +200,6 @@ type explanation = (constraint_type * Level.t) list
 
 (** {6 Support for universe polymorphism } *)
 
-type 'a universe_map = 'a Level.Map.t
-
-(** {6 Substitution} *)
-
-type universe_subst_fn = Level.t -> Universe.t
-type universe_level_subst_fn = Level.t -> Level.t
-
-(** A full substitution, might involve algebraic universes *)
-type universe_subst = Universe.t universe_map
-type universe_level_subst = Level.t universe_map
-
 module Variance :
 sig
   (** A universe position in the instance given to a cumulative
@@ -261,9 +250,6 @@ sig
 
   val share : t -> t * int
   (** Simultaneous hash-consing and hash-value computation *)
-
-  val subst_fn : universe_level_subst_fn -> t -> t
-  (** Substitution by a level-to-level function. *)
 
   val pr : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   (** Pretty-printing, no comments *)
@@ -411,6 +397,10 @@ type 'a in_universe_context_set = 'a * ContextSet.t
 val extend_in_context_set : 'a in_universe_context_set -> ContextSet.t ->
   'a in_universe_context_set
 
+(** {6 Substitution} *)
+
+type universe_level_subst = Level.t Level.Map.t
+
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
 
@@ -429,12 +419,6 @@ val subst_univs_level_abstract_universe_context :
 val subst_univs_level_instance : universe_level_subst -> Instance.t -> Instance.t
 
 (** Level to universe substitutions. *)
-
-val make_subst : universe_subst -> universe_subst_fn
-
-val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
-(** Only user in the kernel is template polymorphism. Ideally we get rid of
-    this code if it goes away. *)
 
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t
@@ -466,7 +450,6 @@ val pr_abstract_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t arr
 val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
 
 val pr_universe_level_subst : universe_level_subst -> Pp.t
-val pr_universe_subst : universe_subst -> Pp.t
 
 (** {6 Hash-consing } *)
 

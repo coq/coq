@@ -266,7 +266,7 @@ open Constr
 let subst_univs_level_constr subst c =
   if Univ.is_empty_level_subst subst then c
   else
-    let f = Univ.Instance.subst_fn (Univ.subst_univs_level_level subst) in
+    let f = Univ.subst_univs_level_instance subst in
     let changed = ref false in
     let rec aux t =
       match kind t with

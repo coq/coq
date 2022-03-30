@@ -240,11 +240,7 @@ module Level = struct
 
 end
 
-type 'a universe_map = 'a Level.Map.t
-
 type universe_level = Level.t
-
-type universe_level_subst_fn = universe_level -> universe_level
 
 type universe_set = Level.Set.t
 
@@ -321,12 +317,6 @@ struct
     let successor (u,n as e) =
       if is_small e then type1
       else (u, n + 1)
-
-    let addn k (u,n as x) =
-      if k = 0 then x
-      else if Level.is_small u then
-        (Level.set,n+k)
-      else (u,n+k)
 
     type super_result =
         SuperSame of bool
@@ -449,9 +439,6 @@ struct
     if is_small l then type1
     else
       List.Smart.map (fun x -> Expr.successor x) l
-
-  let addn n l =
-    List.Smart.map (fun x -> Expr.addn n x) l
 
   let rec merge_univs l1 l2 =
     match l1, l2 with
@@ -646,10 +633,7 @@ let univ_level_rem u v min =
 (** A universe level substitution, note that no algebraic universes are
     involved *)
 
-type universe_level_subst = universe_level universe_map
-
-(** A full substitution might involve algebraic universes *)
-type universe_subst = Universe.t universe_map
+type universe_level_subst = universe_level Level.Map.t
 
 module Variance =
 struct
@@ -721,7 +705,7 @@ module Instance : sig
 
     val share : t -> t * int
 
-    val subst_fn : universe_level_subst_fn -> t -> t
+    val subst_fn : (Level.t -> Level.t) -> t -> t
 
     val pr : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
     val levels : t -> Level.Set.t
@@ -1051,30 +1035,6 @@ let subst_univs_level_constraints subst csts =
 let subst_univs_level_abstract_universe_context subst (inst, csts) =
   inst, subst_univs_level_constraints subst csts
 
-(** With level to universe substitutions. *)
-type universe_subst_fn = universe_level -> Universe.t
-
-let make_subst subst = fun l -> Level.Map.find l subst
-
-let subst_univs_expr_opt fn (l,n) =
-  Universe.addn n (fn l)
-
-let subst_univs_universe fn ul =
-  let subst, nosubst =
-    List.fold_right (fun u (subst,nosubst) ->
-      try let a' = subst_univs_expr_opt fn u in
-            (a' :: subst, nosubst)
-      with Not_found -> (subst, u :: nosubst))
-      ul ([], [])
-  in
-    if CList.is_empty subst then ul
-    else
-      let substs =
-        List.fold_left Universe.merge_univs [] subst
-      in
-        List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.tip u))
-          substs nosubst
-
 let make_instance_subst i =
   let arr = Instance.to_array i in
     Array.fold_left_i (fun i acc l ->
@@ -1118,9 +1078,6 @@ let pr_universe_context = UContext.pr
 let pr_abstract_universe_context = AbstractContext.pr
 
 let pr_universe_context_set = ContextSet.pr
-
-let pr_universe_subst =
-  Level.Map.pr (fun u -> str" := " ++ Universe.pr u ++ spc ())
 
 let pr_universe_level_subst =
   Level.Map.pr (fun u -> str" := " ++ Level.pr u ++ spc ())
