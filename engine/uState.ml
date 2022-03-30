@@ -189,46 +189,52 @@ let drop_weak_constraints =
 let sort_inconsistency cst l r =
   raise (UGraph.UniverseInconsistency (cst, l, r, None))
 
+let level_inconsistency cst l r =
+  let mk u = Sorts.sort_of_univ @@ Universe.make u in
+  raise (UGraph.UniverseInconsistency (cst, mk l, mk r, None))
+
 let subst_univs_sort normalize s = match s with
 | Sorts.Set | Sorts.Prop | Sorts.SProp -> s
 | Sorts.Type u -> Sorts.sort_of_univ (subst_univs_universe normalize u)
 
-type level_kind = KProp | KSProp | KLevel
+type small_universe = USet | UProp | USProp
 
-let level_kind l =
-  if Level.is_prop l then KProp
-  else if Level.is_sprop l then KSProp
-  else KLevel (* necessarily Set / Var / UGlobal *)
+let is_uset = function USet -> true | UProp | USProp -> false
 
-type sort_classification = USmall of Level.t | ULevel of Level.t | UAlgebraic of Universe.t
+type sort_classification =
+| USmall of small_universe (* Set, Prop or SProp *)
+| ULevel of Level.t (* Var or Global *)
+| UMax of Universe.t * Level.Set.t (* Max of Set, Var, Global without increments *)
+| UAlgebraic of Universe.t (* Arbitrary algebraic expression *)
 
 let classify s = match s with
-| Sorts.Prop -> USmall Level.prop
-| Sorts.SProp -> USmall Level.sprop
-| Sorts.Set -> USmall Level.set
-| Sorts.Type u ->
-  match Universe.level u with
-  | None -> UAlgebraic u
-  | Some l -> ULevel l
-
-type levels = LLevel of Level.t | LMax of Level.Set.t | LAlgebraic
-
-let get_levels = function
-| Sorts.Prop -> LLevel Level.prop
-| Sorts.SProp -> LLevel Level.sprop
-| Sorts.Set -> LLevel Level.set
+| Sorts.Prop -> USmall UProp
+| Sorts.SProp -> USmall USProp
+| Sorts.Set -> USmall USet
 | Sorts.Type u ->
   if Universe.is_levels u then match Universe.level u with
-  | None -> LMax (Universe.levels u)
-  | Some u -> LLevel u
-  else LAlgebraic
+  | None -> UMax (u, Universe.levels u)
+  | Some u -> ULevel u
+  else UAlgebraic u
+
+type local = {
+  local_cst : Constraints.t;
+  local_above_prop : Level.Set.t;
+  local_weak : UPairSet.t;
+}
+
+let add_local cst local =
+  { local with local_cst = Constraints.add cst local.local_cst }
+
+(* Constraint with algebraic on the left and a single level on the right *)
+let enforce_leq_up u v local =
+  { local with local_cst = Univ.enforce_leq u (Universe.make v) local.local_cst }
 
 let process_universe_constraints uctx cstrs =
   let open UnivSubst in
   let open UnivProblem in
   let univs = uctx.universes in
   let vars = ref uctx.univ_variables in
-  let extra = ref uctx.minim_extra in
   let cumulative_sprop = UGraph.cumulative_sprop univs in
   let normalize u = normalize_univ_variable_opt_subst !vars u in
   let nf_constraint = function
@@ -238,14 +244,30 @@ let process_universe_constraints uctx cstrs =
     | ULe (u, v) -> ULe (subst_univs_sort normalize u, subst_univs_sort normalize v)
   in
   let is_local l = Level.Map.mem l !vars in
-  let varinfo x = match x with
-  | Sorts.SProp -> Inr Level.sprop
-  | Sorts.Prop -> Inr Level.prop
-  | Sorts.Set -> Inr Level.set
-  | Sorts.Type u -> match Universe.level u with Some l -> Inr l | None -> Inl u
+  let equalize_small l s local =
+    let ls = match l with
+    | USProp -> Sorts.sprop
+    | UProp -> Sorts.prop
+    | USet -> Sorts.set
+    in
+    if UGraph.check_eq_sort univs ls s then local
+    else if is_uset l then match classify s with
+    | USmall _ -> sort_inconsistency Eq Sorts.set s
+    | ULevel r ->
+      if is_local r then
+        let () = instantiate_variable r Universe.type0 vars in
+        add_local (Level.set, Eq, r) local
+      else
+        sort_inconsistency Eq Sorts.set s
+    | UMax (u, _)| UAlgebraic u ->
+      if univ_level_mem Level.set u then
+        let inst = univ_level_rem Level.set u u in
+        enforce_leq_up inst Level.set local
+      else
+        sort_inconsistency Eq ls s
+    else sort_inconsistency Eq ls s
   in
-  let equalize_variables fo l l' r r' local =
-    (* Assumes l = [l',0] and r = [r',0] *)
+  let equalize_variables fo l' r' local =
     let () =
       if is_local l' then
         instantiate_variable l' (Universe.make r') vars
@@ -255,119 +277,121 @@ let process_universe_constraints uctx cstrs =
         (* Two rigid/global levels, none of them being local,
             one of them being Prop/Set, disallow *)
         if Level.is_small l' || Level.is_small r' then
-          sort_inconsistency Eq l r
+          level_inconsistency Eq l' r'
         else if fo then
           raise UniversesDiffer
     in
-    enforce_eq_level l' r' local
+    if Level.equal l' r' then local else add_local (l', Eq, r') local
   in
-  let equalize_universes l r local = match varinfo l, varinfo r with
-  | Inr l', Inr r' -> equalize_variables false l l' r r' local
-  | Inr l, Inl ru | Inl ru, Inr l ->
+  let equalize_algebraic l ru local =
     let alg = Level.Set.mem l uctx.univ_algebraic in
     let inst = univ_level_rem l ru ru in
-      if alg && not (Level.Set.mem l (Universe.levels inst)) then
-        (instantiate_variable l inst vars; local)
-      else
-        let lu = Universe.make l in
-        if univ_level_mem l ru then
-          enforce_leq inst lu local
-        else sort_inconsistency Eq (Sorts.sort_of_univ lu) r
-  | Inl _, Inl _ (* both are algebraic *) ->
+    if alg && not (Level.Set.mem l (Universe.levels inst)) then
+      let () = instantiate_variable l inst vars in
+      local
+    else
+      if univ_level_mem l ru then
+        enforce_leq_up inst l local
+      else sort_inconsistency Eq (Sorts.sort_of_univ (Universe.make l)) (Sorts.sort_of_univ ru)
+  in
+  let equalize_universes l r local = match classify l, classify r with
+  | USmall l', (USmall _ | ULevel _ | UMax _ | UAlgebraic _) ->
+    equalize_small l' r local
+  | (ULevel _ | UMax _ | UAlgebraic _), USmall r' ->
+    equalize_small r' l local
+  | ULevel l', ULevel r' ->
+    equalize_variables false l' r' local
+  | ULevel l', (UAlgebraic r | UMax (r, _)) | (UAlgebraic r | UMax (r, _)), ULevel l' ->
+    equalize_algebraic l' r local
+  | (UAlgebraic _ | UMax _), (UAlgebraic _ | UMax _) ->
+    (* both are algebraic *)
     if UGraph.check_eq_sort univs l r then local
     else sort_inconsistency Eq l r
   in
   let unify_universes cst local =
     let cst = nf_constraint cst in
-      if UnivProblem.is_trivial cst then local
-      else
-          match cst with
-          | ULe (l, r) ->
-            begin match classify r with
-            | UAlgebraic _ ->
-              if UGraph.check_leq_sort univs l r then local
-              else user_err Pp.(str "Algebraic universe on the right")
-            | USmall r' ->
-              begin match get_levels l with
-              | LAlgebraic ->
-                (* l contains a +1 and r=r' small so l <= r impossible *)
-                sort_inconsistency Le l r
-              | LLevel _ | LMax _ ->
-                if UGraph.check_leq_sort univs l r then match get_levels l with
-                | LLevel l ->
-                  Univ.Constraints.add (l, Le, r') local
-                | LAlgebraic | LMax _ -> local
-                else
-                let levels = Sorts.levels l in
-                let fold l' local =
-                  let l = Sorts.sort_of_univ @@ Universe.make l' in
-                  if Level.is_small l' || is_local l' then
-                    equalize_variables false l l' r r' local
-                  else sort_inconsistency Le l r
-                in
-                Level.Set.fold fold levels local
-              end
-            | ULevel r' ->
-              match get_levels l with
-              | LLevel l ->
-                Univ.Constraints.add (l, Le, r') local
-              | LAlgebraic | LMax _ ->
-                (* We insert the constraint in the graph even if the graph
-                    already contains it.  Indeed, checking the existance of the
-                    constraint is costly when the constraint does not already
-                    exist directly as a single edge in the graph, but adding an
-                    edge in the graph which is implied by others is cheap.
-                    Hence, by doing this, we avoid a costly check here, and
-                    make further checks of this constraint easier since it will
-                    exist directly in the graph. *)
-                UGraph.enforce_leq_sort l r local
-            end
-          | ULub (l, r) ->
-              equalize_variables true (Sorts.sort_of_univ (Universe.make l)) l (Sorts.sort_of_univ (Universe.make r)) r local
-          | UWeak (l, r) ->
-            if not (drop_weak_constraints ())
-            then extra := {!extra with UnivMinim.weak_constraints = UPairSet.add (l,r) !extra.UnivMinim.weak_constraints};
-            local
-          | UEq (l, r) -> equalize_universes l r local
+    if UnivProblem.is_trivial cst then local
+    else match cst with
+    | ULe (l, r) ->
+      begin match classify r with
+      | UAlgebraic _ | UMax _ ->
+        if UGraph.check_leq_sort univs l r then local
+        else user_err Pp.(str "Algebraic universe on the right")
+      | USmall r' ->
+        (* Invariant: there are no universes u <= Set in the graph. Except for
+           template levels, Set <= u anyways. Otherwise, for template
+           levels, any constraint u <= Set is turned into u := Set. *)
+        if UGraph.type_in_type univs then local
+        else begin match classify l with
+        | UAlgebraic _ ->
+          (* l contains a +1 and r=r' small so l <= r impossible *)
+          sort_inconsistency Le l r
+        | USmall l' ->
+          if UGraph.check_leq_sort univs l r then local
+          else sort_inconsistency Le l r
+        | ULevel l' ->
+          if is_uset r' && is_local l' then
+            (* Unbounded universe constrained from above, we equalize it *)
+            let () = instantiate_variable l' Universe.type0 vars in
+            add_local (l', Eq, Level.set) local
+          else
+            sort_inconsistency Le l r
+        | UMax (_, levels) ->
+          if is_uset r' then
+            let fold l' local =
+              let l = Sorts.sort_of_univ @@ Universe.make l' in
+              if Level.is_small l' || is_local l' then
+                equalize_variables false l' Level.set local
+              else sort_inconsistency Le l r
+            in
+            Level.Set.fold fold levels local
+          else
+            sort_inconsistency Le l r
+        end
+      | ULevel r' ->
+        (* We insert the constraint in the graph even if the graph
+            already contains it.  Indeed, checking the existence of the
+            constraint is costly when the constraint does not already
+            exist directly as a single edge in the graph, but adding an
+            edge in the graph which is implied by others is cheap.
+            Hence, by doing this, we avoid a costly check here, and
+            make further checks of this constraint easier since it will
+            exist directly in the graph. *)
+        match classify l with
+        | USmall UProp ->
+          { local with local_above_prop = Level.Set.add r' local.local_above_prop }
+        | USmall USProp ->
+          if UGraph.type_in_type univs || cumulative_sprop then local
+          else sort_inconsistency Le l r
+        | USmall USet ->
+          add_local (Level.set, Le, r') local
+        | ULevel l' ->
+          add_local (l', Le, r') local
+        | UAlgebraic l ->
+          enforce_leq_up l r' local
+        | UMax (_, l) ->
+          Univ.Level.Set.fold (fun l' accu -> add_local (l', Le, r') accu) l local
+      end
+    | ULub (l, r) ->
+      equalize_variables true l r local
+    | UWeak (l, r) ->
+      if not (drop_weak_constraints ())
+      then { local with local_weak = UPairSet.add (l, r) local.local_weak }
+      else local
+    | UEq (l, r) -> equalize_universes l r local
   in
   let unify_universes cst local =
     if not (UGraph.type_in_type univs) then unify_universes cst local
     else try unify_universes cst local with UGraph.UniverseInconsistency _ -> local
   in
-  let local =
-    UnivProblem.Set.fold unify_universes cstrs Constraints.empty
-  in
-  (* Remove constraints mentioning Prop / SProp *)
-  let maybe_univ_inconsistency c l r =
-    if UGraph.type_in_type univs then false
-    else
-      let mk u = Sorts.sort_of_univ @@ Universe.make u in
-      raise (UGraph.UniverseInconsistency (c, mk l, mk r, None))
-  in
-  let filter (l, c, r) = match c with
-  | Eq ->
-    begin match level_kind l, level_kind r with
-    | KProp, KProp | KSProp, KSProp -> false
-    | (KSProp | KProp), KLevel | KLevel, (KSProp | KProp) | KProp, KSProp | KSProp, KProp ->
-      maybe_univ_inconsistency c l r
-    | KLevel, KLevel -> true
-    end
-  | Lt | Le ->
-    begin match level_kind l, level_kind r with
-    | KProp, KProp | KSProp, KSProp ->
-      if c == Lt && Level.equal l r then maybe_univ_inconsistency c l r else false
-    | KProp, KSProp -> maybe_univ_inconsistency c l r
-    | KProp, KLevel ->
-      extra := {!extra with UnivMinim.above_prop = Univ.Level.Set.add r !extra.UnivMinim.above_prop};
-      false
-    | KSProp, (KProp | KLevel) ->
-      if cumulative_sprop then false else maybe_univ_inconsistency c l r
-    | KLevel, (KProp | KSProp) -> maybe_univ_inconsistency c l r
-    | KLevel, KLevel -> true
-    end
-  in
-  let local = Constraints.filter filter local in
-  !vars, !extra, local
+  let local = {
+    local_cst = Constraints.empty;
+    local_weak = uctx.minim_extra.UnivMinim.weak_constraints;
+    local_above_prop = uctx.minim_extra.UnivMinim.above_prop;
+  } in
+  let local = UnivProblem.Set.fold unify_universes cstrs local in
+  let extra = { UnivMinim.above_prop = local.local_above_prop; UnivMinim.weak_constraints = local.local_weak } in
+  !vars, extra, local.local_cst
 
 let add_constraints uctx cstrs =
   let univs, old_cstrs = uctx.local in
@@ -541,7 +565,7 @@ let check_univ_decl ~poly uctx decl =
     Monomorphic_entry uctx.local, binders
 
 let is_bound l lbound = match lbound with
-  | UGraph.Bound.Prop -> Level.is_prop l
+  | UGraph.Bound.Prop -> false
   | UGraph.Bound.Set -> Level.is_set l
 
 let restrict_universe_context ~lbound (univs, csts) keep =
@@ -555,8 +579,7 @@ let restrict_universe_context ~lbound (univs, csts) keep =
   let g = UGraph.merge_constraints csts g in
   let allkept = Level.Set.union (UGraph.domain UGraph.initial_universes) (Level.Set.diff allunivs removed) in
   let csts = UGraph.constraints_for ~kept:allkept g in
-  let csts = Constraints.filter (fun (l,d,r) ->
-      not ((is_bound l lbound && d == Le) || (Level.is_prop l && d == Lt && Level.is_set r))) csts in
+  let csts = Constraints.filter (fun (l,d,r) -> not (is_bound l lbound && d == Le)) csts in
   (Level.Set.inter univs keep, csts)
 
 let restrict uctx vars =
@@ -749,21 +772,10 @@ let is_sort_variable uctx s =
 let subst_univs_context_with_def def usubst (uctx, cst) =
   (Level.Set.diff uctx def, UnivSubst.subst_univs_constraints usubst cst)
 
-let is_trivial_leq (l,d,r) =
-  Level.is_prop l && (d == Le || d == Lt) && Level.is_set r
-
-(* Prop < i <-> Set+1 <= i <-> Set < i *)
-let translate_cstr (l,d,r as cstr) =
-  if Level.equal Level.prop l && d == Lt && not (Level.equal Level.set r) then
-    (Level.set, d, r)
-  else cstr
-
 let refresh_constraints univs (ctx, cstrs) =
   let cstrs', univs' =
-    Constraints.fold (fun c (cstrs', univs as acc) ->
-      let c = translate_cstr c in
-      if is_trivial_leq c then acc
-      else (Constraints.add c cstrs', UGraph.enforce_constraint c univs))
+    Constraints.fold (fun c (cstrs', univs) ->
+      (Constraints.add c cstrs', UGraph.enforce_constraint c univs))
       cstrs (Constraints.empty, univs)
   in ((ctx, cstrs'), univs')
 

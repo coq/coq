@@ -65,8 +65,6 @@ struct
   end
 
   type t =
-    | SProp
-    | Prop
     | Set
     | Level of UGlobal.t
     | Var of int
@@ -76,8 +74,6 @@ struct
   let equal x y =
     x == y ||
       match x, y with
-      | SProp, SProp -> true
-      | Prop, Prop -> true
       | Set, Set -> true
       | Level l, Level l' -> UGlobal.equal l l'
       | Var n, Var n' -> Int.equal n n'
@@ -85,12 +81,6 @@ struct
 
   let compare u v =
     match u, v with
-    | SProp, SProp -> 0
-    | SProp, _ -> -1
-    | _, SProp -> 1
-    | Prop,Prop -> 0
-    | Prop, _ -> -1
-    | _, Prop -> 1
     | Set, Set -> 0
     | Set, _ -> -1
     | _, Set -> 1
@@ -102,8 +92,6 @@ struct
   let hequal x y =
     x == y ||
       match x, y with
-      | SProp, SProp -> true
-      | Prop, Prop -> true
       | Set, Set -> true
       | UGlobal.(Level { library = d; process = s; uid = n }, Level  { library = d'; process = s'; uid = n' }) ->
         n == n' && s==s' && d == d'
@@ -111,8 +99,6 @@ struct
       | _ -> false
 
   let hcons = function
-    | SProp as x -> x
-    | Prop as x -> x
     | Set as x -> x
     | UGlobal.(Level { library = d; process = s; uid = n }) as x ->
       let s' = CString.hcons s in
@@ -123,8 +109,6 @@ struct
   open Hashset.Combine
 
   let hash = function
-    | SProp -> combinesmall 1 0
-    | Prop -> combinesmall 1 1
     | Set -> combinesmall 1 2
     | Var n -> combinesmall 2 n
     | Level l -> combinesmall 3 (UGlobal.hash l)
@@ -136,8 +120,6 @@ module Level = struct
   module UGlobal = RawLevel.UGlobal
 
   type raw_level = RawLevel.t =
-  | SProp
-  | Prop
   | Set
   | Level of UGlobal.t
   | Var of int
@@ -173,30 +155,16 @@ module Level = struct
   let make l = hcons { hash = RawLevel.hash l; data = l }
 
   let set = make Set
-  let prop = make Prop
-  let sprop = make SProp
 
   let is_small x =
     match data x with
     | Level _ -> false
     | Var _ -> false
-    | SProp -> true
-    | Prop -> true
     | Set -> true
-
-  let is_prop x =
-    match data x with
-    | Prop -> true
-    | _ -> false
 
   let is_set x =
     match data x with
     | Set -> true
-    | _ -> false
-
-  let is_sprop x =
-    match data x with
-    | SProp -> true
     | _ -> false
 
   let compare u v =
@@ -205,8 +173,6 @@ module Level = struct
 
   let to_string x =
     match data x with
-    | SProp -> "SProp"
-    | Prop -> "Prop"
     | Set -> "Set"
     | UGlobal.(Level { library = d; process = s; uid = n }) ->
       Names.DirPath.to_string d ^
@@ -339,8 +305,6 @@ struct
         if Int.equal 0 c then  Level.compare x x'
         else c
 
-    let sprop = hcons (Level.sprop, 0)
-    let prop = hcons (Level.prop, 0)
     let set = hcons (Level.set, 0)
     let type1 = hcons (Level.set, 1)
 
@@ -357,8 +321,6 @@ struct
     let leq (u,n) (v,n') =
       let cmp = Level.compare u v in
         if Int.equal cmp 0 then n <= n'
-        else if n <= n' then
-          (Level.is_prop u && not (Level.is_sprop v))
         else false
 
     let successor (u,n as e) =
@@ -386,16 +348,7 @@ struct
     let super (u,n) (v,n') =
       let cmp = Level.compare u v in
         if Int.equal cmp 0 then SuperSame (n < n')
-        else
-          let open RawLevel in
-          match Level.data u, n, Level.data v, n' with
-          | SProp, _, SProp, _ | Prop, _, Prop, _ -> SuperSame (n < n')
-          | SProp, 0, Prop, 0 -> SuperSame true
-          | Prop, 0, SProp, 0 -> SuperSame false
-          | (SProp | Prop), 0, _, _ -> SuperSame true
-          | _, _, (SProp | Prop), 0 -> SuperSame false
-
-          | _, _, _, _ -> SuperDiff cmp
+        else SuperDiff cmp
 
     let to_string (v, n) =
       if Int.equal n 0 then Level.to_string v
@@ -420,8 +373,6 @@ struct
     let map f (v, n as x) =
       let v' = f v in
         if v' == v then x
-        else if Level.is_prop v' && n != 0 then
-          (Level.set, n)
         else (v', n)
 
   end
@@ -477,18 +428,16 @@ struct
     | _ -> None
 
   let levels l =
-    List.fold_left (fun acc x -> Level.Set.add (Expr.get_level x) acc) Level.Set.empty l
+    let fold acc x =
+      let l = Expr.get_level x in
+      Level.Set.add l acc
+    in
+    List.fold_left fold Level.Set.empty l
 
   let is_small u =
     match u with
     | [l] -> Expr.is_small l
     | _ -> false
-
-  let sprop = tip Expr.sprop
-
-  (* The lower predicative level of the hierarchy that contains (impredicative)
-     Prop and singleton inductive types *)
-  let type0m = tip Expr.prop
 
   (* The level of sets *)
   let type0 = tip Expr.set
@@ -497,8 +446,6 @@ struct
      hence the definition of [type1_univ], the type of [Prop] *)
   let type1 = tip Expr.type1
 
-  let is_sprop x = equal sprop x
-  let is_type0m x = equal type0m x
   let is_type0 x = equal type0 x
 
   (* Returns the formal universe that lies just above the universe variable u.
@@ -553,10 +500,8 @@ end
 type universe = Universe.t
 
 (* The level of predicative Set *)
-let type0m_univ = Universe.type0m
 let type0_univ = Universe.type0
 let type1_univ = Universe.type1
-let is_type0m_univ = Universe.is_type0m
 let is_type0_univ = Universe.is_type0
 let is_univ_variable l = Universe.level l != None
 let is_small_univ = Universe.is_small
@@ -704,12 +649,7 @@ let check_univ_leq u v =
   Universe.for_all (fun u -> check_univ_leq_one u v) u
 
 let enforce_leq u v c =
-  match Universe.is_sprop u, Universe.is_sprop v with
-  | true, true -> c
-  | true, false -> Constraints.add (Level.sprop,Le,Level.prop) c
-  | false, true -> Constraints.add (Level.prop,Le,Level.sprop) c
-  | false, false ->
-    List.fold_left (fun c v -> (List.fold_left (fun c u -> constraint_add_leq u v c) c u)) c v
+  List.fold_left (fun c v -> (List.fold_left (fun c u -> constraint_add_leq u v c) c u)) c v
 
 let enforce_leq u v c =
   if check_univ_leq u v then c
@@ -879,7 +819,6 @@ struct
     else Array.append x y
 
   let of_array a =
-    assert(Array.for_all (fun x -> not (Level.is_prop x || Level.is_sprop x)) a);
     a
 
   let to_array a = a

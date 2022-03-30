@@ -723,8 +723,6 @@ let detype_cofix detype flags avoid env sigma n (names,tys,bodies) =
        Array.map (fun (_,bd,_) -> bd) v)
 
 let detype_level_name sigma l =
-  if Univ.Level.is_sprop l then GSProp else
-  if Univ.Level.is_prop l then GProp else
   if Univ.Level.is_set l then GSet else
     match UState.id_of_level (Evd.evar_universe_context sigma) l with
     | Some id -> GLocalUniv (CAst.make id)

@@ -289,13 +289,12 @@ module UPairs = OrderedType.UnorderedPair(Univ.Level)
 module UPairSet = Set.Make (UPairs)
 
 let is_bound l lbound = match lbound with
-| UGraph.Bound.Prop -> Level.is_prop l
+| UGraph.Bound.Prop -> false
 | UGraph.Bound.Set -> Level.is_set l
 
 (* if [is_minimal u] then constraints [u <= v] may be dropped and get
    used only for set_minimization. *)
-let is_minimal ~lbound u =
-  Level.is_sprop u || Level.is_prop u || is_bound u lbound
+let is_minimal ~lbound u = is_bound u lbound
 
 type extra = {
   weak_constraints : UPairSet.t;
@@ -321,7 +320,7 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
   in
   let smallles = if get_set_minimization ()
     then
-      let smallles = Constraints.filter (fun (l,d,r) -> Level.Map.mem r us && not (Level.is_sprop l)) smallles in
+      let smallles = Constraints.filter (fun (l,d,r) -> Level.Map.mem r us) smallles in
       let smallles = Constraints.map (fun (_,_,r) -> Level.set, Le, r) smallles in
       let fold u accu = if Level.Map.mem u us then Constraints.add (Level.set, Le, u) accu else accu in
       Level.Set.fold fold above_prop smallles
@@ -349,8 +348,7 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
   (* We ignore the trivial Prop/Set <= i constraints. *)
   let noneqs =
     Constraints.filter
-      (fun (l,d,r) -> not ((d == Le && is_bound l lbound) ||
-                           (Level.is_prop l && d == Lt && Level.is_set r)))
+      (fun (l,d,r) -> not (d == Le && is_bound l lbound))
       csts
   in
   let noneqs = Constraints.union noneqs smallles in

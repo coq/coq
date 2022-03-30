@@ -26,10 +26,7 @@ let set = Set
 let type1 = Type type1_univ
 
 let sort_of_univ u =
-  if Universe.is_sprop u then sprop
-  else if is_type0m_univ u then prop
-  else if is_type0_univ u then set
-  else Type u
+  if is_type0_univ u then set else Type u
 
 let compare s1 s2 =
   if s1 == s2 then 0 else
@@ -68,8 +65,7 @@ let is_small = function
   | Type _ -> false
 
 let levels s = match s with
-| SProp -> Level.Set.singleton Level.sprop
-| Prop -> Level.Set.singleton Level.prop
+| SProp | Prop -> Level.Set.empty
 | Set -> Level.Set.singleton Level.set
 | Type u -> Universe.levels u
 

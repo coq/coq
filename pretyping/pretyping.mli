@@ -30,8 +30,6 @@ val get_bidirectionality_hint : GlobRef.t -> int option
 
 val clear_bidirectionality_hint : GlobRef.t -> unit
 
-val known_glob_level : Evd.evar_map -> glob_sort_name -> Univ.Level.t
-
 (** An auxiliary function for searching for fixpoint guard indexes *)
 
 val search_guard :

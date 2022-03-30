@@ -190,8 +190,7 @@ let subst_univs_sort subs = function
   let u = Universe.repr u in
   let supern u n = iterate Universe.super n u in
   let map (u, n) =
-    if Level.is_prop u || Level.is_sprop u then assert false
-    else if Level.is_set u then [Universe.type0, n]
+    if Level.is_set u then [Universe.type0, n]
     else match Level.Map.find u subs with
     | [] ->
       if Int.equal n 0 then
