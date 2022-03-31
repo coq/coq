@@ -9,9 +9,10 @@
 (************************************************************************)
 
 (** The basic parts of coqdep are in [Common]. *)
+open Coqdeplib
 
 let coqdep () =
-  let open Coqdeplib.Common in
+  let open Common in
 
   (* Initialize coqdep, add files to dependency computation *)
   if Array.length Sys.argv < 2 then usage ();
@@ -21,21 +22,21 @@ let coqdep () =
   (* XXX: All the code below is just setting loadpaths, refactor to
      Common coq.boot library *)
   (* Add current dir with empty logical path if not set by options above. *)
-  (try ignore (find_dir_logpath (Sys.getcwd()))
-   with Not_found -> add_norec_dir_import add_known "." []);
+  (try ignore (Loadpath.find_dir_logpath (Sys.getcwd()))
+   with Not_found -> Loadpath.add_norec_dir_import Loadpath.add_known "." []);
   (* We don't setup any loadpath if the -boot is passed *)
-  if not !option_boot then begin
+  if not !Options.boot then begin
     let env = Boot.Env.init () in
     let stdlib = Boot.Env.(stdlib env |> Path.to_string) in
     let plugins = Boot.Env.(plugins env |> Path.to_string) in
     let user_contrib = Boot.Env.(user_contrib env |> Path.to_string) in
-    add_rec_dir_import add_coqlib_known stdlib ["Coq"];
-    add_rec_dir_import add_coqlib_known plugins ["Coq"];
+    Loadpath.add_rec_dir_import Loadpath.add_coqlib_known stdlib ["Coq"];
+    Loadpath.add_rec_dir_import Loadpath.add_coqlib_known plugins ["Coq"];
     if Sys.file_exists user_contrib
-    then add_rec_dir_no_import add_coqlib_known user_contrib [];
-    List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s [])
+    then Loadpath.add_rec_dir_no_import Loadpath.add_coqlib_known user_contrib [];
+    List.iter (fun s -> Loadpath.add_rec_dir_no_import Loadpath.add_coqlib_known s [])
       (Envars.xdg_dirs ~warn:(fun x -> coqdep_warning "%s" x));
-    List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s []) Envars.coqpath;
+    List.iter (fun s -> Loadpath.add_rec_dir_no_import Loadpath.add_coqlib_known s []) Envars.coqpath;
   end;
   if !option_sort then
     sort ()
