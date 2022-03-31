@@ -138,11 +138,13 @@ let set_impredicative_set () = impredicative_set := true
 
 let indices_matter = ref false
 
+let enable_vm = ref false
+
 let make_senv () =
   let senv = Safe_typing.empty_environment in
   let senv = Safe_typing.set_impredicative_set !impredicative_set senv in
   let senv = Safe_typing.set_indices_matter !indices_matter senv in
-  let senv = Safe_typing.set_VM false senv in
+  let senv = Safe_typing.set_VM !enable_vm senv in
   let senv = Safe_typing.set_allow_sprop true senv in (* be smarter later *)
   Safe_typing.set_native_compiler false senv
 
@@ -321,6 +323,11 @@ let parse_args argv =
 
     | "-indices-matter" :: rem ->
       indices_matter:=true; parse rem
+
+    | "-bytecode-compiler" :: "yes" :: rem ->
+      enable_vm := true; parse rem
+    | "-bytecode-compiler" :: "no" :: rem ->
+      enable_vm := false; parse rem
 
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then

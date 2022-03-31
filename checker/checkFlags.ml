@@ -11,6 +11,7 @@
 open Declarations
 
 let set_local_flags flags env =
+  (* Explicitly ignored flags have been commented out *)
   let flags =
     { (Environ.typing_flags env) with
       check_guarded = flags.check_guarded;
@@ -18,6 +19,11 @@ let set_local_flags flags env =
       check_universes = flags.check_universes;
       conv_oracle = flags.conv_oracle;
       share_reduction = flags.share_reduction;
+      enable_VM = flags.enable_VM;
+      (* enable_native_compiler = flags.enable_native_compiler; *)
+      (* indices_matter = flags.indices_matter; *)
+      (* impredicative_set = flags.impredicative_set; *)
+      (* sprop_allowed = flags.sprop_allowed; *)
       cumulative_sprop = flags.cumulative_sprop;
       allow_uip = flags.allow_uip;
     }
