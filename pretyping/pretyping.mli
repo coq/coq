@@ -144,6 +144,7 @@ type pretype_flags = {
   poly : bool;
   resolve_tc : bool;
   program_mode : bool;
+  use_coercions : bool;
 }
 
 type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a

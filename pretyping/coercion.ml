@@ -519,11 +519,12 @@ let reapply_coercions_body sigma trace body =
     start_app_body sigma body
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
-let inh_app_fun_core ~program_mode env sigma body typ =
+let inh_app_fun_core ~program_mode ?(use_coercions=true) env sigma body typ =
   match unify_product env sigma typ with
   | Inl sigma -> sigma, body, typ, IdCoe
   | Inr t ->
     try
+      if not use_coercions then raise NoCoercion;
       let p = lookup_path_to_fun_from env sigma typ in
       let body = force_app_body body in
       let sigma, body, typ, trace = apply_coercion env sigma p body typ in
@@ -541,13 +542,13 @@ let inh_app_fun_core ~program_mode env sigma body typ =
       else Exninfo.iraise (NoCoercion,info)
 
 (* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
-let inh_app_fun ~program_mode ~resolve_tc env sigma body typ =
-  try inh_app_fun_core ~program_mode env sigma body typ
+let inh_app_fun ~program_mode ~resolve_tc ?use_coercions env sigma body typ =
+  try inh_app_fun_core ~program_mode ?use_coercions env sigma body typ
   with
   | NoCoercion when not resolve_tc
     || not (get_use_typeclasses_for_conversion ()) -> (sigma, body, typ, IdCoe)
   | NoCoercion ->
-    try inh_app_fun_core ~program_mode env (saturate_evd env sigma) body typ
+    try inh_app_fun_core ~program_mode ?use_coercions env (saturate_evd env sigma) body typ
     with NoCoercion -> (sigma, body, typ, IdCoe)
 
 let type_judgment env sigma j =
@@ -564,7 +565,7 @@ let inh_tosort_force ?loc env sigma ({ uj_val; uj_type } as j) =
   with Not_found | NoCoercion ->
     error_not_a_type ?loc env sigma j
 
-let inh_coerce_to_sort ?loc env sigma j =
+let inh_coerce_to_sort ?loc ?(use_coercions=true) env sigma j =
   let typ = whd_all env sigma j.uj_type in
     match EConstr.kind sigma typ with
     | Sort s -> (sigma,{ utj_val = j.uj_val; utj_type = ESorts.kind sigma s })
@@ -572,7 +573,8 @@ let inh_coerce_to_sort ?loc env sigma j =
         let (sigma,s) = Evardefine.define_evar_as_sort env sigma ev in
           (sigma,{ utj_val = j.uj_val; utj_type = s })
     | _ ->
-        inh_tosort_force ?loc env sigma j
+        if use_coercions then inh_tosort_force ?loc env sigma j
+        else error_not_a_type ?loc env sigma j
 
 let inh_coerce_to_base ?loc ~program_mode env sigma j =
   if program_mode then
@@ -582,8 +584,8 @@ let inh_coerce_to_base ?loc ~program_mode env sigma j =
     sigma, res
   else (sigma, j)
 
-let inh_coerce_to_fail flags env sigma rigidonly v v_ty target_type =
-  if rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr target_type) && Heads.is_rigid env (EConstr.Unsafe.to_constr v_ty))
+let inh_coerce_to_fail ?(use_coercions=true) flags env sigma rigidonly v v_ty target_type =
+  if not use_coercions || (rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr target_type) && Heads.is_rigid env (EConstr.Unsafe.to_constr v_ty)))
   then
     raise NoCoercion
   else
@@ -601,10 +603,10 @@ let inh_coerce_to_fail flags env sigma rigidonly v v_ty target_type =
 let default_flags_of env =
   default_flags_of TransparentState.full
 
-let rec inh_conv_coerce_to_fail ?loc env sigma ?(flags=default_flags_of env) rigidonly v t c1 =
+let rec inh_conv_coerce_to_fail ?loc ?use_coercions env sigma ?(flags=default_flags_of env) rigidonly v t c1 =
   try (unify_leq_delay ~flags env sigma t c1, v, IdCoe)
   with UnableToUnify (best_failed_sigma,e) ->
-    try inh_coerce_to_fail flags env sigma rigidonly v t c1
+    try inh_coerce_to_fail ?use_coercions flags env sigma rigidonly v t c1
     with NoCoercion as exn ->
       let _, info = Exninfo.capture exn in
       match
@@ -624,21 +626,21 @@ let rec inh_conv_coerce_to_fail ?loc env sigma ?(flags=default_flags_of env) rig
           let open Context.Rel.Declaration in
           let env1 = push_rel (LocalAssum (name,u1)) env in
           let (sigma, v1, trace1) =
-            inh_conv_coerce_to_fail ?loc env1 sigma rigidonly
+            inh_conv_coerce_to_fail ?loc ?use_coercions env1 sigma rigidonly
               (mkRel 1) (lift 1 u1) (lift 1 t1) in
           let v2 = beta_applist sigma (lift 1 v,[v1]) in
           let t2 = Retyping.get_type_of env1 sigma v2 in
-          let (sigma,v2',trace2) = inh_conv_coerce_to_fail ?loc env1 sigma rigidonly v2 t2 u2 in
+          let (sigma,v2',trace2) = inh_conv_coerce_to_fail ?loc ?use_coercions env1 sigma rigidonly v2 t2 u2 in
           let trace = ProdCoe { na=name; ty=u1; dom=trace1; body=trace2 } in
           (sigma, mkLambda (name, u1, v2'), trace)
       | _ ->
         Exninfo.iraise (NoCoercionNoUnifier (best_failed_sigma,e), info)
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc rigidonly flags env sigma cj t =
+let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions rigidonly flags env sigma cj t =
   let (sigma, val', otrace) =
     try
-      let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc env sigma ~flags rigidonly cj.uj_val cj.uj_type t in
+      let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc ?use_coercions env sigma ~flags rigidonly cj.uj_val cj.uj_type t in
       (sigma, val', Some trace)
     with NoCoercionNoUnifier (best_failed_sigma,e) as exn ->
       let _, info = Exninfo.capture exn in
@@ -659,7 +661,7 @@ let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc rigidonly flags env si
               error_actual_type ?loc ~info env best_failed_sigma cj t e
             else
               let sigma = sigma' in
-              let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc env sigma rigidonly cj.uj_val cj.uj_type t in
+              let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc ?use_coercions env sigma rigidonly cj.uj_val cj.uj_type t in
               (sigma, val', Some trace)
           with NoCoercionNoUnifier (_sigma,_error) as exn ->
             let _, info = Exninfo.capture exn in
@@ -667,7 +669,7 @@ let inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc rigidonly flags env si
   in
   (sigma,{ uj_val = val'; uj_type = t },otrace)
 
-let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc env sigma ?(flags=default_flags_of env) =
-  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc false flags env sigma
-let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc env sigma ?(flags=default_flags_of env) =
-  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc true flags env sigma
+let inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ?use_coercions env sigma ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions false flags env sigma
+let inh_conv_coerce_rigid_to ?loc ~program_mode ~resolve_tc ?use_coercions env sigma ?(flags=default_flags_of env) =
+  inh_conv_coerce_to_gen ?loc ~program_mode ~resolve_tc ?use_coercions true flags env sigma
