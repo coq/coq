@@ -10,7 +10,7 @@
 
 (* Common types *)
 type basename = string
-type dirname = string
+type dirname = System.unix_path
 type dir = string option
 type dirpath = string list
 type filename = string
@@ -173,7 +173,6 @@ module State = struct
     { mllib : (string, dir * string) Hashtbl.t
     ; mlpack : (string, dir * string) Hashtbl.t
     ; vfiles : (dirpath * dirpath, result) Hashtbl.t
-    ; coqlib : (dirpath * dirpath, result) Hashtbl.t
     ; other : (dirpath * dirpath, result) Hashtbl.t
     ; boot : bool
     }
@@ -182,7 +181,6 @@ module State = struct
     { mllib = Hashtbl.create 19
     ; mlpack = Hashtbl.create 19
     ; vfiles = Hashtbl.create 19
-    ; coqlib = Hashtbl.create 19
     ; other = Hashtbl.create 19
     ; boot
     }
@@ -235,9 +233,6 @@ let search_other_known st ?from s =
   try Some (search_table st.State.other ?from s)
   with Not_found -> None
 
-let is_in_coqlib st ?from s =
-  try let _ = search_table st.State.coqlib ?from s in true with Not_found -> false
-
 let add_caml_known st _ phys_dir _ f =
   let basename, suff = get_extension f [".mllib"; ".mlpack"; ".cmxs"] in
   match suff with
@@ -254,12 +249,18 @@ let add_paths recur root table phys_dir log_dir basename =
   let iter n = safe_add table root (n, file) in
   List.iter iter paths
 
-let add_coqlib_known st recur root phys_dir log_dir f =
-  let root = (phys_dir, log_dir) in
-  match get_extension f [".vo"; ".vio"; ".vos"] with
-    | (basename, (".vo" | ".vio" | ".vos")) ->
-        add_paths recur root st.State.coqlib phys_dir log_dir basename
-    | _ -> ()
+(* XXX: There are some differences in add_coqlib_known and add_known
+   that we need to solve *)
+
+(* Loadpath.add_rec_dir_import    (Loadpath.add_coqlib_known lst) stdlib       ["Coq"]; *)
+(* Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) user_contrib [];      *)
+(* let add_coqlib_known st recur root phys_dir log_dir f =
+ *   let root = (phys_dir, log_dir) in
+ *   match get_extension f [".vo"; ".vio"; ".vos"] with
+ *     | (basename, (".vo" | ".vio" | ".vos")) ->
+ *         add_paths recur root st.State.coqlib phys_dir log_dir basename
+ *     | _ -> ()
+ *)
 
 let add_known st recur root phys_dir log_dir f =
   match get_extension f [".v"; ".vo"; ".vio"; ".vos"] with
@@ -270,25 +271,14 @@ let add_known st recur root phys_dir log_dir f =
     | (f,_) ->
         add_paths recur root st.State.other phys_dir log_dir f
 
-(** Simply add this directory and imports it, no subdirs. This is used
-    by the implicit adding of the current path (which is not recursive). *)
-let add_norec_dir_import add_file phys_dir log_dir =
-  add_directory false (add_file true) phys_dir log_dir
-
-(** -Q semantic: go in subdirs but only full logical paths are known. *)
-let add_rec_dir_no_import add_file phys_dir log_dir =
-  add_directory true (add_file false) phys_dir log_dir
-
-(** -R semantic: go in subdirs and suffixes of logical paths are known. *)
-let add_rec_dir_import add_file phys_dir log_dir =
-  add_directory true (add_file true) phys_dir log_dir
-
 (** -I semantic: do not go in subdirs. *)
 let add_caml_dir st phys_dir =
   add_directory false (add_caml_known st) phys_dir []
 
-let split_period = Str.split (Str.regexp (Str.quote "."))
+(** Simply add this directory and imports it, no subdirs. This is used
+    by the implicit adding of the current path (which is not recursive). *)
+let add_current_dir st dir =
+  add_directory false (add_known st true) dir []
 
-let add_current_dir st dir = add_norec_dir_import (add_known st) dir []
-let add_q_include st path l = add_rec_dir_no_import (add_known st) path (split_period l)
-let add_r_include st path l = add_rec_dir_import (add_known st) path (split_period l)
+let add_loadpath st ~implicit path l =
+  add_directory implicit (add_known st implicit) path l

@@ -178,7 +178,7 @@ let rec find_dependencies st basename =
                     let file_str = canonize file_str in
                     add_dep (Dep_info.Dep.Require file_str)) files
               | None ->
-                if verbose && not (Loadpath.is_in_coqlib st ?from str) then
+                if verbose then
                   warning_module_notfound from f str
             end
           in
@@ -320,6 +320,8 @@ let sort st =
   in
   List.iter (fun (name, _) -> loop name) !vAccu
 
+let split_period = Str.split (Str.regexp (Str.quote "."))
+
 let treat_coqproject st f =
   let open CoqProject_file in
   let iter_sourced f = List.iter (fun {thing} -> f thing) in
@@ -331,15 +333,12 @@ let treat_coqproject st f =
     | UnableToOpenProjectFile msg -> Error.cannot_open_project_file msg
   in
   iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_loadpath ~implicit:false st path (split_period l)) project.q_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_loadpath ~implicit:true st path (split_period l)) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
-let add_include st (rc, r, ln) =
-  if rc then
-    Loadpath.add_r_include st r ln
-  else
-    Loadpath.add_q_include st r ln
+let add_include st (implicit, r, ln) =
+  Loadpath.add_loadpath ~implicit st r (split_period ln)
 
 let init ~make_separator_hack args =
   separator_hack := make_separator_hack;

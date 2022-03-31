@@ -33,20 +33,20 @@ let coqdep () =
      Common coq.boot library *)
   (* Add current dir with empty logical path if not set by options above. *)
   (try ignore (Loadpath.find_dir_logpath (Sys.getcwd()))
-   with Not_found -> Loadpath.add_norec_dir_import (Loadpath.add_known lst) "." []);
+   with Not_found -> Loadpath.add_current_dir lst ".");
   (* We don't setup any loadpath if the -boot is passed *)
   if not args.Args.boot then begin
     let env = Boot.Env.init () in
     let stdlib = Boot.Env.(stdlib env |> Path.to_string) in
     let plugins = Boot.Env.(plugins env |> Path.to_string) in
     let user_contrib = Boot.Env.(user_contrib env |> Path.to_string) in
-    Loadpath.add_rec_dir_import (Loadpath.add_coqlib_known lst) stdlib ["Coq"];
-    Loadpath.add_rec_dir_import (Loadpath.add_coqlib_known lst) plugins ["Coq"];
+    Loadpath.add_loadpath ~implicit:true lst stdlib ["Coq"];
+    Loadpath.add_loadpath ~implicit:true lst plugins ["Coq"];
     if Sys.file_exists user_contrib
-    then Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) user_contrib [];
-    List.iter (fun s -> Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s [])
+    then Loadpath.add_loadpath ~implicit:false lst user_contrib [];
+    List.iter (fun s -> Loadpath.add_loadpath ~implicit:false lst s [])
       (Envars.xdg_dirs ~warn:(fun x -> Warning.give "%s" x));
-    List.iter (fun s -> Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s []) Envars.coqpath;
+    List.iter (fun s -> Loadpath.add_loadpath ~implicit:false lst s []) Envars.coqpath;
   end;
   if args.Args.sort then
     sort st
