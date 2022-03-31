@@ -180,23 +180,27 @@ let print_usage_channel co command =
   output_string co command;
   output_string co "coqchk options are:\n";
   output_string co
-"  -Q dir coqdir          map physical dir to logical coqdir\
-\n  -R dir coqdir          synonymous for -Q\
+"\
+\n  -Q dir coqdir               map physical dir to logical coqdir\
+\n  -R dir coqdir               synonymous for -Q\
+\n  -coqlib dir                 set coqchk's standard library location\
 \n\
+\n  -admit module               load module and dependencies without checking\
+\n  -norec module               check module but admit dependencies without checking\
 \n\
-\n  -admit module          load module and dependencies without checking\
-\n  -norec module          check module but admit dependencies without checking\
+\n  -debug                      enable debugging info\
+\n  -where                      print coqchk's standard library location and exit\
+\n  -v, --version               print coqchk version and exit\
+\n  -o, --output-context        print the list of assumptions\
+\n  -m, --memory                print the maximum heap size\
+\n  -silent                     disable trace of constants being checked\
 \n\
-\n  -coqlib dir            set coqchk's standard library location\
-\n  -where                 print coqchk's standard library location and exit\
-\n  -v                     print coqchk version and exit\
-\n  -o, --output-context   print the list of assumptions\
-\n  -m, --memory           print the maximum heap size\
-\n  -silent                disable trace of constants being checked\
+\n  -impredicative-set          set sort Set impredicative\
+\n  -indices-matter             levels of indices (and nonuniform parameters)\
+\n                              contribute to the level of inductives\
+\n  -bytecode-compiler (yes|no) enable the vm_compute reduction machine\
 \n\
-\n  -impredicative-set     set sort Set impredicative\
-\n\
-\n  -h, --help             print this list of options\
+\n  -h, --help                  print this list of options\
 \n"
 
 (* print the usage on standard error *)
