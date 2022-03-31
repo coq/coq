@@ -18,6 +18,8 @@ open Ltac_pretype
 
 (** {5 Tactics} *)
 
+val assert_succeeds : unit Proofview.tactic -> unit Proofview.tactic
+
 val mytclWithHoles : (Tactics.evars_flag ->
   EConstr.constr Tactypes.with_bindings Tactics.destruction_arg option ->
     unit Proofview.tactic) ->

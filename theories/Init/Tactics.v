@@ -340,10 +340,6 @@ Ltac time_constr tac :=
 
 Ltac assert_fails tac :=
   tryif (once tac) then gfail 0 tac "succeeds" else idtac.
-Ltac assert_succeeds tac :=
-  tryif (assert_fails tac) then gfail 0 tac "fails" else idtac.
-Tactic Notation "assert_succeeds" tactic3(tac) :=
-  assert_succeeds tac.
 Tactic Notation "assert_fails" tactic3(tac) :=
   assert_fails tac.
 

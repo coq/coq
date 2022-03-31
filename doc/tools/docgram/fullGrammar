@@ -1556,6 +1556,7 @@ simple_tactic: [
 | "clear" "-" LIST1 hyp
 | "clearbody" LIST1 hyp
 | "generalize" "dependent" constr
+| "assert_succeeds" tactic3
 | "replace" uconstr "with" constr clause by_arg_tac
 | "replace" "->" uconstr clause
 | "replace" "<-" uconstr clause
