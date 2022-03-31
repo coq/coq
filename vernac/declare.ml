@@ -1990,18 +1990,20 @@ let get_keep_admitted_vars =
     ~key:["Keep"; "Admitted"; "Variables"]
     ~value:true
 
-let compute_proof_using_for_admitted proof typ pproofs =
-  if not (get_keep_admitted_vars ()) then None
-  else match get_used_variables proof, pproofs with
-    | Some _ as x, _ -> x
-    | None, pproof :: _ ->
-      let env = Global.env () in
-      let ids_typ = Environ.global_vars_set env typ in
-      (* [pproof] is evar-normalized by [partial_proof]. We don't
-         count variables appearing only in the type of evars. *)
-      let ids_def = Environ.global_vars_set env (EConstr.Unsafe.to_constr pproof) in
-      Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
-    | _ -> None
+let compute_proof_using_for_admitted proof typ iproof =
+  if not (get_keep_admitted_vars ()) || not (Global.sections_are_opened()) then None
+  else match get_used_variables proof with
+    | Some _ as x -> x
+    | None ->
+      match Proof.partial_proof iproof with
+      | pproof :: _ ->
+        let env = Global.env () in
+        let ids_typ = Environ.global_vars_set env typ in
+        (* [pproof] is evar-normalized by [partial_proof]. We don't
+           count variables appearing only in the type of evars. *)
+        let ids_def = Environ.global_vars_set env (EConstr.Unsafe.to_constr pproof) in
+        Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
+      | [] -> None
 
 let finish_admitted ~pm ~pinfo ~uctx ~sec_vars ~univs =
   let cst = MutualEntry.declare_possibly_mutual_parameters ~pinfo ~uctx ~sec_vars ~univs in
@@ -2020,8 +2022,7 @@ let save_admitted ~pm ~proof =
   in
   let typ = EConstr.Unsafe.to_constr typ in
   let iproof = get proof in
-  let pproofs = Proof.partial_proof iproof in
-  let sec_vars = compute_proof_using_for_admitted proof typ pproofs in
+  let sec_vars = compute_proof_using_for_admitted proof typ iproof in
   let uctx = get_initial_euctx proof in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   finish_admitted ~pm ~pinfo:proof.pinfo ~uctx ~sec_vars ~univs
