@@ -1504,40 +1504,85 @@ module MiniEConstr = struct
   let unsafe_to_constr_array v = v
   let unsafe_eq = Refl
 
-  let to_constr_nocheck sigma c =
-    let evar_value ev = existential_opt_value sigma ev in
-    UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
+  exception UnresolvedEvar
 
-  let to_constr_gen sigma c =
-    let saw_evar = ref false in
-    let evar_value ev =
-      let v = existential_opt_value sigma ev in
-      saw_evar := !saw_evar || Option.is_empty v;
-      v
+  let nf_evars_and_universes ~allow_evars sigma c =
+    let open Constr in
+    let open UnivSubst in
+    let subst = universe_subst sigma in
+    let subst = normalize_univ_variable_opt_subst subst in
+    let lsubst = level_subst_of subst in
+    let subst_puniverses (c, u as cu) =
+      let u' = UnivSubst.subst_instance lsubst u in
+      if u' == u then cu else (c, u')
     in
-    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c in
-    let saw_evar = if not !saw_evar then false
-      else
-        let exception SawEvar in
-        let rec iter c = match Constr.kind c with
-          | Evar _ -> raise SawEvar
-          | _ -> Constr.iter iter c
+    let rec aux kvars c =
+      match kind c with
+      | Evar (evk, args) ->
+        let inst = match EvMap.find_opt evk sigma.defn_evars with
+        | None | Some { evar_body = Evar_empty } -> None
+        | Some ({ evar_body = Evar_defined c } as info) -> Some (info, c)
         in
-        try iter c; false with SawEvar -> true
+        begin match inst with
+        | None ->
+          let () = if not allow_evars then raise UnresolvedEvar in
+          let args' = List.Smart.map (fun c -> aux kvars c) args in
+          if args == args' then c else mkEvar (evk, args')
+        | Some (info, c) ->
+          let ctx = evar_filtered_context info in
+          let fold accu decl arg =
+            let r = lazy (Vars.make_substituend (aux kvars arg)) in
+            Id.Map.add (NamedDecl.get_id decl) r accu
+          in
+          let vars = List.fold_left2 fold Id.Map.empty ctx args in
+          aux (vars, 0) c
+        end
+      | Var id ->
+        let (vars, k) = kvars in
+        begin match Id.Map.find_opt id vars with
+        | None -> c
+        | Some (lazy c) -> Vars.lift_substituend k c
+        end
+      | Const pu ->
+        let pu' = subst_puniverses pu in
+        if pu' == pu then c else mkConstU pu'
+      | Ind pu ->
+        let pu' = subst_puniverses pu in
+        if pu' == pu then c else mkIndU pu'
+      | Construct pu ->
+        let pu' = subst_puniverses pu in
+        if pu' == pu then c else mkConstructU pu'
+      | Sort (Type u) ->
+        let u' = UnivSubst.subst_univs_universe subst u in
+        if u' == u then c else mkSort (sort_of_univ u')
+      | Case (ci,u,pms,p,iv,t,br) ->
+        let lift (vars, k) = (vars, k + 1) in
+        let u' = UnivSubst.subst_instance lsubst u in
+        if u' == u then Constr.map_with_binders lift aux kvars c
+        else Constr.map_with_binders lift aux kvars (mkCase (ci,u',pms,p,iv,t,br))
+      | Array (u,elems,def,ty) ->
+        let u' = UnivSubst.subst_instance lsubst u in
+        let elems' = CArray.Smart.map (fun c -> aux kvars c) elems in
+        let def' = aux kvars def in
+        let ty' = aux kvars ty in
+        if u == u' && elems == elems' && def == def' && ty == ty' then c
+        else mkArray (u',elems',def',ty')
+      | _ ->
+        let lift (vars, k) = (vars, k + 1) in
+        Constr.map_with_binders lift aux kvars c
     in
-    saw_evar, c
+    aux (Id.Map.empty, 0) c
 
   let to_constr ?(abort_on_undefined_evars=true) sigma c =
-    if not abort_on_undefined_evars then to_constr_nocheck sigma c
-    else
-      let saw_evar, c = to_constr_gen sigma c in
-      if saw_evar
-      then anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term");
-      c
+    if not abort_on_undefined_evars then nf_evars_and_universes ~allow_evars:true sigma c
+    else match nf_evars_and_universes ~allow_evars:false sigma c with
+    | c -> c
+    | exception UnresolvedEvar ->
+      anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
 
-  let to_constr_opt sigma c =
-    let saw_evar, c = to_constr_gen sigma c in
-    if saw_evar then None else Some c
+  let to_constr_opt sigma c = match nf_evars_and_universes ~allow_evars:false sigma c with
+  | c -> Some c
+  | exception UnresolvedEvar -> None
 
   let of_named_decl d = d
   let unsafe_to_named_decl d = d
