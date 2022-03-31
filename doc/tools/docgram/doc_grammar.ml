@@ -1803,13 +1803,13 @@ let process_rst g file args seen tac_prods cmd_prods =
           if rhs = "coq" && !show_warn then
             warn "%s line %d: Missing 'insertprodn' before 'prodn:: coq'\n" file !linenum;
           fprintf new_rst "%s\n" line;
-        | "tacn::" when args.check_tacs ->
+        | "tacn::" ->
           seen := { !seen with tacs = save_n_get_more "tacn" pfx rhs !seen.tacs tac_prods }
-        | "tacv::" when args.check_tacs ->
+        | "tacv::" ->
           seen := { !seen with tacvs = save_n_get_more "tacv" pfx rhs !seen.tacvs StringSet.empty }
-        | "cmd::" when args.check_cmds ->
+        | "cmd::" ->
           seen := { !seen with cmds = save_n_get_more "cmd" pfx rhs !seen.cmds cmd_prods }
-        | "cmdv::" when args.check_cmds ->
+        | "cmdv::" ->
           seen := { !seen with cmdvs = save_n_get_more "cmdv" pfx rhs !seen.cmdvs StringSet.empty }
         | "insertprodn" ->
           process_insertprodn line rhs
