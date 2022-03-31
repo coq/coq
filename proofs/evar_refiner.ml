@@ -49,13 +49,14 @@ let w_refine (evk,evi) (ltac_var,rawc) env sigma =
     user_err Pp.(str "Instantiate called on already-defined evar");
   let env = Evd.evar_filtered_env env evi in
   let sigma',typed_c =
-    let flags = {
-      Pretyping.use_typeclasses = Pretyping.UseTC;
-      Pretyping.solve_unification_constraints = true;
-      Pretyping.fail_evar = false;
-      Pretyping.expand_evars = true;
-      Pretyping.program_mode = false;
-      Pretyping.polymorphic = false;
+    let flags = Pretyping.{
+      use_coercions = true;
+      use_typeclasses = UseTC;
+      solve_unification_constraints = true;
+      fail_evar = false;
+      expand_evars = true;
+      program_mode = false;
+      polymorphic = false;
     } in
     try Pretyping.understand_ltac flags
       env sigma ltac_var (Pretyping.OfType evi.evar_concl) rawc

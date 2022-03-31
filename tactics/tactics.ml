@@ -1310,13 +1310,14 @@ let rec intros_move = function
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 
-let tactic_infer_flags with_evar = {
-  Pretyping.use_typeclasses = Pretyping.UseTC;
-  Pretyping.solve_unification_constraints = true;
-  Pretyping.fail_evar = not with_evar;
-  Pretyping.expand_evars = true;
-  Pretyping.program_mode = false;
-  Pretyping.polymorphic = false;
+let tactic_infer_flags with_evar = Pretyping.{
+  use_coercions = true;
+  use_typeclasses = UseTC;
+  solve_unification_constraints = true;
+  fail_evar = not with_evar;
+  expand_evars = true;
+  program_mode = false;
+  polymorphic = false;
 }
 
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)

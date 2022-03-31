@@ -621,6 +621,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
     Exninfo.iraise reraise
 
 let constr_flags () = {
+  use_coercions = true;
   use_typeclasses = UseTC;
   solve_unification_constraints = true;
   fail_evar = true;
@@ -639,6 +640,7 @@ let interp_constr = interp_constr_gen WithoutTypeConstraint
 let interp_type = interp_constr_gen IsType
 
 let open_constr_use_classes_flags () = {
+  use_coercions = true;
   use_typeclasses = UseTC;
   solve_unification_constraints = true;
   fail_evar = false;
@@ -648,6 +650,7 @@ let open_constr_use_classes_flags () = {
 }
 
 let open_constr_no_classes_flags () = {
+  use_coercions = true;
   use_typeclasses = NoUseTC;
   solve_unification_constraints = true;
   fail_evar = false;
@@ -657,6 +660,7 @@ let open_constr_no_classes_flags () = {
 }
 
 let pure_open_constr_flags = {
+  use_coercions = true;
   use_typeclasses = NoUseTC;
   solve_unification_constraints = true;
   fail_evar = false;

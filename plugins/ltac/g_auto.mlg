@@ -49,8 +49,9 @@ END
 {
 
 let eval_uconstrs ist cs =
-  let flags = {
-    Pretyping.use_typeclasses = Pretyping.NoUseTC;
+  let flags = Pretyping.{
+    use_coercions = true;
+    use_typeclasses = NoUseTC;
     solve_unification_constraints = true;
     fail_evar = false;
     expand_evars = true;

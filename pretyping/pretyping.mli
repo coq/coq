@@ -51,6 +51,7 @@ type use_typeclasses = NoUseTC | UseTCForConv | UseTC
 *)
 
 type inference_flags = {
+  use_coercions : bool;
   use_typeclasses : use_typeclasses;
   solve_unification_constraints : bool;
   fail_evar : bool;

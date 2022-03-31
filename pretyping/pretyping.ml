@@ -183,6 +183,7 @@ type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
 type use_typeclasses = NoUseTC | UseTCForConv | UseTC
 
 type inference_flags = {
+  use_coercions : bool;
   use_typeclasses : use_typeclasses;
   solve_unification_constraints : bool;
   fail_evar : bool;
@@ -1360,8 +1361,8 @@ let pretype_type ~flags tycon env sigma c =
 let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
   let pretype_flags = {
     program_mode = flags.program_mode;
+    use_coercions = flags.use_coercions;
     poly = flags.polymorphic;
-    use_coercions = true;
     resolve_tc = match flags.use_typeclasses with
       | NoUseTC -> false
       | UseTC | UseTCForConv -> true
@@ -1383,6 +1384,7 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
   process_inference_flags flags !!env sigma (sigma',c',c'_ty)
 
 let default_inference_flags fail = {
+  use_coercions = true;
   use_typeclasses = UseTC;
   solve_unification_constraints = true;
   fail_evar = fail;
@@ -1392,6 +1394,7 @@ let default_inference_flags fail = {
 }
 
 let no_classes_no_fail_inference_flags = {
+  use_coercions = true;
   use_typeclasses = NoUseTC;
   solve_unification_constraints = true;
   fail_evar = false;
