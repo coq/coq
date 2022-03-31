@@ -1220,6 +1220,9 @@ printable: [
 | WITH "Hint" OPT [ "*" | smart_global ]
 | DELETE "Hint" smart_global
 | DELETE "Hint" "*"
+| DELETE "Notation" string
+| REPLACE "Notation" string "in" "custom" IDENT
+| WITH "Notation" string OPT [ "in" "custom" IDENT ]
 
 | INSERTALL "Print"
 ]
