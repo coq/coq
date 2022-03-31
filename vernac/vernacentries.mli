@@ -27,3 +27,36 @@ val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr
 val command_focus : unit Proof.focus_kind
 
 val allow_sprop_opt_name : string list
+
+(** pre-processing and validation of VernacInductive *)
+module Preprocessed_Mind_decl : sig
+  type flags = {
+    template : bool option;
+    udecl : Constrexpr.cumul_univ_decl_expr option;
+    cumulative : bool;
+    poly : bool;
+    finite : Declarations.recursivity_kind;
+  }
+  type record = {
+    flags : flags;
+    primitive_proj : bool;
+    kind : Vernacexpr.inductive_kind;
+    records : Record.Ast.t list;
+  }
+  type inductive = {
+    flags : flags;
+    typing_flags : Declarations.typing_flags option;
+    private_ind : bool;
+    uniform : ComInductive.uniform_inductive_flag;
+    inductives : (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list;
+  }
+  type t =
+    | Record of record
+    | Inductive of inductive
+end
+
+val preprocess_inductive_decl
+  :  atts:Attributes.vernac_flags
+  -> Vernacexpr.inductive_kind
+  -> (Vernacexpr.inductive_expr * Vernacexpr.decl_notation list) list
+  -> Preprocessed_Mind_decl.t
