@@ -27,7 +27,7 @@ type universe_source =
   | QualifiedUniv of Id.t (* global universe introduced by some global value *)
   | UnqualifiedUniv (* other global universe *)
 
-type universe_name_decl = universe_source * (Id.t * Univ.Level.UGlobal.t) list
+type universe_name_decl = universe_source * (Id.t * Univ.UGlobal.t) list
 
 let check_exists_universe sp =
   if Nametab.exists_universe sp then

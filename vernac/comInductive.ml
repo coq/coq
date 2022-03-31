@@ -106,7 +106,7 @@ let make_anonymous_conclusion_flexible sigma = function
   | Some (true, s) ->
     (match EConstr.ESorts.kind sigma s with
      | Type u ->
-       (match Univ.universe_level u with
+       (match Univ.Universe.level u with
         | Some u ->
           Evd.make_flexible_variable sigma ~algebraic:true u
         | None -> sigma)

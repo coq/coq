@@ -214,7 +214,7 @@ let unbounded_from_below u cstrs =
 let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
   let check_level l =
     Univ.Level.Set.mem l (Univ.ContextSet.levels uctx) &&
-    (let () = assert (not @@ Univ.Level.is_small l) in true) &&
+    (let () = assert (not @@ Univ.Level.is_set l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
     not (Univ.Level.Set.mem l ctor_levels)
   in

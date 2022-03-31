@@ -33,36 +33,37 @@ open Util
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
 
-module RawLevel =
-struct
+module UGlobal = struct
   open Names
 
-  module UGlobal = struct
-    type t = {
-      library : DirPath.t;
-      process : string;
-      uid : int;
-    }
+  type t = {
+    library : DirPath.t;
+    process : string;
+    uid : int;
+  }
 
-    let make library process uid = { library; process; uid }
+  let make library process uid = { library; process; uid }
 
-    let repr x = (x.library, x.process, x.uid)
+  let repr x = (x.library, x.process, x.uid)
 
-    let equal u1 u2 =
-      Int.equal u1.uid u2.uid &&
-      DirPath.equal u1.library u2.library &&
-      String.equal u1.process u2.process
+  let equal u1 u2 =
+    Int.equal u1.uid u2.uid &&
+    DirPath.equal u1.library u2.library &&
+    String.equal u1.process u2.process
 
-    let hash u = Hashset.Combine.combine3 u.uid (String.hash u.process) (DirPath.hash u.library)
+  let hash u = Hashset.Combine.combine3 u.uid (String.hash u.process) (DirPath.hash u.library)
 
-    let compare u1 u2 =
-      let c = Int.compare u1.uid u2.uid in
+  let compare u1 u2 =
+    let c = Int.compare u1.uid u2.uid in
+    if c <> 0 then c
+    else
+      let c = DirPath.compare u1.library u2.library in
       if c <> 0 then c
-      else
-        let c = DirPath.compare u1.library u2.library in
-        if c <> 0 then c
-        else String.compare u1.process u2.process
-  end
+      else String.compare u1.process u2.process
+end
+
+module RawLevel =
+struct
 
   type t =
     | Set
@@ -116,8 +117,6 @@ struct
 end
 
 module Level = struct
-
-  module UGlobal = RawLevel.UGlobal
 
   type raw_level = RawLevel.t =
   | Set
@@ -241,15 +240,7 @@ module Level = struct
 
 end
 
-(* Deprecated *)
-module LMap = Level.Map
-module LSet = Level.Set
-
-type 'a universe_map = 'a Level.Map.t
-
 type universe_level = Level.t
-
-type universe_level_subst_fn = universe_level -> universe_level
 
 type universe_set = Level.Set.t
 
@@ -326,12 +317,6 @@ struct
     let successor (u,n as e) =
       if is_small e then type1
       else (u, n + 1)
-
-    let addn k (u,n as x) =
-      if k = 0 then x
-      else if Level.is_small u then
-        (Level.set,n+k)
-      else (u,n+k)
 
     type super_result =
         SuperSame of bool
@@ -455,9 +440,6 @@ struct
     else
       List.Smart.map (fun x -> Expr.successor x) l
 
-  let addn n l =
-    List.Smart.map (fun x -> Expr.addn n x) l
-
   let rec merge_univs l1 l2 =
     match l1, l2 with
     | [], _ -> l2
@@ -496,22 +478,6 @@ struct
   let for_all = List.for_all
   let repr x : t = x
 end
-
-type universe = Universe.t
-
-(* The level of predicative Set *)
-let type0_univ = Universe.type0
-let type1_univ = Universe.type1
-let is_type0_univ = Universe.is_type0
-let is_univ_variable l = Universe.level l != None
-let is_small_univ = Universe.is_small
-let pr_uni = Universe.pr
-
-let sup = Universe.sup
-let super = Universe.super
-
-let universe_level = Universe.level
-
 
 type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
 
@@ -561,12 +527,6 @@ struct
 
 end
 
-module Constraint = Constraints
-
-let empty_constraint = Constraints.empty
-let union_constraint = Constraints.union
-let eq_constraint = Constraints.equal
-
 type constraints = Constraints.t
 
 module Hconstraint =
@@ -613,15 +573,9 @@ let enforce_eq_level u v c =
   else Constraints.add (u,Eq,v) c
 
 let enforce_eq u v c =
-  match Universe.level u, Universe.level v with
-    | Some u, Some v -> enforce_eq_level u v c
-    | _ -> anomaly (Pp.str "A universe comparison can only happen between variables.")
-
-let check_univ_eq u v = Universe.equal u v
-
-let enforce_eq u v c =
-  if check_univ_eq u v then c
-  else enforce_eq u v c
+  if Universe.equal u v then c else match Universe.level u, Universe.level v with
+  | Some u, Some v -> enforce_eq_level u v c
+  | _ -> CErrors.anomaly (Pp.str "A universe comparison can only happen between variables.")
 
 let constraint_add_leq v u c =
   (* We just discard trivial constraints like u<=u *)
@@ -679,10 +633,7 @@ let univ_level_rem u v min =
 (** A universe level substitution, note that no algebraic universes are
     involved *)
 
-type universe_level_subst = universe_level universe_map
-
-(** A full substitution might involve algebraic universes *)
-type universe_subst = universe universe_map
+type universe_level_subst = universe_level Level.Map.t
 
 module Variance =
 struct
@@ -754,7 +705,7 @@ module Instance : sig
 
     val share : t -> t * int
 
-    val subst_fn : universe_level_subst_fn -> t -> t
+    val subst_fn : (Level.t -> Level.t) -> t -> t
 
     val pr : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
     val levels : t -> Level.Set.t
@@ -958,8 +909,6 @@ struct
 
 end
 
-module AUContext = AbstractContext (* Deprecated *)
-
 type 'a univ_abstracted = {
   univ_abstracted_value : 'a;
   univ_abstracted_binder : AbstractContext.t;
@@ -1086,40 +1035,10 @@ let subst_univs_level_constraints subst csts =
 let subst_univs_level_abstract_universe_context subst (inst, csts) =
   inst, subst_univs_level_constraints subst csts
 
-(** With level to universe substitutions. *)
-type universe_subst_fn = universe_level -> universe
-
-let make_subst subst = fun l -> Level.Map.find l subst
-
-let subst_univs_expr_opt fn (l,n) =
-  Universe.addn n (fn l)
-
-let subst_univs_universe fn ul =
-  let subst, nosubst =
-    List.fold_right (fun u (subst,nosubst) ->
-      try let a' = subst_univs_expr_opt fn u in
-            (a' :: subst, nosubst)
-      with Not_found -> (subst, u :: nosubst))
-      ul ([], [])
-  in
-    if CList.is_empty subst then ul
-    else
-      let substs =
-        List.fold_left Universe.merge_univs [] subst
-      in
-        List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.tip u))
-          substs nosubst
-
 let make_instance_subst i =
   let arr = Instance.to_array i in
     Array.fold_left_i (fun i acc l ->
       Level.Map.add l (Level.var i) acc)
-      Level.Map.empty arr
-
-let make_inverse_instance_subst i =
-  let arr = Instance.to_array i in
-    Array.fold_left_i (fun i acc l ->
-      Level.Map.add (Level.var i) l acc)
       Level.Map.empty arr
 
 let make_abstract_instance (ctx, _) =
@@ -1159,9 +1078,6 @@ let pr_universe_context = UContext.pr
 let pr_abstract_universe_context = AbstractContext.pr
 
 let pr_universe_context_set = ContextSet.pr
-
-let pr_universe_subst =
-  Level.Map.pr (fun u -> str" := " ++ Universe.pr u ++ spc ())
 
 let pr_universe_level_subst =
   Level.Map.pr (fun u -> str" := " ++ Level.pr u ++ spc ())

@@ -229,7 +229,7 @@ let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)
 let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
-let ppuniverse_subst l = pp (Univ.pr_universe_subst l)
+let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst l)
 let ppuniverse_opt_subst l = pp (UState.pr_universe_opt_subst l)
 let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst l)
 let ppevar_universe_context l = pp (Termops.pr_evar_universe_context l)
@@ -333,7 +333,7 @@ let constr_display csr =
        v "")^"|]"
 
   and univ_display u =
-    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ pr_uni u ++ fnl ())
+    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Universe.pr u ++ fnl ())
 
   and level_display u =
     incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Level.pr u ++ fnl ())
@@ -492,7 +492,7 @@ let print_pure_constr csr =
     | Set -> print_string "Set"
     | Prop -> print_string "Prop"
     | Type u -> open_hbox();
-        print_string "Type("; pp (pr_uni u); print_string ")"; close_box()
+        print_string "Type("; pp (Universe.pr u); print_string ")"; close_box()
 
   and name_display x = match x.binder_name with
     | Name id -> print_string (Id.to_string id)

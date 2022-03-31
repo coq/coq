@@ -131,7 +131,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
       begin match ESorts.kind !evdref s with
       | Type u ->
          (* TODO: check if max(l,u) is not ok as well *)
-        (match Univ.universe_level u with
+        (match Univ.Universe.level u with
         | None -> refresh_sort status ~direction s
         | Some l ->
            (match Evd.universe_rigidity !evdref l with

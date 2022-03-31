@@ -137,7 +137,7 @@ val ppuniverse_instance : Univ.Instance.t -> unit
 val ppuniverse_context : Univ.UContext.t -> unit
 val ppaucontext : Univ.AbstractContext.t -> unit
 val ppuniverse_context_set : Univ.ContextSet.t -> unit
-val ppuniverse_subst : Univ.universe_subst -> unit
+val ppuniverse_subst : UnivSubst.universe_subst -> unit
 val ppuniverse_opt_subst : UState.universe_opt_subst -> unit
 val ppuniverse_level_subst : Univ.universe_level_subst -> unit
 val ppevar_universe_context : UState.t -> unit

@@ -23,10 +23,10 @@ type t =
 let sprop = SProp
 let prop = Prop
 let set = Set
-let type1 = Type type1_univ
+let type1 = Type Universe.type1
 
 let sort_of_univ u =
-  if is_type0_univ u then set else Type u
+  if Universe.is_type0 u then set else Type u
 
 let compare s1 s2 =
   if s1 == s2 then 0 else

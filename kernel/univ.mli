@@ -8,21 +8,23 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** Qualified global universe level *)
+module UGlobal :
+sig
+
+  type t
+
+  val make : Names.DirPath.t -> string -> int -> t
+  val repr : t -> Names.DirPath.t * string * int
+  val equal : t -> t -> bool
+  val hash : t -> int
+  val compare : t -> t -> int
+
+end
+
 (** Universes. *)
 module Level :
 sig
-
-  module UGlobal : sig
-    type t
-
-    val make : Names.DirPath.t -> string -> int -> t
-    val repr : t -> Names.DirPath.t * string * int
-    val equal : t -> t -> bool
-    val hash : t -> int
-    val compare : t -> t -> int
-
-  end
-  (** Qualified global universe level *)
 
   type t
   (** Type of universe levels. A universe level is essentially a unique name
@@ -32,11 +34,8 @@ sig
   val set : t
   (** The Set universe level. *)
 
-  val is_small : t -> bool
-  (** Is the universe Set? *)
-
   val is_set : t -> bool
-  (** Is it specifically Set *)
+  (** Is the universe Set? *)
 
   val compare : t -> t -> int
   (** Comparison function *)
@@ -87,12 +86,6 @@ sig
   end
 
 end
-
-module LSet :
-sig
-  include CSig.SetS with type elt = Level.t and type t = Level.Set.t
-  val pr : (Level.t -> Pp.t) -> t -> Pp.t
-end [@@ocaml.deprecated "Use Univ.Level.Set"]
 
 module Universe :
 sig
@@ -159,24 +152,6 @@ sig
 
 end
 
-(** Alias name. *)
-
-val pr_uni : Universe.t -> Pp.t
-
-(** The universes hierarchy: Type 0 = Set <= Type 1 <= ...
-   Typing of universes: Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
-val type0_univ : Universe.t
-val type1_univ : Universe.t
-
-val is_type0_univ : Universe.t -> bool
-val is_univ_variable : Universe.t -> bool
-val is_small_univ : Universe.t -> bool
-
-val sup : Universe.t -> Universe.t -> Universe.t
-val super : Universe.t -> Universe.t
-
-val universe_level : Universe.t -> Level.t option
-
 (** [univ_level_mem l u] Is l is mentioned in u ? *)
 
 val univ_level_mem : Level.t -> Universe.t -> bool
@@ -194,14 +169,6 @@ type univ_constraint = Level.t * constraint_type * Level.t
 module Constraints : sig
  include Set.S with type elt = univ_constraint
 end
-
-module Constraint : sig
- include Set.S with type elt = univ_constraint and type t = Constraints.t
-end [@@ocaml.deprecated "Use Univ.Constraints"]
-
-val empty_constraint : Constraints.t
-val union_constraint : Constraints.t -> Constraints.t -> Constraints.t
-val eq_constraint : Constraints.t -> Constraints.t -> bool
 
 (** A value with universe Constraints.t. *)
 type 'a constrained = 'a * Constraints.t
@@ -232,26 +199,6 @@ val enforce_leq_level : Level.t constraint_function
 type explanation = (constraint_type * Level.t) list
 
 (** {6 Support for universe polymorphism } *)
-
-module LMap :
-sig
-  include CMap.ExtS with type key = Level.t and type 'a t = 'a Level.Map.t and module Set := Level.Set
-  val lunion : 'a t -> 'a t -> 'a t
-  val diff : 'a t -> 'a t -> 'a t
-  val subst_union : 'a option t -> 'a option t -> 'a option t
-  val pr : ('a -> Pp.t) -> 'a t -> Pp.t
-end [@@ocaml.deprecated "Use Univ.Level.Map"]
-
-type 'a universe_map = 'a Level.Map.t
-
-(** {6 Substitution} *)
-
-type universe_subst_fn = Level.t -> Universe.t
-type universe_level_subst_fn = Level.t -> Level.t
-
-(** A full substitution, might involve algebraic universes *)
-type universe_subst = Universe.t universe_map
-type universe_level_subst = Level.t universe_map
 
 module Variance :
 sig
@@ -303,9 +250,6 @@ sig
 
   val share : t -> t * int
   (** Simultaneous hash-consing and hash-value computation *)
-
-  val subst_fn : universe_level_subst_fn -> t -> t
-  (** Substitution by a level-to-level function. *)
 
   val pr : (Level.t -> Pp.t) -> ?variance:Variance.t array -> t -> Pp.t
   (** Pretty-printing, no comments *)
@@ -392,19 +336,6 @@ sig
 
 end
 
-module AUContext :
-sig
-  type t = AbstractContext.t
-  val make : Names.Name.t array -> Constraints.t -> t
-  val repr : t -> UContext.t
-  val empty : t
-  val is_empty : t -> bool
-  val size : t -> int
-  val union : t -> t -> t
-  val instantiate : Instance.t -> t -> Constraints.t
-  val names : t -> Names.Name.t array
-end [@@ocaml.deprecated "Use Univ.AbstractContext"]
-
 type 'a univ_abstracted = {
   univ_abstracted_value : 'a;
   univ_abstracted_binder : AbstractContext.t;
@@ -466,6 +397,10 @@ type 'a in_universe_context_set = 'a * ContextSet.t
 val extend_in_context_set : 'a in_universe_context_set -> ContextSet.t ->
   'a in_universe_context_set
 
+(** {6 Substitution} *)
+
+type universe_level_subst = Level.t Level.Map.t
+
 val empty_level_subst : universe_level_subst
 val is_empty_level_subst : universe_level_subst -> bool
 
@@ -485,20 +420,12 @@ val subst_univs_level_instance : universe_level_subst -> Instance.t -> Instance.
 
 (** Level to universe substitutions. *)
 
-val make_subst : universe_subst -> universe_subst_fn
-
-val subst_univs_universe : universe_subst_fn -> Universe.t -> Universe.t
-(** Only user in the kernel is template polymorphism. Ideally we get rid of
-    this code if it goes away. *)
-
 (** Substitution of instances *)
 val subst_instance_instance : Instance.t -> Instance.t -> Instance.t
 val subst_instance_universe : Instance.t -> Universe.t -> Universe.t
 
 val make_instance_subst : Instance.t -> universe_level_subst
 (** Creates [u(0) ↦ 0; ...; u(n-1) ↦ n - 1] out of [u(0); ...; u(n - 1)] *)
-
-val make_inverse_instance_subst : Instance.t -> universe_level_subst
 
 val abstract_universes : UContext.t -> Instance.t * AbstractContext.t
 (** TODO: move universe abstraction out of the kernel *)
@@ -523,7 +450,6 @@ val pr_abstract_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t arr
 val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
 
 val pr_universe_level_subst : universe_level_subst -> Pp.t
-val pr_universe_subst : universe_subst -> Pp.t
 
 (** {6 Hash-consing } *)
 

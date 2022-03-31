@@ -11,8 +11,14 @@
 open Constr
 open Univ
 
+type 'a universe_map = 'a Level.Map.t
+type universe_subst = Universe.t universe_map
+type universe_subst_fn = Level.t -> Universe.t
+type universe_level_subst_fn = Level.t -> Level.t
+
 val level_subst_of : universe_subst_fn -> universe_level_subst_fn
 val subst_univs_constraints : universe_subst_fn -> Constraints.t -> Constraints.t
+val subst_instance : universe_level_subst_fn -> Instance.t -> Instance.t
 
 type universe_opt_subst = Universe.t option universe_map
 
@@ -31,3 +37,7 @@ val normalize_opt_subst : universe_opt_subst -> universe_opt_subst
 
 val nf_evars_and_universes_opt_subst : (existential -> constr option) ->
   universe_opt_subst -> constr -> constr
+
+val subst_univs_universe : (Level.t -> Universe.t) -> Universe.t -> Universe.t
+
+val pr_universe_subst : universe_subst -> Pp.t
