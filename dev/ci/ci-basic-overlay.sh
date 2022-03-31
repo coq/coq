@@ -334,3 +334,13 @@ project category_theory "https://github.com/jwiegley/category-theory" "master"
 # itauto
 ########################################################################
 project itauto "https://gitlab.inria.fr/fbesson/itauto" "master"
+
+########################################################################
+# Mathcomp-word
+########################################################################
+project mathcomp_word "https://github.com/jasmin-lang/coqword" "main"
+
+########################################################################
+# Jasmin
+########################################################################
+project jasmin "https://github.com/jasmin-lang/jasmin" "main"

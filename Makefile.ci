@@ -44,8 +44,10 @@ CI_TARGETS= \
     ci-coqhammer \
     ci-hott \
     ci-iris \
+    ci-jasmin \
     ci-math_classes \
     ci-mathcomp \
+    ci-mathcomp_word \
     ci-mczify \
     ci-mathcomp_base \
     ci-finmap \
@@ -100,9 +102,12 @@ ci-fourcolor: ci-mathcomp
 ci-oddorder: ci-mathcomp
 ci-fcsl_pcm: ci-mathcomp
 ci-mczify: ci-mathcomp
+ci-mathcomp_word: ci-mathcomp
 ci-finmap: ci-mathcomp_base
 ci-bigenough: ci-mathcomp_base
 ci-analysis: ci-elpi ci-finmap ci-bigenough
+
+ci-jasmin: ci-mathcomp_word
 
 ci-iris: ci-autosubst
 

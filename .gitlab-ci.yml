@@ -804,6 +804,19 @@ library:ci-deriving:
   - build:edge+flambda
   - library:ci-mathcomp
 
+library:ci-mathcomp_word:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+
+library:ci-jasmin:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+  - library:ci-mathcomp_word
+
 # Plugins are by definition the projects that depend on Coq's ML API
 
 plugin:ci-aac_tactics:
