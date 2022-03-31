@@ -892,8 +892,7 @@ command: [
 | "Print" "TypeClasses"
 | "Print" "Instances" reference
 | "Print" "Coercions"
-| "Print" "Notation" string
-| "Print" "Notation" string "in" "custom" ident
+| "Print" "Notation" string OPT [ "in" "custom" ident ]
 | "Print" "Coercion" "Paths" class class
 | "Print" "Canonical" "Projections" LIST0 reference
 | "Print" "Typing" "Flags"
@@ -1068,7 +1067,7 @@ command: [
 | "Section" ident
 | "End" ident
 | "Collection" ident ":=" section_var_expr
-| "From" qualid "Extra" "Dependency" string OPT [ "as" ident ]
+| "From" dirpath "Extra" "Dependency" string OPT [ "as" ident ]
 | OPT [ "From" dirpath ] "Require" OPT [ "Import" | "Export" ] LIST1 qualid
 | "Import" OPT import_categories LIST1 filtered_import
 | "Export" OPT import_categories LIST1 filtered_import

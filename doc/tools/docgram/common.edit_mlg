@@ -737,6 +737,9 @@ gallina_ext: [
 | DELETE "Require" export_token LIST1 global
 | REPLACE "From" global "Require" export_token LIST1 global
 | WITH OPT [ "From" dirpath ] "Require" export_token LIST1 global
+
+| REPLACE "From" global "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
+| WITH "From" dirpath "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
 ]
 
 (* lexer stuff *)
@@ -1220,6 +1223,9 @@ printable: [
 | WITH "Hint" OPT [ "*" | smart_global ]
 | DELETE "Hint" smart_global
 | DELETE "Hint" "*"
+| DELETE "Notation" string
+| REPLACE "Notation" string "in" "custom" IDENT
+| WITH "Notation" string OPT [ "in" "custom" IDENT ]
 
 | INSERTALL "Print"
 ]
