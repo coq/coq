@@ -8,8 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Univ
 open Declarations
 open Environ
 
-val check_subtypes : env -> module_type_body -> module_type_body -> Constraints.t
+val check_subtypes : 'a Reduction.universe_state -> env -> module_type_body -> module_type_body -> 'a

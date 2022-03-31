@@ -610,12 +610,13 @@ let intern_args params =
 (** {6 Auxiliary functions concerning subtyping checks} *)
 
 let check_sub mtb sub_mtb_l =
-  (* The constraints are checked and forgot immediately : *)
-  ignore (List.fold_right
-            (fun sub_mtb env ->
-               Environ.add_constraints
-                 (Subtyping.check_subtypes env mtb sub_mtb) env)
-            sub_mtb_l (Global.env()))
+  (* FIXME: The constraints are checked and forgot immediately *)
+  let fold sub_mtb env =
+    let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+    let _, cst = Subtyping.check_subtypes state env mtb sub_mtb in
+    Environ.add_constraints cst env
+  in
+  ignore (List.fold_right fold sub_mtb_l (Global.env ()))
 
 (** This function checks if the type calculated for the module [mp] is
     a "<:"-like subtype of all signatures in [sub_mtb_l]. Uses only
@@ -646,7 +647,8 @@ let build_subtypes env mp args mtys =
        let mte, ctx' = Modintern.interp_module_ast env Modintern.ModType base mte in
        let env = Environ.push_context_set ~strict:true ctx' env in
        let ctx = Univ.ContextSet.union ctx ctx' in
-       let mtb, cst = Mod_typing.translate_modtype env mp inl (args,mte) in
+        let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+       let mtb, (_, cst) = Mod_typing.translate_modtype state env mp inl (args,mte) in
        let ctx = Univ.ContextSet.add_constraints cst ctx in
        ctx, mtb)
     Univ.ContextSet.empty mtys
@@ -694,7 +696,8 @@ let start_module export id args res fs =
         let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
-        let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
+        let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+        let _, _, _, (_, cst) = Mod_typing.translate_mse state env None inl mte in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some (mte, inl), [], ctx
     | Check resl ->
@@ -760,7 +763,8 @@ let declare_module id args res mexpr_o fs =
         let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
-        let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
+        let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+        let _, _, _, (_, cst) = Mod_typing.translate_mse state env None inl mte in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some mte, [], inl, ctx
     | Check mtys ->
@@ -855,7 +859,8 @@ let declare_modtype id args mtys (mty,ann) fs =
   let () = Global.push_context_set ~strict:true mte_ctx in
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
-  let _, _, _, mte_cst = Mod_typing.translate_mse env None inl mte in
+  let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+  let _, _, _, (_, mte_cst) = Mod_typing.translate_mse state env None inl mte in
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let env = Global.env () in
   let entry = params, mte in

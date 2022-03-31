@@ -1014,9 +1014,14 @@ let add_mind ?typing_flags l mie senv =
 
 (** Insertion of module types *)
 
+let infer_state senv =
+  ((Environ.universes senv.env, Univ.Constraints.empty), Reduction.inferred_universes)
+
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
-  let mtb, cst = Mod_typing.translate_modtype senv.env mp inl params_mte  in
+  (* TODO: do not rely on inference in the kernel *)
+  let state = infer_state senv in
+  let mtb, (_, cst) = Mod_typing.translate_modtype state senv.env mp inl params_mte  in
   let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   let mtb = Declareops.hcons_module_type mtb in
   let senv = add_field (l,SFBmodtype mtb) MT senv in
@@ -1036,7 +1041,9 @@ let full_add_module_type mp mt senv =
 
 let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
-  let mb, cst = Mod_typing.translate_module senv.env mp inl me in
+  (* TODO: do not rely on inference in the kernel *)
+  let state = infer_state senv in
+  let mb, (_, cst) = Mod_typing.translate_module state senv.env mp inl me in
   let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   let mb = Declareops.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) M senv in
@@ -1084,7 +1091,9 @@ let start_modtype l senv =
 let add_module_parameter mbid mte inl senv =
   let () = check_empty_struct senv in
   let mp = MPbound mbid in
-  let mtb, cst = Mod_typing.translate_modtype senv.env mp inl ([],mte) in
+  (* TODO: do not rely on inference in the kernel *)
+  let state = infer_state senv in
+  let mtb, (_, cst) = Mod_typing.translate_modtype state senv.env mp inl ([],mte) in
   let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   let senv = full_add_module_type mp mtb senv in
   let new_variant = match senv.modvariant with
@@ -1135,9 +1144,11 @@ let functorize_module params mb =
 let build_module_body params restype senv =
   let struc = NoFunctor (List.rev senv.revstruct) in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in
-  let mb, cst =
-    Mod_typing.finalize_module senv.env senv.modpath
-      (struc,None,senv.modresolver,Univ.Constraints.empty) restype'
+  (* TODO: do not rely on inference in the kernel *)
+  let state = infer_state senv in
+  let mb, (_, cst) =
+    Mod_typing.finalize_module state senv.env senv.modpath
+      (struc,None,senv.modresolver) restype'
   in
   let mb' = functorize_module params mb in
   { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }, cst
@@ -1215,15 +1226,19 @@ let end_modtype l senv =
 let add_include me is_module inl senv =
   let open Mod_typing in
   let mp_sup = senv.modpath in
-  let sign,(),resolver,cst =
-    translate_mse_include is_module senv.env mp_sup inl me
+  (* TODO: do not rely on inference in the kernel *)
+  let state = infer_state senv in
+  let sign,(),resolver,(_, cst) =
+    translate_mse_include is_module state senv.env mp_sup inl me
   in
   let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   (* Include Self support  *)
   let rec compute_sign sign mb resolver senv =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
-      let cst_sub = Subtyping.check_subtypes senv.env mb mtb in
+      (* TODO: do not rely on inference in the kernel *)
+      let state = infer_state senv in
+      let (_, cst_sub) = Subtyping.check_subtypes state senv.env mb mtb in
       let senv =
         add_constraints
           (Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty)
