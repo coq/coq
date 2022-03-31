@@ -96,13 +96,13 @@ val intern_context : env -> bound_univs:UnivNames.universe_binders ->
 (** Main interpretation functions, using type class inference,
     expecting evars and pending problems to be all resolved *)
 
-val interp_constr : ?expected_type:typing_constraint -> env -> evar_map -> ?impls:internalization_env ->
+val interp_constr : ?flags:inference_flags -> ?expected_type:typing_constraint -> env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> constr Evd.in_evar_universe_context
 
-val interp_casted_constr : env -> evar_map -> ?impls:internalization_env ->
+val interp_casted_constr : ?flags:inference_flags -> env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> types -> constr Evd.in_evar_universe_context
 
-val interp_type : env -> evar_map -> ?impls:internalization_env ->
+val interp_type : ?flags:inference_flags -> env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> types Evd.in_evar_universe_context
 
 (** Main interpretation function expecting all postponed problems to
