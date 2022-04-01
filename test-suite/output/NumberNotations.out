@@ -419,7 +419,15 @@ Ip3 (S (S (S O))) nat bool
 eq_refl
      : 1 = 1
 0
+     : 0 = 0
+eq_refl
+     : id 0 = id 0
+eq_refl
      : 1 = 1
+0
+     : 0 = 0
+eq_refl
+     : id 0 = id 0
 2
      : extra_list_unit
 cons O unit tt (cons O unit tt (nil O unit))
@@ -462,7 +470,7 @@ where
      : Fin.t 3
 2 : Fin.t 3
      : Fin.t 3
-File "./output/NumberNotations.v", line 914, characters 11-42:
+File "./output/NumberNotations.v", line 918, characters 11-42:
 The command has indeed failed with message:
 The term "3" has type "Fin.t (S (S (S (S ?n))))"
 while it is expected to have type "Fin.t 3".
@@ -488,7 +496,7 @@ where
      : Fin.t (S (S (S O)))
 @Fin.FS (S (S O)) (@Fin.FS (S O) (@Fin.F1 O)) : Fin.t (S (S (S O)))
      : Fin.t (S (S (S O)))
-File "./output/NumberNotations.v", line 923, characters 11-12:
+File "./output/NumberNotations.v", line 927, characters 11-12:
 The command has indeed failed with message:
 The term
  "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
@@ -516,7 +524,7 @@ where
      : Fin.t 3
 2 : Fin.t 3
      : Fin.t 3
-File "./output/NumberNotations.v", line 968, characters 11-42:
+File "./output/NumberNotations.v", line 972, characters 11-42:
 The command has indeed failed with message:
 The term "3" has type "Fin.t (S (S (S (S ?n))))"
 while it is expected to have type "Fin.t 3".
@@ -542,7 +550,7 @@ where
      : Fin.t (S (S (S O)))
 @Fin.FS (S (S O)) (@Fin.FS (S O) (@Fin.F1 O)) : Fin.t (S (S (S O)))
      : Fin.t (S (S (S O)))
-File "./output/NumberNotations.v", line 977, characters 11-12:
+File "./output/NumberNotations.v", line 981, characters 11-12:
 The command has indeed failed with message:
 The term
  "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
