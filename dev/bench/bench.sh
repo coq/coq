@@ -546,7 +546,14 @@ if [ -d "$working_dir/html" ]; then # might not exist if all jobs failed
 cd "$working_dir/html"
 $render_line_results
 # Move line timing files to timings folder (they will become artifacts)
-mv fast_table slow_table timings_table $timings
+mv \
+fast_table.txt \
+slow_table.txt \
+timings_table.txt \
+fast_table_pdiff.txt \
+slow_table_pdiff.txt \
+timings_table_pdiff.txt \
+$timings
 fi
 
 echo "INFO: workspace = ${CI_JOB_URL}/artifacts/browse/${bench_dirname}"
@@ -563,7 +570,7 @@ fi
 echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
 echo "${rendered_results}"
-echo "${rendered_results}" > $timings/bench_summary
+echo "${rendered_results}" > $timings/bench_summary.txt
 
 echo "INFO: per line timing: ${CI_JOB_URL}/artifacts/browse/${bench_dirname}/html/"
 

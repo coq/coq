@@ -89,36 +89,73 @@ let render_table ?(reverse=false) title num table =
 
 let main () =
   let () = Printexc.record_backtrace true in
-  let table =
+  let unsorted_data =
     Unix.getcwd ()
     |> list_html_files
     |> List.filter_map read_timing_lines
     |> List.flatten
+  in
+  let table =
+    unsorted_data
     (* Do we want to do a unique sort? *)
     (* |> List.sort_uniq (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y) *)
     |> List.sort (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y)
     |> List.map list_timing_data
     |> List.map (fun x -> [ x ])
   in
+  (* This is instead sorted by pdiff *)
+  let table_sorted_pdiff =
+    unsorted_data
+    (* We filter tiny absolute diffs *)
+    |> List.filter (fun (_,_,x,_,_,_) -> x >= 0.05)
+    (* Do we want to do a unique sort? *)
+    (* |> List.sort_uniq (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y) *)
+    |> List.sort (fun (_,_,_,x,_,_) (_,_,_,y,_,_) -> Float.compare x y)
+    |> List.map list_timing_data
+    |> List.map (fun x -> [ x ])
+  in
+
   (* What is a good number to choose? *)
-  let num = 25 in
-  let num = min num (List.length table) in
-  let slow_table = render_table (Printf.sprintf "TOP %d SLOW DOWNS" num) ~reverse:true num table in
+  let base_num = 50 in
+  let reverse = true in
+  (* Sorted by absolute difference: *)
+  let num = min base_num (List.length table) in
+  let slow_table = render_table (Printf.sprintf "TOP %d SLOW DOWNS" num) ~reverse num table in
   let fast_table = render_table (Printf.sprintf "TOP %d SPEED UPS" num) num table in
   let timings_table = render_table "Significant line time changes in bench" (List.length table) table in
+  (* Sorted by relative difference: (We reverse all the tables since the amounts are absolute) *)
+  let num = min base_num (List.length table_sorted_pdiff) in
+  let slow_table_pdiff = render_table (Printf.sprintf "TOP %d SLOW DOWNS (BY %%DIFF)" num) ~reverse num table_sorted_pdiff in
+  let fast_table_pdiff = render_table (Printf.sprintf "TOP %d SPEED UPS (BY %%DIFF)" num) ~reverse num table_sorted_pdiff in
+  let timings_table_pdiff = render_table "Significant line time changes in bench (sorted by %diff)" ~reverse (List.length table_sorted_pdiff) table_sorted_pdiff in
+
   (* Print tables to stdout *)
   Printf.printf "%s\n%s\n" slow_table fast_table;
   (* Print slow table to slow_table file *)
-  let oc_slow = open_out "slow_table" in
+  let oc_slow = open_out "slow_table.txt" in
   Printf.fprintf oc_slow "%s\n" slow_table;
   close_out oc_slow;
   (* Print fast table to fast_table file *)
-  let oc_fast = open_out "fast_table" in
+  let oc_fast = open_out "fast_table.txt" in
   Printf.fprintf oc_fast "%s\n" fast_table;
   close_out oc_fast;
   (* Print all timing data to line_timings file *)
-  let oc_timings = open_out "timings_table" in
+  let oc_timings = open_out "timings_table.txt" in
   Printf.fprintf oc_timings "%s\n" timings_table;
+  close_out oc_timings;
+
+  Printf.printf "%s\n%s\n" slow_table_pdiff fast_table_pdiff;
+  (* Print slow table to slow_table_pdiff file *)
+  let oc_slow = open_out "slow_table_pdiff.txt" in
+  Printf.fprintf oc_slow "%s\n" slow_table_pdiff;
+  close_out oc_slow;
+  (* Print fast table to fast_table_pdiff file *)
+  let oc_fast = open_out "fast_table_pdiff.txt" in
+  Printf.fprintf oc_fast "%s\n" fast_table_pdiff;
+  close_out oc_fast;
+  (* Print all timing data to timings_table_pdiff file *)
+  let oc_timings = open_out "timings_table_pdiff.txt" in
+  Printf.fprintf oc_timings "%s\n" timings_table_pdiff;
   close_out oc_timings;
   ()
 
