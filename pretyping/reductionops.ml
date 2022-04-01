@@ -1492,12 +1492,12 @@ open Reduction
 let infer_eq (univs, cstrs as cuniv) u u' =
   if UGraph.check_eq_sort univs u u' then cuniv
   else
-    univs, (UGraph.enforce_eq_sort u u' cstrs)
+    univs, (UnivSubst.enforce_eq_sort u u' cstrs)
 
 let infer_leq (univs, cstrs as cuniv) u u' =
   if UGraph.check_leq_sort univs u u' then cuniv
   else
-    let cstrs', _ = UGraph.enforce_leq_alg_sort u u' univs in
+    let cstrs', _ = UnivSubst.enforce_leq_alg_sort u u' univs in
       univs, Univ.Constraints.union cstrs cstrs'
 
 let infer_cmp_universes _env pb s0 s1 univs =

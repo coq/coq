@@ -179,8 +179,6 @@ val constraints_of : 'a constrained -> Constraints.t
 (** Enforcing Constraints.t. *)
 type 'a constraint_function = 'a -> 'a -> Constraints.t -> Constraints.t
 
-val enforce_eq : Universe.t constraint_function
-val enforce_leq : Universe.t constraint_function
 val enforce_eq_level : Level.t constraint_function
 val enforce_leq_level : Level.t constraint_function
 

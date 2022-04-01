@@ -309,11 +309,6 @@ struct
 
     let hash = ExprHash.hash
 
-    let leq (u,n) (v,n') =
-      let cmp = Level.compare u v in
-        if Int.equal cmp 0 then n <= n'
-        else false
-
     let successor (u,n as e) =
       if is_small e then type1
       else (u, n + 1)
@@ -571,43 +566,6 @@ let enforce_eq_level u v c =
   (* We discard trivial constraints like u=u *)
   if Level.equal u v then c
   else Constraints.add (u,Eq,v) c
-
-let enforce_eq u v c =
-  if Universe.equal u v then c else match Universe.level u, Universe.level v with
-  | Some u, Some v -> enforce_eq_level u v c
-  | _ -> CErrors.anomaly (Pp.str "A universe comparison can only happen between variables.")
-
-let constraint_add_leq v u c =
-  (* We just discard trivial constraints like u<=u *)
-  if Universe.Expr.equal v u then c
-  else
-    match v, u with
-    | (x,n), (y,m) ->
-    let j = m - n in
-      if j = -1 (* n = m+1, v+1 <= u <-> v < u *) then
-        Constraints.add (x,Lt,y) c
-      else if j <= -1 (* n = m+k, v+k <= u and k>0 *) then
-        if Level.equal x y then (* u+k <= u with k>0 *)
-          Constraints.add (x,Lt,x) c
-        else anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
-      else if j = 0 then
-        Constraints.add (x,Le,y) c
-      else (* j >= 1 *) (* m = n + k, u <= v+k *)
-        if Level.equal x y then c (* u <= u+k, trivial *)
-        else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
-        else Constraints.add (x,Le,y) c (* u <= v implies u <= v+k *)
-
-let check_univ_leq_one u v = Universe.exists (Universe.Expr.leq u) v
-
-let check_univ_leq u v =
-  Universe.for_all (fun u -> check_univ_leq_one u v) u
-
-let enforce_leq u v c =
-  List.fold_left (fun c v -> (List.fold_left (fun c u -> constraint_add_leq u v c) c u)) c v
-
-let enforce_leq u v c =
-  if check_univ_leq u v then c
-  else enforce_leq u v c
 
 let enforce_leq_level u v c =
   if Level.equal u v then c else Constraints.add (u,Le,v) c

@@ -36,6 +36,84 @@ let subst_univs_universe fn ul =
     let substs = List.fold_left Universe.sup u subst in
     List.fold_left (fun acc (u, n) -> Universe.sup acc (addn n (Universe.make u))) substs nosubst
 
+let enforce_eq u v c =
+  if Universe.equal u v then c else match Universe.level u, Universe.level v with
+  | Some u, Some v -> enforce_eq_level u v c
+  | _ -> CErrors.anomaly (Pp.str "A universe comparison can only happen between variables.")
+
+let constraint_add_leq v u c =
+  let eq (x, n) (y, m) = Int.equal m n && Level.equal x y in
+  (* We just discard trivial constraints like u<=u *)
+  if eq v u then c
+  else
+    match v, u with
+    | (x,n), (y,m) ->
+    let j = m - n in
+      if j = -1 (* n = m+1, v+1 <= u <-> v < u *) then
+        Constraints.add (x,Lt,y) c
+      else if j <= -1 (* n = m+k, v+k <= u and k>0 *) then
+        if Level.equal x y then (* u+k <= u with k>0 *)
+          Constraints.add (x,Lt,x) c
+        else CErrors.anomaly (Pp.str"Unable to handle arbitrary u+k <= v constraints.")
+      else if j = 0 then
+        Constraints.add (x,Le,y) c
+      else (* j >= 1 *) (* m = n + k, u <= v+k *)
+        if Level.equal x y then c (* u <= u+k, trivial *)
+        else if Level.is_set x then c (* Prop,Set <= u+S k, trivial *)
+        else Constraints.add (x,Le,y) c (* u <= v implies u <= v+k *)
+
+let check_univ_leq_one u v =
+  let leq (u,n) (v,n') =
+    let cmp = Level.compare u v in
+      if Int.equal cmp 0 then n <= n'
+      else false
+  in
+  Universe.exists (leq u) v
+
+let check_univ_leq u v =
+  Universe.for_all (fun u -> check_univ_leq_one u v) u
+
+let enforce_leq u v c =
+  List.fold_left (fun c v -> (List.fold_left (fun c u -> constraint_add_leq u v c) c u)) c v
+
+let enforce_leq u v c =
+  if check_univ_leq u v then c
+  else enforce_leq (Universe.repr u) (Universe.repr v) c
+
+let get_algebraic = function
+| Prop | SProp -> assert false
+| Set -> Universe.type0
+| Type u -> u
+
+let enforce_eq_sort s1 s2 cst = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  enforce_eq (get_algebraic s1) (get_algebraic s2) cst
+
+let enforce_leq_sort s1 s2 cst = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
+| (Prop, (Set | Type _)) -> cst
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  raise (UGraph.UniverseInconsistency (Le, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  enforce_leq (get_algebraic s1) (get_algebraic s2) cst
+
+let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
+| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
+| (Prop, (Set | Type _)) -> Constraints.empty, g
+| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+  if UGraph.cumulative_sprop g && is_sprop s1 then
+    Constraints.empty, g
+  else
+    raise (UGraph.UniverseInconsistency (Le, s1, s2, None))
+| (Set | Type _), (Set | Type _) ->
+  UGraph.enforce_leq_alg (get_algebraic s1) (get_algebraic s2) g
+
 let enforce_univ_constraint (u,d,v) =
   match d with
   | Eq -> enforce_eq u v

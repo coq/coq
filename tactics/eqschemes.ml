@@ -809,7 +809,7 @@ let build_congr env (eq,refl,ctx) ind =
   let rci = Sorts.Relevant in (* TODO relevance *)
   let ci = make_case_info env ind rci RegularStyle in
   let uni, ctx = Univ.extend_in_context_set (UnivGen.new_global_univ ()) ctx in
-  let ctx = (fst ctx, Univ.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
+  let ctx = (fst ctx, UnivSubst.enforce_leq uni (univ_of_eq env eq) (snd ctx)) in
   let c =
   my_it_mkLambda_or_LetIn paramsctxt
      (mkNamedLambda (make_annot varB Sorts.Relevant) (mkType uni)
