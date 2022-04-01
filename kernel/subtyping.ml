@@ -312,9 +312,9 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
         MoreFunctor (arg_id2,arg_t2,body_t2) ->
         let mp2 = MPbound arg_id2 in
         let subst1 = join (map_mbid arg_id1 mp2 arg_t2.mod_delta) subst1 in
+        let env = add_module_type mp2 arg_t2 env in
         let cst = check_modtypes cst env arg_t2 arg_t1 subst2 subst1 equiv in
         (* contravariant *)
-        let env = add_module_type mp2 arg_t2 env in
         let env =
           if Modops.is_functor body_t1 then env
           else add_module
