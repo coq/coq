@@ -763,7 +763,7 @@ subdirectories:
   * **Wellfounded** : Well-founded relations (basic results)
 
 
-These directories belong to the initial load path of the system, and
+These directories belong to the initial :term:`load path` of the system, and
 the modules they provide are compiled at installation time. So they
 are directly accessible with the command ``Require`` (see
 Section :ref:`compiled-files`).

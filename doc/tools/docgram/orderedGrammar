@@ -115,11 +115,7 @@ of_type: [
 ]
 
 qualid: [
-| ident LIST0 field_ident
-]
-
-field_ident: [
-| "." ident
+| ident LIST0 ( "." ident )
 ]
 
 type: [

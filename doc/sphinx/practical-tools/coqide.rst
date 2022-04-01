@@ -216,11 +216,41 @@ The `Compile` menu offers direct commands to:
 
 + compile the current buffer
 + run a compilation using `make`
-+ go to the last compilation error
++ go to the next compilation error and
 + create a `Makefile` using `coq_makefile`.
 
 At the moment these are not working well.  We recommend you compile
 from a terminal window for now.  We expect to fix them soon.
+
+`Compile buffer` saves the current buffer and compiles it with `coqc` as specified
+in the `Externals` section of the `Edit/Preferences` dialog.  Output appears
+in the `Messages` panel.  It's mostly useful for single-file projects because it doesn't
+automatically recompile other files that it depends on that may have changed.
+
+`Make` and `Make makefile` run the `make` and `coqmakefile` commands shown in
+the `Externals` section of the `Edit/Preferences` dialog.  Output appears in the
+`Messages` panel.  If you use `_CoqProject` files, you may want to change the settings to
+`make -f CoqMakefile` and `coq_makefile -f _CoqProject -o CoqMakefile` as suggested
+in :ref:`here <building_with_coqproject>`.  Alternatively, you may find it easier
+to do your `make` and `coq_makefile` commands from the command line.
+
+.. _coqide_make_note:
+
+Note that you must explicitly save changed buffers before you run `make`.
+`File/Save all` is helpful for this.  Notice that modified and unmodified buffers show
+different icons next to the filename on the tab.  You may find them helpful.
+
+To use the compiled files after compiling a project with the makefile,
+you must restart the Coq interpreter (using `Navigation/Start` in the
+menu or Ctrl-Home) for any buffer in which you're stepping through code
+that relies on the compiled files.
+
+To make changes to `_CoqProject` take effect, you must close and reopen buffers
+associated with files in the project.  Note that each buffer is independently associated
+with a `_CoqProject`.  The `Project` section of the Edit/Preferences` dialog
+specifies the name to use for the `_CoqProject` file.  We recommend not changing
+this.  Remember that these settings are done on a per-installation basis; they
+currently can't be set differently for each package you're developing.
 
 Customizations
 --------------
@@ -231,10 +261,10 @@ Preferences
 You may customize your environment with the *Preferences* dialog, which is
 accessible from *Edit/Preferences* on the menu. There are several sections:
 
-The first section is for selecting the text font used for scripts,
+The `Fonts` section is for selecting the text font used for scripts,
 goal and message panels.
 
-The second and third sections are for controlling colors and style of
+The `Colors` and `Tags` sections are for controlling colors and style of
 the three main buffers. A predefined Coq highlighting style as well
 as standard |GtkSourceView| styles are available. Other styles can be
 added e.g. in ``$HOME/.local/share/gtksourceview-3.0/styles/`` (see
@@ -244,15 +274,15 @@ CoqIDE is not under the control of |GtkSourceView| but of GTK+ and
 governed by files such as ``settings.ini`` and ``gtk.css`` in
 ``$XDG_CONFIG_HOME/gtk-3.0`` or files in
 ``$HOME/.themes/NameOfTheme/gtk-3.0``, as well as the environment
-variable ``GTK_THEME`` (search on internet for the various
+variable ``GTK_THEME`` (search the internet for the various
 possibilities).
 
-The fourth section is for customizing the editor. It includes in
+The `Editor` section is for customizing the editor. It includes in
 particular the ability to activate an Emacs mode named
 micro-Proof-General (use the Help menu to know more about the
 available bindings).
 
-The next section is devoted to file management: you may configure
+The `Files` section is devoted to file management: you may configure
 automatic saving of files, by periodically saving the contents into
 files named `#f#` for each opened file `f`. You may also activate the
 *revert* feature: in case a opened file is modified on the disk by a
@@ -261,15 +291,26 @@ you edited that same file, you will be prompted to choose to either
 discard your changes or not. The File charset encoding choice is
 described below in :ref:`character-encoding-saved-files`.
 
+`Project`
+
+`Appearance`
+
 The `Externals` section allows customizing the external commands for
 compilation, printing, web browsing. In the browser command, you may
 use `%s` to denote the URL to open, for example:
 `firefox -remote "OpenURL(%s)"`.
 
-Notice that these settings are saved in the file ``coqiderc`` in the
-``coq`` subdirectory of the user configuration directory which
-is the value of ``$XDG_CONFIG_HOME`` if this environment variable is
-set and which otherwise is ``$HOME/.config/``.
+`Shortcuts`
+
+`Misc`
+
+.. _user-configuration-directory:
+
+Preferences and key bindings are saved in the user configuration directory,
+which is ``$XDG_CONFIG_HOME/coq`` if the environment variable ``$XDG_CONFIG_HOME``
+is set.  If the variable isn't set, the directory is ``~/.config/coq`` on Linux
+and `C:\Users\<USERNAME>\AppData\Local\coq` on Windows.
+Preferences are in the file "coqiderc" and key bindings are in the file "coqide.keys".
 
 Key bindings
 ~~~~~~~~~~~~
@@ -278,10 +319,8 @@ Each menu item in the GUI shows its key binding, if one has been defined,
 on the right-hand side.  Typing the key binding is equivalent to selecting
 the associated item from the menu.
 A GTK+ accelerator keymap is saved under the name ``coqide.keys`` in
-the ``coq`` subdirectory of the user configuration directory,
-e.g. in `~/.config/coq/` on Linux and `C:\Users\<USERNAME>\AppData\Local\coq`
-on Windows. On some systems (not Linux or Windows),
-you can modify the key binding ("accelerator") for a menu entry by
+the :ref:`user configuration directory<user-configuration-directory>`.
+You can modify the key binding ("accelerator") for a menu entry by
 going to the corresponding menu item without releasing the
 mouse button, pressing the keys you want for the new binding and then releasing
 the mouse button.
@@ -395,9 +434,8 @@ Adding custom bindings
 ~~~~~~~~~~~~~~~~~~~~~~
 
 To extend the default set of bindings, create a file named ``coqide.bindings``
-and place it in the same folder as ``coqide.keys``. This would be
-the folder ``$XDG_CONFIG_HOME/coq``, defaulting to ``~/.config/coq``
-if ``XDG_CONFIG_HOME`` is unset. The file `coqide.bindings` should contain one
+in the :ref:`user configuration directory<user-configuration-directory>`.
+The file `coqide.bindings` should contain one
 binding per line, in the form ``\key value``, followed by an optional priority
 integer. (The key and value should not contain any space character.)
 
@@ -426,7 +464,7 @@ Each of the file tokens provided may consists of one of:
  -  a path to a custom bindings file,
  -  the token ``default``, which resolves to the default bindings file,
  -  the token ``local``, which resolves to the `coqide.bindings` file
-    stored in the user configuration directory.
+    stored in the :ref:`user configuration directory <user-configuration-directory>`.
 
 .. warning::
 

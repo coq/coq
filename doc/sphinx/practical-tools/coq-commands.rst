@@ -1,18 +1,22 @@
 .. _thecoqcommands:
 
-The Coq commands
+Coq commands
 ====================
 
-There are three Coq commands:
+There are several Coq commands:
 
-+ ``coqtop``: the Coq toplevel (interactive mode);
-+ ``coqc``: the Coq compiler (batch compilation);
-+ ``coqchk``: the Coq checker (validation of compiled libraries).
++ ``coqide``: a graphical integrated development environment, described
+  :ref:`here <coqintegrateddevelopmentenvironment>`.  In addition, there are
+  several other IDEs such as Proof General, vsCoq and Coqtail that are not
+  included with the Coq installation.
++ ``coqtop``: a legacy terminal-oriented, non-graphical interfaces for Coq
++ ``coqc``: the Coq compiler (batch compilation)
++ ``coqchk``: the Coq checker (validation of compiled libraries)
 
-
-The options are (basically) the same for the first two commands, and
-roughly described below. You can also look at the ``man`` pages of
-``coqtop`` and ``coqc`` for more details.
+Many of the parameters to start these tools are shared and are described below.
+Passing the `-help` option on the command line will print a summary of the
+available command line parameters.  There are also man pages for each of these,
+but they are probably less current than `-help` or this document).
 
 .. _interactive-use:
 
@@ -49,11 +53,11 @@ The last component of the filename must be a valid Coq identifier as described i
 underscores (_) with a ".v" suffix on the final component.
 For example ``/bar/foo/toto.v`` is valid, but ``/bar/foo/to-to.v`` is not.
 
-We recommend specifying a logical directory name (which is also the module name)
+We recommend specifying a :term:`logical path` (which is also the module name)
 with the `-R` or the `-Q` options.
 Generally we recommend using utilities such as `make` (using `coq_makefile`
 to generate the `Makefile`) or `dune` to build Coq projects.
-See :ref:`building_coq_project`.
+See :ref:`coq_makefile` and :ref:`building_dune`.
 
 .. example:: Compiling and loading a single file
 
@@ -61,7 +65,7 @@ See :ref:`building_coq_project`.
    to compile it and then `Require foo.` in your script.  But this
    doesn't scale well for larger projects.
 
-   Generally it's' better to define a new module:
+   Generally it's better to define a new module:
    To compile `foo.v` as part of a module `Mod1` that is rooted
    at `.` (i.e. the directory containing `foo.v`), run `coqc -Q . Mod1 foo.v`.
 
@@ -80,34 +84,51 @@ See :ref:`building_coq_project`.
 Customization at launch time
 ---------------------------------
 
-By resource file
+Command parameters
+------------------
+
+There are 3 mechanisms for passing parameters to Coq commands.
+In order of importance they are:
+
+- :ref:`command line options <command-line-options>`,
+- :ref:`environment variables <customization-by-environment-variables>` and
+- the `coqrc` start up script
+
+`coqrc` start up script
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-When Coq is launched, with either ``coqtop`` or ``coqc``, the
-resource file ``$XDG_CONFIG_HOME/coq/coqrc.xxx``, if it exists, will
-be implicitly prepended to any document read by Coq, whether it is an
-interactive session or a file to compile. Here, ``$XDG_CONFIG_HOME``
-is the configuration directory of the user (by default it's ``~/.config``)
-and ``xxx`` is the version number (e.g. 8.8). If
-this file is not found, then the file ``$XDG_CONFIG_HOME/coqrc`` is
-searched. If not found, it is the file ``~/.coqrc.xxx`` which is searched,
-and, if still not found, the file ``~/.coqrc``. If the latter is also
-absent, no resource file is loaded.
-You can also specify an arbitrary name for the resource file
-(see option ``-init-file`` below).
+When Coq is launched, it can implicitly prepend a startup script to any document
+read by Coq, whether it is an interactive session or a file to compile.
+The startup script can come from a configuration directory or it can be
+specified on the command line.
 
-The resource file may contain, for instance, ``Add LoadPath`` commands to add
-directories to the load path of Coq. It is possible to skip the
-loading of the resource file with the option ``-q``.
+Coq uses the first file found in this list as the startup script:
+
+- ``$XDG_CONFIG_HOME/coqrc.<VERSION>``
+- ``$XDG_CONFIG_HOME/coqrc``
+- ``$HOME/.coqrc.<VERSION>``
+- ``$HOME/.coqrc``
+
+where ``$XDG_CONFIG_HOME`` is an environment variable.  ``$HOME`` is the user's
+home directory.  ``<VERSION>`` is the version of Coq (as shown by `coqc --version`,
+for example).
+
+``-init-file file`` on the command line uses the specified file instead of a startup
+script from a configuration directory.  ``-q`` prevents the use of a startup script.
+
+The start up script may contain, for instance, :cmd:`Add LoadPath` commands to add
+directories to Coq's :term:`load path`.
 
 .. _customization-by-environment-variables:
 
-By environment variables
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Environment variables
+~~~~~~~~~~~~~~~~~~~~~
 
-``$COQPATH`` can be used to specify the load path. It is a list of directories separated by
+``$COQPATH`` can be used to specify the :term:`load path`. It is a list of directories separated by
 ``:`` (``;`` on Windows). Coq will also honor ``$XDG_DATA_HOME`` and
-``$XDG_DATA_DIRS`` (see Section :ref:`libraries-and-filesystem`).
+``$XDG_DATA_DIRS`` (see Section :ref:`logical-paths-load-path`).
+
+.. TODO PR: Correct ref above?
 
 Some Coq commands call other Coq commands. In this case, they look for
 the commands in directory specified by ``$COQBIN``. If this variable is
@@ -148,39 +169,53 @@ except that ``space_overhead`` is set to 120 and ``minor_heap_size`` is set to 3
    an incorrect warning: coq-commands.rst:4: WARNING: Duplicate explicit target name: "here".
    The warning doesn't even have the right line number. :-(
 
+.. todo how about COQLIB, COQCORELIB, DOCDIR
+
 .. _command-line-options:
 
-By command line options
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Command line options
+~~~~~~~~~~~~~~~~~~~~
 
 The following command-line options are recognized by the commands ``coqc``
 and ``coqtop``, unless stated otherwise:
 
 :-I *directory*, -include *directory*: Add physical path *directory*
-  to the OCaml loadpath.
+  to the OCaml loadpath, which is needed to load OCaml object code files
+  (``.cmo`` or ``.cmxs``).  Subdirectories are not included.
+  See the command :cmd:`Declare ML Module`.
+
+.. TODO PR: is that right about Declare ML Module? it's not a directory like -I
 
   .. seealso::
 
-     :ref:`names-of-libraries` and the
-     command Declare ML Module Section :ref:`compiled-files`.
-:-Q *directory dirpath*: Add physical path *directory* to the list of
-  directories where Coq looks for a file and bind it to the logical
-  directory *dirpath*. The subdirectory structure of *directory* is
-  recursively available from Coq using absolute names (extending the
-  :n:`@dirpath` prefix) (see Section :ref:`qualified-names`). Note that only those
-  subdirectories and files which obey the lexical conventions of what is
-  an :n:`@ident` are taken into account. Conversely, the
-  underlying file systems or operating systems may be more restrictive
-  than Coq. While Linux’s ext4 file system supports any Coq recursive
-  layout (within the limit of 255 bytes per filename), the default on
-  NTFS (Windows) or HFS+ (MacOS X) file systems is on the contrary to
-  disallow two files differing only in the case in the same directory.
+     The :cmd:`Declare ML Module` command.
 
-  .. seealso:: Section :ref:`names-of-libraries`, :ref:`libraries-and-filesystem` and :cmd:`Require`.
-:-R *directory dirpath*: Similar to ``-Q`` *directory dirpath*, but allow using
-  :cmd:`Require` with a partially qualified name.
+.. _-Q-option:
 
-  .. seealso:: Section :ref:`names-of-libraries`, :ref:`libraries-and-filesystem` and :cmd:`Require`.
+:-Q *directory dirpath*: Makes the `.vo` files in a :term:`package` available for
+  loading with the :cmd:`Require` command by adding new entries to the :term:`load path`.
+  The entries map the
+  :term:`logical path` *dirpath* to the physical path *directory*.  Then Coq
+  recursively adds load path entries for subdirectories.  For example, `-Q . Lib`
+  may add the logical path `Lib.SubDir.File`, which maps to the file
+  `./SubDir/File.vo`.
+
+  Only subdirectories and files that follow the lexical conventions for
+  :n:`@ident`\s are included.  Subdirectories named ``CVS`` or
+  ``_darcs`` are excluded. Some operating systems or file systems are
+  more restrictive.  For example, Linux’s ext4 file system limits filenames
+  to 255 bytes.  The
+  default on NTFS (Windows) and HFS+ (MacOS X) file systems is to
+  disallow two files in the same directory with names that differ only in their
+  case.
+
+  Loading files from packages made available with `-Q` must include
+  the :term:`logical name` of the package in `From` clause of the :cmd:`Require`
+  command *or* provide a fully qualified name.
+
+:-R *directory dirpath*: Similar to ``-Q`` *directory dirpath*, but allows using
+  :cmd:`Require` with a partially qualified name (i.e. without a `From` clause).
+
 :-top *dirpath*: Set the logical module name to :n:`@dirpath` for the
   `coqtop` interactive session. If no module name is specified,
   `coqtop` will default to ``Top``. `coqc` does not accept this option

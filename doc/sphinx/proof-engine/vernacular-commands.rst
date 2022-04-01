@@ -347,7 +347,7 @@ described elsewhere
 
    This :term:`table` specifies a set of strings used to exclude lemmas from the results of :cmd:`Search`,
    :cmd:`SearchPattern` and :cmd:`SearchRewrite` queries.  A lemma whose
-   fully-qualified name contains any of the strings will be excluded from the
+   fully qualified name contains any of the strings will be excluded from the
    search results.  The default blacklisted substrings are ``_subterm``, ``_subproof`` and
    ``Private_``.
 
@@ -483,8 +483,8 @@ toplevel. This kind of file is called a *script* for Coq. The standard
 
    Loads a file.  If :n:`@ident` is specified, the command loads a file
    named :n:`@ident.v`, searching successively in
-   each of the directories specified in the *loadpath*. (see Section
-   :ref:`libraries-and-filesystem`)
+   each of the directories specified in the :term:`load path`. (see Section
+   :ref:`logical-paths-load-path`)
 
    If :n:`@string` is specified, it must specify a complete filename.
    `~` and .. abbreviations are
@@ -519,56 +519,67 @@ This section describes the commands used to load compiled files (see
 Chapter :ref:`thecoqcommands` for documentation on how to compile a file). A compiled
 file is a particular case of a module called a *library file*.
 
-
 .. cmd:: {? From @dirpath } Require {? {| Import | Export } {? @import_categories } } {+ @filtered_import }
    :name: From … Require; Require; Require Import; Require Export
 
-   Loads compiled files into the Coq environment. For each
-   :n:`@qualid`, the command looks in the loadpath for a compiled file
-   :n:`@ident.vo` in the file system whose logical name has the form
-   :n:`@dirpath.{* @ident. }@qualid` (if :n:`From @dirpath` is given) or
-   :n:`{* @ident. }@qualid` (if the optional `From` clause is absent). See
-   Section :ref:`libraries-and-filesystem` for more on loadpaths.
+   Loads compiled files into the Coq environment. For the first
+   :n:`@qualid` in each :n:`@filtered_import`, the command looks in the
+   :term:`load path` for a compiled file :n:`@ident.vo` whose
+   :term:`logical name` has the form :n:`@dirpath.{* @ident__implicit. }@qualid`
+   (if :n:`From @dirpath` is given) or :n:`{* @ident__implicit. }@qualid` (if
+   the optional `From` clause is absent). :n:`{* @ident__implicit. }` represents
+   the parts of the fully qualified name that are implicit.  For example,
+   `From Coq Require Nat` loads `Coq.Init.Nat` and `Init` is implicit.
+   :n:`@ident` is the final component of the :n:`@qualid`.
 
    If a file is found, its logical name must be the same as the one
    used to compile the file. Then the file is loaded as well as all
    the files it depends on (recursively). All the files must have
    been compiled with the same version of Coq.
 
-   * :n:`Import` - additionally does an :cmd:`Import` on the loaded module, making components defined
-     in the module available by their short names
-   * :n:`Export` - additionally does an :cmd:`Export` on the loaded module, making components defined
-     in the module available by their short names *and* marking them to be exported by the current
-     module
+   * :n:`Import` - additionally does an :cmd:`Import` on the loaded module,
+     making components defined in the module available by their short names
+   * :n:`Export` - additionally does an :cmd:`Export` on the loaded module,
+     making components defined in the module available by their short names
+     *and* marking them to be exported by the current module
 
    If the required file has already been loaded, it is not
    reloaded. If :n:`Import` or :n:`Export` are present, the command also does
    the equivalent of the :cmd:`Import` or :cmd:`Export` commands.
 
-   When looking for a file whose logical name has the form
-   :n:`@dirpath.{* @ident. }@qualid` or :n:`{* @ident. }@qualid`,
-   exact matches are preferred (that is, matches such that the implicit
-   segment :n:`{* @ident. }` is empty). If the name exactly matches in
-   multiple `-R` or `-Q` options, the file corresponding to the most
-   recent `-R` or `-Q` is used. If there is no exact match, the
+   A single file can be loaded with several variations of the `Require` command.
+   For example, the ``-Q path Lib`` command line parameter associates the file
+   ``path/Foo/File.vo`` with the logical name ``Lib.Foo.File``.  It allows this
+   file to be loaded through :n:`Require Lib.Foo.File`, :n:`From Lib Require Foo.File`,
+   :n:`From Lib Require File` or :n:`From Lib.Foo Require File`.  The `-R path Lib`
+   command line parameter allows loading the file with the additional alternatives
+   :n:`Require Foo.File` and :n:`Require File`  In particular,
+   `From` is useful to ensure that the file comes from a particular
+   package or subpackage.  Use of `-Q` is better for avoiding ambiguous
+   path names.
+
+   Exact matches are preferred when looking for a file with the logical name
+   :n:`@dirpath.{* @ident__implicit. }@qualid` or
+   :n:`{* @ident__implicit. }@qualid`
+   (that is, matches where the implicit part is empty). If the name exactly
+   matches in multiple `-R` or `-Q` options, the file corresponding to the most
+   recent `-R` or `-Q` is used.  If there is no exact match, the
    matches from the most recent `-R` or `-Q` are selected. If this
    results in a unique match, the corresponding file is selected. If
    this results in several matches, it is an error. The difference
    between the `-R` and the `-Q` option is that non-exact matches are
    allowed for `-Q` only if `From` is present, that is if a prefix is
-   given.
+   given.  Matching is done when the script is compiled
+   or processed rather than when its .vo file is loaded.  .vo files use
+   fully-qualified names.
 
-   For instance, ``-Q path Lib`` associates the file
-   ``path/Foo/File.vo`` with the logical name
-   ``Lib.Foo.File`` but allows this file to be accessed through
-   the name ``Lib.Foo.File`` when no `From` is given, with the
-   names ``Foo.File`` and ``File`` when :n:`From
-   Lib` is given, and with the name ``File`` when
-   :n:`From Lib.Foo` is given. Additionally, ``-R path Lib`` allows the
-   same file to be accessed through the names
-   ``Foo.File`` and ``File`` when no `From` is given. In particular,
-   `From` is useful to ensure that the file comes from a particular
-   package or subpackage.
+   Note that if the same logical name is given by multiple `-R` or `-Q` options,
+   the last one specified is used.  The output of :cmd:`Print LoadPath` will
+   show both options in last to first order (i.e., `Require` uses the first match
+   from the top).
+
+   We recommend you use `-R` only to refer to files in the same package.  Use `-Q`
+   (if necessary) to refer to files in a different package.
 
    .. exn:: Cannot load @qualid: no physical path bound to @dirpath.
       :undocumented:
@@ -577,7 +588,7 @@ file is a particular case of a module called a *library file*.
 
       The command did not find the
       file foo.vo. Either foo.v exists but is not compiled or foo.vo is in a
-      directory which is not in your loadpath (see Section :ref:`libraries-and-filesystem`).
+      directory which is not in your :term:`load path`.
 
    .. exn:: Required library @qualid matches several files in path (found file__1.vo, file__2.vo, ...).
 
@@ -601,10 +612,10 @@ file is a particular case of a module called a *library file*.
    .. exn:: The file @ident.vo contains library @qualid__1 and not library @qualid__2.
 
       The library :n:`@qualid__2` is indirectly required by a :cmd:`Require`.
-      The loadpath maps :n:`@qualid__2` to :n:`@ident.vo`,
-      which was compiled using a loadpath that bound it to :n:`@qualid__1`.  Usually
-      the appropriate solution is to recompile :n:`@ident.v` using the correct loadpath.
-      See :ref:`libraries-and-filesystem`.
+      The :term:`load path` maps :n:`@qualid__2` to :n:`@ident.vo`,
+      which was compiled using a load path that bound it to :n:`@qualid__1`.  Usually
+      the appropriate solution is to recompile :n:`@ident.v` using the correct
+      :term:`load path`.
 
    .. warn:: Require inside a module is deprecated and strongly discouraged. You can Require a module at toplevel and optionally Import it inside another one.
 
@@ -619,11 +630,10 @@ file is a particular case of a module called a *library file*.
 
 .. cmd:: Declare ML Module {+ @string }
 
-   Load an OCaml "plugin" and its dependencies
-   dynamically. :n:`@string` argument must be a valid `findlib
-   <http://projects.camlcity.org/projects/findlib.html>`_ library name,
-   for example ``coq-core.plugins.ltac``. The first component of the
-   plugin name is a package that has to be in scope of ``findlib``'s
+   Loads an OCaml plugin and its dependencies dynamically.  The :n:`@string`
+   argument must be a valid `findlib <http://projects.camlcity.org/projects/findlib.html>`_
+   plugin name, for example ``coq-core.plugins.ltac``. The first component of
+   the plugin name is a package that has to be in scope of ``findlib``'s'
    search path. As of Coq 8.16, the command also support a "legacy"
    syntax compatible with the plugin loading system used in Coq
    8.0-8.15, see below.
@@ -660,13 +670,11 @@ file is a particular case of a module called a *library file*.
    Print the name of all findlib libraries loaded with
    :cmd:`Declare ML Module`.
 
-.. _loadpath:
+Load paths
+----------
 
-Loadpath
-------------
-
-Loadpaths are preferably managed using Coq command line options (see
-Section :ref:`libraries-and-filesystem`), but there are also commands
+:term:`Load paths <load path>` are preferably managed using Coq command line options (see
+Section :ref:`logical-paths-load-path`), but there are also commands
 to manage them within Coq. These commands are only meant to be issued in
 the toplevel, and using them in source files is discouraged.
 
@@ -698,7 +706,7 @@ the toplevel, and using them in source files is discouraged.
       dirpath ::= {* @ident . } @ident
 
    This command is equivalent to the command line option
-   :n:`-Q @string @dirpath`. It adds a mapping to the loadpath from
+   :n:`-Q @string @dirpath`. It adds a mapping to the :term:`load path` from
    the logical name :n:`@dirpath` to the file system directory :n:`@string`.
 
    * :n:`@dirpath` is a prefix of a module name.  The module name hierarchy
@@ -711,19 +719,20 @@ the toplevel, and using them in source files is discouraged.
    .. deprecated:: 8.16
 
    This command is equivalent to the command line option
-   :n:`-R @string @dirpath`. It adds the physical directory string and all its
-   subdirectories to the current Coq loadpath.
+   :n:`-R @string @dirpath`. It adds the directory specified by the
+   :n:`@string`` and all its subdirectories to the current Coq :term:`load path`.
 
 
 .. cmd:: Remove LoadPath @string
 
-   This command removes the path :n:`@string` from the current Coq loadpath.
+   This command removes the path :n:`@string` from the current Coq :term:`load path`.
 
 
 .. cmd:: Print LoadPath {? @dirpath }
 
-   This command displays the current Coq loadpath.  If :n:`@dirpath` is specified,
-   displays only the paths that extend that prefix.
+   Displays the current Coq :term:`load path`.  If :n:`@dirpath` is specified,
+   displays only the paths that extend that prefix.  In the output,
+   the logical path `<>` represents an empty logical path.
 
 
 .. cmd:: Add ML Path @string
