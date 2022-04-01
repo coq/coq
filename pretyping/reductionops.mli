@@ -276,3 +276,6 @@ val meta_instance : env -> meta_instance_subst -> constr freelisted -> constr
 val nf_meta       : env -> evar_map -> constr -> constr
 
 exception AnomalyInConversion of exn
+
+(* inferred_universes just gathers the constraints. *)
+val inferred_universes : (UGraph.t * Univ.Constraints.t) Reduction.universe_compare

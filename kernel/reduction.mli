@@ -64,10 +64,8 @@ constructors. *)
 val convert_instances : flex:bool -> Univ.Instance.t -> Univ.Instance.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
 
-(** These two never raise UnivInconsistency, inferred_universes
-    just gathers the constraints. *)
+(** This function never raise UnivInconsistency. *)
 val checked_universes : UGraph.t universe_compare
-val inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare
 
 (** These two functions can only raise NotConvertible *)
 val conv : constr extended_conversion_function

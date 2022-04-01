@@ -577,7 +577,7 @@ let intern_arg (acc, cst) (idl,(typ,ann)) =
   let (mty, cst') = Modintern.interp_module_ast env kind base mty in
   let () = Global.push_context_set ~strict:true cst' in
   let () =
-    let state = ((Global.universes (), Univ.Constraints.empty), Reduction.inferred_universes) in
+    let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
     let _, (_, cst) = Mod_typing.translate_modtype state (Global.env ()) base inl ([], mty) in
     Global.add_constraints cst
   in
@@ -616,7 +616,7 @@ let intern_args params =
 
 let check_sub mtb sub_mtb_l =
   let fold sub_mtb (ocst, env) =
-    let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+    let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
     let _, cst = Subtyping.check_subtypes state env mtb sub_mtb in
     (Univ.Constraints.union ocst cst, Environ.add_constraints cst env)
   in
@@ -652,7 +652,7 @@ let build_subtypes env mp args mtys =
        let mte, ctx' = Modintern.interp_module_ast env Modintern.ModType base mte in
        let env = Environ.push_context_set ~strict:true ctx' env in
        let ctx = Univ.ContextSet.union ctx ctx' in
-       let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+       let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
        let mtb, (_, cst) = Mod_typing.translate_modtype state env mp inl (args,mte) in
        let ctx = Univ.ContextSet.add_constraints cst ctx in
        ctx, mtb)
@@ -707,7 +707,7 @@ let start_module export id args res fs =
         let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
-        let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+        let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
         let _, _, _, (_, cst) = Mod_typing.translate_mse state env None inl mte in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some (mte, inl), [], ctx
@@ -736,7 +736,7 @@ let end_module () =
 
   let struc = current_struct () in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) m_info.cur_typ in
-  let state = ((Global.universes (), Univ.Constraints.empty), Reduction.inferred_universes) in
+  let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
   let _, (_, cst) =
     Mod_typing.finalize_module state (Global.env ()) (Global.current_modpath ())
       (struc, None, current_modresolver ()) restype'
@@ -784,7 +784,7 @@ let declare_module id args res mexpr_o fs =
         let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
-        let state = ((Environ.universes env, Univ.Constraints.empty), Reduction.inferred_universes) in
+        let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
         let _, _, _, (_, cst) = Mod_typing.translate_mse state env None inl mte in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some mte, [], inl, ctx
@@ -822,7 +822,7 @@ let declare_module id args res mexpr_o fs =
   | _ -> inl_res
   in
   let () = Global.push_context_set ~strict:true ctx in
-  let state = ((Global.universes (), Univ.Constraints.empty), Reduction.inferred_universes) in
+  let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
   let _, (_, cst) = Mod_typing.translate_module state (Global.env ()) mp inl entry in
   let () = Global.add_constraints cst in
   let mp_env,resolver = Global.add_module id entry inl in
@@ -883,7 +883,7 @@ let declare_modtype id args mtys (mty,ann) fs =
   let () = Global.push_context_set ~strict:true mte_ctx in
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
-  let state = ((Global.universes (), Univ.Constraints.empty), Reduction.inferred_universes) in
+  let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
   let _, _, _, (_, mte_cst) = Mod_typing.translate_mse state env None inl mte in
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let env = Global.env () in
@@ -970,7 +970,7 @@ let declare_one_include (me_ast,annot) =
   in
   let base_mp = get_module_path me in
 
-  let state = ((Global.universes (), Univ.Constraints.empty), Reduction.inferred_universes) in
+  let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
   let sign, (), resolver, (_, cst) =
     Mod_typing.translate_mse_include is_mod state (Global.env ()) (Global.current_modpath ()) inl me
   in
@@ -980,7 +980,7 @@ let declare_one_include (me_ast,annot) =
   let rec compute_sign sign mb resolver =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
-      let state = ((Global.universes (), Univ.Constraints.empty), Reduction.inferred_universes) in
+      let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
       let (_, cst) = Subtyping.check_subtypes state (Global.env ()) mb mtb in
       let () = Global.add_constraints cst in
       let mpsup_delta =

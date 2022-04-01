@@ -914,39 +914,6 @@ let () =
   in
   CClosure.set_conv conv
 
-let infer_eq (univs, cstrs as cuniv) u u' =
-  if UGraph.check_eq_sort univs u u' then cuniv
-  else
-    univs, (UGraph.enforce_eq_sort u u' cstrs)
-
-let infer_leq (univs, cstrs as cuniv) u u' =
-  if UGraph.check_leq_sort univs u u' then cuniv
-  else
-    let cstrs', _ = UGraph.enforce_leq_alg_sort u u' univs in
-      univs, Univ.Constraints.union cstrs cstrs'
-
-let infer_cmp_universes _env pb s0 s1 univs =
-  match pb with
-  | CUMUL -> infer_leq univs s0 s1
-  | CONV -> infer_eq univs s0 s1
-
-let infer_convert_instances ~flex u u' (univs,cstrs) =
-  let cstrs' =
-    if flex then
-      if UGraph.check_eq_instances univs u u' then cstrs
-      else raise NotConvertible
-    else Univ.enforce_eq_instances u u' cstrs
-  in (univs, cstrs')
-
-let infer_inductive_instances cv_pb variance u1 u2 (univs,csts') =
-  let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  (univs, Univ.Constraints.union csts csts')
-
-let inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare =
-  { compare_sorts = infer_cmp_universes;
-    compare_instances = infer_convert_instances;
-    compare_cumul_instances = infer_inductive_instances; }
-
 let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _ -> None)) t1 t2 =
   let univs = Environ.universes env in
   let b =
