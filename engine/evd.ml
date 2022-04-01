@@ -1510,6 +1510,7 @@ module MiniEConstr = struct
     let open Constr in
     let open UnivSubst in
     let subst = universe_subst sigma in
+    let is_empty_subst = Univ.Level.Map.for_all (fun _ v -> Option.is_empty v) subst in
     let subst = normalize_univ_variable_opt_subst subst in
     let lsubst = level_subst_of subst in
     let subst_puniverses (c, u as cu) =
@@ -1529,12 +1530,20 @@ module MiniEConstr = struct
           let args' = List.Smart.map (fun c -> aux kvars c) args in
           if args == args' then c else mkEvar (evk, args')
         | Some (info, c) ->
-          let ctx = evar_filtered_context info in
-          let fold accu decl arg =
-            let r = lazy (Vars.make_substituend (aux kvars arg)) in
-            Id.Map.add (NamedDecl.get_id decl) r accu
+          let vars =
+            if Id.Map.is_empty (fst kvars) && Identity.is_identity args info.evar_identity then
+              Id.Map.empty
+            else
+              let ctx = evar_filtered_context info in
+              let fold accu decl arg =
+                let id = NamedDecl.get_id decl in
+                if isVarId id arg && not (Id.Map.mem id (fst kvars)) then accu
+                else
+                  let r = lazy (Vars.make_substituend (aux kvars arg)) in
+                  Id.Map.add id r accu
+              in
+              List.fold_left2 fold Id.Map.empty ctx args
           in
-          let vars = List.fold_left2 fold Id.Map.empty ctx args in
           aux (vars, 0) c
         end
       | Var id ->
@@ -1544,17 +1553,25 @@ module MiniEConstr = struct
         | Some (lazy c) -> Vars.lift_substituend k c
         end
       | Const pu ->
-        let pu' = subst_puniverses pu in
-        if pu' == pu then c else mkConstU pu'
+        if is_empty_subst then c
+        else
+          let pu' = subst_puniverses pu in
+          if pu' == pu then c else mkConstU pu'
       | Ind pu ->
-        let pu' = subst_puniverses pu in
-        if pu' == pu then c else mkIndU pu'
+        if is_empty_subst then c
+        else
+          let pu' = subst_puniverses pu in
+          if pu' == pu then c else mkIndU pu'
       | Construct pu ->
-        let pu' = subst_puniverses pu in
-        if pu' == pu then c else mkConstructU pu'
+        if is_empty_subst then c
+        else
+          let pu' = subst_puniverses pu in
+          if pu' == pu then c else mkConstructU pu'
       | Sort (Type u) ->
-        let u' = UnivSubst.subst_univs_universe subst u in
-        if u' == u then c else mkSort (sort_of_univ u')
+        if is_empty_subst then c
+        else
+          let u' = UnivSubst.subst_univs_universe subst u in
+          if u' == u then c else mkSort (sort_of_univ u')
       | Case (ci,u,pms,p,iv,t,br) ->
         let lift (vars, k) = (vars, k + 1) in
         let u' = UnivSubst.subst_instance lsubst u in
