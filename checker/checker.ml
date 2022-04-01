@@ -198,7 +198,7 @@ let print_usage_channel co command =
 \n  -impredicative-set          set sort Set impredicative\
 \n  -indices-matter             levels of indices (and nonuniform parameters)\
 \n                              contribute to the level of inductives\
-\n  -bytecode-compiler (yes|no) enable the vm_compute reduction machine\
+\n  -bytecode-compiler (yes|no) enable the vm_compute reduction machine (default is no)\
 \n\
 \n  -h, --help                  print this list of options\
 \n"
