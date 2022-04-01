@@ -967,21 +967,6 @@ let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
     clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2
   in s
 
-let infer_conv_universes cv_pb ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full) env t1 t2 =
-  let univs = Environ.universes env in
-  let b, cstrs =
-    if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2
-    else Constr.eq_constr_univs_infer univs t1 t2
-  in
-    if b then cstrs
-    else
-      let state = ((univs, Univ.Constraints.empty), inferred_universes) in
-      let ((_,cstrs), _) = clos_gen_conv ts cv_pb l2r evars env univs state t1 t2 in
-        cstrs
-
-let infer_conv = infer_conv_universes CONV
-let infer_conv_leq = infer_conv_universes CUMUL
-
 let default_conv cv_pb env t1 t2 =
     gen_conv cv_pb env t1 t2
 
