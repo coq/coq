@@ -166,23 +166,43 @@ let warning_ml_clash x s suff s' suff' =
     (match s with None -> "." | Some d -> d)
     System.((match s' with None -> "." | Some d -> d) // x) suff
 
-let mkknown () =
-  let h = (Hashtbl.create 19 : (string, dir * string) Hashtbl.t) in
-  let add x s suff =
-    try let s',suff' = Hashtbl.find h x in warning_ml_clash x s' suff' s suff
-    with Not_found -> Hashtbl.add h x (s,suff)
-  and iter f = Hashtbl.iter (fun x (s,_) -> f x s) h
-  and search x =
-    try Some (fst (Hashtbl.find h x))
-    with Not_found -> None
-  in add, iter, search
-
-let add_mllib_known, _, search_mllib_known = mkknown ()
-let add_mlpack_known, _, search_mlpack_known = mkknown ()
-
 type result =
   | ExactMatches of filename list
   | PartialMatchesInSameRoot of root * filename list
+
+module State = struct
+
+  type t =
+    { mllib : (string, dir * string) Hashtbl.t
+    ; mlpack : (string, dir * string) Hashtbl.t
+    ; vfiles : (dirpath * dirpath, result) Hashtbl.t
+    ; coqlib : (dirpath * dirpath, result) Hashtbl.t
+    ; other : (dirpath * dirpath, result) Hashtbl.t
+    }
+
+  let make () =
+    { mllib = Hashtbl.create 19
+    ; mlpack = Hashtbl.create 19
+    ; vfiles = Hashtbl.create 19
+    ; coqlib = Hashtbl.create 19
+    ; other = Hashtbl.create 19
+    }
+
+  let gen_add h x s suff =
+    try
+      let s',suff' = Hashtbl.find h x in warning_ml_clash x s' suff' s suff
+    with Not_found -> Hashtbl.add h x (s,suff)
+
+  let gen_search h x =
+    try Some (fst (Hashtbl.find h x))
+    with Not_found -> None
+
+end
+
+let add_mllib_known { State.mllib ; _ } = State.gen_add mllib
+let search_mllib_known { State.mllib ; _ } = State.gen_search mllib
+let add_mlpack_known { State.mlpack ; _ } = State.gen_add mlpack
+let search_mlpack_known { State.mlpack ; _ } = State.gen_search mlpack
 
 let add_set f l = f :: CList.remove compare_file f l
 
@@ -205,32 +225,26 @@ let safe_add_key q root key (full,f as file) =
 let safe_add q root ((from, suffixes), file) =
   List.iter (fun (full,suff) -> safe_add_key q root (from,suff) (full,file)) suffixes
 
-
-let vKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
-(* The associated boolean is true if this is a root path. *)
-let coqlibKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
-let otherKnown = (Hashtbl.create 19 : (dirpath * dirpath, result) Hashtbl.t)
-
 let search_table table ?(from=[]) s =
   Hashtbl.find table (from, s)
 
-let search_v_known ?from s =
-  try Some (search_table vKnown ?from s)
+let search_v_known st ?from s =
+  try Some (search_table st.State.vfiles ?from s)
   with Not_found -> None
 
-let search_other_known ?from s =
-  try Some (search_table otherKnown ?from s)
+let search_other_known st ?from s =
+  try Some (search_table st.State.other ?from s)
   with Not_found -> None
 
-let is_in_coqlib ?from s =
-  try let _ = search_table coqlibKnown ?from s in true with Not_found -> false
+let is_in_coqlib st ?from s =
+  try let _ = search_table st.State.coqlib ?from s in true with Not_found -> false
 
-let add_caml_known _ phys_dir _ f =
+let add_caml_known st _ phys_dir _ f =
   let basename,suff =
     get_extension f [".mllib"; ".mlpack"] in
   match suff with
-    | ".mllib" -> add_mllib_known basename (Some phys_dir) suff
-    | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
+    | ".mllib" -> add_mllib_known st basename (Some phys_dir) suff
+    | ".mlpack" -> add_mlpack_known st basename (Some phys_dir) suff
     | _ -> ()
 
 let add_paths recur root table phys_dir log_dir basename =
@@ -240,21 +254,21 @@ let add_paths recur root table phys_dir log_dir basename =
   let iter n = safe_add table root (n, file) in
   List.iter iter paths
 
-let add_coqlib_known recur root phys_dir log_dir f =
+let add_coqlib_known st recur root phys_dir log_dir f =
   let root = (phys_dir, log_dir) in
   match get_extension f [".vo"; ".vio"; ".vos"] with
     | (basename, (".vo" | ".vio" | ".vos")) ->
-        add_paths recur root coqlibKnown phys_dir log_dir basename
+        add_paths recur root st.State.coqlib phys_dir log_dir basename
     | _ -> ()
 
-let add_known recur root phys_dir log_dir f =
+let add_known st recur root phys_dir log_dir f =
   match get_extension f [".v"; ".vo"; ".vio"; ".vos"] with
     | (basename,".v") ->
-        add_paths recur root vKnown phys_dir log_dir basename
+        add_paths recur root st.State.vfiles phys_dir log_dir basename
     | (basename, (".vo" | ".vio" | ".vos")) when not(!Options.boot) ->
-        add_paths recur root vKnown phys_dir log_dir basename
+        add_paths recur root st.State.vfiles phys_dir log_dir basename
     | (f,_) ->
-        add_paths recur root otherKnown phys_dir log_dir f
+        add_paths recur root st.State.other phys_dir log_dir f
 
 (** Simply add this directory and imports it, no subdirs. This is used
     by the implicit adding of the current path (which is not recursive). *)
@@ -270,10 +284,11 @@ let add_rec_dir_import add_file phys_dir log_dir =
   add_directory true (add_file true) phys_dir log_dir
 
 (** -I semantic: do not go in subdirs. *)
-let add_caml_dir phys_dir =
-  add_directory false add_caml_known phys_dir []
+let add_caml_dir st phys_dir =
+  add_directory false (add_caml_known st) phys_dir []
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
 
-let add_q_include path l = add_rec_dir_no_import add_known path (split_period l)
-let add_r_include path l = add_rec_dir_import add_known path (split_period l)
+let add_current_dir st dir = add_norec_dir_import (add_known st) dir []
+let add_q_include st path l = add_rec_dir_no_import (add_known st) path (split_period l)
+let add_r_include st path l = add_rec_dir_import (add_known st) path (split_period l)
