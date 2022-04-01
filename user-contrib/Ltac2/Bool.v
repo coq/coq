@@ -77,8 +77,3 @@ Ltac2 Notation x(self) "||" y(thunk(self)) : 3 :=
   | true => true
   | false => y ()
   end.
-
-(** * Compatibility notations *)
-
-#[deprecated(note="Use Bool.equal", since="8.14")]
-Ltac2 eq := equal.

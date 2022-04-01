@@ -315,15 +315,3 @@ Module Uint63Cyclic <: CyclicType.
   Definition ops := int_ops.
   Definition specs := int_specs.
 End Uint63Cyclic.
-
-Module Int63Cyclic <: CyclicType.
-  (* #[deprecated(since="8.14",note="Use Uint63Cyclic.t instead.")] *)
-  Definition t := int.
-  (* #[deprecated(since="8.14",note="Use Uint63Cyclic.ops instead.")] *)
-  Definition ops := int_ops.
-  (* #[deprecated(since="8.14",note="Use Uint63Cyclic.specs instead.")] *)
-  Definition specs := int_specs.
-End Int63Cyclic.
-
-#[deprecated(since="8.14",note="Use the uint63_scope instead.")]
-Notation "n '*c' m" := (mulc_WW n m) (at level 40, no associativity) : int63_scope.

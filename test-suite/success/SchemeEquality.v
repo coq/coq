@@ -149,7 +149,7 @@ Module K.
   Fail Scheme Boolean Equality for K3.
 End K.
 
-Require Int63 Floats.
+Require Uint63 Floats.
 
 Module ElpiTestSuite.
 
@@ -209,7 +209,7 @@ Inductive large :=
 | K26(_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool) (_ : bool).
 Scheme Equality for large.
 
-Inductive prim_int := PI (i : Int63.int).
+Inductive prim_int := PI (i : Uint63.int).
 Scheme Boolean Equality for prim_int.
 
 Inductive prim_float := PF (f : PrimFloat.float).

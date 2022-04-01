@@ -13,10 +13,10 @@ Definition f6 := infinity.
 Definition f7 := neg_infinity.
 Definition f8 := Eval compute in Z.ldexp one (-1).
 Definition f9 := Eval compute in -f8.
-Definition f10 := Eval compute in of_int63 42.
+Definition f10 := Eval compute in of_uint63 42.
 Definition f11 := Eval compute in -f10.
 (* max float *)
-Definition f12 := Eval compute in Z.ldexp (of_int63 9007199254740991) 1024.
+Definition f12 := Eval compute in Z.ldexp (of_uint63 9007199254740991) 1024.
 Definition f13 := Eval compute in -f12.
 (* smallest positive normalized float *)
 Definition f14 := Eval compute in Z.ldexp one (-1022).

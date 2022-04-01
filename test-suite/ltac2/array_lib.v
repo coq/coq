@@ -15,7 +15,7 @@ Ltac2 check_eq_int a l :=
 
 Ltac2 check_eq_bool a l :=
   List.iter2
-    (fun a b => match Bool.eq a b with true => () | false => Control.throw Regression_Test_Failure end)
+    (fun a b => match Bool.equal a b with true => () | false => Control.throw Regression_Test_Failure end)
     (to_list a) l.
 
 Ltac2 check_eq_int_matrix m ll :=

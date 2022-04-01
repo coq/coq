@@ -363,7 +363,7 @@ let unparsing_metavar i from typs =
   match x with
   | ETConstr _ | ETGlobal | ETBigint ->
      UnpMetaVar (prec,side)
-  | ETPattern _ | ETName _ | ETIdent ->
+  | ETPattern _ | ETName | ETIdent ->
      UnpBinderMetaVar (prec,NotQuotedPattern)
   | ETBinder isopen ->
      UnpBinderMetaVar (prec,QuotedPattern)
@@ -636,7 +636,7 @@ let include_possible_similar_trailing_pattern typ etyps sl l =
 
 let prod_entry_type = function
   | ETIdent -> ETProdIdent
-  | ETName _ -> ETProdName
+  | ETName -> ETProdName
   | ETGlobal -> ETProdGlobal
   | ETBigint -> ETProdBigint
   | ETBinder o -> ETProdOneBinder o
@@ -899,12 +899,7 @@ let check_custom_entry entry =
 let check_entry_type = function
   | ETConstr (InCustomEntry entry,_,_) -> check_custom_entry entry
   | ETConstr (InConstrEntry,_,_) | ETPattern _
-  | ETIdent | ETGlobal | ETBigint | ETName _ | ETBinder _-> ()
-
-(* To be turned into a fatal warning in 8.14 *)
-let warn_deprecated_ident_entry =
-  CWarnings.create ~name:"deprecated-ident-entry" ~category:"deprecated"
-         (fun () -> strbrk "grammar entry \"ident\" permitted \"_\" in addition to proper identifiers; this use is deprecated and its meaning will change in the future; use \"name\" instead.")
+  | ETIdent | ETGlobal | ETBigint | ETName | ETBinder _-> ()
 
 let interp_modifiers entry modl = let open NotationMods in
   let rec interp subtyps acc = function
@@ -955,12 +950,6 @@ let interp_modifiers entry modl = let open NotationMods in
   (* interpret item levels wrt to main entry *)
   let extra_etyps = List.map (fun (id,bko,n) -> (id,ETConstr (entry,bko,n))) subtyps in
   (* Temporary hack: "ETName false" (i.e. "ident" in deprecation phase) means "ETIdent" for custom entries *)
-  let mods =
-    { mods with etyps = List.map (function
-        | (id,ETName false) ->
-           if entry = InConstrEntry then (warn_deprecated_ident_entry (); (id,ETName true))
-           else (id,ETIdent)
-        | x -> x) mods.etyps } in
   { mods with etyps = extra_etyps@mods.etyps }
 
 let check_useless_entry_types recvars mainvars etyps =
@@ -1079,7 +1068,7 @@ let set_entry_type from n etyps (x,typ) =
       | ETConstr (s,bko,n), InternalProd ->
           ETConstr (s,bko,(n,InternalProd))
       | ETPattern (b,n), _ -> ETPattern (b,n)
-      | (ETIdent | ETName _ | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
+      | (ETIdent | ETName | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
     with Not_found ->
       ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)
@@ -1102,7 +1091,7 @@ let join_auxiliary_recursive_types recvars etyps =
 let internalization_type_of_entry_type = function
   | ETBinder _ -> NtnInternTypeOnlyBinder
   | ETConstr _ | ETBigint | ETGlobal
-  | ETIdent | ETName _ | ETPattern _ -> NtnInternTypeAny None
+  | ETIdent | ETName | ETPattern _ -> NtnInternTypeAny None
 
 let make_internalization_vars recvars maintyps =
   let maintyps = List.map (on_snd internalization_type_of_entry_type) maintyps in
@@ -1119,7 +1108,7 @@ let make_interpretation_type isrec isonlybinding default_if_binding = function
   | ETConstr (_,None,_) -> NtnTypeConstr
   (* Others *)
   | ETIdent -> NtnTypeBinder NtnParsedAsIdent
-  | ETName _ -> NtnTypeBinder NtnParsedAsName
+  | ETName -> NtnTypeBinder NtnParsedAsName
   | ETPattern (ppstrict,_) -> NtnTypeBinder (NtnParsedAsPattern ppstrict) (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
   | ETBigint | ETGlobal -> NtnTypeConstr
   | ETBinder _ ->
@@ -1239,7 +1228,7 @@ let find_precedence custom lev etyps symbols onlyprint =
           user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps, custom with
         | ETConstr (s,_,(NumLevel _ | NextLevel)), s' when s = s' -> test ()
-        | (ETIdent | ETName _ | ETBigint | ETGlobal), _ ->
+        | (ETIdent | ETName | ETBigint | ETGlobal), _ ->
             begin match lev with
             | None ->
               ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")],0)

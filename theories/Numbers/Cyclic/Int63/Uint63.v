@@ -1887,22 +1887,9 @@ Proof.
   now rewrite Z.mod_small by apply to_Z_bounded.
 Qed.
 
-
 Module Export Uint63Notations.
   Local Open Scope uint63_scope.
   Export Uint63NotationsInternalB.
   Export Uint63NotationsInternalC.
   Export Uint63NotationsInternalD.
 End Uint63Notations.
-
-Module Deprecated. (* as of Coq 8.14 *)
-
-  (* use Z.div_lt_upper_bound instead *)
-  Lemma Z_lt_div2 x y : x < 2 * y -> x / 2 < y.
-  Proof. apply Z.div_lt_upper_bound; reflexivity. Qed.
-
-  (* use negb_sym instead *)
-  Lemma negbE a b : a = negb b → negb a = b.
-  Proof. intros ->; apply negb_involutive. Qed.
-
-End Deprecated.

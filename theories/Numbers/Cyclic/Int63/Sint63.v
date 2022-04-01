@@ -11,7 +11,6 @@
 Require Import ZArith.
 Import Znumtheory.
 Require Export Uint63.
-Require Int63.
 Require Import Lia.
 
 Declare Scope sint63_scope.
@@ -35,18 +34,18 @@ Bind Scope sint63_scope with int.
 End Sint63NotationsInternalA.
 
 Module Import Sint63NotationsInternalB.
-Infix "<<" := Int63.lsl (at level 30, no associativity) : sint63_scope.
+Infix "<<" := PrimInt63.lsl (at level 30, no associativity) : sint63_scope.
 (* TODO do we want >> to be asr or lsr? And is there a notation for the other one? *)
 Infix ">>" := asr (at level 30, no associativity) : sint63_scope.
-Infix "land" := Int63.land (at level 40, left associativity) : sint63_scope.
-Infix "lor" := Int63.lor (at level 40, left associativity) : sint63_scope.
-Infix "lxor" := Int63.lxor (at level 40, left associativity) : sint63_scope.
-Infix "+" := Int63.add : sint63_scope.
-Infix "-" := Int63.sub : sint63_scope.
-Infix "*" := Int63.mul : sint63_scope.
+Infix "land" := PrimInt63.land (at level 40, left associativity) : sint63_scope.
+Infix "lor" := PrimInt63.lor (at level 40, left associativity) : sint63_scope.
+Infix "lxor" := PrimInt63.lxor (at level 40, left associativity) : sint63_scope.
+Infix "+" := PrimInt63.add : sint63_scope.
+Infix "-" := PrimInt63.sub : sint63_scope.
+Infix "*" := PrimInt63.mul : sint63_scope.
 Infix "/" := divs : sint63_scope.
 Infix "mod" := mods (at level 40, no associativity) : sint63_scope.
-Infix "=?" := Int63.eqb (at level 70, no associativity) : sint63_scope.
+Infix "=?" := PrimInt63.eqb (at level 70, no associativity) : sint63_scope.
 Infix "<?" := ltsb (at level 70, no associativity) : sint63_scope.
 Infix "<=?" := lesb (at level 70, no associativity) : sint63_scope.
 Infix "≤?" := lesb (at level 70, no associativity) : sint63_scope.

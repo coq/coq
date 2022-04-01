@@ -32,7 +32,7 @@ let production_level_eq lev1 lev2 =
 
 type 'a constr_entry_key_gen =
   | ETIdent
-  | ETName of bool (* Temporary: true = user told "name", false = user wrote "ident" *)
+  | ETName
   | ETGlobal
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
@@ -41,14 +41,14 @@ type 'a constr_entry_key_gen =
 
 let constr_entry_key_eq v1 v2 = match v1, v2 with
   | ETIdent, ETIdent -> true
-  | ETName _, ETName _ -> true
+  | ETName, ETName -> true
   | ETGlobal, ETGlobal -> true
   | ETBigint, ETBigint -> true
   | ETBinder b1, ETBinder b2 -> b1 == b2
   | ETConstr (s1,bko1,_lev1), ETConstr (s2,bko2,_lev2) ->
     Notation.notation_entry_eq s1 s2 && Option.equal (=) bko1 bko2
   | ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
-  | (ETIdent | ETName _ | ETGlobal | ETBigint | ETBinder _ | ETConstr _ | ETPattern _), _ -> false
+  | (ETIdent | ETName | ETGlobal | ETBigint | ETBinder _ | ETConstr _ | ETPattern _), _ -> false
 
 (** Entries level (left-hand side of grammar rules) *)
 

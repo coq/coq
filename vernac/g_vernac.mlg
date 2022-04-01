@@ -1265,12 +1265,8 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   explicit_subentry:
-    [ [ (* Warning to be turn into an error at the end of deprecation phase (for 8.14) *)
-        IDENT "ident" -> { ETName false }
-        (* To be activated at the end of transitory phase (for 8.15)
-      | IDENT "ident" -> { ETIdent }
-        *)
-      | IDENT "name" -> { ETName true } (* Boolean to remove at the end of transitory phase *)
+    [ [ IDENT "ident" -> { ETIdent }
+      | IDENT "name" -> { ETName }
       | IDENT "global" -> { ETGlobal }
       | IDENT "bigint" -> { ETBigint }
       | IDENT "binder" -> { ETBinder true }
