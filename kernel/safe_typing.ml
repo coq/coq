@@ -1223,26 +1223,23 @@ let add_include me is_module inl senv =
     translate_mse_include is_module state senv.env mp_sup inl me
   in
   (* Include Self support  *)
-  let rec compute_sign sign mb resolver senv =
+  let struc = NoFunctor (List.rev senv.revstruct) in
+  let mb = build_mtb mp_sup struc senv.modresolver in
+  let rec compute_sign sign resolver =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
       let state = check_state senv in
       let (_ : UGraph.t) = Subtyping.check_subtypes state senv.env mb mtb in
       let mpsup_delta =
-        Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
+        Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb senv.modresolver
       in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
-      compute_sign (Modops.subst_signature subst str) mb resolver senv
-    | NoFunctor str -> resolver,str,senv
+      compute_sign (Modops.subst_signature subst str) resolver
+    | NoFunctor str -> resolver, str
   in
-  let resolver,str,senv =
-    let struc = NoFunctor (List.rev senv.revstruct) in
-    let mtb = build_mtb mp_sup struc senv.modresolver in
-    compute_sign sign mtb resolver senv
-  in
-  let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv
-  in
+  let resolver, str = compute_sign sign resolver in
+  let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv in
   let add senv ((l,elem) as field) =
     let new_name = match elem with
       | SFBconst _ ->
