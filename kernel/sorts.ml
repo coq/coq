@@ -14,16 +14,27 @@ type family = InSProp | InProp | InSet | InType
 
 let all_families = [InSProp; InProp; InSet; InType]
 
+module QVar =
+struct
+  type t = int
+  let make n = n
+  let repr n = n
+  let compare = Int.compare
+  let equal = Int.equal
+end
+
 type t =
   | SProp
   | Prop
   | Set
   | Type of Universe.t
+  | QSort of QVar.t * Universe.t
 
 let sprop = SProp
 let prop = Prop
 let set = Set
 let type1 = Type Universe.type1
+let qsort q u = QSort (q, u)
 
 let sort_of_univ u =
   if Universe.is_type0 u then set else Type u
@@ -32,48 +43,54 @@ let compare s1 s2 =
   if s1 == s2 then 0 else
     match s1, s2 with
     | SProp, SProp -> 0
-    | SProp, (Prop | Set | Type _) -> -1
-    | (Prop | Set | Type _), SProp -> 1
+    | SProp, (Prop | Set | Type _ | QSort _) -> -1
+    | (Prop | Set | Type _ | QSort _), SProp -> 1
     | Prop, Prop -> 0
-    | Prop, (Set | Type _) -> -1
+    | Prop, (Set | Type _ | QSort _) -> -1
     | Set, Prop -> 1
     | Set, Set -> 0
-    | Set, Type _ -> -1
+    | Set, (Type _ | QSort _) -> -1
+    | Type _, QSort _ -> -1
     | Type u1, Type u2 -> Universe.compare u1 u2
     | Type _, (Prop | Set) -> 1
+    | QSort (q1, u1), QSort (q2, u2) ->
+      let c = QVar.compare q1 q2 in
+      if Int.equal c 0 then Universe.compare u1 u2 else c
+    | QSort _, (Prop | Set | Type _) -> 1
 
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
 let super = function
   | SProp | Prop | Set -> Type (Universe.type1)
-  | Type u -> Type (Universe.super u)
+  | Type u | QSort (_, u) -> Type (Universe.super u)
 
 let is_sprop = function
   | SProp -> true
-  | Prop | Set | Type _ -> false
+  | Prop | Set | Type _ | QSort _ -> false
 
 let is_prop = function
   | Prop -> true
-  | SProp | Set | Type _ -> false
+  | SProp | Set | Type _ | QSort _-> false
 
 let is_set = function
   | Set -> true
-  | SProp | Prop | Type _ -> false
+  | SProp | Prop | Type _ | QSort _ -> false
 
 let is_small = function
   | SProp | Prop | Set -> true
-  | Type _ -> false
+  | Type _ | QSort _ -> false
 
 let levels s = match s with
 | SProp | Prop -> Level.Set.empty
 | Set -> Level.Set.singleton Level.set
-| Type u -> Universe.levels u
+| Type u | QSort (_, u) -> Universe.levels u
 
 let family = function
   | SProp -> InSProp
   | Prop -> InProp
   | Set -> InSet
   | Type _ -> InType
+  | QSort _ -> assert false (* FIXME ? *)
 
 let family_compare a b = match a,b with
   | InSProp, InSProp -> 0
@@ -100,6 +117,10 @@ let hash = function
   | Type u ->
     let h = Univ.Universe.hash u in
     combinesmall 2 h
+  | QSort (q, u) ->
+    let h = Univ.Universe.hash u in
+    let h' = QVar.repr q in
+    combinesmall 3 (combine h h')
 
 module Hsorts =
   Hashcons.Make(
@@ -112,11 +133,15 @@ module Hsorts =
         | Type u as c ->
           let u' = huniv u in
             if u' == u then c else Type u'
-        | s -> s
+        | QSort (q, u) as c ->
+          let u' = huniv u in
+          if u' == u then c else QSort (q, u)
+        | SProp | Prop | Set as s -> s
       let eq s1 s2 = match (s1,s2) with
-        | Prop, Prop | Set, Set -> true
+        | SProp, SProp | Prop, Prop | Set, Set -> true
         | (Type u1, Type u2) -> u1 == u2
-        |_ -> false
+        | QSort (q1, u1), QSort (q2, u2) -> q1 == q2 && u1 == u2
+        | (SProp | Prop | Set | Type _ | QSort _), _ -> false
 
       let hash = hash
     end)
@@ -147,6 +172,7 @@ let debug_print = function
   | Prop -> Pp.(str "Prop")
   | Set -> Pp.(str "Set")
   | Type u -> Pp.(str "Type(" ++ Univ.Universe.pr u ++ str ")")
+  | QSort (q, u) -> Pp.(str "QSort(" ++ int (QVar.repr q) ++ str ", " ++ Univ.Universe.pr u ++ str ")")
 
 let pr_sort_family = function
   | InSProp -> Pp.(str "SProp")

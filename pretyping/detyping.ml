@@ -744,7 +744,7 @@ let detype_sort sigma = function
   | SProp -> UNamed [GSProp,0]
   | Prop -> UNamed [GProp,0]
   | Set -> UNamed [GSet,0]
-  | Type u ->
+  | Type u | QSort (_, u) (* FIXME? *) ->
       (if !print_universes
        then UNamed (detype_universe sigma u)
        else UAnonymous {rigid=true})

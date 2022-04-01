@@ -1931,7 +1931,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
        main branch, knowing that the default impossible case shall
        always be coercible to one of those *)
       sigma, s
-  | Type _ ->
+  | Type _ | QSort _ ->
     (* If the sort has algebraic universes, we cannot use this sort a
        type constraint for the impossible case; especially if the
        default case is not the canonical one provided in Prop by Coq

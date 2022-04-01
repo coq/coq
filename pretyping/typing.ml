@@ -254,6 +254,14 @@ let judge_of_type u =
     { uj_val = EConstr.mkType u;
       uj_type = EConstr.mkType uu }
 
+let judge_of_sort s =
+  let open Sorts in
+  let u = match s with
+  | Prop | SProp | Set -> Univ.Universe.type1
+  | Type u | QSort (_, u) -> Univ.Universe.super u
+  in
+  { uj_val = EConstr.mkSort (ESorts.make s); uj_type = EConstr.mkType u }
+
 let judge_of_relative env v =
   Environ.on_judgment EConstr.of_constr (judge_of_relative env v)
 
@@ -421,6 +429,7 @@ let rec execute env sigma cstr =
         | Prop -> sigma, judge_of_prop
         | Set -> sigma, judge_of_set
         | Type u -> sigma, judge_of_type u
+        | QSort _ as s -> sigma, judge_of_sort s
       end
 
     | Proj (p, c) ->

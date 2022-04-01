@@ -81,38 +81,53 @@ let enforce_leq u v c =
   else enforce_leq (Universe.repr u) (Universe.repr v) c
 
 let get_algebraic = function
-| Prop | SProp -> assert false
+| Prop | SProp | QSort _ -> assert false
 | Set -> Universe.type0
 | Type u -> u
 
 let enforce_eq_sort s1 s2 cst = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
+| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
+| ((Prop | SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
   raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   enforce_eq (get_algebraic s1) (get_algebraic s2) cst
+| QSort (q1, u1), QSort (q2, u2) ->
+  if QVar.equal q1 q2 then enforce_eq u1 u2 cst
+  else raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
+| (QSort _, (Set | Type _)) | ((Set | Type _), QSort _) ->
+  raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
 
 let enforce_leq_sort s1 s2 cst = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
 | (Prop, (Set | Type _)) -> cst
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
   raise (UGraph.UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   enforce_leq (get_algebraic s1) (get_algebraic s2) cst
+| QSort (q1, u1), QSort (q2, u2) ->
+  if QVar.equal q1 q2 then enforce_leq u1 u2 cst
+  else raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
+| (QSort _, (Set | Type _)) | ((Prop | Set | Type _), QSort _) ->
+  raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
 
 let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
 | (Prop, (Set | Type _)) -> Constraints.empty, g
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
   if UGraph.cumulative_sprop g && is_sprop s1 then
     Constraints.empty, g
   else
     raise (UGraph.UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   UGraph.enforce_leq_alg (get_algebraic s1) (get_algebraic s2) g
+| QSort (q1, u1), QSort (q2, u2) ->
+  if QVar.equal q1 q2 then UGraph.enforce_leq_alg u1 u2 g
+  else raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
+| (QSort _, (Set | Type _)) | ((Prop | Set | Type _), QSort _) ->
+  raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
 
 let enforce_univ_constraint (u,d,v) =
   match d with

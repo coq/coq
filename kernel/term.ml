@@ -23,6 +23,7 @@ type sorts_family = Sorts.family = InSProp | InProp | InSet | InType
 type sorts = Sorts.t = private
   | SProp | Prop | Set
   | Type of Univ.Universe.t  (** Type *)
+  | QSort of Sorts.QVar.t * Univ.Universe.t
 [@@ocaml.deprecated "Alias for Sorts.t"]
 
 (****************************************************************************)

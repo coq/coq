@@ -201,6 +201,7 @@ let level_inconsistency cst l r =
 let subst_univs_sort normalize s = match s with
 | Sorts.Set | Sorts.Prop | Sorts.SProp -> s
 | Sorts.Type u -> Sorts.sort_of_univ (UnivSubst.subst_univs_universe normalize u)
+| Sorts.QSort _ -> assert false (* FIXME *)
 
 type small_universe = USet | UProp | USProp
 
@@ -216,7 +217,7 @@ let classify s = match s with
 | Sorts.Prop -> USmall UProp
 | Sorts.SProp -> USmall USProp
 | Sorts.Set -> USmall USet
-| Sorts.Type u ->
+| Sorts.Type u | Sorts.QSort (_, u) ->
   if Universe.is_levels u then match Universe.level u with
   | None -> UMax (u, Universe.levels u)
   | Some u -> ULevel u

@@ -1145,6 +1145,9 @@ let normalize_sort evars s =
   | Type u ->
     let u' = normalize_universe evars u in
     if u' == u then s else Sorts.sort_of_univ u'
+  | QSort (q, u) ->
+    let u' = normalize_universe evars u in
+    if u' == u then s else Sorts.qsort q u'
 
 (* FIXME inefficient *)
 let set_eq_sort env d s1 s2 =

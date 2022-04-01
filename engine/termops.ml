@@ -1118,6 +1118,8 @@ let is_template_polymorphic_ind env sigma f =
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
   | SProp, SProp | Prop, Prop | Set, Set | Type _, Type _ -> true
+  | QSort (q1, _), QSort (q2, _) -> Sorts.QVar.equal q1 q2
+  | QSort _, _ | _, QSort _ -> false
   | SProp, _ | _, SProp -> false
   | Prop, Set | Prop, Type _ | Set, Type _ -> pb == Reduction.CUMUL
   | Set, Prop | Type _, Prop | Type _, Set -> false

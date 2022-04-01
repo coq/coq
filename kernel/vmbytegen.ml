@@ -546,22 +546,28 @@ let rec compile_lam env cenv lam sz cont =
     else comp_app compile_structured_constant compile_universe cenv
         (Const_ind ind) (Univ.Instance.to_array u) sz cont
 
-  | Lsort (Sorts.SProp | Sorts.Prop | Sorts.Set as s) ->
-    compile_structured_constant cenv (Const_sort s) sz cont
-  | Lsort (Sorts.Type u) ->
+  | Lsort s ->
     (* We represent universes as a global constant with local universes
        "compacted", i.e. as [u arg0 ... argn] where we will substitute (after
        evaluation) [Var 0,...,Var n] with values of [arg0,...,argn] *)
-    let u,s = Univ.compact_univ u in
+    let s, subs = match s with
+    | Sorts.Set | Sorts.Prop | Sorts.SProp as s -> s, []
+    | Sorts.Type u ->
+      let u, s = Univ.compact_univ u in
+      Sorts.sort_of_univ u, s
+    | Sorts.QSort (q, u) ->
+      let u, s = Univ.compact_univ u in
+      Sorts.qsort q u, s
+    in
     let compile_get_univ cenv idx sz cont =
       set_max_stack_size sz;
       compile_fv_elem cenv (FVuniv_var idx) sz cont
     in
-    if List.is_empty s then
-      compile_structured_constant cenv (Const_sort (Sorts.sort_of_univ u)) sz cont
+    if List.is_empty subs then
+      compile_structured_constant cenv (Const_sort s) sz cont
     else
       comp_app compile_structured_constant compile_get_univ cenv
-        (Const_sort (Sorts.sort_of_univ u)) (Array.of_list s) sz cont
+        (Const_sort s) (Array.of_list subs) sz cont
 
   | Llet (_id,def,body) ->
       compile_lam env cenv def sz

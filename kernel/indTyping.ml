@@ -70,6 +70,9 @@ type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
                    missing : Sorts.t list; (* missing u <= ind_univ constraints *)
                  }
 
+let no_sort_variable () =
+  CErrors.anomaly (Pp.str "A sort variable was sent to the kernel")
+
 let check_univ_leq ?(is_real_arg=false) env u info =
   let ind_univ = info.ind_univ in
   let info = if not info.ind_has_relevant_arg && is_real_arg && not (Sorts.is_sprop u)
@@ -258,6 +261,7 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   let ind_univ = match univ_info.ind_univ with
   | Prop | SProp | Set -> univ_info.ind_univ
   | Type u -> Sorts.sort_of_univ (Univ.subst_univs_level_universe usubst u)
+  | QSort _ -> no_sort_variable ()
   in
 
   let arity =
