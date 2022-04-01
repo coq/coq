@@ -116,10 +116,6 @@ module DataI = struct
     }
 end
 
-type projection_flags = {
-  pf_subclass: bool;
-  pf_canonical: bool;
-}
 
 (** [DataR.t] contains record data after interpretation /
    type-inference *)
@@ -133,12 +129,17 @@ module DataR = struct
 end
 
 module Data = struct
+  type projection_flags = {
+    pf_subclass: bool;
+    pf_canonical: bool;
+  }
+  type raw_data = DataR.t
   type t =
   { id : Id.t
   ; idbuild : Id.t
   ; is_coercion : bool
   ; coers : projection_flags list
-  ; rdata : DataR.t
+  ; rdata : raw_data
   ; inhabitant_id : Id.t
   }
 end
@@ -378,7 +379,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   let refi = GlobRef.ConstRef kn in
   Impargs.maybe_declare_manual_implicits false refi impls;
-  if flags.pf_subclass then begin
+  if flags.Data.pf_subclass then begin
     let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
     ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~nonuniform:false ~source:cl
   end;
@@ -401,13 +402,13 @@ let build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls param
             subst nfi ti i indsp mib lifted_fields x rp
       with NotDefinable why as exn ->
         let _, info = Exninfo.capture exn in
-        warning_or_error ~info flags.pf_subclass indsp why;
+        warning_or_error ~info flags.Data.pf_subclass indsp why;
         (None,i,NoProjection fi::subst)
   in
   (nfi - 1, i,
    { Structure.proj_name = fi
    ; proj_true = is_local_assum decl
-   ; proj_canonical = flags.pf_canonical
+   ; proj_canonical = flags.Data.pf_canonical
    ; proj_body = sp_proj } :: kinds
   , subst)
 
@@ -538,8 +539,98 @@ let data_name id rdata =
   - prepares and declares the corresponding record projections, mainly taken care of by
     [declare_projections]
 *)
-let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
-  paramimpls params template ?(kind=Decls.StructureComponent) ?name (record_data : Data.t list) =
+module Record_decl = struct
+  type t = {
+    mie : Entries.mutual_inductive_entry;
+    primitive_proj : bool;
+    impls : DeclareInd.one_inductive_impls list;
+    globnames : UState.named_universes_entry;
+    global_univ_decls : Univ.ContextSet.t option;
+    projunivs : Entries.universes_entry;
+    ubinders : UnivNames.universe_binders;
+    projections_kind : Decls.definition_object_kind;
+    poly : bool;
+    records : Data.t list;
+  }
+end
+
+module Ast = struct
+  open Vernacexpr
+  type t =
+    { name : Names.lident
+    ; is_coercion : coercion_flag
+    ; binders: local_binder_expr list
+    ; cfs : (local_decl_expr * record_field_attr) list
+    ; idbuild : Id.t
+    ; sort : constr_expr option
+    ; default_inhabitant_id : Id.t option
+    }
+
+  let to_datai { name; is_coercion; cfs; idbuild; sort } =
+    let fs = List.map fst cfs in
+    { DataI.name = name.CAst.v
+    ; arity = sort
+    ; nots = List.map (fun (_, { rf_notation }) -> List.map Metasyntax.prepare_where_notation rf_notation) cfs
+    ; fs
+    }
+end
+
+let check_unique_names records =
+  let extract_name acc (rf_decl, _) = match rf_decl with
+      Vernacexpr.AssumExpr({CAst.v=Name id},_,_) -> id::acc
+    | Vernacexpr.DefExpr ({CAst.v=Name id},_,_,_) -> id::acc
+    | _ -> acc in
+  let allnames =
+    List.fold_left (fun acc { Ast.name; cfs; _ } ->
+      name.CAst.v :: (List.fold_left extract_name acc cfs)) [] records
+  in
+  match List.duplicates Id.equal allnames with
+  | [] -> ()
+  | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id) ++ str ".")
+
+let check_priorities kind records =
+  let open Vernacexpr in
+  let isnot_class = match kind with Class false -> false | _ -> true in
+  let has_priority { Ast.cfs; _ } =
+    List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
+  in
+  if isnot_class && List.exists has_priority records then
+    user_err Pp.(str "Priorities only allowed for type class substructures.")
+
+let extract_record_data records =
+  let data = List.map Ast.to_datai records in
+  let pss = List.map (fun { Ast.binders; _ } -> binders) records in
+  let ps = match pss with
+  | [] -> CErrors.anomaly (str "Empty record block.")
+  | ps :: rem ->
+    let eq_local_binders bl1 bl2 = List.equal local_binder_eq bl1 bl2 in
+    let () =
+      if not (List.for_all (eq_local_binders ps) rem) then
+        user_err (str "Parameters should be syntactically the \
+          same for each inductive type.")
+    in
+    ps
+  in
+  ps, data
+
+let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite (records : Ast.t list) =
+  let open Vernacexpr in
+  let () = check_unique_names records in
+  let () = check_priorities kind records in
+  let ps, data = extract_record_data records in
+  let auto_template, impargs, univs, variances, params, data =
+    (* In theory we should be able to use
+       [Notation.with_notation_protection], due to the call to
+       Metasyntax.set_notation_for_interpretation, however something
+       is messing state beyond that.
+    *)
+    Vernacstate.System.protect (fun () ->
+        typecheck_params_and_fields (kind = Class true) poly udecl ps data) ()
+  in
+  let template = template, auto_template in
+  template, impargs, params, univs, variances, data
+
+let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind records data =
   let nparams = List.length params in
   let (univs, ubinders) = univs in
   let poly, projunivs =
@@ -547,7 +638,7 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
     | UState.Monomorphic_entry _ -> false, Entries.Monomorphic_entry
     | UState.Polymorphic_entry uctx -> true, Entries.Polymorphic_entry uctx
   in
-  let ntypes = List.length record_data in
+  let ntypes = List.length data in
   let mk_block i { Data.id; idbuild; rdata = { DataR.min_univ; arity; fields; _ }; _ } =
     let nfields = List.length fields in
     let args = Context.Rel.instance_list mkRel nfields params in
@@ -558,26 +649,25 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
       mind_entry_consnames = [idbuild];
       mind_entry_lc = [type_constructor] }
   in
-  let blocks = List.mapi mk_block record_data in
-  let template = List.for_all (check_template ~template ~univs ~poly ~params) record_data in
+  let blocks = List.mapi mk_block data in
+  let template = List.for_all (check_template ~template ~univs ~poly ~params) data in
   let primitive =
     primitive_proj  &&
-    List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) record_data
+    List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) data
   in
-  let globnames, univs = match univs with
+  let globnames, univs, global_univ_decls = match univs with
   | UState.Monomorphic_entry ctx ->
     if template then
-      (univs, ubinders), Template_ind_entry ctx
+      (univs, ubinders), Template_ind_entry ctx, None
     else
-      let () = DeclareUctx.declare_universe_context ~poly:false ctx in
-      (univs, ubinders), Monomorphic_ind_entry
+      (univs, ubinders), Monomorphic_ind_entry, Some ctx
   | UState.Polymorphic_entry ctx ->
-    (univs, UnivNames.empty_binders), Polymorphic_ind_entry ctx
+    (univs, UnivNames.empty_binders), Polymorphic_ind_entry ctx, None
   in
   let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
   let mie =
     { mind_entry_params = params;
-      mind_entry_record = Some (if primitive then Some (Array.map_of_list (fun a -> a.Data.inhabitant_id) record_data) else None);
+      mind_entry_record = Some (if primitive then Some (Array.map_of_list (fun a -> a.Data.inhabitant_id) data) else None);
       mind_entry_finite = finite;
       mind_entry_inds = blocks;
       mind_entry_private = None;
@@ -585,21 +675,51 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
       mind_entry_variance = variance;
     }
   in
-  let impls = List.map (fun _ -> paramimpls, []) record_data in
+  let impls = List.map (fun _ -> impargs, []) data in
+  let open Record_decl in
+  { mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records = data }
+
+
+let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records =
+  let open Vernacexpr in
+  let template, impargs, params, univs, variances, data =
+    pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
+  let adjust_impls impls = impargs @ [CAst.make None] @ impls in
+  let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
+  (* let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } = *)
+  let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
+    let coers = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
+        { Data.pf_subclass =
+            (match rf_subclass with Vernacexpr.BackInstance -> true | Vernacexpr.NoInstance -> false);
+          pf_canonical = rf_canonical })
+        cfs
+    in
+    let inhabitant_id =
+      match default_inhabitant_id with
+      | None -> data_name name.CAst.v rdata
+      | Some n -> n
+    in
+    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers; inhabitant_id }
+  in
+  let data = List.map2 map data records in
+  interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind:Decls.StructureComponent records data
+
+let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records } =
+  Option.iter (DeclareUctx.declare_universe_context ~poly:false) global_univ_decls;
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj
   in
   let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; inhabitant_id; id; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
-    let projections = declare_projections rsp (projunivs,ubinders) ~kind inhabitant_id coers implfs fields in
+    let projections = declare_projections rsp (projunivs,ubinders) ~kind:projections_kind inhabitant_id coers implfs fields in
     let build = GlobRef.ConstructRef cstr in
     let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly ~nonuniform:false in
     let struc = Structure.make (Global.env ()) rsp projections in
     let () = declare_structure_entry struc in
     rsp
   in
-  List.mapi map record_data
+  List.mapi map records
 
 let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
@@ -652,16 +772,17 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
     (* to be replaced by the following line after deprecation phase
        (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
     (* ; is_coercion *)
-    ; coers = List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) coers
+    ; coers = List.map (fun _ -> { Data.pf_subclass = false ; pf_canonical = true }) coers
     (* to be replaced by the following line after deprecation phase
        (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
     (* ; coers = List.map (fun c -> { pf_subclass = c <> None ; pf_canonical = true }) coers *)
     ; rdata
     ; inhabitant_id
     } in
-  let inds = declare_structure ~cumulative Declarations.BiFinite ~univs ~variances ~primitive_proj paramimpls
-      params template ~kind:Decls.Method ~name:[|inhabitant_id|] [record_data]
-  in
+  let structure =
+    interp_structure_core  ~cumulative Declarations.BiFinite ~univs ~variances ~primitive_proj paramimpls
+      params template ~projections_kind:Decls.Method rdata [record_data] in
+  let inds = declare_structure structure in
   let map ind =
     let map decl b y = {
       meth_name = RelDecl.get_name decl;
@@ -798,63 +919,6 @@ let declare_existing_class g =
 
 open Vernacexpr
 
-module Ast = struct
-  type t =
-    { name : Names.lident
-    ; is_coercion : coercion_flag
-    ; binders: local_binder_expr list
-    ; cfs : (local_decl_expr * record_field_attr) list
-    ; idbuild : Id.t
-    ; sort : constr_expr option
-    ; default_inhabitant_id : Id.t option
-    }
-
-  let to_datai { name; is_coercion; cfs; idbuild; sort } =
-    let fs = List.map fst cfs in
-    { DataI.name = name.CAst.v
-    ; arity = sort
-    ; nots = List.map (fun (_, { rf_notation }) -> List.map Metasyntax.prepare_where_notation rf_notation) cfs
-    ; fs
-    }
-end
-
-let check_unique_names records =
-  let extract_name acc (rf_decl, _) = match rf_decl with
-      Vernacexpr.AssumExpr({CAst.v=Name id},_,_) -> id::acc
-    | Vernacexpr.DefExpr ({CAst.v=Name id},_,_,_) -> id::acc
-    | _ -> acc in
-  let allnames =
-    List.fold_left (fun acc { Ast.name; cfs; _ } ->
-      name.CAst.v :: (List.fold_left extract_name acc cfs)) [] records
-  in
-  match List.duplicates Id.equal allnames with
-  | [] -> ()
-  | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id) ++ str ".")
-
-let check_priorities kind records =
-  let isnot_class = match kind with Class false -> false | _ -> true in
-  let has_priority { Ast.cfs; _ } =
-    List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
-  in
-  if isnot_class && List.exists has_priority records then
-    user_err Pp.(str "Priorities only allowed for type class substructures.")
-
-let extract_record_data records =
-  let data = List.map Ast.to_datai records in
-  let pss = List.map (fun { Ast.binders; _ } -> binders) records in
-  let ps = match pss with
-  | [] -> CErrors.anomaly (str "Empty record block.")
-  | ps :: rem ->
-    let eq_local_binders bl1 bl2 = List.equal local_binder_eq bl1 bl2 in
-    let () =
-      if not (List.for_all (eq_local_binders ps) rem) then
-        user_err (str "Parameters should be syntactically the \
-          same for each inductive type.")
-    in
-    ps
-  in
-  ps, data
-
 (* deprecated in 8.16, to be removed at the end of the deprecation phase
    (c.f., https://github.com/coq/coq/pull/15802 ) *)
 let warn_future_coercion_class_constructor =
@@ -870,7 +934,9 @@ let warn_future_coercion_class_field =
       ++ str "Use '#[global] Existing Instance field.' instead if you don't want the coercion.")
 
 (* declaring structures, common data to refactor *)
-let class_structure ~cumulative ~template ~impargs ~univs ~params ~primitive_proj def records data =
+let class_structure udecl kind def ~template ~cumulative ~poly ~primitive_proj finite records =
+  let template, impargs, params, univs, variances, data =
+    pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
   let { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ }, rdata = match records, data with
     | [r], [d] -> r, d
     | _, _ ->
@@ -890,62 +956,28 @@ let class_structure ~cumulative ~template ~impargs ~univs ~params ~primitive_pro
     | None -> Namegen.next_ident_away name.CAst.v (Termops.vars_of_env (Global.env()))
     | Some id -> id
   in
-  declare_class def ~cumulative ~univs ~primitive_proj name.CAst.v idbuild inhabitant_id
+  declare_class def ~cumulative ~univs ~primitive_proj ~variances name.CAst.v idbuild inhabitant_id
     impargs params rdata template is_coercion coers
 
-let regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj
-    records data =
-  let adjust_impls impls = impargs @ [CAst.make None] @ impls in
-  let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
-  (* let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } = *)
-  let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
-    let coers = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
-        { pf_subclass =
-            (match rf_subclass with Vernacexpr.BackInstance -> true | Vernacexpr.NoInstance -> false);
-          pf_canonical = rf_canonical })
-        cfs
-    in
-    let inhabitant_id =
-      match default_inhabitant_id with
-      | None -> data_name name.CAst.v rdata
-      | Some n -> n
-    in
-    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers; inhabitant_id }
-  in
-  let data = List.map2 map data records in
-  let inds = declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
-      impargs params template data
-  in
+let regular_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records =
+  let structure = interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
+  let inds = declare_structure structure in
   List.map (fun ind -> GlobRef.IndRef ind) inds
 
 (** [fs] corresponds to fields and [ps] to parameters; [coers] is a
     list telling if the corresponding fields must me declared as coercions
     or subinstances. *)
+
 let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     finite (records : Ast.t list) : GlobRef.t list =
-  let () = check_unique_names records in
-  let () = check_priorities kind records in
-  let ps, data = extract_record_data records in
-  let auto_template, impargs, univs, variances, params, data =
-    (* In theory we should be able to use
-       [Notation.with_notation_protection], due to the call to
-       Metasyntax.set_notation_for_interpretation, however something
-       is messing state beyond that.
-    *)
-    Vernacstate.System.protect (fun () ->
-        typecheck_params_and_fields (kind = Class true) poly udecl ps data) ()
-  in
-  let template = template, auto_template in
   match kind with
   | Class def ->
-    class_structure ~template ~impargs ~cumulative ~params ~univs ~variances ~primitive_proj
-      def records data
+    class_structure udecl kind def ~template ~cumulative ~poly ~primitive_proj finite records
   | Inductive_kw | CoInductive | Variant | Record | Structure ->
-    regular_structure ~cumulative ~template ~impargs ~univs ~variances ~params ~finite ~primitive_proj
-      records data
+    regular_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records
 
 module Internal = struct
-  type nonrec projection_flags = projection_flags = {
+  type nonrec projection_flags = Data.projection_flags = {
     pf_subclass: bool;
     pf_canonical: bool;
   }
