@@ -109,7 +109,10 @@ let abstract_scheme env evd c l lname_typ =
        else *)
        if occur_meta evd a then mkLambda_name env (na,ta,t), evd
        else
-         let t', evd' = Find_subterm.subst_closed_term_occ env evd locc a t in
+        let test = make_eq_univs_test env evd a in
+        let bywhat () = mkRel 1 in
+        let t' = replace_term_occ_modulo env evd locc test bywhat t in
+        let evd' = test.testing_state in
            mkLambda_name env (na,ta,t'), evd')
     (c,evd)
     (List.rev l)
@@ -118,11 +121,15 @@ let abstract_scheme env evd c l lname_typ =
 (* Precondition: resulting abstraction is expected to be of type [typ] *)
 
 let abstract_list_all env evd typ c l =
-  let ctxt,_ = splay_prod_n env evd (List.length l) typ in
+  let n = List.length l in
+  let ctxt,_ = splay_prod_n env evd n typ in
   let l_with_all_occs = List.map (function a -> (LikeFirst,a)) l in
   let p,evd = abstract_scheme env evd c l_with_all_occs ctxt in
   let evd,typp =
-    try Typing.type_of env evd p
+    let (pctx, p) = decompose_lam_n_assum evd n p in
+    try
+      let (evd, typp) = Typing.type_of (push_rel_context pctx env) evd p in
+      evd, it_mkProd_or_LetIn typp pctx
     with
     | UserError _ ->
         error_cannot_find_well_typed_abstraction env evd p l None
@@ -131,7 +138,7 @@ let abstract_list_all env evd typ c l =
         error_cannot_find_well_typed_abstraction env evd p l None
     | Pretype_errors.PretypeError (env',evd,e) ->
         error_cannot_find_well_typed_abstraction env evd p l (Some (env',e)) in
-  evd,(p,typp)
+  evd,(p, typp)
 
 let set_occurrences_of_last_arg n =
   Evarconv.AtOccurrences AllOccurrences ::
