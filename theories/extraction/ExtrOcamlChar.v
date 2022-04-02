@@ -35,6 +35,10 @@ Extract Constant shift =>
 
 Extract Inlined Constant ascii_dec => "(=)".
 Extract Inlined Constant Ascii.eqb => "(=)".
+Extract Constant Ascii.compare =>
+  "fun c1 c2 ->
+    let cmp = Char.compare c1 c2 in
+    if cmp < 0 then Lt else if cmp = 0 then Eq else Gt".
 
 (* python -c 'print(" ".join(r""" "%s" """.strip() % (r"'"'\''"'" if chr(i) == "'"'"'" else repr(""" "" """.strip()) if chr(i) == """ " """.strip() else repr(chr(i))) for i in range(256)))' # " to satisfy Coq's comment parser *)
 Extract Inductive byte => char
