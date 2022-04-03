@@ -1236,7 +1236,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let rec sigrec_clausal_form sigma siglen p_i =
     if Int.equal siglen 0 then
       (* is the default value typable with the expected type *)
-      let sigma, dflt_typ = type_of env sigma dflt in
+      let dflt_typ = Retyping.get_type_of env sigma dflt in
       try
         let sigma = Evarconv.unify_leq_delay env sigma dflt_typ p_i in
         let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
@@ -1420,8 +1420,10 @@ let inject_at_positions env sigma l2r eq posns tac =
       let injfun = mkNamedLambda (make_annot e Sorts.Relevant) t injbody in
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
       (* pf : eq t t1 t2 -> eq resty (injfun t1) (injfun t2) *)
-      let pf = mkApp (congr,[|t; resty; injfun; t1; t2|]) in
-      let sigma, pf_typ = Typing.type_of env sigma pf in
+      let mk c = Retyping.get_judgment_of env sigma c in
+      let args = Array.map mk [|t; resty; injfun; t1; t2|] in
+      let sigma, pf = Typing.judge_of_apply env sigma (mk congr) args in
+      let { Environ.uj_val = pf; Environ.uj_type = pf_typ } = pf in
       let pf_typ = Vars.subst1 mkProp (pi3 @@ destProd sigma pf_typ) in
       let pf = mkApp (pf, [| v |]) in
       let ty = simplify_args env sigma pf_typ in
