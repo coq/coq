@@ -91,7 +91,8 @@ for documentation purposes:
 
 5.  For reference, the tool generates `prodnGrammar`, which has the entire grammar in the form of `prodns`.
 
-6.  The tool generates `prodnCommands` (for commands) and `prodnTactics` (for tactics).
+6.  If requested by command-line arguments, the tool generates `prodnCommands`
+    (for commands) and `prodnTactics` (for tactics).
     The former lists all commands that are under `command` in `orderedGrammar` and
     compares it to the `:cmd:` and `:cmdv:` given in the rst files.  The latter
     lists all tactics that are under `simple_tactic` in the grammar and compares it
@@ -131,9 +132,9 @@ the `.rst` files in their PRs when they've changed the grammar.
 
 Other command line arguments:
 
-* `-check-tacs` reports on differences in tactics between the `rsts` and the grammar
+* `-check-tacs` causes generation of `prodnTactics`
 
-* `-check-cmds` reports on differences in commands between the `rsts` and the grammar
+* `-check-cmds` causes generation of `prodnCommands`
 
 * `-no-warn` suppresses printing of some warning messages
 
