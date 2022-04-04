@@ -9,4 +9,4 @@
 (************************************************************************)
 
 val set_local_flags : Declarations.typing_flags -> Environ.env -> Environ.env
-(** Set flags except for those ignored by the checker (eg vm_compute). *)
+(** Set flags except for those ignored by the checker (see .ml file for those). *)

@@ -138,11 +138,13 @@ let set_impredicative_set () = impredicative_set := true
 
 let indices_matter = ref false
 
+let enable_vm = ref false
+
 let make_senv () =
   let senv = Safe_typing.empty_environment in
   let senv = Safe_typing.set_impredicative_set !impredicative_set senv in
   let senv = Safe_typing.set_indices_matter !indices_matter senv in
-  let senv = Safe_typing.set_VM false senv in
+  let senv = Safe_typing.set_VM !enable_vm senv in
   let senv = Safe_typing.set_allow_sprop true senv in (* be smarter later *)
   Safe_typing.set_native_compiler false senv
 
@@ -178,23 +180,27 @@ let print_usage_channel co command =
   output_string co command;
   output_string co "coqchk options are:\n";
   output_string co
-"  -Q dir coqdir          map physical dir to logical coqdir\
-\n  -R dir coqdir          synonymous for -Q\
+"\
+\n  -Q dir coqdir               map physical dir to logical coqdir\
+\n  -R dir coqdir               synonymous for -Q\
+\n  -coqlib dir                 set coqchk's standard library location\
 \n\
+\n  -admit module               load module and dependencies without checking\
+\n  -norec module               check module but admit dependencies without checking\
 \n\
-\n  -admit module          load module and dependencies without checking\
-\n  -norec module          check module but admit dependencies without checking\
+\n  -debug                      enable debugging info\
+\n  -where                      print coqchk's standard library location and exit\
+\n  -v, --version               print coqchk version and exit\
+\n  -o, --output-context        print the list of assumptions\
+\n  -m, --memory                print the maximum heap size\
+\n  -silent                     disable trace of constants being checked\
 \n\
-\n  -coqlib dir            set coqchk's standard library location\
-\n  -where                 print coqchk's standard library location and exit\
-\n  -v                     print coqchk version and exit\
-\n  -o, --output-context   print the list of assumptions\
-\n  -m, --memory           print the maximum heap size\
-\n  -silent                disable trace of constants being checked\
+\n  -impredicative-set          set sort Set impredicative\
+\n  -indices-matter             levels of indices (and nonuniform parameters)\
+\n                              contribute to the level of inductives\
+\n  -bytecode-compiler (yes|no) enable the vm_compute reduction machine (default is no)\
 \n\
-\n  -impredicative-set     set sort Set impredicative\
-\n\
-\n  -h, --help             print this list of options\
+\n  -h, --help                  print this list of options\
 \n"
 
 (* print the usage on standard error *)
@@ -321,6 +327,11 @@ let parse_args argv =
 
     | "-indices-matter" :: rem ->
       indices_matter:=true; parse rem
+
+    | "-bytecode-compiler" :: "yes" :: rem ->
+      enable_vm := true; parse rem
+    | "-bytecode-compiler" :: "no" :: rem ->
+      enable_vm := false; parse rem
 
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then
