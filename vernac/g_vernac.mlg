@@ -209,7 +209,7 @@ let test_variance_ident =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type
-    record_field decl_notations fix_definition ident_decl univ_decl inductive_definition;
+    record_field decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -229,9 +229,9 @@ GRAMMAR EXTEND Gram
       | IDENT "Let"; id = ident_decl; b = def_body ->
           { VernacDefinition ((DoDischarge, Let), name_of_ident_decl id, b) }
       (* Gallina inductive declarations *)
-      | f = finite_token; ind = inductive_definition ->
+      | f = finite_token; ind = inductive_or_record_definition ->
           { VernacInductive (f, [ind]) }
-      | f = inductive_token; indl = LIST1 inductive_definition SEP "with" ->
+      | f = inductive_token; indl = LIST1 inductive_or_record_definition SEP "with" ->
           { VernacInductive (f, indl) }
       | "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
           { VernacFixpoint (NoDischarge, recs) }
@@ -392,7 +392,7 @@ GRAMMAR EXTEND Gram
     [ [ ":="; lc = constructors_or_record -> { lc }
       | -> { RecordDecl (None, [], None) } ] ]
   ;
-  inductive_definition:
+  inductive_or_record_definition:
     [ [ oc = opt_coercion; id = cumul_ident_decl; indpar = binders;
         extrapar = OPT [ "|"; p = binders -> { p } ];
         c = OPT [ ":"; c = lconstr -> { c } ];

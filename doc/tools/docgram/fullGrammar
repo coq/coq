@@ -807,8 +807,8 @@ gallina: [
 | assumptions_token inline assum_list
 | def_token ident_decl def_body
 | "Let" ident_decl def_body
-| finite_token inductive_definition
-| inductive_token LIST1 inductive_definition SEP "with"
+| finite_token inductive_or_record_definition
+| inductive_token LIST1 inductive_or_record_definition SEP "with"
 | "Fixpoint" LIST1 fix_definition SEP "with"
 | "Let" "Fixpoint" LIST1 fix_definition SEP "with"
 | "CoFixpoint" LIST1 cofix_definition SEP "with"
@@ -939,7 +939,7 @@ opt_constructors_or_fields: [
 |
 ]
 
-inductive_definition: [
+inductive_or_record_definition: [
 | opt_coercion cumul_ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
 ]
 

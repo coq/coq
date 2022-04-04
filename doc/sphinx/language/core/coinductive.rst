@@ -18,6 +18,7 @@ More information on coinductive definitions can be found in
 :cite:`Gimenez95b,Gim98,GimCas05`.
 
 .. cmd:: CoInductive @inductive_definition {* with @inductive_definition }
+         CoInductive @record_definition {* with @record_definition }
 
    This command introduces a coinductive type.
    The syntax of the command is the same as the command :cmd:`Inductive`.

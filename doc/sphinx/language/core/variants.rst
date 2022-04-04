@@ -18,6 +18,10 @@ Variants
    be defined using :cmd:`Variant`). No induction scheme is generated for
    this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
 
+   :n:`{? %| {* @binder } }`
+     The :n:`|` separates uniform and non uniform parameters.
+     See :flag:`Uniform Inductive Parameters`.
+
    This command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(template)`, :attr:`universes(cumulative)`, and
    :attr:`private(matching)` attributes.

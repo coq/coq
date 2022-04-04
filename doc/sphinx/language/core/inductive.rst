@@ -7,13 +7,12 @@ Inductive types
 ---------------
 
 .. cmd:: Inductive @inductive_definition {* with @inductive_definition }
+         Inductive @record_definition {* with @record_definition }
 
    .. insertprodn inductive_definition constructor
 
    .. prodn::
-      inductive_definition ::= {? > } @ident {? @cumul_univ_decl } {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
-      constructors_or_record ::= {? %| } {+| @constructor }
-      | {? @ident } %{ {*; @record_field } {? ; } %} {? as @ident }
+      inductive_definition ::= @ident {? @cumul_univ_decl } {* @binder } {? %| {* @binder } } {? : @type } := {? %| } {+| @constructor } {? @decl_notations }
       constructor ::= @ident {* @binder } {? @of_type }
 
    Defines one or more
@@ -31,7 +30,11 @@ Inductive types
    may be impossible to derive (for example, when :n:`@ident` is a
    proposition).
 
-   This command supports the :attr:`universes(polymorphic)`,
+   :n:`{? %| {* @binder } }`
+     The :n:`|` separates uniform and non uniform parameters.
+     See :flag:`Uniform Inductive Parameters`.
+
+   The :cmd:`Inductive` command supports the :attr:`universes(polymorphic)`,
    :attr:`universes(template)`, :attr:`universes(cumulative)`,
    :attr:`bypass_check(positivity)`, :attr:`bypass_check(universes)` and
    :attr:`private(matching)` attributes.
