@@ -241,48 +241,60 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
     if not @@ Univ.Level.Set.is_empty univs then Some (univs, params)
     else None
 
-let get_param_levels ctx params arity splayed_lc =
-  let min_univ = match arity with
-  | RegularArity _ ->
-    CErrors.anomaly
-      Pp.(strbrk "Ill-formed template mutual inductive declaration: all types must be template.")
-  | TemplateArity ar -> ar.template_level
-  in
-  let ctor_levels =
-    let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
-    let param_levels =
-      List.fold_left (fun levels d -> match d with
-          | LocalAssum _ -> levels
-          | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-        Univ.Level.Set.empty params
-    in
-    Array.fold_left
-      (fun levels (d,c) ->
-          let levels =
-            List.fold_left (fun levels d ->
-                Context.Rel.Declaration.fold_constr add_levels d levels)
-              levels d
-          in
-          add_levels c levels)
-      param_levels
-      splayed_lc
-  in
-  match template_polymorphic_univs ~ctor_levels ctx params min_univ with
-  | None ->
-    CErrors.user_err
-      Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
-  | Some (_, param_levels) ->
-    param_levels
-
-let get_template univs params data =
+let get_template univs ~env_params ~env_ar_par ~params data entries =
   match univs with
   | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
   | Template_ind_entry ctx ->
-    let arity, splayed_lc = match data with
-      | [ (arity, _), (_, splayed_lc), _ ] -> arity, splayed_lc
+    let is_prop = match data with
+      | [ _, _, info ] -> Sorts.is_prop @@ Option.get info.ind_min_univ
       | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
     in
-    let params = get_param_levels ctx params arity splayed_lc in
+    (* Compute potential template parameters *)
+    let map decl = match decl with
+    | LocalAssum (_, p) ->
+      let c = Term.strip_prod_assum p in
+      let s = match kind c with
+      | Sort (Type u) ->
+        begin match Universe.level u with
+        | Some l -> if Level.Set.mem l (fst ctx) then Some l else None
+        | None -> None
+        end
+      | _ -> None
+      in
+      Some s
+    | LocalDef _ -> None
+    in
+    let params = List.map_filter map params in
+    let params =
+      if is_prop then
+        (* Inductive types in Prop have no template universes, but are still
+           marked as template to please the upper layers. *)
+        List.map (fun _ -> None) params
+      else
+        (* We reuse the same code as the one for variance inference. *)
+        let init_variance = Array.map_of_list (fun l -> l, None) (Level.Set.elements (fst ctx)) in
+        let variance = InferCumulativity.infer_inductive ~env_params ~env_ar_par init_variance
+            ~arities:(List.map (fun e -> e.mind_entry_arity) entries)
+            ~ctors:(List.map (fun e -> e.mind_entry_lc) entries)
+        in
+        let fold accu v (l, _) = match v with
+        | Variance.Irrelevant -> Level.Set.add l accu
+        | Variance.Covariant | Variance.Invariant -> accu
+        in
+        let irrel = Array.fold_left2 fold Level.Set.empty variance init_variance in
+        let () =
+          if Level.Set.is_empty irrel then
+          CErrors.user_err
+            Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
+        in
+        let map = function
+        | None -> None
+        | Some l ->
+          if Level.Set.mem l irrel && unbounded_from_below l (snd ctx) then Some l
+          else None
+        in
+        List.rev_map map params
+    in
     Some { template_param_levels = params; template_context = ctx }
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
@@ -392,6 +404,8 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         Some variances
   in
 
+  let template = get_template mie.mind_entry_universes ~env_params ~env_ar_par ~params data mie.mind_entry_inds in
+
   (* Abstract universes *)
   let usubst, univs = match mie.mind_entry_universes with
   | Monomorphic_ind_entry | Template_ind_entry _ ->
@@ -403,7 +417,6 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   in
   let params = Vars.subst_univs_level_context usubst params in
   let data = List.map (abstract_packets usubst) data in
-  let template = get_template mie.mind_entry_universes params data in
 
   let env_ar_par =
     let ctx = Environ.rel_context env_ar_par in
