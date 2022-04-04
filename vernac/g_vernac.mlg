@@ -226,8 +226,8 @@ GRAMMAR EXTEND Gram
             VernacAssumption (stre, nl, bl) }
       | d = def_token; id = ident_decl; b = def_body ->
           { VernacDefinition (d, name_of_ident_decl id, b) }
-      | IDENT "Let"; id = ident_decl; b = def_body ->
-          { VernacDefinition ((DoDischarge, Let), name_of_ident_decl id, b) }
+      | IDENT "Let"; name = name_decl; b = def_body ->
+          { VernacDefinition ((DoDischarge, Let), name, b) }
       (* Gallina inductive declarations *)
       | f = finite_token; ind = inductive_or_record_definition ->
           { VernacInductive (f, [ind]) }
@@ -337,6 +337,10 @@ GRAMMAR EXTEND Gram
            univdecl_constraints = fst cs;
            univdecl_extensible_constraints = snd cs } }
     ] ]
+  ;
+  name_decl:
+    [ [ i = name; l = OPT univ_decl -> { (i, l) }
+  ] ]
   ;
   ident_decl:
     [ [ i = identref; l = OPT univ_decl -> { (i, l) }
