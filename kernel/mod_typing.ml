@@ -78,22 +78,22 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaque terms,
          as long as they have the right type *)
-      let c', univs, ctx' =
+      let univs, ctx' =
         match cb.const_universes, ctx with
         | Monomorphic, None ->
-          let c',cst = match cb.const_body with
+          let cst = match cb.const_body with
             | Undef _ | OpaqueDef _ ->
               let j = Typeops.infer env' c in
               assert (j.uj_val == c); (* relevances should already be correct here *)
               let typ = cb.const_type in
               let cst = infer_gen_conv_leq (cst, ustate) env' j.uj_type typ in
-              j.uj_val, cst
+              cst
             | Def c' ->
-              c, infer_gen_conv (cst, ustate) env' c c'
+              infer_gen_conv (cst, ustate) env' c c'
             | Primitive _ ->
               error_incorrect_with_constraint lab
           in
-          c', Monomorphic, cst
+          Monomorphic, cst
         | Polymorphic uctx, Some ctx ->
           let () =
             if not (UGraph.check_subtype (Environ.universes env) uctx ctx) then
@@ -118,10 +118,10 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
             | Primitive _ ->
               error_incorrect_with_constraint lab
           in
-          c, Polymorphic ctx, cst
+          Polymorphic ctx, cst
         | _ -> error_incorrect_with_constraint lab
       in
-      let def = Def c' in
+      let def = Def c in
       (*      let ctx' = Univ.UContext.make (newus, cst) in *)
       let cb' =
         { cb with
@@ -130,7 +130,7 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
           const_body_code =
               (Vmbytegen.compile_constant_body ~fail_on_error:false env' cb.const_universes def) }
       in
-      before@(lab,SFBconst(cb'))::after, c', ctx'
+      before@(lab,SFBconst(cb'))::after, ctx'
     else
       (* Definition inside a sub-module *)
       let mb = match spec with
@@ -140,14 +140,14 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
       begin match mb.mod_expr with
         | Abstract ->
           let struc = Modops.destr_nofunctor (MPdot (mp,lab)) mb.mod_type in
-          let struc',c',cst =
+          let struc', cst =
             check_with_def (cst, ustate) env' struc (idl,(c,ctx)) (MPdot(mp,lab)) mb.mod_delta
           in
           let mb' = { mb with
                       mod_type = NoFunctor struc';
                       mod_type_alg = None }
           in
-          before@(lab,SFBmodule mb')::after, c', cst
+          before@(lab,SFBmodule mb')::after, cst
         | _ -> error_generative_module_expected lab
       end
   with
@@ -227,16 +227,19 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
   | Not_found -> error_no_such_label lab mp
   | Reduction.NotConvertible -> error_incorrect_with_constraint lab
 
-let check_with ustate env mp (sign,alg,reso,cst) = function
+let check_with ustate env mp (sign,reso,cst) = function
   | WithDef(idl, (c, ctx)) ->
     let struc = destr_nofunctor mp sign in
-    let struc', c', cst = check_with_def (cst, ustate) env struc (idl, (c, ctx)) mp reso in
-    let wd' = WithDef (idl, (c', ctx)) in
-    NoFunctor struc', MEwith (alg,wd'), reso, cst
-  | WithMod(idl,new_mp) as wd ->
+    let struc', cst = check_with_def (cst, ustate) env struc (idl, (c, ctx)) mp reso in
+    NoFunctor struc', reso, cst
+  | WithMod(idl,new_mp) ->
     let struc = destr_nofunctor mp sign in
     let struc',reso',cst = check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso in
-    NoFunctor struc', MEwith (alg,wd), reso', cst
+    NoFunctor struc', reso', cst
+
+let check_with_alg ustate env mp (sign,alg,reso,cst) wd =
+  let struc, reso, cst = check_with ustate env mp (sign, reso, cst) wd in
+  struc, MEwith (alg, wd), reso, cst
 
 let translate_apply ustate env inl (sign,alg,reso,cst) mp1 mkalg =
   let farg_id, farg_b, fbody_b = destr_functor sign in
@@ -273,7 +276,7 @@ let rec translate_mse (cst, ustate) env mpo inl = function
   |MEwith(me, with_decl) ->
     assert (Option.is_empty mpo); (* No 'with' syntax for modules *)
     let mp = mp_from_mexpr me in
-    check_with ustate env mp (translate_mse (cst, ustate) env None inl me) with_decl
+    check_with_alg ustate env mp (translate_mse (cst, ustate) env None inl me) with_decl
 
 let mk_mod mp e ty reso =
   { mod_mp = mp;
