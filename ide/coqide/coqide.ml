@@ -1177,13 +1177,6 @@ let apply_unicode_binding =
   cb_on_current_term (fun t ->
     t.script#apply_unicode_binding())
 
-let mem_usage =
-  cb_on_current_term (fun t ->
-    let open Gc in
-    let stats = Gc.stat () in
-    Printf.printf "live_words = %d heap_words = %d top_heap_words = %d\n%!"
-      stats.live_words stats.heap_words stats.top_heap_words)
-
 let coqtop_arguments sn =
   init_bpts sn;
   let dialog = GWindow.dialog ~title:"Coqtop arguments" () in
@@ -1617,8 +1610,6 @@ let build_ui () =
       ~callback:(fun _ -> on_current_term (fun sn ->
          sn.messages#default_route#clear;
          sn.messages#default_route#add_string (MicroPG.get_documentation ())));
-    item "Memory usage" ~label:"Memory usage"  (* temporary, for debugging *)
-      ~callback:MiscMenu.mem_usage;
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];
