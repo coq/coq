@@ -369,6 +369,35 @@ let check_named {CAst.loc;v=na} = match na with
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
 
+(* Returns the list [x_1, ..., x_n] of levels contributing to template
+   polymorphism. The elements x_k is None if the k-th parameter
+   (starting from the most recent and ignoring let-definitions) is not
+   contributing to the inductive type's sort or is Some u_k if its level
+   is u_k and is contributing. *)
+let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
+  let unbounded_from_below u cstrs =
+    let open Univ in
+    Univ.Constraints.for_all (fun (l, d, r) ->
+        match d with
+        | Eq -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
+        | Lt | Le -> not (Univ.Level.equal r u))
+      cstrs
+  in
+  let check_level l =
+    Univ.Level.Set.mem l (Univ.ContextSet.levels uctx) &&
+    (let () = assert (not @@ Univ.Level.is_set l) in true) &&
+    unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
+    not (Univ.Level.Set.mem l ctor_levels)
+  in
+  let univs = match concl with
+  | Prop | Set | SProp -> Univ.Level.Set.empty
+  | Type u -> Univ.Universe.levels u
+  in
+  let univs = Univ.Level.Set.filter (fun l -> check_level l) univs in
+  match concl with
+  | Prop -> true
+  | Set | SProp | Type _ -> not @@ Univ.Level.Set.is_empty univs
+
 let template_polymorphism_candidate ~ctor_levels uctx params concl =
   match uctx with
   | UState.Monomorphic_entry uctx ->
@@ -376,7 +405,7 @@ let template_polymorphism_candidate ~ctor_levels uctx params concl =
     if not concltemplate then false
     else
       let conclu = Option.default Sorts.prop concl in
-      Option.has_some @@ IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
+      template_polymorphic_univs ~ctor_levels uctx params conclu
   | UState.Polymorphic_entry _ -> false
 
 let check_param = function
