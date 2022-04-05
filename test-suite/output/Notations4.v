@@ -316,7 +316,6 @@ Module P.
 
   Module NotationMixedTermBinderAsIdent.
 
-  Set Warnings "-deprecated-ident-entry". (* We do want ident! *)
   Notation "▢_ n P" := (pseudo_force n (fun n => P))
     (at level 0, n ident, P at level 9, format "▢_ n  P").
   Check exists p, ▢_p (p >= 1).
