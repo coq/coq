@@ -25,6 +25,7 @@ module Inf : sig
   type variances
   val infer_level_eq : Level.t -> variances -> variances
   val infer_level_leq : Level.t -> variances -> variances
+  val is_trivial : Level.t -> variances -> bool
   val start : (Level.t * Variance.t option) array -> variances
   val finish : variances -> Variance.t array
 end = struct
@@ -71,6 +72,8 @@ end = struct
         variances.univs
     in
     if univs == variances.univs then variances else {variances with univs}
+
+  let is_trivial u variances = not (Level.Map.mem u variances.univs)
 
   let start us =
     let univs = Array.fold_left (fun univs (u,variance) ->
@@ -243,8 +246,13 @@ and infer_list infos variances v =
 
 let infer_term cv_pb env variances c =
   let open CClosure in
-  let infos = (create_clos_infos all env, create_tab ()) in
-  infer_fterm cv_pb infos variances (CClosure.inject c) []
+  let univs = Vars.universes_of_constr c in
+  if Level.Set.for_all (fun u -> Inf.is_trivial u variances) univs then
+    (* Fast-path: no potentially cumulative level in the term *)
+    variances
+  else
+    let infos = (create_clos_infos all env, create_tab ()) in
+    infer_fterm cv_pb infos variances (CClosure.inject c) []
 
 let infer_arity_constructor is_arity env variances arcn =
   let infer_typ typ (env,variances) =
