@@ -31,6 +31,10 @@ val pr_internal_constructor : type_constant -> int -> bool -> Pp.t
 val pr_projection : ltac_projection -> Pp.t
 val pr_glbexpr_gen : exp_level -> glb_tacexpr -> Pp.t
 val pr_glbexpr : glb_tacexpr -> Pp.t
+val pr_partial_pat : PartialPat.t -> Pp.t
+
+(** Utility function *)
+val partial_pat_of_glb_pat : glb_pat -> PartialPat.t
 
 (** {5 Printing values}*)
 

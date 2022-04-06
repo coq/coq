@@ -93,6 +93,7 @@ type raw_patexpr_r =
 | CPatVar of Name.t
 | CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
 | CPatCnv of raw_patexpr * raw_typexpr
+| CPatOr of raw_patexpr list
 
 and raw_patexpr = raw_patexpr_r CAst.t
 
@@ -118,6 +119,32 @@ and raw_taccase = raw_patexpr * raw_tacexpr
 
 and raw_recexpr = (ltac_projection or_relid * raw_tacexpr) list
 
+(* We want to generate these easily in the Closed case, otherwise we
+   could have the kn in the ctor_data_for_patterns type. Maybe still worth doing?? *)
+type ctor_indx =
+  | Closed of int
+  | Open of ltac_constructor
+
+type ctor_data_for_patterns = {
+  ctyp : type_constant;
+  cnargs : int;
+  cindx : ctor_indx;
+}
+
+type glb_pat =
+  | GPatVar of Name.t
+  | GPatRef of ctor_data_for_patterns or_tuple * glb_pat list
+  | GPatOr of glb_pat list
+
+module PartialPat : sig
+  type r =
+    | Var of Name.t
+    | Ref of ctor_data_for_patterns or_tuple * t list
+    | Or of t list
+    | Extension
+  and t = r CAst.t
+end
+
 type case_info = type_constant or_tuple
 
 type 'a open_match = {
@@ -140,6 +167,7 @@ type glb_tacexpr =
 | GTacSet of type_constant * glb_tacexpr * int * glb_tacexpr
 | GTacOpn of ltac_constructor * glb_tacexpr list
 | GTacWth of glb_tacexpr open_match
+| GTacFullMatch of glb_tacexpr * (glb_pat * glb_tacexpr) list
 | GTacExt : (_, 'a) Tac2dyn.Arg.tag * 'a -> glb_tacexpr
 | GTacPrm of ml_tactic_name * glb_tacexpr list
 

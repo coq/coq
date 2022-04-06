@@ -153,6 +153,106 @@ let order_branches cbr nbr def =
   in
   order 0 0 def
 
+type ('a,'b) factorization =
+  | FullList of 'a list
+  | ListPrefix of 'a list * 'a
+  | Other of 'b
+
+let pr_factorized_constructor pr_rec lvl tpe = function
+  | FullList l ->
+      let pr e = pr_rec E4 e in
+      hov 2 (str "[" ++ prlist_with_sep pr_semicolon pr (List.rev l) ++ str "]")
+  | ListPrefix (l,e) ->
+      let paren = match lvl with
+        | E0 | E1 | E2 -> paren
+        | E3 | E4 | E5 -> fun x -> x
+      in
+      let pr e = pr_rec E1 e in
+      let pr_cons () = spc () ++ str "::" ++ spc () in
+      paren (hov 2 (prlist_with_sep pr_cons pr (List.rev (e :: l))))
+  | Other (n,cl) ->
+  let _, data = Tac2env.interp_type tpe in
+  match data with
+    | GTydAlg def ->
+      let paren = match lvl with
+        | E0 ->
+          if List.is_empty cl then fun x -> x else paren
+        | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+      in
+      let cstr = pr_internal_constructor tpe n (List.is_empty cl) in
+      let cl = match cl with
+        | [] -> mt ()
+        | _ -> spc () ++ pr_sequence (pr_rec E0) cl
+      in
+      paren (hov 2 (cstr ++ cl))
+    | GTydRec def ->
+      let args = List.combine def cl in
+      let pr_arg ((id, _, _), arg) =
+        let kn = change_kn_label tpe id in
+        pr_projection kn ++ spc () ++ str ":=" ++ spc () ++ pr_rec E1 arg
+      in
+      let args = prlist_with_sep pr_semicolon pr_arg args in
+      hv 0 (str "{" ++ spc () ++ args ++ spc () ++ str "}")
+    | (GTydDef _ | GTydOpn) -> assert false
+
+let pr_partial_pat_gen =
+  let open PartialPat in
+  let rec pr_pat lvl pat = match pat.CAst.v with
+    | Var x -> pr_name x
+    | Ref (Tuple 0, _) -> str "()"
+    | Ref (Tuple _, args) ->
+      let paren = match lvl with
+        | E0 | E1 -> paren
+        | E2 | E3 | E4 | E5 -> fun x -> x
+      in
+      paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_pat E1) args)
+    | Ref (Other {cindx=Open kn}, args) ->
+      let paren = match lvl with
+        | E0 -> paren
+        | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+      in
+      let c = pr_constructor kn in
+      paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_pat E0) args)))
+    | Ref (Other {ctyp; cindx=Closed i}, args) ->
+      (* TODO when we have patterns for records this will need an update *)
+      let factorized =
+        if KerName.equal ctyp t_list then
+          let rec factorize accu pat = match pat.CAst.v with
+            | Ref (_, []) -> accu, None
+            | Ref (_, [e; l]) -> factorize (e :: accu) l
+            | _ -> accu, Some pat
+          in
+          let l, e = factorize [] pat in
+          match e with
+          | None -> FullList l
+          | Some e -> ListPrefix (l,e)
+        else Other (i,args)
+      in
+      pr_factorized_constructor pr_pat lvl ctyp factorized
+    | Extension -> str "*extension*"
+    | Or pats ->
+      let paren = match lvl with
+        | E0 -> paren
+        | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+      in
+      paren (hv 0 (prlist_with_sep (fun () -> spc() ++ str "|" ++ spc()) (pr_pat E1) pats))
+  in
+  fun lvl pat -> hov 0 (pr_pat lvl pat)
+
+let pr_partial_pat pat = pr_partial_pat_gen E5 pat
+
+(* Lets us share the pattern printing code *)
+let rec partial_pat_of_glb_pat pat =
+  let open PartialPat in
+  let pat = match pat with
+    | GPatVar x -> Var x
+    | GPatRef (ctor,pats) -> Ref (ctor, List.map partial_pat_of_glb_pat pats)
+    | GPatOr pats -> Or (List.map partial_pat_of_glb_pat pats)
+  in
+  CAst.make pat
+
+let pr_glb_pat pat = pr_partial_pat (partial_pat_of_glb_pat pat)
+
 let pr_glbexpr_gen lvl c =
   let rec pr_glbexpr lvl = function
   | GTacAtm atm -> pr_atom atm
@@ -244,6 +344,14 @@ let pr_glbexpr_gen lvl c =
     let def = pr_pattern (str "_") def_as (mt ()) def_p in
     let br = br ++ def in
     v 0 (hv 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ br ++ str "end")
+  | GTacFullMatch (e, brs) ->
+    let e = pr_glbexpr E5 e in
+    let pr_one_branch (pat,br) =
+      hov 4 (str "|" ++ spc() ++ hov 0 (pr_glb_pat pat ++ spc() ++ str "=>") ++ spc() ++
+             hov 2 (pr_glbexpr E5 br))
+    in
+    let brs = prlist_with_sep spc pr_one_branch brs in
+    v 0 (hv 0 (str "match" ++ spc () ++ e ++ spc () ++ str "with") ++ spc () ++ brs ++ spc() ++ str "end")
   | GTacPrj (kn, e, n) ->
     let def = match Tac2env.interp_type kn with
     | _, GTydRec def -> def
@@ -285,55 +393,26 @@ let pr_glbexpr_gen lvl c =
     hov 0 (str "@external" ++ spc () ++ qstring prm.mltac_plugin ++ spc () ++
       qstring prm.mltac_tactic ++ args)
   and pr_applied_constructor lvl tpe n cl =
-    let _, data = Tac2env.interp_type tpe in
-    if KerName.equal tpe t_list then
-      let rec factorize accu = function
-      | GTacCst (_, 0, []) -> accu, None
-      | GTacCst (_, 0, [e; l]) -> factorize (e :: accu) l
-      | e -> accu, Some e
-      in
-      let l, e = factorize [] (GTacCst (Other tpe, n, cl)) in
-      match e with
-      | None ->
-        let pr e = pr_glbexpr E4 e in
-        hov 2 (str "[" ++ prlist_with_sep pr_semicolon pr (List.rev l) ++ str "]")
-      | Some e ->
-        let paren = match lvl with
-        | E0 | E1 | E2 -> paren
-        | E3 | E4 | E5 -> fun x -> x
+    let factorized =
+      if KerName.equal tpe t_list then
+        let rec factorize accu = function
+          | GTacCst (_, 0, []) -> accu, None
+          | GTacCst (_, 0, [e; l]) -> factorize (e :: accu) l
+          | e -> accu, Some e
         in
-        let pr e = pr_glbexpr E1 e in
-        let pr_cons () = spc () ++ str "::" ++ spc () in
-        paren (hov 2 (prlist_with_sep pr_cons pr (List.rev (e :: l))))
-    else match data with
-    | GTydAlg def ->
-      let paren = match lvl with
-      | E0 ->
-        if List.is_empty cl then fun x -> x else paren
-      | E1 | E2 | E3 | E4 | E5 -> fun x -> x
-      in
-      let cstr = pr_internal_constructor tpe n (List.is_empty cl) in
-      let cl = match cl with
-      | [] -> mt ()
-      | _ -> spc () ++ pr_sequence (pr_glbexpr E0) cl
-      in
-      paren (hov 2 (cstr ++ cl))
-    | GTydRec def ->
-      let args = List.combine def cl in
-      let pr_arg ((id, _, _), arg) =
-        let kn = change_kn_label tpe id in
-        pr_projection kn ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr E1 arg
-      in
-      let args = prlist_with_sep pr_semicolon pr_arg args in
-      hv 0 (str "{" ++ spc () ++ args ++ spc () ++ str "}")
-    | (GTydDef _ | GTydOpn) -> assert false
+        let l, e = factorize [] (GTacCst (Other tpe, n, cl)) in
+        match e with
+        | None -> FullList l
+        | Some e -> ListPrefix (l,e)
+      else Other (n,cl)
+    in
+    pr_factorized_constructor pr_glbexpr lvl tpe factorized
   in
   hov 0 (pr_glbexpr lvl c)
 
-
-
 let pr_glbexpr c =
   pr_glbexpr_gen E5 c
+
 
 (** Toplevel printers *)
 

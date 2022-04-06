@@ -69,3 +69,60 @@ Goal 2 = 3.
         | e => Control.zero e
         end).
 Abort.
+
+Fail Ltac2 Eval fun x => match x with (x,x) => x end.
+Ltac2 Eval fun x => match x with (x,y) => x end.
+
+Module StupidTuple.
+  Ltac2 foo x :=
+    match x with
+    | ((a,b),c) => b
+    end .
+
+  Fail Ltac2 Eval foo (1,2).
+End StupidTuple.
+
+Module Empty.
+  Ltac2 Type empty := [].
+  Ltac2 bar (x:empty) := match x with end.
+End Empty.
+
+Module DeepType.
+  Ltac2 Type rec mylist := [ Nil | One (unit option) | Cons (unit option, mylist) ].
+
+  Fail Ltac2 test x :=
+    match x with
+    | Nil, _ => ()
+    | _, Nil => ()
+    | One None, _ => ()
+    | _, One None => ()
+    end.
+
+  Fail Ltac2 test x :=
+    match x with
+    | Nil, _ => ()
+    | _, Nil => ()
+    | One None, _ => ()
+    | _, One None => ()
+    | Cons _ _, Cons _ _ => ()
+    end.
+
+  Succeed Ltac2 test x :=
+    match x with
+    | Nil, _ => ()
+    | _, Nil => ()
+    | One None, _ => ()
+    | _, One None => ()
+    | _, _ => ()
+    end.
+
+  Succeed Ltac2 test x :=
+    match x with
+    | Nil, _ => ()
+    | _, Nil => ()
+    | One _, _ => ()
+    | _, One _ => ()
+    | Cons _ _, _ => ()
+    | _, Cons _ _ => ()
+    end.
+End DeepType.

@@ -37,7 +37,6 @@ Current limitations include:
 
   - Printing functions are limited and awkward to use.  Only a few data types are
     printable.
-  - Deep pattern matching and matching on tuples don't work.
   - A convenient way to build terms with casts through the low-level API. Because the
     cast type is opaque, building terms with casts currently requires an awkward construction like the
     following, which also incurs extra overhead to repeat typechecking for each
@@ -1120,6 +1119,8 @@ Match over goals
       end.
 
 
+.. _ltac2_match_on_values:
+
 Match on values
 ~~~~~~~~~~~~~~~
 
@@ -1132,16 +1133,17 @@ Match on values
    .. insertprodn ltac2_branches atomic_tac2pat
 
    .. prodn::
-      ltac2_branches ::= {? %| } {+| @tac2pat1 => @ltac2_expr }
+      ltac2_branches ::= {? %| } {+| {? @atomic_tac2pat } => @ltac2_expr }
       tac2pat1 ::= @qualid {+ @tac2pat0 }
       | @qualid
-      | [ ]
       | @tac2pat0 :: @tac2pat0
+      | @tac2pat0 %| {+| @tac2pat1 }
       | @tac2pat0
       tac2pat0 ::= _
       | ()
       | @qualid
       | ( {? @atomic_tac2pat } )
+      | [ {*; @tac2pat1 } ]
       atomic_tac2pat ::= @tac2pat1 : @ltac2_type
       | @tac2pat1 , {*, @tac2pat1 }
       | @tac2pat1
@@ -1152,10 +1154,6 @@ Match on values
    Equivalent to a :tacn:`match <match (Ltac2)>` on a boolean value.  If the
    :n:`@ltac2_expr5__test` evaluates to true, :n:`@ltac2_expr5__then`
    is evaluated.  Otherwise :n:`@ltac2_expr5__else` is evaluated.
-
-.. note::
-
-   For now, deep pattern matching is not implemented.
 
 
 .. _ltac2_notations:
