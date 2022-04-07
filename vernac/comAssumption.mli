@@ -56,7 +56,14 @@ val declare_axiom
 
 (** Context command *)
 
-val context
+val do_context
   :  poly:bool
   -> local_binder_expr list
   -> unit
+
+(** The first half of the context command, from expr to constr *)
+val interp_context
+  :  Environ.env
+  -> Evd.evar_map
+  -> local_binder_expr list
+  -> Evd.evar_map * (Id.t * Constr.t option * Constr.t * Glob_term.binding_kind) list

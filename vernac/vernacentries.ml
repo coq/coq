@@ -2363,7 +2363,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacDeclareInstance (id, bl, inst, info) ->
     vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
   | VernacContext sup ->
-    vtdefault(fun () -> ComAssumption.context ~poly:(only_polymorphism atts) sup)
+    vtdefault(fun () -> ComAssumption.do_context ~poly:(only_polymorphism atts) sup)
   | VernacExistingInstance insts ->
     vtdefault(fun () -> vernac_existing_instance ~atts insts)
   | VernacExistingClass id ->
