@@ -977,7 +977,14 @@ let declare_one_include (me_ast,annot) =
   let () = Global.add_constraints cst in
   let () = assert (ModPath.equal cur_mp (Global.current_modpath ())) in
   (* Include Self support  *)
-  let rec compute_sign sign mb resolver =
+  let mb = { mod_mp = cur_mp;
+  mod_expr = ();
+  mod_type = current_struct ();
+  mod_type_alg = None;
+  mod_delta = current_modresolver ();
+  mod_retroknowledge = ModTypeRK }
+  in
+  let rec compute_sign sign =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
       let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
@@ -987,21 +994,10 @@ let declare_one_include (me_ast,annot) =
         Modops.inline_delta_resolver (Global.env ()) inl cur_mp mbid mtb mb.mod_delta
       in
       let subst = Mod_subst.map_mbid mbid cur_mp mpsup_delta in
-      let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
-      compute_sign (Modops.subst_signature subst str) mb resolver
+      compute_sign (Modops.subst_signature subst str)
     | NoFunctor str -> ()
   in
-  let () =
-    let struc = current_struct () in
-    let mtb = { mod_mp = cur_mp;
-    mod_expr = ();
-    mod_type = struc;
-    mod_type_alg = None;
-    mod_delta = current_modresolver ();
-    mod_retroknowledge = ModTypeRK }
-    in
-    compute_sign sign mtb resolver
-  in
+  let () = compute_sign sign in
 
   let resolver = Global.add_include me is_mod inl in
   let subst = join subst_self (map_mp base_mp cur_mp resolver) in
