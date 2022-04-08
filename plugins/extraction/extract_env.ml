@@ -159,11 +159,14 @@ let factor_fix env sg l cb msb =
 
 let expand_mexpr env mpo me =
   let inl = Some (Flags.get_inline_level()) in
-  Mod_typing.translate_mse env mpo inl me
+  let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
+  let sign, expr, delta, (_, cst) = Mod_typing.translate_mse state env mpo inl me in
+  sign, expr, delta, cst
 
 let expand_modtype env mp me =
   let inl = Some (Flags.get_inline_level()) in
-  let mtb, _cst = Mod_typing.translate_modtype env mp inl ([],me) in
+  let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
+  let mtb, _cst = Mod_typing.translate_modtype state env mp inl ([],me) in
   mtb
 
 let no_delta = Mod_subst.empty_delta_resolver

@@ -1484,3 +1484,44 @@ let nf_meta env sigma c =
   let sigma = create_meta_instance_subst sigma in
   let cl = mk_freelisted c in
   meta_instance env sigma { cl with rebus = cl.rebus }
+
+module Infer = struct
+
+open Reduction
+
+let infer_eq (univs, cstrs as cuniv) u u' =
+  if UGraph.check_eq_sort univs u u' then cuniv
+  else
+    univs, (UnivSubst.enforce_eq_sort u u' cstrs)
+
+let infer_leq (univs, cstrs as cuniv) u u' =
+  if UGraph.check_leq_sort univs u u' then cuniv
+  else
+    let cstrs', _ = UnivSubst.enforce_leq_alg_sort u u' univs in
+      univs, Univ.Constraints.union cstrs cstrs'
+
+let infer_cmp_universes _env pb s0 s1 univs =
+  match pb with
+  | CUMUL -> infer_leq univs s0 s1
+  | CONV -> infer_eq univs s0 s1
+
+let infer_convert_instances ~flex u u' (univs,cstrs) =
+  let cstrs' =
+    if flex then
+      if UGraph.check_eq_instances univs u u' then cstrs
+      else raise NotConvertible
+    else Univ.enforce_eq_instances u u' cstrs
+  in (univs, cstrs')
+
+let infer_inductive_instances cv_pb variance u1 u2 (univs,csts') =
+  let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
+  (univs, Univ.Constraints.union csts csts')
+
+let inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare =
+  { compare_sorts = infer_cmp_universes;
+    compare_instances = infer_convert_instances;
+    compare_cumul_instances = infer_inductive_instances; }
+
+end
+
+let inferred_universes = Infer.inferred_universes

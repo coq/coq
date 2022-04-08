@@ -64,22 +64,13 @@ constructors. *)
 val convert_instances : flex:bool -> Univ.Instance.t -> Univ.Instance.t ->
   'a * 'a universe_compare -> 'a * 'a universe_compare
 
-(** These two never raise UnivInconsistency, inferred_universes
-    just gathers the constraints. *)
+(** This function never raise UnivInconsistency. *)
 val checked_universes : UGraph.t universe_compare
-val inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare
 
 (** These two functions can only raise NotConvertible *)
 val conv : constr extended_conversion_function
 
 val conv_leq : types extended_conversion_function
-
-(** These conversion functions are used by module subtyping, which needs to infer
-    universe constraints inside the kernel *)
-val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) ->
-  ?ts:TransparentState.t -> constr infer_conversion_function
-val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) ->
-  ?ts:TransparentState.t -> types infer_conversion_function
 
 (** Depending on the universe state functions, this might raise
   [UniverseInconsistency] in addition to [NotConvertible] (for better error

@@ -228,7 +228,7 @@ let add_local cst local =
 
 (* Constraint with algebraic on the left and a single level on the right *)
 let enforce_leq_up u v local =
-  { local with local_cst = Univ.enforce_leq u (Universe.make v) local.local_cst }
+  { local with local_cst = UnivSubst.enforce_leq u (Universe.make v) local.local_cst }
 
 let process_universe_constraints uctx cstrs =
   let open UnivSubst in

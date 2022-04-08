@@ -129,9 +129,9 @@ let rec check_module env opac mp mb opacify =
     let mtb1 = mk_mtb mp sign delta
     and mtb2 = mk_mtb mp mb.mod_type mb.mod_delta in
     let env = Modops.add_module_type mp mtb1 env in
-    let cu = Subtyping.check_subtypes env mtb1 mtb2 in
-    if not (Environ.check_constraints cu env) then
-      CErrors.user_err Pp.(str "Incorrect universe constraints for module subtyping");
+    let state = (Environ.universes env, Reduction.checked_universes) in
+    let _ : UGraph.t = Subtyping.check_subtypes state env mtb1 mtb2 in
+    ()
   in
   opac
 
@@ -165,9 +165,8 @@ and check_mexpr env opac mse mp_mse res = match mse with
       let sign, delta = check_mexpr env opac f mp_mse res in
       let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
       let mtb = Modops.module_type_of_module (lookup_module mp env) in
-      let cu = Subtyping.check_subtypes env mtb farg_b in
-      if not (Environ.check_constraints cu env) then
-        CErrors.user_err Pp.(str "Incorrect universe constraints for module subtyping");
+      let state = (Environ.universes env, Reduction.checked_universes) in
+      let _ : UGraph.t = Subtyping.check_subtypes state env mtb farg_b in
       let subst = Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver in
       Modops.subst_signature subst fbody_b, Mod_subst.subst_codom_delta_resolver subst delta
   | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")

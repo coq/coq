@@ -236,35 +236,6 @@ let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (Type _ | Set), (Type _ | Set) ->
   check_leq ugraph (get_algebraic s1) (get_algebraic s2)
 
-let enforce_eq_sort s1 s2 cst = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
-  raise (UniverseInconsistency (Eq, s1, s2, None))
-| (Set | Type _), (Set | Type _) ->
-  Univ.enforce_eq (get_algebraic s1) (get_algebraic s2) cst
-
-let enforce_leq_sort s1 s2 cst = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
-| (Prop, (Set | Type _)) -> cst
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
-  raise (UniverseInconsistency (Le, s1, s2, None))
-| (Set | Type _), (Set | Type _) ->
-  Univ.enforce_leq (get_algebraic s1) (get_algebraic s2) cst
-
-let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
-| (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
-| (Prop, (Set | Type _)) -> Constraints.empty, g
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
-  if cumulative_sprop g && is_sprop s1 then
-    Constraints.empty, g
-  else
-    raise (UniverseInconsistency (Le, s1, s2, None))
-| (Set | Type _), (Set | Type _) ->
-  enforce_leq_alg (get_algebraic s1) (get_algebraic s2) g
-
 (** Pretty-printing *)
 
 let pr_pmap sep pr map =

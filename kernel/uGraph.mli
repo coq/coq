@@ -53,17 +53,14 @@ exception UniverseInconsistency of univ_inconsistency
 
 val enforce_constraint : univ_constraint -> t -> t
 
-val enforce_eq_sort : Sorts.t -> Sorts.t -> Univ.Constraints.t -> Univ.Constraints.t
-val enforce_leq_sort : Sorts.t -> Sorts.t -> Univ.Constraints.t -> Univ.Constraints.t
-
 val merge_constraints : Constraints.t -> t -> t
 
 val check_constraint  : t -> univ_constraint -> bool
 val check_constraints : Constraints.t -> t -> bool
 val check_eq_sort : t -> Sorts.t  -> Sorts.t -> bool
 val check_leq_sort : t -> Sorts.t -> Sorts.t -> bool
-(** Picks an arbitrary set of constraints sufficient to ensure [u <= v]. *)
-val enforce_leq_alg_sort : Sorts.t -> Sorts.t -> t -> Univ.Constraints.t * t
+
+val enforce_leq_alg : Univ.Universe.t -> Univ.Universe.t -> t -> Univ.Constraints.t * t
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
    @raise AlreadyDeclared if the level is already declared in the graph. *)

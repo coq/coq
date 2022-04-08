@@ -995,56 +995,6 @@ let leq_constr_univs univs m n =
     and leq_constr' nargs m n = m == n || compare_leq nargs m n in
     compare_leq 0 m n
 
-let eq_constr_univs_infer univs m n =
-  if m == n then true, Constraints.empty
-  else
-    let cstrs = ref Constraints.empty in
-    let eq_universes _ = UGraph.check_eq_instances univs in
-    let eq_sorts s1 s2 =
-      if Sorts.equal s1 s2 then true
-      else
-        if UGraph.check_eq_sort univs s1 s2 then true
-        else
-          (cstrs := UGraph.enforce_eq_sort s1 s2 !cstrs;
-           true)
-    in
-    let rec eq_constr' nargs m n =
-      m == n || compare_head_gen eq_universes eq_sorts eq_constr' nargs m n
-    in
-    let res = compare_head_gen eq_universes eq_sorts eq_constr' 0 m n in
-    res, !cstrs
-
-let leq_constr_univs_infer univs m n =
-  if m == n then true, Constraints.empty
-  else
-    let cstrs = ref Constraints.empty in
-    let eq_universes _ l l' = UGraph.check_eq_instances univs l l' in
-    let eq_sorts s1 s2 =
-      if Sorts.equal s1 s2 then true
-      else
-        if UGraph.check_eq_sort univs s1 s2 then true
-        else (cstrs := UGraph.enforce_eq_sort s1 s2 !cstrs;
-              true)
-    in
-    let leq_sorts s1 s2 =
-      if Sorts.equal s1 s2 then true
-      else
-        if UGraph.check_leq_sort univs s1 s2 then true
-        else
-          (try let c, _ = UGraph.enforce_leq_alg_sort s1 s2 univs in
-            cstrs := Univ.Constraints.union c !cstrs;
-            true
-          with UGraph.UniverseInconsistency _ -> false)
-    in
-    let rec eq_constr' nargs m n =
-      m == n || compare_head_gen eq_universes eq_sorts eq_constr' nargs m n
-    in
-    let rec compare_leq nargs m n =
-      compare_head_gen_leq eq_universes leq_sorts eq_constr' leq_constr' nargs m n
-    and leq_constr' nargs m n = m == n || compare_leq nargs m n in
-    let res = compare_leq 0 m n in
-    res, !cstrs
-
 let rec eq_constr_nounivs m n =
   (m == n) || compare_head_gen (fun _ _ _ -> true) (fun _ _ -> true) (fun _ -> eq_constr_nounivs) 0 m n
 

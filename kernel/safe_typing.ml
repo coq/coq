@@ -1014,10 +1014,13 @@ let add_mind ?typing_flags l mie senv =
 
 (** Insertion of module types *)
 
+let check_state senv =
+  (Environ.universes senv.env, Reduction.checked_universes)
+
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
-  let mtb, cst = Mod_typing.translate_modtype senv.env mp inl params_mte  in
-  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
+  let state = check_state senv in
+  let mtb, _ = Mod_typing.translate_modtype state senv.env mp inl params_mte  in
   let mtb = Declareops.hcons_module_type mtb in
   let senv = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv
@@ -1036,8 +1039,8 @@ let full_add_module_type mp mt senv =
 
 let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
-  let mb, cst = Mod_typing.translate_module senv.env mp inl me in
-  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
+  let state = check_state senv in
+  let mb, _ = Mod_typing.translate_module state senv.env mp inl me in
   let mb = Declareops.hcons_module_body mb in
   let senv = add_field (l,SFBmodule mb) M senv in
   let senv =
@@ -1084,8 +1087,8 @@ let start_modtype l senv =
 let add_module_parameter mbid mte inl senv =
   let () = check_empty_struct senv in
   let mp = MPbound mbid in
-  let mtb, cst = Mod_typing.translate_modtype senv.env mp inl ([],mte) in
-  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
+  let state = check_state senv in
+  let mtb, _ = Mod_typing.translate_modtype state senv.env mp inl ([],mte) in
   let senv = full_add_module_type mp mtb senv in
   let new_variant = match senv.modvariant with
     | STRUCT (params,oldenv) -> STRUCT ((mbid,mtb) :: params, oldenv)
@@ -1135,12 +1138,13 @@ let functorize_module params mb =
 let build_module_body params restype senv =
   let struc = NoFunctor (List.rev senv.revstruct) in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in
-  let mb, cst =
-    Mod_typing.finalize_module senv.env senv.modpath
-      (struc,None,senv.modresolver,Univ.Constraints.empty) restype'
+  let state = check_state senv in
+  let mb, _ =
+    Mod_typing.finalize_module state senv.env senv.modpath
+      (struc,None,senv.modresolver) restype'
   in
   let mb' = functorize_module params mb in
-  { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }, cst
+  { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
@@ -1173,8 +1177,7 @@ let end_module l restype senv =
   let () = check_current_label l mp in
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
-  let mb, cst = build_module_body params restype senv in
-  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
+  let mb = build_module_body params restype senv in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
   let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
   let senv' = propagate_loads { senv with env = newenv } in
@@ -1215,34 +1218,28 @@ let end_modtype l senv =
 let add_include me is_module inl senv =
   let open Mod_typing in
   let mp_sup = senv.modpath in
-  let sign,(),resolver,cst =
-    translate_mse_include is_module senv.env mp_sup inl me
+  let state = check_state senv in
+  let sign,(),resolver, _ =
+    translate_mse_include is_module state senv.env mp_sup inl me
   in
-  let senv = push_context_set ~strict:true (Univ.Level.Set.empty,cst) senv in
   (* Include Self support  *)
-  let rec compute_sign sign mb resolver senv =
+  let struc = NoFunctor (List.rev senv.revstruct) in
+  let mb = build_mtb mp_sup struc senv.modresolver in
+  let rec compute_sign sign resolver =
     match sign with
     | MoreFunctor(mbid,mtb,str) ->
-      let cst_sub = Subtyping.check_subtypes senv.env mb mtb in
-      let senv =
-        add_constraints
-          (Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty)
-          senv in
+      let state = check_state senv in
+      let (_ : UGraph.t) = Subtyping.check_subtypes state senv.env mb mtb in
       let mpsup_delta =
-        Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
+        Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb senv.modresolver
       in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
-      compute_sign (Modops.subst_signature subst str) mb resolver senv
-    | NoFunctor str -> resolver,str,senv
+      compute_sign (Modops.subst_signature subst str) resolver
+    | NoFunctor str -> resolver, str
   in
-  let resolver,str,senv =
-    let struc = NoFunctor (List.rev senv.revstruct) in
-    let mtb = build_mtb mp_sup struc senv.modresolver in
-    compute_sign sign mtb resolver senv
-  in
-  let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv
-  in
+  let resolver, str = compute_sign sign resolver in
+  let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv in
   let add senv ((l,elem) as field) =
     let new_name = match elem with
       | SFBconst _ ->

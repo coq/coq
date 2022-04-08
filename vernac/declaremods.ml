@@ -576,6 +576,11 @@ let intern_arg (acc, cst) (idl,(typ,ann)) =
   let (mty, base, kind) = Modintern.intern_module_ast Modintern.ModType typ in
   let (mty, cst') = Modintern.interp_module_ast env kind base mty in
   let () = Global.push_context_set ~strict:true cst' in
+  let () =
+    let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
+    let _, (_, cst) = Mod_typing.translate_modtype state (Global.env ()) base inl ([], mty) in
+    Global.add_constraints cst
+  in
   let env = Global.env () in
   let sobjs = get_module_sobjs false env inl mty in
   let mp0 = get_module_path mty in
@@ -610,12 +615,13 @@ let intern_args params =
 (** {6 Auxiliary functions concerning subtyping checks} *)
 
 let check_sub mtb sub_mtb_l =
-  (* The constraints are checked and forgot immediately : *)
-  ignore (List.fold_right
-            (fun sub_mtb env ->
-               Environ.add_constraints
-                 (Subtyping.check_subtypes env mtb sub_mtb) env)
-            sub_mtb_l (Global.env()))
+  let fold sub_mtb (ocst, env) =
+    let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
+    let _, cst = Subtyping.check_subtypes state env mtb sub_mtb in
+    (Univ.Constraints.union ocst cst, Environ.add_constraints cst env)
+  in
+  let cst, _ = List.fold_right fold sub_mtb_l (Univ.Constraints.empty, Global.env ()) in
+  Global.add_constraints cst
 
 (** This function checks if the type calculated for the module [mp] is
     a "<:"-like subtype of all signatures in [sub_mtb_l]. Uses only
@@ -646,13 +652,20 @@ let build_subtypes env mp args mtys =
        let mte, ctx' = Modintern.interp_module_ast env Modintern.ModType base mte in
        let env = Environ.push_context_set ~strict:true ctx' env in
        let ctx = Univ.ContextSet.union ctx ctx' in
-       let mtb, cst = Mod_typing.translate_modtype env mp inl (args,mte) in
+       let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
+       let mtb, (_, cst) = Mod_typing.translate_modtype state env mp inl (args,mte) in
        let ctx = Univ.ContextSet.add_constraints cst ctx in
        ctx, mtb)
     Univ.ContextSet.empty mtys
   in
   (ans, ctx)
 
+let current_modresolver () =
+  fst @@ Safe_typing.delta_of_senv @@ Global.safe_env ()
+
+let current_struct () =
+  let struc = Safe_typing.structure_body_of_safe_env @@ Global.safe_env () in
+  NoFunctor (List.rev struc)
 
 (** {6 Current module information}
 
@@ -694,7 +707,8 @@ let start_module export id args res fs =
         let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
-        let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
+        let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
+        let _, _, _, (_, cst) = Mod_typing.translate_mse state env None inl mte in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some (mte, inl), [], ctx
     | Check resl ->
@@ -719,10 +733,20 @@ let end_module () =
       get_module_sobjs false (Global.env()) inline mty, [], []
   in
   let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
+
+  let struc = current_struct () in
+  let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) m_info.cur_typ in
+  let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
+  let _, (_, cst) =
+    Mod_typing.finalize_module state (Global.env ()) (Global.current_modpath ())
+      (struc, None, current_modresolver ()) restype'
+  in
+  let () = Global.add_constraints cst in
+
   let mp,mbids,resolver = Global.end_module fs id m_info.cur_typ in
   let sobjs = let (ms,objs) = sobjs0 in (mbids@ms,objs) in
 
-  check_subtypes mp m_info.cur_typs;
+  let () = check_subtypes mp m_info.cur_typs in
 
   (* We substitute objects if the module is sealed by a signature *)
   let sobjs =
@@ -760,7 +784,8 @@ let declare_module id args res mexpr_o fs =
         let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
         let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
-        let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
+        let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
+        let _, _, _, (_, cst) = Mod_typing.translate_mse state env None inl mte in
         let ctx = Univ.ContextSet.add_constraints cst ctx in
         Some mte, [], inl, ctx
     | Check mtys ->
@@ -797,13 +822,16 @@ let declare_module id args res mexpr_o fs =
   | _ -> inl_res
   in
   let () = Global.push_context_set ~strict:true ctx in
+  let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
+  let _, (_, cst) = Mod_typing.translate_module state (Global.env ()) mp inl entry in
+  let () = Global.add_constraints cst in
   let mp_env,resolver = Global.add_module id entry inl in
 
   (* Name consistency check : kernel vs. library *)
   assert (ModPath.equal mp (mp_of_kn (Lib.make_kn id)));
   assert (ModPath.equal mp mp_env);
 
-  check_subtypes mp subs;
+  let () = check_subtypes mp subs in
 
   let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
   add_leaf (ModuleObject (id,sobjs));
@@ -833,8 +861,8 @@ let end_modtype () =
   let {Lib.substobjs = substitute; keepobjs = _; anticipateobjs = special; } = lib_stack in
   let sub_mty_l = !openmodtype_info in
   let mp, mbids = Global.end_modtype fs id in
+  let () = check_subtypes_mt mp sub_mty_l in
   let modtypeobjs = (mbids, Objs substitute) in
-  check_subtypes_mt mp sub_mty_l;
   let () = add_leaves id (special@[ModuleTypeObject (id,modtypeobjs)]) in
   (* Check name consistence : start_ vs. end_modtype, kernel vs. library *)
   assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
@@ -855,7 +883,8 @@ let declare_modtype id args mtys (mty,ann) fs =
   let () = Global.push_context_set ~strict:true mte_ctx in
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
-  let _, _, _, mte_cst = Mod_typing.translate_mse env None inl mte in
+  let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
+  let _, _, _, (_, mte_cst) = Mod_typing.translate_mse state env None inl mte in
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
   let env = Global.env () in
   let entry = params, mte in
@@ -881,7 +910,7 @@ let declare_modtype id args mtys (mty,ann) fs =
   assert (ModPath.equal mp_env mp);
 
   (* Subtyping checks *)
-  check_subtypes_mt mp sub_mty_l;
+  let () = check_subtypes_mt mp sub_mty_l in
 
   add_leaf (ModuleTypeObject (id, sobjs));
   mp
@@ -935,11 +964,45 @@ let declare_one_include (me_ast,annot) =
     try
       if List.is_empty mbids then raise NoIncludeSelf;
       let typ = type_of_incl env is_mod me in
-      let reso,_ = Safe_typing.delta_of_senv (Global.safe_env ()) in
+      let reso = current_modresolver () in
       include_subst env cur_mp reso mbids typ inl
     with NoIncludeSelf -> empty_subst
   in
   let base_mp = get_module_path me in
+
+  let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
+  let sign, (), resolver, (_, cst) =
+    Mod_typing.translate_mse_include is_mod state (Global.env ()) (Global.current_modpath ()) inl me
+  in
+  let () = Global.add_constraints cst in
+  let () = assert (ModPath.equal cur_mp (Global.current_modpath ())) in
+  (* Include Self support  *)
+  let rec compute_sign sign mb resolver =
+    match sign with
+    | MoreFunctor(mbid,mtb,str) ->
+      let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
+      let (_, cst) = Subtyping.check_subtypes state (Global.env ()) mb mtb in
+      let () = Global.add_constraints cst in
+      let mpsup_delta =
+        Modops.inline_delta_resolver (Global.env ()) inl cur_mp mbid mtb mb.mod_delta
+      in
+      let subst = Mod_subst.map_mbid mbid cur_mp mpsup_delta in
+      let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
+      compute_sign (Modops.subst_signature subst str) mb resolver
+    | NoFunctor str -> ()
+  in
+  let () =
+    let struc = current_struct () in
+    let mtb = { mod_mp = cur_mp;
+    mod_expr = ();
+    mod_type = struc;
+    mod_type_alg = None;
+    mod_delta = current_modresolver ();
+    mod_retroknowledge = ModTypeRK }
+    in
+    compute_sign sign mtb resolver
+  in
+
   let resolver = Global.add_include me is_mod inl in
   let subst = join subst_self (map_mp base_mp cur_mp resolver) in
   let aobjs = subst_aobjs subst aobjs in

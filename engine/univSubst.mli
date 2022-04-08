@@ -41,3 +41,12 @@ val nf_evars_and_universes_opt_subst : (existential -> constr option) ->
 val subst_univs_universe : (Level.t -> Universe.t) -> Universe.t -> Universe.t
 
 val pr_universe_subst : universe_subst -> Pp.t
+
+val enforce_eq : Universe.t constraint_function
+val enforce_leq : Universe.t constraint_function
+
+val enforce_eq_sort : Sorts.t -> Sorts.t -> Univ.Constraints.t -> Univ.Constraints.t
+val enforce_leq_sort : Sorts.t -> Sorts.t -> Univ.Constraints.t -> Univ.Constraints.t
+
+(** Picks an arbitrary set of constraints sufficient to ensure [u <= v]. *)
+val enforce_leq_alg_sort : Sorts.t -> Sorts.t -> UGraph.t -> Univ.Constraints.t * UGraph.t
