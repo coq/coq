@@ -1704,8 +1704,8 @@ let rec fold_trace f accu = function
   | Micromega.Merge (t1, t2) -> fold_trace f (fold_trace f accu t1) t2
   | Micromega.Push (x, t) -> fold_trace f (f accu x) t
 
-let micromega_tauto pre_process cnf spec prover env
-    (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) gl =
+let micromega_tauto pre_process cnf spec prover
+    (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) =
   (* Express the goal as one big implication *)
   let ff, ids = formula_hyps_concl polys1 polys2 in
   let mt = CamlToCoq.positive (max_tag ff) in
@@ -1765,9 +1765,9 @@ let micromega_tauto pre_process cnf spec prover env
     let res' = dump_list spec.proof_typ spec.dump_proof res' in
     Prf (ids, ff', res')
 
-let micromega_tauto pre_process cnf spec prover env
-    (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) gl =
-  try micromega_tauto pre_process cnf spec prover env polys1 polys2 gl
+let micromega_tauto pre_process cnf spec prover
+    (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) =
+  try micromega_tauto pre_process cnf spec prover polys1 polys2
   with Not_found ->
     Printexc.print_backtrace stdout;
     flush stdout;
@@ -1807,7 +1807,7 @@ let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
         if debug then
           Feedback.msg_debug (Pp.str "Env " ++ Env.pp (genv, sigma) env);
         match
-          micromega_tauto pre_process cnf spec prover env hyps concl (env, sigma)
+          micromega_tauto pre_process cnf spec prover hyps concl
         with
         | Unknown ->
           flush stdout;
@@ -1943,7 +1943,7 @@ let micromega_genr prover tac =
         match
           micromega_tauto
             (fun _ x -> x)
-            Mc.cnfQ spec prover env hyps' concl' (genv, sigma)
+            Mc.cnfQ spec prover hyps' concl'
         with
         | Unknown | Model _ ->
           flush stdout;
