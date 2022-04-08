@@ -1715,7 +1715,7 @@ let rec fold_trace f accu = function
   | Micromega.Merge (t1, t2) -> fold_trace f (fold_trace f accu t1) t2
   | Micromega.Push (x, t) -> fold_trace f (f accu x) t
 
-let micromega_tauto pre_process cnf spec prover
+let micromega_tauto ?(abstract=true) pre_process cnf spec prover
     (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) =
   (* Express the goal as one big implication *)
   let ff, ids = formula_hyps_concl polys1 polys2 in
@@ -1744,7 +1744,7 @@ let micromega_tauto pre_process cnf spec prover
         (fold_trace (fun s (i, _) -> TagSet.add i s) TagSet.empty cnf_ff_tags)
         (List.combine cnf_ff res)
     in
-    let ff' = abstract_formula deps ff in
+    let ff' = if abstract then abstract_formula deps ff else ff in
     let pre_ff' = pre_process mt ff' in
     let cnf_ff', _ = cnf Mc.IsProp pre_ff' in
     if debug then begin
@@ -1776,9 +1776,9 @@ let micromega_tauto pre_process cnf spec prover
     let res' = dump_list spec.proof_typ spec.dump_proof res' in
     Prf (ids, ff', res')
 
-let micromega_tauto pre_process cnf spec prover
+let micromega_tauto ?abstract pre_process cnf spec prover
     (polys1 : (Names.Id.t * 'cst formula) list) (polys2 : 'cst formula) =
-  try micromega_tauto pre_process cnf spec prover polys1 polys2
+  try micromega_tauto ?abstract pre_process cnf spec prover polys1 polys2
   with Not_found ->
     Printexc.print_backtrace stdout;
     flush stdout;
