@@ -15,6 +15,8 @@
 open Names
 open Univ
 
+type quality = QVar of Sorts.QVar.t | QProp | QSProp | QType
+
 type universes_entry =
 | Monomorphic_entry of Univ.ContextSet.t
 | Polymorphic_entry of Univ.UContext.t
@@ -93,6 +95,12 @@ val univ_entry : poly:bool -> t -> named_universes_entry
 val universe_binders : t -> UnivNames.universe_binders
 (** Return local names of universes. *)
 
+val nf_qvar : t -> Sorts.QVar.t -> quality
+(** Returns the normal form of the sort variable. *)
+
+val nf_sort : t -> Sorts.t -> Sorts.t
+(** Returns the normal form of the sort. *)
+
 (** {5 Constraints handling} *)
 
 val add_constraints : t -> Univ.Constraints.t -> t
@@ -157,6 +165,9 @@ val demote_seff_univs : Univ.Level.Set.t -> t -> t
 (** Mark the universes as not local any more, because they have been
    globally declared by some side effect. You should be using
    emit_side_effects instead. *)
+
+val new_sort_variable : t -> t * Sorts.QVar.t
+(** Declare a new local sort. *)
 
 val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
 (** Declare a new local universe; use rigid if a global or bound

@@ -203,41 +203,40 @@ let subst_univs_fn_puniverses f (c, u as cu) =
   let u' = subst_instance f u in
     if u' == u then cu else (c, u')
 
-let nf_evars_and_universes_opt_subst f subst =
-  let subst = normalize_univ_variable_opt_subst subst in
-  let lsubst = level_subst_of subst in
+let nf_evars_and_universes_opt_subst fevar flevel fsort c =
   let rec aux c =
     match kind c with
     | Evar (evk, args) ->
       let args' = SList.Smart.map aux args in
-      (match try f (evk, args') with Not_found -> None with
+      (match try fevar (evk, args') with Not_found -> None with
       | None -> if args == args' then c else mkEvar (evk, args')
       | Some c -> aux c)
     | Const pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
+      let pu' = subst_univs_fn_puniverses flevel pu in
         if pu' == pu then c else mkConstU pu'
     | Ind pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
+      let pu' = subst_univs_fn_puniverses flevel pu in
         if pu' == pu then c else mkIndU pu'
     | Construct pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
+      let pu' = subst_univs_fn_puniverses flevel pu in
         if pu' == pu then c else mkConstructU pu'
-    | Sort (Type u) ->
-      let u' = subst_univs_universe subst u in
-      if u' == u then c else mkSort (sort_of_univ u')
+    | Sort s ->
+      let s' = fsort s in
+      if s' == s then c else mkSort s'
     | Case (ci,u,pms,p,iv,t,br) ->
-      let u' = subst_instance lsubst u in
+      let u' = subst_instance flevel u in
       if u' == u then Constr.map aux c
       else Constr.map aux (mkCase (ci,u',pms,p,iv,t,br))
     | Array (u,elems,def,ty) ->
-      let u' = subst_instance lsubst u in
+      let u' = subst_instance flevel u in
       let elems' = CArray.Smart.map aux elems in
       let def' = aux def in
       let ty' = aux ty in
       if u == u' && elems == elems' && def == def' && ty == ty' then c
       else mkArray (u',elems',def',ty')
     | _ -> Constr.map aux c
-  in aux
+  in
+  aux c
 
 let pr_universe_subst =
   let open Pp in

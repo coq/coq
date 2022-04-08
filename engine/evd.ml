@@ -1146,8 +1146,16 @@ let normalize_sort evars s =
     let u' = normalize_universe evars u in
     if u' == u then s else Sorts.sort_of_univ u'
   | QSort (q, u) ->
-    let u' = normalize_universe evars u in
-    if u' == u then s else Sorts.qsort q u'
+    begin match UState.nf_qvar evars.universes q with
+    | QProp -> Sorts.prop
+    | QSProp -> Sorts.sprop
+    | QType ->
+      let u' = normalize_universe evars u in
+      Sorts.sort_of_univ u'
+    | QVar q' ->
+      let u' = normalize_universe evars u in
+      if q' == q && u' == u then s else Sorts.qsort q' u'
+    end
 
 (* FIXME inefficient *)
 let set_eq_sort env d s1 s2 =
@@ -1577,9 +1585,7 @@ module MiniEConstr = struct
   struct
     type t = Sorts.t
     let make s = s
-    let kind sigma = function
-      | Sorts.Type u -> Sorts.sort_of_univ (normalize_universe sigma u)
-      | s -> s
+    let kind = normalize_sort
     let unsafe_to_sorts s = s
   end
 
@@ -1649,7 +1655,12 @@ module MiniEConstr = struct
       | Evar_defined c -> Some (instantiate_evar_array sigma info c args)
       | Evar_empty -> assert false
     in
-    UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
+    let lsubst = universe_subst sigma in
+    let level_value l =
+      UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
+    in
+    let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
+    UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value c
 
   let to_constr_gen sigma c =
     let saw_evar = ref false in
@@ -1658,7 +1669,12 @@ module MiniEConstr = struct
       saw_evar := !saw_evar || Option.is_empty v;
       v
     in
-    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c in
+    let lsubst = universe_subst sigma in
+    let level_value l =
+      UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
+    in
+    let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
+    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value c in
     let saw_evar = if not !saw_evar then false
       else
         let exception SawEvar in
