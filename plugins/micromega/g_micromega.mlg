@@ -30,6 +30,10 @@ TACTIC EXTEND Lra_Q
 | [ "xlra_Q"  tactic(t) ] -> { Coq_micromega.xlra_Q (Tacinterp.tactic_of_value ist t) }
 END
 
+TACTIC EXTEND Lra_wit_Q
+| [ "wlra_Q" ident(w) constr(t) ] -> { Coq_micromega.wlra_Q w t }
+END
+
 TACTIC EXTEND Lra_R
 | [ "xlra_R" tactic(t) ] -> { Coq_micromega.xlra_R (Tacinterp.tactic_of_value ist t) }
 END

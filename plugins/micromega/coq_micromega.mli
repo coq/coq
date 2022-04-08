@@ -22,6 +22,12 @@ val xpsatz_R : int -> unit Proofview.tactic -> unit Proofview.tactic
 val xpsatz_Z : int -> unit Proofview.tactic -> unit Proofview.tactic
 val print_lia_profile : unit -> unit
 
+(** {5 Use Micromega independently from micromega parser. } *)
+
+(** [wlra_Q id ff] takes a formula [ff : BFormula (Formula Q) isProp]
+    generates a witness and poses it as [id : seq (Psatz Q)] *)
+val wlra_Q : Names.Id.t -> EConstr.t -> unit Proofview.tactic
+
 (** {5 Use Micromega independently from tactics. } *)
 
 (** [dump_proof_term] generates the Coq representation of a Micromega proof witness *)
