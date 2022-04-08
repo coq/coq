@@ -1537,7 +1537,7 @@ module MiniEConstr = struct
               let ctx = evar_filtered_context info in
               let fold accu decl arg =
                 let id = NamedDecl.get_id decl in
-                if isVarId id arg && not (Id.Map.mem id (fst kvars)) then accu
+                if not (Id.Map.mem id (fst kvars)) && isVarId id arg then accu
                 else
                   let r = lazy (Vars.make_substituend (aux kvars arg)) in
                   Id.Map.add id r accu
