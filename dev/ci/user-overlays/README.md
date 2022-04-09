@@ -44,7 +44,7 @@ include the external branch name as `[prbranch]` to apply it when you run
 the test suite locally, e.g. `make ci-elpi`.
 
 Overlay files can be created automatically using the script
-[`create_overlays.sh`](../../dev/tools/create_overlays.sh).
+[`create_overlays.sh`](../../tools/create_overlays.sh).
 
 ### Branching conventions
 
