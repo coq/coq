@@ -28,6 +28,10 @@ val print_lia_profile : unit -> unit
     generates a witness and poses it as [id : seq (Psatz Q)] *)
 val wlra_Q : Names.Id.t -> EConstr.t -> unit Proofview.tactic
 
+(** [wlia id ff] takes a formula [ff : BFormula (Formula Z) isProp]
+    generates a witness and poses it as [id : seq ZMicromega.ZArithProof] *)
+val wlia : Names.Id.t -> EConstr.t -> unit Proofview.tactic
+
 (** {5 Use Micromega independently from tactics. } *)
 
 (** [dump_proof_term] generates the Coq representation of a Micromega proof witness *)

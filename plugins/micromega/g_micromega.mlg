@@ -42,6 +42,10 @@ TACTIC EXTEND Lia
 | [ "xlia" tactic(t) ] -> { Coq_micromega.xlia (Tacinterp.tactic_of_value ist t) }
 END
 
+TACTIC EXTEND Lia_wit
+| [ "wlia" ident(w) constr(t) ] -> { Coq_micromega.wlia w t }
+END
+
 TACTIC EXTEND Nra_Q
 | [ "xnra_Q" tactic(t) ] -> { Coq_micromega.xnra_Q (Tacinterp.tactic_of_value ist t) }
 END

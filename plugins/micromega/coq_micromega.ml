@@ -2456,6 +2456,11 @@ let xlia =
     (fun _ x -> x)
     Mc.cnfZ zz_domain_spec dump_zexpr linear_Z
 
+let wlia =
+  micromega_wit_gen
+    (fun _ x -> x)
+    Mc.cnfZ zz_domain_spec linear_Z
+
 let xnra_Q =
   micromega_gen parse_qarith
     (fun _ x -> x)
