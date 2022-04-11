@@ -12,7 +12,7 @@
 (*                                                                      *)
 (* ** Toplevel definition of tactics **                                 *)
 (*                                                                      *)
-(* - Modules Mc, Env, Cache, CacheZ                                  *)
+(* - Modules Mc, Env, Cache, CacheZ                                     *)
 (*                                                                      *)
 (*  Frédéric Besson (Irisa/Inria) 2006-2019                             *)
 (*                                                                      *)
@@ -63,6 +63,37 @@ let use_nra_cache =
   declare_bool_option_and_ref ~depr:false ~key:["Nra"; "Cache"] ~value:true
 
 let use_csdp_cache () = true
+
+let cache_target =
+  (* The file which we use for csdp cache *)
+  match Sys.getenv_opt "MICROMEGA_CACHE_FILE" with
+  (* Default behavior *)
+  | None -> ".csdp.cache"
+  (* When the enviornment variable "MICROMEGA_CACHE_FILE" is set to
+  "cache_file", we copy the file "cache_file.cache" to "cache_file.cache.new"
+  and then use "cache_file.cache.new" as the persistant cache (what .csdp.cache
+  was being used for). *)
+  | Some cache_file ->
+    let cache_source = cache_file ^ ".cache" in
+    let cache_target = cache_file ^ ".cache.new" in
+    (* Copy binary file *)
+    let () =
+      let cin = open_in_bin cache_source in
+      try
+        let cout = open_out_bin cache_target in
+        try
+          while true do
+            output_byte cout (input_byte cin)
+          done
+        with End_of_file -> close_out cout; close_in cin
+      with Sys_error e ->
+        let exception CsdpCacheOverrideFailure in
+        let msg =
+          "Failure to override .csdp.cache file for micromega using \
+           MICROMEGA_CACHE_FILE."
+        in
+        Printf.eprintf "%s\n" msg; raise CsdpCacheOverrideFailure
+    in cache_target
 
 (**
   * Initialize a tag type to the Tag module declaration (see Mutils).
@@ -2105,8 +2136,8 @@ let really_call_csdpcert :
   *)
 
 let xcall_csdpcert =
-  CacheCsdp.memo_opt use_csdp_cache ".csdp.cache" (fun (prover, pb) ->
-      really_call_csdpcert prover pb)
+  CacheCsdp.memo_opt use_csdp_cache cache_target (fun (prover, pb) ->
+    really_call_csdpcert prover pb)
 
 (**
   * Prover callback functions.
