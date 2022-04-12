@@ -2466,6 +2466,11 @@ let xnra_Q =
     (fun _ x -> x)
     Mc.cnfQ qq_domain_spec dump_qexpr nlinear_prover_R
 
+let wnra_Q =
+  micromega_wit_gen
+    (fun _ x -> x)
+    Mc.cnfQ qq_domain_spec nlinear_prover_R
+
 let xnra_R = micromega_genr nlinear_prover_R
 
 let xnia =
