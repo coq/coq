@@ -2489,6 +2489,12 @@ let xsos_Q =
     Mc.cnfQ qq_domain_spec dump_qexpr
     (non_linear_prover_Q "pure_sos" None)
 
+let wsos_Q =
+  micromega_wit_gen
+    (fun _ x -> x)
+    Mc.cnfQ qq_domain_spec
+    (non_linear_prover_Q "pure_sos" None)
+
 let xsos_R = micromega_genr (non_linear_prover_R "pure_sos" None)
 
 let xsos_Z =
@@ -2497,10 +2503,22 @@ let xsos_Z =
     Mc.cnfZ zz_domain_spec dump_zexpr
     (non_linear_prover_Z "pure_sos" None)
 
+let wsos_Z =
+  micromega_wit_gen
+    (fun _ x -> x)
+    Mc.cnfZ zz_domain_spec
+    (non_linear_prover_Z "pure_sos" None)
+
 let xpsatz_Q i =
   micromega_gen parse_qarith
     (fun _ x -> x)
     Mc.cnfQ qq_domain_spec dump_qexpr
+    (non_linear_prover_Q "real_nonlinear_prover" (Some i))
+
+let wpsatz_Q i =
+  micromega_wit_gen
+    (fun _ x -> x)
+    Mc.cnfQ qq_domain_spec
     (non_linear_prover_Q "real_nonlinear_prover" (Some i))
 
 let xpsatz_R i =
@@ -2510,6 +2528,12 @@ let xpsatz_Z i =
   micromega_gen parse_zarith
     (fun _ x -> x)
     Mc.cnfZ zz_domain_spec dump_zexpr
+    (non_linear_prover_Z "real_nonlinear_prover" (Some i))
+
+let wpsatz_Z i =
+  micromega_wit_gen
+    (fun _ x -> x)
+    Mc.cnfZ zz_domain_spec
     (non_linear_prover_Z "real_nonlinear_prover" (Some i))
 
 let print_lia_profile () =

@@ -70,8 +70,16 @@ TACTIC EXTEND Sos_Z
 | [ "xsos_Z" tactic(t) ] -> { Coq_micromega.xsos_Z (Tacinterp.tactic_of_value ist t) }
 END
 
+TACTIC EXTEND Sos_wit_Z
+| [ "wsos_Z" ident(w) constr(t) ] -> { Coq_micromega.wsos_Z w t }
+END
+
 TACTIC EXTEND Sos_Q
 | [ "xsos_Q" tactic(t) ] -> { Coq_micromega.xsos_Q (Tacinterp.tactic_of_value ist t) }
+END
+
+TACTIC EXTEND Sos_wit_Q
+| [ "wsos_Q" ident(w) constr(t) ] -> { Coq_micromega.wsos_Q w t }
 END
 
 TACTIC EXTEND Sos_R
@@ -83,9 +91,17 @@ TACTIC EXTEND Psatz_Z
   { Coq_micromega.xpsatz_Z i (Tacinterp.tactic_of_value ist t) }
 END
 
+TACTIC EXTEND Psatz_wit_Z
+| [ "wpsatz_Z" nat_or_var(i) ident(w) constr(t) ] -> { Coq_micromega.wpsatz_Z i w t }
+END
+
 TACTIC EXTEND Psatz_Q
 | [ "xpsatz_Q" nat_or_var(i) tactic(t) ] ->
   { Coq_micromega.xpsatz_Q i (Tacinterp.tactic_of_value ist t) }
+END
+
+TACTIC EXTEND Psatz_wit_Q
+| [ "wpsatz_Q" nat_or_var(i) ident(w) constr(t) ] -> { Coq_micromega.wpsatz_Q i w t }
 END
 
 TACTIC EXTEND Psatz_R
