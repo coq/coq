@@ -126,11 +126,11 @@ set of polynomial inequalities does not have solutions [#fnpsatz]_.
    :math:`\bigwedge_{p \in S} p\ge 0` is unsatisfiable.
 
    *Proof:* Let's assume that :math:`\bigwedge_{p \in S} p\ge 0`
-   is satisfiable, that means it exists :math:`x` such that
+   is satisfiable, meaning there exists :math:`x` such that
    for all :math:`p \in S` , we have :math:`p(x) \ge 0`. Since the cone building
    rules preserve non negativity, any polynomial in :math:`\mathit{Cone}(S)`
    is non negative in :math:`x`. Thus :math:`-1 \in \mathit{Cone}(S)` is non
-   negative which is absurd. :math:`\square`
+   negative, which is absurd. :math:`\square`
 
 A proof based on this theorem is called a *positivstellensatz*
 refutation. The tactics work as follows. Formulas are normalized into
@@ -162,7 +162,13 @@ For each conjunct :math:`C_i`, the tactic calls an oracle which searches for
 .. tacn:: xlra_Q @ltac_expr
           xlra_R @ltac_expr
 
-   For internal use only.
+   For internal use only (it may change without notice).
+
+.. tacn:: wlra_Q @ident @one_term
+
+   For advanced users interested in deriving tactics for specific needs.
+   See the :ref:`example below <lra_example>` and comments in
+   `plugin/micromega/coq_micromega.mli`.
 
 `lia`: a tactic for linear integer arithmetic
 ---------------------------------------------
@@ -199,7 +205,7 @@ are a way to take into account the discreteness of :math:`\mathbb{Z}` by roundin
    Let :math:`p` be an integer and :math:`c` a rational constant. Then
    :math:`p \ge c \rightarrow p \ge \lceil{c}\rceil`.
 
-.. example::
+.. example:: Cutting plane
 
    For instance, from :math:`2 x = 1` we can deduce
 
@@ -236,7 +242,13 @@ a proof.
 
 .. tacn:: xlia @ltac_expr
 
-   For internal use only.
+   For internal use only (it may change without notice).
+
+.. tacn:: wlia @ident @one_term
+
+   For advanced users interested in deriving tactics for specific needs.
+   See the :ref:`example below <lra_example>` and comments in
+   `plugin/micromega/coq_micromega.mli`.
 
 `nra`: a proof procedure for non-linear arithmetic
 --------------------------------------------------
@@ -261,7 +273,13 @@ proof by abstracting monomials by variables.
 .. tacn:: xnra_Q @ltac_expr
           xnra_R @ltac_expr
 
-   For internal use only.
+   For internal use only (it may change without notice).
+
+.. tacn:: wnra_Q @ident @one_term
+
+   For advanced users interested in deriving tactics for specific needs.
+   See the :ref:`example below <lra_example>` and comments in
+   `plugin/micromega/coq_micromega.mli`.
 
 `nia`: a proof procedure for non-linear integer arithmetic
 ----------------------------------------------------------
@@ -274,7 +292,13 @@ proof by abstracting monomials by variables.
 
 .. tacn:: xnia @ltac_expr
 
-   For internal use only.
+   For internal use only (it may change without notice).
+
+.. tacn:: wnia @ident @one_term
+
+   For advanced users interested in deriving tactics for specific needs.
+   See the :ref:`example below <lra_example>` and comments in
+   `plugin/micromega/coq_micromega.mli`.
 
 `psatz`: a proof procedure for non-linear arithmetic
 ----------------------------------------------------
@@ -313,7 +337,16 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
           xpsatz_R @nat_or_var @ltac_expr
           xpsatz_Z @nat_or_var @ltac_expr
 
-   For internal use only.
+   For internal use only (it may change without notice).
+
+.. tacn:: wsos_Q @ident @one_term
+          wsos_Z @ident @one_term
+          wpsatz_Q @nat_or_var @ident @one_term
+          wpsatz_Z @nat_or_var @ident @one_term
+
+   For advanced users interested in deriving tactics for specific needs.
+   See the :ref:`example below <lra_example>` and comments in
+   `plugin/micromega/coq_micromega.mli`.
 
 `zify`: pre-processing of arithmetic goals
 ------------------------------------------
@@ -370,8 +403,83 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
           zify_op
           zify_saturate
 
-   For internal use only.
+   For internal use only (it may change without notice).
 
+.. _lra_example:
+
+.. example:: Lra
+
+  The :tacn:`lra` tactic automatically proves the following goal.
+
+  .. coqtop:: in
+
+    Require Import QArith Lqa. #[local] Open Scope Q_scope.
+
+    Lemma example_lra x y : x + 2 * y <= 4 -> 2 * x + y <= 4 -> x + y < 3.
+    Proof.
+    lra.
+    Qed.
+
+  Although understanding what's going on under the hood is not required
+  to use the tactic, here are the details for curious users or advanced
+  users interested in deriving their own tactics for arithmetic types
+  other than ``Q`` or ``R`` from the standard library.
+
+  Mathematically speaking, one needs to prove that
+  :math:`p_2 \ge 0 \land p_1 \ge 0 \land p_0 \ge 0` is unsatisfiable
+  with :math:`p_2 := 4 - x - 2y` and :math:`p_1 := 4 - 2x - y`
+  and :math:`p_0 := x + y - 3`.
+  This is done thanks to the :term:`cone expression`
+  :math:`p_2 + p_1 + 3 \times p_0 \equiv -1`.
+
+  .. coqtop:: all
+
+    From Coq.micromega Require Import RingMicromega QMicromega EnvRing Tauto.
+
+    Print example_lra.
+
+  Here, ``__ff`` is a reified representation of the goal and ``__varmap``
+  is a variable map giving the interpretation of each variable (here that
+  ``PEX 1`` in ``__ff`` stands for ``__x1`` and ``PEX 2`` for ``__x2``).
+  Finally, ``__wit`` is the :term:`cone expression` also called *witness*.
+
+  This proof could also be obtained by the following tactics where
+  :n:`wlra_Q wit ff` calls the oracle on the goal ``ff`` and puts the
+  resulting :term:`cone expression` in ``wit``.
+  ``QTautoChecker_sound`` is a theorem stating that, when the function call
+  ``QTautoChecker ff wit`` returns ``true``, then the goal represented by
+  ``ff`` is valid.
+
+  .. coqtop:: in
+
+    Lemma example_lra' x y : x + 2 * y <= 4 -> 2 * x + y <= 4 -> x + y < 3.
+    Proof.
+    pose (ff := IMPL
+      (A isProp
+         {| Flhs := PEadd (PEX 1) (PEmul (PEc 2) (PEX 2));
+            Fop := OpLe; Frhs := PEc 4 |} tt) None
+      (IMPL
+         (A isProp
+            {| Flhs := PEadd (PEmul (PEc 2) (PEX 1)) (PEX 2);
+               Fop := OpLe; Frhs := PEc 4 |}
+            tt) None
+         (A isProp
+            {| Flhs := PEadd (PEX 1) (PEX 2);
+               Fop := OpLt; Frhs := PEc 3 |} tt))
+      : BFormula (Formula Q) isProp).
+
+  .. coqtop:: all
+
+    pose (varmap := VarMap.Branch (VarMap.Elt y) x VarMap.Empty).
+    let ff' := eval unfold ff in ff in wlra_Q wit ff'.
+    change (eval_bf (Qeval_formula (@VarMap.find Q 0 varmap)) ff).
+    apply (QTautoChecker_sound ff wit).
+
+  .. coqtop:: in
+
+    vm_compute.
+    reflexivity.
+    Qed.
 
 .. [#csdp] Sources and binaries can be found at `<https://github.com/coin-or/csdp>`_
 .. [#fnpsatz] Variants deal with equalities and strict inequalities.
