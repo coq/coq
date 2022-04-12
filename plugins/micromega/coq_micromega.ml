@@ -2478,6 +2478,11 @@ let xnia =
     (fun _ x -> x)
     Mc.cnfZ zz_domain_spec dump_zexpr nlinear_Z
 
+let wnia =
+  micromega_wit_gen
+    (fun _ x -> x)
+    Mc.cnfZ zz_domain_spec nlinear_Z
+
 let xsos_Q =
   micromega_gen parse_qarith
     (fun _ x -> x)
