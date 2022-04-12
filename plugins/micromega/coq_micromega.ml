@@ -1678,6 +1678,17 @@ let rec abstract_wrt_formula f1 f2 =
 
 exception CsdpNotFound
 
+let fail_csdp_not_found () =
+  flush stdout;
+  let s =
+    "Skipping the rest of this tactic: the complexity of the \
+     goal requires the use of an external tool called CSDP. \n\n\
+     However, the \"csdp\" binary is not present in the search path. \n\n\
+     Some OS distributions include CSDP (package \"coinor-csdp\" on Debian \
+     for instance). You can download binaries \
+     and source code from <https://github.com/coin-or/csdp>." in
+  Tacticals.tclFAIL (Pp.str s)
+
 (**
   * This is the core of Micromega: apply the prover, analyze the result and
   * prune unused fomulas, and finally modify the proof state.
@@ -1859,18 +1870,7 @@ Tacticals.tclTHEN
                   ( EConstr.mkVar goal_name
                   , arith_args @ List.map EConstr.mkVar ids )))
       with
-      | CsdpNotFound ->
-        flush stdout;
-        Tacticals.tclFAIL
-          (Pp.str
-             ( " Skipping what remains of this tactic: the complexity of the \
-                goal requires "
-             ^ "the use of a specialized external tool called csdp. \n\n"
-             ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" \
-                executable in the path. \n\n"
-             ^ "Csdp packages are provided by some OS distributions; binaries \
-                and source code can be downloaded from \
-                https://projects.coin-or.org/Csdp" ))
+      | CsdpNotFound -> fail_csdp_not_found ()
       | x ->
         if debug then
           Tacticals.tclFAIL (Pp.str (Printexc.get_backtrace ()))
@@ -1997,18 +1997,7 @@ let micromega_genr prover tac =
                 ; Tactics.exact_check
                     (EConstr.applist (EConstr.mkVar goal_name, arith_args)) ] ]
       with
-      | CsdpNotFound ->
-        flush stdout;
-        Tacticals.tclFAIL
-          (Pp.str
-             ( " Skipping what remains of this tactic: the complexity of the \
-                goal requires "
-             ^ "the use of a specialized external tool called csdp. \n\n"
-             ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" \
-                executable in the path. \n\n"
-             ^ "Csdp packages are provided by some OS distributions; binaries \
-                and source code can be downloaded from \
-                https://projects.coin-or.org/Csdp" )))
+      | CsdpNotFound -> fail_csdp_not_found ())
 
 let lift_ratproof prover l =
   match prover l with
