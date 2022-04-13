@@ -1032,25 +1032,10 @@ already seen in :ref:`NotationsWithBinders`, even when the
 corresponding expression is not used as a binder in the right-hand
 side. E.g.:
 
-   .. todo: these two Set Warnings and the note should be removed when
-      ident is reactivated with its literal meaning.
-
-.. coqtop:: none
-
-   Set Warnings "-deprecated-ident-entry".
-
 .. coqtop:: in
 
    Notation "'apply_id' f a1 .. an" := (.. (f a1) .. an)
      (at level 10, f ident, a1, an at level 9).
-
-.. coqtop:: none
-
-   Set Warnings "+deprecated-ident-entry".
-
-.. note:: As of version 8.13, the entry ``ident`` is a deprecated
-          alias for ``name``. In the future, it is planned to strictly
-          parse an identifier (excluding :g:`_`).
 
 .. _custom-entries:
 
@@ -1279,6 +1264,8 @@ Here are the syntax elements used by the various notation commands.
       level ::= level @natural
       | next level
 
+Note that `_` by itself is a valid :n:`@name` but is not a valid :n:`@ident`.
+
 .. note:: No typing of the denoted expression is performed at definition
           time. Type checking is done only at the time of use of the notation.
 
@@ -1310,28 +1297,6 @@ Here are the syntax elements used by the various notation commands.
              This warning is disabled by default to avoid spurious diagnostics
              due to legacy notation in the Coq standard library.
              It can be turned on with the ``-w disj-pattern-notation`` flag.
-
-.. note::
-
-   As of version 8.13, the entry ``ident`` is a deprecated alias for
-   ``name``. In the future, it is planned to strictly parse an
-   identifier (to the exclusion of :g:`_`). If the intent was to use
-   ``ident`` as an identifier (excluding :g:`_`), just silence the warning with
-   :n:`Set Warnings "-deprecated-ident-entry"` and it should automatically
-   get its intended meaning in version 8.15.
-
-   Similarly, ``as ident`` is a deprecated alias for ``as name``, which
-   will only accept an identifier in the future.  If the
-   intent was to use ``as ident`` as an identifier
-   (excluding :g:`_`), just silence the warning with
-   :n:`Set Warnings "-deprecated-as-ident-kind"`.
-
-   However, this deprecation does not apply to custom entries, where it
-   already denotes an identifier, as expected.
-
-   .. todo: the note above should be removed at the end of deprecation
-      phase of ident
-   ..
 
 .. exn:: Unknown custom entry: @ident.
 

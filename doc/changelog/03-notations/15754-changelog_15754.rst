@@ -1,0 +1,12 @@
+- **Removed:**
+  ``_`` in ``ident`` entries in notations, which was deprecated
+  in favor of ``name`` in 8.13. When you see messages like
+  ``Error: Notation "[ rel _ _ : _ | _ ]" is already defined at level 0
+  with arguments name, name, constr, constr while it is now required to be
+  at level 0 with arguments ident, ident, constr, constr.``,
+  replace ``ident`` with ``name`` in the :cmd:`Notation` command.
+  To ease the change, you can fix the ``deprecated-ident-entry`` warnings
+  in Coq 8.15 (or 8.14 or 8.13). The warning can be turned into an error with
+  ``-arg -w -arg +deprecated-ident-entry`` in the ``_CoqProject`` file
+  (`#15754 <https://github.com/coq/coq/pull/15754>`_,
+  by Pierre Roux).

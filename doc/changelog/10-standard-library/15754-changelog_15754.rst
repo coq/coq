@@ -1,0 +1,4 @@
+- **Removed:**
+  ``Int63``, which was deprecated in favor of ``Uint63`` in 8.14
+  (`#15754 <https://github.com/coq/coq/pull/15754>`_,
+  by Pierre Roux).
