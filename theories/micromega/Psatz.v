@@ -33,14 +33,11 @@ Ltac lia := Lia.lia.
 
 Ltac nia := Lia.nia.
 
-
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
-  | Z =>
-    (sos_Z Lia.zchecker) || (psatz_Z d  Lia.zchecker)
-  | R =>
-    (sos_R Lra.rchecker) || (psatz_R d Lra.rchecker)
-  | Q => (sos_Q Lqa.rchecker) || (psatz_Q d Lqa.rchecker) 
+  | Z => (xsos_Z Lia.zchecker) || (xpsatz_Z d Lia.zchecker)
+  | R => (xsos_R Lra.rchecker) || (xpsatz_R d Lra.rchecker)
+  | Q => (xsos_Q Lqa.rchecker) || (xpsatz_Q d Lqa.rchecker)
   | _ => fail "Unsupported domain"
   end in tac.
 
@@ -55,13 +52,11 @@ Ltac psatzl dom :=
   | _ => fail "Unsupported domain"
   end in tac.
 
-
-Ltac lra := 
+Ltac lra :=
   first [ psatzl R | psatzl Q ].
 
-Ltac nra := 
-  first [ Lra.nra | Lqa.nra ].  
-
+Ltac nra :=
+  first [ Lra.nra | Lqa.nra ].
 
 (* Local Variables: *)
 (* coding: utf-8 *)

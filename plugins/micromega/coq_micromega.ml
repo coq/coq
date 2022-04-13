@@ -2330,58 +2330,58 @@ let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
 let micromega_genr prover tac =
   Tacticals.tclTHEN exfalso_if_concl_not_Prop (micromega_genr prover tac)
 
-let lra_Q =
+let xlra_Q =
   micromega_gen parse_qarith
     (fun _ x -> x)
     Mc.cnfQ qq_domain_spec dump_qexpr linear_prover_Q
 
-let psatz_Q i =
-  micromega_gen parse_qarith
-    (fun _ x -> x)
-    Mc.cnfQ qq_domain_spec dump_qexpr
-    (non_linear_prover_Q "real_nonlinear_prover" (Some i))
-
-let lra_R = micromega_genr linear_prover_R
-
-let psatz_R i =
-  micromega_genr (non_linear_prover_R "real_nonlinear_prover" (Some i))
-
-let psatz_Z i =
-  micromega_gen parse_zarith
-    (fun _ x -> x)
-    Mc.cnfZ zz_domain_spec dump_zexpr
-    (non_linear_prover_Z "real_nonlinear_prover" (Some i))
-
-let sos_Z =
-  micromega_gen parse_zarith
-    (fun _ x -> x)
-    Mc.cnfZ zz_domain_spec dump_zexpr
-    (non_linear_prover_Z "pure_sos" None)
-
-let sos_Q =
-  micromega_gen parse_qarith
-    (fun _ x -> x)
-    Mc.cnfQ qq_domain_spec dump_qexpr
-    (non_linear_prover_Q "pure_sos" None)
-
-let sos_R = micromega_genr (non_linear_prover_R "pure_sos" None)
+let xlra_R = micromega_genr linear_prover_R
 
 let xlia =
   micromega_gen parse_zarith
     (fun _ x -> x)
     Mc.cnfZ zz_domain_spec dump_zexpr linear_Z
 
-let xnlia =
+let xnra_Q =
+  micromega_gen parse_qarith
+    (fun _ x -> x)
+    Mc.cnfQ qq_domain_spec dump_qexpr nlinear_prover_R
+
+let xnra_R = micromega_genr nlinear_prover_R
+
+let xnia =
   micromega_gen parse_zarith
     (fun _ x -> x)
     Mc.cnfZ zz_domain_spec dump_zexpr nlinear_Z
 
-let nra = micromega_genr nlinear_prover_R
-
-let nqa =
+let xsos_Q =
   micromega_gen parse_qarith
     (fun _ x -> x)
-    Mc.cnfQ qq_domain_spec dump_qexpr nlinear_prover_R
+    Mc.cnfQ qq_domain_spec dump_qexpr
+    (non_linear_prover_Q "pure_sos" None)
+
+let xsos_R = micromega_genr (non_linear_prover_R "pure_sos" None)
+
+let xsos_Z =
+  micromega_gen parse_zarith
+    (fun _ x -> x)
+    Mc.cnfZ zz_domain_spec dump_zexpr
+    (non_linear_prover_Z "pure_sos" None)
+
+let xpsatz_Q i =
+  micromega_gen parse_qarith
+    (fun _ x -> x)
+    Mc.cnfQ qq_domain_spec dump_qexpr
+    (non_linear_prover_Q "real_nonlinear_prover" (Some i))
+
+let xpsatz_R i =
+  micromega_genr (non_linear_prover_R "real_nonlinear_prover" (Some i))
+
+let xpsatz_Z i =
+  micromega_gen parse_zarith
+    (fun _ x -> x)
+    Mc.cnfZ zz_domain_spec dump_zexpr
+    (non_linear_prover_Z "real_nonlinear_prover" (Some i))
 
 let print_lia_profile () =
   Simplex.(
@@ -2412,7 +2412,6 @@ let print_lia_profile () =
         ++ int average_pivots ++ fnl ()
         ++ str "maximum number of pivots: "
         ++ int maximum_pivots ++ fnl ()))
-
 
 (* Local Variables: *)
 (* coding: utf-8 *)

@@ -8,18 +8,18 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val psatz_Z : int -> unit Proofview.tactic -> unit Proofview.tactic
-val psatz_Q : int -> unit Proofview.tactic -> unit Proofview.tactic
-val psatz_R : int -> unit Proofview.tactic -> unit Proofview.tactic
+val xlra_Q : unit Proofview.tactic -> unit Proofview.tactic
+val xlra_R : unit Proofview.tactic -> unit Proofview.tactic
 val xlia : unit Proofview.tactic -> unit Proofview.tactic
-val xnlia : unit Proofview.tactic -> unit Proofview.tactic
-val nra : unit Proofview.tactic -> unit Proofview.tactic
-val nqa : unit Proofview.tactic -> unit Proofview.tactic
-val sos_Z : unit Proofview.tactic -> unit Proofview.tactic
-val sos_Q : unit Proofview.tactic -> unit Proofview.tactic
-val sos_R : unit Proofview.tactic -> unit Proofview.tactic
-val lra_Q : unit Proofview.tactic -> unit Proofview.tactic
-val lra_R : unit Proofview.tactic -> unit Proofview.tactic
+val xnra_Q : unit Proofview.tactic -> unit Proofview.tactic
+val xnra_R : unit Proofview.tactic -> unit Proofview.tactic
+val xnia : unit Proofview.tactic -> unit Proofview.tactic
+val xsos_Q : unit Proofview.tactic -> unit Proofview.tactic
+val xsos_R : unit Proofview.tactic -> unit Proofview.tactic
+val xsos_Z : unit Proofview.tactic -> unit Proofview.tactic
+val xpsatz_Q : int -> unit Proofview.tactic -> unit Proofview.tactic
+val xpsatz_R : int -> unit Proofview.tactic -> unit Proofview.tactic
+val xpsatz_Z : int -> unit Proofview.tactic -> unit Proofview.tactic
 val print_lia_profile : unit -> unit
 
 (** {5 Use Micromega independently from tactics. } *)

@@ -143,11 +143,11 @@ and checked to be :math:`-1`.
    The deductive power of :tacn:`lra` overlaps with the one of :tacn:`field`
    tactic *e.g.*, :math:`x = 10 * x / 10` is solved by :tacn:`lra`.
 
-.. tacn:: lra_Q @ltac_expr
-          lra_R @ltac_expr
-          sos_Q @ltac_expr
-          sos_R @ltac_expr
-          sos_Z @ltac_expr
+.. tacn:: xlra_Q @ltac_expr
+          xlra_R @ltac_expr
+          xsos_Q @ltac_expr
+          xsos_R @ltac_expr
+          xsos_Z @ltac_expr
 
    For internal use only.
 
@@ -216,7 +216,7 @@ with an equation :math:`e = i` for :math:`i \in [c_1,c_2]` and recursively searc
 a proof.
 
 .. tacn:: xlia @ltac_expr
-          xnqa @ltac_expr
+          xnra_Q @ltac_expr
 
    For internal use only.
 
@@ -240,7 +240,7 @@ a proof.
 After this pre-processing, the linear prover of :tacn:`lra` searches for a
 proof by abstracting monomials by variables.
 
-.. tacn:: xnra @ltac_expr
+.. tacn:: xnra_R @ltac_expr
 
    For internal use only.
 
@@ -253,7 +253,7 @@ proof by abstracting monomials by variables.
    It performs a pre-processing similar to :tacn:`nra`. The obtained goal is
    solved using the linear integer prover :tacn:`lia`.
 
-.. tacn:: xnlia @ltac_expr
+.. tacn:: xnia @ltac_expr
 
    For internal use only.
 
@@ -286,9 +286,9 @@ cone expression :math:`2 \times (x-1) + (\mathbf{x-1}) \times (\mathbf{x−1}) +
 belongs to :math:`\mathit{Cone}({−x^2,x -1})`. Moreover, by running :tacn:`ring` we
 obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
-.. tacn:: psatz_Q {? @nat_or_var } @ltac_expr
-          psatz_R {? @nat_or_var } @ltac_expr
-          psatz_Z {? @nat_or_var } @ltac_expr
+.. tacn:: xpsatz_Q @nat_or_var @ltac_expr
+          xpsatz_R @nat_or_var @ltac_expr
+          xpsatz_Z @nat_or_var @ltac_expr
 
    For internal use only.
 

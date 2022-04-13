@@ -1132,9 +1132,6 @@ simple_tactic: [
 | REPLACE "hresolve_core" "(" ident ":=" constr ")" "at" nat_or_var "in" constr
 | WITH "hresolve_core" "(" ident ":=" constr ")" OPT ( "at" nat_or_var ) "in" constr
 | DELETE "hresolve_core" "(" ident ":=" constr ")" "in" constr
-| EDIT "psatz_R" ADD_OPT nat_or_var tactic
-| EDIT "psatz_Q" ADD_OPT nat_or_var tactic
-| EDIT "psatz_Z" ADD_OPT nat_or_var tactic
 | REPLACE "subst" LIST1 hyp
 | WITH "subst" LIST0 hyp
 | DELETE "subst"
