@@ -59,16 +59,18 @@ abbreviation has the form of an ordinary applicative expression;
 see :ref:`Abbreviations`. The notation consists of *tokens* separated by
 spaces. Tokens which are identifiers (such as ``A``, ``x0'``, etc.) are the *parameters*
 of the notation. Each of them must occur at least once in the abbreviated term. The
-other elements of the string (such as ``/\``) are the *symbols*.
+other elements of the string (such as ``/\``) are the *symbols*, which must appear
+literally when the notation is used.
 
 Identifiers enclosed in single quotes are treated as symbols and thus
-lose their role of parameters. In the same vein, every symbol of at
-least 3 characters and starting with a simple quote must be quoted
-(then it starts with two single quotes). Here is an example.
+lose their role as parameters. For example:
 
 .. coqtop:: in
 
    Notation "'IF' c1 'then' c2 'else' c3" := (c1 /\ c2 \/ ~ c1 /\ c3) (at level 200, right associativity).
+
+Symbols that start with a single quote with 3 or more characters must be single quoted.
+For example, the symbol `'ab` is represented by `''ab'` in the notation string.
 
 A notation binds a syntactic expression to a term. Unless the parser
 and pretty-printer of Coq already know how to deal with the syntactic
