@@ -183,6 +183,7 @@ type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
 type use_typeclasses = NoUseTC | UseTCForConv | UseTC
 
 type inference_flags = {
+  use_coercions : bool;
   use_typeclasses : use_typeclasses;
   solve_unification_constraints : bool;
   fail_evar : bool;
@@ -195,6 +196,7 @@ type pretype_flags = {
   poly : bool;
   resolve_tc : bool;
   program_mode : bool;
+  use_coercions : bool;
 }
 
 (* Compute the set of still-undefined initial evars up to restriction
@@ -355,10 +357,10 @@ let adjust_evar_source sigma na c =
   | _, _ -> sigma, c
 
 (* coerce to tycon if any *)
-let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc } env sigma j = function
+let inh_conv_coerce_to_tycon ?loc ~flags:{ program_mode; resolve_tc; use_coercions } env sigma j = function
   | None -> sigma, j, Some Coercion.empty_coercion_trace
   | Some t ->
-    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc !!env sigma j t
+    Coercion.inh_conv_coerce_to ?loc ~program_mode ~resolve_tc ~use_coercions !!env sigma j t
 
 let check_instance subst = function
   | [] -> ()
@@ -840,7 +842,7 @@ struct
           sigma, body, na, c1, subs, c2, Coercion.empty_coercion_trace
         | _ ->
           let typ = Vars.esubst Vars.lift_substituend subs typ in
-          let sigma, body, typ, trace = Coercion.inh_app_fun ~program_mode:flags.program_mode ~resolve_tc:flags.resolve_tc !!env sigma body typ in
+          let sigma, body, typ, trace = Coercion.inh_app_fun ~program_mode:flags.program_mode ~resolve_tc:flags.resolve_tc ~use_coercions:flags.use_coercions !!env sigma body typ in
           let resty = whd_all !!env sigma typ in
           let na, c1, c2 = match EConstr.kind sigma resty with
           | Prod (na, c1, c2) -> (na, c1, c2)
@@ -923,7 +925,7 @@ struct
   let pretype_lambda self (name, bk, c1, c2) =
     fun ?loc ~flags tycon env sigma ->
     let open Context.Rel.Declaration in
-    let tycon' = if flags.program_mode
+    let tycon' = if flags.program_mode && flags.use_coercions
       then Option.map (Coercion.remove_subset !!env sigma) tycon
       else tycon
     in
@@ -1256,16 +1258,18 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
   | _ ->
       let sigma, j = eval_pretyper self ~flags empty_tycon env sigma c in
       let loc = loc_of_glob_constr c in
-      let sigma, tj = Coercion.inh_coerce_to_sort ?loc !!env sigma j in
-        match valcon with
-        | None -> sigma, tj
-        | Some v ->
-          begin match Evarconv.unify_leq_delay !!env sigma v tj.utj_val with
-            | sigma -> sigma, tj
-            | exception Evarconv.UnableToUnify (sigma,e) ->
-              error_unexpected_type
-                ?loc:(loc_of_glob_constr c) !!env sigma tj.utj_val v e
-          end
+      let sigma, tj =
+        let use_coercions = flags.use_coercions in
+        Coercion.inh_coerce_to_sort ?loc ~use_coercions !!env sigma j in
+      match valcon with
+      | None -> sigma, tj
+      | Some v ->
+        begin match Evarconv.unify_leq_delay !!env sigma v tj.utj_val with
+        | sigma -> sigma, tj
+        | exception Evarconv.UnableToUnify (sigma,e) ->
+          error_unexpected_type
+            ?loc:(loc_of_glob_constr c) !!env sigma tj.utj_val v e
+        end
 
   let pretype_int self i =
     fun ?loc ~flags tycon env sigma ->
@@ -1357,6 +1361,7 @@ let pretype_type ~flags tycon env sigma c =
 let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
   let pretype_flags = {
     program_mode = flags.program_mode;
+    use_coercions = flags.use_coercions;
     poly = flags.polymorphic;
     resolve_tc = match flags.use_typeclasses with
       | NoUseTC -> false
@@ -1379,6 +1384,7 @@ let ise_pretype_gen (flags : inference_flags) env sigma lvar kind c =
   process_inference_flags flags !!env sigma (sigma',c',c'_ty)
 
 let default_inference_flags fail = {
+  use_coercions = true;
   use_typeclasses = UseTC;
   solve_unification_constraints = true;
   fail_evar = fail;
@@ -1388,6 +1394,7 @@ let default_inference_flags fail = {
 }
 
 let no_classes_no_fail_inference_flags = {
+  use_coercions = true;
   use_typeclasses = NoUseTC;
   solve_unification_constraints = true;
   fail_evar = false;

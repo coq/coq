@@ -121,7 +121,8 @@ let locate_float () =
 
 let has_type env sigma f ty =
   let c = mkCastC (mkRefC f, Constr.DEFAULTcast, ty) in
-  try let _ = Constrintern.interp_constr env sigma c in true
+  let flags = Pretyping.{ all_and_fail_flags with use_coercions = false } in
+  try let _ = Constrintern.interp_constr ~flags env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 
 let type_error_to f ty =

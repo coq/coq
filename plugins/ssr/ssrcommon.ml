@@ -171,8 +171,9 @@ let interp_refine env sigma ist ~concl rc =
     Ltac_pretype.ltac_constrs = constrvars; ltac_genargs = ist.Tacinterp.lfun
   } in
   let kind = Pretyping.OfType concl in
-  let flags = {
-    Pretyping.use_typeclasses = Pretyping.UseTC;
+  let flags = Pretyping.{
+    use_coercions = true;
+    use_typeclasses = UseTC;
     solve_unification_constraints = true;
     fail_evar = false;
     expand_evars = true;

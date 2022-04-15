@@ -51,6 +51,7 @@ type use_typeclasses = NoUseTC | UseTCForConv | UseTC
 *)
 
 type inference_flags = {
+  use_coercions : bool;
   use_typeclasses : use_typeclasses;
   solve_unification_constraints : bool;
   fail_evar : bool;
@@ -144,6 +145,7 @@ type pretype_flags = {
   poly : bool;
   resolve_tc : bool;
   program_mode : bool;
+  use_coercions : bool;
 }
 
 type 'a pretype_fun = ?loc:Loc.t -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> evar_map * 'a

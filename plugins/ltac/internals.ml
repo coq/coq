@@ -41,8 +41,9 @@ let mytclWithHoles tac with_evars c =
 (* cutrewrite, dependent rewrite                                      *)
 
 let with_delayed_uconstr ist c tac =
-  let flags = {
-    Pretyping.use_typeclasses = Pretyping.NoUseTC;
+  let flags = Pretyping.{
+    use_coercions = true;
+    use_typeclasses = NoUseTC;
     solve_unification_constraints = true;
     fail_evar = false;
     expand_evars = true;
@@ -76,13 +77,14 @@ let injHyp id =
   Proofview.tclEVARMAP >>= fun sigma ->
   injection_main false (fun env sigma -> (sigma, (EConstr.mkVar id, NoBindings)))
 
-let constr_flags () = {
-  Pretyping.use_typeclasses = Pretyping.UseTC;
-  Pretyping.solve_unification_constraints = Proof.use_unification_heuristics ();
-  Pretyping.fail_evar = false;
-  Pretyping.expand_evars = true;
-  Pretyping.program_mode = false;
-  Pretyping.polymorphic = false;
+let constr_flags () = Pretyping.{
+  use_coercions = true;
+  use_typeclasses = UseTC;
+  solve_unification_constraints = Proof.use_unification_heuristics ();
+  fail_evar = false;
+  expand_evars = true;
+  program_mode = false;
+  polymorphic = false;
 }
 
 let refine_tac ist ~simple ~with_classes c =

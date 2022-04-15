@@ -2568,18 +2568,18 @@ let intern_pattern globalenv patt =
 
 (* All evars resolved *)
 
-let interp_gen kind env sigma ?(impls=empty_internalization_env) c =
+let interp_gen ?flags kind env sigma ?(impls=empty_internalization_env) c =
   let c = intern_gen kind ~impls env sigma c in
-  understand ~expected_type:kind env sigma c
+  understand ?flags ~expected_type:kind env sigma c
 
-let interp_constr ?(expected_type=WithoutTypeConstraint) env sigma ?(impls=empty_internalization_env) c =
-  interp_gen expected_type env sigma c
+let interp_constr ?flags ?(expected_type=WithoutTypeConstraint) env sigma ?(impls=empty_internalization_env) c =
+  interp_gen ?flags expected_type env sigma c
 
-let interp_type env sigma ?(impls=empty_internalization_env) c =
-  interp_gen IsType env sigma ~impls c
+let interp_type ?flags env sigma ?(impls=empty_internalization_env) c =
+  interp_gen ?flags IsType env sigma ~impls c
 
-let interp_casted_constr env sigma ?(impls=empty_internalization_env) c typ =
-  interp_gen (OfType typ) env sigma ~impls c
+let interp_casted_constr ?flags env sigma ?(impls=empty_internalization_env) c typ =
+  interp_gen ?flags (OfType typ) env sigma ~impls c
 
 (* Not all evars expected to be resolved *)
 
