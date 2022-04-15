@@ -30,4 +30,4 @@ Ltac zchecker :=
 
 Ltac lia := Zify.zify; xlia zchecker.
 
-Ltac nia := Zify.zify; xnlia zchecker.
+Ltac nia := Zify.zify; xnia zchecker.

@@ -22,65 +22,91 @@ open Ltac_plugin
 open Stdarg
 open Tacarg
 
-
-
 }
 
 DECLARE PLUGIN "coq-core.plugins.micromega"
 
-TACTIC EXTEND PsatzZ
-| [ "psatz_Z" nat_or_var(i) tactic(t) ] -> {  (Coq_micromega.psatz_Z i
-                                               (Tacinterp.tactic_of_value ist t))
-                                               }
-| [ "psatz_Z" tactic(t)] -> {  (Coq_micromega.psatz_Z (-1)) (Tacinterp.tactic_of_value ist t) }
+TACTIC EXTEND Lra_Q
+| [ "xlra_Q"  tactic(t) ] -> { Coq_micromega.xlra_Q (Tacinterp.tactic_of_value ist t) }
+END
+
+TACTIC EXTEND Lra_wit_Q
+| [ "wlra_Q" ident(w) constr(t) ] -> { Coq_micromega.wlra_Q w t }
+END
+
+TACTIC EXTEND Lra_R
+| [ "xlra_R" tactic(t) ] -> { Coq_micromega.xlra_R (Tacinterp.tactic_of_value ist t) }
 END
 
 TACTIC EXTEND Lia
-| [ "xlia" tactic(t) ] -> {   (Coq_micromega.xlia (Tacinterp.tactic_of_value ist t)) }
+| [ "xlia" tactic(t) ] -> { Coq_micromega.xlia (Tacinterp.tactic_of_value ist t) }
+END
+
+TACTIC EXTEND Lia_wit
+| [ "wlia" ident(w) constr(t) ] -> { Coq_micromega.wlia w t }
+END
+
+TACTIC EXTEND Nra_Q
+| [ "xnra_Q" tactic(t) ] -> { Coq_micromega.xnra_Q (Tacinterp.tactic_of_value ist t) }
+END
+
+TACTIC EXTEND Nra_wit_Q
+| [ "wnra_Q" ident(w) constr(t) ] -> { Coq_micromega.wnra_Q w t }
+END
+
+TACTIC EXTEND Nra_R
+| [ "xnra_R" tactic(t) ] -> { Coq_micromega.xnra_R (Tacinterp.tactic_of_value ist t) }
 END
 
 TACTIC EXTEND Nia
-| [ "xnlia" tactic(t) ] -> {  (Coq_micromega.xnlia (Tacinterp.tactic_of_value ist t)) }
+| [ "xnia" tactic(t) ] -> { Coq_micromega.xnia (Tacinterp.tactic_of_value ist t) }
 END
 
-TACTIC EXTEND NRA
-| [ "xnra" tactic(t) ] -> {  (Coq_micromega.nra (Tacinterp.tactic_of_value ist t))}
+TACTIC EXTEND Nia_wit
+| [ "wnia" ident(w) constr(t) ] -> { Coq_micromega.wnia w t }
 END
-
-TACTIC EXTEND NQA
-| [ "xnqa" tactic(t) ] -> {  (Coq_micromega.nqa (Tacinterp.tactic_of_value ist t))}
-END
-
-
 
 TACTIC EXTEND Sos_Z
-| [ "sos_Z" tactic(t) ] -> { (Coq_micromega.sos_Z (Tacinterp.tactic_of_value ist t)) }
-   END
+| [ "xsos_Z" tactic(t) ] -> { Coq_micromega.xsos_Z (Tacinterp.tactic_of_value ist t) }
+END
+
+TACTIC EXTEND Sos_wit_Z
+| [ "wsos_Z" ident(w) constr(t) ] -> { Coq_micromega.wsos_Z w t }
+END
 
 TACTIC EXTEND Sos_Q
-| [ "sos_Q" tactic(t) ] -> {   (Coq_micromega.sos_Q (Tacinterp.tactic_of_value ist t)) }
-   END
+| [ "xsos_Q" tactic(t) ] -> { Coq_micromega.xsos_Q (Tacinterp.tactic_of_value ist t) }
+END
+
+TACTIC EXTEND Sos_wit_Q
+| [ "wsos_Q" ident(w) constr(t) ] -> { Coq_micromega.wsos_Q w t }
+END
 
 TACTIC EXTEND Sos_R
-| [ "sos_R" tactic(t) ] -> {   (Coq_micromega.sos_R (Tacinterp.tactic_of_value ist t)) }
+| [ "xsos_R" tactic(t) ] -> { Coq_micromega.xsos_R (Tacinterp.tactic_of_value ist t) }
 END
 
-TACTIC EXTEND LRA_Q
-| [ "lra_Q"  tactic(t) ] -> {   (Coq_micromega.lra_Q (Tacinterp.tactic_of_value ist t)) }
+TACTIC EXTEND Psatz_Z
+| [ "xpsatz_Z" nat_or_var(i) tactic(t) ] ->
+  { Coq_micromega.xpsatz_Z i (Tacinterp.tactic_of_value ist t) }
 END
 
-TACTIC EXTEND LRA_R
-| [ "lra_R" tactic(t) ] -> {   (Coq_micromega.lra_R (Tacinterp.tactic_of_value ist t)) }
+TACTIC EXTEND Psatz_wit_Z
+| [ "wpsatz_Z" nat_or_var(i) ident(w) constr(t) ] -> { Coq_micromega.wpsatz_Z i w t }
 END
 
-TACTIC EXTEND PsatzR
-| [ "psatz_R" nat_or_var(i) tactic(t) ] -> {   (Coq_micromega.psatz_R i (Tacinterp.tactic_of_value ist t)) }
-| [ "psatz_R" tactic(t) ] -> {   (Coq_micromega.psatz_R (-1) (Tacinterp.tactic_of_value ist t)) }
+TACTIC EXTEND Psatz_Q
+| [ "xpsatz_Q" nat_or_var(i) tactic(t) ] ->
+  { Coq_micromega.xpsatz_Q i (Tacinterp.tactic_of_value ist t) }
 END
 
-TACTIC EXTEND PsatzQ
-| [ "psatz_Q" nat_or_var(i) tactic(t) ] -> {  (Coq_micromega.psatz_Q i (Tacinterp.tactic_of_value ist t)) }
-| [ "psatz_Q" tactic(t) ] -> {  (Coq_micromega.psatz_Q (-1) (Tacinterp.tactic_of_value ist t)) }
+TACTIC EXTEND Psatz_wit_Q
+| [ "wpsatz_Q" nat_or_var(i) ident(w) constr(t) ] -> { Coq_micromega.wpsatz_Q i w t }
+END
+
+TACTIC EXTEND Psatz_R
+| [ "xpsatz_R" nat_or_var(i) tactic(t) ] ->
+  { Coq_micromega.xpsatz_R i (Tacinterp.tactic_of_value ist t) }
 END
 
 VERNAC COMMAND EXTEND ShowLiaProfile CLASSIFIED AS QUERY
