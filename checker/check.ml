@@ -57,7 +57,7 @@ type library_t = {
   library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
   library_compiled : Safe_typing.compiled_library;
-  library_opaques : seg_proofs option;
+  library_opaques : seg_proofs;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_digest : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t }
@@ -320,13 +320,6 @@ let marshal_in_segment ~validate ~value ~segment f ch =
   else
     System.marshal_in f ch
 
-let marshal_or_skip ~validate ~value ~segment f ch =
-  if validate then
-    let v = marshal_in_segment ~validate:true ~value ~segment f ch in
-    Some v
-  else
-    None
-
 let intern_from_file ~intern_mode (dir, f) =
   let validate = intern_mode <> Dep in
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
@@ -347,8 +340,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let (md:library_disk) = marshal_in_segment ~validate ~value:Values.v_lib ~segment:seg_md f ch in
       let (opaque_csts:seg_univ option) = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
       let (tasks:'a option) = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
-      let (table:seg_proofs option) =
-        marshal_or_skip ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
+      let (table:seg_proofs) = marshal_in_segment ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in
@@ -375,7 +367,7 @@ let intern_from_file ~intern_mode (dir, f) =
       sd,md,table,opaque_csts,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
-  Option.iter (fun table -> opaque_tables := LibraryMap.add sd.md_name table !opaque_tables) table;
+  opaque_tables := LibraryMap.add sd.md_name table !opaque_tables;
   let extra_cst =
     Option.default Univ.ContextSet.empty
       (Option.map (fun (cs,_) -> cs) opaque_csts) in
