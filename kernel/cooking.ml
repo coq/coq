@@ -88,7 +88,7 @@ type expand_info = abstr_inst_info entry_map
 type cooking_info = {
   expand_info : expand_info;
   abstr_info : abstr_info;
-  abstr_inst_info : abstr_inst_info; (* relevant for recursive types *)
+  abstr_inst_rev_inst : Id.t list;
 }
 
 let empty_cooking_info = {
@@ -99,10 +99,7 @@ let empty_cooking_info = {
       abstr_auctx = AbstractContext.empty;
       abstr_ausubst = Instance.empty;
     };
-  abstr_inst_info = {
-      abstr_rev_inst = [];
-      abstr_uinst = Univ.Instance.empty;
-    };
+  abstr_inst_rev_inst = [];
 }
 
 (*s Cooking the constants. *)
@@ -185,7 +182,7 @@ let share_univs cache top_abst_subst k r u l =
   mkApp (instantiate_my_gr r (Instance.append abstr_uinst u), make_inst k abstr_inst_rel)
 
 let discharge_proj_repr r p = (* To merge with discharge_proj *)
-  let nnewpars = List.length r.abstr_inst_info.abstr_rev_inst in
+  let nnewpars = List.length r.abstr_inst_rev_inst in
   let map npars = npars + nnewpars in
   Projection.Repr.map_npars map p
 
@@ -309,23 +306,26 @@ let abstract_named_context expand_info abstr_info hyps =
     collecting the information needed to do such as a transformation
     of judgment into a [cooking_info] *)
 let make_cooking_info expand_info hyps uctx =
-  let abstr_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
+  let abstr_inst_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
   let abstr_uinst, abstr_auctx = abstract_universes uctx in
   let abstr_ausubst = abstr_uinst in
   let abstr_info = { abstr_ctx = []; abstr_subst = []; abstr_auctx; abstr_ausubst } in
   let abstr_info = abstract_named_context expand_info abstr_info hyps in
-  let abstr_inst_info = { abstr_rev_inst; abstr_uinst } in
-  { expand_info; abstr_info; abstr_inst_info; }
+  { expand_info; abstr_info; abstr_inst_rev_inst; }
+
+let abstr_inst_info info = {
+  abstr_rev_inst = info.abstr_inst_rev_inst;
+  abstr_uinst = info.abstr_info.abstr_ausubst;
+}
 
 let add_inductive_info ind info =
   let (cmap, imap) = info.expand_info in
-  { info with expand_info = (cmap, Mindmap.add ind info.abstr_inst_info imap) }
+  let abstr_inst_info = abstr_inst_info info in
+  { info with expand_info = (cmap, Mindmap.add ind abstr_inst_info imap) }
 
 let names_info info =
   let fold accu id = Id.Set.add id accu in
   List.fold_left fold Id.Set.empty info.abstr_info.abstr_subst
-
-let abstr_inst_info info = info.abstr_inst_info
 
 let rel_context_of_cooking_cache { info; _ } =
   info.abstr_info.abstr_ctx
@@ -334,7 +334,7 @@ let universe_context_of_cooking_info info =
   info.abstr_info.abstr_auctx
 
 let instance_of_cooking_info info =
-  Array.map_of_list mkVar (List.rev info.abstr_inst_info.abstr_rev_inst)
+  Array.map_of_list mkVar (List.rev info.abstr_inst_rev_inst)
 
 let instance_of_cooking_cache { info; _ } =
   instance_of_cooking_info info
