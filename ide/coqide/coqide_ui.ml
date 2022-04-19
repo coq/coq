@@ -153,7 +153,6 @@ let init () =
 \n    <menuitem action='Browse Coq Library' />\
 \n    <menuitem action='Help for keyword' />\
 \n    <menuitem action='Help for μPG mode' />\
-\n    <menuitem action='Memory usage' />\
 \n    <separator />\
 \n    <menuitem name='Abt' action='About Coq' />\
 \n  </menu>\
