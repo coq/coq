@@ -250,45 +250,48 @@ let expand_constr cache modlist top_abst_subst c =
        (note that the generalization over universe variable is implicit) *)
 
 (** The main expanding/substitution functions, performing the three first steps *)
-let expand_subst cache expand_info abstr_info c =
-  let c = expand_constr cache expand_info abstr_info.abstr_ctx c in
-  let c = Vars.subst_univs_level_constr (make_instance_subst abstr_info.abstr_ausubst) c in
+let expand_subst0 cache expand_info abstr_ctx abstr_ausubst c =
+  let c = expand_constr cache expand_info abstr_ctx c in
+  let c = Vars.subst_univs_level_constr (make_instance_subst abstr_ausubst) c in
   c
 
+let expand_subst cache c =
+  expand_subst0 cache.cache cache.info.expand_info cache.info.abstr_info.abstr_ctx cache.info.abstr_info.abstr_ausubst c
+
 (** Adding the final abstraction step, term case *)
-let abstract_as_type { cache; info = { expand_info; abstr_info; _ } } t =
-  let ctx = List.map NamedDecl.to_rel_decl abstr_info.abstr_ctx in
-  it_mkProd_wo_LetIn (expand_subst cache expand_info abstr_info t) ctx
+let abstract_as_type cache t =
+  let ctx = List.map NamedDecl.to_rel_decl cache.info.abstr_info.abstr_ctx in
+  it_mkProd_wo_LetIn (expand_subst cache t) ctx
 
 (** Adding the final abstraction step, type case *)
-let abstract_as_body { cache; info = { expand_info; abstr_info; _ } } c =
-  let ctx = List.map NamedDecl.to_rel_decl abstr_info.abstr_ctx in
-  it_mkLambda_or_LetIn (expand_subst cache expand_info abstr_info c) ctx
+let abstract_as_body cache c =
+  let ctx = List.map NamedDecl.to_rel_decl cache.info.abstr_info.abstr_ctx in
+  it_mkLambda_or_LetIn (expand_subst cache c) ctx
 
 (** Adding the final abstraction step, sort case (for universes) *)
-let abstract_as_sort { cache; info = { expand_info; abstr_info; _ } } s =
-  destSort (expand_subst cache expand_info abstr_info (mkSort s))
+let abstract_as_sort cache s =
+  destSort (expand_subst cache (mkSort s))
 
 (** Absorb a named context in the transformation which turns a
     judgment [G, Δ ⊢ ΠΩ.J] into [⊢ ΠG.ΠΔ.((ΠΩ.J)[σ][τ])], that is,
     produces the context [Δ(Ω[σ][τ])] and substitutions [σ'] and [τ]
     that turns a judgment [G, Δ, Ω[σ][τ] ⊢ J] into [⊢ ΠG.ΠΔ.((ΠΩ.J)[σ][τ])]
     via [⊢ ΠG.ΠΔ.Π(Ω[σ][τ]).(J[σ'][τ])] *)
-let abstract_named_context expand_info abstr_info hyps =
-  let fold decl abstr_info =
+let abstract_named_context expand_info abstr_ausubst hyps =
+  let fold decl abstr_ctx =
     let cache = RefTable.create 13 in
     let decl = match decl with
     | NamedDecl.LocalDef (id, b, t) ->
-      let b = expand_subst cache expand_info abstr_info b in
-      let t = expand_subst cache expand_info abstr_info t in
+      let b = expand_subst0 cache expand_info abstr_ctx abstr_ausubst b in
+      let t = expand_subst0 cache expand_info abstr_ctx abstr_ausubst t in
       NamedDecl.LocalDef (id, b, t)
     | NamedDecl.LocalAssum (id, t) ->
-      let t = expand_subst cache expand_info abstr_info t in
+      let t = expand_subst0 cache expand_info abstr_ctx abstr_ausubst t in
       NamedDecl.LocalAssum (id, t)
     in
-    { abstr_info with abstr_ctx = decl :: abstr_info.abstr_ctx }
+    decl :: abstr_ctx
   in
-  Context.Named.fold_outside fold hyps ~init:abstr_info
+  Context.Named.fold_outside fold hyps ~init:[]
 
 (** Turn a named context [Δ] (hyps) and a universe named context
     [G] (uctx) into a rel context and abstract universe context
@@ -303,8 +306,8 @@ let make_cooking_info ~recursive expand_info hyps uctx =
   let abstr_inst_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
   let abstr_uinst, abstr_auctx = abstract_universes uctx in
   let abstr_ausubst = abstr_uinst in
-  let abstr_info = { abstr_ctx = []; abstr_auctx; abstr_ausubst } in
-  let abstr_info = abstract_named_context expand_info abstr_info hyps in
+  let abstr_ctx = abstract_named_context expand_info abstr_ausubst hyps in
+  let abstr_info = { abstr_ctx; abstr_auctx; abstr_ausubst } in
   let abstr_inst_info = {
     abstr_rev_inst = abstr_inst_rev_inst;
     abstr_uinst = abstr_info.abstr_ausubst;
