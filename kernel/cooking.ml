@@ -83,7 +83,6 @@ type expand_info = abstr_inst_info entry_map
 type cooking_info = {
   expand_info : expand_info;
   abstr_info : abstr_info;
-  abstr_inst_rev_inst : Id.t list;
 }
 
 let empty_cooking_info = {
@@ -93,7 +92,6 @@ let empty_cooking_info = {
       abstr_auctx = AbstractContext.empty;
       abstr_ausubst = Instance.empty;
     };
-  abstr_inst_rev_inst = [];
 }
 
 (*s Cooking the constants. *)
@@ -176,7 +174,7 @@ let share_univs cache top_abst_subst k r u l =
   mkApp (instantiate_my_gr r (Instance.append abstr_uinst u), make_inst k abstr_inst_rel)
 
 let discharge_proj_repr r p = (* To merge with discharge_proj *)
-  let nnewpars = List.length r.abstr_inst_rev_inst in
+  let nnewpars = List.count NamedDecl.is_local_assum r.abstr_info.abstr_ctx in
   let map npars = npars + nnewpars in
   Projection.Repr.map_npars map p
 
@@ -303,16 +301,16 @@ let abstract_named_context expand_info abstr_ausubst hyps =
     collecting the information needed to do such as a transformation
     of judgment into a [cooking_info] *)
 let make_cooking_info ~recursive expand_info hyps uctx =
-  let abstr_inst_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
+  let abstr_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
   let abstr_uinst, abstr_auctx = abstract_universes uctx in
   let abstr_ausubst = abstr_uinst in
   let abstr_ctx = abstract_named_context expand_info abstr_ausubst hyps in
   let abstr_info = { abstr_ctx; abstr_auctx; abstr_ausubst } in
   let abstr_inst_info = {
-    abstr_rev_inst = abstr_inst_rev_inst;
+    abstr_rev_inst = abstr_rev_inst;
     abstr_uinst = abstr_info.abstr_ausubst;
   } in
-  let info = { expand_info; abstr_info; abstr_inst_rev_inst; } in
+  let info = { expand_info; abstr_info } in
   let info = match recursive with
   | None -> info
   | Some ind ->
@@ -332,7 +330,7 @@ let universe_context_of_cooking_info info =
   info.abstr_info.abstr_auctx
 
 let instance_of_cooking_info info =
-  Array.map_of_list mkVar (List.rev info.abstr_inst_rev_inst)
+  Named.instance mkVar info.abstr_info.abstr_ctx
 
 let instance_of_cooking_cache { info; _ } =
   instance_of_cooking_info info
