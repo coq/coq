@@ -23,7 +23,6 @@ open Univ
 open Context
 
 module NamedDecl = Context.Named.Declaration
-module RelDecl = Context.Rel.Declaration
 
 (** {6 Data needed to abstract over the section variables and section universes } *)
 
@@ -37,14 +36,10 @@ module RelDecl = Context.Rel.Declaration
     Bruijn indices, that is, only the instantiation [a,c] is kept *)
 
 type abstr_info = {
-  abstr_ctx : Constr.rel_context;
+  abstr_ctx : Constr.named_context;
   (** Context over which to generalize (e.g. x:T,z:V(x)) *)
   abstr_auctx : Univ.AbstractContext.t;
   (** Universe context over which to generalize *)
-  abstr_subst : Id.t list;
-  (** Canonical renaming represented by its domain made of the
-      actual names of the abstracted term variables (e.g. [a,c]);
-      the codomain made of de Bruijn indices is implicit *)
   abstr_ausubst : Instance.t;
   (** Universe substitution represented as an instance *)
 }
@@ -95,7 +90,6 @@ let empty_cooking_info = {
   expand_info = (Cmap.empty, Mindmap.empty);
   abstr_info = {
       abstr_ctx = [];
-      abstr_subst = [];
       abstr_auctx = AbstractContext.empty;
       abstr_ausubst = Instance.empty;
     };
@@ -146,8 +140,8 @@ let instantiate_my_gr gr u =
 let discharge_inst top_abst_subst sub_abst_rev_inst =
   let rec aux k relargs top_abst_subst sub_abst_rev_inst =
     match top_abst_subst, sub_abst_rev_inst with
-    | id :: top_abst_subst, id' :: sub_abst_rev_inst' ->
-      if Id.equal id id' then
+    | decl :: top_abst_subst, id' :: sub_abst_rev_inst' ->
+      if Id.equal (NamedDecl.get_id decl) id' then
         aux (k+1) (k :: relargs) top_abst_subst sub_abst_rev_inst'
       else
         aux (k+1) relargs top_abst_subst sub_abst_rev_inst
@@ -157,8 +151,8 @@ let discharge_inst top_abst_subst sub_abst_rev_inst =
 
 let rec find_var k id = function
 | [] -> raise Not_found
-| idc :: subst ->
-  if Id.equal id idc then k+1
+| decl :: subst ->
+  if Id.equal id (NamedDecl.get_id decl) then k+1
   else find_var (k+1) id subst
 
 let share cache top_abst_subst r (cstl,knl) =
@@ -257,17 +251,19 @@ let expand_constr cache modlist top_abst_subst c =
 
 (** The main expanding/substitution functions, performing the three first steps *)
 let expand_subst cache expand_info abstr_info c =
-  let c = expand_constr cache expand_info abstr_info.abstr_subst c in
+  let c = expand_constr cache expand_info abstr_info.abstr_ctx c in
   let c = Vars.subst_univs_level_constr (make_instance_subst abstr_info.abstr_ausubst) c in
   c
 
 (** Adding the final abstraction step, term case *)
 let abstract_as_type { cache; info = { expand_info; abstr_info; _ } } t =
-  it_mkProd_wo_LetIn (expand_subst cache expand_info abstr_info t) abstr_info.abstr_ctx
+  let ctx = List.map NamedDecl.to_rel_decl abstr_info.abstr_ctx in
+  it_mkProd_wo_LetIn (expand_subst cache expand_info abstr_info t) ctx
 
 (** Adding the final abstraction step, type case *)
 let abstract_as_body { cache; info = { expand_info; abstr_info; _ } } c =
-  it_mkLambda_or_LetIn (expand_subst cache expand_info abstr_info c) abstr_info.abstr_ctx
+  let ctx = List.map NamedDecl.to_rel_decl abstr_info.abstr_ctx in
+  it_mkLambda_or_LetIn (expand_subst cache expand_info abstr_info c) ctx
 
 (** Adding the final abstraction step, sort case (for universes) *)
 let abstract_as_sort { cache; info = { expand_info; abstr_info; _ } } s =
@@ -281,18 +277,16 @@ let abstract_as_sort { cache; info = { expand_info; abstr_info; _ } } s =
 let abstract_named_context expand_info abstr_info hyps =
   let fold decl abstr_info =
     let cache = RefTable.create 13 in
-    let id, decl = match decl with
+    let decl = match decl with
     | NamedDecl.LocalDef (id, b, t) ->
       let b = expand_subst cache expand_info abstr_info b in
       let t = expand_subst cache expand_info abstr_info t in
-      id, RelDecl.LocalDef (map_annot Name.mk_name id, b, t)
+      NamedDecl.LocalDef (id, b, t)
     | NamedDecl.LocalAssum (id, t) ->
       let t = expand_subst cache expand_info abstr_info t in
-      id, RelDecl.LocalAssum (map_annot Name.mk_name id, t)
+      NamedDecl.LocalAssum (id, t)
     in
-    { abstr_info with
-        abstr_ctx = decl :: abstr_info.abstr_ctx;
-        abstr_subst = id.binder_name :: abstr_info.abstr_subst }
+    { abstr_info with abstr_ctx = decl :: abstr_info.abstr_ctx }
   in
   Context.Named.fold_outside fold hyps ~init:abstr_info
 
@@ -309,7 +303,7 @@ let make_cooking_info ~recursive expand_info hyps uctx =
   let abstr_inst_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
   let abstr_uinst, abstr_auctx = abstract_universes uctx in
   let abstr_ausubst = abstr_uinst in
-  let abstr_info = { abstr_ctx = []; abstr_subst = []; abstr_auctx; abstr_ausubst } in
+  let abstr_info = { abstr_ctx = []; abstr_auctx; abstr_ausubst } in
   let abstr_info = abstract_named_context expand_info abstr_info hyps in
   let abstr_inst_info = {
     abstr_rev_inst = abstr_inst_rev_inst;
@@ -325,11 +319,11 @@ let make_cooking_info ~recursive expand_info hyps uctx =
   info, abstr_inst_info
 
 let names_info info =
-  let fold accu id = Id.Set.add id accu in
-  List.fold_left fold Id.Set.empty info.abstr_info.abstr_subst
+  let fold accu id = Id.Set.add (NamedDecl.get_id id) accu in
+  List.fold_left fold Id.Set.empty info.abstr_info.abstr_ctx
 
 let rel_context_of_cooking_cache { info; _ } =
-  info.abstr_info.abstr_ctx
+  List.map NamedDecl.to_rel_decl info.abstr_info.abstr_ctx
 
 let universe_context_of_cooking_info info =
   info.abstr_info.abstr_auctx
