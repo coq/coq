@@ -305,23 +305,24 @@ let abstract_named_context expand_info abstr_info hyps =
     the instance to apply to take the generalization into account;
     collecting the information needed to do such as a transformation
     of judgment into a [cooking_info] *)
-let make_cooking_info expand_info hyps uctx =
+let make_cooking_info ~recursive expand_info hyps uctx =
   let abstr_inst_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
   let abstr_uinst, abstr_auctx = abstract_universes uctx in
   let abstr_ausubst = abstr_uinst in
   let abstr_info = { abstr_ctx = []; abstr_subst = []; abstr_auctx; abstr_ausubst } in
   let abstr_info = abstract_named_context expand_info abstr_info hyps in
-  { expand_info; abstr_info; abstr_inst_rev_inst; }
-
-let abstr_inst_info info = {
-  abstr_rev_inst = info.abstr_inst_rev_inst;
-  abstr_uinst = info.abstr_info.abstr_ausubst;
-}
-
-let add_inductive_info ind info =
-  let (cmap, imap) = info.expand_info in
-  let abstr_inst_info = abstr_inst_info info in
-  { info with expand_info = (cmap, Mindmap.add ind abstr_inst_info imap) }
+  let abstr_inst_info = {
+    abstr_rev_inst = abstr_inst_rev_inst;
+    abstr_uinst = abstr_info.abstr_ausubst;
+  } in
+  let info = { expand_info; abstr_info; abstr_inst_rev_inst; } in
+  let info = match recursive with
+  | None -> info
+  | Some ind ->
+    let (cmap, imap) = info.expand_info in
+    { info with expand_info = (cmap, Mindmap.add ind abstr_inst_info imap) }
+  in
+  info, abstr_inst_info
 
 let names_info info =
   let fold accu id = Id.Set.add id accu in

@@ -42,14 +42,11 @@ type cooking_info
 val empty_cooking_info : cooking_info
   (** Nothing to abstract *)
 
-val make_cooking_info : expand_info -> named_context -> Univ.UContext.t -> cooking_info
-  (** Abstract a context assumed to be de-Bruijn free for terms and universes *)
-
-val add_inductive_info : MutInd.t -> cooking_info -> cooking_info
+val make_cooking_info : recursive:MutInd.t option -> expand_info ->
+  named_context -> Univ.UContext.t -> cooking_info * abstr_inst_info
+(** Abstract a context assumed to be de-Bruijn free for terms and universes *)
 
 val names_info : cooking_info -> Id.Set.t
-
-val abstr_inst_info : cooking_info -> abstr_inst_info
 
 val universe_context_of_cooking_info : cooking_info -> Univ.AbstractContext.t
 
