@@ -37,8 +37,13 @@ let instantiate_evar evk (ist,rawc) =
     ltac_idents = Names.Id.Map.empty;
     ltac_genargs = ist.Geninterp.lfun;
   } in
-  let sigma' = w_refine (evk,evi) (lvar ,rawc) env sigma in
-  Proofview.Unsafe.tclEVARS sigma'
+  try
+    let sigma' = w_refine (evk,evi) (lvar ,rawc) env sigma in
+    Proofview.Unsafe.tclEVARS sigma'
+  with
+  | CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 let evar_list sigma c =
@@ -90,17 +95,22 @@ let let_evar name typ =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
-    let sigma, _ = Typing.sort_of env sigma typ in
-    let id = match name with
-    | Name.Anonymous ->
-      let id = Namegen.id_of_name_using_hdchar env sigma typ name in
-      Namegen.next_ident_away_in_goal env id (Termops.vars_of_env env)
-    | Name.Name id -> id
-    in
-    let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Namegen.IntroFresh id) typ in
-    Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Tactics.pose_tac (Name.Name id) evar)
-  end
+    try
+      let sigma, _ = Typing.sort_of env sigma typ in
+      let id = match name with
+        | Name.Anonymous ->
+          let id = Namegen.id_of_name_using_hdchar env sigma typ name in
+          Namegen.next_ident_away_in_goal env id (Termops.vars_of_env env)
+        | Name.Name id -> id
+      in
+      let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Namegen.IntroFresh id) typ in
+      Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        (Tactics.pose_tac (Name.Name id) evar)
+    with
+    | Pretype_errors.PretypeError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
+end
 
 let hget_evar n =
   let open EConstr in

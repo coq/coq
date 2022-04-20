@@ -1107,7 +1107,15 @@ module Goal = struct
         tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
       with e when catchable_exception e ->
         let (e, info) = Exninfo.capture e in
-        tclZERO ~info e
+        let raw_msg = Printexc.to_string e |> Pp.str in
+        let bt_msg =
+          match Exninfo.get_backtrace info with
+          | None -> Pp.str "no bt"
+          | Some bt -> Exninfo.backtrace_to_string bt |> Pp.str
+        in
+        let e_msg = CErrors.print e in
+        Feedback.msg_warning Pp.(str "[nf_enter] exn inside tactic: " ++ bt_msg ++ fnl () ++ raw_msg ++ fnl () ++ e_msg);
+        CErrors.anomaly (Pp.str "boom!")
     end
     end
   let gmake env sigma goal =
@@ -1125,7 +1133,15 @@ module Goal = struct
       try f (gmake env sigma goal)
       with e when catchable_exception e ->
         let (e, info) = Exninfo.capture e in
-        tclZERO ~info e
+        let raw_msg = Printexc.to_string e |> Pp.str in
+        let bt_msg =
+          match Exninfo.get_backtrace info with
+          | None -> Pp.str "no bt"
+          | Some bt -> Exninfo.backtrace_to_string bt |> Pp.str
+        in
+        let e_msg = CErrors.print e in
+        Feedback.msg_warning Pp.(str "[enter] exn inside tactic: " ++ bt_msg ++ fnl () ++ raw_msg ++ fnl () ++ e_msg);
+        CErrors.anomaly (Pp.str "boom!")
     end
     end
 
@@ -1138,7 +1154,15 @@ module Goal = struct
        try f (gmake env sigma goal)
        with e when catchable_exception e ->
          let (e, info) = Exninfo.capture e in
-         tclZERO ~info e
+         let raw_msg = Printexc.to_string e |> Pp.str in
+         let bt_msg =
+           match Exninfo.get_backtrace info with
+           | None -> Pp.str "no bt"
+           | Some bt -> Exninfo.backtrace_to_string bt |> Pp.str
+         in
+         let e_msg = CErrors.print e in
+         Feedback.msg_warning Pp.(str "[enter_one] exn inside tactic: " ++ bt_msg ++ fnl () ++ raw_msg ++ fnl () ++ e_msg);
+         CErrors.anomaly (Pp.str "boom!")
       end
     | _ ->
        CErrors.anomaly Pp.(str __LOC__ ++ str " enter_one")
@@ -1236,7 +1260,15 @@ module V82 = struct
       Pv.set { solution = evd; comb = sgs; }
     with e when catchable_exception e ->
       let (e, info) = Exninfo.capture e in
-      tclZERO ~info e
+      let raw_msg = Printexc.to_string e |> Pp.str in
+      let bt_msg =
+        match Exninfo.get_backtrace info with
+        | None -> Pp.str "no bt"
+        | Some bt -> Exninfo.backtrace_to_string bt |> Pp.str
+      in
+      let e_msg = CErrors.print e in
+      Feedback.msg_warning Pp.(str "[V82.tactic] exn inside tactic: " ++ bt_msg ++ fnl () ++ raw_msg ++ fnl () ++ e_msg);
+      CErrors.anomaly (Pp.str "boom!")
 
   let of_tactic t gls =
     try

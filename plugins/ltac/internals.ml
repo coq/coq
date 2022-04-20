@@ -383,8 +383,15 @@ let exact ist (c : Ltac_pretype.closed_glob_constr) =
   let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
   let expected_type = Pretyping.OfType (pf_concl gl) in
-  let sigma, c = Tacinterp.type_uconstr ~expected_type ist c (pf_env gl) (project gl) in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Tactics.exact_no_check c)
+  try
+    let sigma, c = Tacinterp.type_uconstr ~expected_type ist c (pf_env gl) (project gl) in
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Tactics.exact_no_check c)
+  with
+  | CErrors.UserError _
+  | UnivGen.UniverseLengthMismatch _
+  | Pretype_errors.PretypeError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 (** ProofGeneral specific command *)

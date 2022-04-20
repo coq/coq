@@ -56,7 +56,9 @@ let raw_anomaly e = match e with
   | _ ->
     str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "."
 
-let print_backtrace e = match Exninfo.get_backtrace e with
+let print_backtrace _ = mt ()
+
+let _print_backtrace e = match Exninfo.get_backtrace e with
 | None -> mt ()
 | Some bt ->
   let bt = str (Exninfo.backtrace_to_string bt) in

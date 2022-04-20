@@ -752,8 +752,14 @@ let tclDELAYEDWITHHOLES check x tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-    let (sigma, x) = x env sigma in
-    tclWITHHOLES check (tac x) sigma
+    try
+      let (sigma, x) = x env sigma in
+      tclWITHHOLES check (tac x) sigma
+    with
+    | Pretype_errors.PretypeError _
+    | Nametab.GlobalizationError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
   end
 
 let tclTIMEOUT n t =

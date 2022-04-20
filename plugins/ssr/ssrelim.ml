@@ -474,30 +474,35 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   debug_ssr (fun () -> Pp.(pp_concat (str"inf. patterns=") (List.map pp_inf_pat patterns)));
   (* Predicate generation, and (if necessary) tactic to generalize the
    * equation asked by the user *)
-  let sigma, elim_pred, gen_eq_tac, clr =
-    generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr sigma
-  in
-  let sigma, pty = Typing.type_of env sigma elim_pred in
-  let sigma = List.fold_left (fun sigma (_, arg, argty) -> Typing.check env sigma arg argty) sigma elim_args in
-  debug_ssr (fun () -> Pp.(str"elim_pred=" ++ pr_econstr_env env sigma elim_pred));
-  debug_ssr (fun () -> Pp.(str"elim_pred_ty=" ++ pr_econstr_env env sigma pty));
-  let sigma = unify_HO env sigma pred elim_pred in
-  let elim = fire_subst sigma elim in
-  let sigma = resolve_typeclasses env sigma ~where:elim ~fail:false in
-  (* check that the patterns do not contain non instantiated dependent metas *)
-  let () = check_pattern_instantiated env sigma patterns in
-  (* the elim tactic, with the eliminator and the predicated we computed *)
-  let elim = sigma, elim in
-  let seed =
-    Array.map (fun ty ->
-    let ctx,_ = EConstr.decompose_prod_assum sigma ty in
-    CList.rev_map Context.Rel.Declaration.get_name ctx) seed in
+  try
+    let sigma, elim_pred, gen_eq_tac, clr =
+      generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n_elim_args c_is_head_p clr sigma
+    in
+    let sigma, pty = Typing.type_of env sigma elim_pred in
+    let sigma = List.fold_left (fun sigma (_, arg, argty) -> Typing.check env sigma arg argty) sigma elim_args in
+    debug_ssr (fun () -> Pp.(str"elim_pred=" ++ pr_econstr_env env sigma elim_pred));
+    debug_ssr (fun () -> Pp.(str"elim_pred_ty=" ++ pr_econstr_env env sigma pty));
+    let sigma = unify_HO env sigma pred elim_pred in
+    let elim = fire_subst sigma elim in
+    let sigma = resolve_typeclasses env sigma ~where:elim ~fail:false in
+    (* check that the patterns do not contain non instantiated dependent metas *)
+    let () = check_pattern_instantiated env sigma patterns in
+    (* the elim tactic, with the eliminator and the predicated we computed *)
+    let elim = sigma, elim in
+    let seed =
+      Array.map (fun ty ->
+          let ctx,_ = EConstr.decompose_prod_assum sigma ty in
+          CList.rev_map Context.Rel.Declaration.get_name ctx) seed in
 
-  let elim_tac =
-    Tacticals.tclTHENLIST [
-      refine_with ~with_evars:false elim;
-      cleartac clr] in
-  Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]
+    let elim_tac =
+      Tacticals.tclTHENLIST [
+        refine_with ~with_evars:false elim;
+        cleartac clr] in
+    Tacticals.tclTHENLIST [gen_eq_tac; elim_intro_tac ?seed:(Some seed) what eqid elim_tac is_rec clr]
+  with
+  | CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 let elimtac x =

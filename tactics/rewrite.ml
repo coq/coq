@@ -1627,8 +1627,12 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       (* For compatibility *)
       beta <*> Proofview.shelve_unifiable
     with
-    | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
-      raise (RewriteFailure (env, evd, e))
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
+    | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) as exn ->
+      let _, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info (RewriteFailure (env, evd, e))
   end
 
 let tactic_init_setoid () =
@@ -1902,26 +1906,32 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals =
   Proofview.Goal.enter begin fun gl ->
-  let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
-  let unify env evars t = unify_abs res l2r sort env evars t in
-  let app = apply_rule unify in
-  let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
-  let substrat = Strategies.fix recstrat in
-  let strat = { strategy = fun ({ state = () } as input) ->
-    let occs, res = substrat.strategy { input with state = initialize_occurrence_counter occs } in
-    check_used_occurrences occs;
-    (), res
-              }
-  in
-  let origsigma = Tacmach.project gl in
-  tactic_init_setoid () <*>
-    Proofview.tclOR
-      (tclPROGRESS
-        (tclTHEN
-           (Proofview.Unsafe.tclEVARS evd)
-            (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
-    (fun (e, info) -> match e with
-    | e -> Proofview.tclZERO ~info e)
+    try
+      let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
+      let unify env evars t = unify_abs res l2r sort env evars t in
+      let app = apply_rule unify in
+      let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
+      let substrat = Strategies.fix recstrat in
+      let strat = { strategy = fun ({ state = () } as input) ->
+          let occs, res = substrat.strategy { input with state = initialize_occurrence_counter occs } in
+          check_used_occurrences occs;
+          (), res
+        }
+      in
+      let origsigma = Tacmach.project gl in
+      tactic_init_setoid () <*>
+      Proofview.tclOR
+        (tclPROGRESS
+           (tclTHEN
+              (Proofview.Unsafe.tclEVARS evd)
+              (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
+        (fun (e, info) -> match e with
+           | e -> Proofview.tclZERO ~info e)
+    with
+    | PretypeError _
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
   end
 
 let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite

@@ -76,10 +76,10 @@ endif
 COQEXTRAFLAGS?=
 COQFLAGS?=$(COQEXTRAFLAGS)
 
-coqc := $(BIN)coqc -q -R prerequisite TestSuite $(COQFLAGS)
+coqc := $(BIN)coqc -d backtrace -q -R prerequisite TestSuite $(COQFLAGS)
 coqchk := $(BIN)coqchk -R prerequisite TestSuite
 coqdoc := $(BIN)coqdoc
-coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
+coqtop := $(BIN)coqtop -d backtrace -q -test-mode -R prerequisite TestSuite
 coqtopbyte := $(BIN)coqtop.byte -q
 
 ifeq ($(BEST),opt)

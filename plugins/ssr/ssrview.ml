@@ -166,13 +166,18 @@ let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
       | Some s -> CAst.make (Constrexpr.CDelimiters(s,body))
     in
     (* We unravel notations *)
-    let g = intern_constr_expr ist sigma body in
-    match DAst.get g with
-    | Glob_term.GHole (_,_, Some x)
-      when Genarg.has_type x (Genarg.glbwit Tacarg.wit_tactic)
+    try
+      let g = intern_constr_expr ist sigma body in
+      match DAst.get g with
+      | Glob_term.GHole (_,_, Some x)
+        when Genarg.has_type x (Genarg.glbwit Tacarg.wit_tactic)
         -> tclUNIT (`Tac (Genarg.out_gen (Genarg.glbwit Tacarg.wit_tactic) x))
-    | _ -> tclUNIT (`Term (annotation, interp_env, g))
-end)
+      | _ -> tclUNIT (`Term (annotation, interp_env, g))
+    with
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
+    end)
 
 (* To inject a constr into a glob_constr we use an Ltac variable *)
 let tclINJ_CONSTR_IST ist p =

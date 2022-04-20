@@ -157,7 +157,9 @@ let assign_tac ~abstract res : unit Proofview.tactic =
         in
         (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
             (push_state uc <*> Tactics.exact_no_check (EConstr.of_constr pt))
-  | Some (Exn e) -> raise e
+  | Some (Exn e) ->
+    let exn, info = Exninfo.capture e in
+    Proofview.tclZERO ~info exn
   end)
 
 let enable_par ~nworkers = ComTactic.set_par_implementation

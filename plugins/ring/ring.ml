@@ -678,14 +678,19 @@ let ring_lookup (f : Value.t) lH rl t =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
-    let rl = make_args_list sigma rl t in
-    let e = find_ring_structure env sigma rl in
-    let sigma, l = make_term_list env sigma (EConstr.of_constr e.ring_carrier) rl in
-    let rl = Value.of_constr l in
-    let sigma, l = make_hyp_list env sigma lH in
-    let lH = carg l in
-    let ring = ltac_ring_structure e in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Value.apply f (ring@[lH;rl]))
+    try
+      let rl = make_args_list sigma rl t in
+      let e = find_ring_structure env sigma rl in
+      let sigma, l = make_term_list env sigma (EConstr.of_constr e.ring_carrier) rl in
+      let rl = Value.of_constr l in
+      let sigma, l = make_hyp_list env sigma lH in
+      let lH = carg l in
+      let ring = ltac_ring_structure e in
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Value.apply f (ring@[lH;rl]))
+    with
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
   end
 
 (***********************************************************************)
@@ -971,11 +976,16 @@ let field_lookup (f : Value.t) lH rl t =
     let sigma = Tacmach.project gl in
     let env = Proofview.Goal.env gl in
     let rl = make_args_list sigma rl t in
-    let e = find_field_structure env sigma rl in
-    let sigma, c = make_term_list env sigma (EConstr.of_constr e.field_carrier) rl in
-    let rl = Value.of_constr c in
-    let sigma, l = make_hyp_list env sigma lH in
-    let lH = carg l in
-    let field = ltac_field_structure e in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Value.apply f (field@[lH;rl]))
+    try
+      let e = find_field_structure env sigma rl in
+      let sigma, c = make_term_list env sigma (EConstr.of_constr e.field_carrier) rl in
+      let rl = Value.of_constr c in
+      let sigma, l = make_hyp_list env sigma lH in
+      let lH = carg l in
+      let field = ltac_field_structure e in
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Value.apply f (field@[lH;rl]))
+    with
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
   end

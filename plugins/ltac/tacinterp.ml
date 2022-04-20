@@ -1683,12 +1683,17 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        let l' = interp_intro_pattern_list_as_list ist env sigma l in
-        name_atomic ~env
-          (TacIntroPattern (ev,l))
-          (* spiwack: print uninterpreted, not sure if it is the
-             expected behaviour. *)
-          (Tactics.intro_patterns ev l')
+        try
+          let l' = interp_intro_pattern_list_as_list ist env sigma l in
+          name_atomic ~env
+            (TacIntroPattern (ev,l))
+            (* spiwack: print uninterpreted, not sure if it is the
+               expected behaviour. *)
+            (Tactics.intro_patterns ev l')
+        with
+        | Taccoerce.CoercionError _ as exn ->
+          let exn, info = Exninfo.capture exn in
+          Proofview.tclZERO ~info exn
       end
   | TacApply (a,ev,cb,cl) ->
       (* spiwack: until the tactic is in the monad *)
@@ -1765,64 +1770,87 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        let (sigma,c) =
-          let expected_type =
-            if Option.is_empty t then WithoutTypeConstraint else IsType in
-          let flags = open_constr_use_classes_flags () in
-          interp_open_constr ~expected_type ~flags ist env sigma c
-        in
-        let ipat' = interp_intro_pattern_option ist env sigma ipat in
-        let tac = Option.map (Option.map (interp_tactic ist)) t in
-        Tacticals.tclWITHHOLES ev
-        (name_atomic ~env
-          (TacAssert(ev,b,Option.map (Option.map ignore) t,ipat,c))
-          (Tactics.forward b tac ipat' c)) sigma
+        try
+          let (sigma,c) =
+            let expected_type =
+              if Option.is_empty t then WithoutTypeConstraint else IsType in
+            let flags = open_constr_use_classes_flags () in
+            interp_open_constr ~expected_type ~flags ist env sigma c
+          in
+          let ipat' = interp_intro_pattern_option ist env sigma ipat in
+          let tac = Option.map (Option.map (interp_tactic ist)) t in
+          Tacticals.tclWITHHOLES ev
+            (name_atomic ~env
+               (TacAssert(ev,b,Option.map (Option.map ignore) t,ipat,c))
+               (Tactics.forward b tac ipat' c)) sigma
+        with
+        | CErrors.UserError _
+        | Nametab.GlobalizationError _
+        | Pretype_errors.PretypeError _
+        | Type_errors.TypeError _ as exn ->
+          let exn, info = Exninfo.capture exn in
+          Proofview.tclZERO ~info exn
       end
   | TacGeneralize cl ->
       Proofview.Goal.enter begin fun gl ->
         let sigma = project gl in
         let env = Proofview.Goal.env gl in
-        let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
-        Tacticals.tclWITHHOLES false
-        (name_atomic ~env
-          (TacGeneralize cl)
-          (Tactics.generalize_gen cl)) sigma
+        try
+          let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
+          Tacticals.tclWITHHOLES false
+            (name_atomic ~env
+               (TacGeneralize cl)
+               (Tactics.generalize_gen cl)) sigma
+        with
+        | Nametab.GlobalizationError _
+        | Pretype_errors.PretypeError _ as exn ->
+          let exn, info = Exninfo.capture exn in
+          Proofview.tclZERO ~info exn
       end
   | TacLetTac (ev,na,c,clp,b,eqpat) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
         let clp = interp_clause ist env sigma clp in
-        let eqpat = interp_intro_pattern_naming_option ist env sigma eqpat in
-        if Locusops.is_nowhere clp (* typically "pose" *) then
-        (* We try to fully-typecheck the term *)
-          let flags = open_constr_use_classes_flags () in
-          let (sigma,c_interp) = interp_open_constr ~flags ist env sigma c in
-          let na = interp_name ist env sigma na in
-          let let_tac =
-            if b then Tactics.pose_tac na c_interp
-            else
+        try
+          let eqpat = interp_intro_pattern_naming_option ist env sigma eqpat in
+          if Locusops.is_nowhere clp (* typically "pose" *) then
+            (* We try to fully-typecheck the term *)
+            let flags = open_constr_use_classes_flags () in
+            let (sigma,c_interp) = interp_open_constr ~flags ist env sigma c in
+            let na = interp_name ist env sigma na in
+            let let_tac =
+              if b then Tactics.pose_tac na c_interp
+              else
+                let id = Option.default (CAst.make IntroAnonymous) eqpat in
+                let with_eq = Some (true, id) in
+                Tactics.letin_tac with_eq na c_interp None Locusops.nowhere
+            in
+            Tacticals.tclWITHHOLES ev
+              (name_atomic ~env
+                 (TacLetTac(ev,na,c_interp,clp,b,eqpat))
+                 let_tac) sigma
+          else
+            (* We try to keep the pattern structure as much as possible *)
+            let let_pat_tac b na c cl eqpat =
               let id = Option.default (CAst.make IntroAnonymous) eqpat in
-              let with_eq = Some (true, id) in
-              Tactics.letin_tac with_eq na c_interp None Locusops.nowhere
-          in
-          Tacticals.tclWITHHOLES ev
-          (name_atomic ~env
-            (TacLetTac(ev,na,c_interp,clp,b,eqpat))
-            let_tac) sigma
-        else
-        (* We try to keep the pattern structure as much as possible *)
-          let let_pat_tac b na c cl eqpat =
-            let id = Option.default (CAst.make IntroAnonymous) eqpat in
-            let with_eq = if b then None else Some (true,id) in
-            Tactics.letin_pat_tac ev with_eq na c cl
-          in
-          let (sigma',c) = interp_pure_open_constr ist env sigma c in
-          name_atomic ~env
-            (TacLetTac(ev,na,c,clp,b,eqpat))
-            (Tacticals.tclWITHHOLES ev
-               (let_pat_tac b (interp_name ist env sigma na)
-                  (sigma,c) clp eqpat) sigma')
+              let with_eq = if b then None else Some (true,id) in
+              Tactics.letin_pat_tac ev with_eq na c cl
+            in
+            let (sigma',c) = interp_pure_open_constr ist env sigma c in
+            name_atomic ~env
+              (TacLetTac(ev,na,c,clp,b,eqpat))
+              (Tacticals.tclWITHHOLES ev
+                 (let_pat_tac b (interp_name ist env sigma na)
+                    (sigma,c) clp eqpat) sigma')
+        with
+        | CErrors.UserError _
+        | Pretype_errors.PretypeError _
+        | Type_errors.TypeError _
+        | UGraph.UniverseInconsistency _
+        | Nametab.GlobalizationError _ as exn ->
+          let exn, info = Exninfo.capture exn in
+          Proofview.tclZERO ~info exn
       end
 
   (* Derived basic tactics *)
@@ -1832,34 +1860,48 @@ and interp_atomic ist tac : unit Proofview.tactic =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        let l =
-          List.map begin fun (c,(ipato,ipats),cls) ->
-            (* TODO: move sigma as a side-effect *)
-             (* spiwack: the [*p] variants are for printing *)
-            let cp = c in
-            let c = interp_destruction_arg ist gl c in
-            let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
-            let ipatsp = ipats in
-            let ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
-            let cls = Option.map (interp_clause ist env sigma) cls in
-            ((c,(ipato,ipats),cls),(cp,(ipato,ipatsp),cls))
-          end l
-        in
-        let l,lp = List.split l in
-        let sigma,el =
-          Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma el in
-        Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-        (name_atomic ~env
-          (TacInductionDestruct(isrec,ev,(lp,el)))
-            (Tactics.induction_destruct isrec ev (l,el)))
+        try
+          let l =
+            List.map begin fun (c,(ipato,ipats),cls) ->
+              (* TODO: move sigma as a side-effect *)
+              (* spiwack: the [*p] variants are for printing *)
+              let cp = c in
+              let c = interp_destruction_arg ist gl c in
+              let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
+              let ipatsp = ipats in
+              let ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
+              let cls = Option.map (interp_clause ist env sigma) cls in
+              ((c,(ipato,ipats),cls),(cp,(ipato,ipatsp),cls))
+            end l
+          in
+          let l,lp = List.split l in
+          let sigma,el =
+            Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma el in
+          Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+            (name_atomic ~env
+               (TacInductionDestruct(isrec,ev,(lp,el)))
+               (Tactics.induction_destruct isrec ev (l,el)))
+        with
+        | Taccoerce.CoercionError _
+        | CErrors.UserError _ as exn ->
+          let exn, info = Exninfo.capture exn in
+          Proofview.tclZERO ~info exn
       end
 
   (* Conversion *)
   | TacReduce (r,cl) ->
       Proofview.Goal.enter begin fun gl ->
-        let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
-        Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-        (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl))
+        try
+          let (sigma,r_interp) = interp_red_expr ist (pf_env gl) (project gl) r in
+          Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+            (Tactics.reduce r_interp (interp_clause ist (pf_env gl) (project gl) cl))
+        with
+        | Nametab.GlobalizationError _
+        | Taccoerce.CoercionError _
+        | Logic.RefinerError _
+        | Pretype_errors.PretypeError _ as exn ->
+          let exn, info = Exninfo.capture exn in
+          Proofview.tclZERO ~info exn
       end
   | TacChange (check,None,c,cl) ->
       (* spiwack: until the tactic is in the monad *)
@@ -2051,9 +2093,16 @@ type ltac_expr = {
 let hide_interp {global;ast} =
   let hide_interp env =
     let ist = Genintern.empty_glob_sign env in
-    let te = intern_pure_tactic ist ast in
-    let t = eval_tactic te in
-    t
+    try
+      let te = intern_pure_tactic ist ast in
+      let t = eval_tactic te in
+      t
+    with
+    | Nametab.GlobalizationError _
+    | Cases.PatternMatchingError _
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
   in
   if global then
     Proofview.tclENV >>= fun env ->

@@ -261,13 +261,15 @@ let lemInv id c =
     let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
     Clenv.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
-    | NoSuchBinding ->
-        user_err
-          (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
-    | UserError _ ->
-         user_err
-           (str "Cannot refine current goal with the lemma " ++
-              pr_leconstr_env (pf_env gls) (project gls) c ++ str ".")
+    | NoSuchBinding as exn ->
+      let _exn, info = Exninfo.capture exn in
+      let msg = hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma.") in
+      Proofview.tclZERO ~info (UserError msg)
+    | UserError _ as exn ->
+      let _exn, info = Exninfo.capture exn in
+      let msg = str "Cannot refine current goal with the lemma " ++
+                pr_leconstr_env (pf_env gls) (project gls) c ++ str "." in
+      Proofview.tclZERO ~info (UserError msg)
   end
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id

@@ -84,15 +84,24 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
         (Tactics.intros_mustbe_force (List.rev_map NamedDecl.get_id sign) <*>
          tac)
     in
-    let effs, sigma, lem, args, safe =
-      !declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl
-    in
-    let solve =
-      Proofview.tclEFFECTS effs <*>
-      tacK lem args
-    in
-    let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
+    try
+      let effs, sigma, lem, args, safe =
+        !declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl
+      in
+      let solve =
+        Proofview.tclEFFECTS effs <*>
+        tacK lem args
+      in
+      let tac = if not safe then Proofview.mark_as_unsafe <*> solve else solve in
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) tac
+    with
+    (* EJGA: That's particularly interesting *)
+    | CErrors.UserError _
+    | Pretype_errors.PretypeError _
+    | Nametab.GlobalizationError _
+    | Tacticals.FailError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
   end
 
 let abstract_subproof ~opaque tac =

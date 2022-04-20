@@ -63,9 +63,14 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) =
     try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
     with NoMatch -> redex_of_pattern_tc env pat, cl in
   let sigma = Evd.merge_universe_context sigma ucst in
-  if Termops.occur_existential sigma c then errorstrm(str"The pattern"++spc()++
-    pr_econstr_pat env sigma c++spc()++str"did not match and has holes."++spc()++
-    str"Did you mean pose?") else
+  if Termops.occur_existential sigma c then
+    let info = Exninfo.reify () in
+    let msg =
+      str"The pattern"++spc()++
+      pr_econstr_pat env sigma c++spc()++str"did not match and has holes."++spc()++
+      str"Did you mean pose?" in
+    Proofview.tclZERO ~info (CErrors.UserError msg)
+  else
   let c, (sigma, cty) =  match EConstr.kind sigma c with
   | Cast(t, DEFAULTcast, ty) -> t, (sigma, ty)
   | _ -> c, Typing.type_of env sigma c in
@@ -191,6 +196,9 @@ let push_goals gs =
     Proofview.Unsafe.tclSETGOALS (List.map map (gs @ [Proofview.Goal.goal gl]))
   end
 
+(* Move to let exception when we raise OCAml version *)
+exception FailAutoGen
+
 let havetac ist
   (transp,((((clr, orig_pats), binders), simpl), (((fk, _), t), hint)))
   suff namefst
@@ -235,6 +243,7 @@ let havetac ist
     abs_ssrterm ~resolve_typeclasses:rtc ist env sigma t
   in
   let ct, cty, hole, loc = make_ct t in
+  try
   let sigma, cut, itac1, itac2 =
    match fk, namefst, suff with
    | FwdHave, true, true ->
@@ -255,10 +264,7 @@ let havetac ist
      let sigma = List.fold_right (unlock_abs env) skols_args sigma in
      let sigma, t, n_evars =
        interp sigma false (combineCG ct cty (mkCCast ?loc) mkRCast) in
-     if skols <> [] && n_evars <> 0 then
-       CErrors.user_err (Pp.strbrk @@ "Automatic generalization of unresolved implicit "^
-                     "arguments together with abstract variables is "^
-                     "not supported");
+     if skols <> [] && n_evars <> 0 then raise FailAutoGen;
      let gs =
        List.map (fun (_,a) ->
          Ssripats.Internal.find_abstract_proof env sigma false a.(1)) skols_args in
@@ -277,8 +283,16 @@ let havetac ist
      sigma, cty, (binderstac n) <*> hint, Tacticals.tclTHEN itac_c simpltac
    | _, true, false -> assert false in
   Proofview.Unsafe.tclEVARS sigma <*>
-  Tacticals.tclTHENS (cuttac cut) [ itac1; itac2 ] end) <*>
-  set_state gstate
+  Tacticals.tclTHENS (cuttac cut) [ itac1; itac2 ]
+  with
+  | FailAutoGen as exn ->
+    let _, info = Exninfo.capture exn in
+    let msg = Pp.strbrk @@ "Automatic generalization of unresolved implicit "^
+                           "arguments together with abstract variables is "^
+                           "not supported" in
+    Proofview.tclZERO ~info (CErrors.UserError msg)
+   end) <*>
+ set_state gstate
 end
 
 let destProd_or_LetIn sigma c =

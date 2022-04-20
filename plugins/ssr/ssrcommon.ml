@@ -847,23 +847,28 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
     Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    let t, sigma = if n = 0 then t, sigma else
-      let rec loop sigma bo args = function (* saturate with metas *)
-        | 0 -> EConstr.mkApp (t, Array.of_list (List.rev args)), sigma
-        | n -> match EConstr.kind sigma bo with
-          | Lambda (_, ty, bo) ->
-              if not (EConstr.Vars.closed0 sigma ty) then
-                raise dependent_apply_error;
-              let m = Evarutil.new_meta () in
-              loop (meta_declare m ty sigma) bo ((EConstr.mkMeta m)::args) (n-1)
-          | _ -> assert false
-      in loop sigma t [] n in
-    pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env env sigma t));
-    Tacticals.tclTHENLIST [
-      Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
-      Proofview.(if first_goes_last then cycle 1 else tclUNIT ())
-    ]
-  end
+    try
+      let t, sigma = if n = 0 then t, sigma else
+          let rec loop sigma bo args = function (* saturate with metas *)
+            | 0 -> EConstr.mkApp (t, Array.of_list (List.rev args)), sigma
+            | n -> match EConstr.kind sigma bo with
+              | Lambda (_, ty, bo) ->
+                if not (EConstr.Vars.closed0 sigma ty) then
+                  raise dependent_apply_error;
+                let m = Evarutil.new_meta () in
+                loop (meta_declare m ty sigma) bo ((EConstr.mkMeta m)::args) (n-1)
+              | _ -> assert false
+          in loop sigma t [] n in
+      pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env env sigma t));
+      Tacticals.tclTHENLIST [
+        Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
+        Proofview.(if first_goes_last then cycle 1 else tclUNIT ())
+      ]
+    with
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
+    end
 
 let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
   let open Proofview.Notations in
@@ -1204,25 +1209,30 @@ and final id are passed to the continuation [k] which gets evaluated. *)
 let tclINTRO ~id ~conclusion:k = Goal.enter begin fun gl ->
   let open Context in
   let env, sigma, g = Goal.(env gl, sigma gl, concl gl) in
-  let decl, t, no_red = decompose_assum env sigma g in
-  let original_name = Rel.Declaration.get_name decl in
-  let already_used = Tacmach.pf_ids_of_hyps gl in
-  let id = match id, original_name with
-    | Id id, _ -> id
-    | Seed id, _ -> mk_anon_id id already_used
-    | Anon, Name id ->
-       if is_discharged_id id then id
-       else mk_anon_id (Id.to_string id) already_used
-    | Anon, Anonymous ->
-       let ids = Tacmach.pf_ids_of_hyps gl in
-       mk_anon_id ssr_anon_hyp ids
-  in
-  if List.mem id already_used then
-    errorstrm Pp.(Id.print id ++ str" already used");
-  unsafe_intro env (set_decl_id id decl) t <*>
-  (if no_red then tclUNIT () else tclFULL_BETAIOTA) <*>
-  k ~orig_name:original_name ~new_name:id
-end
+  try
+    let decl, t, no_red = decompose_assum env sigma g in
+    let original_name = Rel.Declaration.get_name decl in
+    let already_used = Tacmach.pf_ids_of_hyps gl in
+    let id = match id, original_name with
+      | Id id, _ -> id
+      | Seed id, _ -> mk_anon_id id already_used
+      | Anon, Name id ->
+        if is_discharged_id id then id
+        else mk_anon_id (Id.to_string id) already_used
+      | Anon, Anonymous ->
+        let ids = Tacmach.pf_ids_of_hyps gl in
+        mk_anon_id ssr_anon_hyp ids
+    in
+    if List.mem id already_used then
+      errorstrm Pp.(Id.print id ++ str" already used");
+    unsafe_intro env (set_decl_id id decl) t <*>
+    (if no_red then tclUNIT () else tclFULL_BETAIOTA) <*>
+    k ~orig_name:original_name ~new_name:id
+  with
+  | CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
+  end
 
 let return ~orig_name:_ ~new_name:_ = tclUNIT ()
 

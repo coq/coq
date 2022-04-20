@@ -29,6 +29,8 @@ exception CannotCoerceTo of string
 
 *)
 
+exception CoercionError of Id.t * (Environ.env * Evd.evar_map) option * Val.t * string
+
 module Value :
 sig
   type t = Val.t

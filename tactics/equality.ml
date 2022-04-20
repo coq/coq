@@ -353,36 +353,41 @@ let find_elim hdcncl lft2rgt dep cls ot =
   if (is_eq || is_jmeq) && not dep
   then
     let sort = elimination_sort_of_clause cls gl in
-    let c =
-      match EConstr.kind sigma hdcncl with
-      | Ind (ind_sp,u) ->
-        begin match lft2rgt, cls with
-        | Some true, None
-        | Some false, Some _ ->
-          begin match if is_eq then eq_elimination_ref true sort else None with
-          | Some r -> destConstRef r
-          | None ->
-            let c1 = destConstRef (lookup_eliminator env ind_sp sort) in
-            let mp,l = KerName.repr (Constant.canonical c1) in
-            let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
-            let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
-            if not (Environ.mem_constant c1' (Global.env ())) then
-              user_err
-                (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".");
-            c1'
+    try
+      let c =
+        match EConstr.kind sigma hdcncl with
+        | Ind (ind_sp,u) ->
+          begin match lft2rgt, cls with
+          | Some true, None
+          | Some false, Some _ ->
+            begin match if is_eq then eq_elimination_ref true sort else None with
+            | Some r -> destConstRef r
+            | None ->
+              let c1 = destConstRef (lookup_eliminator env ind_sp sort) in
+              let mp,l = KerName.repr (Constant.canonical c1) in
+              let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
+              let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
+              if not (Environ.mem_constant c1' (Global.env ())) then
+                user_err
+                  (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".");
+              c1'
+            end
+          | _ ->
+            begin match if is_eq then eq_elimination_ref false sort else None with
+            | Some r -> destConstRef r
+            | None -> destConstRef (lookup_eliminator env ind_sp sort)
+            end
           end
         | _ ->
-          begin match if is_eq then eq_elimination_ref false sort else None with
-          | Some r -> destConstRef r
-          | None -> destConstRef (lookup_eliminator env ind_sp sort)
-          end
-        end
-      | _ ->
           (* cannot occur since we checked that we are in presence of
              Logic.eq or Jmeq just before *)
-        assert false
-    in
-        pf_constr_of_global (GlobRef.ConstRef c)
+          assert false
+      in
+      pf_constr_of_global (GlobRef.ConstRef c)
+    with
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
   else
   let scheme_name = match dep, lft2rgt, inccl with
     (* Non dependent case *)
@@ -480,12 +485,17 @@ let clear_for_rewrite_in_hyps ids c =
     let sigma = Proofview.Goal.sigma gl in
     (* Is this the right err? *)
     let err = (Evarutil.OccurHypInSimpleClause None) in
-    let sigma =
-      try Evarutil.check_and_clear_in_constr env sigma err ids c
-      with Evarutil.ClearDependencyError (id,err,inglobal) ->
-        CErrors.user_err Pp.(str "Cannot rewrite due to dependency on " ++ Id.print id ++ str ".")
-    in
-    Proofview.Unsafe.tclEVARS sigma
+    try
+      let sigma =
+        try Evarutil.check_and_clear_in_constr env sigma err ids c
+        with Evarutil.ClearDependencyError (id,err,inglobal) ->
+          CErrors.user_err Pp.(str "Cannot rewrite due to dependency on " ++ Id.print id ++ str ".")
+      in
+      Proofview.Unsafe.tclEVARS sigma
+    with
+  | CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 let general_rewrite_clause l2r with_evars ?tac c cl =
@@ -562,9 +572,15 @@ let general_multi_rewrite with_evars l cl tac =
     Proofview.Goal.enter begin fun gl ->
       let sigma = Tacmach.project gl in
       let env = Proofview.Goal.env gl in
-      let (sigma, c) = f env sigma in
-      tclWITHHOLES with_evars
-        (general_rewrite_clause l2r with_evars ?tac c cl) sigma
+      try
+        let (sigma, c) = f env sigma in
+        tclWITHHOLES with_evars
+          (general_rewrite_clause l2r with_evars ?tac c cl) sigma
+      with
+      | Pretype_errors.PretypeError _
+      | Nametab.GlobalizationError _ as exn ->
+        let _, info = Exninfo.capture exn in
+        Proofview.tclZERO ~info exn
     end
   in
   let rec doN l2r c = function
@@ -1089,15 +1105,22 @@ let onEquality with_evars tac (c,lbindc) =
   let t = pf_get_type_of gl c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
   let eq_clause = pf_apply Clenv.make_clenv_binding gl (c,t') lbindc in
-  let eq_clause' = Clenv.clenv_pose_dependent_evars ~with_evars eq_clause in
-  let eqn = Clenv.clenv_type eq_clause' in
+  try
+    let eq_clause' = Clenv.clenv_pose_dependent_evars ~with_evars eq_clause in
+    let eqn = Clenv.clenv_type eq_clause' in
   (* FIXME evar leak *)
-  let (eq,u,eq_args) = pf_apply find_this_eq_data_decompose gl eqn in
-  let eq = { eq_data = (eq, eq_args); eq_term = Clenv.clenv_value eq_clause' } in
-  tclTHEN
-    (Proofview.Unsafe.tclEVARS eq_clause'.Clenv.evd)
-    (tac eq)
+    let (eq,u,eq_args) = pf_apply find_this_eq_data_decompose gl eqn in
+    let eq = { eq_data = (eq, eq_args); eq_term = Clenv.clenv_value eq_clause' } in
+    tclTHEN
+      (Proofview.Unsafe.tclEVARS eq_clause'.Clenv.evd)
+      (tac eq)
+  with
+  | UserError _
+  | RefinerError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
+
 
 let onNegatedEquality with_evars tac =
   Proofview.Goal.enter begin fun gl ->
@@ -1393,8 +1416,12 @@ let inject_if_homogenous_dependent_pair ty =
            Logic.refiner ~check:true EConstr.Unsafe.(to_constr
              (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|])))
           ])]
-  with Exit ->
+  with
+  | Exit ->
     Proofview.tclUNIT ()
+  | UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 (* Given t1=t2 Inj calculates the whd normal forms of t1 and t2 and it
@@ -1643,14 +1670,19 @@ let cutSubstInConcl l2r eqn =
   let (lbeq,u,(t,e1,e2)) = pf_apply find_eq_data_decompose gl eqn in
   let typ = pf_concl gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
-  let (sigma, (typ, expected)) = subst_tuple_term env sigma e1 e2 typ in
-  tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-  (tclTHENFIRST
-    (tclTHENLIST [
-       (change_concl typ); (* Put in pattern form *)
-       (replace_core onConcl l2r eqn)
-    ])
-    (change_concl expected)) (* Put in normalized form *)
+  try
+    let (sigma, (typ, expected)) = subst_tuple_term env sigma e1 e2 typ in
+    tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+      (tclTHENFIRST
+         (tclTHENLIST [
+             (change_concl typ); (* Put in pattern form *)
+             (replace_core onConcl l2r eqn)
+           ])
+         (change_concl expected)) (* Put in normalized form *)
+  with
+  | Pretype_errors.PretypeError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 let cutSubstInHyp l2r eqn id =
@@ -1821,19 +1853,24 @@ let subst_one_var dep_proof_ok x =
     (* If x has a body, simply replace x with body and clear x *)
     if is_local_def decl then tclTHEN (unfold_body x) (clear [x]) else
       (* Find a non-recursive definition for x *)
-      let res =
-        try
-          (* [is_eq_x] ensures nf_evar on its side *)
-          let hyps = Proofview.Goal.hyps gl in
-          let test hyp _ = is_eq_x gl x hyp in
-          Context.Named.fold_outside test ~init:() hyps;
-          user_err
-            (str "Cannot find any non-recursive equality over " ++ Id.print x ++
+      try
+        let res =
+          try
+            (* [is_eq_x] ensures nf_evar on its side *)
+            let hyps = Proofview.Goal.hyps gl in
+            let test hyp _ = is_eq_x gl x hyp in
+            Context.Named.fold_outside test ~init:() hyps;
+            user_err
+              (str "Cannot find any non-recursive equality over " ++ Id.print x ++
                str".")
-        with FoundHyp res -> res in
-      if is_section_variable (Global.env ()) x then
-        check_non_indirectly_dependent_section_variable gl x;
-      subst_one dep_proof_ok x res
+          with FoundHyp res -> res in
+        if is_section_variable (Global.env ()) x then
+          check_non_indirectly_dependent_section_variable gl x;
+        subst_one dep_proof_ok x res
+      with
+      | CErrors.UserError _ as exn ->
+        let exn, info = Exninfo.capture exn in
+        Proofview.tclZERO ~info exn
   end
 
 let subst_gen dep_proof_ok ids =

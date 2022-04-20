@@ -643,23 +643,30 @@ let dft = default_unify_flags
 let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let clenv = clenv_unique_resolver ~flags clenv concl in
-    let clenv = clenv_pose_dependent_evars ~with_evars clenv in
-    let evd' =
-      if with_classes then
-        let evd' =
-          Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
-            ~fail:(not with_evars) clenv.env clenv.evd
-        in
-        (* After an apply, all the subgoals including those dependent shelved ones are in
-          the hands of the user and resolution won't be called implicitely on them. *)
-        Typeclasses.make_unresolvables (fun x -> true) evd'
-      else clenv.evd
-    in
-    let clenv = update_clenv_evd clenv evd' in
-    Proofview.tclTHEN
-      (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-      (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
+    try
+      let clenv = clenv_unique_resolver ~flags clenv concl in
+      let clenv = clenv_pose_dependent_evars ~with_evars clenv in
+      let evd' =
+        if with_classes then
+          let evd' =
+            Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
+              ~fail:(not with_evars) clenv.env clenv.evd
+          in
+          (* After an apply, all the subgoals including those dependent shelved ones are in
+             the hands of the user and resolution won't be called implicitely on them. *)
+          Typeclasses.make_unresolvables (fun x -> true) evd'
+        else clenv.evd
+      in
+      let clenv = update_clenv_evd clenv evd' in
+      Proofview.tclTHEN
+        (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
+        (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
+    with
+    | UGraph.UniverseInconsistency _
+    | Logic.RefinerError _
+    | PretypeError _ as exn ->
+      let (e, info) = Exninfo.capture exn in
+      Proofview.tclZERO ~info e
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en

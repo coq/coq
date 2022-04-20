@@ -1,3 +1,9 @@
+## Changes between Coq 8.15 and Coq 8.16
+
+### Tactic API
+
+  - **CRITICAL** raising inside tactic code is now forbidden.
+
 ## Changes between Coq 8.14 and Coq 8.15
 
 ### XML protocol

@@ -1314,20 +1314,24 @@ let ssrinstancesof arg =
   let concl = Proofview.Goal.concl gl in
   let concl = Reductionops.nf_evar sigma concl in
   let sigma0, cpat = interp_cpattern env sigma arg None in
-  let pat = match cpat with T x -> x | _ -> errorstrm (str"Not supported") in
-  let rigid ev = Evd.mem sigma ev in
-  let etpat, tpat = mk_tpattern ~rigid env (sigma0, pat) L2R pat in
-  let find, conclude =
-    mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true
-      sigma None (etpat,[tpat]) in
-  let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) p ++ spc()
-                                     ++ str "matches:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) c)); c in
-  ppnl (str"BEGIN INSTANCES");
   try
+    let pat = match cpat with T x -> x | _ -> errorstrm (str"Not supported") in
+    let rigid ev = Evd.mem sigma ev in
+    let etpat, tpat = mk_tpattern ~rigid env (sigma0, pat) L2R pat in
+    let find, conclude =
+      mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true
+        sigma None (etpat,[tpat]) in
+    let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) p ++ spc()
+                                       ++ str "matches:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) c)); c in
+    ppnl (str"BEGIN INSTANCES");
     while true do
       ignore(find env concl 1 ~k:print)
     done; raise NoMatch
-  with NoMatch -> ppnl (str"END INSTANCES"); Tacticals.tclIDTAC
+  with
+  | NoMatch -> ppnl (str"END INSTANCES"); Tacticals.tclIDTAC
+  | CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 module Internal =

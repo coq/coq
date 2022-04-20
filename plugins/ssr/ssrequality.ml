@@ -315,11 +315,16 @@ let unfoldintac occ rdx t (kt,_) =
         with _ -> errorstrm Pp.(str "The term " ++
           pr_econstr_env env sigma c ++spc()++ str "does not unify with " ++ pr_econstr_pat env sigma t)),
     ignore in
-  let concl =
-    try beta env0 (eval_pattern env0 sigma0 concl0 rdx occ unfold)
-    with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
-  let () = conclude () in
-  convert_concl ~check:true concl
+  try
+    let concl =
+      try beta env0 (eval_pattern env0 sigma0 concl0 rdx occ unfold)
+      with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
+    let () = conclude () in
+    convert_concl ~check:true concl
+  with
+  | CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 let foldtac occ rdx ft =
@@ -410,6 +415,7 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   (* We check the proof is well typed. We assume that the type of [elim] is of
      the form [forall (A : Type) (x : A) (P : A -> Type@{s}), T] s.t. the only
      universes to unify are by checking the [A] and [P] arguments. *)
+  try
   let sigma =
     try
       let open EConstr in
@@ -455,6 +461,11 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
     | _ -> anomaly "rewrite rule not an application" in
       tclZEROMSG Pp.(Himsg.explain_refiner_error env sigma (Logic.UnresolvedBindings miss)++
       (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty)))
+
+  with
+  | PRtype_error _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 let pf_merge_uc_of s sigma =
@@ -471,61 +482,66 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
   let r_n' = abs_cterm env sigma0 n r_n in
   let r' = EConstr.Vars.subst_var pattern_id r_n' in
   let sigma0 = Evd.set_universe_context sigma0 ucst in
-  let sigma, rdxt = Typing.type_of env sigma rdx in
-  let () = debug_ssr (fun () -> Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma r)) in
-  let cvtac, rwtac, sigma0 =
-    if EConstr.Vars.closed0 sigma0 r' then
-      let c_eq = Coqlib.(lib_ref "core.eq.type") in
-      let sigma, c_ty = Typing.type_of env sigma r in
-      let () = debug_ssr (fun () -> Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty)) in
-      let open EConstr in
-      match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
-      | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
+  try
+    let sigma, rdxt = Typing.type_of env sigma rdx in
+    let () = debug_ssr (fun () -> Pp.(str"r@rwcltac=" ++ pr_econstr_env env sigma r)) in
+    let cvtac, rwtac, sigma0 =
+      if EConstr.Vars.closed0 sigma0 r' then
+        let c_eq = Coqlib.(lib_ref "core.eq.type") in
+        let sigma, c_ty = Typing.type_of env sigma r in
+        let () = debug_ssr (fun () -> Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty)) in
+        let open EConstr in
+        match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
+        | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
           pirrel_rewrite ?under ?map_redex cl rdx a.(0) new_rdx dir (sigma, r) c_ty, Tacticals.tclIDTAC, sigma0
-      | _ ->
+        | _ ->
           let cl' = EConstr.mkApp (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl, [|rdx|]) in
           let sigma, _ = Typing.type_of env sigma cl' in
           let sigma0 = pf_merge_uc_of sigma sigma0 in
           convert_concl ~check:true cl', rewritetac ?under dir r', sigma0
-    else
-      let dc, r2 = EConstr.decompose_lam_n_assum sigma0 n r' in
-      let r3, _, r3t  =
-        try EConstr.destCast sigma0 r2 with _ ->
-        errorstrm Pp.(str "no cast from " ++ pr_econstr_pat env sigma0 r
-                    ++ str " to " ++ pr_econstr_env env sigma0 r2) in
-      let cl' = EConstr.mkNamedProd (make_annot rule_id Sorts.Relevant) (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
-      let cl'' = EConstr.mkNamedProd (make_annot pattern_id Sorts.Relevant) rdxt cl' in
-      let itacs = [introid pattern_id; introid rule_id] in
-      let cltac = Tactics.clear [pattern_id; rule_id] in
-      let rwtacs = [
-        Tacticals.tclTHENLIST [
-          rewritetac ?under dir (EConstr.mkVar rule_id);
-          if !ssroldreworder || Option.default false under then
-            Proofview.tclUNIT ()
-          else
-            Proofview.cycle 1
+      else
+        let dc, r2 = EConstr.decompose_lam_n_assum sigma0 n r' in
+        let r3, _, r3t  =
+          try EConstr.destCast sigma0 r2 with _ ->
+            errorstrm Pp.(str "no cast from " ++ pr_econstr_pat env sigma0 r
+                          ++ str " to " ++ pr_econstr_env env sigma0 r2) in
+        let cl' = EConstr.mkNamedProd (make_annot rule_id Sorts.Relevant) (EConstr.it_mkProd_or_LetIn r3t dc) (EConstr.Vars.lift 1 cl) in
+        let cl'' = EConstr.mkNamedProd (make_annot pattern_id Sorts.Relevant) rdxt cl' in
+        let itacs = [introid pattern_id; introid rule_id] in
+        let cltac = Tactics.clear [pattern_id; rule_id] in
+        let rwtacs = [
+          Tacticals.tclTHENLIST [
+            rewritetac ?under dir (EConstr.mkVar rule_id);
+            if !ssroldreworder || Option.default false under then
+              Proofview.tclUNIT ()
+            else
+              Proofview.cycle 1
           ];
-        cltac] in
-      Tactics.apply_type ~typecheck:true cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.tclTHENLIST (itacs @ rwtacs), sigma0
-  in
-  let cvtac' =
-    Proofview.tclORELSE cvtac begin function
-    | (PRtype_error e, _) ->
-      let error = Option.cata (fun (env, sigma, te) ->
-          Pp.(fnl () ++ str "Type error was: " ++ Himsg.explain_pretype_error env sigma te))
-          (Pp.mt ()) e in
-      if occur_existential sigma0 (Tacmach.pf_concl gl)
-      then Tacticals.tclZEROMSG Pp.(str "Rewriting impacts evars" ++ error)
-      else Tacticals.tclZEROMSG Pp.(str "Dependent type error in rewrite of "
-        ++ pr_econstr_env env sigma0
-          (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl)
-        ++ error)
-    | (e, info) -> Proofview.tclZERO ~info e
-    end
-  in
-  Proofview.Unsafe.tclEVARS sigma0 <*>
-  Tacticals.tclTHEN cvtac' rwtac
+          cltac] in
+        Tactics.apply_type ~typecheck:true cl'' [rdx; EConstr.it_mkLambda_or_LetIn r3 dc], Tacticals.tclTHENLIST (itacs @ rwtacs), sigma0
+    in
+    let cvtac' =
+      Proofview.tclORELSE cvtac begin function
+      | (PRtype_error e, _) ->
+        let error = Option.cata (fun (env, sigma, te) ->
+            Pp.(fnl () ++ str "Type error was: " ++ Himsg.explain_pretype_error env sigma te))
+            (Pp.mt ()) e in
+        if occur_existential sigma0 (Tacmach.pf_concl gl)
+        then Tacticals.tclZEROMSG Pp.(str "Rewriting impacts evars" ++ error)
+        else Tacticals.tclZEROMSG Pp.(str "Dependent type error in rewrite of "
+                                      ++ pr_econstr_env env sigma0
+                                        (EConstr.mkNamedLambda (make_annot pattern_id Sorts.Relevant) rdxt cl)
+                                      ++ error)
+      | (e, info) -> Proofview.tclZERO ~info e
+      end
+    in
+    Proofview.Unsafe.tclEVARS sigma0 <*>
+    Tacticals.tclTHEN cvtac' rwtac
+  with
+    CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 [@@@ocaml.warning "-3"]
@@ -671,10 +687,14 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
       (fun concl -> closed0_check env0 sigma0 concl e;
         let (d,(ev,ctx,c)) , x = assert_done r in (d,(true, ev,ctx, Reductionops.nf_evar ev c)) , x) in
   let concl0 = Reductionops.nf_evar sigma0 concl0 in
-  let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
-  let (d, (_, sigma, uc, t)), rdx = conclude concl in
-  let r = Evd.merge_universe_context sigma uc, t in
-  rwcltac ?under ?map_redex concl rdx d r
+  try
+    let concl = eval_pattern env0 sigma0 concl0 rdx_pat occ find_R in
+    let (d, (_, sigma, uc, t)), rdx = conclude concl in
+    let r = Evd.merge_universe_context sigma uc, t in
+    rwcltac ?under ?map_redex concl rdx d r
+  with CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
   end
 
 let ssrinstancesofrule ist dir arg =

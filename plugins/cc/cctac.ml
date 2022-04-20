@@ -559,8 +559,13 @@ let mk_eq f c1 c2 k =
     let evm, ty = pf_apply type_of gl c1 in
     let evm, ty = Evarsolve.refresh_universes (Some false) (pf_env gl) evm ty in
     let term = mkApp (fc, [| ty; c1; c2 |]) in
-    let evm, _ =  type_of (pf_env gl) evm term in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k term)
+    try
+      let evm, _ =  type_of (pf_env gl) evm term in
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k term)
+    with
+    | Pretype_errors.PretypeError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
     end
 
 let f_equal =

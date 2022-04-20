@@ -538,8 +538,10 @@ let return_term t =
   generalize [a]
 
 let nsatz_compute t =
-  let lpol =
-    try nsatz t
-    with Ideal.NotInIdeal ->
-      user_err Pp.(str "nsatz cannot solve this problem") in
-  return_term lpol
+  try
+    let lpol = nsatz t in
+    return_term lpol
+  with
+  | Ideal.NotInIdeal as exn ->
+    let _exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info (CErrors.UserError Pp.(str "nsatz cannot solve this problem"))

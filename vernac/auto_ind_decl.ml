@@ -961,36 +961,41 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
   let rec aux l1 l2 =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
-        Proofview.Goal.enter begin fun gl ->
+      Proofview.Goal.enter begin fun gl ->
         let sigma = Tacmach.project gl in
         let env = Tacmach.pf_env gl in
         if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
           let tt1 = Tacmach.pf_get_type_of gl t1 in
           let (ind',u as indu),v = try destruct_ind env sigma tt1
-          (* trick so that the good sequence is returned*)
-                with e when CErrors.noncritical e -> indu,[||]
+            (* trick so that the good sequence is returned*)
+            with e when CErrors.noncritical e -> indu,[||]
           in if Ind.CanOrd.equal ind' ind
-             then Tacticals.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
-             else (
-               let c = get_scheme handle (!bl_scheme_kind_aux ()) ind' in
-               let bl_t1 = mkConstU (c,u) in
-               let bl_args =
-                        Array.append (Array.append
-                          v
-                          (Array.Smart.map (fun x -> do_arg env sigma indu x 1) v))
-                          (Array.Smart.map (fun x -> do_arg env sigma indu x 2) v )
-                in
-                let app =  if Array.is_empty bl_args
-                           then bl_t1 else mkApp (bl_t1,bl_args)
-                in
-                Tacticals.tclTHENLIST [
-                  Equality.replace_by t1 t2
-                    (Tacticals.tclTHEN (apply app) (Auto.default_auto)) ;
-                  aux q1 q2 ]
-              )
+          then Tacticals.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
+          else (
+            let c = get_scheme handle (!bl_scheme_kind_aux ()) ind' in
+            let bl_t1 = mkConstU (c,u) in
+            try
+              let bl_args =
+                Array.append (Array.append
+                                v
+                                (Array.Smart.map (fun x -> do_arg env sigma indu x 1) v))
+                  (Array.Smart.map (fun x -> do_arg env sigma indu x 2) v )
+              in
+              let app =  if Array.is_empty bl_args
+                then bl_t1 else mkApp (bl_t1,bl_args)
+              in
+              Tacticals.tclTHENLIST [
+                Equality.replace_by t1 t2
+                  (Tacticals.tclTHEN (apply app) (Auto.default_auto)) ;
+                aux q1 q2 ]
+            with
+            | ConstructorWithNonParametricInductiveType _ as exn ->
+              let exn, info = Exninfo.capture exn in
+              Proofview.tclZERO ~info exn
+          )
         )
-        end
+      end
     | ([],[]) -> Proofview.tclUNIT ()
     | _ -> Tacticals.tclZEROMSG (str "Both side of the equality must have the same arity.")
   in

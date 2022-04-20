@@ -160,12 +160,15 @@ let left_instance_tac (inst,id) continue seq=
                   let gt=
                     it_mkLambda_or_LetIn
                       (mkApp(idc,[|ot|])) rc in
-                  let evmap, _ =
-                    try Typing.type_of (pf_env gl) evmap gt
-                    with e when CErrors.noncritical e ->
-                      user_err Pp.(str "Untypable instance, maybe higher-order non-prenex quantification") in
-                  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evmap)
-                    (generalize [gt])
+                  try
+                    let evmap, _ =Typing.type_of (pf_env gl) evmap gt in
+                    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evmap)
+                      (generalize [gt])
+                  with
+                  | Pretype_errors.PretypeError _ as exn ->
+                    let _exn, info = Exninfo.capture exn in
+                    let msg = Pp.(str "Untypable instance, maybe higher-order non-prenex quantification") in
+                    Proofview.tclZERO ~info (UserError msg)
                 end)
             else
               pf_constr_of_global id >>= fun idc -> generalize [mkApp(idc,[|t|])]

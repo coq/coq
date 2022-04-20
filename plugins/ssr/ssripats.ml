@@ -299,8 +299,13 @@ end
 
 let tacCHECK_HYPS_EXIST hyps = Goal.enter begin fun gl ->
   let ctx = Goal.hyps gl in
-  List.iter (Ssrcommon.check_hyp_exists ctx) hyps;
-  tclUNIT ()
+  try
+    List.iter (Ssrcommon.check_hyp_exists ctx) hyps;
+    tclUNIT ()
+  with
+  | CErrors.UserError _ as exn ->
+    let exn, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info exn
 end
 
 let tacFILTER_HYP_EXIST hyps k = Goal.enter begin fun gl ->

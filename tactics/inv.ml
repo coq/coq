@@ -471,36 +471,41 @@ let raw_inversion inv_kind id status names =
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
-    let ((ind, u), t) =
-      try pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl c)
-      with UserError _ ->
-        let msg = str "The type of " ++ Id.print id ++ str " is not inductive." in
-        CErrors.user_err  msg
-    in
-    let IndType (indf,realargs) = find_rectype env sigma t in
-    let evdref = ref sigma in
-    let (elim_predicate, args) =
-      make_inv_predicate env evdref indf realargs id status concl in
-    let sigma = !evdref in
-    let dep = status != NoDep && (local_occur_var sigma id concl) in
-    let cut_concl =
-      if dep then
-        Reductionops.beta_applist sigma (elim_predicate, realargs@[c])
-      else
-        Reductionops.beta_applist sigma (elim_predicate, realargs)
-    in
-    let refined id =
-      let prf = mkApp (mkVar id, args) in
-      Refine.refine ~typecheck:false (fun h -> (h, prf))
-    in
-    let neqns = List.length realargs in
-    let as_mode = names != None in
-    let (_, args) = decompose_app_vect sigma t in
-    tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-      (tclTHENS
-        (assert_before Anonymous cut_concl)
-        [case_tac dep names (rewrite_equations_tac as_mode inv_kind id neqns) elim_predicate (ind, u, args) id;
-        onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
+    try
+      let ((ind, u), t) =
+        try pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl c)
+        with UserError _ ->
+          let msg = str "The type of " ++ Id.print id ++ str " is not inductive." in
+          CErrors.user_err msg
+      in
+      let IndType (indf,realargs) = find_rectype env sigma t in
+      let evdref = ref sigma in
+      let (elim_predicate, args) =
+        make_inv_predicate env evdref indf realargs id status concl in
+      let sigma = !evdref in
+      let dep = status != NoDep && (local_occur_var sigma id concl) in
+      let cut_concl =
+        if dep then
+          Reductionops.beta_applist sigma (elim_predicate, realargs@[c])
+        else
+          Reductionops.beta_applist sigma (elim_predicate, realargs)
+      in
+      let refined id =
+        let prf = mkApp (mkVar id, args) in
+        Refine.refine ~typecheck:false (fun h -> (h, prf))
+      in
+      let neqns = List.length realargs in
+      let as_mode = names != None in
+      let (_, args) = decompose_app_vect sigma t in
+      tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        (tclTHENS
+           (assert_before Anonymous cut_concl)
+           [case_tac dep names (rewrite_equations_tac as_mode inv_kind id neqns) elim_predicate (ind, u, args) id;
+            onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
+    with
+    | CErrors.UserError _ as exn ->
+      let exn, info = Exninfo.capture exn in
+      Proofview.tclZERO ~info exn
   end
 
 (* Error messages of the inversion tactics *)

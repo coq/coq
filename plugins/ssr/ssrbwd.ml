@@ -146,9 +146,14 @@ let inner_ssrapplytac gviews (ggenl, gclr) ist =
       (cleartac clr)
   | [], [agens] ->
     let sigma = Proofview.Goal.sigma gl in
-    let clr', lemma = interp_agens ist (pf_env gl) sigma ~concl:(pf_concl gl) agens in
-    let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst lemma)) in
-    Tacticals.tclTHENLIST [Proofview.Unsafe.tclEVARS sigma; cleartac clr; refine_with ~beta:true lemma; cleartac clr']
+    (try
+       let clr', lemma = interp_agens ist (pf_env gl) sigma ~concl:(pf_concl gl) agens in
+       let sigma = Evd.merge_universe_context sigma (Evd.evar_universe_context (fst lemma)) in
+       Tacticals.tclTHENLIST [Proofview.Unsafe.tclEVARS sigma; cleartac clr; refine_with ~beta:true lemma; cleartac clr']
+     with
+     | CErrors.UserError _ as exn ->
+       let e, info = Exninfo.capture exn in
+       Proofview.tclZERO ~info e)
   | _, _ ->
     Tacticals.tclTHENLIST [apply_top_tac; cleartac clr]))
 
