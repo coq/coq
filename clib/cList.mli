@@ -239,6 +239,10 @@ sig
       [l1++(a::l2)=l], [p a=true] and [p b = false] for every element [b] of [l1].
       if there is no such [a], then it returns [(l,[])] instead. *)
 
+  val sep_first : 'a list -> 'a * 'a list
+  (** [sep_first l] returns [(a,l')] such that [l] is [a::l'].
+      It raises [Failure _] if the list is empty. *)
+
   val sep_last : 'a list -> 'a * 'a list
   (** [sep_last l] returns [(a,l')] such that [l] is [l'@[a]].
       It raises [Failure _] if the list is empty. *)

@@ -155,23 +155,4 @@ val check_cofix : env -> cofixpoint -> unit
 
 exception SingletonInductiveBecomesProp of Id.t
 
-(** {6 Debug} *)
-
-type size = Large | Strict
-type subterm_spec =
-    Subterm of (size * wf_paths)
-  | Dead_code
-  | Not_subterm
-type guard_env =
-  { env     : env;
-    (** dB of last fixpoint *)
-    rel_min : int;
-    (** dB of variables denoting subterms *)
-    genv    : subterm_spec Lazy.t list;
-  }
-
-type stack_element = |SClosure of guard_env*constr |SArg of subterm_spec Lazy.t
-
-val subterm_specif : guard_env -> stack_element list -> constr -> subterm_spec
-
 val abstract_mind_lc : int -> int -> MutInd.t -> (rel_context * constr) array -> constr array

@@ -3,7 +3,7 @@ Module Mono.
     Fixpoint F (n : nat) (A : Type) {struct n} : nat
     with G (n : nat) (A:Type@{_})  {struct n} : nat.
     Proof.
-      1: pose (G n A).
+      1: pose (match n with S n => G n A | 0 => 0 end).
       all: exact 0.
     Defined.
   End Transparent.
@@ -12,7 +12,7 @@ Module Mono.
     Fixpoint F (n : nat) (A : Type) {struct n} : nat
     with G (n : nat) (A:Type@{_})  {struct n} : nat.
     Proof.
-      1: pose (G n A).
+      1: pose (match n with S n => G n A | 0 => 0 end).
       all: exact 0.
     Qed.
   End Opaque.
@@ -24,7 +24,7 @@ Module Poly.
     Fixpoint F (n : nat) (A : Type) {struct n} : nat
     with G (n : nat) (A:Type@{_})  {struct n} : nat.
     Proof.
-      1: pose (G n A).
+      1: pose (match n with S n => G n A | 0 => 0 end).
       all: exact 0.
     Defined.
     Check F@{_}. Check G@{_}.
@@ -34,7 +34,7 @@ Module Poly.
     Fixpoint F (n : nat) (A : Type) {struct n} : nat
     with G (n : nat) (A:Type@{_})  {struct n} : nat.
     Proof.
-      1: pose (G n A).
+      1: pose (match n with S n => G n A | 0 => 0 end).
       all: exact 0.
     Qed.
     Check F@{_}. Check G@{_}.
