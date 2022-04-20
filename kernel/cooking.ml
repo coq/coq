@@ -122,11 +122,13 @@ type internal_abstr_inst_info = Univ.Instance.t * int list * int
 type cooking_cache = {
   cache : internal_abstr_inst_info RefTable.t;
   info : cooking_info;
+  rel_ctx : rel_context Lazy.t;
 }
 
 let create_cache info = {
   cache = RefTable.create 13;
   info;
+  rel_ctx = lazy (List.map NamedDecl.to_rel_decl info.abstr_info.abstr_ctx);
 }
 
 let instantiate_my_gr gr u =
@@ -258,12 +260,12 @@ let expand_subst cache c =
 
 (** Adding the final abstraction step, term case *)
 let abstract_as_type cache t =
-  let ctx = List.map NamedDecl.to_rel_decl cache.info.abstr_info.abstr_ctx in
+  let ctx = Lazy.force cache.rel_ctx in
   it_mkProd_wo_LetIn (expand_subst cache t) ctx
 
 (** Adding the final abstraction step, type case *)
 let abstract_as_body cache c =
-  let ctx = List.map NamedDecl.to_rel_decl cache.info.abstr_info.abstr_ctx in
+  let ctx = Lazy.force cache.rel_ctx in
   it_mkLambda_or_LetIn (expand_subst cache c) ctx
 
 (** Adding the final abstraction step, sort case (for universes) *)
@@ -323,8 +325,8 @@ let names_info info =
   let fold accu id = Id.Set.add (NamedDecl.get_id id) accu in
   List.fold_left fold Id.Set.empty info.abstr_info.abstr_ctx
 
-let rel_context_of_cooking_cache { info; _ } =
-  List.map NamedDecl.to_rel_decl info.abstr_info.abstr_ctx
+let rel_context_of_cooking_cache cache =
+  Lazy.force cache.rel_ctx
 
 let universe_context_of_cooking_info info =
   info.abstr_info.abstr_auctx
