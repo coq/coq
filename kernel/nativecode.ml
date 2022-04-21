@@ -1695,7 +1695,7 @@ let pp_mllam fmt l =
         Format.fprintf fmt "@[(fun%a@ ->@\n %a)@]"
           pp_ldecls ids pp_mllam body
     | MLletrec(defs, body) ->
-        Format.fprintf fmt "@[%a@ in@\n%a@]" pp_letrec defs
+        Format.fprintf fmt "@[(%a@ in@\n%a)@]" pp_letrec defs
           pp_mllam body
     | MLlet(id,def,body) ->
         Format.fprintf fmt "@[(let@ %a@ =@\n %a@ in@\n%a)@]"
