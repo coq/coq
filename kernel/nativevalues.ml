@@ -215,8 +215,8 @@ let args_of_accu (k:accumulator) =
 let mk_fix_accu rec_pos pos types bodies =
   mk_accu (Afix(types,bodies,rec_pos, pos))
 
-let mk_cofix_accu pos types norm =
-  mk_accu (Acofix(types,norm,pos,(Obj.magic 0 : t)))
+let mk_cofix_accu pos (types : t) (norm : t) =
+  mk_accu (Acofix(Obj.magic types,Obj.magic norm,pos,(Obj.magic 0 : t)))
 
 let upd_cofix (cofix :t) (cofix_fun : t) =
   let atom = atom_of_accu (Obj.magic cofix) in

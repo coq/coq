@@ -97,7 +97,7 @@ val mk_var_accu : Id.t -> t
 val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
 val mk_prod_accu : Name.t -> t -> t -> t
 val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t
-val mk_cofix_accu : int -> t array -> t array -> t
+val mk_cofix_accu : int -> t -> t -> t
 val mk_meta_accu : metavariable -> t
 val mk_evar_accu : Evar.t -> t array -> t
 val mk_proj_accu : (inductive * int) -> accumulator -> t
