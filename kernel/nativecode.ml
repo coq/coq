@@ -292,6 +292,17 @@ type primitive =
   | MLarrayget
   | Mk_empty_instance
   | MLparray_of_array
+  | Get_value
+  | Get_sort
+  | Get_name
+  | Get_const
+  | Get_match
+  | Get_ind
+  | Get_meta
+  | Get_evar
+  | Get_level
+  | Get_proj
+  | Get_symbols
   | Coq_primitive of CPrimitives.t * bool (* check for accu *)
 
 let eq_primitive p1 p2 =
@@ -362,6 +373,17 @@ let primitive_hash = function
   | Is_parray -> 41
   | MLnot -> 41
   | MLparray_of_array -> 42
+  | Get_value -> 43
+  | Get_sort -> 44
+  | Get_name -> 45
+  | Get_const -> 46
+  | Get_match -> 47
+  | Get_ind -> 48
+  | Get_meta -> 49
+  | Get_evar -> 50
+  | Get_level -> 51
+  | Get_proj -> 52
+  | Get_symbols -> 53
 
 type mllambda =
   | MLlocal        of lname
@@ -899,43 +921,43 @@ let fv_args env fvn fvr =
     end
 
 let get_value_code i =
-  MLapp (MLglobal (Ginternal "get_value"),
+  MLprimitive (Get_value,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_sort_code i =
-  MLapp (MLglobal (Ginternal "get_sort"),
+  MLprimitive (Get_sort,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_name_code i =
-  MLapp (MLglobal (Ginternal "get_name"),
+  MLprimitive (Get_name,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_const_code i =
-  MLapp (MLglobal (Ginternal "get_const"),
+  MLprimitive (Get_const,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_match_code i =
-  MLapp (MLglobal (Ginternal "get_match"),
+  MLprimitive (Get_match,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_ind_code i =
-  MLapp (MLglobal (Ginternal "get_ind"),
+  MLprimitive (Get_ind,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_meta_code i =
-  MLapp (MLglobal (Ginternal "get_meta"),
+  MLprimitive (Get_meta,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_evar_code i =
-  MLapp (MLglobal (Ginternal "get_evar"),
+  MLprimitive (Get_evar,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_level_code i =
-  MLapp (MLglobal (Ginternal "get_level"),
+  MLprimitive (Get_level,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_proj_code i =
-  MLapp (MLglobal (Ginternal "get_proj"),
+  MLprimitive (Get_proj,
     [|MLglobal symbols_tbl_name; MLint i|])
 
 type rlist =
@@ -988,7 +1010,7 @@ let add_check cond targs args =
     match t, a with
     | CPrimitives.(PITT_type (PT_int63, _)), PAml(MLprimitive (Mk_uint, _)) -> cond
     | CPrimitives.(PITT_type (PT_array, _)), PAml(MLprimitive (MLparray_of_array, _)) -> cond
-    | CPrimitives.(PITT_type (PT_array, _)), PAml(MLapp (MLglobal (Ginternal "get_value"),_)) -> cond
+    | CPrimitives.(PITT_type (PT_array, _)), PAml(MLprimitive (Get_value ,_)) -> cond
     | CPrimitives.(PITT_type (prim_ty, _)), PAml ml ->
        (* FIXME: use explicit equality function *)
        let c = (CPrimitives.PTE prim_ty, ml) in
@@ -1850,6 +1872,17 @@ let pp_mllam fmt l =
     | Coq_primitive (op, false) ->
        Format.fprintf fmt "no_check_%s" (CPrimitives.to_string op)
     | Coq_primitive (op, true) -> Format.fprintf fmt "%s" (CPrimitives.to_string op)
+    | Get_value -> Format.fprintf fmt "get_value"
+    | Get_sort -> Format.fprintf fmt "get_sort"
+    | Get_name -> Format.fprintf fmt "get_name"
+    | Get_const -> Format.fprintf fmt "get_const"
+    | Get_match -> Format.fprintf fmt "get_match"
+    | Get_ind -> Format.fprintf fmt "get_ind"
+    | Get_meta -> Format.fprintf fmt "get_meta"
+    | Get_evar -> Format.fprintf fmt "get_evar"
+    | Get_level -> Format.fprintf fmt "get_level"
+    | Get_proj -> Format.fprintf fmt "get_proj"
+    | Get_symbols -> Format.fprintf fmt "get_symbols"
   in
   Format.fprintf fmt "@[%a@]" pp_mllam l
 
@@ -2183,7 +2216,7 @@ let mk_conv_code env sigma prefix t1 t2 =
   let setref2 = Glet(Ginternal "_", MLsetref("rt2",g2)) in
   let gl = List.rev (setref2 :: setref1 :: t2 :: t1 :: gl) in
   let header = Glet(Ginternal "symbols_tbl",
-    MLapp (MLglobal (Ginternal "get_symbols"),
+    MLprimitive (Get_symbols,
       [|MLglobal (Ginternal "()")|])) in
   header::gl, (mind_updates, const_updates)
 
@@ -2201,7 +2234,7 @@ let mk_norm_code env sigma prefix t =
   let setref = Glet(Ginternal "_", MLsetref("rt1",g1)) in
   let gl = List.rev (setref :: t1 :: gl) in
   let header = Glet(Ginternal "symbols_tbl",
-    MLapp (MLglobal (Ginternal "get_symbols"),
+    MLprimitive (Get_symbols,
       [|MLglobal (Ginternal "()")|])) in
   header::gl, (mind_updates, const_updates)
 
