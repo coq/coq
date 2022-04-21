@@ -303,6 +303,7 @@ type primitive =
   | Get_level
   | Get_proj
   | Get_symbols
+  | Lazy
   | Coq_primitive of CPrimitives.t * bool (* check for accu *)
 
 let eq_primitive p1 p2 =
@@ -384,6 +385,7 @@ let primitive_hash = function
   | Get_level -> 51
   | Get_proj -> 52
   | Get_symbols -> 53
+  | Lazy -> 54
 
 type mllambda =
   | MLlocal        of lname
@@ -1400,7 +1402,6 @@ let compile_prim env decl cond paux =
   | Lind (prefix, (ind, u)) ->
      let uargs = ml_of_instance env.env_univ u in
      mkMLapp (MLglobal (Gind (prefix, ind))) uargs
-  | Llazy -> MLglobal (Ginternal "lazy")
   | Lforce -> MLglobal (Ginternal "Lazy.force")
 
 let mllambda_of_lambda univ auxdefs l t =
@@ -1883,6 +1884,7 @@ let pp_mllam fmt l =
     | Get_level -> Format.fprintf fmt "get_level"
     | Get_proj -> Format.fprintf fmt "get_proj"
     | Get_symbols -> Format.fprintf fmt "get_symbols"
+    | Lazy -> Format.fprintf fmt "lazy"
   in
   Format.fprintf fmt "@[%a@]" pp_mllam l
 
@@ -1938,8 +1940,9 @@ let pp_global fmt g =
       Format.fprintf fmt "@[(* %s *)@]@." s
 
 (** Compilation of elements in environment **)
-let rec compile_with_fv env sigma univ auxdefs l t =
+let rec compile_with_fv ?(wrap = fun t -> t) env sigma univ auxdefs l t =
   let (auxdefs,(fv_named,fv_rel),ml) = mllambda_of_lambda univ auxdefs l t in
+  let ml = wrap ml in
   if List.is_empty fv_named && List.is_empty fv_rel then (auxdefs,ml)
   else apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml
 
@@ -1997,13 +2000,14 @@ let compile_constant env sigma con cb =
       let code = lambda_of_constr env sigma t in
       debug_native_compiler (fun () -> Pp.str "Generated lambda code");
       let is_lazy = is_lazy t in
-      let code = if is_lazy then mk_lazy code else code in
+      let wrap t = if is_lazy then MLprimitive (Lazy, [|t|]) else t in
       let l = Constant.label con in
       let auxdefs,code =
-        if no_univs then compile_with_fv env sigma None [] (Some l) code
+        if no_univs then
+          compile_with_fv ~wrap env sigma None [] (Some l) code
         else
           let univ = fresh_univ () in
-          let (auxdefs,code) = compile_with_fv env sigma (Some univ) [] (Some l) code in
+          let (auxdefs,code) = compile_with_fv ~wrap env sigma (Some univ) [] (Some l) code in
           (auxdefs,mkMLlam [|univ|] code)
       in
       debug_native_compiler (fun () -> Pp.str "Generated mllambda code");

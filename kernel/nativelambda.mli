@@ -43,7 +43,6 @@ type lambda =
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
   | Lind          of prefix * pinductive
-  | Llazy
   | Lforce
 
 and lam_branches =
@@ -63,7 +62,6 @@ val decompose_Llam : lambda -> Name.t Context.binder_annot array * lambda
 val decompose_Llam_Llet : lambda -> (Name.t Context.binder_annot * lambda option) array * lambda
 
 val is_lazy : constr -> bool
-val mk_lazy : lambda -> lambda
 
 val get_mind_prefix : env -> MutInd.t -> string
 
