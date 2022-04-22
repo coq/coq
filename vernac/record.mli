@@ -52,9 +52,12 @@ val definition_structure
       }
   end
 
+  (** A record is an inductive [mie] with extra metadata in [records] *)
   module Record_decl : sig
     type t = {
       mie : Entries.mutual_inductive_entry;
+      records : Data.t list;
+      (* TODO: this part could be factored in mie *)
       primitive_proj : bool;
       impls : DeclareInd.one_inductive_impls list;
       globnames : UState.named_universes_entry;
@@ -63,7 +66,6 @@ val definition_structure
       ubinders : UnivNames.universe_binders;
       projections_kind : Decls.definition_object_kind;
       poly : bool;
-      records : Data.t list;
     }
 end
 

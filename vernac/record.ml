@@ -542,6 +542,7 @@ let data_name id rdata =
 module Record_decl = struct
   type t = {
     mie : Entries.mutual_inductive_entry;
+    records : Data.t list;
     primitive_proj : bool;
     impls : DeclareInd.one_inductive_impls list;
     globnames : UState.named_universes_entry;
@@ -550,7 +551,6 @@ module Record_decl = struct
     ubinders : UnivNames.universe_binders;
     projections_kind : Decls.definition_object_kind;
     poly : bool;
-    records : Data.t list;
   }
 end
 
