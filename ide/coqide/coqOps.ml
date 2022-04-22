@@ -177,7 +177,7 @@ object
   method get_n_errors : int
   method get_errors : (int * string) list
   method get_slaves_status : int * int * string CString.Map.t
-
+  method backtrack_to_begin : unit -> unit task
   method handle_failure : handle_exn_rty -> unit task
 
   method destroy : unit -> unit
@@ -914,6 +914,10 @@ object(self)
                  (Doc.focused document && Doc.is_in_focus document safe_id))
     in
       undo to_id unfocus_needed)
+
+  method backtrack_to_begin =
+    let until (id : Doc.id option) _ stop = (id = (Some (Stateid.of_int 1))) in
+    fun () -> self#backtrack_to_id ~move_insert:false (self#find_id until)
 
   method private backtrack_until ?move_insert until =
     self#backtrack_to_id ?move_insert (self#find_id until)

@@ -118,7 +118,9 @@ let create_script coqtop source_buffer =
 
 let misc () = CDebug.(get_flag misc)
 
-type action_stack = Gtk.text_mark list option
+type action_stack_entry = Mark of Gtk.text_mark | Begin
+
+type action_stack = action_stack_entry list option
 
 let call_coq_or_cancel_action coqtop coqops (buffer : GText.buffer) it =
   let () = try buffer#delete_mark (`NAME "target") with GText.No_such_mark _ -> () in
@@ -136,22 +138,23 @@ let close_user_action (stack : action_stack ref) = match !stack with
   let () = stack := None in
   marks
 
-let handle_iter coqtop coqops (buffer : GText.buffer) it stack = match it with
-| None -> ()
-| Some it ->
-  match !stack with
-  | Some marks ->
-    (* We are inside an user action, deferring to its end *)
-    let mark = buffer#create_mark it in
-    stack := Some (mark :: marks)
-  | None ->
-    (* Otherwise we move to the mark now *)
-    call_coq_or_cancel_action coqtop coqops buffer it
+let handle_iter coqtop coqops (buffer : GText.buffer) it (stack : action_stack ref) =
+  match it with
+  | None -> ()
+  | Some it ->
+    match !stack with
+    | Some marks ->
+      (* We are inside an user action, deferring to its end *)
+      let ent = if it#offset > 0 then Mark (buffer#create_mark it) else Begin in
+      stack := Some (ent :: marks)
+    | None ->
+      (* Otherwise we move to the mark now *)
+      call_coq_or_cancel_action coqtop coqops buffer it
 
 let set_buffer_handlers
   (buffer : GText.buffer) script (coqops : CoqOps.ops) coqtop
 =
-  let action_stack = ref None in
+  let action_stack : action_stack ref = ref None in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
   let get_stop () = buffer#get_iter_at_mark (`NAME "stop_of_input") in
   let ensure_marks_exist () =
@@ -222,9 +225,19 @@ let set_buffer_handlers
       (* If coq was asked to backtrack, the cleanup must be done by the
          backtrack_until function, since it may move the stop_of_input
          to a point indicated by coq. *)
-      let iters = List.map (fun mark -> buffer#get_iter_at_mark (`MARK mark)) marks in
+      let iters = List.map (fun mark ->
+          match mark with
+          | Mark mark -> buffer#get_iter_at_mark (`MARK mark)
+          | Begin -> buffer#start_iter
+        ) marks in
       let iter = List.hd @@ List.sort (fun it1 it2 -> it1#compare it2) iters in
-      let () = List.iter (fun mark -> try buffer#delete_mark (`MARK mark) with GText.No_such_mark _ -> ()) marks in
+      let () = List.iter (fun mark ->
+        try match mark with
+        | Mark mark -> buffer#delete_mark (`MARK mark)
+        | Begin -> let action = Coq.seq (coqops#backtrack_to_begin ())
+                                (Coq.lift (fun () -> Sentence.tag_on_insert buffer)) in
+          ignore @@ Coq.try_grab coqtop action (fun () -> ())
+        with GText.No_such_mark _ -> ()) marks in
       call_coq_or_cancel_action coqtop coqops buffer iter
   in
   let mark_deleted_cb m =
