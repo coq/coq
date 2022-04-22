@@ -16,7 +16,7 @@ open Constr
 (** This module defines the representation of values internally used by
 the native compiler *)
 
-type t = t -> t
+type t
 
 type accumulator (* = t (* a block [0:code;atom;arguments] *) *)
 

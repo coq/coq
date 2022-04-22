@@ -14,7 +14,7 @@ open Names
 the native compiler. Be careful when removing apparently dead code from this
 interface, as it may be used by programs generated at runtime. *)
 
-type t = t -> t
+type t
 
 type accumulator
 
