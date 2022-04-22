@@ -1921,9 +1921,7 @@ let pp_array fmt t =
 let pp_global fmt g =
   match g with
   | Glet (gn, c) ->
-      let ids, c = decompose_MLlam c in
-      Format.fprintf fmt "@[let %a%a =@\n  %a@]@\n@." pp_gname gn
-        pp_ldecls ids
+      Format.fprintf fmt "@[let %a =@\n  %a@]@\n@." pp_gname gn
         pp_mllam c
   | Gopen s ->
       Format.fprintf fmt "@[open %s@]@." s
