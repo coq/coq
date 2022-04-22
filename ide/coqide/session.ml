@@ -196,7 +196,7 @@ let set_buffer_handlers
     let rec aux iter =
       if iter#equal max_iter then None
       else if iter#has_tag Tags.Script.processed then
-        Some min_iter
+        Some min_iter#backward_char
       else if iter#has_tag Tags.Script.error_bg then
         processed_sentence_just_before_error iter
       else aux iter#forward_char
