@@ -47,6 +47,7 @@ module Mind_decl : sig
 (** inductive_expr at the constr level *)
 type t = {
   mie : Entries.mutual_inductive_entry;
+  nuparams : int option;
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;
   uctx : Univ.ContextSet.t;

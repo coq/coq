@@ -663,6 +663,7 @@ module Mind_decl = struct
 
 type t = {
   mie : Entries.mutual_inductive_entry;
+  nuparams : int option;
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;
   uctx : Univ.ContextSet.t;
@@ -672,20 +673,27 @@ type t = {
 
 end
 
+let rec count_binder_expr = function
+  | [] -> 0
+  | CLocalAssum(l,_,_) :: rest -> List.length l + count_binder_expr rest
+  | CLocalDef _ :: rest -> 1 + count_binder_expr rest
+  | CLocalPattern {CAst.loc} :: _ ->
+    Loc.raise ?loc (Stream.Error "pattern with quote not allowed here")
+
 let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
   let (params,indl),coercions,ntns = extract_mutual_inductive_declaration_components indl in
   let where_notations = List.map Metasyntax.prepare_where_notation ntns in
   (* Interpret the types *)
-  let indl = match params with
-    | uparams, Some params -> (uparams, params, indl)
+  let indl, nuparams = match params with
+    | uparams, Some params -> (uparams, params, indl), Some (count_binder_expr params)
     | params, None -> match uniform with
-      | UniformParameters -> (params, [], indl)
-      | NonUniformParameters -> ([], params, indl)
+      | UniformParameters -> (params, [], indl), Some 0
+      | NonUniformParameters -> ([], params, indl), None
   in
   let env = Environ.update_typing_flags ?typing_flags env in
   let mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen env ~template udecl indl where_notations ~cumulative ~poly ~private_ind finite in
   let open Mind_decl in
-  { mie; univ_binders; implicits; uctx; where_notations; coercions }
+  { mie; nuparams; univ_binders; implicits; uctx; where_notations; coercions }
 
 let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
   let open Mind_decl in
