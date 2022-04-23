@@ -454,7 +454,8 @@ let compute_projections (_, i as ind) mib =
       | Name id ->
         let r = na.Context.binder_relevance in
         let lab = Label.of_id id in
-        let kn = Projection.Repr.make ind ~proj_npars:mib.mind_nparams ~proj_arg:i lab in
+        let proj_relevant = match r with Sorts.Irrelevant -> false | Sorts.Relevant -> true in
+        let kn = Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg:i lab in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)
         let t = liftn 1 j t in
