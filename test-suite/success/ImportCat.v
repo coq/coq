@@ -61,7 +61,7 @@ End Test2.
 
 Module TestExport.
   Import M(AB).
-  Module X.
+  Module Import(notations) X.
     Module Y.
       Definition bla := 0.
       Coercion AB : A >-> B.
@@ -69,7 +69,6 @@ Module TestExport.
     Export(coercions) Y.
   End X.
 
-  Import(notations) X.
   Fail Check a : B.
 
   Import X.
@@ -96,3 +95,7 @@ Module Notas.
   Lemma foo : False.
   Proof. @@. Abort.
 End Notas.
+
+Require Import(notations) Sumbool.
+Check Sumbool.sumbool_of_bool.
+Fail Check sumbool_of_bool.

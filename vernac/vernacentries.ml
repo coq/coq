@@ -1191,7 +1191,13 @@ let import_names ~export m ns =
   | Lib.Export -> Lib.add_leaf (inExportNames ns)
   | Lib.Import -> cache_names ns
 
-let vernac_import export cats refl =
+let interp_import_cats cats =
+  Option.cata
+    (fun cats -> Libobject.make_filter ~finite:(not cats.negative) cats.import_cats)
+    Libobject.unfiltered
+    cats
+
+let vernac_import (export, cats) refl =
   if Option.has_some cats then
     List.iter (function
         | _, ImportAll -> ()
@@ -1199,11 +1205,7 @@ let vernac_import export cats refl =
           CErrors.user_err ?loc:q.loc
             Pp.(str "Cannot combine importing by categories and importing by names."))
       refl;
-  let cats = Option.cata
-      (fun cats -> Libobject.make_filter ~finite:(not cats.negative) cats.import_cats)
-      Libobject.unfiltered
-      cats
-  in
+  let cats = interp_import_cats cats in
   let import_mod (qid,f) =
     let loc = qid.loc in
     let m = try
@@ -1235,7 +1237,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   let mp = Declaremods.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
-  Option.iter (fun export -> vernac_import export None [qualid_of_ident id, ImportAll]) export
+  Option.iter (fun export -> vernac_import export [qualid_of_ident id, ImportAll]) export
 
 let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -1248,7 +1250,8 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
         List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
-             ([],[]) in
+         ([],[]) in
+       let export = Option.map (on_snd interp_import_cats) export in
        let mp = Declaremods.start_module export id binders_ast mty_ast_o in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
@@ -1256,7 +1259,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export None [qualid_of_ident id, ImportAll]) export
+             (fun export -> vernac_import export [qualid_of_ident id, ImportAll]) export
          ) argsexport
     | _::_ ->
        let binders_ast = List.map
@@ -1271,14 +1274,16 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
          (str "Module " ++ Id.print id ++ str " is defined");
-       Option.iter (fun export -> vernac_import export None [qualid_of_ident id, ImportAll])
+       Option.iter (fun export -> vernac_import export [qualid_of_ident id, ImportAll])
          export
 
 let vernac_end_module export {loc;v=id} =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
-  Option.iter (fun export -> vernac_import export None [qualid_of_ident ?loc id, ImportAll]) export
+  Option.iter (fun (export,filter) ->
+      Declaremods.import_module filter ~export mp)
+    export
 
 let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Global.sections_are_opened () then
@@ -1299,7 +1304,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export None [qualid_of_ident ?loc id, ImportAll]) export
+             (fun export -> vernac_import export [qualid_of_ident ?loc id, ImportAll]) export
          ) argsexport
 
     | _ :: _ ->
@@ -1443,8 +1448,9 @@ let vernac_require from export qidl =
     List.iter2 (fun {CAst.loc} (dp,_) -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
   let lib_resolver = Loadpath.try_locate_absolute_library in
   Library.require_library_from_dirpath ~lib_resolver modrefl;
-  Option.iter (fun export ->
-    let mpl = List.map (fun (m,_) -> Libobject.unfiltered, MPfile m) modrefl in
+  Option.iter (fun (export,cats) ->
+    let cats = interp_import_cats cats in
+    let mpl = List.map (fun (m,_) -> cats, MPfile m) modrefl in
     (* TODO import filters *)
     Declaremods.import_modules ~export mpl)
     export
@@ -2390,10 +2396,10 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_require from export qidl)
-  | VernacImport (export,cats,qidl) ->
+  | VernacImport (export,qidl) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
-        vernac_import export cats qidl)
+        vernac_import export qidl)
   | VernacCanonical qid ->
     vtdefault(fun () ->
         vernac_canonical ~local:(only_locality atts) qid)

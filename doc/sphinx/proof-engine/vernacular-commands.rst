@@ -520,7 +520,7 @@ Chapter :ref:`thecoqcommands` for documentation on how to compile a file). A com
 file is a particular case of a module called a *library file*.
 
 
-.. cmd:: {? From @dirpath } Require {? {| Import | Export } } {+ @qualid }
+.. cmd:: {? From @dirpath } Require {? {| Import {? @import_categories } | Export {? @import_categories } } } {+ @qualid }
    :name: From … Require; Require; Require Import; Require Export
 
    Loads compiled files into the Coq environment. For each

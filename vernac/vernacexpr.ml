@@ -115,6 +115,8 @@ type import_categories = {
   import_cats : string CAst.t list;
 }
 
+type export_with_cats = export_flag * import_categories option
+
 type infix_flag     = bool (* true = Infix;         false = Notation       *)
 
 type one_import_filter_name = qualid * bool (* import inductive components *)
@@ -278,7 +280,7 @@ type register_kind =
 (** {6 Types concerning the module layer} *)
 
 type module_ast_inl = module_ast * Declaremods.inline
-type module_binder = export_flag option * lident list * module_ast_inl
+type module_binder = export_with_cats option * lident list * module_ast_inl
 
 (** {6 The type of vernacular expressions} *)
 
@@ -366,8 +368,8 @@ type nonrec vernac_expr =
   | VernacEndSegment of lident
   | VernacExtraDependency of qualid * string * Id.t option
   | VernacRequire of
-      qualid option * export_flag option * qualid list
-  | VernacImport of export_flag * import_categories option * (qualid * import_filter_expr) list
+      qualid option * export_with_cats option * qualid list
+  | VernacImport of export_with_cats * (qualid * import_filter_expr) list
   | VernacCanonical of qualid or_by_notation
   | VernacCoercion of qualid or_by_notation *
       (class_rawexpr * class_rawexpr) option
@@ -396,9 +398,9 @@ type nonrec vernac_expr =
   | VernacExistingClass of qualid (* inductive or definition name *)
 
   (* Modules and Module Types *)
-  | VernacDeclareModule of export_flag option * lident *
+  | VernacDeclareModule of export_with_cats option * lident *
       module_binder list * module_ast_inl
-  | VernacDefineModule of export_flag option * lident * module_binder list *
+  | VernacDefineModule of export_with_cats option * lident * module_binder list *
       module_ast_inl Declaremods.module_signature * module_ast_inl list
   | VernacDeclareModuleType of lident *
       module_binder list * module_ast_inl list * module_ast_inl list

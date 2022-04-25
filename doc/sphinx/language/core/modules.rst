@@ -59,12 +59,12 @@ The module system provides a way of packaging related elements
 together, as well as a means of massive abstraction.
 
 
-.. cmd:: Module {? {| Import | Export } } @ident {* @module_binder } {? @of_module_type } {? := {+<+ @module_expr_inl } }
+.. cmd:: Module {? {| Import {? @import_categories } | Export {? @import_categories } } } @ident {* @module_binder } {? @of_module_type } {? := {+<+ @module_expr_inl } }
 
    .. insertprodn module_binder module_expr_inl
 
    .. prodn::
-      module_binder ::= ( {? {| Import | Export } } {+ @ident } : @module_type_inl )
+      module_binder ::= ( {? {| Import {? @import_categories } | Export {? @import_categories } } } {+ @ident } : @module_type_inl )
       module_type_inl ::= ! @module_type
       | @module_type {? @functor_app_annot }
       functor_app_annot ::= [ inline at level @natural ]
@@ -188,7 +188,7 @@ are now available through the dot notation.
 
       Use :cmd:`Include` instead.
 
-.. cmd:: Declare Module {? {| Import | Export } } @ident {* @module_binder } : @module_type_inl
+.. cmd:: Declare Module {? {| Import {? @import_categories } | Export {? @import_categories } } } @ident {* @module_binder } : @module_type_inl
 
    Declares a module :token:`ident` of type :token:`module_type_inl`.
 

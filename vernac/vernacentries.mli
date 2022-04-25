@@ -17,7 +17,7 @@ val translate_vernac
 
 (** Vernacular require command *)
 val vernac_require :
-  Libnames.qualid option -> Lib.export_flag option -> Libnames.qualid list -> unit
+  Libnames.qualid option -> Vernacexpr.export_with_cats option -> Libnames.qualid list -> unit
 
 (** Hook to dissappear when #8240 is fixed *)
 val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->

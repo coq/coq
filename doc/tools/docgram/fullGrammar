@@ -1085,8 +1085,8 @@ one_import_filter_name: [
 ]
 
 export_token: [
-| "Import"
-| "Export"
+| "Import" OPT import_categories
+| "Export" OPT import_categories
 |
 ]
 

@@ -44,7 +44,7 @@ val declare_module :
   (Constrexpr.module_ast * inline) list -> ModPath.t
 
 val start_module :
-  Lib.export_flag option -> Id.t ->
+  Lib.export -> Id.t ->
   module_params ->
   (Constrexpr.module_ast * inline) module_signature -> ModPath.t
 

@@ -594,9 +594,9 @@ GRAMMAR EXTEND Gram
         ; qidl = LIST1 global ->
         { VernacRequire (Some ns, export, qidl) }
       | IDENT "Import"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
-        { VernacImport (Import,cats,qidl) }
+        { VernacImport ((Import,cats),qidl) }
       | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
-        { VernacImport (Export,cats,qidl) }
+        { VernacImport ((Export,cats),qidl) }
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
           { VernacInclude(e::l) }
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
@@ -617,8 +617,8 @@ GRAMMAR EXTEND Gram
     [ [ n = global; etc = OPT [ "("; ".."; ")" -> { () } ] -> { n, Option.has_some etc } ] ]
   ;
   export_token:
-    [ [ IDENT "Import" -> { Some Import }
-      | IDENT "Export" -> { Some Export }
+    [ [ IDENT "Import"; cats = OPT import_categories -> { Some (Import,cats) }
+      | IDENT "Export"; cats = OPT import_categories -> { Some (Export,cats) }
       |  -> { None } ] ]
   ;
   ext_module_type:

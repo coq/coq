@@ -367,9 +367,12 @@ let pr_export_flag = function
   | Export -> keyword "Export"
   | Import -> keyword "Import"
 
+let pr_export_with_cats (export,cats) =
+  pr_export_flag export ++ pr_import_cats cats
+
 let pr_require_token = function
   | Some export ->
-    pr_export_flag export ++ spc ()
+    pr_export_with_cats export ++ spc ()
   | None -> mt()
 
 let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
@@ -952,9 +955,9 @@ let pr_vernac_expr v =
         (from ++ keyword "Require" ++ spc() ++ pr_require_token exp ++
          prlist_with_sep sep pr_module l)
     )
-  | VernacImport (f,cats,l) ->
+  | VernacImport (f,l) ->
     return (
-      pr_export_flag f ++ pr_import_cats cats ++ spc() ++
+      pr_export_with_cats f ++ spc() ++
       prlist_with_sep sep pr_import_module l
     )
   | VernacCanonical q ->
