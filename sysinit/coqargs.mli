@@ -23,11 +23,11 @@ type option_command =
 type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
   (** Set flags or options before the initial state is ready. *)
-  | RequireInjection of (string * string option * bool option)
+  | RequireInjection of (string * string option * Lib.export_flag option)
   (** Require libraries before the initial state is
      ready. Parameters follow [Library], that is to say,
      [lib,prefix,import_export] means require library [lib] from
-     optional [prefix] and [import_export] if [Some false/Some true]
+     optional [prefix] and [import_export] if [Some Lib.Import]/[Some Lib.Export]
       is used.  *)
   | WarnNoNative of string
   (** Used so that "-w -native-compiler-disabled -native-compiler yes"

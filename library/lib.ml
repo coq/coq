@@ -16,7 +16,8 @@ open Libnames
 open Libobject
 
 type is_type = bool (* Module Type or just Module *)
-type export = bool option (* None for a Module Type *)
+type export_flag = Export | Import
+type export = export_flag option (* None for a Module Type *)
 
 let make_oname Nametab.{ obj_dir; obj_mp } id =
   Names.(make_path obj_dir id, KerName.make obj_mp (Label.of_id id))

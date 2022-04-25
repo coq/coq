@@ -17,7 +17,8 @@ open Names
    mechanism (at a low level; discharge is not known at this step). *)
 
 type is_type = bool (* Module Type or just Module *)
-type export = bool option (* None for a Module Type *)
+type export_flag = Export | Import
+type export = export_flag option (* None for a Module Type *)
 
 val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
 val make_foname : Names.Id.t -> Libobject.object_name

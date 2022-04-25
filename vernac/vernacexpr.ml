@@ -108,7 +108,7 @@ type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = BackInstance | NoInstance
 
-type export_flag    = bool (* true = Export;        false = Import         *)
+type export_flag = Lib.export_flag = Export | Import
 
 type import_categories = {
   negative : bool;
@@ -278,7 +278,7 @@ type register_kind =
 (** {6 Types concerning the module layer} *)
 
 type module_ast_inl = module_ast * Declaremods.inline
-type module_binder = bool option * lident list * module_ast_inl
+type module_binder = export_flag option * lident list * module_ast_inl
 
 (** {6 The type of vernacular expressions} *)
 
@@ -396,9 +396,9 @@ type nonrec vernac_expr =
   | VernacExistingClass of qualid (* inductive or definition name *)
 
   (* Modules and Module Types *)
-  | VernacDeclareModule of bool option * lident *
+  | VernacDeclareModule of export_flag option * lident *
       module_binder list * module_ast_inl
-  | VernacDefineModule of bool option * lident * module_binder list *
+  | VernacDefineModule of export_flag option * lident * module_binder list *
       module_ast_inl Declaremods.module_signature * module_ast_inl list
   | VernacDeclareModuleType of lident *
       module_binder list * module_ast_inl list * module_ast_inl list

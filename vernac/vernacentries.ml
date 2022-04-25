@@ -1187,8 +1187,9 @@ let inExportNames = Libobject.declare_object
 
 let import_names ~export m ns =
   let ns = interp_names m ns in
-  if export then Lib.add_leaf (inExportNames ns)
-  else cache_names ns
+  match export with
+  | Lib.Export -> Lib.add_leaf (inExportNames ns)
+  | Lib.Import -> cache_names ns
 
 let vernac_import export cats refl =
   if Option.has_some cats then
