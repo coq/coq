@@ -1197,14 +1197,22 @@ let interp_import_cats cats =
     Libobject.unfiltered
     cats
 
+(* Assumes cats is irrelevant if f is ImportNames *)
+let import_module_with_filter ~export cats m f =
+  match f with
+  | ImportAll -> Declaremods.import_module cats ~export m
+  | ImportNames ns -> import_names ~export m ns
+
+let check_no_filter_when_using_cats l =
+  List.iter (function
+      | _, ImportAll -> ()
+      | q, ImportNames _ ->
+        CErrors.user_err ?loc:q.loc
+          Pp.(str "Cannot combine importing by categories and importing by names."))
+    l
+
 let vernac_import (export, cats) refl =
-  if Option.has_some cats then
-    List.iter (function
-        | _, ImportAll -> ()
-        | q, ImportNames _ ->
-          CErrors.user_err ?loc:q.loc
-            Pp.(str "Cannot combine importing by categories and importing by names."))
-      refl;
+  if Option.has_some cats then check_no_filter_when_using_cats refl;
   let cats = interp_import_cats cats in
   let import_mod (qid,f) =
     let loc = qid.loc in
@@ -1218,9 +1226,7 @@ let vernac_import (export, cats) refl =
       with Not_found ->
         CErrors.user_err ?loc Pp.(str "Cannot find module " ++ pr_qualid qid ++ str ".")
     in
-    match f with
-    | ImportAll -> Declaremods.import_module cats ~export m
-    | ImportNames ns -> import_names ~export m ns
+    import_module_with_filter ~export cats m f
   in
   List.iter import_mod refl
 
@@ -1436,7 +1442,15 @@ let vernac_require from export qidl =
     let (hd, tl) = Libnames.repr_qualid from in
     Some (Libnames.add_dirpath_suffix hd tl)
   in
-  let locate qid =
+  let () = match export with
+    | None -> List.iter (function
+        | _, ImportAll -> ()
+        | {CAst.loc}, ImportNames _ ->
+          CErrors.user_err ?loc Pp.(str "Used an import filter without importing."))
+        qidl
+    | Some (_,cats) -> if Option.has_some cats then check_no_filter_when_using_cats qidl
+  in
+  let locate (qid,_) =
     let open Loadpath in
     match locate_qualified_library ?root qid with
     | Ok (_,dir,f) -> dir, f
@@ -1445,14 +1459,14 @@ let vernac_require from export qidl =
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
-    List.iter2 (fun {CAst.loc} (dp,_) -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
+    List.iter2 (fun ({CAst.loc},_) (dp,_) -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
   let lib_resolver = Loadpath.try_locate_absolute_library in
   Library.require_library_from_dirpath ~lib_resolver modrefl;
   Option.iter (fun (export,cats) ->
-    let cats = interp_import_cats cats in
-    let mpl = List.map (fun (m,_) -> cats, MPfile m) modrefl in
-    (* TODO import filters *)
-    Declaremods.import_modules ~export mpl)
+      let cats = interp_import_cats cats in
+      List.iter2 (fun (m,_) (_,f) ->
+          import_module_with_filter ~export cats (MPfile m) f)
+        modrefl qidl)
     export
 
 (* Coercions and canonical structures *)

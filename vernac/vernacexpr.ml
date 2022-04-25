@@ -368,7 +368,7 @@ type nonrec vernac_expr =
   | VernacEndSegment of lident
   | VernacExtraDependency of qualid * string * Id.t option
   | VernacRequire of
-      qualid option * export_with_cats option * qualid list
+      qualid option * export_with_cats option * (qualid * import_filter_expr) list
   | VernacImport of export_with_cats * (qualid * import_filter_expr) list
   | VernacCanonical of qualid or_by_notation
   | VernacCoercion of qualid or_by_notation *

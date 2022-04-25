@@ -953,7 +953,7 @@ let pr_vernac_expr v =
     return (
       hov 2
         (from ++ keyword "Require" ++ spc() ++ pr_require_token exp ++
-         prlist_with_sep sep pr_module l)
+         prlist_with_sep sep pr_import_module l)
     )
   | VernacImport (f,l) ->
     return (

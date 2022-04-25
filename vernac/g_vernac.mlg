@@ -588,10 +588,10 @@ GRAMMAR EXTEND Gram
           { VernacExtraDependency (ns, f, Option.map Id.of_string id) }
 
       (* Requiring an already compiled module *)
-      | IDENT "Require"; export = export_token; qidl = LIST1 global ->
+      | IDENT "Require"; export = export_token; qidl = LIST1 filtered_import ->
           { VernacRequire (None, export, qidl) }
       | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
-        ; qidl = LIST1 global ->
+        ; qidl = LIST1 filtered_import ->
         { VernacRequire (Some ns, export, qidl) }
       | IDENT "Import"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
         { VernacImport ((Import,cats),qidl) }

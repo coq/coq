@@ -1074,7 +1074,7 @@ command: [
 | "End" ident
 | "Collection" ident ":=" section_var_expr
 | "From" dirpath "Extra" "Dependency" string OPT [ "as" ident ]
-| OPT [ "From" dirpath ] "Require" OPT [ "Import" OPT import_categories | "Export" OPT import_categories ] LIST1 qualid
+| OPT [ "From" dirpath ] "Require" OPT [ "Import" OPT import_categories | "Export" OPT import_categories ] LIST1 filtered_import
 | "Import" OPT import_categories LIST1 filtered_import
 | "Export" OPT import_categories LIST1 filtered_import
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )

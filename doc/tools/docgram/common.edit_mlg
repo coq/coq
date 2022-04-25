@@ -742,9 +742,9 @@ gallina_ext: [
 | REPLACE "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
 
-| DELETE "Require" export_token LIST1 global
-| REPLACE "From" global "Require" export_token LIST1 global
-| WITH OPT [ "From" dirpath ] "Require" export_token LIST1 global
+| DELETE "Require" export_token LIST1 filtered_import
+| REPLACE "From" global "Require" export_token LIST1 filtered_import
+| WITH OPT [ "From" dirpath ] "Require" export_token LIST1 filtered_import
 
 | REPLACE "From" global "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
 | WITH "From" dirpath "Extra" "Dependency" ne_string OPT [ "as" IDENT ]

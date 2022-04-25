@@ -103,3 +103,12 @@ Module FancyFunctor.
   Check eq_refl : x = 0.
 
 End FancyFunctor.
+
+Require Import Sumbool(sumbool_of_bool).
+Check sumbool_of_bool.
+Check Sumbool.bool_eq_rec.
+Fail Check bool_eq_rec.
+
+Fail Require Sumbool(sumbool_of_bool).
+Fail Require Import Sumbool(not_a_real_definition).
+Fail Require Import(notations) Sumbool(sumbool_of_bool).
