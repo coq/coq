@@ -21,7 +21,7 @@ license: "LGPL-2.1"
 version: "dev"
 
 depends: [
-  "ocaml"     { >= "4.05.0" }
+  "ocaml"     { >= "4.09.0" }
   "ocamlfind" { build }
   "zarith"    { >= "1.10" }
   "conf-findutils" {build}

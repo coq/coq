@@ -24,7 +24,7 @@
 (package
  (name coq-core)
  (depends
-  (ocaml (>= 4.05.0))
+  (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
   (zarith (>= 1.10))
   (ounit2 :with-test))

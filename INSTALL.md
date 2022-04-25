@@ -17,7 +17,7 @@ Build Requirements
 
 To compile Coq yourself, you need:
 
-- [OCaml](https://ocaml.org/) (version >= 4.05.0)
+- [OCaml](https://ocaml.org/) (version >= 4.09.0)
   (This version of Coq has been tested up to OCaml 4.13.0)
 
 - The [Dune OCaml build system](https://github.com/ocaml/dune/) >= 2.5.1
@@ -73,7 +73,7 @@ compiler as way to improve the performance of Coq. In order to
 profit from Flambda, a special build of the OCaml compiler that has
 the Flambda optimizer enabled must be installed. For OPAM users,
 this amounts to installing a compiler switch ending in `+flambda`,
-such as `4.07.1+flambda`. For other users, YMMV. Once `ocamlopt -config`
+such as `4.12.1+flambda`. For other users, YMMV. Once `ocamlopt -config`
 reports that Flambda is available, some further optimization options
 can be used; see the entry about `flambda options` in the build guide
 for more details.
