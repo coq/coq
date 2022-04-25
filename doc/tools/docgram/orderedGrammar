@@ -751,7 +751,7 @@ one_pattern: [
 ]
 
 module_binder: [
-| "(" OPT [ "Import" OPT import_categories | "Export" OPT import_categories ] LIST1 ident ":" module_type_inl ")"
+| "(" OPT ( [ "Import" | "Export" ] OPT import_categories ) LIST1 ident ":" module_type_inl ")"
 ]
 
 module_type_inl: [
@@ -1054,7 +1054,6 @@ command: [
 | "Let" "CoFixpoint" cofix_definition LIST0 ( "with" cofix_definition )
 | "Scheme" OPT ( ident ":=" ) scheme_kind LIST0 ( "with" OPT ( ident ":=" ) scheme_kind )
 | "Scheme" OPT "Boolean" "Equality" "for" reference
-| "Module" OPT [ "Import" OPT import_categories | "Export" OPT import_categories ] ident LIST0 module_binder OPT of_module_type OPT ( ":=" LIST1 module_expr_inl SEP "<+" )
 | "Combined" "Scheme" ident "from" LIST1 ident SEP ","
 | "Register" qualid "as" qualid
 | "Register" "Inline" qualid
@@ -1068,13 +1067,14 @@ command: [
 | [ "Record" | "Structure" ] record_definition
 | "Class" record_definition
 | "Class" ident_decl LIST0 binder OPT [ ":" sort ] ":=" constructor
+| "Module" OPT ( [ "Import" | "Export" ] OPT import_categories ) ident LIST0 module_binder OPT of_module_type OPT ( ":=" LIST1 module_expr_inl SEP "<+" )
 | "Module" "Type" ident LIST0 module_binder LIST0 ( "<:" module_type_inl ) OPT ( ":=" LIST1 module_type_inl SEP "<+" )
-| "Declare" "Module" OPT [ "Import" OPT import_categories | "Export" OPT import_categories ] ident LIST0 module_binder ":" module_type_inl
+| "Declare" "Module" OPT ( [ "Import" | "Export" ] OPT import_categories ) ident LIST0 module_binder ":" module_type_inl
 | "Section" ident
 | "End" ident
 | "Collection" ident ":=" section_var_expr
 | "From" dirpath "Extra" "Dependency" string OPT [ "as" ident ]
-| OPT [ "From" dirpath ] "Require" OPT [ "Import" OPT import_categories | "Export" OPT import_categories ] LIST1 filtered_import
+| OPT [ "From" dirpath ] "Require" OPT ( [ "Import" | "Export" ] OPT import_categories ) LIST1 filtered_import
 | "Import" OPT import_categories LIST1 filtered_import
 | "Export" OPT import_categories LIST1 filtered_import
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )

@@ -750,6 +750,12 @@ gallina_ext: [
 | WITH "From" dirpath "Extra" "Dependency" ne_string OPT [ "as" IDENT ]
 ]
 
+export_token: [
+| REPLACE "Import" OPT import_categories
+| WITH [ "Import" | "Export" ] OPT import_categories
+| DELETE "Export" OPT import_categories
+]
+
 (* lexer stuff *)
 LEFTQMARK: [
 | "?"
