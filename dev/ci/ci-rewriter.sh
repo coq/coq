@@ -9,6 +9,9 @@ git_download rewriter
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
+ulimit -s
+ulimit -s 65536
+ulimit -s
 ( cd "${CI_BUILD_DIR}/rewriter"
   make
   make install
