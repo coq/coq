@@ -10,6 +10,37 @@
 
 (** GC tweaking *)
 
+(** Work around a broken Gc.set function in released OCaml versions between
+    4.08.0 and 4.11.1 inclusive. *)
+let gc_set : Gc.control -> unit =
+  let open Gc in
+  let fixed_set control =
+    let { custom_major_ratio; custom_minor_ratio; custom_minor_max_size; _ } = control in
+    let control =
+      {
+        control with
+        custom_major_ratio = custom_major_ratio lsr 1;
+        custom_minor_ratio = custom_minor_ratio lsr 1;
+        custom_minor_max_size = custom_minor_max_size lsr 1;
+      }
+    in
+    Gc.set control
+  in
+  (* the fix has been backported to all of these branches, so any
+     version after these will be fixed. *)
+  match Coq_config.caml_version_nums with
+  | [4;11;1]
+  | [4;11;0]
+  | [4;10;2]
+  | [4;10;1]
+  | [4;10;0]
+  | [4;09;1]
+  | [4;09;0]
+  | [4;08;1]
+  | [4;08;0] ->
+    fixed_set
+  | _ -> Gc.set
+
 (** Coq is a heavy user of persistent data structures and symbolic ASTs, so the
     minor heap is heavily solicited. Unfortunately, the default size is far too
     small, so we enlarge it a lot (128 times larger).
@@ -19,13 +50,13 @@
 *)
 
 let set_gc_policy () =
-  Gc.set { (Gc.get ()) with
+  gc_set { (Gc.get ()) with
            Gc.minor_heap_size = 32*1024*1024 (* 32Mwords x 8 bytes/word = 256Mb *)
          ; Gc.space_overhead = 120
          }
 
 let set_gc_best_fit () =
-  Gc.set { (Gc.get ()) with
+  gc_set { (Gc.get ()) with
            Gc.allocation_policy = 2      (* best-fit *)
          ; Gc.space_overhead = 200
          }
