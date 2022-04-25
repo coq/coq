@@ -19,12 +19,10 @@ open Names
 *)
 
 (** {6 ... }
-    Require = load in the environment + open (if the optional boolean
-    is not [None]); mark also for export if the boolean is [Some true] *)
+    Require = load in the environment *)
 val require_library_from_dirpath
   :  lib_resolver:(DirPath.t -> CUnix.physical_path)
   -> (DirPath.t * string) list
-  -> bool option
   -> unit
 
 (** {6 Start the compilation of a library } *)

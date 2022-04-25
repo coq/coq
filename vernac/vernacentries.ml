@@ -1422,7 +1422,7 @@ let warn_require_in_section =
     (fun () -> strbrk "Use of “Require” inside a section is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
-let vernac_require from import qidl =
+let vernac_require from export qidl =
   if Global.sections_are_opened () then warn_require_in_section ();
   let root = match from with
   | None -> None
@@ -1441,7 +1441,12 @@ let vernac_require from import qidl =
   if Dumpglob.dump () then
     List.iter2 (fun {CAst.loc} (dp,_) -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
   let lib_resolver = Loadpath.try_locate_absolute_library in
-  Library.require_library_from_dirpath ~lib_resolver modrefl import
+  Library.require_library_from_dirpath ~lib_resolver modrefl;
+  Option.iter (fun export ->
+    let mpl = List.map (fun (m,_) -> Libobject.unfiltered, MPfile m) modrefl in
+    (* TODO import filters *)
+    Declaremods.import_modules ~export mpl)
+    export
 
 (* Coercions and canonical structures *)
 

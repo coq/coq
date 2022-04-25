@@ -365,17 +365,11 @@ let warn_require_in_module =
     (fun () -> strbrk "Use of “Require” inside a module is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
-let require_library_from_dirpath ~lib_resolver modrefl export =
+let require_library_from_dirpath ~lib_resolver modrefl =
   let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
-  let modrefl = List.map fst modrefl in
   if Lib.is_module_or_modtype () then warn_require_in_module ();
-  Lib.add_leaf (in_require needed);
-  Option.iter (fun export ->
-    let mpl = List.map (fun m -> unfiltered, MPfile m) modrefl in
-    (* TODO import filters *)
-    Declaremods.import_modules ~export mpl)
-    export
+  Lib.add_leaf (in_require needed)
 
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
