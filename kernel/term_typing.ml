@@ -123,12 +123,18 @@ let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
     cook_type = typ;
     cook_universes = univs;
     cook_inline = false;
-    cook_context = None;
     cook_relevance = Sorts.Relevant;
     cook_flags = Environ.typing_flags env;
+    (* Primitives not allowed in sections *)
+    cook_context = None;
+    cook_univ_hyps = Instance.empty;
   }
 
-let infer_parameter env entry =
+let make_univ_hyps = function
+  | None -> Instance.empty
+  | Some us -> Instance.of_array us
+
+let infer_parameter ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.parameter_entry_universes in
   let j = Typeops.infer env entry.parameter_entry_type in
   let r = Typeops.assumption_of_judgment env j in
@@ -140,10 +146,11 @@ let infer_parameter env entry =
     cook_relevance = r;
     cook_inline = false;
     cook_context = entry.parameter_entry_secctx;
+    cook_univ_hyps = make_univ_hyps sec_univs;
     cook_flags = Environ.typing_flags env;
   }
 
-let infer_definition env entry =
+let infer_definition ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.const_entry_universes in
   let j = Typeops.infer env entry.const_entry_body in
   let typ = match entry.const_entry_type with
@@ -162,16 +169,17 @@ let infer_definition env entry =
     cook_relevance = Relevanceops.relevance_of_term env j.uj_val;
     cook_inline = entry.const_entry_inline_code;
     cook_context = entry.const_entry_secctx;
+    cook_univ_hyps = make_univ_hyps sec_univs;
     cook_flags = Environ.typing_flags env;
   }
 
-let infer_constant env = function
+let infer_constant ~sec_univs env = function
   | PrimitiveEntry entry -> infer_primitive env entry
-  | ParameterEntry entry -> infer_parameter env entry
-  | DefinitionEntry entry -> infer_definition env entry
+  | ParameterEntry entry -> infer_parameter ~sec_univs env entry
+  | DefinitionEntry entry -> infer_definition ~sec_univs env entry
 
 (** Definition is opaque (Qed), so we delay the typing of its body. *)
-let infer_opaque env entry =
+let infer_opaque ~sec_univs env entry =
   let env, usubst, _, univs = process_universes env entry.opaque_entry_universes in
   let typj = Typeops.infer_type env entry.opaque_entry_type in
   let context = TyCtx (env, typj, entry.opaque_entry_secctx, usubst, univs) in
@@ -184,6 +192,7 @@ let infer_opaque env entry =
     cook_relevance = Sorts.relevance_of_sort typj.utj_type;
     cook_inline = false;
     cook_context = Some entry.opaque_entry_secctx;
+    cook_univ_hyps = make_univ_hyps sec_univs;
     cook_flags = Environ.typing_flags env;
   }, context
 
@@ -246,6 +255,7 @@ let build_constant_declaration env result =
   let tps = Vmbytegen.compile_constant_body ~fail_on_error:false env univs def in
   {
     const_hyps = hyps;
+    const_univ_hyps = result.cook_univ_hyps;
     const_body = def;
     const_type = typ;
     const_body_code = tps;
@@ -282,12 +292,12 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
 
 (*s Global and local constant declaration. *)
 
-let translate_constant env _kn ce =
+let translate_constant ~sec_univs env _kn ce =
   build_constant_declaration env
-    (infer_constant env ce)
+    (infer_constant ~sec_univs env ce)
 
-let translate_opaque env _kn ce =
-  let def, ctx = infer_opaque env ce in
+let translate_opaque ~sec_univs env _kn ce =
+  let def, ctx = infer_opaque ~sec_univs env ce in
   build_constant_declaration env def, ctx
 
 let translate_local_assum env t =
@@ -304,7 +314,7 @@ let translate_local_def env _id centry =
     const_entry_universes = Monomorphic_entry;
     const_entry_inline_code = false;
   } in
-  let decl = infer_constant env (DefinitionEntry centry) in
+  let decl = infer_constant ~sec_univs:None env (DefinitionEntry centry) in
   let typ = decl.cook_type in
   let () = match decl.cook_universes with
   | Monomorphic -> ()

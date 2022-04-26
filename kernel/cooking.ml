@@ -353,7 +353,7 @@ let discharge_abstract_universe_context abstr auctx =
   let n = AbstractContext.size abstr.abstr_auctx in
   if (Int.equal n 0) then
     (** Optimization: still need to take the union for the constraints between globals *)
-    abstr, AbstractContext.union abstr.abstr_auctx auctx
+    abstr, n, AbstractContext.union abstr.abstr_auctx auctx
   else
     let subst = abstr.abstr_ausubst in
     let suff = Instance.of_array @@ Array.init (AbstractContext.size auctx) (fun i -> Level.var i) in
@@ -361,7 +361,7 @@ let discharge_abstract_universe_context abstr auctx =
     let substf = make_instance_subst ainst in
     let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
     let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
-    { abstr with abstr_ausubst = ainst }, auctx'
+    { abstr with abstr_ausubst = ainst }, n, auctx'
 
 let lift_mono_univs info ctx =
   assert (AbstractContext.is_empty info.abstr_info.abstr_auctx); (* No monorphic constants in a polymorphic section *)
@@ -379,8 +379,8 @@ let lift_poly_univs info auctx =
       built by [discharge_abstract_universe_context], that works on
       [J], that is, that allows to turn [GG'[ττ'], Δ ⊢ J] into
       [⊢ ΠG.ΠΔ.(ΠG'.J)[σ][τ]] via [⊢ ΠG(G'[ττ']).ΠΔ.(J[σ][ττ'])] *)
-  let abstr_info, auctx = discharge_abstract_universe_context info.abstr_info auctx in
-  { info with abstr_info }, auctx
+  let abstr_info, n, auctx = discharge_abstract_universe_context info.abstr_info auctx in
+  { info with abstr_info }, n, auctx
 
 let lift_private_mono_univs info a =
   let () = assert (AbstractContext.is_empty info.abstr_info.abstr_auctx) in

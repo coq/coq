@@ -21,6 +21,7 @@ type 'opaque result = {
   cook_relevance : Sorts.relevance;
   cook_inline : inline;
   cook_context : Names.Id.Set.t option;
+  cook_univ_hyps : Univ.Instance.t;
   cook_flags : typing_flags;
 }
 

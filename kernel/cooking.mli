@@ -66,7 +66,9 @@ val abstract_as_sort : cooking_cache -> Sorts.t -> Sorts.t
 
 val lift_mono_univs : cooking_info -> Univ.ContextSet.t -> cooking_info * Univ.ContextSet.t
 
-val lift_poly_univs : cooking_info -> Univ.AbstractContext.t -> cooking_info * Univ.AbstractContext.t
+(** The [int] is how many universes got discharged, ie size of
+    returned context - size of input context. *)
+val lift_poly_univs : cooking_info -> Univ.AbstractContext.t -> cooking_info * int * Univ.AbstractContext.t
 
 val lift_private_mono_univs : cooking_info -> 'a -> 'a
 

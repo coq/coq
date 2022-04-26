@@ -773,8 +773,8 @@ let is_empty_private = function
 
 (* Special function to call when the body of an opaque definition is provided.
   It performs the type-checking of the body immediately. *)
-let translate_direct_opaque env kn ce =
-  let cb, ctx = Term_typing.translate_opaque env kn ce in
+let translate_direct_opaque ~sec_univs env kn ce =
+  let cb, ctx = Term_typing.translate_opaque ~sec_univs env kn ce in
   let body = ce.Entries.opaque_entry_body, Univ.ContextSet.empty in
   let handle _env c () = (c, Univ.ContextSet.empty, 0) in
   let (c, u) = Term_typing.check_delayed handle ctx (body, ()) in
@@ -783,6 +783,7 @@ let translate_direct_opaque env kn ce =
   { cb with const_body = OpaqueDef c }
 
 let export_side_effects senv eff =
+  let sec_univs = Option.map Section.all_poly_univs senv.sections in
   let env = senv.env in
   let not_exists e = not (Environ.mem_constant e.seff_constant env) in
   let aux (acc,sl) e =
@@ -811,9 +812,9 @@ let export_side_effects senv eff =
           let open Entries in
           let cb = match ce with
             | DefinitionEff ce ->
-              Term_typing.translate_constant env kn (DefinitionEntry ce)
+              Term_typing.translate_constant ~sec_univs env kn (DefinitionEntry ce)
             | OpaqueEff ce ->
-              translate_direct_opaque env kn ce
+              translate_direct_opaque ~sec_univs env kn ce
           in
           let eff = { eff with seff_body = cb } in
           (push_seff env eff, export_eff eff)
@@ -855,10 +856,11 @@ let export_private_constants eff senv =
 let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
   let senv, cb =
+    let sec_univs = Option.map Section.all_poly_univs senv.sections in
       match decl with
       | OpaqueEntry ce ->
         let senv, o = push_opaque_proof senv in
-        let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
+        let cb, ctx = Term_typing.translate_opaque ~sec_univs senv.env kn ce in
         (* Push the delayed data in the environment *)
         let (_, _, _, i) = Opaqueproof.repr o in
         let nonce = Nonce.create () in
@@ -866,7 +868,7 @@ let add_constant l decl senv =
         let senv = { senv with future_cst } in
         senv, { cb with const_body = OpaqueDef o }
       | ConstantEntry ce ->
-        senv, Term_typing.translate_constant senv.env kn ce
+        senv, Term_typing.translate_constant ~sec_univs senv.env kn ce
   in
   let senv = add_constant_aux senv (kn, cb) in
 
@@ -947,13 +949,14 @@ let add_private_constant l uctx decl senv : (Constant.t * private_constants) * s
   let kn = Constant.make2 senv.modpath l in
   let senv = push_context_set ~strict:true uctx senv in
     let cb =
+      let sec_univs = Option.map Section.all_poly_univs senv.sections in
       match decl with
       | OpaqueEff ce ->
         let () = assert (check_constraints uctx ce.Entries.opaque_entry_universes) in
-        translate_direct_opaque senv.env kn ce
+        translate_direct_opaque ~sec_univs senv.env kn ce
       | DefinitionEff ce ->
         let () = assert (check_constraints uctx ce.Entries.const_entry_universes) in
-        Term_typing.translate_constant senv.env kn (Entries.DefinitionEntry ce)
+        Term_typing.translate_constant ~sec_univs senv.env kn (Entries.DefinitionEntry ce)
     in
   let dcb = match cb.const_body with
   | Def _ as const_body -> { cb with const_body }

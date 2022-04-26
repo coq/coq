@@ -108,6 +108,7 @@ type typing_flags = {
  * the OpaqueDef *)
 type 'opaque pconstant_body = {
     const_hyps : Constr.named_context; (** younger hyp at top *)
+    const_univ_hyps : Univ.Instance.t;
     const_body : (Constr.t, 'opaque) constant_def;
     const_type : types;
     const_relevance : Sorts.relevance;
@@ -252,6 +253,8 @@ type mutual_inductive_body = {
     mind_ntypes : int;  (** Number of types in the block *)
 
     mind_hyps : Constr.named_context;  (** Section hypotheses on which the block depends *)
+
+    mind_univ_hyps : Univ.Instance.t; (** Section polymorphic universes. *)
 
     mind_nparams : int;  (** Number of expected parameters including non-uniform ones (i.e. length of mind_params_ctxt w/o let-in) *)
 

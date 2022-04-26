@@ -30,18 +30,18 @@ val translate_local_def : env -> Id.t -> section_def_entry ->
 val translate_local_assum : env -> types -> types * Sorts.relevance
 
 val translate_constant :
-  env -> Constant.t -> constant_entry ->
+  sec_univs:Univ.Level.t array option -> env -> Constant.t -> constant_entry ->
     'a pconstant_body
 
 val translate_opaque :
-  env -> Constant.t -> 'a opaque_entry ->
+  sec_univs:Univ.Level.t array option -> env -> Constant.t -> 'a opaque_entry ->
     unit pconstant_body * typing_context
 
 val check_delayed : 'a effect_handler -> typing_context -> 'a proof_output -> (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes)
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_constant : env ->
+val infer_constant : sec_univs:Univ.Level.t array option -> env ->
   constant_entry -> typing_context Discharge.result
 
 val build_constant_declaration :

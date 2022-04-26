@@ -237,7 +237,7 @@ let subst_class (subst,cl) =
 let discharge_class cl =
   try
     let info = Lib.section_segment_of_reference cl.cl_impl in
-    let info, cl_univs' = Cooking.lift_poly_univs info cl.cl_univs in
+    let info, _, cl_univs' = Cooking.lift_poly_univs info cl.cl_univs in
     let nprops = List.length cl.cl_props in
     let props, context = List.chop nprops (Discharge.cook_rel_context info (cl.cl_props @ cl.cl_context)) in
     let discharge_proj x = x in
