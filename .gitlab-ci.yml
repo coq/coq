@@ -330,6 +330,7 @@ pkg:opam:
   interruptible: true
   # OPAM will build out-of-tree so no point in importing artifacts
   script:
+    - opam install coq-native
     - opam pin add --kind=path coq-core.dev .
     - opam pin add --kind=path coq-stdlib.dev .
     - opam pin add --kind=path coqide-server.dev .
