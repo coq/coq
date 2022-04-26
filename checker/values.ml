@@ -171,6 +171,11 @@ let v_rdecl = v_sum "rel_declaration" 0
        [|v_binder_annot v_name; v_constr; v_constr|] |]   (* LocalDef *)
 let v_rctxt = List v_rdecl
 
+let v_ndecl = v_sum "named_declaration" 0
+    [| [|v_binder_annot v_id; v_constr|];               (* LocalAssum *)
+       [|v_binder_annot v_id; v_constr; v_constr|] |]   (* LocalDef *)
+let v_nctxt = List v_ndecl
+
 let v_section_ctxt = v_enum "emptylist" 1
 
 
@@ -194,7 +199,7 @@ let v_subst =
 (** kernel/lazyconstr *)
 
 let v_abstr_info =
-  Tuple ("abstr_info", [|v_rctxt; v_abs_context; List v_id; v_hmap v_level v_level|])
+  Tuple ("abstr_info", [|v_nctxt; v_abs_context; v_instance|])
 
 let v_abstr_inst_info =
   Tuple ("abstr_inst_info", [|List v_id; v_instance|])
@@ -203,7 +208,7 @@ let v_expand_info =
   Tuple ("expand_info", [|v_hmap v_cst v_abstr_inst_info; v_hmap v_cst v_abstr_inst_info|])
 
 let v_cooking_info =
-  Tuple ("cooking_info", [|v_expand_info; v_abstr_info; v_abstr_inst_info; v_set v_id|])
+  Tuple ("cooking_info", [|v_expand_info; v_abstr_info|])
 
 let v_opaque =
   v_sum "opaque" 0 [|[|List v_subst; List v_cooking_info; v_dp; Int|]|]

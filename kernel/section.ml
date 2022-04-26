@@ -113,12 +113,13 @@ let segment_of_entry env e uctx sec =
   (* [sec.context] are the named hypotheses, [hyps] the subset that is
      declared by the global *)
   let ctx = extract_hyps sec.context hyps in
-  let cooking_info = Cooking.make_cooking_info sec.expand_info_map ctx uctx in
   (* Add recursive calls: projections are recursively referring to the
      mind they belong to *)
-  match e with
-  | SecDefinition _ -> cooking_info
-  | SecInductive ind -> add_inductive_info ind cooking_info
+  let recursive = match e with
+  | SecDefinition _ -> None
+  | SecInductive ind -> Some ind
+  in
+  Cooking.make_cooking_info ~recursive sec.expand_info_map ctx uctx
 
 let push_global env ~poly e sec =
   if has_poly_univs sec && not poly
@@ -126,9 +127,9 @@ let push_global env ~poly e sec =
       Pp.(str "Cannot add a universe monomorphic declaration when \
                section polymorphic universes are present.")
   else
-    let cooking_info = segment_of_entry env e sec.poly_universes sec in
+    let cooking_info, abstr_inst_info = segment_of_entry env e sec.poly_universes sec in
     let cooking_info_map = add_emap e cooking_info sec.cooking_info_map in
-    let expand_info_map = add_emap e (abstr_inst_info cooking_info) sec.expand_info_map in
+    let expand_info_map = add_emap e abstr_inst_info sec.expand_info_map in
     { sec with entries = e :: sec.entries; expand_info_map; cooking_info_map }
 
 let segment_of_constant con sec = Cmap.find con (fst sec.cooking_info_map)

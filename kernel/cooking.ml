@@ -23,7 +23,6 @@ open Univ
 open Context
 
 module NamedDecl = Context.Named.Declaration
-module RelDecl = Context.Rel.Declaration
 
 (** {6 Data needed to abstract over the section variables and section universes } *)
 
@@ -37,16 +36,12 @@ module RelDecl = Context.Rel.Declaration
     Bruijn indices, that is, only the instantiation [a,c] is kept *)
 
 type abstr_info = {
-  abstr_ctx : Constr.rel_context;
+  abstr_ctx : Constr.named_context;
   (** Context over which to generalize (e.g. x:T,z:V(x)) *)
   abstr_auctx : Univ.AbstractContext.t;
   (** Universe context over which to generalize *)
-  abstr_subst : Id.t list;
-  (** Canonical renaming represented by its domain made of the
-      actual names of the abstracted term variables (e.g. [a,c]);
-      the codomain made of de Bruijn indices is implicit *)
-  abstr_ausubst : Univ.universe_level_subst;
-  (** Universe substitution *)
+  abstr_ausubst : Instance.t;
+  (** Universe substitution represented as an instance *)
 }
 
 (** The instantiation to apply to generalized declarations so that
@@ -88,23 +83,15 @@ type expand_info = abstr_inst_info entry_map
 type cooking_info = {
   expand_info : expand_info;
   abstr_info : abstr_info;
-  abstr_inst_info : abstr_inst_info; (* relevant for recursive types *)
-  names_info : Id.Set.t; (* set of generalized names *)
 }
 
 let empty_cooking_info = {
   expand_info = (Cmap.empty, Mindmap.empty);
   abstr_info = {
       abstr_ctx = [];
-      abstr_subst = [];
       abstr_auctx = AbstractContext.empty;
-      abstr_ausubst = Level.Map.empty;
+      abstr_ausubst = Instance.empty;
     };
-  abstr_inst_info = {
-      abstr_rev_inst = [];
-      abstr_uinst = Univ.Instance.empty;
-    };
-  names_info = Id.Set.empty;
 }
 
 (*s Cooking the constants. *)
@@ -135,11 +122,13 @@ type internal_abstr_inst_info = Univ.Instance.t * int list * int
 type cooking_cache = {
   cache : internal_abstr_inst_info RefTable.t;
   info : cooking_info;
+  rel_ctx : rel_context Lazy.t;
 }
 
 let create_cache info = {
   cache = RefTable.create 13;
   info;
+  rel_ctx = lazy (List.map NamedDecl.to_rel_decl info.abstr_info.abstr_ctx);
 }
 
 let instantiate_my_gr gr u =
@@ -151,8 +140,8 @@ let instantiate_my_gr gr u =
 let discharge_inst top_abst_subst sub_abst_rev_inst =
   let rec aux k relargs top_abst_subst sub_abst_rev_inst =
     match top_abst_subst, sub_abst_rev_inst with
-    | id :: top_abst_subst, id' :: sub_abst_rev_inst' ->
-      if Id.equal id id' then
+    | decl :: top_abst_subst, id' :: sub_abst_rev_inst' ->
+      if Id.equal (NamedDecl.get_id decl) id' then
         aux (k+1) (k :: relargs) top_abst_subst sub_abst_rev_inst'
       else
         aux (k+1) relargs top_abst_subst sub_abst_rev_inst
@@ -162,8 +151,8 @@ let discharge_inst top_abst_subst sub_abst_rev_inst =
 
 let rec find_var k id = function
 | [] -> raise Not_found
-| idc :: subst ->
-  if Id.equal id idc then k+1
+| decl :: subst ->
+  if Id.equal id (NamedDecl.get_id decl) then k+1
   else find_var (k+1) id subst
 
 let share cache top_abst_subst r (cstl,knl) =
@@ -187,7 +176,7 @@ let share_univs cache top_abst_subst k r u l =
   mkApp (instantiate_my_gr r (Instance.append abstr_uinst u), make_inst k abstr_inst_rel)
 
 let discharge_proj_repr r p = (* To merge with discharge_proj *)
-  let nnewpars = List.length r.abstr_inst_info.abstr_rev_inst in
+  let nnewpars = List.count NamedDecl.is_local_assum r.abstr_info.abstr_ctx in
   let map npars = npars + nnewpars in
   Projection.Repr.map_npars map p
 
@@ -261,45 +250,48 @@ let expand_constr cache modlist top_abst_subst c =
        (note that the generalization over universe variable is implicit) *)
 
 (** The main expanding/substitution functions, performing the three first steps *)
-let expand_subst cache expand_info abstr_info c =
-  let c = expand_constr cache expand_info abstr_info.abstr_subst c in
-  let c = Vars.subst_univs_level_constr abstr_info.abstr_ausubst c in
+let expand_subst0 cache expand_info abstr_ctx abstr_ausubst c =
+  let c = expand_constr cache expand_info abstr_ctx c in
+  let c = Vars.subst_univs_level_constr (make_instance_subst abstr_ausubst) c in
   c
 
+let expand_subst cache c =
+  expand_subst0 cache.cache cache.info.expand_info cache.info.abstr_info.abstr_ctx cache.info.abstr_info.abstr_ausubst c
+
 (** Adding the final abstraction step, term case *)
-let abstract_as_type { cache; info = { expand_info; abstr_info; _ } } t =
-  it_mkProd_wo_LetIn (expand_subst cache expand_info abstr_info t) abstr_info.abstr_ctx
+let abstract_as_type cache t =
+  let ctx = Lazy.force cache.rel_ctx in
+  it_mkProd_wo_LetIn (expand_subst cache t) ctx
 
 (** Adding the final abstraction step, type case *)
-let abstract_as_body { cache; info = { expand_info; abstr_info; _ } } c =
-  it_mkLambda_or_LetIn (expand_subst cache expand_info abstr_info c) abstr_info.abstr_ctx
+let abstract_as_body cache c =
+  let ctx = Lazy.force cache.rel_ctx in
+  it_mkLambda_or_LetIn (expand_subst cache c) ctx
 
 (** Adding the final abstraction step, sort case (for universes) *)
-let abstract_as_sort { cache; info = { expand_info; abstr_info; _ } } s =
-  destSort (expand_subst cache expand_info abstr_info (mkSort s))
+let abstract_as_sort cache s =
+  destSort (expand_subst cache (mkSort s))
 
 (** Absorb a named context in the transformation which turns a
     judgment [G, Δ ⊢ ΠΩ.J] into [⊢ ΠG.ΠΔ.((ΠΩ.J)[σ][τ])], that is,
     produces the context [Δ(Ω[σ][τ])] and substitutions [σ'] and [τ]
     that turns a judgment [G, Δ, Ω[σ][τ] ⊢ J] into [⊢ ΠG.ΠΔ.((ΠΩ.J)[σ][τ])]
     via [⊢ ΠG.ΠΔ.Π(Ω[σ][τ]).(J[σ'][τ])] *)
-let abstract_named_context expand_info abstr_info hyps =
-  let fold decl abstr_info =
+let abstract_named_context expand_info abstr_ausubst hyps =
+  let fold decl abstr_ctx =
     let cache = RefTable.create 13 in
-    let id, decl = match decl with
+    let decl = match decl with
     | NamedDecl.LocalDef (id, b, t) ->
-      let b = expand_subst cache expand_info abstr_info b in
-      let t = expand_subst cache expand_info abstr_info t in
-      id, RelDecl.LocalDef (map_annot Name.mk_name id, b, t)
+      let b = expand_subst0 cache expand_info abstr_ctx abstr_ausubst b in
+      let t = expand_subst0 cache expand_info abstr_ctx abstr_ausubst t in
+      NamedDecl.LocalDef (id, b, t)
     | NamedDecl.LocalAssum (id, t) ->
-      let t = expand_subst cache expand_info abstr_info t in
-      id, RelDecl.LocalAssum (map_annot Name.mk_name id, t)
+      let t = expand_subst0 cache expand_info abstr_ctx abstr_ausubst t in
+      NamedDecl.LocalAssum (id, t)
     in
-    { abstr_info with
-        abstr_ctx = decl :: abstr_info.abstr_ctx;
-        abstr_subst = id.binder_name :: abstr_info.abstr_subst }
+    decl :: abstr_ctx
   in
-  Context.Named.fold_outside fold hyps ~init:abstr_info
+  Context.Named.fold_outside fold hyps ~init:[]
 
 (** Turn a named context [Δ] (hyps) and a universe named context
     [G] (uctx) into a rel context and abstract universe context
@@ -310,32 +302,37 @@ let abstract_named_context expand_info abstr_info hyps =
     the instance to apply to take the generalization into account;
     collecting the information needed to do such as a transformation
     of judgment into a [cooking_info] *)
-let make_cooking_info expand_info hyps uctx =
+let make_cooking_info ~recursive expand_info hyps uctx =
   let abstr_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
   let abstr_uinst, abstr_auctx = abstract_universes uctx in
-  let abstr_ausubst = Univ.make_instance_subst abstr_uinst in
-  let abstr_info = { abstr_ctx = []; abstr_subst = []; abstr_auctx; abstr_ausubst } in
-  let abstr_info = abstract_named_context expand_info abstr_info hyps in
-  let abstr_inst_info = { abstr_rev_inst; abstr_uinst } in
-  let names_info = Context.Named.to_vars hyps in
-  { expand_info; abstr_info; abstr_inst_info; names_info }
+  let abstr_ausubst = abstr_uinst in
+  let abstr_ctx = abstract_named_context expand_info abstr_ausubst hyps in
+  let abstr_info = { abstr_ctx; abstr_auctx; abstr_ausubst } in
+  let abstr_inst_info = {
+    abstr_rev_inst = abstr_rev_inst;
+    abstr_uinst = abstr_info.abstr_ausubst;
+  } in
+  let info = { expand_info; abstr_info } in
+  let info = match recursive with
+  | None -> info
+  | Some ind ->
+    let (cmap, imap) = info.expand_info in
+    { info with expand_info = (cmap, Mindmap.add ind abstr_inst_info imap) }
+  in
+  info, abstr_inst_info
 
-let add_inductive_info ind info =
-  let (cmap, imap) = info.expand_info in
-  { info with expand_info = (cmap, Mindmap.add ind info.abstr_inst_info imap) }
+let names_info info =
+  let fold accu id = Id.Set.add (NamedDecl.get_id id) accu in
+  List.fold_left fold Id.Set.empty info.abstr_info.abstr_ctx
 
-let names_info info = info.names_info
-
-let abstr_inst_info info = info.abstr_inst_info
-
-let rel_context_of_cooking_cache { info; _ } =
-  info.abstr_info.abstr_ctx
+let rel_context_of_cooking_cache cache =
+  Lazy.force cache.rel_ctx
 
 let universe_context_of_cooking_info info =
   info.abstr_info.abstr_auctx
 
 let instance_of_cooking_info info =
-  Array.map_of_list mkVar (List.rev info.abstr_inst_info.abstr_rev_inst)
+  Named.instance mkVar info.abstr_info.abstr_ctx
 
 let instance_of_cooking_cache { info; _ } =
   instance_of_cooking_info info
@@ -359,12 +356,12 @@ let discharge_abstract_universe_context abstr auctx =
     abstr, AbstractContext.union abstr.abstr_auctx auctx
   else
     let subst = abstr.abstr_ausubst in
-    let ainst = make_abstract_instance auctx in
-    let substf = Univ.lift_level_subst n (make_instance_subst ainst) in
-    let substf = Univ.merge_level_subst subst substf in
+    let suff = Instance.of_array @@ Array.init (AbstractContext.size auctx) (fun i -> Level.var i) in
+    let ainst = Instance.append subst suff in
+    let substf = make_instance_subst ainst in
     let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
     let auctx' = AbstractContext.union abstr.abstr_auctx auctx in
-    { abstr with abstr_ausubst = substf }, auctx'
+    { abstr with abstr_ausubst = ainst }, auctx'
 
 let lift_mono_univs info ctx =
   assert (AbstractContext.is_empty info.abstr_info.abstr_auctx); (* No monorphic constants in a polymorphic section *)
@@ -387,9 +384,9 @@ let lift_poly_univs info auctx =
 
 let lift_private_mono_univs info a =
   let () = assert (AbstractContext.is_empty info.abstr_info.abstr_auctx) in
-  let () = assert (is_empty_level_subst info.abstr_info.abstr_ausubst) in
+  let () = assert (Instance.is_empty info.abstr_info.abstr_ausubst) in
   a
 
 let lift_private_poly_univs info (inst, cstrs) =
-  let cstrs = Univ.subst_univs_level_constraints info.abstr_info.abstr_ausubst cstrs in
+  let cstrs = Univ.subst_univs_level_constraints (make_instance_subst info.abstr_info.abstr_ausubst) cstrs in
   (inst, cstrs)
