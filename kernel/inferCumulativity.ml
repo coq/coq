@@ -96,6 +96,19 @@ let infer_generic_instance_eq variances u =
   Array.fold_left (fun variances u -> infer_level_eq u variances)
     variances (Instance.to_array u)
 
+let extend_con_instance cb u =
+  Instance.(of_array (Array.append (to_array cb.const_univ_hyps) (to_array u)))
+
+let extend_ind_instance mib u =
+  Instance.(of_array (Array.append (to_array mib.mind_univ_hyps) (to_array u)))
+
+let extended_mind_variance mind =
+  match mind.mind_variance, mind.mind_sec_variance with
+  | None, None -> None
+  | Some _ as variance, None -> variance
+  | None, Some _ -> assert false
+  | Some variance, Some sec_variance -> Some (Array.append sec_variance variance)
+
 let infer_cumulative_ind_instance cv_pb mind_variance variances u =
   Array.fold_left2 (fun variances varu u ->
       match cv_pb, varu with
@@ -106,7 +119,8 @@ let infer_cumulative_ind_instance cv_pb mind_variance variances u =
 
 let infer_inductive_instance cv_pb env variances ind nargs u =
   let mind = Environ.lookup_mind (fst ind) env in
-  match mind.mind_variance with
+  let u = extend_ind_instance mind u in
+  match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
   | Some mind_variance ->
     if not (Int.equal (inductive_cumulativity_arguments (mind,snd ind)) nargs)
@@ -115,7 +129,8 @@ let infer_inductive_instance cv_pb env variances ind nargs u =
 
 let infer_constructor_instance_eq env variances ((mi,ind),ctor) nargs u =
   let mind = Environ.lookup_mind mi env in
-  match mind.mind_variance with
+  let u = extend_ind_instance mind u in
+  match extended_mind_variance mind with
   | None -> infer_generic_instance_eq variances u
   | Some _ ->
     if not (Int.equal (constructor_cumulativity_arguments (mind,ind,ctor)) nargs)
@@ -129,10 +144,12 @@ let infer_sort cv_pb variances s =
   | CUMUL ->
     Level.Set.fold infer_level_leq (Sorts.levels s) variances
 
-let infer_table_key variances c =
+let infer_table_key env variances c =
   let open Names in
   match c with
-  | ConstKey (_, u) ->
+  | ConstKey (con, u) ->
+    let cb = Environ.lookup_constant con env in
+    let u = extend_con_instance cb u in
     infer_generic_instance_eq variances u
   | VarKey _ | RelKey _ -> variances
 
@@ -156,7 +173,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FInt _ -> infer_stack infos variances stk
   | FFloat _ -> infer_stack infos variances stk
   | FFlex fl ->
-    let variances = infer_table_key variances fl in
+    let variances = infer_table_key (info_env (fst infos)) variances fl in
     infer_stack infos variances stk
   | FProj (_,c) ->
     let variances = infer_fterm CONV infos variances c [] in
@@ -170,18 +187,14 @@ let rec infer_fterm cv_pb infos variances hd stk =
     infer_fterm cv_pb infos variances (mk_clos (Esubst.subs_lift e) codom) []
   | FInd (ind, u) ->
     let variances =
-      if Instance.is_empty u then variances
-      else
-        let nargs = stack_args_size stk in
-        infer_inductive_instance cv_pb (info_env (fst infos)) variances ind nargs u
+      let nargs = stack_args_size stk in
+      infer_inductive_instance cv_pb (info_env (fst infos)) variances ind nargs u
     in
     infer_stack infos variances stk
   | FConstruct (ctor,u) ->
     let variances =
-      if Instance.is_empty u then variances
-      else
-        let nargs = stack_args_size stk in
-        infer_constructor_instance_eq (info_env (fst infos)) variances ctor nargs u
+      let nargs = stack_args_size stk in
+      infer_constructor_instance_eq (info_env (fst infos)) variances ctor nargs u
     in
     infer_stack infos variances stk
   | FFix ((_,(_,tys,cl)),e) | FCoFix ((_,(_,tys,cl)),e) ->
