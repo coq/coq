@@ -343,11 +343,13 @@ create_opam() {
 
     echo "$1_coq_commit_long = $COQ_HASH_LONG"
 
-    for package in coq-core coq-stdlib coq; do
+    opam install coq-native
+
+    for package in coq; do
         export COQ_OPAM_PACKAGE=$package
         export COQ_ITERATION=1
         _RES=0
-        opam pin add -y -b -j "$number_of_processors" --kind=path $package.dev . \
+        opam pin add --locked=docker -y -b -j "$number_of_processors" --kind=path $package.dev . \
              3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
              4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
             _RES=$?
@@ -379,7 +381,7 @@ old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
 # Deliberately don't include the dummy "coq" package
-installable_coq_opam_packages="coq-core coq-stdlib"
+installable_coq_opam_packages="coq"
 
 echo "DEBUG: $render_results $log_dir $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages"
 rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commit_long $old_coq_commit_long 0 user_time_pdiff $installable_coq_opam_packages)"
