@@ -104,11 +104,11 @@ let caml_version_nums { CamlConf.caml_version } =
   generic_version_nums ~name:"the OCaml compiler" caml_version
 
 let check_caml_version prefs caml_version caml_version_nums =
-  if caml_version_nums >= [4;5;0] then
+  if caml_version_nums >= [4;9;0] then
     cprintf prefs "You have OCaml %s. Good!" caml_version
   else
     let () = cprintf prefs "Your version of OCaml is %s." caml_version in
-    die "You need OCaml 4.05.0 or later."
+    die "You need OCaml 4.09.0 or later."
 
 let check_findlib_version prefs { CamlConf.findlib_version } =
   let findlib_version_nums = generic_version_nums ~name:"findlib" findlib_version in
