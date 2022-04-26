@@ -346,6 +346,8 @@ create_opam() {
 
     echo "$1_coq_commit_long = $COQ_HASH_LONG"
 
+    opam install coq-native
+
     for package in coq-core coq-stdlib coq; do
         export COQ_OPAM_PACKAGE=$package
         export COQ_ITERATION=1
