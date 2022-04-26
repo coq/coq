@@ -589,8 +589,8 @@ let is_array_type env c =
   | Some c' -> Constant.CanOrd.equal c c'
 
 let is_primitive_type env c =
-  (* dummy match to force an update if we add a primitive type, seperated clauses to satisfy ocaml 4.05 *)
-  let _ = function CPrimitives.(PTE(PT_int63)) -> () | CPrimitives.(PTE(PT_float64)) -> () | CPrimitives.(PTE(PT_array)) -> () in
+  (* dummy match to force an update if we add a primitive type *)
+  let _ = function CPrimitives.(PTE(PT_int63)) | CPrimitives.(PTE(PT_float64)) | CPrimitives.(PTE(PT_array)) -> () in
   is_int63_type env c || is_float64_type env c || is_array_type env c
 
 let polymorphic_constant cst env =
