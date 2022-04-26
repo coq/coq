@@ -259,23 +259,20 @@ let infer_arity_constructor is_arity env variances arcn =
      i is irrelevant, j is invariant. *)
   if not is_arity then infer_term CUMUL env variances codom else variances
 
-open Entries
-
-let infer_inductive_core env univs entries =
+let infer_inductive_core ~env_params ~env_ar_par ~arities ~ctors univs =
   let variances = Inf.start univs in
-  let variances = List.fold_left (fun variances entry ->
-      let variances = infer_arity_constructor true
-          env variances entry.mind_entry_arity
-      in
-      List.fold_left (infer_arity_constructor false env)
-        variances entry.mind_entry_lc)
-      variances
-      entries
+  let variances = List.fold_left (fun variances arity ->
+      infer_arity_constructor true env_params variances arity)
+      variances arities
+  in
+  let variances = List.fold_left
+      (List.fold_left (infer_arity_constructor false env_ar_par))
+      variances ctors
   in
   Inf.finish variances
 
-let infer_inductive ~env_params univs entries =
-  try infer_inductive_core env_params univs entries
+let infer_inductive ~env_params ~env_ar_par ~arities ~ctors univs =
+  try infer_inductive_core ~env_params ~env_ar_par ~arities ~ctors univs
   with
   | TrivialVariance -> Array.make (Array.length univs) Invariant
   | BadVariance (lev, expected, actual) ->
