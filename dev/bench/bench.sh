@@ -45,8 +45,8 @@ echo $PWD
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_switch:=ocaml-base-compiler.4.07.1}"
-: "${old_ocaml_switch:=ocaml-base-compiler.4.07.1}"
+: "${new_ocaml_switch:=ocaml-base-compiler.4.09.1}"
+: "${old_ocaml_switch:=ocaml-base-compiler.4.09.1}"
 : "${new_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${old_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
