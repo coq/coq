@@ -224,7 +224,10 @@ let tclDO n t =
     if k < 0 then user_err
       (str"Wrong argument : Do needs a positive integer.");
     if Int.equal k 0 then tclIDTAC
-    else if Int.equal k 1 then t else (tclTHEN t (dorec (k-1)))
+    else if Int.equal k 1 then t
+    else
+      (* Thunk to avoid stack overflow with large n *)
+      tclTHEN t (fun gl -> dorec (k-1) gl)
   in
   dorec n
 
@@ -637,7 +640,9 @@ let rec tclDO n t =
     tclZEROMSG ~info (str"Wrong argument : Do needs a positive integer.")
   else if n = 0 then tclUNIT ()
   else if n = 1 then t
-  else tclTHEN t (tclDO (n-1) t)
+  else
+    (* Thunk to avoid stack overflow with large n *)
+    tclTHEN t (tclUNIT () >>= fun () -> (tclDO (n-1) t))
 
 let rec tclREPEAT0 t =
   tclINDEPENDENT begin
