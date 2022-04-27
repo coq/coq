@@ -68,8 +68,10 @@ val inductive_is_polymorphic : mutual_inductive_body -> bool
 (** Is the inductive cumulative? *)
 val inductive_is_cumulative : mutual_inductive_body -> bool
 
+(** Anomaly when not a primitive record or invalid proj_arg *)
 val inductive_make_projection : Names.inductive -> mutual_inductive_body -> proj_arg:int ->
-  Names.Projection.Repr.t option
+  Names.Projection.Repr.t
+
 val inductive_make_projections : Names.inductive -> mutual_inductive_body ->
   Names.Projection.Repr.t array option
 
