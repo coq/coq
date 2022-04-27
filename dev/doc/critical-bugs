@@ -191,6 +191,16 @@ Universes
     universes such that +2 increments do not appear), mild risk from plugins which manipulate
     algebraic universes.
 
+  component: cumulative inductives and sections
+  summary: variance inference for section universes ignored use of section universes in inductives and axioms defined before the inductive being inferred
+  introduced: V8.12 (73c3b874633d6f6f8af831d4a37d0c1ae52575bc)
+  impacted released versions: V8.12 to V8.15 including patch releases
+  impacted coqchk versions: none
+  fixed in: V8.16 PR#15950 (118ffbc010ce53ebd45baa42edd28335301ca9a5)
+  found by: Gilbert and Pédrot
+  exploit: see #15916
+  risk: could be used inadvertently in developments with complex universe usage, only when using cumulative inductives declared in sections. coqchk still works.
+
 Primitive projections
 
   component: primitive projections, guard condition
