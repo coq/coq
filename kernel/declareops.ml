@@ -106,7 +106,8 @@ let subst_const_def subst def = match def with
   | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque subst o)
 
 let subst_const_body subst cb =
-  assert (List.is_empty cb.const_hyps); (* we're outside sections *)
+  (* we're outside sections *)
+  assert (List.is_empty cb.const_hyps && Univ.Instance.is_empty cb.const_univ_hyps);
   if is_empty_subst subst then cb
   else
     let body' = subst_const_def subst cb.const_body in
@@ -115,6 +116,7 @@ let subst_const_body subst cb =
     then cb
     else
       { const_hyps = [];
+        const_univ_hyps = Univ.Instance.empty;
         const_body = body';
         const_type = type';
         const_body_code =
@@ -266,10 +268,13 @@ let subst_mind_record subst r = match r with
   if infos' == infos then r else PrimRecord infos'
 
 let subst_mind_body subst mib =
+  (* we're outside sections *)
+  assert (List.is_empty mib.mind_hyps && Univ.Instance.is_empty mib.mind_univ_hyps);
   { mind_record = subst_mind_record subst mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
-    mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);
+    mind_hyps = [];
+    mind_univ_hyps = Univ.Instance.empty;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =

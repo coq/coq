@@ -249,6 +249,7 @@ let v_univs = v_sum "universes" 1 [|[|v_abs_context|]|]
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
+    v_instance;
     v_cst_def;
     v_constr;
     v_relevance;
@@ -305,6 +306,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_finite;
     Int;
     v_section_ctxt;
+    v_instance;
     Int;
     Int;
     v_rctxt;

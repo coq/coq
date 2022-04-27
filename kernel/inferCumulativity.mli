@@ -9,13 +9,13 @@
 (************************************************************************)
 
 val infer_inductive
-  : env_params:Environ.env
+  : env_params : Environ.env
   (** Environment containing the polymorphic universes and the
-     parameters. *)
+      parameters. *)
+  -> env_ar_par : Environ.env
+  (** Environment containing the polymorphic universes and the inductives then the parameters. *)
+  -> arities : Constr.t list
+  -> ctors : Constr.t list list
   -> (Univ.Level.t * Univ.Variance.t option) array
   (** Universes whose cumulativity we want to infer or check. *)
-  -> Entries.one_inductive_entry list
-  (** The inductive block data we want to infer cumulativity for.
-      NB: we ignore the template bool and the names, only the terms
-      are used. *)
   -> Univ.Variance.t array

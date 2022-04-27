@@ -28,15 +28,23 @@ type 'opaque result = {
   cook_relevance : Sorts.relevance;
   cook_inline : inline;
   cook_context : Id.Set.t option;
+  cook_univ_hyps : Instance.t;
   cook_flags : typing_flags;
 }
 
-let lift_univs info = function
+let lift_univs info univ_hyps = function
   | Monomorphic ->
-    info, Monomorphic
+    assert (Univ.Instance.is_empty univ_hyps);
+    info, univ_hyps, Monomorphic
   | Polymorphic auctx ->
-    let info, auctx = lift_poly_univs info auctx in
-    info, Polymorphic auctx
+    let info, n, auctx = lift_poly_univs info auctx in
+    let univ_hyps =
+      let open Univ.Instance in
+      let us = to_array univ_hyps in
+      let us = Array.sub us 0 (Array.length us - n) in
+      of_array us
+    in
+    info, univ_hyps, Polymorphic auctx
 
 (********************************)
 (* Discharging opaque proof terms *)
@@ -62,7 +70,7 @@ let cook_opaque_proofterm info c =
 
 let cook_constant env info cb =
   (* Adjust the info so that it is meaningful under the block of quantified universe binders *)
-  let info, univs = lift_univs info cb.const_universes in
+  let info, univ_hyps, univs = lift_univs info cb.const_univ_hyps cb.const_universes in
   let cache = create_cache info in
   let map c = abstract_as_body cache c in
   let body = match cb.const_body with
@@ -78,6 +86,7 @@ let cook_constant env info cb =
   let hyps = List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) names)) cb.const_hyps in
   {
     const_hyps = hyps;
+    const_univ_hyps = univ_hyps;
     const_body = body;
     const_type = typ;
     const_body_code = tps;
@@ -151,7 +160,7 @@ let cook_one_ind cache ~ntypes mip =
   }
 
 let cook_inductive info mib =
-  let info, mind_universes = lift_univs info mib.mind_universes in
+  let info, univ_hyps, mind_universes = lift_univs info mib.mind_univ_hyps mib.mind_universes in
   let cache = create_cache info in
   let nnewparams = Context.Rel.nhyps (rel_context_of_cooking_cache cache) in
   let mind_params_ctxt = cook_rel_context cache mib.mind_params_ctxt in
@@ -201,6 +210,7 @@ let cook_inductive info mib =
     mind_finite = mib.mind_finite;
     mind_ntypes = mib.mind_ntypes;
     mind_hyps;
+    mind_univ_hyps = univ_hyps;
     mind_nparams = mib.mind_nparams + nnewparams;
     mind_nparams_rec = mib.mind_nparams_rec + nnewparams;
     mind_params_ctxt;
