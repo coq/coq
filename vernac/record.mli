@@ -36,6 +36,52 @@ val definition_structure
   -> Ast.t list
   -> GlobRef.t list
 
+  module Data : sig
+    type projection_flags = {
+      pf_subclass: bool;
+      pf_canonical: bool;
+    }
+    type raw_data
+    type t =
+      { id : Id.t
+      ; idbuild : Id.t
+      ; is_coercion : bool
+      ; coers : projection_flags list
+      ; rdata : raw_data
+      ; inhabitant_id : Id.t
+      }
+  end
+
+  (** A record is an inductive [mie] with extra metadata in [records] *)
+  module Record_decl : sig
+    type t = {
+      mie : Entries.mutual_inductive_entry;
+      records : Data.t list;
+      (* TODO: this part could be factored in mie *)
+      primitive_proj : bool;
+      impls : DeclareInd.one_inductive_impls list;
+      globnames : UState.named_universes_entry;
+      global_univ_decls : Univ.ContextSet.t option;
+      projunivs : Entries.universes_entry;
+      ubinders : UnivNames.universe_binders;
+      projections_kind : Decls.definition_object_kind;
+      poly : bool;
+    }
+end
+
+(** Ast.t list at the constr level *)
+val interp_structure
+  :  cumul_univ_decl_expr option
+  -> inductive_kind
+  -> template:bool option
+  -> cumulative:bool
+  -> poly:bool
+  -> primitive_proj:bool
+  -> Declarations.recursivity_kind
+  -> Ast.t list
+  -> Record_decl.t
+
+
 val declare_existing_class : GlobRef.t -> unit
 
 (* Implementation internals, consult Coq developers before using;

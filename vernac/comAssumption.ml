@@ -238,9 +238,7 @@ let context_nosection sigma ~poly ctx =
   let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
   ()
 
-let context ~poly l =
-  let env = Global.env() in
-  let sigma = Evd.from_env env in
+let interp_context env sigma l =
   let sigma, (_, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let ce t = Pretyping.check_evars env sigma t in
@@ -265,6 +263,12 @@ let context ~poly l =
       name,b,t,impl)
       ctx
   in
+   sigma, ctx
+
+let do_context ~poly l =
+  let env = Global.env() in
+  let sigma = Evd.from_env env in
+  let sigma, ctx = interp_context env sigma l in
   if Global.sections_are_opened ()
   then context_insection sigma ~poly ctx
   else context_nosection sigma ~poly ctx

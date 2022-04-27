@@ -42,6 +42,37 @@ val do_mutual_inductive
 
 val make_cases : Names.inductive -> string list list
 
+module Mind_decl : sig
+
+(** inductive_expr at the constr level *)
+type t = {
+  mie : Entries.mutual_inductive_entry;
+  nuparams : int option;
+  univ_binders : UnivNames.universe_binders;
+  implicits : DeclareInd.one_inductive_impls list;
+  uctx : Univ.ContextSet.t;
+  where_notations : Metasyntax.where_decl_notation list;
+  coercions : Libnames.qualid list;
+}
+
+end
+
+(** elaborates an inductive declaration (the first half of do_mutual_inductive) *)
+val interp_mutual_inductive
+  :  env:Environ.env
+  -> template:bool option
+  -> cumul_univ_decl_expr option
+  -> (one_inductive_expr * decl_notation list) list
+  -> cumulative:bool
+  -> poly:bool
+  -> ?typing_flags:Declarations.typing_flags
+  -> private_ind:bool
+  -> uniform:uniform_inductive_flag
+  -> Declarations.recursivity_kind
+  -> Mind_decl.t
+
+(** the post-elaboration part of interp_mutual_inductive, mainly dealing with
+    universe levels *)
 val interp_mutual_inductive_constr
   : sigma:Evd.evar_map
   -> template:bool option

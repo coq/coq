@@ -799,31 +799,16 @@ let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_p
   let map ((is_coercion, name), binders, sort, nameopt, cfs, ido) =
     let idbuild = match nameopt with
     | None -> Nameops.add_prefix "Build_" name.v
-    | Some lid ->
-      let () = Dumpglob.dump_definition lid false "constr" in
-      lid.v
+    | Some lid -> lid.v
     in
     let default_inhabitant_id = Option.map (fun CAst.{v=id} -> id) ido in
-    let () =
-      if Dumpglob.dump () then
-        let () = Dumpglob.dump_definition name false "rec" in
-        let iter (x, _) = match x with
-        | Vernacexpr.(AssumExpr ({loc;v=Name id}, _, _) | DefExpr ({loc;v=Name id}, _, _, _)) ->
-          Dumpglob.dump_definition (make ?loc id) false "proj"
-        | _ -> ()
-        in
-        List.iter iter cfs
-    in
     Record.Ast.{ name; is_coercion; binders; cfs; idbuild; sort; default_inhabitant_id }
   in
   let records = List.map map records in
   match typing_flags with
   | Some _ ->
     CErrors.user_err (Pp.str "Typing flags are not yet supported for records.")
-  | None ->
-    let _ : _ list =
-      Record.definition_structure ~template udecl k ~cumulative ~poly ~primitive_proj finite records in
-    ()
+  | None -> records
 
 let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
   match indl with
@@ -869,7 +854,33 @@ let primitive_proj =
   | Some t -> return t
   | None -> return (primitive_flag ())
 
-let vernac_inductive ~atts kind indl =
+module Preprocessed_Mind_decl = struct
+  type flags = {
+    template : bool option;
+    udecl : Constrexpr.cumul_univ_decl_expr option;
+    cumulative : bool;
+    poly : bool;
+    finite : Declarations.recursivity_kind;
+  }
+  type record = {
+    flags : flags;
+    primitive_proj : bool;
+    kind : Vernacexpr.inductive_kind;
+    records : Record.Ast.t list;
+  }
+  type inductive = {
+    flags : flags;
+    typing_flags : Declarations.typing_flags option;
+    private_ind : bool;
+    uniform : ComInductive.uniform_inductive_flag;
+    inductives : (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list;
+  }
+  type t =
+    | Record of record
+    | Inductive of inductive
+end
+
+let preprocess_inductive_decl ~atts kind indl =
   let udecl, indl = extract_inductive_udecl indl in
   let is_defclass = match kind, indl with
   | Class _, [ ( id , bl , c , Constructors [l]), [] ] -> Some (id, bl, c, l)
@@ -898,16 +909,6 @@ let vernac_inductive ~atts kind indl =
           ++ private_ind ++ typing_flags ++ prim_proj_attr)
         atts)
   in
-  if Dumpglob.dump () then
-    List.iter (fun (((coe,lid), _, _, cstrs), _) ->
-      match cstrs with
-        | Constructors cstrs ->
-            Dumpglob.dump_definition lid false "ind";
-            List.iter (fun (_, (lid, _)) ->
-                         Dumpglob.dump_definition lid false "constr") cstrs
-        | _ -> () (* dumping is done by vernac_record (called below) *) )
-      indl;
-
   if Option.has_some is_defclass then
     (* Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in
@@ -921,8 +922,10 @@ let vernac_inductive ~atts kind indl =
     let coe' = if coe then BackInstance else NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
-    vernac_record ~template udecl ~cumulative (Class true) ~poly ?typing_flags ~primitive_proj
-      finite [id, bl, c, None, [f], None]
+    let recordl = [id, bl, c, None, [f], None] in
+    let kind = Class true in
+    let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in
+    indl, Preprocessed_Mind_decl.(Record { flags = { template; udecl; cumulative; poly; finite; }; primitive_proj; kind; records })
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let () = match kind with
@@ -947,7 +950,8 @@ let vernac_inductive ~atts kind indl =
     in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl
+    let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in
+    indl, Preprocessed_Mind_decl.(Record { flags = { template; udecl; cumulative; poly; finite; }; primitive_proj; kind; records })
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
@@ -969,11 +973,49 @@ let vernac_inductive ~atts kind indl =
     | Constructors l -> (id, bl, c, l), ntn
     | RecordDecl _ -> assert false (* ruled out above *)
     in
-    let indl = List.map unpack indl in
+    let inductives = List.map unpack indl in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
+    indl, Preprocessed_Mind_decl.(Inductive { flags = { template; udecl; cumulative; poly; finite }; typing_flags; private_ind; uniform; inductives })
   else
     user_err (str "Mixed record-inductive definitions are not allowed.")
+
+let dump_inductive indl_for_glob decl =
+  let open Preprocessed_Mind_decl in
+  if Dumpglob.dump () then begin
+    List.iter (fun (((coe,lid), _, _, cstrs), _) ->
+        match cstrs with
+        | Constructors cstrs ->
+          Dumpglob.dump_definition lid false "ind";
+          List.iter (fun (_, (lid, _)) ->
+              Dumpglob.dump_definition lid false "constr") cstrs
+        | _ -> ())
+      indl_for_glob;
+    match decl with
+    | Record { flags = { template; udecl; cumulative; poly; finite; }; kind; primitive_proj; records } ->
+      let dump_glob_proj (x, _) = match x with
+        | Vernacexpr.(AssumExpr ({loc;v=Name id}, _, _) | DefExpr ({loc;v=Name id}, _, _, _)) ->
+          Dumpglob.dump_definition (make ?loc id) false "proj"
+        | _ -> () in
+      records |> List.iter (fun { Record.Ast.cfs; name } ->
+          let () = Dumpglob.dump_definition name false "rec" in
+          List.iter dump_glob_proj cfs)
+    | Inductive _ -> ()
+  end
+
+let vernac_inductive ~atts kind indl =
+  let open Preprocessed_Mind_decl in
+  let indl_for_glob, decl = preprocess_inductive_decl ~atts kind indl in
+  dump_inductive indl_for_glob decl;
+  match decl with
+  | Record { flags = { template; udecl; cumulative; poly; finite; }; kind; primitive_proj; records } ->
+    let _ : _ list =
+      Record.definition_structure ~template udecl kind ~cumulative ~poly ~primitive_proj finite records in
+    ()
+  | Inductive { flags = { template; udecl; cumulative; poly; finite; }; typing_flags; private_ind; uniform; inductives } ->
+    ComInductive.do_mutual_inductive ~template udecl inductives ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite
+
+let preprocess_inductive_decl ~atts kind indl =
+  snd @@ preprocess_inductive_decl ~atts kind indl
 
 let vernac_fixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
@@ -2363,7 +2405,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacDeclareInstance (id, bl, inst, info) ->
     vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
   | VernacContext sup ->
-    vtdefault(fun () -> ComAssumption.context ~poly:(only_polymorphism atts) sup)
+    vtdefault(fun () -> ComAssumption.do_context ~poly:(only_polymorphism atts) sup)
   | VernacExistingInstance insts ->
     vtdefault(fun () -> vernac_existing_instance ~atts insts)
   | VernacExistingClass id ->
