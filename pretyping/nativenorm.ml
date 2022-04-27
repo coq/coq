@@ -181,12 +181,8 @@ let branch_of_switch lvl ans bs =
   Array.init (Array.length tbl) branch
 
 let get_proj env (ind, proj_arg) =
-  let mib = Environ.lookup_mind (fst ind) env in
-  match Declareops.inductive_make_projection ind mib ~proj_arg with
-  | None ->
-    CErrors.anomaly (Pp.strbrk "Return type is not a primitive record")
-  | Some p ->
-    Projection.make p true
+  let p = Environ.get_projection env ind ~proj_arg in
+  Projection.make p true
 
 let rec nf_val env sigma v typ =
   match kind_of_value v with

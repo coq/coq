@@ -296,13 +296,16 @@ let inductive_is_cumulative mib =
 
 let inductive_make_projection ind mib ~proj_arg =
   match mib.mind_record with
-  | NotRecord | FakeRecord -> None
+  | NotRecord | FakeRecord ->
+    CErrors.anomaly Pp.(str "inductive_make_projection: not a primitive record.")
   | PrimRecord infos ->
     let _, labs, _, _ = infos.(snd ind) in
-    Some (Names.Projection.Repr.make ind
-            ~proj_npars:mib.mind_nparams
-            ~proj_arg
-            labs.(proj_arg))
+    if proj_arg < 0 || Array.length labs <= proj_arg
+    then CErrors.anomaly Pp.(str "inductive_make_projection: invalid proj_arg.");
+    Names.Projection.Repr.make ind
+      ~proj_npars:mib.mind_nparams
+      ~proj_arg
+      labs.(proj_arg)
 
 let inductive_make_projections ind mib =
   match mib.mind_record with
