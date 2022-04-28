@@ -651,7 +651,11 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block data in
-  let template = List.for_all (check_template ~template ~univs ~poly ~params) data in
+  let template = match data, fst template with
+    | [data], _ -> check_template ~template ~univs ~poly ~params data
+    | _, Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual records.")
+    | _ -> false
+  in
   let primitive =
     primitive_proj  &&
     List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) data
