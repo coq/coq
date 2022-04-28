@@ -819,7 +819,7 @@ let make_exact_entry env sigma info ?(name=PathAny) (c, cty, ctx) =
         let pat = match info.hint_pattern with
         | Some pat -> snd pat
         | None ->
-          Patternops.pattern_of_constr ~broken:false env sigma cty
+          Patternops.pattern_of_constr env sigma cty
         in
         let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = 0 } in
         (Some hd,
@@ -845,7 +845,7 @@ let make_apply_entry env sigma hnf info ?(name=PathAny) (c, cty, ctx) =
     let pat = match info.hint_pattern with
     | Some p -> snd p
     | None ->
-      Patternops.pattern_of_constr ~broken:false env ce.evd c'
+      Patternops.pattern_of_constr env ce.evd c'
     in
     let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = hyps; } in
     if Int.equal nmiss 0 then
@@ -956,7 +956,7 @@ let make_trivial env sigma ?(name=PathAny) r =
   let h = { rhint_term = c; rhint_type = t; rhint_uctx = ctx; rhint_arty = 0 } in
   (Some hd,
    { pri=1;
-     pat = Some (Patternops.pattern_of_constr ~broken:false env ce.evd (clenv_type ce));
+     pat = Some (Patternops.pattern_of_constr env ce.evd (clenv_type ce));
      name = name;
      db = None;
      secvars = secvars_of_constr env sigma c;

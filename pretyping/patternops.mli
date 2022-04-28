@@ -42,7 +42,10 @@ val head_of_constr_reference : Evd.evar_map -> constr -> GlobRef.t
    a pattern; currently, no destructor (Cases, Fix, Cofix) and no
    existential variable are allowed in [c] *)
 
-val pattern_of_constr : ?broken:bool -> Environ.env -> Evd.evar_map -> EConstr.constr -> constr_pattern
+val pattern_of_constr : Environ.env -> Evd.evar_map -> EConstr.constr -> constr_pattern
+
+(** Do not use, for internal Coq use only. *)
+val legacy_bad_pattern_of_constr : Environ.env -> Evd.evar_map -> EConstr.constr -> constr_pattern
 
 (** [pattern_of_glob_constr l c] translates a term [c] with metavariables into
    a pattern; variables bound in [l] are replaced by the pattern to which they

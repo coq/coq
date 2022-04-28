@@ -2635,7 +2635,7 @@ let interp_constr_pattern env sigma ?(expected_type=WithoutTypeConstraint) c =
   let sigma, c = understand_tcc ~flags env sigma ~expected_type c in
   (* FIXME: it is necessary to be unsafe here because of the way we handle
      evars in the pretyper. Sometimes they get solved eagerly. *)
-  pattern_of_constr ~broken:true env sigma c
+  legacy_bad_pattern_of_constr env sigma c
 
 let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
       { Genintern.intern_ids = ids; Genintern.notation_variable_status = vl } c =
