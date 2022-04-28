@@ -62,22 +62,6 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
 
   type 'a t = {outch : out_channel; mutable htbl : 'a data Table.t; file : string }
 
-  (* XXX: Move to Fun.protect once in Ocaml 4.08 *)
-  let fun_protect ~(finally : unit -> unit) work =
-    let finally_no_exn () =
-      let exception Finally_raised of exn in
-      try finally ()
-      with e ->
-        let bt = Printexc.get_raw_backtrace () in
-        Printexc.raise_with_backtrace (Finally_raised e) bt
-    in
-    match work () with
-    | result -> finally_no_exn (); result
-    | exception work_exn ->
-      let work_bt = Printexc.get_raw_backtrace () in
-      finally_no_exn ();
-      Printexc.raise_with_backtrace work_exn work_bt
-
   let skip_blob ch =
     let hd = Bytes.create Marshal.header_size in
     let () = really_input ch hd 0 Marshal.header_size in
@@ -130,7 +114,7 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
   (* We make the assumption that an acquired lock can always be released *)
 
   let do_under_lock kd fd f =
-    if lock kd fd then Some(fun_protect f ~finally:(fun () -> unlock fd)) else None
+    if lock kd fd then Some(Fun.protect f ~finally:(fun () -> unlock fd)) else None
 
   let fopen_in = open_in_bin
 

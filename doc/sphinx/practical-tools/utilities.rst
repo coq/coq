@@ -633,12 +633,6 @@ To build, say, two targets foo.vo and bar.vo in parallel one can use
   ``make foo.vo bar.vo -j`` has a different meaning for the ``make``
   utility, in particular it may build a shared prerequisite twice.
 
-.. note::
-
-  Due to limitations with the compilation chain, makefiles generated
-  by ``coq_makefile`` won't correctly compile OCaml plugins with OCaml
-  < 4.07.0 when using more than one job (``-j N`` for ``N > 1``).
-
 Precompiling for ``native_compute``
 +++++++++++++++++++++++++++++++++++
 

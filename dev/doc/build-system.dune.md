@@ -172,26 +172,6 @@ etc... Please report any issue.
 
 For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
 
-**Note**: If you are using OCaml >= 4.08 you need to use
-
-```
-(ocd) source dune_db_408
-```
-
-or
-
-```
-(ocd) source dune_db_409
-```
-
-depending on your OCaml version. This is due to several factors:
-
-- OCaml >= 4.08 doesn't allow doubly-linking modules, however `source`
-  is not re entrant and seems to doubly-load in the default setup, see
-  https://github.com/coq/coq/issues/8952
-- OCaml >= 4.09 comes with `dynlink` already linked in so we need to
-  modify the list of modules loaded.
-
 ### Debugging hints
 
 - To debug a failure/error/anomaly, add a breakpoint in
@@ -206,11 +186,6 @@ depending on your OCaml version. This is due to several factors:
 
 - If there is a linking error (eg from "source dune_db"), do a "dune
   build coq-core.install" and try again.
-
-- If you build Coq with an OCaml version earlier than 4.06, and have the
-  OCAMLRUNPARAM environment variable set, Coq may hang on startup when run
-  from the debugger. If this happens, unset the variable, re-start Emacs, and
-  run the debugger again.
 
 ## Dropping from coqtop:
 

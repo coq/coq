@@ -249,14 +249,6 @@ struct
       let m = Map.singleton k x in
       Int.Map.add h m s
 
-  (* when Coq requires OCaml 4.06 or later, the module type
-     CSig.MapS may include the signature of OCaml's "update",
-     requiring an implementation here, which could be just:
-
-       let update k f s = assert false (* not implemented *)
-
-  *)
-
   let singleton k x =
     let h = M.hash k in
     Int.Map.singleton h (Map.singleton k x)

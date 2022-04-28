@@ -188,11 +188,6 @@ There is a known problem with certain OCaml versions and
 `native_compute`, that will make compilation require a large amount of
 RAM (>= 10GiB) for some particular files.
 
-We recommend disabling native compilation (`-native-compiler no`)
-with flambda if you use OCaml < 4.07.0.
-
-c.f. https://caml.inria.fr/mantis/view.php?id=7630
-
 Dynamically Loaded Libraries For Bytecode Executables.
 ------------------------------------------------------
 

@@ -58,12 +58,7 @@ sig
     val is_empty: 'a t -> bool
     val mem: key -> 'a t -> bool
     val add: key -> 'a -> 'a t -> 'a t
-    (* when Coq requires OCaml 4.06 or later, can add:
-
-         val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
-
-       allowing Coq to use OCaml's "update"
-    *)
+    val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
     val singleton: key -> 'a -> 'a t
     val remove: key -> 'a t -> 'a t
     val merge:
