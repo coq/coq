@@ -153,18 +153,12 @@ end
 module PriorityQueue = Heap.Functional(ConstrPriority)
 
 let rec iter_priority_queue q fn =
-  (* use an option to make the function tail recursive. Will be
-     obsoleted with Ocaml 4.02 with the [match … with | exception …]
-     syntax. *)
-  let next = begin
-      try Some (PriorityQueue.maximum q)
-      with Heap.EmptyHeap -> None
-  end in
-  match next with
-  | Some (gref,kind,env,t,_) ->
+  (* Tail-rec! *)
+  match PriorityQueue.maximum q with
+  | (gref,kind,env,t,_) ->
     fn gref kind env t;
     iter_priority_queue (PriorityQueue.remove q) fn
-  | None -> ()
+  | exception Heap.EmptyHeap -> ()
 
 let prioritize_search seq fn =
   let acc = ref PriorityQueue.empty in

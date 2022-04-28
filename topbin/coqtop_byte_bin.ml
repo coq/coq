@@ -17,7 +17,7 @@ let _ = CErrors.register_handler (function
   )
 
 (* XXX: Remove this for Toploop.get_directive once we bump the OCaml
-   version, unfortunately 4.05 still doesn't have it, and 4.13
+   version, unfortunately 4.09 still doesn't have it, and 4.13
    deprecated directive_table *)
 let _get_directive name =
   let dt = Toploop.directive_table [@ocaml.warning "-3"] in
