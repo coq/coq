@@ -155,7 +155,9 @@ let head_of_constr_reference sigma c = match EConstr.kind sigma c with
   | Var id -> GlobRef.VarRef id
   | _ -> anomaly (Pp.str "Not a rigid reference.")
 
-let pattern_of_constr env sigma t =
+let pattern_of_constr ~broken env sigma t =
+  let t = EConstr.Unsafe.to_constr t in
+  let kind = if broken then Constr.kind else fun c -> EConstr.kind_upto sigma c in
   let rec pattern_of_constr env t =
   let open Context.Rel.Declaration in
   match kind t with
@@ -238,6 +240,9 @@ let pattern_of_constr env sigma t =
     in
   pattern_of_constr env t
 
+let legacy_bad_pattern_of_constr env sigma c : constr_pattern = pattern_of_constr ~broken:true env sigma c
+let pattern_of_constr env sigma c : constr_pattern = pattern_of_constr ~broken:false env sigma c
+
 (* To process patterns, we need a translation without typing at all. *)
 
 let map_pattern_with_binders g f l = function
@@ -277,7 +282,7 @@ let rec subst_pattern env sigma subst pat =
     if ref' == ref then pat else (match t with
         | None -> PRef ref'
         | Some t ->
-          pattern_of_constr env sigma t.Univ.univ_abstracted_value)
+          pattern_of_constr env sigma (EConstr.of_constr t.Univ.univ_abstracted_value))
   | PVar _
   | PEvar _
   | PRel _
