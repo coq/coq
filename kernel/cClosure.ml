@@ -659,7 +659,9 @@ let rec to_constr lfts v =
       else
         let subs = comp_subs lfts env in
         subst_constr subs t
-    | FLOCKED | FIrrelevant -> assert false (*mkVar(Id.of_string"_LOCK_")*)
+
+    | FIrrelevant -> assert (!Flags.in_debugger); mkVar(Id.of_string"_IRRELEVANT_")
+    | FLOCKED -> assert (!Flags.in_debugger); mkVar(Id.of_string"_LOCKED_")
 
 and to_constr_case lfts ci u pms p iv c ve env =
   if is_subs_id env && is_lift_id lfts then
