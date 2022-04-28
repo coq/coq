@@ -21,7 +21,9 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         texlive-latex-extra texlive-fonts-recommended texlive-xetex latexmk \
         python3-pip python3-setuptools python3-pexpect python3-bs4 fonts-freefont-otf \
         # Dependencies of source-doc and coq-makefile
-        texlive-science tipa
+        texlive-science tipa \
+        # Dependencies of HB (test suite)
+        wdiff
 
 # More dependencies of the sphinx doc, pytest for coqtail
 RUN pip3 install docutils==0.16 sphinx==3.0.2 sphinx_rtd_theme==0.4.3 \
@@ -44,7 +46,7 @@ ENV COMPILER="4.09.0"
 # Common OPAM packages
 ENV BASE_OPAM="zarith.1.12 ocamlfind.1.9.1 ounit2.2.2.3 odoc.1.5.3" \
     CI_OPAM="ocamlgraph.1.8.8 yojson.1.7.0 cppo.1.6.8" \
-    BASE_ONLY_OPAM="dune.2.7.1 elpi.1.14.1 stdlib-shims.0.1.0"
+    BASE_ONLY_OPAM="dune.2.9.1 elpi.1.15.2 stdlib-shims.0.1.0"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
 ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.2"
