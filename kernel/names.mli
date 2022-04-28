@@ -615,7 +615,7 @@ module Projection : sig
   module Repr : sig
     type t
 
-    val make : inductive -> proj_npars:int -> proj_arg:int -> Label.t -> t
+    val make : inductive -> proj_npars:int -> proj_arg:int -> proj_relevant:bool -> Label.t -> t
 
     include QNameS with type t := t
 
@@ -627,6 +627,7 @@ module Projection : sig
     val npars : t -> int
     val arg : t -> int
     val label : t -> Label.t
+    val relevant : t -> bool
 
     val equal : t -> t -> bool [@@ocaml.deprecated "Use QProjection.equal"]
     val hash : t -> int [@@ocaml.deprecated "Use QProjection.hash"]

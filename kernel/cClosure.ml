@@ -1355,12 +1355,8 @@ let is_irrelevant_constructor infos (ind,_) = match infos.i_cache.i_mode with
 | Conversion -> Indset_env.mem ind infos.i_cache.i_env.irr_inds
 | Reduction -> false
 
-(* FIXME: cache relevance in projection like Fix / Case nodes or in env like constants and inds *)
 let is_irrelevant_projection infos p = match infos.i_cache.i_mode with
-| Conversion ->
-  let mind = Projection.mind p in
-  let mib = lookup_mind mind infos.i_cache.i_env in
-  Declareops.relevance_of_projection_repr mib (Projection.repr p) == Sorts.Irrelevant
+| Conversion -> not @@ Projection.Repr.relevant @@ Projection.repr p
 | Reduction -> false
 
 (*********************************************************************)
