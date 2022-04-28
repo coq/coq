@@ -60,7 +60,11 @@ let read_timing_lines file =
           read_lines_aux acc
     | exception End_of_file -> acc
   in
-  let lines = read_lines_aux [] in
+  let lines =
+    try Some (read_lines_aux [])
+    with End_of_file ->
+      Printf.eprintf "*** Error: Could not read file %s.\n" file; None
+  in
   close_in ic; lines
 
 let list_timing_data (time1, time2, diff, pdiff, line_num, file) =
@@ -84,11 +88,11 @@ let render_table ?(reverse=false) title num table =
   |> fun x -> Table.print headers top x ~align_top ~align_rows ()
 
 let main () =
-  let _ = Printexc.record_backtrace true in
+  let () = Printexc.record_backtrace true in
   let table =
     Unix.getcwd ()
     |> list_html_files
-    |> List.map read_timing_lines
+    |> List.filter_map read_timing_lines
     |> List.flatten
     (* Do we want to do a unique sort? *)
     (* |> List.sort_uniq (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y) *)
