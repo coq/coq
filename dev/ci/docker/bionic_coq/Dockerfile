@@ -63,7 +63,7 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
         i386 env CC='gcc -m32' opam install zarith.1.12 && \
         opam install $BASE_OPAM
 
-# EDGE switch, dune 2.8 for OCaml 4.12, lablgtk 3.1.1 for OCaml 4.09
+# EDGE switch
 ENV COMPILER_EDGE="4.13.0" \
     BASE_OPAM_EDGE="dune.2.9.1 dune-release.1.5.0" \
     COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.2"
