@@ -42,10 +42,12 @@ let coq_strict_sequence = "-strict-sequence"
 let arch prefs = arch prefs.arch
 
 (** NB: [arch_is_win32] is broader than [os_type_win32], cf. cygwin *)
-
 let arch_is_win32 arch = arch = "win32"
 
-let resolve_binary_suffix arch = if arch_is_win32 arch then ".exe" else ""
+let unix arch = os_type_cygwin || not (arch_is_win32 arch)
+
+(* For cygwin dune doesn't add .exe to the binaries, only under mingw *)
+let resolve_binary_suffix arch = if unix arch then "" else ".exe"
 
 (** * Git Precommit Hook *)
 let install_precommit_hook prefs =
@@ -238,8 +240,6 @@ let check_doc () =
 
 (* Source code root *)
 let coqsrc = Sys.getcwd ()
-
-let unix arch = os_type_cygwin || not (arch_is_win32 arch)
 
 (** Variable name, description, ref in prefs, default dir, prefix-relative *)
 
