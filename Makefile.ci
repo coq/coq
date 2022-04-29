@@ -37,6 +37,7 @@ CI_TARGETS= \
     ci-fiat_crypto_legacy \
     ci-fiat_crypto_ocaml \
     ci-fiat_parsers \
+    ci-flocq3 \
     ci-flocq \
     ci-fourcolor \
     ci-gappa \
@@ -118,7 +119,7 @@ ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
 
 ci-metacoq: ci-equations
 
-ci-vst: ci-flocq
+ci-vst: ci-flocq3
 
 ci-compcert: ci-menhir ci-flocq
 ci-gappa: ci-flocq
