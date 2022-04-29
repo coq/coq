@@ -105,9 +105,14 @@ project coqhammer "https://github.com/lukaszcz/coqhammer" "master"
 project geocoq "https://github.com/GeoCoq/GeoCoq" "master"
 
 ########################################################################
-# Flocq
+# Flocq 3
 ########################################################################
-project flocq "https://gitlab.inria.fr/flocq/flocq" "flocq-3"
+project flocq3 "https://gitlab.inria.fr/flocq/flocq" "flocq-3"
+
+########################################################################
+# Flocq (master)
+########################################################################
+project flocq "https://gitlab.inria.fr/flocq/flocq" "master"
 
 ########################################################################
 # coq-performance-tests
