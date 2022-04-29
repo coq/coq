@@ -21,10 +21,16 @@ exception TrivialVariance
 exception BadVariance of Level.t * Variance.t * Variance.t
 (* some ocaml bug is triggered if we make this an inline record *)
 
+exception NotInferring
+
 module Inf : sig
   type variances
   val infer_level_eq : Level.t -> variances -> variances
   val infer_level_leq : Level.t -> variances -> variances
+
+  val get_infer_mode : variances -> bool
+  val set_infer_mode : bool -> variances -> variances
+
   val start : (Level.t * Variance.t option) array -> variances
   val finish : variances -> Variance.t array
 end = struct
@@ -40,7 +46,11 @@ end = struct
   type variances = {
     orig_array : (Level.t * Variance.t option) array;
     univs : (mode * inferred) Level.Map.t;
+    infer_mode : bool;
   }
+
+  let get_infer_mode v = v.infer_mode
+  let set_infer_mode b v = if v.infer_mode == b then v else {v with infer_mode=b}
 
   let to_variance = function
     | IrrelevantI -> Irrelevant
@@ -55,6 +65,7 @@ end = struct
       let expected = to_variance expected in
       raise (BadVariance (u, expected, Invariant))
     | Some (Infer, _) ->
+      if not variances.infer_mode then raise NotInferring;
       let univs = Level.Map.remove u variances.univs in
       if Level.Map.is_empty univs then raise TrivialVariance;
       {variances with univs}
@@ -65,7 +76,9 @@ end = struct
       Level.Map.update u (function
           | None -> None
           | Some (_,CovariantI) as x -> x
-          | Some (Infer,IrrelevantI) -> Some (Infer,CovariantI)
+          | Some (Infer,IrrelevantI) ->
+            if not variances.infer_mode then raise NotInferring;
+            Some (Infer,CovariantI)
           | Some (Check,IrrelevantI) ->
             raise (BadVariance (u, Irrelevant, Covariant)))
         variances.univs
@@ -82,7 +95,7 @@ end = struct
         Level.Map.empty us
     in
     if Level.Map.is_empty univs then raise TrivialVariance;
-    {univs; orig_array=us}
+    {univs; orig_array=us; infer_mode=true}
 
   let finish variances =
     Array.map
@@ -151,8 +164,6 @@ let infer_constant env variances (con,u) =
 
 let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
 
-exception Unfold
-
 let rec infer_fterm cv_pb infos variances hd stk =
   Control.check_for_interrupt ();
   let hd,stk = whd_stack infos hd stk in
@@ -181,13 +192,12 @@ let rec infer_fterm cv_pb infos variances hd stk =
     begin
       let def = unfold_ref_with_args (fst infos) (snd infos) fl stk in
       try
-        try
-        let ov = variances in
+        let infer_mode = get_infer_mode variances in
+        let variances = if Option.has_some def then set_infer_mode false variances else variances in
         let variances = infer_constant (info_env (fst infos)) variances con in
         let variances = infer_stack infos variances stk in
-        if Option.has_some def && variances != ov then raise Unfold else variances
-        with TrivialVariance when Option.has_some def -> raise Unfold
-      with BadVariance _ | Unfold as e ->
+        set_infer_mode infer_mode variances
+      with BadVariance _ | NotInferring as e ->
       match def with
       | None -> raise e
       | Some (hd,stk) -> infer_fterm cv_pb infos variances hd stk
