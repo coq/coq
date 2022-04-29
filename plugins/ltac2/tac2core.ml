@@ -786,10 +786,10 @@ end
 
 (** Patterns *)
 
-let empty_context = EConstr.mkMeta Constr_matching.special_meta
+let empty_context = Constr_matching.empty_context
 
 let () = define0 "pattern_empty_context" begin
-  return (Value.of_constr empty_context)
+  return (Value.of_ext val_matching_context empty_context)
 end
 
 let () = define2 "pattern_matches" pattern constr begin fun pat c ->
@@ -815,7 +815,7 @@ let () = define2 "pattern_matches_subterm" pattern constr begin fun pat c ->
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let of_pair (id, c) = Value.of_tuple [| Value.of_ident id; Value.of_constr c |] in
-    let ans = Value.of_tuple [| Value.of_constr (Lazy.force m_ctx); Value.of_list of_pair ans |] in
+    let ans = Value.of_tuple [| Value.of_ext val_matching_context m_ctx; Value.of_list of_pair ans |] in
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
   pf_apply begin fun env sigma ->
@@ -848,7 +848,7 @@ let () = define2 "pattern_matches_subterm_vect" pattern constr begin fun pat c -
   | IStream.Cons ({ m_sub = (_, sub); m_ctx }, s) ->
     let ans = Id.Map.bindings sub in
     let ans = Array.map_of_list snd ans in
-    let ans = Value.of_tuple [| Value.of_constr (Lazy.force m_ctx); Value.of_array Value.of_constr ans |] in
+    let ans = Value.of_tuple [| Value.of_ext val_matching_context m_ctx; Value.of_array Value.of_constr ans |] in
     Proofview.tclOR (return ans) (fun _ -> of_ans s)
   in
   pf_apply begin fun env sigma ->
@@ -867,7 +867,7 @@ let () = define3 "pattern_matches_goal" bool (list (pair bool pattern)) (pair bo
   let mk_pattern (b, pat) = if b then Tac2match.MatchPattern pat else Tac2match.MatchContext pat in
   let r = (List.map mk_pattern hp, mk_pattern cp) in
   Tac2match.match_goal env sigma concl ~rev r >>= fun (hyps, ctx, subst) ->
-    let of_ctxopt ctx = Value.of_constr (Option.default empty_context ctx) in
+    let of_ctxopt ctx = Value.of_ext val_matching_context (Option.default empty_context ctx) in
     let hids = Value.of_array Value.of_ident (Array.map_of_list fst hyps) in
     let hctx = Value.of_array of_ctxopt (Array.map_of_list snd hyps) in
     let subs = Value.of_array Value.of_constr (Array.map_of_list snd (Id.Map.bindings subst)) in
@@ -877,11 +877,9 @@ let () = define3 "pattern_matches_goal" bool (list (pair bool pattern)) (pair bo
   end
 end
 
-let () = define2 "pattern_instantiate" constr constr begin fun ctx c ->
-  let ctx = EConstr.Unsafe.to_constr ctx in
-  let c = EConstr.Unsafe.to_constr c in
-  let ans = Termops.subst_meta [Constr_matching.special_meta, c] ctx in
-  return (Value.of_constr (EConstr.of_constr ans))
+let () = define2 "pattern_instantiate" (repr_ext val_matching_context) constr begin fun ctx c ->
+  let ans = Constr_matching.instantiate_context ctx c in
+  return (Value.of_constr ans)
 end
 
 (** Error *)

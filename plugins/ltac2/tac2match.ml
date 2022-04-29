@@ -13,7 +13,7 @@ open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
-type context = EConstr.t
+type context = Constr_matching.context
 
 type result = {
   subst : Ltac_pretype.patvar_map ;
@@ -178,7 +178,7 @@ module PatternMatching (E:StaticEnvironment) = struct
             let nctx = { subst } in
             match merge ctx nctx with
             | None -> (map s (e, info)).stream k ctx
-            | Some nctx -> Proofview.tclOR (k (Some (Lazy.force m_ctx)) nctx) (fun e -> (map s e).stream k ctx)
+            | Some nctx -> Proofview.tclOR (k (Some m_ctx) nctx) (fun e -> (map s e).stream k ctx)
         }
       in
       let p = Constr_matching.instantiate_pattern E.env E.sigma Id.Map.empty p in

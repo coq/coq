@@ -492,11 +492,20 @@ let extended_matches env sigma pat c =
 let matches env sigma pat c =
   snd (matches_core_closed env sigma (Id.Set.empty,pat) c)
 
+type context = constr Lazy.t
+
 let special_meta = (-1)
+
+let empty_context = Lazy.from_val (mkMeta special_meta)
+let repr_context c = Lazy.force c
+let instantiate_context ctxt c =
+  let ctxt = EConstr.Unsafe.to_constr (Lazy.force ctxt) in
+  let c = EConstr.Unsafe.to_constr c in
+  EConstr.of_constr (subst_meta [special_meta, c] ctxt)
 
 type matching_result =
     { m_sub : bound_ident_map * patvar_map;
-      m_ctx : constr Lazy.t; }
+      m_ctx : context; }
 
 let mkresult s c n = IStream.Cons ( { m_sub=s; m_ctx=c; } , (IStream.thunk n) )
 

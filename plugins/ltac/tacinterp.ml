@@ -784,10 +784,8 @@ let interp_may_eval f ist env sigma = function
       with Not_found ->
         user_err ?loc (str "Unbound context identifier" ++ Id.print s ++ str".")
     in
-    let ctxt = EConstr.Unsafe.to_constr ctxt in
-    let ic = EConstr.Unsafe.to_constr ic in
-    let c = subst_meta [Constr_matching.special_meta,ic] ctxt in
-    Typing.solve_evars env sigma (EConstr.of_constr c)
+    let c = Constr_matching.instantiate_context ctxt ic in
+    Typing.solve_evars env sigma c
   | ConstrTypeOf c ->
       let (sigma,c_interp) = f ist env sigma c in
       let (sigma, t) = Typing.type_of ~refresh:true env sigma c_interp in

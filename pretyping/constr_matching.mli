@@ -63,11 +63,17 @@ val is_matching : env -> Evd.evar_map -> constr_pattern -> constr -> bool
     prefix of it matches against [pat] *)
 val is_matching_head : env -> Evd.evar_map -> constr_pattern -> constr -> bool
 
+type context
+
+val empty_context : context
+val repr_context : context -> EConstr.t
+val instantiate_context : context -> EConstr.t -> EConstr.t
+
 (** The type of subterm matching results: a substitution + a context
    (whose hole is denoted here with [special_meta]) *)
 type matching_result =
     { m_sub : bound_ident_map * patvar_map;
-      m_ctx : EConstr.t Lazy.t }
+      m_ctx : context }
 
 (** [match_subterm pat c] returns the substitution and the context
    corresponding to each **closed** subterm of [c] matching [pat],

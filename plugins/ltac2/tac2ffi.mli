@@ -172,6 +172,7 @@ val val_constr : EConstr.t Val.tag
 val val_ident : Id.t Val.tag
 val val_pattern : Pattern.constr_pattern Val.tag
 val val_preterm : Ltac_pretype.closed_glob_constr Val.tag
+val val_matching_context : Constr_matching.context Val.tag
 val val_pp : Pp.t Val.tag
 val val_sort : ESorts.t Val.tag
 val val_cast : Constr.cast_kind Val.tag
