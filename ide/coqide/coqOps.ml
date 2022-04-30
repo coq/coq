@@ -333,9 +333,7 @@ object(self)
             try Doc.find document mem_marks
             with Not_found -> aux iter#backward_char in
         aux iter in
-      let ss =
-        find_all_tooltips s
-          (iter#offset - (buffer#get_iter_at_mark s.start)#offset) in
+      let ss = find_all_tooltips s iter#offset in
       let msg = String.concat "\n" (CList.uniquize ss) in
       GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
       script#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
@@ -496,8 +494,8 @@ object(self)
     let pre_chars, post_chars = Option.cata Loc.unloc (0, String.length phrase) loc in
     let pre = b2c buffer pre_chars in
     let post = b2c buffer post_chars in
-    let start = start_sentence#forward_chars pre in
-    let stop = start_sentence#forward_chars post in
+    let start = buffer#get_iter (`OFFSET pre) in
+    let stop = buffer#get_iter (`OFFSET post) in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
     add_tooltip sentence pre post markup
