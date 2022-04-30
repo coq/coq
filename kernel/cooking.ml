@@ -125,12 +125,6 @@ type cooking_cache = {
   rel_ctx : rel_context Lazy.t;
 }
 
-let create_cache info = {
-  cache = RefTable.create 13;
-  info;
-  rel_ctx = lazy (List.map NamedDecl.to_rel_decl info.abstr_info.abstr_ctx);
-}
-
 let instantiate_my_gr gr u =
   match gr with
   | ConstRef c -> mkConstU (c, u)
@@ -293,6 +287,13 @@ let abstract_named_context expand_info abstr_ausubst hyps =
   in
   Context.Named.fold_outside fold hyps ~init:[]
 
+let create_cache info =
+  let cache = RefTable.create 13 in
+  let abstr_info = info.abstr_info in
+  let named_ctx = lazy (abstract_named_context info.expand_info abstr_info.abstr_ausubst abstr_info.abstr_ctx) in
+  let rel_ctx = lazy (List.map NamedDecl.to_rel_decl (Lazy.force named_ctx)) in
+  { cache; info; rel_ctx }
+
 (** Turn a named context [Δ] (hyps) and a universe named context
     [G] (uctx) into a rel context and abstract universe context
     respectively; computing also the substitution [σ] and universe
@@ -304,13 +305,11 @@ let abstract_named_context expand_info abstr_ausubst hyps =
     of judgment into a [cooking_info] *)
 let make_cooking_info ~recursive expand_info hyps uctx =
   let abstr_rev_inst = List.rev (Named.instance_list (fun id -> id) hyps) in
-  let abstr_uinst, abstr_auctx = abstract_universes uctx in
-  let abstr_ausubst = abstr_uinst in
-  let abstr_ctx = abstract_named_context expand_info abstr_ausubst hyps in
-  let abstr_info = { abstr_ctx; abstr_auctx; abstr_ausubst } in
+  let abstr_ausubst, abstr_auctx = abstract_universes uctx in
+  let abstr_info = { abstr_ctx = hyps; abstr_auctx; abstr_ausubst } in
   let abstr_inst_info = {
     abstr_rev_inst = abstr_rev_inst;
-    abstr_uinst = abstr_info.abstr_ausubst;
+    abstr_uinst = abstr_ausubst;
   } in
   let info = { expand_info; abstr_info } in
   let info = match recursive with
