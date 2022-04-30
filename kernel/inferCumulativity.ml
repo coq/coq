@@ -21,10 +21,16 @@ exception TrivialVariance
 exception BadVariance of Level.t * Variance.t * Variance.t
 (* some ocaml bug is triggered if we make this an inline record *)
 
+exception NotInferring
+
 module Inf : sig
   type variances
   val infer_level_eq : Level.t -> variances -> variances
   val infer_level_leq : Level.t -> variances -> variances
+
+  val get_infer_mode : variances -> bool
+  val set_infer_mode : bool -> variances -> variances
+
   val start : (Level.t * Variance.t option) array -> variances
   val finish : variances -> Variance.t array
 end = struct
@@ -40,7 +46,11 @@ end = struct
   type variances = {
     orig_array : (Level.t * Variance.t option) array;
     univs : (mode * inferred) Level.Map.t;
+    infer_mode : bool;
   }
+
+  let get_infer_mode v = v.infer_mode
+  let set_infer_mode b v = if v.infer_mode == b then v else {v with infer_mode=b}
 
   let to_variance = function
     | IrrelevantI -> Irrelevant
@@ -55,6 +65,7 @@ end = struct
       let expected = to_variance expected in
       raise (BadVariance (u, expected, Invariant))
     | Some (Infer, _) ->
+      if not variances.infer_mode then raise NotInferring;
       let univs = Level.Map.remove u variances.univs in
       if Level.Map.is_empty univs then raise TrivialVariance;
       {variances with univs}
@@ -65,7 +76,9 @@ end = struct
       Level.Map.update u (function
           | None -> None
           | Some (_,CovariantI) as x -> x
-          | Some (Infer,IrrelevantI) -> Some (Infer,CovariantI)
+          | Some (Infer,IrrelevantI) ->
+            if not variances.infer_mode then raise NotInferring;
+            Some (Infer,CovariantI)
           | Some (Check,IrrelevantI) ->
             raise (BadVariance (u, Irrelevant, Covariant)))
         variances.univs
@@ -82,7 +95,7 @@ end = struct
         Level.Map.empty us
     in
     if Level.Map.is_empty univs then raise TrivialVariance;
-    {univs; orig_array=us}
+    {univs; orig_array=us; infer_mode=true}
 
   let finish variances =
     Array.map
@@ -144,14 +157,10 @@ let infer_sort cv_pb variances s =
   | CUMUL ->
     Level.Set.fold infer_level_leq (Sorts.levels s) variances
 
-let infer_table_key env variances c =
-  let open Names in
-  match c with
-  | ConstKey (con, u) ->
-    let cb = Environ.lookup_constant con env in
-    let u = extend_con_instance cb u in
-    infer_generic_instance_eq variances u
-  | VarKey _ | RelKey _ -> variances
+let infer_constant env variances (con,u) =
+  let cb = Environ.lookup_constant con env in
+  let u = extend_con_instance cb u in
+  infer_generic_instance_eq variances u
 
 let whd_stack (infos, tab) hd stk = CClosure.whd_stack infos tab hd stk
 
@@ -172,9 +181,27 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FRel _ -> infer_stack infos variances stk
   | FInt _ -> infer_stack infos variances stk
   | FFloat _ -> infer_stack infos variances stk
-  | FFlex fl ->
-    let variances = infer_table_key (info_env (fst infos)) variances fl in
-    infer_stack infos variances stk
+  | FFlex Names.(RelKey _ | VarKey _ as fl) ->
+    (* We could try to lazily unfold but then we have to analyse the
+       universes in the bodies, not worth coding at least for now. *)
+    begin match unfold_ref_with_args (fst infos) (snd infos) fl stk with
+    | Some (hd,stk) -> infer_fterm cv_pb infos variances hd stk
+    | None -> infer_stack infos variances stk
+    end
+  | FFlex (Names.ConstKey con as fl) ->
+    begin
+      let def = unfold_ref_with_args (fst infos) (snd infos) fl stk in
+      try
+        let infer_mode = get_infer_mode variances in
+        let variances = if Option.has_some def then set_infer_mode false variances else variances in
+        let variances = infer_constant (info_env (fst infos)) variances con in
+        let variances = infer_stack infos variances stk in
+        set_infer_mode infer_mode variances
+      with BadVariance _ | NotInferring as e ->
+      match def with
+      | None -> raise e
+      | Some (hd,stk) -> infer_fterm cv_pb infos variances hd stk
+    end
   | FProj (_,c) ->
     let variances = infer_fterm CONV infos variances c [] in
     infer_stack infos variances stk
@@ -256,7 +283,8 @@ and infer_list infos variances v =
 
 let infer_term cv_pb env variances c =
   let open CClosure in
-  let infos = (create_clos_infos all env, create_tab ()) in
+  let reds = CClosure.RedFlags.red_add_transparent betaiotazeta TransparentState.full in
+  let infos = (create_clos_infos reds env, create_tab ()) in
   infer_fterm cv_pb infos variances (CClosure.inject c) []
 
 let infer_arity_constructor is_arity env variances arcn =

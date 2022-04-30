@@ -18,3 +18,9 @@ Fail Inductive not_irrelevant@{*u} : Prop := nirr (_ : Type@{u}).
 Inductive check_covariant@{+u} : Prop := cov (_ : Type@{u}).
 
 Fail Inductive not_covariant@{+u} : Prop := ncov (_ : Type@{u} -> nat).
+
+Inductive must_unfold@{+u *v} : Prop := cmust (_ : @id Type@{v} Type@{u}).
+
+Inductive actually_default_unfold@{u v} : Prop := cnodef (_ : @id Type@{v} Type@{u}).
+Inductive actually_default_unfold_check@{+u *v} : Prop
+  := cnodef_check (_ : actually_default_unfold@{u v}).

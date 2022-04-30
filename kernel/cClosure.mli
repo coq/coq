@@ -222,9 +222,22 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
 
 (** Conversion auxiliary functions to do step by step normalisation *)
 
-(** [unfold_reference] unfolds references in a [fconstr] *)
+(** [unfold_reference] unfolds references in a [fconstr]. Produces a
+    [FIrrelevant] when the reference is irrelevant. *)
 val unfold_reference : Environ.env -> TransparentState.t ->
   clos_tab -> table_key -> (fconstr, Util.Empty.t) constant_def
+
+(** Like [unfold_reference], but handles primitives: if there are not
+    enough arguments, return [None]. Otherwise return [Some] with
+    [ZPrimitive] added to the stack. Produces a [FIrrelevant] when the
+    reference is irrelevant and the infos was created with
+    [create_conv_infos]. *)
+val unfold_ref_with_args
+  : clos_infos
+  -> clos_tab
+  -> table_key
+  -> stack
+  -> (fconstr * stack) option
 
 (** Hook for Reduction *)
 val set_conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) -> unit

@@ -25,7 +25,7 @@ Record Tp' := { tp' : Tp }.
 
 Definition CTp := Tp.
 (* here we have to reduce a constant to infer the correct subtyping. *)
-Record Tp'' := { tp'' : CTp }.
+Record Tp''@{+u} := { tp'' : CTp@{u} }.
 
 Definition LiftTp'@{i j|i <= j} : Tp'@{i} -> Tp'@{j} := fun x => x.
 Definition LiftTp''@{i j|i <= j} : Tp''@{i} -> Tp''@{j} := fun x => x.
