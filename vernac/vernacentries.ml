@@ -2098,9 +2098,13 @@ let vernac_search ~pstate ~atts s gopt r =
   let sigma, env =
     match gopt with
     (* 1st goal by default if it exists, otherwise no goal at all *)
-    | None -> get_goal_or_global_context ~pstate 1
+    | None -> begin
+        try get_goal_or_global_context ~pstate 1
+        with Proof.NoSuchGoal _ -> let env = Global.env () in Evd.from_env env, env
+      end
     (* if goal selector is given and wrong, then let exceptions be raised. *)
-    | Some g -> get_goal_or_global_context ~pstate g in
+    | Some g -> get_goal_or_global_context ~pstate g
+  in
   interp_search env sigma s r
 
 let vernac_locate ~pstate = let open Constrexpr in function
