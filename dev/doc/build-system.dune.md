@@ -156,14 +156,14 @@ You can use [ocamldebug](https://ocaml.org/learn/tutorials/debug.html#The-OCaml-
 
 ```
 dune exec -- dev/dune-dbg coqc foo.v
-(ocd) source dune_db
+(ocd) source db
 ```
 
 to start `coqc.byte foo.v`, other targets are `{checker,coqide,coqtop}`:
 
 ```
 dune exec -- dev/dune-dbg checker foo.vo
-(ocd) source dune_db
+(ocd) source db
 ```
 
 Unfortunately, dependency handling is not fully refined / automated,
@@ -184,7 +184,7 @@ For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
   the functions in `pretyping/pretype_errors.ml`, or other raises
   depending on the error)
 
-- If there is a linking error (eg from "source dune_db"), do a "dune
+- If there is a linking error (eg from "source db"), do a "dune
   build coq-core.install" and try again.
 
 ## Dropping from coqtop:

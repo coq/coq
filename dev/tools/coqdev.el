@@ -122,7 +122,7 @@ Note that this function is executed before _Coqproject is read if it exists."
                               #'ocamldebug-sentinel)
         (ocamldebug-mode)))
     (ocamldebug-set-buffer)
-    (insert "source dune_db_409")))
+    (insert "source db")))
 
 ;; Provide correct breakpoint setting in dune wrapped libraries
 ;; (assuming only 1 library/dune file)
