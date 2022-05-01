@@ -241,50 +241,58 @@ let make_style_stack () =
   | []      -> default_style  (* Anomalous case, but for robustness *)
   | st :: _ -> st
   in
-  let open_tag tag =
-    let (tpfx, ttag) = split_tag tag in
-    if tpfx = end_pfx then "" else
-      let style = get_style ttag in
-      (* Merge the current settings and the style being pushed.  This
-         allows restoring the previous settings correctly in a pop
-         when both set the same attribute.  Example: current settings
-         have red FG, the pushed style has green FG.  When popping the
-         style, we should set red FG, not default FG. *)
-    let style = Terminal.merge (peek ()) style in
-    let diff = Terminal.diff (peek ()) style in
-    style_stack := style :: !style_stack;
-    if tpfx = start_pfx then diff_tag_stack := ttag :: !diff_tag_stack;
-    Terminal.eval diff
+  let open_tag = function
+    | Format.String_tag tag ->
+      let (tpfx, ttag) = split_tag tag in
+      if tpfx = end_pfx then "" else
+        let style = get_style ttag in
+        (* Merge the current settings and the style being pushed.  This
+           allows restoring the previous settings correctly in a pop
+           when both set the same attribute.  Example: current settings
+           have red FG, the pushed style has green FG.  When popping the
+           style, we should set red FG, not default FG. *)
+        let style = Terminal.merge (peek ()) style in
+        let diff = Terminal.diff (peek ()) style in
+        style_stack := style :: !style_stack;
+        if tpfx = start_pfx then diff_tag_stack := ttag :: !diff_tag_stack;
+        Terminal.eval diff
+    | _ -> Terminal.eval default_style
   in
-  let close_tag tag =
-    let (tpfx, _) = split_tag tag in
+  let close_tag = function
+    | Format.String_tag tag ->
+      let (tpfx, _) = split_tag tag in
       if tpfx = start_pfx then "" else begin
         if tpfx = end_pfx then diff_tag_stack := (try List.tl !diff_tag_stack with tl -> []);
         match !style_stack with
         | []       -> (* Something went wrong, we fallback *)
-                      Terminal.eval default_style
+          Terminal.eval default_style
         | cur :: rem -> style_stack := rem;
-                      if cur = (peek ()) then "" else
-                        if rem = [] then Terminal.reset else
-                          Terminal.eval (Terminal.diff cur (peek ()))
+          if cur = (peek ()) then "" else
+          if rem = [] then Terminal.reset else
+            Terminal.eval (Terminal.diff cur (peek ()))
       end
+    | _ -> Terminal.eval default_style
   in
   let clear () = style_stack := [] in
   open_tag, close_tag, clear
 
 let make_printing_functions () =
-  let print_prefix ft tag =
-    let (tpfx, ttag) = split_tag tag in
-    if tpfx <> end_pfx then
-      let style = get_style ttag in
-      match style.Terminal.prefix with Some s -> Format.pp_print_as ft 0 s | None -> () in
-
-  let print_suffix ft tag =
-    let (tpfx, ttag) = split_tag tag in
-    if tpfx <> start_pfx then
-      let style = get_style ttag in
-      match style.Terminal.suffix with Some s -> Format.pp_print_as ft 0 s | None -> () in
-
+  let print_prefix ft = function
+    | Format.String_tag tag ->
+      let (tpfx, ttag) = split_tag tag in
+      if tpfx <> end_pfx then
+        let style = get_style ttag in
+        (match style.Terminal.prefix with Some s -> Format.pp_print_as ft 0 s | None -> ())
+    | _ -> ()
+  in
+  let print_suffix ft = function
+    | Format.String_tag tag ->
+      let (tpfx, ttag) = split_tag tag in
+      if tpfx <> start_pfx then
+        let style = get_style ttag in
+        (match style.Terminal.suffix with Some s -> Format.pp_print_as ft 0 s | None -> ())
+    | _ -> ()
+  in
   print_prefix, print_suffix
 
 let init_output_fns () =
@@ -311,10 +319,10 @@ let init_terminal_output ~color =
   let open_tag, close_tag, clear_tag = make_style_stack () in
   let print_prefix, print_suffix = make_printing_functions () in
   let tag_handler ft = {
-    Format.mark_open_tag   = open_tag;
-    Format.mark_close_tag  = close_tag;
-    Format.print_open_tag  = print_prefix ft;
-    Format.print_close_tag = print_suffix ft;
+    Format.mark_open_stag   = open_tag;
+    Format.mark_close_stag  = close_tag;
+    Format.print_open_stag  = print_prefix ft;
+    Format.print_close_stag = print_suffix ft;
   } in
   if color then
     (* Use 0-length markers *)
@@ -330,8 +338,8 @@ let init_terminal_output ~color =
       Format.pp_set_print_tags !std_ft true;
       Format.pp_set_print_tags !err_ft true
     end;
-  Format.pp_set_formatter_tag_functions !std_ft (tag_handler !std_ft) [@warning "-3"];
-  Format.pp_set_formatter_tag_functions !err_ft (tag_handler !err_ft) [@warning "-3"]
+  Format.pp_set_formatter_stag_functions !std_ft (tag_handler !std_ft);
+  Format.pp_set_formatter_stag_functions !err_ft (tag_handler !err_ft)
 
 (* Rules for emacs:
    - Debug/info: emacs_quote_info

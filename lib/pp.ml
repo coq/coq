@@ -197,9 +197,9 @@ let pp_with ft pp =
     | Ppcmd_print_break(m,n)  -> pp_print_break ft m n
     | Ppcmd_force_newline     -> pp_force_newline ft ()
     | Ppcmd_comment coms      -> List.iter (pr_com ft) coms
-    | Ppcmd_tag(tag, s)       -> pp_open_tag  ft tag [@warning "-3"];
+    | Ppcmd_tag(tag, s)       -> pp_open_stag ft (String_tag tag);
                                  pp_cmd s;
-                                 pp_close_tag ft () [@warning "-3"]
+                                 pp_close_stag ft ()
   in
   pp_cmd pp
 
