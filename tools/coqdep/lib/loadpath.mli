@@ -9,9 +9,7 @@
 (************************************************************************)
 
 (** To move  *)
-val absolute_dir : string -> string
 val get_extension : string -> string list -> string * string
-val absolute_file_name : string -> string option -> string
 
 (* Loadpaths *)
 type basename = string
@@ -28,7 +26,7 @@ type result =
 module State : sig
   type t
 
-  val make : unit -> t
+  val make : boot:bool -> t
 end
 
 val search_v_known : State.t -> ?from:dirpath -> dirpath -> result option
@@ -69,3 +67,7 @@ val add_coqlib_known : State.t -> bool -> root -> dirname -> dirpath -> basename
    it hasn't. We may also use this to warn if ap hysical path is met
    twice.*)
 val find_dir_logpath : string -> string list
+
+(* Used only in "canonize" *)
+val absolute_dir : string -> string
+val absolute_file_name : string -> string option -> string
