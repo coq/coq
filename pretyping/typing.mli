@@ -27,6 +27,9 @@ val sort_of : env -> evar_map -> types -> evar_map * Sorts.t
 (** Typecheck a term has a given type (assuming the type is OK) *)
 val check : env -> evar_map -> constr -> types -> evar_map
 
+(** Check that a declaration is well-formed *)
+val check_decl : env -> evar_map -> rel_declaration -> evar_map * rel_declaration
+
 (** Type of a variable. *)
 val type_of_variable : env -> variable -> types
 

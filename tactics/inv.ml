@@ -95,17 +95,16 @@ let make_inv_predicate env evd indf realargs id status concl =
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have
              c also rewritten when the case * will be done *)
-          let pred =
+          let hyps,bodypred =
             match dflt_concl with
-              | Some concl -> concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
+              | Some concl -> decompose_lam_n_assum !evd (nrealargs+1) concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
               | None ->
                 let sort = get_sort_family_of env !evd concl in
                 let sort = evd_comb1 Evd.fresh_sort_in_family evd sort in
                 let p = make_arity env !evd true indf sort in
-                let evd',(p,ptyp) = Unification.abstract_list_all env
+                let evd',(pctx,p,ptyp) = Unification.abstract_list_all env
                   !evd p concl (realargs@[mkVar id])
-                in evd := evd'; p in
-          let hyps,bodypred = decompose_lam_n_assum !evd (nrealargs+1) pred in
+                in evd := evd'; pctx, p in
           (* We lift to make room for the equations *)
           (hyps,lift nrealargs bodypred)
   in

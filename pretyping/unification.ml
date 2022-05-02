@@ -118,11 +118,24 @@ let abstract_scheme env evd c l lname_typ =
 (* Precondition: resulting abstraction is expected to be of type [typ] *)
 
 let abstract_list_all env evd typ c l =
-  let ctxt,_ = splay_prod_n env evd (List.length l) typ in
+  let n = List.length l in
+  let ctxt,_ = splay_prod_n env evd n typ in
   let l_with_all_occs = List.map (function a -> (LikeFirst,a)) l in
   let p,evd = abstract_scheme env evd c l_with_all_occs ctxt in
+  let (pctx, p0) = EConstr.decompose_lam_n_assum evd n p in
+  let rec type_ctx env sigma pctx ctx = match pctx, ctx with
+  | [], [] -> env, sigma
+  | pdecl :: pctx, decl :: ctx ->
+    let env, sigma = type_ctx env sigma pctx ctx in
+    let sigma, pdecl = Typing.check_decl env sigma pdecl in
+    push_rel pdecl env, sigma
+  | _, _ -> assert false
+  in
   let evd,typp =
-    try Typing.type_of env evd p
+    try
+      let env, evd = type_ctx env evd pctx ctxt in
+      let evd, pt = Typing.type_of env evd p0 in
+      evd, pt
     with
     | UserError _ ->
         error_cannot_find_well_typed_abstraction env evd p l None
@@ -131,7 +144,7 @@ let abstract_list_all env evd typ c l =
         error_cannot_find_well_typed_abstraction env evd p l None
     | Pretype_errors.PretypeError (env',evd,e) ->
         error_cannot_find_well_typed_abstraction env evd p l (Some (env',e)) in
-  evd,(p,typp)
+  evd,(pctx, p0, typp)
 
 let set_occurrences_of_last_arg n =
   Evarconv.AtOccurrences AllOccurrences ::
@@ -2138,7 +2151,9 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
   let flags = { flags with core_unify_flags = flags.subterm_unify_flags } in
   let (evd',cllist) = w_unify_to_subterm_list env evd flags p oplist typ in
   let typp = Typing.meta_type env evd' p in
-  let evd',(pred,predtyp) = abstract_list_all env evd' typp typ cllist in
+  let evd',(pctx,pred,predtyp) = abstract_list_all env evd' typp typ cllist in
+  let pred = it_mkLambda_or_LetIn pred pctx in
+  let predtyp = it_mkProd_or_LetIn predtyp pctx in
   match infer_conv ~pb:CUMUL env evd' predtyp typp with
   | None ->
     error_wrong_abstraction_type env evd'

@@ -486,6 +486,20 @@ let check env sigma c t =
   let sigma, j = execute env sigma c in
   check_actual_type env sigma j t
 
+let check_decl env sigma decl = match decl with
+| LocalAssum (na, t) ->
+  let sigma, j = execute env sigma t in
+  let sigma, j = type_judgment env sigma j in
+  let na = check_binder_annot j.utj_type na in
+  sigma, LocalAssum (na, j.utj_val)
+| LocalDef (na, c, t) ->
+  let sigma, cj = execute env sigma c in
+  let sigma, tj = execute env sigma t in
+  let sigma, tj = type_judgment env sigma tj in
+  let sigma, _ =  judge_of_cast env sigma cj DEFAULTcast tj in
+  let na = check_binder_annot tj.utj_type na in
+  sigma, LocalDef (na, cj.uj_val, tj.utj_val)
+
 (* Sort of a type *)
 
 let sort_of env sigma c =
