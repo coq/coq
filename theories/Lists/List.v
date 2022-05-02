@@ -3050,6 +3050,22 @@ Section Forall2.
   Theorem Forall2_refl : Forall2 [] [].
   Proof. intros; apply Forall2_nil. Qed.
 
+  Theorem Forall2_cons_iff : forall x y l l',
+    Forall2 (x :: l) (y :: l') <-> R x y /\ Forall2 l l'.
+  Proof.
+    intros x y l l'. split.
+    - intros H. now inversion H.
+    - intros [? ?]. now constructor.
+  Qed.
+
+  Theorem Forall2_length : forall l l',
+    Forall2 l l' -> length l = length l'.
+  Proof.
+    intros l. induction l as [|x l IH]; intros l' Hl'; inversion Hl'.
+    - reflexivity.
+    - cbn. f_equal. now apply IH.
+  Qed.
+
   Theorem Forall2_app_inv_l : forall l1 l2 l',
     Forall2 (l1 ++ l2) l' ->
     exists l1' l2', Forall2 l1 l1' /\ Forall2 l2 l2' /\ l' = l1' ++ l2'.
@@ -3077,7 +3093,30 @@ Section Forall2.
   Proof.
     intros l1 l2 l1' l2' H H0. induction l1 in l1', H, H0 |- *; inversion H; subst; simpl; auto.
   Qed.
+
+  Theorem Forall_Exists_exists_Forall2 l1 l2 :
+    Forall (fun a => Exists (R a) l2) l1 ->
+    exists l2', Forall2 l1 l2' /\ incl l2' l2.
+  Proof.
+    induction l1 as [|a l1 IH].
+    - intros _. now exists [].
+    - intros [[b [Hb Hab]] %Exists_exists Hl1l2] %Forall_cons_iff.
+      destruct (IH Hl1l2) as [l2' [Hl1l2' Hl2'l2]].
+      exists (b :: l2'). now eauto using incl_cons.
+  Qed.
 End Forall2.
+
+Lemma Forall2_impl (A B : Type) (R1 R2 : A -> B -> Prop) : (forall a b, R1 a b -> R2 a b) ->
+  forall l1 l2, Forall2 R1 l1 l2 -> Forall2 R2 l1 l2.
+Proof.
+  intros HPQ l1 l2 HPl1l2. induction HPl1l2; now eauto using Forall2.
+Qed.
+
+Lemma Forall2_flip (A B : Type) (R : A -> B -> Prop) l1 l2 :
+  Forall2 R l1 l2 -> Forall2 (fun b a => R a b) l2 l1.
+Proof.
+  intros HPl1l2. induction HPl1l2; now eauto using Forall2.
+Qed.
 
 #[global]
 Hint Constructors Forall2 : core.
