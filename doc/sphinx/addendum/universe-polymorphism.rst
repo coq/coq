@@ -25,7 +25,7 @@ and *monomorphic* definitions is given by the identity function:
    Definition identity {A : Type} (a : A) := a.
 
 By default, :term:`constant` declarations are monomorphic, hence the identity
-function declares a global universe (say ``Top.1``) for its domain.
+function declares a global universe (automatically named ``identity.u0``) for its domain.
 Subsequently, if we try to self-apply the identity, we will get an
 error:
 
@@ -33,10 +33,10 @@ error:
 
    Fail Definition selfid := identity (@identity).
 
-Indeed, the global level ``Top.1`` would have to be strictly smaller than
+Indeed, the global level ``identity.u0`` would have to be strictly smaller than
 itself for this self-application to type check, as the type of
-:g:`(@identity)` is :g:`forall (A : Type@{Top.1}), A -> A` whose type is itself
-:g:`Type@{Top.1+1}`.
+:g:`(@identity)` is :g:`forall (A : Type@{identity.u0}), A -> A` whose type is itself
+:g:`Type@{identity.u0+1}`.
 
 A universe polymorphic identity function binds its domain universe
 level at the definition level instead of making it global.
@@ -54,7 +54,7 @@ so:
 
 .. coqtop:: in
 
-   Definition selfpid := pidentity (@pidentity).
+   Polymorphic Definition selfpid := pidentity (@pidentity).
 
 Of course, the two instances of :g:`pidentity` in this definition are
 different. This can be seen when the :flag:`Printing Universes` flag is on:
@@ -68,20 +68,22 @@ different. This can be seen when the :flag:`Printing Universes` flag is on:
    Print selfpid.
 
 Now :g:`pidentity` is used at two different levels: at the head of the
-application it is instantiated at ``Top.3`` while in the argument position
-it is instantiated at ``Top.4``. This definition is only valid as long as
-``Top.4`` is strictly smaller than ``Top.3``, as shown by the constraints. Note
-that this definition is monomorphic (not universe polymorphic), so the
-two universes (in this case ``Top.3`` and ``Top.4``) are actually global
-levels.
+application it is instantiated at ``u`` while in the argument position
+it is instantiated at ``u0``. This definition is only valid as long as
+``u0`` is strictly smaller than ``u``, as shown by the constraints.
+Note that if we made ``selfpid`` universe monomorphic, the two
+universes (in this case ``u`` and ``u0``) would be declared in the
+global universe graph with names ``selfpid.u0`` and ``selfpid.u1``.
+Since the constraints would also be global ``Print selfpid.`` would
+not show them and we would have to use :cmd:`Print Universes`.
 
 When printing :g:`pidentity`, we can see the universes it binds in
-the annotation :g:`@{Top.2}`. Additionally, when
+the annotation :g:`@{u}`. Additionally, when
 :flag:`Printing Universes` is on we print the "universe context" of
 :g:`pidentity` consisting of the bound universes and the
 constraints they must verify (for :g:`pidentity` there are no constraints).
 
-Inductive types can also be declared universes polymorphic on
+Inductive types can also be declared universe polymorphic on
 universes appearing in their parameters or fields. A typical example
 is given by monoids:
 
@@ -544,10 +546,13 @@ underscore or by omitting the annotation to a polymorphic definition.
 
    Consider the following definition:
 
-   .. coqtop:: all
+   .. coqtop:: in
 
       Lemma foo@{i} : Type@{i}.
       Proof. exact Type. Qed.
+
+   .. coqtop:: all
+
       Print foo.
 
    The universe :g:`Top.xxx` for the :g:`Type` in the :term:`body` cannot be accessed, we
@@ -572,23 +577,29 @@ underscore or by omitting the annotation to a polymorphic definition.
    :g:`Defined`, the :flag:`Private Polymorphic Universes` flag may
    be unset:
 
-   .. coqtop:: all
+   .. coqtop:: in
 
       Unset Private Polymorphic Universes.
 
       Lemma bar : Type. Proof. exact Type. Qed.
+
+   .. coqtop:: all
+
       About bar.
       Fail Check bar@{_}.
       Check bar@{_ _}.
 
    Note that named universes are always public.
 
-   .. coqtop:: all
+   .. coqtop:: in
 
       Set Private Polymorphic Universes.
       Unset Strict Universe Declaration.
 
       Lemma baz : Type@{outer}. Proof. exact Type@{inner}. Qed.
+
+   .. coqtop:: all
+
       About baz.
 
 .. _universe-polymorphism-in-sections:
