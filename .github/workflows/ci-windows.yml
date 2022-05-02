@@ -28,7 +28,7 @@ jobs:
 
       - name: Download Platform
         env:
-          PLATFORM: "https://github.com/coq/platform/archive/88d69fcd97b313de1c6e39b9439234ad6e863f21.zip"
+          PLATFORM: "https://github.com/coq/platform/archive/2022.04.0.zip"
         run: |
           .\dev\ci\platform\coq-pf-02-download.bat
 

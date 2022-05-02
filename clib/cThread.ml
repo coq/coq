@@ -59,11 +59,10 @@ let thread_friendly_really_read_line ic =
     let b = Buffer.create 1024 in
     let s = Bytes.make 1 '\000' in
     let endl = Bytes.of_string "\n" in
-    (* Bytes.equal is in 4.03.0 *)
-    while Bytes.compare s endl <> 0 do
+    while not (Bytes.equal s endl) do
       let n = thread_friendly_read_fd fd s ~off:0 ~len:1 in
       if n = 0 then raise End_of_file;
-      if Bytes.compare s endl <> 0 then Buffer.add_bytes b s;
+      if not (Bytes.equal s endl) then Buffer.add_bytes b s;
     done;
     Buffer.contents b
   with Unix.Unix_error _ -> raise End_of_file

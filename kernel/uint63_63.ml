@@ -136,9 +136,7 @@ let div21 xh xl y =
     nh := Int64.logor (Int64.shift_left !nh 1) (Int64.of_int (!nl lsr 62));
     nl := !nl lsl 1;
     q := !q lsl 1;
-    (* TODO: use "Int64.unsigned_compare !nh y >= 0",
-       once OCaml 4.08 becomes the minimal required version *)
-    if Int64.compare !nh 0L < 0 || Int64.compare !nh y >= 0 then
+    if Int64.unsigned_compare !nh y >= 0 then
       begin q := !q lor 1; nh := Int64.sub !nh y; end
   done;
   !q, Int64.to_int !nh

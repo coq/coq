@@ -27,7 +27,7 @@ let check_lablgtk_version ocamlfind =
   let v, _ = tryrun ocamlfind ["query"; "-format"; "%v"; "lablgtk3"] in
   try
     let vn = generic_version_nums ~name:"lablgtk3" v in
-    if vn < [3; 1; 0] then
+    if vn < [3; 1; 2] then
       (false, v)
     else
       (true, v)
@@ -60,7 +60,7 @@ let check_coqide ocamlfind prefs best_compiler camllib =
   else
     let (ok, version) = check_lablgtk_version ocamlfind in
     let found = Format.sprintf "LablGtk3 and LablGtkSourceView3 found (%s)" version in
-    if not ok then set_ide prefs No (found^", but too old (required >= 3.1.0, found " ^ version ^ ")");
+    if not ok then set_ide prefs No (found^", but too old (required >= 3.1.2, found " ^ version ^ ")");
     (* We're now sure to produce at least one kind of coqide *)
     lablgtkdir := dir;
     if prefs.coqide = Some Byte then set_ide prefs Byte (found^", bytecode requested");

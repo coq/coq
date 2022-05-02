@@ -494,9 +494,9 @@ let pp_one_ind prefix ip_equiv pl name cnames ctyps =
             (fun () -> spc () ++ str "* ") (pp_type true pl) typs)
   in
   pp_parameters pl ++ str prefix ++ name ++
-  pp_equiv pl name ip_equiv ++
-  if Int.equal (Array.length ctyps) 0 then str "" (* Note: OCaml 4.07.0 provides "type foo = |" *)
-  else str " =" ++ fnl () ++ v 0 (prvecti pp_constructor ctyps)
+  pp_equiv pl name ip_equiv ++ str " =" ++
+  if Int.equal (Array.length ctyps) 0 then str " |"
+  else fnl () ++ v 0 (prvecti pp_constructor ctyps)
 
 let pp_logical_ind packet =
   pp_comment (Id.print packet.ip_typename ++ str " : logical inductive") ++

@@ -9,7 +9,7 @@
 
 # nix-shell supports the --arg option (see Nix doc) that allows you for
 # instance to do this:
-# $ nix-shell --arg ocamlPackages "(import <nixpkgs> {}).ocaml-ng.ocamlPackages_4_05" --arg buildIde false
+# $ nix-shell --arg ocamlPackages "(import <nixpkgs> {}).ocaml-ng.ocamlPackages_4_09" --arg buildIde false
 
 # You can also compile Coq and "install" it by running:
 # $ make clean # (only needed if you have left-over compilation files)
@@ -55,12 +55,10 @@ stdenv.mkDerivation rec {
     antlr4
     ocamlPackages.odoc
   ]
-  ++ optionals doInstallCheck (
+  ++ optionals doInstallCheck [
     # Test-suite dependencies
-    # ncurses is required to build an OCaml REPL
-    optional (!versionAtLeast ocaml.version "4.07") ncurses
-    ++ [ ocamlPackages.ounit rsync which ]
-  )
+    ocamlPackages.ounit rsync which
+  ]
   ++ optionals shell (
     [ jq curl gitFull gnupg ] # Dependencies of the merging script
     ++ (with ocamlPackages; [ ocaml-lsp merlin ocp-indent ocp-index utop ocamlformat ]) # Dev tools
