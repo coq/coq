@@ -102,7 +102,7 @@ let make_inv_predicate env evd indf realargs id status concl =
                 let sort = get_sort_family_of env !evd concl in
                 let sort = evd_comb1 Evd.fresh_sort_in_family evd sort in
                 let p = make_arity env !evd true indf sort in
-                let evd',(pctx,p,ptyp) = Unification.abstract_list_all env
+                let evd',(pctx,p,_,_) = Unification.abstract_list_all env
                   !evd p concl (realargs@[mkVar id])
                 in evd := evd'; pctx, p in
           (* We lift to make room for the equations *)
