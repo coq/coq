@@ -39,6 +39,7 @@ type coe_info_typ = {
   coe_value : GlobRef.t;
   coe_typ : Constr.t;
   coe_local : bool;
+  coe_reversible : bool;
   coe_is_identity : bool;
   coe_is_projection : Projection.Repr.t option;
   coe_source : cl_typ;
@@ -67,7 +68,8 @@ val class_args_of : env -> evar_map -> types -> constr list
 
 val subst_coercion : substitution -> coe_info_typ -> coe_info_typ
 
-val declare_coercion : env -> evar_map -> coe_info_typ -> unit
+(** Set [update] to update an already declared coercion (default [false]). *)
+val declare_coercion : env -> evar_map -> ?update:bool -> coe_info_typ -> unit
 
 (** {6 Access to coercions infos } *)
 val coercion_exists : coe_typ -> bool
@@ -78,6 +80,9 @@ val coercion_info : coe_typ -> coe_info_typ
 
 (** @raise Not_found in the following functions when no path exists *)
 
+(** given one (or two) types these function also return the class (classes)
+    of the type and its class_args_of *)
+
 val lookup_path_between_class : cl_typ * cl_typ -> inheritance_path
 val lookup_path_between : env -> evar_map -> src:types -> tgt:types ->
   inheritance_path
@@ -85,6 +90,8 @@ val lookup_path_to_fun_from : env -> evar_map -> types -> inheritance_path
 val lookup_path_to_sort_from : env -> evar_map -> types -> inheritance_path
 val lookup_pattern_path_between :
   env -> inductive * inductive -> (constructor * int) list
+
+val path_is_reversible : inheritance_path -> bool
 
 (**/**)
 (* Crade *)
@@ -104,3 +111,7 @@ val coercions : unit -> coe_info_typ list
 (** [hide_coercion] returns the number of params to skip if the coercion must
    be hidden, [None] otherwise; it raises [Not_found] if not a coercion *)
 val hide_coercion : coe_typ -> int option
+
+module ClTypSet : Set.S with type elt = cl_typ
+
+val reachable_from : cl_typ -> ClTypSet.t

@@ -82,6 +82,33 @@ To coerce an object :g:`t:C t₁..tₙ` of ``C`` towards ``D``, we have to
 apply the coercion ``f`` to it; the obtained term :g:`f _.._ t` is
 then an object of ``D``.
 
+Reversible Coercions
+--------------------
+
+When a term cannot be coerced (directly) to its expected type, Coq tries to
+use a :gdef:`reversible coercion` (see the :attr:`reversible` attribute). Intuitively,
+Coq synthesizes a new term of the right type that can be coerced
+to the original one. The new term is obtained by reversing the coercion, that
+is guessing its input given the output.
+
+More precisely, in order to coerce a term :g:`a : A` to type :g:`B`, Coq
+finds a reversible coercion :g:`f : B >-> A`, then synthesizes some :g:`?x : B`
+such that :g:`f ?x = a` (typically through :ref:`canonicalstructures` or
+:ref:`typeclasses`) and finally replaces :g:`a` with the value of :g:`?x`.
+
+If Coq doesn't find a reversible coercion :g:`f : B >-> A`, then it
+looks for a coercion class :g:`C` equipped with an incoming reversible coercion
+:g:`g : B >-> C` and a coercion :g:`h : A >-> C` (not necessarily reversible),
+then synthesizes some :g:`?x : B` such that :g:`g ?x = h a`, and finally
+replaces :g:`a` with the value of :g:`?x`.
+If there's another class :g:`D` with a coercion from :g:`C` to :g:`D` and
+incoming coercions from :g:`A` and :g:`B`, Coq tries :g:`C` before :g:`D`.
+This ordering is well defined only if the coercion graph happens to be a semi
+lattice.  The intuition behind this ordering is that since coercions forget
+information, :g:`D` has less information that :g:`C`, and hence
+inferring :g:`?x : B` from :g:`h a : D` would be harder.
+
+See the :ref:`example below <example-reversible-coercion>`.
 
 Identity Coercions
 -------------------
@@ -113,18 +140,27 @@ term consists of the successive application of its coercions.
 Declaring Coercions
 -------------------------
 
-.. cmd:: Coercion @reference : @class >-> @class
-         Coercion @ident {? @univ_decl } @def_body
+.. cmd:: Coercion @reference {? : @class >-> @class }
+         Coercion @ident_decl @def_body
 
   The first form declares the construction denoted by :token:`reference` as a coercion between
-  the two given classes.  The second form defines :token:`ident`
-  just like :cmd:`Definition` :n:`@ident {? @univ_decl } @def_body`
-  and then declares :token:`ident` as a coercion between it source and its target.
+  the two given classes.  The second form defines :token:`ident_decl`
+  just like :cmd:`Definition` :n:`@ident_decl @def_body`
+  and then declares :token:`ident_decl` as a coercion between it source and its target.
   Both forms support the :attr:`local` attribute, which makes the coercion local to the current section.
 
-  This command supports the :attr:`local` and :attr:`global` attributes
-  (described :ref:`here <set_unset_scope_qualifiers>`) as well as the
-  :attr:`nonuniform` attribute.
+  :n:`{? : @class >-> @class }`
+    The source and target classes of the coercion.
+    If unspecified, :n:`@reference` must already be a coercion, which
+    enables modifying the :attr:`reversible` attribute of :n:`@reference`.
+    See the :ref:`example <example-reversible-coercion-attribute>` below.
+
+  .. attr:: reversible{? = {| yes | no } }
+     :name: reversible
+
+     This :term:`attribute` allows the coercion to be used as a
+     :term:`reversible coercion`. By default coercions are not reversible except for
+     :cmd:`Record` fields specified using :g:`:>`.
 
   .. attr:: nonuniform
 
@@ -255,8 +291,9 @@ Use `>` before the record name to declare the constructor name as
 a coercion from the class of the last field type to the record name.
 See :token:`record_definition`.
 
-Use `:>` in the field type to declare the field as a coercion from the record name
-to the class of the field type.  See :token:`of_type`.
+Use `:>` in the field type to declare the field as a coercion from the
+record name to the class of the field type. For these coercions, the
+:attr:`reversible` attribute defaults to :g:`yes`. See :token:`of_type`.
 
 Coercions and Sections
 ----------------------
@@ -389,6 +426,55 @@ There are three situations:
     Set Printing Coercions.
     Check (b 0).
     Unset Printing Coercions.
+
+.. _example-reversible-coercion:
+
+.. example:: Reversible coercions
+
+  Notice the :n:`:>` on `ssort` making it a :term:`reversible coercion`.
+
+  .. coqtop:: in
+
+    Structure S := {
+      ssort :> Type;
+      sstuff : ssort;
+    }.
+    Definition test (s : S) := sstuff s.
+    Canonical Structure S_nat := {| ssort := nat; sstuff := 0; |}.
+
+  .. coqtop:: all
+
+    Check test (nat : Type).
+
+.. _example-reversible-coercion-attribute:
+
+.. example:: Reversible coercions using the :attr:`reversible` attribute
+
+  Notice there is no `:>` on `ssort'` and the added :cmd:`Coercion` compared
+  to the previous example.
+
+  .. coqtop:: in
+
+    Structure S' := {
+      ssort' : Type;
+      sstuff' : ssort';
+    }.
+    Coercion ssort' : S' >-> Sortclass.
+    Definition test' (s : S') := sstuff' s.
+    Canonical Structure S_nat' := {| ssort' := nat; sstuff' := 0; |}.
+
+  Since there's no `:>` on the definition of `ssort'`, the :attr:`reversible` attribute is not set:
+
+  .. coqtop:: all
+
+    Fail Check test' (nat : Type).
+
+  The attribute can be set after declaring the coercion:
+
+  .. coqtop:: all
+
+    #[reversible] Coercion ssort'.
+    Check test' (nat : Type).
 
 .. _example-identity-coercion:
 

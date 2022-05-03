@@ -1053,7 +1053,7 @@ gallina_ext: [
 | "Strategy" LIST1 [ strategy_level "[" LIST1 smart_global "]" ]
 | "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
 | "Canonical" OPT "Structure" by_notation
-| "Coercion" global OPT univ_decl def_body
+| "Coercion" global OPT [ OPT univ_decl def_body ]
 | "Identity" "Coercion" identref ":" class_rawexpr ">->" class_rawexpr
 | "Coercion" global ":" class_rawexpr ">->" class_rawexpr
 | "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr

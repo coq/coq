@@ -721,11 +721,12 @@ gallina_ext: [
 
 | DELETE "Coercion" global ":" class_rawexpr ">->" class_rawexpr
 | REPLACE "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr
-| WITH "Coercion" smart_global ":" class_rawexpr ">->" class_rawexpr
+| WITH "Coercion" smart_global OPT [ ":" class_rawexpr ">->" class_rawexpr ]
 
 (* semantically restricted per https://github.com/coq/coq/pull/12936#discussion_r492705820 *)
-| REPLACE "Coercion" global OPT univ_decl def_body
-| WITH "Coercion" ident OPT univ_decl def_body
+(* global OPT univ_decl is just ident_decl, the first OPT is moved to the rule above *)
+| REPLACE "Coercion" global OPT [ OPT univ_decl def_body ]
+| WITH "Coercion" ident_decl def_body
 
 | REPLACE "Include" "Type" module_type_inl LIST0 ext_module_type
 | WITH "Include" "Type" LIST1 module_type_inl SEP "<+"

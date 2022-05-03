@@ -472,9 +472,9 @@ GRAMMAR EXTEND Gram
   [ [ attr = LIST0 quoted_attributes ;
       bd = record_binder; rf_priority = OPT [ "|"; n = natural -> { n } ];
       rf_notation = decl_notations -> {
-      let rf_canonical = attr |> List.flatten |> parse canonical_field in
+      let rf_canonical, rf_reverse = attr |> List.flatten |> parse Notations.(canonical_field ++ reversible) in
       let rf_subclass, rf_decl = bd in
-      rf_decl, { rf_subclass ; rf_priority ; rf_notation ; rf_canonical } } ] ]
+      rf_decl, { rf_subclass ; rf_reverse ; rf_priority ; rf_notation ; rf_canonical } } ] ]
   ;
   record_fields:
     [ [ f = record_field; ";"; fs = record_fields -> { f :: fs }
@@ -744,18 +744,19 @@ GRAMMAR EXTEND Gram
           { VernacCanonical CAst.(make ~loc @@ ByNotation ntn) }
 
       (* Coercions *)
-      | IDENT "Coercion"; qid = global; u = OPT univ_decl; d = def_body ->
-          { let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d) }
+      | IDENT "Coercion"; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { u, d } ] ->
+          { match ud with Some (u, d) -> let s = coerce_reference_to_id qid in
+          VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d)
+          | None -> VernacCoercion (CAst.make ~loc @@ AN qid, None) }
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
            { VernacIdentityCoercion (f, s, t) }
       | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-          { VernacCoercion (CAst.make ~loc @@ AN qid, s, t) }
+          { VernacCoercion (CAst.make ~loc @@ AN qid, Some(s, t)) }
       | IDENT "Coercion"; ntn = by_notation; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-          { VernacCoercion (CAst.make ~loc @@ ByNotation ntn, s, t) }
+          { VernacCoercion (CAst.make ~loc @@ ByNotation ntn, Some (s, t)) }
 
       | IDENT "Context"; c = LIST1 binder ->
           { VernacContext (List.flatten c) }

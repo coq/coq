@@ -39,6 +39,7 @@ val definition_structure
   module Data : sig
     type projection_flags = {
       pf_subclass: bool;
+      pf_reversible: bool;
       pf_canonical: bool;
     }
     type raw_data
@@ -89,6 +90,7 @@ val declare_existing_class : GlobRef.t -> unit
 module Internal : sig
   type projection_flags = {
     pf_subclass: bool;
+    pf_reversible: bool;
     pf_canonical: bool;
   }
 

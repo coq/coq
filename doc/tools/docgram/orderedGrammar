@@ -1084,9 +1084,9 @@ command: [
 | "Strategy" LIST1 [ strategy_level "[" LIST1 reference "]" ]
 | "Canonical" OPT "Structure" ident_decl def_body
 | "Canonical" OPT "Structure" reference
-| "Coercion" ident OPT univ_decl def_body
+| "Coercion" ident_decl def_body
 | "Identity" "Coercion" ident ":" class ">->" class
-| "Coercion" reference ":" class ">->" class
+| "Coercion" reference OPT [ ":" class ">->" class ]
 | "Context" LIST1 binder
 | "Instance" OPT ( ident_decl LIST0 binder ) ":" type OPT hint_info OPT [ ":=" "{" LIST0 field_val "}" | ":=" term ]
 | "Existing" "Instance" qualid OPT hint_info
