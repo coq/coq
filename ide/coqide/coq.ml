@@ -207,8 +207,6 @@ type status = New | Ready | Busy | Closed
 
 type 'a task = handle -> ('a -> void) -> void
 
-type reset_kind = Planned | Unexpected
-
 type coqtop = {
   (* non quoted command-line arguments of coqtop *)
   mutable sup_args : string list;
@@ -285,6 +283,17 @@ let rec check_errors = function
 | `NVAL :: _ -> raise (TubeError "NVAL")
 | `OUT :: _ -> raise (TubeError "OUT")
 
+let exc f =
+  try
+    f ()
+  with e ->
+    let msg = match e with
+      | TubeError _ -> "coqidetop died"
+      | _ -> "CoqIDE failure"
+    in
+    exc_dialog e msg;
+    raise e
+
 let handle_feedback feedback_processor xml =
   let feedback = Xmlprotocol.to_feedback xml in
   feedback_processor feedback
@@ -307,6 +316,7 @@ type input_state = {
 }
 
 let unsafe_handle_input handle (feedback_processor, ltac_debug_processor) state conds ~read_all =
+  exc @@ fun () ->
   check_errors conds;
   let s = read_all () in
   if String.length s = 0 then raise (TubeError "EMPTY");
@@ -444,19 +454,7 @@ let mkready coqtop db =
     end;
     Void
 
-let save_all = ref (fun () -> assert false)
-
-let rec respawn_coqtop ?(why=Unexpected) coqtop =
-  let () = match why with
-  | Unexpected ->
-    let title = "Warning" in
-    let icon = (warn_image ())#coerce in
-    let buttons = ["Reset"; "Save all and quit"; "Quit without saving"] in
-    let ans = GToolbox.question_box ~title ~buttons ~icon (coqtop.basename ^ ": coqidetop died.") in
-    if ans = 2 then (!save_all (); GtkMain.Main.quit ())
-    else if ans = 3 then GtkMain.Main.quit ()
-  | Planned -> ()
-  in
+let rec respawn_coqtop coqtop =
   clear_handle coqtop.handle;
   Queue.clear coqtop.do_when_ready;
   ignore_error (fun () ->
@@ -524,7 +522,7 @@ let close_coqtop coqtop =
   coqtop.status <- Closed;
   clear_handle coqtop.handle
 
-let reset_coqtop coqtop = respawn_coqtop ~why:Planned coqtop
+let reset_coqtop coqtop = respawn_coqtop coqtop
 
 let get_arguments coqtop = coqtop.sup_args
 
@@ -543,6 +541,7 @@ let process_task ?(db=false) coqtop task =
   end;
   try ignore (task coqtop.handle (mkready coqtop db))
   with e ->
+    exc_dialog e "writer failure";
     Minilib.log ("Coqtop writer failed, resetting: " ^ Printexc.to_string e);
     if coqtop.status <> Closed then respawn_coqtop coqtop
 

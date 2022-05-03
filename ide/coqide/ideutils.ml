@@ -637,3 +637,24 @@ let encode_string_list l = String.concat " " (List.map encode_string l)
 let filter_key ev =
   let filter mods = List.filter (fun m -> List.mem m [`SHIFT; `CONTROL; `MOD1 (* Alt *)]) mods in
   GdkEvent.Key.(keyval ev, (filter (state ev)))
+
+let save_all = ref (fun () -> assert false)
+
+let exc_dialog e top_msg =
+  let title = "Error" in
+  let icon = (warn_image ())#coerce in
+  let buttons = ["Reset"; "Save all and quit"; "Quit without saving"] in
+  let lines = [""; Printexc.to_string e; Printexc.get_backtrace ()] in
+  let msg = Printf.sprintf "%s.\nPlease report at %s\n%s" top_msg Coq_config.wwwbugtracker
+      (String.concat "\n" lines) in
+  Minilib.log(msg);
+  let ans = GToolbox.question_box ~title ~buttons ~icon msg in
+  if ans = 2 then (!save_all (); GtkMain.Main.quit ())
+  else if ans = 3 then GtkMain.Main.quit ()
+
+let exc f =
+  try
+    f ()
+  with e ->
+    exc_dialog e "CoqIDE failure";
+    raise e

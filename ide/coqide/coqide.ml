@@ -430,7 +430,7 @@ let saveall _ =
       | Some f -> ignore (sn.fileops#save f))
     notebook#pages
 
-let () = Coq.save_all := saveall
+let () = Ideutils.save_all := saveall
 
 let revert_all ?parent _ =
   List.iter

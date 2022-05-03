@@ -122,3 +122,11 @@ val decode_string_list : string -> string list
 (** filter key event to keep only the interesting modifiers *)
 
 val filter_key : GdkEvent.Key.t -> Gdk.keysym * Gdk.Tags.modifier list
+
+(* routines for displaying exceptions in a dialog *)
+
+val save_all : (unit -> unit) ref
+
+val exc_dialog : exn -> string -> unit
+
+val exc : (unit -> 'a) -> 'a
