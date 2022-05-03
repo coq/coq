@@ -440,31 +440,39 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       })
       indnames arities arityconcl constructors
   in
-  let template = List.map4 (fun indname (templatearity, _) concl (_, ctypes) ->
-      let template_candidate () =
-        templatearity ||
-        let ctor_levels =
-          let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
-          let param_levels =
-            List.fold_left (fun levels d -> match d with
-                | LocalAssum _ -> levels
-                | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-              Univ.Level.Set.empty ctx_params
-          in
-          List.fold_left (fun levels c -> add_levels c levels)
-            param_levels ctypes
-        in
-        template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
+  let template =
+    if not (Int.equal (List.length indnames) 1) then
+      let () = match template with
+        | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
+        | _ -> ()
       in
-      match template with
-        | Some template ->
-          if poly && template then user_err
-              Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.");
-          template
-        | None ->
-          should_auto_template indname (template_candidate ())
-      )
-      indnames arities arityconcl constructors
+      List.map (fun _ -> false) indnames
+    else
+      List.map4 (fun indname (templatearity, _) concl (_, ctypes) ->
+          let template_candidate () =
+            templatearity ||
+            let ctor_levels =
+              let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
+              let param_levels =
+                List.fold_left (fun levels d -> match d with
+                    | LocalAssum _ -> levels
+                    | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+                  Univ.Level.Set.empty ctx_params
+              in
+              List.fold_left (fun levels c -> add_levels c levels)
+                param_levels ctypes
+            in
+            template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
+          in
+          match template with
+          | Some template ->
+            if poly && template then user_err
+                Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.");
+            template
+          | None ->
+            should_auto_template indname (template_candidate ())
+        )
+        indnames arities arityconcl constructors
   in
   let is_template = List.for_all (fun t -> t) template in
   let univ_entry, ctx = match univ_entry with

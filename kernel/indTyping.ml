@@ -278,24 +278,11 @@ let get_template univs params data =
   match univs with
   | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
   | Template_ind_entry ctx ->
-    (* For each type in the block, compute potential template parameters *)
-    let params = List.map (fun ((arity, _), (_, splayed_lc), _) -> get_param_levels ctx params arity splayed_lc) data in
-    (* Pick the lower bound of template parameters. Note that in particular, if
-       one of the the inductive types from the block is Prop-valued, then no
-       parameters are template. *)
-    let fold min params =
-      let map u v = match u, v with
-        | (None, _) | (_, None) -> None
-        | Some u, Some v ->
-          let () = assert (Univ.Level.equal u v) in
-          Some u
-      in
-      List.map2 map min params
+    let arity, splayed_lc = match data with
+      | [ (arity, _), (_, splayed_lc), _ ] -> arity, splayed_lc
+      | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
     in
-    let params = match params with
-      | [] -> assert false
-      | hd :: rem -> List.fold_left fold hd rem
-    in
+    let params = get_param_levels ctx params arity splayed_lc in
     Some { template_param_levels = params; template_context = ctx }
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
