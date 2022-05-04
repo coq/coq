@@ -322,7 +322,26 @@ lint:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
-pkg:opam:
+pkg:opam-native:
+  stage: build
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
+  interruptible: true
+  # OPAM will build out-of-tree so no point in importing artifacts
+  script:
+    - opam install coq-native
+    - opam pin add --locked=docker --kind=path coq.dev .
+    # Check that native works
+    - echo "Definition f x := x + x." > test_native.v
+    - coqc -native-compiler yes test_native.v
+    - test -f .coq-native/Ntest_native.cmxs
+  variables:
+    OPAM_SWITCH: "edge"
+    OPAM_VARIANT: "+flambda"
+  only: *full-ci
+
+pkg:opam-split:
   stage: build
   except:
     variables:
