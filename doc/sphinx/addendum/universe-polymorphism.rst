@@ -74,8 +74,8 @@ it is instantiated at ``u0``. This definition is only valid as long as
 Note that if we made ``selfpid`` universe monomorphic, the two
 universes (in this case ``u`` and ``u0``) would be declared in the
 global universe graph with names ``selfpid.u0`` and ``selfpid.u1``.
-Since the constraints would also be global ``Print selfpid.`` would
-not show them and we would have to use :cmd:`Print Universes`.
+Since the constraints would be global, ``Print selfpid.`` will
+not show them, however they will be shown by :cmd:`Print Universes`.
 
 When printing :g:`pidentity`, we can see the universes it binds in
 the annotation :g:`@{u}`. Additionally, when
