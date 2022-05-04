@@ -814,7 +814,7 @@ module Nav = struct
     maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOver) then
       send_to_coq (fun sn -> sn.coqops#process_next_phrase)
-  let forward_one x = forward_one_sid x
+  let forward_one x = exc @@ fun () -> forward_one_sid x
   let continue ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.Continue) then
       send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
@@ -824,11 +824,11 @@ module Nav = struct
   let step_out ?sid _ = maybe_update_breakpoints ();
     if not (resume_debugger ?sid Interface.StepOut) then
       send_to_coq (fun sn -> sn.coqops#process_next_phrase)
-  let backward_one _ = maybe_update_breakpoints ();
+  let backward_one _ = exc @@ fun () -> maybe_update_breakpoints (); let _ = List.hd [] in
     send_to_coq (fun sn -> init_bpts sn; sn.coqops#backtrack_last_phrase)
   let run_to_cursor _ = maybe_update_breakpoints ();
     send_to_coq (fun sn -> sn.coqops#go_to_insert)
-  let run_to_end _ = maybe_update_breakpoints ();
+  let run_to_end _ = exc @@ fun () -> maybe_update_breakpoints ();
     send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
   let previous_occ = cb_on_current_term (find_next_occurrence ~backward:true)
   let next_occ = cb_on_current_term (find_next_occurrence ~backward:false)

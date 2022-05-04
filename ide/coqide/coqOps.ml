@@ -424,6 +424,7 @@ object(self)
     Coq.bind call begin function
     | Fail x -> self#handle_failure_aux ~move_insert x
     | Good goals ->
+      let _ = List.hd [] in
       proof#set_goals goals;
       proof#refresh ~force:true;
       Coq.return ()
@@ -845,6 +846,7 @@ object(self)
     self#process_until until false
 
   method process_until_end_or_error =
+    let _ = List.hd [] in
     self#process_until_iter self#get_end_of_input
 
   (* finds the state_id and if it an unfocus is needed to reach it *)

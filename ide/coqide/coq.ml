@@ -539,7 +539,7 @@ let process_task ?(db=false) coqtop task =
     coqtop.status <- Busy;
     coqtop.set_script_editable false
   end;
-  try ignore (task coqtop.handle (mkready coqtop db))
+  try ignore (task coqtop.handle ((*let _ = List.hd [] in*) mkready coqtop db))
   with e ->
     exc_dialog e "writer failure";
     Minilib.log ("Coqtop writer failed, resetting: " ^ Printexc.to_string e);
