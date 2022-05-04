@@ -195,7 +195,10 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let () = ignore (Stm.snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_out) in
       Stm.reset_task_queue ();
       (* In .vio production, dump an empty .vos file to indicate that the .vio should be loaded. *)
-      if mode = BuildVio then dump_empty_vos()
+      (* EJGA: This is problematic in a vio + vio2vo run, as there is
+         a race with target generation *)
+      if mode = BuildVio then dump_empty_vos();
+      ()
 
   | Vio2Vo ->
       Flags.async_proofs_worker_id := "Vio2Vo";

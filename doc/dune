@@ -35,6 +35,7 @@
   (package coq-stdlib)
   (source_tree sphinx)
   (source_tree tools/coqrst)
+  ../config/coq_config.py
   unreleased.rst
   (env_var SPHINXWARNOPT))
  (action

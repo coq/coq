@@ -28,7 +28,8 @@ jobs:
 
       - name: Download Platform
         env:
-          PLATFORM: "https://github.com/coq/platform/archive/2022.04.0.zip"
+          # Pinned to master branch after the opam pin fix, should be replaced by next tag once it is set.
+          PLATFORM: "https://github.com/coq/platform/archive/00e757ae93800aa016a667d3eb81244625310dcf.zip"
         run: |
           .\dev\ci\platform\coq-pf-02-download.bat
 

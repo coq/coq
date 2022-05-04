@@ -8,9 +8,8 @@ want to profile time or memory consumption. AFAIK, this only works for Linux.
 In Coq source folder:
 
 opam switch 4.09.0+trunk+fp
-./configure -profile devel -debug
-make
-perf record -g bin/coqc file.v
+make world
+perf record -g _build/install/default/bin/coqc file.v
 perf report -g fractal,callee --no-children
 
 To profile only part of a file, first load it using
@@ -33,8 +32,8 @@ second for the standard library ([example output](https://cdn.rawgit.com/andres-
 
 ~~~~~
 #!/bin/bash
-make -f Makefile.dune clean
-make -f Makefile.dune states
+make clean
+make states
 perf record -F99  `# ~1GB of data` --call-graph=dwarf -- make -f Makefile.dune world
 perf script --time '0%-100%'  |
         stackcollapse-perf.pl |
@@ -85,8 +84,7 @@ git rebase master
 Then:
 
 opam switch 4.00.1+alloc-profiling
-./configure -profile devel -debug
-make
+make world
 
 Note that linking the coqtop binary takes quite an amount of time with this
 branch, so do not worry too much. There are more recent branches of

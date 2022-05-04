@@ -34,7 +34,8 @@ jobs:
         run: |
           eval $(opam env)
           ./configure -prefix "$(pwd)/_install_ci" -warn-error yes -native-compiler no -coqide opt
-          make -j "$NJOBS"
+          make dunestrap
+          dune build -p coq-core,coq-stdlib,coqide-server,coqide,coq
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.11"
           NJOBS: "2"
@@ -42,12 +43,16 @@ jobs:
       - name: Install Coq
         run: |
           eval $(opam env)
-          make install
+          dune install --prefix="$(pwd)/_install_ci" coq-core coq-stdlib coqide-server coqide coq
 
       - name: Run Coq Test Suite
         run: |
           eval $(opam env)
-          export OCAMLPATH="$(pwd)/_install_ci/lib":"$OCAMLPATH"
-          make -j "$NJOBS" test-suite PRINT_LOGS=1
+          cd test-suite
+          make clean
+          export OCAMLPATH="$(pwd)/../_install_ci/lib":"$OCAMLPATH"
+          BIN="$(pwd)/../_install_ci/bin/"
+          LIB="$(pwd)/../_install_ci/lib/coq/"
+          make -j "$NJOBS" BIN="$BIN" COQLIB="$LIB" PRINT_LOGS=1 all
         env:
           NJOBS: "2"

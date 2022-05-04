@@ -146,3 +146,7 @@ bin
 
 # To remove when Dune 2.8 is the minimum version
 .merlin
+
+.dune-stamp
+theories/dune
+user-contrib/Ltac2/dune

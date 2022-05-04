@@ -237,11 +237,12 @@ let is_in_coqlib st ?from s =
   try let _ = search_table st.State.coqlib ?from s in true with Not_found -> false
 
 let add_caml_known st _ phys_dir _ f =
-  let basename,suff =
-    get_extension f [".mllib"; ".mlpack"] in
+  let basename, suff = get_extension f [".mllib"; ".mlpack"; ".cmxs"] in
   match suff with
     | ".mllib" -> add_mllib_known st basename (Some phys_dir) suff
     | ".mlpack" -> add_mlpack_known st basename (Some phys_dir) suff
+    (* Installed gloally *)
+    | ".cmxs" -> add_mlpack_known st basename (Some phys_dir) suff
     | _ -> ()
 
 let add_paths recur root table phys_dir log_dir basename =

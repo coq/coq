@@ -65,7 +65,7 @@ before_script:
 # - use artifacts between jobs                       #
 ######################################################
 
-# TODO figure out how to build doc for installed Coq
+# Regular "release" build of Coq, with final installed layout
 .build-template:
   stage: build
   except:
@@ -76,11 +76,11 @@ before_script:
     name: "$CI_JOB_NAME"
     paths:
       - _install_ci
+      # All those are for the test-suite jobs, to be discarded soon
       - config/Makefile
       - config/coq_config.py
       - config/coq_config.ml
       - config/dune.c_flags
-      - dmesg.txt
     expire_in: 1 month
   script:
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
@@ -92,15 +92,17 @@ before_script:
     - dev/ci/gitlab-section.sh end coq.config
 
     - dev/ci/gitlab-section.sh start coq.build coq.build
-    - make -j "$NJOBS" world $EXTRA_TARGET
+    - make dunestrap
+    - dune build -p coq-core,coq-stdlib,coqide-server,coqide,coq
     - dev/ci/gitlab-section.sh end coq.build
 
     - dev/ci/gitlab-section.sh start coq.install coq.install
-    - make install $EXTRA_INSTALL
+    - dune install --prefix="$(pwd)/_install_ci" coq-core coq-stdlib coqide-server coqide coq
     - dev/ci/gitlab-section.sh end coq.install
 
-# Template for building Coq + stdlib, typical use: overload the switch
-.dune-template:
+# Developer build, with build layout. Faster and useful for those
+# jobs needing _build
+.build-template:dev:
   stage: build
   except:
     variables:
@@ -111,11 +113,13 @@ before_script:
     # See also https://github.com/ocaml/ocaml/issues/7842#issuecomment-596863244
     # and https://github.com/coq/coq/pull/11916#issuecomment-609977375
     - ulimit -s 16384
-    - make -f Makefile.dune world
+    - make -f Makefile.dune $DUNE_TARGET
+    - find _build -name '*.vio' -exec rm -f {} \;
     - tar cfj _build.tar.bz2 _build
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
+    DUNE_TARGET: world
   artifacts:
     name: "$CI_JOB_NAME"
     when: always
@@ -124,15 +128,16 @@ before_script:
       - _build.tar.bz2
     expire_in: 1 month
 
-.dune-ci-template:
+.dev-ci-template:
   stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   needs:
-    - build:edge+flambda:dune:dev
+    - build:edge+flambda:dev
   script:
+    - ulimit -s 16384
     - tar xfj _build.tar.bz2
     - make -f Makefile.dune "$DUNE_TARGET"
   variables:
@@ -147,24 +152,6 @@ before_script:
 # artifacts are used together and we may get some random Coq. To that
 # purpose, we add a spurious dependency `not-a-real-job` that must be
 # overridden otherwise the CI will fail.
-
-.doc-template:
-  stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
-  interruptible: true
-  needs:
-    - not-a-real-job
-  script:
-    - SPHINXENV="OCAMLPATH='$PWD/_install_ci/lib/:$OCAMLPATH' COQBIN='$PWD/_install_ci/bin/'"
-    - make -j "$NJOBS" SPHINXENV="$SPHINXENV" SPHINX_DEPS= refman
-    - make install-doc-sphinx
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths:
-      - _install_ci/share/doc/coq/
-    expire_in: 2 months
 
 # set "needs" when using
 .test-suite-template:
@@ -202,7 +189,7 @@ before_script:
     - not-a-real-job
   script:
     # exit 0: workaround for https://gitlab.com/gitlab-org/gitlab/issues/202505
-    # the validate:quick job is sometimes started before build:quick, without artifacts
+    # the validate:vio job is sometimes started before build:vio, without artifacts
     # we ignore these spurious errors so if the job fails it's a real error
     - cd _install_ci || exit 0
     - find lib/coq/ -name '*.vo' -fprint0 vofiles
@@ -222,6 +209,7 @@ before_script:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
+    - ulimit -s 16384           # For flambda + native
     - make -f Makefile.ci -j "$NJOBS" "${CI_JOB_NAME#*:}"
   artifacts:
     name: "$CI_JOB_NAME"
@@ -257,9 +245,6 @@ build:base:
   extends: .build-template
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
-    # coqdoc for stdlib, until we know how to build it from installed Coq
-    EXTRA_TARGET: "doc-stdlib"
-    EXTRA_INSTALL: "install-doc-stdlib-html install-doc-printable"
 
 # no coqide for 32bit: libgtk installation problems
 build:base+32bit:
@@ -278,29 +263,38 @@ build:edge+flambda:
     OPAM_VARIANT: "+flambda"
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
 
-build:edge+flambda:dune:dev:
-  extends: .dune-template
+build:edge+flambda:dev:
+  extends: .build-template:dev
 
 build:base+async:
   extends: .build-template
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
-    COQUSERFLAGS: "-async-proofs on"
+    COQ_DUNE_EXTRA_OPT: "-async"
   after_script:
     - dmesg > dmesg.txt
-  timeout: 100m
+  timeout: 120m
   allow_failure: true # See https://github.com/coq/coq/issues/9658
   only:
     variables:
       - $UNRELIABLE =~ /enabled/
   artifacts:
     when: always
+    paths:
+      - _install_ci
+      # All those are for the test-suite jobs, to be discarded once we have dune for the test-suite
+      - config/Makefile
+      - config/coq_config.py
+      - config/coq_config.ml
+      - config/dune.c_flags
+      - dmesg.txt
 
-build:quick:
-  extends: .build-template
+build:vio:
+  extends: .build-template:dev
   variables:
     COQ_EXTRA_CONF: "-native-compiler no"
-    QUICK: "1"
+    COQ_DUNE_EXTRA_OPT: "-vio"
+    DUNE_TARGET: "vio world"
   after_script:
     - dmesg > dmesg.txt
   timeout: 100m
@@ -310,6 +304,9 @@ build:quick:
       - $UNRELIABLE =~ /enabled/
   artifacts:
     when: always
+    paths:
+      - _install_ci
+      - dmesg.txt
 
 lint:
   stage: build
@@ -322,26 +319,7 @@ lint:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
-pkg:opam-native:
-  stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
-  interruptible: true
-  # OPAM will build out-of-tree so no point in importing artifacts
-  script:
-    - opam install coq-native
-    - opam pin add --locked=docker --kind=path coq.dev .
-    # Check that native works
-    - echo "Definition f x := x + x." > test_native.v
-    - coqc -native-compiler yes test_native.v
-    - test -f .coq-native/Ntest_native.cmxs
-  variables:
-    OPAM_SWITCH: "edge"
-    OPAM_VARIANT: "+flambda"
-  only: *full-ci
-
-pkg:opam-split:
+.pkg:opam-template:
   stage: build
   except:
     variables:
@@ -357,6 +335,19 @@ pkg:opam-split:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
   only: *full-ci
+
+pkg:opam:
+  extends: .pkg:opam-template
+
+pkg:opam:native:
+  extends: .pkg:opam-template
+  before_script:
+    - opam install -y coq-native
+  after_script:
+    - eval $(opam env)
+    - echo "Definition f x := x + x." > test_native.v
+    - coqc -native-compiler yes test_native.v
+    - test -f .coq-native/Ntest_native.cmxs
 
 .nix-template:
   stage: build
@@ -427,12 +418,7 @@ pkg:nix:
     - nix-build "$CI_PROJECT_URL/-/archive/$CI_COMMIT_SHA.tar.gz" -K
 
 doc:refman:
-  extends: .doc-template
-  needs:
-    - build:base
-
-doc:refman:dune:
-  extends: .dune-ci-template
+  extends: .dev-ci-template
   variables:
     DUNE_TARGET: refman-html
   artifacts:
@@ -440,8 +426,8 @@ doc:refman:dune:
       - _build/log
       - _build/default/doc/refman-html
 
-doc:refman-pdf:dune:
-  extends: .dune-ci-template
+doc:refman-pdf:
+  extends: .dev-ci-template
   variables:
     DUNE_TARGET: refman-pdf
   artifacts:
@@ -449,10 +435,8 @@ doc:refman-pdf:dune:
       - _build/log
       - _build/default/doc/refman-pdf
 
-# currently bugged: dune cleans up the glob files so no links
-# see #12699
-doc:stdlib:dune:
-  extends: .dune-ci-template
+doc:stdlib:
+  extends: .dev-ci-template
   variables:
     DUNE_TARGET: stdlib-html
   artifacts:
@@ -470,8 +454,8 @@ doc:refman:deploy:
       - $DOCUMENTATION_DEPLOY_KEY
   needs:
     - doc:ml-api:odoc
-    - doc:refman:dune
-    - build:base
+    - doc:refman
+    - doc:stdlib
   script:
     - echo "$DOCUMENTATION_DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - git clone git@github.com:coq/doc.git _deploy
@@ -481,14 +465,14 @@ doc:refman:deploy:
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
     - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
     - cp -rv _build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman
-    - cp -rv _install_ci/share/doc/coq/html/stdlib _deploy/$CI_COMMIT_REF_NAME/stdlib
+    - cp -rv _build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
     - git add api refman stdlib
     - git commit -m "Documentation of branch “$CI_COMMIT_REF_NAME” at $CI_COMMIT_SHORT_SHA"
     - git push # TODO: rebase and retry on failure
 
 doc:ml-api:odoc:
-  extends: .dune-ci-template
+  extends: .dev-ci-template
   variables:
     DUNE_TARGET: apidoc
   artifacts:
@@ -518,14 +502,14 @@ test-suite:edge+flambda:
     OPAM_VARIANT: "+flambda"
   only: *full-ci
 
-test-suite:edge:dune:dev:
+test-suite:edge:dev:
   stage: build
   except:
     variables:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   needs:
-    - build:edge+flambda:dune:dev
+    - build:edge+flambda:dev
   script:
     - tar xfj _build.tar.bz2
     - make -f Makefile.dune test-suite
@@ -578,7 +562,7 @@ test-suite:base+async:
     - build:base
   variables:
     COQEXTRAFLAGS: "-async-proofs on -async-proofs-cache force"
-  timeout: 100m
+  timeout: 120m
   allow_failure: true
   only:
     variables:
@@ -606,10 +590,10 @@ validate:edge+flambda:
     OPAM_VARIANT: "+flambda"
   only: *full-ci
 
-validate:quick:
+validate:vio:
   extends: .validate-template
   needs:
-    - build:quick
+    - build:vio
   only:
     variables:
       - $UNRELIABLE =~ /enabled/
@@ -884,7 +868,7 @@ plugin:plugin-tutorial:
       - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
-    - ./configure -profile devel -warn-error yes
+    - ./configure -prefix "$(pwd)/_install_ci" -warn-error yes
     - make -j "$NJOBS" plugin-tutorial
 
 plugin:ci-quickchick:

@@ -251,6 +251,8 @@ let rec treat_file old_dirname old_name =
   let dirname =
     match (old_dirname,new_dirname) with
       | (d, ".") -> d
+      (* EGJA: We should disable this buggy normalization stuff for
+         "./foo -> foo" but it breaks dune coq.theory! *)
       | (None,d) -> Some d
       | (Some d1,d2) -> Some (System.(d1 // d2))
   in

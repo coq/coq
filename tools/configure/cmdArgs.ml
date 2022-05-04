@@ -32,15 +32,12 @@ type t = {
   macintegration : bool;
   browser : string option;
   withdoc : bool;
-  byteonly : bool;
   bin_annot : bool;
   annot : bool;
   bytecodecompiler : bool;
   nativecompiler : nativecompiler;
   coqwebsite : string;
   warn_error : bool;
-  dune_profile : string;
-  install_enabled : bool;
   debug : bool;
 }
 
@@ -48,9 +45,7 @@ end
 
 open Prefs
 
-module Profiles = struct
-
-let default = {
+let default_prefs = {
   prefix = None;
   interactive = true;
   libdir = None;
@@ -64,7 +59,6 @@ let default = {
   macintegration = true;
   browser = None;
   withdoc = false;
-  byteonly = false;
   bin_annot = false;
   annot = false;
   bytecodecompiler = true;
@@ -72,32 +66,8 @@ let default = {
     if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
   coqwebsite = "http://coq.inria.fr/";
   warn_error = false;
-  dune_profile = "--release";
-  install_enabled = true;
   debug = false;
 }
-
-let devel state = { state with
-  bin_annot = true;
-  annot = true;
-  warn_error = true;
-  dune_profile = "--profile=dev";
-  interactive = true;
-  prefix = Some (Filename.concat (Sys.getcwd ()) "_build_vo/default");
-  install_enabled = false;
-}
-
-let devel_doc = "-annot -bin-annot -warn-error yes"
-
-let get = function
-  | "devel" -> devel
-  | s -> raise (Arg.Bad ("profile name expected instead of "^s))
-
-let doc =
-  "<profile> Sets a bunch of flags. Supported profiles:
-     devel = " ^ devel_doc
-
-end
 
 let get_bool = function
   | "true" | "yes" | "y" | "all" -> true
@@ -116,7 +86,7 @@ let get_native = function
   | "ondemand" -> NativeOndemand
   | s -> raise (Arg.Bad ("(yes|no|ondemand) argument expected instead of "^s))
 
-let prefs = ref Profiles.default
+let prefs = ref default_prefs
 
 let arg_bool f = Arg.String (fun s -> prefs := f !prefs (get_bool s))
 
@@ -128,8 +98,6 @@ let arg_set f = Arg.Unit (fun () -> prefs := f !prefs)
 let arg_ide f = Arg.String (fun s -> prefs := f !prefs (Some (get_ide s)))
 
 let arg_native f = Arg.String (fun s -> prefs := f !prefs (get_native s))
-
-let arg_profile = Arg.String (fun s -> prefs := Profiles.get s !prefs)
 
 (* TODO : earlier any option -foo was also available as --foo *)
 
@@ -167,8 +135,6 @@ let args_options = Arg.align [
     "<command> Use <command> to open URL %s";
   "-with-doc", arg_bool (fun p withdoc -> { p with withdoc }),
     "(yes|no) Compile the documentation or not";
-  "-byte-only", arg_set (fun p -> { p with byteonly = true }),
-    " Compiles only bytecode version of Coq";
   "-annot", arg_set (fun p -> { p with annot = true }),
     " Dumps ml text annotation files while compiling Coq (e.g. for Tuareg)";
   "-bin-annot", arg_set (fun p -> { p with bin_annot = true }),
@@ -184,7 +150,6 @@ let args_options = Arg.align [
     " URL of the coq website";
   "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
     "(yes|no) Make OCaml warnings into errors (default no)";
-  "-profile", arg_profile, Profiles.doc;
   "-debug", arg_set (fun p -> { p with debug = true }), " Enable debug information for package detection"
 ]
 

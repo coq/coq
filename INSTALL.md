@@ -68,49 +68,33 @@ Nix users can also get all the required dependencies by running:
 
     $ nix-shell
 
-Advanced users may want to experiment with the OCaml Flambda
-compiler as way to improve the performance of Coq. In order to
-profit from Flambda, a special build of the OCaml compiler that has
-the Flambda optimizer enabled must be installed. For OPAM users,
-this amounts to installing a compiler switch ending in `+flambda`,
-such as `4.12.1+flambda`. For other users, YMMV. Once `ocamlopt -config`
-reports that Flambda is available, some further optimization options
-can be used; see the entry about `flambda options` in the build guide
-for more details.
-
-Choice of Build and Installation Procedure
-------------------------------------------
-
-There are two partially overlapping infrastructures available to build
-Coq. They are available through `Makefile.make` (legacy / hybrid
-build) and `Makefile.dune` (full Dune build).
-
-You can use the `COQ_USE_DUNE` environment variable to change the one
-to use by default. This is useful for Coq development, where we
-recommend to rely mainly on `Makefile.dune`. Note that mixing the two
-systems is not perfectly supported and may lead to confusing behavior.
-
-In both cases, the OCaml parts are built using
-[Dune](https://github.com/ocaml/dune). The main difference between the
-two systems is how the `.vo` files are built.
-
-In the case of `Makefile.make`, `.vo` files are built with a legacy
-Makefile, similar to what `coq_makefile` would do. In the case of
-`Makefile.dune`, `.vo` files are built with Dune, thanks to its
-recently-added, and still experimental, Coq mode.
-
-See the documentation for the two infrastructures:
-
-- [Legacy build](dev/doc/INSTALL.make.md)
-- [Full Dune build](dev/doc/build-system.dune.md)
-
-See also [`dev/doc/README.md`](dev/doc/README.md).
-
 Run-time dependencies of native compilation
 -------------------------------------------
 
 The OCaml compiler and findlib are build-time dependencies, but also
 run-time dependencies if you wish to use the native compiler.
+
+Build and install procedure
+---------------------------
+
+Note that Coq supports a faster, but less optimized developer build,
+but final users must always use the release build. See
+[dev/doc/build-system.dune.md](dev/doc/build-system.dune.md)
+for more details.
+
+To build and install Coq (and CoqIDE if desired) do:
+
+    $ ./configure -prefix <install_prefix> $options
+    $ make dunestrap
+    $ dune build -p coq-core,coq-stdlib,coq,coqide-server,coqide
+    $ dune install --prefix=<install_prefix> coq-core coq-stdlib coq coqide-server coqide
+
+You can drop the `coqide` packages if not needed.
+
+Packagers may want to play with `dune install` options as to tweak
+installation path, the `-prefix` argument in `./configure` tells Coq
+where to find its standard library, but doesn't control any other
+installation path these days.
 
 OCaml toolchain advisory
 ------------------------

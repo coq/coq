@@ -29,6 +29,17 @@ depends: [
 build: [
   # Requires dune 2.8 due to https://github.com/ocaml/dune/issues/3219
   # ["dune" "subst"] {pinned}
+  #
+  # XXX need to run configure as in coq-core, or else dunestrap will
+  # use the default rule in config
+  [ "./configure"
+    "-prefix" prefix
+    "-mandir" man
+    "-libdir" "%{lib}%/coq"
+    "-coqide" "no"
+    "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
+  ]
+  [ make "dunestrap" "COQ_DUNE_EXTRA_OPT=-split" ]
   [
     "dune"
     "build"

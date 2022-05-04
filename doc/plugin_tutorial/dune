@@ -1,0 +1,10 @@
+; We get a super bizarre error here...
+; (rule
+;  (alias plugin-tutorial)
+;  (deps
+;   (source_tree .)
+;   (package coq-core)
+;    ../../tools/CoqMakefile.in
+;    ../../theories/Init/Prelude.vo)
+;  (action
+;    (bash "make COQCORELIB=$(pwd)/../../ COQLIB=$(pwd)/../../")))

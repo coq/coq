@@ -46,19 +46,19 @@ the one used in the Coq repository), e.g.:
 
 We recommend that you use the targets in `Makefile.dune`.  See
 [`build-system.dune.md`](build-system.dune.md) to learn more about
-them.  In the example below, you may omit `-f Makefile.dune` by
-setting `COQ_USE_DUNE=1`.
+them. `Makefile` is just an alias for `Makefile.dune` so you can just
+call `make` directly.
 
 ```
 $ git clone https://github.com/coq/coq.git
 $ cd coq
-$ make -f Makefile.dune
+$ make
     # to get an idea of the available targets
-$ make -f Makefile.dune check
+$ make check
    # build all OCaml files as fast as possible
 $ dune exec -- dev/shim/coqc-prelude test.v
     # update coqc and the prelude and compile file test.v
-$ make -f Makefile.dune world
+$ make world
     # build coq and the complete stdlib and setup it for use under _build/install/default
     # In particular, you may run, e.g., coq_makefile from _build/install/default
     # to build some test project
@@ -67,27 +67,6 @@ $ make -f Makefile.dune world
 When running the commands above, you may set `DUNEOPT=--display=short`
 for a more verbose build (not required if you have already set the
 default verbosity globally as described in the previous section).
-
-Alternatively, you can use the legacy build system (which is now
-a hybrid since it relies on Dune for the OCaml parts). If you haven't
-set `COQ_USE_DUNE=1`, then you don't need `-f Makefile.make`.
-
-```
-$ ./configure -profile devel
-    # add -warn-error no if you don't want to fail on warnings while building the stlib
-$ make -f Makefile.make -j $JOBS
-    # Make once for `merlin` (autocompletion tool)
-
-<hack>
-
-$ make -f Makefile.make -j $JOBS states
-    # builds just enough to run coqtop
-$ bin/coqc <test_file_name.v>
-<goto hack until stuff works>
-```
-
-When running the commands above, you may set `_DDISPLAY=short` for a
-more verbose build.
 
 To learn how to run the test suite, you can read
 [`test-suite/README.md`](../../test-suite/README.md).

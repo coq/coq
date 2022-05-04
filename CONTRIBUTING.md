@@ -538,10 +538,10 @@ doubt, ask the reviewers.
 
 If you broke the test-suite, you should get many failed jobs, because
 the test-suite is run multiple times in various settings.  You should
-get the same failure locally by running `make test-suite` or `make -f
-Makefile.dune test-suite`.  It's helpful to run this locally and
-ensure the test-suite is not broken before submitting a PR as this
-will spare a lot of runtime on distant machines.
+get the same failure locally by running `make test-suite`. It's
+helpful to run this locally and ensure the test-suite is not broken
+before submitting a PR as this will spare a lot of runtime on distant
+machines.
 
 To learn more about the test-suite, you should refer to its
 [README][test-suite-README].
@@ -555,7 +555,7 @@ We have a linter that checks a few different things:
   to build every commit, and in principle even the test-suite should
   pass on every commit (but this isn't tested in CI because it would
   take too long).  A good way to test this is to use `git rebase
-  master --exec "make -f Makefile.dune check"`.
+  master --exec "make check"`.
 - **No tabs or end-of-line spaces on updated lines**.  We are trying
   to get rid of all tabs and all end-of-line spaces from the code base
   (except in some very special files that need them).  This checks not
@@ -570,7 +570,7 @@ We have a linter that checks a few different things:
 - **All files should end with a single newline**.  See the section
   [Style guide](#style-guide) for additional style recommendations.
 - **Documented syntax is up-to-date**.  If you update the grammar, you
-  should run `make -f Makefile.make doc_gram_rsts` to update the
+  should run `make doc_gram_rsts` to update the
   documented syntax.  You should then update the text describing the
   syntax in the documentation and commit the changes.  In some cases,
   the documented syntax is edited to make the documentation more
@@ -986,8 +986,7 @@ team.
 
 - Documentation of the Coq API is written directly in comments in
   `.mli` files.  You can browse it on [the Coq website][api-doc], or
-  rebuild it locally (`make -f Makefile.dune apidoc`, requires `odoc`
-  and `dune`).
+  rebuild it locally (`make apidoc`, requires `odoc` and `dune`).
 
 - A plugin tutorial is located in
   [`doc/plugin_tutorial`][plugin-tutorial].
@@ -999,15 +998,10 @@ team.
 The list of dependencies can be found in the first section of the
 [`INSTALL.md`](INSTALL.md) file.
 
-Today, the recommended method for building Coq is to use `dune`.  Run
-`make -f Makefile.dune` to get help on the various available targets,
-Additional documentation can be found in
-[`dev/doc/build-system.dune.md`][dev-doc-dune], and in [the official
-Dune documentation][dune-doc].
-
-The legacy make-based system is still available.  If you wish to use
-it, you need to start by running `./configure -profile devel`.  Most
-of the available targets are not documented, so you will need to ask.
+Coq is built using the `dune` build system. Run `make` to get help on
+the various available targets.  Additional documentation can be found
+in [`dev/doc/build-system.dune.md`][dev-doc-dune], and in [the
+official Dune documentation][dune-doc].
 
 #### Continuous integration ####
 

@@ -1,0 +1,11 @@
+(library
+ (name coq_dune)
+ (modules :standard \ gen_rules)
+ (flags :standard -w +a-40-42)
+ (libraries coqdeplib findlib))
+
+(executable
+ (name gen_rules)
+ (modules gen_rules)
+ (flags :standard -w +a-40-42)
+ (libraries coq_dune))

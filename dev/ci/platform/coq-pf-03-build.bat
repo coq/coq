@@ -21,7 +21,10 @@ call coq_platform_make_windows.bat ^
   -jobs=2 ^
   -switch=d ^
   -set-switch=y ^
+  -override-dev-pkg="coq-core=%GITHUB_SERVER_URL%/%GITHUB_REPOSITORY%/archive/%GITHUB_SHA%.tar.gz" ^
+  -override-dev-pkg="coq-stdlib=%GITHUB_SERVER_URL%/%GITHUB_REPOSITORY%/archive/%GITHUB_SHA%.tar.gz" ^
   -override-dev-pkg="coq=%GITHUB_SERVER_URL%/%GITHUB_REPOSITORY%/archive/%GITHUB_SHA%.tar.gz" ^
+  -override-dev-pkg="coqide-server=%GITHUB_SERVER_URL%/%GITHUB_REPOSITORY%/archive/%GITHUB_SHA%.tar.gz" ^
   -override-dev-pkg="coqide=%GITHUB_SERVER_URL%/%GITHUB_REPOSITORY%/archive/%GITHUB_SHA%.tar.gz" ^
   || GOTO ErrorExit
 

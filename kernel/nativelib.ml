@@ -113,7 +113,8 @@ let call_compiler ?profile:(profile=false) ml_filename =
      own library *)
   let require_load_path = !get_load_paths () in
   (* We assume that installed files always go in .coq-native for now *)
-  let install_load_path = List.map (fun dn -> dn / dft_output_dir) require_load_path in
+  (* To ease the build we also consider the current dir, but at some point the build system should manage both *)
+  let install_load_path = List.map (fun dn -> dn / dft_output_dir) require_load_path @ require_load_path in
   let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (get_include_dirs () @ install_load_path)) in
   let f = Filename.chop_extension ml_filename in
   let link_filename = f ^ ".cmo" in
