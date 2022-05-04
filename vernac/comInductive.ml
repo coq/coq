@@ -461,55 +461,51 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in
 
   (* Build the inductive entries *)
-  let entries = List.map4 (fun indname (templatearity, arity) concl (cnames,ctypes) ->
+  let entries = List.map3 (fun indname (templatearity, arity) (cnames,ctypes) ->
       { mind_entry_typename = indname;
         mind_entry_arity = arity;
         mind_entry_consnames = cnames;
         mind_entry_lc = ctypes
       })
-      indnames arities arityconcl constructors
+      indnames arities constructors
   in
-  let template =
-    if not (Int.equal (List.length indnames) 1) then
-      let () = match template with
-        | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
-        | _ -> ()
-      in
-      List.map (fun _ -> false) indnames
-    else
-      List.map4 (fun indname (templatearity, _) concl (_, ctypes) ->
-          let template_candidate () =
-            templatearity ||
-            let ctor_levels =
-              let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
-              let param_levels =
-                List.fold_left (fun levels d -> match d with
-                    | LocalAssum _ -> levels
-                    | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-                  Univ.Level.Set.empty ctx_params
-              in
-              List.fold_left (fun levels c -> add_levels c levels)
-                param_levels ctypes
-            in
-            template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
+  let is_template = match entries, arities, arityconcl with
+  | [entry], [templatearity, _], [concl] ->
+    begin match template with
+    | Some template -> template
+    | None ->
+      let template_candidate =
+        templatearity ||
+        let ctor_levels =
+          let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
+          let param_levels =
+            List.fold_left (fun levels d -> match d with
+                | LocalAssum _ -> levels
+                | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+              Univ.Level.Set.empty ctx_params
           in
-          match template with
-          | Some template ->
-            if poly && template then user_err
-                Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.");
-            template
-          | None ->
-            should_auto_template indname (template_candidate ())
-        )
-        indnames arities arityconcl constructors
+          List.fold_left (fun levels c -> add_levels c levels)
+            param_levels entry.mind_entry_lc
+        in
+        template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
+      in
+      should_auto_template entry.mind_entry_typename template_candidate
+    end
+  | _ ->
+    let () = match template with
+    | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
+    | _ -> ()
+    in
+    false
   in
-  let is_template = List.for_all (fun t -> t) template in
   let univ_entry, ctx = match univ_entry with
   | UState.Monomorphic_entry ctx ->
     if is_template then Template_ind_entry ctx, Univ.ContextSet.empty
     else Monomorphic_ind_entry, ctx
   | UState.Polymorphic_entry uctx ->
-    Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+    if is_template then user_err
+      Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
+    else Polymorphic_ind_entry uctx, Univ.ContextSet.empty
   in
   let variance = variance_of_entry ~cumulative ~variances univ_entry in
   (* Build the mutual inductive entry *)
