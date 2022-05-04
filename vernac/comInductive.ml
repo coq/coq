@@ -408,6 +408,40 @@ let template_polymorphism_candidate ~ctor_levels uctx params concl =
       template_polymorphic_univs ~ctor_levels uctx params conclu
   | UState.Polymorphic_entry _ -> false
 
+let compute_template_inductive ~user_template ~env_ar_params ~ctx_params ~univ_entry entry concl =
+match user_template with
+| Some template -> template
+| None ->
+  (* Heuristic: the user has not written Prop explicitly in the return
+      arity, but inference has decided to lower it to Prop. *)
+  let templatearity =
+    if Term.isArity entry.mind_entry_arity then
+      let (_, s) = Reduction.dest_arity env_ar_params entry.mind_entry_arity in
+      if Sorts.is_prop s then match concl with
+      | None | Some (Type _ | Set)-> true
+      | Some Prop -> false
+      | Some SProp -> assert false
+      else false
+    else false
+  in
+  let template_candidate =
+    templatearity ||
+    let ctor_levels =
+      let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
+      let param_levels =
+        List.fold_left (fun levels d -> match d with
+            | LocalAssum _ -> levels
+            | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+          Univ.Level.Set.empty ctx_params
+      in
+      List.fold_left (fun levels c -> add_levels c levels)
+        param_levels entry.mind_entry_lc
+    in
+    template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
+  in
+  should_auto_template entry.mind_entry_typename template_candidate
+
+
 let check_param = function
 | CLocalDef (na, _, _) -> check_named na
 | CLocalAssum (nas, Default _, _) -> List.iter check_named nas
@@ -471,38 +505,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   in
   let is_template = match entries, arityconcl with
   | [entry], [concl] ->
-    begin match template with
-    | Some template -> template
-    | None ->
-      (* Heuristic: the user has not written Prop explicitly in the return
-         arity, but inference has decided to lower it to Prop. *)
-      let templatearity =
-        if Term.isArity entry.mind_entry_arity then
-          let (_, s) = Reduction.dest_arity env_ar_params entry.mind_entry_arity in
-          if Sorts.is_prop s then match concl with
-          | None | Some (Type _ | Set)-> true
-          | Some Prop -> false
-          | Some SProp -> assert false
-          else false
-        else false
-      in
-      let template_candidate =
-        templatearity ||
-        let ctor_levels =
-          let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
-          let param_levels =
-            List.fold_left (fun levels d -> match d with
-                | LocalAssum _ -> levels
-                | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-              Univ.Level.Set.empty ctx_params
-          in
-          List.fold_left (fun levels c -> add_levels c levels)
-            param_levels entry.mind_entry_lc
-        in
-        template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
-      in
-      should_auto_template entry.mind_entry_typename template_candidate
-    end
+    compute_template_inductive ~user_template:template ~env_ar_params ~ctx_params ~univ_entry entry concl
   | _ ->
     let () = match template with
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
