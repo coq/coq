@@ -13,5 +13,5 @@ ci_dir="$(dirname "$0")"
 make_args=(EXTERNAL_REWRITER=1 EXTERNAL_COQPRIME=1 OCAMLFIND=ocamlfind)
 
 ( cd "${CI_BUILD_DIR}/fiat_crypto"
-  make "${make_args[@]}" standalone-ocaml lite-generated-files
+  make "${make_args[@]}" -j 1 standalone-ocaml lite-generated-files
 )
