@@ -12,6 +12,8 @@ open Pp
 open Util
 open Tok
 
+module Stream = Gramlib.Stream
+
 (* Dictionaries: trees annotated with string options, each node being a map
    from chars to dictionaries (the subtrees). A trie, in other words. *)
 
@@ -487,7 +489,7 @@ let rec progress_further loc last nj tt cs =
 and update_longest_valid_token loc last nj tt cs =
   match tt.node with
   | Some _ as last' ->
-    stream_njunk nj cs;
+    Stream.njunk nj cs;
     progress_further loc last' 0 tt cs
   | None ->
     progress_further loc last nj tt cs
@@ -523,7 +525,7 @@ type marker = Delimited of int * char list * char list | ImmediateAsciiIdent
 
 let peek_marker_len b e s =
   let rec peek n =
-    match stream_nth n s with
+    match Stream.nth n s with
     | c -> if c = b then peek (n+1) else n, List.make n b, List.make n e
     | exception Stream.Failure -> n, List.make n b, List.make n e
   in
@@ -532,7 +534,7 @@ let peek_marker_len b e s =
   else Delimited (len, start, stop)
 
 let peek_marker s =
-  match stream_nth 0 s with
+  match Stream.nth 0 s with
     | '(' -> peek_marker_len '(' ')' s
     | '[' -> peek_marker_len '[' ']' s
     | '{' -> peek_marker_len '{' '}' s
@@ -795,7 +797,7 @@ let rec next_token ~diff_mode loc s =
 let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
   let bp_ = Loc.(loc.bp) in
   let cur_loc = ref loc in
-  LStream.from ~loc
+  Gramlib.LStream.from ~loc
     (fun i ->
       let (tok, loc) = next_token !cur_loc cs in
       cur_loc := after loc;

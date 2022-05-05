@@ -173,7 +173,7 @@ and vernac_load ~verbosely fname =
     let longfname = Loadpath.locate_file fname in
     let in_chan = Util.open_utf8_file_in longfname in
     Pcoq.Parsable.make ~loc:Loc.(initial (InFile { dirpath=None; file=longfname}))
-        (Stream.of_channel in_chan) in
+        (Gramlib.Stream.of_channel in_chan) in
   (* Parsing loop *)
   let v_mod = if verbosely then Flags.verbosely else Flags.silently in
   let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing

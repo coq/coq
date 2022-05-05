@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module Stream = Gramlib.Stream
+
 (** We keep the string to preserve the user representation,
     e.g. "e"/"E" or the presence of leading 0s, or the presence of a +
     in the exponent *)

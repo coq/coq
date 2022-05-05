@@ -141,7 +141,7 @@ let trim_quotation txt =
     else None, txt
 
 let match_pattern (type c) (p : c p) : t -> c =
-  let err () = raise Stream.Failure in
+  let err () = raise Gramlib.Stream.Failure in
   let seq = string_equal in
   match p with
   | PKEYWORD s -> (function KEYWORD s' when seq s s' -> s' | NUMBER n when seq s (NumTok.Unsigned.sprint n) -> s | _ -> err ())

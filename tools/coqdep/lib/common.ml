@@ -170,7 +170,7 @@ let parse_META package f =
     close_in ic;
     Some (f, m)
   with
-  | Stream.Error msg -> Error.cannot_parse_meta_file package msg
+  (* | Gramlib.Stream.Error msg -> Error.cannot_parse_meta_file package msg *)
   | Sys_error _msg -> None
 
 let find_META package =

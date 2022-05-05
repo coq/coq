@@ -82,7 +82,7 @@ let add ((((s,eid),(sid,verbose)),off),(line_nb,bol_pos)) =
   (* note: this won't yield correct values for bol_pos_last,
      but the debugger doesn't use that *)
   let loc = { (initial ToplevelInput) with bp=off; line_nb } in
-  let pa = Pcoq.Parsable.make ~loc (Stream.of_string s) in
+  let pa = Pcoq.Parsable.make ~loc (Gramlib.Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s may not be empty *)
   | Some ast ->
@@ -109,13 +109,13 @@ let edit_at id =
  * be removed in the next version of the protocol.
  *)
 let query (route, (s,id)) =
-  let pa = Pcoq.Parsable.make (Stream.of_string s) in
+  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string s) in
   let doc = get_doc () in
   Stm.query ~at:id ~doc ~route pa
 
 let annotate phrase =
   let doc = get_doc () in
-  let pa = Pcoq.Parsable.make (Stream.of_string phrase) in
+  let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string phrase) in
   match Stm.parse_sentence ~doc (Stm.get_current_state ~doc) ~entry:Pvernac.main_entry pa with
   | None -> Richpp.richpp_of_pp ~width:78 (Pp.mt ())
   | Some ast ->

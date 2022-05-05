@@ -120,15 +120,6 @@ let app_opt f x =
   | Some f -> f x
   | None -> x
 
-(* Stream *)
-
-let stream_nth n st =
-  try List.nth (Stream.npeek (n+1) st) n
-  with Failure _ -> raise Stream.Failure
-
-let stream_njunk n st =
-  repeat n Stream.junk st
-
 (* Delayed computations *)
 
 type 'a delayed = unit -> 'a
