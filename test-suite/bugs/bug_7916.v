@@ -18,7 +18,6 @@ Abort.
 (* Minimized bug from math-comp*)
 Module MathComp.
 
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-R" "/github/workspace/builds/coq/coq-failing/_build_ci/mathcomp/mathcomp" "mathcomp" "-Q" "/github/workspace/cwd" "Top" "-Q" "/github/workspace/builds/coq/coq-failing/_install_ci/lib/coq/user-contrib/Ltac2" "Ltac2" "-I" "/github/workspace/builds/coq/coq-failing/_build_ci/mathcomp/mathcomp" "-top" "seq") -*- *)
 (* File reduced by coq-bug-finder from original input, then from 4170 lines to 77 lines, then from 96 lines to 1135 lines, then from 1139 lines to 101 lines, then from 119 lines to 516 lines, then from 520 lines to 108 lines, then from 123 lines to 158 lines, then from 162 lines to 108 lines, then from 121 lines to 253 lines, then from 257 lines to 109 lines, then from 113 lines to 109 lines *)
 (* coqc version 8.14+alpha compiled with OCaml 4.12.0
    coqtop version 8.14+alpha *)
@@ -135,7 +134,7 @@ Module MathComp.
 End MathComp.
 
 Module Iris.
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-Q" "/github/workspace/cwd" "Top" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris/prelude" "iris.prelude" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris/algebra" "iris.algebra" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris/si_logic" "iris.si_logic" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris/bi" "iris.bi" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris/proofmode" "iris.proofmode" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris/base_logic" "iris.base_logic" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris/program_logic" "iris.program_logic" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris_heap_lang" "iris.heap_lang" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris_staging" "iris.staging" "-Q" "/github/workspace/builds/coq/coq-failing/_build_ci/iris/iris_deprecated" "iris.deprecated" "-Q" "/github/workspace/builds/coq/coq-failing/_install_ci/lib/coq/user-contrib/Ltac2" "Ltac2" "-Q" "/github/workspace/builds/coq/coq-failing/_install_ci/lib/coq/user-contrib/stdpp" "stdpp" "-top" "ofe") -*- *)
+
 (* File reduced by coq-bug-finder from original input, then from 1726 lines to 63 lines, then from 117 lines to 133 lines, then from 137 lines to 64 lines, then from 115 lines to 134 lines, then from 138 lines to 69 lines, then from 96 lines to 750 lines, then from 752 lines to 101 lines, then from 126 lines to 357 lines, then from 361 lines to 116 lines, then from 140 lines to 190 lines, then from 194 lines to 125 lines, then from 148 lines to 1547 lines, then from 1547 lines to 152 lines, then from 156 lines to 152 lines *)
 (* coqc version 8.14+alpha compiled with OCaml 4.12.0
    coqtop version 8.14+alpha *)
@@ -295,7 +294,7 @@ End Iris.
 
 Module SSr.
 
-(* -*- mode: coq; coq-prog-args: ("-emacs" "-R" "/github/workspace/builds/coq/coq-failing/_build_ci/fourcolor/theories" "fourcolor" "-Q" "/github/workspace/cwd" "Top" "-Q" "/github/workspace/builds/coq/coq-failing/_install_ci/lib/coq/user-contrib/Ltac2" "Ltac2" "-Q" "/github/workspace/builds/coq/coq-failing/_install_ci/lib/coq/user-contrib/mathcomp" "mathcomp" "-top" "realcategorical") -*- *)
+
 (* File reduced by coq-bug-finder from original input, then from 451 lines to 35 lines, then from 99 lines to 1013 lines, then from 1016 lines to 85 lines, then from 99 lines to 206 lines, then from 209 lines to 101 lines, then from 114 lines to 360 lines, then from 363 lines to 185 lines, then from 198 lines to 330 lines, then from 334 lines to 185 lines, then from 189 lines to 185 lines *)
 (* coqc version 8.14+alpha compiled with OCaml 4.12.0
    coqtop version 8.14+alpha *)
