@@ -44,56 +44,74 @@ let vAccu   = ref ([] : (string * string) list)
 
 let addQueue q v = q := v :: !q
 
-let error_cannot_parse s (i,j) =
-  Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
-  exit 1
+(** Exceptions *)
 
-let error_cannot_open_project_file msg =
-  Printf.eprintf "%s\n" msg;
-  exit 1
+module Error = struct
 
-let error_cannot_parse_project_file file msg =
-  Printf.eprintf "Project file \"%s\": Syntax error: %s\n" file msg;
-  exit 1
+  exception CannotParseFile of string * (int * int)
+  exception CannotParseProjectFile of string * string
+  exception CannotParseMetaFile of string * string
 
-let error_cannot_parse_meta_file file msg =
-  Printf.eprintf "META file \"%s\": Syntax error: %s\n" file msg;
-  exit 1
+  exception CannotOpenFile of string * string
+  exception CannotOpenProjectFile of string
 
-let error_meta_file_lacks_field meta_file package field =
-  Printf.eprintf "META file \"%s\" lacks field %s for package %s.\n" meta_file field package;
-  exit 1
+  exception MetaLacksFieldForPackage of string * string * string
+  exception DeclaredMLModuleNotFound of string * string * string
+  exception InvalidFindlibPluginName of string * string
+  exception CannotFindMeta of string * string
 
-let error_cannot_stat s unix_error =
-  Printf.eprintf "%s\n" (error_message unix_error);
-  exit 1
+  let _ = CErrors.register_handler @@ function
+    | CannotParseFile (s,(i,j)) ->
+      Some Pp.(str "File \"" ++ str s ++ str "\"," ++ str "characters" ++ spc ()
+        ++ int i ++ str "-" ++ int j ++ str ":" ++ spc () ++ str "Syntax error")
 
-let error_cannot_stat_in f s unix_error =
-  Printf.eprintf "In file \"%s\": %s\n" f (error_message unix_error);
-  exit 1
+    | CannotParseProjectFile (file, msg) ->
+      Some Pp.(str "Project file" ++ spc () ++ str  "\"" ++ str file ++ str "\":" ++ spc ()
+        ++ str "Syntax error:" ++ str msg)
 
-let error_cannot_open s msg =
-  (* Print an arbitrary line number, such that the message matches
-     common error message pattern. *)
-  Printf.eprintf "%s: %s\n" s msg;
-  exit 1
+    | CannotParseMetaFile (file, msg) ->
+      Some Pp.(str "META file \"" ++ str file ++ str "\":" ++ spc ()
+        ++ str "Syntax error:" ++ spc () ++ str msg)
 
-let error_declare_in_META f s m =
-  Printf.eprintf "in file %s, declared ML module %s has not been found in %s.\n" f s m;
-  exit 1
+    | CannotOpenFile (s, msg) ->
+      Some Pp.(str s ++ str ":" ++ spc () ++ str msg)
 
-let error_findlib_name f s =
-  Printf.eprintf "in file %s, %s is not a valid plugin name anymore.\n" f s;
-  Printf.eprintf "Plugins should be loaded using their public name according to findlib,\n";
-  Printf.eprintf "for example package-name.foo and not foo_plugin.\n";
-  Printf.eprintf "If you are building with dune < 2.9.4 you must specify both\n";
-  Printf.eprintf "the legacy and the findlib plugin name as in:\n";
-  Printf.eprintf "Declare ML Module \"foo_plugin:package-name.foo\".\n";
-  exit 1
+    | CannotOpenProjectFile msg ->
+      (* TODO: more info? *)
+      Some Pp.(str msg)
 
-let error_no_meta f package =
-  Printf.eprintf "in file %s, could not find META.%s.\n" f package;
-  exit 1
+    | MetaLacksFieldForPackage (meta_file, package, field) ->
+      Some Pp.(str "META file \"" ++ str meta_file ++ str "\"" ++ spc () ++ str "lacks field" ++ spc ()
+        ++ str field ++ spc () ++ str "for package" ++ spc () ++ str package ++ str ".")
+
+    | DeclaredMLModuleNotFound (f, s, m) ->
+      Some Pp.(str "in file " ++ str f ++ str "," ++ spc() ++ str "declared ML module" ++ spc ()
+        ++ str s ++ spc () ++ str "has not been found in" ++ spc () ++ str m ++ str ".")
+
+    | InvalidFindlibPluginName (f, s) ->
+      Some Pp.(str (Printf.sprintf "in file %s, %s is not a valid plugin name anymore." f s)
+        ++ str "Plugins should be loaded using their public name according to findlib," ++ spc ()
+        ++ str "for example package-name.foo and not foo_plugin." ++ spc ()
+        ++ str "If you are building with dune < 2.9.4 you must specify both" ++ spc ()
+        ++ str "the legacy and the findlib plugin name as in:" ++ spc ()
+        ++ str "Declare ML Module \"foo_plugin:package-name.foo\".")
+
+    | CannotFindMeta (f, package) ->
+      Some Pp.(str "in file" ++ spc () ++ str f ++ str "," ++ spc ()
+        ++ str "could not find META." ++ str package ++ str ".")
+
+    | _ -> None
+
+  let cannot_parse s ij = raise @@ CannotParseFile (s, ij)
+  let cannot_open_project_file msg = raise @@ CannotOpenProjectFile msg
+  let cannot_parse_project_file file msg = raise @@ CannotParseProjectFile (file, msg)
+  let cannot_parse_meta_file file msg = raise @@ CannotParseMetaFile (file, msg)
+  let meta_file_lacks_field meta_file package field = raise @@ MetaLacksFieldForPackage (meta_file, package, field)
+  let cannot_open s msg = raise @@ CannotOpenFile (s, msg)
+  let declare_in_META f s m = raise @@ DeclaredMLModuleNotFound (f, s, m)
+  let findlib_name f s = raise @@ InvalidFindlibPluginName (f, s)
+  let no_meta f package = raise @@ CannotFindMeta (f, package)
+end
 
 type what = Library | External
 let str_of_what = function Library -> "library" | External -> "external file"
@@ -110,7 +128,6 @@ let warning_module_notfound ?(what=Library) from f s =
 
 let warning_declare f s =
   coqdep_warning "in file %s, declared ML module %s has not been found!" f s
-
 
 let warn_if_clash ?(what=Library) exact file dir f1 = function
   | f2::fl ->
@@ -231,7 +248,7 @@ let parse_META package f =
     close_in ic;
     Some (f, m)
   with
-  | Stream.Error msg -> error_cannot_parse_meta_file package msg
+  | Stream.Error msg -> Error.cannot_parse_meta_file package msg
   | Sys_error _msg -> None
 
 let find_META package =
@@ -255,14 +272,14 @@ let findlib_resolve f package legacy_name plugin =
   let open Fl_metascanner in
   match find_META package, legacy_name with
   | None, Some p -> None, p
-  | None, None -> error_no_meta f package
+  | None, None -> Error.no_meta f package
   | Some (meta_file, meta), _ ->
       let rec find_plugin path p { pkg_defs ; pkg_children  } =
         match p with
         | [] -> path, pkg_defs
         | p :: ps ->
             let rec find_child = function
-              | [] -> error_declare_in_META f (String.concat "." plugin) meta_file
+              | [] -> Error.declare_in_META f (String.concat "." plugin) meta_file
               | (s, def) :: _ when s = p -> def
               | _ :: rest -> find_child rest
             in
@@ -275,7 +292,7 @@ let findlib_resolve f package legacy_name plugin =
         | [] ->
             match def with
             | Some x -> x
-            | None -> error_meta_file_lacks_field meta_file package fld
+            | None -> Error.meta_file_lacks_field meta_file package fld
       in
       let path = [find_plugin_field "directory" (Some ".") meta.pkg_defs] in
       let path, plug = find_plugin path plugin meta in
@@ -325,7 +342,7 @@ let rec find_dependencies st basename =
               | [[x]] when List.mem_assoc x legacy_mapping ->
                   findlib_resolve f "coq-core" (Some x) (List.assoc x legacy_mapping)
               | [[x]] ->
-                  error_findlib_name f x
+                  Error.findlib_name f x
               | [[legacy]; package :: plugin] ->
                   findlib_resolve f package (Some legacy) plugin
               | [package :: plugin] ->
@@ -394,8 +411,8 @@ let rec find_dependencies st basename =
         List.rev !dependencies
     | Syntax_error (i,j) ->
         close_in chan;
-        error_cannot_parse f (i,j)
-  with Sys_error msg -> error_cannot_open (basename ^ ".v") msg
+        Error.cannot_parse f (i,j)
+  with Sys_error msg -> Error.cannot_open (basename ^ ".v") msg
 
 
 let write_vos = ref false
@@ -472,14 +489,10 @@ let rec treat_file old_dirname old_name =
     | _ -> ()
 
 let treat_file_command_line old_name =
-  try treat_file None old_name
-  with Cannot_stat_file (f, msg) ->
-    error_cannot_stat f msg
+  treat_file None old_name
 
 let treat_file_coq_project where old_name =
-  try treat_file None old_name
-  with Cannot_stat_file (f, msg) ->
-    error_cannot_stat_in where f msg
+  treat_file None old_name
 
 (* "[sort]" outputs `.v` files required by others *)
 let sort st =
@@ -536,8 +549,8 @@ let treat_coqproject st f =
   let project =
     try read_project_file ~warning_fn f
     with
-    | Parsing_error msg -> error_cannot_parse_project_file f msg
-    | UnableToOpenProjectFile msg -> error_cannot_open_project_file msg
+    | Parsing_error msg -> Error.cannot_parse_project_file f msg
+    | UnableToOpenProjectFile msg -> Error.cannot_open_project_file msg
   in
   iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
