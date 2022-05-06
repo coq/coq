@@ -101,7 +101,7 @@ val compute_template_inductive
   -> univ_entry:UState.universes_entry
   -> Entries.one_inductive_entry
   -> Sorts.t option
-  -> bool
+  -> Entries.inductive_universes_entry * Univ.ContextSet.t
 (** [compute_template_inductive] computes whether an inductive can be template
     polymorphic. *)
 

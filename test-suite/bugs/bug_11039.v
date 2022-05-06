@@ -1,5 +1,7 @@
 (* this bug was a proof of False *)
 
+Set Warnings "+no-template-universe".
+
 (* when we require template poly Coq recognizes that it's not allowed *)
 Fail #[universes(template)]
   Inductive foo@{i} (A:Type@{i}) : Type@{i+1} := bar (X:Type@{i}) : foo A.

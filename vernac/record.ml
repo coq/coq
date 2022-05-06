@@ -619,7 +619,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block data in
-  let template = match blocks, data with
+  let ind_univs, global_univ_decls = match blocks, data with
   | [entry], [data] ->
     let concl = Some data.Data.rdata.DataR.min_univ in
     let env_ar_params = Environ.push_rel_context params (Global.env ()) in
@@ -628,22 +628,22 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   | _ ->
     begin match template with
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual records.")
-    | Some false | None -> false
+    | Some false | None ->
+      match univs with
+      | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+      | UState.Monomorphic_entry uctx -> Monomorphic_ind_entry, uctx
     end
   in
   let primitive =
     primitive_proj  &&
     List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) data
   in
-  let globnames, univs, global_univ_decls = match univs with
-  | UState.Monomorphic_entry ctx ->
-    if template then
-      (univs, ubinders), Template_ind_entry ctx, None
-    else
-      (univs, ubinders), Monomorphic_ind_entry, Some ctx
-  | UState.Polymorphic_entry ctx ->
-    (univs, UnivNames.empty_binders), Polymorphic_ind_entry ctx, None
+  let globnames, global_univ_decls = match ind_univs with
+  | Monomorphic_ind_entry -> (univs, ubinders), Some global_univ_decls
+  | Template_ind_entry uctx -> (univs, ubinders), Some global_univ_decls
+  | Polymorphic_ind_entry uctx -> (univs, UnivNames.empty_binders), None
   in
+  let univs = ind_univs in
   let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
   let mie =
     { mind_entry_params = params;
