@@ -83,41 +83,76 @@ constraints they must verify (for :g:`pidentity` there are no constraints).
 
 Inductive types can also be declared universes polymorphic on
 universes appearing in their parameters or fields. A typical example
-is given by monoids:
+is given by monoids. We first put ourselves in a mode where every declaration
+is universe-polymorphic:
 
 .. coqtop:: in
 
-   Polymorphic Record Monoid := { mon_car :> Type; mon_unit : mon_car;
+   Set Universe Polymorphism.
+
+.. coqtop:: in
+
+   Record Monoid := { mon_car :> Type; mon_unit : mon_car;
      mon_op : mon_car -> mon_car -> mon_car }.
 
-.. coqtop:: in
+A monoid is here defined by a carrier type, a unit in this type
+and a binary operation.
+
+.. coqtop:: all
 
    Print Monoid.
 
 The Monoid's carrier universe is polymorphic, hence it is possible to
 instantiate it for example with :g:`Monoid` itself. First we build the
-trivial unit monoid in :g:`Set`:
+trivial unit monoid in any universe :g:`i >= Set`:
 
 .. coqtop:: in
 
-   Definition unit_monoid : Monoid :=
+   Definition unit_monoid@{i} : Monoid@{i} :=
      {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
 
-From this we can build a definition for the monoid of :g:`Set`\-monoids
-(where multiplication would be given by the product of monoids).
+Here we are using the fact that :g:`unit : Set` and by cumulativity,
+any polymorphic universe is greater or equal to `Set`.
+
+From this we can build a definition for the monoid of monoids,
+where multiplication is given by the product of monoids. To do so, we
+first need to define a universe-polymorphic variant of pairs:
 
 .. coqtop:: in
 
-   Polymorphic Definition monoid_monoid : Monoid.
-     refine (@Build_Monoid Monoid unit_monoid (fun x y => x)).
-   Defined.
+  Record pprod@{i j} (A : Type@{i}) (B : Type@{j}) : Type@{max(i,j)} :=
+    ppair { pfst : A; psnd : B }.
+
+  Arguments ppair {A} {B}.
+  Infix "**" := pprod (at level 40, left associativity) : type_scope.
+  Notation "( x ; y ; .. ; z )" := (ppair .. (ppair x y) .. z) (at level 0) : core_scope.
+
+The monoid of monoids uses the cartesian product of monoids as its operation:
+
+.. coqtop:: in
+
+    Definition monoid_op@{i} (m m' : Monoid@{i}) (x y : mon_car m ** mon_car m') :
+       mon_car m ** mon_car m' :=
+      let (l, r) := x in
+      let (l', r') := y in
+      (mon_op m l l'; mon_op m' r r').
+
+    Definition prod_monoid@{i} (m m' : Monoid@{i}): Monoid@{i} :=
+      {| mon_car := (m ** m')%type;
+         mon_unit := (mon_unit m; mon_unit m');
+         mon_op := (monoid_op m m') |}.
+
+    Definition monoids_monoid@{i j | i < j} : Monoid@{j} :=
+      {| mon_car := Monoid@{i};
+         mon_unit := unit_monoid@{i};
+         mon_op := prod_monoid@{i} |}.
 
 .. coqtop:: all
 
-   Print monoid_monoid.
+   Print monoids_monoid.
 
 As one can see from the constraints, this monoid is “large”, it lives
-in a universe strictly higher than :g:`Set`.
+in a universe strictly higher than its objects, monoids in the universes :g:`i`.
 
 Polymorphic, Monomorphic
 -------------------------
@@ -209,11 +244,15 @@ Cumulative, NonCumulative
 
 Consider the examples below.
 
-.. coqtop:: in
+.. coqtop:: in reset
 
    Polymorphic Cumulative Inductive list {A : Type} :=
    | nil : list
    | cons : A -> list -> list.
+
+.. coqtop:: none
+
+   Set Printing Universes.
 
 .. coqtop:: all
 
@@ -248,6 +287,61 @@ The following is an example of a record with non-trivial subtyping relation:
 
    E[Γ] ⊢ \mathsf{packType}@\{i\} =_{βδιζη}
    \mathsf{packType}@\{j\}~\mbox{ whenever }~i ≤ j
+
+Looking back at the example of monoids, we can see that they are naturally
+covariant for cumulativity:
+
+.. coqtop:: in
+
+   Set Universe Polymorphism.
+
+   Cumulative Record Monoid := {
+     mon_car :> Type;
+     mon_unit : mon_car;
+     mon_op : mon_car -> mon_car -> mon_car }.
+
+.. coqtop:: none
+
+   Set Printing Universes.
+
+.. coqtop:: all
+
+   Print Monoid.
+
+This means that a monoid in a lower universe (like the unit monoid in set), can
+be seen as a monoid in any higher universe, without introducing explicit lifting.
+
+.. coqtop:: in
+
+   Definition unit_monoid : Monoid@{Set} :=
+     {| mon_car := unit; mon_unit := tt; mon_op x y := tt |}.
+
+.. coqtop:: all
+
+   Monomorphic Universe i.
+
+   Check unit_monoid : Monoid@{i}.
+
+Finally, invariant universes appear when there is no possible subtyping relation
+between different instances of the inductive. Consider:
+
+.. coqtop:: in
+
+   Polymorphic Cumulative Record monad@{i} := {
+      m : Type@{i} -> Type@{i};
+      unit : forall (A : Type@{i}), A -> m A }.
+
+.. coqtop:: none
+
+   Set Printing Universes.
+
+.. coqtop:: all
+
+   Print monad.
+
+The universe of :g:`monad` is invariant due to its use on the left side of an arrow in
+the :g:`m` field: one cannot lift or lower the level of the type constructor to build a
+monad in a higher or lower universe.
 
 Specifying cumulativity
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -317,27 +411,37 @@ Insufficiently restrictive variance annotations lead to errors:
 
 .. example:: A proof using cumulativity
 
-  .. coqtop:: in reset
+   .. coqtop:: in reset
 
-    Set Universe Polymorphism.
-    Set Polymorphic Inductive Cumulativity.
+      Set Universe Polymorphism.
+      Set Polymorphic Inductive Cumulativity.
+      Set Printing Universes.
 
-    Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
+      Inductive eq@{i} {A : Type@{i}} (x : A) : A -> Type@{i} := eq_refl : eq x x.
 
-    Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
-    := forall f g : (forall a, B a),
-                    (forall x, eq@{e} (f x) (g x))
-                    -> eq@{e} f g.
+   .. coqtop:: all
 
-    Section down.
-        Universes a b e e'.
-        Constraint e' < e.
-        Lemma funext_down {A B}
-          (H : @funext_type@{a b e} A B) : @funext_type@{a b e'} A B.
-        Proof.
-          exact H.
-        Defined.
-    End down.
+      Print eq.
+
+   The universe of :g:`eq` is irrelevant here, hence proofs of equalities can
+   inhabit any universe.  The universe must be big enough to fit `A`.
+
+   .. coqtop:: in
+
+      Definition funext_type@{a b e} (A : Type@{a}) (B : A -> Type@{b})
+      := forall f g : (forall a, B a),
+                      (forall x, eq@{e} (f x) (g x))
+                      -> eq@{e} f g.
+
+      Section down.
+          Universes a b e e'.
+          Constraint e' < e.
+          Lemma funext_down {A B}
+            (H : @funext_type@{a b e} A B) : @funext_type@{a b e'} A B.
+          Proof.
+            exact H.
+          Defined.
+      End down.
 
 Cumulativity Weak Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
