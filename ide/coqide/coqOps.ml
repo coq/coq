@@ -14,7 +14,7 @@ open Ideutils
 open Interface
 open Feedback
 
-let b2c = byte_off_to_buffer_off
+let b2c = byte_offset_to_char_offset
 
 (** variant of buffer_off_to_byte_off: convert unicode offset (used by GTK buffer)
     to UTF-8 byte offset (used by Coq) with size caching for performance *)
@@ -50,9 +50,10 @@ end
 
 module SentenceId : sig
 
-  type sentence = private {
+  type sentence = {
     start : GText.mark;
     stop : GText.mark;
+    mutable byte_start : int;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
@@ -80,6 +81,7 @@ end = struct
   type sentence = {
     start : GText.mark;
     stop : GText.mark;
+    mutable byte_start : int;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
@@ -97,6 +99,7 @@ end = struct
   let mk_sentence ~start ~stop flags = decr id; {
     start = start;
     stop = stop;
+    byte_start = 0;
     flags = flags;
     edit_id = !id;
     tooltips = [];
@@ -466,14 +469,14 @@ object(self)
 
   method private attach_tooltip ?loc sentence text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
-    let pre_chars, post_chars = Option.cata Loc.unloc (0, String.length phrase) loc in
-    let pre = b2c buffer pre_chars in
-    let post = b2c buffer post_chars in
-    let start = buffer#get_iter (`OFFSET pre) in
-    let stop = buffer#get_iter (`OFFSET post) in
+    let pre_bytes, post_bytes = Option.cata Loc.unloc (0, String.length phrase) loc in
+    let pre = b2c phrase (pre_bytes - (sentence.byte_start)) in
+    let post = b2c phrase (post_bytes - (sentence.byte_start)) in
+    let start = start_sentence#forward_chars pre in
+    let stop = start_sentence#forward_chars post in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
-    add_tooltip sentence pre post markup
+    add_tooltip sentence start#offset stop#offset markup
 
   method private debug_prompt ~tag msg =
     match tag with
@@ -599,27 +602,28 @@ object(self)
     let stop = buffer#get_iter_at_mark sentence.stop in
     buffer#move_mark ~where:stop (`NAME "start_of_input");
 
-  method private position_tag_at_iter ?loc iter_start iter_stop tag phrase = match loc with
+  method private apply_tag_in_sentence ?loc tag sentence =
+    let start, stop, phrase = self#get_sentence sentence in
+    match loc with
     | None ->
-      buffer#apply_tag tag ~start:iter_start ~stop:iter_stop
+      buffer#apply_tag tag ~start ~stop
     | Some loc ->
-      let start, stop = Loc.unloc loc in
-      buffer#apply_tag tag
-        ~start:(buffer#get_iter (`OFFSET (b2c buffer start)))
-        ~stop:(buffer#get_iter (`OFFSET (b2c buffer stop)))
+      let start_bytes, stop_bytes = Loc.unloc loc in
+      let stop = start#forward_chars (b2c phrase (stop_bytes - (sentence.byte_start))) in
+      let start = start#forward_chars (b2c phrase (start_bytes - (sentence.byte_start))) in
+      buffer#apply_tag tag ~start ~stop
 
   method private position_tag_at_sentence ?loc tag sentence =
-    let start, stop, phrase = self#get_sentence sentence in
-    self#position_tag_at_iter ?loc start stop tag phrase
+    self#apply_tag_in_sentence ?loc tag sentence
 
   method private process_interp_error ?loc queue sentence msg tip id =
     Coq.bind (Coq.return ()) (function () ->
-    let start, stop, phrase = self#get_sentence sentence in
+    let start, stop, _ = self#get_sentence sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
     pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
-      self#position_tag_at_iter ?loc start stop Tags.Script.error phrase;
+      self#apply_tag_in_sentence ?loc Tags.Script.error sentence;
       buffer#place_cursor ~where:stop;
       messages#default_route#clear;
       messages#default_route#push Feedback.Error msg;
@@ -720,6 +724,7 @@ object(self)
             (* script before last_offsets is not editable because Coq is processing *)
             let s_offs = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
             let bp = c2b buffer s_offs start#offset in
+            sentence.byte_start <- bp;
             let line_nb = start#line + 1 in
             let bol_uni = start#offset - start#line_offset in
             let bol_byte = c2b buffer s_offs bol_uni in
@@ -778,7 +783,7 @@ object(self)
            | Some loc ->
              let (iter, _, phrase) = self#get_sentence s in
              let (start, _) = Loc.unloc loc in
-             buffer#get_iter (`OFFSET (byte_offset_to_char_offset phrase start))
+             buffer#get_iter (`OFFSET (b2c phrase start))
          end in iter#line + 1, msg
       | _ -> assert false in
     List.rev
