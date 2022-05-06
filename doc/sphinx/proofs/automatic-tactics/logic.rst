@@ -124,8 +124,9 @@ Solvers for logic and equality
 
    .. opt:: Firstorder Solver @ltac_expr
 
-      The default tactic used by :tacn:`firstorder` when no rule applies in
-      :g:`auto with core`.  It can be set locally or globally using this :term:`option`.
+      The default tactic used by :tacn:`firstorder` when no rule
+      applies in :g:`auto with core`. This command supports the same
+      locality attributes as :cmd:`Obligation Tactic`.
 
    .. cmd:: Print Firstorder Solver
 
