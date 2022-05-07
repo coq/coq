@@ -23,8 +23,8 @@ For example, in interactive mode, some errors coming from the kernel
 of Coq are signaled late. The type of errors belonging to this
 category are universe inconsistencies.
 
-At the time of writing, only opaque proofs (ending with ``Qed`` or
-``Admitted``) can be processed asynchronously.
+At the time of writing, only opaque proofs (ending with :cmd:`Qed` or
+:cmd:`Admitted`) can be processed asynchronously.
 
 Finally, asynchronous processing is disabled when running CoqIDE in
 Windows. The current implementation of the feature is not stable on
@@ -43,22 +43,22 @@ When a section ends, Coq looks at the proof object to decide which
 section variables are actually used and hence have to be quantified in
 the statement of the theorem. To avoid making the construction of
 proofs mandatory when ending a section, one can start each proof with
-the ``Proof using`` command (Section :ref:`proof-editing-mode`) that
+the :cmd:`Proof using` command (Section :ref:`proof-editing-mode`) that
 declares which section variables the theorem uses.
 
-The presence of ``Proof`` using is needed to process proofs asynchronously
+The presence of :cmd:`Proof using` is needed to process proofs asynchronously
 in interactive mode.
 
 It is not strictly mandatory in batch mode if it is not the first time
 the file is compiled and if the file itself did not change. When the
-proof does not begin with Proof using, the system records in an
+proof does not begin with :cmd:`Proof using`, the system records in an
 auxiliary file, produced along with the ``.vo`` file, the list of section
 variables used.
 
 Automatic suggestion of proof annotations
 `````````````````````````````````````````
 
-The :flag:`Suggest Proof Using` flag makes Coq suggest, when a ``Qed``
+The :flag:`Suggest Proof Using` flag makes Coq suggest, when a :cmd:`Qed`
 command is processed, a correct proof annotation. It is up to the user
 to modify the proof script accordingly.
 
@@ -66,11 +66,11 @@ to modify the proof script accordingly.
 Proof blocks and error resilience
 --------------------------------------
 
-Coq 8.6 introduced a mechanism for error resilience: in interactive
+In interactive
 mode Coq is able to completely check a document containing errors
 instead of bailing out at the first failure.
 
-Two kind of errors are supported: errors occurring in
+Two kind of errors are handled: errors occurring in
 commands and errors occurring in proofs.
 
 To properly recover from a failing tactic, Coq needs to recognize the
@@ -112,19 +112,21 @@ Valid proof block types are: “curly”, “par”, “indent”, and “bullet
 Interactive mode
 ---------------------
 
-At the time of writing the only user interface supporting asynchronous
-proof processing is CoqIDE.
+.. todo: How about PG and coqtail?
 
-When CoqIDE is started, two Coq processes are created. The master one
+CoqIDE and VsCoq support asynchronous proof processing.
+
+When CoqIDE is started and async mode is enabled, two or more Coq processes
+are created. The master one
 follows the user, giving feedback as soon as possible by skipping
-proofs, which are delegated to the worker process. The worker process,
-whose state can be seen by clicking on the button in the lower right
-corner of the main CoqIDE window, asynchronously processes the proofs.
-If a proof contains an error, it is reported in red in the label of
+proofs, which are delegated to the worker processes. The worker processes
+asynchronously processes the proofs.  The *Jobs panel* in the main CoqIDE
+window shows the status of each worker process.
+If a proof contains an error, it's reported in red in the label of
 the very same button, that can also be used to see the list of errors
 and jump to the corresponding line.
 
-If a proof is processed asynchronously the corresponding Qed command
+If a proof is processed asynchronously the corresponding :cmd:`Qed` command
 is colored using a lighter color than usual. This signals that the
 proof has been delegated to a worker process (or will be processed
 lazily if the ``-async-proofs lazy`` option is used). Once finished, the

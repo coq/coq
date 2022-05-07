@@ -59,12 +59,9 @@ so:
 Of course, the two instances of :g:`pidentity` in this definition are
 different. This can be seen when the :flag:`Printing Universes` flag is on:
 
-.. coqtop:: none
-
-   Set Printing Universes.
-
 .. coqtop:: all
 
+   Set Printing Universes.
    Print selfpid.
 
 Now :g:`pidentity` is used at two different levels: at the head of the
@@ -252,12 +249,9 @@ Consider the examples below.
    | nil : list
    | cons : A -> list -> list.
 
-.. coqtop:: none
-
-   Set Printing Universes.
-
 .. coqtop:: all
 
+   Set Printing Universes.
    Print list.
 
 When printing :g:`list`, the universe context indicates the subtyping
@@ -302,12 +296,9 @@ covariant for cumulativity:
      mon_unit : mon_car;
      mon_op : mon_car -> mon_car -> mon_car }.
 
-.. coqtop:: none
-
-   Set Printing Universes.
-
 .. coqtop:: all
 
+   Set Printing Universes.
    Print Monoid.
 
 This means that a monoid in a lower universe (like the unit monoid in set), can
@@ -333,12 +324,9 @@ between different instances of the inductive. Consider:
       m : Type@{i} -> Type@{i};
       unit : forall (A : Type@{i}), A -> m A }.
 
-.. coqtop:: none
-
-   Set Printing Universes.
-
 .. coqtop:: all
 
+   Set Printing Universes.
    Print monad.
 
 The universe of :g:`monad` is invariant due to its use on the left side of an arrow in
@@ -508,7 +496,6 @@ Consider the following example:
 .. coqtop:: none
 
    Polymorphic Definition pidentity {A : Type} (a : A) := a.
-   Set Printing Universes.
 
 .. coqtop:: in
 
@@ -516,6 +503,7 @@ Consider the following example:
 
 .. coqtop:: all
 
+   Set Printing Universes.
    Print id0.
 
 This definition is elaborated by minimizing the universe of :g:`id0` to
