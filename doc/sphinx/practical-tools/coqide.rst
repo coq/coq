@@ -2,133 +2,215 @@
 
 .. _coqintegrateddevelopmentenvironment:
 
-Coq Integrated Development Environment
-========================================
+CoqIDE
+======
 
-The Coq Integrated Development Environment is a graphical tool, to be
-used as a user-friendly replacement to `coqtop`. Its main purpose is to
-allow the user to navigate forward and backward into a Coq
-file, executing corresponding commands or undoing them respectively.
+.. todo: how to say that a number of things are broken?  Maybe list them
+   somewhere--doesn't have to be super detailed
 
-CoqIDE is run by typing the command `coqide` on the command line.
-Without argument, the main screen is displayed with an “unnamed
-buffer”, and with a filename as argument, another buffer displaying
-the contents of that file. Additionally, `coqide` accepts the same
-options as `coqtop`, given in :ref:`thecoqcommands`, the ones having obviously
-no meaning for CoqIDE being ignored.
+The Coq Integrated Development Environment (CoqIDE) is a user-friendly GUI
+for Coq. Its main purpose is to allow users to edit Coq scripts and step forward
+and backward through them.  Stepping forward executes commands and
+tactics while stepping backward undoes previously executed commands and tactics,
+returning to a previous state.
+
+To run CoqIDE, enter `coqide` on the command line.
+If you include script file names (which end with `.v`) as arguments, each is opened
+in a separate tab.  If you don't, CoqIDE opens a single unnamed buffer
+(titled `*scratch*`).  `coqide` also accepts many of the options of `coqtop`
+(see :ref:`thecoqcommands`), while ignoring the ones that aren't meaningful
+for CoqIDE.  Use `coqide --help` to see the list of command line options.
 
 .. _coqide_mainscreen:
 
   .. image:: ../_static/coqide.png
      :alt: CoqIDE main screen
 
-A sample CoqIDE main screen, while navigating into a file `Fermat.v`,
-is shown in the figure :ref:`CoqIDE main screen <coqide_mainscreen>`.
-At the top is a menu bar, and a tool bar
-below it. The large window on the left is displaying the various
-*script buffers*. The upper right window is the *goal window*, where
-goals to be proven are displayed. The lower right window is the *message
-window*, where various messages resulting from commands are displayed.
-At the bottom is the status bar.
+The screenshot shows CoqIDE as the user is stepping through the file `Fermat.v`.
+A menu bar and a tool bar appear at the top of the window. The left-hand panel shows
+the current *script buffer*.  Each script buffer corresponds to a separate Coq process.
+The upper right panel is the *proof panel*, which shows the goals to be proven.
+
+The lower right panel has three tabs: the *Messages
+panel*, which shows messages produced by commands and tactics; the *Errors panel*,
+which shows errors detected when running in :ref:`async mode <asyncmode>` and the
+*Jobs panel,* which shows information on the worker processes used by async mode.
+The contents of the right-hand panels are specific to the currently-displayed script.
+Click the arrow icons to detach these panel into separate windows.  The proof panel
+can be detached from the `Windows/Detach Proof` menu item.
+
+The *status bar* is a line of text that appears at the bottom of the window.
 
 Managing files and buffers, basic editing
-----------------------------------------------
+-----------------------------------------
 
-In the script window, you may open arbitrarily many buffers to edit.
-The *File* menu allows you to open files or create some, save them,
-print or export them into various formats. Among all these buffers,
-there is always one which is the current *running buffer*, whose name
-is displayed on a background in the *processed* color (green by default), which
-is the one where Coq commands are currently executed.
+The *File* menu lets you open files into buffers, create new buffers, save buffers to files,
+and print or export them in various formats.
 
-Buffers may be edited as in any text editor, and classical basic
-editing commands (Copy/Paste, …) are available in the *Edit* menu.
-CoqIDE offers only basic editing commands, so if you need more complex
-editing commands, you may launch your favorite text editor on the
-current buffer, using the *Edit/External Editor* menu.
+Text editing provides the basic operations such as copy, cut, paste, find and replace.
+Most editing operations are shown in the *Edit* menu.  Keystroke equivalents (if defined)
+for menu items are shown on the right of each item.  If you need more complex editor
+commands, you can launch an external text editor on the current buffer, using the
+*Edit/External Editor* menu. (Use `Edit/Preferences/Externals/External Editor` to
+specify the external text editor.)  When you're done editing, you currently must
+reopen the file to see your changes.  Also note:
 
-Interactive navigation into Coq scripts
---------------------------------------------
+- Undo is also available as ``Ctrl-Z`` (`Cmd-Z` on macOS).  Redo is `Ctrl-Shift-Z`
+  (`Shift-Cmd-Z` on macOS).
+- Select all is `Ctrl-A` (`Cmd-A` on macOS).
+- `Home` and `End` move the cursor to the beginning or end of the current line.
+- If you remove the default bindings for `Ctrl-Home` and `Ctrl-End`, these keys
+  will move the cursor to the beginning or end of the buffer.
+- `Ctrl-Delete` deletes a word of text after the cursor
+- `Ctrl-Backspace` deletes a word of text before the cursor
+- Commenting and uncommenting the current line or selected text is available in
+  the *Tools* menu.  If some text is selected, exactly that text is commented out;
+  otherwise the line containing the cursor is commented out.  To uncomment, position
+  the cursor between `(*` and `*)` or select any text between them.
 
-The running buffer is the one where navigation takes place. The toolbar offers
-five basic commands for this. The first one, represented by a down arrow icon,
-is for going forward executing one command. If that command is successful, the
-part of the script that has been executed is displayed on a background with the
-processed color. If that command fails, the error message is displayed in the
-message window, and the location of the error is emphasized by an underline in
-the error foreground color (red by default).
+Files are automatically saved periodically to a recovery file.  For example,
+`foo.v` is saved to `#foo.v#` every 10 seconds by default.  You can change the
+interval in the *Edit / Preferences / Files* dialog.  In some cases when CoqIDE
+exits abruptly, it saves named buffers in ``<NAME>.crashcoqide`` in the same
+directory as ``<NAME>``.  Unnamed buffers are saved in
+``Unnamed_coqscript_<N>.crashcoqide`` in the directory that CoqIDE was started in.
 
-In the figure :ref:`CoqIDE main screen <coqide_mainscreen>`,
-the running buffer is `Fermat.v`, all commands until
-the ``Theorem`` have been already executed, and the user tried to go
+In the *View* menu, you can set several printing options that
+correspond to options that can appear in the script.  For example, "Display
+notations" on the menu corresponds to the :flag:`Printing Notations` flag.  You
+should use the menu instead of controlling these settings in your script.
+
+Running Coq scripts
+-------------------
+
+Operations for running the script are available in the *Navigation* menu,
+from the toolbar and from the keyboard.  These include:
+
+- Forward (`Ctrl-Down`) to run one command or tactic
+- Backward (`Ctrl-Up`) undo one command or tactic
+- Run to cursor (`Ctrl-Right`) to run commands up to the cursor
+- Run to end (`Ctrl-End`) to run commands to the end of the buffer
+- Reset Coq (`Ctrl-Home`) to restart the Coq process
+- Interrupt to stop processing commands after the current command completes
+
+Tooltips identify the action assocaited with each toolbar icon.
+
+Commands may:
+
+- Complete successfully.  In this case, the background of the command is marked
+  with the "processed" color (green by default), except for :cmd:`Axiom`\s and
+  :cmd:`Admitted`\s, which are marked in light orange to indicate they are
+  unproven assumptions.
+- Complete with a warning.  In this case, the warning appears in the messages
+  panel in yellow.  The background of the command is marked with the "processed"
+  color and the text is shown in blue and underlined.  The message text is
+  available as a tooltip on the text of the command.
+- Fail with an error.  If you're stepping through the proof line by line, the
+  error message appears in the message panel in red and the command is shown
+  in red and underlined with a pink background.  If you're in async mode,
+  described in more detail below, the message appears in the *errors panel*.
+  Double click on an entry to jump to the point of the error.  Execution
+  of commands stops unless you're in async mode.
+
+In the previous figure :ref:`CoqIDE main screen <coqide_mainscreen>`,
+the running buffer is `Fermat.v`.  All commands until
+the ``Theorem`` have already been executed, then the user tried to go
 forward executing ``Induction n``. That command failed because no such
-tactic exists (names of standard tactics are written in lowercase),
-and the failing command is underlined.
+tactic exists (names of standard tactics are written in lowercase).
+The failing command has been underlined.
 
-Notice that the processed part of the running buffer is not editable. If
-you ever want to modify something you have to go backward using the up
-arrow tool, or even better, put the cursor where you want to go back
-and use the goto button. Unlike with `coqtop`, you should never use
-``Undo`` to go backward.
+If you're not in async mode and you modify the processed part of the buffer,
+everything after that point is undone.  Unlike in `coqtop`, you should not use
+:cmd:`Undo` to go backward.
 
-There are two additional buttons for navigation within the running buffer. The
-"down" button with a line goes directly to the end; the "up" button with a line
-goes back to the beginning. The handling of errors when using the go-to-the-end
-button depends on whether Coq is running in asynchronous mode or not (see
-Chapter :ref:`asynchronousandparallelproofprocessing`). If it is not running in that mode, execution
-stops as soon as an error is found. Otherwise, execution continues, and the
-error is marked with an underline in the error foreground color, with a
-background in the error background color (pink by default). The same
-characterization of error-handling applies when running several commands using
-the "goto" button.
+The other buttons on the toolbar do the following:
 
-If you ever try to execute a command that runs for a long time
-and would like to abort it before it terminates, you may
-use the interrupt button (the white cross on a red circle).
+- Save the current buffer (down arrow icon)
+- Close the current buffer ("X" icon)
+- Fully check the document (gears icon) - for async mode
+- Previous occurrence (left arrow icon) - find the previous occurrence
+  of the current word (The current word is determined by the cursor position.)
+- Next occurrence (right arrow icon) - find the next occurrence
+  of the current word
 
-There are other buttons on the CoqIDE toolbar: a button to save the running
-buffer; a button to close the current buffer (an "X"); buttons to switch among
-buffers (left and right arrows); an "information" button; and a "gears" button.
+The colored ribbon appearing across the bottom of the CoqIDE window just above
+the status bar represents the state of processing for the current script
+schematically.  Blue means unprocessed, light green means successfully
+processed, red mean an error, light orange is used for :cmd:`Axiom` and :cmd:`Admitted`
+and gray for proofs awaiting their final check.  Clicking on the bar moves the
+script cursor to the corresponding part of the script.  (See the next screenshot,
+in the async mode section.)
 
-The "gears" button submits proof terms to the Coq kernel for type checking.
-When Coq uses asynchronous processing (see Chapter :ref:`asynchronousandparallelproofprocessing`),
-proofs may have been completed without kernel-checking of generated proof terms.
-The presence of unchecked proof terms is indicated by ``Qed`` statements that
-have a subdued *being-processed* color (light blue by default), rather than the
-processed color, though their preceding proofs have the processed color.
+The left edge of the ribbon corresponds to the first command or tactic in the
+script and the right edge corresponds to the last command that has been passed
+to Coq.  Currently, for very long scripts, it may take many seconds for CoqIDE to
+pass all the commands to the server, causing the display to jump around a lot.  Perhaps
+this will be improved in a future release.  The text at the far right hand side of
+the status bar (e.g. "0 / 1" gives the number of unprocessed proofs that have been
+sent to Coq and the number of proofs that have errors.
 
-Notice that for all these buttons, except for the "gears" button, their operations
-are also available in the menu, where their keyboard shortcuts are given.
+.. _asyncmode:
+
+Asynchronous mode
+-----------------
+
+Asynchronous mode uses multiple Coq processes to process proofs
+in parallel with proof-level granularity.  This is described in detail in
+:ref:`asynchronousandparallelproofprocessing`.
+
+While synchronous mode stops processing at the first error it encounters, in async
+mode, errors only stop processing the proof the error appears in.
+Therefore async mode can report errors in multiple proofs without manual intervention.
+In addition, async mode lets the user edit failed proofs without invalidating
+successful proofs that appear after it in the script.  The part of a failed proof
+between `Proof.` and `Qed.` can then be edited.  Quirk: the light blue part after
+the error and before `Qed.` becomes editable only after you've changed the
+error-highlighted text or before it.
+
+.. image:: ../_static/async-mode.png
+   :alt: Async mode
+
+In the screenshot, the proof of the failed theorem can be edited (between `Proof.`
+and `Qed.`) without invalidating the theorems that follow it.  The modified
+proof can then be reprocessed using the usual navigation operations.  The light blue
+highlight in the script indicates commands that haven't been processed.
+
+Async mode defers the final type checking step of proofs, leaving the `Qed.` marked in
+a slightly different shade of light blue to indicate this.  To complete the final
+checking, click on the "gears" button on the toolbar ("Fully check the document").
 
 Commands and templates
 ----------------------
 
 The Templates menu allows using shortcuts to insert
-commands. This is a nice way to proceed if you are not sure of the
+commands. This is a nice way to proceed if you're not sure of the
 syntax of the command you want.
 
 Moreover, from this menu you can automatically insert templates of complex
-commands like ``Fixpoint`` that you can conveniently fill afterwards.
+commands like ``Fixpoint`` that you can conveniently fill in afterwards.
 
 Queries
-------------
+-------
 
 .. image:: ../_static/coqide-queries.png
    :alt: CoqIDE queries
 
-We call *query* any command that does not change the current state,
-such as ``Check``, ``Search``, etc. To run such commands interactively, without
-writing them in scripts, CoqIDE offers a *query pane*. The query pane can be
-displayed on demand by using the ``View`` menu, or using the shortcut ``F1``.
-Queries can also be performed by selecting a particular phrase, then choosing an
-item from the ``Queries`` menu. The response then appears in the message window.
-The image above shows the result after selecting of the phrase
-``Nat.mul`` in the script window, and choosing ``Print`` from the ``Queries``
-menu.
+A *query* is any command that does not change the current state, such as
+:cmd:`About`, :cmd:`Check`, :cmd:`Print`, :cmd:`Search`, etc.  The *query pane*
+lets you run such commands
+interactively without modifying your script. The query pane is accessible from
+the *View* menu, or using the shortcut ``F1``.
+You can also do queries by selecting some text, then choosing an
+item from the *Queries* menu. The response will appear in the message panel.
+The image above shows the result after selecting
+``Nat.mul`` in the bottom line of the script panel, then choosing ``Print``
+from the ``Queries`` menu.
+
+.. todo: should names of menus be *Menu* or `Menu` or ??  not consistent
 
 
 Compilation
-----------------
+-----------
 
 The `Compile` menu offers direct commands to:
 
@@ -137,15 +219,20 @@ The `Compile` menu offers direct commands to:
 + go to the last compilation error
 + create a `Makefile` using `coq_makefile`.
 
-Customizations
--------------------
+At the moment these are not working well.  We recommend you compile
+from a terminal window for now.  We expect to fix them soon.
 
-You may customize your environment using the menu Edit/Preferences. A new
-window will be displayed, with several customization sections
-presented as a notebook.
+Customizations
+--------------
+
+Preferences
+~~~~~~~~~~~
+
+You may customize your environment with the *Preferences* dialog, which is
+accessible from *Edit/Preferences* on the menu. There are several sections:
 
 The first section is for selecting the text font used for scripts,
-goal and message windows.
+goal and message panels.
 
 The second and third sections are for controlling colors and style of
 the three main buffers. A predefined Coq highlighting style as well
@@ -184,20 +271,60 @@ Notice that these settings are saved in the file ``coqiderc`` in the
 is the value of ``$XDG_CONFIG_HOME`` if this environment variable is
 set and which otherwise is ``$HOME/.config/``.
 
-A GTK+ accelerator keymap is saved under the name ``coqide.keys`` in
-the same ``coq`` subdirectory of the user configuration directory. It
-is not recommended to edit this file manually: to modify a given menu
-shortcut, go to the corresponding menu item without releasing the
-mouse button, press the key you want for the new shortcut, and release
-the mouse button afterwards. If your system does not allow it, you may
-still edit this configuration file by hand, but this is more involved.
+Key bindings
+~~~~~~~~~~~~
 
+Each menu item in the GUI shows its key binding, if one has been defined,
+on the right-hand side.  Typing the key binding is equivalent to selecting
+the associated item from the menu.
+A GTK+ accelerator keymap is saved under the name ``coqide.keys`` in
+the ``coq`` subdirectory of the user configuration directory,
+e.g. in `~/.config/coq/` on Linux and `C:\Users\<USERNAME>\AppData\Local\coq`
+on Windows. On some systems (not Linux or Windows),
+you can modify the key binding ("accelerator") for a menu entry by
+going to the corresponding menu item without releasing the
+mouse button, pressing the keys you want for the new binding and then releasing
+the mouse button.
+
+Alternatively, you can edit the file directly.  Make sure there are no
+CoqIDE processes running while you edit the file.  (CoqIDE creates or
+overwrites the file when it terminates, which may reorder the lines).
+
+The file contains lines such as:
+
+   ::
+
+     ; (gtk_accel_path "<Actions>/Queries/About" "<Primary><Shift>a")
+     ; (gtk_accel_path "<Actions>/Export/Export to" "")
+     (gtk_accel_path "<Actions>/Edit/Find Next" "F4")
+
+The first line corresponds to the menu item for the Queries/About menu item,
+which was bound by default to `Shift-Ctrl-A`.  "<Primary>" indicates `Ctrl`.
+The second line is for a menu item that has no key binding.
+
+Lines that begin with semicolons are comments create by CoqIDE.  CoqIDE uses
+the default binding for these items.  To change a key binding, remove the semicolon
+and set the third item in the list as desired, such as in the third line.
+Avoid assigning the same binding to multiple items.
+
+If the same menu item name appears on multiple lines in the file, the value from the
+last line is used.  This is convenient for copying a group of changes from elsewhere--just
+insert the changes at the end of the file.  The next time CoqIDE terminates, it will
+resort the items.
+
+Some menu entries can be changed as a group from the Edit/Preferences/Shortcuts panel.
+Key bindings that don't appear in the file such as `Ctrl-A` (Select All) can't be
+changed with this mechanism.
+
+.. todo: list common rebindings?
+
+.. todo: microPG mode?
 
 Using Unicode symbols
---------------------------
+---------------------
 
 CoqIDE is based on GTK+ and inherits from it support for Unicode in
-its text windows. Consequently a large set of symbols is available for
+its text panels. Consequently a large set of symbols is available for
 notations. Furthermore, CoqIDE conveniently provides a simple way to
 input Unicode characters.
 
@@ -218,10 +345,9 @@ mathematical symbols ∀ and ∃, you may define:
      (at level 200, x binder, y binder, right associativity)
      : type_scope.
 
-There exists a small set of such notations already defined, in the
-file `utf8.v` of Coq library, so you may enable them just by
-``Require Import Unicode.Utf8`` inside CoqIDE, or equivalently,
-by starting CoqIDE with ``coqide -l utf8``.
+A small set of such notations are already defined in the Coq library
+which you can enable with ``Require Import Unicode.Utf8`` inside CoqIDE,
+or equivalently, by starting CoqIDE with ``coqide -l utf8``.
 
 However, there are some issues when using such Unicode symbols: you of
 course need to use a character font which supports them. In the Fonts
@@ -315,7 +441,7 @@ Each of the file tokens provided may consists of one of:
 .. _character-encoding-saved-files:
 
 Character encoding for saved files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the Files section of the preferences, the encoding option is
 related to the way files are saved.
@@ -428,6 +554,12 @@ Break (F11)
   Stops the debugger at the next possible stopping point, from which you can
   step or continue.   (Not supported in Windows at this time.)
 
+Note that the debugger is disabled when CoqIDE is running multiple worker processes,
+i.e. running in async mode.  Going "Forward" a single step at a time doesn't use
+async mode and will always enter the debugger as expected.  In addition, the debugger
+doesn't work correctly in some cases involving editing failed proofs in asymc mode (
+see `#16069 <https://github.com/coq/coq/pull/16069>`_.)
+
 If you step through `idtac "A"; idtac "B"; idtac "C".`, you'll notice that the
 steps for `my_tac` are:
 
@@ -498,7 +630,7 @@ case, breakpoints in the secondary script that move due to script editing may no
 match the locations in the compiled secondary script.  The debugger won't stop at these
 breakpoints as you expect.  Also, the code highlighted for stack frames in that
 script may be incorrect.  You will need to re-compile
-the secondary script and then restart the primary script (Restart, Ctrl-HOME) to get back
+the secondary script and then restart the primary script (Restart, `Ctrl-HOME`) to get back
 to a consistent state.
 
 For multi-file debugging, we suggest detaching the Messages, Proof Context
