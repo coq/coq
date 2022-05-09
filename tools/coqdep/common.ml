@@ -453,8 +453,6 @@ let compute_deps st =
   let mk_dep (name, _) = Dep_info.make name (find_dependencies st name) in
   !vAccu |> List.rev |> List.map mk_dep
 
-exception Cannot_stat_file of string * Unix.error
-
 let rec treat_file old_dirname old_name =
   let name = Filename.basename old_name
   and new_dirname = Filename.dirname old_name in
@@ -467,7 +465,8 @@ let rec treat_file old_dirname old_name =
   let complete_name = file_name name dirname in
   let stat_res =
     try stat complete_name
-    with Unix_error(error, _, _) -> raise (Cannot_stat_file (complete_name, error))
+    with Unix_error (error, _, _) ->
+      Error.cannot_open complete_name (Unix.error_message error)
   in
   match stat_res.st_kind
   with
