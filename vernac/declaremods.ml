@@ -1106,7 +1106,9 @@ let end_library ~output_native_objects dir =
 let import_modules ~export mpl =
   let _,objs = collect_modules mpl (MPmap.empty, []) in
   List.iter (fun (f,o) -> open_object f 1 o) objs;
-  if export then Lib.add_leaf_entry (ExportObject { mpl })
+  match export with
+  | Lib.Import -> ()
+  | Lib.Export -> Lib.add_leaf_entry (ExportObject { mpl })
 
 let import_module f ~export mp =
   import_modules ~export [f,mp]

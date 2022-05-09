@@ -44,7 +44,7 @@ val declare_module :
   (Constrexpr.module_ast * inline) list -> ModPath.t
 
 val start_module :
-  bool option -> Id.t ->
+  Lib.export -> Id.t ->
   module_params ->
   (Constrexpr.module_ast * inline) module_signature -> ModPath.t
 
@@ -97,11 +97,11 @@ val append_end_library_hook : (unit -> unit) -> unit
    or when [mp] corresponds to a functor. If [export] is [true], the module is also
    opened every time the module containing it is. *)
 
-val import_module : Libobject.open_filter -> export:bool -> ModPath.t -> unit
+val import_module : Libobject.open_filter -> export:Lib.export_flag -> ModPath.t -> unit
 
 (** Same as [import_module] but for multiple modules, and more optimized than
     iterating [import_module]. *)
-val import_modules : export:bool -> (Libobject.open_filter * ModPath.t) list -> unit
+val import_modules : export:Lib.export_flag -> (Libobject.open_filter * ModPath.t) list -> unit
 
 (** Include  *)
 

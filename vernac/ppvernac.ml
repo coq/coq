@@ -363,11 +363,16 @@ let pr_of_module_type prc = function
   | Check mtys ->
     prlist_strict (fun m -> str "<:" ++ pr_module_ast_inl true prc m) mtys
 
+let pr_export_flag = function
+  | Export -> keyword "Export"
+  | Import -> keyword "Import"
+
+let pr_export_with_cats (export,cats) =
+  pr_export_flag export ++ pr_import_cats cats
+
 let pr_require_token = function
-  | Some true ->
-    keyword "Export" ++ spc ()
-  | Some false ->
-    keyword "Import" ++ spc ()
+  | Some export ->
+    pr_export_with_cats export ++ spc ()
   | None -> mt()
 
 let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
@@ -948,11 +953,11 @@ let pr_vernac_expr v =
     return (
       hov 2
         (from ++ keyword "Require" ++ spc() ++ pr_require_token exp ++
-         prlist_with_sep sep pr_module l)
+         prlist_with_sep sep pr_import_module l)
     )
-  | VernacImport (f,cats,l) ->
+  | VernacImport (f,l) ->
     return (
-      (if f then keyword "Export" else keyword "Import") ++ pr_import_cats cats ++ spc() ++
+      pr_export_with_cats f ++ spc() ++
       prlist_with_sep sep pr_import_module l
     )
   | VernacCanonical q ->

@@ -219,7 +219,7 @@ let process_module_binding = Declaremods.process_module_binding
 
 let nametab_register_module_body mp struc =
   (* If [mp] is a globally visible module, we simply import it *)
-  try import_module ~export:false mp
+  try import_module ~export:Lib.Import mp
   with Not_found ->
     (* Otherwise we try to emulate an import by playing with nametab *)
     nametab_register_dir mp;

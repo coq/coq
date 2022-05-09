@@ -42,7 +42,7 @@ type option_command =
 
 type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
-  | RequireInjection of (string * string option * bool option)
+  | RequireInjection of (string * string option * Lib.export_flag option)
   | WarnNoNative of string
   | WarnNativeDeprecated
 
@@ -292,7 +292,7 @@ let parse_args ~usage ~init arglist : t * string list =
       }}
 
     |"-compat" ->
-      add_vo_require oval (get_compat_file (next ())) None (Some false)
+      add_vo_require oval (get_compat_file (next ())) None (Some Lib.Import)
 
     |"-exclude-dir" ->
       System.exclude_directory (next ()); oval
@@ -321,15 +321,15 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-rfrom" ->
       let from = next () in add_vo_require oval (next ()) (Some from) None
 
-    |"-require-import" | "-ri" -> add_vo_require oval (next ()) None (Some false)
+    |"-require-import" | "-ri" -> add_vo_require oval (next ()) None (Some Lib.Import)
 
-    |"-require-export" | "-re" -> add_vo_require oval (next ()) None (Some true)
+    |"-require-export" | "-re" -> add_vo_require oval (next ()) None (Some Lib.Export)
 
     |"-require-import-from" | "-rifrom" ->
-      let from = next () in add_vo_require oval (next ()) (Some from) (Some false)
+      let from = next () in add_vo_require oval (next ()) (Some from) (Some Lib.Import)
 
     |"-require-export-from" | "-refrom" ->
-      let from = next () in add_vo_require oval (next ()) (Some from) (Some true)
+      let from = next () in add_vo_require oval (next ()) (Some from) (Some Lib.Export)
 
     |"-top" ->
       let topname = Libnames.dirpath_of_string (next ()) in
@@ -402,7 +402,7 @@ let parse_args ~usage ~init arglist : t * string list =
       oval
     |"-time" -> { oval with config = { oval.config with time = true }}
     |"-type-in-type" -> set_logic (fun o -> { o with type_in_type = true }) oval
-    |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
+    |"-unicode" -> add_vo_require oval "Utf8_core" None (Some Lib.Import)
     |"-where" -> set_query oval PrintWhere
     |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp usage)
     |"-v"|"--version" -> set_query oval PrintVersion
@@ -437,7 +437,7 @@ let parse_args ~usage ~init args =
 (* Startup LoadPath and Modules                                               *)
 (******************************************************************************)
 (* prelude_data == From Coq Require Import Prelude. *)
-let prelude_data = "Prelude", Some "Coq", Some false
+let prelude_data = "Prelude", Some "Coq", Some Lib.Import
 
 let injection_commands opts =
   if opts.pre.load_init then RequireInjection prelude_data :: opts.pre.injections else opts.pre.injections

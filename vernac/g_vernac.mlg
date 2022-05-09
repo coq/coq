@@ -588,15 +588,15 @@ GRAMMAR EXTEND Gram
           { VernacExtraDependency (ns, f, Option.map Id.of_string id) }
 
       (* Requiring an already compiled module *)
-      | IDENT "Require"; export = export_token; qidl = LIST1 global ->
+      | IDENT "Require"; export = export_token; qidl = LIST1 filtered_import ->
           { VernacRequire (None, export, qidl) }
       | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
-        ; qidl = LIST1 global ->
+        ; qidl = LIST1 filtered_import ->
         { VernacRequire (Some ns, export, qidl) }
       | IDENT "Import"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
-        { VernacImport (false,cats,qidl) }
+        { VernacImport ((Import,cats),qidl) }
       | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
-        { VernacImport (true,cats,qidl) }
+        { VernacImport ((Export,cats),qidl) }
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
           { VernacInclude(e::l) }
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
@@ -617,8 +617,8 @@ GRAMMAR EXTEND Gram
     [ [ n = global; etc = OPT [ "("; ".."; ")" -> { () } ] -> { n, Option.has_some etc } ] ]
   ;
   export_token:
-    [ [ IDENT "Import" -> { Some false }
-      | IDENT "Export" -> { Some true }
+    [ [ IDENT "Import"; cats = OPT import_categories -> { Some (Import,cats) }
+      | IDENT "Export"; cats = OPT import_categories -> { Some (Export,cats) }
       |  -> { None } ] ]
   ;
   ext_module_type:
