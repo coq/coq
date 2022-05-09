@@ -30,7 +30,7 @@ depends: [
   "dune" {>= "2.5"}
   "ocaml" {>= "4.09.0"}
   "ocamlfind" {>= "1.8.1"}
-  "zarith" {>= "1.10"}
+  "zarith" {>= "1.12"}
   "ounit2" {with-test}
 ]
 build: [
