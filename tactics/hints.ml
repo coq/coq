@@ -1279,6 +1279,7 @@ let make_hint ~locality name action =
 
 let warn_deprecated_hint_without_locality =
   CWarnings.create ~name:"deprecated-hint-without-locality" ~category:"deprecated"
+    ~default:CWarnings.AsError
     (fun () -> strbrk "The default value for hint locality is currently \
     \"local\" in a section and \"global\" otherwise, but is scheduled to change \
     in a future release. For the time being, adding hints outside of sections \
