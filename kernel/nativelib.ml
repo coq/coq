@@ -60,9 +60,12 @@ let delay_cleanup_file =
 let include_dirs = ref []
 
 let get_include_dirs () =
-  let env = Boot.Env.init () in
   let base = match !include_dirs with
   | [] ->
+    (* EJGA: Should this case go away in favor of always requiring
+       explicit -nI flags once we remove the make-based system? I think
+       so. *)
+    let env = Boot.Env.init () in
     [ Boot.Env.(Path.to_string (native_cmi env "kernel"))
     ; Boot.Env.(Path.to_string (native_cmi env "library"))
     ]
