@@ -1204,151 +1204,6 @@ let hash_cast_kind = function
 | NATIVEcast -> 1
 | DEFAULTcast -> 2
 
-let sh_instance = Univ.Instance.share
-
-(* [hashcons hash_consing_functions constr] computes an hash-consed
-   representation for [constr] using [hash_consing_functions] on
-   leaves. *)
-let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
-  let rec hash_term (t : t) =
-    match t with
-      | Var i ->
-        (Var (sh_id i), combinesmall 1 (Id.hash i))
-      | Sort s ->
-        (Sort (sh_sort s), combinesmall 2 (Sorts.hash s))
-      | Cast (c, k, t) ->
-        let c, hc = sh_rec c in
-        let t, ht = sh_rec t in
-        (Cast (c, k, t), combinesmall 3 (combine3 hc (hash_cast_kind k) ht))
-      | Prod (na,t,c) ->
-        let t, ht = sh_rec t
-        and c, hc = sh_rec c in
-        (Prod (sh_na na, t, c), combinesmall 4 (combine3 (hash_annot Name.hash na) ht hc))
-      | Lambda (na,t,c) ->
-        let t, ht = sh_rec t
-        and c, hc = sh_rec c in
-        (Lambda (sh_na na, t, c), combinesmall 5 (combine3 (hash_annot Name.hash na) ht hc))
-      | LetIn (na,b,t,c) ->
-        let b, hb = sh_rec b in
-        let t, ht = sh_rec t in
-        let c, hc = sh_rec c in
-        (LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (hash_annot Name.hash na) hb ht hc))
-      | App (c,l) ->
-        let c, hc = sh_rec c in
-        let l, hl = hash_term_array l in
-        (App (c,l), combinesmall 7 (combine hl hc))
-      | Evar (e,l) ->
-        let l, hl = hash_list_array l in
-        (Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
-      | Const (c,u) ->
-        let c' = sh_con c in
-        let u', hu = sh_instance u in
-        (Const (c', u'), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
-      | Ind (ind,u) ->
-        let u', hu = sh_instance u in
-        (Ind (sh_ind ind, u'),
-         combinesmall 10 (combine (Ind.SyntacticOrd.hash ind) hu))
-      | Construct (c,u) ->
-        let u', hu = sh_instance u in
-        (Construct (sh_construct c, u'),
-         combinesmall 11 (combine (Construct.SyntacticOrd.hash c) hu))
-      | Case (ci,u,pms,p,iv,c,bl) ->
-        (** FIXME: use a dedicated hashconsing structure *)
-        let hcons_ctx (lna, c) =
-          let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
-          let fold accu na = combine (hash_annot Name.hash na) accu in
-          let hna = Array.fold_left fold 0 lna in
-          let c, hc = sh_rec c in
-          (lna, c), combine hna hc
-        in
-        let u, hu = sh_instance u in
-        let pms,hpms = hash_term_array pms in
-        let p, hp = hcons_ctx p in
-        let iv, hiv = sh_invert iv in
-        let c, hc = sh_rec c in
-        let fold accu c =
-          let c, h = hcons_ctx c in
-          combine accu h, c
-        in
-        let hbl, bl = Array.fold_left_map fold 0 bl in
-        let hbl = combine (combine hc (combine hiv (combine hpms (combine hu hp)))) hbl in
-        (Case (sh_ci ci, u, pms, p, iv, c, bl), combinesmall 12 hbl)
-      | Fix (ln,(lna,tl,bl)) ->
-        let bl,hbl = hash_term_array bl in
-        let tl,htl = hash_term_array tl in
-        let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
-        let fold accu na = combine (hash_annot Name.hash na) accu in
-        let hna = Array.fold_left fold 0 lna in
-        let h = combine3 hna hbl htl in
-        (Fix (ln,(lna,tl,bl)), combinesmall 13 h)
-      | CoFix(ln,(lna,tl,bl)) ->
-        let bl,hbl = hash_term_array bl in
-        let tl,htl = hash_term_array tl in
-        let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
-        let fold accu na = combine (hash_annot Name.hash na) accu in
-        let hna = Array.fold_left fold 0 lna in
-        let h = combine3 hna hbl htl in
-        (CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
-      | Meta n ->
-        (t, combinesmall 15 n)
-      | Rel n ->
-        (t, combinesmall 16 n)
-      | Proj (p,c) ->
-        let c, hc = sh_rec c in
-        let p' = Projection.hcons p in
-          (Proj (p', c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
-      | Int i ->
-        let (h,l) = Uint63.to_int2 i in
-        (t, combinesmall 18 (combine h l))
-      | Float f -> (t, combinesmall 19 (Float64.hash f))
-      | Array (u,t,def,ty) ->
-        let u, hu = sh_instance u in
-        let t, ht = hash_term_array t in
-        let def, hdef = sh_rec def in
-        let ty, hty = sh_rec ty in
-        let h = combine4 hu ht hdef hty in
-        (Array(u,t,def,ty), combinesmall 20 h)
-
-  and sh_invert = function
-    | NoInvert -> NoInvert, 0
-    | CaseInvert {indices;} ->
-      let indices, ha = hash_term_array indices in
-      CaseInvert {indices;}, combinesmall 1 ha
-
-  and sh_rec t =
-    let (y, h) = hash_term t in
-    (* [h] must be positive. *)
-    let h = h land 0x3FFFFFFF in
-    (HashsetTerm.repr h y term_table, h)
-
-  (* Note : During hash-cons of arrays, we modify them *in place* *)
-
-  and hash_term_array t =
-    let accu = ref 0 in
-    for i = 0 to Array.length t - 1 do
-      let x, h = sh_rec (Array.unsafe_get t i) in
-      accu := combine !accu h;
-      Array.unsafe_set t i x
-    done;
-    (* [h] must be positive. *)
-    let h = !accu land 0x3FFFFFFF in
-    (HashsetTermArray.repr h t term_array_table, h)
-
-  and hash_list_array l =
-    let fold accu c =
-      let c, h = sh_rec c in
-      (combine accu h, c)
-    in
-    let h, l = List.fold_left_map fold 0 l in
-    (l, h land 0x3FFFFFFF)
-
-  in
-  (* Make sure our statically allocated Rels (1 to 16) are considered
-     as canonical, and hence hash-consed to themselves *)
-  ignore (hash_term_array rels);
-
-  fun t -> fst (sh_rec t)
-
 (* Exported hashing fonction on constr, used mainly in plugins.
    Slight differences from [snd (hash_term t)] above: it ignores binders
    and doesn't do [land  0x3FFFFFFF]. *)
@@ -1463,15 +1318,143 @@ module Hannot = Hashcons.Make(Hannotinfo)
 
 let hcons_annot = Hashcons.simple_hcons Hannot.generate Hannot.hcons Name.hcons
 
-let hcons =
-  hashcons
-    (Sorts.hcons,
-     hcons_caseinfo,
-     hcons_construct,
-     hcons_ind,
-     hcons_con,
-     hcons_annot,
-     Id.hcons)
+let rec hash_term (t : t) =
+  match t with
+  | Var i ->
+    (Var (Id.hcons i), combinesmall 1 (Id.hash i))
+  | Sort s ->
+    (Sort (Sorts.hcons s), combinesmall 2 (Sorts.hash s))
+  | Cast (c, k, t) ->
+    let c, hc = sh_rec c in
+    let t, ht = sh_rec t in
+    (Cast (c, k, t), combinesmall 3 (combine3 hc (hash_cast_kind k) ht))
+  | Prod (na,t,c) ->
+    let t, ht = sh_rec t
+    and c, hc = sh_rec c in
+    (Prod (hcons_annot na, t, c), combinesmall 4 (combine3 (hash_annot Name.hash na) ht hc))
+  | Lambda (na,t,c) ->
+    let t, ht = sh_rec t
+    and c, hc = sh_rec c in
+    (Lambda (hcons_annot na, t, c), combinesmall 5 (combine3 (hash_annot Name.hash na) ht hc))
+  | LetIn (na,b,t,c) ->
+    let b, hb = sh_rec b in
+    let t, ht = sh_rec t in
+    let c, hc = sh_rec c in
+    (LetIn (hcons_annot na, b, t, c), combinesmall 6 (combine4 (hash_annot Name.hash na) hb ht hc))
+  | App (c,l) ->
+    let c, hc = sh_rec c in
+    let l, hl = hash_term_array l in
+    (App (c,l), combinesmall 7 (combine hl hc))
+  | Evar (e,l) ->
+    let l, hl = hash_list_array l in
+    (Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
+  | Const (c,u) ->
+    let c' = hcons_con c in
+    let u', hu = Instance.share u in
+    (Const (c', u'), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
+  | Ind (ind,u) ->
+    let u', hu = Instance.share u in
+    (Ind (hcons_ind ind, u'),
+     combinesmall 10 (combine (Ind.SyntacticOrd.hash ind) hu))
+  | Construct (c,u) ->
+    let u', hu = Instance.share u in
+    (Construct (hcons_construct c, u'),
+     combinesmall 11 (combine (Construct.SyntacticOrd.hash c) hu))
+  | Case (ci,u,pms,p,iv,c,bl) ->
+    (** FIXME: use a dedicated hashconsing structure *)
+    let hcons_ctx (lna, c) =
+      let () = Array.iteri (fun i x -> Array.unsafe_set lna i (hcons_annot x)) lna in
+      let fold accu na = combine (hash_annot Name.hash na) accu in
+      let hna = Array.fold_left fold 0 lna in
+      let c, hc = sh_rec c in
+      (lna, c), combine hna hc
+    in
+    let u, hu = Instance.share u in
+    let pms,hpms = hash_term_array pms in
+    let p, hp = hcons_ctx p in
+    let iv, hiv = sh_invert iv in
+    let c, hc = sh_rec c in
+    let fold accu c =
+      let c, h = hcons_ctx c in
+      combine accu h, c
+    in
+    let hbl, bl = Array.fold_left_map fold 0 bl in
+    let hbl = combine (combine hc (combine hiv (combine hpms (combine hu hp)))) hbl in
+    (Case (hcons_caseinfo ci, u, pms, p, iv, c, bl), combinesmall 12 hbl)
+  | Fix (ln,(lna,tl,bl)) ->
+    let bl,hbl = hash_term_array bl in
+    let tl,htl = hash_term_array tl in
+    let () = Array.iteri (fun i x -> Array.unsafe_set lna i (hcons_annot x)) lna in
+    let fold accu na = combine (hash_annot Name.hash na) accu in
+    let hna = Array.fold_left fold 0 lna in
+    let h = combine3 hna hbl htl in
+    (Fix (ln,(lna,tl,bl)), combinesmall 13 h)
+  | CoFix(ln,(lna,tl,bl)) ->
+    let bl,hbl = hash_term_array bl in
+    let tl,htl = hash_term_array tl in
+    let () = Array.iteri (fun i x -> Array.unsafe_set lna i (hcons_annot x)) lna in
+    let fold accu na = combine (hash_annot Name.hash na) accu in
+    let hna = Array.fold_left fold 0 lna in
+    let h = combine3 hna hbl htl in
+    (CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
+  | Meta n ->
+    (t, combinesmall 15 n)
+  | Rel n ->
+    (t, combinesmall 16 n)
+  | Proj (p,c) ->
+    let c, hc = sh_rec c in
+    let p' = Projection.hcons p in
+    (Proj (p', c), combinesmall 17 (combine (Projection.SyntacticOrd.hash p') hc))
+  | Int i ->
+    let (h,l) = Uint63.to_int2 i in
+    (t, combinesmall 18 (combine h l))
+  | Float f -> (t, combinesmall 19 (Float64.hash f))
+  | Array (u,t,def,ty) ->
+    let u, hu = Instance.share u in
+    let t, ht = hash_term_array t in
+    let def, hdef = sh_rec def in
+    let ty, hty = sh_rec ty in
+    let h = combine4 hu ht hdef hty in
+    (Array(u,t,def,ty), combinesmall 20 h)
+
+and sh_invert = function
+  | NoInvert -> NoInvert, 0
+  | CaseInvert {indices;} ->
+    let indices, ha = hash_term_array indices in
+    CaseInvert {indices;}, combinesmall 1 ha
+
+and sh_rec t =
+  let (y, h) = hash_term t in
+  (* [h] must be positive. *)
+  let h = h land 0x3FFFFFFF in
+  (HashsetTerm.repr h y term_table, h)
+
+(* Note : During hash-cons of arrays, we modify them *in place* *)
+
+and hash_term_array t =
+  let accu = ref 0 in
+  for i = 0 to Array.length t - 1 do
+    let x, h = sh_rec (Array.unsafe_get t i) in
+    accu := combine !accu h;
+    Array.unsafe_set t i x
+  done;
+  (* [h] must be positive. *)
+  let h = !accu land 0x3FFFFFFF in
+  (HashsetTermArray.repr h t term_array_table, h)
+
+and hash_list_array l =
+  let fold accu c =
+    let c, h = sh_rec c in
+    (combine accu h, c)
+  in
+  let h, l = List.fold_left_map fold 0 l in
+  (l, h land 0x3FFFFFFF)
+
+  (* Make sure our statically allocated Rels (1 to 16) are considered
+     as canonical, and hence hash-consed to themselves *)
+let () = ignore (hash_term_array rels)
+
+let hcons t = fst (sh_rec t)
 
 (* let hcons_types = hcons_constr *)
 
