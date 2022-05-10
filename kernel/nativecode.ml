@@ -18,7 +18,7 @@ open Nativevalues
 open Nativelambda
 open Environ
 
-[@@@ocaml.warning "-32-37"]
+[@@@ocaml.warning "-37"]
 
 (** This file defines the mllambda code generation phase of the native
 compiler. mllambda represents a fragment of ML, and can easily be printed
@@ -1994,9 +1994,6 @@ let is_code_loaded name =
   | Linked s ->
       if is_loaded_native_file s then true
       else (name := NotLinked; false)
-
-let param_name = Name (Id.of_string "params")
-let arg_name = Name (Id.of_string "arg")
 
 let compile_mind mb mind stack =
   let u = Declareops.inductive_polymorphic_context mb in

@@ -744,7 +744,6 @@ let fold_map f accu c = match kind c with
       if t' == t then accu, c
       else accu, mkProj (p, t')
   | Evar (e,l) ->
-    (* Doesn't matter, we should not hashcons evars anyways *)
       let accu, l' = List.Smart.fold_left_map f accu l in
       if l'==l then accu, c
       else accu, mkEvar (e, l')

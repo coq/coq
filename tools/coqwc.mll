@@ -241,7 +241,6 @@ let process_channel ch =
   if !skip_header then read_header lb;
   spec lb
 
-[@@@ocaml.warning "-52"]
 let process_file f =
   try
     let ch = open_in f in
@@ -250,11 +249,8 @@ let process_file f =
     print_file (Some f);
     update_totals ()
   with
-    | Sys_error "Is a directory" ->
-	flush stdout; eprintf "coqwc: %s: Is a directory\n" f; flush stderr
     | Sys_error s ->
-	flush stdout; eprintf "coqwc: %s\n" s; flush stderr
-[@@@ocaml.warning "+52"]
+        flush stdout; eprintf "coqwc: %s: %s\n" f s; flush stderr
 
 (*s Parsing of the command line. *)
 
