@@ -8,10 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open System
 open Format
-open Unix
 open Lexer
+
+let (//) = System.(//)
 
 let coqdep_warning args =
   eprintf "*** Warning: @[";
@@ -453,8 +453,6 @@ let compute_deps st =
   let mk_dep (name, _) = Dep_info.make name (find_dependencies st name) in
   !vAccu |> List.rev |> List.map mk_dep
 
-exception Cannot_stat_file of string * Unix.error
-
 let rec treat_file old_dirname old_name =
   let name = Filename.basename old_name
   and new_dirname = Filename.dirname old_name in
@@ -466,12 +464,13 @@ let rec treat_file old_dirname old_name =
   in
   let complete_name = file_name name dirname in
   let stat_res =
-    try stat complete_name
-    with Unix_error(error, _, _) -> raise (Cannot_stat_file (complete_name, error))
+    try Unix.stat complete_name
+    with Unix.Unix_error (error, _, _) ->
+      Error.cannot_open complete_name (Unix.error_message error)
   in
-  match stat_res.st_kind
+  match stat_res.Unix.st_kind
   with
-    | S_DIR ->
+    | Unix.S_DIR ->
         (if name.[0] <> '.' then
            let newdirname =
              match dirname with
@@ -479,7 +478,7 @@ let rec treat_file old_dirname old_name =
                | Some d -> d//name
            in
            Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
-    | S_REG ->
+    | Unix.S_REG ->
       (match Loadpath.get_extension name [".v"] with
        | base,".v" ->
          let name = file_name base dirname
