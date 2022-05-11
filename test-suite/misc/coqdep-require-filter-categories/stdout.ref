@@ -1,0 +1,6 @@
+fA.vo fA.glob fA.v.beautified fA.required_vo: fA.v 
+fA.vio: fA.v 
+fB.vo fB.glob fB.v.beautified fB.required_vo: fB.v fA.vo
+fB.vio: fB.v fA.vio
+fC.vo fC.glob fC.v.beautified fC.required_vo: fC.v fB.vo
+fC.vio: fC.v fB.vio

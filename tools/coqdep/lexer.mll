@@ -128,6 +128,10 @@ and require_modifiers from = parse
       { require_file from lexbuf }
   | "Export" space+
       { require_file from lexbuf }
+  | "Import" "("
+      { skip_parenthesized lexbuf; require_file from lexbuf }
+  | "Export" "("
+      { skip_parenthesized lexbuf; require_file from lexbuf }
   | space+
       { require_modifiers from lexbuf }
   | eof
@@ -187,6 +191,18 @@ and comment = parse
   | _
       { comment lexbuf }
 
+and skip_parenthesized = parse
+  | "(*"
+      { comment lexbuf; skip_parenthesized lexbuf }
+  | "("
+      { skip_parenthesized lexbuf; skip_parenthesized lexbuf }
+  | ")"
+      { () }
+  | eof
+      { raise Fin_fichier }
+  | _
+    { skip_parenthesized lexbuf }
+
 and load_file = parse
   | '"' [^ '"']* '"' (*'"'*)
       { let s = lexeme lexbuf in
@@ -202,6 +218,8 @@ and load_file = parse
 and require_file from = parse
   | "(*"
       { comment lexbuf; require_file from lexbuf }
+  | "("
+    { skip_parenthesized lexbuf; require_file from lexbuf }
   | space+
       { require_file from lexbuf }
   | coq_ident
@@ -252,6 +270,8 @@ and coq_qual_id_tail module_name = parse
 and coq_qual_id_list module_names = parse
   | "(*"
       { comment lexbuf; coq_qual_id_list module_names lexbuf }
+  | "("
+    { skip_parenthesized lexbuf; coq_qual_id_list module_names lexbuf }
   | space+
       { coq_qual_id_list module_names lexbuf }
   | coq_ident
