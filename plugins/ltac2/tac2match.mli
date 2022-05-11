@@ -13,7 +13,7 @@ open EConstr
 
 (** This file extends Matching with the main logic for Ltac2 match goal. *)
 
-type context = EConstr.t
+type context = Constr_matching.context
 
 type match_pattern =
 | MatchPattern of Pattern.constr_pattern

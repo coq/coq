@@ -26,7 +26,7 @@ module NamedDecl = Context.Named.Declaration
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
   subst : Constr_matching.bound_ident_map * Ltac_pretype.extended_patvar_map ;
-  context : EConstr.constr Id.Map.t;
+  context : Constr_matching.context Id.Map.t;
   terms : EConstr.constr Id.Map.t;
   lhs : 'a;
 }
@@ -47,7 +47,7 @@ let adjust : Constr_matching.bound_ident_map * Ltac_pretype.patvar_map ->
 (** Adds a binding to a {!Id.Map.t} if the identifier is [Some id] *)
 let id_map_try_add id x m =
   match id with
-  | Some id -> Id.Map.add id (Lazy.force x) m
+  | Some id -> Id.Map.add id x m
   | None -> m
 
 (** Adds a binding to a {!Id.Map.t} if the name is [Name id] *)

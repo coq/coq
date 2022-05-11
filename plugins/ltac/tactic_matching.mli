@@ -21,7 +21,7 @@
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
   subst : Constr_matching.bound_ident_map * Ltac_pretype.extended_patvar_map ;
-  context : EConstr.constr Names.Id.Map.t;
+  context : Constr_matching.context Names.Id.Map.t;
   terms : EConstr.constr Names.Id.Map.t;
   lhs : 'a;
 }
