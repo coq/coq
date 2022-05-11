@@ -255,7 +255,7 @@ project reduction_effects "https://github.com/coq-community/reduction-effects" "
 # menhirlib
 ########################################################################
 # Note: menhirlib is now in subfolder coq-menhirlib of menhir
-project menhirlib "https://gitlab.inria.fr/fpottier/menhir" "20210310"
+project menhirlib "https://gitlab.inria.fr/fpottier/menhir" "20220210"
 
 ########################################################################
 # aac_tactics
