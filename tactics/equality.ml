@@ -1796,7 +1796,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
       if not (Id.equal id hyp)
          && List.exists (fun y -> local_occur_var_in_decl sigma y dcl) deps
       then
-        (dest,id::deps,(dest,id)::allhyps)
+        (MoveBefore id,id::deps,(dest,id)::allhyps)
       else
         (MoveBefore id,deps,allhyps))
       hyps
