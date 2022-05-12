@@ -33,5 +33,5 @@ Definition irrelevant_with_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x
 
 Unset Cumulativity Weak Constraints.
 Fail Definition irrelevant_without_weak@{u} : irrelevant@{u} -> irrelevant := fun x => x.
-Definition irrelevant_without_weak@{u+} : irrelevant@{u} -> irrelevant := fun x => x.
+Definition irrelevant_without_weak@{u?} : irrelevant@{u} -> irrelevant := fun x => x.
 Check irrelevant_without_weak@{_ _}.

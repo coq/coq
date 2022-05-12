@@ -25,13 +25,13 @@ type t =
   | QLeq of Sorts.Quality.t * Sorts.Quality.t
   | ULe of Sorts.t * Sorts.t
   | UEq of Sorts.t * Sorts.t
-  | ULub of Level.t * Level.t
-  | UWeak of Level.t * Level.t
+  | ULub of Universe.t * Universe.t
+  | UWeak of Universe.t * Universe.t
 
 val is_trivial : t -> bool
 
 (** Wrapper around the UGraph function to handle Prop *)
-val check_eq_level : UGraph.t -> Level.t -> Level.t -> bool
+val check_eq : UGraph.t -> Universe.t -> Universe.t -> bool
 
 module Set : sig
   include Set.S with type elt = t

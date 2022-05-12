@@ -335,7 +335,7 @@ let strengthen_const mp_from l cb resolver =
     let con = constant_of_delta_kn resolver kn in
     let u = UVars.make_abstract_instance (Declareops.constant_polymorphic_context cb) in
       { cb with
-        const_body = Def (mkConstU (con,u));
+        const_body = Def (mkConstU (con, u));
         const_body_code = Some (Vmbytegen.compile_alias con) }
 
 let rec strengthen_module mp_from mp_to mb =
