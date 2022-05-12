@@ -149,7 +149,7 @@ let do_universe ~poly l =
     let names = CArray.map_of_list (fun (na,_) -> Name na) l in
     let us = CArray.map_of_list (fun (_,l) -> Level.make l) l in
     let ctx =
-      UVars.UContext.make ([||],names) (UVars.Instance.of_array ([||],us), Constraints.empty)
+      UVars.UContext.make ([||],names) (UVars.LevelInstance.of_array ([||],us), Constraints.empty)
     in
     Global.push_section_context ctx
 
@@ -168,6 +168,16 @@ let do_constraint ~poly l =
   | true ->
     let uctx = UVars.UContext.make
         ([||],[||])
-        (UVars.Instance.empty,constraints)
+        (UVars.LevelInstance.empty,constraints)
     in
     Global.push_section_context uctx
+
+let check_constraint env sigma l =
+  let open Univ in
+  let constraints = List.fold_left (fun acc cst ->
+      let cst = Constrintern.interp_univ_constraint sigma cst in
+      Constraints.add cst acc)
+      Constraints.empty l
+  in
+  if Evd.check_constraints sigma constraints then ()
+  else CErrors.user_err (Pp.str"Constraints do not hold")

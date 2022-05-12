@@ -142,10 +142,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
               if not onlyalg && (not (Univ.Level.is_set l) || (refreshset && not direction))
               then refresh_sort status ~direction s
                else t
-            | UnivFlexible alg ->
-               (if alg then
-                  evdref := Evd.make_nonalgebraic_variable !evdref l);
-               t))
+            | UnivFlexible -> t))
       | Set when refreshset && not direction ->
        (* Cannot make a universe "lower" than "Set",
           only refreshing when we want higher universes. *)
@@ -206,7 +203,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
 let get_type_of_refresh  ?(polyprop=true) ?(lax=false) env evars t =
   let tty = Retyping.get_type_of env evars t in
   let evars', tty = refresh_universes ~onlyalg:true
-    ~status:(Evd.UnivFlexible false) (Some false) env evars tty in
+    ~status:Evd.UnivFlexible (Some false) env evars tty in
   evars', tty
 
 let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
@@ -1478,7 +1475,7 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
           let t1 = it_mkProd_or_LetIn (mkSort j) ctx1 in
           downcast evk1 t1 evd
         else
-          let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
+          let evd, k = Evd.new_sort_variable univ_flexible evd in
           let t1 = it_mkProd_or_LetIn (mkSort k) ctx1 in
           let t2 = it_mkProd_or_LetIn (mkSort k) ctx2 in
           let evd = Evd.set_leq_sort env (Evd.set_leq_sort env evd k i) k j in

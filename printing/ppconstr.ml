@@ -185,11 +185,6 @@ let tag_var = tag Tag.variable
     | CType qid -> pr_qualid qid
     | CRawType s -> Univ.Level.raw_pr s
 
-  let pr_univ_level_expr = function
-    | UNamed s -> tag_type (pr_sort_name_expr s)
-    | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-    | UAnonymous {rigid=UnivFlexible b} -> assert (not b); tag_type (str "_")
-
   let pr_univ_expr (u,n) =
     tag_type (pr_sort_name_expr u) ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
 
@@ -198,8 +193,7 @@ let tag_var = tag Tag.variable
     | UNamed [x] -> pr_univ_expr x
     | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
     | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-    | UAnonymous {rigid=UnivFlexible b} ->
-      tag_type (str "Type")
+    | UAnonymous {rigid=UnivFlexible} -> tag_type (str "_")
 
   let pr_qvar_expr = function
     | CQAnon _ -> tag_type (str "_")
@@ -250,7 +244,7 @@ let tag_var = tag Tag.variable
   let pr_inside_universe_instance (ql,ul) =
     (if List.is_empty ql then mt()
      else prlist_with_sep spc pr_quality_expr ql ++ strbrk " | ")
-    ++ prlist_with_sep spc pr_univ_level_expr ul
+    ++ prlist_with_sep spc pr_univ ul
 
   let pr_universe_instance l =
     pr_opt_no_spc (pr_univ_annot pr_inside_universe_instance) l

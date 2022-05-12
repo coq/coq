@@ -31,7 +31,7 @@ Print bar.
 Unset Strict Universe Declaration.
 (* The universes in the binder come first, then the extra universes in
    order of appearance. *)
-Definition foo@{uu +} := Type -> Type@{v} -> Type@{uu}.
+Definition foo@{uu ?} := Type -> Type@{v} -> Type@{uu}.
 Print foo.
 
 Check Type@{i} -> Type@{j}.
@@ -147,8 +147,8 @@ Print Applied.infunct.
    different axioms, but all axioms have to declare all universes. In
    monomorphic mode they get the same universes, ie the type is only
    interpd once. *)
-Axiom axfoo@{i+} axbar : Type -> Type@{i}.
-Monomorphic Axiom axfoo'@{i+} axbar' : Type -> Type@{i}.
+Axiom axfoo@{i ?} axbar : Type -> Type@{i}.
+Monomorphic Axiom axfoo'@{i ?} axbar' : Type -> Type@{i}.
 
 About axfoo. About axbar. About axfoo'. About axbar'.
 

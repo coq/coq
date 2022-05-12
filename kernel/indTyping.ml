@@ -259,8 +259,8 @@ let check_record data =
 let unbounded_from_below u cstrs =
   Univ.Constraints.for_all (fun (l, d, r) ->
       match d with
-      | Eq -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
-      | Lt | Le -> not (Univ.Level.equal r u))
+      | Eq -> not (Univ.Universe.mem u l) && not (Univ.Universe.mem u r)
+      | Le -> not (Univ.Universe.mem u r))
     cstrs
 
 let get_template univs ~env_params ~env_ar_par ~params entries =
@@ -411,13 +411,13 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
       | Polymorphic_ind_entry uctx ->
         (* no variance for qualities *)
-        let _qualities, univs = Instance.to_array @@ UContext.instance uctx in
+        let _qualities, univs = LevelInstance.to_array @@ UContext.instance uctx in
         let univs = Array.map2 (fun a b -> a,b) univs variances in
         let univs = match sec_univs with
           | None -> univs
           | Some sec_univs ->
             (* no variance for qualities *)
-            let _, sec_univs = UVars.Instance.to_array sec_univs in
+            let _, sec_univs = UVars.LevelInstance.to_array sec_univs in
             let sec_univs = Array.map (fun u -> u, None) sec_univs in
             Array.append sec_univs univs
         in

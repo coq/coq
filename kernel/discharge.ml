@@ -21,12 +21,12 @@ module RelDecl = Context.Rel.Declaration
 
 let lift_univs info univ_hyps = function
   | Monomorphic ->
-    assert (UVars.Instance.is_empty univ_hyps);
+    assert (UVars.LevelInstance.is_empty univ_hyps);
     info, univ_hyps, Monomorphic
   | Polymorphic auctx ->
     let info, (qn, un), auctx = lift_poly_univs info auctx in
     let univ_hyps =
-      let open UVars.Instance in
+      let open UVars.LevelInstance in
       let qs, us = to_array univ_hyps in
       let qs = Array.sub qs 0 (Array.length qs - qn) in
       let us = Array.sub us 0 (Array.length us - un) in

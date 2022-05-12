@@ -102,7 +102,7 @@ let rec check_type_conclusion ind =
       | (None, UAnonymous {rigid=UnivRigid}) ->
         (* should have been made flexible *)
         assert false
-      | (None, UAnonymous {rigid=UnivFlexible _}) -> false
+      | (None, UAnonymous {rigid=UnivFlexible}) -> false
       | _ -> true
     end
   | GProd (_, _, _, _, e)
@@ -114,7 +114,7 @@ let rec make_anonymous_conclusion_flexible ind =
   let open Glob_term in
   match DAst.get ind with
   | GSort (None, UAnonymous {rigid=UnivRigid}) ->
-    Some (DAst.make ?loc:ind.loc (GSort (None, UAnonymous {rigid=UnivFlexible true})))
+    Some (DAst.make ?loc:ind.loc (GSort (None, UAnonymous {rigid=UnivFlexible})))
   | GSort _ -> None
   | GProd (a, b, c, d, e) -> begin match make_anonymous_conclusion_flexible e with
       | None -> None
@@ -391,8 +391,8 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
     let open Univ in
     Univ.Constraints.for_all (fun (l, d, r) ->
         match d with
-        | Eq -> not (Univ.Level.equal l u) && not (Univ.Level.equal r u)
-        | Lt | Le -> not (Univ.Level.equal r u))
+        | Eq -> not (Univ.Universe.mem u l) && not (Univ.Universe.mem u r)
+        | Le -> not (Univ.Universe.mem u r))
       cstrs
   in
   let fold_params accu decl = match decl with
@@ -442,17 +442,17 @@ let template_polymorphism_candidate uctx params entry template_syntax = match te
     univs
   | QSort _ -> assert false
 
+(* Returns two universe contexts, for the template and global universes.
+   The global universe will be declared before the template ones. *)
 let split_universe_context subset (univs, csts) =
   let subfilter (l, _, r) =
-    let () = assert (not @@ Univ.Level.Set.mem r subset) in
-    Univ.Level.Set.mem l subset
+    let l = Univ.Universe.levels l in
+    let r = Univ.Universe.levels r in
+    let () = assert (not @@ Univ.Level.Set.for_all (fun r -> Univ.Level.Set.mem r subset) r) in
+    Univ.Level.Set.exists (fun l -> Univ.Level.Set.mem l subset) l
   in
-  let subcst = Univ.Constraints.filter subfilter csts in
+  let subcst, remcst = Univ.Constraints.partition subfilter csts in
   let rem = Univ.Level.Set.diff univs subset in
-  let remfilter (l, _, r) =
-    not (Univ.Level.Set.mem l subset) && not (Univ.Level.Set.mem r subset)
-  in
-  let remcst = Univ.Constraints.filter remfilter csts in
   (subset, subcst), (rem, remcst)
 
 let warn_no_template_universe =

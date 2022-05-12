@@ -10,7 +10,7 @@ Global Set Universe Polymorphism.
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 Set Implicit Arguments.
 Global Set Nonrecursive Elimination Schemes.
-Record prod (A B : Type) := pair { fst : A ; snd : B }.
+Record prod@{i j} (A : Type@{i}) (B : Type@{j}) : Type@{max(i,j)} := pair { fst : A ; snd : B }.
 Notation "x * y" := (prod x y) : type_scope.
 Axiom admit : forall {T}, T.
 Delimit Scope function_scope with function.

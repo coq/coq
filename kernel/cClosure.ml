@@ -1420,7 +1420,7 @@ end =
 struct
 
 type 'constr partial_subst = {
-  subst: ('constr, Sorts.Quality.t, Univ.Level.t) Partial_subst.t;
+  subst: ('constr, Sorts.Quality.t, Univ.Universe.t) Partial_subst.t;
   rhs: constr;
 }
 

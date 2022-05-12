@@ -151,7 +151,7 @@ let pp_struct_const = function
   | Const_ind (mind, i) -> Pp.(MutInd.print mind ++ str"#" ++ int i)
   | Const_evar e -> Pp.( str "Evar(" ++ int (Evar.repr e) ++ str ")")
   | Const_b0 i -> Pp.int i
-  | Const_univ_instance u -> UVars.Instance.pr Sorts.QVar.raw_pr Univ.Level.raw_pr u
+  | Const_univ_instance u -> UVars.Instance.pr Sorts.QVar.raw_pr (Univ.Universe.pr Univ.Level.raw_pr) u
   | Const_val _ -> Pp.str "(value)"
   | Const_uint i -> Pp.str (Uint63.to_string i)
   | Const_float f -> Pp.str (Float64.to_string f)

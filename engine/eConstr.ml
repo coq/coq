@@ -934,6 +934,9 @@ let subst_instance_relevance subst r =
   let r = UVars.subst_instance_relevance subst r in
   ERelevance.make r
 
+let subst_level_instance_constr subst c =
+  of_constr (Vars.subst_level_instance_constr subst (to_constr c))
+
 (** Operations that dot NOT commute with evar-normalization *)
 let noccurn sigma n term =
   let rec occur_rec n c = match kind sigma c with

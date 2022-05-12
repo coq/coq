@@ -13,17 +13,20 @@ Error: Unbound value x
 Coq < Coq < Toplevel input, characters 7-8:
 > Check $ x.
 >       ^
-Error: Syntax error: [lconstr] expected after 'Check' (in [query_command]).
+Error:
+Syntax error: 'Constraint' or [lconstr] expected after 'Check' (in [query_command]).
 
 Coq < Coq < Toplevel input, characters 7-8:
 > Check $ preterm:x.
 >       ^
-Error: Syntax error: [lconstr] expected after 'Check' (in [query_command]).
+Error:
+Syntax error: 'Constraint' or [lconstr] expected after 'Check' (in [query_command]).
 
 Coq < Coq < Toplevel input, characters 7-8:
 > Check $ preterm : x.
 >       ^
-Error: Syntax error: [lconstr] expected after 'Check' (in [query_command]).
+Error:
+Syntax error: 'Constraint' or [lconstr] expected after 'Check' (in [query_command]).
 
 Coq < Coq < Toplevel input, characters 18-19:
 > Check $preterm : x.
@@ -48,6 +51,7 @@ Error: Unbound value preterm
 Coq < Coq < Toplevel input, characters 7-8:
 > Check $ preterm :x.
 >       ^
-Error: Syntax error: [lconstr] expected after 'Check' (in [query_command]).
+Error:
+Syntax error: 'Constraint' or [lconstr] expected after 'Check' (in [query_command]).
 
 Coq < 

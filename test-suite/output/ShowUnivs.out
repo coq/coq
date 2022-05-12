@@ -1,12 +1,9 @@
 UNIVERSES:
  {ShowUnivs.5 ShowUnivs.4 ShowUnivs.3 ShowUnivs.2 ShowUnivs.1} |=
-   ShowUnivs.2 < ShowUnivs.3
-   ShowUnivs.3 < ShowUnivs.4
    ShowUnivs.3 <= ShowUnivs.5
-   ShowUnivs.4 <= ShowUnivs.1
-   ShowUnivs.5 <= ShowUnivs.1
-ALGEBRAIC UNIVERSES:
- {ShowUnivs.5 ShowUnivs.4 ShowUnivs.1}
+   max(ShowUnivs.4, ShowUnivs.5) <= ShowUnivs.1
+   ShowUnivs.2+1 <= ShowUnivs.3
+   ShowUnivs.3+1 <= ShowUnivs.4
 FLEXIBLE UNIVERSES:
  ShowUnivs.5
  ShowUnivs.4
@@ -19,5 +16,4 @@ SORTS:
 WEAK CONSTRAINTS:
  
 
-Normalized constraints:
- {ShowUnivs.3 ShowUnivs.2} |= ShowUnivs.2 < ShowUnivs.3
+Normalized constraints: {ShowUnivs.2} |= 

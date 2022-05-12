@@ -25,7 +25,7 @@ Section ListLower.
 
 End ListLower.
 
-Lemma LowerL_Lem@{i j|j<i+} (A : Type@{j}) (l : List@{i} A) : l = LowerL@{j i} l.
+Lemma LowerL_Lem@{i j|j<i?} (A : Type@{j}) (l : List@{i} A) : l = LowerL@{j i} l.
 Proof. reflexivity. Qed.
 
 Inductive Tp := tp : Type -> Tp.

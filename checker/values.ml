@@ -105,11 +105,12 @@ let v_cstrs =
     ("Univ.constraints",
      v_set
        (v_tuple "univ_constraint"
-          [|v_level;v_enum "order_request" 3;v_level|]))
+          [|v_univ;v_enum "order_request" 2;v_univ|]))
 
 let v_variance = v_enum "variance" 3
 
-let v_instance = Annot ("instance", v_pair (Array v_quality) (Array v_level))
+let v_level_instance = Annot ("level_instance", v_pair (Array v_quality) (Array v_level))
+let v_univ_instance = Annot ("instance", v_pair (Array v_quality) (Array v_univ))
 let v_abs_context = v_tuple "abstract_universe_context" [|v_pair (Array v_name) (Array v_name); v_cstrs|]
 let v_context_set = v_tuple "universe_context_set" [|v_hset v_level;v_cstrs|]
 
@@ -120,7 +121,7 @@ let v_sort = v_sum "sort" 3 (*SProp, Prop, Set*) [|[|v_univ(*Type*)|];[|v_qvar;v
 let v_relevance = v_sum "relevance" 2 [|[|v_qvar|]|]
 let v_binder_annot x = v_tuple "binder_annot" [|x;v_relevance|]
 
-let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
+let v_puniverses v = v_tuple "punivs" [|v;v_univ_instance|]
 
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in
@@ -150,13 +151,13 @@ let rec v_constr =
     [|v_puniverses v_cst|]; (* Const *)
     [|v_puniverses v_ind|]; (* Ind *)
     [|v_puniverses v_cons|]; (* Construct *)
-    [|v_caseinfo;v_instance; Array v_constr; v_case_return; v_case_invert; v_constr; Array v_case_branch|]; (* Case *)
+    [|v_caseinfo;v_univ_instance; Array v_constr; v_case_return; v_case_invert; v_constr; Array v_case_branch|]; (* Case *)
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
     [|v_proj;v_relevance;v_constr|]; (* Proj *)
     [|v_uint63|]; (* Int *)
     [|Float64|]; (* Float *)
-    [|v_instance;Array v_constr;v_constr;v_constr|] (* Array *)
+    [|v_univ_instance;Array v_constr;v_constr;v_constr|] (* Array *)
   |])
 
 and v_prec = Tuple ("prec_declaration",
@@ -202,10 +203,10 @@ let v_subst =
 (** kernel/lazyconstr *)
 
 let v_abstr_info =
-  Tuple ("abstr_info", [|v_nctxt; v_abs_context; v_instance|])
+  Tuple ("abstr_info", [|v_nctxt; v_abs_context; v_level_instance|])
 
 let v_abstr_inst_info =
-  Tuple ("abstr_inst_info", [|List v_id; v_instance|])
+  Tuple ("abstr_inst_info", [|List v_id; v_level_instance|])
 
 let v_expand_info =
   Tuple ("expand_info", [|v_hmap v_cst v_abstr_inst_info; v_hmap v_cst v_abstr_inst_info|])
@@ -255,14 +256,13 @@ let v_univs = v_sum "universes" 1 [|[|v_abs_context|]|]
 let v_vm_reloc_table = Array (v_pair Int Int)
 
 let v_vm_annot_switch = v_tuple "vm_annot_switch" [|v_vm_reloc_table; v_bool; Int|]
-
 let v_vm_caml_prim = v_enum "vm_caml_prim" 6
 
 let v_non_subst_reloc = v_sum "vm_non_subst_reloc" 0 [|
   [|v_sort|];
   [|Fail "Evar"|];
   [|Int|];
-  [|v_instance|];
+  [|v_univ_instance|];
   [|Any|]; (* contains a Vmvalues.value *)
   [|v_uint63|];
   [|Float64|];
@@ -303,7 +303,7 @@ let v_vm_to_patch = v_tuple "vm_to_patch" [|v_vm_emitcodes; v_vm_fv; v_vm_positi
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
-    v_instance;
+    v_level_instance;
     v_cst_def;
     v_constr;
     v_relevance;
@@ -362,7 +362,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_finite;
     Int;
     v_section_ctxt;
-    v_instance;
+    v_level_instance;
     Int;
     Int;
     v_rctxt;

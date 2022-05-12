@@ -530,16 +530,15 @@ Explicit Universes
    universe_name ::= @qualid
    | Set
    | Prop
-   univ_annot ::= @%{ {* @univ_level_or_quality } {? %| {* @univ_level_or_quality } } %}
-   univ_level_or_quality ::= Set
-   | SProp
+   univ_annot ::= @%{ {* @univ_or_quality } {? %| {* @univ_or_quality } } %}
+   univ_or_quality ::= SProp
    | Prop
    | Type
    | _
-   | @qualid
-   univ_decl ::= @%{ {? {* @ident } %| } {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
-   cumul_univ_decl ::= @%{ {? {* @ident } %| } {* {? {| + | = | * } } @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
-   univ_constraint ::= @universe_name {| < | = | <= } @universe_name
+   | @universe
+   univ_decl ::= @%{ {? {* @ident } %| } {* @ident } {? ? } {? %| {*, @univ_constraint } {? ? } } %}
+   cumul_univ_decl ::= @%{ {? {* @ident } %| } {* {? {| + | = | * } } @ident } {? ? } {? %| {*, @univ_constraint } {? ? } } %}
+   univ_constraint ::= @universe {| < | = | <= } @universe
 
 The syntax has been extended to allow users to explicitly bind names
 to universes and explicitly instantiate polymorphic definitions.
@@ -576,6 +575,16 @@ to universes and explicitly instantiate polymorphic definitions.
 
    .. exn:: Polymorphic universe constraints can only be declared inside sections, use Monomorphic Constraint instead
       :undocumented:
+
+.. cmd:: Check Constraint {+, @univ_constraint }
+
+   Checks if a list of constraints hold in the current universe context, in which case the command
+   succeeds.
+
+   .. exn:: Constraint does not hold.
+
+      One can use :cmd:`Fail` before the :cmd:`Check Constraint`
+      command to check that a list of constraints does not hold.
 
 .. _printing-universes:
 
@@ -641,7 +650,7 @@ by adding a :g:`+` in the list of bound universe levels:
 .. coqtop:: all
 
    Fail Definition foobar@{u} : Type@{u} := Type.
-   Definition foobar@{u +} : Type@{u} := Type.
+   Definition foobar@{u ?} : Type@{u} := Type.
    Set Printing Universes.
    Print foobar.
 

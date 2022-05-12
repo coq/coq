@@ -541,7 +541,7 @@ let declare_variable ~name ~kind ~typing_flags d =
         | UState.Polymorphic_entry uctx ->
           Global.push_section_context uctx;
           let mk_anon_names u =
-            let qs, us = UVars.Instance.to_array u in
+            let qs, us = UVars.LevelInstance.to_array u in
             Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
           in
           Global.push_section_context
@@ -960,14 +960,13 @@ module ProgramDecl = struct
             obls
         , b )
     in
-    let prg_uctx = UState.make_flexible_nonalgebraic uctx in
     { prg_cinfo = { cinfo with CInfo.typ = reduce cinfo.CInfo.typ }
     ; prg_info = info
     ; prg_using = using
     ; prg_hook = obl_hook
     ; prg_opaque = opaque
     ; prg_body = body
-    ; prg_uctx
+    ; prg_uctx = uctx
     ; prg_obligations = {obls = obls'; remaining = Array.length obls'}
     ; prg_deps = deps
     ; prg_possible_guard = possible_guard
@@ -1091,7 +1090,7 @@ let update_global_obligation_uctx prg uctx =
   ProgramDecl.Internal.set_uctx ~uctx prg
 
 let instance_of_univs = function
-  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
+  | UState.Polymorphic_entry uctx, _ -> UVars.Instance.of_level_instance (UVars.UContext.instance uctx)
   | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
 
 let declare_obligation prg obl ~uctx ~types ~body =
@@ -2034,7 +2033,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
        should be enforced statically. *)
     let (_, body_uctx), _ = const.proof_entry_body in
     let () = assert (Univ.ContextSet.is_empty body_uctx) in
-    EConstr.EInstance.make (UVars.UContext.instance ctx)
+    EConstr.EInstance.make (UVars.Instance.of_level_instance (UVars.UContext.instance ctx))
   in
   let args = List.map EConstr.of_constr args in
   let lem = EConstr.mkConstU (cst, inst) in

@@ -280,11 +280,14 @@ Axiom add_0_r_peq : forall x : nat, peq (x + 0)%nat x.
 Instance peq_left {A : Type} {B : Type} {R : crelation B} (f : A -> B) `{Reflexive B R} : Proper (peq ==> R) f.
 Admitted.
 
-#[export] Instance reflexive_eq_dom_reflexive@{i j jr mij mijr} {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
+#[universes(polymorphic), export]
+Instance reflexive_eq_dom_reflexive@{i j jr}
+ {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
   Reflexive@{j jr} R ->
-  Reflexive@{mij mijr} (@peq A ==> R)%signatureT.
+  Reflexive (respectful (@peq A) R)%signatureT.
 Proof.
   intros hr x ? ? e. destruct e. apply hr.
+  Show Proof.
 Qed.
 
 #[universes(polymorphic), export]
