@@ -8,6 +8,6 @@ open Stdarg
 TACTIC EXTEND magic
 | [ "magic" ident(i) ident(j) ] -> {
   let open Constrexpr in
-  DeclareUniv.do_constraint ~poly:false [ CType (Libnames.qualid_of_ident i), Univ.Lt, CType (Libnames.qualid_of_ident j)]; Proofview.tclUNIT()
+  DeclareUniv.do_constraint ~poly:false [ [(CType (Libnames.qualid_of_ident i), 0)], (Univ.Le, true), [(CType (Libnames.qualid_of_ident j), 0)]]; Proofview.tclUNIT()
 }
 END

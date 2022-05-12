@@ -178,28 +178,25 @@ let tag_var = tag Tag.variable
 
   let pr_sep_com sep f c = pr_with_comments ?loc:(constr_loc c) (sep() ++ f c)
 
-  let pr_sort_name_expr = function
-    | CSProp -> str "SProp"
-    | CProp -> str "Prop"
-    | CSet -> str "Set"
-    | CType qid -> pr_qualid qid
-    | CRawType s -> Univ.Level.raw_pr s
+  let pr_univ_expr (u, n) =
+    let with_incr s =
+      tag_type s ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
+    in
+    match u with
+    | CSProp -> with_incr (str "SProp")
+    | CProp -> with_incr (str "Prop")
+    | CSet -> with_incr (str "Set")
+    | CType qid -> with_incr (pr_qualid qid)
+    | CRawType s -> tag_type (Univ.LevelExpr.pr Univ.Level.raw_pr (s, n))
 
-  let pr_univ_level_expr = function
-    | UNamed s -> tag_type (pr_sort_name_expr s)
-    | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-    | UAnonymous {rigid=UnivFlexible b} -> assert (not b); tag_type (str "_")
-
-  let pr_univ_expr (u,n) =
-    tag_type (pr_sort_name_expr u) ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
+  let pr_sort_name_expr u = pr_univ_expr (u, 0)
 
   let pr_univ l =
     match l with
     | UNamed [x] -> pr_univ_expr x
     | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
     | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
-    | UAnonymous {rigid=UnivFlexible b} ->
-      tag_type (str "Type")
+    | UAnonymous {rigid=UnivFlexible} -> tag_type (str "_")
 
   let pr_qvar_expr = function
     | CQAnon _ -> tag_type (str "_")
@@ -250,7 +247,7 @@ let tag_var = tag Tag.variable
   let pr_inside_universe_instance (ql,ul) =
     (if List.is_empty ql then mt()
      else prlist_with_sep spc pr_quality_expr ql ++ strbrk " | ")
-    ++ prlist_with_sep spc pr_univ_level_expr ul
+    ++ prlist_with_sep spc pr_univ ul
 
   let pr_universe_instance l =
     pr_opt_no_spc (pr_univ_annot pr_inside_universe_instance) l

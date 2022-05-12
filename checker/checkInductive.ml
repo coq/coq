@@ -199,7 +199,7 @@ let check_inductive env mind mb =
   check "mind_finite" (mb.mind_finite == mind_finite);
   check "mind_ntypes" Int.(equal mb.mind_ntypes mind_ntypes);
   check "mind_hyps" (List.is_empty mind_hyps);
-  check "mind_univ_hyps" (UVars.Instance.is_empty mind_univ_hyps);
+  check "mind_univ_hyps" (UVars.LevelInstance.is_empty mind_univ_hyps);
   check "mind_nparams" Int.(equal mb.mind_nparams mind_nparams);
 
   check "mind_nparams_rec" (mb.mind_nparams_rec <= mind_nparams_rec);

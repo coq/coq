@@ -1150,6 +1150,7 @@ let cast_to_int v =
   | MLint _ -> v
   | _ -> MLprimitive (Val_to_int, [|v|])
 
+(* todo check: probably broken by change of repr (MS) *)
 let ml_of_instance instance u =
   if UVars.Instance.is_empty u then [||]
   else
@@ -1158,7 +1159,7 @@ let ml_of_instance instance u =
     let has_variable =
       let qs, us = UVars.Instance.to_array u in
       Array.exists (fun q -> Option.has_some (Sorts.Quality.var_index q)) qs
-      || Array.exists (fun u -> Option.has_some (Univ.Level.var_index u)) us
+      || Array.exists (fun u -> Univ.Universe.exists (fun (l, _) -> Option.has_some (Univ.Level.var_index l)) u) us
     in
     let u_code =
       if has_variable then

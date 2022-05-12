@@ -27,7 +27,6 @@ type 'a check_function = t -> 'a -> 'a -> bool
 
 val check_leq : Universe.t check_function
 val check_eq : Universe.t check_function
-val check_eq_level : Level.t check_function
 
 (** The initial graph of universes: Prop < Set *)
 val initial_universes : t
@@ -64,7 +63,13 @@ val check_constraints : Constraints.t -> t -> bool
 val check_eq_sort : t -> Sorts.t  -> Sorts.t -> bool
 val check_leq_sort : t -> Sorts.t -> Sorts.t -> bool
 
-val enforce_leq_alg : Univ.Universe.t -> Univ.Universe.t -> t -> Univ.Constraints.t * t
+exception InconsistentEquality
+(** Sets a universe level equal to a universe in the graph.
+   Stronger than enforcing an equality as the level disappears from the
+   graph in case of success.
+   @raise InconsistentEquality if the equality cannot be enforced.
+   *)
+val set : Level.t -> Universe.t -> t -> t
 
 (** Adds a universe to the graph, ensuring it is >= or > Set.
    @raise AlreadyDeclared if the level is already declared in the graph. *)
@@ -87,8 +92,9 @@ val empty_universes : t
 
 (** [constraints_of_universes g] returns [csts] and [partition] where
    [csts] are the non-Eq constraints and [partition] is the partition
-   of the universes into equivalence classes. *)
-val constraints_of_universes : t -> Constraints.t * Level.Set.t list
+   of the universes into equivalence classes mapping a level to its equivalent
+   level expressions (i.e. l = l' + k). *)
+val constraints_of_universes : t -> Constraints.t * LevelExpr.Set.t list
 
 val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 (** [choose p g u] picks a universe verifying [p] and equal
@@ -96,8 +102,7 @@ val choose : (Level.t -> bool) -> t -> Level.t -> Level.t option
 
 (** [constraints_for ~kept g] returns the constraints about the
    universes [kept] in [g] up to transitivity.
-
-    eg if [g] is [a <= b <= c] then [constraints_for ~kept:{a, c} g] is [a <= c]. *)
+   e.g. if [g] is [a <= b <= c] then [constraints_for ~kept:{a, c} g] is [a <= c]. *)
 val constraints_for : kept:Level.Set.t -> t -> Constraints.t
 
 val domain : t -> Level.Set.t
@@ -110,8 +115,8 @@ val check_subtype : AbstractContext.t check_function
 (** {6 Dumping} *)
 
 type node =
-| Alias of Level.t
-| Node of bool Level.Map.t (** Nodes v s.t. u < v (true) or u <= v (false) *)
+| Alias of LevelExpr.t
+| Node of (int * Universe.t) list (** Nodes [(k_i, u_i); ...] s.t. u + k_i <= u_i *)
 
 val repr : t -> node Level.Map.t
 

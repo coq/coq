@@ -106,7 +106,7 @@ type typing_flags = {
  * the OpaqueDef *)
 type ('opaque, 'bytecode) pconstant_body = {
     const_hyps : Constr.named_context; (** younger hyp at top *)
-    const_univ_hyps : UVars.Instance.t;
+    const_univ_hyps : UVars.LevelInstance.t;
     const_body : (Constr.t, 'opaque, bool) constant_def;
                     (** [bool] is for [unfold_fix] in symbols *)
     const_type : types;
@@ -263,7 +263,7 @@ type mutual_inductive_body = {
 
     mind_hyps : Constr.named_context;  (** Section hypotheses on which the block depends *)
 
-    mind_univ_hyps : UVars.Instance.t; (** Section polymorphic universes. *)
+    mind_univ_hyps : UVars.LevelInstance.t; (** Section polymorphic universes. *)
 
     mind_nparams : int;  (** Number of expected parameters including non-uniform ones (i.e. length of mind_params_ctxt w/o let-in) *)
 
