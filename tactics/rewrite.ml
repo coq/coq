@@ -269,7 +269,7 @@ end) = struct
   let get_transitive_proof env = find_class_proof transitive_type transitive_proof env
 
   let mk_relation env evars ty =
-    let evars', ty = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
+    let evars', ty = Evarsolve.refresh_universes ~onlyalg:true ~status:Evd.UnivFlexible
     (Some false) env (fst evars) ty in
     app_poly env (evars', snd evars) relation [| ty |]
 
@@ -297,7 +297,7 @@ end) = struct
             let ty = Reductionops.nf_betaiota env (goalevars evars) ty in
             let (evars, b', arg, cstrs) = aux env evars (subst1 mkProp b) cstrs in
             let evars, relty = mk_relty evars env ty obj in
-            let evars', b' = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
+            let evars', b' = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible)
               (Some false) env (fst evars) b' in
             let evars, newarg = app_poly env (evars', snd evars) respectful [| ty ; b' ; relty ; arg |] in
               evars, mkProd(na, ty, b), newarg, (ty, Some relty) :: cstrs
@@ -381,7 +381,7 @@ end) = struct
     | [] -> rel
 
   let refresh_univs env evars ty =
-    let evars', ty = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible false)
+    let evars', ty = Evarsolve.refresh_universes ~onlyalg:true ~status:(Evd.UnivFlexible)
       (Some false) env (fst evars) ty in
     (evars', snd evars), ty
 
@@ -809,7 +809,7 @@ let resolve_morphism env m args args' (b,cstr) evars =
       else TypeGlobal.build_signature evars env appmtype cstrs cstr
     in
       (* Actual signature found *)
-    let evars', appmtype' = Evarsolve.refresh_universes ~status:(Evd.UnivFlexible false) ~onlyalg:true
+    let evars', appmtype' = Evarsolve.refresh_universes ~status:(Evd.UnivFlexible) ~onlyalg:true
       (Some false) env (fst evars) appmtype' in
     let cl_args = [| appmtype' ; signature ; appm |] in
     let evars, app = app_poly_sort b env (evars', snd evars) (if b then PropGlobal.proper_type else TypeGlobal.proper_type)

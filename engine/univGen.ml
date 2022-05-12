@@ -60,6 +60,9 @@ let new_univ_global () =
 let fresh_level () =
   Univ.Level.make (new_univ_global ())
 
+let fresh_univ () =
+  Universe.make (fresh_level ())
+
 let new_sort_id =
   let cnt = ref 0 in
   fun () -> incr cnt; !cnt
@@ -79,7 +82,8 @@ let fresh_instance auctx : _ in_sort_context_set =
       qinst
   in
   let uctx = Array.fold_right Level.Set.add uinst Level.Set.empty in
-  let inst = Instance.of_array (qinst,uinst) in
+  let inst = LevelInstance.of_array (qinst,uinst) in
+  let inst = Instance.of_level_instance inst in
   inst, ((qctx,uctx), AbstractContext.instantiate inst auctx)
 
 let existing_instance ?loc auctx inst =
@@ -150,7 +154,7 @@ let fresh_universe_context_set_instance ctx =
     let univs',subst = Level.Set.fold
       (fun u (univs',subst) ->
         let u' = fresh_level () in
-          (Level.Set.add u' univs', Level.Map.add u u' subst))
+          (Level.Set.add u' univs', Level.Map.add u (Universe.make u') subst))
       univs (Level.Set.empty, Level.Map.empty)
     in
     let cst' = subst_univs_level_constraints subst cst in

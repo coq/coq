@@ -1254,7 +1254,8 @@ let rec unify_0_with_initial_metas (subst : subst0) conv_at_top env cv_pb flags 
   let sigma = subst.subst_sigma in
   debug_tactic_unification (fun () ->
       str "Starting unification:" ++ spc() ++
-      Termops.Internal.print_constr_env env sigma (fst m) ++ strbrk" ~= " ++
+      Termops.Internal.print_constr_env env sigma (fst m) ++
+      (match cv_pb with CONV -> strbrk" ~= " | CUMUL -> strbrk" ~<= ") ++
       Termops.Internal.print_constr_env env sigma (fst n));
 
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in

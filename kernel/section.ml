@@ -32,7 +32,7 @@ type 'a t = {
   (** Global universes introduced in the section *)
   poly_universes : UContext.t;
   (** Universes local to the section *)
-  all_poly_univs : Instance.t;
+  all_poly_univs : LevelInstance.t;
   (** All polymorphic universes, including from previous sections. *)
   has_poly_univs : bool;
   (** Are there polymorphic universes or constraints, including in previous sections. *)
@@ -60,17 +60,19 @@ let push_local_universe_context ctx sec =
   else
     let sctx = sec.poly_universes in
     let poly_universes = UContext.union sctx ctx in
-    let all_poly_univs = Instance.append sec.all_poly_univs (UContext.instance ctx) in
+    let all_poly_univs = LevelInstance.append sec.all_poly_univs (UContext.instance ctx) in
     { sec with poly_universes; all_poly_univs; has_poly_univs = true }
 
 let is_polymorphic_univ u sec =
-  let _, us = Instance.to_array sec.all_poly_univs in
+  let _, us = LevelInstance.to_array sec.all_poly_univs in
   Array.exists (fun u' -> Level.equal u u') us
 
 let push_constraints uctx sec =
   if sec.has_poly_univs &&
      Constraints.exists
-       (fun (l,_,r) -> is_polymorphic_univ l sec || is_polymorphic_univ r sec)
+       (fun (l,_,r) ->
+        Universe.exists (fun (l, _) -> is_polymorphic_univ l sec) l ||
+        Universe.exists (fun (l, _) -> is_polymorphic_univ l sec) r)
        (snd uctx)
   then CErrors.user_err
       Pp.(str "Cannot add monomorphic constraints which refer to section polymorphic universes.");
@@ -84,7 +86,7 @@ let open_section ~custom prev =
     context = [];
     mono_universes = ContextSet.empty;
     poly_universes = UContext.empty;
-    all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) Instance.empty prev;
+    all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) LevelInstance.empty prev;
     has_poly_univs = Option.cata has_poly_univs false prev;
     entries = [];
     expand_info_map = (Cmap.empty, Mindmap.empty);

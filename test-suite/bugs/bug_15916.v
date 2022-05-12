@@ -36,7 +36,7 @@ Module WithAxiom.
   (* !!! should not work !!! *)
   Fail Polymorphic Definition lift_t@{u v|} (x:t@{u}) : t@{v}
     := match (C1@{u} x) : I1@{v} with C1 y => y end.
-  Fail Polymorphic Definition lift_t@{u v|u < v +} (x:t@{u}) : t@{v}
+  Fail Polymorphic Definition lift_t@{u v|u < v ?} (x:t@{u}) : t@{v}
     := match (C1@{u} x) : I1@{v} with C1 y => y end.
 
   (* sanity check that the above 2 test the right thing *)
@@ -48,9 +48,9 @@ End WithAxiom.
 Module WithVars.
 
   Module Rel.
-    Fail Cumulative Inductive foo@{*u +} (X:=Type@{u}) := C (_:X).
+    Fail Cumulative Inductive foo@{*u ?} (X:=Type@{u}) := C (_:X).
 
-    Cumulative Inductive foo@{+u +} (X:=Type@{u}) := C (_:X).
+    Cumulative Inductive foo@{+u ?} (X:=Type@{u}) := C (_:X).
   End Rel.
 
   Module Var.

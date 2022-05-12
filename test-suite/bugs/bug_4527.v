@@ -79,7 +79,6 @@ associativity) : function_scope.
 
 Inductive paths {A : Type} (a : A) : A -> Type :=
   idpath : paths a a.
-
 Arguments idpath {A a} , [A] a.
 
 Notation "x = y :> A" := (@paths A x y) : type_scope.
@@ -120,7 +119,7 @@ Arguments eissect {A B}%_type_scope f%_function_scope {_} _.
 Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3, format "f '^-1'") :
 function_scope.
 
-Inductive Unit : Type1 :=
+Inductive Unit@{i} : Type1@{i} :=
     tt : Unit.
 
 Local Open Scope path_scope.
@@ -164,7 +163,7 @@ End Adjointify.
     := match n with
          | O => Unit@{l}
          | S n => (forall (g : forall a, C (f a)),
-                     ExtensionAlong@{i j k l l} f C g) *
+                     ExtensionAlong@{i j k} f C g) *
                   forall (h k : forall b, C b),
                     ExtendableAlong n f (fun b => h b = k b)
        end.
@@ -217,10 +216,13 @@ Existing Class In.
 Arguments inO_equiv_inO {O} T {U} {_} f {_}.
 Global Existing Instance O_inO.
 
-Section ORecursion.
-  Context {O : ReflectiveSubuniverse}.
+Unset Universe Minimization ToSet.
 
-  Definition O_indpaths {P Q : Type} {Q_inO : In O Q}
+Section ORecursion.
+  Universes Ou Oa.
+  Context {O : ReflectiveSubuniverse@{Ou Oa}}.
+
+  Definition O_indpaths@{i j ?} {P : Type@{i}} {Q : Type@{j}} {Q_inO : In O Q}
              (g h : O P -> Q) (p : g o to O P == h o to O P)
   : g == h
   := (fst (snd (extendable_to_O O two) g h) p).1.
@@ -243,24 +245,23 @@ Section Reflective_Subuniverse.
     Definition inO_to_O_retract (T:Type) (mu : O T -> T)
     : Sect (to O T) mu -> In O T.
     Proof.
+      Show Universes.
       unfold Sect; intros H.
       apply inO_isequiv_to_O.
       apply isequiv_adjointify with (g:=mu).
-      -
- refine (O_indpaths (to O T o mu) idmap _).
+      - refine (O_indpaths (to O T o mu) idmap _).
         intros x; exact (ap (to O T) (H x)).
-      -
- exact H.
+      - exact H.
     Defined.
 
-    Definition inO_paths@{i} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y :
+    Definition inO_paths@{i | Oa <= i} (S : Type@{i}) {S_inO : In@{Ou Oa i} O S} (x y :
 S)    : In@{Ou Oa i} O (x=y).
     Proof.
-      simple refine (inO_to_O_retract@{i} _ _ _); intro u.
+      simple refine (inO_to_O_retract@{i i} _ _ _); intro u.
       -
  assert (p : (fun _ : O (x=y) => x) == (fun _=> y)).
         {
- refine (O_indpaths _ _ _); simpl.
+ refine (O_indpaths@{Ou Oa i i} _ _ _); simpl.
           intro v; exact v.
 }
         exact (p u).

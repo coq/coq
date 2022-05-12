@@ -1,8 +1,6 @@
 UNIVERSES:
  {w v u} |= u <= v
             v <= w
-ALGEBRAIC UNIVERSES:
- {}
 FLEXIBLE UNIVERSES:
  
 SORTS:
@@ -15,13 +13,10 @@ Normalized constraints:
             v <= w
 UNIVERSES:
  {ShowUnivs.8 ShowUnivs.7 ShowUnivs.6 ShowUnivs.5 ShowUnivs.4} |=
-   ShowUnivs.5 < ShowUnivs.6
-   ShowUnivs.6 < ShowUnivs.7
    ShowUnivs.6 <= ShowUnivs.8
-   ShowUnivs.7 <= ShowUnivs.4
-   ShowUnivs.8 <= ShowUnivs.4
-ALGEBRAIC UNIVERSES:
- {ShowUnivs.8 ShowUnivs.7 ShowUnivs.4}
+   max(ShowUnivs.7, ShowUnivs.8) <= ShowUnivs.4
+   ShowUnivs.5+1 <= ShowUnivs.6
+   ShowUnivs.6+1 <= ShowUnivs.7
 FLEXIBLE UNIVERSES:
  ShowUnivs.8
  ShowUnivs.7
@@ -35,4 +30,4 @@ WEAK CONSTRAINTS:
  
 
 Normalized constraints:
- {ShowUnivs.6 ShowUnivs.5} |= ShowUnivs.5 < ShowUnivs.6
+ {ShowUnivs.5} |= 

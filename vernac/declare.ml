@@ -169,7 +169,7 @@ let extract_monomorphic = function
 
 let instance_of_univs = function
   | UState.Monomorphic_entry _, _ -> UVars.Instance.empty
-  | UState.Polymorphic_entry uctx, _ -> UVars.UContext.instance uctx
+  | UState.Polymorphic_entry uctx, _ -> UVars.Instance.of_level_instance (UVars.UContext.instance uctx)
 
 let add_mono_univ_uctx_for_derived ctx' = function
   | UState.Monomorphic_entry ctx, ubinders -> UState.Monomorphic_entry (Univ.ContextSet.union ctx ctx'), ubinders
@@ -637,7 +637,7 @@ let declare_variable ~name ~kind ~typing_flags d =
         | UState.Polymorphic_entry uctx ->
           Global.push_section_context uctx;
           let mk_anon_names u =
-            let qs, us = UVars.Instance.to_array u in
+            let qs, us = UVars.LevelInstance.to_array u in
             Array.make (Array.length qs) Anonymous, Array.make (Array.length us) Anonymous
           in
           Global.push_section_context
@@ -1005,14 +1005,13 @@ module ProgramDecl = struct
             obls
         , b )
     in
-    let prg_uctx = UState.make_flexible_nonalgebraic uctx in
     { prg_cinfo = { cinfo with CInfo.typ = reduce cinfo.CInfo.typ }
     ; prg_info = info
     ; prg_using = using
     ; prg_hook = obl_hook
     ; prg_opaque = opaque
     ; prg_body = body
-    ; prg_uctx
+    ; prg_uctx = uctx
     ; prg_obligations = {obls = obls'; remaining = Array.length obls'}
     ; prg_deps = deps
     ; prg_possible_guard = possible_guard

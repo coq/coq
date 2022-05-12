@@ -1137,7 +1137,7 @@ let explain_not_match_error = function
       in
       let uctx = AbstractContext.repr auctx in
       Printer.pr_universe_instance_constraints sigma
-        (UContext.instance uctx)
+        (Instance.of_level_instance (UContext.instance uctx))
         (UContext.constraints uctx)
     in
     str "incompatible polymorphic binders: got" ++ spc () ++ h (pr_auctx got) ++ spc() ++

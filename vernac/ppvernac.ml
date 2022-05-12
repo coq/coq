@@ -58,9 +58,20 @@ let pr_red_expr =
     (pr_constr_expr, pr_lconstr_expr, pr_smart_global, pr_constr_expr, pr_or_var int)
     keyword
 
-let pr_uconstraint (l, d, r) =
-  pr_sort_name_expr l ++ spc () ++ Univ.pr_constraint_type d ++ spc () ++
-  pr_sort_name_expr r
+let pr_incr pr (x, k) =
+  pr x ++ (if k = 0 then mt() else str"+" ++ int k)
+
+let pr_universe_expr =
+  prlist_with_sep (fun () -> str",") (pr_incr pr_sort_name_expr)
+
+let pr_constraint_type d k =
+  match d with
+  | Univ.Le -> if k then str"<" else str"<="
+  | Univ.Eq -> str"="
+
+let pr_uconstraint (l, (d, k), r) =
+  pr_universe_expr l ++ spc () ++ pr_constraint_type d k ++ spc () ++
+  pr_universe_expr r
 
 let pr_full_univ_name_list = function
   | None -> mt()
@@ -1212,6 +1223,14 @@ let pr_synpure_vernac_expr v =
     let pr_i = match io with None -> mt ()
                            | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
     return (pr_i ++ pr_mayeval r c)
+  | VernacCheckConstraint (c,io) ->
+    let pr_check_constraint c =
+      hov 2 (keyword "Check" ++ spc() ++ keyword "Constraint" ++
+      prlist_with_sep (fun _ -> str",") pr_uconstraint c)
+    in
+    let pr_i = match io with None -> mt ()
+    | Some i -> Goal_select.pr_goal_selector i ++ str ": " in
+    return (pr_i ++ pr_check_constraint c)
   | VernacGlobalCheck c ->
     return (hov 2 (keyword "Type" ++ pr_constrarg c))
   | VernacDeclareReduction (s,r) ->

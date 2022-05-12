@@ -185,6 +185,7 @@ module Constr :
     val ident : Id.t Entry.t
     val global : qualid Entry.t
     val universe_name : sort_name_expr Entry.t
+    val universe : universe_expr Entry.t
     val sort : sort_expr Entry.t
     val sort_family : Sorts.family Entry.t
     val pattern : cases_pattern_expr Entry.t

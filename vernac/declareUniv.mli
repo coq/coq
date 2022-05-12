@@ -23,3 +23,6 @@ val do_universe : poly:bool -> lident list -> unit
 
 (** Command [Constraint]. *)
 val do_constraint : poly:bool -> Constrexpr.univ_constraint_expr list -> unit
+
+(** Command [Check Constraint] *)
+val check_constraint : Environ.env -> Evd.evar_map -> Constrexpr.univ_constraint_expr list -> unit

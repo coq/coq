@@ -1,4 +1,6 @@
 Axiom proof_admitted : False.
+Require Export Coq.Classes.CMorphisms.
+Import Datatypes.
 Tactic Notation "admit" := abstract case proof_admitted.
 Require Coq.Program.Program.
 Export Coq.Program.Program.
@@ -7,7 +9,6 @@ Set Universe Polymorphism.
 
 Close Scope nat_scope.
 Require Setoid.
-Require Export Coq.Classes.CMorphisms.
 
 Notation "∀  x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity).

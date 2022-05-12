@@ -22,7 +22,7 @@ val expr_Set_sort : sort_expr
 (** {6 Equalities on [constr_expr] related types} *)
 
 val sort_name_expr_eq : sort_name_expr -> sort_name_expr -> bool
-val univ_level_expr_eq : univ_level_expr -> univ_level_expr -> bool
+val universe_expr_eq : universe_expr -> universe_expr -> bool
 val sort_expr_eq : sort_expr -> sort_expr -> bool
 val relevance_info_expr_eq : relevance_info_expr -> relevance_info_expr -> bool
 
