@@ -164,7 +164,7 @@ val univ_level_rem : Level.t -> Universe.t -> Universe.t -> Universe.t
 
 (** {6 Constraints. } *)
 
-type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
+type constraint_type = Loop_checking.constraint_type = Lt | Le | Eq
 type univ_constraint = Level.t * constraint_type * Level.t
 
 module Constraints : sig

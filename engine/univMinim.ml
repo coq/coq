@@ -206,15 +206,17 @@ let minimize_univ_variables ctx us left right cstrs =
         in (Level.Map.remove r left, lbounds))
       left (left, LBMap.empty)
   in
-  let rec instance (ctx, us, insts, cstrs as acc) u =
+  let rec instance above (ctx, us, insts, cstrs as acc) u =
     let acc, left, lower =
       match Level.Map.find u left with
       | exception Not_found -> acc, [], Level.Map.empty
       | l ->
         let acc, left, newlow, lower =
           List.fold_left
-          (fun (acc, left, newlow, lower') (d, l) ->
-           let acc', {enforce=enf;alg;lbound=l';lower} = aux acc l in
+          (fun (acc, left, newlow, lower' as state) (d, l) ->
+            if Level.equal u l then state else
+            let above = Level.Set.add u above in
+           let acc', {enforce=enf;alg;lbound=l';lower} = aux above acc l in
            let l' =
              if enf then Universe.make l
              else l'
@@ -279,12 +281,15 @@ let minimize_univ_variables ctx us left right cstrs =
         try enforce_uppers (instantiate_lbound lbound)
         with UpperBoundedAlg ->
           enforce_uppers (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
-  and aux (ctx, us, seen, cstrs as acc) u =
+  and aux above (ctx, us, seen, cstrs as acc) u =
     try acc, Level.Map.find u seen.LBMap.lbmap
-    with Not_found -> instance acc u
+    with Not_found ->
+      if Level.Set.mem u above then
+        acc, {enforce=true; alg=false; lbound=Universe.make u; lower = Level.Map.singleton u Le}
+      else instance above acc u
   in
     UnivFlex.fold (fun u ~is_defined (ctx, us, seen, cstrs as acc) ->
-      if not is_defined then fst (aux acc u)
+      if not is_defined then fst (aux Level.Set.empty acc u)
       else Level.Set.remove u ctx, UnivFlex.make_nonalgebraic_variable us u, seen, cstrs)
       us (ctx, us, lbounds, cstrs)
 

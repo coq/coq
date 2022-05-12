@@ -15,6 +15,8 @@ open Univ
 
 module UnivFlex = UnivFlex
 
+let _debug_ustate_flag, debug = CDebug.create_full ~name:"ustate" ()
+
 type universes_entry =
 | Monomorphic_entry of Univ.ContextSet.t
 | Polymorphic_entry of Univ.UContext.t
@@ -604,6 +606,15 @@ let process_universe_constraints uctx cstrs =
   let local = UnivProblem.Set.fold unify_universes cstrs local in
   let extra = { UnivMinim.above_prop = local.local_above_prop; UnivMinim.weak_constraints = local.local_weak } in
   !vars, extra, local.local_cst, local.local_sorts
+
+let process_universe_constraints uctx cstrs =
+  debug Pp.(fun () -> str"Calling process_universe_constraints");
+  try let res = process_universe_constraints uctx cstrs in
+    debug Pp.(fun () -> str"process_universe_constraint terminated");
+    res
+  with Stack_overflow ->
+    CErrors.anomaly (Pp.str "process_universe_constraint raised a stack overflow")
+
 
 let add_constraints uctx cstrs =
   let univs, old_cstrs = uctx.local in

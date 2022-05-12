@@ -10,7 +10,7 @@
 
 open Univ
 
-module G = AcyclicGraph.Make(struct
+module G = Loop_checking.Make(struct
     type t = Level.t
     module Set = Level.Set
     module Map = Level.Map

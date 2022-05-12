@@ -1,5 +1,8 @@
 type constraint_type = Lt | Le | Eq
 
+let _debug_loop_checking_flag, debug = CDebug.create_full ~name:"loop-checking" ()
+let debug_loop_checking_timing_flag, debug_timing = CDebug.create_full ~name:"loop-checking-timing" ()
+
 module type Point = sig
   type t
 
@@ -12,56 +15,99 @@ module type Point = sig
   val pr : t -> Pp.t
 end
 
-(* This allows to load multiple plugins sharing the same option at the same time
-  while have option settings apply to both *)
-let timing_opt () = true
-  (* let open Goptions in
-  let key = ["Universes"; "Timing"] in
-  let tables = get_tables () in
-  try
-    let _ = OptionMap.find key tables in
-    fun () ->
-      let tables = get_tables () in
-      let opt = OptionMap.find key tables in
-      match opt.opt_value with
-      | BoolValue b -> b
-      | _ -> assert false
-  with Not_found ->
-    declare_bool_option_and_ref ~depr:false ~key ~value:false *)
-
 let time prefix f x =
-  if timing_opt () then
+  if CDebug.(get_flag debug_loop_checking_timing_flag) then
     let start = Unix.gettimeofday () in
     let res = f x in
     let stop = Unix.gettimeofday () in
-    let () = Printf.printf "%s\n" (Pp.string_of_ppcmds Pp.(prefix ++ str " executed in: " ++ Pp.real (stop -. start) ++ str "s")) in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " executed in: " ++ Pp.real (stop -. start) ++ str "s") in
     res
   else f x
 
 module Make (Point : Point) = struct
 
+  module Index :
+  sig
+    type t
+    val equal : t -> t -> bool
+    module Set : CSig.SetS with type elt = t
+    module Map : CMap.ExtS with type key = t and module Set := Set
+    type table
+    val empty : table
+    val fresh : Point.t -> table -> t * table
+    val mem : Point.t -> table -> bool
+    val find : Point.t -> table -> t
+    val repr : t -> table -> Point.t
+  end =
+  struct
+    type t = int
+    let equal = Int.equal
+    module Set = Int.Set
+    module Map = Int.Map
+
+    type table = {
+      tab_len : int;
+      tab_fwd : Point.t Int.Map.t;
+      tab_bwd : int Point.Map.t
+    }
+
+    let empty = {
+      tab_len = 0;
+      tab_fwd = Int.Map.empty;
+      tab_bwd = Point.Map.empty;
+    }
+    let mem x t = Point.Map.mem x t.tab_bwd
+    let find x t = Point.Map.find x t.tab_bwd
+    let repr n t = Int.Map.find n t.tab_fwd
+
+    let fresh x t =
+      let () = assert (not @@ mem x t) in
+      let n = t.tab_len in
+      n, {
+        tab_len = n + 1;
+        tab_fwd = Int.Map.add n x t.tab_fwd;
+        tab_bwd = Point.Map.add x n t.tab_bwd;
+      }
+  end
+
+module PMap = Index.Map
+module PSet = Index.Set
+
 type univ_constraint = Point.t * constraint_type * Point.t
 
-type clauses = (int * (Point.t * int) list) list Point.Map.t
+type clauses = (int * (Index.t * int) list) list Point.Map.t
+
+(* Comparison on this type is pointer equality *)
+type canonical_node =
+  { canon: Index.t;
+
+  }
+
+(* A Point.t is either an alias for another one, or a canonical one,
+    for which we know the points that are above *)
+
+type entry =
+  | Canonical of canonical_node
+  | Equiv of Index.t
 
 let add_clause l kprem cls =
-  Point.Map.update l (fun kprems ->
+  PMap.update l (fun kprems ->
     match kprems with
     | None -> Some [kprem]
     | Some l -> Some (kprem :: l)) cls
 
 (* let update_model *)
 (* Point.Maps are purely functional hashmaps *)
-type model = int Point.Map.t
+type model = int PMap.t
 
-let level_value m l =
-  try Point.Map.find l m
+let model_value m l =
+  try PMap.find l m
   with Not_found -> 0
 
 let min_premise (m : model) prem =
   match prem with
   | (l, k) :: tl ->
-    List.fold_left (fun minl (l, k) -> min minl (level_value m l - k)) (level_value m l - k) tl
+    List.fold_left (fun minl (l, k) -> min minl (model_value m l - k)) (model_value m l - k) tl
   | [] -> assert false
 
 let update_value (w,m) concl conclv (k, prem) : (int * (Point.Set.t * model)) option =
@@ -72,13 +118,13 @@ let update_value (w,m) concl conclv (k, prem) : (int * (Point.Set.t * model)) op
      if newk <= conclv then None
      else Some (newk, (Point.Set.add concl w, Point.Map.add concl newk m))
 
-let rec check_model_aux cls wm =
+let check_model_aux cls wm =
   Point.Map.fold (fun concl cls (_, (_, m) as acc) ->
       snd (List.fold_left (fun (conclv, (_, wm) as acc) kprem ->
           match update_value wm concl conclv kprem with
           | None -> acc
           | Some (newv, wm') -> (newv, (true, wm')))
-        (level_value m concl, acc) cls))
+        (model_value m concl, acc) cls))
     cls (false, wm)
 
 let check_model cls w m =
@@ -135,9 +181,16 @@ let check v cls m =
         | Model (wc, mwc) ->
           (match check_model conclnW wc mwc with
           | None -> Model (wc, mwc)
-          | Some (wcls, mcls)  ->
-             loop v cV wcls cls mcls))
+          | Some (wcls, mcls)  -> loop v cV wcls cls mcls))
   in loop v cV Point.Set.empty cls m
+
+let check v cls m =
+  debug Pp.(fun () -> str"Calling loop-checking");
+  try let res = check v cls m in
+    debug Pp.(fun () -> str"Loop-checking terminated");
+    res
+  with Stack_overflow ->
+    CErrors.anomaly (Pp.str "check raised a stack overflow")
 
 let valuation_of_model m =
   let max = Point.Map.fold (fun _ k acc -> max k acc) m 0 in
@@ -163,17 +216,46 @@ let update_model cls m =
       m prems)
     cls m
 
+let max_level m =
+  Point.Map.fold (fun _ v m -> max v m) m 0
+
+let clauses_cardinal m =
+  Point.Map.fold (fun _ prems card ->
+    List.length prems + card)
+    m 0
+
+
 type t = {
   model : model;
-  univs : Point.Set.t;
+  points : PSet.t;
   clauses : clauses;
 }
+
+let statistics { points; model; clauses } =
+  let open Pp in
+  int (PSet.cardinal points) ++ str"universes, maximal level in the model is " ++ int (max_level model) ++
+  str", " ++ int (clauses_cardinal clauses) ++ str" clauses."
+
+let pr_with f (l, n) =
+  if Int.equal n 0 then f l
+  else Pp.(f l ++ Pp.str"+" ++ int n)
+
+let pr_pointint = pr_with Point.pr
+
+let pr_clauses cls =
+  let open Pp in
+  Point.Map.fold (fun concl prems acc ->
+    (prlist_with_sep spc (fun (k, prem) ->
+      h (prlist_with_sep (fun () -> str ",") pr_pointint prem ++ str " → " ++ pr_pointint (concl, k) ++ spc ()))
+       prems) ++ fnl () ++ acc) cls (Pp.mt())
+
 let infer_clauses_extension (m : t) (clauses : clauses) =
-  let univs = m.univs in
+  let points = m.points in
   let model' = update_model clauses m.model in
-  match check univs clauses model' with
+  debug Pp.(fun () -> str"Calling loop-checking" ++ statistics { m with model = model' });
+  match check points clauses model' with
   | Loop -> None
-  | Model (_w', model) -> Some { model; clauses; univs }
+  | Model (_w', model) -> Some { model; clauses; points }
 
 let check_clause m conclv (k, prem) =
   let k0 = min_premise m prem in
@@ -185,64 +267,121 @@ let check_clause m conclv (k, prem) =
 
 let check_clauses m cls =
   Point.Map.for_all (fun concl cls ->
-    let conclv = level_value m concl in
+    let conclv = model_value m concl in
     List.for_all (fun cl -> check_clause m conclv cl) cls)
     cls
 
-let clauses_of_le_constraint (u v : (Point.t * int) list) cls =
-  (* max u_i <= v <-> ∧_i u_i <= v *)
+(* max u_i <= v <-> ∧_i u_i <= v *)
+let clauses_of_le_constraint u v cls =
   List.fold_left (fun cls (u, k) -> add_clause u (k, v) cls) cls u
 
-let clauses_of_constraint u k v cls =
-  match k with
-  | Le -> clauses_of_le_constraint u v cls
-  | Lt -> clauses_of_le_constraint (Universe.super u) v cls
-  | Eq -> clauses_of_le_constraint u v (clauses_of_le_constraint v u cls)
-
 let empty_clauses = Point.Map.empty
+let empty = { model = Point.Map.empty; points = Point.Set.empty; clauses = empty_clauses }
 
-let check_leq (m : t) u v =
+let _check_leq (m : t) u v =
   let cls = clauses_of_le_constraint u v empty_clauses in
   check_clauses m.model cls
 
-let check_eq (m : t) u v =
-  let cls = clauses_of_constraint u Eq v empty_clauses in
+let clauses_of_point_constraint (cstr : univ_constraint) (cls : clauses) : clauses =
+  let (l, k, r) = cstr in (* l <=k r *)
+  match k with
+  | Lt -> add_clause l (1, [(r, 0)]) cls (* l < r <-> l + 1 <= r *)
+  | Le -> add_clause l (0, [(r, 0)]) cls
+  | Eq -> add_clause l (0, [(r, 0)]) (add_clause r (0, [(l, 0)]) cls)
+
+type 'a check_function = t -> 'a -> 'a -> bool
+
+let check_lt (m : t) u v =
+  let cls = clauses_of_point_constraint (u, Lt, v) empty_clauses in
   check_clauses m.model cls
 
-let check_eq_level m u v =
+let check_leq (m : t) u v =
+  let cls = clauses_of_point_constraint (u, Le, v) empty_clauses in
+  check_clauses m.model cls
+
+let check_eq m u v =
   let cls = add_clause u (0, [(v, 0)]) (add_clause v (0, [(u, 0)]) empty_clauses) in
   check_clauses m.model cls
 
-let check_lt_level (m : t) u v =
-  let cls = clauses_of_univ_constraint (u, Lt, v) empty_clauses in
-  check_clauses m.model cls
+let infer_extension u k v m =
+  let cls = clauses_of_point_constraint (u, k, v) m.clauses in
+  match infer_clauses_extension m cls with
+  | None ->
+    let newcls = clauses_of_point_constraint (u, k, v) empty_clauses in
+    debug Pp.(fun () -> str"Enforcing clauses " ++ pr_clauses newcls ++ str" resulted in a loop");
+    None
+  | x -> x
 
-let check_le_level (m : t) u v =
-  let cls = clauses_of_univ_constraint (u, Le, v) empty_clauses in
-  check_clauses m.model cls
-let initial_universes =
-  { model = Point.Map.add Level.set 0 Point.Map.empty;
-    clauses = empty_clauses;
-    univs = Point.Set.singleton Level.set }
+let enforce_leq u v m = infer_extension u Le v m
+let enforce_lt u v m = infer_extension u Lt v m
+let enforce_eq u v m = infer_extension u Eq v m
 
-let enforce_leq u v m =
-  let cls = clauses_of_univ_constraint (u, Le, v) m.clauses in
+type lub = (Point.t * int) list
+
+let clauses_of_constraint (u : lub) k (v : lub) cls =
+  match k with
+  | Le -> clauses_of_le_constraint u v cls
+  | Lt -> clauses_of_le_constraint (List.map (fun (l, k) -> (l, k + 1)) u) v cls
+  | Eq -> clauses_of_le_constraint u v (clauses_of_le_constraint v u cls)
+
+let enforce_constraint u k v (m : t) =
+  let cls = clauses_of_constraint u k v empty_clauses in
   infer_clauses_extension m cls
 
-let enforce_lt u v m =
-  let cls = clauses_of_univ_constraint (u, Lt, v) m.clauses in
-  infer_clauses_extension m cls
+exception AlreadyDeclared
 
-let enforce_eq u v m =
-  let cls = clauses_of_univ_constraint (u, Eq, v) m.clauses in
-  infer_clauses_extension m cls
+let check_invariants ~(required_canonical:Point.t -> bool) _ =
+  let _r = required_canonical in
+  ()
 
-let add u { model; univs; clauses } =
-  { univs = Point.Set.add u univs;
-    model = Point.Map.add u 0 model;
-    clauses }
+let add ?(rank:int option) u { model; points; clauses } =
+  let _r = rank in
+  if Point.Set.mem u points then raise AlreadyDeclared
+  else
+    { points = Point.Set.add u points;
+      model = Point.Map.add u 0 model;
+      clauses }
 
-let check_declared { univs; _ } l = Point.Set.mem l univs
+exception Undeclared of Point.t
+
+let check_declared { points; _ } ls =
+  Point.Set.iter (fun l ->
+    if Point.Set.mem l points then ()
+    else raise (Undeclared l))
+    ls
+
+let get_explanation (cstr : Point.t * constraint_type * Point.t) _ : (constraint_type * Point.t) list =
+  let _cstr = cstr in
+  (* TODO *)
+  []
+
+
+let constraint_type_ord c1 c2 = match c1, c2 with
+  | Lt, Lt -> 0
+  | Lt, _ -> -1
+  | Le, Lt -> 1
+  | Le, Le -> 0
+  | Le, Eq -> -1
+  | Eq, Eq -> 0
+  | Eq, _ -> 1
+
+module UConstraintOrd =
+struct
+  type t = univ_constraint
+  let compare (u,c,v) (u',c',v') =
+    let i = constraint_type_ord c c' in
+    if not (Int.equal i 0) then i
+    else
+      let i' = Point.compare u u' in
+      if not (Int.equal i' 0) then i'
+      else Point.compare v v'
+end
+
+module Constraints =
+struct
+  module S = Set.Make(UConstraintOrd)
+  include S
+end
 
 (* This only works for level (+1) <= level constraints *)
 let constraints_of_clauses (clauses : clauses) =
@@ -256,36 +395,79 @@ let constraints_of_clauses (clauses : clauses) =
       | _ -> assert false) cstrs prems)
     clauses Constraints.empty
 
+type 'a constraint_fold = Point.t * constraint_type * Point.t -> 'a -> 'a
+
 let constraints_of { clauses; _ } fold acc =
   let cstrs = constraints_of_clauses clauses in
   Constraints.fold fold cstrs acc, []
 
-let constraints_for ~kept:Point.Set.t { clauses; _ } fold acc =
+let constraints_for ~(kept:Point.Set.t) { clauses; _ } fold acc =
   let cstrs = constraints_of_clauses clauses in
-  let cstrs = Constraints.filter (fun (l, d, r) -> Point.Set.mem )
+  let cstrs = Constraints.filter (fun (l, _, r) -> Point.Set.mem l kept || Point.Set.mem r kept) cstrs in
+  Constraints.fold fold cstrs acc
+
+let domain { points; _ } = points
+
+let choose p _ p' =
+  if p p' then Some p'
+  else None
+    (* Point.Set.fold (fun p' acc ->
+      match acc with
+      | Some _ -> acc
+      | None -> if p p' then Some p' else acc)
+      points None *)
+
+type node =
+  | Alias of Point.t
+  | Node of bool Point.Map.t (** Nodes v s.t. u < v (true) or u <= v (false) *)
+
+type repr = node Point.Map.t
+let repr { clauses; _ } =
+  Point.Map.fold (fun concl prems acc ->
+    let map =
+      List.fold_left (fun map (k, prem) ->
+        match prem with
+        | [(v, 0)] ->
+          if k = 0 then Point.Map.add v false map
+          else if k = 1 then Point.Map.add v true map
+          else assert false
+        | _ -> assert false) Point.Map.empty prems
+    in
+    let repr = Node map in
+    Point.Map.add concl repr acc)
+    clauses Point.Map.empty
+
+
+let pr_model { model; _ } =
+  Pp.(str "model: " ++ pr_levelmap model)
+
+let valuation { model; _ } = valuation_of_model model
+
+end
+
+
+(*
+let clauses_of_constraints cstr =
+  Univ.Constraints.fold clauses_of_point_constraint cstr Point.Map.empty
+
+
+let initial_universes =
+  { model = Point.Map.add Level.set 0 Point.Map.empty;
+    clauses = empty_clauses;
+    points = Point.Set.singleton Level.set }
 
 let infer_cstrs_extension m (cstrs : Constraints.t) =
   let cls = clauses_of_constraints cstrs in
   infer_clauses_extension m cls
 
-
-let clauses_of_univ_constraint (cstr : univ_constraint) (cls : clauses) : clauses =
-  let (l, k, r) = cstr in (* l <=k r *)
-  match k with
-  | Lt -> add_clause l (1, [(r, 0)]) cls (* l < r <-> l + 1 <= r *)
-  | Le -> add_clause l (0, [(r, 0)]) cls
-  | Eq -> add_clause l (0, [(r, 0)]) (add_clause r (0, [(l, 0)]) cls)
-
-let clauses_of_constraints cstr =
-  Univ.Constraints.fold clauses_of_univ_constraint cstr Point.Map.empty
-
-let check_constraints ((univs, cstrs) : Univ.ContextSet.t) : unit =
+let check_constraints ((points, cstrs) : Univ.ContextSet.t) : unit =
   let clauses = time (Pp.str "Building clauses out of constraints") clauses_of_constraints cstrs in
   let m = update_model clauses Point.Map.empty in
-  match time (Pp.str "Checking for a model") (check univs clauses) m with
+  match time (Pp.str "Checking for a model") (check points clauses) m with
   | Loop -> Feedback.msg_info Pp.(str "found a loop")
   | Model (_w, _m) -> Feedback.msg_info Pp.(str "found a model")
 
     (* match check_model clauses Point.Set.empty m with
     | None -> Feedback.msg_info Pp.(str"Model is " ++ pr_levelmap m)
     | Some _ -> Feedback.msg_info Pp.(str"Not actually a model!") *)
+*)
