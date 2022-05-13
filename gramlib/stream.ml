@@ -21,7 +21,7 @@ and 'a data =
   | Sapp of 'a data * 'a data
   | Sgen of 'a gen
   | Sbuffio : buffio -> char data
-and 'a gen = { mutable curr : 'a option option; func : int -> 'a option }
+and 'a gen = { mutable curr : 'a option option; func : unit -> 'a option }
 and buffio =
   { ic : in_channel; buff : bytes; mutable len : int; mutable ind : int }
 
@@ -45,23 +45,23 @@ let fill_buff b =
   b.len <- input b.ic b.buff 0 (Bytes.length b.buff); b.ind <- 0
 
 
-let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
+let rec get_data : type v. v data -> v data = fun d -> match d with
  (* Returns either Sempty or Scons(a, _) even when d is a generator
     or a buffer. In those cases, the item a is seen as extracted from
  the generator/buffer.
  The count parameter is used for calling `Sgen-functions'.  *)
    Sempty | Scons (_, _) -> d
  | Sapp (d1, d2) ->
-     begin match get_data count d1 with
+     begin match get_data d1 with
        Scons (a, d11) -> Scons (a, Sapp (d11, d2))
-     | Sempty -> get_data count d2
+     | Sempty -> get_data d2
      | _ -> assert false
      end
  | Sgen {curr = Some None} -> Sempty
  | Sgen ({curr = Some(Some a)} as g) ->
      g.curr <- None; Scons(a, d)
  | Sgen g ->
-     begin match g.func count with
+     begin match g.func () with
        None -> g.curr <- Some(None); Sempty
      | Some a -> Scons(a, d)
          (* Warning: anyone using g thinks that an item has been read *)
@@ -80,13 +80,13 @@ let peek_data : type v. v cell -> v option = fun s ->
    Sempty -> None
  | Scons (a, _) -> Some a
  | Sapp (_, _) ->
-     begin match get_data s.count s.data with
+     begin match get_data s.data with
        Scons(a, _) as d -> s.data <- d; Some a
      | Sempty -> None
      | _ -> assert false
      end
  | Sgen {curr = Some a} -> a
- | Sgen g -> let x = g.func s.count in g.curr <- Some x; x
+ | Sgen g -> let x = g.func () in g.curr <- Some x; x
  | Sbuffio b ->
      if b.ind >= b.len then fill_buff b;
      if b.len == 0 then begin s.data <- Sempty; None end
@@ -166,13 +166,7 @@ let of_list l =
 
 let of_string s =
   let count = ref 0 in
-  from (fun _ ->
-    (* We cannot use the index passed by the [from] function directly
-       because it returns the current stream count, with absolutely no
-       guarantee that it will start from 0. For example, in the case
-       of [Stream.icons 'c' (Stream.from_string "ab")], the first
-       access to the string will be made with count [1] already.
-    *)
+  from (fun () ->
     let c = !count in
     if c < String.length s
     then (incr count; Some s.[c])

@@ -29,16 +29,11 @@ exception Error of string
 
 (** {1 Stream builders} *)
 
-val from : (int -> 'a option) -> 'a t
-(** [Stream.from f] returns a stream built from the function [f].
-   To create a new stream element, the function [f] is called with
-   the current stream count. The user function [f] must return either
-   [Some <value>] for a value or [None] to specify the end of the
-   stream.
-
-   Do note that the indices passed to [f] may not start at [0] in the
-   general case. For example, [[< '0; '1; Stream.from f >]] would call
-   [f] the first time with count [2].
+val from : (unit -> 'a option) -> 'a t
+(** [Stream.from f] returns a stream built from the function [f]. To
+    create a new stream element, the function [f] is called. The user
+    function [f] must return either [Some <value>] for a value or
+    [None] to specify the end of the stream.
 *)
 
 val of_list : 'a list -> 'a t

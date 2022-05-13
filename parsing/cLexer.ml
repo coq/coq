@@ -798,7 +798,7 @@ let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
   let bp_ = Loc.(loc.bp) in
   let cur_loc = ref loc in
   Gramlib.LStream.from ~loc
-    (fun i ->
+    (fun () ->
       let (tok, loc) = next_token !cur_loc cs in
       cur_loc := after loc;
       let aloc = Loc.{loc with bol_pos = loc.bol_pos + bp_;
