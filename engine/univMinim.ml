@@ -11,6 +11,8 @@
 open Univ
 open UnivSubst
 
+let _debug_uminim_flag, debug = CDebug.create_full ~name:"univ-minim" ()
+
 (* To disallow minimization to Set *)
 let { Goptions.get = get_set_minimization } =
   Goptions.declare_bool_option_and_ref
@@ -193,7 +195,12 @@ let enforce_uppers upper lbound cstrs =
         | None -> raise UpperBoundedAlg)
     cstrs upper
 
-let minimize_univ_variables ctx us left right cstrs =
+let lift_lower d lower =
+  match d with
+  | Le | Eq -> lower
+  | Lt -> Level.Map.map (fun _ -> Lt) lower
+
+let minimize_univ_variables ctx us left right cstrs =  
   let left, lbounds =
     Level.Map.fold (fun r lower (left, lbounds as acc)  ->
       if UnivFlex.mem r us || not (Level.Set.mem r ctx) then acc
@@ -217,6 +224,7 @@ let minimize_univ_variables ctx us left right cstrs =
             if Level.equal u l then state else
             let above = Level.Set.add u above in
            let acc', {enforce=enf;alg;lbound=l';lower} = aux above acc l in
+           let lower = lift_lower d lower in
            let l' =
              if enf then Universe.make l
              else l'
@@ -314,6 +322,8 @@ let extra_union a b = {
 let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;above_prop} =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Set <= i constraints separate *)
+  debug (fun () -> Pp.str "Calling universe minimization");
+  (* Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
     Constraints.partition (fun (l,d,r) -> d == Le && Level.is_set l) csts
   in
