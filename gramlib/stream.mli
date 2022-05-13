@@ -48,20 +48,8 @@ val of_list : 'a list -> 'a t
 val of_string : string -> char t
 (** Return the stream of the characters of the string parameter. *)
 
-val of_bytes : bytes -> char t
-(** Return the stream of the characters of the bytes parameter.
-    @since 4.02.0 *)
-
 val of_channel : in_channel -> char t
 (** Return the stream of the characters read from the input channel. *)
-
-
-(** {1 Stream iterator} *)
-
-val iter : ('a -> unit) -> 'a t -> unit
-(** [Stream.iter f s] scans the whole stream s, applying function [f]
-   in turn to each stream element encountered. *)
-
 
 (** {1 Predefined parsers} *)
 
@@ -100,16 +88,5 @@ val njunk : int -> 'a t -> unit
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
-
-val iapp : 'a t -> 'a t -> 'a t
-val icons : 'a -> 'a t -> 'a t
-val ising : 'a -> 'a t
-
-val lapp : (unit -> 'a t) -> 'a t -> 'a t
-val lcons : (unit -> 'a) -> 'a t -> 'a t
-val lsing : (unit -> 'a) -> 'a t
-
-val sempty : 'a t
-val slazy : (unit -> 'a t) -> 'a t
 
 val dump : ('a -> unit) -> 'a t -> unit

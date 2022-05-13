@@ -19,7 +19,6 @@ and 'a data =
     Sempty
   | Scons of 'a * 'a data
   | Sapp of 'a data * 'a data
-  | Slazy of 'a data Lazy.t
   | Sgen of 'a gen
   | Sbuffio : buffio -> char data
 and 'a gen = { mutable curr : 'a option option; func : int -> 'a option }
@@ -73,10 +72,9 @@ let rec get_data : type v. int -> v data -> v data = fun count d -> match d with
        let r = Bytes.unsafe_get b.buff b.ind in
        (* Warning: anyone using g thinks that an item has been read *)
        b.ind <- succ b.ind; Scons(r, d)
- | Slazy f -> get_data count (Lazy.force f)
 
 
-let rec peek_data : type v. v cell -> v option = fun s ->
+let peek_data : type v. v cell -> v option = fun s ->
  (* consult the first item of s *)
  match s.data with
    Sempty -> None
@@ -87,7 +85,6 @@ let rec peek_data : type v. v cell -> v option = fun s ->
      | Sempty -> None
      | _ -> assert false
      end
- | Slazy f -> s.data <- (Lazy.force f); peek_data s
  | Sgen {curr = Some a} -> a
  | Sgen g -> let x = g.func s.count in g.curr <- Some x; x
  | Sbuffio b ->
@@ -159,15 +156,6 @@ let empty s =
   | None -> ()
 
 
-let iter f strm =
-  let rec do_rec () =
-    match peek strm with
-      Some a -> junk strm; ignore(f a); do_rec ()
-    | None -> ()
-  in
-  do_rec ()
-
-
 (* Stream building functions *)
 
 let from f = Some {count = 0; data = Sgen {curr = None; func = f}}
@@ -191,34 +179,9 @@ let of_string s =
     else None)
 
 
-let of_bytes s =
-  let count = ref 0 in
-  from (fun _ ->
-    let c = !count in
-    if c < Bytes.length s
-    then (incr count; Some (Bytes.get s c))
-    else None)
-
-
 let of_channel ic =
   Some {count = 0;
         data = Sbuffio {ic = ic; buff = Bytes.create 4096; len = 0; ind = 0}}
-
-
-(* Stream expressions builders *)
-
-let iapp i s = Some {count = 0; data = Sapp (data i, data s)}
-let icons i s = Some {count = 0; data = Scons (i, data s)}
-let ising i = Some {count = 0; data = Scons (i, Sempty)}
-
-let lapp f s =
-  Some {count = 0; data = Slazy (lazy(Sapp (data (f ()), data s)))}
-
-let lcons f s = Some {count = 0; data = Slazy (lazy(Scons (f (), data s)))}
-let lsing f = Some {count = 0; data = Slazy (lazy(Scons (f (), Sempty)))}
-
-let sempty = None
-let slazy f = Some {count = 0; data = Slazy (lazy(data (f ())))}
 
 (* For debugging use *)
 
@@ -244,6 +207,5 @@ and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
       print_string ", ";
       dump_data f d2;
       print_string ")"
-  | Slazy _ -> print_string "Slazy"
   | Sgen _ -> print_string "Sgen"
   | Sbuffio _ -> print_string "Sbuffio"
