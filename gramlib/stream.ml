@@ -13,8 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'a t = 'a cell option
-and 'a cell = { mutable count : int; mutable data : 'a data }
+type 'a t = { mutable count : int; mutable data : 'a data }
 and 'a data =
     Sempty
   | Scons of 'a * 'a data
@@ -34,12 +33,7 @@ exception Failure = Stdlib.Stream.Failure
 exception Error = Stdlib.Stream.Error
 [@@ocaml.warning "-3"]
 
-let count = function
-  | None -> 0
-  | Some { count } -> count
-let data = function
-  | None -> Sempty
-  | Some { data } -> data
+let count { count } = count
 
 let fill_buff b =
   b.len <- input b.ic b.buff 0 (Bytes.length b.buff); b.ind <- 0
@@ -74,7 +68,7 @@ let rec get_data : type v. v data -> v data = fun d -> match d with
        b.ind <- succ b.ind; Scons(r, d)
 
 
-let peek_data : type v. v cell -> v option = fun s ->
+let peek : type v. v t -> v option = fun s ->
  (* consult the first item of s *)
  match s.data with
    Sempty -> None
@@ -93,12 +87,7 @@ let peek_data : type v. v cell -> v option = fun s ->
      else Some (Bytes.unsafe_get b.buff b.ind)
 
 
-let peek = function
-  | None -> None
-  | Some s -> peek_data s
-
-
-let rec junk_data : type v. v cell -> unit = fun s ->
+let rec junk : type v. v t -> unit = fun s ->
   match s.data with
     Scons (_, d) -> s.count <- (succ s.count); s.data <- d
   | Sgen ({curr = Some _} as g) -> s.count <- (succ s.count); g.curr <- None
@@ -107,35 +96,25 @@ let rec junk_data : type v. v cell -> unit = fun s ->
       if b.len == 0 then s.data <- Sempty
       else (s.count <- (succ s.count); b.ind <- succ b.ind)
   | _ ->
-      match peek_data s with
+      match peek s with
         None -> ()
-      | Some _ -> junk_data s
+      | Some _ -> junk s
 
-
-let junk = function
-  | None -> ()
-  | Some data -> junk_data data
-
-let rec nget_data n s =
+let rec nget n s =
   if n <= 0 then [], s.data, 0
   else
-    match peek_data s with
+    match peek s with
       Some a ->
-        junk_data s;
-        let (al, d, k) = nget_data (pred n) s in a :: al, Scons (a, d), succ k
+        junk s;
+        let (al, d, k) = nget (pred n) s in a :: al, Scons (a, d), succ k
     | None -> [], s.data, 0
 
 
-let npeek_data n s =
-  let (al, d, len) = nget_data n s in
+let npeek n s =
+  let (al, d, len) = nget n s in
   s.count <- (s.count - len);
   s.data <- d;
   al
-
-
-let npeek n = function
-  | None -> []
-  | Some d -> npeek_data n d
 
 let nth n st =
   try List.nth (npeek (n+1) st) n
@@ -158,10 +137,10 @@ let empty s =
 
 (* Stream building functions *)
 
-let from f = Some {count = 0; data = Sgen {curr = None; func = f}}
+let from f = {count = 0; data = Sgen {curr = None; func = f}}
 
 let of_list l =
-  Some {count = 0; data = List.fold_right (fun x l -> Scons (x, l)) l Sempty}
+  {count = 0; data = List.fold_right (fun x l -> Scons (x, l)) l Sempty}
 
 
 let of_string s =
@@ -174,16 +153,16 @@ let of_string s =
 
 
 let of_channel ic =
-  Some {count = 0;
+  {count = 0;
         data = Sbuffio {ic = ic; buff = Bytes.create 4096; len = 0; ind = 0}}
 
 (* For debugging use *)
 
 let rec dump : type v. (v -> unit) -> v t -> unit = fun f s ->
   print_string "{count = ";
-  print_int (count s);
+  print_int s.count;
   print_string "; data = ";
-  dump_data f (data s);
+  dump_data f s.data;
   print_string "}";
   print_newline ()
 and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
