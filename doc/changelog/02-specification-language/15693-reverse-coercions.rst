@@ -5,4 +5,4 @@
   or canonical structure resolution
   (`#15693 <https://github.com/coq/coq/pull/15693>`_,
   by Cyril Cohen, Pierre Roux, Enrico Tassi,
-  reviewed by Ali Caglayan, Jim Fehrle and Gaëtan Gilert).
+  reviewed by Ali Caglayan, Jim Fehrle and Gaëtan Gilbert).
