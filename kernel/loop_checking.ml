@@ -2,6 +2,7 @@ type constraint_type = Lt | Le | Eq
 
 let debug_loop_checking_invariants, debug_invariants = CDebug.create_full ~name:"loop-checking-invariants" ()
 let _debug_loop_checking_model, debug_model = CDebug.create_full ~name:"loop-checking-model" ()
+let _debug_loop_checking_clauses, debug_clauses = CDebug.create_full ~name:"loop-checking-clauses" ()
 let _debug_loop_checking_flag, debug = CDebug.create_full ~name:"loop-checking" ()
 let debug_loop_checking_timing_flag, debug_timing = CDebug.create_full ~name:"loop-checking-timing" ()
 
@@ -17,14 +18,61 @@ module type Point = sig
   val pr : t -> Pp.t
 end
 
-let time prefix f x =
+let _time prefix =
+  let accum = ref 0. in
+  fun f x ->
   if CDebug.(get_flag debug_loop_checking_timing_flag) then
     let start = Unix.gettimeofday () in
     let res = f x in
     let stop = Unix.gettimeofday () in
-    let () = debug_timing Pp.(fun () -> prefix ++ str " executed in: " ++ Pp.real (stop -. start) ++ str "s") in
+    let time = stop -. start in
+    let () = accum := time +. !accum in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " executed in: " ++ Pp.real time ++ str "s") in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " total execution time is: " ++ Pp.real !accum ++ str "s") in
     res
   else f x
+
+let time2 prefix f =
+  let accum = ref 0. in
+  fun x y ->
+  if CDebug.(get_flag debug_loop_checking_timing_flag) then
+    let start = Unix.gettimeofday () in
+    let res = f x y in
+    let stop = Unix.gettimeofday () in
+    let time = stop -. start in
+    let () = accum := time +. !accum in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " executed in: " ++ Pp.real time ++ str "s") in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " total execution time is: " ++ Pp.real !accum ++ str "s") in
+    res
+  else f x y
+
+let time3 prefix f =
+  let accum = ref 0. in
+  fun x y z ->
+  if CDebug.(get_flag debug_loop_checking_timing_flag) then
+    let start = Unix.gettimeofday () in
+    let res = f x y z in
+    let stop = Unix.gettimeofday () in
+    let time = stop -. start in
+    let () = accum := time +. !accum in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " executed in: " ++ Pp.real time ++ str "s") in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " total execution time is: " ++ Pp.real !accum ++ str "s") in
+    res
+  else f x y z
+
+let time4 prefix f =
+  let accum = ref 0. in
+  fun x y z w ->
+  if CDebug.(get_flag debug_loop_checking_timing_flag) then
+    let start = Unix.gettimeofday () in
+    let res = f x y z w in
+    let stop = Unix.gettimeofday () in
+    let time = stop -. start in
+    let () = accum := time +. !accum in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " executed in: " ++ Pp.real time ++ str "s") in
+    let () = debug_timing Pp.(fun () -> prefix ++ str " total execution time is: " ++ Pp.real !accum ++ str "s") in
+    res
+  else f x y z w
 
 module Make (Point : Point) = struct
 
@@ -82,98 +130,15 @@ module PSet = Index.Set
 
 type univ_constraint = Point.t * constraint_type * Point.t
 
-module Premises =
-struct
-
-  module Premise =
-  struct
-    type t = Index.t * int
-
-    let equal x y : bool =
-      let (idx, k) = x in
-      let (idx', k') = y in
-      if Index.equal idx idx' then
-        Int.equal k k'
-      else false
-
-    let compare x y : int =
-      let (idx, k) = x in
-      let (idx', k') = y in
-      match Index.compare idx idx' with
-      | 0 -> Int.compare k k'
-      | x -> x
-  end
-
-  (* Invariant: sorted, non-empty *)
-  type t = Premise.t list
-
-  let fold f g l =
-    match l with
-    | [] -> assert false
-    | [hd] -> g hd
-    | hd :: tl -> List.fold_left f (g hd) tl
-
-  let iter = List.iter
-  let for_all = List.for_all
-  let _add prem (x : t) : t = CList.merge_set Premise.compare [prem] x
-  let compare : t -> t -> int = CList.compare Premise.compare
-  let equal : t -> t -> bool = CList.equal Premise.equal
-
-  let of_list l = l
-
-end
-
-let pr_with f (l, n) =
-  if Int.equal n 0 then f l
-  else Pp.(f l ++ Pp.str"+" ++ int n)
-
-module ClausesOf = struct
-  module ClauseInfo = struct
-    type t = int * Premises.t
-
-    let _equal x y : bool =
-      let (k, prems) = x in
-      let (k', prems') = y in
-      if Int.equal k k' then
-        Premises.equal prems prems'
-      else false
-
-    let compare x y : int =
-      let (k, prems) = x in
-      let (k', prems') = y in
-      match Int.compare k k' with
-      | 0 -> Premises.compare prems prems'
-      | x -> x
-
-    let of_list (k, prems) =
-      (k, Premises.of_list prems)
-
-  end
-
-  module S = Set.Make(ClauseInfo)
-  include S
-
-  let pr pr_pointint concl cls =
-    let open Pp in
-    prlist_with_sep spc (fun (k, prem) ->
-      h (prlist_with_sep (fun () -> str ",") pr_pointint prem ++ str " → " ++ pr_pointint (concl, k) ++ spc ()))
-       (elements cls)
-
-end
-
-type clause_info = (int * Premises.t)
-type clauses_info = ClausesOf.t
-
-(* type mark = NoMark | Updated *)
+type mark = NoMark | Visited
 
 (* Comparison on this type is pointer equality *)
 type canonical_node =
   { canon: Index.t;
-    value : int }
+    value : int;
+    mutable mark : mark }
 
-(* let unset_mark can = can.mark <- NoMark *)
-
-(* let set_mark can = can.mark <- Updated *)
+let unset_mark can = can.mark <- NoMark
 
 (* A Point.t is either an alias for another one, or a canonical one,
     for which we know the points that are above *)
@@ -182,27 +147,19 @@ type entry =
   | Canonical of canonical_node
   | Equiv of Index.t
 
-type clauses = clauses_info PMap.t
-
 type model = {
   entries : entry PMap.t;
   table : Index.table }
 
-(* let _unset_marks m =
+let unset_marks m =
   PMap.iter (fun _ e ->
     match e with
     | Equiv _ -> ()
-    | Canonical can -> unset_mark can) m.entries *)
+    | Canonical can -> unset_mark can) m.entries
 
 let empty_model = {
   entries = PMap.empty;
   table = Index.empty
-}
-
-(* Invariant: clauses map only canonical points in the model to their clauses *)
-type t = {
-  model : model;
-  clauses : clauses;
 }
 
 let enter_equiv m u v =
@@ -232,6 +189,108 @@ let repr_node m u =
   with Not_found ->
     CErrors.anomaly ~label:"Univ.repr"
       Pp.(str"Universe " ++ Point.pr u ++ str" undefined.")
+
+module Premises =
+struct
+
+  module Premise =
+  struct
+    type t = Index.t * int
+
+    let equal x y : bool =
+      let (idx, k) = x in
+      let (idx', k') = y in
+      if Index.equal idx idx' then
+        Int.equal k k'
+      else false
+
+    let compare x y : int =
+      let (idx, k) = x in
+      let (idx', k') = y in
+      match Index.compare idx idx' with
+      | 0 -> Int.compare k k'
+      | x -> x
+
+    let equal_upto m (idx, k) (idx', k') =
+      Int.equal k k' && repr m idx == repr m idx'
+  end
+
+  (* Invariant: sorted, non-empty *)
+  type t = Premise.t list
+
+  let fold f g l =
+    match l with
+    | [] -> assert false
+    | [hd] -> g hd
+    | hd :: tl -> List.fold_left f (g hd) tl
+
+  let iter = List.iter
+  let for_all = List.for_all
+  let _add prem (x : t) : t = CList.merge_set Premise.compare [prem] x
+  let compare : t -> t -> int = CList.compare Premise.compare
+  let equal : t -> t -> bool = CList.equal Premise.equal
+
+  let of_list l = l
+
+  let equal_upto m prems prems' =
+    CList.equal (Premise.equal_upto m) prems prems'
+end
+
+let pr_with f (l, n) =
+  if Int.equal n 0 then f l
+  else Pp.(f l ++ Pp.str"+" ++ int n)
+
+module ClausesOf = struct
+  module ClauseInfo = struct
+    type t = int * Premises.t
+
+    let _equal x y : bool =
+      let (k, prems) = x in
+      let (k', prems') = y in
+      if Int.equal k k' then
+        Premises.equal prems prems'
+      else false
+
+    let compare x y : int =
+      let (k, prems) = x in
+      let (k', prems') = y in
+      match Int.compare k k' with
+      | 0 -> Premises.compare prems prems'
+      | x -> x
+
+    let of_list (k, prems) =
+      (k, Premises.of_list prems)
+
+    let equal_upto m (k, prems) (k', prems') =
+      Int.equal k k' &&
+      Premises.equal_upto m prems prems'
+
+  end
+
+  module S = Set.Make(ClauseInfo)
+  include S
+
+  let pr pr_pointint concl cls =
+    let open Pp in
+    v 0 (prlist_with_sep spc (fun (k, prem) ->
+      hov 0 (prlist_with_sep (fun () -> str ",") pr_pointint prem ++ str " → " ++ pr_pointint (concl, k)))
+        (elements cls))
+
+  let mem_upto m cl cls =
+    let eq cl' = ClauseInfo.equal_upto m cl cl' in
+    exists eq cls
+
+end
+
+type clause_info = (int * Premises.t)
+type clauses_info = ClausesOf.t
+type clauses = clauses_info PMap.t
+
+(* Invariant: clauses map only canonical points in the model to their clauses *)
+type t = {
+  model : model;
+  clauses : clauses;
+}
 
 let clauses_of idx clauses : clauses_info =
   try PMap.find idx clauses
@@ -285,13 +344,21 @@ let canonical_universes (m : model) : int =
     match k with Equiv _ -> acc | Canonical _ -> succ acc)
     m.entries 0
 
+let without_bound (m : model) (cls : clauses) : int =
+  PMap.fold (fun _ k acc ->
+    match k with Equiv _ -> acc | Canonical can ->
+      let cls = clauses_of can.canon cls in
+      if ClausesOf.is_empty cls then succ acc else acc)
+    m.entries 0
+
 let statistics { model; clauses } =
   let open Pp in
   str" " ++ int (PMap.cardinal model.entries) ++ str" universes" ++
   str", " ++ int (canonical_universes model) ++ str" canonical universes" ++
   str ", maximal value in the model is " ++ int (model_max model) ++
   str ", minimal value is " ++ int (model_min model) ++
-  str", " ++ int (clauses_cardinal clauses) ++ str" clauses."
+  str", " ++ int (clauses_cardinal clauses) ++ str" clauses." ++ spc () ++
+  int (without_bound model clauses) ++ str" canonical universes are not bounded above"
 
 let debug_check_invariants model clauses =
   if CDebug.get_flag debug_loop_checking_invariants then
@@ -341,20 +408,15 @@ let check_model cls w m =
   debug_check_invariants m cls;
   if modified then Some (w, m') else None
 
-let check_model cls w m =
-  time (Pp.str "check_model") (check_model cls w) m
+let check_model = time3 (Pp.str "check_model") check_model
 
 let premises_in m w prem =
   Premises.for_all (fun (l, _) -> PSet.mem (repr m l).canon w) prem
 
 let partition_clauses m (cls : clauses) w : clauses * clauses =
   PMap.fold (fun concl cls (inl, inr) ->
-    let (clsW, clsnW) =
-      ClausesOf.fold (fun kprem (inW, ninW) ->
-        if premises_in m w (snd kprem) then (ClausesOf.add kprem inW, ninW)
-        else (inW, ClausesOf.add kprem ninW)) cls (ClausesOf.empty, ClausesOf.empty)
-    in
-  (PMap.add concl clsW inl, PMap.add concl clsnW inr))
+    let (clsW, clsnW) = ClausesOf.partition (fun kprem -> premises_in m w (snd kprem)) cls in
+    (PMap.add concl clsW inl, PMap.add concl clsnW inr))
   cls (PMap.empty, PMap.empty)
 
 let partition_clauses_concl (cls : clauses) (w : PSet.t) : clauses * clauses =
@@ -460,16 +522,41 @@ let pr_clauses_info m = ClausesOf.pr (pr_pointint m)
 
 let pr_clauses m (cls : clauses) =
   let open Pp in
-  PMap.fold (fun concl cls acc -> pr_clauses_info m concl cls ++ fnl () ++ acc) cls (Pp.mt())
+  PMap.fold (fun concl cls acc -> pr_clauses_info m concl cls ++ spc () ++ acc) cls (Pp.mt())
 
 let debug_model m =
   debug_model Pp.(fun () -> str"Model is " ++ pr_levelmap m)
+
+(* let model_remove idx (m : model) =
+  { entries = PMap.remove idx m.entries; table = m.table } *)
+
+
+(* Filters the set of clauses to remove those of shape [l + k -> l' + k] where
+  [l] itself does not have any constraint [... -> l + k], hence can not be updated. *)
+(* let filter_with_bound (m : model) (cls : clauses) : clauses  =
+  let unbounded =
+    PMap.fold (fun _ k unbounded ->
+    match k with Equiv _ -> unbounded | Canonical can ->
+      let cancls = clauses_of can.canon cls in
+      if ClausesOf.is_empty cancls then PSet.add can.canon unbounded
+      else unbounded)
+    m.entries PSet.empty
+  in
+  PMap.fold (fun concl clsc cls ->
+    let clsc' = ClausesOf.filter (fun (_, prems) -> not (premises_in m unbounded prems)) clsc in
+    if clsc' == clsc then cls
+    else PMap.add concl clsc' cls)
+    cls cls
+
+let filter_with_bound = time2 (Pp.str"Filtering clauses") filter_with_bound *)
 
 let infer_clauses_extension (model : model) (clauses : clauses) =
   debug_check_invariants model clauses;
   let model = update_model clauses model in
   debug_check_invariants model clauses;
   debug Pp.(fun () -> str"Calling loop-checking" ++ statistics { model; clauses });
+  (* let filtered_clauses = filter_with_bound model clauses in *)
+  (* debug Pp.(fun () -> str"Filtered clauses " ++ int (clauses_cardinal filtered_clauses)); *)
   match check clauses model with
   | Loop -> None
   | Model (_w', model) ->
@@ -534,7 +621,10 @@ let add_clause (m : model) l kprem (cls : clauses) : clauses =
   let canl = repr_node m l in
   match filter_trivial_pclause m canl kprem with
   | None -> cls
-  | Some kprem -> add_clause_aux canl (ClausesOf.ClauseInfo.of_list kprem) cls
+  | Some kprem ->
+    let kprem = ClausesOf.ClauseInfo.of_list kprem in
+    if ClausesOf.mem_upto m kprem (clauses_of canl.canon cls) then cls
+    else add_clause_aux canl kprem cls
 
 let add_clauses (m : model) canl kprem (cls : clauses) : clauses =
   let kprem = ClausesOf.filter_map (filter_trivial_clause m canl) kprem in
@@ -596,13 +686,19 @@ let clauses_of_point_constraint (m : t) (cstr : univ_constraint) clauses : claus
 let enforce_clauses_of_point_constraint (cstr : univ_constraint) ({ model; clauses } as m) : t =
   let (l, k, r) = cstr in (* l <=k r *)
   match k with
-  | Lt -> { model; clauses = add_clause m.model l (1, [(r, 0)]) clauses } (* l < r <-> l + 1 <= r *)
-  | Le -> { model; clauses = add_clause m.model l (0, [(r, 0)]) clauses }
+  | Lt -> (* l < r <-> l + 1 <= r *)
+     let clauses' = add_clause m.model l (1, [(r, 0)]) clauses in
+     if clauses' == clauses then m
+     else { model; clauses = clauses' }
+  | Le ->
+    let clauses' = add_clause m.model l (0, [(r, 0)]) clauses in
+    if clauses' == clauses then m
+    else { model; clauses = clauses' }
   | Eq -> enforce_eq_points m l r
     (* { model; clauses = add_clause m.model l (0, [(r, 0)]) (add_clause m.model r (0, [(l, 0)]) clauses) } *)
 
-let enforce_clauses_of_point_constraint cstr m =
-  time (Pp.str "Enforcing clauses") (enforce_clauses_of_point_constraint cstr) m
+let enforce_clauses_of_point_constraint =
+  time2 (Pp.str "Enforcing clauses") enforce_clauses_of_point_constraint
 
 type 'a check_function = t -> 'a -> 'a -> bool
 
@@ -682,14 +778,18 @@ let infer_extension x k y m =
     let newcls = clauses_of_point_constraint m (x, k, y) empty_clauses in
     str"Enforcing clauses " ++ pr_clauses m.model newcls);
   let clauses = clauses_of_point_constraint m (x, k, y) empty_clauses in
-  if check_clauses m.model clauses then
+  if check_clauses m.model clauses then begin
     (* The clauses are already true in the current model,
-       but might not be in an extension, so we add them still *)
+       but might not be in a m extension, so we add them still *)
+    debug Pp.(fun () -> str"Clause is valid in the current model");
     let m = enforce_clauses_of_point_constraint (x, k, y) m in
+    (* If the clauses were already present in the set of clauses of [m],
+      then it will be unchanged, physically *)
     if CDebug.(get_flag debug_loop_checking_invariants) then
       assert (check_clauses m.model clauses);
+    debug_clauses Pp.(fun () -> str"Clauses: " ++ pr_clauses m.model m.clauses);
     Some m
-  else
+  end else
     (* The clauses are not valid in the current model, we have to find a new one *)
     let m = enforce_clauses_of_point_constraint (x, k, y) m in
     match infer_clauses_extension m.model m.clauses with
@@ -699,6 +799,9 @@ let infer_extension x k y m =
         (constraints_of_clauses m.model initclauses));
       None
     | Some _ as x -> x
+
+let infer_extension =
+  time4 Pp.(str "infer_extension") infer_extension
 
 let pr_can_constraints m can =
   let cls = clauses_of can.canon m.clauses in
@@ -721,13 +824,15 @@ let simplify_clauses_between ({ model; clauses } as m) v u =
   let canv = repr_node model v in
   let canu = repr_node model u in
   if canv == canu then Some m else
+  let () = unset_marks m.model in
   let rec forward prev acc canv : canonical_node list =
-    if List.memq canv acc || List.memq canv prev then acc else (* Already visited *)
+    if canv.mark == Visited then acc else
+    let () = canv.mark <- Visited in
     let cls = clauses_of canv.canon clauses in
     ClausesOf.fold (fun (k, prems) acc ->
       List.fold_left (fun acc (l, _k') ->
         let canl = repr model l in
-        if List.memq canl prev || List.memq canl acc then acc
+        if canl.mark == Visited then acc
         else
           if canl == canu then begin
             assert (Int.equal k 0); (* there would be a loop otherwise *)
@@ -747,17 +852,16 @@ let simplify_clauses_between ({ model; clauses } as m) v u =
       debug_check_invariants model m.clauses;
       Some { model; clauses = m.clauses }
 
-(* x <= y
-  z+1 <= x
+let simplify_clauses_between =
+  time3 (Pp.str "simplify_clauses_between") simplify_clauses_between
 
-  add y <= z -> x <= y <= z < x -> loop
-  simplify beween z y : z <= x -> x <= y
-  *)
-
+(* Enforce u <= v and check if v <= u already held, in that case, enforce u = v *)
 let enforce_leq u v m =
   match infer_extension u Le v m with
   | None -> None
-  | Some m -> simplify_clauses_between m v u
+  | Some m' ->
+    if m' != m then simplify_clauses_between m' v u
+    else Some m (* The clause was already present so we already checked for v <= u *)
 
 let enforce_lt u v m = infer_extension u Lt v m
 let enforce_eq u v m = infer_extension u Eq v m
@@ -780,7 +884,7 @@ let add_model u { entries; table } =
   if Index.mem u table then raise AlreadyDeclared
   else
     let idx, table = Index.fresh u table in
-    let can = Canonical { canon = idx; value = 0 } in
+    let can = Canonical { canon = idx; value = 0; mark = NoMark } in
     let entries = PMap.add idx can entries in
     idx, { entries; table }
 
