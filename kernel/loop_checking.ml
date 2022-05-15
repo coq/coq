@@ -32,6 +32,7 @@ module Make (Point : Point) = struct
   sig
     type t
     val equal : t -> t -> bool
+    val compare : t -> t -> int
     module Set : CSig.SetS with type elt = t
     module Map : CMap.ExtS with type key = t and module Set := Set
     type table
@@ -45,6 +46,7 @@ module Make (Point : Point) = struct
   struct
     type t = int
     let equal = Int.equal
+    let compare = Int.compare
     module Set = Int.Set
     module Map = Int.Map
 
@@ -80,8 +82,87 @@ module PSet = Index.Set
 
 type univ_constraint = Point.t * constraint_type * Point.t
 
-type clause_info = (int * (Index.t * int) list)
-type clauses_info = clause_info list
+module Premises =
+struct
+
+  module Premise =
+  struct
+    type t = Index.t * int
+
+    let equal x y : bool =
+      let (idx, k) = x in
+      let (idx', k') = y in
+      if Index.equal idx idx' then
+        Int.equal k k'
+      else false
+
+    let compare x y : int =
+      let (idx, k) = x in
+      let (idx', k') = y in
+      match Index.compare idx idx' with
+      | 0 -> Int.compare k k'
+      | x -> x
+  end
+
+  (* Invariant: sorted, non-empty *)
+  type t = Premise.t list
+
+  let fold f g l =
+    match l with
+    | [] -> assert false
+    | [hd] -> g hd
+    | hd :: tl -> List.fold_left f (g hd) tl
+
+  let iter = List.iter
+  let for_all = List.for_all
+  let _add prem (x : t) : t = CList.merge_set Premise.compare [prem] x
+  let compare : t -> t -> int = CList.compare Premise.compare
+  let equal : t -> t -> bool = CList.equal Premise.equal
+
+  let of_list l = l
+
+end
+
+let pr_with f (l, n) =
+  if Int.equal n 0 then f l
+  else Pp.(f l ++ Pp.str"+" ++ int n)
+
+module ClausesOf = struct
+  module ClauseInfo = struct
+    type t = int * Premises.t
+
+    let _equal x y : bool =
+      let (k, prems) = x in
+      let (k', prems') = y in
+      if Int.equal k k' then
+        Premises.equal prems prems'
+      else false
+
+    let compare x y : int =
+      let (k, prems) = x in
+      let (k', prems') = y in
+      match Int.compare k k' with
+      | 0 -> Premises.compare prems prems'
+      | x -> x
+
+    let of_list (k, prems) =
+      (k, Premises.of_list prems)
+
+  end
+
+  module S = Set.Make(ClauseInfo)
+  include S
+
+  let pr pr_pointint concl cls =
+    let open Pp in
+    prlist_with_sep spc (fun (k, prem) ->
+      h (prlist_with_sep (fun () -> str ",") pr_pointint prem ++ str " → " ++ pr_pointint (concl, k) ++ spc ()))
+       (elements cls)
+
+end
+
+type clause_info = (int * Premises.t)
+type clauses_info = ClausesOf.t
 
 (* type mark = NoMark | Updated *)
 
@@ -152,9 +233,9 @@ let repr_node m u =
     CErrors.anomaly ~label:"Univ.repr"
       Pp.(str"Universe " ++ Point.pr u ++ str" undefined.")
 
-let clauses_of idx clauses =
+let clauses_of idx clauses : clauses_info =
   try PMap.find idx clauses
-  with Not_found -> []
+  with Not_found -> ClausesOf.empty
 
 let check_invariants ~(required_canonical:Point.t -> bool) { model; clauses } =
   let required_canonical u = required_canonical (Index.repr u model.table) in
@@ -166,14 +247,14 @@ let check_invariants ~(required_canonical:Point.t -> bool) { model; clauses } =
       assert (Index.mem (Index.repr idx model.table) model.table);
       assert (can.value >= 0);
       let cls = clauses_of idx clauses in
-      List.iter
+      ClausesOf.iter
         (fun (k, prems) ->
           assert (k >= 0);
           let check_prem (l, k) =
             assert (k >= 0);
             assert (PMap.mem l model.entries)
           in
-          List.iter check_prem prems) cls;
+          Premises.iter check_prem prems) cls;
       incr n_canon
     | Equiv idx' ->
       assert (PMap.mem idx' model.entries);
@@ -186,8 +267,8 @@ let check_invariants ~(required_canonical:Point.t -> bool) { model; clauses } =
     assert (PMap.cardinal clauses <= !n_canon)
 
 let clauses_cardinal (cls : clauses) : int =
-  PMap.fold (fun _ prems card ->
-    List.length prems + card)
+  PMap.fold (fun _ cls card ->
+    ClausesOf.cardinal cls + card)
     cls 0
 
 let model_max (m : model) : int =
@@ -224,19 +305,12 @@ let model_value m l =
   with Not_found -> 0
 
 let min_premise (m : model) prem =
-  match prem with
-  | [(l, k)] -> model_value m l - k
-  | (l, k) :: tl ->
-    List.fold_left (fun minl (l, k) -> min minl (model_value m l - k)) (model_value m l - k) tl
-  | [] -> assert false
+  let g (l, k) = model_value m l - k in
+  let f minl prem = min minl (g prem) in
+  Premises.fold f g prem
 
-(* let _is_unmarked can =
-  match can.mark with
-  | NoMark -> true
-  | Updated -> false *)
-
-let update_value (c, w, m) (k, prem) : (canonical_node * PSet.t * model) option =
-  let k0 = min_premise m prem in
+let update_value (c, w, m) (k, premises) : (canonical_node * PSet.t * model) option =
+  let k0 = min_premise m premises in
   if k0 < 0 then None
   else
     let newk = k + k0 in
@@ -252,13 +326,13 @@ let check_model_aux (cls : clauses) (w, m) =
   PMap.fold (fun idx cls (modified, w, m) ->
     let can = repr m idx in
     let (can', w', m') =
-      List.fold_left (fun cwm kprem ->
-        match update_value cwm kprem with
+      ClausesOf.fold (fun cls cwm ->
+        match update_value cwm cls with
         | None -> cwm
         | Some (can, _, _ as cwm') ->
           debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ int can.value);
           cwm')
-        (can, w, m) cls
+        cls (can, w, m)
     in ((modified || can != can'), w', m'))
   cls (false, w, m)
 
@@ -271,14 +345,14 @@ let check_model cls w m =
   time (Pp.str "check_model") (check_model cls w) m
 
 let premises_in m w prem =
-  List.for_all (fun (l, _) -> PSet.mem (repr m l).canon w) prem
+  Premises.for_all (fun (l, _) -> PSet.mem (repr m l).canon w) prem
 
 let partition_clauses m (cls : clauses) w : clauses * clauses =
   PMap.fold (fun concl cls (inl, inr) ->
     let (clsW, clsnW) =
-      List.fold_left (fun (inW, ninW) kprem ->
-        if premises_in m w (snd kprem) then (kprem :: inW, ninW)
-        else (inW, kprem :: ninW)) ([], []) cls
+      ClausesOf.fold (fun kprem (inW, ninW) ->
+        if premises_in m w (snd kprem) then (ClausesOf.add kprem inW, ninW)
+        else (inW, ClausesOf.add kprem ninW)) cls (ClausesOf.empty, ClausesOf.empty)
     in
   (PMap.add concl clsW inl, PMap.add concl clsnW inr))
   cls (PMap.empty, PMap.empty)
@@ -370,16 +444,11 @@ let update_model_value (m : model) l k' : model =
   else change_node m { can with value = k' }
 
 let update_model (cls : clauses) (m : model) : model =
-  PMap.fold (fun _concl prems m ->
-    List.fold_left (fun m (_k, prems) ->
+  PMap.fold (fun _concl cls m ->
+    ClausesOf.fold (fun (_k, prems) m ->
       List.fold_left (fun m (l, k) -> update_model_value m l k) m prems)
-      m prems)
+      cls m)
     cls m
-
-let pr_with f (l, n) =
-  if Int.equal n 0 then f l
-  else Pp.(f l ++ Pp.str"+" ++ int n)
-
 
 let pr_index_point m idx =
   let point = Index.repr idx m.table in
@@ -387,15 +456,11 @@ let pr_index_point m idx =
 
 let pr_pointint m = pr_with (pr_index_point m)
 
-let pr_clauses_info m concl prems =
-  let open Pp in
-  prlist_with_sep spc (fun (k, prem) ->
-    h (prlist_with_sep (fun () -> str ",") (pr_pointint m) prem ++ str " → " ++ pr_pointint m (concl, k) ++ spc ()))
-     prems
+let pr_clauses_info m = ClausesOf.pr (pr_pointint m)
 
 let pr_clauses m (cls : clauses) =
   let open Pp in
-  PMap.fold (fun concl prems acc -> pr_clauses_info m concl prems ++ fnl () ++ acc) cls (Pp.mt())
+  PMap.fold (fun concl cls acc -> pr_clauses_info m concl cls ++ fnl () ++ acc) cls (Pp.mt())
 
 let debug_model m =
   debug_model Pp.(fun () -> str"Model is " ++ pr_levelmap m)
@@ -424,7 +489,7 @@ let check_clause m conclv (k, prem) =
 let check_clauses m (cls : clauses) =
   PMap.for_all (fun concl cls ->
     let conclv = model_value m concl in
-    List.for_all (fun cl -> check_clause m conclv cl) cls)
+    ClausesOf.for_all (fun cl -> check_clause m conclv cl) cls)
     cls
 
 let empty_clauses = PMap.empty
@@ -434,8 +499,8 @@ let add_clause_aux can kprem clauses =
   PMap.update can.canon
       (fun cls ->
         match cls with
-        | None -> Some [kprem]
-        | Some cls -> Some (kprem :: cls))
+        | None -> Some (ClausesOf.singleton kprem)
+        | Some cls -> Some (ClausesOf.add kprem cls))
       clauses
 
 let add_clauses_aux can kprem clauses =
@@ -443,7 +508,7 @@ let add_clauses_aux can kprem clauses =
     (fun cls ->
     match cls with
     | None -> Some kprem
-    | Some cls -> Some (kprem @ cls))
+    | Some cls -> Some (ClausesOf.union kprem cls))
     clauses
 
 let filter_trivial_clause m canl (k, prems) =
@@ -469,12 +534,11 @@ let add_clause (m : model) l kprem (cls : clauses) : clauses =
   let canl = repr_node m l in
   match filter_trivial_pclause m canl kprem with
   | None -> cls
-  | Some kprem -> add_clause_aux canl kprem cls
+  | Some kprem -> add_clause_aux canl (ClausesOf.ClauseInfo.of_list kprem) cls
 
 let add_clauses (m : model) canl kprem (cls : clauses) : clauses =
-  match List.filter_map (filter_trivial_clause m canl) kprem with
-  | [] -> cls
-  | kprems -> add_clauses_aux canl kprems cls
+  let kprem = ClausesOf.filter_map (filter_trivial_clause m canl) kprem in
+  add_clauses_aux canl kprem cls
 
 type pclause_info = (int * (Point.t * int) list)
 
@@ -597,16 +661,16 @@ end
 
 (* This only works for level (+1) <= level constraints *)
 let constraints_of_clauses m (clauses : clauses) =
-  PMap.fold (fun concl prems cstrs ->
+  PMap.fold (fun concl cls cstrs ->
     let conclp = Index.repr concl m.table in
-    List.fold_left (fun cstrs (k, prem) ->
-      match prem with
+    ClausesOf.fold (fun (k, prems) cstrs ->
+      match prems with
       | [(v, 0)] ->
         let vp = Index.repr v m.table in
         if k = 0 then Constraints.add (conclp, Le, vp) cstrs
         else if k = 1 then Constraints.add (conclp, Lt, vp) cstrs
         else assert false
-      | _ -> assert false) cstrs prems)
+      | _ -> assert false) cls cstrs)
     clauses Constraints.empty
 
 let infer_extension x k y m =
@@ -660,7 +724,7 @@ let simplify_clauses_between ({ model; clauses } as m) v u =
   let rec forward prev acc canv : canonical_node list =
     if List.memq canv acc || List.memq canv prev then acc else (* Already visited *)
     let cls = clauses_of canv.canon clauses in
-    List.fold_left (fun acc (k, prems) ->
+    ClausesOf.fold (fun (k, prems) acc ->
       List.fold_left (fun acc (l, _k') ->
         let canl = repr model l in
         if List.memq canl prev || List.memq canl acc then acc
@@ -670,7 +734,7 @@ let simplify_clauses_between ({ model; clauses } as m) v u =
             CList.unionq (canu :: canv :: prev) acc
           end
         else forward (canv :: prev) acc canl)
-        acc prems) acc cls
+        acc prems) cls acc
   in
   let equiv = forward [] [] canv in
   if CList.is_empty equiv then Some m
@@ -787,15 +851,16 @@ let constraints_for ~(kept:Point.Set.t) { model; clauses } (fold : 'a constraint
       | exception Not_found ->
         let cls = clauses_of v.canon clauses in
         (* v is not equal to any kept point *)
-        let todo = List.fold_left (fun todo (k', prems') -> (prems', k + k') :: todo)
-            todo cls
+        let todo =
+          ClausesOf.fold (fun (k', prems') todo -> (prems', k + k') :: todo)
+            cls todo
         in
         add_from u csts todo)
   in
   PSet.fold (fun u csts ->
       let arc = repr model u in
       let cls = clauses_of arc.canon clauses in
-      List.fold_left (fun csts (k, prems) -> add_from u csts [prems,k]) csts cls)
+      ClausesOf.fold (fun (k, prems) csts -> add_from u csts [prems,k]) cls csts)
     kept csts
 
 
@@ -838,7 +903,7 @@ let repr { clauses; model } =
     | Canonical can ->
       let prems = clauses_of can.canon clauses in
       let map =
-        List.fold_left (fun map (k, prem) ->
+        ClausesOf.fold (fun (k, prem) map ->
           match prem with
           | [(v, 0)] ->
             let canv = repr model v in
@@ -846,7 +911,7 @@ let repr { clauses; model } =
             if k = 0 then Point.Map.add vp false map
             else if k = 1 then Point.Map.add vp true map
             else assert false
-          | _ -> assert false) Point.Map.empty prems
+          | _ -> assert false) prems Point.Map.empty
       in
       Node map
     in
