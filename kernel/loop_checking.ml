@@ -15,6 +15,7 @@ module type Point = sig
   val equal : t -> t -> bool
   val compare : t -> t -> int
 
+  val keep_canonical : t -> bool
   val pr : t -> Pp.t
 end
 
@@ -32,7 +33,7 @@ let _time prefix =
     res
   else f x
 
-let time2 prefix f =
+let _time2 prefix f =
   let accum = ref 0. in
   fun x y ->
   if CDebug.(get_flag debug_loop_checking_timing_flag) then
@@ -438,9 +439,12 @@ let check_model cls w m =
   debug_check_invariants m cls;
   if modified then Some (w, m') else None
 
-let check_model = time3 (Pp.str "check_model") check_model
+(* let check_model = time3 (Pp.str "check_model") check_model *)
 
-let premises_in m w prem =
+let all_premises_in m w prem =
+  Premises.for_all (fun (l, _) -> PSet.mem (repr m l).canon w) prem
+
+let _some_premises_in m w prem =
   Premises.for_all (fun (l, _) -> PSet.mem (repr m l).canon w) prem
 
 let partition_clauses m (cls : clauses) w : clauses * clauses =
@@ -449,7 +453,7 @@ let partition_clauses m (cls : clauses) w : clauses * clauses =
     else PMap.add concl cls clsm
   in
   PMap.fold (fun concl cls (inl, inr) ->
-    let (clsW, clsnW) = ClausesOf.partition (fun kprem -> premises_in m w (snd kprem)) cls in
+    let (clsW, clsnW) = ClausesOf.partition (fun kprem -> all_premises_in m w (snd kprem)) cls in
     (add_ne concl clsW inl, add_ne concl clsnW inr))
   cls (PMap.empty, PMap.empty)
 
@@ -461,7 +465,7 @@ let partition_clauses_concl (cls : clauses) (w : PSet.t) : clauses * clauses =
     else (inl, inr))
     cls (PMap.empty, cls)
 
-let partition_clauses_concl = time2 Pp.(str "partition_clauses_concl") partition_clauses_concl
+(* let partition_clauses_concl = time2 Pp.(str "partition_clauses_concl") partition_clauses_concl *)
 
 type result = Loop | Model of PSet.t * model
 
@@ -476,7 +480,7 @@ let pr_w m w =
   let open Pp in
   prlist_with_sep spc (fun idx -> Point.pr (Index.repr idx m.table)) (PSet.elements w)
 
-let check cls m =
+let check cls ?(init_w=PSet.empty) m =
   let cV = canonical_cardinal m in
   let rec inner_loop w m cls =
     let (premconclW, conclW) = partition_clauses m cls w in
@@ -508,14 +512,14 @@ let check cls m =
           | None -> Model (wc, mc)
           | Some (wcls, mcls) -> loop cV wcls mcls cls))
   in
-  let res = loop cV PSet.empty m cls in
+  let res = loop cV init_w m cls in
   (* unset_marks m; *)
   res
 
 
-let check cls m =
+let check cls ?(init_w = PSet.empty) m =
   debug Pp.(fun () -> str"Calling loop-checking");
-  try let res = check cls m in
+  try let res = check cls ~init_w m in
     debug Pp.(fun () -> str"Loop-checking terminated");
     res
   with Stack_overflow ->
@@ -543,7 +547,7 @@ let update_model_value (m : model) l k' : model =
   if Int.equal k' can.value then m
   else change_node m { can with value = k' }
 
-let update_model (cls : clauses) (m : model) : model =
+let _update_model (cls : clauses) (m : model) : model =
   PMap.fold (fun _concl cls m ->
     ClausesOf.fold (fun (_k, prems) m ->
       List.fold_left (fun m (l, k) -> update_model_value m l k) m prems)
@@ -590,8 +594,8 @@ let filter_with_bound = time2 (Pp.str"Filtering clauses") filter_with_bound *)
 
 let infer_clauses_extension (model : model) (clauses : clauses) =
   debug_check_invariants model clauses;
-  let model = update_model clauses model in
-  debug_check_invariants model clauses;
+  (* let model = update_model clauses model in *)
+  (* debug_check_invariants model clauses; *)
   debug Pp.(fun () -> str"Calling loop-checking" ++ statistics { model; clauses });
   (* let filtered_clauses = filter_with_bound model clauses in *)
   (* debug Pp.(fun () -> str"Filtered clauses " ++ int (clauses_cardinal filtered_clauses)); *)
@@ -708,17 +712,21 @@ let _check_leq (m : t) u v =
   let cls = clauses_of_le_constraint m.model u v empty_clauses in
   check_clauses m.model cls
 
-let _is_bound (m : model) can cano (cls : clauses) : bool =
+let _is_bound (m : t) can cano : bool =
   PMap.exists (fun concl clsc ->
     if Index.equal concl can.canon then false
-    else ClausesOf.has_bound m cano clsc) cls
+    else ClausesOf.has_bound m.model cano clsc) m.clauses
 
 (* Precondition: canu.value == canv.value, so no new model needs to be computed *)
 let enforce_eq_can { model; clauses } canu canv : canonical_node * t =
   assert (canu.value == canv.value);
-  (* v := u *)
+  (* v := u or u := v, depending on the cardinal of attached constraints
+     (heuristically, keeps the representant of Set a canonical node) *)
   let can, other, model =
-    canu, canv.canon, enter_equiv model canv.canon canu.canon
+    if Point.keep_canonical (Index.repr canu.canon model.table) then
+      canu, canv.canon, enter_equiv model canv.canon canu.canon
+    else
+      canv, canu.canon, enter_equiv model canu.canon canv.canon
   in
   let clauses =
     match PMap.find other clauses with
@@ -832,8 +840,8 @@ let enforce_clauses_of_can_constraint (cstr : can_constraint) ({ model; clauses 
   if clauses' == clauses then false, m
   else true, { model; clauses = clauses' }
 
-let enforce_clauses_of_can_constraint =
-  time2 (Pp.str "Enforcing clauses") enforce_clauses_of_can_constraint
+(* let enforce_clauses_of_can_constraint = *)
+  (* time2 (Pp.str "Enforcing clauses") enforce_clauses_of_can_constraint *)
 
 type 'a check_function = t -> 'a -> 'a -> bool
 
@@ -910,15 +918,21 @@ let enforce_eq u v m =
   else match Int.compare canu.value canv.value with
     | 0 -> Some (snd (enforce_eq_can m canu canv))
     | x when x < 0 ->
-      (* canu.value <= canv.value, so v <= u is trivial.
+      (* canu.value < canv.value, so v <= u is trivial.
          The first enforce will be fast, the second can involve an inference *)
       Option.bind (enforce_leq_can canv canu m)
-        (fun m' -> enforce_leq_can (repr m'.model canu.canon) (repr m'.model canv.canon) m')
+        (fun m' ->
+          let canu' = repr m'.model canu.canon in
+          let canv' =  repr m'.model canv.canon in
+          enforce_leq_can canu' canv' m')
     | _ ->
-      (* canv.value <= canu.value, so u <= v is trivial.
+      (* canv.value < canu.value, so u <= v is trivial.
           The first enforce will be fast, the second can involve an inference *)
       Option.bind (enforce_leq_can canu canv m)
-        (fun m' -> enforce_leq_can (repr m'.model canv.canon) (repr m'.model canu.canon) m')
+        (fun m' ->
+          let canu' = repr m'.model canu.canon in
+          let canv' =  repr m'.model canv.canon in
+          enforce_leq_can canv' canu' m')
 
 type lub = (Point.t * int) list
 
