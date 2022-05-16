@@ -678,7 +678,8 @@ let _check_leq (m : t) u v =
   check_clauses m.model cls
 
 let enforce_eq_can { model; clauses } canu canv : (bool * canonical_node) * t =
-  let value = max canu.value canv.value in
+  let value = min canu.value canv.value in
+  debug Pp.(fun () -> str"In enforce_eq_can, equal values? " ++ bool (canu.value == canv.value));
   (* u := v *)
   let can, other, model =
     if Int.equal value canu.value then
@@ -693,7 +694,7 @@ let enforce_eq_can { model; clauses } canu canv : (bool * canonical_node) * t =
     else true, PMap.remove other clauses
   in
   debug_check_invariants model clauses;
-  (recheck, can), { model; clauses }
+  (recheck || not (Int.equal canu.value canv.value), can), { model; clauses }
 
 let _enforce_eq_indices (m : t) u v =
   let canu = repr m.model u in
@@ -702,6 +703,7 @@ let _enforce_eq_indices (m : t) u v =
   else snd (enforce_eq_can m canu canv)
 
 let enforce_eq_points (m : t) u v =
+  debug Pp.(fun () -> str"Enforce equal points");
   let canu = repr_node m.model u in
   let canv = repr_node m.model v in
   if canu == canv then ((false, canu), m)
@@ -823,14 +825,15 @@ let infer_extension x k y m =
   end else
     (* The clauses are not valid in the current model, we have to find a new one *)
     let check, m = enforce_clauses_of_point_constraint (x, k, y) m in
-    if check then
+    if check then begin
+      debug Pp.(fun () -> str"Enforcing clauses requires a new inference");
       match infer_clauses_extension m.model m.clauses with
       | None ->
         debug Pp.(fun () -> str"Enforcing clauses " ++ pr_clauses m.model clauses ++ str" resulted in a loop");
         debug Pp.(fun () -> str"Initial constraints" ++ Constraints.pr Point.pr
           (constraints_of_clauses m.model initclauses));
         None
-      | Some _ as x -> x
+      | Some _ as x -> x end
     else ((* No need to update the model *)
       debug Pp.(fun () -> str"Enforcing clauses " ++ pr_clauses m.model clauses ++ str" did not change the model");
       Some m)
@@ -847,6 +850,10 @@ let make_equiv m equiv =
     prlist_with_sep spc (fun can -> pr_can m.model can) equiv);
   match equiv with
   | can :: can' :: tl ->
+    (* We are about to merge all these universes as they should be equal in the model,
+      they should hence have the same values *)
+    if CDebug.(get_flag debug_loop_checking_invariants) then
+      assert (List.for_all (fun x -> x.value = can.value) (can' :: tl));
     let (check, can), m =
       List.fold_left (fun ((check, can), m) can' ->
         let (check', can), m = enforce_eq_can m can can' in
