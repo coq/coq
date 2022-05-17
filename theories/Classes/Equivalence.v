@@ -54,7 +54,7 @@ Infix "=~=" := pequiv (at level 70, no associativity) : equiv_scope.
 (** Shortcuts to make proof search easier. *)
 
 #[global]
-Program Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv | 1.
+ Program Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv | 1.
 
 #[global]
 Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv | 1.
@@ -63,8 +63,9 @@ Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv | 1.
 Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv | 1.
 
   Next Obligation.
-  Proof. intros A R sa x y z Hxy Hyz.
-         now transitivity y.
+  Proof.
+    intros A R sa x y z Hxy Hyz.
+    now transitivity y.
   Qed.
 
 Arguments equiv_symmetric {A R} sa x y : rename.

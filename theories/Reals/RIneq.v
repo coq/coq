@@ -27,6 +27,8 @@ Local Open Scope R_scope.
 
 Implicit Type r : R.
 
+Local Ltac Tauto.intuition_solver ::= auto with real.
+
 (*********************************************************)
 (** ** Relation between orders and equality              *)
 (*********************************************************)

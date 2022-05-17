@@ -750,8 +750,8 @@ Proof.
  functional induction union s1 s2; intros B1 B2; auto.
  factornode s2; destruct_split; inv.
  apply join_ok; auto with *.
- - intro y; rewrite union_spec, split_spec1; intuition_in.
- - intro y; rewrite union_spec, split_spec2; intuition_in.
+ - intro y; rewrite union_spec, split_spec1; intuition_in; exact _.
+ - intro y; rewrite union_spec, split_spec2; intuition_in; exact _.
 Qed.
 
 (** * Filter *)

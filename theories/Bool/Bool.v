@@ -16,6 +16,8 @@ Inductive bool : Set := true : bool | false : bool
 
 (** Most of the lemmas in this file are trivial by case analysis *)
 
+Local Ltac Tauto.intuition_solver ::= auto with bool.
+
 Ltac destr_bool :=
  intros; destruct_all bool; simpl in *; trivial; try discriminate.
 

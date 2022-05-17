@@ -282,7 +282,7 @@ Tactic Notation "apply" "*" constr(t) :=
 
 Ltac simpl_crelation :=
   unfold flip, impl, arrow ; try reduce ; program_simpl ;
-    try ( solve [ dintuition ]).
+    try ( solve [ dintuition auto with crelations ]).
 
 Local Obligation Tactic := simpl_crelation.
 

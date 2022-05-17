@@ -88,7 +88,7 @@ Section Perm.
     intros H H' [H0 H0'].
     destruct (multiplicity (list_contents l) a) as [|[|n]],
              (multiplicity (list_contents l') a) as [|[|n']];
-    [ tauto | intuition | | intuition | tauto | intuition |  | intuition | ]; exfalso.
+    [ tauto | | | | tauto | |  | | ]; try solve [intuition auto with arith]; exfalso.
     - now inversion H'.
     - now inversion H.
     - now inversion H.

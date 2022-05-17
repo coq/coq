@@ -18,6 +18,8 @@ Require Import Wf_nat.
 
 Open Scope Z_scope.
 
+Local Ltac Tauto.intuition_solver ::= auto with zarith.
+
 (** This file contains some notions of number theory upon Z numbers:
      - a divisibility predicate [Z.divide]
      - a gcd predicate [gcd]

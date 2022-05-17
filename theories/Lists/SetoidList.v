@@ -139,7 +139,7 @@ Qed.
 Global Instance eqlistA_equivlistA : subrelation eqlistA equivlistA.
 Proof.
   intros x x' H. induction H as [|? ? ? ? H ? IHeqlistA].
-  - intuition.
+  - intuition auto with relations.
   - red; intros x0.
     rewrite 2 InA_cons.
     rewrite (IHeqlistA x0), H; intuition.

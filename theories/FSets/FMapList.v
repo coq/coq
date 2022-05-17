@@ -462,7 +462,7 @@ Lemma equal_2 : forall m (Hm:Sort m) m' (Hm:Sort m') cmp,
 Proof with auto with ordered_type.
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
  functional induction (equal cmp m m'); simpl; subst;auto; unfold Equivb;
-  intuition; try discriminate; subst;
+  intuition auto; try discriminate; subst;
   try match goal with H: X.compare _ _ = _ |- _ => clear H end.
 
  - inversion H0.
@@ -631,7 +631,7 @@ Proof.
      * constructor 1.
        unfold eqke in *; simpl in *; intuition congruence.
    + destruct IHm as (y, hyp); auto.
-     exists y; intuition.
+     exists y; intuition auto with ordered_type.
 Qed.
 
 
@@ -1216,14 +1216,14 @@ Lemma eq_equal : forall m m', eq m m' <-> equal cmp m m' = true.
 Proof.
   intros (l,Hl); induction l.
   - intros (l',Hl'); unfold eq; simpl.
-    destruct l'; unfold equal; simpl; intuition.
+    destruct l'; unfold equal; simpl; intuition auto with bool.
   - intros (l',Hl'); unfold eq.
     destruct l'.
-    + destruct a; unfold equal; simpl; intuition.
+    + destruct a; unfold equal; simpl; intuition auto with bool.
     + destruct a as (x,e).
       destruct p as (x',e').
       unfold equal; simpl.
-      destruct (X.compare x x') as [Hlt|Heq|Hlt]; simpl; intuition.
+      destruct (X.compare x x') as [Hlt|Heq|Hlt]; simpl; intuition auto with bool.
       * unfold cmp at 1.
         MD.elim_comp; clear H; simpl.
         inversion_clear Hl.
@@ -1274,7 +1274,7 @@ Proof.
  intros (m,Hm); induction m;
  intros (m', Hm'); destruct m'; unfold eq; simpl;
  try destruct a as (x,e); try destruct p as (x',e'); auto.
- destruct (X.compare x x')  as [Hlt|Heq|Hlt]; MapS.Raw.MX.elim_comp; intuition.
+ destruct (X.compare x x')  as [Hlt|Heq|Hlt]; MapS.Raw.MX.elim_comp; intuition auto with ordered_type.
  inversion_clear Hm; inversion_clear Hm'.
  apply (IHm H0 (Build_slist H4)); auto.
 Qed.

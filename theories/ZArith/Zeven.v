@@ -17,6 +17,8 @@
 
 Require Import BinInt.
 
+Local Ltac Tauto.intuition_solver ::= auto with bool.
+
 Local Open Scope Z_scope.
 
 (** Historical formulation of even and odd predicates, based on

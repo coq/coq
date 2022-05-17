@@ -10,6 +10,8 @@
 
 Require Import Orders Rbase Rbasic_fun ROrderedType GenericMinMax.
 
+Local Ltac Tauto.intuition_solver ::= auto with real.
+
 (** * Maximum and Minimum of two real numbers *)
 
 Local Open Scope R_scope.

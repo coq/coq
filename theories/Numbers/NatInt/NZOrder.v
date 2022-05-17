@@ -82,7 +82,7 @@ Theorem le_gt_cases : forall n m, n <= m \/ n > m.
 Proof.
 intros n m; nzinduct n m.
 - left; apply le_refl.
-- intro n. rewrite lt_succ_r, le_succ_l, !lt_eq_cases. intuition.
+- intro n. rewrite lt_succ_r, le_succ_l, !lt_eq_cases. intuition auto with relations.
 Qed.
 
 Theorem lt_trichotomy : forall n m,  n < m \/ n == m \/ m < n.
@@ -145,7 +145,7 @@ Instance le_partialorder : PartialOrder _ le.
 Proof.
 intros x y. compute. split.
 - intro EQ; now rewrite EQ.
-- rewrite 2 lt_eq_cases. intuition. elim (lt_irrefl x). now transitivity y.
+- rewrite 2 lt_eq_cases. intuition auto with relations. elim (lt_irrefl x). now transitivity y.
 Qed.
 
 (** We know enough now to benefit from the generic [order] tactic. *)

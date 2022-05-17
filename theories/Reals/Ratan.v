@@ -24,6 +24,7 @@ Require Import PartSum.
 Require Import Lia.
 
 Local Open Scope R_scope.
+Local Ltac Tauto.intuition_solver ::= auto with rorders real arith.
 
 (*********************************************************)
 (** * Preliminaries                                      *)

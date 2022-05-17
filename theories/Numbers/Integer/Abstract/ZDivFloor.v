@@ -162,7 +162,7 @@ Lemma div_opp_l_z :
  forall a b, b~=0 -> a mod b == 0 -> (-a)/b == -(a/b).
 Proof.
 intros a b Hb H. symmetry. apply div_unique with 0.
-- destruct (lt_ge_cases 0 b); [left|right]; intuition; order.
+- destruct (lt_ge_cases 0 b); [left|right]; intuition auto; order.
 - rewrite <- opp_0, <- H.
   rewrite mul_opp_r, <- opp_add_distr, <- div_mod; order.
 Qed.
@@ -184,7 +184,7 @@ Lemma mod_opp_l_z :
  forall a b, b~=0 -> a mod b == 0 -> (-a) mod b == 0.
 Proof.
 intros a b Hb H. symmetry. apply mod_unique with (-(a/b)).
-- destruct (lt_ge_cases 0 b); [left|right]; intuition; order.
+- destruct (lt_ge_cases 0 b); [left|right]; intuition auto; order.
 - rewrite <- opp_0, <- H.
   rewrite mul_opp_r, <- opp_add_distr, <- div_mod; order.
 Qed.

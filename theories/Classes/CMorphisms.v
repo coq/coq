@@ -717,7 +717,7 @@ Lemma StrictOrder_PartialOrder
   `(Equivalence A eqA, StrictOrder A R, Proper _ (eqA==>eqA==>iffT) R) :
   PartialOrder eqA (relation_disjunction R eqA).
 Proof.
-intros. intros x y. compute. intuition.
+intros. intros x y. compute. intuition auto with crelations.
 elim (StrictOrder_Irreflexive x).
 transitivity y; auto.
 Qed.

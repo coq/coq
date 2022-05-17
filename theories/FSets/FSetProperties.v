@@ -35,7 +35,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   Lemma In_dec : forall x s, {In x s} + {~ In x s}.
   Proof.
-  intros; generalize (mem_iff s x); case (mem x s); intuition.
+  intros; generalize (mem_iff s x); case (mem x s); intuition auto with bool.
   Qed.
 
   Definition Add x s s' := forall y, In y s' <-> E.eq x y \/ In y s.
@@ -711,7 +711,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
         (forall x : elt, In x s <-> InA E.eq x l) /\
         cardinal s = length l.
   Proof.
-  intros; exists (elements s); intuition; apply cardinal_1.
+  intros; exists (elements s); intuition auto with set; apply cardinal_1.
   Qed.
 
   Lemma cardinal_1 : forall s, Empty s -> cardinal s = 0.
@@ -943,7 +943,7 @@ Module OrdProperties (M:S).
 
   Lemma leb_1 : forall x y, leb x y = true <-> ~E.lt y x.
   Proof.
-   intros; unfold leb, gtb; destruct (E.compare x y); intuition; try discriminate; ME.order.
+   intros; unfold leb, gtb; destruct (E.compare x y); intuition try discriminate; ME.order.
   Qed.
 
   Lemma gtb_compat : forall x, Proper (E.eq==>Logic.eq) (gtb x).
@@ -976,8 +976,7 @@ Module OrdProperties (M:S).
   intros.
   rewrite gtb_1 in H.
   assert (~E.lt y x). {
-   unfold gtb in *; destruct (E.compare x y); intuition;
-   try discriminate; ME.order.
+   unfold gtb in *; destruct (E.compare x y); intuition try discriminate; ME.order.
   }
   ME.order.
   Qed.
@@ -1011,8 +1010,8 @@ Module OrdProperties (M:S).
   - red; intros a.
     rewrite InA_app_iff, InA_cons, !filter_InA, <-elements_iff,
       leb_1, gtb_1, (H0 a) by auto with fset.
-    intuition.
-    destruct (E.compare a x); intuition.
+    intuition auto with relations set.
+    destruct (E.compare a x); intuition auto with set.
     fold (~E.lt a x); auto with ordered_type set.
   Qed.
 
@@ -1036,7 +1035,7 @@ Module OrdProperties (M:S).
       * inversion H3.
   - red; intros a.
     rewrite InA_app_iff, InA_cons, InA_nil.
-    do 2 rewrite <- elements_iff; rewrite (H0 a); intuition.
+    do 2 rewrite <- elements_iff; rewrite (H0 a); intuition auto with relations.
   Qed.
 
   Lemma elements_Add_Below : forall s s' x,
@@ -1058,7 +1057,7 @@ Module OrdProperties (M:S).
       * inversion H3.
   - red; intros a.
     rewrite InA_cons.
-    do 2 rewrite <- elements_iff; rewrite (H0 a); intuition.
+    do 2 rewrite <- elements_iff; rewrite (H0 a); intuition auto with relations.
   Qed.
 
   (** Two other induction principles on sets: we can be more restrictive

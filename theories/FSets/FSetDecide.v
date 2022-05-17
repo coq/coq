@@ -507,7 +507,7 @@ the above form:
     Lemma dec_In : forall x s,
       decidable (In x s).
     Proof.
-      red; intros; generalize (F.mem_iff s x); case (mem x s); intuition.
+      red; intros; generalize (F.mem_iff s x); case (mem x s); intuition auto with bool.
     Qed.
 
     (** [E.eq] is decidable. *)

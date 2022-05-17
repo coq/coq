@@ -547,7 +547,7 @@ Ltac order := match goal with
  | _ => MX.order
 end.
 
-Ltac intuition_in := repeat (intuition; inv In; inv MapsTo).
+Ltac intuition_in := repeat (intuition auto; inv In; inv MapsTo).
 
 (* Function/Functional Scheme can't deal with internal fix.
    Let's do its job by hand: *)
@@ -1045,7 +1045,7 @@ Proof.
  - generalize (remove_min_bst H0); rewrite e1; simpl in *; auto.
  - intro; intro.
    apply H1; auto.
-   generalize (remove_min_in l2 x2 d2 r2 _x4 x); rewrite e1; simpl; intuition.
+   generalize (remove_min_in l2 x2 d2 r2 _x4 x); rewrite e1; simpl; intuition auto with relations.
  - generalize (remove_min_gt_tree H0); rewrite e1; simpl; auto.
 Qed.
 
@@ -1093,7 +1093,7 @@ Qed.
 
 Lemma remove_1 : forall m x y, bst m -> X.eq x y -> ~ In y (remove x m).
 Proof.
- intros; rewrite remove_in; intuition.
+ intros; rewrite remove_in; intuition auto with relations.
 Qed.
 
 Lemma remove_2 : forall m x y e, bst m -> ~X.eq x y ->
@@ -1319,7 +1319,7 @@ Proof.
  - intros.
    rewrite Hl.
    destruct (Hr acc x0 e0); clear Hl Hr.
-   intuition; inversion_clear H3; intuition.
+   intuition; inversion_clear H3; intuition auto with ordered_type.
    destruct H0; simpl in *; subst; intuition.
 Qed.
 

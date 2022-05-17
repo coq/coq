@@ -81,8 +81,8 @@ Proof. auto with *. Qed.
 
 Lemma le_antisym : forall x y, x<=y -> y<=x -> x==y.
 Proof.
- intros x y; rewrite 2 P.le_lteq. intuition.
- elim (StrictOrder_Irreflexive x); transitivity y; auto.
+  intros x y; rewrite 2 P.le_lteq. intuition auto with relations.
+  elim (StrictOrder_Irreflexive x); transitivity y; auto.
 Qed.
 
 Lemma neq_sym : forall x y, ~x==y -> ~y==x.
@@ -134,7 +134,7 @@ Qed.
 Lemma not_ge_lt : forall x y, ~y<=x -> x<y.
 Proof.
 intros x y H. destruct (P.lt_total x y); auto.
-destruct H. rewrite P.le_lteq. intuition.
+destruct H. rewrite P.le_lteq. intuition auto with relations.
 Qed.
 
 Lemma not_gt_le : forall x y, ~y<x -> x<=y.

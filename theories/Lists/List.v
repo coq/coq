@@ -350,6 +350,9 @@ Hint Resolve app_eq_unit app_inj_tail: datatypes.
 #[global]
 Hint Resolve in_eq in_cons in_inv in_nil in_app_or in_or_app: datatypes.
 
+(* XXX declare datatypes db and move to top of file *)
+Local Ltac Tauto.intuition_solver ::= auto with datatypes.
+
 
 
 (*******************************************)

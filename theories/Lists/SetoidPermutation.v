@@ -14,6 +14,8 @@ Require Import Permutation SetoidList.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Local Ltac Tauto.intuition_solver ::= auto with relations.
+
 (** Permutations of list modulo a setoid equality. *)
 
 (** Contribution by Robbert Krebbers (Nijmegen University). *)

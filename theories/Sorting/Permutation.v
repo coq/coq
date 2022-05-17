@@ -929,7 +929,8 @@ Qed.
 Lemma Permutation_Permutation_transp : forall l1 l2 : list A,
  Permutation l1 l2 <-> Permutation_transp l1 l2.
 Proof.
-  intros l1 l2; split; intros HP; induction HP; intuition.
+  intros l1 l2; split; intros HP; induction HP; intuition auto.
+  - solve_relation.
   - now apply Permutation_transp_cons.
   - rewrite <- (app_nil_l (y :: _)).
     rewrite <- (app_nil_l (x :: y :: _)).

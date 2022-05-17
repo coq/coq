@@ -251,7 +251,7 @@ Qed.
 Lemma div_1_r: forall a, a/1 == a.
 Proof.
 intros. symmetry. apply div_unique with 0.
-- assert (H:=lt_0_1); rewrite abs_pos; intuition; order.
+- assert (H:=lt_0_1); rewrite abs_pos; intuition auto; order.
 - now nzsimpl.
 Qed.
 

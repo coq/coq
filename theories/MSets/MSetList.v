@@ -863,8 +863,8 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
 
   Lemma compare_spec_aux : forall s s', CompSpec eq L.lt s s' (compare s s').
   Proof.
-  induction s as [|x s IH]; intros [|x' s']; simpl; intuition. 
-  elim_compare x x'; auto.
+    induction s as [|x s IH]; intros [|x' s']; simpl; intuition auto with relations.
+    elim_compare x x'; auto.
   Qed.
 
   Lemma compare_spec : forall s s', Ok s -> Ok s' ->
