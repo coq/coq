@@ -368,7 +368,7 @@ struct
   (* let union (clauses : t) (clauses' : t) : t =
     PMap.fold (fun idx cls acc -> add (idx, cls) acc) clauses clauses' *)
 
-  let clauses_from (clauses : t) (w : PSet.t) : ClausesBackward.t =
+  let _clauses_from (clauses : t) (w : PSet.t) : ClausesBackward.t =
     let clauses = PMap.filter (fun idx _concls -> PSet.mem idx w) clauses in
     PMap.fold (fun _idx cls acc -> ClausesBackward.union cls acc) clauses ClausesBackward.empty
 
@@ -567,6 +567,8 @@ let check_model clauses updates model =
   let (modified, updates, model) = check_model_aux clauses (updates, model) in
   if modified then Some (updates, model) else None
 
+let _check_model_bwd = check_model
+
 (* let check_model = time3 (Pp.str "check_model") check_model *)
 
 let all_premises_in m w prem =
@@ -575,7 +577,8 @@ let all_premises_in m w prem =
 let some_premise_in m w prem =
   Premises.exists (fun (l, _) -> PSet.mem (repr m l).canon w) prem
 
-let partition_clauses m (cls : clauses) w : clauses * clauses =
+(* Partition the clauses: those with premises in w and those with premises outside w *)
+let _partition_clauses m (cls : clauses) w : clauses * clauses =
   let add_ne concl cls clsm =
     if ClausesOf.is_empty cls then clsm
     else Clauses.add (concl, cls) clsm
@@ -584,6 +587,18 @@ let partition_clauses m (cls : clauses) w : clauses * clauses =
     let (clsW, clsnW) = ClausesOf.partition (fun kprem -> all_premises_in m w (snd kprem)) cls in
     (add_ne concl clsW inl, add_ne concl clsnW inr))
     cls.Clauses.clauses_bwd (Clauses.empty, Clauses.empty)
+
+let partition_clauses_fwd (cls : clauses) w : clauses * ClausesForward.t =
+  let open Clauses in
+  PMap.fold (fun prem cls (inl, inr) ->
+    if PSet.mem prem w then
+      let fwd =
+        { clauses_fwd = PMap.add prem cls inl.clauses_fwd;
+          clauses_bwd = ClausesBackward.union cls inl.clauses_bwd }
+      in (fwd, PMap.remove prem inr)
+    else
+      (inl, inr))
+    cls.Clauses.clauses_fwd (Clauses.empty, cls.Clauses.clauses_fwd)
 
 (* let partition_clauses = time3 Pp.(str "partition_clauses") partition_clauses *)
 
@@ -609,7 +624,7 @@ let canonical_cardinal m =
     | Canonical _ -> succ acc)
     m.entries 0
 
-let pr_w m w =
+let _pr_w m w =
   let open Pp in
   prlist_with_sep spc (fun idx -> Point.pr (Index.repr idx m.table)) (PSet.elements w)
 
@@ -627,26 +642,45 @@ let _clauses_forward model clauses (w : PSet.t) =
     if not (ClausesOf.is_empty cls') then PMap.add concl cls' acc else acc)
     clauses PMap.empty
 
-(* Todo: avoid unions and filtering *)
+let check_model_fwd_aux (cls : ClausesForward.t) (w, m) =
+  PMap.fold (fun idx cls acc ->
+    if not (PSet.mem idx w) then acc else
+    PMap.fold (fun idx cls (modified, w, m) ->
+      let can = repr m idx in
+      let (can', w', m') =
+        ClausesOf.fold (fun cls cwm ->
+          match update_value cwm cls with
+          | None -> cwm
+          | Some cwm' ->
+            (* debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ int can.value); *)
+            (* debug Pp.(fun () -> str" due to clauses " ++ pr_clauses m (ClausesBackward.singleton (idx, ClausesOf.singleton cls))); *)
+            cwm')
+          cls (can, w, m)
+      in ((modified || can != can'), w', m'))
+      cls acc)
+  cls (false, w, m)
+
+let check_model_fwd clauses updates model =
+  let (modified, updates, model) = check_model_fwd_aux clauses (updates, model) in
+  if modified then Some (updates, model) else None
+
 let check_model cls w m =
-  let cls_from = ClausesForward.clauses_from cls.Clauses.clauses_fwd w in
-  debug Pp.(fun () -> str"Clauses with an update:" ++ pr_clauses m cls_from);
-  check_model cls_from w m
+  check_model_fwd cls.Clauses.clauses_fwd w m
 
 let check { model; updates; clauses } w =
   let cV = canonical_cardinal model in
   let rec inner_loop w m cls =
-    let (premconclW, conclW) = partition_clauses m cls w in
+    let (premconclW, conclW) = partition_clauses_fwd cls w in
     let cardW = PSet.cardinal w in
-    debug Pp.(fun () -> str "Inner loop on " ++ int cardW ++ str" universes: " ++ pr_w m w);
+    (* debug Pp.(fun () -> str "Inner loop on " ++ int cardW ++ str" universes: " ++ pr_w m w); *)
     let rec inner_loop_partition w m =
       match loop cardW w m premconclW with
       | Loop -> Loop
       | Model (wr, mr) ->
-        debug Pp.(fun () -> str "wr = " ++ pr_w mr wr);
-        (match check_model conclW wr mr with
+        (* debug Pp.(fun () -> str "wr = " ++ pr_w mr wr); *)
+        (match check_model_fwd conclW wr mr with
         | Some (wconcl, mconcl) ->
-          debug Pp.(fun () -> str "wconcl = " ++ pr_w mr wr);
+          (* debug Pp.(fun () -> str "wconcl = " ++ pr_w mr wr); *)
           inner_loop_partition wconcl mconcl
         | None -> Model (wr, mr))
       in inner_loop_partition w m
@@ -669,13 +703,12 @@ let check { model; updates; clauses } w =
   | Loop -> Loop
   | Model (wc, mc) -> Model (PSet.union wc updates, mc)
 
-let check m w =
-  debug Pp.(fun () -> str"Calling loop-checking");
-  try let res = check m w in
-    debug Pp.(fun () -> str"Loop-checking terminated");
-    res
-  with Stack_overflow ->
-    CErrors.anomaly (Pp.str "check raised a stack overflow")
+(* let check m w = *)
+  (* debug Pp.(fun () -> str"Calling loop-checking"); *)
+  (* check m w *)
+  (* debug Pp.(fun () -> str"Loop-checking terminated"); *)
+  (* with Stack_overflow -> *)
+    (* CErrors.anomaly (Pp.str "check raised a stack overflow") *)
 
 let entry_value m e =
   match e with
