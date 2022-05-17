@@ -218,10 +218,10 @@ let check_for_zarith prefs =
     die "Zarith library installed but no development files found (try installing the -dev package)"
   | _   ->
     let zarith_version_int = generic_version_nums ~name:"Zarith" zarith_version in
-    if zarith_version_int >= [1;12;0] then
+    if zarith_version_int >= [1;11;0] then
       cprintf prefs "You have the Zarith library %s installed. Good!" zarith_version
     else
-      die ("Zarith version 1.12 is required, you have " ^ zarith_version)
+      die ("Zarith version 1.11 is required, you have " ^ zarith_version)
 
 (** * Documentation : do we have latex, hevea, ... *)
 
