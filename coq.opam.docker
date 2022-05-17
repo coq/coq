@@ -23,7 +23,7 @@ version: "dev"
 depends: [
   "ocaml"     { >= "4.09.0" }
   "ocamlfind" { build }
-  "zarith"    { >= "1.12" }
+  "zarith"    { >= "1.11" }
   "conf-findutils" {build}
 ]
 
