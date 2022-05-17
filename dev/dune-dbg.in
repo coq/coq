@@ -28,8 +28,13 @@ while [[ $# -gt 0 ]]; do
             exe=_build/default/topbin/coqtop_byte_bin.bc
             break
             ;;
+        coqdep)
+            shift
+            exe=_build/default/tools/coqdep/coqdep.bc
+            break
+            ;;
         *)
-            echo "usage: dune exec -- dev/dune-dbg [-emacs] {coqchk|coqide|coqc|coqtop} coqargs"
+            echo "usage: dune exec -- dev/dune-dbg [-emacs] {coqchk|coqide|coqc|coqtop|coqdep} coqargs"
             exit 1
             ;;
     esac
