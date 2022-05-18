@@ -617,9 +617,10 @@ Module Raw2SetsOn (O:OrderedType)(M:RawSets O) <: SetsOn O.
   (** Specification of [lt] *)
 #[global]
   Instance lt_strorder : StrictOrder lt.
-  Proof. constructor ; unfold lt; red.
-    unfold complement. red. intros. apply (irreflexivity H).
-    intros. transitivity y; auto.
+Proof.
+  constructor ; unfold lt; red.
+  - unfold complement. red. intros. apply (irreflexivity H).
+  - intros. transitivity y; auto.
   Qed.
 
 #[global]
@@ -757,84 +758,85 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
  Instance lt_strorder : StrictOrder lt.
  Proof.
   split.
-  (* irreflexive *)
-  intros s (x & _ & [(IN,Em)|(IN & y & IN' & LT & Be)]).
-  specialize (Em x IN); order.
-  specialize (Be x IN LT); order.
-  (* transitive *)
-  intros s1 s2 s3 (x & EQ & [(IN,Pre)|(IN,Lex)])
-                  (x' & EQ' & [(IN',Pre')|(IN',Lex')]).
-  (* 1) Pre / Pre --> Pre *)
-  assert (O.lt x x') by (specialize (Pre' x IN); auto).
-  exists x; split.
-  intros y Hy; rewrite <- (EQ' y); auto; order.
-  left; split; auto.
-  rewrite <- (EQ' x); auto.
-  (* 2) Pre / Lex *)
-  elim_compare x x'.
-  (* 2a) x=x' --> Pre *)
-  destruct Lex' as (y & INy & LT & Be).
-  exists y; split.
-  intros z Hz. split; intros INz.
-   specialize (Pre z INz). rewrite <- (EQ' z), <- (EQ z); auto; order.
-   specialize (Be z INz Hz). rewrite (EQ z), (EQ' z); auto; order.
-  left; split; auto.
-  intros z Hz. transitivity x; auto; order.
-  (* 2b) x<x' --> Pre *)
-  exists x; split.
-  intros z Hz. rewrite <- (EQ' z) by order; auto.
-  left; split; auto.
-  rewrite <- (EQ' x); auto.
-  (* 2c) x>x' --> Lex *)
-  exists x'; split.
-  intros z Hz. rewrite (EQ z) by order; auto.
-  right; split; auto.
-  rewrite (EQ x'); auto.
-  (* 3) Lex / Pre --> Lex *)
-  destruct Lex as (y & INy & LT & Be).
-  specialize (Pre' y INy).
-  exists x; split.
-  intros z Hz. rewrite <- (EQ' z) by order; auto.
-  right; split; auto.
-  exists y; repeat split; auto.
-  rewrite <- (EQ' y); auto.
-  intros z Hz LTz; apply Be; auto. rewrite (EQ' z); auto; order.
-  (* 4) Lex / Lex *)
-  elim_compare x x'.
-  (* 4a) x=x' --> impossible *)
-  destruct Lex as (y & INy & LT & Be).
-  setoid_replace x with x' in LT; auto.
-  specialize (Be x' IN' LT); order.
-  (* 4b) x<x' --> Lex *)
-  exists x; split.
-  intros z Hz. rewrite <- (EQ' z) by order; auto.
-  right; split; auto.
-  destruct Lex as (y & INy & LT & Be).
-  elim_compare y x'.
-   (* 4ba *)
-   destruct Lex' as (y' & Iny' & LT' & Be').
-   exists y'; repeat split; auto. order.
-   intros z Hz LTz. specialize (Be' z Hz LTz).
-    rewrite <- (EQ' z) in Hz by order.
-    apply Be; auto. order.
-   (* 4bb *)
-   exists y; repeat split; auto.
-   rewrite <- (EQ' y); auto.
-   intros z Hz LTz. apply Be; auto. rewrite (EQ' z); auto; order.
-   (* 4bc*)
-   assert (O.lt x' x) by auto. order.
-  (* 4c) x>x' --> Lex *)
-  exists x'; split.
-  intros z Hz. rewrite (EQ z) by order; auto.
-  right; split; auto.
-  rewrite (EQ x'); auto.
+  - (* irreflexive *)
+    intros s (x & _ & [(IN,Em)|(IN & y & IN' & LT & Be)]).
+    + specialize (Em x IN); order.
+    + specialize (Be x IN LT); order.
+  - (* transitive *)
+    intros s1 s2 s3 (x & EQ & [(IN,Pre)|(IN,Lex)])
+           (x' & EQ' & [(IN',Pre')|(IN',Lex')]).
+    + (* 1) Pre / Pre --> Pre *)
+    assert (O.lt x x') by (specialize (Pre' x IN); auto).
+    exists x; split.
+    * intros y Hy; rewrite <- (EQ' y); auto; order.
+    * left; split; auto.
+      rewrite <- (EQ' x); auto.
+    + (* 2) Pre / Lex *)
+      elim_compare x x'.
+      * (* 2a) x=x' --> Pre *)
+        destruct Lex' as (y & INy & LT & Be).
+        exists y; split.
+        -- intros z Hz. split; intros INz.
+           ++ specialize (Pre z INz). rewrite <- (EQ' z), <- (EQ z); auto; order.
+           ++ specialize (Be z INz Hz). rewrite (EQ z), (EQ' z); auto; order.
+        -- left; split; auto.
+           intros z Hz. transitivity x; auto; order.
+      * (* 2b) x<x' --> Pre *)
+        exists x; split.
+        -- intros z Hz. rewrite <- (EQ' z) by order; auto.
+        -- left; split; auto.
+           rewrite <- (EQ' x); auto.
+      * (* 2c) x>x' --> Lex *)
+        exists x'; split.
+        -- intros z Hz. rewrite (EQ z) by order; auto.
+        -- right; split; auto.
+           rewrite (EQ x'); auto.
+    + (* 3) Lex / Pre --> Lex *)
+      destruct Lex as (y & INy & LT & Be).
+      specialize (Pre' y INy).
+      exists x; split.
+      * intros z Hz. rewrite <- (EQ' z) by order; auto.
+      * right; split; auto.
+        exists y; repeat split; auto.
+        -- rewrite <- (EQ' y); auto.
+        -- intros z Hz LTz; apply Be; auto. rewrite (EQ' z); auto; order.
+    + (* 4) Lex / Lex *)
+      elim_compare x x'.
+      * (* 4a) x=x' --> impossible *)
+        destruct Lex as (y & INy & LT & Be).
+        setoid_replace x with x' in LT; auto.
+        specialize (Be x' IN' LT); order.
+      * (* 4b) x<x' --> Lex *)
+        exists x; split.
+        -- intros z Hz. rewrite <- (EQ' z) by order; auto.
+        -- right; split; auto.
+           destruct Lex as (y & INy & LT & Be).
+           elim_compare y x'.
+           ++ (* 4ba *)
+             destruct Lex' as (y' & Iny' & LT' & Be').
+             exists y'; repeat split; auto.
+             ** order.
+             ** intros z Hz LTz. specialize (Be' z Hz LTz).
+                rewrite <- (EQ' z) in Hz by order.
+                apply Be; auto. order.
+           ++ (* 4bb *)
+             exists y; repeat split; auto.
+             ** rewrite <- (EQ' y); auto.
+             ** intros z Hz LTz. apply Be; auto. rewrite (EQ' z); auto; order.
+           ++ (* 4bc*)
+             assert (O.lt x' x) by auto. order.
+      * (* 4c) x>x' --> Lex *)
+        exists x'; split.
+        -- intros z Hz. rewrite (EQ z) by order; auto.
+        -- right; split; auto.
+           rewrite (EQ x'); auto.
  Qed.
 
  Lemma lt_empty_r : forall s s', Empty s' -> ~ lt s s'.
  Proof.
   intros s s' Hs' (x & _ & [(IN,_)|(_ & y & IN & _)]).
-  elim (Hs' x IN).
-  elim (Hs' y IN).
+  - elim (Hs' x IN).
+  - elim (Hs' y IN).
  Qed.
 
  Definition Add x s s' := forall y, In y s' <-> O.eq x y \/ In y s.
@@ -844,13 +846,14 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
  Proof.
   intros x s1 s2 s2' Em Ab Ad.
   exists x; split.
-  intros y Hy; split; intros IN.
-  elim (Em y IN).
-  rewrite (Ad y) in IN; destruct IN as [EQ|IN]. order.
-  specialize (Ab y IN). order.
-  left; split.
-  rewrite (Ad x). now left.
-  intros y Hy. elim (Em y Hy).
+  - intros y Hy; split; intros IN.
+    + elim (Em y IN).
+    + rewrite (Ad y) in IN; destruct IN as [EQ|IN].
+      * order.
+      * specialize (Ab y IN). order.
+  - left; split.
+    + rewrite (Ad x). now left.
+    + intros y Hy. elim (Em y Hy).
  Qed.
 
  Lemma lt_add_lt : forall x1 x2 s1 s1' s2 s2',
@@ -859,15 +862,16 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
   Proof.
   intros x1 x2 s1 s1' s2 s2' Ab1 Ab2 Ad1 Ad2 LT.
   exists x1; split; [ | right; split]; auto.
-  intros y Hy. rewrite (Ad1 y), (Ad2 y).
-  split; intros [U|U]; try order.
-  specialize (Ab1 y U). order.
-  specialize (Ab2 y U). order.
-  rewrite (Ad1 x1); auto with *.
-  exists x2; repeat split; auto.
-  rewrite (Ad2 x2); now left.
-  intros y. rewrite (Ad2 y). intros [U|U]. order.
-  specialize (Ab2 y U). order.
+  - intros y Hy. rewrite (Ad1 y), (Ad2 y).
+    split; intros [U|U]; try order.
+    + specialize (Ab1 y U). order.
+    + specialize (Ab2 y U). order.
+  - rewrite (Ad1 x1); auto with *.
+  - exists x2; repeat split; auto.
+    + rewrite (Ad2 x2); now left.
+    + intros y. rewrite (Ad2 y). intros [U|U].
+      * order.
+      * specialize (Ab2 y U). order.
   Qed.
 
   Lemma lt_add_eq : forall x1 x2 s1 s1' s2 s2',
@@ -876,21 +880,21 @@ Module MakeSetOrdering (O:OrderedType)(Import M:IN O).
   Proof.
   intros x1 x2 s1 s1' s2 s2' Ab1 Ab2 Ad1 Ad2 Hx (x & EQ & Disj).
   assert (O.lt x1 x).
-   destruct Disj as [(IN,_)|(IN,_)]; auto. rewrite Hx; auto.
-  exists x; split.
-  intros z Hz. rewrite (Ad1 z), (Ad2 z).
-  split; intros [U|U]; try (left; order); right.
-  rewrite <- (EQ z); auto.
-  rewrite (EQ z); auto.
-  destruct Disj as [(IN,Em)|(IN & y & INy & LTy & Be)].
-  left; split; auto.
-  rewrite (Ad2 x); auto.
-  intros z. rewrite (Ad1 z); intros [U|U]; try specialize (Ab1 z U); auto; order.
-  right; split; auto.
-  rewrite (Ad1 x); auto.
-  exists y; repeat split; auto.
-  rewrite (Ad2 y); auto.
-  intros z. rewrite (Ad2 z). intros [U|U]; try specialize (Ab2 z U); auto; order.
+  - destruct Disj as [(IN,_)|(IN,_)]; auto. rewrite Hx; auto.
+  - exists x; split.
+    + intros z Hz. rewrite (Ad1 z), (Ad2 z).
+      split; intros [U|U]; try (left; order); right.
+      * rewrite <- (EQ z); auto.
+      * rewrite (EQ z); auto.
+    + destruct Disj as [(IN,Em)|(IN & y & INy & LTy & Be)].
+      * left; split; auto.
+        -- rewrite (Ad2 x); auto.
+        -- intros z. rewrite (Ad1 z); intros [U|U]; try specialize (Ab1 z U); auto; order.
+      * right; split; auto.
+        -- rewrite (Ad1 x); auto.
+        -- exists y; repeat split; auto.
+           ++ rewrite (Ad2 y); auto.
+           ++ intros z. rewrite (Ad2 z). intros [U|U]; try specialize (Ab2 z U); auto; order.
   Qed.
 
 End MakeSetOrdering.
@@ -924,24 +928,27 @@ Module MakeListOrdering (O:OrderedType).
  Instance lt_strorder : StrictOrder lt.
  Proof.
  split.
- (* irreflexive *)
- assert (forall s s', s=s' -> ~lt s s').
-  red; induction 2.
-  discriminate.
-  inversion H; subst.
-  apply (StrictOrder_Irreflexive y); auto.
-  inversion H; subst; auto.
- intros s Hs; exact (H s s (eq_refl s) Hs).
- (* transitive *)
- intros s s' s'' H; generalize s''; clear s''; elim H.
- intros x l s'' H'; inversion_clear H'; auto.
- intros x x' l l' E s'' H'; inversion_clear H'; auto.
- constructor 2. transitivity x'; auto.
- constructor 2. rewrite <- H0; auto.
- intros.
- inversion_clear H3.
- constructor 2. rewrite H0; auto.
- constructor 3; auto. transitivity y; auto. unfold lt in *; auto.
+ - (* irreflexive *)
+   assert (forall s s', s=s' -> ~lt s s'). {
+     red; induction 2.
+     - discriminate.
+     - inversion H; subst.
+       apply (StrictOrder_Irreflexive y); auto.
+     - inversion H; subst; auto.
+   }
+   intros s Hs; exact (H s s (eq_refl s) Hs).
+ - (* transitive *)
+       intros s s' s'' H; generalize s''; clear s''; elim H.
+       + intros x l s'' H'; inversion_clear H'; auto.
+       + intros x x' l l' E s'' H'; inversion_clear H'; auto.
+         * constructor 2. transitivity x'; auto.
+         * constructor 2. rewrite <- H0; auto.
+       + intros.
+         inversion_clear H3.
+         * constructor 2. rewrite H0; auto.
+         * constructor 3; auto.
+           -- transitivity y; auto.
+           -- unfold lt in *; auto.
  Qed.
 
 #[global]
@@ -952,9 +959,11 @@ Module MakeListOrdering (O:OrderedType).
  intros s1 s1' E1 s2 s2' E2 H.
  revert s1' E1 s2' E2.
  induction H; intros; inversion_clear E1; inversion_clear E2.
- constructor 1.
- constructor 2. MO.order.
- constructor 3. MO.order. unfold lt in *; auto.
+ - constructor 1.
+ - constructor 2. MO.order.
+ - constructor 3.
+   + MO.order.
+   + unfold lt in *; auto.
  Qed.
 
  Lemma eq_cons :
@@ -963,8 +972,10 @@ Module MakeListOrdering (O:OrderedType).
  Proof.
   unfold eq; intros l1 l2 x y Exy E12 z.
   split; inversion_clear 1.
-  left; MO.order. right; rewrite <- E12; auto.
-  left; MO.order. right; rewrite E12; auto.
+  - left; MO.order.
+  - right; rewrite <- E12; auto.
+  - left; MO.order.
+  - right; rewrite E12; auto.
  Qed.
  #[global]
  Hint Resolve eq_cons : core.

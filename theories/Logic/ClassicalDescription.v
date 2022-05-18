@@ -39,12 +39,12 @@ Theorem classical_definite_description :
 Proof.
 intros A P i.
 destruct (excluded_middle_informative (exists! x, P x)) as [Hex|HnonP].
-  apply constructive_definite_description with (P:= fun x => (exists! x : A, P x) -> P x).
+- apply constructive_definite_description with (P:= fun x => (exists! x : A, P x) -> P x).
   destruct Hex as (x,(Hx,Huni)).
   exists x; split.
-    intros _; exact Hx.
-    firstorder.
-exists i; tauto.
+  + intros _; exact Hx.
+  + firstorder.
+- exists i; tauto.
 Qed.
 
 (** Church's iota operator *)
@@ -64,10 +64,10 @@ Theorem dependent_unique_choice :
 Proof.
 intros A B R H.
 assert (Hexuni:forall x, exists! y, R x y).
-  intro x. apply H.
-exists (fun x => proj1_sig (constructive_definite_description (R x) (Hexuni x))).
-intro x.
-apply (proj2_sig (constructive_definite_description (R x) (Hexuni x))).
+- intro x. apply H.
+- exists (fun x => proj1_sig (constructive_definite_description (R x) (Hexuni x))).
+  intro x.
+  apply (proj2_sig (constructive_definite_description (R x) (Hexuni x))).
 Qed.
 
 Theorem unique_choice :

@@ -52,8 +52,8 @@ Module Update_OT (O:OrderedTypeOrig) <: OrderedType.
  Instance lt_strorder : StrictOrder lt.
  Proof.
   split.
-  intros x Hx. apply (O.lt_not_eq Hx); auto with *.
-  exact O.lt_trans.
+  - intros x Hx. apply (O.lt_not_eq Hx); auto with *.
+  - exact O.lt_trans.
  Qed.
 
 #[global]
@@ -61,14 +61,15 @@ Module Update_OT (O:OrderedTypeOrig) <: OrderedType.
  Proof.
   apply proper_sym_impl_iff_2; auto with *.
   intros x x' Hx y y' Hy H.
-  assert (H0 : lt x' y).
+  assert (H0 : lt x' y). {
    destruct (O.compare x' y) as [H'|H'|H']; auto.
-   elim (O.lt_not_eq H). transitivity x'; auto with *.
-   elim (O.lt_not_eq (O.lt_trans H H')); auto.
+   - elim (O.lt_not_eq H). transitivity x'; auto with *.
+   - elim (O.lt_not_eq (O.lt_trans H H')); auto.
+  }
   destruct (O.compare x' y') as [H'|H'|H']; auto.
-  elim (O.lt_not_eq H).
-   transitivity x'; auto with *. transitivity y'; auto with *.
-  elim (O.lt_not_eq (O.lt_trans H' H0)); auto with *.
+  - elim (O.lt_not_eq H).
+    transitivity x'; auto with *. transitivity y'; auto with *.
+  - elim (O.lt_not_eq (O.lt_trans H' H0)); auto with *.
  Qed.
 
  Definition compare x y :=
@@ -123,15 +124,15 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
  Instance eq_equiv : Equivalence eq.
  Proof.
   split; red.
-  (* refl *)
-  unfold eq; intros x.
-  assert (H:=compare_sym x x).
-  destruct (x ?= x); simpl in *; auto; discriminate.
-  (* sym *)
-  unfold eq; intros x y H.
-  rewrite compare_sym, H; simpl; auto.
-  (* trans *)
-  apply compare_trans.
+  - (* refl *)
+    unfold eq; intros x.
+    assert (H:=compare_sym x x).
+    destruct (x ?= x); simpl in *; auto; discriminate.
+  - (* sym *)
+    unfold eq; intros x y H.
+    rewrite compare_sym, H; simpl; auto.
+  - (* trans *)
+    apply compare_trans.
  Qed.
 
 #[global]
@@ -147,20 +148,20 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
  Proof.
   unfold lt, eq; intros x y z Hxy Hyz.
   destruct (compare x z) eqn:Hxz; auto.
-  rewrite compare_sym, CompOpp_iff in Hyz. simpl in Hyz.
-  rewrite (compare_trans Hxz Hyz) in Hxy; discriminate.
-  rewrite compare_sym, CompOpp_iff in Hxy. simpl in Hxy.
-  rewrite (compare_trans Hxy Hxz) in Hyz; discriminate.
+  - rewrite compare_sym, CompOpp_iff in Hyz. simpl in Hyz.
+    rewrite (compare_trans Hxz Hyz) in Hxy; discriminate.
+  - rewrite compare_sym, CompOpp_iff in Hxy. simpl in Hxy.
+    rewrite (compare_trans Hxy Hxz) in Hyz; discriminate.
  Qed.
 
  Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
  Proof.
   unfold lt, eq; intros x y z Hxy Hyz.
   destruct (compare x z) eqn:Hxz; auto.
-  rewrite compare_sym, CompOpp_iff in Hxy. simpl in Hxy.
-  rewrite (compare_trans Hxy Hxz) in Hyz; discriminate.
-  rewrite compare_sym, CompOpp_iff in Hyz. simpl in Hyz.
-  rewrite (compare_trans Hxz Hyz) in Hxy; discriminate.
+  - rewrite compare_sym, CompOpp_iff in Hxy. simpl in Hxy.
+    rewrite (compare_trans Hxy Hxz) in Hyz; discriminate.
+  - rewrite compare_sym, CompOpp_iff in Hyz. simpl in Hyz.
+    rewrite (compare_trans Hxz Hyz) in Hxy; discriminate.
  Qed.
 
 #[global]
@@ -204,12 +205,12 @@ Module OT_to_Alt (Import O:OrderedType) <: OrderedTypeAlt.
  intros x y; unfold compare.
  destruct (compare_spec x y) as [U|U|U];
   destruct (compare_spec y x) as [V|V|V]; auto.
- rewrite U in V. elim (StrictOrder_Irreflexive y); auto.
- rewrite U in V. elim (StrictOrder_Irreflexive y); auto.
- rewrite V in U. elim (StrictOrder_Irreflexive x); auto.
- rewrite V in U. elim (StrictOrder_Irreflexive x); auto.
- rewrite V in U. elim (StrictOrder_Irreflexive x); auto.
- rewrite V in U. elim (StrictOrder_Irreflexive y); auto.
+ - rewrite U in V. elim (StrictOrder_Irreflexive y); auto.
+ - rewrite U in V. elim (StrictOrder_Irreflexive y); auto.
+ - rewrite V in U. elim (StrictOrder_Irreflexive x); auto.
+ - rewrite V in U. elim (StrictOrder_Irreflexive x); auto.
+ - rewrite V in U. elim (StrictOrder_Irreflexive x); auto.
+ - rewrite V in U. elim (StrictOrder_Irreflexive y); auto.
  Qed.
 
  Lemma compare_Eq : forall x y, compare x y = Eq <-> eq x y.
@@ -217,8 +218,8 @@ Module OT_to_Alt (Import O:OrderedType) <: OrderedTypeAlt.
  unfold compare.
  intros x y; destruct (compare_spec x y); intuition;
   try discriminate.
- rewrite H0 in H. elim (StrictOrder_Irreflexive y); auto.
- rewrite H0 in H. elim (StrictOrder_Irreflexive y); auto.
+ - rewrite H0 in H. elim (StrictOrder_Irreflexive y); auto.
+ - rewrite H0 in H. elim (StrictOrder_Irreflexive y); auto.
  Qed.
 
  Lemma compare_Lt : forall x y, compare x y = Lt <-> lt x y.
@@ -226,8 +227,8 @@ Module OT_to_Alt (Import O:OrderedType) <: OrderedTypeAlt.
  unfold compare.
  intros x y; destruct (compare_spec x y); intuition;
   try discriminate.
- rewrite H in H0. elim (StrictOrder_Irreflexive y); auto.
- rewrite H in H0. elim (StrictOrder_Irreflexive x); auto.
+ - rewrite H in H0. elim (StrictOrder_Irreflexive y); auto.
+ - rewrite H in H0. elim (StrictOrder_Irreflexive x); auto.
  Qed.
 
  Lemma compare_Gt : forall x y, compare x y = Gt <-> lt y x.

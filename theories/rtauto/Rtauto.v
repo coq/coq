@@ -66,13 +66,13 @@ end.
 
 Theorem form_eq_refl: forall p q, form_eq p q = true -> p = q.
 induction p;destruct q;simpl;clean.
-intro h;generalize (pos_eq_refl _ _ h);congruence.
-case_eq (form_eq p1 q1);clean.
-intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
-case_eq (form_eq p1 q1);clean.
-intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
-case_eq (form_eq p1 q1);clean.
-intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
+- intro h;generalize (pos_eq_refl _ _ h);congruence.
+- case_eq (form_eq p1 q1);clean.
+  intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
+- case_eq (form_eq p1 q1);clean.
+  intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
+- case_eq (form_eq p1 q1);clean.
+  intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
 Qed.
 
 Arguments form_eq_refl [p q] _.
@@ -148,10 +148,10 @@ Theorem project_In : forall hyps F g,
 In g hyps F ->
 interp_ctx hyps F [[g]].
 induction F;simpl.
-contradiction.
-intros g H;destruct H.
-subst;apply compose0;simpl;trivial.
-apply compose1 with [[g]];auto.
+- contradiction.
+- intros g H;destruct H.
+  + subst;apply compose0;simpl;trivial.
+  + apply compose1 with [[g]];auto.
 Qed.
 
 Theorem project : forall hyps F p g,
@@ -368,9 +368,9 @@ Qed.
 
 Theorem Reflect: forall gl prf, if check_proof empty gl prf then [[gl]] else True.
 intros gl prf;case_eq (check_proof empty gl prf);intro check_prf.
-change (interp_ctx empty F_empty [[gl]]) ;
-apply interp_proof with prf;assumption.
-trivial.
+- change (interp_ctx empty F_empty [[gl]]) ;
+    apply interp_proof with prf;assumption.
+- trivial.
 Qed.
 
 End with_env.

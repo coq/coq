@@ -89,9 +89,10 @@ Instance Acc_pt_morphism {A:Type}(E R : A->A->Prop)
  `(Equivalence _ E) `(Proper _ (E==>E==>iff) R) :
  Proper (E==>iff) (Acc R).
 Proof.
- apply proper_sym_impl_iff. auto with relations.
- intros x y EQ WF. apply Acc_intro; intros z Hz.
-rewrite <- EQ in Hz. now apply Acc_inv with x.
+  apply proper_sym_impl_iff.
+  - auto with relations.
+  - intros x y EQ WF. apply Acc_intro; intros z Hz.
+    rewrite <- EQ in Hz. now apply Acc_inv with x.
 Qed.
 
 (** Equivalent relations have the same accessible points *)

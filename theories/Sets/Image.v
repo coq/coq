@@ -55,15 +55,15 @@ Section Image.
     intros X x f.
     apply Extensionality_Ensembles.
     split; red; intros x0 H'.
-    elim H'; intros.
-    rewrite H0.
-    elim Add_inv with U X x x1; auto using Im_def with sets.
-    destruct 1; auto using Im_def with sets.
-    elim Add_inv with V (Im X f) (f x) x0.
-    destruct 1 as [x0 H y H0].
-    rewrite H0; auto using Im_def with sets.
-    destruct 1; auto using Im_def with sets.
-    trivial.
+    - elim H'; intros.
+      rewrite H0.
+      elim Add_inv with U X x x1; auto using Im_def with sets.
+      destruct 1; auto using Im_def with sets.
+    - elim Add_inv with V (Im X f) (f x) x0.
+      + destruct 1 as [x0 H y H0].
+        rewrite H0; auto using Im_def with sets.
+      + destruct 1; auto using Im_def with sets.
+      + trivial.
   Qed.
 
   Lemma image_empty : forall f:U -> V, Im (Empty_set U) f = Empty_set V.
@@ -80,10 +80,10 @@ Section Image.
     forall (X:Ensemble U) (f:U -> V), Finite _ X -> Finite _ (Im X f).
   Proof.
     intros X f H'; elim H'.
-    rewrite (image_empty f); auto with sets.
-    intros A H'0 H'1 x H'2; clear H' X.
-    rewrite (Im_add A x f); auto with sets.
-    apply Add_preserves_Finite; auto with sets.
+    - rewrite (image_empty f); auto with sets.
+    - intros A H'0 H'1 x H'2; clear H' X.
+      rewrite (Im_add A x f); auto with sets.
+      apply Add_preserves_Finite; auto with sets.
   Qed.
 
   Lemma Im_inv :
@@ -138,22 +138,22 @@ Section Image.
       cardinal _ A n -> forall n':nat, cardinal _ (Im A f) n' -> n' = n.
   Proof.
     induction 2 as [| A n H'0 H'1 x H'2]; auto with sets.
-    rewrite (image_empty f).
-    intros n' CE.
-    apply cardinal_unicity with V (Empty_set V); auto with sets.
-    intro n'.
-    rewrite (Im_add A x f).
-    intro H'3.
-    elim cardinal_Im_intro with A f n; trivial with sets.
-    intros i CI.
-    lapply (H'1 i); trivial with sets.
-    cut (~ In _ (Im A f) (f x)).
-    intros H0 H1.
-    apply cardinal_unicity with V (Add _ (Im A f) (f x)); trivial with sets.
-    apply card_add; auto with sets.
-    rewrite <- H1; trivial with sets.
-    red; intro; apply H'2.
-    apply In_Image_elim with f; trivial with sets.
+    - rewrite (image_empty f).
+      intros n' CE.
+      apply cardinal_unicity with V (Empty_set V); auto with sets.
+    - intro n'.
+      rewrite (Im_add A x f).
+      intro H'3.
+      elim cardinal_Im_intro with A f n; trivial with sets.
+      intros i CI.
+      lapply (H'1 i); trivial with sets.
+      cut (~ In _ (Im A f) (f x)).
+      + intros H0 H1.
+        apply cardinal_unicity with V (Add _ (Im A f) (f x)); trivial with sets.
+        apply card_add; auto with sets.
+        rewrite <- H1; trivial with sets.
+      + red; intro; apply H'2.
+        apply In_Image_elim with f; trivial with sets.
   Qed.
 
   Lemma cardinal_decreases :
@@ -161,17 +161,17 @@ Section Image.
       cardinal U A n -> forall n':nat, cardinal V (Im A f) n' -> n' <= n.
   Proof.
     induction 1 as [| A n H'0 H'1 x H'2]; auto with sets.
-    rewrite (image_empty f); intros.
-    cut (n' = 0).
-    intro E; rewrite E; trivial with sets.
-    apply cardinal_unicity with V (Empty_set V); auto with sets.
-    intro n'.
-    rewrite (Im_add A x f).
-    elim cardinal_Im_intro with A f n; trivial with sets.
-    intros p C H'3.
-    apply Nat.le_trans with (S p).
-    apply card_Add_gen with V (Im A f) (f x); trivial with sets.
-    apply -> Nat.succ_le_mono; auto with sets.
+    - rewrite (image_empty f); intros.
+      cut (n' = 0).
+      + intro E; rewrite E; trivial with sets.
+      + apply cardinal_unicity with V (Empty_set V); auto with sets.
+    - intro n'.
+      rewrite (Im_add A x f).
+      elim cardinal_Im_intro with A f n; trivial with sets.
+      intros p C H'3.
+      apply Nat.le_trans with (S p).
+      + apply card_Add_gen with V (Im A f) (f x); trivial with sets.
+      + apply -> Nat.succ_le_mono; auto with sets.
   Qed.
 
   Theorem Pigeonhole :
@@ -181,9 +181,9 @@ Section Image.
   Proof.
     unfold not; intros A f n CAn n' CIfn' ltn'n I.
     cut (n' = n).
-    intro E; generalize ltn'n; rewrite E; exact (Nat.lt_irrefl n).
-    apply injective_preserves_cardinal with (A := A) (f := f) (n := n);
-      trivial with sets.
+    - intro E; generalize ltn'n; rewrite E; exact (Nat.lt_irrefl n).
+    - apply injective_preserves_cardinal with (A := A) (f := f) (n := n);
+        trivial with sets.
   Qed.
 
   Lemma Pigeonhole_principle :

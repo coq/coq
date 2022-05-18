@@ -90,7 +90,11 @@ Qed.
 
 Lemma one_mod_wB : 1 mod wB = 1.
 Proof.
-rewrite Zmod_small. reflexivity. split. auto with zarith. apply gt_wB_1.
+  rewrite Zmod_small.
+  - reflexivity.
+  - split.
+    + auto with zarith.
+    + apply gt_wB_1.
 Qed.
 
 Lemma succ_mod_wB : forall n : Z, (n + 1) mod wB = ((n mod wB) + 1) mod wB.
@@ -105,7 +109,9 @@ Qed.
 
 Lemma NZ_to_Z_mod : forall n, [| n |] mod wB = [| n |].
 Proof.
-intro n; rewrite Zmod_small. reflexivity. apply ZnZ.spec_to_Z.
+  intro n; rewrite Zmod_small.
+  - reflexivity.
+  - apply ZnZ.spec_to_Z.
 Qed.
 
 Theorem pred_succ : forall n, P (S n) == n.
@@ -144,10 +150,11 @@ Lemma BS : forall n : Z, 0 <= n -> n < wB - 1 -> B n -> B (n + 1).
 Proof.
 intros n H1 H2 H3.
 unfold B in *. apply AS in H3.
-setoid_replace (ZnZ.of_Z (n + 1)) with (S (ZnZ.of_Z n)). assumption.
-zify.
-rewrite 2 ZnZ.of_Z_correct. 2-3: lia.
-symmetry; apply Zmod_small; lia.
+setoid_replace (ZnZ.of_Z (n + 1)) with (S (ZnZ.of_Z n)).
+- assumption.
+- zify.
+  rewrite 2 ZnZ.of_Z_correct. 2-3: lia.
+  symmetry; apply Zmod_small; lia.
 Qed.
 
 Theorem Zbounded_induction :
@@ -159,30 +166,36 @@ Proof.
 intros Q b Q0 QS.
 set (Q' := fun n => (n < b /\ Q n) \/ (b <= n)).
 assert (H : forall n, 0 <= n -> Q' n).
-apply natlike_rec2; unfold Q'.
-destruct (Z.le_gt_cases b 0) as [H | H]. now right. left; now split.
-intros n H IH. destruct IH as [[IH1 IH2] | IH].
-destruct (Z.le_gt_cases (b - 1) n) as [H1 | H1].
-right; lia.
-left. split; [ lia | now apply (QS n)].
-right; auto with zarith.
-unfold Q' in *; intros n H1 H2. destruct (H n H1) as [[H3 H4] | H3].
-assumption. now apply Z.le_ngt in H3.
+- apply natlike_rec2; unfold Q'.
+  + destruct (Z.le_gt_cases b 0) as [H | H].
+    * now right.
+    * left; now split.
+  + intros n H IH. destruct IH as [[IH1 IH2] | IH].
+    * destruct (Z.le_gt_cases (b - 1) n) as [H1 | H1].
+      -- right; lia.
+      -- left. split; [ lia | now apply (QS n)].
+    * right; auto with zarith.
+- unfold Q' in *; intros n H1 H2. destruct (H n H1) as [[H3 H4] | H3].
+  + assumption.
+  + now apply Z.le_ngt in H3.
 Qed.
 
 Lemma B_holds : forall n : Z, 0 <= n < wB -> B n.
 Proof.
 intros n [H1 H2].
 apply Zbounded_induction with wB.
-apply B0. apply BS. assumption. assumption.
+- apply B0.
+- apply BS.
+- assumption.
+- assumption.
 Qed.
 
 Theorem bi_induction : forall n, A n.
 Proof.
 intro n. setoid_replace n with (ZnZ.of_Z (ZnZ.to_Z n)).
-apply B_holds. apply ZnZ.spec_to_Z.
-red. symmetry. apply ZnZ.of_Z_correct.
-apply ZnZ.spec_to_Z.
+- apply B_holds. apply ZnZ.spec_to_Z.
+- red. symmetry. apply ZnZ.of_Z_correct.
+  apply ZnZ.spec_to_Z.
 Qed.
 
 End Induction.

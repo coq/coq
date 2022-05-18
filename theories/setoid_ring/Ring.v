@@ -17,15 +17,15 @@ Require Export Ring_tac.
 Lemma BoolTheory :
   ring_theory false true xorb andb xorb (fun b:bool => b) (eq(A:=bool)).
 split; simpl.
-intros x; destruct x; reflexivity.
-intros x y; destruct x; destruct y; reflexivity.
-intros x y z; destruct x; destruct y; destruct z; reflexivity.
-reflexivity.
-intros x y; destruct x; destruct y; reflexivity.
-intros x y; destruct x; destruct y; reflexivity.
-intros x y z; destruct x; destruct y; destruct z; reflexivity.
-reflexivity.
-intros x; destruct x; reflexivity.
+- intros x; destruct x; reflexivity.
+- intros x y; destruct x; destruct y; reflexivity.
+- intros x y z; destruct x; destruct y; destruct z; reflexivity.
+- reflexivity.
+- intros x y; destruct x; destruct y; reflexivity.
+- intros x y; destruct x; destruct y; reflexivity.
+- intros x y z; destruct x; destruct y; destruct z; reflexivity.
+- reflexivity.
+- intros x; destruct x; reflexivity.
 Qed.
 
 Definition bool_eq (b1 b2:bool) :=

@@ -43,8 +43,8 @@ Include MinMaxProperties Q_as_OT QHasMinMax.
 Lemma plus_max_distr_l : forall n m p, Qmax (p + n) (p + m) == p + Qmax n m.
 Proof.
  intros. apply max_monotone.
- intros x x' Hx; rewrite Hx; auto with qarith.
- intros x x' Hx. apply Qplus_le_compat; q_order.
+ - intros x x' Hx; rewrite Hx; auto with qarith.
+ - intros x x' Hx. apply Qplus_le_compat; q_order.
 Qed.
 
 Lemma plus_max_distr_r : forall n m p, Qmax (n + p) (m + p) == Qmax n m + p.
@@ -56,8 +56,8 @@ Qed.
 Lemma plus_min_distr_l : forall n m p, Qmin (p + n) (p + m) == p + Qmin n m.
 Proof.
  intros. apply min_monotone.
- intros x x' Hx; rewrite Hx; auto with qarith.
- intros x x' Hx. apply Qplus_le_compat; q_order.
+ - intros x x' Hx; rewrite Hx; auto with qarith.
+ - intros x x' Hx. apply Qplus_le_compat; q_order.
 Qed.
 
 Lemma plus_min_distr_r : forall n m p, Qmin (n + p) (m + p) == Qmin n m + p.

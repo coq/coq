@@ -91,10 +91,11 @@ Section ZModulo.
   generalize (Z_div_mod_POS wB wB_pos p).
   destruct (Z.pos_div_eucl p wB); simpl; destruct 1.
   unfold to_Z; rewrite Zmod_small; auto.
-  assert (0 <= z).
+  assert (0 <= z). {
    replace z with (Zpos p / wB) by
     (symmetry; apply Zdiv_unique with z0; auto).
    apply Z_div_pos; auto with zarith.
+  }
   replace (Z.of_N (N_of_Z z)) with z by
     (destruct z; simpl; auto; elim H1; auto).
   rewrite Z.mul_comm; auto.
@@ -133,8 +134,8 @@ Section ZModulo.
   unfold to_Z, minus_one.
   apply Zmod_small; split. 2: lia.
   unfold wB, base.
-  cut (1 <= 2 ^ Zpos digits). lia.
-  apply Z.le_trans with (Zpos digits). lia.
+  cut (1 <= 2 ^ Zpos digits). { lia. }
+  apply Z.le_trans with (Zpos digits). { lia. }
   apply Zpower2_le_lin; auto with zarith.
  Qed.
 
@@ -161,11 +162,11 @@ Section ZModulo.
  Proof.
  intros; unfold opp_c, to_Z; auto.
  case_eq (eq0 x); intros; unfold interp_carry.
- fold [|x|]; rewrite (spec_eq0 x H); auto.
- assert (x mod wB <> 0).
-  unfold eq0, to_Z in H.
-  intro H0; rewrite H0 in H; discriminate.
- rewrite Z_mod_nz_opp_full; lia.
+ - fold [|x|]; rewrite (spec_eq0 x H); auto.
+ - assert (x mod wB <> 0).
+   { unfold eq0, to_Z in H.
+     intro H0; rewrite H0 in H; discriminate. }
+   rewrite Z_mod_nz_opp_full; lia.
  Qed.
 
  Lemma spec_opp : forall x, [|opp x|] = (-[|x|]) mod wB.
@@ -219,47 +220,49 @@ Section ZModulo.
  intros; unfold succ_c, to_Z, Z.succ.
  case_eq (eq0 (x+1)); intros; unfold interp_carry.
 
- rewrite Z.mul_1_l.
- replace (wB + 0 mod wB) with wB by auto with zarith.
- symmetry. rewrite Z.add_move_r.
- assert ((x+1) mod wB = 0) by (apply spec_eq0; auto).
- replace (wB-1) with ((wB-1) mod wB) by
-  (apply Zmod_small; generalize wB_pos; lia).
- rewrite <- Zminus_mod_idemp_l; rewrite Z_mod_same; simpl; auto.
- apply Zmod_equal; auto.
+ - rewrite Z.mul_1_l.
+   replace (wB + 0 mod wB) with wB by auto with zarith.
+   symmetry. rewrite Z.add_move_r.
+   assert ((x+1) mod wB = 0) by (apply spec_eq0; auto).
+   replace (wB-1) with ((wB-1) mod wB) by
+     (apply Zmod_small; generalize wB_pos; lia).
+   rewrite <- Zminus_mod_idemp_l; rewrite Z_mod_same; simpl; auto.
+   apply Zmod_equal; auto.
 
- assert ((x+1) mod wB <> 0).
-  unfold eq0, to_Z in *; now destruct ((x+1) mod wB).
- assert (x mod wB + 1 <> wB).
-  contradict H0.
-  rewrite Z.add_move_r in H0; simpl in H0.
-  rewrite <- Zplus_mod_idemp_l; rewrite H0.
-  replace (wB-1+1) with wB by lia; apply Z_mod_same; auto.
- rewrite <- Zplus_mod_idemp_l.
- apply Zmod_small.
- generalize (Z_mod_lt x wB wB_pos); lia.
+ - assert ((x+1) mod wB <> 0). {
+     unfold eq0, to_Z in *; now destruct ((x+1) mod wB).
+   }
+   assert (x mod wB + 1 <> wB). {
+     contradict H0.
+     rewrite Z.add_move_r in H0; simpl in H0.
+     rewrite <- Zplus_mod_idemp_l; rewrite H0.
+     replace (wB-1+1) with wB by lia; apply Z_mod_same; auto.
+   }
+   rewrite <- Zplus_mod_idemp_l.
+   apply Zmod_small.
+   generalize (Z_mod_lt x wB wB_pos); lia.
  Qed.
 
  Lemma spec_add_c : forall x y, [+|add_c x y|] = [|x|] + [|y|].
  Proof.
  intros; unfold add_c, to_Z, interp_carry.
  destruct Z_lt_le_dec.
- apply Zmod_small;
-  generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
- rewrite Z.mul_1_l, Z.add_comm, Z.add_move_r.
- apply Zmod_small;
-  generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
+ - apply Zmod_small;
+     generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
+ - rewrite Z.mul_1_l, Z.add_comm, Z.add_move_r.
+   apply Zmod_small;
+     generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
  Qed.
 
  Lemma spec_add_carry_c : forall x y, [+|add_carry_c x y|] = [|x|] + [|y|] + 1.
  Proof.
  intros; unfold add_carry_c, to_Z, interp_carry.
  destruct Z_lt_le_dec.
- apply Zmod_small;
-  generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
- rewrite Z.mul_1_l, Z.add_comm, Z.add_move_r.
- apply Zmod_small;
-  generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
+ - apply Zmod_small;
+     generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
+ - rewrite Z.mul_1_l, Z.add_comm, Z.add_move_r.
+   apply Zmod_small;
+     generalize (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
  Qed.
 
  Lemma spec_succ : forall x, [|succ x|] = ([|x|] + 1) mod wB.
@@ -301,43 +304,44 @@ Section ZModulo.
  Proof.
  intros; unfold pred_c, to_Z, interp_carry.
  case_eq (eq0 x); intros.
- fold [|x|]; rewrite spec_eq0; auto.
- replace ((wB-1) mod wB) with (wB-1). lia.
- symmetry; apply Zmod_small; generalize wB_pos; lia.
+ - fold [|x|]; rewrite spec_eq0; auto.
+   replace ((wB-1) mod wB) with (wB-1).
+   + lia.
+   + symmetry; apply Zmod_small; generalize wB_pos; lia.
 
- assert (x mod wB <> 0).
-  unfold eq0, to_Z in *; now destruct (x mod wB).
- rewrite <- Zminus_mod_idemp_l.
- apply Zmod_small.
- generalize (Z_mod_lt x wB wB_pos); lia.
+ - assert (x mod wB <> 0).
+   + unfold eq0, to_Z in *; now destruct (x mod wB).
+   + rewrite <- Zminus_mod_idemp_l.
+     apply Zmod_small.
+     generalize (Z_mod_lt x wB wB_pos); lia.
  Qed.
 
  Lemma spec_sub_c : forall x y, [-|sub_c x y|] = [|x|] - [|y|].
  Proof.
  intros; unfold sub_c, to_Z, interp_carry.
  destruct Z_lt_le_dec.
- replace ((wB + (x mod wB - y mod wB)) mod wB) with
-   (wB + (x mod wB - y mod wB)).
- lia.
- symmetry; apply Zmod_small.
- generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
+ - replace ((wB + (x mod wB - y mod wB)) mod wB) with
+     (wB + (x mod wB - y mod wB)).
+   + lia.
+   + symmetry; apply Zmod_small.
+     generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
 
- apply Zmod_small.
- generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
+ - apply Zmod_small.
+   generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
  Qed.
 
  Lemma spec_sub_carry_c : forall x y, [-|sub_carry_c x y|] = [|x|] - [|y|] - 1.
  Proof.
  intros; unfold sub_carry_c, to_Z, interp_carry.
  destruct Z_lt_le_dec.
- replace ((wB + (x mod wB - y mod wB - 1)) mod wB) with
-   (wB + (x mod wB - y mod wB -1)).
- lia.
- symmetry; apply Zmod_small.
- generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
+ - replace ((wB + (x mod wB - y mod wB - 1)) mod wB) with
+     (wB + (x mod wB - y mod wB -1)).
+   + lia.
+   + symmetry; apply Zmod_small.
+     generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
 
- apply Zmod_small.
- generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
+ - apply Zmod_small.
+   generalize wB_pos (Z_mod_lt x wB wB_pos) (Z_mod_lt y wB wB_pos); lia.
  Qed.
 
  Lemma spec_pred : forall x, [|pred x|] = ([|x|] - 1) mod wB.
@@ -373,25 +377,26 @@ Section ZModulo.
  Proof.
  intros; unfold mul_c, zn2z_to_Z.
  assert (Z.div_eucl ([|x|]*[|y|]) wB = (([|x|]*[|y|])/wB,([|x|]*[|y|]) mod wB)).
-  unfold Z.modulo, Z.div; destruct Z.div_eucl; auto.
- generalize (Z_div_mod ([|x|]*[|y|]) wB wB_pos); destruct Z.div_eucl as (h,l).
- destruct 1; injection H as [= ? ?].
- rewrite H0.
- assert ([|l|] = l).
-  apply Zmod_small; auto.
- assert ([|h|] = h).
-  apply Zmod_small.
-  subst h.
-  split.
-  apply Z_div_pos; auto with zarith.
-  apply Zdiv_lt_upper_bound. lia.
-  apply Z.mul_lt_mono_nonneg; auto with zarith.
- clear H H0 H1 H2.
- case_eq (eq0 h); simpl; intros.
- case_eq (eq0 l); simpl; intros.
- rewrite <- H3, <- H4, (spec_eq0 h), (spec_eq0 l); auto. lia.
- rewrite H3, H4; auto with zarith.
- rewrite H3, H4; auto with zarith.
+ - unfold Z.modulo, Z.div; destruct Z.div_eucl; auto.
+ - generalize (Z_div_mod ([|x|]*[|y|]) wB wB_pos); destruct Z.div_eucl as (h,l).
+   destruct 1; injection H as [= ? ?].
+   rewrite H0.
+   assert ([|l|] = l).
+   + apply Zmod_small; auto.
+   + assert ([|h|] = h).
+     * apply Zmod_small.
+       subst h.
+       split.
+       -- apply Z_div_pos; auto with zarith.
+       -- apply Zdiv_lt_upper_bound.
+          ++ lia.
+          ++ apply Z.mul_lt_mono_nonneg; auto with zarith.
+     * clear H H0 H1 H2.
+       case_eq (eq0 h); simpl; intros.
+       -- case_eq (eq0 l); simpl; intros.
+          ++ rewrite <- H3, <- H4, (spec_eq0 h), (spec_eq0 l); auto. lia.
+          ++ rewrite H3, H4; auto with zarith.
+       -- rewrite H3, H4; auto with zarith.
  Qed.
 
  Lemma spec_mul : forall x y, [|mul x y|] = ([|x|] * [|y|]) mod wB.
@@ -414,22 +419,24 @@ Section ZModulo.
  intros; unfold div.
  assert ([|b|]>0) by lia.
  assert (Z.div_eucl [|a|] [|b|] = ([|a|]/[|b|], [|a|] mod [|b|])).
-  unfold Z.modulo, Z.div; destruct Z.div_eucl; auto.
+ { unfold Z.modulo, Z.div; destruct Z.div_eucl; auto. }
  generalize (Z_div_mod [|a|] [|b|] H0).
  destruct Z.div_eucl as (q,r); destruct 1; intros.
  injection H1 as [= ? ?].
- assert ([|r|]=r).
-  apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|];
-    lia.
- assert ([|q|]=q).
+ assert ([|r|]=r). {
+   apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|];
+   lia.
+ }
+ assert ([|q|]=q). {
   apply Zmod_small.
   subst q.
   split.
-  apply Z_div_pos; auto with zarith.
-  apply Zdiv_lt_upper_bound; auto with zarith.
-  apply Z.lt_le_trans with (wB*1).
-  rewrite Z.mul_1_r; auto with zarith.
-  apply Z.mul_le_mono_nonneg; generalize wB_pos; lia.
+  - apply Z_div_pos; auto with zarith.
+  - apply Zdiv_lt_upper_bound; auto with zarith.
+    apply Z.lt_le_trans with (wB*1).
+    + rewrite Z.mul_1_r; auto with zarith.
+    + apply Z.mul_le_mono_nonneg; generalize wB_pos; lia.
+ }
  rewrite H5, H6; rewrite Z.mul_comm; auto with zarith.
  Qed.
 
@@ -473,19 +480,19 @@ Section ZModulo.
  destruct H2 as (q,H2); destruct H3 as (q',H3); clear H4.
  assert (H4:=Z.gcd_nonneg a b).
  destruct (Z.eq_dec (Z.gcd a b) 0) as [->|Hneq].
- generalize (Zmax_spec a b); lia.
- assert (0 <= q).
-  apply Z.mul_le_mono_pos_r with (Z.gcd a b); lia.
- destruct (Z.eq_dec q 0).
+ - generalize (Zmax_spec a b); lia.
+ - assert (0 <= q).
+   { apply Z.mul_le_mono_pos_r with (Z.gcd a b); lia. }
+   destruct (Z.eq_dec q 0).
 
- subst q; simpl in *; subst a; simpl; auto.
- generalize (Zmax_spec 0 b) (Zabs_spec b); lia.
+   + subst q; simpl in *; subst a; simpl; auto.
+     generalize (Zmax_spec 0 b) (Zabs_spec b); lia.
 
- apply Z.le_trans with a.
- rewrite H2 at 2.
- rewrite <- (Z.mul_1_l (Z.gcd a b)) at 1.
- apply Z.mul_le_mono_nonneg; lia.
- generalize (Zmax_spec a b); lia.
+   + apply Z.le_trans with a.
+     * rewrite H2 at 2.
+       rewrite <- (Z.mul_1_l (Z.gcd a b)) at 1.
+       apply Z.mul_le_mono_nonneg; lia.
+     * generalize (Zmax_spec a b); lia.
  Qed.
 
  Lemma spec_gcd : forall a b, Zis_gcd [|a|] [|b|] [|gcd a b|].
@@ -494,13 +501,13 @@ Section ZModulo.
  generalize (Z_mod_lt a wB wB_pos)(Z_mod_lt b wB wB_pos); intros.
  fold [|a|] in *; fold [|b|] in *.
  replace ([|Z.gcd [|a|] [|b|]|]) with (Z.gcd [|a|] [|b|]).
- apply Zgcd_is_gcd.
- symmetry; apply Zmod_small.
- split.
- apply Z.gcd_nonneg.
- apply Z.le_lt_trans with (Z.max [|a|] [|b|]).
- apply Zgcd_bound; auto with zarith.
- generalize (Zmax_spec [|a|] [|b|]); lia.
+ - apply Zgcd_is_gcd.
+ - symmetry; apply Zmod_small.
+   split.
+   + apply Z.gcd_nonneg.
+   + apply Z.le_lt_trans with (Z.max [|a|] [|b|]).
+     * apply Zgcd_bound; auto with zarith.
+     * generalize (Zmax_spec [|a|] [|b|]); lia.
  Qed.
 
  Lemma spec_gcd_gt : forall a b, [|a|] > [|b|] ->
@@ -525,23 +532,26 @@ Section ZModulo.
  assert ([|b|]>0) by lia.
  remember ([|a1|]*wB+[|a2|]) as a.
  assert (Z.div_eucl a [|b|] = (a/[|b|], a mod [|b|])).
-  unfold Z.modulo, Z.div; destruct Z.div_eucl; auto.
+ { unfold Z.modulo, Z.div; destruct Z.div_eucl; auto. }
  generalize (Z_div_mod a [|b|] H3).
  destruct Z.div_eucl as (q,r); destruct 1; intros.
  injection H4 as [= ? ?].
- assert ([|r|]=r).
+ assert ([|r|]=r). {
   apply Zmod_small; generalize (Z_mod_lt b wB wB_pos); fold [|b|];
     lia.
- assert ([|q|]=q).
+ }
+ assert ([|q|]=q). {
   apply Zmod_small.
   subst q.
   split.
-  apply Z_div_pos. lia.
-  subst a. nia.
-  apply Zdiv_lt_upper_bound; nia.
-  subst a.
-  replace (wB*[|b|]) with (([|b|]-1)*wB + wB) by ring.
-  lia.
+  - apply Z_div_pos.
+    + lia.
+    + subst a. nia.
+  - apply Zdiv_lt_upper_bound; nia.
+ }
+ subst a.
+ replace (wB*[|b|]) with (([|b|]-1)*wB + wB) by ring.
+ lia.
  Qed.
 
  Definition add_mul_div p x y :=
@@ -563,9 +573,9 @@ Section ZModulo.
  apply Zmod_small.
  generalize (Z_mod_lt [|w|] (2 ^ [|p|])); intros.
  split.
- destruct H; auto using Z.lt_gt with zarith.
- apply Z.le_lt_trans with [|w|]; auto with zarith.
- apply Zmod_le; auto with zarith.
+ - destruct H; auto using Z.lt_gt with zarith.
+ - apply Z.le_lt_trans with [|w|]; auto with zarith.
+   apply Zmod_le; auto with zarith.
  Qed.
 
  Definition is_even x :=
@@ -586,11 +596,12 @@ Section ZModulo.
  unfold sqrt.
  repeat rewrite Z.pow_2_r.
  replace [|Z.sqrt [|x|]|] with (Z.sqrt [|x|]).
- apply Z.sqrt_spec; auto with zarith.
- symmetry; apply Zmod_small.
- split. apply Z.sqrt_nonneg; auto.
- apply Z.le_lt_trans with [|x|]; auto.
- apply Z.sqrt_le_lin; auto.
+ - apply Z.sqrt_spec; auto with zarith.
+ - symmetry; apply Zmod_small.
+   split.
+   + apply Z.sqrt_nonneg; auto.
+   + apply Z.le_lt_trans with [|x|]; auto.
+     apply Z.sqrt_le_lin; auto.
  Qed.
 
  Definition sqrt2 x y :=
@@ -615,30 +626,33 @@ Section ZModulo.
  destruct z.
  - auto with zarith.
  - generalize (Z.sqrtrem_spec (Zpos p)).
- destruct Z.sqrtrem as (s,r); intros [U V]. lia.
+ destruct Z.sqrtrem as (s,r); intros [U V]. { lia. }
  assert (s < wB).
  {
   destruct (Z_lt_le_dec s wB); auto.
-  assert (wB * wB <= Zpos p).
+  assert (wB * wB <= Zpos p). {
    apply Z.le_trans with (s*s). 2: lia.
    apply Z.mul_le_mono_nonneg; generalize wB_pos; lia.
-  assert (Zpos p < wB*wB).
+  }
+  assert (Zpos p < wB*wB). {
    rewrite Heqz.
    replace (wB*wB) with ((wB-1)*wB+wB) by ring.
    apply Z.add_le_lt_mono. 2: auto with zarith.
-   apply Z.mul_le_mono_nonneg. 1, 3-5: auto with zarith.
-   generalize wB_pos; lia.
-  generalize (spec_to_Z x); lia.
+   apply Z.mul_le_mono_nonneg. 1, 3-4: auto with zarith.
+   1:generalize wB_pos; lia.
+   generalize (spec_to_Z x); lia.
+  }
+  auto with zarith.
  }
  replace [|s|] with s by (symmetry; apply Zmod_small; lia).
  destruct Z_lt_le_dec; unfold interp_carry.
- replace [|r|] with r by (symmetry; apply Zmod_small; lia).
- rewrite Z.pow_2_r; lia.
- replace [|r-wB|] with (r-wB) by (symmetry; apply Zmod_small; lia).
- rewrite Z.pow_2_r; lia.
+   + replace [|r|] with r by (symmetry; apply Zmod_small; lia).
+     rewrite Z.pow_2_r; lia.
+   + replace [|r-wB|] with (r-wB) by (symmetry; apply Zmod_small; lia).
+     rewrite Z.pow_2_r; lia.
 
  - assert (0<=Zneg p).
-     generalize (spec_to_Z x) (spec_to_Z y); nia.
+   { generalize (spec_to_Z x) (spec_to_Z y); nia. }
    lia.
  Qed.
 
@@ -669,34 +683,36 @@ Section ZModulo.
  pose proof (Z.log2_nonneg (Zpos p)).
  destruct (Z.log2_spec (Zpos p)); auto.
  intros.
- assert (0 <= zdigits - Z.log2 (Zpos p) - 1 < wB) as Hrange.
+ assert (0 <= zdigits - Z.log2 (Zpos p) - 1 < wB) as Hrange. {
   split.
-  cut (Z.log2 (Zpos p) < zdigits). lia.
-  unfold zdigits.
-  unfold wB, base in *.
-  apply Z.log2_lt_pow2; intuition.
-  apply Z.lt_trans with zdigits.
-  lia.
-  unfold zdigits, wB, base; apply Zpower2_lt_lin; auto with zarith.
+  - cut (Z.log2 (Zpos p) < zdigits).
+    + lia.
+    + unfold zdigits.
+      unfold wB, base in *.
+      apply Z.log2_lt_pow2; intuition.
+  - apply Z.lt_trans with zdigits.
+    + lia.
+    + unfold zdigits, wB, base; apply Zpower2_lt_lin; auto with zarith.
+ }
 
  unfold to_Z; rewrite (Zmod_small _ _ Hrange).
  split.
- apply Z.le_trans with (2^(zdigits - Z.log2 (Zpos p) - 1)*(2^Z.log2 (Zpos p))).
- apply Zdiv_le_upper_bound; auto with zarith.
- rewrite <- Zpower_exp; auto with zarith.
- rewrite Z.mul_comm; rewrite <- Z.pow_succ_r; auto with zarith.
- replace (Z.succ (zdigits - Z.log2 (Zpos p) -1 + Z.log2 (Zpos p))) with zdigits
-   by ring.
- unfold wB, base, zdigits; auto with zarith.
- apply Z.mul_le_mono_nonneg; auto with zarith.
+ - apply Z.le_trans with (2^(zdigits - Z.log2 (Zpos p) - 1)*(2^Z.log2 (Zpos p))).
+   + apply Zdiv_le_upper_bound; auto with zarith.
+     rewrite <- Zpower_exp; auto with zarith.
+     rewrite Z.mul_comm; rewrite <- Z.pow_succ_r; auto with zarith.
+     replace (Z.succ (zdigits - Z.log2 (Zpos p) -1 + Z.log2 (Zpos p))) with zdigits
+       by ring.
+     unfold wB, base, zdigits; auto with zarith.
+   + apply Z.mul_le_mono_nonneg; auto with zarith.
 
- apply Z.lt_le_trans
-   with (2^(zdigits - Z.log2 (Zpos p) - 1)*(2^(Z.succ (Z.log2 (Zpos p))))).
- apply Z.mul_lt_mono_pos_l; auto with zarith.
- rewrite <- Zpower_exp; auto with zarith.
- replace (zdigits - Z.log2 (Zpos p) -1 +Z.succ (Z.log2 (Zpos p))) with zdigits
-   by ring.
- unfold wB, base, zdigits; auto with zarith.
+ - apply Z.lt_le_trans
+     with (2^(zdigits - Z.log2 (Zpos p) - 1)*(2^(Z.succ (Z.log2 (Zpos p))))).
+   + apply Z.mul_lt_mono_pos_l; auto with zarith.
+   + rewrite <- Zpower_exp; auto with zarith.
+     replace (zdigits - Z.log2 (Zpos p) -1 +Z.succ (Z.log2 (Zpos p))) with zdigits
+       by ring.
+     unfold wB, base, zdigits; auto with zarith.
  Qed.
 
  Fixpoint Ptail p := match p with
@@ -715,15 +731,17 @@ Section ZModulo.
  Proof.
  induction p; try (compute; auto; fail).
  intros; simpl.
- assert (d <> xH).
+ assert (d <> xH). {
   intro; subst.
   compute in H; destruct p; discriminate.
- assert (Z.succ (Zpos (Pos.pred d)) = Zpos d).
+ }
+ assert (Z.succ (Zpos (Pos.pred d)) = Zpos d). {
   simpl; f_equal.
   rewrite Pos.add_1_r.
   destruct (Pos.succ_pred_or d); auto.
   rewrite H1 in H0; elim H0; auto.
- assert (Ptail p < Zpos (Pos.pred d)).
+ }
+ assert (Ptail p < Zpos (Pos.pred d)). {
   apply IHp.
   apply Z.mul_lt_mono_pos_r with 2; auto with zarith.
   rewrite (Z.mul_comm (Zpos p)).
@@ -731,6 +749,7 @@ Section ZModulo.
   rewrite Z.mul_comm.
   rewrite <- Z.pow_succ_r; auto with zarith.
   rewrite H1; auto.
+ }
  rewrite <- H1; lia.
  Qed.
 
@@ -754,26 +773,27 @@ Section ZModulo.
  intros; unfold tail0.
  generalize (spec_to_Z x).
  destruct [|x|]; try discriminate; intros.
- assert ([|Ptail p|] = Ptail p).
+ assert ([|Ptail p|] = Ptail p). {
   apply Zmod_small.
   split; auto.
   unfold wB, base in *.
   apply Z.lt_trans with (Zpos digits).
-  apply Ptail_bounded; auto with zarith.
-  apply Zpower2_lt_lin; auto with zarith.
+  - apply Ptail_bounded; auto with zarith.
+  - apply Zpower2_lt_lin; auto with zarith.
+ }
  rewrite H1.
 
  clear; induction p.
- exists (Zpos p); simpl; rewrite Pos.mul_1_r; auto with zarith.
- destruct IHp as (y & Yp & Ye).
- exists y.
- split; auto.
- change (Zpos p~0) with (2*Zpos p).
- rewrite Ye.
- change (Ptail p~0) with (Z.succ (Ptail p)).
- rewrite Z.pow_succ_r; auto; ring.
+ - exists (Zpos p); simpl; rewrite Pos.mul_1_r; auto with zarith.
+ - destruct IHp as (y & Yp & Ye).
+   exists y.
+   split; auto.
+   change (Zpos p~0) with (2*Zpos p).
+   rewrite Ye.
+   change (Ptail p~0) with (Z.succ (Ptail p)).
+   rewrite Z.pow_succ_r; auto; ring.
 
- exists 0; simpl; auto with zarith.
+ - exists 0; simpl; auto with zarith.
  Qed.
 
  Definition lor := Z.lor.

@@ -57,8 +57,8 @@ Qed.
 Lemma imply_to_and : forall P Q:Prop, ~ (P -> Q) -> P /\ ~ Q.
 Proof.
 intros; split.
-apply not_imply_elim with Q; trivial.
-apply not_imply_elim2 with P; trivial.
+- apply not_imply_elim with Q; trivial.
+- apply not_imply_elim2 with P; trivial.
 Qed.
 
 Lemma or_to_imply : forall P Q:Prop, ~ P \/ Q -> P -> Q.

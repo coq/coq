@@ -105,11 +105,11 @@ Section multiset_defs.
     forall x y z:multiset, meq (munion x (munion y z)) (munion z (munion x y)).
   Proof.
     intros; apply (op_rotate multiset munion meq).
-      apply munion_comm.
-      apply munion_ass.
-      exact meq_trans.
-      exact meq_sym.
-      trivial.
+    - apply munion_comm.
+    - apply munion_ass.
+    - exact meq_trans.
+    - exact meq_sym.
+    - trivial.
   Qed.
 
   Lemma meq_congr :
@@ -139,8 +139,8 @@ Section multiset_defs.
       meq (munion x (munion (munion y z) t)) (munion (munion y (munion x z)) t).
   Proof.
     intros; apply meq_trans with (munion (munion x (munion y z)) t).
-    apply meq_sym; apply munion_ass.
-    apply meq_left; apply munion_perm_left.
+    - apply meq_sym; apply munion_ass.
+    - apply meq_left; apply munion_perm_left.
   Qed.
 
   (** specific for treesort *)
@@ -151,8 +151,8 @@ Section multiset_defs.
       meq (munion x (munion u t)) (munion (munion y (munion x t)) z).
   Proof.
     intros; apply meq_trans with (munion x (munion (munion y z) t)).
-    apply meq_right; apply meq_left; trivial.
-    apply multiset_twist1.
+    - apply meq_right; apply meq_left; trivial.
+    - apply multiset_twist1.
   Qed.
 
   Lemma treesort_twist2 :
@@ -161,8 +161,8 @@ Section multiset_defs.
       meq (munion x (munion u t)) (munion (munion y (munion x z)) t).
   Proof.
     intros; apply meq_trans with (munion x (munion (munion y z) t)).
-    apply meq_right; apply meq_left; trivial.
-    apply multiset_twist2.
+    - apply meq_right; apply meq_left; trivial.
+    - apply multiset_twist2.
   Qed.
 
   (** SingletonBag *)

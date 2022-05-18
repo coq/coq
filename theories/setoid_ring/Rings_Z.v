@@ -22,4 +22,6 @@ Proof. discriminate. Qed.
 #[global]
 Instance Zdi : (Integral_domain (Rcr:=Zcri)). 
 constructor. 
-exact Zmult_integral. exact Z_one_zero. Defined.
+- exact Zmult_integral.
+- exact Z_one_zero.
+Defined.

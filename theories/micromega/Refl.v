@@ -32,8 +32,8 @@ Theorem make_impl_true :
   forall (A : Type) (eval : A -> Prop) (l : list A), make_impl eval l True.
 Proof.
 intros A eval l; induction l as [| a l IH]; simpl.
-trivial.
-intro; apply IH.
+- trivial.
+- intro; apply IH.
 Qed.
 
 
@@ -47,8 +47,8 @@ intros A B eval eval' l; induction l as [| a l IH]; simpl.
 - intros r EVAL.
   rewrite EVAL.
   rewrite IH.
-  tauto.
-  auto.
+  + tauto.
+  + auto.
 Qed.
 
 Fixpoint make_conj (A : Type) (eval : A -> Prop) (l : list A) {struct l} : Prop :=
@@ -69,47 +69,47 @@ Lemma make_conj_impl : forall (A : Type) (eval : A -> Prop) (l : list A) (g : Pr
   (make_conj eval l -> g) <-> make_impl eval l g.
 Proof.
   intros A eval l; induction l as [|? l IHl].
-  simpl.
-  tauto.
-  simpl.
-  intros g.
-  destruct l.
-  simpl.
-  tauto.
-  generalize (IHl g).
-  tauto.
+  - simpl.
+    tauto.
+  - simpl.
+    intros g.
+    destruct l.
+    + simpl.
+      tauto.
+    + generalize (IHl g).
+      tauto.
 Qed.
 
 Lemma make_conj_in : forall (A : Type) (eval : A -> Prop) (l : list A),
   make_conj eval l -> (forall p, In p l -> eval p).
 Proof.
   intros A eval l; induction l as [|? l IHl].
-  simpl.
-  tauto.
-  simpl.
-  intros H ? H0.
-  destruct l.
-  simpl in H0.
-  destruct H0.
-  subst; auto.
-  tauto.
-  destruct H.
-  destruct H0.
-  subst;auto.
-  apply IHl; auto.
+  - simpl.
+    tauto.
+  - simpl.
+    intros H ? H0.
+    destruct l.
+    + simpl in H0.
+      destruct H0.
+      * subst; auto.
+      * tauto.
+    + destruct H.
+      destruct H0.
+      * subst;auto.
+      * apply IHl; auto.
 Qed.
 
 Lemma make_conj_app : forall  A eval l1 l2, @make_conj A eval (l1 ++ l2) <-> @make_conj A eval l1 /\ @make_conj A eval l2.
 Proof.
   intros A eval l1; induction l1 as [|a l1 IHl1].
-  simpl.
-  tauto.
-  intros l2.
-  change ((a::l1) ++ l2) with (a :: (l1 ++ l2)).
-  rewrite make_conj_cons.
-  rewrite IHl1.
-  rewrite make_conj_cons.
-  tauto.
+  - simpl.
+    tauto.
+  - intros l2.
+    change ((a::l1) ++ l2) with (a :: (l1 ++ l2)).
+    rewrite make_conj_cons.
+    rewrite IHl1.
+    rewrite make_conj_cons.
+    tauto.
 Qed.
 
 Infix "+++" := rev_append (right associativity, at level 60) : list_scope.

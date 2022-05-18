@@ -68,22 +68,22 @@ Lemma prop_degen_ext : prop_degeneracy -> prop_extensionality.
 Proof.
   intros H A B [Hab Hba].
   destruct (H A); destruct (H B).
-    rewrite H1; exact H0.
-    absurd B.
-      rewrite H1; exact (fun H => H).
-      apply Hab; rewrite H0; exact I.
-    absurd A.
-      rewrite H0; exact (fun H => H).
-      apply Hba; rewrite H1; exact I.
-    rewrite H1; exact H0.
+  - rewrite H1; exact H0.
+  - absurd B.
+    + rewrite H1; exact (fun H => H).
+    + apply Hab; rewrite H0; exact I.
+  - absurd A.
+    + rewrite H0; exact (fun H => H).
+    + apply Hba; rewrite H1; exact I.
+  - rewrite H1; exact H0.
 Qed.
 
 Lemma prop_degen_em : prop_degeneracy -> excluded_middle.
 Proof.
   intros H A.
   destruct (H A).
-    left; rewrite H0; exact I.
-    right; rewrite H0; exact (fun x => x).
+  - left; rewrite H0; exact I.
+  - right; rewrite H0; exact (fun x => x).
 Qed.
 
 Lemma prop_ext_em_degen :
@@ -91,9 +91,9 @@ Lemma prop_ext_em_degen :
 Proof.
   intros Ext EM A.
   destruct (EM A).
-    left; apply (Ext A True); split;
-     [ exact (fun _ => I) | exact (fun _ => H) ].
-    right; apply (Ext A False); split; [ exact H | apply False_ind ].
+  - left; apply (Ext A True); split;
+      [ exact (fun _ => I) | exact (fun _ => H) ].
+  - right; apply (Ext A False); split; [ exact H | apply False_ind ].
 Qed.
 
 (** A weakest form of propositional extensionality: extensionality for
@@ -203,11 +203,11 @@ Section Proof_irrelevance_gen.
     generalize (eq_refl (G neg)).
     pattern (G neg) at 1.
     apply Ind with (b := G neg); intro Heq.
-    rewrite (bool_elim_redl bool false true).
-    change (true = neg true); rewrite Heq; apply Gfix.
-    rewrite (bool_elim_redr bool false true).
-    change (neg false = false); rewrite Heq; symmetry ;
-      apply Gfix.
+    - rewrite (bool_elim_redl bool false true).
+      change (true = neg true); rewrite Heq; apply Gfix.
+    - rewrite (bool_elim_redr bool false true).
+      change (neg false = false); rewrite Heq; symmetry ;
+        apply Gfix.
   Qed.
 
   Lemma ext_prop_dep_proof_irrel_gen :
@@ -355,8 +355,8 @@ Section Proof_irrelevance_EM_CC.
   Proof.
     unfold p2b; intro A; apply or_dep_elim with (b := em A);
       unfold b2p; intros.
-    apply (or_elim_redl A (~ A) B (fun _ => b1) (fun _ => b2)).
-    destruct (b H).
+    - apply (or_elim_redl A (~ A) B (fun _ => b1) (fun _ => b2)).
+    - destruct (b H).
   Qed.
 
   Lemma p2p2 : b1 <> b2 -> forall A:Prop, b2p (p2b A) -> A.
@@ -364,10 +364,10 @@ Section Proof_irrelevance_EM_CC.
     intro not_eq_b1_b2.
     unfold p2b; intro A; apply or_dep_elim with (b := em A);
       unfold b2p; intros.
-    assumption.
-    destruct not_eq_b1_b2.
-    rewrite <- (or_elim_redr A (~ A) B (fun _ => b1) (fun _ => b2)) in H.
-    assumption.
+    - assumption.
+    - destruct not_eq_b1_b2.
+      rewrite <- (or_elim_redr A (~ A) B (fun _ => b1) (fun _ => b2)) in H.
+      assumption.
   Qed.
 
   (** Using excluded-middle a second time, we get proof-irrelevance *)
@@ -375,8 +375,8 @@ Section Proof_irrelevance_EM_CC.
   Theorem proof_irrelevance_cc : b1 = b2.
   Proof.
     refine (or_elim _ _ _ _ _ (em (b1 = b2))); intro H.
-    trivial.
-    apply (NoRetractFromSmallPropositionToProp.paradox B p2b b2p (p2p2 H) p2p1).
+    - trivial.
+    - apply (NoRetractFromSmallPropositionToProp.paradox B p2b b2p (p2p2 H) p2p1).
   Qed.
 
 End Proof_irrelevance_EM_CC.
@@ -565,8 +565,8 @@ Definition GodelDummett := forall A B:Prop, (A -> B) \/ (B -> A).
 Lemma excluded_middle_Godel_Dummett : excluded_middle -> GodelDummett.
 Proof.
   intros EM A B. destruct (EM B) as [HB|HnotB].
-  left; intros _; exact HB.
-  right; intros HB; destruct (HnotB HB).
+  - left; intros _; exact HB.
+  - right; intros HB; destruct (HnotB HB).
 Qed.
 
 (** [(A->B) \/ (B->A)] is equivalent to [(C -> A\/B) -> (C->A) \/ (C->B)]
@@ -579,14 +579,14 @@ Lemma Godel_Dummett_iff_right_distr_implication_over_disjunction :
   GodelDummett <-> RightDistributivityImplicationOverDisjunction.
 Proof.
   split.
-    intros GD A B C HCAB.
+  - intros GD A B C HCAB.
     destruct (GD B A) as [HBA|HAB]; [left|right]; intro HC;
       destruct (HCAB HC) as [HA|HB]; [ | apply HBA | apply HAB | ]; assumption.
-    intros Distr A B.
+  - intros Distr A B.
     destruct (Distr A B (A\/B)) as [HABA|HABB].
-      intro HAB; exact HAB.
-      right; intro HB; apply HABA; right; assumption.
-      left; intro HA; apply HABB; left; assumption.
+    + intro HAB; exact HAB.
+    + right; intro HB; apply HABA; right; assumption.
+    + left; intro HA; apply HABB; left; assumption.
 Qed.
 
 (** [(A->B) \/ (B->A)] is stronger than the weak excluded middle *)
@@ -595,8 +595,8 @@ Lemma Godel_Dummett_weak_excluded_middle :
   GodelDummett -> weak_excluded_middle.
 Proof.
   intros GD A. destruct (GD (~A) A) as [HnotAA|HAnotA].
-    left; intro HnotA; apply (HnotA (HnotAA HnotA)).
-    right; intro HA; apply (HAnotA HA HA).
+  - left; intro HnotA; apply (HnotA (HnotAA HnotA)).
+  - right; intro HA; apply (HAnotA HA HA).
 Qed.
 
 (** The weak excluded middle is equivalent to the classical De Morgan's law *)
@@ -641,9 +641,9 @@ Lemma
 Proof.
   intros IP A B C HCAB.
   destruct (IP bool (fun b => if b then A else B) C true) as ([|],H).
-    intro HC; destruct (HCAB HC); [exists true|exists false]; assumption.
-    left; assumption.
-    right; assumption.
+  - intro HC; destruct (HCAB HC); [exists true|exists false]; assumption.
+  - left; assumption.
+  - right; assumption.
 Qed.
 
 Lemma independence_general_premises_Godel_Dummett :
@@ -663,9 +663,9 @@ Lemma independence_general_premises_drinker :
   IndependenceOfGeneralPremises <-> DrinkerParadox.
 Proof.
   split.
-    intros IP A P InhA; apply (IP A P (exists x, P x) InhA); intro Hx; exact Hx.
-    intros Drinker A P Q InhA H; destruct (Drinker A P InhA) as (x,Hx).
-      exists x; intro HQ; apply (Hx (H HQ)).
+  - intros IP A P InhA; apply (IP A P (exists x, P x) InhA); intro Hx; exact Hx.
+  - intros Drinker A P Q InhA H; destruct (Drinker A P InhA) as (x,Hx).
+    exists x; intro HQ; apply (Hx (H HQ)).
 Qed.
 
 (** Independence of general premises is weaker than (generalized)
@@ -683,8 +683,8 @@ Lemma excluded_middle_independence_general_premises :
 Proof.
   intros GEM A P x0.
   destruct (GEM (exists x, P x) (P x0)) as [(x,Hx)|Hnot].
-    exists x; intro; exact Hx.
-    exists x0; exact Hnot.
+  - exists x; intro; exact Hx.
+  - exists x0; exact Hnot.
 Qed.
 
 (** * Axioms equivalent to classical logic *)
@@ -786,7 +786,7 @@ Proof.
   assert (Equivalence R).
   { split.
     - now left.
-    - destruct 1. now left. now right.
+    - destruct 1. + now left. + now right.
     - destruct 1, 1; try now right. left; now transitivity y. }
   destruct (ReprFunChoice R H) as (f,Hf). clear H.
   destruct (Bool.bool_dec (f true) (f false)) as [Heq|Hneq].

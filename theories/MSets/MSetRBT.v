@@ -862,9 +862,9 @@ Proof.
 induct s x.
 - intuition_in.
 - autorew; intuition_in.
-  assert (X.lt y x') by eauto. order.
-  assert (X.lt x' y) by eauto. order.
-  order.
+  + assert (X.lt y x') by eauto. order.
+  + assert (X.lt x' y) by eauto. order.
+  + order.
 - destruct l as [|[|] ll lx lr]; autorew;
   rewrite ?IHl by trivial; intuition_in; order.
 - destruct r as [|[|] rl rx rr]; autorew;
@@ -1427,18 +1427,19 @@ Proof.
  induction l1 as [|x1 l1 IH1].
  - intros l2 acc; simpl. inA. tauto.
  - induction l2 as [|x2 l2 IH2]; intros acc.
-   * intros; simpl. rewrite rev_append_rev. inA. tauto.
-   * simpl. intros U V.
+   + intros; simpl. rewrite rev_append_rev. inA. tauto.
+   + simpl. intros U V.
      destruct (sorted_app_inv _ _ U) as (U1 & U2 & U3); auto.
      destruct (sorted_app_inv _ _ V) as (V1 & V2 & V3); auto.
      case X.compare_spec; intro C.
-     + rewrite IH1; auto. f_equiv. inA. intuition; try order.
+     * rewrite IH1; auto. f_equiv. inA. intuition; try order.
        assert (X.lt x x1) by (apply U3; inA). order.
-     + rewrite (IH2 acc); auto. f_equiv. inA. intuition; try order.
+     * rewrite (IH2 acc); auto. f_equiv. inA. intuition; try order.
        assert (X.lt x x1) by (apply U3; inA). order.
-     + rewrite IH1; auto. inA. intuition; try order.
-       left; split; auto. destruct 1. order.
-       assert (X.lt x x2) by (apply V3; inA). order.
+     * rewrite IH1; auto. inA. intuition; try order.
+       left; split; auto. destruct 1.
+       -- order.
+       -- assert (X.lt x x2) by (apply V3; inA). order.
 Qed.
 
 Lemma linear_diff_spec s1 s2 x `(Ok s1, Ok s2) :
@@ -1458,8 +1459,9 @@ Proof.
  unfold elt in *.
  induction (rev (elements s1)); simpl; intros.
  - rewrite InA_nil. intuition.
- - unfold flip in *. rewrite remove_spec, IHl, InA_cons. tauto.
-   clear IHl. induction l; simpl; auto_tc.
+ - unfold flip in *. rewrite remove_spec, IHl, InA_cons.
+   + tauto.
+   + clear IHl. induction l; simpl; auto_tc.
 Qed.
 
 Lemma diff_spec s1 s2 y `{Ok s1, Ok s2} :

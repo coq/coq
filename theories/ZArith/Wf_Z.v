@@ -67,8 +67,9 @@ Lemma natlike_ind :
    forall x:Z, 0 <= x -> P x.
 Proof.
  intros P Ho Hrec x Hx; apply Z_of_nat_prop; trivial.
- intros n; induction n. exact Ho.
- rewrite Nat2Z.inj_succ. apply Hrec; trivial using Nat2Z.is_nonneg.
+ intros n; induction n.
+ - exact Ho.
+ - rewrite Nat2Z.inj_succ. apply Hrec; trivial using Nat2Z.is_nonneg.
 Qed.
 
 Lemma natlike_rec :
@@ -78,8 +79,9 @@ Lemma natlike_rec :
    forall x:Z, 0 <= x -> P x.
 Proof.
  intros P Ho Hrec x Hx; apply Z_of_nat_set; trivial.
- intros n; induction n. exact Ho.
- rewrite Nat2Z.inj_succ. apply Hrec; trivial using Nat2Z.is_nonneg.
+ intros n; induction n.
+ - exact Ho.
+ - rewrite Nat2Z.inj_succ. apply Hrec; trivial using Nat2Z.is_nonneg.
 Qed.
 
 Section Efficient_Rec.
@@ -126,7 +128,9 @@ Section Efficient_Rec.
    destruct z as [|p|p]; intros Hz.
    - apply Ho.
    - assert (EQ : 0 <= Z.pred (Zpos p)) by now apply Z.lt_le_pred.
-     apply Hrec. easy. apply IH; trivial. split; trivial.
+     apply Hrec.
+     + easy.
+     + apply IH; trivial. split; trivial.
      apply Z.lt_pred_l.
    - now destruct Hz.
   Qed.
@@ -184,11 +188,12 @@ Section Efficient_Rec.
     rewrite <- (Z.sub_simpl_r x z). apply Z.le_0_sub in Hx.
     pattern (x - z); apply Zlt_0_rec; trivial.
     clear x Hx. intros x IH Hx.
-    apply Hrec. intros y (Hy,Hy').
-    rewrite <- (Z.sub_simpl_r y z). apply IH; split.
-    now rewrite Z.le_0_sub.
-    now apply Z.lt_sub_lt_add_r.
-    now rewrite <- (Z.add_le_mono_r 0 x z).
+    apply Hrec.
+    - intros y (Hy,Hy').
+                  rewrite <- (Z.sub_simpl_r y z). apply IH; split.
+      + now rewrite Z.le_0_sub.
+      + now apply Z.lt_sub_lt_add_r.
+    - now rewrite <- (Z.add_le_mono_r 0 x z).
   Qed.
 
   Lemma Zlt_lower_bound_ind :

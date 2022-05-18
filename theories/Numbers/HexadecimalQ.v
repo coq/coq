@@ -453,6 +453,8 @@ Qed.
 
 Lemma of_iff d d' : of_hexadecimal d = of_hexadecimal d' <-> dnorm d = dnorm d'.
 Proof.
-  split. apply of_inj. intros E. rewrite <- of_hexadecimal_dnorm, E.
-  apply of_hexadecimal_dnorm.
+  split.
+  - apply of_inj.
+  - intros E. rewrite <- of_hexadecimal_dnorm, E.
+    apply of_hexadecimal_dnorm.
 Qed.

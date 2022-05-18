@@ -219,18 +219,18 @@ Proof.
 generalize (mem_iff s x)(elements_iff s x)(existsb_exists (eqb x) (elements s)).
 rewrite InA_alt.
 destruct (mem x s); destruct (existsb (eqb x) (elements s)); auto; intros.
-symmetry.
-rewrite H1.
-destruct H0 as (H0,_).
-destruct H0 as (a,(Ha1,Ha2)); [ intuition |].
-exists a; intuition.
-unfold eqb; destruct (eq_dec x a); auto.
-rewrite <- H.
-rewrite H0.
-destruct H1 as (H1,_).
-destruct H1 as (a,(Ha1,Ha2)); [intuition|].
-exists a; intuition.
-unfold eqb in *; destruct (eq_dec x a); auto; discriminate.
+- symmetry.
+  rewrite H1.
+  destruct H0 as (H0,_).
+  destruct H0 as (a,(Ha1,Ha2)); [ intuition |].
+  exists a; intuition.
+  unfold eqb; destruct (eq_dec x a); auto.
+- rewrite <- H.
+  rewrite H0.
+  destruct H1 as (H1,_).
+  destruct H1 as (a,(Ha1,Ha2)); [intuition|].
+  exists a; intuition.
+  unfold eqb in *; destruct (eq_dec x a); auto; discriminate.
 Qed.
 
 Variable f : elt->bool.
@@ -249,19 +249,19 @@ intros.
 generalize (forallb_forall f (elements s))(for_all_iff s H)(elements_iff s).
 unfold For_all.
 destruct (forallb f (elements s)); destruct (for_all f s); auto; intros.
-rewrite <- H1; intros.
-destruct H0 as (H0,_).
-rewrite (H2 x0) in H3.
-rewrite (InA_alt E.eq x0 (elements s)) in H3.
-destruct H3 as (a,(Ha1,Ha2)).
-rewrite (H _ _ Ha1).
-apply H0; auto.
-symmetry.
-rewrite H0; intros.
-destruct H1 as (_,H1).
-apply H1; auto.
-rewrite H2.
-rewrite InA_alt; eauto.
+- rewrite <- H1; intros.
+  destruct H0 as (H0,_).
+  rewrite (H2 x0) in H3.
+  rewrite (InA_alt E.eq x0 (elements s)) in H3.
+  destruct H3 as (a,(Ha1,Ha2)).
+  rewrite (H _ _ Ha1).
+  apply H0; auto.
+- symmetry.
+  rewrite H0; intros.
+  destruct H1 as (_,H1).
+  apply H1; auto.
+  rewrite H2.
+  rewrite InA_alt; eauto.
 Qed.
 
 Lemma exists_b : compat_bool E.eq f ->
@@ -271,20 +271,20 @@ intros.
 generalize (existsb_exists f (elements s))(exists_iff s H)(elements_iff s).
 unfold Exists.
 destruct (existsb f (elements s)); destruct (exists_ f s); auto; intros.
-rewrite <- H1; intros.
-destruct H0 as (H0,_).
-destruct H0 as (a,(Ha1,Ha2)); auto.
-exists a; split; auto.
-rewrite H2; rewrite InA_alt; eauto.
-symmetry.
-rewrite H0.
-destruct H1 as (_,H1).
-destruct H1 as (a,(Ha1,Ha2)); auto.
-rewrite (H2 a) in Ha1.
-rewrite (InA_alt E.eq a (elements s)) in Ha1.
-destruct Ha1 as (b,(Hb1,Hb2)).
-exists b; auto.
-rewrite <- (H _ _ Hb1); auto.
+- rewrite <- H1; intros.
+  destruct H0 as (H0,_).
+  destruct H0 as (a,(Ha1,Ha2)); auto.
+  exists a; split; auto.
+  rewrite H2; rewrite InA_alt; eauto.
+- symmetry.
+  rewrite H0.
+  destruct H1 as (_,H1).
+  destruct H1 as (a,(Ha1,Ha2)); auto.
+  rewrite (H2 a) in Ha1.
+  rewrite (InA_alt E.eq a (elements s)) in Ha1.
+  destruct Ha1 as (b,(Hb1,Hb2)).
+  exists b; auto.
+  rewrite <- (H _ _ Hb1); auto.
 Qed.
 
 End BoolSpec.
@@ -317,15 +317,15 @@ unfold Equal; intros s s' H.
 generalize (is_empty_iff s)(is_empty_iff s').
 destruct (is_empty s); destruct (is_empty s');
  unfold Empty; auto; intros.
-symmetry.
-rewrite <- H1; intros a Ha.
-rewrite <- (H a) in Ha.
-destruct H0 as (_,H0).
-exact (H0 Logic.eq_refl _ Ha).
-rewrite <- H0; intros a Ha.
-rewrite (H a) in Ha.
-destruct H1 as (_,H1).
-exact (H1 Logic.eq_refl _ Ha).
+- symmetry.
+  rewrite <- H1; intros a Ha.
+  rewrite <- (H a) in Ha.
+  destruct H0 as (_,H0).
+  exact (H0 Logic.eq_refl _ Ha).
+- rewrite <- H0; intros a Ha.
+  rewrite (H a) in Ha.
+  destruct H1 as (_,H1).
+  exact (H1 Logic.eq_refl _ Ha).
 Qed.
 
 #[global]
@@ -348,8 +348,8 @@ Instance singleton_m : Proper (E.eq ==> Equal) singleton.
 Proof.
 unfold Equal; intros x y H a.
 do 2 rewrite singleton_iff; split; intros.
-apply E.eq_trans with x; auto.
-apply E.eq_trans with y; auto.
+- apply E.eq_trans with x; auto.
+- apply E.eq_trans with y; auto.
 Qed.
 
 #[global]
@@ -399,8 +399,8 @@ Proof.
 intros s s' H s'' s''' H0.
 generalize (subset_iff s s'') (subset_iff s' s''').
 destruct (subset s s''); destruct (subset s' s'''); auto; intros.
-rewrite H in H1; rewrite H0 in H1; intuition.
-rewrite H in H1; rewrite H0 in H1; intuition.
+- rewrite H in H1; rewrite H0 in H1; intuition.
+- rewrite H in H1; rewrite H0 in H1; intuition.
 Qed.
 
 #[global]
@@ -409,8 +409,8 @@ Proof.
 intros s s' H s'' s''' H0.
 generalize (equal_iff s s'') (equal_iff s' s''').
 destruct (equal s s''); destruct (equal s' s'''); auto; intros.
-rewrite H in H1; rewrite H0 in H1; intuition.
-rewrite H in H1; rewrite H0 in H1; intuition.
+- rewrite H in H1; rewrite H0 in H1; intuition.
+- rewrite H in H1; rewrite H0 in H1; intuition.
 Qed.
 
 
@@ -481,8 +481,8 @@ Lemma filter_ext : forall f f', compat_bool E.eq f -> (forall x, f x = f' x) ->
  forall s s', s[=]s' -> filter f s [=] filter f' s'.
 Proof.
 intros f f' Hf Hff' s s' Hss' x. do 2 (rewrite filter_iff; auto).
-rewrite Hff', Hss'; intuition.
-repeat red; intros; rewrite <- 2 Hff'; auto.
+- rewrite Hff', Hss'; intuition.
+- repeat red; intros; rewrite <- 2 Hff'; auto.
 Qed.
 
 Lemma filter_subset : forall f, compat_bool E.eq f ->

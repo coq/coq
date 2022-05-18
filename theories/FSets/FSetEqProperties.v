@@ -73,8 +73,8 @@ Qed.
 Lemma is_empty_equal_empty: is_empty s = equal s empty.
 Proof.
 apply bool_1; split; intros.
-auto with set.
-rewrite <- is_empty_iff; auto with set.
+- auto with set.
+- rewrite <- is_empty_iff; auto with set.
 Qed.
 
 Lemma choose_mem_1: choose s=Some x -> mem x s=true.
@@ -207,9 +207,9 @@ Proof.
 intros.
 generalize (@choose_1 s) (@choose_2 s).
 destruct (choose s);intros.
-exists e;auto with set.
-generalize (H1 Logic.eq_refl); clear H1.
-intros; rewrite (is_empty_1 H1) in H; discriminate.
+- exists e;auto with set.
+- generalize (H1 Logic.eq_refl); clear H1.
+  intros; rewrite (is_empty_1 H1) in H; discriminate.
 Qed.
 
 Lemma choose_mem_4: choose empty=None.
@@ -266,9 +266,9 @@ Qed.
 Lemma is_empty_cardinal: is_empty s = zerob (cardinal s).
 Proof.
 intros; apply bool_1; split; intros.
-rewrite MP.cardinal_1; simpl; auto with set.
-assert (cardinal s = 0) by (apply zerob_true_elim; auto).
-auto with set fset.
+- rewrite MP.cardinal_1; simpl; auto with set.
+- assert (cardinal s = 0) by (apply zerob_true_elim; auto).
+  auto with set fset.
 Qed.
 
 (** Properties of [singleton] *)
@@ -480,10 +480,10 @@ Lemma set_rec:  forall (P:t->Type),
 Proof.
 intros.
 apply set_induction; auto; intros.
-apply X with empty; auto with set.
-apply X with (add x s0); auto with set.
-apply equal_1; intro a; rewrite add_iff; rewrite (H0 a); tauto.
-apply X0; auto with set; apply mem_3; auto.
+- apply X with empty; auto with set.
+- apply X with (add x s0); auto with set.
+  + apply equal_1; intro a; rewrite add_iff; rewrite (H0 a); tauto.
+  + apply X0; auto with set; apply mem_3; auto.
 Qed.
 
 (** Properties of [fold] *)
@@ -610,32 +610,32 @@ Lemma for_all_filter:
  forall s, for_all f s=is_empty (filter (fun x => negb (f x)) s).
 Proof.
 intros; apply bool_1; split; intros.
-apply is_empty_1.
-unfold Empty; intros.
-rewrite filter_iff; auto.
-red; destruct 1.
-rewrite <- (@for_all_iff s f) in H; auto.
-rewrite (H a H0) in H1; discriminate.
-apply for_all_1; auto; red; intros.
-revert H; rewrite <- is_empty_iff.
-unfold Empty; intro H; generalize (H x); clear H.
-rewrite filter_iff; auto.
-destruct (f x); auto.
+- apply is_empty_1.
+  unfold Empty; intros.
+  rewrite filter_iff; auto.
+  red; destruct 1.
+  rewrite <- (@for_all_iff s f) in H; auto.
+  rewrite (H a H0) in H1; discriminate.
+- apply for_all_1; auto; red; intros.
+  revert H; rewrite <- is_empty_iff.
+  unfold Empty; intro H; generalize (H x); clear H.
+  rewrite filter_iff; auto.
+  destruct (f x); auto.
 Qed.
 
 Lemma exists_filter :
  forall s, exists_ f s=negb (is_empty (filter f s)).
 Proof.
 intros; apply bool_1; split; intros.
-destruct (exists_2 Comp H) as (a,(Ha1,Ha2)).
-apply bool_6.
-red; intros; apply (@is_empty_2 _ H0 a); auto with set.
-generalize (@choose_1 (filter f s)) (@choose_2 (filter f s)).
-destruct (choose (filter f s)).
-intros H0 _; apply exists_1; auto.
-exists e; generalize (H0 e); rewrite filter_iff; auto.
-intros _ H0.
-rewrite (is_empty_1 (H0 Logic.eq_refl)) in H; auto; discriminate.
+- destruct (exists_2 Comp H) as (a,(Ha1,Ha2)).
+  apply bool_6.
+  red; intros; apply (@is_empty_2 _ H0 a); auto with set.
+- generalize (@choose_1 (filter f s)) (@choose_2 (filter f s)).
+  destruct (choose (filter f s)).
+  + intros H0 _; apply exists_1; auto.
+    exists e; generalize (H0 e); rewrite filter_iff; auto.
+  + intros _ H0.
+    rewrite (is_empty_1 (H0 Logic.eq_refl)) in H; auto; discriminate.
 Qed.
 
 Lemma partition_filter_1:
@@ -685,10 +685,10 @@ unfold Add, MP.Add, Equal; intros.
 repeat rewrite filter_iff; auto.
 rewrite H0; clear H0.
 assert (f a = true -> ~E.eq x a).
- intros H0 H1.
- rewrite (Comp _ _ H1) in H.
- rewrite H in H0; discriminate.
-tauto.
+- intros H0 H1.
+  rewrite (Comp _ _ H1) in H.
+  rewrite H in H0; discriminate.
+- tauto.
 Qed.
 
 Lemma union_filter: forall f g, (compat_bool E.eq f) -> (compat_bool E.eq g) ->
@@ -697,13 +697,13 @@ Proof.
 clear Comp' Comp f.
 intros.
 assert (compat_bool E.eq (fun x => orb (f x) (g x))).
-  unfold compat_bool, Proper, respectful; intros.
+- unfold compat_bool, Proper, respectful; intros.
   rewrite (H x y H1);  rewrite (H0 x y H1); auto.
-unfold Equal; intros; set_iff; repeat rewrite filter_iff; auto.
-assert (f a || g a = true <-> f a = true \/ g a = true).
-  split; auto with bool.
-  intro H3; destruct (orb_prop _ _ H3); auto.
-tauto.
+- unfold Equal; intros; set_iff; repeat rewrite filter_iff; auto.
+  assert (f a || g a = true <-> f a = true \/ g a = true).
+  + split; auto with bool.
+    intro H3; destruct (orb_prop _ _ H3); auto.
+  + tauto.
 Qed.
 
 Lemma filter_union: forall s s', filter f (union s s') [=] union (filter f s) (filter f s').
@@ -848,29 +848,30 @@ Lemma sum_plus :
 Proof.
 unfold sum.
 intros f g Hf Hg.
-assert (fc : compat_opL (fun x:elt =>plus (f x))).  red; auto with fset.
-assert (ft : transposeL (fun x:elt =>plus (f x))). red; intros x y z.
-  rewrite !PeanoNat.Nat.add_assoc, (PeanoNat.Nat.add_comm (f x) (f y)); reflexivity.
-assert (gc : compat_opL (fun x:elt => plus (g x))). red; auto with fset.
-assert (gt : transposeL (fun x:elt =>plus (g x))). red; intros x y z.
-  rewrite !PeanoNat.Nat.add_assoc, (PeanoNat.Nat.add_comm (g x) (g y)); reflexivity.
-assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))). repeat red; auto.
-assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). red; intros x y z.
+assert (fc : compat_opL (fun x:elt =>plus (f x))). { red; auto with fset. }
+assert (ft : transposeL (fun x:elt =>plus (f x))). { red; intros x y z.
+  rewrite !PeanoNat.Nat.add_assoc, (PeanoNat.Nat.add_comm (f x) (f y)); reflexivity. }
+assert (gc : compat_opL (fun x:elt => plus (g x))). { red; auto with fset. }
+assert (gt : transposeL (fun x:elt =>plus (g x))). { red; intros x y z.
+  rewrite !PeanoNat.Nat.add_assoc, (PeanoNat.Nat.add_comm (g x) (g y)); reflexivity. }
+assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))). { repeat red; auto. }
+assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). { red; intros x y z.
   set (u := (f x + g x)); set (v := (f y + g y)).
   rewrite !PeanoNat.Nat.add_assoc, (PeanoNat.Nat.add_comm u).
   reflexivity.
+}
 assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
 intros s;pattern s; apply set_rec.
-intros.
-rewrite <- (fold_equal _ _ st _ fc ft 0 _ _ H).
-rewrite <- (fold_equal _ _ st _ gc gt 0 _ _ H).
-rewrite <- (fold_equal _ _ st _ fgc fgt 0 _ _ H); auto.
-intros; do 3 (rewrite (fold_add _ _ st);auto).
-rewrite H0;simpl.
-rewrite <- !(PeanoNat.Nat.add_assoc (f x)); f_equal.
-rewrite !PeanoNat.Nat.add_assoc. f_equal.
-apply PeanoNat.Nat.add_comm.
-do 3 rewrite fold_empty;auto.
+- intros.
+  rewrite <- (fold_equal _ _ st _ fc ft 0 _ _ H).
+  rewrite <- (fold_equal _ _ st _ gc gt 0 _ _ H).
+  rewrite <- (fold_equal _ _ st _ fgc fgt 0 _ _ H); auto.
+- intros; do 3 (rewrite (fold_add _ _ st);auto).
+  rewrite H0;simpl.
+  rewrite <- !(PeanoNat.Nat.add_assoc (f x)); f_equal.
+  rewrite !PeanoNat.Nat.add_assoc. f_equal.
+  apply PeanoNat.Nat.add_comm.
+- do 3 rewrite fold_empty;auto.
 Qed.
 
 Lemma sum_filter : forall f, (compat_bool E.eq f) ->
@@ -878,31 +879,33 @@ Lemma sum_filter : forall f, (compat_bool E.eq f) ->
 Proof.
 unfold sum; intros f Hf.
 assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
-assert (cc : compat_opL (fun x => plus (if f x then 1 else 0))).
+assert (cc : compat_opL (fun x => plus (if f x then 1 else 0))). {
  repeat red; intros.
  rewrite (Hf _ _ H); auto.
-assert (ct : transposeL (fun x => plus (if f x then 1 else 0))).
+}
+assert (ct : transposeL (fun x => plus (if f x then 1 else 0))). {
  red; intros.
  set (a := if f x then _ else _).
  rewrite PeanoNat.Nat.add_comm.
  rewrite <- !PeanoNat.Nat.add_assoc. f_equal.
  apply PeanoNat.Nat.add_comm.
+}
 intros s;pattern s; apply set_rec.
-intros.
-change elt with E.t.
-rewrite <- (fold_equal _ _ st _ cc ct 0 _ _ H).
-rewrite <- (MP.Equal_cardinal (filter_equal Hf (equal_2 H))); auto.
-intros; rewrite (fold_add _ _ st _ cc ct); auto.
-generalize (@add_filter_1 f Hf s0 (add x s0) x) (@add_filter_2 f Hf s0 (add x s0) x) .
-assert (~ In x (filter f s0)).
- intro H1; rewrite (mem_1 (filter_1 Hf H1)) in H; discriminate H.
-case (f x); simpl; intros.
-rewrite (MP.cardinal_2 H1 (H2 Logic.eq_refl (MP.Add_add s0 x))); auto.
-rewrite <- (MP.Equal_cardinal (H3 Logic.eq_refl (MP.Add_add s0 x))); auto.
-intros; rewrite fold_empty;auto.
-rewrite MP.cardinal_1; auto.
-unfold Empty; intros.
-rewrite filter_iff; auto; set_iff; tauto.
+- intros.
+  change elt with E.t.
+  rewrite <- (fold_equal _ _ st _ cc ct 0 _ _ H).
+  rewrite <- (MP.Equal_cardinal (filter_equal Hf (equal_2 H))); auto.
+- intros; rewrite (fold_add _ _ st _ cc ct); auto.
+  generalize (@add_filter_1 f Hf s0 (add x s0) x) (@add_filter_2 f Hf s0 (add x s0) x) .
+  assert (~ In x (filter f s0)).
+  + intro H1; rewrite (mem_1 (filter_1 Hf H1)) in H; discriminate H.
+  + case (f x); simpl; intros.
+    * rewrite (MP.cardinal_2 H1 (H2 Logic.eq_refl (MP.Add_add s0 x))); auto.
+    * rewrite <- (MP.Equal_cardinal (H3 Logic.eq_refl (MP.Add_add s0 x))); auto.
+- intros; rewrite fold_empty;auto.
+  rewrite MP.cardinal_1; auto.
+  unfold Empty; intros.
+  rewrite filter_iff; auto; set_iff; tauto.
 Qed.
 
 Lemma fold_compat :
@@ -915,20 +918,20 @@ Lemma fold_compat :
 Proof.
 intros A eqA st f g fc ft gc gt i.
 intro s; pattern s; apply set_rec; intros.
-transitivity (fold f s0 i).
-apply fold_equal with (eqA:=eqA); auto.
-rewrite equal_sym; auto.
-transitivity (fold g s0 i).
-apply H0; intros; apply H1; auto with set.
-elim  (equal_2 H x); auto with set; intros.
-apply fold_equal with (eqA:=eqA); auto with set.
-transitivity (f x (fold f s0 i)).
-apply fold_add with (eqA:=eqA); auto with set.
-transitivity (g x (fold f s0 i)); auto with set.
-transitivity (g x (fold g s0 i)); auto with set.
-apply gc; auto with set.
-symmetry; apply fold_add with (eqA:=eqA); auto.
-do 2 rewrite fold_empty; reflexivity.
+- transitivity (fold f s0 i).
+  + apply fold_equal with (eqA:=eqA); auto.
+    rewrite equal_sym; auto.
+  + transitivity (fold g s0 i).
+    * apply H0; intros; apply H1; auto with set.
+      elim  (equal_2 H x); auto with set; intros.
+    * apply fold_equal with (eqA:=eqA); auto with set.
+- transitivity (f x (fold f s0 i)).
+  + apply fold_add with (eqA:=eqA); auto with set.
+  + transitivity (g x (fold f s0 i)); auto with set.
+    transitivity (g x (fold g s0 i)); auto with set.
+    * apply gc; auto with set.
+    * symmetry; apply fold_add with (eqA:=eqA); auto.
+- do 2 rewrite fold_empty; reflexivity.
 Qed.
 
 Lemma sum_compat :
@@ -936,10 +939,10 @@ Lemma sum_compat :
   forall s, (forall x, In x s -> f x=g x) -> sum f s=sum g s.
 intros.
 unfold sum; apply (fold_compat _ (@Logic.eq nat)); auto with fset.
-intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
-intros x y z; rewrite !PeanoNat.Nat.add_assoc; f_equal; apply PeanoNat.Nat.add_comm.
-intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
-intros x y z; rewrite !PeanoNat.Nat.add_assoc; f_equal; apply PeanoNat.Nat.add_comm.
+- intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
+- intros x y z; rewrite !PeanoNat.Nat.add_assoc; f_equal; apply PeanoNat.Nat.add_comm.
+- intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
+- intros x y z; rewrite !PeanoNat.Nat.add_assoc; f_equal; apply PeanoNat.Nat.add_comm.
 Qed.
 
 End Sum.

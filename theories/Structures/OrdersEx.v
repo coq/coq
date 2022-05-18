@@ -55,16 +55,16 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  Instance lt_strorder : StrictOrder lt.
  Proof.
  split.
- (* irreflexive *)
- intros (x1,x2); compute. destruct 1.
- apply (StrictOrder_Irreflexive x1); auto.
- apply (StrictOrder_Irreflexive x2); intuition.
- (* transitive *)
- intros (x1,x2) (y1,y2) (z1,z2). compute. intuition.
- left; etransitivity; eauto.
- left. setoid_replace z1 with y1; auto with relations.
- left; setoid_replace x1 with y1; auto with relations.
- right; split; etransitivity; eauto.
+ - (* irreflexive *)
+   intros (x1,x2); compute. destruct 1.
+   + apply (StrictOrder_Irreflexive x1); auto.
+   + apply (StrictOrder_Irreflexive x2); intuition.
+ - (* transitive *)
+   intros (x1,x2) (y1,y2) (z1,z2). compute. intuition.
+   + left; etransitivity; eauto.
+   + left. setoid_replace z1 with y1; auto with relations.
+   + left; setoid_replace x1 with y1; auto with relations.
+   + right; split; etransitivity; eauto.
  Qed.
 
 #[global]
@@ -155,8 +155,8 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   Proof.
    unfold eq, lt.
    induction x; destruct y; try constructor; simpl; auto.
-    destruct (IHx y); subst; auto.
-    destruct (IHx y); subst; auto.
+   - destruct (IHx y); subst; auto.
+   - destruct (IHx y); subst; auto.
   Qed.
 
 End PositiveOrderedTypeBits.

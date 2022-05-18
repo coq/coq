@@ -34,7 +34,9 @@ Qed.
 
 Lemma inj_iff a a' : N.to_nat a = N.to_nat a' <-> a = a'.
 Proof.
- split. apply inj. intros; now subst.
+  split.
+  - apply inj.
+  - intros; now subst.
 Qed.
 
 (** Interaction of this translation and usual operations. *)
@@ -152,7 +154,9 @@ Qed.
 Lemma inj_iter a {A} (f:A->A) (x:A) :
   N.iter a f x = Nat.iter (N.to_nat a) f x.
 Proof.
- destruct a as [|a]. trivial. apply Pos2Nat.inj_iter.
+  destruct a as [|a].
+  - trivial.
+  - apply Pos2Nat.inj_iter.
 Qed.
 
 End N2Nat.
@@ -190,7 +194,9 @@ Qed.
 
 Lemma inj_iff n n' : N.of_nat n = N.of_nat n' <-> n = n'.
 Proof.
- split. apply inj. intros; now subst.
+  split.
+  - apply inj.
+  - intros; now subst.
 Qed.
 
 (** Interaction of this translation and usual operations. *)

@@ -26,15 +26,16 @@ Module Pos2Nat.
 
 Lemma inj_succ p : to_nat (succ p) = S (to_nat p).
 Proof.
- unfold to_nat. rewrite iter_op_succ. trivial.
- apply Nat.add_assoc.
+  unfold to_nat. rewrite iter_op_succ.
+  - trivial.
+  - apply Nat.add_assoc.
 Qed.
 
 Theorem inj_add p q : to_nat (p + q) = to_nat p + to_nat q.
 Proof.
  revert q. induction p as [|p IHp] using peano_ind; intros q.
- now rewrite add_1_l, inj_succ.
- now rewrite add_succ_l, !inj_succ, IHp.
+ - now rewrite add_1_l, inj_succ.
+ - now rewrite add_succ_l, !inj_succ, IHp.
 Qed.
 
 Theorem inj_mul p q : to_nat (p * q) = to_nat p * to_nat q.
@@ -65,8 +66,8 @@ Qed.
 Lemma is_succ p : exists n, to_nat p = S n.
 Proof.
  induction p as [|p IHp] using peano_ind.
- now exists 0.
- destruct IHp as (n,Hn). exists (S n). now rewrite inj_succ, Hn.
+ - now exists 0.
+         - destruct IHp as (n,Hn). exists (S n). now rewrite inj_succ, Hn.
 Qed.
 
 (** [Pos.to_nat] is strictly positive *)
@@ -82,9 +83,10 @@ Qed.
 
 Theorem id p : of_nat (to_nat p) = p.
 Proof.
- induction p as [|p IHp] using peano_ind. trivial.
- rewrite inj_succ. rewrite <- IHp at 2.
- now destruct (is_succ p) as (n,->).
+  induction p as [|p IHp] using peano_ind.
+  - trivial.
+  - rewrite inj_succ. rewrite <- IHp at 2.
+    now destruct (is_succ p) as (n,->).
 Qed.
 
 (** [Pos.to_nat] is hence injective *)
@@ -96,7 +98,9 @@ Qed.
 
 Lemma inj_iff p q : to_nat p = to_nat q <-> p = q.
 Proof.
- split. apply inj. intros; now subst.
+  split.
+  - apply inj.
+  - intros; now subst.
 Qed.
 
 (** [Pos.to_nat] is a morphism for comparison *)
@@ -108,9 +112,9 @@ Proof.
    rewrite <- Hq, lt_1_succ, inj_succ, inj_1, Nat.compare_succ.
    symmetry. apply Nat.compare_lt_iff, is_pos.
  - destruct (succ_pred_or q) as [Hq|Hq]; [subst|].
-   rewrite compare_antisym, lt_1_succ, inj_succ. simpl.
-   symmetry. apply Nat.compare_gt_iff, is_pos.
-   now rewrite <- Hq, 2 inj_succ, compare_succ_succ, IH.
+   + rewrite compare_antisym, lt_1_succ, inj_succ. simpl.
+     symmetry. apply Nat.compare_gt_iff, is_pos.
+   + now rewrite <- Hq, 2 inj_succ, compare_succ_succ, IH.
 Qed.
 
 (** [Pos.to_nat] is a morphism for [lt], [le], etc *)
@@ -142,8 +146,8 @@ Theorem inj_sub p q : (q < p)%positive ->
 Proof.
  intro H. apply Nat.add_cancel_r with (to_nat q).
  rewrite Nat.sub_add.
- now rewrite <- inj_add, sub_add.
- now apply Nat.lt_le_incl, inj_lt.
+ - now rewrite <- inj_add, sub_add.
+ - now apply Nat.lt_le_incl, inj_lt.
 Qed.
 
 Theorem inj_sub_max p q :
@@ -219,14 +223,18 @@ Module Nat2Pos.
 
 Theorem id (n:nat) : n<>0 -> Pos.to_nat (Pos.of_nat n) = n.
 Proof.
- induction n as [|n H]; trivial. now destruct 1.
- intros _. simpl Pos.of_nat. destruct n. trivial.
- rewrite Pos2Nat.inj_succ. f_equal. now apply H.
+  induction n as [|n H]; trivial.
+  - now destruct 1.
+  - intros _. simpl Pos.of_nat. destruct n.
+    + trivial.
+    + rewrite Pos2Nat.inj_succ. f_equal. now apply H.
 Qed.
 
 Theorem id_max (n:nat) : Pos.to_nat (Pos.of_nat n) = max 1 n.
 Proof.
- destruct n. trivial. now rewrite id.
+  destruct n.
+  - trivial.
+  - now rewrite id.
 Qed.
 
 (** [Pos.of_nat] is hence injective for non-zero numbers *)
@@ -239,7 +247,9 @@ Qed.
 Lemma inj_iff (n m : nat) : n<>0 -> m<>0 ->
  (Pos.of_nat n = Pos.of_nat m <-> n = m).
 Proof.
- split. now apply inj. intros; now subst.
+  split.
+  - now apply inj.
+  - intros; now subst.
 Qed.
 
 (** Usual operations are morphisms with respect to [Pos.of_nat]
@@ -263,7 +273,9 @@ Lemma inj_add (n m : nat) : n<>0 -> m<>0 ->
 Proof.
 intros Hn Hm. apply Pos2Nat.inj.
 rewrite Pos2Nat.inj_add, !id; trivial.
-intros H. destruct n. now destruct Hn. now simpl in H.
+intros H. destruct n.
+- now destruct Hn.
+- now simpl in H.
 Qed.
 
 Lemma inj_mul (n m : nat) : n<>0 -> m<>0 ->
@@ -271,7 +283,9 @@ Lemma inj_mul (n m : nat) : n<>0 -> m<>0 ->
 Proof.
 intros Hn Hm. apply Pos2Nat.inj.
 rewrite Pos2Nat.inj_mul, !id; trivial.
-intros H. apply Nat.mul_eq_0 in H. destruct H. now elim Hn. now elim Hm.
+intros H. apply Nat.mul_eq_0 in H. destruct H.
+- now elim Hn.
+- now elim Hm.
 Qed.
 
 Lemma inj_compare (n m : nat) : n<>0 -> m<>0 ->
@@ -293,23 +307,27 @@ Qed.
 Lemma inj_min (n m : nat) :
  Pos.of_nat (min n m) = Pos.min (Pos.of_nat n) (Pos.of_nat m).
 Proof.
- destruct n as [|n]. simpl. symmetry. apply Pos.min_l, Pos.le_1_l.
- destruct m as [|m]. simpl. symmetry. apply Pos.min_r, Pos.le_1_l.
+ destruct n as [|n]. { simpl. symmetry. apply Pos.min_l, Pos.le_1_l. }
+ destruct m as [|m]. { simpl. symmetry. apply Pos.min_r, Pos.le_1_l. }
  unfold Pos.min. rewrite <- inj_compare by easy.
  case Nat.compare_spec; intros H; f_equal;
   apply Nat.min_l || apply Nat.min_r.
- rewrite H; auto. now apply Nat.lt_le_incl. now apply Nat.lt_le_incl.
+ - rewrite H; auto.
+ - now apply Nat.lt_le_incl.
+ - now apply Nat.lt_le_incl.
 Qed.
 
 Lemma inj_max (n m : nat) :
  Pos.of_nat (max n m) = Pos.max (Pos.of_nat n) (Pos.of_nat m).
 Proof.
- destruct n as [|n]. simpl. symmetry. apply Pos.max_r, Pos.le_1_l.
- destruct m as [|m]. simpl. symmetry. apply Pos.max_l, Pos.le_1_l.
+ destruct n as [|n]. { simpl. symmetry. apply Pos.max_r, Pos.le_1_l. }
+ destruct m as [|m]. { simpl. symmetry. apply Pos.max_l, Pos.le_1_l. }
  unfold Pos.max. rewrite <- inj_compare by easy.
  case Nat.compare_spec; intros H; f_equal;
   apply Nat.max_l || apply Nat.max_r.
- rewrite H; auto. now apply Nat.lt_le_incl. now apply Nat.lt_le_incl.
+ - rewrite H; auto.
+ - now apply Nat.lt_le_incl.
+ - now apply Nat.lt_le_incl.
 Qed.
 
 Theorem inj_pow (n m : nat) : m <> 0 ->
@@ -371,7 +389,9 @@ Qed.
 
 Lemma inj_iff (n m : nat) : Pos.of_succ_nat n = Pos.of_succ_nat m <-> n = m.
 Proof.
- split. apply inj. intros; now subst.
+  split.
+  - apply inj.
+  - intros; now subst.
 Qed.
 
 (** Another formulation *)
@@ -463,11 +483,11 @@ Lemma Pmult_nat_mult : forall p n,
  Pmult_nat p n = Pos.to_nat p * n.
 Proof.
  intro p; induction p as [p IHp|p IHp|]; intros n; unfold Pos.to_nat; simpl.
- f_equal. rewrite 2 IHp. rewrite <- Nat.mul_assoc.
-  f_equal. simpl. now rewrite Nat.add_0_r.
- rewrite 2 IHp. rewrite <- Nat.mul_assoc.
-  f_equal. simpl. now rewrite Nat.add_0_r.
- simpl. now rewrite Nat.add_0_r.
+ - f_equal. rewrite 2 IHp. rewrite <- Nat.mul_assoc.
+   f_equal. simpl. now rewrite Nat.add_0_r.
+ - rewrite 2 IHp. rewrite <- Nat.mul_assoc.
+   f_equal. simpl. now rewrite Nat.add_0_r.
+ - simpl. now rewrite Nat.add_0_r.
 Qed.
 
 Lemma Pmult_nat_succ_morphism :
@@ -502,8 +522,9 @@ Qed.
 Lemma le_Pmult_nat : forall p n, n <= Pmult_nat p n.
 Proof.
  intros p n. rewrite Pmult_nat_mult.
- apply Nat.le_trans with (1*n). now rewrite Nat.mul_1_l.
- apply Nat.mul_le_mono_r. apply Pos2Nat.is_pos.
+ apply Nat.le_trans with (1*n).
+ - now rewrite Nat.mul_1_l.
+ - apply Nat.mul_le_mono_r. apply Pos2Nat.is_pos.
 Qed.
 
 End ObsoletePmultNat.

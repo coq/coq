@@ -20,8 +20,8 @@ Include NOrderProp N.
 Theorem le_add_r : forall n m, n <= n + m.
 Proof.
 intros n m; induct m.
-rewrite add_0_r; now apply eq_le_incl.
-intros m IH. rewrite add_succ_r; now apply le_le_succ_r.
+- rewrite add_0_r; now apply eq_le_incl.
+- intros m IH. rewrite add_succ_r; now apply le_le_succ_r.
 Qed.
 
 Theorem lt_lt_add_r : forall n m p, n < m -> n < m + p.
@@ -37,12 +37,16 @@ Qed.
 
 Theorem add_pos_l : forall n m, 0 < n -> 0 < n + m.
 Proof.
-intros; apply add_pos_nonneg. assumption. apply le_0_l.
+  intros; apply add_pos_nonneg.
+  - assumption.
+  - apply le_0_l.
 Qed.
 
 Theorem add_pos_r : forall n m, 0 < m -> 0 < n + m.
 Proof.
-intros; apply add_nonneg_pos. apply le_0_l. assumption.
+  intros; apply add_nonneg_pos.
+  - apply le_0_l.
+  - assumption.
 Qed.
 
 End NAddOrderProp.

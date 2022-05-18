@@ -93,9 +93,9 @@ Section decidability.
   Proof.
     intro H.
     apply (Zcompare_rec _ x y).
-    intro. right. elim (Z.compare_eq_iff x y); auto with arith.
-    intro. left. elim (Z.compare_eq_iff x y); auto with arith.
-    intro H1. absurd (x > y); auto with arith.
+    - intro. right. elim (Z.compare_eq_iff x y); auto with arith.
+    - intro. left. elim (Z.compare_eq_iff x y); auto with arith.
+    - intro H1. absurd (x > y); auto with arith.
   Defined.
 
 End decidability.
@@ -106,15 +106,15 @@ Lemma Zlt_cotrans : forall n m:Z, n < m -> forall p:Z, {n < p} + {p < m}.
 Proof.
   intros x y H z.
   case (Z_lt_ge_dec x z).
-  intro.
-  left.
-  assumption.
-  intro.
-  right.
-  apply (Z.le_lt_trans _ x).
-  apply Z.ge_le.
-  assumption.
-  assumption.
+  - intro.
+    left.
+    assumption.
+  - intro.
+    right.
+    apply (Z.le_lt_trans _ x).
+    + apply Z.ge_le.
+      assumption.
+    + assumption.
 Defined.
 
 Lemma Zlt_cotrans_pos : forall n m:Z, 0 < n + m -> {0 < n} + {0 < m}.
@@ -138,44 +138,44 @@ Lemma not_Zeq_inf : forall n m:Z, n <> m -> {n < m} + {m < n}.
 Proof.
   intros x y H.
   case Z_lt_ge_dec with x y.
-  intro.
-  left.
-  assumption.
-  intro H0.
-  generalize (Z.ge_le _ _ H0).
-  intro H1.
-  case (Z_le_lt_eq_dec _ _ H1).
-  intro.
-  right.
-  assumption.
-  intro.
-  apply False_rec.
-  apply H.
-  symmetry .
-  assumption.
+  - intro.
+    left.
+    assumption.
+  - intro H0.
+    generalize (Z.ge_le _ _ H0).
+    intro H1.
+    case (Z_le_lt_eq_dec _ _ H1).
+    + intro.
+      right.
+      assumption.
+    + intro.
+      apply False_rec.
+      apply H.
+      symmetry .
+      assumption.
 Defined.
 
 Lemma Z_dec : forall n m:Z, {n < m} + {n > m} + {n = m}.
 Proof.
   intros x y.
   case (Z_lt_ge_dec x y).
-  intro H.
-  left.
-  left.
-  assumption.
-  intro H.
-  generalize (Z.ge_le _ _ H).
-  intro H0.
-  case (Z_le_lt_eq_dec y x H0).
-  intro H1.
-  left.
-  right.
-  apply Z.lt_gt.
-  assumption.
-  intro.
-  right.
-  symmetry .
-  assumption.
+  - intro H.
+    left.
+    left.
+    assumption.
+  - intro H.
+    generalize (Z.ge_le _ _ H).
+    intro H0.
+    case (Z_le_lt_eq_dec y x H0).
+    + intro H1.
+      left.
+      right.
+      apply Z.lt_gt.
+      assumption.
+    + intro.
+      right.
+      symmetry .
+      assumption.
 Defined.
 
 

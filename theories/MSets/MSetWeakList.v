@@ -169,25 +169,26 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
    mem x s = true <-> In x s.
   Proof.
   induction s; intros.
-  split; intros; inv. discriminate.
-  simpl; destruct (X.eq_dec x a); split; intros; inv; auto.
-  right; rewrite <- IHs; auto.
-  rewrite IHs; auto.
+  - split; intros; inv. discriminate.
+  - simpl; destruct (X.eq_dec x a); split; intros; inv; auto.
+    + right; rewrite <- IHs; auto.
+    + rewrite IHs; auto.
   Qed.
 
   Lemma isok_iff : forall l, Ok l <-> isok l = true.
   Proof.
   induction l.
-  intuition.
-  simpl.
-  rewrite andb_true_iff.
-  rewrite negb_true_iff.
-  rewrite <- IHl.
-  split; intros H. inv.
-  split; auto.
-  apply not_true_is_false. rewrite mem_spec; auto.
-  destruct H; constructors; auto.
-  rewrite <- mem_spec; auto; congruence.
+  - intuition.
+  - simpl.
+    rewrite andb_true_iff.
+    rewrite negb_true_iff.
+    rewrite <- IHl.
+    split; intros H.
+    + inv.
+      split; auto.
+      apply not_true_is_false. rewrite mem_spec; auto.
+    + destruct H; constructors; auto.
+      rewrite <- mem_spec; auto; congruence.
   Qed.
 
   Global Instance isok_Ok l : isok l = true -> Ok l | 10.
@@ -200,21 +201,21 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
      In y (add x s) <-> X.eq y x \/ In y s.
   Proof.
   induction s; simpl; intros.
-  intuition; inv; auto.
-  destruct X.eq_dec; inv; rewrite InA_cons, ?IHs; intuition.
-  left; eauto.
-  inv; auto.
+  - intuition; inv; auto.
+  - destruct X.eq_dec; inv; rewrite InA_cons, ?IHs; intuition.
+    + left; eauto.
+    + inv; auto.
   Qed.
 
   Global Instance add_ok s x `(Ok s) : Ok (add x s).
   Proof.
   induction s.
-  simpl; intuition.
-  intros; inv. simpl.
-  destruct X.eq_dec; auto.
-  constructors; auto.
-  intro; inv; auto.
-  rewrite add_spec in *; intuition.
+  - simpl; intuition.
+  - intros; inv. simpl.
+    destruct X.eq_dec; auto.
+    constructors; auto.
+    intro; inv; auto.
+    rewrite add_spec in *; intuition.
   Qed.
 
   Lemma remove_spec :
@@ -222,20 +223,20 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
      In y (remove x s) <-> In y s /\ ~X.eq y x.
   Proof.
   induction s; simpl; intros.
-  intuition; inv; auto.
-  destruct X.eq_dec as [|Hnot]; inv; rewrite !InA_cons, ?IHs; intuition.
-  elim H. setoid_replace a with y; eauto.
-  elim H3. setoid_replace x with y; eauto.
-  elim Hnot. eauto.
+  - intuition; inv; auto.
+  - destruct X.eq_dec as [|Hnot]; inv; rewrite !InA_cons, ?IHs; intuition.
+    + elim H. setoid_replace a with y; eauto.
+    + elim H3. setoid_replace x with y; eauto.
+    + elim Hnot. eauto.
   Qed.
 
   Global Instance remove_ok s x `(Ok s) : Ok (remove x s).
   Proof.
   induction s; simpl; intros.
-  auto.
-  destruct X.eq_dec; inv; auto.
-  constructors; auto.
-  rewrite remove_spec; intuition.
+  - auto.
+  - destruct X.eq_dec; inv; auto.
+    constructors; auto.
+    rewrite remove_spec; intuition.
   Qed.
 
   Lemma singleton_ok : forall x : elt, Ok (singleton x).
@@ -245,7 +246,9 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
 
   Lemma singleton_spec : forall x y : elt, In y (singleton x) <-> X.eq y x.
   Proof.
-  unfold singleton; simpl; split; intros. inv; auto. left; auto.
+    unfold singleton; simpl; split; intros.
+    - inv; auto.
+    - left; auto.
   Qed.
 
   Lemma empty_ok : Ok empty.
@@ -261,9 +264,9 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Lemma is_empty_spec : forall s : t, is_empty s = true <-> Empty s.
   Proof.
   unfold Empty; destruct s; simpl; split; intros; auto.
-  intro; inv.
-  discriminate.
-  elim (H e); auto.
+  - intro; inv.
+  - discriminate.
+  - elim (H e); auto.
   Qed.
 
   Lemma elements_spec1 : forall (s : t) (x : elt), In x (elements s) <-> In x s.
@@ -293,8 +296,8 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
    In x (union s s') <-> In x s \/ In x s'.
   Proof.
   induction s; simpl in *; unfold flip; intros; auto; inv.
-  intuition; inv.
-  rewrite IHs, add_spec, InA_cons; intuition.
+  - intuition; inv.
+  - rewrite IHs, add_spec, InA_cons; intuition.
   Qed.
 
   Global Instance inter_ok s s' `(Ok s, Ok s') : Ok (inter s s').
@@ -309,25 +312,26 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Qed.
 
   Lemma inter_spec  :
-   forall (s s' : t) (x : elt) {Hs : Ok s} {Hs' : Ok s'},
-   In x (inter s s') <-> In x s /\ In x s'.
+    forall (s s' : t) (x : elt) {Hs : Ok s} {Hs' : Ok s'},
+      In x (inter s s') <-> In x s /\ In x s'.
   Proof.
-  unfold inter, fold, flip; intros.
-  set (acc := nil (A:=elt)) in *.
-  assert (Hacc : Ok acc) by constructors.
-  assert (IFF : (In x s /\ In x s') <-> (In x s /\ In x s') \/ In x acc).
-   intuition; unfold acc in *; inv.
-  rewrite IFF; clear IFF. clearbody acc.
-  revert acc Hacc x s' Hs Hs'.
-  induction s; simpl; intros.
-  intuition; inv.
-  inv.
-  case_eq (mem a s'); intros Hm.
-  rewrite IHs, add_spec, InA_cons; intuition.
-  rewrite mem_spec in Hm; auto.
-  left; split; auto. rewrite H1; auto.
-  rewrite IHs, InA_cons; intuition.
-  rewrite H2, <- mem_spec in H3; auto. congruence.
+    unfold inter, fold, flip; intros.
+    set (acc := nil (A:=elt)) in *.
+    assert (Hacc : Ok acc) by constructors.
+    assert (IFF : (In x s /\ In x s') <-> (In x s /\ In x s') \/ In x acc). {
+      intuition; unfold acc in *; inv.
+    }
+    rewrite IFF; clear IFF. clearbody acc.
+    revert acc Hacc x s' Hs Hs'.
+    induction s; simpl; intros.
+    - intuition; inv.
+    - inv.
+      case_eq (mem a s'); intros Hm.
+      + rewrite IHs, add_spec, InA_cons; intuition.
+        rewrite mem_spec in Hm; auto.
+        left; split; auto. rewrite H1; auto.
+      + rewrite IHs, InA_cons; intuition.
+        rewrite H2, <- mem_spec in H3; auto. congruence.
   Qed.
 
   Global Instance diff_ok : forall s s' `(Ok s, Ok s'), Ok (diff s s').
@@ -342,9 +346,9 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Proof.
   unfold diff; intros s s'; revert s.
   induction s'; simpl; unfold flip.
-  intuition; inv.
-  intros. inv.
-  rewrite IHs', remove_spec, InA_cons; intuition.
+  - intuition; inv.
+  - intros. inv.
+    rewrite IHs', remove_spec, InA_cons; intuition.
   Qed.
 
   Lemma subset_spec :
@@ -355,9 +359,9 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   rewrite is_empty_spec.
   unfold Empty; intros.
   intuition.
-  specialize (H a). rewrite diff_spec in H; intuition.
-  rewrite <- (mem_spec a) in H |- *. destruct (mem a s'); intuition.
-  rewrite diff_spec in H0; intuition.
+  - specialize (H a). rewrite diff_spec in H; intuition.
+    rewrite <- (mem_spec a) in H |- *. destruct (mem a s'); intuition.
+  - rewrite diff_spec in H0; intuition.
   Qed.
 
   Lemma equal_spec :
@@ -366,7 +370,9 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Proof.
   unfold Equal, equal; intros.
   rewrite andb_true_iff, !subset_spec.
-  unfold Subset; intuition. rewrite <- H; auto. rewrite H; auto.
+  unfold Subset; intuition.
+  - rewrite <- H; auto.
+  - rewrite H; auto.
   Qed.
 
   Definition choose_spec1 :
@@ -378,8 +384,8 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Definition choose_spec2 : forall s : t, choose s = None -> Empty s.
   Proof.
   destruct s; simpl; intros.
-  intros x H0; inversion H0.
-  inversion H.
+  - intros x H0; inversion H0.
+  - inversion H.
   Qed.
 
   Lemma cardinal_spec :
@@ -392,8 +398,8 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
    In x (filter f s) -> In x s.
   Proof.
   induction s; simpl.
-  intuition; inv.
-  intros; destruct (f a); inv; intuition; right; eauto.
+  - intuition; inv.
+  - intros; destruct (f a); inv; intuition; right; eauto.
   Qed.
 
   Lemma filter_spec :
@@ -402,22 +408,22 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
    (In x (filter f s) <-> In x s /\ f x = true).
   Proof.
   induction s; simpl.
-  intuition; inv.
-  intros.
-  destruct (f a) eqn:E; rewrite ?InA_cons, IHs; intuition.
-  setoid_replace x with a; auto.
-  setoid_replace a with x in E; auto. congruence.
+  - intuition; inv.
+  - intros.
+    destruct (f a) eqn:E; rewrite ?InA_cons, IHs; intuition.
+    + setoid_replace x with a; auto.
+    + setoid_replace a with x in E; auto. congruence.
   Qed.
 
   Global Instance filter_ok s f `(Ok s) : Ok (filter f s).
   Proof.
   induction s; simpl.
-  auto.
-  intros; inv.
-  case (f a); auto.
-  constructors; auto.
-  contradict H0.
-  eapply filter_spec'; eauto.
+  - auto.
+  - intros; inv.
+    case (f a); auto.
+    constructors; auto.
+    contradict H0.
+    eapply filter_spec'; eauto.
   Qed.
 
   Lemma for_all_spec :
@@ -426,14 +432,14 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
    (for_all f s = true <-> For_all (fun x => f x = true) s).
   Proof.
   unfold For_all; induction s; simpl.
-  intuition. inv.
-  intros; inv.
-  destruct (f a) eqn:F.
-  rewrite IHs; intuition. inv; auto.
-  setoid_replace x with a; auto.
-  split; intros H'; try discriminate.
-  intros.
-  rewrite <- F, <- (H' a); auto.
+  - intuition. inv.
+  - intros; inv.
+    destruct (f a) eqn:F.
+    + rewrite IHs; intuition. inv; auto.
+      setoid_replace x with a; auto.
+    + split; intros H'; try discriminate.
+      intros.
+      rewrite <- F, <- (H' a); auto.
   Qed.
 
   Lemma exists_spec :
@@ -442,15 +448,15 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
    (exists_ f s = true <-> Exists (fun x => f x = true) s).
   Proof.
   unfold Exists; induction s; simpl.
-  split; [discriminate| intros (x & Hx & _); inv].
-  intros.
-  destruct (f a) eqn:F.
-  split; auto.
-  exists a; auto.
-  rewrite IHs; firstorder.
-  inv.
-  setoid_replace a with x in F; auto; congruence.
-  exists x; auto.
+  - split; [discriminate| intros (x & Hx & _); inv].
+  - intros.
+    destruct (f a) eqn:F.
+    + split; auto.
+      exists a; auto.
+    + rewrite IHs; firstorder.
+      inv.
+      * setoid_replace a with x in F; auto; congruence.
+      * exists x; auto.
   Qed.
 
   Lemma partition_spec1 :
@@ -459,11 +465,11 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
    Equal (fst (partition f s)) (filter f s).
   Proof.
   simple induction s; simpl; auto; unfold Equal.
-  firstorder.
-  intros x l Hrec f Hf.
-  generalize (Hrec f Hf); clear Hrec.
-  case (partition f l); intros s1 s2; simpl; intros.
-  case (f x); simpl; firstorder; inversion H0; intros; firstorder.
+  - firstorder.
+  - intros x l Hrec f Hf.
+    generalize (Hrec f Hf); clear Hrec.
+    case (partition f l); intros s1 s2; simpl; intros.
+    case (f x); simpl; firstorder; inversion H0; intros; firstorder.
   Qed.
 
   Lemma partition_spec2 :
@@ -472,11 +478,11 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
    Equal (snd (partition f s)) (filter (fun x => negb (f x)) s).
   Proof.
   simple induction s; simpl; auto; unfold Equal.
-  firstorder.
-  intros x l Hrec f Hf.
-  generalize (Hrec f Hf); clear Hrec.
-  case (partition f l); intros s1 s2; simpl; intros.
-  case (f x); simpl; firstorder; inversion H0; intros; firstorder.
+  - firstorder.
+  - intros x l Hrec f Hf.
+    generalize (Hrec f Hf); clear Hrec.
+    case (partition f l); intros s1 s2; simpl; intros.
+    case (f x); simpl; firstorder; inversion H0; intros; firstorder.
   Qed.
 
   Lemma partition_ok1' :
@@ -502,21 +508,21 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Global Instance partition_ok1 : forall s f `(Ok s), Ok (fst (partition f s)).
   Proof.
   simple induction s; simpl.
-  auto.
-  intros x l Hrec f Hs; inv.
-  generalize (@partition_ok1' _ _ f x).
-  generalize (Hrec f H0).
-  case (f x); case (partition f l); simpl; constructors; auto.
+  - auto.
+  - intros x l Hrec f Hs; inv.
+    generalize (@partition_ok1' _ _ f x).
+    generalize (Hrec f H0).
+    case (f x); case (partition f l); simpl; constructors; auto.
   Qed.
 
   Global Instance partition_ok2 : forall s f `(Ok s), Ok (snd (partition f s)).
   Proof.
   simple induction s; simpl.
-  auto.
-  intros x l Hrec f Hs; inv.
-  generalize (@partition_ok2' _ _ f x).
-  generalize (Hrec f H0).
-  case (f x); case (partition f l); simpl; constructors; auto.
+  - auto.
+  - intros x l Hrec f Hs; inv.
+    generalize (@partition_ok2' _ _ f x).
+    generalize (Hrec f H0).
+    case (f x); case (partition f l); simpl; constructors; auto.
   Qed.
 
   End ForNotations.

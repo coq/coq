@@ -398,31 +398,31 @@ end.
 Lemma ltb_tree_iff : forall x s, lt_tree x s <-> ltb_tree x s = true.
 Proof.
  induction s as [|c l IHl y r IHr]; simpl.
- unfold lt_tree; intuition_in.
- elim_compare x y.
- split; intros; try discriminate. assert (X.lt y x) by auto. order.
- split; intros; try discriminate. assert (X.lt y x) by auto. order.
- rewrite !andb_true_iff, <-IHl, <-IHr.
-  unfold lt_tree; intuition_in; order.
+ - unfold lt_tree; intuition_in.
+ - elim_compare x y.
+   + split; intros; try discriminate. assert (X.lt y x) by auto. order.
+   + split; intros; try discriminate. assert (X.lt y x) by auto. order.
+   + rewrite !andb_true_iff, <-IHl, <-IHr.
+     unfold lt_tree; intuition_in; order.
 Qed.
 
 Lemma gtb_tree_iff : forall x s, gt_tree x s <-> gtb_tree x s = true.
 Proof.
  induction s as [|c l IHl y r IHr]; simpl.
- unfold gt_tree; intuition_in.
- elim_compare x y.
- split; intros; try discriminate. assert (X.lt x y) by auto. order.
- rewrite !andb_true_iff, <-IHl, <-IHr.
-  unfold gt_tree; intuition_in; order.
- split; intros; try discriminate. assert (X.lt x y) by auto. order.
+ - unfold gt_tree; intuition_in.
+ - elim_compare x y.
+   + split; intros; try discriminate. assert (X.lt x y) by auto. order.
+   + rewrite !andb_true_iff, <-IHl, <-IHr.
+     unfold gt_tree; intuition_in; order.
+   + split; intros; try discriminate. assert (X.lt x y) by auto. order.
 Qed.
 
 Lemma isok_iff : forall s, Ok s <-> isok s = true.
 Proof.
  induction s as [|c l IHl y r IHr]; simpl.
- intuition_in.
- rewrite !andb_true_iff, <- IHl, <-IHr, <- ltb_tree_iff, <- gtb_tree_iff.
- intuition_in.
+ - intuition_in.
+ - rewrite !andb_true_iff, <- IHl, <-IHr, <- ltb_tree_iff, <- gtb_tree_iff.
+   intuition_in.
 Qed.
 
 #[global]
@@ -559,7 +559,9 @@ Lemma is_empty_spec : forall s, is_empty s = true <-> Empty s.
 Proof.
  destruct s as [|c r x l]; simpl; auto.
  - split; auto. intros _ x H. inv.
- - split; auto. try discriminate. intro H; elim (H x); auto.
+ - split; auto.
+   + try discriminate.
+   + intro H; elim (H x); auto.
 Qed.
 
 (** ** Membership *)
@@ -602,10 +604,10 @@ Qed.
 Lemma min_elt_spec3 s : min_elt s = None -> Empty s.
 Proof.
  functional induction (min_elt s).
- red; red; inversion 2.
- inversion 1.
- intro H0.
- destruct (IHo H0 _x3); auto.
+ - red; red; inversion 2.
+ - inversion 1.
+ - intro H0.
+   destruct (IHo H0 _x3); auto.
 Qed.
 
 Lemma max_elt_spec1 s x : max_elt s = Some x -> InT x s.
@@ -634,10 +636,10 @@ Qed.
 Lemma max_elt_spec3 s : max_elt s = None -> Empty s.
 Proof.
  functional induction (max_elt s).
- red; red; inversion 2.
- inversion 1.
- intro H0.
- destruct (IHo H0 _x3); auto.
+ - red; red; inversion 2.
+ - inversion 1.
+ - intro H0.
+   destruct (IHo H0 _x3); auto.
 Qed.
 
 Lemma choose_spec1 : forall s x, choose s = Some x -> InT x s.
@@ -655,12 +657,14 @@ Lemma choose_spec3 : forall s s' x x' `{Ok s, Ok s'},
   Equal s s' -> X.eq x x'.
 Proof.
  unfold choose, Equal; intros s s' x x' Hb Hb' Hx Hx' H.
- assert (~X.lt x x').
+ assert (~X.lt x x'). {
   apply min_elt_spec2 with s'; auto.
   rewrite <-H; auto using min_elt_spec1.
- assert (~X.lt x' x).
+ }
+ assert (~X.lt x' x). {
   apply min_elt_spec2 with s; auto.
   rewrite H; auto using min_elt_spec1.
+ }
  elim_compare x x'; intuition.
 Qed.
 
@@ -670,12 +674,12 @@ Lemma elements_spec1' : forall s acc x,
  InA X.eq x (elements_aux acc s) <-> InT x s \/ InA X.eq x acc.
 Proof.
  induction s as [ | c l Hl x r Hr ]; simpl; auto.
- intuition.
- inversion H0.
- intros.
- rewrite Hl.
- destruct (Hr acc x0); clear Hl Hr.
- intuition; inversion_clear H3; intuition.
+ - intuition.
+   inversion H0.
+ - intros.
+   rewrite Hl.
+   destruct (Hr acc x0); clear Hl Hr.
+   intuition; inversion_clear H3; intuition.
 Qed.
 
 Lemma elements_spec1 : forall s x, InA X.eq x (elements s) <-> InT x s.
@@ -691,15 +695,15 @@ Proof.
  induction s as [ | c l Hl y r Hr]; simpl; intuition.
  inv.
  apply Hl; auto.
- constructor.
- apply Hr; auto.
- eapply InA_InfA; eauto with *.
- intros.
- destruct (elements_spec1' r acc y0); intuition.
- intros.
- inversion_clear H.
- order.
- destruct (elements_spec1' r acc x); intuition eauto.
+ - constructor.
+   + apply Hr; auto.
+   + eapply InA_InfA; eauto with *.
+     intros.
+     destruct (elements_spec1' r acc y0); intuition.
+ - intros.
+   inversion_clear H.
+   + order.
+   + destruct (elements_spec1' r acc x); intuition eauto.
 Qed.
 
 Lemma elements_spec2 : forall s `(Ok s), sort X.lt (elements s).
@@ -870,28 +874,28 @@ Lemma subsetl_spec : forall subset_l1 l1 x1 c1 s2
  (subsetl subset_l1 x1 s2 = true <-> Subset (Node c1 l1 x1 Leaf) s2 ).
 Proof.
  induction s2 as [|c2 l2 IHl2 x2 r2 IHr2]; simpl; intros.
- unfold Subset; intuition; try discriminate.
- assert (H': InT x1 Leaf) by auto; inversion H'.
- specialize (IHl2 H).
- specialize (IHr2 H).
- inv.
- elim_compare x1 x2.
+ - unfold Subset; intuition; try discriminate.
+   assert (H': InT x1 Leaf) by auto; inversion H'.
+ - specialize (IHl2 H).
+   specialize (IHr2 H).
+   inv.
+   elim_compare x1 x2.
 
- rewrite H1 by auto; clear H1 IHl2 IHr2.
- unfold Subset. intuition_in.
- assert (X.eq a x2) by order; intuition_in.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+   + rewrite H1 by auto; clear H1 IHl2 IHr2.
+     unfold Subset. intuition_in.
+     * assert (X.eq a x2) by order; intuition_in.
+     * assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 
- rewrite IHl2 by auto; clear H1 IHl2 IHr2.
- unfold Subset. intuition_in.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+   + rewrite IHl2 by auto; clear H1 IHl2 IHr2.
+     unfold Subset. intuition_in.
+     * assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+     * assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 
- rewrite <-andb_lazy_alt, andb_true_iff, H1 by auto; clear H1 IHl2 IHr2.
- unfold Subset. intuition_in.
- constructor 3. setoid_replace a with x1; auto. rewrite <- mem_spec; auto.
- rewrite mem_spec; auto.
- assert (InT x1 (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+   + rewrite <-andb_lazy_alt, andb_true_iff, H1 by auto; clear H1 IHl2 IHr2.
+     unfold Subset. intuition_in.
+     * constructor 3. setoid_replace a with x1; auto. rewrite <- mem_spec; auto.
+     * rewrite mem_spec; auto.
+       assert (InT x1 (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 Qed.
 
 
@@ -901,61 +905,61 @@ Lemma subsetr_spec : forall subset_r1 r1 x1 c1 s2,
  (subsetr subset_r1 x1 s2 = true <-> Subset (Node c1 Leaf x1 r1) s2).
 Proof.
  induction s2 as [|c2 l2 IHl2 x2 r2 IHr2]; simpl; intros.
- unfold Subset; intuition; try discriminate.
- assert (H': InT x1 Leaf) by auto; inversion H'.
- specialize (IHl2 H).
- specialize (IHr2 H).
- inv.
- elim_compare x1 x2.
+ - unfold Subset; intuition; try discriminate.
+   assert (H': InT x1 Leaf) by auto; inversion H'.
+ - specialize (IHl2 H).
+   specialize (IHr2 H).
+   inv.
+   elim_compare x1 x2.
 
- rewrite H1 by auto; clear H1 IHl2 IHr2.
- unfold Subset. intuition_in.
- assert (X.eq a x2) by order; intuition_in.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+   + rewrite H1 by auto; clear H1 IHl2 IHr2.
+     unfold Subset. intuition_in.
+     * assert (X.eq a x2) by order; intuition_in.
+     * assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 
- rewrite <-andb_lazy_alt, andb_true_iff, H1 by auto;  clear H1 IHl2 IHr2.
- unfold Subset. intuition_in.
- constructor 2. setoid_replace a with x1; auto. rewrite <- mem_spec; auto.
- rewrite mem_spec; auto.
- assert (InT x1 (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+   + rewrite <-andb_lazy_alt, andb_true_iff, H1 by auto;  clear H1 IHl2 IHr2.
+     unfold Subset. intuition_in.
+     * constructor 2. setoid_replace a with x1; auto. rewrite <- mem_spec; auto.
+     * rewrite mem_spec; auto.
+       assert (InT x1 (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 
- rewrite IHr2 by auto; clear H1 IHl2 IHr2.
- unfold Subset. intuition_in.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+   + rewrite IHr2 by auto; clear H1 IHl2 IHr2.
+     unfold Subset. intuition_in.
+     * assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+     * assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 Qed.
 
 Lemma subset_spec : forall s1 s2 `{Ok s1, Ok s2},
  (subset s1 s2 = true <-> Subset s1 s2).
 Proof.
  induction s1 as [|c1 l1 IHl1 x1 r1 IHr1]; simpl; intros.
- unfold Subset; intuition_in.
- destruct s2 as [|c2 l2 x2 r2]; simpl; intros.
- unfold Subset; intuition_in; try discriminate.
- assert (H': InT x1 Leaf) by auto; inversion H'.
- inv.
- elim_compare x1 x2.
+ - unfold Subset; intuition_in.
+ - destruct s2 as [|c2 l2 x2 r2]; simpl; intros.
+   + unfold Subset; intuition_in; try discriminate.
+     assert (H': InT x1 Leaf) by auto; inversion H'.
+   + inv.
+     elim_compare x1 x2.
 
- rewrite <-andb_lazy_alt, andb_true_iff, IHl1, IHr1 by auto.
- clear IHl1 IHr1.
- unfold Subset; intuition_in.
- assert (X.eq a x2) by order; intuition_in.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+     * rewrite <-andb_lazy_alt, andb_true_iff, IHl1, IHr1 by auto.
+       clear IHl1 IHr1.
+       unfold Subset; intuition_in.
+       -- assert (X.eq a x2) by order; intuition_in.
+       -- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+       -- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 
- rewrite <-andb_lazy_alt, andb_true_iff, IHr1 by auto.
- rewrite (@subsetl_spec (subset l1) l1 x1 c1) by auto.
- clear IHl1 IHr1.
- unfold Subset; intuition_in.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+     * rewrite <-andb_lazy_alt, andb_true_iff, IHr1 by auto.
+       rewrite (@subsetl_spec (subset l1) l1 x1 c1) by auto.
+       clear IHl1 IHr1.
+       unfold Subset; intuition_in.
+       -- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+       -- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 
- rewrite <-andb_lazy_alt, andb_true_iff, IHl1 by auto.
- rewrite (@subsetr_spec (subset r1) r1 x1 c1) by auto.
- clear IHl1 IHr1.
- unfold Subset; intuition_in.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+     * rewrite <-andb_lazy_alt, andb_true_iff, IHl1 by auto.
+       rewrite (@subsetr_spec (subset r1) r1 x1 c1) by auto.
+       clear IHl1 IHr1.
+       unfold Subset; intuition_in.
+       -- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
+       -- assert (InT a (Node c2 l2 x2 r2)) by auto; intuition_in; order.
 Qed.
 
 
@@ -987,34 +991,36 @@ Declare Equivalent Keys L.eq equivlistA.
 Instance lt_strorder : StrictOrder lt.
 Proof.
  split.
- intros s (s1 & s2 & B1 & B2 & E1 & E2 & L).
- assert (eqlistA X.eq (elements s1) (elements s2)).
-  apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto with *.
-  rewrite <- eq_Leq. transitivity s; auto. symmetry; auto.
- rewrite H in L.
- apply (StrictOrder_Irreflexive (elements s2)); auto.
- intros s1 s2 s3 (s1' & s2' & B1 & B2 & E1 & E2 & L12)
-                 (s2'' & s3' & B2' & B3 & E2' & E3 & L23).
- exists s1', s3'; do 4 (split; trivial).
- assert (eqlistA X.eq (elements s2') (elements s2'')).
-  apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto with *.
-  rewrite <- eq_Leq. transitivity s2; auto. symmetry; auto.
- transitivity (elements s2'); auto.
- rewrite H; auto.
+ - intros s (s1 & s2 & B1 & B2 & E1 & E2 & L).
+   assert (eqlistA X.eq (elements s1) (elements s2)).
+   + apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto with *.
+     rewrite <- eq_Leq. transitivity s; auto. symmetry; auto.
+   + rewrite H in L.
+     apply (StrictOrder_Irreflexive (elements s2)); auto.
+ - intros s1 s2 s3 (s1' & s2' & B1 & B2 & E1 & E2 & L12)
+          (s2'' & s3' & B2' & B3 & E2' & E3 & L23).
+   exists s1', s3'; do 4 (split; trivial).
+   assert (eqlistA X.eq (elements s2') (elements s2'')).
+   + apply SortA_equivlistA_eqlistA with (ltA:=X.lt); auto with *.
+     rewrite <- eq_Leq. transitivity s2; auto. symmetry; auto.
+   + transitivity (elements s2'); auto.
+     rewrite H; auto.
 Qed.
 
 #[global]
 Instance lt_compat : Proper (eq==>eq==>iff) lt.
 Proof.
  intros s1 s2 E12 s3 s4 E34. split.
- intros (s1' & s3' & B1 & B3 & E1 & E3 & LT).
- exists s1', s3'; do 2 (split; trivial).
-  split. transitivity s1; auto. symmetry; auto.
-  split; auto. transitivity s3; auto. symmetry; auto.
- intros (s1' & s3' & B1 & B3 & E1 & E3 & LT).
- exists s1', s3'; do 2 (split; trivial).
-  split. transitivity s2; auto.
-  split; auto. transitivity s4; auto.
+ - intros (s1' & s3' & B1 & B3 & E1 & E3 & LT).
+   exists s1', s3'; do 2 (split; trivial).
+   split.
+   + transitivity s1; auto. symmetry; auto.
+   + split; auto. transitivity s3; auto. symmetry; auto.
+ - intros (s1' & s3' & B1 & B3 & E1 & E3 & LT).
+   exists s1', s3'; do 2 (split; trivial).
+   split.
+   + transitivity s2; auto.
+   + split; auto. transitivity s4; auto.
 Qed.
 
 
@@ -1069,9 +1075,9 @@ Proof.
  induction s1 as [|c1 l1 Hl1 x1 r1 Hr1]; intros; auto.
  rewrite elements_node, app_ass; simpl.
  apply Hl1; auto. clear e2. intros [|x2 r2 e2].
- simpl; auto.
- apply compare_more_Cmp.
- rewrite <- cons_1; auto.
+ - simpl; auto.
+ - apply compare_more_Cmp.
+   rewrite <- cons_1; auto.
 Qed.
 
 Lemma compare_Cmp : forall s1 s2,
@@ -1091,9 +1097,9 @@ Lemma compare_spec : forall s1 s2 `{Ok s1, Ok s2},
 Proof.
  intros.
  destruct (compare_Cmp s1 s2); constructor.
- rewrite eq_Leq; auto.
- intros; exists s1, s2; repeat split; auto.
- intros; exists s2, s1; repeat split; auto.
+ - rewrite eq_Leq; auto.
+ - intros; exists s1, s2; repeat split; auto.
+ - intros; exists s2, s1; repeat split; auto.
 Qed.
 
 
@@ -1105,8 +1111,8 @@ Proof.
 unfold equal; intros s1 s2 B1 B2.
 destruct (@compare_spec s1 s2 B1 B2) as [H|H|H];
  split; intros H'; auto; try discriminate.
-rewrite H' in H. elim (StrictOrder_Irreflexive s2); auto.
-rewrite H' in H. elim (StrictOrder_Irreflexive s2); auto.
+- rewrite H' in H. elim (StrictOrder_Irreflexive s2); auto.
+- rewrite H' in H. elim (StrictOrder_Irreflexive s2); auto.
 Qed.
 
 (** ** A few results about [mindepth] and [maxdepth] *)
@@ -1115,8 +1121,11 @@ Lemma mindepth_maxdepth s : mindepth s <= maxdepth s.
 Proof.
  induction s; simpl; auto.
  rewrite <- Nat.succ_le_mono.
- transitivity (mindepth s1). apply Nat.le_min_l.
- transitivity (maxdepth s1). trivial. apply Nat.le_max_l.
+ transitivity (mindepth s1).
+ - apply Nat.le_min_l.
+ - transitivity (maxdepth s1).
+   + trivial.
+   + apply Nat.le_max_l.
 Qed.
 
 Lemma maxdepth_cardinal s : cardinal s < 2^(maxdepth s).
@@ -1147,14 +1156,16 @@ Lemma maxdepth_log_cardinal s : s <> Leaf ->
  Nat.log2 (cardinal s) < maxdepth s.
 Proof.
  intros H.
- apply Nat.log2_lt_pow2. destruct s; simpl; intuition.
- apply maxdepth_cardinal.
+ apply Nat.log2_lt_pow2.
+ - destruct s; simpl; intuition.
+ - apply maxdepth_cardinal.
 Qed.
 
 Lemma mindepth_log_cardinal s : mindepth s <= Nat.log2 (S (cardinal s)).
 Proof.
- apply Nat.log2_le_pow2. auto with arith.
- apply mindepth_cardinal.
+  apply Nat.log2_le_pow2.
+  - auto with arith.
+  - apply mindepth_cardinal.
 Qed.
 
 End Props.

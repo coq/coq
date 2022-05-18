@@ -164,17 +164,18 @@ Qed.
 Theorem Rminus_eq_0 : forall n m : R, n - m == 0 <-> n == m.
 Proof.
 intros n m.
-split; intro H. setoid_replace n with ((n - m) + m) by ring. rewrite H.
-now rewrite Rplus_0_l.
-rewrite H; ring.
+split; intro H.
+- setoid_replace n with ((n - m) + m) by ring. rewrite H.
+  now rewrite Rplus_0_l.
+- rewrite H; ring.
 Qed.
 
 Theorem Rplus_cancel_l : forall n m p : R, p + n == p + m <-> n == m.
 Proof.
 intros n m p; split; intro H.
-setoid_replace n with (- p + (p + n)) by ring.
-setoid_replace m with (- p + (p + m)) by ring. now rewrite H.
-now rewrite H.
+- setoid_replace n with (- p + (p + n)) by ring.
+  setoid_replace m with (- p + (p + m)) by ring. now rewrite H.
+- now rewrite H.
 Qed.
 
 (* Relations *)
@@ -200,25 +201,29 @@ Proof (SORneq_0_1 sor).
 Theorem Req_em : forall n m : R, n == m \/ n ~= m.
 Proof.
 intros n m. destruct (Rlt_trichotomy n m) as [H | [H | H]]; try rewrite Rlt_le_neq in H.
-right; now destruct H.
-now left.
-right; apply Rneq_symm; now destruct H.
+- right; now destruct H.
+- now left.
+- right; apply Rneq_symm; now destruct H.
 Qed.
 
 Theorem Req_dne : forall n m : R, ~ ~ n == m <-> n == m.
 Proof.
 intros n m; destruct (Req_em n m) as [H | H].
-split; auto.
-split. intro H1; false_hyp H H1. auto.
+- split; auto.
+- split.
+  + intro H1; false_hyp H H1.
+  + auto.
 Qed.
 
 Theorem Rle_lt_eq : forall n m : R, n <= m <-> n < m \/ n == m.
 Proof.
 intros n m; rewrite Rlt_le_neq.
 split; [intro H | intros [[H1 H2] | H]].
-destruct (Req_em n m) as [H1 | H1]. now right. left; now split.
-assumption.
-rewrite H; apply Rle_refl.
+- destruct (Req_em n m) as [H1 | H1].
+  + now right.
+  + left; now split.
+- assumption.
+- rewrite H; apply Rle_refl.
 Qed.
 
 Ltac le_less := rewrite Rle_lt_eq; left; try assumption.
@@ -228,26 +233,26 @@ Ltac le_elim H := rewrite Rle_lt_eq in H; destruct H as [H | H].
 Theorem Rlt_trans : forall n m p : R, n < m -> m < p -> n < p.
 Proof.
 intros n m p; repeat rewrite Rlt_le_neq; intros [H1 H2] [H3 H4]; split.
-now apply Rle_trans with m.
-intro H. rewrite H in H1. pose proof (Rle_antisymm H3 H1). now apply H4.
+- now apply Rle_trans with m.
+- intro H. rewrite H in H1. pose proof (Rle_antisymm H3 H1). now apply H4.
 Qed.
 
 Theorem Rle_lt_trans : forall n m p : R, n <= m -> m < p -> n < p.
 Proof.
 intros n m p H1 H2; le_elim H1.
-now apply (Rlt_trans (m := m)). now rewrite H1.
+- now apply (Rlt_trans (m := m)). - now rewrite H1.
 Qed.
 
 Theorem Rlt_le_trans : forall n m p : R, n < m -> m <= p -> n < p.
 Proof.
 intros n m p H1 H2; le_elim H2.
-now apply (Rlt_trans (m := m)). now rewrite <- H2.
+- now apply (Rlt_trans (m := m)). - now rewrite <- H2.
 Qed.
 
 Theorem Rle_gt_cases : forall n m : R, n <= m \/ m < n.
 Proof.
 intros n m; destruct (Rlt_trichotomy n m) as [H | [H | H]].
-left; now le_less. left; now le_equal. now right.
+- left; now le_less. - left; now le_equal. - now right.
 Qed.
 
 Theorem Rlt_neq : forall n m : R, n < m -> n ~= m.
@@ -258,15 +263,19 @@ Qed.
 Theorem Rle_ngt : forall n m : R, n <= m <-> ~ m < n.
 Proof.
 intros n m; split.
-intros H H1; assert (H2 : n < n) by now apply Rle_lt_trans with m. now apply (Rlt_neq H2).
-intro H. destruct (Rle_gt_cases n m) as [H1 | H1]. assumption. false_hyp H1 H.
+- intros H H1; assert (H2 : n < n) by now apply Rle_lt_trans with m. now apply (Rlt_neq H2).
+- intro H. destruct (Rle_gt_cases n m) as [H1 | H1].
+  + assumption.
+  + false_hyp H1 H.
 Qed.
 
 Theorem Rlt_nge : forall n m : R, n < m <-> ~ m <= n.
 Proof.
 intros n m; split.
-intros H H1; assert (H2 : n < n) by now apply Rlt_le_trans with m. now apply (Rlt_neq H2).
-intro H. destruct (Rle_gt_cases m n) as [H1 | H1]. false_hyp H1 H. assumption.
+- intros H H1; assert (H2 : n < n) by now apply Rlt_le_trans with m. now apply (Rlt_neq H2).
+- intro H. destruct (Rle_gt_cases m n) as [H1 | H1].
+  + false_hyp H1 H.
+  + assumption.
 Qed.
 
 (* Plus, minus and order *)
@@ -274,10 +283,10 @@ Qed.
 Theorem Rplus_le_mono_l : forall n m p : R, n <= m <-> p + n <= p + m.
 Proof.
 intros n m p; split.
-apply (SORplus_le_mono_l sor).
-intro H. apply ((SORplus_le_mono_l sor) (p + n) (p + m) (- p)) in H.
-setoid_replace (- p + (p + n)) with n in H by ring.
-setoid_replace (- p + (p + m)) with m in H by ring. assumption.
+- apply (SORplus_le_mono_l sor).
+- intro H. apply ((SORplus_le_mono_l sor) (p + n) (p + m) (- p)) in H.
+  setoid_replace (- p + (p + n)) with n in H by ring.
+  setoid_replace (- p + (p + m)) with m in H by ring. assumption.
 Qed.
 
 Theorem Rplus_le_mono_r : forall n m p : R, n <= m <-> n + p <= m + p.
@@ -359,12 +368,12 @@ Qed.
 Theorem Ropp_lt_mono : forall n m : R, n < m <-> - m < - n.
 Proof.
 intros n m. split; intro H.
-apply -> (@Rplus_lt_mono_l n m (- n - m)) in H.
-setoid_replace (- n - m + n) with (- m) in H by ring.
-now setoid_replace (- n - m + m) with (- n) in H by ring.
-apply -> (@Rplus_lt_mono_l (- m) (- n) (n + m)) in H.
-setoid_replace (n + m + - m) with n in H by ring.
-now setoid_replace (n + m + - n) with m in H by ring.
+- apply -> (@Rplus_lt_mono_l n m (- n - m)) in H.
+  setoid_replace (- n - m + n) with (- m) in H by ring.
+  now setoid_replace (- n - m + m) with (- n) in H by ring.
+- apply -> (@Rplus_lt_mono_l (- m) (- n) (n + m)) in H.
+  setoid_replace (n + m + - m) with n in H by ring.
+  now setoid_replace (n + m + - n) with m in H by ring.
 Qed.
 
 Theorem Ropp_pos_neg : forall n : R, 0 < - n <-> n < 0.
@@ -380,17 +389,20 @@ Proof (SORtimes_pos_pos sor).
 Theorem Rtimes_nonneg_nonneg : forall n m : R, 0 <= n -> 0 <= m -> 0 <= n * m.
 Proof.
 intros n m H1 H2.
-le_elim H1. le_elim H2.
-le_less; now apply Rtimes_pos_pos.
-rewrite <- H2; rewrite Rtimes_0_r; le_equal.
-rewrite <- H1; rewrite Rtimes_0_l; le_equal.
+le_elim H1.
+- le_elim H2.
+  + le_less; now apply Rtimes_pos_pos.
+  + rewrite <- H2; rewrite Rtimes_0_r; le_equal.
+- rewrite <- H1; rewrite Rtimes_0_l; le_equal.
 Qed.
 
 Theorem Rtimes_pos_neg : forall n m : R, 0 < n -> m < 0 -> n * m < 0.
 Proof.
 intros n m H1 H2. apply -> Ropp_pos_neg.
 setoid_replace (- (n * m)) with (n * (- m)) by ring.
-apply Rtimes_pos_pos. assumption. now apply <- Ropp_pos_neg.
+apply Rtimes_pos_pos.
+- assumption.
+- now apply <- Ropp_pos_neg.
 Qed.
 
 Theorem Rtimes_neg_neg : forall n m : R, n < 0 -> m < 0 -> 0 < n * m.
@@ -403,9 +415,9 @@ Qed.
 Theorem Rtimes_square_nonneg : forall n : R, 0 <= n * n.
 Proof.
 intro n; destruct (Rlt_trichotomy 0 n) as [H | [H | H]].
-le_less; now apply Rtimes_pos_pos.
-rewrite <- H, Rtimes_0_l; le_equal.
-le_less; now apply Rtimes_neg_neg.
+- le_less; now apply Rtimes_pos_pos.
+- rewrite <- H, Rtimes_0_l; le_equal.
+- le_less; now apply Rtimes_neg_neg.
 Qed.
 
 Theorem Rtimes_neq_0 : forall n m : R, n ~= 0 /\ m ~= 0 -> n * m ~= 0.
@@ -414,10 +426,10 @@ intros n m [H1 H2].
 destruct (Rlt_trichotomy n 0) as [H3 | [H3 | H3]];
 destruct (Rlt_trichotomy m 0) as [H4 | [H4 | H4]];
 try (false_hyp H3 H1); try (false_hyp H4 H2).
-apply Rneq_symm. apply Rlt_neq. now apply Rtimes_neg_neg.
-apply Rlt_neq. rewrite Rtimes_comm. now apply Rtimes_pos_neg.
-apply Rlt_neq. now apply Rtimes_pos_neg.
-apply Rneq_symm. apply Rlt_neq. now apply Rtimes_pos_pos.
+- apply Rneq_symm. apply Rlt_neq. now apply Rtimes_neg_neg.
+- apply Rlt_neq. rewrite Rtimes_comm. now apply Rtimes_pos_neg.
+- apply Rlt_neq. now apply Rtimes_pos_neg.
+- apply Rneq_symm. apply Rlt_neq. now apply Rtimes_pos_pos.
 Qed.
 
 (* The following theorems are used to build a morphism from Z to R and
@@ -434,8 +446,8 @@ Qed.
 Theorem Rlt_0_1 : 0 < 1.
 Proof.
 apply <- Rlt_le_neq. split.
-setoid_replace 1 with (1 * 1) by ring. apply Rtimes_square_nonneg.
-apply Rneq_0_1.
+- setoid_replace 1 with (1 * 1) by ring. apply Rtimes_square_nonneg.
+- apply Rneq_0_1.
 Qed.
 
 Theorem Rlt_succ_r : forall n : R, n < 1 + n.
@@ -446,7 +458,9 @@ Qed.
 
 Theorem Rlt_lt_succ : forall n m : R, n < m -> n < 1 + m.
 Proof.
-intros n m H; apply Rlt_trans with m. assumption. apply Rlt_succ_r.
+  intros n m H; apply Rlt_trans with m.
+  - assumption.
+  - apply Rlt_succ_r.
 Qed.
 
 (*Theorem Rtimes_lt_mono_pos_l : forall n m p : R, 0 < p -> n < m -> p * n < p * m.

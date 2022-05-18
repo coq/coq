@@ -63,12 +63,12 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     {s' : t | forall y : elt, In y s' <-> ~ E.eq x y /\ In y s}.
   Proof.
     intros; exists (remove x s); intuition.
-    absurd (In x (remove x s)); auto with set ordered_type.
-    apply In_1 with y; auto with ordered_type.
-    elim (E.eq_dec x y); intros; auto.
-    absurd (In x (remove x s)); auto with set ordered_type.
-    apply In_1 with y; auto with ordered_type.
-    eauto with set.
+    - absurd (In x (remove x s)); auto with set ordered_type.
+      apply In_1 with y; auto with ordered_type.
+    - elim (E.eq_dec x y); intros; auto.
+      + absurd (In x (remove x s)); auto with set ordered_type.
+        apply In_1 with y; auto with ordered_type.
+      + eauto with set.
   Qed.
 
   Definition union :
@@ -148,14 +148,14 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     exists (filter (fdec Pdec) s).
     intro H; assert (compat_bool E.eq (fdec Pdec)); auto.
     intuition.
-    eauto with set.
-    generalize (filter_2 H0 H1).
-    unfold fdec.
-    case (Pdec x); intuition.
-    inversion H2.
-    apply filter_3; auto.
-    unfold fdec; simpl.
-    case (Pdec x); intuition.
+    - eauto with set.
+    - generalize (filter_2 H0 H1).
+      unfold fdec.
+      case (Pdec x); intuition.
+      inversion H2.
+    - apply filter_3; auto.
+      unfold fdec; simpl.
+      case (Pdec x); intuition.
   Qed.
 
   Definition for_all :
@@ -167,16 +167,16 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
      (for_all_2 (s:=s) (f:=fdec Pdec)).
     case (for_all (fdec Pdec) s); unfold For_all; [ left | right ];
      intros.
-    assert (compat_bool E.eq (fdec Pdec)); auto.
-    generalize (H0 H3 Logic.eq_refl _ H2).
-    unfold fdec.
-    case (Pdec x); intuition.
-    inversion H4.
-    intuition.
-    absurd (false = true); [ auto with bool | apply H; auto ].
-    intro.
-    unfold fdec.
-    case (Pdec x); intuition.
+    - assert (compat_bool E.eq (fdec Pdec)); auto.
+      generalize (H0 H3 Logic.eq_refl _ H2).
+      unfold fdec.
+      case (Pdec x); intuition.
+      inversion H4.
+    - intuition.
+      absurd (false = true); [ auto with bool | apply H; auto ].
+      intro.
+      unfold fdec.
+      case (Pdec x); intuition.
   Qed.
 
   Definition exists_ :
@@ -188,18 +188,18 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
      (exists_2 (s:=s) (f:=fdec Pdec)).
     case (exists_ (fdec Pdec) s); unfold Exists; [ left | right ];
      intros.
-    elim H0; auto; intros.
-    exists x; intuition.
-    generalize H4.
-    unfold fdec.
-    case (Pdec x); intuition.
-    inversion H2.
-    intuition.
-    elim H2; intros.
-    absurd (false = true); [ auto with bool | apply H; auto ].
-    exists x; intuition.
-    unfold fdec.
-    case (Pdec x); intuition.
+    - elim H0; auto; intros.
+      exists x; intuition.
+      generalize H4.
+      unfold fdec.
+      case (Pdec x); intuition.
+      inversion H2.
+    - intuition.
+      elim H2; intros.
+      absurd (false = true); [ auto with bool | apply H; auto ].
+      exists x; intuition.
+      unfold fdec.
+      case (Pdec x); intuition.
   Qed.
 
   Definition partition :
@@ -217,32 +217,33 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     case (partition (fdec Pdec) s).
     intros s1 s2; simpl.
     intros; assert (compat_bool E.eq (fdec Pdec)); auto.
-    intros; assert (compat_bool E.eq (fun x => negb (fdec Pdec x))).
-    generalize H2; unfold compat_bool, Proper, respectful; intuition;
-     apply (f_equal negb); auto.
+    intros; assert (compat_bool E.eq (fun x => negb (fdec Pdec x))). {
+      generalize H2; unfold compat_bool, Proper, respectful; intuition;
+        apply (f_equal negb); auto.
+    }
     intuition.
-    generalize H4; unfold For_all, Equal; intuition.
-    elim (H0 x); intros.
-    assert (fdec Pdec x = true).
-     eapply filter_2; eauto with set.
-    generalize H8; unfold fdec; case (Pdec x); intuition.
-    inversion H9.
-    generalize H; unfold For_all, Equal; intuition.
-    elim (H0 x); intros.
-    cut ((fun x => negb (fdec Pdec x)) x = true).
-    unfold fdec; case (Pdec x); intuition.
+    - generalize H4; unfold For_all, Equal; intuition.
+      elim (H0 x); intros.
+      assert (fdec Pdec x = true).
+      { eapply filter_2; eauto with set. }
+      generalize H8; unfold fdec; case (Pdec x); intuition.
+      inversion H9.
+    - generalize H; unfold For_all, Equal; intuition.
+      elim (H0 x); intros.
+      cut ((fun x => negb (fdec Pdec x)) x = true).
+      { unfold fdec; case (Pdec x); intuition. }
       change ((fun x => negb (fdec Pdec x)) x = true).
       apply (filter_2 (s:=s) (x:=x)); auto.
-    set (b := fdec Pdec x) in *; generalize (Logic.eq_refl b);
-     pattern b at -1; case b; unfold b;
-     [ left | right ].
-    elim (H4 x); intros _ B; apply B; auto with set.
-    elim (H x); intros _ B; apply B; auto with set.
-    apply filter_3; auto.
-    rewrite H5; auto.
-    eapply (filter_1 (s:=s) (x:=x) H2); elim (H4 x); intros B _; apply B;
-     auto.
-    eapply (filter_1 (s:=s) (x:=x) H3); elim (H x); intros B _; apply B; auto.
+    - set (b := fdec Pdec x) in *; generalize (Logic.eq_refl b);
+        pattern b at -1; case b; unfold b;
+        [ left | right ].
+      + elim (H4 x); intros _ B; apply B; auto with set.
+      + elim (H x); intros _ B; apply B; auto with set.
+        apply filter_3; auto.
+        rewrite H5; auto.
+    - eapply (filter_1 (s:=s) (x:=x) H2); elim (H4 x); intros B _; apply B;
+        auto.
+    - eapply (filter_1 (s:=s) (x:=x) H3); elim (H x); intros B _; apply B; auto.
   Qed.
 
   Definition choose_aux: forall s : t,
@@ -256,8 +257,8 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
   Definition choose : forall s : t, {x : elt | In x s} + {Empty s}.
   Proof.
    intros; destruct (choose_aux s) as [(x,Hx)|H].
-   left; exists x; apply choose_1; auto.
-   right; apply choose_2; auto.
+   - left; exists x; apply choose_1; auto.
+   - right; apply choose_2; auto.
   Defined.
 
   Lemma choose_ok1 :
@@ -266,11 +267,11 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
   Proof.
     intros s x.
     unfold choose; split; intros.
-    destruct (choose_aux s) as [(y,Hy)|H']; try congruence.
-    replace x with y in * by congruence.
-    exists (choose_1 Hy); auto.
-    destruct H.
-    destruct (choose_aux s) as [(y,Hy)|H']; congruence.
+    - destruct (choose_aux s) as [(y,Hy)|H']; try congruence.
+      replace x with y in * by congruence.
+      exists (choose_1 Hy); auto.
+    - destruct H.
+      destruct (choose_aux s) as [(y,Hy)|H']; congruence.
   Qed.
 
   Lemma choose_ok2 :
@@ -279,10 +280,10 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
   Proof.
     intros s.
     unfold choose; split; intros.
-    destruct (choose_aux s) as [(y,Hy)|H']; try congruence.
-    exists (choose_2 H'); auto.
-    destruct H.
-    destruct (choose_aux s) as [(y,Hy)|H']; congruence.
+    - destruct (choose_aux s) as [(y,Hy)|H']; try congruence.
+      exists (choose_2 H'); auto.
+    - destruct H.
+      destruct (choose_aux s) as [(y,Hy)|H']; congruence.
   Qed.
 
   Lemma choose_equal : forall s s', Equal s s' ->
@@ -297,11 +298,11 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
               (@M.choose_1 s')(@M.choose_2 s')(@M.choose_3 s s')
               (choose_ok1 s)(choose_ok2 s)(choose_ok1 s')(choose_ok2 s').
    destruct (choose s) as [(x,Hx)|Hx]; destruct (choose s') as [(x',Hx')|Hx']; auto; intros.
-   apply H4; auto.
-   rewrite H5; exists Hx; auto.
-   rewrite H7; exists Hx'; auto.
-   apply Hx' with x; unfold Equal in H; rewrite <-H; auto.
-   apply Hx with x'; unfold Equal in H; rewrite H; auto.
+   - apply H4; auto.
+     + rewrite H5; exists Hx; auto.
+     + rewrite H7; exists Hx'; auto.
+   - apply Hx' with x; unfold Equal in H; rewrite <-H; auto.
+   - apply Hx with x'; unfold Equal in H; rewrite H; auto.
   Qed.
 
   Definition min_elt :
@@ -433,8 +434,8 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Lemma choose_1 : forall (s : t) (x : elt), choose s = Some x -> In x s.
   Proof.
     intros s x; unfold choose; case (M.choose s).
-    simple destruct s0; intros; injection H; intros; subst; auto.
-    intros; discriminate H.
+    - simple destruct s0; intros; injection H; intros; subst; auto.
+    - intros; discriminate H.
   Qed.
 
   Lemma choose_2 : forall s : t, choose s = None -> Empty s.
@@ -483,17 +484,17 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Lemma min_elt_1 : forall (s : t) (x : elt), min_elt s = Some x -> In x s.
   Proof.
     intros s x; unfold min_elt; case (M.min_elt s).
-    simple destruct s0; intros; injection H; intros; subst; intuition.
-    intros; discriminate H.
+    - simple destruct s0; intros; injection H; intros; subst; intuition.
+    - intros; discriminate H.
   Qed.
 
   Lemma min_elt_2 :
    forall (s : t) (x y : elt), min_elt s = Some x -> In y s -> ~ E.lt y x.
   Proof.
     intros s x y; unfold min_elt; case (M.min_elt s).
-    unfold For_all; simple destruct s0; intros; injection H; intros;
-     subst; firstorder.
-    intros; discriminate H.
+    - unfold For_all; simple destruct s0; intros; injection H; intros;
+        subst; firstorder.
+    - intros; discriminate H.
   Qed.
 
   Lemma min_elt_3 : forall s : t, min_elt s = None -> Empty s.
@@ -511,17 +512,17 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Lemma max_elt_1 : forall (s : t) (x : elt), max_elt s = Some x -> In x s.
   Proof.
     intros s x; unfold max_elt; case (M.max_elt s).
-    simple destruct s0; intros; injection H; intros; subst; intuition.
-    intros; discriminate H.
+    - simple destruct s0; intros; injection H; intros; subst; intuition.
+    - intros; discriminate H.
   Qed.
 
   Lemma max_elt_2 :
    forall (s : t) (x y : elt), max_elt s = Some x -> In y s -> ~ E.lt x y.
   Proof.
     intros s x y; unfold max_elt; case (M.max_elt s).
-    unfold For_all; simple destruct s0; intros; injection H; intros;
-     subst; firstorder.
-    intros; discriminate H.
+    - unfold For_all; simple destruct s0; intros; injection H; intros;
+        subst; firstorder.
+    - intros; discriminate H.
   Qed.
 
   Lemma max_elt_3 : forall s : t, max_elt s = None -> Empty s.
@@ -754,14 +755,14 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
     intro p; case p; clear p; intros s1 s2 H C.
     generalize (H (compat_P_aux C)); clear H; intro H.
     simpl; unfold Equal; intuition.
-    apply filter_3; firstorder.
-    elim (H2 a); intros.
-    assert (In a s).
-     eapply filter_1; eauto.
-    elim H3; intros; auto.
-    absurd (f a = true).
-    exact (H a H6).
-    eapply filter_2; eauto.
+    - apply filter_3; firstorder.
+    - elim (H2 a); intros.
+      assert (In a s).
+      + eapply filter_1; eauto.
+      + elim H3; intros; auto.
+        absurd (f a = true).
+        * exact (H a H6).
+        * eapply filter_2; eauto.
   Qed.
 
   Lemma partition_2 :
@@ -771,20 +772,21 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
     intros s f; unfold partition; case M.partition.
     intro p; case p; clear p; intros s1 s2 H C.
     generalize (H (compat_P_aux C)); clear H; intro H.
-    assert (D : compat_bool E.eq (fun x => negb (f x))).
-    generalize C; unfold compat_bool, Proper, respectful; intros; apply (f_equal negb);
-     auto.
+    assert (D : compat_bool E.eq (fun x => negb (f x))). {
+      generalize C; unfold compat_bool, Proper, respectful; intros; apply (f_equal negb);
+        auto.
+    }
     simpl; unfold Equal; intuition.
-    apply filter_3; firstorder with bool.
-    elim (H2 a); intros.
-    assert (In a s).
-     eapply filter_1; eauto.
-    elim H3; intros; auto.
-    absurd (f a = true).
-    intro.
-    generalize (filter_2 D H1).
-    rewrite H7; intros H8; inversion H8.
-    exact (H0 a H6).
+    - apply filter_3; firstorder with bool.
+    - elim (H2 a); intros.
+      assert (In a s).
+      { eapply filter_1; eauto. }
+      elim H3; intros; auto.
+      absurd (f a = true).
+      + intro.
+        generalize (filter_2 D H1).
+        rewrite H7; intros H8; inversion H8.
+      + exact (H0 a H6).
   Qed.
 
 

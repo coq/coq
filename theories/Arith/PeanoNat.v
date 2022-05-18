@@ -422,9 +422,9 @@ Lemma sqrt_specif n : (sqrt n)*(sqrt n) <= n < S (sqrt n) * S (sqrt n).
 Proof.
   set (s:=sqrt n).
   replace n with (n + 0*0 + (0-0)).
-  apply sqrt_iter_spec; auto.
-  simpl.
-  now rewrite !add_0_r.
+  - apply sqrt_iter_spec; auto.
+  - simpl.
+    now rewrite !add_0_r.
 Qed.
 
 Definition sqrt_spec a (Ha:0<=a) := sqrt_specif a.
@@ -613,7 +613,7 @@ Proof. unfold testbit; fold testbit; f_equal; apply div2_double. Qed.
 Lemma shiftr_specif : forall a n m,
   testbit (shiftr a n) m = testbit a (m+n).
 Proof.
-  intros a n; induction n as [|n IHn]; intros m. trivial.
+  intros a n; induction n as [|n IHn]; intros m.
   - now rewrite add_0_r.
   - now rewrite add_succ_r, <- add_succ_l, <- IHn.
 Qed.
@@ -636,13 +636,13 @@ Proof.
   intros a n; induction n as [|n IHn]; intros m H; [ inversion H | ].
   change (shiftl a (S n)) with (double (shiftl a n)).
   destruct m; simpl.
-  unfold odd; apply negb_false_iff.
-  apply even_spec.
-  exists (shiftl a n).
-  apply double_twice.
-  rewrite double_twice, div2_double.
-  apply IHn.
-  now apply succ_le_mono.
+  - unfold odd; apply negb_false_iff.
+    apply even_spec.
+    exists (shiftl a n).
+    apply double_twice.
+  - rewrite double_twice, div2_double.
+    apply IHn.
+    now apply succ_le_mono.
 Qed.
 
 Lemma div2_bitwise : forall op n a b,

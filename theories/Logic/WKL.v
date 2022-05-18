@@ -42,13 +42,19 @@ Proposition is_path_from_characterization P n l :
 Proof.
 intros. split.
 - induction 1 as [|* HP _ (l'&Hl'&HPl')|* HP _ (l'&Hl'&HPl')].
-  + exists []. split. reflexivity. intros n ->%Nat.le_0_r. assumption.
-  + exists (true :: l'). split. apply eq_S, Hl'. intros [|] H.
-    * assumption.
-    * simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
-  + exists (false :: l'). split. apply eq_S, Hl'. intros [|] H.
-    * assumption.
-    * simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
+  + exists []. split.
+    * reflexivity.
+    * intros n ->%Nat.le_0_r. assumption.
+  + exists (true :: l'). split.
+    * apply eq_S, Hl'.
+    * intros [|] H.
+      -- assumption.
+      -- simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
+  + exists (false :: l'). split.
+    * apply eq_S, Hl'.
+    * intros [|] H.
+      -- assumption.
+      -- simpl. rewrite <- app_assoc. apply HPl', le_S_n, H.
 - intros (l'& <- &HPl'). induction l' as [|[|]] in l, HPl' |- *.
   + constructor. apply (HPl' 0). apply Nat.le_0_l.
   + eapply next_left.
@@ -195,8 +201,9 @@ intros P DeMorgan. induction l.
     destruct a.
     * destruct Hb as (l',(Hl',(HYl',HY))).
       rewrite <- (Y_unique P DeMorgan l' l Hl'); auto.
-    * intro n. apply inductively_barred_at_imp_is_path_from. assumption.
-      firstorder.
+    * intro n. apply inductively_barred_at_imp_is_path_from.
+      -- assumption.
+      -- firstorder.
 Qed.
 
 (** Main theorem *)

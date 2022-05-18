@@ -21,15 +21,21 @@ Defined.
 #[global]
 Instance Qri : (Ring (Ro:=Qops)).
 constructor.
-try apply Q_Setoid. 
-apply Qplus_comp. 
-apply Qmult_comp. 
-apply Qminus_comp. 
-apply Qopp_comp.
- exact Qplus_0_l. exact Qplus_comm. apply Qplus_assoc.
- exact Qmult_1_l.  exact Qmult_1_r. apply Qmult_assoc.
- apply Qmult_plus_distr_l.  intros. apply Qmult_plus_distr_r. 
-reflexivity. exact Qplus_opp_r.
+- apply Q_Setoid.
+- apply Qplus_comp.
+- apply Qmult_comp.
+- apply Qminus_comp.
+- apply Qopp_comp.
+- exact Qplus_0_l.
+- exact Qplus_comm.
+- apply Qplus_assoc.
+- exact Qmult_1_l.
+- exact Qmult_1_r.
+- apply Qmult_assoc.
+- apply Qmult_plus_distr_l.
+- intros. apply Qmult_plus_distr_r.
+- reflexivity.
+- exact Qplus_opp_r.
 Defined.
 
 #[global]
@@ -42,4 +48,6 @@ unfold Qeq. simpl. auto with *. Qed.
 #[global]
 Instance Qdi : (Integral_domain (Rcr:=Qcri)). 
 constructor. 
-exact Qmult_integral. exact Q_one_zero. Defined.
+- exact Qmult_integral.
+- exact Q_one_zero.
+Defined.

@@ -70,8 +70,10 @@ Qed.
 
 Lemma of_iff d d' : Z.of_hex_int d = Z.of_hex_int d' <-> norm d = norm d'.
 Proof.
-  split. apply of_inj. intros E. rewrite <- of_int_norm, E.
-  apply of_int_norm.
+  split.
+  - apply of_inj.
+  - intros E. rewrite <- of_int_norm, E.
+    apply of_int_norm.
 Qed.
 
 (** Various lemmas *)

@@ -59,8 +59,8 @@ Open Scope Z_scope.
    0 <= Zgcdn n a b.
  Proof.
    intros n; induction n.
-   simpl; auto with zarith.
-   intros a; destruct a; simpl; intros; auto with zarith; auto.
+   - simpl; auto with zarith.
+   - intros a; destruct a; simpl; intros; auto with zarith; auto.
  Qed.
 
  Lemma Zgcd_alt_pos : forall a b, 0 <= Zgcd_alt a b.
@@ -76,21 +76,21 @@ Open Scope Z_scope.
    Z.abs a < Z.of_nat n -> Zis_gcd a b (Zgcdn n a b).
  Proof.
    intros n; induction n as [|n IHn].
-   intros; lia.
-   intros a; destruct a as [|p|p]; intros b H; simpl;
-     [ generalize (Zis_gcd_0_abs b); intuition | | ];
-   unfold Z.modulo;
-   generalize (Z_div_mod b (Zpos p) (eq_refl Gt));
-   destruct (Z.div_eucl b (Zpos p)) as (q,r);
-   intros (H0,H1);
-   rewrite Nat2Z.inj_succ in H; simpl Z.abs in H;
-   (assert (H2: Z.abs r < Z.of_nat n) by lia);
-    assert (IH:=IHn r (Zpos p) H2); clear IHn;
-    simpl in IH |- *;
-    rewrite H0.
-   apply Zis_gcd_for_euclid2; auto.
-   apply Zis_gcd_minus; apply Zis_gcd_sym.
-   apply Zis_gcd_for_euclid2; auto.
+   - intros; lia.
+   - intros a; destruct a as [|p|p]; intros b H; simpl;
+       [ generalize (Zis_gcd_0_abs b); intuition | | ];
+       unfold Z.modulo;
+       generalize (Z_div_mod b (Zpos p) (eq_refl Gt));
+       destruct (Z.div_eucl b (Zpos p)) as (q,r);
+       intros (H0,H1);
+       rewrite Nat2Z.inj_succ in H; simpl Z.abs in H;
+       (assert (H2: Z.abs r < Z.of_nat n) by lia);
+       assert (IH:=IHn r (Zpos p) H2); clear IHn;
+       simpl in IH |- *;
+       rewrite H0.
+     + apply Zis_gcd_for_euclid2; auto.
+     + apply Zis_gcd_minus; apply Zis_gcd_sym.
+       apply Zis_gcd_for_euclid2; auto.
  Qed.
 
  (** 2) For Euclid's algorithm, the worst-case situation corresponds
@@ -106,24 +106,25 @@ Open Scope Z_scope.
  Lemma fibonacci_pos : forall n, 0 <= fibonacci n.
  Proof.
    enough (forall N n, (n<N)%nat -> 0<=fibonacci n) by eauto.
-   intros N; induction N as [|N IHN]. intros; lia.
-   intros [ | [ | n ] ]. 1-2: simpl; lia.
-   intros.
-   change (0 <= fibonacci (S n) + fibonacci n).
-   generalize (IHN n) (IHN (S n)); lia.
+   intros N; induction N as [|N IHN].
+   - intros; lia.
+   - intros [ | [ | n ] ]. 1-2: simpl; lia.
+     intros.
+     change (0 <= fibonacci (S n) + fibonacci n).
+     generalize (IHN n) (IHN (S n)); lia.
  Qed.
 
  Lemma fibonacci_incr :
    forall n m, (n<=m)%nat -> fibonacci n <= fibonacci m.
  Proof.
    induction 1 as [|m H IH].
-   auto with zarith.
-   apply Z.le_trans with (fibonacci m); auto.
-   clear.
-   destruct m as [|m].
-   simpl; auto with zarith.
-   change (fibonacci (S m) <= fibonacci (S m)+fibonacci m).
-   generalize (fibonacci_pos m); lia.
+   - auto with zarith.
+   - apply Z.le_trans with (fibonacci m); auto.
+     clear.
+     destruct m as [|m].
+     + simpl; auto with zarith.
+     + change (fibonacci (S m) <= fibonacci (S m)+fibonacci m).
+       generalize (fibonacci_pos m); lia.
  Qed.
 
  (** 3) We prove that fibonacci numbers are indeed worst-case:
@@ -138,31 +139,32 @@ Open Scope Z_scope.
    fibonacci (S (S n)) <= b.
  Proof.
    intros n; induction n as [|n IHn].
-   intros [|a|a]; intros; simpl; lia.
-   intros [|a|a] b (Ha,Ha'); [simpl; lia | | easy ].
-   remember (S n) as m eqn:Heqm.
-   rewrite Heqm at 2. simpl Zgcdn.
-   unfold Z.modulo; generalize (Z_div_mod b (Zpos a) eq_refl).
-   destruct (Z.div_eucl b (Zpos a)) as (q,r).
-   intros (EQ,(Hr,Hr')).
-   Z.le_elim Hr.
-   - (* r > 0 *)
-     replace (fibonacci (S (S m))) with (fibonacci (S m) + fibonacci m) by auto.
-     intros.
-     destruct (IHn r (Zpos a) (conj Hr Hr')); auto.
-     + assert (EQ' : r = Zpos a * (-q) + b) by (rewrite EQ; ring).
-       rewrite EQ' at 1.
-       apply Zis_gcd_sym.
-       apply Zis_gcd_for_euclid2; auto.
-       apply Zis_gcd_sym; auto.
-     + split. auto.
-       destruct q. lia. 1-2: nia.
-   - (* r = 0 *)
-     clear IHn EQ Hr'; intros _.
-     subst r; simpl; rewrite Heqm.
-     destruct n.
-     + simpl. lia.
-     + now destruct 1.
+   - intros [|a|a]; intros; simpl; lia.
+   - intros [|a|a] b (Ha,Ha'); [simpl; lia | | easy ].
+     remember (S n) as m eqn:Heqm.
+     rewrite Heqm at 2. simpl Zgcdn.
+     unfold Z.modulo; generalize (Z_div_mod b (Zpos a) eq_refl).
+     destruct (Z.div_eucl b (Zpos a)) as (q,r).
+     intros (EQ,(Hr,Hr')).
+     Z.le_elim Hr.
+     + (* r > 0 *)
+       replace (fibonacci (S (S m))) with (fibonacci (S m) + fibonacci m) by auto.
+       intros.
+       destruct (IHn r (Zpos a) (conj Hr Hr')); auto.
+       * assert (EQ' : r = Zpos a * (-q) + b) by (rewrite EQ; ring).
+         rewrite EQ' at 1.
+         apply Zis_gcd_sym.
+         apply Zis_gcd_for_euclid2; auto.
+         apply Zis_gcd_sym; auto.
+       * split.
+         -- auto.
+         -- destruct q. 1:lia. 1-2: nia.
+     + (* r = 0 *)
+       clear IHn EQ Hr'; intros _.
+       subst r; simpl; rewrite Heqm.
+       destruct n.
+       * simpl. lia.
+       * now destruct 1.
  Qed.
 
  (** 3b) We reformulate the previous result in a more positive way. *)
@@ -176,20 +178,20 @@ Open Scope Z_scope.
      k = (S (Pos.to_nat p) - n)%nat ->
      0 < Zpos p < b -> Zpos p < fibonacci (S n) ->
      Zis_gcd (Zpos p) b (Zgcdn n (Zpos p) b)).
-   destruct 2; eauto.
-   clear n; intros k; induction k as [|k IHk].
-   intros.
-   apply Zgcdn_linear_bound.
-   lia.
-   intros n b H H0 H1.
-   generalize (Zgcdn_worst_is_fibonacci n (Zpos p) b H0); intros H2.
-   assert (Zis_gcd (Zpos p) b (Zgcdn (S n) (Zpos p) b)) as H3.
-   apply IHk; auto.
-   lia.
-   replace (fibonacci (S (S n))) with (fibonacci (S n)+fibonacci n) by auto.
-   generalize (fibonacci_pos n); lia.
-   replace (Zgcdn n (Zpos p) b) with (Zgcdn (S n) (Zpos p) b); auto.
-   generalize (H2 H3); clear H2 H3; lia.
+   - destruct 2; eauto.
+   - clear n; intros k; induction k as [|k IHk].
+     + intros.
+       apply Zgcdn_linear_bound.
+       lia.
+     + intros n b H H0 H1.
+       generalize (Zgcdn_worst_is_fibonacci n (Zpos p) b H0); intros H2.
+       assert (Zis_gcd (Zpos p) b (Zgcdn (S n) (Zpos p) b)) as H3.
+       * apply IHk; auto.
+         -- lia.
+         -- replace (fibonacci (S (S n))) with (fibonacci (S n)+fibonacci n) by auto.
+            generalize (fibonacci_pos n); lia.
+       * replace (Zgcdn n (Zpos p) b) with (Zgcdn (S n) (Zpos p) b); auto.
+         generalize (H2 H3); clear H2 H3; lia.
  Qed.
 
  (** 4) The proposed bound leads to a fibonacci number that is big enough. *)
@@ -205,11 +207,11 @@ Open Scope Z_scope.
     set (n:= (Pos.size_nat p+Pos.size_nat p)%nat) in *; simpl;
     assert (n <> O) as H by (unfold n; destruct p; simpl; auto).
 
-   destruct n as [ |m]; [elim H; auto| ].
-   generalize (fibonacci_pos m); rewrite Pos2Z.inj_xI; lia.
+   - destruct n as [ |m]; [elim H; auto| ].
+     generalize (fibonacci_pos m); rewrite Pos2Z.inj_xI; lia.
 
-   destruct n as [ |m]; [elim H; auto| ].
-   generalize (fibonacci_pos m); rewrite Pos2Z.inj_xO; lia.
+   - destruct n as [ |m]; [elim H; auto| ].
+     generalize (fibonacci_pos m); rewrite Pos2Z.inj_xO; lia.
  Qed.
 
  (* 5) the end: we glue everything together and take care of

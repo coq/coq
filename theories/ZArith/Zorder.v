@@ -348,7 +348,9 @@ Qed.
 
 Lemma Zle_0_nat : forall n:nat, 0 <= Z.of_nat n.
 Proof.
-  intros n; induction n; simpl; intros. apply Z.le_refl. easy.
+  intros n; induction n; simpl; intros.
+  - apply Z.le_refl.
+  - easy.
 Qed.
 
 #[global]
@@ -553,8 +555,8 @@ Lemma Zmult_lt_compat2 n m p q :
 Proof.
   intros (Hn, Hnp) (Hm,Hmq).
   apply Z.le_lt_trans with (p * m).
-   apply Z.mul_le_mono_pos_r; trivial.
-   apply Z.mul_lt_mono_pos_l; Z.order.
+  - apply Z.mul_le_mono_pos_r; trivial.
+  - apply Z.mul_lt_mono_pos_l; Z.order.
 Qed.
 
 (** Compatibility of multiplication by a positive wrt to being positive *)
@@ -572,8 +574,9 @@ Qed.
 
 Lemma Zmult_gt_0_le_0_compat n m : n > 0 -> 0 <= m -> 0 <= m * n.
 Proof.
- Z.swap_greater. intros. apply Z.mul_nonneg_nonneg. trivial.
-  now apply Z.lt_le_incl.
+  Z.swap_greater. intros. apply Z.mul_nonneg_nonneg.
+  - trivial.
+  - now apply Z.lt_le_incl.
 Qed.
 
 (** Simplification of multiplication by a positive wrt to being positive *)

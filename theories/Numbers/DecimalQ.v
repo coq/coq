@@ -453,6 +453,8 @@ Qed.
 
 Lemma of_iff d d' : of_decimal d = of_decimal d' <-> dnorm d = dnorm d'.
 Proof.
-  split. apply of_inj. intros E. rewrite <- of_decimal_dnorm, E.
-  apply of_decimal_dnorm.
+  split.
+  - apply of_inj.
+  - intros E. rewrite <- of_decimal_dnorm, E.
+    apply of_decimal_dnorm.
 Qed.

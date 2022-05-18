@@ -87,9 +87,10 @@ Proof.
 unfold eqb31. intros x y.
 rewrite Cyclic31.spec_compare.
 split.
-case Z.compare_spec.
-intuition. apply Int31_canonic; auto. 1-2: easy.
-now intros ->; rewrite Z.compare_refl.
+- case Z.compare_spec.
+  2,3: easy.
+  intuition. apply Int31_canonic; auto.
+- now intros ->; rewrite Z.compare_refl.
 Qed.
 
 Lemma eqb31_correct : forall x y, eqb31 x y = true -> x=y.

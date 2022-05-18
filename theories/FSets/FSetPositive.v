@@ -364,15 +364,18 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma is_empty_spec: forall s, Empty s <-> is_empty s = true.
   Proof.
     unfold Empty, In.
-    induction s as [|l IHl o r IHr]; simpl. now split.
-      rewrite <- 2andb_lazy_alt, 2andb_true_iff, <- IHl, <- IHr. clear IHl IHr.
+    induction s as [|l IHl o r IHr]; simpl.
+    - now split.
+    - rewrite <- 2andb_lazy_alt, 2andb_true_iff, <- IHl, <- IHr. clear IHl IHr.
       destruct o; simpl; split.
-        intro H. elim (H 1). reflexivity.
-        intuition discriminate.
-        intro H. split. split. reflexivity.
-          intro a. apply (H a~0).
-          intro a. apply (H a~1).
-        intros H [a|a|]; apply H || intro; discriminate.
+      + intro H. elim (H 1). reflexivity.
+      + intuition discriminate.
+      + intro H. split.
+        * split.
+          -- reflexivity.
+          -- intro a. apply (H a~0).
+        * intro a. apply (H a~1).
+      + intros H [a|a|]; apply H || intro; discriminate.
   Qed.
 
   Lemma is_empty_1: forall s, Empty s -> is_empty s = true.
@@ -389,46 +392,55 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma subset_spec: forall s s', s [<=] s' <-> subset s s' = true.
   Proof.
     induction s as [|l IHl o r IHr]; intros [|l' o' r']; simpl.
-      split; intros. reflexivity. apply subset_Leaf_s.
+    - split; intros.
+      + reflexivity.
+      + apply subset_Leaf_s.
 
-      split; intros. reflexivity. apply subset_Leaf_s.
+    - split; intros.
+      + reflexivity.
+      + apply subset_Leaf_s.
 
-      rewrite <- 2andb_lazy_alt, 2andb_true_iff, <- 2is_empty_spec.
+    - rewrite <- 2andb_lazy_alt, 2andb_true_iff, <- 2is_empty_spec.
       destruct o; simpl.
-        split.
-          intro H. elim (@empty_1 1). apply H. reflexivity.
-          intuition discriminate.
-        split; intro H.
-          split. split. reflexivity.
-          unfold Empty. intros a H1. apply (@empty_1 (a~0)). apply H. assumption.
-          unfold Empty. intros a H1. apply (@empty_1 (a~1)). apply H. assumption.
-          destruct H as [[_ Hl] Hr].
+      + split.
+        * intro H. elim (@empty_1 1). apply H. reflexivity.
+        * intuition discriminate.
+      + split; intro H.
+        * split.
+          -- split.
+             ++ reflexivity.
+             ++ unfold Empty. intros a H1. apply (@empty_1 (a~0)). apply H. assumption.
+          -- unfold Empty. intros a H1. apply (@empty_1 (a~1)). apply H. assumption.
+        * destruct H as [[_ Hl] Hr].
           intros [i|i|] Hi.
-            elim (Hr i Hi).
-            elim (Hl i Hi).
-            discriminate.
+          -- elim (Hr i Hi).
+          -- elim (Hl i Hi).
+          -- discriminate.
 
-      rewrite <- 2andb_lazy_alt, 2andb_true_iff, <- IHl, <- IHr. clear.
+    - rewrite <- 2andb_lazy_alt, 2andb_true_iff, <- IHl, <- IHr. clear.
       destruct o; simpl.
-       split; intro H.
-         split. split.
-          destruct o'; trivial.
-          specialize (H 1). unfold In in H. simpl in H. apply H. reflexivity.
-          intros i Hi. apply (H i~0). apply Hi.
-          intros i Hi. apply (H i~1). apply Hi.
-         destruct H as [[Ho' Hl] Hr]. rewrite Ho'.
+      + split; intro H.
+        * split.
+          -- split.
+             ++ destruct o'; trivial.
+                specialize (H 1). unfold In in H. simpl in H. apply H. reflexivity.
+             ++ intros i Hi. apply (H i~0). apply Hi.
+          -- intros i Hi. apply (H i~1). apply Hi.
+        * destruct H as [[Ho' Hl] Hr]. rewrite Ho'.
           intros i Hi. destruct i.
-            apply (Hr i). assumption.
-            apply (Hl i). assumption.
-            assumption.
-       split; intros.
-         split. split. reflexivity.
-           intros i Hi. apply (H i~0). apply Hi.
-           intros i Hi. apply (H i~1). apply Hi.
-           intros i Hi. destruct i; destruct H as [[H Hl] Hr].
-             apply (Hr i). assumption.
-             apply (Hl i). assumption.
-             discriminate Hi.
+          -- apply (Hr i). assumption.
+          -- apply (Hl i). assumption.
+          -- assumption.
+      + split; intros.
+        * split.
+          -- split.
+             ++ reflexivity.
+             ++ intros i Hi. apply (H i~0). apply Hi.
+          -- intros i Hi. apply (H i~1). apply Hi.
+        * intros i Hi. destruct i; destruct H as [[H Hl] Hr].
+          -- apply (Hr i). assumption.
+          -- apply (Hl i). assumption.
+          -- discriminate Hi.
   Qed.
 
 
@@ -443,13 +455,15 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma equal_subset: forall s s', equal s s' = subset s s' && subset s' s.
   Proof.
     induction s as [|l IHl o r IHr]; intros [|l' o' r']; simpl; trivial.
-      destruct o. reflexivity. rewrite andb_comm. reflexivity.
-      rewrite <- 6andb_lazy_alt. rewrite eq_iff_eq_true.
-       rewrite 7andb_true_iff, eqb_true_iff.
+    - destruct o.
+      + reflexivity.
+      + rewrite andb_comm. reflexivity.
+    - rewrite <- 6andb_lazy_alt. rewrite eq_iff_eq_true.
+      rewrite 7andb_true_iff, eqb_true_iff.
       rewrite IHl, IHr, 2andb_true_iff. clear IHl IHr. intuition subst.
-       destruct o'; reflexivity.
-       destruct o'; reflexivity.
-       destruct o; auto. destruct o'; trivial.
+      + destruct o'; reflexivity.
+      + destruct o'; reflexivity.
+      + destruct o; auto. destruct o'; trivial.
   Qed.
 
   Lemma equal_spec: forall s s', Equal s s' <-> equal s s' = true.
@@ -468,8 +482,8 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold eq.
     intros. case_eq (equal s s'); intro H.
-     left. apply equal_2, H.
-     right. abstract (intro H'; rewrite (equal_1 H') in H; discriminate).
+    - left. apply equal_2, H.
+    - right. abstract (intro H'; rewrite (equal_1 H') in H; discriminate).
   Defined.
 
   (** (Specified) definition of [compare] *)
@@ -485,10 +499,10 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma compare_inv: forall s s', compare_fun s s' = CompOpp (compare_fun s' s).
   Proof.
     induction s as [|l IHl o r IHr]; destruct s' as [|l' o' r']; trivial.
-    unfold compare_fun. case is_empty; reflexivity.
-    unfold compare_fun. case is_empty; reflexivity.
-    simpl. rewrite compare_bool_inv.
-     case compare_bool; simpl; trivial; apply lex_Opp; auto.
+    - unfold compare_fun. case is_empty; reflexivity.
+    - unfold compare_fun. case is_empty; reflexivity.
+    - simpl. rewrite compare_bool_inv.
+      case compare_bool; simpl; trivial; apply lex_Opp; auto.
   Qed.
 
   Lemma lex_Eq: forall u v, lex u v = Eq <-> u=Eq /\ v=Eq.
@@ -501,12 +515,12 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma compare_equal: forall s s', compare_fun s s' = Eq <-> equal s s' = true.
   Proof.
     induction s as [|l IHl o r IHr]; destruct s' as [|l' o' r'].
-     simpl. tauto.
-     unfold compare_fun, equal. case is_empty; intuition discriminate.
-     unfold compare_fun, equal. case is_empty; intuition discriminate.
-     simpl. rewrite <- 2andb_lazy_alt, 2andb_true_iff.
-     rewrite <- IHl, <- IHr, <- compare_bool_Eq. clear IHl IHr.
-     rewrite and_assoc. rewrite <- 2lex_Eq. reflexivity.
+    - simpl. tauto.
+    - unfold compare_fun, equal. case is_empty; intuition discriminate.
+    - unfold compare_fun, equal. case is_empty; intuition discriminate.
+    - simpl. rewrite <- 2andb_lazy_alt, 2andb_true_iff.
+      rewrite <- IHl, <- IHr, <- compare_bool_Eq. clear IHl IHr.
+      rewrite and_assoc. rewrite <- 2lex_Eq. reflexivity.
   Qed.
 
 
@@ -524,9 +538,9 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma compare : forall s s' : t, Compare lt eq s s'.
   Proof.
     intros. case_eq (compare_fun s s'); intro H.
-    apply EQ. apply compare_eq, H.
-    apply LT. assumption.
-    apply GT. apply compare_gt, H.
+    - apply EQ. apply compare_eq, H.
+    - apply LT. assumption.
+    - apply GT. apply compare_gt, H.
   Defined.
 
   Section lt_spec.
@@ -583,13 +597,14 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     forall b, compare_fun a b = if is_empty b then Eq else Lt.
   Proof.
     induction a as [|l IHl o r IHr]; trivial.
-    destruct o. intro; discriminate.
-    simpl is_empty. rewrite <- andb_lazy_alt, andb_true_iff.
-    intros [Hl Hr].
-    destruct b as [|l' [|] r']; simpl compare_fun; trivial.
-     rewrite Hl, Hr. trivial.
-     rewrite (IHl Hl), (IHr Hr). simpl.
-     case (is_empty l'); case (is_empty r'); trivial.
+    destruct o.
+    - intro; discriminate.
+    - simpl is_empty. rewrite <- andb_lazy_alt, andb_true_iff.
+      intros [Hl Hr].
+      destruct b as [|l' [|] r']; simpl compare_fun; trivial.
+      + rewrite Hl, Hr. trivial.
+      + rewrite (IHl Hl), (IHr Hr). simpl.
+        case (is_empty l'); case (is_empty r'); trivial.
   Qed.
 
   Lemma compare_x_empty: forall a, is_empty a = true ->
@@ -603,32 +618,33 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     forall a b c, ct (compare_fun a b) (compare_fun b c) (compare_fun a c).
   Proof.
     induction a as [|l IHl o r IHr]; intros s' s''.
-     destruct s' as [|l' o' r']; destruct s'' as [|l'' o'' r'']; ct.
-      rewrite compare_inv. ct.
-      unfold compare_fun at 1. case_eq (is_empty (Node l' o' r')); intro H'.
-       rewrite (compare_empty_x _ H'). ct.
-       unfold compare_fun at 2. case_eq (is_empty (Node l'' o'' r'')); intro H''.
-        rewrite (compare_x_empty _ H''), H'. ct.
-        ct.
+    - destruct s' as [|l' o' r']; destruct s'' as [|l'' o'' r'']; ct.
+      + rewrite compare_inv. ct.
+      + unfold compare_fun at 1. case_eq (is_empty (Node l' o' r')); intro H'.
+        * rewrite (compare_empty_x _ H'). ct.
+        * unfold compare_fun at 2. case_eq (is_empty (Node l'' o'' r'')); intro H''.
+          -- rewrite (compare_x_empty _ H''), H'. ct.
+          -- ct.
 
-     destruct s' as [|l' o' r']; destruct s'' as [|l'' o'' r''].
-      ct.
-      unfold compare_fun at 2. rewrite compare_x_Leaf.
-      case_eq (is_empty (Node l o r)); intro H.
-       rewrite (compare_empty_x _ H). ct.
-       case_eq (is_empty (Node l'' o'' r'')); intro H''.
-        rewrite (compare_x_empty _ H''), H. ct.
-        ct.
+    - destruct s' as [|l' o' r']; destruct s'' as [|l'' o'' r''].
+      + ct.
+      + unfold compare_fun at 2. rewrite compare_x_Leaf.
+        case_eq (is_empty (Node l o r)); intro H.
+        * rewrite (compare_empty_x _ H). ct.
+        * case_eq (is_empty (Node l'' o'' r'')); intro H''.
+          -- rewrite (compare_x_empty _ H''), H. ct.
+          -- ct.
 
-      rewrite 2 compare_x_Leaf.
-      case_eq (is_empty (Node l o r)); intro H.
-       rewrite compare_inv, (compare_x_empty _ H). ct.
-       case_eq (is_empty (Node l' o' r')); intro H'.
-        rewrite (compare_x_empty _ H'), H. ct.
-        ct.
+      + rewrite 2 compare_x_Leaf.
+        case_eq (is_empty (Node l o r)); intro H.
+        * rewrite compare_inv, (compare_x_empty _ H). ct.
+        * case_eq (is_empty (Node l' o' r')); intro H'.
+          -- rewrite (compare_x_empty _ H'), H. ct.
+          -- ct.
 
-      simpl compare_fun. apply ct_lex. apply ct_compare_bool.
-       apply ct_lex; trivial.
+      + simpl compare_fun. apply ct_lex.
+        * apply ct_compare_bool.
+        * apply ct_lex; trivial.
   Qed.
 
   End lt_spec.
@@ -765,12 +781,12 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
       fold_left f' acc (xfold f s i j) =
       fold_left f' (xelements s j acc) i).
 
-    induction s as [|l IHl o r IHr]; intros; trivial.
+    - induction s as [|l IHl o r IHr]; intros; trivial.
       destruct o; simpl xelements; simpl xfold.
-        rewrite IHr, <- IHl. reflexivity.
-        rewrite IHr. apply IHl.
+      + rewrite IHr, <- IHl. reflexivity.
+      + rewrite IHr. apply IHl.
 
-    intros. exact (H s i 1 nil).
+    - intros. exact (H s i 1 nil).
   Qed.
 
   (** Specification of [cardinal] *)
@@ -781,12 +797,12 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     assert (H: forall s j acc,
                 (cardinal s + length acc)%nat = length (xelements s j acc)).
 
-    induction s as [|l IHl b r IHr]; intros j acc; simpl; trivial. destruct b.
-      rewrite <- IHl. simpl. rewrite <- IHr.
-       rewrite <- plus_n_Sm, Nat.add_assoc. reflexivity.
-      rewrite <- IHl, <- IHr. rewrite Nat.add_assoc. reflexivity.
+    - induction s as [|l IHl b r IHr]; intros j acc; simpl; trivial. destruct b.
+      + rewrite <- IHl. simpl. rewrite <- IHr.
+        rewrite <- plus_n_Sm, Nat.add_assoc. reflexivity.
+      + rewrite <- IHl, <- IHr. rewrite Nat.add_assoc. reflexivity.
 
-    intros. rewrite <- H. simpl. rewrite Nat.add_comm. reflexivity.
+    - intros. rewrite <- H. simpl. rewrite Nat.add_comm. reflexivity.
   Qed.
 
   (** Specification of [filter] *)
@@ -796,11 +812,11 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     intro f. unfold In.
     induction s as [|l IHl o r IHr]; intros x i; simpl xfilter.
-     rewrite mem_Leaf. intuition discriminate.
-     rewrite mem_node. destruct x; simpl.
-       rewrite IHr. reflexivity.
-       rewrite IHl. reflexivity.
-       rewrite <- andb_lazy_alt. apply andb_true_iff.
+    - rewrite mem_Leaf. intuition discriminate.
+    - rewrite mem_node. destruct x; simpl.
+      + rewrite IHr. reflexivity.
+      + rewrite IHl. reflexivity.
+      + rewrite <- andb_lazy_alt. apply andb_true_iff.
   Qed.
 
   Lemma filter_1 : forall s x f, @compat_bool elt E.eq f ->
@@ -822,18 +838,21 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     xforall f s i = true <-> For_all (fun x => f (i@x) = true) s.
   Proof.
     unfold For_all, In. intro f.
-    induction s as [|l IHl o r IHr]; intros i; simpl. now split.
-     rewrite <- 2andb_lazy_alt, <- orb_lazy_alt, 2 andb_true_iff.
-     rewrite IHl, IHr. clear IHl IHr.
+    induction s as [|l IHl o r IHr]; intros i; simpl.
+    - now split.
+    - rewrite <- 2andb_lazy_alt, <- orb_lazy_alt, 2 andb_true_iff.
+      rewrite IHl, IHr. clear IHl IHr.
       split.
-       intros [[Hi Hr] Hl] x. destruct x; simpl; intro H.
-        apply Hr, H.
-        apply Hl, H.
-        rewrite H in Hi. assumption.
-       intro H; intuition.
-        specialize (H 1). destruct o. apply H. reflexivity. reflexivity.
-        apply H. assumption.
-        apply H. assumption.
+      + intros [[Hi Hr] Hl] x. destruct x; simpl; intro H.
+        * apply Hr, H.
+        * apply Hl, H.
+        * rewrite H in Hi. assumption.
+      + intro H; intuition.
+        * specialize (H 1). destruct o.
+          -- apply H. reflexivity.
+          -- reflexivity.
+        * apply H. assumption.
+        * apply H. assumption.
   Qed.
 
   Lemma for_all_1 : forall s f, @compat_bool elt E.eq f ->
@@ -852,15 +871,15 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold Exists, In. intro f.
     induction s as [|l IHl o r IHr]; intros i; simpl.
-    split; [ discriminate | now intros  [ _ [? _]]].
-     rewrite <- 2orb_lazy_alt, 2orb_true_iff, <- andb_lazy_alt, andb_true_iff.
-     rewrite IHl, IHr. clear IHl IHr.
+    - split; [ discriminate | now intros  [ _ [? _]]].
+    - rewrite <- 2orb_lazy_alt, 2orb_true_iff, <- andb_lazy_alt, andb_true_iff.
+      rewrite IHl, IHr. clear IHl IHr.
       split.
-       intros [[Hi|[x Hr]]|[x Hl]].
-        exists 1. exact Hi.
-        exists x~1. exact Hr.
-        exists x~0. exact Hl.
-       intros [[x|x|] H]; eauto.
+      + intros [[Hi|[x Hr]]|[x Hl]].
+        * exists 1. exact Hi.
+        * exists x~1. exact Hr.
+        * exists x~0. exact Hl.
+      + intros [[x|x|] H]; eauto.
   Qed.
 
   Lemma exists_1 : forall s f, @compat_bool elt E.eq f ->
@@ -879,8 +898,8 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold partition, filter. intros s f. generalize 1 as j.
     induction s as [|l IHl o r IHr]; intro j.
-      reflexivity.
-      destruct o; simpl; rewrite IHl, IHr; reflexivity.
+    - reflexivity.
+    - destruct o; simpl; rewrite IHl, IHr; reflexivity.
   Qed.
 
   Lemma partition_1 : forall s f, @compat_bool elt E.eq f ->
@@ -902,33 +921,35 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     InL y acc \/ exists x, y=(j@x) /\ mem x s = true.
   Proof.
     induction s as [|l IHl o r IHr]; simpl.
-      intros. split; intro H.
-        left. assumption.
-        destruct H as [H|[x [Hx Hx']]]. assumption. discriminate.
+    - intros. split; intro H.
+      + left. assumption.
+      + destruct H as [H|[x [Hx Hx']]].
+        * assumption.
+        * discriminate.
 
-      intros j acc y. case o.
-        rewrite IHl. rewrite InA_cons. rewrite IHr. clear IHl IHr. split.
-          intros [[H|[H|[x [-> H]]]]|[x [-> H]]]; eauto.
-            right. exists x~1. auto.
-            right. exists x~0. auto.
-          intros [H|[x [-> H]]].
-            eauto.
-            destruct x.
-              left. right. right. exists x; auto.
-              right. exists x; auto.
-              left. left. reflexivity.
+    - intros j acc y. case o.
+      + rewrite IHl. rewrite InA_cons. rewrite IHr. clear IHl IHr. split.
+        * intros [[H|[H|[x [-> H]]]]|[x [-> H]]]; eauto.
+          -- right. exists x~1. auto.
+          -- right. exists x~0. auto.
+        * intros [H|[x [-> H]]].
+          -- eauto.
+          -- destruct x.
+             ++ left. right. right. exists x; auto.
+             ++ right. exists x; auto.
+             ++ left. left. reflexivity.
 
-        rewrite IHl, IHr. clear IHl IHr. split.
-          intros [[H|[x [-> H]]]|[x [-> H]]].
-            eauto.
-            right. exists x~1. auto.
-            right. exists x~0. auto.
-          intros [H|[x [-> H]]].
-            eauto.
-            destruct x.
-              left. right.  exists x; auto.
-              right. exists x; auto.
-              discriminate.
+      + rewrite IHl, IHr. clear IHl IHr. split.
+        * intros [[H|[x [-> H]]]|[x [-> H]]].
+          -- eauto.
+          -- right. exists x~1. auto.
+          -- right. exists x~0. auto.
+        * intros [H|[x [-> H]]].
+          -- eauto.
+          -- destruct x.
+             ++ left. right.  exists x; auto.
+             ++ right. exists x; auto.
+             ++ discriminate.
   Qed.
 
   Lemma elements_1: forall s x, In x s -> InL x (elements s).
@@ -941,8 +962,8 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold elements, In. intros s x H.
     rewrite xelements_spec in H. destruct H as [H|[y [H H']]].
-      inversion_clear H.
-      rewrite H. assumption.
+    - inversion_clear H.
+    - rewrite H. assumption.
   Qed.
 
   Lemma lt_rev_append: forall j x y, E.lt x y -> E.lt (j@x) (j@y).
@@ -954,49 +975,57 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
     assert (H: forall s j acc,
       sort E.lt acc ->
       (forall x y, In x s ->  InL y acc -> E.lt (j@x) y) ->
-      sort E.lt (xelements s j acc)).
+      sort E.lt (xelements s j acc)). {
 
     induction s as [|l IHl o r IHr]; simpl; trivial.
     intros j acc Hacc Hsacc. destruct o.
-      apply IHl. constructor.
-       apply IHr. apply Hacc.
-       intros x y Hx Hy. apply Hsacc; assumption.
-       case_eq (xelements r j~1 acc). constructor.
-       intros z q H. constructor.
-       assert (H': InL z (xelements r j~1 acc)).
-        rewrite H. constructor. reflexivity.
-       clear H q. rewrite xelements_spec in H'. destruct H' as [Hy|[x [-> Hx]]].
-         apply (Hsacc 1 z); trivial. reflexivity.
-         simpl. apply lt_rev_append. exact I.
-       intros x y Hx Hy. inversion_clear Hy.
-         rewrite H. simpl. apply lt_rev_append. exact I.
-         rewrite xelements_spec in H. destruct H as [Hy|[z [-> Hy]]].
-           apply Hsacc; assumption.
-           simpl. apply lt_rev_append. exact I.
+    - apply IHl.
+      + constructor.
+        * apply IHr.
+          -- apply Hacc.
+          -- intros x y Hx Hy. apply Hsacc; assumption.
+        * case_eq (xelements r j~1 acc).
+          -- constructor.
+          -- intros z q H. constructor.
+             assert (H': InL z (xelements r j~1 acc)). {
+               rewrite H. constructor. reflexivity.
+             }
+             clear H q. rewrite xelements_spec in H'. destruct H' as [Hy|[x [-> Hx]]].
+             ++ apply (Hsacc 1 z); trivial. reflexivity.
+             ++ simpl. apply lt_rev_append. exact I.
+      + intros x y Hx Hy. inversion_clear Hy.
+        * rewrite H. simpl. apply lt_rev_append. exact I.
+        * rewrite xelements_spec in H. destruct H as [Hy|[z [-> Hy]]].
+          -- apply Hsacc; assumption.
+          -- simpl. apply lt_rev_append. exact I.
 
-      apply IHl. apply IHr. apply Hacc.
-       intros x y Hx Hy. apply Hsacc; assumption.
-       intros x y Hx Hy. rewrite xelements_spec in Hy.
+    - apply IHl.
+      + apply IHr.
+        * apply Hacc.
+        * intros x y Hx Hy. apply Hsacc; assumption.
+      + intros x y Hx Hy. rewrite xelements_spec in Hy.
         destruct Hy as [Hy|[z [-> Hy]]].
-         apply Hsacc; assumption.
-         simpl. apply lt_rev_append. exact I.
+        * apply Hsacc; assumption.
+        * simpl. apply lt_rev_append. exact I.
+    }
 
-    intros. apply H. constructor.
-      intros x y _ H'. inversion H'.
+    intros. apply H.
+    - constructor.
+    - intros x y _ H'. inversion H'.
   Qed.
 
   Lemma elements_3w: forall s, NoDupA E.eq (elements s).
   Proof.
     intro. apply SortA_NoDupA with E.lt.
-      constructor.
-       intro. apply E.eq_refl.
-       intro. apply E.eq_sym.
-       intro. apply E.eq_trans.
-      constructor.
-       intros x H. apply E.lt_not_eq in H. apply H. reflexivity.
-       intro. apply E.lt_trans.
-     solve_proper.
-      apply elements_3.
+    - constructor.
+      + intro. apply E.eq_refl.
+      + intro. apply E.eq_sym.
+      + intro. apply E.eq_trans.
+    - constructor.
+      + intros x H. apply E.lt_not_eq in H. apply H. reflexivity.
+      + intro. apply E.lt_trans.
+    - solve_proper.
+    - apply elements_3.
   Qed.
 
 
@@ -1005,33 +1034,33 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Lemma choose_1: forall s x, choose s = Some x -> In x s.
   Proof.
     induction s as [| l IHl o r IHr]; simpl.
-      intros. discriminate.
-      destruct o.
-        intros x H. injection H; intros; subst. reflexivity.
-        revert IHl. case choose.
-          intros p Hp x [= <-]. apply Hp.
-           reflexivity.
-          intros _ x. revert IHr. case choose.
-            intros p Hp [= <-]. apply Hp.
-            reflexivity.
-            intros. discriminate.
+    - intros. discriminate.
+    - destruct o.
+      + intros x H. injection H; intros; subst. reflexivity.
+      + revert IHl. case choose.
+        * intros p Hp x [= <-]. apply Hp.
+          reflexivity.
+        * intros _ x. revert IHr. case choose.
+          -- intros p Hp [= <-]. apply Hp.
+             reflexivity.
+          -- intros. discriminate.
   Qed.
 
   Lemma choose_2: forall s, choose s = None -> Empty s.
   Proof.
     unfold Empty, In. intros s H.
     induction s as [|l IHl o r IHr].
-      intro. apply empty_1.
-      destruct o.
-        discriminate.
-        simpl in H. destruct (choose l).
-          discriminate.
-          destruct (choose r).
-            discriminate.
-            intros [a|a|].
-              apply IHr. reflexivity.
-              apply IHl. reflexivity.
-              discriminate.
+    - intro. apply empty_1.
+    - destruct o.
+      + discriminate.
+      + simpl in H. destruct (choose l).
+        * discriminate.
+        * destruct (choose r).
+          -- discriminate.
+          -- intros [a|a|].
+             ++ apply IHr. reflexivity.
+             ++ apply IHl. reflexivity.
+             ++ discriminate.
   Qed.
 
   Lemma choose_empty: forall s, is_empty s = true -> choose s = None.
@@ -1044,14 +1073,14 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     setoid_rewrite equal_spec.
     induction s as [|l IHl o r IHr].
-      intros. symmetry. apply choose_empty. assumption.
+    - intros. symmetry. apply choose_empty. assumption.
 
-      destruct s' as [|l' o' r'].
-        generalize (Node l o r) as s. simpl. intros. apply choose_empty.
+    - destruct s' as [|l' o' r'].
+      + generalize (Node l o r) as s. simpl. intros. apply choose_empty.
         rewrite <- equal_spec in H. apply eq_sym in H. rewrite equal_spec in H.
         assumption.
 
-        simpl. rewrite <- 2andb_lazy_alt, 2andb_true_iff, eqb_true_iff.
+      + simpl. rewrite <- 2andb_lazy_alt, 2andb_true_iff, eqb_true_iff.
         intros [[<- Hl] Hr]. rewrite (IHl _ Hl), (IHr _ Hr). reflexivity.
   Qed.
 
@@ -1066,50 +1095,50 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
    unfold In.
    induction s as [| l IHl o r IHr]; simpl.
-     intros. discriminate.
-     intros x. destruct (min_elt l); intros.
-       injection H as [= <-]. apply IHl. reflexivity.
-       destruct o; simpl.
-         injection H as [= <-]. reflexivity.
-         destruct (min_elt r); simpl in *.
-           injection H as [= <-]. apply IHr. reflexivity.
-           discriminate.
+   - intros. discriminate.
+   - intros x. destruct (min_elt l); intros.
+     + injection H as [= <-]. apply IHl. reflexivity.
+     + destruct o; simpl.
+       * injection H as [= <-]. reflexivity.
+       * destruct (min_elt r); simpl in *.
+         -- injection H as [= <-]. apply IHr. reflexivity.
+         -- discriminate.
   Qed.
 
   Lemma min_elt_3: forall s, min_elt s = None -> Empty s.
   Proof.
     unfold Empty, In. intros s H.
     induction s as [|l IHl o r IHr].
-      intro. apply empty_1.
-      intros [a|a|].
-        apply IHr. revert H. clear. simpl. destruct (min_elt r); trivial.
-          case min_elt; intros; try discriminate. destruct o; discriminate.
-        apply IHl. revert H. clear. simpl. destruct (min_elt l); trivial.
-         intro; discriminate.
-        revert H. clear. simpl. case min_elt; intros; try discriminate.
-         destruct o; discriminate.
+    - intro. apply empty_1.
+    - intros [a|a|].
+      + apply IHr. revert H. clear. simpl. destruct (min_elt r); trivial.
+        case min_elt; intros; try discriminate. destruct o; discriminate.
+      + apply IHl. revert H. clear. simpl. destruct (min_elt l); trivial.
+        intro; discriminate.
+      + revert H. clear. simpl. case min_elt; intros; try discriminate.
+        destruct o; discriminate.
   Qed.
 
   Lemma min_elt_2: forall s x y, min_elt s = Some x -> In y s -> ~ E.lt y x.
   Proof.
     unfold In.
     induction s as [|l IHl o r IHr]; intros x y H H'.
-      discriminate.
-      simpl in H. case_eq (min_elt l).
-        intros p Hp. rewrite Hp in H. injection H as [= <-].
+    - discriminate.
+    - simpl in H. case_eq (min_elt l).
+      + intros p Hp. rewrite Hp in H. injection H as [= <-].
         destruct y as [z|z|]; simpl; intro; trivial. apply (IHl p z); trivial.
-        intro Hp; rewrite Hp in H. apply min_elt_3 in Hp.
+      + intro Hp; rewrite Hp in H. apply min_elt_3 in Hp.
         destruct o.
-          injection H as [= <-]. intros Hl.
+        * injection H as [= <-]. intros Hl.
           destruct y as [z|z|]; simpl; trivial. elim (Hp _ H').
 
-          destruct (min_elt r).
-            injection H as [= <-].
-            destruct y as [z|z|].
-              apply (IHr e z); trivial.
-              elim (Hp _ H').
-              discriminate.
-            discriminate.
+        * destruct (min_elt r).
+          -- injection H as [= <-].
+             destruct y as [z|z|].
+             ++ apply (IHr e z); trivial.
+             ++ elim (Hp _ H').
+             ++ discriminate.
+          -- discriminate.
   Qed.
 
 
@@ -1119,50 +1148,50 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
    unfold In.
    induction s as [| l IHl o r IHr]; simpl.
-     intros. discriminate.
-     intros x. destruct (max_elt r); intros.
-       injection H as [= <-]. apply IHr. reflexivity.
-       destruct o; simpl.
-         injection H as [= <-]. reflexivity.
-         destruct (max_elt l); simpl in *.
-           injection H as [= <-]. apply IHl. reflexivity.
-           discriminate.
+   - intros. discriminate.
+   - intros x. destruct (max_elt r); intros.
+     + injection H as [= <-]. apply IHr. reflexivity.
+     + destruct o; simpl.
+       * injection H as [= <-]. reflexivity.
+       * destruct (max_elt l); simpl in *.
+         -- injection H as [= <-]. apply IHl. reflexivity.
+         -- discriminate.
   Qed.
 
   Lemma max_elt_3: forall s, max_elt s = None -> Empty s.
   Proof.
     unfold Empty, In. intros s H.
     induction s as [|l IHl o r IHr].
-      intro. apply empty_1.
-      intros [a|a|].
-        apply IHr. revert H. clear. simpl. destruct (max_elt r); trivial.
-         intro; discriminate.
-        apply IHl. revert H. clear. simpl. destruct (max_elt l); trivial.
-          case max_elt; intros; try discriminate. destruct o; discriminate.
-        revert H. clear. simpl. case max_elt; intros; try discriminate.
-         destruct o; discriminate.
+    - intro. apply empty_1.
+    - intros [a|a|].
+      + apply IHr. revert H. clear. simpl. destruct (max_elt r); trivial.
+        intro; discriminate.
+      + apply IHl. revert H. clear. simpl. destruct (max_elt l); trivial.
+        case max_elt; intros; try discriminate. destruct o; discriminate.
+      + revert H. clear. simpl. case max_elt; intros; try discriminate.
+        destruct o; discriminate.
   Qed.
 
   Lemma max_elt_2: forall s x y, max_elt s = Some x -> In y s -> ~ E.lt x y.
   Proof.
     unfold In.
     induction s as [|l IHl o r IHr]; intros x y H H'.
-      discriminate.
-      simpl in H. case_eq (max_elt r).
-        intros p Hp. rewrite Hp in H. injection H as [= <-].
+    - discriminate.
+    - simpl in H. case_eq (max_elt r).
+      + intros p Hp. rewrite Hp in H. injection H as [= <-].
         destruct y as [z|z|]; simpl; intro; trivial. apply (IHr p z); trivial.
-        intro Hp; rewrite Hp in H. apply max_elt_3 in Hp.
+      + intro Hp; rewrite Hp in H. apply max_elt_3 in Hp.
         destruct o.
-          injection H as [= <-]. intros Hl.
+        * injection H as [= <-]. intros Hl.
           destruct y as [z|z|]; simpl; trivial. elim (Hp _ H').
 
-          destruct (max_elt l).
-            injection H as [= <-].
-            destruct y as [z|z|].
-              elim (Hp _ H').
-              apply (IHl e z); trivial.
-              discriminate.
-            discriminate.
+        * destruct (max_elt l).
+          -- injection H as [= <-].
+             destruct y as [z|z|].
+             ++ elim (Hp _ H').
+             ++ apply (IHl e z); trivial.
+             ++ discriminate.
+          -- discriminate.
   Qed.
 
 End PositiveSet.

@@ -46,6 +46,6 @@ Theorem choice :
 Proof.
 intros A B.
 apply description_rel_choice_imp_funct_choice.
-exact (unique_choice A B).
-exact (relational_choice A B).
+- exact (unique_choice A B).
+- exact (relational_choice A B).
 Qed.

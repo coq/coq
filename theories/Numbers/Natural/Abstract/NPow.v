@@ -63,9 +63,10 @@ Proof. wrap pow_nonzero. Qed.
 Lemma pow_eq_0_iff : forall a b, a^b == 0 <-> b~=0 /\ a==0.
 Proof.
  intros a b. split.
- rewrite pow_eq_0_iff. intros [H |[H H']].
-  generalize (le_0_l b); order. split; order.
- intros (Hb,Ha). rewrite Ha. now apply pow_0_l'.
+ - rewrite pow_eq_0_iff. intros [H |[H H']].
+   + generalize (le_0_l b); order.
+   + split; order.
+ - intros (Hb,Ha). rewrite Ha. now apply pow_0_l'.
 Qed.
 
 (** Monotonicity *)
@@ -148,10 +149,11 @@ Proof. wrap pow_add_upper. Qed.
 Lemma even_pow : forall a b, b~=0 -> even (a^b) = even a.
 Proof.
  intros a b Hb. rewrite neq_0_lt_0 in Hb.
- apply lt_ind with (4:=Hb). solve_proper.
- now nzsimpl.
- clear b Hb. intros b Hb IH.
- rewrite pow_succ_r', even_mul, IH. now destruct (even a).
+ apply lt_ind with (4:=Hb).
+ - solve_proper.
+ - now nzsimpl.
+ - clear b Hb. intros b Hb IH.
+   rewrite pow_succ_r', even_mul, IH. now destruct (even a).
 Qed.
 
 Lemma odd_pow : forall a b, b~=0 -> odd (a^b) = odd a.

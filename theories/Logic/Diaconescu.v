@@ -66,9 +66,9 @@ Proof.
   intros A B H.
   change ((fun _ => A) true = (fun _ => B) true).
   rewrite
-   pred_extensionality with (P := fun _:bool => A) (Q := fun _:bool => B).
-    reflexivity.
-    intros _; exact H.
+    pred_extensionality with (P := fun _:bool => A) (Q := fun _:bool => B).
+  - reflexivity.
+  - intros _; exact H.
 Qed.
 
 Lemma proof_irrel : forall (A:Prop) (a1 a2:A), a1 = a2.
@@ -103,10 +103,10 @@ Proof.
   destruct (guarded_rel_choice _ _
    (fun Q:bool -> Prop =>  exists y : _, Q y)
    (fun (Q:bool -> Prop) (y:bool) => Q y)) as (R,(HRsub,HR)). 
-    exact (fun _ H => H).
-  exists R; intros P HP.
-  destruct (HR P HP) as (y,(Hy,Huni)).
-  exists y; firstorder.
+  - exact (fun _ H => H).
+  - exists R; intros P HP.
+    destruct (HR P HP) as (y,(Hy,Huni)).
+    exists y; firstorder.
 Qed.
 
 (** The proof of the excluded middle *)
@@ -124,33 +124,34 @@ set (class_of_false := fun b => b = false \/ P).
 
 (* the actual "decision": is (R class_of_true) = true or false? *)
 destruct (H class_of_true) as [b0 [H0 [H0' H0'']]].
-exists true; left; reflexivity.
-destruct H0.
+- exists true; left; reflexivity.
+- destruct H0.
 
-(* the actual "decision": is (R class_of_false) = true or false? *)
-destruct (H class_of_false) as [b1 [H1 [H1' H1'']]].
-exists false; left; reflexivity.
-destruct H1.
+  (* the actual "decision": is (R class_of_false) = true or false? *)
+  + destruct (H class_of_false) as [b1 [H1 [H1' H1'']]].
+    * exists false; left; reflexivity.
+    * destruct H1.
 
-(* case where P is false: (R class_of_true)=true /\ (R class_of_false)=false *)
-right.
-intro HP.
-assert (Hequiv : forall b:bool, class_of_true b <-> class_of_false b).
-intro b; split.
-unfold class_of_false; right; assumption.
-unfold class_of_true; right; assumption.
-assert (Heq : class_of_true = class_of_false).
-apply pred_extensionality with (1 := Hequiv).
-apply diff_true_false.
-rewrite <- H0.
-rewrite <- H1.
-rewrite <- H0''. reflexivity.
-rewrite Heq.
-assumption.
+      -- (* case where P is false: (R class_of_true)=true /\ (R class_of_false)=false *)
+        right.
+        intro HP.
+        assert (Hequiv : forall b:bool, class_of_true b <-> class_of_false b).
+        ++ intro b; split.
+           ** unfold class_of_false; right; assumption.
+           ** unfold class_of_true; right; assumption.
+        ++ assert (Heq : class_of_true = class_of_false).
+           ** apply pred_extensionality with (1 := Hequiv).
+           ** apply diff_true_false.
+              rewrite <- H0.
+              rewrite <- H1.
+              rewrite <- H0''.
+              { reflexivity. }
+              rewrite Heq.
+              assumption.
 
-(* cases where P is true *)
-left; assumption.
-left; assumption.
+      -- (* cases where P is true *)
+        left; assumption.
+  + left; assumption.
 
 Qed.
 
@@ -195,8 +196,8 @@ Proof.
   rewrite Heq.
   replace (or_introl (a2=a2) (eq_refl a2))
      with (or_intror (a2=a2) (eq_refl a2)).
-  reflexivity.
-  apply proof_irrelevance.
+  - reflexivity.
+  - apply proof_irrelevance.
 Qed.
 
 (** But from the actual proofs of being in [A'], we can assert in the
@@ -217,18 +218,18 @@ Proof.
     (rel_choice A' bool
        (fun x y =>  projT1 x = a1 /\ y = true \/ projT1 x = a2 /\ y = false))
     as (R,(HRsub,HR)).
-    apply decide.
-  destruct (HR a1') as (b1,(Ha1'b1,_Huni1)).
-  destruct (HRsub a1' b1 Ha1'b1) as [(_, Hb1true)|(Ha1a2, _Hb1false)].
-  destruct (HR a2') as (b2,(Ha2'b2,Huni2)).
-  destruct (HRsub a2' b2 Ha2'b2) as [(Ha2a1, _Hb2true)|(_, Hb2false)].
-    left; symmetry; assumption.
-    right; intro H.
-    subst b1; subst b2.
-    rewrite (projT1_injective H) in Ha1'b1.
-    assert (false = true) by auto using Huni2.
-    discriminate.
-  left; assumption.
+  - apply decide.
+  - destruct (HR a1') as (b1,(Ha1'b1,_Huni1)).
+    destruct (HRsub a1' b1 Ha1'b1) as [(_, Hb1true)|(Ha1a2, _Hb1false)].
+    + destruct (HR a2') as (b2,(Ha2'b2,Huni2)).
+      destruct (HRsub a2' b2 Ha2'b2) as [(Ha2a1, _Hb2true)|(_, Hb2false)].
+      * left; symmetry; assumption.
+      * right; intro H.
+        subst b1; subst b2.
+        rewrite (projT1_injective H) in Ha1'b1.
+        assert (false = true) by auto using Huni2.
+        discriminate.
+    + left; assumption.
 Qed.
 
 (** An alternative more concise proof can be done by directly using
@@ -238,27 +239,29 @@ Lemma proof_irrel_rel_choice_imp_eq_dec' : a1=a2 \/ ~a1=a2.
 Proof.
   assert (decide: forall x:A, x=a1 \/ x=a2 ->
                 exists y:bool, x=a1 /\ y=true \/ x=a2 /\ y=false).
-    intros a [Ha1|Ha2]; [exists true | exists false]; auto.
-  assert (guarded_rel_choice :=
-          rel_choice_and_proof_irrel_imp_guarded_rel_choice
-	  rel_choice
-	  proof_irrelevance).
-  destruct
-    (guarded_rel_choice A bool
-      (fun x => x=a1 \/ x=a2)
-      (fun x y => x=a1 /\ y=true \/ x=a2 /\ y=false))
+  - intros a [Ha1|Ha2]; [exists true | exists false]; auto.
+  - assert (guarded_rel_choice :=
+              rel_choice_and_proof_irrel_imp_guarded_rel_choice
+                rel_choice
+                proof_irrelevance).
+    destruct
+      (guarded_rel_choice A bool
+                          (fun x => x=a1 \/ x=a2)
+                          (fun x y => x=a1 /\ y=true \/ x=a2 /\ y=false))
       as (R,(HRsub,HR)).
-      apply decide.
-  destruct (HR a1) as (b1,(Ha1b1,_Huni1)). left; reflexivity.
-  destruct (HRsub a1 b1 Ha1b1) as [(_, Hb1true)|(Ha1a2, _Hb1false)].
-  destruct (HR a2) as (b2,(Ha2b2,Huni2)). right; reflexivity.
-  destruct (HRsub a2 b2 Ha2b2) as [(Ha2a1, _Hb2true)|(_, Hb2false)].
-    left; symmetry; assumption.
-    right; intro H.
-    subst b1; subst b2; subst a1.
-    assert (false = true) by auto using Huni2, Ha1b1.
-    discriminate.
-  left; assumption.
+    + apply decide.
+    + destruct (HR a1) as (b1,(Ha1b1,_Huni1)).
+      * left; reflexivity.
+      * destruct (HRsub a1 b1 Ha1b1) as [(_, Hb1true)|(Ha1a2, _Hb1false)].
+        -- destruct (HR a2) as (b2,(Ha2b2,Huni2)).
+           ++ right; reflexivity.
+           ++ destruct (HRsub a2 b2 Ha2b2) as [(Ha2a1, _Hb2true)|(_, Hb2false)].
+              ** left; symmetry; assumption.
+              ** right; intro H.
+                 subst b1; subst b2; subst a1.
+                 assert (false = true) by auto using Huni2, Ha1b1.
+                 discriminate.
+        -- left; assumption.
 Qed.
 
 End ProofIrrel_RelChoice_imp_EqEM.
@@ -291,15 +294,15 @@ Proof.
   pose (C := fun y => y=true  \/ P).
   assert (B (eps B)) as [Hfalse|HP]
     by (apply epsilon_spec; exists false; left; reflexivity).
-  assert (C (eps C)) as [Htrue|HP]
-    by (apply epsilon_spec; exists true; left; reflexivity).
-    right; intro HP.
-    assert (forall y, B y <-> C y) by (intro y; split; intro; right; assumption).
-    rewrite epsilon_extensionality with (1:=H) in Hfalse.
-    rewrite Htrue in Hfalse.
-    discriminate.
-  auto.
-  auto.
+  - assert (C (eps C)) as [Htrue|HP]
+        by (apply epsilon_spec; exists true; left; reflexivity).
+    + right; intro HP.
+      assert (forall y, B y <-> C y) by (intro y; split; intro; right; assumption).
+      rewrite epsilon_extensionality with (1:=H) in Hfalse.
+      rewrite Htrue in Hfalse.
+      discriminate.
+    + auto.
+  - auto.
 Qed.
 
 End ExtensionalEpsilon_imp_EM.

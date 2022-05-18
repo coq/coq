@@ -55,8 +55,13 @@ Instance seq_cv_morph
   : forall (un : nat -> CReal), CMorphisms.Proper
       (CMorphisms.respectful CRealEq CRelationClasses.iffT) (seq_cv un).
 Proof.
-  split. intros. apply (seq_cv_proper un x). exact H0. exact H.
-  intros. apply (seq_cv_proper un y). exact H0. symmetry. exact H.
+  split.
+  - intros. apply (seq_cv_proper un x).
+    + exact H0.
+    + exact H.
+  - intros. apply (seq_cv_proper un y).
+    + exact H0.
+    + symmetry. exact H.
 Qed.
 
 
@@ -68,14 +73,14 @@ Proof.
   destruct (CRealArchimedean a) as [n [H H0]].
   exists (n-2)%Z. split.
   - setoid_replace (n - 2 # 1)%Q with ((n#1) + - 2)%Q.
-    rewrite inject_Q_plus, (opp_inject_Q 2).
-    apply (CReal_plus_lt_reg_r 2). ring_simplify.
-    rewrite CReal_plus_comm. exact H0.
-    rewrite Qinv_plus_distr. reflexivity.
+    + rewrite inject_Q_plus, (opp_inject_Q 2).
+      apply (CReal_plus_lt_reg_r 2). ring_simplify.
+      rewrite CReal_plus_comm. exact H0.
+    + rewrite Qinv_plus_distr. reflexivity.
   - setoid_replace (n - 2 # 1)%Q with ((n#1) + - 2)%Q.
-    rewrite inject_Q_plus, (opp_inject_Q 2).
-    ring_simplify. exact H.
-    rewrite Qinv_plus_distr. reflexivity.
+    + rewrite inject_Q_plus, (opp_inject_Q 2).
+      ring_simplify. exact H.
+    + rewrite Qinv_plus_distr. reflexivity.
 Qed.
 
 (* ToDo: Move to ConstructiveCauchyAbs.v *)
@@ -83,10 +88,12 @@ Lemma Qabs_Rabs : forall q : Q,
     inject_Q (Qabs q) == CReal_abs (inject_Q q).
 Proof.
   intro q. apply Qabs_case.
-  - intros. rewrite CReal_abs_right. reflexivity.
-    apply inject_Q_le, H.
-  - intros. rewrite CReal_abs_left, opp_inject_Q. reflexivity.
-    apply inject_Q_le, H.
+  - intros. rewrite CReal_abs_right.
+    + reflexivity.
+    + apply inject_Q_le, H.
+  - intros. rewrite CReal_abs_left, opp_inject_Q.
+    + reflexivity.
+    + apply inject_Q_le, H.
 Qed.
 
 Lemma Qlt_trans_swap_hyp: forall x y z : Q,
@@ -209,48 +216,52 @@ Proof.
   (xcau (4 * q)%positive) as [j jmaj].
   assert (CReal_abs (xn i - xn j) <= inject_Q (1 # 4 * n)).
   { destruct (le_lt_dec i j).
-    apply (CReal_le_trans _ _ _ (imaj i j (Nat.le_refl _) l)).
-    apply inject_Q_le. unfold Qle, Qnum, Qden.
-    rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
-    apply Pos.mul_le_mono_l, Hp. apply le_S, le_S_n in l.
-    apply (CReal_le_trans _ _ _ (jmaj i j l (Nat.le_refl _))).
-    apply inject_Q_le. unfold Qle, Qnum, Qden.
-    rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
-    apply Pos.mul_le_mono_l, Hq. }
+    - apply (CReal_le_trans _ _ _ (imaj i j (Nat.le_refl _) l)).
+      apply inject_Q_le. unfold Qle, Qnum, Qden.
+      rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
+      apply Pos.mul_le_mono_l, Hp.
+    - apply le_S, le_S_n in l.
+      apply (CReal_le_trans _ _ _ (jmaj i j l (Nat.le_refl _))).
+      apply inject_Q_le. unfold Qle, Qnum, Qden.
+      rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
+      apply Pos.mul_le_mono_l, Hq. }
   clear jmaj imaj.
   setoid_replace (1#n)%Q with ((1#(3*n)) + ((1#(3*n)) + (1#(3*n))))%Q.
   2: rewrite Qinv_plus_distr, Qinv_plus_distr; reflexivity.
   apply lt_inject_Q. rewrite inject_Q_plus.
   rewrite Qabs_Rabs.
   apply (CReal_le_lt_trans _ (CReal_abs (inject_Q (seq (xn i) (4 * Z.neg p)%Z) - xn i) + CReal_abs (xn i - inject_Q(seq (xn j) (4 * Z.neg q)%Z)))).
-  unfold Qminus.
-  rewrite inject_Q_plus, opp_inject_Q.
-  setoid_replace (inject_Q (seq (xn i) (4 * Z.neg p)%Z) +
-                  - inject_Q (seq (xn j) (4 * Z.neg q)%Z))
-    with (inject_Q (seq (xn i) (4 * Z.neg p)%Z) - xn i
-          + (xn i - inject_Q (seq (xn j) (4 * Z.neg q)%Z))).
-  2: ring.
-  apply CReal_abs_triang. apply CReal_plus_le_lt_compat.
-  rewrite CReal_abs_minus_sym. apply (CReal_le_trans _ (inject_Q (1# 4*p))).
-  apply CReal_cv_self. apply inject_Q_le. unfold Qle, Qnum, Qden.
-  rewrite Z.mul_1_l, Z.mul_1_l.
-  apply Pos2Z.pos_le_pos. apply (Pos.le_trans _ (4*n)).
-  apply Pos.mul_le_mono_r. discriminate.
-  apply Pos.mul_le_mono_l. exact Hp.
-  apply (CReal_le_lt_trans
-           _ (CReal_abs (xn i - xn j + (xn j - inject_Q (seq (xn j) (4 * Z.neg q)%Z))))).
-  apply CReal_abs_morph. ring.
-  apply (CReal_le_lt_trans _ _ _ (CReal_abs_triang _ _)).
-  rewrite inject_Q_plus. apply CReal_plus_le_lt_compat.
-  apply (CReal_le_trans _ _ _ H). apply inject_Q_le.
-  unfold Qle, Qnum, Qden. rewrite Z.mul_1_l, Z.mul_1_l.
-  apply Pos2Z.pos_le_pos. apply Pos.mul_le_mono_r. discriminate.
-  apply (CReal_le_lt_trans _ (inject_Q (1#4*q))).
-  apply CReal_cv_self. apply inject_Q_lt. unfold Qlt, Qnum, Qden.
-  rewrite Z.mul_1_l, Z.mul_1_l.
-  apply Pos2Z.pos_lt_pos. apply (Pos.lt_le_trans _ (4*n)).
-  apply Pos.mul_lt_mono_r. reflexivity.
-  apply Pos.mul_le_mono_l. exact Hq.
+  - unfold Qminus.
+    rewrite inject_Q_plus, opp_inject_Q.
+    setoid_replace (inject_Q (seq (xn i) (4 * Z.neg p)%Z) +
+                    - inject_Q (seq (xn j) (4 * Z.neg q)%Z))
+      with (inject_Q (seq (xn i) (4 * Z.neg p)%Z) - xn i
+            + (xn i - inject_Q (seq (xn j) (4 * Z.neg q)%Z))).
+    2: ring.
+    apply CReal_abs_triang.
+  - apply CReal_plus_le_lt_compat.
+    + rewrite CReal_abs_minus_sym. apply (CReal_le_trans _ (inject_Q (1# 4*p))).
+      * apply CReal_cv_self.
+      * apply inject_Q_le. unfold Qle, Qnum, Qden.
+        rewrite Z.mul_1_l, Z.mul_1_l.
+        apply Pos2Z.pos_le_pos. apply (Pos.le_trans _ (4*n)).
+        -- apply Pos.mul_le_mono_r. discriminate.
+        -- apply Pos.mul_le_mono_l. exact Hp.
+    + apply (CReal_le_lt_trans
+               _ (CReal_abs (xn i - xn j + (xn j - inject_Q (seq (xn j) (4 * Z.neg q)%Z))))).
+      * apply CReal_abs_morph. ring.
+      * apply (CReal_le_lt_trans _ _ _ (CReal_abs_triang _ _)).
+        rewrite inject_Q_plus. apply CReal_plus_le_lt_compat.
+        -- apply (CReal_le_trans _ _ _ H). apply inject_Q_le.
+           unfold Qle, Qnum, Qden. rewrite Z.mul_1_l, Z.mul_1_l.
+           apply Pos2Z.pos_le_pos. apply Pos.mul_le_mono_r. discriminate.
+        -- apply (CReal_le_lt_trans _ (inject_Q (1#4*q))).
+           ++ apply CReal_cv_self.
+           ++ apply inject_Q_lt. unfold Qlt, Qnum, Qden.
+              rewrite Z.mul_1_l, Z.mul_1_l.
+              apply Pos2Z.pos_lt_pos. apply (Pos.lt_le_trans _ (4*n)).
+              ** apply Pos.mul_lt_mono_r. reflexivity.
+              ** apply Pos.mul_le_mono_l. exact Hq.
 Qed.
 
 Definition CReal_from_cauchy_cm (n : Z) : positive :=
@@ -287,15 +298,15 @@ Proof.
   assert (CReal_abs (xn i - xn j) <= inject_Q (1 # 4 * 2^n')).
   {
     destruct (le_lt_dec i j).
-    apply (CReal_le_trans _ _ _ (imaj i j (Nat.le_refl _) l)).
-    apply inject_Q_le. unfold Qle, Qnum, Qden.
-    rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
-    subst; apply Pos.mul_le_mono_l, Pos_pow_le_mono_r, CReal_from_cauchy_cm_mono, Hp.
-    apply le_S, le_S_n in l.
-    apply (CReal_le_trans _ _ _ (jmaj i j l (Nat.le_refl _))).
-    apply inject_Q_le. unfold Qle, Qnum, Qden.
-    rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
-    subst; apply Pos.mul_le_mono_l, Pos_pow_le_mono_r, CReal_from_cauchy_cm_mono, Hq.
+    - apply (CReal_le_trans _ _ _ (imaj i j (Nat.le_refl _) l)).
+      apply inject_Q_le. unfold Qle, Qnum, Qden.
+      rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
+      subst; apply Pos.mul_le_mono_l, Pos_pow_le_mono_r, CReal_from_cauchy_cm_mono, Hp.
+    - apply le_S, le_S_n in l.
+      apply (CReal_le_trans _ _ _ (jmaj i j l (Nat.le_refl _))).
+      apply inject_Q_le. unfold Qle, Qnum, Qden.
+      rewrite Z.mul_1_l, Z.mul_1_l. apply Pos2Z.pos_le_pos.
+      subst; apply Pos.mul_le_mono_l, Pos_pow_le_mono_r, CReal_from_cauchy_cm_mono, Hq.
   }
   clear jmaj imaj.
   setoid_replace (2^n)%Q with ((1#3)*2^n + ((1#3)*2^n + (1#3)*2^n))%Q by ring.
@@ -330,7 +341,7 @@ Proof.
   }
   apply (CReal_le_lt_trans
            _ (CReal_abs (xn i - xn j + (xn j - inject_Q (seq (xn j) (Z.neg q' - 2)%Z))))).
-    1: apply CReal_abs_morph; ring.
+  1: apply CReal_abs_morph; ring.
   apply (CReal_le_lt_trans _ _ _ (CReal_abs_triang _ _)).
   rewrite inject_Q_plus.
   apply CReal_plus_le_lt_compat.
@@ -373,8 +384,9 @@ Proof.
   - exists 1%positive. apply (CReal_lt_trans _ 0 _ maj). apply CRealLt_0_1.
   - exists p. exact maj.
   - exists 1%positive. apply (CReal_lt_trans _ (inject_Q (Z.neg p # 1)) _ maj).
-    apply (CReal_lt_trans _ 0). apply inject_Q_lt. reflexivity.
-    apply CRealLt_0_1.
+    apply (CReal_lt_trans _ 0).
+    + apply inject_Q_lt. reflexivity.
+    + apply CRealLt_0_1.
 Qed.
 
 Lemma CReal_abs_upper_bound (x : CReal)
@@ -590,61 +602,66 @@ Proof.
   2: ring.
   apply (CReal_le_trans _ _ _ (CReal_abs_triang _ _)).
   apply (CReal_le_trans _ (inject_Q (1#2*p) + inject_Q (1#2*p))).
-  apply CReal_plus_le_compat.
-  2: { apply (CReal_le_trans _ _ _ H). apply inject_Q_le.
-       rewrite Qpower_minus_pos.
-       assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%Q as Aux
-         by ( intros; unfold Qeq, Qmult, Qnum, Qden; ring ); rewrite Aux; clear Aux.
-       rewrite Qmult_comm; apply Qmult_le_l; [lra|].
-       pose proof Qpower_2powneg_le_inv p.
-       pose proof Qpower_0_lt 2 (Z.neg p)%Z; lra. }
+  - apply CReal_plus_le_compat.
+    2: { apply (CReal_le_trans _ _ _ H). apply inject_Q_le.
+         rewrite Qpower_minus_pos.
+         assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%Q as Aux
+             by ( intros; unfold Qeq, Qmult, Qnum, Qden; ring ); rewrite Aux; clear Aux.
+         rewrite Qmult_comm; apply Qmult_le_l; [lra|].
+         pose proof Qpower_2powneg_le_inv p.
+         pose proof Qpower_0_lt 2 (Z.neg p)%Z; lra. }
 
-  (* Use imaj to relate xn i and xn j *)
-  specialize (imaj j i (Nat.le_trans _ _ _ (Nat.le_max_r _ _) H0) (Nat.le_refl _)).
+    (* Use imaj to relate xn i and xn j *)
+    specialize (imaj j i (Nat.le_trans _ _ _ (Nat.le_max_r _ _) H0) (Nat.le_refl _)).
     apply (CReal_le_trans _ (inject_Q (1 # 4 * p) + inject_Q (1 # 4 * p))).
-    setoid_replace (xn j - inject_Q (seq (xn i) (Z.neg i' - 2)))
-    with (xn j - xn i + (xn i - inject_Q (seq (xn i) (Z.neg i' - 2)))).
+    + setoid_replace (xn j - inject_Q (seq (xn i) (Z.neg i' - 2)))
+        with (xn j - xn i + (xn i - inject_Q (seq (xn i) (Z.neg i' - 2)))).
       2: ring.
-    apply (CReal_le_trans _ _ _ (CReal_abs_triang _ _)).
-    apply CReal_plus_le_compat. apply (CReal_le_trans _ _ _ imaj).
-    rewrite Heqi'. change (Z.neg p - 1)%Z with (Z.neg (p + 1))%Z.
-    unfold CReal_from_cauchy_cm.
-    apply inject_Q_le.
-    unfold Qle, Qnum, Qden.
-    rewrite Z.mul_1_l, Z.mul_1_l.
-    apply Pos2Z.pos_le_pos, Pos.mul_le_mono_l.
-    pose proof Pospow_lin_le_2pow p.
-    rewrite Pos.add_1_r, Pos.pow_succ_r.
-    lia.
-    clear imaj.
+      apply (CReal_le_trans _ _ _ (CReal_abs_triang _ _)).
+      apply CReal_plus_le_compat.
+      * apply (CReal_le_trans _ _ _ imaj).
+        rewrite Heqi'. change (Z.neg p - 1)%Z with (Z.neg (p + 1))%Z.
+        unfold CReal_from_cauchy_cm.
+        apply inject_Q_le.
+        unfold Qle, Qnum, Qden.
+        rewrite Z.mul_1_l, Z.mul_1_l.
+        apply Pos2Z.pos_le_pos, Pos.mul_le_mono_l.
+        pose proof Pospow_lin_le_2pow p.
+        rewrite Pos.add_1_r, Pos.pow_succ_r.
+        lia.
+      * clear imaj.
 
-  (* Use CReal_cv_self' to relate xn i and seq (xn i) (...) *)
-  pose proof CReal_cv_self' (xn i) (Z.neg i' - 2).
-    apply (CReal_le_trans _ _ _ H1).
-    apply inject_Q_le.
-    rewrite Heqi'. change (Z.neg p - 1)%Z with (Z.neg (p + 1))%Z.
-    unfold CReal_from_cauchy_cm.
-    change (Z.neg (p + 1))%Z with (Z.neg p - 1)%Z.
-    ring_simplify (Z.neg p - 1 - 2)%Z.
-    rewrite Qpower_minus_pos.
-    assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%Q as Aux
-      by ( intros; unfold Qeq, Qmult, Qnum, Qden; ring ); rewrite Aux; clear Aux.
-    pose proof Qpower_2powneg_le_inv p.
-    pose proof Qpower_0_lt 2 (Z.neg p)%Z; lra.
+        (* Use CReal_cv_self' to relate xn i and seq (xn i) (...) *)
+        pose proof CReal_cv_self' (xn i) (Z.neg i' - 2).
+        apply (CReal_le_trans _ _ _ H1).
+        apply inject_Q_le.
+        rewrite Heqi'. change (Z.neg p - 1)%Z with (Z.neg (p + 1))%Z.
+        unfold CReal_from_cauchy_cm.
+        change (Z.neg (p + 1))%Z with (Z.neg p - 1)%Z.
+        ring_simplify (Z.neg p - 1 - 2)%Z.
+        rewrite Qpower_minus_pos.
+        assert(forall (n:Z) (p q : positive), n#(p*q) == (n#p) * (1#q))%Q as Aux
+            by ( intros; unfold Qeq, Qmult, Qnum, Qden; ring ); rewrite Aux; clear Aux.
+        pose proof Qpower_2powneg_le_inv p.
+        pose proof Qpower_0_lt 2 (Z.neg p)%Z; lra.
 
-  (* Solve remaining aux goals *)
-  rewrite <- inject_Q_plus. rewrite (inject_Q_morph _ (1#2*p)).
-  apply CRealLe_refl. rewrite Qinv_plus_distr; reflexivity.
-  rewrite <- inject_Q_plus. rewrite (inject_Q_morph _ (1#p)).
-  apply CRealLe_refl. rewrite Qinv_plus_distr; reflexivity.
+    + (* Solve remaining aux goals *)
+      rewrite <- inject_Q_plus. rewrite (inject_Q_morph _ (1#2*p)).
+      * apply CRealLe_refl.
+      * rewrite Qinv_plus_distr; reflexivity.
+  - rewrite <- inject_Q_plus. rewrite (inject_Q_morph _ (1#p)).
+    + apply CRealLe_refl.
+    + rewrite Qinv_plus_distr; reflexivity.
 Qed.
 
 Lemma CRealLtIsLinear : isLinearOrder CRealLt.
 Proof.
-  repeat split. exact CRealLt_asym.
-  exact CReal_lt_trans.
-  intros. destruct (CRealLt_dec x z y H).
-  left. exact c. right. exact c.
+  repeat split.
+  - exact CRealLt_asym.
+  - exact CReal_lt_trans.
+  - intros. destruct (CRealLt_dec x z y H).
+    + left. exact c.
+    + right. exact c.
 Qed.
 
 Lemma CRealAbsLUB : forall x y : CReal,
@@ -654,8 +671,9 @@ Proof.
   - intros [H H0]. apply CReal_abs_le. split. 2: exact H.
     apply (CReal_plus_le_reg_r (y-x)). ring_simplify. exact H0.
   - intros. apply CReal_abs_def2 in H. destruct H. split.
-   exact H. fold (-x <= y).
-    apply (CReal_plus_le_reg_r (x-y)). ring_simplify. exact H0.
+    + exact H.
+    + fold (-x <= y).
+      apply (CReal_plus_le_reg_r (x-y)). ring_simplify. exact H0.
 Qed.
 
 Lemma CRealComplete :  forall xn : nat -> CReal,
@@ -669,10 +687,10 @@ Lemma CRealComplete :  forall xn : nat -> CReal,
   forall i : nat, (n <= i)%nat -> (CReal_abs (xn i + - l)) <= (inject_Q (1 # p))}}.
 Proof.
   intros. destruct (Rcauchy_complete xn) as [l cv].
-  intro p. destruct (H p) as [n a]. exists n. intros.
-  exact (a i j H0 H1).
-  exists l. intros p. destruct (cv p).
-  exists x. exact c.
+  - intro p. destruct (H p) as [n a]. exists n. intros.
+    exact (a i j H0 H1).
+  - exists l. intros p. destruct (cv p).
+    exists x. exact c.
 Qed.
 
 Lemma Qnot_le_iff_lt: forall x y : Q,
@@ -705,9 +723,10 @@ Proof.
     destruct (Qlt_le_dec (2 * 2^n) (seq b n - seq a n)).
     + left. exists n. apply q.
     + assert (2 * 2^n < seq d n - seq c n)%Q.
-      { destruct maj. exfalso.
-        apply (Qlt_not_le (2 * 2^n) (seq b n - seq a n)); assumption.
-        assumption. }
+      { destruct maj.
+        - exfalso.
+          apply (Qlt_not_le (2 * 2^n) (seq b n - seq a n)); assumption.
+        - assumption. }
       clear maj. right. exists n.
       apply H0.
   - clear H0 H. intro n.

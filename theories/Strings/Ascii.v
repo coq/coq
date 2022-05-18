@@ -136,9 +136,9 @@ Theorem N_ascii_embedding :
   forall n:N, (n < 256)%N -> N_of_ascii (ascii_of_N n) = n.
 Proof.
 intro n; destruct n as [|p].
-reflexivity.
-do 8 (destruct p as [p|p|]; [ | | intros; vm_compute; reflexivity ]);
- intro H; vm_compute in H; destruct p; discriminate.
+- reflexivity.
+- do 8 (destruct p as [p|p|]; [ | | intros; vm_compute; reflexivity ]);
+  intro H; vm_compute in H; destruct p; discriminate.
 Qed.
 
 Theorem N_ascii_bounded :
@@ -158,11 +158,11 @@ Theorem nat_ascii_embedding :
 Proof.
  intros. unfold nat_of_ascii, ascii_of_nat.
  rewrite N_ascii_embedding.
- apply Nat2N.id.
- unfold N.lt.
- change 256%N with (N.of_nat 256).
- rewrite <- Nat2N.inj_compare.
- now apply Nat.compare_lt_iff.
+ - apply Nat2N.id.
+ - unfold N.lt.
+   change 256%N with (N.of_nat 256).
+   rewrite <- Nat2N.inj_compare.
+   now apply Nat.compare_lt_iff.
 Qed.
 
 Theorem nat_ascii_bounded :

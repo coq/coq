@@ -53,8 +53,8 @@ Qed.
 Lemma Qred_iff : forall q:Q, Qred q = q <-> Z.gcd (Qnum q) (QDen q) = 1%Z.
 Proof.
   split; intros.
-  apply Qred_identity2; auto.
-  apply Qred_identity; auto.
+  - apply Qred_identity2; auto.
+  - apply Qred_identity; auto.
 Qed.
 
 (** Coercion from [Qc] to [Q] and equality *)
@@ -402,8 +402,8 @@ Lemma Qc_dec : forall x y, {x<y} + {y<x} + {x=y}.
 Proof.
   unfold Qclt, Qcle; intros.
   destruct (Q_dec x y) as [H|H].
-  left; auto.
-  right; apply Qc_is_canon; auto.
+  - left; auto.
+  - right; apply Qc_is_canon; auto.
 Defined.
 
 Lemma Qclt_le_dec : forall x y, {x<y} + {y<=x}.
@@ -482,19 +482,19 @@ Qed.
 Lemma Qcpower_0 : forall n, n<>O -> 0^n = 0.
 Proof.
   destruct n; simpl.
-  destruct 1; auto.
-  intros.
-  now apply Qc_is_canon.
+  - destruct 1; auto.
+  - intros.
+    now apply Qc_is_canon.
 Qed.
 
 Lemma Qcpower_pos : forall p n, 0 <= p -> 0 <= p^n.
 Proof.
   induction n; simpl; auto with qarith.
-  easy.
-  intros.
-  apply Qcle_trans with (0*(p^n)).
-  easy.
-  apply Qcmult_le_compat_r; auto.
+  - easy.
+  - intros.
+    apply Qcle_trans with (0*(p^n)).
+    + easy.
+    + apply Qcmult_le_compat_r; auto.
 Qed.
 
 (** And now everything is easier concerning tactics: *)
@@ -513,25 +513,25 @@ Qed.
 Definition Qcrt : ring_theory 0 1 Qcplus Qcmult Qcminus Qcopp (eq(A:=Qc)).
 Proof.
   constructor.
-  exact Qcplus_0_l.
-  exact Qcplus_comm.
-  exact Qcplus_assoc.
-  exact Qcmult_1_l.
-  exact Qcmult_comm.
-  exact Qcmult_assoc.
-  exact Qcmult_plus_distr_l.
-  reflexivity.
-  exact Qcplus_opp_r.
+  - exact Qcplus_0_l.
+  - exact Qcplus_comm.
+  - exact Qcplus_assoc.
+  - exact Qcmult_1_l.
+  - exact Qcmult_comm.
+  - exact Qcmult_assoc.
+  - exact Qcmult_plus_distr_l.
+  - reflexivity.
+  - exact Qcplus_opp_r.
 Qed.
 
 Definition Qcft :
   field_theory 0%Qc 1%Qc Qcplus Qcmult Qcminus Qcopp Qcdiv Qcinv (eq(A:=Qc)).
 Proof.
   constructor.
-  exact Qcrt.
-  exact Q_apart_0_1.
-  reflexivity.
-  exact Qcmult_inv_l.
+  - exact Qcrt.
+  - exact Q_apart_0_1.
+  - reflexivity.
+  - exact Qcmult_inv_l.
 Qed.
 
 Add Field Qcfield : Qcft.

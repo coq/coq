@@ -72,10 +72,10 @@ Lemma NoDupA_altdef : forall l,
  NoDupA l <-> ForallOrdPairs (complement eqA) l.
 Proof.
  split; induction 1 as [|a l H rest]; constructor; auto.
- rewrite Forall_forall. intros b Hb.
- intro Eq; elim H. rewrite InA_alt. exists b; auto.
- rewrite InA_alt; intros (a' & Haa' & Ha').
- rewrite Forall_forall in H. exact (H a' Ha' Haa').
+ - rewrite Forall_forall. intros b Hb.
+   intro Eq; elim H. rewrite InA_alt. exists b; auto.
+ - rewrite InA_alt; intros (a' & Haa' & Ha').
+   rewrite Forall_forall in H. exact (H a' Ha' Haa').
 Qed.
 
 
@@ -128,10 +128,10 @@ Qed.
 Global Instance eqlistA_equiv : Equivalence eqlistA.
 Proof.
  constructor; red.
- intros x; induction x; auto.
- induction 1; auto.
- intros x y z H; revert z; induction H; auto.
- inversion 1; subst; auto. invlist eqlistA; eauto with *.
+ - intros x; induction x; auto.
+ - induction 1; auto.
+ - intros x y z H; revert z; induction H; auto.
+   inversion 1; subst; auto. invlist eqlistA; eauto with *.
 Qed.
 (** Moreover, [eqlistA] implies [equivlistA]. A reverse result
     will be proved later for sorted list without duplicates. *)
@@ -139,10 +139,10 @@ Qed.
 Global Instance eqlistA_equivlistA : subrelation eqlistA equivlistA.
 Proof.
   intros x x' H. induction H as [|? ? ? ? H ? IHeqlistA].
-  intuition.
-  red; intros x0.
-  rewrite 2 InA_cons.
-  rewrite (IHeqlistA x0), H; intuition.
+  - intuition.
+  - red; intros x0.
+    rewrite 2 InA_cons.
+    rewrite (IHeqlistA x0), H; intuition.
 Qed.
 
 (** InA is compatible with eqA (for its first arg) and with
@@ -175,11 +175,11 @@ Lemma InA_split : forall l x, InA x l ->
  exists l1 y l2, eqA x y /\ l = l1++y::l2.
 Proof.
 intros l; induction l as [|a l IHl]; intros x H; inv.
-exists (@nil A); exists a; exists l; auto.
-match goal with H' : InA x l |- _ => rename H' into H0 end.
-destruct (IHl x H0) as (l1,(y,(l2,(H1,H2)))).
-exists (a::l1); exists y; exists l2; auto.
-split; simpl; f_equal; auto.
+- exists (@nil A); exists a; exists l; auto.
+- match goal with H' : InA x l |- _ => rename H' into H0 end.
+  destruct (IHl x H0) as (l1,(y,(l2,(H1,H2)))).
+  exists (a::l1); exists y; exists l2; auto.
+  split; simpl; f_equal; auto.
 Qed.
 
 Lemma InA_app : forall l1 l2 x,
@@ -195,12 +195,12 @@ Lemma InA_app_iff : forall l1 l2 x,
  InA x (l1 ++ l2) <-> InA x l1 \/ InA x l2.
 Proof.
  split.
- apply InA_app.
- destruct 1 as [H|H]; generalize H; do 2 rewrite InA_alt.
- destruct 1 as (y,(H1,H2)); exists y; split; auto.
- apply in_or_app; auto.
- destruct 1 as (y,(H1,H2)); exists y; split; auto.
- apply in_or_app; auto.
+ - apply InA_app.
+ - destruct 1 as [H|H]; generalize H; do 2 rewrite InA_alt.
+   + destruct 1 as (y,(H1,H2)); exists y; split; auto.
+     apply in_or_app; auto.
+   + destruct 1 as (y,(H1,H2)); exists y; split; auto.
+     apply in_or_app; auto.
 Qed.
 
 Lemma InA_rev : forall p m,
@@ -208,8 +208,8 @@ Lemma InA_rev : forall p m,
 Proof.
  intros; do 2 rewrite InA_alt.
  split; intros (y,H); exists y; intuition.
- rewrite In_rev; auto.
- rewrite <- In_rev; auto.
+ - rewrite In_rev; auto.
+ - rewrite <- In_rev; auto.
 Qed.
 
 (** Some more facts about InA *)
@@ -245,38 +245,38 @@ Proof.
 intros l; induction l as [|a l IHl]; simpl; auto; intros l' H H0 H1.
 inv.
 constructor.
-rewrite InA_alt; intros (y,(H4,H5)).
-destruct (in_app_or _ _ _ H5).
-match goal with H2' : ~ InA a l |- _ => rename H2' into H2 end.
-elim H2.
-rewrite InA_alt.
-exists y; auto.
-apply (H1 a).
-auto.
-rewrite InA_alt.
-exists y; auto.
-apply IHl; auto.
-intros x ? ?.
-apply (H1 x); auto.
+- rewrite InA_alt; intros (y,(H4,H5)).
+  destruct (in_app_or _ _ _ H5).
+  + match goal with H2' : ~ InA a l |- _ => rename H2' into H2 end.
+    elim H2.
+    rewrite InA_alt.
+    exists y; auto.
+  + apply (H1 a).
+    * auto.
+    * rewrite InA_alt.
+      exists y; auto.
+- apply IHl; auto.
+  intros x ? ?.
+  apply (H1 x); auto.
 Qed.
 
 Lemma NoDupA_rev : forall l, NoDupA l -> NoDupA (rev l).
 Proof.
 intros l; induction l.
-simpl; auto.
-simpl; intros.
-inv.
-apply NoDupA_app; auto.
-constructor; auto.
-intro; inv.
-intros x.
-rewrite InA_alt.
-intros (x1,(H2,H3)).
-intro; inv.
-match goal with H0 : ~ InA _ _ |- _ => destruct H0 end.
-match goal with H4 : eqA x ?x' |- InA ?x' _ => rewrite <- H4, H2 end.
-apply In_InA.
-rewrite In_rev; auto.
+- simpl; auto.
+- simpl; intros.
+  inv.
+  apply NoDupA_app; auto.
+  + constructor; auto.
+    intro; inv.
+  + intros x.
+    rewrite InA_alt.
+    intros (x1,(H2,H3)).
+    intro; inv.
+    match goal with H0 : ~ InA _ _ |- _ => destruct H0 end.
+    match goal with H4 : eqA x ?x' |- InA ?x' _ => rewrite <- H4, H2 end.
+    apply In_InA.
+    rewrite In_rev; auto.
 Qed.
 
 Lemma NoDupA_split : forall l l' x, NoDupA (l++x::l') -> NoDupA (l++l').
@@ -293,17 +293,17 @@ Lemma NoDupA_swap : forall l l' x, NoDupA (l++x::l') -> NoDupA (x::l++l').
 Proof.
  intros l; induction l as [|a l IHl]; simpl in *; intros l' x H; inv; auto.
  constructor; eauto.
- match goal with H1 : NoDupA (l ++ x :: l') |- _ => assert (H2:=IHl _ _ H1) end.
- inv.
- rewrite InA_cons.
- red; destruct 1.
- match goal with H0 : ~ InA a (l ++ x :: l') |- _ => apply H0 end.
- rewrite InA_app_iff in *; rewrite InA_cons; auto.
- auto.
- constructor.
- match goal with H0 : ~ InA a (l ++ x :: l') |- _ => contradict H0 end.
- rewrite InA_app_iff in *; rewrite InA_cons; intuition.
- eapply NoDupA_split; eauto.
+ - match goal with H1 : NoDupA (l ++ x :: l') |- _ => assert (H2:=IHl _ _ H1) end.
+   inv.
+   rewrite InA_cons.
+   red; destruct 1.
+   + match goal with H0 : ~ InA a (l ++ x :: l') |- _ => apply H0 end.
+     rewrite InA_app_iff in *; rewrite InA_cons; auto.
+   + auto.
+ - constructor.
+   + match goal with H0 : ~ InA a (l ++ x :: l') |- _ => contradict H0 end.
+     rewrite InA_app_iff in *; rewrite InA_cons; intuition.
+   + eapply NoDupA_split; eauto.
 Qed.
 
 Lemma NoDupA_singleton x : NoDupA (x::nil).
@@ -366,15 +366,15 @@ Proof.
  assert (SW:=NoDupA_swap H1). inv.
  rewrite InA_app_iff in *.
  split; intros.
- match goal with H3 : ~ InA x l |- _ =>
-   assert (~eqA a x) by (contradict H3; rewrite <- H3; auto)
- end.
- assert (~eqA a y) by (rewrite <- H; auto).
- tauto.
- assert (OR : eqA a x \/ InA a l) by intuition.
- destruct OR as [EQN|INA]; auto.
- match goal with H0 : ~ (InA y l1 \/ InA y l2) |- _ => elim H0 end.
- rewrite <-H,<-EQN; auto.
+ - match goal with H3 : ~ InA x l |- _ =>
+                     assert (~eqA a x) by (contradict H3; rewrite <- H3; auto)
+   end.
+   assert (~eqA a y) by (rewrite <- H; auto).
+   tauto.
+ - assert (OR : eqA a x \/ InA a l) by intuition.
+   destruct OR as [EQN|INA]; auto.
+   match goal with H0 : ~ (InA y l1 \/ InA y l2) |- _ => elim H0 end.
+   rewrite <-H,<-EQN; auto.
 Qed.
 
 End EquivlistA.
@@ -454,16 +454,16 @@ Lemma ForallOrdPairs_inclA : forall l l',
  NoDupA l' -> inclA l' l -> ForallOrdPairs R l -> ForallOrdPairs R l'.
 Proof.
 intros l l'. induction l' as [|x l' IH].
-constructor.
-intros ND Incl FOP. apply FOP_cons; inv; unfold inclA in *; auto.
-rewrite Forall_forall; intros y Hy.
-assert (Ix : InA x (x::l')) by (rewrite InA_cons; auto).
- apply Incl in Ix. rewrite InA_alt in Ix. destruct Ix as (x' & Hxx' & Hx').
-assert (Iy : InA y (x::l')) by (apply In_InA; simpl; auto).
- apply Incl in Iy. rewrite InA_alt in Iy. destruct Iy as (y' & Hyy' & Hy').
-rewrite Hxx', Hyy'.
-destruct (ForallOrdPairs_In FOP x' y' Hx' Hy') as [E|[?|?]]; auto.
-absurd (InA x l'); auto. rewrite Hxx', E, <- Hyy'; auto.
+- constructor.
+- intros ND Incl FOP. apply FOP_cons; inv; unfold inclA in *; auto.
+  rewrite Forall_forall; intros y Hy.
+  assert (Ix : InA x (x::l')) by (rewrite InA_cons; auto).
+  apply Incl in Ix. rewrite InA_alt in Ix. destruct Ix as (x' & Hxx' & Hx').
+  assert (Iy : InA y (x::l')) by (apply In_InA; simpl; auto).
+  apply Incl in Iy. rewrite InA_alt in Iy. destruct Iy as (y' & Hyy' & Hy').
+  rewrite Hxx', Hyy'.
+  destruct (ForallOrdPairs_In FOP x' y' Hx' Hy') as [E|[?|?]]; auto.
+  absurd (InA x l'); auto. rewrite Hxx', E, <- Hyy'; auto.
 Qed.
 
 
@@ -482,17 +482,17 @@ Lemma fold_right_commutes_restr :
   eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
 Proof.
 intros s1; induction s1 as [|a s1 IHs1]; simpl; auto; intros s2 x H.
-reflexivity.
-transitivity (f a (f x (fold_right f i (s1++s2)))).
-apply Comp; auto.
-apply IHs1.
-invlist ForallOrdPairs; auto.
-apply TraR.
-invlist ForallOrdPairs; auto.
-match goal with H0 : Forall (R a) (s1 ++ x :: s2) |- R a x =>
-  rewrite Forall_forall in H0; apply H0
-end.
-apply in_or_app; simpl; auto.
+- reflexivity.
+- transitivity (f a (f x (fold_right f i (s1++s2)))).
+  + apply Comp; auto.
+    apply IHs1.
+    invlist ForallOrdPairs; auto.
+  + apply TraR.
+    invlist ForallOrdPairs; auto.
+    match goal with H0 : Forall (R a) (s1 ++ x :: s2) |- R a x =>
+                      rewrite Forall_forall in H0; apply H0
+    end.
+    apply in_or_app; simpl; auto.
 Qed.
 
 Lemma fold_right_equivlistA_restr :
@@ -500,27 +500,27 @@ Lemma fold_right_equivlistA_restr :
   equivlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
 Proof.
  intros s; induction s as [|x l Hrec].
- intros s'; destruct s' as [|a s']; simpl.
- intros; reflexivity.
- unfold equivlistA; intros H H0 H1 H2.
- destruct (H2 a).
- assert (InA a nil) by auto; inv.
- intros s' N N' F E; simpl in *.
- assert (InA x s') as H by (rewrite <- (E x); auto).
- destruct (InA_split H) as (s1,(y,(s2,(H1,H2)))).
- subst s'.
- transitivity (f x (fold_right f i (s1++s2))).
- apply Comp; auto.
- apply Hrec; auto.
- inv; auto.
- eapply NoDupA_split; eauto.
- invlist ForallOrdPairs; auto. 
- eapply equivlistA_NoDupA_split; eauto.
- transitivity (f y (fold_right f i (s1++s2))).
- apply Comp; auto. reflexivity.
- symmetry; apply fold_right_commutes_restr.
- apply ForallOrdPairs_inclA with (x::l); auto.
-  red; intros; rewrite E; auto.
+ - intros s'; destruct s' as [|a s']; simpl.
+   + intros; reflexivity.
+   + unfold equivlistA; intros H H0 H1 H2.
+     destruct (H2 a).
+     assert (InA a nil) by auto; inv.
+ - intros s' N N' F E; simpl in *.
+   assert (InA x s') as H by (rewrite <- (E x); auto).
+   destruct (InA_split H) as (s1,(y,(s2,(H1,H2)))).
+   subst s'.
+   transitivity (f x (fold_right f i (s1++s2))).
+   + apply Comp; auto.
+     apply Hrec; auto.
+     * inv; auto.
+     * eapply NoDupA_split; eauto.
+     * invlist ForallOrdPairs; auto.
+     * eapply equivlistA_NoDupA_split; eauto.
+   + transitivity (f y (fold_right f i (s1++s2))).
+     * apply Comp; auto. reflexivity.
+     * symmetry; apply fold_right_commutes_restr.
+       apply ForallOrdPairs_inclA with (x::l); auto.
+       red; intros; rewrite E; auto.
 Qed.
 
 Lemma fold_right_add_restr :
@@ -540,9 +540,9 @@ Lemma fold_right_commutes : forall s1 s2 x,
   eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
 Proof.
 intros s1; induction s1 as [|a s1 IHs1]; simpl; auto; intros s2 x.
-reflexivity.
-transitivity (f a (f x (fold_right f i (s1++s2)))); auto.
-apply Comp; auto.
+- reflexivity.
+- transitivity (f a (f x (fold_right f i (s1++s2)))); auto.
+  apply Comp; auto.
 Qed.
 
 Lemma fold_right_equivlistA :
@@ -618,17 +618,17 @@ intros s1; induction s1 as [|a s1 IHs1]; simpl; auto; intros s2 x i j heqij ?.
     * assumption.
     * reflexivity.
 - transitivity (f a (f x (fold_right f j (s1++s2)))).
-  apply Comp; auto.
-  eapply IHs1.
-  assumption.
-  invlist ForallOrdPairs; auto.
-  apply TraR.
-  invlist ForallOrdPairs; auto.
-  match goal with H0 : Forall (R a) (s1 ++ x :: s2) |- _ =>
-    rewrite Forall_forall in H0; apply H0
-  end.
-  apply in_or_app; simpl; auto.
-  reflexivity.
+  + apply Comp; auto.
+    eapply IHs1.
+    * assumption.
+    * invlist ForallOrdPairs; auto.
+  + apply TraR.
+    * invlist ForallOrdPairs; auto.
+      match goal with H0 : Forall (R a) (s1 ++ x :: s2) |- _ =>
+                        rewrite Forall_forall in H0; apply H0
+      end.
+      apply in_or_app; simpl; auto.
+    * reflexivity.
 Qed.
 
 Lemma fold_right_equivlistA_restr2 :
@@ -638,11 +638,12 @@ Lemma fold_right_equivlistA_restr2 :
     eqB (fold_right f i s) (fold_right f j s').
 Proof.
  intros s; induction s as [|x l Hrec].
- intros s'; destruct s' as [|a s']; simpl.
- intros. assumption.
- unfold equivlistA; intros ? ? H H0 H1 H2 **.
- destruct (H2 a).
- assert (InA a nil) by auto; inv.
+ { intros s'; destruct s' as [|a s']; simpl.
+   - intros. assumption.
+   - unfold equivlistA; intros ? ? H H0 H1 H2 **.
+     destruct (H2 a).
+     assert (InA a nil) by auto; inv.
+ }
  intros s' i j N N' F E eqij; simpl in *.
  assert (InA x s') as H by (rewrite <- (E x); auto).
  destruct (InA_split H) as (s1,(y,(s2,(H1,H2)))).
@@ -650,10 +651,10 @@ Proof.
  transitivity (f x (fold_right f j (s1++s2))).
  - apply Comp; auto.
    apply Hrec; auto.
-   inv; auto.
-   eapply NoDupA_split; eauto.
-   invlist ForallOrdPairs; auto.
-   eapply equivlistA_NoDupA_split; eauto.
+   + inv; auto.
+   + eapply NoDupA_split; eauto.
+   + invlist ForallOrdPairs; auto.
+   + eapply equivlistA_NoDupA_split; eauto.
  - transitivity (f y (fold_right f i (s1++s2))).
    + apply Comp; auto.
      symmetry.
@@ -662,10 +663,10 @@ Proof.
      * reflexivity.
    + symmetry.
      apply fold_right_commutes_restr2.
-     symmetry.
-     assumption.
-     apply ForallOrdPairs_inclA with (x::l); auto.
-     red; intros; rewrite E; auto.
+     * symmetry.
+       assumption.
+     * apply ForallOrdPairs_inclA with (x::l); auto.
+       red; intros; rewrite E; auto.
 Qed.
 
 Lemma fold_right_add_restr2 :
@@ -720,13 +721,13 @@ Hypothesis eqA_dec : forall x y : A, {eqA x y}+{~(eqA x y)}.
 Lemma InA_dec : forall x l, { InA x l } + { ~ InA x l }.
 Proof.
 intros x l; induction l as [|a l IHl].
-right; auto.
-intro; inv.
-destruct (eqA_dec x a).
-left; auto.
-destruct IHl.
-left; auto.
-right; intro; inv; contradiction.
+- right; auto.
+  intro; inv.
+- destruct (eqA_dec x a).
+  + left; auto.
+  + destruct IHl.
+    * left; auto.
+    * right; intro; inv; contradiction.
 Defined.
 
 Fixpoint removeA (x : A) (l : list A) : list A :=
@@ -746,36 +747,36 @@ Qed.
 Lemma removeA_InA : forall l x y, InA y (removeA x l) <-> InA y l /\ ~eqA x y.
 Proof.
 intros l; induction l as [|a l IHl]; simpl; auto.
-intros x y; split.
-intro; inv.
-destruct 1; inv.
-intros x y.
-destruct (eqA_dec x a) as [Heq|Hnot]; simpl; auto.
-rewrite IHl; split; destruct 1; split; auto.
-inv; auto.
-match goal with H0 : ~ eqA x y |- _ => destruct H0 end; transitivity a; auto.
-split.
-intro; inv.
-split; auto.
-contradict Hnot.
-transitivity y; auto.
-match goal with H0 : InA y (removeA x l) |- _ =>
-  rewrite (IHl x y) in H0; destruct H0; auto
-end.
-destruct 1; inv; auto.
-right; rewrite IHl; auto.
+- intros x y; split.
+  + intro; inv.
+  + destruct 1; inv.
+- intros x y.
+  destruct (eqA_dec x a) as [Heq|Hnot]; simpl; auto.
+  + rewrite IHl; split; destruct 1; split; auto.
+    inv; auto.
+    match goal with H0 : ~ eqA x y |- _ => destruct H0 end; transitivity a; auto.
+  + split.
+    * intro; inv.
+      -- split; auto.
+         contradict Hnot.
+         transitivity y; auto.
+      -- match goal with H0 : InA y (removeA x l) |- _ =>
+                           rewrite (IHl x y) in H0; destruct H0; auto
+         end.
+    * destruct 1; inv; auto.
+      right; rewrite IHl; auto.
 Qed.
 
 Lemma removeA_NoDupA :
   forall s x, NoDupA s ->  NoDupA (removeA x s).
 Proof.
 intros s; induction s as [|a s IHs]; simpl; intros x ?.
-auto.
-inv.
-destruct (eqA_dec x a); simpl; auto.
-constructor; auto.
-rewrite removeA_InA.
-intuition.
+- auto.
+- inv.
+  destruct (eqA_dec x a); simpl; auto.
+  constructor; auto.
+  rewrite removeA_InA.
+  intuition.
 Qed.
 
 Lemma removeA_equivlistA : forall l l' x,
@@ -784,13 +785,13 @@ Proof.
 unfold equivlistA; intros l l' x H H0 x0.
 rewrite removeA_InA.
 split; intros H1.
-rewrite <- H0; split; auto.
-contradict H.
-apply InA_eqA with x0; auto.
-rewrite <- (H0 x0) in H1.
-destruct H1.
-inv; auto.
-match goal with H2 : ~ eqA x x0 |- _ => elim H2; auto end.
+- rewrite <- H0; split; auto.
+  contradict H.
+  apply InA_eqA with x0; auto.
+- rewrite <- (H0 x0) in H1.
+  destruct H1.
+  inv; auto.
+  match goal with H2 : ~ eqA x x0 |- _ => elim H2; auto end.
 Qed.
 
 End Remove.
@@ -824,10 +825,10 @@ Global Instance InfA_compat : Proper (eqA==>eqlistA==>iff) InfA.
 Proof using eqA_equiv ltA_compat. (* and not ltA_strorder *)
  intros x x' Hxx' l l' Hll'.
  inversion_clear Hll'.
- intuition.
- split; intro; inv; constructor.
- match goal with H : eqA _ _ |- _ => rewrite <- Hxx', <- H; auto end.
- match goal with H : eqA _ _ |- _ => rewrite Hxx', H; auto end.
+ - intuition.
+ - split; intro; inv; constructor.
+   + match goal with H : eqA _ _ |- _ => rewrite <- Hxx', <- H; auto end.
+   + match goal with H : eqA _ _ |- _ => rewrite Hxx', H; auto end.
 Qed.
 
 (** For compatibility, can be deduced from [InfA_compat] *)
@@ -842,10 +843,10 @@ Lemma SortA_InfA_InA :
  forall l x a, SortA l -> InfA a l -> InA x l -> ltA a x.
 Proof.
  intros l; induction l as [|a l IHl].
- intros x a **. inv.
- intros x a0 **. inv.
- setoid_replace x with a; auto.
- eauto.
+ - intros x a **. inv.
+ - intros x a0 **. inv.
+   + setoid_replace x with a; auto.
+   + eauto.
 Qed.
 
 Lemma In_InfA :
@@ -866,8 +867,8 @@ Lemma InfA_alt :
  forall l x, SortA l -> (InfA x l <-> (forall y, InA y l -> ltA x y)).
 Proof.
 split.
-intros; eapply SortA_InfA_InA; eauto.
-apply InA_InfA.
+- intros; eapply SortA_InfA_InA; eauto.
+- apply InA_InfA.
 Qed.
 
 Lemma InfA_app : forall l1 l2 a, InfA a l1 -> InfA a l2 -> InfA a (l1++l2).
@@ -948,35 +949,35 @@ Lemma SortA_equivlistA_eqlistA : forall l l',
    SortA l -> SortA l' -> equivlistA l l' -> eqlistA l l'.
 Proof.
 intros l; induction l as [|a l IHl]; intros l'; destruct l' as [|a0 l']; simpl; intros H H0 H1; auto.
-destruct (H1 a0); assert (InA a0 nil) by auto; inv.
-destruct (H1 a); assert (InA a nil) by auto; inv.
-inv.
-assert (forall y, InA y l -> ltA a y).
-intros; eapply (SortA_InfA_InA (l:=l)); eauto.
-assert (forall y, InA y l' -> ltA a0 y).
-intros; eapply (SortA_InfA_InA (l:=l')); eauto.
-do 2 match goal with H : InfA _ _ |- _ => clear H end.
-assert (eqA a a0).
- destruct (H1 a).
- destruct (H1 a0).
- assert (InA a (a0::l')) by auto. inv; auto.
- assert (InA a0 (a::l)) by auto. inv; auto.
- elim (StrictOrder_Irreflexive a); eauto.
-constructor; auto.
-apply IHl; auto.
-intros x; split; intros.
-destruct (H1 x).
-assert (InA x (a0::l')) by auto. inv; auto.
-match goal with H3 : eqA a a0, H4 : InA x l, H9 : eqA x a0 |- InA x l' =>
-  rewrite H9,<-H3 in H4
-end.
-elim (StrictOrder_Irreflexive a); eauto.
-destruct (H1 x).
-assert (InA x (a::l)) by auto. inv; auto.
-match goal with H3 : eqA a a0, H4 : InA x l', H9 : eqA x a |- InA x l =>
-  rewrite H9,H3 in H4
-end.
-elim (StrictOrder_Irreflexive a0); eauto.
+- destruct (H1 a0); assert (InA a0 nil) by auto; inv.
+- destruct (H1 a); assert (InA a nil) by auto; inv.
+- inv.
+  assert (forall y, InA y l -> ltA a y) by
+    (intros; eapply (SortA_InfA_InA (l:=l)); eauto).
+  assert (forall y, InA y l' -> ltA a0 y) by
+    (intros; eapply (SortA_InfA_InA (l:=l')); eauto).
+  do 2 match goal with H : InfA _ _ |- _ => clear H end.
+  assert (eqA a a0).
+  + destruct (H1 a).
+    destruct (H1 a0).
+    assert (InA a (a0::l')) by auto. inv; auto.
+    assert (InA a0 (a::l)) by auto. inv; auto.
+    elim (StrictOrder_Irreflexive a); eauto.
+  + constructor; auto.
+    apply IHl; auto.
+    intros x; split; intros.
+    * destruct (H1 x).
+      assert (InA x (a0::l')) by auto. inv; auto.
+      match goal with H3 : eqA a a0, H4 : InA x l, H9 : eqA x a0 |- InA x l' =>
+                        rewrite H9,<-H3 in H4
+      end.
+      elim (StrictOrder_Irreflexive a); eauto.
+    * destruct (H1 x).
+      assert (InA x (a::l)) by auto. inv; auto.
+      match goal with H3 : eqA a a0, H4 : InA x l', H9 : eqA x a |- InA x l =>
+                        rewrite H9,H3 in H4
+      end.
+      elim (StrictOrder_Irreflexive a0); eauto.
 Qed.
 
 End EqlistA.
@@ -1005,10 +1006,10 @@ Proof.
 clear sotrans ltA ltA_strorder ltA_compat.
 intros f H l x; do 2 rewrite InA_alt; intuition;
   match goal with Hex' : exists _, _ |- _ => rename Hex' into Hex end.
-destruct Hex as (y,(H0,H1)); rewrite filter_In in H1; exists y; intuition.
-destruct Hex as (y,(H0,H1)); rewrite filter_In in H1; intuition.
+- destruct Hex as (y,(H0,H1)); rewrite filter_In in H1; exists y; intuition.
+- destruct Hex as (y,(H0,H1)); rewrite filter_In in H1; intuition.
   rewrite (H _ _ H0); auto.
-destruct Hex as (y,(H0,H1)); exists y; rewrite filter_In; intuition.
+- destruct Hex as (y,(H0,H1)); exists y; rewrite filter_In; intuition.
   rewrite <- (H _ _ H0); auto.
 Qed.
 
@@ -1021,12 +1022,13 @@ inv.
 match goal with H1' : SortA l, H2' : InfA a l |- _ => rename H1' into H1, H2' into H2 end.
 rewrite IHl at 1; auto.
 case_eq (f a); simpl; intros; auto.
-assert (forall e, In e l -> f e = false) as H3.
+assert (forall e, In e l -> f e = false) as H3. {
   intros e H3.
   assert (H4:=SortA_InfA_InA H1 H2 (In_InA H3)).
   case_eq (f e); simpl; intros; auto.
   elim (StrictOrder_Irreflexive e).
   transitivity a; auto.
+}
 replace (List.filter f l) with (@nil A); auto.
 generalize H3; clear; induction l as [|a l IHl]; simpl; auto.
 case_eq (f a); auto; intros H H3.
@@ -1064,31 +1066,31 @@ Proof.
 set (eqk := fun p p' : A*B => eqA (fst p) (fst p')).
 set (eqke := fun p p' : A*B => eqA (fst p) (fst p') /\ snd p = snd p').
 intros l; induction l as [|a l IHl]; intros a0 b H; simpl.
-split; intros H0; try discriminate.
-invlist InA.
-destruct a as (a',b'); rename a0 into a.
-invlist NoDupA.
-split; intros.
-invlist InA.
-match goal with H2 : eqke (a, b) (a', b') |- _ => compute in H2; destruct H2 end.
-subst b'.
-destruct (eqA_dec a a'); intuition.
-destruct (eqA_dec a a') as [HeqA|]; simpl.
-match goal with H0 : ~ InA eqk (a', b') l |- _ => contradict H0 end.
-match goal with H2 : InA eqke (a, b) l |- _ => revert HeqA H2; clear - eqA_equiv end.
-induction l.
-intros; invlist InA.
-intros; invlist InA; auto.
-match goal with |- InA eqk _ (?p :: _) => destruct p as [a0 b0] end.
-match goal with H : eqke (a, b) (a0, b0) |- _ => compute in H; destruct H end.
-subst b.
-left; auto.
-compute.
-transitivity a; auto. symmetry; auto.
-rewrite <- IHl; auto.
-destruct (eqA_dec a a'); simpl in *.
-left; split; simpl; congruence.
-right. rewrite IHl; auto.
+- split; intros H0; try discriminate.
+  invlist InA.
+- destruct a as (a',b'); rename a0 into a.
+  invlist NoDupA.
+  split; intros.
+  + invlist InA.
+    * match goal with H2 : eqke (a, b) (a', b') |- _ => compute in H2; destruct H2 end.
+      subst b'.
+      destruct (eqA_dec a a'); intuition.
+    * destruct (eqA_dec a a') as [HeqA|]; simpl.
+      -- match goal with H0 : ~ InA eqk (a', b') l |- _ => contradict H0 end.
+         match goal with H2 : InA eqke (a, b) l |- _ => revert HeqA H2; clear - eqA_equiv end.
+         induction l.
+         ++ intros; invlist InA.
+         ++ intros; invlist InA; auto.
+            match goal with |- InA eqk _ (?p :: _) => destruct p as [a0 b0] end.
+            match goal with H : eqke (a, b) (a0, b0) |- _ => compute in H; destruct H end.
+            subst b.
+            left; auto.
+            compute.
+            transitivity a; auto. symmetry; auto.
+      -- rewrite <- IHl; auto.
+  + destruct (eqA_dec a a'); simpl in *.
+    * left; split; simpl; congruence.
+    * right. rewrite IHl; auto.
 Qed.
 
 End Find.

@@ -268,7 +268,7 @@ Qed.
 
 Lemma Nadd_alt n m : n + m = Nat.iter (N.to_nat n) N.succ m.
 Proof.
-  destruct n. trivial.
+  destruct n. 1:trivial.
   induction p using Pos.peano_rect.
   - now rewrite N.add_1_l.
   - change (N.pos (Pos.succ p)) with (N.succ (N.pos p)).
@@ -340,8 +340,10 @@ Qed.
 
 Lemma of_iff d d' : Pos.of_hex_uint d = Pos.of_hex_uint d' <-> unorm d = unorm d'.
 Proof.
-  split. apply of_inj. intros E. rewrite <- of_uint_norm, E.
-  apply of_uint_norm.
+  split.
+  - apply of_inj.
+  - intros E. rewrite <- of_uint_norm, E.
+    apply of_uint_norm.
 Qed.
 
 (* various lemmas *)

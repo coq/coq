@@ -129,8 +129,8 @@ Module KeyOrderedType(O:OrderedType).
     intros; red; intros.
     destruct H1 as [e' H2].
     elim (@ltk_not_eqk (k,e) (k,e')).
-    eapply Sort_Inf_In; eauto.
-    repeat red; reflexivity.
+    - eapply Sort_Inf_In; eauto.
+    - repeat red; reflexivity.
   Qed.
 
   Lemma Sort_NoDupA l : Sort l -> NoDupA eqk l.

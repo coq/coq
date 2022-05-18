@@ -77,15 +77,15 @@ Qed.
 Lemma opp_max_distr n m : -(max n m) == min (-n) (-m).
 Proof.
  destruct (le_ge_cases n m).
- rewrite max_r by trivial. symmetry. apply min_r. now rewrite <- opp_le_mono.
- rewrite max_l by trivial. symmetry. apply min_l. now rewrite <- opp_le_mono.
+ - rewrite max_r by trivial. symmetry. apply min_r. now rewrite <- opp_le_mono.
+ - rewrite max_l by trivial. symmetry. apply min_l. now rewrite <- opp_le_mono.
 Qed.
 
 Lemma opp_min_distr n m : -(min n m) == max (-n) (-m).
 Proof.
  destruct (le_ge_cases n m).
- rewrite min_l by trivial. symmetry. apply max_l. now rewrite <- opp_le_mono.
- rewrite min_r by trivial. symmetry. apply max_r. now rewrite <- opp_le_mono.
+ - rewrite min_l by trivial. symmetry. apply max_l. now rewrite <- opp_le_mono.
+ - rewrite min_r by trivial. symmetry. apply max_r. now rewrite <- opp_le_mono.
 Qed.
 
 (** Sub *)
@@ -93,8 +93,8 @@ Qed.
 Lemma sub_max_distr_l n m p : max (p - n) (p - m) == p - min n m.
 Proof.
  destruct (le_ge_cases n m).
- rewrite min_l by trivial. apply max_l. now rewrite <- sub_le_mono_l.
- rewrite min_r by trivial. apply max_r. now rewrite <- sub_le_mono_l.
+ - rewrite min_l by trivial. apply max_l. now rewrite <- sub_le_mono_l.
+ - rewrite min_r by trivial. apply max_r. now rewrite <- sub_le_mono_l.
 Qed.
 
 Lemma sub_max_distr_r n m p : max (n - p) (m - p) == max n m - p.
@@ -106,8 +106,8 @@ Qed.
 Lemma sub_min_distr_l n m p : min (p - n) (p - m) == p - max n m.
 Proof.
  destruct (le_ge_cases n m).
- rewrite max_r by trivial. apply min_r. now rewrite <- sub_le_mono_l.
- rewrite max_l by trivial. apply min_l. now rewrite <- sub_le_mono_l.
+ - rewrite max_r by trivial. apply min_r. now rewrite <- sub_le_mono_l.
+ - rewrite max_l by trivial. apply min_l. now rewrite <- sub_le_mono_l.
 Qed.
 
 Lemma sub_min_distr_r n m p : min (n - p) (m - p) == min n m - p.
@@ -150,32 +150,32 @@ Lemma mul_max_distr_nonpos_l n m p : p <= 0 ->
  max (p * n) (p * m) == p * min n m.
 Proof.
  intros. destruct (le_ge_cases n m).
- rewrite min_l by trivial. rewrite max_l. reflexivity. now apply mul_le_mono_nonpos_l.
- rewrite min_r by trivial. rewrite max_r. reflexivity. now apply mul_le_mono_nonpos_l.
+ - rewrite min_l by trivial. rewrite max_l by now apply mul_le_mono_nonpos_l. reflexivity.
+ - rewrite min_r by trivial. rewrite max_r by now apply mul_le_mono_nonpos_l. reflexivity.
 Qed.
 
 Lemma mul_max_distr_nonpos_r n m p : p <= 0 ->
  max (n * p) (m * p) == min n m * p.
 Proof.
  intros. destruct (le_ge_cases n m).
- rewrite min_l by trivial. rewrite max_l. reflexivity. now apply mul_le_mono_nonpos_r.
- rewrite min_r by trivial. rewrite max_r. reflexivity. now apply mul_le_mono_nonpos_r.
+ - rewrite min_l by trivial. rewrite max_l by now apply mul_le_mono_nonpos_r. reflexivity.
+ - rewrite min_r by trivial. rewrite max_r by now apply mul_le_mono_nonpos_r. reflexivity.
 Qed.
 
 Lemma mul_min_distr_nonpos_l n m p : p <= 0 ->
  min (p * n) (p * m) == p * max n m.
 Proof.
  intros. destruct (le_ge_cases n m).
- rewrite max_r by trivial. rewrite min_r. reflexivity. now apply mul_le_mono_nonpos_l.
- rewrite max_l by trivial. rewrite min_l. reflexivity. now apply mul_le_mono_nonpos_l.
+ - rewrite max_r by trivial. rewrite min_r by now apply mul_le_mono_nonpos_l. reflexivity.
+ - rewrite max_l by trivial. rewrite min_l by now apply mul_le_mono_nonpos_l. reflexivity.
 Qed.
 
 Lemma mul_min_distr_nonpos_r n m p : p <= 0 ->
  min (n * p) (m * p) == max n m * p.
 Proof.
  intros. destruct (le_ge_cases n m).
- rewrite max_r by trivial. rewrite min_r. reflexivity. now apply mul_le_mono_nonpos_r.
- rewrite max_l by trivial. rewrite min_l. reflexivity. now apply mul_le_mono_nonpos_r.
+ - rewrite max_r by trivial. rewrite min_r by now apply mul_le_mono_nonpos_r. reflexivity.
+ - rewrite max_l by trivial. rewrite min_l by now apply mul_le_mono_nonpos_r. reflexivity.
 Qed.
 
 End ZMaxMinProp.

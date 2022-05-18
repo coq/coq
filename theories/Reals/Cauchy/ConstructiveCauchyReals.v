@@ -98,12 +98,13 @@ Lemma CRealLtEpsilon : forall x y : CReal,
     CRealLtProp x y -> x < y.
 Proof.
   intros x y H. unfold CRealLtProp in H.
-  apply constructive_indefinite_ground_description_Z in H. apply H.
-  intros n.
-  pose proof Qlt_le_dec (2 * 2 ^ n) (seq y n - seq x n) as Hdec.
-  destruct Hdec as [H1|H1].
-  - left; exact H1.
-  - right; apply Qle_not_lt in H1; exact H1.
+  apply constructive_indefinite_ground_description_Z in H.
+  - apply H.
+  - intros n.
+    pose proof Qlt_le_dec (2 * 2 ^ n) (seq y n - seq x n) as Hdec.
+    destruct Hdec as [H1|H1].
+    + left; exact H1.
+    + right; apply Qle_not_lt in H1; exact H1.
 Qed.
 
 Lemma CRealLtForget : forall x y : CReal,
@@ -261,12 +262,12 @@ Proof.
   pose proof (CRealLt_above_same y x n q).
   apply (Qlt_not_le (seq y (Z.min n p))
                     (seq x (Z.min n p))).
-  apply H0. apply Z.le_min_l.
-  apply Qlt_le_weak. apply (Qplus_lt_l _ _ (-seq x (Z.min n p))).
-  rewrite Qplus_opp_r. apply (Qlt_trans _ (2*2^p)).
-  - pose proof Qpower_0_lt 2 p ltac:(lra). lra.
-  - apply H. lia.
-  (* ToDo: use lra *)
+  - apply H0. apply Z.le_min_l.
+  - apply Qlt_le_weak. apply (Qplus_lt_l _ _ (-seq x (Z.min n p))).
+    rewrite Qplus_opp_r. apply (Qlt_trans _ (2*2^p)).
+    + pose proof Qpower_0_lt 2 p ltac:(lra). lra.
+    + apply H. lia.
+      (* ToDo: use lra *)
 Qed.
 
 Lemma CRealLt_irrefl : forall x:CReal, x < x -> False.
@@ -385,12 +386,16 @@ Proof.
     + assumption.
     + contradiction.
     + destruct (CRealLt_dec y x0 y0).
-        assumption. assumption. contradiction.
+      * assumption.
+      * assumption.
+      * contradiction.
   - intro Hylty0; destruct (CRealLt_dec y y0 x).
     + assumption.
     + contradiction.
     + destruct (CRealLt_dec x y0 x0).
-        assumption. assumption. contradiction.
+      * assumption.
+      * assumption.
+      * contradiction.
 Qed.
 
 #[global]
@@ -782,9 +787,9 @@ Lemma CReal_plus_le_lt_compat :
 Proof.
   intros r1 r2 r3 r4 Hr1ler2 Hr3ltr4.
   apply CReal_le_lt_trans with (r2 + r3).
-  intro contra; rewrite CReal_plus_comm, (CReal_plus_comm r1) in contra.
-  apply CReal_plus_lt_reg_l in contra. contradiction.
-  apply CReal_plus_lt_compat_l. exact Hr3ltr4.
+  - intro contra; rewrite CReal_plus_comm, (CReal_plus_comm r1) in contra.
+    apply CReal_plus_lt_reg_l in contra. contradiction.
+  - apply CReal_plus_lt_compat_l. exact Hr3ltr4.
 Qed.
 
 Lemma CReal_plus_le_compat :
@@ -792,9 +797,9 @@ Lemma CReal_plus_le_compat :
 Proof.
   intros r1 r2 r3 r4 Hr1ler2 Hr3ler4.
   apply CReal_le_trans with (r2 + r3).
-  intro contra; rewrite CReal_plus_comm, (CReal_plus_comm r1) in contra.
-  apply CReal_plus_lt_reg_l in contra. contradiction.
-  apply CReal_plus_le_compat_l; exact Hr3ler4.
+  - intro contra; rewrite CReal_plus_comm, (CReal_plus_comm r1) in contra.
+    apply CReal_plus_lt_reg_l in contra. contradiction.
+  - apply CReal_plus_le_compat_l; exact Hr3ler4.
 Qed.
 
 Lemma CReal_plus_opp_r : forall x : CReal,
@@ -820,19 +825,24 @@ Lemma CReal_plus_proper_r : forall x y z : CReal,
     CRealEq x y -> CRealEq (CReal_plus x z) (CReal_plus y z).
 Proof.
   intros. apply (CRealEq_trans _ (CReal_plus z x)).
-  apply CReal_plus_comm. apply (CRealEq_trans _ (CReal_plus z y)).
-  2: apply CReal_plus_comm.
-  split. intro abs. apply CReal_plus_lt_reg_l in abs.
-  destruct H. contradiction. intro abs. apply CReal_plus_lt_reg_l in abs.
-  destruct H. contradiction.
+  - apply CReal_plus_comm.
+  - apply (CRealEq_trans _ (CReal_plus z y)).
+    2: apply CReal_plus_comm.
+    split.
+    + intro abs. apply CReal_plus_lt_reg_l in abs.
+      destruct H. contradiction.
+    + intro abs. apply CReal_plus_lt_reg_l in abs.
+      destruct H. contradiction.
 Qed.
 
 Lemma CReal_plus_proper_l : forall x y z : CReal,
     CRealEq x y -> CRealEq (CReal_plus z x) (CReal_plus z y).
 Proof.
-  intros. split. intro abs. apply CReal_plus_lt_reg_l in abs.
-  destruct H. contradiction. intro abs. apply CReal_plus_lt_reg_l in abs.
-  destruct H. contradiction.
+  intros. split.
+  - intro abs. apply CReal_plus_lt_reg_l in abs.
+    destruct H. contradiction.
+  - intro abs. apply CReal_plus_lt_reg_l in abs.
+    destruct H. contradiction.
 Qed.
 
 Add Parametric Morphism : CReal_plus
@@ -841,8 +851,9 @@ Add Parametric Morphism : CReal_plus
 Proof.
   intros x y H z t H0. apply (CRealEq_trans _ (CReal_plus x t)).
   - destruct H0.
-    split. intro abs. apply CReal_plus_lt_reg_l in abs. contradiction.
-    intro abs. apply CReal_plus_lt_reg_l in abs. contradiction.
+    split.
+    + intro abs. apply CReal_plus_lt_reg_l in abs. contradiction.
+    + intro abs. apply CReal_plus_lt_reg_l in abs. contradiction.
   - apply CReal_plus_proper_r. apply H.
 Qed.
 
@@ -853,8 +864,9 @@ Instance CReal_plus_morph_T
 Proof.
   intros x y H z t H0. apply (CRealEq_trans _ (CReal_plus x t)).
   - destruct H0.
-    split. intro abs. apply CReal_plus_lt_reg_l in abs. contradiction.
-    intro abs. apply CReal_plus_lt_reg_l in abs. contradiction.
+    split.
+    + intro abs. apply CReal_plus_lt_reg_l in abs. contradiction.
+    + intro abs. apply CReal_plus_lt_reg_l in abs. contradiction.
   - apply CReal_plus_proper_r. apply H.
 Qed.
 

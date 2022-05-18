@@ -52,10 +52,10 @@ Lemma Qle_ceiling : forall x, x <= Qceiling x.
 Proof.
 intros x.
 apply Qle_trans with (- - x).
- rewrite Qopp_involutive.
- auto with *.
-change (Qceiling x:Q) with (-(Qfloor(-x))).
-auto with *.
+- rewrite Qopp_involutive.
+  auto with *.
+- change (Qceiling x:Q) with (-(Qfloor(-x))).
+  auto with *.
 Qed.
 
 #[global]
@@ -126,25 +126,25 @@ Add Morphism Qfloor with signature Qeq ==> eq as Qfloor_comp.
 Proof.
 intros x y H.
 apply Z.le_antisymm.
- auto with *.
-symmetry in H; auto with *.
+- auto with *.
+- symmetry in H; auto with *.
 Qed.
 
 Add Morphism Qceiling with signature Qeq ==> eq as Qceiling_comp.
 Proof.
 intros x y H.
 apply Z.le_antisymm.
- auto with *.
-symmetry in H; auto with *.
+- auto with *.
+- symmetry in H; auto with *.
 Qed.
 
 Lemma Zdiv_Qdiv (n m: Z): (n / m)%Z = Qfloor (n / m).
 Proof.
  unfold Qfloor. intros. simpl.
  destruct m as [ | | p]; simpl.
-  now rewrite Zdiv_0_r, Z.mul_0_r.
-  now rewrite Z.mul_1_r.
- rewrite <- Z.opp_eq_mul_m1.
- rewrite <- (Z.opp_involutive (Zpos p)).
- now rewrite Zdiv_opp_opp.
+ - now rewrite Zdiv_0_r, Z.mul_0_r.
+ - now rewrite Z.mul_1_r.
+ - rewrite <- Z.opp_eq_mul_m1.
+   rewrite <- (Z.opp_involutive (Zpos p)).
+   now rewrite Zdiv_opp_opp.
 Qed.

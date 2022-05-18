@@ -173,10 +173,10 @@ Program Instance Decidable_eq_poly : forall (p q : poly), Decidable (eq p q) := 
 
 Next Obligation.
 split.
-revert q; induction p; intros [] ?; simpl in *; bool; try_decide;
-  f_equal; first [intuition congruence|auto].
-revert q; induction p; intros [] Heq; simpl in *; bool; try_decide; intuition;
-  try injection Heq; first[congruence|intuition].
+- revert q; induction p; intros [] ?; simpl in *; bool; try_decide;
+    f_equal; first [intuition congruence|auto].
+- revert q; induction p; intros [] Heq; simpl in *; bool; try_decide; intuition;
+    try injection Heq; first[congruence|intuition].
 Qed.
 
 Program Instance Decidable_null : forall p, Decidable (null p) := {
@@ -184,8 +184,8 @@ Program Instance Decidable_null : forall p, Decidable (null p) := {
 }.
 Next Obligation.
 split.
-  destruct p as [[]|]; first [discriminate|constructor].
-  inversion 1; trivial.
+- destruct p as [[]|]; first [discriminate|constructor].
+- inversion 1; trivial.
 Qed.
 
 Definition list_nth {A} p (l : list A) def :=
@@ -214,8 +214,8 @@ Program Instance Decidable_valid : forall n p, Decidable (valid n p) := {
 }.
 Next Obligation.
 split.
-  revert n; induction p; unfold valid_dec in *; intuition; bool; try_decide; auto.
-  intros H; induction H; unfold valid_dec in *; bool; try_decide; auto.
+- revert n; induction p; unfold valid_dec in *; intuition; bool; try_decide; auto.
+- intros H; induction H; unfold valid_dec in *; bool; try_decide; auto.
 Qed.
 
 (** Basic algebra *)
@@ -375,16 +375,16 @@ Section Algebra.
 Lemma poly_add_compat : forall pl pr var, eval var (poly_add pl pr) = xorb (eval var pl) (eval var pr).
 Proof.
 intros pl; induction pl; intros pr var; simpl.
-+ induction pr; simpl; auto; solve [try_rewrite; ring].
-+ induction pr; simpl; auto; try solve [try_rewrite; simpl; ring].
+- induction pr; simpl; auto; solve [try_rewrite; ring].
+- induction pr; simpl; auto; try solve [try_rewrite; simpl; ring].
   destruct (Pos.compare_spec p p0); repeat case_decide; simpl; first [try_rewrite; ring|idtac].
-    try_rewrite; ring_simplify; repeat rewrite xorb_assoc.
+  + try_rewrite; ring_simplify; repeat rewrite xorb_assoc.
     match goal with [ |- context [xorb (andb ?b1 ?b2) (andb ?b1 ?b3)] ] =>
-      replace (xorb (andb b1 b2) (andb b1 b3)) with (andb b1 (xorb b2 b3)) by ring
+                      replace (xorb (andb b1 b2) (andb b1 b3)) with (andb b1 (xorb b2 b3)) by ring
     end.
     rewrite <- IHpl2.
     match goal with [ H : null ?p |- _ ] => rewrite (eval_null_zero _ _ H) end; ring.
-    simpl; rewrite IHpl1; simpl; ring.
+  + simpl; rewrite IHpl1; simpl; ring.
 Qed.
 
 Lemma poly_mul_cst_compat : forall v p var,
@@ -400,21 +400,21 @@ Lemma poly_mul_mon_compat : forall i p var,
   eval var (poly_mul_mon i p) = (list_nth i var false && eval var p).
 Proof.
 intros i p var; induction p; simpl; case_decide; simpl; try_rewrite; try ring.
-inversion H; ring.
-match goal with [ |- ?u = ?t ] => set (x := t); destruct x; reflexivity end.
-match goal with [ |- ?u = ?t ] => set (x := t); destruct x; reflexivity end.
+- inversion H; ring.
+- match goal with [ |- ?u = ?t ] => set (x := t); destruct x; reflexivity end.
+- match goal with [ |- ?u = ?t ] => set (x := t); destruct x; reflexivity end.
 Qed.
 
 Lemma poly_mul_compat : forall pl pr var, eval var (poly_mul pl pr) = andb (eval var pl) (eval var pr).
 Proof.
 intros pl; induction pl; intros pr var; simpl.
-  apply poly_mul_cst_compat.
-  case_decide; simpl.
-    rewrite IHpl1; ring_simplify.
+- apply poly_mul_cst_compat.
+- case_decide; simpl.
+  + rewrite IHpl1; ring_simplify.
     replace (eval var pr && list_nth p var false && eval var pl2)
-    with (list_nth p var false && (eval var pl2 && eval var pr)) by ring.
+      with (list_nth p var false && (eval var pl2 && eval var pr)) by ring.
     now rewrite <- IHpl2; inversion H; simpl; ring.
-    rewrite poly_add_compat, poly_mul_mon_compat, IHpl1, IHpl2; ring.
+  + rewrite poly_add_compat, poly_mul_mon_compat, IHpl1, IHpl2; ring.
 Qed.
 
 #[local]
@@ -447,14 +447,14 @@ intros kl kr pl pr Hl Hr; revert kr pr Hr; induction Hl; intros kr pr Hr; simpl.
 {  assert (Hle : (Pos.max (Pos.succ i) kr <= Pos.max k kr)%positive) by auto.
   apply (valid_le_compat (Pos.max (Pos.succ i) kr)); [|assumption].
   clear - IHHl1 IHHl2 Hl2 Hr H0; induction Hr.
-    constructor; auto.
-      now rewrite <- (Pos.max_id i); intuition.
-    destruct (Pos.compare_spec i i0); subst; try case_decide; repeat (constructor; intuition).
-      + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; auto.
-      + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; lia.
-      + apply (valid_le_compat (Pos.max (Pos.succ i0) (Pos.succ i0))); [now auto|]; rewrite Pos.max_id; lia.
-      + apply (valid_le_compat (Pos.max (Pos.succ i) i0)); intuition.
-      + apply (valid_le_compat (Pos.max i (Pos.succ i0))); intuition.
+   - constructor; auto.
+     now rewrite <- (Pos.max_id i); intuition.
+   - destruct (Pos.compare_spec i i0); subst; try case_decide; repeat (constructor; intuition).
+     + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; auto.
+     + apply (valid_le_compat (Pos.max i0 i0)); [now auto|]; rewrite Pos.max_id; lia.
+     + apply (valid_le_compat (Pos.max (Pos.succ i0) (Pos.succ i0))); [now auto|]; rewrite Pos.max_id; lia.
+     + apply (valid_le_compat (Pos.max (Pos.succ i) i0)); intuition.
+     + apply (valid_le_compat (Pos.max i (Pos.succ i0))); intuition.
 }
 Qed.
 

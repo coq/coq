@@ -132,18 +132,18 @@ Fixpoint flatten_stack (stack : list (option (list t))) :=
 Theorem Sorted_merge : forall l1 l2,
   Sorted l1 -> Sorted l2 -> Sorted (merge l1 l2).
 Proof.
-induction l1; induction l2; intros; simpl; auto.
+  induction l1; induction l2; intros; simpl; auto.
   destruct (a <=? a0) eqn:Heq1.
-    invert H.
-      simpl. constructor; trivial; rewrite Heq1; constructor.
-      assert (Sorted (merge (b::l) (a0::l2))) by (apply IHl1; auto).
+  - invert H.
+    + simpl. constructor; trivial; rewrite Heq1; constructor.
+    + assert (Sorted (merge (b::l) (a0::l2))) by (apply IHl1; auto).
       clear H0 H3 IHl1; simpl in *.
       destruct (b <=? a0); constructor; auto || rewrite Heq1; constructor.
-    assert (a0 <=? a) by
+  - assert (a0 <=? a) by
       (destruct (leb_total a0 a) as [H'|H']; trivial || (rewrite Heq1 in H'; inversion H')).
     invert H0.
-      constructor; trivial.
-      assert (Sorted (merge (a::l1) (b::l))) by auto using IHl1.
+    + constructor; trivial.
+    + assert (Sorted (merge (a::l1) (b::l))) by auto using IHl1.
       clear IHl2; simpl in *.
       destruct (a <=? b); constructor; auto.
 Qed.
@@ -151,67 +151,68 @@ Qed.
 Theorem Permuted_merge : forall l1 l2, Permutation (l1++l2) (merge l1 l2).
 Proof.
   induction l1; simpl merge; intro.
-    assert (forall l, (fix merge_aux (l0 : list t) : list t := l0) l = l)
-    as -> by (destruct l; trivial). (* Technical lemma *)
+  - assert (forall l, (fix merge_aux (l0 : list t) : list t := l0) l = l)
+      as -> by (destruct l; trivial). (* Technical lemma *)
     apply Permutation_refl.
-  induction l2.
-    rewrite app_nil_r. apply Permutation_refl.
-    destruct (a <=? a0).
-      constructor; apply IHl1.
-      apply Permutation_sym, Permutation_cons_app, Permutation_sym, IHl2.
+  - induction l2.
+    + rewrite app_nil_r. apply Permutation_refl.
+    + destruct (a <=? a0).
+      * constructor; apply IHl1.
+      * apply Permutation_sym, Permutation_cons_app, Permutation_sym, IHl2.
 Qed.
 
 Theorem Sorted_merge_list_to_stack : forall stack l,
   SortedStack stack -> Sorted l -> SortedStack (merge_list_to_stack stack l).
 Proof.
   induction stack as [|[|]]; intros; simpl.
-    auto.
-    apply IHstack. destruct H as (_,H1). fold SortedStack in H1. auto.
-      apply Sorted_merge; auto; destruct H; auto.
-      auto.
+  - auto.
+  - apply IHstack.
+    + destruct H as (_,H1). fold SortedStack in H1. auto.
+    + apply Sorted_merge; auto; destruct H; auto.
+  - auto.
 Qed.
 
 Theorem Permuted_merge_list_to_stack : forall stack l,
   Permutation (l ++ flatten_stack stack) (flatten_stack (merge_list_to_stack stack l)).
 Proof.
   induction stack as [|[]]; simpl; intros.
-    reflexivity.
-    rewrite app_assoc.
+  - reflexivity.
+  - rewrite app_assoc.
     etransitivity.
-      apply Permutation_app_tail.
+    + apply Permutation_app_tail.
       etransitivity.
-        apply Permutation_app_comm.
-      apply Permuted_merge.
-    apply IHstack.
-    reflexivity.
+      * apply Permutation_app_comm.
+      * apply Permuted_merge.
+    + apply IHstack.
+  - reflexivity.
 Qed.
 
 Theorem Sorted_merge_stack : forall stack,
   SortedStack stack -> Sorted (merge_stack stack).
 Proof.
 induction stack as [|[|]]; simpl; intros.
-  constructor; auto.
-  apply Sorted_merge; tauto.
-  auto.
+- constructor; auto.
+- apply Sorted_merge; tauto.
+- auto.
 Qed.
 
 Theorem Permuted_merge_stack : forall stack,
   Permutation (flatten_stack stack) (merge_stack stack).
 Proof.
 induction stack as [|[]]; simpl.
-  trivial.
-  transitivity (l ++ merge_stack stack).
-    apply Permutation_app_head; trivial.
-    apply Permuted_merge.
-  assumption.
+- trivial.
+- transitivity (l ++ merge_stack stack).
+  + apply Permutation_app_head; trivial.
+  + apply Permuted_merge.
+- assumption.
 Qed.
 
 Theorem Sorted_iter_merge : forall stack l,
   SortedStack stack -> Sorted (iter_merge stack l).
 Proof.
   intros stack l H; induction l in stack, H |- *; simpl.
-    auto using Sorted_merge_stack.
-    assert (Sorted [a]) by constructor.
+  - auto using Sorted_merge_stack.
+  - assert (Sorted [a]) by constructor.
     auto using Sorted_merge_list_to_stack.
 Qed.
 
@@ -219,15 +220,15 @@ Theorem Permuted_iter_merge : forall l stack,
   Permutation (flatten_stack stack ++ l) (iter_merge stack l).
 Proof.
   induction l; simpl; intros.
-    rewrite app_nil_r. apply Permuted_merge_stack.
-    change (a::l) with ([a]++l).
+  - rewrite app_nil_r. apply Permuted_merge_stack.
+  - change (a::l) with ([a]++l).
     rewrite app_assoc.
     etransitivity.
-      apply Permutation_app_tail.
-    etransitivity.
-    apply Permutation_app_comm.
-    apply Permuted_merge_list_to_stack.
-    apply IHl.
+    + apply Permutation_app_tail.
+      etransitivity.
+      * apply Permutation_app_comm.
+      * apply Permuted_merge_list_to_stack.
+    + apply IHl.
 Qed.
 
 Theorem LocallySorted_sort : forall l, Sorted (sort l).

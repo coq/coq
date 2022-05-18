@@ -840,8 +840,8 @@ Section S.
       Proof.
         intros f.
         destruct (is_cnf_tt f) eqn:EQ.
-        apply is_cnf_tt_inv in EQ;auto.
-        reflexivity.
+        - apply is_cnf_tt_inv in EQ;auto.
+        - reflexivity.
       Qed.
 
       Lemma or_cnf_opt_cnf_ff : forall f,
@@ -852,12 +852,12 @@ Section S.
         rewrite is_cnf_tt_cnf_ff.
         simpl.
         destruct (is_cnf_tt f) eqn:EQ.
-        apply is_cnf_tt_inv in EQ.
-        congruence.
-        destruct (is_cnf_ff f) eqn:EQ1.
-        apply is_cnf_ff_inv in EQ1.
-        congruence.
-        reflexivity.
+        - apply is_cnf_tt_inv in EQ.
+          congruence.
+        - destruct (is_cnf_ff f) eqn:EQ1.
+          + apply is_cnf_ff_inv in EQ1.
+            congruence.
+          + reflexivity.
       Qed.
 
       Lemma abs_and_pol : forall (k: kind) (f1 f2: TFormula TX AF k) pol,
@@ -866,18 +866,18 @@ Section S.
       Proof.
         unfold abs_and; intros k f1 f2 pol.
         destruct (is_X f1) eqn:EQ1.
-        apply is_X_inv in EQ1.
-        subst.
-        simpl.
-        rewrite if_same. reflexivity.
-        destruct (is_X f2) eqn:EQ2.
-        apply is_X_inv in EQ2.
-        subst.
-        simpl.
-        rewrite if_same.
-        unfold and_cnf_opt.
-        rewrite orb_comm. reflexivity.
-        destruct pol ; simpl; auto.
+        - apply is_X_inv in EQ1.
+          subst.
+          simpl.
+          rewrite if_same. reflexivity.
+        - destruct (is_X f2) eqn:EQ2.
+          + apply is_X_inv in EQ2.
+            subst.
+            simpl.
+            rewrite if_same.
+            unfold and_cnf_opt.
+            rewrite orb_comm. reflexivity.
+          + destruct pol ; simpl; auto.
       Qed.
 
       Lemma abs_or_pol : forall (k: kind) (f1 f2:TFormula TX AF k) pol,
@@ -886,18 +886,18 @@ Section S.
       Proof.
         unfold abs_or; intros k f1 f2 pol.
         destruct (is_X f1) eqn:EQ1.
-        apply is_X_inv in EQ1.
-        subst.
-        destruct (is_X f2) eqn:EQ2.
-        apply is_X_inv in EQ2.
-        subst.
-        simpl.
-        rewrite if_same.
-        reflexivity.
-        simpl.
-        rewrite if_same.
-        destruct pol ; simpl; auto.
-        destruct pol ; simpl ; auto.
+        - apply is_X_inv in EQ1.
+          subst.
+          destruct (is_X f2) eqn:EQ2.
+          + apply is_X_inv in EQ2.
+            subst.
+            simpl.
+            rewrite if_same.
+            reflexivity.
+          + simpl.
+            rewrite if_same.
+            destruct pol ; simpl; auto.
+        - destruct pol ; simpl ; auto.
       Qed.
 
       Variable needA_all : forall a, needA a = true.
@@ -926,9 +926,9 @@ Section S.
         intros b o; destruct o ; simpl; auto.
         - intros t f.
           destruct (is_X f) eqn:EQ.
-          apply is_X_inv in EQ. subst. reflexivity.
-          simpl.
-          apply or_cnf_opt_cnf_ff_r.
+          + apply is_X_inv in EQ. subst. reflexivity.
+          + simpl.
+            apply or_cnf_opt_cnf_ff_r.
         - intros.
           apply or_cnf_opt_cnf_ff_r.
       Qed.
@@ -1015,10 +1015,10 @@ Section S.
         unfold or_is_X.
         intros k f1 f2.
         is_X t; is_X t0.
-        exists t ; intuition.
-        exists t ; intuition.
-        exists t0 ; intuition.
-        congruence.
+        - exists t ; intuition.
+        - exists t ; intuition.
+        - exists t0 ; intuition.
+        - congruence.
       Qed.
 
       Lemma mk_iff_is_bool : forall (k: kind) (f1 f2:TFormula TX AF k) pol,
@@ -1185,9 +1185,9 @@ Section S.
                simpl. unfold and_cnf_opt.
                rewrite orb_comm. reflexivity.
              * destruct o; simpl.
-               rewrite EQ1. simpl.
-               congruence.
-               congruence.
+               -- rewrite EQ1. simpl.
+                  congruence.
+               -- congruence.
         -  apply abst_iff_correct; auto.
         -  apply abst_eq_correct; auto.
       Qed.
@@ -1203,22 +1203,24 @@ Section S.
     intros a'; induction a' as [|a a' IHa']; simpl.
     - intros a cl H.
       destruct (deduce (fst a) (fst a)) as [t|].
-      destruct (unsat t). congruence.
-      inversion H. reflexivity.
-      inversion H ;reflexivity.
+      + destruct (unsat t).
+        * congruence.
+        * inversion H. reflexivity.
+      + inversion H ;reflexivity.
     - intros a0 cl H.
       destruct (deduce (fst a0) (fst a)) as [t|].
-      destruct (unsat t). congruence.
-      destruct (radd_term a0 a') eqn:RADD; try congruence.
-      inversion H. subst.
-      apply IHa' in RADD.
-      rewrite RADD.
-      reflexivity.
-      destruct (radd_term a0 a') eqn:RADD; try congruence.
-      inversion H. subst.
-      apply IHa' in RADD.
-      rewrite RADD.
-      reflexivity.
+      + destruct (unsat t).
+        * congruence.
+        * destruct (radd_term a0 a') eqn:RADD; try congruence.
+          inversion H. subst.
+          apply IHa' in RADD.
+          rewrite RADD.
+          reflexivity.
+      + destruct (radd_term a0 a') eqn:RADD; try congruence.
+        inversion H. subst.
+        apply IHa' in RADD.
+        rewrite RADD.
+        reflexivity.
   Qed.
 
   Lemma radd_term_term' : forall a' a cl, add_term a a' = Some cl -> radd_term a a' = inl cl.
@@ -1226,22 +1228,24 @@ Section S.
     intros a'; induction a' as [|a a' IHa']; simpl.
     - intros a cl H.
       destruct (deduce (fst a) (fst a)) as [t|].
-      destruct (unsat t). congruence.
-      inversion H. reflexivity.
-      inversion H ;reflexivity.
+      + destruct (unsat t).
+        * congruence.
+        * inversion H. reflexivity.
+      + inversion H ;reflexivity.
     - intros a0 cl H.
       destruct (deduce (fst a0) (fst a)) as [t|].
-      destruct (unsat t). congruence.
-      destruct (add_term a0 a') eqn:RADD; try congruence.
-      inversion H. subst.
-      apply IHa' in RADD.
-      rewrite RADD.
-      reflexivity.
-      destruct (add_term a0 a') eqn:RADD; try congruence.
-      inversion H. subst.
-      apply IHa' in RADD.
-      rewrite RADD.
-      reflexivity.
+      + destruct (unsat t).
+        * congruence.
+        * destruct (add_term a0 a') eqn:RADD; try congruence.
+          inversion H. subst.
+          apply IHa' in RADD.
+          rewrite RADD.
+          reflexivity.
+      + destruct (add_term a0 a') eqn:RADD; try congruence.
+        inversion H. subst.
+        apply IHa' in RADD.
+        rewrite RADD.
+        reflexivity.
   Qed.
 
   Lemma xror_clause_clause : forall a f,
@@ -1249,8 +1253,7 @@ Section S.
   Proof.
     unfold xror_clause_cnf.
     unfold xor_clause_cnf.
-    assert (ACC: fst (@nil clause, null) = nil).
-    reflexivity.
+    assert (ACC: fst (@nil clause, null) = nil) by reflexivity.
     intros a f.
     set (F1:= (fun '(acc, tg) (e : clause) =>
                  match ror_clause a e with
@@ -1275,13 +1278,13 @@ Section S.
     induction a as [|a a0 IHa]; simpl; auto.
     intros a1.
     destruct (radd_term a a1) eqn:RADD.
-    apply radd_term_term in RADD.
-    rewrite RADD.
-    auto.
-    destruct (add_term a a1) eqn:RADD'.
-    apply radd_term_term' in RADD'.
-    congruence.
-    reflexivity.
+    - apply radd_term_term in RADD.
+      rewrite RADD.
+      auto.
+    - destruct (add_term a a1) eqn:RADD'.
+      + apply radd_term_term' in RADD'.
+        congruence.
+      + reflexivity.
   Qed.
 
   Lemma ror_clause_clause : forall a f,
@@ -1313,8 +1316,8 @@ Section S.
     - simpl ; auto.
     - simpl. destruct (is_cnf_tt f2) ; simpl ; auto.
       destruct (is_cnf_ff f2) eqn:EQ.
-      reflexivity.
-      apply ror_cnf_cnf.
+      + reflexivity.
+      + apply ror_cnf_cnf.
   Qed.
 
   Lemma ratom_cnf : forall  f a,
@@ -1393,10 +1396,10 @@ Section S.
       unfold or_cnf_opt.
       simpl.
       destruct (is_cnf_tt (xcnf true f2)) eqn:EQ;auto.
-      apply is_cnf_tt_inv in EQ; auto.
-      destruct (is_cnf_ff (xcnf true f2)) eqn:EQ1.
-      apply is_cnf_ff_inv in EQ1. congruence.
-      reflexivity.
+      -- apply is_cnf_tt_inv in EQ; auto.
+      -- destruct (is_cnf_ff (xcnf true f2)) eqn:EQ1.
+         ++ apply is_cnf_ff_inv in EQ1. congruence.
+         ++ reflexivity.
     *
       rewrite <- ror_opt_cnf_cnf.
       destruct (ror_cnf_opt (xcnf (negb true) f1) (xcnf true f2)).
@@ -1547,30 +1550,30 @@ Section S.
       simpl.
       case_eq (deduce (fst t) (fst a));
         intros t0; [intros H|].
-      generalize (@deduce_prop _ _ _ H env).
-      case_eq (unsat t0); intros H0 H1.
-      {
-        generalize (@unsat_prop _ H0 env).
-        simpl.
-        unfold eval_clause.
-        repeat rewrite make_conj_cons.
-        tauto.
-      }
-      destruct (add_term t cl) ; simpl in * ; try tauto.
-      {
-        intros.
-        unfold eval_clause in *.
-        repeat rewrite make_conj_cons in *.
-        tauto.
-      }
-      {
-        unfold eval_clause in *.
-        repeat rewrite make_conj_cons in *.
-        tauto.
-      }
-      destruct (add_term t cl) ; simpl in *;
-        unfold eval_clause in * ;
-        repeat rewrite make_conj_cons in *; tauto.
+      + generalize (@deduce_prop _ _ _ H env).
+        case_eq (unsat t0); intros H0 H1.
+        {
+          generalize (@unsat_prop _ H0 env).
+          simpl.
+          unfold eval_clause.
+          repeat rewrite make_conj_cons.
+          tauto.
+        }
+        destruct (add_term t cl) ; simpl in * ; try tauto.
+        {
+          intros.
+          unfold eval_clause in *.
+          repeat rewrite make_conj_cons in *.
+          tauto.
+        }
+        {
+          unfold eval_clause in *.
+          repeat rewrite make_conj_cons in *.
+          tauto.
+        }
+      + destruct (add_term t cl) ; simpl in *;
+          unfold eval_clause in * ;
+          repeat rewrite make_conj_cons in *; tauto.
   Qed.
 
 
@@ -1664,18 +1667,18 @@ Section S.
   Lemma or_cnf_correct : forall env f f', eval_cnf env (or_cnf f f') <-> (eval_cnf env  f) \/ (eval_cnf  env f').
   Proof.
     intros env f; induction f as [|a f IHf].
-    unfold eval_cnf.
-    simpl.
-    tauto.
-    (**)
-    intros.
-    simpl.
-    rewrite eval_cnf_app.
-    rewrite <- eval_cnf_cons_iff.
-    rewrite IHf.
-    rewrite or_clause_cnf_correct.
-    unfold eval_clause.
-    tauto.
+    - unfold eval_cnf.
+      simpl.
+      tauto.
+      (**)
+    - intros.
+      simpl.
+      rewrite eval_cnf_app.
+      rewrite <- eval_cnf_cons_iff.
+      rewrite IHf.
+      rewrite or_clause_cnf_correct.
+      unfold eval_clause.
+      tauto.
   Qed.
 
   Lemma or_cnf_opt_correct : forall env f f', eval_cnf env (or_cnf_opt f f') <-> eval_cnf env (or_cnf f f').
@@ -1700,12 +1703,12 @@ Section S.
     }
     { simpl.
       destruct (is_cnf_ff f') eqn:EQ.
-      apply is_cnf_ff_inv in EQ.
-      subst.
-      rewrite or_cnf_correct.
-      rewrite eval_cnf_ff.
-      tauto.
-      tauto.
+      - apply is_cnf_ff_inv in EQ.
+        subst.
+        rewrite or_cnf_correct.
+        rewrite eval_cnf_ff.
+        tauto.
+      - tauto.
     }
   Qed.
 
@@ -1807,12 +1810,12 @@ Section S.
       rewrite or_cnf_opt_correct in H.
       rewrite or_cnf_correct in H.
       destruct H as [H | H].
-      generalize (IHf1 _ _ H).
-      simpl in *.
-      rewrite hold_eNOT.
-      tauto.
-      generalize (IHf2 _ _ H).
-      auto.
+      * generalize (IHf1 _ _ H).
+        simpl in *.
+        rewrite hold_eNOT.
+        tauto.
+      * generalize (IHf2 _ _ H).
+        auto.
     + (* pol = false *)
       rewrite eval_cnf_and_opt in H.
       unfold and_cnf in H.
@@ -1909,11 +1912,11 @@ Section S.
     - (* A *)
       simpl.
       destruct pol ; simpl.
-      intros.
-      eapply normalise_correct  ; eauto.
-      (* A 2 *)
-      intros.
-      eapply  negate_correct ; eauto.
+      + intros.
+        eapply normalise_correct  ; eauto.
+      + (* A 2 *)
+        intros.
+        eapply  negate_correct ; eauto.
     - (* AND *)
       destruct pol ; simpl in H.
       + (* pol = true *)
@@ -1923,8 +1926,8 @@ Section S.
         rewrite eval_cnf_app  in H.
         destruct H as [H H0].
         apply hold_eAND; split.
-        apply (IHf1 _ _ H).
-        apply (IHf2 _ _ H0).
+        * apply (IHf1 _ _ H).
+        * apply (IHf2 _ _ H0).
       +  (* pol = false *)
         intros.
         apply hold_eNOT.
@@ -1932,14 +1935,14 @@ Section S.
         rewrite or_cnf_opt_correct in H.
         rewrite or_cnf_correct in H.
         destruct H as [H | H].
-        generalize (IHf1 false  env H).
-        simpl.
-        rewrite hold_eNOT.
-        tauto.
-        generalize (IHf2 false  env H).
-        simpl.
-        rewrite hold_eNOT.
-        tauto.
+        * generalize (IHf1 false  env H).
+          simpl.
+          rewrite hold_eNOT.
+          tauto.
+        * generalize (IHf2 false  env H).
+          simpl.
+          rewrite hold_eNOT.
+          tauto.
     - (* OR *)
       simpl in H.
       destruct pol.
@@ -1948,14 +1951,14 @@ Section S.
         rewrite or_cnf_opt_correct in H.
         rewrite or_cnf_correct in H.
         destruct H as [H | H].
-        generalize (IHf1 _  env H).
-        simpl.
-        rewrite hold_eOR.
-        tauto.
-        generalize (IHf2 _  env H).
-        simpl.
-        rewrite hold_eOR.
-        tauto.
+        * generalize (IHf1 _  env H).
+          simpl.
+          rewrite hold_eOR.
+          tauto.
+        * generalize (IHf2 _  env H).
+          simpl.
+          rewrite hold_eOR.
+          tauto.
       + (* pol = true *)
         intros. unfold mk_or in H.
         rewrite eval_cnf_and_opt in H.
@@ -1972,12 +1975,12 @@ Section S.
     - (**)
       simpl.
       destruct pol ; simpl.
-      intros.
-      apply (IHf false) ; auto.
-      intros.
-      generalize (IHf _ _ H).
-      rewrite ! hold_eNOT.
-      tauto.
+      + intros.
+        apply (IHf false) ; auto.
+      + intros.
+        generalize (IHf _ _ H).
+        rewrite ! hold_eNOT.
+        tauto.
     - (* IMPL *)
       apply xcnf_impl; auto.
     - apply xcnf_iff ; auto.
@@ -2001,13 +2004,13 @@ Section S.
         apply xcnf_iff in H; auto.
         simpl in H.
         destruct pol ; simpl in *.
-        rewrite <- hold_eEQ.
-        simpl; auto.
-        rewrite <- hold_eEQ.
-        simpl; auto.
-        unfold is_true in *.
-        rewrite negb_true_iff in H.
-        congruence.
+        * rewrite <- hold_eEQ.
+          simpl; auto.
+        * rewrite <- hold_eEQ.
+          simpl; auto.
+          unfold is_true in *.
+          rewrite negb_true_iff in H.
+          congruence.
   Qed.
 
   Variable Witness : Type.
@@ -2031,22 +2034,22 @@ Section S.
   Proof.
     unfold eval_cnf.
     intros t; induction t as [|a t IHt].
-    (* bc *)
-    simpl.
-    auto.
-    (* ic *)
-    simpl.
-    intros w; destruct w as [|w ?].
-    intros ; discriminate.
-    case_eq (checker a w) ; intros H H0 env ** ; try discriminate.
-    generalize (@checker_sound _ _ H env).
-    generalize (IHt _ H0 env) ; intros H1 H2.
-    destruct t.
-    red ; intro.
-    rewrite <- make_conj_impl in H2.
-    tauto.
-    rewrite <- make_conj_impl in H2.
-    tauto.
+    - (* bc *)
+      simpl.
+      auto.
+    - (* ic *)
+      simpl.
+      intros w; destruct w as [|w ?].
+      + intros ; discriminate.
+      + case_eq (checker a w) ; intros H H0 env ** ; try discriminate.
+        generalize (@checker_sound _ _ H env).
+        generalize (IHt _ H0 env) ; intros H1 H2.
+        destruct t.
+        * red ; intro.
+          rewrite <- make_conj_impl in H2.
+          tauto.
+        * rewrite <- make_conj_impl in H2.
+          tauto.
   Qed.
 
   Definition tauto_checker (f:@GFormula Term rtyp Annot unit isProp) (w:list Witness) : bool :=

@@ -24,33 +24,36 @@ Module Type ZGcdProp
 Lemma divide_opp_l : forall n m, (-n | m) <-> (n | m).
 Proof.
  intros n m. split; intros (p,Hp); exists (-p); rewrite Hp.
-  now rewrite mul_opp_l, mul_opp_r.
-  now rewrite mul_opp_opp.
+  - now rewrite mul_opp_l, mul_opp_r.
+  - now rewrite mul_opp_opp.
 Qed.
 
 Lemma divide_opp_r : forall n m, (n | -m) <-> (n | m).
 Proof.
  intros n m. split; intros (p,Hp); exists (-p).
-  now rewrite mul_opp_l, <- Hp, opp_involutive.
-  now rewrite Hp, mul_opp_l.
+ - now rewrite mul_opp_l, <- Hp, opp_involutive.
+ - now rewrite Hp, mul_opp_l.
 Qed.
 
 Lemma divide_abs_l : forall n m, (abs n | m) <-> (n | m).
 Proof.
  intros n m. destruct (abs_eq_or_opp n) as [H|H]; rewrite H.
- easy. apply divide_opp_l.
+ - easy.
+ - apply divide_opp_l.
 Qed.
 
 Lemma divide_abs_r : forall n m, (n | abs m) <-> (n | m).
 Proof.
  intros n m. destruct (abs_eq_or_opp m) as [H|H]; rewrite H.
- easy. apply divide_opp_r.
+ - easy.
+ - apply divide_opp_r.
 Qed.
 
 Lemma divide_1_r_abs : forall n, (n | 1) -> abs n == 1.
 Proof.
- intros n Hn. apply divide_1_r_nonneg. apply abs_nonneg.
- now apply divide_abs_l.
+  intros n Hn. apply divide_1_r_nonneg.
+  - apply abs_nonneg.
+  - now apply divide_abs_l.
 Qed.
 
 Lemma divide_1_r : forall n, (n | 1) -> n==1 \/ n==-1.
@@ -62,8 +65,8 @@ Lemma divide_antisym_abs : forall n m,
  (n | m) -> (m | n) -> abs n == abs m.
 Proof.
  intros. apply divide_antisym_nonneg; try apply abs_nonneg.
- now apply divide_abs_l, divide_abs_r.
- now apply divide_abs_l, divide_abs_r.
+ - now apply divide_abs_l, divide_abs_r.
+ - now apply divide_abs_l, divide_abs_r.
 Qed.
 
 Lemma divide_antisym : forall n m,
@@ -99,7 +102,8 @@ Qed.
 Lemma gcd_abs_l : forall n m, gcd (abs n) m == gcd n m.
 Proof.
  intros n m. destruct (abs_eq_or_opp n) as [H|H]; rewrite H.
- easy. apply gcd_opp_l.
+ - easy.
+ - apply gcd_opp_l.
 Qed.
 
 Lemma gcd_abs_r : forall n m, gcd n (abs m) == gcd n m.
@@ -127,9 +131,10 @@ Lemma gcd_add_mult_diag_r : forall n m p, gcd n (m+p*n) == gcd n m.
 Proof.
  intros n m p. apply gcd_unique_alt; try apply gcd_nonneg.
  intros. rewrite gcd_divide_iff. split; intros (U,V); split; trivial.
- apply divide_add_r; trivial. now apply divide_mul_r.
- apply divide_add_cancel_r with (p*n); trivial.
- now apply divide_mul_r. now rewrite add_comm.
+ - apply divide_add_r; trivial. now apply divide_mul_r.
+ - apply divide_add_cancel_r with (p*n); trivial.
+   + now apply divide_mul_r.
+   + now rewrite add_comm.
 Qed.
 
 Lemma gcd_add_diag_r : forall n m, gcd n (m+n) == gcd n m.
@@ -162,48 +167,52 @@ Qed.
 
 Lemma gcd_bezout : forall n m p, gcd n m == p -> Bezout n m p.
 Proof.
- (* First, a version restricted to natural numbers *)
- assert (aux : forall n, 0<=n -> forall m, 0<=m -> Bezout n m (gcd n m)).
-  intros n Hn; pattern n.
-  apply (fun H => strong_right_induction _ H 0); trivial.
-  unfold Bezout. solve_proper.
-  clear n Hn. intros n Hn IHn.
-  apply le_lteq in Hn; destruct Hn as [Hn|Hn].
-  intros m Hm; pattern m.
-  apply (fun H => strong_right_induction _ H 0); trivial.
-  unfold Bezout. solve_proper.
-  clear m Hm. intros m Hm IHm.
-  destruct (lt_trichotomy n m) as [LT|[EQ|LT]].
-  (* n < m *)
-  destruct (IHm (m-n)) as (a & b & EQ).
-  apply sub_nonneg; order.
-  now apply lt_sub_pos.
-  exists (a-b). exists b.
-  rewrite gcd_sub_diag_r in EQ. rewrite <- EQ.
-  rewrite mul_sub_distr_r, mul_sub_distr_l.
-  now rewrite add_sub_assoc, add_sub_swap.
-  (* n = m *)
-  rewrite EQ. rewrite gcd_diag_nonneg; trivial.
-  exists 1. exists 0. now nzsimpl.
-  (* m < n *)
-  destruct (IHn m Hm LT n) as (a & b & EQ). order.
-  exists b. exists a. now rewrite gcd_comm, <- EQ, add_comm.
-  (* n = 0 *)
-  intros m Hm. rewrite <- Hn, gcd_0_l_nonneg; trivial.
-  exists 0. exists 1. now nzsimpl.
- (* Then we relax the positivity condition on n *)
- assert (aux' : forall n m, 0<=m -> Bezout n m (gcd n m)).
-  intros n m Hm.
-  destruct (le_ge_cases 0 n). now apply aux.
-  assert (Hn' : 0 <= -n) by now apply opp_nonneg_nonpos.
-  destruct (aux (-n) Hn' m Hm) as (a & b & EQ).
-  exists (-a). exists b. now rewrite <- gcd_opp_l, <- EQ, mul_opp_r, mul_opp_l.
- (* And finally we do the same for m *)
- intros n m p Hp. rewrite <- Hp; clear Hp.
- destruct (le_ge_cases 0 m). now apply aux'.
- assert (Hm' : 0 <= -m) by now apply opp_nonneg_nonpos.
- destruct (aux' n (-m) Hm') as (a & b & EQ).
- exists a. exists (-b). now rewrite <- gcd_opp_r, <- EQ, mul_opp_r, mul_opp_l.
+  (* First, a version restricted to natural numbers *)
+  assert (aux : forall n, 0<=n -> forall m, 0<=m -> Bezout n m (gcd n m)). {
+    intros n Hn; pattern n.
+    apply (fun H => strong_right_induction _ H 0); trivial.
+    { unfold Bezout. solve_proper. }
+    clear n Hn. intros n Hn IHn.
+    apply le_lteq in Hn; destruct Hn as [Hn|Hn].
+    - intros m Hm; pattern m.
+      apply (fun H => strong_right_induction _ H 0); trivial.
+      { unfold Bezout. solve_proper. }
+      clear m Hm. intros m Hm IHm.
+      destruct (lt_trichotomy n m) as [LT|[EQ|LT]].
+      + (* n < m *)
+        destruct (IHm (m-n)) as (a & b & EQ).
+        * apply sub_nonneg; order.
+        * now apply lt_sub_pos.
+        * exists (a-b). exists b.
+          rewrite gcd_sub_diag_r in EQ. rewrite <- EQ.
+          rewrite mul_sub_distr_r, mul_sub_distr_l.
+          now rewrite add_sub_assoc, add_sub_swap.
+      + (* n = m *)
+        rewrite EQ. rewrite gcd_diag_nonneg; trivial.
+        exists 1. exists 0. now nzsimpl.
+      + (* m < n *)
+        destruct (IHn m Hm LT n) as (a & b & EQ). { order. }
+        exists b. exists a. now rewrite gcd_comm, <- EQ, add_comm.
+    - (* n = 0 *)
+      intros m Hm. rewrite <- Hn, gcd_0_l_nonneg; trivial.
+      exists 0. exists 1. now nzsimpl.
+  }
+  (* Then we relax the positivity condition on n *)
+  assert (aux' : forall n m, 0<=m -> Bezout n m (gcd n m)). {
+    intros n m Hm.
+    destruct (le_ge_cases 0 n).
+    - now apply aux.
+    - assert (Hn' : 0 <= -n) by now apply opp_nonneg_nonpos.
+      destruct (aux (-n) Hn' m Hm) as (a & b & EQ).
+      exists (-a). exists b. now rewrite <- gcd_opp_l, <- EQ, mul_opp_r, mul_opp_l.
+  }
+  (* And finally we do the same for m *)
+  intros n m p Hp. rewrite <- Hp; clear Hp.
+  destruct (le_ge_cases 0 m).
+  - now apply aux'.
+  - assert (Hm' : 0 <= -m) by now apply opp_nonneg_nonpos.
+    destruct (aux' n (-m) Hm') as (a & b & EQ).
+    exists a. exists (-b). now rewrite <- gcd_opp_r, <- EQ, mul_opp_r, mul_opp_l.
 Qed.
 
 Lemma gcd_mul_mono_l :
@@ -211,18 +220,18 @@ Lemma gcd_mul_mono_l :
 Proof.
  intros n m p.
  apply gcd_unique.
- apply mul_nonneg_nonneg; trivial using gcd_nonneg, abs_nonneg.
- destruct (gcd_divide_l n m) as (q,Hq).
- rewrite Hq at 2. rewrite mul_assoc. apply mul_divide_mono_r.
- rewrite <- (abs_sgn p) at 2. rewrite <- mul_assoc. apply divide_factor_l.
- destruct (gcd_divide_r n m) as (q,Hq).
- rewrite Hq at 2. rewrite mul_assoc. apply mul_divide_mono_r.
- rewrite <- (abs_sgn p) at 2. rewrite <- mul_assoc. apply divide_factor_l.
- intros q H H'.
- destruct (gcd_bezout n m (gcd n m) (eq_refl _)) as (a & b & EQ).
- rewrite <- EQ, <- sgn_abs, mul_add_distr_l. apply divide_add_r.
- rewrite mul_shuffle2. now apply divide_mul_l.
- rewrite mul_shuffle2. now apply divide_mul_l.
+ - apply mul_nonneg_nonneg; trivial using gcd_nonneg, abs_nonneg.
+ - destruct (gcd_divide_l n m) as (q,Hq).
+   rewrite Hq at 2. rewrite mul_assoc. apply mul_divide_mono_r.
+   rewrite <- (abs_sgn p) at 2. rewrite <- mul_assoc. apply divide_factor_l.
+ - destruct (gcd_divide_r n m) as (q,Hq).
+   rewrite Hq at 2. rewrite mul_assoc. apply mul_divide_mono_r.
+   rewrite <- (abs_sgn p) at 2. rewrite <- mul_assoc. apply divide_factor_l.
+ - intros q H H'.
+   destruct (gcd_bezout n m (gcd n m) (eq_refl _)) as (a & b & EQ).
+   rewrite <- EQ, <- sgn_abs, mul_add_distr_l. apply divide_add_r.
+   + rewrite mul_shuffle2. now apply divide_mul_l.
+   + rewrite mul_shuffle2. now apply divide_mul_l.
 Qed.
 
 Lemma gcd_mul_mono_l_nonneg :
@@ -248,8 +257,9 @@ Proof.
  intros n m p H G.
  destruct (gcd_bezout n m 1 G) as (a & b & EQ).
  rewrite <- (mul_1_l p), <- EQ, mul_add_distr_r.
- apply divide_add_r. rewrite mul_shuffle0. apply divide_factor_r.
- rewrite <- mul_assoc. now apply divide_mul_r.
+ apply divide_add_r.
+ - rewrite mul_shuffle0. apply divide_factor_r.
+ - rewrite <- mul_assoc. now apply divide_mul_r.
 Qed.
 
 Lemma divide_mul_split : forall n m p, n ~= 0 -> (n | m * p) ->
@@ -258,18 +268,20 @@ Proof.
  intros n m p Hn H.
  assert (G := gcd_nonneg n m).
  apply le_lteq in G; destruct G as [G|G].
- destruct (gcd_divide_l n m) as (q,Hq).
- exists (gcd n m). exists q.
- split. now rewrite mul_comm.
- split. apply gcd_divide_r.
- destruct (gcd_divide_r n m) as (r,Hr).
- rewrite Hr in H. rewrite Hq in H at 1.
- rewrite mul_shuffle0 in H. apply mul_divide_cancel_r in H; [|order].
- apply gauss with r; trivial.
- apply mul_cancel_r with (gcd n m); [order|].
- rewrite mul_1_l.
- rewrite <- gcd_mul_mono_r_nonneg, <- Hq, <- Hr; order.
- symmetry in G. apply gcd_eq_0 in G. destruct G as (Hn',_); order.
+ - destruct (gcd_divide_l n m) as (q,Hq).
+   exists (gcd n m). exists q.
+   split.
+   + now rewrite mul_comm.
+   + split.
+     * apply gcd_divide_r.
+     * destruct (gcd_divide_r n m) as (r,Hr).
+       rewrite Hr in H. rewrite Hq in H at 1.
+       rewrite mul_shuffle0 in H. apply mul_divide_cancel_r in H; [|order].
+       apply gauss with r; trivial.
+       apply mul_cancel_r with (gcd n m); [order|].
+       rewrite mul_1_l.
+       rewrite <- gcd_mul_mono_r_nonneg, <- Hq, <- Hr; order.
+ - symmetry in G. apply gcd_eq_0 in G. destruct G as (Hn',_); order.
 Qed.
 
 (** TODO : more about rel_prime (i.e. gcd == 1), about prime ... *)

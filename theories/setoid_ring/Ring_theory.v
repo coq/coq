@@ -346,11 +346,11 @@ Section ALMOST_RING.
  Lemma Rmul_0_l x : 0 * x == 0.
  Proof.
   setoid_replace (0*x) with ((0+1)*x + -x).
-  now rewrite (Radd_0_l Rth), (Rmul_1_l Rth), (Ropp_def Rth).
+  - now rewrite (Radd_0_l Rth), (Rmul_1_l Rth), (Ropp_def Rth).
 
-  rewrite (Rdistr_l Rth), (Rmul_1_l Rth).
-  rewrite <- (Radd_assoc Rth), (Ropp_def Rth).
-  now rewrite (Radd_comm Rth), (Radd_0_l Rth).
+  - rewrite (Rdistr_l Rth), (Rmul_1_l Rth).
+    rewrite <- (Radd_assoc Rth), (Ropp_def Rth).
+    now rewrite (Radd_comm Rth), (Radd_0_l Rth).
  Qed.
 
  Lemma Ropp_mul_l x y : -(x * y) == -x * y.

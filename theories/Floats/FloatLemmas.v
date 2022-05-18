@@ -58,7 +58,7 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
   destruct H' as (H1,H2).
   apply Zeq_bool_eq in H1.
   apply Z.max_case_strong.
-  apply Z.min_case_strong.
+  1:apply Z.min_case_strong.
   - reflexivity.
   - intros He _.
     destruct (Z.max_spec (Z.pos (digits2_pos m) + e0 - prec) emin) as [ (H, Hm) | (H, Hm) ].
@@ -83,19 +83,19 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
         assert (H' : forall p p', digits2_pos (shift_pos p p') = (digits2_pos p' + p)%positive).
         {
           induction p0.
-          intro p'.
-          simpl.
-          rewrite IHp0.
-          rewrite IHp0.
-          lia.
-          intro p'.
-          simpl.
-          rewrite IHp0.
-          rewrite IHp0.
-          lia.
-          intro p'.
-          simpl.
-          lia.
+          - intro p'.
+            simpl.
+            rewrite IHp0.
+            rewrite IHp0.
+            lia.
+          - intro p'.
+            simpl.
+            rewrite IHp0.
+            rewrite IHp0.
+            lia.
+          - intro p'.
+            simpl.
+            lia.
         }
         rewrite H'.
         lia.
@@ -173,16 +173,16 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
         - destruct p; unfold Zdigits2, shr_m, digits2_pos; lia.
       }
       induction p.
-      simpl.
-      intro s0.
-      do 2 rewrite IHp.
-      rewrite Hshr1.
-      lia.
-      intros.
-      simpl.
-      do 2 rewrite IHp.
-      lia.
-      apply Hshr1.
+      - simpl.
+        intro s0.
+        do 2 rewrite IHp.
+        rewrite Hshr1.
+        lia.
+      - intros.
+        simpl.
+        do 2 rewrite IHp.
+        lia.
+      - apply Hshr1.
     }
 
     assert (Hd0 : forall z, Zdigits2 z = 0%Z -> z = 0%Z).
@@ -223,39 +223,39 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
         {
           intros A f'.
           induction p.
-          intro e'.
-          simpl.
-          now do 2 rewrite IHp.
-          intro e'.
-          simpl.
-          now do 2 rewrite IHp.
-          intro e'.
-          now simpl.
+          - intro e'.
+            simpl.
+            now do 2 rewrite IHp.
+          - intro e'.
+            simpl.
+            now do 2 rewrite IHp.
+          - intro e'.
+            now simpl.
         }
         intros A f'.
         induction p.
-        intros.
-        simpl.
-        rewrite <- Pos.add_1_r.
-        do 2 rewrite IHp.
-        now do 3 rewrite Hiter_pos'.
-        intros.
-        simpl.
-        now do 2 rewrite Hiter_pos'.
-        intros.
-        now simpl.
+        - intros.
+          simpl.
+          rewrite <- Pos.add_1_r.
+          do 2 rewrite IHp.
+          now do 3 rewrite Hiter_pos'.
+        - intros.
+          simpl.
+          now do 2 rewrite Hiter_pos'.
+        - intros.
+          now simpl.
       }
       replace p0 with (p0 - 1 + 1)%positive.
-      rewrite Hiter_pos.
-      unfold shr_1 at 1.
-      remember (iter_pos _ _ _) as shr_p0m1.
-      destruct shr_p0m1.
-      unfold SpecFloat.shr_m in Hshr_p0m1.
-      now rewrite Hshr_p0m1.
-      rewrite Pos.add_1_r.
-      rewrite Pos.sub_1_r.
-      apply Pos.succ_pred.
-      lia.
+      - rewrite Hiter_pos.
+        unfold shr_1 at 1.
+        remember (iter_pos _ _ _) as shr_p0m1.
+        destruct shr_p0m1.
+        unfold SpecFloat.shr_m in Hshr_p0m1.
+        now rewrite Hshr_p0m1.
+      - rewrite Pos.add_1_r.
+        rewrite Pos.sub_1_r.
+        apply Pos.succ_pred.
+        lia.
     }
 
     rewrite Z.leb_le in H2.

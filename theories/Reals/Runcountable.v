@@ -32,9 +32,15 @@ Proof.
     + right. intro H. destruct H. destruct H0. apply Rlt_asym in H0. contradiction.
     + subst. right. intro H. destruct H. destruct H0.
       pose proof (Rlt_asym (u n) (u n) H0). contradiction.
-    + destruct (Req_EM_T h (u n)). subst. right. intro H. destruct H. destruct H0.
-      exact (H1 eq_refl). left. split. assumption. split. assumption. intro H. subst.
-      exact (n0 eq_refl).
+    + destruct (Req_EM_T h (u n)).
+      * subst. right. intro H. destruct H. destruct H0.
+        exact (H1 eq_refl).
+      * left. split.
+        -- assumption.
+        -- split.
+           ++ assumption.
+           ++ intro H. subst.
+              exact (n0 eq_refl).
   - subst. right. intro H. destruct H. pose proof (Rlt_asym (u n) (u n) H). contradiction.
   - right. intro H. destruct H. apply Rlt_asym in H. contradiction.
 Qed.
@@ -56,15 +62,19 @@ Proof.
   split.
   - assert (a + a < a + b)%R. { apply (Rplus_lt_compat_l a a b). assumption. }
     rewrite -> double in H0. apply (Rmult_lt_compat_l (/ (INR 2))) in H0.
-    rewrite <- Rmult_assoc in H0. rewrite -> Rinv_l in H0. simpl in H0.
-    rewrite -> Rmult_1_l in H0. rewrite -> Rmult_comm in H0. assumption.
-    assumption. assumption.
+    + rewrite <- Rmult_assoc in H0. rewrite -> Rinv_l in H0.
+      * simpl in H0.
+        rewrite -> Rmult_1_l in H0. rewrite -> Rmult_comm in H0. assumption.
+      * assumption.
+    + assumption.
   - assert (b + a < b + b)%R. { apply (Rplus_lt_compat_l b a b). assumption. }
     rewrite -> Rplus_comm in H0. rewrite -> double in H0.
     apply (Rmult_lt_compat_l (/ (INR 2))) in H0.
-    rewrite <- Rmult_assoc in H0. rewrite -> Rinv_l in H0. simpl in H0.
-    rewrite -> Rmult_1_l in H0. rewrite -> Rmult_comm in H0. assumption.
-    assumption. assumption.
+    + rewrite <- Rmult_assoc in H0. rewrite -> Rinv_l in H0.
+      * simpl in H0.
+        rewrite -> Rmult_1_l in H0. rewrite -> Rmult_comm in H0. assumption.
+      * assumption.
+    + assumption.
 Qed.
 
 Lemma point_in_holed_interval_works (a b h : R) :
@@ -76,9 +86,18 @@ Proof.
   destruct (Req_EM_T h ((a + b) / INR 2)).
   - (* middle hole, p is quarter *) subst.
     pose proof (middle_in_interval a ((a + b) / INR 2) H0). destruct H2.
-    split. assumption. split. apply (Rlt_trans p ((a + b) / INR 2)%R). assumption.
-    assumption. apply Rlt_not_eq. assumption.
-  - split. assumption. split. assumption. intro abs. subst. contradiction.
+    split.
+    + assumption.
+    + split.
+      * apply (Rlt_trans p ((a + b) / INR 2)%R).
+        -- assumption.
+        -- assumption.
+      * apply Rlt_not_eq. assumption.
+  - split.
+    + assumption.
+    + split.
+      * assumption.
+      * intro abs. subst. contradiction.
 Qed.
 
 (* An enumeration of R reaches any open interval of R,
@@ -88,10 +107,11 @@ Definition first_in_holed_interval (u : nat -> R) (v : R -> nat) (a b h : R)
     -> { n : nat | in_holed_interval a b h u n
                 /\ forall k : nat, in_holed_interval a b h u k -> n <= k }.
 Proof.
-  intros. apply epsilon_smallest. apply (in_holed_interval_dec a b h u).
-  exists (v (point_in_holed_interval a b h)).
-  destruct H. unfold in_holed_interval. rewrite -> H.
-  apply point_in_holed_interval_works. assumption.
+  intros. apply epsilon_smallest.
+  - apply (in_holed_interval_dec a b h u).
+  - exists (v (point_in_holed_interval a b h)).
+    destruct H. unfold in_holed_interval. rewrite -> H.
+    apply point_in_holed_interval_works. assumption.
 Defined.
 
 Lemma first_in_holed_interval_works (u : nat -> R) (v : R -> nat) (a b h : R)
@@ -102,7 +122,9 @@ Proof.
   destruct (first_in_holed_interval u v a b h pen plow) as [c [_ beyond]].
   destruct pen as [uv _]. intros x H H0 H1 x_uc.
   assert (ihi : in_holed_interval a b h u (v x)).
-  { split. rewrite -> uv. assumption. rewrite -> uv. split; assumption. }
+  { split.
+    - rewrite -> uv. assumption.
+    - rewrite -> uv. split; assumption. }
   destruct (proj1 (Nat.lt_eq_cases _ _) (beyond (v x) ihi)) as [lcvx | ecvx].
   - exact lcvx.
   - exfalso. apply x_uc. rewrite ecvx. rewrite -> uv. reflexivity.
@@ -118,7 +140,9 @@ Definition first_two_in_interval (u : nat -> R) (v : R -> nat) (a b : R)
 
 Lemma split_couple_eq : forall {a b c d : R}, (a,b) = (c,d) -> a = c /\ b = d.
 Proof.
-  intros. injection H. intros. split. subst. reflexivity. subst. reflexivity.
+  intros. injection H. intros. split.
+  - subst. reflexivity.
+  - subst. reflexivity.
 Qed.
 
 Lemma first_two_in_interval_works (u : nat -> R) (v : R -> nat) (a b : R)
@@ -191,17 +215,22 @@ Proof.
   intro n. simpl. destruct (tearing_sequences u v pen n) as [[a b] pr].
   simpl. pose proof (first_two_in_interval_works u v a b pen pr).
   destruct (first_two_in_interval u v a b pen pr).
-  simpl. split. destruct H. assumption.
-  destruct H as [H1 [H2 [H3 [H4 H5]]]]. assumption.
+  simpl. split.
+  - destruct H. assumption.
+  - destruct H as [H1 [H2 [H3 [H4 H5]]]]. assumption.
 Qed.
 
 Lemma split_lt_succ : forall n m : nat, lt n (S m) -> lt n m \/ n = m.
 Proof.
   intros n m. generalize dependent n. induction m.
-  - intros. destruct n. right. reflexivity. exfalso. inversion H. inversion H1.
-  - intros. destruct n. left. unfold lt. apply -> Nat.succ_le_mono; apply Nat.le_0_l.
-    apply Nat.lt_succ_lt_pred in H. simpl in H. specialize (IHm n H). destruct IHm. left. apply -> Nat.succ_lt_mono. assumption.
-    subst. right. reflexivity.
+  - intros. destruct n.
+    + right. reflexivity.
+    + exfalso. inversion H. inversion H1.
+  - intros. destruct n.
+    + left. unfold lt. apply -> Nat.succ_le_mono; apply Nat.le_0_l.
+    + apply Nat.lt_succ_lt_pred in H. simpl in H. specialize (IHm n H). destruct IHm.
+      * left. apply -> Nat.succ_lt_mono. assumption.
+      * subst. right. reflexivity.
 Qed.
 
 Lemma increase_seq_transit (u : nat -> R) :
@@ -210,7 +239,9 @@ Proof.
   intros. induction m.
   - intros. inversion H0.
   - intros. destruct (split_lt_succ n m H0).
-    + apply (Rlt_trans (u n) (u m)). apply IHm. assumption. apply H.
+    + apply (Rlt_trans (u n) (u m)).
+      * apply IHm. assumption.
+      * apply H.
     + subst. apply H.
 Qed.
 
@@ -220,7 +251,9 @@ Proof.
   intros. induction m.
   - intros. inversion H0.
   - intros. destruct (split_lt_succ n m H0).
-    + apply (Rlt_trans (u (S m)) (u m)). apply H. apply IHm. assumption.
+    + apply (Rlt_trans (u (S m)) (u m)).
+      * apply H.
+      * apply IHm. assumption.
     + subst. apply H.
 Qed.
 
@@ -239,24 +272,26 @@ Proof.
     inversion tn. subst. assumption.
   - apply Nat.compare_lt_iff in order. (* increase first sequence *)
     apply (Rlt_trans (fst In) (fst Im)).
-    remember (fun n => fst (proj1_sig (tearing_sequences u v pen n))) as fseq.
-    pose proof (increase_seq_transit fseq).
-    assert ((forall n : nat, (fseq n < fseq (S n))%R)).
-    { intro n0. rewrite -> Heqfseq. pose proof (tearing_sequences_inc_dec u v pen n0).
-      destruct (tearing_sequences u v pen (S n0)). simpl.
-      destruct ((tearing_sequences u v pen n0)). apply H0. }
-    specialize (H H0). rewrite -> Heqfseq in H. specialize (H n m order).
-    rewrite -> tn in H. rewrite -> tm in H. simpl in H. apply H. assumption.
+    + remember (fun n => fst (proj1_sig (tearing_sequences u v pen n))) as fseq.
+      pose proof (increase_seq_transit fseq).
+      assert ((forall n : nat, (fseq n < fseq (S n))%R)).
+      { intro n0. rewrite -> Heqfseq. pose proof (tearing_sequences_inc_dec u v pen n0).
+        destruct (tearing_sequences u v pen (S n0)). simpl.
+        destruct ((tearing_sequences u v pen n0)). apply H0. }
+      specialize (H H0). rewrite -> Heqfseq in H. specialize (H n m order).
+      rewrite -> tn in H. rewrite -> tm in H. simpl in H. apply H.
+    + assumption.
   - apply Nat.compare_gt_iff in order. (* decrease second sequence *)
-    apply (Rlt_trans (fst In) (snd In)). assumption.
-    remember (fun n => snd (proj1_sig (tearing_sequences u v pen n))) as sseq.
-    pose proof (decrease_seq_transit sseq).
-    assert ((forall n : nat, (sseq (S n) < sseq n)%R)).
-    { intro n0. rewrite -> Heqsseq. pose proof (tearing_sequences_inc_dec u v pen n0).
-      destruct (tearing_sequences u v pen (S n0)). simpl.
-      destruct ((tearing_sequences u v pen n0)). apply H0. }
-    specialize (H H0). rewrite -> Heqsseq in H. specialize (H m n order).
-    rewrite -> tn in H. rewrite -> tm in H. apply H.
+    apply (Rlt_trans (fst In) (snd In)).
+    + assumption.
+    + remember (fun n => snd (proj1_sig (tearing_sequences u v pen n))) as sseq.
+      pose proof (decrease_seq_transit sseq).
+      assert ((forall n : nat, (sseq (S n) < sseq n)%R)).
+      { intro n0. rewrite -> Heqsseq. pose proof (tearing_sequences_inc_dec u v pen n0).
+        destruct (tearing_sequences u v pen (S n0)). simpl.
+        destruct ((tearing_sequences u v pen n0)). apply H0. }
+      specialize (H H0). rewrite -> Heqsseq in H. specialize (H m n order).
+      rewrite -> tn in H. rewrite -> tm in H. apply H.
 Qed.
 
 Definition tearing_elem_fst (u : nat -> R) (v : R -> nat) (pen : enumeration R u v) (x : R)
@@ -279,18 +314,19 @@ Lemma torn_number_above_first_sequence (u : nat -> R) (v : R -> nat) (en : enume
 Proof.
   intros. destruct (torn_number u v en) as [torn i]. simpl.
   destruct (Rlt_le_dec (fst (proj1_sig (tearing_sequences u v en n))) torn).
-  assumption. exfalso.
-  destruct i. (* Apply the first sequence once to make the inequality strict *)
-  assert (Rlt torn (fst (proj1_sig (tearing_sequences u v en (S n))))).
-  { apply (Rle_lt_trans torn (fst (proj1_sig (tearing_sequences u v en n)))).
-    assumption. apply tearing_sequences_inc_dec. }
-  clear r. specialize (H (fst (proj1_sig (tearing_sequences u v en (S n))))).
-  assert (tearing_elem_fst u v en (fst (proj1_sig (tearing_sequences u v en (S n))))).
-  { exists (S n). reflexivity. }
-  specialize (H H2). assert (Rlt torn torn).
-  { apply (Rlt_le_trans torn (fst (proj1_sig (tearing_sequences u v en (S n)))));
-      assumption. }
-  apply Rlt_irrefl in H3. contradiction.
+  - assumption.
+  - exfalso.
+    destruct i. (* Apply the first sequence once to make the inequality strict *)
+    assert (Rlt torn (fst (proj1_sig (tearing_sequences u v en (S n))))).
+    { apply (Rle_lt_trans torn (fst (proj1_sig (tearing_sequences u v en n)))).
+      - assumption. - apply tearing_sequences_inc_dec. }
+    clear r. specialize (H (fst (proj1_sig (tearing_sequences u v en (S n))))).
+    assert (tearing_elem_fst u v en (fst (proj1_sig (tearing_sequences u v en (S n))))).
+    { exists (S n). reflexivity. }
+    specialize (H H2). assert (Rlt torn torn).
+    { apply (Rlt_le_trans torn (fst (proj1_sig (tearing_sequences u v en (S n)))));
+        assumption. }
+    apply Rlt_irrefl in H3. contradiction.
 Qed.
 
 (* The torn number is between both tearing sequences, so it could have been chosen
@@ -308,7 +344,7 @@ Proof.
     assert (Rlt (snd (proj1_sig (tearing_sequences u v en (S n)))) torn).
     { apply (Rlt_le_trans (snd (proj1_sig (tearing_sequences u v en (S n))))
                           (snd (proj1_sig (tearing_sequences u v en n))) torn).
-      apply (tearing_sequences_inc_dec u v en n). assumption. }
+      - apply (tearing_sequences_inc_dec u v en n). - assumption. }
     clear h. (* Then prove snd (tearing_sequences u v (S n)) is an upper bound of the first
                 sequence. It will yield the contradiction torn < torn. *)
     assert (is_upper_bound (tearing_elem_fst u v en)
@@ -346,32 +382,33 @@ Lemma first_indices_increasing (u : nat -> R) (v : R -> nat) (H : enumeration R 
   : forall n : nat, n <> 0 -> v (fst (proj1_sig (tearing_sequences u v H n)))
                      < v (fst (proj1_sig (tearing_sequences u v H (S n)))).
 Proof.
-  intros. destruct n. contradiction.
-  (* The n+1 and n+2 intervals are drawn from the n-th interval, which we note r r0 *)
-  destruct (tearing_sequences u v H n) as [[r r0] H1] eqn:In. simpl in H1.
-  (* Draw the n+1 interval *)
-  destruct (tearing_sequences u v H (S n)) as [[r1 r2] H2] eqn:ISn. simpl in H2.
-  (* Draw the n+2 interval *)
-  destruct (tearing_sequences u v H (S (S n))) as [[r3 r4] H3] eqn:ISSn. simpl in H3.
-  simpl.
+  intros. destruct n.
+  - contradiction.
+  - (* The n+1 and n+2 intervals are drawn from the n-th interval, which we note r r0 *)
+    destruct (tearing_sequences u v H n) as [[r r0] H1] eqn:In. simpl in H1.
+    (* Draw the n+1 interval *)
+    destruct (tearing_sequences u v H (S n)) as [[r1 r2] H2] eqn:ISn. simpl in H2.
+    (* Draw the n+2 interval *)
+    destruct (tearing_sequences u v H (S (S n))) as [[r3 r4] H3] eqn:ISSn. simpl in H3.
+    simpl.
 
-  assert ((r1,r2) = first_two_in_interval u v r r0 H H1).
-  { simpl in ISn. rewrite -> In in ISn. inversion ISn. reflexivity. }
-  assert ((r3,r4) = first_two_in_interval u v r1 r2 H H2).
-  { pose proof (tearing_sequences_projsig u v H (S n)). rewrite -> ISn in H5.
-    rewrite -> ISSn in H5. apply H5. }
+    assert ((r1,r2) = first_two_in_interval u v r r0 H H1).
+    { simpl in ISn. rewrite -> In in ISn. inversion ISn. reflexivity. }
+    assert ((r3,r4) = first_two_in_interval u v r1 r2 H H2).
+    { pose proof (tearing_sequences_projsig u v H (S n)). rewrite -> ISn in H5.
+      rewrite -> ISSn in H5. apply H5. }
 
-  pose proof (first_two_in_interval_works u v r r0 H H1) as firstChoiceWorks.
-  rewrite <- H4 in firstChoiceWorks.
-  destruct firstChoiceWorks as [fth [fth0 [fth1 [fth2 [fth3 fth4]]]]].
+    pose proof (first_two_in_interval_works u v r r0 H H1) as firstChoiceWorks.
+    rewrite <- H4 in firstChoiceWorks.
+    destruct firstChoiceWorks as [fth [fth0 [fth1 [fth2 [fth3 fth4]]]]].
 
-  (* to prove the n+2 left bound in between r1 and r2 *)
-  pose proof (first_two_in_interval_works u v r1 r2 H H2).
-  rewrite <- H5 in H6. destruct H6 as [H6 [H7 [H8 [H9 [H10 H11]]]]]. apply fth4.
-  - apply (Rlt_trans r r1); assumption.
-  - apply (Rlt_trans r3 r2); assumption.
-  - intro abs. subst. apply Rlt_irrefl in H6. contradiction.
-  - intro abs. subst. apply Rlt_irrefl in H7. contradiction.
+    (* to prove the n+2 left bound in between r1 and r2 *)
+    pose proof (first_two_in_interval_works u v r1 r2 H H2).
+    rewrite <- H5 in H6. destruct H6 as [H6 [H7 [H8 [H9 [H10 H11]]]]]. apply fth4.
+    + apply (Rlt_trans r r1); assumption.
+    + apply (Rlt_trans r3 r2); assumption.
+    + intro abs. subst. apply Rlt_irrefl in H6. contradiction.
+    + intro abs. subst. apply Rlt_irrefl in H7. contradiction.
 Qed.
 
 Theorem R_uncountable : forall u : nat -> R, ~Bijective u.
@@ -379,21 +416,26 @@ Proof.
   intros u [v [H3 H4]]. pose proof (conj H4 H3) as H.
   assert (forall n : nat, n + v (fst (proj1_sig (tearing_sequences u v H 1)))
                    <= v (fst (proj1_sig (tearing_sequences u v H (S n))))).
-  { induction n. simpl. apply Nat.le_refl.
-    apply (Nat.le_trans (S n + v (fst (proj1_sig (tearing_sequences u v H 1))))
-                    (S (v (fst (proj1_sig (tearing_sequences u v H (S n))))))).
-    simpl. apply -> Nat.succ_le_mono. assumption. apply first_indices_increasing.
-    intro H1. discriminate. }
+  { induction n.
+    - simpl. apply Nat.le_refl.
+    - apply (Nat.le_trans (S n + v (fst (proj1_sig (tearing_sequences u v H 1))))
+                          (S (v (fst (proj1_sig (tearing_sequences u v H (S n))))))).
+      + simpl. apply -> Nat.succ_le_mono. assumption.
+      + apply first_indices_increasing.
+        intro H1. discriminate. }
   assert (v (proj1_sig (torn_number u v H)) + v (fst (proj1_sig (tearing_sequences u v H 1)))
           < v (proj1_sig (torn_number u v H))).
   { pose proof (limit_index_above_all_indices u v H (v (proj1_sig (torn_number u v H)))).
     specialize (H0 (v (proj1_sig (torn_number u v H)))).
     apply (Nat.le_lt_trans (v (proj1_sig (torn_number u v H))
-                        + v (fst (proj1_sig (tearing_sequences u v H 1))))
-                       (v (fst (proj1_sig (tearing_sequences u v H (S (v (proj1_sig (torn_number u v H))))))))).
-    assumption. assumption. }
+                            + v (fst (proj1_sig (tearing_sequences u v H 1))))
+                           (v (fst (proj1_sig (tearing_sequences u v H (S (v (proj1_sig (torn_number u v H))))))))).
+    - assumption.
+    - assumption. }
   assert (forall n m : nat, ~(n + m < n)).
-  { induction n. intros. intro H2. inversion H2. intro m. intro H2. simpl in H2.
-    apply Nat.lt_succ_lt_pred in H2. simpl in H2. apply IHn in H2. contradiction. }
+  { induction n.
+    - intros. intro H2. inversion H2.
+    - intro m. intro H2. simpl in H2.
+      apply Nat.lt_succ_lt_pred in H2. simpl in H2. apply IHn in H2. contradiction. }
   apply H2 in H1. contradiction.
 Qed.

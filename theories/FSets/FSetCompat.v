@@ -384,8 +384,8 @@ Module Update_Sets
   Instance lt_strorder : StrictOrder lt.
   Proof.
    split.
-   intros x Hx. apply (M.lt_not_eq Hx). auto with crelations.
-   exact M.lt_trans.
+   - intros x Hx. apply (M.lt_not_eq Hx). auto with crelations.
+   - exact M.lt_trans.
   Qed.
 
 #[global]
@@ -393,14 +393,15 @@ Module Update_Sets
   Proof.
   apply proper_sym_impl_iff_2. 1-2: auto with crelations.
   intros s s' Hs u u' Hu H.
-  assert (H0 : lt s' u).
+  assert (H0 : lt s' u). {
    destruct (M.compare s' u) as [H'|H'|H']; auto.
-   elim (M.lt_not_eq H). transitivity s'; auto.
-   elim (M.lt_not_eq (M.lt_trans H H')); auto.
+   - elim (M.lt_not_eq H). transitivity s'; auto.
+   - elim (M.lt_not_eq (M.lt_trans H H')); auto.
+  }
   destruct (M.compare s' u') as [H'|H'|H']; auto.
-  elim (M.lt_not_eq H).
-   transitivity u'. 2: auto with crelations. transitivity s'; auto.
-  elim (M.lt_not_eq (M.lt_trans H' H0)); auto with crelations.
+  - elim (M.lt_not_eq H).
+    transitivity u'. 2: auto with crelations. transitivity s'; auto.
+  - elim (M.lt_not_eq (M.lt_trans H' H0)); auto with crelations.
   Qed.
 
   Definition compare s s' :=

@@ -40,16 +40,16 @@ Arguments Lget [A] n l.
 Lemma map_app : forall (A B:Set) (f:A -> B) l m,
 List.map  f (l ++ m) = List.map  f  l ++ List.map  f  m.
 induction l.
-reflexivity.
-simpl.
-intro m ; apply f_equal;apply IHl.
+- reflexivity.
+- simpl.
+  intro m ; apply f_equal;apply IHl.
 Qed.
 
 Lemma length_map : forall (A B:Set) (f:A -> B) l,
 length (List.map  f l) = length l.
 induction l.
-reflexivity.
-simpl; apply f_equal;apply IHl.
+- reflexivity.
+- simpl; apply f_equal;apply IHl.
 Qed.
 
 Lemma Lget_map : forall (A B:Set) (f:A -> B) i l,
@@ -64,10 +64,10 @@ Lemma Lget_app : forall (A:Set) (a:A) l i,
 Lget i (l ++ a :: nil) = if Nat.eqb i (length l) then Some a else Lget i l.
 Proof.
 induction l;simpl Lget;simpl length.
-intros [ | i];simpl;reflexivity.
-intros [ | i];simpl.
-reflexivity.
-auto.
+- intros [ | i];simpl;reflexivity.
+- intros [ | i];simpl.
+  + reflexivity.
+  + auto.
 Qed.
 
 Lemma Lget_app_Some : forall (A:Set) l delta i (a: A),
@@ -172,14 +172,14 @@ Theorem Tget_Tadd: forall i j a T,
 Proof.
 intros i j.
 case_eq (i ?= j).
-intro H;rewrite (Pos.compare_eq _ _ H);intros a;clear i H.
-induction j;destruct T;simpl;try (apply IHj);congruence.
-unfold Pos.compare.
-generalize i;clear i;induction j;destruct T;simpl in H|-*;
-destruct i;simpl;try rewrite (IHj _ H);try (destruct i;simpl;congruence);reflexivity|| congruence.
-unfold Pos.compare.
-generalize i;clear i;induction j;destruct T;simpl in H|-*;
-destruct i;simpl;try rewrite (IHj _ H);try (destruct i;simpl;congruence);reflexivity|| congruence.
+- intro H;rewrite (Pos.compare_eq _ _ H);intros a;clear i H.
+  induction j;destruct T;simpl;try (apply IHj);congruence.
+- unfold Pos.compare.
+  generalize i;clear i;induction j;destruct T;simpl in H|-*;
+    destruct i;simpl;try rewrite (IHj _ H);try (destruct i;simpl;congruence);reflexivity|| congruence.
+- unfold Pos.compare.
+  generalize i;clear i;induction j;destruct T;simpl in H|-*;
+    destruct i;simpl;try rewrite (IHj _ H);try (destruct i;simpl;congruence);reflexivity|| congruence.
 Qed.
 
 Record Store : Type :=
@@ -204,26 +204,26 @@ Theorem get_Full_Gt : forall S, Full S ->
        forall i, (i ?= index S) = Gt -> get i S = PNone.
 Proof.
 intros S W;induction W.
-unfold empty,index,get,contents;intros;apply Tget_Tempty.
-unfold index,get,push. simpl @contents.
-intros i e;rewrite Tget_Tadd.
-rewrite (Gt_Psucc _ _ e).
-unfold get in IHW.
-apply IHW;apply Gt_Psucc;assumption.
+- unfold empty,index,get,contents;intros;apply Tget_Tempty.
+- unfold index,get,push. simpl @contents.
+  intros i e;rewrite Tget_Tadd.
+  rewrite (Gt_Psucc _ _ e).
+  unfold get in IHW.
+  apply IHW;apply Gt_Psucc;assumption.
 Qed.
 
 Theorem get_Full_Eq : forall S, Full S -> get (index S) S = PNone.
 intros [index0 contents0] F.
 case F.
-unfold empty,index,get,contents;intros;apply Tget_Tempty.
-unfold push,index,get;simpl @contents.
-intros a S.
-rewrite Tget_Tadd.
-rewrite Psucc_Gt.
-intro W.
-change (get (Pos.succ (index S)) S =PNone).
-apply get_Full_Gt; auto.
-apply Psucc_Gt.
+- unfold empty,index,get,contents;intros;apply Tget_Tempty.
+- unfold push,index,get;simpl @contents.
+  intros a S.
+  rewrite Tget_Tadd.
+  rewrite Psucc_Gt.
+  intro W.
+  change (get (Pos.succ (index S)) S =PNone).
+  apply get_Full_Gt; auto.
+  apply Psucc_Gt.
 Qed.
 
 Theorem get_push_Full :
@@ -237,16 +237,16 @@ end.
 Proof.
 intros i a S F.
 case_eq (i ?= index S).
-intro e;rewrite (Pos.compare_eq _ _ e).
-destruct S;unfold get,push,index;simpl @contents;rewrite Tget_Tadd.
-rewrite Pos.compare_refl;reflexivity.
-intros;destruct S;unfold get,push,index;simpl @contents;rewrite Tget_Tadd.
-simpl @index in H;rewrite H;reflexivity.
-intro H;generalize H;clear H.
-unfold get,push;simpl.
-rewrite Tget_Tadd;intro e;rewrite e.
-change (get i S=PNone).
-apply get_Full_Gt;auto.
+- intro e;rewrite (Pos.compare_eq _ _ e).
+  destruct S;unfold get,push,index;simpl @contents;rewrite Tget_Tadd.
+  rewrite Pos.compare_refl;reflexivity.
+- intros;destruct S;unfold get,push,index;simpl @contents;rewrite Tget_Tadd.
+  simpl @index in H;rewrite H;reflexivity.
+- intro H;generalize H;clear H.
+  unfold get,push;simpl.
+  rewrite Tget_Tadd;intro e;rewrite e.
+  change (get i S=PNone).
+  apply get_Full_Gt;auto.
 Qed.
 
 Lemma Full_push_compat : forall i a S, Full S ->
@@ -255,20 +255,20 @@ forall x, get i S = PSome x ->
 Proof.
 intros i a S F x H.
 case_eq (i ?= index S);intro test.
-rewrite (Pos.compare_eq _ _ test) in H.
-rewrite (get_Full_Eq _ F) in H;congruence.
-rewrite <- H.
-rewrite (get_push_Full i a).
-rewrite test;reflexivity.
-assumption.
-rewrite (get_Full_Gt _ F) in H;congruence.
+- rewrite (Pos.compare_eq _ _ test) in H.
+  rewrite (get_Full_Eq _ F) in H;congruence.
+- rewrite <- H.
+  rewrite (get_push_Full i a).
+  + rewrite test;reflexivity.
+  + assumption.
+- rewrite (get_Full_Gt _ F) in H;congruence.
 Qed.
 
 Lemma Full_index_one_empty : forall S, Full S -> index S = 1 -> S=empty.
 intros [ind cont] F one; inversion F.
-reflexivity.
-simpl @index in one;assert (h:=Pos.succ_not_1 (index S)).
-congruence.
+- reflexivity.
+- simpl @index in one;assert (h:=Pos.succ_not_1 (index S)).
+  congruence.
 Qed.
 
 Lemma push_not_empty: forall a S, (push a S) <> empty.
@@ -285,12 +285,12 @@ end.
 Lemma get_In : forall (x:A) (S:Store) (F:Full S) i ,
 get i S = PSome x -> In x S F.
 induction F.
-intro i;rewrite get_empty; congruence.
-intro i;rewrite get_push_Full;trivial.
-case_eq (i ?= index S);simpl.
-left;congruence.
-right;eauto.
-congruence.
+- intro i;rewrite get_empty; congruence.
+- intro i;rewrite get_push_Full;trivial.
+  case_eq (i ?= index S);simpl.
+  + left;congruence.
+  + right;eauto.
+  + congruence.
 Qed.
 
 End Store.
@@ -371,8 +371,8 @@ Defined.
 Theorem Full_map : forall S, Full S -> Full (map S).
 intros S F.
 induction F.
-exact F_empty.
-rewrite map_push;constructor 2;assumption.
+- exact F_empty.
+- rewrite map_push;constructor 2;assumption.
 Defined.
 
 End Map.

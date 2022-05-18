@@ -328,10 +328,10 @@ Qed.
 Lemma P_eventually_implies_acc : forall (x : nat) (n : nat), P (n + x) -> acc x.
 Proof.
 intros x n; generalize x; clear x; induction n as [|n IH]; simpl.
-apply P_implies_acc.
-intros x H. constructor. intros y [fxy _].
-apply IH. rewrite fxy.
-replace (n + S x) with (S (n + x)); auto with arith.
+- apply P_implies_acc.
+- intros x H. constructor. intros y [fxy _].
+  apply IH. rewrite fxy.
+  replace (n + S x) with (S (n + x)); auto with arith.
 Defined.
 
 Corollary P_eventually_implies_acc_ex : (exists n : nat, P n) -> acc 0.
@@ -348,11 +348,12 @@ Proof.
 intros Acc_0. pattern 0. apply Fix_F with (R := R); [| assumption].
 clear Acc_0; intros x IH.
 destruct (P_decidable x) as [Px | not_Px].
-exists x; simpl; assumption.
-set (y := S x).
-assert (Ryx : R y x). unfold R; split; auto.
-destruct (IH y Ryx) as [n Hn].
-exists n; assumption.
+- exists x; simpl; assumption.
+- set (y := S x).
+  assert (Ryx : R y x).
+  + unfold R; split; auto.
+  + destruct (IH y Ryx) as [n Hn].
+    exists n; assumption.
 Defined.
 
 Theorem constructive_indefinite_ground_description_nat_Acc :
@@ -408,7 +409,7 @@ Defined.
 Lemma constructive_indefinite_ground_description : (exists x : A, P x) -> {x : A | P x}.
 Proof.
 intro H. assert (H1 : exists n : nat, P' n).
-destruct H as [x Hx]. exists (f x); unfold P'. rewrite gof_eq_id; assumption.
+{ destruct H as [x Hx]. exists (f x); unfold P'. rewrite gof_eq_id; assumption. }
 apply (constructive_indefinite_ground_description_nat P' P'_decidable)  in H1.
 destruct H1 as [n Hn]. exists (g n); unfold P' in Hn; assumption.
 Defined.

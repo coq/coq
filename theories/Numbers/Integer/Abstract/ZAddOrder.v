@@ -272,10 +272,10 @@ Theorem zero_pos_neg :
   P 0 -> (forall n, 0 < n -> P n /\ P (- n)) -> forall n, P n.
 Proof.
 intros H1 H2 n. destruct (lt_trichotomy n 0) as [H3 | [H3 | H3]].
-apply opp_pos_neg, H2 in H3. destruct H3 as [_ H3].
-now rewrite opp_involutive in H3.
-now rewrite H3.
-apply H2 in H3; now destruct H3.
+- apply opp_pos_neg, H2 in H3. destruct H3 as [_ H3].
+  now rewrite opp_involutive in H3.
+- now rewrite H3.
+- apply H2 in H3; now destruct H3.
 Qed.
 
 End PosNeg.

@@ -444,12 +444,12 @@ Lemma join_spec : forall l x r y,
  InT y (join l x r) <-> X.eq y x \/ InT y l \/ InT y r.
 Proof.
  join_tac.
- simpl.
- rewrite add_spec'; intuition_in.
- rewrite add_spec'; intuition_in.
- rewrite bal_spec, Hlr; clear Hlr Hrl; intuition_in.
- rewrite bal_spec, Hrl; clear Hlr Hrl; intuition_in.
- apply create_spec.
+ - simpl.
+   rewrite add_spec'; intuition_in.
+ - rewrite add_spec'; intuition_in.
+ - rewrite bal_spec, Hlr; clear Hlr Hrl; intuition_in.
+ - rewrite bal_spec, Hrl; clear Hlr Hrl; intuition_in.
+ - apply create_spec.
 Qed.
 
 #[global]
@@ -458,8 +458,8 @@ Instance join_ok : forall l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r),
 Proof.
  join_tac; auto with *; inv; apply bal_ok; auto;
  clear Hrl Hlr; intro; intros; rewrite join_spec in *.
- intuition; [ setoid_replace y with x | ]; eauto.
- intuition; [ setoid_replace y with x | ]; eauto.
+ - intuition; [ setoid_replace y with x | ]; eauto.
+ - intuition; [ setoid_replace y with x | ]; eauto.
 Qed.
 
 
@@ -470,8 +470,8 @@ Lemma remove_min_spec : forall l x r y h,
   X.eq y (remove_min l x r)#2 \/ InT y (remove_min l x r)#1.
 Proof.
  intros l x r; functional induction (remove_min l x r); simpl in *; intros.
- intuition_in.
- rewrite bal_spec, In_node_iff, IHp, e0; simpl; intuition.
+ - intuition_in.
+ - rewrite bal_spec, In_node_iff, IHp, e0; simpl; intuition.
 Qed.
 
 #[global]
@@ -479,28 +479,28 @@ Instance remove_min_ok l x r : forall h `(Ok (Node h l x r)),
  Ok (remove_min l x r)#1.
 Proof.
  functional induction (remove_min l x r); simpl; intros.
- inv; auto.
- assert (O : Ok (Node _x ll lx lr)) by (inv; auto).
- assert (L : lt_tree x (Node _x ll lx lr)) by (inv; auto).
- specialize IHp with (1:=O); rewrite e0 in IHp; auto; simpl in *.
- apply bal_ok; auto.
- inv; auto.
- intro y; specialize (L y).
- rewrite remove_min_spec, e0 in L; simpl in L; intuition.
- inv; auto.
+ - inv; auto.
+ - assert (O : Ok (Node _x ll lx lr)) by (inv; auto).
+   assert (L : lt_tree x (Node _x ll lx lr)) by (inv; auto).
+   specialize IHp with (1:=O); rewrite e0 in IHp; auto; simpl in *.
+   apply bal_ok; auto.
+   + inv; auto.
+   + intro y; specialize (L y).
+     rewrite remove_min_spec, e0 in L; simpl in L; intuition.
+   + inv; auto.
 Qed.
 
 Lemma remove_min_gt_tree : forall l x r h `{Ok (Node h l x r)},
  gt_tree (remove_min l x r)#2 (remove_min l x r)#1.
 Proof.
  intros l x r; functional induction (remove_min l x r); simpl; intros.
- inv; auto.
- assert (O : Ok (Node _x ll lx lr)) by (inv; auto).
- assert (L : lt_tree x (Node _x ll lx lr)) by (inv; auto).
- specialize IHp with (1:=O); rewrite e0 in IHp; simpl in IHp.
- intro y; rewrite bal_spec; intuition;
-  specialize (L m); rewrite remove_min_spec, e0 in L; simpl in L;
-   [setoid_replace y with x|inv]; eauto.
+ - inv; auto.
+ - assert (O : Ok (Node _x ll lx lr)) by (inv; auto).
+   assert (L : lt_tree x (Node _x ll lx lr)) by (inv; auto).
+   specialize IHp with (1:=O); rewrite e0 in IHp; simpl in IHp.
+   intro y; rewrite bal_spec; intuition;
+     specialize (L m); rewrite remove_min_spec, e0 in L; simpl in L;
+     [setoid_replace y with x|inv]; eauto.
 Qed.
 Local Hint Resolve remove_min_gt_tree : core.
 
@@ -512,9 +512,9 @@ Lemma merge_spec : forall s1 s2 y,
 Proof.
  intros s1 s2; functional induction (merge s1 s2); intros;
   try factornode s1.
- intuition_in.
- intuition_in.
- rewrite bal_spec, remove_min_spec, e1; simpl; intuition.
+ - intuition_in.
+ - intuition_in.
+ - rewrite bal_spec, remove_min_spec, e1; simpl; intuition.
 Qed.
 
 #[global]
@@ -525,11 +525,11 @@ Proof.
  functional induction (merge s1 s2); intros; auto;
   try factornode s1.
  apply bal_ok; auto.
- change s2' with ((s2',m)#1); rewrite <-e1; eauto with *.
- intros y Hy.
- apply H1; auto.
- rewrite remove_min_spec, e1; simpl; auto.
- change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <-e1; eauto.
+ - change s2' with ((s2',m)#1); rewrite <-e1; eauto with *.
+ - intros y Hy.
+   apply H1; auto.
+   rewrite remove_min_spec, e1; simpl; auto.
+ - change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <-e1; eauto.
 Qed.
 
 
@@ -540,26 +540,26 @@ Lemma remove_spec : forall s x y `{Ok s},
  (InT y (remove x s) <-> InT y s /\ ~ X.eq y x).
 Proof.
  induct s x.
- intuition_in.
- rewrite merge_spec; intuition; [order|order|intuition_in].
- elim H2; eauto.
- rewrite bal_spec, IHl; clear IHl IHr; intuition; [order|order|intuition_in].
- rewrite bal_spec, IHr; clear IHl IHr; intuition; [order|order|intuition_in].
+ - intuition_in.
+ - rewrite merge_spec; intuition; [order|order|intuition_in].
+   elim H2; eauto.
+ - rewrite bal_spec, IHl; clear IHl IHr; intuition; [order|order|intuition_in].
+ - rewrite bal_spec, IHr; clear IHl IHr; intuition; [order|order|intuition_in].
 Qed.
 
 #[global]
 Instance remove_ok s x `(Ok s) : Ok (remove x s).
 Proof.
  induct s x.
- auto.
- (* EQ *)
- apply merge_ok; eauto.
- (* LT *)
- apply bal_ok; auto.
- intro z; rewrite remove_spec; auto; destruct 1; eauto.
- (* GT *)
- apply bal_ok; auto.
- intro z; rewrite remove_spec; auto; destruct 1; eauto.
+ - auto.
+ - (* EQ *)
+   apply merge_ok; eauto.
+ - (* LT *)
+   apply bal_ok; auto.
+   intro z; rewrite remove_spec; auto; destruct 1; eauto.
+ - (* GT *)
+   apply bal_ok; auto.
+   intro z; rewrite remove_spec; auto; destruct 1; eauto.
 Qed.
 
 
@@ -570,9 +570,9 @@ Lemma concat_spec : forall s1 s2 y,
 Proof.
  intros s1 s2; functional induction (concat s1 s2); intros;
   try factornode s1.
- intuition_in.
- intuition_in.
- rewrite join_spec, remove_min_spec, e1; simpl; intuition.
+ - intuition_in.
+ - intuition_in.
+ - rewrite join_spec, remove_min_spec, e1; simpl; intuition.
 Qed.
 
 #[global]
@@ -583,11 +583,11 @@ Proof.
  functional induction (concat s1 s2); intros; auto;
   try factornode s1.
  apply join_ok; auto.
- change (Ok (s2',m)#1); rewrite <-e1; eauto with *.
- intros y Hy.
- apply H1; auto.
- rewrite remove_min_spec, e1; simpl; auto.
- change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <-e1; eauto.
+ - change (Ok (s2',m)#1); rewrite <-e1; eauto with *.
+ - intros y Hy.
+   apply H1; auto.
+   rewrite remove_min_spec, e1; simpl; auto.
+ - change (gt_tree (s2',m)#2 (s2',m)#1); rewrite <-e1; eauto.
 Qed.
 
 
@@ -598,49 +598,49 @@ Lemma split_spec1 : forall s x y `{Ok s},
  (InT y (split x s)#l <-> InT y s /\ X.lt y x).
 Proof.
  induct s x.
- intuition_in.
- intuition_in; order.
- specialize (IHl x y).
- destruct (split x l); simpl in *. rewrite IHl; intuition_in; order.
- specialize (IHr x y).
- destruct (split x r); simpl in *. rewrite join_spec, IHr; intuition_in; order.
+ - intuition_in.
+ - intuition_in; order.
+ - specialize (IHl x y).
+   destruct (split x l); simpl in *. rewrite IHl; intuition_in; order.
+ - specialize (IHr x y).
+   destruct (split x r); simpl in *. rewrite join_spec, IHr; intuition_in; order.
 Qed.
 
 Lemma split_spec2 : forall s x y `{Ok s},
  (InT y (split x s)#r <-> InT y s /\ X.lt x y).
 Proof.
  induct s x.
- intuition_in.
- intuition_in; order.
- specialize (IHl x y).
- destruct (split x l); simpl in *. rewrite join_spec, IHl; intuition_in; order.
- specialize (IHr x y).
- destruct (split x r); simpl in *. rewrite IHr; intuition_in; order.
+ - intuition_in.
+ - intuition_in; order.
+ - specialize (IHl x y).
+   destruct (split x l); simpl in *. rewrite join_spec, IHl; intuition_in; order.
+ - specialize (IHr x y).
+   destruct (split x r); simpl in *. rewrite IHr; intuition_in; order.
 Qed.
 
 Lemma split_spec3 : forall s x `{Ok s},
  ((split x s)#b = true <-> InT x s).
 Proof.
  induct s x.
- intuition_in; try discriminate.
- intuition.
- specialize (IHl x).
- destruct (split x l); simpl in *. rewrite IHl; intuition_in; order.
- specialize (IHr x).
- destruct (split x r); simpl in *. rewrite IHr; intuition_in; order.
+ - intuition_in; try discriminate.
+ - intuition.
+ - specialize (IHl x).
+   destruct (split x l); simpl in *. rewrite IHl; intuition_in; order.
+ - specialize (IHr x).
+   destruct (split x r); simpl in *. rewrite IHr; intuition_in; order.
 Qed.
 
 Lemma split_ok : forall s x `{Ok s}, Ok (split x s)#l /\ Ok (split x s)#r.
 Proof.
  induct s x; simpl; auto.
- specialize (IHl x).
- generalize (fun y => @split_spec2 l x y _).
- destruct (split x l); simpl in *; intuition. apply join_ok; auto.
- intros y; rewrite H; intuition.
- specialize (IHr x).
- generalize (fun y => @split_spec1 r x y _).
- destruct (split x r); simpl in *; intuition. apply join_ok; auto.
- intros y; rewrite H; intuition.
+ - specialize (IHl x).
+   generalize (fun y => @split_spec2 l x y _).
+   destruct (split x l); simpl in *; intuition. apply join_ok; auto.
+   intros y; rewrite H; intuition.
+ - specialize (IHr x).
+   generalize (fun y => @split_spec1 r x y _).
+   destruct (split x r); simpl in *; intuition. apply join_ok; auto.
+   intros y; rewrite H; intuition.
 Qed.
 
 #[global]
@@ -682,8 +682,8 @@ Proof.
    rewrite concat_spec, IHi1, IHi2, split_spec1, split_spec2; auto.
    intuition_in.
    absurd (InT x1 s2).
-   rewrite <- split_spec3; auto; congruence.
-   setoid_replace x1 with y; auto.
+   + rewrite <- split_spec3; auto; congruence.
+   + setoid_replace x1 with y; auto.
 Qed.
 
 Lemma inter_spec : forall s1 s2 y `{Ok s1, Ok s2},
@@ -737,11 +737,11 @@ Lemma union_spec : forall s1 s2 y `{Ok s1, Ok s2},
  (InT y (union s1 s2) <-> InT y s1 \/ InT y s2).
 Proof.
  intros s1 s2; functional induction union s1 s2; intros y B1 B2.
- intuition_in.
- intuition_in.
- factornode s2; destruct_split; inv.
- rewrite join_spec, IHt0, IHt1, split_spec1, split_spec2; auto with *.
- destruct (X.compare_spec y x1); intuition_in.
+ - intuition_in.
+ - intuition_in.
+ - factornode s2; destruct_split; inv.
+   rewrite join_spec, IHt0, IHt1, split_spec1, split_spec2; auto with *.
+   destruct (X.compare_spec y x1); intuition_in.
 Qed.
 
 #[global]
@@ -750,8 +750,8 @@ Proof.
  functional induction union s1 s2; intros B1 B2; auto.
  factornode s2; destruct_split; inv.
  apply join_ok; auto with *.
- intro y; rewrite union_spec, split_spec1; intuition_in.
- intro y; rewrite union_spec, split_spec2; intuition_in.
+ - intro y; rewrite union_spec, split_spec1; intuition_in.
+ - intro y; rewrite union_spec, split_spec2; intuition_in.
 Qed.
 
 (** * Filter *)

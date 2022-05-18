@@ -248,8 +248,10 @@ Qed.
 
 Lemma of_iff d d' : Nat.of_uint d = Nat.of_uint d' <-> unorm d = unorm d'.
 Proof.
-  split. apply of_inj. intros E. rewrite <- of_uint_norm, E.
-  apply of_uint_norm.
+  split.
+  - apply of_inj.
+  - intros E. rewrite <- of_uint_norm, E.
+    apply of_uint_norm.
 Qed.
 
 End Unsigned.

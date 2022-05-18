@@ -33,26 +33,27 @@ Lemma CRmin_lt_r : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmin. unfold CRmin in H.
   apply (CRmult_eq_reg_r (CR_of_Q R 2)).
-  left; apply CR_of_Q_pos; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  rewrite CRabs_right. unfold CRminus.
-  rewrite CRopp_plus_distr, CRplus_assoc, <- (CRplus_assoc y).
-  rewrite CRplus_opp_r, CRplus_0_l, CRopp_involutive. reflexivity.
-  apply (CRmult_lt_compat_r (CR_of_Q R 2)) in H.
-  2: apply CR_of_Q_pos; reflexivity.
-  intro abs. contradict H.
-  apply (CRle_trans _ (x + y - CRabs R (y - x))).
-  rewrite CRabs_left. 2: apply CRlt_asym, abs.
-  unfold CRminus. rewrite CRopp_involutive, CRplus_comm.
-  rewrite CRplus_assoc, <- (CRplus_assoc (-x)), CRplus_opp_l.
-  rewrite CRplus_0_l, (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
-  rewrite CRmult_1_r. apply CRle_refl.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r. apply CRle_refl.
+  - left; apply CR_of_Q_pos; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l, CRmult_1_r.
+    rewrite CRabs_right.
+    + unfold CRminus.
+      rewrite CRopp_plus_distr, CRplus_assoc, <- (CRplus_assoc y).
+      rewrite CRplus_opp_r, CRplus_0_l, CRopp_involutive. reflexivity.
+    + apply (CRmult_lt_compat_r (CR_of_Q R 2)) in H.
+      2: apply CR_of_Q_pos; reflexivity.
+      intro abs. contradict H.
+      apply (CRle_trans _ (x + y - CRabs R (y - x))).
+      * rewrite CRabs_left. 2: apply CRlt_asym, abs.
+        unfold CRminus. rewrite CRopp_involutive, CRplus_comm.
+        rewrite CRplus_assoc, <- (CRplus_assoc (-x)), CRplus_opp_l.
+        rewrite CRplus_0_l, (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
+        rewrite CRmult_1_r. apply CRle_refl.
+      * rewrite CRmult_assoc, <- CR_of_Q_mult.
+        setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+        rewrite CRmult_1_r. apply CRle_refl.
 Qed.
 
 Add Parametric Morphism {R : ConstructiveReals} : CRmin
@@ -80,17 +81,17 @@ Lemma CRmin_l : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmin.
   apply (CRmult_le_reg_r (CR_of_Q R 2)).
-  apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  unfold CRminus. rewrite CRplus_assoc. apply CRplus_le_compat_l.
-  apply (CRplus_le_reg_r (CRabs _ (y + - x)+ -x)).
-  rewrite CRplus_assoc, <- (CRplus_assoc (-CRabs _ (y + - x))).
-  rewrite CRplus_opp_l, CRplus_0_l.
-  rewrite (CRplus_comm x), CRplus_assoc, CRplus_opp_l, CRplus_0_r.
-  apply CRle_abs.
+  - apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+    unfold CRminus. rewrite CRplus_assoc. apply CRplus_le_compat_l.
+    apply (CRplus_le_reg_r (CRabs _ (y + - x)+ -x)).
+    rewrite CRplus_assoc, <- (CRplus_assoc (-CRabs _ (y + - x))).
+    rewrite CRplus_opp_l, CRplus_0_l.
+    rewrite (CRplus_comm x), CRplus_assoc, CRplus_opp_l, CRplus_0_r.
+    apply CRle_abs.
 Qed.
 
 Lemma CRmin_r : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -98,18 +99,18 @@ Lemma CRmin_r : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmin.
   apply (CRmult_le_reg_r (CR_of_Q R 2)).
-  apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  rewrite (CRplus_comm x).
-  unfold CRminus. rewrite CRplus_assoc. apply CRplus_le_compat_l.
-  apply (CRplus_le_reg_l (-x)).
-  rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
-  rewrite <- (CRopp_involutive y), <- CRopp_plus_distr, <- CRopp_plus_distr.
-  apply CRopp_ge_le_contravar. rewrite CRabs_opp, CRplus_comm.
-  apply CRle_abs.
+  - apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+    rewrite (CRplus_comm x).
+    unfold CRminus. rewrite CRplus_assoc. apply CRplus_le_compat_l.
+    apply (CRplus_le_reg_l (-x)).
+    rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
+    rewrite <- (CRopp_involutive y), <- CRopp_plus_distr, <- CRopp_plus_distr.
+    apply CRopp_ge_le_contravar. rewrite CRabs_opp, CRplus_comm.
+    apply CRle_abs.
 Qed.
 
 Lemma CRnegPartAbsMin : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -133,13 +134,13 @@ Lemma CRmin_mult :
 Proof.
   intros R p q r H. unfold CRmin.
   setoid_replace (r * q - r * p) with (r * (q - p)).
-  rewrite CRabs_mult.
-  rewrite (CRabs_right r). 2: exact H.
-  rewrite <- CRmult_assoc. apply CRmult_morph. 2: reflexivity.
-  unfold CRminus. rewrite CRopp_mult_distr_r.
-  do 2 rewrite <- CRmult_plus_distr_l. reflexivity.
-  unfold CRminus. rewrite CRopp_mult_distr_r.
-  rewrite <- CRmult_plus_distr_l. reflexivity.
+  - rewrite CRabs_mult.
+    rewrite (CRabs_right r). 2: exact H.
+    rewrite <- CRmult_assoc. apply CRmult_morph. 2: reflexivity.
+    unfold CRminus. rewrite CRopp_mult_distr_r.
+    do 2 rewrite <- CRmult_plus_distr_l. reflexivity.
+  - unfold CRminus. rewrite CRopp_mult_distr_r.
+    rewrite <- CRmult_plus_distr_l. reflexivity.
 Qed.
 
 Lemma CRmin_plus : forall {R : ConstructiveReals} (x y z : CRcarrier R),
@@ -147,23 +148,24 @@ Lemma CRmin_plus : forall {R : ConstructiveReals} (x y z : CRcarrier R),
 Proof.
   intros. unfold CRmin.
   unfold CRminus. setoid_replace (x + z + - (x + y)) with (z-y).
-  apply (CRmult_eq_reg_r (CR_of_Q _ 2)).
-  left. apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_plus_distr_r.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  do 3 rewrite (CRplus_assoc x). apply CRplus_morph. reflexivity.
-  do 2 rewrite <- CRplus_assoc. apply CRplus_morph. 2: reflexivity.
-  rewrite (CRplus_comm x). apply CRplus_assoc.
-  rewrite CRopp_plus_distr. rewrite <- CRplus_assoc.
-  apply CRplus_morph. 2: reflexivity.
-  rewrite CRplus_comm, <- CRplus_assoc, CRplus_opp_l.
-  apply CRplus_0_l.
+  - apply (CRmult_eq_reg_r (CR_of_Q _ 2)).
+    + left. apply CR_of_Q_lt; reflexivity.
+    + rewrite CRmult_plus_distr_r.
+      rewrite CRmult_assoc, <- CR_of_Q_mult.
+      setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+      rewrite CRmult_1_r.
+      rewrite CRmult_assoc, <- CR_of_Q_mult.
+      setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+      rewrite CRmult_1_r.
+      rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+      do 3 rewrite (CRplus_assoc x). apply CRplus_morph.
+      * reflexivity.
+      * do 2 rewrite <- CRplus_assoc. apply CRplus_morph. 2: reflexivity.
+        rewrite (CRplus_comm x). apply CRplus_assoc.
+  - rewrite CRopp_plus_distr. rewrite <- CRplus_assoc.
+    apply CRplus_morph. 2: reflexivity.
+    rewrite CRplus_comm, <- CRplus_assoc, CRplus_opp_l.
+    apply CRplus_0_l.
 Qed.
 
 Lemma CRmin_left : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -171,16 +173,19 @@ Lemma CRmin_left : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmin.
   apply (CRmult_eq_reg_r (CR_of_Q R 2)).
-  left. apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  rewrite CRabs_right. unfold CRminus. rewrite CRopp_plus_distr.
-  rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
-  rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l. apply CRopp_involutive.
-  rewrite <- (CRplus_opp_r x). apply CRplus_le_compat.
-  exact H. apply CRle_refl.
+  - left. apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+    rewrite CRabs_right.
+    + unfold CRminus. rewrite CRopp_plus_distr.
+      rewrite CRplus_assoc. apply CRplus_morph.
+      * reflexivity.
+      * rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l. apply CRopp_involutive.
+    + rewrite <- (CRplus_opp_r x). apply CRplus_le_compat.
+      * exact H.
+      * apply CRle_refl.
 Qed.
 
 Lemma CRmin_right : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -188,18 +193,21 @@ Lemma CRmin_right : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmin.
   apply (CRmult_eq_reg_r (CR_of_Q R 2)).
-  left. apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  rewrite CRabs_left. unfold CRminus. do 2 rewrite CRopp_plus_distr.
-  rewrite (CRplus_comm x y).
-  rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
-  do 2 rewrite CRopp_involutive.
-  rewrite CRplus_comm, CRplus_assoc, CRplus_opp_l, CRplus_0_r. reflexivity.
-  rewrite <- (CRplus_opp_r x). apply CRplus_le_compat.
-  exact H. apply CRle_refl.
+  - left. apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+    rewrite CRabs_left.
+    + unfold CRminus. do 2 rewrite CRopp_plus_distr.
+      rewrite (CRplus_comm x y).
+      rewrite CRplus_assoc. apply CRplus_morph.
+      * reflexivity.
+      * do 2 rewrite CRopp_involutive.
+        rewrite CRplus_comm, CRplus_assoc, CRplus_opp_l, CRplus_0_r. reflexivity.
+    + rewrite <- (CRplus_opp_r x). apply CRplus_le_compat.
+      * exact H.
+      * apply CRle_refl.
 Qed.
 
 Lemma CRmin_lt : forall {R : ConstructiveReals} (x y z : CRcarrier R),
@@ -207,38 +215,38 @@ Lemma CRmin_lt : forall {R : ConstructiveReals} (x y z : CRcarrier R),
 Proof.
   intros. unfold CRmin.
   apply (CRmult_lt_reg_r (CR_of_Q R 2)).
-  apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  apply (CRplus_lt_reg_l _ (CRabs _ (y - x) - (z*CR_of_Q R 2))).
-  unfold CRminus. rewrite CRplus_assoc. rewrite CRplus_opp_l, CRplus_0_r.
-  rewrite (CRplus_comm (CRabs R (y + - x))).
-  rewrite (CRplus_comm (x+y)), CRplus_assoc.
-  rewrite <- (CRplus_assoc (CRabs R (y + - x))), CRplus_opp_r, CRplus_0_l.
-  rewrite <- (CRplus_comm (x+y)).
-  apply CRabs_def1.
-  - unfold CRminus. rewrite <- (CRplus_comm y), CRplus_assoc.
-    apply CRplus_lt_compat_l.
-    apply (CRplus_lt_reg_l R (-x)).
-    rewrite CRopp_mult_distr_l.
-    rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
-    rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
-    rewrite CRmult_1_r. apply CRplus_le_lt_compat.
-    apply CRlt_asym.
-    apply CRopp_gt_lt_contravar, H.
-    apply CRopp_gt_lt_contravar, H.
-  - rewrite CRopp_plus_distr, CRopp_involutive.
-    rewrite CRplus_comm, CRplus_assoc.
-    apply CRplus_lt_compat_l.
-    apply (CRplus_lt_reg_l R (-y)).
-    rewrite CRopp_mult_distr_l.
-    rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
-    rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
-    rewrite CRmult_1_r. apply CRplus_le_lt_compat.
-    apply CRlt_asym.
-    apply CRopp_gt_lt_contravar, H0.
-    apply CRopp_gt_lt_contravar, H0.
+  - apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    apply (CRplus_lt_reg_l _ (CRabs _ (y - x) - (z*CR_of_Q R 2))).
+    unfold CRminus. rewrite CRplus_assoc. rewrite CRplus_opp_l, CRplus_0_r.
+    rewrite (CRplus_comm (CRabs R (y + - x))).
+    rewrite (CRplus_comm (x+y)), CRplus_assoc.
+    rewrite <- (CRplus_assoc (CRabs R (y + - x))), CRplus_opp_r, CRplus_0_l.
+    rewrite <- (CRplus_comm (x+y)).
+    apply CRabs_def1.
+    + unfold CRminus. rewrite <- (CRplus_comm y), CRplus_assoc.
+      apply CRplus_lt_compat_l.
+      apply (CRplus_lt_reg_l R (-x)).
+      rewrite CRopp_mult_distr_l.
+      rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
+      rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
+      rewrite CRmult_1_r. apply CRplus_le_lt_compat.
+      * apply CRlt_asym.
+        apply CRopp_gt_lt_contravar, H.
+      * apply CRopp_gt_lt_contravar, H.
+    + rewrite CRopp_plus_distr, CRopp_involutive.
+      rewrite CRplus_comm, CRplus_assoc.
+      apply CRplus_lt_compat_l.
+      apply (CRplus_lt_reg_l R (-y)).
+      rewrite CRopp_mult_distr_l.
+      rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
+      rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
+      rewrite CRmult_1_r. apply CRplus_le_lt_compat.
+      * apply CRlt_asym.
+        apply CRopp_gt_lt_contravar, H0.
+      * apply CRopp_gt_lt_contravar, H0.
 Qed.
 
 Lemma CRmin_contract : forall {R : ConstructiveReals} (x y a : CRcarrier R),
@@ -248,35 +256,38 @@ Proof.
   unfold CRminus. rewrite CRopp_mult_distr_l, <- CRmult_plus_distr_r.
   rewrite (CRabs_morph
              _ ((x - y + (CRabs _ (a - y) - CRabs _ (a - x))) * CR_of_Q R (1 # 2))).
-  rewrite CRabs_mult, (CRabs_right (CR_of_Q R (1 # 2))).
-  2: apply CR_of_Q_le; discriminate.
-  apply (CRle_trans _
-           ((CRabs _ (x - y) * 1 + CRabs _ (x-y) * 1)
-              * CR_of_Q R (1 # 2))).
-  apply CRmult_le_compat_r.
-  apply CR_of_Q_le. discriminate.
-  apply (CRle_trans
-           _ (CRabs _ (x - y) + CRabs _ (CRabs _ (a - y) - CRabs _ (a - x)))).
-  apply CRabs_triang. rewrite CRmult_1_r. apply CRplus_le_compat_l.
-  rewrite (CRabs_morph (x-y) ((a-y)-(a-x))).
-  apply CRabs_triang_inv2.
-  unfold CRminus. rewrite (CRplus_comm (a + - y)).
-  rewrite <- CRplus_assoc. apply CRplus_morph. 2: reflexivity.
-  rewrite CRplus_comm, CRopp_plus_distr, <- CRplus_assoc.
-  rewrite CRplus_opp_r, CRopp_involutive, CRplus_0_l.
-  reflexivity.
-  rewrite <- CRmult_plus_distr_l.
-  rewrite <- (CR_of_Q_plus R 1 1).
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 + 1) * (1 # 2))%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r. apply CRle_refl.
-  unfold CRminus. apply CRmult_morph. 2: reflexivity.
-  do 4 rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
-  rewrite <- CRplus_assoc. rewrite CRplus_comm, CRopp_plus_distr.
-  rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
-  rewrite CRopp_plus_distr. rewrite (CRplus_comm (-a)).
-  rewrite CRplus_assoc, <- (CRplus_assoc (-a)), CRplus_opp_l.
-  rewrite CRplus_0_l, CRopp_involutive. reflexivity.
+  - rewrite CRabs_mult, (CRabs_right (CR_of_Q R (1 # 2))).
+    2: apply CR_of_Q_le; discriminate.
+    apply (CRle_trans _
+                      ((CRabs _ (x - y) * 1 + CRabs _ (x-y) * 1)
+                       * CR_of_Q R (1 # 2))).
+    + apply CRmult_le_compat_r.
+      * apply CR_of_Q_le. discriminate.
+      * apply (CRle_trans
+                 _ (CRabs _ (x - y) + CRabs _ (CRabs _ (a - y) - CRabs _ (a - x)))).
+        -- apply CRabs_triang.
+        -- rewrite CRmult_1_r. apply CRplus_le_compat_l.
+           rewrite (CRabs_morph (x-y) ((a-y)-(a-x))).
+           ++ apply CRabs_triang_inv2.
+           ++ unfold CRminus. rewrite (CRplus_comm (a + - y)).
+              rewrite <- CRplus_assoc. apply CRplus_morph. 2: reflexivity.
+              rewrite CRplus_comm, CRopp_plus_distr, <- CRplus_assoc.
+              rewrite CRplus_opp_r, CRopp_involutive, CRplus_0_l.
+              reflexivity.
+    + rewrite <- CRmult_plus_distr_l.
+      rewrite <- (CR_of_Q_plus R 1 1).
+      rewrite CRmult_assoc, <- CR_of_Q_mult.
+      setoid_replace ((1 + 1) * (1 # 2))%Q with 1%Q. 2: reflexivity.
+      rewrite CRmult_1_r. apply CRle_refl.
+  - unfold CRminus. apply CRmult_morph. 2: reflexivity.
+    do 4 rewrite CRplus_assoc. apply CRplus_morph.
+    + reflexivity.
+    + rewrite <- CRplus_assoc. rewrite CRplus_comm, CRopp_plus_distr.
+      rewrite CRplus_assoc. apply CRplus_morph.
+      * reflexivity.
+      * rewrite CRopp_plus_distr. rewrite (CRplus_comm (-a)).
+        rewrite CRplus_assoc, <- (CRplus_assoc (-a)), CRplus_opp_l.
+        rewrite CRplus_0_l, CRopp_involutive. reflexivity.
 Qed.
 
 Lemma CRmin_glb : forall {R : ConstructiveReals} (x y z:CRcarrier R),
@@ -284,29 +295,29 @@ Lemma CRmin_glb : forall {R : ConstructiveReals} (x y z:CRcarrier R),
 Proof.
   intros. unfold CRmin.
   apply (CRmult_le_reg_r (CR_of_Q R 2)).
-  apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  apply (CRplus_le_reg_l (CRabs _ (y-x) - (z*CR_of_Q R 2))).
-  unfold CRminus. rewrite CRplus_assoc, CRplus_opp_l, CRplus_0_r.
-  rewrite (CRplus_comm (CRabs R (y + - x) + - (z * CR_of_Q R 2))).
-  rewrite CRplus_assoc, <- (CRplus_assoc (- CRabs R (y + - x))).
-  rewrite CRplus_opp_l, CRplus_0_l.
-  apply CRabs_le. split.
-  - do 2 rewrite CRopp_plus_distr.
-    rewrite CRopp_involutive, (CRplus_comm y), CRplus_assoc.
-    apply CRplus_le_compat_l, (CRplus_le_reg_l y).
-    rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l.
-    rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
-    rewrite CRmult_1_r. apply CRplus_le_compat; exact H0.
-  - rewrite (CRplus_comm x), CRplus_assoc. apply CRplus_le_compat_l.
-    apply (CRplus_le_reg_l (-x)).
-    rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
-    rewrite CRopp_mult_distr_l.
-    rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
+  - apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
     rewrite CRmult_1_r.
-    apply CRplus_le_compat; apply CRopp_ge_le_contravar; exact H.
+    apply (CRplus_le_reg_l (CRabs _ (y-x) - (z*CR_of_Q R 2))).
+    unfold CRminus. rewrite CRplus_assoc, CRplus_opp_l, CRplus_0_r.
+    rewrite (CRplus_comm (CRabs R (y + - x) + - (z * CR_of_Q R 2))).
+    rewrite CRplus_assoc, <- (CRplus_assoc (- CRabs R (y + - x))).
+    rewrite CRplus_opp_l, CRplus_0_l.
+    apply CRabs_le. split.
+    + do 2 rewrite CRopp_plus_distr.
+      rewrite CRopp_involutive, (CRplus_comm y), CRplus_assoc.
+      apply CRplus_le_compat_l, (CRplus_le_reg_l y).
+      rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l.
+      rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
+      rewrite CRmult_1_r. apply CRplus_le_compat; exact H0.
+    + rewrite (CRplus_comm x), CRplus_assoc. apply CRplus_le_compat_l.
+      apply (CRplus_le_reg_l (-x)).
+      rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
+      rewrite CRopp_mult_distr_l.
+      rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
+      rewrite CRmult_1_r.
+      apply CRplus_le_compat; apply CRopp_ge_le_contravar; exact H.
 Qed.
 
 Lemma CRmin_assoc : forall {R : ConstructiveReals} (a b c : CRcarrier R),
@@ -315,16 +326,18 @@ Proof.
   split.
   - apply CRmin_glb.
     + apply (CRle_trans _ (CRmin a b)).
-      apply CRmin_l. apply CRmin_l.
+      * apply CRmin_l. * apply CRmin_l.
     + apply CRmin_glb.
-      apply (CRle_trans _ (CRmin a b)).
-      apply CRmin_l. apply CRmin_r. apply CRmin_r.
+      * apply (CRle_trans _ (CRmin a b)).
+        -- apply CRmin_l. -- apply CRmin_r.
+      * apply CRmin_r.
   - apply CRmin_glb.
-    + apply CRmin_glb. apply CRmin_l.
-      apply (CRle_trans _ (CRmin b c)).
-      apply CRmin_r. apply CRmin_l.
+    + apply CRmin_glb.
+      * apply CRmin_l.
+      * apply (CRle_trans _ (CRmin b c)).
+        -- apply CRmin_r.  -- apply CRmin_l.
     + apply (CRle_trans _ (CRmin b c)).
-      apply CRmin_r. apply CRmin_r.
+      * apply CRmin_r. * apply CRmin_r.
 Qed.
 
 Lemma CRlt_min : forall {R : ConstructiveReals} (x y z : CRcarrier R),
@@ -335,10 +348,14 @@ Proof.
   split.
   - apply (CRlt_le_trans _ (CR_of_Q R q) _ c).
     intro abs. apply (CRlt_asym _ _ c0).
-    apply (CRle_lt_trans _ x). apply CRmin_l. exact abs.
+    apply (CRle_lt_trans _ x).
+    + apply CRmin_l.
+    + exact abs.
   - apply (CRlt_le_trans _ (CR_of_Q R q) _ c).
     intro abs. apply (CRlt_asym _ _ c0).
-    apply (CRle_lt_trans _ y). apply CRmin_r. exact abs.
+    apply (CRle_lt_trans _ y).
+    + apply CRmin_r.
+    + exact abs.
 Qed.
 
 
@@ -372,28 +389,28 @@ Lemma CRmax_lub : forall {R : ConstructiveReals} (x y z:CRcarrier R),
 Proof.
   intros. unfold CRmax.
   apply (CRmult_le_reg_r (CR_of_Q _ 2)).
-  apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  apply (CRplus_le_reg_l (-x-y)).
-  rewrite <- CRplus_assoc. unfold CRminus.
-  rewrite <- CRopp_plus_distr, CRplus_opp_l, CRplus_0_l.
-  apply CRabs_le. split.
-  - repeat rewrite CRopp_plus_distr.
-    do 2 rewrite CRopp_involutive.
-    rewrite (CRplus_comm x), CRplus_assoc. apply CRplus_le_compat_l.
-    apply (CRplus_le_reg_l (-x)).
-    rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
-    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-    rewrite CRopp_plus_distr.
-    apply CRplus_le_compat; apply CRopp_ge_le_contravar; assumption.
-  - rewrite (CRplus_comm y), CRopp_plus_distr, CRplus_assoc.
-    apply CRplus_le_compat_l.
-    apply (CRplus_le_reg_l y).
-    rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l.
-    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-    apply CRplus_le_compat; assumption.
+  - apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    apply (CRplus_le_reg_l (-x-y)).
+    rewrite <- CRplus_assoc. unfold CRminus.
+    rewrite <- CRopp_plus_distr, CRplus_opp_l, CRplus_0_l.
+    apply CRabs_le. split.
+    + repeat rewrite CRopp_plus_distr.
+      do 2 rewrite CRopp_involutive.
+      rewrite (CRplus_comm x), CRplus_assoc. apply CRplus_le_compat_l.
+      apply (CRplus_le_reg_l (-x)).
+      rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
+      rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+      rewrite CRopp_plus_distr.
+      apply CRplus_le_compat; apply CRopp_ge_le_contravar; assumption.
+    + rewrite (CRplus_comm y), CRopp_plus_distr, CRplus_assoc.
+      apply CRplus_le_compat_l.
+      apply (CRplus_le_reg_l y).
+      rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l.
+      rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+      apply CRplus_le_compat; assumption.
 Qed.
 
 Lemma CRmax_l : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -401,17 +418,19 @@ Lemma CRmax_l : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmax.
   apply (CRmult_le_reg_r (CR_of_Q R 2)).
-  apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  setoid_replace 2%Q with (1+1)%Q. rewrite CR_of_Q_plus.
-  rewrite CRmult_plus_distr_l, CRmult_1_r, CRplus_assoc.
-  apply CRplus_le_compat_l.
-  apply (CRplus_le_reg_l (-y)).
-  rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
-  rewrite CRabs_minus_sym, CRplus_comm.
-  apply CRle_abs. reflexivity.
+  - apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    setoid_replace 2%Q with (1+1)%Q.
+    + rewrite CR_of_Q_plus.
+      rewrite CRmult_plus_distr_l, CRmult_1_r, CRplus_assoc.
+      apply CRplus_le_compat_l.
+      apply (CRplus_le_reg_l (-y)).
+      rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
+      rewrite CRabs_minus_sym, CRplus_comm.
+      apply CRle_abs.
+    + reflexivity.
 Qed.
 
 Lemma CRmax_r : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -419,16 +438,16 @@ Lemma CRmax_r : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmax.
   apply (CRmult_le_reg_r (CR_of_Q _ 2)).
-  apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  rewrite (CRplus_comm x).
-  rewrite CRplus_assoc. apply CRplus_le_compat_l.
-  apply (CRplus_le_reg_l (-x)).
-  rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
-  rewrite CRplus_comm. apply CRle_abs.
+  - apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+    rewrite (CRplus_comm x).
+    rewrite CRplus_assoc. apply CRplus_le_compat_l.
+    apply (CRplus_le_reg_l (-x)).
+    rewrite <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
+    rewrite CRplus_comm. apply CRle_abs.
 Qed.
 
 Lemma CRposPartAbsMax : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -451,23 +470,24 @@ Lemma CRmax_plus : forall {R : ConstructiveReals} (x y z : CRcarrier R),
 Proof.
   intros. unfold CRmax.
   setoid_replace (x + z - (x + y)) with (z-y).
-  apply (CRmult_eq_reg_r (CR_of_Q _ 2)).
-  left. apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_plus_distr_r.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  rewrite CRmult_1_r.
-  do 3 rewrite (CRplus_assoc x). apply CRplus_morph. reflexivity.
-  do 2 rewrite <- CRplus_assoc. apply CRplus_morph. 2: reflexivity.
-  rewrite (CRplus_comm x). apply CRplus_assoc.
-  unfold CRminus. rewrite CRopp_plus_distr. rewrite <- CRplus_assoc.
-  apply CRplus_morph. 2: reflexivity.
-  rewrite CRplus_comm, <- CRplus_assoc, CRplus_opp_l.
-  apply CRplus_0_l.
+  - apply (CRmult_eq_reg_r (CR_of_Q _ 2)).
+    + left. apply CR_of_Q_lt; reflexivity.
+    + rewrite CRmult_plus_distr_r.
+      rewrite CRmult_assoc, <- CR_of_Q_mult.
+      setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+      rewrite CRmult_1_r.
+      rewrite CRmult_assoc, <- CR_of_Q_mult.
+      setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+      rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+      rewrite CRmult_1_r.
+      do 3 rewrite (CRplus_assoc x). apply CRplus_morph.
+      * reflexivity.
+      * do 2 rewrite <- CRplus_assoc. apply CRplus_morph. 2: reflexivity.
+        rewrite (CRplus_comm x). apply CRplus_assoc.
+  - unfold CRminus. rewrite CRopp_plus_distr. rewrite <- CRplus_assoc.
+    apply CRplus_morph. 2: reflexivity.
+    rewrite CRplus_comm, <- CRplus_assoc, CRplus_opp_l.
+    apply CRplus_0_l.
 Qed.
 
 Lemma CRmax_left : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -475,15 +495,17 @@ Lemma CRmax_left : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmax.
   apply (CRmult_eq_reg_r (CR_of_Q R 2)).
-  left. apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
-  rewrite CRabs_left. unfold CRminus. rewrite CRopp_plus_distr, CRopp_involutive.
-  rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l. reflexivity.
-  rewrite <- (CRplus_opp_r x). apply CRplus_le_compat_r. exact H.
+  - left. apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+    rewrite CRplus_assoc. apply CRplus_morph.
+    + reflexivity.
+    + rewrite CRabs_left.
+      * unfold CRminus. rewrite CRopp_plus_distr, CRopp_involutive.
+        rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l. reflexivity.
+      * rewrite <- (CRplus_opp_r x). apply CRplus_le_compat_r. exact H.
 Qed.
 
 Lemma CRmax_right : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -491,16 +513,18 @@ Lemma CRmax_right : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intros. unfold CRmax.
   apply (CRmult_eq_reg_r (CR_of_Q R 2)).
-  left. apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
-  rewrite (CRplus_comm x y).
-  rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
-  rewrite CRabs_right. unfold CRminus. rewrite CRplus_comm.
-  rewrite CRplus_assoc, CRplus_opp_l, CRplus_0_r. reflexivity.
-  rewrite <- (CRplus_opp_r x). apply CRplus_le_compat_r. exact H.
+  - left. apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    rewrite (CR_of_Q_plus _ 1 1), CRmult_plus_distr_l, CRmult_1_r.
+    rewrite (CRplus_comm x y).
+    rewrite CRplus_assoc. apply CRplus_morph.
+    + reflexivity.
+    + rewrite CRabs_right.
+      * unfold CRminus. rewrite CRplus_comm.
+        rewrite CRplus_assoc, CRplus_opp_l, CRplus_0_r. reflexivity.
+      * rewrite <- (CRplus_opp_r x). apply CRplus_le_compat_r. exact H.
 Qed.
 
 Lemma CRmax_contract : forall {R : ConstructiveReals} (x y a : CRcarrier R),
@@ -509,37 +533,40 @@ Proof.
   intros. unfold CRmax.
   rewrite (CRabs_morph
              _ ((x - y + (CRabs _ (a - x) - CRabs _ (a - y))) * CR_of_Q R (1 # 2))).
-  rewrite CRabs_mult, (CRabs_right (CR_of_Q R (1 # 2))).
-  2: apply CR_of_Q_le; discriminate.
-  apply (CRle_trans
-           _ ((CRabs _ (x - y) * 1 + CRabs _ (x-y) * 1)
-              * CR_of_Q R (1 # 2))).
-  apply CRmult_le_compat_r.
-  apply CR_of_Q_le. discriminate.
-  apply (CRle_trans
-           _ (CRabs _ (x - y) + CRabs _ (CRabs _ (a - x) - CRabs _ (a - y)))).
-  apply CRabs_triang. rewrite CRmult_1_r. apply CRplus_le_compat_l.
-  rewrite (CRabs_minus_sym x y).
-  rewrite (CRabs_morph (y-x) ((a-x)-(a-y))).
-  apply CRabs_triang_inv2.
-  unfold CRminus. rewrite (CRplus_comm (a + - x)).
-  rewrite <- CRplus_assoc. apply CRplus_morph. 2: reflexivity.
-  rewrite CRplus_comm, CRopp_plus_distr, <- CRplus_assoc.
-  rewrite CRplus_opp_r, CRopp_involutive, CRplus_0_l.
-  reflexivity.
-  rewrite <- CRmult_plus_distr_l.
-  rewrite <- (CR_of_Q_plus R 1 1).
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 + 1) * (1 # 2))%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r. apply CRle_refl.
-  unfold CRminus. rewrite CRopp_mult_distr_l.
-  rewrite <- CRmult_plus_distr_r. apply CRmult_morph. 2: reflexivity.
-  do 4 rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
-  rewrite <- CRplus_assoc. rewrite CRplus_comm, CRopp_plus_distr.
-  rewrite CRplus_assoc. apply CRplus_morph. reflexivity.
-  rewrite CRopp_plus_distr. rewrite (CRplus_comm (-a)).
-  rewrite CRplus_assoc, <- (CRplus_assoc (-a)), CRplus_opp_l.
-  rewrite CRplus_0_l. apply CRplus_comm.
+  - rewrite CRabs_mult, (CRabs_right (CR_of_Q R (1 # 2))).
+    2: apply CR_of_Q_le; discriminate.
+    apply (CRle_trans
+             _ ((CRabs _ (x - y) * 1 + CRabs _ (x-y) * 1)
+                * CR_of_Q R (1 # 2))).
+    + apply CRmult_le_compat_r.
+      * apply CR_of_Q_le. discriminate.
+      * apply (CRle_trans
+                 _ (CRabs _ (x - y) + CRabs _ (CRabs _ (a - x) - CRabs _ (a - y)))).
+        -- apply CRabs_triang.
+        -- rewrite CRmult_1_r. apply CRplus_le_compat_l.
+           rewrite (CRabs_minus_sym x y).
+           rewrite (CRabs_morph (y-x) ((a-x)-(a-y))).
+           ++ apply CRabs_triang_inv2.
+           ++ unfold CRminus. rewrite (CRplus_comm (a + - x)).
+              rewrite <- CRplus_assoc. apply CRplus_morph. 2: reflexivity.
+              rewrite CRplus_comm, CRopp_plus_distr, <- CRplus_assoc.
+              rewrite CRplus_opp_r, CRopp_involutive, CRplus_0_l.
+              reflexivity.
+    + rewrite <- CRmult_plus_distr_l.
+      rewrite <- (CR_of_Q_plus R 1 1).
+      rewrite CRmult_assoc, <- CR_of_Q_mult.
+      setoid_replace ((1 + 1) * (1 # 2))%Q with 1%Q. 2: reflexivity.
+      rewrite CRmult_1_r. apply CRle_refl.
+  - unfold CRminus. rewrite CRopp_mult_distr_l.
+    rewrite <- CRmult_plus_distr_r. apply CRmult_morph. 2: reflexivity.
+    do 4 rewrite CRplus_assoc. apply CRplus_morph.
+    + reflexivity.
+    + rewrite <- CRplus_assoc. rewrite CRplus_comm, CRopp_plus_distr.
+      rewrite CRplus_assoc. apply CRplus_morph.
+      * reflexivity.
+      * rewrite CRopp_plus_distr. rewrite (CRplus_comm (-a)).
+        rewrite CRplus_assoc, <- (CRplus_assoc (-a)), CRplus_opp_l.
+        rewrite CRplus_0_l. apply CRplus_comm.
 Qed.
 
 Lemma CRmax_lub_lt : forall {R : ConstructiveReals} (x y z : CRcarrier R),
@@ -547,28 +574,30 @@ Lemma CRmax_lub_lt : forall {R : ConstructiveReals} (x y z : CRcarrier R),
 Proof.
   intros. unfold CRmax.
   apply (CRmult_lt_reg_r (CR_of_Q R 2)).
-  apply CR_of_Q_lt; reflexivity.
-  rewrite CRmult_assoc, <- CR_of_Q_mult.
-  setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
-  rewrite CRmult_1_r.
-  apply (CRplus_lt_reg_l _ (-y -x)). unfold CRminus.
-  rewrite CRplus_assoc, <- (CRplus_assoc (-x)), <- (CRplus_assoc (-x)).
-  rewrite CRplus_opp_l, CRplus_0_l, <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
-  apply CRabs_def1.
-  - rewrite (CRplus_comm y), (CRplus_comm (-y)), CRplus_assoc.
-    apply CRplus_lt_compat_l.
-    apply (CRplus_lt_reg_l _ y).
-    rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l.
-    rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
-    rewrite CRmult_1_r. apply CRplus_le_lt_compat.
-    apply CRlt_asym, H0. exact H0.
-  - rewrite CRopp_plus_distr, CRopp_involutive.
-    rewrite CRplus_assoc. apply CRplus_lt_compat_l.
-    apply (CRplus_lt_reg_l _ x).
-    rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l.
-    rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
-    rewrite CRmult_1_r. apply CRplus_le_lt_compat.
-    apply CRlt_asym, H. exact H.
+  - apply CR_of_Q_lt; reflexivity.
+  - rewrite CRmult_assoc, <- CR_of_Q_mult.
+    setoid_replace ((1 # 2) * 2)%Q with 1%Q. 2: reflexivity.
+    rewrite CRmult_1_r.
+    apply (CRplus_lt_reg_l _ (-y -x)). unfold CRminus.
+    rewrite CRplus_assoc, <- (CRplus_assoc (-x)), <- (CRplus_assoc (-x)).
+    rewrite CRplus_opp_l, CRplus_0_l, <- CRplus_assoc, CRplus_opp_l, CRplus_0_l.
+    apply CRabs_def1.
+    + rewrite (CRplus_comm y), (CRplus_comm (-y)), CRplus_assoc.
+      apply CRplus_lt_compat_l.
+      apply (CRplus_lt_reg_l _ y).
+      rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l.
+      rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
+      rewrite CRmult_1_r. apply CRplus_le_lt_compat.
+      * apply CRlt_asym, H0.
+      * exact H0.
+    + rewrite CRopp_plus_distr, CRopp_involutive.
+      rewrite CRplus_assoc. apply CRplus_lt_compat_l.
+      apply (CRplus_lt_reg_l _ x).
+      rewrite <- CRplus_assoc, CRplus_opp_r, CRplus_0_l.
+      rewrite (CR_of_Q_plus R 1 1), CRmult_plus_distr_l.
+      rewrite CRmult_1_r. apply CRplus_le_lt_compat.
+      * apply CRlt_asym, H.
+      * exact H.
 Qed.
 
 Lemma CRmax_assoc : forall {R : ConstructiveReals} (a b c : CRcarrier R),
@@ -576,17 +605,23 @@ Lemma CRmax_assoc : forall {R : ConstructiveReals} (a b c : CRcarrier R),
 Proof.
   split.
   - apply CRmax_lub.
-    + apply CRmax_lub. apply CRmax_l.
-      apply (CRle_trans _ (CRmax b c)).
-      apply CRmax_l. apply CRmax_r.
+    + apply CRmax_lub.
+      * apply CRmax_l.
+      * apply (CRle_trans _ (CRmax b c)).
+        -- apply CRmax_l.
+        -- apply CRmax_r.
     + apply (CRle_trans _ (CRmax b c)).
-      apply CRmax_r. apply CRmax_r.
+      * apply CRmax_r.
+      * apply CRmax_r.
   - apply CRmax_lub.
     + apply (CRle_trans _ (CRmax a b)).
-      apply CRmax_l. apply CRmax_l.
+      * apply CRmax_l.
+      * apply CRmax_l.
     + apply CRmax_lub.
-      apply (CRle_trans _ (CRmax a b)).
-      apply CRmax_r. apply CRmax_l. apply CRmax_r.
+      * apply (CRle_trans _ (CRmax a b)).
+        -- apply CRmax_r.
+        -- apply CRmax_l.
+      * apply CRmax_r.
 Qed.
 
 Lemma CRmax_min_mult_neg :
@@ -595,13 +630,14 @@ Lemma CRmax_min_mult_neg :
 Proof.
   intros R p q r H. unfold CRmin, CRmax.
   setoid_replace (r * q - r * p) with (r * (q - p)).
-  rewrite CRabs_mult.
-  rewrite (CRabs_left r), <- CRmult_assoc.
-  apply CRmult_morph. 2: reflexivity. unfold CRminus.
-  rewrite <- CRopp_mult_distr_l, CRopp_mult_distr_r,
-  CRmult_plus_distr_l, CRmult_plus_distr_l.
-  reflexivity. exact H.
-  unfold CRminus. rewrite CRmult_plus_distr_l, CRopp_mult_distr_r. reflexivity.
+  - rewrite CRabs_mult.
+    rewrite (CRabs_left r), <- CRmult_assoc.
+    + apply CRmult_morph. 2: reflexivity. unfold CRminus.
+      rewrite <- CRopp_mult_distr_l, CRopp_mult_distr_r,
+        CRmult_plus_distr_l, CRmult_plus_distr_l.
+      reflexivity.
+    + exact H.
+  - unfold CRminus. rewrite CRmult_plus_distr_l, CRopp_mult_distr_r. reflexivity.
 Qed.
 
 Lemma CRlt_max : forall {R : ConstructiveReals} (x y z : CRcarrier R),
@@ -611,11 +647,15 @@ Proof.
   destruct qmaj.
   split.
   - apply (CRlt_le_trans _ (CR_of_Q R q)).
-    apply (CRle_lt_trans _ (CRmax x y)). apply CRmax_l. exact c.
-    apply CRlt_asym, c0.
+    + apply (CRle_lt_trans _ (CRmax x y)).
+      * apply CRmax_l.
+      * exact c.
+    + apply CRlt_asym, c0.
   - apply (CRlt_le_trans _ (CR_of_Q R q)).
-    apply (CRle_lt_trans _ (CRmax x y)). apply CRmax_r. exact c.
-    apply CRlt_asym, c0.
+    + apply (CRle_lt_trans _ (CRmax x y)).
+      * apply CRmax_r.
+      * exact c.
+    + apply CRlt_asym, c0.
 Qed.
 
 Lemma CRmax_mult :
@@ -624,12 +664,13 @@ Lemma CRmax_mult :
 Proof.
   intros R p q r H. unfold CRmin, CRmax.
   setoid_replace (r * q - r * p) with (r * (q - p)).
-  rewrite CRabs_mult.
-  rewrite (CRabs_right r), <- CRmult_assoc.
-  apply CRmult_morph. 2: reflexivity.
-  rewrite CRmult_plus_distr_l, CRmult_plus_distr_l.
-  reflexivity. exact H.
-  unfold CRminus. rewrite CRmult_plus_distr_l, CRopp_mult_distr_r. reflexivity.
+  - rewrite CRabs_mult.
+    rewrite (CRabs_right r), <- CRmult_assoc.
+    + apply CRmult_morph. 2: reflexivity.
+      rewrite CRmult_plus_distr_l, CRmult_plus_distr_l.
+      reflexivity.
+    + exact H.
+  - unfold CRminus. rewrite CRmult_plus_distr_l, CRopp_mult_distr_r. reflexivity.
 Qed.
 
 Lemma CRmin_max_mult_neg :
@@ -638,13 +679,14 @@ Lemma CRmin_max_mult_neg :
 Proof.
   intros R p q r H. unfold CRmin, CRmax.
   setoid_replace (r * q - r * p) with (r * (q - p)).
-  rewrite CRabs_mult.
-  rewrite (CRabs_left r), <- CRmult_assoc.
-  apply CRmult_morph. 2: reflexivity. unfold CRminus.
-  rewrite CRopp_mult_distr_l, CRopp_involutive,
-  CRmult_plus_distr_l, CRmult_plus_distr_l.
-  reflexivity. exact H.
-  unfold CRminus. rewrite CRmult_plus_distr_l, CRopp_mult_distr_r. reflexivity.
+  - rewrite CRabs_mult.
+    rewrite (CRabs_left r), <- CRmult_assoc.
+    + apply CRmult_morph. 2: reflexivity. unfold CRminus.
+      rewrite CRopp_mult_distr_l, CRopp_involutive,
+        CRmult_plus_distr_l, CRmult_plus_distr_l.
+      reflexivity.
+    + exact H.
+  - unfold CRminus. rewrite CRmult_plus_distr_l, CRopp_mult_distr_r. reflexivity.
 Qed.
 
 Lemma CRmorph_min : forall {R1 R2 : ConstructiveReals}
@@ -657,10 +699,12 @@ Proof.
   rewrite CRmorph_mult. apply CRmult_morph.
   2: apply CRmorph_rat.
   unfold CRminus. do 2 rewrite CRmorph_plus. apply CRplus_morph.
-  apply CRplus_morph. reflexivity. reflexivity.
-  rewrite CRmorph_opp. apply CRopp_morph.
-  rewrite <- CRmorph_abs. apply CRabs_morph.
-  rewrite CRmorph_plus. apply CRplus_morph.
-  reflexivity.
-  rewrite CRmorph_opp. apply CRopp_morph, CRmorph_proper. reflexivity.
+  - apply CRplus_morph.
+    + reflexivity.
+    + reflexivity.
+  - rewrite CRmorph_opp. apply CRopp_morph.
+    rewrite <- CRmorph_abs. apply CRabs_morph.
+    rewrite CRmorph_plus. apply CRplus_morph.
+    + reflexivity.
+    + rewrite CRmorph_opp. apply CRopp_morph, CRmorph_proper. reflexivity.
 Qed.

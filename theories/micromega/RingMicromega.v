@@ -216,30 +216,30 @@ Lemma OpMult_sound :
     eval_op1 o x -> eval_op1 o' y -> OpMult o o' = Some om -> eval_op1 om (x * y).
 Proof.
 unfold eval_op1; intros o; destruct o; simpl; intros o' om x y H1 H2 H3.
-(* x == 0 *)
-inversion H3. rewrite H1. now rewrite (Rtimes_0_l sor).
-(* x ~= 0 *)
-destruct o' ; inversion H3.
- (* y == 0 *)
- rewrite H2. now rewrite (Rtimes_0_r sor).
- (* y ~= 0 *)
- apply (Rtimes_neq_0 sor) ; auto.
-(* 0 < x *)
-destruct o' ; inversion H3.
- (* y == 0 *)
- rewrite H2; now rewrite (Rtimes_0_r sor).
- (* 0 < y *)
- now apply (Rtimes_pos_pos sor).
- (* 0 <= y *)
-  apply (Rtimes_nonneg_nonneg sor); [le_less | assumption].
-(* 0 <= x *)
-destruct o' ; inversion H3.
- (* y == 0 *)
- rewrite H2; now rewrite (Rtimes_0_r sor).
- (* 0 < y *)
- apply (Rtimes_nonneg_nonneg sor); [assumption | le_less ].
- (* 0 <= y *)
- now apply (Rtimes_nonneg_nonneg sor).
+- (* x == 0 *)
+  inversion H3. rewrite H1. now rewrite (Rtimes_0_l sor).
+- (* x ~= 0 *)
+  destruct o' ; inversion H3.
+  + (* y == 0 *)
+    rewrite H2. now rewrite (Rtimes_0_r sor).
+  + (* y ~= 0 *)
+    apply (Rtimes_neq_0 sor) ; auto.
+- (* 0 < x *)
+  destruct o' ; inversion H3.
+  + (* y == 0 *)
+    rewrite H2; now rewrite (Rtimes_0_r sor).
+  + (* 0 < y *)
+    now apply (Rtimes_pos_pos sor).
+  + (* 0 <= y *)
+    apply (Rtimes_nonneg_nonneg sor); [le_less | assumption].
+- (* 0 <= x *)
+  destruct o' ; inversion H3.
+  + (* y == 0 *)
+    rewrite H2; now rewrite (Rtimes_0_r sor).
+  + (* 0 < y *)
+    apply (Rtimes_nonneg_nonneg sor); [assumption | le_less ].
+  + (* 0 <= y *)
+    now apply (Rtimes_nonneg_nonneg sor).
 Qed.
 
 Lemma OpAdd_sound :
@@ -247,46 +247,46 @@ Lemma OpAdd_sound :
     eval_op1 o e -> eval_op1 o' e' -> OpAdd o o' = Some oa -> eval_op1 oa (e + e').
 Proof.
 unfold eval_op1; intros o; destruct o; simpl; intros o' oa e e' H1 H2 Hoa.
-(* e == 0 *)
-inversion Hoa as [H0]. rewrite <- H0.
-destruct o' ; rewrite H1 ; now rewrite  (Rplus_0_l sor).
-(* e ~= 0 *)
- destruct o'.
- (* e' == 0 *)
- inversion Hoa.
- rewrite H2. now rewrite (Rplus_0_r sor).
- (* e' ~= 0 *)
- discriminate.
- (* 0 < e' *)
- discriminate.
- (* 0 <= e' *)
- discriminate.
-(* 0 < e *)
- destruct o'.
- (* e' == 0 *)
- inversion Hoa.
- rewrite H2.  now rewrite (Rplus_0_r sor).
- (* e' ~= 0 *)
- discriminate.
- (* 0 < e' *)
- inversion Hoa.
- now apply (Rplus_pos_pos sor).
- (* 0 <= e' *)
- inversion Hoa.
- now apply (Rplus_pos_nonneg sor).
-(* 0 <= e *)
- destruct o'.
- (* e' == 0 *)
- inversion Hoa.
- now rewrite H2, (Rplus_0_r sor).
- (* e' ~= 0 *)
- discriminate.
- (* 0 < e' *)
- inversion Hoa.
- now apply (Rplus_nonneg_pos sor).
- (* 0 <= e' *)
- inversion Hoa.
- now apply (Rplus_nonneg_nonneg sor).
+- (* e == 0 *)
+  inversion Hoa as [H0]. rewrite <- H0.
+  destruct o' ; rewrite H1 ; now rewrite  (Rplus_0_l sor).
+- (* e ~= 0 *)
+  destruct o'.
+  + (* e' == 0 *)
+    inversion Hoa.
+    rewrite H2. now rewrite (Rplus_0_r sor).
+  + (* e' ~= 0 *)
+    discriminate.
+  + (* 0 < e' *)
+    discriminate.
+  + (* 0 <= e' *)
+    discriminate.
+- (* 0 < e *)
+  destruct o'.
+  + (* e' == 0 *)
+    inversion Hoa.
+    rewrite H2.  now rewrite (Rplus_0_r sor).
+  + (* e' ~= 0 *)
+    discriminate.
+  + (* 0 < e' *)
+    inversion Hoa.
+    now apply (Rplus_pos_pos sor).
+  + (* 0 <= e' *)
+    inversion Hoa.
+    now apply (Rplus_pos_nonneg sor).
+- (* 0 <= e *)
+  destruct o'.
+  + (* e' == 0 *)
+    inversion Hoa.
+    now rewrite H2, (Rplus_0_r sor).
+  + (* e' ~= 0 *)
+    discriminate.
+    (* 0 < e' *)
+  + inversion Hoa.
+    now apply (Rplus_nonneg_pos sor).
+  + (* 0 <= e' *)
+    inversion Hoa.
+    now apply (Rplus_nonneg_nonneg sor).
 Qed.
 
 Inductive Psatz : Type :=
@@ -440,47 +440,47 @@ Proof.
   - (* PsatzIn *)
   simpl ; intros H0.
   destruct (nth_in_or_default n l (Pc cO, Equal)) as [Hin|Heq].
-  (* index is in bounds *)
-  apply IN. congruence.
-  (* index is out-of-bounds *)
-  inversion H0.
-  rewrite Heq. simpl.
-  now apply  (morph0 (SORrm addon)).
+  + (* index is in bounds *)
+    apply IN. congruence.
+  + (* index is out-of-bounds *)
+    inversion H0.
+    rewrite Heq. simpl.
+    now apply  (morph0 (SORrm addon)).
   - (* PsatzSquare *)
     intros H0. inversion H0.
     simpl. unfold eval_pol.
-  rewrite (Psquare_ok (SORsetoid sor) Rops_wd
-    (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
-  now apply (Rtimes_square_nonneg sor).
+    rewrite (Psquare_ok (SORsetoid sor) Rops_wd
+                        (Rth_ARth (SORsetoid sor) Rops_wd (SORrt sor))  (SORrm addon));
+      now apply (Rtimes_square_nonneg sor).
   - (* PsatzMulC *)
     case_eq  (eval_Psatz l e) ; simpl ; intros ? H0; [intros H1|].
-    apply IHe in H0.
-    apply pexpr_times_nformula_correct with (1:=H0) (2:= H1).
-    apply IN.
-    discriminate.
+    + apply IHe in H0.
+      * apply pexpr_times_nformula_correct with (1:=H0) (2:= H1).
+      * apply IN.
+    + discriminate.
   - (* PsatzMulC *)
-  simpl.
-  case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
-  case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
-  intros n H0 n0 H1.
-  apply IHe1 in H1; auto. apply IHe2 in H0; auto.
-  apply (nformula_times_nformula_correct env n0 n); auto.
+    simpl.
+    case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
+    case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
+    intros n H0 n0 H1.
+    apply IHe1 in H1; auto. apply IHe2 in H0; auto.
+    apply (nformula_times_nformula_correct env n0 n); auto.
   - (* PsatzAdd *)
-  simpl.
-  case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
-  case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
-  intros n H0 n0 H1.
-  apply IHe1 in H1; auto. apply IHe2 in H0; auto.
-  apply (nformula_plus_nformula_correct env n0 n) ; assumption.
+    simpl.
+    case_eq (eval_Psatz l e1) ; simpl ; try discriminate.
+    case_eq (eval_Psatz l e2) ; simpl ; try discriminate.
+    intros n H0 n0 H1.
+    apply IHe1 in H1; auto. apply IHe2 in H0; auto.
+    apply (nformula_plus_nformula_correct env n0 n) ; assumption.
   - (* PsatzC *)
-  simpl.
-  case_eq (cO [<] c).
-  intros H0 H1.  inversion H1. simpl.
-  rewrite <- (morph0 (SORrm addon)). now apply cltb_sound.
-  discriminate.
+    simpl.
+    case_eq (cO [<] c).
+    + intros H0 H1.  inversion H1. simpl.
+      rewrite <- (morph0 (SORrm addon)). now apply cltb_sound.
+    + discriminate.
   - (* PsatzZ *)
-  simpl. intros H0. inversion H0.
-  simpl.   apply  (morph0 (SORrm addon)).
+    simpl. intros H0. inversion H0.
+    simpl. apply  (morph0 (SORrm addon)).
 Qed.
 
 Fixpoint ge_bool (n m  : nat) : bool :=
@@ -533,10 +533,10 @@ Lemma extract_hyps_app : forall l ln1 ln2,
   extract_hyps l (ln1 ++ ln2) = (extract_hyps l ln1) ++ (extract_hyps l ln2).
 Proof.
   intros l ln1; induction ln1 as [|? ln1 IHln1].
-  reflexivity.
-  simpl.
-  intros.
-  rewrite IHln1. reflexivity.
+  - reflexivity.
+  - simpl.
+    intros.
+    rewrite IHln1. reflexivity.
 Qed.
 
 Ltac inv H := inversion H ; try subst ; clear H.
@@ -592,10 +592,10 @@ destruct op; simpl ;
 (*****)
 destruct p ; simpl; try discriminate H1;
 try rewrite <- (morph0 (SORrm addon)); trivial.
-now apply cneqb_sound.
-apply (morph_eq (SORrm addon)) in H1. congruence.
-apply cleb_sound in H1. now apply -> (Rle_ngt sor).
-apply cltb_sound in H1. now apply -> (Rlt_nge sor).
+- now apply cneqb_sound.
+- apply (morph_eq (SORrm addon)) in H1. congruence.
+- apply cleb_sound in H1. now apply -> (Rle_ngt sor).
+- apply cltb_sound in H1. now apply -> (Rlt_nge sor).
 Qed.
 
 
@@ -939,10 +939,10 @@ Proof.
   destruct d as [p o]; simpl.
   generalize (eval_pol env p); intros r.
   destruct o ; simpl.
-  apply (Req_em sor r 0).
-  destruct (Req_em sor r 0) ; tauto.
-  rewrite <- (Rle_ngt sor r 0). generalize (Rle_gt_cases sor r 0). tauto.
-  rewrite <- (Rlt_nge sor r 0). generalize (Rle_gt_cases sor 0 r). tauto.
+  - apply (Req_em sor r 0).
+  - destruct (Req_em sor r 0) ; tauto.
+  - rewrite <- (Rle_ngt sor r 0). generalize (Rle_gt_cases sor r 0). tauto.
+  - rewrite <- (Rlt_nge sor r 0). generalize (Rle_gt_cases sor 0 r). tauto.
 Qed.
 
 (** Reverse transformation *)
@@ -961,27 +961,27 @@ Lemma xdenorm_correct : forall p i env,
 Proof.
   unfold eval_pol.
   intros p; induction p as [|? p IHp|p2 IHp1 ? p3 IHp2].
-  simpl. reflexivity.
-  (* Pinj *)
-  simpl.
-  intros.
-  rewrite Pos.add_succ_r.
-  rewrite <- IHp.
-  symmetry.
-  rewrite Pos.add_comm.
-  rewrite Pjump_add. reflexivity.
-  (* PX *)
-  simpl.
-  intros.
-  rewrite <- IHp1, <- IHp2.
-  unfold Env.tail , Env.hd.
-  rewrite <- Pjump_add.
-  rewrite Pos.add_1_r.
-  unfold Env.nth.
-  unfold jump at 2.
-  rewrite <- Pos.add_1_l.
-  rewrite (rpow_pow_N (SORpower addon)).
-  unfold pow_N. ring.
+  - simpl. reflexivity.
+  - (* Pinj *)
+    simpl.
+    intros.
+    rewrite Pos.add_succ_r.
+    rewrite <- IHp.
+    symmetry.
+    rewrite Pos.add_comm.
+    rewrite Pjump_add. reflexivity.
+  - (* PX *)
+    simpl.
+    intros.
+    rewrite <- IHp1, <- IHp2.
+    unfold Env.tail , Env.hd.
+    rewrite <- Pjump_add.
+    rewrite Pos.add_1_r.
+    unfold Env.nth.
+    unfold jump at 2.
+    rewrite <- Pos.add_1_l.
+    rewrite (rpow_pow_N (SORpower addon)).
+    unfold pow_N. ring.
 Qed.
 
 Definition denorm := xdenorm xH.
@@ -990,18 +990,18 @@ Lemma denorm_correct : forall p env, eval_pol env p == eval_pexpr env (denorm p)
 Proof.
   unfold denorm.
   intros p; induction p as [| |? IHp1 ? ? IHp2].
-  reflexivity.
-  simpl.
-  rewrite Pos.add_1_r.
-  apply xdenorm_correct.
-  simpl.
-  intros.
-  rewrite IHp1.
-  unfold Env.tail.
-  rewrite xdenorm_correct.
-  change (Pos.succ xH) with 2%positive.
-  rewrite (rpow_pow_N (SORpower addon)).
-  simpl. reflexivity.
+  - reflexivity.
+  - simpl.
+    rewrite Pos.add_1_r.
+    apply xdenorm_correct.
+  - simpl.
+    intros.
+    rewrite IHp1.
+    unfold Env.tail.
+    rewrite xdenorm_correct.
+    change (Pos.succ xH) with 2%positive.
+    rewrite (rpow_pow_N (SORpower addon)).
+    simpl. reflexivity.
 Qed.
 
 
@@ -1047,9 +1047,9 @@ Proof.
   intros env s;
    induction s as [| |? IHs1 ? IHs2|? IHs1 ? IHs2|? IHs1 ? IHs2|? IHs|? IHs ?];
    simpl ; try (rewrite IHs1 ; rewrite IHs2) ; try reflexivity.
-  apply phi_C_of_S.
-  rewrite IHs. reflexivity.
-  rewrite IHs. reflexivity.
+  - apply phi_C_of_S.
+  - rewrite IHs. reflexivity.
+  - rewrite IHs. reflexivity.
 Qed.
 
 (** equality might be (too) strong *)

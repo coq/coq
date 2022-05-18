@@ -126,30 +126,30 @@ Proof.
   2: intros p; case (H (Z.le_refl wB) p); auto.
  unfold positive_to_int, wB at 1 3 4.
  elim size.
- intros _ p; simpl;
-   rewrite to_Z_0, Pmult_1_r; split; auto with zarith; apply refl_equal.
- intros n; rewrite inj_S; unfold Z.succ; rewrite Zpower_exp, Z.pow_1_r; auto with zarith.
- intros IH Hle p.
- assert (F1: 2 ^ Z_of_nat n <= wB); auto with zarith.
-  assert (0 <= 2 ^ Z_of_nat n); auto with zarith.
- case p; simpl.
- intros p1.
- generalize (IH F1 p1); case positive_to_int_rec; simpl.
- intros n1 i (H1,H2).
- rewrite Zpos_xI, H1.
- replace (φ (i << 1 + 1)) with (φ i * 2 + 1).
- split; auto with zarith; ring.
- rewrite add_spec, lsl_spec, Zplus_mod_idemp_l, to_Z_1, Z.pow_1_r, Zmod_small; auto.
- case (to_Z_bounded i); split; auto with zarith.
- intros p1.
- generalize (IH F1 p1); case positive_to_int_rec; simpl.
- intros n1 i (H1,H2).
- rewrite Zpos_xO, H1.
- replace (φ (i << 1)) with (φ i * 2).
- split; auto with zarith; ring.
- rewrite lsl_spec, to_Z_1, Z.pow_1_r, Zmod_small; auto.
- case (to_Z_bounded i); split; auto with zarith.
- rewrite to_Z_1; assert (0 < 2^ Z_of_nat n); auto with zarith.
+ - intros _ p; simpl;
+     rewrite to_Z_0, Pmult_1_r; split; auto with zarith; apply refl_equal.
+ - intros n; rewrite inj_S; unfold Z.succ; rewrite Zpower_exp, Z.pow_1_r; auto with zarith.
+   intros IH Hle p.
+   assert (F1: 2 ^ Z_of_nat n <= wB); auto with zarith.
+   assert (0 <= 2 ^ Z_of_nat n); auto with zarith.
+   case p; simpl.
+   + intros p1.
+     generalize (IH F1 p1); case positive_to_int_rec; simpl.
+     intros n1 i (H1,H2).
+     rewrite Zpos_xI, H1.
+     replace (φ (i << 1 + 1)) with (φ i * 2 + 1).
+     * split; auto with zarith; ring.
+     * rewrite add_spec, lsl_spec, Zplus_mod_idemp_l, to_Z_1, Z.pow_1_r, Zmod_small; auto.
+       case (to_Z_bounded i); split; auto with zarith.
+   + intros p1.
+     generalize (IH F1 p1); case positive_to_int_rec; simpl.
+     intros n1 i (H1,H2).
+     rewrite Zpos_xO, H1.
+     replace (φ (i << 1)) with (φ i * 2).
+     * split; auto with zarith; ring.
+     * rewrite lsl_spec, to_Z_1, Z.pow_1_r, Zmod_small; auto.
+       case (to_Z_bounded i); split; auto with zarith.
+   + rewrite to_Z_1; assert (0 < 2^ Z_of_nat n); auto with zarith.
 Qed.
 
 Lemma mulc_WW_spec :
@@ -198,30 +198,30 @@ Lemma shift_unshift_mod_2 : forall n p a, 0 <= p <= n ->
    - remember (a * 2 ^ (n - p)) as b.
      destruct (Z_mod_lt b (2^n)); auto with zarith.
      split.
-     apply Z_div_pos; auto with zarith.
-     apply Zdiv_lt_upper_bound; auto with zarith.
-     apply Z.lt_le_trans with (2^n); auto with zarith.
-     generalize (pow2_pos (n - p)); nia.
+     + apply Z_div_pos; auto with zarith.
+     + apply Zdiv_lt_upper_bound; auto with zarith.
+       apply Z.lt_le_trans with (2^n); auto with zarith.
+       generalize (pow2_pos (n - p)); nia.
  Qed.
 
 Lemma div_le_0 : forall p x, 0 <= x -> 0 <= x / 2 ^ p.
  Proof.
   intros p x Hle;destruct (Z_le_gt_dec 0 p).
-  apply  Zdiv_le_lower_bound;auto with zarith.
-  replace (2^p) with 0.
-  destruct x;compute;intro;discriminate.
-  destruct p;trivial;discriminate.
+  - apply  Zdiv_le_lower_bound;auto with zarith.
+  - replace (2^p) with 0.
+    + destruct x;compute;intro;discriminate.
+    + destruct p;trivial;discriminate.
  Qed.
 
 Lemma div_lt : forall p x y, 0 <= x < y -> x / 2^p < y.
  Proof.
   intros p x y H;destruct (Z_le_gt_dec 0 p).
-  apply Zdiv_lt_upper_bound;auto with zarith.
-  apply Z.lt_le_trans with y;auto with zarith.
-  rewrite <- (Zmult_1_r y);apply Zmult_le_compat;auto with zarith.
-  replace (2^p) with 0.
-  destruct x;change (0<y);auto with zarith.
-  destruct p;trivial;discriminate.
+  - apply Zdiv_lt_upper_bound;auto with zarith.
+    apply Z.lt_le_trans with y;auto with zarith.
+    rewrite <- (Zmult_1_r y);apply Zmult_le_compat;auto with zarith.
+  - replace (2^p) with 0.
+    + destruct x;change (0<y);auto with zarith.
+    + destruct p;trivial;discriminate.
  Qed.
 
 Lemma P (A B C: Prop) :
@@ -236,13 +236,19 @@ Proof.
  intros;rewrite <- (shift_unshift_mod_2 n p a);[ | auto with zarith].
  symmetry;apply Zmod_small.
  generalize (a * 2 ^ (n - p));intros w.
- generalize (2 ^ (n - p)) (pow2_pos (n - p)); intros x; apply P. lia. intros hx.
- generalize (2 ^ n) (pow2_pos n); intros y; apply P. lia. intros hy.
- elim_div. intros q r. apply P. lia.
- elim_div. intros z t. refine (P _ _ _ _ _). lia.
- intros [ ? [ ht | ] ]; [ | lia ]; subst w.
- intros [ ? [ hr | ] ]; [ | lia ]; subst t.
- nia.
+ generalize (2 ^ (n - p)) (pow2_pos (n - p)); intros x; apply P.
+ - lia.
+ - intros hx.
+   generalize (2 ^ n) (pow2_pos n); intros y; apply P.
+   + lia.
+   + intros hy.
+     elim_div. intros q r. apply P.
+     * lia.
+     * elim_div. intros z t. refine (P _ _ _ _ _).
+       -- lia.
+       -- intros [ ? [ ht | ] ]; [ | lia ]; subst w.
+          intros [ ? [ hr | ] ]; [ | lia ]; subst t.
+          nia.
 Qed.
 
 Lemma pos_mod_spec w p : φ(pos_mod p w) = φ(w) mod (2 ^ φ(p)).

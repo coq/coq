@@ -16,9 +16,15 @@ Set Implicit Arguments.
 
 Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
  Proof.
-  constructor. exact Nat.add_0_l. exact Nat.add_comm. exact Nat.add_assoc.
-  exact Nat.mul_1_l. exact Nat.mul_0_l. exact Nat.mul_comm. exact Nat.mul_assoc.
-  exact Nat.mul_add_distr_r.
+   constructor.
+   - exact Nat.add_0_l.
+   - exact Nat.add_comm.
+   - exact Nat.add_assoc.
+   - exact Nat.mul_1_l.
+   - exact Nat.mul_0_l.
+   - exact Nat.mul_comm.
+   - exact Nat.mul_assoc.
+   - exact Nat.mul_add_distr_r.
  Qed.
 
 Lemma nat_morph_N :
@@ -26,9 +32,9 @@ Lemma nat_morph_N :
           0%N 1%N N.add N.mul N.eqb N.to_nat.
 Proof.
   constructor;trivial.
-  exact N2Nat.inj_add.
-  exact N2Nat.inj_mul.
-  intros x y H. apply N.eqb_eq in H. now subst.
+  - exact N2Nat.inj_add.
+  - exact N2Nat.inj_mul.
+  - intros x y H. apply N.eqb_eq in H. now subst.
 Qed.
 
 Ltac natcst t :=

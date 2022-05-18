@@ -161,8 +161,8 @@ Lemma Nleb_ltb_trans a b c :
 Proof.
   unfold Nleb. intros. apply leb_correct_conv.
   apply Nat.le_lt_trans with (m := N.to_nat b).
-  apply leb_complete. assumption.
-  apply leb_complete_conv. assumption.
+  - apply leb_complete. assumption.
+  - apply leb_complete_conv. assumption.
 Qed.
 
 Lemma Nltb_leb_trans a b c :
@@ -170,8 +170,8 @@ Lemma Nltb_leb_trans a b c :
 Proof.
   unfold Nleb. intros. apply leb_correct_conv.
   apply Nat.lt_le_trans with (m := N.to_nat b).
-  apply leb_complete_conv. assumption.
-  apply leb_complete. assumption.
+  - apply leb_complete_conv. assumption.
+  - apply leb_complete. assumption.
 Qed.
 
 Lemma Nltb_trans a b c :
@@ -179,8 +179,8 @@ Lemma Nltb_trans a b c :
 Proof.
   unfold Nleb. intros. apply leb_correct_conv.
   apply Nat.lt_trans with (m := N.to_nat b).
-  apply leb_complete_conv. assumption.
-  apply leb_complete_conv. assumption.
+  - apply leb_complete_conv. assumption.
+  - apply leb_complete_conv. assumption.
 Qed.
 
 Lemma Nltb_leb_weak a b : Nleb b a = false -> Nleb a b = true.
@@ -224,9 +224,10 @@ Qed.
 Lemma Nltb_double_mono a b :
    Nleb a b = false -> Nleb (N.double a) (N.double b) = false.
 Proof.
-  intros. elim (sumbool_of_bool (Nleb (N.double a) (N.double b))). intro H0.
-  rewrite (Nleb_double_mono_conv _ _ H0) in H. discriminate H.
-  trivial.
+  intros. elim (sumbool_of_bool (Nleb (N.double a) (N.double b))).
+  - intro H0.
+    rewrite (Nleb_double_mono_conv _ _ H0) in H. discriminate H.
+  - trivial.
 Qed.
 
 Lemma Nltb_double_plus_one_mono a b :
@@ -234,26 +235,28 @@ Lemma Nltb_double_plus_one_mono a b :
    Nleb (N.succ_double a) (N.succ_double b) = false.
 Proof.
   intros. elim (sumbool_of_bool (Nleb (N.succ_double a) (N.succ_double b))).
-  intro H0.
-  rewrite (Nleb_double_plus_one_mono_conv _ _ H0) in H. discriminate H.
-  trivial.
+  - intro H0.
+    rewrite (Nleb_double_plus_one_mono_conv _ _ H0) in H. discriminate H.
+  - trivial.
 Qed.
 
 Lemma Nltb_double_mono_conv a b :
   Nleb (N.double a) (N.double b) = false -> Nleb a b = false.
 Proof.
-  intros. elim (sumbool_of_bool (Nleb a b)). intro H0.
-  rewrite (Nleb_double_mono _ _ H0) in H. discriminate H.
-  trivial.
+  intros. elim (sumbool_of_bool (Nleb a b)).
+  - intro H0.
+    rewrite (Nleb_double_mono _ _ H0) in H. discriminate H.
+  - trivial.
 Qed.
 
 Lemma Nltb_double_plus_one_mono_conv a b :
   Nleb (N.succ_double a) (N.succ_double b) = false ->
    Nleb a b = false.
 Proof.
-  intros. elim (sumbool_of_bool (Nleb a b)). intro H0.
-  rewrite (Nleb_double_plus_one_mono _ _ H0) in H. discriminate H.
-  trivial.
+  intros. elim (sumbool_of_bool (Nleb a b)).
+  - intro H0.
+    rewrite (Nleb_double_plus_one_mono _ _ H0) in H. discriminate H.
+  - trivial.
 Qed.
 
 (* Nleb and N.compare *)

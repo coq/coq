@@ -34,9 +34,10 @@ Proof.
   intros Hg LE (Hn,Hd). rewrite Hd, Hn.
   rewrite <- Hg in LE; clear Hg.
   assert (0 <> g) by (intro; subst; discriminate).
-  rewrite Z2Pos.id. ring.
-  now rewrite <- (Z.mul_pos_cancel_l g); [ rewrite <- Hd | apply Z.le_neq ].
-  Close Scope Z_scope.
+  rewrite Z2Pos.id.
+  - ring.
+  - now rewrite <- (Z.mul_pos_cancel_l g); [ rewrite <- Hd | apply Z.le_neq ].
+    Close Scope Z_scope.
 Qed.
 
 Lemma Qred_complete : forall p q,  p==q -> Qred p = Qred q.

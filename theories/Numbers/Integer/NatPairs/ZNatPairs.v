@@ -99,12 +99,12 @@ Proof. reflexivity. Qed.
 Instance eq_equiv : Equivalence Z.eq.
 Proof.
 split.
-unfold Reflexive, Z.eq. reflexivity.
-unfold Symmetric, Z.eq; now symmetry.
-unfold Transitive, Z.eq. intros (n1,n2) (m1,m2) (p1,p2) H1 H2; simpl in *.
-apply (add_cancel_r _ _ (m1+m2)%N).
-rewrite add_shuffle2, H1, add_shuffle1, H2.
-now rewrite add_shuffle1, (add_comm m1).
+- unfold Reflexive, Z.eq. reflexivity.
+- unfold Symmetric, Z.eq; now symmetry.
+- unfold Transitive, Z.eq. intros (n1,n2) (m1,m2) (p1,p2) H1 H2; simpl in *.
+  apply (add_cancel_r _ _ (m1+m2)%N).
+  rewrite add_shuffle2, H1, add_shuffle1, H2.
+  now rewrite add_shuffle1, (add_comm m1).
 Qed.
 
 #[global]
@@ -157,13 +157,14 @@ Qed.
 #[global]
 Instance mul_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.mul.
 Proof.
-assert (forall n, Proper (Z.eq ==> Z.eq) (Z.mul n)).
+assert (forall n, Proper (Z.eq ==> Z.eq) (Z.mul n)). {
  unfold Z.mul, Z.eq. intros (n1,n2) (p1,p2) (q1,q2) H; simpl in *.
  rewrite add_shuffle1, (add_comm (n1*p1)%N).
  symmetry. rewrite add_shuffle1.
  rewrite <- ! mul_add_distr_l.
  rewrite (add_comm p2), (add_comm q2), H.
  reflexivity.
+}
 intros n n' Hn m m' Hm.
 rewrite Hm, (mul_comm n), (mul_comm n'), Hn.
 reflexivity.
@@ -180,18 +181,21 @@ Open Scope NScope.
 intros A0 AS n; unfold Z.zero, Z.succ, Z.eq in *.
 destruct n as [n m].
 cut (forall p, A (p, 0)); [intro H1 |].
-cut (forall p, A (0, p)); [intro H2 |].
-destruct (add_dichotomy n m) as [[p H] | [p H]].
-rewrite (A_wd (n, m) (0, p)) by (rewrite add_0_l; now rewrite add_comm).
-apply H2.
-rewrite (A_wd (n, m) (p, 0)) by now rewrite add_0_r. apply H1.
-induct p. assumption. intros p IH.
-apply (A_wd (0, p) (1, N.succ p)) in IH; [| now rewrite add_0_l, add_1_l].
-rewrite one_succ in IH. now apply AS.
-induct p. assumption. intros p IH.
-replace 0 with (snd (p, 0)); [| reflexivity].
-replace (N.succ p) with (N.succ (fst (p, 0))); [| reflexivity]. now apply -> AS.
-Close Scope NScope.
+- cut (forall p, A (0, p)); [intro H2 |].
+  + destruct (add_dichotomy n m) as [[p H] | [p H]].
+    * rewrite (A_wd (n, m) (0, p)) by (rewrite add_0_l; now rewrite add_comm).
+      apply H2.
+    * rewrite (A_wd (n, m) (p, 0)) by now rewrite add_0_r. apply H1.
+  + induct p. * assumption.
+      * intros p IH.
+        apply (A_wd (0, p) (1, N.succ p)) in IH; [| now rewrite add_0_l, add_1_l].
+        rewrite one_succ in IH. now apply AS.
+- induct p.
+  + assumption.
+  + intros p IH.
+    replace 0 with (snd (p, 0)); [| reflexivity].
+    replace (N.succ p) with (N.succ (fst (p, 0))); [| reflexivity]. now apply -> AS.
+    Close Scope NScope.
 Qed.
 
 End Induction.
@@ -314,14 +318,14 @@ Qed.
 Instance lt_wd : Proper (Z.eq ==> Z.eq ==> iff) Z.lt.
 Proof.
 assert (forall n, Proper (Z.eq==>iff) (Z.lt n)).
- intros (n1,n2). apply proper_sym_impl_iff; auto with *.
- unfold Z.lt, Z.eq; intros (r1,r2) (s1,s2) Eq H; simpl in *.
- apply le_lt_add_lt with (r1+r2)%N (r1+r2)%N; [apply le_refl; auto with *|].
- rewrite add_shuffle2, (add_comm s2), Eq.
- rewrite (add_comm s1 n2), (add_shuffle1 n2), (add_comm n2 r1).
- now rewrite <- add_lt_mono_r.
-intros n n' Hn m m' Hm.
-rewrite Hm. rewrite 2 lt_nge, 2 lt_eq_cases, Hn; auto with *.
+- intros (n1,n2). apply proper_sym_impl_iff; auto with *.
+  unfold Z.lt, Z.eq; intros (r1,r2) (s1,s2) Eq H; simpl in *.
+  apply le_lt_add_lt with (r1+r2)%N (r1+r2)%N; [apply le_refl; auto with *|].
+  rewrite add_shuffle2, (add_comm s2), Eq.
+  rewrite (add_comm s1 n2), (add_shuffle1 n2), (add_comm n2 r1).
+  now rewrite <- add_lt_mono_r.
+- intros n n' Hn m m' Hm.
+  rewrite Hm. rewrite 2 lt_nge, 2 lt_eq_cases, Hn; auto with *.
 Qed.
 
 Definition t := Z.t.

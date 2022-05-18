@@ -53,29 +53,31 @@ Defined.
 Lemma cring_almost_ring_theory:
    almost_ring_theory (R:=R) zero one _+_ _*_ _-_ -_ _==_.
 intros. apply mk_art ;intros. 
-rewrite ring_add_0_l; reflexivity. 
-rewrite ring_add_comm; reflexivity. 
-rewrite ring_add_assoc; reflexivity. 
-rewrite ring_mul_1_l; reflexivity. 
-apply ring_mul_0_l.
-rewrite cring_mul_comm; reflexivity. 
-rewrite ring_mul_assoc; reflexivity. 
-rewrite ring_distr_l; reflexivity. 
-rewrite ring_opp_mul_l; reflexivity. 
-apply ring_opp_add.
-rewrite ring_sub_def ; reflexivity. Defined.
+- rewrite ring_add_0_l; reflexivity.
+- rewrite ring_add_comm; reflexivity.
+- rewrite ring_add_assoc; reflexivity.
+- rewrite ring_mul_1_l; reflexivity.
+- apply ring_mul_0_l.
+- rewrite cring_mul_comm; reflexivity.
+- rewrite ring_mul_assoc; reflexivity.
+- rewrite ring_distr_l; reflexivity.
+- rewrite ring_opp_mul_l; reflexivity.
+- apply ring_opp_add.
+- rewrite ring_sub_def ; reflexivity.
+Defined.
 
 Lemma cring_morph:
   ring_morph  zero one _+_ _*_ _-_ -_ _==_
              0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool
              Ncring_initial.gen_phiZ.
 intros. apply mkmorph ; intros; simpl; try reflexivity.
-rewrite Ncring_initial.gen_phiZ_add; reflexivity.
-rewrite ring_sub_def. unfold Z.sub. rewrite Ncring_initial.gen_phiZ_add.
-rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
-rewrite Ncring_initial.gen_phiZ_mul; reflexivity.
-rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
-rewrite (Zeqb_ok x y H). reflexivity. Defined.
+- rewrite Ncring_initial.gen_phiZ_add; reflexivity.
+- rewrite ring_sub_def. unfold Z.sub. rewrite Ncring_initial.gen_phiZ_add.
+  rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
+- rewrite Ncring_initial.gen_phiZ_mul; reflexivity.
+- rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
+- rewrite (Zeqb_ok x y H). reflexivity.
+Defined.
 
 Lemma cring_power_theory : 
   @Ring_theory.power_theory R one _*_ _==_ N (fun n:N => n)
