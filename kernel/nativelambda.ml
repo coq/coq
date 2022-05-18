@@ -49,7 +49,6 @@ type lambda =
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
   | Lind          of prefix * pinductive
-  | Llazy
   | Lforce
 
 and lam_branches =
@@ -123,7 +122,7 @@ let get_const_prefix env c =
 let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Luint _
-  | Llazy | Lforce | Lmeta _ | Lint _ | Lfloat _ -> lam
+  | Lforce | Lmeta _ | Lint _ | Lfloat _ -> lam
   | Lprod(dom,codom) ->
       let dom' = f n dom in
       let codom' = f n codom in
@@ -663,6 +662,3 @@ let lambda_of_constr env sigma c =
     (msgerrnl (str "Lambda = \n" ++ pp_lam lam);flush_all());
   end; *)
   optimize lam
-
-let mk_lazy c =
-  mkLapp Llazy [|c|]
