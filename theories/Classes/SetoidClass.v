@@ -145,4 +145,5 @@ Infix "=~=" := pequiv (at level 70, no associativity) : type_scope.
 
 (** Reset the default Program tactic. *)
 
-Obligation Tactic := program_simpl.
+#[global] Obligation Tactic := program_simpl.
+#[export] Obligation Tactic := program_simpl.

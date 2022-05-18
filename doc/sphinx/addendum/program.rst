@@ -273,10 +273,18 @@ optional tactic is replaced by the default one if not specified.
    automatically, whether to solve them or when starting to prove one,
    e.g. using :cmd:`Next Obligation`.
 
-   This command supports the :attr:`local` and :attr:`global` attributes.
+   This command supports the :attr:`local`, :attr:`export` and :attr:`global` attributes.
    :attr:`local` makes the setting last only for the current
    module. :attr:`local` is the default inside sections while :attr:`global`
-   otherwise.
+   otherwise. :attr:`export` and :attr:`global` may be used together.
+
+   When :attr:`global` is used without :attr:`export` and when no
+   explicit locality is used outside sections, the meaning is
+   different from the usual meaning of :attr:`global`: the command's
+   effect persists after the current module is closed (as with the
+   usual :attr:`global`), but it is also reapplied when the module or
+   any of its parents is imported. This will change in a future
+   version.
 
 .. cmd:: Show Obligation Tactic
 

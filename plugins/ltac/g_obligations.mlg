@@ -26,8 +26,9 @@ let (set_default_tactic, get_default_tactic, print_default_tactic) =
 let () =
   (* Delay to recover the tactic imperatively *)
   let tac = Proofview.tclBIND (Proofview.tclUNIT ()) begin fun () ->
-    snd (get_default_tactic ())
-  end in
+      get_default_tactic ()
+    end
+  in
   Declare.Obls.default_tactic := tac
 
 let with_tac f tac =
@@ -132,9 +133,9 @@ VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF STATE program
 END
 
 VERNAC COMMAND EXTEND Set_Solver CLASSIFIED AS SIDEFF
-| #[ locality = Attributes.locality; ] [ "Obligation" "Tactic" ":=" tactic(t) ] -> {
+| #[ locality = Tactic_option.tac_option_locality; ] [ "Obligation" "Tactic" ":=" tactic(t) ] -> {
         set_default_tactic
-          (Locality.make_section_locality locality)
+          locality
           (Tacintern.glob_tactic t);
   }
 END
