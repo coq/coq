@@ -528,10 +528,8 @@ let fold_left4_map f e l1 l2 l3 l4 =
 
 (** {6 Splitting} *)
 
-let except cmp x l =
+let remove cmp x l =
   List.filter (fun y -> not (cmp x y)) l
-
-let remove = except (* Alias *)
 
 let rec remove_first p = function
   | b :: l when p b -> l

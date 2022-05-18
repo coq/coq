@@ -233,7 +233,7 @@ let open_scope i (local,op,sc) =
   if Int.equal i 1 then
     scope_stack :=
       if op then sc :: !scope_stack
-      else List.except scope_eq sc !scope_stack
+      else List.remove scope_eq sc !scope_stack
 
 let cache_scope o =
   open_scope 1 o

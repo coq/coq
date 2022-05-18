@@ -205,11 +205,8 @@ val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list ->
 
 (** {6 Splitting} *)
 
-val except : 'a eq -> 'a -> 'a list -> 'a list
-(** [except eq a l] Remove all occurrences of [a] in [l] *)
-
 val remove : 'a eq -> 'a -> 'a list -> 'a list
-(** Alias of [except] *)
+(** [remove eq a l] Remove all occurrences of [a] in [l] *)
 
 val remove_first : ('a -> bool) -> 'a list -> 'a list
 (** Remove the first element satisfying a predicate, or raise [Not_found] *)
