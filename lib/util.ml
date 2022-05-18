@@ -66,7 +66,7 @@ let subst_command_placeholder s t =
 
 (* Lists *)
 
-module List : CList.ExtS = CList
+module List = CList
 
 let (@) = CList.append
 

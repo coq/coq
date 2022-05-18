@@ -60,7 +60,7 @@ val subst_command_placeholder : string -> string -> string
 
 (** {6 Lists. } *)
 
-module List : CList.ExtS
+module List : module type of CList
 
 val (@) : 'a list -> 'a list -> 'a list
 
