@@ -295,6 +295,28 @@ Induction
    .. exn:: Not an inductive product.
       :undocumented:
 
+   .. exn:: Cannot recognize a statement based on @reference.
+
+      The type of the :n:`@induction_arg` (in an :n:`@induction_clause`) must reduce to the
+      :n:`@reference` which was inferred as the type the induction
+      principle operates on. Note that it is not enough to be convertible, but you can
+      work around that with :tacn:`change`:
+
+      .. coqtop:: reset all
+
+         Definition N := nat.
+         Axiom strong : forall P, (forall n:N, (forall m:N, m < n -> P m) -> P n)
+           -> forall n, P n.
+
+         Axiom P : N -> Prop.
+
+         Goal forall n:nat, P n.
+         intros.
+         Fail induction n using strong.
+         change N in n.
+         (* n is now of type N, matching the inferred type that strong operates on *)
+         induction n using strong.
+
    .. exn:: Unable to find an instance for the variables @ident … @ident.
 
       Use the :n:`with @bindings` clause or the :tacn:`einduction` tactic instead.
