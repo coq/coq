@@ -11,139 +11,6 @@
 type 'a cmp = 'a -> 'a -> int
 type 'a eq = 'a -> 'a -> bool
 
-module type S = module type of List
-
-module type ExtS =
-sig
-  include S
-  val compare : 'a cmp -> 'a list cmp
-  val equal : 'a eq -> 'a list eq
-  val is_empty : 'a list -> bool
-  val mem_f : 'a eq -> 'a -> 'a list -> bool
-  val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
-  val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-  val exists_i : (int -> 'a -> bool) -> int -> 'a list -> bool
-  val prefix_of : 'a eq -> 'a list -> 'a list -> bool
-  val same_length : 'a list -> 'b list -> bool
-  val interval : int -> int -> int list
-  val make : int -> 'a -> 'a list
-  val addn : int -> 'a -> 'a list -> 'a list
-  val init : int -> (int -> 'a) -> 'a list
-  val append : 'a list -> 'a list -> 'a list
-  val concat : 'a list list -> 'a list
-  val flatten : 'a list list -> 'a list
-  val assign : 'a list -> int -> 'a -> 'a list
-  val filter : ('a -> bool) -> 'a list -> 'a list
-  val filter2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> 'a list * 'b list
-  val filteri :
-    (int -> 'a -> bool) -> 'a list -> 'a list
-  val filter_with : bool list -> 'a list -> 'a list
-  val map_filter : ('a -> 'b option) -> 'a list -> 'b list
-  val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
-  val partitioni :
-    (int -> 'a -> bool) -> 'a list -> 'a list * 'a list
-  val map : ('a -> 'b) -> 'a list -> 'b list
-  val map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-  val map_left : ('a -> 'b) -> 'a list -> 'b list
-  val map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
-  val map2_i :
-    (int -> 'a -> 'b -> 'c) -> int -> 'a list -> 'b list -> 'c list
-  val map3 :
-    ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
-  val map4 :
-    ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list -> 'd list -> 'e list
-  val map_of_array : ('a -> 'b) -> 'a array -> 'b list
-  val map_append : ('a -> 'b list) -> 'a list -> 'b list
-  val map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
-  val extend : bool list -> 'a -> 'a list -> 'a list
-  val count : ('a -> bool) -> 'a list -> int
-  val index : 'a eq -> 'a -> 'a list -> int
-  val safe_index : 'a eq -> 'a -> 'a list -> int option
-  val index0 : 'a eq -> 'a -> 'a list -> int
-  val fold_left_until : ('c -> 'a -> 'c CSig.until) -> 'c -> 'a list -> 'c
-  val fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
-  val fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
-  val fold_right_and_left :
-      ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
-  val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
-  val fold_left2_set : exn -> ('a -> 'b -> 'c -> 'b list -> 'c list -> 'a) -> 'a -> 'b list -> 'c list -> 'a
-  val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
-  val fold_right_map : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
-  val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b list -> 'c list -> 'a * 'd list
-  val fold_right2_map : ('b -> 'c -> 'a -> 'd * 'a) -> 'b list -> 'c list -> 'a -> 'd list * 'a
-  val fold_left3_map : ('a -> 'b -> 'c -> 'd -> 'a * 'e) -> 'a -> 'b list -> 'c list -> 'd list -> 'a * 'e list
-  val fold_left4_map : ('a -> 'b -> 'c -> 'd -> 'e -> 'a * 'r) -> 'a -> 'b list -> 'c list -> 'd list -> 'e list -> 'a * 'r list
-  val except : 'a eq -> 'a -> 'a list -> 'a list
-  val remove : 'a eq -> 'a -> 'a list -> 'a list
-  val remove_first : ('a -> bool) -> 'a list -> 'a list
-  val extract_first : ('a -> bool) -> 'a list -> 'a list * 'a
-  val find_map : ('a -> 'b option) -> 'a list -> 'b
-  exception IndexOutOfRange
-  val goto : int -> 'a list -> 'a list * 'a list
-  val split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
-  val sep_first : 'a list -> 'a * 'a list
-  val sep_last : 'a list -> 'a * 'a list
-  val drop_last : 'a list -> 'a list
-  val last : 'a list -> 'a
-  val lastn : int -> 'a list -> 'a list
-  val chop : int -> 'a list -> 'a list * 'a list
-  val firstn : int -> 'a list -> 'a list
-  val skipn : int -> 'a list -> 'a list
-  val skipn_at_least : int -> 'a list -> 'a list
-  val drop_prefix : 'a eq -> 'a list -> 'a list -> 'a list
-  val insert : ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
-  val share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
-  val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
-  val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
-  val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
-  val mem_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> bool
-  val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
-  val split : ('a * 'b) list -> 'a list * 'b list
-  val combine : 'a list -> 'b list -> ('a * 'b) list
-  val split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
-  val split4 : ('a * 'b * 'c * 'd) list -> 'a list * 'b list * 'c list * 'd list
-  val combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
-  val add_set : 'a eq -> 'a -> 'a list -> 'a list
-  val eq_set : 'a eq -> 'a list -> 'a list -> bool
-  val subset : 'a list -> 'a list -> bool
-  val merge_set : 'a cmp -> 'a list -> 'a list -> 'a list
-  val intersect : 'a eq -> 'a list -> 'a list -> 'a list
-  val union : 'a eq -> 'a list -> 'a list -> 'a list
-  val unionq : 'a list -> 'a list -> 'a list
-  val subtract : 'a eq -> 'a list -> 'a list -> 'a list
-  val subtractq : 'a list -> 'a list -> 'a list
-  val distinct : 'a list -> bool
-  val distinct_f : 'a cmp -> 'a list -> bool
-  val duplicates : 'a eq -> 'a list -> 'a list
-  val uniquize_key : ('a -> 'b) -> 'a list -> 'a list
-  val uniquize : 'a list -> 'a list
-  val sort_uniquize : 'a cmp -> 'a list -> 'a list
-  val min : 'a cmp -> 'a list -> 'a
-  val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-  val cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
-  val combinations : 'a list list -> 'a list list
-  val cartesians_filter :
-    ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
-
-  module Smart :
-  sig
-    val map : ('a -> 'a) -> 'a list -> 'a list
-    val fold_left_map : ('a -> 'b -> 'a * 'b) -> 'a -> 'b list -> 'a * 'b list
-    val fold_right_map : ('b -> 'a -> 'b * 'a) -> 'b list -> 'a -> 'b list * 'a
-  end
-
-  module type MonoS = sig
-    type elt
-    val equal : elt list -> elt list -> bool
-    val mem : elt -> elt list -> bool
-    val assoc : elt -> (elt * 'a) list -> 'a
-    val mem_assoc : elt -> (elt * 'a) list -> bool
-    val remove_assoc : elt -> (elt * 'a) list -> (elt * 'a) list
-    val mem_assoc_sym : elt -> ('a * elt) list -> bool
-  end
-
-end
-
 include List
 
 (** Tail-rec implementation of usual functions. This is a well-known trick used
@@ -661,10 +528,8 @@ let fold_left4_map f e l1 l2 l3 l4 =
 
 (** {6 Splitting} *)
 
-let except cmp x l =
+let remove cmp x l =
   List.filter (fun y -> not (cmp x y)) l
-
-let remove = except (* Alias *)
 
 let rec remove_first p = function
   | b :: l when p b -> l
