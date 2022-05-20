@@ -1,7 +1,3 @@
-(library
- (name coqdeplib)
- (modules :standard \ coqdep)
- (libraries coq-core.boot coq-core.lib findlib.internal))
 
 (executable
  (name coqdep)
@@ -10,5 +6,3 @@
  (modes exe byte)
  (modules coqdep)
  (libraries coqdeplib))
-
-(ocamllex lexer)
