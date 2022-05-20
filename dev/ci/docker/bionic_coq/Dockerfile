@@ -44,7 +44,7 @@ ENV NJOBS="2" \
 ENV COMPILER="4.09.0"
 
 # Common OPAM packages
-ENV BASE_OPAM="zarith.1.11 ocamlfind.1.9.1 ounit2.2.2.3 odoc.1.5.3" \
+ENV BASE_OPAM="zarith.1.11 ocamlfind.1.9.1 ounit2.2.2.3 odoc.1.5.3 camlp-streams.5.0" \
     CI_OPAM="ocamlgraph.1.8.8 yojson.1.7.0 cppo.1.6.8" \
     BASE_ONLY_OPAM="dune.2.9.1 elpi.1.15.2 stdlib-shims.0.1.0"
 

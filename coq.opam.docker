@@ -25,6 +25,7 @@ depends: [
   "ocamlfind" { build }
   "zarith"    { >= "1.11" }
   "conf-findutils" {build}
+  "camlp-streams" {>= "5.0"}
 ]
 
 depopts: [

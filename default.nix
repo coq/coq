@@ -69,7 +69,7 @@ stdenv.mkDerivation rec {
   # This follows a similar change in the nixpkgs repo (cf. NixOS/nixpkgs#101058)
   # ocamlfind looks for zarith when building plugins
   # This follows a similar change in the nixpkgs repo (cf. NixOS/nixpkgs#94230)
-  propagatedBuildInputs = with ocamlPackages; [ ocaml findlib zarith ];
+  propagatedBuildInputs = with ocamlPackages; [ ocaml findlib zarith camlp-streams ];
 
   propagatedUserEnvPkgs = with ocamlPackages; [ ocaml findlib ];
 
