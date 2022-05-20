@@ -8,12 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module Dynlink = struct
-  type t = Opt | Byte | Both | No | Variable
-end
-
-let boot = ref false
-let sort = ref false
-let write_vos = ref false
-let noglob = ref false
-let dynlink = ref Dynlink.Both
+let give args =
+  let open Format in
+  eprintf "*** Warning: @[";
+  kfprintf (fun fmt -> fprintf fmt "@]\n%!") err_formatter args

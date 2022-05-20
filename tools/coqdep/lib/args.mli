@@ -8,12 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module Dynlink = struct
-  type t = Opt | Byte | Both | No | Variable
-end
+type t =
+  { boot : bool
+  ; sort : bool
+  ; vos : bool
+  ; noglob : bool
+  ; coqproject : string option
+  ; ml_path : string list
+  ; vo_path : (bool * string * string) list
+  ; dyndep : Options.Dynlink.t
+  ; meta_files : string list
+  ; files : string list
+  }
 
-let boot = ref false
-let sort = ref false
-let write_vos = ref false
-let noglob = ref false
-let dynlink = ref Dynlink.Both
+val make : unit -> t
+val usage : unit -> 'a
+val parse : t -> string list -> t

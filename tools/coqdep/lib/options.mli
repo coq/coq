@@ -8,4 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module Dynlink : sig
+  type t = Opt | Byte | Both | No | Variable
+end
+
 val boot : bool ref
+val sort : bool ref
+val write_vos : bool ref
+val noglob : bool ref
+val dynlink : Dynlink.t ref
