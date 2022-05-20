@@ -6,6 +6,7 @@ let _debug_loop_checking_clauses, _debug_clauses = CDebug.create_full ~name:"loo
 (* let _debug_loop_checking_bwdclauses, debug_bwdclauses = CDebug.create_full ~name:"loop-checking-bwdclauses" () *)
 let _debug_loop_checking_flag, debug = CDebug.create_full ~name:"loop-checking" ()
 let debug_loop_checking_timing_flag, debug_timing = CDebug.create_full ~name:"loop-checking-timing" ()
+let _debug_loop_checking_loop, debug_loop = CDebug.create_full ~name:"loop-checking-loop" ()
 let _debug_loop_checking_check_model, debug_check_model = CDebug.create_full ~name:"loop-checking-check-model" ()
 
 module type Point = sig
@@ -220,6 +221,9 @@ module ClausesOf = struct
 
     let of_list (k, prems) = (k, Premises.of_list prems)
 
+    let pr pr_pointint concl (k, prem) =
+      let open Pp in
+      hov 0 (prlist_with_sep (fun () -> str ",") pr_pointint prem ++ str " → " ++ pr_pointint (concl, k))
     (* let has_bound m idx (_k, prems) = *)
       (* List.exists (fun (l, _) -> (repr m l) == idx) prems *)
   end
@@ -229,9 +233,7 @@ module ClausesOf = struct
 
   let pr pr_pointint concl cls =
     let open Pp in
-    v 0 (prlist_with_sep spc (fun (k, prem) ->
-      hov 0 (prlist_with_sep (fun () -> str ",") pr_pointint prem ++ str " → " ++ pr_pointint (concl, k)))
-        (elements cls))
+    v 0 (prlist_with_sep spc (ClauseInfo.pr pr_pointint concl) (elements cls))
 
   (* Ocaml >= 4.11 has a more efficient version. *)
   let filter_map p l =
@@ -316,6 +318,8 @@ let pr_index_point m idx =
   with Not_found -> Pp.str"<point not in table>"
 
 let pr_pointint m = pr_with (pr_index_point m)
+
+let pr_clause_info m concl cl = ClausesOf.ClauseInfo.pr (pr_pointint m) concl cl
 
 let pr_clauses_of m = ClausesOf.pr (pr_pointint m)
 
@@ -699,44 +703,44 @@ let check { model; updates; clauses } (w : CanSet.t) =
     (* Should consider only clauses with conclusions in w *)
     (* Partition the clauses according to the presence of w in the premises *)
     let cardW = CanSet.cardinal premconclw in
-    debug Pp.(fun () -> str "Inner loop on " ++ int cardW ++ str" universes: " ++
+    debug_loop Pp.(fun () -> str "Inner loop on " ++ int cardW ++ str" universes: " ++
       str " Premises and conclusions in w: " ++ pr_w m premconclw ++
       str " Conclusions in w: " ++ pr_w m conclw);
     let rec inner_loop_partition w m =
-      debug Pp.(fun () -> str "w = " ++ pr_w m w);
+      debug_loop Pp.(fun () -> str "w = " ++ pr_w m w);
       match loop cardW w m with
       | Loop -> Loop
       | Model (wr, mr) ->
-        debug Pp.(fun () -> str "wr = " ++ pr_w mr wr);
+        debug_loop Pp.(fun () -> str "wr = " ++ pr_w mr wr);
         (match check_clauses_with_premises conclw mr with
         | Some (wconcl, mconcl) ->
-          debug Pp.(fun () -> str "wconcl = " ++ pr_w mconcl wconcl);
+          debug_loop Pp.(fun () -> str "wconcl = " ++ pr_w mconcl wconcl);
           inner_loop_partition wconcl mconcl
         | None ->
-          debug Pp.(fun () -> str"Inner loop found a model");
+          debug_loop Pp.(fun () -> str"Inner loop found a model");
           Model (wr, mr))
       in inner_loop_partition premconclw m
   and loop cV u m =
-    debug Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr m u);
+    debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr m u);
     match check_clauses_with_premises u m with
     | None -> Model (u, m)
     | Some (w, m) ->
       if Int.equal (CanSet.cardinal w) cV
-      then (debug Pp.(fun () -> str"Found a loop"); Loop)
+      then (debug_loop Pp.(fun () -> str"Found a loop"); Loop)
       else
         let (premconclw, conclw, premw) = partition_clauses_fwd m w in
-        debug Pp.(fun () -> str"partitioned clauses: forward from and to w " ++ spc () ++
+        debug_loop Pp.(fun () -> str"partitioned clauses: forward from and to w " ++ spc () ++
           CanSet.pr { m with entries = PMap.empty } premconclw);
-        debug Pp.(fun () -> str"partitioned clauses: forward to w not from w: " ++ spc () ++
+        debug_loop Pp.(fun () -> str"partitioned clauses: forward to w not from w: " ++ spc () ++
           CanSet.pr { m with entries = PMap.empty } conclw);
-        debug Pp.(fun () -> str"partitioned clauses: backward not from w, forward to w " ++ spc () ++
+        debug_loop Pp.(fun () -> str"partitioned clauses: backward not from w, forward to w " ++ spc () ++
           CanSet.pr { m with entries = PMap.empty } premw);
 
         (* debug_check_invariants { model = m; updates = w; clauses = conclnW }; *)
         (match inner_loop premconclw conclw m with
         | Loop -> Loop
         | Model (wc, mc) ->
-          debug Pp.(fun () -> str "wc = " ++ pr_w mc wc);
+          debug_loop Pp.(fun () -> str "wc = " ++ pr_w mc wc);
           (* wc is a subset of w *)
           (match check_clauses_with_premises premw mc with
           (* check_model_compare conclnW wc mc with *)
@@ -1069,26 +1073,81 @@ let mem_clause m ((l, kprem) : clause) : bool =
 
 type 'a check_function = t -> 'a -> 'a -> bool
 
+let check_clause_holds m can clause =
+  let (k, premises) = clause in
+  let canp = List.map (fun (idx, k) -> repr m idx, k) premises in
+  let rec aux (canv, kpath) =
+      try let k' = List.assq canv canp in kpath <= k'
+      with Not_found ->
+        let bwd = canv.clauses_bwd in
+        ClausesOf.exists
+          (fun (kp, premises) ->
+            List.exists (fun (idx, k') ->
+              let gidx = repr m idx in
+              aux (gidx, kp - k' + kpath)) premises)
+            bwd
+  in aux (can, k)
+
+let _check_clause_holds_fwd m can clause =
+  let (k, premises) = clause in
+  let canp = List.map (fun (idx, k) -> repr m idx, k) premises in
+  let rec aux (canv, kpath) =
+    let fwd = canv.clauses_fwd in (* Constraints canv -> ? *)
+    try let cls = PMap.find can.canon fwd in
+      (* Constraints canv -> can *)
+      ClausesOf.exists (fun (kp, premises) ->
+        let (_, kcanv) = List.hd premises in
+        (* canv + kcanv -> can + kp, does (canv + kpath) -> (can + k) holds *)
+        kcanv + kpath >= k - kp) cls
+    with Not_found ->
+      PMap.exists (fun idx cls ->
+        let canidx = repr m idx in
+        ClausesOf.exists (fun (kp, premises) ->
+          List.exists (fun (_, kcanv) -> aux (canidx, kcanv - kp + kpath)) premises)
+        cls) fwd
+  in List.exists aux canp
+
+(* Checks that a clause currently holds in the model *)
 let check_clause_of m conclv clause =
   let (k, premises) = clause in
   let k0 = min_premise m premises in
   if k0 < 0 then false (* We do not allow vacuously true constraints *)
-  else k + k0 <= conclv
+  else
+    (debug Pp.(fun () -> str"check_clause_of: k = " ++ int k ++ str" k0 = " ++ int k0 ++ str" conclv = " ++ int conclv);
+    k + k0 <= conclv)
+
+(* A clause x -> y might hold in the current minimal model without being valid in all
+   its extensions. We check that the "inverse" clause y -> x + 1 does *not* hold as
+   well to ensure that x -> y will really hold in all extensions.
+   Both clauses cannot be valid at the same time as this would imply a loop. *)
+let _check_inv_clause_of m concl clause =
+  let (k, premises) = clause in
+  let chk = List.for_all (fun (idx, idxk) ->
+    let vidx = model_value m idx in
+    check_clause_of m (vidx + idxk) (1, [concl, k]))
+    premises
+  in
+  debug Pp.(fun () -> str"check_inv_clause_of: " ++  pr_clause_info m concl clause ++ str " = " ++ bool chk);
+  chk
 
 let check_clauses m (cls : ClausesBackward.t) =
   PMap.for_all (fun concl cls ->
-    let conclv = model_value m concl in
-    ClausesOf.for_all (fun cl -> check_clause_of m conclv cl) cls)
+    let can = repr m concl in
+    ClausesOf.for_all (fun cl ->
+      if check_clause_of m can.value cl then check_clause_holds m (repr m concl) cl
+      else false) cls)
     cls
 
 let check_clauses m cls =
-  if check_clauses m cls then true
+  if check_clauses m cls then
+    (debug Pp.(fun () -> str"check_clauses succeeded on: " ++ pr_clauses_bwd m cls ++
+    str" and model " ++ pr_levelmap m); true)
   else (debug Pp.(fun () -> str"check_clauses failed on: " ++ pr_clauses_bwd m cls ++
     str" and model " ++ pr_levelmap m); false)
 
 let check_clause m (concl, cl) =
-  let conclv = (repr m concl).value in
-  ClausesOf.for_all (fun cl -> check_clause_of m conclv cl) cl
+  let conclv = repr m concl in
+  ClausesOf.for_all (fun cl -> check_clause_holds m conclv cl) cl
 
 let _check_clause = time2 (Pp.str"check_clause") check_clause
 
