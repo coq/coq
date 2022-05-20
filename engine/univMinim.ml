@@ -11,8 +11,6 @@
 open Univ
 open UnivSubst
 
-let _debug_uminim_flag, debug = CDebug.create_full ~name:"univ-minim" ()
-
 (* To disallow minimization to Set *)
 let { Goptions.get = get_set_minimization } =
   Goptions.declare_bool_option_and_ref
@@ -213,18 +211,15 @@ let minimize_univ_variables ctx us left right cstrs =
         in (Level.Map.remove r left, lbounds))
       left (left, LBMap.empty)
   in
-  let rec instance above (ctx, us, insts, cstrs as acc) u =
+  let rec instance (ctx, us, insts, cstrs as acc) u =
     let acc, left, lower =
       match Level.Map.find u left with
       | exception Not_found -> acc, [], Level.Map.empty
       | l ->
         let acc, left, newlow, lower =
           List.fold_left
-          (fun (acc, left, newlow, lower' as state) (d, l) ->
-            if Level.equal u l then state else
-            let above = Level.Set.add u above in
-           let acc', {enforce=enf;alg;lbound=l';lower} = aux above acc l in
-           let lower = lift_lower d lower in
+          (fun (acc, left, newlow, lower') (d, l) ->
+           let acc', {enforce=enf;alg;lbound=l';lower} = aux acc l in
            let l' =
              if enf then Universe.make l
              else l'
@@ -289,15 +284,12 @@ let minimize_univ_variables ctx us left right cstrs =
         try enforce_uppers (instantiate_lbound lbound)
         with UpperBoundedAlg ->
           enforce_uppers (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
-  and aux above (ctx, us, seen, cstrs as acc) u =
+  and aux (ctx, us, seen, cstrs as acc) u =
     try acc, Level.Map.find u seen.LBMap.lbmap
-    with Not_found ->
-      if Level.Set.mem u above then
-        acc, {enforce=true; alg=false; lbound=Universe.make u; lower = Level.Map.singleton u Le}
-      else instance above acc u
+    with Not_found -> instance acc u
   in
     UnivFlex.fold (fun u ~is_defined (ctx, us, seen, cstrs as acc) ->
-      if not is_defined then fst (aux Level.Set.empty acc u)
+      if not is_defined then fst (aux acc u)
       else Level.Set.remove u ctx, UnivFlex.make_nonalgebraic_variable us u, seen, cstrs)
       us (ctx, us, lbounds, cstrs)
 
@@ -321,8 +313,6 @@ let extra_union a b = {
 
 let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;above_prop} =
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
-  (* Keep the Set <= i constraints separate *)
-  debug (fun () -> Pp.str "Calling universe minimization");
   (* Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
     Constraints.partition (fun (l,d,r) -> d == Le && Level.is_set l) csts
