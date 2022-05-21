@@ -123,6 +123,7 @@ ide/coqide/default_bindings_src.exe
 ide/coqide/index_urls.txt
 .lia.cache
 .nia.cache
+.nra.cache
 
 # emacs save files
 *~
