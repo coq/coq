@@ -38,7 +38,8 @@ Require Export NsatzTactic.
 Ltac nsatz_internal_discrR ::= discrR.
 
 (* Real numbers *)
-Require Import Reals.
+Require Export Rbase.
+Require Export Rfunctions.
 Require Import RealField.
 
 Lemma Rsth : Setoid_Theory R (@eq R).
@@ -55,10 +56,15 @@ constructor;
 try (try apply Rsth;
    try (unfold respectful, Proper; unfold equality; unfold eq_notation in *;
   intros; try rewrite H; try rewrite H0; reflexivity)).
- exact Rplus_0_l. exact Rplus_comm. symmetry. apply Rplus_assoc.
- exact Rmult_1_l.  exact Rmult_1_r. symmetry. apply Rmult_assoc.
- exact Rmult_plus_distr_r. intros; apply Rmult_plus_distr_l.
-exact Rplus_opp_r.
+- exact Rplus_0_l.
+- exact Rplus_comm.
+- symmetry. apply Rplus_assoc.
+- exact Rmult_1_l.
+- exact Rmult_1_r.
+- symmetry. apply Rmult_assoc.
+- exact Rmult_plus_distr_r.
+- intros; apply Rmult_plus_distr_l.
+- exact Rplus_opp_r.
 Defined.
 
 Class can_compute_Z (z : Z) := dummy_can_compute_Z : True.
@@ -80,4 +86,6 @@ red. exact Rmult_comm. Defined.
 #[global]
 Instance Rdi : (Integral_domain (Rcr:=Rcri)).
 constructor.
-exact Rmult_integral. exact R_one_zero. Defined.
+- exact Rmult_integral.
+- exact R_one_zero.
+Defined.

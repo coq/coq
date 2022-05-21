@@ -53,9 +53,9 @@ Proof.
   - lra.
   - apply sqrt_pos.
   - rewrite Rsqr_sqrt.
-    apply cos2.
-    pose proof sin2_bound x.
-    lra.
+    + apply cos2.
+    + pose proof sin2_bound x.
+      lra.
 Qed.
 
 Lemma cos_sin_opp : forall x, cos x <=0 ->
@@ -68,10 +68,10 @@ Proof.
   - lra.
   - apply sqrt_pos.
   - rewrite Rsqr_sqrt.
-    rewrite <- Rsqr_neg.
-    apply cos2.
-    pose proof sin2_bound x.
-    lra.
+    + rewrite <- Rsqr_neg.
+      apply cos2.
+    + pose proof sin2_bound x.
+      lra.
 Qed.
 
 Lemma cos_sin_Rabs : forall x,
@@ -94,9 +94,9 @@ Proof.
   - lra.
   - apply sqrt_pos.
   - rewrite Rsqr_sqrt.
-    apply sin2.
-    pose proof cos2_bound x.
-    lra.
+    + apply sin2.
+    + pose proof cos2_bound x.
+      lra.
 Qed.
 
 Lemma sin_cos_opp : forall x, sin x <=0 ->
@@ -109,10 +109,10 @@ Proof.
   - lra.
   - apply sqrt_pos.
   - rewrite Rsqr_sqrt.
-    rewrite <- Rsqr_neg.
-    apply sin2.
-    pose proof cos2_bound x.
-    lra.
+    + rewrite <- Rsqr_neg.
+      apply sin2.
+    + pose proof cos2_bound x.
+      lra.
 Qed.
 
 Lemma sin_cos_Rabs : forall x,
@@ -184,9 +184,9 @@ Proof.
   rewrite <- sqrt_mult_alt by lra.
   rewrite Rsqr_div', Rsqr_sqrt by lra.
   field_simplify ((1 - (sin x)²) * (1 + (sin x)² / (1 - (sin x)²))).
-  rewrite sqrt_1.
-  field.
-  lra.
+  - rewrite sqrt_1.
+    field.
+  - lra.
 Qed.
 
 Lemma cos_tan : forall x, 0 < cos x ->
@@ -199,32 +199,36 @@ Proof.
     rewrite Htan.
     rewrite Rsqr_div'.
     rewrite <- Rsqr_neg.
+    pose proof cos2_bound x.
+    pose proof Rsqr_pos_lt (cos x) ltac:(lra).
+    pose proof sqrt_lt_R0 (cos x)² ltac:(assumption).
     rewrite Rsqr_sqrt.
+    2:lra.
     field_simplify( 1 + (1 - (cos x)²) / (cos x)² ).
+    2:lra.
     rewrite sqrt_div_alt.
+    2:lra.
     rewrite sqrt_1.
     field_simplify_eq.
-    rewrite sqrt_Rsqr.
-    reflexivity.
-    all: pose proof cos2_bound x.
-    all: pose proof Rsqr_pos_lt (cos x) ltac:(lra).
-    all: pose proof sqrt_lt_R0 (cos x)² ltac:(assumption).
-    all: lra.
+    2:lra.
+    rewrite sqrt_Rsqr;lra.
   - assert(Hsinge:0<=sin x) by lra.
     pose proof tan_cos x Hsinge as Htan.
     rewrite Htan.
     rewrite Rsqr_div'.
+    pose proof cos2_bound x.
+    pose proof Rsqr_pos_lt (cos x) ltac:(lra).
+    pose proof sqrt_lt_R0 (cos x)² ltac:(assumption).
     rewrite Rsqr_sqrt.
+    2:lra.
     field_simplify( 1 + (1 - (cos x)²) / (cos x)² ).
+    2:lra.
     rewrite sqrt_div_alt.
+    2:lra.
     rewrite sqrt_1.
     field_simplify_eq.
-    rewrite sqrt_Rsqr.
-    reflexivity.
-    all: pose proof cos2_bound x.
-    all: pose proof Rsqr_pos_lt (cos x) ltac:(lra).
-    all: pose proof sqrt_lt_R0 (cos x)² ltac:(assumption).
-    all: lra.
+    2:lra.
+    rewrite sqrt_Rsqr;lra.
 Qed.
 
 (*********************************************************)

@@ -12,6 +12,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
 Require Import Ranalysis2.
+Require Import Lra.
 Local Open Scope R_scope.
 
 (** Division *)
@@ -38,16 +39,67 @@ Proof.
         apply Rmult_lt_0_compat;
           [ apply Rabs_pos_lt; assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
   clear H3; intros alp_f2 H3.
-  cut
-    (forall x0:R,
-      Rabs (x0 - x) < alp_f2 -> Rabs (f2 x0 - f2 x) < Rabs (f2 x) / 2).
-  intro H4.
-  cut (forall a:R, Rabs (a - x) < alp_f2 -> Rabs (f2 x) / 2 < Rabs (f2 a)).
-  intro H5.
-  cut
-    (forall a:R,
-      Rabs a < Rmin eps_f2 alp_f2 -> / Rabs (f2 (x + a)) < 2 / Rabs (f2 x)).
-  intro Maj.
+  assert
+    (H4:forall x0:R,
+        Rabs (x0 - x) < alp_f2 -> Rabs (f2 x0 - f2 x) < Rabs (f2 x) / 2). {
+    intros.
+    case (Req_dec x x0); intro.
+    + rewrite <- H5; unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
+        unfold Rdiv; apply Rmult_lt_0_compat;
+        [ apply Rabs_pos_lt; assumption | apply Rinv_0_lt_compat; prove_sup0 ].
+    + elim H3; intros.
+      apply H7.
+      split.
+      * unfold D_x, no_cond; split.
+        -- trivial.
+        -- assumption.
+      * assumption.
+  }
+  assert (H5:forall a:R, Rabs (a - x) < alp_f2 -> Rabs (f2 x) / 2 < Rabs (f2 a)). {
+    intros.
+    assert (H6 := H4 a H5).
+    rewrite <- (Rabs_Ropp (f2 a - f2 x)) in H6.
+    rewrite Ropp_minus_distr in H6.
+    assert (H7 := Rle_lt_trans _ _ _ (Rabs_triang_inv _ _) H6).
+    apply Rplus_lt_reg_l with (- Rabs (f2 a) + Rabs (f2 x) / 2).
+    rewrite Rplus_assoc.
+    rewrite <- double_var.
+    do 2 rewrite (Rplus_comm (- Rabs (f2 a))).
+    rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r.
+    unfold Rminus in H7; assumption.
+  }
+  assert
+    (Maj:forall a:R,
+        Rabs a < Rmin eps_f2 alp_f2 -> / Rabs (f2 (x + a)) < 2 / Rabs (f2 x)). {
+    intros.
+    unfold Rdiv.
+    apply Rmult_lt_reg_l with (Rabs (f2 (x + a))).
+    - apply Rabs_pos_lt; apply H2.
+      apply Rlt_le_trans with (Rmin eps_f2 alp_f2).
+      + assumption.
+      + apply Rmin_l.
+    - rewrite <- Rinv_r_sym.
+      + apply Rmult_lt_reg_l with (Rabs (f2 x)).
+        { apply Rabs_pos_lt; assumption. }
+        rewrite Rmult_1_r.
+        rewrite (Rmult_comm (Rabs (f2 x))).
+        repeat rewrite Rmult_assoc.
+        rewrite <- Rinv_l_sym.
+        2:{ apply Rabs_no_R0; assumption. }
+        rewrite Rmult_1_r.
+        apply Rmult_lt_reg_l with (/ 2).
+        { apply Rinv_0_lt_compat; prove_sup0. }
+        repeat rewrite (Rmult_comm (/ 2)).
+        repeat rewrite Rmult_assoc.
+        rewrite <- Rinv_r_sym.
+        2:{ discrR. }
+        rewrite Rmult_1_r.
+        unfold Rdiv in H5; apply H5.
+        replace (x + a - x) with a by ring.
+        assert (H7 := Rlt_le_trans _ _ _ H6 (Rmin_r _ _)); assumption.
+      + apply Rabs_no_R0; apply H2.
+        assert (H7 := Rlt_le_trans _ _ _ H6 (Rmin_l _ _)); assumption.
+  }
   unfold derivable_pt_lim; intros.
   elim (H (Rabs (eps * f2 x / 8)));
     [ idtac
@@ -58,12 +110,15 @@ Proof.
             | apply Rinv_neq_0_compat; discrR ] ].
   intros alp_f1d H7.
   case (Req_dec (f1 x) 0); intro.
-  case (Req_dec l1 0); intro.
+  1:case (Req_dec l1 0); intro.
+  3:case (Req_dec l1 0); intro.
+  3:case (Req_dec l2 0); intro.
+  5:case (Req_dec l2 0); intro.
 (***********************************)
 (*              First case         *)
 (*           (f1 x)=0  l1 =0       *)
 (***********************************)
-  cut (0 < Rmin eps_f2 (Rmin alp_f2 alp_f1d));
+  - cut (0 < Rmin eps_f2 (Rmin alp_f2 alp_f1d));
     [ intro
       | repeat apply Rmin_pos;
         [ apply (cond_pos eps_f2)
@@ -81,47 +136,44 @@ Proof.
     (Rabs (/ f2 (x + h) * ((f1 (x + h) - f1 x) / h - l1)) +
       Rabs (l1 / (f2 x * f2 (x + h)) * (f2 x - f2 (x + h))) +
       Rabs (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) - f2 x) / h - l2)) +
-      Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h)) * (f2 (x + h) - f2 x))).
-  unfold Rminus.
-  rewrite <-
-    (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2)))
-    .
-  apply Rabs_4.
+       Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h)) * (f2 (x + h) - f2 x))).
+  { unfold Rminus.
+    rewrite <-
+            (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2))).
+    apply Rabs_4. }
   repeat rewrite Rabs_mult.
-  apply Rlt_le_trans with (eps / 4 + eps / 4 + eps / 4 + eps / 4).
+  replace eps with (eps / 4 + eps / 4 + eps / 4 + eps / 4) by field.
   cut (Rabs (/ f2 (x + h)) * Rabs ((f1 (x + h) - f1 x) / h - l1) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2);
+        try assumption || apply H2.
+      - apply H14.
+      - apply Rmin_2; assumption. }
   cut (Rabs (l1 / (f2 x * f2 (x + h))) * Rabs (f2 x - f2 (x + h)) < eps / 4).
+  2:{ rewrite H9.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
   cut
     (Rabs (f1 x / (f2 x * f2 (x + h))) * Rabs ((f2 (x + h) - f2 x) / h - l2) <
-      eps / 4).
+       eps / 4).
+  2:{ rewrite H8.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
   cut
     (Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h))) * Rabs (f2 (x + h) - f2 x) <
-      eps / 4).
-  intros.
-  apply Rlt_4; assumption.
-  rewrite H8.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite H8.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite H9.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite <- Rabs_mult.
-  apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2);
-    try assumption || apply H2.
-  apply H14.
-  apply Rmin_2; assumption.
-  right; symmetry ; apply quadruple_var.
+       eps / 4).
+  2:{ rewrite H8.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
+  intros. lra.
 (***********************************)
 (*           Second case           *)
 (*           (f1 x)=0  l1<>0       *)
 (***********************************)
-  assert (H10 := derivable_continuous_pt _ _ X).
+- assert (H10 := derivable_continuous_pt _ _ X).
   unfold continuity_pt in H10.
   unfold continue_in in H10.
   unfold limit1_in in H10.
@@ -130,14 +182,41 @@ Proof.
   simpl in H10.
   unfold R_dist in H10.
   elim (H10 (Rabs (eps * Rsqr (f2 x) / (8 * l1)))).
+  2:{ change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
+      apply Rabs_pos_lt; unfold Rdiv, Rsqr; repeat rewrite Rmult_assoc;
+        repeat apply prod_neq_R0.
+      - lra.
+      - assumption.
+      - assumption.
+      - apply Rinv_neq_0_compat; apply prod_neq_R0; [discrR | assumption]. }
   clear H10; intros alp_f2t2 H10.
-  cut
-    (forall a:R,
-      Rabs a < alp_f2t2 ->
-      Rabs (f2 (x + a) - f2 x) < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
-  intro H11.
-  cut (0 < Rmin (Rmin eps_f2 alp_f1d) (Rmin alp_f2 alp_f2t2)).
-  intro.
+  assert
+    (H11:forall a:R,
+        Rabs a < alp_f2t2 ->
+        Rabs (f2 (x + a) - f2 x) < Rabs (eps * Rsqr (f2 x) / (8 * l1))). {
+    intros.
+    elim H10; intros.
+    case (Req_dec a 0); intro.
+    - rewrite H14; rewrite Rplus_0_r.
+      unfold Rminus; rewrite Rplus_opp_r.
+      rewrite Rabs_R0.
+      apply Rabs_pos_lt.
+      unfold Rdiv, Rsqr; repeat rewrite Rmult_assoc.
+      repeat apply prod_neq_R0; try assumption.
+      + now apply Rgt_not_eq.
+      + apply Rinv_neq_0_compat; apply prod_neq_R0; [discrR | assumption].
+    - apply H13.
+      split.
+      + apply D_x_no_cond; assumption.
+      + replace (x + a - x) with a; [ assumption | ring ].
+  }
+  assert (0 < Rmin (Rmin eps_f2 alp_f1d) (Rmin alp_f2 alp_f2t2)). {
+    repeat apply Rmin_pos.
+    - apply (cond_pos eps_f2).
+    - apply (cond_pos alp_f1d).
+    - elim H3; intros; assumption.
+    - elim H10; intros; assumption.
+  }
   exists (mkposreal (Rmin (Rmin eps_f2 alp_f1d) (Rmin alp_f2 alp_f2t2)) H12).
   simpl.
   intros.
@@ -149,80 +228,48 @@ Proof.
   assert (H20 := Rlt_le_trans _ _ _ H16 (Rmin_r _ _)).
   clear H14 H15 H16.
   rewrite formule; try assumption.
+  2:{ apply H2; assumption. }
   apply Rle_lt_trans with
     (Rabs (/ f2 (x + h) * ((f1 (x + h) - f1 x) / h - l1)) +
       Rabs (l1 / (f2 x * f2 (x + h)) * (f2 x - f2 (x + h))) +
       Rabs (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) - f2 x) / h - l2)) +
       Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h)) * (f2 (x + h) - f2 x))).
-  unfold Rminus.
-  rewrite <-
-    (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2)))
-    .
-  apply Rabs_4.
+  { unfold Rminus.
+    rewrite <-
+            (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2))).
+    apply Rabs_4. }
   repeat rewrite Rabs_mult.
-  apply Rlt_le_trans with (eps / 4 + eps / 4 + eps / 4 + eps / 4).
+  replace eps with (eps / 4 + eps / 4 + eps / 4 + eps / 4) by field.
   cut (Rabs (/ f2 (x + h)) * Rabs ((f1 (x + h) - f1 x) / h - l1) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut (Rabs (l1 / (f2 x * f2 (x + h))) * Rabs (f2 x - f2 (x + h)) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term2 x h eps l1 alp_f2 alp_f2t2 eps_f2 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut
     (Rabs (f1 x / (f2 x * f2 (x + h))) * Rabs ((f2 (x + h) - f2 x) / h - l2) <
-      eps / 4).
+       eps / 4).
+  2:{ rewrite H8.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
   cut
     (Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h))) * Rabs (f2 (x + h) - f2 x) <
-      eps / 4).
-  intros.
-  apply Rlt_4; assumption.
-  rewrite H8.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite H8.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite <- Rabs_mult.
-  apply (maj_term2 x h eps l1 alp_f2 alp_f2t2 eps_f2 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  right; symmetry ; apply quadruple_var.
-  apply H2; assumption.
-  repeat apply Rmin_pos.
-  apply (cond_pos eps_f2).
-  apply (cond_pos alp_f1d).
-  elim H3; intros; assumption.
-  elim H10; intros; assumption.
-  intros.
-  elim H10; intros.
-  case (Req_dec a 0); intro.
-  rewrite H14; rewrite Rplus_0_r.
-  unfold Rminus; rewrite Rplus_opp_r.
-  rewrite Rabs_R0.
-  apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; repeat rewrite Rmult_assoc.
-  repeat apply prod_neq_R0; try assumption.
-  now apply Rgt_not_eq.
-  apply Rinv_neq_0_compat; apply prod_neq_R0; [discrR | assumption].
-  apply H13.
-  split.
-  apply D_x_no_cond; assumption.
-  replace (x + a - x) with a; [ assumption | ring ].
-  change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
-  apply Rabs_pos_lt; unfold Rdiv, Rsqr; repeat rewrite Rmult_assoc;
-    repeat apply prod_neq_R0.
-  red; intro; rewrite H11 in H6; elim (Rlt_irrefl _ H6).
-  assumption.
-  assumption.
-  apply Rinv_neq_0_compat; apply prod_neq_R0; [discrR | assumption].
+       eps / 4).
+  2:{ rewrite H8.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
+  intros. lra.
 (***********************************)
 (*        Third case               *)
 (*     (f1 x)<>0  l1=0  l2=0       *)
 (***********************************)
-  case (Req_dec l1 0); intro.
-  case (Req_dec l2 0); intro.
-  elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x))));
+- elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x))));
     [ idtac
       | apply Rabs_pos_lt; unfold Rdiv, Rsqr; repeat rewrite Rmult_assoc;
         repeat apply prod_neq_R0 ;
@@ -231,8 +278,13 @@ Proof.
             | now apply Rgt_not_eq
             | apply Rinv_neq_0_compat; apply prod_neq_R0; discrR || assumption ] ].
   intros alp_f2d H12.
-  cut (0 < Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d alp_f2d)).
-  intro.
+  assert (0 < Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d alp_f2d)). {
+    repeat apply Rmin_pos.
+    - apply (cond_pos eps_f2).
+    - elim H3; intros; assumption.
+    - apply (cond_pos alp_f1d).
+    - apply (cond_pos alp_f2d).
+  }
   exists (mkposreal (Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d alp_f2d)) H11).
   simpl.
   intros.
@@ -244,56 +296,48 @@ Proof.
   assert (H20 := Rlt_le_trans _ _ _ H16 (Rmin_r _ _)).
   clear H15 H16.
   rewrite formule; try assumption.
+  2:{ apply H2; assumption. }
   apply Rle_lt_trans with
     (Rabs (/ f2 (x + h) * ((f1 (x + h) - f1 x) / h - l1)) +
       Rabs (l1 / (f2 x * f2 (x + h)) * (f2 x - f2 (x + h))) +
       Rabs (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) - f2 x) / h - l2)) +
       Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h)) * (f2 (x + h) - f2 x))).
-  unfold Rminus.
-  rewrite <-
-    (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2)))
-    .
-  apply Rabs_4.
+  { unfold Rminus.
+    rewrite <-
+            (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2))).
+    apply Rabs_4. }
   repeat rewrite Rabs_mult.
-  apply Rlt_le_trans with (eps / 4 + eps / 4 + eps / 4 + eps / 4).
+  replace eps with (eps / 4 + eps / 4 + eps / 4 + eps / 4) by field.
   cut (Rabs (/ f2 (x + h)) * Rabs ((f1 (x + h) - f1 x) / h - l1) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); assumption || idtac.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut (Rabs (l1 / (f2 x * f2 (x + h))) * Rabs (f2 x - f2 (x + h)) < eps / 4).
+  2:{ rewrite H9.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
   cut
     (Rabs (f1 x / (f2 x * f2 (x + h))) * Rabs ((f2 (x + h) - f2 x) / h - l2) <
-      eps / 4).
+       eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut
     (Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h))) * Rabs (f2 (x + h) - f2 x) <
-      eps / 4).
-  intros.
-  apply Rlt_4; assumption.
-  rewrite H10.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite <- Rabs_mult.
-  apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite H9.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite <- Rabs_mult.
-  apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); assumption || idtac.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  right; symmetry ; apply quadruple_var.
-  apply H2; assumption.
-  repeat apply Rmin_pos.
-  apply (cond_pos eps_f2).
-  elim H3; intros; assumption.
-  apply (cond_pos alp_f1d).
-  apply (cond_pos alp_f2d).
+       eps / 4).
+  2:{ rewrite H10.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
+  intros. lra.
 (***********************************)
 (*      Fourth case                *)
 (*    (f1 x)<>0  l1=0  l2<>0       *)
 (***********************************)
-  elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x))));
+- elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x))));
     [ idtac
       | apply Rabs_pos_lt; unfold Rsqr, Rdiv;
         repeat apply prod_neq_R0 ;
@@ -310,12 +354,25 @@ Proof.
   simpl in H12.
   unfold R_dist in H12.
   elim (H12 (Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2)))).
+  2:{ change (0 < Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2))).
+      apply Rabs_pos_lt.
+      unfold Rsqr, Rdiv.
+      repeat rewrite Rinv_mult.
+      repeat apply prod_neq_R0; try assumption.
+      - lra.
+      - apply Rinv_neq_0_compat; discrR.
+      - apply Rinv_neq_0_compat; assumption.
+      - apply Rinv_neq_0_compat; assumption. }
   intros alp_f2c H13.
-  cut (0 < Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d (Rmin alp_f2d alp_f2c))).
-  intro.
-  exists
-    (mkposreal (Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d (Rmin alp_f2d alp_f2c)))
-      H14).
+  assert (0 < Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d (Rmin alp_f2d alp_f2c))). {
+    repeat apply Rmin_pos.
+    - apply (cond_pos eps_f2).
+    - elim H3; intros; assumption.
+    - apply (cond_pos alp_f1d).
+    - apply (cond_pos alp_f2d).
+    - elim H13; intros; assumption.
+  }
+  exists (mkposreal (Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d (Rmin alp_f2d alp_f2c))) H14).
   simpl; intros.
   assert (H17 := Rlt_le_trans _ _ _ H16 (Rmin_l _ _)).
   assert (H18 := Rlt_le_trans _ _ _ H16 (Rmin_r _ _)).
@@ -326,92 +383,72 @@ Proof.
   assert (H23 := Rlt_le_trans _ _ _ H17 (Rmin_l _ _)).
   assert (H24 := Rlt_le_trans _ _ _ H17 (Rmin_r _ _)).
   clear H16 H17 H18 H19.
-  cut
+  assert
     (forall a:R,
       Rabs a < alp_f2c ->
       Rabs (f2 (x + a) - f2 x) <
-      Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2))).
-  intro.
+      Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2))). {
+    intros.
+    case (Req_dec a 0); intro.
+    - rewrite H17; rewrite Rplus_0_r.
+      unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0.
+      apply Rabs_pos_lt.
+      unfold Rdiv, Rsqr.
+      repeat rewrite Rinv_mult.
+      repeat apply prod_neq_R0; try assumption.
+      + red; intro H18; rewrite H18 in H6; elim (Rlt_irrefl _ H6).
+      + apply Rinv_neq_0_compat; discrR.
+      + apply Rinv_neq_0_compat; assumption.
+      + apply Rinv_neq_0_compat; assumption.
+    - discrR.
+      elim H13; intros.
+      apply H19.
+      split.
+      + apply D_x_no_cond; assumption.
+      + replace (x + a - x) with a; [ assumption | ring ].
+  }
   rewrite formule; try assumption.
+  2:{ apply H2; assumption. }
   apply Rle_lt_trans with
     (Rabs (/ f2 (x + h) * ((f1 (x + h) - f1 x) / h - l1)) +
       Rabs (l1 / (f2 x * f2 (x + h)) * (f2 x - f2 (x + h))) +
       Rabs (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) - f2 x) / h - l2)) +
-      Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h)) * (f2 (x + h) - f2 x))).
-  unfold Rminus.
-  rewrite <-
-    (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2)))
-    .
-  apply Rabs_4.
+       Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h)) * (f2 (x + h) - f2 x))).
+  { unfold Rminus.
+    rewrite <- (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2))).
+    apply Rabs_4. }
   repeat rewrite Rabs_mult.
-  apply Rlt_le_trans with (eps / 4 + eps / 4 + eps / 4 + eps / 4).
+  replace eps with (eps / 4 + eps / 4 + eps / 4 + eps / 4) by field.
   cut (Rabs (/ f2 (x + h)) * Rabs ((f1 (x + h) - f1 x) / h - l1) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut (Rabs (l1 / (f2 x * f2 (x + h))) * Rabs (f2 x - f2 (x + h)) < eps / 4).
+  2:{ rewrite H9.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
   cut
     (Rabs (f1 x / (f2 x * f2 (x + h))) * Rabs ((f2 (x + h) - f2 x) / h - l2) <
-      eps / 4).
+       eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut
     (Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h))) * Rabs (f2 (x + h) - f2 x) <
-      eps / 4).
-  intros.
-  apply Rlt_4; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term4 x h eps l2 alp_f2 alp_f2c eps_f2 f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite H9.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite <- Rabs_mult.
-  apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  right; symmetry ; apply quadruple_var.
-  apply H2; assumption.
-  intros.
-  case (Req_dec a 0); intro.
-  rewrite H17; rewrite Rplus_0_r.
-  unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0.
-  apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr.
-  repeat rewrite Rinv_mult.
-  repeat apply prod_neq_R0; try assumption.
-  red; intro H18; rewrite H18 in H6; elim (Rlt_irrefl _ H6).
-  apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; assumption.
-  apply Rinv_neq_0_compat; assumption.
-  discrR.
-  elim H13; intros.
-  apply H19.
-  split.
-  apply D_x_no_cond; assumption.
-  replace (x + a - x) with a; [ assumption | ring ].
-  repeat apply Rmin_pos.
-  apply (cond_pos eps_f2).
-  elim H3; intros; assumption.
-  apply (cond_pos alp_f1d).
-  apply (cond_pos alp_f2d).
-  elim H13; intros; assumption.
-  change (0 < Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2))).
-  apply Rabs_pos_lt.
-  unfold Rsqr, Rdiv.
-  repeat rewrite Rinv_mult.
-  repeat apply prod_neq_R0; try assumption.
-  red; intro H13; rewrite H13 in H6; elim (Rlt_irrefl _ H6).
-  apply Rinv_neq_0_compat; discrR.
-  apply Rinv_neq_0_compat; assumption.
-  apply Rinv_neq_0_compat; assumption.
+       eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term4 x h eps l2 alp_f2 alp_f2c eps_f2 f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
+  intros. lra.
 (***********************************)
 (*         Fifth case              *)
 (*    (f1 x)<>0  l1<>0  l2=0       *)
 (***********************************)
-  case (Req_dec l2 0); intro.
-  assert (H11 := derivable_continuous_pt _ _ X).
+- assert (H11 := derivable_continuous_pt _ _ X).
   unfold continuity_pt in H11.
   unfold continue_in in H11.
   unfold limit1_in in H11.
@@ -420,21 +457,45 @@ Proof.
   simpl in H11.
   unfold R_dist in H11.
   elim (H11 (Rabs (eps * Rsqr (f2 x) / (8 * l1)))).
+  2:{ change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
+      apply Rabs_pos_lt.
+      unfold Rdiv, Rsqr; rewrite Rinv_mult.
+      repeat apply prod_neq_R0;try apply Rinv_neq_0_compat; lra. }
   clear H11; intros alp_f2t2 H11.
   elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x)))).
+  2:{ apply Rabs_pos_lt.
+      unfold Rdiv, Rsqr; rewrite Rinv_mult.
+      repeat apply prod_neq_R0; try apply Rinv_neq_0_compat; lra. }
   intros alp_f2d H12.
-  cut (0 < Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d (Rmin alp_f2d alp_f2t2))).
-  intro.
-  exists
-    (mkposreal
-      (Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d (Rmin alp_f2d alp_f2t2))) H13).
+  assert (0 < Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d (Rmin alp_f2d alp_f2t2))). {
+    repeat apply Rmin_pos.
+    - apply (cond_pos eps_f2).
+    - elim H3; intros; assumption.
+    - apply (cond_pos alp_f1d).
+    - apply (cond_pos alp_f2d).
+    - elim H11; intros; assumption.
+  }
+  exists (mkposreal (Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d (Rmin alp_f2d alp_f2t2))) H13).
   simpl.
   intros.
-  cut
+  assert
     (forall a:R,
       Rabs a < alp_f2t2 ->
-      Rabs (f2 (x + a) - f2 x) < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
-  intro.
+      Rabs (f2 (x + a) - f2 x) < Rabs (eps * Rsqr (f2 x) / (8 * l1))). {
+    intros.
+    case (Req_dec a 0); intro.
+    - rewrite H17; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
+      rewrite Rabs_R0.
+      apply Rabs_pos_lt.
+      unfold Rdiv; rewrite Rinv_mult.
+      unfold Rsqr.
+      repeat apply prod_neq_R0; try apply Rinv_neq_0_compat;lra.
+    - elim H11; intros.
+      apply H19.
+      split.
+      + apply D_x_no_cond; assumption.
+      + replace (x + a - x) with a; [ assumption | ring ].
+  }
   assert (H17 := Rlt_le_trans _ _ _ H15 (Rmin_l _ _)).
   assert (H18 := Rlt_le_trans _ _ _ H15 (Rmin_r _ _)).
   assert (H19 := Rlt_le_trans _ _ _ H17 (Rmin_r _ _)).
@@ -444,90 +505,50 @@ Proof.
   assert (H23 := Rlt_le_trans _ _ _ H21 (Rmin_l _ _)).
   assert (H24 := Rlt_le_trans _ _ _ H21 (Rmin_r _ _)).
   clear H15 H17 H18 H21.
-  rewrite formule; try assumption.
+  rewrite formule; auto; try assumption.
   apply Rle_lt_trans with
     (Rabs (/ f2 (x + h) * ((f1 (x + h) - f1 x) / h - l1)) +
       Rabs (l1 / (f2 x * f2 (x + h)) * (f2 x - f2 (x + h))) +
       Rabs (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) - f2 x) / h - l2)) +
       Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h)) * (f2 (x + h) - f2 x))).
-  unfold Rminus.
-  rewrite <-
-    (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2)))
-    .
-  apply Rabs_4.
+  { unfold Rminus.
+    rewrite <- (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2))).
+    apply Rabs_4. }
   repeat rewrite Rabs_mult.
-  apply Rlt_le_trans with (eps / 4 + eps / 4 + eps / 4 + eps / 4).
+  replace eps with (eps / 4 + eps / 4 + eps / 4 + eps / 4) by field.
   cut (Rabs (/ f2 (x + h)) * Rabs ((f1 (x + h) - f1 x) / h - l1) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut (Rabs (l1 / (f2 x * f2 (x + h))) * Rabs (f2 x - f2 (x + h)) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term2 x h eps l1 alp_f2 alp_f2t2 eps_f2 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut
     (Rabs (f1 x / (f2 x * f2 (x + h))) * Rabs ((f2 (x + h) - f2 x) / h - l2) <
-      eps / 4).
+       eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut
     (Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h))) * Rabs (f2 (x + h) - f2 x) <
-      eps / 4).
-  intros.
-  apply Rlt_4; assumption.
-  rewrite H10.
-  unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
-  rewrite Rabs_R0; rewrite Rmult_0_l.
-  apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ].
-  rewrite <- Rabs_mult.
-  apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term2 x h eps l1 alp_f2 alp_f2t2 eps_f2 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  right; symmetry ; apply quadruple_var.
-  apply H2; assumption.
-  intros.
-  case (Req_dec a 0); intro.
-  rewrite H17; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
-    rewrite Rabs_R0.
-  apply Rabs_pos_lt.
-  unfold Rdiv; rewrite Rinv_mult.
-  unfold Rsqr.
-  repeat apply prod_neq_R0;
-    assumption ||
-      (apply Rinv_neq_0_compat; assumption) ||
-        (apply Rinv_neq_0_compat; discrR) ||
-          (red; intro H18; rewrite H18 in H6; elim (Rlt_irrefl _ H6)).
-  elim H11; intros.
-  apply H19.
-  split.
-  apply D_x_no_cond; assumption.
-  replace (x + a - x) with a; [ assumption | ring ].
-  repeat apply Rmin_pos.
-  apply (cond_pos eps_f2).
-  elim H3; intros; assumption.
-  apply (cond_pos alp_f1d).
-  apply (cond_pos alp_f2d).
-  elim H11; intros; assumption.
-  apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult.
-  repeat apply prod_neq_R0;
-    assumption ||
-      (apply Rinv_neq_0_compat; assumption) ||
-        (apply Rinv_neq_0_compat; discrR) ||
-          (red; intro H12; rewrite H12 in H6; elim (Rlt_irrefl _ H6)).
-  change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
-  apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult.
-  repeat apply prod_neq_R0;
-    assumption ||
-      (apply Rinv_neq_0_compat; assumption) ||
-        (apply Rinv_neq_0_compat; discrR) ||
-          (red; intro H12; rewrite H12 in H6; elim (Rlt_irrefl _ H6)).
+       eps / 4).
+  2:{ rewrite H10.
+      unfold Rdiv; repeat rewrite Rmult_0_r || rewrite Rmult_0_l.
+      rewrite Rabs_R0; rewrite Rmult_0_l.
+      apply Rmult_lt_0_compat; [ assumption | apply Rinv_0_lt_compat; prove_sup ]. }
+  intros. lra.
 (***********************************)
 (*       Sixth case                *)
 (*    (f1 x)<>0  l1<>0  l2<>0      *)
 (***********************************)
-  elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x)))).
+- elim (H0 (Rabs (Rsqr (f2 x) * eps / (8 * f1 x)))).
+  2:{ apply Rabs_pos_lt.
+      unfold Rdiv, Rsqr; rewrite Rinv_mult.
+      repeat apply prod_neq_R0; try apply Rinv_neq_0_compat; lra. }
   intros alp_f2d H11.
   assert (H12 := derivable_continuous_pt _ _ X).
   unfold continuity_pt in H12.
@@ -538,14 +559,28 @@ Proof.
   simpl in H12.
   unfold R_dist in H12.
   elim (H12 (Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2)))).
+  2:{ change (0 < Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2)));
+      apply Rabs_pos_lt.
+      unfold Rdiv, Rsqr; rewrite Rinv_mult.
+      repeat apply prod_neq_R0; try apply Rinv_neq_0_compat; lra. }
   intros alp_f2c H13.
   elim (H12 (Rabs (eps * Rsqr (f2 x) / (8 * l1)))).
+  2:{ change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))); apply Rabs_pos_lt.
+      unfold Rdiv, Rsqr; rewrite Rinv_mult.
+      repeat apply prod_neq_R0; try apply Rinv_neq_0_compat; lra. }
   intros alp_f2t2 H14.
-  cut
+  assert
     (0 <
       Rmin (Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d alp_f2d))
-      (Rmin alp_f2c alp_f2t2)).
-  intro.
+      (Rmin alp_f2c alp_f2t2)). {
+    repeat apply Rmin_pos.
+    - apply (cond_pos eps_f2).
+    - elim H3; intros; assumption.
+    - apply (cond_pos alp_f1d).
+    - apply (cond_pos alp_f2d).
+    - elim H13; intros; assumption.
+    - elim H14; intros; assumption.
+  }
   exists
     (mkposreal
       (Rmin (Rmin (Rmin eps_f2 alp_f2) (Rmin alp_f1d alp_f2d))
@@ -567,169 +602,73 @@ Proof.
     (forall a:R,
       Rabs a < alp_f2t2 ->
       Rabs (f2 (x + a) - f2 x) < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
+  2:{ intros.
+      case (Req_dec a 0); intro.
+      - rewrite H18; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
+          rewrite Rabs_R0; apply Rabs_pos_lt.
+        unfold Rdiv, Rsqr; rewrite Rinv_mult.
+        repeat apply prod_neq_R0; try apply Rinv_neq_0_compat; lra.
+      - elim H14; intros.
+        apply H20.
+        split.
+        + unfold D_x, no_cond; split.
+          * trivial.
+          * apply Rminus_not_eq_right.
+            replace (x + a - x) with a; [ assumption | ring ].
+        + replace (x + a - x) with a; [ assumption | ring ]. }
   cut
     (forall a:R,
       Rabs a < alp_f2c ->
       Rabs (f2 (x + a) - f2 x) <
-      Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2))).
+        Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2))).
+  2:{ intros.
+      case (Req_dec a 0); intro.
+      - rewrite H18; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
+          rewrite Rabs_R0; apply Rabs_pos_lt.
+        unfold Rdiv, Rsqr; rewrite Rinv_mult.
+        repeat apply prod_neq_R0; try apply Rinv_neq_0_compat; lra.
+      - elim H13; intros.
+        apply H20.
+        split.
+        + apply D_x_no_cond; assumption.
+        + replace (x + a - x) with a; [ assumption | ring ]. }
   intros.
-  rewrite formule; try assumption.
+  rewrite formule; try assumption. 2:{ auto. }
   apply Rle_lt_trans with
     (Rabs (/ f2 (x + h) * ((f1 (x + h) - f1 x) / h - l1)) +
       Rabs (l1 / (f2 x * f2 (x + h)) * (f2 x - f2 (x + h))) +
       Rabs (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) - f2 x) / h - l2)) +
       Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h)) * (f2 (x + h) - f2 x))).
-  unfold Rminus.
-  rewrite <-
-    (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2)))
-    .
-  apply Rabs_4.
+  { unfold Rminus.
+    rewrite <- (Rabs_Ropp (f1 x / (f2 x * f2 (x + h)) * ((f2 (x + h) + - f2 x) / h + - l2))).
+    apply Rabs_4. }
   repeat rewrite Rabs_mult.
-  apply Rlt_le_trans with (eps / 4 + eps / 4 + eps / 4 + eps / 4).
+  replace eps with (eps / 4 + eps / 4 + eps / 4 + eps / 4) by field.
   cut (Rabs (/ f2 (x + h)) * Rabs ((f1 (x + h) - f1 x) / h - l1) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut (Rabs (l1 / (f2 x * f2 (x + h))) * Rabs (f2 x - f2 (x + h)) < eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term2 x h eps l1 alp_f2 alp_f2t2 eps_f2 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut
     (Rabs (f1 x / (f2 x * f2 (x + h))) * Rabs ((f2 (x + h) - f2 x) / h - l2) <
-      eps / 4).
+       eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
   cut
     (Rabs (l2 * f1 x / (Rsqr (f2 x) * f2 (x + h))) * Rabs (f2 (x + h) - f2 x) <
-      eps / 4).
-  intros.
-  apply Rlt_4; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term4 x h eps l2 alp_f2 alp_f2c eps_f2 f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term3 x h eps l2 alp_f2 eps_f2 alp_f2d f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term2 x h eps l1 alp_f2 alp_f2t2 eps_f2 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  rewrite <- Rabs_mult.
-  apply (maj_term1 x h eps l1 alp_f2 eps_f2 alp_f1d f1 f2); try assumption.
-  apply H2; assumption.
-  apply Rmin_2; assumption.
-  right; symmetry ; apply quadruple_var.
-  apply H2; assumption.
-  intros.
-  case (Req_dec a 0); intro.
-  rewrite H18; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
-    rewrite Rabs_R0; apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult.
-  repeat apply prod_neq_R0;
-    assumption ||
-      (apply Rinv_neq_0_compat; assumption) ||
-        (apply Rinv_neq_0_compat; discrR) ||
-          (red; intro H28; rewrite H28 in H6; elim (Rlt_irrefl _ H6)).
-  apply prod_neq_R0; [ discrR | assumption ].
-  elim H13; intros.
-  apply H20.
-  split.
-  apply D_x_no_cond; assumption.
-  replace (x + a - x) with a; [ assumption | ring ].
-  intros.
-  case (Req_dec a 0); intro.
-  rewrite H18; rewrite Rplus_0_r; unfold Rminus; rewrite Rplus_opp_r;
-    rewrite Rabs_R0; apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult.
-  repeat apply prod_neq_R0;
-    assumption ||
-      (apply Rinv_neq_0_compat; assumption) ||
-        (apply Rinv_neq_0_compat; discrR) ||
-          (red; intro H28; rewrite H28 in H6; elim (Rlt_irrefl _ H6)).
-  elim H14; intros.
-  apply H20.
-  split.
-  unfold D_x, no_cond; split.
-  trivial.
-  apply Rminus_not_eq_right.
-  replace (x + a - x) with a; [ assumption | ring ].
-  replace (x + a - x) with a; [ assumption | ring ].
-  repeat apply Rmin_pos.
-  apply (cond_pos eps_f2).
-  elim H3; intros; assumption.
-  apply (cond_pos alp_f1d).
-  apply (cond_pos alp_f2d).
-  elim H13; intros; assumption.
-  elim H14; intros; assumption.
-  change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))); apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult.
-  repeat apply prod_neq_R0;
-    assumption ||
-      (apply Rinv_neq_0_compat; assumption) ||
-        (apply Rinv_neq_0_compat; discrR) ||
-          (red; intro H14; rewrite H14 in H6; elim (Rlt_irrefl _ H6)).
-  change (0 < Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2)));
-    apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult.
-  repeat apply prod_neq_R0;
-    assumption ||
-      (apply Rinv_neq_0_compat; assumption) ||
-        (apply Rinv_neq_0_compat; discrR) ||
-          (red; intro H13; rewrite H13 in H6; elim (Rlt_irrefl _ H6)).
-  apply prod_neq_R0; [ discrR | assumption ].
-  apply Rabs_pos_lt.
-  unfold Rdiv, Rsqr; rewrite Rinv_mult.
-  repeat apply prod_neq_R0;
-    assumption ||
-      (apply Rinv_neq_0_compat; assumption) ||
-        (apply Rinv_neq_0_compat; discrR) ||
-          (red; intro H11; rewrite H11 in H6; elim (Rlt_irrefl _ H6)).
-  intros.
-  unfold Rdiv.
-  apply Rmult_lt_reg_l with (Rabs (f2 (x + a))).
-  apply Rabs_pos_lt; apply H2.
-  apply Rlt_le_trans with (Rmin eps_f2 alp_f2).
-  assumption.
-  apply Rmin_l.
-  rewrite <- Rinv_r_sym.
-  apply Rmult_lt_reg_l with (Rabs (f2 x)).
-  apply Rabs_pos_lt; assumption.
-  rewrite Rmult_1_r.
-  rewrite (Rmult_comm (Rabs (f2 x))).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r.
-  apply Rmult_lt_reg_l with (/ 2).
-  apply Rinv_0_lt_compat; prove_sup0.
-  repeat rewrite (Rmult_comm (/ 2)).
-  repeat rewrite Rmult_assoc.
-  rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_r.
-  unfold Rdiv in H5; apply H5.
-  replace (x + a - x) with a.
-  assert (H7 := Rlt_le_trans _ _ _ H6 (Rmin_r _ _)); assumption.
-  ring.
-  discrR.
-  apply Rabs_no_R0; assumption.
-  apply Rabs_no_R0; apply H2.
-  assert (H7 := Rlt_le_trans _ _ _ H6 (Rmin_l _ _)); assumption.
-  intros.
-  assert (H6 := H4 a H5).
-  rewrite <- (Rabs_Ropp (f2 a - f2 x)) in H6.
-  rewrite Ropp_minus_distr in H6.
-  assert (H7 := Rle_lt_trans _ _ _ (Rabs_triang_inv _ _) H6).
-  apply Rplus_lt_reg_l with (- Rabs (f2 a) + Rabs (f2 x) / 2).
-  rewrite Rplus_assoc.
-  rewrite <- double_var.
-  do 2 rewrite (Rplus_comm (- Rabs (f2 a))).
-  rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r.
-  unfold Rminus in H7; assumption.
-  intros.
-  case (Req_dec x x0); intro.
-  rewrite <- H5; unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
-    unfold Rdiv; apply Rmult_lt_0_compat;
-      [ apply Rabs_pos_lt; assumption | apply Rinv_0_lt_compat; prove_sup0 ].
-  elim H3; intros.
-  apply H7.
-  split.
-  unfold D_x, no_cond; split.
-  trivial.
-  assumption.
-  assumption.
+       eps / 4).
+  2:{ rewrite <- Rabs_mult.
+      apply (maj_term4 x h eps l2 alp_f2 alp_f2c eps_f2 f1 f2); try assumption.
+      - apply H2; assumption.
+      - apply Rmin_2; assumption. }
+  intros. lra.
 Qed.
 
 Lemma derivable_pt_div :
