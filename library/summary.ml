@@ -14,7 +14,21 @@ open Util
 
 module Dyn = Dyn.Make ()
 
+module Stage = struct
+
+type t = Synterp | Interp
+
+let equal x y =
+  match x, y with
+  | Synterp, Synterp -> true
+  | Synterp, Interp -> false
+  | Interp, Interp -> true
+  | Interp, Synterp -> false
+
+end
+
 type 'a summary_declaration = {
+  stage : Stage.t;
   freeze_function : marshallable:bool -> 'a;
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
@@ -60,6 +74,18 @@ type frozen = {
 let empty_frozen = { summaries = Frozen.empty; ml_module = None }
 
 module HMap = Dyn.HMap(Decl)(ID)
+
+let freeze_staged_summaries stage ~marshallable : frozen =
+  let filter = { HMap.filter = fun tag decl -> Stage.equal decl.stage stage } in
+  let map = { HMap.map = fun tag decl -> decl.freeze_function ~marshallable } in
+  { summaries = HMap.map map (HMap.filter filter !sum_map);
+    ml_module =
+      match stage with
+      | Stage.Synterp ->
+        Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod
+      | _ ->
+        None;
+  }
 
 let freeze_summaries ~marshallable : frozen =
   let map = { HMap.map = fun tag decl -> decl.freeze_function ~marshallable } in
@@ -119,15 +145,16 @@ let remove_from_summary st tag =
 
 (** All-in-one reference declaration + registration *)
 
-let ref_tag ?(freeze=fun ~marshallable r -> r) ~name x =
+let ref_tag ?(stage=Stage.Interp) ?(freeze=fun ~marshallable r -> r) ~name x =
   let r = ref x in
   let tag = declare_summary_tag name
-    { freeze_function = (fun ~marshallable -> freeze ~marshallable !r);
+    { stage;
+      freeze_function = (fun ~marshallable -> freeze ~marshallable !r);
       unfreeze_function = ((:=) r);
       init_function = (fun () -> r := x) } in
   r, tag
 
-let ref ?freeze ~name x = fst @@ ref_tag ?freeze ~name x
+let ref ?stage ?freeze ~name x = fst @@ ref_tag ?stage ?freeze ~name x
 
 module Local = struct
 
@@ -142,12 +169,13 @@ let get (key, name) =
     init_function ();
     CEphemeron.get !key
 
-let ref (type a) ~name (init : a) : a local_ref =
+let ref (type a) ?(stage=Stage.Interp) ~name (init : a) : a local_ref =
   let () = check_name (mangle name) in
   let tag : a CEphemeron.key Dyn.tag = Dyn.create (mangle name) in
   let r = pervasives_ref (CEphemeron.create init) in
   let () = sum_map := DynMap.add tag
-    { freeze_function = (fun ~marshallable -> !r);
+    { stage;
+      freeze_function = (fun ~marshallable -> !r);
       unfreeze_function = (fun v -> r := v);
       init_function = (fun () -> r := CEphemeron.create init) } !sum_map
   in

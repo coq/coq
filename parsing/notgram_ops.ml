@@ -16,7 +16,7 @@ open Notation
 (* Register the grammar of notation for parsing and printing
    (also register the parsing rule if not onlyprinting) *)
 
-let notation_grammar_map = Summary.ref ~name:"notation_grammar_map" NotationMap.empty
+let notation_grammar_map = Summary.ref ~stage:Summary.Stage.Synterp ~name:"notation_grammar_map" NotationMap.empty
 
 let declare_notation_grammar ntn rule =
   try
@@ -28,7 +28,7 @@ let declare_notation_grammar ntn rule =
 let grammar_of_notation ntn =
   NotationMap.find ntn !notation_grammar_map
 
-let notation_subentries_map = Summary.ref ~name:"notation_subentries_map" NotationMap.empty
+let notation_subentries_map = Summary.ref ~stage:Summary.Stage.Synterp ~name:"notation_subentries_map" NotationMap.empty
 
 let declare_notation_subentries ntn entries =
   try

@@ -388,7 +388,7 @@ module Modules = struct
   }
 
   let nametab, summary_tag =
-    Summary.ref_tag ~name:"MODULES-NAMETAB" initial
+    Summary.ref_tag ~stage:Summary.Stage.Synterp ~name:"MODULES-NAMETAB" initial
 
   let freeze () = !nametab
   let unfreeze v = nametab := v

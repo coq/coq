@@ -32,6 +32,9 @@ sig
   type any = Any : 'a key * 'a value -> any
   val iter : (any -> unit) -> t -> unit
   val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
+
+  type filter = { filter : 'a. 'a key -> 'a value -> bool }
+  val filter : filter -> t -> t
 end
 
 module type S =
@@ -79,6 +82,9 @@ sig
     sig
       type map = { map : 'a. 'a tag -> 'a V1.t -> 'a V2.t }
       val map : map -> Map(V1).t -> Map(V2).t
+
+      type filter = { filter : 'a. 'a tag -> 'a V1.t -> bool }
+      val filter : filter -> Map(V1).t -> Map(V1).t
     end
 
   module Easy : sig

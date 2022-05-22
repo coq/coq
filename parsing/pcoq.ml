@@ -457,7 +457,8 @@ let unfreeze (grams, lex) =
 
 let parser_summary_tag =
   Summary.declare_summary_tag "GRAMMAR_LEXER"
-    { Summary.freeze_function = freeze;
+    { stage = Summary.Stage.Synterp;
+      Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = Summary.nop }
 

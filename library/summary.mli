@@ -10,10 +10,22 @@
 
 (** This module registers the declaration of global tables, which will be kept
    in synchronization during the various backtracks of the system. *)
+module Stage : sig
+
+(** We distinguish two stages and separate the system state accordingly.
+    [Synterp] is the syntactic interpretation phase, i.e. vernacular parsing and
+    execution of commands having an effect on parsing. [Interp] is the
+    interpretation phase, where standard commands are executed. *)
+  type t = Synterp | Interp
+
+  val equal : t -> t -> bool
+
+end
 
 (** Types of global Coq states. The ['a] type should be pure and marshallable by
     the standard OCaml marshalling function. *)
 type 'a summary_declaration = {
+  stage : Stage.t;
   freeze_function : marshallable:bool -> 'a;
   (** freeze_function [true] is for marshalling to disk.
    *  e.g. lazy must be forced *)
@@ -43,17 +55,20 @@ val declare_summary_tag : string -> 'a summary_declaration -> 'a Dyn.tag
     It behaves just as OCaml's standard [ref] function, except
     that a [declare_summary] is done, with [name] as string.
     The [init_function] restores the reference to its initial value.
-    The [freeze_function] can be overridden *)
+    The [freeze_function] can be overridden
+    The [stage] argument defaults to [Interp] and should be changed to [Synterp]
+    for references which are read from and written to during the syntactic
+    interpretation. *)
 
-val ref : ?freeze:(marshallable:bool -> 'a -> 'a) -> name:string -> 'a -> 'a ref
-val ref_tag : ?freeze:(marshallable:bool -> 'a -> 'a) -> name:string -> 'a -> 'a ref * 'a Dyn.tag
+val ref : ?stage:Stage.t -> ?freeze:(marshallable:bool -> 'a -> 'a) -> name:string -> 'a -> 'a ref
+val ref_tag : ?stage:Stage.t -> ?freeze:(marshallable:bool -> 'a -> 'a) -> name:string -> 'a -> 'a ref * 'a Dyn.tag
 
 (* As [ref] but the value is local to a process, i.e. not sent to, say, proof
  * workers.  It is useful to implement a local cache for example. *)
 module Local : sig
 
   type 'a local_ref
-  val ref : name:string -> 'a -> 'a local_ref
+  val ref : ?stage:Stage.t -> name:string -> 'a -> 'a local_ref
   val (:=) : 'a local_ref -> 'a -> unit
   val (!) : 'a local_ref -> 'a
 
@@ -77,6 +92,7 @@ type frozen
 
 val empty_frozen : frozen
 val freeze_summaries : marshallable:bool -> frozen
+val freeze_staged_summaries : Stage.t -> marshallable:bool -> frozen
 val unfreeze_summaries : ?partial:bool -> frozen -> unit
 val init_summaries : unit -> unit
 
