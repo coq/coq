@@ -76,6 +76,7 @@ type open_filter
 
 type ('a,'b) object_declaration = {
   object_name : string;
+  object_stage : Summary.Stage.t;
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
   open_function : open_filter -> int -> 'b -> unit;
@@ -185,6 +186,9 @@ val subst_object : substitution * obj -> obj
 val classify_object : obj -> substitutivity
 val discharge_object : obj -> obj option
 val rebuild_object : obj -> obj
+val object_stage : obj -> Summary.Stage.t
+
+val pr_libobject : t -> Pp.t
 
 (** Higher-level API for objects with fixed scope.
 

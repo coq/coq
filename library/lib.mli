@@ -43,22 +43,10 @@ type classified_objects = {
 }
 
 (** {6 ... } *)
-(** Low-level adding operations (does not cache) *)
-
-val add_entry : node -> unit
-val add_leaf_entry : Libobject.t -> unit
-
-(** {6 ... } *)
 (** Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
 val add_leaf : Libobject.obj -> unit
-
-(** {6 ... } *)
-
-(** The function [contents] gives access to the current entire segment *)
-
-val contents : unit -> library_segment
 
 (** {6 Functions relative to current path } *)
 
@@ -76,7 +64,6 @@ val make_kn : Id.t -> KerName.t
 
 (** Are we inside an opened section *)
 val sections_are_opened : unit -> bool
-[@@ocaml.deprecated "Use Global.sections_are_opened"]
 val sections_depth : unit -> int
 
 (** Are we inside an opened module type *)
@@ -87,44 +74,7 @@ val is_modtype : unit -> bool
 val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
 
-(** Returns the opening node of a given name *)
-val find_opening_node : Id.t -> node
-
-(** {6 Modules and module types } *)
-
-val start_module :
-  export -> module_ident -> ModPath.t ->
-  Summary.frozen -> Nametab.object_prefix
-
-val start_modtype :
-  module_ident -> ModPath.t ->
-  Summary.frozen -> Nametab.object_prefix
-
-val end_module :
-  unit ->
-  Nametab.object_prefix * Summary.frozen * classified_objects
-
-val end_modtype :
-  unit ->
-  Nametab.object_prefix * Summary.frozen * classified_objects
-
-(** {6 Compilation units } *)
-
-val start_compilation : DirPath.t -> ModPath.t -> unit
-val end_compilation : DirPath.t -> Nametab.object_prefix * classified_objects
-
-(** The function [library_dp] returns the [DirPath.t] of the current
-   compiling library (or [default_library]) *)
-val library_dp : unit -> DirPath.t
-
-(** Extract the library part of a name even if in a section *)
-val split_modpath : ModPath.t -> DirPath.t * Id.t list
-val library_part :  GlobRef.t -> DirPath.t
-
-(** {6 Sections } *)
-
-val open_section : Id.t -> unit
-val close_section : unit -> unit
+module State : sig
 
 (** {6 We can get and set the state of the operations (used in [States]). } *)
 
@@ -138,6 +88,24 @@ val drop_objects : frozen -> frozen
 
 val init : unit -> unit
 
+(** {6 ... } *)
+
+(** The function [contents] gives access to the current entire segment *)
+
+val contents : unit -> library_segment
+
+val print : unit -> Pp.t
+
+end
+
+(** The function [library_dp] returns the [DirPath.t] of the current
+   compiling library (or [default_library]) *)
+val library_dp : unit -> DirPath.t
+
+(** Extract the library part of a name even if in a section *)
+val split_modpath : ModPath.t -> DirPath.t * Id.t list
+val library_part :  GlobRef.t -> DirPath.t
+
 (** {6 Section management for discharge } *)
 val section_segment_of_constant : Constant.t -> Cooking.cooking_info
 val section_segment_of_inductive: MutInd.t -> Cooking.cooking_info
@@ -149,3 +117,42 @@ val is_in_section : GlobRef.t -> bool
 (** {6 Discharge: decrease the section level if in the current section } *)
 
 val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
+
+module type LibVisitorS = sig
+
+  (** Returns the opening node of a given name *)
+  val find_opening_node : Id.t -> node
+
+  val add_entry : node -> unit
+  val add_leaf_entry : Libobject.t -> unit
+
+  (** {6 Sections } *)
+  val open_section : Id.t -> unit
+  val close_section : unit -> unit
+
+  (** {6 Modules and module types } *)
+  val start_module :
+    export -> module_ident -> ModPath.t ->
+    Summary.frozen -> Nametab.object_prefix
+
+  val start_modtype :
+    module_ident -> ModPath.t ->
+    Summary.frozen -> Nametab.object_prefix
+
+  val end_module :
+    unit ->
+    Nametab.object_prefix * Summary.frozen * classified_objects
+
+  val end_modtype :
+    unit ->
+    Nametab.object_prefix * Summary.frozen * classified_objects
+
+end
+
+module Synterp : LibVisitorS
+module Interp : LibVisitorS
+
+(** {6 Compilation units } *)
+
+val start_compilation : DirPath.t -> ModPath.t -> unit
+val end_compilation : DirPath.t -> Nametab.object_prefix * classified_objects * classified_objects

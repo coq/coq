@@ -118,7 +118,7 @@ let declare_univ_binders gr (univs, pl) =
     input_univ_names (QualifiedUniv l, univs)
 
 let do_universe ~poly l =
-  let in_section = Global.sections_are_opened () in
+  let in_section = Lib.sections_are_opened () in
   let () =
     if poly && not in_section then
       CErrors.user_err

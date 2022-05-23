@@ -16,6 +16,10 @@ type object_prefix = {
   obj_mp  : ModPath.t;
 }
 
+let pr_object_prefix op =
+  let open Pp in
+  str"dirpath: " ++ DirPath.print op.obj_dir ++ str ", modpath: " ++ str (ModPath.to_string op.obj_mp)
+
 let eq_op op1 op2 =
   DirPath.equal op1.obj_dir op2.obj_dir &&
   ModPath.equal op1.obj_mp  op2.obj_mp
@@ -435,6 +439,7 @@ let push_modtype vis sp kn =
   }
 
 let push_module vis dir mp =
+  CDebug.debug_synterp (fun () -> Pp.(str"push_module dir=" ++ DirPath.print dir ++ str", mp=" ++ str (ModPath.debug_to_string mp)));
   let open Modules in
   nametab := { !nametab with
     modtab = MPDTab.push vis dir mp !nametab.modtab;
@@ -477,7 +482,8 @@ let locate_universe qid = UnivTab.locate qid !the_univtab
 
 let locate_dir qid = DirTab.locate qid Modules.(!nametab.dirtab)
 
-let locate_module qid = MPDTab.locate qid Modules.(!nametab.modtab)
+let locate_module qid =
+  MPDTab.locate qid Modules.(!nametab.modtab)
 
 let full_name_module qid = MPDTab.user_name qid Modules.(!nametab.modtab)
 

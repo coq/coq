@@ -32,18 +32,18 @@ module System : sig
 
   module Stm : sig
     val make_shallow : t -> t
-    val lib : t -> Lib.frozen
+    val lib : t -> Lib.State.frozen
     val summary : t -> Summary.frozen
     val replace_summary : t -> Summary.frozen -> t
   end
 end = struct
-  type t = Lib.frozen * Summary.frozen
+  type t = Lib.State.frozen * Summary.frozen
 
   let freeze ~marshallable =
-    (Lib.freeze (), Summary.freeze_summaries ~marshallable)
+    (Lib.State.freeze (), Summary.freeze_summaries ~marshallable)
 
   let unfreeze (fl,fs) =
-    Lib.unfreeze fl;
+    Lib.State.unfreeze fl;
     Summary.unfreeze_summaries fs
 
   let protect f x =
@@ -56,7 +56,7 @@ end = struct
 
   (* STM-specific state manipulations *)
   module Stm = struct
-    let make_shallow (lib, summary) = Lib.drop_objects lib, summary
+    let make_shallow (lib, summary) = Lib.State.drop_objects lib, summary
     let lib = fst
     let summary = snd
     let replace_summary (lib,_) summary = (lib,summary)
@@ -244,7 +244,7 @@ module Stm = struct
           end
       }
 
-  type non_pstate = Summary.frozen * Lib.frozen
+  type non_pstate = Summary.frozen * Lib.State.frozen
   let non_pstate { system } =
     let st = System.Stm.summary system in
     let st = Summary.remove_from_summary st Evarutil.meta_counter_summary_tag in

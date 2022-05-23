@@ -15,10 +15,22 @@ open Constrexpr
 open Notation_term
 open Environ
 
+type notation_main_data
+type syntax_rules
+
 (** Adding a (constr) notation in the environment*)
 
-val add_notation : local:bool -> infix:bool -> Deprecation.t option -> env -> constr_expr ->
-  (lstring * syntax_modifier CAst.t list) -> scope_name option -> unit
+val add_notation_syntax :
+  local:bool ->
+  infix:bool ->
+  Deprecation.t option ->
+  constr_expr ->
+  (lstring * syntax_modifier CAst.t list) ->
+  constr_expr * notation_main_data * notation_symbols * notation CAst.t * syntax_rules * delimiters
+
+val add_notation_interp : local:bool -> env -> constr_expr ->
+  notation_main_data -> notation_symbols -> notation CAst.t ->
+  syntax_rules -> delimiters -> scope_name option -> unit
 
 val add_notation_extra_printing_rule : string -> string -> string -> unit
 

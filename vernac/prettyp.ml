@@ -818,9 +818,9 @@ let print_safe_judgment env sigma j =
 (* *)
 
 let print_full_context env sigma =
-  print_context env sigma true None (Lib.contents ())
+  print_context env sigma true None (Lib.State.contents ())
 let print_full_context_typ env sigma =
-  print_context env sigma false None (Lib.contents ())
+  print_context env sigma false None (Lib.State.contents ())
 
 module DynHandleF = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t end)
 
@@ -884,7 +884,7 @@ let print_full_pure_context env sigma =
       prec rest ++ pp
   | [] -> mt ()
   in
-  prec (Lib.contents ())
+  prec (Lib.State.contents ())
 
 (* For printing an inductive definition with
    its constructors and elimination,
@@ -903,7 +903,7 @@ let read_sec_context qid =
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest
   in
-  let cxt = Lib.contents () in
+  let cxt = Lib.State.contents () in
   List.rev (get_cxt [] cxt)
 
 let print_sec_context env sigma sec =
@@ -1047,7 +1047,7 @@ let print_about env sigma na udecl =
 
 (* for debug *)
 let inspect env sigma depth =
-  print_context env sigma false (Some depth) (Lib.contents ())
+  print_context env sigma false (Some depth) (Lib.State.contents ())
 
 (*************************************************************************)
 (* Pretty-printing functions coming from classops.ml                     *)

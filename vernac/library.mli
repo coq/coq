@@ -25,6 +25,11 @@ val require_library_from_dirpath
   -> (DirPath.t * string) list
   -> unit
 
+val require_library_syntax_from_dirpath
+  :  lib_resolver:(DirPath.t -> CUnix.physical_path)
+  -> (DirPath.t * string) list
+  -> unit
+
 (** {6 Start the compilation of a library } *)
 
 (** Segments of a library *)
@@ -60,10 +65,10 @@ val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs ->
 (** {6 Interrogate the status of libraries } *)
 
   (** - Tell if a library is loaded *)
-val library_is_loaded : DirPath.t -> bool
+val library_is_loaded : parsing:bool -> DirPath.t -> bool
 
   (** - Tell which libraries are loaded *)
-val loaded_libraries : unit -> DirPath.t list
+val loaded_libraries : parsing:bool -> DirPath.t list
 
 (** {6 Native compiler. } *)
 val native_name_from_filename : string -> string

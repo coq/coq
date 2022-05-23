@@ -18,6 +18,8 @@ module Stage : sig
     interpretation phase, where standard commands are executed. *)
   type t = Synterp | Interp
 
+  val print : t -> Pp.t
+
   val equal : t -> t -> bool
 
 end

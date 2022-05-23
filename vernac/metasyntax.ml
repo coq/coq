@@ -899,11 +899,13 @@ let classify_syntax_definition (local, _) =
   if local then Dispose else Substitute
 
 let open_syntax_extension i o =
+  (* Printf.eprintf "open_syntax_extension called\n"; *)
   if Int.equal i 1 then cache_syntax_extension o
 
 let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object
     {(default_object "SYNTAX-EXTENSION") with
+     object_stage = Summary.Stage.Synterp;
      open_function = simple_open ~cat:notation_cat open_syntax_extension;
      cache_function = cache_syntax_extension;
      subst_function = subst_syntax_extension;
@@ -1505,11 +1507,11 @@ let inNotation : notation_obj -> obj =
 (**********************************************************************)
 
 let with_lib_stk_protection f x =
-  let fs = Lib.freeze () in
-  try let a = f x in Lib.unfreeze fs; a
+  let fs = Lib.State.freeze () in
+  try let a = f x in Lib.State.unfreeze fs; a
   with reraise ->
     let reraise = Exninfo.capture reraise in
-    let () = Lib.unfreeze fs in
+    let () = Lib.State.unfreeze fs in
     Exninfo.iraise reraise
 
 let with_syntax_protection f x =
@@ -1745,11 +1747,12 @@ let prepare_where_notation decl_ntn =
         user_err Pp.(str "Parsing rule for this notation has to be previously declared.") in
     (decl_ntn, main_data, notation_symbols, ntn, syntax_rules)
 
+(* FIXME unify add_notation_interpretation and add_notation_interp *)
 let add_notation_interpretation ~local env (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
-  let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
-  let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
-  Lib.add_leaf (inNotation notation);
-  Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
+    let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
+    let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
+    Lib.add_leaf (inNotation notation);
+    Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
 
 (* interpreting a where clause *)
 let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
@@ -1758,9 +1761,7 @@ let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_sym
   Lib.add_leaf (inNotation notation);
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
-(* Main entry point for command Notation *)
-
-let add_notation ~local ~infix deprecation env c ({CAst.loc;v=df},modifiers) sc =
+let build_notation_syntax ~local ~infix deprecation c ({CAst.loc;v=df},modifiers) =
   (* Extract the modifiers not affecting the parsing rule *)
   let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~abbrev:false deprecation modifiers in
   (* Extract the modifiers not affecting the parsing rule *)
@@ -1769,30 +1770,40 @@ let add_notation ~local ~infix deprecation env c ({CAst.loc;v=df},modifiers) sc 
   let df, notation_symbols, c = if infix then adjust_infix_notation df notation_symbols c else df, notation_symbols, c in
   (* Build the canonical identifier of the syntactic part of the notation *)
   let ntn = make_notation_key main_data.entry notation_symbols.symbols in
-  (* Build or rebuild the syntax rules *)
-  let syntax_rules =
-    if isnumeral then (check_no_syntax_modifiers_for_numeral syntax_modifiers; PrimTokenSyntax) else
-    match syntax_modifiers with
-    | [] ->
-      (* No syntax data: try to rely on a previously declared rule *)
-      (try SpecificSyntax (recover_notation_syntax ntn)
-      with NoSyntaxRule ->
-        (* Try to determine a default syntax rule *)
-        let sd = compute_syntax_data ~local main_data notation_symbols ntn NotationMods.default in
-        SpecificSyntax (make_syntax_rules false main_data ntn sd))
+  let syntax_rules = if isnumeral then (check_no_syntax_modifiers_for_numeral syntax_modifiers; PrimTokenSyntax) else
+  match syntax_modifiers with
+  | [] ->
+    (* No syntax data: try to rely on a previously declared rule *)
+    (try SpecificSyntax (recover_notation_syntax ntn)
+    with NoSyntaxRule ->
+      (* Try to determine a default syntax rule *)
+      let sd = compute_syntax_data ~local main_data notation_symbols ntn NotationMods.default in
+      SpecificSyntax (make_syntax_rules false main_data ntn sd))
 
-    | _ ->
-      let mods = interp_modifiers main_data.entry syntax_modifiers in
-      let sd = compute_syntax_data ~local main_data notation_symbols ntn mods in
-      SpecificSyntax (make_syntax_rules false main_data ntn sd)
+  | _ ->
+    let mods = interp_modifiers main_data.entry syntax_modifiers in
+    let sd = compute_syntax_data ~local main_data notation_symbols ntn mods in
+    SpecificSyntax (make_syntax_rules false main_data ntn sd)
   in
-  (* Build the interpretation *)
-  let notation = make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env c sc in
-  (* Declare both syntax and interpretation *)
+  main_data, notation_symbols, ntn, syntax_rules, c, df
+
+(* Main entry point for command Notation *)
+
+let add_notation_syntax ~local ~infix deprecation c ({CAst.loc;v=df},modifiers as ast)  =
+  (* Printf.eprintf "Adding notation syntax\n"; *)
+  (* Build or rebuild the syntax rules *)
+  let main_data, notation_symbols, ntn, syntax_rules, c, df = build_notation_syntax ~local ~infix deprecation c ast in
+  (* Declare syntax *)
   syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (local,(ntn,sy)))) syntax_rules;
+  c, main_data, notation_symbols, (CAst.make ?loc ntn), syntax_rules, df
+
+let add_notation_interp ~local env c main_data notation_symbols ntn syntax_rules df sc =
+  (* Build the interpretation *)
+  let notation = make_notation_interpretation ~local main_data notation_symbols ntn.CAst.v syntax_rules df env c sc in
+  (* Declare interpretation *)
   Lib.add_leaf (inNotation notation);
   (* Dump the location of the notation for coqdoc *)
-  Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
+  Dumpglob.dump_notation ntn sc true
 
 (* Main entry point for Format Notation *)
 
@@ -1925,6 +1936,7 @@ let classify_custom_entry (local,s) =
 
 let inCustomEntry : locality_flag * string -> obj =
   declare_object {(default_object "CUSTOM-ENTRIES") with
+      object_stage = Summary.Stage.Synterp;
       cache_function = cache_custom_entry;
       load_function = load_custom_entry;
       subst_function = subst_custom_entry;

@@ -63,6 +63,10 @@ type stm_init_options =
 
   ; stm_options  : AsyncOpts.stm_opt
   (** Low-level STM options *)
+
+  ; only_parsing : bool
+  (** disable execution (some code paths of the STM do belong to the
+      execution phase and don't go trough vernacinterp) *)
   }
 
 (** The type of a STM document *)

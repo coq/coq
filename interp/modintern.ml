@@ -24,6 +24,8 @@ exception ModuleInternalizationError of module_internalization_error
 
 type module_kind = Module | ModType | ModAny
 
+type module_struct_expr = (constr_expr, universe_decl_expr) Entries.module_struct_entry_gen
+
 let error_not_a_module_loc ~info kind loc qid =
   let e = match kind with
     | Module -> NotAModule qid
@@ -104,7 +106,7 @@ let intern_with_decl = function
   | CWith_Module ({CAst.v=fqid},qid) ->
     WithMod (fqid,lookup_module qid)
   | CWith_Definition ({CAst.v=fqid},udecl,c) ->
-    WithDef (fqid,(udecl,c))
+    WithDef (fqid,(c,udecl))
 
 let loc_of_module l = l.CAst.loc
 
@@ -129,7 +131,7 @@ let rec intern_module_ast kind m = match m with
 
 let interp_with_decl env base kind = function
   | WithMod (fqid,mp) -> WithMod (fqid,mp), Univ.ContextSet.empty
-  | WithDef(fqid,(udecl,c)) ->
+  | WithDef(fqid,(c,udecl)) ->
     let sigma, udecl = interp_univ_decl_opt env udecl in
     let c, ectx = interp_constr env sigma c in
     let poly = lookup_polymorphism env base kind fqid in

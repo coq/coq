@@ -148,7 +148,7 @@ let init_load_paths opts =
 
 let init_runtime opts =
   let open Coqargs in
-  Lib.init ();
+  Lib.State.init ();
   init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;
   Mltop.init_known_plugins ();
@@ -174,6 +174,7 @@ let require_file (dir, from, exp) =
   let mp = Libnames.qualid_of_string dir in
   let mfrom = Option.map Libnames.qualid_of_string from in
   let exp = Option.map (fun e -> e, None) exp in
+  Flags.silently (Synterp.vernac_require_syntax mfrom exp) [mp,Vernacexpr.ImportAll];
   Flags.silently (Vernacentries.vernac_require mfrom exp) [mp,Vernacexpr.ImportAll]
 
 let warn_no_native_compiler =

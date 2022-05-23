@@ -59,6 +59,8 @@ let empty_state = {
 
 let ltac_state = Summary.ref empty_state ~name:"ltac2-state"
 
+let ltac_notations = Summary.ref KNmap.empty ~stage:Summary.Stage.Synterp ~name:"ltac2-notations"
+
 let define_global kn e =
   let state = !ltac_state in
   ltac_state := { state with ltac_tactics = KNmap.add kn e state.ltac_tactics }
@@ -93,6 +95,11 @@ let define_alias ?deprecation kn tac =
   ltac_state := { state with ltac_aliases = KNmap.add kn data state.ltac_aliases }
 
 let interp_alias kn = KNmap.find kn ltac_state.contents.ltac_aliases
+
+let define_notation kn tac =
+  ltac_notations := KNmap.add kn tac !ltac_notations
+
+let interp_notation kn = KNmap.find kn !ltac_notations
 
 module ML =
 struct

@@ -149,6 +149,8 @@ val declare_string_option_and_ref : (value:string -> (unit -> string)) opt_decl
 val declare_stringopt_option_and_ref : (unit -> string option) opt_decl
 val declare_interpreted_string_option_and_ref :
   (value:'a -> (string -> 'a) -> ('a -> string) -> (unit -> 'a)) opt_decl
+val declare_interpreted_parsing_string_option_and_ref :
+  (value:'a -> (string -> 'a) -> ('a -> string) -> (unit -> 'a)) opt_decl
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 
@@ -167,15 +169,15 @@ val get_ref_table :
   option_name -> Libnames.qualid table_of_A
 
 (** The first argument is a locality flag. *)
-val set_int_option_value_gen    : ?locality:option_locality -> option_name -> int option -> unit
-val set_bool_option_value_gen   : ?locality:option_locality -> option_name -> bool   -> unit
-val set_string_option_value_gen : ?locality:option_locality -> option_name -> string -> unit
-val set_string_option_append_value_gen : ?locality:option_locality -> option_name -> string -> unit
-val unset_option_value_gen : ?locality:option_locality -> option_name -> unit
+val set_int_option_value_gen    : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> int option -> unit
+val set_bool_option_value_gen   : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> bool   -> unit
+val set_string_option_value_gen : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> string -> unit
+val set_string_option_append_value_gen : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> string -> unit
+val unset_option_value_gen : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> unit
 
-val set_int_option_value    : option_name -> int option -> unit
-val set_bool_option_value   : option_name -> bool   -> unit
-val set_string_option_value : option_name -> string -> unit
+val set_int_option_value    : ?stage:Summary.Stage.t -> option_name -> int option -> unit
+val set_bool_option_value   : ?stage:Summary.Stage.t -> option_name -> bool   -> unit
+val set_string_option_value : ?stage:Summary.Stage.t -> option_name -> string -> unit
 
 val print_option_value : option_name -> unit
 
@@ -189,7 +191,7 @@ type table_value =
   | StringRefValue of string
   | QualidRefValue of Libnames.qualid
 
-val set_option_value : ?locality:option_locality ->
+val set_option_value : ?locality:option_locality -> ?stage:Summary.Stage.t ->
   ('a -> option_value -> option_value) -> option_name -> 'a -> unit
 (** [set_option_value ?locality f name v] sets [name] to the result of
     applying [f] to [v] and [name]'s current value. Use for behaviour

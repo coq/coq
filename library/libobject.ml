@@ -63,6 +63,7 @@ let filter_or f1 f2 = match f1, f2 with
 
 type ('a,'b) object_declaration = {
   object_name : string;
+  object_stage : Summary.Stage.t;
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
   open_function : open_filter -> int -> 'b -> unit;
@@ -74,6 +75,7 @@ type ('a,'b) object_declaration = {
 
 let default_object s = {
   object_name = s;
+  object_stage = Summary.Stage.Interp;
   cache_function = (fun _ -> ());
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ _ -> ());
@@ -143,6 +145,7 @@ let declare_named_object_full odecl =
   let odecl =
     let oname = make_oname in
     { object_name = odecl.object_name;
+      object_stage = Summary.Stage.Interp;
       cache_function = (fun (p, (id, o)) -> odecl.cache_function (oname p id, o));
       load_function = (fun i (p, (id, o)) -> odecl.load_function i (oname p id, o));
       open_function = (fun f i (p, (id, o)) -> odecl.open_function f i (oname p id, o));
@@ -209,6 +212,38 @@ let discharge_object (Dyn.Dyn (tag, v)) =
 let rebuild_object (Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
   Dyn.Dyn (tag, decl.rebuild_function v)
+
+let object_stage (Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  decl.object_stage
+
+let rec pr_libobject o = let open Pp in match o with
+  | ModuleObject(id, sobjs) ->
+    str"module " ++ Names.Id.print id ++ str" = " ++ pr_sobjs sobjs
+  | ModuleTypeObject(id, sobjs) ->
+    str"module type " ++ Names.Id.print id ++ str" = " ++ pr_sobjs sobjs
+  | IncludeObject(aobjs) ->
+    str "include " ++ pr_aobjs aobjs
+  | KeepObject(id, objs) ->
+    str "keep " ++ Names.Id.print id ++ pr_objs objs
+  | ExportObject(l) -> str "export " ++ prlist_with_sep spc (fun (filter, id) -> str (Names.ModPath.to_string id)) l.mpl
+  | AtomicObject(o) -> pr_obj o
+
+and pr_aobjs o = let open Pp in match o with
+  | Objs objs -> pr_objs objs
+  | Ref(mp, subst) -> str (Names.ModPath.to_string mp) ++ str" (with subst)"
+
+and pr_sobjs (ids, abobjs) =
+  let open Pp in
+  str"fun (" ++ prlist_with_sep spc (fun id -> str @@ Names.MBId.to_string id) ids ++ str")"
+
+and pr_objs objs =
+  let open Pp in
+  str"struct " ++ hov 2 (pr_vertical_list pr_libobject objs) ++ str "end"
+
+and pr_obj (Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  Pp.str decl.object_name
 
 let dump = Dyn.dump
 

@@ -112,14 +112,22 @@ type constant_entry =
 
 (** {6 Modules } *)
 
-type module_struct_entry = (constr * Univ.AbstractContext.t option) Declarations.module_alg_expr
+type ('constr,'univ) module_struct_entry_gen =
+  ('constr * 'univ option) Declarations.module_alg_expr
 
-type module_params_entry =
-  (MBId.t * module_struct_entry * inline) list (** older first *)
+type ('constr, 'univ) module_params_entry_gen =
+  (MBId.t * ('constr, 'univ) module_struct_entry_gen * inline) list (** older first *)
 
-type module_type_entry = module_params_entry * module_struct_entry
+type ('constr, 'univ) module_type_entry_gen =
+  ('constr, 'univ) module_params_entry_gen * ('constr, 'univ) module_struct_entry_gen
 
-type module_entry =
-  | MType of module_params_entry * module_struct_entry
+type ('constr, 'univ) module_entry_gen =
+  | MType of ('constr, 'univ) module_params_entry_gen * ('constr, 'univ) module_struct_entry_gen
   | MExpr of
-      module_params_entry * module_struct_entry * module_struct_entry option
+      ('constr, 'univ) module_params_entry_gen * ('constr, 'univ) module_struct_entry_gen
+      * ('constr, 'univ) module_struct_entry_gen option
+
+type module_struct_entry = (Constr.t, Univ.AbstractContext.t) module_struct_entry_gen
+type module_params_entry = (Constr.t, Univ.AbstractContext.t) module_params_entry_gen
+type module_type_entry = (Constr.t, Univ.AbstractContext.t) module_type_entry_gen
+type module_entry = (Constr.t, Univ.AbstractContext.t) module_entry_gen

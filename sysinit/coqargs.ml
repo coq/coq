@@ -63,6 +63,7 @@ type coqargs_config = {
   native_include_dirs : CUnix.physical_path list;
   time        : bool;
   print_emacs : bool;
+  only_parsing : bool;
 }
 
 type coqargs_pre = {
@@ -118,6 +119,7 @@ let default_config = {
   native_include_dirs = [];
   time         = false;
   print_emacs  = false;
+  only_parsing = try ignore(Sys.getenv "ONLY_PARSING"); true with Not_found -> false;
 
   (* Quiet / verbosity options should be here *)
 }
@@ -214,7 +216,8 @@ let interp_set_option opt v old =
   | StringValue _ -> StringValue v
   | StringOptValue _ -> StringOptValue (Some v)
 
-let set_option = let open Goptions in function
+let set_option =
+  let open Goptions in function
   | opt, OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
   | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
   | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
@@ -372,6 +375,7 @@ let parse_args ~usage ~init arglist : t * string list =
     |"-test-mode" -> Vernacinterp.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-config"|"--config" -> set_query oval PrintConfig
+    |"-only-parsing" -> { oval with config = { oval.config with only_parsing = true }}
 
     |"-bt" -> add_set_debug oval "backtrace"
     (* -debug is deprecated *)

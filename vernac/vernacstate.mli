@@ -75,7 +75,7 @@ module Stm : sig
   val set_pstate : t -> pstate -> t
 
   (** Rest of the state, unfortunately this is used in low-level so we need to expose it *)
-  type non_pstate = Summary.frozen * Lib.frozen
+  type non_pstate = Summary.frozen * Lib.State.frozen
   val non_pstate : t -> non_pstate
 
   (** Checks if two states have the same Environ.env (physical eq) *)

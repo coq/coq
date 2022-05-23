@@ -52,7 +52,7 @@ type locate_error = LibUnmappedDir | LibNotFound
 type 'a locate_result = ('a, locate_error) result
 
 val locate_qualified_library
-  :  ?root:DirPath.t
+  : ?root:DirPath.t
   -> Libnames.qualid
   -> (DirPath.t * CUnix.physical_path) locate_result
 

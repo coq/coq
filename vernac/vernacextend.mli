@@ -137,7 +137,7 @@ val vtmodifyprogram : (pm:Declare.OblState.t -> Declare.OblState.t) -> typed_ver
 val vtdeclareprogram : (pm:Declare.OblState.t -> Declare.Proof.t) -> typed_vernac
 val vtopenproofprogram : (pm:Declare.OblState.t -> Declare.OblState.t * Declare.Proof.t) -> typed_vernac
 
-type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> unit -> typed_vernac
+type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> unit -> (bool * typed_vernac)
 
 type plugin_args = Genarg.raw_generic_argument list
 

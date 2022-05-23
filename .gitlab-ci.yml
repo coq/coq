@@ -251,6 +251,13 @@ build:edge+flambda:
 build:edge+flambda:dev:
   extends: .build-template:dev
 
+build:base+onlyparsing:
+  extends: .build-template
+  variables:
+    COQUSERFLAGS: "-only-parsing"
+  artifacts:
+    when: always
+
 build:base+async:
   extends: .build-template
   variables:
@@ -537,6 +544,13 @@ test-suite:base+async:
   only:
     variables:
       - $UNRELIABLE =~ /enabled/
+
+test-suite:base+onlyparsing:
+  extends: .test-suite-template
+  needs:
+    - build:base+onlyparsing
+  variables:
+    COQEXTRAFLAGS: "-only-parsing"
 
 validate:base:
   extends: .validate-template

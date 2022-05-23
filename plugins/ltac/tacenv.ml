@@ -32,6 +32,7 @@ module KnTab = Nametab.Make(FullPath)(KerName)
 let tactic_tab = Summary.ref ~name:"LTAC-NAMETAB" (KnTab.empty, KNmap.empty)
 
 let push_tactic vis sp kn =
+  CDebug.debug_synterp (fun () -> Pp.(str"push_tactic kn=" ++ KerName.debug_print kn));
   let (tab, revtab) = !tactic_tab in
   let tab = KnTab.push vis sp kn tab in
   let revtab = KNmap.add kn sp revtab in
@@ -62,6 +63,7 @@ let alias_map = Summary.ref ~name:"tactic-alias"
   (KNmap.empty : alias_tactic KNmap.t)
 
 let register_alias key tac =
+  CDebug.debug_synterp (fun () -> Pp.(str"register alias " ++ KerName.debug_print key));
   alias_map := KNmap.add key tac !alias_map
 
 let interp_alias key =
@@ -92,6 +94,7 @@ let pr_tacname t =
 let tac_tab = ref MLTacMap.empty
 
 let register_ml_tactic ?(overwrite = false) s (t : ml_tactic array) =
+  CDebug.debug_synterp (fun () -> Pp.(str"register_ml_tactic: " ++ str s.mltac_tactic));
   let () =
     if MLTacMap.mem s !tac_tab then
       if overwrite then

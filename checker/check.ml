@@ -280,6 +280,7 @@ type library_objects = lib_objects * lib_objects
 
 type library_disk = {
   md_compiled : Safe_typing.compiled_library;
+  md_syntax_objects : library_objects;
   md_objects : library_objects;
 }
 

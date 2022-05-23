@@ -74,6 +74,8 @@ type object_prefix = {
   obj_mp  : ModPath.t;
 }
 
+val pr_object_prefix : object_prefix -> Pp.t
+
 val eq_op : object_prefix -> object_prefix -> bool
 
 (** to this type are mapped [DirPath.t]'s in the nametab *)

@@ -1264,7 +1264,7 @@ let check_locality locality =
         Pp.(str "This command does not support the " ++
             str what ++ str " attribute in sections.")
   in
-  if Global.sections_are_opened () then
+  if Lib.sections_are_opened () then
     match locality with
     | Local -> ()
     | SuperGlobal -> not_local "global"
@@ -1289,7 +1289,7 @@ let warn_deprecated_hint_without_locality =
     \"#[export] Hint Unfold foo : bar.\"")
 
 let default_hint_locality () =
-  if Global.sections_are_opened () then Local else
+  if Lib.sections_are_opened () then Local else
     let () = warn_deprecated_hint_without_locality () in
     SuperGlobal
 

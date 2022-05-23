@@ -14,6 +14,10 @@ module Stage = struct
 
 type t = Synterp | Interp
 
+let print = function
+  | Synterp -> Pp.str "Synterp"
+  | Interp -> Pp.str "Interp"
+
 let equal x y =
   match x, y with
   | Synterp, Synterp -> true
@@ -85,6 +89,7 @@ let freeze_staged_summaries stage ~marshallable : frozen =
   }
 
 let freeze_summaries ~marshallable : frozen =
+  CDebug.debug_synterp (fun () -> Pp.(str"freeze_summaries (full)"));
   let map = { HMap.map = fun tag decl -> decl.freeze_function ~marshallable } in
   { summaries = HMap.map map !sum_map;
     ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
@@ -103,6 +108,7 @@ let warn_summary_out_of_scope =
 let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
   (* The unfreezing of [ml_modules_summary] has to be anticipated since it
    * may modify the content of [summaries] by loading new ML modules *)
+  CDebug.debug_synterp (fun () -> Pp.(str"unfreeze_summaries " ++ if partial then str"(partial)" else str"(full)"));
   begin match !sum_mod with
   | None -> CErrors.anomaly Pp.(str "Undeclared ML-MODULES summary.")
   | Some decl -> Option.iter decl.unfreeze_function ml_module

@@ -81,8 +81,10 @@ let specific_notation_printing_rules =
   Summary.ref ~name:"specific-notation-printing-rules" (SpecificNotationMap.empty : notation_printing_rules SpecificNotationMap.t)
 
 let declare_generic_notation_printing_rules ntn rules =
+  CDebug.debug_synterp (fun () -> Pp.(str "declare_generic_notation_printing_rules"));
   generic_notation_printing_rules := NotationMap.add ntn rules !generic_notation_printing_rules
 let declare_specific_notation_printing_rules specific_ntn rules =
+  CDebug.debug_synterp (fun () -> Pp.(str "declare_specific_notation_printing_rules"));
   specific_notation_printing_rules := SpecificNotationMap.add specific_ntn rules !specific_notation_printing_rules
 
 let has_generic_notation_printing_rule ntn =

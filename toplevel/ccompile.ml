@@ -47,7 +47,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
   | BuildVo | BuildVok ->
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VoDoc long_f_dot_out; injections; stm_options; } in
+          Stm.{ doc_type = VoDoc long_f_dot_out; injections; stm_options; only_parsing = opts.config.only_parsing } in
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
@@ -96,7 +96,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VioDoc long_f_dot_out; injections; stm_options;
+          Stm.{ doc_type = VioDoc long_f_dot_out; injections; stm_options; only_parsing = opts.config.only_parsing
               } in
 
       let state = { doc; sid; proof = None; time = opts.config.time } in

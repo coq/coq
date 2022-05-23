@@ -550,7 +550,7 @@ let warn_deprecated_hint_rewrite_without_locality =
     \"#[export] Hint Rewrite foo : bar.\" This is supported since Coq 8.14.")
 
 let default_hint_rewrite_locality () =
-  if Global.sections_are_opened () then Hints.Local
+  if Lib.sections_are_opened () then Hints.Local
   else
     let () = warn_deprecated_hint_rewrite_without_locality () in
     Hints.SuperGlobal
@@ -576,14 +576,14 @@ let add_rew_rules ~locality base lrul =
   | Local -> cache_hintrewrite (base,lrul)
   | SuperGlobal ->
     let () =
-      if Global.sections_are_opened () then
+      if Lib.sections_are_opened () then
       CErrors.user_err Pp.(str
         "This command does not support the global attribute in sections.");
     in
     Lib.add_leaf (inGlobalHintRewrite (base,lrul))
   | Export ->
     let () =
-      if Global.sections_are_opened () then
+      if Lib.sections_are_opened () then
         CErrors.user_err Pp.(str
           "This command does not support the export attribute in sections.");
     in

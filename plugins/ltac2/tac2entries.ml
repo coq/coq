@@ -628,8 +628,8 @@ end
 let parse_scope = ParseToken.parse_scope
 
 type synext = {
+  synext_kn : KerName.t;
   synext_tok : sexpr list;
-  synext_exp : raw_tacexpr;
   synext_lev : int;
   synext_loc : bool;
   synext_depr : Deprecation.t option;
@@ -679,7 +679,7 @@ let perform_notation syn st =
       ((CAst.make ?loc:e.loc @@ CPatVar na), e)
     in
     let bnd = List.map map args in
-    CAst.make ~loc @@ CTacLet (false, bnd, syn.synext_exp)
+    CAst.make ~loc @@ CTacSyn (bnd, syn.synext_kn)
   in
   let rule = Pcoq.Production.make rule (act mk) in
   let pos = Some (string_of_int syn.synext_lev) in
@@ -700,8 +700,9 @@ let open_synext i syn =
   if Int.equal i 1 then Pcoq.extend_grammar_command ltac2_notation syn
 
 let subst_synext (subst, syn) =
-  let e = Tac2intern.subst_rawexpr subst syn.synext_exp in
-  if e == syn.synext_exp then syn else { syn with synext_exp = e }
+  let kn = Mod_subst.subst_kn subst syn.synext_kn in
+  if kn == syn.synext_kn then syn
+  else { syn with synext_kn = kn }
 
 let classify_synext o =
   if o.synext_loc then Dispose else Substitute
@@ -710,10 +711,33 @@ let ltac2_notation_cat = Libobject.create_category "ltac2.notations"
 
 let inTac2Notation : synext -> obj =
   declare_object {(default_object "TAC2-NOTATION") with
+     object_stage = Summary.Stage.Synterp;
      cache_function  = cache_synext;
      open_function   = simple_open ~cat:ltac2_notation_cat open_synext;
      subst_function = subst_synext;
      classify_function = classify_synext}
+
+let cache_synext_interp (local,kn,tac) =
+  Tac2env.define_notation kn tac
+
+let open_synext_interp i o =
+  if Int.equal i 1 then cache_synext_interp o
+
+let subst_synext_interp (subst, (local,kn,tac as o)) =
+  let tac' = Tac2intern.subst_rawexpr subst tac in
+  let kn' = Mod_subst.subst_kn subst kn in
+  if kn' == kn && tac' == tac then o else
+  (local, kn', tac')
+
+let classify_synext_interp (local,_,_) =
+  if local then Dispose else Substitute
+
+let inTac2NotationInterp : (bool*KerName.t*raw_tacexpr) -> obj =
+  declare_object {(default_object "TAC2-NOTATION-INTERP") with
+     cache_function  = cache_synext_interp;
+     open_function   = simple_open ~cat:ltac2_notation_cat open_synext_interp;
+     subst_function = subst_synext_interp;
+     classify_function = classify_synext_interp}
 
 type abbreviation = {
   abbr_body : raw_tacexpr;
@@ -746,41 +770,77 @@ let inTac2Abbreviation : Id.t -> abbreviation -> obj =
      subst_function = subst_abbreviation;
      classify_function = classify_abbreviation}
 
-let register_notation ?deprecation ?(local = false) tkn lev body = match tkn, lev with
-| [SexprRec (_, {loc;v=Some id}, [])], None ->
-  (* Tactic abbreviation *)
-  let () = check_lowercase CAst.(make ?loc id) in
-  let body = Tac2intern.globalize Id.Set.empty body in
-  let abbr = { abbr_body = body; abbr_depr = deprecation } in
-  Lib.add_leaf (inTac2Abbreviation id abbr)
-| _ ->
-  (* Check that the tokens make sense *)
-  let entries = List.map ParseToken.parse_token tkn in
-  let fold accu tok = match tok with
-  | TacTerm _ -> accu
-  | TacNonTerm (Name id, _) -> Id.Set.add id accu
-  | TacNonTerm (Anonymous, _) -> accu
-  in
-  let ids = List.fold_left fold Id.Set.empty entries in
-  (* Globalize so that names are absolute *)
-  let body = Tac2intern.globalize ids body in
-  let lev = match lev with
-  | Some n ->
-    let () =
-      if n < 0 || n > 6 then
-        user_err (str "Notation levels must range between 0 and 6")
+let rec string_of_scope = function
+| SexprStr s -> Printf.sprintf "str(%s)" s.CAst.v
+| SexprInt i -> Printf.sprintf "int(%i)" i.CAst.v
+| SexprRec (_, {v=na}, []) -> Option.cata Id.to_string "_" na
+| SexprRec (_, {v=na}, e) ->
+  Printf.sprintf "%s(%s)" (Option.cata Id.to_string "_" na) (String.concat " " (List.map string_of_scope e))
+
+let string_of_token = function
+| SexprStr {v=s} -> Printf.sprintf "str(%s)" s
+| SexprRec (_, {v=na}, [tok]) -> string_of_scope tok
+| _ -> assert false
+
+let make_fresh_key tokens =
+  let prods = String.concat "_" (List.map string_of_token tokens) in
+  (* We embed the hash of the kernel name in the label so that the identifier
+      should be mostly unique. This ensures that including two modules
+      together won't confuse the corresponding labels. *)
+  let hash = (ModPath.hash (Lib.current_mp ())) land 0x7FFFFFFF in
+  let lbl = Id.of_string_soft (Printf.sprintf "%s_%08X" prods hash) in
+  Lib.make_kn lbl
+
+type notation_interpretation_data =
+| Abbreviation of Id.t * Deprecation.t option * raw_tacexpr
+| Synext of bool * KerName.t * Id.Set.t * raw_tacexpr
+
+let register_notation atts tkn lev body =
+  let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
+  let local = Option.default false local in
+  match tkn, lev with
+  | [SexprRec (_, {loc;v=Some id}, [])], None ->
+    (* Tactic abbreviation *)
+    let () = check_lowercase CAst.(make ?loc id) in
+    Abbreviation(id, deprecation, body)
+  | _ ->
+    (* Check that the tokens make sense *)
+    let entries = List.map ParseToken.parse_token tkn in
+    let fold accu tok = match tok with
+    | TacTerm _ -> accu
+    | TacNonTerm (Name id, _) -> Id.Set.add id accu
+    | TacNonTerm (Anonymous, _) -> accu
     in
-    n
-  | None -> 5
-  in
-  let ext = {
-    synext_tok = tkn;
-    synext_exp = body;
-    synext_lev = lev;
-    synext_loc = local;
-    synext_depr = deprecation;
-  } in
-  Lib.add_leaf (inTac2Notation ext)
+    let ids = List.fold_left fold Id.Set.empty entries in
+    (* Globalize so that names are absolute *)
+    let lev = match lev with
+    | Some n ->
+      let () =
+        if n < 0 || n > 6 then
+          user_err (str "Notation levels must range between 0 and 6")
+      in
+      n
+    | None -> 5
+    in
+    let key = make_fresh_key tkn in
+    let ext = {
+      synext_kn = key;
+      synext_tok = tkn;
+      synext_lev = lev;
+      synext_loc = local;
+      synext_depr = deprecation;
+    } in
+    Lib.add_leaf (inTac2Notation ext);
+    Synext (local,key,ids,body)
+
+let register_notation_interpretation = function
+  | Abbreviation (id, deprecation, body) ->
+    let body = Tac2intern.globalize Id.Set.empty body in
+    let abbr = { abbr_body = body; abbr_depr = deprecation } in
+    Lib.add_leaf (inTac2Abbreviation id abbr)
+  | Synext (local,kn,ids,body) ->
+    let body = Tac2intern.globalize ids body in
+    Lib.add_leaf (inTac2NotationInterp (local,kn,body))
 
 type redefinition = {
   redef_kn : ltac_constant;
@@ -893,9 +953,6 @@ let register_struct atts str = match str with
 | StrPrm (id, t, ml) ->
   let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
   register_primitive ?deprecation ?local id t ml
-| StrSyn (tok, lev, e) ->
-  let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
-  register_notation ?deprecation ?local tok lev e
 | StrMut (qid, old, e) ->
   let () = Attributes.unsupported_attributes atts in
   register_redefinition qid old e
@@ -1111,6 +1168,7 @@ let load_ltac2_init _ () =
 (** Dummy object that register global rules when Require is called *)
 let inTac2Init : unit -> obj =
   declare_object {(default_object "TAC2-INIT") with
+    object_stage = Summary.Stage.Synterp;
     cache_function = cache_ltac2_init;
     load_function = load_ltac2_init;
   }

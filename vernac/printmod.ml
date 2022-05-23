@@ -214,7 +214,7 @@ let nametab_register_body mp dir (l,body) =
         mib.mind_packets
 
 (* TODO only import printing-relevant objects (or find a way to print without importing) *)
-let import_module = Declaremods.import_module Libobject.unfiltered
+let import_module = Declaremods.Interp.import_module Libobject.unfiltered
 let process_module_binding = Declaremods.process_module_binding
 
 let nametab_register_module_body mp struc =
@@ -396,6 +396,7 @@ let unsafe_print_module extent env mp with_body mb =
 exception ShortPrinting
 
 let print_module ~with_body mp =
+  CDebug.debug_synterp (fun () -> Pp.(str"print_module, mp=" ++ str (ModPath.debug_to_string mp)));
   let me = Global.lookup_module mp in
   try
     if !short then raise ShortPrinting;

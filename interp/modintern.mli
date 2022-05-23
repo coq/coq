@@ -34,10 +34,12 @@ exception ModuleInternalizationError of module_internalization_error
 
 type module_kind = Module | ModType | ModAny
 
+type module_struct_expr = (constr_expr, universe_decl_expr) module_struct_entry_gen
+
 (** Module internalization, i.e. from AST to module expression *)
 val intern_module_ast :
-  module_kind -> module_ast -> (universe_decl_expr option * constr_expr) Declarations.module_alg_expr * ModPath.t * module_kind
+  module_kind -> module_ast -> module_struct_expr * ModPath.t * module_kind
 
 (** Module interpretation, i.e. from module expression to typed module entry *)
 val interp_module_ast :
-  env -> module_kind -> ModPath.t -> (universe_decl_expr option * constr_expr) Declarations.module_alg_expr -> module_struct_entry * Univ.ContextSet.t
+  env -> module_kind -> ModPath.t -> module_struct_expr -> module_struct_entry * Univ.ContextSet.t
