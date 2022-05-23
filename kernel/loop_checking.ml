@@ -724,7 +724,7 @@ struct
     let open Pp in
     prlist_with_sep spc (fun (idx, _) -> Point.pr (Index.repr idx m.table)) (PMap.bindings w)
 
-  let _pr_clauses m w =
+  let pr_clauses m w =
     let open Pp in
     prlist_with_sep spc (fun (idx, (bwd, fwd)) ->
       Point.pr (Index.repr idx m.table) ++ str": " ++ spc () ++
@@ -853,7 +853,7 @@ let check { model; updates; clauses } (w : CanSet.t) =
           Model (wr, mr))
       in inner_loop_partition premconclw m
   and loop cV u m =
-    debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr m u);
+    debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr_clauses m u);
     match check_clauses_with_premises u m with
     | None -> Model (u, m)
     | Some (w, m) ->
@@ -1310,65 +1310,13 @@ let check_clause_holds_fwd m can clause =
 let _check_clause_holds_fwd_use = check_clause_holds_fwd
 
 (* Checks that a clause currently holds in the model *)
-let check_clause_of m conclv clause =
+let _check_clause_of m conclv clause =
   let (k, premises) = clause in
   let k0 = min_premise m premises in
   if k0 < 0 then false (* We do not allow vacuously true constraints *)
   else
     (debug Pp.(fun () -> str"check_clause_of: k = " ++ int k ++ str" k0 = " ++ int k0 ++ str" conclv = " ++ int conclv);
     k + k0 <= conclv)
-
-(* A clause x -> y might hold in the current minimal model without being valid in all
-   its extensions. We check that the "inverse" clause y -> x + 1 does *not* hold as
-   well to ensure that x -> y will really hold in all extensions.
-   Both clauses cannot be valid at the same time as this would imply a loop. *)
-let _check_inv_clause_of m concl clause =
-  let (k, premises) = clause in
-  let chk = NeList.for_all (fun (idx, idxk) ->
-    let vidx = model_value m idx in
-    check_clause_of m (vidx + idxk) (1, NeList.tip (concl, k)))
-    premises
-  in
-  debug Pp.(fun () -> str"check_inv_clause_of: " ++  pr_clause_info m concl clause ++ str " = " ++ bool chk);
-  chk
-
-let check_clauses m (cls : ClausesBackward.t) =
-  PMap.for_all (fun concl cls ->
-    let can = repr m concl in
-    ClausesOf.for_all (fun cl ->
-      if check_clause_of m can.value cl then
-        (* let fwdc = check_clause_holds_fwd m can cl in *)
-        let bwdc = check_clause_holds m can cl in bwdc
-        (* if fwdc == bwdc then fwdc *)
-        (* else CErrors.anomaly Pp.(str "check_clause_holds differ in fwd and backward mode: forward" ++ bool fwdc ++ str" backward: " ++ bool bwdc) *)
-      else false) cls)
-    cls
-
-let check_clauses m cls =
-  if check_clauses m cls then
-    (debug Pp.(fun () -> str"check_clauses succeeded on: " ++ pr_clauses_bwd m cls ++
-    str" and model " ++ pr_levelmap m); true)
-  else (debug Pp.(fun () -> str"check_clauses failed on: " ++ pr_clauses_bwd m cls ++
-    str" and model " ++ pr_levelmap m); false)
-
-let check_clause m (concl, cl) =
-  let conclv = repr m concl in
-  ClausesOf.for_all (fun cl -> check_clause_holds m conclv cl) cl
-
-let _check_clause = time2 (Pp.str"check_clause") check_clause
-
-let check_lt (m : t) u v =
-  let cls = clauses_of_univ_constraint m (u, Lt, v) ClausesBackward.empty in
-  check_clauses m.model cls
-
-let check_leq (m : t) u v =
-  let cls = clauses_of_univ_constraint m (u, Le, v) ClausesBackward.empty in
-  check_clauses m.model cls
-
-let check_eq m u v =
-  let canu = repr_node m.model u in
-  let canv = repr_node m.model v in
-  canu == canv
 
 (* let pr_clauses m cls = Clauses.pr pr_clause m cls.Clauses.clauses_bwd *)
 
@@ -1398,22 +1346,22 @@ let infer_clause_extension cl m =
   match filter_trivial_clause m.model cl with
   | None -> Some m
   | Some cl ->
+    debug Pp.(fun () -> str"After filtering, clause is: " ++ pr_clause m.model cl);
     (* if mem_clause m cl then Some m else *)
+    let m = add_clauses_of_model m cl in
     let w, model = update_model cl m.model in
     if CanSet.is_empty w then begin
       (* The clause is already true in the current model,
         but might not be in an extension, so we add it still *)
       debug Pp.(fun () -> str"Clause is valid in the current model");
-      let m = add_clauses_of_model { m with model } cl in
       (* debug_clauses Pp.(fun () -> str"Clauses: " ++ pr_clauses m.model m.clauses); *)
       Some m
     end else begin
       (* The clauses are not valid in the current model, we have to find a new one *)
       debug Pp.(fun () -> str"Enforcing clauses requires a new inference");
-      let m = add_clauses_of_model { m with model } cl in
-      match infer_clauses_extension w m with
+      match infer_clauses_extension w { m with model } with
       | None ->
-        debug Pp.(fun () -> str"Enforcing clauses " ++ pr_clause m.model cl ++ str" resulted in a loop");
+        debug Pp.(fun () -> str"Enforcing clauses " ++ pr_clause model cl ++ str" resulted in a loop");
         None
       | Some _ as x -> x
         (* assert (check_clause m.model cl); *)
@@ -1474,6 +1422,69 @@ let enforce_eq u v m =
           let canv' =  repr m'.model canv.canon in
           enforce_leq_can canv' canu' m')
   end
+
+
+(* A clause x -> y + 1 might hold in the current minimal model without being valid in all
+   its extensions. We check that the "inverse" clause y + 1 -> x + 1 does *not* hold as
+   well to ensure that x -> y will really hold in all extensions.
+   Both clauses cannot be valid at the same time as this would imply a loop. *)
+let check_inv_clause_of m concl clause =
+  let (k, premises) = clause in
+  let chk = NeList.fold (fun (idx, _idxk) curm ->
+    match curm with
+    | None -> infer_clause_extension (idx, ClausesOf.singleton (1, NeList.tip (concl, k))) m
+    | Some m -> Some m)
+    premises None
+  in
+  let chk = match chk with
+    | Some _ -> false
+    | None -> true
+  in
+  debug Pp.(fun () -> str"check_inv_clause_of: " ++  pr_clause_info m.model concl clause ++ str " = " ++ bool chk);
+  chk
+
+let check_clauses m (cls : ClausesBackward.t) =
+  PMap.for_all (fun concl cls ->
+    (* let can = repr m.model concl in *)
+    ClausesOf.for_all (fun cl ->
+      check_inv_clause_of m concl cl)
+(*
+      if check_clause_of m can.value cl then
+        (* let fwdc = check_clause_holds_fwd m can cl in *)
+        let bwdc = check_clause_holds m can cl in bwdc
+        (* if fwdc == bwdc then fwdc *)
+        (* else CErrors.anomaly Pp.(str "check_clause_holds differ in fwd and backward mode: forward" ++ bool fwdc ++ str" backward: " ++ bool bwdc) *)
+      else false)  *)
+      cls)
+    cls
+
+let check_clauses m cls =
+  if check_clauses m cls then
+    (debug Pp.(fun () -> str"check_clauses succeeded on: " ++ pr_clauses_bwd m.model cls ++
+    str" and model " ++ pr_levelmap m.model); true)
+  else (debug Pp.(fun () -> str"check_clauses failed on: " ++ pr_clauses_bwd m.model cls ++
+    str" and model " ++ pr_levelmap m.model); false)
+
+let check_clause m (concl, cl) =
+  let conclv = repr m concl in
+  ClausesOf.for_all (fun cl -> check_clause_holds m conclv cl) cl
+
+let _check_clause = time2 (Pp.str"check_clause") check_clause
+
+let check_lt (m : t) u v =
+  let cls = clauses_of_univ_constraint m (u, Lt, v) ClausesBackward.empty in
+  check_clauses m cls
+
+let check_leq (m : t) u v =
+  let cls = clauses_of_univ_constraint m (u, Le, v) ClausesBackward.empty in
+  check_clauses m cls
+
+let check_eq m u v =
+  let canu = repr_node m.model u in
+  let canv = repr_node m.model v in
+  canu == canv
+
+
 
 type lub = (Point.t * int) list
 type ilub = (Index.t * int) NeList.t
