@@ -24,7 +24,7 @@ To compile Coq yourself, you need:
 
 - The [ZArith library](https://github.com/ocaml/Zarith) >= 1.11
 
-- The [findlib](http://projects.camlcity.org/projects/findlib.html) library (version >= 1.8.0)
+- The [findlib](http://projects.camlcity.org/projects/findlib.html) library (version >= 1.8.1)
 
 - a C compiler
 
