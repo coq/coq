@@ -550,6 +550,13 @@ struct
     if ClausesOfRepr.subset_upto m kprem (find l cls) then cls
     else add cl cls
 
+  let reindex m (clauses : t) : t =
+    PMap.fold (fun idx clsof acc ->
+      let idx' = (repr m idx).canon in
+      if Index.equal idx' idx then acc
+      else PMap.remove idx (PMap.add idx' clsof acc))
+      clauses clauses
+
   let union_upto (m : model) (clauses : t) (clauses' : t) : t =
     let merge idx cls cls' =
       match cls, cls' with
@@ -559,14 +566,7 @@ struct
       | Some cls, Some cls' ->
         Some (ClausesOfRepr.union_upto m idx cls cls')
     in
-    PMap.merge merge clauses clauses'
-
-  let reindex m (clauses : t) : t =
-    PMap.fold (fun idx clsof acc ->
-      let idx' = (repr m idx).canon in
-      if Index.equal idx' idx then acc
-      else PMap.remove idx (PMap.add idx' clsof acc))
-      clauses clauses
+    PMap.merge merge (reindex m clauses) (reindex m clauses')
 
   let repr m (clauses : t) : t =
     PMap.fold (fun idx clsof acc ->
@@ -1055,13 +1055,14 @@ let enforce_eq_can { model; updates; clauses } canu canv : canonical_node * t =
   (* v := u or u := v, depending on the cardinal of attached constraints
      (heuristically, keeps the representant of Set a canonical node) *)
   debug_check_invariants { model; updates; clauses = clauses };
+  let model0 = model in
   let can, other, model =
     if Point.keep_canonical (Index.repr canu.canon model.table) then
       canu, canv, enter_equiv model canv.canon canu.canon
     else
       canv, canu, enter_equiv model canu.canon canv.canon
   in
-  let model =
+  let can, model =
     let bwd = ClausesOfRepr.union_upto model can.canon can.clauses_bwd other.clauses_bwd in
     let fwd = ClausesBackward.union_upto model can.clauses_fwd other.clauses_fwd in
     let modeln = { model with entries = PMap.empty } in
@@ -1072,9 +1073,10 @@ let enforce_eq_can { model; updates; clauses } canu canv : canonical_node * t =
         pr_can model can ++ str": " ++ spc () ++
         pr_clauses_bwd modeln can.clauses_fwd);
       debug Pp.(fun () -> str"Other forward clauses for " ++
-        pr_can model can ++ str": " ++ spc () ++
+        pr_can model0 other ++ str": " ++ spc () ++
         pr_clauses_bwd modeln other.clauses_fwd);
-      change_node model { can with clauses_bwd = bwd; clauses_fwd = fwd }
+    let can = { can with clauses_bwd = bwd; clauses_fwd = fwd } in
+    can, change_node model can
   in
   let updates = PSet.remove other.canon updates in
   let m = { model; updates; clauses } in
@@ -1090,9 +1092,8 @@ let _enforce_eq_indices (m : t) u v =
   if canu == canv then m
   else snd (enforce_eq_can m canu canv)
 
-(* let _pr_can_constraints m can =
-  let cls = Clauses.of_bwd can.canon m.clauses in
-  pr_clauses_of m.model can.canon cls *)
+ let pr_can_constraints m can =
+  pr_clauses_of m.model can.canon can.clauses_bwd
 
 let make_equiv m equiv =
   debug Pp.(fun () -> str"Unifying universes: " ++
@@ -1107,8 +1108,8 @@ let make_equiv m equiv =
       List.fold_left (fun (can, m) can' -> enforce_eq_can m can can')
         (enforce_eq_can m can can') tl
     in
-    debug Pp.(fun () -> str"Chosen canonical universe: " ++ pr_can m.model can);
-          (* str"Constraints:" ++ pr_can_constraints m can); *)
+    debug Pp.(fun () -> str"Chosen canonical universe: " ++ pr_can m.model can ++
+          str"Constraints:" ++ pr_can_constraints m can);
     m
   | _ -> assert false
 
@@ -1310,13 +1311,17 @@ let check_clause_holds_fwd m can clause =
 let _check_clause_holds_fwd_use = check_clause_holds_fwd
 
 (* Checks that a clause currently holds in the model *)
-let _check_clause_of m conclv clause =
+let check_clause_of m conclv clause =
   let (k, premises) = clause in
   let k0 = min_premise m premises in
   if k0 < 0 then false (* We do not allow vacuously true constraints *)
   else
     (debug Pp.(fun () -> str"check_clause_of: k = " ++ int k ++ str" k0 = " ++ int k0 ++ str" conclv = " ++ int conclv);
     k + k0 <= conclv)
+
+let check_clause m (concl, clause) =
+  let v = (repr m concl).value in
+  ClausesOf.for_all (check_clause_of m v) clause
 
 (* let pr_clauses m cls = Clauses.pr pr_clause m cls.Clauses.clauses_bwd *)
 
@@ -1363,8 +1368,10 @@ let infer_clause_extension cl m =
       | None ->
         debug Pp.(fun () -> str"Enforcing clauses " ++ pr_clause model cl ++ str" resulted in a loop");
         None
-      | Some _ as x -> x
-        (* assert (check_clause m.model cl); *)
+      | Some m as x ->
+        let conclcan = repr m.model (fst cl) in
+        debug Pp.(fun () -> str"Backward clauses of concl " ++ pr_clauses_of m.model conclcan.canon conclcan.clauses_bwd);
+        assert (check_clause m.model cl); x
     end
 
 let infer_extension x k y m =
@@ -1517,7 +1524,9 @@ let enforce_constraint u k v (m : t) =
 exception AlreadyDeclared
 
 let add_model u { entries; table } =
-  if Index.mem u table then raise AlreadyDeclared
+  if Index.mem u table then
+   (debug Pp.(fun () -> str"Already declared level: " ++ Point.pr u);
+    raise AlreadyDeclared)
   else
     let idx, table = Index.fresh u table in
     let can = Canonical { canon = idx; value = 0; mark = NoMark;
