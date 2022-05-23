@@ -10,22 +10,13 @@
 
 module StrSet : Set.S with type elt = string
 
-val coqdep_warning : ('a, Format.formatter, unit, unit) format4 -> 'a
-
-(** Options *)
-val option_sort : bool ref
-
 module State : sig
   type t
   val loadpath : t -> Loadpath.State.t
 end
 
-(** [init args] Init coqdep, parsing arguments from [args]; returns
-   the list of .v files passed as arguments *)
-val init : string list -> string list * State.t
-
-(** Display the --help documentation *)
-val usage : unit -> unit
+(** [init args] Init coqdep, setting arguments from [args]. *)
+val init : Args.t -> State.t
 
 (** [treat_file_command_line file] Add an input file to be considered  *)
 val treat_file_command_line : string -> unit

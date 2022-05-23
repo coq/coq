@@ -8,4 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let boot = ref false
+let give args =
+  let open Format in
+  eprintf "*** Warning: @[";
+  kfprintf (fun fmt -> fprintf fmt "@]\n%!") err_formatter args

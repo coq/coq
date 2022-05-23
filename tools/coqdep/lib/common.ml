@@ -13,16 +13,7 @@ open Lexer
 
 let (//) = System.(//)
 
-let coqdep_warning args =
-  eprintf "*** Warning: @[";
-  kfprintf (fun fmt -> fprintf fmt "@]\n%!") err_formatter args
-
 module StrSet = Set.Make(String)
-
-type dynlink = Opt | Byte | Both | No | Variable
-
-let option_noglob = ref false
-let option_dynlink = ref Both
 
 let meta_files = ref []
 
@@ -44,75 +35,6 @@ let vAccu   = ref ([] : (string * string) list)
 
 let addQueue q v = q := v :: !q
 
-(** Exceptions *)
-
-module Error = struct
-
-  exception CannotParseFile of string * (int * int)
-  exception CannotParseProjectFile of string * string
-  exception CannotParseMetaFile of string * string
-
-  exception CannotOpenFile of string * string
-  exception CannotOpenProjectFile of string
-
-  exception MetaLacksFieldForPackage of string * string * string
-  exception DeclaredMLModuleNotFound of string * string * string
-  exception InvalidFindlibPluginName of string * string
-  exception CannotFindMeta of string * string
-
-  let _ = CErrors.register_handler @@ function
-    | CannotParseFile (s,(i,j)) ->
-      Some Pp.(str "File \"" ++ str s ++ str "\"," ++ str "characters" ++ spc ()
-        ++ int i ++ str "-" ++ int j ++ str ":" ++ spc () ++ str "Syntax error")
-
-    | CannotParseProjectFile (file, msg) ->
-      Some Pp.(str "Project file" ++ spc () ++ str  "\"" ++ str file ++ str "\":" ++ spc ()
-        ++ str "Syntax error:" ++ str msg)
-
-    | CannotParseMetaFile (file, msg) ->
-      Some Pp.(str "META file \"" ++ str file ++ str "\":" ++ spc ()
-        ++ str "Syntax error:" ++ spc () ++ str msg)
-
-    | CannotOpenFile (s, msg) ->
-      Some Pp.(str s ++ str ":" ++ spc () ++ str msg)
-
-    | CannotOpenProjectFile msg ->
-      (* TODO: more info? *)
-      Some Pp.(str msg)
-
-    | MetaLacksFieldForPackage (meta_file, package, field) ->
-      Some Pp.(str "META file \"" ++ str meta_file ++ str "\"" ++ spc () ++ str "lacks field" ++ spc ()
-        ++ str field ++ spc () ++ str "for package" ++ spc () ++ str package ++ str ".")
-
-    | DeclaredMLModuleNotFound (f, s, m) ->
-      Some Pp.(str "in file " ++ str f ++ str "," ++ spc() ++ str "declared ML module" ++ spc ()
-        ++ str s ++ spc () ++ str "has not been found in" ++ spc () ++ str m ++ str ".")
-
-    | InvalidFindlibPluginName (f, s) ->
-      Some Pp.(str (Printf.sprintf "in file %s, %s is not a valid plugin name anymore." f s)
-        ++ str "Plugins should be loaded using their public name according to findlib," ++ spc ()
-        ++ str "for example package-name.foo and not foo_plugin." ++ spc ()
-        ++ str "If you are building with dune < 2.9.4 you must specify both" ++ spc ()
-        ++ str "the legacy and the findlib plugin name as in:" ++ spc ()
-        ++ str "Declare ML Module \"foo_plugin:package-name.foo\".")
-
-    | CannotFindMeta (f, package) ->
-      Some Pp.(str "in file" ++ spc () ++ str f ++ str "," ++ spc ()
-        ++ str "could not find META." ++ str package ++ str ".")
-
-    | _ -> None
-
-  let cannot_parse s ij = raise @@ CannotParseFile (s, ij)
-  let cannot_open_project_file msg = raise @@ CannotOpenProjectFile msg
-  let cannot_parse_project_file file msg = raise @@ CannotParseProjectFile (file, msg)
-  let cannot_parse_meta_file file msg = raise @@ CannotParseMetaFile (file, msg)
-  let meta_file_lacks_field meta_file package field = raise @@ MetaLacksFieldForPackage (meta_file, package, field)
-  let cannot_open s msg = raise @@ CannotOpenFile (s, msg)
-  let declare_in_META f s m = raise @@ DeclaredMLModuleNotFound (f, s, m)
-  let findlib_name f s = raise @@ InvalidFindlibPluginName (f, s)
-  let no_meta f package = raise @@ CannotFindMeta (f, package)
-end
-
 type what = Library | External
 let str_of_what = function Library -> "library" | External -> "external file"
 
@@ -120,14 +42,14 @@ let warning_module_notfound ?(what=Library) from f s =
   let what = str_of_what what in
   match from with
   | None ->
-      coqdep_warning "in file %s, %s %s is required and has not been found in the loadpath!"
+      Warning.give "in file %s, %s %s is required and has not been found in the loadpath!"
         f what (String.concat "." s)
   | Some pth ->
-      coqdep_warning "in file %s, %s %s is required from root %s and has not been found in the loadpath!"
+      Warning.give "in file %s, %s %s is required from root %s and has not been found in the loadpath!"
         f what (String.concat "." s) (String.concat "." pth)
 
 let warning_declare f s =
-  coqdep_warning "in file %s, declared ML module %s has not been found!" f s
+  Warning.give "in file %s, declared ML module %s has not been found!" f s
 
 let warn_if_clash ?(what=Library) exact file dir f1 = function
   | f2::fl ->
@@ -353,7 +275,8 @@ let rec find_dependencies st basename =
             let sl = List.map public_to_private_name sl in
             let declare suff dir s =
               let base = escape (file_name s dir) in
-              match !option_dynlink with
+              let open Options.Dynlink in
+              match !Options.dynlink with
               | No -> ()
               | Byte -> add_dep_other (sprintf "%s%s" base suff)
               | Opt -> add_dep_other (sprintf "%s.cmxs" base)
@@ -414,9 +337,6 @@ let rec find_dependencies st basename =
         Error.cannot_parse f (i,j)
   with Sys_error msg -> Error.cannot_open (basename ^ ".v") msg
 
-
-let write_vos = ref false
-
 module Dep_info = struct
 
   type t =
@@ -430,12 +350,12 @@ module Dep_info = struct
 
   let print fmt { name; deps } =
     let ename = escape name in
-    let glob = if !option_noglob then "" else ename^".glob " in
+    let glob = if !Options.noglob then "" else ename^".glob " in
     fprintf fmt "%s.vo %s%s.v.beautified %s.required_vo: %s.v %s\n" ename glob ename ename ename
       (string_of_dependency_list ".vo" deps);
     fprintf fmt "%s.vio: %s.v %s\n" ename ename
       (string_of_dependency_list ".vio" deps);
-    if !write_vos then
+    if !Options.write_vos then
       fprintf fmt "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
         (string_of_dependency_list ".vos" deps);
     fprintf fmt "%!"
@@ -521,30 +441,10 @@ let sort st =
   in
   List.iter (fun (name,_) -> loop name) !vAccu
 
-let usage () =
-  eprintf " usage: coqdep [options] <filename>+\n";
-  eprintf " options:\n";
-  eprintf "  -boot : For coq developers, prints dependencies over coq library files (omitted by default).\n";
-  eprintf "  -sort : output the given file name ordered by dependencies\n";
-  eprintf "  -noglob | -no-glob : \n";
-  eprintf "  -noinit : currently no effect\n";
-  eprintf "  -f file : read -I, -Q, -R and filenames from _CoqProject-formatted FILE.\n";
-  eprintf "  -I dir : add (non recursively) dir to ocaml path\n";
-  eprintf "  -R dir logname : add and import dir recursively to coq load path under logical name logname\n";
-  eprintf "  -Q dir logname : add (recursively) and open (non recursively) dir to coq load path under logical name logname\n";
-  eprintf "  -vos : also output dependencies about .vos files\n";
-  eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
-  eprintf "  -coqlib dir : set the coq standard library directory\n";
-  eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
-  eprintf "  -m META : resolve plugins names using the META file\n";
-  exit 1
-
-let option_sort = ref false
-
 let treat_coqproject st f =
   let open CoqProject_file in
   let iter_sourced f = List.iter (fun {thing} -> f thing) in
-  let warning_fn x = coqdep_warning "%s" x in
+  let warning_fn x = Warning.give "%s" x in
   let project =
     try read_project_file ~warning_fn f
     with
@@ -556,63 +456,6 @@ let treat_coqproject st f =
   iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
-module Args = struct
-
-  type t =
-    { coqproject : string option
-    ; ml_path : string list
-    ; vo_path : (bool * string * string) list
-    ; files : string list
-    }
-
-  let make () =
-    { coqproject = None
-    ; ml_path = []
-    ; vo_path = []
-    ; files = []
-    }
-
-end
-
-let parse st args =
-  let rec parse st =
-    function
-    | "-boot" :: ll -> Options.boot := true; parse st ll
-    | "-sort" :: ll -> option_sort := true; parse st ll
-    | "-vos" :: ll -> write_vos := true; parse st ll
-    | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse st ll
-    | "-noinit" :: ll -> (* do nothing *) parse st ll
-    | "-f" :: f :: ll -> parse { st with Args.coqproject = Some f } ll
-    | "-I" :: r :: ll -> parse { st with Args.ml_path = r :: st.Args.ml_path } ll
-    | "-I" :: [] -> usage ()
-    | "-R" :: r :: ln :: ll -> parse { st with Args.vo_path = (true, r, ln) :: st.Args.vo_path } ll
-    | "-Q" :: r :: ln :: ll -> parse { st with Args.vo_path = (false, r, ln) :: st.Args.vo_path } ll
-    | "-R" :: ([] | [_]) -> usage ()
-    | "-exclude-dir" :: r :: ll -> System.exclude_directory r; parse st ll
-    | "-exclude-dir" :: [] -> usage ()
-    | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse st ll
-    | "-coqlib" :: [] -> usage ()
-    | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse st ll
-    | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse st ll
-    | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse st ll
-    | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse st ll
-    | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse st ll
-    | "-m" :: m :: ll -> meta_files := !meta_files @ [m]; parse st ll
-    | ("-h"|"--help"|"-help") :: _ -> usage ()
-    | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
-      coqdep_warning "unknown option %s" opt;
-      parse st ll
-    | f :: ll -> parse { st with Args.files = f :: st.Args.files } ll
-    | [] -> st
-  in
-  let st = parse st args in
-  let open Args in
-  { st with
-    ml_path = List.rev st.ml_path
-  ; vo_path = List.rev st.vo_path
-  ; files = List.rev st.files
-  }
-
 let add_include st (rc, r, ln) =
   if rc then
     Loadpath.add_r_include st r ln
@@ -621,10 +464,15 @@ let add_include st (rc, r, ln) =
 
 let init args =
   vAccu := [];
-  if not Coq_config.has_natdynlink then option_dynlink := No;
-  let { Args.coqproject; ml_path; vo_path; files } = parse (Args.make ()) args in
+  if not Coq_config.has_natdynlink then Options.dynlink := Options.Dynlink.No;
   let st = Loadpath.State.make () in
-  Option.iter (treat_coqproject st) coqproject;
-  List.iter (Loadpath.add_caml_dir st) ml_path;
-  List.iter (add_include st) vo_path;
-  files, st
+  Options.boot := args.Args.boot;
+  Options.sort := args.Args.sort;
+  Options.write_vos := args.Args.vos;
+  Options.noglob :=  args.Args.noglob;
+  Option.iter (treat_coqproject st) args.Args.coqproject;
+  List.iter (Loadpath.add_caml_dir st) args.Args.ml_path;
+  List.iter (add_include st) args.Args.vo_path;
+  Options.dynlink := args.Args.dyndep;
+  meta_files := args.Args.meta_files;
+  st

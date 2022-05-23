@@ -8,4 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val boot : bool ref
+type t =
+  { boot : bool
+  ; sort : bool
+  ; vos : bool
+  ; noglob : bool
+  ; coqproject : string option
+  ; ml_path : string list
+  ; vo_path : (bool * string * string) list
+  ; dyndep : Options.Dynlink.t
+  ; meta_files : string list
+  ; files : string list
+  }
+
+val make : unit -> t
+val usage : unit -> 'a
+val parse : t -> string list -> t
