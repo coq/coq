@@ -17,7 +17,6 @@ type 'a t = { mutable count : int; mutable data : 'a data }
 and 'a data =
     Sempty
   | Scons of 'a * 'a data
-  | Sapp of 'a data * 'a data
   | Sgen of 'a gen
   | Sbuffio : buffio -> char data
 and 'a gen = { mutable curr : 'a option option; func : unit -> 'a option }
@@ -38,47 +37,11 @@ let count { count } = count
 let fill_buff b =
   b.len <- input b.ic b.buff 0 (Bytes.length b.buff); b.ind <- 0
 
-
-let rec get_data : type v. v data -> v data = fun d -> match d with
- (* Returns either Sempty or Scons(a, _) even when d is a generator
-    or a buffer. In those cases, the item a is seen as extracted from
- the generator/buffer.
- The count parameter is used for calling `Sgen-functions'.  *)
-   Sempty | Scons (_, _) -> d
- | Sapp (d1, d2) ->
-     begin match get_data d1 with
-       Scons (a, d11) -> Scons (a, Sapp (d11, d2))
-     | Sempty -> get_data d2
-     | _ -> assert false
-     end
- | Sgen {curr = Some None} -> Sempty
- | Sgen ({curr = Some(Some a)} as g) ->
-     g.curr <- None; Scons(a, d)
- | Sgen g ->
-     begin match g.func () with
-       None -> g.curr <- Some(None); Sempty
-     | Some a -> Scons(a, d)
-         (* Warning: anyone using g thinks that an item has been read *)
-     end
- | Sbuffio b ->
-     if b.ind >= b.len then fill_buff b;
-     if b.len == 0 then Sempty else
-       let r = Bytes.unsafe_get b.buff b.ind in
-       (* Warning: anyone using g thinks that an item has been read *)
-       b.ind <- succ b.ind; Scons(r, d)
-
-
 let peek : type v. v t -> v option = fun s ->
  (* consult the first item of s *)
  match s.data with
    Sempty -> None
  | Scons (a, _) -> Some a
- | Sapp (_, _) ->
-     begin match get_data s.data with
-       Scons(a, _) as d -> s.data <- d; Some a
-     | Sempty -> None
-     | _ -> assert false
-     end
  | Sgen {curr = Some a} -> a
  | Sgen g -> let x = g.func () in g.curr <- Some x; x
  | Sbuffio b ->
@@ -173,12 +136,6 @@ and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
       f a;
       print_string ", ";
       dump_data f d;
-      print_string ")"
-  | Sapp (d1, d2) ->
-      print_string "Sapp (";
-      dump_data f d1;
-      print_string ", ";
-      dump_data f d2;
       print_string ")"
   | Sgen _ -> print_string "Sgen"
   | Sbuffio _ -> print_string "Sbuffio"
