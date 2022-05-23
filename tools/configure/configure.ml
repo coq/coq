@@ -114,11 +114,11 @@ let check_caml_version prefs caml_version caml_version_nums =
 
 let check_findlib_version prefs { CamlConf.findlib_version } =
   let findlib_version_nums = generic_version_nums ~name:"findlib" findlib_version in
-  if findlib_version_nums >= [1;8;0] then
+  if findlib_version_nums >= [1;8;1] then
     cprintf prefs "You have OCamlfind %s. Good!" findlib_version
   else
     let () = cprintf prefs "Your version of OCamlfind is %s." findlib_version in
-    die "You need OCamlfind 1.8.0 or later."
+    die "You need OCamlfind 1.8.1 or later."
 
 (** Note, these warnings are only used in Coq Makefile *)
 (** Explanation of enabled/disabled warnings:
