@@ -37,6 +37,8 @@ type t =
   (** native dynlink enabled [only relevant to coq_makefile] *)
   ; coqide : ide option
   (** coqide build [yes/no/byte] *)
+  ; unspeclablgtk : bool
+  (** whether to allows an "[unspecified]" version of lablgtk *)
   ; macintegration : bool
   (** whether to integrate CoqIDE with OSX  *)
   ; browser : string option

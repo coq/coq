@@ -23,15 +23,19 @@ let get_lablgtkdir ocamlfind =
 
 (** Detect and/or verify the Lablgtk2 version *)
 
-let check_lablgtk_version ocamlfind =
+let check_lablgtk_version ?(unspeclablgtk=false) ocamlfind =
   let v, _ = tryrun ocamlfind ["query"; "-format"; "%v"; "lablgtk3"] in
-  try
-    let vn = generic_version_nums ~name:"lablgtk3" v in
-    if vn < [3; 1; 2] then
-      (false, v)
-    else
-      (true, v)
-  with _ -> (false, v)
+  (* When the *)
+  if unspeclablgtk && String.equal v "[unspecified]" then
+    (true, v)
+  else
+    try
+      let vn = generic_version_nums ~name:"lablgtk3" v in
+      if vn < [3; 1; 2] then
+        (false, v)
+      else
+        (true, v)
+    with _ -> (false, v)
 
 let pr_ide = function No -> "no" | Byte -> "only bytecode" | Opt -> "native"
 
@@ -58,7 +62,7 @@ let check_coqide ocamlfind prefs best_compiler camllib =
   if dir = ""
   then set_ide prefs No "LablGtk3 or LablGtkSourceView3 not found"
   else
-    let (ok, version) = check_lablgtk_version ocamlfind in
+    let (ok, version) = check_lablgtk_version ~unspeclablgtk:prefs.unspeclablgtk ocamlfind in
     let found = Format.sprintf "LablGtk3 and LablGtkSourceView3 found (%s)" version in
     if not ok then set_ide prefs No (found^", but too old (required >= 3.1.2, found " ^ version ^ ")");
     (* We're now sure to produce at least one kind of coqide *)

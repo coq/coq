@@ -29,6 +29,7 @@ type t = {
   arch : string option;
   natdynlink : bool;
   coqide : ide option;
+  unspeclablgtk : bool;
   macintegration : bool;
   browser : string option;
   withdoc : bool;
@@ -61,6 +62,7 @@ let default = {
   arch = None;
   natdynlink = true;
   coqide = None;
+  unspeclablgtk = false;
   macintegration = true;
   browser = None;
   withdoc = false;
@@ -161,6 +163,8 @@ let args_options = Arg.align [
     "(yes|no) Use dynamic loading of native code or not";
   "-coqide", arg_ide (fun p coqide -> { p with coqide }),
     "(opt|byte|no) Specifies whether or not to compile CoqIDE";
+  "-allow-unspecified-lablgtk", arg_set (fun p -> { p with unspeclablgtk = true }),
+    " Allow \"[unspecified]\" lablgtk version";
   "-nomacintegration", arg_set (fun p -> { p with macintegration = false}),
     " Do not try to build CoqIDE MacOS integration";
   "-browser", arg_string_option (fun p browser -> { p with browser }),
