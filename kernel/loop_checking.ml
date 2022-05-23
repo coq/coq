@@ -1366,12 +1366,9 @@ let check_leq (m : t) u v =
   check_clauses m.model cls
 
 let check_eq m u v =
-  (* let canu = repr_node m.model u in
+  let canu = repr_node m.model u in
   let canv = repr_node m.model v in
-  canu == canv || *)
-   let cls = clauses_of_univ_constraint m (u, Eq, v) ClausesBackward.empty in
-  check_clauses m.model cls
-
+  canu == canv
 
 (* let pr_clauses m cls = Clauses.pr pr_clause m cls.Clauses.clauses_bwd *)
 
