@@ -30,6 +30,9 @@ sig
   type any = Any : 'a key * 'a value -> any
   val iter : (any -> unit) -> t -> unit
   val fold : (any -> 'r -> 'r) -> t -> 'r -> 'r
+
+  type filter = { filter : 'a. 'a key -> 'a value -> bool }
+  val filter : filter -> t -> t
 end
 
 module type PreS =
@@ -54,6 +57,9 @@ sig
     sig
       type map = { map : 'a. 'a tag -> 'a V1.t -> 'a V2.t }
       val map : map -> Map(V1).t -> Map(V2).t
+
+      type filter = { filter : 'a. 'a tag -> 'a V1.t -> bool }
+      val filter : filter -> Map(V1).t -> Map(V1).t
     end
 
 end
@@ -138,6 +144,9 @@ module Self : PreS = struct
     type any = Any : 'a tag * 'a value -> any
     let iter f m = Int.Map.iter (fun k v -> f (Any (k, v))) m
     let fold f m accu = Int.Map.fold (fun k v accu -> f (Any (k, v)) accu) m accu
+
+    type filter = { filter : 'a. 'a tag -> 'a value -> bool }
+    let filter f m = Int.Map.filter f.filter m
   end
 
   module HMap (V1 : ValueS) (V2 : ValueS) =
@@ -146,6 +155,11 @@ module Self : PreS = struct
 
     let map (f : map) (m : Map(V1).t) : Map(V2).t =
       Int.Map.mapi f.map m
+
+    type filter = { filter : 'a. 'a tag -> 'a V1.t -> bool }
+
+    let filter (f : filter) (m : Map(V1).t) : Map(V1).t =
+      Int.Map.filter f.filter m
 
   end
 

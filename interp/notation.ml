@@ -424,7 +424,7 @@ let entry_relative_level_eq t1 t2 = match t1, t2 with
 let level_eq (s1, l1, t1) (s2, l2, t2) =
   notation_entry_eq s1 s2 && Int.equal l1 l2 && List.equal entry_relative_level_eq t1 t2
 
-let notation_level_map = Summary.ref ~name:"notation_level_map" NotationMap.empty
+let notation_level_map = Summary.ref ~stage:Summary.Stage.Synterp ~name:"notation_level_map" NotationMap.empty
 
 let declare_notation_level ntn level =
   try
@@ -2567,7 +2567,8 @@ let init () =
 
 let _ =
   Summary.declare_summary "symbols"
-    { Summary.freeze_function = freeze;
+    { stage = Summary.Stage.Interp;
+      Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init }
 

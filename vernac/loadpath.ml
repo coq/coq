@@ -20,7 +20,7 @@ type t = {
   path_root : (CUnix.physical_path * DP.t);
 }
 
-let load_paths = Summary.ref ([] : t list) ~name:"LOADPATHS"
+let load_paths = Summary.ref ([] : t list) ~stage:Summary.Stage.Synterp ~name:"LOADPATHS"
 
 let logical p = p.path_logical
 let physical p = p.path_physical

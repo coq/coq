@@ -232,7 +232,7 @@ let interp_prod_item = function
     TacNonTerm (loc, (symbol, ido))
 
 let make_fresh_key =
-  let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
+  let id = Summary.ref ~stage:Summary.Stage.Synterp ~name:"TACTIC-NOTATION-COUNTER" 0 in
   fun prods ->
     let cur = incr id; !id in
     let map = function
