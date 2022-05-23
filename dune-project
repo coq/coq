@@ -26,7 +26,7 @@
  (depends
   (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
-  (zarith (>= 1.12))
+  (zarith (>= 1.11))
   (ounit2 :with-test))
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
  (description "Coq is a formal proof management system. It provides
