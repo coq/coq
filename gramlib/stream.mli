@@ -81,7 +81,3 @@ val nth : int -> 'a t -> 'a
 val njunk : int -> 'a t -> unit
 
 (**/**)
-
-(* The following is for system use only. Do not call directly. *)
-
-val dump : ('a -> unit) -> 'a t -> unit

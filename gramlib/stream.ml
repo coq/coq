@@ -118,24 +118,3 @@ let of_string s =
 let of_channel ic =
   {count = 0;
         data = Sbuffio {ic = ic; buff = Bytes.create 4096; len = 0; ind = 0}}
-
-(* For debugging use *)
-
-let rec dump : type v. (v -> unit) -> v t -> unit = fun f s ->
-  print_string "{count = ";
-  print_int s.count;
-  print_string "; data = ";
-  dump_data f s.data;
-  print_string "}";
-  print_newline ()
-and dump_data : type v. (v -> unit) -> v data -> unit = fun f ->
-  function
-    Sempty -> print_string "Sempty"
-  | Scons (a, d) ->
-      print_string "Scons (";
-      f a;
-      print_string ", ";
-      dump_data f d;
-      print_string ")"
-  | Sgen _ -> print_string "Sgen"
-  | Sbuffio _ -> print_string "Sbuffio"
