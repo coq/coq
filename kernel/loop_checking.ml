@@ -85,19 +85,6 @@ let time4 prefix f =
     res
   else f x y z w
 
-let filter_map_same f l =
-  let rec aux l =
-    match l with
-    | [] -> l
-    | hd :: tl ->
-      match f hd with
-      | Some hd' ->
-        let tl' = aux tl in
-        if hd == hd' && tl == tl' then l
-        else hd' :: tl'
-      | None -> aux tl
-  in aux l
-
 module Make (Point : Point) = struct
 
   module Index :
@@ -164,7 +151,17 @@ struct
   let tip x = Tip x
   (* let cons x xs = Cons (x, xs) *)
 
-  let map f (x : 'a t) : 'a t =
+  let map f (x : 'a t) : 'b t =
+    let rec aux l =
+      match l with
+      | Tip x -> Tip (f x)
+      | Cons (x, xs) ->
+        let x' = f x in
+        let xs' = aux xs in
+        Cons (x', xs')
+    in aux x
+
+  let smart_map f (x : 'a t) : 'a t =
     let rec aux l =
       match l with
       | Tip x -> let x' = f x in if x' == x then l else Tip x'
@@ -174,7 +171,107 @@ struct
         else Cons (x', xs')
     in aux x
 
-  let fold f
+  let fold (f : 'a -> 'b -> 'b) (x : 'a t) (acc : 'b) : 'b =
+    let rec aux acc l =
+      match l with
+      | Tip x -> f x acc
+      | Cons (hd, tl) -> aux (f hd acc) tl
+    in aux acc x
+
+  let fold_ne (f : 'a -> 'b -> 'b) (g : 'a -> 'b) (x : 'a t) : 'b =
+    let rec aux l =
+      match l with
+      | Tip x -> g x
+      | Cons (hd, tl) -> f hd (aux tl)
+    in aux x
+
+  let iter f x =
+    let rec aux l =
+      match l with
+      | Tip x -> f x
+      | Cons (hd, tl) -> f hd; aux tl
+    in aux x
+
+  let for_all f x =
+    let rec aux l =
+      match l with
+      | Tip x -> f x
+      | Cons (hd, tl) -> f hd && aux tl
+    in aux x
+
+  let exists f x =
+    let rec aux l =
+      match l with
+      | Tip x -> f x
+      | Cons (hd, tl) -> f hd || aux tl
+    in aux x
+
+  let equal f x y =
+    let rec aux l l' =
+      match l, l' with
+      | Tip x, Tip y -> f x y
+      | Cons _, Tip _ -> false
+      | Tip _, Cons _ -> false
+      | Cons (hd, tl), Cons (hd', tl') ->
+        f hd hd' && aux tl tl'
+    in aux x y
+
+  let compare f x y =
+    let rec aux l l' =
+      match l, l' with
+      | Tip x, Tip y -> f x y
+      | Cons _, Tip _ -> 1
+      | Tip _, Cons _ -> -1
+      | Cons (hd, tl), Cons (hd', tl') ->
+        match f hd hd' with
+        | 0 -> aux tl tl'
+        | c -> c
+    in aux x y
+
+  let rec of_list = function
+    | [] -> assert false
+    | [hd] -> Tip hd
+    | hd :: tl -> Cons (hd, of_list tl)
+
+  let rec to_list = function
+    | Tip hd -> [hd]
+    | Cons (hd, tl) -> hd :: to_list tl
+
+  let filter_map_same f l =
+    let rec aux l =
+      match l with
+      | Tip hd ->
+        begin match f hd with
+        | None -> None
+        | Some hd' -> if hd == hd' then Some l else Some (Tip hd')
+        end
+      | Cons (hd, tl) ->
+        match f hd with
+        | Some hd' ->
+          let tl' = aux tl in
+          begin match tl' with
+            | None -> Some (Tip hd')
+            | Some tl' ->
+              if hd == hd' && tl == tl' then Some l
+              else Some (Cons (hd', tl'))
+            end
+        | None -> aux tl
+    in aux l
+
+  let mem_assq x = exists (fun y -> fst y == x)
+
+  let assq x l =
+    let rec aux l =
+      match l with
+      | Tip (hd, v) -> if hd == x then v else raise Not_found
+      | Cons ((hd, v), tl) ->
+        if hd == x then v else aux tl
+    in aux l
+
+  let head x =
+    match x with
+    | Tip hd -> hd
+    | Cons (hd, _) -> hd
 
 end
 
@@ -202,23 +299,27 @@ struct
   end
 
   (* Invariant: sorted, non-empty *)
-  type t = Premise.t list
+  type t = Premise.t NeList.t
 
-  let fold f g l =
-    match l with
-    | [] -> assert false
-    | [hd] -> g hd
-    | hd :: tl -> List.fold_left f (g hd) tl
+  let fold = NeList.fold
 
-  let iter = List.iter
-  let for_all = List.for_all
-  (* let exists = List.exists *)
-  let _add prem (x : t) : t = CList.merge_set Premise.compare [prem] x
-  let _union (x : t) (y : t) : t = CList.merge_set Premise.compare x y
-  let compare : t -> t -> int = CList.compare Premise.compare
-  let equal : t -> t -> bool = CList.equal Premise.equal
+  let fold_ne = NeList.fold_ne
 
-  let of_list l = l
+  let iter = NeList.iter
+  let for_all = NeList.for_all
+  let exists = NeList.exists
+  (* let _add prem (x : t) : t = CList.merge_set Premise.compare [prem] x *)
+  (* let _union (x : t) (y : t) : t = CList.merge_set Premise.compare x y *)
+  let compare : t -> t -> int = NeList.compare Premise.compare
+  let equal : t -> t -> bool = NeList.equal Premise.equal
+
+  let of_list = NeList.of_list
+
+  let to_list = NeList.to_list
+
+  let smart_map = NeList.smart_map
+  let map = NeList.map
+
 
 end
 
@@ -248,7 +349,7 @@ module ClausesOf = struct
 
     let pr pr_pointint concl (k, prem) =
       let open Pp in
-      hov 0 (prlist_with_sep (fun () -> str ",") pr_pointint prem ++ str " → " ++ pr_pointint (concl, k))
+      hov 0 (prlist_with_sep (fun () -> str ",") pr_pointint (Premises.to_list prem) ++ str " → " ++ pr_pointint (concl, k))
     (* let has_bound m idx (_k, prems) = *)
       (* List.exists (fun (l, _) -> (repr m l) == idx) prems *)
   end
@@ -354,7 +455,7 @@ let repr_premise m (idx, k as x) =
   else (idx', k)
 
 let repr_premises m (x : Premises.t) : Premises.t =
-  CList.Smart.map (repr_premise m) x
+  Premises.smart_map (repr_premise m) x
 
 let repr_clauses_of m ((k, prems as x) : ClausesOf.ClauseInfo.t) : ClausesOf.ClauseInfo.t =
   let prems' = repr_premises m prems in
@@ -371,7 +472,7 @@ struct
     Int.equal k k' && repr m idx == repr m idx'
 
   let premises_equal_upto m prems prems' =
-    CList.equal (premise_equal_upto m) prems prems'
+    NeList.equal (premise_equal_upto m) prems prems'
 
   let premises_equal_upto m (k, prems) (k', prems') =
     k <= k' &&
@@ -385,15 +486,15 @@ struct
     for_all (fun cl -> mem_upto m cl cls') cls
 
   let filter_trivial_clause m l ((k, prems) as kprems) =
-    let prems' = filter_map_same (fun (l', k' as x) ->
+    let prems' = NeList.filter_map_same (fun (l', k' as x) ->
       let canl' = repr m l' in
       if Index.equal canl'.canon l && k' >= k then None
       else if Index.equal l' canl'.canon then Some x
       else Some (canl'.canon, k')) prems
     in
     match prems' with
-    | [] -> None
-    | _ ->
+    | None -> None
+    | Some prems' ->
       if prems' == prems then Some kprems
       else Some (k, prems')
 
@@ -541,7 +642,7 @@ let check_invariants ~(required_canonical:Point.t -> bool) { model; updates; _ }
           Premises.iter check_prem prems) cls;
       assert (PMap.for_all (fun _ kprems ->
           ClausesOf.for_all (fun (_, prems) ->
-            List.exists (fun (idx', _) -> can == repr model idx') prems) kprems) can.clauses_fwd);
+            NeList.exists (fun (idx', _) -> can == repr model idx') prems) kprems) can.clauses_fwd);
       incr n_canon
     | Equiv idx' ->
       assert (PMap.mem idx' model.entries);
@@ -600,9 +701,8 @@ let model_value m l =
 
 let min_premise (m : model) prem =
   let g (l, k) = model_value m l - k in
-  let f minl prem = min minl (g prem) in
-  Premises.fold f g prem
-
+  let f prem minl = min minl (g prem) in
+  Premises.fold_ne f g prem
 
 module CanSet =
 struct
@@ -839,7 +939,7 @@ let add_clause_model m (prems, (l, k)) : model =
     m.entries
   in
   let entries = (* Add clause to the forward clauses from the premises *)
-    List.fold_left (fun entries (idx, _) ->
+    Premises.fold (fun (idx, _) entries ->
       let canidx = (repr m idx).canon in
       modify_can canidx (fun _idx ({ clauses_fwd; _ } as can) ->
         (* let fwd = ClausesBackward.add_upto m (canl, ClausesOf.singleton clof) clauses_fwd in  *)
@@ -847,7 +947,7 @@ let add_clause_model m (prems, (l, k)) : model =
         if fwd == clauses_fwd then can
         else { can with clauses_fwd = fwd })
         entries)
-      entries prems
+      prems entries
   in { m with entries }
 
 (** Assumes premise and conclusion already in canonical form *)
@@ -924,14 +1024,14 @@ let _filter_trivial_can_clause canl ((k, prems) as kprems) =
     else Clauses.add (canl.canon, ClausesOf.singleton kprem) cls *)
 
 
-type pclause_info = (int * (Point.t * int) list)
+type pclause_info = (int * (Point.t * int) NeList.t)
 
 let _to_clause_info m (k, prems : pclause_info) : clause_info =
   let trans_prem (p, k) =
     let can = repr_node m p in
     (can.canon, k)
   in
-  (k, List.map trans_prem prems)
+  (k, NeList.map trans_prem prems)
 
 (* let _check_leq (m : t) u v = *)
   (* let cls = clauses_of_le_constraint m.model u v Clauses.empty in *)
@@ -1027,7 +1127,7 @@ let simplify_clauses_between ({ model; _ } as m) v u =
     let cls = canv.clauses_bwd in
     ClausesOf.fold (fun cli acc ->
       let (k, prems) = cli in
-      List.fold_left (fun (acc, visited) (l, _k') ->
+      NeList.fold (fun (l, _k') (acc, visited) ->
         let canl = repr model l in
         if is_visited canl.mark then acc, visited
         else
@@ -1037,7 +1137,7 @@ let simplify_clauses_between ({ model; _ } as m) v u =
           end
         else if Int.equal k 0 then forward (canv :: prev) acc visited canl
         else (acc, visited))
-        acc prems) cls (acc, visited)
+        prems acc) cls (acc, visited)
   in
   let equiv, visited = forward [] [] [] canv in
   let () = List.iter unset_mark visited in
@@ -1045,7 +1145,7 @@ let simplify_clauses_between ({ model; _ } as m) v u =
   else Some (make_equiv m equiv)
     (* if recheck then
       match check m.clauses m.model with
-      | Loop -> CErrors.anomaly Pp.(str"Equating universes resulted in a loop")
+      | Loop -> CsErrors.anomaly Pp.(str"Equating universes resulted in a loop")
       | Model (_w, model) ->
         debug (fun () -> Pp.(str"Equating universes resulted in a model"));
         debug_check_invariants model m.clauses;
@@ -1114,7 +1214,7 @@ exception Found of canonical_node list
 let check_clause_holds m can clause =
   let (k, premises) = clause in
   (* premises -> can + k ? *)
-  let canp = List.map (fun (idx, k) -> repr m idx, k) premises in
+  let canp = NeList.map (fun (idx, k) -> repr m idx, k) premises in
   let rec aux visited todo next_todo =
     match todo, next_todo with
     | [], [] -> visited
@@ -1123,7 +1223,7 @@ let check_clause_holds m can clause =
       match canv.mark with
       | Visited kpath' when kpath' <= kpath -> aux visited todo next_todo
       | _ ->
-        try let k' = List.assq canv canp in
+        try let k' = NeList.assq canv canp in
           (* canv + k' -> canv + kpath *)
           if kpath <= k' then raise (Found visited) else raise Not_found
         with Not_found ->
@@ -1133,12 +1233,12 @@ let check_clause_holds m can clause =
           let next_todo =
             ClausesOf.fold
               (fun (kp, premises) acc ->
-                List.fold_left (fun acc (idx, k') ->
+                NeList.fold (fun (idx, k') acc ->
                   let gidx = repr m idx in
                   if gidx != canv then
                     (* idx + k' -> canv + kp *)
                     (gidx, kpath - kp + k') :: acc
-                  else (* trivial x + k -> x constraint *) acc) acc premises)
+                  else (* trivial x + k -> x constraint *) acc) premises acc)
                     bwd next_todo
           in
           aux visited todo next_todo
@@ -1164,9 +1264,9 @@ let check_clause_holds_fwd m can clause =
   (* premises -> can + k *)
   let (kcan, premises) = clause in
   (* 1, UnivBinders.14, 0 *)
-  let canp = List.map (fun (idx, k) -> repr m idx, k) premises in
+  let canp = Premises.map (fun (idx, k) -> repr m idx, k) premises in
   debug_check Pp.(fun () -> str"Checking " ++ pr_clause_info m can.canon clause);
-  if List.mem_assq can canp then
+  if NeList.mem_assq can canp then
     (debug_check Pp.(fun () -> str " ? " ++ bool true); true)
   else begin
     let rec aux (canv, kpath) =
@@ -1178,7 +1278,7 @@ let check_clause_holds_fwd m can clause =
           str "forward clauses: " ++ pr_clauses_of m can.canon cls);
         ClausesOf.exists (fun (kp, premises) ->
           (* premises -> can.canon + kp *)
-          let (_, kcanv) = List.hd premises in
+          let (_, kcanv) = NeList.head premises in
           (* kcanv is always 0 *)
           (* canv + kcanv -> can.canon + kp implies canv + kpath -> can.canon + k *)
           kcan <= kp + kpath - kcanv) cls
@@ -1193,17 +1293,17 @@ let check_clause_holds_fwd m can clause =
           else if canidx == can then (* Missed clauses due to forward clauses not being a canonical map *)
             ClausesOf.exists (fun (kp, premises) ->
               (* premises -> can.canon + kp *)
-              let (_, kcanv) = List.hd premises in
+              let (_, kcanv) = NeList.head premises in
               (* kcanv is always 0 *)
               (* canv + kcanv -> can.canon + kp implies canv + kpath -> can.canon + k *)
               kcan <= kp + kpath - kcanv) cls
           else
           ClausesOf.exists (fun (kp, premises) ->
           (* premises = [canv] -> canidx.canon + kp *)
-            List.exists (fun (_, kcanv) -> aux (canidx, kpath + kp - kcanv)) premises)
+            Premises.exists (fun (_, kcanv) -> aux (canidx, kpath + kp - kcanv)) premises)
           cls) fwd
     in
-    let res = List.exists aux canp in
+    let res = NeList.exists aux canp in
     debug_check Pp.(fun () -> str " ? " ++ bool res); res
   end
 
@@ -1224,9 +1324,9 @@ let check_clause_of m conclv clause =
    Both clauses cannot be valid at the same time as this would imply a loop. *)
 let _check_inv_clause_of m concl clause =
   let (k, premises) = clause in
-  let chk = List.for_all (fun (idx, idxk) ->
+  let chk = NeList.for_all (fun (idx, idxk) ->
     let vidx = model_value m idx in
-    check_clause_of m (vidx + idxk) (1, [concl, k]))
+    check_clause_of m (vidx + idxk) (1, NeList.tip (concl, k)))
     premises
   in
   debug Pp.(fun () -> str"check_inv_clause_of: " ++  pr_clause_info m concl clause ++ str " = " ++ bool chk);
@@ -1379,19 +1479,21 @@ let enforce_eq u v m =
   end
 
 type lub = (Point.t * int) list
-type ilub = (Index.t * int) list
+type ilub = (Index.t * int) NeList.t
 
 (* max u_i <= v <-> ∧_i u_i <= v *)
 let clauses_of_le_constraint (u : ilub) (v : ilub) cls : clauses =
-  List.fold_left (fun cls (u, k) ->
-    Clauses.add (v, (u, k)) cls) cls u
+  NeList.fold (fun (u, k) cls ->
+    Clauses.add (v, (u, k)) cls) u cls
 
 let clauses_of_constraint m (u : lub) k (v : lub) cls =
   let u = List.map (fun (p, k) -> Index.find p m.table, k) u in
   let v = List.map (fun (p, k) -> Index.find p m.table, k) v in
+  let u = NeList.of_list u in
+  let v = NeList.of_list v in
   match k with
   | Le -> clauses_of_le_constraint u v cls
-  | Lt -> clauses_of_le_constraint (List.map (fun (l, k) -> (l, k + 1)) u) v cls
+  | Lt -> clauses_of_le_constraint (NeList.map (fun (l, k) -> (l, k + 1)) u) v cls
   | Eq -> clauses_of_le_constraint u v (clauses_of_le_constraint v u cls)
 
 let enforce_constraint u k v (m : t) =
@@ -1477,7 +1579,7 @@ let constraints_of_clauses m clauses =
     ClausesOf.fold (fun cli cstrs ->
       let (k, prems) = cli in
       match prems with
-      | [(v, 0)] ->
+      | NeList.Tip (v, 0) ->
         let vp = Index.repr v m.table in
         if k = 0 then Constraints.add (conclp, Le, vp) cstrs
         else if k = 1 then Constraints.add (conclp, Lt, vp) cstrs
@@ -1526,7 +1628,7 @@ let constraints_for ~(kept:Point.Set.t) { model; _ } (fold : 'a constraint_fold)
   let rec add_from u csts todo = match todo with
     | [] -> csts
     | (prems,k)::todo ->
-      let v = match prems with [v, 0] -> v | _ -> assert false in
+      let v = match prems with NeList.Tip (v, 0) -> v | _ -> assert false in
       (* constraints cannot have premisses of other shapes *)
       let v = repr model v in
       (match PMap.find v.canon rmap with
@@ -1591,7 +1693,7 @@ let repr { model; _ } =
         ClausesOf.fold (fun cli map ->
           let (k, prem) = cli in
           match prem with
-          | [(v, 0)] ->
+          | NeList.Tip (v, 0) ->
             let canv = repr model v in
             let vp = Index.repr canv.canon model.table in
             if k = 0 then Point.Map.add vp false map
