@@ -8,6 +8,7 @@ let _debug_loop_checking_flag, debug = CDebug.create_full ~name:"loop-checking" 
 let debug_loop_checking_timing_flag, debug_timing = CDebug.create_full ~name:"loop-checking-timing" ()
 let _debug_loop_checking_loop, debug_loop = CDebug.create_full ~name:"loop-checking-loop" ()
 let _debug_loop_checking_check_model, debug_check_model = CDebug.create_full ~name:"loop-checking-check-model" ()
+let _debug_loop_checking_check, debug_check = CDebug.create_full ~name:"loop-checking-check" ()
 
 module type Point = sig
   type t
@@ -153,6 +154,30 @@ module PSet = Index.Set
 
 type univ_constraint = Point.t * constraint_type * Point.t
 
+module NeList =
+struct
+
+  type 'a t =
+    | Tip of 'a
+    | Cons of 'a * 'a t
+
+  let tip x = Tip x
+  (* let cons x xs = Cons (x, xs) *)
+
+  let map f (x : 'a t) : 'a t =
+    let rec aux l =
+      match l with
+      | Tip x -> let x' = f x in if x' == x then l else Tip x'
+      | Cons (x, xs) -> let x' = f x in
+        let xs' = aux xs in
+        if x' == x && xs' == xs then l
+        else Cons (x', xs')
+    in aux x
+
+  let fold f
+
+end
+
 module Premises =
 struct
 
@@ -249,7 +274,7 @@ type clause = Index.t * ClausesOf.t
 
 let _is_empty_clause ((_, kprem) : clause) = ClausesOf.is_empty kprem
 
-type mark = NoMark | Visited
+type mark = NoMark | Visited of int
 
 (* Comparison on this type is pointer equality *)
 type canonical_node =
@@ -272,11 +297,11 @@ type model = {
   entries : entry PMap.t;
   table : Index.table }
 
-(* let unset_marks m =
+let unset_marks m =
   PMap.iter (fun _ e ->
     match e with
     | Equiv _ -> ()
-    | Canonical can -> unset_mark can) m.entries *)
+    | Canonical can -> unset_mark can) m.entries
 
 let empty_model = {
   entries = PMap.empty;
@@ -434,6 +459,13 @@ struct
         Some (ClausesOfRepr.union_upto m idx cls cls')
     in
     PMap.merge merge clauses clauses'
+
+  let reindex m (clauses : t) : t =
+    PMap.fold (fun idx clsof acc ->
+      let idx' = (repr m idx).canon in
+      if Index.equal idx' idx then acc
+      else PMap.remove idx (PMap.add idx' clsof acc))
+      clauses clauses
 
   let repr m (clauses : t) : t =
     PMap.fold (fun idx clsof acc ->
@@ -838,7 +870,7 @@ let repr_model m =
   if entries' == m.entries then m
   else { m with entries = entries' }
 
-let _repr_all m =
+let _canonical_model m =
   { m with model = repr_model m.model }
 
 let _clauses_levels cls =
@@ -980,20 +1012,24 @@ let make_equiv m equiv =
     m
   | _ -> assert false
 
+let is_visited = function
+  | Visited _ -> true
+  | NoMark -> false
+
 let simplify_clauses_between ({ model; _ } as m) v u =
   let canv = repr model v in
   let canu = repr model u in
   if canv == canu then Some m else
   let rec forward prev acc visited canv : canonical_node list * canonical_node list =
-    if canv.mark == Visited then acc, visited else
-    let () = canv.mark <- Visited in
+    if is_visited canv.mark then acc, visited else
+    let () = canv.mark <- Visited 0 in
     let visited = canv :: visited in
     let cls = canv.clauses_bwd in
     ClausesOf.fold (fun cli acc ->
       let (k, prems) = cli in
       List.fold_left (fun (acc, visited) (l, _k') ->
         let canl = repr model l in
-        if canl.mark == Visited then acc, visited
+        if is_visited canl.mark then acc, visited
         else
           if canl == canu then begin
             assert (Int.equal k 0); (* there would be a loop otherwise *)
@@ -1073,39 +1109,105 @@ let mem_clause m ((l, kprem) : clause) : bool =
 
 type 'a check_function = t -> 'a -> 'a -> bool
 
+exception Found of canonical_node list
+
 let check_clause_holds m can clause =
   let (k, premises) = clause in
+  (* premises -> can + k ? *)
   let canp = List.map (fun (idx, k) -> repr m idx, k) premises in
-  let rec aux (canv, kpath) =
-      try let k' = List.assq canv canp in kpath <= k'
-      with Not_found ->
-        let bwd = canv.clauses_bwd in
-        ClausesOf.exists
-          (fun (kp, premises) ->
-            List.exists (fun (idx, k') ->
-              let gidx = repr m idx in
-              aux (gidx, kp - k' + kpath)) premises)
-            bwd
-  in aux (can, k)
+  let rec aux visited todo next_todo =
+    match todo, next_todo with
+    | [], [] -> visited
+    | [], todo -> aux visited todo []
+    | (canv, kpath) :: todo, next_todo ->
+      match canv.mark with
+      | Visited kpath' when kpath' <= kpath -> aux visited todo next_todo
+      | _ ->
+        try let k' = List.assq canv canp in
+          (* canv + k' -> canv + kpath *)
+          if kpath <= k' then raise (Found visited) else raise Not_found
+        with Not_found ->
+          let bwd = canv.clauses_bwd in
+          let visited = canv :: visited in
+          canv.mark <- Visited kpath;
+          let next_todo =
+            ClausesOf.fold
+              (fun (kp, premises) acc ->
+                List.fold_left (fun acc (idx, k') ->
+                  let gidx = repr m idx in
+                  if gidx != canv then
+                    (* idx + k' -> canv + kp *)
+                    (gidx, kpath - kp + k') :: acc
+                  else (* trivial x + k -> x constraint *) acc) acc premises)
+                    bwd next_todo
+          in
+          aux visited todo next_todo
+  in
+  try
+    let res, visited =
+      try false, aux [] [(can, k)] []
+      with Found visited -> true, visited
+    in
+    List.iter (fun u -> u.mark <- NoMark) visited;
+    res
+  with e ->
+    (* Unlikely event: fatal error or signal *)
+    let () = unset_marks m in
+    raise e
 
-let _check_clause_holds_fwd m can clause =
-  let (k, premises) = clause in
+let _find_reindex m can cls =
+  try PMap.find can cls
+  with Not_found ->
+    PMap.find can (ClausesBackward.reindex m cls)
+
+let check_clause_holds_fwd m can clause =
+  (* premises -> can + k *)
+  let (kcan, premises) = clause in
+  (* 1, UnivBinders.14, 0 *)
   let canp = List.map (fun (idx, k) -> repr m idx, k) premises in
-  let rec aux (canv, kpath) =
-    let fwd = canv.clauses_fwd in (* Constraints canv -> ? *)
-    try let cls = PMap.find can.canon fwd in
-      (* Constraints canv -> can *)
-      ClausesOf.exists (fun (kp, premises) ->
-        let (_, kcanv) = List.hd premises in
-        (* canv + kcanv -> can + kp, does (canv + kpath) -> (can + k) holds *)
-        kcanv + kpath >= k - kp) cls
-    with Not_found ->
-      PMap.exists (fun idx cls ->
-        let canidx = repr m idx in
+  debug_check Pp.(fun () -> str"Checking " ++ pr_clause_info m can.canon clause);
+  if List.mem_assq can canp then
+    (debug_check Pp.(fun () -> str " ? " ++ bool true); true)
+  else begin
+    let rec aux (canv, kpath) =
+      (* canv + kpath -> can + k ? *)
+      let fwd = canv.clauses_fwd in (* Constraints canv -> ? *)
+      try let cls = PMap.find can.canon fwd in
+        (* Constraints canv -> can *)
+        debug_check Pp.(fun () -> str"Found " ++ pr_can m can ++ str" in forward clauses of " ++ pr_can m canv ++ spc () ++
+          str "forward clauses: " ++ pr_clauses_of m can.canon cls);
         ClausesOf.exists (fun (kp, premises) ->
-          List.exists (fun (_, kcanv) -> aux (canidx, kcanv - kp + kpath)) premises)
-        cls) fwd
-  in List.exists aux canp
+          (* premises -> can.canon + kp *)
+          let (_, kcanv) = List.hd premises in
+          (* kcanv is always 0 *)
+          (* canv + kcanv -> can.canon + kp implies canv + kpath -> can.canon + k *)
+          kcan <= kp + kpath - kcanv) cls
+      with Not_found ->
+        debug_check Pp.(fun () -> str"Didn't find " ++ pr_can m can ++ str" in forward clauses of " ++ pr_can m canv ++ spc () ++
+          str "forward clauses: " ++ pr_clauses_bwd m fwd);
+        PMap.exists (fun idx cls ->
+          let canidx = repr m idx in
+          (* Trivial canv + k -> canv clause *)
+          if canidx == canv then
+            (debug_check Pp.(fun () -> str"Skipping trivial clauses: " ++ pr_clauses_of m idx cls); false)
+          else if canidx == can then (* Missed clauses due to forward clauses not being a canonical map *)
+            ClausesOf.exists (fun (kp, premises) ->
+              (* premises -> can.canon + kp *)
+              let (_, kcanv) = List.hd premises in
+              (* kcanv is always 0 *)
+              (* canv + kcanv -> can.canon + kp implies canv + kpath -> can.canon + k *)
+              kcan <= kp + kpath - kcanv) cls
+          else
+          ClausesOf.exists (fun (kp, premises) ->
+          (* premises = [canv] -> canidx.canon + kp *)
+            List.exists (fun (_, kcanv) -> aux (canidx, kpath + kp - kcanv)) premises)
+          cls) fwd
+    in
+    let res = List.exists aux canp in
+    debug_check Pp.(fun () -> str " ? " ++ bool res); res
+  end
+
+let _check_clause_holds_fwd_use = check_clause_holds_fwd
 
 (* Checks that a clause currently holds in the model *)
 let check_clause_of m conclv clause =
@@ -1134,7 +1236,11 @@ let check_clauses m (cls : ClausesBackward.t) =
   PMap.for_all (fun concl cls ->
     let can = repr m concl in
     ClausesOf.for_all (fun cl ->
-      if check_clause_of m can.value cl then check_clause_holds m (repr m concl) cl
+      if check_clause_of m can.value cl then
+        (* let fwdc = check_clause_holds_fwd m can cl in *)
+        let bwdc = check_clause_holds m can cl in bwdc
+        (* if fwdc == bwdc then fwdc *)
+        (* else CErrors.anomaly Pp.(str "check_clause_holds differ in fwd and backward mode: forward" ++ bool fwdc ++ str" backward: " ++ bool bwdc) *)
       else false) cls)
     cls
 
@@ -1160,7 +1266,10 @@ let check_leq (m : t) u v =
   check_clauses m.model cls
 
 let check_eq m u v =
-  let cls = clauses_of_univ_constraint m (u, Eq, v) ClausesBackward.empty in
+  (* let canu = repr_node m.model u in
+  let canv = repr_node m.model v in
+  canu == canv || *)
+   let cls = clauses_of_univ_constraint m (u, Eq, v) ClausesBackward.empty in
   check_clauses m.model cls
 
 
