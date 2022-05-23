@@ -1991,7 +1991,7 @@ let get_keep_admitted_vars =
     ~value:true
 
 let compute_proof_using_for_admitted proof typ iproof =
-  if not (get_keep_admitted_vars ()) || not (Global.sections_are_opened()) then None
+  if not (get_keep_admitted_vars ()) || not (Lib.sections_are_opened()) then None
   else match get_used_variables proof with
     | Some _ as x -> x
     | None ->

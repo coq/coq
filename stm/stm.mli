@@ -61,6 +61,9 @@ type stm_init_options =
   (** Injects Require and Set/Unset commands before the initial
      state is ready *)
 
+  ; only_parsing : bool
+  (** disable execution (some code paths of the STM do belong to the
+      execution phase and don't go trough vernacinterp) *)
   }
 
 (** The type of a STM document *)

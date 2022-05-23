@@ -380,7 +380,7 @@ let check_inside_module () =
     warn_extraction_inside_module ()
 
 let check_inside_section () =
-  if Global.sections_are_opened () then
+  if Lib.sections_are_opened () then
     err (str "You can't do that within a section." ++ fnl () ++
          str "Close it and try again.")
 
@@ -480,7 +480,7 @@ let warning_remaining_implicit k =
 
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp ->
-      if not (Library.library_is_loaded dp) then begin
+      if not (Library.library_is_loaded ~parsing:false dp) then begin
         match base_mp (Lib.current_mp ()) with
           | MPfile dp' when not (DirPath.equal dp dp') ->
             err (str "Please load library " ++ DirPath.print dp ++ str " first.")

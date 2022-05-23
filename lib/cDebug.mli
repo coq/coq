@@ -50,3 +50,5 @@ val set_debug_all : bool -> unit
 
 val misc : flag
 val pp_misc : t
+
+val debug_synterp : t

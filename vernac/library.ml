@@ -110,24 +110,30 @@ type library_summary = {
 
 (* This is a map from names to loaded libraries *)
 let libraries_table : library_summary DPmap.t ref =
-  Summary.ref DPmap.empty ~name:"LIBRARY"
+  Summary.ref DPmap.empty ~stage:Summary.Stage.Interp ~name:"LIBRARY"
+
+let libraries_table_syntax : library_summary DPmap.t ref =
+  Summary.ref DPmap.empty ~stage:Summary.Stage.Synterp ~name:"LIBRARY-SYNTAX"
 
 (* This is the map of loaded libraries filename *)
 (* (not synchronized so as not to be caught in the states on disk) *)
 let libraries_filename_table = ref DPmap.empty
 
 (* These are the _ordered_ sets of loaded, imported and exported libraries *)
-let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD"
+let libraries_loaded_list = Summary.ref [] ~stage:Summary.Stage.Interp ~name:"LIBRARY-LOAD"
+
+let libraries_loaded_list_syntax = Summary.ref [] ~stage:Summary.Stage.Synterp ~name:"LIBRARY-LOAD-SYNTAX"
 
 (* Opaque proof tables *)
 
 (* various requests to the tables *)
 
-let find_library dir =
-  DPmap.find dir !libraries_table
+let find_library ~parsing dir =
+  if parsing then DPmap.find dir !libraries_table_syntax
+  else DPmap.find dir !libraries_table
 
-let try_find_library dir =
-  try find_library dir
+let try_find_library ~parsing dir =
+  try find_library ~parsing dir
   with Not_found ->
     user_err
       (str "Unknown library " ++ DirPath.print dir ++ str ".")
@@ -142,28 +148,35 @@ let library_full_filename dir =
   try DPmap.find dir !libraries_filename_table
   with Not_found -> "<unavailable filename>"
 
-let library_is_loaded dir =
-  try let _ = find_library dir in true
+let library_is_loaded ~parsing dir =
+  try let _ = find_library ~parsing dir in true
   with Not_found -> false
 
   (* If a library is loaded several time, then the first occurrence must
      be performed first, thus the libraries_loaded_list ... *)
 
-let register_loaded_library m =
+let register_loaded_library ~parsing m =
   let libname = m.libsum_name in
   let rec aux = function
     | [] ->
-        if (Global.typing_flags ()).enable_native_compiler then begin
+        if (Global.typing_flags ()).enable_native_compiler && not parsing then begin
             let dirname = Filename.dirname (library_full_filename libname) in
             Nativelib.enable_library dirname libname
           end;
         [libname]
     | m'::_ as l when DirPath.equal m' libname -> l
     | m'::l' -> m' :: aux l' in
-  libraries_loaded_list := aux !libraries_loaded_list;
-  libraries_table := DPmap.add libname m !libraries_table
+  if parsing then begin
+    libraries_loaded_list_syntax := aux !libraries_loaded_list_syntax;
+    libraries_table_syntax := DPmap.add libname m !libraries_table_syntax
+  end else begin
+    libraries_loaded_list := aux !libraries_loaded_list;
+    libraries_table := DPmap.add libname m !libraries_table
+  end
 
-  let loaded_libraries () = !libraries_loaded_list
+let loaded_libraries ~parsing =
+  if parsing then !libraries_loaded_list_syntax
+  else !libraries_loaded_list
 
 (** Delayed / available tables of opaque terms *)
 
@@ -257,9 +270,9 @@ let intern_from_file f =
   | Some (_,false) ->
       mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
 
-let rec intern_library ~lib_resolver (needed, contents) (dir, f) from =
+let rec intern_library ~parsing ~lib_resolver (needed, contents) (dir, f) from =
   (* Look if in the current logical environment *)
-  try (find_library dir).libsum_digests, (needed, contents)
+  try (find_library ~parsing dir).libsum_digests, (needed, contents)
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
   try (DPmap.find dir contents).library_digests, (needed, contents)
@@ -274,24 +287,24 @@ let rec intern_library ~lib_resolver (needed, contents) (dir, f) from =
        DirPath.print m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".");
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  m.library_digests, intern_library_deps ~lib_resolver (needed, contents) dir m f
+  m.library_digests, intern_library_deps ~parsing ~lib_resolver (needed, contents) dir m f
 
-and intern_library_deps ~lib_resolver libs dir m from =
+and intern_library_deps ~parsing ~lib_resolver libs dir m from =
   let needed, contents =
-    Array.fold_left (intern_mandatory_library ~lib_resolver dir from)
+    Array.fold_left (intern_mandatory_library ~parsing ~lib_resolver dir from)
       libs m.library_deps in
   (dir :: needed, DPmap.add dir m contents )
 
-and intern_mandatory_library ~lib_resolver caller from libs (dir,d) =
-  let digest, libs = intern_library ~lib_resolver libs (dir, None) (Some from) in
+and intern_mandatory_library ~parsing ~lib_resolver caller from libs (dir,d) =
+  let digest, libs = intern_library ~parsing ~lib_resolver libs (dir, None) (Some from) in
   if not (Safe_typing.digest_match ~actual:digest ~required:d) then
     user_err (str "Compiled library " ++ DirPath.print caller ++
     str " (in file " ++ str from ++ str ") makes inconsistent assumptions \
     over library " ++ DirPath.print dir);
   libs
 
-let rec_intern_library ~lib_resolver libs (dir, f) =
-  let _, libs = intern_library ~lib_resolver libs (dir, Some f) None in
+let rec_intern_library ~parsing ~lib_resolver libs (dir, f) =
+  let _, libs = intern_library ~parsing ~lib_resolver libs (dir, Some f) None in
   libs
 
 let native_name_from_filename f =
@@ -318,16 +331,20 @@ let native_name_from_filename f =
 
 let register_library m =
   let l = m.library_data in
-  Declaremods.Synterp.register_library
-    m.library_name
-    l.md_syntax_objects;
   Declaremods.Interp.register_library
     m.library_name
     l.md_compiled
     l.md_objects
     m.library_digests
     m.library_extra_univs;
-  register_loaded_library (mk_summary m)
+  register_loaded_library ~parsing:false (mk_summary m)
+
+let register_library_syntax m =
+  let l = m.library_data in
+  Declaremods.Synterp.register_library
+    m.library_name
+    l.md_syntax_objects;
+  register_loaded_library ~parsing:true (mk_summary m)
 
 (* Follow the semantics of Anticipate object:
    - called at module or module type closing when a Require occurs in
@@ -355,6 +372,33 @@ let in_require : require_obj -> obj =
      discharge_function = discharge_require;
      classify_function = (fun o -> Anticipate) }
 
+(* Follow the semantics of Anticipate object:
+   - called at module or module type closing when a Require occurs in
+     the module or module type
+   - not called from a library (i.e. a module identified with a file) *)
+let load_require_syntax _ needed =
+  List.iter register_library_syntax needed
+
+  (* [needed] is the ordered list of libraries not already loaded *)
+let cache_require_syntax o =
+  load_require_syntax 1 o
+
+let discharge_require_syntax o = Some o
+
+(* open_function is never called from here because an Anticipate object *)
+
+type require_obj_syntax = library_t list
+
+let in_require_syntax : require_obj_syntax -> obj =
+  declare_object
+    {(default_object "REQUIRE-SYNTAX") with
+     object_stage = Summary.Stage.Synterp;
+     cache_function = cache_require_syntax;
+     load_function = load_require_syntax;
+     open_function = (fun _ _ -> assert false);
+     discharge_function = discharge_require_syntax;
+     classify_function = (fun o -> Anticipate) }
+
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)
 
@@ -364,10 +408,19 @@ let warn_require_in_module =
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
 let require_library_from_dirpath ~lib_resolver modrefl =
-  let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
+  CDebug.debug_synterp (fun () -> Pp.(str "require " ++ prlist_with_sep spc (fun (mp,s) -> DirPath.print mp ++ str "," ++ str s) modrefl));
+  let needed, contents = List.fold_left (rec_intern_library ~parsing:false ~lib_resolver) ([], DPmap.empty) modrefl in
+  CDebug.debug_synterp (fun () -> Pp.(str "needed " ++ prlist_with_sep spc DirPath.print needed));
   let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
   if Lib.is_module_or_modtype () then warn_require_in_module ();
   Lib.add_leaf (in_require needed)
+
+let require_library_syntax_from_dirpath ~lib_resolver modrefl =
+  CDebug.debug_synterp (fun () -> Pp.(str "require syntax " ++ prlist_with_sep spc (fun (mp,s) -> DirPath.print mp ++ str "," ++ str s) modrefl));
+  let needed, contents = List.fold_left (rec_intern_library ~parsing:true ~lib_resolver) ([], DPmap.empty) modrefl in
+  CDebug.debug_synterp (fun () -> Pp.(str "needed " ++ prlist_with_sep spc DirPath.print needed));
+  let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
+  Lib.add_leaf (in_require_syntax needed)
 
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
@@ -391,12 +444,13 @@ let load_library_todo f =
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
 
-let current_deps () =
+let current_deps ~parsing =
   let map name =
-    let m = try_find_library name in
+    let m = try_find_library ~parsing name in
     (name, m.libsum_digests)
   in
-  List.map map !libraries_loaded_list
+  if parsing then List.map map !libraries_loaded_list_syntax
+  else List.map map !libraries_loaded_list
 
 let error_recursively_dependent_library dir =
   user_err
@@ -472,7 +526,7 @@ let save_library_to todo_proofs ~output_native_objects dir f =
     in
     let sd = {
     md_name = dir;
-    md_deps = Array.of_list (current_deps ());
+    md_deps = Array.of_list (current_deps ~parsing:true);
     md_ocaml = Coq_config.caml_version;
   } in
   let md = {

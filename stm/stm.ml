@@ -27,7 +27,53 @@ open Feedback
 open Vernacexpr
 open Vernacextend
 
-module PG_compat = Vernacstate.Declare [@@ocaml.warning "-3"]
+let only_parsing = ref false
+
+module PG_compat = struct
+  let copy_terminators ~src ~tgt =
+    if !only_parsing then None
+    else Vernacstate.Declare.copy_terminators ~src ~tgt [@@ocaml.warning "-3"]
+  let there_are_pending_proofs () = 
+    if !only_parsing then false
+    else Vernacstate.Declare.there_are_pending_proofs () [@@ocaml.warning "-3"]
+
+  let get_open_goals () =
+    if !only_parsing then 0
+    else Vernacstate.Declare.get_open_goals () [@@ocaml.warning "-3"]
+
+  let return_partial_proof = assert(not !only_parsing);
+    Vernacstate.Declare.return_partial_proof [@@ocaml.warning "-3"]
+
+  let return_proof = assert(not !only_parsing);
+    Vernacstate.Declare.return_proof [@@ocaml.warning "-3"]
+
+  let close_future_proof = assert(not !only_parsing);
+    Vernacstate.Declare.close_future_proof [@@ocaml.warning "-3"]
+
+  let close_proof = assert(not !only_parsing);
+    Vernacstate.Declare.close_proof [@@ocaml.warning "-3"]
+  
+  let update_sigma_univs ugraph =
+    if !only_parsing then ()
+    else Vernacstate.Declare.update_sigma_univs ugraph [@@ocaml.warning "-3"]
+
+  let unfreeze lemmas =
+    if !only_parsing then ()
+    else Vernacstate.Declare.unfreeze lemmas [@@ocaml.warning "-3"]
+
+  let with_current_proof f =
+    if !only_parsing then ()
+    else Vernacstate.Declare.with_current_proof f [@@ocaml.warning "-3"]
+
+  let discard_all =
+    Vernacstate.Declare.discard_all [@@ocaml.warning "-3"]
+
+  let get_pstate () =
+    if !only_parsing then None
+    else (Vernacstate.Declare.get_pstate ()) [@@ocaml.warning "-3"]
+
+  exception NoCurrentProof = Vernacstate.Declare.NoCurrentProof [@@ocaml.warning "-3"]
+end
 
 let is_vtkeep = function VtKeep _ -> true | _ -> false
 let get_vtkeep = function VtKeep x -> x | _ -> assert false
@@ -1008,6 +1054,7 @@ end (* }}} *)
 
 (* Wrapper for the proof-closing special path for Qed *)
 let stm_qed_delay_proof ?route ~proof ~id ~st ~loc ~control pending : Vernacstate.t =
+  assert (not !only_parsing);
   set_id_for_feedback ?route dummy_doc id;
   Vernacinterp.interp_qed_delayed_proof ~proof ~st ~control (CAst.make ?loc pending)
 
@@ -1036,7 +1083,7 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
     (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
   else begin
     stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    Vernacinterp.interp ?verbosely:(Some verbose) ~st expr
+    Vernacinterp.interp ~only_parsing:!only_parsing ?verbosely:(Some verbose) ~st expr
   end
 
 (****************************** CRUFT *****************************************)
@@ -1481,7 +1528,7 @@ end = struct (* {{{ *)
        * a bad fixpoint *)
       (* STATE: We use the current installed imperative state *)
       let st = State.freeze () in
-      if not drop then begin
+      if not drop && not !only_parsing then begin
         (* Unfortunately close_future_proof and friends are not pure so we need
            to set the state manually here *)
           State.unfreeze st;
@@ -1880,6 +1927,7 @@ end = struct (* {{{ *)
 
 let async_policy () =
   if Attributes.is_universe_polymorphism () then false (* FIXME this makes no sense, it is the default value of the attribute *)
+  else if !only_parsing then false
   else if VCS.is_interactive () then
     (async_proofs_is_master !cur_opt || !cur_opt.async_proofs_mode = APonLazy)
   else
@@ -2259,7 +2307,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let wall_clock = Unix.gettimeofday () in
                 let loc = x.expr.CAst.loc in
                 record_pb_time name ?loc (wall_clock -. !wall_clock_last_fork);
-                let proof =
+                let proof = if !only_parsing then None else
                   match keep with
                   | VtDrop -> None
                   | VtKeep VtKeepAxiom ->
@@ -2279,7 +2327,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let wall_clock2 = Unix.gettimeofday () in
                 let st = Vernacstate.freeze_interp_state ~marshallable:false in
                 let _st = match proof with
-                  | None ->  stm_vernac_interp id st x
+                  | None -> stm_vernac_interp id st x
                   | Some proof ->
                     let control, pe = extract_pe x in
                     stm_qed_delay_proof ~id ~st ~proof ~loc ~control pe
@@ -2335,6 +2383,7 @@ type stm_init_options =
   (** Injects Require and Set/Unset commands before the initial
      state is ready *)
 
+  ; only_parsing : bool
   }
 
   (* fb_handler   : Feedback.feedback -> unit; *)
@@ -2357,7 +2406,9 @@ let init_process stm_flags =
 let init_core () =
   State.register_root_state ()
 
-let new_doc { doc_type ; injections } =
+let new_doc { doc_type ; injections; only_parsing = op } =
+
+  only_parsing := op;
 
   (* We must reset the whole state before creating a document! *)
   State.restore_root_state ();

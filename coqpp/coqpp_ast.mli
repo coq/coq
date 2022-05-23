@@ -112,6 +112,7 @@ type vernac_rule = {
   vernac_class : code option;
   vernac_depr : bool;
   vernac_body : code;
+  vernac_synterp : (string * code) option;
 }
 
 type vernac_ext = {

@@ -92,3 +92,5 @@ let set_flags s = match parse_flags s with
     List.iter set_one_flag flags
 
 let misc, pp_misc = create_full ~name:"misc" ()
+
+let _, debug_synterp = create_full ~name:"synterp" ()

@@ -266,6 +266,6 @@ let do_context ~poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, ctx = interp_context env sigma l in
-  if Global.sections_are_opened ()
+  if Lib.sections_are_opened ()
   then context_insection sigma ~poly ctx
   else context_nosection sigma ~poly ctx

@@ -720,6 +720,7 @@ let lift_constr_tac_to_ml_tac vars tac =
   tac
 
 let tactic_extend plugin_name tacname ~level ?deprecation sign =
+  CDebug.debug_synterp (fun () -> Pp.(str"TACTIC_EXTEND " ++ str tacname));
   let open Tacexpr in
   let ml_tactic_name =
     { mltac_tactic = tacname;

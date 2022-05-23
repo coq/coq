@@ -40,7 +40,7 @@ let environment_until dir_opt =
       match dir_opt with
       | Some d' when DirPath.equal d d' -> [MPfile d, meb]
       | _ -> (MPfile d, meb) :: (parse l)
-  in parse (Library.loaded_libraries ())
+  in parse (Library.loaded_libraries ~parsing:false)
 
 
 (*s Visit:
