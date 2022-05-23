@@ -83,7 +83,7 @@ let buffer buf =
   let () = Buffer.clear buf in
   ans
 
-let rec parse_string buf s = match Stream.next s with
+let rec parse_string buf s = match input_char s with
 | ' ' | '\n' | '\r' | '\t' -> buffer buf
 | '#' ->
   parse_skip_comment s;
@@ -91,21 +91,21 @@ let rec parse_string buf s = match Stream.next s with
 | c ->
   let () = Buffer.add_char buf c in
   parse_string buf s
-| exception Stream.Failure -> buffer buf
+| exception End_of_file -> buffer buf
 
-and parse_string2 buf s = match Stream.next s with
+and parse_string2 buf s = match input_char s with
 | '"' -> buffer buf
 | c ->
   let () = Buffer.add_char buf c in
   parse_string2 buf s
-| exception Stream.Failure -> raise (Parsing_error "unterminated string")
+| exception End_of_file -> raise (Parsing_error "unterminated string")
 
-and parse_skip_comment s = match Stream.next s with
+and parse_skip_comment s = match input_char s with
 | '\n' -> ()
 | _ -> parse_skip_comment s
-| exception Stream.Failure -> ()
+| exception End_of_file -> ()
 
-and parse_args buf accu s = match Stream.next s with
+and parse_args buf accu s = match input_char s with
 | ' ' | '\n' | '\r' | '\t' -> parse_args buf accu s
 | '#' ->
   let () = parse_skip_comment s in
@@ -117,14 +117,14 @@ and parse_args buf accu s = match Stream.next s with
   let () = Buffer.add_char buf c in
   let str = parse_string buf s in
   parse_args buf (str :: accu) s
-| exception Stream.Failure -> accu
+| exception End_of_file -> accu
 
 exception UnableToOpenProjectFile of string
 
 let parse f =
   let c = try open_in f with Sys_error msg -> raise (UnableToOpenProjectFile msg) in
   let buf = Buffer.create 64 in
-  let res = parse_args buf [] (Stream.of_channel c) in
+  let res = parse_args buf [] c in
   close_in c;
   List.rev res
 
