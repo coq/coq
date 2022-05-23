@@ -1428,7 +1428,7 @@ let enforce_eq u v m =
    its extensions. We check that the "inverse" clause y + 1 -> x + 1 does *not* hold as
    well to ensure that x -> y will really hold in all extensions.
    Both clauses cannot be valid at the same time as this would imply a loop. *)
-let check_inv_clause_of m concl clause =
+let _check_inv_clause_of m concl clause =
   let (k, premises) = clause in
   let chk = NeList.fold (fun (idx, _idxk) curm ->
     match curm with
@@ -1445,18 +1445,18 @@ let check_inv_clause_of m concl clause =
 
 let check_clauses m (cls : ClausesBackward.t) =
   PMap.for_all (fun concl cls ->
-    (* let can = repr m.model concl in *)
+    let can = repr m.model concl in
     ClausesOf.for_all (fun cl ->
-      check_inv_clause_of m concl cl)
-(*
-      if check_clause_of m can.value cl then
-        (* let fwdc = check_clause_holds_fwd m can cl in *)
-        let bwdc = check_clause_holds m can cl in bwdc
-        (* if fwdc == bwdc then fwdc *)
-        (* else CErrors.anomaly Pp.(str "check_clause_holds differ in fwd and backward mode: forward" ++ bool fwdc ++ str" backward: " ++ bool bwdc) *)
-      else false)  *)
+        let bwdc = check_clause_holds m.model can cl in bwdc)
       cls)
     cls
+
+      (* check_inv_clause_of m concl cl) *)
+      (* if check_clause_of m can.value cl then *)
+        (* let fwdc = check_clause_holds_fwd m can cl in *)
+        (* if fwdc == bwdc then fwdc *)
+        (* else CErrors.anomaly Pp.(str "check_clause_holds differ in fwd and backward mode: forward" ++ bool fwdc ++ str" backward: " ++ bool bwdc) *)
+      (* else false)  *)
 
 let check_clauses m cls =
   if check_clauses m cls then
@@ -1476,8 +1476,11 @@ let check_lt (m : t) u v =
   check_clauses m cls
 
 let check_leq (m : t) u v =
-  let cls = clauses_of_univ_constraint m (u, Le, v) ClausesBackward.empty in
-  check_clauses m cls
+  let canu = repr_node m.model u in
+  let  canv = repr_node m.model v in
+  canu == canv
+  || let cls = clauses_of_univ_constraint m (u, Le, v) ClausesBackward.empty in
+     check_clauses m cls
 
 let check_eq m u v =
   let canu = repr_node m.model u in
