@@ -92,10 +92,10 @@ let next s =
   | None -> raise Failure
 
 
-let empty s =
+let is_empty s =
   match peek s with
-    Some _ -> raise Failure
-  | None -> ()
+  | Some _ -> false
+  | None -> true
 
 
 (* Stream building functions *)

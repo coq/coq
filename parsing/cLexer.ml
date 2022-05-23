@@ -380,10 +380,10 @@ let rec string loc ~comm_level bp len s = match Stream.peek s with
       Stream.junk s;
       string loc ~comm_level bp (store len c) s
   | _ ->
-      let _ = Stream.empty s in
-      let ep = Stream.count s in
-     let loc = set_loc_pos loc bp ep in
-     err loc Unterminated_string
+    let () = if not (Stream.is_empty s) then raise Stream.Failure in
+    let ep = Stream.count s in
+    let loc = set_loc_pos loc bp ep in
+    err loc Unterminated_string
 
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
@@ -462,12 +462,12 @@ let rec comment loc bp s =
       push_string "\""; push_string (get_buff len); push_string "\"";
       comment loc bp s
   | _ ->
-    match try Some (Stream.empty s) with Stream.Failure -> None with
-    | Some _ ->
+    match Stream.is_empty s with
+    | true ->
       let ep = Stream.count s in
       let loc = set_loc_pos loc bp ep in
       err loc Unterminated_comment
-    | _ ->
+    | false ->
           match Stream.peek s with
             Some ('\n' as z) ->
               Stream.junk s;

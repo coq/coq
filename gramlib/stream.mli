@@ -53,8 +53,8 @@ val next : 'a t -> 'a
    stream.
    @raise Stream.Failure if the stream is empty. *)
 
-val empty : 'a t -> unit
-(** Return [()] if the stream is empty, else raise {!Stream.Failure}. *)
+val is_empty : 'a t -> bool
+(** Return [true] if the stream is empty, else [false]. *)
 
 
 (** {1 Useful functions} *)
