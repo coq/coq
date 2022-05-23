@@ -102,9 +102,8 @@ let is_empty s =
 
 let from f = {count = 0; data = Sgen {curr = None; func = f}}
 
-let of_list l =
-  {count = 0; data = List.fold_right (fun x l -> Scons (x, l)) l Sempty}
-
+(* NB we need the thunk for value restriction *)
+let empty () = {count = 0; data = Sempty}
 
 let of_string s =
   let count = ref 0 in

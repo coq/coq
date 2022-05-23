@@ -36,7 +36,7 @@ val from : (unit -> 'a option) -> 'a t
     [None] to specify the end of the stream.
 *)
 
-val of_list : 'a list -> 'a t
+val empty : unit -> 'a t
 (** Return the stream holding the elements of the list in the same
    order. *)
 

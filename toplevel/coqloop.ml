@@ -230,7 +230,7 @@ let top_buffer =
     str = Bytes.empty;
     len = 0;
     bols = [];
-    tokens = Pcoq.Parsable.make (Gramlib.Stream.of_list []);
+    tokens = Pcoq.Parsable.make (Gramlib.Stream.empty ());
     start = 0 }
 
 let set_prompt prompt =
