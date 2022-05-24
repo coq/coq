@@ -130,9 +130,11 @@ class finder name (view : GText.view) =
           let next_ct = if edited then ct + 1 else ct in
           replace_at next next_ct (tot + 1)
       in
-      let () = view#buffer#begin_user_action () in
-      let () = replace_at view#buffer#start_iter 0 0 in
-      view#buffer#end_user_action ()
+      if self#search_text <> "" then begin
+        let () = view#buffer#begin_user_action () in
+        let () = replace_at view#buffer#start_iter 0 0 in
+        view#buffer#end_user_action ()
+      end
 
     method private set_not_found () =
       find_entry#misc#modify_bg [`NORMAL, `NAME "#F7E6E6"];
