@@ -763,9 +763,9 @@ struct
 
   let is_empty (w, _cw) = PMap.is_empty w
 
-  let cardinal (w, _ : t) = PMap.cardinal w
+  let cardinal (_w, cw : t) = cw
 
-  let _update idx f (w, cw as x) =
+  let update idx f (w, cw as x) =
     let cwr = ref cw in
     let w' =
       PMap.update idx (fun old ->
@@ -834,14 +834,14 @@ let check_model_fwd_clauses_aux (cls : ClausesBackward.t) (acc : bool * (CanSet.
     let can = repr m concl in
     let can', m' = check_model_clauses_of_aux m can cls in
     if can == can' then (* not modifed *) acc
-    else (true, (CanSet.add can.canon (can.clauses_bwd, can.clauses_fwd) w, m')))
-(*
+    else
+       (* (true, (CanSet.add can.canon (can.clauses_bwd, can.clauses_fwd) w, m'))) *)
       let upd = function
         | None -> Some (can.clauses_bwd, can.clauses_fwd)
         | Some _ -> Some (can.clauses_bwd, can.clauses_fwd)
       in
       let w' = CanSet.update can.canon upd w in
-      (true, (w', m'))) *)
+      (true, (w', m')))
     cls acc
 
 let check_model_fwd_aux (w, _ as wm : CanSet.t * model) =
