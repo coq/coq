@@ -216,7 +216,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
     let univ = ComInductive.Internal.compute_constructor_level env_ar sigma newfs in
     let univ = if Sorts.is_sprop sort then univ else if Sorts.is_sprop univ then Sorts.prop else univ in
       if not def && is_impredicative_sort env0 sort then
-        sigma, (univ, typ)
+        sigma, (sort, typ)
       else
         let sigma = Evd.set_leq_sort env_ar sigma univ sort in
         if Sorts.is_small univ &&
@@ -444,38 +444,6 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) inhabitant_
 
 open Typeclasses
 
-let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min_univ; fields; _ }; _ } =
-  let template_candidate () =
-    (* we use some dummy values for the arities in the rel_context
-       as univs_of_constr doesn't care about localassums and
-       getting the real values is too annoying *)
-    let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
-    let param_levels =
-      List.fold_left (fun levels d -> match d with
-          | LocalAssum _ -> levels
-          | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-        Univ.Level.Set.empty params
-    in
-    let ctor_levels = List.fold_left
-        (fun univs d ->
-           let univs =
-             RelDecl.fold_constr (fun c univs -> add_levels c univs) d univs
-           in
-           univs)
-        param_levels fields
-    in
-    ComInductive.template_polymorphism_candidate ~ctor_levels univs params
-      (Some min_univ)
-  in
-  match template with
-  | Some template, _ ->
-    (* templateness explicitly requested *)
-    if poly && template then user_err Pp.(strbrk "Attributes \"template\" and \"polymorphism\" are not compatible.");
-    template
-  | None, template ->
-    (* auto detect template *)
-    ComInductive.should_auto_template id (template && template_candidate ())
-
 let load_structure i structure = Structure.register structure
 
 let cache_structure o = load_structure 1 o
@@ -631,7 +599,7 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
   let template = template, auto_template in
   template, impargs, params, univs, variances, data
 
-let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind records data =
+let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params (template, _) ~projections_kind records data =
   let nparams = List.length params in
   let (univs, ubinders) = univs in
   let poly, projunivs =
@@ -651,10 +619,17 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block data in
-  let template = match data, fst template with
-    | [data], _ -> check_template ~template ~univs ~poly ~params data
-    | _, Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual records.")
-    | _ -> false
+  let template = match blocks, data with
+  | [entry], [data] ->
+    let concl = Some data.Data.rdata.DataR.min_univ in
+    let env_ar_params = Environ.push_rel_context params (Global.env ()) in
+    ComInductive.compute_template_inductive ~user_template:template
+      ~env_ar_params ~ctx_params:params ~univ_entry:univs entry concl
+  | _ ->
+    begin match template with
+    | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual records.")
+    | Some false | None -> false
+    end
   in
   let primitive =
     primitive_proj  &&

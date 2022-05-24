@@ -318,7 +318,7 @@ let inductive_levels env evd arities inds =
     CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
       if is_impredicative_sort env du then
         (* Any product is allowed here. *)
-        evd, (false, arity) :: arities
+        evd, arity :: arities
       else (* If in a predicative sort, or asked to infer the type,
               we take the max of:
               - indices (if in indices-matter mode)
@@ -341,7 +341,7 @@ let inductive_levels env evd arities inds =
             Evd.set_leq_sort env evd Sorts.set du
           else evd
         in
-        let template_prop, evd, arity =
+        let evd, arity =
           if not (Sorts.is_small du) && Sorts.equal cu du then
             if is_flexible_sort evd du && not (Evd.check_leq evd Sorts.set du)
             then if Term.isArity arity
@@ -354,12 +354,12 @@ let inductive_levels env evd arities inds =
                    constructor so we cook up a new type and unify the unbound
                    universe to a dummy value. *)
                 let evd = Evd.set_eq_sort env evd Sorts.set du in
-                true, evd, Term.mkArity (ctx, Sorts.prop)
-              else false, Evd.set_eq_sort env evd Sorts.set du, arity
-            else false, evd, arity
-          else false, Evd.set_eq_sort env evd cu du, arity
+                evd, Term.mkArity (ctx, Sorts.prop)
+              else Evd.set_eq_sort env evd Sorts.set du, arity
+            else evd, arity
+          else Evd.set_eq_sort env evd cu du, arity
         in
-          (evd, (template_prop, arity) :: arities))
+          (evd, arity :: arities))
     (evd,[]) (Array.to_list levels') destarities sizes
   in evd, List.rev arities
 
@@ -408,6 +408,40 @@ let template_polymorphism_candidate ~ctor_levels uctx params concl =
       template_polymorphic_univs ~ctor_levels uctx params conclu
   | UState.Polymorphic_entry _ -> false
 
+let compute_template_inductive ~user_template ~env_ar_params ~ctx_params ~univ_entry entry concl =
+match user_template with
+| Some template -> template
+| None ->
+  (* Heuristic: the user has not written Prop explicitly in the return
+      arity, but inference has decided to lower it to Prop. *)
+  let templatearity =
+    if Term.isArity entry.mind_entry_arity then
+      let (_, s) = Reduction.dest_arity env_ar_params entry.mind_entry_arity in
+      if Sorts.is_prop s then match concl with
+      | None | Some (Type _ | Set)-> true
+      | Some Prop -> false
+      | Some SProp -> assert false
+      else false
+    else false
+  in
+  let template_candidate =
+    templatearity ||
+    let ctor_levels =
+      let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
+      let param_levels =
+        List.fold_left (fun levels d -> match d with
+            | LocalAssum _ -> levels
+            | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+          Univ.Level.Set.empty ctx_params
+      in
+      List.fold_left (fun levels c -> add_levels c levels)
+        param_levels entry.mind_entry_lc
+    in
+    template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
+  in
+  should_auto_template entry.mind_entry_typename template_candidate
+
+
 let check_param = function
 | CLocalDef (na, _, _) -> check_named na
 | CLocalAssum (nas, Default _, _) -> List.iter check_named nas
@@ -453,63 +487,40 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   let sigma, arities = inductive_levels env_ar_params sigma arities constructors in
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
-  let arities = List.map (on_snd nf) arities in
+  let arities = List.map nf arities in
   let constructors = List.map (on_snd (List.map nf)) constructors in
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
   let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
-  let sigma = restrict_inductive_universes sigma ctx_params (List.map snd arities) constructors in
+  let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
   let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in
 
   (* Build the inductive entries *)
-  let entries = List.map4 (fun indname (templatearity, arity) concl (cnames,ctypes) ->
+  let entries = List.map3 (fun indname arity (cnames,ctypes) ->
       { mind_entry_typename = indname;
         mind_entry_arity = arity;
         mind_entry_consnames = cnames;
         mind_entry_lc = ctypes
       })
-      indnames arities arityconcl constructors
+      indnames arities constructors
   in
-  let template =
-    if not (Int.equal (List.length indnames) 1) then
-      let () = match template with
-        | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
-        | _ -> ()
-      in
-      List.map (fun _ -> false) indnames
-    else
-      List.map4 (fun indname (templatearity, _) concl (_, ctypes) ->
-          let template_candidate () =
-            templatearity ||
-            let ctor_levels =
-              let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
-              let param_levels =
-                List.fold_left (fun levels d -> match d with
-                    | LocalAssum _ -> levels
-                    | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-                  Univ.Level.Set.empty ctx_params
-              in
-              List.fold_left (fun levels c -> add_levels c levels)
-                param_levels ctypes
-            in
-            template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
-          in
-          match template with
-          | Some template ->
-            if poly && template then user_err
-                Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.");
-            template
-          | None ->
-            should_auto_template indname (template_candidate ())
-        )
-        indnames arities arityconcl constructors
+  let is_template = match entries, arityconcl with
+  | [entry], [concl] ->
+    compute_template_inductive ~user_template:template ~env_ar_params ~ctx_params ~univ_entry entry concl
+  | _ ->
+    let () = match template with
+    | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
+    | _ -> ()
+    in
+    false
   in
-  let is_template = List.for_all (fun t -> t) template in
   let univ_entry, ctx = match univ_entry with
   | UState.Monomorphic_entry ctx ->
     if is_template then Template_ind_entry ctx, Univ.ContextSet.empty
     else Monomorphic_ind_entry, ctx
   | UState.Polymorphic_entry uctx ->
-    Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+    if is_template then user_err
+      Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
+    else Polymorphic_ind_entry uctx, Univ.ContextSet.empty
   in
   let variance = variance_of_entry ~cumulative ~variances univ_entry in
   (* Build the mutual inductive entry *)

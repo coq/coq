@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
 open Vernacexpr
 open Constrexpr
 
@@ -95,24 +94,16 @@ val interp_mutual_inductive_constr
 (** Internal API, exported for Record                                   *)
 (************************************************************************)
 
-val should_auto_template : Id.t -> bool -> bool
-(** [should_auto_template x b] is [true] when [b] is [true] and we
-   automatically use template polymorphism. [x] is the name of the
-   inductive under consideration. *)
-
-val template_polymorphism_candidate
-  : ctor_levels:Univ.Level.Set.t
-  -> UState.universes_entry
-  -> Constr.rel_context
+val compute_template_inductive
+  : user_template:bool option
+  -> env_ar_params:Environ.env
+  -> ctx_params:(Constr.constr, Constr.constr) Context.Rel.Declaration.pt list
+  -> univ_entry:UState.universes_entry
+  -> Entries.one_inductive_entry
   -> Sorts.t option
   -> bool
-(** [template_polymorphism_candidate ~ctor_levels uctx params
-   conclsort] is [true] iff an inductive with params [params],
-   conclusion [conclsort] and universe levels appearing in the
-   constructor arguments [ctor_levels] would be definable as template
-   polymorphic. It should have at least one universe in its
-   monomorphic universe context that can be made parametric in its
-   conclusion sort, if one is given. *)
+(** [compute_template_inductive] computes whether an inductive can be template
+    polymorphic. *)
 
 val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:int -> binders:int
   -> EConstr.t -> Evd.evar_map

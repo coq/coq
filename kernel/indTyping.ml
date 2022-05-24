@@ -65,17 +65,10 @@ let mind_check_names mie =
 (************************************************************************)
 
 type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
-                   ind_min_univ : Sorts.t option; (* Some for template *)
+                   ind_template : bool;
                    ind_univ : Sorts.t;
                    missing : Sorts.t list; (* missing u <= ind_univ constraints *)
                  }
-
-let sup_sort s1 s2 = match s1, s2 with
-| (_, SProp) -> assert false (* template SProp not allowed *)
-| (SProp, s) | (Prop, s) | (s, Prop) -> s
-| (Set, Set) -> Sorts.set
-| (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Universe.sup u Universe.type0)
-| (Type u, Type v) -> Sorts.sort_of_univ (Universe.sup u v)
 
 let check_univ_leq ?(is_real_arg=false) env u info =
   let ind_univ = info.ind_univ in
@@ -84,10 +77,8 @@ let check_univ_leq ?(is_real_arg=false) env u info =
     else info
   in
   (* Inductive types provide explicit lifting from SProp to other universes, so allow SProp <= any. *)
-  if Sorts.is_sprop u || UGraph.check_leq_sort (universes env) u ind_univ
-  then { info with ind_min_univ = Option.map (sup_sort u) info.ind_min_univ }
-  else if is_impredicative_sort env ind_univ
-       && Option.is_empty info.ind_min_univ then { info with ind_squashed = true }
+  if Sorts.is_sprop u || UGraph.check_leq_sort (universes env) u ind_univ then info
+  else if is_impredicative_sort env ind_univ then { info with ind_squashed = true }
   else {info with missing = u :: info.missing}
 
 let check_context_univs ~ctor env info ctx =
@@ -111,11 +102,10 @@ let check_indices_matter env_params info indices =
 let check_arity ~template env_params env_ar ind =
   let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
   let indices, ind_sort = Reduction.dest_arity env_params arity in
-  let ind_min_univ = if template then Some Sorts.prop else None in
   let univ_info = {
     ind_squashed=false;
     ind_has_relevant_arg=false;
-    ind_min_univ;
+    ind_template = template;
     ind_univ=ind_sort;
     missing=[];
   }
@@ -190,7 +180,7 @@ let check_record data =
 (* - all_sorts in case of small, unitary Prop (not smashed) *)
 (* - logical_sorts in case of large, unitary Prop (smashed) *)
 
-let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_;ind_has_relevant_arg=_;missing=_} =
+let allowed_sorts {ind_squashed;ind_univ;ind_template=_;ind_has_relevant_arg=_;missing=_} =
   if not ind_squashed then InType
   else Sorts.family ind_univ
 
@@ -211,7 +201,7 @@ let get_template univs ~env_params ~env_ar_par ~params data entries =
   | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
   | Template_ind_entry ctx ->
     let is_prop = match data with
-      | [ _, _, info ] -> Sorts.is_prop @@ Option.get info.ind_min_univ
+      | [ _, _, info ] -> Sorts.is_prop info.ind_univ
       | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
     in
     (* Compute potential template parameters *)
@@ -279,9 +269,11 @@ let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   | Type u -> Sorts.sort_of_univ (Univ.subst_univs_level_universe usubst u)
   in
 
-  let arity = match univ_info.ind_min_univ with
-    | None -> RegularArity {mind_user_arity = arity; mind_sort = ind_univ}
-    | Some min_univ -> TemplateArity { template_level = min_univ; }
+  let arity =
+    if univ_info.ind_template then
+      TemplateArity { template_level = univ_info.ind_univ; }
+    else
+      RegularArity {mind_user_arity = arity; mind_sort = ind_univ}
   in
 
   let kelim = allowed_sorts univ_info in

@@ -59,10 +59,14 @@ Module ExplicitTemplate.
   #[universes(template)]
   Inductive identity@{i} (A : Type@{i}) (a : A) : A -> Type@{i} := id_refl : identity A a a.
 
-  (* Weird interaction of template polymorphism and inductive types
-     which naturally fall in Prop: this one is template polymorphic but not on i:
-     it just lives in any universe *)
-  Check (identity Type nat nat : Prop).
+  (* There used to be a weird interaction of template polymorphism and inductive
+     types which fall in Prop due to kernel sort inference. This inductive is
+     template polymorphic, but the universe annotation Type@{i} was ignored by
+     the kernel which infered it lived in any universe and thus put it in Prop.
+     This is not the case anymore since return sort inference has been removed
+     from the kernel. Now the universe annotation is respected by the kernel. *)
+  Fail Check (identity Type nat nat : Prop).
+  Check (identity True I I : Prop).
 End ExplicitTemplate.
 
 Polymorphic Definition f@{i} : Type@{i} := nat.
