@@ -640,7 +640,8 @@ object(self)
   method private fill_command_queue until queue =
     let topstack =
       if Doc.focused document then fst (Doc.context document) else [] in
-    let rec loop n iter =
+    let rec loop n iter prev_start =
+      (* prev_start is a workaround to avoid an endless loop.  See #15873/#15984 *)
       match Sentence.find buffer iter with
       | None -> ()
       | Some (start, stop) ->
@@ -652,7 +653,7 @@ object(self)
             stop#equal (buffer#get_iter_at_mark s.stop)) topstack
         then begin
           Queue.push (`Skip (start, stop)) queue;
-          loop n stop
+          loop n stop start#offset
         end else begin
           buffer#apply_tag Tags.Script.to_process ~start ~stop;
           let sentence =
@@ -661,10 +662,10 @@ object(self)
               ~stop:(`MARK (buffer#create_mark stop))
               [] in
           Queue.push (`Sentence sentence) queue;
-          if not stop#is_end then loop (succ n) stop
+          if start#offset <> prev_start && not stop#is_end then loop (succ n) stop start#offset
         end
     in
-    loop 0 self#get_start_of_input
+    loop 0 self#get_start_of_input (-1)
 
   method private discard_command_queue queue =
     while not (Queue.is_empty queue) do
