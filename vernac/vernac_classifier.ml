@@ -156,7 +156,7 @@ let classify_vernac e =
     | VernacDeclareInstance _
     | VernacExtraDependency _ -> VtSideff ([], VtLater)
     (* Who knows *)
-    | VernacLoad _ -> VtSideff ([], VtNow)
+    | VernacLoad _ | VernacUltraDebug _ -> VtSideff ([], VtNow)
     (* (Local) Notations have to disappear *)
     | VernacEndSegment _ -> VtSideff ([], VtNow)
     (* Modules with parameters have to be executed: can import notations *)

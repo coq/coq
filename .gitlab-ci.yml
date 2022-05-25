@@ -81,6 +81,7 @@ before_script:
       - config/coq_config.ml
       - config/dune.c_flags
       - dmesg.txt
+      - ultradebug/
     expire_in: 1 month
   script:
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
@@ -92,6 +93,7 @@ before_script:
     - dev/ci/gitlab-section.sh end coq.config
 
     - dev/ci/gitlab-section.sh start coq.build coq.build
+    - mkdir ultradebug
     - make -j "$NJOBS" world $EXTRA_TARGET
     - dev/ci/gitlab-section.sh end coq.build
 
@@ -286,6 +288,7 @@ build:base+async:
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     COQUSERFLAGS: "-async-proofs on"
+    WITH_ULTRADEBUG: "yes"
   after_script:
     - dmesg > dmesg.txt
   timeout: 100m

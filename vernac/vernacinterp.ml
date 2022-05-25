@@ -262,10 +262,53 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
     Vernacstate.invalidate_cache ();
     Exninfo.iraise exn
 
+let ultradebug = Sys.getenv_opt "ULTRADEBUG"
+
+type ultradebug =
+  | Normal of bool * Vernacstate.t * Vernacexpr.vernac_control
+  | Delayed of Declare.Proof.proof_object * Vernacstate.t * Vernacexpr.control_flag list * Vernacexpr.proof_end CAst.t
+
 (* Regular interp *)
 let interp ?(verbosely=true) ~st cmd =
-  interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
+  match cmd.CAst.v.expr with
+  | VernacUltraDebug f ->
+    let debug =
+      let f = open_in_bin f in
+      let v = Marshal.from_channel f in
+      close_in f;
+      v
+    in
+    begin match debug with
+    | Normal (verbosely,st,cmd) -> interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
+    | Delayed (proof,st,control,pe) ->
+      interp_gen ~verbosely:false ~st ~interp_fn:(interp_qed_delayed_control ~proof ~control) pe
+    end
+  | _ -> match ultradebug with
+    | None -> interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
+    | Some f ->
+      try interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
+      with exn ->
+        let exn = Exninfo.capture exn in
+        let () =
+          let f = open_out_bin f in
+          Marshal.to_channel f (Normal (verbosely,st,cmd)) [];
+          flush f;
+          close_out f
+        in
+        Exninfo.iraise exn
 
 let interp_qed_delayed_proof ~proof ~st ~control pe : Vernacstate.t =
-  interp_gen ~verbosely:false ~st
-    ~interp_fn:(interp_qed_delayed_control ~proof ~control) pe
+  match ultradebug with
+  | None ->
+    interp_gen ~verbosely:false ~st ~interp_fn:(interp_qed_delayed_control ~proof ~control) pe
+  | Some f ->
+    try interp_gen ~verbosely:false ~st ~interp_fn:(interp_qed_delayed_control ~proof ~control) pe
+    with exn ->
+      let exn = Exninfo.capture exn in
+      let () =
+        let f = open_out_bin f in
+        Marshal.to_channel f (Delayed (proof,st,control,pe)) [];
+        flush f;
+        close_out f
+      in
+      Exninfo.iraise exn

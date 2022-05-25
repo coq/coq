@@ -684,6 +684,7 @@ let pr_vernac_expr v =
       else
         spc() ++ qs s
     )
+  | VernacUltraDebug s -> return (keyword "UltraDebug" ++ spc() ++ qs s)
 
   (* Proof management *)
   | VernacAbortAll ->

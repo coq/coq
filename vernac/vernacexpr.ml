@@ -335,6 +335,7 @@ type hints_expr =
 type nonrec vernac_expr =
 
   | VernacLoad of verbose_flag * string
+  | VernacUltraDebug of string
   (* Syntax *)
   | VernacReservedNotation of infix_flag * (lstring * syntax_modifier CAst.t list)
   | VernacOpenCloseScope of bool * scope_name

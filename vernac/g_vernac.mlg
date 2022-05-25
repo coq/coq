@@ -925,6 +925,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Cd" -> { VernacChdir None }
       | IDENT "Cd"; dir = ne_string -> { VernacChdir (Some dir) }
 
+      | IDENT "UltraDebug"; s = ne_string -> { VernacUltraDebug s }
+
       | IDENT "Load"; verbosely = [ IDENT "Verbose" -> { true } | -> { false } ];
         s = [ s = ne_string -> { s } | s = IDENT -> { s } ] ->
           { VernacLoad (verbosely, s) }

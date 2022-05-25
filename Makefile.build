@@ -224,10 +224,11 @@ ifdef NATIVECOMPUTE
   COQOPTS += -w -deprecated-native-compiler-option -native-compiler ondemand
 endif
 COQOPTS += $(COQWARNERROR) $(COQUSERFLAGS)
+WITH_ULTRADEBUG?=
 # Beware this depends on the makefile being in a particular dir, we
 # should pass an absolute path here but windows is tricky
 # c.f. https://github.com/coq/coq/pull/9560
-BOOTCOQC=$(TIMER) $(COQC) -coqlib $(VO_OUT_DIR) -q $(COQOPTS) $(DUNEPLUGININCLUDES)
+BOOTCOQC=$(TIMER) $(if $(WITH_ULTRADEBUG),env ULTRADEBUG=ultradebug/$*.ultradebug) $(COQC) -coqlib $(VO_OUT_DIR) -q $(COQOPTS) $(DUNEPLUGININCLUDES)
 
 ###########################################################################
 # Infrastructure for the rest of the Makefile

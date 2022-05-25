@@ -2293,6 +2293,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     anomaly (str "type_vernac")
   | VernacLoad _ ->
     anomaly (str "Load is not supported recursively")
+  | VernacUltraDebug _ -> user_err (str "UltraDebug not available here")
 
   (* Syntax *)
   | VernacReservedNotation (infix, sl) ->
