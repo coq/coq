@@ -887,7 +887,10 @@ struct
       let sigma, j = pretype (Some ty) env sigma origarg in
       (* Unify the (possibly refined) existential variable with the
          (typechecked) original value *)
-      let sigma = Evarconv.unify_delay !!env sigma newarg (j_val j) in
+      let sigma = try Evarconv.unify_delay !!env sigma newarg (j_val j)
+        with Evarconv.UnableToUnify (sigma,e) ->
+          raise (PretypeError (!!env,sigma,CannotUnify (newarg,j_val j,Some e)))
+      in
       sigma, Coercion.push_arg (Coercion.reapply_coercions_body sigma trace t) (j_val j)
     in
     (* We now refine any arguments whose typing was delayed for
