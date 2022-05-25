@@ -93,6 +93,11 @@ let insert_with_tags (buf : #GText.buffer_skel) mark rmark tags text =
 
 let nl_white_regex = Str.regexp "^\\( *\n *\\)"
 let diff_regex = Str.regexp "^diff."
+let escape_regex = Str.regexp "[^\n\x20-\xff]\\|\x7f"
+
+let escaped s =
+  let subst s = Printf.sprintf "\\x%02x" (Char.code (Str.matched_string s).[0]) in
+  Str.global_substitute escape_regex subst s
 
 let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
   let open Xml_datatype in
@@ -116,7 +121,7 @@ let insert_xml ?(mark = `INSERT) ?(tags = []) (buf : #GText.buffer_skel) msg =
       insert_with_tags buf mark rmark etags s
   in
   let rec insert tags = function
-  | PCData s -> insert_str tags s
+  | PCData s -> insert_str tags (escaped s)
   | Element (t, _, children) ->
     let (pfx, tname) = Pp.split_tag t in
     let is_diff = try let _ = Str.search_forward diff_regex tname 0 in true with Not_found -> false in
