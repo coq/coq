@@ -8,7 +8,7 @@ let _debug_loop_checking_flag, debug = CDebug.create_full ~name:"loop-checking" 
 let debug_loop_checking_timing_flag, debug_timing = CDebug.create_full ~name:"loop-checking-timing" ()
 let _debug_loop_checking_loop, debug_loop = CDebug.create_full ~name:"loop-checking-loop" ()
 let _debug_loop_checking_check_model, debug_check_model = CDebug.create_full ~name:"loop-checking-check-model" ()
-(* let _debug_loop_checking_check, debug_check = CDebug.create_full ~name:"loop-checking-check" () *)
+let _debug_loop_checking_check, debug_check = CDebug.create_full ~name:"loop-checking-check" ()
 
 module type Point = sig
   type t
@@ -275,6 +275,14 @@ struct
       | Tip (hd, v) -> if hd == x then v else raise_notrace Not_found
       | Cons ((hd, v), tl) ->
         if hd == x then v else aux tl
+    in aux l
+
+  let find f l =
+    let rec aux l =
+      match l with
+      | Tip (hd, v) -> if f hd then v else raise_notrace Not_found
+      | Cons ((hd, v), tl) ->
+        if f hd then v else aux tl
     in aux l
 
   let _head x =
@@ -896,7 +904,7 @@ let partition_clauses_fwd model (w : CanSet.t) : CanSet.t * CanSet.t * CanSet.t 
     (allw, conclw, conclnw))
     w (CanSet.empty, CanSet.empty, CanSet.empty)
 
-let partition_clauses_fwd = time2 (Pp.str"partition clauses fwd") partition_clauses_fwd
+let partition_clauses_fwd = time2 (Pp.str"parti tion clauses fwd") partition_clauses_fwd
 
 let check model (w : CanSet.t) =
   let cV = canonical_cardinal model in
@@ -1294,10 +1302,18 @@ exception Found of canonical_node list
 
 let check_clause m (prems, (concl, k) : can_clause) =
   (* premises -> can + k ? *)
-  let test =
+  let test_idx y kpath =
     match prems with
-    | NeList.Tip (prem, k') -> fun y kpath -> y == prem && kpath <= k'
-    | _ -> fun y kpath ->
+    | NeList.Tip (prem, k') -> Index.equal y prem.canon && kpath <= k'
+    | _ ->
+        try let ky = NeList.find (fun prem -> y = prem.canon) prems in
+          kpath <= ky
+        with Not_found -> false
+  in
+  let test_repr y kpath =
+    match prems with
+    | NeList.Tip (prem, k') -> y == prem && kpath <= k'
+    | _ ->
         if NeList.mem_assq y prems then
           kpath <= NeList.assq y prems
         else false
@@ -1306,14 +1322,17 @@ let check_clause m (prems, (concl, k) : can_clause) =
     match todo, next_todo with
     | [], [] -> visited
     | [], todo -> aux visited todo []
-    | (v, kpath) :: todo, next_todo ->
-      let canv = repr m v in
+    | (canv, kpath) :: todo, next_todo ->
       match canv.mark with
       | Visited kpath' when kpath' <= kpath -> aux visited todo next_todo
       | _ ->
+        let bwd = canv.clauses_bwd in
+        if ClausesOf.exists
+          (fun (kp, premises) ->
+            NeList.for_all (fun (idx, k') -> test_idx idx (kpath - kp + k')) premises) bwd then
+          raise_notrace (Found visited)
+        else
         (* canv + k' -> canv + kpath *)
-        if test canv kpath then raise_notrace (Found visited) else
-          let bwd = canv.clauses_bwd in
           let visited = canv :: visited in
           canv.mark <- Visited kpath;
           let next_todo =
@@ -1321,7 +1340,10 @@ let check_clause m (prems, (concl, k) : can_clause) =
               (fun (kp, premises) acc ->
                 NeList.fold (fun (idx, k') acc ->
                   (* idx + k' -> canv + kp *)
-                  (idx, kpath - kp + k') :: acc)
+                  let canidx = repr m idx in
+                  let kidx = kpath - kp + k' in
+                  if test_repr canidx kidx then raise_notrace (Found visited)
+                  else (canidx, kidx) :: acc)
                   premises acc)
                 bwd next_todo
           in
@@ -1329,7 +1351,7 @@ let check_clause m (prems, (concl, k) : can_clause) =
   in
   try
     let res, visited =
-      try false, aux [] [(concl.canon, k)] []
+      try false, aux [] [(concl, k)] []
       with Found visited -> true, visited
     in
     List.iter (fun u -> u.mark <- NoMark) visited;
@@ -1345,9 +1367,10 @@ let check_lt (m : t) u v =
   let cl = can_clause_of_point_constraint m u 1 v in
   check_clause m cl
 
-let check_leq (m : t) u v =
+let check_leq (m : t) u vp =
+  debug_check Pp.(fun () -> str"checking : " ++ Point.pr u ++ str " ≤ " ++ Point.pr vp);
   let canu = repr_node m u in
-  let canv = repr_node m v in
+  let canv = repr_node m vp in
   canu == canv
   || let cl = can_clause_of_can_constraint (canu, 0, canv) in
     check_clause m cl
