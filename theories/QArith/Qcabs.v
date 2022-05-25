@@ -34,8 +34,8 @@ Lemma Qcabs_case (x:Qc) (P : Qc -> Type) :
 Proof.
   intros A B.
   apply (Qabs_case x (fun x => forall Hx, P {|this:=x;canon:=Hx|})).
-  intros; case (Qc_decomp x {|canon:=Hx|}); auto.
-  intros; case (Qc_decomp (-x) {|canon:=Hx|}); auto.
+  - intros; case (Qc_decomp x {|canon:=Hx|}); auto.
+  - intros; case (Qc_decomp (-x) {|canon:=Hx|}); auto.
 Qed.
 
 Lemma Qcabs_pos x : 0 <= x -> [x] = x.

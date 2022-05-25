@@ -56,9 +56,9 @@ Proof.
 intros a n m.
 unfold Qpower_positive.
 apply pow_pos_add.
-apply Q_Setoid.
-apply Qmult_comp.
-apply Qmult_assoc.
+- apply Q_Setoid.
+- apply Qmult_comp.
+- apply Qmult_assoc.
 Qed.
 
 (** ** Qpower_positive and inversion, division, exponent subtraction *)
@@ -90,13 +90,13 @@ Lemma Qpower_mult_positive : forall a n m,
 Proof.
 intros a n m.
 induction n using Pos.peano_ind.
- reflexivity.
-rewrite Pos.mul_succ_l.
-rewrite <- Pos.add_1_l.
-do 2 rewrite Qpower_plus_positive.
-rewrite IHn.
-rewrite Qmult_power_positive.
-reflexivity.
+- reflexivity.
+- rewrite Pos.mul_succ_l.
+  rewrite <- Pos.add_1_l.
+  do 2 rewrite Qpower_plus_positive.
+  rewrite IHn.
+  rewrite Qmult_power_positive.
+  reflexivity.
 Qed.
 
 (** ** Qpower_positive decomposition *)
@@ -194,7 +194,7 @@ Proof.
   intros q n Hq.
   induction n.
   - cbn in *.
-    apply Qmult_lt_1_compat. assumption.
+    apply Qmult_lt_1_compat. 1:assumption.
     apply Qmult_lt_1_compat; assumption.
   - cbn in *.
     apply Qmult_lt_1_compat; assumption.
@@ -217,7 +217,7 @@ Proof.
   intros q n Hq.
   induction n.
   - cbn in *.
-    apply Qmult_le_1_compat. assumption.
+    apply Qmult_le_1_compat. 1:assumption.
     apply Qmult_le_1_compat; assumption.
   - cbn in *.
     apply Qmult_le_1_compat; assumption.
@@ -260,13 +260,13 @@ Lemma Qpower_plus' : forall a n m, (n+m <> 0)%Z -> a^(n+m) == a^n*a^m.
 Proof.
 intros a n m H.
 destruct (Qeq_dec a 0)as [X|X].
-rewrite X.
-rewrite Qpower_0 by assumption.
-destruct n; destruct m; try (elim H; reflexivity);
- simpl; repeat rewrite Qpower_positive_0; ring_simplify;
- reflexivity.
-apply Qpower_plus.
-assumption.
+- rewrite X.
+  rewrite Qpower_0 by assumption.
+  destruct n; destruct m; try (elim H; reflexivity);
+    simpl; repeat rewrite Qpower_positive_0; ring_simplify;
+    reflexivity.
+- apply Qpower_plus.
+  assumption.
 Qed.
 
 (** ** Qpower and inversion, division, exponent subtraction *)
@@ -434,16 +434,16 @@ Lemma Zpower_Qpower : forall (a n:Z), (0<=n)%Z -> inject_Z (a^n) == (inject_Z a)
 Proof.
 intros a [|n|n] H;[reflexivity| |elim H; reflexivity].
 induction n using Pos.peano_ind.
- replace (a^1)%Z with a by ring.
- ring.
-rewrite Pos2Z.inj_succ.
-unfold Z.succ.
-rewrite Zpower_exp; auto with *; try discriminate.
-rewrite Qpower_plus' by discriminate.
-rewrite <- IHn by discriminate.
-replace (a^Zpos n*a^1)%Z with (a^Zpos n*a)%Z by ring.
-ring_simplify.
-reflexivity.
+- replace (a^1)%Z with a by ring.
+  ring.
+- rewrite Pos2Z.inj_succ.
+  unfold Z.succ.
+  rewrite Zpower_exp; auto with *; try discriminate.
+  rewrite Qpower_plus' by discriminate.
+  rewrite <- IHn by discriminate.
+  replace (a^Zpos n*a^1)%Z with (a^Zpos n*a)%Z by ring.
+  ring_simplify.
+  reflexivity.
 Qed.
 
 (** ** Square *)
@@ -452,12 +452,12 @@ Lemma Qsqr_nonneg : forall a, 0 <= a^2.
 Proof.
 intros a.
 destruct (Qlt_le_dec 0 a) as [A|A].
-apply (Qmult_le_0_compat a a);
- (apply Qlt_le_weak; assumption).
-setoid_replace (a^2) with ((-a)*(-a)) by ring.
-rewrite Qle_minus_iff in A.
-setoid_replace (0+ - a) with (-a) in A by ring.
-apply Qmult_le_0_compat; assumption.
+- apply (Qmult_le_0_compat a a);
+    (apply Qlt_le_weak; assumption).
+- setoid_replace (a^2) with ((-a)*(-a)) by ring.
+  rewrite Qle_minus_iff in A.
+  setoid_replace (0+ - a) with (-a) in A by ring.
+  apply Qmult_le_0_compat; assumption.
 Qed.
 
 (** ** Power of 2 positive upper bound *)

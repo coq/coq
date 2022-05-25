@@ -107,18 +107,18 @@ Proof.
  intros a k n. pattern n.
  apply induction; clear n.
 
- intros n n' Hn; setoid_rewrite Hn; auto with *.
+ - intros n n' Hn; setoid_rewrite Hn; auto with *.
 
- intros m Hm. destruct (nlt_0_r _ Hm).
+ - intros m Hm. destruct (nlt_0_r _ Hm).
 
- intros n IH m Hm.
- rewrite lt_succ_r in Hm.
- rewrite add_succ_l.
- rewrite 2 strong_rec0_succ.
- apply step_good.
- intros m' Hm'.
- apply IH.
- apply lt_le_trans with m; auto.
+ - intros n IH m Hm.
+   rewrite lt_succ_r in Hm.
+   rewrite add_succ_l.
+   rewrite 2 strong_rec0_succ.
+   apply step_good.
+   intros m' Hm'.
+   apply IH.
+   apply lt_le_trans with m; auto.
 Qed.
 
 Lemma strong_rec0_fixpoint : forall (a : A) (n : N.t),
@@ -130,12 +130,12 @@ apply step_good.
 intros m Hm.
 symmetry.
 setoid_replace n with (S m + (n - S m)).
-apply strong_rec0_more_steps.
-apply lt_succ_diag_r.
-rewrite add_comm.
-symmetry.
-apply sub_add.
-rewrite le_succ_l; auto.
+- apply strong_rec0_more_steps.
+  apply lt_succ_diag_r.
+- rewrite add_comm.
+  symmetry.
+  apply sub_add.
+  rewrite le_succ_l; auto.
 Qed.
 
 Theorem strong_rec_fixpoint : forall (a : A) (n : N.t),
@@ -143,10 +143,10 @@ Theorem strong_rec_fixpoint : forall (a : A) (n : N.t),
 Proof.
 intros.
 transitivity (f (fun n => strong_rec0 a f (S n) n) n).
-rewrite strong_rec_alt.
-apply strong_rec0_fixpoint.
-f_equiv.
-intros x x' Hx; rewrite strong_rec_alt, Hx; auto with *.
+- rewrite strong_rec_alt.
+  apply strong_rec0_fixpoint.
+- f_equiv.
+  intros x x' Hx; rewrite strong_rec_alt, Hx; auto with *.
 Qed.
 
 (** NB: without the [step_good] hypothesis, we have proved that
@@ -172,20 +172,20 @@ intros a a' n.
 generalize (le_refl n).
 set (k:=n) at -2. clearbody k. revert k. pattern n.
 apply induction; clear n.
-(* compat *)
-intros n n' Hn. setoid_rewrite Hn; auto with *.
-(* 0 *)
-intros k Hk. rewrite le_0_r in Hk.
-rewrite Hk, strong_rec_0. symmetry. apply strong_rec_0_any.
-(* S *)
-intros n IH k Hk.
-rewrite 2 strong_rec_fixpoint.
-apply step_good.
-intros m Hm.
-apply IH.
-rewrite succ_le_mono.
-apply le_trans with k; auto.
-rewrite le_succ_l; auto.
+- (* compat *)
+  intros n n' Hn. setoid_rewrite Hn; auto with *.
+- (* 0 *)
+  intros k Hk. rewrite le_0_r in Hk.
+  rewrite Hk, strong_rec_0. symmetry. apply strong_rec_0_any.
+- (* S *)
+  intros n IH k Hk.
+  rewrite 2 strong_rec_fixpoint.
+  apply step_good.
+  intros m Hm.
+  apply IH.
+  rewrite succ_le_mono.
+  apply le_trans with k; auto.
+  rewrite le_succ_l; auto.
 Qed.
 
 End FixPoint.

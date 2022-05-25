@@ -46,14 +46,14 @@ Theorem classical_indefinite_description :
 Proof.
   intros A P i.
   destruct (excluded_middle_informative (exists x, P x)) as [Hex|HnonP].
-  apply constructive_indefinite_description
-    with (P:= fun x => (exists x, P x) -> P x).
-  destruct Hex as (x,Hx).
+  - apply constructive_indefinite_description
+      with (P:= fun x => (exists x, P x) -> P x).
+    destruct Hex as (x,Hx).
     exists x; intros _; exact Hx.
-  assert {x : A | True} as (a,_).
-    apply constructive_indefinite_description with (P := fun _ : A => True).
-    destruct i as (a); firstorder.
-  firstorder.
+  - assert {x : A | True} as (a,_).
+    { apply constructive_indefinite_description with (P := fun _ : A => True).
+      destruct i as (a); firstorder. }
+    firstorder.
 Defined.
 
 (** Hilbert's epsilon operator *)

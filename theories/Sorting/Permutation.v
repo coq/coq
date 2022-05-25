@@ -155,10 +155,10 @@ Proof.
   intros l m l' m' Hpermll' Hpermmm';
    induction Hpermll' as [|x l l'|x y l|l l' l''];
     repeat rewrite <- app_comm_cons; auto.
-  apply Permutation_trans with (l' := (x :: y :: l ++ m));
-   [idtac | repeat rewrite app_comm_cons; apply Permutation_app_head]; trivial.
-  apply Permutation_trans with (l' := (l' ++ m')); try assumption.
-  apply Permutation_app_tail; assumption.
+  - apply Permutation_trans with (l' := (x :: y :: l ++ m));
+      [idtac | repeat rewrite app_comm_cons; apply Permutation_app_head]; trivial.
+  - apply Permutation_trans with (l' := (l' ++ m')); try assumption.
+    apply Permutation_app_tail; assumption.
 Qed.
 
 #[export] Instance Permutation_app' :
@@ -183,9 +183,10 @@ Theorem Permutation_app_comm : forall (l l' : list A),
   Permutation (l ++ l') (l' ++ l).
 Proof.
   induction l as [|x l]; simpl; intro l'.
-  rewrite app_nil_r; trivial. rewrite IHl.
-  rewrite app_comm_cons, Permutation_cons_append.
-  now rewrite <- app_assoc.
+  - rewrite app_nil_r; trivial.
+  - rewrite IHl.
+    rewrite app_comm_cons, Permutation_cons_append.
+    now rewrite <- app_assoc.
 Qed.
 Local Hint Resolve Permutation_app_comm : core.
 
@@ -326,13 +327,13 @@ Theorem Permutation_ind_bis :
 Proof.
   intros P Hnil Hskip Hswap Htrans.
   induction 1; auto.
-  apply Htrans with (x::y::l); auto.
-  apply Hswap; auto.
-  induction l; auto.
-  apply Hskip; auto.
-  apply Hskip; auto.
-  induction l; auto.
-  eauto.
+  - apply Htrans with (x::y::l); auto.
+    + apply Hswap; auto.
+      induction l; auto.
+    + apply Hskip; auto.
+      apply Hskip; auto.
+      induction l; auto.
+  - eauto.
 Qed.
 
 Theorem Permutation_nil_app_cons : forall (l l' : list A) (x : A),
@@ -435,9 +436,9 @@ Proof.
   revert a1 a2 Heqm.
   induction H; intros; try (injection Heqm as [= ? ?]; subst);
     discriminate || (try tauto).
-  apply Permutation_length_1_inv in H as ->; left; auto.
-  apply IHPermutation1 in Heqm as [H1|H1]; apply IHPermutation2 in H1 as [];
-    auto.
+  - apply Permutation_length_1_inv in H as ->; left; auto.
+  - apply IHPermutation1 in Heqm as [H1|H1]; apply IHPermutation2 in H1 as [];
+      auto.
 Qed.
 
 Lemma Permutation_length_2 :
@@ -516,7 +517,9 @@ Proof.
  induction 1; auto.
  - inversion_clear 1; constructor; eauto using Permutation_in.
  - inversion_clear 1 as [|? ? H1 H2]. inversion_clear H2; simpl in *.
-   constructor. simpl; intuition. constructor; intuition.
+   constructor.
+   + simpl; intuition.
+   + constructor; intuition.
 Qed.
 
 Global Instance Permutation_NoDup' :
@@ -789,9 +792,9 @@ Proof.
    apply Permutation_nth_error_bis in H.
    destruct H as (f & Hf & Hf2 & Hf3).
    exists f. split; [|split]; auto.
-   intros x y _ _ Hxy. now apply Hf.
-   intros n Hn. rewrite <- 2 nth_default_eq. unfold nth_default.
-    now rewrite Hf3.
+   + intros x y _ _ Hxy. now apply Hf.
+   + intros n Hn. rewrite <- 2 nth_default_eq. unfold nth_default.
+     now rewrite Hf3.
  - intros (E & f & Hf1 & Hf2 & Hf3).
    rewrite Permutation_nth_error.
    split; auto.

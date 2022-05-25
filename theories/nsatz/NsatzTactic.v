@@ -40,7 +40,9 @@ Context {R:Type}`{Rid:Integral_domain R}.
 
 Lemma psos_r1b: forall x y:R, x - y == 0 -> x == y.
 intros x y H; setoid_replace x with ((x - y) + y); simpl;
- [setoid_rewrite H | idtac]; simpl. cring. cring.
+  [setoid_rewrite H | idtac]; simpl.
+- cring.
+- cring.
 Qed.
 
 Lemma psos_r1: forall x y, x == y -> x - y == 0.
@@ -50,10 +52,11 @@ Qed.
 Lemma nsatzR_diff: forall x y:R, not (x == y) -> not (x - y == 0).
 intros.
 intro; apply H.
-simpl; setoid_replace x with ((x - y) + y). simpl.
-setoid_rewrite H0.
-simpl; cring.
-simpl. simpl; cring.
+simpl; setoid_replace x with ((x - y) + y).
+- simpl.
+  setoid_rewrite H0.
+  simpl; cring.
+- simpl. simpl; cring.
 Qed.
 
 (* adpatation du code de Benjamin aux setoides *)
@@ -118,15 +121,15 @@ Qed.
 
 Definition Rtheory:ring_theory ring0 ring1 add mul sub opp _==_.
 apply mk_rt.
-apply ring_add_0_l.
-apply ring_add_comm.
-apply ring_add_assoc.
-apply ring_mul_1_l.
-apply cring_mul_comm.
-apply ring_mul_assoc.
-apply ring_distr_l.
-apply ring_sub_def.
-apply ring_opp_def.
+- apply ring_add_0_l.
+- apply ring_add_comm.
+- apply ring_add_assoc.
+- apply ring_mul_1_l.
+- apply cring_mul_comm.
+- apply ring_mul_assoc.
+- apply ring_distr_l.
+- apply ring_sub_def.
+- apply ring_opp_def.
 Defined.
 
 Lemma PolZadd_correct : forall P' P l,
@@ -175,12 +178,16 @@ Lemma mult_l_correct : forall l la lp,
   Cond0 PolZ (PhiR l) lp ->
   PhiR l (mult_l la lp) == 0.
 Proof.
- induction la;simpl;intros. cring.
- destruct lp;trivial. simpl. cring.
- simpl in H;destruct H.
- rewrite  PolZadd_correct.
- simpl. rewrite PolZmul_correct. simpl. rewrite  H.
- rewrite IHla. cring. trivial.
+  induction la;simpl;intros.
+  - cring.
+  - destruct lp;trivial.
+    + simpl. cring.
+    + simpl in H;destruct H.
+      rewrite  PolZadd_correct.
+      simpl. rewrite PolZmul_correct. simpl. rewrite  H.
+      rewrite IHla.
+      * cring.
+      * trivial.
 Qed.
 
 Lemma compute_list_correct : forall l lla lp,
@@ -458,15 +465,21 @@ Defined.
 #[global]
 Instance Qri : (Ring (Ro:=Qops)).
 constructor.
-try apply Q_Setoid.
-apply Qplus_comp.
-apply Qmult_comp.
-apply Qminus_comp.
-apply Qopp_comp.
- exact Qplus_0_l. exact Qplus_comm. apply Qplus_assoc.
- exact Qmult_1_l.  exact Qmult_1_r. apply Qmult_assoc.
- apply Qmult_plus_distr_l.  intros. apply Qmult_plus_distr_r.
-reflexivity. exact Qplus_opp_r.
+- apply Q_Setoid.
+- apply Qplus_comp.
+- apply Qmult_comp.
+- apply Qminus_comp.
+- apply Qopp_comp.
+- exact Qplus_0_l.
+- exact Qplus_comm.
+- apply Qplus_assoc.
+- exact Qmult_1_l.
+- exact Qmult_1_r.
+- apply Qmult_assoc.
+- apply Qmult_plus_distr_l.
+- intros. apply Qmult_plus_distr_r.
+- reflexivity.
+- exact Qplus_opp_r.
 Defined.
 
 Lemma Q_one_zero: not (Qeq 1%Q 0%Q).
@@ -479,7 +492,9 @@ red. exact Qmult_comm. Defined.
 #[global]
 Instance Qdi : (Integral_domain (Rcr:=Qcri)).
 constructor.
-exact Qmult_integral. exact Q_one_zero. Defined.
+- exact Qmult_integral.
+- exact Q_one_zero.
+Defined.
 
 (* Integers *)
 Lemma Z_one_zero: 1%Z <> 0%Z.
@@ -492,4 +507,6 @@ red. exact Z.mul_comm. Defined.
 #[global]
 Instance Zdi : (Integral_domain (Rcr:=Zcri)).
 constructor.
-exact Zmult_integral. exact Z_one_zero. Defined.
+- exact Zmult_integral.
+- exact Z_one_zero.
+Defined.

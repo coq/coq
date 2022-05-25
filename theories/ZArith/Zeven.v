@@ -200,16 +200,17 @@ Proof.
   {
    intros m Hm.
    apply Z.quot_unique with (if Z.odd m then Z.sgn m else 0).
-   now apply Z.lt_le_incl.
-   rewrite Z.sgn_pos by trivial.
-   destruct (Z.odd m); now split.
-   apply Zquot2_odd_eqn.
+   - now apply Z.lt_le_incl.
+   - rewrite Z.sgn_pos by trivial.
+     destruct (Z.odd m); now split.
+   - apply Zquot2_odd_eqn.
   }
- destruct (Z.lt_trichotomy 0 n) as [POS|[NUL|NEG]].
+  destruct (Z.lt_trichotomy 0 n) as [POS|[NUL|NEG]].
  - now apply AUX.
  - now subst.
  - apply Z.opp_inj. rewrite <- Z.quot_opp_l, <- Zquot2_opp.
-   apply AUX. now destruct n. easy.
+   + apply AUX. now destruct n.
+   + easy.
 Qed.
 
 (** More properties of parity *)
@@ -226,8 +227,12 @@ Lemma Zsplit2 n :
 Proof.
  destruct (Z_modulo_2 n) as [(y,Hy)|(y,Hy)];
   rewrite <- Z.add_diag in Hy.
- - exists (y, y). split. assumption. now left.
- - exists (y, y + 1). split. now rewrite Z.add_assoc. now right.
+ - exists (y, y). split.
+   + assumption.
+   + now left.
+ - exists (y, y + 1). split.
+   + now rewrite Z.add_assoc.
+   + now right.
 Qed.
 
 Theorem Zeven_ex n : Zeven n -> exists m, n = 2 * m.

@@ -178,7 +178,9 @@ Proof. intros; apply Rnot_le_lt. auto with real. Qed.
 Lemma Rnot_lt_le : forall r1 r2, ~ r1 < r2 -> r2 <= r1.
 Proof.
   intros r1 r2 H; destruct (Rtotal_order r1 r2) as [ | [ H0 | H0 ] ].
-    contradiction. subst; auto with rorders. auto with real.
+  - contradiction.
+  - subst; auto with rorders.
+  - auto with real.
 Qed.
 
 Lemma Rnot_gt_le : forall r1 r2, ~ r1 > r2 -> r1 <= r2.
@@ -458,10 +460,10 @@ Qed.
 Lemma Rplus_eq_reg_l : forall r r1 r2, r + r1 = r + r2 -> r1 = r2.
 Proof.
   intros; transitivity (- r + r + r1).
-  ring.
-  transitivity (- r + r + r2).
-  repeat rewrite Rplus_assoc; rewrite <- H; reflexivity.
-  ring.
+  - ring.
+  - transitivity (- r + r + r2).
+    + repeat rewrite Rplus_assoc; rewrite <- H; reflexivity.
+    + ring.
 Qed.
 #[global]
 Hint Resolve Rplus_eq_reg_l: real.
@@ -496,9 +498,9 @@ Lemma Rplus_eq_R0 :
   forall r1 r2, 0 <= r1 -> 0 <= r2 -> r1 + r2 = 0 -> r1 = 0 /\ r2 = 0.
 Proof.
   intros a b; split.
-  apply Rplus_eq_0_l with b; auto with real.
-  apply Rplus_eq_0_l with a; auto with real.
-  rewrite Rplus_comm; auto with real.
+  - apply Rplus_eq_0_l with b; auto with real.
+  - apply Rplus_eq_0_l with a; auto with real.
+    rewrite Rplus_comm; auto with real.
 Qed.
 
 (*********************************************************)
@@ -577,9 +579,9 @@ Qed.
 Lemma Rmult_eq_reg_l : forall r r1 r2, r * r1 = r * r2 -> r <> 0 -> r1 = r2.
 Proof.
   intros. apply Rquot1. apply (CReal_mult_eq_reg_l (Rrepr r)).
-  apply Rrepr_appart in H0. rewrite Rrepr_0 in H0. exact H0.
-  apply Rrepr_appart in H0.
-  rewrite <- Rrepr_mult, <- Rrepr_mult, H. reflexivity.
+  - apply Rrepr_appart in H0. rewrite Rrepr_0 in H0. exact H0.
+  - apply Rrepr_appart in H0.
+    rewrite <- Rrepr_mult, <- Rrepr_mult, H. reflexivity.
 Qed.
 
 Lemma Rmult_eq_reg_r : forall r r1 r2, r1 * r = r2 * r -> r <> 0 -> r1 = r2.
@@ -593,9 +595,9 @@ Qed.
 Lemma Rmult_integral : forall r1 r2, r1 * r2 = 0 -> r1 = 0 \/ r2 = 0.
 Proof.
   intros; case (Req_dec r1 0); [ intro Hz | intro Hnotz ].
-  auto.
-  right; apply Rmult_eq_reg_l with r1; trivial.
-  rewrite H; auto with real.
+  - auto.
+  - right; apply Rmult_eq_reg_l with r1; trivial.
+    rewrite H; auto with real.
 Qed.
 
 (**********)
@@ -1008,8 +1010,8 @@ Proof. do 3 intro; apply Rplus_lt_compat_r. Qed.
 Lemma Rplus_le_compat_l : forall r r1 r2, r1 <= r2 -> r + r1 <= r + r2.
 Proof.
   unfold Rle; intros; elim H; intro.
-  left; apply (Rplus_lt_compat_l r r1 r2 H0).
-  right; rewrite <- H0; auto with zarith real.
+  - left; apply (Rplus_lt_compat_l r r1 r2 H0).
+  - right; rewrite <- H0; auto with zarith real.
 Qed.
 
 Lemma Rplus_ge_compat_l : forall r r1 r2, r1 >= r2 -> r + r1 >= r + r2.
@@ -1021,8 +1023,8 @@ Hint Resolve Rplus_ge_compat_l: real.
 Lemma Rplus_le_compat_r : forall r r1 r2, r1 <= r2 -> r1 + r <= r2 + r.
 Proof.
   unfold Rle; intros; elim H; intro.
-  left; apply (Rplus_lt_compat_r r r1 r2 H0).
-  right; rewrite <- H0; auto with real.
+  - left; apply (Rplus_lt_compat_r r r1 r2 H0).
+  - right; rewrite <- H0; auto with real.
 Qed.
 
 #[global]
@@ -1117,8 +1119,8 @@ Lemma sum_inequa_Rle_lt :
     a <= x -> x < b -> c < y -> y <= d -> a + c < x + y < b + d.
 Proof.
   intros; split.
-  apply Rlt_le_trans with (a + y); auto with real.
-  apply Rlt_le_trans with (b + y); auto with real.
+  - apply Rlt_le_trans with (a + y); auto with real.
+  - apply Rlt_le_trans with (b + y); auto with real.
 Qed.
 
 (** *** Cancellation *)
@@ -1140,8 +1142,8 @@ Qed.
 Lemma Rplus_le_reg_l : forall r r1 r2, r + r1 <= r + r2 -> r1 <= r2.
 Proof.
   unfold Rle; intros; elim H; intro.
-  left; apply (Rplus_lt_reg_l r r1 r2 H0).
-  right; apply (Rplus_eq_reg_l r r1 r2 H0).
+  - left; apply (Rplus_lt_reg_l r r1 r2 H0).
+  - right; apply (Rplus_eq_reg_l r r1 r2 H0).
 Qed.
 
 Lemma Rplus_le_reg_r : forall r r1 r2, r1 + r <= r2 + r -> r1 <= r2.
@@ -1459,9 +1461,9 @@ Lemma Rmult_lt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
 Proof.
   intros z x y H H0.
   case (Rtotal_order x y); intros Eq0; auto; elim Eq0; clear Eq0; intros Eq0.
-  rewrite Eq0 in H0; exfalso; apply (Rlt_irrefl (z * y)); auto.
-  generalize (Rmult_lt_compat_l z y x H Eq0); intro; exfalso;
-    generalize (Rlt_trans (z * x) (z * y) (z * x) H0 H1);
+  - rewrite Eq0 in H0; exfalso; apply (Rlt_irrefl (z * y)); auto.
+  - generalize (Rmult_lt_compat_l z y x H Eq0); intro; exfalso;
+      generalize (Rlt_trans (z * x) (z * y) (z * x) H0 H1);
       intro; apply (Rlt_irrefl (z * x)); auto.
 Qed.
 
@@ -1469,8 +1471,8 @@ Lemma Rmult_lt_reg_r : forall r r1 r2 : R, 0 < r -> r1 * r < r2 * r -> r1 < r2.
 Proof.
   intros.
   apply Rmult_lt_reg_l with r.
-  exact H.
-  now rewrite 2!(Rmult_comm r).
+  - exact H.
+  - now rewrite 2!(Rmult_comm r).
 Qed.
 
 Lemma Rmult_gt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
@@ -1479,21 +1481,21 @@ Proof. eauto using Rmult_lt_reg_l with rorders. Qed.
 Lemma Rmult_le_reg_l : forall r r1 r2, 0 < r -> r * r1 <= r * r2 -> r1 <= r2.
 Proof.
   intros z x y H H0; case H0; auto with real.
-  intros H1; apply Rlt_le.
-  apply Rmult_lt_reg_l with (r := z); auto.
-  intros H1; replace x with (/ z * (z * x)); auto with real.
-  replace y with (/ z * (z * y)).
-  rewrite H1; auto with real.
-  rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
-  rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
+  - intros H1; apply Rlt_le.
+    apply Rmult_lt_reg_l with (r := z); auto.
+  - intros H1; replace x with (/ z * (z * x)); auto with real.
+    + replace y with (/ z * (z * y)).
+      * rewrite H1; auto with real.
+      * rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
+    + rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
 Qed.
 
 Lemma Rmult_le_reg_r : forall r r1 r2, 0 < r -> r1 * r <= r2 * r -> r1 <= r2.
 Proof.
   intros.
   apply Rmult_le_reg_l with r.
-  exact H.
-  now rewrite 2!(Rmult_comm r).
+  - exact H.
+  - now rewrite 2!(Rmult_comm r).
 Qed.
 
 (*********************************************************)
@@ -1530,24 +1532,24 @@ Qed.
 Lemma Rge_minus : forall r1 r2, r1 >= r2 -> r1 - r2 >= 0.
 Proof.
   destruct 1.
-    auto using Rgt_minus, Rgt_ge.
-    right; auto using Rminus_diag_eq with rorders.
+  - auto using Rgt_minus, Rgt_ge.
+  - right; auto using Rminus_diag_eq with rorders.
 Qed.
 
 (**********)
 Lemma Rminus_lt : forall r1 r2, r1 - r2 < 0 -> r1 < r2.
 Proof.
   intros; replace r1 with (r1 - r2 + r2).
-  pattern r2 at 3; replace r2 with (0 + r2); auto with real.
-  ring.
+  - pattern r2 at 3; replace r2 with (0 + r2); auto with real.
+  - ring.
 Qed.
 
 Lemma Rminus_gt : forall r1 r2, r1 - r2 > 0 -> r1 > r2.
 Proof.
   intros; replace r2 with (0 + r2); auto with real.
   replace r1 with (r1 - r2 + r2).
-  apply Rplus_gt_compat_r; assumption.
-  ring.
+  - apply Rplus_gt_compat_r; assumption.
+  - ring.
 Qed.
 
 Lemma Rminus_gt_0_lt : forall a b, 0 < b - a -> a < b.
@@ -1557,16 +1559,16 @@ Proof. intro; intro; apply Rminus_gt. Qed.
 Lemma Rminus_le : forall r1 r2, r1 - r2 <= 0 -> r1 <= r2.
 Proof.
   intros; replace r1 with (r1 - r2 + r2).
-  pattern r2 at 3; replace r2 with (0 + r2); auto with real.
-  ring.
+  - pattern r2 at 3; replace r2 with (0 + r2); auto with real.
+  - ring.
 Qed.
 
 Lemma Rminus_ge : forall r1 r2, r1 - r2 >= 0 -> r1 >= r2.
 Proof.
   intros; replace r2 with (0 + r2); auto with real.
   replace r1 with (r1 - r2 + r2).
-  apply Rplus_ge_compat_r; assumption.
-  ring.
+  - apply Rplus_ge_compat_r; assumption.
+  - ring.
 Qed.
 
 (**********)
@@ -1585,18 +1587,18 @@ Hint Immediate tech_Rplus: real.
 Lemma Rle_0_sqr : forall r, 0 <= Rsqr r.
 Proof.
   intro; case (Rlt_le_dec r 0); unfold Rsqr; intro.
-  replace (r * r) with (- r * - r); auto with real.
-  replace 0 with (- r * 0); auto with real.
-  replace 0 with (0 * r); auto with real.
+  - replace (r * r) with (- r * - r); auto with real.
+    replace 0 with (- r * 0); auto with real.
+  - replace 0 with (0 * r); auto with real.
 Qed.
 
 (***********)
 Lemma Rlt_0_sqr : forall r, r <> 0 -> 0 < Rsqr r.
 Proof.
   intros; case (Rdichotomy r 0); trivial; unfold Rsqr; intro.
-  replace (r * r) with (- r * - r); auto with real.
-  replace 0 with (- r * 0); auto with real.
-  replace 0 with (0 * r); auto with real.
+  - replace (r * r) with (- r * - r); auto with real.
+    replace 0 with (- r * 0); auto with real.
+  - replace 0 with (0 * r); auto with real.
 Qed.
 #[global]
 Hint Resolve Rle_0_sqr Rlt_0_sqr: real.
@@ -1612,9 +1614,9 @@ Lemma Rplus_sqr_eq_0 :
   forall r1 r2, Rsqr r1 + Rsqr r2 = 0 -> r1 = 0 /\ r2 = 0.
 Proof.
   intros a b; split.
-  apply Rplus_sqr_eq_0_l with b; auto with real.
-  apply Rplus_sqr_eq_0_l with a; auto with real.
-  rewrite Rplus_comm; auto with real.
+  - apply Rplus_sqr_eq_0_l with b; auto with real.
+  - apply Rplus_sqr_eq_0_l with a; auto with real.
+    rewrite Rplus_comm; auto with real.
 Qed.
 
 (*********************************************************)
@@ -1666,9 +1668,9 @@ Proof.
   intros; apply Rmult_lt_reg_l with (r1 * r2); auto with real.
   case (Rmult_neq_0_reg r1 r2); intros; auto with real.
   replace (r1 * r2 * / r2) with r1.
-  replace (r1 * r2 * / r1) with r2; trivial.
-  symmetry ; auto with real.
-  symmetry ; auto with real.
+  - replace (r1 * r2 * / r1) with r2; trivial.
+    symmetry ; auto with real.
+  - symmetry ; auto with real.
 Qed.
 
 Lemma Rinv_1_lt_contravar : forall r1 r2, 1 <= r1 -> r1 < r2 -> / r2 < / r1.
@@ -1679,13 +1681,13 @@ Proof.
   apply Rmult_lt_reg_l with (r := x); auto with real.
   rewrite (Rmult_comm x (/ x)); rewrite Rinv_l; auto with real.
   apply Rmult_lt_reg_l with (r := y); auto with real.
-  apply Rlt_trans with (r2 := x); auto.
-  cut (y * (x * / y) = x).
-  intro H1; rewrite H1; rewrite (Rmult_1_r y); auto.
-  rewrite (Rmult_comm x); rewrite <- Rmult_assoc; rewrite (Rmult_comm y (/ y));
-    rewrite Rinv_l; auto with real.
-  apply Rlt_dichotomy_converse; right.
-  red; apply Rlt_trans with (r2 := x); auto with real.
+  - apply Rlt_trans with (r2 := x); auto.
+  - cut (y * (x * / y) = x).
+    + intro H1; rewrite H1; rewrite (Rmult_1_r y); auto.
+    + rewrite (Rmult_comm x); rewrite <- Rmult_assoc; rewrite (Rmult_comm y (/ y));
+        rewrite Rinv_l; auto with real.
+      apply Rlt_dichotomy_converse; right.
+      red; apply Rlt_trans with (r2 := x); auto with real.
 Qed.
 #[global]
 Hint Resolve Rinv_1_lt_contravar: real.
@@ -1740,10 +1742,10 @@ Qed.
 Lemma plus_INR : forall n m:nat, INR (n + m) = INR n + INR m.
 Proof.
   intros n m; induction  n as [| n Hrecn].
-  simpl; auto with real.
-  replace (S n + m)%nat with (S (n + m)); auto with arith.
-  repeat rewrite S_INR.
-  rewrite Hrecn; ring.
+  - simpl; auto with real.
+  - replace (S n + m)%nat with (S (n + m)); auto with arith.
+    repeat rewrite S_INR.
+    rewrite Hrecn; ring.
 Qed.
 #[global]
 Hint Resolve plus_INR: real.
@@ -1763,9 +1765,9 @@ Hint Resolve minus_INR: real.
 Lemma mult_INR : forall n m:nat, INR (n * m) = INR n * INR m.
 Proof.
   intros n m; induction  n as [| n Hrecn].
-  simpl; auto with real.
-  intros; repeat rewrite S_INR; simpl.
-  rewrite plus_INR; rewrite Hrecn; ring.
+  - simpl; auto with real.
+  - intros; repeat rewrite S_INR; simpl.
+    rewrite plus_INR; rewrite Hrecn; ring.
 Qed.
 #[global]
 Hint Resolve mult_INR: real.
@@ -1785,8 +1787,8 @@ Hint Resolve lt_0_INR: real.
 Lemma lt_INR : forall n m:nat, (n < m)%nat -> INR n < INR m.
 Proof.
   simple induction 1; intros; auto with real.
-  rewrite S_INR; auto with real.
-  rewrite S_INR; apply Rlt_trans with (INR m0); auto with real.
+  - rewrite S_INR; auto with real.
+  - rewrite S_INR; apply Rlt_trans with (INR m0); auto with real.
 Qed.
 #[global]
 Hint Resolve lt_INR: real.
@@ -1812,8 +1814,8 @@ Hint Resolve pos_INR_nat_of_P: real.
 Lemma pos_INR : forall n:nat, 0 <= INR n.
 Proof.
   intro n; case n.
-  simpl; auto with real.
-  auto with arith real.
+  - simpl; auto with real.
+  - auto with arith real.
 Qed.
 #[global]
 Hint Resolve pos_INR: real.
@@ -1826,10 +1828,10 @@ Proof.
     apply Rle_lt_trans with (2 := H).
     apply pos_INR.
   - destruct n as [|n].
-    apply Nat.lt_0_succ.
-    apply -> Nat.succ_lt_mono; apply IHm.
-    rewrite 2!S_INR in H.
-    apply Rplus_lt_reg_r with (1 := H).
+    + apply Nat.lt_0_succ.
+    + apply -> Nat.succ_lt_mono; apply IHm.
+      rewrite 2!S_INR in H.
+      apply Rplus_lt_reg_r with (1 := H).
 Qed.
 #[global]
 Hint Resolve INR_lt: real.
@@ -1858,9 +1860,9 @@ Hint Immediate INR_not_0: real.
 Lemma not_0_INR : forall n:nat, n <> 0%nat -> INR n <> 0.
 Proof.
   intro n; case n.
-  intro; absurd (0%nat = 0%nat); trivial.
-  intros; rewrite S_INR.
-  apply Rgt_not_eq; red; auto with real.
+  - intro; absurd (0%nat = 0%nat); trivial.
+  - intros; rewrite S_INR.
+    apply Rgt_not_eq; red; auto with real.
 Qed.
 #[global]
 Hint Resolve not_0_INR: real.
@@ -1868,10 +1870,10 @@ Hint Resolve not_0_INR: real.
 Lemma not_INR : forall n m:nat, n <> m -> INR n <> INR m.
 Proof.
   intros n m H; case (Nat.le_gt_cases n m); intros H1.
-  case (proj1 (Nat.lt_eq_cases _ _) H1); intros H2.
-  apply Rlt_dichotomy_converse; auto with real.
-  exfalso; auto.
-  apply not_eq_sym; apply Rlt_dichotomy_converse; auto with real.
+  - case (proj1 (Nat.lt_eq_cases _ _) H1); intros H2.
+    + apply Rlt_dichotomy_converse; auto with real.
+    + exfalso; auto.
+  - apply not_eq_sym; apply Rlt_dichotomy_converse; auto with real.
 Qed.
 #[global]
 Hint Resolve not_INR: real.
@@ -1880,15 +1882,15 @@ Lemma INR_eq : forall n m:nat, INR n = INR m -> n = m.
 Proof.
   intros n m HR.
   destruct (dec_eq_nat n m) as [H|H].
-  exact H.
-  now apply not_INR in H.
+  - exact H.
+  - now apply not_INR in H.
 Qed.
 
 Lemma INR_le : forall n m:nat, INR n <= INR m -> (n <= m)%nat.
 Proof.
   intros; elim H; intro.
-  generalize (INR_lt n m H0); intro; auto with arith.
-  generalize (INR_eq n m H0); intro; rewrite H1; auto.
+  - generalize (INR_lt n m H0); intro; auto with arith.
+  - generalize (INR_eq n m H0); intro; rewrite H1; auto.
 Qed.
 #[global]
 Hint Resolve INR_le: real.
@@ -1916,24 +1918,24 @@ Lemma INR_IPR : forall p, INR (Pos.to_nat p) = IPR p.
 Proof.
   assert (H: forall p, 2 * INR (Pos.to_nat p) = IPR_2 p).
   { induction p as [p|p|] ; simpl IPR_2.
-    rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- IHp.
-    now rewrite (Rplus_comm (2 * _)).
-    now rewrite Pos2Nat.inj_xO, mult_INR, <- IHp.
-    apply Rmult_1_r. }
+    - rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- IHp.
+      now rewrite (Rplus_comm (2 * _)).
+    - now rewrite Pos2Nat.inj_xO, mult_INR, <- IHp.
+    - apply Rmult_1_r. }
   intros [p|p|] ; unfold IPR.
-  rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- H.
-  apply Rplus_comm.
-  now rewrite Pos2Nat.inj_xO, mult_INR, <- H.
-  easy.
+  - rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- H.
+    apply Rplus_comm.
+  - now rewrite Pos2Nat.inj_xO, mult_INR, <- H.
+  - easy.
 Qed.
 
 (**********)
 Lemma INR_IZR_INZ : forall n:nat, INR n = IZR (Z.of_nat n).
 Proof.
   intros [|n].
-  easy.
-  simpl Z.of_nat. unfold IZR.
-  now rewrite <- INR_IPR, SuccNat2Pos.id_succ.
+  - easy.
+  - simpl Z.of_nat. unfold IZR.
+    now rewrite <- INR_IPR, SuccNat2Pos.id_succ.
 Qed.
 
 Lemma IZR_NEG : forall p, IZR (Zneg p) = Ropp (IZR (Zpos p)).
@@ -1963,24 +1965,24 @@ Lemma plus_IZR_NEG_POS :
 Proof.
   intros p q; simpl. rewrite Z.pos_sub_spec.
   case Pos.compare_spec; intros H; unfold IZR.
-  subst. ring.
-  rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
-  rewrite minus_INR by (now apply Nat.lt_le_incl, Pos2Nat.inj_lt).
-  ring.
-  rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
-  rewrite minus_INR by (now apply Nat.lt_le_incl, Pos2Nat.inj_lt).
-  ring.
+  - subst. ring.
+  - rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
+    rewrite minus_INR by (now apply Nat.lt_le_incl, Pos2Nat.inj_lt).
+    ring.
+  - rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
+    rewrite minus_INR by (now apply Nat.lt_le_incl, Pos2Nat.inj_lt).
+    ring.
 Qed.
 
 (**********)
 Lemma plus_IZR : forall n m:Z, IZR (n + m) = IZR n + IZR m.
 Proof.
   intro z; destruct z; intro t; destruct t; intros; auto with real.
-  simpl. unfold IZR. rewrite <- 3!INR_IPR, Pos2Nat.inj_add. apply plus_INR.
-  apply plus_IZR_NEG_POS.
-  rewrite Z.add_comm; rewrite Rplus_comm; apply plus_IZR_NEG_POS.
-  simpl. unfold IZR. rewrite <- 3!INR_IPR, Pos2Nat.inj_add, plus_INR.
-  apply Ropp_plus_distr.
+  - simpl. unfold IZR. rewrite <- 3!INR_IPR, Pos2Nat.inj_add. apply plus_INR.
+  - apply plus_IZR_NEG_POS.
+  - rewrite Z.add_comm; rewrite Rplus_comm; apply plus_IZR_NEG_POS.
+  - simpl. unfold IZR. rewrite <- 3!INR_IPR, Pos2Nat.inj_add, plus_INR.
+    apply Ropp_plus_distr.
 Qed.
 
 (**********)
@@ -2032,12 +2034,12 @@ Qed.
 Lemma lt_0_IZR : forall n:Z, 0 < IZR n -> (0 < n)%Z.
 Proof.
   intro z; case z; simpl; intros.
-  elim (Rlt_irrefl _ H).
-  easy.
-  elim (Rlt_not_le _ _ H).
-  unfold IZR.
-  rewrite <- INR_IPR.
-  auto with real.
+  - elim (Rlt_irrefl _ H).
+  - easy.
+  - elim (Rlt_not_le _ _ H).
+    unfold IZR.
+    rewrite <- INR_IPR.
+    auto with real.
 Qed.
 
 (**********)
@@ -2053,12 +2055,12 @@ Qed.
 Lemma eq_IZR_R0 : forall n:Z, IZR n = 0 -> n = 0%Z.
 Proof.
   intro z; destruct z; simpl; intros; auto with zarith.
-  elim Rgt_not_eq with (2 := H).
-  unfold IZR. rewrite <- INR_IPR.
-  apply lt_0_INR, Pos2Nat.is_pos.
-  elim Rlt_not_eq with (2 := H).
-  unfold IZR. rewrite <- INR_IPR.
-  apply Ropp_lt_gt_0_contravar, lt_0_INR, Pos2Nat.is_pos.
+  - elim Rgt_not_eq with (2 := H).
+    unfold IZR. rewrite <- INR_IPR.
+    apply lt_0_INR, Pos2Nat.is_pos.
+  - elim Rlt_not_eq with (2 := H).
+    unfold IZR. rewrite <- INR_IPR.
+    apply Ropp_lt_gt_0_contravar, lt_0_INR, Pos2Nat.is_pos.
 Qed.
 
 (**********)
@@ -2080,17 +2082,17 @@ Qed.
 Lemma le_0_IZR : forall n:Z, 0 <= IZR n -> (0 <= n)%Z.
 Proof.
   unfold Rle; intros z [H| H].
-  red; intro; apply (Z.lt_le_incl 0 z (lt_0_IZR z H)); assumption.
-  rewrite (eq_IZR_R0 z); auto with zarith real.
+  - red; intro; apply (Z.lt_le_incl 0 z (lt_0_IZR z H)); assumption.
+  - rewrite (eq_IZR_R0 z); auto with zarith real.
 Qed.
 
 (**********)
 Lemma le_IZR : forall n m:Z, IZR n <= IZR m -> (n <= m)%Z.
 Proof.
   unfold Rle; intros z1 z2 [H| H].
-  apply (Z.lt_le_incl z1 z2); auto with real.
-  apply lt_IZR; trivial.
-  rewrite (eq_IZR z1 z2); auto with zarith real.
+  - apply (Z.lt_le_incl z1 z2); auto with real.
+    apply lt_IZR; trivial.
+  - rewrite (eq_IZR z1 z2); auto with zarith real.
 Qed.
 
 (**********)
@@ -2118,10 +2120,10 @@ Qed.
 Lemma IZR_lt : forall n m:Z, (n < m)%Z -> IZR n < IZR m.
 Proof.
   intros m n H; cut (m <= n)%Z.
-  intro H0; elim (IZR_le m n H0); intro; auto.
-  generalize (eq_IZR m n H1); intro; exfalso.
-  slia H H3.
-  normZ. slia H H0.
+  - intro H0; elim (IZR_le m n H0); intro; auto.
+    generalize (eq_IZR m n H1); intro; exfalso.
+    slia H H3.
+  - normZ. slia H H0.
 Qed.
 
 Lemma IZR_neq : forall z1 z2:Z, z1 <> z2 -> IZR z1 <> IZR z2.
@@ -2144,9 +2146,9 @@ Lemma one_IZR_lt1 : forall n:Z, -1 < IZR n < 1 -> n = 0%Z.
 Proof.
   intros z [H1 H2].
   apply Z.le_antisymm.
-  apply Z.lt_succ_r; apply lt_IZR; trivial.
-  change 0%Z with (Z.succ (-1)).
-  apply Z.le_succ_l; apply lt_IZR; trivial.
+  - apply Z.lt_succ_r; apply lt_IZR; trivial.
+  - change 0%Z with (Z.succ (-1)).
+    apply Z.le_succ_l; apply lt_IZR; trivial.
 Qed.
 
 Lemma one_IZR_r_R1 :
@@ -2156,12 +2158,12 @@ Proof.
   apply Zminus_eq.
   apply one_IZR_lt1.
   rewrite <- Z_R_minus; split.
-  replace (-1) with (r - (r + 1)).
-  unfold Rminus; apply Rplus_lt_le_compat; auto with real.
-  ring.
-  replace 1 with (r + 1 - r).
-  unfold Rminus; apply Rplus_le_lt_compat; auto with real.
-  ring.
+  - replace (-1) with (r - (r + 1)).
+    + unfold Rminus; apply Rplus_lt_le_compat; auto with real.
+    + ring.
+  - replace 1 with (r + 1 - r).
+    + unfold Rminus; apply Rplus_le_lt_compat; auto with real.
+    + ring.
 Qed.
 
 
@@ -2195,12 +2197,12 @@ Lemma Rinv_le_contravar :
   forall x y, 0 < x -> x <= y -> / y <= / x.
 Proof.
   intros x y H1 [H2|H2].
-  apply Rlt_le.
-  apply Rinv_lt_contravar with (2 := H2).
-  apply Rmult_lt_0_compat with (1 := H1).
-  now apply Rlt_trans with x.
-  rewrite H2.
-  apply Rle_refl.
+  - apply Rlt_le.
+    apply Rinv_lt_contravar with (2 := H2).
+    apply Rmult_lt_0_compat with (1 := H1).
+    now apply Rlt_trans with x.
+  - rewrite H2.
+    apply Rle_refl.
 Qed.
 
 Lemma Rle_Rinv : forall x y:R, 0 < x -> 0 < y -> x <= y -> / y <= / x.
@@ -2282,16 +2284,16 @@ Lemma le_epsilon :
 Proof.
   intros x y H.
   destruct (Rle_or_lt x y) as [H1|H1].
-  exact H1.
-  apply Rplus_le_reg_r with x.
-  replace (y + x) with (2 * (y + (x - y) * / 2)) by field.
-  replace (x + x) with (2 * x) by ring.
-  apply Rmult_le_compat_l.
-  now apply (IZR_le 0 2).
-  apply H.
-  apply Rmult_lt_0_compat.
-  now apply Rgt_minus.
-  apply Rinv_0_lt_compat, Rlt_0_2.
+  - exact H1.
+  - apply Rplus_le_reg_r with x.
+    replace (y + x) with (2 * (y + (x - y) * / 2)) by field.
+    replace (x + x) with (2 * x) by ring.
+    apply Rmult_le_compat_l.
+    + now apply (IZR_le 0 2).
+    + apply H.
+      apply Rmult_lt_0_compat.
+      * now apply Rgt_minus.
+      * apply Rinv_0_lt_compat, Rlt_0_2.
 Qed.
 
 (**********)

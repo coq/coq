@@ -69,8 +69,9 @@ Hint Constructors avl : core.
 Lemma height_non_negative : forall (s : t elt), avl s ->
  height s >= 0.
 Proof.
- induction s; simpl; intros. now apply Z.le_ge.
- inv avl; intuition; omega_max.
+  induction s; simpl; intros.
+  - now apply Z.le_ge.
+  - inv avl; intuition; omega_max.
 Qed.
 
 Ltac avl_nn_hyp H :=
@@ -176,19 +177,19 @@ Lemma add_avl_1 :  forall m x e, avl m ->
  avl (add x e m) /\ 0 <= height (add x e m) - height m <= 1.
 Proof.
  intros m x e; functional induction (add x e m); intros; inv avl; simpl in *.
- intuition; try constructor; simpl; auto; try omega_max.
- (* LT *)
- destruct IHt; auto.
- split.
- apply bal_avl; auto; omega_max.
- omega_bal.
- (* EQ *)
- intuition; omega_max.
- (* GT *)
- destruct IHt; auto.
- split.
- apply bal_avl; auto; omega_max.
- omega_bal.
+ - intuition; try constructor; simpl; auto; try omega_max.
+ - (* LT *)
+   destruct IHt; auto.
+   split.
+   + apply bal_avl; auto; omega_max.
+   + omega_bal.
+ - (* EQ *)
+   intuition; omega_max.
+ - (* GT *)
+   destruct IHt; auto.
+   split.
+   + apply bal_avl; auto; omega_max.
+   + omega_bal.
 Qed.
 
 Lemma add_avl : forall m x e, avl m -> avl (add x e m).
@@ -205,13 +206,13 @@ Lemma remove_min_avl_1 : forall l x e r h, avl (Node l x e r h) ->
  0 <= height (Node l x e r h) - height (remove_min l x e r)#1 <= 1.
 Proof.
  intros l x e r; functional induction (remove_min l x e r); simpl in *; intros.
- inv avl; simpl in *; split; auto.
- avl_nns; omega_max.
- inversion_clear H.
- rewrite e0 in IHp;simpl in IHp;destruct (IHp _x); auto.
- split; simpl in *.
- apply bal_avl; auto; omega_max.
- omega_bal.
+ - inv avl; simpl in *; split; auto.
+   avl_nns; omega_max.
+ - inversion_clear H.
+   rewrite e0 in IHp;simpl in IHp;destruct (IHp _x); auto.
+   split; simpl in *.
+   + apply bal_avl; auto; omega_max.
+   + omega_bal.
 Qed.
 
 Lemma remove_min_avl : forall l x e r h, avl (Node l x e r h) ->
@@ -229,14 +230,14 @@ Lemma merge_avl_1 : forall m1 m2, avl m1 -> avl m2 ->
 Proof.
  intros m1 m2; functional induction (merge m1 m2); intros;
  try factornode _x _x0 _x1 _x2 _x3 as m1.
- simpl; split; auto; avl_nns; omega_max.
- simpl; split; auto; avl_nns; omega_max.
- generalize (remove_min_avl_1 H0).
- rewrite e1; destruct 1.
- split.
- apply bal_avl; auto.
- omega_max.
- omega_bal.
+ - simpl; split; auto; avl_nns; omega_max.
+ - simpl; split; auto; avl_nns; omega_max.
+ - generalize (remove_min_avl_1 H0).
+   rewrite e1; destruct 1.
+   split.
+   + apply bal_avl; auto.
+     omega_max.
+   + omega_bal.
 Qed.
 
 Lemma merge_avl : forall m1 m2, avl m1 -> avl m2 ->
@@ -252,25 +253,25 @@ Lemma remove_avl_1 : forall m x, avl m ->
  avl (remove x m) /\ 0 <= height m - height (remove x m) <= 1.
 Proof.
  intros m x; functional induction (remove x m); intros.
- split; auto; omega_max.
- (* LT *)
- inv avl.
- destruct (IHt H0).
- split.
- apply bal_avl; auto.
- omega_max.
- omega_bal.
- (* EQ *)
- inv avl.
- generalize (merge_avl_1 H0 H1 H2).
- intuition omega_max.
- (* GT *)
- inv avl.
- destruct (IHt H1).
- split.
- apply bal_avl; auto.
- omega_max.
- omega_bal.
+ - split; auto; omega_max.
+ - (* LT *)
+   inv avl.
+   destruct (IHt H0).
+   split.
+   + apply bal_avl; auto.
+     omega_max.
+   + omega_bal.
+ - (* EQ *)
+   inv avl.
+   generalize (merge_avl_1 H0 H1 H2).
+   intuition omega_max.
+ - (* GT *)
+   inv avl.
+   destruct (IHt H1).
+   split.
+   + apply bal_avl; auto.
+     omega_max.
+   + omega_bal.
 Qed.
 
 Lemma remove_avl : forall m x, avl m -> avl (remove x m).
@@ -289,46 +290,46 @@ Lemma join_avl_1 : forall l x d r, avl l -> avl r ->
 Proof.
  join_tac.
 
- split; simpl; auto.
- destruct (add_avl_1 x d H0).
- avl_nns; omega_max.
- set (l:=Node ll lx ld lr lh) in *.
- split; auto.
- destruct (add_avl_1 x d H).
- simpl (height (Leaf elt)).
- avl_nns; omega_max.
+ - split; simpl; auto.
+   destruct (add_avl_1 x d H0).
+   avl_nns; omega_max.
+ - set (l:=Node ll lx ld lr lh) in *.
+   split; auto.
+   destruct (add_avl_1 x d H).
+   simpl (height (Leaf elt)).
+   avl_nns; omega_max.
 
- inversion_clear H.
- assert (height (Node rl rx rd rr rh) = rh); auto.
- set (r := Node rl rx rd rr rh) in *; clearbody r.
- destruct (Hlr x d r H2 H0); clear Hrl Hlr.
- set (j := join lr x d r) in *; clearbody j.
- simpl.
- assert (-(3) <= height ll - height j <= 3) by omega_max.
- split.
- apply bal_avl; auto.
- omega_bal.
+ - inversion_clear H.
+   assert (height (Node rl rx rd rr rh) = rh); auto.
+   set (r := Node rl rx rd rr rh) in *; clearbody r.
+   destruct (Hlr x d r H2 H0); clear Hrl Hlr.
+   set (j := join lr x d r) in *; clearbody j.
+   simpl.
+   assert (-(3) <= height ll - height j <= 3) by omega_max.
+   split.
+   + apply bal_avl; auto.
+   + omega_bal.
 
- inversion_clear H0.
- assert (height (Node ll lx ld lr lh) = lh); auto.
- set (l := Node ll lx ld lr lh) in *; clearbody l.
- destruct (Hrl H H1); clear Hrl Hlr.
- set (j := join l x d rl) in *; clearbody j.
- simpl.
- assert (-(3) <= height j - height rr <= 3) by omega_max.
- split.
- apply bal_avl; auto.
- omega_bal.
+ - inversion_clear H0.
+   assert (height (Node ll lx ld lr lh) = lh); auto.
+   set (l := Node ll lx ld lr lh) in *; clearbody l.
+   destruct (Hrl H H1); clear Hrl Hlr.
+   set (j := join l x d rl) in *; clearbody j.
+   simpl.
+   assert (-(3) <= height j - height rr <= 3) by omega_max.
+   split.
+   + apply bal_avl; auto.
+   + omega_bal.
 
- clear Hrl Hlr.
- assert (height (Node ll lx ld lr lh) = lh); auto.
- assert (height (Node rl rx rd rr rh) = rh); auto.
- set (l := Node ll lx ld lr lh) in *; clearbody l.
- set (r := Node rl rx rd rr rh) in *; clearbody r.
- assert (-(2) <= height l - height r <= 2) by omega_max.
- split.
- apply create_avl; auto.
- rewrite create_height; auto; omega_max.
+ - clear Hrl Hlr.
+   assert (height (Node ll lx ld lr lh) = lh); auto.
+   assert (height (Node rl rx rd rr rh) = rh); auto.
+   set (l := Node ll lx ld lr lh) in *; clearbody l.
+   set (r := Node rl rx rd rr rh) in *; clearbody r.
+   assert (-(2) <= height l - height r <= 2) by omega_max.
+   split.
+   + apply create_avl; auto.
+   + rewrite create_height; auto; omega_max.
 Qed.
 
 Lemma join_avl : forall l x d r, avl l -> avl r -> avl (join l x d r).
@@ -355,9 +356,9 @@ Lemma split_avl : forall m x, avl m ->
   avl (split x m)#l /\ avl (split x m)#r.
 Proof.
  intros m x; functional induction (split x m); simpl; auto.
- rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
- simpl; inversion_clear 1; auto.
- rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
+ - rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
+ - simpl; inversion_clear 1; auto.
+ - rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
 Qed.
 
 End Elt.
@@ -579,10 +580,10 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
   Equivb cmp m m' <-> Raw.Proofs.Equivb cmp m m'.
  Proof.
  intros; unfold Equivb, Equiv, Raw.Proofs.Equivb, In; intuition.
- generalize (H0 k); do 2 rewrite In_alt; intuition.
- generalize (H0 k); do 2 rewrite In_alt; intuition.
- generalize (H0 k); do 2 rewrite <- In_alt; intuition.
- generalize (H0 k); do 2 rewrite <- In_alt; intuition.
+ - generalize (H0 k); do 2 rewrite In_alt; intuition.
+ - generalize (H0 k); do 2 rewrite In_alt; intuition.
+ - generalize (H0 k); do 2 rewrite <- In_alt; intuition.
+ - generalize (H0 k); do 2 rewrite <- In_alt; intuition.
  Qed.
 
  Lemma equal_1 : forall m m' cmp,
@@ -628,8 +629,8 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Proof.
  unfold find, map2, In; intros elt elt' elt'' m m' x f.
  do 2 rewrite In_alt; intros; simpl; apply map2_1; auto.
- apply (is_bst m).
- apply (is_bst m').
+ - apply (is_bst m).
+ - apply (is_bst m').
  Qed.
 
  Lemma map2_2 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
@@ -638,8 +639,8 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Proof.
  unfold In, map2; intros elt elt' elt'' m m' x f.
  do 3 rewrite In_alt; intros; simpl in *; eapply map2_2; eauto.
- apply (is_bst m).
- apply (is_bst m').
+ - apply (is_bst m).
+ - apply (is_bst m').
  Qed.
 
 End IntMake.

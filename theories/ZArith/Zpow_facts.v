@@ -84,16 +84,18 @@ Lemma Zpower2_Psize n p :
   Zpos p < 2^(Z.of_nat n) <-> (Pos.size_nat p <= n)%nat.
 Proof.
   revert p; induction n as [|n IHn].
-  intros p; destruct p; now split.
-  assert (Hn := Nat2Z.is_nonneg n).
-  intros p; destruct p as [p|p|]; simpl Pos.size_nat.
-  - specialize IHn with p.
-    rewrite Nat2Z.inj_succ, Z.pow_succ_r; lia.
-  - specialize IHn with p.
-    rewrite Nat2Z.inj_succ, Z.pow_succ_r; lia.
-  - split. lia.
-    intros _. apply Z.pow_gt_1. easy.
-    now rewrite Nat2Z.inj_succ, Z.lt_succ_r.
+  - intros p; destruct p; now split.
+  - assert (Hn := Nat2Z.is_nonneg n).
+    intros p; destruct p as [p|p|]; simpl Pos.size_nat.
+    + specialize IHn with p.
+      rewrite Nat2Z.inj_succ, Z.pow_succ_r; lia.
+    + specialize IHn with p.
+      rewrite Nat2Z.inj_succ, Z.pow_succ_r; lia.
+    + split.
+      * lia.
+      * intros _. apply Z.pow_gt_1.
+        -- easy.
+        -- now rewrite Nat2Z.inj_succ, Z.lt_succ_r.
 Qed.
 
 (** * Z.pow and modulo *)
@@ -171,9 +173,9 @@ Theorem rel_prime_Zpower_r i p q :
  0 <= i -> rel_prime p q -> rel_prime p (q^i).
 Proof.
   intros Hi Hpq; pattern i; apply natlike_ind; auto with zarith.
-  simpl. apply rel_prime_sym, rel_prime_1.
-  clear i Hi. intros i Hi Rec; rewrite Z.pow_succ_r; auto.
-  apply rel_prime_mult; auto.
+  - simpl. apply rel_prime_sym, rel_prime_1.
+  - clear i Hi. intros i Hi Rec; rewrite Z.pow_succ_r; auto.
+    apply rel_prime_mult; auto.
 Qed.
 
 Theorem rel_prime_Zpower i j p q :
@@ -207,29 +209,30 @@ Proof.
   pattern x; apply Z_lt_induction; auto.
   clear x Hx; intros x IH Hx p n Hn Hp H.
   Z.le_elim Hx; subst.
-  apply Z.le_succ_l in Hx; simpl in Hx.
-  Z.le_elim Hx; subst.
-  (* x > 1 *)
-  case (prime_dec x); intros Hpr.
-  exists 1; rewrite Z.pow_1_r; apply prime_power_prime with n; auto.
-  case not_prime_divide with (2 := Hpr); auto.
-  intros p1 ((Hp1, Hpq1),(q1,->)).
-  assert (Hq1 : 0 < q1) by (apply Z.mul_lt_mono_pos_r with p1; lia).
-  destruct (IH p1) with p n as (r1,Hr1). 3-4: assumption. 1-2: lia.
-  transitivity (q1 * p1); trivial. exists q1; auto with zarith.
-  destruct (IH q1) with p n as (r2,Hr2). 3-4: assumption. 2: lia.
-  split. lia.
-  rewrite <- (Z.mul_1_r q1) at 1.
-  apply Z.mul_lt_mono_pos_l; auto with zarith.
-  transitivity (q1 * p1); trivial. exists p1; auto with zarith.
-  exists (r2 + r1); subst.
-  symmetry. apply Z.pow_add_r.
-  generalize Hq1; case r2; now auto with zarith.
-  generalize Hp1; case r1; now auto with zarith.
-  (* x = 1 *)
-  exists 0; rewrite Z.pow_0_r; auto.
-  (* x = 0 *)
-  exists n; destruct H as [? H]; rewrite Z.mul_0_r in H; auto.
+  - apply Z.le_succ_l in Hx; simpl in Hx.
+    Z.le_elim Hx; subst.
+    + (* x > 1 *)
+      case (prime_dec x); intros Hpr.
+      * exists 1; rewrite Z.pow_1_r; apply prime_power_prime with n; auto.
+      * case not_prime_divide with (2 := Hpr); auto.
+        intros p1 ((Hp1, Hpq1),(q1,->)).
+        assert (Hq1 : 0 < q1) by (apply Z.mul_lt_mono_pos_r with p1; lia).
+        destruct (IH p1) with p n as (r1,Hr1). 3-4: assumption. 1-2: lia.
+        -- transitivity (q1 * p1); trivial. exists q1; auto with zarith.
+        -- destruct (IH q1) with p n as (r2,Hr2). 3-4: assumption. 2: lia.
+           ++ split.
+              ** lia.
+              ** rewrite <- (Z.mul_1_r q1) at 1.
+                 apply Z.mul_lt_mono_pos_l; auto with zarith.
+           ++ transitivity (q1 * p1); trivial. exists p1; auto with zarith.
+           ++ exists (r2 + r1); subst.
+              symmetry. apply Z.pow_add_r.
+              ** generalize Hq1; case r2; now auto with zarith.
+              ** generalize Hp1; case r1; now auto with zarith.
+    + (* x = 1 *)
+      exists 0; rewrite Z.pow_0_r; auto.
+  - (* x = 0 *)
+    exists n; destruct H as [? H]; rewrite Z.mul_0_r in H; auto.
 Qed.
 
 (** * Z.square: a direct definition of [z^2] *)

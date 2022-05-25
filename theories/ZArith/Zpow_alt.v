@@ -55,11 +55,11 @@ Proof.
  induction p; simpl; intros.
  - f_equal.
    rewrite Piter_mul_acc.
-   now rewrite Piter_op_square, IHp.
-   intros. symmetry; apply Z.mul_assoc.
+   + now rewrite Piter_op_square, IHp.
+   + intros. symmetry; apply Z.mul_assoc.
  - rewrite Piter_mul_acc.
-   now rewrite Piter_op_square, IHp.
-   intros. symmetry; apply Z.mul_assoc.
+   + now rewrite Piter_op_square, IHp.
+   + intros. symmetry; apply Z.mul_assoc.
  - now Z.nzsimpl.
 Qed.
 

@@ -37,17 +37,17 @@ Section Wf_Lexicographic_Exponentiation.
   Lemma left_prefix : forall x y z : List, ltl (x ++ y) z -> ltl x z.
   Proof.
     simple induction x.
-    simple induction z.
-    simpl; intros H.
-    inversion_clear H.
-    simpl; intros; apply (Lt_nil A leA).
-    intros a l HInd.
-    simpl.
-    intros.
-    inversion_clear H.
-    apply (Lt_hd A leA); auto with sets.
-    apply (Lt_tl A leA).
-    apply (HInd y y0); auto with sets.
+    - simple induction z.
+      + simpl; intros H.
+        inversion_clear H.
+      + simpl; intros; apply (Lt_nil A leA).
+    - intros a l HInd.
+      simpl.
+      intros.
+      inversion_clear H.
+      + apply (Lt_hd A leA); auto with sets.
+      + apply (Lt_tl A leA).
+        apply (HInd y y0); auto with sets.
   Qed.
 
 
@@ -58,19 +58,19 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intros x y; generalize x.
     elim y; simpl.
-    right.
-    exists x0; auto with sets.
-    intros.
-    inversion H0.
-    left; apply (Lt_nil A leA).
-    left; apply (Lt_hd A leA); auto with sets.
-    generalize (H x1 z H3).
-    simple induction 1.
-    left; apply (Lt_tl A leA); auto with sets.
-    simple induction 1.
-    simple induction 1; intros.
-    rewrite H8.
-    right; exists x2; auto with sets.
+    - right.
+      exists x0; auto with sets.
+    - intros.
+      inversion H0.
+      + left; apply (Lt_nil A leA).
+      + left; apply (Lt_hd A leA); auto with sets.
+      + generalize (H x1 z H3).
+        simple induction 1.
+        * left; apply (Lt_tl A leA); auto with sets.
+        * simple induction 1.
+          simple induction 1; intros.
+          rewrite H8.
+          right; exists x2; auto with sets.
   Qed.
 
   Lemma desc_prefix : forall (x : List) (a : A), Descl (x ++ [a]) -> Descl x.
@@ -126,22 +126,22 @@ Section Wf_Lexicographic_Exponentiation.
     - assert (E : x0 ++ y = [x]) by auto with sets.
       apply app_eq_unit in E as [(->, ->)| (->, ->)].
       + split.
-        apply d_nil.
-        apply d_one.
+        * apply d_nil.
+        * apply d_one.
       + split.
-        apply d_one.
-        apply d_nil.
+        * apply d_one.
+        * apply d_nil.
     - induction y0 using rev_ind in x0, H0 |- *.
       + rewrite <- app_nil_end in H0.
         rewrite <- H0.
         split.
-        apply d_conc; auto with sets.
-        apply d_nil.
+        * apply d_conc; auto with sets.
+        * apply d_nil.
       + induction y0 using rev_ind in x1, x0, H0 |- *.
         * simpl.
           split.
-          apply app_inj_tail in H0 as (<-, _). assumption.
-          apply d_one.
+          -- apply app_inj_tail in H0 as (<-, _). assumption.
+          -- apply d_one.
         * rewrite <- 2!app_assoc_reverse in H0.
           apply app_inj_tail in H0 as (H0, <-).
           pose proof H0 as H0'.
@@ -149,8 +149,8 @@ Section Wf_Lexicographic_Exponentiation.
           rewrite app_assoc_reverse in H0.
           apply Hind in H0 as [].
           split.
-          assumption.
-          apply d_conc; auto with sets.
+          -- assumption.
+          -- apply d_conc; auto with sets.
   Qed.
 
 
@@ -168,20 +168,20 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intros a b x.
     case x.
-    simpl.
-    simple induction 1.
-    intros.
-    inversion H1; auto with sets.
-    inversion H3.
+    - simpl.
+      simple induction 1.
+      intros.
+      inversion H1; auto with sets.
+      inversion H3.
 
-    simple induction 1.
-    generalize (app_comm_cons l [a] a0).
-    intros E; rewrite <- E; intros.
-    generalize (desc_tail l a a0 H0); intro.
-    inversion H1.
-    eapply clos_rt_t; [ eassumption | apply t_step; assumption ].
+    - simple induction 1.
+      generalize (app_comm_cons l [a] a0).
+      intros E; rewrite <- E; intros.
+      generalize (desc_tail l a a0 H0); intro.
+      inversion H1.
+      + eapply clos_rt_t; [ eassumption | apply t_step; assumption ].
 
-    inversion H4.
+      + inversion H4.
   Qed.
 
 
@@ -193,13 +193,13 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intro.
     case x.
-    intros; apply (Lt_nil A leA).
+    - intros; apply (Lt_nil A leA).
 
-    simpl; intros.
-    inversion_clear H0.
-    apply (Lt_hd A leA a b); auto with sets.
+    - simpl; intros.
+      inversion_clear H0.
+      + apply (Lt_hd A leA a b); auto with sets.
 
-    inversion_clear H1.
+      + inversion_clear H1.
   Qed.
 
 
@@ -211,9 +211,9 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intros.
     apply (Acc_inv (R:=Lex_Exp) (x:=<< x1 ++ x2, y1 >>)).
-    auto with sets.
+    - auto with sets.
 
-    unfold lex_exp; simpl; auto with sets.
+    - unfold lex_exp; simpl; auto with sets.
   Qed.
 
 
@@ -230,68 +230,68 @@ Section Wf_Lexicographic_Exponentiation.
         fun x : List =>
         forall (x0 : List) (y : Descl x0),
           ltl x0 x -> Acc Lex_Exp << x0, y >>).
-    intros.
-    inversion_clear H0.
+    - intros.
+      inversion_clear H0.
 
-    intro.
-    generalize (well_founded_ind (wf_clos_trans A leA H)).
-    intros GR.
-    apply GR with
-      (P := 
-        fun x0 : A =>
-        forall l : List,
-          (forall (x1 : List) (y : Descl x1),
-             ltl x1 l -> Acc Lex_Exp << x1, y >>) ->
-          forall (x1 : List) (y : Descl x1),
-            ltl x1 (l ++ [x0]) -> Acc Lex_Exp << x1, y >>).
-    intro; intros HInd; intros.
-    generalize (right_prefix x2 l [x1] H1).
-    simple induction 1.
-    intro; apply (H0 x2 y1 H3).
+    - intro.
+      generalize (well_founded_ind (wf_clos_trans A leA H)).
+      intros GR.
+      apply GR with
+        (P :=
+           fun x0 : A =>
+             forall l : List,
+               (forall (x1 : List) (y : Descl x1),
+                   ltl x1 l -> Acc Lex_Exp << x1, y >>) ->
+               forall (x1 : List) (y : Descl x1),
+                 ltl x1 (l ++ [x0]) -> Acc Lex_Exp << x1, y >>).
+      intro; intros HInd; intros.
+      generalize (right_prefix x2 l [x1] H1).
+      simple induction 1.
+      + intro; apply (H0 x2 y1 H3).
 
-    simple induction 1.
-    intro; simple induction 1.
-    clear H4 H2.
-    intro; generalize y1; clear y1.
-    rewrite H2.
-    apply rev_ind with
-      (A := A)
-      (P := 
-        fun x3 : List =>
-        forall y1 : Descl (l ++ x3),
-          ltl x3 [x1] -> Acc Lex_Exp << l ++ x3, y1 >>).
-    intros.
-    generalize (app_nil_end l); intros Heq.
-    generalize y1.
-    clear y1.
-    rewrite <- Heq.
-    intro.
-    apply Acc_intro.
-    simple induction y2.
-    unfold lex_exp at 1.
-    simpl; intros x4 y3. intros.
-    apply (H0 x4 y3); auto with sets.
+      + simple induction 1.
+        intro; simple induction 1.
+        clear H4 H2.
+        intro; generalize y1; clear y1.
+        rewrite H2.
+        apply rev_ind with
+          (A := A)
+          (P :=
+             fun x3 : List =>
+               forall y1 : Descl (l ++ x3),
+                 ltl x3 [x1] -> Acc Lex_Exp << l ++ x3, y1 >>).
+        * intros.
+          generalize (app_nil_end l); intros Heq.
+          generalize y1.
+          clear y1.
+          rewrite <- Heq.
+          intro.
+          apply Acc_intro.
+          simple induction y2.
+          unfold lex_exp at 1.
+          simpl; intros x4 y3. intros.
+          apply (H0 x4 y3); auto with sets.
 
-    intros.
-    generalize (dist_Desc_concat l (l0 ++ [x4]) y1).
-    simple induction 1.
-    intros.
-    generalize (desc_end x4 x1 l0 (conj H8 H5)); intros.
-    generalize y1.
-    rewrite <- (app_assoc_reverse l l0 [x4]); intro.
-    generalize (HInd x4 H9 (l ++ l0)); intros HInd2.
-    generalize (ltl_unit l0 x4 x1 H8 H5); intro.
-    generalize (dist_Desc_concat (l ++ l0) [x4] y2).
-    simple induction 1; intros.
-    generalize (H4 H12 H10); intro.
-    generalize (Acc_inv H14).
-    generalize (acc_app l l0 H12 H14).
-    intros f g.
-    generalize (HInd2 f); intro.
-    apply Acc_intro.
-    simple induction y3.
-    unfold lex_exp at 1; simpl; intros.
-    apply H15; auto with sets.
+        * intros.
+          generalize (dist_Desc_concat l (l0 ++ [x4]) y1).
+          simple induction 1.
+          intros.
+          generalize (desc_end x4 x1 l0 (conj H8 H5)); intros.
+          generalize y1.
+          rewrite <- (app_assoc_reverse l l0 [x4]); intro.
+          generalize (HInd x4 H9 (l ++ l0)); intros HInd2.
+          generalize (ltl_unit l0 x4 x1 H8 H5); intro.
+          generalize (dist_Desc_concat (l ++ l0) [x4] y2).
+          simple induction 1; intros.
+          generalize (H4 H12 H10); intro.
+          generalize (Acc_inv H14).
+          generalize (acc_app l l0 H12 H14).
+          intros f g.
+          generalize (HInd2 f); intro.
+          apply Acc_intro.
+          simple induction y3.
+          unfold lex_exp at 1; simpl; intros.
+          apply H15; auto with sets.
   Qed.
 
 

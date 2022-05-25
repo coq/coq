@@ -636,11 +636,11 @@ Lemma Qplus_inj_r (x y z: Q):
   x + z == y + z <-> x == y.
 Proof.
  split; intro E.
-  rewrite <- (Qplus_0_r x), <- (Qplus_0_r y).
-  rewrite <- (Qplus_opp_r z); auto.
-  do 2 rewrite Qplus_assoc.
-  rewrite E. reflexivity.
- rewrite E. reflexivity.
+ - rewrite <- (Qplus_0_r x), <- (Qplus_0_r y).
+   rewrite <- (Qplus_opp_r z); auto.
+   do 2 rewrite Qplus_assoc.
+   rewrite E. reflexivity.
+ - rewrite E. reflexivity.
 Qed.
 
 Lemma Qplus_inj_l (x y z: Q):
@@ -806,11 +806,11 @@ Lemma Qmult_inj_r (x y z: Q): ~ z == 0 -> (x * z == y * z <-> x == y).
 Proof.
  intro z_ne_0.
  split; intro E.
-  rewrite <- (Qmult_1_r x), <- (Qmult_1_r y).
-  rewrite <- (Qmult_inv_r z); auto.
-  do 2 rewrite Qmult_assoc.
-  rewrite E. reflexivity.
- rewrite E. reflexivity.
+ - rewrite <- (Qmult_1_r x), <- (Qmult_1_r y).
+   rewrite <- (Qmult_inv_r z); auto.
+   do 2 rewrite Qmult_assoc.
+   rewrite E. reflexivity.
+ - rewrite E. reflexivity.
 Qed.
 
 Lemma Qmult_inj_l (x y z: Q): ~ z == 0 -> (z * x == z * y <-> x == y).
@@ -1090,13 +1090,20 @@ Proof.
   intros q. destruct q as [a b]. destruct a as [|p|p].
   - exists xH. reflexivity.
   - exists (p+1)%positive. apply (Z.lt_le_trans _ (Z.pos (p+1))).
-    simpl. rewrite Pos.mul_1_r.
-    apply Z.lt_succ_diag_r. simpl. rewrite Pos2Z.inj_mul.
-    rewrite <- (Zmult_1_r (Z.pos (p+1))). apply Z.mul_le_mono_nonneg.
-    discriminate. rewrite Zmult_1_r. apply Z.le_refl. discriminate.
-    apply Z2Nat.inj_le. discriminate. apply Pos2Z.is_nonneg.
-    apply Nat.le_succ_l. apply Nat2Z.inj_lt.
-    rewrite Z2Nat.id. apply Pos2Z.is_pos. apply Pos2Z.is_nonneg.
+    + simpl. rewrite Pos.mul_1_r.
+      apply Z.lt_succ_diag_r.
+    + simpl. rewrite Pos2Z.inj_mul.
+      rewrite <- (Zmult_1_r (Z.pos (p+1))). apply Z.mul_le_mono_nonneg.
+      * discriminate.
+      * rewrite Zmult_1_r. apply Z.le_refl.
+      * discriminate.
+      * apply Z2Nat.inj_le.
+        -- discriminate.
+        -- apply Pos2Z.is_nonneg.
+        -- apply Nat.le_succ_l. apply Nat2Z.inj_lt.
+           rewrite Z2Nat.id.
+           ++ apply Pos2Z.is_pos.
+           ++ apply Pos2Z.is_nonneg.
   - exists xH. reflexivity.
 Defined.
 
@@ -1141,11 +1148,11 @@ Proof.
   match goal with |- ?a <= ?b => ring_simplify a b end.
   rewrite Z.add_comm.
   apply Z.add_le_mono.
-  match goal with |- ?a <= ?b => ring_simplify z1 t1 (Zpos z2) (Zpos t2) a b end.
-  auto with zarith.
-  match goal with |- ?a <= ?b => ring_simplify x1 y1 (Zpos x2) (Zpos y2) a b end.
-  auto with zarith.
-  Close Scope Z_scope.
+  - match goal with |- ?a <= ?b => ring_simplify z1 t1 (Zpos z2) (Zpos t2) a b end.
+    auto with zarith.
+  - match goal with |- ?a <= ?b => ring_simplify x1 y1 (Zpos x2) (Zpos y2) a b end.
+    auto with zarith.
+    Close Scope Z_scope.
 Qed.
 
 Lemma Qplus_lt_le_compat :
@@ -1158,20 +1165,20 @@ Proof.
   match goal with |- ?a < ?b => ring_simplify a b end.
   rewrite Z.add_comm.
   apply Z.add_le_lt_mono.
-  match goal with |- ?a <= ?b => ring_simplify z1 t1 (Zpos z2) (Zpos t2) a b end.
-  auto with zarith.
-  match goal with |- ?a < ?b => ring_simplify x1 y1 (Zpos x2) (Zpos y2) a b end.
-  do 2 (apply Z.mul_lt_mono_pos_r;try easy).
-  Close Scope Z_scope.
+  - match goal with |- ?a <= ?b => ring_simplify z1 t1 (Zpos z2) (Zpos t2) a b end.
+    auto with zarith.
+  - match goal with |- ?a < ?b => ring_simplify x1 y1 (Zpos x2) (Zpos y2) a b end.
+    do 2 (apply Z.mul_lt_mono_pos_r;try easy).
+    Close Scope Z_scope.
 Qed.
 
 Lemma Qplus_le_l (x y z: Q): x + z <= y + z <-> x <= y.
 Proof.
  split; intros.
-  rewrite <- (Qplus_0_r x), <- (Qplus_0_r y), <- (Qplus_opp_r z).
-  do 2 rewrite Qplus_assoc.
-  apply Qplus_le_compat; auto with *.
- apply Qplus_le_compat; auto with *.
+ - rewrite <- (Qplus_0_r x), <- (Qplus_0_r y), <- (Qplus_opp_r z).
+   do 2 rewrite Qplus_assoc.
+   apply Qplus_le_compat; auto with *.
+ - apply Qplus_le_compat; auto with *.
 Qed.
 
 Lemma Qplus_le_r (x y z: Q): z + x <= z + y <-> x <= y.
@@ -1183,10 +1190,10 @@ Qed.
 Lemma Qplus_lt_l (x y z: Q): x + z < y + z <-> x < y.
 Proof.
  split; intros.
-  rewrite <- (Qplus_0_r x), <- (Qplus_0_r y), <- (Qplus_opp_r z).
-  do 2 rewrite Qplus_assoc.
-  apply Qplus_lt_le_compat; auto with *.
- apply Qplus_lt_le_compat; auto with *.
+ - rewrite <- (Qplus_0_r x), <- (Qplus_0_r y), <- (Qplus_opp_r z).
+   do 2 rewrite Qplus_assoc.
+   apply Qplus_lt_le_compat; auto with *.
+ - apply Qplus_lt_le_compat; auto with *.
 Qed.
 
 Lemma Qplus_lt_r (x y z: Q): z + x < z + y <-> x < y.
@@ -1234,8 +1241,8 @@ Qed.
 Lemma Qmult_le_r (x y z: Q): 0 < z -> (x*z <= y*z <-> x <= y).
 Proof.
  split; intro.
-  now apply Qmult_lt_0_le_reg_r with z.
- apply Qmult_le_compat_r; auto with qarith.
+ - now apply Qmult_lt_0_le_reg_r with z.
+ - apply Qmult_le_compat_r; auto with qarith.
 Qed.
 
 Lemma Qmult_le_l (x y z: Q): 0 < z -> (z*x <= z*y <-> x <= y).
@@ -1264,9 +1271,10 @@ Proof.
  simpl_mult.
  rewrite Z.mul_shuffle1, (Z.mul_shuffle1 b1).
  rewrite Z.mul_1_r.
- intro LT. rewrite <- Z.mul_lt_mono_pos_r. reflexivity.
- now apply Z.mul_pos_pos.
- Close Scope Z_scope.
+ intro LT. rewrite <- Z.mul_lt_mono_pos_r.
+ - reflexivity.
+ - now apply Z.mul_pos_pos.
+   Close Scope Z_scope.
 Qed.
 
 Lemma Qmult_lt_l (x y z: Q): 0 < z -> (z*x < z*y <-> x < y).
@@ -1369,10 +1377,10 @@ Lemma Qle_shift_div_l : forall a b c,
 Proof.
 intros a b c Hc H.
 apply Qmult_lt_0_le_reg_r with (c).
- assumption.
-setoid_replace (b/c*c) with (c*(b/c)) by apply Qmult_comm.
-rewrite Qmult_div_r; try assumption.
-auto with *.
+- assumption.
+- setoid_replace (b/c*c) with (c*(b/c)) by apply Qmult_comm.
+  rewrite Qmult_div_r; try assumption.
+  auto with *.
 Qed.
 
 Lemma Qle_shift_inv_l : forall a c,
@@ -1389,10 +1397,10 @@ Lemma Qle_shift_div_r : forall a b c,
 Proof.
 intros a b c Hc H.
 apply Qmult_lt_0_le_reg_r with b.
- assumption.
-setoid_replace (a/b*b) with (b*(a/b)) by apply Qmult_comm.
-rewrite Qmult_div_r; try assumption.
-auto with *.
+- assumption.
+- setoid_replace (a/b*b) with (b*(a/b)) by apply Qmult_comm.
+  rewrite Qmult_div_r; try assumption.
+  auto with *.
 Qed.
 
 Lemma Qle_shift_inv_r : forall b c,
@@ -1417,10 +1425,10 @@ apply Qnot_le_lt.
 intros H0.
 apply (Qlt_not_le _ _ H).
 apply Qmult_lt_0_le_reg_r with (/c).
- apply Qinv_lt_0_compat.
- assumption.
-setoid_replace (a*c/c) with (a) by (apply Qdiv_mult_l; auto with *).
-assumption.
+- apply Qinv_lt_0_compat.
+  assumption.
+- setoid_replace (a*c/c) with (a) by (apply Qdiv_mult_l; auto with *).
+  assumption.
 Qed.
 
 Lemma Qlt_shift_inv_l : forall a c,
@@ -1440,10 +1448,10 @@ apply Qnot_le_lt.
 intros H0.
 apply (Qlt_not_le _ _ H).
 apply Qmult_lt_0_le_reg_r with (/b).
- apply Qinv_lt_0_compat.
- assumption.
-setoid_replace (c*b/b) with (c) by (apply Qdiv_mult_l; auto with *).
-assumption.
+- apply Qinv_lt_0_compat.
+  assumption.
+- setoid_replace (c*b/b) with (c) by (apply Qdiv_mult_l; auto with *).
+  assumption.
 Qed.
 
 Lemma Qlt_shift_inv_r : forall b c,
@@ -1459,14 +1467,22 @@ Lemma Qinv_lt_contravar : forall a b : Q,
     0 < a -> 0 < b -> (a < b <-> /b < /a).
 Proof.
   intros a b H H0. split.
-  - intro H1. rewrite <- Qmult_1_l. apply Qlt_shift_div_r. apply H0.
-    rewrite <- (Qmult_inv_r a). rewrite Qmult_comm.
-    apply Qmult_lt_l. apply Qinv_lt_0_compat.  apply H.
-    apply H1. intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
+  - intro H1. rewrite <- Qmult_1_l. apply Qlt_shift_div_r.
+    + apply H0.
+    + rewrite <- (Qmult_inv_r a).
+      * rewrite Qmult_comm.
+        apply Qmult_lt_l.
+        -- apply Qinv_lt_0_compat.  apply H.
+        -- apply H1.
+      * intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
   - intro H1. rewrite <- (Qinv_involutive b). rewrite <- (Qmult_1_l (// b)).
-    apply Qlt_shift_div_l. apply Qinv_lt_0_compat. apply H0.
-    rewrite <- (Qmult_inv_r a). apply Qmult_lt_l. apply H.
-    apply H1. intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
+    apply Qlt_shift_div_l.
+    + apply Qinv_lt_0_compat. apply H0.
+    + rewrite <- (Qmult_inv_r a).
+      * apply Qmult_lt_l.
+        -- apply H.
+        -- apply H1.
+      * intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
 Qed.
 
 

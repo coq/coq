@@ -74,41 +74,47 @@ Lemma Rrepr_inv : forall (x:R) (xnz : Rrepr x # 0),
 Proof.
   intros. rewrite RinvImpl.Rinv_def. destruct (Req_appart_dec x R0).
   - exfalso. subst x. destruct xnz.
-    rewrite Rrepr_0 in c. exact (CRealLt_irrefl 0 c).
-    rewrite Rrepr_0 in c. exact (CRealLt_irrefl 0 c).
-  - rewrite Rquot2. apply (CReal_mult_eq_reg_l (Rrepr x)). exact xnz.
-    rewrite CReal_mult_comm, (CReal_mult_comm (Rrepr x)), CReal_inv_l, CReal_inv_l.
-    reflexivity.
+    + rewrite Rrepr_0 in c. exact (CRealLt_irrefl 0 c).
+    + rewrite Rrepr_0 in c. exact (CRealLt_irrefl 0 c).
+  - rewrite Rquot2. apply (CReal_mult_eq_reg_l (Rrepr x)).
+    + exact xnz.
+    + rewrite CReal_mult_comm, (CReal_mult_comm (Rrepr x)), CReal_inv_l, CReal_inv_l.
+      reflexivity.
 Qed.
 
 Lemma Rrepr_le : forall x y:R, (x <= y)%R <-> Rrepr x <= Rrepr y.
 Proof.
   split.
-  - intros [H|H] abs. rewrite RbaseSymbolsImpl.Rlt_def in H.
-    apply CRealLtEpsilon in H.
-    exact (CRealLt_asym (Rrepr x) (Rrepr y) H abs).
-    destruct H. exact (CRealLt_asym (Rrepr x) (Rrepr x) abs abs).
-  - intros. destruct (total_order_T x y). destruct s.
-    left. exact r. right. exact e.
-    rewrite RbaseSymbolsImpl.Rlt_def in r. apply CRealLtEpsilon in r. contradiction.
+  - intros [H|H] abs.
+    + rewrite RbaseSymbolsImpl.Rlt_def in H.
+      apply CRealLtEpsilon in H.
+      exact (CRealLt_asym (Rrepr x) (Rrepr y) H abs).
+    + destruct H. exact (CRealLt_asym (Rrepr x) (Rrepr x) abs abs).
+  - intros. destruct (total_order_T x y).
+    + destruct s.
+      * left. exact r.
+      * right. exact e.
+    + rewrite RbaseSymbolsImpl.Rlt_def in r. apply CRealLtEpsilon in r. contradiction.
 Qed.
 
 Lemma Rrepr_appart : forall x y:R,
     (x <> y)%R -> Rrepr x # Rrepr y.
 Proof.
-  intros. destruct (total_order_T x y). destruct s.
-  left. rewrite RbaseSymbolsImpl.Rlt_def in r.
-  apply CRealLtEpsilon. exact r. contradiction.
-  right. rewrite RbaseSymbolsImpl.Rlt_def in r.
-  apply CRealLtEpsilon. exact r.
+  intros. destruct (total_order_T x y).
+  - destruct s.
+    + left. rewrite RbaseSymbolsImpl.Rlt_def in r.
+      apply CRealLtEpsilon. exact r.
+    + contradiction.
+  - right. rewrite RbaseSymbolsImpl.Rlt_def in r.
+    apply CRealLtEpsilon. exact r.
 Qed.
 
 Lemma Rappart_repr : forall x y:R,
     Rrepr x # Rrepr y -> (x <> y)%R.
 Proof.
   intros x y [H|H] abs.
-  destruct abs. exact (CRealLt_asym (Rrepr x) (Rrepr x) H H).
-  destruct abs. exact (CRealLt_asym (Rrepr x) (Rrepr x) H H).
+  - destruct abs. exact (CRealLt_asym (Rrepr x) (Rrepr x) H H).
+  - destruct abs. exact (CRealLt_asym (Rrepr x) (Rrepr x) H H).
 Qed.
 
 Close Scope CReal_scope.
@@ -194,14 +200,16 @@ Lemma R1_neq_R0 : 1 <> 0.
 Proof.
   intro abs.
   assert (CRealEq 1%CReal 0%CReal).
-  { transitivity (Rrepr 1). symmetry.
-    replace 1%R with (Rabst 1%CReal).
-    2: unfold IZR,IPR; rewrite RbaseSymbolsImpl.R1_def; reflexivity.
-    rewrite Rquot2. reflexivity. transitivity (Rrepr 0).
-    rewrite abs. reflexivity.
-    replace 0%R with (Rabst 0%CReal).
-    2: unfold IZR; rewrite RbaseSymbolsImpl.R0_def; reflexivity.
-    rewrite Rquot2. reflexivity. }
+  { transitivity (Rrepr 1).
+    - symmetry.
+      replace 1%R with (Rabst 1%CReal).
+      2: unfold IZR,IPR; rewrite RbaseSymbolsImpl.R1_def; reflexivity.
+      rewrite Rquot2. reflexivity.
+    - transitivity (Rrepr 0).
+      + rewrite abs. reflexivity.
+      + replace 0%R with (Rabst 0%CReal).
+        2: unfold IZR; rewrite RbaseSymbolsImpl.R0_def; reflexivity.
+        rewrite Rquot2. reflexivity. }
   pose proof (CRealLt_morph 0%CReal 0%CReal (CRealEq_refl _) 1%CReal 0%CReal H).
   apply (CRealLt_irrefl 0%CReal). apply H0. apply CRealLt_0_1.
 Qed.
@@ -261,9 +269,9 @@ Lemma Rmult_lt_compat_l : forall r r1 r2:R, 0 < r -> r1 < r2 -> r * r1 < r * r2.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rlt_def. rewrite RbaseSymbolsImpl.Rlt_def in H.
   do 2 rewrite Rrepr_mult. apply CRealLtForget. apply CReal_mult_lt_compat_l.
-  rewrite <- (Rquot2 0%CReal). unfold IZR in H.
-  rewrite RbaseSymbolsImpl.R0_def in H. apply CRealLtEpsilon. exact H.
-  rewrite RbaseSymbolsImpl.Rlt_def in H0. apply CRealLtEpsilon. exact H0.
+  - rewrite <- (Rquot2 0%CReal). unfold IZR in H.
+    rewrite RbaseSymbolsImpl.R0_def in H. apply CRealLtEpsilon. exact H.
+  -  rewrite RbaseSymbolsImpl.Rlt_def in H0. apply CRealLtEpsilon. exact H0.
 Qed.
 
 #[global]
@@ -292,10 +300,13 @@ Proof.
   induction n.
   - apply Rrepr_0.
   - replace (Z.of_nat (S n)) with (Z.of_nat n + 1)%Z.
-    simpl. destruct n. apply Rrepr_1.
-    rewrite Rrepr_plus,inject_Z_plus, <- IHn, Rrepr_1. reflexivity.
-    replace 1%Z with (Z.of_nat 1). rewrite <- (Nat2Z.inj_add n 1).
-    apply f_equal. rewrite Nat.add_comm. reflexivity. reflexivity.
+    + simpl. destruct n.
+      * apply Rrepr_1.
+      * rewrite Rrepr_plus,inject_Z_plus, <- IHn, Rrepr_1. reflexivity.
+    + replace 1%Z with (Z.of_nat 1).
+      * rewrite <- (Nat2Z.inj_add n 1).
+        apply f_equal. rewrite Nat.add_comm. reflexivity.
+      * reflexivity.
 Qed.
 
 Lemma Rrepr_IPR2 : forall n : positive,
@@ -303,24 +314,26 @@ Lemma Rrepr_IPR2 : forall n : positive,
 Proof.
   induction n.
   - simpl. replace (Z.pos n~1~0) with ((Z.pos n~0 + 1) + (Z.pos n~0 + 1))%Z.
-    rewrite RbaseSymbolsImpl.R1_def, Rrepr_mult, inject_Z_plus, inject_Z_plus.
-    rewrite Rrepr_plus, Rrepr_plus, <- IHn.
-    rewrite Rquot2, CReal_mult_plus_distr_r, CReal_mult_1_l.
-    rewrite (CReal_plus_comm 1%CReal). repeat rewrite CReal_plus_assoc.
-    apply CReal_plus_morph. reflexivity.
-    reflexivity.
-    repeat rewrite <- Pos2Z.inj_add. apply f_equal.
-    rewrite Pos.add_diag. apply f_equal.
-    rewrite Pos.add_1_r. reflexivity.
+    + rewrite RbaseSymbolsImpl.R1_def, Rrepr_mult, inject_Z_plus, inject_Z_plus.
+      rewrite Rrepr_plus, Rrepr_plus, <- IHn.
+      rewrite Rquot2, CReal_mult_plus_distr_r, CReal_mult_1_l.
+      rewrite (CReal_plus_comm 1%CReal). repeat rewrite CReal_plus_assoc.
+      apply CReal_plus_morph.
+      * reflexivity.
+      * reflexivity.
+    + repeat rewrite <- Pos2Z.inj_add. apply f_equal.
+      rewrite Pos.add_diag. apply f_equal.
+      rewrite Pos.add_1_r. reflexivity.
   - simpl. replace (Z.pos n~0~0) with ((Z.pos n~0) + (Z.pos n~0))%Z.
-    rewrite RbaseSymbolsImpl.R1_def, Rrepr_mult, inject_Z_plus.
-    rewrite Rrepr_plus, <- IHn.
-    rewrite Rquot2, CReal_mult_plus_distr_r, CReal_mult_1_l. reflexivity.
-    rewrite <- Pos2Z.inj_add. apply f_equal.
-    rewrite Pos.add_diag. reflexivity.
+    + rewrite RbaseSymbolsImpl.R1_def, Rrepr_mult, inject_Z_plus.
+      rewrite Rrepr_plus, <- IHn.
+      rewrite Rquot2, CReal_mult_plus_distr_r, CReal_mult_1_l. reflexivity.
+    + rewrite <- Pos2Z.inj_add. apply f_equal.
+      rewrite Pos.add_diag. reflexivity.
   - simpl. rewrite Rrepr_plus, RbaseSymbolsImpl.R1_def, Rquot2.
-    replace 2%Z with (1 + 1)%Z. rewrite inject_Z_plus. reflexivity.
-    reflexivity.
+    replace 2%Z with (1 + 1)%Z.
+    + rewrite inject_Z_plus. reflexivity.
+    + reflexivity.
 Qed.
 
 Lemma Rrepr_IPR : forall n : positive,
@@ -329,9 +342,9 @@ Proof.
   intro n. destruct n.
   - unfold IPR. rewrite Rrepr_plus.
     replace (n~1)%positive with (n~0 + 1)%positive.
-    rewrite Pos2Z.inj_add, inject_Z_plus, <- Rrepr_IPR2, CReal_plus_comm.
-    rewrite RbaseSymbolsImpl.R1_def, Rquot2. reflexivity.
-    rewrite Pos.add_1_r. reflexivity.
+    + rewrite Pos2Z.inj_add, inject_Z_plus, <- Rrepr_IPR2, CReal_plus_comm.
+      rewrite RbaseSymbolsImpl.R1_def, Rquot2. reflexivity.
+    + rewrite Pos.add_1_r. reflexivity.
   - apply Rrepr_IPR2.
   - unfold IPR. rewrite RbaseSymbolsImpl.R1_def. apply Rquot2.
 Qed.
@@ -343,7 +356,7 @@ Proof.
   - unfold IZR. rewrite RbaseSymbolsImpl.R0_def. apply Rquot2.
   - apply Rrepr_IPR.
   - unfold IZR. rewrite Rrepr_opp, Rrepr_IPR. rewrite <- opp_inject_Z.
-    replace (- Z.pos n)%Z with (Z.neg n). reflexivity. reflexivity.
+    replace (- Z.pos n)%Z with (Z.neg n); reflexivity.
 Qed.
 
 (**********)
@@ -351,12 +364,15 @@ Lemma archimed : forall r:R, IZR (up r) > r /\ IZR (up r) - r <= 1.
 Proof.
   intro r. unfold up.
   destruct (CRealArchimedean (Rrepr r)) as [n nmaj], (total_order_T (IZR n - r) R1).
-  destruct s.
-  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR.
-    apply CRealLtForget. apply nmaj.
-    unfold Rle. left. exact r0.
-  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def.
-    rewrite Rrepr_IZR. apply CRealLtForget. apply nmaj. right. exact e.
+  1:destruct s.
+  - split.
+    + unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR.
+      apply CRealLtForget. apply nmaj.
+    + unfold Rle. left. exact r0.
+  - split.
+    + unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def.
+      rewrite Rrepr_IZR. apply CRealLtForget. apply nmaj.
+    + right. exact e.
   - split.
     + unfold Rgt, Z.pred. rewrite RbaseSymbolsImpl.Rlt_def.
       rewrite Rrepr_IZR, inject_Z_plus.
@@ -368,52 +384,54 @@ Proof.
                (CReal_plus (Rrepr r) (CReal_opp (Rrepr R1))))
         in r0.
       rewrite CReal_plus_assoc,
-      CReal_plus_opp_l,
-      CReal_plus_0_r,
-      RbaseSymbolsImpl.R1_def, Rquot2,
-      CReal_plus_comm,
-      CReal_plus_assoc,
-      <- (CReal_plus_assoc (CReal_opp (Rrepr r))),
-      CReal_plus_opp_l,
-      CReal_plus_0_l
+        CReal_plus_opp_l,
+        CReal_plus_0_r,
+        RbaseSymbolsImpl.R1_def, Rquot2,
+        CReal_plus_comm,
+        CReal_plus_assoc,
+        <- (CReal_plus_assoc (CReal_opp (Rrepr r))),
+        CReal_plus_opp_l,
+        CReal_plus_0_l
         in r0.
       rewrite (opp_inject_Z 1). exact r0.
-    + destruct (total_order_T (IZR (Z.pred n) - r) 1). destruct s.
-      left. exact r1. right. exact e.
-      exfalso. destruct nmaj as [_ nmaj].
-      pose proof Rrepr_IZR as iz.
-      rewrite <- iz in nmaj.
-      apply (Rlt_asym (IZR n) (r + 2)).
-      rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_plus. rewrite (Rrepr_plus 1 1).
-      apply CRealLtForget.
-      apply (CReal_lt_le_trans _ _ _ nmaj).
-      unfold IZR, IPR. rewrite RbaseSymbolsImpl.R1_def, Rquot2.
-      rewrite <- (inject_Z_plus 1 1). apply CRealLe_refl.
-      clear nmaj.
-      unfold Z.pred in r1. rewrite RbaseSymbolsImpl.Rlt_def in r1.
-      rewrite Rrepr_minus, (Rrepr_IZR (n + -1)) in r1.
-      rewrite inject_Z_plus, <- (Rrepr_IZR n) in r1.
-      rewrite RbaseSymbolsImpl.Rlt_def, Rrepr_plus.
-      apply CRealLtEpsilon in r1.
-      apply (CReal_plus_lt_compat_l
-               (CReal_plus (Rrepr r) 1%CReal)) in r1.
-      apply CRealLtForget.
-      apply (CReal_le_lt_trans
-               _ (CReal_plus (CReal_plus (Rrepr r) (Rrepr 1)) 1%CReal)).
-      rewrite (Rrepr_plus 1 1). unfold IZR, IPR.
-      rewrite RbaseSymbolsImpl.R1_def, (Rquot2 1%CReal), <- CReal_plus_assoc.
-      apply CRealLe_refl.
-      rewrite <- (CReal_plus_comm (Rrepr 1)),
-      <- CReal_plus_assoc,
-      (CReal_plus_comm (Rrepr 1))
-        in r1.
-      apply (CReal_lt_le_trans _ _ _ r1).
-      unfold CReal_minus. rewrite (opp_inject_Z 1).
-      rewrite (CReal_plus_comm (Rrepr (IZR n))), CReal_plus_assoc,
-      <- (CReal_plus_assoc 1), <- (CReal_plus_assoc 1), CReal_plus_opp_r.
-      rewrite CReal_plus_0_l, CReal_plus_comm, CReal_plus_assoc,
-      CReal_plus_opp_l, CReal_plus_0_r.
-      apply CRealLe_refl.
+    + destruct (total_order_T (IZR (Z.pred n) - r) 1).
+      * destruct s.
+        -- left. exact r1.
+        -- right. exact e.
+      * exfalso. destruct nmaj as [_ nmaj].
+        pose proof Rrepr_IZR as iz.
+        rewrite <- iz in nmaj.
+        apply (Rlt_asym (IZR n) (r + 2)).
+        -- rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_plus. rewrite (Rrepr_plus 1 1).
+           apply CRealLtForget.
+           apply (CReal_lt_le_trans _ _ _ nmaj).
+           unfold IZR, IPR. rewrite RbaseSymbolsImpl.R1_def, Rquot2.
+           rewrite <- (inject_Z_plus 1 1). apply CRealLe_refl.
+        -- clear nmaj.
+           unfold Z.pred in r1. rewrite RbaseSymbolsImpl.Rlt_def in r1.
+           rewrite Rrepr_minus, (Rrepr_IZR (n + -1)) in r1.
+           rewrite inject_Z_plus, <- (Rrepr_IZR n) in r1.
+           rewrite RbaseSymbolsImpl.Rlt_def, Rrepr_plus.
+           apply CRealLtEpsilon in r1.
+           apply (CReal_plus_lt_compat_l
+                    (CReal_plus (Rrepr r) 1%CReal)) in r1.
+           apply CRealLtForget.
+           apply (CReal_le_lt_trans
+                    _ (CReal_plus (CReal_plus (Rrepr r) (Rrepr 1)) 1%CReal)).
+           ++ rewrite (Rrepr_plus 1 1). unfold IZR, IPR.
+              rewrite RbaseSymbolsImpl.R1_def, (Rquot2 1%CReal), <- CReal_plus_assoc.
+              apply CRealLe_refl.
+           ++ rewrite <- (CReal_plus_comm (Rrepr 1)),
+                <- CReal_plus_assoc,
+                (CReal_plus_comm (Rrepr 1))
+                in r1.
+              apply (CReal_lt_le_trans _ _ _ r1).
+              unfold CReal_minus. rewrite (opp_inject_Z 1).
+              rewrite (CReal_plus_comm (Rrepr (IZR n))), CReal_plus_assoc,
+                <- (CReal_plus_assoc 1), <- (CReal_plus_assoc 1), CReal_plus_opp_r.
+              rewrite CReal_plus_0_l, CReal_plus_comm, CReal_plus_assoc,
+                CReal_plus_opp_l, CReal_plus_0_r.
+              apply CRealLe_refl.
 Qed.
 
 (**********************************************************)
@@ -438,27 +456,31 @@ Proof.
   intros. pose (fun x:CReal => E (Rabst x)) as Er.
   assert (forall x y : CReal, CRealEq x y -> Er x <-> Er y)
     as Erproper.
-  { intros. unfold Er. replace (Rabst x) with (Rabst y). reflexivity.
-    apply Rquot1. do 2 rewrite Rquot2. split; apply H1. }
+  { intros. unfold Er. replace (Rabst x) with (Rabst y).
+    - reflexivity.
+    - apply Rquot1. do 2 rewrite Rquot2. split; apply H1. }
   assert (exists x : CReal, Er x) as Einhab.
   { destruct H0. exists (Rrepr x). unfold Er.
-    replace (Rabst (Rrepr x)) with x. exact H0.
-    apply Rquot1. rewrite Rquot2. reflexivity. }
+    replace (Rabst (Rrepr x)) with x.
+    - exact H0.
+    - apply Rquot1. rewrite Rquot2. reflexivity. }
   assert (exists x : CReal,
              (forall y:CReal, Er y -> CRealLe y x))
     as Ebound.
   { destruct H. exists (Rrepr x). intros y Ey. rewrite <- (Rquot2 y).
     apply Rrepr_le. apply H. exact Ey. }
   destruct (@CR_sig_lub CRealConstructive
-              Er Erproper sig_forall_dec sig_not_dec Einhab Ebound).
+                        Er Erproper sig_forall_dec sig_not_dec Einhab Ebound).
   exists (Rabst x). split.
-  intros y Ey. apply Rrepr_le. rewrite Rquot2.
-  unfold CRealLe. apply a.
-  unfold Er. replace (Rabst (Rrepr y)) with y. exact Ey.
-  apply Rquot1. rewrite Rquot2. reflexivity.
-  intros. destruct a. apply Rrepr_le. rewrite Rquot2.
-  unfold CRealLe. apply H3. intros y Ey.
-  intros. rewrite <- (Rquot2 y) in H4.
-  apply Rrepr_le in H4. exact H4.
-  apply H1, Ey.
+  - intros y Ey. apply Rrepr_le. rewrite Rquot2.
+    unfold CRealLe. apply a.
+    unfold Er. replace (Rabst (Rrepr y)) with y.
+    + exact Ey.
+    + apply Rquot1. rewrite Rquot2. reflexivity.
+  - intros. destruct a. apply Rrepr_le. rewrite Rquot2.
+    unfold CRealLe. apply H3. intros y Ey.
+    intros. rewrite <- (Rquot2 y) in H4.
+    apply Rrepr_le in H4.
+    + exact H4.
+    + apply H1, Ey.
 Qed.

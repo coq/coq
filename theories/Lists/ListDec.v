@@ -91,10 +91,14 @@ Proof.
  - destruct IHl as (l' & N & I).
    destruct (In_decidable d (f a) (map f l')).
    + exists l'; simpl; split; trivial.
-     intros x [Hx|Hx]. now subst. now apply I.
+     intros x [Hx|Hx].
+     * now subst.
+     * now apply I.
    + exists (a::l'); simpl; split.
      * now constructor.
-     * intros x [Hx|Hx]. subst; now left. right; now apply I.
+     * intros x [Hx|Hx].
+       -- subst; now left.
+       -- right; now apply I.
 Qed.
 
 Lemma uniquify A (d:decidable_eq A)(l:list A) :

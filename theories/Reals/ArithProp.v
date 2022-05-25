@@ -55,8 +55,8 @@ Proof.
   assert (H1 := le_INR _ _ H).
   do 2 rewrite mult_INR in H1.
   apply Rmult_le_reg_l with (INR 2).
-  apply lt_0_INR. apply Nat.lt_0_2.
-  assumption.
+  - apply lt_0_INR. apply Nat.lt_0_2.
+  - assumption.
 Qed.
 
 (** Here, we have the euclidian division *)
@@ -76,83 +76,83 @@ Proof.
   exists k0.
   exists (x - IZR k0 * y).
   split.
-  ring.
-  unfold k0; case (Rcase_abs y) as [Hlt|Hge].
-  assert (H0 := archimed (x / - y)); rewrite <- Z_R_minus; simpl;
-    unfold Rminus.
-  replace (- ((1 + - IZR (up (x / - y))) * y)) with
-    ((IZR (up (x / - y)) - 1) * y); [ idtac | ring ].
-  split.
-  apply Rmult_le_reg_l with (/ - y).
-  apply Rinv_0_lt_compat; apply Ropp_0_gt_lt_contravar; exact Hlt.
-  rewrite Rmult_0_r; rewrite (Rmult_comm (/ - y)); rewrite Rmult_plus_distr_r;
-    rewrite Rinv_opp.
-  rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
-    rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ].
-  apply Rplus_le_reg_l with (IZR (up (x / - y)) - x / - y).
-  rewrite Rplus_0_r; unfold Rdiv; pattern (/ - y) at 4;
-    rewrite Rinv_opp.
-  replace
-    (IZR (up (x * / - y)) - x * - / y +
-      (- (x * / y) + - (IZR (up (x * / - y)) - 1))) with 1;
-    [ idtac | ring ].
-  elim H0; intros _ H1; unfold Rdiv in H1; exact H1.
-  rewrite (Rabs_left _ Hlt); apply Rmult_lt_reg_l with (/ - y).
-  apply Rinv_0_lt_compat; apply Ropp_0_gt_lt_contravar; exact Hlt.
-  rewrite <- Rinv_l_sym.
-  rewrite (Rmult_comm (/ - y)); rewrite Rmult_plus_distr_r;
-    rewrite Rinv_opp.
-  rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
-    rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ];
-      apply Rplus_lt_reg_l with (IZR (up (x / - y)) - 1).
-  replace (IZR (up (x / - y)) - 1 + 1) with (IZR (up (x / - y)));
-    [ idtac | ring ].
-  replace (IZR (up (x / - y)) - 1 + (- (x * / y) + - (IZR (up (x / - y)) - 1)))
-    with (- (x * / y)); [ idtac | ring ].
-  rewrite <- Ropp_mult_distr_r_reverse; rewrite <- Rinv_opp; elim H0;
-    unfold Rdiv; intros H1 _; exact H1.
-  apply Ropp_neq_0_compat; assumption.
-  assert (H0 := archimed (x / y)); rewrite <- Z_R_minus; simpl;
-    cut (0 < y).
-  intro; unfold Rminus;
-    replace (- ((IZR (up (x / y)) + -(1)) * y)) with ((1 - IZR (up (x / y))) * y);
-      [ idtac | ring ].
-  split.
-  apply Rmult_le_reg_l with (/ y).
-  apply Rinv_0_lt_compat; assumption.
-  rewrite Rmult_0_r; rewrite (Rmult_comm (/ y)); rewrite Rmult_plus_distr_r;
-    rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
-      [ rewrite Rmult_1_r | assumption ];
-      apply Rplus_le_reg_l with (IZR (up (x / y)) - x / y);
-	rewrite Rplus_0_r; unfold Rdiv;
-	  replace
-	    (IZR (up (x * / y)) - x * / y + (x * / y + (1 - IZR (up (x * / y))))) with
-	    1; [ idtac | ring ]; elim H0; intros _ H2; unfold Rdiv in H2;
-	      exact H2.
-  rewrite (Rabs_right _ Hge); apply Rmult_lt_reg_l with (/ y).
-  apply Rinv_0_lt_compat; assumption.
-  rewrite <- (Rinv_l_sym _ H); rewrite (Rmult_comm (/ y));
-    rewrite Rmult_plus_distr_r; rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
-      [ rewrite Rmult_1_r | assumption ];
-      apply Rplus_lt_reg_l with (IZR (up (x / y)) - 1);
-	replace (IZR (up (x / y)) - 1 + 1) with (IZR (up (x / y)));
-	  [ idtac | ring ];
-	  replace (IZR (up (x / y)) - 1 + (x * / y + (1 - IZR (up (x / y))))) with
-	    (x * / y); [ idtac | ring ]; elim H0; unfold Rdiv;
-	      intros H2 _; exact H2.
-  destruct (total_order_T 0 y) as [[Hlt|Heq]|Hgt].
-  assumption.
-  elim H; symmetry ; exact Heq.
-  apply Rge_le in Hge; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hge Hgt)).
+  - ring.
+  - unfold k0; case (Rcase_abs y) as [Hlt|Hge].
+    + assert (H0 := archimed (x / - y)); rewrite <- Z_R_minus; simpl;
+        unfold Rminus.
+      replace (- ((1 + - IZR (up (x / - y))) * y)) with
+        ((IZR (up (x / - y)) - 1) * y); [ idtac | ring ].
+      split.
+      * apply Rmult_le_reg_l with (/ - y).
+        -- apply Rinv_0_lt_compat; apply Ropp_0_gt_lt_contravar; exact Hlt.
+        -- rewrite Rmult_0_r; rewrite (Rmult_comm (/ - y)); rewrite Rmult_plus_distr_r;
+             rewrite Rinv_opp.
+           rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
+             rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ].
+           apply Rplus_le_reg_l with (IZR (up (x / - y)) - x / - y).
+           rewrite Rplus_0_r; unfold Rdiv; pattern (/ - y) at 4;
+             rewrite Rinv_opp.
+           replace
+             (IZR (up (x * / - y)) - x * - / y +
+                (- (x * / y) + - (IZR (up (x * / - y)) - 1))) with 1;
+             [ idtac | ring ].
+           elim H0; intros _ H1; unfold Rdiv in H1; exact H1.
+      * rewrite (Rabs_left _ Hlt); apply Rmult_lt_reg_l with (/ - y).
+        -- apply Rinv_0_lt_compat; apply Ropp_0_gt_lt_contravar; exact Hlt.
+        -- rewrite <- Rinv_l_sym.
+           ++ rewrite (Rmult_comm (/ - y)); rewrite Rmult_plus_distr_r;
+                rewrite Rinv_opp.
+              rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
+                rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ];
+                apply Rplus_lt_reg_l with (IZR (up (x / - y)) - 1).
+              replace (IZR (up (x / - y)) - 1 + 1) with (IZR (up (x / - y)));
+                [ idtac | ring ].
+              replace (IZR (up (x / - y)) - 1 + (- (x * / y) + - (IZR (up (x / - y)) - 1)))
+                with (- (x * / y)); [ idtac | ring ].
+              rewrite <- Ropp_mult_distr_r_reverse; rewrite <- Rinv_opp; elim H0;
+                unfold Rdiv; intros H1 _; exact H1.
+           ++ apply Ropp_neq_0_compat; assumption.
+    + assert (H0 := archimed (x / y)); rewrite <- Z_R_minus; simpl;
+        cut (0 < y).
+      * intro; unfold Rminus;
+          replace (- ((IZR (up (x / y)) + -(1)) * y)) with ((1 - IZR (up (x / y))) * y);
+          [ idtac | ring ].
+        split.
+        -- apply Rmult_le_reg_l with (/ y).
+           ++ apply Rinv_0_lt_compat; assumption.
+           ++ rewrite Rmult_0_r; rewrite (Rmult_comm (/ y)); rewrite Rmult_plus_distr_r;
+                rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
+                [ rewrite Rmult_1_r | assumption ];
+                apply Rplus_le_reg_l with (IZR (up (x / y)) - x / y);
+                rewrite Rplus_0_r; unfold Rdiv;
+                replace
+                  (IZR (up (x * / y)) - x * / y + (x * / y + (1 - IZR (up (x * / y))))) with
+                1; [ idtac | ring ]; elim H0; intros _ H2; unfold Rdiv in H2;
+                exact H2.
+        -- rewrite (Rabs_right _ Hge); apply Rmult_lt_reg_l with (/ y).
+           ++ apply Rinv_0_lt_compat; assumption.
+           ++ rewrite <- (Rinv_l_sym _ H); rewrite (Rmult_comm (/ y));
+                rewrite Rmult_plus_distr_r; rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
+                [ rewrite Rmult_1_r | assumption ];
+                apply Rplus_lt_reg_l with (IZR (up (x / y)) - 1);
+                replace (IZR (up (x / y)) - 1 + 1) with (IZR (up (x / y)));
+                [ idtac | ring ];
+                replace (IZR (up (x / y)) - 1 + (x * / y + (1 - IZR (up (x / y))))) with
+                (x * / y); [ idtac | ring ]; elim H0; unfold Rdiv;
+                intros H2 _; exact H2.
+      * destruct (total_order_T 0 y) as [[Hlt|Heq]|Hgt].
+        -- assumption.
+        -- elim H; symmetry ; exact Heq.
+        -- apply Rge_le in Hge; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hge Hgt)).
 Qed.
 
 Lemma tech8 : forall n i:nat, (n <= S n + i)%nat.
 Proof.
   intros; induction  i as [| i Hreci].
-  replace (S n + 0)%nat with (S n); [ apply Nat.le_succ_diag_r | ring ].
-  replace (S n + S i)%nat with (S (S n + i)).
-  apply le_S; assumption.
-  apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; do 2 rewrite S_INR; ring.
+  - replace (S n + 0)%nat with (S n); [ apply Nat.le_succ_diag_r | ring ].
+  - replace (S n + S i)%nat with (S (S n + i)).
+    + apply le_S; assumption.
+    + apply INR_eq; rewrite S_INR; do 2 rewrite plus_INR; do 2 rewrite S_INR; ring.
 Qed.
 
 (* TODO #14736 for compatibility only, should be removed after deprecation *)

@@ -104,15 +104,15 @@ Require Import EnvRing.
 Lemma Zsor : SOR 0 1 Z.add Z.mul Z.sub Z.opp (@eq Z) Z.le Z.lt.
 Proof.
   constructor ; intros ; subst; try reflexivity.
-  apply Zsth.
-  apply Zth.
-  auto using Z.le_antisymm.
-  eauto using Z.le_trans.
-  apply Z.le_neq.
-  apply Z.lt_trichotomy.
-  apply Z.add_le_mono_l; assumption.
-  apply Z.mul_pos_pos ; auto.
-  discriminate.
+  - apply Zsth.
+  - apply Zth.
+  - auto using Z.le_antisymm.
+  - eauto using Z.le_trans.
+  - apply Z.le_neq.
+  - apply Z.lt_trichotomy.
+  - apply Z.add_le_mono_l; assumption.
+  - apply Z.mul_pos_pos ; auto.
+  - discriminate.
 Qed.
 
 Lemma ZSORaddon :
@@ -122,13 +122,13 @@ Lemma ZSORaddon :
   (fun x => x) (fun x => x) (pow_N 1 Z.mul).
 Proof.
   constructor.
-  constructor ; intros ; try reflexivity.
-  apply Zeq_bool_eq ; auto.
-  constructor.
-  reflexivity.
-  intros x y.
-  apply Zeq_bool_neq ; auto.
-  apply Zle_bool_imp_le.
+  - constructor ; intros ; try reflexivity.
+    apply Zeq_bool_eq ; auto.
+  - constructor.
+    reflexivity.
+  - intros x y.
+    apply Zeq_bool_neq ; auto.
+  - apply Zle_bool_imp_le.
 Qed.
 
 Fixpoint Zeval_expr (env : PolEnv Z) (e: PExpr Z) : Z :=
@@ -164,19 +164,19 @@ Fixpoint Zeval_const  (e: PExpr Z) : option Z :=
 Lemma ZNpower : forall r n, r ^ Z.of_N n = pow_N 1 Z.mul r n.
 Proof.
   intros r n; destruct n as [|p].
-  reflexivity.
-  simpl.
-  unfold Z.pow_pos.
-  replace (pow_pos Z.mul r p) with (1 * (pow_pos Z.mul r p)) by ring.
-  generalize 1.
-  induction p as [p IHp|p IHp|]; simpl ; intros ; repeat rewrite IHp ; ring.
+  - reflexivity.
+  - simpl.
+    unfold Z.pow_pos.
+    replace (pow_pos Z.mul r p) with (1 * (pow_pos Z.mul r p)) by ring.
+    generalize 1.
+    induction p as [p IHp|p IHp|]; simpl ; intros ; repeat rewrite IHp ; ring.
 Qed.
 
 Lemma Zeval_expr_compat : forall env e, Zeval_expr env e = eval_expr env e.
 Proof.
   intros env e; induction e ; simpl ; try congruence.
-  reflexivity.
-  rewrite ZNpower. congruence.
+  - reflexivity.
+  - rewrite ZNpower. congruence.
 Qed.
 
 Definition Zeval_pop2 (o : Op2) : Z -> Z -> Prop :=
@@ -224,8 +224,8 @@ Lemma Zeval_op2_hold : forall k op q1 q2,
     Tauto.hold k (Zeval_op2 k op q1 q2) <-> Zeval_pop2 op q1 q2.
 Proof.
   intro k; destruct k.
-  simpl ; tauto.
-  simpl. apply pop2_bop2.
+  - simpl ; tauto.
+  - simpl. apply pop2_bop2.
 Qed.
 
 
@@ -387,12 +387,12 @@ Proof.
     + subst.
       ring.
   - split ; intros H H0.
-    subst. apply H. ring.
-    apply H.
-    assert (z0 + (z - z0) = z0 + 0) as H1 by congruence.
-    rewrite Z.add_0_r in H1.
-    rewrite <- H1.
-    ring.
+    + subst. apply H. ring.
+    + apply H.
+      assert (z0 + (z - z0) = z0 + 0) as H1 by congruence.
+      rewrite Z.add_0_r in H1.
+      rewrite <- H1.
+      ring.
   - split ; intros.
     + apply Zle_0_minus_le; auto.
     + apply Zle_minus_le_0; auto.
@@ -600,9 +600,9 @@ Proof.
   - assert (0 < Z.pos r) by easy.
     rewrite Z.add_1_r, Z.le_succ_l.
     apply Z.mul_lt_mono_pos_l with a.
-    auto using Z.gt_lt.
-    eapply Z.lt_le_trans. 2: eassumption.
-    now apply Z.lt_add_pos_r.
+    + auto using Z.gt_lt.
+    + eapply Z.lt_le_trans. 2: eassumption.
+      now apply Z.lt_add_pos_r.
   - now elim H1.
 Qed.
 
@@ -687,20 +687,20 @@ Lemma Zdiv_pol_correct : forall a p, 0 < a -> Zdivide_pol a p  ->
 Proof.
   intros a p H H0.
   induction H0 as [? ?|? ? IHZdivide_pol j|? ? ? IHZdivide_pol1 ? IHZdivide_pol2 j].
-  (* Pc *)
-  simpl.
-  intros.
-  apply Zdivide_Zdiv_eq ; auto.
-  (* Pinj *)
-  simpl.
-  intros.
-  apply IHZdivide_pol.
-  (* PX *)
-  simpl.
-  intros.
-  rewrite IHZdivide_pol1.
-  rewrite IHZdivide_pol2.
-  ring.
+  - (* Pc *)
+    simpl.
+    intros.
+    apply Zdivide_Zdiv_eq ; auto.
+  - (* Pinj *)
+    simpl.
+    intros.
+    apply IHZdivide_pol.
+  - (* PX *)
+    simpl.
+    intros.
+    rewrite IHZdivide_pol1.
+    rewrite IHZdivide_pol2.
+    ring.
 Qed.
 
 Lemma Zgcd_pol_ge : forall p, fst (Zgcd_pol p) >= 0.
@@ -712,18 +712,19 @@ Proof.
   intros.
   simpl.
   unfold ZgcdM.
-  apply Z.le_ge; transitivity 1. easy.
-  apply Z.le_max_r.
+  apply Z.le_ge; transitivity 1.
+  - easy.
+  - apply Z.le_max_r.
 Qed.
 
 Lemma Zdivide_pol_Zdivide : forall p x y, Zdivide_pol x p -> (y | x) ->  Zdivide_pol y p.
 Proof.
   intros p x y H H0.
   induction H.
-  constructor.
-  apply Z.divide_trans with (1:= H0) ; assumption.
-  constructor. auto.
-  constructor ; auto.
+  - constructor.
+    apply Z.divide_trans with (1:= H0) ; assumption.
+  - constructor. auto.
+  - constructor ; auto.
 Qed.
 
 Lemma Zdivide_pol_one : forall p, Zdivide_pol 1 p.
@@ -748,20 +749,20 @@ Lemma Zdivide_pol_sub : forall p a b,
    Zdivide_pol (Z.gcd a b) p.
 Proof.
   intros p; induction p as [c|? p IHp|p ? ? ? IHp2].
-  simpl.
-  intros a b H H0. inversion H0.
-  constructor.
-  apply Zgcd_minus ; auto.
-  intros ? ? H H0.
-  constructor.
-  simpl in H0. inversion H0 ; subst; clear H0.
-  apply IHp ; auto.
-  simpl. intros a b H H0.
-  inv H0.
-  constructor.
-  apply Zdivide_pol_Zdivide with (1:= (ltac:(assumption) : Zdivide_pol a p)).
-  destruct (Zgcd_is_gcd a b) ; assumption.
-  apply IHp2 ; assumption.
+  - simpl.
+    intros a b H H0. inversion H0.
+    constructor.
+    apply Zgcd_minus ; auto.
+  - intros ? ? H H0.
+    constructor.
+    simpl in H0. inversion H0 ; subst; clear H0.
+    apply IHp ; auto.
+  - simpl. intros a b H H0.
+    inv H0.
+    constructor.
+    + apply Zdivide_pol_Zdivide with (1:= (ltac:(assumption) : Zdivide_pol a p)).
+      destruct (Zgcd_is_gcd a b) ; assumption.
+    + apply IHp2 ; assumption.
 Qed.
 
 Lemma Zdivide_pol_sub_0 : forall p a,
@@ -769,17 +770,18 @@ Lemma Zdivide_pol_sub_0 : forall p a,
    Zdivide_pol a p.
 Proof.
   intros p; induction p as [c|? p IHp|? IHp1 ? ? IHp2].
-  simpl.
-  intros ? H. inversion H.
-  constructor. rewrite Z.sub_0_r in *. assumption.
-  intros ? H.
-  constructor.
-  simpl in H. inversion H ; subst; clear H.
-  apply IHp ; auto.
-  simpl. intros ? H.
-  inv H.
-  constructor. auto.
-  apply IHp2 ; assumption.
+  - simpl.
+    intros ? H. inversion H.
+    constructor. rewrite Z.sub_0_r in *. assumption.
+  - intros ? H.
+    constructor.
+    simpl in H. inversion H ; subst; clear H.
+    apply IHp ; auto.
+  - simpl. intros ? H.
+    inv H.
+    constructor.
+    + auto.
+    + apply IHp2 ; assumption.
 Qed.
 
 
@@ -787,41 +789,44 @@ Lemma Zgcd_pol_div : forall p g c,
   Zgcd_pol p = (g, c) -> Zdivide_pol g (PsubC Z.sub p c).
 Proof.
   intros p; induction p as [c|? ? IHp|p1 IHp1 ? p3 IHp2]; simpl.
-  (* Pc *)
-  intros ? ? H. inv H.
-  constructor.
-  exists 0. now ring.
-  (* Pinj *)
-  intros.
-  constructor.  apply IHp ; auto.
-  (* PX *)
-  intros g c.
-  case_eq (Zgcd_pol p1) ; case_eq (Zgcd_pol p3) ; intros z z0 H z1 z2 H0 H1.
-  inv H1.
-  unfold ZgcdM at 1.
-  destruct (Zmax_spec (Z.gcd (ZgcdM z1 z2) z) 1) as [HH1 | HH1];
-  destruct HH1 as [HH1 HH1'] ; rewrite HH1'.
-  constructor.
-  apply (Zdivide_pol_Zdivide _ (ZgcdM z1 z2)).
-  unfold ZgcdM.
-  destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
-  destruct HH2 as [H1 H2].
-  rewrite H2.
-  apply Zdivide_pol_sub ; auto.
-  apply Z.lt_le_trans with 1. reflexivity. now apply Z.ge_le.
-  destruct HH2 as [H1 H2]. rewrite H2.
-  apply Zdivide_pol_one.
-  unfold ZgcdM in HH1. unfold ZgcdM.
-  destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
-  destruct HH2 as [H1 H2]. rewrite H2 in *.
-  destruct (Zgcd_is_gcd (Z.gcd z1 z2) z); auto.
-  destruct HH2 as [H1 H2]. rewrite H2.
-  destruct (Zgcd_is_gcd 1  z); auto.
-  apply (Zdivide_pol_Zdivide _ z).
-  apply (IHp2 _ _ H); auto.
-  destruct (Zgcd_is_gcd (ZgcdM z1 z2) z); auto.
-  constructor. apply Zdivide_pol_one.
-  apply Zdivide_pol_one.
+  - (* Pc *)
+    intros ? ? H. inv H.
+    constructor.
+    exists 0. now ring.
+  - (* Pinj *)
+    intros.
+    constructor.  apply IHp ; auto.
+  - (* PX *)
+    intros g c.
+    case_eq (Zgcd_pol p1) ; case_eq (Zgcd_pol p3) ; intros z z0 H z1 z2 H0 H1.
+    inv H1.
+    unfold ZgcdM at 1.
+    destruct (Zmax_spec (Z.gcd (ZgcdM z1 z2) z) 1) as [HH1 | HH1];
+      destruct HH1 as [HH1 HH1'] ; rewrite HH1'.
+    + constructor.
+      * apply (Zdivide_pol_Zdivide _ (ZgcdM z1 z2)).
+        -- unfold ZgcdM.
+           destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
+           ++ destruct HH2 as [H1 H2].
+              rewrite H2.
+              apply Zdivide_pol_sub ; auto.
+              apply Z.lt_le_trans with 1.
+              ** reflexivity.
+              ** now apply Z.ge_le.
+           ++ destruct HH2 as [H1 H2]. rewrite H2.
+              apply Zdivide_pol_one.
+        -- unfold ZgcdM in HH1. unfold ZgcdM.
+           destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
+           ++ destruct HH2 as [H1 H2]. rewrite H2 in *.
+              destruct (Zgcd_is_gcd (Z.gcd z1 z2) z); auto.
+           ++ destruct HH2 as [H1 H2]. rewrite H2.
+              destruct (Zgcd_is_gcd 1  z); auto.
+      * apply (Zdivide_pol_Zdivide _ z).
+        -- apply (IHp2 _ _ H); auto.
+        -- destruct (Zgcd_is_gcd (ZgcdM z1 z2) z); auto.
+    + constructor.
+      * apply Zdivide_pol_one.
+      * apply Zdivide_pol_one.
 Qed.
 
 
@@ -831,10 +836,10 @@ Lemma Zgcd_pol_correct_lt : forall p env g c, Zgcd_pol p = (g,c) -> 0 < g -> eva
 Proof.
   intros.
   rewrite <- Zdiv_pol_correct ; auto.
-  rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-  unfold eval_pol. ring.
-  (**)
-  apply Zgcd_pol_div ; auto.
+  - rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
+    unfold eval_pol. ring.
+    (**)
+  - apply Zgcd_pol_div ; auto.
 Qed.
 
 
@@ -920,12 +925,12 @@ Lemma pos_le_add : forall y x,
 Proof.
   intros y x.
   assert  ((Z.pos x) <= Z.pos (x + y))%Z as H.
-  rewrite <- (Z.add_0_r (Zpos x)).
-  rewrite <- Pos2Z.add_pos_pos.
-  apply Z.add_le_mono_l.
-  compute. congruence.
-  rewrite Pos.add_comm in H.
-  apply H.
+  - rewrite <- (Z.add_0_r (Zpos x)).
+    rewrite <- Pos2Z.add_pos_pos.
+    apply Z.add_le_mono_l.
+    compute. congruence.
+  - rewrite Pos.add_comm in H.
+    apply H.
 Qed.
 
 
@@ -940,8 +945,8 @@ Proof.
     eapply Pos.le_trans ; eauto.
     assert (xH + v <= p + v)%positive.
     { apply Pos.add_le_mono.
-      apply Pos.le_1_l.
-      apply Pos.le_refl.
+      - apply Pos.le_1_l.
+      - apply Pos.le_refl.
     }
     eapply Pos.le_trans ; eauto.
     apply pos_le_add.
@@ -962,9 +967,9 @@ Proof.
     destruct H as [H |[ H | H]].
     + subst.
       apply Pos.max_case_strong;intros ; auto.
-      apply max_var_le.
-      eapply Pos.le_trans ; eauto.
-      apply max_var_le.
+      * apply max_var_le.
+      * eapply Pos.le_trans ; eauto.
+        apply max_var_le.
     + apply Pos.max_case_strong;intros ; auto.
       eapply Pos.le_trans ; eauto.
     + apply Pos.max_case_strong;intros ; auto.
@@ -1132,30 +1137,31 @@ Require Import Wf_nat.
 Lemma in_bdepth : forall l a b  y, In y l ->  ltof ZArithProof bdepth y (EnumProof a b  l).
 Proof.
   intros l; induction l as [|a l IHl].
-  (* nil *)
-  simpl.
-  tauto.
-  (* cons *)
-  simpl.
-  intros a0 b y H.
-  destruct H as [H|H].
-  subst.
-  unfold ltof.
-  simpl.
-  generalize (         (fold_right
-            (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat l)).
-  intros.
-  generalize (bdepth y) ; intros.
-  rewrite Nat.lt_succ_r. apply Nat.le_max_l.
-  generalize (IHl a0 b  y  H).
-  unfold ltof.
-  simpl.
-  generalize (      (fold_right (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat
-         l)).
-  intros.
-  eapply Nat.lt_le_trans. eassumption.
-  rewrite <- Nat.succ_le_mono.
-  apply Nat.le_max_r.
+  - (* nil *)
+    simpl.
+    tauto.
+  - (* cons *)
+    simpl.
+    intros a0 b y H.
+    destruct H as [H|H].
+    + subst.
+      unfold ltof.
+      simpl.
+      generalize (         (fold_right
+                              (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat l)).
+      intros.
+      generalize (bdepth y) ; intros.
+      rewrite Nat.lt_succ_r. apply Nat.le_max_l.
+    + generalize (IHl a0 b  y  H).
+      unfold ltof.
+      simpl.
+      generalize (      (fold_right (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat
+                                    l)).
+      intros.
+      eapply Nat.lt_le_trans.
+      * eassumption.
+      * rewrite <- Nat.succ_le_mono.
+        apply Nat.le_max_r.
 Qed.
 
 Lemma ltof_bdepth_split_l :
@@ -1204,19 +1210,19 @@ Proof.
   revert H0.
   case_eq (Zgcd_pol e) ; intros g c0.
   generalize (Zgt_cases g 0) ; destruct (Z.gtb g 0).
-  intros H0 H1 H2.
-  inv H2.
-  change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in *.
-  apply (Zgcd_pol_correct_lt _ env) in H1. 2: auto using Z.gt_lt.
-  apply Z.le_add_le_sub_l, Z.ge_le; rewrite Z.add_0_r.
-  apply (narrow_interval_lower_bound g (- c0) (eval_pol env (Zdiv_pol (PsubC Z.sub e c0) g)) H0).
-  apply Z.le_ge.
-  rewrite <- Z.sub_0_l.
-  apply Z.le_sub_le_add_r.
-  rewrite <- H1.
-  assumption.
-  (* g <= 0 *)
-  intros H0 H1 H2. inv H2. auto with zarith.
+  - intros H0 H1 H2.
+    inv H2.
+    change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in *.
+    apply (Zgcd_pol_correct_lt _ env) in H1. 2: auto using Z.gt_lt.
+    apply Z.le_add_le_sub_l, Z.ge_le; rewrite Z.add_0_r.
+    apply (narrow_interval_lower_bound g (- c0) (eval_pol env (Zdiv_pol (PsubC Z.sub e c0) g)) H0).
+    apply Z.le_ge.
+    rewrite <- Z.sub_0_l.
+    apply Z.le_sub_le_add_r.
+    rewrite <- H1.
+    assumption.
+    (* g <= 0 *)
+  - intros H0 H1 H2. inv H2. auto with zarith.
 Qed.
 
 Lemma cutting_plane_sound : forall env f p,
@@ -1227,79 +1233,80 @@ Proof.
   unfold genCuttingPlane.
   intros env f; destruct f as [e op].
   destruct op.
-  (* Equal *)
-  intros p; destruct p as [[e' z] op].
-  case_eq (Zgcd_pol e) ; intros g c.
-  case_eq (Z.gtb g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Z.gcd g c) g))) ; [discriminate|].
-  case_eq (makeCuttingPlane e).
-  intros ? ? H H0 H1 H2 H3.
-  inv H3.
-  unfold makeCuttingPlane in H.
-  rewrite H1 in H.
-  revert H.
-  change (eval_pol env e = 0) in H2.
-  case_eq (Z.gtb g 0).
-  intros H H3.
-  rewrite <- Zgt_is_gt_bool in H.
-  rewrite Zgcd_pol_correct_lt with (1:= H1)  in H2. 2: auto using Z.gt_lt.
-  unfold nformula_of_cutting_plane.
-  change (eval_pol env (padd e' (Pc z)) = 0).
-  inv H3.
-  rewrite eval_pol_add.
-  set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub e c) g)) in *; clearbody x.
-  simpl.
-  rewrite andb_false_iff in H0.
-  destruct H0 as [H0|H0].
-  rewrite Zgt_is_gt_bool in H ; congruence.
-  rewrite andb_false_iff in H0.
-  destruct H0 as [H0|H0].
-  rewrite negb_false_iff in H0.
-  apply Zeq_bool_eq in H0.
-  subst. simpl.
-  rewrite Z.add_0_r, Z.mul_eq_0 in H2.
-  intuition subst; easy.
-  rewrite negb_false_iff in H0.
-  apply Zeq_bool_eq in H0.
-  assert (HH := Zgcd_is_gcd g c).
-  rewrite H0 in HH.
-  destruct HH as [H3 H4 ?].
-  apply Zdivide_opp_r in H4.
-  rewrite Zdivide_ceiling ; auto.
-  apply Z.sub_move_0_r.
-  apply Z.div_unique_exact. now intros ->.
-  now rewrite Z.add_move_0_r in H2.
-  intros H H3.
-  unfold nformula_of_cutting_plane.
-  inv H3.
-  change (eval_pol env (padd e' (Pc 0)) = 0).
-  rewrite eval_pol_add.
-  simpl.
-  now rewrite Z.add_0_r.
-  (* NonEqual *)
-  intros ? H H0.
-  inv H0.
-  unfold eval_nformula in *.
-  unfold RingMicromega.eval_nformula in *.
-  unfold nformula_of_cutting_plane.
-  unfold eval_op1 in *.
-  rewrite (RingMicromega.eval_pol_add Zsor ZSORaddon).
-  simpl. now rewrite Z.add_0_r.
-  (* Strict *)
-  intros p; destruct p as [[e' z] op].
-  case_eq (makeCuttingPlane (PsubC Z.sub e 1)).
-  intros ? ? H H0 H1.
-  inv H1.
-  apply (makeCuttingPlane_ns_sound env) with (2:= H).
-  simpl in *.
-  rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-  now apply Z.lt_le_pred.
-  (* NonStrict *)
-  intros p; destruct p as [[e' z] op].
-  case_eq (makeCuttingPlane e).
-  intros ? ? H H0 H1.
-  inv H1.
-  apply (makeCuttingPlane_ns_sound env) with (2:= H).
-  assumption.
+  - (* Equal *)
+    intros p; destruct p as [[e' z] op].
+    case_eq (Zgcd_pol e) ; intros g c.
+    case_eq (Z.gtb g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Z.gcd g c) g))) ; [discriminate|].
+    case_eq (makeCuttingPlane e).
+    intros ? ? H H0 H1 H2 H3.
+    inv H3.
+    unfold makeCuttingPlane in H.
+    rewrite H1 in H.
+    revert H.
+    change (eval_pol env e = 0) in H2.
+    case_eq (Z.gtb g 0).
+    + intros H H3.
+      rewrite <- Zgt_is_gt_bool in H.
+      rewrite Zgcd_pol_correct_lt with (1:= H1)  in H2. 2: auto using Z.gt_lt.
+      unfold nformula_of_cutting_plane.
+      change (eval_pol env (padd e' (Pc z)) = 0).
+      inv H3.
+      rewrite eval_pol_add.
+      set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub e c) g)) in *; clearbody x.
+      simpl.
+      rewrite andb_false_iff in H0.
+      destruct H0 as [H0|H0].
+      * rewrite Zgt_is_gt_bool in H ; congruence.
+      * rewrite andb_false_iff in H0.
+        destruct H0 as [H0|H0].
+        -- rewrite negb_false_iff in H0.
+           apply Zeq_bool_eq in H0.
+           subst. simpl.
+           rewrite Z.add_0_r, Z.mul_eq_0 in H2.
+           intuition subst; easy.
+        -- rewrite negb_false_iff in H0.
+           apply Zeq_bool_eq in H0.
+           assert (HH := Zgcd_is_gcd g c).
+           rewrite H0 in HH.
+           destruct HH as [H3 H4 ?].
+           apply Zdivide_opp_r in H4.
+           rewrite Zdivide_ceiling ; auto.
+           apply Z.sub_move_0_r.
+           apply Z.div_unique_exact.
+           ++ now intros ->.
+           ++ now rewrite Z.add_move_0_r in H2.
+    + intros H H3.
+      unfold nformula_of_cutting_plane.
+      inv H3.
+      change (eval_pol env (padd e' (Pc 0)) = 0).
+      rewrite eval_pol_add.
+      simpl.
+      now rewrite Z.add_0_r.
+  - (* NonEqual *)
+    intros ? H H0.
+    inv H0.
+    unfold eval_nformula in *.
+    unfold RingMicromega.eval_nformula in *.
+    unfold nformula_of_cutting_plane.
+    unfold eval_op1 in *.
+    rewrite (RingMicromega.eval_pol_add Zsor ZSORaddon).
+    simpl. now rewrite Z.add_0_r.
+  - (* Strict *)
+    intros p; destruct p as [[e' z] op].
+    case_eq (makeCuttingPlane (PsubC Z.sub e 1)).
+    intros ? ? H H0 H1.
+    inv H1.
+    apply (makeCuttingPlane_ns_sound env) with (2:= H).
+    simpl in *.
+    rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
+    now apply Z.lt_le_pred.
+  - (* NonStrict *)
+    intros p; destruct p as [[e' z] op].
+    case_eq (makeCuttingPlane e).
+    intros ? ? H H0 H1.
+    inv H1.
+    apply (makeCuttingPlane_ns_sound env) with (2:= H).
+    assumption.
 Qed.
 
 Lemma  genCuttingPlaneNone : forall env f,
@@ -1309,32 +1316,33 @@ Proof.
   unfold genCuttingPlane.
   intros env f; destruct f as [p o].
   destruct o.
-  case_eq (Zgcd_pol p) ; intros g c.
-  case_eq (Z.gtb g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Z.gcd g c) g))).
-  intros H H0 H1 H2.
-  flatten_bool.
-  match goal with [ H' : (g >? 0) = true |- ?G ] => rename H' into H3 end.
-  match goal with [ H' : negb (Zeq_bool c 0) = true |- ?G ] => rename H' into H end.
-  match goal with [ H' : negb (Zeq_bool (Z.gcd g c) g) = true |- ?G ] => rename H' into H5 end.
-  rewrite negb_true_iff in H5.
-  apply Zeq_bool_neq in H5.
-  rewrite <- Zgt_is_gt_bool in H3.
-  rewrite negb_true_iff in H.
-  apply Zeq_bool_neq in H.
-  change (eval_pol env p = 0) in H2.
-  rewrite Zgcd_pol_correct_lt with (1:= H0) in H2. 2: auto using Z.gt_lt.
-  set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub p c) g)) in *; clearbody x.
-  contradict H5.
-  apply Zis_gcd_gcd. apply Z.lt_le_incl, Z.gt_lt; assumption.
-  constructor; auto with zarith.
-  exists (-x).
-  rewrite Z.mul_opp_l, Z.mul_comm.
-  now apply Z.add_move_0_l.
-  (**)
-  destruct (makeCuttingPlane p);  discriminate.
-  discriminate.
-  destruct (makeCuttingPlane (PsubC Z.sub p 1)) ; discriminate.
-  destruct (makeCuttingPlane p) ; discriminate.
+  - case_eq (Zgcd_pol p) ; intros g c.
+    case_eq (Z.gtb g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Z.gcd g c) g))).
+    + intros H H0 H1 H2.
+      flatten_bool.
+      match goal with [ H' : (g >? 0) = true |- ?G ] => rename H' into H3 end.
+      match goal with [ H' : negb (Zeq_bool c 0) = true |- ?G ] => rename H' into H end.
+      match goal with [ H' : negb (Zeq_bool (Z.gcd g c) g) = true |- ?G ] => rename H' into H5 end.
+      rewrite negb_true_iff in H5.
+      apply Zeq_bool_neq in H5.
+      rewrite <- Zgt_is_gt_bool in H3.
+      rewrite negb_true_iff in H.
+      apply Zeq_bool_neq in H.
+      change (eval_pol env p = 0) in H2.
+      rewrite Zgcd_pol_correct_lt with (1:= H0) in H2. 2: auto using Z.gt_lt.
+      set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub p c) g)) in *; clearbody x.
+      contradict H5.
+      apply Zis_gcd_gcd.
+      * apply Z.lt_le_incl, Z.gt_lt; assumption.
+      * constructor; auto with zarith.
+        exists (-x).
+        rewrite Z.mul_opp_l, Z.mul_comm.
+        now apply Z.add_move_0_l.
+        (**)
+    + destruct (makeCuttingPlane p);  discriminate.
+  - discriminate.
+  - destruct (makeCuttingPlane (PsubC Z.sub p 1)) ; discriminate.
+  - destruct (makeCuttingPlane p) ; discriminate.
 Qed.
 
 Lemma eval_nformula_mk_eq_pos : forall env x z t,
@@ -1438,28 +1446,27 @@ Proof.
       rewrite (Pos.add_comm p).
       rewrite max_var_acc.
       apply Pos.le_refl.
-    - intros p ? ? AGREE.
-      f_equal.
-      f_equal.
-      { apply (IHp1 p).
-        eapply agree_env_subset; eauto.
-        apply Pos.le_max_l.
-      }
-      f_equal.
-      { unfold Env.hd.
-        unfold Env.nth.
-        apply AGREE.
-        apply Pos.le_1_l.
-      }
-      {
-        apply (IHp2 p).
-        apply agree_env_tail.
-        eapply agree_env_subset; eauto.
-        rewrite !Pplus_one_succ_r.
-        rewrite max_var_acc.
-        apply Pos.le_max_r.
-      }
+      - intros p ? ? AGREE.
+        f_equal;[f_equal|].
+        + apply (IHp1 p).
+          eapply agree_env_subset; eauto.
+          apply Pos.le_max_l.
+
+        + f_equal.
+          unfold Env.hd.
+          unfold Env.nth.
+          apply AGREE.
+          apply Pos.le_1_l.
+
+
+        + apply (IHp2 p).
+          apply agree_env_tail.
+          eapply agree_env_subset; eauto.
+          rewrite !Pplus_one_succ_r.
+          rewrite max_var_acc.
+          apply Pos.le_max_r.
   }
+
   rewrite H. tauto.
 Qed.
 
@@ -1535,51 +1542,53 @@ Proof.
   intros l. case_eq (eval_Psatz l w) ; [| discriminate].
   intros f Hf.
   case_eq (Zunsat f).
-  intros H0 ? ?.
+  + intros H0 ? ?.
   apply (checker_nf_sound Zsor ZSORaddon l w).
   unfold check_normalised_formulas.  unfold eval_Psatz in Hf. rewrite Hf.
   unfold Zunsat in H0. assumption.
-  intros H0 H1 env.
-  assert (make_impl  (eval_nformula env) (f::l) False) as H2.
-   apply H with (2:= H1).
-   unfold ltof.
-   simpl.
-   auto with arith.
-  destruct f.
-  rewrite <- make_conj_impl in H2.
-  rewrite make_conj_cons in H2.
-  rewrite <- make_conj_impl.
-  intro.
-  apply H2.
-  split ; auto.
-  apply eval_Psatz_sound with (2:= Hf) ; assumption.
+  + intros H0 H1 env.
+    assert (make_impl  (eval_nformula env) (f::l) False) as H2.
+    { apply H with (2:= H1).
+      unfold ltof.
+      simpl.
+      auto with arith.
+    }
+    destruct f.
+    rewrite <- make_conj_impl in H2.
+    rewrite make_conj_cons in H2.
+    rewrite <- make_conj_impl.
+    intro.
+    apply H2.
+    split ; auto.
+    apply eval_Psatz_sound with (2:= Hf) ; assumption.
   - (* CutProof *)
-  simpl.
-  intros l.
-  case_eq (eval_Psatz l w) ; [ | discriminate].
-  intros f' Hlc.
-  case_eq (genCuttingPlane f').
-  intros p H0 H1 env.
-  assert (make_impl (eval_nformula env) (nformula_of_cutting_plane p::l) False) as H2.
-   eapply (H pf)  ; auto.
-   unfold ltof.
-   simpl.
-   auto with arith.
-  rewrite <- make_conj_impl in H2.
-  rewrite make_conj_cons in H2.
-  rewrite <- make_conj_impl.
-  intro.
-  apply H2.
-  split ; auto.
-  apply (eval_Psatz_sound env) in Hlc.
-  apply cutting_plane_sound with (1:= Hlc) (2:= H0).
-  auto.
-  (* genCuttingPlane = None *)
-  intros H0 H1 env.
-  rewrite <- make_conj_impl.
-  intros H2.
-  apply eval_Psatz_sound with (2:= Hlc) in H2.
-  apply genCuttingPlaneNone with (2:= H2) ; auto.
+    simpl.
+    intros l.
+    case_eq (eval_Psatz l w) ; [ | discriminate].
+    intros f' Hlc.
+    case_eq (genCuttingPlane f').
+    + intros p H0 H1 env.
+      assert (make_impl (eval_nformula env) (nformula_of_cutting_plane p::l) False) as H2.
+      { eapply (H pf)  ; auto.
+        unfold ltof.
+        simpl.
+        auto with arith.
+      }
+      rewrite <- make_conj_impl in H2.
+      rewrite make_conj_cons in H2.
+      rewrite <- make_conj_impl.
+      intro.
+      apply H2.
+      split ; auto.
+      apply (eval_Psatz_sound env) in Hlc.
+      * apply cutting_plane_sound with (1:= Hlc) (2:= H0).
+      * auto.
+    + (* genCuttingPlane = None *)
+      intros H0 H1 env.
+      rewrite <- make_conj_impl.
+      intros H2.
+      apply eval_Psatz_sound with (2:= Hlc) in H2.
+      apply genCuttingPlaneNone with (2:= H2) ; auto.
   - (* SplitProof *)
     intros l.
     cbn - [genCuttingPlane].
@@ -1591,212 +1600,217 @@ Proof.
     match goal with [ H' : ZChecker _ pf2 = true |- _ ] => rename H' into H1 end.
     destruct (eval_nformula_split env p).
     + apply (fun H' ck => H _ H' _ ck env) in H0.
-      rewrite <- make_conj_impl in *.
-      intro ; apply H0.
-      rewrite make_conj_cons. split; auto.
-      apply (cutting_plane_sound _ (p,NonStrict)) ; auto.
-      apply ltof_bdepth_split_l.
+      * rewrite <- make_conj_impl in *.
+        intro ; apply H0.
+        rewrite make_conj_cons. split; auto.
+        apply (cutting_plane_sound _ (p,NonStrict)) ; auto.
+      * apply ltof_bdepth_split_l.
     + apply (fun H' ck => H _ H' _ ck env) in H1.
-      rewrite <- make_conj_impl in *.
-      intro ; apply H1.
-      rewrite make_conj_cons. split; auto.
-      apply (cutting_plane_sound _ (popp p,NonStrict)) ; auto.
-      apply ltof_bdepth_split_r.
+      * rewrite <- make_conj_impl in *.
+        intro ; apply H1.
+        rewrite make_conj_cons. split; auto.
+        apply (cutting_plane_sound _ (popp p,NonStrict)) ; auto.
+      * apply ltof_bdepth_split_r.
   - (* EnumProof *)
-  intros l.
-  simpl.
-  case_eq (eval_Psatz l w1) ; [  | discriminate].
-  case_eq (eval_Psatz l w2) ; [  | discriminate].
-  intros f1 Hf1 f2 Hf2.
-  case_eq (genCuttingPlane f2).
-  intros p; destruct p as [ [p1 z1] op1].
-  case_eq (genCuttingPlane f1).
-  intros p; destruct p as [ [p2 z2] op2].
-  case_eq (valid_cut_sign op1 && valid_cut_sign op2 && is_pol_Z0 (padd p1 p2)).
-  intros Hcond.
-  flatten_bool.
-  match goal with [ H1 : is_pol_Z0 (padd p1 p2) = true |- _ ] => rename H1 into HZ0 end.
-  match goal with [ H2 : valid_cut_sign op1 = true |- _ ] => rename H2 into Hop1 end.
-  match goal with [ H3 : valid_cut_sign op2 = true |- _ ] => rename H3 into Hop2 end.
-  intros HCutL HCutR Hfix env.
-  (* get the bounds of the enum *)
-  rewrite <- make_conj_impl.
-  intro H0.
-  assert (-z1 <= eval_pol env p1 <= z2) as H1.
-   split.
-   apply  (eval_Psatz_sound env) in Hf2 ; auto.
-   apply cutting_plane_sound with (1:= Hf2) in HCutR.
-   unfold nformula_of_cutting_plane in HCutR.
-   unfold eval_nformula in HCutR.
-   unfold RingMicromega.eval_nformula in HCutR.
-   change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutR.
-   unfold eval_op1 in HCutR.
-   destruct op1 ; simpl in Hop1 ; try discriminate;
-     rewrite eval_pol_add in HCutR; simpl in HCutR.
-     rewrite Z.add_move_0_l in HCutR; rewrite HCutR, Z.opp_involutive; reflexivity.
-     now apply Z.le_sub_le_add_r in HCutR.
-   (**)
-   apply (fun H => is_pol_Z0_eval_pol _ H env) in HZ0.
-   rewrite eval_pol_add, Z.add_move_r, Z.sub_0_l in HZ0.
-   rewrite HZ0.
-   apply  (eval_Psatz_sound env) in Hf1 ; auto.
-   apply cutting_plane_sound with (1:= Hf1) in HCutL.
-   unfold nformula_of_cutting_plane in HCutL.
-   unfold eval_nformula in HCutL.
-   unfold RingMicromega.eval_nformula in HCutL.
-   change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutL.
-   unfold eval_op1 in HCutL.
-   rewrite eval_pol_add in HCutL. simpl in HCutL.
-   destruct op2 ; simpl in Hop2 ; try discriminate.
-   rewrite Z.add_move_r, Z.sub_0_l in HCutL.
-   now rewrite HCutL, Z.opp_involutive.
-   now rewrite <- Z.le_sub_le_add_l in HCutL.
-  revert Hfix.
-  match goal with
-    | |- context[?F pf (-z1) z2 = true] => set (FF := F)
-  end.
-  intros Hfix.
-  assert (HH :forall x, -z1 <= x <= z2 -> exists pr,
-    (In pr pf /\
-      ZChecker ((PsubC Z.sub p1 x,Equal) :: l) pr = true)%Z).
-  clear HZ0 Hop1 Hop2 HCutL HCutR H0 H1.
-  revert Hfix.
-  generalize (-z1). clear z1. intro z1.
-  revert z1 z2.
-  induction pf as [|a pf IHpf];simpl ;intros z1 z2 Hfix x **.
-  revert Hfix.
-  now case (Z.gtb_spec); [ | easy ]; intros LT; elim (Zlt_not_le _ _ LT); transitivity x.
-  flatten_bool.
-  match goal with [ H' : _ <= x <= _ |- _ ] => rename H' into H0 end.
-  match goal with [ H' : FF pf (z1 + 1) z2 = true |- _ ] => rename H' into H2 end.
-  destruct (Z_le_lt_eq_dec _ _ (proj1 H0)) as [ LT | -> ].
-  2: exists a; auto.
-  rewrite <- Z.le_succ_l in LT.
-  assert (LE: (Z.succ z1 <= x <= z2)%Z) by intuition.
-  elim IHpf with (2:=H2) (3:= LE).
-  intros x0 ?.
-  exists x0 ; split;tauto.
-  intros until 1. 
-  apply H ; auto. 
-  unfold ltof in *.
-  simpl in *.
-  Zify.zify.
-  intuition subst. assumption.
-  eapply Z.lt_le_trans. eassumption.
-  apply Z.add_le_mono_r. assumption.
-  (*/asser *)
-  destruct (HH _ H1) as [pr [Hin Hcheker]].
-  assert (make_impl (eval_nformula env) ((PsubC Z.sub p1 (eval_pol env p1),Equal) :: l) False) as H2.
-   eapply (H pr)  ;auto.
-   apply in_bdepth ; auto.
-  rewrite <- make_conj_impl in H2.
-  apply H2.
-  rewrite  make_conj_cons.
-  split ;auto.
-  unfold  eval_nformula.
-  unfold RingMicromega.eval_nformula.
-  simpl.
-  rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-  unfold eval_pol. ring.
-  discriminate.
-  (* No cutting plane *)
-  intros H0 H1 H2 env.
-  rewrite <- make_conj_impl.
-  intros H3.
-  apply eval_Psatz_sound with (2:= Hf1) in H3.
-  apply genCuttingPlaneNone with (2:= H3) ; auto.
-  (* No Cutting plane (bis) *)
-  intros H0 H1 env.
-  rewrite <- make_conj_impl.
-  intros H2.
-  apply eval_Psatz_sound with (2:= Hf2) in H2.
-  apply genCuttingPlaneNone with (2:= H2) ; auto.
-- intros l.
-  unfold ZChecker.
-  fold ZChecker.
-  set (fr := (max_var_nformulae l)%positive).
-  set (z1 := (Pos.succ fr)) in *.
-  set (t1 := (Pos.succ z1)) in *.
-  destruct (x <=? fr)%positive eqn:LE ; [|congruence].
-  intros H0 env.
-  set (env':= fun v => if Pos.eqb v z1
-                       then if Z.leb (env x) 0 then 0 else env x
-                       else if Pos.eqb v t1
-                            then if Z.leb (env x) 0 then -(env x) else 0
-                            else env v).
-  apply (fun H' ck => H _ H' _ ck env') in H0.
-  + rewrite <- make_conj_impl in *.
-    intro H1.
-    rewrite !make_conj_cons in H0.
-    apply H0 ; repeat split.
-    *
-      apply eval_nformula_mk_eq_pos.
-      unfold env'.
-      rewrite! Pos.eqb_refl.
-      replace (x=?z1)%positive with false.
-      replace (x=?t1)%positive with false.
-      replace (t1=?z1)%positive with false.
-      destruct (env x <=? 0); ring.
-      { unfold t1.
-        pos_tac; normZ.
-        lia (Hyp (e := Z.pos z1 - Z.succ (Z.pos z1)) ltac:(assumption)).
-      }
-      {
-        unfold t1, z1.
-        pos_tac; normZ.
-        lia (Add (Hyp LE) (Hyp (e := Z.pos x - Z.succ (Z.succ (Z.pos fr))) ltac:(assumption))).
-      }
-      {
-        unfold z1.
-        pos_tac; normZ.
-        lia (Add (Hyp LE) (Hyp (e := Z.pos x - Z.succ (Z.pos fr)) ltac:(assumption))).
-      }
-    *
-      apply eval_nformula_bound_var.
-      unfold env'.
-      rewrite! Pos.eqb_refl.
-      destruct (env x <=? 0) eqn:EQ.
-      compute. congruence.
-      rewrite Z.leb_gt in EQ.
-      normZ.
-      lia (Add (Hyp EQ) (Hyp (e := 0 - (env x + 1)) ltac:(assumption))).
-    *
-      apply eval_nformula_bound_var.
-      unfold env'.
-      rewrite! Pos.eqb_refl.
-      replace (t1 =? z1)%positive with false.
-      destruct (env x <=? 0) eqn:EQ.
-      rewrite Z.leb_le in EQ.
-      normZ.
-      lia (Add (Hyp EQ) (Hyp (e := 0 - (- env x + 1)) ltac:(assumption))).
-      compute; congruence.
-      unfold t1.
-      clear.
-      pos_tac; normZ.
-      lia (Hyp (e := Z.pos z1 - Z.succ (Z.pos z1)) ltac:(assumption)).
-    *
-      rewrite (agree_env_eval_nformulae _ env') in H1;auto.
-      unfold agree_env; intros x0 H2.
-      unfold env'.
-      replace (x0 =? z1)%positive with false.
-      replace (x0 =? t1)%positive with false.
-      reflexivity.
-      {
-        unfold t1, z1.
-        unfold fr in *.
-        apply Pos2Z.pos_le_pos in H2.
-        pos_tac; normZ.
-        lia (Add (Hyp H2) (Hyp (e := Z.pos x0 - Z.succ (Z.succ (Z.pos (max_var_nformulae l)))) ltac:(assumption))).
-      }
-      {
-        unfold z1, fr in *.
-        apply Pos2Z.pos_le_pos in H2.
-        pos_tac; normZ.
-        lia (Add (Hyp H2) (Hyp (e := Z.pos x0 - Z.succ (Z.pos (max_var_nformulae l))) ltac:(assumption))).
-      }
-  + unfold ltof.
+    intros l.
     simpl.
-    apply Nat.lt_succ_diag_r.
+    case_eq (eval_Psatz l w1) ; [  | discriminate].
+    case_eq (eval_Psatz l w2) ; [  | discriminate].
+    intros f1 Hf1 f2 Hf2.
+    case_eq (genCuttingPlane f2).
+    + intros p; destruct p as [ [p1 z1] op1].
+      case_eq (genCuttingPlane f1).
+      * intros p; destruct p as [ [p2 z2] op2].
+        case_eq (valid_cut_sign op1 && valid_cut_sign op2 && is_pol_Z0 (padd p1 p2)).
+        -- intros Hcond.
+           flatten_bool.
+           match goal with [ H1 : is_pol_Z0 (padd p1 p2) = true |- _ ] => rename H1 into HZ0 end.
+           match goal with [ H2 : valid_cut_sign op1 = true |- _ ] => rename H2 into Hop1 end.
+           match goal with [ H3 : valid_cut_sign op2 = true |- _ ] => rename H3 into Hop2 end.
+           intros HCutL HCutR Hfix env.
+           (* get the bounds of the enum *)
+           rewrite <- make_conj_impl.
+           intro H0.
+           assert (-z1 <= eval_pol env p1 <= z2) as H1. {
+             split.
+             - apply  (eval_Psatz_sound env) in Hf2 ; auto.
+               apply cutting_plane_sound with (1:= Hf2) in HCutR.
+               unfold nformula_of_cutting_plane in HCutR.
+               unfold eval_nformula in HCutR.
+               unfold RingMicromega.eval_nformula in HCutR.
+               change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutR.
+               unfold eval_op1 in HCutR.
+               destruct op1 ; simpl in Hop1 ; try discriminate;
+                 rewrite eval_pol_add in HCutR; simpl in HCutR.
+               + rewrite Z.add_move_0_l in HCutR; rewrite HCutR, Z.opp_involutive; reflexivity.
+               + now apply Z.le_sub_le_add_r in HCutR.
+               (**)
+             - apply (fun H => is_pol_Z0_eval_pol _ H env) in HZ0.
+               rewrite eval_pol_add, Z.add_move_r, Z.sub_0_l in HZ0.
+               rewrite HZ0.
+               apply  (eval_Psatz_sound env) in Hf1 ; auto.
+               apply cutting_plane_sound with (1:= Hf1) in HCutL.
+               unfold nformula_of_cutting_plane in HCutL.
+               unfold eval_nformula in HCutL.
+               unfold RingMicromega.eval_nformula in HCutL.
+               change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutL.
+               unfold eval_op1 in HCutL.
+               rewrite eval_pol_add in HCutL. simpl in HCutL.
+               destruct op2 ; simpl in Hop2 ; try discriminate.
+               + rewrite Z.add_move_r, Z.sub_0_l in HCutL.
+                 now rewrite HCutL, Z.opp_involutive.
+               + now rewrite <- Z.le_sub_le_add_l in HCutL.
+           }
+           revert Hfix.
+           match goal with
+           | |- context[?F pf (-z1) z2 = true] => set (FF := F)
+           end.
+           intros Hfix.
+           assert (HH :forall x, -z1 <= x <= z2 -> exists pr,
+                        (In pr pf /\
+                           ZChecker ((PsubC Z.sub p1 x,Equal) :: l) pr = true)%Z). {
+             clear HZ0 Hop1 Hop2 HCutL HCutR H0 H1.
+             revert Hfix.
+             generalize (-z1). clear z1. intro z1.
+             revert z1 z2.
+             induction pf as [|a pf IHpf];simpl ;intros z1 z2 Hfix x **.
+             - revert Hfix.
+               now case (Z.gtb_spec); [ | easy ]; intros LT; elim (Zlt_not_le _ _ LT); transitivity x.
+             - flatten_bool.
+               match goal with [ H' : _ <= x <= _ |- _ ] => rename H' into H0 end.
+               match goal with [ H' : FF pf (z1 + 1) z2 = true |- _ ] => rename H' into H2 end.
+               destruct (Z_le_lt_eq_dec _ _ (proj1 H0)) as [ LT | -> ].
+               2: exists a; auto.
+               rewrite <- Z.le_succ_l in LT.
+               assert (LE: (Z.succ z1 <= x <= z2)%Z) by intuition.
+               elim IHpf with (2:=H2) (3:= LE).
+               + intros x0 ?.
+                 exists x0 ; split;tauto.
+               + intros until 1.
+                 apply H ; auto.
+                 unfold ltof in *.
+                 simpl in *.
+                 Zify.zify.
+                 intuition subst.
+                 * assumption.
+                 * eapply Z.lt_le_trans.
+                   -- eassumption.
+                   -- apply Z.add_le_mono_r. assumption.
+           }
+           (*/asser *)
+           destruct (HH _ H1) as [pr [Hin Hcheker]].
+           assert (make_impl (eval_nformula env) ((PsubC Z.sub p1 (eval_pol env p1),Equal) :: l) False) as H2. {
+             eapply (H pr)  ;auto.
+             apply in_bdepth ; auto.
+           }
+           rewrite <- make_conj_impl in H2.
+           apply H2.
+           rewrite  make_conj_cons.
+           split ;auto.
+           unfold  eval_nformula.
+           unfold RingMicromega.eval_nformula.
+           simpl.
+           rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
+           unfold eval_pol. ring.
+        -- discriminate.
+      * (* No cutting plane *)
+        intros H0 H1 H2 env.
+        rewrite <- make_conj_impl.
+        intros H3.
+        apply eval_Psatz_sound with (2:= Hf1) in H3.
+        apply genCuttingPlaneNone with (2:= H3) ; auto.
+    + (* No Cutting plane (bis) *)
+      intros H0 H1 env.
+      rewrite <- make_conj_impl.
+      intros H2.
+      apply eval_Psatz_sound with (2:= Hf2) in H2.
+      apply genCuttingPlaneNone with (2:= H2) ; auto.
+  - intros l.
+    unfold ZChecker.
+    fold ZChecker.
+    set (fr := (max_var_nformulae l)%positive).
+    set (z1 := (Pos.succ fr)) in *.
+    set (t1 := (Pos.succ z1)) in *.
+    destruct (x <=? fr)%positive eqn:LE ; [|congruence].
+    intros H0 env.
+    set (env':= fun v => if Pos.eqb v z1
+                      then if Z.leb (env x) 0 then 0 else env x
+                      else if Pos.eqb v t1
+                           then if Z.leb (env x) 0 then -(env x) else 0
+                           else env v).
+    apply (fun H' ck => H _ H' _ ck env') in H0.
+    + rewrite <- make_conj_impl in *.
+      intro H1.
+      rewrite !make_conj_cons in H0.
+      apply H0 ; repeat split.
+      *
+        apply eval_nformula_mk_eq_pos.
+        unfold env'.
+        rewrite! Pos.eqb_refl.
+        replace (x=?z1)%positive with false.
+        1:replace (x=?t1)%positive with false.
+        1:replace (t1=?z1)%positive with false.
+        1:destruct (env x <=? 0); ring.
+        { unfold t1.
+          pos_tac; normZ.
+          lia (Hyp (e := Z.pos z1 - Z.succ (Z.pos z1)) ltac:(assumption)).
+        }
+        {
+          unfold t1, z1.
+          pos_tac; normZ.
+          lia (Add (Hyp LE) (Hyp (e := Z.pos x - Z.succ (Z.succ (Z.pos fr))) ltac:(assumption))).
+        }
+        {
+          unfold z1.
+          pos_tac; normZ.
+          lia (Add (Hyp LE) (Hyp (e := Z.pos x - Z.succ (Z.pos fr)) ltac:(assumption))).
+        }
+      *
+        apply eval_nformula_bound_var.
+        unfold env'.
+        rewrite! Pos.eqb_refl.
+        destruct (env x <=? 0) eqn:EQ.
+        -- compute. congruence.
+        -- rewrite Z.leb_gt in EQ.
+           normZ.
+           lia (Add (Hyp EQ) (Hyp (e := 0 - (env x + 1)) ltac:(assumption))).
+      *
+        apply eval_nformula_bound_var.
+        unfold env'.
+        rewrite! Pos.eqb_refl.
+        replace (t1 =? z1)%positive with false.
+        -- destruct (env x <=? 0) eqn:EQ.
+           ++ rewrite Z.leb_le in EQ.
+              normZ.
+              lia (Add (Hyp EQ) (Hyp (e := 0 - (- env x + 1)) ltac:(assumption))).
+           ++ compute; congruence.
+        -- unfold t1.
+           clear.
+           pos_tac; normZ.
+           lia (Hyp (e := Z.pos z1 - Z.succ (Z.pos z1)) ltac:(assumption)).
+      *
+        rewrite (agree_env_eval_nformulae _ env') in H1;auto.
+        unfold agree_env; intros x0 H2.
+        unfold env'.
+        replace (x0 =? z1)%positive with false.
+        1:replace (x0 =? t1)%positive with false.
+        1:reflexivity.
+        {
+          unfold t1, z1.
+          unfold fr in *.
+          apply Pos2Z.pos_le_pos in H2.
+          pos_tac; normZ.
+          lia (Add (Hyp H2) (Hyp (e := Z.pos x0 - Z.succ (Z.succ (Z.pos (max_var_nformulae l)))) ltac:(assumption))).
+        }
+        {
+          unfold z1, fr in *.
+          apply Pos2Z.pos_le_pos in H2.
+          pos_tac; normZ.
+          lia (Add (Hyp H2) (Hyp (e := Z.pos x0 - Z.succ (Z.pos (max_var_nformulae l))) ltac:(assumption))).
+        }
+    + unfold ltof.
+      simpl.
+      apply Nat.lt_succ_diag_r.
 Qed.
 
 Definition ZTautoChecker  (f : BFormula (Formula Z) Tauto.isProp) (w: list ZArithProof): bool :=
@@ -1827,8 +1841,8 @@ Proof.
     unfold eval_tt.
     intros H env.
     rewrite (make_impl_map (eval_nformula env)).
-    eapply ZChecker_sound; eauto.
-    tauto.
+    + eapply ZChecker_sound; eauto.
+    + tauto.
 Qed.
 Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
   match pt with

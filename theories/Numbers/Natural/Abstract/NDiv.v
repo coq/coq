@@ -156,7 +156,7 @@ Proof. intros; apply div_le_lower_bound; auto'. Qed.
 (** A division respects opposite monotonicity for the divisor *)
 
 Lemma div_le_compat_l: forall p q r, 0<q<=r -> p/r <= p/q.
-Proof. intros. apply div_le_compat_l. auto'. auto. Qed.
+Proof. intros. apply div_le_compat_l;[auto' | auto]. Qed.
 
 (** * Relations between usual operations and mod and div *)
 

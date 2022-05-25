@@ -35,23 +35,24 @@ Section wf_proof.
 
   Lemma Zwf_well_founded : well_founded (Zwf c).
     red; intros.
-    assert (forall (n:nat) (a:Z), (f a < n)%nat \/ a < c -> Acc (Zwf c) a).
+    assert (forall (n:nat) (a:Z), (f a < n)%nat \/ a < c -> Acc (Zwf c) a). {
     clear a; simple induction n; intros.
-  (** n= 0 *)
-    case H; intros.
-    lia.
-    apply Acc_intro; unfold Zwf; intros.
-    lia.
-  (** inductive case *)
-    case H0; clear H0; intro; auto.
-    apply Acc_intro; intros.
-    apply H.
-    unfold Zwf in H1.
-    case (Z.le_gt_cases c y); intro. 2: lia.
-    left.
-    apply Nat.lt_le_trans with (f a); auto with arith.
-    unfold f.
-    lia.
+    - (** n= 0 *)
+      case H; intros.
+      + lia.
+      + apply Acc_intro; unfold Zwf; intros.
+        lia.
+    - (** inductive case *)
+      case H0; clear H0; intro; auto.
+      apply Acc_intro; intros.
+      apply H.
+      unfold Zwf in H1.
+      case (Z.le_gt_cases c y); intro. 2: lia.
+      left.
+      apply Nat.lt_le_trans with (f a); auto with arith.
+      unfold f.
+      lia.
+    }
     apply (H (S (f a))); auto.
   Qed.
 

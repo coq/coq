@@ -107,12 +107,12 @@ Module KeyDecidableType(D:DecidableType).
   Lemma In_alt : forall k l, In k l <-> exists e, InA eqk (k,e) l.
   Proof.
   intros k l; split; intros [y H].
-  exists y; auto.
-  induction H as [a l eq|a l H IH].
-  destruct a as [k' y'].
-  exists y'; auto.
-  destruct IH as [e H0].
-  exists e; auto.
+  - exists y; auto.
+  - induction H as [a l eq|a l H IH].
+    + destruct a as [k' y'].
+      exists y'; auto.
+    + destruct IH as [e H0].
+      exists e; auto.
   Qed.
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.

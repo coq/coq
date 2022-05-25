@@ -42,16 +42,16 @@ apply central_induction with (z:=m).
  + split; intros; (etransitivity; [eassumption|]); [|symmetry];
     (eapply nat_rect_wd; [eassumption|apply succ_wd]).
  }
-exists 0%nat. now left.
-intros n. split; intros [k [L|R]].
-exists (Datatypes.S k). left. now apply succ_wd.
-destruct k as [|k].
-simpl in R. exists 1%nat. left. now apply succ_wd.
-rewrite nat_rect_succ_r in R. exists k. now right.
-destruct k as [|k]; simpl in L.
-exists 1%nat. now right.
-apply succ_inj in L. exists k. now left.
-exists (Datatypes.S k). right. now rewrite nat_rect_succ_r.
+- exists 0%nat. now left.
+- intros n. split; intros [k [L|R]].
+  + exists (Datatypes.S k). left. now apply succ_wd.
+  + destruct k as [|k].
+    * simpl in R. exists 1%nat. left. now apply succ_wd.
+    * rewrite nat_rect_succ_r in R. exists k. now right.
+  + destruct k as [|k]; simpl in L.
+    * exists 1%nat. now right.
+    * apply succ_inj in L. exists k. now left.
+  + exists (Datatypes.S k). right. now rewrite nat_rect_succ_r.
 Qed.
 
 (** Generalized version of [pred_succ] when iterating *)
@@ -59,9 +59,9 @@ Qed.
 Lemma succ_swap_pred : forall k n m, n == (S^k) m -> m == (P^k) n.
 Proof.
 induction k.
-simpl; auto with *.
-simpl; intros. apply pred_wd in H. rewrite pred_succ in H. apply IHk in H; auto.
-rewrite <- nat_rect_succ_r in H; auto.
+- simpl; auto with *.
+- simpl; intros. apply pred_wd in H. rewrite pred_succ in H. apply IHk in H; auto.
+  rewrite <- nat_rect_succ_r in H; auto.
 Qed.
 
 (** From a given point, all others are iterated successors
@@ -70,8 +70,8 @@ Qed.
 Lemma itersucc_or_iterpred : forall n m, exists k, n == (S^k) m \/ n == (P^k) m.
 Proof.
 intros n m. destruct (itersucc_or_itersucc n m) as (k,[H|H]).
-exists k; left; auto.
-exists k; right. apply succ_swap_pred; auto.
+- exists k; left; auto.
+- exists k; right. apply succ_swap_pred; auto.
 Qed.
 
 (** In particular, all points are either iterated successors of [0]
@@ -89,8 +89,9 @@ Definition initial n := forall m, n ~= S m.
 
 Lemma initial_alt : forall n, initial n <-> S (P n) ~= n.
 Proof.
-split. intros Bn EQ. symmetry in EQ. destruct (Bn _ EQ).
-intros NEQ m EQ. apply NEQ. rewrite EQ, pred_succ; auto with *.
+  split.
+  - intros Bn EQ. symmetry in EQ. destruct (Bn _ EQ).
+  - intros NEQ m EQ. apply NEQ. rewrite EQ, pred_succ; auto with *.
 Qed.
 
 Lemma initial_alt2 : forall n, initial n <-> ~exists m, n == S m.
@@ -108,8 +109,12 @@ Hypothesis Initial : initial init.
 Lemma initial_unique : forall m, initial m -> m == init.
 Proof.
 intros m Im. destruct (itersucc_or_itersucc init m) as (p,[H|H]).
-destruct p. now simpl in *. destruct (Initial _ H).
-destruct p. now simpl in *. destruct (Im _ H).
+- destruct p.
+  + now simpl in *.
+  + destruct (Initial _ H).
+- destruct p.
+  + now simpl in *.
+  + destruct (Im _ H).
 Qed.
 
 (** ... then all other points are descendant of it. *)
@@ -117,8 +122,10 @@ Qed.
 Lemma initial_ancestor : forall m, exists p, m == (S^p) init.
 Proof.
 intros m. destruct (itersucc_or_itersucc init m) as (p,[H|H]).
-destruct p; simpl in *; auto. exists O; auto with *. destruct (Initial _ H).
-exists p; auto.
+- destruct p; simpl in *; auto.
+  + exists O; auto with *.
+  + destruct (Initial _ H).
+- exists p; auto.
 Qed.
 
 (** NB : We would like to have [pred n == n] for the initial element,
@@ -206,10 +213,10 @@ Lemma central_induction_pred :
 Proof.
 intros.
 assert (A 0).
-destruct (itersucc_or_iterpred 0 n0) as (k,[Hk|Hk]); rewrite Hk; clear Hk.
- clear H2. induction k; simpl in *; auto.
- clear H1. induction k; simpl in *; auto.
-apply bi_induction_pred; auto.
+- destruct (itersucc_or_iterpred 0 n0) as (k,[Hk|Hk]); rewrite Hk; clear Hk.
+  + clear H2. induction k; simpl in *; auto.
+  + clear H1. induction k; simpl in *; auto.
+- apply bi_induction_pred; auto.
 Qed.
 
 End NZDomainProp.
@@ -238,8 +245,9 @@ Qed.
 
 Lemma ofnat_pred : forall n, n<>O -> [Peano.pred n] == P [n].
 Proof.
- unfold ofnat. destruct n. destruct 1; auto.
- intros _. simpl. symmetry. apply pred_succ.
+  unfold ofnat. destruct n.
+  - destruct 1; auto.
+  - intros _. simpl. symmetry. apply pred_succ.
 Qed.
 
 (** Since [P 0] can be anything in NZ (either [-1], [0], or even other
@@ -262,8 +270,10 @@ Theorem ofnat_S_gt_0 :
 Proof.
 unfold ofnat.
 intros n; induction n as [| n IH]; simpl in *.
-apply lt_succ_diag_r.
-apply lt_trans with (S 0). apply lt_succ_diag_r. now rewrite <- succ_lt_mono.
+- apply lt_succ_diag_r.
+- apply lt_trans with (S 0).
+  + apply lt_succ_diag_r.
+  + now rewrite <- succ_lt_mono.
 Qed.
 
 Theorem ofnat_S_neq_0 :
@@ -275,14 +285,16 @@ Qed.
 Lemma ofnat_injective : forall n m, [n]==[m] -> n = m.
 Proof.
 induction n as [|n IH]; destruct m; auto.
-intros H; elim (ofnat_S_neq_0 _ H).
-intros H; symmetry in H; elim (ofnat_S_neq_0 _ H).
-intros. f_equal. apply IH. now rewrite <- succ_inj_wd.
+- intros H; elim (ofnat_S_neq_0 _ H).
+- intros H; symmetry in H; elim (ofnat_S_neq_0 _ H).
+- intros. f_equal. apply IH. now rewrite <- succ_inj_wd.
 Qed.
 
 Lemma ofnat_eq : forall n m, [n]==[m] <-> n = m.
 Proof.
-split. apply ofnat_injective. intros; now subst.
+  split.
+  - apply ofnat_injective.
+  - intros; now subst.
 Qed.
 
 (* In addition, we can prove that [ofnat] preserves order. *)
@@ -290,23 +302,23 @@ Qed.
 Lemma ofnat_lt : forall n m : nat, [n]<[m] <-> (n<m)%nat.
 Proof.
 induction n as [|n IH]; destruct m; repeat rewrite ofnat_zero; split.
-intro H; elim (lt_irrefl _ H).
-inversion 1.
-intros _; apply Nat.lt_0_succ.
-intros; apply ofnat_S_gt_0.
-intro H; elim (lt_asymm _ _ H); apply ofnat_S_gt_0.
-inversion 1.
-rewrite !ofnat_succ, <- succ_lt_mono, IH; apply Nat.succ_lt_mono.
-rewrite !ofnat_succ, <- succ_lt_mono, IH; apply Nat.succ_lt_mono.
+- intro H; elim (lt_irrefl _ H).
+- inversion 1.
+- intros _; apply Nat.lt_0_succ.
+- intros; apply ofnat_S_gt_0.
+- intro H; elim (lt_asymm _ _ H); apply ofnat_S_gt_0.
+- inversion 1.
+- rewrite !ofnat_succ, <- succ_lt_mono, IH; apply Nat.succ_lt_mono.
+- rewrite !ofnat_succ, <- succ_lt_mono, IH; apply Nat.succ_lt_mono.
 Qed.
 
 Lemma ofnat_le : forall n m : nat, [n]<=[m] <-> (n<=m)%nat.
 Proof.
 intros. rewrite lt_eq_cases, ofnat_lt, ofnat_eq.
 split.
-destruct 1; subst; auto.
-apply Nat.lt_le_incl; assumption.
-apply Nat.lt_eq_cases.
+- destruct 1; subst; auto.
+  apply Nat.lt_le_incl; assumption.
+- apply Nat.lt_eq_cases.
 Qed.
 
 End NZOfNatOrd.
@@ -322,45 +334,48 @@ Local Open Scope ofnat.
 Lemma ofnat_add_l : forall n m, [n]+m == (S^n) m.
 Proof.
  induction n; intros.
- apply add_0_l.
- rewrite ofnat_succ, add_succ_l. simpl. now f_equiv.
+ - apply add_0_l.
+ - rewrite ofnat_succ, add_succ_l. simpl. now f_equiv.
 Qed.
 
 Lemma ofnat_add : forall n m, [n+m] == [n]+[m].
 Proof.
  intros. rewrite ofnat_add_l.
- induction n; simpl. reflexivity.
- now f_equiv.
+ induction n; simpl.
+ - reflexivity.
+ - now f_equiv.
 Qed.
 
 Lemma ofnat_mul : forall n m, [n*m] == [n]*[m].
 Proof.
  induction n; simpl; intros.
- symmetry. apply mul_0_l.
- rewrite Nat.add_comm.
- rewrite ofnat_add, mul_succ_l.
- now f_equiv.
+ - symmetry. apply mul_0_l.
+ - rewrite Nat.add_comm.
+   rewrite ofnat_add, mul_succ_l.
+   now f_equiv.
 Qed.
 
 Lemma ofnat_sub_r : forall n m, n-[m] == (P^m) n.
 Proof.
  induction m; simpl; intros.
- apply sub_0_r.
- rewrite sub_succ_r. now f_equiv.
+ - apply sub_0_r.
+ - rewrite sub_succ_r. now f_equiv.
 Qed.
 
 Lemma ofnat_sub : forall n m, m<=n -> [n-m] == [n]-[m].
 Proof.
  intros n m H. rewrite ofnat_sub_r.
- revert n H. induction m. intros.
- rewrite Nat.sub_0_r. now simpl.
- intros.
- destruct n.
- inversion H.
- rewrite nat_rect_succ_r.
- simpl.
- etransitivity. apply IHm; apply <- Nat.succ_le_mono; assumption.
-    eapply nat_rect_wd; [symmetry;apply pred_succ|apply pred_wd].
+ revert n H. induction m.
+ - intros.
+   rewrite Nat.sub_0_r. now simpl.
+ - intros.
+   destruct n.
+   + inversion H.
+   + rewrite nat_rect_succ_r.
+     simpl.
+     etransitivity.
+     * apply IHm; apply <- Nat.succ_le_mono; assumption.
+     * eapply nat_rect_wd; [symmetry;apply pred_succ|apply pred_wd].
 Qed.
 
 End NZOfNatOps.

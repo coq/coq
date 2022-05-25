@@ -112,12 +112,12 @@ Qed.
 Lemma Zdivide_dec a b : {(a | b)} + {~ (a | b)}.
 Proof.
  destruct (Z.eq_dec a 0) as [Ha|Ha].
-  destruct (Z.eq_dec b 0) as [Hb|Hb].
-   left; subst; apply Z.divide_0_r.
-   right. subst. contradict Hb. now apply Z.divide_0_l.
-  destruct (Z.eq_dec (b mod a) 0).
-   left. now apply Z.mod_divide.
-   right. now rewrite <- Z.mod_divide.
+ - destruct (Z.eq_dec b 0) as [Hb|Hb].
+   + left; subst; apply Z.divide_0_r.
+   + right. subst. contradict Hb. now apply Z.divide_0_l.
+ - destruct (Z.eq_dec (b mod a) 0).
+   + left. now apply Z.mod_divide.
+   + right. now rewrite <- Z.mod_divide.
 Defined.
 
 Lemma Z_lt_neq {x y: Z} : x < y -> y <> x.
@@ -171,8 +171,8 @@ Proof with auto using Z_lt_neq.
   intros H H1. apply Z.mod_divide...
   rewrite Zminus_mod.
   rewrite H1. rewrite <- (Z.mod_small c b) at 1.
-  rewrite Z.sub_diag, Z.mod_0_l...
-  subst. now apply Z.mod_pos_bound.
+  - rewrite Z.sub_diag, Z.mod_0_l...
+  - subst. now apply Z.mod_pos_bound.
 Qed.
 
 Lemma Zdivide_mod_minus a b c:
@@ -235,8 +235,8 @@ Qed.
 Lemma Zis_gcd_0_abs a : Zis_gcd 0 a (Z.abs a).
 Proof.
   apply Zabs_ind.
-  intros; apply Zis_gcd_sym; apply Zis_gcd_0; auto.
-  intros; apply Zis_gcd_opp; apply Zis_gcd_0; auto.
+  - intros; apply Zis_gcd_sym; apply Zis_gcd_0; auto.
+  - intros; apply Zis_gcd_opp; apply Zis_gcd_0; auto.
 Qed.
 
 #[global]
@@ -261,7 +261,9 @@ Lemma Zis_gcd_for_euclid :
   forall a b d q:Z, Zis_gcd b (a - q * b) d -> Zis_gcd a b d.
 Proof.
   intros a b d q; simple induction 1; constructor; intuition.
-  replace a with (a - q * b + q * b). auto with zarith. ring.
+  replace a with (a - q * b + q * b).
+  - auto with zarith.
+  - ring.
 Qed.
 
 Lemma Zis_gcd_for_euclid2 :
@@ -269,7 +271,9 @@ Lemma Zis_gcd_for_euclid2 :
 Proof.
   intros b d q r; destruct 1 as [? ? H]; constructor; intuition.
   apply H; auto.
-  replace r with (b * q + r - b * q). auto with zarith. ring.
+  replace r with (b * q + r - b * q).
+  - auto with zarith.
+  - ring.
 Qed.
 
 (** We implement the extended version of Euclid's algorithm,
@@ -304,29 +308,29 @@ Section extended_euclid_algorithm.
   Proof.
     intros v3 Hv3; generalize Hv3; pattern v3.
     apply Zlt_0_rec.
-    clear v3 Hv3; intros x H ? ? u1 u2 u3 v1 v2 H1 H2 H3.
-    destruct (Z_zerop x) as [Heq|Hneq].
-    apply (Euclid_intro u1 u2 u3).
-    assumption.
-    apply H3.
-    rewrite Heq; auto with zarith.
-    set (q := u3 / x) in *.
-    assert (Hq : 0 <= u3 - q * x < x).
-    replace (u3 - q * x) with (u3 mod x).
-    apply Z_mod_lt.
-    apply Z.lt_gt, Z.le_neq; auto.
-    generalize (Z_div_mod_eq_full u3 x).
-    unfold q.
-    intro eq; pattern u3 at 2; rewrite eq; ring.
-    apply (H (u3 - q * x) Hq (proj1 Hq) v1 v2 x (u1 - q * v1) (u2 - q * v2)).
-    tauto.
-    replace ((u1 - q * v1) * a + (u2 - q * v2) * b) with
-      (u1 * a + u2 * b - q * (v1 * a + v2 * b)).
-    rewrite H1; rewrite H2; trivial.
-    ring.
-    intros; apply H3.
-    apply Zis_gcd_for_euclid with q; assumption.
-    assumption.
+    - clear v3 Hv3; intros x H ? ? u1 u2 u3 v1 v2 H1 H2 H3.
+      destruct (Z_zerop x) as [Heq|Hneq].
+      + apply (Euclid_intro u1 u2 u3).
+        * assumption.
+        * apply H3.
+          rewrite Heq; auto with zarith.
+      + set (q := u3 / x) in *.
+        assert (Hq : 0 <= u3 - q * x < x). {
+          replace (u3 - q * x) with (u3 mod x).
+          - apply Z_mod_lt.
+            apply Z.lt_gt, Z.le_neq; auto.
+          - generalize (Z_div_mod_eq_full u3 x).
+            unfold q.
+            intro eq; pattern u3 at 2; rewrite eq; ring.
+        }
+        apply (H (u3 - q * x) Hq (proj1 Hq) v1 v2 x (u1 - q * v1) (u2 - q * v2)).
+        * tauto.
+        * replace ((u1 - q * v1) * a + (u2 - q * v2) * b) with
+            (u1 * a + u2 * b - q * (v1 * a + v2 * b)) by ring.
+          rewrite H1; rewrite H2; trivial.
+        * intros; apply H3.
+          apply Zis_gcd_for_euclid with q; assumption.
+    - assumption.
   Qed.
 
   (** We get Euclid's algorithm by applying [euclid_rec] on
@@ -335,14 +339,14 @@ Section extended_euclid_algorithm.
   Lemma euclid : Euclid.
   Proof.
     case (Z_le_gt_dec 0 b); intro.
-    intros;
-      apply (fun H => euclid_rec b H 1 0 a 0 1);
-      auto; ring.
-    intros;
-      apply (fun H => euclid_rec (- b) H 1 0 a 0 (-1));
-      auto; try ring.
-    now apply Z.opp_nonneg_nonpos, Z.lt_le_incl, Z.gt_lt.
-    auto with zarith.
+    - intros;
+        apply (fun H => euclid_rec b H 1 0 a 0 1);
+        auto; ring.
+    - intros;
+        apply (fun H => euclid_rec (- b) H 1 0 a 0 (-1));
+        auto; try ring.
+      + now apply Z.opp_nonneg_nonpos, Z.lt_le_incl, Z.gt_lt.
+      + auto with zarith.
   Qed.
 
 End extended_euclid_algorithm.
@@ -370,10 +374,10 @@ Proof.
   elim (euclid a b); intros u v d0 e g.
   generalize (Zis_gcd_uniqueness_apart_sign a b d d0 Hgcd g).
   intro H; elim H; clear H; intros H.
-  apply Bezout_intro with u v.
-  rewrite H; assumption.
-  apply Bezout_intro with (- u) (- v).
-  rewrite H; rewrite <- e; ring.
+  - apply Bezout_intro with u v.
+    rewrite H; assumption.
+  - apply Bezout_intro with (- u) (- v).
+    rewrite H; rewrite <- e; ring.
 Qed.
 
 (** gcd of [ca] and [cb] is [c gcd(a,b)]. *)
@@ -389,8 +393,8 @@ Proof.
   apply Zdivide_intro with (u * a' + v * b').
   rewrite <- Huv.
   replace (c * (u * a + v * b)) with (u * (c * a) + v * (c * b)).
-  rewrite Ha'; rewrite Hb'; ring.
-  ring.
+  - rewrite Ha'; rewrite Hb'; ring.
+  - ring.
 Qed.
 
 
@@ -494,13 +498,13 @@ Proof.
   - exists b'; rewrite ?Z.mul_1_r; auto with zarith.
   - intros x (xa,H5) (xb,H6).
     destruct (Hab (x*g)) as (x',Hx').
-    exists xa; rewrite Z.mul_assoc; rewrite <- H5; auto.
-    exists xb; rewrite Z.mul_assoc; rewrite <- H6; auto.
-    replace g with (1*g) in Hx'; auto with zarith.
-    do 2 rewrite Z.mul_assoc in Hx'.
-    apply Z.mul_reg_r in Hx'; trivial.
-    rewrite Z.mul_1_r in Hx'.
-    exists x'; auto with zarith.
+    + exists xa; rewrite Z.mul_assoc; rewrite <- H5; auto.
+    + exists xb; rewrite Z.mul_assoc; rewrite <- H6; auto.
+    + replace g with (1*g) in Hx'; auto with zarith.
+      do 2 rewrite Z.mul_assoc in Hx'.
+      apply Z.mul_reg_r in Hx'; trivial.
+      rewrite Z.mul_1_r in Hx'.
+      exists x'; auto with zarith.
 Qed.
 
 Theorem rel_prime_sym: forall a b, rel_prime a b -> rel_prime b a.
@@ -522,18 +526,18 @@ Qed.
 Theorem rel_prime_1: forall n, rel_prime 1 n.
 Proof.
   intros n; red; apply Zis_gcd_intro; auto.
-  exists 1; reflexivity.
-  exists n; rewrite Z.mul_1_r; reflexivity.
+  - exists 1; reflexivity.
+  - exists n; rewrite Z.mul_1_r; reflexivity.
 Qed.
 
 Theorem not_rel_prime_0: forall n, 1 < n -> ~ rel_prime 0 n.
 Proof.
   intros n H H1; absurd (n = 1 \/ n = -1).
-  intros [H2 | H2]; subst; contradict H; discriminate.
-  case (Zis_gcd_unique  0 n n 1); auto.
-  apply Zis_gcd_intro; auto.
-  exists 0; reflexivity.
-  exists 1; rewrite Z.mul_1_l; reflexivity.
+  - intros [H2 | H2]; subst; contradict H; discriminate.
+  - case (Zis_gcd_unique  0 n n 1); auto.
+    apply Zis_gcd_intro; auto.
+    + exists 0; reflexivity.
+    + exists 1; rewrite Z.mul_1_l; reflexivity.
 Qed.
 
 Theorem rel_prime_mod: forall p q, 0 < q ->
@@ -541,12 +545,12 @@ Theorem rel_prime_mod: forall p q, 0 < q ->
 Proof.
   intros p q H H0.
   assert (H1: Bezout p q 1).
-  apply rel_prime_bezout; auto.
-  inversion_clear H1 as [q1 r1 H2].
-  apply bezout_rel_prime.
-  apply Bezout_intro with q1  (r1 + q1 * (p / q)).
-  rewrite <- H2.
-  pattern p at 3; rewrite (Z_div_mod_eq_full p q); ring.
+  - apply rel_prime_bezout; auto.
+  - inversion_clear H1 as [q1 r1 H2].
+    apply bezout_rel_prime.
+    apply Bezout_intro with q1  (r1 + q1 * (p / q)).
+    rewrite <- H2.
+    pattern p at 3; rewrite (Z_div_mod_eq_full p q); ring.
 Qed.
 
 Theorem rel_prime_mod_rev: forall p q, 0 < q ->
@@ -581,8 +585,8 @@ Proof.
   intros p; destruct 1 as [H H0]; intros a ?.
   assert
     (a = - p \/ - p < a < -1 \/ a = -1 \/ a = 0 \/ a = 1 \/ 1 < a < p \/ a = p).
-  { assert (Z.abs a <= Z.abs p) as H2.
-      apply Zdivide_bounds; [ assumption | now intros -> ].
+  { assert (Z.abs a <= Z.abs p) as H2 by
+        (apply Zdivide_bounds; [ assumption | now intros -> ]).
     revert H2.
     pattern (Z.abs a); apply Zabs_ind; pattern (Z.abs p); apply Zabs_ind;
     intros H2 H3 H4.
@@ -687,8 +691,9 @@ Qed.
 
 Lemma not_prime_1: ~ prime 1.
 Proof.
-  intros H1; absurd (1 < 1). discriminate.
-  inversion H1; auto.
+  intros H1; absurd (1 < 1).
+  - discriminate.
+  - inversion H1; auto.
 Qed.
 
 Lemma prime_2: prime 2.
@@ -798,9 +803,9 @@ Notation Zgcd_is_pos := Z.gcd_nonneg (only parsing).
 Lemma Zgcd_is_gcd : forall a b, Zis_gcd a b (Z.gcd a b).
 Proof.
  constructor.
- apply Z.gcd_divide_l.
- apply Z.gcd_divide_r.
- apply Z.gcd_greatest.
+ - apply Z.gcd_divide_l.
+ - apply Z.gcd_divide_r.
+ - apply Z.gcd_greatest.
 Qed.
 
 Theorem Zgcd_spec : forall x y : Z, {z : Z | Zis_gcd x y z /\ 0 <= z}.
@@ -820,13 +825,13 @@ Theorem Zis_gcd_gcd: forall a b c : Z,
 Proof.
   intros a b c H1 H2.
   case (Zis_gcd_uniqueness_apart_sign a b c (Z.gcd a b)); auto.
-  apply Zgcd_is_gcd; auto.
-  Z.le_elim H1.
-  - generalize (Z.gcd_nonneg a b); auto with zarith.
-    intros H3 H4; contradict H3.
-    rewrite <- (Z.opp_involutive (Z.gcd a b)), <- H4.
-    now apply Zlt_not_le, Z.opp_lt_mono; rewrite Z.opp_involutive.
-  - subst. now case (Z.gcd a b).
+  - apply Zgcd_is_gcd; auto.
+  - Z.le_elim H1.
+    + generalize (Z.gcd_nonneg a b); auto with zarith.
+      intros H3 H4; contradict H3.
+      rewrite <- (Z.opp_involutive (Z.gcd a b)), <- H4.
+      now apply Zlt_not_le, Z.opp_lt_mono; rewrite Z.opp_involutive.
+    + subst. now case (Z.gcd a b).
 Qed.
 
 Notation Zgcd_inv_0_l := Z.gcd_eq_0_l (only parsing).
@@ -876,20 +881,20 @@ Theorem Zgcd_1_rel_prime : forall a b,
  Z.gcd a b = 1 <-> rel_prime a b.
 Proof.
   unfold rel_prime; intros a b; split; intro H.
-  rewrite <- H; apply Zgcd_is_gcd.
-  case (Zis_gcd_unique a b (Z.gcd a b) 1); auto.
-  apply Zgcd_is_gcd.
-  intros H2; absurd (0 <= Z.gcd a b); auto with zarith.
-  - rewrite H2; red; auto.
-  - generalize (Z.gcd_nonneg a b); auto with zarith.
+  - rewrite <- H; apply Zgcd_is_gcd.
+  - case (Zis_gcd_unique a b (Z.gcd a b) 1); auto.
+    + apply Zgcd_is_gcd.
+    + intros H2; absurd (0 <= Z.gcd a b); auto with zarith.
+      * rewrite H2; red; auto.
+      * generalize (Z.gcd_nonneg a b); auto with zarith.
 Qed.
 
 Definition rel_prime_dec: forall a b,
  { rel_prime a b }+{ ~ rel_prime a b }.
 Proof.
   intros a b; case (Z.eq_dec (Z.gcd a b) 1); intros H1.
-  left; apply -> Zgcd_1_rel_prime; auto.
-  right; contradict H1; apply <- Zgcd_1_rel_prime; auto.
+  - left; apply -> Zgcd_1_rel_prime; auto.
+  - right; contradict H1; apply <- Zgcd_1_rel_prime; auto.
 Defined.
 
 Definition prime_dec_aux:

@@ -90,7 +90,9 @@ Proof.
  intros EQ POS NEG.
  split; auto.
  red; destruct b.
-  now destruct Hb. left; now apply POS. right; now apply NEG.
+ - now destruct Hb.
+ - left; now apply POS.
+ - right; now apply NEG.
 Qed.
 
 (** The same results as before, stated separately in terms of Z.div and Z.modulo *)
@@ -563,9 +565,10 @@ Qed.
 Theorem Zdiv_mult_le:
  forall a b c, 0<=a -> 0<=b -> 0<=c -> c*(a/b) <= (c*a)/b.
 Proof.
- intros a b c ? ? ?. zero_or_not b. now rewrite Z.mul_0_r.
- apply Z.div_mul_le; auto.
- apply Z.le_neq; auto.
+  intros a b c ? ? ?. zero_or_not b.
+  - now rewrite Z.mul_0_r.
+  - apply Z.div_mul_le; auto.
+    apply Z.le_neq; auto.
 Qed.
 
 (** Z.modulo is related to divisibility (see more in Znumtheory) *)
@@ -686,25 +689,25 @@ Definition Zmod' a b :=
 Theorem Zmod_POS_correct a b : Zmod_POS a b = snd (Z.pos_div_eucl a b).
 Proof.
   induction a as [a IH|a IH| ]; simpl; rewrite ?IH.
-  destruct (Z.pos_div_eucl a b) as (p,q); simpl;
-   case Z.ltb_spec; reflexivity.
-  destruct (Z.pos_div_eucl a b) as (p,q); simpl;
-   case Z.ltb_spec; reflexivity.
-  case Z.leb_spec; trivial.
+  - destruct (Z.pos_div_eucl a b) as (p,q); simpl;
+      case Z.ltb_spec; reflexivity.
+  - destruct (Z.pos_div_eucl a b) as (p,q); simpl;
+      case Z.ltb_spec; reflexivity.
+  - case Z.leb_spec; trivial.
 Qed.
 
 Theorem Zmod'_correct: forall a b, Zmod' a b = a mod b.
 Proof.
   intros a b; unfold Z.modulo; case a; simpl; auto.
-  intros p; case b; simpl; auto.
-  intros p1; refine (Zmod_POS_correct _ _); auto.
-  intros p1; rewrite Zmod_POS_correct; auto.
-  case (Z.pos_div_eucl p (Zpos p1)); simpl; intros z1 z2; case z2; auto.
-  intros p; case b; simpl; auto.
-  intros p1; rewrite Zmod_POS_correct; auto.
-  case (Z.pos_div_eucl p (Zpos p1)); simpl; intros z1 z2; case z2; auto.
-  intros p1; rewrite Zmod_POS_correct; simpl; auto.
-  case (Z.pos_div_eucl p (Zpos p1)); auto.
+  - intros p; case b; simpl; auto.
+    + intros p1; refine (Zmod_POS_correct _ _); auto.
+    + intros p1; rewrite Zmod_POS_correct; auto.
+      case (Z.pos_div_eucl p (Zpos p1)); simpl; intros z1 z2; case z2; auto.
+  - intros p; case b; simpl; auto.
+    + intros p1; rewrite Zmod_POS_correct; auto.
+      case (Z.pos_div_eucl p (Zpos p1)); simpl; intros z1 z2; case z2; auto.
+    + intros p1; rewrite Zmod_POS_correct; simpl; auto.
+      case (Z.pos_div_eucl p (Zpos p1)); auto.
 Qed.
 
 

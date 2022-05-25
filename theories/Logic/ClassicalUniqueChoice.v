@@ -53,34 +53,35 @@ Theorem classic_set_in_prop_context :
 Proof.
 intros C HnotEM.
 set (R := fun A b => A /\ true = b \/ ~ A /\ false = b).
-assert (H :  exists f : Prop -> bool, (forall A:Prop, R A (f A))).
+assert (H :  exists f : Prop -> bool, (forall A:Prop, R A (f A))). {
 apply unique_choice.
 intro A.
 destruct (classic A) as [Ha| Hnota].
-  exists true; split.
-    left; split; [ assumption | reflexivity ].
-    intros y [[_ Hy]| [Hna _]].
-      assumption.
-      contradiction.
-  exists false; split.
-    right; split; [ assumption | reflexivity ].
-    intros y [[Ha _]| [_ Hy]].
-      contradiction.
-      assumption.
+- exists true; split.
+  + left; split; [ assumption | reflexivity ].
+  + intros y [[_ Hy]| [Hna _]].
+    * assumption.
+    * contradiction.
+- exists false; split.
+  + right; split; [ assumption | reflexivity ].
+  + intros y [[Ha _]| [_ Hy]].
+    * contradiction.
+    * assumption.
+}
 destruct H as [f Hf].
 apply HnotEM.
 intro P.
 assert (HfP := Hf P).
 (* Elimination from Hf to Set is not allowed but from f to Set yes ! *)
 destruct (f P).
-  left.
+- left.
   destruct HfP as [[Ha _]| [_ Hfalse]].
-    assumption.
-    discriminate.
-  right.
+  + assumption.
+  + discriminate.
+- right.
   destruct HfP as [[_ Hfalse]| [Hna _]].
-    discriminate.
-    assumption. 
+  + discriminate.
+  + assumption.
 Qed.
 
 Corollary not_not_classic_set :

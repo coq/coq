@@ -33,17 +33,17 @@ Lemma atan_sub_correct :
 Proof.
 intros u v pn0 uvint aint.
 assert (cos (atan u) <> 0).
- destruct (atan_bound u); apply Rgt_not_eq, cos_gt_0; auto.
- rewrite <- Ropp_div; assumption.
+{ destruct (atan_bound u); apply Rgt_not_eq, cos_gt_0; auto.
+  rewrite <- Ropp_div; assumption. }
 assert (cos (atan v) <> 0).
- destruct (atan_bound v); apply Rgt_not_eq, cos_gt_0; auto.
- rewrite <- Ropp_div; assumption.
+{ destruct (atan_bound v); apply Rgt_not_eq, cos_gt_0; auto.
+  rewrite <- Ropp_div; assumption. }
 assert (t : forall a b c, a - b = c -> a = b + c) by (intros; subst; field).
 apply t, tan_inj; clear t; try assumption.
 rewrite tan_minus; auto.
-  rewrite !tan_atan; reflexivity.
-apply Rgt_not_eq, cos_gt_0; rewrite <- ?Ropp_div; tauto.
-rewrite !tan_atan; assumption.
+- rewrite !tan_atan; reflexivity.
+- apply Rgt_not_eq, cos_gt_0; rewrite <- ?Ropp_div; tauto.
+- rewrite !tan_atan; assumption.
 Qed.
 
 Lemma tech : forall x y , -1 <= x <= 1 -> -1 < y < 1 -> 
@@ -52,21 +52,21 @@ Proof.
 assert (ut := PI_RGT_0).
 intros x y [xm1 x1] [ym1 y1].
 assert (-(PI/4) <= atan x).
- destruct xm1 as [xm1 | xm1].
-  rewrite <- atan_1, <- atan_opp; apply Rlt_le, atan_increasing.
-  assumption.
- solve[rewrite <- xm1; change (-1) with (-(1)); rewrite atan_opp, atan_1; apply Rle_refl].
+{ destruct xm1 as [xm1 | xm1].
+  { rewrite <- atan_1, <- atan_opp; apply Rlt_le, atan_increasing.
+    assumption. }
+  solve[rewrite <- xm1; change (-1) with (-(1)); rewrite atan_opp, atan_1; apply Rle_refl]. }
 assert (-(PI/4) < atan y).
- rewrite <- atan_1, <- atan_opp; apply atan_increasing.
- assumption.
+{ rewrite <- atan_1, <- atan_opp; apply atan_increasing.
+  assumption. }
 assert (atan x <= PI/4).
- destruct x1 as [x1 | x1].
-  rewrite <- atan_1; apply Rlt_le, atan_increasing.
-  assumption.
- solve[rewrite x1, atan_1; apply Rle_refl].
+{ destruct x1 as [x1 | x1].
+  { rewrite <- atan_1; apply Rlt_le, atan_increasing.
+    assumption. }
+  solve[rewrite x1, atan_1; apply Rle_refl]. }
 assert (atan y < PI/4).
-  rewrite <- atan_1; apply atan_increasing.
-  assumption.
+{ rewrite <- atan_1; apply atan_increasing.
+  assumption. }
 rewrite Ropp_div; split; lra.
 Qed.
 
@@ -76,10 +76,10 @@ Proof.
 assert (utility : 0 < PI/2) by (apply PI2_RGT_0).
 rewrite <- atan_1.
 rewrite (atan_sub_correct 1 (/2)).
-   apply f_equal, f_equal; unfold atan_sub; field.
-  apply Rgt_not_eq; lra.
- apply tech; try split; try lra.
-apply atan_bound.
+- apply f_equal, f_equal; unfold atan_sub; field.
+- apply Rgt_not_eq; lra.
+- apply tech; try split; try lra.
+- apply atan_bound.
 Qed.
 
 Lemma Machin_4_5_239 : PI/4 = 4 * atan (/5) - atan(/239).
@@ -141,30 +141,30 @@ Proof.
 assert (dec3 : 0 <= /3 <= 1) by (split; lra).
 assert (dec7 : 0 <= /7 <= 1) by (split; lra).
 assert (decr : Un_decreasing PI_2_3_7_tg).
- apply Ratan_seq_decreasing in dec3.
- apply Ratan_seq_decreasing in dec7.
- intros n; apply Rplus_le_compat.
-  apply Rmult_le_compat_l; [ lra | exact (dec3 n)].
- exact (dec7 n).
+{ apply Ratan_seq_decreasing in dec3.
+  apply Ratan_seq_decreasing in dec7.
+  intros n; apply Rplus_le_compat.
+  { apply Rmult_le_compat_l; [ lra | exact (dec3 n)]. }
+  exact (dec7 n). }
 assert (cv : Un_cv PI_2_3_7_tg 0).
- apply Ratan_seq_converging in dec3.
- apply Ratan_seq_converging in dec7.
- intros eps ep.
- assert (ep' : 0 < eps /3) by lra.
- destruct (dec3 _ ep') as [N1 Pn1]; destruct (dec7 _ ep') as [N2 Pn2].
- exists (N1 + N2)%nat; intros n Nn.
- unfold PI_2_3_7_tg.
- rewrite <- (Rplus_0_l 0).
- apply Rle_lt_trans with
+{ apply Ratan_seq_converging in dec3.
+  apply Ratan_seq_converging in dec7.
+  intros eps ep.
+  assert (ep' : 0 < eps /3) by lra.
+  destruct (dec3 _ ep') as [N1 Pn1]; destruct (dec7 _ ep') as [N2 Pn2].
+  exists (N1 + N2)%nat; intros n Nn.
+  unfold PI_2_3_7_tg.
+  rewrite <- (Rplus_0_l 0).
+  apply Rle_lt_trans with
     (1 := R_dist_plus (2 * Ratan_seq (/3) n) 0 (Ratan_seq (/7) n) 0).
- replace eps with (2 * eps/3 + eps/3) by field.
- apply Rplus_lt_compat.
-  unfold R_dist, Rminus, Rdiv.
-  rewrite <- (Rmult_0_r 2), <- Ropp_mult_distr_r_reverse.
-  rewrite <- Rmult_plus_distr_l, Rabs_mult, (Rabs_pos_eq 2);[|lra].
-  rewrite Rmult_assoc; apply Rmult_lt_compat_l;[lra | ].
-   apply (Pn1 n); lia.
-  apply (Pn2 n); lia.
+  replace eps with (2 * eps/3 + eps/3) by field.
+  apply Rplus_lt_compat.
+  { unfold R_dist, Rminus, Rdiv.
+    rewrite <- (Rmult_0_r 2), <- Ropp_mult_distr_r_reverse.
+    rewrite <- Rmult_plus_distr_l, Rabs_mult, (Rabs_pos_eq 2);[|lra].
+    rewrite Rmult_assoc; apply Rmult_lt_compat_l;[lra | ].
+    apply (Pn1 n); lia. }
+  apply (Pn2 n); lia. }
 rewrite Machin_2_3_7.
 rewrite !atan_eq_ps_atan; try (split; lra).
 unfold ps_atan; destruct (in_int (/3)); destruct (in_int (/7));
@@ -172,13 +172,13 @@ unfold ps_atan; destruct (in_int (/3)); destruct (in_int (/7));
 destruct (ps_atan_exists_1 (/3)) as [v3 Pv3].
 destruct (ps_atan_exists_1 (/7)) as [v7 Pv7].
 assert (main : Un_cv (sum_f_R0 (tg_alt PI_2_3_7_tg)) (2 * v3 + v7)).
- assert (main :Un_cv (fun n => 2 * sum_f_R0 (tg_alt (Ratan_seq (/3))) n +
-                        sum_f_R0 (tg_alt (Ratan_seq (/7))) n) (2 * v3 + v7)).
-  apply CV_plus;[ | assumption].
-  apply CV_mult;[ | assumption].
-  exists 0%nat; intros; rewrite R_dist_eq; assumption.
- apply Un_cv_ext with (2 := main).
- intros n; rewrite scal_sum, <- plus_sum; apply sum_eq; intros.
- rewrite Rmult_comm; unfold PI_2_3_7_tg, tg_alt; field.
+{ assert (main :Un_cv (fun n => 2 * sum_f_R0 (tg_alt (Ratan_seq (/3))) n +
+                               sum_f_R0 (tg_alt (Ratan_seq (/7))) n) (2 * v3 + v7)).
+  { apply CV_plus;[ | assumption].
+    apply CV_mult;[ | assumption].
+    exists 0%nat; intros; rewrite R_dist_eq; assumption. }
+  apply Un_cv_ext with (2 := main).
+  intros n; rewrite scal_sum, <- plus_sum; apply sum_eq; intros.
+  rewrite Rmult_comm; unfold PI_2_3_7_tg, tg_alt; field. }
 intros N; apply (alternated_series_ineq _ _ _ decr cv main).
 Qed.

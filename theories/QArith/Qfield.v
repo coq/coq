@@ -17,27 +17,27 @@ Require Import NArithRing.
 Definition Qsrt : ring_theory 0 1 Qplus Qmult Qminus Qopp Qeq.
 Proof.
   constructor.
-  exact Qplus_0_l.
-  exact Qplus_comm.
-  exact Qplus_assoc.
-  exact Qmult_1_l.
-  exact Qmult_comm.
-  exact Qmult_assoc.
-  exact Qmult_plus_distr_l.
-  reflexivity.
-  exact Qplus_opp_r.
+  - exact Qplus_0_l.
+  - exact Qplus_comm.
+  - exact Qplus_assoc.
+  - exact Qmult_1_l.
+  - exact Qmult_comm.
+  - exact Qmult_assoc.
+  - exact Qmult_plus_distr_l.
+  - reflexivity.
+  - exact Qplus_opp_r.
 Qed.
 
 Definition Qsft : field_theory 0 1 Qplus Qmult Qminus Qopp Qdiv Qinv Qeq.
 Proof.
   constructor.
-  exact Qsrt.
-  discriminate.
-  reflexivity.
-  intros p Hp.
-  rewrite Qmult_comm.
-  apply Qmult_inv_r.
-  exact Hp.
+  - exact Qsrt.
+  - discriminate.
+  - reflexivity.
+  - intros p Hp.
+    rewrite Qmult_comm.
+    apply Qmult_inv_r.
+    exact Hp.
 Qed.
 
 Lemma Qpower_theory : power_theory 1 Qmult Qeq Z.of_N Qpower.

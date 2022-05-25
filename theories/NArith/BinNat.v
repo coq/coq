@@ -135,8 +135,8 @@ Theorem peano_rect_succ P a f n :
  peano_rect P a f (succ n) = f n (peano_rect P a f n).
 Proof.
 destruct n; simpl.
-trivial.
-now rewrite Pos.peano_rect_succ.
+- trivial.
+- now rewrite Pos.peano_rect_succ.
 Qed.
 
 Definition peano_ind (P : N -> Prop) := peano_rect P.
@@ -160,7 +160,9 @@ Theorem bi_induction :
   forall A : N -> Prop, Proper (Logic.eq==>iff) A ->
     A 0 -> (forall n, A n <-> A (succ n)) -> forall n : N, A n.
 Proof.
-intros A A_wd A0 AS. apply peano_rect. assumption. intros; now apply -> AS.
+  intros A A_wd A0 AS. apply peano_rect.
+  - assumption.
+  - intros; now apply -> AS.
 Qed.
 
 Definition recursion {A} : A -> (N -> A -> A) -> N -> A :=
@@ -172,8 +174,8 @@ Instance recursion_wd {A} (Aeq : relation A) :
 Proof.
 intros a a' Ea f f' Ef x x' Ex. subst x'.
 induction x using peano_ind.
-trivial.
-unfold recursion in *. rewrite 2 peano_rect_succ. now apply Ef.
+- trivial.
+- unfold recursion in *. rewrite 2 peano_rect_succ. now apply Ef.
 Qed.
 
 Theorem recursion_0 {A} (a:A) (f:N->A->A) : recursion a f 0 = a.
@@ -184,8 +186,8 @@ Theorem recursion_succ {A} (Aeq : relation A) (a : A) (f : N -> A -> A):
   forall n : N, Aeq (recursion a f (succ n)) (f n (recursion a f n)).
 Proof.
 unfold recursion; intros a_wd f_wd n. induction n using peano_ind.
-rewrite peano_rect_succ. now apply f_wd.
-rewrite !peano_rect_succ in *. now apply f_wd.
+- rewrite peano_rect_succ. now apply f_wd.
+- rewrite !peano_rect_succ in *. now apply f_wd.
 Qed.
 
 (** Specification of constants *)
@@ -213,7 +215,9 @@ Qed.
 
 Lemma pos_pred_succ n : Pos.pred_N (succ_pos n) = n.
 Proof.
- destruct n. trivial. apply Pos.pred_N_succ.
+  destruct n.
+  - trivial.
+  - apply Pos.pred_N_succ.
 Qed.
 
 Lemma succ_pos_pred p : succ (Pos.pred_N p) = pos p.
@@ -260,9 +264,9 @@ Qed.
 Theorem sub_succ_r n m : n - succ m = pred (n - m).
 Proof.
 destruct n as [|p], m as [|q]; trivial.
-now destruct p.
-simpl. rewrite Pos.sub_mask_succ_r, Pos.sub_mask_carry_spec.
-now destruct (Pos.sub_mask p q) as [|[r|r|]|].
+- now destruct p.
+- simpl. rewrite Pos.sub_mask_succ_r, Pos.sub_mask_carry_spec.
+  now destruct (Pos.sub_mask p q) as [|[r|r|]|].
 Qed.
 
 (** Specification of multiplication *)
@@ -283,7 +287,9 @@ Qed.
 Lemma eqb_eq n m : eqb n m = true <-> n=m.
 Proof.
 destruct n as [|n], m as [|m]; simpl; try easy'.
-rewrite Pos.eqb_eq. split; intro H. now subst. now destr_eq H.
+rewrite Pos.eqb_eq. split; intro H.
+- now subst.
+- now destr_eq H.
 Qed.
 
 Lemma ltb_lt n m : (n <? m) = true <-> n < m.
@@ -352,8 +358,10 @@ Qed.
 Lemma lt_succ_r n m : n < succ m <-> n<=m.
 Proof.
 destruct n as [|p], m as [|q]; simpl; try easy'.
-split. now destruct p. now destruct 1.
-apply Pos.lt_succ_r.
+- split.
+  + now destruct p.
+  + now destruct 1.
+- apply Pos.lt_succ_r.
 Qed.
 
 (** We can now derive all properties of basic functions and orders,
@@ -482,31 +490,37 @@ Qed.
 
 Lemma size_gt n : n < 2^(size n).
 Proof.
- destruct n. reflexivity. simpl. apply Pos.size_gt.
+  destruct n.
+  - reflexivity.
+  - simpl. apply Pos.size_gt.
 Qed.
 
 Lemma size_le n : 2^(size n) <= succ_double n.
 Proof.
- destruct n as [|p]. discriminate. simpl.
- change (2^Pos.size p <= Pos.succ (p~0))%positive.
- apply Pos.lt_le_incl, Pos.lt_succ_r, Pos.size_le.
+  destruct n as [|p].
+  - discriminate.
+  - simpl.
+    change (2^Pos.size p <= Pos.succ (p~0))%positive.
+    apply Pos.lt_le_incl, Pos.lt_succ_r, Pos.size_le.
 Qed.
 
 Lemma log2_spec n : 0 < n ->
  2^(log2 n) <= n < 2^(succ (log2 n)).
 Proof.
  destruct n as [|[p|p|]]; discriminate || intros _; simpl; split.
- apply (size_le (pos p)).
- apply Pos.size_gt.
- apply Pos.size_le.
- apply Pos.size_gt.
- discriminate.
- reflexivity.
+ - apply (size_le (pos p)).
+ - apply Pos.size_gt.
+ - apply Pos.size_le.
+ - apply Pos.size_gt.
+ - discriminate.
+ - reflexivity.
 Qed.
 
 Lemma log2_nonpos n : n<=0 -> log2 n = 0.
 Proof.
- destruct n; intros Hn. reflexivity. now destruct Hn.
+  destruct n; intros Hn.
+  - reflexivity.
+  - now destruct Hn.
 Qed.
 
 (** Specification of parity functions *)
@@ -514,23 +528,25 @@ Qed.
 Lemma even_spec n : even n = true <-> Even n.
 Proof.
  destruct n as [|p].
- split. now exists 0.
- trivial.
- destruct p as [p|p|]; simpl; split; try easy.
- intros (m,H). now destruct m.
- now exists (pos p).
- intros (m,H). now destruct m.
+ - split.
+   + now exists 0.
+   + trivial.
+ - destruct p as [p|p|]; simpl; split; try easy.
+   + intros (m,H). now destruct m.
+   + now exists (pos p).
+   + intros (m,H). now destruct m.
 Qed.
 
 Lemma odd_spec n : odd n = true <-> Odd n.
 Proof.
  destruct n as [|p].
- split. discriminate.
- intros (m,H). now destruct m.
- destruct p as [p|p|]; simpl; split; try easy.
- now exists (pos p).
- intros (m,H). now destruct m.
- now exists 0.
+ - split.
+   + discriminate.
+   + intros (m,H). now destruct m.
+ - destruct p as [p|p|]; simpl; split; try easy.
+   + now exists (pos p).
+   + intros (m,H). now destruct m.
+   + now exists 0.
 Qed.
 
 (** Specification of the euclidean division *)
@@ -539,23 +555,23 @@ Theorem pos_div_eucl_spec (a:positive)(b:N) :
   let (q,r) := pos_div_eucl a b in pos a = q * b + r.
 Proof.
   induction a as [a IHa|a IHa|];
-   cbv beta iota delta [pos_div_eucl]; fold pos_div_eucl; cbv zeta.
-  (* a~1 *)
-  destruct pos_div_eucl as (q,r).
-  change (pos a~1) with (succ_double (pos a)).
-  rewrite IHa, succ_double_add, double_mul.
-  case leb_spec; intros H; trivial.
-  rewrite succ_double_mul, <- add_assoc. f_equal.
-  now rewrite (add_comm b), sub_add.
-  (* a~0 *)
-  destruct pos_div_eucl as (q,r).
-  change (pos a~0) with (double (pos a)).
-  rewrite IHa, double_add, double_mul.
-  case leb_spec; intros H; trivial.
-  rewrite succ_double_mul, <- add_assoc. f_equal.
-  now rewrite (add_comm b), sub_add.
-  (* 1 *)
-  now destruct b as [|[ | | ]].
+    cbv beta iota delta [pos_div_eucl]; fold pos_div_eucl; cbv zeta.
+  - (* a~1 *)
+    destruct pos_div_eucl as (q,r).
+    change (pos a~1) with (succ_double (pos a)).
+    rewrite IHa, succ_double_add, double_mul.
+    case leb_spec; intros H; trivial.
+    rewrite succ_double_mul, <- add_assoc. f_equal.
+    now rewrite (add_comm b), sub_add.
+  - (* a~0 *)
+    destruct pos_div_eucl as (q,r).
+    change (pos a~0) with (double (pos a)).
+    rewrite IHa, double_add, double_mul.
+    case leb_spec; intros H; trivial.
+    rewrite succ_double_mul, <- add_assoc. f_equal.
+    now rewrite (add_comm b), sub_add.
+  - (* 1 *)
+    now destruct b as [|[ | | ]].
 Qed.
 
 Theorem div_eucl_spec a b :
@@ -582,56 +598,62 @@ Theorem pos_div_eucl_remainder (a:positive) (b:N) :
 Proof.
   intros Hb.
   induction a as [a IHa|a IHa|];
-   cbv beta iota delta [pos_div_eucl]; fold pos_div_eucl; cbv zeta.
-  (* a~1 *)
-  destruct pos_div_eucl as (q,r); simpl in *.
-  case leb_spec; intros H; simpl; trivial.
-  apply add_lt_mono_l with b. rewrite add_comm, sub_add by trivial.
-  destruct b as [|b]; [now destruct Hb| simpl; rewrite Pos.add_diag ].
-  apply (succ_double_lt _ _ IHa).
-  (* a~0 *)
-  destruct pos_div_eucl as (q,r); simpl in *.
-  case leb_spec; intros H; simpl; trivial.
-  apply add_lt_mono_l with b. rewrite add_comm, sub_add by trivial.
-  destruct b as [|b]; [now destruct Hb| simpl; rewrite Pos.add_diag ].
-  now destruct r.
-  (* 1 *)
-  destruct b as [|[ | | ]]; easy || (now destruct Hb).
+    cbv beta iota delta [pos_div_eucl]; fold pos_div_eucl; cbv zeta.
+  - (* a~1 *)
+    destruct pos_div_eucl as (q,r); simpl in *.
+    case leb_spec; intros H; simpl; trivial.
+    apply add_lt_mono_l with b. rewrite add_comm, sub_add by trivial.
+    destruct b as [|b]; [now destruct Hb| simpl; rewrite Pos.add_diag ].
+    apply (succ_double_lt _ _ IHa).
+  - (* a~0 *)
+    destruct pos_div_eucl as (q,r); simpl in *.
+    case leb_spec; intros H; simpl; trivial.
+    apply add_lt_mono_l with b. rewrite add_comm, sub_add by trivial.
+    destruct b as [|b]; [now destruct Hb| simpl; rewrite Pos.add_diag ].
+    now destruct r.
+  - (* 1 *)
+    destruct b as [|[ | | ]]; easy || (now destruct Hb).
 Qed.
 
 Theorem mod_lt a b : b<>0 -> a mod b < b.
 Proof.
-  destruct b as [ |b]. now destruct 1.
-  destruct a as [ |a]. reflexivity.
+  destruct b as [ |b]. { now destruct 1. }
+  destruct a as [ |a]. { reflexivity. }
   unfold modulo. simpl. apply pos_div_eucl_remainder.
 Qed.
 
 Theorem mod_bound_pos a b : 0<=a -> 0<b -> 0 <= a mod b < b.
 Proof.
- intros _ H. split. apply le_0_l. apply mod_lt. now destruct b.
+  intros _ H. split.
+  - apply le_0_l.
+  - apply mod_lt. now destruct b.
 Qed.
 
 (** Specification of square root *)
 
 Lemma sqrtrem_sqrt n : fst (sqrtrem n) = sqrt n.
 Proof.
- destruct n as [|p]. reflexivity.
- unfold sqrtrem, sqrt, Pos.sqrt.
- destruct (Pos.sqrtrem p) as (s,r). now destruct r.
+  destruct n as [|p].
+  - reflexivity.
+  - unfold sqrtrem, sqrt, Pos.sqrt.
+    destruct (Pos.sqrtrem p) as (s,r). now destruct r.
 Qed.
 
 Lemma sqrtrem_spec n :
  let (s,r) := sqrtrem n in n = s*s + r /\ r <= 2*s.
 Proof.
- destruct n as [|p]. now split.
- generalize (Pos.sqrtrem_spec p). simpl.
- destruct 1; simpl; subst; now split.
+  destruct n as [|p].
+  - now split.
+  - generalize (Pos.sqrtrem_spec p). simpl.
+    destruct 1; simpl; subst; now split.
 Qed.
 
 Lemma sqrt_spec n : 0<=n ->
  let s := sqrt n in s*s <= n < (succ s)*(succ s).
 Proof.
- intros _. destruct n as [|p]. now split. apply (Pos.sqrt_spec p).
+  intros _. destruct n as [|p].
+  - now split.
+  - apply (Pos.sqrt_spec p).
 Qed.
 
 Lemma sqrt_neg n : n<0 -> sqrt n = 0.
@@ -657,11 +679,11 @@ Lemma ggcd_correct_divisors a b :
   a=g*aa /\ b=g*bb.
 Proof.
  destruct a as [|p], b as [|q]; simpl; auto.
- now rewrite Pos.mul_1_r.
- now rewrite Pos.mul_1_r.
- generalize (Pos.ggcd_correct_divisors p q).
- destruct Pos.ggcd as (g,(aa,bb)); simpl.
- destruct 1; split; now f_equal.
+ - now rewrite Pos.mul_1_r.
+ - now rewrite Pos.mul_1_r.
+ - generalize (Pos.ggcd_correct_divisors p q).
+   destruct Pos.ggcd as (g,(aa,bb)); simpl.
+   destruct 1; split; now f_equal.
 Qed.
 
 (** We can use this fact to prove a part of the gcd correctness *)
@@ -685,12 +707,13 @@ Qed.
 Lemma gcd_greatest a b c : (c|a) -> (c|b) -> (c|gcd a b).
 Proof.
  destruct a as [ |p], b as [ |q]; simpl; trivial.
- destruct c as [ |r]. intros (s,H). destruct s; discriminate.
- intros ([ |s],Hs) ([ |t],Ht); try discriminate; simpl in *.
- destruct (Pos.gcd_greatest p q r) as (u,H).
- exists s. now inversion Hs.
- exists t. now inversion Ht.
- exists (pos u). simpl; now f_equal.
+ destruct c as [ |r].
+ - intros (s,H). destruct s; discriminate.
+ - intros ([ |s],Hs) ([ |t],Ht); try discriminate; simpl in *.
+   destruct (Pos.gcd_greatest p q r) as (u,H).
+   + exists s. now inversion Hs.
+   + exists t. now inversion Ht.
+   + exists (pos u). simpl; now f_equal.
 Qed.
 
 Lemma gcd_nonneg a b : 0 <= gcd a b.
@@ -752,9 +775,10 @@ Lemma shiftr_spec a n m : 0<=m ->
  testbit (shiftr a n) m = testbit a (m+n).
 Proof.
  intros _. revert a m.
- induction n as [|n IHn] using peano_ind; intros a m. now rewrite add_0_r.
- rewrite add_comm, add_succ_l, add_comm, <- add_succ_l.
- now rewrite <- IHn, testbit_succ_r_div2, shiftr_succ_r by apply le_0_l.
+ induction n as [|n IHn] using peano_ind; intros a m.
+ - now rewrite add_0_r.
+ - rewrite add_comm, add_succ_l, add_comm, <- add_succ_l.
+   now rewrite <- IHn, testbit_succ_r_div2, shiftr_succ_r by apply le_0_l.
 Qed.
 
 Lemma shiftl_spec_high a n m : 0<=m -> n<=m ->
@@ -764,10 +788,10 @@ Proof.
  rewrite <- (sub_add n m H) at 1.
  set (m' := m-n). clearbody m'. clear H m. revert a m'.
  induction n using peano_ind; intros a m.
- rewrite add_0_r; now destruct a.
- rewrite shiftl_succ_r.
- rewrite add_comm, add_succ_l, add_comm.
- now rewrite testbit_succ_r_div2, div2_double by apply le_0_l.
+ - rewrite add_0_r; now destruct a.
+ - rewrite shiftl_succ_r.
+   rewrite add_comm, add_succ_l, add_comm.
+   now rewrite testbit_succ_r_div2, div2_double by apply le_0_l.
 Qed.
 
 Lemma shiftl_spec_low a n m : m<n ->
@@ -775,13 +799,14 @@ Lemma shiftl_spec_low a n m : m<n ->
 Proof.
  revert a m.
  induction n as [|n IHn] using peano_ind; intros a m H.
- elim (le_0_l m). now rewrite compare_antisym, H.
- rewrite shiftl_succ_r.
- destruct m as [|p]. now destruct (shiftl a n).
- rewrite <- (succ_pos_pred p), testbit_succ_r_div2, div2_double by apply le_0_l.
- apply IHn.
- apply add_lt_mono_l with 1. rewrite 2 (add_succ_l 0). simpl.
- now rewrite succ_pos_pred.
+ - elim (le_0_l m). now rewrite compare_antisym, H.
+ - rewrite shiftl_succ_r.
+   destruct m as [|p].
+   + now destruct (shiftl a n).
+   + rewrite <- (succ_pos_pred p), testbit_succ_r_div2, div2_double by apply le_0_l.
+     apply IHn.
+     apply add_lt_mono_l with 1. rewrite 2 (add_succ_l 0). simpl.
+     now rewrite succ_pos_pred.
 Qed.
 
 Definition div2_spec a : div2 a = shiftr a 1.
@@ -804,9 +829,9 @@ Lemma lxor_spec a a' n :
  testbit (lxor a a') n = xorb (testbit a n) (testbit a' n).
 Proof.
  destruct a, a'; simpl; trivial.
- now destruct Pos.testbit.
- now destruct Pos.testbit.
- apply pos_lxor_spec.
+ - now destruct Pos.testbit.
+ - now destruct Pos.testbit.
+ - apply pos_lxor_spec.
 Qed.
 
 Lemma pos_lor_spec p p' n :
@@ -821,8 +846,8 @@ Lemma lor_spec a a' n :
  testbit (lor a a') n = (testbit a n) || (testbit a' n).
 Proof.
  destruct a, a'; simpl; trivial.
- now rewrite orb_false_r.
- apply pos_lor_spec.
+ - now rewrite orb_false_r.
+ - apply pos_lor_spec.
 Qed.
 
 Lemma pos_land_spec p p' n :
@@ -838,8 +863,8 @@ Lemma land_spec a a' n :
  testbit (land a a') n = (testbit a n) && (testbit a' n).
 Proof.
  destruct a, a'; simpl; trivial.
- now rewrite andb_false_r.
- apply pos_land_spec.
+ - now rewrite andb_false_r.
+ - apply pos_land_spec.
 Qed.
 
 Lemma pos_ldiff_spec p p' n :
@@ -855,8 +880,8 @@ Lemma ldiff_spec a a' n :
  testbit (ldiff a a') n = (testbit a n) && negb (testbit a' n).
 Proof.
  destruct a, a'; simpl; trivial.
- now rewrite andb_true_r.
- apply pos_ldiff_spec.
+ - now rewrite andb_true_r.
+ - apply pos_ldiff_spec.
 Qed.
 
 (** Instantiation of generic properties of advanced functions
@@ -906,18 +931,21 @@ Lemma pos_pred_shiftl_low : forall p n m, m<n ->
  testbit (Pos.pred_N (Pos.shiftl p n)) m = true.
 Proof.
  intros p n; induction n as [|n IHn] using peano_ind.
- now intro m; destruct m.
- intros m H. unfold Pos.shiftl.
- destruct n as [|n]; simpl in *.
- destruct m. now destruct p. elim (Pos.nlt_1_r _ H).
- rewrite Pos.iter_succ. simpl.
- set (u:=Pos.iter xO p n) in *; clearbody u.
- destruct m as [|m]. now destruct u.
- rewrite <- (IHn (Pos.pred_N m)).
- rewrite <- (testbit_odd_succ _ (Pos.pred_N m)).
- rewrite succ_pos_pred. now destruct u.
- apply le_0_l.
- apply succ_lt_mono. now rewrite succ_pos_pred.
+ - now intro m; destruct m.
+ - intros m H. unfold Pos.shiftl.
+   destruct n as [|n]; simpl in *.
+   + destruct m.
+     * now destruct p.
+     * elim (Pos.nlt_1_r _ H).
+   + rewrite Pos.iter_succ. simpl.
+     set (u:=Pos.iter xO p n) in *; clearbody u.
+     destruct m as [|m].
+     * now destruct u.
+     * rewrite <- (IHn (Pos.pred_N m)).
+       -- rewrite <- (testbit_odd_succ _ (Pos.pred_N m)).
+          ++ rewrite succ_pos_pred. now destruct u.
+          ++ apply le_0_l.
+       -- apply succ_lt_mono. now rewrite succ_pos_pred.
 Qed.
 
 Lemma pos_pred_shiftl_high : forall p n m, n<=m ->
@@ -925,25 +953,28 @@ Lemma pos_pred_shiftl_high : forall p n m, n<=m ->
  testbit (shiftl (Pos.pred_N p) n) m.
 Proof.
  intros p n; induction n as [|n IHn] using peano_ind; intros m H.
- unfold shiftl. simpl. now destruct (Pos.pred_N p).
- rewrite shiftl_succ_r.
- destruct n as [|n].
- destruct m as [|m]. now destruct H. now destruct p.
- destruct m as [|m]. now destruct H.
- rewrite <- (succ_pos_pred m).
- rewrite double_spec, testbit_even_succ by apply le_0_l.
- rewrite <- IHn.
- rewrite testbit_succ_r_div2 by apply le_0_l.
- f_equal. simpl. rewrite Pos.iter_succ.
- now destruct (Pos.iter xO p n).
- apply succ_le_mono. now rewrite succ_pos_pred.
+ - unfold shiftl. simpl. now destruct (Pos.pred_N p).
+ - rewrite shiftl_succ_r.
+   destruct n as [|n].
+   + destruct m as [|m].
+     * now destruct H.
+     * now destruct p.
+   + destruct m as [|m].
+     * now destruct H.
+     * rewrite <- (succ_pos_pred m).
+       rewrite double_spec, testbit_even_succ by apply le_0_l.
+       rewrite <- IHn.
+       -- rewrite testbit_succ_r_div2 by apply le_0_l.
+          f_equal. simpl. rewrite Pos.iter_succ.
+          now destruct (Pos.iter xO p n).
+       -- apply succ_le_mono. now rewrite succ_pos_pred.
 Qed.
 
 Lemma pred_div2_up p : Pos.pred_N (Pos.div2_up p) = div2 (Pos.pred_N p).
 Proof.
  destruct p as [p|p| ]; trivial.
- simpl. apply Pos.pred_N_succ.
- destruct p; simpl; trivial.
+ - simpl. apply Pos.pred_N_succ.
+ - destruct p; simpl; trivial.
 Qed.
 
 (** ** Properties of [iter] *)

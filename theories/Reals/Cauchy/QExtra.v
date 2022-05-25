@@ -79,20 +79,20 @@ Proof.
   - intros contra; inversion contra.
   - rewrite Qpower_minus by lra.
     apply Qle_shift_div_l.
-      apply Qpower_0_lt; lra.
-    do 2 rewrite Qpower_decomp_pos, Pos_pow_1_r.
-    unfold Qle, Qmult, Qnum, Qden.
-    rewrite Pos.mul_1_r, Z.mul_1_r.
-    pose proof Pos_log2ceil_plus1_spec p as Hnom.
-    pose proof Pos_log2floor_plus1_spec den as Hden.
+    + apply Qpower_0_lt; lra.
+    + do 2 rewrite Qpower_decomp_pos, Pos_pow_1_r.
+      unfold Qle, Qmult, Qnum, Qden.
+      rewrite Pos.mul_1_r, Z.mul_1_r.
+      pose proof Pos_log2ceil_plus1_spec p as Hnom.
+      pose proof Pos_log2floor_plus1_spec den as Hden.
 
-    apply (Zmult_le_reg_r _ _ 2).
-        lia.
-    replace (Z.pos p * 2 ^ Z.pos (Pos_log2floor_plus1 den) * 2)%Z
-      with ((Z.pos p * 2) * 2 ^ Z.pos (Pos_log2floor_plus1 den))%Z by ring.
-    replace (2 ^ Z.pos (Pos_log2ceil_plus1 p) * Z.pos den * 2)%Z
-      with (2 ^ Z.pos (Pos_log2ceil_plus1 p) * (Z.pos den * 2))%Z by ring.
-    apply Z.mul_le_mono_nonneg; lia.
+      apply (Zmult_le_reg_r _ _ 2).
+      * lia.
+      * replace (Z.pos p * 2 ^ Z.pos (Pos_log2floor_plus1 den) * 2)%Z
+          with ((Z.pos p * 2) * 2 ^ Z.pos (Pos_log2floor_plus1 den))%Z by ring.
+        replace (2 ^ Z.pos (Pos_log2ceil_plus1 p) * Z.pos den * 2)%Z
+          with (2 ^ Z.pos (Pos_log2ceil_plus1 p) * (Z.pos den * 2))%Z by ring.
+        apply Z.mul_le_mono_nonneg; lia.
   - intros contra; inversion contra.
 Qed.
 
@@ -140,28 +140,28 @@ Proof.
   - (* Todo: A lemma like Pos2Z.add_neg_pos for minus would be nice *)
     change
       (Z.pos_sub (Pos.succ (Pos_log2floor_plus1 p)) (Pos_log2floor_plus1 (Qden (Z.pos p # den))))%Z
-    with
+      with
       ((Z.pos (Pos.succ (Pos_log2floor_plus1 p)) - Z.pos (Pos_log2floor_plus1 (Qden (Z.pos p # den)))))%Z.
     rewrite Qpower_minus by lra.
     apply Qlt_shift_div_l.
-      apply Qpower_0_lt; lra.
-    do 2 rewrite Qpower_decomp_pos, Pos_pow_1_r.
-    unfold Qlt, Qmult, Qnum, Qden.
-    rewrite Pos.mul_1_r, Z.mul_1_r.
-    pose proof Pos_log2floor_plus1_spec p as Hnom.
-    pose proof Pos_log2floor_plus1_spec den as Hden.
-    apply (Zmult_lt_reg_r _ _ 2).
-      lia.
-    rewrite Pos2Z.inj_succ, <- Z.add_1_r.
-    rewrite Z.pow_add_r by lia.
+    + apply Qpower_0_lt; lra.
+    + do 2 rewrite Qpower_decomp_pos, Pos_pow_1_r.
+      unfold Qlt, Qmult, Qnum, Qden.
+      rewrite Pos.mul_1_r, Z.mul_1_r.
+      pose proof Pos_log2floor_plus1_spec p as Hnom.
+      pose proof Pos_log2floor_plus1_spec den as Hden.
+      apply (Zmult_lt_reg_r _ _ 2).
+      * lia.
+      * rewrite Pos2Z.inj_succ, <- Z.add_1_r.
+        rewrite Z.pow_add_r by lia.
 
-    replace (Z.pos p * 2 ^ Z.pos (Pos_log2floor_plus1 den) * 2)%Z
-      with (2 ^ Z.pos (Pos_log2floor_plus1 den) * (Z.pos p * 2))%Z by ring.
-    replace (2 ^ Z.pos (Pos_log2floor_plus1 p) * 2 ^ 1 * Z.pos den * 2)%Z
-      with ((Z.pos den * 2) * (2 * 2 ^ Z.pos (Pos_log2floor_plus1 p)))%Z by ring.
+        replace (Z.pos p * 2 ^ Z.pos (Pos_log2floor_plus1 den) * 2)%Z
+          with (2 ^ Z.pos (Pos_log2floor_plus1 den) * (Z.pos p * 2))%Z by ring.
+        replace (2 ^ Z.pos (Pos_log2floor_plus1 p) * 2 ^ 1 * Z.pos den * 2)%Z
+          with ((Z.pos den * 2) * (2 * 2 ^ Z.pos (Pos_log2floor_plus1 p)))%Z by ring.
 
-    (* ToDo: this is weaker than neccessary: Z.mul_lt_mono_nonneg. *)
-    apply Zmult_lt_compat2; lia.
+        (* ToDo: this is weaker than neccessary: Z.mul_lt_mono_nonneg. *)
+        apply Zmult_lt_compat2; lia.
   - cbn.
     (* ToDo: lra could know that negative fractions are negative *)
     assert (Z.neg p # den < 0) as Hnegfrac by (unfold Qlt, Qnum, Qden; lia).

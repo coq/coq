@@ -106,9 +106,9 @@ Notation "[ x ]" := (gen_order_phi_Z x).
 Lemma ring_ops_wd : ring_eq_ext rplus rtimes ropp req.
 Proof.
 constructor.
-exact rplus_morph.
-exact rtimes_morph.
-exact ropp_morph.
+- exact rplus_morph.
+- exact rtimes_morph.
+- exact ropp_morph.
 Qed.
 
 Lemma Zring_morph :
@@ -135,9 +135,9 @@ Qed.
 Lemma clt_pos_morph : forall x y : positive, (x < y)%positive -> phi_pos1 x < phi_pos1 y.
 Proof.
 intros x y H. pattern y; apply Pos.lt_ind with x.
-rewrite phi_pos1_succ; apply (Rlt_succ_r sor).
-clear y H; intros y _ H. rewrite phi_pos1_succ. now apply (Rlt_lt_succ sor).
-assumption.
+- rewrite phi_pos1_succ; apply (Rlt_succ_r sor).
+- clear y H; intros y _ H. rewrite phi_pos1_succ. now apply (Rlt_lt_succ sor).
+- assumption.
 Qed.
 
 Lemma clt_morph : forall x y : Z, (x < y)%Z -> [x] < [y].
@@ -145,31 +145,32 @@ Proof.
 intros x y H.
 do 2 rewrite (same_genZ (SORsetoid sor) ring_ops_wd (SORrt sor));
 destruct x; destruct y; simpl in *; try discriminate.
-apply phi_pos1_pos.
-now apply clt_pos_morph.
-apply <- (Ropp_neg_pos sor); apply phi_pos1_pos.
-apply (Rlt_trans sor) with 0. apply <- (Ropp_neg_pos sor); apply phi_pos1_pos.
-apply phi_pos1_pos.
-apply -> (Ropp_lt_mono sor); apply clt_pos_morph.
-red. now rewrite Pos.compare_antisym.
+- apply phi_pos1_pos.
+- now apply clt_pos_morph.
+- apply <- (Ropp_neg_pos sor); apply phi_pos1_pos.
+- apply (Rlt_trans sor) with 0.
+  + apply <- (Ropp_neg_pos sor); apply phi_pos1_pos.
+  + apply phi_pos1_pos.
+- apply -> (Ropp_lt_mono sor); apply clt_pos_morph.
+  red. now rewrite Pos.compare_antisym.
 Qed.
 
 Lemma Zcleb_morph : forall x y : Z, Z.leb x y = true -> [x] <= [y].
 Proof.
 unfold Z.leb; intros x y H.
 case_eq (x ?= y)%Z; intro H1; rewrite H1 in H.
-le_equal. apply (morph_eq Zring_morph). unfold Zeq_bool; now rewrite H1.
-le_less. now apply clt_morph.
-discriminate.
+- le_equal. apply (morph_eq Zring_morph). unfold Zeq_bool; now rewrite H1.
+- le_less. now apply clt_morph.
+- discriminate.
 Qed.
 
 Lemma Zcneqb_morph : forall x y : Z, Zeq_bool x y = false -> [x] ~= [y].
 Proof.
 intros x y H. unfold Zeq_bool in H.
 case_eq (Z.compare x y); intro H1; rewrite H1 in *; (discriminate || clear H).
-apply (Rlt_neq sor). now apply clt_morph.
-fold (x > y)%Z in H1. rewrite Z.gt_lt_iff in H1.
-apply (Rneq_symm sor). apply (Rlt_neq sor). now apply clt_morph.
+- apply (Rlt_neq sor). now apply clt_morph.
+- fold (x > y)%Z in H1. rewrite Z.gt_lt_iff in H1.
+  apply (Rneq_symm sor). apply (Rlt_neq sor). now apply clt_morph.
 Qed.
 
 End InitialMorphism.

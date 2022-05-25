@@ -151,31 +151,32 @@ Section defs.
     forall l2:list A, Sorted leA l2 -> merge_lem l1 l2.
   Proof.
     fix merge 1; intros; destruct l1.
-    apply merge_exist with l2; auto with datatypes.
-    rename l1 into l.
-    revert l2 H0. fix merge0 1. intros.
-    destruct l2 as [|a0 l0]. 
-    apply merge_exist with (a :: l); simpl; auto with datatypes. 
-    induction (leA_dec a a0) as [Hle|Hle].
+    - apply merge_exist with l2; auto with datatypes.
+    - rename l1 into l.
+      revert l2 H0. fix merge0 1. intros.
+      destruct l2 as [|a0 l0].
+      + apply merge_exist with (a :: l); simpl; auto with datatypes.
+      + induction (leA_dec a a0) as [Hle|Hle].
 
-    (* 1 (leA a a0) *)
-    apply Sorted_inv in H. destruct H.
-    destruct (merge l H (a0 :: l0) H0) as [l1 H2 H3 H4].
-    apply merge_exist with (a :: l1). clear merge merge0.
-      auto using cons_sort, cons_leA with datatypes.
-    simpl. rewrite H3. now rewrite munion_ass.
-    intros. apply cons_leA. 
-    apply (@HdRel_inv _ leA) with l; trivial with datatypes.
+        * (* 1 (leA a a0) *)
+          apply Sorted_inv in H. destruct H.
+          destruct (merge l H (a0 :: l0) H0) as [l1 H2 H3 H4].
+          apply merge_exist with (a :: l1).
+          -- clear merge merge0.
+             auto using cons_sort, cons_leA with datatypes.
+          -- simpl. rewrite H3. now rewrite munion_ass.
+          -- intros. apply cons_leA.
+             apply (@HdRel_inv _ leA) with l; trivial with datatypes.
 
-    (* 2 (leA a0 a) *)
-    apply Sorted_inv in H0. destruct H0.
-    destruct (merge0 l0 H0) as [l1 H2 H3 H4]. clear merge merge0.  
-    apply merge_exist with (a0 :: l1); 
-      auto using cons_sort, cons_leA with datatypes.
-    simpl; rewrite H3. simpl. setoid_rewrite munion_ass at 1. rewrite munion_comm.
-    repeat rewrite munion_ass. setoid_rewrite munion_comm at 3. reflexivity.
-    intros. apply cons_leA. 
-    apply (@HdRel_inv _ leA) with l0; trivial with datatypes.
+        * (* 2 (leA a0 a) *)
+          apply Sorted_inv in H0. destruct H0.
+          destruct (merge0 l0 H0) as [l1 H2 H3 H4]. clear merge merge0.
+          apply merge_exist with (a0 :: l1);
+            auto using cons_sort, cons_leA with datatypes.
+          -- simpl; rewrite H3. simpl. setoid_rewrite munion_ass at 1. rewrite munion_comm.
+             repeat rewrite munion_ass. setoid_rewrite munion_comm at 3. reflexivity.
+          -- intros. apply cons_leA.
+             apply (@HdRel_inv _ leA) with l0; trivial with datatypes.
   Qed.
 
   (** ** From trees to multisets *)
@@ -215,22 +216,22 @@ Section defs.
   Lemma insert : forall T:Tree, is_heap T -> forall a:A, insert_spec a T.
   Proof.
     simple induction 1; intros.
-    apply insert_exist with (Tree_Node a Tree_Leaf Tree_Leaf);
-      auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
-    simpl; unfold meq, munion; auto using node_is_heap with datatypes.
-    elim (leA_dec a a0); intros.
-    elim (X a0); intros.
-    apply insert_exist with (Tree_Node a T2 T0);
-      auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
-    simpl; apply treesort_twist1; trivial with datatypes.
-    elim (X a); intros T3 HeapT3 ConT3 LeA.
-    apply insert_exist with (Tree_Node a0 T2 T3);
-      auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
-    apply node_is_heap; auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
-    apply low_trans with a; auto with datatypes.
-    apply LeA; auto with datatypes.
-    apply low_trans with a; auto with datatypes.
-    simpl; apply treesort_twist2; trivial with datatypes.
+    - apply insert_exist with (Tree_Node a Tree_Leaf Tree_Leaf);
+        auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
+    - simpl; unfold meq, munion; auto using node_is_heap with datatypes.
+      elim (leA_dec a a0); intros.
+      + elim (X a0); intros.
+        apply insert_exist with (Tree_Node a T2 T0);
+          auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
+        simpl; apply treesort_twist1; trivial with datatypes.
+      + elim (X a); intros T3 HeapT3 ConT3 LeA.
+        apply insert_exist with (Tree_Node a0 T2 T3);
+          auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
+        * apply node_is_heap; auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
+          -- apply low_trans with a; auto with datatypes.
+          -- apply LeA; auto with datatypes.
+             apply low_trans with a; auto with datatypes.
+        * simpl; apply treesort_twist2; trivial with datatypes.
   Qed.
 
 
@@ -245,16 +246,16 @@ Section defs.
   Lemma list_to_heap : forall l:list A, build_heap l.
   Proof.
     simple induction l.
-    apply (heap_exist nil Tree_Leaf); auto with datatypes.
-    simpl; unfold meq; exact nil_is_heap.
-    simple induction 1.
-    intros T i m; elim (insert T i a).
-    intros; apply heap_exist with T1; simpl; auto with datatypes.
-    apply meq_trans with (munion (contents T) (singletonBag a)).
-    apply meq_trans with (munion (singletonBag a) (contents T)).
-    apply meq_right; trivial with datatypes.
-    apply munion_comm.
-    apply meq_sym; trivial with datatypes.
+    - apply (heap_exist nil Tree_Leaf); auto with datatypes.
+      simpl; unfold meq; exact nil_is_heap.
+    - simple induction 1.
+      intros T i m; elim (insert T i a).
+      intros; apply heap_exist with T1; simpl; auto with datatypes.
+      apply meq_trans with (munion (contents T) (singletonBag a)).
+      + apply meq_trans with (munion (singletonBag a) (contents T)).
+        * apply meq_right; trivial with datatypes.
+        * apply munion_comm.
+      + apply meq_sym; trivial with datatypes.
   Qed.
 
 
@@ -270,19 +271,19 @@ Section defs.
   Lemma heap_to_list : forall T:Tree, is_heap T -> flat_spec T.
   Proof.
     intros T h; elim h; intros.
-    apply flat_exist with (nil (A:=A)); auto with datatypes.
-    elim X; intros l1 s1 i1 m1; elim X0; intros l2 s2 i2 m2.
-    elim (merge _ s1 _ s2); intros.
-    apply flat_exist with (a :: l); simpl; auto with datatypes.
-    apply meq_trans with
-      (munion (list_contents _ eqA_dec l1)
-	(munion (list_contents _ eqA_dec l2) (singletonBag a))).
-    apply meq_congr; auto with datatypes.
-    apply meq_trans with
-      (munion (singletonBag a)
-	(munion (list_contents _ eqA_dec l1) (list_contents _ eqA_dec l2))).
-    apply munion_rotate.
-    apply meq_right; apply meq_sym; trivial with datatypes.
+    - apply flat_exist with (nil (A:=A)); auto with datatypes.
+    - elim X; intros l1 s1 i1 m1; elim X0; intros l2 s2 i2 m2.
+      elim (merge _ s1 _ s2); intros.
+      apply flat_exist with (a :: l); simpl; auto with datatypes.
+      apply meq_trans with
+        (munion (list_contents _ eqA_dec l1)
+                (munion (list_contents _ eqA_dec l2) (singletonBag a))).
+      + apply meq_congr; auto with datatypes.
+      + apply meq_trans with
+          (munion (singletonBag a)
+                  (munion (list_contents _ eqA_dec l1) (list_contents _ eqA_dec l2))).
+        * apply munion_rotate.
+        * apply meq_right; apply meq_sym; trivial with datatypes.
   Qed.
 
 

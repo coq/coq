@@ -74,9 +74,9 @@ Section Integers_sect.
   Definition nat_po : PO nat.
     apply Definition_of_PO with (Carrier_of := Integers) (Rel_of := le);
       auto with sets arith.
-    apply Inhabited_intro with (x := 0).
+    - apply Inhabited_intro with (x := 0).
       apply Integers_defn.
-    exact le_Order.
+    - exact le_Order.
   Defined.
 
   Lemma le_total_order : Totally_ordered nat nat_po Integers.
@@ -85,9 +85,9 @@ Section Integers_sect.
     simpl.
     intros H' x y H'0.
     elim Nat.le_gt_cases with (n := x) (m := y).
-    intro H'1; left; auto with sets arith.
-    intro H'1; right.
-    apply Nat.lt_le_incl; assumption.
+    - intro H'1; left; auto with sets arith.
+    - intro H'1; right.
+      apply Nat.lt_le_incl; assumption.
   Qed.
 
   Lemma Finite_subset_has_lub :
@@ -95,40 +95,43 @@ Section Integers_sect.
       Finite nat X ->  exists m : nat, Upper_Bound nat nat_po X m.
   Proof.
     intros X H'; elim H'.
-    exists 0.
-    apply Upper_Bound_definition.
-      unfold nat_po. simpl. apply triv_nat.
-    intros y H'0; elim H'0; auto with sets arith.
-    intros A H'0 H'1 x H'2; try assumption.
-    elim H'1; intros x0 H'3; clear H'1.
-    elim le_total_order.
-    simpl.
-    intro H'1; try assumption.
-    lapply H'1; [ intro H'4; idtac | try assumption ]; auto with sets arith.
-    generalize (H'4 x0 x).
-    clear H'4.
-    clear H'1.
-    intro H'1; lapply H'1;
-      [ intro H'4; elim H'4;
-	[ intro H'5; try exact H'5; clear H'4 H'1 | intro H'5; clear H'4 H'1 ]
-	| clear H'1 ].
-    exists x.
-    apply Upper_Bound_definition. simpl. apply triv_nat.
-    intros y H'1; elim H'1.
-    generalize le_trans.
-    intro H'4; red in H'4.
-    intros x1 H'6; try assumption.
-    apply H'4 with (y := x0). elim H'3; simpl; auto with sets arith. trivial.
-    intros x1 H'4; elim H'4. unfold nat_po; simpl; trivial.
-    exists x0.
-    apply Upper_Bound_definition.
-      unfold nat_po. simpl. apply triv_nat.
-    intros y H'1; elim H'1.
-    intros x1 H'4; try assumption.
-    elim H'3; simpl; auto with sets arith.
-    intros x1 H'4; elim H'4; auto with sets arith.
-    red.
-    intros x1 H'1; elim H'1; apply triv_nat.
+    - exists 0.
+      apply Upper_Bound_definition.
+      + unfold nat_po. simpl. apply triv_nat.
+      + intros y H'0; elim H'0; auto with sets arith.
+    - intros A H'0 H'1 x H'2; try assumption.
+      elim H'1; intros x0 H'3; clear H'1.
+      elim le_total_order.
+      simpl.
+      intro H'1; try assumption.
+      lapply H'1; [ intro H'4; idtac | try assumption ]; auto with sets arith.
+      generalize (H'4 x0 x).
+      clear H'4.
+      clear H'1.
+      intro H'1; lapply H'1;
+        [ intro H'4; elim H'4;
+          [ intro H'5; try exact H'5; clear H'4 H'1 | intro H'5; clear H'4 H'1 ]
+        | clear H'1 ].
+      + exists x.
+        apply Upper_Bound_definition.
+        * simpl. apply triv_nat.
+        * intros y H'1; elim H'1.
+          -- generalize le_trans.
+             intro H'4; red in H'4.
+             intros x1 H'6; try assumption.
+             apply H'4 with (y := x0).
+             ++ elim H'3; simpl; auto with sets arith.
+             ++ trivial.
+          -- intros x1 H'4; elim H'4. unfold nat_po; simpl; trivial.
+      + exists x0.
+        apply Upper_Bound_definition.
+        * unfold nat_po. simpl. apply triv_nat.
+        * intros y H'1; elim H'1.
+          -- intros x1 H'4; try assumption.
+             elim H'3; simpl; auto with sets arith.
+          -- intros x1 H'4; elim H'4; auto with sets arith.
+      + red.
+        intros x1 H'1; elim H'1; apply triv_nat.
   Qed.
 
   Lemma Integers_has_no_ub :
@@ -138,12 +141,12 @@ Section Integers_sect.
     intros x H'0.
     elim H'0; intros H'1 H'2.
     cut (In nat Integers (S x)).
-    intro H'3.
-    specialize H'2 with (y := S x); lapply H'2;
-      [ intro H'5; clear H'2 | try assumption; clear H'2 ].
-    apply Nat.nle_succ_diag_l in H'5; assumption.
-    apply triv_nat.
- Qed.
+    - intro H'3.
+      specialize H'2 with (y := S x); lapply H'2;
+        [ intro H'5; clear H'2 | try assumption; clear H'2 ].
+      apply Nat.nle_succ_diag_l in H'5; assumption.
+    - apply triv_nat.
+  Qed.
 
   Lemma Integers_infinite : ~ Finite nat Integers.
   Proof.

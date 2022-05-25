@@ -28,10 +28,10 @@ Lemma elim_concl_eq :
 Proof.
   intros x y H.
   destruct (Z_lt_le_dec x y).
-  exfalso. apply H ; auto.
-  destruct (Zle_lt_or_eq y x);auto.
-  exfalso.
-  apply H ; auto.
+  - exfalso. apply H ; auto.
+  - destruct (Zle_lt_or_eq y x);auto.
+    exfalso.
+    apply H ; auto.
 Qed.
 
 Lemma elim_concl_le :
@@ -39,8 +39,8 @@ Lemma elim_concl_le :
 Proof.
   intros x y H.
   destruct (Z_lt_le_dec y x).
-  exfalso ; auto.
-  auto.
+  - exfalso ; auto.
+  - auto.
 Qed.
 
 Lemma elim_concl_lt :
@@ -48,8 +48,8 @@ Lemma elim_concl_lt :
 Proof.
   intros x y H.
   destruct (Z_lt_le_dec x y).
-  auto.
-  exfalso ; auto.
+  - auto.
+  - exfalso ; auto.
 Qed.
 
 

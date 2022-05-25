@@ -63,15 +63,15 @@ Lemma poly_of_formula_eval_compat : forall var f,
   eval var (poly_of_formula f) = formula_eval var f.
 Proof.
 intros var f; induction f; simpl poly_of_formula; simpl formula_eval; auto.
-  now simpl; match goal with [ |- ?t = ?u ] => destruct u; reflexivity end.
-  rewrite poly_mul_compat, IHf1, IHf2; ring.
-  repeat rewrite poly_add_compat.
+- now simpl; match goal with [ |- ?t = ?u ] => destruct u; reflexivity end.
+- rewrite poly_mul_compat, IHf1, IHf2; ring.
+- repeat rewrite poly_add_compat.
   rewrite poly_mul_compat; try_rewrite.
   now match goal with [ |- ?t = ?x || ?y ] => destruct x; destruct y; reflexivity end.
-  rewrite poly_add_compat; try_rewrite.
+- rewrite poly_add_compat; try_rewrite.
   now match goal with [ |- ?t = negb ?x ] => destruct x; reflexivity end.
-  rewrite poly_add_compat; congruence.
-  rewrite ?poly_add_compat, ?poly_mul_compat; try_rewrite.
+- rewrite poly_add_compat; congruence.
+- rewrite ?poly_add_compat, ?poly_mul_compat; try_rewrite.
   match goal with
     [ |- ?t = if ?b1 then ?b2 else ?b3 ] => destruct b1; destruct b2; destruct b3; reflexivity
   end.
@@ -246,15 +246,15 @@ Lemma boolean_witness_nonzero : forall k p, linear k p -> ~ null p ->
   eval (boolean_witness p) p = true.
 Proof.
 intros k p Hl Hp; induction Hl; simpl.
-  destruct c; [reflexivity|elim Hp; now constructor].
-  case_decide.
-    rewrite eval_null_zero; [|assumption]; rewrite list_replace_nth_2; simpl.
+- destruct c; [reflexivity|elim Hp; now constructor].
+- case_decide.
+  + rewrite eval_null_zero; [|assumption]; rewrite list_replace_nth_2; simpl.
     match goal with [ |- (if ?b then true else false) = true ] =>
-      assert (Hrw : b = true); [|rewrite Hrw; reflexivity]
+                      assert (Hrw : b = true); [|rewrite Hrw; reflexivity]
     end.
     erewrite eval_suffix_compat; [now eauto| |now apply linear_valid_incl; eauto].
     now intros j Hd; apply list_replace_nth_1; lia.
-    rewrite list_replace_nth_2, xorb_false_r.
+  + rewrite list_replace_nth_2, xorb_false_r.
     erewrite eval_suffix_compat; [now eauto| |now apply linear_valid_incl; eauto].
     now intros j Hd; apply list_replace_nth_1; lia.
 Qed.

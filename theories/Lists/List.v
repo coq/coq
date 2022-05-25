@@ -85,8 +85,8 @@ Section Facts.
   Theorem destruct_list (l : list A) : {x:A & {tl:list A | l = x::tl}}+{l = []}.
   Proof.
     induction l as [|a tail].
-    right; reflexivity.
-    left; exists a, tail; reflexivity.
+    - right; reflexivity.
+    - left; exists a, tail; reflexivity.
   Qed.
 
   Lemma hd_error_tl_repr l (a:A) r :
@@ -300,10 +300,10 @@ Section Facts.
   Theorem in_split : forall x (l:list A), In x l -> exists l1 l2, l = l1++x::l2.
   Proof.
   intros x l; induction l as [|a l IHl]; simpl; [destruct 1|destruct 1 as [?|H]].
-  subst a; auto.
-  exists [], l; auto.
-  destruct (IHl H) as (l1,(l2,H0)).
-  exists (a::l1), l2; simpl. apply f_equal. auto.
+  - subst a; auto.
+    exists [], l; auto.
+  - destruct (IHl H) as (l1,(l2,H0)).
+    exists (a::l1), l2; simpl. apply f_equal. auto.
   Qed.
 
   Lemma in_elt : forall (x:A) l1 l2, In x (l1 ++ x :: l2).
@@ -331,10 +331,10 @@ Section Facts.
     forall (a:A) (l:list A), {In a l} + {~ In a l}.
   Proof.
     intros H a l; induction l as [| a0 l IHl].
-    right; apply in_nil.
-    destruct (H a0 a); simpl; auto.
-    destruct IHl; simpl; auto.
-    right; unfold not; intros [Hc1| Hc2]; auto.
+    - right; apply in_nil.
+    - destruct (H a0 a); simpl; auto.
+      destruct IHl; simpl; auto.
+      right; unfold not; intros [Hc1| Hc2]; auto.
   Defined.
 
 End Facts.
@@ -631,23 +631,23 @@ Section Elts.
     forall l d, l <> [] -> l = removelast l ++ [last l d].
   Proof.
     intro l; induction l as [|? l IHl].
-    destruct 1; auto.
-    intros d _.
-    destruct l as [|a0 l]; auto.
-    pattern (a0::l) at 1; rewrite IHl with d; auto; discriminate.
+    - destruct 1; auto.
+    - intros d _.
+      destruct l as [|a0 l]; auto.
+      pattern (a0::l) at 1; rewrite IHl with d; auto; discriminate.
   Qed.
 
   Lemma exists_last :
     forall l, l <> [] -> { l' : (list A) & { a : A | l = l' ++ [a]}}.
   Proof.
     intro l; induction l as [|a l IHl].
-    destruct 1; auto.
-    intros _.
-    destruct l.
-    exists [], a; auto.
-    destruct IHl as [l' (a',H)]; try discriminate.
-    rewrite H.
-    exists (a::l'), a'; auto.
+    - destruct 1; auto.
+    - intros _.
+      destruct l.
+      + exists [], a; auto.
+      + destruct IHl as [l' (a',H)]; try discriminate.
+        rewrite H.
+        exists (a::l'), a'; auto.
   Qed.
 
   Lemma removelast_app :
@@ -698,9 +698,9 @@ Section Elts.
   Proof.
     intro l; induction l as [|x l IHl]; auto.
     intro y; simpl; destruct (eq_dec y x) as [yeqx | yneqx].
-    apply IHl.
-    unfold not; intro HF; simpl in HF; destruct HF; auto.
-    apply (IHl y); assumption.
+    - apply IHl.
+    - unfold not; intro HF; simpl in HF; destruct HF; auto.
+      apply (IHl y); assumption.
   Qed.
 
   Lemma notin_remove: forall l x, ~ In x l -> remove x l = l.
@@ -997,17 +997,17 @@ Section ListOps.
     In y (concat l) <-> exists x, In x l /\ In y x.
   Proof.
     intro l; induction l as [|a l IHl]; simpl; intro y; split; intros H.
-    contradiction.
-    destruct H as (x,(H,_)); contradiction.
-    destruct (in_app_or _ _ _ H) as [H0|H0].
-    exists a; auto.
-    destruct (IHl y) as (H1,_); destruct (H1 H0) as (x,(H2,H3)).
-    exists x; auto.
-    apply in_or_app.
-    destruct H as (x,(H0,H1)); destruct H0.
-    subst; auto.
-    right; destruct (IHl y) as (_,H2); apply H2.
-    exists x; auto.
+    - contradiction.
+    - destruct H as (x,(H,_)); contradiction.
+    - destruct (in_app_or _ _ _ H) as [H0|H0].
+      + exists a; auto.
+      + destruct (IHl y) as (H1,_); destruct (H1 H0) as (x,(H2,H3)).
+        exists x; auto.
+    - apply in_or_app.
+      destruct H as (x,(H0,H1)); destruct H0.
+      + subst; auto.
+      + right; destruct (IHl y) as (_,H2); apply H2.
+        exists x; auto.
   Qed.
 
 
@@ -1320,19 +1320,19 @@ End Fold_Right_Recursor.
     fold_right f i (l++l') = fold_right f (fold_right f i l') l.
   Proof.
     intros A B f l; induction l.
-    simpl; auto.
-    simpl; intros.
-    f_equal; auto.
+    - simpl; auto.
+    - simpl; intros.
+      f_equal; auto.
   Qed.
 
   Lemma fold_left_rev_right : forall (A B:Type)(f:A->B->B) l i,
     fold_right f i (rev l) = fold_left (fun x y => f y x) l i.
   Proof.
     intros A B f l; induction l.
-    simpl; auto.
-    intros.
-    simpl.
-    rewrite fold_right_app; simpl; auto.
+    - simpl; auto.
+    - intros.
+      simpl.
+      rewrite fold_right_app; simpl; auto.
   Qed.
 
   Theorem fold_symmetric :
@@ -1405,8 +1405,8 @@ End Fold_Right_Recursor.
       existsb (l1++l2) = existsb l1 || existsb l2.
     Proof.
       intro l1; induction l1 as [|a ? ?]; intros l2; simpl.
-        solve[auto].
-      case (f a); simpl; solve[auto].
+      - auto.
+      - case (f a); simpl; solve[auto].
     Qed.
 
   (** find whether a boolean function is satisfied by
@@ -1434,8 +1434,8 @@ End Fold_Right_Recursor.
       forall l1 l2, forallb (l1++l2) = forallb l1 && forallb l2.
     Proof.
       intro l1; induction l1 as [|a ? ?]; simpl.
-        solve[auto].
-      case (f a); simpl; solve[auto].
+      - auto.
+      - case (f a); simpl; solve[auto].
     Qed.
 
   (** [filter] *)
@@ -1661,11 +1661,11 @@ End Fold_Right_Recursor.
       nth n l d = (nth n (fst (split l)) (fst d), nth n (snd (split l)) (snd d)).
     Proof.
       intro l; induction l as [|a l IHl].
-      intros n d; destruct n; destruct d; simpl; auto.
-      intros n d; destruct n; destruct d; simpl; auto.
-      destruct a; destruct (split l); simpl; auto.
-      destruct a; destruct (split l); simpl in *; auto.
-      apply IHl.
+      - intros n d; destruct n; destruct d; simpl; auto.
+      - intros n d; destruct n; destruct d; simpl; auto.
+        + destruct a; destruct (split l); simpl; auto.
+        + destruct a; destruct (split l); simpl in *; auto.
+          apply IHl.
     Qed.
 
     Lemma split_length_l : forall (l:list (A*B)),
@@ -1696,7 +1696,7 @@ End Fold_Right_Recursor.
       forall l1 l2, split l = (l1, l2) -> combine l1 l2 = l.
     Proof.
       intro l; induction l as [|a l IHl].
-      simpl; auto.
+      1: simpl; auto.
       all: intuition; inversion H; auto.
       destruct (split l); simpl in *.
       inversion H1; subst; simpl.
@@ -1715,31 +1715,31 @@ End Fold_Right_Recursor.
       In (x,y) (combine l l') -> In x l.
     Proof.
       intro l; induction l as [|a l IHl].
-      simpl; auto.
-      intro l'; destruct l' as [|a0 l']; simpl; auto; intros x y H.
-      contradiction.
-      destruct H as [H|H].
-      injection H; auto.
-      right; apply IHl with l' y; auto.
+      - simpl; auto.
+      - intro l'; destruct l' as [|a0 l']; simpl; auto; intros x y H.
+        + contradiction.
+        + destruct H as [H|H].
+          * injection H; auto.
+          * right; apply IHl with l' y; auto.
     Qed.
 
     Lemma in_combine_r : forall (l:list A)(l':list B)(x:A)(y:B),
       In (x,y) (combine l l') -> In y l'.
     Proof.
       intro l; induction l as [|? ? IHl].
-      simpl; intros; contradiction.
-      intro l'; destruct l'; simpl; auto; intros x y H.
-      destruct H as [H|H].
-      injection H; auto.
-      right; apply IHl with x; auto.
+      - simpl; intros; contradiction.
+      - intro l'; destruct l'; simpl; auto; intros x y H.
+        destruct H as [H|H].
+        + injection H; auto.
+        + right; apply IHl with x; auto.
     Qed.
 
     Lemma combine_length : forall (l:list A)(l':list B),
       length (combine l l') = min (length l) (length l').
     Proof.
       intro l; induction l.
-      simpl; auto.
-      intro l'; destruct l'; simpl; auto.
+      - simpl; auto.
+      - intro l'; destruct l'; simpl; auto.
     Qed.
 
     Lemma combine_nth : forall (l:list A)(l':list B)(n:nat)(x:A)(y:B),
@@ -1747,8 +1747,8 @@ End Fold_Right_Recursor.
       nth n (combine l l') (x,y) = (nth n l x, nth n l' y).
     Proof.
       intro l; induction l; intro l'; destruct l'; intros n x y; try discriminate.
-      destruct n; simpl; auto.
-      destruct n; simpl in *; auto.
+      - destruct n; simpl; auto.
+      - destruct n; simpl in *; auto.
     Qed.
 
   (** [list_prod] has the same signature as [combine], but unlike
@@ -2060,7 +2060,7 @@ Section Cutting.
     - destruct l2 as [|x xs].
       * simpl. rewrite app_nil_r. apply firstn_all2. now apply Nat.le_add_r.
       * rewrite firstn_app. assert (H0 : (length l1 + S k - length l1) = S k).
-        now rewrite Nat.add_comm, Nat.add_sub.
+        1:now rewrite Nat.add_comm, Nat.add_sub.
         rewrite H0, firstn_all2; [reflexivity | now apply Nat.le_add_r].
   Qed.
 
@@ -2115,9 +2115,9 @@ Section Cutting.
   Lemma firstn_skipn : forall n l, firstn n l ++ skipn n l = l.
   Proof.
     intro n; induction n.
-    simpl; auto.
-    intro l; destruct l; simpl; auto.
-    f_equal; auto.
+    - simpl; auto.
+    - intro l; destruct l; simpl; auto.
+      f_equal; auto.
   Qed.
 
   Lemma firstn_length : forall n l, length (firstn n l) = min n (length l).
@@ -2591,10 +2591,11 @@ Section NatSeq.
     n < len -> nth n (seq start len) d = start+n.
   Proof.
     intro len; induction len as [|len IHlen]; intros start n d H.
-    inversion H.
-    simpl seq.
-    destruct n; simpl. now rewrite Nat.add_0_r.
-    now rewrite IHlen; [rewrite Nat.add_succ_r|apply Nat.succ_lt_mono].
+    - inversion H.
+    - simpl seq.
+      destruct n; simpl.
+      + now rewrite Nat.add_0_r.
+      + now rewrite IHlen; [rewrite Nat.add_succ_r|apply Nat.succ_lt_mono].
   Qed.
 
   Lemma seq_shift : forall len start,
@@ -2682,8 +2683,8 @@ Section Exists_Forall.
         now exists i; exists a.
       - intros [i [d [Hl HP]]].
         apply Exists_exists; exists (nth i l d); split.
-        apply nth_In; assumption.
-        assumption.
+        + apply nth_In; assumption.
+        + assumption.
     Qed.
 
     Lemma Exists_nil : Exists nil <-> False.
@@ -2775,8 +2776,8 @@ Section Exists_Forall.
       split.
       - intros HF i d Hl.
         apply (Forall_forall l).
-        assumption.
-        apply nth_In; assumption.
+        + assumption.
+        + apply nth_In; assumption.
       - intros HF.
         apply Forall_forall; intros a Hin.
         apply (In_nth _ _ a) in Hin; destruct Hin as [i [Hl Heq]].
@@ -2847,8 +2848,8 @@ Section Exists_Forall.
   Proof.
     intros P Q H l H0.
     induction H0 as [x l H0|x l H0 IHExists].
-    apply (Exists_cons_hd Q x l (H x H0)).
-    apply (Exists_cons_tl x IHExists).
+    - apply (Exists_cons_hd Q x l (H x H0)).
+    - apply (Exists_cons_tl x IHExists).
   Qed.
 
   Lemma Exists_or : forall (P Q : A -> Prop) l,
@@ -3054,8 +3055,8 @@ Section Forall2.
     exists l1' l2', Forall2 l1 l1' /\ Forall2 l2 l2' /\ l' = l1' ++ l2'.
   Proof.
     intro l1; induction l1 as [|a l1 IHl1]; intros l2 l' H.
-      exists [], l'; auto.
-      simpl in H; inversion H as [|? y ? ? ? H4]; subst; clear H.
+    - exists [], l'; auto.
+    - simpl in H; inversion H as [|? y ? ? ? H4]; subst; clear H.
       apply IHl1 in H4 as (l1' & l2' & Hl1 & Hl2 & ->).
       exists (y::l1'), l2'; simpl; auto.
   Qed.
@@ -3065,8 +3066,8 @@ Section Forall2.
     exists l1 l2, Forall2 l1 l1' /\ Forall2 l2 l2' /\ l = l1 ++ l2.
   Proof.
     intro l1'; induction l1' as [|a l1' IHl1']; intros l2' l H.
-      exists [], l; auto.
-      simpl in H; inversion H as [|x ? ? ? ? H4]; subst; clear H.
+    - exists [], l; auto.
+    - simpl in H; inversion H as [|x ? ? ? ? H4]; subst; clear H.
       apply IHl1' in H4 as (l1 & l2 & Hl1 & Hl2 & ->).
       exists (x::l1), l2; simpl; auto.
   Qed.
@@ -3108,10 +3109,10 @@ Section ForallPairs.
     forall x y, In x l -> In y l -> x=y \/ R x y \/ R y x.
   Proof.
     induction 1.
-    inversion 1.
-    simpl; destruct 1; destruct 1; subst; auto.
-    right; left. apply -> Forall_forall; eauto.
-    right; right. apply -> Forall_forall; eauto.
+    - inversion 1.
+    - simpl; destruct 1; destruct 1; subst; auto.
+      + right; left. apply -> Forall_forall; eauto.
+      + right; right. apply -> Forall_forall; eauto.
   Qed.
 
   (** [ForallPairs] implies [ForallOrdPairs]. The reverse implication is true

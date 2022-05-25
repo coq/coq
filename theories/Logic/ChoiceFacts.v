@@ -397,11 +397,11 @@ Proof.
   intros A B Descr RelCh R H.
   destruct (RelCh R H) as (R',(HR'R,H0)).
   destruct (Descr R') as (f,Hf).
-  firstorder.
-  exists f; intro x.
-  destruct (H0 x) as (y,(HR'xy,Huniq)).
-  rewrite <- (Huniq (f x) (Hf x)).
-  apply HR'R; assumption.
+  - firstorder.
+  - exists f; intro x.
+    destruct (H0 x) as (y,(HR'xy,Huniq)).
+    rewrite <- (Huniq (f x) (Hf x)).
+    apply HR'R; assumption.
 Qed.
 
 Lemma fun_choice_imp_rel_choice :
@@ -411,10 +411,10 @@ Proof.
   destruct (FunCh R H) as (f,H0).
   exists (fun x y => f x = y).
   split.
-  intros x y Heq; rewrite <- Heq; trivial.
-  intro x; exists (f x); split.
-    reflexivity.
-    trivial.
+  - intros x y Heq; rewrite <- Heq; trivial.
+  - intro x; exists (f x); split.
+    + reflexivity.
+    + trivial.
 Qed.
 
 Lemma fun_choice_imp_functional_rel_reification :
@@ -422,12 +422,12 @@ Lemma fun_choice_imp_functional_rel_reification :
 Proof.
   intros A B FunCh R H.
   destruct (FunCh R) as [f H0].
-  (* 1 *)
-  intro x.
-  destruct (H x) as (y,(HRxy,_)).
-  exists y; exact HRxy.
-  (* 2 *)
-  exists f; exact H0.
+  - (* 1 *)
+    intro x.
+    destruct (H x) as (y,(HRxy,_)).
+    exists y; exact HRxy.
+  - (* 2 *)
+    exists f; exact H0.
 Qed.
 
 Corollary fun_choice_iff_rel_choice_and_functional_rel_reification :
@@ -435,10 +435,10 @@ Corollary fun_choice_iff_rel_choice_and_functional_rel_reification :
     RelationalChoice_on A B /\ FunctionalRelReification_on A B.
 Proof.
   intros A B. split.
-  intro H; split;
-    [ exact (fun_choice_imp_rel_choice H)
+  - intro H; split;
+      [ exact (fun_choice_imp_rel_choice H)
       | exact (fun_choice_imp_functional_rel_reification H) ].
-  intros [H H0]; exact (functional_rel_reification_and_rel_choice_imp_fun_choice H0 H).
+  - intros [H H0]; exact (functional_rel_reification_and_rel_choice_imp_fun_choice H0 H).
 Qed.
 
 (**********************************************************************)
@@ -459,19 +459,20 @@ Proof.
   intros rel_choice proof_irrel.
   red; intros A B P R H.
   destruct (rel_choice _ _ (fun (x:sigT P) (y:B) => R (projT1 x) y)) as (R',(HR'R,H0)).
-  intros (x,HPx).
-  destruct (H x HPx) as (y,HRxy).
-  exists y; exact HRxy.
-  set (R'' := fun (x:A) (y:B) => exists H : P x, R' (existT P x H) y).
-  exists R''; split.
-  intros x y (HPx,HR'xy).
-    change x with (projT1 (existT P x HPx)); apply HR'R; exact HR'xy.
-  intros x HPx.
-  destruct (H0 (existT P x HPx)) as (y,(HR'xy,Huniq)).
-  exists y; split. exists HPx; exact HR'xy.
-  intros y' (H'Px,HR'xy').
-    apply Huniq.
-    rewrite proof_irrel with (a1 := HPx) (a2 := H'Px); exact HR'xy'.
+  - intros (x,HPx).
+    destruct (H x HPx) as (y,HRxy).
+    exists y; exact HRxy.
+  - set (R'' := fun (x:A) (y:B) => exists H : P x, R' (existT P x H) y).
+    exists R''; split.
+    + intros x y (HPx,HR'xy).
+      change x with (projT1 (existT P x HPx)); apply HR'R; exact HR'xy.
+    + intros x HPx.
+      destruct (H0 (existT P x HPx)) as (y,(HR'xy,Huniq)).
+      exists y; split.
+      * exists HPx; exact HR'xy.
+      * intros y' (H'Px,HR'xy').
+        apply Huniq.
+        rewrite proof_irrel with (a1 := HPx) (a2 := H'Px); exact HR'xy'.
 Qed.
 
 Lemma rel_choice_indep_of_general_premises_imp_guarded_rel_choice :
@@ -480,10 +481,12 @@ Lemma rel_choice_indep_of_general_premises_imp_guarded_rel_choice :
 Proof.
   intros A B Inh AC_rel IndPrem P R H.
   destruct (AC_rel (fun x y => P x -> R x y)) as (R',(HR'R,H0)).
-  intro x. apply IndPrem. exact Inh. intro Hx.
-  apply H; assumption.
-  exists (fun x y => P x /\ R' x y).
-  firstorder.
+  - intro x. apply IndPrem.
+    + exact Inh.
+    + intro Hx.
+      apply H; assumption.
+  - exists (fun x y => P x /\ R' x y).
+    firstorder.
 Qed.
 
 Lemma guarded_rel_choice_imp_rel_choice :
@@ -491,8 +494,8 @@ Lemma guarded_rel_choice_imp_rel_choice :
 Proof.
   intros A B GAC_rel R H.
   destruct (GAC_rel (fun _ => True) R) as (R',(HR'R,H0)).
-  firstorder.
-  exists R'; firstorder.
+  - firstorder.
+  - exists R'; firstorder.
 Qed.
 
 Lemma subset_types_imp_guarded_rel_choice_iff_rel_choice :
@@ -509,10 +512,10 @@ Corollary guarded_iff_omniscient_rel_choice :
   GuardedRelationalChoice <-> OmniscientRelationalChoice.
 Proof.
   split.
-  intros GAC_rel A B R.
-  apply (GAC_rel A B (fun x => exists y, R x y) R); auto.
-  intros OAC_rel A B P R H.
-  destruct (OAC_rel A B R) as (f,Hf); exists f; firstorder.
+  - intros GAC_rel A B R.
+    apply (GAC_rel A B (fun x => exists y, R x y) R); auto.
+  - intros OAC_rel A B P R H.
+    destruct (OAC_rel A B R) as (f,Hf); exists f; firstorder.
 Qed.
 
 (**********************************************************************)
@@ -525,8 +528,8 @@ Lemma guarded_fun_choice_imp_indep_of_general_premises :
 Proof.
   intros GAC_fun A P Q Inh H.
   destruct (GAC_fun unit A (fun _ => Q) (fun _ => P) Inh) as (f,Hf).
-  tauto.
-  exists (f tt); auto.
+  - tauto.
+  - exists (f tt); auto.
 Qed.
 
 
@@ -535,8 +538,8 @@ Lemma guarded_fun_choice_imp_fun_choice :
 Proof.
   intros GAC_fun A B Inh R H.
   destruct (GAC_fun A B (fun _ => True) R Inh) as (f,Hf).
-  firstorder.
-  exists f; auto.
+  - firstorder.
+  - exists f; auto.
 Qed.
 
 Lemma fun_choice_and_indep_general_prem_imp_guarded_fun_choice :
@@ -567,8 +570,8 @@ Lemma omniscient_fun_choice_imp_small_drinker :
 Proof.
   intros OAC_fun A P Inh.
   destruct (OAC_fun unit A (fun _ => P)) as (f,Hf).
-  auto.
-  exists (f tt); firstorder.
+  - auto.
+  - exists (f tt); firstorder.
 Qed.
 
 Lemma omniscient_fun_choice_imp_fun_choice :
@@ -585,8 +588,8 @@ Lemma fun_choice_and_small_drinker_imp_omniscient_fun_choice :
 Proof.
   intros AC_fun Drinker A B R Inh.
   destruct (AC_fun A B Inh (fun x y => (exists y, R x y) -> R x y)) as (f,Hf).
-  intro x; apply (Drinker B (R x) Inh).
-  exists f; assumption.
+  - intro x; apply (Drinker B (R x) Inh).
+  - exists f; assumption.
 Qed.
 
 Corollary fun_choice_and_small_drinker_iff_omniscient_fun_choice :
@@ -608,11 +611,11 @@ Theorem guarded_iff_omniscient_fun_choice :
   GuardedFunctionalChoice <-> OmniscientFunctionalChoice.
 Proof.
   split.
-  intros GAC_fun A B R Inh.
-  apply (GAC_fun A B (fun x => exists y, R x y) R); auto.
-  intros OAC_fun A B P R Inh H.
-  destruct (OAC_fun A B R Inh) as (f,Hf).
-  exists f; firstorder.
+  - intros GAC_fun A B R Inh.
+    apply (GAC_fun A B (fun x => exists y, R x y) R); auto.
+  - intros OAC_fun A B P R Inh H.
+    destruct (OAC_fun A B R Inh) as (f,Hf).
+    exists f; firstorder.
 Qed.
 
 (**********************************************************************)
@@ -625,8 +628,8 @@ Lemma iota_imp_constructive_definite_description :
 Proof.
   intros D_iota A P H.
   destruct D_iota with (P:=P) as (x,H1).
-  destruct H; red in H; auto.
-  exists x; apply H1; assumption.
+  - destruct H; red in H; auto.
+  - exists x; apply H1; assumption.
 Qed.
 
 (** ID_epsilon + Drinker <-> D_epsilon *)
@@ -636,8 +639,8 @@ Lemma epsilon_imp_constructive_indefinite_description:
 Proof.
   intros D_epsilon A P H.
   destruct D_epsilon with (P:=P) as (x,H1).
-  destruct H; auto.
-  exists x; apply H1; assumption.
+  - destruct H; auto.
+  - exists x; apply H1; assumption.
 Qed.
 
 Lemma constructive_indefinite_description_and_small_drinker_imp_epsilon :
@@ -692,11 +695,11 @@ Proof.
   red; intros R Rdec H.
   set (R':= fun x y => R x y /\ forall y', R x y' -> y <= y').
   destruct (Descr R') as (f,Hf).
-  intro x.
-  apply (dec_inh_nat_subset_has_unique_least_element (R x)).
-    apply Rdec.
-    apply (H x).
-    exists f.
+  - intro x.
+    apply (dec_inh_nat_subset_has_unique_least_element (R x)).
+    + apply Rdec.
+    + apply (H x).
+  - exists f.
     intros x.
     destruct (Hf x) as (Hfx,_).
     assumption.
@@ -735,12 +738,12 @@ Proof.
   pose (B' := { x:A & B x }).
   pose (R' := fun (x:A) (y:B') => projT1 y = x /\ R (projT1 y) (projT2 y)).
   destruct (AC_fun A B' R') as (f,Hf).
-  intros x. destruct (H x) as (y,Hy).
-  exists (existT (fun x => B x) x y). split; trivial.
-  exists (fun x => eq_rect _ _ (projT2 (f x)) _ (proj1_inf (Hf x))).
-  intro x; destruct (Hf x) as (Heq,HR) using and_indd.
-  destruct (f x); simpl in *.
-  destruct Heq using eq_indd; trivial.
+  - intros x. destruct (H x) as (y,Hy).
+    exists (existT (fun x => B x) x y). split; trivial.
+  - exists (fun x => eq_rect _ _ (projT2 (f x)) _ (proj1_inf (Hf x))).
+    intro x; destruct (Hf x) as (Heq,HR) using and_indd.
+    destruct (f x); simpl in *.
+    destruct Heq using eq_indd; trivial.
 Qed.
 
 (** ** Functional choice and truncation choice are equivalent *)
@@ -794,16 +797,16 @@ Proof.
   pose (B' := { x:A & B x }).
   pose (R' := fun (x:A) (y:B') => projT1 y = x /\ R (projT1 y) (projT2 y)).
   destruct (AC_fun A B' R') as (f,Hf).
-  intros x. destruct (H x) as (y,(Hy,Huni)).
-  exists (existT (fun x => B x) x y). repeat split; trivial.
-  intros (x',y') (Heqx',Hy').
-  simpl in *.
-  destruct Heqx'.
-  rewrite (Huni y'); trivial.
-  exists (fun x => eq_rect _ _ (projT2 (f x)) _ (proj1_inf (Hf x))).
-  intro x; destruct (Hf x) as (Heq,HR) using and_indd.
-  destruct (f x); simpl in *.
-  destruct Heq using eq_indd; trivial.
+  - intros x. destruct (H x) as (y,(Hy,Huni)).
+    exists (existT (fun x => B x) x y). repeat split; trivial.
+    intros (x',y') (Heqx',Hy').
+    simpl in *.
+    destruct Heqx'.
+    rewrite (Huni y'); trivial.
+  - exists (fun x => eq_rect _ _ (projT2 (f x)) _ (proj1_inf (Hf x))).
+    intro x; destruct (Hf x) as (Heq,HR) using and_indd.
+    destruct (f x); simpl in *.
+    destruct Heq using eq_indd; trivial.
 Qed.
 
 Corollary dep_iff_non_dep_functional_rel_reification :
@@ -919,15 +922,15 @@ Proof.
   intros Descr EM P.
   pose (select := fun b:bool => if b then P else ~P).
   assert { b:bool | select b } as ([|],HP).
-  red in Descr.
-  apply Descr.
-  rewrite <- unique_existence; split.
-  destruct (EM P).
-  exists true; trivial.
-  exists false; trivial.
-  intros [|] [|] H1 H2; simpl in *; reflexivity || contradiction.
-  left; trivial.
-  right; trivial.
+  - red in Descr.
+    apply Descr.
+    rewrite <- unique_existence; split.
+    + destruct (EM P).
+      * exists true; trivial.
+      * exists false; trivial.
+    + intros [|] [|] H1 H2; simpl in *; reflexivity || contradiction.
+  - left; trivial.
+  - right; trivial.
 Qed.
 
 Corollary fun_reification_descr_computational_excluded_middle_in_prop_context :
@@ -962,18 +965,18 @@ Proof.
   set (R' (p q:nat*A) := fst q = S (fst p) /\ R (fst p) (snd q)).
   destruct (H0 0) as (y0,Hy0).
   destruct H with (R:=R') (x0:=(0,y0)) as (f,(Hf0,HfS)).
-    intro x; destruct (H0 (fst x)) as (y,Hy).
+  - intro x; destruct (H0 (fst x)) as (y,Hy).
     exists (S (fst x),y).
     red. auto.
-  assert (Heq:forall n, fst (f n) = n).
-    induction n.
-      rewrite Hf0; reflexivity.
-      specialize HfS with n; destruct HfS as (->,_); congruence.
-  exists (fun n => snd (f (S n))).
-  intro n'. specialize HfS with n'.
-  destruct HfS as (_,HR).
-  rewrite Heq in HR.
-  assumption.
+  - assert (Heq:forall n, fst (f n) = n).
+    + induction n.
+      * rewrite Hf0; reflexivity.
+      * specialize HfS with n; destruct HfS as (->,_); congruence.
+    + exists (fun n => snd (f (S n))).
+      intro n'. specialize HfS with n'.
+      destruct HfS as (_,HR).
+      rewrite Heq in HR.
+      assumption.
 Qed.
 
 (**********************************************************************)
@@ -1034,13 +1037,15 @@ Proof.
     x = x' /\ (T x y -> y = y' \/ T x y') /\ (T x y' -> y = y' \/ T x y)).
   assert (Hequiv : Equivalence R).
   { split.
-    - split. easy. firstorder.
-    - intros (x,y) (x',y') (H1,(H2,H2')). split. easy. simpl fst in *. simpl snd in *.
-      subst x'. split; intro H.
-      + destruct (H2' H); firstorder.
-      + destruct (H2 H); firstorder.
+    - split. + easy. + firstorder.
+    - intros (x,y) (x',y') (H1,(H2,H2')). split.
+      + easy.
+      + simpl fst in *. simpl snd in *.
+        subst x'. split; intro H.
+        * destruct (H2' H); firstorder.
+        * destruct (H2 H); firstorder.
     - intros (x,y) (x',y') (x'',y'') (H1,(H2,H2')) (H3,(H4,H4')).
-      simpl fst in *. simpl snd in *. subst x'' x'. split. easy. split; intro H.
+      simpl fst in *. simpl snd in *. subst x'' x'. split. { easy. } split; intro H.
       + simpl fst in *. simpl snd in *. destruct (H2 H) as [<-|H0].
         * destruct (H4 H); firstorder.
         * destruct (H2' H0), (H4 H0); try subst y'; try subst y''; try firstorder.
@@ -1055,17 +1060,17 @@ Proof.
     exists (snd (g (x,y))).
     destruct (Hg (x,y)) as ((Heq1,(H',H'')),Hgxyuniq); clear Hg.
     destruct (H' Hy) as [Heq2|Hgy]; clear H'.
-    + split. split.
+    + split;[split|].
       * rewrite <- Heq2. assumption.
       * exists y. destruct (g (x,y)) as (x',y'). simpl in Heq1, Heq2. subst; easy.
       * intros y' (Hy',(y'',(Hy'',Heq))).
-        rewrite (Hgxyuniq (x,y'')), Heq. easy. split. easy.
+        rewrite (Hgxyuniq (x,y'')), Heq. { easy. } split. { easy. }
         split; right; easy.
-    + split. split.
+    + split;[split|].
       * assumption.
       * exists y. destruct (g (x,y)) as (x',y'). simpl in Heq1. subst x'; easy.
       * intros y' (Hy',(y'',(Hy'',Heq))).
-        rewrite (Hgxyuniq (x,y'')), Heq. easy. split. easy.
+        rewrite (Hgxyuniq (x,y'')), Heq. { easy. } split. { easy. }
         split; right; easy.
 Qed.
 
@@ -1077,8 +1082,8 @@ Theorem gen_setoid_fun_choice_imp_setoid_fun_choice  :
 Proof.
   intros A B GenSetoidFunChoice R T Hequiv Hcompat Hex.
   apply GenSetoidFunChoice; try easy.
-  apply eq_equivalence.
-  intros * H <-. firstorder.
+  - apply eq_equivalence.
+  - intros * H <-. firstorder.
 Qed.
 
 Theorem setoid_fun_choice_imp_gen_setoid_fun_choice :
@@ -1161,7 +1166,9 @@ Proof.
   exists (fun a => f (g a)).
   intro x. destruct (Hg x) as (Hgx,HRuniq).
   split.
-  - eapply Hcompat. symmetry. apply Hgx. apply Hf.
+  - eapply Hcompat.
+    + symmetry. apply Hgx.
+    + apply Hf.
   - intros y Hxy. f_equal. auto.
 Qed.
 

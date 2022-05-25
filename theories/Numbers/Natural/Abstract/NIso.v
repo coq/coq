@@ -67,9 +67,9 @@ Local Notation "n == m" := (N1.eq n m) (at level 70, no associativity).
 Lemma inverse_nat_iso : forall n : N1.t, h21 (h12 n) == n.
 Proof.
 induct n.
-now rewrite Hom12.natural_isomorphism_0, Hom21.natural_isomorphism_0.
-intros n IH.
-now rewrite Hom12.natural_isomorphism_succ, Hom21.natural_isomorphism_succ, IH.
+- now rewrite Hom12.natural_isomorphism_0, Hom21.natural_isomorphism_0.
+- intros n IH.
+  now rewrite Hom12.natural_isomorphism_succ, Hom21.natural_isomorphism_succ, IH.
 Qed.
 
 End Inverse.
@@ -92,9 +92,9 @@ Definition isomorphism (f1 : N1.t -> N2.t) (f2 : N2.t -> N1.t) : Prop :=
 Theorem iso_nat_iso : isomorphism h12 h21.
 Proof.
 unfold isomorphism.
-split. apply Hom12.hom_nat_iso.
-split. apply Hom21.hom_nat_iso.
-split. apply Inverse12.inverse_nat_iso.
+split. { apply Hom12.hom_nat_iso. }
+split. { apply Hom21.hom_nat_iso. }
+split. { apply Inverse12.inverse_nat_iso. }
 apply Inverse21.inverse_nat_iso.
 Qed.
 

@@ -29,16 +29,16 @@ Require Setoid.
 Definition Rsrt : ring_theory R0 R1 Rplus Rmult Rminus Ropp (@eq R).
 Proof.
   constructor.
-  exact Rplus_0_l.
-  exact Rplus_comm.
-  intros. rewrite Rplus_assoc. auto.
-  exact Rmult_1_l.
-  exact Rmult_comm.
-  intros ; rewrite Rmult_assoc ; auto.
-  intros. rewrite Rmult_comm. rewrite Rmult_plus_distr_l.
-   rewrite (Rmult_comm z).    rewrite (Rmult_comm z). auto.
-  reflexivity.
-  exact Rplus_opp_r.
+  - exact Rplus_0_l.
+  - exact Rplus_comm.
+  - intros. rewrite Rplus_assoc. auto.
+  - exact Rmult_1_l.
+  - exact Rmult_comm.
+  - intros ; rewrite Rmult_assoc ; auto.
+  - intros. rewrite Rmult_comm. rewrite Rmult_plus_distr_l.
+    rewrite (Rmult_comm z).    rewrite (Rmult_comm z). auto.
+  - reflexivity.
+  - exact Rplus_opp_r.
 Qed.
 
 Local Open Scope R_scope.
@@ -46,16 +46,16 @@ Local Open Scope R_scope.
 Lemma Rsor : SOR R0 R1 Rplus Rmult Rminus Ropp (@eq R)  Rle Rlt.
 Proof.
   constructor; intros ; subst ; try (intuition (subst; try ring ; auto with real)).
-  constructor.
-  constructor.
-  unfold RelationClasses.Symmetric. auto.
-  unfold RelationClasses.Transitive. intros. subst. reflexivity.
-  apply Rsrt.
-  eapply Rle_trans ; eauto.
-  apply (Rlt_irrefl m) ; auto.
-  apply Rnot_le_lt. auto with real.
-  destruct (total_order_T n m) as [ [H1 | H1] | H1] ; auto.
-  now apply Rmult_lt_0_compat.
+  - constructor.
+    + constructor.
+    + unfold RelationClasses.Symmetric. auto.
+    + unfold RelationClasses.Transitive. intros. subst. reflexivity.
+  - apply Rsrt.
+  - eapply Rle_trans ; eauto.
+  - apply (Rlt_irrefl m) ; auto.
+  - apply Rnot_le_lt. auto with real.
+  - destruct (total_order_T n m) as [ [H1 | H1] | H1] ; auto.
+  - now apply Rmult_lt_0_compat.
 Qed.
 
 Lemma Rinv_1 : forall x, x * / 1 = x.
@@ -100,16 +100,16 @@ Lemma Q2R_inv_ext : forall x,
 Proof.
   intros.
   case_eq (Qeq_bool x 0).
-  intros.
-  apply Qeq_bool_eq in H.
-  destruct x ; simpl.
-  unfold Qeq in H.
-  simpl in H.
-  rewrite Zmult_1_r in H.
-  rewrite H.
-  apply Rmult_0_l.
-  intros.
-  now apply Q2R_inv, Qeq_bool_neq.
+  - intros.
+    apply Qeq_bool_eq in H.
+    destruct x ; simpl.
+    unfold Qeq in H.
+    simpl in H.
+    rewrite Zmult_1_r in H.
+    rewrite H.
+    apply Rmult_0_l.
+  - intros.
+    now apply Q2R_inv, Qeq_bool_neq.
 Qed.
 
 Notation to_nat := N.to_nat.
@@ -122,17 +122,17 @@ Lemma QSORaddon :
   Q2R nat to_nat pow.
 Proof.
   constructor.
-  constructor ; intros ; try reflexivity.
-  apply Q2R_0.
-  apply Q2R_1.
-  apply Q2R_plus.
-  apply Q2R_minus.
-  apply Q2R_mult.
-  apply Q2R_opp.
-  apply Qeq_true ; auto.
-  apply R_power_theory.
-  apply Qeq_false.
-  apply Qle_true.
+  - constructor ; intros ; try reflexivity.
+    + apply Q2R_0.
+    + apply Q2R_1.
+    + apply Q2R_plus.
+    + apply Q2R_minus.
+    + apply Q2R_mult.
+    + apply Q2R_opp.
+    + apply Qeq_true ; auto.
+  - apply R_power_theory.
+  - apply Qeq_false.
+  - apply Qle_true.
 Qed.
 
 (* Syntactic ring coefficients. *)
@@ -199,10 +199,10 @@ Qed.
 Lemma is_neg_false : forall z, is_neg z = false -> (z_of_exp z >= 0)%Z.
 Proof.
   destruct z ; simpl ; try congruence.
-  destruct z ; try congruence.
-  compute. congruence.
-  compute. congruence.
-  generalize (Zle_0_nat n). auto using Z.le_ge.
+  - destruct z ; try congruence.
+    + compute. congruence.
+    + compute. congruence.
+  - generalize (Zle_0_nat n). auto using Z.le_ge.
 Qed.
 
 Definition CInvR0 (r : Rcst) := Qeq_bool (Q_of_Rcst r) (0 # 1).
@@ -292,25 +292,25 @@ Proof.
   unfold Qpower, powerRZ.
   destruct z.
   - apply Q2R_1.
-  -
-    change (Qpower_positive q p)
-          with (Qpower q (Zpos p)).
+
+  - change (Qpower_positive q p)
+      with (Qpower q (Zpos p)).
     rewrite <- N2Z.inj_pos.
     rewrite <- positive_N_nat.
     rewrite rpow_pow_N.
     rewrite rpow_pow_N0.
     apply Q2R_pow_N.
-  -
-    rewrite  Q2R_inv.
-    unfold Qpower_positive.
-    rewrite <- positive_N_nat.
-    rewrite rpow_pow_N0.
-    unfold pow_N.
-    rewrite Q2R_pow_pos.
-    auto.
-    intro.
-    apply Qpower_positive_eq_zero in H.
-    destruct DEF ; auto with arith.
+
+  - rewrite  Q2R_inv.
+    + unfold Qpower_positive.
+      rewrite <- positive_N_nat.
+      rewrite rpow_pow_N0.
+      unfold pow_N.
+      rewrite Q2R_pow_pos.
+      auto.
+    + intro.
+      apply Qpower_positive_eq_zero in H.
+      destruct DEF ; auto with arith.
 Qed.
 
 Lemma Qpower0 : forall z, (z <> 0)%Z -> (0 ^ z == 0)%Q.
@@ -335,7 +335,7 @@ Proof.
   - apply Q2R_minus.
   - apply Q2R_mult.
   - destruct z.
-    destruct (CPowR0 z c) eqn:C; unfold CPowR0 in C.
+    1:destruct (CPowR0 z c) eqn:C; unfold CPowR0 in C.
     +
       rewrite andb_true_iff in C.
       destruct C as (C1 & C2).
@@ -348,13 +348,13 @@ Proof.
       rewrite Qpower0 by auto.
       apply Q2R_0.
     + rewrite Q2RpowerRZ.
-      rewrite IHc.
-      reflexivity.
-      rewrite andb_false_iff in C.
-      destruct C.
-      simpl. apply Z.ltb_ge in H.
-      right. Ztac.normZ. Ztac.slia H H0.
-      left ; apply Qeq_bool_neq; auto.
+      * rewrite IHc.
+        reflexivity.
+      * rewrite andb_false_iff in C.
+        destruct C.
+        -- simpl. apply Z.ltb_ge in H.
+           right. Ztac.normZ. Ztac.slia H H0.
+        -- left ; apply Qeq_bool_neq; auto.
     + simpl.
       rewrite <- IHc.
       destruct Qpower_theory.
@@ -428,8 +428,8 @@ Lemma Reval_op2_hold : forall b op q1 q2,
     Tauto.hold b (Reval_op2 b op q1 q2) <-> Reval_pop2 op q1 q2.
 Proof.
   destruct b.
-  simpl ; tauto.
-  simpl. apply pop2_bop2.
+  - simpl ; tauto.
+  - simpl. apply pop2_bop2.
 Qed.
 
 Definition Reval_formula (e: PolEnv R) (k: Tauto.kind) (ff : Formula Rcst) :=
@@ -445,8 +445,8 @@ Lemma Reval_pop2_eval_op2 : forall o e1 e2,
 Proof.
   destruct o ; simpl ; try tauto.
   split.
-  apply Rge_le.
-  apply Rle_ge.
+  - apply Rge_le.
+  - apply Rle_ge.
 Qed.
 
 Lemma Reval_formula_compat : forall env b f, Tauto.hold b (Reval_formula env b f) <-> Reval_formula' env f.
@@ -529,7 +529,7 @@ Proof.
   apply tauto_checker_sound with (eval:=QReval_formula) (eval':=    Qeval_nformula) (env := env) in TC.
   - change (eval_f e_rtyp (QReval_formula env))
       with
-        (eval_bf  (QReval_formula env)) in TC.
+      (eval_bf  (QReval_formula env)) in TC.
     rewrite eval_bf_map in TC.
     unfold eval_bf in TC.
     rewrite eval_f_morph with (ev':= Reval_formula env) in TC ; auto.
@@ -538,18 +538,18 @@ Proof.
     rewrite QReval_formula_compat.
     unfold QReval_formula'.
     rewrite <- eval_formulaSC  with (phiS := R_of_Rcst).
-    rewrite Reval_formula_compat.
-    tauto.
-    intro. rewrite Q_of_RcstR. reflexivity.
-  -
-  apply Reval_nformula_dec.
+    + rewrite Reval_formula_compat.
+      tauto.
+    + intro. rewrite Q_of_RcstR. reflexivity.
+
+  - apply Reval_nformula_dec.
   - destruct t.
-  apply (check_inconsistent_sound Rsor QSORaddon) ; auto.
+    apply (check_inconsistent_sound Rsor QSORaddon) ; auto.
   - unfold rdeduce.
     intros. revert H.
     eapply (nformula_plus_nformula_correct Rsor QSORaddon); eauto.
-  -
-    intros.
+
+  - intros.
     rewrite QReval_formula_compat.
     eapply (cnf_normalise_correct Rsor QSORaddon) ; eauto.
   - intros. rewrite Tauto.hold_eNOT. rewrite QReval_formula_compat.
@@ -558,8 +558,8 @@ Proof.
     unfold eval_tt.
     intros.
     rewrite make_impl_map with (eval := Qeval_nformula env0).
-    eapply RWeakChecker_sound; eauto.
-    tauto.
+    + eapply RWeakChecker_sound; eauto.
+    + tauto.
 Qed.
 
 

@@ -244,12 +244,20 @@ Lemma CRlt_proper
 Proof.
   intros R x y H x0 y0 H0. destruct H, H0.
   destruct (CRltLinear R). split.
-  - intro. destruct (s x y x0). assumption.
-    contradiction. destruct (s y y0 x0).
-    assumption. assumption. contradiction.
-  - intro. destruct (s y x y0). assumption.
-    contradiction. destruct (s x x0 y0).
-    assumption. assumption. contradiction.
+  - intro. destruct (s x y x0).
+    + assumption.
+    + contradiction.
+    + destruct (s y y0 x0).
+      * assumption.
+      * assumption.
+      * contradiction.
+  - intro. destruct (s y x y0).
+    + assumption.
+    + contradiction.
+    + destruct (s x x0 y0).
+      * assumption.
+      * assumption.
+      * contradiction.
 Qed.
 
 Lemma CRle_refl : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -263,14 +271,18 @@ Lemma CRle_lt_trans : forall {R : ConstructiveReals} (r1 r2 r3 : CRcarrier R),
     r1 <= r2 -> r2 < r3 -> r1 < r3.
 Proof.
   intros. destruct (CRltLinear R).
-  destruct (s r2 r1 r3 H0). contradiction. apply c.
+  destruct (s r2 r1 r3 H0).
+  - contradiction.
+  - apply c.
 Qed.
 
 Lemma CRlt_le_trans : forall {R : ConstructiveReals} (r1 r2 r3 : CRcarrier R),
     r1 < r2 -> r2 <= r3 -> r1 < r3.
 Proof.
   intros. destruct (CRltLinear R).
-  destruct (s r1 r3 r2 H). apply c. contradiction.
+  destruct (s r1 r3 r2 H).
+  - apply c.
+  - contradiction.
 Qed.
 
 Lemma CRle_trans : forall {R : ConstructiveReals} (x y z : CRcarrier R),
@@ -290,8 +302,9 @@ Qed.
 Lemma CRlt_trans_flip : forall {R : ConstructiveReals} (x y z : CRcarrier R),
     y < z -> x < y -> x < z.
 Proof.
-  intros. apply (CRlt_le_trans _ y). exact H0.
-  apply CRlt_asym. exact H.
+  intros. apply (CRlt_le_trans _ y).
+  - exact H0.
+  - apply CRlt_asym. exact H.
 Qed.
 
 Lemma CReq_refl : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -324,7 +337,10 @@ Add Parametric Relation {R : ConstructiveReals} : (CRcarrier R) (CReq R)
 Instance CReq_relT : forall {R : ConstructiveReals},
     CRelationClasses.Equivalence (CReq R).
 Proof.
-  split. exact CReq_refl. exact CReq_sym. exact CReq_trans.
+  split.
+  - exact CReq_refl.
+  - exact CReq_sym.
+  - exact CReq_trans.
 Qed.
 
 #[global]
@@ -333,12 +349,20 @@ Instance CRlt_morph
       (CMorphisms.respectful (CReq R) (CMorphisms.respectful (CReq R) CRelationClasses.iffT)) (CRlt R).
 Proof.
   intros R x y H x0 y0 H0. destruct H, H0. split.
-  - intro. destruct (CRltLinear R). destruct (s x y x0). assumption.
-    contradiction. destruct (s y y0 x0).
-    assumption. assumption. contradiction.
-  - intro. destruct (CRltLinear R). destruct (s y x y0). assumption.
-    contradiction. destruct (s x x0 y0).
-    assumption. assumption. contradiction.
+  - intro. destruct (CRltLinear R). destruct (s x y x0).
+    + assumption.
+    + contradiction.
+    + destruct (s y y0 x0).
+      * assumption.
+      * assumption.
+      * contradiction.
+  - intro. destruct (CRltLinear R). destruct (s y x y0).
+    + assumption.
+    + contradiction.
+    + destruct (s x x0 y0).
+      * assumption.
+      * assumption.
+      * contradiction.
 Qed.
 
 Add Parametric Morphism {R : ConstructiveReals} : (CRle R)
@@ -363,7 +387,8 @@ Lemma CRplus_0_r : forall {R : ConstructiveReals} (x : CRcarrier R),
 Proof.
   intros. destruct (CRisRing R).
   transitivity (0 + x).
-  apply Radd_comm. apply Radd_0_l.
+  - apply Radd_comm.
+  - apply Radd_0_l.
 Qed.
 
 Lemma CRplus_opp_l : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -371,7 +396,8 @@ Lemma CRplus_opp_l : forall {R : ConstructiveReals} (x : CRcarrier R),
 Proof.
   intros. destruct (CRisRing R).
   transitivity (x + - x).
-  apply Radd_comm. apply Ropp_def.
+  - apply Radd_comm.
+  - apply Ropp_def.
 Qed.
 
 Lemma CRplus_opp_r : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -393,9 +419,10 @@ Proof.
   intros. destruct (CRisRing R).
   apply (CRlt_proper R (CRplus R r r1) (CRplus R r1 r) (Radd_comm _ _)
                      (CRplus R r2 r) (CRplus R r2 r)).
-  apply CReq_refl.
-  apply (CRlt_proper R _ _ (CReq_refl _) _ (CRplus R r r2)).
-  apply Radd_comm. apply CRplus_lt_compat_l. exact H.
+  - apply CReq_refl.
+  - apply (CRlt_proper R _ _ (CReq_refl _) _ (CRplus R r r2)).
+    + apply Radd_comm.
+    + apply CRplus_lt_compat_l. exact H.
 Qed.
 
 Lemma CRplus_lt_reg_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -406,8 +433,8 @@ Proof.
                      (CRplus R r2 r) (CRplus R r2 r)) in H.
   2: apply CReq_refl.
   apply (CRlt_proper R _ _ (CReq_refl _) _ (CRplus R r r2)) in H.
-  apply CRplus_lt_reg_l in H. exact H.
-  apply Radd_comm.
+  - apply CRplus_lt_reg_l in H. exact H.
+  - apply Radd_comm.
 Qed.
 
 Lemma CRplus_le_compat_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -426,7 +453,8 @@ Lemma CRplus_le_compat : forall {R : ConstructiveReals} (r1 r2 r3 r4 : CRcarrier
     r1 <= r2 -> r3 <= r4 -> r1 + r3 <= r2 + r4.
 Proof.
   intros. apply (CRle_trans _ (CRplus R r2 r3)).
-  apply CRplus_le_compat_r, H. apply CRplus_le_compat_l, H0.
+  - apply CRplus_le_compat_r, H.
+  - apply CRplus_le_compat_l, H0.
 Qed.
 
 Lemma CRle_minus : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -457,8 +485,9 @@ Lemma CRplus_lt_le_compat :
     -> r1 + r3 < r2 + r4.
 Proof.
   intros. apply (CRlt_le_trans _ (CRplus R r2 r3)).
-  apply CRplus_lt_compat_r. exact H. intro abs.
-  apply CRplus_lt_reg_l in abs. contradiction.
+  - apply CRplus_lt_compat_r. exact H.
+  - intro abs.
+    apply CRplus_lt_reg_l in abs. contradiction.
 Qed.
 
 Lemma CRplus_le_lt_compat :
@@ -468,8 +497,8 @@ Lemma CRplus_le_lt_compat :
     -> r1 + r3 < r2 + r4.
 Proof.
   intros. apply (CRle_lt_trans _ (CRplus R r2 r3)).
-  apply CRplus_le_compat_r. exact H.
-  apply CRplus_lt_compat_l. exact H0.
+  - apply CRplus_le_compat_r. exact H.
+  - apply CRplus_lt_compat_l. exact H0.
 Qed.
 
 Lemma CRplus_eq_reg_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -482,25 +511,33 @@ Proof.
                 _ _ H).
   destruct (CRisRing R).
   apply (CReq_trans r1) in H0.
-  apply (CReq_trans _ _ _ H0).
-  transitivity ((- r + r) + r2).
-  apply Radd_assoc. transitivity (0 + r2).
-  apply Radd_ext. apply CRplus_opp_l. apply CReq_refl.
-  apply Radd_0_l. apply CReq_sym.
-  transitivity (- r + r + r1).
-  apply Radd_assoc.
-  transitivity (0 + r1).
-  apply Radd_ext. apply CRplus_opp_l. apply CReq_refl.
-  apply Radd_0_l.
+  - apply (CReq_trans _ _ _ H0).
+    transitivity ((- r + r) + r2).
+    + apply Radd_assoc.
+    + transitivity (0 + r2).
+      * apply Radd_ext.
+        -- apply CRplus_opp_l.
+        -- apply CReq_refl.
+      * apply Radd_0_l.
+  - apply CReq_sym.
+    transitivity (- r + r + r1).
+    + apply Radd_assoc.
+    + transitivity (0 + r1).
+      * apply Radd_ext.
+        -- apply CRplus_opp_l.
+        -- apply CReq_refl.
+      * apply Radd_0_l.
 Qed.
 
 Lemma CRplus_eq_reg_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
     r1 + r == r2 + r -> r1 == r2.
 Proof.
   intros. apply (CRplus_eq_reg_l r).
-  transitivity (r1 + r). apply (Radd_comm (CRisRing R)).
-  transitivity (r2 + r).
-  exact H. apply (Radd_comm (CRisRing R)).
+  transitivity (r1 + r).
+  - apply (Radd_comm (CRisRing R)).
+  - transitivity (r2 + r).
+    + exact H.
+    + apply (Radd_comm (CRisRing R)).
 Qed.
 
 Lemma CRplus_assoc : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -579,9 +616,11 @@ Lemma CRopp_involutive : forall {R : ConstructiveReals} (r : CRcarrier R),
     - - r == r.
 Proof.
   intros. apply (CRplus_eq_reg_l (CRopp R r)).
-  transitivity (CR_of_Q R 0). apply CRisRing.
-  apply CReq_sym. transitivity (r + - r).
-  apply CRisRing. apply CRisRing.
+  transitivity (CR_of_Q R 0).
+  - apply CRisRing.
+  - apply CReq_sym. transitivity (r + - r).
+    + apply CRisRing.
+    + apply CRisRing.
 Qed.
 
 Lemma CRopp_gt_lt_contravar
@@ -590,14 +629,15 @@ Lemma CRopp_gt_lt_contravar
 Proof.
   intros. apply (CRplus_lt_reg_l R r1).
   destruct (CRisRing R).
-  apply (CRle_lt_trans _ 0). apply Ropp_def.
-  apply (CRplus_lt_compat_l R (CRopp R r2)) in H.
-  apply (CRle_lt_trans _ (CRplus R (CRopp R r2) r2)).
-  apply (CRle_trans _ (CRplus R r2 (CRopp R r2))).
-  destruct (Ropp_def r2). exact H0.
-  destruct (Radd_comm r2 (CRopp R r2)). exact H1.
-  apply (CRlt_le_trans _ _ _ H).
-  destruct (Radd_comm r1 (CRopp R r2)). exact H0.
+  apply (CRle_lt_trans _ 0).
+  - apply Ropp_def.
+  - apply (CRplus_lt_compat_l R (CRopp R r2)) in H.
+    apply (CRle_lt_trans _ (CRplus R (CRopp R r2) r2)).
+    + apply (CRle_trans _ (CRplus R r2 (CRopp R r2))).
+      * destruct (Ropp_def r2). exact H0.
+      * destruct (Radd_comm r2 (CRopp R r2)). exact H1.
+    + apply (CRlt_le_trans _ _ _ H).
+      destruct (Radd_comm r1 (CRopp R r2)). exact H0.
 Qed.
 
 Lemma CRopp_lt_cancel : forall {R : ConstructiveReals} (r1 r2 : CRcarrier R),
@@ -623,18 +663,20 @@ Lemma CRopp_plus_distr : forall {R : ConstructiveReals} (r1 r2 : CRcarrier R),
 Proof.
   intros. destruct (CRisRing R), (CRisRingExt R).
   apply (CRplus_eq_reg_l (CRplus R r1 r2)).
-  transitivity (CR_of_Q R 0). apply Ropp_def.
+  transitivity (CR_of_Q R 0). 1:apply Ropp_def.
   transitivity (r2 + r1 + (-r1 + -r2)).
-  transitivity (r2 + (r1 + (-r1 + -r2))).
-  transitivity (r2 + - r2).
-  apply CReq_sym. apply Ropp_def. apply Radd_ext.
-  apply CReq_refl.
-  transitivity (0 + - r2).
-  apply CReq_sym, Radd_0_l.
-  transitivity (r1 + - r1 + - r2).
-  apply Radd_ext. 2: apply CReq_refl. apply CReq_sym, Ropp_def.
-  apply CReq_sym, Radd_assoc. apply Radd_assoc.
-  apply Radd_ext. 2: apply CReq_refl. apply Radd_comm.
+  1:transitivity (r2 + (r1 + (-r1 + -r2))).
+  1:transitivity (r2 + - r2).
+  - apply CReq_sym. apply Ropp_def.
+  - apply Radd_ext.
+    + apply CReq_refl.
+    + transitivity (0 + - r2).
+      * apply CReq_sym, Radd_0_l.
+      * transitivity (r1 + - r1 + - r2).
+        -- apply Radd_ext. 2: apply CReq_refl. apply CReq_sym, Ropp_def.
+        -- apply CReq_sym, Radd_assoc.
+  - apply Radd_assoc.
+  - apply Radd_ext. 2: apply CReq_refl. apply Radd_comm.
 Qed.
 
 Lemma CRmult_1_l : forall {R : ConstructiveReals} (r : CRcarrier R),
@@ -647,7 +689,8 @@ Lemma CRmult_1_r : forall {R : ConstructiveReals} (x : CRcarrier R),
     x * 1 == x.
 Proof.
   intros. destruct (CRisRing R). transitivity (CRmult R 1 x).
-  apply Rmul_comm. apply Rmul_1_l.
+  - apply Rmul_comm.
+  - apply Rmul_1_l.
 Qed.
 
 Lemma CRmult_assoc : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -667,14 +710,16 @@ Lemma CRmult_plus_distr_l : forall {R : ConstructiveReals} (r1 r2 r3 : CRcarrier
 Proof.
   intros. destruct (CRisRing R).
   transitivity ((r2 + r3) * r1).
-  apply Rmul_comm.
-  transitivity ((r2 * r1) + (r3 * r1)).
-  apply Rdistr_l.
-  transitivity ((r1 * r2) + (r3 * r1)).
-  destruct (CRisRingExt R). apply Radd_ext.
-  apply Rmul_comm. apply CReq_refl.
-  destruct (CRisRingExt R). apply Radd_ext.
-  apply CReq_refl. apply Rmul_comm.
+  - apply Rmul_comm.
+  - transitivity ((r2 * r1) + (r3 * r1)).
+    + apply Rdistr_l.
+    + transitivity ((r1 * r2) + (r3 * r1)).
+      * destruct (CRisRingExt R). apply Radd_ext.
+        -- apply Rmul_comm.
+        -- apply CReq_refl.
+      * destruct (CRisRingExt R). apply Radd_ext.
+        -- apply CReq_refl.
+        -- apply Rmul_comm.
 Qed.
 
 Lemma CRmult_plus_distr_r : forall {R : ConstructiveReals} (r1 r2 r3 : CRcarrier R),
@@ -690,7 +735,8 @@ Lemma CRzero_double : forall {R : ConstructiveReals} (x : CRcarrier R),
 Proof.
   intros.
   apply (CRplus_eq_reg_l x), CReq_sym. transitivity x.
-  apply CRplus_0_r. exact H.
+  - apply CRplus_0_r.
+  - exact H.
 Qed.
 
 Lemma CRmult_0_r : forall {R : ConstructiveReals} (x : CRcarrier R),
@@ -698,9 +744,10 @@ Lemma CRmult_0_r : forall {R : ConstructiveReals} (x : CRcarrier R),
 Proof.
   intros. apply CRzero_double.
   transitivity (x * (0 + 0)).
-  destruct (CRisRingExt R). apply Rmul_ext. apply CReq_refl.
-  apply CReq_sym, CRplus_0_r.
-  destruct (CRisRing R). apply CRmult_plus_distr_l.
+  - destruct (CRisRingExt R). apply Rmul_ext.
+    + apply CReq_refl.
+    + apply CReq_sym, CRplus_0_r.
+  - destruct (CRisRing R). apply CRmult_plus_distr_l.
 Qed.
 
 Lemma CRmult_0_l : forall {R : ConstructiveReals} (r : CRcarrier R),
@@ -713,24 +760,25 @@ Lemma CRopp_mult_distr_r : forall {R : ConstructiveReals} (r1 r2 : CRcarrier R),
     - (r1 * r2) == r1 * (- r2).
 Proof.
   intros. apply (CRplus_eq_reg_l (CRmult R r1 r2)).
-  destruct (CRisRing R). transitivity (CR_of_Q R 0). apply Ropp_def.
+  destruct (CRisRing R). transitivity (CR_of_Q R 0). 1:apply Ropp_def.
   transitivity (r1 * (r2 + - r2)).
   2: apply CRmult_plus_distr_l.
   transitivity (r1 * 0).
-  apply CReq_sym, CRmult_0_r.
-  destruct (CRisRingExt R). apply Rmul_ext. apply CReq_refl.
-  apply CReq_sym, Ropp_def.
+  1:apply CReq_sym, CRmult_0_r.
+  destruct (CRisRingExt R). apply Rmul_ext.
+  - apply CReq_refl.
+  - apply CReq_sym, Ropp_def.
 Qed.
 
 Lemma CRopp_mult_distr_l : forall {R : ConstructiveReals} (r1 r2 : CRcarrier R),
     - (r1 * r2) == (- r1) * r2.
 Proof.
   intros. transitivity (r2 * - r1).
-  transitivity (- (r2 * r1)).
-  apply (Ropp_ext (CRisRingExt R)).
-  apply CReq_sym, (Rmul_comm (CRisRing R)).
-  apply CRopp_mult_distr_r.
-  apply CReq_sym, (Rmul_comm (CRisRing R)).
+  1:transitivity (- (r2 * r1)).
+  - apply (Ropp_ext (CRisRingExt R)).
+    apply CReq_sym, (Rmul_comm (CRisRing R)).
+  - apply CRopp_mult_distr_r.
+  - apply CReq_sym, (Rmul_comm (CRisRing R)).
 Qed.
 
 Lemma CRmult_lt_compat_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -738,22 +786,23 @@ Lemma CRmult_lt_compat_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R
 Proof.
   intros. apply (CRplus_lt_reg_r (CRopp R (CRmult R r1 r))).
   apply (CRle_lt_trans _ 0).
-  apply (Ropp_def (CRisRing R)).
+  1:apply (Ropp_def (CRisRing R)).
   apply (CRlt_le_trans _ (CRplus R (CRmult R r2 r) (CRmult R (CRopp R r1) r))).
-  apply (CRlt_le_trans _ (CRmult R (CRplus R r2 (CRopp R r1)) r)).
-  apply CRmult_lt_0_compat. 2: exact H.
-  apply (CRplus_lt_reg_r r1).
-  apply (CRle_lt_trans _ r1). apply (Radd_0_l (CRisRing R)).
-  apply (CRlt_le_trans _ r2 _ H0).
-  apply (CRle_trans _ (CRplus R r2 (CRplus R (CRopp R r1) r1))).
-  apply (CRle_trans _ (CRplus R r2 0)).
-  destruct (CRplus_0_r r2). exact H1.
-  apply CRplus_le_compat_l. destruct (CRplus_opp_l r1). exact H1.
-  destruct (Radd_assoc (CRisRing R) r2 (CRopp R r1) r1). exact H2.
-  destruct (CRisRing R).
-  destruct (Rdistr_l r2 (CRopp R r1) r). exact H2.
-  apply CRplus_le_compat_l. destruct (CRopp_mult_distr_l r1 r).
-  exact H1.
+  1:apply (CRlt_le_trans _ (CRmult R (CRplus R r2 (CRopp R r1)) r)).
+  - apply CRmult_lt_0_compat. 2: exact H.
+    apply (CRplus_lt_reg_r r1).
+    apply (CRle_lt_trans _ r1).
+    + apply (Radd_0_l (CRisRing R)).
+    + apply (CRlt_le_trans _ r2 _ H0).
+      apply (CRle_trans _ (CRplus R r2 (CRplus R (CRopp R r1) r1))).
+      1:apply (CRle_trans _ (CRplus R r2 0)).
+      * destruct (CRplus_0_r r2). exact H1.
+      * apply CRplus_le_compat_l. destruct (CRplus_opp_l r1). exact H1.
+      * destruct (Radd_assoc (CRisRing R) r2 (CRopp R r1) r1). exact H2.
+  - destruct (CRisRing R).
+    destruct (Rdistr_l r2 (CRopp R r1) r). exact H2.
+  - apply CRplus_le_compat_l. destruct (CRopp_mult_distr_l r1 r).
+    exact H1.
 Qed.
 
 Lemma CRmult_lt_compat_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -768,7 +817,8 @@ Lemma CRinv_r : forall {R : ConstructiveReals} (r:CRcarrier R)
     r * (/ r) rnz == 1.
 Proof.
   intros. transitivity ((/ r) rnz * r).
-  apply (CRisRing R). apply CRinv_l.
+  - apply (CRisRing R).
+  - apply CRinv_l.
 Qed.
 
 Lemma CRmult_lt_reg_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -778,21 +828,24 @@ Proof.
   2: apply CRinv_0_lt_compat, H.
   apply (CRle_lt_trans _ ((r1 * r) * ((/ r) (inr H)))).
   - clear H0. apply (CRle_trans _ (CRmult R r1 1)).
-    destruct (CRmult_1_r r1). exact H0.
-    apply (CRle_trans _ (CRmult R r1 (CRmult R r ((/ r) (inr H))))).
-    destruct (Rmul_ext (CRisRingExt R) r1 r1 (CReq_refl r1)
-                       (r * ((/ r) (inr H))) 1).
-    apply CRinv_r. exact H0.
-    destruct (Rmul_assoc (CRisRing R) r1 r ((/ r) (inr H))). exact H1.
+    + destruct (CRmult_1_r r1). exact H0.
+    + apply (CRle_trans _ (CRmult R r1 (CRmult R r ((/ r) (inr H))))).
+      * destruct (Rmul_ext (CRisRingExt R) r1 r1 (CReq_refl r1)
+                           (r * ((/ r) (inr H))) 1).
+        -- apply CRinv_r.
+        -- exact H0.
+      * destruct (Rmul_assoc (CRisRing R) r1 r ((/ r) (inr H))). exact H1.
   - apply (CRlt_le_trans _ ((r2 * r) * ((/ r) (inr H)))).
-    exact H0. clear H0.
+    { exact H0. }
+    clear H0.
     apply (CRle_trans _ (r2 * 1)).
     2: destruct (CRmult_1_r r2); exact H1.
     apply (CRle_trans _ (r2 * (r * ((/ r) (inr H))))).
-    destruct (Rmul_assoc (CRisRing R) r2 r ((/ r) (inr H))). exact H0.
+    { destruct (Rmul_assoc (CRisRing R) r2 r ((/ r) (inr H))). exact H0. }
     destruct (Rmul_ext (CRisRingExt R) r2 r2 (CReq_refl r2)
                        (r * ((/ r) (inr H))) 1).
-    apply CRinv_r. exact H1.
+    + apply CRinv_r.
+    + exact H1.
 Qed.
 
 Lemma CRmult_lt_reg_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -802,14 +855,16 @@ Proof.
   rewrite (Rmul_comm (CRisRing R) r r1) in H0.
   rewrite (Rmul_comm (CRisRing R) r r2) in H0.
   apply CRmult_lt_reg_r in H0.
-  exact H0. exact H.
+  - exact H0.
+  - exact H.
 Qed.
 
 Lemma CRmult_le_compat_l_half : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
     0 < r -> r1 <= r2 -> r * r1 <= r * r2.
 Proof.
   intros. intro abs. apply CRmult_lt_reg_l in abs.
-  contradiction. exact H.
+  - contradiction.
+  - exact H.
 Qed.
 
 Lemma CRmult_le_compat_r_half : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -818,7 +873,8 @@ Lemma CRmult_le_compat_r_half : forall {R : ConstructiveReals} (r r1 r2 : CRcarr
     -> r1 * r <= r2 * r.
 Proof.
   intros. intro abs. apply CRmult_lt_reg_r in abs.
-  contradiction. exact H.
+  - contradiction.
+  - exact H.
 Qed.
 
 Lemma CRmult_eq_reg_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
@@ -829,28 +885,30 @@ Proof.
   intros. destruct H0,H.
   - split.
     + intro abs. apply H0. apply CRmult_lt_compat_r.
-      exact c. exact abs.
+      * exact c.
+      * exact abs.
     + intro abs. apply H1. apply CRmult_lt_compat_r.
-      exact c. exact abs.
+      * exact c.
+      * exact abs.
   - split.
     + intro abs. apply H1. apply CRopp_lt_cancel.
       apply (CRle_lt_trans _ (CRmult R r1 (CRopp R r))).
-      apply CRopp_mult_distr_r.
+      { apply CRopp_mult_distr_r. }
       apply (CRlt_le_trans _ (CRmult R r2 (CRopp R r))).
       2: apply CRopp_mult_distr_r.
       apply CRmult_lt_compat_r. 2: exact abs.
       apply (CRplus_lt_reg_r r). apply (CRle_lt_trans _ r).
-      apply (Radd_0_l (CRisRing R)).
+      { apply (Radd_0_l (CRisRing R)). }
       apply (CRlt_le_trans _ 0 _ c).
       apply CRplus_opp_l.
     + intro abs. apply H0. apply CRopp_lt_cancel.
       apply (CRle_lt_trans _ (CRmult R r2 (CRopp R r))).
-      apply CRopp_mult_distr_r.
+      1:apply CRopp_mult_distr_r.
       apply (CRlt_le_trans _ (CRmult R r1 (CRopp R r))).
       2: apply CRopp_mult_distr_r.
       apply CRmult_lt_compat_r. 2: exact abs.
       apply (CRplus_lt_reg_r r). apply (CRle_lt_trans _ r).
-      apply (Radd_0_l (CRisRing R)).
+      1:apply (Radd_0_l (CRisRing R)).
       apply (CRlt_le_trans _ 0 _ c).
       apply CRplus_opp_l.
 Qed.
@@ -869,8 +927,11 @@ Lemma CRmult_eq_reg_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
 Proof.
   intros. rewrite (Rmul_comm (CRisRing R)) in H0.
   rewrite (Rmul_comm (CRisRing R) r) in H0.
-  apply CRmult_eq_reg_r in H0. exact H0. destruct H.
-  right. exact c. left. exact c.
+  apply CRmult_eq_reg_r in H0.
+  - exact H0.
+  - destruct H.
+    + right. exact c.
+    + left. exact c.
 Qed.
 
 Lemma CRinv_mult_distr :
@@ -879,11 +940,13 @@ Lemma CRinv_mult_distr :
     (rmnz : (r1*r2) ≶ 0),
     (/ (r1 * r2)) rmnz == (/ r1) r1nz * (/ r2) r2nz.
 Proof.
-  intros. apply (CRmult_eq_reg_l r1). exact r1nz.
-  rewrite (Rmul_assoc (CRisRing R)). rewrite CRinv_r. rewrite CRmult_1_l.
-  apply (CRmult_eq_reg_l r2). exact r2nz.
-  rewrite CRinv_r. rewrite (Rmul_assoc (CRisRing R)).
-  rewrite (CRmult_comm r2 r1). rewrite CRinv_r. reflexivity.
+  intros. apply (CRmult_eq_reg_l r1).
+  - exact r1nz.
+  - rewrite (Rmul_assoc (CRisRing R)). rewrite CRinv_r. rewrite CRmult_1_l.
+    apply (CRmult_eq_reg_l r2).
+    + exact r2nz.
+    + rewrite CRinv_r. rewrite (Rmul_assoc (CRisRing R)).
+      rewrite (CRmult_comm r2 r1). rewrite CRinv_r. reflexivity.
 Qed.
 
 Lemma CRinv_morph : forall {R : ConstructiveReals} (x y : CRcarrier R)
@@ -891,8 +954,9 @@ Lemma CRinv_morph : forall {R : ConstructiveReals} (x y : CRcarrier R)
     x == y
     -> (/ x) rxnz == (/ y) rynz.
 Proof.
-  intros. apply (CRmult_eq_reg_l x). exact rxnz.
- rewrite CRinv_r, H, CRinv_r. reflexivity.
+  intros. apply (CRmult_eq_reg_l x).
+  - exact rxnz.
+  - rewrite CRinv_r, H, CRinv_r. reflexivity.
 Qed.
 
 Lemma CRlt_minus : forall {R : ConstructiveReals} (x y : CRcarrier R),
@@ -920,9 +984,11 @@ Qed.
 Lemma eq_inject_Q : forall {R : ConstructiveReals} (q r : Q),
     CR_of_Q R q == CR_of_Q R r -> Qeq q r.
 Proof.
-  intros. destruct H. destruct (Q_dec q r). destruct s.
-  exfalso. apply (CR_of_Q_lt R q r) in q0. contradiction.
-  exfalso. apply (CR_of_Q_lt R r q) in q0. contradiction. exact q0.
+  intros. destruct H. destruct (Q_dec q r).
+  - destruct s.
+    + exfalso. apply (CR_of_Q_lt R q r) in q0. contradiction.
+    + exfalso. apply (CR_of_Q_lt R r q) in q0. contradiction.
+  - exact q0.
 Qed.
 
 #[global]
@@ -938,10 +1004,10 @@ Lemma CR_of_Q_opp : forall {R : ConstructiveReals} (q : Q),
 Proof.
   intros. apply (CRplus_eq_reg_l (CR_of_Q R q)).
   transitivity (CR_of_Q R 0).
-  transitivity (CR_of_Q R (q-q)).
-  apply CReq_sym, CR_of_Q_plus.
-  apply CR_of_Q_morph. ring.
-  apply CReq_sym. apply (CRisRing R).
+  - transitivity (CR_of_Q R (q-q)).
+    + apply CReq_sym, CR_of_Q_plus.
+    + apply CR_of_Q_morph. ring.
+  - apply CReq_sym. apply (CRisRing R).
 Qed.
 
 Lemma CR_of_Q_pos : forall {R : ConstructiveReals} (q:Q),
@@ -956,10 +1022,10 @@ Lemma CR_of_Q_inv : forall {R : ConstructiveReals} (q : Q) (qPos : Qlt 0 q),
 Proof.
   intros.
   apply (CRmult_eq_reg_l (CR_of_Q R q)).
-  right. apply CR_of_Q_pos, qPos.
-  rewrite CRinv_r, <- CR_of_Q_mult.
-  apply CR_of_Q_morph. field. intro abs.
-  rewrite abs in qPos. exact (Qlt_irrefl 0 qPos).
+  - right. apply CR_of_Q_pos, qPos.
+  - rewrite CRinv_r, <- CR_of_Q_mult.
+    apply CR_of_Q_morph. field. intro abs.
+    rewrite abs in qPos. exact (Qlt_irrefl 0 qPos).
 Qed.
 
 Lemma CRmult_le_0_compat : forall {R : ConstructiveReals} (a b : CRcarrier R),
@@ -974,15 +1040,19 @@ Proof.
   assert (0 < CR_of_Q R (Z.pos n #1)) as nPos.
   { apply CR_of_Q_lt. reflexivity. }
   assert (b * (/ CR_of_Q R (Z.pos n #1)) (inr nPos) < -(a*b)).
-  { apply (CRmult_lt_reg_r (CR_of_Q R (Z.pos n #1))). apply nPos.
-    rewrite <- (Rmul_assoc (CRisRing R)), CRinv_l, CRmult_1_r.
-    apply (CRmult_lt_compat_r (-(a*b))) in maj.
-    rewrite CRmult_assoc, CRinv_l, CRmult_1_r in maj.
-    rewrite CRmult_comm. apply maj. apply epsPos. }
+  { apply (CRmult_lt_reg_r (CR_of_Q R (Z.pos n #1))).
+    - apply nPos.
+    - rewrite <- (Rmul_assoc (CRisRing R)), CRinv_l, CRmult_1_r.
+      apply (CRmult_lt_compat_r (-(a*b))) in maj.
+      + rewrite CRmult_assoc, CRinv_l, CRmult_1_r in maj.
+        rewrite CRmult_comm. apply maj.
+      + apply epsPos. }
   pose proof (CRmult_le_compat_l_half
                 (a + (/ CR_of_Q R (Z.pos n #1)) (inr nPos)) 0 b).
   assert (0 + 0 < a + (/ CR_of_Q R (Z.pos n #1)) (inr nPos)).
-  { apply CRplus_le_lt_compat. apply H. apply CRinv_0_lt_compat. apply nPos. }
+  { apply CRplus_le_lt_compat.
+    - apply H.
+    - apply CRinv_0_lt_compat. apply nPos. }
   rewrite CRplus_0_l in H3. specialize (H2 H3 H0).
   clear H3. rewrite CRmult_0_r in H2.
   apply H2. clear H2. rewrite (Rdistr_l (CRisRing R)).
@@ -998,10 +1068,11 @@ Proof.
   intros. apply (CRplus_le_reg_r (-(r*r1))).
   rewrite CRplus_opp_r, CRopp_mult_distr_r.
   rewrite <- CRmult_plus_distr_l.
-  apply CRmult_le_0_compat. exact H.
-  apply (CRplus_le_reg_r r1).
-  rewrite CRplus_0_l, CRplus_assoc, CRplus_opp_l, CRplus_0_r.
-  exact H0.
+  apply CRmult_le_0_compat.
+  - exact H.
+  - apply (CRplus_le_reg_r r1).
+    rewrite CRplus_0_l, CRplus_assoc, CRplus_opp_l, CRplus_0_r.
+    exact H0.
 Qed.
 
 Lemma CRmult_le_compat_r : forall {R : ConstructiveReals} (r r1 r2:CRcarrier R),
@@ -1018,12 +1089,15 @@ Lemma CRmult_pos_pos
 Proof.
   intros. destruct (CRltLinear R). clear p.
   specialize (s 0 x 1 (CRzero_lt_one R)) as [H2|H2].
-  exact H2. apply CRlt_asym in H2.
-  apply (CRmult_le_compat_r y) in H2.
-  2: exact H1. rewrite CRmult_1_l in H2.
-  apply (CRlt_le_trans _ _ _ H) in H2.
-  rewrite <- (CRmult_0_l y) in H.
-  apply CRmult_lt_reg_r in H. exact H. exact H2.
+  - exact H2.
+  - apply CRlt_asym in H2.
+    apply (CRmult_le_compat_r y) in H2.
+    2: exact H1. rewrite CRmult_1_l in H2.
+    apply (CRlt_le_trans _ _ _ H) in H2.
+    rewrite <- (CRmult_0_l y) in H.
+    apply CRmult_lt_reg_r in H.
+    + exact H.
+    + exact H2.
 Qed.
 
 (* In particular x * y == 1 implies that 0 # x, 0 # y and
@@ -1036,23 +1110,26 @@ Proof.
   (* Narrow cases to x < 1. *)
   destruct (CRltLinear R). clear p.
   pose proof (s 0 x 1 (CRzero_lt_one R)) as [H0|H0].
-  left. exact H0.
+  { left. exact H0. }
   (* In this case, linear order 0 y (x*y) decides. *)
   destruct (s 0 y (x*y) H).
   - left. rewrite <- (CRmult_0_l y) in H. apply CRmult_lt_reg_r in H.
-    exact H. exact c.
+    + exact H.
+    + exact c.
   - right. apply CRopp_lt_cancel. rewrite CRopp_0.
     apply (CRmult_pos_pos (-x) (-y)).
     + rewrite <- CRopp_mult_distr_l, CRopp_mult_distr_r, CRopp_involutive. exact H.
     + rewrite <- CRopp_0. apply CRopp_ge_le_contravar.
       intro abs. rewrite <- (CRmult_0_r x) in H.
-      apply CRmult_lt_reg_l in H. rewrite <- (CRmult_1_l y) in c.
-      rewrite <- CRmult_assoc in c. apply CRmult_lt_reg_r in c.
-      rewrite CRmult_1_r in c. exact (CRlt_asym _ _ H0 c).
-      exact H. exact abs.
+      apply CRmult_lt_reg_l in H.
+      * rewrite <- (CRmult_1_l y) in c.
+        rewrite <- CRmult_assoc in c. apply CRmult_lt_reg_r in c.
+        -- rewrite CRmult_1_r in c. exact (CRlt_asym _ _ H0 c).
+        -- exact H.
+      * exact abs.
     + intro abs. apply (CRmult_lt_compat_r y) in H0.
-      rewrite CRmult_1_l in H0. exact (CRlt_asym _ _ H0 c).
-      apply CRopp_lt_cancel. rewrite CRopp_0. exact abs.
+      * rewrite CRmult_1_l in H0. exact (CRlt_asym _ _ H0 c).
+      * apply CRopp_lt_cancel. rewrite CRopp_0. exact abs.
 Qed.
 
 Lemma CRmult_le_reg_l :
@@ -1060,8 +1137,9 @@ Lemma CRmult_le_reg_l :
     0 < x -> x * y <= x * z -> y <= z.
 Proof.
   intros. intro abs.
-  apply (CRmult_lt_compat_l x) in abs. contradiction.
-  exact H.
+  apply (CRmult_lt_compat_l x) in abs.
+  - contradiction.
+  - exact H.
 Qed.
 
 Lemma CRmult_le_reg_r :
@@ -1069,7 +1147,9 @@ Lemma CRmult_le_reg_r :
     0 < x -> y * x <= z * x -> y <= z.
 Proof.
   intros. intro abs.
-  apply (CRmult_lt_compat_r x) in abs. contradiction. exact H.
+  apply (CRmult_lt_compat_r x) in abs.
+  - contradiction.
+  - exact H.
 Qed.
 
 Definition CRup_nat {R : ConstructiveReals} (x : CRcarrier R)
@@ -1084,36 +1164,38 @@ Definition CRfloor {R : ConstructiveReals} (a : CRcarrier R)
                      (a < CR_of_Q R (p#1) + CR_of_Q R 2) }.
 Proof.
   destruct (CR_Q_dense R (a - CR_of_Q R (1#2)) a) as [q qmaj].
-  - apply (CRlt_le_trans _ (a-0)). apply CRplus_lt_compat_l.
-    apply CRopp_gt_lt_contravar.
-    apply CR_of_Q_lt. reflexivity.
-    unfold CRminus. rewrite CRopp_0, CRplus_0_r. apply CRle_refl.
+  - apply (CRlt_le_trans _ (a-0)).
+    + apply CRplus_lt_compat_l.
+      apply CRopp_gt_lt_contravar.
+      apply CR_of_Q_lt. reflexivity.
+    + unfold CRminus. rewrite CRopp_0, CRplus_0_r. apply CRle_refl.
   - exists (Qfloor q). destruct qmaj. split.
-    apply (CRle_lt_trans _ (CR_of_Q R q)). 2: exact c0.
-    apply CR_of_Q_le. apply Qfloor_le.
-    apply (CRlt_le_trans _ (CR_of_Q R q + CR_of_Q R (1#2))).
-    apply (CRplus_lt_compat_r (CR_of_Q R (1 # 2))) in c.
-    unfold CRminus in c. rewrite CRplus_assoc, CRplus_opp_l, CRplus_0_r in c. exact c.
-    rewrite (CR_of_Q_plus R 1 1), <- CRplus_assoc, <- (CR_of_Q_plus R _ 1).
-    apply CRplus_le_compat. apply CR_of_Q_le.
-    rewrite Qinv_plus_distr. apply Qlt_le_weak, Qlt_floor.
-    apply CR_of_Q_le. discriminate.
+    + apply (CRle_lt_trans _ (CR_of_Q R q)). 2: exact c0.
+      apply CR_of_Q_le. apply Qfloor_le.
+    + apply (CRlt_le_trans _ (CR_of_Q R q + CR_of_Q R (1#2))).
+      * apply (CRplus_lt_compat_r (CR_of_Q R (1 # 2))) in c.
+        unfold CRminus in c. rewrite CRplus_assoc, CRplus_opp_l, CRplus_0_r in c. exact c.
+      * rewrite (CR_of_Q_plus R 1 1), <- CRplus_assoc, <- (CR_of_Q_plus R _ 1).
+        apply CRplus_le_compat.
+        -- apply CR_of_Q_le.
+           rewrite Qinv_plus_distr. apply Qlt_le_weak, Qlt_floor.
+        -- apply CR_of_Q_le. discriminate.
 Qed.
 
 Lemma CRplus_appart_reg_l : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
     (r + r1) ≶ (r + r2) -> r1 ≶ r2.
 Proof.
   intros. destruct H.
-  left. apply (CRplus_lt_reg_l R r), c.
-  right. apply (CRplus_lt_reg_l R r), c.
+  - left. apply (CRplus_lt_reg_l R r), c.
+  - right. apply (CRplus_lt_reg_l R r), c.
 Qed.
 
 Lemma CRplus_appart_reg_r : forall {R : ConstructiveReals} (r r1 r2 : CRcarrier R),
     (r1 + r) ≶ (r2 + r) -> r1 ≶ r2.
 Proof.
   intros. destruct H.
-  left. apply (CRplus_lt_reg_r r), c.
-  right. apply (CRplus_lt_reg_r r), c.
+  - left. apply (CRplus_lt_reg_r r), c.
+  - right. apply (CRplus_lt_reg_r r), c.
 Qed.
 
 Lemma CRmult_appart_reg_l
@@ -1121,8 +1203,8 @@ Lemma CRmult_appart_reg_l
     0 < r -> (r * r1) ≶ (r * r2) -> r1 ≶ r2.
 Proof.
   intros. destruct H0.
-  left. exact (CRmult_lt_reg_l r _ _ H c).
-  right. exact (CRmult_lt_reg_l r _ _ H c).
+  - left. exact (CRmult_lt_reg_l r _ _ H c).
+  - right. exact (CRmult_lt_reg_l r _ _ H c).
 Qed.
 
 Lemma CRmult_appart_reg_r
@@ -1130,8 +1212,8 @@ Lemma CRmult_appart_reg_r
     0 < r -> (r1 * r) ≶ (r2 * r) -> r1 ≶ r2.
 Proof.
   intros. destruct H0.
-  left. exact (CRmult_lt_reg_r r _ _ H c).
-  right. exact (CRmult_lt_reg_r r _ _ H c).
+  - left. exact (CRmult_lt_reg_r r _ _ H c).
+  - right. exact (CRmult_lt_reg_r r _ _ H c).
 Qed.
 
 #[global]
@@ -1141,13 +1223,13 @@ Instance CRapart_morph
 Proof.
   intros R x y H x0 y0 H0. destruct H, H0. split.
   - intro. destruct H3.
-    left. apply (CRle_lt_trans _ x _ H).
-    apply (CRlt_le_trans _ x0 _ c), H2.
-    right. apply (CRle_lt_trans _ x0 _ H0).
-    apply (CRlt_le_trans _ x _ c), H1.
+    + left. apply (CRle_lt_trans _ x _ H).
+      apply (CRlt_le_trans _ x0 _ c), H2.
+    + right. apply (CRle_lt_trans _ x0 _ H0).
+      apply (CRlt_le_trans _ x _ c), H1.
   - intro. destruct H3.
-    left. apply (CRle_lt_trans _ y _ H1).
-    apply (CRlt_le_trans _ y0 _ c), H0.
-    right. apply (CRle_lt_trans _ y0 _ H2).
-    apply (CRlt_le_trans _ y _ c), H.
+    + left. apply (CRle_lt_trans _ y _ H1).
+      apply (CRlt_le_trans _ y0 _ c), H0.
+    + right. apply (CRle_lt_trans _ y0 _ H2).
+      apply (CRlt_le_trans _ y _ c), H.
 Qed.

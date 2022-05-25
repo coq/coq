@@ -41,7 +41,7 @@ Goal forall x y:Z,  x = y -> (x+0)%Z = (y*1+0)%Z.
 nsatz.
 Qed.
 
-Require Import Reals.
+Require Import Rbase.
 
 Goal forall x y:R,  x = y -> (x+0)%R = (y*1+0)%R.
 nsatz.
@@ -60,7 +60,7 @@ Section Geometry.
    https://docs.google.com/fileview?id=0ByhB3nPmbnjTYzFiZmIyNGMtYTkwNC00NWFiLWJiNzEtODM4NmVkYTc2NTVk&hl=fr
 *)
 
-Require Import Reals.
+Require Import Rbase.
 Require Import List.
 
 Record point:Type:={

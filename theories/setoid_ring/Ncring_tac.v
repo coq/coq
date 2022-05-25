@@ -195,17 +195,22 @@ Ltac reify_goal lvar lexpr lterm:=
 
 Lemma comm: forall (R:Type)`{Ring R}(c : Z) (x : R),
   x * (gen_phiZ c) == (gen_phiZ c) * x.
-induction c. intros. simpl. gen_rewrite. simpl. intros.
-rewrite <- same_gen.
-induction p. simpl.  gen_rewrite. rewrite IHp. reflexivity.
-simpl.  gen_rewrite. rewrite IHp. reflexivity.
-simpl.  gen_rewrite. 
-simpl. intros. rewrite <- same_gen.
-induction p. simpl. generalize IHp. clear IHp.
-gen_rewrite. intro IHp.  rewrite IHp. reflexivity.
-simpl. generalize IHp. clear IHp.
-gen_rewrite. intro IHp.  rewrite IHp. reflexivity.
-simpl.  gen_rewrite. Qed.
+  induction c.
+  - intros. simpl. gen_rewrite.
+  - simpl. intros.
+    rewrite <- same_gen.
+    induction p.
+    + simpl.  gen_rewrite. rewrite IHp. reflexivity.
+    + simpl.  gen_rewrite. rewrite IHp. reflexivity.
+    + simpl.  gen_rewrite.
+  - simpl. intros. rewrite <- same_gen.
+    induction p.
+    + simpl. generalize IHp. clear IHp.
+      gen_rewrite. intro IHp.  rewrite IHp. reflexivity.
+    + simpl. generalize IHp. clear IHp.
+      gen_rewrite. intro IHp.  rewrite IHp. reflexivity.
+    + simpl.  gen_rewrite.
+Qed.
 
 Ltac ring_gen :=
    match goal with

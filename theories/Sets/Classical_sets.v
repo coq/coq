@@ -38,11 +38,11 @@ Section Ensembles_classical.
   Proof.
     intros A NI.
     elim (not_all_ex_not U (fun x:U => ~ In U A x)).
-    intros x H; apply Inhabited_intro with x.
-    apply NNPP; auto with sets.
-    red; intro.
-    apply NI; red.
-    intros x H'; elim (H x); trivial with sets.
+    - intros x H; apply Inhabited_intro with x.
+      apply NNPP; auto with sets.
+    - red; intro.
+      apply NI; red.
+      intros x H'; elim (H x); trivial with sets.
   Qed.
 
   Lemma not_empty_Inhabited :
@@ -61,8 +61,8 @@ Section Ensembles_classical.
     intros x YX.
     apply Inhabited_intro with x.
     apply Setminus_intro.
-    apply not_imply_elim with (In U X x); trivial with sets.
-    auto with sets.
+    - apply not_imply_elim with (In U X x); trivial with sets.
+    - auto with sets.
   Qed.
 
   Lemma Strict_super_set_contains_new_element :

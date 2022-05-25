@@ -39,29 +39,29 @@ Lemma Qabs_pos : forall x, 0 <= x -> Qabs x == x.
 Proof.
 intros x H.
 apply Qabs_case.
-reflexivity.
-intros H0.
-setoid_replace x with 0.
-reflexivity.
-apply Qle_antisym; assumption.
+- reflexivity.
+- intros H0.
+  setoid_replace x with 0.
+  + reflexivity.
+  + apply Qle_antisym; assumption.
 Qed.
 
 Lemma Qabs_neg : forall x, x <= 0 -> Qabs x == - x.
 Proof.
 intros x H.
 apply Qabs_case.
-intros H0.
-setoid_replace x with 0.
-reflexivity.
-apply Qle_antisym; assumption.
-reflexivity.
+- intros H0.
+  setoid_replace x with 0.
+  + reflexivity.
+  + apply Qle_antisym; assumption.
+- reflexivity.
 Qed.
 
 Lemma Qabs_nonneg : forall x, 0 <= (Qabs x).
 intros x.
 apply Qabs_case.
-auto.
-apply (Qopp_le_compat x 0).
+- auto.
+- apply (Qopp_le_compat x 0).
 Qed.
 
 Lemma Zabs_Qabs : forall n d, (Z.abs n#d)==Qabs (n#d).
@@ -135,40 +135,40 @@ rewrite Qle_minus_iff.
 setoid_replace (Qabs (x - y) + - (Qabs x - Qabs y)) with ((Qabs (x - y) + Qabs y) + - Qabs x) by ring.
 rewrite <- Qle_minus_iff.
 setoid_replace (Qabs x) with (Qabs (x-y+y)).
-apply Qabs_triangle.
-apply Qabs_wd.
-ring.
+- apply Qabs_triangle.
+- apply Qabs_wd.
+  ring.
 Qed.
 
 Lemma Qabs_Qle_condition x y: Qabs x <= y <-> -y <= x <= y.
 Proof.
  split.
-  split.
-   rewrite <- (Qopp_opp x).
-   apply Qopp_le_compat.
-   apply Qle_trans with (Qabs (-x)).
-   apply Qle_Qabs.
-   now rewrite Qabs_opp.
-  apply Qle_trans with (Qabs x); auto using Qle_Qabs.
- intros (H,H').
- apply Qabs_case; trivial.
- intros. rewrite <- (Qopp_opp y). now apply Qopp_le_compat.
+ - split.
+   + rewrite <- (Qopp_opp x).
+     apply Qopp_le_compat.
+     apply Qle_trans with (Qabs (-x)).
+     * apply Qle_Qabs.
+     * now rewrite Qabs_opp.
+   + apply Qle_trans with (Qabs x); auto using Qle_Qabs.
+ - intros (H,H').
+   apply Qabs_case; trivial.
+   intros. rewrite <- (Qopp_opp y). now apply Qopp_le_compat.
 Qed.
 
 Lemma Qabs_Qlt_condition: forall x y : Q,
   Qabs x < y <-> -y < x < y.
 Proof.
  split.
-  split.
-   rewrite <- (Qopp_opp x).
-   apply Qopp_lt_compat.
-   apply Qle_lt_trans with (Qabs (-x)).
-   apply Qle_Qabs.
-   now rewrite Qabs_opp.
-  apply Qle_lt_trans with (Qabs x); auto using Qle_Qabs.
- intros (H,H').
- apply Qabs_case; trivial.
- intros. rewrite <- (Qopp_opp y). now apply Qopp_lt_compat.
+ - split.
+   + rewrite <- (Qopp_opp x).
+     apply Qopp_lt_compat.
+     apply Qle_lt_trans with (Qabs (-x)).
+     * apply Qle_Qabs.
+     * now rewrite Qabs_opp.
+   + apply Qle_lt_trans with (Qabs x); auto using Qle_Qabs.
+ - intros (H,H').
+   apply Qabs_case; trivial.
+   intros. rewrite <- (Qopp_opp y). now apply Qopp_lt_compat.
 Qed.
 
 Lemma Qabs_diff_Qle_condition x y r: Qabs (x - y) <= r <-> x - r <= y <= x + r.

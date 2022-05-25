@@ -135,11 +135,11 @@ Section Zlength_properties.
   Lemma Zlength_correct l : Zlength l = Z.of_nat (length l).
   Proof.
     assert (H : forall l acc, Zlength_aux acc A l = acc + Z.of_nat (length l)).
-    clear l. intros l; induction l as [|? ? IHl].
-    auto with zarith.
-    intros. simpl length; simpl Zlength_aux.
-     rewrite IHl, Nat2Z.inj_succ, Z.add_succ_comm; auto.
-    unfold Zlength. now rewrite H.
+    - clear l. intros l; induction l as [|? ? IHl].
+      + auto with zarith.
+      + intros. simpl length; simpl Zlength_aux.
+        rewrite IHl, Nat2Z.inj_succ, Z.add_succ_comm; auto.
+    - unfold Zlength. now rewrite H.
   Qed.
 
   Lemma Zlength_nil : Zlength (A:=A) nil = 0.

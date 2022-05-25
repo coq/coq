@@ -72,7 +72,9 @@ Section defs.
       forall l:list A, Sorted l -> P l.
   Proof.
     intros P ? ? l.
-    induction l. firstorder using Sorted_inv. firstorder using Sorted_inv.
+    induction l.
+    - firstorder using Sorted_inv.
+    - firstorder using Sorted_inv.
   Qed.
 
   Lemma Sorted_LocallySorted_iff : forall l, Sorted l <-> LocallySorted l.

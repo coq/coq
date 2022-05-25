@@ -254,8 +254,8 @@ Module ZnZ.
  Proof.
  unfold zn2z_to_Z, WO; simpl; intros.
  case_eq (eq0 h); intros.
- rewrite (spec_eq0 _ H); auto.
- rewrite spec_0; auto with zarith.
+ - rewrite (spec_eq0 _ H); auto.
+ - rewrite spec_0; auto with zarith.
  Qed.
 
  Lemma spec_OW : forall l,
@@ -263,8 +263,8 @@ Module ZnZ.
  Proof.
  unfold zn2z_to_Z, OW; simpl; intros.
  case_eq (eq0 l); intros.
- rewrite (spec_eq0 _ H); auto.
- rewrite spec_0; auto with zarith.
+ - rewrite (spec_eq0 _ H); auto.
+ - rewrite spec_0; auto with zarith.
  Qed.
 
  Lemma spec_WW : forall h l,
@@ -272,10 +272,10 @@ Module ZnZ.
  Proof.
  unfold WW; simpl; intros.
  case_eq (eq0 h); intros.
- rewrite (spec_eq0 _ H); auto.
- fold (OW l).
- rewrite spec_OW; auto.
- simpl; auto.
+ - rewrite (spec_eq0 _ H); auto.
+   fold (OW l).
+   rewrite spec_OW; auto.
+ - simpl; auto.
  Qed.
 
  End WW.
@@ -299,9 +299,9 @@ Module ZnZ.
  replace (base digits) with (1 * base digits + 0) by ring.
  rewrite Hp1.
  apply Z.add_le_mono.
- apply Z.mul_le_mono_nonneg. 1-2, 4: lia.
- unfold base; auto with zarith.
- case (spec_to_Z w1); auto with zarith.
+ - apply Z.mul_le_mono_nonneg. 1-2, 4: lia.
+   unfold base; auto with zarith.
+ - case (spec_to_Z w1); auto with zarith.
  Qed.
 
  Definition of_Z z :=
@@ -314,8 +314,8 @@ Module ZnZ.
    forall p, 0 <= p < base digits -> [|of_Z p|] = p.
  Proof.
  intros p; case p; simpl; try rewrite spec_0; auto.
- intros; rewrite of_pos_correct; lia.
- intros p1 (H1, _); contradict H1; apply Z.lt_nge; red; simpl; auto.
+ - intros; rewrite of_pos_correct; lia.
+ - intros p1 (H1, _); contradict H1; apply Z.lt_nge; red; simpl; auto.
  Qed.
 
  End Of_Z.
@@ -397,10 +397,10 @@ Lemma add_opp_r : forall x y, x + - y == x-y.
 Proof.
 intros. zify. rewrite <- Zminus_mod_idemp_r. unfold Z.sub.
 destruct (Z.eq_dec ([|y|] mod wB) 0) as [EQ|NEQ].
-rewrite Z_mod_zero_opp_full, EQ, 2 Z.add_0_r; auto.
-rewrite Z_mod_nz_opp_full by auto.
-rewrite <- Zplus_mod_idemp_r, <- Zminus_mod_idemp_l.
-rewrite Z_mod_same_full. simpl. now rewrite Zplus_mod_idemp_r.
+- rewrite Z_mod_zero_opp_full, EQ, 2 Z.add_0_r; auto.
+- rewrite Z_mod_nz_opp_full by auto.
+  rewrite <- Zplus_mod_idemp_r, <- Zminus_mod_idemp_l.
+  rewrite Z_mod_same_full. simpl. now rewrite Zplus_mod_idemp_r.
 Qed.
 
 Lemma add_opp_diag_r : forall x, x + - x == 0.
@@ -411,11 +411,15 @@ Qed.
 Lemma CyclicRing : ring_theory 0 1 ZnZ.add ZnZ.mul ZnZ.sub ZnZ.opp eq.
 Proof.
 constructor.
-exact add_0_l. exact add_comm. exact add_assoc.
-exact mul_1_l. exact mul_comm. exact mul_assoc.
-exact mul_add_distr_r.
-symmetry. apply add_opp_r.
-exact add_opp_diag_r.
+- exact add_0_l.
+- exact add_comm.
+- exact add_assoc.
+- exact mul_1_l.
+- exact mul_comm.
+- exact mul_assoc.
+- exact mul_add_distr_r.
+- symmetry. apply add_opp_r.
+- exact add_opp_diag_r.
 Qed.
 
 Definition eqb x y :=

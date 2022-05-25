@@ -74,8 +74,8 @@ Qed.
 Theorem def_add_add : forall n m, n +++ m == n + m.
 Proof.
 intros n m; induct n.
-now rewrite def_add_0_l, add_0_l.
-intros n H. now rewrite def_add_succ_l, add_succ_l, H.
+- now rewrite def_add_0_l, add_0_l.
+- intros n H. now rewrite def_add_succ_l, add_succ_l, H.
 Qed.
 
 (*****************************************************)
@@ -107,8 +107,8 @@ Qed.
 Theorem def_mul_mul : forall n m, n ** m == n * m.
 Proof.
 intros n m; induct m.
-now rewrite def_mul_0_r, mul_0_r.
-intros m IH; now rewrite def_mul_succ_r, mul_succ_r, def_add_add, IH.
+- now rewrite def_mul_0_r, mul_0_r.
+- intros m IH; now rewrite def_mul_succ_r, mul_succ_r, def_add_add, IH.
 Qed.
 
 (*****************************************************)
@@ -148,8 +148,8 @@ lt_step n (recursion lt_base lt_step n)? *)
 Theorem ltb_0 : forall n, n << 0 = false.
 Proof.
 cases n.
-rewrite ltb_base; now rewrite if_zero_0.
-intro n; rewrite ltb_step. now rewrite recursion_0.
+- rewrite ltb_base; now rewrite if_zero_0.
+- intro n; rewrite ltb_step. now rewrite recursion_0.
 Qed.
 
 Theorem ltb_0_succ : forall n, 0 << S n = true.
@@ -166,11 +166,11 @@ Qed.
 Theorem ltb_lt : forall n m, n << m = true <-> n < m.
 Proof.
 double_induct n m.
-cases m.
-rewrite ltb_0. split; intro H; [discriminate H | false_hyp H nlt_0_r].
-intro n. rewrite ltb_0_succ. split; intro; [apply lt_0_succ | reflexivity].
-intro n. rewrite ltb_0. split; intro H; [discriminate | false_hyp H nlt_0_r].
-intros n m. rewrite succ_ltb_mono. now rewrite <- succ_lt_mono.
+- cases m.
+  + rewrite ltb_0. split; intro H; [discriminate H | false_hyp H nlt_0_r].
+  + intro n. rewrite ltb_0_succ. split; intro; [apply lt_0_succ | reflexivity].
+- intro n. rewrite ltb_0. split; intro H; [discriminate | false_hyp H nlt_0_r].
+- intros n m. rewrite succ_ltb_mono. now rewrite <- succ_lt_mono.
 Qed.
 
 Theorem ltb_ge : forall n m, n << m = false <-> n >= m.
@@ -243,12 +243,12 @@ Theorem half_aux_spec : forall n,
  n == fst (half_aux n) + snd (half_aux n).
 Proof.
 apply induction.
-intros x x' Hx. setoid_rewrite Hx; auto with *.
-rewrite half_aux_0; simpl; rewrite add_0_l; auto with *.
-intros.
-rewrite half_aux_succ. simpl.
-rewrite add_succ_l, add_comm; auto.
-now f_equiv.
+- intros x x' Hx. setoid_rewrite Hx; auto with *.
+- rewrite half_aux_0; simpl; rewrite add_0_l; auto with *.
+- intros.
+  rewrite half_aux_succ. simpl.
+  rewrite add_succ_l, add_comm; auto.
+  now f_equiv.
 Qed.
 
 Theorem half_aux_spec2 : forall n,
@@ -256,12 +256,12 @@ Theorem half_aux_spec2 : forall n,
  fst (half_aux n) == S (snd (half_aux n)).
 Proof.
 apply induction.
-intros x x' Hx. setoid_rewrite Hx; auto with *.
-rewrite half_aux_0; simpl. auto with *.
-intros.
-rewrite half_aux_succ; simpl.
-destruct H; auto with *.
-right; now f_equiv.
+- intros x x' Hx. setoid_rewrite Hx; auto with *.
+- rewrite half_aux_0; simpl. auto with *.
+- intros.
+  rewrite half_aux_succ; simpl.
+  destruct H; auto with *.
+  right; now f_equiv.
 Qed.
 
 Theorem half_0 : half 0 == 0.
@@ -280,26 +280,26 @@ Proof.
 intros. unfold half.
 nzsimpl'.
 destruct (half_aux_spec2 n) as [H|H]; [left|right].
-rewrite <- H at 1. apply half_aux_spec.
-rewrite <- add_succ_l. rewrite <- H at 1. apply half_aux_spec.
+- rewrite <- H at 1. apply half_aux_spec.
+- rewrite <- add_succ_l. rewrite <- H at 1. apply half_aux_spec.
 Qed.
 
 Theorem half_upper_bound : forall n, 2 * half n <= n.
 Proof.
 intros.
 destruct (half_double n) as [E|E]; rewrite E at 2.
-apply le_refl.
-nzsimpl.
-apply le_le_succ_r, le_refl.
+- apply le_refl.
+- nzsimpl.
+  apply le_le_succ_r, le_refl.
 Qed.
 
 Theorem half_lower_bound : forall n, n <= 1 + 2 * half n.
 Proof.
 intros.
 destruct (half_double n) as [E|E]; rewrite E at 1.
-nzsimpl.
-apply le_le_succ_r, le_refl.
-apply le_refl.
+- nzsimpl.
+  apply le_le_succ_r, le_refl.
+- apply le_refl.
 Qed.
 
 Theorem half_nz : forall n, 1 < n -> 0 < half n.
@@ -309,23 +309,23 @@ assert (LE : 0 <= half n) by apply le_0_l.
 le_elim LE; auto.
 destruct (half_double n) as [E|E];
  rewrite <- LE, mul_0_r, ?add_0_r in E; rewrite E in LT.
-order'.
-order.
+- order'.
+- order.
 Qed.
 
 Theorem half_decrease : forall n, 0 < n -> half n < n.
 Proof.
 intros n LT.
 destruct (half_double n) as [E|E]; rewrite E at 2; nzsimpl'.
-rewrite <- add_0_l at 1.
-rewrite <- add_lt_mono_r.
-assert (LE : 0 <= half n) by apply le_0_l.
-le_elim LE; auto.
-rewrite <- LE, mul_0_r in E. rewrite E in LT. destruct (nlt_0_r _ LT).
-rewrite <- add_succ_l.
-rewrite <- add_0_l at 1.
-rewrite <- add_lt_mono_r.
-apply lt_0_succ.
+- rewrite <- add_0_l at 1.
+  rewrite <- add_lt_mono_r.
+  assert (LE : 0 <= half n) by apply le_0_l.
+  le_elim LE; auto.
+  rewrite <- LE, mul_0_r in E. rewrite E in LT. destruct (nlt_0_r _ LT).
+- rewrite <- add_succ_l.
+  rewrite <- add_0_l at 1.
+  rewrite <- add_lt_mono_r.
+  apply lt_0_succ.
 Qed.
 
 
@@ -388,10 +388,10 @@ Lemma log_good_step : forall n h1 h2,
 Proof.
 intros n h1 h2 E.
 destruct (n<<2) eqn:H.
-auto with *.
-f_equiv. apply E, half_decrease.
-rewrite two_succ, <- not_true_iff_false, ltb_lt, nlt_ge, le_succ_l in H.
-order'.
+- auto with *.
+- f_equiv. apply E, half_decrease.
+  rewrite two_succ, <- not_true_iff_false, ltb_lt, nlt_ge, le_succ_l in H.
+  order'.
 Qed.
 #[global]
 Hint Resolve log_good_step : core.
@@ -414,38 +414,39 @@ Theorem pow2_log : forall n, 0 < n -> half n < 2^^(log n) <= n.
 Proof.
 intro n; generalize (le_refl n). set (k:=n) at -2. clearbody k.
 revert k. pattern n. apply induction; clear n.
-intros n n' Hn; setoid_rewrite Hn; auto with *.
-intros k Hk1 Hk2.
- le_elim Hk1. destruct (nlt_0_r _ Hk1).
- rewrite Hk1 in Hk2. destruct (nlt_0_r _ Hk2).
+- intros n n' Hn; setoid_rewrite Hn; auto with *.
+- intros k Hk1 Hk2.
+  le_elim Hk1.
+  + destruct (nlt_0_r _ Hk1).
+  + rewrite Hk1 in Hk2. destruct (nlt_0_r _ Hk2).
 
-intros n IH k Hk1 Hk2.
-destruct (lt_ge_cases k 2) as [LT|LE].
-(* base *)
-rewrite log_init, pow_0 by auto.
-rewrite <- le_succ_l, <- one_succ in Hk2.
-le_elim Hk2.
-rewrite two_succ, <- nle_gt, le_succ_l in LT. destruct LT; auto.
-rewrite <- Hk2.
-rewrite half_1; auto using lt_0_1, le_refl.
-(* step *)
-rewrite log_step, pow_succ by auto.
-rewrite two_succ, le_succ_l in LE.
-destruct (IH (half k)) as (IH1,IH2).
- rewrite <- lt_succ_r. apply lt_le_trans with k; auto.
-  now apply half_decrease.
- apply half_nz; auto.
-set (K:=2^^log (half k)) in *; clearbody K.
-split.
-rewrite <- le_succ_l in IH1.
-apply mul_le_mono_l with (p:=2) in IH1.
-eapply lt_le_trans; eauto.
-nzsimpl'.
-rewrite lt_succ_r.
-eapply le_trans; [ eapply half_lower_bound | ].
-nzsimpl'; apply le_refl.
-eapply le_trans; [ | eapply half_upper_bound ].
-apply mul_le_mono_l; auto.
+- intros n IH k Hk1 Hk2.
+  destruct (lt_ge_cases k 2) as [LT|LE].
+  + (* base *)
+    rewrite log_init, pow_0 by auto.
+    rewrite <- le_succ_l, <- one_succ in Hk2.
+    le_elim Hk2.
+    * rewrite two_succ, <- nle_gt, le_succ_l in LT. destruct LT; auto.
+    * rewrite <- Hk2.
+      rewrite half_1; auto using lt_0_1, le_refl.
+  + (* step *)
+    rewrite log_step, pow_succ by auto.
+    rewrite two_succ, le_succ_l in LE.
+    destruct (IH (half k)) as (IH1,IH2).
+    * rewrite <- lt_succ_r. apply lt_le_trans with k; auto.
+      now apply half_decrease.
+    * apply half_nz; auto.
+    * set (K:=2^^log (half k)) in *; clearbody K.
+      split.
+      -- rewrite <- le_succ_l in IH1.
+         apply mul_le_mono_l with (p:=2) in IH1.
+         eapply lt_le_trans; eauto.
+         nzsimpl'.
+         rewrite lt_succ_r.
+         eapply le_trans; [ eapply half_lower_bound | ].
+         nzsimpl'; apply le_refl.
+      -- eapply le_trans; [ | eapply half_upper_bound ].
+         apply mul_le_mono_l; auto.
 Qed.
 
 End NdefOpsProp.

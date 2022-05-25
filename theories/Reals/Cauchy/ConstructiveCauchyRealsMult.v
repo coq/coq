@@ -115,7 +115,7 @@ Proof.
         2: apply Qabs_nonneg.
       apply Qlt_le_weak. apply (cauchy x); lia.
     + apply (Qmult_lt_l _ _ (2 ^ -(n - scale y - 1))%Q).
-        apply Qpower_0_lt; lra.
+      { apply Qpower_0_lt; lra. }
       rewrite Qmult_assoc, <- Qpower_plus by lra.
       rewrite <- Qpower_plus by lra.
       simplify_Qpower_exponent; rewrite Qpower_0_r, Qmult_1_l.
@@ -127,7 +127,7 @@ Proof.
         2: apply Qabs_nonneg.
       apply Qlt_le_weak; apply (cauchy y); lia.
     + apply (Qmult_lt_l _ _ (2 ^ -(n - scale x - 1))%Q).
-        apply Qpower_0_lt; lra.
+      { apply Qpower_0_lt; lra. }
       rewrite Qmult_assoc, <- Qpower_plus by lra.
       rewrite <- Qpower_plus by lra.
       simplify_Qpower_exponent; rewrite Qpower_0_r, Qmult_1_l.
@@ -292,7 +292,7 @@ Proof.
     pose proof bound y' (n - scale x - 2)%Z as Hybnd.
     replace n with ((n - scale y' - 2) + scale y' + 2)%Z at 4 by lia.
     apply Weaken_Qle_QpowerAddExp.
-      lia.
+    { lia. }
     rewrite Qpower_plus, Qabs_Qmult by lra.
     apply Qmult_le_compat_nonneg; (split; [apply Qabs_nonneg | lra]).
   }
@@ -427,15 +427,16 @@ Proof.
   split.
   - intros x y H z t H0. apply CReal_plus_morph; assumption.
   - intros x y H z t H0. apply (CRealEq_trans _ (CReal_mult x t)).
-    apply CReal_mult_proper_l. apply H0.
-    apply (CRealEq_trans _ (CReal_mult t x)). apply CReal_mult_comm.
-    apply (CRealEq_trans _ (CReal_mult t y)).
-    apply CReal_mult_proper_l. apply H.  apply CReal_mult_comm.
+    + apply CReal_mult_proper_l. apply H0.
+    + apply (CRealEq_trans _ (CReal_mult t x)). { apply CReal_mult_comm. }
+      apply (CRealEq_trans _ (CReal_mult t y)).
+      * apply CReal_mult_proper_l. apply H.
+      * apply CReal_mult_comm.
   - intros x y H. apply (CReal_plus_eq_reg_l x).
-    apply (CRealEq_trans _ (inject_Q 0)). apply CReal_plus_opp_r.
+    apply (CRealEq_trans _ (inject_Q 0)). { apply CReal_plus_opp_r. }
     apply (CRealEq_trans _ (CReal_plus y (CReal_opp y))).
-    apply CRealEq_sym. apply CReal_plus_opp_r.
-    apply CReal_plus_proper_r. apply CRealEq_sym. apply H.
+    + apply CRealEq_sym. apply CReal_plus_opp_r.
+    + apply CReal_plus_proper_r. apply CRealEq_sym. apply H.
 Qed.
 
 Lemma CReal_isRing : ring_theory (inject_Q 0) (inject_Q 1)
@@ -453,8 +454,8 @@ Proof.
   - intros x y z. rewrite <- (CReal_mult_comm z).
     rewrite CReal_mult_plus_distr_l.
     apply (CRealEq_trans _ (CReal_plus (CReal_mult x z) (CReal_mult z y))).
-    apply CReal_plus_proper_r. apply CReal_mult_comm.
-    apply CReal_plus_proper_l. apply CReal_mult_comm.
+    + apply CReal_plus_proper_r. apply CReal_mult_comm.
+    + apply CReal_plus_proper_l. apply CReal_mult_comm.
   - intros x y. apply CRealEq_refl.
   - apply CReal_plus_opp_r.
 Qed.
@@ -527,10 +528,11 @@ Proof.
   unfold CReal_minus in H1. rewrite H1.
   rewrite CReal_mult_comm, CReal_opp_mult_distr_l, CReal_mult_comm.
   rewrite <- CReal_mult_plus_distr_l.
-  apply CReal_mult_lt_0_compat. exact H.
-  apply (CReal_plus_lt_reg_l y).
-  rewrite CReal_plus_comm, CReal_plus_0_l.
-  rewrite <- CReal_plus_assoc, H1, CReal_plus_0_l. exact H0.
+  apply CReal_mult_lt_0_compat.
+  - exact H.
+  - apply (CReal_plus_lt_reg_l y).
+    rewrite CReal_plus_comm, CReal_plus_0_l.
+    rewrite <- CReal_plus_assoc, H1, CReal_plus_0_l. exact H0.
 Qed.
 
 Lemma CReal_mult_lt_compat_r : forall x y z : CReal,
@@ -547,17 +549,23 @@ Lemma CReal_mult_eq_reg_l : forall (r r1 r2 : CReal),
 Proof.
   intros. destruct H; split.
   - intro abs. apply (CReal_mult_lt_compat_l (-r)) in abs.
-    rewrite <- CReal_opp_mult_distr_l, <- CReal_opp_mult_distr_l, H0 in abs.
-    exact (CRealLe_refl _ abs). apply (CReal_plus_lt_reg_l r).
-    rewrite CReal_plus_opp_r, CReal_plus_comm, CReal_plus_0_l. exact c.
+    + rewrite <- CReal_opp_mult_distr_l, <- CReal_opp_mult_distr_l, H0 in abs.
+      exact (CRealLe_refl _ abs).
+    + apply (CReal_plus_lt_reg_l r).
+      rewrite CReal_plus_opp_r, CReal_plus_comm, CReal_plus_0_l. exact c.
   - intro abs. apply (CReal_mult_lt_compat_l (-r)) in abs.
-    rewrite <- CReal_opp_mult_distr_l, <- CReal_opp_mult_distr_l, H0 in abs.
-    exact (CRealLe_refl _ abs). apply (CReal_plus_lt_reg_l r).
-    rewrite CReal_plus_opp_r, CReal_plus_comm, CReal_plus_0_l. exact c.
-  - intro abs. apply (CReal_mult_lt_compat_l r) in abs. rewrite H0 in abs.
-    exact (CRealLe_refl _ abs). exact c.
-  - intro abs. apply (CReal_mult_lt_compat_l r) in abs. rewrite H0 in abs.
-    exact (CRealLe_refl _ abs). exact c.
+    + rewrite <- CReal_opp_mult_distr_l, <- CReal_opp_mult_distr_l, H0 in abs.
+      exact (CRealLe_refl _ abs).
+    + apply (CReal_plus_lt_reg_l r).
+      rewrite CReal_plus_opp_r, CReal_plus_comm, CReal_plus_0_l. exact c.
+  - intro abs. apply (CReal_mult_lt_compat_l r) in abs.
+    + rewrite H0 in abs.
+      exact (CRealLe_refl _ abs).
+    + exact c.
+  - intro abs. apply (CReal_mult_lt_compat_l r) in abs.
+    + rewrite H0 in abs.
+      exact (CRealLe_refl _ abs).
+    + exact c.
 Qed.
 
 Lemma CReal_abs_appart_zero : forall (x : CReal) (n : Z),
@@ -692,24 +700,24 @@ Proof.
 
   setoid_rewrite Qabs_Qmult; setoid_rewrite Qabs_Qinv.
   apply Qlt_shift_div_r.
-  setoid_rewrite <- (Qmult_0_l 0); setoid_rewrite Qabs_Qmult.
-  apply Qmult_lt_compat_nonneg.
+  - setoid_rewrite <- (Qmult_0_l 0); setoid_rewrite Qabs_Qmult.
+    apply Qmult_lt_compat_nonneg.
     1,2: split; [lra | apply Qabs_gt, AuxPos].
-  assert( forall r:Q, (r == (r/2^k/2^k)*(2^k*2^k))%Q )
-  as H by (intros r; field; apply Qpower_not_0; lra); rewrite H; clear H.
-  apply Qmult_lt_compat_nonneg.
-  - split.
-    + do 2 (apply Qle_shift_div_l; [ apply Qpower_0_lt; lra | rewrite Qmult_0_l ]).
-      apply Qabs_nonneg.
-    + do 2 (apply Qlt_shift_div_r; [apply Qpower_0_lt; lra|]).
-      do 2 rewrite <- Qpower_plus by lra.
-      apply (cauchy x (n+k+k)%Z); lia.
-  - split.
-     + rewrite <- Qpower_plus by lra.
-       apply Qpower_pos; lra.
-     + setoid_rewrite Qabs_Qmult; apply Qmult_lt_compat_nonneg.
-       1,2: split; [apply Qpower_pos; lra | ].
-       1,2: apply Qabs_gt, AuxAppart.
+  - assert( forall r:Q, (r == (r/2^k/2^k)*(2^k*2^k))%Q )
+      as H by (intros r; field; apply Qpower_not_0; lra); rewrite H; clear H.
+    apply Qmult_lt_compat_nonneg.
+    + split.
+      * do 2 (apply Qle_shift_div_l; [ apply Qpower_0_lt; lra | rewrite Qmult_0_l ]).
+        apply Qabs_nonneg.
+      * do 2 (apply Qlt_shift_div_r; [apply Qpower_0_lt; lra|]).
+        do 2 rewrite <- Qpower_plus by lra.
+        apply (cauchy x (n+k+k)%Z); lia.
+    + split.
+      * rewrite <- Qpower_plus by lra.
+        apply Qpower_pos; lra.
+      * setoid_rewrite Qabs_Qmult; apply Qmult_lt_compat_nonneg.
+        1,2: split; [apply Qpower_pos; lra | ].
+        1,2: apply Qabs_gt, AuxAppart.
 Qed.
 
 Lemma CReal_inv_pos_bound : forall (x : CReal) (Hxpos : 0 < x),
@@ -814,7 +822,7 @@ Proof.
 
   rewrite Qpower_plus; [|lra].
   apply Qmult_le_compat_nonneg.
-    pose proof Qpower_pos 2 n; split; lra.
+  { pose proof Qpower_pos 2 n; split; lra. }
   split.
   - apply Qpower_pos; lra.
   - rewrite Qabs_pos; [lra|].
@@ -848,43 +856,47 @@ Lemma CReal_inv_mult_distr :
   forall r1 r2 (r1nz : r1 # 0) (r2nz : r2 # 0) (rmnz : (r1*r2) # 0),
     (/ (r1 * r2)) rmnz == (/ r1) r1nz * (/ r2) r2nz.
 Proof.
-  intros. apply (CReal_mult_eq_reg_l r1). exact r1nz.
-  rewrite <- CReal_mult_assoc. rewrite CReal_inv_r. rewrite CReal_mult_1_l.
-  apply (CReal_mult_eq_reg_l r2). exact r2nz.
-  rewrite CReal_inv_r. rewrite <- CReal_mult_assoc.
-  rewrite (CReal_mult_comm r2 r1). rewrite CReal_inv_r.
-  reflexivity.
+  intros. apply (CReal_mult_eq_reg_l r1).
+  - exact r1nz.
+  - rewrite <- CReal_mult_assoc. rewrite CReal_inv_r. rewrite CReal_mult_1_l.
+    apply (CReal_mult_eq_reg_l r2).
+    + exact r2nz.
+    + rewrite CReal_inv_r. rewrite <- CReal_mult_assoc.
+      rewrite (CReal_mult_comm r2 r1). rewrite CReal_inv_r.
+      reflexivity.
 Qed.
 
 Lemma Rinv_eq_compat : forall x y (rxnz : x # 0) (rynz : y # 0),
     x == y
     -> (/ x) rxnz == (/ y) rynz.
 Proof.
-  intros. apply (CReal_mult_eq_reg_l x). exact rxnz.
- rewrite CReal_inv_r, H, CReal_inv_r. reflexivity.
+  intros. apply (CReal_mult_eq_reg_l x).
+  - exact rxnz.
+  - rewrite CReal_inv_r, H, CReal_inv_r. reflexivity.
 Qed.
 
 Lemma CReal_mult_lt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
 Proof.
   intros z x y H H0.
   apply (CReal_mult_lt_compat_l ((/z) (inr H))) in H0.
-  repeat rewrite <- CReal_mult_assoc in H0. rewrite CReal_inv_l in H0.
-  repeat rewrite CReal_mult_1_l in H0. apply H0.
-  apply CReal_inv_0_lt_compat. exact H.
+  - repeat rewrite <- CReal_mult_assoc in H0. rewrite CReal_inv_l in H0.
+    repeat rewrite CReal_mult_1_l in H0. apply H0.
+  - apply CReal_inv_0_lt_compat. exact H.
 Qed.
 
 Lemma CReal_mult_lt_reg_r : forall r r1 r2, 0 < r -> r1 * r < r2 * r -> r1 < r2.
 Proof.
   intros.
   apply CReal_mult_lt_reg_l with r.
-  exact H.
-  now rewrite 2!(CReal_mult_comm r).
+  - exact H.
+  - now rewrite 2!(CReal_mult_comm r).
 Qed.
 
 Lemma CReal_mult_eq_reg_r : forall r r1 r2, r1 * r == r2 * r -> r # 0 -> r1 == r2.
 Proof.
-  intros. apply (CReal_mult_eq_reg_l r). exact H0.
-  now rewrite 2!(CReal_mult_comm r).
+  intros. apply (CReal_mult_eq_reg_l r).
+  - exact H0.
+  - now rewrite 2!(CReal_mult_comm r).
 Qed.
 
 Lemma CReal_mult_eq_compat_l : forall r r1 r2, r1 == r2 -> r * r1 == r * r2.
@@ -967,7 +979,8 @@ Lemma CReal_mult_le_compat_l_half : forall r r1 r2,
     0 < r -> r1 <= r2 -> r * r1 <= r * r2.
 Proof.
   intros. intro abs. apply (CReal_mult_lt_reg_l) in abs.
-  contradiction. apply H.
+  - contradiction.
+  - apply H.
 Qed.
 
 Lemma CReal_invQ : forall (b : positive) (pos : Qlt 0 (Z.pos b # 1)),
@@ -1025,7 +1038,8 @@ Proof.
   - exists O. apply maj.
   - exists (Pos.to_nat p). rewrite positive_nat_Z. apply maj.
   - exists O. apply (CReal_lt_trans _ (inject_Q (Z.neg p # 1))).
-    apply maj. apply inject_Q_lt. reflexivity.
+    + apply maj.
+    + apply inject_Q_lt. reflexivity.
 Qed.
 
 Lemma CReal_mult_le_0_compat : forall (a b : CReal),
@@ -1039,23 +1053,27 @@ Proof.
     as [n maj].
   destruct n as [|n].
   - apply (CReal_mult_lt_compat_r (-(a*b))) in maj.
-    rewrite CReal_mult_0_l, CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r in maj.
-    contradiction. exact epsPos.
+    + rewrite CReal_mult_0_l, CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r in maj.
+      contradiction.
+    + exact epsPos.
   - (* n > 0 *)
     assert (0 < inject_Q (Z.of_nat (S n) #1)) as nPos.
     { apply inject_Q_lt. unfold Qlt, Qnum, Qden.
-      do 2 rewrite Z.mul_1_r. apply Z2Nat.inj_lt. discriminate.
-      apply Zle_0_nat. rewrite Nat2Z.id. apply -> Nat.succ_le_mono; apply Nat.le_0_l. }
+      do 2 rewrite Z.mul_1_r. apply Z2Nat.inj_lt.
+      - discriminate.
+      - apply Zle_0_nat.
+      - rewrite Nat2Z.id. apply -> Nat.succ_le_mono; apply Nat.le_0_l. }
     assert (b * (/ inject_Q (Z.of_nat (S n) #1)) (inr nPos) < -(a*b)).
-    { apply (CReal_mult_lt_reg_r (inject_Q (Z.of_nat (S n) #1))). apply nPos.
+    { apply (CReal_mult_lt_reg_r (inject_Q (Z.of_nat (S n) #1))). { apply nPos. }
       rewrite CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r.
       apply (CReal_mult_lt_compat_r (-(a*b))) in maj.
-      rewrite CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r in maj.
-      rewrite CReal_mult_comm. apply maj. apply epsPos. }
+      - rewrite CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r in maj.
+        rewrite CReal_mult_comm. apply maj.
+      - apply epsPos. }
     pose proof (CReal_mult_le_compat_l_half
                   (a + (/ inject_Q (Z.of_nat (S n) #1)) (inr nPos)) 0 b).
     assert (0 + 0 < a + (/ inject_Q (Z.of_nat (S n) #1)) (inr nPos)).
-    { apply CReal_plus_le_lt_compat. apply H. apply CReal_inv_0_lt_compat. apply nPos. }
+    { apply CReal_plus_le_lt_compat. { apply H. } apply CReal_inv_0_lt_compat. apply nPos. }
     rewrite CReal_plus_0_l in H3. specialize (H2 H3 H0).
     clear H3. rewrite CReal_mult_0_r in H2.
     apply H2. clear H2. rewrite CReal_mult_plus_distr_r.
@@ -1071,7 +1089,7 @@ Proof.
   intros. apply (CReal_plus_le_reg_r (-(r*r1))).
   rewrite CReal_plus_opp_r, CReal_opp_mult_distr_r.
   rewrite <- CReal_mult_plus_distr_l.
-  apply CReal_mult_le_0_compat. exact H.
+  apply CReal_mult_le_0_compat. { exact H. }
   apply (CReal_plus_le_reg_r r1).
   rewrite CReal_plus_0_l, CReal_plus_assoc, CReal_plus_opp_l, CReal_plus_0_r.
   exact H0.
@@ -1092,8 +1110,9 @@ Lemma CReal_mult_le_reg_l :
     0 < x -> x * y <= x * z -> y <= z.
 Proof.
   intros. intro abs.
-  apply (CReal_mult_lt_compat_l x) in abs. contradiction.
-  exact H.
+  apply (CReal_mult_lt_compat_l x) in abs.
+  - contradiction.
+  - exact H.
 Qed.
 
 Lemma CReal_mult_le_reg_r :
@@ -1101,6 +1120,7 @@ Lemma CReal_mult_le_reg_r :
     0 < x -> y * x <= z * x -> y <= z.
 Proof.
   intros. intro abs.
-  apply (CReal_mult_lt_compat_r x) in abs. contradiction.
-  exact H.
+  apply (CReal_mult_lt_compat_r x) in abs.
+  - contradiction.
+  - exact H.
 Qed.

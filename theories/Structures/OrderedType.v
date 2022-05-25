@@ -94,15 +94,15 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Lemma lt_eq : forall x y z, lt x y -> eq y z -> lt x z.
   Proof with auto with ordered_type.
    intros x y z H ?; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
-   elim (lt_not_eq H); apply eq_trans with z...
-   elim (lt_not_eq (lt_trans Hlt H))...
+   - elim (lt_not_eq H); apply eq_trans with z...
+   - elim (lt_not_eq (lt_trans Hlt H))...
   Qed.
 
   Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
   Proof with auto with ordered_type.
    intros x y z H H0; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
-   elim (lt_not_eq H0); apply eq_trans with x...
-   elim (lt_not_eq (lt_trans H0 Hlt))...
+   - elim (lt_not_eq H0); apply eq_trans with x...
+   - elim (lt_not_eq (lt_trans H0 Hlt))...
   Qed.
 
 #[global]
@@ -402,12 +402,12 @@ Module KeyOrderedType(O:OrderedType).
   Lemma In_alt : forall k l, In k l <-> exists e, InA eqk (k,e) l.
   Proof with auto with ordered_type.
   intros k l; split; intros [y H].
-    exists y...
-  induction H as [a l eq|a l H IH].
-    destruct a as [k' y'].
-    exists y'...
-  destruct IH as [e H0].
-  exists e...
+  - exists y...
+  - induction H as [a l eq|a l H IH].
+    + destruct a as [k' y'].
+      exists y'...
+    + destruct IH as [e H0].
+      exists e...
   Qed.
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.
@@ -443,8 +443,8 @@ Module KeyOrderedType(O:OrderedType).
     intros l k e H H0; red; intros H1.
     destruct H1 as [e' H2].
     elim (@ltk_not_eqk (k,e) (k,e')).
-    eapply Sort_Inf_In; eauto with ordered_type.
-    red; simpl; auto with ordered_type.
+    - eapply Sort_Inf_In; eauto with ordered_type.
+    - red; simpl; auto with ordered_type.
   Qed.
 
   Lemma Sort_NoDupA: forall l, Sort l -> NoDupA eqk l.

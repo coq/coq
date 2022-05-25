@@ -222,20 +222,20 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
     forall (i: key) (m: t A), find i (remove i m) = None.
   Proof.
     induction i; destruct m.
-     simpl; auto.
-     destruct m1; destruct o; destruct m2 as [ | ll oo rr]; simpl; auto.
-      rewrite (rleaf i); auto.
-      cut (find i (remove i (Node ll oo rr)) = None).
-        destruct (remove i (Node ll oo rr)); auto; apply IHi.
-        apply IHi.
-     simpl; auto.
-     destruct m1 as [ | ll oo rr]; destruct o; destruct m2; simpl; auto.
-      rewrite (rleaf i); auto.
-      cut (find i (remove i (Node ll oo rr)) = None).
-        destruct (remove i (Node ll oo rr)); auto; apply IHi.
-        apply IHi.
-     simpl; auto.
-     destruct m1; destruct m2; simpl; auto.
+    - simpl; auto.
+    - destruct m1; destruct o; destruct m2 as [ | ll oo rr]; simpl; auto.
+      + rewrite (rleaf i); auto.
+      + cut (find i (remove i (Node ll oo rr)) = None).
+        * destruct (remove i (Node ll oo rr)); auto; apply IHi.
+        * apply IHi.
+    - simpl; auto.
+    - destruct m1 as [ | ll oo rr]; destruct o; destruct m2; simpl; auto.
+      + rewrite (rleaf i); auto.
+      + cut (find i (remove i (Node ll oo rr)) = None).
+        * destruct (remove i (Node ll oo rr)); auto; apply IHi.
+        * apply IHi.
+    - simpl; auto.
+    - destruct m1; destruct m2; simpl; auto.
   Qed.
 
   Theorem gro:
@@ -251,19 +251,19 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
         try apply IHi; try congruence;
         try rewrite (rleaf j); auto;
         try rewrite (gleaf i); auto.
-     cut (find i (remove j (Node m2_1 o m2_2)) = find i (Node m2_1 o m2_2));
+    - cut (find i (remove j (Node m2_1 o m2_2)) = find i (Node m2_1 o m2_2));
         [ destruct (remove j (Node m2_1 o m2_2)); try rewrite (gleaf i); auto
         | apply IHi; congruence ].
-     destruct (remove j (Node m1_1 o0 m1_2)); simpl; try rewrite (gleaf i);
+    - destruct (remove j (Node m1_1 o0 m1_2)); simpl; try rewrite (gleaf i);
         auto.
-     destruct (remove j (Node m2_1 o m2_2)); simpl; try rewrite (gleaf i);
+    - destruct (remove j (Node m2_1 o m2_2)); simpl; try rewrite (gleaf i);
         auto.
-     cut (find i (remove j (Node m1_1 o0 m1_2)) = find i (Node m1_1 o0 m1_2));
+    - cut (find i (remove j (Node m1_1 o0 m1_2)) = find i (Node m1_1 o0 m1_2));
         [ destruct (remove j (Node m1_1 o0 m1_2)); try rewrite (gleaf i); auto
         | apply IHi; congruence ].
-     destruct (remove j (Node m2_1 o m2_2)); simpl; try rewrite (gleaf i);
+    - destruct (remove j (Node m2_1 o m2_2)); simpl; try rewrite (gleaf i);
         auto.
-     destruct (remove j (Node m1_1 o0 m1_2)); simpl; try rewrite (gleaf i);
+    - destruct (remove j (Node m1_1 o0 m1_2)); simpl; try rewrite (gleaf i);
         auto.
   Qed.
 
@@ -272,16 +272,16 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       find i m = Some v -> List.In (append j i, v) (xelements m j).
     Proof.
       induction m; intros.
-       rewrite (gleaf i) in H; discriminate. 
-       destruct o; destruct i; simpl; simpl in H.
-        rewrite append_assoc_1; apply in_or_app; right; apply in_cons;
-          apply IHm2; auto.
-        rewrite append_assoc_0; apply in_or_app; left; apply IHm1; auto.
-        rewrite append_neutral_r; apply in_or_app; injection H as [= ->];
-          right; apply in_eq.
-        rewrite append_assoc_1; apply in_or_app; right; apply IHm2; auto.
-        rewrite append_assoc_0; apply in_or_app; left; apply IHm1; auto.
-        congruence.
+      - rewrite (gleaf i) in H; discriminate.
+      - destruct o; destruct i; simpl; simpl in H.
+        + rewrite append_assoc_1; apply in_or_app; right; apply in_cons;
+            apply IHm2; auto.
+        + rewrite append_assoc_0; apply in_or_app; left; apply IHm1; auto.
+        + rewrite append_neutral_r; apply in_or_app; injection H as [= ->];
+            right; apply in_eq.
+        + rewrite append_assoc_1; apply in_or_app; right; apply IHm2; auto.
+        + rewrite append_assoc_0; apply in_or_app; left; apply IHm1; auto.
+        + congruence.
     Qed.
 
   Theorem elements_correct:
@@ -313,15 +313,15 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       List.In (xI i, v) (xelements m (xI j)) -> List.In (i, v) (xelements m j).
     Proof.
       induction m.
-       simpl; auto.
-       intros; destruct o; simpl; simpl in H; destruct (in_app_or _ _ _ H);
-         apply in_or_app.
-        left; apply IHm1; auto.
-        right; destruct (in_inv H0).
-         injection H1 as [= -> ->]; apply in_eq.
-         apply in_cons; apply IHm2; auto.
-        left; apply IHm1; auto.
-        right; apply IHm2; auto.
+      - simpl; auto.
+      - intros; destruct o; simpl; simpl in H; destruct (in_app_or _ _ _ H);
+          apply in_or_app.
+        + left; apply IHm1; auto.
+        + right; destruct (in_inv H0).
+          * injection H1 as [= -> ->]; apply in_eq.
+          * apply in_cons; apply IHm2; auto.
+        + left; apply IHm1; auto.
+        + right; apply IHm2; auto.
     Qed.
 
     Lemma xelements_io :
@@ -329,14 +329,14 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       ~List.In (xI i, v) (xelements m (xO j)).
     Proof.
       induction m.
-       simpl; auto.
-       intros; destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
-        apply (IHm1 _ _ _ H0).
-        destruct (in_inv H0).
-         congruence.
-         apply (IHm2 _ _ _ H1).
-        apply (IHm1 _ _ _ H0).
-        apply (IHm2 _ _ _ H0).
+      - simpl; auto.
+      - intros; destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
+        + apply (IHm1 _ _ _ H0).
+        + destruct (in_inv H0).
+          * congruence.
+          * apply (IHm2 _ _ _ H1).
+        + apply (IHm1 _ _ _ H0).
+        + apply (IHm2 _ _ _ H0).
     Qed.
 
     Lemma xelements_oo :
@@ -344,15 +344,15 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       List.In (xO i, v) (xelements m (xO j)) -> List.In (i, v) (xelements m j).
     Proof.
       induction m.
-       simpl; auto.
-       intros; destruct o; simpl; simpl in H; destruct (in_app_or _ _ _ H);
-         apply in_or_app.
-        left; apply IHm1; auto.
-        right; destruct (in_inv H0).
-         injection H1 as [= -> ->]; apply in_eq.
-         apply in_cons; apply IHm2; auto.
-        left; apply IHm1; auto.
-        right; apply IHm2; auto.
+      - simpl; auto.
+      - intros; destruct o; simpl; simpl in H; destruct (in_app_or _ _ _ H);
+          apply in_or_app.
+        + left; apply IHm1; auto.
+        + right; destruct (in_inv H0).
+          * injection H1 as [= -> ->]; apply in_eq.
+          * apply in_cons; apply IHm2; auto.
+        + left; apply IHm1; auto.
+        + right; apply IHm2; auto.
     Qed.
 
     Lemma xelements_oi :
@@ -360,14 +360,14 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       ~List.In (xO i, v) (xelements m (xI j)).
     Proof.
       induction m.
-       simpl; auto.
-       intros; destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
-        apply (IHm1 _ _ _ H0).
-        destruct (in_inv H0).
-         congruence.
-         apply (IHm2 _ _ _ H1).
-        apply (IHm1 _ _ _ H0).
-        apply (IHm2 _ _ _ H0).
+      - simpl; auto.
+      - intros; destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
+        + apply (IHm1 _ _ _ H0).
+        + destruct (in_inv H0).
+          * congruence.
+          * apply (IHm2 _ _ _ H1).
+        + apply (IHm1 _ _ _ H0).
+        + apply (IHm2 _ _ _ H0).
     Qed.
 
     Lemma xelements_ih :
@@ -375,12 +375,12 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       List.In (xI i, v) (xelements (Node m1 o m2) xH) -> List.In (i, v) (xelements m2 xH).
     Proof.
       destruct o; simpl; intros; destruct (in_app_or _ _ _ H).
-        absurd (List.In (xI i, v) (xelements m1 2)); auto; apply xelements_io; auto.
-        destruct (in_inv H0).
-         congruence.
-         apply xelements_ii; auto.
-        absurd (List.In (xI i, v) (xelements m1 2)); auto; apply xelements_io; auto.
-        apply xelements_ii; auto.
+      - absurd (List.In (xI i, v) (xelements m1 2)); auto; apply xelements_io; auto.
+      - destruct (in_inv H0).
+        + congruence.
+        + apply xelements_ii; auto.
+      - absurd (List.In (xI i, v) (xelements m1 2)); auto; apply xelements_io; auto.
+      - apply xelements_ii; auto.
     Qed.
 
     Lemma xelements_oh :
@@ -388,12 +388,12 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       List.In (xO i, v) (xelements (Node m1 o m2) xH) -> List.In (i, v) (xelements m1 xH).
     Proof.
       destruct o; simpl; intros; destruct (in_app_or _ _ _ H).
-        apply xelements_oo; auto.
-        destruct (in_inv H0).
-         congruence.
-         absurd (List.In (xO i, v) (xelements m2 3)); auto; apply xelements_oi; auto.
-        apply xelements_oo; auto.
-        absurd (List.In (xO i, v) (xelements m2 3)); auto; apply xelements_oi; auto.
+      - apply xelements_oo; auto.
+      - destruct (in_inv H0).
+        + congruence.
+        + absurd (List.In (xO i, v) (xelements m2 3)); auto; apply xelements_oi; auto.
+      - apply xelements_oo; auto.
+      - absurd (List.In (xO i, v) (xelements m2 3)); auto; apply xelements_oi; auto.
     Qed.
 
     Lemma xelements_hi :
@@ -401,14 +401,14 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       ~List.In (xH, v) (xelements m (xI i)).
     Proof.
       induction m; intros.
-       simpl; auto.
-       destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
-        generalize H0; apply IHm1; auto.
-        destruct (in_inv H0).
-         congruence.
-         generalize H1; apply IHm2; auto.
-        generalize H0; apply IHm1; auto.
-        generalize H0; apply IHm2; auto.
+      - simpl; auto.
+      - destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
+        + generalize H0; apply IHm1; auto.
+        + destruct (in_inv H0).
+          * congruence.
+          * generalize H1; apply IHm2; auto.
+        + generalize H0; apply IHm1; auto.
+        + generalize H0; apply IHm2; auto.
     Qed.
 
     Lemma xelements_ho :
@@ -416,14 +416,14 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       ~List.In (xH, v) (xelements m (xO i)).
     Proof.
       induction m; intros.
-       simpl; auto.
-       destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
-        generalize H0; apply IHm1; auto.
-        destruct (in_inv H0).
-         congruence.
-         generalize H1; apply IHm2; auto.
-        generalize H0; apply IHm1; auto.
-        generalize H0; apply IHm2; auto.
+      - simpl; auto.
+      - destruct o; simpl; intro H; destruct (in_app_or _ _ _ H).
+        + generalize H0; apply IHm1; auto.
+        + destruct (in_inv H0).
+          * congruence.
+          * generalize H1; apply IHm2; auto.
+        + generalize H0; apply IHm1; auto.
+        + generalize H0; apply IHm2; auto.
     Qed.
 
     Lemma find_xfind_h :
@@ -437,27 +437,27 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       List.In (i, v) (xelements m j) -> xfind i j m = Some v.
     Proof.
       induction i; simpl; intros; destruct j; simpl.
-       apply IHi; apply xelements_ii; auto.
-       absurd (List.In (xI i, v) (xelements m (xO j))); auto; apply xelements_io.
-       destruct m.
-        simpl in H; tauto.
-        rewrite find_xfind_h. apply IHi. apply (xelements_ih _ _ _ _ _ H).
-       absurd (List.In (xO i, v) (xelements m (xI j))); auto; apply xelements_oi.
-       apply IHi; apply xelements_oo; auto.
-       destruct m.
-        simpl in H; tauto.
-        rewrite find_xfind_h. apply IHi. apply (xelements_oh _ _ _ _ _ H).
-       absurd (List.In (xH, v) (xelements m (xI j))); auto; apply xelements_hi.
-       absurd (List.In (xH, v) (xelements m (xO j))); auto; apply xelements_ho.
-       destruct m.
-        simpl in H; tauto.
-        destruct o; simpl in H; destruct (in_app_or _ _ _ H).
-         absurd (List.In (xH, v) (xelements m1 (xO xH))); auto; apply xelements_ho.
-         destruct (in_inv H0).
-          congruence.
-          absurd (List.In (xH, v) (xelements m2 (xI xH))); auto; apply xelements_hi.
-         absurd (List.In (xH, v) (xelements m1 (xO xH))); auto; apply xelements_ho.
-         absurd (List.In (xH, v) (xelements m2 (xI xH))); auto; apply xelements_hi.
+      - apply IHi; apply xelements_ii; auto.
+      - absurd (List.In (xI i, v) (xelements m (xO j))); auto; apply xelements_io.
+      - destruct m.
+        + simpl in H; tauto.
+        + rewrite find_xfind_h. apply IHi. apply (xelements_ih _ _ _ _ _ H).
+      - absurd (List.In (xO i, v) (xelements m (xI j))); auto; apply xelements_oi.
+      - apply IHi; apply xelements_oo; auto.
+      - destruct m.
+        + simpl in H; tauto.
+        + rewrite find_xfind_h. apply IHi. apply (xelements_oh _ _ _ _ _ H).
+      - absurd (List.In (xH, v) (xelements m (xI j))); auto; apply xelements_hi.
+      - absurd (List.In (xH, v) (xelements m (xO j))); auto; apply xelements_ho.
+      - destruct m.
+        + simpl in H; tauto.
+        + destruct o; simpl in H; destruct (in_app_or _ _ _ H).
+          * absurd (List.In (xH, v) (xelements m1 (xO xH))); auto; apply xelements_ho.
+          * destruct (in_inv H0).
+            -- congruence.
+            -- absurd (List.In (xH, v) (xelements m2 (xI xH))); auto; apply xelements_hi.
+          * absurd (List.In (xH, v) (xelements m1 (xO xH))); auto; apply xelements_ho.
+          * absurd (List.In (xH, v) (xelements m2 (xI xH))); auto; apply xelements_hi.
     Qed.
 
   Theorem elements_complete:
@@ -509,29 +509,29 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
   unfold Empty, MapsTo.
   intuition.
-  generalize (H a).
-  destruct (find a m); intuition.
-  elim (H0 a0); auto.
-  rewrite H in H0; discriminate.
+  - generalize (H a).
+    destruct (find a m); intuition.
+    elim (H0 a0); auto.
+  - rewrite H in H0; discriminate.
   Qed.
 
   Lemma Empty_Node : forall l o r, Empty (Node l o r) <-> o=None /\ Empty l /\ Empty r.
   Proof.
   intros l o r.
   split.
-  rewrite Empty_alt.
-  split.
-  destruct o; auto.
-  generalize (H 1); simpl; auto.
-  split; rewrite Empty_alt; intros.
-  generalize (H (xO a)); auto.
-  generalize (H (xI a)); auto.
-  intros (H,(H0,H1)).
-  subst.
-  rewrite Empty_alt; intros.
-  destruct a; auto.
-  simpl; generalize H1; rewrite Empty_alt; auto.
-  simpl; generalize H0; rewrite Empty_alt; auto.
+  - rewrite Empty_alt.
+    split.
+    + destruct o; auto.
+      generalize (H 1); simpl; auto.
+    + split; rewrite Empty_alt; intros.
+      * generalize (H (xO a)); auto.
+      * generalize (H (xI a)); auto.
+  - intros (H,(H0,H1)).
+    subst.
+    rewrite Empty_alt; intros.
+    destruct a; auto.
+    + simpl; generalize H1; rewrite Empty_alt; auto.
+    + simpl; generalize H0; rewrite Empty_alt; auto.
   Qed.
 
   Section FMapSpec.
@@ -546,8 +546,8 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
   unfold In, MapsTo; intros m x; rewrite mem_find.
   destruct (find x m).
-  exists a; auto.
-  intros; discriminate.
+  - exists a; auto.
+  - intros; discriminate.
   Qed.
 
   Variable  m m' m'' : t A.
@@ -580,12 +580,12 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Lemma is_empty_2 : is_empty m = true -> Empty m.
   Proof.
   induction m; simpl; auto.
-  rewrite Empty_alt.
-  intros _; exact gempty.
-  rewrite Empty_Node.
-  destruct o.
-  intros; discriminate.
-  intro H; destruct (andb_prop _ _ H); intuition.
+  - rewrite Empty_alt.
+    intros _; exact gempty.
+  - rewrite Empty_Node.
+    destruct o.
+    + intros; discriminate.
+    + intro H; destruct (andb_prop _ _ H); intuition.
   Qed.
 
   Lemma add_1 : E.eq x y -> MapsTo y e (add x e m).
@@ -628,9 +628,9 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
   unfold MapsTo.
   destruct (E.eq_dec x y).
-  subst.
-  rewrite grs; intros; discriminate.
-  rewrite gro; auto.
+  - subst.
+    rewrite grs; intros; discriminate.
+  - rewrite gro; auto.
   Qed.
 
   Lemma elements_1 :
@@ -641,8 +641,8 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   intro H.
   exists (x,e).
   split.
-  red; simpl; unfold E.eq; auto.
-  apply elements_correct; auto.
+  - red; simpl; unfold E.eq; auto.
+  - apply elements_correct; auto.
   Qed.
 
   Lemma elements_2 :
@@ -676,38 +676,39 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Lemma xelements_sort : forall p, sort lt_key (xelements m p).
   Proof.
   induction m.
-  simpl; auto.
-  destruct o; simpl; intros.
-  (* Some *)
-  apply (SortA_app (eqA:=eq_key_elt)). 1-2: auto with typeclass_instances.
-  constructor; auto.
-  apply In_InfA; intros.
-  destruct y0.
-  red; red; simpl.
-  eapply xelements_bits_lt_2; eauto.
-  intros x0 y0.
-  do 2 rewrite InA_alt.
-  intros (y1,(Hy1,H)) (y2,(Hy2,H0)).
-  destruct y1; destruct x0; compute in Hy1; destruct Hy1; subst.
-  destruct y2; destruct y0; compute in Hy2; destruct Hy2; subst.
-  red; red; simpl.
-  destruct H0.
-  injection H0 as [= H0 _]; subst.
-  eapply xelements_bits_lt_1; eauto.
-  apply E.bits_lt_trans with p.
-  eapply xelements_bits_lt_1; eauto.
-  eapply xelements_bits_lt_2; eauto.
-  (* None *)
-  apply (SortA_app (eqA:=eq_key_elt)). auto with typeclass_instances. 1-2: auto.
-  intros x0 y0.
-  do 2 rewrite InA_alt.
-  intros (y1,(Hy1,H)) (y2,(Hy2,H0)).
-  destruct y1; destruct x0; compute in Hy1; destruct Hy1; subst.
-  destruct y2; destruct y0; compute in Hy2; destruct Hy2; subst.
-  red; red; simpl.
-  apply E.bits_lt_trans with p.
-  eapply xelements_bits_lt_1; eauto.
-  eapply xelements_bits_lt_2; eauto.
+  - simpl; auto.
+  - destruct o; simpl; intros.
+    + (* Some *)
+      apply (SortA_app (eqA:=eq_key_elt)). 1-2: auto with typeclass_instances.
+      * constructor; auto.
+        apply In_InfA; intros.
+        destruct y0.
+        red; red; simpl.
+        eapply xelements_bits_lt_2; eauto.
+      * intros x0 y0.
+        do 2 rewrite InA_alt.
+        intros (y1,(Hy1,H)) (y2,(Hy2,H0)).
+        destruct y1; destruct x0; compute in Hy1; destruct Hy1; subst.
+        destruct y2; destruct y0; compute in Hy2; destruct Hy2; subst.
+        red; red; simpl.
+        destruct H0.
+        -- injection H0 as [= H0 _]; subst.
+           eapply xelements_bits_lt_1; eauto.
+        -- apply E.bits_lt_trans with p.
+           ++ eapply xelements_bits_lt_1; eauto.
+           ++ eapply xelements_bits_lt_2; eauto.
+    + (* None *)
+      apply (SortA_app (eqA:=eq_key_elt)).
+      { auto with typeclass_instances. } 1-2: auto.
+      intros x0 y0.
+      do 2 rewrite InA_alt.
+      intros (y1,(Hy1,H)) (y2,(Hy2,H0)).
+      destruct y1; destruct x0; compute in Hy1; destruct Hy1; subst.
+      destruct y2; destruct y0; compute in Hy2; destruct Hy2; subst.
+      red; red; simpl.
+      apply E.bits_lt_trans with p.
+      * eapply xelements_bits_lt_1; eauto.
+      * eapply xelements_bits_lt_2; eauto.
   Qed.
 
   Lemma elements_3 : sort lt_key (elements m).
@@ -753,9 +754,9 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       find i (xmapi f m j) = option_map (f (append j i)) (find i m).
   Proof.
   induction i; intros; destruct m; simpl; auto.
-  rewrite (append_assoc_1 j i); apply IHi.
-  rewrite (append_assoc_0 j i); apply IHi.
-  rewrite (append_neutral_r j); auto.
+  - rewrite (append_assoc_1 j i); apply IHi.
+  - rewrite (append_assoc_0 j i); apply IHi.
+  - rewrite (append_neutral_r j); auto.
   Qed.
 
   Theorem gmapi:
@@ -765,8 +766,8 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   intros.
   unfold mapi.
   replace (f i) with (f (append xH i)).
-  apply xgmapi.
-  rewrite append_neutral_l; auto.
+  - apply xgmapi.
+  - rewrite append_neutral_l; auto.
   Qed.
 
   Lemma mapi_1 :
@@ -917,14 +918,14 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
       set (F := fun a p => f (fst p) (snd p) a).
       induction m; intros; simpl; auto.
       destruct o.
-      rewrite fold_left_app; simpl.
-      rewrite <- IHm1.
-      rewrite <- IHm2.
-      unfold F; simpl; reflexivity.
-      rewrite fold_left_app; simpl.
-      rewrite <- IHm1.
-      rewrite <- IHm2.
-      reflexivity.
+      - rewrite fold_left_app; simpl.
+        rewrite <- IHm1.
+        rewrite <- IHm2.
+        unfold F; simpl; reflexivity.
+      - rewrite fold_left_app; simpl.
+        rewrite <- IHm1.
+        rewrite <- IHm2.
+        reflexivity.
     Qed.
 
     Definition fold m i := xfoldi m i 1.
@@ -963,103 +964,107 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
     Equivb cmp m m' -> equal cmp m m' = true.
   Proof.
   induction m.
-  (* m = Leaf *)
-  destruct 1.
-  simpl.
-  apply is_empty_1.
-  red; red; intros.
-  assert (In a (Leaf A)).
-  rewrite H.
-  exists e; auto.
-  destruct H2; red in H2.
-  destruct a; simpl in *; discriminate.
-  (* m = Node *)
-  destruct m'.
-  (* m' = Leaf *)
-  destruct 1.
-  simpl.
-  destruct o.
-  assert (In xH (Leaf A)).
-  rewrite <- H.
-  exists a; red; auto.
-  destruct H1; red in H1; simpl in H1; discriminate.
-  apply andb_true_intro; split; apply is_empty_1; red; red; intros.
-  assert (In (xO a) (Leaf A)).
-  rewrite <- H.
-  exists e; auto.
-  destruct H2; red in H2; simpl in H2; discriminate.
-  assert (In (xI a) (Leaf A)).
-  rewrite <- H.
-  exists e; auto.
-  destruct H2; red in H2; simpl in H2; discriminate.
-  (* m' = Node *)
-  destruct 1.
-  assert (Equivb cmp m1 m'1).
-    split.
-    intros k; generalize (H (xO k)); unfold In, MapsTo; simpl; auto.
-    intros k e e'; generalize (H0 (xO k) e e'); unfold In, MapsTo; simpl; auto.
-  assert (Equivb cmp m2 m'2).
-    split.
-    intros k; generalize (H (xI k)); unfold In, MapsTo; simpl; auto.
-    intros k e e'; generalize (H0 (xI k) e e'); unfold In, MapsTo; simpl; auto.
-  simpl.
-  destruct o; destruct o0; simpl.
-  repeat (apply andb_true_intro; split); auto.
-  apply (H0 xH); red; auto.
-  generalize (H xH); unfold In, MapsTo; simpl; intuition.
-  destruct H4; try discriminate; eauto.
-  generalize (H xH); unfold In, MapsTo; simpl; intuition.
-  destruct H5; try discriminate; eauto.
-  apply andb_true_intro; split; auto.
+  - (* m = Leaf *)
+    destruct 1.
+    simpl.
+    apply is_empty_1.
+    red; red; intros.
+    assert (In a (Leaf A)).
+    + rewrite H.
+      exists e; auto.
+    + destruct H2; red in H2.
+      destruct a; simpl in *; discriminate.
+  - (* m = Node *)
+    destruct m'.
+    + (* m' = Leaf *)
+      destruct 1.
+      simpl.
+      destruct o.
+      * assert (In xH (Leaf A)).
+        { rewrite <- H.
+          exists a; red; auto. }
+        destruct H1; red in H1; simpl in H1; discriminate.
+      * apply andb_true_intro; split; apply is_empty_1; red; red; intros.
+        -- assert (In (xO a) (Leaf A)). {
+             rewrite <- H.
+             exists e; auto.
+           }
+           destruct H2; red in H2; simpl in H2; discriminate.
+        -- assert (In (xI a) (Leaf A)). {
+             rewrite <- H.
+             exists e; auto.
+           }
+           destruct H2; red in H2; simpl in H2; discriminate.
+    + (* m' = Node *)
+      destruct 1.
+      assert (Equivb cmp m1 m'1). {
+        split.
+        - intros k; generalize (H (xO k)); unfold In, MapsTo; simpl; auto.
+        - intros k e e'; generalize (H0 (xO k) e e'); unfold In, MapsTo; simpl; auto.
+      }
+      assert (Equivb cmp m2 m'2). {
+        split.
+        - intros k; generalize (H (xI k)); unfold In, MapsTo; simpl; auto.
+        - intros k e e'; generalize (H0 (xI k) e e'); unfold In, MapsTo; simpl; auto.
+      }
+      simpl.
+      destruct o; destruct o0; simpl.
+      * repeat (apply andb_true_intro; split); auto.
+        apply (H0 xH); red; auto.
+      * generalize (H xH); unfold In, MapsTo; simpl; intuition.
+        destruct H4; try discriminate; eauto.
+      * generalize (H xH); unfold In, MapsTo; simpl; intuition.
+        destruct H5; try discriminate; eauto.
+      * apply andb_true_intro; split; auto.
   Qed.
 
   Lemma equal_2 : forall (A:Type)(m m':t A)(cmp:A->A->bool),
     equal cmp m m' = true -> Equivb cmp m m'.
   Proof.
   induction m.
-  (* m = Leaf *)
-  simpl.
-  split; intros.
-  split.
-  destruct 1; red in H0; destruct k; discriminate.
-  destruct 1; elim (is_empty_2 H H0).
-  red in H0; destruct k; discriminate.
-  (* m = Node *)
-  destruct m'.
-  (* m' = Leaf *)
-  simpl.
-  destruct o; intros; try discriminate.
-  destruct (andb_prop _ _ H); clear H.
-  split; intros.
-  split; unfold In, MapsTo; destruct 1.
-  destruct k; simpl in *; try discriminate.
-  destruct (is_empty_2 H1 (find_2 _ _ H)).
-  destruct (is_empty_2 H0 (find_2 _ _ H)).
-  destruct k; simpl in *; discriminate.
-  unfold In, MapsTo; destruct k; simpl in *; discriminate.
-  (* m' = Node *)
-  destruct o; destruct o0; simpl; intros; try discriminate.
-  destruct (andb_prop _ _ H); clear H.
-  destruct (andb_prop _ _ H0); clear H0.
-  destruct (IHm1 _ _ H2); clear H2 IHm1.
-  destruct (IHm2 _ _ H1); clear H1 IHm2.
-  split; intros.
-  destruct k; unfold In, MapsTo in *; simpl; auto.
-  split; eauto.
-  destruct k; unfold In, MapsTo in *; simpl in *.
-  eapply H4; eauto.
-  eapply H3; eauto.
-  congruence.
-  destruct (andb_prop _ _ H); clear H.
-  destruct (IHm1 _ _ H0); clear H0 IHm1.
-  destruct (IHm2 _ _ H1); clear H1 IHm2.
-  split; intros.
-  destruct k; unfold In, MapsTo in *; simpl; auto.
-  split; eauto.
-  destruct k; unfold In, MapsTo in *; simpl in *.
-  eapply H3; eauto.
-  eapply H2; eauto.
-  try discriminate.
+  - (* m = Leaf *)
+    simpl.
+    split; intros.
+    + split.
+      * destruct 1; red in H0; destruct k; discriminate.
+      * destruct 1; elim (is_empty_2 H H0).
+    + red in H0; destruct k; discriminate.
+  - (* m = Node *)
+    destruct m'.
+    + (* m' = Leaf *)
+      simpl.
+      destruct o; intros; try discriminate.
+      destruct (andb_prop _ _ H); clear H.
+      split; intros.
+      * split; unfold In, MapsTo; destruct 1.
+        -- destruct k; simpl in *; try discriminate.
+           ++ destruct (is_empty_2 H1 (find_2 _ _ H)).
+           ++ destruct (is_empty_2 H0 (find_2 _ _ H)).
+        -- destruct k; simpl in *; discriminate.
+      * unfold In, MapsTo; destruct k; simpl in *; discriminate.
+    + (* m' = Node *)
+      destruct o; destruct o0; simpl; intros; try discriminate.
+      * destruct (andb_prop _ _ H); clear H.
+        destruct (andb_prop _ _ H0); clear H0.
+        destruct (IHm1 _ _ H2); clear H2 IHm1.
+        destruct (IHm2 _ _ H1); clear H1 IHm2.
+        split; intros.
+        -- destruct k; unfold In, MapsTo in *; simpl; auto.
+           split; eauto.
+        -- destruct k; unfold In, MapsTo in *; simpl in *.
+           ++ eapply H4; eauto.
+           ++ eapply H3; eauto.
+           ++ congruence.
+      * destruct (andb_prop _ _ H); clear H.
+        destruct (IHm1 _ _ H0); clear H0 IHm1.
+        destruct (IHm2 _ _ H1); clear H1 IHm2.
+        split; intros.
+        -- destruct k; unfold In, MapsTo in *; simpl; auto.
+           split; eauto.
+        -- destruct k; unfold In, MapsTo in *; simpl in *.
+           ++ eapply H3; eauto.
+           ++ eapply H2; eauto.
+           ++ try discriminate.
   Qed.
 
 End PositiveMap.
@@ -1086,8 +1091,8 @@ Module PositiveMapAdditionalFacts.
     find i m = Some v -> add i v m = m.
   Proof.
     induction i; intros; destruct m; simpl; simpl in H; try congruence.
-     rewrite (IHi m2 v H); congruence.
-     rewrite (IHi m1 v H); congruence.
+    - rewrite (IHi m2 v H); congruence.
+    - rewrite (IHi m1 v H); congruence.
   Qed.
 
   Lemma xmap2_lr :
@@ -1109,15 +1114,15 @@ Module PositiveMapAdditionalFacts.
   Proof.
     intros A B f g Eq1.
     assert (Eq2: forall (i j: option A), g i j = f j i).
-      intros; auto.
+    { intros; auto. }
     induction m1; intros; destruct m2; simpl;
       try rewrite Eq1;
       repeat rewrite (xmap2_lr f g);
       repeat rewrite (xmap2_lr g f);
       auto.
-     rewrite IHm1_1.
-     rewrite IHm1_2.
-     auto.
+    rewrite IHm1_1.
+    rewrite IHm1_2.
+    auto.
   Qed.
 
 End PositiveMapAdditionalFacts.

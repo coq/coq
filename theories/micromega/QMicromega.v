@@ -24,24 +24,24 @@ Require Import Qfield.
 Lemma Qsor : SOR 0 1 Qplus Qmult Qminus Qopp Qeq  Qle Qlt.
 Proof.
   constructor; intros ; subst ; try (intuition (subst; auto with qarith)).
-  apply Q_Setoid.
-  rewrite H ; rewrite H0 ; reflexivity.
-  rewrite H ; rewrite H0 ; reflexivity.
-  rewrite H ; auto ; reflexivity.
-  rewrite <- H ; rewrite <- H0 ; auto.
-  rewrite H ; rewrite H0 ; auto.
-  rewrite <- H ; rewrite <- H0 ; auto.
-  rewrite H ; rewrite  H0 ; auto.
-  apply Qsrt.
-  eapply Qle_trans ; eauto.
-  apply (Qlt_not_eq n m H H0) ; auto.
-  destruct(Q_dec n m) as [[H1 |H1] | H1 ] ; tauto.
-  apply (Qplus_le_compat  p p n m  (Qle_refl p) H).
-  generalize (Qmult_lt_compat_r 0 n m H0 H).
-  rewrite Qmult_0_l.
-  auto.
-  compute in H.
-  discriminate.
+  - apply Q_Setoid.
+  - rewrite H ; rewrite H0 ; reflexivity.
+  - rewrite H ; rewrite H0 ; reflexivity.
+  - rewrite H ; auto ; reflexivity.
+  - rewrite <- H ; rewrite <- H0 ; auto.
+  - rewrite H ; rewrite H0 ; auto.
+  - rewrite <- H ; rewrite <- H0 ; auto.
+  - rewrite H ; rewrite  H0 ; auto.
+  - apply Qsrt.
+  - eapply Qle_trans ; eauto.
+  - apply (Qlt_not_eq n m H H0) ; auto.
+  - destruct(Q_dec n m) as [[H1 |H1] | H1 ] ; tauto.
+  - apply (Qplus_le_compat  p p n m  (Qle_refl p) H).
+  - generalize (Qmult_lt_compat_r 0 n m H0 H).
+    rewrite Qmult_0_l.
+    auto.
+  - compute in H.
+    discriminate.
 Qed.
 
 
@@ -52,13 +52,13 @@ Lemma QSORaddon :
   (fun x => x) (fun x => x) (pow_N 1 Qmult).
 Proof.
   constructor.
-  constructor ; intros ; try reflexivity.
-  apply Qeq_bool_eq; auto.
-  constructor.
-  reflexivity.
-  intros x y.
-  apply Qeq_bool_neq ; auto.
-  apply Qle_bool_imp_le.
+  - constructor ; intros ; try reflexivity.
+    apply Qeq_bool_eq; auto.
+  - constructor.
+    reflexivity.
+  - intros x y.
+    apply Qeq_bool_neq ; auto.
+  - apply Qle_bool_imp_le.
 Qed.
 
 
@@ -102,9 +102,9 @@ Qed.
 Lemma Qeval_expr_compat : forall env e, Qeval_expr env e = Qeval_expr' env e.
 Proof.
   induction e ; simpl ; subst ; try congruence.
-  reflexivity.
-  rewrite IHe.
-  apply QNpower.
+  - reflexivity.
+  - rewrite IHe.
+    apply QNpower.
 Qed.
 
 Definition Qeval_pop2 (o : Op2) : Q -> Q -> Prop :=
@@ -163,8 +163,8 @@ Lemma Qeval_op2_hold : forall k op q1 q2,
     Tauto.hold k (Qeval_op2 k op q1 q2) <-> Qeval_pop2 op q1 q2.
 Proof.
   destruct k.
-  simpl ; tauto.
-  simpl. apply pop2_bop2.
+  - simpl ; tauto.
+  - simpl. apply pop2_bop2.
 Qed.
 
 Definition Qeval_formula (e:PolEnv Q) (k: Tauto.kind) (ff : Formula Q) :=
@@ -269,6 +269,6 @@ Proof.
     unfold eval_tt.
     intros.
     rewrite make_impl_map with (eval := Qeval_nformula env).
-    eapply QWeakChecker_sound; eauto.
-    tauto.
+    + eapply QWeakChecker_sound; eauto.
+    + tauto.
 Qed.

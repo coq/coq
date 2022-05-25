@@ -63,8 +63,8 @@ Proof.
   intros. apply Bool.eq_true_iff_eq.
   rewrite eqb_spec. rewrite Z.eqb_eq.
   split ; intro H.
-  now subst; reflexivity.
-  now apply to_Z_inj in H.
+  - now subst; reflexivity.
+  - now apply to_Z_inj in H.
 Qed.
 
 #[global]
@@ -75,8 +75,8 @@ Add Zify BinOp Op_eqb.
 Lemma eq_int_inj : forall  n m : int, n = m <-> (φ  n = φ m)%uint63.
 Proof.
   split; intro H.
-  rewrite H ; reflexivity.
-  apply to_Z_inj; auto.
+  - rewrite H ; reflexivity.
+  - apply to_Z_inj; auto.
 Qed.
 
 #[global]
@@ -196,8 +196,8 @@ Proof.
   generalize (is_even_spec x).
   rewrite Z_evenE.
   destruct (is_even x).
-  symmetry. apply Z.eqb_eq. auto.
-  symmetry. apply Z.eqb_neq. congruence.
+  - symmetry. apply Z.eqb_eq. auto.
+  - symmetry. apply Z.eqb_neq. congruence.
 Qed.
 
 #[global]

@@ -111,8 +111,8 @@ Qed.
 Lemma sub_max_distr_l n m p : max (p - n) (p - m) == p - min n m.
 Proof.
  destruct (le_ge_cases n m).
- rewrite min_l by trivial. apply max_l. now apply sub_le_mono_l.
- rewrite min_r by trivial. apply max_r. now apply sub_le_mono_l.
+ - rewrite min_l by trivial. apply max_l. now apply sub_le_mono_l.
+ - rewrite min_r by trivial. apply max_r. now apply sub_le_mono_l.
 Qed.
 
 Lemma sub_max_distr_r n m p : max (n - p) (m - p) == max n m - p.
@@ -124,8 +124,8 @@ Qed.
 Lemma sub_min_distr_l n m p : min (p - n) (p - m) == p - max n m.
 Proof.
  destruct (le_ge_cases n m).
- rewrite max_r by trivial. apply min_r. now apply sub_le_mono_l.
- rewrite max_l by trivial. apply min_l. now apply sub_le_mono_l.
+ - rewrite max_r by trivial. apply min_r. now apply sub_le_mono_l.
+ - rewrite max_l by trivial. apply min_l. now apply sub_le_mono_l.
 Qed.
 
 Lemma sub_min_distr_r n m p : min (n - p) (m - p) == min n m - p.

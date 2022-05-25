@@ -174,17 +174,17 @@ Theorem Zquot_mod_unique_full a b q r :
   Remainder a b r -> a = b*q + r -> q = a÷b /\ r = Z.rem a b.
 Proof.
   destruct 1 as [(H,H0)|(H,H0)]; intros.
-  apply Zdiv_mod_unique with b; auto.
-  apply Zrem_lt_pos; auto.
-  lia.
-  rewrite <- H1; apply Z.quot_rem'.
+  - apply Zdiv_mod_unique with b; auto.
+    + apply Zrem_lt_pos; auto.
+      lia.
+    + rewrite <- H1; apply Z.quot_rem'.
 
-  rewrite <- (Z.opp_involutive a).
-  rewrite Zquot_opp_l, Zrem_opp_l.
-  generalize (Zdiv_mod_unique b (-q) (-a÷b) (-r) (Z.rem (-a) b)).
-  generalize (Zrem_lt_pos (-a) b).
-  rewrite <-Z.quot_rem', Z.mul_opp_r, <-Z.opp_add_distr, <-H1.
-  lia.
+  - rewrite <- (Z.opp_involutive a).
+    rewrite Zquot_opp_l, Zrem_opp_l.
+    generalize (Zdiv_mod_unique b (-q) (-a÷b) (-r) (Z.rem (-a) b)).
+    generalize (Zrem_lt_pos (-a) b).
+    rewrite <-Z.quot_rem', Z.mul_opp_r, <-Z.opp_add_distr, <-H1.
+    lia.
 Qed.
 
 Theorem Zquot_unique_full a b q r :
@@ -365,9 +365,10 @@ Proof. intros. zero_or_not b. apply Z.quot_mul_le; lia. Qed.
 Lemma Zrem_divides : forall a b,
  Z.rem a b = 0 <-> exists c, a = b*c.
 Proof.
- intros. zero_or_not b. firstorder.
- rewrite Z.rem_divide; trivial.
- split; intros (c,Hc); exists c; subst; auto with zarith.
+ intros. zero_or_not b.
+ - firstorder.
+ - rewrite Z.rem_divide; trivial.
+   split; intros (c,Hc); exists c; subst; auto with zarith.
 Qed.
 
 (** Particular case : dividing by 2 is related with parity *)
@@ -375,18 +376,19 @@ Qed.
 Lemma Zquot2_odd_remainder : forall a,
  Remainder a 2 (if Z.odd a then Z.sgn a else 0).
 Proof.
- intros [ |p|p]. simpl.
- left. simpl. auto with zarith.
- left. destruct p; simpl; lia.
- right. destruct p; simpl; split; now auto with zarith.
+ intros [ |p|p].
+ - simpl.
+   left. simpl. auto with zarith.
+ - left. destruct p; simpl; lia.
+ - right. destruct p; simpl; split; now auto with zarith.
 Qed.
 
 Lemma Zrem_odd : forall a, Z.rem a 2 = if Z.odd a then Z.sgn a else 0.
 Proof.
  intros. symmetry.
  apply Zrem_unique_full with (Z.quot2 a).
- apply Zquot2_odd_remainder.
- apply Zquot2_odd_eqn.
+ - apply Zquot2_odd_remainder.
+ - apply Zquot2_odd_eqn.
 Qed.
 
 Lemma Zrem_even : forall a, Z.rem a 2 = if Z.even a then 0 else Z.sgn a.
@@ -415,10 +417,10 @@ Theorem Zquotrem_Zdiv_eucl_pos : forall a b:Z, 0 <= a -> 0 < b ->
 Proof.
   intros.
   apply Zdiv_mod_unique with b.
-  apply Zrem_lt_pos; lia.
-  rewrite Z.abs_eq by lia. apply Z_mod_lt; lia.
-  rewrite <- Z_div_mod_eq_full.
-  symmetry; apply Z.quot_rem; lia.
+  - apply Zrem_lt_pos; lia.
+  - rewrite Z.abs_eq by lia. apply Z_mod_lt; lia.
+  - rewrite <- Z_div_mod_eq_full.
+    symmetry; apply Z.quot_rem; lia.
 Qed.
 
 Theorem Zquot_Zdiv_pos : forall a b, 0 <= a -> 0 <= b ->

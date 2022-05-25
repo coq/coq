@@ -18,38 +18,40 @@ Include NMulOrderProp N.
 Theorem sub_0_l : forall n, 0 - n == 0.
 Proof.
 intro n; induct n.
-apply sub_0_r.
-intros n IH; rewrite sub_succ_r; rewrite IH. now apply pred_0.
+- apply sub_0_r.
+- intros n IH; rewrite sub_succ_r; rewrite IH. now apply pred_0.
 Qed.
 
 Theorem sub_succ : forall n m, S n - S m == n - m.
 Proof.
 intros n m; induct m.
-rewrite sub_succ_r. do 2 rewrite sub_0_r. now rewrite pred_succ.
-intros m IH. rewrite sub_succ_r. rewrite IH. now rewrite sub_succ_r.
+- rewrite sub_succ_r. do 2 rewrite sub_0_r. now rewrite pred_succ.
+- intros m IH. rewrite sub_succ_r. rewrite IH. now rewrite sub_succ_r.
 Qed.
 
 Theorem sub_diag : forall n, n - n == 0.
 Proof.
-intro n; induct n. apply sub_0_r. intros n IH; rewrite sub_succ; now rewrite IH.
+  intro n; induct n.
+  - apply sub_0_r.
+  - intros n IH; rewrite sub_succ; now rewrite IH.
 Qed.
 
 Theorem sub_gt : forall n m, n > m -> n - m ~= 0.
 Proof.
 intros n m H; elim H using lt_ind_rel; clear n m H.
-solve_proper.
-intro; rewrite sub_0_r; apply neq_succ_0.
-intros; now rewrite sub_succ.
+- solve_proper.
+- intro; rewrite sub_0_r; apply neq_succ_0.
+- intros; now rewrite sub_succ.
 Qed.
 
 Theorem add_sub_assoc : forall n m p, p <= m -> n + (m - p) == (n + m) - p.
 Proof.
 intros n m p; induct p.
-intro; now do 2 rewrite sub_0_r.
-intros p IH H. do 2 rewrite sub_succ_r.
-rewrite <- IH by (apply lt_le_incl; now apply le_succ_l).
-rewrite add_pred_r by (apply sub_gt; now apply le_succ_l).
-reflexivity.
+- intro; now do 2 rewrite sub_0_r.
+- intros p IH H. do 2 rewrite sub_succ_r.
+  rewrite <- IH by (apply lt_le_incl; now apply le_succ_l).
+  rewrite add_pred_r by (apply sub_gt; now apply le_succ_l).
+  reflexivity.
 Qed.
 
 Theorem sub_succ_l : forall n m, n <= m -> S m - n == S (m - n).
@@ -88,17 +90,17 @@ use add_sub_assoc and sub_0_le, which is proven below. *)
 Theorem add_sub_eq_nz : forall n m p, p ~= 0 -> n - m == p -> m + p == n.
 Proof.
 intros n m p H; double_induct n m.
-intros m H1; rewrite sub_0_l in H1. symmetry in H1; false_hyp H1 H.
-intro n; rewrite sub_0_r; now rewrite add_0_l.
-intros n m IH H1. rewrite sub_succ in H1. apply IH in H1.
-rewrite add_succ_l; now rewrite H1.
+- intros m H1; rewrite sub_0_l in H1. symmetry in H1; false_hyp H1 H.
+- intro n; rewrite sub_0_r; now rewrite add_0_l.
+- intros n m IH H1. rewrite sub_succ in H1. apply IH in H1.
+  rewrite add_succ_l; now rewrite H1.
 Qed.
 
 Theorem sub_add_distr : forall n m p, n - (m + p) == (n - m) - p.
 Proof.
 intros n m p; induct p.
-rewrite add_0_r; now rewrite sub_0_r.
-intros p IH. rewrite add_succ_r; do 2 rewrite sub_succ_r. now rewrite IH.
+- rewrite add_0_r; now rewrite sub_0_r.
+- intros p IH. rewrite add_succ_r; do 2 rewrite sub_succ_r. now rewrite IH.
 Qed.
 
 Theorem add_sub_swap : forall n m p, p <= n -> n + m - p == n - p + m.
@@ -114,27 +116,27 @@ Qed.
 Theorem le_sub_l : forall n m, n - m <= n.
 Proof.
 intros n m; induct m.
-rewrite sub_0_r; now apply eq_le_incl.
-intros m IH. rewrite sub_succ_r.
-apply le_trans with (n - m); [apply le_pred_l | assumption].
+- rewrite sub_0_r; now apply eq_le_incl.
+- intros m IH. rewrite sub_succ_r.
+  apply le_trans with (n - m); [apply le_pred_l | assumption].
 Qed.
 
 Theorem sub_0_le : forall n m, n - m == 0 <-> n <= m.
 Proof.
 intros n m; double_induct n m.
-intro m; split; intro; [apply le_0_l | apply sub_0_l].
-intro m; rewrite sub_0_r; split; intro H;
-[false_hyp H neq_succ_0 | false_hyp H nle_succ_0].
-intros n m H. rewrite <- succ_le_mono. now rewrite sub_succ.
+- intro m; split; intro; [apply le_0_l | apply sub_0_l].
+- intro m; rewrite sub_0_r; split; intro H;
+    [false_hyp H neq_succ_0 | false_hyp H nle_succ_0].
+- intros n m H. rewrite <- succ_le_mono. now rewrite sub_succ.
 Qed.
 
 Theorem sub_add_le : forall n m, n <= n - m + m.
 Proof.
 intros n m.
 destruct (le_ge_cases n m) as [LE|GE].
-rewrite <- sub_0_le in LE. rewrite LE; nzsimpl.
-now rewrite <- sub_0_le.
-rewrite sub_add by assumption. apply le_refl.
+- rewrite <- sub_0_le in LE. rewrite LE; nzsimpl.
+  now rewrite <- sub_0_le.
+- rewrite sub_add by assumption. apply le_refl.
 Qed.
 
 Theorem le_sub_le_add_r : forall n m p,
@@ -142,11 +144,11 @@ Theorem le_sub_le_add_r : forall n m p,
 Proof.
 intros n m p.
 split; intros LE.
-rewrite (add_le_mono_r _ _ p) in LE.
-apply le_trans with (n-p+p); auto using sub_add_le.
-destruct (le_ge_cases n p) as [LE'|GE].
-rewrite <- sub_0_le in LE'. rewrite LE'. apply le_0_l.
-rewrite (add_le_mono_r _ _ p). now rewrite sub_add.
+- rewrite (add_le_mono_r _ _ p) in LE.
+  apply le_trans with (n-p+p); auto using sub_add_le.
+- destruct (le_ge_cases n p) as [LE'|GE].
+  + rewrite <- sub_0_le in LE'. rewrite LE'. apply le_0_l.
+  + rewrite (add_le_mono_r _ _ p). now rewrite sub_add.
 Qed.
 
 Theorem le_sub_le_add_l : forall n m p, n - m <= p <-> n <= m + p.
@@ -174,9 +176,10 @@ Theorem le_add_le_sub_r : forall n m p, n + p <= m -> n <= m - p.
 Proof.
 intros n m p LE.
 apply (add_le_mono_r _ _ p).
-rewrite sub_add. assumption.
-apply le_trans with (n+p); trivial.
-rewrite <- (add_0_l p) at 1. rewrite <- add_le_mono_r. apply le_0_l.
+rewrite sub_add.
+- assumption.
+- apply le_trans with (n+p); trivial.
+  rewrite <- (add_0_l p) at 1. rewrite <- add_le_mono_r. apply le_0_l.
 Qed.
 
 (** Unfortunately, we do not have [n <= m - p -> n + p <= m].
@@ -191,13 +194,15 @@ Theorem lt_add_lt_sub_r : forall n m p, n + p < m <-> n < m - p.
 Proof.
 intros n m p.
 destruct (le_ge_cases p m) as [LE|GE].
-rewrite <- (sub_add p m) at 1 by assumption.
-now rewrite <- add_lt_mono_r.
-assert (GE' := GE). rewrite <- sub_0_le in GE'; rewrite GE'.
-split; intros LT.
-elim (lt_irrefl m). apply le_lt_trans with (n+p); trivial.
- rewrite <- (add_0_l m). apply add_le_mono. apply le_0_l. assumption.
-now elim (nlt_0_r n).
+- rewrite <- (sub_add p m) at 1 by assumption.
+  now rewrite <- add_lt_mono_r.
+- assert (GE' := GE). rewrite <- sub_0_le in GE'; rewrite GE'.
+  split; intros LT.
+  + elim (lt_irrefl m). apply le_lt_trans with (n+p); trivial.
+    rewrite <- (add_0_l m). apply add_le_mono.
+    * apply le_0_l.
+    * assumption.
+  + now elim (nlt_0_r n).
 Qed.
 
 Theorem lt_add_lt_sub_l : forall n m p, n + p < m <-> p < m - n.
@@ -209,15 +214,18 @@ Theorem sub_lt : forall n m, m <= n -> 0 < m -> n - m < n.
 Proof.
 intros n m LE LT.
 assert (LE' := le_sub_l n m). rewrite lt_eq_cases in LE'.
-destruct LE' as [LT'|EQ]. assumption.
-apply add_sub_eq_nz in EQ; [|order].
-rewrite (add_lt_mono_r _ _ n), add_0_l in LT. order.
+destruct LE' as [LT'|EQ].
+- assumption.
+- apply add_sub_eq_nz in EQ; [|order].
+  rewrite (add_lt_mono_r _ _ n), add_0_l in LT. order.
 Qed.
 
 Lemma sub_le_mono_r : forall n m p, n <= m -> n-p <= m-p.
 Proof.
  intros n m p. rewrite le_sub_le_add_r.
- transitivity m. assumption. apply sub_add_le.
+ transitivity m.
+ - assumption.
+ - apply sub_add_le.
 Qed.
 
 Lemma sub_le_mono_l : forall n m p, n <= m -> p-m <= p-n.
@@ -231,25 +239,25 @@ Qed.
 Theorem mul_pred_r : forall n m, n * (P m) == n * m - n.
 Proof.
 intros n m; cases m.
-now rewrite pred_0, mul_0_r, sub_0_l.
-intro m; rewrite pred_succ, mul_succ_r, <- add_sub_assoc.
-now rewrite sub_diag, add_0_r.
-now apply eq_le_incl.
+- now rewrite pred_0, mul_0_r, sub_0_l.
+- intro m; rewrite pred_succ, mul_succ_r, <- add_sub_assoc.
+  + now rewrite sub_diag, add_0_r.
+  + now apply eq_le_incl.
 Qed.
 
 Theorem mul_sub_distr_r : forall n m p, (n - m) * p == n * p - m * p.
 Proof.
 intros n m p; induct n.
-now rewrite sub_0_l, mul_0_l, sub_0_l.
-intros n IH. destruct (le_gt_cases m n) as [H | H].
-rewrite sub_succ_l by assumption. do 2 rewrite mul_succ_l.
-rewrite (add_comm ((n - m) * p) p), (add_comm (n * p) p).
-rewrite <- (add_sub_assoc p (n * p) (m * p)) by now apply mul_le_mono_r.
-now apply add_cancel_l.
-assert (H1 : S n <= m); [now apply le_succ_l |].
-setoid_replace (S n - m) with 0 by now apply sub_0_le.
-setoid_replace ((S n * p) - m * p) with 0 by (apply sub_0_le; now apply mul_le_mono_r).
-apply mul_0_l.
+- now rewrite sub_0_l, mul_0_l, sub_0_l.
+- intros n IH. destruct (le_gt_cases m n) as [H | H].
+  + rewrite sub_succ_l by assumption. do 2 rewrite mul_succ_l.
+    rewrite (add_comm ((n - m) * p) p), (add_comm (n * p) p).
+    rewrite <- (add_sub_assoc p (n * p) (m * p)) by now apply mul_le_mono_r.
+    now apply add_cancel_l.
+  + assert (H1 : S n <= m) by now apply le_succ_l.
+    setoid_replace (S n - m) with 0 by now apply sub_0_le.
+    setoid_replace ((S n * p) - m * p) with 0 by (apply sub_0_le; now apply mul_le_mono_r).
+    apply mul_0_l.
 Qed.
 
 Theorem mul_sub_distr_l : forall n m p, p * (n - m) == p * n - p * m.
@@ -266,16 +274,16 @@ Definition lt_alt n m := exists p, S p + n == m.
 Lemma le_equiv : forall n m, le_alt n m <-> n <= m.
 Proof.
 intros n m; split.
-intros (p,H). rewrite <- H, add_comm. apply le_add_r.
-intro H. exists (m-n). now apply sub_add.
+- intros (p,H). rewrite <- H, add_comm. apply le_add_r.
+- intro H. exists (m-n). now apply sub_add.
 Qed.
 
 Lemma lt_equiv : forall n m, lt_alt n m <-> n < m.
 Proof.
 intros n m; split.
-intros (p,H). rewrite <- H, add_succ_l, lt_succ_r, add_comm. apply le_add_r.
-intro H. exists (m-S n). rewrite add_succ_l, <- add_succ_r.
-apply sub_add. now rewrite le_succ_l.
+- intros (p,H). rewrite <- H, add_succ_l, lt_succ_r, add_comm. apply le_add_r.
+- intro H. exists (m-S n). rewrite add_succ_l, <- add_succ_r.
+  apply sub_add. now rewrite le_succ_l.
 Qed.
 
 #[global]
@@ -307,14 +315,14 @@ from know properties of [<=]. However, it can also be done directly. *)
 Theorem le_alt_dichotomy : forall n m, le_alt n m \/ le_alt m n.
 Proof.
 intros n m; induct n.
-left; exists m; apply add_0_r.
-intros n IH.
-destruct IH as [[p H] | [p H]].
-destruct (zero_or_succ p) as [H1 | [p' H1]]; rewrite H1 in H.
-rewrite add_0_l in H. right; exists (S 0); rewrite H, add_succ_l;
- now rewrite add_0_l.
-left; exists p'; rewrite add_succ_r; now rewrite add_succ_l in H.
-right; exists (S p). rewrite add_succ_l; now rewrite H.
+- left; exists m; apply add_0_r.
+- intros n IH.
+  destruct IH as [[p H] | [p H]].
+  + destruct (zero_or_succ p) as [H1 | [p' H1]]; rewrite H1 in H.
+    * rewrite add_0_l in H. right; exists (S 0); rewrite H, add_succ_l;
+      now rewrite add_0_l.
+    * left; exists p'; rewrite add_succ_r; now rewrite add_succ_l in H.
+  + right; exists (S p). rewrite add_succ_l; now rewrite H.
 Qed.
 
 Theorem add_dichotomy :

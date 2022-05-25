@@ -168,16 +168,16 @@ Lemma trunc : forall {A} {n} (p:nat), n > p -> t A n
   -> t A (n - p).
 Proof.
   intros A n p; induction p as [| p f]; intros H v.
-  rewrite Nat.sub_0_r.
-  exact v.
+  - rewrite Nat.sub_0_r.
+    exact v.
 
-  apply shiftout.
+  - apply shiftout.
 
-  rewrite <- Nat.sub_succ_l.
-  apply f.
-  auto with *.
-  exact v.
-  auto with *.
+    rewrite <- Nat.sub_succ_l.
+    + apply f.
+      * auto with *.
+      * exact v.
+    + auto with *.
 Defined.
 
 (** Concatenation of two vectors *)

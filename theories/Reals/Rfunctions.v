@@ -85,19 +85,19 @@ Qed.
 Lemma Rpow_mult_distr : forall (x y:R) (n:nat), (x * y) ^ n = x^n * y^n.
 Proof.
 intros x y n ; induction n.
- field.
- simpl.
- repeat (rewrite Rmult_assoc) ; apply Rmult_eq_compat_l.
- rewrite IHn ; field.
+- field.
+- simpl.
+  repeat (rewrite Rmult_assoc) ; apply Rmult_eq_compat_l.
+  rewrite IHn ; field.
 Qed.
 
 Lemma pow_nonzero : forall (x:R) (n:nat), x <> 0 -> x ^ n <> 0.
 Proof.
   intro; simple induction n; simpl.
-  intro; red; intro; apply R1_neq_R0; assumption.
-  intros; red; intro; elim (Rmult_integral x (x ^ n0) H1).
-  intro; auto.
-  apply H; assumption.
+  - intro; red; intro; apply R1_neq_R0; assumption.
+  - intros; red; intro; elim (Rmult_integral x (x ^ n0) H1).
+    + intro; auto.
+    + apply H; assumption.
 Qed.
 
 #[global]
@@ -122,15 +122,15 @@ Hint Resolve pow_lt: real.
 Lemma Rlt_pow_R1 : forall (x:R) (n:nat), 1 < x -> (0 < n)%nat -> 1 < x ^ n.
 Proof.
   intros x n; elim n; simpl; auto with real.
-  intros H' H'0; exfalso. apply (Nat.lt_irrefl 0); assumption.
-  intros n0; case n0.
-  simpl; rewrite Rmult_1_r; auto.
-  intros n1 H' H'0 H'1.
-  replace 1 with (1 * 1); auto with real.
-  apply Rlt_trans with (r2 := x * 1); auto with real.
-  apply Rmult_lt_compat_l; auto with real.
-  apply Rlt_trans with (r2 := 1); auto with real.
-  apply H'; auto with arith.
+  - intros H' H'0; exfalso. apply (Nat.lt_irrefl 0); assumption.
+  - intros n0; case n0.
+    + simpl; rewrite Rmult_1_r; auto.
+    + intros n1 H' H'0 H'1.
+      replace 1 with (1 * 1); auto with real.
+      apply Rlt_trans with (r2 := x * 1); auto with real.
+      apply Rmult_lt_compat_l; auto with real.
+      * apply Rlt_trans with (r2 := 1); auto with real.
+      * apply H'; auto with arith.
 Qed.
 #[global]
 Hint Resolve Rlt_pow_R1: real.
@@ -138,19 +138,19 @@ Hint Resolve Rlt_pow_R1: real.
 Lemma Rlt_pow : forall (x:R) (n m:nat), 1 < x -> (n < m)%nat -> x ^ n < x ^ m.
 Proof.
   intros x n m H' H'0; replace m with (m - n + n)%nat.
-  rewrite pow_add.
-  pattern (x ^ n) at 1; replace (x ^ n) with (1 * x ^ n);
-    auto with real.
-  apply Rminus_lt.
-  repeat rewrite (fun y:R => Rmult_comm y (x ^ n));
-    rewrite <- Rmult_minus_distr_l.
-  replace 0 with (x ^ n * 0); auto with real.
-  apply Rmult_lt_compat_l; auto with real.
-  apply pow_lt; auto with real.
-  apply Rlt_trans with (r2 := 1); auto with real.
-  apply Rlt_minus; auto with real.
-  apply Rlt_pow_R1; [ | apply lt_minus_O_lt ]; assumption.
-  apply Nat.sub_add, Nat.lt_le_incl; assumption.
+  - rewrite pow_add.
+    pattern (x ^ n) at 1; replace (x ^ n) with (1 * x ^ n);
+      auto with real.
+    apply Rminus_lt.
+    repeat rewrite (fun y:R => Rmult_comm y (x ^ n));
+      rewrite <- Rmult_minus_distr_l.
+    replace 0 with (x ^ n * 0); auto with real.
+    apply Rmult_lt_compat_l; auto with real.
+    + apply pow_lt; auto with real.
+      apply Rlt_trans with (r2 := 1); auto with real.
+    + apply Rlt_minus; auto with real.
+      apply Rlt_pow_R1; [ | apply lt_minus_O_lt ]; assumption.
+  - apply Nat.sub_add, Nat.lt_le_incl; assumption.
 Qed.
 #[global]
 Hint Resolve Rlt_pow: real.
@@ -176,29 +176,29 @@ Qed.
 Lemma poly : forall (n:nat) (x:R), 0 < x -> 1 + INR n * x <= (1 + x) ^ n.
 Proof.
   intros; elim n.
-  simpl; cut (1 + 0 * x = 1).
-  intro; rewrite H0; unfold Rle; right; reflexivity.
-  ring.
-  intros; unfold pow; fold pow;
-    apply
-      (Rle_trans (1 + INR (S n0) * x) ((1 + x) * (1 + INR n0 * x))
-        ((1 + x) * (1 + x) ^ n0)).
-  cut ((1 + x) * (1 + INR n0 * x) = 1 + INR (S n0) * x + INR n0 * (x * x)).
-  intro; rewrite H1; pattern (1 + INR (S n0) * x) at 1;
-    rewrite <- (let (H1, H2) := Rplus_ne (1 + INR (S n0) * x) in H1);
-      apply Rplus_le_compat_l; elim n0; intros.
-  simpl; rewrite Rmult_0_l; unfold Rle; right; auto.
-  unfold Rle; left; generalize Rmult_gt_0_compat; unfold Rgt;
-    intro; fold (Rsqr x);
-      apply (H3 (INR (S n1)) (Rsqr x) (lt_INR_0 (S n1) (Nat.lt_0_succ n1)));
-        fold (x > 0) in H;
-          apply (Rlt_0_sqr x (Rlt_dichotomy_converse x 0 (or_intror (x < 0) H))).
-  rewrite (S_INR n0); ring.
-  unfold Rle in H0; elim H0; intro.
-  unfold Rle; left; apply Rmult_lt_compat_l.
-  rewrite Rplus_comm; apply (Rle_lt_0_plus_1 x (Rlt_le 0 x H)).
-  assumption.
-  rewrite H1; unfold Rle; right; trivial.
+  - simpl; cut (1 + 0 * x = 1).
+    + intro; rewrite H0; unfold Rle; right; reflexivity.
+    + ring.
+  - intros; unfold pow; fold pow;
+      apply
+        (Rle_trans (1 + INR (S n0) * x) ((1 + x) * (1 + INR n0 * x))
+                   ((1 + x) * (1 + x) ^ n0)).
+    + cut ((1 + x) * (1 + INR n0 * x) = 1 + INR (S n0) * x + INR n0 * (x * x)).
+      * intro; rewrite H1; pattern (1 + INR (S n0) * x) at 1;
+          rewrite <- (let (H1, H2) := Rplus_ne (1 + INR (S n0) * x) in H1);
+          apply Rplus_le_compat_l; elim n0; intros.
+        -- simpl; rewrite Rmult_0_l; unfold Rle; right; auto.
+        -- unfold Rle; left; generalize Rmult_gt_0_compat; unfold Rgt;
+             intro; fold (Rsqr x);
+             apply (H3 (INR (S n1)) (Rsqr x) (lt_INR_0 (S n1) (Nat.lt_0_succ n1)));
+             fold (x > 0) in H;
+             apply (Rlt_0_sqr x (Rlt_dichotomy_converse x 0 (or_intror (x < 0) H))).
+      * rewrite (S_INR n0); ring.
+    + unfold Rle in H0; elim H0; intro.
+      * unfold Rle; left; apply Rmult_lt_compat_l.
+        -- rewrite Rplus_comm; apply (Rle_lt_0_plus_1 x (Rlt_le 0 x H)).
+        -- assumption.
+      * rewrite H1; unfold Rle; right; trivial.
 Qed.
 
 Lemma Power_monotonic :
@@ -206,25 +206,25 @@ Lemma Power_monotonic :
     Rabs x > 1 -> (m <= n)%nat -> Rabs (x ^ m) <= Rabs (x ^ n).
 Proof.
   intros x m n H; induction  n as [| n Hrecn]; intros; inversion H0.
-  unfold Rle; right; reflexivity.
-  unfold Rle; right; reflexivity.
-  apply (Rle_trans (Rabs (x ^ m)) (Rabs (x ^ n)) (Rabs (x ^ S n))).
-  apply Hrecn; assumption.
-  simpl; rewrite Rabs_mult.
-  pattern (Rabs (x ^ n)) at 1.
-  rewrite <- Rmult_1_r.
-  rewrite (Rmult_comm (Rabs x) (Rabs (x ^ n))).
-  apply Rmult_le_compat_l.
-  apply Rabs_pos.
-  unfold Rgt in H.
-  apply Rlt_le; assumption.
+  - unfold Rle; right; reflexivity.
+  - unfold Rle; right; reflexivity.
+  - apply (Rle_trans (Rabs (x ^ m)) (Rabs (x ^ n)) (Rabs (x ^ S n))).
+    + apply Hrecn; assumption.
+    + simpl; rewrite Rabs_mult.
+      pattern (Rabs (x ^ n)) at 1.
+      rewrite <- Rmult_1_r.
+      rewrite (Rmult_comm (Rabs x) (Rabs (x ^ n))).
+      apply Rmult_le_compat_l.
+      * apply Rabs_pos.
+      * unfold Rgt in H.
+        apply Rlt_le; assumption.
 Qed.
 
 Lemma RPow_abs : forall (x:R) (n:nat), Rabs x ^ n = Rabs (x ^ n).
 Proof.
   intro; simple induction n; simpl.
-  symmetry; apply Rabs_pos_eq; apply Rlt_le; apply Rlt_0_1.
-  intros; rewrite H; symmetry; apply Rabs_mult.
+  - symmetry; apply Rabs_pos_eq; apply Rlt_le; apply Rlt_0_1.
+  - intros; rewrite H; symmetry; apply Rabs_mult.
 Qed.
 
 
@@ -232,52 +232,51 @@ Lemma Pow_x_infinity :
   forall x:R,
     Rabs x > 1 ->
     forall b:R,
-      exists N : nat, (forall n:nat, (n >= N)%nat -> Rabs (x ^ n) >= b).
+    exists N : nat, (forall n:nat, (n >= N)%nat -> Rabs (x ^ n) >= b).
 Proof.
   intros; elim (archimed (b * / (Rabs x - 1))); intros; clear H1;
     cut (exists N : nat, INR N >= b * / (Rabs x - 1)).
-  intro; elim H1; clear H1; intros; exists x0; intros;
-    apply (Rge_trans (Rabs (x ^ n)) (Rabs (x ^ x0)) b).
-  apply Rle_ge; apply Power_monotonic; assumption.
-  rewrite <- RPow_abs; cut (Rabs x = 1 + (Rabs x - 1)).
-  intro; rewrite H3;
-    apply (Rge_trans ((1 + (Rabs x - 1)) ^ x0) (1 + INR x0 * (Rabs x - 1)) b).
-  apply Rle_ge; apply poly; fold (Rabs x - 1 > 0); apply Rgt_minus;
-    assumption.
-  apply (Rge_trans (1 + INR x0 * (Rabs x - 1)) (INR x0 * (Rabs x - 1)) b).
-  apply Rle_ge; apply Rlt_le; rewrite (Rplus_comm 1 (INR x0 * (Rabs x - 1)));
-    pattern (INR x0 * (Rabs x - 1)) at 1;
-      rewrite <- (let (H1, H2) := Rplus_ne (INR x0 * (Rabs x - 1)) in H1);
-        apply Rplus_lt_compat_l; apply Rlt_0_1.
-  cut (b = b * / (Rabs x - 1) * (Rabs x - 1)).
-  intros; rewrite H4; apply Rmult_ge_compat_r.
-  apply Rge_minus; unfold Rge; left; assumption.
-  assumption.
-  rewrite Rmult_assoc; rewrite Rinv_l.
-  ring.
-  apply Rlt_dichotomy_converse; right; apply Rgt_minus; assumption.
-  ring.
-  cut ((0 <= up (b * / (Rabs x - 1)))%Z \/ (up (b * / (Rabs x - 1)) <= 0)%Z).
-  intros; elim H1; intro.
-  elim (IZN (up (b * / (Rabs x - 1))) H2); intros; exists x0;
-    apply
-      (Rge_trans (INR x0) (IZR (up (b * / (Rabs x - 1)))) (b * / (Rabs x - 1))).
-  rewrite INR_IZR_INZ; apply IZR_ge. normZ. slia H3 H5.
-  unfold Rge; left; assumption.
-  exists 0%nat;
-    apply
-      (Rge_trans (INR 0) (IZR (up (b * / (Rabs x - 1)))) (b * / (Rabs x - 1))).
-  rewrite INR_IZR_INZ; apply IZR_ge; simpl. normZ. slia H2 H3.
-  unfold Rge; left; assumption.
-  apply Z.le_ge_cases.
+  - intro; elim H1; clear H1; intros; exists x0; intros;
+      apply (Rge_trans (Rabs (x ^ n)) (Rabs (x ^ x0)) b).
+    { apply Rle_ge; apply Power_monotonic; assumption. }
+    rewrite <- RPow_abs; assert (Rabs x = 1 + (Rabs x - 1)) by ring.
+    rewrite H3;
+      apply (Rge_trans ((1 + (Rabs x - 1)) ^ x0) (1 + INR x0 * (Rabs x - 1)) b).
+    + apply Rle_ge; apply poly; fold (Rabs x - 1 > 0); apply Rgt_minus;
+        assumption.
+    + apply (Rge_trans (1 + INR x0 * (Rabs x - 1)) (INR x0 * (Rabs x - 1)) b).
+      { apply Rle_ge; apply Rlt_le; rewrite (Rplus_comm 1 (INR x0 * (Rabs x - 1)));
+          pattern (INR x0 * (Rabs x - 1)) at 1;
+          rewrite <- (let (H1, H2) := Rplus_ne (INR x0 * (Rabs x - 1)) in H1);
+          apply Rplus_lt_compat_l; apply Rlt_0_1. }
+      cut (b = b * / (Rabs x - 1) * (Rabs x - 1)).
+      * intros; rewrite H4; apply Rmult_ge_compat_r.
+        { apply Rge_minus; unfold Rge; left; assumption. }
+        assumption.
+      * rewrite Rmult_assoc; rewrite Rinv_l.
+        { ring. }
+        apply Rlt_dichotomy_converse; right; apply Rgt_minus; assumption.
+  - assert ((0 <= up (b * / (Rabs x - 1)))%Z \/ (up (b * / (Rabs x - 1)) <= 0)%Z)
+      by  apply Z.le_ge_cases.
+    elim H1; intro.
+    + elim (IZN (up (b * / (Rabs x - 1))) H2); intros; exists x0;
+        apply
+          (Rge_trans (INR x0) (IZR (up (b * / (Rabs x - 1)))) (b * / (Rabs x - 1))).
+      * rewrite INR_IZR_INZ; apply IZR_ge. normZ. slia H3 H5.
+      * unfold Rge; left; assumption.
+    + exists 0%nat;
+        apply
+          (Rge_trans (INR 0) (IZR (up (b * / (Rabs x - 1)))) (b * / (Rabs x - 1))).
+      * rewrite INR_IZR_INZ; apply IZR_ge; simpl. normZ. slia H2 H3.
+      * unfold Rge; left; assumption.
 Qed.
 
 Lemma pow_ne_zero : forall n:nat, n <> 0%nat -> 0 ^ n = 0.
 Proof.
   simple induction n.
-  simpl; auto.
-  intros; elim H; reflexivity.
-  intros; simpl; apply Rmult_0_l.
+  - simpl; auto.
+    intros; elim H; reflexivity.
+  - intros; simpl; apply Rmult_0_l.
 Qed.
 
 Lemma pow_inv x n : (/ x)^n = / x^n.
@@ -305,38 +304,40 @@ Lemma pow_lt_1_zero :
       exists N : nat, (forall n:nat, (n >= N)%nat -> Rabs (x ^ n) < y).
 Proof.
   intros; elim (Req_dec x 0); intro.
-  exists 1%nat; rewrite H1; intros n GE; rewrite pow_ne_zero.
-  rewrite Rabs_R0; assumption.
-  inversion GE; auto.
-  cut (Rabs (/ x) > 1).
-  intros; elim (Pow_x_infinity (/ x) H2 (/ y + 1)); intros N.
-  exists N; intros; rewrite <- (Rinv_inv y).
-  rewrite <- (Rinv_inv (Rabs (x ^ n))).
-  apply Rinv_lt_contravar.
-  apply Rmult_lt_0_compat.
-  apply Rinv_0_lt_compat.
-  assumption.
-  apply Rinv_0_lt_compat.
-  apply Rabs_pos_lt.
-  apply pow_nonzero.
-  assumption.
-  rewrite <- Rabs_inv, <- pow_inv.
-  apply (Rlt_le_trans (/ y) (/ y + 1) (Rabs ((/ x) ^ n))).
-  pattern (/ y) at 1.
-  rewrite <- (let (H1, H2) := Rplus_ne (/ y) in H1).
-  apply Rplus_lt_compat_l.
-  apply Rlt_0_1.
-  apply Rge_le.
-  apply H3.
-  assumption.
-  rewrite <- (Rinv_inv 1).
-  rewrite Rabs_inv.
-  unfold Rgt; apply Rinv_lt_contravar.
-  apply Rmult_lt_0_compat.
-  apply Rabs_pos_lt.
-  assumption.
-  rewrite Rinv_1; apply Rlt_0_1.
-  rewrite Rinv_1; assumption.
+  - exists 1%nat; rewrite H1; intros n GE; rewrite pow_ne_zero.
+    + rewrite Rabs_R0; assumption.
+    + inversion GE; auto.
+  - assert (Rabs (/ x) > 1). {
+      rewrite <- (Rinv_inv 1).
+      rewrite Rabs_inv.
+      unfold Rgt; apply Rinv_lt_contravar.
+      - apply Rmult_lt_0_compat.
+        + apply Rabs_pos_lt.
+          assumption.
+        + rewrite Rinv_1; apply Rlt_0_1.
+      - rewrite Rinv_1; assumption.
+    }
+    elim (Pow_x_infinity (/ x) H2 (/ y + 1)); intros N.
+    exists N; intros; rewrite <- (Rinv_inv y).
+    rewrite <- (Rinv_inv (Rabs (x ^ n))).
+    apply Rinv_lt_contravar.
+    + apply Rmult_lt_0_compat.
+      * apply Rinv_0_lt_compat.
+        assumption.
+      * apply Rinv_0_lt_compat.
+        apply Rabs_pos_lt.
+        apply pow_nonzero.
+        assumption.
+    + rewrite <- Rabs_inv, <- pow_inv.
+      apply (Rlt_le_trans (/ y) (/ y + 1) (Rabs ((/ x) ^ n))).
+      * pattern (/ y) at 1.
+        rewrite <- (let (H1, H2) := Rplus_ne (/ y) in H1).
+        apply Rplus_lt_compat_l.
+        apply Rlt_0_1.
+      * apply Rge_le.
+        apply H3.
+        assumption.
+
 Qed.
 
 Lemma pow_R1 : forall (r:R) (n:nat), r ^ n = 1 -> Rabs r = 1 \/ n = 0%nat.
@@ -344,59 +345,59 @@ Proof.
   intros r n H'.
   case (Req_dec (Rabs r) 1); auto; intros H'1.
   case (Rdichotomy _ _ H'1); intros H'2.
-  generalize H'; case n; auto.
-  intros n0 H'0.
-  cut (r <> 0); [ intros Eq1 | idtac ].
-  cut (Rabs r <> 0); [ intros Eq2 | apply Rabs_no_R0 ]; auto.
-  absurd (Rabs (/ r) ^ 0 < Rabs (/ r) ^ S n0); auto.
-  replace (Rabs (/ r) ^ S n0) with 1.
-  simpl; apply Rlt_irrefl; auto.
-  rewrite Rabs_inv, pow_inv.
-  rewrite RPow_abs; auto.
-  rewrite H'0; rewrite Rabs_right; auto with real rorders.
-  apply Rlt_pow; auto with arith.
-  rewrite Rabs_inv.
-  apply Rmult_lt_reg_l with (r := Rabs r).
-  case (Rabs_pos r); auto.
-  intros H'3; case Eq2; auto.
-  rewrite Rmult_1_r; rewrite Rinv_r; auto with real.
-  red; intro; absurd (r ^ S n0 = 1); auto.
-  simpl; rewrite H; rewrite Rmult_0_l; auto with real.
-  generalize H'; case n; auto.
-  intros n0 H'0.
-  cut (r <> 0); [ intros Eq1 | auto with real ].
-  cut (Rabs r <> 0); [ intros Eq2 | apply Rabs_no_R0 ]; auto.
-  absurd (Rabs r ^ 0 < Rabs r ^ S n0); auto with real arith.
-  repeat rewrite RPow_abs; rewrite H'0; simpl; auto with real.
-  red; intro; absurd (r ^ S n0 = 1); auto.
-  simpl; rewrite H; rewrite Rmult_0_l; auto with real.
+  - generalize H'; case n; auto.
+    intros n0 H'0.
+    cut (r <> 0); [ intros Eq1 | idtac ].
+    + assert (Eq2: Rabs r <> 0) by (apply Rabs_no_R0; auto).
+      absurd (Rabs (/ r) ^ 0 < Rabs (/ r) ^ S n0); auto.
+      * replace (Rabs (/ r) ^ S n0) with 1.
+        -- simpl; apply Rlt_irrefl; auto.
+        -- rewrite Rabs_inv, pow_inv.
+           rewrite RPow_abs; auto.
+           rewrite H'0; rewrite Rabs_right; auto with real rorders.
+      * apply Rlt_pow; auto with arith.
+        rewrite Rabs_inv.
+        apply Rmult_lt_reg_l with (r := Rabs r).
+        -- case (Rabs_pos r); auto.
+           intros H'3; case Eq2; auto.
+        -- rewrite Rmult_1_r; rewrite Rinv_r; auto with real.
+    + red; intro; absurd (r ^ S n0 = 1); auto.
+      simpl; rewrite H; rewrite Rmult_0_l; auto with real.
+  - generalize H'; case n; auto.
+    intros n0 H'0.
+    cut (r <> 0); [ intros Eq1 | auto with real ].
+    + cut (Rabs r <> 0); [ intros Eq2 | apply Rabs_no_R0 ]; auto.
+      absurd (Rabs r ^ 0 < Rabs r ^ S n0); auto with real arith.
+      repeat rewrite RPow_abs; rewrite H'0; simpl; auto with real.
+    + red; intro; absurd (r ^ S n0 = 1); auto.
+      simpl; rewrite H; rewrite Rmult_0_l; auto with real.
 Qed.
 
 Lemma pow_Rsqr : forall (x:R) (n:nat), x ^ (2 * n) = Rsqr x ^ n.
 Proof.
   intros; induction  n as [| n Hrecn].
-  reflexivity.
-  replace (2 * S n)%nat with (S (S (2 * n))).
-  replace (x ^ S (S (2 * n))) with (x * x * x ^ (2 * n)).
-  rewrite Hrecn; reflexivity.
-  simpl; ring.
-  ring.
+  - reflexivity.
+  - replace (2 * S n)%nat with (S (S (2 * n))).
+    + replace (x ^ S (S (2 * n))) with (x * x * x ^ (2 * n)).
+      * rewrite Hrecn; reflexivity.
+      * simpl; ring.
+    + ring.
 Qed.
 
 Lemma pow_le : forall (a:R) (n:nat), 0 <= a -> 0 <= a ^ n.
 Proof.
   intros; induction  n as [| n Hrecn].
-  simpl; left; apply Rlt_0_1.
-  simpl; apply Rmult_le_pos; assumption.
+  - simpl; left; apply Rlt_0_1.
+  - simpl; apply Rmult_le_pos; assumption.
 Qed.
 
 (**********)
 Lemma pow_1_even : forall n:nat, (-1) ^ (2 * n) = 1.
 Proof.
   intro; induction  n as [| n Hrecn].
-  reflexivity.
-  replace (2 * S n)%nat with (2 + 2 * n)%nat by ring.
-  rewrite pow_add; rewrite Hrecn; simpl; ring.
+  - reflexivity.
+  - replace (2 * S n)%nat with (2 + 2 * n)%nat by ring.
+    rewrite pow_add; rewrite Hrecn; simpl; ring.
 Qed.
 
 (**********)
@@ -410,55 +411,55 @@ Qed.
 Lemma pow_1_abs : forall n:nat, Rabs ((-1) ^ n) = 1.
 Proof.
   intro; induction  n as [| n Hrecn].
-  simpl; apply Rabs_R1.
-  replace (S n) with (n + 1)%nat; [ rewrite pow_add | ring ].
-  rewrite Rabs_mult.
-  rewrite Hrecn; rewrite Rmult_1_l; simpl; rewrite Rmult_1_r.
-  change (-1) with (-(1)).
-  rewrite Rabs_Ropp; apply Rabs_R1.
+  - simpl; apply Rabs_R1.
+  - replace (S n) with (n + 1)%nat; [ rewrite pow_add | ring ].
+    rewrite Rabs_mult.
+    rewrite Hrecn; rewrite Rmult_1_l; simpl; rewrite Rmult_1_r.
+    change (-1) with (-(1)).
+    rewrite Rabs_Ropp; apply Rabs_R1.
 Qed.
 
 Lemma pow_mult : forall (x:R) (n1 n2:nat), x ^ (n1 * n2) = (x ^ n1) ^ n2.
 Proof.
   intros; induction  n2 as [| n2 Hrecn2].
-  simpl; replace (n1 * 0)%nat with 0%nat; [ reflexivity | ring ].
-  replace (n1 * S n2)%nat with (n1 * n2 + n1)%nat.
-  replace (S n2) with (n2 + 1)%nat by ring.
-  do 2 rewrite pow_add.
-  rewrite Hrecn2.
-  simpl.
-  ring.
-  ring.
+  - simpl; replace (n1 * 0)%nat with 0%nat; [ reflexivity | ring ].
+  - replace (n1 * S n2)%nat with (n1 * n2 + n1)%nat.
+    + replace (S n2) with (n2 + 1)%nat by ring.
+      do 2 rewrite pow_add.
+      rewrite Hrecn2.
+      simpl.
+      ring.
+    + ring.
 Qed.
 
 Lemma pow_incr : forall (x y:R) (n:nat), 0 <= x <= y -> x ^ n <= y ^ n.
 Proof.
   intros.
   induction  n as [| n Hrecn].
-  right; reflexivity.
-  simpl.
-  elim H; intros.
-  apply Rle_trans with (y * x ^ n).
-  do 2 rewrite <- (Rmult_comm (x ^ n)).
-  apply Rmult_le_compat_l.
-  apply pow_le; assumption.
-  assumption.
-  apply Rmult_le_compat_l.
-  apply Rle_trans with x; assumption.
-  apply Hrecn.
+  - right; reflexivity.
+  - simpl.
+    elim H; intros.
+    apply Rle_trans with (y * x ^ n).
+    + do 2 rewrite <- (Rmult_comm (x ^ n)).
+      apply Rmult_le_compat_l.
+      * apply pow_le; assumption.
+      * assumption.
+    + apply Rmult_le_compat_l.
+      * apply Rle_trans with x; assumption.
+      * apply Hrecn.
 Qed.
 
 Lemma pow_R1_Rle : forall (x:R) (k:nat), 1 <= x -> 1 <= x ^ k.
 Proof.
   intros.
   induction  k as [| k Hreck].
-  right; reflexivity.
-  simpl.
-  apply Rle_trans with (x * 1).
-  rewrite Rmult_1_r; assumption.
-  apply Rmult_le_compat_l.
-  left; apply Rlt_le_trans with 1; [ apply Rlt_0_1 | assumption ].
-  exact Hreck.
+  - right; reflexivity.
+  - simpl.
+    apply Rle_trans with (x * 1).
+    + rewrite Rmult_1_r; assumption.
+    + apply Rmult_le_compat_l.
+      * left; apply Rlt_le_trans with 1; [ apply Rlt_0_1 | assumption ].
+      * exact Hreck.
 Qed.
 
 Lemma Rle_pow :
@@ -466,55 +467,55 @@ Lemma Rle_pow :
 Proof.
   intros.
   replace n with (n - m + m)%nat.
-  rewrite pow_add.
-  rewrite Rmult_comm.
-  pattern (x ^ m) at 1; rewrite <- Rmult_1_r.
-  apply Rmult_le_compat_l.
-  apply pow_le; left; apply Rlt_le_trans with 1; [ apply Rlt_0_1 | assumption ].
-  apply pow_R1_Rle; assumption.
-  apply Nat.sub_add; assumption.
+  - rewrite pow_add.
+    rewrite Rmult_comm.
+    pattern (x ^ m) at 1; rewrite <- Rmult_1_r.
+    apply Rmult_le_compat_l.
+    + apply pow_le; left; apply Rlt_le_trans with 1; [ apply Rlt_0_1 | assumption ].
+    + apply pow_R1_Rle; assumption.
+  - apply Nat.sub_add; assumption.
 Qed.
 
 Lemma pow1 : forall n:nat, 1 ^ n = 1.
 Proof.
   intro; induction  n as [| n Hrecn].
-  reflexivity.
-  simpl; rewrite Hrecn; rewrite Rmult_1_r; reflexivity.
+  - reflexivity.
+  - simpl; rewrite Hrecn; rewrite Rmult_1_r; reflexivity.
 Qed.
 
 Lemma pow_Rabs : forall (x:R) (n:nat), x ^ n <= Rabs x ^ n.
 Proof.
   intros; induction  n as [| n Hrecn].
-  right; reflexivity.
-  simpl; destruct (Rcase_abs x) as [Hlt|Hle].
-  apply Rle_trans with (Rabs (x * x ^ n)).
-  apply RRle_abs.
-  rewrite Rabs_mult.
-  apply Rmult_le_compat_l.
-  apply Rabs_pos.
-  right; symmetry; apply RPow_abs.
-  pattern (Rabs x) at 1; rewrite (Rabs_right x Hle);
-    apply Rmult_le_compat_l.
-  apply Rge_le; exact Hle.
-  apply Hrecn.
+  - right; reflexivity.
+  - simpl; destruct (Rcase_abs x) as [Hlt|Hle].
+    + apply Rle_trans with (Rabs (x * x ^ n)).
+      * apply RRle_abs.
+      * rewrite Rabs_mult.
+        apply Rmult_le_compat_l.
+        -- apply Rabs_pos.
+        -- right; symmetry; apply RPow_abs.
+    + pattern (Rabs x) at 1; rewrite (Rabs_right x Hle);
+        apply Rmult_le_compat_l.
+      * apply Rge_le; exact Hle.
+      * apply Hrecn.
 Qed.
 
 Lemma pow_maj_Rabs : forall (x y:R) (n:nat), Rabs y <= x -> y ^ n <= x ^ n.
 Proof.
   intros; cut (0 <= x).
-  intro; apply Rle_trans with (Rabs y ^ n).
-  apply pow_Rabs.
-  induction  n as [| n Hrecn].
-  right; reflexivity.
-  simpl; apply Rle_trans with (x * Rabs y ^ n).
-  do 2 rewrite <- (Rmult_comm (Rabs y ^ n)).
-  apply Rmult_le_compat_l.
-  apply pow_le; apply Rabs_pos.
-  assumption.
-  apply Rmult_le_compat_l.
-  apply H0.
-  apply Hrecn.
-  apply Rle_trans with (Rabs y); [ apply Rabs_pos | exact H ].
+  - intro; apply Rle_trans with (Rabs y ^ n).
+    + apply pow_Rabs.
+    + induction  n as [| n Hrecn].
+      * right; reflexivity.
+      * simpl; apply Rle_trans with (x * Rabs y ^ n).
+        -- do 2 rewrite <- (Rmult_comm (Rabs y ^ n)).
+           apply Rmult_le_compat_l.
+           ++ apply pow_le; apply Rabs_pos.
+           ++ assumption.
+        -- apply Rmult_le_compat_l.
+           ++ apply H0.
+           ++ apply Hrecn.
+  - apply Rle_trans with (Rabs y); [ apply Rabs_pos | exact H ].
 Qed.
 
 Lemma Rsqr_pow2 : forall x, Rsqr x = x ^ 2.
@@ -631,12 +632,12 @@ Proof.
   intros m1 H'; rewrite SuccNat2Pos.id_succ; simpl.
   replace (Zpower_nat (Z.of_nat n) (S m1)) with
   (Z.of_nat n * Zpower_nat (Z.of_nat n) m1)%Z.
-  rewrite mult_IZR; auto with real.
-  repeat rewrite <- INR_IZR_INZ; simpl.
-  rewrite H'; simpl.
-  case m1; simpl; auto with real.
-  intros m2; rewrite SuccNat2Pos.id_succ; auto.
-  unfold Zpower_nat; auto.
+  - rewrite mult_IZR; auto with real.
+    repeat rewrite <- INR_IZR_INZ; simpl.
+    rewrite H'; simpl.
+    case m1; simpl; auto with real.
+    intros m2; rewrite SuccNat2Pos.id_succ; auto.
+  - unfold Zpower_nat; auto.
 Qed.
 
 Lemma Zpower_pos_powerRZ :
@@ -645,10 +646,10 @@ Proof.
   intros.
   rewrite Zpower_pos_nat; simpl.
   induction (Pos.to_nat m).
-  easy.
-  unfold Zpower_nat; simpl.
-  rewrite mult_IZR.
-  now rewrite <- IHn0.
+  - easy.
+  - unfold Zpower_nat; simpl.
+    rewrite mult_IZR.
+    now rewrite <- IHn0.
 Qed.
 
 Lemma powerRZ_lt : forall (x:R) (z:Z), 0 < x -> 0 < x ^Z z.
@@ -669,21 +670,21 @@ Lemma Zpower_nat_powerRZ_absolu :
   forall n m:Z, (0 <= m)%Z -> IZR (Zpower_nat n (Z.abs_nat m)) = IZR n ^Z m.
 Proof.
   intros n m; case m; simpl; auto with zarith.
-  intros p H'; elim (Pos.to_nat p); simpl; auto with zarith.
-  intros n0 H'0; rewrite <- H'0; simpl; auto with zarith.
-  rewrite <- mult_IZR; auto.
-  intros p H'; absurd (0 <= Zneg p)%Z; auto with zarith.
+  - intros p H'; elim (Pos.to_nat p); simpl; auto with zarith.
+    intros n0 H'0; rewrite <- H'0; simpl; auto with zarith.
+    rewrite <- mult_IZR; auto.
+  - intros p H'; absurd (0 <= Zneg p)%Z; auto with zarith.
 Qed.
 
 Lemma powerRZ_R1 : forall n:Z, 1 ^Z n = 1.
 Proof.
   intros n; case n; simpl; auto.
-  intros p; elim (Pos.to_nat p); simpl; auto; intros n0 H'; rewrite H';
-    ring.
-  intros p; elim (Pos.to_nat p); simpl.
-  exact Rinv_1.
-  intros n1 H'; rewrite Rinv_mult; try rewrite Rinv_1; try rewrite H';
-    auto with real.
+  - intros p; elim (Pos.to_nat p); simpl; auto; intros n0 H'; rewrite H';
+      ring.
+  - intros p; elim (Pos.to_nat p); simpl.
+    + exact Rinv_1.
+    + intros n1 H'; rewrite Rinv_mult; try rewrite Rinv_1; try rewrite H';
+        auto with real.
 Qed.
 
 Local Open Scope Z_scope.
@@ -821,10 +822,10 @@ Lemma GP_finite :
     sum_f_R0 (fun n:nat => x ^ n) n * (x - 1) = x ^ (n + 1) - 1.
 Proof.
   intros; induction  n as [| n Hrecn]; simpl.
-  ring.
-  rewrite Rmult_plus_distr_r; rewrite Hrecn; cut ((n + 1)%nat = S n).
-  intro H; rewrite H; simpl; ring.
-  apply Nat.add_1_r.
+  - ring.
+  - rewrite Rmult_plus_distr_r; rewrite Hrecn; cut ((n + 1)%nat = S n).
+    + intro H; rewrite H; simpl; ring.
+    + apply Nat.add_1_r.
 Qed.
 
 Lemma sum_f_R0_triangle :
@@ -832,16 +833,16 @@ Lemma sum_f_R0_triangle :
     Rabs (sum_f_R0 x n) <= sum_f_R0 (fun i:nat => Rabs (x i)) n.
 Proof.
   intro; simple induction n; simpl.
-  unfold Rle; right; reflexivity.
-  intro m; intro;
-    apply
-      (Rle_trans (Rabs (sum_f_R0 x m + x (S m)))
-        (Rabs (sum_f_R0 x m) + Rabs (x (S m)))
-        (sum_f_R0 (fun i:nat => Rabs (x i)) m + Rabs (x (S m)))).
-  apply Rabs_triang.
-  rewrite Rplus_comm;
-    rewrite (Rplus_comm (sum_f_R0 (fun i:nat => Rabs (x i)) m) (Rabs (x (S m))));
-      apply Rplus_le_compat_l; assumption.
+  - unfold Rle; right; reflexivity.
+  - intro m; intro;
+      apply
+        (Rle_trans (Rabs (sum_f_R0 x m + x (S m)))
+                   (Rabs (sum_f_R0 x m) + Rabs (x (S m)))
+                   (sum_f_R0 (fun i:nat => Rabs (x i)) m + Rabs (x (S m)))).
+    + apply Rabs_triang.
+    + rewrite Rplus_comm;
+        rewrite (Rplus_comm (sum_f_R0 (fun i:nat => Rabs (x i)) m) (Rabs (x (S m))));
+        apply Rplus_le_compat_l; assumption.
 Qed.
 
 (*******************************)
@@ -856,19 +857,19 @@ Lemma R_dist_pos : forall x y:R, R_dist x y >= 0.
 Proof.
   intros; unfold R_dist; unfold Rabs; case (Rcase_abs (x - y));
     intro l.
-  unfold Rge; left; apply (Ropp_gt_lt_0_contravar (x - y) l).
-  trivial.
+  - unfold Rge; left; apply (Ropp_gt_lt_0_contravar (x - y) l).
+  - trivial.
 Qed.
 
 (*********)
 Lemma R_dist_sym : forall x y:R, R_dist x y = R_dist y x.
 Proof.
   unfold R_dist; intros; split_Rabs; try ring.
-  generalize (Ropp_gt_lt_0_contravar (y - x) Hlt0); intro;
-    rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 Hlt);
+  - generalize (Ropp_gt_lt_0_contravar (y - x) Hlt0); intro;
+      rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 Hlt);
       intro; unfold Rgt in H; exfalso; auto.
-  generalize (minus_Rge y x Hge0); intro; generalize (minus_Rge x y Hge); intro;
-    generalize (Rge_antisym x y H0 H); intro; rewrite H1;
+  - generalize (minus_Rge y x Hge0); intro; generalize (minus_Rge x y Hge); intro;
+      generalize (Rge_antisym x y H0 H); intro; rewrite H1;
       ring.
 Qed.
 
@@ -876,12 +877,12 @@ Qed.
 Lemma R_dist_refl : forall x y:R, R_dist x y = 0 <-> x = y.
 Proof.
   unfold R_dist; intros; split_Rabs; split; intros.
-  rewrite (Ropp_minus_distr x y) in H; symmetry;
-    apply (Rminus_diag_uniq y x H).
-  rewrite (Ropp_minus_distr x y); generalize (eq_sym H); intro;
-    apply (Rminus_diag_eq y x H0).
-  apply (Rminus_diag_uniq x y H).
-  apply (Rminus_diag_eq x y H).
+  - rewrite (Ropp_minus_distr x y) in H; symmetry;
+      apply (Rminus_diag_uniq y x H).
+  - rewrite (Ropp_minus_distr x y); generalize (eq_sym H); intro;
+      apply (Rminus_diag_eq y x H0).
+  - apply (Rminus_diag_uniq x y H).
+  - apply (Rminus_diag_eq x y H).
 Qed.
 
 Lemma R_dist_eq : forall x:R, R_dist x x = 0.
@@ -902,8 +903,8 @@ Lemma R_dist_plus :
 Proof.
   intros; unfold R_dist;
     replace (a + c - (b + d)) with (a - b + (c - d)).
-  exact (Rabs_triang (a - b) (c - d)).
-  ring.
+  - exact (Rabs_triang (a - b) (c - d)).
+  - ring.
 Qed.
 
 Lemma R_dist_mult_l : forall a b c,

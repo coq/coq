@@ -40,12 +40,12 @@ Qed.
 Theorem le_0_l : forall n, 0 <= n.
 Proof.
 intro n; nzinduct n.
-now apply eq_le_incl.
-intro n; split.
-apply le_le_succ_r.
-intro H; apply le_succ_r in H; destruct H as [H | H].
-assumption.
-symmetry in H; false_hyp H neq_succ_0.
+- now apply eq_le_incl.
+- intro n; split.
+  + apply le_le_succ_r.
+  + intro H; apply le_succ_r in H; destruct H as [H | H].
+    * assumption.
+    * symmetry in H; false_hyp H neq_succ_0.
 Qed.
 
 Theorem induction :
@@ -53,7 +53,8 @@ Theorem induction :
     A 0 -> (forall n, A n -> A (S n)) -> forall n, A n.
 Proof.
 intros A A_wd A0 AS n; apply right_induction with 0; try assumption.
-intros; auto; apply le_0_l. apply le_0_l.
+- intros; auto; apply le_0_l.
+- apply le_0_l.
 Qed.
 
 (** The theorems [bi_induction], [central_induction] and the tactic [nzinduct]
@@ -81,42 +82,45 @@ Qed.
 
 Theorem neq_0_r n : n ~= 0 <-> exists m, n == S m.
 Proof.
-cases n. split; intro H;
-[now elim H | destruct H as [m H]; symmetry in H; false_hyp H neq_succ_0].
-intro n; split; intro H; [now exists n | apply neq_succ_0].
+  cases n.
+  - split; intro H;[now elim H | destruct H as [m H];
+    symmetry in H; false_hyp H neq_succ_0].
+  - intro n; split; intro H; [now exists n | apply neq_succ_0].
 Qed.
 
 Theorem zero_or_succ n : n == 0 \/ exists m, n == S m.
 Proof.
 cases n.
-now left.
-intro n; right; now exists n.
+- now left.
+- intro n; right; now exists n.
 Qed.
 
 Theorem eq_pred_0 n : P n == 0 <-> n == 0 \/ n == 1.
 Proof.
 cases n.
-rewrite pred_0. now split; [left|].
-intro n. rewrite pred_succ.
-split. intros H; right. now rewrite H, one_succ.
-intros [H|H]. elim (neq_succ_0 _ H).
-apply succ_inj_wd. now rewrite <- one_succ.
+- rewrite pred_0. now split; [left|].
+- intro n. rewrite pred_succ.
+  split.
+  + intros H; right. now rewrite H, one_succ.
+  + intros [H|H].
+    * elim (neq_succ_0 _ H).
+    * apply succ_inj_wd. now rewrite <- one_succ.
 Qed.
 
 Theorem succ_pred n : n ~= 0 -> S (P n) == n.
 Proof.
 cases n.
-intro H; exfalso; now apply H.
-intros; now rewrite pred_succ.
+- intro H; exfalso; now apply H.
+- intros; now rewrite pred_succ.
 Qed.
 
 Theorem pred_inj n m : n ~= 0 -> m ~= 0 -> P n == P m -> n == m.
 Proof.
 cases n.
-intros H; exfalso; now apply H.
-intros n _; cases m.
-intros H; exfalso; now apply H.
-intros m H2 H3. do 2 rewrite pred_succ in H3. now rewrite H3.
+- intros H; exfalso; now apply H.
+- intros n _; cases m.
+  + intros H; exfalso; now apply H.
+  + intros m H2 H3. do 2 rewrite pred_succ in H3. now rewrite H3.
 Qed.
 
 (** The following induction principle is useful for reasoning about, e.g.,
@@ -152,10 +156,12 @@ Theorem two_dim_induction :
    (forall n, (forall m, R n m) -> R (S n) 0) -> forall n m, R n m.
 Proof.
 intros H1 H2 H3. intro n; induct n.
-intro m; induct m.
-exact H1. exact (H2 0).
-intros n IH. intro m; induct m.
-now apply H3. exact (H2 (S n)).
+- intro m; induct m.
+  + exact H1.
+  + exact (H2 0).
+- intros n IH. intro m; induct m.
+  + now apply H3.
+  + exact (H2 (S n)).
 Qed.
 
 End TwoDimensionalInduction.

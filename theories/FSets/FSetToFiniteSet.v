@@ -54,8 +54,8 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  Proof.
  unfold Same_set, Included, mkEns, In.
  split; intros.
- destruct(H x H0).
- inversion H0.
+ - destruct(H x H0).
+ - inversion H0.
  Qed.
 
  Lemma singleton_Singleton : forall x, !!(M.singleton x) === Singleton _ x .
@@ -80,23 +80,23 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  Proof.
  unfold Same_set, Included, mkEns, In.
  split; intro; set_iff; inversion 1; auto with sets.
- inversion H0.
- constructor 2; constructor.
- constructor 1; auto.
+ - inversion H0.
+   constructor 2; constructor.
+ - constructor 1; auto.
  Qed.
 
  Lemma Add_Add : forall x s s', MP.Add x s s' -> !!s' === Add _ (!!s) x.
  Proof.
  unfold Same_set, Included, mkEns, In.
  split; intros.
- red in H; rewrite H in H0.
- destruct H0.
- inversion H0.
- constructor 2; constructor.
- constructor 1; auto.
- red in H; rewrite H.
- inversion H0; auto.
- inversion H1; auto.
+ - red in H; rewrite H in H0.
+   destruct H0.
+   + inversion H0.
+     constructor 2; constructor.
+   + constructor 1; auto.
+ - red in H; rewrite H.
+   inversion H0; auto.
+   inversion H1; auto.
  Qed.
 
  Lemma remove_Subtract : forall x s, !!(remove x s) === Subtract _ (!!s) x.
@@ -111,26 +111,26 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  Lemma mkEns_Finite : forall s, Finite _ (!!s).
  Proof.
  intro s; pattern s; apply set_induction; clear s; intros.
- intros; replace (!!s) with (Empty_set elt); auto with sets.
- symmetry; apply Extensionality_Ensembles.
- apply Empty_Empty_set; auto.
- replace (!!s') with (Add _ (!!s) x).
- constructor 2; auto.
- symmetry; apply Extensionality_Ensembles.
- apply Add_Add; auto.
+ - intros; replace (!!s) with (Empty_set elt); auto with sets.
+   symmetry; apply Extensionality_Ensembles.
+   apply Empty_Empty_set; auto.
+ - replace (!!s') with (Add _ (!!s) x).
+   + constructor 2; auto.
+   + symmetry; apply Extensionality_Ensembles.
+     apply Add_Add; auto.
  Qed.
 
  Lemma mkEns_cardinal : forall s, cardinal _ (!!s) (M.cardinal s).
  Proof.
  intro s; pattern s; apply set_induction; clear s; intros.
- intros; replace (!!s) with (Empty_set elt); auto with sets.
- rewrite cardinal_1; auto with sets.
- symmetry; apply Extensionality_Ensembles.
- apply Empty_Empty_set; auto.
- replace (!!s') with (Add _ (!!s) x).
- rewrite (cardinal_2 H0 H1); auto with sets.
- symmetry; apply Extensionality_Ensembles.
- apply Add_Add; auto.
+ - intros; replace (!!s) with (Empty_set elt); auto with sets.
+   + rewrite cardinal_1; auto with sets.
+   + symmetry; apply Extensionality_Ensembles.
+     apply Empty_Empty_set; auto.
+ - replace (!!s') with (Add _ (!!s) x).
+   + rewrite (cardinal_2 H0 H1); auto with sets.
+   + symmetry; apply Extensionality_Ensembles.
+     apply Add_Add; auto.
  Qed.
 
  (** we can even build a function from Finite Ensemble to FSet
@@ -140,13 +140,13 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
    exists s:M.t, !!s === e.
  Proof.
  induction 1.
- exists M.empty.
- apply empty_Empty_Set.
- destruct IHFinite as (s,Hs).
- exists (M.add x s).
- apply Extensionality_Ensembles in Hs.
- rewrite <- Hs.
- apply add_Add.
+ - exists M.empty.
+   apply empty_Empty_Set.
+ - destruct IHFinite as (s,Hs).
+   exists (M.add x s).
+   apply Extensionality_Ensembles in Hs.
+   rewrite <- Hs.
+   apply add_Add.
  Qed.
 
 End WS_to_Finite_set.

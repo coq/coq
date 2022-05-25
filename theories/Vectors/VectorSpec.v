@@ -40,9 +40,10 @@ Proof.
 split.
 - revert n v1 v2; refine (@rect2 _ _ _ _ _); simpl.
   + reflexivity.
-  + intros n ? ? H ? ? H0. f_equal. apply (H0 Fin.F1 Fin.F1 eq_refl).
-    apply H. intros p1 p2 H1;
-    apply (H0 (Fin.FS p1) (Fin.FS p2) (f_equal (@Fin.FS n) H1)).
+  + intros n ? ? H ? ? H0. f_equal.
+    * apply (H0 Fin.F1 Fin.F1 eq_refl).
+    * apply H. intros p1 p2 H1;
+        apply (H0 (Fin.FS p1) (Fin.FS p2) (f_equal (@Fin.FS n) H1)).
 - intros; now f_equal.
 Qed.
 
@@ -99,7 +100,10 @@ refine (@Fin.rectS _ _ _); lazy beta; [ intros n v | intros n p H v ].
       (forall v0 : t A (S n), (shiftrepeat v0) [@ Fin.L_R 1 p ] = v0 [@p]) ->
       (shiftrepeat v) [@Fin.L_R 1 (Fin.FS p)] = v [@Fin.FS p]
     |_ => fun _ => True end v' with
-  |[] => I | cons _ h n t => _ end). destruct n. exact I. now simpl.
+          |[] => I | cons _ h n t => _ end).
+  destruct n.
+  + exact I.
+  + now simpl.
 Qed.
 
 Lemma shiftrepeat_last A: forall n (v: t A (S n)), last (shiftrepeat v) = last v.
@@ -245,7 +249,9 @@ Lemma take_idem : forall {A} p n (v:t A n)  le le',
 Proof.
   intros A p; induction p as [|p IHp]; intros n v le le'.
   - auto.
-  - destruct v. inversion le. simpl. apply f_equal. apply IHp.
+  - destruct v.
+    + inversion le.
+    + simpl. apply f_equal. apply IHp.
 Qed.
 
 Lemma take_app : forall {A} {n} (v:t A n) {m} (w:t A m) le, take n le (append v w) = v.
@@ -260,7 +266,9 @@ Lemma take_prf_irr : forall {A} p {n} (v:t A n) le le', take p le v = take p le'
 Proof.
   intros A p; induction p as [|p IHp]; intros n v le le'.
   - reflexivity.
-  - destruct v. inversion le. simpl. apply f_equal. apply IHp.
+  - destruct v.
+    + inversion le.
+    + simpl. apply f_equal. apply IHp.
 Qed.
 
 (** ** Properties of [uncons] and [splitat] *)

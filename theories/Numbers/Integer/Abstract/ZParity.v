@@ -30,10 +30,11 @@ Qed.
 Lemma even_opp : forall n, even (-n) = even n.
 Proof.
  assert (H : forall n, Even n -> Even (-n)).
-  intros n (m,H). exists (-m). rewrite mul_opp_r. now f_equiv.
+ { intros n (m,H). exists (-m). rewrite mul_opp_r. now f_equiv. }
  intros n. rewrite eq_iff_eq_true, !even_spec.
- split. rewrite <- (opp_involutive n) at 2. apply H.
- apply H.
+ split.
+ - rewrite <- (opp_involutive n) at 2. apply H.
+ - apply H.
 Qed.
 
 Lemma odd_opp : forall n, odd (-n) = odd n.

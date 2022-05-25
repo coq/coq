@@ -34,8 +34,8 @@ Qed.
 Theorem add_opp_r n m : n + (- m) == n - m.
 Proof.
 nzinduct m.
-now nzsimpl.
-intro m. rewrite opp_succ, sub_succ_r, add_pred_r. now rewrite pred_inj_wd.
+- now nzsimpl.
+- intro m. rewrite opp_succ, sub_succ_r, add_pred_r. now rewrite pred_inj_wd.
 Qed.
 
 Theorem sub_0_l n : 0 - n == - n.
@@ -69,8 +69,8 @@ Qed.
 Theorem sub_diag n : n - n == 0.
 Proof.
 nzinduct n.
-now nzsimpl.
-intro n. rewrite sub_succ_r, sub_succ_l; now rewrite pred_succ.
+- now nzsimpl.
+- intro n. rewrite sub_succ_r, sub_succ_l; now rewrite pred_succ.
 Qed.
 
 Theorem add_opp_diag_l n : - n + n == 0.
@@ -96,16 +96,16 @@ Qed.
 Theorem opp_involutive n : - (- n) == n.
 Proof.
 nzinduct n.
-now nzsimpl.
-intro n. rewrite opp_succ, opp_pred. now rewrite succ_inj_wd.
+- now nzsimpl.
+- intro n. rewrite opp_succ, opp_pred. now rewrite succ_inj_wd.
 Qed.
 
 Theorem opp_add_distr n m : - (n + m) == - n + (- m).
 Proof.
 nzinduct n.
-now nzsimpl.
-intro n. rewrite add_succ_l; do 2 rewrite opp_succ; rewrite add_pred_l.
-now rewrite pred_inj_wd.
+- now nzsimpl.
+- intro n. rewrite add_succ_l; do 2 rewrite opp_succ; rewrite add_pred_l.
+  now rewrite pred_inj_wd.
 Qed.
 
 Theorem opp_sub_distr n m : - (n - m) == - n + m.

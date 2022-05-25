@@ -70,10 +70,10 @@ Module OrderedType_from_Alt (O:OrderedTypeAlt) <: OrderedType.
  Proof.
  intros.
  case_eq (x ?= y); intros.
- apply EQ; auto.
- apply LT; auto.
- apply GT; red.
- rewrite compare_sym; rewrite H; auto.
+ - apply EQ; auto.
+ - apply LT; auto.
+ - apply GT; red.
+   rewrite compare_sym; rewrite H; auto.
  Defined.
 
  Definition eq_dec : forall x y, { eq x y } + { ~ eq x y }.

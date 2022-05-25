@@ -139,24 +139,24 @@ Proof.
       unfold IQmake_to_hexadecimal; simpl.
       set (n := Nat.iter _ _ _).
       case (Pos.eq_dec n 1); intro Hn.
-      exfalso; apply Hf.
-      { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
-      clear m; set (m := match n with 1%positive | _ => _ end).
-      replace m with (QArith_base.IQmake_to_hexadecimal (Z.of_hex_int (app_int i f)) n).
-      2:{ now unfold m; revert Hn; case n. }
-      unfold QArith_base.IQmake_to_hexadecimal, n; simpl.
-      rewrite nztail_to_hex_uint_pow16.
-      clear r; set (r := if _ <? _ then Some (Hexadecimal _ _) else Some _).
-      clear m; set (m := match nb_digits f with 0 => _ | _ => _ end).
-      replace m with r; [unfold r|now unfold m; revert Hf; case f].
-      rewrite HexadecimalZ.to_of, abs_norm, abs_app_int.
-      case Nat.ltb_spec; intro Hnf.
-      * rewrite (del_tail_app_int_exact _ _ Hnf).
-        rewrite (del_head_app_int_exact _ _ Hnf).
-        now rewrite (dnorm_i_exact _ _ Hnf).
-      * rewrite (unorm_app_r _ _ Hnf).
-        rewrite (iter_D0_unorm _ Hf).
-        now rewrite dnorm_i_exact'.
+      * exfalso; apply Hf.
+        { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
+      * clear m; set (m := match n with 1%positive | _ => _ end).
+        replace m with (QArith_base.IQmake_to_hexadecimal (Z.of_hex_int (app_int i f)) n).
+        2:{ now unfold m; revert Hn; case n. }
+        unfold QArith_base.IQmake_to_hexadecimal, n; simpl.
+        rewrite nztail_to_hex_uint_pow16.
+        clear r; set (r := if _ <? _ then Some (Hexadecimal _ _) else Some _).
+        clear m; set (m := match nb_digits f with 0 => _ | _ => _ end).
+        replace m with r; [unfold r|now unfold m; revert Hf; case f].
+        rewrite HexadecimalZ.to_of, abs_norm, abs_app_int.
+        case Nat.ltb_spec; intro Hnf.
+        -- rewrite (del_tail_app_int_exact _ _ Hnf).
+           rewrite (del_head_app_int_exact _ _ Hnf).
+           now rewrite (dnorm_i_exact _ _ Hnf).
+        -- rewrite (unorm_app_r _ _ Hnf).
+           rewrite (iter_D0_unorm _ Hf).
+           now rewrite dnorm_i_exact'.
   - unfold of_hexadecimal; simpl.
     rewrite <-(DecimalZ.to_of e).
     case (Z.of_int e); clear e; [|intro e..]; simpl.
@@ -175,24 +175,24 @@ Proof.
         unfold IQmake_to_hexadecimal; simpl.
         set (n := Nat.iter _ _ _).
         case (Pos.eq_dec n 1); intro Hn.
-        exfalso; apply Hf.
-        { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
-        clear m; set (m := match n with 1%positive | _ => _ end).
-        replace m with (QArith_base.IQmake_to_hexadecimal (Z.of_hex_int (app_int i f)) n).
-        2:{ now unfold m; revert Hn; case n. }
-        unfold QArith_base.IQmake_to_hexadecimal, n; simpl.
-        rewrite nztail_to_hex_uint_pow16.
-        clear r; set (r := if _ <? _ then Some (Hexadecimal _ _) else Some _).
-        clear m; set (m := match nb_digits f with 0 => _ | _ => _ end).
-        replace m with r; [unfold r|now unfold m; revert Hf; case f].
-        rewrite HexadecimalZ.to_of, abs_norm, abs_app_int.
-        case Nat.ltb_spec; intro Hnf.
-        -- rewrite (del_tail_app_int_exact _ _ Hnf).
-           rewrite (del_head_app_int_exact _ _ Hnf).
-           now rewrite (dnorm_i_exact _ _ Hnf).
-        -- rewrite (unorm_app_r _ _ Hnf).
-           rewrite (iter_D0_unorm _ Hf).
-           now rewrite dnorm_i_exact'.
+        -- exfalso; apply Hf.
+           { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
+        -- clear m; set (m := match n with 1%positive | _ => _ end).
+           replace m with (QArith_base.IQmake_to_hexadecimal (Z.of_hex_int (app_int i f)) n).
+           2:{ now unfold m; revert Hn; case n. }
+           unfold QArith_base.IQmake_to_hexadecimal, n; simpl.
+           rewrite nztail_to_hex_uint_pow16.
+           clear r; set (r := if _ <? _ then Some (Hexadecimal _ _) else Some _).
+           clear m; set (m := match nb_digits f with 0 => _ | _ => _ end).
+           replace m with r; [unfold r|now unfold m; revert Hf; case f].
+           rewrite HexadecimalZ.to_of, abs_norm, abs_app_int.
+           case Nat.ltb_spec; intro Hnf.
+           ++ rewrite (del_tail_app_int_exact _ _ Hnf).
+              rewrite (del_head_app_int_exact _ _ Hnf).
+              now rewrite (dnorm_i_exact _ _ Hnf).
+           ++ rewrite (unorm_app_r _ _ Hnf).
+              rewrite (iter_D0_unorm _ Hf).
+              now rewrite dnorm_i_exact'.
     + set (i' := match i with Pos _ => _ | _ => _ end).
       set (m := match Pos.to_uint e with Decimal.Nil => _ | _ => _ end).
       replace m with (HexadecimalExp i' f (Decimal.Pos (Pos.to_uint e))).
@@ -214,8 +214,8 @@ Proof.
         unfold IQmake_to_hexadecimal; simpl.
         set (n := Nat.iter _ _ _).
         case (Pos.eq_dec n 1); intro Hn.
-        exfalso; apply Hf.
-        { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
+        { exfalso; apply Hf.
+          now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
         clear m; set (m := match n with 1%positive | _ => _ end).
         replace m with (QArith_base.IQmake_to_hexadecimal (Z.of_hex_int (app_int i f)) n).
         2:{ now unfold m; revert Hn; case n. }
@@ -247,8 +247,8 @@ Proof.
         unfold IQmake_to_hexadecimal; simpl.
         set (n := Nat.iter _ _ _).
         case (Pos.eq_dec n 1); intro Hn.
-        exfalso; apply Hf.
-        { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
+        { exfalso; apply Hf.
+          now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
         clear m; set (m := match n with 1%positive | _ => _ end).
         replace m with (QArith_base.IQmake_to_hexadecimal (Z.of_hex_int (app_int i f)) n).
         2:{ now unfold m; revert Hn; case n. }
@@ -297,6 +297,8 @@ Qed.
 
 Lemma of_iff d d' : of_hexadecimal d = of_hexadecimal d' <-> dnorm d = dnorm d'.
 Proof.
-  split. apply of_inj. intros E. rewrite <- of_hexadecimal_dnorm, E.
-  apply of_hexadecimal_dnorm.
+  split.
+  - apply of_inj.
+  - intros E. rewrite <- of_hexadecimal_dnorm, E.
+    apply of_hexadecimal_dnorm.
 Qed.

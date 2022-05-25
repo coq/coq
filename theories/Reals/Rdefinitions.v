@@ -175,7 +175,7 @@ Qed.
 Lemma Req_appart_dec : forall x y : R,
     { x = y } + { x < y \/ y < x }.
 Proof.
-  intros. destruct (total_order_T x y). destruct s.
+  intros. destruct (total_order_T x y). 1:destruct s.
   - right. left. exact r.
   - left. exact e.
   - right. right. exact r.
@@ -185,10 +185,10 @@ Lemma Rrepr_appart_0 : forall x:R,
     (x < R0 \/ R0 < x) -> CReal_appart (Rrepr x) (inject_Q 0).
 Proof.
   intros. apply CRealLtDisjunctEpsilon. destruct H.
-  left. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H.
-  exact H.
-  right. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H.
-  exact H.
+  - left. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H.
+    exact H.
+  - right. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H.
+    exact H.
 Qed.
 
 Module Type RinvSig.
@@ -220,7 +220,7 @@ Infix "/" := Rdiv   : R_scope.
 Definition up (x : R) : Z.
 Proof.
   destruct (CRealArchimedean (Rrepr x)) as [n nmaj], (total_order_T (IZR n - x) R1).
-  destruct s.
+  1:destruct s.
   - exact n.
   - (* x = n-1 *) exact n.
   - exact (Z.pred n).

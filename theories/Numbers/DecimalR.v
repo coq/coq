@@ -149,8 +149,8 @@ Proof.
       unfold IQmake_to_decimal; simpl.
       set (n := Nat.iter _ _ _).
       case (Pos.eq_dec n 1); intro Hn.
-      exfalso; apply Hf.
-      { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
+      { exfalso; apply Hf.
+        now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
       clear m; set (m := match n with 1%positive | _ => _ end).
       replace m with (QArith_base.IQmake_to_decimal (Z.of_int (app_int i f)) n).
       2:{ now unfold m; revert Hn; case n. }
@@ -185,8 +185,8 @@ Proof.
         unfold IQmake_to_decimal; simpl.
         set (n := Nat.iter _ _ _).
         case (Pos.eq_dec n 1); intro Hn.
-        exfalso; apply Hf.
-        { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
+        { exfalso; apply Hf.
+          now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
         clear m; set (m := match n with 1%positive | _ => _ end).
         replace m with (QArith_base.IQmake_to_decimal (Z.of_int (app_int i f)) n).
         2:{ now unfold m; revert Hn; case n. }
@@ -224,8 +224,8 @@ Proof.
         unfold IQmake_to_decimal; simpl.
         set (n := Nat.iter _ _ _).
         case (Pos.eq_dec n 1); intro Hn.
-        exfalso; apply Hf.
-        { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
+        { exfalso; apply Hf.
+          now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
         clear m; set (m := match n with 1%positive | _ => _ end).
         replace m with (QArith_base.IQmake_to_decimal (Z.of_int (app_int i f)) n).
         2:{ now unfold m; revert Hn; case n. }
@@ -257,8 +257,8 @@ Proof.
         unfold IQmake_to_decimal; simpl.
         set (n := Nat.iter _ _ _).
         case (Pos.eq_dec n 1); intro Hn.
-        exfalso; apply Hf.
-        { now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
+        { exfalso; apply Hf.
+          now apply nb_digits_0; revert Hn; unfold n; case nb_digits. }
         clear m; set (m := match n with 1%positive | _ => _ end).
         replace m with (QArith_base.IQmake_to_decimal (Z.of_int (app_int i f)) n).
         2:{ now unfold m; revert Hn; case n. }
@@ -307,6 +307,8 @@ Qed.
 
 Lemma of_iff d d' : of_decimal d = of_decimal d' <-> dnorm d = dnorm d'.
 Proof.
-  split. apply of_inj. intros E. rewrite <- of_decimal_dnorm, E.
-  apply of_decimal_dnorm.
+  split.
+  - apply of_inj.
+  - intros E. rewrite <- of_decimal_dnorm, E.
+    apply of_decimal_dnorm.
 Qed.

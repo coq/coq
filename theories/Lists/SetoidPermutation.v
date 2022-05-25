@@ -121,8 +121,8 @@ Proof.
     { rewrite <-E2. intuition. }
     subst. transitivity (y :: l₁); [intuition |].
     apply PermutationA_cons_app, IHPl₁.
-    now apply NoDupA_split with y.
-    apply equivlistA_NoDupA_split with x y; intuition.
+    + now apply NoDupA_split with y.
+    + apply equivlistA_NoDupA_split with x y; intuition.
 Qed.
 
 Lemma Permutation_eqlistA_commute l₁ l₂ l₃ :
@@ -150,12 +150,16 @@ Proof.
  induction 1.
  - now exists nil.
  - destruct IHPermutationA as (l,(P,E)). exists (x₁::l); auto.
- - exists (x::y::l). split. constructor. reflexivity.
+ - exists (x::y::l). split.
+   + constructor.
+   + reflexivity.
  - destruct IHPermutationA1 as (l₁',(P,E)).
    destruct IHPermutationA2 as (l₂',(P',E')).
    destruct (@Permutation_eqlistA_commute l₁' l₂ l₂') as (l₁'',(P'',E''));
     trivial.
-   exists l₁''. split. now transitivity l₁'. now transitivity l₂'.
+   exists l₁''. split.
+   + now transitivity l₁'.
+   + now transitivity l₂'.
 Qed.
 
 Lemma Permutation_PermutationA l₁ l₂ :

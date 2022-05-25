@@ -39,9 +39,14 @@ Defined.
 Instance Zr: (@Ring _ _ _ _ _ _ _ _ Zops).
 Proof.
 constructor; try apply Zsth; try solve_proper.
- exact Z.add_comm. exact Z.add_assoc.
- exact Z.mul_1_l.  exact Z.mul_1_r. exact Z.mul_assoc.
- exact Z.mul_add_distr_r.  intros; apply Z.mul_add_distr_l.  exact Z.sub_diag.
+- exact Z.add_comm.
+- exact Z.add_assoc.
+- exact Z.mul_1_l.
+- exact Z.mul_1_r.
+- exact Z.mul_assoc.
+- exact Z.mul_add_distr_r.
+- intros; apply Z.mul_add_distr_l.
+- exact Z.sub_diag.
 Defined.
 
 (*Instance ZEquality: @Equality Z:= (@eq Z).*)
@@ -99,9 +104,9 @@ Ltac rsimpl := simpl.
  Lemma same_gen : forall x, gen_phiPOS1 x == gen_phiPOS x.
  Proof.
   induction x;rsimpl.
-  rewrite IHx. destruct x;simpl;norm.
-  rewrite IHx;destruct x;simpl;norm.
-  reflexivity.
+  - rewrite IHx. destruct x;simpl;norm.
+  - rewrite IHx;destruct x;simpl;norm.
+  - reflexivity.
  Qed.
 
  Lemma ARgen_phiPOS_Psucc : forall x,
@@ -115,24 +120,24 @@ Ltac rsimpl := simpl.
    gen_phiPOS1 (x + y) == (gen_phiPOS1 x) + (gen_phiPOS1 y).
  Proof.
   induction x;destruct y;simpl;norm.
-  rewrite Pos.add_carry_spec.
-  rewrite ARgen_phiPOS_Psucc.
-  rewrite IHx;norm.
-  add_push (gen_phiPOS1 y);add_push 1;reflexivity.
-  rewrite IHx;norm;add_push (gen_phiPOS1 y);reflexivity.
-  rewrite ARgen_phiPOS_Psucc;norm;add_push 1;reflexivity.
-  rewrite IHx;norm;add_push(gen_phiPOS1 y); add_push 1;reflexivity.
-  rewrite IHx;norm;add_push(gen_phiPOS1 y);reflexivity.
-  add_push 1;reflexivity.
-  rewrite ARgen_phiPOS_Psucc;norm;add_push 1;reflexivity.
+  - rewrite Pos.add_carry_spec.
+    rewrite ARgen_phiPOS_Psucc.
+    rewrite IHx;norm.
+    add_push (gen_phiPOS1 y);add_push 1;reflexivity.
+  - rewrite IHx;norm;add_push (gen_phiPOS1 y);reflexivity.
+  - rewrite ARgen_phiPOS_Psucc;norm;add_push 1;reflexivity.
+  - rewrite IHx;norm;add_push(gen_phiPOS1 y); add_push 1;reflexivity.
+  - rewrite IHx;norm;add_push(gen_phiPOS1 y);reflexivity.
+  - add_push 1;reflexivity.
+  - rewrite ARgen_phiPOS_Psucc;norm;add_push 1;reflexivity.
  Qed.
 
  Lemma ARgen_phiPOS_mult :
    forall x y, gen_phiPOS1 (x * y) == gen_phiPOS1 x * gen_phiPOS1 y.
  Proof.
   induction x;intros;simpl;norm.
-  rewrite ARgen_phiPOS_add;simpl;rewrite IHx;norm.
-  rewrite IHx;reflexivity.
+  - rewrite ARgen_phiPOS_add;simpl;rewrite IHx;norm.
+  - rewrite IHx;reflexivity.
  Qed.
 
 
@@ -173,12 +178,12 @@ Ltac rsimpl := simpl.
  Proof.
   intros x y; repeat rewrite same_genZ; generalize x y;clear x y.
   induction x;destruct y;simpl;norm.
-  apply ARgen_phiPOS_add.
-  apply gen_phiZ1_add_pos_neg. 
-   rewrite gen_phiZ1_add_pos_neg. rewrite ring_add_comm.
-reflexivity.
- rewrite ARgen_phiPOS_add. rewrite ring_opp_add. reflexivity.
-Qed.
+  - apply ARgen_phiPOS_add.
+  - apply gen_phiZ1_add_pos_neg.
+  - rewrite gen_phiZ1_add_pos_neg. rewrite ring_add_comm.
+    reflexivity.
+  - rewrite ARgen_phiPOS_add. rewrite ring_opp_add. reflexivity.
+ Qed.
 
 Lemma gen_phiZ_opp : forall x, [- x] == - [x].
  Proof.
@@ -203,12 +208,15 @@ Declare Equivalent Keys bracket gen_phiZ.
 Global Instance gen_phiZ_morph :
 (@Ring_morphism (Z:Type) R _ _ _ _ _ _ _ Zops Zr _ _ _ _ _ _ _ _ _ gen_phiZ) . (* beurk!*)
  apply Build_Ring_morphism; simpl;try reflexivity.
-   apply gen_phiZ_add. intros. rewrite ring_sub_def.
-replace (x-y)%Z with (x + (-y))%Z.
-now rewrite gen_phiZ_add, gen_phiZ_opp, ring_sub_def.
-reflexivity.
- apply gen_phiZ_mul. apply gen_phiZ_opp. apply gen_phiZ_ext.
- Defined.
+- apply gen_phiZ_add.
+- intros. rewrite ring_sub_def.
+  replace (x-y)%Z with (x + (-y))%Z.
+  + now rewrite gen_phiZ_add, gen_phiZ_opp, ring_sub_def.
+  + reflexivity.
+- apply gen_phiZ_mul.
+- apply gen_phiZ_opp.
+- apply gen_phiZ_ext.
+Defined.
 
 End ZMORPHISM.
 

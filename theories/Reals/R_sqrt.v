@@ -25,8 +25,8 @@ Proof.
   intros x.
   unfold sqrt.
   destruct (Rcase_abs x) as [H|H].
-  apply Rle_refl.
-  apply Rsqrt_positivity.
+  - apply Rle_refl.
+  - apply Rsqrt_positivity.
 Qed.
 
 Lemma sqrt_positivity : forall x:R, 0 <= x -> 0 <= sqrt x.
@@ -40,8 +40,8 @@ Proof.
   intros.
   unfold sqrt.
   case (Rcase_abs x) as [Hlt|Hge].
-  elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ Hlt H)).
-  rewrite Rsqrt_Rsqrt; reflexivity.
+  - elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ Hlt H)).
+  - rewrite Rsqrt_Rsqrt; reflexivity.
 Qed.
 
 Lemma sqrt_0 : sqrt 0 = 0.
@@ -61,8 +61,8 @@ Qed.
 Lemma sqrt_eq_0 : forall x:R, 0 <= x -> sqrt x = 0 -> x = 0.
 Proof.
   intros; cut (Rsqr (sqrt x) = 0).
-  intro; unfold Rsqr in H1; rewrite sqrt_sqrt in H1; assumption.
-  rewrite H0; apply Rsqr_0.
+  - intro; unfold Rsqr in H1; rewrite sqrt_sqrt in H1; assumption.
+  - rewrite H0; apply Rsqr_0.
 Qed.
 
 Lemma sqrt_lem_0 : forall x y:R, 0 <= x -> 0 <= y -> sqrt x = y -> y * y = x.
@@ -119,28 +119,28 @@ Proof.
   intros x y Hx.
   unfold sqrt at 3.
   destruct (Rcase_abs y) as [Hy|Hy].
-  rewrite Rmult_0_r.
-  destruct Hx as [Hx'|Hx'].
-  unfold sqrt.
-  destruct (Rcase_abs (x * y)) as [Hxy|Hxy].
-  apply eq_refl.
-  elim Rge_not_lt with (1 := Hxy).
-  rewrite <- (Rmult_0_r x).
-  now apply Rmult_lt_compat_l.
-  rewrite <- Hx', Rmult_0_l.
-  exact sqrt_0.
-  apply Rsqr_inj.
-  apply sqrt_pos.
-  apply Rmult_le_pos.
-  apply sqrt_pos.
-  apply Rsqrt_positivity.
-  rewrite Rsqr_mult, 2!Rsqr_sqrt.
-  unfold Rsqr.
-  now rewrite Rsqrt_Rsqrt.
-  exact Hx.
-  apply Rmult_le_pos.
-  exact Hx.
-  now apply Rge_le.
+  - rewrite Rmult_0_r.
+    destruct Hx as [Hx'|Hx'].
+    + unfold sqrt.
+      destruct (Rcase_abs (x * y)) as [Hxy|Hxy].
+      * apply eq_refl.
+      * elim Rge_not_lt with (1 := Hxy).
+        rewrite <- (Rmult_0_r x).
+        now apply Rmult_lt_compat_l.
+    + rewrite <- Hx', Rmult_0_l.
+      exact sqrt_0.
+  - apply Rsqr_inj.
+    + apply sqrt_pos.
+    + apply Rmult_le_pos.
+      * apply sqrt_pos.
+      * apply Rsqrt_positivity.
+    + rewrite Rsqr_mult, 2!Rsqr_sqrt.
+      * unfold Rsqr.
+        now rewrite Rsqrt_Rsqrt.
+      * exact Hx.
+      * apply Rmult_le_pos.
+        -- exact Hx.
+        -- now apply Rge_le.
 Qed.
 
 Lemma sqrt_mult :
@@ -161,17 +161,17 @@ Qed.
 Lemma Rlt_mult_inv_pos : forall x y:R, 0 < x -> 0 < y -> 0 < x * / y.
 intros x y H H0; try assumption.
 replace 0 with (x * 0).
-apply Rmult_lt_compat_l; auto with real.
-ring.
+- apply Rmult_lt_compat_l; auto with real.
+- ring.
 Qed.
 
 Lemma Rle_mult_inv_pos : forall x y:R, 0 <= x -> 0 < y -> 0 <= x * / y.
 intros x y H H0; try assumption.
 case H; intros.
-red; left.
-apply Rlt_mult_inv_pos; auto with real.
-rewrite <- H1.
-red; right; ring.
+- red; left.
+  apply Rlt_mult_inv_pos; auto with real.
+- rewrite <- H1.
+  red; right; ring.
 Qed.
 
 Lemma sqrt_div_alt :
@@ -180,29 +180,29 @@ Proof.
   intros x y Hy.
   unfold sqrt at 2.
   destruct (Rcase_abs x) as [Hx|Hx].
-  unfold Rdiv.
-  rewrite Rmult_0_l.
-  unfold sqrt.
-  destruct (Rcase_abs (x * / y)) as [Hxy|Hxy].
-  apply eq_refl.
-  elim Rge_not_lt with (1 := Hxy).
-  apply Rmult_lt_reg_r with y.
-  exact Hy.
-  rewrite Rmult_assoc, Rinv_l, Rmult_1_r, Rmult_0_l.
-  exact Hx.
-  now apply Rgt_not_eq.
-  set (Hx' := Rge_le x 0 Hx).
-  clearbody Hx'. clear Hx.
-  apply Rsqr_inj.
-  apply sqrt_pos.
-  apply Rle_mult_inv_pos.
-  apply Rsqrt_positivity.
-  now apply sqrt_lt_R0.
-  rewrite Rsqr_div', 2!Rsqr_sqrt.
-  unfold Rsqr.
-  now rewrite Rsqrt_Rsqrt.
-  now apply Rlt_le.
-  now apply Rle_mult_inv_pos.
+  - unfold Rdiv.
+    rewrite Rmult_0_l.
+    unfold sqrt.
+    destruct (Rcase_abs (x * / y)) as [Hxy|Hxy].
+    + apply eq_refl.
+    + elim Rge_not_lt with (1 := Hxy).
+      apply Rmult_lt_reg_r with y.
+      * exact Hy.
+      * rewrite Rmult_assoc, Rinv_l, Rmult_1_r, Rmult_0_l.
+        -- exact Hx.
+        -- now apply Rgt_not_eq.
+  - set (Hx' := Rge_le x 0 Hx).
+    clearbody Hx'. clear Hx.
+    apply Rsqr_inj.
+    + apply sqrt_pos.
+    + apply Rle_mult_inv_pos.
+      * apply Rsqrt_positivity.
+      * now apply sqrt_lt_R0.
+    + rewrite Rsqr_div', 2!Rsqr_sqrt.
+      * unfold Rsqr.
+        now rewrite Rsqrt_Rsqrt.
+      * now apply Rlt_le.
+      * now apply Rle_mult_inv_pos.
 Qed.
 
 Lemma sqrt_div :
@@ -218,19 +218,19 @@ Proof.
   intros x y.
   unfold sqrt at 2.
   destruct (Rcase_abs y) as [Hy|Hy].
-  intros Hx.
-  elim Rlt_not_le with (1 := Hx).
-  apply sqrt_pos.
-  set (Hy' := Rge_le y 0 Hy).
-  clearbody Hy'. clear Hy.
-  unfold sqrt.
-  destruct (Rcase_abs x) as [Hx|Hx].
-  intros _.
-  now apply Rlt_le_trans with R0.
-  intros Hxy.
-  apply Rsqr_incrst_1 in Hxy ; try apply Rsqrt_positivity.
-  unfold Rsqr in Hxy.
-  now rewrite 2!Rsqrt_Rsqrt in Hxy.
+  - intros Hx.
+    elim Rlt_not_le with (1 := Hx).
+    apply sqrt_pos.
+  - set (Hy' := Rge_le y 0 Hy).
+    clearbody Hy'. clear Hy.
+    unfold sqrt.
+    destruct (Rcase_abs x) as [Hx|Hx].
+    + intros _.
+      now apply Rlt_le_trans with R0.
+    + intros Hxy.
+      apply Rsqr_incrst_1 in Hxy ; try apply Rsqrt_positivity.
+      unfold Rsqr in Hxy.
+      now rewrite 2!Rsqrt_Rsqrt in Hxy.
 Qed.
 
 Lemma sqrt_lt_0 : forall x y:R, 0 <= x -> 0 <= y -> sqrt x < sqrt y -> x < y.
@@ -245,10 +245,10 @@ Proof.
   intros x y (Hx, Hxy).
   apply Rsqr_incrst_0 ; try apply sqrt_pos.
   rewrite 2!Rsqr_sqrt.
-  exact Hxy.
-  apply Rlt_le.
-  now apply Rle_lt_trans with x.
-  exact Hx.
+  - exact Hxy.
+  - apply Rlt_le.
+    now apply Rle_lt_trans with x.
+  - exact Hx.
 Qed.
 
 Lemma sqrt_lt_1 : forall x y:R, 0 <= x -> 0 <= y -> x < y -> sqrt x < sqrt y.
@@ -272,16 +272,16 @@ Lemma sqrt_le_1_alt :
   forall x y : R, x <= y -> sqrt x <= sqrt y.
 Proof.
   intros x y [Hxy|Hxy].
-  destruct (Rle_or_lt 0 x) as [Hx|Hx].
-  apply Rlt_le.
-  apply sqrt_lt_1_alt.
-  now split.
-  unfold sqrt at 1.
-  destruct (Rcase_abs x) as [Hx'|Hx'].
-  apply sqrt_pos.
-  now elim Rge_not_lt with (1 := Hx').
-  rewrite Hxy.
-  apply Rle_refl.
+  - destruct (Rle_or_lt 0 x) as [Hx|Hx].
+    + apply Rlt_le.
+      apply sqrt_lt_1_alt.
+      now split.
+    + unfold sqrt at 1.
+      destruct (Rcase_abs x) as [Hx'|Hx'].
+      * apply sqrt_pos.
+      * now elim Rge_not_lt with (1 := Hx').
+  - rewrite Hxy.
+    apply Rle_refl.
 Qed.
 
 Lemma sqrt_le_1 :
@@ -302,9 +302,9 @@ Qed.
 Lemma sqrt_inj : forall x y:R, 0 <= x -> 0 <= y -> sqrt x = sqrt y -> x = y.
 Proof.
   intros; cut (Rsqr (sqrt x) = Rsqr (sqrt y)).
-  intro; rewrite (Rsqr_sqrt x H) in H2; rewrite (Rsqr_sqrt y H0) in H2;
-    assumption.
-  rewrite H1; reflexivity.
+  - intro; rewrite (Rsqr_sqrt x H) in H2; rewrite (Rsqr_sqrt y H0) in H2;
+      assumption.
+  - rewrite H1; reflexivity.
 Qed.
 
 Lemma sqrt_less_alt :
@@ -314,10 +314,10 @@ Proof.
   assert (Hx1 := Rle_lt_trans _ _ _ Rle_0_1 Hx).
   assert (Hx2 := Rlt_le _ _ Hx1).
   apply Rsqr_incrst_0 ; trivial.
-  rewrite Rsqr_sqrt ; trivial.
-  rewrite <- (Rmult_1_l x) at 1.
-  now apply Rmult_lt_compat_r.
-  apply sqrt_pos.
+  - rewrite Rsqr_sqrt ; trivial.
+    rewrite <- (Rmult_1_l x) at 1.
+    now apply Rmult_lt_compat_r.
+  - apply sqrt_pos.
 Qed.
 
 Lemma sqrt_less : forall x:R, 0 <= x -> 1 < x -> sqrt x < x.
@@ -339,22 +339,22 @@ Qed.
 Lemma sqrt_inv x : sqrt (/ x) = / sqrt x.
 Proof.
 destruct (Rlt_or_le 0 x) as [H|H].
-assert (sqrt x <> 0).
-  apply Rgt_not_eq.
-  now apply sqrt_lt_R0.
-apply Rmult_eq_reg_r with (sqrt x); auto.
-rewrite Rinv_l; auto.
-rewrite <- sqrt_mult_alt.
-  now rewrite -> Rinv_l, sqrt_1; auto with real.
-apply Rlt_le.
-now apply Rinv_0_lt_compat.
-rewrite sqrt_neg_0 with (1 := H).
-rewrite sqrt_neg_0.
-apply eq_sym, Rinv_0.
-destruct H as [H| ->].
-now apply Rlt_le, Rinv_lt_0_compat.
-rewrite Rinv_0.
-apply Rle_refl.
+- assert (sqrt x <> 0).
+  + apply Rgt_not_eq.
+    now apply sqrt_lt_R0.
+  + apply Rmult_eq_reg_r with (sqrt x); auto.
+    rewrite Rinv_l; auto.
+    rewrite <- sqrt_mult_alt.
+    * now rewrite -> Rinv_l, sqrt_1; auto with real.
+    * apply Rlt_le.
+      now apply Rinv_0_lt_compat.
+- rewrite sqrt_neg_0 with (1 := H).
+  rewrite sqrt_neg_0.
+  + apply eq_sym, Rinv_0.
+  + destruct H as [H| ->].
+    * now apply Rlt_le, Rinv_lt_0_compat.
+    * rewrite Rinv_0.
+      apply Rle_refl.
 Qed.
 
 Lemma inv_sqrt_depr x : 0 < x -> / sqrt x = sqrt (/ x).
@@ -416,22 +416,22 @@ Lemma Rsqr_sol_eq_0_1 :
     x = sol_x1 a b c \/ x = sol_x2 a b c -> a * Rsqr x + b * x + c = 0.
 Proof.
   intros; elim H0; intro.
-  rewrite H1.
-  unfold sol_x1, Delta, Rsqr.
-  field_simplify.
-  rewrite <- (Rsqr_pow2 (sqrt _)), Rsqr_sqrt.
-  field.
-  apply a.
-  apply H.
-  apply a.
-  rewrite H1.
-  unfold sol_x2, Delta, Rsqr.
-  field_simplify.
-  rewrite <- (Rsqr_pow2 (sqrt _)), Rsqr_sqrt.
-  field.
-  apply a.
-  apply H.
-  apply a.
+  - rewrite H1.
+    unfold sol_x1, Delta, Rsqr.
+    field_simplify.
+    + rewrite <- (Rsqr_pow2 (sqrt _)), Rsqr_sqrt.
+      * field.
+        apply a.
+      * apply H.
+    + apply a.
+  - rewrite H1.
+    unfold sol_x2, Delta, Rsqr.
+    field_simplify.
+    + rewrite <- (Rsqr_pow2 (sqrt _)), Rsqr_sqrt.
+      * field.
+        apply a.
+      * apply H.
+    + apply a.
 Qed.
 
 Lemma Rsqr_sol_eq_0_0 :
@@ -440,51 +440,47 @@ Lemma Rsqr_sol_eq_0_0 :
     a * Rsqr x + b * x + c = 0 -> x = sol_x1 a b c \/ x = sol_x2 a b c.
 Proof.
   intros; rewrite (canonical_Rsqr a b c x) in H0; rewrite Rplus_comm in H0;
-    generalize
-      (Rplus_opp_r_uniq ((4 * a * c - Rsqr b) / (4 * a))
-        (a * Rsqr (x + b / (2 * a))) H0); cut (Rsqr b - 4 * a * c = Delta a b c).
-  intro;
-    replace (- ((4 * a * c - Rsqr b) / (4 * a))) with
+  generalize
+    (Rplus_opp_r_uniq ((4 * a * c - Rsqr b) / (4 * a))
+      (a * Rsqr (x + b / (2 * a))) H0);
+  assert (Rsqr b - 4 * a * c = Delta a b c) by reflexivity.
+  replace (- ((4 * a * c - Rsqr b) / (4 * a))) with
     ((Rsqr b - 4 * a * c) / (4 * a)).
+  2:{ unfold Rdiv; rewrite <- Ropp_mult_distr_l_reverse.
+      rewrite Ropp_minus_distr.
+      reflexivity. }
   rewrite H1; intro;
     generalize
       (Rmult_eq_compat_l (/ a) (a * Rsqr (x + b / (2 * a)))
         (Delta a b c / (4 * a)) H2);
-      replace (/ a * (a * Rsqr (x + b / (2 * a)))) with (Rsqr (x + b / (2 * a))).
+    replace (/ a * (a * Rsqr (x + b / (2 * a)))) with (Rsqr (x + b / (2 * a))).
+  2:{ rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+      - symmetry ; apply Rmult_1_l.
+      - apply (cond_nonzero a). }
   replace (/ a * (Delta a b c / (4 * a))) with
-  (Rsqr (sqrt (Delta a b c) / (2 * a))).
+    (Rsqr (sqrt (Delta a b c) / (2 * a))).
+  2:{ rewrite Rsqr_div'.
+      rewrite Rsqr_sqrt.
+      2:assumption.
+      unfold Rdiv.
+      rewrite (Rmult_comm (/ a)).
+      rewrite Rmult_assoc.
+      rewrite <- Rinv_mult.
+      replace (4 * a * a) with (Rsqr (2 * a)) by ring_Rsqr.
+      reflexivity. }
   intro;
     generalize (Rsqr_eq (x + b / (2 * a)) (sqrt (Delta a b c) / (2 * a)) H3);
       intro; elim H4; intro.
-  left; unfold sol_x1;
-    generalize
-      (Rplus_eq_compat_l (- (b / (2 * a))) (x + b / (2 * a))
-        (sqrt (Delta a b c) / (2 * a)) H5);
-      replace (- (b / (2 * a)) + (x + b / (2 * a))) with x.
-  intro; rewrite H6; unfold Rdiv; ring.
-  ring.
-  right; unfold sol_x2;
-    generalize
-      (Rplus_eq_compat_l (- (b / (2 * a))) (x + b / (2 * a))
-        (- (sqrt (Delta a b c) / (2 * a))) H5);
-      replace (- (b / (2 * a)) + (x + b / (2 * a))) with x.
-  intro; rewrite H6; unfold Rdiv; ring.
-  ring.
-  rewrite Rsqr_div'.
-  rewrite Rsqr_sqrt.
-  unfold Rdiv.
-  rewrite (Rmult_comm (/ a)).
-  rewrite Rmult_assoc.
-  rewrite <- Rinv_mult.
-  replace (4 * a * a) with (Rsqr (2 * a)).
-  reflexivity.
-  ring_Rsqr.
-  assumption.
-  rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
-  symmetry ; apply Rmult_1_l.
-  apply (cond_nonzero a).
-  unfold Rdiv; rewrite <- Ropp_mult_distr_l_reverse.
-  rewrite Ropp_minus_distr.
-  reflexivity.
-  reflexivity.
+  - left; unfold sol_x1;
+      generalize
+        (Rplus_eq_compat_l (- (b / (2 * a))) (x + b / (2 * a))
+                           (sqrt (Delta a b c) / (2 * a)) H5);
+      replace (- (b / (2 * a)) + (x + b / (2 * a))) with x by ring.
+    intro; rewrite H6; unfold Rdiv; ring.
+  - right; unfold sol_x2;
+      generalize
+        (Rplus_eq_compat_l (- (b / (2 * a))) (x + b / (2 * a))
+                           (- (sqrt (Delta a b c) / (2 * a))) H5);
+      replace (- (b / (2 * a)) + (x + b / (2 * a))) with x by ring.
+    intro; rewrite H6; unfold Rdiv; ring.
 Qed.

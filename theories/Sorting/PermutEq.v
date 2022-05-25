@@ -32,8 +32,8 @@ Section Perm.
     forall l a, In a l <-> 0 < multiplicity (list_contents l) a.
   Proof.
     intros; split; intro H.
-    eapply In_InA, multiplicity_InA in H; eauto with typeclass_instances.
-    eapply multiplicity_InA, InA_alt in H as (y & -> & H); eauto with typeclass_instances.
+    - eapply In_InA, multiplicity_InA in H; eauto with typeclass_instances.
+    - eapply multiplicity_InA, InA_alt in H as (y & -> & H); eauto with typeclass_instances.
   Qed.
 
   Lemma multiplicity_In_O :
@@ -54,26 +54,26 @@ Section Perm.
     forall l, NoDup l <-> (forall a, multiplicity (list_contents l) a <= 1).
   Proof.
     induction l.
-    simpl.
-    split; auto with arith.
-    intros; apply NoDup_nil.
-    split; simpl.
-    inversion_clear 1.
-    rewrite IHl in H1.
-    intros; destruct (eq_dec a a0) as [H2|H2]; simpl; auto.
-    subst a0.
-    rewrite multiplicity_In_O; auto.
-    intros; constructor.
-    rewrite multiplicity_In.
-    generalize (H a).
-    destruct (eq_dec a a) as [H0|H0].
-    destruct (multiplicity (list_contents l) a); auto with arith.
-    simpl; inversion 1.
-    inversion H3.
-    destruct H0; auto.
-    rewrite IHl; intros.
-    generalize (H a0); auto with arith.
-    destruct (eq_dec a a0); simpl; auto with arith.
+    - simpl.
+      split; auto with arith.
+      intros; apply NoDup_nil.
+    - split; simpl.
+      + inversion_clear 1.
+        rewrite IHl in H1.
+        intros; destruct (eq_dec a a0) as [H2|H2]; simpl; auto.
+        subst a0.
+        rewrite multiplicity_In_O; auto.
+      + intros; constructor.
+        * rewrite multiplicity_In.
+          generalize (H a).
+          destruct (eq_dec a a) as [H0|H0].
+          -- destruct (multiplicity (list_contents l) a); auto with arith.
+             simpl; inversion 1.
+             inversion H3.
+          -- destruct H0; auto.
+        * rewrite IHl; intros.
+          generalize (H a0); auto with arith.
+          destruct (eq_dec a a0); simpl; auto with arith.
   Qed.
 
   Lemma NoDup_permut :
@@ -132,23 +132,23 @@ Section Perm.
     forall l l', Permutation l l' <-> permutation l l'.
   Proof.
     split.
-    induction 1.
-    apply permut_refl.
-    apply permut_cons; auto.
-    change (permutation (y::x::l) ((x::nil)++y::l)).
-    apply permut_add_cons_inside; simpl; apply permut_refl.
-    apply permut_trans with l'; auto.
-    revert l'.
-    induction l.
-    intros.
-    rewrite (permut_nil (permut_sym H)).
-    apply Permutation_refl.
-    intros.
-    destruct (In_split _ _ (permut_cons_In H)) as (h2,(t2,H1)).
-    subst l'.
-    apply Permutation_cons_app.
-    apply IHl.
-    apply permut_remove_hd with a; auto with typeclass_instances.
+    - induction 1.
+      + apply permut_refl.
+      + apply permut_cons; auto.
+      + change (permutation (y::x::l) ((x::nil)++y::l)).
+        apply permut_add_cons_inside; simpl; apply permut_refl.
+      + apply permut_trans with l'; auto.
+    - revert l'.
+      induction l.
+      + intros.
+        rewrite (permut_nil (permut_sym H)).
+        apply Permutation_refl.
+      + intros.
+        destruct (In_split _ _ (permut_cons_In H)) as (h2,(t2,H1)).
+        subst l'.
+        apply Permutation_cons_app.
+        apply IHl.
+        apply permut_remove_hd with a; auto with typeclass_instances.
   Qed.
 
   (** Permutation for short lists. *)
@@ -169,25 +169,25 @@ Section Perm.
     intros a1 b1 a2 b2 P.
     assert (H:=permut_cons_In P).
     inversion_clear H.
-    left; split; auto.
-    apply permut_length_1.
-    red; red; intros.
-    generalize (P a); clear P; simpl.
-    destruct (eq_dec a1 a) as [H2|H2];
-      destruct (eq_dec a2 a) as [H3|H3]; auto.
-    destruct H3; transitivity a1; auto.
-    destruct H2; transitivity a2; auto.
-    right.
-    inversion_clear H0; [|inversion H].
-    split; auto.
-    apply permut_length_1.
-    red; red; intros.
-    generalize (P a); clear P; simpl.
-    destruct (eq_dec a1 a) as [H2|H2];
-      destruct (eq_dec b2 a) as [H3|H3]; auto.
-    simpl; rewrite <- plus_n_Sm; inversion 1; auto.
-    destruct H3; transitivity a1; auto.
-    destruct H2; transitivity b2; auto.
+    - left; split; auto.
+      apply permut_length_1.
+      red; red; intros.
+      generalize (P a); clear P; simpl.
+      destruct (eq_dec a1 a) as [H2|H2];
+        destruct (eq_dec a2 a) as [H3|H3]; auto.
+      + destruct H3; transitivity a1; auto.
+      + destruct H2; transitivity a2; auto.
+    - right.
+      inversion_clear H0; [|inversion H].
+      split; auto.
+      apply permut_length_1.
+      red; red; intros.
+      generalize (P a); clear P; simpl.
+      destruct (eq_dec a1 a) as [H2|H2];
+        destruct (eq_dec b2 a) as [H3|H3]; auto.
+      + simpl; rewrite <- plus_n_Sm; inversion 1; auto.
+      + destruct H3; transitivity a1; auto.
+      + destruct H2; transitivity b2; auto.
   Qed.
 
   (** Permutation is compatible with length. *)
@@ -195,14 +195,14 @@ Section Perm.
     forall l1 l2, permutation l1 l2 -> length l1 = length l2.
   Proof.
     induction l1; intros l2 H.
-    rewrite (permut_nil (permut_sym H)); auto.
-    destruct (In_split _ _ (permut_cons_In H)) as (h2,(t2,H1)).
-    subst l2.
-    rewrite app_length.
-    simpl; rewrite <- plus_n_Sm; f_equal.
-    rewrite <- app_length.
-    apply IHl1.
-    apply permut_remove_hd with a; auto with typeclass_instances.
+    - rewrite (permut_nil (permut_sym H)); auto.
+    - destruct (In_split _ _ (permut_cons_In H)) as (h2,(t2,H1)).
+      subst l2.
+      rewrite app_length.
+      simpl; rewrite <- plus_n_Sm; f_equal.
+      rewrite <- app_length.
+      apply IHl1.
+      apply permut_remove_hd with a; auto with typeclass_instances.
   Qed.
 
   Variable B : Type.
@@ -215,17 +215,17 @@ Section Perm.
       PermutSetoid.permutation _ eqB_dec (map f l1) (map f l2).
   Proof.
     intros f; induction l1.
-    intros l2 P; rewrite (permut_nil (permut_sym P)); apply permut_refl.
-    intros l2 P.
-    simpl.
-    destruct (In_split _ _ (permut_cons_In P)) as (h2,(t2,H1)).
-    subst l2.
-    rewrite map_app.
-    simpl.
-    apply permut_add_cons_inside.
-    rewrite <- map_app.
-    apply IHl1; auto.
-    apply permut_remove_hd with a; auto with typeclass_instances.
+    - intros l2 P; rewrite (permut_nil (permut_sym P)); apply permut_refl.
+    - intros l2 P.
+      simpl.
+      destruct (In_split _ _ (permut_cons_In P)) as (h2,(t2,H1)).
+      subst l2.
+      rewrite map_app.
+      simpl.
+      apply permut_add_cons_inside.
+      rewrite <- map_app.
+      apply IHl1; auto.
+      apply permut_remove_hd with a; auto with typeclass_instances.
   Qed.
 
 End Perm.

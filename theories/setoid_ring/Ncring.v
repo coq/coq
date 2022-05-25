@@ -123,41 +123,44 @@ Context {R:Type}`{Rr:Ring R}.
 
 Lemma pow_pos_comm : forall  x j,  x * pow_pos x j == pow_pos x j * x.
 Proof.
-induction j; simpl. rewrite <- ring_mul_assoc.
-rewrite <- ring_mul_assoc.
-rewrite <- IHj. rewrite (ring_mul_assoc (pow_pos x j) x (pow_pos x j)).
-rewrite <- IHj. rewrite <- ring_mul_assoc. reflexivity.
-rewrite <- ring_mul_assoc. rewrite <- IHj.
-rewrite ring_mul_assoc. rewrite IHj.
-rewrite <- ring_mul_assoc. rewrite IHj. reflexivity. reflexivity.
+  induction j; simpl.
+  - rewrite <- ring_mul_assoc.
+    rewrite <- ring_mul_assoc.
+    rewrite <- IHj. rewrite (ring_mul_assoc (pow_pos x j) x (pow_pos x j)).
+    rewrite <- IHj. rewrite <- ring_mul_assoc. reflexivity.
+  - rewrite <- ring_mul_assoc. rewrite <- IHj.
+    rewrite ring_mul_assoc. rewrite IHj.
+    rewrite <- ring_mul_assoc. rewrite IHj. reflexivity.
+  - reflexivity.
 Qed.
 
 Lemma pow_pos_succ : forall  x j, pow_pos x (Pos.succ j) == x * pow_pos x j.
 Proof.
 induction j; simpl.
-  rewrite IHj.
-rewrite <- (ring_mul_assoc x (pow_pos x j) (x * pow_pos x j)).
-rewrite (ring_mul_assoc (pow_pos x j) x  (pow_pos x j)).
+- rewrite IHj.
+  rewrite <- (ring_mul_assoc x (pow_pos x j) (x * pow_pos x j)).
+  rewrite (ring_mul_assoc (pow_pos x j) x  (pow_pos x j)).
   rewrite <- pow_pos_comm.
-rewrite <- ring_mul_assoc. reflexivity.
-reflexivity. reflexivity.
+  rewrite <- ring_mul_assoc. reflexivity.
+- reflexivity.
+- reflexivity.
 Qed.
 
 Lemma pow_pos_add : forall  x i j,
   pow_pos x (i + j) == pow_pos x i * pow_pos x j.
 Proof.
   intro x;induction i;intros.
-  rewrite Pos.xI_succ_xO;rewrite <- Pos.add_1_r.
-  rewrite <- Pos.add_diag;repeat rewrite <- Pos.add_assoc.
-  repeat rewrite IHi.
-  rewrite Pos.add_comm;rewrite Pos.add_1_r;
-  rewrite pow_pos_succ.
-  simpl;repeat rewrite ring_mul_assoc. reflexivity.
-  rewrite <- Pos.add_diag;repeat rewrite <- Pos.add_assoc.
-  repeat rewrite IHi. rewrite ring_mul_assoc. reflexivity.
-  rewrite Pos.add_comm;rewrite Pos.add_1_r;rewrite pow_pos_succ.
-   simpl. reflexivity.
- Qed.
+  - rewrite Pos.xI_succ_xO;rewrite <- Pos.add_1_r.
+    rewrite <- Pos.add_diag;repeat rewrite <- Pos.add_assoc.
+    repeat rewrite IHi.
+    rewrite Pos.add_comm;rewrite Pos.add_1_r;
+      rewrite pow_pos_succ.
+    simpl;repeat rewrite ring_mul_assoc. reflexivity.
+  - rewrite <- Pos.add_diag;repeat rewrite <- Pos.add_assoc.
+    repeat rewrite IHi. rewrite ring_mul_assoc. reflexivity.
+  - rewrite Pos.add_comm;rewrite Pos.add_1_r;rewrite pow_pos_succ.
+    simpl. reflexivity.
+Qed.
 
  Definition id_phi_N (x:N) : N := x.
 
@@ -178,22 +181,22 @@ Proof.
  Lemma ring_mul_0_l : forall  x, 0 * x == 0.
  Proof.
   intro x. setoid_replace (0*x) with ((0+1)*x + -x). 
-  rewrite ring_add_0_l. rewrite ring_mul_1_l .
-  rewrite ring_opp_def . fold zero. reflexivity.
-  rewrite ring_distr_l . rewrite ring_mul_1_l .
-  rewrite <- ring_add_assoc ; rewrite ring_opp_def .
-  rewrite ring_add_comm ; rewrite ring_add_0_l ;reflexivity.
+  - rewrite ring_add_0_l. rewrite ring_mul_1_l .
+    rewrite ring_opp_def . fold zero. reflexivity.
+  - rewrite ring_distr_l . rewrite ring_mul_1_l .
+    rewrite <- ring_add_assoc ; rewrite ring_opp_def .
+    rewrite ring_add_comm ; rewrite ring_add_0_l ;reflexivity.
  Qed.
 
  Lemma ring_mul_0_r : forall  x, x * 0 == 0.
  Proof.
   intro x; setoid_replace (x*0)  with (x*(0+1) + -x).
-  rewrite ring_add_0_l ; rewrite ring_mul_1_r .
-  rewrite ring_opp_def ; fold zero; reflexivity.
+  - rewrite ring_add_0_l ; rewrite ring_mul_1_r .
+    rewrite ring_opp_def ; fold zero; reflexivity.
 
-  rewrite ring_distr_r ;rewrite ring_mul_1_r .
-  rewrite <- ring_add_assoc ; rewrite ring_opp_def .
-  rewrite ring_add_comm ; rewrite ring_add_0_l ;reflexivity.
+  - rewrite ring_distr_r ;rewrite ring_mul_1_r .
+    rewrite <- ring_add_assoc ; rewrite ring_opp_def .
+    rewrite ring_add_comm ; rewrite ring_add_0_l ;reflexivity.
  Qed.
 
  Lemma ring_opp_mul_l : forall x y, -(x * y) == -x * y.
@@ -250,10 +253,10 @@ Lemma ring_opp_mul_r : forall x y, -(x * y) == x * -y.
  Proof.
   intros.
   setoid_replace (x1 - y1)  with (x1 + -y1).
-  setoid_replace (x2 - y2)  with (x2 + -y2).
-  rewrite H;rewrite H0;reflexivity.
-  rewrite ring_sub_def. reflexivity.
-  rewrite ring_sub_def. reflexivity.
+  - setoid_replace (x2 - y2)  with (x2 + -y2).
+    + rewrite H;rewrite H0;reflexivity.
+    + rewrite ring_sub_def. reflexivity.
+  - rewrite ring_sub_def. reflexivity.
  Qed.
 
  Ltac mrewrite :=

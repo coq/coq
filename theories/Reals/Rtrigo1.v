@@ -33,40 +33,47 @@ Lemma CVN_R_cos :
     CVN_R fn.
 Proof.
   unfold CVN_R in |- *; intros.
-  cut ((r:R) <> 0).
-  intro hyp_r; unfold CVN_r in |- *.
+  assert (hyp_r:(r:R) <> 0). {
+    assert (H0 := cond_pos r); lra.
+  }
+  unfold CVN_r in |- *.
   exists (fun n:nat => / INR (fact (2 * n)) * r ^ (2 * n)).
   cut
     { l:R |
         Un_cv
         (fun n:nat =>
           sum_f_R0 (fun k:nat => Rabs (/ INR (fact (2 * k)) * r ^ (2 * k)))
-          n) l }.
-  intros (x,p).
-  exists x.
-  split.
-  apply p.
-  intros; rewrite H; unfold Rdiv in |- *; do 2 rewrite Rabs_mult.
-  rewrite pow_1_abs; rewrite Rmult_1_l.
-  cut (0 < / INR (fact (2 * n))).
-  intro; rewrite (Rabs_right _ (Rle_ge _ _ (Rlt_le _ _ H1))).
-  apply Rmult_le_compat_l.
-  left; apply H1.
-  rewrite <- RPow_abs; apply pow_maj_Rabs.
-  rewrite Rabs_Rabsolu.
-  unfold Boule in H0; rewrite Rminus_0_r in H0.
-  left; apply H0.
-  apply Rinv_0_lt_compat; apply INR_fact_lt_0.
+                   n) l }.
+  { intros (x,p).
+    exists x.
+    split.
+    - apply p.
+    - intros; rewrite H; unfold Rdiv in |- *; do 2 rewrite Rabs_mult.
+      rewrite pow_1_abs; rewrite Rmult_1_l.
+      assert (0 < / INR (fact (2 * n))). {
+        apply Rinv_0_lt_compat; apply INR_fact_lt_0.
+      }
+      rewrite (Rabs_right _ (Rle_ge _ _ (Rlt_le _ _ H1))).
+      apply Rmult_le_compat_l.
+      { left; apply H1. }
+      rewrite <- RPow_abs; apply pow_maj_Rabs.
+      rewrite Rabs_Rabsolu.
+      unfold Boule in H0; rewrite Rminus_0_r in H0.
+      left; apply H0. }
   apply Alembert_C2.
-  intro; apply Rabs_no_R0.
-  apply prod_neq_R0.
-  apply Rinv_neq_0_compat.
-  apply INR_fact_neq_0.
-  apply pow_nonzero; assumption.
+  { intro; apply Rabs_no_R0.
+    apply prod_neq_R0.
+    - apply Rinv_neq_0_compat.
+      apply INR_fact_neq_0.
+    - apply pow_nonzero; assumption. }
   assert (H0 := Alembert_cos).
   unfold cos_n in H0; unfold Un_cv in H0; unfold Un_cv in |- *; intros.
-  cut (0 < eps / Rsqr r).
-  intro; elim (H0 _ H2); intros N0 H3.
+  assert (0 < eps / Rsqr r). {
+    unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+    - apply H1.
+    - apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
+  }
+  elim (H0 _ H2); intros N0 H3.
   exists N0; intros.
   unfold R_dist in |- *; assert (H5 := H3 _ H4).
   unfold R_dist in H5;
@@ -76,17 +83,17 @@ Proof.
         Rabs (/ INR (fact (2 * n)) * r ^ (2 * n)))) with
     (Rsqr r *
       Rabs ((-1) ^ S n / INR (fact (2 * S n)) / ((-1) ^ n / INR (fact (2 * n))))).
-  apply Rmult_lt_reg_l with (/ Rsqr r).
-  apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
-  pattern (/ Rsqr r) at 1 in |- *; replace (/ Rsqr r) with (Rabs (/ Rsqr r)).
-  rewrite <- Rabs_mult; rewrite Rmult_minus_distr_l; rewrite Rmult_0_r;
-    rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); apply H5.
-  unfold Rsqr in |- *; apply prod_neq_R0; assumption.
-  rewrite Rabs_inv.
-  rewrite Rabs_right.
-  reflexivity.
-  apply Rle_ge; apply Rle_0_sqr.
+  { apply Rmult_lt_reg_l with (/ Rsqr r).
+    { apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption. }
+    pattern (/ Rsqr r) at 1 in |- *; replace (/ Rsqr r) with (Rabs (/ Rsqr r)).
+    2:{ rewrite Rabs_inv.
+        rewrite Rabs_right.
+        - reflexivity.
+        - apply Rle_ge; apply Rle_0_sqr. }
+    rewrite <- Rabs_mult; rewrite Rmult_minus_distr_l; rewrite Rmult_0_r;
+      rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+    2:{ unfold Rsqr in |- *; apply prod_neq_R0; assumption. }
+    rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); apply H5. }
   rewrite (Rmult_comm (Rsqr r)); unfold Rdiv in |- *; repeat rewrite Rabs_mult;
     rewrite Rabs_Rabsolu; rewrite pow_1_abs; rewrite Rmult_1_l;
       repeat rewrite Rmult_assoc; apply Rmult_eq_compat_l.
@@ -101,20 +108,13 @@ Proof.
     rewrite Rabs_Rabsolu; rewrite Rmult_assoc; apply Rmult_eq_compat_l.
   rewrite Rabs_inv.
   do 2 rewrite Rabs_Rabsolu; repeat rewrite Rabs_right.
+  2,3:apply Rle_ge; apply pow_le; left; apply (cond_pos r).
   replace (r ^ (2 * S n)) with (r ^ (2 * n) * r * r).
+  2:{ replace (2 * S n)%nat with (S (S (2 * n))) by ring.
+      simpl; ring. }
   repeat rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
-  unfold Rsqr in |- *; ring.
-  apply pow_nonzero; assumption.
-  replace (2 * S n)%nat with (S (S (2 * n))).
-  simpl in |- *; ring.
-  ring.
-  apply Rle_ge; apply pow_le; left; apply (cond_pos r).
-  apply Rle_ge; apply pow_le; left; apply (cond_pos r).
-  unfold Rdiv in |- *; apply Rmult_lt_0_compat.
-  apply H1.
-  apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
-  assert (H0 := cond_pos r); red in |- *; intro; rewrite H1 in H0;
-    elim (Rlt_irrefl _ H0).
+  2:{ apply pow_nonzero; assumption. }
+  unfold Rsqr; ring.
 Qed.
 
 (**********)
@@ -122,45 +122,45 @@ Lemma continuity_cos : continuity cos.
 Proof.
   set (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N)) * x ^ (2 * N)).
   cut (CVN_R fn).
-  intro; cut (forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }).
-  intro cv; cut (forall n:nat, continuity (fn n)).
-  intro; cut (forall x:R, cos x = SFL fn cv x).
-  intro; cut (continuity (SFL fn cv) -> continuity cos).
-  intro; apply H1.
-  apply SFL_continuity; assumption.
-  unfold continuity in |- *; unfold continuity_pt in |- *;
-    unfold continue_in in |- *; unfold limit1_in in |- *;
+  1:intro; cut (forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }).
+  1:intro cv; cut (forall n:nat, continuity (fn n)).
+  1:intro; cut (forall x:R, cos x = SFL fn cv x).
+  1:intro; cut (continuity (SFL fn cv) -> continuity cos).
+  - intro; apply H1.
+    apply SFL_continuity; assumption.
+  - unfold continuity in |- *; unfold continuity_pt in |- *;
+      unfold continue_in in |- *; unfold limit1_in in |- *;
       unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *;
-        intros.
-  elim (H1 x _ H2); intros.
-  exists x0; intros.
-  elim H3; intros.
-  split.
-  apply H4.
-  intros; rewrite (H0 x); rewrite (H0 x1); apply H5; apply H6.
-  intro; unfold cos, SFL in |- *.
-  case (cv x) as (x1,HUn); case (exist_cos (Rsqr x)) as (x0,Hcos); intros.
-  symmetry; eapply UL_sequence.
-  apply HUn.
-  unfold cos_in, infinite_sum in Hcos; unfold Un_cv in |- *; intros.
-  elim (Hcos _ H0); intros N0 H1.
-  exists N0; intros.
-  unfold R_dist in H1; unfold R_dist, SP in |- *.
-  replace (sum_f_R0 (fun k:nat => fn k x) n) with
-  (sum_f_R0 (fun i:nat => cos_n i * Rsqr x ^ i) n).
-  apply H1; assumption.
-  apply sum_eq; intros.
-  unfold cos_n, fn in |- *; apply Rmult_eq_compat_l.
-  unfold Rsqr in |- *; rewrite pow_sqr; reflexivity.
-  intro; unfold fn in |- *;
-    replace (fun x:R => (-1) ^ n / INR (fact (2 * n)) * x ^ (2 * n)) with
-    (fct_cte ((-1) ^ n / INR (fact (2 * n))) * pow_fct (2 * n))%F;
-    [ idtac | reflexivity ].
-  apply continuity_mult.
-  apply derivable_continuous; apply derivable_const.
-  apply derivable_continuous; apply (derivable_pow (2 * n)).
-  apply CVN_R_CVS; apply X.
-  apply CVN_R_cos; unfold fn in |- *; reflexivity.
+      intros.
+    elim (H1 x _ H2); intros.
+    exists x0; intros.
+    elim H3; intros.
+    split.
+    + apply H4.
+    + intros; rewrite (H0 x); rewrite (H0 x1); apply H5; apply H6.
+  - intro; unfold cos, SFL in |- *.
+    case (cv x) as (x1,HUn); case (exist_cos (Rsqr x)) as (x0,Hcos); intros.
+    symmetry; eapply UL_sequence.
+    + apply HUn.
+    + unfold cos_in, infinite_sum in Hcos; unfold Un_cv in |- *; intros.
+      elim (Hcos _ H0); intros N0 H1.
+      exists N0; intros.
+      unfold R_dist in H1; unfold R_dist, SP in |- *.
+      replace (sum_f_R0 (fun k:nat => fn k x) n) with
+        (sum_f_R0 (fun i:nat => cos_n i * Rsqr x ^ i) n).
+      * apply H1; assumption.
+      * apply sum_eq; intros.
+        unfold cos_n, fn in |- *; apply Rmult_eq_compat_l.
+        unfold Rsqr in |- *; rewrite pow_sqr; reflexivity.
+  - intro; unfold fn in |- *;
+      replace (fun x:R => (-1) ^ n / INR (fact (2 * n)) * x ^ (2 * n)) with
+      (fct_cte ((-1) ^ n / INR (fact (2 * n))) * pow_fct (2 * n))%F;
+      [ idtac | reflexivity ].
+    apply continuity_mult.
+    + apply derivable_continuous; apply derivable_const.
+    + apply derivable_continuous; apply (derivable_pow (2 * n)).
+  - apply CVN_R_CVS; apply X.
+  - apply CVN_R_cos; unfold fn in |- *; reflexivity.
 Qed.
 
 Lemma sin_gt_cos_7_8 : sin (7 / 8) > cos (7 / 8).
@@ -192,22 +192,25 @@ apply IZR_lt; reflexivity.
 Qed.
 
 Definition PI_2_aux : {z | 7/8 <= z <= 7/4 /\ -cos z = 0}.
-assert (cc : continuity (fun r =>- cos r)).
- apply continuity_opp, continuity_cos.
-assert (cvp : 0 < cos (7/8)).
+assert (cc : continuity (fun r =>- cos r)). {
+  apply continuity_opp, continuity_cos.
+}
+assert (cvp : 0 < cos (7/8)). {
  assert (int78 : -2 <= 7/8 <= 2) by (split; lra).
  destruct int78 as [lower upper].
  case (pre_cos_bound _ 0 lower upper).
  unfold cos_approx; simpl sum_f_R0; unfold cos_term.
  intros cl _; apply Rlt_le_trans with (2 := cl); simpl.
  lra.
-assert (cun : cos (7/4) < 0).
+}
+assert (cun : cos (7/4) < 0). {
  replace (7/4) with (7/8 + 7/8) by field.
  rewrite cos_plus.
  apply Rlt_minus; apply Rsqr_incrst_1.
-   exact sin_gt_cos_7_8.
-  apply Rlt_le; assumption.
- apply Rlt_le; apply Rlt_trans with (1 := cvp); exact sin_gt_cos_7_8.
+ - exact sin_gt_cos_7_8.
+ - apply Rlt_le; assumption.
+ - apply Rlt_le; apply Rlt_trans with (1 := cvp); exact sin_gt_cos_7_8.
+}
 apply IVT; auto; lra.
 Qed.
 
@@ -267,20 +270,23 @@ unfold sin_approx; simpl sum_f_R0; unfold sin_term; simpl.
 match goal with |- _ < ?a =>
   replace a with (x * (1 - x^2/6)) by (simpl; field)
 end.
-assert (t' : x ^ 2 <= 4).
+assert (t' : x ^ 2 <= 4). {
  replace 4 with (2 ^ 2) by field.
  apply (pow_incr x 2); split; apply Rlt_le; assumption.
+}
 apply Rmult_lt_0_compat;[assumption | lra ].
 Qed.
 
 Lemma sin_PI2 : sin (PI / 2) = 1.
 replace (PI / 2) with PI2 by (unfold PI; field).
-assert (int' : 0 < PI2 < 2).
+assert (int' : 0 < PI2 < 2). {
  destruct pi2_int; split; lra.
+}
 assert (lo2 := sin_pos_tech PI2 int').
-assert (t2 : Rabs (sin PI2) = 1).
+assert (t2 : Rabs (sin PI2) = 1). {
  rewrite <- Rabs_R1; apply Rsqr_eq_abs_0.
  rewrite Rsqr_1, sin2, cos_pi2, Rsqr_0, Rminus_0_r; reflexivity.
+}
 revert t2; rewrite Rabs_pos_eq;[| apply Rlt_le]; tauto.
 Qed.
 
@@ -302,10 +308,10 @@ Qed.
 Lemma cos_PI : cos PI = -1.
 Proof.
   replace PI with (PI / 2 + PI / 2).
-  rewrite cos_plus.
-  rewrite sin_PI2; rewrite cos_PI2.
-  ring.
-  symmetry  in |- *; apply double_var.
+  - rewrite cos_plus.
+    rewrite sin_PI2; rewrite cos_PI2.
+    ring.
+  - symmetry  in |- *; apply double_var.
 Qed.
 
 Lemma sin_PI : sin PI = 0.
@@ -316,31 +322,31 @@ Proof.
   rewrite <- Rsqr_neg in H.
   rewrite Rsqr_1 in H.
   cut (Rsqr (sin PI) = 0).
-  intro; apply (Rsqr_eq_0 _ H0).
-  apply Rplus_eq_reg_l with 1.
-  rewrite Rplus_0_r; rewrite Rplus_comm; exact H.
+  - intro; apply (Rsqr_eq_0 _ H0).
+  - apply Rplus_eq_reg_l with 1.
+    rewrite Rplus_0_r; rewrite Rplus_comm; exact H.
 Qed.
 
 Lemma sin_bound : forall (a : R) (n : nat), 0 <= a -> a <= PI ->
        sin_approx a (2 * n + 1) <= sin a <= sin_approx a (2 * (n + 1)).
 Proof.
 intros a n a0 api; apply pre_sin_bound.
- assumption.
-apply Rle_trans with (1:= api) (2 := PI_4).
+- assumption.
+- apply Rle_trans with (1:= api) (2 := PI_4).
 Qed.
 
 Lemma cos_bound : forall (a : R) (n : nat), - PI / 2 <= a -> a <= PI / 2 ->
        cos_approx a (2 * n + 1) <= cos a <= cos_approx a (2 * (n + 1)).
 Proof.
 intros a n lower upper; apply pre_cos_bound.
- apply Rle_trans with (2 := lower).
- apply Rmult_le_reg_r with 2; [lra |].
- replace ((-PI/2) * 2) with (-PI) by field.
- assert (t := PI_4); lra.
-apply Rle_trans with (1 := upper).
-apply Rmult_le_reg_r with 2; [lra | ].
-replace ((PI/2) * 2) with PI by field.
-generalize PI_4; intros; lra.
+- apply Rle_trans with (2 := lower).
+  apply Rmult_le_reg_r with 2; [lra |].
+  replace ((-PI/2) * 2) with (-PI) by field.
+  assert (t := PI_4); lra.
+- apply Rle_trans with (1 := upper).
+  apply Rmult_le_reg_r with 2; [lra | ].
+  replace ((PI/2) * 2) with PI by field.
+  generalize PI_4; intros; lra.
 Qed.
 (**********)
 Lemma neg_cos : forall x:R, cos (x + PI) = - cos x.
@@ -362,11 +368,11 @@ Proof.
   replace (PI / 2 + (x + y)) with (PI / 2 + x + y); [ rewrite cos_plus | ring ].
   rewrite (sin_cos (PI / 2 + x)).
   replace (PI / 2 + (PI / 2 + x)) with (x + PI).
-  rewrite neg_cos.
-  replace (cos (PI / 2 + x)) with (- sin x).
-  ring.
-  rewrite sin_cos; rewrite Ropp_involutive; reflexivity.
-  pattern PI at 1 in |- *; rewrite (double_var PI); ring.
+  - rewrite neg_cos.
+    replace (cos (PI / 2 + x)) with (- sin x).
+    + ring.
+    + rewrite sin_cos; rewrite Ropp_involutive; reflexivity.
+  - pattern PI at 1 in |- *; rewrite (double_var PI); ring.
 Qed.
 
 Lemma sin_minus : forall x y:R, sin (x - y) = sin x * cos y - cos x * sin y.
@@ -390,27 +396,27 @@ Proof.
     unfold Rdiv in |- *;
       replace (cos x * cos y - sin x * sin y) with
       (cos x * cos y * (1 - sin x * / cos x * (sin y * / cos y))).
-  rewrite Rinv_mult.
-  repeat rewrite <- Rmult_assoc;
-    replace ((sin x * cos y + cos x * sin y) * / (cos x * cos y)) with
-    (sin x * / cos x + sin y * / cos y).
-  reflexivity.
-  rewrite Rmult_plus_distr_r; rewrite Rinv_mult.
-  repeat rewrite Rmult_assoc; repeat rewrite (Rmult_comm (sin x));
-    repeat rewrite <- Rmult_assoc.
-  repeat rewrite Rinv_r_simpl_m; [ reflexivity | assumption | assumption ].
-  unfold Rminus in |- *; rewrite Rmult_plus_distr_l; rewrite Rmult_1_r;
-    apply Rplus_eq_compat_l; repeat rewrite Rmult_assoc;
+  - rewrite Rinv_mult.
+    repeat rewrite <- Rmult_assoc;
+      replace ((sin x * cos y + cos x * sin y) * / (cos x * cos y)) with
+      (sin x * / cos x + sin y * / cos y).
+    + reflexivity.
+    + rewrite Rmult_plus_distr_r; rewrite Rinv_mult.
+      repeat rewrite Rmult_assoc; repeat rewrite (Rmult_comm (sin x));
+        repeat rewrite <- Rmult_assoc.
+      repeat rewrite Rinv_r_simpl_m; [ reflexivity | assumption | assumption ].
+  - unfold Rminus in |- *; rewrite Rmult_plus_distr_l; rewrite Rmult_1_r;
+      apply Rplus_eq_compat_l; repeat rewrite Rmult_assoc;
       rewrite (Rmult_comm (sin x)); rewrite (Rmult_comm (cos y));
-        rewrite <- Ropp_mult_distr_r_reverse; repeat rewrite <- Rmult_assoc;
-          rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_l; rewrite (Rmult_comm (sin x));
-    rewrite <- Ropp_mult_distr_r_reverse; repeat rewrite Rmult_assoc;
-      apply Rmult_eq_compat_l; rewrite (Rmult_comm (/ cos y));
+      rewrite <- Ropp_mult_distr_r_reverse; repeat rewrite <- Rmult_assoc;
+      rewrite <- Rinv_r_sym.
+    + rewrite Rmult_1_l; rewrite (Rmult_comm (sin x));
+        rewrite <- Ropp_mult_distr_r_reverse; repeat rewrite Rmult_assoc;
+        apply Rmult_eq_compat_l; rewrite (Rmult_comm (/ cos y));
         rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
-  apply Rmult_1_r.
-  assumption.
-  assumption.
+      * apply Rmult_1_r.
+      * assumption.
+    + assumption.
 Qed.
 
 (*******************************************************)
@@ -485,21 +491,21 @@ Lemma tan_minus :
     tan (x - y) = (tan x - tan y) / (1 + tan x * tan y).
 Proof.
   intros; unfold Rminus in |- *; rewrite tan_plus.
-  rewrite tan_neg; unfold Rminus in |- *; rewrite <- Ropp_mult_distr_l_reverse;
-    rewrite Rmult_opp_opp; reflexivity.
-  assumption.
-  rewrite cos_neg; assumption.
-  assumption.
-  rewrite tan_neg; unfold Rminus in |- *; rewrite <- Ropp_mult_distr_l_reverse;
-    rewrite Rmult_opp_opp; assumption.
+  - rewrite tan_neg; unfold Rminus in |- *; rewrite <- Ropp_mult_distr_l_reverse;
+      rewrite Rmult_opp_opp; reflexivity.
+  - assumption.
+  - rewrite cos_neg; assumption.
+  - assumption.
+  - rewrite tan_neg; unfold Rminus in |- *; rewrite <- Ropp_mult_distr_l_reverse;
+      rewrite Rmult_opp_opp; assumption.
 Qed.
 
 Lemma cos_3PI2 : cos (3 * (PI / 2)) = 0.
 Proof.
   replace (3 * (PI / 2)) with (PI + PI / 2).
-  rewrite cos_plus; rewrite sin_PI; rewrite cos_PI2; ring.
-  pattern PI at 1 in |- *; rewrite (double_var PI).
-  ring.
+  - rewrite cos_plus; rewrite sin_PI; rewrite cos_PI2; ring.
+  - pattern PI at 1 in |- *; rewrite (double_var PI).
+    ring.
 Qed.
 
 Lemma sin_2PI : sin (2 * PI) = 0.
@@ -526,25 +532,25 @@ Qed.
 Lemma sin_period : forall (x:R) (k:nat), sin (x + 2 * INR k * PI) = sin x.
 Proof.
   intros x k; induction  k as [| k Hreck].
-  simpl in |- *;  ring_simplify (x + 2 * 0 * PI).
-  trivial.
+  - simpl in |- *;  ring_simplify (x + 2 * 0 * PI).
+    trivial.
 
-  replace (x + 2 * INR (S k) * PI) with (x + 2 * INR k * PI + 2 * PI).
-  rewrite sin_plus in |- *; rewrite sin_2PI in |- *; rewrite cos_2PI in |- *.
-  ring_simplify; trivial.
-  rewrite S_INR in |- *;  ring.
+  - replace (x + 2 * INR (S k) * PI) with (x + 2 * INR k * PI + 2 * PI).
+    + rewrite sin_plus in |- *; rewrite sin_2PI in |- *; rewrite cos_2PI in |- *.
+      ring_simplify; trivial.
+    + rewrite S_INR in |- *;  ring.
 Qed.
 
 Lemma cos_period : forall (x:R) (k:nat), cos (x + 2 * INR k * PI) = cos x.
 Proof.
   intros x k; induction  k as [| k Hreck].
-  simpl in |- *;  ring_simplify (x + 2 * 0 * PI).
-  trivial.
+  - simpl in |- *;  ring_simplify (x + 2 * 0 * PI).
+    trivial.
 
-  replace (x + 2 * INR (S k) * PI) with (x + 2 * INR k * PI + 2 * PI).
-  rewrite cos_plus in |- *; rewrite sin_2PI in |- *; rewrite cos_2PI in |- *.
-  ring_simplify; trivial.
-  rewrite S_INR in |- *;  ring.
+  - replace (x + 2 * INR (S k) * PI) with (x + 2 * INR k * PI + 2 * PI).
+    + rewrite cos_plus in |- *; rewrite sin_2PI in |- *; rewrite cos_2PI in |- *.
+      ring_simplify; trivial.
+    + rewrite S_INR in |- *;  ring.
 Qed.
 
 Lemma sin_shift : forall x:R, sin (PI / 2 - x) = cos x.
@@ -571,37 +577,37 @@ Qed.
 Lemma SIN_bound : forall x:R, -1 <= sin x <= 1.
 Proof.
   intro; destruct (Rle_dec (-1) (sin x)) as [Hle|Hnle].
-  destruct (Rle_dec (sin x) 1) as [Hle'|Hnle'].
-  split; assumption.
-  cut (1 < sin x).
-  intro;
-    generalize
-      (Rsqr_incrst_1 1 (sin x) H (Rlt_le 0 1 Rlt_0_1)
-        (Rlt_le 0 (sin x) (Rlt_trans 0 1 (sin x) Rlt_0_1 H)));
-      rewrite Rsqr_1; intro; rewrite sin2 in H0; unfold Rminus in H0.
+  - destruct (Rle_dec (sin x) 1) as [Hle'|Hnle'].
+    + split; assumption.
+    + cut (1 < sin x).
+      * intro;
+          generalize
+            (Rsqr_incrst_1 1 (sin x) H (Rlt_le 0 1 Rlt_0_1)
+                           (Rlt_le 0 (sin x) (Rlt_trans 0 1 (sin x) Rlt_0_1 H)));
+          rewrite Rsqr_1; intro; rewrite sin2 in H0; unfold Rminus in H0.
         generalize (Rplus_lt_compat_l (-1) 1 (1 + - Rsqr (cos x)) H0);
           repeat rewrite <- Rplus_assoc; change (-1) with (-(1)); rewrite Rplus_opp_l;
-            rewrite Rplus_0_l; intro; rewrite <- Ropp_0 in H1;
-              generalize (Ropp_lt_gt_contravar (-0) (- Rsqr (cos x)) H1);
-                repeat rewrite Ropp_involutive; intro; generalize (Rle_0_sqr (cos x));
-                  intro; elim (Rlt_irrefl 0 (Rle_lt_trans 0 (Rsqr (cos x)) 0 H3 H2)).
-  auto with real.
-  cut (sin x < -1).
-  intro; generalize (Ropp_lt_gt_contravar (sin x) (-1) H);
-    change (-1) with (-(1));
-    rewrite Ropp_involutive; clear H; intro;
-      generalize
-        (Rsqr_incrst_1 1 (- sin x) H (Rlt_le 0 1 Rlt_0_1)
-          (Rlt_le 0 (- sin x) (Rlt_trans 0 1 (- sin x) Rlt_0_1 H)));
+          rewrite Rplus_0_l; intro; rewrite <- Ropp_0 in H1;
+          generalize (Ropp_lt_gt_contravar (-0) (- Rsqr (cos x)) H1);
+          repeat rewrite Ropp_involutive; intro; generalize (Rle_0_sqr (cos x));
+          intro; elim (Rlt_irrefl 0 (Rle_lt_trans 0 (Rsqr (cos x)) 0 H3 H2)).
+      * auto with real.
+  - cut (sin x < -1).
+    + intro; generalize (Ropp_lt_gt_contravar (sin x) (-1) H);
+        change (-1) with (-(1));
+        rewrite Ropp_involutive; clear H; intro;
+        generalize
+          (Rsqr_incrst_1 1 (- sin x) H (Rlt_le 0 1 Rlt_0_1)
+                         (Rlt_le 0 (- sin x) (Rlt_trans 0 1 (- sin x) Rlt_0_1 H)));
         rewrite Rsqr_1; intro; rewrite <- Rsqr_neg in H0;
-          rewrite sin2 in H0; unfold Rminus in H0;
-            generalize (Rplus_lt_compat_l (-1) 1 (1 + - Rsqr (cos x)) H0);
-              rewrite <- Rplus_assoc; change (-1) with (-(1)); rewrite Rplus_opp_l;
-                rewrite Rplus_0_l; intro; rewrite <- Ropp_0 in H1;
-                  generalize (Ropp_lt_gt_contravar (-0) (- Rsqr (cos x)) H1);
-                    repeat rewrite Ropp_involutive; intro; generalize (Rle_0_sqr (cos x));
-                      intro; elim (Rlt_irrefl 0 (Rle_lt_trans 0 (Rsqr (cos x)) 0 H3 H2)).
-  auto with real.
+        rewrite sin2 in H0; unfold Rminus in H0;
+        generalize (Rplus_lt_compat_l (-1) 1 (1 + - Rsqr (cos x)) H0);
+        rewrite <- Rplus_assoc; change (-1) with (-(1)); rewrite Rplus_opp_l;
+        rewrite Rplus_0_l; intro; rewrite <- Ropp_0 in H1;
+        generalize (Ropp_lt_gt_contravar (-0) (- Rsqr (cos x)) H1);
+        repeat rewrite Ropp_involutive; intro; generalize (Rle_0_sqr (cos x));
+        intro; elim (Rlt_irrefl 0 (Rle_lt_trans 0 (Rsqr (cos x)) 0 H3 H2)).
+    + auto with real.
 Qed.
 
 Lemma COS_bound : forall x:R, -1 <= cos x <= 1.
@@ -646,78 +652,59 @@ Proof.
     with (sum_f_R0 (fun i:nat => (-1) ^ i * Un i) 3);
       [ idtac | apply sum_eq; intros; unfold Un in |- *; reflexivity ].
   cut (forall n:nat, Un (S n) < Un n).
-  intro; simpl in |- *.
-  repeat rewrite Rmult_1_l; repeat rewrite Rmult_1_r;
-    replace (-1 * Un 1%nat) with (- Un 1%nat); [ idtac | ring ];
-    replace (-1 * -1 * Un 2%nat) with (Un 2%nat); [ idtac | ring ];
-    replace (-1 * (-1 * -1) * Un 3%nat) with (- Un 3%nat);
-    [ idtac | ring ];
-    replace (Un 0%nat + - Un 1%nat + Un 2%nat + - Un 3%nat) with
-    (Un 0%nat - Un 1%nat + (Un 2%nat - Un 3%nat)); [ idtac | ring ].
-  apply Rplus_lt_0_compat.
-  unfold Rminus in |- *; apply Rplus_lt_reg_l with (Un 1%nat);
-    rewrite Rplus_0_r; rewrite (Rplus_comm (Un 1%nat));
+  { intro; simpl in |- *.
+    repeat rewrite Rmult_1_l; repeat rewrite Rmult_1_r;
+      replace (-1 * Un 1%nat) with (- Un 1%nat); [ idtac | ring ];
+      replace (-1 * -1 * Un 2%nat) with (Un 2%nat); [ idtac | ring ];
+      replace (-1 * (-1 * -1) * Un 3%nat) with (- Un 3%nat);
+      [ idtac | ring ];
+      replace (Un 0%nat + - Un 1%nat + Un 2%nat + - Un 3%nat) with
+      (Un 0%nat - Un 1%nat + (Un 2%nat - Un 3%nat)); [ idtac | ring ].
+    apply Rplus_lt_0_compat.
+    - unfold Rminus in |- *; apply Rplus_lt_reg_l with (Un 1%nat);
+      rewrite Rplus_0_r; rewrite (Rplus_comm (Un 1%nat));
       rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r;
-        apply H1.
-  unfold Rminus in |- *; apply Rplus_lt_reg_l with (Un 3%nat);
-    rewrite Rplus_0_r; rewrite (Rplus_comm (Un 3%nat));
+      apply H1.
+    - unfold Rminus in |- *; apply Rplus_lt_reg_l with (Un 3%nat);
+      rewrite Rplus_0_r; rewrite (Rplus_comm (Un 3%nat));
       rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r;
-        apply H1.
+      apply H1. }
   intro; unfold Un in |- *.
-  cut ((2 * S n + 1)%nat = (2 * n + 1 + 2)%nat).
-  intro; rewrite H1.
+  assert ((2 * S n + 1)%nat = (2 * n + 1 + 2)%nat) by ring.
+  rewrite H1.
   rewrite pow_add; unfold Rdiv in |- *; rewrite Rmult_assoc;
     apply Rmult_lt_compat_l.
-  apply pow_lt; assumption.
+  { apply pow_lt; assumption. }
   rewrite <- H1; apply Rmult_lt_reg_l with (INR (fact (2 * n + 1))).
-  apply lt_INR_0; apply Nat.neq_0_lt_0.
-  assert (H2 := fact_neq_0 (2 * n + 1)).
-  red in |- *; intro; elim H2; assumption.
+  { apply INR_fact_lt_0. }
   rewrite <- Rinv_r_sym.
+  2:{ apply INR_fact_neq_0. }
   apply Rmult_lt_reg_l with (INR (fact (2 * S n + 1))).
-  apply lt_INR_0; apply Nat.neq_0_lt_0.
-  assert (H2 := fact_neq_0 (2 * S n + 1)).
-  red in |- *; intro; elim H2; assumption.
+  { apply INR_fact_lt_0. }
   rewrite (Rmult_comm (INR (fact (2 * S n + 1)))); repeat rewrite Rmult_assoc;
     rewrite <- Rinv_l_sym.
+  2:{ apply INR_fact_neq_0. }
   do 2 rewrite Rmult_1_r; apply Rle_lt_trans with (INR (fact (2 * n + 1)) * 4).
-  apply Rmult_le_compat_l.
-  apply pos_INR.
-  simpl in |- *; rewrite Rmult_1_r; change 4 with (Rsqr 2);
-    apply Rsqr_incr_1.
-  apply Rle_trans with (PI / 2);
-    [ assumption
+  { apply Rmult_le_compat_l.
+    { apply pos_INR. }
+    simpl in |- *; rewrite Rmult_1_r; change 4 with (Rsqr 2);
+      apply Rsqr_incr_1;[|lra|lra].
+    apply Rle_trans with (PI / 2);
+      [ assumption
       | unfold Rdiv in |- *; apply Rmult_le_reg_l with 2;
         [ prove_sup0
-          | rewrite <- Rmult_assoc; rewrite Rinv_r_simpl_m;
-            [ apply PI_4 | discrR ] ] ].
-  left; assumption.
-  left; prove_sup0.
-  rewrite H1; replace (2 * n + 1 + 2)%nat with (S (S (2 * n + 1))).
+        | rewrite <- Rmult_assoc; rewrite Rinv_r_simpl_m;
+          [ apply PI_4 | discrR ] ] ]. }
+  rewrite H1; replace (2 * n + 1 + 2)%nat with (S (S (2 * n + 1))) by ring.
   do 2 rewrite fact_simpl; do 2 rewrite mult_INR.
   repeat rewrite <- Rmult_assoc.
   rewrite <- (Rmult_comm (INR (fact (2 * n + 1)))).
   apply Rmult_lt_compat_l.
-  apply lt_INR_0; apply Nat.neq_0_lt_0.
-  assert (H2 := fact_neq_0 (2 * n + 1)).
-  red in |- *; intro; elim H2; assumption.
+  { apply INR_fact_lt_0. }
   do 2 rewrite S_INR; rewrite plus_INR; rewrite mult_INR; set (x := INR n);
-    unfold INR in |- *.
-  replace (((1 + 1) * x + 1 + 1 + 1) * ((1 + 1) * x + 1 + 1)) with (4 * x * x + 10 * x + 6);
-  [ idtac | ring ].
-  apply Rplus_lt_reg_l with (-(4)); rewrite Rplus_opp_l;
-    replace (-(4) + (4 * x * x + 10 * x + 6)) with (4 * x * x + 10 * x + 2);
-    [ idtac | ring ].
-  apply Rplus_le_lt_0_compat.
-  cut (0 <= x).
-  intro; apply Rplus_le_le_0_compat; repeat apply Rmult_le_pos;
-    assumption || left; prove_sup.
-  apply pos_INR.
-  now apply IZR_lt.
-  ring.
-  apply INR_fact_neq_0.
-  apply INR_fact_neq_0.
-  ring.
+  unfold INR in |- *.
+  pose proof (pos_INR _ : 0 <= x).
+  nra.
 Qed.
 
 Lemma SIN : forall a:R, 0 <= a -> a <= PI -> sin_lb a <= sin a <= sin_ub a.
@@ -757,25 +744,24 @@ Theorem sin_gt_0 : forall x:R, 0 < x -> x < PI -> 0 < sin x.
 Proof.
   intros; elim (SIN x (Rlt_le 0 x H) (Rlt_le x PI H0)); intros H1 _;
     case (Rtotal_order x (PI / 2)); intro H2.
-  apply Rlt_le_trans with (sin_lb x).
-  apply sin_lb_gt_0; [ assumption | left; assumption ].
-  assumption.
-  elim H2; intro H3.
-  rewrite H3; rewrite sin_PI2; apply Rlt_0_1.
-  rewrite <- sin_PI_x; generalize (Ropp_gt_lt_contravar x (PI / 2) H3);
-    intro H4; generalize (Rplus_lt_compat_l PI (- x) (- (PI / 2)) H4).
-  replace (PI + - (PI / 2)) with (PI / 2).
-  intro H5; generalize (Ropp_lt_gt_contravar x PI H0); intro H6;
-    change (- PI < - x) in H6; generalize (Rplus_lt_compat_l PI (- PI) (- x) H6).
-  rewrite Rplus_opp_r.
-  intro H7;
-    elim
-      (SIN (PI - x) (Rlt_le 0 (PI - x) H7)
-        (Rlt_le (PI - x) PI (Rlt_trans (PI - x) (PI / 2) PI H5 PI2_Rlt_PI)));
-      intros H8 _;
+  - apply Rlt_le_trans with (sin_lb x).
+    + apply sin_lb_gt_0; [ assumption | left; assumption ].
+    + assumption.
+  - elim H2; intro H3.
+    + rewrite H3; rewrite sin_PI2; apply Rlt_0_1.
+    + rewrite <- sin_PI_x; generalize (Ropp_gt_lt_contravar x (PI / 2) H3);
+        intro H4; generalize (Rplus_lt_compat_l PI (- x) (- (PI / 2)) H4).
+      replace (PI + - (PI / 2)) with (PI / 2) by field.
+      intro H5; generalize (Ropp_lt_gt_contravar x PI H0); intro H6;
+        change (- PI < - x) in H6; generalize (Rplus_lt_compat_l PI (- PI) (- x) H6).
+      rewrite Rplus_opp_r.
+      intro H7;
+        elim
+          (SIN (PI - x) (Rlt_le 0 (PI - x) H7)
+               (Rlt_le (PI - x) PI (Rlt_trans (PI - x) (PI / 2) PI H5 PI2_Rlt_PI)));
+        intros H8 _;
         generalize (sin_lb_gt_0 (PI - x) H7 (Rlt_le (PI - x) (PI / 2) H5));
-          intro H9; apply (Rlt_le_trans 0 (sin_lb (PI - x)) (sin (PI - x)) H9 H8).
-  field.
+        intro H9; apply (Rlt_le_trans 0 (sin_lb (PI - x)) (sin (PI - x)) H9 H8).
 Qed.
 
 Theorem cos_gt_0 : forall x:R, - (PI / 2) < x -> x < PI / 2 -> 0 < cos x.
@@ -827,14 +813,14 @@ Proof.
   intros x H1 H2; apply Rge_le; rewrite <- Ropp_0;
     rewrite <- (Ropp_involutive (cos x)); apply Ropp_le_ge_contravar;
       rewrite <- neg_cos; replace (x + PI) with (x - PI + 2 * INR 1 * PI).
-  rewrite cos_period; apply cos_ge_0.
-  replace (- (PI / 2)) with (- PI + PI / 2) by field.
-  unfold Rminus in |- *; rewrite (Rplus_comm x); apply Rplus_le_compat_l;
-    assumption.
-  unfold Rminus in |- *; rewrite Rplus_comm;
-    replace (PI / 2) with (- PI + 3 * (PI / 2)) by field.
-  apply Rplus_le_compat_l; assumption.
-  unfold INR in |- *; ring.
+  - rewrite cos_period; apply cos_ge_0.
+    + replace (- (PI / 2)) with (- PI + PI / 2) by field.
+      unfold Rminus in |- *; rewrite (Rplus_comm x); apply Rplus_le_compat_l;
+        assumption.
+    + unfold Rminus in |- *; rewrite Rplus_comm;
+        replace (PI / 2) with (- PI + 3 * (PI / 2)) by field.
+      apply Rplus_le_compat_l; assumption.
+  - unfold INR in |- *; ring.
 Qed.
 
 Lemma sin_lt_0 : forall x:R, PI < x -> x < 2 * PI -> sin x < 0.
@@ -873,14 +859,14 @@ Proof.
   intros x H1 H2; rewrite <- Ropp_0; rewrite <- (Ropp_involutive (cos x));
     apply Ropp_lt_gt_contravar; rewrite <- neg_cos;
       replace (x + PI) with (x - PI + 2 * INR 1 * PI).
-  rewrite cos_period; apply cos_gt_0.
-  replace (- (PI / 2)) with (- PI + PI / 2) by field.
-  unfold Rminus in |- *; rewrite (Rplus_comm x); apply Rplus_lt_compat_l;
-    assumption.
-  unfold Rminus in |- *; rewrite Rplus_comm;
-    replace (PI / 2) with (- PI + 3 * (PI / 2)) by field.
-  apply Rplus_lt_compat_l; assumption.
-  unfold INR in |- *; ring.
+  - rewrite cos_period; apply cos_gt_0.
+    + replace (- (PI / 2)) with (- PI + PI / 2) by field.
+      unfold Rminus in |- *; rewrite (Rplus_comm x); apply Rplus_lt_compat_l;
+        assumption.
+    + unfold Rminus in |- *; rewrite Rplus_comm;
+        replace (PI / 2) with (- PI + 3 * (PI / 2)) by field.
+      apply Rplus_lt_compat_l; assumption.
+  - unfold INR in |- *; ring.
 Qed.
 
 Lemma tan_gt_0 : forall x:R, 0 < x -> x < PI / 2 -> 0 < tan x.
@@ -890,8 +876,8 @@ Proof.
       generalize (Rlt_trans (- (PI / 2)) 0 x H0 H1); intro H5;
         generalize (Rlt_trans x (PI / 2) PI H2 PI2_Rlt_PI);
           intro H7; unfold Rdiv in |- *; apply Rmult_lt_0_compat.
-  apply sin_gt_0; assumption.
-  apply Rinv_0_lt_compat; apply cos_gt_0; assumption.
+  - apply sin_gt_0; assumption.
+  - apply Rinv_0_lt_compat; apply cos_gt_0; assumption.
 Qed.
 
 Lemma tan_lt_0 : forall x:R, - (PI / 2) < x -> x < 0 -> tan x < 0.
@@ -900,16 +886,16 @@ Proof.
     generalize (cos_gt_0 x H1 (Rlt_trans x 0 (PI / 2) H2 PI2_RGT_0));
       intro H3; rewrite <- Ropp_0;
         replace (sin x / cos x) with (- (- sin x / cos x)).
-  rewrite <- sin_neg; apply Ropp_gt_lt_contravar;
-    change (0 < sin (- x) / cos x) in |- *; unfold Rdiv in |- *;
+  - rewrite <- sin_neg; apply Ropp_gt_lt_contravar;
+      change (0 < sin (- x) / cos x) in |- *; unfold Rdiv in |- *;
       apply Rmult_lt_0_compat.
-  apply sin_gt_0.
-  rewrite <- Ropp_0; apply Ropp_gt_lt_contravar; assumption.
-  apply Rlt_trans with (PI / 2).
-  rewrite <- (Ropp_involutive (PI / 2)); apply Ropp_gt_lt_contravar; assumption.
-  apply PI2_Rlt_PI.
-  apply Rinv_0_lt_compat; assumption.
-  unfold Rdiv in |- *; ring.
+    + apply sin_gt_0.
+      * rewrite <- Ropp_0; apply Ropp_gt_lt_contravar; assumption.
+      * apply Rlt_trans with (PI / 2).
+        -- rewrite <- (Ropp_involutive (PI / 2)); apply Ropp_gt_lt_contravar; assumption.
+        -- apply PI2_Rlt_PI.
+    + apply Rinv_0_lt_compat; assumption.
+  - unfold Rdiv in |- *; ring.
 Qed.
 
 Lemma cos_ge_0_3PI2 :
@@ -956,10 +942,10 @@ Lemma form3 :
 Proof.
   intros p q; pattern p at 1 in |- *;
     replace p with ((p - q) / 2 + (p + q) / 2).
-  pattern q at 3 in |- *; replace q with ((p + q) / 2 - (p - q) / 2).
-  rewrite sin_plus; rewrite sin_minus; ring.
-  pattern q at 3 in |- *; rewrite double_var; unfold Rdiv in |- *; ring.
-  pattern p at 3 in |- *; rewrite double_var; unfold Rdiv in |- *; ring.
+  - pattern q at 3 in |- *; replace q with ((p + q) / 2 - (p - q) / 2).
+    + rewrite sin_plus; rewrite sin_minus; ring.
+    + pattern q at 3 in |- *; rewrite double_var; unfold Rdiv in |- *; ring.
+  - pattern p at 3 in |- *; rewrite double_var; unfold Rdiv in |- *; ring.
 Qed.
 
 Lemma form4 :
@@ -978,80 +964,70 @@ Lemma sin_increasing_0 :
     x <= PI / 2 -> - (PI / 2) <= y -> y <= PI / 2 -> sin x < sin y -> x < y.
 Proof.
   intros; cut (sin ((x - y) / 2) < 0).
-  intro H4; case (Rtotal_order ((x - y) / 2) 0); intro H5.
-  assert (Hyp : 0 < 2).
-  prove_sup0.
-  generalize (Rmult_lt_compat_l 2 ((x - y) / 2) 0 Hyp H5).
-  unfold Rdiv in |- *.
-  rewrite <- Rmult_assoc.
-  rewrite Rinv_r_simpl_m.
-  rewrite Rmult_0_r.
-  clear H5; intro H5; apply Rminus_lt; assumption.
-  discrR.
-  elim H5; intro H6.
-  rewrite H6 in H4; rewrite sin_0 in H4; elim (Rlt_irrefl 0 H4).
-  change (0 < (x - y) / 2) in H6;
-    generalize (Ropp_le_ge_contravar (- (PI / 2)) y H1).
-  rewrite Ropp_involutive.
-  intro H7; generalize (Rge_le (PI / 2) (- y) H7); clear H7; intro H7;
-    generalize (Rplus_le_compat x (PI / 2) (- y) (PI / 2) H0 H7).
-  rewrite <- double_var.
-  intro H8.
-  assert (Hyp : 0 < 2).
-  prove_sup0.
-  generalize
-    (Rmult_le_compat_l (/ 2) (x - y) PI
-      (Rlt_le 0 (/ 2) (Rinv_0_lt_compat 2 Hyp)) H8).
-  repeat rewrite (Rmult_comm (/ 2)).
-  intro H9;
+  - intro H4; case (Rtotal_order ((x - y) / 2) 0); intro H5.
+    { unfold Rdiv in H5;lra. }
+    elim H5; intro H6.
+    { rewrite H6 in H4; rewrite sin_0 in H4; elim (Rlt_irrefl 0 H4). }
+    change (0 < (x - y) / 2) in H6;
+      generalize (Ropp_le_ge_contravar (- (PI / 2)) y H1).
+    rewrite Ropp_involutive.
+    intro H7; generalize (Rge_le (PI / 2) (- y) H7); clear H7; intro H7;
+      generalize (Rplus_le_compat x (PI / 2) (- y) (PI / 2) H0 H7).
+    rewrite <- double_var.
+    intro H8.
+    assert (Hyp : 0 < 2) by lra.
     generalize
-      (sin_gt_0 ((x - y) / 2) H6
-        (Rle_lt_trans ((x - y) / 2) (PI / 2) PI H9 PI2_Rlt_PI));
+      (Rmult_le_compat_l (/ 2) (x - y) PI
+                         (Rlt_le 0 (/ 2) (Rinv_0_lt_compat 2 Hyp)) H8).
+    repeat rewrite (Rmult_comm (/ 2)).
+    intro H9;
+      generalize
+        (sin_gt_0 ((x - y) / 2) H6
+                  (Rle_lt_trans ((x - y) / 2) (PI / 2) PI H9 PI2_Rlt_PI));
       intro H10;
-        elim
-          (Rlt_irrefl (sin ((x - y) / 2))
-            (Rlt_trans (sin ((x - y) / 2)) 0 (sin ((x - y) / 2)) H4 H10)).
-  generalize (Rlt_minus (sin x) (sin y) H3); clear H3; intro H3;
-    rewrite form4 in H3;
+      elim
+        (Rlt_irrefl (sin ((x - y) / 2))
+                    (Rlt_trans (sin ((x - y) / 2)) 0 (sin ((x - y) / 2)) H4 H10)).
+  - generalize (Rlt_minus (sin x) (sin y) H3); clear H3; intro H3;
+      rewrite form4 in H3;
       generalize (Rplus_le_compat x (PI / 2) y (PI / 2) H0 H2).
-  rewrite <- double_var.
-  assert (Hyp : 0 < 2).
-  prove_sup0.
-  intro H4;
-    generalize
-      (Rmult_le_compat_l (/ 2) (x + y) PI
-        (Rlt_le 0 (/ 2) (Rinv_0_lt_compat 2 Hyp)) H4).
-  repeat rewrite (Rmult_comm (/ 2)).
-  clear H4; intro H4;
-    generalize (Rplus_le_compat (- (PI / 2)) x (- (PI / 2)) y H H1);
+    rewrite <- double_var.
+    assert (Hyp : 0 < 2) by prove_sup0.
+    intro H4;
+      generalize
+        (Rmult_le_compat_l (/ 2) (x + y) PI
+                           (Rlt_le 0 (/ 2) (Rinv_0_lt_compat 2 Hyp)) H4).
+    repeat rewrite (Rmult_comm (/ 2)).
+    clear H4; intro H4;
+      generalize (Rplus_le_compat (- (PI / 2)) x (- (PI / 2)) y H H1);
       replace (- (PI / 2) + - (PI / 2)) with (- PI) by field.
-  intro H5;
-    generalize
-      (Rmult_le_compat_l (/ 2) (- PI) (x + y)
-        (Rlt_le 0 (/ 2) (Rinv_0_lt_compat 2 Hyp)) H5).
-  replace (/ 2 * (x + y)) with ((x + y) / 2) by apply Rmult_comm.
-  replace (/ 2 * - PI) with (- (PI / 2)) by field.
-  clear H5; intro H5; elim H4; intro H40.
-  elim H5; intro H50.
-  generalize (cos_gt_0 ((x + y) / 2) H50 H40); intro H6;
-    generalize (Rmult_lt_compat_l 2 0 (cos ((x + y) / 2)) Hyp H6).
-  rewrite Rmult_0_r.
-  clear H6; intro H6; case (Rcase_abs (sin ((x - y) / 2))); intro H7.
-  assumption.
-  generalize (Rge_le (sin ((x - y) / 2)) 0 H7); clear H7; intro H7;
-    generalize
-      (Rmult_le_pos (2 * cos ((x + y) / 2)) (sin ((x - y) / 2))
-        (Rlt_le 0 (2 * cos ((x + y) / 2)) H6) H7); intro H8;
+    intro H5;
+      generalize
+        (Rmult_le_compat_l (/ 2) (- PI) (x + y)
+                           (Rlt_le 0 (/ 2) (Rinv_0_lt_compat 2 Hyp)) H5).
+    replace (/ 2 * (x + y)) with ((x + y) / 2) by apply Rmult_comm.
+    replace (/ 2 * - PI) with (- (PI / 2)) by field.
+    clear H5; intro H5; elim H4; intro H40.
+    2:{ unfold Rdiv in H3.
+        rewrite H40 in H3; assert (H50 := cos_PI2); unfold Rdiv in H50;
+          rewrite H50 in H3; rewrite Rmult_0_r in H3; rewrite Rmult_0_l in H3;
+          elim (Rlt_irrefl 0 H3). }
+    elim H5; intro H50.
+    2:{ rewrite <- H50 in H3; rewrite cos_neg in H3; rewrite cos_PI2 in H3;
+        rewrite Rmult_0_r in H3; rewrite Rmult_0_l in H3;
+        elim (Rlt_irrefl 0 H3). }
+    generalize (cos_gt_0 ((x + y) / 2) H50 H40); intro H6;
+      generalize (Rmult_lt_compat_l 2 0 (cos ((x + y) / 2)) Hyp H6).
+    rewrite Rmult_0_r.
+    clear H6; intro H6; case (Rcase_abs (sin ((x - y) / 2))); intro H7.
+    { assumption. }
+    generalize (Rge_le (sin ((x - y) / 2)) 0 H7); clear H7; intro H7;
+      generalize
+        (Rmult_le_pos (2 * cos ((x + y) / 2)) (sin ((x - y) / 2))
+                      (Rlt_le 0 (2 * cos ((x + y) / 2)) H6) H7); intro H8;
       generalize
         (Rle_lt_trans 0 (2 * cos ((x + y) / 2) * sin ((x - y) / 2)) 0 H8 H3);
-        intro H9; elim (Rlt_irrefl 0 H9).
-  rewrite <- H50 in H3; rewrite cos_neg in H3; rewrite cos_PI2 in H3;
-    rewrite Rmult_0_r in H3; rewrite Rmult_0_l in H3;
-      elim (Rlt_irrefl 0 H3).
-  unfold Rdiv in H3.
-  rewrite H40 in H3; assert (H50 := cos_PI2); unfold Rdiv in H50;
-    rewrite H50 in H3; rewrite Rmult_0_r in H3; rewrite Rmult_0_l in H3;
-      elim (Rlt_irrefl 0 H3).
+      intro H9; elim (Rlt_irrefl 0 H9).
 Qed.
 
 Lemma sin_increasing_1 :
@@ -1062,8 +1038,7 @@ Proof.
   intros; generalize (Rplus_lt_compat_l x x y H3); intro H4;
     generalize (Rplus_le_compat (- (PI / 2)) x (- (PI / 2)) x H H);
       replace (- (PI / 2) + - (PI / 2)) with (- PI) by field.
-  assert (Hyp : 0 < 2).
-  prove_sup0.
+  assert (Hyp : 0 < 2) by prove_sup0.
   intro H5; generalize (Rle_lt_trans (- PI) (x + x) (x + y) H5 H4); intro H6;
     generalize
       (Rmult_lt_compat_l (/ 2) (- PI) (x + y) (Rinv_0_lt_compat 2 Hyp) H6);
@@ -1101,16 +1076,16 @@ Proof.
     generalize (cos_gt_0 ((x + y) / 2) H4 H5); intro H8;
       generalize (Rmult_lt_0_compat 2 (cos ((x + y) / 2)) Hyp H8);
         clear H8; intro H8; cut (- PI < - (PI / 2)).
-  intro H9;
-    generalize
-      (sin_lt_0_var ((x - y) / 2)
-        (Rlt_le_trans (- PI) (- (PI / 2)) ((x - y) / 2) H9 H7) H6);
+  - intro H9;
+      generalize
+        (sin_lt_0_var ((x - y) / 2)
+                      (Rlt_le_trans (- PI) (- (PI / 2)) ((x - y) / 2) H9 H7) H6);
       intro H10;
-        generalize
-          (Rmult_lt_gt_compat_neg_l (sin ((x - y) / 2)) 0 (
-            2 * cos ((x + y) / 2)) H10 H8); intro H11; rewrite Rmult_0_r in H11;
-          rewrite Rmult_comm; assumption.
-  apply Ropp_lt_gt_contravar; apply PI2_Rlt_PI.
+      generalize
+        (Rmult_lt_gt_compat_neg_l (sin ((x - y) / 2)) 0 (
+                                    2 * cos ((x + y) / 2)) H10 H8); intro H11; rewrite Rmult_0_r in H11;
+      rewrite Rmult_comm; assumption.
+  - apply Ropp_lt_gt_contravar; apply PI2_Rlt_PI.
 Qed.
 
 Lemma sin_decreasing_0 :
@@ -1163,11 +1138,11 @@ Proof.
 intros xP yP Hsin.
 destruct (total_order_T x y) as [[H|H]|H]; auto.
 - assert (sin x < sin y).
-    now apply sin_increasing_1; lra.
-  now lra.
+  + now apply sin_increasing_1; lra.
+  + now lra.
 - assert (sin y < sin x).
-    now apply sin_increasing_1; lra.
-  now lra.
+  + now apply sin_increasing_1; lra.
+  + now lra.
 Qed.
 
 Lemma cos_increasing_0 :
@@ -1255,11 +1230,11 @@ Proof.
 intros xP yP Hcos.
 destruct (total_order_T x y) as [[H|H]|H]; auto.
 - assert (cos y < cos x).
-    now apply cos_decreasing_1; lra.
-  now lra.
+  + now apply cos_decreasing_1; lra.
+  + now lra.
 - assert (cos x < cos y).
-    now apply cos_decreasing_1; lra.
-  now lra.
+  + now apply cos_decreasing_1; lra.
+  + now lra.
 Qed.
 
 Lemma tan_diff :
@@ -1278,57 +1253,57 @@ Lemma tan_increasing_0 :
 Proof.
   intros; generalize PI4_RLT_PI2; intro H4;
     generalize (Ropp_lt_gt_contravar (PI / 4) (PI / 2) H4);
-      intro H5; change (- (PI / 2) < - (PI / 4)) in H5;
-        generalize
-          (cos_gt_0 x (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) x H5 H)
-            (Rle_lt_trans x (PI / 4) (PI / 2) H0 H4)); intro HP1;
-          generalize
-            (cos_gt_0 y (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) y H5 H1)
-              (Rle_lt_trans y (PI / 4) (PI / 2) H2 H4)); intro HP2;
-            generalize
-              (not_eq_sym
-                (Rlt_not_eq 0 (cos x)
-                  (cos_gt_0 x (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) x H5 H)
-                    (Rle_lt_trans x (PI / 4) (PI / 2) H0 H4))));
-              intro H6;
-                generalize
-                  (not_eq_sym
-                    (Rlt_not_eq 0 (cos y)
-                      (cos_gt_0 y (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) y H5 H1)
-                        (Rle_lt_trans y (PI / 4) (PI / 2) H2 H4))));
-                  intro H7; generalize (tan_diff x y H6 H7); intro H8;
-                    generalize (Rlt_minus (tan x) (tan y) H3); clear H3;
-                      intro H3; rewrite H8 in H3; cut (sin (x - y) < 0).
-  intro H9; generalize (Ropp_le_ge_contravar (- (PI / 4)) y H1);
-    rewrite Ropp_involutive; intro H10; generalize (Rge_le (PI / 4) (- y) H10);
-      clear H10; intro H10; generalize (Ropp_le_ge_contravar y (PI / 4) H2);
-        intro H11; generalize (Rge_le (- y) (- (PI / 4)) H11);
-          clear H11; intro H11;
-            generalize (Rplus_le_compat (- (PI / 4)) x (- (PI / 4)) (- y) H H11);
-              generalize (Rplus_le_compat x (PI / 4) (- y) (PI / 4) H0 H10).
-  replace (PI / 4 + PI / 4) with (PI / 2) by field.
-  replace (- (PI / 4) + - (PI / 4)) with (- (PI / 2)) by field.
-  intros; case (Rtotal_order 0 (x - y)); intro H14.
-  generalize
-    (sin_gt_0 (x - y) H14 (Rle_lt_trans (x - y) (PI / 2) PI H12 PI2_Rlt_PI));
-    intro H15; elim (Rlt_irrefl 0 (Rlt_trans 0 (sin (x - y)) 0 H15 H9)).
-  elim H14; intro H15.
-  rewrite <- H15 in H9; rewrite sin_0 in H9; elim (Rlt_irrefl 0 H9).
-  apply Rminus_lt; assumption.
-  case (Rcase_abs (sin (x - y))); intro H9.
-  assumption.
-  generalize (Rge_le (sin (x - y)) 0 H9); clear H9; intro H9;
-    generalize (Rinv_0_lt_compat (cos x) HP1); intro H10;
-      generalize (Rinv_0_lt_compat (cos y) HP2); intro H11;
-        generalize (Rmult_lt_0_compat (/ cos x) (/ cos y) H10 H11);
-          replace (/ cos x * / cos y) with (/ (cos x * cos y)).
-  intro H12;
+    intro H5; change (- (PI / 2) < - (PI / 4)) in H5;
     generalize
-      (Rmult_le_pos (sin (x - y)) (/ (cos x * cos y)) H9
-        (Rlt_le 0 (/ (cos x * cos y)) H12)); intro H13;
-      elim
-        (Rlt_irrefl 0 (Rle_lt_trans 0 (sin (x - y) * / (cos x * cos y)) 0 H13 H3)).
-  apply Rinv_mult.
+      (cos_gt_0 x (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) x H5 H)
+                (Rle_lt_trans x (PI / 4) (PI / 2) H0 H4)); intro HP1;
+    generalize
+      (cos_gt_0 y (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) y H5 H1)
+                (Rle_lt_trans y (PI / 4) (PI / 2) H2 H4)); intro HP2;
+    generalize
+      (not_eq_sym
+         (Rlt_not_eq 0 (cos x)
+                     (cos_gt_0 x (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) x H5 H)
+                               (Rle_lt_trans x (PI / 4) (PI / 2) H0 H4))));
+    intro H6;
+    generalize
+      (not_eq_sym
+         (Rlt_not_eq 0 (cos y)
+                     (cos_gt_0 y (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) y H5 H1)
+                               (Rle_lt_trans y (PI / 4) (PI / 2) H2 H4))));
+    intro H7; generalize (tan_diff x y H6 H7); intro H8;
+    generalize (Rlt_minus (tan x) (tan y) H3); clear H3;
+    intro H3; rewrite H8 in H3; cut (sin (x - y) < 0).
+  - intro H9; generalize (Ropp_le_ge_contravar (- (PI / 4)) y H1);
+      rewrite Ropp_involutive; intro H10; generalize (Rge_le (PI / 4) (- y) H10);
+      clear H10; intro H10; generalize (Ropp_le_ge_contravar y (PI / 4) H2);
+      intro H11; generalize (Rge_le (- y) (- (PI / 4)) H11);
+      clear H11; intro H11;
+      generalize (Rplus_le_compat (- (PI / 4)) x (- (PI / 4)) (- y) H H11);
+      generalize (Rplus_le_compat x (PI / 4) (- y) (PI / 4) H0 H10).
+    replace (PI / 4 + PI / 4) with (PI / 2) by field.
+    replace (- (PI / 4) + - (PI / 4)) with (- (PI / 2)) by field.
+    intros; case (Rtotal_order 0 (x - y)); intro H14.
+    + generalize
+        (sin_gt_0 (x - y) H14 (Rle_lt_trans (x - y) (PI / 2) PI H12 PI2_Rlt_PI));
+        intro H15; elim (Rlt_irrefl 0 (Rlt_trans 0 (sin (x - y)) 0 H15 H9)).
+    + elim H14; intro H15.
+      * rewrite <- H15 in H9; rewrite sin_0 in H9; elim (Rlt_irrefl 0 H9).
+      * apply Rminus_lt; assumption.
+  - case (Rcase_abs (sin (x - y))); intro H9.
+    + assumption.
+    + generalize (Rge_le (sin (x - y)) 0 H9); clear H9; intro H9;
+        generalize (Rinv_0_lt_compat (cos x) HP1); intro H10;
+        generalize (Rinv_0_lt_compat (cos y) HP2); intro H11;
+        generalize (Rmult_lt_0_compat (/ cos x) (/ cos y) H10 H11);
+        replace (/ cos x * / cos y) with (/ (cos x * cos y)).
+      * intro H12;
+          generalize
+            (Rmult_le_pos (sin (x - y)) (/ (cos x * cos y)) H9
+                          (Rlt_le 0 (/ (cos x * cos y)) H12)); intro H13;
+          elim
+            (Rlt_irrefl 0 (Rle_lt_trans 0 (sin (x - y) * / (cos x * cos y)) 0 H13 H3)).
+      * apply Rinv_mult.
 Qed.
 
 Lemma tan_increasing_1 :
@@ -1338,45 +1313,45 @@ Lemma tan_increasing_1 :
 Proof.
   intros; apply Rminus_lt; generalize PI4_RLT_PI2; intro H4;
     generalize (Ropp_lt_gt_contravar (PI / 4) (PI / 2) H4);
-      intro H5; change (- (PI / 2) < - (PI / 4)) in H5;
-        generalize
-          (cos_gt_0 x (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) x H5 H)
-            (Rle_lt_trans x (PI / 4) (PI / 2) H0 H4)); intro HP1;
-          generalize
-            (cos_gt_0 y (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) y H5 H1)
-              (Rle_lt_trans y (PI / 4) (PI / 2) H2 H4)); intro HP2;
-            generalize
-              (not_eq_sym
-                (Rlt_not_eq 0 (cos x)
-                  (cos_gt_0 x (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) x H5 H)
-                    (Rle_lt_trans x (PI / 4) (PI / 2) H0 H4))));
-              intro H6;
-                generalize
-                  (not_eq_sym
-                    (Rlt_not_eq 0 (cos y)
-                      (cos_gt_0 y (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) y H5 H1)
-                        (Rle_lt_trans y (PI / 4) (PI / 2) H2 H4))));
-                  intro H7; rewrite (tan_diff x y H6 H7);
-                    generalize (Rinv_0_lt_compat (cos x) HP1); intro H10;
-                      generalize (Rinv_0_lt_compat (cos y) HP2); intro H11;
-                        generalize (Rmult_lt_0_compat (/ cos x) (/ cos y) H10 H11);
-                          replace (/ cos x * / cos y) with (/ (cos x * cos y)).
-  clear H10 H11; intro H8; generalize (Ropp_le_ge_contravar y (PI / 4) H2);
-    intro H11; generalize (Rge_le (- y) (- (PI / 4)) H11);
+    intro H5; change (- (PI / 2) < - (PI / 4)) in H5;
+    generalize
+      (cos_gt_0 x (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) x H5 H)
+                (Rle_lt_trans x (PI / 4) (PI / 2) H0 H4)); intro HP1;
+    generalize
+      (cos_gt_0 y (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) y H5 H1)
+                (Rle_lt_trans y (PI / 4) (PI / 2) H2 H4)); intro HP2;
+    generalize
+      (not_eq_sym
+         (Rlt_not_eq 0 (cos x)
+                     (cos_gt_0 x (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) x H5 H)
+                               (Rle_lt_trans x (PI / 4) (PI / 2) H0 H4))));
+    intro H6;
+    generalize
+      (not_eq_sym
+         (Rlt_not_eq 0 (cos y)
+                     (cos_gt_0 y (Rlt_le_trans (- (PI / 2)) (- (PI / 4)) y H5 H1)
+                               (Rle_lt_trans y (PI / 4) (PI / 2) H2 H4))));
+    intro H7; rewrite (tan_diff x y H6 H7);
+    generalize (Rinv_0_lt_compat (cos x) HP1); intro H10;
+    generalize (Rinv_0_lt_compat (cos y) HP2); intro H11;
+    generalize (Rmult_lt_0_compat (/ cos x) (/ cos y) H10 H11);
+    replace (/ cos x * / cos y) with (/ (cos x * cos y)).
+  - clear H10 H11; intro H8; generalize (Ropp_le_ge_contravar y (PI / 4) H2);
+      intro H11; generalize (Rge_le (- y) (- (PI / 4)) H11);
       clear H11; intro H11;
-        generalize (Rplus_le_compat (- (PI / 4)) x (- (PI / 4)) (- y) H H11).
-  replace (- (PI / 4) + - (PI / 4)) with (- (PI / 2)) by field.
-  clear H11; intro H9; generalize (Rlt_minus x y H3); clear H3; intro H3;
-    clear H H0 H1 H2 H4 H5 HP1 HP2; generalize PI2_Rlt_PI;
+      generalize (Rplus_le_compat (- (PI / 4)) x (- (PI / 4)) (- y) H H11).
+    replace (- (PI / 4) + - (PI / 4)) with (- (PI / 2)) by field.
+    clear H11; intro H9; generalize (Rlt_minus x y H3); clear H3; intro H3;
+      clear H H0 H1 H2 H4 H5 HP1 HP2; generalize PI2_Rlt_PI;
       intro H1; generalize (Ropp_lt_gt_contravar (PI / 2) PI H1);
-        clear H1; intro H1;
-          generalize
-            (sin_lt_0_var (x - y) (Rlt_le_trans (- PI) (- (PI / 2)) (x - y) H1 H9) H3);
-            intro H2;
-              generalize
-                (Rmult_lt_gt_compat_neg_l (sin (x - y)) 0 (/ (cos x * cos y)) H2 H8);
-                rewrite Rmult_0_r; intro H4; assumption.
-  apply Rinv_mult.
+      clear H1; intro H1;
+      generalize
+        (sin_lt_0_var (x - y) (Rlt_le_trans (- PI) (- (PI / 2)) (x - y) H1 H9) H3);
+      intro H2;
+      generalize
+        (Rmult_lt_gt_compat_neg_l (sin (x - y)) 0 (/ (cos x * cos y)) H2 H8);
+      rewrite Rmult_0_r; intro H4; assumption.
+  - apply Rinv_mult.
 Qed.
 
 Lemma sin_incr_0 :
@@ -1548,80 +1523,32 @@ Qed.
 (**********)
 Lemma sin_eq_0_1 : forall x:R, (exists k : Z, x = IZR k * PI) -> sin x = 0.
 Proof.
-  intros.
-  elim H; intros.
-  apply (Zcase_sign x0).
-  intro.
-  rewrite H1 in H0.
-  simpl in H0.
-  rewrite H0; rewrite Rmult_0_l; apply sin_0.
-  intro.
-  cut (0 <= x0)%Z.
-  intro.
-  elim (IZN x0 H2); intros.
-  rewrite H3 in H0.
-  rewrite <- INR_IZR_INZ in H0.
-  rewrite H0.
-  elim (even_odd_cor x1); intros.
-  elim H4; intro.
-  rewrite H5.
-  rewrite mult_INR.
-  simpl in |- *.
-  rewrite <- (Rplus_0_l ((1 + 1) * INR x2 * PI)).
-  rewrite sin_period.
-  apply sin_0.
-  rewrite H5.
-  rewrite S_INR; rewrite mult_INR.
-  simpl in |- *.
-  rewrite Rmult_plus_distr_r.
-  rewrite Rmult_1_l; rewrite sin_plus.
-  rewrite sin_PI.
-  rewrite Rmult_0_r.
-  rewrite <- (Rplus_0_l ((1 + 1) * INR x2 * PI)).
-  rewrite sin_period.
-  rewrite sin_0; ring.
-  apply le_IZR.
-  left; apply IZR_lt.
-  assert (H2 := Z.gt_lt_iff).
-  elim (H2 x0 0%Z); intros.
-  apply H3; assumption.
-  intro.
-  rewrite H0.
-  replace (sin (IZR x0 * PI)) with (- sin (- IZR x0 * PI)).
-  cut (0 <= - x0)%Z.
-  intro.
-  rewrite <- Ropp_Ropp_IZR.
-  elim (IZN (- x0) H2); intros.
-  rewrite H3.
-  rewrite <- INR_IZR_INZ.
-  elim (even_odd_cor x1); intros.
-  elim H4; intro.
-  rewrite H5.
-  rewrite mult_INR.
-  simpl in |- *.
-  rewrite <- (Rplus_0_l ((1 + 1) * INR x2 * PI)).
-  rewrite sin_period.
-  rewrite sin_0; ring.
-  rewrite H5.
-  rewrite S_INR; rewrite mult_INR.
-  simpl in |- *.
-  rewrite Rmult_plus_distr_r.
-  rewrite Rmult_1_l; rewrite sin_plus.
-  rewrite sin_PI.
-  rewrite Rmult_0_r.
-  rewrite <- (Rplus_0_l ((1 + 1) * INR x2 * PI)).
-  rewrite sin_period.
-  rewrite sin_0; ring.
-  apply le_IZR.
-  apply Rplus_le_reg_l with (IZR x0).
-  rewrite Rplus_0_r.
-  rewrite Ropp_Ropp_IZR.
-  rewrite Rplus_opp_r.
-  now apply Rlt_le, IZR_lt.
-  rewrite <- sin_neg.
-  rewrite Ropp_mult_distr_l_reverse.
-  rewrite Ropp_involutive.
-  reflexivity.
+  assert (forall n, sin (INR n * PI) = 0). {
+    intros n;induction n as [|n IHn].
+    { change (INR 0) with 0.
+      replace (0 * PI) with 0 by ring.
+      exact sin_0. }
+    rewrite S_INR.
+    replace ((INR n + 1) * PI) with ((INR n) * PI + PI) by ring.
+    rewrite neg_sin,IHn.
+    ring.
+  }
+  intros x [k Hx].
+  rewrite Hx;clear x Hx.
+  destruct (Z.abs_or_opp_abs k).
+  - replace (IZR k) with (INR (Z.to_nat k)).
+    { apply H. }
+    rewrite INR_IZR_INZ.
+    f_equal.
+    apply Z2Nat.id.
+    lia.
+  - replace (IZR k) with (- INR (Z.to_nat (- k))).
+    { replace (- INR (Z.to_nat (- k)) * PI) with (- (INR (Z.to_nat (- k)) * PI)) by ring.
+      rewrite sin_neg.
+      rewrite H;ring. }
+    rewrite INR_IZR_INZ.
+    rewrite <-opp_IZR. f_equal.
+    lia.
 Qed.
 
 Lemma sin_eq_0_0 (x:R) : sin x = 0 ->  exists k : Z, x = IZR k * PI.
@@ -1716,7 +1643,9 @@ Proof.
   destruct (Rtotal_order x (3 * (PI / 2))) as [LT|[EQ|GT]].
   - rewrite cos_sin in Hx.
     assert (Lo' : 0 <= PI / 2 + x).
-    { apply Rplus_le_le_0_compat. apply Rlt_le, PI2_RGT_0. trivial. }
+    { apply Rplus_le_le_0_compat.
+      - apply Rlt_le, PI2_RGT_0.
+      - trivial. }
     assert (Hi' : PI / 2 + x <= 2 * PI).
     { apply Rlt_le.
       replace (2 * PI) with (PI / 2 + 3 * (PI / 2)) by field.

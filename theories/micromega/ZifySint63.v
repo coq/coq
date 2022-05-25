@@ -82,8 +82,8 @@ Add Zify BinOp Op_eqb.
 Lemma eq_int_inj : forall  n m : int, n = m <-> (to_Z n = to_Z m)%sint63.
 Proof.
   split; intro H.
-  rewrite H; reflexivity.
-  now apply to_Z_inj.
+  - rewrite H; reflexivity.
+  - now apply to_Z_inj.
 Qed.
 
 #[global]

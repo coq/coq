@@ -58,10 +58,11 @@ Qed.
 Lemma Zpower_nat_Z (z : Z) (n : nat) :
   Zpower_nat z n = z ^ (Z.of_nat n).
 Proof.
- induction n. trivial.
- rewrite Zpower_nat_succ_r, Nat2Z.inj_succ, Z.pow_succ_r.
- now f_equal.
- apply Nat2Z.is_nonneg.
+  induction n.
+  - trivial.
+  - rewrite Zpower_nat_succ_r, Nat2Z.inj_succ, Z.pow_succ_r.
+    + now f_equal.
+    + apply Nat2Z.is_nonneg.
 Qed.
 
 Theorem Zpower_nat_Zpower z n : 0 <= n ->
