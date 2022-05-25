@@ -427,6 +427,7 @@ type entry =
 
 type model = {
   entries : entry PMap.t;
+  canonical : int; (* Number of canonical nodes *)
   table : Index.table }
 
 let unset_marks m =
@@ -437,6 +438,7 @@ let unset_marks m =
 
 let empty_model = {
   entries = PMap.empty;
+  canonical = 0;
   table = Index.empty
 }
 
@@ -445,6 +447,7 @@ let enter_equiv m u v =
           match a with
           | Canonical _ -> Equiv v
           | _ -> assert false) m.entries;
+    canonical = m.canonical - 1;
     table = m.table }
 
 let change_equiv entries u v =
@@ -594,6 +597,7 @@ struct
       cls 0
 
   let empty = PMap.empty
+  let is_empty = PMap.is_empty
 
   let singleton cl = add cl empty
 
@@ -868,12 +872,7 @@ let check_clauses_with_premises = time2 (Pp.str"check_clauses_with_premises") ch
 
 type 'a result = Loop | Model of 'a * model
 
-let canonical_cardinal m =
-  PMap.fold (fun _ e acc ->
-    match e with
-    | Equiv _ -> acc
-    | Canonical _ -> succ acc)
-    m.entries 0
+let canonical_cardinal m = m.canonical
 
 let can_all_premises_in m w prem =
   Premises.for_all (fun (l, _) -> CanSet.mem (repr m l).canon w) prem
@@ -883,9 +882,17 @@ let partition_clauses_fwd model (w : CanSet.t) : CanSet.t * CanSet.t * CanSet.t 
   CanSet.fold (fun idx (bwd, fwd) (allw, conclw, conclnw) ->
     let bwdw, bwdnw = ClausesOf.partition (fun (_k, prems) -> can_all_premises_in model w prems) bwd in
     let fwdw, fwdnw = ClausesBackward.partition (fun concl _clsinfo -> CanSet.mem (repr model concl).canon w) fwd in
-    let allw = CanSet.add idx (bwdw, fwdw) allw (* Premises and conclusions in w *)
-    and conclw = CanSet.add idx (bwdnw, ClausesBackward.empty) conclw (* Conclusions in w, premises not in w *)
-    and conclnw = CanSet.add idx (ClausesOf.empty, fwdnw) conclnw in (* Conclusions not in w, Premises in w *)
+    let allw =
+      if ClausesOf.is_empty bwdw && ClausesBackward.is_empty fwdw then allw
+      else CanSet.add idx (bwdw, fwdw) allw (* Premises and conclusions in w *)
+    in
+    let conclw =
+      if ClausesOf.is_empty bwdnw then conclw
+      else CanSet.add idx (bwdnw, ClausesBackward.empty) conclw (* Conclusions in w, premises not in w *)
+    in
+    let conclnw =
+      if ClausesBackward.is_empty fwdnw then conclnw
+      else CanSet.add idx (ClausesOf.empty, fwdnw) conclnw in (* Conclusions not in w, Premises in w *)
     (allw, conclw, conclnw))
     w (CanSet.empty, CanSet.empty, CanSet.empty)
 
@@ -1596,7 +1603,7 @@ let enforce_constraint u k v (m : t) =
 
 exception AlreadyDeclared
 
-let add_model u { entries; table } =
+let add_model u { entries; table; canonical } =
   if Index.mem u table then
    (debug Pp.(fun () -> str"Already declared level: " ++ Point.pr u);
     raise AlreadyDeclared)
@@ -1605,7 +1612,7 @@ let add_model u { entries; table } =
     let can = Canonical { canon = idx; value = 0; mark = NoMark;
       clauses_fwd = PMap.empty; clauses_bwd = ClausesOf.empty } in
     let entries = PMap.add idx can entries in
-    idx, { entries; table }
+    idx, { entries; table; canonical = canonical + 1 }
 
 let add ?(rank:int option) u model =
   let _r = rank in
