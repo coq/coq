@@ -197,7 +197,9 @@ let create_session f =
   sn.coqops#set_forward_set_goals_of_dbg_session
     (fun msg ->
       sn.coqops#set_debug_goal msg;
+      sn.last_db_goals <- msg;
       let osn = (find_secondary_sn sn) in
+      osn.coqops#set_debug_goal msg;
       osn.last_db_goals <- msg);
   sn.coqops#set_forward_init_db (fun () -> !forward_init_db sn);
   let _ = set_drag sn.script#drag in
