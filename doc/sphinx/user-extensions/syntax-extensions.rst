@@ -1337,7 +1337,7 @@ Most commands use :token:`scope_name`; :token:`scope_key`\s are used within :tok
    Declares a new notation scope. Note that the initial
    state of Coq declares the following notation scopes:
    ``core_scope``, ``type_scope``, ``function_scope``, ``nat_scope``,
-   ``bool_scope``, ``list_scope``, ``int_scope``, ``uint_scope``.
+   ``bool_scope``, ``list_scope``, ``dec_int_scope``, ``dec_uint_scope``.
 
    Use commands such as :cmd:`Notation` to add notations to the scope.
 
