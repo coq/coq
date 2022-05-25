@@ -572,7 +572,7 @@ let split_at_annot bl na =
         else
           aux (x :: acc) rest
       | CLocalPattern _ :: rest ->
-        Loc.raise ?loc (Stream.Error "pattern with quote not allowed after fix")
+        Loc.raise ?loc (Gramlib.Stream.Error "pattern with quote not allowed after fix")
       | [] ->
         CErrors.user_err ?loc
           (str "No parameter named " ++ Id.print id ++ str".")

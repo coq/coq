@@ -23,12 +23,13 @@ let from ?(loc=Loc.(initial ToplevelInput)) f =
   let loct_func loct i = Hashtbl.find loct i in
   let loct_add loct i loc = Hashtbl.add loct i loc in
   let strm =
+    let i = ref 0 in
     Stream.from
-      (fun i ->
-        match f i with
+      (fun () ->
+        match f () with
         | None -> None
         | Some (a,loc) ->
-        loct_add loct i loc; Some a) in
+        loct_add loct !i loc; incr i; Some a) in
   let fun_loc i = if i = 0 then loc else loct_func loct (i - 1) in
   { strm; max_peek = 0; fun_loc }
 

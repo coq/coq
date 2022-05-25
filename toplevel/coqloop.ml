@@ -76,7 +76,7 @@ let reset_input_buffer doc ic ibuf =
   ibuf.str <- Bytes.empty;
   ibuf.len <- 0;
   ibuf.bols <- [];
-  ibuf.tokens <- Pcoq.Parsable.make (Stream.from (prompt_char doc ic ibuf));
+  ibuf.tokens <- Pcoq.Parsable.make (Gramlib.Stream.from (prompt_char doc ic ibuf));
   ibuf.start <- 0
 
 (* Functions to print underlined locations from an input buffer. *)
@@ -230,7 +230,7 @@ let top_buffer =
     str = Bytes.empty;
     len = 0;
     bols = [];
-    tokens = Pcoq.Parsable.make (Stream.of_list []);
+    tokens = Pcoq.Parsable.make (Gramlib.Stream.empty ());
     start = 0 }
 
 let set_prompt prompt =
@@ -242,7 +242,7 @@ let set_prompt prompt =
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
-  let rec dot st = match LStream.next st with
+  let rec dot st = match Gramlib.LStream.next st with
     | Tok.KEYWORD ("."|"...") -> ()
     | Tok.EOI -> ()
     | _ -> dot st

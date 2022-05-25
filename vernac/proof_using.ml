@@ -207,7 +207,8 @@ let suggest_variable env id =
 let value = ref None
 
 let using_to_string us = Pp.string_of_ppcmds (Ppvernac.pr_using us)
-let using_from_string us = Pcoq.Entry.parse G_vernac.section_subset_expr (Pcoq.Parsable.make (Stream.of_string us))
+let using_from_string us = Pcoq.Entry.parse G_vernac.section_subset_expr
+    (Pcoq.Parsable.make (Gramlib.Stream.of_string us))
 
 let proof_using_opt_name = ["Default";"Proof";"Using"]
 let () =

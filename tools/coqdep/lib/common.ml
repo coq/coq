@@ -170,8 +170,10 @@ let parse_META package f =
     close_in ic;
     Some (f, m)
   with
-  | Stream.Error msg -> Error.cannot_parse_meta_file package msg
   | Sys_error _msg -> None
+  (* findlib >= 1.9.3 uses its own Error exception, so we can't catch
+     it without bumping our version requirements. TODO pass the message on once we bump. *)
+  | _ -> Error.cannot_parse_meta_file package ""
 
 let find_META package =
   let rec aux = function

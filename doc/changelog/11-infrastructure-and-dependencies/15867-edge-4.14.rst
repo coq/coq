@@ -1,0 +1,4 @@
+- **Added:**
+  OCaml 4.14 is now officially supported
+  (`#15867 <https://github.com/coq/coq/pull/15867>`_,
+  by Gaëtan Gilbert).

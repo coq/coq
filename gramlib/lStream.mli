@@ -11,7 +11,7 @@
 (** Extending streams with a (non-canonical) location function *)
 
 type 'a t
-val from : ?loc:Loc.t -> (int -> ('a * Loc.t) option) -> 'a t
+val from : ?loc:Loc.t -> (unit -> ('a * Loc.t) option) -> 'a t
 
 (** Returning the loc of the last consumed element or the initial loc
     if no element is consumed *)

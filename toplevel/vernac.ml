@@ -90,7 +90,7 @@ let load_vernac_core ~echo ~check ~interactive ~state ?ldir file =
   let dirpath = Option.cata (fun ldir -> Some Names.DirPath.(to_string ldir))
       None ldir in
   let in_pa = Pcoq.Parsable.make ~loc:Loc.(initial (InFile {dirpath; file}))
-      (Stream.of_channel in_chan) in
+      (Gramlib.Stream.of_channel in_chan) in
   let open State in
 
   (* ids = For beautify, list of parsed sids *)

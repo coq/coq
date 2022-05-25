@@ -43,7 +43,7 @@ let pat_of_name CAst.{loc;v} = match v with
 | Anonymous -> CAst.make ?loc @@ CPatAtom None
 | Name id -> CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident id))
 
-let err () = raise Stream.Failure
+let err () = raise Gramlib.Stream.Failure
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)

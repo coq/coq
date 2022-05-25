@@ -447,7 +447,7 @@ let check_param = function
 | CLocalAssum (nas, Default _, _) -> List.iter check_named nas
 | CLocalAssum (nas, Generalized _, _) -> ()
 | CLocalPattern {CAst.loc} ->
-    Loc.raise ?loc (Stream.Error "pattern with quote not allowed here")
+    Loc.raise ?loc (Gramlib.Stream.Error "pattern with quote not allowed here")
 
 let restrict_inductive_universes sigma ctx_params arities constructors =
   let merge_universes_of_constr c =
@@ -726,7 +726,7 @@ let rec count_binder_expr = function
   | CLocalAssum(l,_,_) :: rest -> List.length l + count_binder_expr rest
   | CLocalDef _ :: rest -> 1 + count_binder_expr rest
   | CLocalPattern {CAst.loc} :: _ ->
-    Loc.raise ?loc (Stream.Error "pattern with quote not allowed here")
+    Loc.raise ?loc (Gramlib.Stream.Error "pattern with quote not allowed here")
 
 let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
   let (params,indl),coercions,ntns = extract_mutual_inductive_declaration_components indl in

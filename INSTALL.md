@@ -18,7 +18,7 @@ Build Requirements
 To compile Coq yourself, you need:
 
 - [OCaml](https://ocaml.org/) (version >= 4.09.0)
-  (This version of Coq has been tested up to OCaml 4.13.0)
+  (This version of Coq has been tested up to OCaml 4.14.0)
 
 - The [Dune OCaml build system](https://github.com/ocaml/dune/) >= 2.5.1
 

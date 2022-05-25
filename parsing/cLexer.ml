@@ -12,6 +12,8 @@ open Pp
 open Util
 open Tok
 
+module Stream = Gramlib.Stream
+
 (* Dictionaries: trees annotated with string options, each node being a map
    from chars to dictionaries (the subtrees). A trie, in other words. *)
 
@@ -378,10 +380,10 @@ let rec string loc ~comm_level bp len s = match Stream.peek s with
       Stream.junk s;
       string loc ~comm_level bp (store len c) s
   | _ ->
-      let _ = Stream.empty s in
-      let ep = Stream.count s in
-     let loc = set_loc_pos loc bp ep in
-     err loc Unterminated_string
+    let () = if not (Stream.is_empty s) then raise Stream.Failure in
+    let ep = Stream.count s in
+    let loc = set_loc_pos loc bp ep in
+    err loc Unterminated_string
 
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
@@ -460,12 +462,12 @@ let rec comment loc bp s =
       push_string "\""; push_string (get_buff len); push_string "\"";
       comment loc bp s
   | _ ->
-    match try Some (Stream.empty s) with Stream.Failure -> None with
-    | Some _ ->
+    match Stream.is_empty s with
+    | true ->
       let ep = Stream.count s in
       let loc = set_loc_pos loc bp ep in
       err loc Unterminated_comment
-    | _ ->
+    | false ->
           match Stream.peek s with
             Some ('\n' as z) ->
               Stream.junk s;
@@ -487,7 +489,7 @@ let rec progress_further loc last nj tt cs =
 and update_longest_valid_token loc last nj tt cs =
   match tt.node with
   | Some _ as last' ->
-    stream_njunk nj cs;
+    Stream.njunk nj cs;
     progress_further loc last' 0 tt cs
   | None ->
     progress_further loc last nj tt cs
@@ -523,7 +525,7 @@ type marker = Delimited of int * char list * char list | ImmediateAsciiIdent
 
 let peek_marker_len b e s =
   let rec peek n =
-    match stream_nth n s with
+    match Stream.nth n s with
     | c -> if c = b then peek (n+1) else n, List.make n b, List.make n e
     | exception Stream.Failure -> n, List.make n b, List.make n e
   in
@@ -532,7 +534,7 @@ let peek_marker_len b e s =
   else Delimited (len, start, stop)
 
 let peek_marker s =
-  match stream_nth 0 s with
+  match Stream.nth 0 s with
     | '(' -> peek_marker_len '(' ')' s
     | '[' -> peek_marker_len '[' ']' s
     | '{' -> peek_marker_len '{' '}' s
@@ -795,8 +797,8 @@ let rec next_token ~diff_mode loc s =
 let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
   let bp_ = Loc.(loc.bp) in
   let cur_loc = ref loc in
-  LStream.from ~loc
-    (fun i ->
+  Gramlib.LStream.from ~loc
+    (fun () ->
       let (tok, loc) = next_token !cur_loc cs in
       cur_loc := after loc;
       let aloc = Loc.{loc with bol_pos = loc.bol_pos + bp_;

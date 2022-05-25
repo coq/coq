@@ -31,7 +31,7 @@ end
 
 open Toplevel_
 
-let err () = raise Stream.Failure
+let err () = raise Gramlib.Stream.Failure
 
 let test_show_goal =
   let open Pcoq.Lookahead in
