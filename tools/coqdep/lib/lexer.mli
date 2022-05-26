@@ -16,8 +16,6 @@ type coq_token =
   | Require of qualid option * qualid list
   | Declare of string list
   | Load of load
-  | AddLoadPath of string
-  | AddRecLoadPath of string * qualid
   | External of qualid * string
 
 exception Fin_fichier

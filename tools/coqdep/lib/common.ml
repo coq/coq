@@ -222,7 +222,6 @@ let rec find_dependencies st basename =
           | Some [] -> assert false
           | None -> warning_module_notfound ~what:External (Some from) f [str]
           end
-        | AddLoadPath _ | AddRecLoadPath _ -> (* TODO: will this be handled? *) ()
       done;
       List.rev !dependencies
     with
