@@ -31,10 +31,16 @@ module PluginSpec : sig
   val pp : t -> string
 end
 
-type toplevel = {
-  load_obj : PluginSpec.t -> unit;
-  add_dir  : string -> unit;
-  ml_loop  : unit -> unit }
+type toplevel =
+  { load_plugin : PluginSpec.t -> unit
+  (** Load a findlib library, given by public name *)
+  ; load_module : string -> unit
+  (** Load a cmxs / cmo module, used by the native compiler to load objects *)
+  ; add_dir  : string -> unit
+  (** Adds a dir to the module search path *)
+  ; ml_loop  : unit -> unit
+  (** Implementation of Drop *)
+  }
 
 (** Sets and initializes a toplevel (if any) *)
 val set_top : toplevel -> unit
