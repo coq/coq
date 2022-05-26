@@ -35,7 +35,6 @@ dune* whitespace=blank-at-eol,tab-in-indent
 *.mlg whitespace=blank-at-eol,tab-in-indent
 *.mli whitespace=blank-at-eol,tab-in-indent
 *.mll whitespace=blank-at-eol,tab-in-indent
-*.mllib whitespace=blank-at-eol,tab-in-indent
 *.mlp whitespace=blank-at-eol,tab-in-indent
 *.mly whitespace=blank-at-eol,tab-in-indent
 *.mlpack whitespace=blank-at-eol,tab-in-indent

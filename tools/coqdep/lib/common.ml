@@ -200,12 +200,9 @@ let rec find_dependencies st basename =
                   | None -> mldir
                   | Some _ -> Some(Filename.dirname str)
                 in
-                match Loadpath.search_mllib_known st s with
-                | Some mldir -> declare ".cma" (pick_mldir mldir) s
-                | None ->
-                  match Loadpath.search_mlpack_known st s with
-                  | Some mldir -> declare ".cmo" (pick_mldir mldir) s
-                  | None -> warning_declare f str
+                match Loadpath.search_mlpack_known st s with
+                | Some mldir -> declare ".cmo" (pick_mldir mldir) s
+                | None -> warning_declare f str
               end
           in
           List.iter decl sl

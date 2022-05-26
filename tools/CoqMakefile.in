@@ -25,7 +25,6 @@ MLIFILES          := $(COQMF_MLIFILES)
 MLFILES           := $(COQMF_MLFILES)
 MLGFILES          := $(COQMF_MLGFILES)
 MLPACKFILES       := $(COQMF_MLPACKFILES)
-MLLIBFILES        := $(COQMF_MLLIBFILES)
 METAFILE          := $(COQMF_METAFILE)
 CMDLINE_VFILES    := $(COQMF_CMDLINE_VFILES)
 INSTALLCOQDOCROOT := $(COQMF_INSTALLCOQDOCROOT)
@@ -318,7 +317,6 @@ ALLSRCFILES := \
 	$(MLGFILES) \
 	$(MLFILES) \
 	$(MLPACKFILES) \
-	$(MLLIBFILES) \
 	$(MLIFILES)
 
 # helpers
@@ -328,7 +326,7 @@ vo_to_obj = $(addsuffix .o,\
 strip_dotslash = $(patsubst ./%,%,$(1))
 
 # without this we get undefined variables in the expansion for the
-# targets of the [deprecated,use-mllib-or-mlpack] rule
+# targets of the [deprecated,use-mlpack] rule
 with_undef = $(if $(filter-out undefined, $(origin $(1))),$($(1)))
 
 VO = vo
@@ -347,7 +345,7 @@ CMOFILES = \
 	$(MLPACKFILES:.mlpack=.cmo)
 CMXFILES = $(CMOFILES:.cmo=.cmx)
 OFILES = $(CMXFILES:.cmx=.o)
-CMAFILES = $(MLLIBFILES:.mllib=.cma) $(MLPACKFILES:.mlpack=.cma)
+CMAFILES = $(MLPACKFILES:.mlpack=.cma)
 CMXAFILES = $(CMAFILES:.cma=.cmxa)
 CMIFILES = \
 	$(CMOFILES:.cmo=.cmi) \
@@ -366,12 +364,6 @@ PACKEDFILES = \
 	  $(foreach lib, \
 	    $(call strip_dotslash, \
 	       $(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES)),$(call with_undef,$(lib))))
-# files that are archived into a .cma (mllib)
-LIBEDFILES = \
-	$(call strip_dotslash, \
-	  $(foreach lib, \
-	    $(call strip_dotslash, \
-	       $(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES)),$(call with_undef,$(lib))))
 CMIFILESTOINSTALL = $(filter-out $(addsuffix .cmi,$(PACKEDFILES)),$(CMIFILES))
 CMOFILESTOINSTALL = $(filter-out $(addsuffix .cmo,$(PACKEDFILES)),$(CMOFILES))
 OBJFILES = $(call vo_to_obj,$(VOFILES))
@@ -742,21 +734,6 @@ $(filter %.cmx, $(MLFILES:.ml=.cmx) $(MLGFILES:.mlg=.cmx)): %.cmx: %.ml
 	$(SHOW)'CAMLOPT -c $(FOR_PACK) $<'
 	$(HIDE)$(TIMER) $(CAMLOPTC) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) $(FOR_PACK) $<
 
-
-$(MLLIBFILES:.mllib=.cmxs): %.cmxs: %.cmxa
-	$(SHOW)'CAMLOPT -shared -o $@'
-	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) \
-		-shared -o $@ $<
-
-$(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib
-	$(SHOW)'CAMLC -a -o $@'
-	$(HIDE)$(TIMER) $(CAMLLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -a -o $@ $^
-
-$(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib
-	$(SHOW)'CAMLOPT -a -o $@'
-	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -a -o $@ $^
-
-
 $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmxa
 	$(SHOW)'CAMLOPT -shared -o $@'
 	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) \
@@ -779,8 +756,8 @@ $(MLPACKFILES:.mlpack=.cmx): %.cmx: | %.mlpack
 	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) -pack -o $@ $^
 
 # This rule is for _CoqProject with no .mllib nor .mlpack
-$(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)) $(addsuffix .cmxs,$(LIBEDFILES)),$(MLFILES:.ml=.cmxs) $(MLGFILES:.mlg=.cmxs)): %.cmxs: %.cmx
-	$(SHOW)'[deprecated,use-mllib-or-mlpack] CAMLOPT -shared -o $@'
+$(filter-out $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix .cmxs,$(PACKEDFILES)),$(MLFILES:.ml=.cmxs) $(MLGFILES:.mlg=.cmxs)): %.cmxs: %.cmx
+	$(SHOW)'[deprecated,use-mlpack] CAMLOPT -shared -o $@'
 	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) \
 		-shared -o $@ $<
 
@@ -886,10 +863,6 @@ $(addsuffix .d,$(MLGFILES)): %.mlg.d: %.ml
 $(addsuffix .d,$(MLFILES)): %.ml.d: %.ml
 	$(SHOW)'CAMLDEP $<'
 	$(HIDE)$(CAMLDEP) $(OCAMLLIBS) "$<" $(redir_if_ok)
-
-$(addsuffix .d,$(MLLIBFILES)): %.mllib.d: %.mllib
-	$(SHOW)'OCAMLLIBDEP $<'
-	$(HIDE)$(OCAMLLIBDEP) -c $(OCAMLLIBS) "$<" $(redir_if_ok)
 
 $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 	$(SHOW)'OCAMLLIBDEP $<'

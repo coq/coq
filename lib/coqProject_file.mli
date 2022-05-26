@@ -24,7 +24,7 @@ type project = {
    * the user-contrib folder) *)
   docroot : string option;
 
-  files : string sourced list; (* .v, .ml, .mlg, .mli, .mllib, .mlpack files *)
+  files : string sourced list; (* .v, .ml, .mlg, .mli, .mlpack files *)
   cmd_line_files : string sourced list;
   meta_file : meta_file;
 

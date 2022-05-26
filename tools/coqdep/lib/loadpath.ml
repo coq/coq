@@ -170,8 +170,7 @@ type result =
 module State = struct
 
   type t =
-    { mllib : (string, dir * string) Hashtbl.t
-    ; mlpack : (string, dir * string) Hashtbl.t
+    { mlpack : (string, dir * string) Hashtbl.t
     ; vfiles : (dirpath * dirpath, result) Hashtbl.t
     ; coqlib : (dirpath * dirpath, result) Hashtbl.t
     ; other : (dirpath * dirpath, result) Hashtbl.t
@@ -179,8 +178,7 @@ module State = struct
     }
 
   let make ~boot =
-    { mllib = Hashtbl.create 19
-    ; mlpack = Hashtbl.create 19
+    { mlpack = Hashtbl.create 19
     ; vfiles = Hashtbl.create 19
     ; coqlib = Hashtbl.create 19
     ; other = Hashtbl.create 19
@@ -198,8 +196,6 @@ module State = struct
 
 end
 
-let add_mllib_known { State.mllib ; _ } = State.gen_add mllib
-let search_mllib_known { State.mllib ; _ } = State.gen_search mllib
 let add_mlpack_known { State.mlpack ; _ } = State.gen_add mlpack
 let search_mlpack_known { State.mlpack ; _ } = State.gen_search mlpack
 
@@ -239,9 +235,8 @@ let is_in_coqlib st ?from s =
   try let _ = search_table st.State.coqlib ?from s in true with Not_found -> false
 
 let add_caml_known st _ phys_dir _ f =
-  let basename, suff = get_extension f [".mllib"; ".mlpack"; ".cmxs"] in
+  let basename,suff = get_extension f [".mlpack"; ".cmxs"] in
   match suff with
-    | ".mllib" -> add_mllib_known st basename (Some phys_dir) suff
     | ".mlpack" -> add_mlpack_known st basename (Some phys_dir) suff
     (* Installed gloally *)
     | ".cmxs" -> add_mlpack_known st basename (Some phys_dir) suff

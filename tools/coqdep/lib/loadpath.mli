@@ -31,7 +31,6 @@ end
 
 val search_v_known : State.t -> ?from:dirpath -> dirpath -> result option
 val search_other_known : State.t -> ?from:dirpath -> dirpath -> result option
-val search_mllib_known : State.t -> string -> dir option
 val search_mlpack_known : State.t -> string -> dir option
 
 val is_in_coqlib : State.t -> ?from:dirpath -> dirpath -> bool

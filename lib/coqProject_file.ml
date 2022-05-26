@@ -25,7 +25,7 @@ type project = {
   native_compiler : native_compiler option;
   docroot : string option;
 
-  files : string sourced list; (* .v, .ml, .mlg, .mli, .mllib, .mlpack files *)
+  files : string sourced list; (* .v, .ml, .mlg, .mli, .mlpack files *)
   cmd_line_files : string sourced list;
   meta_file : meta_file;
 
@@ -187,7 +187,7 @@ let expand_paths project =
   let rec expand_dir path rv =
     let add_file f =
       if List.mem (Filename.extension f)
-               [".v"; ".mli"; ".ml"; ".mlg"; ".mlpack"; ".mllib"] then
+               [".v"; ".mli"; ".ml"; ".mlg"; ".mlpack"] then
         rv := {thing=abs_f f; source=ProjectFile} :: !rv
     in
     if Sys.file_exists path && Sys.is_directory path then
@@ -278,7 +278,6 @@ let process_cmd_line ~warning_fn orig_dir proj args =
         | ".ml"
         | ".mli"
         | ".mlg"
-        | ".mllib"
         | ".mlpack" ->
           check_filename f;
           { proj with files = (sourced abs_f) :: proj.files }

@@ -114,7 +114,7 @@ let error_cannot_parse s (i,j) =
 
 let error_unknown_extension name =
   Printf.eprintf "Don't know what to do with \"%s\"\n" name;
-  Printf.eprintf "Usage: ocamllibdep [-I dir] [-c] [file.mllib] [file.mlpack]\n";
+  Printf.eprintf "Usage: ocamllibdep [-I dir] [-c] [file.mlpack]\n";
   exit 1
 
 let error_cannot_open msg =
@@ -155,7 +155,6 @@ let mkknown () =
 let add_ml_known, search_ml_known = mkknown ()
 let add_mlpack_known, search_mlpack_known = mkknown ()
 
-let mllibAccu = ref ([] : (string * dir) list)
 let mlpackAccu = ref ([] : (string * dir) list)
 
 let add_caml_known phys_dir f =
@@ -192,25 +191,9 @@ let addQueue q v = q := v :: !q
 let treat_file old_name =
   let name = Filename.basename old_name in
   let dirname = Some (Filename.dirname old_name) in
-  match get_extension name [".mllib";".mlpack"] with
-  | (base,".mllib") -> addQueue mllibAccu (base,dirname)
+  match get_extension name [".mlpack"] with
   | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
   | _ -> error_unknown_extension old_name
-
-let mllib_dependencies () =
-  List.iter
-    (fun (name,dirname) ->
-       let fullname = file_name name dirname in
-       let deps = treat_file_modules fullname ".mllib" in
-       let sdeps = String.concat " " deps in
-       let efullname = escape fullname in
-       printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname sdeps;
-       printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n"
-         efullname efullname;
-       printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n"
-         efullname efullname;
-       flush stdout)
-    (List.rev !mllibAccu)
 
 let coq_makefile_mode = ref false
 
@@ -250,7 +233,6 @@ let rec parse = function
 let main () =
   if Array.length Sys.argv < 2 then exit 1;
   parse (List.tl (Array.to_list Sys.argv));
-  mllib_dependencies ();
   mlpack_dependencies ()
 
 let _ = main ()

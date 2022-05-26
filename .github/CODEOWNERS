@@ -212,9 +212,7 @@
 /kernel/float64*                     @coq/number-maintainers
 /kernel/uint63*                      @coq/number-maintainers
 /plugins/syntax/g_number_string.mlg  @coq/number-maintainers
-/plugins/syntax/int63_syntax_plugin.mllib  @coq/number-maintainers
 /plugins/syntax/number.ml            @coq/number-maintainers
-/plugins/syntax/number_string_notation_plugin.mllib  @coq/number-maintainers
 /user-contrib/Ltac2/Int.v            @coq/number-maintainers
 /test-suite/output/FloatExtraction*  @coq/number-maintainers
 /test-suite/output/*Number*          @coq/number-maintainers

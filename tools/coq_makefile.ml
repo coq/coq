@@ -139,12 +139,12 @@ let generate_meta_file p =
     | Absent -> p
     | Generate proj ->
         let cmname = List.map (fun { thing } -> thing)
-            (files_by_suffix p.files [".mllib"; ".mlpack"]) in
+            (files_by_suffix p.files [".mlpack"]) in
         let dir, cmname =
           match cmname with
-          | [] -> Printf.eprintf "In order to generate a META file one needs an .mlpack or .mllib file\n"; exit 1
+          | [] -> Printf.eprintf "In order to generate a META file one needs an .mlpack file\n"; exit 1
           | [x] -> Filename.dirname x, Filename.(basename @@ chop_extension x)
-          | _ -> Printf.eprintf "Automatic META generation only works for one .mlpack or .mllib file, since you have more you need to write the META file by hand\n"; exit 1 in
+          | _ -> Printf.eprintf "Automatic META generation only works for one .mlpack file, since you have more you need to write the META file by hand\n"; exit 1 in
         let f = dir ^ "/META." ^ proj in
         let oc = open_out f in
         let meta : _ format = {|
@@ -228,7 +228,7 @@ let generate_conf_coq_config oc =
 ;;
 
 let check_metafile p =
-  if files_by_suffix p.files [".mlpack"; ".mllib"] <> [] && p.meta_file = Absent then begin
+  if files_by_suffix p.files [".mlpack"] <> [] && p.meta_file = Absent then begin
     eprintf "Warning: it is recommended you provide a META.package-name file\n";
     eprintf "Warning: since you build plugins. See also -generate-meta-for-package.\n";
   end
@@ -242,8 +242,7 @@ let write_coqbin oc =
     endif\n\
     COQMKFILE ?= \"$(COQBIN)coq_makefile\""
 
-let generate_conf_files oc p
-=
+let generate_conf_files oc p =
   let module S = String in
   let fout varname suffix =
     fprintf oc "COQMF_%s := $(filter %%%s, $(COQMF_SOURCES))\n" varname suffix;
@@ -262,7 +261,6 @@ let generate_conf_files oc p
   fout "MLFILES" ".ml";
   fout "MLGFILES" ".mlg";
   fout "MLPACKFILES" ".mlpack";
-  fout "MLLIBFILES" ".mllib";
   fprintf oc "COQMF_METAFILE = %s\n"  (match p.meta_file with Present x -> x | _ -> "")
 
 let rec all_start_with prefix = function
