@@ -11,33 +11,22 @@
 open Util
 open Pp
 
-(* Code to hook Coq into the ML toplevel -- depends on having the
-   objective-caml compiler mostly visible. The functions implemented here are:
-   \begin{itemize}
-   \item [dir_ml_load name]: Loads the ML module fname from the current ML
-     path.
-   \item [dir_ml_use]: Directive #use of Ocaml toplevel
-   \item [add_ml_dir]: Directive #directory of Ocaml toplevel
-   \end{itemize}
+(* Code to interact with ML "toplevel", in particular, handling ML
+   plugin loading.
 
-   How to build an ML module interface with these functions.
+   We use Fl_dynload to load plugins, which can correctly track
+   dependencies, and manage path for us.
 
-   The idea is that the ML directory path is like the Coq directory
-   path, so we can maintain the two in parallel, though nowaways we
-   use findlib to resolve plugins too.
+   A bit of infrastructure is still in place to support a "legacy"
+   mode where Coq used to manage the OCaml include paths and directly
+   load .cmxs/.cma files itself.
 
-   In the same way, we can use the "ml_env" as a kind of ML
-   environment, which we freeze, unfreeze, and add things to just like
-   to the other environments.
+   We also place here the required code for interacting with the
+   Summary and Libobject, and provide an API so plugins can interact
+   with this loading/unloading for Coq-specific purposes adding their
+   own init functions, given that OCaml cannot unlink a dynamic module.
 
-   Finally, we can create an object which is an ML module, and require
-   that the "caching" of the ML module cause the loading of the
-   associated ML file, if that file has not been yet loaded.  Of
-   course, the problem is how to record dependencies between ML
-   modules.
-
-   (I do not know of a solution to this problem, other than to
-   put all the needed names into the ML Module object.) *)
+*)
 
 
 (* This path is where we look for .cmo/.cmxs using the legacy method *)
