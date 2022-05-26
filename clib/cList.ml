@@ -674,6 +674,10 @@ let rec assoc_f f a = function
   | (x, e) :: xs -> if f a x then e else assoc_f f a xs
   | [] -> raise Not_found
 
+let rec assoc_f_opt f a = function
+  | (x, e) :: xs -> if f a x then Some e else assoc_f_opt f a xs
+  | [] -> None
+
 let remove_assoc_f f a l =
   try remove_first (fun (x,_) -> f a x) l with Not_found -> l
 
