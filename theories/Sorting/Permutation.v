@@ -118,7 +118,7 @@ Section Permutation_properties.
 
 Variable A B:Type.
 
-Implicit Types a b : A.
+Implicit Types a : A.
 Implicit Types l m : list A.
 
 (** Compatibility with others operations on lists *)
@@ -540,6 +540,57 @@ Proof.
       now apply Permutation_cons_inv with x.
 Qed.
 
+Lemma Permutation_incl_cons_inv_r (l1 l2 : list A) a : incl l1 (a :: l2) ->
+  exists n l3, Permutation l1 (repeat a n ++ l3) /\ incl l3 l2.
+Proof.
+  induction l1 as [|b l1 IH].
+  - intros _. now exists 0, nil.
+  - intros [Hb Hincl] %incl_cons_inv.
+    destruct (IH Hincl) as [n [l3 [Hl1 Hl3l2]]].
+    destruct Hb.
+    + subst b. exists (S n), l3. eauto.
+    + exists n, (b :: l3). eauto using incl_cons.
+Qed.
+
+Lemma Permutation_pigeonhole l1 l2 : incl l1 l2 -> length l2 < length l1 ->
+  exists a l3, Permutation l1 (a :: a :: l3).
+Proof.
+  induction l2 as [|a l2 IH] in l1 |- *.
+  - intros -> %incl_l_nil [] %PeanoNat.Nat.nlt_0_r.
+  - intros [[|[|n]] [l4 [Hl1 Hl4]]] %Permutation_incl_cons_inv_r Hlen.
+    + apply IH.
+      * unfold incl. eauto using Permutation_in.
+      * eauto using PeanoNat.Nat.lt_trans.
+    + assert (Hl2l4 : length l2 < length l4).
+      { rewrite (Permutation_length Hl1) in Hlen.
+        now apply PeanoNat.Nat.succ_lt_mono. }
+      destruct (IH l4 Hl4 Hl2l4) as [b [l3 Hl4l3]].
+      exists b, (a :: l3).
+      apply (Permutation_trans Hl1).
+      now apply (Permutation_cons_app (b :: b :: nil)).
+    + now exists a, (repeat a n ++ l4).
+Qed.
+
+Lemma Permutation_pigeonhole_rel (R : B -> A -> Prop) (l1 : list B) l2 :
+  Forall (fun b => Exists (R b) l2) l1 ->
+  length l2 < length l1 ->
+  exists b b' (l3 : list B), Permutation l1 (b :: b' :: l3) /\ exists a, In a l2 /\ R b a /\ R b' a.
+Proof.
+  intros [l2' [Hl2'l1 Hl2'l2]]%Forall_Exists_exists_Forall2.
+  intros Hl2l2'. rewrite (Forall2_length Hl2'l1) in Hl2l2'.
+  destruct (Permutation_pigeonhole Hl2'l2 Hl2l2') as [a [l3 Hl2']].
+  destruct (Permutation_Forall2 Hl2' (Forall2_flip Hl2'l1)) as [l1' [Hl1l1' Hl1']].
+  destruct (Forall2_app_inv_l [a; a] l3 Hl1') as [lbb' [l1'' [Ha [? ?]]]].
+  assert (Hlbb' := Forall2_length Ha).
+  destruct lbb' as [|b lb']; [easy|].
+  apply Forall2_cons_iff in Ha as [Hba Ha].
+  destruct lb' as [|b' l]; [easy|].
+  apply Forall2_cons_iff in Ha as [Hb'a Ha].
+  inversion Ha. subst. exists b, b', l1''.
+  split; [easy|]. exists a.
+  split; eauto using Permutation_in, in_eq.
+Qed.
+
 Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
 
 Lemma Permutation_count_occ l1 l2 :
@@ -564,7 +615,7 @@ Proof.
       * rewrite (count_occ_elt_eq _ _ _ Heq) in Hocc.
         now injection Hocc.
       * now rewrite (count_occ_elt_neq _ _ _ Hneq) in Hocc.
-   Qed.
+Qed.
 
 End Permutation_properties.
 
