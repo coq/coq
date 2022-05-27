@@ -1029,10 +1029,14 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
       | _ -> redrec (c, stack))
     | None -> s'
   in
-  let simpfun = clos_norm_flags betaiota env sigma in
-  simpfun (applist (redrec c))
+  applist (redrec c)
 
-let hnf_constr env sigma c = whd_simpl_orelse_delta_but_fix env sigma (c, [])
+let hnf_constr0 env sigma c =
+  whd_simpl_orelse_delta_but_fix env sigma (c, [])
+
+let hnf_constr env sigma c =
+  let c = whd_simpl_orelse_delta_but_fix env sigma (c, []) in
+  clos_norm_flags betaiota env sigma c
 
 (* The "simpl" reduction tactic *)
 
