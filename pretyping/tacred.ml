@@ -1259,12 +1259,15 @@ let check_privacy env ind =
 
 let reduce_to_ind_gen allow_product env sigma t =
   let rec elimrec env t l =
-    let t = hnf_constr env sigma t in
+    let t = hnf_constr0 env sigma t in
     match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
-      | Ind (ind, _ as indu) -> check_privacy env ind; (indu, it_mkProd_or_LetIn t l)
+      | Ind (ind, _ as indu) ->
+        let t = nf_betaiota env sigma t in
+        check_privacy env ind; (indu, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
           let open Context.Rel.Declaration in
           if allow_product then
+            let ty = nf_betaiota env sigma ty in
             elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
           else
             user_err Pp.(str"Not an inductive definition.")
