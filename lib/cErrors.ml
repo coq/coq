@@ -26,6 +26,7 @@ let _ =
   Printexc.register_printer pr
 
 let anomaly ?loc ?info ?label pp =
+  let () = Exninfo.record_backtrace true in
   let info = Option.default Exninfo.null info in
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (Anomaly (label, pp), info)
