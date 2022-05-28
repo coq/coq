@@ -290,6 +290,9 @@ val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
 val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
 (** Like [List.assoc] but using the equality given as argument *)
 
+val assoc_f_opt : 'a eq -> 'a -> ('a * 'b) list -> 'b option
+(** Like [List.assoc_opt] but using the equality given as argument *)
+
 val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
 (** Remove first matching element; unchanged if no such element *)
 

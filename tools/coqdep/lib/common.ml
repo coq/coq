@@ -163,67 +163,24 @@ end
 let string_of_dependency_list suffix_for_require deps =
   String.concat " " (List.map (Dep.to_string ~suffix:suffix_for_require) deps)
 
-let parse_META package f =
-  try
-    let ic = open_in f in
-    let m = Fl_metascanner.parse ic in
-    close_in ic;
-    Some (f, m)
-  with
-  | Sys_error _msg -> None
-  (* findlib >= 1.9.3 uses its own Error exception, so we can't catch
-     it without bumping our version requirements. TODO pass the message on once we bump. *)
-  | _ -> Error.cannot_parse_meta_file package ""
-
-let find_META package =
-  let rec aux = function
-    | [] ->
-      (* this is needed by stdlib2 for example, since it loads a package it
-         does not own, so we check it is installed. *)
-      begin try
-        let m = Findlib.package_meta_file package in
-        parse_META package m
-      with Fl_package_base.No_such_package _ -> None end
-    | m :: ms ->
-        if Filename.extension m = "." ^ package then
-          parse_META package m
-        else
-          aux ms
-  in
-    aux !meta_files
-
-let findlib_resolve f package legacy_name plugin =
-  let open Fl_metascanner in
-  match find_META package, legacy_name with
-  | None, Some p -> None, p
-  | None, None -> Error.no_meta f package
-  | Some (meta_file, meta), _ ->
-      let rec find_plugin path p { pkg_defs ; pkg_children  } =
-        match p with
-        | [] -> path, pkg_defs
-        | p :: ps ->
-            let rec find_child = function
-              | [] -> Error.declare_in_META f (String.concat "." plugin) meta_file
-              | (s, def) :: _ when s = p -> def
-              | _ :: rest -> find_child rest
-            in
-            let c = find_child pkg_children in
-            let path = path @ [find_plugin_field "directory" (Some ".") c.pkg_defs] in
-            find_plugin path ps c
-      and find_plugin_field fld def = function
-        | { def_var; def_value; _ } :: _ when def_var = fld -> def_value
-        | _ :: rest -> find_plugin_field fld def rest
-        | [] ->
-            match def with
-            | Some x -> x
-            | None -> Error.meta_file_lacks_field meta_file package fld
-      in
-      let path = [find_plugin_field "directory" (Some ".") meta.pkg_defs] in
-      let path, plug = find_plugin path plugin meta in
-      Some meta_file, String.concat "/" path ^ "/" ^
-        Filename.chop_extension @@ find_plugin_field "plugin" None plug
-
 let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
+
+(* Transform "Declare ML %DECL" to a pair of (meta, cmxs). Something
+   very similar is in ML top *)
+let declare_ml_to_file file decl =
+  let decl = String.split_on_char ':' decl in
+  let decl = List.map (String.split_on_char '.') decl in
+  let meta_files = !meta_files in
+  match decl with
+  | [[x]] when List.mem_assoc x legacy_mapping ->
+    Fl.findlib_resolve ~meta_files ~file ~package:"coq-core" ~legacy_name:(Some x) ~plugin_name:(List.assoc x legacy_mapping)
+  | [[x]] ->
+    Error.findlib_name file x
+  | [[legacy]; package :: plugin_name] ->
+    Fl.findlib_resolve ~meta_files ~file ~package ~legacy_name:(Some legacy) ~plugin_name
+  | [package :: plugin_name] ->
+    Fl.findlib_resolve ~meta_files ~file ~package ~legacy_name:None ~plugin_name
+  | _ -> assert false
 
 let rec find_dependencies st basename =
   let verbose = true in (* for past/future use? *)
@@ -262,19 +219,7 @@ let rec find_dependencies st basename =
                   warning_module_notfound from f str
               end) strl
         | Declare sl ->
-            let public_to_private_name = function
-              | [[x]] when List.mem_assoc x legacy_mapping ->
-                  findlib_resolve f "coq-core" (Some x) (List.assoc x legacy_mapping)
-              | [[x]] ->
-                  Error.findlib_name f x
-              | [[legacy]; package :: plugin] ->
-                  findlib_resolve f package (Some legacy) plugin
-              | [package :: plugin] ->
-                  findlib_resolve f package None plugin
-              | _ -> assert false in
-            let sl = List.map (String.split_on_char ':') sl in
-            let sl = List.map (List.map (String.split_on_char '.')) sl in
-            let sl = List.map public_to_private_name sl in
+            let sl = List.map (declare_ml_to_file f) sl in
             let declare suff dir s =
               let base = escape (file_name s dir) in
               let open Options.Dynlink in
@@ -286,7 +231,7 @@ let rec find_dependencies st basename =
                         add_dep_other (sprintf "%s.cmxs" base)
               | Variable -> add_dep_other (sprintf "%s%s" base
                   (if suff=".cmo" then "$(DYNOBJ)" else "$(DYNLIB)"))
-              in
+            in
             let decl (meta_file,str) =
               Option.iter add_dep_other meta_file;
               let s = basename_noext str in
@@ -299,8 +244,8 @@ let rec find_dependencies st basename =
                   | Some mldir -> declare ".cmo" mldir s
                   | None -> warning_declare f str
                 end
-                in
-              List.iter decl sl
+            in
+            List.iter decl sl
         | Load file ->
             let canon =
               match file with
