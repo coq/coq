@@ -12,7 +12,7 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 ( cd "${CI_BUILD_DIR}/flocq"
   if ! [ -x ./configure ]; then
       autoconf
-      ./configure COQEXTRAFLAGS="-compat 8.13";
+      ./configure COQEXTRAFLAGS="-compat 8.14";
   fi
   ./remake "-j${NJOBS}"
   ./remake install install-glob
