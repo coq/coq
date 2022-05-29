@@ -1,0 +1,25 @@
+(library
+ (name primitive)
+ (synopsis "Coq Primitive Objects")
+ (public_name coq-primitive)
+ (wrapped false)
+ (flags (:standard \ -rectypes))
+ (modules (:standard \ uint63_31 uint63_63 float64_31 float64_63)))
+
+(rule
+ (targets uint63.ml)
+ (deps (:gen-file uint63_%{ocaml-config:int_size}.ml))
+ (action (copy# %{gen-file} %{targets})))
+
+(rule
+ (targets float64.ml)
+ (deps (:gen-file float64_%{ocaml-config:int_size}.ml))
+ (action (copy# %{gen-file} %{targets})))
+
+(documentation
+ (package coq-primitive))
+
+; In dev profile, we check the kernel against a more strict set of
+; warnings.
+(env
+ (dev (flags :standard -w @a-4-44-50-70)))

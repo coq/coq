@@ -27,6 +27,7 @@
   (zarith (>= 1.11))
   (ounit2 :with-test))
  (depopts coq-native)
+  (coq-primitive (= :version)))
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
@@ -65,6 +66,12 @@ Feit-Thompson theorem or homotopy type theory) and teaching.
 
 This package includes the Coq Standard Library, that is to say, the
 set of modules usually bound to the Coq.* namespace."))
+
+(package
+ (name coq-primitive)
+ (synopsis "The Coq Proof Assistant -- Primitive Objects")
+ (description "This package provides OCaml implementations of Coq's primitive
+objects, used by coq-core and also available to link with extracted code."))
 
 (package
  (name coqide-server)

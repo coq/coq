@@ -53,11 +53,8 @@ applications of these primitive operations.
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlInt63`
 module can be used when extracting to OCaml: it maps the Coq primitives to types
-and functions of a :g:`Uint63` module (including signed functions for
-:g:`Sint63` despite the name). That OCaml module is not produced by extraction.
-Instead, it has to be provided by the user (if they want to compile or execute
-the extracted code). For instance, an implementation of this module can be taken
-from the kernel of Coq.
+and functions of the :g:`Uint63` module from the `coq-primitive` library
+(including signed functions for :g:`Sint63` despite the name).
 
 Literal values (at type :g:`Uint63.int`) are extracted to literal OCaml values
 wrapped into the :g:`Uint63.of_int` (resp. :g:`Uint63.of_int64`) constructor on
@@ -103,10 +100,7 @@ to comply with the IEEE 754 standard for floating-point arithmetic.
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlFloats`
 module can be used when extracting to OCaml: it maps the Coq primitives to types
-and functions of a :g:`Float64` module. Said OCaml module is not produced by
-extraction. Instead, it has to be provided by the user (if they want to compile
-or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of Coq.
+and functions of the :g:`Float64` module from the `coq-primitive` library.
 
 Literal values (of type :g:`Float64.t`) are extracted to literal OCaml
 values (of type :g:`float`) written in hexadecimal notation and
@@ -153,10 +147,7 @@ operations.
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlPArray`
 module can be used when extracting to OCaml: it maps the Coq primitives to types
-and functions of a :g:`Parray` module. Said OCaml module is not produced by
-extraction. Instead, it has to be provided by the user (if they want to compile
-or execute the extracted code). For instance, an implementation of this module
-can be taken from the kernel of Coq (see ``kernel/parray.ml``).
+and functions of the :g:`Parray` module from the `coq-primitive` library.
 
 Coq's primitive arrays are persistent data structures. Semantically, a set operation
 ``t.[i <- a]`` represents a new array that has the same values as ``t``, except

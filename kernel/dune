@@ -3,8 +3,8 @@
  (synopsis "The Coq Kernel")
  (public_name coq-core.kernel)
  (wrapped false)
- (modules (:standard \ genOpcodeFiles uint63_31 uint63_63 float64_31 float64_63))
- (libraries boot lib coqrun dynlink))
+ (modules (:standard \ genOpcodeFiles))
+ (libraries boot lib coqrun dynlink primitive))
 
 (executable
   (name genOpcodeFiles)
@@ -13,16 +13,6 @@
 (rule
  (targets vmopcodes.ml)
  (action (with-stdout-to %{targets} (run ./genOpcodeFiles.exe copml))))
-
-(rule
- (targets uint63.ml)
- (deps (:gen-file uint63_%{ocaml-config:int_size}.ml))
- (action (copy# %{gen-file} %{targets})))
-
-(rule
- (targets float64.ml)
- (deps (:gen-file float64_%{ocaml-config:int_size}.ml))
- (action (copy# %{gen-file} %{targets})))
 
 (documentation
  (package coq-core))
