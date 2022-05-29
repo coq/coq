@@ -15,7 +15,15 @@ depends: [
   "dune" {>= "2.5"}
 ]
 build: [
-  ["dune" "subst"] {pinned}
+  # Requires dune 2.8 due to https://github.com/ocaml/dune/issues/3219
+  # ["dune" "subst"] {pinned}
+  [ "./configure"
+    "-prefix" prefix
+    "-mandir" man
+    "-libdir" "%{lib}%/coq"
+    "-coqide" "no"
+    "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
+  ]
   [
     "dune"
     "build"
