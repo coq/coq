@@ -4,7 +4,11 @@
  (public_name coq-primitive)
  (wrapped false)
  (flags (:standard \ -rectypes))
- (modules (:standard \ uint63_31 uint63_63 float64_31 float64_63)))
+ (modules (:standard \ uint63_31 uint63_63 float64_31 float64_63))
+ (foreign_stubs
+  (language c)
+  (names coq_float64)
+  (flags (:include %{project_root}/config/dune.c_flags))))
 
 (rule
  (targets uint63.ml)

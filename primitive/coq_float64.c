@@ -13,8 +13,10 @@
 
 #define CAML_INTERNALS
 #include <caml/alloc.h>
+#include <caml/callback.h>
+#include <caml/memory.h>
 
-#include "coq_values.h"
+#define Is_double(v) (Tag_val(v) == Double_tag)
 
 union double_bits {
   double d;
@@ -71,4 +73,14 @@ DECLARE_FUNOP(next_down, next_down(x))
 
 value coq_is_double(value x) {
   return Val_long(Is_double(x));
+}
+
+#define uint63_of_value(val) ((uint64_t)(val) >> 1)
+
+double coq_uint63_to_float(value x) {
+  return (double) uint63_of_value(x);
+}
+
+value coq_uint63_to_float_byte(value x) {
+  return caml_copy_double(coq_uint63_to_float(x));
 }

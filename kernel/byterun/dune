@@ -4,7 +4,7 @@
  (public_name coq-core.vm)
  (foreign_stubs
   (language c)
-  (names coq_fix_code coq_float64 coq_memory coq_values coq_interp)
+  (names coq_fix_code coq_memory coq_values coq_interp)
   (flags :standard (:include %{project_root}/config/dune.c_flags))))
 
 (rule
