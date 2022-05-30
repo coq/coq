@@ -123,13 +123,11 @@ module Declare : sig
   val copy_terminators : src:LemmaStack.t option -> tgt:LemmaStack.t option -> LemmaStack.t option
 
   (* Low-level stuff *)
-  val get : unit -> LemmaStack.t option
   val get_program : unit -> Declare.OblState.t NeList.t
   val set : LemmaStack.t option * Declare.OblState.t NeList.t -> unit
 
   val get_pstate : unit -> Declare.Proof.t option
 
-  val freeze : marshallable:bool -> LemmaStack.t option
   val unfreeze : LemmaStack.t -> unit
 
 end

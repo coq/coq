@@ -136,7 +136,6 @@ let unfreeze_interp_state { system; lemmas; program; parsing; opaques } =
 (* Compatibility module *)
 module Declare_ = struct
 
-  let get () = !s_lemmas
   let get_program () = !s_program
 
   let set (pstate,pm) =
@@ -146,7 +145,6 @@ module Declare_ = struct
   let get_pstate () =
     Option.map (LemmaStack.with_top ~f:(fun x -> x)) !s_lemmas
 
-  let freeze ~marshallable:_ = get ()
   let unfreeze x = s_lemmas := Some x
 
   exception NoCurrentProof
