@@ -127,6 +127,13 @@ module Make (Point:Point) = struct
       n_nodes : int; n_edges : int;
       table : Index.table }
 
+  let copy t =
+    let copy_entry = function
+      | Canonical n -> Canonical { n with status = NoMark }
+      | Equiv x -> Equiv x in
+    let entries = PMap.map copy_entry t.entries in
+    { t with entries }
+
   (** Used to cleanup mutable marks if a traversal function is
       interrupted before it has the opportunity to do it itself. *)
   let unsafe_cleanup_marks g =

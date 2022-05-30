@@ -118,6 +118,8 @@ type t =
   ; typing_flags : Declarations.typing_flags option
   }
 
+let copy t = { t with proofview = Proofview.copy t.proofview }
+
 (*** General proof functions ***)
 
 let proof p =

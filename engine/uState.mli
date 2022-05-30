@@ -29,6 +29,8 @@ type t
 
 (** Different ways to create a new universe state *)
 
+val copy : t -> t
+
 val empty : t
 
 val make : lbound:UGraph.Bound.t -> UGraph.t -> t

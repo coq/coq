@@ -420,3 +420,6 @@ val no_link_info : link_info
 
 (** Primitives *)
 val set_retroknowledge : env -> Retroknowledge.retroknowledge -> env
+
+(** Hack *)
+val copy : env -> env

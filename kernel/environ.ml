@@ -101,6 +101,8 @@ type env = {
   indirect_pterms : Opaqueproof.opaquetab;
 }
 
+let copy e = { e with env_universes = UGraph.copy e.env_universes }
+
 let empty_named_context_val = {
   env_named_ctx = [];
   env_named_map = Id.Map.empty;

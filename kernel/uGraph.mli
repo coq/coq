@@ -123,3 +123,6 @@ val explain_universe_inconsistency : (Level.t -> Pp.t) ->
 
 (** {6 Debugging} *)
 val check_universes_invariants : t -> unit
+
+(** {6 Hack} *)
+val copy : t -> t

@@ -70,6 +70,8 @@ module LemmaStack = struct
   let map ~f x = NeList.map f x
   let map_top ~f x = NeList.map_head f x
 
+  let copy x = map ~f:Declare.Proof.copy x
+
   let pop x = NeList.head x, NeList.tail x
 
   let get_top = NeList.head
@@ -119,7 +121,7 @@ let do_if_not_cached rf f v =
 
 let freeze_interp_state ~marshallable =
   { system = update_cache s_cache (System.freeze ~marshallable);
-    lemmas = !s_lemmas;
+    lemmas = if marshallable then Option.map LemmaStack.copy !s_lemmas else !s_lemmas;
     program = !s_program;
     opaques = Opaques.Summary.freeze ~marshallable;
     shallow = false;

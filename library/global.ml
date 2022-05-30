@@ -26,7 +26,10 @@ module GlobalSafeEnv : sig
 end = struct
 
 let global_env, global_env_summary_tag =
-  Summary.ref_tag ~name:global_env_summary_name Safe_typing.empty_environment
+  Summary.ref_tag
+    ~name:global_env_summary_name
+    ~freeze:(fun ~marshallable x -> if marshallable then Safe_typing.copy x else x)
+    Safe_typing.empty_environment
 
 let is_joined_environment () =
   Safe_typing.is_joined_environment !global_env

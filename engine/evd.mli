@@ -150,6 +150,8 @@ type evar_map
 (** Type of unification state. Essentially a bunch of state-passing data needed
     to handle incremental term construction. *)
 
+val copy : evar_map -> evar_map
+
 val empty : evar_map
 (** The empty evar map. *)
 

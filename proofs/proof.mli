@@ -48,7 +48,7 @@ type data =
   ; poly : bool;
   (** polymorphism *)
   }
-
+val copy : t -> t
 val data : t -> data
 
 (*** General proof functions ***)

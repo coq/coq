@@ -41,7 +41,7 @@ type t =
    initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
    minim_extra : UnivMinim.extra;
  }
-
+let copy ust = { ust with initial_universes = UGraph.copy ust.initial_universes; universes = UGraph.copy ust.universes }
 let initial_sprop_cumulative = UGraph.set_cumulative_sprop true UGraph.initial_universes
 
 let empty =

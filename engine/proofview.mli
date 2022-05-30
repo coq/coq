@@ -19,6 +19,8 @@ open EConstr
 (** Main state of tactics *)
 type proofview
 
+val copy : proofview -> proofview
+
 (** Returns a stylised view of a proofview for use by, for instance,
     ide-s. *)
 (* spiwack: the type of [proofview] will change as we push more

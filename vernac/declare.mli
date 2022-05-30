@@ -308,6 +308,8 @@ module Proof : sig
   (** Used by the STM only to store info, should go away *)
   val get_po_name : proof_object -> Id.t
 
+  val copy : t -> t
+
 end
 
 (** {2 low-level, internal API, avoid using unless you have special needs } *)

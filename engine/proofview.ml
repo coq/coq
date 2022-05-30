@@ -22,7 +22,7 @@ open Context.Named.Declaration
 
 (** Main state of tactics *)
 type proofview = Proofview_monad.proofview
-
+let copy p = { p with solution = Evd.copy p.solution }
 (* evar env
    * proofs (under construction).
    * statements that are being proved. *)

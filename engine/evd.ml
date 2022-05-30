@@ -603,7 +603,7 @@ type evar_map = {
   shelf : Evar.t list list;
   extras : Store.t;
 }
-
+let copy sigma = { sigma with universes = UState.copy sigma.universes }
 let get_is_maybe_typeclass, (is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t) = Hook.make ~default:(fun evd c -> false) ()
 
 let is_maybe_typeclass sigma c = Hook.get get_is_maybe_typeclass sigma c

@@ -30,6 +30,8 @@ type t = {
   type_in_type : bool;
 }
 
+let copy t = { t with graph = G.copy t.graph }
+
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 

@@ -268,3 +268,6 @@ val register_inductive : inductive -> 'a CPrimitives.prim_ind -> safe_transforme
 
 val set_strategy :
   Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_transformer0
+
+(** {6 Hack } *)
+val copy : safe_transformer0

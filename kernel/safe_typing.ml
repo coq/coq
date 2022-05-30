@@ -1547,3 +1547,6 @@ Would this be correct with respect to undo's and stuff ?
 let set_strategy k l e = { e with env =
    (Environ.set_oracle e.env
       (Conv_oracle.set_strategy (Environ.oracle e.env) k l)) }
+
+
+let copy e = { e with env = Environ.copy e.env }

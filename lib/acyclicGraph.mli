@@ -74,4 +74,7 @@ module Make (Point:Point) : sig
   type repr = node Point.Map.t
   val repr : t -> repr
 
+  (** {5 Hack} *)
+
+  val copy : t -> t
 end

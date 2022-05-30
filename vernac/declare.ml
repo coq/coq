@@ -1432,6 +1432,8 @@ let fold ~f p = f p.proof
 let map ~f p = { p with proof = f p.proof }
 let map_fold ~f p = let proof, res = f p.proof in { p with proof }, res
 
+let copy p = { p with initial_euctx = UState.copy p.initial_euctx; proof = Proof.copy p.proof }
+
 let map_fold_endline ~f ps =
   let et =
     match ps.endline_tactic with
