@@ -327,6 +327,7 @@ lint:
   interruptible: true
   # OPAM will build out-of-tree so no point in importing artifacts
   script:
+    - opam pin add --kind=path coq-primitive.dev .
     - opam pin add --kind=path coq-core.dev .
     - opam pin add --kind=path coq-stdlib.dev .
     - opam pin add --kind=path coqide-server.dev .
