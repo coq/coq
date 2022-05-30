@@ -149,7 +149,7 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
           else in_right
       | _, _ => in_right
     end }.
-
+(*
   Next Obligation.
     match goal with y : list _ |- _ => destruct y end ;
     unfold not in *; eauto.
@@ -157,3 +157,5 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : EqDec (list A) eq :=
 
   Solve Obligations with unfold equiv, complement in * ; 
     program_simpl ; intuition (discriminate || eauto).
+
+*)
