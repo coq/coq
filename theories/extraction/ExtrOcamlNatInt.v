@@ -48,11 +48,11 @@ Extract Inductive nat => int [ "0" "Stdlib.Int.succ" ]
 (** Efficient (but uncertified) versions for usual [nat] functions *)
 
 Extract Constant plus => "(+)".
-Extract Constant pred => "fun n -> Stdlib.Int.max 0 (n-1)".
-Extract Constant minus => "fun n m -> Stdlib.Int.max 0 (n-m)".
+Extract Constant pred => "fun n -> Stdlib.max 0 (n-1)".
+Extract Constant minus => "fun n m -> Stdlib.max 0 (n-m)".
 Extract Constant mult => "( * )".
-Extract Inlined Constant max => "Stdlib.Int.max".
-Extract Inlined Constant min => "Stdlib.Int.min".
+Extract Inlined Constant max => "Stdlib.max".
+Extract Inlined Constant min => "Stdlib.min".
 (*Extract Inlined Constant nat_beq => "(=)".*)
 Extract Inlined Constant Nat.eqb => "(=)".
 Extract Inlined Constant EqNat.eq_nat_decide => "(=)".
