@@ -22,7 +22,7 @@ Kernel
 
 - **Changed:**
   Fixpoints are now expected to be guarded even in subterms erasable
-  by reduction, thus getting rid from an artificial obstacle
+  by reduction, thus getting rid of an artificial obstacle
   preventing to lift the assumption of weak normalization of Coq to an
   assumption of strong normalization; for instance (barring
   implementation bugs) termination of the type-checking algorithm of
@@ -182,14 +182,14 @@ Tactics
   (or :tacn:`setoid_rewrite`) to use when rewriting with ``Type`` valued
   relations.
   (`#14137 <https://github.com/coq/coq/pull/14137>`_,
-  fixes `#4632 <https://github.com/coq/coq/issues/4632>`_
-  and `#5384 <https://github.com/coq/coq/issues/5384>`_
-  and `#5521 <https://github.com/coq/coq/issues/5521>`_
-  and `#6278 <https://github.com/coq/coq/issues/6278>`_
-  and `#7675 <https://github.com/coq/coq/issues/7675>`_
-  and `#8739 <https://github.com/coq/coq/issues/8739>`_
-  and `#11011 <https://github.com/coq/coq/issues/11011>`_
-  and `#12240 <https://github.com/coq/coq/issues/12240>`_
+  fixes `#4632 <https://github.com/coq/coq/issues/4632>`_,
+  `#5384 <https://github.com/coq/coq/issues/5384>`_,
+  `#5521 <https://github.com/coq/coq/issues/5521>`_,
+  `#6278 <https://github.com/coq/coq/issues/6278>`_,
+  `#7675 <https://github.com/coq/coq/issues/7675>`_,
+  `#8739 <https://github.com/coq/coq/issues/8739>`_,
+  `#11011 <https://github.com/coq/coq/issues/11011>`_,
+  `#12240 <https://github.com/coq/coq/issues/12240>`_,
   and `#15279 <https://github.com/coq/coq/issues/15279>`_,
   by Matthieu Sozeau helped by Ali Caglayan).
 - **Added:**
@@ -220,7 +220,7 @@ Tactic language
   fixes `#15554 <https://github.com/coq/coq/issues/15554>`_,
   by Gaëtan Gilbert).
 - **Added:**
-  ``Ltac2`` understands :n:`toplevel_selector` and obeys :opt:`Default Goal Selector`.
+  ``Ltac2`` understands :token:`toplevel_selector` and obeys :opt:`Default Goal Selector`.
   Note that ``par:`` is buggy when combined with :tacn:`abstract`. Unlike ``Ltac1`` even ``par: abstract tac`` is not properly treated.
   (`#15378 <https://github.com/coq/coq/pull/15378>`_,
   by Gaëtan Gilbert).
@@ -238,7 +238,7 @@ SSReflect
 ^^^^^^^^^
 
 - **Fixed:**
-  :tacn:`have`, :tacn:`suff` and :tacn:`wlog` support goals in `sProp`
+  :tacn:`have`, :tacn:`suff` and :tacn:`wlog` support goals in `SProp`
   (`#15121 <https://github.com/coq/coq/pull/15121>`_,
   by Enrico Tassi).
 
@@ -282,7 +282,9 @@ Commands and options
   (`#15690 <https://github.com/coq/coq/pull/15690>`_,
   by Frédéric Besson).
 - **Deprecated:**
-  :cmd:`Add LoadPath` and :cmd:`Add Rec LoadPath`
+  :cmd:`Add LoadPath` and :cmd:`Add Rec LoadPath`. If this command is an
+  important feature for you, please open an issue on `GitHub <https://github.com/coq/coq/issues>`
+  and explain your workflow
   (`#15652 <https://github.com/coq/coq/pull/15652>`_,
   by Gaëtan Gilbert).
 - **Deprecated:**
@@ -360,12 +362,12 @@ Command-line tools
   (`#15788 <https://github.com/coq/coq/pull/15788>`_,
   by Cyril Cohen and Enrico Tassi).
 - **Added:**
-  Added -bytecode-compiler (yes|no) flag for ``coqchk`` enabling
+  Added :n:`-bytecode-compiler {| yes | no }` flag for ``coqchk`` enabling
   :tacn:`vm_compute` during checks, which is off by default.
   (`#15886 <https://github.com/coq/coq/pull/15886>`_,
   by Ali Caglayan).
 - **Fixed:**
-  :n:`coqdoc` confused by the presence of command :n:`Load` in a file
+  ``coqdoc`` confused by the presence of command :cmd:`Load` in a file
   (`#15511 <https://github.com/coq/coq/pull/15511>`_,
   fixes `#15497 <https://github.com/coq/coq/issues/15497>`_,
   by Hugo Herbelin).
@@ -396,7 +398,7 @@ Standard library
   (`#15446 <https://github.com/coq/coq/pull/15446>`_,
   by Olivier Laurent).
 - **Changed:**
-  typeclass instances `Permutation_app'` and `Permutation_cons` are `#[export]` instead of `#[global]`
+  the locality of typeclass instances `Permutation_app'` and `Permutation_cons` from :attr:`global` to :attr:`export`
   (`#15597 <https://github.com/coq/coq/pull/15597>`_,
   fixes `#15596 <https://github.com/coq/coq/issues/15596>`_,
   by Gaëtan Gilbert).
@@ -476,7 +478,7 @@ Infrastructure and dependencies
   hand written ``META`` file or use the ``-generate-meta-for-package`` option
   when applicable. As a consequence :cmd:`Declare ML Module` now uses plugin
   names according to ``findlib``, e.g. `coq-aac-tactics.plugin`.
-  ``coqdep`` accepts ``-m META`` and use the file to resolve plugin names to
+  ``coqdep`` accepts ``-m META`` and uses the file to resolve plugin names to
   actual file names.
   (`#15220 <https://github.com/coq/coq/pull/15220>`_,
   fixes `#7698 <https://github.com/coq/coq/issues/7698>`_,
@@ -485,7 +487,7 @@ Infrastructure and dependencies
   Minimum supported zarith version is now 1.11
   (`#15483 <https://github.com/coq/coq/pull/15483>`_
   and `#16005 <https://github.com/coq/coq/pull/16005>`_
-  and `#16030 <https://github.com/coq/coq/pull/16030>`,
+  and `#16030 <https://github.com/coq/coq/pull/16030>`_,
   closes `#15496 <https://github.com/coq/coq/issues/15496>`_,
   by Gaëtan Gilbert and Théo Zimmermann and Jason Gross).
 - **Changed:**
