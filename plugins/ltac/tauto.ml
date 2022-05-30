@@ -253,6 +253,20 @@ let with_flags flags _ ist =
   let ist = { ist with lfun = Id.Map.add x.CAst.v arg ist.lfun } in
   eval_tactic_ist ist (CAst.make @@ TacArg (TacCall (CAst.make (Locus.ArgVar f, [Reference (Locus.ArgVar x)]))))
 
+let warn_auto_with_star = CWarnings.create ~name:"intuition-auto-with-star" ~category:"deprecated"
+    Pp.(fun () ->
+        str "\"auto with *\" was used through the default \"intuition_solver\" tactic."
+        ++ spc() ++ str "This will be replaced by just \"auto\" in the future.")
+
+let warn_auto_with_star_tac _ _ =
+  Proofview.tclBIND
+    (Proofview.tclUNIT ())
+    begin fun () ->
+      warn_auto_with_star ();
+      Proofview.tclUNIT()
+    end
+
+
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in
   let ids = List.map (fun id -> Name id) ids in
@@ -273,3 +287,4 @@ let () = register_tauto_tactic apply_nnpp "apply_nnpp" []
 let () = register_tauto_tactic reduction_not_iff "reduction_not_iff" []
 let () = register_tauto_tactic (with_flags tauto_uniform_unit_flags) "with_uniform_flags" ["f"]
 let () = register_tauto_tactic (with_flags tauto_power_flags) "with_power_flags" ["f"]
+let () = register_tauto_tactic warn_auto_with_star_tac "warn_auto_with_star" []
