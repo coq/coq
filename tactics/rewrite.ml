@@ -1466,6 +1466,15 @@ exception RewriteFailure of Environ.env * Evd.evar_map * pretype_error
 
 type result = (evar_map * constr option * types) option option
 
+exception UnsolvedConstraints of Environ.env * Evd.evar_map * Evar.t
+
+let () = CErrors.register_handler begin function
+| UnsolvedConstraints (env, evars, ev) ->
+  Some (str "Unsolved constraint remaining: " ++ spc () ++
+    Termops.pr_evar_info env evars (Evd.find evars ev) ++ str ".")
+| _ -> None
+end
+
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
   let sigma, sort = Typing.sort_of env sigma concl in
   let evdref = ref sigma in
@@ -1488,15 +1497,8 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
   | Success res ->
     let (_, cstrs) = res.rew_evars in
     let evars = solve_constraints env res.rew_evars in
-    let () =
-      Evar.Set.iter
-        (fun ev ->
-           if not (Evd.is_defined evars ev) then
-             user_err
-               (str "Unsolved constraint remaining: " ++ spc () ++
-                Termops.pr_evar_info env evars (Evd.find evars ev) ++ str "."))
-        cstrs
-    in
+    let iter ev = if not (Evd.is_defined evars ev) then raise (UnsolvedConstraints (env, evars, ev)) in
+    let () = Evar.Set.iter iter cstrs in
     let newt = res.rew_to in
     let res = match res.rew_prf with
       | RewCast c -> None
