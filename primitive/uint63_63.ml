@@ -29,10 +29,7 @@ let of_int64 = Int64.to_int
 let to_int64 = to_uint64
 
 let of_float = int_of_float
-
-external to_float : int -> (float [@unboxed])
-  = "coq_uint63_to_float_byte" "coq_uint63_to_float"
-[@@noalloc]
+let to_float = float_of_int
 
 let hash i = i
 [@@ocaml.inline always]
