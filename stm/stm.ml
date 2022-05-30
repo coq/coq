@@ -962,7 +962,7 @@ end = struct (* {{{ *)
       stm_prerr_endline (fun () -> "defining "^str_id^" (cache="^
         if cache then "Y)" else "N)");
       f ();
-      if cache then cache_state ~marshallable:false id;
+      if cache then cache_state ~marshallable:true id;
       stm_prerr_endline (fun () -> "setting cur id to "^str_id);
       cur_id := id;
       if feedback_processed then
