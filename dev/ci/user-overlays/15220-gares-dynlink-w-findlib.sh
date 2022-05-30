@@ -40,6 +40,4 @@ overlay reduction_effects https://github.com/gares/reduction-effects dynlink-w-f
 
 overlay coq_performance_tests https://github.com/gares/coq-performance-tests dynlink-w-findlib 15220
 
-overlay gappa https://gitlab.inria.fr/tassi/coq dynlink-w-findlib 15220
-
 overlay coq_tools https://github.com/gares/coq-tools dynlink-w-findlib 15220
