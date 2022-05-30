@@ -192,7 +192,9 @@ let subst_kind subst = function
 let subst_md (subst, {local; replace=repl; for_ml; expr=t; depr}) =
   {local; replace=subst_kind subst repl; for_ml; expr=Tacsubst.subst_tactic subst t; depr}
 
-let classify_md o = Substitute
+let classify_md = function
+  | {local=false} | {replace=NoReplace _} -> Substitute
+  | {local=true; replace=Replace _} -> Dispose
 
 let inMD : tacdef -> obj =
   declare_named_object_gen {(default_object "TAC-DEFINITION") with

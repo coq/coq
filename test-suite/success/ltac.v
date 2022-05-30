@@ -404,3 +404,34 @@ Proof.
 Qed.
 
 End EvarNames.
+
+Module LocalRedef.
+  Ltac thetac := idtac.
+  Ltac thetac' := idtac.
+
+  Module Inner.
+    Ltac thetac ::= fail.
+    Local Ltac thetac' ::= fail.
+    Goal False.
+      Fail thetac.
+      Fail thetac'.
+    Abort.
+  End Inner.
+  Goal False.
+    Fail thetac.
+    thetac'.
+  Abort.
+
+  Section S.
+    Variable f : False.
+    Fail Global Ltac thetac' ::= exact f.
+    Ltac thetac' ::= exact f.
+    Goal False.
+    Proof. thetac'. Qed.
+  End S.
+  Goal False.
+  Proof.
+    thetac'.
+    Fail Qed.
+  Abort.
+End LocalRedef.
