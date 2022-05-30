@@ -180,7 +180,7 @@ let kill ({ pid = unixpid; oob_resp; oob_req; cin; cout; alive; watch } as p) =
     close_out_noerr cout;
     Option.iter close_in_noerr oob_resp;
     Option.iter close_out_noerr oob_req;
-    if Sys.os_type = "Unix" then Unix.kill unixpid 9;
+    if Sys.os_type = "Unix" then Unix.kill unixpid Sys.sigkill;
     p.watch <- None
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
 
@@ -250,7 +250,7 @@ let kill ({ pid = unixpid; oob_req; oob_resp; cin; cout; alive } as p) =
     close_out_noerr cout;
     Option.iter close_in_noerr oob_resp;
     Option.iter close_out_noerr oob_req;
-    if Sys.os_type = "Unix" then Unix.kill unixpid 9;
+    if Sys.os_type = "Unix" then Unix.kill unixpid Sys.sigkill;
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
 
 let rec wait p =
