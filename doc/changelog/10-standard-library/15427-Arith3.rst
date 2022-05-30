@@ -1,5 +1,0 @@
-- **Added:**
-  ``Nat.EvenT`` and ``Nat.OddT`` (almost the same as ``Nat.Even`` and ``Nat.Odd`` but with output in ``Type``.
-  Decidability of parity (with output ``Type``) is provided ``EvenT_OddT_dec`` as well as induction principles ``Nat.EvenT_OddT_rect`` and ``Nat.OddT_EvenT_rect`` (with output ``Type``)
-  (`#15427 <https://github.com/coq/coq/pull/15427>`_,
-  by Olivier Laurent).
