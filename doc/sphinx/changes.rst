@@ -861,6 +861,45 @@ Miscellaneous
   fixes `#15420 <https://github.com/coq/coq/issues/15420>`_,
   by Hugo Herbelin).
 
+Changes in 8.15.2
+~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+Tactics
+^^^^^^^
+
+- **Added:**
+  :tacn:`intuition` and :tacn:`dintuition` use ``Tauto.intuition_solver`` (defined as ``auto with *``) instead of hardcoding ``auto with *``.
+  This makes it possible to change the default solver with ``Ltac Tauto.intuition_solver ::= ...``
+  (`#15866 <https://github.com/coq/coq/pull/15866>`_,
+  fixes `#7725 <https://github.com/coq/coq/issues/7725>`_,
+  by Gaëtan Gilbert).
+- **Fixed:**
+  uncaught exception ``UnableToUnify`` with bidirectionality hints
+  (`#16066 <https://github.com/coq/coq/pull/16066>`_,
+  fixes `#16063 <https://github.com/coq/coq/issues/16063>`_,
+  by Gaëtan Gilbert).
+
+CoqIDE
+^^^^^^
+
+- **Fixed:**
+  multiple CoqIDE bugs
+  (`#15938 <https://github.com/coq/coq/pull/15938>`_,
+  fixes `#15861 <https://github.com/coq/coq/issues/15861>`_,
+  `#15939 <https://github.com/coq/coq/pull/15939>`_,
+  fixes `#15882 <https://github.com/coq/coq/issues/15882>`_,
+  `#15964 <https://github.com/coq/coq/pull/15964>`_,
+  fixes `#15799 <https://github.com/coq/coq/issues/15799>`_,
+  `#15984 <https://github.com/coq/coq/pull/15984>`_,
+  partially fixes `#15873 <https://github.com/coq/coq/issues/15873>`_,
+  `#15996 <https://github.com/coq/coq/pull/15996>`_,
+  `#15912 <https://github.com/coq/coq/pull/15912>`_,
+  fixes `#15903 <https://github.com/coq/coq/issues/15903>`_,
+  all by Jim Fehrle).
+
 Version 8.14
 ------------
 
