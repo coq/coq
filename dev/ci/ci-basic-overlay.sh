@@ -130,16 +130,6 @@ project coq_tools "https://github.com/JasonGross/coq-tools" "master"
 project coquelicot "https://gitlab.inria.fr/coquelicot/coquelicot" "master"
 
 ########################################################################
-# Gappa stand alone tool
-########################################################################
-project gappa_tool "https://gitlab.inria.fr/gappa/gappa" "master"
-
-########################################################################
-# Gappa plugin
-########################################################################
-project gappa "https://gitlab.inria.fr/gappa/coq" "master"
-
-########################################################################
 # CompCert
 ########################################################################
 project compcert "https://github.com/AbsInt/CompCert" "master"

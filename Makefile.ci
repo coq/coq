@@ -40,7 +40,6 @@ CI_TARGETS= \
     ci-flocq3 \
     ci-flocq \
     ci-fourcolor \
-    ci-gappa \
     ci-geocoq \
     ci-coqhammer \
     ci-hott \
@@ -122,7 +121,6 @@ ci-metacoq: ci-equations
 ci-vst: ci-flocq3
 
 ci-compcert: ci-menhir ci-flocq
-ci-gappa: ci-flocq
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:

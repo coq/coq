@@ -735,12 +735,6 @@ library:ci-corn:
   - plugin:ci-bignums
   - library:ci-math_classes
 
-plugin:ci-gappa:
-  extends: .ci-template-flambda
-  needs:
-  - build:edge+flambda
-  - library:ci-flocq
-
 library:ci-geocoq:
   extends: .ci-template-flambda
   needs:

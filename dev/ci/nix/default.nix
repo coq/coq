@@ -104,7 +104,6 @@ let projects = {
   fiat_crypto = callPackage ./fiat_crypto.nix {};
   flocq = callPackage ./flocq.nix {};
   formal-topology = callPackage ./formal-topology.nix {};
-  gappa = callPackage ./gappa.nix {};
   GeoCoq = callPackage ./GeoCoq.nix {};
   HoTT = callPackage ./HoTT.nix {};
   iris = callPackage ./iris.nix {};
