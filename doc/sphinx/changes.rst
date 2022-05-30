@@ -376,14 +376,6 @@ Command-line tools
   fixes `#15497 <https://github.com/coq/coq/issues/15497>`_,
   by Hugo Herbelin).
 
-CoqIDE
-^^^^^^
-
-- **Changed:**
-  Bumped lablgtk3 lower bound to 3.1.2
-  (`#15947 <https://github.com/coq/coq/pull/15947>`_,
-  by Pierre-Marie Pédrot).
-
 Standard library
 ^^^^^^^^^^^^^^^^
 
@@ -462,6 +454,10 @@ Standard library
 Infrastructure and dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+- **Changed:**
+  Bumped lablgtk3 lower bound to 3.1.2
+  (`#15947 <https://github.com/coq/coq/pull/15947>`_,
+  by Pierre-Marie Pédrot).
 - **Changed:**
   Load plugins using `findlib <http://projects.camlcity.org/projects/findlib.html>`_.
   This requires projects built with ``coq_makefile`` to either provide a
