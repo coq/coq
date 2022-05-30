@@ -900,6 +900,16 @@ CoqIDE
   fixes `#15903 <https://github.com/coq/coq/issues/15903>`_,
   all by Jim Fehrle).
 
+Standard library
+^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  an incorrect implementation of SFClassify, allowing for a proof of False since
+  8.11.0, due to Axioms present in Float.Axioms.
+  (`#16101 <https://github.com/coq/coq/pull/16101>`_,
+  fixes `#16096 <https://github.com/coq/coq/issues/16096>`_,
+  by Ali Caglayan).
+
 Version 8.14
 ------------
 

@@ -231,8 +231,8 @@ Section FloatOps.
     | S754_nan => NaN
     | S754_infinity false => PInf
     | S754_infinity true => NInf
-    | S754_zero false => NZero
-    | S754_zero true => PZero
+    | S754_zero false => PZero
+    | S754_zero true => NZero
     | S754_finite false m _ =>
       if (digits2_pos m =? Z.to_pos prec)%positive then PNormal
       else PSubn
