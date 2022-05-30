@@ -4,7 +4,7 @@
  (public_name coq-core.kernel)
  (wrapped false)
  (modules (:standard \ genOpcodeFiles))
- (libraries boot lib coqrun dynlink primitive))
+ (libraries boot lib coqrun dynlink runtime_types))
 
 (executable
   (name genOpcodeFiles)

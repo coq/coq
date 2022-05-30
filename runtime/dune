@@ -1,7 +1,6 @@
 (library
- (name primitive)
- (synopsis "Coq Primitive Objects")
- (public_name coq-primitive)
+ (name runtime_types)
+ (public_name coq-runtime-types)
  (wrapped false)
  (flags (:standard \ -rectypes))
  (modules (:standard \ uint63_31 uint63_63 float64_31 float64_63))
@@ -21,7 +20,7 @@
  (action (copy# %{gen-file} %{targets})))
 
 (documentation
- (package coq-primitive))
+ (package coq-runtime-types))
 
 ; In dev profile, we check the kernel against a more strict set of
 ; warnings.
