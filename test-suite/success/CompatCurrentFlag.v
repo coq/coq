@@ -1,3 +1,3 @@
-(* -*- coq-prog-args: ("-compat" "8.16") -*- *)
+(* -*- coq-prog-args: ("-compat" "8.17") -*- *)
 (** Check that the current compatibility flag actually requires the relevant modules. *)
-Import Coq.Compat.Coq816.
+Import Coq.Compat.Coq817.
