@@ -384,16 +384,6 @@ Standard library
 ^^^^^^^^^^^^^^^^
 
 - **Changed:**
-  `ExtrOCamlInt63` no longer extracts `comparison` to `int` in OCaml;
-  the extraction of `Uint63.compare` and `Sint63.compare` was also adapted accordingly
-  (`#15294 <https://github.com/coq/coq/pull/15294>`_,
-  fixes `#15280 <https://github.com/coq/coq/issues/15280>`_,
-  by Li-yao Xia).
-- **Changed:**
-  Extraction from :g:`nat` to OCaml :g:`int` uses Stdlib instead of Pervasives
-  (`#15333 <https://github.com/coq/coq/pull/15333>`_,
-  by Rudy Nicolo Peterson).
-- **Changed:**
   the ``signature`` scope of ``Classes.CMorphisms`` into ``signatureT``
   (`#15446 <https://github.com/coq/coq/pull/15446>`_,
   by Olivier Laurent).
@@ -432,10 +422,6 @@ Standard library
   (`#15388 <https://github.com/coq/coq/pull/15388>`_,
   fixes `#15382 <https://github.com/coq/coq/issues/15382>`_,
   by Olivier Laurent).
-- **Added:**
-  More extraction definitions for division and comparison of Z and N
-  (`#15098 <https://github.com/coq/coq/pull/15098>`_,
-  by Li-yao Xia).
 - **Added:**
   lemma `count_occ_rev`
   (`#15397 <https://github.com/coq/coq/pull/15397>`_,
@@ -499,14 +485,28 @@ Infrastructure and dependencies
   and `#16015 <https://github.com/coq/coq/pull/16015>`_,
   by Pierre-Marie Pédrot and Théo Zimmermann).
 
-Miscellaneous
-^^^^^^^^^^^^^
+Extraction
+^^^^^^^^^^
 
+- **Changed:**
+  `ExtrOCamlInt63` no longer extracts `comparison` to `int` in OCaml;
+  the extraction of `Uint63.compare` and `Sint63.compare` was also adapted accordingly
+  (`#15294 <https://github.com/coq/coq/pull/15294>`_,
+  fixes `#15280 <https://github.com/coq/coq/issues/15280>`_,
+  by Li-yao Xia).
+- **Changed:**
+  Extraction from :g:`nat` to OCaml :g:`int` uses Stdlib instead of Pervasives
+  (`#15333 <https://github.com/coq/coq/pull/15333>`_,
+  by Rudy Nicolo Peterson).
 - **Changed:**
   The empty inductive type is now extracted to OCaml empty type
   available since OCaml 4.07
   (`#15967 <https://github.com/coq/coq/pull/15967>`_,
   by Pierre Roux).
+- **Added:**
+  More extraction definitions for division and comparison of Z and N
+  (`#15098 <https://github.com/coq/coq/pull/15098>`_,
+  by Li-yao Xia).
 - **Fixed:**
   Type :n:`int` in files :n:`Number.v`, :n:`Decimal.v` and
   :n:`Hexadecimal.v` have been renamed to :n:`signed_int` (together
