@@ -712,20 +712,20 @@ Building a Coq project with Dune
 .. note::
 
    Dune's Coq support is still experimental; we strongly recommend
-   using Dune 2.3 or later.
+   using Dune 3.2 or later.
 
 .. note::
 
    The canonical documentation for the Coq Dune extension is
    maintained upstream; please refer to the `Dune manual
-   <https://dune.readthedocs.io/>`_ for up-to-date information. This
-   documentation is up to date for Dune 2.3.
+   <https://dune.readthedocs.io/>`_ for up-to-date information. The
+   documentation below is up to date for Dune 3.2
 
 Building a Coq project with Dune requires setting up a Dune project
 for your files. This involves adding a ``dune-project`` and
 ``pkg.opam`` file to the root (``pkg.opam`` can be empty or generated
 by Dune itself), and then providing ``dune`` files in the directories
-your ``.v`` files are placed. For the experimental version "0.1" of
+your ``.v`` files are placed. For the experimental version "0.3" of
 the Coq Dune language, Coq library stanzas look like:
 
 .. code:: scheme
@@ -760,6 +760,9 @@ Once your project is set up, `dune build` will generate the
 `pkg.install` files and all the files necessary for the installation
 of your project.
 
+Note that projects using Dune to build need to use the compatibility
+syntax for `Declare ML Module`, see example below:
+
 .. example::
 
    A typical stanza for a Coq plugin is split into two parts. An OCaml build directive, which is standard Dune:
@@ -786,6 +789,14 @@ of your project.
         (modules :standard \ IdDec NoCycle)) ; exclude some modules that don't build
 
        (include_subdirs qualified)
+
+   For now, each ``.v`` file that loads the plugin must use
+   the following special syntax on its `Declare ML Module`
+   command for compatibility with current Dune versions (as of Coq 8.16):
+
+   .. code:: coq
+
+       Declare ML Module "equations_plugin:equations.plugin".
 
 .. _coqdep:
 

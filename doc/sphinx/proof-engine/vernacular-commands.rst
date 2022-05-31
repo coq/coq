@@ -619,18 +619,35 @@ file is a particular case of a module called a *library file*.
 
 .. cmd:: Declare ML Module {+ @string }
 
-   This commands dynamically loads OCaml plugins dynamically.  The string
-   argument must be a valid `findlib <http://projects.camlcity.org/projects/findlib.html>`
-   plugin name, for example ``coq-core.plugins.ltac``. The first component of
-   the plugin name is a package that has to be in scope of ``findlib``.
+   Load an OCaml "plugin" and its dependencies
+   dynamically. :n:`@string` argument must be a valid `findlib
+   <http://projects.camlcity.org/projects/findlib.html>`_ library name,
+   for example ``coq-core.plugins.ltac``. The first component of the
+   plugin name is a package that has to be in scope of ``findlib``'s
+   search path. As of Coq 8.16, the command also support a "legacy"
+   syntax compatible with the plugin loading system used in Coq
+   8.0-8.15, see below.
+
    One can see the paths explored by ``findlib`` by running
-   ``ocamlfind printconf`` and get the list of available packages
-   by running ``ocamlfind list | grep coq`` (Coq packages are typically named
-   ``coq-something``).
+   ``ocamlfind printconf`` and get the list of available libraries by
+   running ``ocamlfind list | grep coq`` (Coq libraries are typically
+   named ``coq-something``).
 
    This command is reserved for plugin developers, who should provide
-   a .v file containing the command. Users of the plugins will then generally
-   load the .v file.
+   a ``.v`` file containing the command. Users of the plugin will
+   usually require the resulting ``.vo`` file which will then
+   transitively load the required plugin.
+
+   Note that the plugin loading system for Coq changed in 8.16 to use
+   findlib. Previous Coq versions loaded OCaml dynamic objects by
+   first locating the object file from ``-I`` directives, then
+   directly invoking ``Dynlink.loadfile``. For compatibility purposes,
+   8.16 still supports this legacy method, with the syntax being
+   ``Declare ML Module "foo_plugin:pkg.plugin.foo".``, where
+   ``foo_plugin`` is the name of the OCaml object file.
+
+   This is useful if you are still using a third party build system
+   such as Dune or your own.
 
    This command supports the :attr:`local` attribute.  If present,
    the listed files are not exported, even if they're outside a section.
@@ -638,13 +655,10 @@ file is a particular case of a module called a *library file*.
    .. exn:: File not found on loadpath: @string.
       :undocumented:
 
-
 .. cmd:: Print ML Modules
 
-   This prints the name of all OCaml modules loaded with :cmd:`Declare ML Module`.
-   To know from where these module were loaded, the user
-   should use the command :cmd:`Locate File`.
-
+   Print the name of all findlib libraries loaded with
+   :cmd:`Declare ML Module`.
 
 .. _loadpath:
 
