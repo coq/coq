@@ -16,7 +16,7 @@ homepage: "https://coq.inria.fr/"
 doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
 depends: [
-  "dune" {build & >= "2.5.0"}
+  "dune" {>= "2.9"}
   "conf-python-3" {build}
   "coq" {build & = version}
 ]

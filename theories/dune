@@ -2,11 +2,9 @@
  (name Coq)
  (package coq-stdlib)
  (synopsis "Coq's Standard Library")
- (flags -q -w -deprecated-native-compiler-option)
+ ; Uncomment this to have dune compile native files in release mode
  ; (mode native)
  (boot)
- ; (per_file
- ;  (Init/*.v -> -boot))
  (libraries
    ltac_plugin
    tauto_plugin
