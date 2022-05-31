@@ -15,7 +15,7 @@ Require Import Ltac.
 Require Import Datatypes.
 Require Import Logic.
 
-Declare ML Module "tauto_plugin".
+Declare ML Module "tauto_plugin:coq-core.plugins.tauto".
 
 Local Ltac not_dep_intros :=
   repeat match goal with

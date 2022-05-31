@@ -92,7 +92,8 @@ module Error = struct
       Some Pp.(str (Printf.sprintf "in file %s, %s is not a valid plugin name anymore." f s)
         ++ str "Plugins should be loaded using their public name according to findlib," ++ spc ()
         ++ str "for example package-name.foo and not foo_plugin." ++ spc ()
-        ++ str "If you are building with dune < 2.9.4 you must specify both" ++ spc ()
+        ++ str "If you are using a buid system that doesn't yet support the new loading method" ++ spc ()
+        ++ str "(such as Dune) you must specify both" ++ spc ()
         ++ str "the legacy and the findlib plugin name as in:" ++ spc ()
         ++ str "Declare ML Module \"foo_plugin:package-name.foo\".")
 
@@ -347,7 +348,10 @@ let rec find_dependencies st basename =
                   findlib_resolve f package (Some legacy) plugin
               | [package :: plugin] ->
                   findlib_resolve f package None plugin
-              | _ -> assert false in
+              | plist ->
+                CErrors.user_err
+                  Pp.(str "Failed to resolve plugin " ++
+                      pr_sequence (pr_sequence str) plist) in
             let sl = List.map (String.split_on_char ':') sl in
             let sl = List.map (List.map (String.split_on_char '.')) sl in
             let sl = List.map public_to_private_name sl in
