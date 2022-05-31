@@ -85,7 +85,7 @@ let warn_if_clash ?(what=Library) exact file dir f1 = let open Format in functio
         end
   | [] -> ()
 
-let safe_assoc st ?(what=Library) from file k =
+let safe_assoc ~st ?(what=Library) ~from file k =
   let search =
     match what with
     | Library -> Loadpath.search_v_known st
@@ -172,7 +172,7 @@ let rec find_dependencies st path =
         | Require (from, strl) ->
           let decl str =
             if should_visit_v_and_mark from str then begin
-              match safe_assoc st from path_no_ext str with
+              match safe_assoc ~st ~from path_no_ext str with
               | Some files ->
                 List.iter (fun file_str ->
                     let file_str = canonize file_str in
@@ -213,12 +213,12 @@ let rec find_dependencies st path =
             match file with
             | Logical str ->
               if should_visit_v_and_mark None [str]
-              then safe_assoc st None path_no_ext [str]
+              then safe_assoc ~st ~from:None path_no_ext [str]
               else None
             | Physical str ->
               if String.equal (Filename.basename str) str then
                 if should_visit_v_and_mark None [str]
-                then safe_assoc st None path_no_ext [str]
+                then safe_assoc ~st ~from:None path_no_ext [str]
                 else None
               else
                 Some [canonize str]
@@ -233,7 +233,7 @@ let rec find_dependencies st path =
              in
              List.iter decl l)
         | External(from,str) ->
-          begin match safe_assoc st ~what:External (Some from) path_no_ext [str] with
+          begin match safe_assoc ~st ~what:External ~from:(Some from) path_no_ext [str] with
           | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
           | Some [] -> assert false
           | None -> warning_module_notfound ~what:External (Some from) path_no_ext [str]
@@ -283,7 +283,7 @@ let sort st =
           | Lexer.Require (from, sl) ->
                 List.iter
                   (fun s ->
-                    match safe_assoc st from file s with
+                    match safe_assoc ~st ~from file s with
                     | None -> ()
                     | Some l -> List.iter loop l)
                 sl
