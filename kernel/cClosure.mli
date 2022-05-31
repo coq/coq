@@ -14,11 +14,6 @@ open Declarations
 open Environ
 open Esubst
 
-(** Flags for profiling reductions. *)
-val stats : bool ref
-
-val with_stats: 'a Lazy.t -> 'a
-
 (** {6 ... } *)
 (** Delta implies all consts (both global (= by
   [kernel_name]) and local (= by [Rel] or [Var])), all evars, and letin's.
