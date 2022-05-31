@@ -16,7 +16,7 @@ Require Import Coq.Init.Logic.
 Require Import Coq.Init.Specif.
 Require Coq.Init.Nat.
 
-Declare ML Module "number_string_notation_plugin".
+Declare ML Module "number_string_notation_plugin:coq-core.plugins.number_string_notation".
 
 (** We define an inductive for use with the [String Notation] command
     which contains all ascii characters.  We use 256 constructors for

@@ -2,7 +2,7 @@ Require Import ZArith QArith.
 From Coq.micromega Require Import RingMicromega EnvRing Tauto.
 From Coq.micromega Require Import ZMicromega QMicromega.
 
-Declare ML Module "micromega_plugin".
+Declare ML Module "micromega_plugin:coq-core.plugins.micromega".
 
 Goal True.
 Proof.

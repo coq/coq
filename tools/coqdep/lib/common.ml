@@ -132,7 +132,10 @@ let declare_ml_to_file file decl =
     Fl.findlib_resolve ~meta_files ~file ~package ~legacy_name:(Some legacy) ~plugin_name
   | [package :: plugin_name] ->
     Fl.findlib_resolve ~meta_files ~file ~package ~legacy_name:None ~plugin_name
-  | _ -> assert false
+  | plist ->
+    CErrors.user_err
+      Pp.(str "Failed to resolve plugin " ++
+          pr_sequence (pr_sequence str) plist)
 
 let rec find_dependencies st basename =
   let verbose = true in (* for past/future use? *)

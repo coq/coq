@@ -15,7 +15,7 @@ Require Import Ring_polynom.
 Require Import BinList.
 Require Export ListTactics.
 Require Import InitialRing.
-Declare ML Module "ring_plugin".
+Declare ML Module "ring_plugin:coq-core.plugins.ring".
 
 
 (* adds a definition t' on the normal form of t and an hypothesis id
