@@ -1,3 +1,23 @@
+## Changes between Coq 8.15 and Coq 8.16
+
+### Plugin Interface
+
+Plugins are now identified by a findlib library name of the form
+`pkg.lib`. This way, plugins can depend on other libraries and Coq can
+properly load the required dependencies.
+
+It is necessary to adjust plugin code:
+
+- `.mlg` files must now use `DECLARE PLUGIN "pkg.lib"` instead of
+  `DECLARE PLUGIN "library_name"`.
+
+- `.v` files should use `Declare ML Module "pkg.lib"`, or, if using
+  Dune, `Declare ML Module "library_name:pkg.lib"` until Dune is
+  adapted.
+
+You must also provide the corresponding `META` file if you build
+system doesn't generate it automatically.
+
 ## Changes between Coq 8.14 and Coq 8.15
 
 ### XML protocol

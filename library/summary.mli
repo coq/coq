@@ -77,8 +77,11 @@ end
 (** Special summary for ML modules.  This summary entry is special
     because its unfreeze may load ML code and hence add summary
     entries.  Thus is has to be recognizable, and handled properly.
+
+    The args correspond to Mltop.PluginSpec.t , that is to say,
+    the optional legacy plugin name, and the findlib name for the plugin.
    *)
-val declare_ml_modules_summary : (bool * string) list summary_declaration -> unit
+val declare_ml_modules_summary : (string option * string) list summary_declaration -> unit
 
 (** For global tables registered statically before the end of coqtop
     launch, the following empty [init_function] could be used. *)
