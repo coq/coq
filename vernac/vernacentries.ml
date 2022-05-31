@@ -1584,7 +1584,7 @@ let vernac_declare_ml_module ~local l =
   let l = List.map expand l in
   Mltop.declare_ml_modules local l
 
-let warn_cd = CWarnings.create ~name:"cd-deprecated" ~category:"deprecated"
+let warn_cd = CWarnings.create ~name:"cd-deprecated" ~category:"deprecated" ~default:CWarnings.AsError
   (fun () -> strbrk "The command \"Cd\" is deprecated." ++ spc () ++
              (* TODO: *)
              strbrk "TODO: something about how extraction will/does support an output dir so use that instead" ++ spc () ++
