@@ -415,7 +415,8 @@ type nonrec vernac_expr =
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of string
   | VernacDeclareMLModule of string list
-  | VernacChdir of string option
+  | VernacChdir of string
+  | VernacPwd
 
   (* Resetting *)
   | VernacResetName of lident

@@ -1584,18 +1584,22 @@ let vernac_declare_ml_module ~local l =
   let l = List.map expand l in
   Mltop.declare_ml_modules local l
 
-let vernac_chdir = function
-  | None -> Feedback.msg_notice (str (Sys.getcwd()))
-  | Some path ->
-      begin
-        try Sys.chdir (expand path)
-        with Sys_error err ->
-          (* Cd is typically used to control the output directory of
-          extraction. A failed Cd could lead to overwriting .ml files
-          so we make it an error. *)
-          user_err Pp.(str ("Cd failed: " ^ err))
-      end;
-      Flags.if_verbose Feedback.msg_info (str (Sys.getcwd()))
+let warn_cd = CWarnings.create ~name:"cd-deprecated" ~category:"deprecated"
+  (fun () -> strbrk "The command \"Cd\" is deprecated." ++ spc () ++
+             (* TODO: *)
+             strbrk "TODO: something about how extraction will/does support an output dir so use that instead" ++ spc () ++
+             strbrk "Use the \"Pwd\" command to print the current working directory." ++ spc () ++
+             strbrk "If \"Cd\" is an important feature for you, please open an issue at" ++ spc () ++
+             strbrk "https://github.com/coq/coq/issues" ++ spc () ++ strbrk "and explain your workflow.")
+
+let vernac_chdir path =
+  warn_cd ();
+  try Sys.chdir (expand path)
+  with Sys_error err ->
+    (* Cd is typically used to control the output directory of
+    extraction. A failed Cd could lead to overwriting .ml files
+    so we make it an error. *)
+    user_err Pp.(str ("Cd failed: " ^ err))
 
 (************)
 (* Commands *)
@@ -2469,6 +2473,8 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () -> with_locality ~atts vernac_declare_ml_module l)
   | VernacChdir s ->
     vtdefault(fun () -> unsupported_attributes atts; vernac_chdir s)
+  | VernacPwd ->
+    vtdefault(fun () -> unsupported_attributes atts; Feedback.msg_notice (str (Sys.getcwd ())))
 
   (* Commands *)
   | VernacCreateHintDb (dbname,b) ->

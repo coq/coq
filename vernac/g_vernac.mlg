@@ -921,9 +921,8 @@ GRAMMAR EXTEND Gram
           { VernacDeclareScope sc }
 
       (* System directory *)
-      | IDENT "Pwd" -> { VernacChdir None }
-      | IDENT "Cd" -> { VernacChdir None }
-      | IDENT "Cd"; dir = ne_string -> { VernacChdir (Some dir) }
+      | IDENT "Pwd" -> { VernacPwd }
+      | IDENT "Cd"; dir = ne_string -> { VernacChdir dir }
 
       | IDENT "Load"; verbosely = [ IDENT "Verbose" -> { true } | -> { false } ];
         s = [ s = ne_string -> { s } | s = IDENT -> { s } ] ->

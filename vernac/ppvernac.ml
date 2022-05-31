@@ -1087,7 +1087,9 @@ let pr_vernac_expr v =
       hov 2 (keyword "Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)
     )
   | VernacChdir s ->
-    return (keyword "Cd" ++ pr_opt qs s)
+    return (keyword "Cd" ++ qs s)
+  | VernacPwd ->
+    return (keyword "Pwd")
 
   (* Commands *)
   | VernacCreateHintDb (dbname,b) ->

@@ -138,7 +138,7 @@ let classify_vernac e =
     | VernacUniverse _ | VernacConstraint _
     | VernacCanonical _ | VernacCoercion _ | VernacIdentityCoercion _
     | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
-    | VernacChdir _
+    | VernacChdir _ | VernacPwd
     | VernacCreateHintDb _ | VernacRemoveHints _ | VernacHints _
     | VernacArguments _
     | VernacReserve _
