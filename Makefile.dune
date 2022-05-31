@@ -87,7 +87,7 @@ help-install:
 	@echo ""
 	@echo " Provided opam/dune packages are:"
 	@echo ""
-	@echo "  - coq-primitive: Coq primitive types for extracted OCaml runtimes"
+	@echo "  - coq-runtime-types: Coq primitive types for extracted OCaml runtimes"
 	@echo "  - coq-core: base Coq package, toplevel compilers, plugins, tools, no stdlib, no GTK"
 	@echo "  - coq-stdlib: Coq's standard library"
 	@echo "  - coqide-server: XML protocol language server"
@@ -130,7 +130,7 @@ dunestrap: $(DUNE_FILES)
 states: dunestrap
 	dune build $(DUNEOPT) dev/shim/coqtop-prelude
 
-NONDOC_INSTALL_TARGETS:=coq-primitive.install coq-core.install coq-stdlib.install coqide-server.install coqide.install coq.install
+NONDOC_INSTALL_TARGETS:=coq-runtime-types.install coq-core.install coq-stdlib.install coqide-server.install coqide.install coq.install
 
 world: dunestrap
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)

@@ -32,7 +32,7 @@ depends: [
   "ocamlfind" {>= "1.8.1"}
   "zarith" {>= "1.11"}
   "ounit2" {with-test}
-  "coq-primitive" {= version}
+  "coq-runtime-types" {= version}
 ]
 build: [
   # Requires dune 2.8 due to https://github.com/ocaml/dune/issues/3219

@@ -53,7 +53,7 @@ applications of these primitive operations.
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlInt63`
 module can be used when extracting to OCaml: it maps the Coq primitives to types
-and functions of the :g:`Uint63` module from the `coq-primitive` library
+and functions of the :g:`Uint63` module from the `coq-runtime-types` library
 (including signed functions for :g:`Sint63` despite the name).
 
 Literal values (at type :g:`Uint63.int`) are extracted to literal OCaml values
@@ -100,7 +100,7 @@ to comply with the IEEE 754 standard for floating-point arithmetic.
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlFloats`
 module can be used when extracting to OCaml: it maps the Coq primitives to types
-and functions of the :g:`Float64` module from the `coq-primitive` library.
+and functions of the :g:`Float64` module from the `coq-runtime-types` library.
 
 Literal values (of type :g:`Float64.t`) are extracted to literal OCaml
 values (of type :g:`float`) written in hexadecimal notation and
@@ -147,7 +147,7 @@ operations.
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlPArray`
 module can be used when extracting to OCaml: it maps the Coq primitives to types
-and functions of the :g:`Parray` module from the `coq-primitive` library.
+and functions of the :g:`Parray` module from the `coq-runtime-types` library.
 
 Coq's primitive arrays are persistent data structures. Semantically, a set operation
 ``t.[i <- a]`` represents a new array that has the same values as ``t``, except

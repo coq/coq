@@ -1,7 +1,7 @@
 #cd".";;
 #directory "_build/default/lib/.lib.objs/byte/";;
 #directory "_build/default/clib/.clib.objs/byte/";;
-#directory "_build/default/primitive/.primitive.objs/byte/";;
+#directory "_build/default/runtime/.runtime_type.objs/byte/";;
 #directory "_build/default/kernel/.kernel.objs/byte/";;
 #directory "_build/default/library/.library.objs/byte/";;
 #directory "_build/default/engine/.engine.objs/byte/";;
