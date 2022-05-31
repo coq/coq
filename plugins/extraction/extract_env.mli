@@ -10,27 +10,24 @@
 
 (*s This module declares the extraction commands. *)
 
-open Names
-open Libnames
-
-val simple_extraction : qualid -> unit
-val full_extraction : string option -> qualid list -> unit
-val separate_extraction : qualid list -> unit
-val extraction_library : bool -> lident -> unit
+val simple_extraction : Libnames.qualid -> unit
+val full_extraction : string option -> Libnames.qualid list -> unit
+val separate_extraction : Libnames.qualid list -> unit
+val extraction_library : bool -> Names.lident -> unit
 
 (* For the test-suite : extraction to a temporary file + ocamlc on it *)
 
-val extract_and_compile : qualid list -> unit
+val extract_and_compile : Libnames.qualid list -> unit
 
 (* For debug / external output via coqtop.byte + Drop : *)
 
 val mono_environment :
- GlobRef.t list -> ModPath.t list -> Miniml.ml_structure
+Names.GlobRef.t list -> Names.ModPath.t list -> Miniml.ml_structure
 
 (* Used by the Relation Extraction plugin *)
 
 val print_one_decl :
-  Miniml.ml_structure -> ModPath.t -> Miniml.ml_decl -> Pp.t
+  Miniml.ml_structure -> Names.ModPath.t -> Miniml.ml_decl -> Pp.t
 
 (* Used by Extraction Compute *)
 

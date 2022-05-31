@@ -11,22 +11,16 @@
 (*s Production of Scheme syntax. *)
 
 open Pp
-open CErrors
-open Util
-open Names
-open Miniml
-open Mlutil
-open Table
 open Common
 
 (*s Scheme renaming issues. *)
 
 let keywords =
-  List.fold_right (fun s -> Id.Set.add (Id.of_string s))
+  List.fold_right (fun s -> Names.Id.Set.add (Names.Id.of_string s))
     [ "define"; "let"; "lambda"; "lambdas"; "match";
       "apply"; "car"; "cdr";
       "error"; "delay"; "force"; "_"; "__"]
-    Id.Set.empty
+      Names.Id.Set.empty
 
 let pp_comment s = str ";; " ++ h s ++ fnl ()
 
@@ -39,10 +33,10 @@ let preamble _ comment _ usf =
   str ";; This extracted scheme code relies on some additional macros\n" ++
   str ";; available at http://www.pps.univ-paris-diderot.fr/~letouzey/scheme\n" ++
   str "(load \"macros_extr.scm\")\n\n" ++
-  (if usf.mldummy then str "(define __ (lambda (_) __))\n\n" else mt ())
+  (if usf.Miniml.mldummy then str "(define __ (lambda (_) __))\n\n" else mt ())
 
 let pr_id id =
-  str @@ String.map (fun c -> if c == '\'' then '~' else c) (Id.to_string id)
+  str @@ String.map (fun c -> if c == '\'' then '~' else c) (Names.Id.to_string id)
 
 let paren = pp_par true
 
@@ -65,6 +59,7 @@ let pp_global k r = str (Common.pp_global k r)
 (*s Pretty-printing of expressions.  *)
 
 let rec pp_expr env args =
+  let open Miniml in
   let apply st = pp_apply st true args in
   function
     | MLrel n ->
@@ -73,11 +68,11 @@ let rec pp_expr env args =
         let stl = List.map (pp_expr env []) args' in
         pp_expr env (stl @ args) f
     | MLlam _ as a ->
-        let fl,a' = collect_lams a in
-        let fl,env' = push_vars (List.map id_of_mlid fl) env in
+        let fl,a' = Mlutil.collect_lams a in
+        let fl,env' = push_vars (List.map Mlutil.id_of_mlid fl) env in
         apply (pp_abst (pp_expr env' [] a') (List.rev fl))
     | MLletin (id,a1,a2) ->
-        let i,env' = push_vars [id_of_mlid id] env in
+        let i,env' = push_vars [Mlutil.id_of_mlid id] env in
         apply
           (hv 0
              (hov 2
@@ -90,31 +85,31 @@ let rec pp_expr env args =
     | MLglob r ->
         apply (pp_global Term r)
     | MLcons (_,r,args') ->
-        assert (List.is_empty args);
+        assert (Util.List.is_empty args);
         let st =
           str "`" ++
           paren (pp_global Cons r ++
-                 (if List.is_empty args' then mt () else spc ()) ++
+                 (if Util.List.is_empty args' then mt () else spc ()) ++
                  prlist_with_sep spc (pp_cons_args env) args')
         in
-        if is_coinductive r then paren (str "delay " ++ st) else st
-    | MLtuple _ -> user_err Pp.(str "Cannot handle tuples in Scheme yet.")
-    | MLcase (_,_,pv) when not (is_regular_match pv) ->
-        user_err Pp.(str "Cannot handle general patterns in Scheme yet.")
-    | MLcase (_,t,pv) when is_custom_match pv ->
+        if Table.is_coinductive r then paren (str "delay " ++ st) else st
+    | MLtuple _ -> CErrors.user_err Pp.(str "Cannot handle tuples in Scheme yet.")
+    | MLcase (_,_,pv) when not (Mlutil.is_regular_match pv) ->
+      CErrors.user_err Pp.(str "Cannot handle general patterns in Scheme yet.")
+    | MLcase (_,t,pv) when Table.is_custom_match pv ->
         let mkfun (ids,_,e) =
-          if not (List.is_empty ids) then named_lams (List.rev ids) e
-          else dummy_lams (ast_lift 1 e) 1
+          if not (Util.List.is_empty ids) then Mlutil.named_lams (List.rev ids) e
+          else Mlutil.dummy_lams (Mlutil.ast_lift 1 e) 1
         in
         apply
           (paren
              (hov 2
-                (str (find_custom_match pv) ++ fnl () ++
+                (str (Table.find_custom_match pv) ++ fnl () ++
                  prvect (fun tr -> pp_expr env [] (mkfun tr) ++ fnl ()) pv
                  ++ pp_expr env [] t)))
     | MLcase (typ,t, pv) ->
         let e =
-          if not (is_coinductive_type typ) then pp_expr env [] t
+          if not (Table.is_coinductive_type typ) then pp_expr env [] t
           else paren (str "force" ++ spc () ++ pp_expr env [] t)
         in
         apply (v 3 (paren (str "match " ++ e ++ fnl () ++ pp_pat env pv)))
@@ -136,22 +131,25 @@ let rec pp_expr env args =
     | MLparray _ ->
             paren (str "Prelude.error \"EXTRACTION OF PARRAY NOT IMPLEMENTED\"")
 
-and pp_cons_args env = function
-  | MLcons (_,r,args) when is_coinductive r ->
+and pp_cons_args env =
+  let open Miniml in
+  function
+  | MLcons (_,r,args) when Table.is_coinductive r ->
       paren (pp_global Cons r ++
-             (if List.is_empty args then mt () else spc ()) ++
+             (if Util.List.is_empty args then mt () else spc ()) ++
              prlist_with_sep spc (pp_cons_args env) args)
   | e -> str "," ++ pp_expr env [] e
 
 and pp_one_pat env (ids,p,t) =
+  let open Miniml in
   let r = match p with
     | Pusual r -> r
     | Pcons (r,l) -> r (* cf. the check [is_regular_match] above *)
     | _ -> assert false
   in
-  let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
+  let ids,env' = push_vars (List.rev_map Mlutil.id_of_mlid ids) env in
   let args =
-    if List.is_empty ids then mt ()
+    if Util.List.is_empty ids then mt ()
     else (str " " ++ prlist_with_sep spc pr_id (List.rev ids))
   in
   (pp_global Cons r ++ args), (pp_expr env' [] t)
@@ -177,42 +175,48 @@ and pp_fix env j (ids,bl) args =
 
 (*s Pretty-printing of a declaration. *)
 
-let pp_decl = function
+let pp_decl =
+  let open Miniml in
+  function
   | Dind _ -> mt ()
   | Dtype _ -> mt ()
   | Dfix (rv, defs,_) ->
       let names = Array.map
-        (fun r -> if is_inline_custom r then mt () else pp_global Term r) rv
+        (fun r -> if Table.is_inline_custom r then mt () else pp_global Term r) rv
       in
       prvecti
         (fun i r ->
-          let void = is_inline_custom r ||
-            (not (is_custom r) &&
+          let void = Table.is_inline_custom r ||
+            (not (Table.is_custom r) &&
              match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
           in
           if void then mt ()
           else
             hov 2
               (paren (str "define " ++ names.(i) ++ spc () ++
-                        (if is_custom r then str (find_custom r)
+                        (if Table.is_custom r then str (Table.find_custom r)
                          else pp_expr (empty_env ()) [] defs.(i)))
                ++ fnl ()) ++ fnl ())
         rv
   | Dterm (r, a, _) ->
-      if is_inline_custom r then mt ()
+      if Table.is_inline_custom r then mt ()
       else
         hov 2 (paren (str "define " ++ pp_global Term r ++ spc () ++
-                        (if is_custom r then str (find_custom r)
+                        (if Table.is_custom r then str (Table.find_custom r)
                          else pp_expr (empty_env ()) [] a)))
         ++ fnl2 ()
 
-let rec pp_structure_elem = function
+let rec pp_structure_elem =
+  let open Miniml in
+  function
   | (l,SEdecl d) -> pp_decl d
   | (l,SEmodule m) -> pp_module_expr m.ml_mod_expr
   | (l,SEmodtype m) -> mt ()
       (* for the moment we simply discard module type *)
 
-and pp_module_expr = function
+and pp_module_expr =
+  let open Miniml in
+  function
   | MEstruct (mp,sel) -> prlist_strict pp_structure_elem sel
   | MEfunctor _ -> mt ()
       (* for the moment we simply discard unapplied functors *)
@@ -227,10 +231,10 @@ let pp_struct =
   in
   prlist_strict pp_sel
 
-let scheme_descr = {
+let scheme_descr = Miniml.{
   keywords = keywords;
   file_suffix = ".scm";
-  file_naming = file_of_modfile;
+  file_naming = Table.file_of_modfile;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;

@@ -10,32 +10,26 @@
 
 (*s Extraction from Coq terms to Miniml. *)
 
-open Names
-open Declarations
-open Environ
-open Evd
-open Miniml
+val extract_constant : Environ.env -> Names.Constant.t -> Declarations.constant_body -> Miniml.ml_decl
 
-val extract_constant : env -> Constant.t -> constant_body -> ml_decl
-
-val extract_constant_spec : env -> Constant.t -> 'a pconstant_body -> ml_spec
+val extract_constant_spec : Environ.env -> Names.Constant.t -> 'a Declarations.pconstant_body -> Miniml.ml_spec
 
 (** For extracting "module ... with ..." declaration *)
 
 val extract_with_type :
-  env -> evar_map -> EConstr.t -> ( Id.t list * ml_type ) option
+Environ.env -> Evd.evar_map -> EConstr.t -> ( Names.Id.t list * Miniml.ml_type ) option
 
 val extract_fixpoint :
-  env -> evar_map -> Constant.t array ->
-    (EConstr.t, EConstr.types) Constr.prec_declaration -> ml_decl
+Environ.env -> Evd.evar_map -> Names.Constant.t array ->
+    (EConstr.t, EConstr.types) Constr.prec_declaration -> Miniml.ml_decl
 
-val extract_inductive : env -> MutInd.t -> ml_ind
+val extract_inductive : Environ.env -> Names.MutInd.t -> Miniml.ml_ind
 
 (** For Extraction Compute and Show Extraction *)
 
-val extract_constr : env -> evar_map -> EConstr.t -> ml_ast * ml_type
+val extract_constr : Environ.env -> Evd.evar_map -> EConstr.t -> Miniml.ml_ast * Miniml.ml_type
 
 (*s Is a [ml_decl] or a [ml_spec] logical ? *)
 
-val logical_decl : ml_decl -> bool
-val logical_spec : ml_spec -> bool
+val logical_decl : Miniml.ml_decl -> bool
+val logical_spec : Miniml.ml_spec -> bool

@@ -9,12 +9,8 @@
 (************************************************************************)
 
 open Names
-open ModPath
-open CErrors
-open Util
 open Miniml
 open Table
-open Mlutil
 
 (*S Functions upon ML modules. *)
 
@@ -37,7 +33,7 @@ let se_iter do_decl do_spec do_mp =
     | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
     | MTwith (mt,ML_With_type(idl,l,t))->
         let mp_mt = msid_of_mt mt in
-        let l',idl' = List.sep_last idl in
+        let l',idl' = Util.List.sep_last idl in
         let mp_w =
           List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
         in
@@ -98,7 +94,7 @@ let patt_iter_references do_cons p =
 
 let ast_iter_references do_term do_cons do_type a =
   let rec iter a =
-    ast_iter iter a;
+    Mlutil.ast_iter iter a;
     match a with
       | MLglob r -> do_term r
       | MLcons (_,r,_) -> do_cons r
@@ -144,7 +140,7 @@ let spec_iter_references do_term do_cons do_type = function
 exception Found
 
 let rec ast_search f a =
-  if f a then raise Found else ast_iter (ast_search f) a
+  if f a then raise Found else Mlutil.ast_iter (ast_search f) a
 
 let decl_ast_search f = function
   | Dterm (_,a,_) -> ast_search f a
@@ -225,11 +221,11 @@ let get_decl_in_structure r struc =
   try
     let base_mp,ll = labels_of_ref r in
     if not (at_toplevel base_mp) then error_not_visible r;
-    let sel = List.assoc_f ModPath.equal base_mp struc in
+    let sel = Util.List.assoc_f ModPath.equal base_mp struc in
     let rec go ll sel = match ll with
       | [] -> assert false
       | l :: ll ->
-          match search_structure l (not (List.is_empty ll)) sel with
+          match search_structure l (not (Util.List.is_empty ll)) sel with
             | SEdecl d -> d
             | SEmodtype m -> assert false
             | SEmodule m ->
@@ -238,7 +234,7 @@ let get_decl_in_structure r struc =
                   | _ -> error_not_visible r
     in go ll sel
   with Not_found ->
-    anomaly (Pp.str "reference not found in extracted structure.")
+   CErrors.anomaly (Pp.str "reference not found in extracted structure.")
 
 
 (*s Optimization of a [ml_structure]. *)
@@ -259,7 +255,7 @@ let dfix_to_mlfix rv av i =
   let rec subst n t = match t with
     | MLglob ((GlobRef.ConstRef kn) as refe) ->
         (try MLrel (n + (Refmap'.find refe s)) with Not_found -> t)
-    | _ -> ast_map_lift subst n t
+    | _ -> Mlutil.ast_map_lift subst n t
   in
   let ids = Array.map (fun r -> Label.to_id (label_of_r r)) rv in
   let c = Array.map (subst 0) av
@@ -270,7 +266,9 @@ let dfix_to_mlfix rv av i =
    order to preserve the global interface, later [depcheck_se] will get
    rid of them if possible *)
 
-let rec optim_se top to_appear s = function
+let rec optim_se top to_appear s =
+  let open Mlutil in
+  function
   | [] -> []
   | (l,SEdecl (Dterm (r,a,t))) :: lse ->
       let a = normalize (ast_glob_subst !s a) in
@@ -362,7 +360,7 @@ let rec depcheck_se = function
     let se' = depcheck_se se in
     let refs = declared_refs d in
     let refs' = List.filter is_needed refs in
-    if List.is_empty refs' then
+    if Util.List.is_empty refs' then
       (List.iter remove_info_axiom refs;
        List.iter remove_opaque refs;
        se')
@@ -385,7 +383,7 @@ let rec depcheck_struct = function
   | (mp,lse)::struc ->
       let struc' = depcheck_struct struc in
       let lse' = depcheck_se lse in
-      if List.is_empty lse' then struc' else (mp,lse')::struc'
+      if Util.List.is_empty lse' then struc' else (mp,lse')::struc'
 
 exception RemainingImplicit of kill_reason
 
@@ -405,7 +403,7 @@ let optimize_struct to_appear struc =
   in
   let mini_struc =
     if library () then
-      List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
+      List.filter (fun (_,lse) -> not (Util.List.is_empty lse)) opt_struc
     else
       begin
         reset_needed ();

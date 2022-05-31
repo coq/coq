@@ -8,20 +8,12 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
-open Util
 open Names
-open ModPath
-open Namegen
-open Nameops
-open Table
-open Miniml
-open Mlutil
 
 let ascii_of_id id =
   let s = Id.to_string id in
   for i = 0 to String.length s - 2 do
-    if s.[i] == '_' && s.[i+1] == '_' then warning_id s
+    if s.[i] == '_' && s.[i+1] == '_' then Table.warning_id s
   done;
   Unicode.ascii_of_ident s
 
@@ -29,44 +21,44 @@ let is_mp_bound = function MPbound _ -> true | _ -> false
 
 (*s Some pretty-print utility functions. *)
 
-let pp_par par st = if par then str "(" ++ st ++ str ")" else st
+let pp_par par st = if par then Pp.(str "(" ++ st ++ str ")") else st
 
 (** [pp_apply] : a head part applied to arguments, possibly with parenthesis *)
 
 let pp_apply st par args = match args with
   | [] -> st
-  | _  -> hov 2 (pp_par par (st ++ spc () ++ prlist_with_sep spc identity args))
+  | _  -> Pp.(hov 2 (pp_par par (st ++ spc () ++ prlist_with_sep spc Util.identity args)))
 
 (** Same as [pp_apply], but with also protection of the head by parenthesis *)
 
 let pp_apply2 st par args =
-  let par' = not (List.is_empty args) || par in
+  let par' = not (Util.List.is_empty args) || par in
   pp_apply (pp_par par' st) par args
 
 let pr_binding = function
-  | [] -> mt ()
-  | l  -> str " " ++ prlist_with_sep (fun () -> str " ") Id.print l
+  | [] -> Pp.mt ()
+  | l  -> Pp.(str " " ++ prlist_with_sep (fun () -> str " ") Id.print l)
 
 let pp_tuple_light f = function
-  | [] -> mt ()
+  | [] -> Pp.mt ()
   | [x] -> f true x
   | l ->
-      pp_par true (prlist_with_sep (fun () -> str "," ++ spc ()) (f false) l)
+      pp_par true Pp.(prlist_with_sep (fun () -> str "," ++ spc ()) (f false) l)
 
 let pp_tuple f = function
-  | [] -> mt ()
+  | [] -> Pp.mt ()
   | [x] -> f x
-  | l -> pp_par true (prlist_with_sep (fun () -> str "," ++ spc ()) f l)
+  | l -> pp_par true Pp.(prlist_with_sep (fun () -> str "," ++ spc ()) f l)
 
 let pp_boxed_tuple f = function
-  | [] -> mt ()
+  | [] -> Pp.mt ()
   | [x] -> f x
-  | l -> pp_par true (hov 0 (prlist_with_sep (fun () -> str "," ++ spc ()) f l))
+  | l -> pp_par true Pp.(hov 0 (prlist_with_sep (fun () -> str "," ++ spc ()) f l))
 
 let pp_array f = function
-  | [] -> mt ()
+  | [] -> Pp.mt ()
   | [x] -> f x
-  | l -> pp_par true (prlist_with_sep (fun () -> str ";" ++ spc ()) f l)
+  | l -> pp_par true Pp.(prlist_with_sep (fun () -> str ";" ++ spc ()) f l)
 
 (** By default, in module Format, you can do horizontal placing of blocks
     even if they include newlines, as long as the number of chars in the
@@ -75,11 +67,11 @@ let pp_array f = function
 
 (* EG: This looks quite suspicious... but beware of bugs *)
 (* let fnl () = stras (1000000,"") ++ fnl () *)
-let fnl () = fnl ()
+let fnl () = Pp.fnl ()
 
-let fnl2 () = fnl () ++ fnl ()
+let fnl2 () = Pp.(fnl () ++ fnl ())
 
-let space_if = function true -> str " " | false -> mt ()
+let space_if = function true -> Pp.str " " | false -> Pp.mt ()
 
 let begins_with s prefix =
   let len = String.length prefix in
@@ -98,7 +90,7 @@ let begins_with_CoqXX s =
   with Not_found -> false
 
 let unquote s =
-  if lang () != Scheme then s
+  if Table.lang () != Table.Scheme then s
   else String.map (fun c -> if c == '\'' then '~' else c) s
 
 let rec qualify delim = function
@@ -118,7 +110,7 @@ let is_lower s = match s.[0] with 'a' .. 'z' | '_' -> true | _ -> false
 let lowercase_id id = Id.of_string (String.uncapitalize_ascii (ascii_of_id id))
 let uppercase_id id =
   let s = ascii_of_id id in
-  assert (not (String.is_empty s));
+  assert (not (Util.String.is_empty s));
   if s.[0] == '_' then Id.of_string ("Coq_"^s)
   else Id.of_string (String.capitalize_ascii s)
 
@@ -128,7 +120,7 @@ module KOrd =
 struct
   type t = kind * string
   let compare (k1, s1) (k2, s2) =
-    let c = pervasives_compare k1 k2 (* OK *) in
+    let c = Util.pervasives_compare k1 k2 (* OK *) in
     if c = 0 then String.compare s1 s2
     else c
 end
@@ -136,7 +128,7 @@ end
 module KMap = Map.Make(KOrd)
 
 let upperkind = function
-  | Type -> lang () == Haskell
+  | Type -> Table.lang () == Table.Haskell
   | Term -> false
   | Cons | Mod -> true
 
@@ -150,12 +142,12 @@ type env = Id.t list * Id.Set.t
 (*s Generic renaming issues for local variable names. *)
 
 let rec rename_id id avoid =
-  if Id.Set.mem id avoid then rename_id (increment_subscript id) avoid else id
+  if Id.Set.mem id avoid then rename_id (Nameops.increment_subscript id) avoid else id
 
 let rec rename_vars avoid = function
   | [] ->
       [], avoid
-  | id :: idl when id == dummy_name ->
+  | id :: idl when id == Mlutil.dummy_name ->
       (* we don't rename dummy binders *)
       let (idl', avoid') = rename_vars avoid idl in
       (id :: idl', avoid')
@@ -216,10 +208,10 @@ let mktable_id autoclean =
   (fun r v -> m := Id.Map.add r v !m), (fun r -> Id.Map.find r !m), clear
 
 let mktable_ref autoclean =
-  let m = ref Refmap'.empty in
-  let clear () = m := Refmap'.empty in
+  let m = ref Table.Refmap'.empty in
+  let clear () = m := Table.Refmap'.empty in
   if autoclean then register_cleanup clear;
-  (fun r v -> m := Refmap'.add r v !m), (fun r -> Refmap'.find r !m), clear
+  (fun r v -> m := Table.Refmap'.add r v !m), (fun r -> Table.Refmap'.find r !m), clear
 
 let mktable_modpath autoclean =
   let m = ref MPmap.empty in
@@ -287,7 +279,7 @@ let pop_visible, push_visible, get_visible =
       | v :: vl ->
           vis := vl;
           (* we save the 1st-level-content of MPfile for later use *)
-          if get_phase () == Impl && modular () && is_modfile v.mp
+          if get_phase () == Impl && Table.modular () && Table.is_modfile v.mp
           then add_mpfiles_content v.mp v.content
   and push mp mps =
     vis := { mp = mp; params = mps; content = KMap.empty } :: !vis
@@ -367,7 +359,7 @@ let modfstlev_rename =
 (*s Creating renaming for a [module_path] : first, the real function ... *)
 
 let rec mp_renaming_fun mp = match mp with
-  | _ when not (modular ()) && at_toplevel mp -> [""]
+  | _ when not (Table.modular ()) && Table.at_toplevel mp -> [""]
   | MPdot (mp,l) ->
       let lmp = mp_renaming mp in
       let mp = match lmp with
@@ -380,33 +372,33 @@ let rec mp_renaming_fun mp = match mp with
       if not (params_ren_mem mp) then [s]
       else let i,_,_ = MBId.repr mbid in [s^"__"^string_of_int i]
   | MPfile _ ->
-      assert (modular ()); (* see [at_toplevel] above *)
+      assert (Table.modular ()); (* see [at_toplevel] above *)
       assert (get_phase () == Pre);
-      let current_mpfile = (List.last (get_visible ())).mp in
+      let current_mpfile = (Util.List.last (get_visible ())).mp in
       if not (ModPath.equal mp current_mpfile) then mpfiles_add mp;
-      [string_of_modfile mp]
+      [Table.string_of_modfile mp]
 
 (* ... and its version using a cache *)
 
 and mp_renaming =
   let add,get,_ = mktable_modpath true in
   fun x ->
-    try if is_mp_bound (base_mp x) then raise Not_found; get x
+    try if is_mp_bound (Table.base_mp x) then raise Not_found; get x
     with Not_found -> let y = mp_renaming_fun x in add x y; y
 
 (*s Renamings creation for a [global_reference]: we build its fully-qualified
     name in a [string list] form (head is the short name). *)
 
 let ref_renaming_fun (k,r) =
-  let mp = modpath_of_r r in
+  let mp = Table.modpath_of_r r in
   let l = mp_renaming mp in
-  let l = if lang () != Ocaml && not (modular ()) then [""] else l in
+  let l = if Table.lang () != Table.Ocaml && not (Table.modular ()) then [""] else l in
   let s =
-    let idg = safe_basename_of_global r in
+    let idg = Table.safe_basename_of_global r in
     match l with
     | [""] -> (* this happens only at toplevel of the monolithic case *)
       let globs = get_global_ids () in
-      let id = next_ident_away (kindcase_id k idg) globs in
+      let id = Namegen.next_ident_away (kindcase_id k idg) globs in
       Id.to_string id
     | _ -> modular_rename k idg
   in
@@ -418,7 +410,7 @@ let ref_renaming_fun (k,r) =
 let ref_renaming =
   let add,get,_ = mktable_ref true in
   fun ((k,r) as x) ->
-    try if is_mp_bound (base_mp (modpath_of_r r)) then raise Not_found; get r
+    try if is_mp_bound (Table.base_mp (Table.modpath_of_r r)) then raise Not_found; get r
     with Not_found -> let y = ref_renaming_fun x in add r y; y
 
 (* [visible_clash mp0 (k,s)] checks if [mp0-s] of kind [k]
@@ -477,10 +469,10 @@ let visible_clash_dbg mp0 ks =
 (* After the 1st pass, we can decide which modules will be opened initially *)
 
 let opened_libraries () =
-  if not (modular ()) then []
+  if not (Table.modular ()) then []
   else
     let used_files = mpfiles_list () in
-    let used_ks = List.map (fun mp -> Mod,string_of_modfile mp) used_files in
+    let used_ks = List.map (fun mp -> Mod, Table.string_of_modfile mp) used_files in
     (* By default, we open all used files. Ambiguities will be resolved later
        by using qualified names. Nonetheless, we don't open any file A that
        contains an immediate submodule A.B hiding another file B : otherwise,
@@ -514,7 +506,7 @@ let pp_duplicate k' prefix mp rls olab =
       rls, Option.get olab
     else
       (* Here rls=s::rls', we search the label for s inside mp *)
-      List.tl rls, get_nth_label_mp (mp_length mp - mp_length prefix) mp
+      List.tl rls, Table.get_nth_label_mp (Table.mp_length mp - Table.mp_length prefix) mp
   in
   match get_duplicate prefix lbl with
   | Some ren -> dottify (ren :: rls')
@@ -533,7 +525,7 @@ let fstlev_ks k = function
 let pp_ocaml_local k prefix mp rls olab =
   (* what is the largest prefix of [mp] that belongs to [visible]? *)
   assert (k != Mod || not (ModPath.equal mp prefix)); (* mp as whole module isn't in itself *)
-  let rls' = List.skipn (mp_length prefix) rls in
+  let rls' = Util.List.skipn (Table.mp_length prefix) rls in
   let k's = fstlev_ks k rls' in
   (* Reference r / module path mp is of the form [<prefix>.s.<...>]. *)
   if not (visible_clash prefix k's) then dottify rls'
@@ -552,8 +544,8 @@ let pp_ocaml_bound base rls =
 let pp_ocaml_extern k base rls = match rls with
   | [] -> assert false
   | base_s :: rls' ->
-      if (not (modular ())) (* Pseudo qualification with "" *)
-        || (List.is_empty rls')  (* Case of a file A.v used as a module later *)
+      if (not (Table.modular ())) (* Pseudo qualification with "" *)
+        || (Util.List.is_empty rls')  (* Case of a file A.v used as a module later *)
         || (not (mpfiles_mem base)) (* Module not opened *)
         || (mpfiles_clash base (fstlev_ks k rls')) (* Conflict in opened files *)
         || (visible_clash base (fstlev_ks k rls')) (* Local conflict *)
@@ -561,7 +553,7 @@ let pp_ocaml_extern k base rls = match rls with
         (* We need to fully qualify. Last clash situation is unsupported *)
         match visible_clash_dbg base (Mod,base_s) with
           | None -> dottify rls
-          | Some (mp,l) -> error_module_clash base (MPdot (mp,l))
+          | Some (mp,l) -> Table.error_module_clash base (MPdot (mp,l))
       else
         (* Standard situation : object in an opened file *)
         dottify rls'
@@ -569,10 +561,10 @@ let pp_ocaml_extern k base rls = match rls with
 (* [pp_ocaml_gen] : choosing between [pp_ocaml_local] or [pp_ocaml_extern] *)
 
 let pp_ocaml_gen k mp rls olab =
-  match common_prefix_from_list mp (get_visible_mps ()) with
+  match Table.common_prefix_from_list mp (get_visible_mps ()) with
     | Some prefix -> pp_ocaml_local k prefix mp rls olab
     | None ->
-        let base = base_mp mp in
+        let base = Table.base_mp mp in
         if is_mp_bound base then pp_ocaml_bound base rls
         else pp_ocaml_extern k base rls
 
@@ -583,7 +575,7 @@ let pp_haskell_gen k mp rls = match rls with
   | s::rls' ->
     let str = pseudo_qualify rls' in
     let str = if is_upper str && not (upperkind k) then ("_"^str) else str in
-    if ModPath.equal (base_mp mp) (top_visible_mp ()) then str else s^"."^str
+    if ModPath.equal (Table.base_mp mp) (top_visible_mp ()) then str else s^"."^str
 
 (* Main name printing function for a reference *)
 
@@ -591,18 +583,18 @@ let pp_global k r =
   let ls = ref_renaming (k,r) in
   assert (List.length ls > 1);
   let s = List.hd ls in
-  let mp,l = repr_of_r r in
+  let mp,l = Table.repr_of_r r in
   if ModPath.equal mp (top_visible_mp ()) then
     (* simplest situation: definition of r (or use in the same context) *)
     (* we update the visible environment *)
     (add_visible (k,s) l; unquote s)
   else
     let rls = List.rev ls in (* for what come next it's easier this way *)
-    match lang () with
-      | Scheme -> unquote s (* no modular Scheme extraction... *)
-      | JSON -> dottify (List.map unquote rls)
-      | Haskell -> if modular () then pp_haskell_gen k mp rls else s
-      | Ocaml -> pp_ocaml_gen k mp rls (Some l)
+    match Table.lang () with
+      | Table.Scheme -> unquote s (* no modular Scheme extraction... *)
+      | Table.JSON -> dottify (List.map unquote rls)
+      | Table.Haskell -> if Table.modular () then pp_haskell_gen k mp rls else s
+      | Table.Ocaml -> pp_ocaml_gen k mp rls (Some l)
 
 (* Main name printing function for declaring a reference *)
 
@@ -639,19 +631,19 @@ let ascii_constructor_ref () = Coqlib.lib_ref ascii_constructor_name
 
 let check_extract_ascii () =
   try
-    let char_type = match lang () with
-      | Ocaml -> "char"
-      | Haskell -> "Prelude.Char"
+    let char_type = match Table.lang () with
+      | Table.Ocaml -> "char"
+      | Table.Haskell -> "Prelude.Char"
       | _ -> raise Not_found
     in
-    String.equal (find_custom @@ ascii_type_ref ()) (char_type)
+    String.equal (Table.find_custom @@ ascii_type_ref ()) (char_type)
   with Not_found -> false
 
 let is_list_cons l =
- List.for_all (function MLcons (_,GlobRef.ConstructRef(_,_),[]) -> true | _ -> false) l
+ List.for_all (function Miniml.MLcons (_,GlobRef.ConstructRef(_,_),[]) -> true | _ -> false) l
 
 let is_native_char = function
-  | MLcons(_,gr,l) ->
+  | Miniml.MLcons(_,gr,l) ->
     is_ascii_registered ()
     && GlobRef.equal gr (ascii_constructor_ref ())
     && check_extract_ascii ()
@@ -661,13 +653,13 @@ let is_native_char = function
 let get_native_char c =
   let rec cumul = function
     | [] -> 0
-    | MLcons(_,GlobRef.ConstructRef(_,j),[])::l -> (2-j) + 2 * (cumul l)
+    | Miniml.MLcons(_,GlobRef.ConstructRef(_,j),[])::l -> (2-j) + 2 * (cumul l)
     | _ -> assert false
   in
-  let l = match c with MLcons(_,_,l) -> l | _ -> assert false in
+  let l = match c with Miniml.MLcons(_,_,l) -> l | _ -> assert false in
   Char.chr (cumul l)
 
-let pp_native_char c = str ("'"^Char.escaped (get_native_char c)^"'")
+let pp_native_char c = Pp.str ("'"^Char.escaped (get_native_char c)^"'")
 
 (** Special hack for constants of type String.string : if an
     [Extract Inductive string => string] has been declared, then
@@ -688,12 +680,12 @@ let string_constructor_ref () = Coqlib.lib_ref string_constructor_name
 
 let check_extract_string () =
   try
-    let string_type = match lang () with
-      | Ocaml -> "string"
-      | Haskell -> "Prelude.String"
+    let string_type = match Table.lang () with
+      | Table.Ocaml -> "string"
+      | Table.Haskell -> "Prelude.String"
       | _ -> raise Not_found
     in
-    String.equal (find_custom @@ string_type_ref ()) string_type
+    String.equal (Table.find_custom @@ string_type_ref ()) string_type
   with Not_found -> false
 
 (* The argument is known to be of type Coq.Strings.String.string.
@@ -702,9 +694,9 @@ let check_extract_string () =
 
 let rec is_native_string_rec empty_string_ref string_constructor_ref = function
   (* "EmptyString" constructor *)
-  | MLcons(_, gr, []) -> GlobRef.equal gr empty_string_ref
+  | Miniml.MLcons(_, gr, []) -> GlobRef.equal gr empty_string_ref
   (* "String" constructor *)
-  | MLcons(_, gr, [hd; tl]) ->
+  | Miniml.MLcons(_, gr, [hd; tl]) ->
       GlobRef.equal gr string_constructor_ref
       && is_native_char hd
       && is_native_string_rec empty_string_ref string_constructor_ref tl
@@ -718,7 +710,7 @@ let rec is_native_string_rec empty_string_ref string_constructor_ref = function
 
 let is_native_string c =
   match c with
-  | MLcons(_, GlobRef.ConstructRef(ind, j), l) ->
+  | Miniml.MLcons(_, GlobRef.ConstructRef(ind, j), l) ->
       is_string_registered ()
       && GlobRef.equal (GlobRef.IndRef ind) (string_type_ref ())
       && check_extract_string ()
@@ -731,10 +723,10 @@ let get_native_string c =
   let buf = Buffer.create 64 in
   let rec get = function
     (* "EmptyString" constructor *)
-    | MLcons(_, gr, []) when GlobRef.equal gr (empty_string_ref ()) ->
+    | Miniml.MLcons(_, gr, []) when GlobRef.equal gr (empty_string_ref ()) ->
         Buffer.contents buf
     (* "String" constructor *)
-    | MLcons(_, gr, [hd; tl]) when GlobRef.equal gr (string_constructor_ref ()) ->
+    | Miniml.MLcons(_, gr, [hd; tl]) when GlobRef.equal gr (string_constructor_ref ()) ->
         Buffer.add_char buf (get_native_char hd);
         get tl
     (* others *)
@@ -744,7 +736,7 @@ let get_native_string c =
 (* Printing the underlying string. *)
 
 let pp_native_string c =
-  str ("\"" ^ String.escaped (get_native_string c) ^ "\"")
+  Pp.str ("\"" ^ String.escaped (get_native_string c) ^ "\"")
 
 (* Registered sig type *)
 

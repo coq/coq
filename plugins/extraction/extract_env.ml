@@ -9,18 +9,9 @@
 (************************************************************************)
 
 open Miniml
-open Constr
 open Declarations
 open Names
-open ModPath
-open Libnames
-open Pp
-open CErrors
-open Util
 open Table
-open Extraction
-open Modutil
-open Common
 
 (***************************************)
 (*S Part I: computing Coq environment. *)
@@ -96,8 +87,8 @@ module Visit : VISIT = struct
     | ConstRef c -> add_kn (Constant.user c)
     | IndRef (ind,_) | ConstructRef ((ind,_),_) -> add_kn (MutInd.user ind)
     | VarRef _ -> assert false
-  let add_decl_deps = decl_iter_references add_ref add_ref add_ref
-  let add_spec_deps = spec_iter_references add_ref add_ref add_ref
+  let add_decl_deps = Modutil.decl_iter_references add_ref add_ref add_ref
+  let add_spec_deps = Modutil.spec_iter_references add_ref add_ref add_ref
 end
 
 let add_field_label mp = function
@@ -121,15 +112,15 @@ let check_fix env sg cb i =
   match cb.const_body with
     | Def lbody ->
         (match EConstr.kind sg (get_body lbody) with
-          | Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
-          | CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
+          | Constr.Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
+          | Constr.CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
           | _ -> raise Impossible)
     | Undef _ | OpaqueDef _ | Primitive _ -> raise Impossible
 
 let prec_declaration_equal sg (na1, ca1, ta1) (na2, ca2, ta2) =
-  Array.equal (Context.eq_annot Name.equal) na1 na2 &&
-  Array.equal (EConstr.eq_constr sg) ca1 ca2 &&
-  Array.equal (EConstr.eq_constr sg) ta1 ta2
+  Util.Array.equal (Context.eq_annot Name.equal) na1 na2 &&
+  Util.Array.equal (EConstr.eq_constr sg) ca1 ca2 &&
+  Util.Array.equal (EConstr.eq_constr sg) ta1 ta2
 
 let factor_fix env sg l cb msb =
   let _,recd as check = check_fix env sg cb 0 in
@@ -137,7 +128,7 @@ let factor_fix env sg l cb msb =
   if Int.equal n 1 then [|l|], recd, msb
   else begin
     if List.length msb < n-1 then raise Impossible;
-    let msb', msb'' = List.chop (n-1) msb in
+    let msb', msb'' = Util.List.chop (n-1) msb in
     let labels = Array.make n l in
     List.iteri
       (fun j ->
@@ -185,7 +176,7 @@ let env_for_mtb_with_def env mp me reso idl =
   let struc = Modops.destr_nofunctor mp me in
   let l = Label.of_id (List.hd idl) in
   let spot = function (l',SFBconst _) -> Label.equal l l' | _ -> false in
-  let before = fst (List.split_when spot struc) in
+  let before = fst (Util.List.split_when spot struc) in
   Modops.add_structure mp before reso env
 
 let make_cst resolver mp l =
@@ -201,15 +192,15 @@ let rec extract_structure_spec env mp reso = function
   | [] -> []
   | (l,SFBconst cb) :: msig ->
       let c = make_cst reso mp l in
-      let s = extract_constant_spec env c cb in
+      let s = Extraction.extract_constant_spec env c cb in
       let specs = extract_structure_spec env mp reso msig in
-      if logical_spec s then specs
+      if Extraction.logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmind _) :: msig ->
       let mind = make_mind reso mp l in
-      let s = Sind (mind, extract_inductive env mind) in
+      let s = Sind (mind, Extraction.extract_inductive env mind) in
       let specs = extract_structure_spec env mp reso msig in
-      if logical_spec s then specs
+      if Extraction.logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmodule mb) :: msig ->
       let specs = extract_structure_spec env mp reso msig in
@@ -233,11 +224,11 @@ and extract_mexpr_spec env mp1 (me_struct_o,me_alg) = match me_alg with
       let env' = env_for_mtb_with_def env mp1 me_struct delta idl in
       let mt = extract_mexpr_spec env mp1 (None,me') in
       let sg = Evd.from_env env in
-      (match extract_with_type env' sg (EConstr.of_constr c) with
+      (match Extraction.extract_with_type env' sg (EConstr.of_constr c) with
        (* cb may contain some kn *)
          | None -> mt
          | Some (vl,typ) ->
-            type_iter_references Visit.add_ref typ;
+            Modutil.type_iter_references Visit.add_ref typ;
             MTwith(mt,ML_With_type(idl,vl,typ)))
   | MEwith(me',WithMod(idl,mp))->
       Visit.add_mp_all mp;
@@ -291,8 +282,8 @@ let rec extract_structure env mp reso ~all = function
          let ms = extract_structure env mp reso ~all struc in
          let b = Array.exists Visit.needed_cst vc in
          if all || b then
-           let d = extract_fixpoint env sg vc recd in
-           if (not b) && (logical_decl d) then ms
+           let d = Extraction.extract_fixpoint env sg vc recd in
+           if (not b) && (Extraction.logical_decl d) then ms
            else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
          else ms
        with Impossible ->
@@ -300,8 +291,8 @@ let rec extract_structure env mp reso ~all = function
          let c = make_cst reso mp l in
          let b = Visit.needed_cst c in
          if all || b then
-           let d = extract_constant env c cb in
-           if (not b) && (logical_decl d) then ms
+           let d = Extraction.extract_constant env c cb in
+           if (not b) && (Extraction.logical_decl d) then ms
            else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
          else ms)
   | (l,SFBmind mib) :: struc ->
@@ -309,8 +300,8 @@ let rec extract_structure env mp reso ~all = function
       let mind = make_mind reso mp l in
       let b = Visit.needed_ind mind in
       if all || b then
-        let d = Dind (mind, extract_inductive env mind) in
-        if (not b) && (logical_decl d) then ms
+        let d = Dind (mind, Extraction.extract_inductive env mind) in
+        if (not b) && (Extraction.logical_decl d) then ms
         else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms
   | (l,SFBmodule mb) :: struc ->
@@ -389,7 +380,7 @@ and extract_module env mp ~all mb =
   let typ = match mb.mod_expr with
     | FullStruct ->
       assert (Option.is_empty mb.mod_type_alg);
-      mtyp_of_mexpr impl
+      Modutil.mtyp_of_mexpr impl
     | _ -> extract_mbody_spec env mp mb
   in
   { ml_mod_expr = impl;
@@ -435,8 +426,8 @@ let mono_filename f =
           if lang () != Haskell then default_id
           else
             try Id.of_string (Filename.basename f)
-            with UserError _ ->
-              user_err Pp.(str "Extraction: provided filename is not a valid identifier")
+            with CErrors.UserError _ ->
+              CErrors.user_err Pp.(str "Extraction: provided filename is not a valid identifier")
         in
         Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
 
@@ -452,14 +443,14 @@ let module_filename mp =
 
 let print_one_decl struc mp decl =
   let d = descr () in
-  reset_renaming_tables AllButExternal;
-  set_phase Pre;
+  Common.reset_renaming_tables Common.AllButExternal;
+  Common.set_phase Common.Pre;
   ignore (d.pp_struct struc);
-  set_phase Impl;
-  push_visible mp [];
+  Common.set_phase Common.Impl;
+  Common.push_visible mp [];
   let ans = d.pp_decl decl in
-  pop_visible ();
-  v 0 ans
+  Common.pop_visible ();
+  Pp.v 0 ans
 
 (*s Extraction of a ml struct to a file. *)
 
@@ -490,36 +481,36 @@ let formatter dry file =
 
 let get_comment () =
   let s = file_comment () in
-  if String.is_empty s then None
+  if Util.String.is_empty s then None
   else
     let split_comment = Str.split (Str.regexp "[ \t\n]+") s in
-    Some (prlist_with_sep spc str split_comment)
+    Some Pp.(prlist_with_sep spc str split_comment)
 
 let print_structure_to_file (fn,si,mo) dry struc =
   Buffer.clear buf;
   let d = descr () in
-  reset_renaming_tables AllButExternal;
+  Common.reset_renaming_tables Common.AllButExternal;
   let unsafe_needs = {
-    mldummy = struct_ast_search Mlutil.isMLdummy struc;
-    tdummy = struct_type_search Mlutil.isTdummy struc;
-    tunknown = struct_type_search ((==) Tunknown) struc;
+    mldummy = Modutil.struct_ast_search Mlutil.isMLdummy struc;
+    tdummy = Modutil.struct_type_search Mlutil.isTdummy struc;
+    tunknown = Modutil.struct_type_search ((==) Tunknown) struc;
     magic =
       if lang () != Haskell then false
-      else struct_ast_search (function MLmagic _ -> true | _ -> false) struc }
+      else Modutil.struct_ast_search (function MLmagic _ -> true | _ -> false) struc }
   in
   (* First, a dry run, for computing objects to rename or duplicate *)
-  set_phase Pre;
+  Common.set_phase Common.Pre;
   ignore (d.pp_struct struc);
-  let opened = opened_libraries () in
+  let opened = Common.opened_libraries () in
   (* Print the implementation *)
   let cout = if dry then None else Option.map open_out fn in
   let ft = formatter dry cout in
   let comment = get_comment () in
   begin try
     (* The real printing of the implementation *)
-    set_phase Impl;
-    pp_with ft (d.preamble mo comment opened unsafe_needs);
-    pp_with ft (d.pp_struct struc);
+    Common.set_phase Common.Impl;
+    Pp.pp_with ft (d.preamble mo comment opened unsafe_needs);
+    Pp.pp_with ft (d.pp_struct struc);
     Format.pp_print_flush ft ();
     Option.iter close_out cout;
   with reraise ->
@@ -533,9 +524,9 @@ let print_structure_to_file (fn,si,mo) dry struc =
        let cout = open_out si in
        let ft = formatter false (Some cout) in
        begin try
-         set_phase Intf;
-         pp_with ft (d.sig_preamble mo comment opened unsafe_needs);
-         pp_with ft (d.pp_sig (signature_of_structure struc));
+        Common.set_phase Common.Intf;
+         Pp.pp_with ft (d.sig_preamble mo comment opened unsafe_needs);
+         Pp.pp_with ft (d.pp_sig (Modutil.signature_of_structure struc));
          Format.pp_print_flush ft ();
          close_out cout;
        with reraise ->
@@ -546,7 +537,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
     (if dry then None else si);
   (* Print the buffer content via Coq standard formatter (ok with coqide). *)
   if not (Int.equal (Buffer.length buf) 0) then begin
-    Feedback.msg_notice (str (Buffer.contents buf));
+    Feedback.msg_notice (Pp.str (Buffer.contents buf));
     Buffer.reset buf
   end
 
@@ -557,11 +548,11 @@ let print_structure_to_file (fn,si,mo) dry struc =
 
 
 let reset () =
-  Visit.reset (); reset_tables (); reset_renaming_tables Everything
+  Visit.reset (); reset_tables (); Common.reset_renaming_tables Common.Everything
 
 let init ?(compute=false) ?(inner=false) modular library =
   if not inner then (check_inside_section (); check_inside_module ());
-  set_keywords (descr ()).keywords;
+  Common.set_keywords (descr ()).keywords;
   set_modular modular;
   set_library library;
   set_extrcompute compute;
@@ -581,7 +572,7 @@ let rec locate_ref = function
       let mpo = try Some (Nametab.locate_module qid) with Not_found -> None
       and ro =
         try Some (Smartlocate.global_with_alias qid)
-        with Nametab.GlobalizationError _ | UserError _ -> None
+        with Nametab.GlobalizationError _ | CErrors.UserError _ -> None
       in
       match mpo, ro with
         | None, None -> Nametab.error_global_not_found ~info:Exninfo.null qid
@@ -599,7 +590,7 @@ let rec locate_ref = function
 let full_extr f (refs,mps) =
   init false false;
   List.iter (fun mp -> if is_modfile mp then error_MPfile_as_mod mp true) mps;
-  let struc = optimize_struct (refs,mps) (mono_environment refs mps) in
+  let struc = Modutil.optimize_struct (refs,mps) (mono_environment refs mps) in
   warns ();
   print_structure_to_file (mono_filename f) false struc;
   reset ()
@@ -612,11 +603,11 @@ let full_extraction f lr = full_extr f (locate_ref lr)
 let separate_extraction lr =
   init true false;
   let refs,mps = locate_ref lr in
-  let struc = optimize_struct (refs,mps) (mono_environment refs mps) in
+  let struc = Modutil.optimize_struct (refs,mps) (mono_environment refs mps) in
   let () = List.iter (function
     | MPfile _, _ -> ()
     | (MPdot _ | MPbound _), _ ->
-      user_err (str "Separate Extraction from inside a module is not supported."))
+      CErrors.user_err Pp.(str "Separate Extraction from inside a module is not supported."))
       struc
   in
   warns ();
@@ -636,14 +627,14 @@ let simple_extraction r =
   | ([], [mp]) as p -> full_extr None p
   | [r],[] ->
       init false false;
-      let struc = optimize_struct ([r],[]) (mono_environment [r] []) in
-      let d = get_decl_in_structure r struc in
+      let struc = Modutil.optimize_struct ([r],[]) (mono_environment [r] []) in
+      let d = Modutil.get_decl_in_structure r struc in
       warns ();
       let flag =
-        if is_custom r then str "(** User defined extraction *)" ++ fnl()
-        else mt ()
+        if is_custom r then Pp.(str "(** User defined extraction *)" ++ fnl ())
+        else Pp.mt ()
       in
-      let ans = flag ++ print_one_decl struc (modpath_of_r r) d in
+      let ans = Pp.(flag ++ print_one_decl struc (modpath_of_r r) d) in
       reset ();
       Feedback.msg_notice ans
   | _ -> assert false
@@ -655,7 +646,7 @@ let simple_extraction r =
 let extraction_library is_rec CAst.{loc;v=m} =
   init true true;
   let dir_m =
-    let q = qualid_of_ident m in
+    let q = Libnames.qualid_of_ident m in
     try Nametab.full_name_module q with Not_found -> error_unknown_module ?loc q
   in
   Visit.add_mp_all (MPfile dir_m);
@@ -667,7 +658,7 @@ let extraction_library is_rec CAst.{loc;v=m} =
     else l
   in
   let struc = List.fold_left select [] l in
-  let struc = optimize_struct ([],[]) struc in
+  let struc = Modutil.optimize_struct ([],[]) struc in
   warns ();
   let print = function
     | (MPfile dir as mp, sel) as e ->
@@ -698,9 +689,9 @@ let structure_for_compute env sg c =
   let ast = Mlutil.normalize ast in
   let refs = ref GlobRef.Set.empty in
   let add_ref r = refs := GlobRef.Set.add r !refs in
-  let () = ast_iter_references add_ref add_ref add_ref ast in
+  let () = Modutil.ast_iter_references add_ref add_ref add_ref ast in
   let refs = GlobRef.Set.elements !refs in
-  let struc = optimize_struct (refs,[]) (mono_environment refs []) in
+  let struc = Modutil.optimize_struct (refs,[]) (mono_environment refs []) in
   (flatten_structure struc), ast, mlt
 
 (* For the test-suite :
@@ -738,7 +729,7 @@ let extract_and_compile l =
   let () = remove f; remove (f^"i") in
   let base = Filename.chop_suffix f ".ml" in
   let () = remove (base^".cmo"); remove (base^".cmi") in
-  Feedback.msg_notice (str "Extracted code successfully compiled")
+  Feedback.msg_notice Pp.(str "Extracted code successfully compiled")
 
 (* Show the extraction of the current ongoing proof *)
 let show_extraction ~pstate =
@@ -747,7 +738,7 @@ let show_extraction ~pstate =
   let sigma, env = Declare.Proof.get_current_context pstate in
   let trms = Proof.partial_proof prf in
   let extr_term t =
-    let ast, ty = extract_constr env sigma t in
+    let ast, ty = Extraction.extract_constr env sigma t in
     let mp = Lib.current_mp () in
     let l = Label.of_id (Declare.Proof.get_name pstate) in
     let fake_ref = GlobRef.ConstRef (Constant.make2 mp l) in

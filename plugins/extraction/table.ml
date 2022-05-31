@@ -9,18 +9,7 @@
 (************************************************************************)
 
 open Names
-open ModPath
-open Term
-open Declarations
-open Namegen
-open Libobject
-open Goptions
-open Libnames
-open Globnames
-open CErrors
-open Util
 open Pp
-open Miniml
 
 (** Sets and maps for [global_reference] that use the "user" [kernel_name]
     instead of the canonical one *)
@@ -109,7 +98,7 @@ let labels_of_ref r =
 
 (*s Constants tables. *)
 
-let typedefs = ref (Cmap_env.empty : (constant_body * ml_type) Cmap_env.t)
+let typedefs = ref (Cmap_env.empty : (Declarations.constant_body * Miniml.ml_type) Cmap_env.t)
 let init_typedefs () = typedefs := Cmap_env.empty
 let add_typedef kn cb t =
   typedefs := Cmap_env.add kn (cb,t) !typedefs
@@ -120,7 +109,7 @@ let lookup_typedef kn cb =
   with Not_found -> None
 
 let cst_types =
-  ref (Cmap_env.empty : (constant_body * ml_schema) Cmap_env.t)
+  ref (Cmap_env.empty : (Declarations.constant_body * Miniml.ml_schema) Cmap_env.t)
 let init_cst_types () = cst_types := Cmap_env.empty
 let add_cst_type kn cb s = cst_types := Cmap_env.add kn (cb,s) !cst_types
 let lookup_cst_type kn cb =
@@ -132,7 +121,7 @@ let lookup_cst_type kn cb =
 (*s Inductives table. *)
 
 let inductives =
-  ref (Mindmap_env.empty : (mutual_inductive_body * ml_ind) Mindmap_env.t)
+  ref (Mindmap_env.empty : (Declarations.mutual_inductive_body * Miniml.ml_ind) Mindmap_env.t)
 let init_inductives () = inductives := Mindmap_env.empty
 let add_ind kn mib ml_ind =
   inductives := Mindmap_env.add kn (mib,ml_ind) !inductives
@@ -146,7 +135,7 @@ let lookup_ind kn mib =
 let unsafe_lookup_ind kn = snd (Mindmap_env.find kn !inductives)
 
 let inductive_kinds =
-  ref (Mindmap_env.empty : inductive_kind Mindmap_env.t)
+  ref (Mindmap_env.empty : Miniml.inductive_kind Mindmap_env.t)
 let init_inductive_kinds () = inductive_kinds := Mindmap_env.empty
 let add_inductive_kind kn k =
     inductive_kinds := Mindmap_env.add kn k !inductive_kinds
@@ -156,11 +145,11 @@ let is_coinductive r =
     | IndRef (kn,_) -> kn
     | _ -> assert false
   in
-  try Mindmap_env.find kn !inductive_kinds == Coinductive
+  try Mindmap_env.find kn !inductive_kinds == Miniml.Coinductive
   with Not_found -> false
 
 let is_coinductive_type = function
-  | Tglob (r,_) -> is_coinductive r
+  | Miniml.Tglob (r,_) -> is_coinductive r
   | _ -> false
 
 let get_record_fields r =
@@ -170,12 +159,12 @@ let get_record_fields r =
     | _ -> assert false
   in
   try match Mindmap_env.find kn !inductive_kinds with
-    | Record f -> f
+    | Miniml.Record f -> f
     | _ -> []
   with Not_found -> []
 
 let record_fields_of_type = function
-  | Tglob (r,_) -> get_record_fields r
+  | Miniml.Tglob (r,_) -> get_record_fields r
   | _ -> []
 
 (*s Recursors table. *)
@@ -194,11 +183,11 @@ let add_recursors env ind =
   let mib = Environ.lookup_mind ind env in
   Array.iter
     (fun mip ->
-       let id = mip.mind_typename in
+       let id = mip.Declarations.mind_typename in
        let kn_rec = mk_kn (Nameops.add_suffix id "_rec")
        and kn_rect = mk_kn (Nameops.add_suffix id "_rect") in
        recursors := KNset.add kn_rec (KNset.add kn_rect !recursors))
-    mib.mind_packets
+    mib.Declarations.mind_packets
 
 let is_recursor = function
   | GlobRef.ConstRef c -> KNset.mem (Constant.canonical c) !recursors
@@ -262,22 +251,22 @@ let safe_basename_of_global r =
   let last_chance r =
     try Nametab.basename_of_global r
     with Not_found ->
-      anomaly (Pp.str "Inductive object unknown to extraction and not globally visible.")
+      CErrors.anomaly (Pp.str "Inductive object unknown to extraction and not globally visible.")
   in
   let open GlobRef in
   match r with
     | ConstRef kn -> Label.to_id (Constant.label kn)
     | IndRef (kn,0) -> Label.to_id (MutInd.label kn)
     | IndRef (kn,i) ->
-      (try (unsafe_lookup_ind kn).ind_packets.(i).ip_typename
+      (try (unsafe_lookup_ind kn).Miniml.ind_packets.(i).Miniml.ip_typename
        with Not_found -> last_chance r)
     | ConstructRef ((kn,i),j) ->
-      (try (unsafe_lookup_ind kn).ind_packets.(i).ip_consnames.(j-1)
+      (try (unsafe_lookup_ind kn).Miniml.ind_packets.(i).Miniml.ip_consnames.(j-1)
        with Not_found -> last_chance r)
     | VarRef v -> v
 
 let string_of_global r =
- try string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty r)
+ try Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty r)
  with Not_found -> Id.to_string (safe_basename_of_global r)
 
 let safe_pr_global r = str (string_of_global r)
@@ -296,11 +285,11 @@ let pr_long_mp mp =
   let lid = DirPath.repr (Nametab.dirpath_of_module mp) in
   str (String.concat "." (List.rev_map Id.to_string lid))
 
-let pr_long_global ref = pr_path (Nametab.path_of_global ref)
+let pr_long_global ref = Libnames.pr_path (Nametab.path_of_global ref)
 
 (*S Warning and Error messages. *)
 
-let err ?loc s = user_err ?loc s
+let err ?loc s = CErrors.user_err ?loc s
 
 let warn_extraction_axiom_to_realize =
   CWarnings.create ~name:"extraction-axiom-to-realize" ~category:"extraction"
@@ -324,10 +313,10 @@ let warn_extraction_logical_axiom =
 
 let warning_axioms () =
   let info_axioms = Refset'.elements !info_axioms in
-  if not (List.is_empty info_axioms) then
+  if not (Util.List.is_empty info_axioms) then
     warn_extraction_axiom_to_realize info_axioms;
   let log_axioms = Refset'.elements !log_axioms in
-  if not (List.is_empty log_axioms) then
+  if not (Util.List.is_empty log_axioms) then
     warn_extraction_logical_axiom log_axioms
 
 let warn_extraction_opaque_accessed =
@@ -346,14 +335,14 @@ let warn_extraction_opaque_as_axiom =
 
 let warning_opaques accessed =
   let opaques = Refset'.elements !opaques in
-  if not (List.is_empty opaques) then
+  if not (Util.List.is_empty opaques) then
     let lst = hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques) in
     if accessed then warn_extraction_opaque_accessed lst
     else warn_extraction_opaque_as_axiom lst
 
 let warning_ambiguous_name =
   CWarnings.create ~name:"extraction-ambiguous-name" ~category:"extraction"
-    (fun (q,mp,r) -> strbrk "The name " ++ pr_qualid q ++ strbrk " is ambiguous, " ++
+    (fun (q,mp,r) -> strbrk "The name " ++ Libnames.pr_qualid q ++ strbrk " is ambiguous, " ++
                        strbrk "do you mean module " ++
                        pr_long_mp mp ++
                        strbrk " or object " ++
@@ -427,7 +416,7 @@ let error_singleton_become_prop id og =
        str "or extract to Haskell.")
 
 let error_unknown_module ?loc m =
-  err ?loc (str "Module" ++ spc () ++ pr_qualid m ++ spc () ++ str "not found.")
+  err ?loc (str "Module" ++ spc () ++ Libnames.pr_qualid m ++ spc () ++ str "not found.")
 
 let error_scheme () =
   err (str "No Scheme modular extraction available yet.")
@@ -449,17 +438,17 @@ let argnames_of_global r =
   let env = Global.env () in
   let typ, _ = Typeops.type_of_global_in_context env r in
   let rels,_ =
-    decompose_prod (Reduction.whd_all env typ) in
+  Term.decompose_prod (Reduction.whd_all env typ) in
   List.rev_map (fun x -> Context.binder_name (fst x)) rels
 
 let msg_of_implicit = function
-  | Kimplicit (r,i) ->
+  | Miniml.Kimplicit (r,i) ->
      let name = match (List.nth (argnames_of_global r) (i-1)) with
        | Anonymous -> ""
        | Name id -> "(" ^ Id.to_string id ^ ") "
      in
-     (String.ordinal i)^" argument "^name^"of "^(string_of_global r)
-  | Ktype | Kprop -> ""
+     (Util.String.ordinal i)^" argument "^name^"of "^(string_of_global r)
+  | Miniml.Ktype | Miniml.Kprop -> ""
 
 let error_remaining_implicit k =
   let s = msg_of_implicit k in
@@ -499,7 +488,7 @@ let info_file f =
    so we register them to coq save/undo mechanism. *)
 
 let my_bool_option name value =
-  declare_bool_option_and_ref ~depr:false ~key:["Extraction"; name] ~value
+  Goptions.declare_bool_option_and_ref ~depr:false ~key:["Extraction"; name] ~value
 
 (*s Extraction AccessOpaque *)
 
@@ -564,31 +553,31 @@ let chg_flag n = int_flag_ref := n; opt_flag_ref := flag_of_int n
 
 let optims () = !opt_flag_ref
 
-let () = declare_bool_option
+let () = Goptions.(declare_bool_option
           {optdepr = false;
            optkey = ["Extraction"; "Optimize"];
            optread = (fun () -> not (Int.equal !int_flag_ref 0));
-           optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
+           optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))})
 
-let () = declare_int_option
+let () = Goptions.(declare_int_option
           { optdepr = false;
             optkey = ["Extraction";"Flag"];
             optread = (fun _ -> Some !int_flag_ref);
             optwrite = (function
                           | None -> chg_flag 0
-                          | Some i -> chg_flag (max i 0))}
+                          | Some i -> chg_flag (max i 0))})
 
 (* This option controls whether "dummy lambda" are removed when a
    toplevel constant is defined. *)
 let conservative_types =
-  declare_bool_option_and_ref
+  Goptions.declare_bool_option_and_ref
     ~depr:false
     ~key:["Extraction"; "Conservative"; "Types"]
     ~value:false
 
 (* Allows to print a comment at the beginning of the output files *)
 let file_comment =
-  declare_string_option_and_ref
+  Goptions.declare_string_option_and_ref
     ~depr:false
     ~key:["Extraction"; "File"; "Comment"]
     ~value:""
@@ -601,8 +590,8 @@ let lang_ref = Summary.ref Ocaml ~name:"ExtrLang"
 
 let lang () = !lang_ref
 
-let extr_lang : lang -> obj =
-  declare_object @@ superglobal_object_nodischarge "Extraction Lang"
+let extr_lang : lang -> Libobject.obj =
+  Libobject.declare_object @@ Libobject.superglobal_object_nodischarge "Extraction Lang"
     ~cache:(fun l -> lang_ref := l)
     ~subst:None
 
@@ -627,10 +616,10 @@ let add_inline_entries b l =
 
 (* Registration of operations for rollback. *)
 
-let inline_extraction : bool * GlobRef.t list -> obj =
-  declare_object @@ superglobal_object "Extraction Inline"
+let inline_extraction : bool * GlobRef.t list -> Libobject.obj =
+  Libobject.declare_object @@ Libobject.superglobal_object "Extraction Inline"
     ~cache:(fun (b,l) -> add_inline_entries b l)
-    ~subst:(Some (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l))))
+    ~subst:(Some (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (Globnames.subst_global s x)) l))))
     ~discharge:(fun x -> Some x)
 
 (* Grammar entries. *)
@@ -659,8 +648,8 @@ let print_extraction_inline () =
 
 (* Reset part *)
 
-let reset_inline : unit -> obj =
-  declare_object @@ superglobal_object_nodischarge "Reset Extraction Inline"
+let reset_inline : unit -> Libobject.obj =
+  Libobject.declare_object @@ Libobject.superglobal_object_nodischarge "Reset Extraction Inline"
     ~cache:(fun () -> inline_table := empty_inline_table)
     ~subst:None
 
@@ -693,7 +682,7 @@ let add_implicits r l =
                   safe_pr_global r)
     | ArgId id ->
        try
-         let i = List.index Name.equal (Name id) names in
+         let i = Util.List.index Name.equal (Name id) names in
          Int.Set.add i s
        with Not_found ->
          err (str "No argument " ++ Id.print id ++ str " for " ++
@@ -704,10 +693,10 @@ let add_implicits r l =
 
 (* Registration of operations for rollback. *)
 
-let implicit_extraction : GlobRef.t * int_or_id list -> obj =
-  declare_object @@ superglobal_object_nodischarge "Extraction Implicit"
+let implicit_extraction : GlobRef.t * int_or_id list -> Libobject.obj =
+  Libobject.declare_object @@ Libobject.superglobal_object_nodischarge "Extraction Implicit"
     ~cache:(fun (r,l) -> add_implicits r l)
-    ~subst:(Some (fun (s,(r,l)) -> (fst (subst_global s r), l)))
+    ~subst:(Some (fun (s,(r,l)) -> (fst (Globnames.subst_global s r), l)))
 
 (* Grammar entries. *)
 
@@ -731,7 +720,7 @@ let string_of_modfile mp =
   try MPmap.find mp !modfile_mps
   with Not_found ->
     let id = Id.of_string (raw_string_of_modfile mp) in
-    let id' = next_ident_away id !modfile_ids in
+    let id' = Namegen.next_ident_away id !modfile_ids in
     let s' = Id.to_string id' in
     modfile_ids := Id.Set.add id' !modfile_ids;
     modfile_mps := MPmap.add mp s' !modfile_mps;
@@ -753,8 +742,8 @@ let add_blacklist_entries l =
 
 (* Registration of operations for rollback. *)
 
-let blacklist_extraction : string list -> obj =
-  declare_object @@ superglobal_object_nodischarge "Extraction Blacklist"
+let blacklist_extraction : string list -> Libobject.obj =
+  Libobject.declare_object @@ Libobject.superglobal_object_nodischarge "Extraction Blacklist"
     ~cache:add_blacklist_entries
     ~subst:None
 
@@ -771,8 +760,8 @@ let print_extraction_blacklist () =
 
 (* Reset part *)
 
-let reset_blacklist : unit -> obj =
-  declare_object @@ superglobal_object_nodischarge "Reset Extraction Blacklist"
+let reset_blacklist : unit -> Libobject.obj =
+  Libobject.declare_object @@ Libobject.superglobal_object_nodischarge "Reset Extraction Blacklist"
     ~cache:(fun ()-> blacklist_table := Id.Set.empty)
     ~subst:None
 
@@ -801,11 +790,11 @@ let add_custom_match r s =
   custom_matchs := Refmap'.add r s !custom_matchs
 
 let indref_of_match pv =
-  if Array.is_empty pv then raise Not_found;
+  if Util.Array.is_empty pv then raise Not_found;
   let (_,pat,_) = pv.(0) in
   match pat with
-    | Pusual (GlobRef.ConstructRef (ip,_)) -> GlobRef.IndRef ip
-    | Pcons (GlobRef.ConstructRef (ip,_),_) -> GlobRef.IndRef ip
+    | Miniml.Pusual (GlobRef.ConstructRef (ip,_)) -> GlobRef.IndRef ip
+    | Miniml.Pcons (GlobRef.ConstructRef (ip,_),_) -> GlobRef.IndRef ip
     | _ -> raise Not_found
 
 let is_custom_match pv =
@@ -817,15 +806,15 @@ let find_custom_match pv =
 
 (* Registration of operations for rollback. *)
 
-let in_customs : GlobRef.t * string list * string -> obj =
-  declare_object @@ superglobal_object_nodischarge "ML extractions"
+let in_customs : GlobRef.t * string list * string -> Libobject.obj =
+  Libobject.declare_object @@ Libobject.superglobal_object_nodischarge "ML extractions"
     ~cache:(fun (r,ids,s) -> add_custom r ids s)
-    ~subst:(Some (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str)))
+    ~subst:(Some (fun (s,(r,ids,str)) -> (fst (Globnames.subst_global s r), ids, str)))
 
-let in_custom_matchs : GlobRef.t * string -> obj =
-  declare_object @@ superglobal_object_nodischarge "ML extractions custom matches"
+let in_custom_matchs : GlobRef.t * string -> Libobject.obj =
+  Libobject.declare_object @@ Libobject.superglobal_object_nodischarge "ML extractions custom matches"
     ~cache:(fun (r,s) -> add_custom_match r s)
-    ~subst:(Some (fun (subs,(r,s)) -> (fst (subst_global subs r), s)))
+    ~subst:(Some (fun (subs,(r,s)) -> (fst (Globnames.subst_global subs r), s)))
 
 (* Grammar entries. *)
 
@@ -854,7 +843,7 @@ let extract_inductive r s l optstr =
   match g with
     | GlobRef.IndRef ((kn,i) as ip) ->
         let mib = Global.lookup_mind kn in
-        let n = Array.length mib.mind_packets.(i).mind_consnames in
+        let n = Array.length mib.Declarations.mind_packets.(i).Declarations.mind_consnames in
         if not (Int.equal n (List.length l)) then error_nb_cons ();
         Lib.add_leaf (inline_extraction (true,[g]));
         Lib.add_leaf (in_customs (g,[],s));

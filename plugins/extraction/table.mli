@@ -8,59 +8,54 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-open Libnames
-open Miniml
-open Declarations
+module Refset' : CSig.SetS with type elt = Names.GlobRef.t
+module Refmap' : CSig.MapS with type key = Names.GlobRef.t
 
-module Refset' : CSig.SetS with type elt = GlobRef.t
-module Refmap' : CSig.MapS with type key = GlobRef.t
-
-val safe_basename_of_global : GlobRef.t -> Id.t
+val safe_basename_of_global : Names.GlobRef.t -> Names.Id.t
 
 (*s Warning and Error messages. *)
 
 val warning_axioms : unit -> unit
 val warning_opaques : bool -> unit
-val warning_ambiguous_name : ?loc:Loc.t -> qualid * ModPath.t * GlobRef.t -> unit
+val warning_ambiguous_name : ?loc:Loc.t -> Libnames.qualid * Names.ModPath.t * Names.GlobRef.t -> unit
 val warning_id : string -> unit
-val error_axiom_scheme : ?loc:Loc.t -> GlobRef.t -> int -> 'a
-val error_constant : ?loc:Loc.t -> GlobRef.t -> 'a
-val error_inductive : ?loc:Loc.t -> GlobRef.t -> 'a
+val error_axiom_scheme : ?loc:Loc.t -> Names.GlobRef.t -> int -> 'a
+val error_constant : ?loc:Loc.t -> Names.GlobRef.t -> 'a
+val error_inductive : ?loc:Loc.t -> Names.GlobRef.t -> 'a
 val error_nb_cons : unit -> 'a
-val error_module_clash : ModPath.t -> ModPath.t -> 'a
-val error_no_module_expr : ModPath.t -> 'a
-val error_singleton_become_prop : Id.t -> GlobRef.t option -> 'a
-val error_unknown_module : ?loc:Loc.t -> qualid -> 'a
+val error_module_clash : Names.ModPath.t -> Names.ModPath.t -> 'a
+val error_no_module_expr : Names.ModPath.t -> 'a
+val error_singleton_become_prop : Names.Id.t -> Names.GlobRef.t option -> 'a
+val error_unknown_module : ?loc:Loc.t -> Libnames.qualid -> 'a
 val error_scheme : unit -> 'a
-val error_not_visible : GlobRef.t -> 'a
-val error_MPfile_as_mod : ModPath.t -> bool -> 'a
+val error_not_visible : Names.GlobRef.t -> 'a
+val error_MPfile_as_mod : Names.ModPath.t -> bool -> 'a
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
-val check_loaded_modfile : ModPath.t -> unit
-val msg_of_implicit : kill_reason -> string
-val err_or_warn_remaining_implicit : kill_reason -> unit
+val check_loaded_modfile : Names.ModPath.t -> unit
+val msg_of_implicit : Miniml.kill_reason -> string
+val err_or_warn_remaining_implicit : Miniml.kill_reason -> unit
 
 val info_file : string -> unit
 
-(*s utilities about [module_path] and [kernel_names] and [GlobRef.t] *)
+(*s utilities about [module_path] and [kernel_names] and [Names.GlobRef.t] *)
 
-val occur_kn_in_ref : MutInd.t -> GlobRef.t -> bool
-val repr_of_r : GlobRef.t -> ModPath.t * Label.t
-val modpath_of_r : GlobRef.t -> ModPath.t
-val label_of_r : GlobRef.t -> Label.t
-val base_mp : ModPath.t -> ModPath.t
-val is_modfile : ModPath.t -> bool
-val string_of_modfile : ModPath.t -> string
-val file_of_modfile : ModPath.t -> string
-val is_toplevel : ModPath.t -> bool
-val at_toplevel : ModPath.t -> bool
-val mp_length : ModPath.t -> int
-val prefixes_mp : ModPath.t -> MPset.t
+val occur_kn_in_ref : Names.MutInd.t -> Names.GlobRef.t -> bool
+val repr_of_r : Names.GlobRef.t -> Names.ModPath.t * Names.Label.t
+val modpath_of_r : Names.GlobRef.t -> Names.ModPath.t
+val label_of_r : Names.GlobRef.t -> Names.Label.t
+val base_mp : Names.ModPath.t -> Names.ModPath.t
+val is_modfile : Names.ModPath.t -> bool
+val string_of_modfile : Names.ModPath.t -> string
+val file_of_modfile : Names.ModPath.t -> string
+val is_toplevel : Names.ModPath.t -> bool
+val at_toplevel : Names.ModPath.t -> bool
+val mp_length : Names.ModPath.t -> int
+val prefixes_mp : Names.ModPath.t -> Names.MPset.t
 val common_prefix_from_list :
-  ModPath.t -> ModPath.t list -> ModPath.t option
-val get_nth_label_mp : int -> ModPath.t -> Label.t
-val labels_of_ref : GlobRef.t -> ModPath.t * Label.t list
+  Names.ModPath.t -> Names.ModPath.t list -> Names.ModPath.t option
+val get_nth_label_mp : int -> Names.ModPath.t -> Names.Label.t
+val labels_of_ref : Names.GlobRef.t -> Names.ModPath.t * Names.Label.t list
 
 (*s Some table-related operations *)
 
@@ -72,37 +67,37 @@ val labels_of_ref : GlobRef.t -> ModPath.t * Label.t list
    [mutual_inductive_body] as checksum. In both case, we should ideally
    also check the env *)
 
-val add_typedef : Constant.t -> constant_body -> ml_type -> unit
-val lookup_typedef : Constant.t -> constant_body -> ml_type option
+val add_typedef : Names.Constant.t -> Declarations.constant_body -> Miniml.ml_type -> unit
+val lookup_typedef : Names.Constant.t -> Declarations.constant_body -> Miniml.ml_type option
 
-val add_cst_type : Constant.t -> constant_body -> ml_schema -> unit
-val lookup_cst_type : Constant.t -> constant_body -> ml_schema option
+val add_cst_type : Names.Constant.t -> Declarations.constant_body -> Miniml.ml_schema -> unit
+val lookup_cst_type : Names.Constant.t -> Declarations.constant_body -> Miniml.ml_schema option
 
-val add_ind : MutInd.t -> mutual_inductive_body -> ml_ind -> unit
-val lookup_ind : MutInd.t -> mutual_inductive_body -> ml_ind option
+val add_ind : Names.MutInd.t -> Declarations.mutual_inductive_body -> Miniml.ml_ind -> unit
+val lookup_ind : Names.MutInd.t -> Declarations.mutual_inductive_body -> Miniml.ml_ind option
 
-val add_inductive_kind : MutInd.t -> inductive_kind -> unit
-val is_coinductive : GlobRef.t -> bool
-val is_coinductive_type : ml_type -> bool
+val add_inductive_kind : Names.MutInd.t -> Miniml.inductive_kind -> unit
+val is_coinductive : Names.GlobRef.t -> bool
+val is_coinductive_type : Miniml.ml_type -> bool
 (* What are the fields of a record (empty for a non-record) *)
 val get_record_fields :
-  GlobRef.t -> GlobRef.t option list
-val record_fields_of_type : ml_type -> GlobRef.t option list
+  Names.GlobRef.t -> Names.GlobRef.t option list
+val record_fields_of_type : Miniml.ml_type -> Names.GlobRef.t option list
 
-val add_recursors : Environ.env -> MutInd.t -> unit
-val is_recursor : GlobRef.t -> bool
+val add_recursors : Environ.env -> Names.MutInd.t -> unit
+val is_recursor : Names.GlobRef.t -> bool
 
-val add_projection : int -> Constant.t -> inductive -> unit
-val is_projection : GlobRef.t -> bool
-val projection_arity : GlobRef.t -> int
-val projection_info : GlobRef.t -> inductive * int (* arity *)
+val add_projection : int -> Names.Constant.t -> Names.inductive -> unit
+val is_projection : Names.GlobRef.t -> bool
+val projection_arity : Names.GlobRef.t -> int
+val projection_info : Names.GlobRef.t -> Names.inductive * int (* arity *)
 
-val add_info_axiom : GlobRef.t -> unit
-val remove_info_axiom : GlobRef.t -> unit
-val add_log_axiom : GlobRef.t -> unit
+val add_info_axiom : Names.GlobRef.t -> unit
+val remove_info_axiom : Names.GlobRef.t -> unit
+val add_log_axiom : Names.GlobRef.t -> unit
 
-val add_opaque : GlobRef.t -> unit
-val remove_opaque : GlobRef.t -> unit
+val add_opaque : Names.GlobRef.t -> unit
+val remove_opaque : Names.GlobRef.t -> unit
 
 val reset_tables : unit -> unit
 
@@ -171,40 +166,40 @@ val is_extrcompute : unit -> bool
 
 (*s Table for custom inlining *)
 
-val to_inline : GlobRef.t -> bool
-val to_keep : GlobRef.t -> bool
+val to_inline : Names.GlobRef.t -> bool
+val to_keep : Names.GlobRef.t -> bool
 
 (*s Table for implicits arguments *)
 
-val implicits_of_global : GlobRef.t -> Int.Set.t
+val implicits_of_global : Names.GlobRef.t -> Int.Set.t
 
 (*s Table for user-given custom ML extractions. *)
 
 (* UGLY HACK: registration of a function defined in [extraction.ml] *)
 val type_scheme_nb_args_hook : (Environ.env -> Constr.t -> int) Hook.t
 
-val is_custom : GlobRef.t -> bool
-val is_inline_custom : GlobRef.t -> bool
-val find_custom : GlobRef.t -> string
-val find_type_custom : GlobRef.t -> string list * string
+val is_custom : Names.GlobRef.t -> bool
+val is_inline_custom : Names.GlobRef.t -> bool
+val find_custom : Names.GlobRef.t -> string
+val find_type_custom : Names.GlobRef.t -> string list * string
 
-val is_custom_match : ml_branch array -> bool
-val find_custom_match : ml_branch array -> string
+val is_custom_match : Miniml.ml_branch array -> bool
+val find_custom_match : Miniml.ml_branch array -> string
 
 (*s Extraction commands. *)
 
 val extraction_language : lang -> unit
-val extraction_inline : bool -> qualid list -> unit
+val extraction_inline : bool -> Libnames.qualid list -> unit
 val print_extraction_inline : unit -> Pp.t
 val reset_extraction_inline : unit -> unit
 val extract_constant_inline :
-  bool -> qualid -> string list -> string -> unit
+  bool -> Libnames.qualid -> string list -> string -> unit
 val extract_inductive :
-  qualid -> string -> string list -> string option -> unit
+Libnames.qualid -> string -> string list -> string option -> unit
 
 
-type int_or_id = ArgInt of int | ArgId of Id.t
-val extraction_implicit : qualid -> int_or_id list -> unit
+type int_or_id = ArgInt of int | ArgId of Names.Id.t
+val extraction_implicit : Libnames.qualid -> int_or_id list -> unit
 
 (*s Table of blacklisted filenames *)
 

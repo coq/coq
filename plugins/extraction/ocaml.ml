@@ -11,16 +11,12 @@
 (*s Production of Ocaml syntax. *)
 
 open Pp
-open CErrors
 open Util
 open Names
-open ModPath
 open Table
 open Miniml
 open Mlutil
-open Modutil
 open Common
-
 
 (*s Some utility functions. *)
 
@@ -275,7 +271,7 @@ let rec pp_expr par env args =
         pp_boxed_tuple (pp_expr true env []) l
     | MLcase (_, t, pv) when is_custom_match pv ->
         if not (is_regular_match pv) then
-          user_err Pp.(str "Cannot mix yet user-given match and general patterns.");
+          CErrors.user_err Pp.(str "Cannot mix yet user-given match and general patterns.");
         let mkfun (ids,_,e) =
           if not (List.is_empty ids) then named_lams (List.rev ids) e
           else dummy_lams (ast_lift 1 e) 1
@@ -675,7 +671,7 @@ and pp_module_type params = function
       ++ str "end"
   | MTwith(mt,ML_With_type(idl,vl,typ)) ->
       let ids = pp_parameters (rename_tvars keywords vl) in
-      let mp_mt = msid_of_mt mt in
+      let mp_mt = Modutil.msid_of_mt mt in
       let l,idl' = List.sep_last idl in
       let mp_w =
         List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
@@ -686,7 +682,7 @@ and pp_module_type params = function
       pop_visible();
       pp_module_type [] mt ++ pp_w ++ str " = " ++ pp_type false vl typ
   | MTwith(mt,ML_With_module(idl,mp)) ->
-      let mp_mt = msid_of_mt mt in
+      let mp_mt = Modutil.msid_of_mt mt in
       let mp_w =
         List.fold_left (fun mp id -> MPdot(mp,Label.of_id id)) mp_mt idl
       in

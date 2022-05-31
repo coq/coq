@@ -22,12 +22,8 @@ DECLARE PLUGIN "coq-core.plugins.extraction"
 
 open Ltac_plugin
 open Stdarg
-open Pp
-open Names
-open Table
-open Extract_env
 
-let pr_mlname _ _ _ s = spc () ++ qs s
+let pr_mlname _ _ _ s = Pp.(spc () ++ qs s)
 
 }
 
@@ -41,137 +37,137 @@ END
 {
 
 let pr_int_or_id _ _ _ = function
-  | ArgInt i -> int i
-  | ArgId id -> Id.print id
+  | Table.ArgInt i -> Pp.int i
+  | Table.ArgId id -> Names.Id.print id
 
 }
 
 ARGUMENT EXTEND int_or_id
   PRINTED BY { pr_int_or_id }
-| [ preident(id) ] -> { ArgId (Id.of_string id) }
-| [ integer(i) ] -> { ArgInt i }
+| [ preident(id) ] -> { Table.ArgId (Names.Id.of_string id) }
+| [ integer(i) ] -> { Table.ArgInt i }
 END
 
 {
 
 let pr_language = function
-  | Ocaml -> str "OCaml"
-  | Haskell -> str "Haskell"
-  | Scheme -> str "Scheme"
-  | JSON -> str "JSON"
+  | Table.Ocaml -> Pp.str "OCaml"
+  | Table.Haskell -> Pp.str "Haskell"
+  | Table.Scheme -> Pp.str "Scheme"
+  | Table.JSON -> Pp.str "JSON"
 
 }
 
 VERNAC ARGUMENT EXTEND language
 PRINTED BY { pr_language }
-| [ "OCaml" ] -> { Ocaml }
-| [ "Haskell" ] -> { Haskell }
-| [ "Scheme" ] -> { Scheme }
-| [ "JSON" ] -> { JSON }
+| [ "OCaml" ] -> { Table.Ocaml }
+| [ "Haskell" ] -> { Table.Haskell }
+| [ "Scheme" ] -> { Table.Scheme }
+| [ "JSON" ] -> { Table.JSON }
 END
 
 (* Extraction commands *)
 
 VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
 (* Extraction in the Coq toplevel *)
-| [ "Extraction" global(x) ] -> { simple_extraction x }
-| [ "Recursive" "Extraction" ne_global_list(l) ] -> { full_extraction None l }
+| [ "Extraction" global(x) ] -> { Extract_env.simple_extraction x }
+| [ "Recursive" "Extraction" ne_global_list(l) ] -> { Extract_env.full_extraction None l }
 
 (* Monolithic extraction to a file *)
 | [ "Extraction" string(f) ne_global_list(l) ]
-  -> { full_extraction (Some f) l }
+  -> { Extract_env.full_extraction (Some f) l }
 
 (* Extraction to a temporary file and OCaml compilation *)
 | [ "Extraction" "TestCompile" ne_global_list(l) ]
-  -> { extract_and_compile l }
+  -> { Extract_env.extract_and_compile l }
 END
 
 VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY
 (* Same, with content split in several files *)
 | [ "Separate" "Extraction" ne_global_list(l) ]
-  -> { separate_extraction l }
+  -> { Extract_env.separate_extraction l }
 END
 
 (* Modular extraction (one Coq library = one ML module) *)
 VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY
 | [ "Extraction" "Library" identref(m) ]
-  -> { extraction_library false m }
+  -> { Extract_env.extraction_library false m }
 END
 
 VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY
 | [ "Recursive" "Extraction" "Library" identref(m) ]
-  -> { extraction_library true m }
+  -> { Extract_env.extraction_library true m }
 END
 
 (* Target Language *)
 VERNAC COMMAND EXTEND ExtractionLanguage CLASSIFIED AS SIDEFF
 | [ "Extraction" "Language" language(l) ]
-  -> { extraction_language l }
+  -> { Table.extraction_language l }
 END
 
 VERNAC COMMAND EXTEND ExtractionInline CLASSIFIED AS SIDEFF
 (* Custom inlining directives *)
 | [ "Extraction" "Inline" ne_global_list(l) ]
-  -> { extraction_inline true l }
+  -> { Table.extraction_inline true l }
 END
 
 VERNAC COMMAND EXTEND ExtractionNoInline CLASSIFIED AS SIDEFF
 | [ "Extraction" "NoInline" ne_global_list(l) ]
-  -> { extraction_inline false l }
+  -> { Table.extraction_inline false l }
 END
 
 VERNAC COMMAND EXTEND PrintExtractionInline CLASSIFIED AS QUERY
 | [ "Print" "Extraction" "Inline" ]
-  -> {Feedback.msg_notice (print_extraction_inline ()) }
+  -> {Feedback.msg_notice (Table.print_extraction_inline ()) }
 END
 
 VERNAC COMMAND EXTEND ResetExtractionInline CLASSIFIED AS SIDEFF
 | [ "Reset" "Extraction" "Inline" ]
-  -> { reset_extraction_inline () }
+  -> { Table.reset_extraction_inline () }
 END
 
 VERNAC COMMAND EXTEND ExtractionImplicit CLASSIFIED AS SIDEFF
 (* Custom implicit arguments of some csts/inds/constructors *)
 | [ "Extraction" "Implicit" global(r) "[" int_or_id_list(l) "]" ]
-  -> { extraction_implicit r l }
+  -> { Table.extraction_implicit r l }
 END
 
 VERNAC COMMAND EXTEND ExtractionBlacklist CLASSIFIED AS SIDEFF
 (* Force Extraction to not use some filenames *)
 | [ "Extraction" "Blacklist" ne_preident_list(l) ]
-  -> { extraction_blacklist l }
+  -> { Table.extraction_blacklist l }
 END
 
 VERNAC COMMAND EXTEND PrintExtractionBlacklist CLASSIFIED AS QUERY
 | [ "Print" "Extraction" "Blacklist" ]
-  -> { Feedback.msg_notice (print_extraction_blacklist ()) }
+  -> { Feedback.msg_notice (Table.print_extraction_blacklist ()) }
 END
 
 VERNAC COMMAND EXTEND ResetExtractionBlacklist CLASSIFIED AS SIDEFF
 | [ "Reset" "Extraction" "Blacklist" ]
-  -> { reset_extraction_blacklist () }
+  -> { Table.reset_extraction_blacklist () }
 END
 
 
 (* Overriding of a Coq object by an ML one *)
 VERNAC COMMAND EXTEND ExtractionConstant CLASSIFIED AS SIDEFF
 | [ "Extract" "Constant" global(x) string_list(idl) "=>" mlname(y) ]
-  -> { extract_constant_inline false x idl y }
+  -> { Table.extract_constant_inline false x idl y }
 END
 
 VERNAC COMMAND EXTEND ExtractionInlinedConstant CLASSIFIED AS SIDEFF
 | [ "Extract" "Inlined" "Constant" global(x) "=>" mlname(y) ]
-  -> { extract_constant_inline true x [] y }
+  -> { Table.extract_constant_inline true x [] y }
 END
 
 VERNAC COMMAND EXTEND ExtractionInductive CLASSIFIED AS SIDEFF
 | [ "Extract" "Inductive" global(x) "=>"
     mlname(id) "[" mlname_list(idl) "]" string_opt(o) ]
-  -> { extract_inductive x id idl o }
+  -> { Table.extract_inductive x id idl o }
 END
 (* Show the extraction of the current proof *)
 
 VERNAC COMMAND EXTEND ShowExtraction CLASSIFIED AS QUERY STATE proof_query
 | [ "Show" "Extraction" ]
-  -> { show_extraction }
+  -> { Extract_env.show_extraction }
 END

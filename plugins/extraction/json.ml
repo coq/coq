@@ -1,9 +1,4 @@
 open Pp
-open Util
-open Names
-open Table
-open Miniml
-open Mlutil
 open Common
 
 let json_str s =
@@ -16,13 +11,13 @@ let json_bool b =
   if b then str "true" else str "false"
 
 let json_global typ ref =
-  if is_custom ref then
-    json_str (find_custom ref)
+  if Table.is_custom ref then
+    json_str (Table.find_custom ref)
   else
     json_str (Common.pp_global typ ref)
 
 let json_id id =
-  json_str (Id.to_string id)
+  json_str (Names.Id.to_string id)
 
 let json_dict_one (k, v) =
   json_str k ++ str (": ") ++ v
@@ -53,16 +48,18 @@ let preamble mod_name comment used_modules usf =
   json_dict_open [
     ("what", json_str "module");
     ("name", json_id mod_name);
-    ("need_magic", json_bool (usf.magic));
-    ("need_dummy", json_bool (usf.mldummy));
+    ("need_magic", json_bool (usf.Miniml.magic));
+    ("need_dummy", json_bool (usf.Miniml.mldummy));
     ("used_modules", json_list
-      (List.map (fun mf -> json_str (file_of_modfile mf)) used_modules))
+      (List.map (fun mf -> json_str (Table.file_of_modfile mf)) used_modules))
   ]
 
 
 (*s Pretty-printing of types. *)
 
-let rec json_type vl = function
+let rec json_type vl =
+  let open Miniml in
+  function
   | Tmeta _ | Tvar' _ -> assert false
   | Tvar i -> (try
       let varid = List.nth vl (pred i) in json_dict [
@@ -90,7 +87,9 @@ let rec json_type vl = function
 
 (*s Pretty-printing of expressions. *)
 
-let rec json_expr env = function
+let rec json_expr env =
+  let open Miniml in
+  function
   | MLrel n -> json_dict [
       ("what", json_str "expr:rel");
       ("name", json_id (get_db_name n env))
@@ -101,15 +100,15 @@ let rec json_expr env = function
       ("args", json_list (List.map (json_expr env) args))
     ]
   | MLlam _ as a ->
-    let fl, a' = collect_lams a in
-    let fl, env' = push_vars (List.map id_of_mlid fl) env in
+    let fl, a' = Mlutil.collect_lams a in
+    let fl, env' = push_vars (List.map Mlutil.id_of_mlid fl) env in
     json_dict [
       ("what", json_str "expr:lambda");
       ("argnames", json_list (List.map json_id (List.rev fl)));
       ("body", json_expr env' a')
     ]
   | MLletin (id, a1, a2) ->
-    let i, env' = push_vars [id_of_mlid id] env in
+    let i, env' = push_vars [Mlutil.id_of_mlid id] env in
     json_dict [
       ("what", json_str "expr:let");
       ("name", json_id (List.hd i));
@@ -172,13 +171,15 @@ let rec json_expr env = function
     ]
 
 and json_one_pat env (ids,p,t) =
-  let ids', env' = push_vars (List.rev_map id_of_mlid ids) env in json_dict [
+  let ids', env' = push_vars (List.rev_map Mlutil.id_of_mlid ids) env in json_dict [
     ("what", json_str "case");
     ("pat", json_gen_pat (List.rev ids') env' p);
     ("body", json_expr env' t)
   ]
 
-and json_gen_pat ids env = function
+and json_gen_pat ids env =
+  let open Miniml in
+  function
   | Pcons (r, l) -> json_cons_pat r (List.map (json_gen_pat ids env) l)
   | Pusual r -> json_cons_pat r (List.map json_id ids)
   | Ptuple l -> json_dict [
@@ -198,8 +199,8 @@ and json_cons_pat r ppl = json_dict [
   ]
 
 and json_function env t =
-  let bl, t' = collect_lams t in
-  let bl, env' = push_vars (List.map id_of_mlid bl) env in
+  let bl, t' = Mlutil.collect_lams t in
+  let bl, env' = push_vars (List.map Mlutil.id_of_mlid bl) env in
   json_dict [
     ("what", json_str "expr:lambda");
     ("argnames", json_list (List.map json_id (List.rev bl)));
@@ -211,10 +212,10 @@ and json_function env t =
 
 let json_ind ip pl cv = json_dict [
     ("what", json_str "decl:ind");
-    ("name", json_global Type (GlobRef.IndRef ip));
+    ("name", json_global Type (Names.GlobRef.IndRef ip));
     ("argnames", json_list (List.map json_id pl));
     ("constructors", json_listarr (Array.mapi (fun idx c -> json_dict [
-        ("name", json_global Cons (GlobRef.ConstructRef (ip, idx+1)));
+        ("name", json_global Cons (Names.GlobRef.ConstructRef (ip, idx+1)));
         ("argtypes", json_list (List.map (json_type pl) c))
       ]) cv))
   ]
@@ -222,7 +223,9 @@ let json_ind ip pl cv = json_dict [
 
 (*s Pretty-printing of a declaration. *)
 
-let pp_decl = function
+let pp_decl =
+  let open Miniml in
+  function
   | Dind (kn, defs) -> prvecti_with_sep pr_comma
     (fun i p -> if p.ip_logical then str ""
      else json_ind (kn, i) p.ip_vars p.ip_types) defs.ind_packets
@@ -250,22 +253,22 @@ let pp_decl = function
     ]
 
 let rec pp_structure_elem = function
-  | (l,SEdecl d) -> [ pp_decl d ]
-  | (l,SEmodule m) -> pp_module_expr m.ml_mod_expr
-  | (l,SEmodtype m) -> []
+  | (l,Miniml.SEdecl d) -> [ pp_decl d ]
+  | (l,Miniml.SEmodule m) -> pp_module_expr m.Miniml.ml_mod_expr
+  | (l,Miniml.SEmodtype m) -> []
       (* for the moment we simply discard module type *)
 
 and pp_module_expr = function
-  | MEstruct (mp,sel) -> List.concat (List.map pp_structure_elem sel)
-  | MEfunctor _ -> []
+  | Miniml.MEstruct (mp,sel) -> List.concat (List.map pp_structure_elem sel)
+  | Miniml.MEfunctor _ -> []
       (* for the moment we simply discard unapplied functors *)
-  | MEident _ | MEapply _ -> assert false
+  | Miniml.MEident _ | Miniml.MEapply _ -> assert false
       (* should be expansed in extract_env *)
 
 let pp_struct mls =
   let pp_sel (mp,sel) =
     push_visible mp [];
-    let p = prlist_with_sep pr_comma identity
+    let p = prlist_with_sep pr_comma Util.identity
       (List.concat (List.map pp_structure_elem sel)) in
     pop_visible (); p
   in
@@ -276,10 +279,10 @@ let pp_struct mls =
   str "}" ++ fnl ()
 
 
-let json_descr = {
-  keywords = Id.Set.empty;
+let json_descr = Miniml.{
+  keywords = Names.Id.Set.empty;
   file_suffix = ".json";
-  file_naming = file_of_modfile;
+  file_naming = Table.file_of_modfile;
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;

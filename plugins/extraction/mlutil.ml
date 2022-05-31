@@ -11,7 +11,6 @@
 (*i*)
 open Util
 open Names
-open Libnames
 open Table
 open Miniml
 (*i*)
@@ -1533,7 +1532,7 @@ let inline_test r t =
        not (is_fix t2) && ml_size t < 12 && is_not_strict t)
 
 let con_of_string s =
-  let d, id = Libnames.split_dirpath (dirpath_of_string s) in
+  let d, id = Libnames.split_dirpath (Libnames.dirpath_of_string s) in
   Constant.make2 (ModPath.MPfile d) (Label.of_id id)
 
 let manual_inline_set =
