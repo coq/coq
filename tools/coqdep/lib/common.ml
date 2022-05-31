@@ -20,23 +20,13 @@ let basename_noext filename =
     - first string is the full filename, with only its extension removed
     - second string is the absolute version of the previous (via getcwd)
 *)
-let vAccu = ref ([] : (string * string) list)
+let vAccu = ref ([] : string list)
 
 let separator_hack = ref true
 let filename_concat dir name =
   if !separator_hack
   then System.(dir // name)
   else Filename.concat dir name
-
-(* This is used to overcome makefile limitations w.r.t. filenames,
-   (bar/../foo is not the same than ./foo for make) but it is a crude
-   hack and we should remove it, and instead require users to follow
-   the same naming convention *)
-let canonize f =
-  let f' = filename_concat (Loadpath.absolute_dir (Filename.dirname f)) (Filename.basename f) in
-  match List.filter (fun (_,full) -> f' = full) !vAccu with
-    | (f,_) :: _ -> f
-    | _ -> f
 
 (** Queue operations *)
 let addQueue q v = q := v :: !q
@@ -175,7 +165,6 @@ let rec find_dependencies st basename =
               match safe_assoc st from verbose f str with
               | Some files ->
                 List.iter (fun file_str ->
-                    let file_str = canonize file_str in
                     add_dep (Dep_info.Dep.Require file_str)) files
               | None ->
                 if verbose && not (Loadpath.is_in_coqlib st ?from str) then
@@ -214,7 +203,7 @@ let rec find_dependencies st basename =
                 if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
                 else None
               else
-                Some [canonize str]
+                Some [str]
           in
           (match canon with
            | None -> ()
@@ -227,7 +216,7 @@ let rec find_dependencies st basename =
              List.iter decl l)
         | External(from,str) ->
           begin match safe_assoc st ~what:External (Some from) verbose f [str] with
-          | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
+          | Some (file :: _) -> add_dep (Dep_info.Dep.Other file)
           | Some [] -> assert false
           | None -> warning_module_notfound ~what:External (Some from) f [str]
           end
@@ -248,7 +237,7 @@ module State = struct
 end
 
 let compute_deps st =
-  let mk_dep (name, _orig_path) = Dep_info.make ~name ~deps:(find_dependencies st name) in
+  let mk_dep name = Dep_info.make ~name ~deps:(find_dependencies st name) in
   !vAccu |> List.rev |> List.map mk_dep
 
 let rec treat_file old_dirname old_name =
@@ -279,10 +268,9 @@ let rec treat_file old_dirname old_name =
        Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
   | Unix.S_REG ->
     (match Loadpath.get_extension name [".v"] with
-     | base,".v" ->
+     | base, ".v" ->
        let name = file_name base dirname in
-       let absname = Loadpath.absolute_file_name ~filename_concat base dirname in
-       addQueue vAccu (name, absname)
+       addQueue vAccu name
      | _ -> ())
   | _ -> ()
 
@@ -296,7 +284,6 @@ let treat_file_coq_project where old_name =
 let sort st =
   let seen = Hashtbl.create 97 in
   let rec loop file =
-    let file = canonize file in
     if not (Hashtbl.mem seen file) then begin
       Hashtbl.add seen file ();
       let cin = open_in (file ^ ".v") in
@@ -318,7 +305,7 @@ let sort st =
         Format.printf "%s.v " file
     end
   in
-  List.iter (fun (name, _) -> loop name) !vAccu
+  List.iter loop !vAccu
 
 let treat_coqproject st f =
   let open CoqProject_file in
