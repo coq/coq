@@ -8,12 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module Dynlink = struct
-  type t = Opt | Byte | Both | No | Variable
+module Dep = struct
+  type t =
+  | Require of string (* one basename, to which we later append .vo or .vio or .vos *)
+  | Ml of string * string
+  | Other of string (* filenames of dependencies, separated by spaces *)
 end
 
-let boot = ref false
-let sort = ref false
-let write_vos = ref false
-let noglob = ref false
-let dynlink = ref Dynlink.Both
+type t =
+  { name : string  (* This should become [module : Coq_module.t] eventually *)
+  ; deps : Dep.t list
+  }
+
+let make ~name ~deps = { name; deps }

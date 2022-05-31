@@ -93,13 +93,8 @@ let register_dir_logpath, find_dir_logpath =
     (see discussion at PR #14718)
 *)
 
-let coqdep_warning args =
-  let open Format in
-  eprintf "*** Warning: @[";
-  kfprintf (fun fmt -> fprintf fmt "@]\n%!") err_formatter args
-
 let warning_cannot_open_dir dir =
-  coqdep_warning "cannot open %s" dir
+  Warning.give "cannot open %s" dir
 
 let add_directory recur add_file phys_dir log_dir =
   let root = (phys_dir, log_dir) in
@@ -162,7 +157,7 @@ let rec cuts recur = function
 
 let warning_ml_clash x s suff s' suff' =
   if suff = suff' && not (same_path_opt s s') then
-  coqdep_warning "%s%s already found in %s (discarding %s%s)\n" x suff
+    Warning.give "%s%s already found in %s (discarding %s%s)\n" x suff
     (match s with None -> "." | Some d -> d)
     System.((match s' with None -> "." | Some d -> d) // x) suff
 
@@ -178,14 +173,16 @@ module State = struct
     ; vfiles : (dirpath * dirpath, result) Hashtbl.t
     ; coqlib : (dirpath * dirpath, result) Hashtbl.t
     ; other : (dirpath * dirpath, result) Hashtbl.t
+    ; boot : bool
     }
 
-  let make () =
+  let make ~boot =
     { mllib = Hashtbl.create 19
     ; mlpack = Hashtbl.create 19
     ; vfiles = Hashtbl.create 19
     ; coqlib = Hashtbl.create 19
     ; other = Hashtbl.create 19
+    ; boot
     }
 
   let gen_add h x s suff =
@@ -265,7 +262,7 @@ let add_known st recur root phys_dir log_dir f =
   match get_extension f [".v"; ".vo"; ".vio"; ".vos"] with
     | (basename,".v") ->
         add_paths recur root st.State.vfiles phys_dir log_dir basename
-    | (basename, (".vo" | ".vio" | ".vos")) when not(!Options.boot) ->
+    | (basename, (".vo" | ".vio" | ".vos")) when not st.State.boot ->
         add_paths recur root st.State.vfiles phys_dir log_dir basename
     | (f,_) ->
         add_paths recur root st.State.other phys_dir log_dir f

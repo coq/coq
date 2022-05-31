@@ -21,24 +21,6 @@ val init : Args.t -> State.t
 (** [treat_file_command_line file] Add an input file to be considered  *)
 val treat_file_command_line : string -> unit
 
-module Dep : sig
-  type t =
-  | Require of string (* one basename, to which we later append .vo or .vio or .vos *)
-  | Other of string   (* filenames of dependencies, separated by spaces *)
-
-  val to_string : suffix:string -> t -> string
-end
-
-module Dep_info : sig
-  type t =
-    { name : string
-    ; deps : Dep.t list
-    }
-
-  (** Print dependencies in makefile format *)
-  val print : Format.formatter -> t -> unit
-end
-
 val sort : State.t -> unit
 
 val compute_deps : State.t -> Dep_info.t list

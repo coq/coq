@@ -8,18 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Format
-open Lexer
-
-let (//) = System.(//)
-
 module StrSet = Set.Make(String)
-
-let meta_files = ref []
 
 (** [basename_noext] removes both the directory part and the extension
     (if necessary) of a filename *)
-
 let basename_noext filename =
   let fn = Filename.basename filename in
   try Filename.chop_extension fn with Invalid_argument _ -> fn
@@ -28,11 +20,19 @@ let basename_noext filename =
     - first string is the full filename, with only its extension removed
     - second string is the absolute version of the previous (via getcwd)
 *)
+let vAccu = ref ([] : (string * string) list)
 
-let vAccu   = ref ([] : (string * string) list)
+(* This is used to overcome makefile limitations w.r.t. filenames,
+   (bar/../foo is not the same than ./foo for make) but it is a crude
+   hack and we should remove it, and instead require users to follow
+   the same naming convention *)
+let canonize f =
+  let f' = System.(Loadpath.absolute_dir (Filename.dirname f) // Filename.basename f) in
+  match List.filter (fun (_,full) -> f' = full) !vAccu with
+    | (f,_) :: _ -> f
+    | _ -> f
 
 (** Queue operations *)
-
 let addQueue q v = q := v :: !q
 
 type what = Library | External
@@ -42,16 +42,16 @@ let warning_module_notfound ?(what=Library) from f s =
   let what = str_of_what what in
   match from with
   | None ->
-      Warning.give "in file %s, %s %s is required and has not been found in the loadpath!"
-        f what (String.concat "." s)
+    Warning.give "in file %s, %s %s is required and has not been found in the loadpath!"
+      f what (String.concat "." s)
   | Some pth ->
-      Warning.give "in file %s, %s %s is required from root %s and has not been found in the loadpath!"
-        f what (String.concat "." s) (String.concat "." pth)
+    Warning.give "in file %s, %s %s is required from root %s and has not been found in the loadpath!"
+      f what (String.concat "." s) (String.concat "." pth)
 
 let warning_declare f s =
   Warning.give "in file %s, declared ML module %s has not been found!" f s
 
-let warn_if_clash ?(what=Library) exact file dir f1 = function
+let warn_if_clash ?(what=Library) exact file dir f1 = let open Format in function
   | f2::fl ->
       let f =
         match what with
@@ -97,44 +97,7 @@ let safe_assoc st ?(what=Library) from verbose file k =
 
 let file_name s = function
   | None     -> s
-  | Some d   -> d // s
-
-(* Makefile's escaping rules are awful: $ is escaped by doubling and
-   other special characters are escaped by backslash prefixing while
-   backslashes themselves must be escaped only if part of a sequence
-   followed by a special character (i.e. in case of ambiguity with a
-   use of it as escaping character).  Moreover (even if not crucial)
-   it is apparently not possible to directly escape ';' and leading '\t'. *)
-
-let escape =
-  let s' = Buffer.create 10 in
-  fun s ->
-    Buffer.clear s';
-    for i = 0 to String.length s - 1 do
-      let c = s.[i] in
-      if c = ' ' || c = '#' || c = ':' (* separators and comments *)
-        || c = '%' (* pattern *)
-        || c = '?' || c = '[' || c = ']' || c = '*' (* expansion in filenames *)
-        || i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' ||
-            'A' <= s.[1] && s.[1] <= 'Z' ||
-            'a' <= s.[1] && s.[1] <= 'z') (* homedir expansion *)
-      then begin
-        let j = ref (i-1) in
-        while !j >= 0 && s.[!j] = '\\' do
-          Buffer.add_char s' '\\'; decr j (* escape all preceding '\' *)
-        done;
-        Buffer.add_char s' '\\';
-      end;
-      if c = '$' then Buffer.add_char s' '$';
-      Buffer.add_char s' c
-    done;
-    Buffer.contents s'
-
-let canonize f =
-  let f' = Loadpath.absolute_dir (Filename.dirname f) // Filename.basename f in
-  match List.filter (fun (_,full) -> f' = full) !vAccu with
-    | (f,_) :: _ -> escape f
-    | _ -> escape f
+  | Some d   -> System.(d // s)
 
 module VData = struct
   type t = string list option * string list
@@ -150,20 +113,9 @@ module VCache = Set.Make(VData)
     (those loaded by [Require]) from other dependencies, e.g. dependencies
     on ".v" files (for [Load]) or ".cmx", ".cmo", etc... (for [Declare]). *)
 
-module Dep = struct
-  type t =
-  | Require of string (* one basename, to which we later append .vo or .vio or .vos *)
-  | Other of string   (* filenames of dependencies, separated by spaces *)
-
-  let to_string ~suffix = function
-    | Require basename -> basename ^ suffix
-    | Other s -> s
-end
-
-let string_of_dependency_list suffix_for_require deps =
-  String.concat " " (List.map (Dep.to_string ~suffix:suffix_for_require) deps)
-
 let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
+
+let meta_files = ref []
 
 (* Transform "Declare ML %DECL" to a pair of (meta, cmxs). Something
    very similar is in ML top *)
@@ -193,131 +145,102 @@ let rec find_dependencies st basename =
           visited_v := VCache.add (from, str) !visited_v;
           true
        end else false
-       in
+    in
     (* Output: dependencies found *)
     let dependencies = ref [] in
-    let add_dep dep =
-       dependencies := dep::!dependencies in
-    let add_dep_other s =
-       add_dep (Dep.Other s) in
+    let add_dep dep = dependencies := dep :: !dependencies in
+    let add_dep_other s = add_dep (Dep_info.Dep.Other s) in
 
     (* Reading file contents *)
     let f = basename ^ ".v" in
     let chan = open_in f in
     let buf = Lexing.from_channel chan in
+    let open Lexer in
     try
       while true do
         let tok = coq_action buf in
         match tok with
         | Require (from, strl) ->
-            List.iter (fun str ->
-              if should_visit_v_and_mark from str then begin
+          let decl str =
+            if should_visit_v_and_mark from str then begin
               match safe_assoc st from verbose f str with
-              | Some files -> List.iter (fun file_str -> add_dep (Dep.Require (canonize file_str))) files
+              | Some files ->
+                List.iter (fun file_str ->
+                    let file_str = canonize file_str in
+                    add_dep (Dep_info.Dep.Require file_str)) files
               | None ->
-                  if verbose && not (Loadpath.is_in_coqlib st ?from str) then
+                if verbose && not (Loadpath.is_in_coqlib st ?from str) then
                   warning_module_notfound from f str
-              end) strl
+            end
+          in
+          List.iter decl strl
         | Declare sl ->
-            let sl = List.map (declare_ml_to_file f) sl in
-            let declare suff dir s =
-              let base = escape (file_name s dir) in
-              let open Options.Dynlink in
-              match !Options.dynlink with
-              | No -> ()
-              | Byte -> add_dep_other (sprintf "%s%s" base suff)
-              | Opt -> add_dep_other (sprintf "%s.cmxs" base)
-              | Both -> add_dep_other (sprintf "%s%s" base suff);
-                        add_dep_other (sprintf "%s.cmxs" base)
-              | Variable -> add_dep_other (sprintf "%s%s" base
-                  (if suff=".cmo" then "$(DYNOBJ)" else "$(DYNLIB)"))
-            in
-            let decl (meta_file,str) =
-              Option.iter add_dep_other meta_file;
-              let s = basename_noext str in
-              if not (StrSet.mem s !visited_ml) then begin
+          let sl = List.map (declare_ml_to_file f) sl in
+          let declare suff dir s =
+            let base = file_name s dir in
+            add_dep (Dep_info.Dep.Ml (base,suff))
+          in
+          let decl (meta_file,str) =
+            Option.iter add_dep_other meta_file;
+            let s = basename_noext str in
+            if not (StrSet.mem s !visited_ml) then begin
                 visited_ml := StrSet.add s !visited_ml;
                 match Loadpath.search_mllib_known st s with
-                  | Some mldir -> declare ".cma" mldir s
-                  | None ->
-                    match Loadpath.search_mlpack_known st s with
+                | Some mldir -> declare ".cma" mldir s
+                | None ->
+                  match Loadpath.search_mlpack_known st s with
                   | Some mldir -> declare ".cmo" mldir s
                   | None -> warning_declare f str
-                end
-            in
-            List.iter decl sl
+              end
+          in
+          List.iter decl sl
         | Load file ->
-            let canon =
-              match file with
-              | Logical str ->
+          let canon =
+            match file with
+            | Logical str ->
+              if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
+              else None
+            | Physical str ->
+              if String.equal (Filename.basename str) str then
                 if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
                 else None
-              | Physical str ->
-                if String.equal (Filename.basename str) str then
-                  if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
-                  else None
-                else
-                  Some [canonize str]
-            in
-            (match canon with
-            | None -> ()
-            | Some l ->
-              List.iter (fun canon ->
-              add_dep_other (sprintf "%s.v" canon);
-              let deps = find_dependencies st canon in
-              List.iter add_dep deps) l)
+              else
+                Some [canonize str]
+          in
+          (match canon with
+           | None -> ()
+           | Some l ->
+             let decl canon =
+               add_dep_other (Format.sprintf "%s.v" canon);
+               let deps = find_dependencies st canon in
+               List.iter add_dep deps
+             in
+             List.iter decl l)
         | External(from,str) ->
-            begin match safe_assoc st ~what:External (Some from) verbose f [str] with
-            | Some (file :: _) -> add_dep (Dep.Other (canonize file))
-            | Some [] -> assert false
-            | None -> warning_module_notfound ~what:External (Some from) f [str]
-            end
+          begin match safe_assoc st ~what:External (Some from) verbose f [str] with
+          | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
+          | Some [] -> assert false
+          | None -> warning_module_notfound ~what:External (Some from) f [str]
+          end
         | AddLoadPath _ | AddRecLoadPath _ -> (* TODO: will this be handled? *) ()
       done;
       List.rev !dependencies
     with
     | Fin_fichier ->
-        close_in chan;
-        List.rev !dependencies
+      close_in chan;
+      List.rev !dependencies
     | Syntax_error (i,j) ->
-        close_in chan;
-        Error.cannot_parse f (i,j)
+      close_in chan;
+      Error.cannot_parse f (i,j)
   with Sys_error msg -> Error.cannot_open (basename ^ ".v") msg
 
-module Dep_info = struct
-
-  type t =
-    { name : string  (* This should become [module : Coq_module.t] eventually *)
-    ; deps : Dep.t list
-    }
-
-  let make name deps = { name; deps }
-
-  open Format
-
-  let print fmt { name; deps } =
-    let ename = escape name in
-    let glob = if !Options.noglob then "" else ename^".glob " in
-    fprintf fmt "%s.vo %s%s.v.beautified %s.required_vo: %s.v %s\n" ename glob ename ename ename
-      (string_of_dependency_list ".vo" deps);
-    fprintf fmt "%s.vio: %s.v %s\n" ename ename
-      (string_of_dependency_list ".vio" deps);
-    if !Options.write_vos then
-      fprintf fmt "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
-        (string_of_dependency_list ".vos" deps);
-    fprintf fmt "%!"
-
-end
-
 module State = struct
-
   type t = Loadpath.State.t
   let loadpath x = x
-
 end
 
 let compute_deps st =
-  let mk_dep (name, _) = Dep_info.make name (find_dependencies st name) in
+  let mk_dep (name, _orig_path) = Dep_info.make ~name ~deps:(find_dependencies st name) in
   !vAccu |> List.rev |> List.map mk_dep
 
 let rec treat_file old_dirname old_name =
@@ -327,32 +250,31 @@ let rec treat_file old_dirname old_name =
     match (old_dirname,new_dirname) with
       | (d, ".") -> d
       | (None,d) -> Some d
-      | (Some d1,d2) -> Some (d1//d2)
+      | (Some d1,d2) -> Some (System.(d1 // d2))
   in
   let complete_name = file_name name dirname in
   let stat_res =
     try Unix.stat complete_name
-    with Unix.Unix_error (error, _, _) ->
+    with Unix.Unix_error(error, _, _) ->
       Error.cannot_open complete_name (Unix.error_message error)
   in
-  match stat_res.Unix.st_kind
-  with
-    | Unix.S_DIR ->
-        (if name.[0] <> '.' then
-           let newdirname =
-             match dirname with
-               | None -> name
-               | Some d -> d//name
-           in
-           Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
-    | Unix.S_REG ->
-      (match Loadpath.get_extension name [".v"] with
-       | base,".v" ->
-         let name = file_name base dirname
-         and absname = Loadpath.absolute_file_name base dirname in
-         addQueue vAccu (name, absname)
-       | _ -> ())
-    | _ -> ()
+  match stat_res.Unix.st_kind with
+  | Unix.S_DIR ->
+    (if name.[0] <> '.' then
+       let newdirname =
+         match dirname with
+         | None -> name
+         | Some d -> System.(d // name)
+       in
+       Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
+  | Unix.S_REG ->
+    (match Loadpath.get_extension name [".v"] with
+     | base,".v" ->
+       let name = file_name base dirname in
+       let absname = Loadpath.absolute_file_name base dirname in
+       addQueue vAccu (name, absname)
+     | _ -> ())
+  | _ -> ()
 
 let treat_file_command_line old_name =
   treat_file None old_name
@@ -371,8 +293,8 @@ let sort st =
       let lb = Lexing.from_channel cin in
       try
         while true do
-          match coq_action lb with
-            | Require (from, sl) ->
+          match Lexer.coq_action lb with
+          | Lexer.Require (from, sl) ->
                 List.iter
                   (fun s ->
                     match safe_assoc st from false file s with
@@ -381,12 +303,12 @@ let sort st =
                 sl
             | _ -> ()
         done
-      with Fin_fichier ->
+      with Lexer.Fin_fichier ->
         close_in cin;
-        printf "%s.v " file
+        Format.printf "%s.v " file
     end
   in
-  List.iter (fun (name,_) -> loop name) !vAccu
+  List.iter (fun (name, _) -> loop name) !vAccu
 
 let treat_coqproject st f =
   let open CoqProject_file in
@@ -411,15 +333,13 @@ let add_include st (rc, r, ln) =
 
 let init args =
   vAccu := [];
-  if not Coq_config.has_natdynlink then Options.dynlink := Options.Dynlink.No;
-  let st = Loadpath.State.make () in
-  Options.boot := args.Args.boot;
-  Options.sort := args.Args.sort;
-  Options.write_vos := args.Args.vos;
-  Options.noglob :=  args.Args.noglob;
+  if not Coq_config.has_natdynlink then Makefile.set_dyndep "no";
+  let st = Loadpath.State.make ~boot:args.Args.boot in
+  Makefile.set_write_vos args.Args.vos;
+  Makefile.set_noglob args.Args.noglob;
   Option.iter (treat_coqproject st) args.Args.coqproject;
   List.iter (Loadpath.add_caml_dir st) args.Args.ml_path;
   List.iter (add_include st) args.Args.vo_path;
-  Options.dynlink := args.Args.dyndep;
+  Makefile.set_dyndep args.Args.dyndep;
   meta_files := args.Args.meta_files;
   st

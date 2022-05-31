@@ -33,7 +33,7 @@ let coqdep () =
   (try ignore (Loadpath.find_dir_logpath (Sys.getcwd()))
    with Not_found -> Loadpath.add_norec_dir_import (Loadpath.add_known lst) "." []);
   (* We don't setup any loadpath if the -boot is passed *)
-  if not !Options.boot then begin
+  if not args.Args.boot then begin
     let env = Boot.Env.init () in
     let stdlib = Boot.Env.(stdlib env |> Path.to_string) in
     let plugins = Boot.Env.(plugins env |> Path.to_string) in
@@ -46,10 +46,10 @@ let coqdep () =
       (Envars.xdg_dirs ~warn:(fun x -> Warning.give "%s" x));
     List.iter (fun s -> Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) s []) Envars.coqpath;
   end;
-  if !Options.sort then
+  if args.Args.sort then
     sort st
   else
-    compute_deps st |> List.iter (Dep_info.print Format.std_formatter)
+    compute_deps st |> List.iter (Makefile.print_dep Format.std_formatter)
 
 let () =
   try

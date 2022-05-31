@@ -8,19 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type t =
-  { boot : bool
-  ; sort : bool
-  ; vos : bool
-  ; noglob : bool
-  ; coqproject : string option
-  ; ml_path : string list
-  ; vo_path : (bool * string * string) list
-  ; dyndep : string
-  ; meta_files : string list
-  ; files : string list
-  }
+val print_dep :
+  Format.formatter
+  -> Dep_info.t
+  -> unit
 
-val make : unit -> t
-val usage : unit -> 'a
-val parse : t -> string list -> t
+val set_dyndep : string -> unit
+val set_noglob : bool -> unit
+val set_write_vos : bool -> unit

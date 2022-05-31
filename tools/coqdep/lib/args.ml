@@ -16,7 +16,7 @@ type t =
   ; coqproject : string option
   ; ml_path : string list
   ; vo_path : (bool * string * string) list
-  ; dyndep : Options.Dynlink.t
+  ; dyndep : string
   ; meta_files : string list
   ; files : string list
   }
@@ -29,7 +29,7 @@ let make () =
   ; coqproject = None
   ; ml_path = []
   ; vo_path = []
-  ; dyndep = Options.Dynlink.Both
+  ; dyndep = "both"
   ; meta_files = []
   ; files = []
   }
@@ -72,11 +72,7 @@ let parse st args =
     | "-exclude-dir" :: [] -> usage ()
     | "-coqlib" :: r :: ll -> Boot.Env.set_coqlib r; parse st ll
     | "-coqlib" :: [] -> usage ()
-    | "-dyndep" :: "no" :: ll -> parse { st with dyndep = Options.Dynlink.No } ll
-    | "-dyndep" :: "opt" :: ll -> parse { st with dyndep = Options.Dynlink.Opt } ll
-    | "-dyndep" :: "byte" :: ll -> parse { st with dyndep = Options.Dynlink.Byte } ll
-    | "-dyndep" :: "both" :: ll -> parse { st with dyndep = Options.Dynlink.Both } ll
-    | "-dyndep" :: "var" :: ll -> parse { st with dyndep = Options.Dynlink.Variable } ll
+    | "-dyndep" :: dyndep :: ll -> parse { st with dyndep } ll
     | "-m" :: m :: ll -> parse { st with meta_files = st.meta_files @ [m]} ll
     | ("-h"|"--help"|"-help") :: _ -> usage ()
     | opt :: ll when String.length opt > 0 && opt.[0] = '-' ->
