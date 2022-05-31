@@ -18,8 +18,8 @@ end
 (** [init args] Init coqdep, setting arguments from [args]. *)
 val init : make_separator_hack:bool -> Args.t -> State.t
 
-(** [treat_file_command_line file] Add an input file to be considered  *)
-val treat_file_command_line : string -> unit
+(** [treat_file file] Add an input file to be considered  *)
+val treat_file : string -> unit
 
 val sort : State.t -> unit
 

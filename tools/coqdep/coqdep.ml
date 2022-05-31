@@ -27,7 +27,7 @@ let coqdep () =
   let make_separator_hack = true in
   let st = init ~make_separator_hack args in
   let lst = Common.State.loadpath st in
-  List.iter treat_file_command_line v_files;
+  List.iter treat_file v_files;
 
   (* XXX: All the code below is just setting loadpaths, refactor to
      Common coq.boot library *)

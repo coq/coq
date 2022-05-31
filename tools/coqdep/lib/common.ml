@@ -144,7 +144,7 @@ let declare_ml_to_file file decl =
       Pp.(str "Failed to resolve plugin " ++
           pr_sequence (pr_sequence str) plist)
 
-let rec find_dependencies st basename =
+let rec find_dependencies st path =
   let verbose = true in (* for past/future use? *)
   try
     (* Visited marks *)
@@ -162,8 +162,8 @@ let rec find_dependencies st basename =
     let add_dep_other s = add_dep (Dep_info.Dep.Other s) in
 
     (* Reading file contents *)
-    let f = basename ^ ".v" in
-    let chan = open_in f in
+    let chan = open_in path in
+    let path_no_ext = Filename.chop_extension path in
     let buf = Lexing.from_channel chan in
     let open Lexer in
     try
@@ -173,19 +173,19 @@ let rec find_dependencies st basename =
         | Require (from, strl) ->
           let decl str =
             if should_visit_v_and_mark from str then begin
-              match safe_assoc st from verbose f str with
+              match safe_assoc st from verbose path_no_ext str with
               | Some files ->
                 List.iter (fun file_str ->
                     let file_str = canonize file_str in
                     add_dep (Dep_info.Dep.Require file_str)) files
               | None ->
                 if verbose && not (Loadpath.is_in_coqlib st ?from str) then
-                  warning_module_notfound from f str
+                  warning_module_notfound from path_no_ext str
             end
           in
           List.iter decl strl
         | Declare sl ->
-          let sl = List.map (declare_ml_to_file f) sl in
+          let sl = List.map (declare_ml_to_file path_no_ext) sl in
           let declare suff dir s =
             let base = file_name s dir in
             add_dep (Dep_info.Dep.Ml (base,suff))
@@ -205,7 +205,7 @@ let rec find_dependencies st basename =
                 | None ->
                   match Loadpath.search_mlpack_known st s with
                   | Some mldir -> declare ".cmo" (pick_mldir mldir) s
-                  | None -> warning_declare f str
+                  | None -> warning_declare path_no_ext str
               end
           in
           List.iter decl sl
@@ -213,11 +213,13 @@ let rec find_dependencies st basename =
           let canon =
             match file with
             | Logical str ->
-              if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
+              if should_visit_v_and_mark None [str]
+              then safe_assoc st None verbose path_no_ext [str]
               else None
             | Physical str ->
               if String.equal (Filename.basename str) str then
-                if should_visit_v_and_mark None [str] then safe_assoc st None verbose f [str]
+                if should_visit_v_and_mark None [str]
+                then safe_assoc st None verbose path_no_ext [str]
                 else None
               else
                 Some [canonize str]
@@ -232,10 +234,10 @@ let rec find_dependencies st basename =
              in
              List.iter decl l)
         | External(from,str) ->
-          begin match safe_assoc st ~what:External (Some from) verbose f [str] with
+          begin match safe_assoc st ~what:External (Some from) verbose path_no_ext [str] with
           | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
           | Some [] -> assert false
-          | None -> warning_module_notfound ~what:External (Some from) f [str]
+          | None -> warning_module_notfound ~what:External (Some from) path_no_ext [str]
           end
       done;
       List.rev !dependencies
@@ -245,8 +247,9 @@ let rec find_dependencies st basename =
       List.rev !dependencies
     | Syntax_error (i,j) ->
       close_in chan;
-      Error.cannot_parse f (i,j)
-  with Sys_error msg -> Error.cannot_open (basename ^ ".v") msg
+      Error.cannot_parse path (i,j)
+  with
+  | Sys_error msg -> Error.cannot_open path msg
 
 module State = struct
   type t = Loadpath.State.t
@@ -254,49 +257,17 @@ module State = struct
 end
 
 let compute_deps st =
-  let mk_dep (name, _orig_path) = Dep_info.make ~name ~deps:(find_dependencies st name) in
+  let mk_dep (path, _orig_path) =
+    let name = Filename.chop_extension path in
+    Dep_info.make ~name ~deps:(find_dependencies st path) in
   !vAccu |> List.rev |> List.map mk_dep
 
-let rec treat_file old_dirname old_name =
-  let name = Filename.basename old_name
-  and new_dirname = Filename.dirname old_name in
-  let dirname =
-    match (old_dirname,new_dirname) with
-      | (d, ".") -> d
-      (* EGJA: We should disable this buggy normalization stuff for
-         "./foo -> foo" but it breaks dune coq.theory! *)
-      | (None,d) -> Some d
-      | (Some d1,d2) -> Some (filename_concat d1 d2)
-  in
-  let complete_name = file_name name dirname in
-  let stat_res =
-    try Unix.stat complete_name
-    with Unix.Unix_error(error, _, _) ->
-      Error.cannot_open complete_name (Unix.error_message error)
-  in
-  match stat_res.Unix.st_kind with
-  | Unix.S_DIR ->
-    (if name.[0] <> '.' then
-       let newdirname =
-         match dirname with
-         | None -> name
-         | Some d -> filename_concat d name
-       in
-       Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
-  | Unix.S_REG ->
-    (match Loadpath.get_extension name [".v"] with
-     | base,".v" ->
-       let name = file_name base dirname in
-       let absname = Loadpath.absolute_file_name ~filename_concat base dirname in
-       addQueue vAccu (name, absname)
-     | _ -> ())
-  | _ -> ()
-
-let treat_file_command_line old_name =
-  treat_file None old_name
-
-let treat_file_coq_project where old_name =
-  treat_file None old_name
+let treat_file path =
+  if Filename.check_suffix path ".v" then
+    let abspath = Loadpath.absolute_file_name ~filename_concat path None in
+    addQueue vAccu (path, abspath)
+  else
+    ()
 
 (* "[sort]" outputs `.v` files required by others *)
 let sort st =
@@ -339,7 +310,7 @@ let treat_coqproject st f =
   iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
-  iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
+  iter_sourced treat_file (all_files project)
 
 let add_include st (rc, r, ln) =
   if rc then

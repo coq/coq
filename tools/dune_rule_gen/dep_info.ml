@@ -20,7 +20,7 @@ let debug = false
 
 let coqdep_register_file file =
   (* if debug then Format.eprintf "cd regfile: %s@\n%!" file; *)
-  CD.Common.treat_file_command_line (Path.to_string file)
+  CD.Common.treat_file (Path.to_string file)
 
 (* From dir info + context *)
 let make ~args ~(dir_info : _ Dir_info.t) =

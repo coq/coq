@@ -8,9 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** To move  *)
-val get_extension : string -> string list -> string * string
-
 (* Loadpaths *)
 type basename = string
 type dirname = string
