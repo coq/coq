@@ -85,7 +85,7 @@ let warn_if_clash ?(what=Library) exact file dir f1 = let open Format in functio
         end
   | [] -> ()
 
-let safe_assoc st ?(what=Library) from verbose file k =
+let safe_assoc st ?(what=Library) from file k =
   let search =
     match what with
     | Library -> Loadpath.search_v_known st
@@ -93,12 +93,12 @@ let safe_assoc st ?(what=Library) from verbose file k =
   match search ?from k with
   | None -> None
   | Some (Loadpath.ExactMatches (f :: l)) ->
-    if verbose then warn_if_clash ~what true file k f l; Some [f]
+    warn_if_clash ~what true file k f l; Some [f]
   | Some (Loadpath.PartialMatchesInSameRoot (root, l)) ->
     (match List.sort String.compare l with [] -> assert false | f :: l as all ->
     (* If several files match, it will fail at Require;
        To be "fair", in coqdep, we add dependencies on all matching files *)
-    if verbose then warn_if_clash ~what false file k f l; Some all)
+    warn_if_clash ~what false file k f l; Some all)
   | Some (Loadpath.ExactMatches []) -> assert false
 
 let file_name s = function
@@ -145,7 +145,6 @@ let declare_ml_to_file file decl =
           pr_sequence (pr_sequence str) plist)
 
 let rec find_dependencies st path =
-  let verbose = true in (* for past/future use? *)
   try
     (* Visited marks *)
     let visited_ml = ref StrSet.empty in
@@ -173,13 +172,13 @@ let rec find_dependencies st path =
         | Require (from, strl) ->
           let decl str =
             if should_visit_v_and_mark from str then begin
-              match safe_assoc st from verbose path_no_ext str with
+              match safe_assoc st from path_no_ext str with
               | Some files ->
                 List.iter (fun file_str ->
                     let file_str = canonize file_str in
                     add_dep (Dep_info.Dep.Require file_str)) files
               | None ->
-                if verbose && not (Loadpath.is_in_coqlib st ?from str) then
+                if not (Loadpath.is_in_coqlib st ?from str) then
                   warning_module_notfound from path_no_ext str
             end
           in
@@ -214,12 +213,12 @@ let rec find_dependencies st path =
             match file with
             | Logical str ->
               if should_visit_v_and_mark None [str]
-              then safe_assoc st None verbose path_no_ext [str]
+              then safe_assoc st None path_no_ext [str]
               else None
             | Physical str ->
               if String.equal (Filename.basename str) str then
                 if should_visit_v_and_mark None [str]
-                then safe_assoc st None verbose path_no_ext [str]
+                then safe_assoc st None path_no_ext [str]
                 else None
               else
                 Some [canonize str]
@@ -234,7 +233,7 @@ let rec find_dependencies st path =
              in
              List.iter decl l)
         | External(from,str) ->
-          begin match safe_assoc st ~what:External (Some from) verbose path_no_ext [str] with
+          begin match safe_assoc st ~what:External (Some from) path_no_ext [str] with
           | Some (file :: _) -> add_dep (Dep_info.Dep.Other (canonize file))
           | Some [] -> assert false
           | None -> warning_module_notfound ~what:External (Some from) path_no_ext [str]
@@ -284,7 +283,7 @@ let sort st =
           | Lexer.Require (from, sl) ->
                 List.iter
                   (fun s ->
-                    match safe_assoc st from false file s with
+                    match safe_assoc st from file s with
                     | None -> ()
                     | Some l -> List.iter loop l)
                 sl
