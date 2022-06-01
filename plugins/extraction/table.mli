@@ -105,6 +105,10 @@ val remove_opaque : GlobRef.t -> unit
 
 val reset_tables : unit -> unit
 
+(*s Output Directory parameter *)
+
+val output_directory : unit -> string
+
 (*s AccessOpaque parameter *)
 
 val access_opaque : unit -> bool
