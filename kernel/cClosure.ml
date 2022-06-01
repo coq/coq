@@ -25,7 +25,6 @@
 
 open CErrors
 open Util
-open Pp
 open Names
 open Constr
 open Declarations
@@ -35,45 +34,6 @@ open Vars
 open Esubst
 
 module RelDecl = Context.Rel.Declaration
-
-let stats = ref false
-
-(* Profiling *)
-let beta = ref 0
-let delta = ref 0
-let zeta = ref 0
-let evar = ref 0
-let nb_match = ref 0
-let fix = ref 0
-let cofix = ref 0
-let prune = ref 0
-
-let reset () =
-  beta := 0; delta := 0; zeta := 0; evar := 0; nb_match := 0; fix := 0;
-  cofix := 0; evar := 0; prune := 0
-
-let stop() =
-  Feedback.msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
-         str" zeta=" ++ int !zeta ++ str" evar=" ++
-         int !evar ++ str" match=" ++ int !nb_match ++ str" fix=" ++ int !fix ++
-         str " cofix=" ++ int !cofix ++ str" prune=" ++ int !prune ++
-         str"]")
-
-let incr_cnt red cnt =
-  if red then begin
-    if !stats then incr cnt;
-    true
-  end else
-    false
-
-let with_stats c =
-  if !stats then begin
-    reset();
-    let r = Lazy.force c in
-    stop();
-    r
-  end else
-    Lazy.force c
 
 let all_opaque = TransparentState.empty
 
@@ -174,19 +134,17 @@ module RedFlags : RedFlagsSig = struct
   let mkfullflags = List.fold_left red_add { no_red with r_const = TransparentState.full }
 
   let red_set red = function
-    | BETA -> incr_cnt red.r_beta beta
+    | BETA -> red.r_beta
     | CONST kn ->
-      let c = is_transparent_constant red.r_const kn in
-        incr_cnt c delta
+      is_transparent_constant red.r_const kn
     | VAR id -> (* En attendant d'avoir des kn pour les Var *)
-      let c = is_transparent_variable red.r_const id in
-        incr_cnt c delta
-    | ZETA -> incr_cnt red.r_zeta zeta
-    | MATCH -> incr_cnt red.r_match nb_match
-    | FIX -> incr_cnt red.r_fix fix
-    | COFIX -> incr_cnt red.r_cofix cofix
+      is_transparent_variable red.r_const id
+    | ZETA -> red.r_zeta
+    | MATCH -> red.r_match
+    | FIX -> red.r_fix
+    | COFIX -> red.r_cofix
     | DELTA -> (* Used for Rel/Var defined in context *)
-        incr_cnt red.r_delta delta
+      red.r_delta
 
   let red_projection red p =
     if Projection.unfolded p then true
@@ -1584,7 +1542,7 @@ let kh info tab v stk = fapp_stack(kni info tab v stk)
       calls itself recursively. *)
 let rec kl info tab m =
   let share = info.i_cache.i_share in
-  if is_val m then (incr prune; term_of_fconstr m)
+  if is_val m then term_of_fconstr m
   else
     let (nm,s) = kni info tab m [] in
     let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
@@ -1602,7 +1560,7 @@ and klt info tab e t = match kind t with
 (* no redex: go up for atoms and already normalized terms, go down
    otherwise. *)
 and norm_head info tab m =
-  if is_val m then (incr prune; term_of_fconstr m) else
+  if is_val m then term_of_fconstr m else
     match m.term with
       | FLambda(_n,tys,f,e) ->
         let fold (e, info, ctxt) (na, ty) =
@@ -1670,12 +1628,10 @@ and zip_term info tab m stk = match stk with
 (* Initialization and then normalization *)
 
 (* weak reduction *)
-let whd_val info tab v =
-  with_stats (lazy (term_of_fconstr (kh info tab v [])))
+let whd_val info tab v = term_of_fconstr (kh info tab v [])
 
 (* strong reduction *)
-let norm_val info tab v =
-  with_stats (lazy (kl info tab v))
+let norm_val info tab v = kl info tab v
 
 let whd_stack infos tab m stk = match Mark.red_state m.mark with
 | Whnf | Ntrl ->
