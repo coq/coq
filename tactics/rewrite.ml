@@ -1928,10 +1928,18 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
-let not_declared ~info env sigma ty rel =
-  tclFAIL ~info
-    (str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
-     str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
+exception RelationNotDeclared of Environ.env * Evd.evar_map * string * EConstr.types
+
+let () = CErrors.register_handler begin function
+| RelationNotDeclared (env, sigma, ty, concl) ->
+  let rel, _, _, _, _, _ = decompose_app_rel_error env sigma concl in
+  Some (str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
+    str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
+| _ -> None
+end
+
+let not_declared ~info env sigma ty concl =
+  Proofview.tclZERO ~info (RelationNotDeclared (env, sigma, ty, concl))
 
 let setoid_proof ty fn fallback =
   Proofview.Goal.enter begin fun gl ->
@@ -1958,9 +1966,7 @@ let setoid_proof ty fn fallback =
               begin function (e', info) -> match e' with
                 | Hipattern.NoEquationFound ->
                     begin match e with
-                    | (Not_found, _) ->
-                      let rel, _, _, _, _, _ = decompose_app_rel_error env sigma concl in
-                      not_declared ~info env sigma ty rel
+                    | (Not_found, _) -> not_declared ~info env sigma ty concl
                     | (e, info) ->
                       Proofview.tclZERO ~info e
                     end
