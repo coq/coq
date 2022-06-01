@@ -1,0 +1,2 @@
+(cram
+ (deps %{bin:coqc} %{project_root}/theories/extraction/Extraction.vo %{project_root}/theories/Arith/PeanoNat.vo))
