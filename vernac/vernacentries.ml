@@ -1380,7 +1380,6 @@ let vernac_end_segment lid =
         let () = vernac_end_segment ~pm ~proof lid in
         (), ())
   }
-[@@ocaml.warning "-40"]
 
 let vernac_begin_segment ~interactive f =
   let inproof = Vernacextend.InProof.(if interactive then Reject else Ignore) in
@@ -1391,7 +1390,6 @@ let vernac_begin_segment ~interactive f =
         let () = f () in
         (), ())
   }
-[@@ocaml.warning "-40"]
 
 (* External dependencies *)
 
