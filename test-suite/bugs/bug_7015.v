@@ -19,7 +19,7 @@ Module Simple.
 
     Definition one : (fun n => foo@{i} n) = fun n => foo@{j} n := eq_refl.
 
-    Definition two : foo@{i} = foo@{j} := eta_out _ _ one.
+    Definition two : foo@{i} = foo@{j} := @eta_out nat (fun _ => Type) _ _ one.
 
     Definition two' : foo@{i} = foo@{j} := Eval compute in two.
 
@@ -54,7 +54,7 @@ Module WithRed.
 
     Definition one : (fun n => foo@{i k} false n) = fun n => foo@{j k} false n := eq_refl.
 
-    Definition two : foo@{i k} false = foo@{j k} false := eta_out _ _ one.
+    Definition two : foo@{i k} false = foo@{j k} false := @eta_out nat (fun _ => Type) _ _ one.
 
     Definition two' : foo@{i k} false = foo@{j k} false := Eval compute in two.
 

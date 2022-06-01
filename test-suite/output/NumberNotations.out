@@ -340,10 +340,10 @@ where
      : Fin.t 3
 2 : Fin.t 3
      : Fin.t 3
-File "./output/NumberNotations.v", line 681, characters 11-42:
+File "./output/NumberNotations.v", line 681, characters 34-40:
 The command has indeed failed with message:
-The term "3" has type "Fin.t (S (S (S (S ?n))))"
-while it is expected to have type "Fin.t 3".
+The term "0" has type "Fin.t (S ?n)" while it is expected to have type
+ "Fin.t 0".
 @Fin.F1 ?n
      : Fin.t (S ?n)
 where
@@ -368,10 +368,8 @@ where
      : Fin.t (S (S (S O)))
 File "./output/NumberNotations.v", line 690, characters 11-12:
 The command has indeed failed with message:
-The term
- "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
-has type "Fin.t (S (S (S (S ?n))))" while it is expected to have type
- "Fin.t (S (S (S O)))".
+The term "@Fin.F1 ?n" has type "Fin.t (S ?n)"
+while it is expected to have type "Fin.t O".
 0
      : list unit
 1
@@ -524,10 +522,10 @@ where
      : Fin.t 3
 2 : Fin.t 3
      : Fin.t 3
-File "./output/NumberNotations.v", line 972, characters 11-42:
+File "./output/NumberNotations.v", line 972, characters 34-40:
 The command has indeed failed with message:
-The term "3" has type "Fin.t (S (S (S (S ?n))))"
-while it is expected to have type "Fin.t 3".
+The term "0" has type "Fin.t (S ?n)" while it is expected to have type
+ "Fin.t 0".
 @Fin.F1 ?n
      : Fin.t (S ?n)
 where
@@ -552,10 +550,8 @@ where
      : Fin.t (S (S (S O)))
 File "./output/NumberNotations.v", line 981, characters 11-12:
 The command has indeed failed with message:
-The term
- "@Fin.FS (S (S (S ?n))) (@Fin.FS (S (S ?n)) (@Fin.FS (S ?n) (@Fin.F1 ?n)))"
-has type "Fin.t (S (S (S (S ?n))))" while it is expected to have type
- "Fin.t (S (S (S O)))".
+The term "@Fin.F1 ?n" has type "Fin.t (S ?n)"
+while it is expected to have type "Fin.t O".
 0%float
      : float
 1%float

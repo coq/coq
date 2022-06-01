@@ -1,3 +1,5 @@
+Unset Automatic Bidirectionality.
+
 Record T (x : nat) := { t : x = x }.
 
 Goal exists x, T x.
@@ -11,7 +13,6 @@ Qed.
 (** Fine if the new evar is defined as the originally shelved evar:  we do nothing.
   In the other direction we promote the non-shelved new goal to a shelved one:
   shelved status has priority over goal status. *)
-
 Goal forall a : nat,  exists x, T x.
    evar (x : nat). subst x. Show Existentials.
    intros a. simple refine (ex_intro ?[x0] _ _). shelve. simpl.

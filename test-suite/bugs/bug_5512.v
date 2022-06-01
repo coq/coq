@@ -1,3 +1,5 @@
+Unset Automatic Bidirectionality.
+
 (* Check that an anomaly is not raised *)
 Goal exists x, x.
 Proof.
