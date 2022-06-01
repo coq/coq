@@ -246,7 +246,7 @@ let elim_wrapper cls rwtac =
       Proofview.tclZERO ~info e
     end
 
-let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
+let general_elim_clause with_evars frzevars tac cls c (ctx, eqn, args) l l2r elim =
   (* Ad hoc asymmetric general_elim_clause *)
   let general_elim_clause0 rew =
     let rewrite_elim =
@@ -279,10 +279,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     | None -> pf_concl gl
     | Some id -> pf_get_hyp_typ id gl
     in
-    let ty = match strat with
-    | Naive -> (try snd (reduce_to_quantified_ind env sigma t) with UserError _ -> t)
-    | FirstSolved | AllMatches -> t
-    in
+    let ty = it_mkProd_or_LetIn (applist (eqn, args)) ctx in
     let eqclause = Clenv.make_clenv_binding env sigma (c, ty) l in
     let try_clause evd' =
       let clenv = Clenv.update_clenv_evd eqclause evd' in
@@ -313,14 +310,11 @@ let (forward_general_setoid_rewrite_clause, general_setoid_rewrite_clause) = Hoo
 
 (* Do we have a JMeq instance on twice the same domains ? *)
 
-let jmeq_same_dom env sigma = function
-  | None -> true (* already checked in Hipattern.find_eq_data_decompose *)
-  | Some t ->
-    let rels, t = decompose_prod_assum sigma t in
-    let env = push_rel_context rels env in
-    match decompose_app sigma t with
-      | _, [dom1; _; dom2;_] -> is_conv env sigma dom1 dom2
-      | _ -> false
+let jmeq_same_dom env sigma (rels, eq, args) =
+  let env = push_rel_context rels env in
+  match args with
+    | [dom1; _; dom2;_] -> is_conv env sigma dom1 dom2
+    | _ -> false
 
 let eq_elimination_ref l2r sort =
   let name =
@@ -340,7 +334,7 @@ let eq_elimination_ref l2r sort =
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
-let find_elim hdcncl lft2rgt dep cls ot =
+let find_elim hdcncl lft2rgt dep cls t =
   Proofview.Goal.enter_one begin fun gl ->
   let sigma = project gl in
   let is_global_exists gr c =
@@ -349,7 +343,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
   let inccl = Option.is_empty cls in
   let env = Proofview.Goal.env gl in
   let is_eq = is_global_exists "core.eq.type" hdcncl in
-  let is_jmeq = is_global_exists "core.JMeq.type" hdcncl && jmeq_same_dom env sigma ot in
+  let is_jmeq = is_global_exists "core.JMeq.type" hdcncl && jmeq_same_dom env sigma t in
   if (is_eq || is_jmeq) && not dep
   then
     let sort = elimination_sort_of_clause cls gl in
@@ -416,7 +410,7 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars d
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun evd c type_of_cls in
-  find_elim hdcncl lft2rgt dep cls (Some t) >>= fun elim ->
+  find_elim hdcncl lft2rgt dep cls t >>= fun elim ->
       general_elim_clause with_evars frzevars tac cls c t l
       (match lft2rgt with None -> false | Some b -> b) (ElimTerm elim)
   end
@@ -450,7 +444,7 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
       match match_with_equality_type env sigma t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
           let lft2rgt = adjust_rewriting_direction args lft2rgt in
-          leibniz_rewrite_ebindings_clause cls lft2rgt tac c (it_mkProd_or_LetIn t rels)
+          leibniz_rewrite_ebindings_clause cls lft2rgt tac c (rels, hdcncl, args)
             l with_evars frzevars dep_proof_ok hdcncl
       | None ->
           Proofview.tclORELSE
@@ -467,7 +461,7 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
                     | Some (hdcncl,args) ->
                   let lft2rgt = adjust_rewriting_direction args lft2rgt in
                   leibniz_rewrite_ebindings_clause cls lft2rgt tac c
-                    (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars frzevars dep_proof_ok hdcncl
+                    (rels' @ rels, hdcncl, args) l with_evars frzevars dep_proof_ok hdcncl
                     | None -> Proofview.tclZERO ~info e
             (* error "The provided term does not end with an equality or a declared rewrite relation." *)
             end
