@@ -97,7 +97,7 @@ project hott 'https://github.com/HoTT/HoTT' 'bca7ccfa0ca359feb11c17a09f45042b46b
 ########################################################################
 # CoqHammer
 ########################################################################
-project coqhammer 'https://github.com/lukaszcz/coqhammer' 'cd2d756d096742595869445b917786298f8e210f'
+project coqhammer 'https://github.com/lukaszcz/coqhammer' 'd0c90dd6c04d1b91b191018c714b3c27bd9e64ee'
 
 ########################################################################
 # GeoCoq
@@ -212,7 +212,7 @@ project bedrock2 'https://github.com/mit-plv/bedrock2' '99b86e974bdaf0ed2ffd893b
 ########################################################################
 # Equations
 ########################################################################
-project equations 'https://github.com/mattam82/Coq-Equations' '6125eaf1ad730962462cc255b2aeb3d8193a2352'
+project equations 'https://github.com/mattam82/Coq-Equations' '610478f75358422673e2326e3a1d30d29d4e0dd2'
 
 ########################################################################
 # Elpi + Hierarchy Builder
@@ -244,7 +244,7 @@ project simple_io 'https://github.com/Lysxia/coq-simple-io' 'd68e6aa01859a938f39
 ########################################################################
 # quickchick
 ########################################################################
-project quickchick 'https://github.com/QuickChick/QuickChick' 'a765baf9a7b998d047c83cabb244a4bdd7fcbe15'
+project quickchick 'https://github.com/QuickChick/QuickChick' 'c318de88cd54119a1ff23696049ad7623704566b'
 
 ########################################################################
 # reduction-effects
@@ -270,7 +270,7 @@ project paco 'https://github.com/snu-sf/paco' '7f10f146f84591236f1ddccb0c75b56ce
 ########################################################################
 # paramcoq
 ########################################################################
-project paramcoq 'https://github.com/coq-community/paramcoq' 'fb0e7bd2194efd825fbb8dc01a4582f9bfae9838'
+project paramcoq 'https://github.com/ejgallego/paramcoq' '2f8e1988a7a605b78546c82238ea7eed3f38e3f6'
 
 ########################################################################
 # relation_algebra

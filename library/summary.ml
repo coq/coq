@@ -22,7 +22,7 @@ type 'a summary_declaration = {
 module Decl = struct type 'a t = 'a summary_declaration end
 module DynMap = Dyn.Map(Decl)
 
-type ml_modules = (bool * string) list
+type ml_modules = (string option * string) list
 
 let sum_mod : ml_modules summary_declaration option ref = ref None
 let sum_map = ref DynMap.empty

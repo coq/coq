@@ -10,17 +10,37 @@
 
 (** {5 Toplevel management} *)
 
-(** If there is a toplevel under Coq, it is described by the following
-   record. *)
-type plugin =
-| Legacy of { obj_file_path : string; fl_public_name : string }
-| Findlib of { fl_public_name : string }
-val pp_plugin : plugin -> string
+(** Coq plugins are identified by their OCaml library name (in the
+   Findlib sense) *)
+module PluginSpec : sig
 
-type toplevel = {
-  load_obj : plugin -> unit;
-  add_dir  : string -> unit;
-  ml_loop  : unit -> unit }
+  (** A plugin is identified by its canonical library name,
+      such as [coq-core.plugins.ltac] *)
+  type t
+
+  (** [repr p] returns a pair of [legacy_name, lib_name] where
+     [lib_name] is the canoncial library name.
+
+      [legacy_name] may be [Some pname] for the cases the plugin was
+     specified in [Declare ML Module] with their legacy name (for
+     example [ltac_plugin]). This will stop being supported soon and
+     is only here for compatiblity. Note that the name doesn't include
+     the ".cmxs" / ".cma" extension *)
+  val repr : t -> string option * string
+
+  val pp : t -> string
+end
+
+type toplevel =
+  { load_plugin : PluginSpec.t -> unit
+  (** Load a findlib library, given by public name *)
+  ; load_module : string -> unit
+  (** Load a cmxs / cmo module, used by the native compiler to load objects *)
+  ; add_dir  : string -> unit
+  (** Adds a dir to the module search path *)
+  ; ml_loop  : unit -> unit
+  (** Implementation of Drop *)
+  }
 
 (** Sets and initializes a toplevel (if any) *)
 val set_top : toplevel -> unit
@@ -36,21 +56,24 @@ val ocaml_toploop : unit -> unit
 
 (** {5 ML Dynlink} *)
 
-(** Adds a dir to the plugin search path *)
+(** Adds a dir to the plugin search path, this also extends
+   OCamlfind's search path *)
 val add_ml_dir : string -> unit
 
 (** Tests if we can load ML files *)
 val has_dynlink : bool
 
-(** List of modules linked to the toplevel *)
-val add_known_module : string -> unit
 val module_is_known : string -> bool
 
 (** {5 Initialization functions} *)
 
-(** Declare a plugin and its initialization function.
-    A plugin is just an ML module with an initialization function.
-    Adding a known plugin implies adding it as a known ML module.
+(** Declare a plugin without an initialization function.  A plugin is
+   a findlib library name. Usually, this will be called automatically
+   when use do [DECLARE PLUGIN "pkg.lib"] in the .mlg file. *)
+val add_known_module : string -> unit
+(* EJGA: Todo, this could take a PluginSpec.t at some point *)
+
+(** Declare a plugin plus a Coq-specific initialization function.
     The initialization function is granted to be called after Coq is fully
     bootstrapped, even if the plugin is statically linked with the toplevel *)
 val add_known_plugin : (unit -> unit) -> string -> unit
@@ -67,6 +90,7 @@ val declare_cache_obj : (unit -> unit) -> string -> unit
 
 (** {5 Declaring modules} *)
 
+(** Implementation of the [Declare ML Module] vernacular command. *)
 val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
 
 (** {5 Utilities} *)

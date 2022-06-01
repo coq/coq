@@ -26,8 +26,8 @@ Require Export Coq.Init.Tauto.
    - ltac_plugin (in Ltac)
    - tauto_plugin (in Tauto).
 *)
-Declare ML Module "cc_plugin".
-Declare ML Module "firstorder_plugin".
+Declare ML Module "cc_plugin:coq-core.plugins.cc".
+Declare ML Module "firstorder_plugin:coq-core.plugins.firstorder".
 
 (* Parsing / printing of hexadecimal numbers *)
 Arguments Nat.of_hex_uint d%hex_uint_scope.

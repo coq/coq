@@ -17,7 +17,7 @@
 Require Import ZMicromega RingMicromega VarMap DeclConstant.
 Require Import BinNums.
 Require Coq.micromega.Tauto.
-Declare ML Module "micromega_plugin".
+Declare ML Module "micromega_plugin:coq-core.plugins.micromega".
 
 Ltac zchecker :=
   let __wit := fresh "__wit" in

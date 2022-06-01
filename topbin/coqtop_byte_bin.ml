@@ -23,9 +23,17 @@ let _get_directive name =
   let dt = Toploop.directive_table [@ocaml.warning "-3"] in
   Hashtbl.find_opt dt name
 
-let load_file fmt = function
-  | Mltop.Legacy { obj_file_path; _ } -> (Topdirs.load_file [@ocaml.warning "-3"]) fmt obj_file_path
-  | Mltop.Findlib { fl_public_name } -> Topfind.load_deeply [fl_public_name]; true
+let load_module fmt name =
+  if not ((Topdirs.load_file [@ocaml.warning "-3"]) fmt name) then
+    CErrors.user_err Pp.(str ("Could not load plugin " ^ name))
+
+let load_plugin fmt ps =
+  match Mltop.PluginSpec.repr ps with
+  | (Some file, _)  ->
+    let file = file ^ ".cma" in
+    load_module fmt file
+  | (None, lib ) ->
+    Topfind.load_deeply [lib]
 
 let drop_setup () =
   begin
@@ -38,11 +46,10 @@ let drop_setup () =
   end;
   let ppf = Format.std_formatter in
   Mltop.(set_top
-           { load_obj = (fun f -> if not (load_file ppf f)
-                          then CErrors.user_err Pp.(str ("Could not load plugin "^pp_plugin f))
-                        );
-             add_dir  = Topdirs.dir_directory;
-             ml_loop  = (fun () -> Toploop.loop ppf);
+           { load_plugin = load_plugin ppf
+           ; load_module = load_module ppf
+           ; add_dir  = Topdirs.dir_directory
+           ; ml_loop  = (fun () -> Toploop.loop ppf)
            })
 
 (* Main coqtop initialization *)
