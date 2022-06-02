@@ -1,4 +1,4 @@
-t_rect = 
+t_rect =
 fun (P : t -> Type) (f : let x := t in forall x0 : x, P x0 -> P (k x0)) =>
 fix F (t : t) : P t :=
   match t as t0 return (P t0) with
@@ -16,7 +16,7 @@ Arguments t_rect (P f)%function_scope t
                      | {| f3 := b |} => b
                      end
      : TT -> 0 = 0
-proj = 
+proj =
 fun (x y : nat) (P : nat -> Type) (def : P x) (prf : P y) =>
 match Nat.eq_dec x y with
 | left eqprf => match eqprf in (_ = z) return (P z) with
@@ -27,7 +27,7 @@ end
      : forall (x y : nat) (P : nat -> Type), P x -> P y -> P y
 
 Arguments proj (x y)%nat_scope P%function_scope def prf
-foo = 
+foo =
 fix foo (A : Type) (l : list A) {struct l} : option A :=
   match l with
   | nil => None
@@ -37,7 +37,7 @@ fix foo (A : Type) (l : list A) {struct l} : option A :=
      : forall A : Type, list A -> option A
 
 Arguments foo A%type_scope l%list_scope
-uncast = 
+uncast =
 fun (A : Type) (x : I A) => match x with
                             | x0 <: _ => x0
                             end
@@ -46,7 +46,7 @@ fun (A : Type) (x : I A) => match x with
 Arguments uncast A%type_scope x
 foo' = if A 0 then true else false
      : bool
-f = 
+f =
 fun H : B =>
 match H with
 | AC x =>
@@ -81,17 +81,17 @@ The command has indeed failed with message:
 Once notations are expanded, the resulting constructor D (in type J) is
 expected to be applied to no arguments while it is actually applied to
 1 argument.
-lem1 = 
+lem1 =
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
 
 Arguments lem1 k
-lem2 = 
+lem2 =
 fun dd : bool => if dd as aa return (aa = aa) then eq_refl else eq_refl
      : forall k : bool, k = k
 
 Arguments lem2 k%bool_scope
-lem3 = 
+lem3 =
 fun dd : nat * nat => let (bb, cc) as aa return (aa = aa) := dd in eq_refl
      : forall k : nat * nat, k = k
 
@@ -177,7 +177,7 @@ fun x : K => match x with
 File "./output/Cases.v", line 224, characters 38-86:
 The command has indeed failed with message:
 Pattern "S _, _" is redundant in this clause.
-stray = 
+stray =
 fun N : Tree =>
 match N with
 | App (App Node (Node as strayvariable)) _ |

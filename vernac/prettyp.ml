@@ -624,7 +624,7 @@ let print_instance sigma cb =
     pr_universe_instance sigma inst
   else mt()
 
-let print_constant with_values sep sp udecl =
+let print_constant with_values sp udecl =
   let cb = Global.lookup_constant sp in
   let val_0 = Global.body_of_constant_body Library.indirect_accessor cb in
   let typ = cb.const_type in
@@ -639,7 +639,7 @@ let print_constant with_values sep sp udecl =
     match val_0 with
     | None ->
         str"*** [ " ++
-        print_basename sp ++ print_instance sigma cb ++ str " : " ++ cut () ++ pr_ltype typ ++
+        print_basename sp ++ print_instance sigma cb ++ str " :" ++ spc () ++ pr_ltype typ ++
         str" ]" ++
         Printer.pr_universes sigma univs
     | Some (c, priv, ctx) ->
@@ -647,12 +647,13 @@ let print_constant with_values sep sp udecl =
       | Opaqueproof.PrivateMonomorphic () -> None
       | Opaqueproof.PrivatePolymorphic ctx -> Some ctx
       in
-        print_basename sp ++ print_instance sigma cb ++ str sep ++ cut () ++
-        (if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
-        Printer.pr_universes sigma univs ?priv)
+      print_basename sp ++ print_instance sigma cb ++
+      str (if with_values then " =" else " :") ++ spc() ++
+      (if with_values then print_typed_body env sigma (Some c,typ) else pr_ltype typ)++
+      Printer.pr_universes sigma univs ?priv)
 
 let gallina_print_constant_with_infos sp udecl =
-  print_constant true " = " sp udecl ++
+  print_constant true sp udecl ++
   with_line_skip (print_name_infos (GlobRef.ConstRef sp))
 
 let gallina_print_abbreviation env kn =
@@ -679,7 +680,6 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
    declaration. It may have been so at the time this was written, but this
    needs to be done in a more principled way. *)
 let gallina_print_library_leaf env sigma with_values mp lobj =
-  let sep = if with_values then " = " else " : " in
   match lobj with
   | AtomicObject o ->
     let handler =
@@ -690,7 +690,7 @@ let gallina_print_library_leaf env sigma with_values mp lobj =
       end @@
       DynHandle.add Declare.Internal.Constant.tag begin fun (id,_) ->
         let kn = Constant.make2 mp (Label.of_id id) in
-        Some (print_constant with_values sep kn None)
+        Some (print_constant with_values kn None)
       end @@
       DynHandle.add DeclareInd.Internal.objInductive begin fun (id,_) ->
         let kn = MutInd.make2 mp (Label.of_id id) in
@@ -822,7 +822,7 @@ let print_full_pure_atomic env sigma mp lobj =
         match cb.const_body with
         | Undef _ ->
           str "Parameter " ++
-          print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ
+          print_basename con ++ str " :" ++ spc () ++ pr_ltype_env env sigma typ
         | OpaqueDef lc ->
           str "Theorem " ++ print_basename con ++ cut () ++
           str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
@@ -834,7 +834,7 @@ let print_full_pure_atomic env sigma mp lobj =
           pr_lconstr_env env sigma c
         | Primitive _ ->
           str "Primitive " ++
-          print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ)
+          print_basename con ++ str " :" ++ spc () ++ pr_ltype_env env sigma typ)
       ++ str "." ++ fnl () ++ fnl ()
     end @@
     DynHandleF.add DeclareInd.Internal.objInductive begin fun (id,_) ->

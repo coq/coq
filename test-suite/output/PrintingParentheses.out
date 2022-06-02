@@ -1,6 +1,6 @@
 ((1 + (2 * 3), 4), 5)
      : (nat * nat) * nat
-mult_n_Sm = 
+mult_n_Sm =
 fun n m : nat =>
 nat_ind (fun n0 : nat => ((n0 * m) + n0) = (n0 * (S m)))
   (eq_refl : ((0 * m) + 0) = (0 * (S m)))

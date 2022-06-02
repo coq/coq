@@ -1,4 +1,4 @@
-f = 
+f =
 fix f (n : nat) : nat :=
   match n with
   | 0 => 0
