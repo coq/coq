@@ -334,7 +334,7 @@ let eq_elimination_ref l2r sort =
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
-let find_elim hdcncl lft2rgt dep cls t =
+let find_elim lft2rgt dep cls ((_, hdcncl, _) as t) =
   Proofview.Goal.enter_one begin fun gl ->
   let sigma = project gl in
   let is_global_exists gr c =
@@ -402,15 +402,12 @@ let type_of_clause cls gl = match cls with
   | None -> Proofview.Goal.concl gl
   | Some id -> pf_get_hyp_typ id gl
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
+let leibniz_rewrite_ebindings_clause cls lft2rgt tac c ((_, hdcncl, _) as t) l with_evars frzevars dep_proof_ok =
   Proofview.Goal.enter begin fun gl ->
   let evd = Proofview.Goal.sigma gl in
-  let env = Proofview.Goal.env gl in
-  let isatomic = isProd evd (whd_zeta env evd hdcncl) in
-  let dep_fun = if isatomic then dependent else dependent_no_evar in
   let type_of_cls = type_of_clause cls gl in
-  let dep = dep_proof_ok && dep_fun evd c type_of_cls in
-  find_elim hdcncl lft2rgt dep cls t >>= fun elim ->
+  let dep = dep_proof_ok && dependent_no_evar evd c type_of_cls in
+  find_elim lft2rgt dep cls t >>= fun elim ->
       general_elim_clause with_evars frzevars tac cls c t l
       (match lft2rgt with None -> false | Some b -> b) (ElimTerm elim)
   end
@@ -445,7 +442,7 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
           let lft2rgt = adjust_rewriting_direction args lft2rgt in
           leibniz_rewrite_ebindings_clause cls lft2rgt tac c (rels, hdcncl, args)
-            l with_evars frzevars dep_proof_ok hdcncl
+            l with_evars frzevars dep_proof_ok
       | None ->
           Proofview.tclORELSE
             begin
@@ -461,7 +458,7 @@ let general_rewrite ~where:cls ~l2r:lft2rgt occs ~freeze:frzevars ~dep:dep_proof
                     | Some (hdcncl,args) ->
                   let lft2rgt = adjust_rewriting_direction args lft2rgt in
                   leibniz_rewrite_ebindings_clause cls lft2rgt tac c
-                    (rels' @ rels, hdcncl, args) l with_evars frzevars dep_proof_ok hdcncl
+                    (rels' @ rels, hdcncl, args) l with_evars frzevars dep_proof_ok
                     | None -> Proofview.tclZERO ~info e
             (* error "The provided term does not end with an equality or a declared rewrite relation." *)
             end
