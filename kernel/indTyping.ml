@@ -196,12 +196,12 @@ let unbounded_from_below u cstrs =
       | Lt | Le -> not (Univ.Level.equal r u))
     cstrs
 
-let get_template univs ~env_params ~env_ar_par ~params data entries =
+let get_template univs ~env_params ~env_ar_par ~params entries =
   match univs with
   | Polymorphic_ind_entry _ | Monomorphic_ind_entry -> None
   | Template_ind_entry ctx ->
-    let is_prop = match data with
-      | [ _, _, info ] -> Sorts.is_prop info.ind_univ
+    let entry = match entries with
+      | [entry] -> entry
       | _ -> CErrors.user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
     in
     (* Compute potential template parameters *)
@@ -220,36 +220,27 @@ let get_template univs ~env_params ~env_ar_par ~params data entries =
     | LocalDef _ -> None
     in
     let params = List.map_filter map params in
-    let params =
-      if is_prop then
-        (* Inductive types in Prop have no template universes, but are still
-           marked as template to please the upper layers. *)
-        List.map (fun _ -> None) params
-      else
-        (* We reuse the same code as the one for variance inference. *)
-        let init_variance = Array.map_of_list (fun l -> l, None) (Level.Set.elements (fst ctx)) in
-        let variance = InferCumulativity.infer_inductive ~env_params ~env_ar_par init_variance
-            ~arities:(List.map (fun e -> e.mind_entry_arity) entries)
-            ~ctors:(List.map (fun e -> e.mind_entry_lc) entries)
-        in
-        let fold accu v (l, _) = match v with
-        | Variance.Irrelevant -> Level.Set.add l accu
-        | Variance.Covariant | Variance.Invariant -> accu
-        in
-        let irrel = Array.fold_left2 fold Level.Set.empty variance init_variance in
-        let () =
-          if Level.Set.is_empty irrel then
-          CErrors.user_err
-            Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
-        in
-        let map = function
-        | None -> None
-        | Some l ->
-          if Level.Set.mem l irrel && unbounded_from_below l (snd ctx) then Some l
-          else None
-        in
-        List.rev_map map params
+    let fold accu u = match u with None -> accu | Some u -> Level.Set.add u accu in
+    let plevels = List.fold_left fold Level.Set.empty params in
+    let unbound = Level.Set.diff (fst ctx) plevels in
+    let plevels =
+      if not (Level.Set.is_empty unbound) then
+        CErrors.user_err Pp.(strbrk "The following template universes are not \
+          bound by parameters: " ++ pr_sequence Level.pr (Level.Set.elements unbound))
+      else Level.Set.elements plevels
     in
+    let check_bound l =
+      if not (unbounded_from_below l (snd ctx)) then
+        CErrors.user_err Pp.(strbrk "Universe level " ++ Level.pr l ++ strbrk " has a lower bound")
+    in
+    let () = List.iter check_bound plevels in
+    (* We reuse the same code as the one for variance inference. *)
+    let init_variance = Array.map_of_list (fun l -> l, Some Variance.Irrelevant) plevels in
+    let _variance = InferCumulativity.infer_inductive ~env_params ~env_ar_par init_variance
+        ~arities:[entry.mind_entry_arity]
+        ~ctors:[entry.mind_entry_lc]
+    in
+    let params = List.rev params in
     Some { template_param_levels = params; template_context = ctx }
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
@@ -361,7 +352,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
         Some variances
   in
 
-  let template = get_template mie.mind_entry_universes ~env_params ~env_ar_par ~params data mie.mind_entry_inds in
+  let template = get_template mie.mind_entry_universes ~env_params ~env_ar_par ~params mie.mind_entry_inds in
 
   (* Abstract universes *)
   let usubst, univs = match mie.mind_entry_universes with

@@ -3,7 +3,8 @@ Fail Inductive list' (A:Set) : Set :=
 | cons' : A -> list' A -> list' (A*A).
 
 (* Check printing of let-ins *)
-#[universes(template)] Inductive foo (A : Type) (x : A) (y := x) := Foo.
+Inductive foo (A : Type) (x : A) (y := x) := Foo.
+
 Print foo.
 
 (* Check where clause *)

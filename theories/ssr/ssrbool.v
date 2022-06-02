@@ -1626,8 +1626,7 @@ Notation "[ 'qualify' 'an' x : T | P ]" :=
 Section KeyPred.
 
 Variable T : Type.
-#[universes(template)]
-Variant pred_key (p : {pred T}) := DefaultPredKey.
+Variant pred_key (p : {pred T}) : Prop := DefaultPredKey.
 
 Variable p : {pred T}.
 Structure keyed_pred (k : pred_key p) :=

@@ -153,6 +153,8 @@ Module TestTemplateAttribute.
     Universe u.
     Context (A : Type@{u}).
 
+    Set Warnings "+no-template-universe".
+
     (* Failing as Bar cannot be made template polymorphic at all *)
     Fail #[universes(template)] Inductive Bar :=
     | bar : A -> Bar.
@@ -184,3 +186,27 @@ Module BoxBox.
   Check Box' True : Prop.
 
 End BoxBox.
+
+Module TemplateUnit.
+
+Set Warnings "-no-template-universe".
+
+(* This is marked as template without any actual template universe. *)
+#[universes(template)] Inductive foo := Foo.
+
+Check (foo : Prop).
+
+End TemplateUnit.
+
+Module TemplateParamUnit.
+
+(* In theory, A could be template but the upper layers don't mark it as such *)
+Set Warnings "+no-template-universe".
+Fail #[universes(template)] Inductive foo (A : Type) := Foo.
+
+Set Warnings "-no-template-universe".
+#[universes(template)] Inductive foo (A : Type) := Foo.
+
+Check (foo unit : Prop).
+
+End TemplateParamUnit.

@@ -374,7 +374,7 @@ let check_named {CAst.loc;v=na} = match na with
    (starting from the most recent and ignoring let-definitions) is not
    contributing to the inductive type's sort or is Some u_k if its level
    is u_k and is contributing. *)
-let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
+let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
   let unbounded_from_below u cstrs =
     let open Univ in
     Univ.Constraints.for_all (fun (l, d, r) ->
@@ -383,35 +383,82 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
         | Lt | Le -> not (Univ.Level.equal r u))
       cstrs
   in
+  let fold_params accu decl = match decl with
+  | LocalAssum (_, p) ->
+    let c = Term.strip_prod_assum p in
+    begin match Constr.kind c with
+    | Constr.Sort (Type u) ->
+      begin match Univ.Universe.level u with
+      | Some l -> Univ.Level.Set.add l accu
+      | None -> accu
+      end
+    | _ -> accu
+    end
+  | LocalDef _ -> accu
+  in
+  let paramslevels = List.fold_left fold_params Univ.Level.Set.empty paramsctxt in
   let check_level l =
     Univ.Level.Set.mem l (Univ.ContextSet.levels uctx) &&
+    Univ.Level.Set.mem l paramslevels &&
     (let () = assert (not @@ Univ.Level.is_set l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
     not (Univ.Level.Set.mem l ctor_levels)
   in
-  let univs = match concl with
-  | Prop | Set | SProp -> Univ.Level.Set.empty
-  | Type u -> Univ.Universe.levels u
-  in
+  let univs = Univ.Universe.levels u in
   let univs = Univ.Level.Set.filter (fun l -> check_level l) univs in
-  match concl with
-  | Prop -> true
-  | Set | SProp | Type _ -> not @@ Univ.Level.Set.is_empty univs
+  univs
 
-let template_polymorphism_candidate ~ctor_levels uctx params concl =
-  match uctx with
-  | UState.Monomorphic_entry uctx ->
-    let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
-    if not concltemplate then false
-    else
-      let conclu = Option.default Sorts.prop concl in
-      template_polymorphic_univs ~ctor_levels uctx params conclu
-  | UState.Polymorphic_entry _ -> false
+let template_polymorphism_candidate uctx params entry concl = match concl with
+| None -> Univ.Level.Set.empty
+| Some (Set | SProp | Prop) -> Univ.Level.Set.empty
+| Some (Type u) ->
+  let ctor_levels =
+    let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
+    let param_levels =
+      List.fold_left (fun levels d -> match d with
+          | LocalAssum _ -> levels
+          | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+        Univ.Level.Set.empty params
+    in
+    List.fold_left (fun levels c -> add_levels c levels)
+      param_levels entry.mind_entry_lc
+  in
+  let univs = template_polymorphic_univs ~ctor_levels uctx params u in
+  univs
+
+let split_universe_context subset (univs, csts) =
+  let subfilter (l, _, r) =
+    let () = assert (not @@ Univ.Level.Set.mem r subset) in
+    Univ.Level.Set.mem l subset
+  in
+  let subcst = Univ.Constraints.filter subfilter csts in
+  let rem = Univ.Level.Set.diff univs subset in
+  let remfilter (l, _, r) =
+    not (Univ.Level.Set.mem l subset) && not (Univ.Level.Set.mem r subset)
+  in
+  let remcst = Univ.Constraints.filter remfilter csts in
+  (subset, subcst), (rem, remcst)
+
+let warn_no_template_universe =
+  CWarnings.create ~name:"no-template-universe" ~category:"universes"
+    (fun () -> Pp.str "This inductive type has no template universes.")
 
 let compute_template_inductive ~user_template ~env_ar_params ~ctx_params ~univ_entry entry concl =
-match user_template with
-| Some template -> template
-| None ->
+match user_template, univ_entry with
+| Some false, UState.Monomorphic_entry uctx ->
+  Monomorphic_ind_entry, uctx
+| Some false, UState.Polymorphic_entry uctx ->
+  Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+| Some true, UState.Monomorphic_entry uctx ->
+  let template_universes = template_polymorphism_candidate uctx ctx_params entry concl in
+  let template, global = split_universe_context template_universes uctx in
+  let () = if Univ.Level.Set.is_empty (fst template) then warn_no_template_universe () in
+  Template_ind_entry template, global
+| Some true, UState.Polymorphic_entry _ ->
+  user_err Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
+| None, UState.Polymorphic_entry uctx ->
+  Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+| None, UState.Monomorphic_entry uctx ->
   (* Heuristic: the user has not written Prop explicitly in the return
       arity, but inference has decided to lower it to Prop. *)
   let templatearity =
@@ -424,23 +471,19 @@ match user_template with
       else false
     else false
   in
-  let template_candidate =
-    templatearity ||
-    let ctor_levels =
-      let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
-      let param_levels =
-        List.fold_left (fun levels d -> match d with
-            | LocalAssum _ -> levels
-            | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-          Univ.Level.Set.empty ctx_params
-      in
-      List.fold_left (fun levels c -> add_levels c levels)
-        param_levels entry.mind_entry_lc
-    in
-    template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
-  in
-  should_auto_template entry.mind_entry_typename template_candidate
-
+  if templatearity then
+    let template = should_auto_template entry.mind_entry_typename true in
+    (* Dummy template inductive. Matters for the shape of the induction principle *)
+    if template then Template_ind_entry Univ.ContextSet.empty, uctx
+    else Monomorphic_ind_entry, uctx
+  else
+    let template_candidate = template_polymorphism_candidate uctx ctx_params entry concl in
+    let has_template = not @@ Univ.Level.Set.is_empty template_candidate in
+    let template = should_auto_template entry.mind_entry_typename has_template in
+    if template then
+      let template, global = split_universe_context template_candidate uctx in
+      Template_ind_entry template, global
+    else Monomorphic_ind_entry, uctx
 
 let check_param = function
 | CLocalDef (na, _, _) -> check_named na
@@ -503,7 +546,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       })
       indnames arities constructors
   in
-  let is_template = match entries, arityconcl with
+  let univ_entry, ctx = match entries, arityconcl with
   | [entry], [concl] ->
     compute_template_inductive ~user_template:template ~env_ar_params ~ctx_params ~univ_entry entry concl
   | _ ->
@@ -511,16 +554,9 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
     | Some true -> user_err Pp.(str "Template-polymorphism not allowed with mutual inductives.")
     | _ -> ()
     in
-    false
-  in
-  let univ_entry, ctx = match univ_entry with
-  | UState.Monomorphic_entry ctx ->
-    if is_template then Template_ind_entry ctx, Univ.ContextSet.empty
-    else Monomorphic_ind_entry, ctx
-  | UState.Polymorphic_entry uctx ->
-    if is_template then user_err
-      Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.")
-    else Polymorphic_ind_entry uctx, Univ.ContextSet.empty
+    match univ_entry with
+    | UState.Monomorphic_entry ctx -> Monomorphic_ind_entry, ctx
+    | UState.Polymorphic_entry uctx -> Polymorphic_ind_entry uctx, Univ.ContextSet.empty
   in
   let variance = variance_of_entry ~cumulative ~variances univ_entry in
   (* Build the mutual inductive entry *)
