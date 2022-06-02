@@ -65,6 +65,7 @@ module Make (Point:Point) = struct
     val mem : Point.t -> table -> bool
     val find : Point.t -> table -> t
     val repr : t -> table -> Point.t
+    val hash : t -> int
   end =
   struct
     type t = int
@@ -95,6 +96,7 @@ module Make (Point:Point) = struct
         tab_fwd = Int.Map.add n x t.tab_fwd;
         tab_bwd = Point.Map.add x n t.tab_bwd;
       }
+    let hash x = x
   end
 
   module PMap = Index.Map
@@ -111,7 +113,6 @@ module Make (Point:Point) = struct
       rank : int;
       klvl: int;
       ilvl: int;
-      mutable status: status
     }
 
   (* A Point.t is either an alias for another one, or a canonical one,
@@ -127,23 +128,21 @@ module Make (Point:Point) = struct
       n_nodes : int; n_edges : int;
       table : Index.table }
 
-  (** Used to cleanup mutable marks if a traversal function is
-      interrupted before it has the opportunity to do it itself. *)
-  let unsafe_cleanup_marks g =
-    let iter _ n = match n with
-      | Equiv _ -> ()
-      | Canonical n -> n.status <- NoMark
-    in
-    PMap.iter iter g.entries
+  module CN = struct
+    type t = canonical_node
+    let equal x y = x.canon == y.canon
+    let hash x = Index.hash x.canon
+  end
 
-  let rec cleanup_marks g =
-    try unsafe_cleanup_marks g
-    with e ->
-      (* The only way unsafe_cleanup_marks may raise an exception is when
-         a serious error (stack overflow, out of memory) occurs, or a signal is
-         sent. In this unlikely event, we relaunch the cleanup until we finally
-         succeed. *)
-      cleanup_marks g; raise e
+  module Status = Hashtbl.Make(CN)
+
+  let make_status (g:t) = Status.create 17
+
+  let status_of status i =
+    try Status.find status i
+    with Not_found -> NoMark
+
+  let set_status status i s = Status.replace status i s
 
   (* Every Point.t has a unique canonical arc representative *)
 
@@ -155,7 +154,6 @@ module Make (Point:Point) = struct
         PMap.modify u (fun _ a ->
             match a with
             | Canonical n ->
-              n.status <- NoMark;
               Equiv v
             | _ -> assert false) g.entries;
       index = g.index;
@@ -172,8 +170,7 @@ module Make (Point:Point) = struct
                PMap.modify n.canon
                  (fun _ a ->
                     match a with
-                    | Canonical n' ->
-                      n'.status <- NoMark;
+                    | Canonical _ ->
                       Canonical n
                     | _ -> assert false)
                  g.entries }
@@ -231,7 +228,6 @@ module Make (Point:Point) = struct
                       (PMap.mem u.canon v.ltle ||
                        PMap.exists (fun l _ -> u == repr g l) v.ltle))
             ) u.gtge;
-          assert (u.status = NoMark);
           assert (Index.equal l u.canon);
           assert (u.ilvl > g.index);
           assert (not (PMap.mem u.canon u.ltle));
@@ -281,16 +277,6 @@ module Make (Point:Point) = struct
       let g = change_node g u in
       u.gtge, u, g
 
-  (* [revert_graph] rollbacks the changes made to mutable fields in
-     nodes in the graph.
-     [to_revert] contains the touched nodes. *)
-  let revert_graph to_revert g =
-    List.iter (fun t ->
-        match PMap.find t g.entries with
-        | Equiv _ -> ()
-        | Canonical t ->
-          t.status <- NoMark) to_revert
-
   exception AbortBackward of t
   exception CycleDetected
 
@@ -304,25 +290,25 @@ module Make (Point:Point) = struct
      corresponding step numbers of the algorithm described in Section
      5.1 of this paper.  *)
 
-  let rec backward_traverse to_revert b_traversed count g x =
+  let rec backward_traverse status b_traversed count g x =
     let count = count - 1 in
     if count < 0 then begin
-      revert_graph to_revert g;
       raise_notrace (AbortBackward g)
     end;
-    if x.status = NoMark then begin
-      x.status <- Visited;
-      let to_revert = x.canon::to_revert in
+    if status_of status x = NoMark then begin
+      set_status status x Visited;
       let gtge, x, g = get_gtge g x in
-      let to_revert, b_traversed, count, g =
-        PSet.fold (fun y (to_revert, b_traversed, count, g) ->
+      let b_traversed, count, g =
+        PSet.fold (fun y (b_traversed, count, g) ->
             let y = repr g y in
-            backward_traverse to_revert b_traversed count g y)
-          gtge (to_revert, b_traversed, count, g)
+            backward_traverse status b_traversed count g y)
+          gtge (b_traversed, count, g)
       in
-      to_revert, x.canon::b_traversed, count, g
+      x.canon::b_traversed, count, g
     end
-    else to_revert, b_traversed, count, g
+    else b_traversed, count, g
+
+  let backward_traverse count g x = backward_traverse (make_status g) [] count g x
 
   let rec forward_traverse f_traversed g v_klvl x y =
     let y = repr g y in
@@ -345,25 +331,30 @@ module Make (Point:Point) = struct
       f_traversed, g
     else f_traversed, g
 
-  let rec find_to_merge to_revert g x v =
+  let rec find_to_merge status g x v =
     let x = repr g x in
-    match x.status with
-    | Visited -> false, to_revert   | ToMerge -> true, to_revert
+    match status_of status x with
+    | Visited -> false   | ToMerge -> true
     | NoMark ->
-      let to_revert = x::to_revert in
-      if Index.equal x.canon v then
-        begin x.status <- ToMerge; true, to_revert end
+      if Index.equal x.canon v then begin
+        set_status status x ToMerge;
+        true
+      end
       else
         begin
-          let merge, to_revert = PSet.fold
-              (fun y (merge, to_revert) ->
-                 let merge', to_revert = find_to_merge to_revert g y v in
-                 merge' || merge, to_revert) x.gtge (false, to_revert)
+          let merge = PSet.fold
+              (fun y merge ->
+                 let merge' = find_to_merge status g y v in
+                 merge' || merge) x.gtge false
           in
-          x.status <- if merge then ToMerge else Visited;
-          merge, to_revert
+          set_status status x (if merge then ToMerge else Visited);
+          merge
         end
     | _ -> assert false
+
+  let find_to_merge g x v =
+    let status = make_status g in
+    status, find_to_merge status g x v
 
   let get_new_edges g to_merge =
     (* Computing edge sets. *)
@@ -409,8 +400,7 @@ module Make (Point:Point) = struct
     let b_traversed, v_klvl, g =
       let u = repr g u in
       try
-        let to_revert, b_traversed, _, g = backward_traverse [] [] (u.klvl + 1) g u in
-        revert_graph to_revert g;
+        let b_traversed, _, g = backward_traverse (u.klvl + 1) g u in
         let v_klvl = u.klvl in
         b_traversed, v_klvl, g
       with AbortBackward g ->
@@ -430,16 +420,12 @@ module Make (Point:Point) = struct
     let to_merge, b_reindex, f_reindex =
       if (repr g u).klvl = v_klvl then
         begin
-          let merge, to_revert = find_to_merge [] g u v in
-          let r =
-            if merge then
-              List.filter (fun u -> u.status = ToMerge) to_revert,
-              List.filter (fun u -> (repr g u).status <> ToMerge) b_traversed,
-              List.filter (fun u -> (repr g u).status <> ToMerge) f_traversed
-            else [], b_traversed, f_traversed
-          in
-          List.iter (fun u -> u.status <- NoMark) to_revert;
-          r
+          let status, merge = find_to_merge g u v in
+          if merge then
+            Status.fold (fun u status acc -> if status = ToMerge then u::acc else acc) status [],
+            List.filter (fun u -> status_of status (repr g u) <> ToMerge) b_traversed,
+            List.filter (fun u -> status_of status (repr g u) <> ToMerge) f_traversed
+          else [], b_traversed, f_traversed
         end
       else [], b_traversed, f_traversed
     in
@@ -512,10 +498,6 @@ module Make (Point:Point) = struct
           change_node g v
     with
     | CycleDetected as e -> raise_notrace e
-    | e ->
-      (* Unlikely event: fatal error or signal *)
-      let () = cleanup_marks g in
-      raise e
 
   let add ?(rank=0) v g =
     if Index.mem v g.table then raise AlreadyDeclared
@@ -529,7 +511,6 @@ module Make (Point:Point) = struct
         rank;
         klvl = 0;
         ilvl = g.index;
-        status = NoMark;
       }
       in
       let entries = PMap.add v (Canonical node) g.entries in
@@ -581,50 +562,39 @@ module Make (Point:Point) = struct
      - we do a BFS rather than a DFS because we expect to have a short
          path (typically, the shortest path has length 1)
   *)
-  exception Found of canonical_node list
+  exception Found
   let search_path strict u v g =
-    let rec loop to_revert todo next_todo =
+    let rec loop status todo next_todo =
       match todo, next_todo with
-      | [], [] -> to_revert (* No path found *)
-      | [], _ -> loop to_revert next_todo []
+      | [], [] -> () (* No path found *)
+      | [], _ -> loop status next_todo []
       | (u, strict)::todo, _ ->
-        if u.status = Visited || (u.status = WeakVisited && strict)
-        then loop to_revert todo next_todo
-        else
-          let to_revert =
-            if u.status = NoMark then u::to_revert else to_revert
-          in
-          u.status <- if strict then WeakVisited else Visited;
+        if status_of status u = Visited || (status_of status u = WeakVisited && strict)
+        then loop status todo next_todo
+        else begin
+          set_status status u (if strict then WeakVisited else Visited);
           if try PMap.find v.canon u.ltle || not strict
             with Not_found -> false
-          then raise_notrace (Found to_revert)
+          then raise_notrace Found
           else
             begin
               let next_todo =
                 PMap.fold (fun u strictu next_todo ->
                     let strict = not strictu && strict in
                     let u = repr g u in
-                    if u == v && not strict then raise_notrace (Found to_revert)
+                    if u == v && not strict then raise_notrace Found
                     else if topo_compare u v = 1 then next_todo
                     else (u, strict)::next_todo)
                   u.ltle next_todo
               in
-              loop to_revert todo next_todo
+              loop status todo next_todo
             end
+        end
     in
     if u == v then not strict
     else
-      try
-        let res, to_revert =
-          try false, loop [] [u, strict] []
-          with Found to_revert -> true, to_revert
-        in
-        List.iter (fun u -> u.status <- NoMark) to_revert;
-        res
-      with e ->
-        (* Unlikely event: fatal error or signal *)
-        let () = cleanup_marks g in
-        raise e
+      try loop (make_status g) [u, strict] []; false
+      with Found -> true
 
   (** Uncomment to debug the cycle detection algorithm. *)
   (*let insert_edge strict ucan vcan g =
