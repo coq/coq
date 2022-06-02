@@ -159,13 +159,9 @@ let add_loc l loc (names, names_rev) =
   | None -> (names, names_rev)
   | Some _ -> (names, Level.Map.add l { uname = None; uloc = loc } names_rev)
 
-let of_binders names =
-  let rev_map =
-    UNameMap.fold (fun id l rmap ->
-        Level.Map.add l { uname = Some id; uloc = None } rmap)
-      names Level.Map.empty
-  in
-  { empty with names = (names, rev_map) }
+let of_names (ubind,revubind) =
+  let revubind = Level.Map.map (fun id -> { uname = Some id; uloc = None }) revubind in
+  {empty with names = (ubind,revubind)}
 
 let universe_of_name uctx s =
   UNameMap.find s (fst uctx.names)

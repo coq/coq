@@ -150,7 +150,7 @@ let pr_mutual_inductive_body env mind mib udecl =
   let bl = Printer.universe_binders_with_opt_names
       (Declareops.inductive_polymorphic_context mib) udecl
   in
-  let sigma = Evd.from_ctx (UState.of_binders bl) in
+  let sigma = Evd.from_ctx (UState.of_names bl) in
 
   hov 0 (def keyword ++ spc () ++
          prlist_with_sep (fun () -> fnl () ++ str"  with ")
@@ -264,7 +264,7 @@ let print_body is_impl extent env mp (l,body) =
          | OnlyNames -> mt ()
          | WithContents ->
             let bl = Printer.universe_binders_with_opt_names ctx None in
-            let sigma = Evd.from_ctx (UState.of_binders bl) in
+            let sigma = Evd.from_ctx (UState.of_names bl) in
             str " :" ++ spc () ++
             hov 0 (Printer.pr_ltype_env env sigma cb.const_type) ++
             (match cb.const_body with
