@@ -50,7 +50,7 @@ let existing_instance ?loc auctx inst =
     let actual = Array.length (Instance.to_array inst)
     and expect = AbstractContext.size auctx in
       if not (Int.equal actual expect) then
-        raise (UniverseLengthMismatch { actual; expect })
+        Loc.raise ?loc (UniverseLengthMismatch { actual; expect })
       else ()
   in
   inst, (Level.Set.empty, AbstractContext.instantiate inst auctx)

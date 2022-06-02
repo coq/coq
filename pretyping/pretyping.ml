@@ -434,7 +434,7 @@ let pretype_ref ?loc sigma env ref us =
         | None | Some [] -> ()
         | Some us ->
             let open UnivGen in
-            raise (UniverseLengthMismatch {
+            Loc.raise ?loc (UniverseLengthMismatch {
               actual = List.length us;
               expect = 0;
             }));
@@ -1301,7 +1301,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
         sigma, Some u
       | Some u ->
           let open UnivGen in
-          raise (UniverseLengthMismatch {
+          Loc.raise ?loc (UniverseLengthMismatch {
             actual = List.length u;
             expect = 1;
           })
