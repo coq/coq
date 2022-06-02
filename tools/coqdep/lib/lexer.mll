@@ -21,8 +21,6 @@
     | Require of qualid option * qualid list
     | Declare of string list
     | Load of load
-    | AddLoadPath of string
-    | AddRecLoadPath of string * qualid
     | External of qualid * string
 
   exception Fin_fichier
@@ -78,8 +76,6 @@ rule coq_action = parse
       { modules [] lexbuf }
   | "Load" space+
       { load_file lexbuf }
-  | "Add" space+ "LoadPath" space+
-      { add_loadpath lexbuf }
   | "Time" space+
       { coq_action lexbuf }
   | "Timeout" space+ ['0'-'9']+ space+
@@ -153,28 +149,6 @@ and consume_require_or_extradeps only_extra_dep from = parse
   | _
       { syntax_error lexbuf }
 
-and add_loadpath = parse
-  | "(*"
-      { comment lexbuf; add_loadpath lexbuf }
-  | space+
-      { add_loadpath lexbuf }
-  | eof
-      { syntax_error lexbuf }
-  | '"' [^ '"']* '"' (*'"'*)
-      { add_loadpath_as (unquote_string (lexeme lexbuf)) lexbuf }
-
-and add_loadpath_as path = parse
-  | "(*"
-      { comment lexbuf; add_loadpath_as path lexbuf }
-  | space+
-      { add_loadpath_as path lexbuf }
-  | "as"
-      { let qid = coq_qual_id lexbuf in
-        skip_to_dot lexbuf;
-        AddRecLoadPath (path, qid) }
-  | dot
-      { AddLoadPath path }
-
 and comment = parse
   | "(*"
       { comment lexbuf; comment lexbuf }
@@ -243,16 +217,6 @@ and parse_dot = parse
   | dot { () }
   | eof { syntax_error lexbuf }
   | _ { syntax_error lexbuf }
-
-and coq_qual_id = parse
-  | "(*"
-      { comment lexbuf; coq_qual_id lexbuf }
-  | space+
-      { coq_qual_id lexbuf }
-  | coq_ident
-      { coq_qual_id_tail [get_ident lexbuf] lexbuf }
-  | _
-      { syntax_error lexbuf }
 
 and coq_qual_id_tail module_name = parse
   | "(*"
