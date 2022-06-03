@@ -303,11 +303,10 @@ considered the sign of a potential error. For instance, it could
 result from an undetected misspelled constant constructor. By default,
 a warning is issued in such situations.
 
-.. warn:: Unused variable @ident catches more than one case.
+.. warn:: Unused variable @ident might be a misspelled constructor. Use _ or _@ident to silence this warning.
 
    This indicates that an unused pattern variable :token:`ident`
-   occurs in a pattern-matching clause used to complete at least two
-   cases of the pattern-matching problem.
+   occurs in a pattern-matching clause.
 
    The warning can be deactivated by using a variable name starting
    with ``_`` or by setting ``Set Warnings
@@ -472,8 +471,8 @@ second one and :g:`false` otherwise. We can write it as follows:
 
    Fixpoint lef (n m:nat) {struct m} : bool :=
      match n, m with
-     | O, x => true
-     | x, O => false
+     | O, _ => true
+     | _, O => false
      | S n, S m => lef n m
      end.
 
@@ -491,7 +490,7 @@ Another way to write this function is:
 
    Fixpoint lef (n m:nat) {struct m} : bool :=
      match n, m with
-     | O, x => true
+     | O, _ => true
      | S n, S m => lef n m
      | _, _ => false
      end.

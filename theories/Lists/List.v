@@ -367,7 +367,7 @@ Section Elts.
   Fixpoint nth (n:nat) (l:list A) (default:A) {struct l} : A :=
     match n, l with
       | O, x :: l' => x
-      | O, other => default
+      | O, [] => default
       | S m, [] => default
       | S m, x :: t => nth m t default
     end.
@@ -375,7 +375,7 @@ Section Elts.
   Fixpoint nth_ok (n:nat) (l:list A) (default:A) {struct l} : bool :=
     match n, l with
       | O, x :: l' => true
-      | O, other => false
+      | O, [] => false
       | S m, [] => false
       | S m, x :: t => nth_ok m t default
     end.
