@@ -16,7 +16,9 @@ It is necessary to adjust plugin code:
   adapted.
 
 You must also provide the corresponding `META` file if your build
-system doesn't generate it automatically.
+system doesn't generate it automatically (see the documentation of
+`-generate-meta-for-package` for how `coq_makefile` can generate it
+automatically).
 
 ## Changes between Coq 8.14 and Coq 8.15
 
