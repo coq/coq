@@ -46,9 +46,9 @@
 
 # !! Before using FIND_SKIP_DIRS, please read how you should in the !!
 # !! FIND_SKIP_DIRS section of dev/doc/build-system.dev.txt         !!
-# "-not -name ." to avoid skipping everything since we "find ."
+# "! -name ." to avoid skipping everything since we "find ."
 # "-type d" to be able to find .merlin.in files
-FIND_SKIP_DIRS:=-not -name . '(' \
+FIND_SKIP_DIRS:=! -name . '(' \
   -name '.*' -type d -o \
   -name 'debian' -o \
   -name "$${GIT_DIR}" -o \
