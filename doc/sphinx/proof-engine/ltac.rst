@@ -1839,8 +1839,8 @@ Defining |Ltac| symbols
 
    Defines or redefines an |Ltac| symbol.
 
-   If the :attr:`local` attribute is specified, the definition will not be
-   exported outside the current module.
+   If the :attr:`local` attribute is specified, definitions will not be
+   exported outside the current module and redefinitions only apply for the current module.
 
    :token:`qualid`
       Name of the symbol being defined or redefined.  For definitions, :token:`qualid`
