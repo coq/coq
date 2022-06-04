@@ -63,6 +63,7 @@ let () =
   let w = Coqide.main files in
   Coqide.set_signal_handlers ~parent:w ();
   Coqide_os_specific.init ();
+  Shared_os_specific.init ();
   try
     GMain.main ();
     failwith "Gtk loop ended"

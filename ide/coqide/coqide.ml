@@ -442,8 +442,12 @@ let revert_all ?parent _ =
       end)
     notebook#pages
 
+let win_interrupt = ref false
+
 let quit ?parent _ =
-  if not !FileAux.in_quit_dialog then
+  if !win_interrupt then
+    win_interrupt := false
+  else if not !FileAux.in_quit_dialog then
     try FileAux.check_quit ?parent saveall; exit 0
     with FileAux.DontQuit -> ()
 
@@ -842,6 +846,7 @@ module Nav = struct
       Coq.reset_coqtop sn.coqtop (* calls init_bpts *)
     end
   let interrupt _ =  (* terminate computation *)
+    if Sys.os_type = "Win32" then File.win_interrupt := true;
     Minilib.log "User interrupt received";
     if not (resume_debugger Interface.Interrupt) && notebook#pages <> [] then begin
       let osn = (find_db_sn ()) in

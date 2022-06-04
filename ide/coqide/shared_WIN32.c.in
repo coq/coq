@@ -1,0 +1,16 @@
+#define _WIN32_WINNT 0x0501  /* Cf below, we restrict to  */
+
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <windows.h>
+
+/* convert an OCaml pid (a process-local handle #) to a Win32 pid (global) */
+CAMLprim value win32_cvtpid(value pseudopid) {
+  CAMLparam1(pseudopid);
+  HANDLE h;
+  DWORD win32_pid;
+  
+  h = (HANDLE)(Long_val(pseudopid));
+  win32_pid = GetProcessId(h);
+  CAMLreturn(Val_int(win32_pid));
+}
