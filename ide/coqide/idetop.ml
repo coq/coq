@@ -27,8 +27,19 @@ module CompactedDecl = Context.Compacted.Declaration
 
 let catch_break = ref false
 
+(* tell whether we have a bona fide interrupt *)
+let valid_interrupt () =
+  if Sys.os_type = "Win32" then begin
+    let fname = Shared.get_interrupt_fname (Unix.getpid ()) in
+    let exists = Sys.file_exists fname in
+    if exists then Unix.unlink fname;
+    exists
+  end else
+    true
+
 let init_signal_handler () =
-  let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
+  let f _ = if valid_interrupt () then
+              if !catch_break then raise Sys.Break else Control.interrupt := true in
   Sys.set_signal Sys.sigint (Sys.Signal_handle f)
 
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
@@ -692,6 +703,7 @@ let islave_default_opts = Coqargs.default
 
 let () =
   let open Coqtop in
+  Shared_os_specific.init ();
   let custom = {
       parse_extra = islave_parse ;
       usage = coqidetop_specific_usage;
