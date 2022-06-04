@@ -172,7 +172,9 @@ type ccb = { open_ccb : 't. 't scoped_ccb -> 't }
 let mk_ccb poly = { open_ccb = fun scope -> scope.bind_ccb poly }
 let with_ccb ccb e = ccb.open_ccb e
 
+(* overridden on Windows; see file coqide_WIN32.c.in *)
 let interrupter = ref (fun pid -> Unix.kill pid Sys.sigint)
+let cvt_pid = ref (fun pid -> pid)
 
 (* todo: does not work on windows (sigusr1 not supported) *)
 let breaker = ref (fun pid -> Unix.kill pid Sys.sigusr1)
@@ -609,9 +611,20 @@ let db_stack x = eval_call ~db:true (Xmlprotocol.db_stack x)
 let db_vars x = eval_call ~db:true (Xmlprotocol.db_vars x)
 let db_configd x = eval_call ~db:true (Xmlprotocol.db_configd x)
 
+let get_interrupt_fname pid =
+  Filename.concat (Minilib.coqide_config_home ())
+      (Printf.sprintf "interrupt_%d" (!cvt_pid pid))
+
 let interrupt_coqtop coqtop workers =
   if coqtop.status = Busy then
-    try !interrupter (CoqTop.unixpid coqtop.handle.proc)
+    try
+      let pid = CoqTop.unixpid coqtop.handle.proc in
+      if Sys.os_type = "Win32" then begin
+        (* indicate which process to interrupt *)
+        let fd = open_out (get_interrupt_fname pid) in
+        close_out fd
+    end;
+    !interrupter pid
     with _ -> Minilib.log "Error while sending Ctrl-C"
   else
     let rec aux = function

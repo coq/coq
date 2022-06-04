@@ -13,7 +13,7 @@
  (public_name coqidetop.opt)
  (package coqide-server)
  (modules idetop)
- (libraries coq-core.toplevel coqide-server.protocol)
+ (libraries coqide_gui coq-core.toplevel coqide-server.protocol)
  (modes native byte)
  (link_flags -linkall))
 

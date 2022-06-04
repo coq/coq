@@ -27,8 +27,20 @@ module CompactedDecl = Context.Compacted.Declaration
 
 let catch_break = ref false
 
+(* tell whether we have a bona fide windows interrupt *)
+let check_win32 () =
+  if Sys.os_type = "Win32" then begin
+    let fname = Coq.get_interrupt_fname (Unix.getpid ()) in
+    let exists = Sys.file_exists fname in
+    if exists then Unix.unlink fname;
+    true, exists
+  end else
+    false, false
+
 let init_signal_handler () =
-  let f _ = if !catch_break then raise Sys.Break else Control.interrupt := true in
+  let f _ = let is_win, is_valid = check_win32 () in
+            if not is_win || is_valid then
+              if !catch_break then raise Sys.Break else Control.interrupt := true in
   Sys.set_signal Sys.sigint (Sys.Signal_handle f)
 
 let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s

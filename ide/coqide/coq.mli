@@ -106,6 +106,9 @@ val init_coqtop : coqtop -> unit task -> unit
 val interrupt_coqtop : coqtop -> string list -> unit
 (** Terminate the current computation of coqtop or the worker if coqtop is not running. *)
 
+val get_interrupt_fname: int -> string
+(** get filename used to pass interrupt pid on Win32 *)
+
 val close_coqtop : coqtop -> unit
 (** Close coqtop. Subsequent requests will be discarded. Hook ignored. *)
 
@@ -219,6 +222,7 @@ val check_connection : string list -> unit
 val interrupter : (int -> unit) ref
 val breaker : (int -> unit) ref
 val send_break : coqtop -> unit
+val cvt_pid : (int -> int) ref
 
 val save_all : (unit -> unit) ref
 
