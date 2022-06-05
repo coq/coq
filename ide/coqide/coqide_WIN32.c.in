@@ -14,8 +14,8 @@
    because the console is shared.  Idetop.win_interrupt is used to ignore the signal send
    to CoqIDE. */
 
-CAMLprim value win32_interrupt(value pseudopid) {
-  CAMLparam1(pseudopid);
+CAMLprim value win32_interrupt() {
+  CAMLparam0();
   GenerateConsoleCtrlEvent(CTRL_C_EVENT,0); /* signal our co-console */
   CAMLreturn(Val_unit);
 }

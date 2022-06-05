@@ -30,7 +30,7 @@ let catch_break = ref false
 (* tell whether we have a bona fide windows interrupt *)
 let check_win32 () =
   if Sys.os_type = "Win32" then begin
-    let fname = Coq.get_interrupt_fname (Unix.getpid ()) in
+    let fname = Shared.get_interrupt_fname (Unix.getpid ()) in
     let exists = Sys.file_exists fname in
     if exists then Unix.unlink fname;
     true, exists
@@ -704,6 +704,7 @@ let islave_default_opts = Coqargs.default
 
 let () =
   let open Coqtop in
+  Shared_os_specific.init ();
   let custom = {
       parse_extra = islave_parse ;
       usage = coqidetop_specific_usage;
