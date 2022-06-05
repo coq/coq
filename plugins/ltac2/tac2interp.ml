@@ -80,6 +80,43 @@ let get_ref ist kn =
 
 let return = Proofview.tclUNIT
 
+exception NoMatch
+
+let match_ctor_against ctor v =
+  match ctor, v with
+  | Tuple 0, _ -> [| |]
+  | Tuple _, ValBlk (_,vs) -> vs
+  | Tuple _, _ -> assert false
+  | Other { cindx = Open ctor }, ValOpn (ctor', vs) ->
+    if KerName.equal ctor ctor' then vs
+    else raise NoMatch
+  | Other { cindx = Open _ }, _ -> assert false
+  | Other { cnargs = 0; cindx = Closed i }, ValInt i' ->
+    if Int.equal i i' then [| |]
+    else raise NoMatch
+  | Other { cnargs = 0 }, ValBlk _ -> raise NoMatch
+  | Other _, ValInt _ -> raise NoMatch
+  | Other { cindx = Closed i }, ValBlk (i', vs) ->
+    if Int.equal i i' then vs
+    else raise NoMatch
+  | Other { cindx = Closed _ }, ValOpn _ -> assert false
+  | _, (ValStr _ | ValCls _ | ValExt _ | ValUint63 _ | ValFloat _) -> assert false
+
+let rec match_pattern_against ist pat v =
+  match pat with
+  | GPatVar x -> push_name ist x v
+  | GPatRef (ctor,pats) ->
+    let vs = match_ctor_against ctor v in
+    List.fold_left_i (fun i ist pat -> match_pattern_against ist pat vs.(i)) 0 ist pats
+  | GPatOr pats -> match_pattern_against_or ist pats v
+
+and match_pattern_against_or ist pats v =
+  match pats with
+  | [] -> raise NoMatch
+  | pat :: pats ->
+    try match_pattern_against ist pat v
+    with NoMatch -> match_pattern_against_or ist pats v
+
 let rec interp (ist : environment) = function
 | GTacAtm (AtmInt n) -> return (Tac2ffi.of_int n)
 | GTacAtm (AtmStr s) -> return (Tac2ffi.of_string (Bytes.of_string s))
@@ -128,6 +165,8 @@ let rec interp (ist : environment) = function
   interp ist e >>= fun e -> interp_case ist e cse0 cse1
 | GTacWth { opn_match = e; opn_branch = cse; opn_default = def } ->
   interp ist e >>= fun e -> interp_with ist e cse def
+| GTacFullMatch (e,brs) ->
+  interp ist e >>= fun e -> interp_full_match ist e brs
 | GTacPrj (_, e, p) ->
   interp ist e >>= fun e -> interp_proj ist e p
 | GTacSet (_, e, p, r) ->
@@ -180,6 +219,14 @@ and interp_with ist e cse def =
     interp ist p
   end
 
+and interp_full_match ist e = function
+  | [] -> CErrors.anomaly Pp.(str "ltac2 match not exhaustive")
+  | (pat,br) :: rest ->
+    begin match match_pattern_against ist pat e with
+    | exception NoMatch -> interp_full_match ist e rest
+    | ist -> interp ist br
+    end
+
 and interp_proj ist e p =
   return (Valexpr.field e p)
 
@@ -215,8 +262,11 @@ and eval_pure bnd kn = function
   in
   let bnd = List.fold_left fold bnd vals in
   eval_pure bnd kn body
+
 | GTacAtm (AtmStr _) | GTacSet _
-| GTacApp _ | GTacCse _ | GTacPrj _ | GTacPrm _ | GTacExt _ | GTacWth _ ->
+| GTacApp _ | GTacCse _ | GTacPrj _
+| GTacPrm _ | GTacExt _ | GTacWth _
+| GTacFullMatch _ ->
   anomaly (Pp.str "Term is not a syntactical value")
 
 and eval_pure_args bnd args =

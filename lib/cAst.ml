@@ -26,3 +26,10 @@ let with_val f n = f n.v
 let with_loc_val f n = f ?loc:n.loc n.v
 
 let eq f x y = f x.v y.v
+
+module Smart = struct
+  let map f n =
+    let v' = f n.v in
+    if v' == n.v then n
+    else {n with v=v'}
+end
