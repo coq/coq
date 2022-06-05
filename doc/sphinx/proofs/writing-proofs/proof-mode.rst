@@ -1110,7 +1110,7 @@ Notes:
 
       intros m.
 
-This screen shot shows the result of applying a :tacn:`split` tactic that replaces one goal
+This screenshot shows the result of applying a :tacn:`split` tactic that replaces one goal
 with 2 goals.  Notice that the goal ``P 1`` is not highlighted at all after
 the split because it has not changed.
 
