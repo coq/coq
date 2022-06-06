@@ -302,7 +302,7 @@ The first line corresponds to the menu item for the Queries/About menu item,
 which was bound by default to `Shift-Ctrl-A`.  "<Primary>" indicates `Ctrl`.
 The second line is for a menu item that has no key binding.
 
-Lines that begin with semicolons are comments create by CoqIDE.  CoqIDE uses
+Lines that begin with semicolons are comments created by CoqIDE.  CoqIDE uses
 the default binding for these items.  To change a key binding, remove the semicolon
 and set the third item in the list as desired, such as in the third line.
 Avoid assigning the same binding to multiple items.
@@ -312,9 +312,13 @@ last line is used.  This is convenient for copying a group of changes from elsew
 insert the changes at the end of the file.  The next time CoqIDE terminates, it will
 resort the items.
 
+The end of
+`this file <https://github.com/linuxmint/gtk/blob/master/gdk/keyname-table.h#:~:text=NC_(%22keyboard%20label%22%2C%20%22BackSpace%22)>`_
+gives the names of the keys.
+
 Some menu entries can be changed as a group from the Edit/Preferences/Shortcuts panel.
 Key bindings that don't appear in the file such as `Ctrl-A` (Select All) can't be
-changed with this mechanism.
+changed with this mechanism.  (At the moment, `Ctrl-A` does not work on Windows.)
 
 .. todo: list common rebindings?
 
