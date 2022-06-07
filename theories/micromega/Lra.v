@@ -21,7 +21,7 @@ Require Import RingMicromega.
 Require Import VarMap.
 Require Coq.micromega.Tauto.
 Require Import Rregisternames.
-Declare ML Module "micromega_plugin".
+Declare ML Module "micromega_plugin:coq-core.plugins.micromega".
 
 Ltac rchange :=
   intros ?__wit ?__varmap ?__ff ;

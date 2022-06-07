@@ -36,7 +36,8 @@ let _ = CErrors.register_handler @@ function
     Some Pp.(str (Printf.sprintf "in file %s, %s is not a valid plugin name anymore." f s)
       ++ str "Plugins should be loaded using their public name according to findlib," ++ spc ()
       ++ str "for example package-name.foo and not foo_plugin." ++ spc ()
-      ++ str "If you are building with dune < 2.9.4 you must specify both" ++ spc ()
+      ++ str "If you are using a buid system that doesn't yet support the new loading method" ++ spc ()
+      ++ str "(such as Dune) you must specify both" ++ spc ()
       ++ str "the legacy and the findlib plugin name as in:" ++ spc ()
       ++ str "Declare ML Module \"foo_plugin:package-name.foo\".")
 

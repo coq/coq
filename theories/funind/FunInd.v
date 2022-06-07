@@ -9,4 +9,4 @@
 (************************************************************************)
 
 Require Coq.extraction.Extraction.
-Declare ML Module "funind_plugin".
+Declare ML Module "funind_plugin:coq-core.plugins.funind".

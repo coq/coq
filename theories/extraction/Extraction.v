@@ -8,4 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Declare ML Module "extraction_plugin".
+Declare ML Module "extraction_plugin:coq-core.plugins.extraction".

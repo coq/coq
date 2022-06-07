@@ -11,33 +11,22 @@
 open Util
 open Pp
 
-(* Code to hook Coq into the ML toplevel -- depends on having the
-   objective-caml compiler mostly visible. The functions implemented here are:
-   \begin{itemize}
-   \item [dir_ml_load name]: Loads the ML module fname from the current ML
-     path.
-   \item [dir_ml_use]: Directive #use of Ocaml toplevel
-   \item [add_ml_dir]: Directive #directory of Ocaml toplevel
-   \end{itemize}
+(* Code to interact with ML "toplevel", in particular, handling ML
+   plugin loading.
 
-   How to build an ML module interface with these functions.
+   We use Fl_dynload to load plugins, which can correctly track
+   dependencies, and manage path for us.
 
-   The idea is that the ML directory path is like the Coq directory
-   path, so we can maintain the two in parallel, though nowaways we
-   use findlib to resolve plugins too.
+   A bit of infrastructure is still in place to support a "legacy"
+   mode where Coq used to manage the OCaml include paths and directly
+   load .cmxs/.cma files itself.
 
-   In the same way, we can use the "ml_env" as a kind of ML
-   environment, which we freeze, unfreeze, and add things to just like
-   to the other environments.
+   We also place here the required code for interacting with the
+   Summary and Libobject, and provide an API so plugins can interact
+   with this loading/unloading for Coq-specific purposes adding their
+   own init functions, given that OCaml cannot unlink a dynamic module.
 
-   Finally, we can create an object which is an ML module, and require
-   that the "caching" of the ML module cause the loading of the
-   associated ML file, if that file has not been yet loaded.  Of
-   course, the problem is how to record dependencies between ML
-   modules.
-
-   (I do not know of a solution to this problem, other than to
-   put all the needed names into the ML Module object.) *)
+*)
 
 
 (* This path is where we look for .cmo/.cmxs using the legacy method *)
@@ -80,20 +69,42 @@ module Fl_internals = struct
     in
     fl_split_in_words archive |> List.map (Findlib.resolve_path ~base)
 
+  (* We register errors at for Dynlink and Findlib, it is possible to
+     do so Symtable too, as we used to do in the bytecode init code.
+     *)
+  let _ = CErrors.register_handler (function
+      | Dynlink.Error msg ->
+        let paths = Findlib.search_path () in
+        Some (hov 0 (str "Dynlink error: " ++ str (Dynlink.error_message msg) ++
+                     cut () ++ str "Findlib paths:" ++ cut () ++ v 0 (prlist_with_sep cut str paths) ++ fnl()))
+      | Fl_package_base.No_such_package(p,msg) ->
+        let paths = Findlib.search_path () in
+        Some (hov 0 (str "Findlib error: " ++ str p ++
+                     str " not found in:" ++ cut () ++ v 0 (prlist_with_sep cut str paths) ++ fnl() ++ str msg))
+      | _ ->
+        None
+    )
+
 end
 
 module PluginSpec : sig
 
   type t
 
-  val make : lib:string -> t
-  val make_legacy : file:string -> lib:string -> t
+  (* Main constructor, takes the format used in Declare ML Module *)
+  val of_declare_ml_format : string -> t
 
+  (* repr/unrepr are internal and only needed for the summary and other low-level stuff *)
   val repr : t -> string option * string
   val unrepr : string option * string -> t
 
+  (* Load a plugin, low-level, that is to say, will directly call the
+     loading mechanism in OCaml/findlib *)
   val load : t -> unit
 
+  (* Compute a digest, a findlib library name have more than one
+     plugin .cmxs, however this is not the case in Coq. Maybe we
+     should strengthen this invariant. *)
   val digest : t -> Digest.t list
 
   val pp : t -> string
@@ -102,6 +113,42 @@ module PluginSpec : sig
   module Map : CMap.ExtS with type key = t and module Set := Set
 
 end = struct
+
+  type t = { file : string option; lib : string }
+
+  module Errors = struct
+
+    let plugin_name_should_contain_dot m =
+      CErrors.user_err
+        Pp.(str Format.(asprintf "%s is not a valid plugin name anymore." m) ++ spc() ++
+            str "Plugins should be loaded using their public name" ++ spc () ++
+            str "according to findlib, for example package-name.foo and not " ++
+            str "foo_plugin.")
+
+    let plugin_name_invalid_format m =
+      CErrors.user_err
+        Pp.(str Format.(asprintf "%s is not a valid plugin name." m) ++ spc () ++
+            str "It should be a public findlib name, e.g. package-name.foo," ++ spc () ++
+            str "or a legacy name followed by a findlib public name, e.g. "++ spc () ++
+            str "legacy_plugin:package-name.plugin.")
+
+  end
+
+  let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
+
+  let of_declare_ml_format m =
+    match String.split_on_char ':' m with
+    | [file] when List.mem_assoc file legacy_mapping ->
+      { file = Some file; lib = String.concat "." ("coq-core" :: List.assoc file legacy_mapping) }
+    | [x] when not (Fl_internals.validate_lib_name x) ->
+      Errors.plugin_name_should_contain_dot m
+    | [ file; lib ] ->
+      { file = Some file; lib }
+    | [ lib ] ->
+      { file = None; lib }
+    | [] -> assert false
+    | _ :: _ :: _ ->
+      Errors.plugin_name_invalid_format m
 
   (* Adds the corresponding extension .cmo/.cma or .cmxs. Dune and
      coq_makefile byte plugins do differ in the choice of extension,
@@ -113,14 +160,6 @@ end = struct
       let name = base ^ ".cmo" in
       if System.is_in_path !coq_mlpath_copy name
       then name else base ^ ".cma"
-
-  type t = { file : string option; lib : string }
-
-  let make ~lib =
-    { file = None; lib }
-
-  let make_legacy ~file ~lib =
-    { file = Some file; lib }
 
   let load = function
     | { file = None; lib } ->
@@ -163,10 +202,16 @@ end = struct
 end
 
 (* If there is a toplevel under Coq *)
-type toplevel = {
-  load_obj : PluginSpec.t -> unit;
-  add_dir  : string -> unit;
-  ml_loop  : unit -> unit }
+type toplevel =
+  { load_plugin : PluginSpec.t -> unit
+  (** Load a findlib library, given by public name *)
+  ; load_module : string -> unit
+  (** Load a cmxs / cmo module, used by the native compiler to load objects *)
+  ; add_dir  : string -> unit
+  (** Adds a dir to the module search path *)
+  ; ml_loop  : unit -> unit
+  (** Implementation of Drop *)
+  }
 
 (* Determines the behaviour of Coq with respect to ML files (compiled
    or not) *)
@@ -180,9 +225,7 @@ let load = ref WithoutTop
 (* Sets and initializes a toplevel (if any) *)
 let set_top toplevel = load :=
   WithTop toplevel;
-  Nativelib.load_obj := (fun file ->
-      let ps = PluginSpec.make_legacy ~file ~lib:file in
-      toplevel.load_obj ps)
+  Nativelib.load_obj := toplevel.load_module
 
 (* Removes the toplevel (if any) *)
 let remove () =
@@ -204,76 +247,9 @@ let ocaml_toploop () =
     | WithTop t -> Printexc.catch t.ml_loop ()
     | _ -> ()
 
-(* Dynamic loading of .cmo/.cma *)
-
-(* We register Coq Errors with the global printer here as they will be
-   printed if Dynlink.loadfile raises UserError in the module
-   intializers. We should make this more principled tho. *)
-let _ = Printexc.register_printer (function
-    | CErrors.UserError msg ->
-      Some (Format.asprintf "@[%a@]" Pp.pp_with msg)
-    | _ -> None)
-
-(* We register errors at least for Dynlink, it is possible to do so Symtable
-   too, as we do in the bytecode init code.
-*)
-let _ = CErrors.register_handler (function
-    | Dynlink.Error msg ->
-      let paths = Findlib.search_path () in
-      Some (hov 0 (str "Dynlink error: " ++ str (Dynlink.error_message msg) ++
-        cut () ++ str "Findlib paths:" ++ cut () ++ v 0 (prlist_with_sep cut str paths) ++ fnl()))
-    | Fl_package_base.No_such_package(p,msg) ->
-      let paths = Findlib.search_path () in
-      Some (hov 0 (str "Findlib error: " ++ str p ++
-        str " not found in:" ++ cut () ++ v 0 (prlist_with_sep cut str paths) ++ fnl() ++ str msg))
-    | _ ->
-      None
-  )
-
-module Legacy_code_waiting_for_dune_release = struct
-
-  let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
-
-  module Errors = struct
-
-    let plugin_name_should_contain_dot m =
-      CErrors.user_err
-        Pp.(str Format.(asprintf "%s is not a valid plugin name anymore." m) ++ spc() ++
-            str "Plugins should be loaded using their public name" ++ spc () ++
-            str "according to findlib, for example package-name.foo and not " ++
-            str "foo_plugin.")
-
-    let plugin_name_invalid_format m =
-      CErrors.user_err
-        Pp.(str Format.(asprintf "%s is not a valid plugin name." m) ++ spc () ++
-            str "It should be a public findlib name, e.g. package-name.foo," ++ spc () ++
-            str "or a legacy name followed by a findlib public name, e.g. "++ spc () ++
-            str "legacy_plugin:package-name.plugin.")
-
-  end
-
-  let resolve_legacy_name_if_needed m =
-    match String.split_on_char ':' m with
-    | [x] when not (Fl_internals.validate_lib_name x) ->
-      Errors.plugin_name_should_contain_dot m
-    | [ file; lib ] ->
-      PluginSpec.make_legacy ~file ~lib
-    | [ lib ] ->
-      PluginSpec.make ~lib
-    | [] -> assert false
-    | _ :: _ :: _ ->
-      Errors.plugin_name_invalid_format m
-
-  let resolve_legacy_name_if_needed m =
-    List.assoc_opt m legacy_mapping
-    |> Option.cata (fun flname -> m ^ ":coq-core." ^ String.concat "." @@ flname) m
-    |> resolve_legacy_name_if_needed
-
-end
-
 let ml_load p =
   match !load with
-  | WithTop t -> t.load_obj p
+  | WithTop t -> t.load_plugin p
   | WithoutTop ->
     PluginSpec.load p
 
@@ -309,7 +285,7 @@ let plugin_is_known mname = PluginSpec.Set.mem mname !known_loaded_modules
 let known_loaded_plugins : (unit -> unit) PluginSpec.Map.t ref = ref PluginSpec.Map.empty
 
 let add_known_plugin init name =
-  let name = Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed name in
+  let name = PluginSpec.of_declare_ml_format name in
   add_known_module name;
   known_loaded_plugins := PluginSpec.Map.add name init !known_loaded_plugins
 
@@ -322,7 +298,7 @@ let init_known_plugins () =
 let cache_objs = ref PluginSpec.Map.empty
 
 let declare_cache_obj f name =
-  let name = PluginSpec.make ~lib:name in
+  let name = PluginSpec.of_declare_ml_format name in
   let objs = try PluginSpec.Map.find name !cache_objs with Not_found -> [] in
   let objs = f :: objs in
   cache_objs := PluginSpec.Map.add name objs !cache_objs
@@ -346,11 +322,11 @@ let load_ml_object mname =
   init_ml_object mname
 
 let add_known_module name =
-  let name = Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed name in
+  let name = PluginSpec.of_declare_ml_format name in
   add_known_module name
 
 let module_is_known mname =
-  let mname = Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed mname in
+  let mname = PluginSpec.of_declare_ml_format mname in
   module_is_known mname
 
 (* Summary of declared ML Modules *)
@@ -443,7 +419,7 @@ let inMLModule : ml_module_object -> Libobject.obj =
 
 
 let declare_ml_modules local l =
-  let mnames = List.map Legacy_code_waiting_for_dune_release.resolve_legacy_name_if_needed l in
+  let mnames = List.map PluginSpec.of_declare_ml_format l in
   if Global.sections_are_opened()
   then CErrors.user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
   (* List.concat_map only available in 4.10 *)
