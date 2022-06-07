@@ -1,1 +1,9 @@
 (vendored_dirs csexp)
+
+(executable
+ (name coqmod)
+ (public_name coqmod)
+ (package coq-core)
+ (libraries coq-core.lib coq-core.clib csexp))
+
+(ocamllex lexer)
