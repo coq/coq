@@ -11,6 +11,8 @@
 open Univ
 open UnivSubst
 
+let _debug_loop_checking_flag, debug = CDebug.create_full ~name:"univMinim" ()
+
 (* To disallow minimization to Set *)
 let { Goptions.get = get_set_minimization } =
   Goptions.declare_bool_option_and_ref
@@ -285,6 +287,7 @@ let minimize_univ_variables ctx us left right cstrs =
         with UpperBoundedAlg ->
           enforce_uppers (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
   and aux (ctx, us, seen, cstrs as acc) u =
+    debug Pp.(fun () -> str"Calling minim on " ++ Level.pr u);
     try acc, Level.Map.find u seen.LBMap.lbmap
     with Not_found -> instance acc u
   in
@@ -344,7 +347,11 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
         csts g
     in
     let g = UGraph.merge_constraints csts g in
-      UGraph.constraints_of_universes g
+    let cstrs = UGraph.constraints_of_universes g in
+    debug Pp.(fun () -> str "New universe context: " ++ pr_universe_context_set Level.pr (ctx, fst cstrs));
+    debug Pp.(fun () -> str "Partition: " ++
+      prlist_with_sep fnl (Level.Set.pr Level.pr) (snd cstrs));
+    cstrs
   in
   (* Ignore constraints from lbound:Set *)
   let noneqs =
