@@ -1233,7 +1233,7 @@ let simplify_clauses_between model v u =
   let model = ref model in
   let rec forward prev acc visited canv : canonical_node list * canonical_node list =
     let () = canv.mark <- Visited 0 in
-    (* debug Pp.(fun () -> str"visiting " ++ pr_can !model canv); *)
+    debug Pp.(fun () -> str"visiting " ++ pr_can !model canv);
     let visited = canv :: visited in
     let cls = canv.clauses_bwd in
     ClausesOf.fold (fun cli acc ->
@@ -1244,8 +1244,8 @@ let simplify_clauses_between model v u =
         let () = model := model' in
         if is_visited canl.mark then
           begin
-            (* debug Pp.(fun () -> str"already visited: " ++ pr_can !model canl); *)
-            (* debug Pp.(fun () -> str"In of the accumulator? " ++ bool (CList.memq canl acc));       *)
+            debug Pp.(fun () -> str"already visited: " ++ pr_can !model canl);
+            debug Pp.(fun () -> str"In of the accumulator? " ++ bool (CList.memq canl acc));
           (* We might be coming from another path *)
           if CList.memq canl acc then (CList.unionq (canv :: prev) acc), visited
           else acc, visited
@@ -1253,7 +1253,7 @@ let simplify_clauses_between model v u =
         else
           if canl == canu then begin
             assert (Int.equal k 0); (* there would be a loop otherwise *)
-            (CList.unionq (canu :: canv :: prev) acc), visited
+            forward [] (CList.unionq (canu :: canv :: prev) acc) visited canl
           end
         else if Int.equal k 0 then forward (canv :: prev) acc visited canl
         else (acc, visited))
@@ -1536,8 +1536,8 @@ let enforce_leq_can u v m =
   match infer_extension u 0 v m with
   | None -> None
   | Some m' ->
-    if m' != m then simplify_clauses_between m' v.canon u.canon
-    else Some m (* The clause was already present so we already checked for v <= u *)
+     simplify_clauses_between m' v.canon u.canon
+     (*if m' != m then else Some m (* The clause was already present so we already checked for v <= u *) *)
 
 let enforce_leq u v m =
   let m, canu = repr_compress_node m u in
@@ -1556,9 +1556,9 @@ let enforce_eq u v m =
   else begin
     debug Pp.(fun () -> str"enforce_eq: " ++ pr_can m canu ++ str" = " ++ pr_can m canv);
     match Int.compare canu.value canv.value with
-    | 0 -> Some (snd (enforce_eq_can m canu canv))
-    | x when x < 0 ->
-      (* canu.value < canv.value, so v <= u is trivial and we cannot have u < v,
+    (* | 0 -> Some (snd (enforce_eq_can m canu canv)) *)
+    | x when x <= 0 ->
+      (* canu.value <= canv.value, so v <= u is trivial and we cannot have u < v,
          only u <= v in the clauses.
          The first enforce will be fast, the second can involve an inference *)
       (* let cls = clauses_forward model m.clauses (PSet.singleton canu.canon) in *)
