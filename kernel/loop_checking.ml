@@ -1014,7 +1014,7 @@ let add_can_clause_model m ((prems, (canl, k)) : can_clause) : can_clause * mode
     if bwd == canl.clauses_bwd then canl
     else { canl with clauses_bwd = bwd }
   in
-  let m' = change_node m canl' in
+  let m' = if canl == canl' then m else change_node m canl' in
   let prems', m' = (* Add clause to the forward clauses from the premises *)
     NeList.fold_map (fun ((idx0, k) as prem) entries ->
       let idx = if idx0 == canl then canl' else idx0 in
@@ -1171,6 +1171,15 @@ let enforce_eq_can model canu canv : canonical_node * t =
     let bwd = ClausesOfRepr.union_upto model can.canon can.clauses_bwd other.clauses_bwd in
     let fwd = ClausesBackward.union_upto model can.clauses_fwd other.clauses_fwd in
     let modeln = { model with entries = PMap.empty } in
+      debug Pp.(fun () -> str"Backward clauses for " ++
+      pr_can model can ++ str": " ++ spc () ++
+      pr_clauses_of modeln can.canon can.clauses_bwd);
+      debug Pp.(fun () -> str"Backward clauses for " ++
+      pr_can model0 other ++ str": " ++ spc () ++
+      pr_clauses_of modeln other.canon other.clauses_bwd);
+      debug Pp.(fun () -> str"New backward clauses for " ++
+        pr_can model can ++ str": " ++ spc () ++
+        pr_clauses_of modeln can.canon bwd);
       debug Pp.(fun () -> str"Add forward clauses for " ++
         pr_can model can ++ str": " ++ spc () ++
         pr_clauses_bwd modeln fwd);
@@ -1189,7 +1198,9 @@ let enforce_eq_can model canu canv : canonical_node * t =
 let enforce_eq_can = time3 (Pp.str"enforce_eq_can") enforce_eq_can
 
  let pr_can_constraints m can =
-  pr_clauses_of m can.canon can.clauses_bwd
+  let open Pp in
+  pr_clauses_of m can.canon can.clauses_bwd ++ spc () ++
+  str"Forward clauses: " ++ pr_clauses_bwd m can.clauses_fwd
 
 let make_equiv m equiv =
   debug Pp.(fun () -> str"Unifying universes: " ++
@@ -1213,22 +1224,32 @@ let is_visited = function
   | Visited _ -> true
   | NoMark -> false
 
+(* We have v -> u in the clauses, we look for all chains of constraints u -> v and unify all
+   the universes involved. *)
 let simplify_clauses_between model v u =
   let canv = repr model v in
   let canu = repr model u in
   if canv == canu then Some model else
   let model = ref model in
   let rec forward prev acc visited canv : canonical_node list * canonical_node list =
-    if is_visited canv.mark then acc, visited else
     let () = canv.mark <- Visited 0 in
+    (* debug Pp.(fun () -> str"visiting " ++ pr_can !model canv); *)
     let visited = canv :: visited in
     let cls = canv.clauses_bwd in
     ClausesOf.fold (fun cli acc ->
       let (k, prems) = cli in
       NeList.fold (fun (l, _k') (acc, visited) ->
         let model', canl = repr_compress !model l in
+        (* debug Pp.(fun () -> str"looking at premise " ++ pr_can !model canl); *)
         let () = model := model' in
-        if is_visited canl.mark then acc, visited
+        if is_visited canl.mark then
+          begin
+            (* debug Pp.(fun () -> str"already visited: " ++ pr_can !model canl); *)
+            (* debug Pp.(fun () -> str"In of the accumulator? " ++ bool (CList.memq canl acc));       *)
+          (* We might be coming from another path *)
+          if CList.memq canl acc then (CList.unionq (canv :: prev) acc), visited
+          else acc, visited
+        end
         else
           if canl == canu then begin
             assert (Int.equal k 0); (* there would be a loop otherwise *)
@@ -1300,13 +1321,18 @@ type 'a check_function = t -> 'a -> 'a -> bool
 
 exception Found of canonical_node list
 
+let min_can_premise prem =
+  let g (l, k) = l.value - k in
+  let f prem minl = min minl (g prem) in
+  Premises.fold_ne f g prem
+
 let check_clause m (prems, (concl, k) : can_clause) =
   (* premises -> can + k ? *)
   let test_idx y kpath =
     match prems with
     | NeList.Tip (prem, k') -> Index.equal y prem.canon && kpath <= k'
     | _ ->
-        try let ky = NeList.find (fun prem -> y = prem.canon) prems in
+        try let ky = NeList.find (fun prem -> Index.equal y prem.canon) prems in
           kpath <= ky
         with Not_found -> false
   in
@@ -1318,6 +1344,9 @@ let check_clause m (prems, (concl, k) : can_clause) =
           kpath <= NeList.assq y prems
         else false
   in
+  (* let minval = min_can_premise prems + k in *)
+  (* if concl.value < minval then false else *)
+  (* If the clause holds then prems -> concl + k, so k0 + k <= concl.value *)
   let rec aux visited todo next_todo =
     match todo, next_todo with
     | [], [] -> visited
@@ -1453,11 +1482,6 @@ let update_model_value (m : model) can k' : model =
   else
     (debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ int k');
     change_node m { can with value = k' })
-
-let min_can_premise prem =
-  let g (l, k) = l.value - k in
-  let f prem minl = min minl (g prem) in
-  Premises.fold_ne f g prem
 
 let update_model ((prems, (can, k)) : can_clause) (m : model) : CanSet.t * model =
   let k0 = min_can_premise prems in
@@ -1703,7 +1727,8 @@ let constraints_of_clauses m clauses =
       let (k, prems) = cli in
       match prems with
       | NeList.Tip (v, 0) ->
-        let vp = Index.repr v m.table in
+        let vcan = repr m v in
+        let vp = Index.repr vcan.canon m.table in
         if k = 0 then Constraints.add (conclp, Le, vp) cstrs
         else if k = 1 then Constraints.add (conclp, Lt, vp) cstrs
         else assert false
