@@ -1,9 +1,9 @@
 ; Default flags for all Coq libraries.
 (env
- (dev     (flags :standard -rectypes -w -9-27@40@60-70 \ -short-paths))
+ (dev     (flags :standard -rectypes -w -9-27@60-70 \ -short-paths))
  (release (flags :standard -rectypes)
           (ocamlopt_flags :standard -O3 -unbox-closures))
- (ireport (flags :standard -rectypes -w -9-27-40+60-70)
+ (ireport (flags :standard -rectypes -w -9-27+60-70)
           (ocamlopt_flags :standard -O3 -unbox-closures -inlining-report)))
 
 ; Information about flags for release mode:

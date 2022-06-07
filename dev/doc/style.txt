@@ -66,6 +66,13 @@ OCaml Style:
     (setq tuareg-with-indent 0)
     (setq tuareg-function-indent 0)
     (setq tuareg-let-always-indent nil)
+  - when a match fails to compile due to unbound constructors (eg
+    "match x with VarRef x -> bla | ConstRef x -> bli | _ -> blo" when
+    GlobRef is not open) it can be resolved in several ways:
+    + locally or globally open GlobRef
+    + type annotate "x : GlobRef.t" (where it is introduced, or in the match expression, whichever is nicer)
+    + annotate the first branch "GlobRef.VarRef x -> bla"
+      this last solution is not robust to branch reordering so should not be prefered
 
 - Coding methodology
   - no "try ... with _ -> ..." which catches even Sys.Break (Ctrl-C),

@@ -128,8 +128,6 @@ type typed_vernac =
       run : pm:'inprog -> proof:'inproof -> 'outprog * 'outproof;
     } -> typed_vernac
 
-[@@@ocaml.warning "-40"]
-
 let vtdefault f =
   TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = No;
                 run = (fun ~pm:() ~proof:() ->
@@ -205,8 +203,6 @@ let vtopenproofprogram f =
                     let pm, proof = f ~pm in
                     pm, proof)
               }
-
-[@@@ocaml.warning "+40"]
 
 type vernac_command = ?loc:Loc.t -> atts:Attributes.vernac_flags -> unit -> typed_vernac
 
