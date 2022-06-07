@@ -102,8 +102,6 @@ module Make (Point:Point) = struct
   module PMap = Index.Map
   module PSet = Index.Set
 
-  type status = NoMark | Visited | WeakVisited | ToMerge
-
   (* Comparison on this type is pointer equality *)
   type canonical_node =
     { canon: Index.t;
@@ -134,15 +132,17 @@ module Make (Point:Point) = struct
     let hash x = Index.hash x.canon
   end
 
-  module Status = Hashtbl.Make(CN)
+  module Status = struct
+    module Internal = Hashtbl.Make(CN)
 
-  let make_status (g:t) = Status.create 17
+    (** we could experiment with creation size based on the size of [g] *)
+    let create (g:t) = Internal.create 17
 
-  let status_of status i =
-    try Status.find status i
-    with Not_found -> NoMark
-
-  let set_status status i s = Status.replace status i s
+    let mem = Internal.mem
+    let find = Internal.find
+    let replace = Internal.replace
+    let fold = Internal.fold
+  end
 
   (* Every Point.t has a unique canonical arc representative *)
 
@@ -295,8 +295,9 @@ module Make (Point:Point) = struct
     if count < 0 then begin
       raise_notrace (AbortBackward g)
     end;
-    if status_of status x = NoMark then begin
-      set_status status x Visited;
+    if Status.mem status x then b_traversed, count, g
+    else begin
+      Status.replace status x ();
       let gtge, x, g = get_gtge g x in
       let b_traversed, count, g =
         PSet.fold (fun y (b_traversed, count, g) ->
@@ -306,9 +307,8 @@ module Make (Point:Point) = struct
       in
       x.canon::b_traversed, count, g
     end
-    else b_traversed, count, g
 
-  let backward_traverse count g x = backward_traverse (make_status g) [] count g x
+  let backward_traverse count g x = backward_traverse (Status.create g) [] count g x
 
   let rec forward_traverse f_traversed g v_klvl x y =
     let y = repr g y in
@@ -333,11 +333,11 @@ module Make (Point:Point) = struct
 
   let rec find_to_merge status g x v =
     let x = repr g x in
-    match status_of status x with
-    | Visited -> false   | ToMerge -> true
-    | NoMark ->
+    match Status.find status x with
+    | merge -> merge
+    | exception Not_found ->
       if Index.equal x.canon v then begin
-        set_status status x ToMerge;
+        Status.replace status x true;
         true
       end
       else
@@ -347,13 +347,12 @@ module Make (Point:Point) = struct
                  let merge' = find_to_merge status g y v in
                  merge' || merge) x.gtge false
           in
-          set_status status x (if merge then ToMerge else Visited);
+          Status.replace status x merge;
           merge
         end
-    | _ -> assert false
 
   let find_to_merge g x v =
-    let status = make_status g in
+    let status = Status.create g in
     status, find_to_merge status g x v
 
   let get_new_edges g to_merge =
@@ -422,9 +421,10 @@ module Make (Point:Point) = struct
         begin
           let status, merge = find_to_merge g u v in
           if merge then
-            Status.fold (fun u status acc -> if status = ToMerge then u::acc else acc) status [],
-            List.filter (fun u -> status_of status (repr g u) <> ToMerge) b_traversed,
-            List.filter (fun u -> status_of status (repr g u) <> ToMerge) f_traversed
+            let not_merged u = try not (Status.find status (repr g u)) with Not_found -> true in
+            Status.fold (fun u merged acc -> if merged then u::acc else acc) status [],
+            List.filter not_merged b_traversed,
+            List.filter not_merged f_traversed
           else [], b_traversed, f_traversed
         end
       else [], b_traversed, f_traversed
@@ -563,16 +563,22 @@ module Make (Point:Point) = struct
          path (typically, the shortest path has length 1)
   *)
   exception Found
+  type visited = WeakVisited | Visited
   let search_path strict u v g =
     let rec loop status todo next_todo =
       match todo, next_todo with
       | [], [] -> () (* No path found *)
       | [], _ -> loop status next_todo []
       | (u, strict)::todo, _ ->
-        if status_of status u = Visited || (status_of status u = WeakVisited && strict)
+        let is_visited = match Status.find status u with
+          | Visited -> true
+          | WeakVisited -> strict
+          | exception Not_found -> false
+        in
+        if is_visited
         then loop status todo next_todo
         else begin
-          set_status status u (if strict then WeakVisited else Visited);
+          Status.replace status u (if strict then WeakVisited else Visited);
           if try PMap.find v.canon u.ltle || not strict
             with Not_found -> false
           then raise_notrace Found
@@ -593,7 +599,7 @@ module Make (Point:Point) = struct
     in
     if u == v then not strict
     else
-      try loop (make_status g) [u, strict] []; false
+      try loop (Status.create g) [u, strict] []; false
       with Found -> true
 
   (** Uncomment to debug the cycle detection algorithm. *)
