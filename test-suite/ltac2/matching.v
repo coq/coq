@@ -126,3 +126,14 @@ Module DeepType.
     | _, Cons _ _ => ()
     end.
 End DeepType.
+
+Module As.
+  Ltac2 option_flat x :=
+    match x with
+    | Some (Some _ as v) => v
+    | Some None | None => None
+    end.
+
+  (* this checks that we didn't parse the pattern as "Some (Some (_ as v))" *)
+  Ltac2 Eval option_flat (Some (Some 0)).
+End As.

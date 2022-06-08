@@ -199,6 +199,12 @@ let pr_partial_pat_gen =
   let open PartialPat in
   let rec pr_pat lvl pat = match pat.CAst.v with
     | Var x -> pr_name x
+    | As (p, x) ->
+      let paren = match lvl with
+        | E0 -> paren
+        | E1 | E2 | E3 | E4 | E5 -> fun x -> x
+      in
+      paren (hv 0 (pr_pat E1 p ++ spc() ++ str "as" ++ spc () ++ Id.print x))
     | Ref (Tuple 0, _) -> str "()"
     | Ref (Tuple _, args) ->
       let paren = match lvl with
@@ -248,6 +254,7 @@ let rec partial_pat_of_glb_pat pat =
     | GPatVar x -> Var x
     | GPatRef (ctor,pats) -> Ref (ctor, List.map partial_pat_of_glb_pat pats)
     | GPatOr pats -> Or (List.map partial_pat_of_glb_pat pats)
+    | GPatAs (p,x) -> As (partial_pat_of_glb_pat p, x)
   in
   CAst.make pat
 

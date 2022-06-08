@@ -105,6 +105,7 @@ let match_ctor_against ctor v =
 let rec match_pattern_against ist pat v =
   match pat with
   | GPatVar x -> push_name ist x v
+  | GPatAs (p,x) -> match_pattern_against (push_name ist (Name x) v) p v
   | GPatRef (ctor,pats) ->
     let vs = match_ctor_against ctor v in
     List.fold_left_i (fun i ist pat -> match_pattern_against ist pat vs.(i)) 0 ist pats

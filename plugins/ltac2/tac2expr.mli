@@ -94,6 +94,7 @@ type raw_patexpr_r =
 | CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
 | CPatCnv of raw_patexpr * raw_typexpr
 | CPatOr of raw_patexpr list
+| CPatAs of raw_patexpr * lident
 
 and raw_patexpr = raw_patexpr_r CAst.t
 
@@ -135,12 +136,14 @@ type glb_pat =
   | GPatVar of Name.t
   | GPatRef of ctor_data_for_patterns or_tuple * glb_pat list
   | GPatOr of glb_pat list
+  | GPatAs of glb_pat * Id.t
 
 module PartialPat : sig
   type r =
     | Var of Name.t
     | Ref of ctor_data_for_patterns or_tuple * t list
     | Or of t list
+    | As of t * Id.t
     | Extension
   and t = r CAst.t
 end

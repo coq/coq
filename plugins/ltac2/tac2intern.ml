@@ -581,7 +581,7 @@ let rec intern_patexpr env {loc;v=pat} = match pat with
 | CPatRef (qid, pl) ->
   let kn = get_constructor env qid in
   GEPatRef (kn, List.map (fun p -> intern_patexpr env p) pl)
-| CPatCnv _ | CPatOr _ ->
+| CPatCnv _ | CPatOr _ | CPatAs _ ->
   raise HardCase
 
 type pattern_kind =
@@ -624,6 +624,7 @@ let add_name accu = function
 let rec ids_of_pattern accu {v=pat} = match pat with
 | CPatVar Anonymous -> accu
 | CPatVar (Name id) -> Id.Set.add id accu
+| CPatAs (p,id) -> ids_of_pattern (Id.Set.add id.v accu) p
 | CPatRef (_, pl) | CPatOr pl ->
   List.fold_left ids_of_pattern accu pl
 | CPatCnv (pat, _) -> ids_of_pattern accu pat
@@ -638,7 +639,7 @@ let is_unit_pattern = function
 
 let extract_pattern_type ({loc;v=p} as pat) = match p with
 | CPatCnv (pat, ty) -> pat, Some ty
-| CPatVar _ | CPatRef _ | CPatOr _ ->
+| CPatVar _ | CPatRef _ | CPatOr _ | CPatAs _ ->
   if is_unit_pattern p then
     (* Special handling of () patterns *)
     let t_unit = CAst.make ?loc @@ CTypRef (AbsKn (Tuple 0), []) in
@@ -721,6 +722,7 @@ type wip_pat_r =
   | PatVar of Name.t
   | PatRef of ctor_data_for_patterns or_tuple * wip_pat list
   | PatOr of wip_pat list
+  | PatAs of wip_pat * lident
 and wip_pat = wip_pat_r CAst.t
 
 let catchall = CAst.make (PatVar Anonymous)
@@ -739,6 +741,17 @@ let rec intern_pat_rec env cpat t =
         let patvars = Id.Map.singleton id (loc,t) in
         patvars, CAst.make ?loc (PatVar x)
     end
+  | CPatAs (p, x) ->
+    let patvars, p = intern_pat_rec env p t in
+    let patvars = Id.Map.update x.v (function
+        | Some _ ->
+          CErrors.user_err ?loc
+            Pp.(str "Variable " ++ Id.print x.v ++
+                str " is bound several times in this matching.")
+        | None -> Some (x.loc,t))
+        patvars
+    in
+    patvars, CAst.make ?loc (PatAs (p, x))
   | CPatRef (ctor,args) ->
     let ctor = get_constructor env ctor in
     let ctor, argts =
@@ -764,7 +777,9 @@ let rec intern_pat_rec env cpat t =
     let patvars, args = CList.fold_left2_map (fun patvars arg argt ->
         let argvars, arg = intern_pat_rec env arg argt in
         let patvars = Id.Map.union (fun id _ (loc,_) ->
-            CErrors.user_err ?loc Pp.(str "Variable " ++ Id.print id ++ str " is bound several times in this matching."))
+            CErrors.user_err ?loc
+              Pp.(str "Variable " ++ Id.print id ++
+                  str " is bound several times in this matching."))
             patvars argvars
         in
         patvars, arg)
@@ -802,6 +817,7 @@ let rec glb_of_wip_pat_r = function
   | PatVar x -> GPatVar x
   | PatRef (ctor,pats) -> GPatRef (ctor, List.map glb_of_wip_pat pats)
   | PatOr pats -> GPatOr (List.map glb_of_wip_pat pats)
+  | PatAs (p,x) -> GPatAs (glb_of_wip_pat p, x.v)
 and glb_of_wip_pat pat = glb_of_wip_pat_r pat.CAst.v
 
 (** Pattern analysis for non-exhaustiveness and (TODO) useless patterns based on
@@ -812,6 +828,7 @@ let default_matrix =
     | {v=PatRef _} :: _ -> []
     | {v=PatVar _} :: rest -> [rest]
     | {v=PatOr pats} :: rest -> List.map_append default_row (List.map (fun x -> x::rest) pats)
+    | {v=PatAs (p,_)} :: rest -> default_row (p::rest)
   in
   List.map_append default_row
 
@@ -819,6 +836,7 @@ let rec root_ctors = function
   | {v=PatVar _} -> []
   | {v=PatRef (ctor,_)} -> [ctor]
   | {v=PatOr pats} -> List.map_append root_ctors pats
+  | {v=PatAs (p,_)} -> root_ctors p
 
 let ctor_nargs = function
   | Tuple n -> n
@@ -939,6 +957,7 @@ let specialized_matrix pats ctor =
       else []
     | {v=PatVar _} :: rest -> [List.append (List.make (ctor_nargs ctor) catchall) rest]
     | {v=PatOr pats} :: rest -> List.map_append special_row (List.map (fun x -> x::rest) pats)
+    | {v=PatAs (p,_)} :: rest -> special_row (p::rest)
   in
   List.map_append special_row pats
 
@@ -947,6 +966,7 @@ and lift_interned_pat_r = let open PartialPat in function
     | PatVar x -> Var x
     | PatRef (ctor, pats) -> Ref (ctor, List.map lift_interned_pat pats)
     | PatOr pats -> Or (List.map lift_interned_pat pats)
+    | PatAs (p,x) -> As (lift_interned_pat p, x.v)
 
 (* invariant: ts is n types, pats is a matrix with n columns (nth pats i is row i) *)
 let rec missing_matches env ts pats n =
@@ -1198,7 +1218,7 @@ and intern_let_rec env loc ids el e =
   let map env (pat, t, e) =
     let na = match pat.v with
     | CPatVar na -> na
-    | CPatRef _ | CPatCnv _ | CPatOr _ ->
+    | CPatRef _ | CPatCnv _ | CPatOr _ | CPatAs _ ->
       user_err ?loc:pat.loc (str "This kind of pattern is forbidden in let-rec bindings")
     in
     let id = fresh_id env in
@@ -1333,7 +1353,7 @@ and intern_case env loc e pl =
             else warn_redundant_clause ?loc ()
         in
         brT
-      | CPatCnv _ | CPatOr _ ->
+      | CPatCnv _ | CPatOr _ | CPatAs _ ->
         raise HardCase
       in
       let () = unify ?loc:br.loc env tbr ret in
@@ -1691,6 +1711,8 @@ and globalize_pattern ids ({loc;v=pr} as p) = match pr with
 | CPatOr pl ->
   let pl = List.map (fun p -> globalize_pattern ids p) pl in
   CAst.make ?loc @@ CPatOr pl
+| CPatAs (p,x) ->
+  CAst.make ?loc @@ CPatAs (globalize_pattern ids p, x)
 
 (** Kernel substitution *)
 
@@ -1731,6 +1753,10 @@ let rec subst_glb_pat subst = function
     let pats' = List.Smart.map (subst_glb_pat subst) pats in
     if pats' == pats then pat0
     else GPatOr pats'
+  | GPatAs (p,x) as pat0 ->
+    let p' = subst_glb_pat subst p in
+    if p' == p then pat0
+    else GPatAs (p',x)
 
 let rec subst_expr subst e = match e with
 | GTacAtm _ | GTacVar _ | GTacPrm _ -> e
@@ -1865,6 +1891,9 @@ let rec subst_rawpattern subst ({loc;v=pr} as p) = match pr with
 | CPatOr pl ->
   let pl' = List.Smart.map (fun p -> subst_rawpattern subst p) pl in
   if pl' == pl then p else CAst.make ?loc @@ CPatOr pl'
+| CPatAs (pat,x) ->
+  let pat' = subst_rawpattern subst pat in
+  if pat' == pat then p else CAst.make ?loc @@ CPatAs (pat', x)
 
 (** Used for notations *)
 let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with

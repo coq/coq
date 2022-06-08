@@ -292,7 +292,7 @@ let fresh_var avoid x =
 
 let extract_pattern_type ({loc;v=p} as pat) = match p with
 | CPatCnv (pat, ty) -> pat, Some ty
-| CPatVar _ | CPatRef _ | CPatOr _ -> pat, None
+| CPatVar _ | CPatRef _ | CPatOr _ | CPatAs _ -> pat, None
 
 (** Mangle recursive tactics *)
 let inline_rec_tactic tactics =

@@ -127,6 +127,7 @@ GRAMMAR EXTEND Gram
       | p = tac2pat; "|"; pl = LIST1 tac2pat SEP "|" ->
         { let pl = p :: pl in
           CAst.make ~loc @@ CPatOr pl }
+      | p = tac2pat; "as"; id = lident -> { CAst.make ~loc @@ CPatAs (p,id) }
       ]
     | "0"
       [ "_" -> { CAst.make ~loc @@ CPatVar Anonymous }
