@@ -645,17 +645,17 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags
   let should_suggest =
     entry.proof_entry_opaque
     && not (List.is_empty (Global.named_context()))
-    && Option.is_empty entry.proof_entry_secctx
   in
+  let no_sec_vars = Option.is_empty entry.proof_entry_secctx  in
   let dref = match scope with
   | Locality.Discharge ->
     let () = declare_variable_core ~name ~kind (SectionLocalDef entry) in
-    if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
+    if should_suggest then Proof_using.suggest_variable (Global.env ()) name no_sec_vars;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
     let kn = declare_constant ~name ~local ~kind ~typing_flags (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
-    if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
+    if should_suggest then Proof_using.suggest_constant (Global.env ()) kn no_sec_vars;
     gr
   in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in

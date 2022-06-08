@@ -217,7 +217,8 @@ GRAMMAR EXTEND Gram
         l = LIST0
           [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
           { (id,(bl,c)) } ] ->
-          { VernacStartTheoremProof (thm, (id,(bl,c))::l) }
+          { Update_proof_using.save_theorem loc;
+            VernacStartTheoremProof (thm, (id,(bl,c))::l) }
       | stre = assumption_token; nl = inline; bl = assum_list ->
           { VernacAssumption (stre, nl, bl) }
       | tk = assumptions_token; nl = inline; bl = assum_list ->
@@ -693,8 +694,9 @@ GRAMMAR EXTEND Gram
   (* Proof using *)
   section_subset_expr:
     [ [ test_only_starredidentrefs; l = LIST0 starredidentref ->
-          { starredidentreflist_to_expr l }
-      | e = ssexpr -> { e } ]]
+          { Update_proof_using.save_section_vars_list loc;
+            starredidentreflist_to_expr l }
+      | e = ssexpr -> { Update_proof_using.save_section_vars_list loc; e } ]]
   ;
   starredidentref:
     [ [ i = identref -> { SsSingl i }

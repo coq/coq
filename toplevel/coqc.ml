@@ -36,6 +36,7 @@ coqc specific options:\
 \n  -vok                   process the file by loading .vos instead of .vo files for\
 \n                         dependencies, and produce an empty .vok file on success\
 \n  -vio                   process statements and suspend opaque proofs, and produce a .vio file\
+\n  -update-proof-using    Update source files using info from Set Suggest Proof Using\n
 \n\
 \nUndocumented:\
 \n  -quick                 (deprecated) alias for -vio\

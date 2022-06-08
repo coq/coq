@@ -131,10 +131,19 @@ let record_proof_using expr =
 
 let debug_proof_using = CDebug.create ~name:"proof-using" ()
 
+let suggest_proof_using = ref false
+
+let () =
+  Goptions.(declare_bool_option
+    { optdepr  = false;
+      optkey   = ["Suggest";"Proof";"Using"];
+      optread  = (fun () -> !suggest_proof_using);
+      optwrite = ((:=) suggest_proof_using) })
+
 (* Variables in [skip] come from after the definition, so don't count
    for "All". Used in the variable case since the env contains the
    variable itself. *)
-let suggest_common env ppid used ids_typ skip =
+let suggest_common env ppid used ids_typ skip no_sec_vars =
   let module S = Id.Set in
   let open Pp in
   let pr_set parens s =
@@ -157,52 +166,52 @@ let suggest_common env ppid used ids_typ skip =
       str "all_needed " ++ pr_set false all_needed ++ fnl() ++
       str "Type* "      ++ pr_set false fwd_typ)
   in
-  let valid_exprs = ref [] in
-  let valid e = valid_exprs := e :: !valid_exprs in
-  if S.is_empty needed then valid (str "Type");
-  if S.equal all_needed fwd_typ then valid (str "Type*");
-  if S.equal all all_needed then valid(str "All");
-  valid (pr_set false needed);
-  Feedback.msg_info (
-    str"The proof of "++ ppid ++ spc() ++
-    str "should start with one of the following commands:"++spc()++
-    v 0 (
-    prlist_with_sep cut (fun x->str"Proof using " ++x++ str". ") !valid_exprs));
-  if Aux_file.recording ()
-  then
-    let s = string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs) in
-    record_proof_using s
 
-let suggest_proof_using = ref false
+  let items =
+    if not (Id.Set.is_empty needed) then
+      List.map (fun e -> Id.to_string e) (Id.Set.elements needed)
+    else if S.equal all all_needed then
+      ["All"]
+    else if S.equal all_needed fwd_typ then
+      ["Type*"]
+    else
+      ["Type"]
+  in
+  Update_proof_using.save_needed items;
 
-let () =
-  Goptions.(declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Suggest";"Proof";"Using"];
-      optread  = (fun () -> !suggest_proof_using);
-      optwrite = ((:=) suggest_proof_using) })
-
-let suggest_constant env kn =
-  if !suggest_proof_using
-  then begin
-    let open Declarations in
-    let body = lookup_constant kn env in
-    let used = Id.Set.of_list @@ List.map NamedDecl.get_id body.const_hyps in
-    let ids_typ = global_vars_set env body.const_type in
-    suggest_common env (Printer.pr_constant env kn) used ids_typ Id.Set.empty
+  if no_sec_vars && !suggest_proof_using then begin
+    let valid_exprs = ref [] in
+    let valid e = valid_exprs := e :: !valid_exprs in
+    if S.is_empty needed then valid (str "Type");
+    if S.equal all_needed fwd_typ then valid (str "Type*");
+    if S.equal all all_needed then valid(str "All");
+    valid (pr_set false needed);
+    Feedback.msg_info (
+      str"The proof of "++ ppid ++ spc() ++
+      str "should start with one of the following commands:"++spc()++
+      v 0 (
+      prlist_with_sep cut (fun x->str"Proof using " ++x++ str". ") !valid_exprs));
+    if Aux_file.recording ()
+    then
+      let s = string_of_ppcmds (prlist_with_sep (fun _ -> str";")  (fun x->x) !valid_exprs) in
+      record_proof_using s
   end
 
-let suggest_variable env id =
-  if !suggest_proof_using
-  then begin
-    match lookup_named id env with
-    | LocalDef (_,body,typ) ->
-      let ids_typ = global_vars_set env typ in
-      let ids_body = global_vars_set env body in
-      let used = Id.Set.union ids_body ids_typ in
-      suggest_common env (Id.print id) used ids_typ (Id.Set.singleton id)
-    | LocalAssum _ -> assert false
-  end
+let suggest_constant env kn no_sec_vars =
+  let open Declarations in
+  let body = lookup_constant kn env in
+  let used = Id.Set.of_list @@ List.map NamedDecl.get_id body.const_hyps in
+  let ids_typ = global_vars_set env body.const_type in
+  suggest_common env (Printer.pr_constant env kn) used ids_typ Id.Set.empty no_sec_vars
+
+let suggest_variable env id no_sec_vars =
+  match lookup_named id env with
+  | LocalDef (_,body,typ) ->
+    let ids_typ = global_vars_set env typ in
+    let ids_body = global_vars_set env body in
+    let used = Id.Set.union ids_body ids_typ in
+    suggest_common env (Id.print id) used ids_typ (Id.Set.singleton id) no_sec_vars
+  | LocalAssum _ -> assert false
 
 let value = ref None
 

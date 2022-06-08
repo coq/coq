@@ -217,8 +217,11 @@ let compile_file opts stm_opts copts injections (f_in, echo) =
   if !Flags.beautify then
     Flags.with_option Flags.beautify_file
       (fun f_in -> compile opts stm_opts copts injections ~echo ~f_in ~f_out) f_in
-  else
-    compile opts stm_opts copts injections ~echo ~f_in ~f_out
+  else begin
+    if copts.update_proof_using then Update_proof_using.start_file f_in;
+    compile opts stm_opts copts injections ~echo ~f_in ~f_out;
+    if copts.update_proof_using then Update_proof_using.end_file ()
+  end
 
 let compile_file opts stm_opts copts injections =
   Option.iter (compile_file opts stm_opts copts injections) copts.compile_file

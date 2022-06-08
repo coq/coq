@@ -26,6 +26,7 @@ type t =
   ; glob_out    : Dumpglob.glob_output
 
   ; output_context : bool
+  ; update_proof_using : bool
   }
 
 let default =
@@ -44,6 +45,7 @@ let default =
   ; glob_out = Dumpglob.MultFiles
 
   ; output_context = false
+  ; update_proof_using = false
   }
 
 let depr opt =
@@ -208,6 +210,9 @@ let parse arglist : t =
         |"-dump-glob" ->
           let file = next () in
           { oval with glob_out = Dumpglob.File file }
+
+        |"-update-proof-using" ->
+          { oval with update_proof_using = true }
 
         (* Rest *)
         | s ->

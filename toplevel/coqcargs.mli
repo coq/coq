@@ -40,6 +40,7 @@ type t =
   ; glob_out    : Dumpglob.glob_output
 
   ; output_context : bool
+  ; update_proof_using : bool
   }
 
 val default : t
