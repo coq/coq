@@ -82,6 +82,7 @@ Module OrderedType_from_Alt (O:OrderedTypeAlt) <: OrderedType.
  case (x ?= y); [ left | right | right ]; auto; discriminate.
  Defined.
 
+ Module Hints. End Hints.
 End OrderedType_from_Alt.
 
 (** From the original presentation to this alternative one. *)

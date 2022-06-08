@@ -1167,6 +1167,7 @@ Section Elt.
  exact (@Raw.map2_2 elt elt' elt'' f (this m) (sorted m) (this m') (sorted m') x).
  Qed.
 
+ Module Hints. End Hints.
 End Make.
 
 Module Make_ord (X: OrderedType)(D : OrderedType) <:

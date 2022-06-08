@@ -53,6 +53,8 @@ Module PairDecidableType(D1 D2:DecidableType) <: DecidableType.
 
  Definition eq x y := D1.eq (fst x) (fst y) /\ D2.eq (snd x) (snd y).
 
+ Import D1.Hints D2.Hints.
+
  Lemma eq_refl : forall x : t, eq x x.
  Proof.
  intros (x1,x2); red; simpl; auto.
@@ -74,6 +76,7 @@ Module PairDecidableType(D1 D2:DecidableType) <: DecidableType.
  destruct (D1.eq_dec x1 y1); destruct (D2.eq_dec x2 y2); intuition.
  Defined.
 
+ Module Hints. End Hints.
 End PairDecidableType.
 
 (** Similarly for pairs of UsualDecidableType *)
@@ -93,4 +96,5 @@ Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: UsualDecidableType.
  (right; injection; auto).
  Defined.
 
+ Module Hints. End Hints.
 End PairUsualDecidableType.

@@ -253,6 +253,7 @@ Module Type WSfun (E : DecidableType).
     remove_2 find_1 fold_1 map_1 mapi_1 mapi_2
     : map.
 
+  Module Hints. End Hints.
 End WSfun.
 
 

@@ -68,6 +68,8 @@ split; intros (e0,H0); exists e0.
 - apply (MapsTo_1 (E.eq_sym H) H0); auto.
 Qed.
 
+Import E.Hints.
+
 Lemma MapsTo_iff : forall m x y e, E.eq x y -> (MapsTo x e m <-> MapsTo y e m).
 Proof.
 split; apply MapsTo_1; auto.
@@ -513,6 +515,8 @@ case_eq (find x m); intros.
     * rewrite (find_1 H4) in H1; discriminate.
 Qed.
 
+Import E.Hints.
+
 Lemma elements_o : forall m x,
  find x m = findA (eqb x) (elements m).
 Proof.
@@ -757,6 +761,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Notation eqke := (@eq_key_elt elt).
   Notation eqk := (@eq_key elt).
+
+  Import E.Hints.
 
   Instance eqk_equiv : Equivalence eqk.
   Proof. unfold eq_key; split; eauto. Qed.
@@ -1732,6 +1738,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   - rewrite <- Hm1, <- Hm2, <- Hm3; auto.
   - rewrite Hm1, Hm2, Hm3; auto.
  Qed.
+
+ Import E.Hints.
 
  Add Parametric Morphism elt : (@update elt)
    with signature Equal ==> Equal ==> Equal as update_m.

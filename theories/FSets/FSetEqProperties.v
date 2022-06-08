@@ -87,6 +87,8 @@ Proof.
 auto with set.
 Qed.
 
+Import E.Hints.
+
 Lemma add_mem_1: mem x (add x s)=true.
 Proof.
 auto with set.
@@ -650,6 +652,8 @@ Proof.
 auto with set.
 Qed.
 
+Import E.Hints.
+
 Lemma filter_add_1 : forall s x, f x = true ->
  filter f (add x s) [=] add x (filter f s).
 Proof.
@@ -907,6 +911,8 @@ intros s;pattern s; apply set_rec.
   unfold Empty; intros.
   rewrite filter_iff; auto; set_iff; tauto.
 Qed.
+
+Import E.Hints.
 
 Lemma fold_compat :
   forall (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)

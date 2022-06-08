@@ -143,6 +143,8 @@ Qed.
 
 (* Not part of the exported specifications, used later for [combine]. *)
 
+Import X.Hints.
+
 Lemma find_eq : forall m (Hm:NoDupA m) x x',
    X.eq x x' -> find x m = find x' m.
 Proof.
@@ -531,6 +533,8 @@ Proof.
  - inversion H.
  - destruct a; inversion H; auto.
 Qed.
+
+Import X.Hints.
 
 (** Specification of [mapi] *)
 
@@ -997,5 +1001,6 @@ Section Elt.
  exact (@Raw.map2_2 elt elt' elt'' f (this m) (NoDup m) (this m') (NoDup m') x).
  Qed.
 
+ Module Hints. End Hints.
 End Make.
 

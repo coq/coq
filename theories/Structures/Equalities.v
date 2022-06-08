@@ -54,10 +54,14 @@ Module Type IsEqOrig (Import E:Eq').
   Axiom eq_refl : forall x : t, x==x.
   Axiom eq_sym : forall x y : t, x==y -> y==x.
   Axiom eq_trans : forall x y z : t, x==y -> y==z -> x==z.
-  #[global]
-  Hint Immediate eq_sym : core.
-  #[global]
-  Hint Resolve eq_refl eq_trans : core.
+  Module Hints.
+    (** In order to avoid polluting the global hint database, we put these
+      equality hints into a Module. When implementing IsEqOrig, you will have to
+      include an empty [Module Hints. End Hints.]. *)
+    #[export] Hint Immediate eq_sym : core.
+    #[export] Hint Resolve eq_refl : core. #[export] Hint Resolve eq_trans :
+    core.
+  End Hints.
 End IsEqOrig.
 
 (** * Types with decidable equality *)
@@ -134,6 +138,7 @@ Module BackportEq (E:Eq)(F:IsEq E) <: IsEqOrig E.
  Definition eq_refl := @Equivalence_Reflexive _ _ F.eq_equiv.
  Definition eq_sym := @Equivalence_Symmetric _ _ F.eq_equiv.
  Definition eq_trans := @Equivalence_Transitive _ _ F.eq_equiv.
+ Module Hints. End Hints.
 End BackportEq.
 
 Module UpdateEq (E:Eq)(F:IsEqOrig E) <: IsEq E.
@@ -251,6 +256,7 @@ Module Type UsualIsEqOrig (E:UsualEq) <: IsEqOrig E.
  Definition eq_refl := @Logic.eq_refl E.t.
  Definition eq_sym := @Logic.eq_sym E.t.
  Definition eq_trans := @Logic.eq_trans E.t.
+ Module Hints. End Hints.
 End UsualIsEqOrig.
 
 Module Type UsualEqualityType <: EqualityType

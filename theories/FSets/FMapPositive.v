@@ -1067,6 +1067,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
            ++ try discriminate.
   Qed.
 
+  Module Hints. End Hints.
 End PositiveMap.
 
 (** Here come some additional facts about this implementation.

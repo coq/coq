@@ -30,6 +30,7 @@ Module Type UsualOrderedType.
  Axiom lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
  Parameter compare : forall x y : t, Compare lt eq x y.
  Parameter eq_dec : forall x y : t, { eq x y } + { ~ eq x y }.
+ Module Hints. End Hints.
 End UsualOrderedType.
 
 (** a [UsualOrderedType] is in particular an [OrderedType]. *)
@@ -65,6 +66,7 @@ Module Nat_as_OT <: UsualOrderedType.
 
   Definition eq_dec := eq_nat_dec.
 
+  Module Hints. End Hints.
 End Nat_as_OT.
 
 
@@ -98,6 +100,7 @@ Module Z_as_OT <: UsualOrderedType.
 
   Definition eq_dec := Z.eq_dec.
 
+  Module Hints. End Hints.
 End Z_as_OT.
 
 (** [positive] is an ordered type with respect to the usual order on natural numbers. *)
@@ -130,6 +133,7 @@ Module Positive_as_OT <: UsualOrderedType.
 
   Definition eq_dec := Pos.eq_dec.
 
+  Module Hints. End Hints.
 End Positive_as_OT.
 
 
@@ -156,6 +160,7 @@ Module N_as_OT <: UsualOrderedType.
 
   Definition eq_dec := N.eq_dec.
 
+  Module Hints. End Hints.
 End N_as_OT.
 
 
@@ -223,6 +228,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  - assert (~ eq y x); auto using lt_not_eq, eq_sym.
  Defined.
 
+ Module Hints. End Hints.
 End PairOrderedType.
 
 
@@ -314,6 +320,7 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   - right. intro. subst y. now rewrite (Pos.compare_refl x) in *.
   Qed.
 
+  Module Hints. End Hints.
 End PositiveOrderedTypeBits.
 
 Module Ascii_as_OT <: UsualOrderedType.
@@ -389,6 +396,7 @@ Module Ascii_as_OT <: UsualOrderedType.
     end Logic.eq_refl.
 
   Definition eq_dec (x y : ascii): {x = y} + { ~ (x = y)} := ascii_dec x y.
+  Module Hints. End Hints.
 End Ascii_as_OT.
 
 (** [String] is an ordered type with respect to the usual lexical order. *)
@@ -545,4 +553,5 @@ Module String_as_OT <: UsualOrderedType.
     end Logic.eq_refl.
 
   Definition eq_dec (x y : string): {x = y} + { ~ (x = y)} := string_dec x y.
+  Module Hints. End Hints.
 End String_as_OT.

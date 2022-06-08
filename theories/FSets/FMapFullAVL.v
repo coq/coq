@@ -643,6 +643,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  - apply (is_bst m').
  Qed.
 
+ Module Hints. End Hints.
 End IntMake.
 
 

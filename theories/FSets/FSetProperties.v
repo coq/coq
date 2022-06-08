@@ -289,6 +289,8 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   (** * Properties of elements *)
 
+  Import E.Hints.
+
   Lemma elements_Empty : forall s, Empty s <-> elements s = nil.
   Proof.
   intros.

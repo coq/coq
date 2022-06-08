@@ -58,6 +58,7 @@ Module Type OrderedType.
      redundant field allows seeing an OrderedType as a DecidableType. *)
   Parameter eq_dec : forall x y, { eq x y } + { ~ eq x y }.
 
+  Module Hints. End Hints.
 End OrderedType.
 
 Module MOT_to_OT (Import O : MiniOrderedType) <: OrderedType.
@@ -69,6 +70,7 @@ Module MOT_to_OT (Import O : MiniOrderedType) <: OrderedType.
    assert (~ eq y x)...
   Defined.
 
+  Module Hints. End Hints.
 End MOT_to_OT.
 
 (** * Ordered types properties *)

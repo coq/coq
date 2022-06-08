@@ -52,6 +52,8 @@ Module KeyDecidableType(D:DecidableType).
 
   (* eqk, eqke are equalities *)
 
+  Import Hints.
+
   Lemma eqk_refl : forall e, eqk e e.
   Proof. auto. Qed.
 

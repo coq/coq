@@ -102,4 +102,5 @@ Module BoolOrd <: UsualDecidableTypeFull <: OrderedTypeFull <: TotalOrder.
   Definition eq_trans := @eq_Transitive bool.
   Definition eqb := eqb.
   Definition eqb_eq := eqb_true_iff.
+  Module Hints. End Hints.
 End BoolOrd.

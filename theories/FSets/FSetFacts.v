@@ -34,6 +34,8 @@ Section IffSpec.
 Variable s s' s'' : t.
 Variable x y z : elt.
 
+Import E.Hints.
+
 Lemma In_eq_iff : E.eq x y -> (In x s <-> In y s).
 Proof.
 split; apply In_1; auto.
@@ -242,6 +244,8 @@ generalize (mem_iff (filter f s) x)(mem_iff s x)(filter_iff s x H).
 destruct (mem x s); destruct (mem x (filter f s)); destruct (f x); simpl; intuition.
 Qed.
 
+Import E.Hints.
+
 Lemma for_all_b : compat_bool E.eq f ->
   for_all f s = forallb f (elements s).
 Proof.
@@ -342,6 +346,8 @@ generalize (H0 x); clear H0; rewrite (In_eq_iff s' H).
 generalize (mem_iff s x)(mem_iff s' y).
 destruct (mem x s); destruct (mem y s'); intuition.
 Qed.
+
+Import E.Hints.
 
 #[global]
 Instance singleton_m : Proper (E.eq ==> Equal) singleton.
