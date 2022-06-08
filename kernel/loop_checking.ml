@@ -835,7 +835,7 @@ let check_model_clauses_of_aux m can cls =
     | None -> cwm
     | Some (can, _ as cwm') ->
       debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ int can.value);
-      debug Pp.(fun () -> str" due to clauses " ++ pr_clauses_bwd m (ClausesBackward.singleton (can.canon, ClausesOf.singleton cls)));
+      debug Pp.(fun () -> str" due to clause " ++ pr_clauses_bwd m (ClausesBackward.singleton (can.canon, ClausesOf.singleton cls)));
       cwm')
     cls (can, m)
   in (can', m')
@@ -847,7 +847,6 @@ let check_model_fwd_clauses_aux (cls : ClausesBackward.t) (acc : bool * (CanSet.
     let can', m' = check_model_clauses_of_aux m can cls in
     if can == can' then (* not modifed *) acc
     else
-       (* (true, (CanSet.add can.canon (can.clauses_bwd, can.clauses_fwd) w, m'))) *)
       let upd = function
         | None -> Some (can.clauses_bwd, can.clauses_fwd)
         | Some _ -> Some (can.clauses_bwd, can.clauses_fwd)
@@ -884,7 +883,8 @@ let canonical_cardinal m = m.canonical
 
 let can_all_premises_in m w prem =
   Premises.for_all (fun (l, _) -> CanSet.mem (repr m l).canon w) prem
-
+let _ise = ClausesOf.is_empty
+let _ise' = ClausesBackward.is_empty
 (* Partition the clauses according to the presence of w in the premises, and only w in the conclusions *)
 let partition_clauses_fwd model (w : CanSet.t) : CanSet.t * CanSet.t * CanSet.t =
   CanSet.fold (fun idx (bwd, fwd) (allw, conclw, conclnw) ->
@@ -892,27 +892,29 @@ let partition_clauses_fwd model (w : CanSet.t) : CanSet.t * CanSet.t * CanSet.t 
     let fwdw, fwdnw = ClausesBackward.partition (fun concl _clsinfo -> CanSet.mem (repr model concl).canon w) fwd in
     let allw =
       if ClausesOf.is_empty bwdw && ClausesBackward.is_empty fwdw then allw
-      else CanSet.add idx (bwdw, fwdw) allw (* Premises and conclusions in w *)
+      else
+        CanSet.add idx (bwdw, fwdw) allw (* Premises and conclusions in w *)
     in
     let conclw =
       if ClausesOf.is_empty bwdnw then conclw
-      else CanSet.add idx (bwdnw, ClausesBackward.empty) conclw (* Conclusions in w, premises not in w *)
+      else
+        CanSet.add idx (bwdnw, ClausesBackward.empty) conclw (* Conclusions in w, premises not in w *)
     in
     let conclnw =
       if ClausesBackward.is_empty fwdnw then conclnw
-      else CanSet.add idx (ClausesOf.empty, fwdnw) conclnw in (* Conclusions not in w, Premises in w *)
+      else
+         CanSet.add idx (ClausesOf.empty, fwdnw) conclnw in (* Conclusions not in w, Premises in w *)
     (allw, conclw, conclnw))
     w (CanSet.empty, CanSet.empty, CanSet.empty)
 
-let partition_clauses_fwd = time2 (Pp.str"parti tion clauses fwd") partition_clauses_fwd
+let partition_clauses_fwd = time2 (Pp.str"partition clauses fwd") partition_clauses_fwd
 
 let check model (w : CanSet.t) =
   let cV = canonical_cardinal model in
   debug_check_invariants model;
-  let rec inner_loop premconclw conclw m =
+  let rec inner_loop cardW premconclw conclw m =
     (* Should consider only clauses with conclusions in w *)
     (* Partition the clauses acscording to the presence of w in the premises *)
-    let cardW = CanSet.cardinal premconclw in
     debug_loop Pp.(fun () -> str "Inner loop on " ++ int cardW ++ str" universes: " ++
       str " Premises and conclusions in w: " ++ pr_w m premconclw ++
       str " Conclusions in w: " ++ pr_w m conclw);
@@ -935,25 +937,25 @@ let check model (w : CanSet.t) =
     match check_clauses_with_premises u m with
     | None -> Model (u, m)
     | Some (w, m) ->
-      if Int.equal (CanSet.cardinal w) cV
-      then (debug_loop Pp.(fun () -> str"Found a loop"); Loop)
+      let cardW = (CanSet.cardinal w) in
+      if Int.equal cardW cV
+      then (debug_loop Pp.(fun () -> str"Found a loop on " ++ int cardW ++ str" universes" ); Loop)
       else
         let (premconclw, conclw, premw) = partition_clauses_fwd m w in
-        debug_loop Pp.(fun () -> str"partitioned clauses: forward from and to w " ++ spc () ++
-          CanSet.pr { m with entries = PMap.empty } premconclw);
-        debug_loop Pp.(fun () -> str"partitioned clauses: forward to w not from w: " ++ spc () ++
-          CanSet.pr { m with entries = PMap.empty } conclw);
-        debug_loop Pp.(fun () -> str"partitioned clauses: backward not from w, forward to w " ++ spc () ++
-          CanSet.pr { m with entries = PMap.empty } premw);
+        debug_loop Pp.(fun () -> str"partitioned clauses: from and to w " ++ spc () ++
+          CanSet.pr_clauses { m with entries = PMap.empty } premconclw);
+        debug_loop Pp.(fun () -> str"partitioned clauses: to w, not from w: " ++ spc () ++
+          CanSet.pr_clauses { m with entries = PMap.empty } conclw);
+        debug_loop Pp.(fun () -> str"partitioned clauses: not from w, to w " ++ spc () ++
+          CanSet.pr_clauses { m with entries = PMap.empty } premw);
 
         (* debug_check_invariants { model = m; updates = w; clauses = conclnW }; *)
-        (match inner_loop premconclw conclw m with
+        (match inner_loop cardW premconclw conclw m with
         | Loop -> Loop
         | Model (wc, mc) ->
           debug_loop Pp.(fun () -> str "wc = " ++ pr_w mc wc);
           (* wc is a subset of w *)
           (match check_clauses_with_premises premw mc with
-          (* check_model_compare conclnW wc mc with *)
           | None -> Model (wc, mc)
           | Some (wcls, mcls) -> loop cV wcls mcls))
   in loop cV w model
@@ -1486,7 +1488,12 @@ let update_model_value (m : model) can k' : model =
 let update_model ((prems, (can, k)) : can_clause) (m : model) : CanSet.t * model =
   let k0 = min_can_premise prems in
   let m' = update_model_value m can (k + k0) in
-  if m' != m then (CanSet.add can.canon (can.clauses_bwd, can.clauses_fwd) CanSet.empty, m') else (CanSet.empty, m)
+  if m' != m then
+    let canset = CanSet.add can.canon (can.clauses_bwd, can.clauses_fwd) CanSet.empty in
+    match check_clauses_with_premises canset m' with
+    | Some wm -> wm
+    | None -> (CanSet.empty, m')
+  else (CanSet.empty, m)
 
 let filter_trivial_can_clause ((prems, (concl, k as conclk) as x) : can_clause) : can_clause option =
   match NeList.filter (fun (prem, k') -> not (prem == concl && k' >= k)) prems with
@@ -1506,7 +1513,7 @@ let infer_clause_extension cl m =
     let w, m = update_model cl m in
     if CanSet.is_empty w then begin
       (* The clause is already true in the current model,
-        but might not be in an extension, so we add it still *)
+        but might not be in an extension, so we keep it *)
       debug Pp.(fun () -> str"Clause is valid in the current model");
       (* debug_clauses Pp.(fun () -> str"Clauses: " ++ pr_clauses model m.clauses); *)
       Some m
