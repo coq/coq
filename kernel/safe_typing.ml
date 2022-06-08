@@ -1063,8 +1063,8 @@ let start_mod_modtype ~istype l senv =
     (* carried over fields *)
     env = senv.env;
     future_cst = senv.future_cst;
-    modresolver = senv.modresolver;
-    paramresolver = senv.paramresolver;
+    modresolver = Mod_subst.empty_delta_resolver;
+    paramresolver = Mod_subst.add_delta_resolver senv.modresolver senv.paramresolver;
     univ = senv.univ;
     required = senv.required;
     opaquetab = senv.opaquetab;
