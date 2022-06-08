@@ -563,7 +563,9 @@ let set_pattern_catch_all_var ?loc eqn = function
 let warn_named_multi_catch_all =
   CWarnings.create ~name:"unused-pattern-matching-variable" ~category:"pattern-matching"
          (fun id ->
-          strbrk "Unused variable " ++ Id.print id ++ strbrk " catches more than one case.")
+          strbrk "Unused variable " ++ Id.print id
+          ++ strbrk " might be a misspelled constructor. Use _ or _"
+          ++ Id.print id ++ strbrk " to silence this warning.")
 
 let wildcard_id = Id.of_string "wildcard'"
 
@@ -571,9 +573,8 @@ let is_wildcard id =
   Id.equal (Id.of_string (Nameops.atompart_of_id id)) wildcard_id
 
 let check_unused_pattern_eqn env vars eqn =
-  match List.length vars with
-  | 0 -> raise_pattern_matching_error ?loc:eqn.eqn_loc (env, Evd.empty, UnusedClause eqn.patterns)
-  | 1 -> ()
+  match vars with
+  | [] -> raise_pattern_matching_error ?loc:eqn.eqn_loc (env, Evd.empty, UnusedClause eqn.patterns)
   | _ ->
     let warn {CAst.v = id; loc} =
       (* Convention: Names starting with `_` and derivatives of Program's

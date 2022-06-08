@@ -364,7 +364,7 @@ Section FloatOps.
     | S754_infinity true => S754_nan
     | S754_finite true _ _ => S754_nan
     | S754_zero _ => x
-    | S754_finite sx mx ex =>
+    | S754_finite false mx ex =>
       let '(mz, ez, lz) := SFsqrt_core_binary (Zpos mx) ex in
       binary_round_aux false mz ez lz
     end.
