@@ -39,6 +39,7 @@ Require Import ssreflect.
       odflt d ox == if ox is Some x returns x,          d otherwise
       obind f ox == if ox is Some x returns f x,        None otherwise
        omap f ox == if ox is Some x returns Some (f x), None otherwise
+         olift f := Some \o f
 
  - Singleton types:
   all_equal_to x0 == x0 is the only value in its type, so any such value
@@ -350,12 +351,15 @@ Definition bind aT rT (f : aT -> option rT) := apply f None.
 
 Definition map aT rT (f : aT -> rT) := bind (fun x => Some (f x)).
 
+Definition lift aT rT (f : aT -> rT) := fun x => Some (f x).
+
 End Option.
 
 Notation oapp := Option.apply.
 Notation odflt := Option.default.
 Notation obind := Option.bind.
 Notation omap := Option.map.
+Notation olift := Option.lift.
 Notation some := (@Some _) (only parsing).
 
 (**  Shorthand for some basic equality lemmas.  **)
@@ -475,6 +479,10 @@ Arguments catcomp {A B C} g f x /.
 Notation "f1 \o f2" := (comp f1 f2) : fun_scope.
 Notation "f1 \; f2" := (catcomp f1 f2) : fun_scope.
 
+Lemma compA {A B C D : Type} (f : B -> A) (g : C -> B) (h : D -> C) :
+  f \o (g \o h) = (f \o g) \o h.
+Proof. by []. Qed.
+
 Notation "[ 'eta' f ]" := (fun x => f x) : fun_scope.
 
 Notation "'fun' => E" := (fun _ => E) : fun_scope.
@@ -486,6 +494,36 @@ Definition idfun T x : T := x.
 Arguments idfun {T} x /.
 
 Definition phant_id T1 T2 v1 v2 := phantom T1 v1 -> phantom T2 v2.
+
+Section OptionTheory.
+
+Variables (aT rT sT : Type) (f : aT -> rT) (g : rT -> sT).
+
+Lemma obindEapp (fo : aT -> option rT) : obind fo = oapp fo None.
+Proof. by []. Qed.
+
+Lemma omapEbind : omap f = obind (olift f).
+Proof. by []. Qed.
+
+Lemma omapEapp : omap f = oapp (olift f) None.
+Proof. by []. Qed.
+
+Lemma oappEmap (y0 : rT) x : oapp f y0 x = odflt y0 (omap f x).
+Proof. by case: x. Qed.
+
+Lemma omap_comp : omap (g \o f) =1 omap g \o omap f.
+Proof. by case. Qed.
+
+Lemma oapp_comp x : oapp (g \o f) x =1 (@oapp _ _)^~ x g \o omap f.
+Proof. by case. Qed.
+
+Lemma oapp_comp_f (x : rT) : oapp (g \o f) (g x) =1 g \o oapp f x.
+Proof. by case. Qed.
+
+Lemma olift_comp : olift (g \o f) = olift g \o f.
+Proof. by []. Qed.
+
+End OptionTheory.
 
 (** The empty type. **)
 
@@ -684,6 +722,14 @@ Proof. by move=> fK hK x; rewrite /= fK hK. Qed.
 Lemma pcan_pcomp f' h' :
   pcancel f f' -> pcancel h h' -> pcancel (f \o h) (pcomp h' f').
 Proof. by move=> fK hK x; rewrite /pcomp fK /= hK. Qed.
+
+Lemma ocan_comp [fo : B -> option A] [ho : C -> option B]
+    [f' : A -> B] [h' : B -> C] :
+  ocancel fo f' -> ocancel ho h' -> ocancel (obind fo \o ho) (h' \o f').
+Proof.
+move=> fK hK c /=; rewrite -[RHS]hK/=; case hcE : (ho c) => [b|]//=.
+by rewrite -[b in RHS]fK; case: (fo b) => //=; have := hK c; rewrite hcE.
+Qed.
 
 Lemma eq_inj : injective f -> f =1 g -> injective g.
 Proof. by move=> injf eqfg x y; rewrite -2!eqfg; apply: injf. Qed.
