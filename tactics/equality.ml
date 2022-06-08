@@ -1104,11 +1104,14 @@ let onNegatedEquality with_evars tac =
     let sigma = Tacmach.project gl in
     let ccl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    match EConstr.kind sigma (hnf_constr env sigma ccl) with
-    | Prod (_,t,u) when is_empty_type env sigma u ->
+    match EConstr.kind sigma (hnf_constr0 env sigma ccl) with
+    | Prod (na,t,u) ->
+      let u = nf_betaiota (push_rel_assum (na, t) env) sigma u in
+      if is_empty_type env sigma u then
         tclTHEN introf
           (onLastHypId (fun id ->
             onEquality with_evars tac (mkVar id,NoBindings)))
+      else tclZEROMSG (str "Not a negated primitive equality.")
     | _ ->
       let info = Exninfo.reify () in
       tclZEROMSG ~info (str "Not a negated primitive equality.")

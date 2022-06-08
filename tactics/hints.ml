@@ -828,9 +828,10 @@ let make_exact_entry env sigma info ?(name=PathAny) (c, cty, ctx) =
            code = with_uid (Give_exact h); })
 
 let make_apply_entry env sigma hnf info ?(name=PathAny) (c, cty, ctx) =
-  let cty = if hnf then hnf_constr env sigma cty else cty in
+  let cty = if hnf then hnf_constr0 env sigma cty else cty in
   match EConstr.kind sigma cty with
   | Prod _ ->
+    let cty = if hnf then Reductionops.nf_betaiota env sigma cty else cty in
     let sigma' = merge_context_set_opt sigma ctx in
     let ce = mk_clenv_from env sigma' (c,cty) in
     let c' = clenv_type (* ~reduce:false *) ce in

@@ -69,6 +69,9 @@ val whd_simpl : reduction_function
    not immediately hide a non reducible fix or cofix *)
 val hnf_constr : reduction_function
 
+(** Variant of the above that does not perform nf-βι *)
+val hnf_constr0 : reduction_function
+
 (** Unfold *)
 val unfoldn :
   (occurrences * evaluable_global_reference) list ->  reduction_function
