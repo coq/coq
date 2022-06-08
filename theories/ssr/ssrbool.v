@@ -1710,6 +1710,13 @@ Lemma all_sig_cond I T (C : pred I) P :
   {f : I -> T | forall x, C x -> P x (f x)}.
 Proof. by move=> y0; apply: all_sig_cond_dep. Qed.
 
+Lemma all_sig2_cond {I T} (C : pred I) P Q :
+  T -> (forall x, C x -> {y : T | P x y & Q x y}) ->
+  {f : I -> T | forall x, C x -> P x (f x) & forall x, C x -> Q x (f x)}.
+Proof.
+by move=> /all_sig_cond/[apply]-[f Pf]; exists f => i Di; have [] := Pf i Di.
+Qed.
+
 Section RelationProperties.
 
 (**
