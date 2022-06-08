@@ -587,26 +587,6 @@ val tclLIFT : 'a NonLogical.t -> 'a tactic
     the monad. *)
 val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
 
-(**/**)
-
-(*** Compatibility layer with <= 8.2 tactics ***)
-module V82 : sig
-  [@@@ocaml.warning "-3"]
-  type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
-  [@@@ocaml.warning "+3"]
-
-  (* [nf_evars=true] applies the evar (assignment) map to the goals
-   * (conclusion and context) before calling the tactic *)
-  val tactic : ?nf_evars:bool -> tac -> unit tactic
-
-  (* Caution: this function loses quite a bit of information. It
-     should be avoided as much as possible.  It should work as
-     expected for a tactic obtained from {!V82.tactic} though. *)
-  val of_tactic : 'a tactic -> tac
-
-end
-[@@ocaml.deprecated "Use the new engine."]
-
 (** {7 Notations} *)
 
 module Notations : sig
