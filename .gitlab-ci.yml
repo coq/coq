@@ -706,7 +706,6 @@ library:ci-fiat_crypto_ocaml:
   - plugin:ci-bignums
   - plugin:ci-rewriter
   - library:ci-fiat_crypto
-  allow_failure: true
 
 library:ci-flocq3:
   extends: .ci-template-flambda
