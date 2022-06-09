@@ -1,13 +1,14 @@
 (library
  (name table)
- (modules table))
+ (modules table)
+ (libraries clib))
 
 (executable
  (name render_results)
  (modules render_results)
- (libraries unix table))
+ (libraries unix table clib))
 
 (executable
  (name render_line_results)
  (modules render_line_results)
- (libraries unix table str))
+ (libraries unix table str clib))
