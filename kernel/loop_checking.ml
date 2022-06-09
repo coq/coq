@@ -101,6 +101,7 @@ module Make (Point : Point) = struct
     val find : Point.t -> table -> t
     val repr : t -> table -> Point.t
     val dom : table -> Point.Set.t
+    val hash : t -> int
   end =
   struct
     type t = int
@@ -134,6 +135,8 @@ module Make (Point : Point) = struct
       }
 
     let dom t = Point.Map.domain t.tab_bwd
+
+    let hash x = x
   end
 
 module PMap = Index.Map
@@ -267,9 +270,9 @@ struct
         | None -> aux tl
     in aux l
 
-  let mem_assq x = exists (fun y -> fst y == x)
+  let _mem_assq x = exists (fun y -> fst y == x)
 
-  let assq x l =
+  let _assq x l =
     let rec aux l =
       match l with
       | Tip (hd, v) -> if hd == x then v else raise_notrace Not_found
@@ -277,7 +280,7 @@ struct
         if hd == x then v else aux tl
     in aux l
 
-  let find f l =
+  let _find f l =
     let rec aux l =
       match l with
       | Tip (hd, v) -> if f hd then v else raise_notrace Not_found
@@ -414,17 +417,12 @@ type clause = Index.t * ClausesOf.t
 
 let _is_empty_clause ((_, kprem) : clause) = ClausesOf.is_empty kprem
 
-type mark = NoMark | Visited of int
-
 (* Comparison on this type is pointer equality *)
 type canonical_node =
   { canon: Index.t;
     value : int;
     clauses_bwd : ClausesOf.t;
-    clauses_fwd : ClausesOf.t PMap.t;
-    mutable mark : mark }
-
-let unset_mark can = can.mark <- NoMark
+    clauses_fwd : ClausesOf.t PMap.t }
 
 (* A Point.t is either an alias for another one, or a canonical one,
     for which we know the points that are above *)
@@ -438,17 +436,30 @@ type model = {
   canonical : int; (* Number of canonical nodes *)
   table : Index.table }
 
-let unset_marks m =
-  PMap.iter (fun _ e ->
-    match e with
-    | Equiv _ -> ()
-    | Canonical can -> unset_mark can) m.entries
-
 let empty_model = {
   entries = PMap.empty;
   canonical = 0;
   table = Index.empty
 }
+
+module CN = struct
+  type t = canonical_node
+  let equal x y = x == y
+  let hash x = Index.hash x.canon
+end
+
+module Status = struct
+  module Internal = Hashtbl.Make(CN)
+
+  (** we could experiment with creation size based on the size of [g] *)
+  let create (_m:model) = Internal.create 17
+
+  let _mem = Internal.mem
+  let find = Internal.find
+  let replace = Internal.replace
+  let fold = Internal.fold
+end
+
 
 let enter_equiv m u v =
   { entries = PMap.modify u (fun _ a ->
@@ -1222,9 +1233,9 @@ let make_equiv m equiv =
     m
   | _ -> assert false
 
-let is_visited = function
-  | Visited _ -> true
-  | NoMark -> false
+let make_equiv = time2 (Pp.str"make_equiv") make_equiv
+
+type simplify_mark = Visited | InEquiv
 
 (* We have v -> u in the clauses, we look for all chains of constraints u -> v and unify all
    the universes involved. *)
@@ -1232,39 +1243,41 @@ let simplify_clauses_between model v u =
   let canv = repr model v in
   let canu = repr model u in
   if canv == canu then Some model else
-  let model = ref model in
-  let rec forward prev acc visited canv : canonical_node list * canonical_node list =
-    let () = canv.mark <- Visited 0 in
-    debug Pp.(fun () -> str"visiting " ++ pr_can !model canv);
-    let visited = canv :: visited in
+  let status = Status.create model in
+  let rec forward prev canv : unit =
+    debug Pp.(fun () -> str"visiting " ++ pr_can model canv);
     let cls = canv.clauses_bwd in
-    ClausesOf.fold (fun cli acc ->
+    Status.replace status canv Visited;
+    ClausesOf.iter (fun cli ->
       let (k, prems) = cli in
-      NeList.fold (fun (l, _k') (acc, visited) ->
-        let model', canl = repr_compress !model l in
+      NeList.iter (fun lk' ->
+        let canl = repr model (fst lk') in
         (* debug Pp.(fun () -> str"looking at premise " ++ pr_can !model canl); *)
-        let () = model := model' in
-        if is_visited canl.mark then
-          begin
-            debug Pp.(fun () -> str"already visited: " ++ pr_can !model canl);
-            debug Pp.(fun () -> str"In of the accumulator? " ++ bool (CList.memq canl acc));
-          (* We might be coming from another path *)
-          if CList.memq canl acc then (CList.unionq (canv :: prev) acc), visited
-          else acc, visited
-        end
-        else
+        match Status.find status canl with
+        | Visited -> ()
+        | InEquiv -> begin
+          Status.replace status canv InEquiv;
+          List.iter (fun can -> Status.replace status can InEquiv) prev
+          end
+        | exception Not_found ->
           if canl == canu then begin
             assert (Int.equal k 0); (* there would be a loop otherwise *)
-            forward [] (CList.unionq (canu :: canv :: prev) acc) visited canl
+            Status.replace status canu InEquiv;
+            Status.replace status canv InEquiv;
+            List.iter (fun can -> Status.replace status can InEquiv) prev
           end
-        else if Int.equal k 0 then forward (canv :: prev) acc visited canl
-        else (acc, visited))
-        prems acc) cls (acc, visited)
+          else if Int.equal k 0 then forward (canv :: prev) canl
+          else ()) prems) cls
   in
-  let equiv, visited = forward [] [] [] canv in
-  let () = List.iter unset_mark visited in
-  if CList.is_empty equiv then Some !model
-  else Some (make_equiv !model equiv)
+  let () = forward [] canv in
+  let merge can mark acc =
+    match mark with
+    | Visited -> acc
+    | InEquiv -> can :: acc
+  in
+  let equiv = Status.fold merge status [] in
+  if CList.is_empty equiv then Some model
+  else Some (make_equiv model equiv)
     (* if recheck then
       match check m.clauses model with
       | Loop -> CsErrors.anomaly Pp.(str"Equating universes resulted in a loop")
@@ -1321,14 +1334,12 @@ let mem_clause m ((l, kprem) : clause) : bool =
 
 type 'a check_function = t -> 'a -> 'a -> bool
 
-exception Found of canonical_node list
-
 let min_can_premise prem =
   let g (l, k) = l.value - k in
   let f prem minl = min minl (g prem) in
   Premises.fold_ne f g prem
 
-let _check_clause m prems concl k =
+(* let _check_clause m prems concl k =
   (* premises -> can + k ? *)
   let test_idx y kpath =
     match prems with
@@ -1389,19 +1400,23 @@ let _check_clause m prems concl k =
   with e ->
     (* Unlikely event: fatal error or signal *)
     let () = unset_marks m in
-    raise e
+    raise e *)
+
+type check_clause_mark = VisitedAt of int
+
+exception Found
 
 let check_clause_singleton m prem concl k =
   (* premises -> concl + k ? *)
   let premidx = prem.canon in
   let test_idx y kpath = Index.equal y premidx && kpath <= 0 in
   let test_repr y kpath = y == prem && kpath <= 0 in
-  let fold_prem kpath visited (kp, premises) acc =
+  let fold_prem kpath (kp, premises) acc =
     match premises with
     | NeList.Tip (idx, k') ->
       let canidx = repr m idx in
       let kidx = kpath - kp + k' in
-      if canidx == prem && kidx <= 0 then raise_notrace (Found visited)
+      if canidx == prem && kidx <= 0 then raise_notrace Found
       else (canidx, kidx) :: acc
     | _ ->
     NeList.fold (fun (idx, k') acc ->
@@ -1409,18 +1424,19 @@ let check_clause_singleton m prem concl k =
       let canidx = repr m idx in
       let kidx = kpath - kp + k' in
       if not (Index.equal canidx.canon idx) &&
-        test_repr canidx kidx then raise_notrace (Found visited)
+        test_repr canidx kidx then raise_notrace Found
       else (canidx, kidx) :: acc)
       premises acc
   in
-  let rec aux visited todo next_todo =
+  let status = Status.create m in
+  let rec aux todo next_todo =
     match todo, next_todo with
-    | [], [] -> visited
-    | [], todo -> aux visited todo []
+    | [], [] -> ()
+    | [], todo -> aux todo []
     | (canv, kpath) :: todo, next_todo ->
-      match canv.mark with
-      | Visited kpath' when kpath' <= kpath -> aux visited todo next_todo
-      | _ ->
+      match Status.find status canv with
+      | VisitedAt kpath' when kpath' <= kpath -> aux todo next_todo
+      | exception Not_found | _ ->
         let existsfn kprem =
           kpath - fst kprem <= 0 &&
           match snd kprem with
@@ -1428,26 +1444,16 @@ let check_clause_singleton m prem concl k =
           | _ -> NeList.for_all (fun (idx, k') -> test_idx idx (kpath - fst kprem + k')) (snd kprem)
         in
         let bwd = canv.clauses_bwd in
-        if ClausesOf.exists existsfn bwd then raise_notrace (Found visited)
+        if ClausesOf.exists existsfn bwd then raise_notrace Found
         else
         (* canv + k' -> canv + kpath *)
-          let fold_fn kprem acc = fold_prem kpath visited kprem acc in
+          let fold_fn kprem acc = fold_prem kpath kprem acc in
           let next_todo = ClausesOf.fold fold_fn bwd next_todo in
-          let visited = canv :: visited in
-          canv.mark <- Visited kpath;
-          aux visited todo next_todo
+          Status.replace status canv (VisitedAt kpath);
+          aux todo next_todo
   in
-  try
-    let res, visited =
-      try false, aux [] [(concl, k)] []
-      with Found visited -> true, visited
-    in
-    List.iter (fun u -> u.mark <- NoMark) visited;
-    res
-  with e ->
-    (* Unlikely event: fatal error or signal *)
-    let () = unset_marks m in
-    raise e
+  try let () = aux [(concl, k)] [] in false
+  with Found -> true
 
 (* let check_clause = time4 (Pp.str"check_clause") check_clause *)
 
@@ -1721,7 +1727,7 @@ let add_model u { entries; table; canonical } =
     raise AlreadyDeclared)
   else
     let idx, table = Index.fresh u table in
-    let can = Canonical { canon = idx; value = 0; mark = NoMark;
+    let can = Canonical { canon = idx; value = 0;
       clauses_fwd = PMap.empty; clauses_bwd = ClausesOf.empty } in
     let entries = PMap.add idx can entries in
     idx, { entries; table; canonical = canonical + 1 }
