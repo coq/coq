@@ -1601,8 +1601,8 @@ let enforce_leq_can u v m =
   match infer_extension u 0 v m with
   | None -> None
   | Some m' ->
-     simplify_clauses_between m' v.canon u.canon
-     (*if m' != m then else Some m (* The clause was already present so we already checked for v <= u *) *)
+     if m' != m then simplify_clauses_between m' v.canon u.canon
+    else Some m (* The clause was already present so we already checked for v <= u *)
 
 let enforce_leq u v m =
   let m, canu = repr_compress_node m u in
