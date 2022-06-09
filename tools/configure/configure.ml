@@ -125,6 +125,7 @@ let check_findlib_version prefs { CamlConf.findlib_version } =
     4: fragile pattern matching: too common in the code and too annoying to avoid in general
     9: missing fields in a record pattern: too common in the code and not worth the bother
     27: innocuous unused variable: innocuous
+    40: constructor or label name used out of scope: gets in the way of putting types in modules
     41: ambiguous constructor or label: too common
     42: disambiguated counstructor or label: too common
     44: "open" shadowing already defined identifier: too common, especially when some are aliases
@@ -137,7 +138,7 @@ let check_findlib_version prefs { CamlConf.findlib_version } =
 *)
 
 (* Note, we list all warnings to be complete *)
-let coq_warnings = "-w -a+1..3-4+5..8-9+10..26-27+28..40-41-42+43-44-45+46..47-48+49..57-58+59..66-67-68+69-70"
+let coq_warnings = "-w -a+1..3-4+5..8-9+10..26-27+28..39-40-41-42+43-44-45+46..47-48+49..57-58+59..66-67-68+69-70"
 let coq_warn_error prefs =
     if prefs.warn_error
     then "-warn-error +a"
