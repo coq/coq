@@ -1299,11 +1299,11 @@ let can_clause_of_can_constraint (cstr : can_constraint) : can_clause =
   let (l, k, r) = cstr in (* l + k <= r *)
   (NeList.tip (r, 0), (l, k))
 
-let can_clause_of_point_constraint (m : t) l k r : can_clause =
+let _can_clause_of_point_constraint (m : t) l k r : can_clause =
   (* l + k <= r *)
   let canl = repr_node m l in
   let canr = repr_node m r in
-  can_clause_of_can_constraint (canl, k, canr)
+  (NeList.tip (canr, 0), (canl, k))
 
 let _filter_trivial_clause m (l, kprems as x) =
   let prems' =
@@ -1328,7 +1328,7 @@ let min_can_premise prem =
   let f prem minl = min minl (g prem) in
   Premises.fold_ne f g prem
 
-let check_clause m (prems, (concl, k) : can_clause) =
+let _check_clause m prems concl k =
   (* premises -> can + k ? *)
   let test_idx y kpath =
     match prems with
@@ -1346,8 +1346,6 @@ let check_clause m (prems, (concl, k) : can_clause) =
           kpath <= NeList.assq y prems
         else false
   in
-  (* let minval = min_can_premise prems + k in *)
-  (* if concl.value < minval then false else *)
   (* If the clause holds then prems -> concl + k, so k0 + k <= concl.value *)
   let rec aux visited todo next_todo =
     match todo, next_todo with
@@ -1373,7 +1371,8 @@ let check_clause m (prems, (concl, k) : can_clause) =
                   (* idx + k' -> canv + kp *)
                   let canidx = repr m idx in
                   let kidx = kpath - kp + k' in
-                  if test_repr canidx kidx then raise_notrace (Found visited)
+                  if not (Index.equal canidx.canon idx) &&
+                    test_repr canidx kidx then raise_notrace (Found visited)
                   else (canidx, kidx) :: acc)
                   premises acc)
                 bwd next_todo
@@ -1392,19 +1391,80 @@ let check_clause m (prems, (concl, k) : can_clause) =
     let () = unset_marks m in
     raise e
 
-let check_clause = time2 (Pp.str"check_clause") check_clause
+let check_clause_singleton m prem concl k =
+  (* premises -> concl + k ? *)
+  let premidx = prem.canon in
+  let test_idx y kpath = Index.equal y premidx && kpath <= 0 in
+  let test_repr y kpath = y == prem && kpath <= 0 in
+  let find_idx kpath (kp, premises) =
+    kpath - kp <= 0 &&
+    match premises with
+    | NeList.Tip (idx, _) -> Index.equal idx premidx
+    | _ -> NeList.for_all (fun (idx, k') -> test_idx idx (kpath - kp + k')) premises
+  in
+  let fold_prem kpath visited (kp, premises) acc =
+    match premises with
+    | NeList.Tip (idx, k') ->
+      let canidx = repr m idx in
+      let kidx = kpath - kp + k' in
+      if canidx == prem && kidx <= 0 then raise_notrace (Found visited)
+      else (canidx, kidx) :: acc
+    | _ ->
+    NeList.fold (fun (idx, k') acc ->
+      (* idx + k' -> canv + kp *)
+      let canidx = repr m idx in
+      let kidx = kpath - kp + k' in
+      if not (Index.equal canidx.canon idx) &&
+        test_repr canidx kidx then raise_notrace (Found visited)
+      else (canidx, kidx) :: acc)
+      premises acc
+  in
+  let rec aux visited todo next_todo =
+    match todo, next_todo with
+    | [], [] -> visited
+    | [], todo -> aux visited todo []
+    | (canv, kpath) :: todo, next_todo ->
+      match canv.mark with
+      | Visited kpath' when kpath' <= kpath -> aux visited todo next_todo
+      | _ ->
+        let bwd = canv.clauses_bwd in
+        if ClausesOf.exists (fun kprem -> find_idx kpath kprem) bwd then raise_notrace (Found visited)
+        else
+        (* canv + k' -> canv + kpath *)
+          let next_todo =
+            ClausesOf.fold (fun kprem acc -> fold_prem kpath visited kprem acc) bwd next_todo
+          in
+          let visited = canv :: visited in
+          canv.mark <- Visited kpath;
+          aux visited todo next_todo
+  in
+  try
+    let res, visited =
+      try false, aux [] [(concl, k)] []
+      with Found visited -> true, visited
+    in
+    List.iter (fun u -> u.mark <- NoMark) visited;
+    res
+  with e ->
+    (* Unlikely event: fatal error or signal *)
+    let () = unset_marks m in
+    raise e
+
+
+(* let check_clause = time4 (Pp.str"check_clause") check_clause *)
 
 let check_lt (m : t) u v =
-  let cl = can_clause_of_point_constraint m u 1 v in
-  check_clause m cl
+  let canu = repr_node m u in
+  let canv = repr_node m v in
+  check_clause_singleton m canv canu 1
+  (* let (prems, (concl, k)) = can_clause_of_point_constraint m u 1 v in *)
+  (* check_clause m prems concl k *)
 
 let check_leq (m : t) u vp =
   debug_check Pp.(fun () -> str"checking : " ++ Point.pr u ++ str " ≤ " ++ Point.pr vp);
   let canu = repr_node m u in
   let canv = repr_node m vp in
-  canu == canv
-  || let cl = can_clause_of_can_constraint (canu, 0, canv) in
-    check_clause m cl
+  canu == canv || check_clause_singleton m canv canu 0
 
 let check_eq m u v =
   let canu = repr_node m u in
