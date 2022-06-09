@@ -7,3 +7,6 @@
  (libraries coq-core.lib coq-core.clib csexp))
 
 (ocamllex lexer)
+
+(cram
+ (deps %{bin:coqmod}))
