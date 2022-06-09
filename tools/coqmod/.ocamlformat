@@ -1,0 +1,12 @@
+profile = ocamlformat
+version = 0.21.0
+
+exp-grouping = preserve
+sequence-style = terminator
+break-separators = after
+dock-collection-brackets = true
+field-space = loose
+
+break-cases = fit #fit-or-vertical
+# {fit|nested|toplevel|fit-or-vertical|all}
+cases-exp-indent=4
