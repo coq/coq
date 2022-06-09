@@ -1396,12 +1396,6 @@ let check_clause_singleton m prem concl k =
   let premidx = prem.canon in
   let test_idx y kpath = Index.equal y premidx && kpath <= 0 in
   let test_repr y kpath = y == prem && kpath <= 0 in
-  let find_idx kpath (kp, premises) =
-    kpath - kp <= 0 &&
-    match premises with
-    | NeList.Tip (idx, _) -> Index.equal idx premidx
-    | _ -> NeList.for_all (fun (idx, k') -> test_idx idx (kpath - kp + k')) premises
-  in
   let fold_prem kpath visited (kp, premises) acc =
     match premises with
     | NeList.Tip (idx, k') ->
@@ -1427,13 +1421,18 @@ let check_clause_singleton m prem concl k =
       match canv.mark with
       | Visited kpath' when kpath' <= kpath -> aux visited todo next_todo
       | _ ->
+        let existsfn kprem =
+          kpath - fst kprem <= 0 &&
+          match snd kprem with
+          | NeList.Tip (idx, _) -> Index.equal idx premidx
+          | _ -> NeList.for_all (fun (idx, k') -> test_idx idx (kpath - fst kprem + k')) (snd kprem)
+        in
         let bwd = canv.clauses_bwd in
-        if ClausesOf.exists (fun kprem -> find_idx kpath kprem) bwd then raise_notrace (Found visited)
+        if ClausesOf.exists existsfn bwd then raise_notrace (Found visited)
         else
         (* canv + k' -> canv + kpath *)
-          let next_todo =
-            ClausesOf.fold (fun kprem acc -> fold_prem kpath visited kprem acc) bwd next_todo
-          in
+          let fold_fn kprem acc = fold_prem kpath visited kprem acc in
+          let next_todo = ClausesOf.fold fold_fn bwd next_todo in
           let visited = canv :: visited in
           canv.mark <- Visited kpath;
           aux visited todo next_todo
@@ -1449,7 +1448,6 @@ let check_clause_singleton m prem concl k =
     (* Unlikely event: fatal error or signal *)
     let () = unset_marks m in
     raise e
-
 
 (* let check_clause = time4 (Pp.str"check_clause") check_clause *)
 
