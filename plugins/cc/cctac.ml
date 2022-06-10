@@ -265,7 +265,7 @@ let app_global f args k =
   Tacticals.pf_constr_of_global (Lazy.force f) >>= fun fc -> k (mkApp (fc, args))
 
 let rec gen_holes env sigma t n accu =
-  if Int.equal n 0 then (sigma, List.rev accu, t)
+  if Int.equal n 0 then (sigma, List.rev accu)
   else match EConstr.kind sigma t with
   | Prod (_, u, t) ->
     let (sigma, ev) = Evarutil.new_evar env sigma u in
@@ -283,9 +283,9 @@ let app_global_with_holes f args n =
       let fj = Retyping.get_judgment_of env sigma fc in
       let argsj = Array.map (fun c -> Retyping.get_judgment_of env sigma c) args in
       let sigma, fj = Typing.judge_of_apply env sigma fj argsj in
-      let (sigma, holes, ty) = gen_holes env sigma fj.uj_type n [] in
+      let (sigma, holes) = gen_holes env sigma fj.uj_type n [] in
       let ans = applist (fj.uj_val, holes) in
-      let sigma = Typing.check_actual_type env sigma { uj_val = ans; uj_type = ty } concl in
+      let sigma = Typing.check env sigma ans concl in
       (sigma, ans)
     end
   end
