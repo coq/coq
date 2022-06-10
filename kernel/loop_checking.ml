@@ -1235,60 +1235,60 @@ let make_equiv m equiv =
 
 let make_equiv = time2 (Pp.str"make_equiv") make_equiv
 
-type simplify_mark = Visited | InEquiv
+let clauses_bwd_univs m cls =
+  PMap.fold (fun concl _ acc -> PSet.add (repr m concl).canon acc) cls PSet.empty
 
-(* We have v -> u in the clauses, we look for all chains of constraints u -> v and unify all
-   the universes involved. *)
+let find_to_merge model status canv canu =
+  let rec forward can : bool =
+    debug Pp.(fun () -> str"visiting " ++ pr_can model can);
+    match Status.find status can with
+    | merge -> merge
+    | exception Not_found ->
+      if can == canv then begin
+        Status.replace status can true;
+        true
+      end else
+        let cls = can.clauses_fwd in
+        Status.replace status can false;
+        debug Pp.(fun () -> str"Forward universes: " ++ int (ClausesBackward.cardinal cls) ++
+          str " Canonical: " ++ int (PSet.cardinal (clauses_bwd_univs model cls)));
+        let merge =
+          ClausesBackward.fold (fun concl _cls merge ->
+            let conclcan = repr model concl in
+            if conclcan != can && conclcan.value == can.value then (* We stay in the same equivalence class *)
+              let merge' = forward conclcan in
+              merge' || merge
+            else merge) cls false
+        in
+        Status.replace status can merge;
+        merge
+  in
+  let merge = forward canu in
+  if merge then
+    let merge_fn can mark acc = if mark then can :: acc else acc in
+    let equiv = Status.fold merge_fn status [] in
+    merge, equiv
+  else merge, []
+
+let find_to_merge =
+  time4 (Pp.str "find_to_merge") find_to_merge
+
 let simplify_clauses_between model v u =
   let canv = repr model v in
   let canu = repr model u in
-  if canv == canu then Some model else
-  let status = Status.create model in
-  let rec forward prev canv : unit =
-    debug Pp.(fun () -> str"visiting " ++ pr_can model canv);
-    let cls = canv.clauses_bwd in
-    Status.replace status canv Visited;
-    ClausesOf.iter (fun cli ->
-      let (k, prems) = cli in
-      NeList.iter (fun lk' ->
-        let canl = repr model (fst lk') in
-        (* debug Pp.(fun () -> str"looking at premise " ++ pr_can !model canl); *)
-        match Status.find status canl with
-        | Visited -> ()
-        | InEquiv -> begin
-          Status.replace status canv InEquiv;
-          List.iter (fun can -> Status.replace status can InEquiv) prev
-          end
-        | exception Not_found ->
-          if canl == canu then begin
-            assert (Int.equal k 0); (* there would be a loop otherwise *)
-            Status.replace status canu InEquiv;
-            Status.replace status canv InEquiv;
-            List.iter (fun can -> Status.replace status can InEquiv) prev
-          end
-          else if Int.equal k 0 then forward (canv :: prev) canl
-          else ()) prems) cls
-  in
-  let () = forward [] canv in
-  let merge can mark acc =
-    match mark with
-    | Visited -> acc
-    | InEquiv -> can :: acc
-  in
-  let equiv = Status.fold merge status [] in
-  if CList.is_empty equiv then Some model
-  else Some (make_equiv model equiv)
-    (* if recheck then
-      match check m.clauses model with
-      | Loop -> CsErrors.anomaly Pp.(str"Equating universes resulted in a loop")
-      | Model (_w, model) ->
-        debug (fun () -> Pp.(str"Equating universes resulted in a model"));
-        debug_check_invariants model m.clauses;
-        Some { model; clauses = m.clauses }
-    else Some m *)
+  if canv == canu then Some model
+  else
+    if not (Int.equal canu.value canv.value) then
+      (* We know v -> u and check for u -> v, this can only be true if both levels
+        already have the same value *)
+      Some model
+  else
+    let status = Status.create model in
+    let merge, equiv = find_to_merge model status canv canu in
+    if merge then Some (make_equiv model equiv) else Some model
 
-let simplify_clauses_between =
-  time3 (Pp.str "simplify_clauses_between") simplify_clauses_between
+(* let simplify_clauses_between = *)
+  (* time3 (Pp.str "simplify_clauses_between") simplify_clauses_between *)
 (*
 
 let enforce_eq_points ({ model; clauses } as m : t) u v =
