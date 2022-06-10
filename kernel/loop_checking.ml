@@ -1231,6 +1231,7 @@ let make_equiv m equiv =
     debug Pp.(fun () -> str"Chosen canonical universe: " ++ pr_can m can ++
           str"Constraints:" ++ pr_can_constraints m can);
     m
+  | [_] -> m
   | _ -> assert false
 
 let make_equiv = time2 (Pp.str"make_equiv") make_equiv
@@ -1244,24 +1245,21 @@ let find_to_merge model status canv canu =
     match Status.find status can with
     | merge -> merge
     | exception Not_found ->
-      if can == canv then begin
-        Status.replace status can true;
-        true
-      end else
-        let cls = can.clauses_fwd in
-        Status.replace status can false;
-        debug Pp.(fun () -> str"Forward universes: " ++ int (ClausesBackward.cardinal cls) ++
-          str " Canonical: " ++ int (PSet.cardinal (clauses_bwd_univs model cls)));
-        let merge =
-          ClausesBackward.fold (fun concl _cls merge ->
-            let conclcan = repr model concl in
-            if conclcan != can && conclcan.value == can.value then (* We stay in the same equivalence class *)
-              let merge' = forward conclcan in
-              merge' || merge
-            else merge) cls false
-        in
-        Status.replace status can merge;
-        merge
+      let merge = can == canv || can == canu in
+      let () = Status.replace status can merge in
+      let cls = can.clauses_fwd in
+      debug Pp.(fun () -> str"Forward universes: " ++ int (ClausesBackward.cardinal cls) ++
+        str " Canonical: " ++ int (PSet.cardinal (clauses_bwd_univs model cls)));
+      let merge =
+        ClausesBackward.fold (fun concl _cls merge ->
+          let conclcan = repr model concl in
+          if conclcan != can && conclcan.value == can.value then (* We stay in the same equivalence class *)
+            let merge' = forward conclcan in
+            merge' || merge
+          else merge) cls merge
+      in
+      Status.replace status can merge;
+      merge
   in
   let merge = forward canu in
   if merge then
@@ -1273,19 +1271,17 @@ let find_to_merge model status canv canu =
 let find_to_merge =
   time4 (Pp.str "find_to_merge") find_to_merge
 
-let simplify_clauses_between model v u =
-  let canv = repr model v in
-  let canu = repr model u in
-  if canv == canu then Some model
-  else
-    if not (Int.equal canu.value canv.value) then
+let simplify_clauses_between model canv canu =
+  if canv == canu then model
+  else if not (Int.equal canu.value canv.value) then
       (* We know v -> u and check for u -> v, this can only be true if both levels
         already have the same value *)
-      Some model
+    (debug Pp.(fun () -> pr_can model canu ++ str"'s value =  " ++ int canu.value ++ str" and " ++ pr_can model canv ++ str "'s value = " ++ int canv.value ++ str", no simplification possible");
+      model)
   else
     let status = Status.create model in
     let merge, equiv = find_to_merge model status canv canu in
-    if merge then Some (make_equiv model equiv) else Some model
+    if merge then make_equiv model equiv else model
 
 (* let simplify_clauses_between = *)
   (* time3 (Pp.str "simplify_clauses_between") simplify_clauses_between *)
@@ -1417,6 +1413,11 @@ let check_clause_singleton m prem concl k =
       let canidx = repr m idx in
       let kidx = kpath - kp + k' in
       if canidx == prem && kidx <= 0 then raise_notrace Found
+      (* else if prem.value > canidx.value then
+        (* If this holds then it is impossible for a clause prem -> canidx + k to hold,
+           as this would imply that canidx.value >= prem.value + k
+        *)
+        acc *)
       else (canidx, kidx) :: acc
     | _ ->
     NeList.fold (fun (idx, k') acc ->
@@ -1607,8 +1608,11 @@ let enforce_leq_can u v m =
   match infer_extension u 0 v m with
   | None -> None
   | Some m' ->
-     if m' != m then simplify_clauses_between m' v.canon u.canon
-    else Some m (* The clause was already present so we already checked for v <= u *)
+    if m' != m then
+      let v = repr m' v.canon in
+      let u = repr m' u.canon in
+      Some (simplify_clauses_between m' v u)
+    else Some m
 
 let enforce_leq u v m =
   let m, canu = repr_compress_node m u in
@@ -1634,7 +1638,7 @@ let enforce_eq u v m =
          The first enforce will be fast, the second can involve an inference *)
       (* let cls = clauses_forward model m.clauses (PSet.singleton canu.canon) in *)
       (* debug Pp.(fun () -> str"enforce_eq: clauses to move " ++ pr_clauses model cls); *)
-      Option.bind (infer_extension canv 0 canu m)
+      Option.bind (enforce_leq_can canv canu m)
         (fun m' ->
           let canu' = repr m' canu.canon in
           let canv' =  repr m' canv.canon in
@@ -1644,7 +1648,7 @@ let enforce_eq u v m =
           The first enforce will be fast, the second can involve an inference *)
       (* let cls = clauses_forward model m.clauses (PSet.singleton canv.canon) in *)
       (* debug Pp.(fun () -> str"enforce_eq: clauses to move " ++ pr_clauses model cls); *)
-      Option.bind (infer_extension canu 0 canv m)
+      Option.bind (enforce_leq_can canu canv m)
         (fun m' ->
           let canu' = repr m' canu.canon in
           let canv' =  repr m' canv.canon in
