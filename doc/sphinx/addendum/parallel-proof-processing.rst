@@ -31,6 +31,8 @@ Windows. The current implementation of the feature is not stable on
 Windows. It can be enabled, as described below at :ref:`interactive-mode`,
 though doing so is not recommended.
 
+.. _proof-annotations:
+
 Proof annotations
 ----------------------
 
@@ -39,7 +41,7 @@ statement of the theorem without looking at the proof. This requires
 some annotations if the theorem is proved inside a Section (see
 Section :ref:`section-mechanism`).
 
-When a section ends, Coq looks at the proof object to decide which
+When a :ref:`section <section-mechanism>` ends, Coq looks at the proof object to decide which
 section variables are actually used and hence have to be quantified in
 the statement of the theorem. To avoid making the construction of
 proofs mandatory when ending a section, one can start each proof with
@@ -54,6 +56,33 @@ the file is compiled and if the file itself did not change. When the
 proof does not begin with :cmd:`Proof using`, the system records in an
 auxiliary file, produced along with the ``.vo`` file, the list of section
 variables used.
+
+If a theorem has an incorrect annotation that omits a needed variable, you may see
+a message like this:
+
+   .. code-block::
+
+      File "./Pff.v", line 2372, characters 0-4:
+      Error: The following section variable is used but not declared:
+      precisionNotZero.
+
+      You can either update your proof to not depend on precisionNotZero, or you can
+      update your Proof line from
+      Proof using FtoRradix b pGivesBound precision radix radixMoreThanOne radixMoreThanZERO
+      to
+      Proof using FtoRradix b pGivesBound precision precisionNotZero radix radixMoreThanOne radixMoreThanZERO
+
+In this case the minimal annotation suggested by the :flag:`Suggest Proof Using` flag is
+`Print Using pGivesBound precisionNotZero radixMoreThanOne.`  The other variables
+in the suggestion are unnecessary because they will be transitively included from
+the minimal annotation.
+
+Alternatively, if the :cmd:`Proof using` included unneeded variables, they become
+extra parameters of the theorem, which may generate errors.
+This :ref:`example <example-print-using>` shows an example of an unneeded variable.
+One possible error is `(in proof <theorem name>) Attempt to save an incomplete proof`,
+which may indicate that the named theorem refers to an an earlier theorem that has
+an incorrect annotation.
 
 Automatic suggestion of proof annotations
 `````````````````````````````````````````

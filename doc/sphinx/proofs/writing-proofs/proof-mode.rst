@@ -278,10 +278,12 @@ When the proof is completed, you can exit proof mode with commands such as
       | All
 
    Opens proof mode, declaring the set of
-   section variables (see :ref:`gallina-assumptions`) used by the proof.
-   At :cmd:`Qed` time, the
-   system verifies that the set of section variables used in
-   the proof is a subset of the declared one.
+   :ref:`section <section-mechanism>` variables (see :ref:`gallina-assumptions`)
+   used by the proof.
+   These :ref:`proof annotations <proof-annotations>` are useful to enable asynchronous
+   processing of proofs.  This :ref:`example <example-print-using>` shows how they work.
+   The :cmd:`Qed` command verifies that the set of section variables
+   used in the proof is a subset of the declared ones.
 
    The set of declared variables is closed under type dependency. For
    example, if ``T`` is a variable and ``a`` is a variable of type
@@ -351,6 +353,50 @@ When the proof is completed, you can exit proof mode with commands such as
          Abort.
          End Test.
 
+.. _example-print-using:
+
+   .. example :: Declaring section variables
+
+      When a :ref:`section <section-mechanism>` is closed with :cmd:`End`, section
+      variables declared with :cmd:`Proof using` are added to the theorem as
+      additional variables.  You can see the effect on the theorem's statement
+      with commands such as :cmd:`Check`, :cmd:`Print` and :cmd:`About` after the
+      section is closed.  Currently there is no command that shows the section variables
+      associated with a theorem before the section is closed.
+
+      Adding the unnecessary section variable `radixNotZero` changes how `foo'` can be
+      applied.
+
+      .. coqtop :: in
+
+         Require Import ZArith.
+         Section bar.
+           Variable radix : Z.
+           Hypothesis radixNotZero : (0 < radix)%Z.
+
+           Lemma foo : 0 = 0.
+           Proof. reflexivity. Qed.
+
+           Lemma foo' : 0 = 0.
+           Proof using radixNotZero. reflexivity. Qed.  (* radixNotZero is not needed *)
+
+      .. coqtop :: all
+
+           Print foo'.   (* Doesn't show radixNotZero yet *)
+         End bar.
+         Print foo.      (* Doesn't change after the End *)
+         Print foo'.     (* "End" added type radix (used by radixNotZero) and radixNotZero *)
+         Goal 0 = 0.
+
+      .. coqtop :: in
+
+         Fail apply foo'.  (* Fails because of the extra variable *)
+
+      .. coqtop :: all
+
+         apply (foo' 5).   (* Can be used if the extra variable is provided explicitly *)
+
+      .. coqtop:: abort none
 
 Proof using options
 ```````````````````
@@ -364,6 +410,10 @@ The following options modify the behavior of ``Proof using``.
    default ``Proof using`` value. E.g. ``Set Default Proof Using "a
    b"`` will complete all ``Proof`` commands not followed by a
    ``using`` part with ``using a b``.
+
+   Note that :n:`@section_var_expr` isn't validated immediately.  An
+   invalid value will generate an error on a subsequent :cmd:`Proof`
+   or :cmd:`Qed` command.
 
 
 .. flag:: Suggest Proof Using
