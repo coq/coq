@@ -15,8 +15,10 @@ It is necessary to adjust plugin code:
   Dune, `Declare ML Module "library_name:pkg.lib"` until Dune is
   adapted.
 
-You must also provide the corresponding `META` file if you build
-system doesn't generate it automatically.
+You must also provide the corresponding `META` file if your build
+system doesn't generate it automatically (see the documentation of
+`-generate-meta-for-package` for how `coq_makefile` can generate it
+automatically).
 
 ## Changes between Coq 8.14 and Coq 8.15
 
