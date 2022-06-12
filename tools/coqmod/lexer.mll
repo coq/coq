@@ -68,7 +68,8 @@ let coq_ident_char = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9' '\128'-'\255']
 let coq_ident = coq_ident_start_char coq_ident_char*
 let coq_field = '.' coq_ident
 let coq_qualid = coq_ident coq_field*
-let coq_qid_quot = '"' coq_qualid '"'
+
+let coq_mod = ['A'-'Z' 'a'-'z' '.' ':' '-']+
 
 let locality = "Local" | "Global" | "#[local]" | "#[global]"
 
@@ -118,20 +119,18 @@ and parse_declare t = parse
   | whitespace+   { parse_declare t lexbuf }
   | comment_begin { parse_comment lexbuf; parse_declare t lexbuf }
   | "ML"          { parse_declare_ml t lexbuf }
-  | _             { syntax_error t lexbuf ~who:"parse_declare"
-                      ~desc:(msg_unable lexbuf) }
+  | _             { skip_to_dot t lexbuf; parse_coq t lexbuf }
 and parse_declare_ml t = parse
   | newline       { Lexing.new_line lexbuf; parse_declare_ml t lexbuf }
   | whitespace+   { parse_declare_ml t lexbuf }
   | comment_begin { parse_comment lexbuf; parse_declare_ml t lexbuf }
   | "Module"      { parse_ml_modules t [] lexbuf }
-  | _             { syntax_error t lexbuf ~who:"parse_declare_ml"
-                      ~desc:(msg_unable lexbuf) }
+  | _             { skip_to_dot t lexbuf; parse_coq t lexbuf }
 and parse_ml_modules t modules = parse
   | newline       { Lexing.new_line lexbuf; parse_ml_modules t modules lexbuf }
   | whitespace+   { parse_ml_modules t modules lexbuf }
   | comment_begin { parse_comment lexbuf; parse_ml_modules t modules lexbuf }
-  | coq_qid_quot  { let modules = get_module ~quoted:true lexbuf :: modules in
+  | quoted        { let modules = get_module ~quoted:true lexbuf :: modules in
                     parse_ml_modules t modules lexbuf }
   | '.'           { Token.add_declare_list t modules }
   | eof           { syntax_error t lexbuf ~who:"parse_ml_modules"
