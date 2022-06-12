@@ -52,7 +52,7 @@ end
 module Module : sig
   (** Tokens for modules consist of a location [loc] of the token and a string
     [logical_name] for the value. *)
-  type t
+  type t = {loc : Loc.t; logical_name : string}
 
   val make : Loc.t -> string -> t
   (** Construct a [Module.t] with given location and logical name. *)
@@ -65,8 +65,27 @@ module Module : sig
     [logical_name]. *)
 end
 
+module From : sig
+  type t = {prefix : Module.t option; require : Module.t}
+end
+
+module Load : sig
+  type t = {loc : Loc.t; path : string}
+end
+
+module ExtraDep : sig
+  type t = {loc : Loc.t; from : Module.t; file : string}
+end
+
 (** Abstract type of lexed dependency tokens. *)
-type t
+type t = {
+  filename : string option;
+  froms : From.t list;
+  (* EJGA: XXX this is wrong, OCaml module names shouldn't have the same namespace *)
+  declares : Module.t list;
+  loads : Load.t list;
+  extradeps : ExtraDep.t list;
+}
 
 val get_filename : t -> string
 (** Name of the file the tokens were lexed in. *)

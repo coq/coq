@@ -158,10 +158,10 @@ let rec find_dependencies st basename =
     let f = basename ^ ".v" in
     let chan = open_in f in
     let buf = Lexing.from_channel chan in
-    let open Lexer in
+    let lex_res = Lexer.lex_coq ~file:f buf in
     try
       while true do
-        let tok = coq_action buf in
+        let (tok : Lexer.coq_token) = Lexer.next_token lex_res in
         match tok with
         | Require (from, strl) ->
           let decl str =
@@ -228,10 +228,10 @@ let rec find_dependencies st basename =
       done;
       List.rev !dependencies
     with
-    | Fin_fichier ->
+    | Lexer.Fin_fichier ->
       close_in chan;
       List.rev !dependencies
-    | Syntax_error (i,j) ->
+    | Lexer.Syntax_error (i,j) ->
       close_in chan;
       Error.cannot_parse f (i,j)
   with Sys_error msg -> Error.cannot_open (basename ^ ".v") msg
@@ -293,9 +293,10 @@ let sort st =
       Hashtbl.add seen file ();
       let cin = open_in (file ^ ".v") in
       let lb = Lexing.from_channel cin in
+      let lres = Lexer.lex_coq ~file:(file ^ ".v") lb in
       try
         while true do
-          match Lexer.coq_action lb with
+          match Lexer.next_token lres with
           | Lexer.Require (from, sl) ->
                 List.iter
                   (fun s ->

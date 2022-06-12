@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* Interface to coqmod's lexer *)
 type qualid = string list
 
 type load = Logical of string | Physical of string
@@ -19,6 +20,9 @@ type coq_token =
   | External of qualid * string
 
 exception Fin_fichier
-exception Syntax_error of int * int
+exception Syntax_error of int*int
 
-val coq_action : Lexing.lexbuf -> coq_token
+type t
+
+val lex_coq : file:string -> Lexing.lexbuf -> t
+val next_token : t -> coq_token
