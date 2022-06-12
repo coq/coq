@@ -8,6 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* XXX *)
+open Gramlib
+
+let of_list l =
+  let rl = ref l in
+  Stream.from (fun () ->
+      match !rl with
+      | [] -> None
+      | x :: xs -> rl := xs; Some x)
+
 (* Interface to coqmod's lexer *)
 type qualid = string list
 
@@ -52,7 +62,7 @@ let to_list (lr : CT.t) : coq_token list =
   let m = List.map in
   m of_froms froms @ m of_declares declares @ m of_loads loads @ m of_extradeps extradeps
 
-let stream_tokens lr = to_list lr |> Stream.of_list
+let stream_tokens lr = to_list lr |> of_list
 
 let lex_coq ~file buf =
   let tok = CM.Token.set_filename CM.Token.empty file in
