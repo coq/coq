@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open Coqmodlib
+
 let rec read_buffer t buf =
   match Lexer.parse_coq t buf with
   | t -> read_buffer t buf
