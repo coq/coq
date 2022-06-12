@@ -180,6 +180,7 @@ let safe_pr_constr_env = safe_gen pr_constr_env
 let u_ident = Id.of_string "u"
 
 let universe_binders_with_opt_names orig names =
+  let open Univ in
   let orig = Univ.AbstractContext.names orig in
   let orig = Array.to_list orig in
   let udecl = match names with
@@ -197,19 +198,21 @@ let universe_binders_with_opt_names orig names =
           expect = List.length udecl;
         })
   in
-  let fold_named i ubind = function
-    | Name id -> Id.Map.add id (Univ.Level.var i) ubind
-    | Anonymous -> ubind
+  let fold_named i (ubind,revubind as o) = function
+    | Name id -> let ui = Level.var i in
+      Id.Map.add id ui ubind, Level.Map.add ui id revubind
+    | Anonymous -> o
   in
-  let ubind = List.fold_left_i fold_named 0 UnivNames.empty_binders udecl in
-  let fold_anons i (u_ident, ubind) = function
-    | Name _ -> u_ident, ubind
+  let names = List.fold_left_i fold_named 0 (UnivNames.empty_binders,Level.Map.empty) udecl in
+  let fold_anons i (u_ident, (ubind, revubind) as o) = function
+    | Name _ -> o
     | Anonymous ->
+      let ui = Level.var i in
       let id = Namegen.next_ident_away_from u_ident (fun id -> Id.Map.mem id ubind) in
-      (id, Id.Map.add id (Univ.Level.var i) ubind)
+      (id, (Id.Map.add id ui ubind, Level.Map.add ui id revubind))
   in
-  let (_, ubind) = List.fold_left_i fold_anons 0 (u_ident, ubind) udecl in
-  ubind
+  let (_, names) = List.fold_left_i fold_anons 0 (u_ident, names) udecl in
+  names
 
 let pr_universe_ctx_set sigma c =
   if !Detyping.print_universes && not (Univ.ContextSet.is_empty c) then

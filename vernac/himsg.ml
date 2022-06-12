@@ -1011,7 +1011,7 @@ let explain_not_match_error = function
       let open Univ in
     let pr_auctx auctx =
       let sigma = Evd.from_ctx
-          (UState.of_binders
+          (UState.of_names
              (Printer.universe_binders_with_opt_names auctx None))
       in
       let uctx = AbstractContext.repr auctx in

@@ -73,7 +73,7 @@ let print_ref reduce ref udecl =
   let typ, univs = Typeops.type_of_global_in_context env ref in
   let inst = Univ.make_abstract_instance univs in
   let bl = Printer.universe_binders_with_opt_names (Environ.universes_of_global env ref) udecl in
-  let sigma = Evd.from_ctx (UState.of_binders bl) in
+  let sigma = Evd.from_ctx (UState.of_names bl) in
   let typ =
     if reduce then
       let ctx,ccl = Reductionops.splay_prod_assum env sigma (EConstr.of_constr typ)
@@ -630,7 +630,7 @@ let print_constant with_values sep sp udecl =
   let typ = cb.const_type in
   let univs = cb.const_universes in
   let uctx =
-    UState.of_binders
+    UState.of_names
       (Printer.universe_binders_with_opt_names (Declareops.constant_polymorphic_context cb) udecl)
   in
   let env = Global.env () and sigma = Evd.from_ctx uctx in

@@ -88,6 +88,8 @@ Fail Definition fo@{uu uu} := Type@{uu}.
 Print foo@{E M N}.
 (* Underscores discard the name if there's one. *)
 Print foo@{_ _ _}.
+(* Can use a name for multiple universes *)
+Print foo@{u u IMPORTANT}.
 
 (* Also works for inductives and records. *)
 Print Empty@{E}.

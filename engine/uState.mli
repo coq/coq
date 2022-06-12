@@ -41,7 +41,7 @@ val from_env : ?binders:lident list -> Environ.env -> t
 (** Main entry point at the beginning of a declaration declaring the
     binding names as rigid universes. *)
 
-val of_binders : UnivNames.universe_binders -> t
+val of_names : (UnivNames.universe_binders * Id.t Level.Map.t) -> t
 (** Main entry point when only names matter, e.g. for printing. *)
 
 val of_context_set : Univ.ContextSet.t -> t
