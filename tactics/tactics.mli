@@ -189,7 +189,7 @@ val clear         : Id.t list -> unit Proofview.tactic
 val clear_body    : Id.t list -> unit Proofview.tactic
 val unfold_body   : Id.t -> unit Proofview.tactic
 val keep          : Id.t list -> unit Proofview.tactic
-val apply_clear_request : clear_flag -> bool -> constr -> unit Proofview.tactic
+val apply_clear_request : clear_flag -> bool -> Id.t option -> unit Proofview.tactic
 
 val specialize    : constr with_bindings -> intro_pattern option -> unit Proofview.tactic
 

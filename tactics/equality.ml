@@ -537,6 +537,7 @@ let apply_special_clear_request clear_flag f =
     let env = Proofview.Goal.env gl in
     try
       let (sigma, (c, bl)) = f env sigma in
+      let c = try Some (destVar sigma c) with DestKO -> None in
       apply_clear_request clear_flag (use_clear_hyp_by_default ()) c
     with
       e when noncritical e -> tclIDTAC
@@ -1489,8 +1490,9 @@ let injEq flags ?(injection_in_context = injection_in_context_flag ()) with_evar
         let destopt = match EConstr.kind sigma c with
         | Var id -> get_previous_hyp_position id gl
         | _ -> MoveLast in
+        let id = try Some (destVar sigma c) with DestKO -> None in
         let clear_tac =
-          tclTRY (apply_clear_request clear_flag dft_clear_flag c) in
+          tclTRY (apply_clear_request clear_flag dft_clear_flag id) in
         (* Try should be removal if dependency were treated *)
         let intro_tac =
           if bounded_intro
@@ -1536,7 +1538,9 @@ let dEqThen0 ~keep_proofs with_evars ntac = function
 
 let dEq ~keep_proofs with_evars =
   dEqThen0 ~keep_proofs with_evars (fun clear_flag c x ->
-    (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
+    Proofview.tclEVARMAP >>= fun sigma ->
+    let ido = try Some (destVar sigma c) with DestKO -> None in
+    (apply_clear_request clear_flag (use_clear_hyp_by_default ()) ido))
 
 let dEqThen ~keep_proofs with_evars ntac where =
   dEqThen0 ~keep_proofs with_evars (fun _ _ n -> ntac n) where
