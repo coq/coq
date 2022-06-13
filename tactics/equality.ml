@@ -1449,6 +1449,7 @@ let injEqThen keep_proofs tac l2r eql =
   let { eq_data = (eq, (t,t1,t2)) } = eql in
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
+  let id = try Some (destVar sigma eql.eq_term) with DestKO -> None in
   match find_positions env sigma ~keep_proofs ~no_discr:true t1 t2 with
   | Inl _ ->
      assert false
@@ -1462,7 +1463,7 @@ let injEqThen keep_proofs tac l2r eql =
      Proofview.tclZERO NothingToInject
   | Inr posns ->
       inject_at_positions env sigma l2r eql posns
-        (tac eql.eq_term)
+        (tac id)
   end
 
 let get_previous_hyp_position id gl =
@@ -1482,15 +1483,13 @@ let injEq flags ?(injection_in_context = injection_in_context_flag ()) with_evar
     | None -> None, false, false, false
     | _ -> let b = use_injection_pattern_l2r_order flags in ipats, b, b, b in
   (* Built the post tactic depending on compatibility mode *)
-  let post_tac c n =
+  let post_tac id n =
     match ipats_style with
     | Some ipats ->
       Proofview.Goal.enter begin fun gl ->
-        let sigma = project gl in
-        let destopt = match EConstr.kind sigma c with
-        | Var id -> get_previous_hyp_position id gl
-        | _ -> MoveLast in
-        let id = try Some (destVar sigma c) with DestKO -> None in
+        let destopt = match id with
+        | Some id -> get_previous_hyp_position id gl
+        | None -> MoveLast in
         let clear_tac =
           tclTRY (apply_clear_request clear_flag dft_clear_flag id) in
         (* Try should be removal if dependency were treated *)
@@ -1522,14 +1521,14 @@ let decompEqThen keep_proofs ntac eq =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
-      match find_positions env sigma ~keep_proofs ~no_discr:false t1 t2 with
-      | Inl (cpath, (_,dirn), _) ->
-          discr_positions env sigma eq cpath dirn
-      | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
-        ntac eq.eq_term 0
+    let ido = try Some (destVar sigma eq.eq_term) with DestKO -> None in
+    match find_positions env sigma ~keep_proofs ~no_discr:false t1 t2 with
+    | Inl (cpath, (_,dirn), _) ->
+      discr_positions env sigma eq cpath dirn
+    | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
+      ntac ido 0
     | Inr posns ->
-        inject_at_positions env sigma true eq posns
-          (ntac eq.eq_term)
+      inject_at_positions env sigma true eq posns (ntac ido)
   end
 
 let dEqThen0 ~keep_proofs with_evars ntac = function
@@ -1537,9 +1536,7 @@ let dEqThen0 ~keep_proofs with_evars ntac = function
   | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (decompEqThen (use_keep_proofs keep_proofs) (ntac clear_flag))) c
 
 let dEq ~keep_proofs with_evars =
-  dEqThen0 ~keep_proofs with_evars (fun clear_flag c x ->
-    Proofview.tclEVARMAP >>= fun sigma ->
-    let ido = try Some (destVar sigma c) with DestKO -> None in
+  dEqThen0 ~keep_proofs with_evars (fun clear_flag ido x ->
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) ido))
 
 let dEqThen ~keep_proofs with_evars ntac where =
