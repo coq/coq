@@ -83,7 +83,7 @@ val simpleInjClause : inj_flags option -> evars_flag ->
   constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 
 val dEq : keep_proofs:(bool option) -> evars_flag -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
-val dEqThen : keep_proofs:(bool option) -> evars_flag -> (clear_flag -> constr -> int -> unit Proofview.tactic) -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
+val dEqThen : keep_proofs:(bool option) -> evars_flag -> (int -> unit Proofview.tactic) -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 
 val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> evar_map * (constr * constr * constr)

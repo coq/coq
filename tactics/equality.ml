@@ -1530,13 +1530,16 @@ let decompEqThen keep_proofs ntac eq =
           (ntac eq.eq_term)
   end
 
-let dEqThen ~keep_proofs with_evars ntac = function
+let dEqThen0 ~keep_proofs with_evars ntac = function
   | None -> onNegatedEquality with_evars (decompEqThen (use_keep_proofs keep_proofs) (ntac None))
   | Some c -> onInductionArg (fun clear_flag -> onEquality with_evars (decompEqThen (use_keep_proofs keep_proofs) (ntac clear_flag))) c
 
 let dEq ~keep_proofs with_evars =
-  dEqThen ~keep_proofs with_evars (fun clear_flag c x ->
+  dEqThen0 ~keep_proofs with_evars (fun clear_flag c x ->
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c))
+
+let dEqThen ~keep_proofs with_evars ntac where =
+  dEqThen0 ~keep_proofs with_evars (fun _ _ n -> ntac n) where
 
 let intro_decomp_eq tac (eq, _, data) (c, t) =
   Proofview.Goal.enter begin fun gl ->
