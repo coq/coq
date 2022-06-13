@@ -65,3 +65,6 @@ val judge_of_float : Environ.env -> Float64.t -> unsafe_judgment
 
 val checked_appvect : env -> evar_map -> constr -> constr array -> evar_map * constr
 val checked_applist : env -> evar_map -> constr -> constr list -> evar_map * constr
+
+(** hack *)
+val recheck_against : Environ.env -> evar_map -> constr -> constr -> evar_map * types
