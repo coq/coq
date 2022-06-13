@@ -132,6 +132,8 @@ GRAMMAR EXTEND Gram
     | "0"
       [ "_" -> { CAst.make ~loc @@ CPatVar Anonymous }
       | "()" -> { CAst.make ~loc @@ CPatRef (AbsKn (Tuple 0), []) }
+      | n = Prim.integer -> { CAst.make ~loc @@ CPatAtm (AtmInt n) }
+      | s = Prim.string -> { CAst.make ~loc @@ CPatAtm (AtmStr s) }
       | qid = Prim.qualid -> { pattern_of_qualid qid }
       | "("; p = atomic_tac2pat; ")" -> { p }
       | "{"; a = tac2rec_fieldpats; "}" -> { CAst.make ~loc @@ CPatRecord a }

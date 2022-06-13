@@ -160,3 +160,27 @@ Module Record.
        check_eq_int (bang r) 0.
 
 End Record.
+
+Module Atom.
+
+  Fail Ltac2 mix_atoms x :=
+    match x with
+    | 0 | "" => false
+    | _ => true
+    end.
+
+  Ltac2 match_int x :=
+    match x with
+    | 0 => false
+    | _ => true
+    end.
+  Fail Ltac2 dummy : (int * int) -> _ := match_int.
+
+  Ltac2 match_str x :=
+    match x with
+    | "" => false
+    | _ => true
+    end.
+  Fail Ltac2 dummy : int -> _ := match_str.
+
+End Atom.

@@ -199,6 +199,7 @@ let pr_partial_pat_gen =
   let open PartialPat in
   let rec pr_pat lvl pat = match pat.CAst.v with
     | Var x -> pr_name x
+    | Atom a -> pr_atom a
     | As (p, x) ->
       let paren = match lvl with
         | E0 -> paren
@@ -235,7 +236,8 @@ let pr_partial_pat_gen =
         else Other (i,args)
       in
       pr_factorized_constructor pr_pat lvl ctyp factorized
-    | Extension -> str "*extension*"
+    | Extension {example=None} -> str "*extension*"
+    | Extension {example=Some a} -> pr_atom a
     | Or pats ->
       let paren = match lvl with
         | E0 -> paren
@@ -252,6 +254,7 @@ let rec partial_pat_of_glb_pat pat =
   let open PartialPat in
   let pat = match pat with
     | GPatVar x -> Var x
+    | GPatAtm x -> Atom x
     | GPatRef (ctor,pats) -> Ref (ctor, List.map partial_pat_of_glb_pat pats)
     | GPatOr pats -> Or (List.map partial_pat_of_glb_pat pats)
     | GPatAs (p,x) -> As (partial_pat_of_glb_pat p, x)
