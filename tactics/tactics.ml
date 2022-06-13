@@ -3785,7 +3785,7 @@ let mk_term_eq homogeneous env sigma ty t ty' t' =
 
 let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
   let open Context.Rel.Declaration in
-  Refine.refine ~typecheck:false begin fun sigma ->
+  Refine.refine ~typecheck:true begin fun sigma ->
   let eqslen = List.length eqs in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
   let sigma, abshypeq, abshypt =
