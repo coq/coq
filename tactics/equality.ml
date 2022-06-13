@@ -1540,9 +1540,7 @@ let dEq ~keep_proofs with_evars =
 
 let intro_decomp_eq tac (eq, _, data) (c, t) =
   Proofview.Goal.enter begin fun gl ->
-    let cl = pf_apply Clenv.make_clenv_binding gl (c, t) NoBindings in
-    let eq = { eq_data = (eq, data); eq_term = Clenv.clenv_value cl } in
-    Proofview.Unsafe.tclEVARS cl.Clenv.evd <*>
+    let eq = { eq_data = (eq, data); eq_term = c } in
     decompEqThen !keep_proof_equalities_for_injection (fun _ -> tac) eq
   end
 
