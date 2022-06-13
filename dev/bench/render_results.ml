@@ -31,11 +31,11 @@ type ('a,'b) pkg_timings = {
 ;;
 
 let reduce_pkg_timings (m_f : 'a list -> 'c) (m_a : 'b list -> 'd) (t : ('a,'b) pkg_timings list) : ('c,'d) pkg_timings =
-  { user_time  = m_f @@ List.map (fun x -> x.user_time)  t
-  ; num_instr  = m_a @@ List.map (fun x -> x.num_instr)  t
-  ; num_cycles = m_a @@ List.map (fun x -> x.num_cycles) t
-  ; num_mem    = m_a @@ List.map (fun x -> x.num_mem)    t
-  ; num_faults = m_a @@ List.map (fun x -> x.num_faults) t
+  { user_time  = m_f @@ CList.map (fun x -> x.user_time)  t
+  ; num_instr  = m_a @@ CList.map (fun x -> x.num_instr)  t
+  ; num_cycles = m_a @@ CList.map (fun x -> x.num_cycles) t
+  ; num_mem    = m_a @@ CList.map (fun x -> x.num_mem)    t
+  ; num_faults = m_a @@ CList.map (fun x -> x.num_faults) t
   }
 ;;
 
@@ -76,8 +76,8 @@ module Float = struct
   let nan = nan
 end
 
-module List = struct
-  include List
+module CList = struct
+  include CList
 
   let rec init_tailrec_aux acc i n f =
     if i >= n then acc
@@ -96,7 +96,7 @@ module List = struct
     | Sys.Other _ -> 50
 
   let init len f =
-    if len < 0 then invalid_arg "List.init" else
+    if len < 0 then invalid_arg "CList.init" else
     if len > rev_init_threshold then rev (init_tailrec_aux [] 0 len f)
     else init_aux 0 len f
 
@@ -106,12 +106,12 @@ module List = struct
 
   let reduce f = function
     | [] ->
-      invalid_arg "List.reduce: Empty List"
+      invalid_arg "CList.reduce: Empty CList"
     | h :: t ->
       fold_left f h t
 
-  let min l = reduce min l
-  let max l = reduce max l
+  let min l = reduce Stdlib.min l
+  let max l = reduce Stdlib.max l
 
 end
 ;;
@@ -145,11 +145,11 @@ let add_timings a b =
 let mk_pkg_timings work_dir pkg_name suffix iteration =
   let command_prefix = "cat " ^ work_dir ^ "/" ^ pkg_name ^ suffix ^ string_of_int iteration in
   let ncoms = command_prefix ^ ".ncoms" |> run |> String.rchop ~n:1 |> int_of_string in
-  let timings = List.init ncoms (fun ncom ->
+  let timings = CList.init ncoms (fun ncom ->
       let command_prefix = command_prefix ^ "." ^ string_of_int (ncom+1) in
       let time_command_output = command_prefix ^ ".time" |> run |> String.rchop ~n:1 |> String.split_on_char ' ' in
 
-      let nth x i = List.nth i x in
+      let nth x i = CList.nth i x in
 
       { user_time = time_command_output |> nth 0 |> float_of_string
       (* Perf can indeed be not supported in some systems, so we must fail gracefully *)
@@ -167,7 +167,7 @@ let mk_pkg_timings work_dir pkg_name suffix iteration =
   in
   match timings with
   | [] -> assert false
-  | timing :: rest -> List.fold_left add_timings timing rest
+  | timing :: rest -> CList.fold_left add_timings timing rest
 ;;
 
 (* process command line paramters *)
@@ -178,7 +178,7 @@ let new_coq_version = Sys.argv.(3) in
 let old_coq_version = Sys.argv.(4) in
 let minimal_user_time = float_of_string Sys.argv.(5) in
 let sorting_column = Sys.argv.(6) in
-let coq_opam_packages = Sys.argv |> Array.to_list |> List.drop 7 in
+let coq_opam_packages = Sys.argv |> Array.to_list |> CList.drop 7 in
 
 (* ASSUMPTIONS:
 
@@ -201,27 +201,27 @@ in
 
 (* parse the *.time and *.perf files *)
 coq_opam_packages
-|> List.map
+|> CList.map
      (fun package_name ->
        package_name,(* compilation_results_for_NEW : (float * int * int * int) list *)
-       List.init num_of_iterations succ |> List.map (mk_pkg_timings work_dir package_name ".NEW."),
-       List.init num_of_iterations succ |> List.map (mk_pkg_timings work_dir package_name ".OLD."))
+       CList.init num_of_iterations succ |> CList.map (mk_pkg_timings work_dir package_name ".NEW."),
+       CList.init num_of_iterations succ |> CList.map (mk_pkg_timings work_dir package_name ".OLD."))
 
 (* from the list of measured values, select just the minimal ones *)
 
-|> List.map
+|> CList.map
   (fun ((package_name : string),
         (new_measurements : (float, int) pkg_timings list),
         (old_measurements : (float, int) pkg_timings list)) ->
-    let f_min : float list -> float = List.min in
-    let i_min : int list -> int = List.min in
+    let f_min : float list -> float = CList.min in
+    let i_min : int list -> int = CList.min in
     package_name,
     reduce_pkg_timings f_min i_min new_measurements,
     reduce_pkg_timings f_min i_min old_measurements
   )
 
 (* compute the "proportional differences in % of the NEW measurement and the OLD measurement" of all measured values *)
-|> List.map
+|> CList.map
      (fun (package_name, new_t, old_t) ->
        package_name, new_t, old_t,
        { user_time  = (new_t.user_time -. old_t.user_time) /. old_t.user_time *. 100.0
@@ -232,7 +232,7 @@ coq_opam_packages
        })
 
 (* sort the table with results *)
-|> List.sort
+|> CList.sort
      (match sorting_column with
       | "user_time_pdiff" ->
         fun (_,_,_,perf1) (_,_,_,perf2) ->
@@ -245,13 +245,13 @@ coq_opam_packages
 
 (* Keep only measurements that took at least "minimal_user_time" (in seconds). *)
 
-|> List.filter
+|> CList.filter
      (fun (_, new_t, old_t, _) ->
         minimal_user_time <= new_t.user_time && minimal_user_time <= old_t.user_time)
 
 (* Below we take the measurements and format them to stdout. *)
 
-|> List.map begin fun (package_name, new_t, old_t, perc) ->
+|> CList.map begin fun (package_name, new_t, old_t, perc) ->
 
   let precision = 2 in
   let prf f = Printf.sprintf "%.*f" precision f in

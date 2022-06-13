@@ -5,8 +5,8 @@ let list_html_files dir =
     | f :: fs when Sys.is_directory f ->
         Sys.readdir f
         |> Array.to_list
-        |> List.map (Filename.concat f)
-        |> List.append fs
+        |> CList.map (Filename.concat f)
+        |> CList.append fs
         |> loop result
     | f :: fs ->
       if Filename.check_suffix f ".html" then
@@ -81,7 +81,7 @@ let render_table ?(reverse=false) title num table =
   let top = [["OLD"; "NEW"; "DIFF"; "%DIFF"; "Ln"; "FILE"]] in
   let align_top = [[Middle; Middle; Middle; Middle; Middle; MidLeft]] in
   let align_rows = [[Right; Right; Right; Right; Right; Left]] in
-  (if reverse then List.rev table else table)
+  (if reverse then CList.rev table else table)
   |> Array.of_list
   |> fun x -> Array.sub x 0 num
   |> Array.to_list
@@ -92,20 +92,20 @@ let main () =
   let table =
     Unix.getcwd ()
     |> list_html_files
-    |> List.filter_map read_timing_lines
-    |> List.flatten
+    |> CList.filter_map read_timing_lines
+    |> CList.flatten
     (* Do we want to do a unique sort? *)
-    (* |> List.sort_uniq (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y) *)
-    |> List.sort (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y)
-    |> List.map list_timing_data
-    |> List.map (fun x -> [ x ])
+    (* |> CList.sort_uniq (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y) *)
+    |> CList.sort (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y)
+    |> CList.map list_timing_data
+    |> CList.map (fun x -> [ x ])
   in
   (* What is a good number to choose? *)
   let num = 25 in
-  let num = min num (List.length table) in
+  let num = min num (CList.length table) in
   let slow_table = render_table (Printf.sprintf "TOP %d SLOW DOWNS" num) ~reverse:true num table in
   let fast_table = render_table (Printf.sprintf "TOP %d SPEED UPS" num) num table in
-  let timings_table = render_table "Significant line time changes in bench" (List.length table) table in
+  let timings_table = render_table "Significant line time changes in bench" (CList.length table) table in
   (* Print tables to stdout *)
   Printf.printf "%s\n%s\n" slow_table fast_table;
   (* Print slow table to slow_table file *)

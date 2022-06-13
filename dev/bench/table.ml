@@ -29,8 +29,8 @@ let vert_split (ls : 'a list list) =
   | [] -> failwith "vert_split"
   | x :: l -> (x, l)
   in
-  let ls = List.map split ls in
-  List.split ls
+  let ls = CList.map split ls in
+  CList.split ls
 
 let justify align n s =
   let len = String.length s in
@@ -66,32 +66,32 @@ let angle hkind vkind = match hkind, vkind with
 
 let print_separator vkind col_size =
   let rec dashes n = if n = 0 then "" else "─" ^ dashes (n - 1) in
-  let len = List.length col_size in
+  let len = CList.length col_size in
   let pad = dashes row_padding in
   let () = assert (0 < len) in
   let map n = dashes n in
   angle `Lft vkind ^ pad ^
-  String.concat (pad ^ angle `Mid vkind ^ pad) (List.map map col_size) ^
+  String.concat (pad ^ angle `Mid vkind ^ pad) (CList.map map col_size) ^
   pad ^ angle `Rgt vkind
 
 let print_blank col_size =
-  let len = List.length col_size in
+  let len = CList.length col_size in
   let () = assert (0 < len) in
   let pad = String.make row_padding ' ' in
   let map n = String.make n ' ' in
-  "│" ^ pad ^ String.concat (pad ^ "│" ^ pad) (List.map map col_size) ^ pad ^ "│"
+  "│" ^ pad ^ String.concat (pad ^ "│" ^ pad) (CList.map map col_size) ^ pad ^ "│"
 
 let print_row row =
-  let len = List.length row in
+  let len = CList.length row in
   let () = assert (0 < len) in
   let pad = String.make row_padding ' ' in
   "│" ^ pad ^ String.concat (pad ^ "│" ^ pad) row ^ pad ^ "│"
 
-let default_align_headers = List.map (fun _ -> Align.Middle)
-let default_align_top = List.map @@ List.map (fun _ -> Align.Middle)
+let default_align_headers = CList.map (fun _ -> Align.Middle)
+let default_align_top = CList.map @@ CList.map (fun _ -> Align.Middle)
 let default_align_rows rows =
-  List.hd rows
-  |> List.map @@ List.map (fun _ -> Align.Right)
+  CList.hd rows
+  |> CList.map @@ CList.map (fun _ -> Align.Right)
 
 (* Invariant : all rows must have the same shape *)
 
@@ -101,19 +101,19 @@ let print (headers : header list) (top : row) (rows : row list)
   ?(align_rows = default_align_rows rows)
   () =
   (* Sanitize input *)
-  let ncolums = List.length headers in
+  let ncolums = CList.length headers in
   let shape = ref None in
   let check row =
-    let () = homogeneous (List.length row = ncolums) in
-    let rshape : int list = List.map (fun data -> List.length data) row in
+    let () = homogeneous (CList.length row = ncolums) in
+    let rshape : int list = CList.map (fun data -> CList.length data) row in
     match !shape with
     | None -> shape := Some rshape
     | Some s -> homogeneous (rshape = s)
   in
-  let () = List.iter check rows in
+  let () = CList.iter check rows in
   (* TODO: check is broken please fix *)
-  (* let () = List.iter check (List.map (List.map (fun _ -> [])) align_rows) in *)
-  let () = homogeneous (List.length align_headers = ncolums) in
+  (* let () = CList.iter check (CList.map (CList.map (fun _ -> [])) align_rows) in *)
+  let () = homogeneous (CList.length align_headers = ncolums) in
   (* Compute layout *)
   let rec layout n (rows : row list) =
     if n = 0 then []
@@ -122,13 +122,13 @@ let print (headers : header list) (top : row) (rows : row list)
       let ans = layout (n - 1) rows in
       let data = ref None in
       let iter args =
-        let size = List.map String.length args in
+        let size = CList.map String.length args in
         match !data with
         | None -> data := Some size
         | Some s ->
-          data := Some (List.map2 (fun len1 len2 -> max len1 len2) s size)
+          data := Some (CList.map2 (fun len1 len2 -> max len1 len2) s size)
       in
-      let () = List.iter iter col in
+      let () = CList.iter iter col in
       let data = match !data with None -> [] | Some s -> s in
       data :: ans
   in
@@ -136,16 +136,16 @@ let print (headers : header list) (top : row) (rows : row list)
   let map hd shape =
     let data_size = match shape with
     | [] -> 0
-    | n :: shape -> List.fold_left (fun accu n -> accu + n + val_padding) n shape
+    | n :: shape -> CList.fold_left (fun accu n -> accu + n + val_padding) n shape
     in
     max (String.length hd) data_size
   in
-  let col_size = List.map2 map headers layout in
+  let col_size = CList.map2 map headers layout in
   (* Justify the data *)
   let headers = map3 justify align_headers col_size headers in
-  let top = List.map2 (justify Align.Middle) col_size (map3 justify_row align_top layout top) in
+  let top = CList.map2 (justify Align.Middle) col_size (map3 justify_row align_top layout top) in
 
-  let rows = List.map (fun row -> List.map2 (justify Align.Right) col_size (map3 justify_row align_rows layout row)) rows in
+  let rows = CList.map (fun row -> CList.map2 (justify Align.Right) col_size (map3 justify_row align_rows layout row)) rows in
   (* Print the table *)
   let lines =
     print_separator `Top col_size ::
@@ -153,7 +153,7 @@ let print (headers : header list) (top : row) (rows : row list)
     print_blank col_size ::
     print_row top ::
     print_separator `Mid col_size ::
-    List.map print_row rows @
+    CList.map print_row rows @
     print_separator `Bot col_size ::
     []
   in
