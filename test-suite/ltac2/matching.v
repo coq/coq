@@ -137,3 +137,26 @@ Module As.
   (* this checks that we didn't parse the pattern as "Some (Some (_ as v))" *)
   Ltac2 Eval option_flat (Some (Some 0)).
 End As.
+
+Module Record.
+
+  Ltac2 bang x := match x with { contents := v } => v end.
+
+  Ltac2 Type exn ::= [ Regression_Test_Failure ].
+
+  Ltac2 check_eq_int a b :=
+    if Int.equal a b then () else Control.throw Regression_Test_Failure .
+
+  Print Ltac2 bang.
+
+  Ltac2 Eval
+        let r := { contents := 0 } in
+        r.(contents) := 1;
+        check_eq_int (bang r) 1.
+
+  Fail Ltac2 Eval
+       let r := { contents := 0 } in
+       r.(contents) := 1;
+       check_eq_int (bang r) 0.
+
+End Record.

@@ -92,6 +92,7 @@ type atom =
 type raw_patexpr_r =
 | CPatVar of Name.t
 | CPatRef of ltac_constructor or_tuple or_relid * raw_patexpr list
+| CPatRecord of (ltac_projection or_relid * raw_patexpr) list
 | CPatCnv of raw_patexpr * raw_typexpr
 | CPatOr of raw_patexpr list
 | CPatAs of raw_patexpr * lident
