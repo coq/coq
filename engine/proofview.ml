@@ -761,8 +761,9 @@ let with_shelf tac =
   Pv.get >>= fun npv ->
   let { solution = sigma } = npv in
   let gls, sigma = Evd.pop_shelf sigma in
-  (* The pending future goals are necessarily coming from V82.tactic *)
+  (* The pending future goals are necessarily coming from legacy tactics *)
   (* and thus considered as to shelve, as in Proof.run_tactic *)
+  (* TODO: is it still relevant since the removal of the compat layer? *)
   let fgl, sigma = Evd.pop_future_goals sigma in
   (* Ensure we mark and return only unsolved goals *)
   let gls' = CList.rev_append fgl.Evd.FutureGoals.comb gls in
@@ -1052,17 +1053,6 @@ let (>>=) = tclBIND
 
 (** {6 Goal-dependent tactics} *)
 
-let goal_env env evars gl =
-  let evi = Evd.find evars gl in
-  Evd.evar_filtered_env env evi
-
-let goal_nf_evar sigma gl =
-  let evi = Evd.find sigma gl in
-  let evi = Evarutil.nf_evar_info sigma evi in
-  let sigma = Evd.add sigma gl evi in
-  (gl, sigma)
-
-
 let catchable_exception = function
   | Logic_monad.Exception _ -> false
   | e -> CErrors.noncritical e
@@ -1202,57 +1192,6 @@ let wrap_exceptions f =
   try f ()
   with e when catchable_exception e ->
     let (e, info) = Exninfo.capture e in tclZERO ~info e
-
-(*** Compatibility layer with <= 8.2 tactics ***)
-module V82 = struct
-[@@@ocaml.warning "-3"]
-
-  type tac = Evar.t Evd.sigma -> Evar.t list Evd.sigma
-
-  let tactic ?(nf_evars=true) tac =
-    (* spiwack: we ignore the dependencies between goals here,
-       expectingly preserving the semantics of <= 8.2 tactics *)
-    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-    let open Proof in
-    Pv.get >>= fun ps ->
-    try
-      let tac g_w_s evd =
-        let g, w = drop_state g_w_s, get_state g_w_s in
-        let glsigma  =
-          tac { Evd.it = g ; sigma = evd; }  in
-        let sigma = glsigma.Evd.sigma in
-        let g = CList.map (fun g -> goal_with_state g w) glsigma.Evd.it in
-        ( g, sigma )
-      in
-        (* Old style tactics expect the goals normalized with respect to evars. *)
-      let (initgoals_w_state, initevd) =
-        Evd.Monad.List.map (fun g_w_s s ->
-          let g, w = drop_state g_w_s, get_state g_w_s in
-          let g, s = if nf_evars then goal_nf_evar s g else g, s in
-          goal_with_state g w, s) ps.comb ps.solution
-      in
-      let (goalss,evd) = Evd.Monad.List.map tac initgoals_w_state initevd in
-      let sgs = CList.flatten goalss in
-      let sgs = undefined evd sgs in
-      InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"<unknown>")) >>
-      Pv.set { solution = evd; comb = sgs; }
-    with e when catchable_exception e ->
-      let (e, info) = Exninfo.capture e in
-      tclZERO ~info e
-
-  let of_tactic t gls =
-    try
-      let env = Global.env () in
-      let init = { solution = gls.Evd.sigma ; comb = [with_empty_state gls.Evd.it] } in
-      let name, poly = Names.Id.of_string "legacy_pe", false in
-      let (_,final,_,_) = apply ~name ~poly (goal_env env gls.Evd.sigma gls.Evd.it) t init in
-      { Evd.sigma = final.solution ; it = CList.map drop_state final.comb }
-    with Logic_monad.TacticFailure e as src ->
-      let (_, info) = Exninfo.capture src in
-      Exninfo.iraise (e, info)
-
-[@@@ocaml.warning "-3"]
-end
 
 (** {7 Notations} *)
 
