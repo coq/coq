@@ -2845,10 +2845,15 @@ let interp_univ_constraints env evd cstrs =
 let interp_univ_decl env decl =
   let open UState in
   let binders : lident list = decl.univdecl_instance in
-  let evd = Evd.from_env ~binders env in
+  let evd = Evd.from_env env in
+  let evd, instance = List.fold_left_map (fun evd lid ->
+      Evd.new_univ_level_variable ?loc:lid.loc univ_rigid ~name:lid.v evd)
+      evd
+      binders
+  in
   let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
   let decl = {
-    univdecl_instance = binders;
+    univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
     univdecl_constraints = cstrs;
     univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
@@ -2859,10 +2864,15 @@ let interp_cumul_univ_decl env decl =
   let open UState in
   let binders = List.map fst decl.univdecl_instance in
   let variances = Array.map_of_list snd decl.univdecl_instance in
-  let evd = Evd.from_ctx (UState.from_env ~binders env) in
+  let evd = Evd.from_env env in
+  let evd, instance = List.fold_left_map (fun evd lid ->
+      Evd.new_univ_level_variable ?loc:lid.loc univ_rigid ~name:lid.v evd)
+      evd
+      binders
+  in
   let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
   let decl = {
-    univdecl_instance = binders;
+    univdecl_instance = instance;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;
     univdecl_constraints = cstrs;
     univdecl_extensible_constraints = decl.univdecl_extensible_constraints;
