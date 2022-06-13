@@ -2348,6 +2348,16 @@ ltac2_expr0: [
 | ltac2_tactic_atom      (* ltac2 plugin *)
 ]
 
+tac2rec_fieldpats: [
+| tac2rec_fieldpat ";" OPT tac2rec_fieldpats      (* ltac2 plugin *)
+| tac2rec_fieldpat ";"      (* ltac2 plugin *)
+| tac2rec_fieldpat      (* ltac2 plugin *)
+]
+
+tac2rec_fieldpat: [
+| qualid ":=" tac2pat1      (* ltac2 plugin *)
+]
+
 ltac2_tactic_atom: [
 | integer      (* ltac2 plugin *)
 | string      (* ltac2 plugin *)
@@ -2382,14 +2392,18 @@ tac2pat1: [
 | qualid      (* ltac2 plugin *)
 | tac2pat0 "::" tac2pat0      (* ltac2 plugin *)
 | tac2pat0 "|" LIST1 tac2pat1 SEP "|"      (* ltac2 plugin *)
+| tac2pat0 "as" lident      (* ltac2 plugin *)
 | tac2pat0      (* ltac2 plugin *)
 ]
 
 tac2pat0: [
 | "_"      (* ltac2 plugin *)
 | "()"      (* ltac2 plugin *)
+| integer      (* ltac2 plugin *)
+| string      (* ltac2 plugin *)
 | qualid      (* ltac2 plugin *)
 | "(" OPT atomic_tac2pat ")"      (* ltac2 plugin *)
+| "{" OPT tac2rec_fieldpats "}"      (* ltac2 plugin *)
 | "[" LIST0 tac2pat1 SEP ";" "]"      (* ltac2 plugin *)
 ]
 
