@@ -30,7 +30,7 @@
 ;; ./configure to compile Coq it is already too late).
 
 ;;; Code:
-(require 'ocamldebug)
+(require 'ocamldebug nil 'noerror)
 
 (require 'seq)
 (require 'subr-x)
