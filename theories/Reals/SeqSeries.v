@@ -53,7 +53,7 @@ Proof.
       unfold ge; apply Nat.le_trans with n.
       - apply H4.
       - apply Nat.le_trans with (N + n)%nat.
-        + rewrite Nat.add_comm; apply Nat.le_add_r.
+        + apply Nat.le_add_l.
         + apply Nat.le_succ_diag_r. }
     cut (0 <= N)%nat.
     2:{ apply Nat.le_0_l. }
@@ -106,7 +106,7 @@ Proof.
     apply H3; unfold ge; apply Nat.le_trans with n.
     - apply H4.
     - apply Nat.le_trans with (N + n)%nat.
-      + rewrite Nat.add_comm; apply Nat.le_add_r.
+      + apply Nat.le_add_l.
       + apply Nat.le_succ_diag_r.
   }
   elim X; intros l1N H2.
@@ -133,7 +133,7 @@ Proof.
     { apply H6; unfold ge; apply Nat.le_trans with n.
       - apply H7.
       - apply Nat.le_trans with (N + n)%nat.
-        + rewrite Nat.add_comm; apply Nat.le_add_r.
+        + apply Nat.le_add_l.
         + apply Nat.le_succ_diag_r. }
     cut (0 <= N)%nat.
     2:{ apply Nat.le_0_l. }
@@ -170,7 +170,7 @@ Proof.
   { unfold SP in H5; apply H5; unfold ge; apply Nat.le_trans with n.
     - apply H6.
     - apply Nat.le_trans with (N + n)%nat.
-      + rewrite Nat.add_comm; apply Nat.le_add_r.
+      + apply Nat.le_add_l.
       + apply Nat.le_succ_diag_r. }
   cut (0 <= N)%nat.
   2:{ apply Nat.le_0_l. }

@@ -24,6 +24,11 @@ intros n m; induct m.
 - intros m IH. rewrite add_succ_r; now apply le_le_succ_r.
 Qed.
 
+Theorem le_add_l : forall n m, n <= m + n.
+Proof.
+intros n m; rewrite add_comm; apply le_add_r.
+Qed.
+
 Theorem lt_lt_add_r : forall n m p, n < m -> n < m + p.
 Proof.
 intros n m p H; rewrite <- (add_0_r n).
