@@ -96,12 +96,6 @@ val cutRewriteInConcl : bool -> constr -> unit Proofview.tactic
 val rewriteInHyp : bool -> constr -> Id.t -> unit Proofview.tactic
 val rewriteInConcl : bool -> constr -> unit Proofview.tactic
 
-(* Tells if tactic "discriminate" is applicable *)
-val discriminable : env -> evar_map -> constr -> constr -> bool
-
-(* Tells if tactic "injection" is applicable *)
-val injectable : env -> evar_map -> keep_proofs:(bool option) -> constr -> constr -> bool
-
 val set_keep_equality : inductive -> bool -> unit
 
 (* Subst *)

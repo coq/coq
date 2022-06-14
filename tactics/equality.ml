@@ -817,18 +817,6 @@ let use_keep_proofs = function
   | None -> !keep_proof_equalities_for_injection
   | Some b -> b
 
-let discriminable env sigma t1 t2 =
-  match find_positions env sigma ~keep_proofs:false ~no_discr:false t1 t2 with
-    | Inl _ -> true
-    | _ -> false
-
-let injectable env sigma ~keep_proofs t1 t2 =
-    match find_positions env sigma ~keep_proofs:(use_keep_proofs keep_proofs) ~no_discr:true t1 t2 with
-    | Inl _ -> assert false
-    | Inr [] | Inr [([],_,_)] -> false
-    | Inr _ -> true
-
-
 (* Once we have found a position, we need to project down to it.  If
    we are discriminating, then we need to produce False on one of the
    branches of the discriminator, and True on the other one.  So the
