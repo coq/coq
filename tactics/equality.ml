@@ -1023,11 +1023,13 @@ type equality = {
   (* equality data + A : Type, t1 : A, t2 : A *)
   eq_term : EConstr.t;
   (* term [M : R A t1 t2] where [R] is the equality from above *)
+  eq_evar : Evar.t list;
+  (* List of implicit hypotheses on which the data above depends. *)
 }
 
 let eq_baseid = Id.of_string "e"
 
-let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v } cpath dirn =
+let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v; eq_evar = evs } cpath dirn =
   build_coq_True () >>= fun true_0 ->
   build_coq_False () >>= fun false_0 ->
   let false_ty = Retyping.get_type_of env sigma false_0 in
@@ -1047,8 +1049,9 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v } cpath 
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
     (* pf : eq t t1 t2 -> False *)
     let pf = EConstr.mkApp (pf, [|v|]) in
+    let ng = List.map Proofview.with_empty_state evs in
     tclTHENS (assert_after Anonymous false_0)
-      [onLastHypId gen_absurdity; (Logic.refiner ~check:true EConstr.Unsafe.(to_constr pf))]
+      [onLastHypId gen_absurdity; Tactics.exact_check pf <*> Proofview.Unsafe.tclNEWGOALS ng]
 
 let discrEq eq =
   let { eq_data = (_, (_, t1, t2)) } = eq in
@@ -1065,18 +1068,26 @@ let discrEq eq =
 
 let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.enter begin fun gl ->
-  let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
-  let t = pf_get_type_of gl c in
-  let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
-  let eq_clause = pf_apply Clenv.make_clenv_binding gl (c,t') lbindc in
-  let eq_clause' = Clenv.clenv_pose_dependent_evars ~with_evars eq_clause in
-  let eqn = Clenv.clenv_type eq_clause' in
-  (* FIXME evar leak *)
-  let (eq,u,eq_args) = pf_apply find_this_eq_data_decompose gl eqn in
-  let eq = { eq_data = (eq, eq_args); eq_term = Clenv.clenv_value eq_clause' } in
-  tclTHEN
-    (Proofview.Unsafe.tclEVARS eq_clause'.Clenv.evd)
-    (tac eq)
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let t = Retyping.get_type_of env sigma c in
+  let t' = try snd (Tacred.reduce_to_quantified_ind env sigma t) with UserError _ -> t in
+  let sigma, eq_clause = Clenv.make_evar_clause env sigma t' in
+  let sigma = Clenv.solve_evar_clause env sigma false eq_clause lbindc in
+  if not with_evars && List.exists (fun h -> h.Clenv.hole_deps) eq_clause.Clenv.cl_holes then
+    let filter h = if h.Clenv.hole_deps then Some h.Clenv.hole_name else None in
+    let bindings = List.map_filter filter eq_clause.Clenv.cl_holes in
+    Proofview.tclZERO  (RefinerError (env, sigma, UnresolvedBindings bindings))
+  else
+  let filter h =
+    if h.Clenv.hole_deps then None
+    else try Some (fst @@ destEvar sigma h.Clenv.hole_evar) with DestKO -> None
+  in
+  let goals = List.map_filter filter eq_clause.Clenv.cl_holes in
+  let cl_args = Array.map_of_list (fun h -> h.Clenv.hole_evar) eq_clause.Clenv.cl_holes in
+  let (eq,u,eq_args) = find_this_eq_data_decompose env sigma eq_clause.cl_concl in
+  let eq = { eq_data = (eq, eq_args); eq_term = mkApp (c, cl_args); eq_evar = goals } in
+  Proofview.Unsafe.tclEVARS sigma <*> tac eq
   end
 
 let onNegatedEquality with_evars tac =
@@ -1392,7 +1403,7 @@ let simplify_args env sigma t =
     | _ -> t
 
 let inject_at_positions env sigma l2r eq posns tac =
-  let { eq_data = (eq, (t,t1,t2)); eq_term = v } = eq in
+  let { eq_data = (eq, (t,t1,t2)); eq_term = v; eq_evar = evs } = eq in
   let e = next_ident_away eq_baseid (vars_of_env env) in
   let e_env = push_named (LocalAssum (make_annot e Sorts.Relevant,t)) env in
   let evdref = ref sigma in
@@ -1418,14 +1429,16 @@ let inject_at_positions env sigma l2r eq posns tac =
   if List.is_empty injectors then
     tclZEROMSG (str "Failed to decompose the equality.")
   else
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS !evdref)
-    (Tacticals.tclTHENFIRST
-      (Proofview.tclIGNORE (Proofview.Monad.List.map
-         (fun (pf,ty) -> tclTHENS (cut ty)
-           [inject_if_homogenous_dependent_pair ty;
-            Logic.refiner ~check:true EConstr.Unsafe.(to_constr pf)])
-         (if l2r then List.rev injectors else injectors)))
-      (tac (List.length injectors)))
+    let ng = List.map Proofview.with_empty_state evs in
+    let map (pf, ty) =
+      tclTHENS (cut ty) [
+        inject_if_homogenous_dependent_pair ty;
+        Tactics.exact_check pf <*> Proofview.Unsafe.tclNEWGOALS ng;
+    ] in
+    Proofview.Unsafe.tclEVARS !evdref <*>
+    Tacticals.tclTHENFIRST
+      (Tacticals.tclMAP map (if l2r then List.rev injectors else injectors))
+      (tac (List.length injectors))
 
 exception NothingToInject
 let () = CErrors.register_handler (function
@@ -1532,7 +1545,7 @@ let dEqThen ~keep_proofs with_evars ntac where =
 
 let intro_decomp_eq tac (eq, _, data) (c, t) =
   Proofview.Goal.enter begin fun gl ->
-    let eq = { eq_data = (eq, data); eq_term = c } in
+    let eq = { eq_data = (eq, data); eq_term = c; eq_evar = [] } in
     decompEqThen !keep_proof_equalities_for_injection (fun _ -> tac) eq
   end
 
