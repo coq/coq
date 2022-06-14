@@ -67,7 +67,8 @@ See :ref:`building_coq_project`.
 
    To make the module available in `CoqIDE`, include the following line in the
    `_CoqProject` file (see :ref:`coq_makefile`) in the directory from which you
-   start `CoqIDE`.  *<PATH>* is the pathname of the directory containing the module,
+   start `CoqIDE` or give it as an argument to the ``coqide`` command.
+   *<PATH>* is the pathname of the directory containing the module,
    which can be an absolute path or relative to Coq's current directory.  For now,
    you must close and reload a named script file for `CoqIDE` to pick up the change,
    or restart `CoqIDE`.
@@ -75,21 +76,6 @@ See :ref:`building_coq_project`.
 
       .. coqdoc::
          -R <PATH> Mod1
-
-   It's also possible to load a module within `coqtop` or `coqide` with
-   commands like these.  The drawback of this is that it adds
-   environment-specific information (the PATH) to your script, making
-   it non-portable, so we discourage using this approach.
-
-      .. coqdoc::
-         Add LoadPath "PATH" as Mod1.
-         Require Mod1.foo.
-
-   in which `PATH` is the pathname of the directory containing `foo.v`, which
-   can be absolute or relative to Coq's current directory.  The
-   :cmd:`Add LoadPath` is not needed if you provide the mapping from the
-   logical directory (module name) to the physical directory by including the
-   `-Q . Mod1` as command-line arguments to `coqtop` or `coqide`.
 
 Customization at launch time
 ---------------------------------
@@ -190,13 +176,11 @@ and ``coqtop``, unless stated otherwise:
   NTFS (Windows) or HFS+ (MacOS X) file systems is on the contrary to
   disallow two files differing only in the case in the same directory.
 
-  .. seealso:: Section :ref:`names-of-libraries`.
-:-R *directory dirpath*: Do as ``-Q`` *directory dirpath* but make the
-  subdirectory structure of *directory* recursively visible so that the
-  recursive contents of physical *directory* is available from Coq using
-  short or partially qualified names.
+  .. seealso:: Section :ref:`names-of-libraries`, :ref:`libraries-and-filesystem` and :cmd:`Require`.
+:-R *directory dirpath*: Similar to ``-Q`` *directory dirpath*, but allow using
+  :cmd:`Require` with a partially qualified name.
 
-  .. seealso:: Section :ref:`names-of-libraries`.
+  .. seealso:: Section :ref:`names-of-libraries`, :ref:`libraries-and-filesystem` and :cmd:`Require`.
 :-top *dirpath*: Set the logical module name to :n:`@dirpath` for the
   `coqtop` interactive session. If no module name is specified,
   `coqtop` will default to ``Top``. `coqc` does not accept this option
