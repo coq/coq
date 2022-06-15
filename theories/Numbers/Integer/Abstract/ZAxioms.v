@@ -104,6 +104,7 @@ Module Type QuotRemSpec (Import A : ZAxiomsMiniSig')(Import B : QuotRem' A).
 #[global]
  Declare Instance rem_wd : Proper (eq==>eq==>eq) B.rem.
  Axiom quot_rem : forall a b, b ~= 0 -> a == b*(a÷b) + (a rem b).
+ Axiom quot_rem' : forall a b, a == b*(a÷b) + (a rem b).
  Axiom rem_bound_pos : forall a b, 0<=a -> 0<b -> 0 <= a rem b < b.
  Axiom rem_opp_l : forall a b, b ~= 0 -> (-a) rem b == - (a rem b).
  Axiom rem_opp_r : forall a b, b ~= 0 -> a rem (-b) == a rem b.

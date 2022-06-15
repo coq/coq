@@ -38,6 +38,11 @@ Module ZEuclid.
   now destruct b.
  Qed.
 
+ Theorem div_mod' a b : a = b*(div a b) + modulo a b.
+ Proof.
+  now destruct b; [destruct a|apply div_mod..].
+ Qed.
+
  Lemma mod_always_pos a b : b<>0 -> 0 <= modulo a b < Z.abs b.
  Proof.
   intros Hb. unfold modulo.

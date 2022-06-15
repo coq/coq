@@ -31,6 +31,7 @@ Module Type NZDivSpec (Import A : NZOrdAxiomsSig')(Import B : DivMod' A).
 #[global]
  Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
  Axiom div_mod : forall a b, b ~= 0 -> a == b*(a/b) + (a mod b).
+ Axiom div_mod' : forall a b, a == b*(a/b) + (a mod b).
  Axiom mod_bound_pos : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
 End NZDivSpec.
 
@@ -114,6 +115,19 @@ apply mod_unique with 1; intuition; try order.
 now nzsimpl.
 Qed.
 
+Lemma mod_0_r : forall a, a mod 0 == a.
+Proof.
+intros a. generalize (div_mod' a 0).
+now rewrite mul_0_l, add_0_l.
+Qed.
+
+Lemma mod_same' : forall a, 0<=a -> a mod a == 0.
+Proof.
+intros ? [?|<-]%lt_eq_cases.
+- now apply mod_same.
+- now apply mod_0_r.
+Qed.
+
 (** A division of a small number by a bigger one yields zero. *)
 
 Theorem div_small: forall a b, 0<=a<b -> a/b == 0.
@@ -142,6 +156,13 @@ Qed.
 Lemma mod_0_l: forall a, 0<a -> 0 mod a == 0.
 Proof.
 intros; apply mod_small; split; order.
+Qed.
+
+Lemma mod_0_l': forall a, 0<=a -> 0 mod a == 0.
+Proof.
+intros ? [?|<-]%lt_eq_cases.
+- now apply mod_0_l.
+- now apply mod_0_r.
 Qed.
 
 Lemma div_1_r: forall a, 0<=a -> a/1 == a.
@@ -181,7 +202,12 @@ apply mod_unique with a; try split; try order.
 - nzsimpl; apply mul_comm.
 Qed.
 
-
+Lemma mod_mul' : forall a b, 0<=a -> 0<=b -> (a*b) mod b == 0.
+Proof.
+intros ??? [?|<-]%lt_eq_cases.
+- now apply mod_mul.
+- rewrite mul_0_r. now apply mod_0_r.
+Qed.
 (** * Order results about mod and div *)
 
 (** A modulo cannot grow beyond its starting point. *)

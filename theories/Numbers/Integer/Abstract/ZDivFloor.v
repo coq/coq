@@ -271,6 +271,13 @@ Proof.
 intros. rewrite mod_eq, div_same by trivial. nzsimpl. apply sub_diag.
 Qed.
 
+Lemma mod_same' : forall a, a mod a == 0.
+Proof.
+intros a. destruct (eq_decidable a 0) as [->|].
+- now apply mod_same'.
+- now apply mod_same.
+Qed.
+
 (** A division of a small number by a bigger one yields zero. *)
 
 Theorem div_small: forall a b, 0<=a<b -> a/b == 0.
@@ -293,6 +300,13 @@ Qed.
 Lemma mod_0_l: forall a, a~=0 -> 0 mod a == 0.
 Proof.
 intros; rewrite mod_eq, div_0_l; now nzsimpl.
+Qed.
+
+Lemma mod_0_l': forall a, 0 mod a == 0.
+Proof.
+intros a. destruct (eq_decidable a 0) as [->|].
+- now apply mod_0_l'.
+- now apply mod_0_l.
 Qed.
 
 Lemma div_1_r: forall a, a/1 == a.
@@ -324,6 +338,13 @@ Qed.
 Lemma mod_mul : forall a b, b~=0 -> (a*b) mod b == 0.
 Proof.
 intros. rewrite mod_eq, div_mul by trivial. rewrite mul_comm; apply sub_diag.
+Qed.
+
+Lemma mod_mul' : forall a b, (a*b) mod b == 0.
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|].
+- rewrite mul_0_r. apply mod_0_r.
+- now apply mod_mul.
 Qed.
 
 Theorem div_unique_exact a b q: b~=0 -> a == b*q -> q == a/b.

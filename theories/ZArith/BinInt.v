@@ -726,6 +726,11 @@ Proof.
  unfold div, modulo. now destruct div_eucl.
 Qed.
 
+Lemma div_mod' a b : a = b*(a/b) + (a mod b).
+Proof.
+ now destruct b;[destruct a|apply div_mod..].
+Qed.
+
 Lemma pos_div_eucl_bound a b : 0<b -> 0 <= snd (pos_div_eucl a b) < b.
 Proof.
   assert (AUX : forall m p, m < pos (p~0) -> m - pos p < pos p). {

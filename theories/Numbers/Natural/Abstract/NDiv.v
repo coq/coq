@@ -60,6 +60,9 @@ Proof. intros. apply div_same; auto'. Qed.
 Lemma mod_same : forall a, a~=0 -> a mod a == 0.
 Proof. intros. apply mod_same; auto'. Qed.
 
+Lemma mod_same' : forall a, a mod a == 0.
+Proof. intros. apply mod_same', le_0_l. Qed.
+
 (** A division of a small number by a bigger one yields zero. *)
 
 Theorem div_small: forall a b, a<b -> a/b == 0.
@@ -77,6 +80,9 @@ Proof. intros. apply div_0_l; auto'. Qed.
 
 Lemma mod_0_l: forall a, a~=0 -> 0 mod a == 0.
 Proof. intros. apply mod_0_l; auto'. Qed.
+
+Lemma mod_0_l': forall a, 0 mod a == 0.
+Proof. intros. apply mod_0_l', le_0_l. Qed.
 
 Lemma div_1_r: forall a, a/1 == a.
 Proof. intros. apply div_1_r; auto'. Qed.
@@ -96,6 +102,8 @@ Proof. intros. apply div_mul; auto'. Qed.
 Lemma mod_mul : forall a b, b~=0 -> (a*b) mod b == 0.
 Proof. intros. apply mod_mul; auto'. Qed.
 
+Lemma mod_mul' : forall a b, (a*b) mod b == 0.
+Proof. intros. apply mod_mul'; apply le_0_l. Qed.
 
 (** * Order results about mod and div *)
 

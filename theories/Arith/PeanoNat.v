@@ -368,6 +368,11 @@ Proof.
   now rewrite mul_0_r, sub_diag, !add_0_r in U.
 Qed.
 
+Lemma div_mod' x y : x = y*(x/y) + x mod y.
+Proof.
+  now destruct y; [|apply div_mod].
+Qed.
+
 Lemma div_mod_eq x y : x = y*(x/y) + x mod y.
 Proof. destruct y as [|y]; [reflexivity|now apply div_mod]. Qed.
 
