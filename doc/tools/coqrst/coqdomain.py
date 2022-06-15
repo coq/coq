@@ -29,7 +29,7 @@ from docutils.parsers.rst import Directive, directives
 from docutils.parsers.rst.roles import code_role #, set_classes
 from docutils.parsers.rst.directives.admonitions import BaseAdmonition
 
-from sphinx import addnodes
+from sphinx import addnodes, version_info as sphinx_version
 from sphinx.directives import ObjectDescription
 from sphinx.domains import Domain, ObjType, Index
 from sphinx.errors import ExtensionError
@@ -48,16 +48,33 @@ from .notations.plain import stringify_with_ellipses
 
 # FIXME: Patch this in Sphinx
 # https://github.com/coq/coq/issues/12361
-def visit_desc_signature(self, node):
-    hyper = ''
-    if node.parent['objtype'] != 'describe' and node['ids']:
-        for id in node['ids']:
-            hyper += self.hypertarget(id)
-    self.body.append(hyper)
-    if not node.get('is_multiline'):
-        self._visit_signature_line(node)
-    else:
-        self.body.append('%\n\\pysigstartmultiline\n')
+if sphinx_version >= (4, 5):
+    from sphinx.writers.latex import CR
+
+    def visit_desc_signature(self, node):
+        hyper = ''
+        if node.parent['objtype'] != 'describe' and node['ids']:
+            for id in node['ids']:
+                hyper += self.hypertarget(id)
+        self.body.append(hyper)
+        if not self.in_desc_signature:
+            self.in_desc_signature = True
+            self.body.append(CR + r'\pysigstartsignatures')
+        if not node.get('is_multiline'):
+            self._visit_signature_line(node)
+        else:
+            self.body.append(CR + r'\pysigstartmultiline')
+else:
+    def visit_desc_signature(self, node):
+        hyper = ''
+        if node.parent['objtype'] != 'describe' and node['ids']:
+            for id in node['ids']:
+                hyper += self.hypertarget(id)
+        self.body.append(hyper)
+        if not node.get('is_multiline'):
+            self._visit_signature_line(node)
+        else:
+            self.body.append('%\n\\pysigstartmultiline\n')
 LaTeXTranslator.visit_desc_signature = visit_desc_signature
 
 PARSE_ERROR = """{}:{} Parse error in notation!
