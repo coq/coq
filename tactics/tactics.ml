@@ -2351,7 +2351,7 @@ let intro_decomp_eq ?loc l thin tac id =
   let c = mkVar id in
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let sigma, t = Typing.type_of env sigma c in
+  let {uj_type=t} = Typing.judge_of_variable env id in
   let _,t = reduce_to_atomic_ind env sigma t in
   match my_find_eq_data_decompose env sigma t with
   | Some (eq,u,eq_args) ->
@@ -2368,17 +2368,16 @@ let intro_or_and_pattern ?loc with_evars ll thin tac id =
   let c = mkVar id in
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let sigma, t = Typing.type_of env sigma c in
+  let {uj_type=t} = Typing.judge_of_variable env id in
   let (ind,t) = reduce_to_quantified_ind env sigma t in
   let branchsigns = compute_constructor_signatures env ~rec_flag:false ind in
   let nv_with_let = Array.map List.length branchsigns in
   let ll = fix_empty_or_and_pattern (Array.length branchsigns) ll in
   let ll = get_and_check_or_and_pattern ?loc ll branchsigns in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (Tacticals.tclTHENLASTn
-       (Tacticals.tclTHEN (simplest_ecase c) (clear [id]))
-       (Array.map2 (fun n l -> tac thin (Some n) l)
-          nv_with_let ll))
+  Tacticals.tclTHENLASTn
+    (Tacticals.tclTHEN (simplest_ecase c) (clear [id]))
+    (Array.map2 (fun n l -> tac thin (Some n) l)
+       nv_with_let ll)
   end
 
 let rewrite_hyp_then with_evars thin l2r id tac =
@@ -2392,7 +2391,7 @@ let rewrite_hyp_then with_evars thin l2r id tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.project gl in
-    let sigma, t = Typing.type_of env sigma (mkVar id) in
+    let {uj_type=t} = Typing.judge_of_variable env id in
     let t = whd_all env sigma t in
     let eqtac, thin = match match_with_equality_type env sigma t with
     | Some (hdcncl,[_;lhs;rhs]) ->
@@ -2419,7 +2418,7 @@ let rewrite_hyp_then with_evars thin l2r id tac =
         Tacticals.tclTHEN (rew_on l2r onConcl) (clear [id]),
         thin in
     (* Skip the side conditions of the rewriting step *)
-    tclEVARSTHEN sigma (Tacticals.tclTHENFIRST eqtac (tac thin))
+    Tacticals.tclTHENFIRST eqtac (tac thin)
   end
 
 let rec collect_intro_names = let open CAst in function
@@ -2712,14 +2711,14 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
             | IntroFresh heq_base -> new_fresh_id (Id.Set.singleton id) heq_base gl
             | IntroIdentifier id -> id in
           let eqdata = build_coq_eq_data () in
-          let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
+          let args = if lr then [mkVar id;c] else [c;mkVar id]in
           let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
           let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
-          let eq = applist (eq,args) in
+          let sigma, eq = Typing.checked_applist env sigma eq [t] in
+          let eq = applist (eq, args) in
           let refl = applist (refl, [t;mkVar id]) in
           let term = mkNamedLetIn (make_annot id rel) c t
               (mkLetIn (make_annot (Name heq) Sorts.Relevant, refl, eq, ccl)) in
-          let sigma, _ = Typing.type_of env sigma term in
           let ans = term,
             Tacticals.tclTHENLIST
               [
@@ -3859,11 +3858,11 @@ let is_defined_variable env id =
 
 let abstract_args gl generalize_vars dep id defined f args =
   let open Context.Rel.Declaration in
-  let sigma = ref (Tacmach.project gl) in
+  let sigma = Tacmach.project gl in
   let env = Tacmach.pf_env gl in
   let concl = Tacmach.pf_concl gl in
   let hyps = Proofview.Goal.hyps gl in
-  let dep = dep || local_occur_var !sigma id concl in
+  let dep = dep || local_occur_var sigma id concl in
   let avoid = ref Id.Set.empty in
   let get_id name =
     let id = fresh_id_in_env !avoid (match name with Name n -> n | Anonymous -> Id.of_string "gen_x") env in
@@ -3875,21 +3874,20 @@ let abstract_args gl generalize_vars dep id defined f args =
 
        eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
     *)
-  let aux (prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars) arg =
+  let aux (sigma, prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars) arg =
     let name, ty_relevance, ty, arity =
-      let rel, c = Reductionops.splay_prod_n env !sigma 1 prod in
+      let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
       let decl = List.hd rel in
       RelDecl.get_name decl, RelDecl.get_relevance decl, RelDecl.get_type decl, c
     in
-    let sigma', argty = Typing.type_of env !sigma arg in
-    let sigma', ty = Evarsolve.refresh_universes (Some true) env sigma' ty in
-    let () = sigma := sigma' in
+    let argty = Retyping.get_type_of env sigma arg in
+    let sigma, ty = Evarsolve.refresh_universes (Some true) env sigma ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
-    let leq = constr_cmp !sigma Reduction.CUMUL liftargty ty in
-      match EConstr.kind !sigma arg with
+    let leq = constr_cmp sigma Reduction.CUMUL liftargty ty in
+      match EConstr.kind sigma arg with
       | Var id when not (is_defined_variable env id) && leq && not (Id.Set.mem id nongenvars) ->
-          (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
+          (sigma, subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
           Id.Set.add id nongenvars, Id.Set.remove id vars)
       | _ ->
           let name = get_id name in
@@ -3898,53 +3896,52 @@ let abstract_args gl generalize_vars dep id defined f args =
           let c' = mkApp (lift 1 c, [|mkRel 1|]) in
           let args = arg :: args in
           let liftarg = lift (List.length ctx) arg in
-          let eq, refl =
+          let sigma, eq, refl =
             if leq then
-              let sigma', eq = mkEq env  !sigma (lift 1 ty) (mkRel 1) liftarg in
-              let sigma', refl = mkRefl env sigma' (lift (-lenctx) ty) arg in
-              sigma := sigma'; eq, refl
+              let sigma, eq = mkEq env  sigma (lift 1 ty) (mkRel 1) liftarg in
+              let sigma, refl = mkRefl env sigma (lift (-lenctx) ty) arg in
+              sigma, eq, refl
             else
-              let sigma', eq = mkHEq env !sigma (lift 1 ty) (mkRel 1) liftargty liftarg in
-              let sigma', refl = mkHRefl env sigma' argty arg in
-              sigma := sigma'; eq, refl
+              let sigma, eq = mkHEq env sigma (lift 1 ty) (mkRel 1) liftargty liftarg in
+              let sigma, refl = mkHRefl env sigma argty arg in
+              sigma, eq, refl
           in
           let eqs = eq :: lift_list eqs in
           let refls = refl :: refls in
-          let argvars = ids_of_constr env !sigma vars arg in
-            (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls,
+          let argvars = ids_of_constr env sigma vars arg in
+            (sigma, arity, ctx, push_rel decl ctxenv, c', args, eqs, refls,
             nongenvars, Id.Set.union argvars vars)
   in
-  let f', args' = decompose_indapp env !sigma f args in
+  let f', args' = decompose_indapp env sigma f args in
   let dogen, f', args' =
-    let parvars = ids_of_constr env !sigma ~all:true Id.Set.empty f' in
-      if not (linear env !sigma parvars args') then true, f, args
+    let parvars = ids_of_constr env sigma ~all:true Id.Set.empty f' in
+      if not (linear env sigma parvars args') then true, f, args
       else
-        match Array.findi (fun i x -> not (isVar !sigma x) || is_defined_variable env (destVar !sigma x)) args' with
+        match Array.findi (fun i x -> not (isVar sigma x) || is_defined_variable env (destVar sigma x)) args' with
         | None -> false, f', args'
         | Some nonvar ->
             let before, after = Array.chop nonvar args' in
               true, mkApp (f', before), after
   in
     if dogen then
-      let sigma', tyf' = Typing.type_of env !sigma f' in
-      sigma := sigma';
-      let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars =
-        Array.fold_left aux (tyf',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty) args'
+      let tyf' = Retyping.get_type_of env sigma f' in
+      let sigma, arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars =
+        Array.fold_left aux (sigma, tyf',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars =
         if generalize_vars then
           let nogen = Id.Set.add id nogen in
-            hyps_of_vars env !sigma hyps nogen vars
+            hyps_of_vars env sigma hyps nogen vars
         else []
       in
       let body, c' =
-        if defined then Some c', Retyping.get_type_of ctxenv !sigma c'
+        if defined then Some c', Retyping.get_type_of ctxenv sigma c'
         else None, c'
       in
       let typ = Tacmach.pf_get_hyp_typ id gl in
       let tac = make_abstract_generalize env id typ concl dep ctx body c' eqs args refls in
-      let tac = Proofview.Unsafe.tclEVARS !sigma <*> tac in
+      let tac = Proofview.Unsafe.tclEVARS sigma <*> tac in
         Some (tac, dep, succ (List.length ctx), vars)
     else None
 
@@ -5007,26 +5004,24 @@ let (forward_setoid_transitivity, setoid_transitivity) = Hook.make ()
 (* This is probably not very useful any longer *)
 let prove_transitivity hdcncl eq_kind t =
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.project gl in
-    let sigma, eq1, eq2 = match eq_kind with
+    let eq1, eq2 = match eq_kind with
       | MonomorphicLeibnizEq (c1,c2) ->
-        sigma, mkApp (hdcncl, [| c1; t|]), mkApp (hdcncl, [| t; c2 |])
+        mkApp (hdcncl, [| c1; t|]), mkApp (hdcncl, [| t; c2 |])
       | PolymorphicLeibnizEq (typ,c1,c2) ->
-        sigma, mkApp (hdcncl, [| typ; c1; t |]), mkApp (hdcncl, [| typ; t; c2 |])
+        mkApp (hdcncl, [| typ; c1; t |]), mkApp (hdcncl, [| typ; t; c2 |])
       | HeterogenousEq (typ1,c1,typ2,c2) ->
         let env = Proofview.Goal.env gl in
-        let sigma, typt = Typing.type_of env sigma t in
-        sigma,
+        let sigma = Tacmach.project gl in
+        let typt = Retyping.get_type_of env sigma t in
         mkApp(hdcncl, [| typ1; c1; typt ;t |]),
         mkApp(hdcncl, [| typt; t; typ2; c2 |])
     in
-    tclEVARSTHEN sigma
-      (Tacticals.tclTHENFIRST (cut eq2)
-         (Tacticals.tclTHENFIRST (cut eq1)
-            (Tacticals.tclTHENLIST
-               [ Tacticals.tclDO 2 intro;
-                 Tacticals.onLastHyp simplest_case;
-                 assumption ])))
+    Tacticals.tclTHENFIRST (cut eq2)
+      (Tacticals.tclTHENFIRST (cut eq1)
+         (Tacticals.tclTHENLIST
+            [ Tacticals.tclDO 2 intro;
+              Tacticals.onLastHyp simplest_case;
+              assumption ]))
   end
 
 let transitivity_red allowred t =

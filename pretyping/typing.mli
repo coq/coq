@@ -52,6 +52,7 @@ val check_actual_type : env -> evar_map -> unsafe_judgment -> types -> evar_map
 val judge_of_sprop : unsafe_judgment
 val judge_of_prop : unsafe_judgment
 val judge_of_set : unsafe_judgment
+val judge_of_variable : env -> Id.t -> unsafe_judgment
 val judge_of_apply : env -> evar_map -> unsafe_judgment -> unsafe_judgment array ->
   evar_map * unsafe_judgment
 val judge_of_abstraction : Environ.env -> Name.t ->
@@ -61,3 +62,6 @@ val judge_of_product : Environ.env -> Name.t ->
 val judge_of_projection : env -> evar_map -> Projection.t -> unsafe_judgment -> unsafe_judgment
 val judge_of_int : Environ.env -> Uint63.t -> unsafe_judgment
 val judge_of_float : Environ.env -> Float64.t -> unsafe_judgment
+
+val checked_appvect : env -> evar_map -> constr -> constr array -> evar_map * constr
+val checked_applist : env -> evar_map -> constr -> constr list -> evar_map * constr
