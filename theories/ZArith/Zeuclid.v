@@ -31,16 +31,16 @@ Module ZEuclid.
  Instance div_wd : Proper (eq==>eq==>eq) div.
  Proof. congruence. Qed.
 
- Theorem div_mod a b : b<>0 -> a = b*(div a b) + modulo a b.
+ Theorem div_mod_full a b : a = b*(div a b) + modulo a b.
  Proof.
-  intros Hb. unfold div, modulo.
-  rewrite Z.mul_assoc. rewrite Z.sgn_abs. apply Z.div_mod.
-  now destruct b.
+  unfold div, modulo.
+  rewrite Z.mul_assoc. rewrite Z.sgn_abs. apply Z.div_mod_full.
  Qed.
 
- Theorem div_mod' a b : a = b*(div a b) + modulo a b.
+ (* TODO #16189 deprecate *)
+ Theorem div_mod a b : b<>0 -> a = b*(div a b) + modulo a b.
  Proof.
-  now destruct b; [destruct a|apply div_mod..].
+  intros. apply div_mod_full.
  Qed.
 
  Lemma mod_always_pos a b : b<>0 -> 0 <= modulo a b < Z.abs b.

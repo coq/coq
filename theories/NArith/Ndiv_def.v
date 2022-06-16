@@ -27,4 +27,4 @@ Proof. now apply (N.pos_div_eucl_remainder a (Npos b)). Qed.
 Notation Nmod := N.modulo (only parsing).
 
 Notation Ndiv_eucl_correct := N.div_eucl_spec (only parsing).
-Notation Ndiv_mod_eq := N.div_mod' (only parsing).
+Notation Ndiv_mod_eq := N.div_mod_full (only parsing).

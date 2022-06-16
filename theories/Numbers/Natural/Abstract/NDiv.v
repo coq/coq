@@ -57,11 +57,12 @@ Proof. intros. apply div_unique_exact; auto'. Qed.
 Lemma div_same : forall a, a~=0 -> a/a == 1.
 Proof. intros. apply div_same; auto'. Qed.
 
-Lemma mod_same : forall a, a~=0 -> a mod a == 0.
-Proof. intros. apply mod_same; auto'. Qed.
+Lemma mod_same_full : forall a, a mod a == 0.
+Proof. intros. apply mod_same_full, le_0_l. Qed.
 
-Lemma mod_same' : forall a, a mod a == 0.
-Proof. intros. apply mod_same', le_0_l. Qed.
+(* TODO #16189 deprecate *)
+Lemma mod_same : forall a, a~=0 -> a mod a == 0.
+Proof. intros. apply mod_same_full. Qed.
 
 (** A division of a small number by a bigger one yields zero. *)
 
@@ -78,11 +79,12 @@ Proof. intros. apply mod_small; auto'. Qed.
 Lemma div_0_l: forall a, a~=0 -> 0/a == 0.
 Proof. intros. apply div_0_l; auto'. Qed.
 
-Lemma mod_0_l: forall a, a~=0 -> 0 mod a == 0.
-Proof. intros. apply mod_0_l; auto'. Qed.
+Lemma mod_0_l_full: forall a, 0 mod a == 0.
+Proof. intros. apply mod_0_l_full, le_0_l. Qed.
 
-Lemma mod_0_l': forall a, 0 mod a == 0.
-Proof. intros. apply mod_0_l', le_0_l. Qed.
+(* TODO #16189 deprecate *)
+Lemma mod_0_l: forall a, a~=0 -> 0 mod a == 0.
+Proof. intros. apply mod_0_l_full. Qed.
 
 Lemma div_1_r: forall a, a/1 == a.
 Proof. intros. apply div_1_r; auto'. Qed.
@@ -99,11 +101,12 @@ Proof. exact mod_1_l. Qed.
 Lemma div_mul : forall a b, b~=0 -> (a*b)/b == a.
 Proof. intros. apply div_mul; auto'. Qed.
 
-Lemma mod_mul : forall a b, b~=0 -> (a*b) mod b == 0.
-Proof. intros. apply mod_mul; auto'. Qed.
+Lemma mod_mul_full : forall a b, (a*b) mod b == 0.
+Proof. intros. apply mod_mul_full; apply le_0_l. Qed.
 
-Lemma mod_mul' : forall a b, (a*b) mod b == 0.
-Proof. intros. apply mod_mul'; apply le_0_l. Qed.
+(* TODO #16189 deprecate *)
+Lemma mod_mul : forall a b, b~=0 -> (a*b) mod b == 0.
+Proof. intros. apply mod_mul_full. Qed.
 
 (** * Order results about mod and div *)
 

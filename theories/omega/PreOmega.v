@@ -55,7 +55,7 @@ Module Z.
     set (r := x mod y) in *;
     clearbody q r.
   Ltac quot_rem_to_equations_generalize x y :=
-    pose proof (Z.quot_rem' x y);
+    pose proof (Z.quot_rem_full x y);
     pose proof (rem_bound_pos_pos x y);
     pose proof (rem_bound_pos_neg x y);
     pose proof (rem_bound_neg_pos x y);

@@ -582,15 +582,16 @@ Proof.
   destruct pos_div_eucl. now rewrite mul_comm.
 Qed.
 
-Theorem div_mod' a b : a = b * (a/b) + (a mod b).
+Theorem div_mod_full a b : a = b * (a/b) + (a mod b).
 Proof.
   generalize (div_eucl_spec a b).
   unfold div, modulo. now destruct div_eucl.
 Qed.
 
+(* TODO #16189 deprecate *)
 Definition div_mod a b : b<>0 -> a = b * (a/b) + (a mod b).
 Proof.
- intros _. apply div_mod'.
+  intros. apply div_mod_full.
 Qed.
 
 Theorem pos_div_eucl_remainder (a:positive) (b:N) :

@@ -266,16 +266,17 @@ Proof.
   - rewrite <- div_opp_opp by trivial. now apply div_same.
 Qed.
 
-Lemma mod_same : forall a, a~=0 -> a mod a == 0.
-Proof.
-intros. rewrite mod_eq, div_same by trivial. nzsimpl. apply sub_diag.
-Qed.
-
-Lemma mod_same' : forall a, a mod a == 0.
+Lemma mod_same_full : forall a, a mod a == 0.
 Proof.
 intros a. destruct (eq_decidable a 0) as [->|].
-- now apply mod_same'.
-- now apply mod_same.
+- now apply mod_same_full.
+- rewrite mod_eq, div_same by trivial. nzsimpl. apply sub_diag.
+Qed.
+
+(* TODO #16189 deprecate *)
+Lemma mod_same : forall a, a~=0 -> a mod a == 0.
+Proof.
+intros. apply mod_same_full.
 Qed.
 
 (** A division of a small number by a bigger one yields zero. *)
@@ -297,16 +298,17 @@ Proof.
   - rewrite <- div_opp_opp, opp_0 by trivial. now apply div_0_l.
 Qed.
 
-Lemma mod_0_l: forall a, a~=0 -> 0 mod a == 0.
-Proof.
-intros; rewrite mod_eq, div_0_l; now nzsimpl.
-Qed.
-
-Lemma mod_0_l': forall a, 0 mod a == 0.
+Lemma mod_0_l_full: forall a, 0 mod a == 0.
 Proof.
 intros a. destruct (eq_decidable a 0) as [->|].
-- now apply mod_0_l'.
-- now apply mod_0_l.
+- now apply mod_0_l_full.
+- rewrite mod_eq, div_0_l; now nzsimpl.
+Qed.
+
+(* TODO #16189 deprecate *)
+Lemma mod_0_l: forall a, a~=0 -> 0 mod a == 0.
+Proof.
+intros. apply mod_0_l_full.
 Qed.
 
 Lemma div_1_r: forall a, a/1 == a.
@@ -335,16 +337,17 @@ intros a b ?. symmetry. apply div_unique with 0.
 - nzsimpl; apply mul_comm.
 Qed.
 
-Lemma mod_mul : forall a b, b~=0 -> (a*b) mod b == 0.
-Proof.
-intros. rewrite mod_eq, div_mul by trivial. rewrite mul_comm; apply sub_diag.
-Qed.
-
-Lemma mod_mul' : forall a b, (a*b) mod b == 0.
+Lemma mod_mul_full : forall a b, (a*b) mod b == 0.
 Proof.
 intros a b. destruct (eq_decidable b 0) as [->|].
 - rewrite mul_0_r. apply mod_0_r.
-- now apply mod_mul.
+- rewrite mod_eq, div_mul by trivial. rewrite mul_comm; apply sub_diag.
+Qed.
+
+(* TODO #16189 deprecate *)
+Lemma mod_mul : forall a b, b~=0 -> (a*b) mod b == 0.
+Proof.
+intros. apply mod_mul_full.
 Qed.
 
 Theorem div_unique_exact a b q: b~=0 -> a == b*q -> q == a/b.

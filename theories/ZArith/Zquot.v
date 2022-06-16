@@ -35,7 +35,7 @@ Local Open Scope Z_scope.
 
 Notation Ndiv_Zquot := N2Z.inj_quot (only parsing).
 Notation Nmod_Zrem := N2Z.inj_rem (only parsing).
-Notation Z_quot_rem_eq := Z.quot_rem' (only parsing).
+Notation Z_quot_rem_eq := Z.quot_rem_full (only parsing).
 Notation Zrem_lt := Z.rem_bound_abs (only parsing).
 Notation Z_quot_mult := Z.quot_mul (only parsing).
 
@@ -177,13 +177,13 @@ Proof.
   - apply Zdiv_mod_unique with b; auto.
     + apply Zrem_lt_pos; auto.
       lia.
-    + rewrite <- H1; apply Z.quot_rem'.
+    + rewrite <- H1; apply Z.quot_rem_full.
 
   - rewrite <- (Z.opp_involutive a).
     rewrite Zquot_opp_l, Zrem_opp_l.
     generalize (Zdiv_mod_unique b (-q) (-a÷b) (-r) (Z.rem (-a) b)).
     generalize (Zrem_lt_pos (-a) b).
-    rewrite <-Z.quot_rem', Z.mul_opp_r, <-Z.opp_add_distr, <-H1.
+    rewrite <-Z.quot_rem_full, Z.mul_opp_r, <-Z.opp_add_distr, <-H1.
     lia.
 Qed.
 

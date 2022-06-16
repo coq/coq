@@ -356,10 +356,9 @@ Proof.
       now rewrite <- sub_succ_l.
 Qed.
 
-Lemma div_mod x y : y<>0 -> x = y*(x/y) + x mod y.
+Lemma div_mod_full x y : x = y*(x/y) + x mod y.
 Proof.
-  intros Hy.
-  destruct y as [|y]; [ now elim Hy | clear Hy ].
+  destruct y as [|y]; [easy|].
   unfold div, modulo.
   generalize (divmod_spec x y 0 y (le_n y)).
   destruct divmod as (q,u).
@@ -368,9 +367,10 @@ Proof.
   now rewrite mul_0_r, sub_diag, !add_0_r in U.
 Qed.
 
-Lemma div_mod' x y : x = y*(x/y) + x mod y.
+(* TODO #16189 deprecate *)
+Lemma div_mod x y : y<>0 -> x = y*(x/y) + x mod y.
 Proof.
-  now destruct y; [|apply div_mod].
+  intros ?. apply div_mod_full.
 Qed.
 
 Lemma div_mod_eq x y : x = y*(x/y) + x mod y.

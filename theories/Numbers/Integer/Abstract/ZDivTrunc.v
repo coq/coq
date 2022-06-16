@@ -42,7 +42,7 @@ Module Type ZQuotProp
   Definition div_wd := quot_wd.
   Definition mod_wd := rem_wd.
   Definition div_mod := quot_rem.
-  Definition div_mod' := quot_rem'.
+  Definition div_mod_full := quot_rem_full.
   Definition mod_bound_pos := rem_bound_pos.
  End Quot2Div.
  Module NZQuot := Nop <+ NZDivProp A Quot2Div B.

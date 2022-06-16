@@ -695,9 +695,12 @@ Proof.
    + now apply Pos.lt_succ_r.
 Qed.
 
-Lemma div_eucl_eq a b : b<>0 ->
+Lemma div_eucl_eq_full a b :
  let (q, r) := div_eucl a b in a = b * q + r.
 Proof.
+ destruct (eq_decidable b 0) as [->|Hb].
+ { now destruct a. }
+ revert Hb.
  destruct a as [ |a|a], b as [ |b|b]; unfold div_eucl; trivial;
   (now destruct 1) || intros _;
   generalize (pos_div_eucl_eq a (pos b) Logic.eq_refl);
@@ -720,15 +723,21 @@ Proof.
    now rewrite opp_add_distr, <- mul_opp_l.
 Qed.
 
-Lemma div_mod a b : b<>0 -> a = b*(a/b) + (a mod b).
+(* TODO #16189 deprecate *)
+Lemma div_eucl_eq a b : b<>0 ->
+ let (q, r) := div_eucl a b in a = b * q + r.
+Proof. intros ?. apply div_eucl_eq_full. Qed.
+
+Lemma div_mod_full a b : a = b*(a/b) + (a mod b).
 Proof.
- intros Hb. generalize (div_eucl_eq a b Hb).
+ generalize (div_eucl_eq_full a b).
  unfold div, modulo. now destruct div_eucl.
 Qed.
 
-Lemma div_mod' a b : a = b*(a/b) + (a mod b).
+(* TODO #16189 deprecate *)
+Lemma div_mod a b : b<>0 -> a = b*(a/b) + (a mod b).
 Proof.
- now destruct b;[destruct a|apply div_mod..].
+ intros ?. apply div_mod_full.
 Qed.
 
 Lemma pos_div_eucl_bound a b : 0<b -> 0 <= snd (pos_div_eucl a b) < b.
@@ -818,14 +827,21 @@ Proof.
   change (pos a) with (of_N (N.pos a)); intros ->; now destruct q, r.
 Qed.
 
-Lemma quot_rem' a b : a = b*(a÷b) + rem a b.
+Lemma quot_rem_full a b : a = b*(a÷b) + rem a b.
 Proof.
  rewrite mul_comm. generalize (quotrem_eq a b).
  unfold quot, rem. now destruct quotrem.
 Qed.
 
+(* TODO #16189 deprecate *)
+Lemma quot_rem' a b : a = b*(a÷b) + rem a b.
+Proof.
+ apply quot_rem_full.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma quot_rem a b : b<>0 -> a = b*(a÷b) + rem a b.
-Proof. intros _. apply quot_rem'. Qed.
+Proof. intros _. apply quot_rem_full. Qed.
 
 Lemma rem_bound_pos a b : 0<=a -> 0<b -> 0 <= rem a b < b.
 Proof.
