@@ -710,6 +710,7 @@ GRAMMAR EXTEND Gram
       | e1 = ssexpr; "+"; e2 = ssexpr-> { SsUnion(e1,e2) } ]
     | "0"
       [ i = starredidentref -> { i }
+      | "()" -> { SsEmpty }
       | "("; test_only_starredidentrefs; l = LIST0 starredidentref; ")"->
           { starredidentreflist_to_expr l }
       | "("; test_only_starredidentrefs; l = LIST0 starredidentref; ")"; "*" ->
