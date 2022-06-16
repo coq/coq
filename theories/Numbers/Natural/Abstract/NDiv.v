@@ -149,8 +149,11 @@ Proof. exact div_lt. Qed.
 Lemma div_le_mono : forall a b c, c~=0 -> a<=b -> a/c <= b/c.
 Proof. intros. apply div_le_mono; auto'. Qed.
 
+Lemma mul_div_le_full : forall a b, b*(a/b) <= a.
+Proof. intros. apply mul_div_le_full; apply le_0_l. Qed.
+
 Lemma mul_div_le : forall a b, b~=0 -> b*(a/b) <= a.
-Proof. intros. apply mul_div_le; auto'. Qed.
+Proof. intros. apply mul_div_le_full. Qed.
 
 Lemma mul_succ_div_gt: forall a b, b~=0 -> a < b*(S (a/b)).
 Proof. intros; apply mul_succ_div_gt; auto'. Qed.

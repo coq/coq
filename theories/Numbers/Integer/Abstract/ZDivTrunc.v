@@ -55,18 +55,50 @@ Ltac pos_or_neg a :=
 
 (** Another formulation of the main equation *)
 
+Lemma rem_eq_full :
+ forall a b, a rem b == a - b*(a÷b).
+Proof.
+intros a b.
+rewrite <- add_move_l.
+symmetry. apply quot_rem_full.
+Qed.
+
 Lemma rem_eq :
  forall a b, b~=0 -> a rem b == a - b*(a÷b).
 Proof.
-intros.
-rewrite <- add_move_l.
-symmetry. now apply quot_rem.
+intros. apply rem_eq_full.
+Qed.
+
+Lemma rem_0_r :
+ forall a, a rem 0 == a.
+Proof.
+exact NZQuot.mod_0_r.
 Qed.
 
 (** A few sign rules (simple ones) *)
 
+Lemma rem_opp_l_full : forall a b, (-a) rem b == - (a rem b).
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|?].
+- now rewrite !rem_0_r.
+- now apply rem_opp_l.
+Qed.
+
+Lemma rem_opp_r_full : forall a b, a rem (-b) == a rem b.
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|?].
+- now rewrite opp_0, !rem_0_r.
+- now apply rem_opp_r.
+Qed.
+
+Lemma rem_opp_opp_full : forall a b, (-a) rem (-b) == - (a rem b).
+Proof.
+intros a b. now rewrite rem_opp_r_full, rem_opp_l_full.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_opp_opp : forall a b, b ~= 0 -> (-a) rem (-b) == - (a rem b).
-Proof. intros. now rewrite rem_opp_r, rem_opp_l. Qed.
+Proof. intros. apply rem_opp_opp_full. Qed.
 
 Lemma quot_opp_l : forall a b, b ~= 0 -> (-a)÷b == -(a÷b).
 Proof.
@@ -121,9 +153,17 @@ Proof.
   - rewrite <- quot_opp_opp by trivial. now apply NZQuot.div_same.
 Qed.
 
+Lemma rem_same_full : forall a, a rem a == 0.
+Proof.
+intros a. destruct (eq_decidable a 0) as [->|?].
+- apply rem_0_r.
+- rewrite rem_eq_full, quot_same by trivial. nzsimpl. apply sub_diag.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_same : forall a, a~=0 -> a rem a == 0.
 Proof.
-intros. rewrite rem_eq, quot_same by trivial. nzsimpl. apply sub_diag.
+intros. apply rem_same_full.
 Qed.
 
 (** A division of a small number by a bigger one yields zero. *)
@@ -145,9 +185,17 @@ Proof.
   - rewrite <- quot_opp_opp, opp_0 by trivial. now apply NZQuot.div_0_l.
 Qed.
 
+Lemma rem_0_l_full: forall a, 0 rem a == 0.
+Proof.
+intros a. destruct (eq_decidable a 0) as [->|?].
+- apply rem_0_r.
+- rewrite rem_eq_full, quot_0_l; now nzsimpl.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_0_l: forall a, a~=0 -> 0 rem a == 0.
 Proof.
-intros; rewrite rem_eq, quot_0_l; now nzsimpl.
+intros. apply rem_0_l_full.
 Qed.
 
 Lemma quot_1_r: forall a, a÷1 == a.
@@ -161,8 +209,7 @@ Qed.
 
 Lemma rem_1_r: forall a, a rem 1 == 0.
 Proof.
-intros. rewrite rem_eq, quot_1_r; nzsimpl; auto using sub_diag.
-intro EQ; symmetry in EQ; revert EQ; apply lt_neq; apply lt_0_1.
+intros. rewrite rem_eq_full, quot_1_r; nzsimpl; auto using sub_diag.
 Qed.
 
 Lemma quot_1_l: forall a, 1<a -> 1÷a == 0.
@@ -182,9 +229,17 @@ Proof.
     apply NZQuot.div_mul; order.
 Qed.
 
+Lemma rem_mul_full : forall a b, (a*b) rem b == 0.
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|?].
+- now rewrite mul_0_r, rem_0_r.
+- rewrite rem_eq_full, quot_mul by trivial. rewrite mul_comm; apply sub_diag.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_mul : forall a b, b~=0 -> (a*b) rem b == 0.
 Proof.
-intros. rewrite rem_eq, quot_mul by trivial. rewrite mul_comm; apply sub_diag.
+intros. apply rem_mul_full.
 Qed.
 
 Theorem quot_unique_exact a b q: b~=0 -> a == b*q -> q == a÷b.
@@ -194,67 +249,131 @@ Qed.
 
 (** The sign of [a rem b] is the one of [a] (when it's not null) *)
 
-Lemma rem_nonneg : forall a b, b~=0 -> 0 <= a -> 0 <= a rem b.
+Lemma rem_nonneg_full : forall a b, 0 <= a -> 0 <= a rem b.
 Proof.
-  intros a b **. pos_or_neg b.
-  - destruct (rem_bound_pos a b); order.
-  - rewrite <- rem_opp_r; trivial.
+intros a b. destruct (eq_decidable b 0) as [->|?].
+- now rewrite rem_0_r.
+- intros ?. pos_or_neg b.
+  + destruct (rem_bound_pos a b); order.
+  + rewrite <- rem_opp_r_full.
     destruct (rem_bound_pos a (-b)); trivial.
 Qed.
 
+(* TODO #16189 deprecate *)
+Lemma rem_nonneg : forall a b, b~=0 -> 0 <= a -> 0 <= a rem b.
+Proof.
+intros. now apply rem_nonneg_full.
+Qed.
+
+Lemma rem_nonpos_full : forall a b, a <= 0 -> a rem b <= 0.
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|?].
+- now rewrite rem_0_r.
+- intros Ha. apply opp_nonneg_nonpos. apply opp_nonneg_nonpos in Ha.
+  rewrite <- rem_opp_l_full. now apply rem_nonneg.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_nonpos : forall a b, b~=0 -> a <= 0 -> a rem b <= 0.
 Proof.
- intros a b Hb Ha.
- apply opp_nonneg_nonpos. apply opp_nonneg_nonpos in Ha.
- rewrite <- rem_opp_l by trivial. now apply rem_nonneg.
+intros. now apply rem_nonpos_full.
 Qed.
 
+Lemma rem_sign_mul_full : forall a b, 0 <= (a rem b) * a.
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|?].
+- rewrite rem_0_r. apply square_nonneg.
+- destruct (le_ge_cases 0 a).
+  + apply mul_nonneg_nonneg; trivial. now apply rem_nonneg.
+  + apply mul_nonpos_nonpos; trivial. now apply rem_nonpos.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_sign_mul : forall a b, b~=0 -> 0 <= (a rem b) * a.
 Proof.
-intros a b Hb. destruct (le_ge_cases 0 a).
- - apply mul_nonneg_nonneg; trivial. now apply rem_nonneg.
- - apply mul_nonpos_nonpos; trivial. now apply rem_nonpos.
+intros. apply rem_sign_mul_full.
 Qed.
 
+Lemma rem_sign_nz_full : forall a b, a rem b ~= 0 ->
+ sgn (a rem b) == sgn a.
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|Hb].
+- now rewrite !rem_0_r.
+- intros Hab. destruct (lt_trichotomy 0 a) as [LT|[EQ|LT]].
+  + rewrite 2 sgn_pos; try easy.
+    generalize (rem_nonneg a b Hb (lt_le_incl _ _ LT)). order.
+  + now rewrite <- EQ, rem_0_l, sgn_0.
+  + rewrite 2 sgn_neg; try easy.
+    generalize (rem_nonpos a b Hb (lt_le_incl _ _ LT)). order.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_sign_nz : forall a b, b~=0 -> a rem b ~= 0 ->
  sgn (a rem b) == sgn a.
 Proof.
-intros a b Hb H. destruct (lt_trichotomy 0 a) as [LT|[EQ|LT]].
-- rewrite 2 sgn_pos; try easy.
-  generalize (rem_nonneg a b Hb (lt_le_incl _ _ LT)). order.
-- now rewrite <- EQ, rem_0_l, sgn_0.
-- rewrite 2 sgn_neg; try easy.
-  generalize (rem_nonpos a b Hb (lt_le_incl _ _ LT)). order.
+intros. now apply rem_sign_nz_full.
 Qed.
 
+Lemma rem_sign_full : forall a b, a~=0 -> sgn (a rem b) ~= -sgn a.
+Proof.
+intros a b Ha. destruct (eq_decidable b 0) as [->|Hb].
+- rewrite rem_0_r. destruct (sgn_spec a) as [[? ->]|[[? ?]|[? ->]]].
+  + apply neq_sym, lt_neq, (lt_trans _ _ _ lt_m1_0 lt_0_1).
+  + order.
+  + rewrite opp_involutive. apply lt_neq, (lt_trans _ _ _ lt_m1_0 lt_0_1).
+- intros H. destruct (eq_decidable (a rem b) 0) as [EQ|NEQ].
+  + apply Ha, sgn_null_iff, opp_inj. now rewrite <- H, opp_0, EQ, sgn_0.
+  + apply Ha, sgn_null_iff. apply eq_mul_0_l with 2; try order'. nzsimpl'.
+    apply add_move_0_l. rewrite <- H. symmetry. now apply rem_sign_nz.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_sign : forall a b, a~=0 -> b~=0 -> sgn (a rem b) ~= -sgn a.
 Proof.
-intros a b Ha Hb H.
-destruct (eq_decidable (a rem b) 0) as [EQ|NEQ].
-- apply Ha, sgn_null_iff, opp_inj. now rewrite <- H, opp_0, EQ, sgn_0.
-- apply Ha, sgn_null_iff. apply eq_mul_0_l with 2; try order'. nzsimpl'.
-  apply add_move_0_l. rewrite <- H. symmetry. now apply rem_sign_nz.
+intros. now apply rem_sign_full.
 Qed.
 
 (** Operations and absolute value *)
 
+Lemma rem_abs_l_full : forall a b, (abs a) rem b == abs (a rem b).
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|Hb].
+- now rewrite !rem_0_r.
+- destruct (le_ge_cases 0 a) as [LE|LE].
+  + rewrite 2 abs_eq; try easy. now apply rem_nonneg.
+  + rewrite 2 abs_neq, rem_opp_l; try easy. now apply rem_nonpos.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_abs_l : forall a b, b ~= 0 -> (abs a) rem b == abs (a rem b).
 Proof.
-intros a b Hb. destruct (le_ge_cases 0 a) as [LE|LE].
-- rewrite 2 abs_eq; try easy. now apply rem_nonneg.
-- rewrite 2 abs_neq, rem_opp_l; try easy. now apply rem_nonpos.
+intros. apply rem_abs_l_full.
 Qed.
 
+Lemma rem_abs_r_full : forall a b, a rem (abs b) == a rem b.
+Proof.
+intros a b. destruct (eq_decidable b 0) as [->|Hb].
+- now rewrite abs_0, !rem_0_r.
+- destruct (le_ge_cases 0 b).
+  + now rewrite abs_eq.
+  + now rewrite abs_neq, ?rem_opp_r.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma rem_abs_r : forall a b, b ~= 0 -> a rem (abs b) == a rem b.
 Proof.
-intros a b Hb. destruct (le_ge_cases 0 b).
-- now rewrite abs_eq.
-- now rewrite abs_neq, ?rem_opp_r.
+intros. apply rem_abs_r_full.
 Qed.
 
-Lemma rem_abs : forall a b,  b ~= 0 -> (abs a) rem (abs b) == abs (a rem b).
+Lemma rem_abs_full : forall a b, (abs a) rem (abs b) == abs (a rem b).
 Proof.
-intros. now rewrite rem_abs_r, rem_abs_l.
+intros. now rewrite rem_abs_r_full, rem_abs_l_full.
+Qed.
+
+(* TODO #16189 deprecate *)
+Lemma rem_abs : forall a b, b ~= 0 -> (abs a) rem (abs b) == abs (a rem b).
+Proof.
+intros. apply rem_abs_full.
 Qed.
 
 Lemma quot_abs_l : forall a b, b ~= 0 -> (abs a)÷b == (sgn a)*(a÷b).
@@ -308,8 +427,12 @@ Qed.
 
 (** A modulo cannot grow beyond its starting point. *)
 
+Theorem rem_le_full: forall a b, 0<=a -> 0<=b -> a rem b <= a.
+Proof. exact NZQuot.mod_le_full. Qed.
+
+(* TODO #16189 deprecate *)
 Theorem rem_le: forall a b, 0<=a -> 0<b -> a rem b <= a.
-Proof. exact NZQuot.mod_le. Qed.
+Proof. intros. apply rem_le_full; order. Qed.
 
 Theorem quot_pos : forall a b, 0<=a -> 0<b -> 0<= a÷b.
 Proof. exact NZQuot.div_pos. Qed.
@@ -360,24 +483,39 @@ Qed.
 (** With this choice of division,
     rounding of quot is always done toward zero: *)
 
-Lemma mul_quot_le : forall a b, 0<=a -> b~=0 -> 0 <= b*(a÷b) <= a.
+Lemma mul_quot_le_full : forall a b, 0<=a -> 0 <= b*(a÷b) <= a.
 Proof.
-intros a b **. pos_or_neg b.
-- split.
-  + apply mul_nonneg_nonneg; [|apply quot_pos]; order.
-  + apply NZQuot.mul_div_le; order.
-- rewrite <- mul_opp_opp, <- quot_opp_r by order.
-  split.
-  + apply mul_nonneg_nonneg; [|apply quot_pos]; order.
-  + apply NZQuot.mul_div_le; order.
+intros a b ?. destruct (eq_decidable b 0) as [->|Hb].
+- rewrite mul_0_l. split; order.
+- pos_or_neg b.
+  + split.
+    * apply mul_nonneg_nonneg; [|apply quot_pos]; order.
+    * apply NZQuot.mul_div_le; order.
+  + rewrite <- mul_opp_opp, <- quot_opp_r by order.
+    split.
+    * apply mul_nonneg_nonneg; [|apply quot_pos]; order.
+    * apply NZQuot.mul_div_le; order.
 Qed.
 
+(* TODO #16189 deprecate *)
+Lemma mul_quot_le : forall a b, 0<=a -> b~=0 -> 0 <= b*(a÷b) <= a.
+Proof.
+intros. now apply mul_quot_le_full.
+Qed.
+
+Lemma mul_quot_ge_full : forall a b, a<=0 -> a <= b*(a÷b) <= 0.
+Proof.
+intros a b ?. destruct (eq_decidable b 0) as [->|Hb].
+- rewrite mul_0_l. split; order.
+- rewrite <- opp_nonneg_nonpos, opp_le_mono, <-mul_opp_r, <-quot_opp_l by order.
+  rewrite <- opp_nonneg_nonpos in *.
+  destruct (mul_quot_le (-a) b); tauto.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_quot_ge : forall a b, a<=0 -> b~=0 -> a <= b*(a÷b) <= 0.
 Proof.
-intros a b **.
-rewrite <- opp_nonneg_nonpos, opp_le_mono, <-mul_opp_r, <-quot_opp_l by order.
-rewrite <- opp_nonneg_nonpos in *.
-destruct (mul_quot_le (-a) b); tauto.
+intros. now apply mul_quot_ge_full.
 Qed.
 
 (** For positive numbers, considering [S (a÷b)] leads to an upper bound for [a] *)
@@ -413,9 +551,15 @@ Qed.
 
 (** Inequality [mul_quot_le] is exact iff the modulo is zero. *)
 
+Lemma quot_exact_full : forall a b, (a == b*(a÷b) <-> a rem b == 0).
+Proof.
+intros. rewrite rem_eq_full. rewrite sub_move_r; nzsimpl; tauto.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma quot_exact : forall a b, b~=0 -> (a == b*(a÷b) <-> a rem b == 0).
 Proof.
-intros. rewrite rem_eq by order. rewrite sub_move_r; nzsimpl; tauto.
+intros. apply quot_exact_full.
 Qed.
 
 (** Some additional inequalities about quot. *)
@@ -451,7 +595,7 @@ Proof. exact NZQuot.div_le_compat_l. Qed.
     always valid, and need to be restricted. For instance
     [(a+b*c) rem c <> a rem c] for [a=9,b=-5,c=2] *)
 
-Lemma rem_add : forall a b c, c~=0 -> 0 <= (a+b*c)*a ->
+Lemma rem_add_full : forall a b c, 0 <= (a+b*c)*a ->
  (a + b * c) rem c == a rem c.
 Proof.
 assert (forall a b c, c~=0 -> 0<=a -> 0<=a+b*c -> (a+b*c) rem c == a rem c). {
@@ -461,11 +605,19 @@ assert (forall a b c, c~=0 -> 0<=a -> 0<=a+b*c -> (a+b*c) rem c == a rem c). {
     rewrite <- mul_opp_opp in *.
     apply NZQuot.mod_add; order.
 }
-intros a b c Hc Habc.
-destruct (le_0_mul _ _ Habc) as [(Habc',Ha)|(Habc',Ha)]. { auto. }
-apply opp_inj. revert Ha Habc'.
-rewrite <- 2 opp_nonneg_nonpos.
-rewrite <- 2 rem_opp_l, opp_add_distr, <- mul_opp_l by order. auto.
+intros a b c Habc. destruct (eq_decidable c 0) as [->|Hc].
+- now rewrite mul_0_r, add_0_r.
+- destruct (le_0_mul _ _ Habc) as [(Habc',Ha)|(Habc',Ha)]. { auto. }
+  apply opp_inj. revert Ha Habc'.
+  rewrite <- 2 opp_nonneg_nonpos.
+  rewrite <- 2 rem_opp_l, opp_add_distr, <- mul_opp_l by order. auto.
+Qed.
+
+(* TODO #16189 deprecate *)
+Lemma rem_add : forall a b c, c~=0 -> 0 <= (a+b*c)*a ->
+ (a + b * c) rem c == a rem c.
+Proof.
+intros. now apply rem_add_full.
 Qed.
 
 Lemma quot_add : forall a b c, c~=0 -> 0 <= (a+b*c)*a ->
@@ -514,35 +666,61 @@ Proof.
 intros a b c **. rewrite !(mul_comm c); now apply quot_mul_cancel_r.
 Qed.
 
+Lemma mul_rem_distr_r_full: forall a b c,
+  (a*c) rem (b*c) == (a rem b) * c.
+Proof.
+intros a b c. destruct (eq_decidable b 0) as [->|Hb].
+- now rewrite mul_0_l, !rem_0_r.
+- destruct (eq_decidable c 0) as [->|Hc].
+  + now rewrite !mul_0_r, rem_0_r.
+  + assert (b*c ~= 0) by (rewrite <- neq_mul_0; tauto).
+  rewrite !rem_eq_full.
+  rewrite quot_mul_cancel_r by order.
+  now rewrite mul_sub_distr_r, <- !mul_assoc, (mul_comm (a÷b) c).
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_rem_distr_r: forall a b c, b~=0 -> c~=0 ->
   (a*c) rem (b*c) == (a rem b) * c.
 Proof.
-intros a b c **.
-assert (b*c ~= 0) by (rewrite <- neq_mul_0; tauto).
-rewrite ! rem_eq by trivial.
-rewrite quot_mul_cancel_r by order.
-now rewrite mul_sub_distr_r, <- !mul_assoc, (mul_comm (a÷b) c).
+intros. apply mul_rem_distr_r_full.
 Qed.
 
+Lemma mul_rem_distr_l_full: forall a b c,
+  (c*a) rem (c*b) == c * (a rem b).
+Proof.
+intros a b c. rewrite !(mul_comm c). apply mul_rem_distr_r_full.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_rem_distr_l: forall a b c, b~=0 -> c~=0 ->
   (c*a) rem (c*b) == c * (a rem b).
 Proof.
-intros a b c **; rewrite !(mul_comm c); now apply mul_rem_distr_r.
+intros. apply mul_rem_distr_l_full.
 Qed.
 
 (** Operations modulo. *)
 
+Theorem rem_rem_full: forall a n,
+ (a rem n) rem n == a rem n.
+Proof.
+intros a n. destruct (eq_decidable n 0) as [->|Hn].
+- now rewrite !rem_0_r.
+- pos_or_neg a; pos_or_neg n.
+  + now apply NZQuot.mod_mod_full.
+  + rewrite <- ! (rem_opp_r _ n) by trivial. apply NZQuot.mod_mod_full; order.
+  + apply opp_inj. rewrite <- !rem_opp_l by order. apply NZQuot.mod_mod_full; order.
+  + apply opp_inj. rewrite <- !rem_opp_opp by order. apply NZQuot.mod_mod_full; order.
+Qed.
+
+(* TODO #16189 deprecate *)
 Theorem rem_rem: forall a n, n~=0 ->
  (a rem n) rem n == a rem n.
 Proof.
-  intros a n **. pos_or_neg a; pos_or_neg n.
-  - apply NZQuot.mod_mod; order.
-  - rewrite <- ! (rem_opp_r _ n) by trivial. apply NZQuot.mod_mod; order.
-  - apply opp_inj. rewrite <- !rem_opp_l by order. apply NZQuot.mod_mod; order.
-  - apply opp_inj. rewrite <- !rem_opp_opp by order. apply NZQuot.mod_mod; order.
+intros. apply rem_rem_full.
 Qed.
 
-Lemma mul_rem_idemp_l : forall a b n, n~=0 ->
+Lemma mul_rem_idemp_l_full : forall a b n,
  ((a rem n)*b) rem n == (a*b) rem n.
 Proof.
 assert (Aux1 : forall a b n, 0<=a -> 0<=b -> n~=0 ->
@@ -558,21 +736,44 @@ assert (Aux2 : forall a b n, 0<=a -> n~=0 ->
   - apply opp_inj. rewrite <-2 rem_opp_l, <-2 mul_opp_r by order.
     apply Aux1; order.
 }
-intros a b n Hn. pos_or_neg a. { now apply Aux2. }
-apply opp_inj. rewrite <-2 rem_opp_l, <-2 mul_opp_l, <-rem_opp_l by order.
-apply Aux2; order.
+intros a b n. destruct (eq_decidable n 0) as [->|Hn].
+- now rewrite !rem_0_r.
+- pos_or_neg a. { now apply Aux2. }
+  apply opp_inj. rewrite <-2 rem_opp_l, <-2 mul_opp_l, <-rem_opp_l by order.
+  apply Aux2; order.
 Qed.
 
+(* TODO #16189 deprecate *)
+Lemma mul_rem_idemp_l : forall a b n, n~=0 ->
+ ((a rem n)*b) rem n == (a*b) rem n.
+Proof.
+intros. apply mul_rem_idemp_l_full.
+Qed.
+
+Lemma mul_rem_idemp_r_full : forall a b n,
+ (a*(b rem n)) rem n == (a*b) rem n.
+Proof.
+intros a b n. rewrite !(mul_comm a). apply mul_rem_idemp_l_full.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_rem_idemp_r : forall a b n, n~=0 ->
  (a*(b rem n)) rem n == (a*b) rem n.
 Proof.
-intros a b n **. rewrite !(mul_comm a). now apply mul_rem_idemp_l.
+intros. apply mul_rem_idemp_r_full.
 Qed.
 
+Theorem mul_rem_full: forall a b n,
+ (a * b) rem n == ((a rem n) * (b rem n)) rem n.
+Proof.
+intros. now rewrite mul_rem_idemp_l_full, mul_rem_idemp_r_full.
+Qed.
+
+(* TODO #16189 deprecate *)
 Theorem mul_rem: forall a b n, n~=0 ->
  (a * b) rem n == ((a rem n) * (b rem n)) rem n.
 Proof.
-intros. now rewrite mul_rem_idemp_l, mul_rem_idemp_r.
+intros. apply mul_rem_full.
 Qed.
 
 (** addition and modulo
@@ -584,7 +785,7 @@ Qed.
   (8 rem 3 + (-10 rem 3)) rem 3 = 1.
 *)
 
-Lemma add_rem_idemp_l : forall a b n, n~=0 -> 0 <= a*b ->
+Lemma add_rem_idemp_l_full : forall a b n, 0 <= a*b ->
  ((a rem n)+b) rem n == (a+b) rem n.
 Proof.
 assert (Aux : forall a b n, 0<=a -> 0<=b -> n~=0 ->
@@ -592,30 +793,54 @@ assert (Aux : forall a b n, 0<=a -> 0<=b -> n~=0 ->
   intros a b n **. pos_or_neg n. { apply NZQuot.add_mod_idemp_l; order. }
   rewrite <- ! (rem_opp_r _ n) by order. apply NZQuot.add_mod_idemp_l; order.
 }
-intros a b n Hn Hab. destruct (le_0_mul _ _ Hab) as [(Ha,Hb)|(Ha,Hb)].
-{ now apply Aux. }
-apply opp_inj. rewrite <-2 rem_opp_l, 2 opp_add_distr, <-rem_opp_l by order.
-rewrite <- opp_nonneg_nonpos in *.
-now apply Aux.
+intros a b n Hab. destruct (eq_decidable n 0) as [->|Hn].
+- now rewrite !rem_0_r.
+- destruct (le_0_mul _ _ Hab) as [(Ha,Hb)|(Ha,Hb)].
+  { now apply Aux. }
+  apply opp_inj. rewrite <-2 rem_opp_l, 2 opp_add_distr, <-rem_opp_l by order.
+  rewrite <- opp_nonneg_nonpos in *.
+  now apply Aux.
 Qed.
 
-Lemma add_rem_idemp_r : forall a b n, n~=0 -> 0 <= a*b ->
+(* TODO #16189 deprecate *)
+Lemma add_rem_idemp_l : forall a b n, n~=0 -> 0 <= a*b ->
+ ((a rem n)+b) rem n == (a+b) rem n.
+Proof.
+intros. now apply add_rem_idemp_l_full.
+Qed.
+
+Lemma add_rem_idemp_r_full : forall a b n, 0 <= a*b ->
  (a+(b rem n)) rem n == (a+b) rem n.
 Proof.
-intros a b n **. rewrite !(add_comm a). apply add_rem_idemp_l; trivial.
+intros a b n **. rewrite !(add_comm a). apply add_rem_idemp_l_full.
 now rewrite mul_comm.
 Qed.
 
-Theorem add_rem: forall a b n, n~=0 -> 0 <= a*b ->
+(* TODO #16189 deprecate *)
+Lemma add_rem_idemp_r : forall a b n, n~=0 -> 0 <= a*b ->
+ (a+(b rem n)) rem n == (a+b) rem n.
+Proof.
+intros. now apply add_rem_idemp_r_full.
+Qed.
+
+Theorem add_rem_full: forall a b n, 0 <= a*b ->
  (a+b) rem n == (a rem n + b rem n) rem n.
 Proof.
-intros a b n Hn Hab. rewrite add_rem_idemp_l, add_rem_idemp_r; trivial.
-- reflexivity.
+intros a b n Hab. rewrite add_rem_idemp_l_full, add_rem_idemp_r_full; [easy..|].
+destruct (eq_decidable n 0) as [->|Hn].
+- now rewrite !rem_0_r.
 - destruct (le_0_mul _ _ Hab) as [(Ha,Hb)|(Ha,Hb)];
     destruct (le_0_mul _ _ (rem_sign_mul b n Hn)) as [(Hb',Hm)|(Hb',Hm)];
     auto using mul_nonneg_nonneg, mul_nonpos_nonpos.
   + setoid_replace b with 0 by order. rewrite rem_0_l by order. nzsimpl; order.
   + setoid_replace b with 0 by order. rewrite rem_0_l by order. nzsimpl; order.
+Qed.
+
+(* TODO #16189 deprecate *)
+Theorem add_rem: forall a b n, n~=0 -> 0 <= a*b ->
+ (a+b) rem n == (a rem n + b rem n) rem n.
+Proof.
+intros. now apply add_rem_full.
 Qed.
 
 (** Conversely, the following results need less restrictions here. *)
@@ -640,16 +865,25 @@ apply opp_inj. rewrite <- 3 quot_opp_l; try order. { apply Aux2; order. }
 rewrite <- neq_mul_0. tauto.
 Qed.
 
+Lemma mod_mul_r_full : forall a b c,
+ a rem (b*c) == a rem b + b*((a÷b) rem c).
+Proof.
+intros a b c. destruct (eq_decidable b 0) as [->|Hb].
+- now rewrite !mul_0_l, !rem_0_r, add_0_r.
+- destruct (eq_decidable c 0) as [->|Hc].
+  + rewrite mul_0_r, !rem_0_r, add_comm. apply quot_rem_full.
+  + apply add_cancel_l with (b*c*(a÷(b*c))).
+    rewrite <- quot_rem_full.
+    rewrite <- quot_quot by trivial.
+    rewrite add_assoc, add_shuffle0, <- mul_assoc, <- mul_add_distr_l.
+    rewrite <- quot_rem_full. apply quot_rem_full.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mod_mul_r : forall a b c, b~=0 -> c~=0 ->
  a rem (b*c) == a rem b + b*((a÷b) rem c).
 Proof.
- intros a b c Hb Hc.
- apply add_cancel_l with (b*c*(a÷(b*c))).
- rewrite <- quot_rem by (apply neq_mul_0; split; order).
- rewrite <- quot_quot by trivial.
- rewrite add_assoc, add_shuffle0, <- mul_assoc, <- mul_add_distr_l.
- rewrite <- quot_rem by order.
- apply quot_rem; order.
+intros. apply mod_mul_r_full.
 Qed.
 
 Lemma rem_quot: forall a b, b~=0 ->
@@ -667,4 +901,3 @@ Theorem quot_mul_le:
 Proof. exact NZQuot.div_mul_le. Qed.
 
 End ZQuotProp.
-

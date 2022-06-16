@@ -328,12 +328,19 @@ Qed.
 
 (** The following two properties could be used as specification of div *)
 
+Lemma mul_div_le_full : forall a b, 0<=a -> 0<=b -> b*(a/b) <= a.
+Proof.
+intros a b Ha [Hb|<-]%lt_eq_cases.
+- rewrite (add_le_mono_r _ _ (a mod b)), <- div_mod by order.
+  rewrite <- (add_0_r a) at 1.
+  rewrite <- add_le_mono_l. destruct (mod_bound_pos a b); order.
+- now rewrite mul_0_l.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_div_le : forall a b, 0<=a -> 0<b -> b*(a/b) <= a.
 Proof.
-intros a b ? ?.
-rewrite (add_le_mono_r _ _ (a mod b)), <- div_mod by order.
-rewrite <- (add_0_r a) at 1.
-rewrite <- add_le_mono_l. destruct (mod_bound_pos a b); order.
+intros. apply mul_div_le_full; order.
 Qed.
 
 Lemma mul_succ_div_gt : forall a b, 0<=a -> 0<b -> a < b*(S (a/b)).
