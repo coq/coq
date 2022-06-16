@@ -832,7 +832,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
   rewrite <- (diff_inter_cardinal s' s).
   rewrite (inter_sym s' s).
   rewrite (inter_subset_equal H).
-  rewrite Nat.add_comm; apply Nat.le_add_r.
+  apply Nat.le_add_l.
   Qed.
 
   Lemma subset_cardinal_lt :

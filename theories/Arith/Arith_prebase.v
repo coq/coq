@@ -202,7 +202,8 @@ Hint Resolve -> Nat.add_le_mono_l : arith. (* Plus.plus_le_compat_l *)
 #[global]
 Hint Resolve -> Nat.add_le_mono_r : arith. (* Plus.plus_le_compat_r *)
 #[local]
-Definition le_plus_r_stt := (fun n m => eq_ind _ _ (Nat.le_add_r m n) _ (Nat.add_comm m n)).
+Definition le_plus_r_stt := (fun n m => Nat.le_add_l m n).
+#[local]
 Definition le_plus_trans_stt := (fun n m p Hle => Nat.le_trans n _ _ Hle (Nat.le_add_r m p)).
 Opaque le_plus_r_stt le_plus_trans_stt.
 #[global]

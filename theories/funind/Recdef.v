@@ -31,7 +31,7 @@ Qed.
 
 Theorem Splus_lt x y : y < S (x + y).
 Proof.
- apply Nat.lt_succ_r. rewrite Nat.add_comm. apply Nat.le_add_r.
+ apply Nat.lt_succ_r. apply Nat.le_add_l.
 Qed.
 
 Theorem SSplus_lt x y : x < S (S (x + y)).
