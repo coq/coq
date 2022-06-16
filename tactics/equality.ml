@@ -1384,8 +1384,8 @@ let inject_if_homogenous_dependent_pair ty =
         tclTHENS (cut (mkApp (ceq,new_eq_args)))
           [clear [destVar sigma hyp];
            Tacticals.pf_constr_of_global inj2 >>= fun inj2 ->
-           Logic.refiner ~check:true EConstr.Unsafe.(to_constr
-             (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|])))
+           Tactics.exact_check
+             (mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3);hyp|]))
           ])]
   with Exit ->
     Proofview.tclUNIT ()
