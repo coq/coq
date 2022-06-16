@@ -13,7 +13,7 @@
 (** This file proposes an implementation of the non-dependent interface
  [FMapInterface.WS] using lists of pairs, unordered but without redundancy. *)
 
-Require Import FunInd FMapInterface.
+Require Import FMapInterface.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -81,7 +81,7 @@ Qed.
 
 (** * [mem] *)
 
-Function mem (k : key) (s : t elt) {struct s} : bool :=
+Fixpoint mem (k : key) (s : t elt) {struct s} : bool :=
   match s with
    | nil => false
    | (k',_) :: l => if X.eq_dec k k' then true else mem k l
@@ -90,30 +90,28 @@ Function mem (k : key) (s : t elt) {struct s} : bool :=
 Lemma mem_1 : forall m (Hm:NoDupA m) x, In x m -> mem x m = true.
 Proof.
  intros m Hm x; generalize Hm; clear Hm.
- functional induction (mem x m);intros NoDup belong1;trivial.
+ induction m; simpl; intros NoDup belong1.
  - inversion belong1. inversion H.
- - inversion_clear NoDup.
-   inversion_clear belong1.
-   inversion_clear H1.
-   + compute in H2; destruct H2.
-     contradiction.
-   + apply IHb; auto.
-     exists x0; auto.
+ - destruct a; destruct X.eq_dec; [reflexivity|]; apply IHm.
+   + inversion_clear NoDup; assumption.
+   + inversion_clear belong1; inversion_clear H; [elim n; apply H0|exists x0; auto].
 Qed.
 
 Lemma mem_2 : forall m (Hm:NoDupA m) x, mem x m = true -> In x m.
 Proof.
  intros m Hm x; generalize Hm; clear Hm; unfold PX.In,PX.MapsTo.
- functional induction (mem x m); intros NoDup hyp; try discriminate.
- - exists _x; auto.
- - inversion_clear NoDup.
-   destruct IHb; auto.
-   exists x0; auto.
+ induction m; intros NoDup hyp; try discriminate; simpl in *.
+ destruct a, X.eq_dec.
+ + exists e; constructor; split; [assumption|reflexivity].
+ + destruct IHm as [e' He'].
+   - inversion_clear NoDup; assumption.
+   - assumption.
+   - exists e'; auto.
 Qed.
 
 (** * [find] *)
 
-Function find (k:key) (s: t elt) {struct s} : option elt :=
+Fixpoint find (k:key) (s: t elt) {struct s} : option elt :=
   match s with
    | nil => None
    | (k',x)::s' => if X.eq_dec k k' then Some x else find k s'
@@ -122,23 +120,23 @@ Function find (k:key) (s: t elt) {struct s} : option elt :=
 Lemma find_2 : forall m x e, find x m = Some e -> MapsTo x e m.
 Proof.
  intros m x. unfold PX.MapsTo.
- functional induction (find x m);simpl;intros e' eqfind; inversion eqfind; auto.
+ induction m; simpl;intros e' eqfind; inversion eqfind; auto.
+ destruct a, X.eq_dec.
+ + constructor; split; simpl; congruence.
+ + constructor 2; apply IHm; assumption.
 Qed.
 
 Lemma find_1 : forall m (Hm:NoDupA m) x e,
   MapsTo x e m -> find x m = Some e.
 Proof.
- intros m Hm x e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction (find x m);simpl; subst; try clear H_eq_1.
-
- - inversion 2.
-
- - do 2 inversion_clear 1.
-   + compute in H2; destruct H2; subst; trivial.
-   + elim H; apply InA_eqk with (x,e); auto.
-
- - do 2 inversion_clear 1; auto.
-   compute in H2; destruct H2; elim _x; auto.
+ intros m; induction m as [|[a e]]; simpl; intros Hdup x e' Hm.
+ - inversion Hm.
+ - inversion_clear Hdup.
+   inversion_clear Hm; destruct X.eq_dec.
+   + destruct H1; simpl in *; congruence.
+   + elim n; apply H1.
+   + elim H; apply InA_eqk with (x,e'); auto.
+   + apply IHm; auto.
 Qed.
 
 (* Not part of the exported specifications, used later for [combine]. *)
@@ -157,7 +155,7 @@ Qed.
 
 (** * [add] *)
 
-Function add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
+Fixpoint add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
   match s with
    | nil => (k,x) :: nil
    | (k',y) :: l => if X.eq_dec k k' then (k,x)::l else (k',y)::add k x l
@@ -165,43 +163,49 @@ Function add (k : key) (x : elt) (s : t elt) {struct s} : t elt :=
 
 Lemma add_1 : forall m x y e, X.eq x y -> MapsTo y e (add x e m).
 Proof.
- intros m x y e; generalize y; clear y; unfold PX.MapsTo.
- functional induction (add x e m);simpl;auto.
+ induction m as [|[a m]]; intros x y e He; simpl in *; auto.
+ destruct X.eq_dec; [now auto|].
+ apply InA_cons_tl, IHm, He.
 Qed.
 
 Lemma add_2 : forall m x y e e',
   ~ X.eq x y -> MapsTo y e m -> MapsTo y e (add x e' m).
 Proof.
- intros m x  y e e'; generalize y e; clear y e; unfold PX.MapsTo.
- functional induction (add x e' m);simpl;auto.
- - intros y' e'' eqky';  inversion_clear 1.
-   + destruct H0; simpl in *.
-     elim eqky'; apply X.eq_trans with k'; auto.
-   + auto.
- - intros y' e'' eqky'; inversion_clear 1; intuition.
+ induction m as [|[a m]]; intros x y e e' H Hm; simpl in *.
+ - inversion_clear Hm.
+ - inversion_clear Hm; destruct X.eq_dec.
+   + elim H; apply X.eq_trans with a; [auto|apply X.eq_sym; apply H0].
+   + apply InA_cons_hd; apply H0.
+   + apply InA_cons_tl; assumption.
+   + apply InA_cons_tl; apply IHm; auto.
 Qed.
 
 Lemma add_3 : forall m x y e e',
   ~ X.eq x y -> MapsTo y e (add x e' m) -> MapsTo y e m.
 Proof.
- intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
- functional induction (add x e' m);simpl;auto.
- - intros; apply (In_inv_3 H0); auto.
- - constructor 2; apply (In_inv_3 H0); auto.
- - inversion_clear 2; auto.
+ induction m as [|[a m]]; intros x y e e' H Hm.
+ - exfalso; inversion_clear Hm.
+   + elim H; apply X.eq_sym; apply H0.
+   + inversion_clear H0.
+ - simpl in Hm; destruct X.eq_dec.
+   + apply InA_cons_tl; apply InA_cons in Hm; destruct Hm; [|now auto].
+     elim H; apply X.eq_sym; apply H0.
+   + apply InA_cons in Hm; destruct Hm.
+     * apply InA_cons_hd; auto.
+     * apply InA_cons_tl; eapply IHm; eauto.
 Qed.
 
 Lemma add_3' : forall m x y e e',
   ~ X.eq x y -> InA eqk (y,e) (add x e' m) -> InA eqk (y,e) m.
 Proof.
- intros m x y e e'. generalize y e; clear y e.
- functional induction (add x e' m);simpl;auto.
- - inversion_clear 2.
-   + compute in H1; elim H; auto.
-   + inversion H1.
- - constructor 2; inversion_clear H0; auto.
-   compute in H1; elim H; auto.
- - inversion_clear 2; auto.
+ induction m as [|[a m]]; intros x y e e' H Hm; simpl in *.
+ - inversion_clear Hm; [|now auto].
+   compute in H0; elim H; auto.
+ - destruct X.eq_dec; simpl in *.
+   + apply InA_cons in Hm; destruct Hm; [elim H; apply X.eq_sym; apply H0|].
+     apply InA_cons_tl; auto.
+   + apply InA_cons in Hm; destruct Hm; [apply InA_cons_hd; auto|].
+     apply InA_cons_tl; eapply IHm; eauto.
 Qed.
 
 Lemma add_NoDup : forall m (Hm:NoDupA m) x e, NoDupA (add x e m).
@@ -248,7 +252,7 @@ Qed.
 
 (** * [remove] *)
 
-Function remove (k : key) (s : t elt) {struct s} : t elt :=
+Fixpoint remove (k : key) (s : t elt) {struct s} : t elt :=
   match s with
    | nil => nil
    | (k',x) :: l => if X.eq_dec k k' then l else (k',x) :: remove k l
@@ -256,53 +260,57 @@ Function remove (k : key) (s : t elt) {struct s} : t elt :=
 
 Lemma remove_1 : forall m (Hm:NoDupA m) x y, X.eq x y -> ~ In y (remove x m).
 Proof.
- intros m Hm x y; generalize Hm; clear Hm.
- functional induction (remove x m);simpl;intros;auto.
+ induction m as [|[a m]]; intros Hm x y H; simpl in *.
 
- - red; inversion 1; inversion H1.
+ - inversion 1; inversion H1.
 
  - inversion_clear Hm.
-   subst.
-   contradict H0.
-   destruct H0 as (e,H2); unfold PX.MapsTo in H2.
-   apply InA_eqk with (y,e); auto.
-   compute; apply X.eq_trans with x; auto.
-
- - intro H2.
-   destruct H2 as (e,H2); inversion_clear H2.
-   + compute in H0; destruct H0.
-     elim _x; apply X.eq_trans with y; auto.
-   + inversion_clear Hm.
-     elim (IHt0 H2 H).
-     exists e; auto.
+   destruct X.eq_dec.
+   + intros [e' ?]; elim H0.
+     apply InA_eqk with (y, e').
+     * apply X.eq_trans with x; [|auto].
+       apply X.eq_sym; auto.
+     * apply InA_eqke_eqk; auto.
+   + intros [e' H2]; apply InA_cons in H2; destruct H2.
+     * elim n; apply X.eq_trans with y; [auto|apply H2].
+     * elim IHm with x y; auto.
+       exists e'; auto.
 Qed.
 
 Lemma remove_2 : forall m (Hm:NoDupA m) x y e,
   ~ X.eq x y -> MapsTo y e m -> MapsTo y e (remove x m).
 Proof.
- intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction (remove x m);auto.
- - inversion_clear 3; auto.
-   compute in H1; destruct H1.
-   elim H; apply X.eq_trans with k'; auto.
-
- - inversion_clear 1; inversion_clear 2; auto.
+ induction m as [|[a m]]; intros Hm x y e H He; simpl in *.
+ + inversion_clear He.
+ + apply InA_cons in He; destruct He, X.eq_dec.
+   - elim H; apply X.eq_trans with a; [auto|]; apply X.eq_sym; apply H0.
+   - inversion_clear Hm; apply InA_cons_hd; assumption.
+   - apply H0.
+   - inversion_clear Hm.
+     apply InA_cons; destruct (X.eq_dec y a).
+     * elim H1; apply InA_eqk with (y, e); [assumption|]; apply InA_eqke_eqk; auto.
+     * right; apply IHm; auto.
 Qed.
 
 Lemma remove_3 : forall m (Hm:NoDupA m) x y e,
   MapsTo y e (remove x m) -> MapsTo y e m.
 Proof.
- intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction (remove x m);auto.
- do 2 inversion_clear 1; auto.
+ induction m as [|[a m]]; intros Hm x y e H; unfold PX.MapsTo; simpl in *; auto.
+ destruct X.eq_dec.
+ - apply InA_cons_tl; apply H.
+ - inversion_clear Hm; apply InA_cons in H; destruct H; [apply InA_cons_hd; auto|].
+   apply InA_cons_tl; apply IHm with x; auto.
 Qed.
 
 Lemma remove_3' : forall m (Hm:NoDupA m) x y e,
   InA eqk (y,e) (remove x m) -> InA eqk (y,e) m.
 Proof.
- intros m Hm x y e; generalize Hm; clear Hm; unfold PX.MapsTo.
- functional induction (remove x m);auto.
- do 2 inversion_clear 1; auto.
+ induction m as [|[a m]]; intros Hm x y e H; unfold PX.MapsTo; simpl in *.
+ - inversion_clear H.
+ - destruct X.eq_dec.
+   + apply InA_cons_tl; auto.
+   + apply InA_cons in H; destruct H; [apply InA_cons_hd; auto|].
+     inversion_clear Hm; apply InA_cons_tl; apply IHm with x; auto.
 Qed.
 
 Lemma remove_NoDup : forall m (Hm:NoDupA m) x, NoDupA (remove x m).
@@ -338,7 +346,7 @@ Qed.
 
 (** * [fold] *)
 
-Function fold (A:Type)(f:key->elt->A->A)(m:t elt) (acc : A) {struct m} :  A :=
+Fixpoint fold (A:Type)(f:key->elt->A->A)(m:t elt) (acc : A) {struct m} :  A :=
   match m with
    | nil => acc
    | (k,e)::m' => fold f m' (f k e acc)
@@ -347,7 +355,7 @@ Function fold (A:Type)(f:key->elt->A->A)(m:t elt) (acc : A) {struct m} :  A :=
 Lemma fold_1 : forall m (A:Type)(i:A)(f:key->elt->A->A),
   fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
 Proof.
- intros; functional induction (@fold A f m i); auto.
+ induction m as [|[a m]]; intros A i f; simpl; auto.
 Qed.
 
 (** * [equal] *)
