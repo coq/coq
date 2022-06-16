@@ -266,6 +266,9 @@ zulip_autofail() {
 }
 if [[ $zulip_post ]]; then trap zulip_autofail ERR; fi
 
+# see https://github.com/coq/coq/pull/15807
+ulimit -s $((2 * $(ulimit -s)))
+
 # Clone the indicated git-repository.
 
 coq_dir="$working_dir/coq"
