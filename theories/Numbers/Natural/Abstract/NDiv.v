@@ -26,12 +26,18 @@ Proof. intros. apply mod_bound_pos; auto'. Qed.
 
 (** Another formulation of the main equation *)
 
+Lemma mod_eq_full :
+ forall a b, a mod b == a - b*(a/b).
+Proof.
+intros a b. symmetry. apply add_sub_eq_l.
+symmetry. apply div_mod_full.
+Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mod_eq :
  forall a b, b~=0 -> a mod b == a - b*(a/b).
 Proof.
-intros.
-symmetry. apply add_sub_eq_l. symmetry.
-now apply div_mod.
+intros. apply mod_eq_full.
 Qed.
 
 (** Uniqueness theorems *)
@@ -112,8 +118,12 @@ Proof. intros. apply mod_mul_full. Qed.
 
 (** A modulo cannot grow beyond its starting point. *)
 
+Theorem mod_le_full: forall a b, a mod b <= a.
+Proof. intros. apply mod_le_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Theorem mod_le: forall a b, b~=0 -> a mod b <= a.
-Proof. intros. apply mod_le; auto'. Qed.
+Proof. intros. apply mod_le_full. Qed.
 
 Lemma div_str_pos : forall a b, 0<b<=a -> 0 < a/b.
 Proof. exact div_str_pos. Qed.
@@ -147,8 +157,12 @@ Proof. intros; apply mul_succ_div_gt; auto'. Qed.
 
 (** The previous inequality is exact iff the modulo is zero. *)
 
+Lemma div_exact_full : forall a b, (a == b*(a/b) <-> a mod b == 0).
+Proof. intros. apply div_exact_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma div_exact : forall a b, b~=0 -> (a == b*(a/b) <-> a mod b == 0).
-Proof. intros. apply div_exact; auto'. Qed.
+Proof. intros. apply div_exact_full. Qed.
 
 (** Some additional inequalities about div. *)
 
@@ -171,9 +185,13 @@ Proof. intros. apply div_le_compat_l;[auto' | auto]. Qed.
 
 (** * Relations between usual operations and mod and div *)
 
+Lemma mod_add_full : forall a b c, (a + b * c) mod c == a mod c.
+Proof. intros. apply mod_add_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mod_add : forall a b c, c~=0 ->
  (a + b * c) mod c == a mod c.
-Proof. intros. apply mod_add; auto'. Qed.
+Proof. intros. apply mod_add_full. Qed.
 
 Lemma div_add : forall a b c, c~=0 ->
  (a + b * c) / c == a / c + b.
@@ -193,51 +211,98 @@ Lemma div_mul_cancel_l : forall a b c, b~=0 -> c~=0 ->
  (c*a)/(c*b) == a/b.
 Proof. intros. apply div_mul_cancel_l; auto'. Qed.
 
+Lemma mul_mod_distr_r_full: forall a b c,
+  (a*c) mod (b*c) == (a mod b) * c.
+Proof. intros. apply mul_mod_distr_r_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_mod_distr_r: forall a b c, b~=0 -> c~=0 ->
   (a*c) mod (b*c) == (a mod b) * c.
-Proof. intros. apply mul_mod_distr_r; auto'. Qed.
+Proof. intros. apply mul_mod_distr_r_full. Qed.
 
+Lemma mul_mod_distr_l_full: forall a b c,
+  (c*a) mod (c*b) == c * (a mod b).
+Proof. intros. apply mul_mod_distr_l_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_mod_distr_l: forall a b c, b~=0 -> c~=0 ->
   (c*a) mod (c*b) == c * (a mod b).
-Proof. intros. apply mul_mod_distr_l; auto'. Qed.
+Proof. intros. apply mul_mod_distr_l_full. Qed.
 
 (** Operations modulo. *)
 
+Theorem mod_mod_full: forall a n, (a mod n) mod n == a mod n.
+Proof. intros. apply mod_mod_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Theorem mod_mod: forall a n, n~=0 ->
  (a mod n) mod n == a mod n.
-Proof. intros. apply mod_mod; auto'. Qed.
+Proof. intros. apply mod_mod_full. Qed.
 
+Lemma mul_mod_idemp_l_full : forall a b n, ((a mod n)*b) mod n == (a*b) mod n.
+Proof. intros. apply mul_mod_idemp_l_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_mod_idemp_l : forall a b n, n~=0 ->
  ((a mod n)*b) mod n == (a*b) mod n.
-Proof. intros. apply mul_mod_idemp_l; auto'. Qed.
+Proof. intros. apply mul_mod_idemp_l_full. Qed.
 
+Lemma mul_mod_idemp_r_full : forall a b n, (a*(b mod n)) mod n == (a*b) mod n.
+Proof. intros. apply mul_mod_idemp_r_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mul_mod_idemp_r : forall a b n, n~=0 ->
  (a*(b mod n)) mod n == (a*b) mod n.
-Proof. intros. apply mul_mod_idemp_r; auto'. Qed.
+Proof. intros. apply mul_mod_idemp_r_full. Qed.
 
+Theorem mul_mod_full: forall a b n,
+ (a * b) mod n == ((a mod n) * (b mod n)) mod n.
+Proof. intros. apply mul_mod_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Theorem mul_mod: forall a b n, n~=0 ->
  (a * b) mod n == ((a mod n) * (b mod n)) mod n.
-Proof. intros. apply mul_mod; auto'. Qed.
+Proof. intros. apply mul_mod_full. Qed.
 
+Lemma add_mod_idemp_l_full : forall a b n,
+ ((a mod n)+b) mod n == (a+b) mod n.
+Proof. intros. apply add_mod_idemp_l_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma add_mod_idemp_l : forall a b n, n~=0 ->
  ((a mod n)+b) mod n == (a+b) mod n.
-Proof. intros. apply add_mod_idemp_l; auto'. Qed.
+Proof. intros. apply add_mod_idemp_l_full. Qed.
 
+Lemma add_mod_idemp_r_full : forall a b n,
+ (a+(b mod n)) mod n == (a+b) mod n.
+Proof. intros. apply add_mod_idemp_r_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma add_mod_idemp_r : forall a b n, n~=0 ->
  (a+(b mod n)) mod n == (a+b) mod n.
-Proof. intros. apply add_mod_idemp_r; auto'. Qed.
+Proof. intros. apply add_mod_idemp_r_full. Qed.
 
+Theorem add_mod_full: forall a b n,
+ (a+b) mod n == (a mod n + b mod n) mod n.
+Proof. intros. apply add_mod_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Theorem add_mod: forall a b n, n~=0 ->
  (a+b) mod n == (a mod n + b mod n) mod n.
-Proof. intros. apply add_mod; auto'. Qed.
+Proof. intros. apply add_mod_full. Qed.
 
 Lemma div_div : forall a b c, b~=0 -> c~=0 ->
  (a/b)/c == a/(b*c).
 Proof. intros. apply div_div; auto'. Qed.
 
+Lemma mod_mul_r_full : forall a b c,
+ a mod (b*c) == a mod b + b*((a/b) mod c).
+Proof. intros. apply mod_mul_r_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mod_mul_r : forall a b c, b~=0 -> c~=0 ->
  a mod (b*c) == a mod b + b*((a/b) mod c).
-Proof. intros. apply mod_mul_r; auto'. Qed.
+Proof. intros. apply mod_mul_r_full. Qed.
 
 (** A last inequality: *)
 
@@ -247,8 +312,13 @@ Proof. intros. apply div_mul_le; auto'. Qed.
 
 (** mod is related to divisibility *)
 
+Lemma mod_divides_full : forall a b,
+ (a mod b == 0 <-> exists c, a == b*c).
+Proof. intros. apply mod_divides_full; apply le_0_l. Qed.
+
+(* TODO #16189 deprecate *)
 Lemma mod_divides : forall a b, b~=0 ->
  (a mod b == 0 <-> exists c, a == b*c).
-Proof. intros. apply mod_divides; auto'. Qed.
+Proof. intros. apply mod_divides_full. Qed.
 
 End NDivProp.
