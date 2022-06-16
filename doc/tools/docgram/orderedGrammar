@@ -1157,6 +1157,7 @@ section_var_expr50: [
 
 section_var_expr0: [
 | starred_ident_ref
+| "()"
 | "(" section_var_expr ")" OPT "*"
 ]
 

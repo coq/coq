@@ -271,6 +271,7 @@ When the proof is completed, you can exit proof mode with commands such as
       | @section_var_expr0 + @section_var_expr0
       | @section_var_expr0
       section_var_expr0 ::= @starred_ident_ref
+      | ()
       | ( @section_var_expr ) {? * }
       starred_ident_ref ::= @ident {? * }
       | Type {? * }
