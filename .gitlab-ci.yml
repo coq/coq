@@ -859,6 +859,9 @@ plugin:ci-equations:
 plugin:ci-fiat_parsers:
   extends: .ci-template
 
+plugin:ci-lean_importer:
+  extends: .ci-template
+
 plugin:ci-metacoq:
   extends: .ci-template
   needs:

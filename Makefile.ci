@@ -45,6 +45,7 @@ CI_TARGETS= \
     ci-hott \
     ci-iris \
     ci-jasmin \
+    ci-lean_importer \
     ci-math_classes \
     ci-mathcomp \
     ci-mathcomp_word \

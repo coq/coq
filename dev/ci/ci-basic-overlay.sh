@@ -339,3 +339,8 @@ project mathcomp_word "https://github.com/jasmin-lang/coqword" "main"
 # Jasmin
 ########################################################################
 project jasmin "https://github.com/jasmin-lang/jasmin" "main"
+
+########################################################################
+# Lean Importer
+########################################################################
+project lean_importer "https://github.com/SkySkimmer/coq-lean-import" "master"
