@@ -936,7 +936,7 @@ let pr_vernac_expr v =
   | VernacEndSegment id ->
     return (hov 2 (keyword "End" ++ spc() ++ pr_lident id))
   | VernacNameSectionHypSet (id,set) ->
-    return (hov 2 (keyword "Package" ++ spc() ++ pr_lident id ++ spc()++
+    return (hov 2 (keyword "Collection" ++ spc() ++ pr_lident id ++ spc()++
                    str ":="++spc()++pr_using set))
   | VernacExtraDependency(from,file,id) ->
     return (
