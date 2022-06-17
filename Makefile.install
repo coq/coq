@@ -52,23 +52,13 @@ endif
 # We ought to improve this, as of today the case of an opam-built dune
 # installing to a global prefix such as /usr/local/ may not follow the FHS.
 # For now, we respect the values given at configure's time.
-ifdef DUNE_29_PLUS
 install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
 	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coq-core
 	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coqide-server
-else
-install-dune: $(BCONTEXT)/coq-core.install $(BCONTEXT)/coqide-server.install
-	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coq-core
-	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide-server
-endif
 
-# IMPORTANT NOTE: before Dune 2.9, the --docdir and --etcdir options
-# were not supported, if using Dune >= 2.9, Coq's configure will set
-# the DUNE_29_PLUS=yes` variable to use the call with the right options.
-#
-# Additionally, you can also add --libdir=$(COQLIBINSTALL) if required
-# by your distribution, but we recommend using the default configured
-# with Dune.
+# You can also add --libdir=$(COQLIBINSTALL) if required by your
+# distribution, but we recommend using the default configured with
+# Dune.
 
 install-coq: install-dune install-library
 
@@ -100,15 +90,9 @@ endif
 ifeq ($(HASCOQIDE),no)
 install-coqide:
 else
-ifdef DUNE_29_PLUS
 install-coqide: $(BCONTEXT)/coqide.install
 	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" --etcdir="$(CONFIGDIR)" --docdir="$(DOCDIR)" coqide
-else
-	dune install $(_DOPT) $(DESTDIRARG) --mandir="$(MANDIR)" --prefix="$(COQPREFIX)" coqide
 endif
-endif
-
-
 
 # For emacs:
 # Local Variables:

@@ -65,7 +65,7 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 
 # EDGE switch
 ENV COMPILER_EDGE="4.14.0" \
-    BASE_OPAM_EDGE="dune.2.9.1 dune-release.1.5.0 ocamlfind.1.9.1 odoc.2.0.2" \
+    BASE_OPAM_EDGE="dune.2.9.3 dune-release.1.6.1 ocamlfind.1.9.1 odoc.2.0.2" \
     COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.2"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
