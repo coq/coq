@@ -12,13 +12,6 @@ open Names
 open Constr
 open Mod_subst
 
-type global_reference = GlobRef.t =
-  | VarRef of variable     [@ocaml.deprecated "Use Names.GlobRef.VarRef"]
-  | ConstRef of Constant.t [@ocaml.deprecated "Use Names.GlobRef.ConstRef"]
-  | IndRef of inductive    [@ocaml.deprecated "Use Names.GlobRef.IndRef"]
-  | ConstructRef of constructor [@ocaml.deprecated "Use Names.GlobRef.ConstructRef"]
-[@@ocaml.deprecated "Use Names.GlobRef.t"]
-
 open GlobRef
 
 let isVarRef = function VarRef _ -> true | _ -> false
@@ -61,15 +54,6 @@ let canonical_gr = function
   | IndRef (kn,i) -> IndRef(MutInd.make1(MutInd.canonical kn),i)
   | ConstructRef ((kn,i),j )-> ConstructRef((MutInd.make1(MutInd.canonical kn),i),j)
   | VarRef id -> VarRef id
-
-let global_of_constr c = match kind c with
-  | Const (sp,u) -> ConstRef sp
-  | Ind (ind_sp,u) -> IndRef ind_sp
-  | Construct (cstr_cp,u) -> ConstructRef cstr_cp
-  | Var id -> VarRef id
-  |  _ -> raise Not_found
-
-let is_global = Constr.isRefX
 
 let printable_constr_of_global = function
   | VarRef id -> mkVar id
