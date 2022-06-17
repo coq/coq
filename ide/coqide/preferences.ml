@@ -666,10 +666,47 @@ let tag_button () =
 let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
 let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"
 
+let accel_regex = Str.regexp {|\(; \|\)(gtk_accel_path "\([^""]*\)"|}
+
+exception UnknownFormat
+
 let save_accel_pref () =
   if not (Sys.file_exists (Minilib.coqide_config_home ()))
   then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
-  GtkData.AccelMap.save accel_file
+  let tmp_file, fd = Filename.open_temp_file ?perms:(Some 0o644)
+    ?temp_dir:(Some (Filename.dirname accel_file))
+    "coqide.keys_" "" in
+  close_out fd;
+  GtkData.AccelMap.save tmp_file;
+  (* AccelMap.save writes entries in random order, so sort them: *)
+  let fd = open_in tmp_file in
+  let map = ref CString.Map.empty in
+  let top_lines = ref [] in
+  begin
+    try
+      while true do
+        let line = input_line fd in
+        if Str.string_match accel_regex line 0 then
+          let key = Str.matched_group 2 line in
+          map := CString.Map.add key line !map
+        else begin
+          if not (CString.Map.is_empty !map) then begin
+            Minilib.log ("Unknown format for coqide.keys; sorting skipped");
+            raise UnknownFormat
+          end;
+          top_lines := line :: !top_lines
+        end
+      done
+    with
+    | UnknownFormat -> close_in fd
+    | End_of_file ->
+      close_in fd;
+      let fd = open_out tmp_file in
+      List.iter (fun l -> Printf.fprintf fd "%s\n" l) (List.rev !top_lines);
+      CString.Map.iter (fun k l -> Printf.fprintf fd "%s\n" l) !map;
+      close_out fd
+  end;
+  Sys.rename tmp_file accel_file
 
 let save_rc_pref () =
   if not (Sys.file_exists (Minilib.coqide_config_home ()))
