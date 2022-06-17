@@ -211,7 +211,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
     infer_fterm CONV infos variances bd []
   | FProd (_,dom,codom,e) ->
     let variances = infer_fterm CONV infos variances dom [] in
-    infer_fterm cv_pb infos variances (mk_clos (Esubst.subs_lift e) codom) []
+    infer_fterm cv_pb infos variances (mk_clos (CClosure.usubs_lift e) codom) []
   | FInd (ind, u) ->
     let variances =
       let nargs = stack_args_size stk in
@@ -227,7 +227,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FFix ((_,(_,tys,cl)),e) | FCoFix ((_,(_,tys,cl)),e) ->
     let n = Array.length cl in
     let variances = infer_vect infos variances (Array.map (mk_clos e) tys) in
-    let le = Esubst.subs_liftn n e in
+    let le = CClosure.usubs_liftn n e in
     let variances = infer_vect infos variances (Array.map (mk_clos le) cl) in
     infer_stack infos variances stk
   | FArray (u,elemsdef,ty) ->

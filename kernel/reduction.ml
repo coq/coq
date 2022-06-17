@@ -74,7 +74,7 @@ type lft_constr_stack_elt =
     Zlapp of (lift * fconstr) array
   | Zlproj of Projection.Repr.t * lift
   | Zlfix of (lift * fconstr) * lft_constr_stack
-  | Zlcase of case_info * lift * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
+  | Zlcase of case_info * lift * Univ.Instance.t * constr array * case_return * case_branch array * fconstr usubs
   | Zlprimitive of
      CPrimitives.t * pconstant * lft_fconstr list * lft_fconstr next_native_args
 and lft_constr_stack = lft_constr_stack_elt list
@@ -343,11 +343,11 @@ let esubst_of_rel_context_instance_list ctx u args e =
   let open Context.Rel.Declaration in
   let rec aux lft e args ctx = match ctx with
   | [] -> lft, e
-  | LocalAssum _ :: ctx -> aux (lft + 1) (subs_lift e) (subs_lift args) ctx
+  | LocalAssum _ :: ctx -> aux (lft + 1) (usubs_lift e) (usubs_lift args) ctx
   | LocalDef (_, c, _) :: ctx ->
     let c = Vars.subst_instance_constr u c in
     let c = mk_clos args c in
-    aux lft (subs_cons c e) (subs_cons c args) ctx
+    aux lft (usubs_cons c e) (usubs_cons c args) ctx
   in
   aux 0 e args (List.rev ctx)
 
@@ -517,7 +517,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
         let cuniv = ccnv CONV l2r infos el1 el2 c1 c'1 cuniv in
-        ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (subs_lift e) c2) (mk_clos (subs_lift e') c'2) cuniv
+        ccnv cv_pb l2r (push_relevance infos x1) (el_lift el1) (el_lift el2) (mk_clos (usubs_lift e) c2) (mk_clos (usubs_lift e') c'2) cuniv
 
     (* Eta-expansion on the fly *)
     | (FLambda _, _) ->
@@ -636,8 +636,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
           let fty2 = Array.map (mk_clos e2) tys2 in
-          let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
-          let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+          let fcl1 = Array.map (mk_clos (usubs_liftn n e1)) cl1 in
+          let fcl2 = Array.map (mk_clos (usubs_liftn n e2)) cl2 in
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
@@ -655,8 +655,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
           let fty2 = Array.map (mk_clos e2) tys2 in
-          let fcl1 = Array.map (mk_clos (subs_liftn n e1)) cl1 in
-          let fcl2 = Array.map (mk_clos (subs_liftn n e2)) cl2 in
+          let fcl1 = Array.map (mk_clos (usubs_liftn n e1)) cl1 in
+          let fcl2 = Array.map (mk_clos (usubs_liftn n e2)) cl2 in
           let el1 = el_stack lft1 v1 in
           let el2 = el_stack lft2 v2 in
           let cuniv = convert_vect l2r infos el1 el2 fty1 fty2 cuniv in
@@ -686,6 +686,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       let cuniv =
         let ind = (mind,snd ci1.ci_ind) in
         let nargs = inductive_cumulativity_arguments ind in
+        let u1 = CClosure.usubst_instance e1 u1 in
+        let u2 = CClosure.usubst_instance e2 u2 in
         convert_inductives CONV ind nargs u1 u2 cuniv
       in
       let pms1 = mk_clos_vect e1 pms1 in
@@ -758,6 +760,8 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
                   if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
                     convert_instances ~flex:false u1 u2 cu
                   else
+                    let u1 = CClosure.usubst_instance e1 u1 in
+                    let u2 = CClosure.usubst_instance e2 u2 in
                     match mind.Declarations.mind_variance with
                     | None -> convert_instances ~flex:false u1 u2 cu
                     | Some variances -> convert_instances_cumul CONV variances u1 u2 cu
@@ -797,8 +801,8 @@ and convert_under_context l2r infos e1 e2 lft1 lft2 ctx (nas1, c1) (nas2, c2) cu
   let () = assert (Int.equal n (Array.length nas2)) in
   let n, e1, e2 = match ctx with
   | None -> (* nolet *)
-    let e1 = subs_liftn n e1 in
-    let e2 = subs_liftn n e2 in
+    let e1 = usubs_liftn n e1 in
+    let e2 = usubs_liftn n e2 in
     (n, e1, e2)
   | Some (ctx, u1, u2, args1, args2) ->
     let n1, e1 = esubst_of_rel_context_instance_list ctx u1 args1 e1 in

@@ -92,27 +92,29 @@ type fconstr
 
 type finvert
 
+type 'a usubs = 'a subs Univ.puniverses
+
 type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
   | FFlex of table_key
-  | FInd of inductive Univ.puniverses
-  | FConstruct of constructor Univ.puniverses
+  | FInd of pinductive
+  | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * fconstr
-  | FFix of fixpoint * fconstr subs
-  | FCoFix of cofixpoint * fconstr subs
-  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * fconstr subs (* predicate and branches are closures *)
-  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * fconstr subs
-  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr subs
-  | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr subs
-  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr subs
-  | FEvar of existential * fconstr subs
+  | FFix of fixpoint * fconstr usubs
+  | FCoFix of cofixpoint * fconstr usubs
+  | FCaseT of case_info * Univ.Instance.t * constr array * case_return * fconstr * case_branch array * fconstr usubs (* predicate and branches are closures *)
+  | FCaseInvert of case_info * Univ.Instance.t * constr array * case_return * finvert * fconstr * case_branch array * fconstr usubs
+  | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr usubs
+  | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr usubs
+  | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr usubs
+  | FEvar of existential * fconstr usubs
   | FInt of Uint63.t
   | FFloat of Float64.t
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
-  | FCLOS of constr * fconstr subs
+  | FCLOS of constr * fconstr usubs
   | FIrrelevant
   | FLOCKED
 
@@ -123,11 +125,11 @@ type 'a next_native_args = (CPrimitives.arg_kind * 'a) list
 
 type stack_member =
   | Zapp of fconstr array
-  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr subs
+  | ZcaseT of case_info * Univ.Instance.t * constr array * case_return * case_branch array * fconstr usubs
   | Zproj of Projection.Repr.t
   | Zfix of fconstr * stack
   | Zprimitive of CPrimitives.t * pconstant * fconstr list * fconstr next_native_args
-       (* operator, constr def, reduced arguments rev, next arguments *)
+       (* operator, constr def, arguments already seen (in rev order), next arguments *)
   | Zshift of int
   | Zupdate of fconstr
 
@@ -147,7 +149,14 @@ val skip_irrelevant_stack : stack -> stack
 val inductive_subst : Declarations.mutual_inductive_body
   -> Univ.Instance.t
   -> fconstr array
-  -> fconstr Esubst.subs
+  -> fconstr usubs
+
+val usubs_lift : 'a usubs -> 'a usubs
+val usubs_liftn : int -> 'a usubs -> 'a usubs
+val usubs_cons : 'a -> 'a usubs -> 'a usubs
+
+(** identity if the first instance is empty *)
+val usubst_instance : 'a Univ.puniverses -> Univ.Instance.t -> Univ.Instance.t
 
 (** To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use
@@ -164,7 +173,7 @@ val mk_red : fterm -> fconstr
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val destFLambda :
-  (fconstr subs -> constr -> fconstr) -> fconstr -> Name.t Context.binder_annot * fconstr * fconstr
+  (fconstr usubs -> constr -> fconstr) -> fconstr -> Name.t Context.binder_annot * fconstr * fconstr
 
 (** Global and local constant cache *)
 type clos_infos
@@ -243,8 +252,8 @@ val set_conv : (clos_infos -> clos_tab -> fconstr -> fconstr -> bool) -> unit
 val lift_fconstr      : int -> fconstr -> fconstr
 val lift_fconstr_vect : int -> fconstr array -> fconstr array
 
-val mk_clos      : fconstr subs -> constr -> fconstr
-val mk_clos_vect : fconstr subs -> constr array -> fconstr array
+val mk_clos      : fconstr usubs -> constr -> fconstr
+val mk_clos_vect : fconstr usubs -> constr array -> fconstr array
 
 val kni: clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
 val knr: clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
@@ -254,6 +263,6 @@ val zip : fconstr -> stack -> fconstr
 
 val term_of_process : fconstr -> stack -> constr
 
-val to_constr : lift -> fconstr -> constr
+val to_constr : lift Univ.puniverses -> fconstr -> constr
 
 (** End of cbn debug section i*)
