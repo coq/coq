@@ -249,7 +249,7 @@ Proof.
   induction (to_list d) as [|h t IHl]; [now simpl|].
   rewrite <-List.app_comm_cons.
   now case h; [| simpl; rewrite List.app_length; intro Hl; exfalso; revert Hl;
-    apply Nat.le_ngt; rewrite Nat.add_comm; apply Nat.le_add_r..].
+    apply Nat.le_ngt, Nat.le_add_l..].
 Qed.
 
 Lemma nzhead_app_nil_r d d' : nzhead (app d d') = Nil -> nzhead d' = Nil.
@@ -265,7 +265,7 @@ Proof.
   induction (to_list d) as [|h t IHl]; [now simpl|].
   now case h; [now simpl|..];
     simpl;intro H; exfalso; revert H; apply Nat.le_ngt;
-    rewrite List.app_length, Nat.add_comm; apply Nat.le_add_r.
+    rewrite List.app_length; apply Nat.le_add_l.
 Qed.
 
 Lemma nzhead_app_nil_l d d' : nzhead (app d d') = Nil -> nzhead d = Nil.

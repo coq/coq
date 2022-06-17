@@ -88,7 +88,7 @@ Notation plus_lt_le_compat := Nat.add_lt_le_mono (only parsing).
 Notation plus_lt_compat := Nat.add_lt_mono (only parsing).
 #[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.le_add_r instead.")]
 Notation le_plus_l := Nat.le_add_r (only parsing).
-#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.le_add_r (together with Nat.add_comm) instead.")]
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.le_add_l (with arguments reversed) instead.")]
 Notation le_plus_r := Arith_prebase.le_plus_r_stt.
 #[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.le_add_r (together with Nat.le_trans) instead.")]
 Notation le_plus_trans := Arith_prebase.le_plus_trans_stt.
