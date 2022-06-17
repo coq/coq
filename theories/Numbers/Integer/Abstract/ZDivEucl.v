@@ -805,6 +805,7 @@ intros a b. split.
 - intros [c ->]. now apply mod_mul_full.
 Qed.
 
+(* TODO #16189 deprecate *)
 Lemma mod_divides : forall a b, b~=0 ->
  (a mod b == 0 <-> (b|a)).
 Proof.
