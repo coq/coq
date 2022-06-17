@@ -63,6 +63,7 @@ rewrite <- add_move_l.
 symmetry. apply quot_rem_full.
 Qed.
 
+(* TODO #16189 deprecate *)
 Lemma rem_eq :
  forall a b, b~=0 -> a rem b == a - b*(a÷b).
 Proof.
