@@ -152,6 +152,7 @@ Proof. intros. apply div_le_mono; auto'. Qed.
 Lemma mul_div_le_full : forall a b, b*(a/b) <= a.
 Proof. intros. apply mul_div_le_full; apply le_0_l. Qed.
 
+(* TODO #16189 deprecate *)
 Lemma mul_div_le : forall a b, b~=0 -> b*(a/b) <= a.
 Proof. intros. apply mul_div_le_full. Qed.
 
