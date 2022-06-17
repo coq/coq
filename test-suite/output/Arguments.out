@@ -65,12 +65,14 @@ f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
 Arguments f x y n%nat_scope v m%nat_scope
+f uses section variables T1 T2.
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
 Arguments f x y !n%nat_scope !v !m%nat_scope
+f uses section variables T1 T2.
 The reduction tactics unfold f when the 3rd, 4th and
   5th arguments evaluate to a constructor
 f is transparent
@@ -79,6 +81,7 @@ f : forall [T2 : Type], T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
 Arguments f [T2]%type_scope x y !n%nat_scope !v !m%nat_scope
+f uses section variable T1.
 The reduction tactics unfold f when the 4th, 5th and
   6th arguments evaluate to a constructor
 f is transparent
