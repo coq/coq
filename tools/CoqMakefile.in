@@ -76,7 +76,7 @@ VERBOSE ?=
 TIMED?=
 TIMECMD?=
 # Use command time on linux, gtime on Mac OS
-TIMEFMT?="$@ (real: %e, user: %U, sys: %S, mem: %M ko)"
+TIMEFMT?="$(if $(findstring undefined, $(flavor 1)),$@,$(1)) (real: %e, user: %U, sys: %S, mem: %M ko)"
 ifneq (,$(TIMED))
 ifeq (0,$(shell command time -f "" true >/dev/null 2>/dev/null; echo $$?))
 STDTIME?=command time -f $(TIMEFMT)
@@ -793,7 +793,7 @@ $(VOFILES): %.vo: %.v | $(VDFILE)
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $@
-	$(HIDE)$(COQNATIVE) $(COQLIBS) $@
+	$(HIDE)$(call TIMER,$@.native) $(COQNATIVE) $(COQLIBS) $@
 endif
 
 # FIXME ?merge with .vo / .vio ?
