@@ -1962,7 +1962,8 @@ let query_command_selector ?loc = function
 let vernac_check_may_eval ~pstate redexp glopt rc =
   let glopt = query_command_selector glopt in
   let sigma, env = get_current_context_of_args ~pstate glopt in
-  let sigma, c = Constrintern.interp_open_constr ~expected_type:Pretyping.UnknownIfTermOrType env sigma rc in
+  let gc = Constrintern.intern_unknown_if_term_or_type env sigma rc in
+  let sigma, c = Pretyping.understand_tcc env sigma gc in
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
   Evarconv.check_problems_are_solved env sigma;
   let sigma = Evd.minimize_universes sigma in

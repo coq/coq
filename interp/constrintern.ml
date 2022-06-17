@@ -2533,12 +2533,11 @@ let bound_univs sigma = Evd.universe_binders sigma
 let scope_of_type_kind env sigma = function
   | IsType -> Notation.current_type_scope_name ()
   | OfType typ -> compute_type_scope env sigma typ
-  | WithoutTypeConstraint | UnknownIfTermOrType -> None
+  | WithoutTypeConstraint -> None
 
 let allowed_binder_kind_of_type_kind = function
-  | IsType -> Some AbsPi
-  | OfType _ | WithoutTypeConstraint -> Some AbsLambda
-  | UnknownIfTermOrType -> None
+  | IsType -> AbsPi
+  | OfType _ | WithoutTypeConstraint -> AbsLambda
 
 let empty_ltac_sign = {
   ltac_vars = Id.Set.empty;
@@ -2549,13 +2548,19 @@ let empty_ltac_sign = {
 let intern_gen kind env sigma
                ?(impls=empty_internalization_env) ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
                c =
-  let tmp_scope = scope_of_type_kind env sigma kind in
-  let k = allowed_binder_kind_of_type_kind kind in
+  let tmp_scope = Option.cata (scope_of_type_kind env sigma) None kind in
+  let k = Option.map allowed_binder_kind_of_type_kind kind in
   internalize env {ids = extract_ids env; unb = false;
                    local_univs = { bound = bound_univs sigma; unb_univs = true };
                    tmp_scope = tmp_scope; scopes = [];
                    impls; binder_block_names = Some k}
     pattern_mode (ltacvars, Id.Map.empty) c
+
+let intern_unknown_if_term_or_type env sigma c =
+  intern_gen None env sigma c
+
+let intern_gen kind env sigma ?impls ?pattern_mode ?ltacvars c =
+  intern_gen (Some kind) env sigma ?impls ?pattern_mode ?ltacvars c
 
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
 let intern_type env sigma c = intern_gen IsType env sigma c
@@ -2646,7 +2651,7 @@ let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
     {ids; unb = false;
      local_univs = { bound = bound_univs sigma; unb_univs = true };
      tmp_scope; scopes = []; impls;
-     binder_block_names = Some k}
+     binder_block_names = Some (Some k)}
     pattern_mode (ltacvars, vl) c
 
 let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
