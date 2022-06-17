@@ -773,6 +773,7 @@ Proof.
    + now rewrite !mul_0_l, add_0_r.
 Qed.
 
+(* TODO #16189 deprecate *)
 Lemma mod_mul_r : forall a b c, 0<b -> c~=0 ->
  a mod (b*c) == a mod b + b*((a/b) mod c).
 Proof.
