@@ -92,6 +92,13 @@ let judge_of_apply env sigma funj argjv =
   in
   apply_rec sigma 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
 
+let checked_appvect env sigma f args =
+  let mk c = Retyping.get_judgment_of env sigma c in
+  let sigma, j = judge_of_apply env sigma (mk f) (Array.map mk args) in
+  sigma, j.uj_val
+
+let checked_applist env sigma f args = checked_appvect env sigma f (Array.of_list args)
+
 let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
   let (sigma, j) = judge_of_apply env sigma funj argjv in
   let ar = inductive_type_knowing_parameters env sigma ind argjv in
