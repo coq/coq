@@ -34,7 +34,7 @@ myrefl is not universe polymorphic
 Arguments myrefl {C}%type_scope x _
   (where some original arguments have been renamed)
 Expands to: Constructor Arguments_renaming.Test1.myrefl
-myplus = 
+myplus =
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m
@@ -69,7 +69,7 @@ Arguments myrefl A%type_scope {C}%type_scope x _
 Expands to: Constructor Arguments_renaming.myrefl
 myrefl
      : forall (A C : Type) (x : A), C -> myEq A C x x
-myplus = 
+myplus =
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m

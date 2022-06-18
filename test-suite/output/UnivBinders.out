@@ -7,7 +7,7 @@ Record PWrap@{uu} (A : Type@{uu}) : Type@{uu} := pwrap
 PWrap has primitive projections with eta conversion.
 Arguments PWrap A%type_scope
 Arguments pwrap A%type_scope punwrap
-punwrap@{uu} = 
+punwrap@{uu} =
 fun (A : Type@{uu}) (p : PWrap@{uu} A) => punwrap _ p
      : forall A : Type@{uu}, PWrap@{uu} A -> A
 (* uu |=  *)
@@ -19,7 +19,7 @@ Record RWrap@{uu} (A : Type@{uu}) : Type@{uu} := rwrap
 
 Arguments RWrap A%type_scope
 Arguments rwrap A%type_scope runwrap
-runwrap@{uu} = 
+runwrap@{uu} =
 fun (A : Type@{uu}) (r : RWrap@{uu} A) => let (runwrap) := r in runwrap
      : forall A : Type@{uu}, RWrap@{uu} A -> A
 (* uu |=  *)
@@ -30,7 +30,7 @@ Wrap@{uu} = fun A : Type@{uu} => A
 (* uu |=  *)
 
 Arguments Wrap A%type_scope
-wrap@{uu} = 
+wrap@{uu} =
 fun (A : Type@{uu}) (Wrap : Wrap@{uu} A) => Wrap
      : forall A : Type@{uu}, Wrap@{uu} A -> A
 (* uu |=  *)
@@ -39,7 +39,7 @@ Arguments wrap {A}%type_scope {Wrap}
 bar@{uu} = nat
      : Wrap@{uu} Set
 (* uu |= Set < uu *)
-foo@{uu u v} = 
+foo@{uu u v} =
 Type@{u} -> Type@{v} -> Type@{uu}
      : Type@{max(uu+1,u+1,v+1)}
 (* uu u v |=  *)
@@ -69,18 +69,18 @@ mono
 File "./output/UnivBinders.v", line 70, characters 0-52:
 The command has indeed failed with message:
 Universe uu already exists.
-bobmorane = 
+bobmorane =
 let tt := Type@{UnivBinders.32} in
 let ff := Type@{UnivBinders.34} in tt -> ff
      : Type@{max(UnivBinders.31,UnivBinders.33)}
 File "./output/UnivBinders.v", line 85, characters 23-25:
 The command has indeed failed with message:
 Universe uu already bound.
-foo@{E M N} = 
+foo@{E M N} =
 Type@{M} -> Type@{N} -> Type@{E}
      : Type@{max(E+1,M+1,N+1)}
 (* E M N |=  *)
-foo@{uu u v} = 
+foo@{uu u v} =
 Type@{u} -> Type@{v} -> Type@{uu}
      : Type@{max(uu+1,u+1,v+1)}
 (* uu u v |=  *)
@@ -144,7 +144,7 @@ SomeMod.inmod@{uu} = Type@{uu}
 inmod@{uu} = Type@{uu}
      : Type@{uu+1}
 (* uu |=  *)
-Applied.infunct@{uu v} = 
+Applied.infunct@{uu v} =
 inmod@{uu} -> Type@{v}
      : Type@{max(uu+1,v+1)}
 (* uu v |=  *)

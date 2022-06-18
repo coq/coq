@@ -2,7 +2,7 @@ thing = forall x y : foo, bla x y
      : Prop
 thing = forall (x : foo@{thing.u0}) (y : foo@{thing.u1}), bla x y
      : Prop
-thing = 
+thing =
 forall (x : @foo@{thing.u0} True) (y : @foo@{thing.u1} True),
 @bla True True x y
      : Prop

@@ -26,7 +26,7 @@ When applied to no arguments:
   Arguments A, x are implicit and maximally inserted
 When applied to 1 argument:
   Argument A is implicit
-Nat.add = 
+Nat.add =
 fix add (n m : nat) {struct n} : nat :=
   match n with
   | 0 => m

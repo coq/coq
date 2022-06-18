@@ -45,8 +45,8 @@ and pr_or_and_intro_pattern prc = function
 
 (** Printing of bindings *)
 let pr_binding prc = let open CAst in function
-  | {loc;v=(NamedHyp id, c)} -> hov 1 (Names.Id.print id.v ++ str " := " ++ cut () ++ prc c)
-  | {loc;v=(AnonHyp n, c)} -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+  | {loc;v=(NamedHyp id, c)} -> hov 1 (Names.Id.print id.v ++ str " :=" ++ spc () ++ prc c)
+  | {loc;v=(AnonHyp n, c)} -> hov 1 (int n ++ str " :=" ++ spc () ++ prc c)
 
 let pr_bindings prc prlc = function
   | ImplicitBindings l ->
