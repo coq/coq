@@ -20,6 +20,8 @@ Require Export FMapInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Local Ltac Tauto.intuition_solver ::= auto with bool map.
+
 #[global]
 Hint Extern 1 (Equivalence _) => constructor; congruence : core.
 
@@ -1948,7 +1950,7 @@ Module OrdProperties (M:S).
     rewrite InA_app_iff, InA_cons, InA_nil, <- 2 elements_mapsto_iff,
       find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
       add_mapsto_iff.
-    unfold O.eqke; simpl. intuition.
+    unfold O.eqke; simpl. intuition auto with relations.
     destruct (E.eq_dec x t0) as [Heq|Hneq]; auto.
     exfalso.
     assert (In t0 m).
@@ -1981,7 +1983,7 @@ Module OrdProperties (M:S).
     rewrite InA_cons, <- 2 elements_mapsto_iff,
       find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
       add_mapsto_iff.
-    unfold O.eqke; simpl. intuition.
+    unfold O.eqke; simpl. intuition auto with relations.
     destruct (E.eq_dec x t0) as [Heq|Hneq]; auto.
     exfalso.
     assert (In t0 m) by

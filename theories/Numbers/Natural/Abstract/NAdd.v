@@ -21,7 +21,7 @@ Include NBaseProp N.
 Theorem eq_add_0 : forall n m, n + m == 0 <-> n == 0 /\ m == 0.
 Proof.
 intros n m; induct n.
-- nzsimpl; intuition.
+- nzsimpl; intuition auto with relations.
 - intros n IH. nzsimpl.
 setoid_replace (S (n + m) == 0) with False by
  (apply neg_false; apply neq_succ_0).

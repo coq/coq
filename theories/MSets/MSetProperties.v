@@ -21,6 +21,8 @@ Require Import PeanoNat DecidableTypeEx OrdersLists MSetFacts MSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Local Ltac Tauto.intuition_solver ::= auto with relations.
+
 #[global]
 Hint Unfold transpose : core.
 
@@ -33,7 +35,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
 
   Lemma In_dec : forall x s, {In x s} + {~ In x s}.
   Proof.
-  intros; generalize (mem_iff s x); case (mem x s); intuition.
+  intros; generalize (mem_iff s x); case (mem x s); intuition auto with bool.
   Qed.
 
   Definition Add x s s' := forall y, In y s' <-> E.eq x y \/ In y s.
@@ -709,7 +711,7 @@ Module WPropertiesOn (Import E : DecidableType)(M : WSetsOn E).
         (forall x : elt, In x s <-> InA E.eq x l) /\
         cardinal s = length l.
   Proof.
-  intros; exists (elements s); intuition; apply cardinal_1.
+  intros; exists (elements s); intuition auto with set; apply cardinal_1.
   Qed.
 
   Lemma cardinal_1 : forall s, Empty s -> cardinal s = 0.

@@ -67,7 +67,7 @@ Definition le_elim_rel_stt :
 Proof.
   intros P H0 HS n.
   induction n; trivial.
-  intros m Le. elim Le; intuition.
+  intros m Le. elim Le; intuition auto with arith.
 Qed.
 #[deprecated(since="8.16",note="The Arith.Le file is obsolete.")]
 Notation le_elim_rel := le_elim_rel_stt.

@@ -21,6 +21,8 @@ Require Export MSetInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Local Ltac Tauto.intuition_solver ::= auto with relations.
+
 (** First, a functor for Weak Sets in functorial version. *)
 
 Module WFactsOn (Import E : DecidableType)(Import M : WSetsOn E).
@@ -170,7 +172,7 @@ Proof. apply iff_sym, mem_spec. Qed.
 
 Lemma not_mem_iff : ~In x s <-> mem x s = false.
 Proof.
-rewrite <-mem_spec; destruct (mem x s); intuition.
+rewrite <-mem_spec; destruct (mem x s); intuition auto with bool.
 Qed.
 
 Lemma equal_iff : s[=]s' <-> equal s s' = true.

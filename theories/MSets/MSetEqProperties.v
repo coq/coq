@@ -154,7 +154,7 @@ Qed.
 
 Lemma equal_sym: equal s s'=equal s' s.
 Proof.
-intros; apply bool_1; do 2 rewrite <- equal_iff; intuition.
+intros; apply bool_1; do 2 rewrite <- equal_iff; intuition auto with relations.
 Qed.
 
 Lemma equal_trans:
@@ -494,7 +494,7 @@ Lemma exclusive_set : forall s s' x,
  ~(In x s/\In x s') <-> mem x s && mem x s'=false.
 Proof.
 intros; do 2 rewrite mem_iff.
-destruct (mem x s); destruct (mem x s'); intuition.
+destruct (mem x s); destruct (mem x s'); intuition auto with bool.
 Qed.
 
 Section Fold.

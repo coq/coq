@@ -311,7 +311,7 @@ Module KeyOrderedType(O:OrderedType).
   Proof. auto with ordered_type. Qed.
 
   Lemma eqke_sym : forall e e', eqke e e' -> eqke e' e.
-  Proof. unfold eqke; intuition. Qed.
+  Proof. unfold eqke; intuition auto with relations. Qed.
 
   Lemma eqk_trans : forall e e' e'', eqk e e' -> eqk e' e'' -> eqk e e''.
   Proof. eauto with ordered_type. Qed.

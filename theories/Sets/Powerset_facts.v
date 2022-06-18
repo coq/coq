@@ -34,6 +34,8 @@ Require Export Partial_Order.
 Require Export Cpo.
 Require Export Powerset.
 
+Local Ltac Tauto.intuition_solver ::= auto with sets.
+
 Section Sets_as_an_algebra.
   Variable U : Type.
 

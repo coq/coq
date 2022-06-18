@@ -17,6 +17,8 @@ Require Import MSetInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Local Ltac Tauto.intuition_solver ::= auto with typeclass_instances.
+
 (** * Functions over lists
 
    First, we provide sets as lists which are (morally) without redundancy.
@@ -360,7 +362,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   unfold Empty; intros.
   intuition.
   - specialize (H a). rewrite diff_spec in H; intuition.
-    rewrite <- (mem_spec a) in H |- *. destruct (mem a s'); intuition.
+    rewrite <- (mem_spec a) in H |- *. destruct (mem a s'); intuition auto with bool.
   - rewrite diff_spec in H0; intuition.
   Qed.
 

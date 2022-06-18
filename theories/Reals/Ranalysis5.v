@@ -18,6 +18,8 @@ Require Import Lia.
 Require Import Lra.
 Local Open Scope R_scope.
 
+Local Ltac Tauto.intuition_solver ::= auto with rorders real.
+
 (** * Preliminaries lemmas *)
 
 Lemma f_incr_implies_g_incr_interv : forall f g:R->R, forall lb ub,

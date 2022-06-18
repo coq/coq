@@ -46,7 +46,7 @@ Qed.
 
 Lemma not_mem_iff : ~In x s <-> mem x s = false.
 Proof.
-rewrite mem_iff; destruct (mem x s); intuition.
+rewrite mem_iff; destruct (mem x s); intuition auto with bool.
 Qed.
 
 Lemma equal_iff : s[=]s' <-> equal s s' = true.

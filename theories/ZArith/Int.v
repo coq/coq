@@ -21,6 +21,8 @@ Declare Scope Int_scope.
 Delimit Scope Int_scope with I.
 Local Open Scope Int_scope.
 
+Local Ltac Tauto.intuition_solver ::= auto with bool.
+
 (** * A specification of integers *)
 
 Module Type Int.

@@ -382,7 +382,7 @@ Ltac invtree f :=
 
 Ltac inv := inv_ok; invtree InT.
 
-Ltac intuition_in := repeat (intuition; inv).
+Ltac intuition_in := repeat (intuition auto; inv).
 
 (** Helper tactic concerning order of elements. *)
 
@@ -1157,7 +1157,7 @@ Lemma maxdepth_log_cardinal s : s <> Leaf ->
 Proof.
  intros H.
  apply Nat.log2_lt_pow2.
- - destruct s; simpl; intuition.
+ - destruct s; simpl; intuition auto with arith.
  - apply maxdepth_cardinal.
 Qed.
 

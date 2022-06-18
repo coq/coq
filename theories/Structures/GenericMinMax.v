@@ -91,7 +91,7 @@ Lemma max_spec n m :
 Proof.
  destruct (lt_total n m); [left|right].
  - split; auto. apply max_r. rewrite le_lteq; auto.
- - assert (m <= n) by (rewrite le_lteq; intuition).
+ - assert (m <= n) by (rewrite le_lteq; intuition auto with relations).
    split; auto. now apply max_l.
 Qed.
 
@@ -247,7 +247,7 @@ Lemma min_spec n m :
 Proof.
  destruct (lt_total n m); [left|right].
  - split; auto. apply min_l. rewrite le_lteq; auto.
- - assert (m <= n) by (rewrite le_lteq; intuition).
+ - assert (m <= n) by (rewrite le_lteq; intuition auto with relations).
    split; auto. now apply min_r.
 Qed.
 
@@ -639,7 +639,7 @@ Module TOMaxEqDec_to_Compare
    absurd (x==y); auto. transitivity (max x y); auto.
    symmetry. apply max_l. rewrite le_lteq; intuition.
  - destruct (lt_total y x); auto.
-   absurd (max x y == y); auto. apply max_r; rewrite le_lteq; intuition.
+   absurd (max x y == y); auto. apply max_r; rewrite le_lteq; intuition auto with relations.
  Qed.
 
 End TOMaxEqDec_to_Compare.

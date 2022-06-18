@@ -21,6 +21,7 @@ Set Firstorder Depth 2.
 (** * From non-dependent signature [S] to dependent signature [Sdep]. *)
 
 Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
+  Local Ltac Tauto.intuition_solver ::= auto with bool set.
 
   Definition empty : {s : t | Empty s}.
   Proof.

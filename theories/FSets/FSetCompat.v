@@ -14,6 +14,8 @@ Require Import FSetInterface FSetFacts MSetInterface MSetFacts.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Local Ltac Tauto.intuition_solver ::= auto with relations.
+
 (** * From new Weak Sets to old ones *)
 
 Module Backport_WSets

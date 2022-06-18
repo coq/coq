@@ -161,7 +161,7 @@ Definition Remainder_alt a b r :=
 Lemma Remainder_equiv : forall a b r,
  Remainder a b r <-> Remainder_alt a b r.
 Proof.
-  unfold Remainder, Remainder_alt; intuition.
+  unfold Remainder, Remainder_alt; intuition auto with zarith.
   - lia.
   - lia.
   - rewrite <-(Z.mul_opp_opp). apply Z.mul_nonneg_nonneg; lia.

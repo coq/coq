@@ -21,6 +21,8 @@ Require Import List Permutation Morphisms PeanoNat.
 Import ListNotations. (* For notations [] and [a;b;c] *)
 Set Implicit Arguments.
 
+Local Ltac Tauto.intuition_solver ::= auto with datatypes.
+
 Section CPermutation.
 
 Variable A:Type.

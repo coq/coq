@@ -181,7 +181,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
 
  Lemma eq_sym : forall x y : t, eq x y -> eq y x.
  Proof.
- intros (x1,x2) (y1,y2); unfold eq; simpl; intuition.
+ intros (x1,x2) (y1,y2); unfold eq; simpl; intuition auto with relations.
  Qed.
 
  Lemma eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.

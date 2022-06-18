@@ -260,7 +260,7 @@ Instance lt_compat : Proper (eq==>eq==>iff) lt.
 Proof. unfold lt; auto with *. Qed.
 
 Lemma le_lteq : forall x y, le x y <-> lt x y \/ eq x y.
-Proof. intros; unfold le, lt, flip. rewrite O.le_lteq; intuition. Qed.
+Proof. intros; unfold le, lt, flip. rewrite O.le_lteq; intuition auto with relations. Qed.
 
 Definition compare := flip O.compare.
 

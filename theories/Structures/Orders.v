@@ -318,7 +318,7 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
  Lemma eqb_eq : forall x y, eqb x y <-> eq x y.
  Proof.
  intros. unfold eq, eqb, le.
- case leb; simpl; intuition; discriminate.
+ case leb; simpl; intuition auto; discriminate.
  Qed.
 
  Include HasEqBool2Dec.
@@ -362,7 +362,7 @@ Module TTLB_to_OTF (Import O : TotalTransitiveLeBool') <: OrderedTypeFull.
  unfold lt, eq, le.
  split; [ | intuition ].
  intros LE.
- case_eq (y <=? x); [right|left]; intuition; try discriminate.
+ case_eq (y <=? x); [right|left]; intuition auto; discriminate.
  Qed.
 
 End TTLB_to_OTF.

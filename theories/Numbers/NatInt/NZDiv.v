@@ -71,7 +71,7 @@ assert (U : forall q1 q2 r1 r2,
 - intros q1 q2 r1 r2 Hr1 Hr2 EQ; destruct (lt_trichotomy q1 q2) as [LT|[EQ'|GT]].
   + elim (U q1 q2 r1 r2); intuition.
   + split; auto. rewrite EQ' in EQ. rewrite add_cancel_l in EQ; auto.
-  + elim (U q2 q1 r2 r1); intuition.
+  + elim (U q2 q1 r2 r1); intuition auto with relations.
 Qed.
 
 Theorem div_unique:
@@ -110,7 +110,7 @@ Qed.
 Lemma mod_same : forall a, 0<a -> a mod a == 0.
 Proof.
 intros. symmetry.
-apply mod_unique with 1; intuition; try order.
+apply mod_unique with 1; intuition auto; try order.
 now nzsimpl.
 Qed.
 
