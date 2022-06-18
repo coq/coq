@@ -90,6 +90,8 @@
 - [ ] In a PR on `master` to be backported, add a new link to the
   `'versions'` list of the refman (in `html_context` in
   [`doc/sphinx/conf.py`](../../doc/sphinx/conf.py)).
+- [ ] Ping `@Zimmi48` and `@erikmd` to set up the infrastructure to
+  have alpha Docker images built for the branch.
 
 ## In the days following the branching ##
 
