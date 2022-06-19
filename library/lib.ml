@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Names
 open Libnames
-open Libobject
 
 type is_type = bool (* Module Type or just Module *)
 type export_flag = Export | Import
@@ -59,6 +58,7 @@ let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | [] -> acc
     | o :: stk ->
+      let open Libobject in
       begin match o with
         | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
           clean (o::substl, keepl, anticipl) stk
@@ -172,12 +172,12 @@ let add_leaf_entry leaf =
   lib_state := { !lib_state with lib_stk }
 
 let add_discharged_leaf obj =
-  let newobj = rebuild_object obj in
-  cache_object (prefix(),newobj);
+  let newobj = Libobject.rebuild_object obj in
+  Libobject.cache_object (prefix(),newobj);
   add_leaf_entry (AtomicObject newobj)
 
 let add_leaf obj =
-  cache_object (prefix(),obj);
+  Libobject.cache_object (prefix(),obj);
   add_leaf_entry (AtomicObject obj)
 
 (* Modules. *)
@@ -382,10 +382,10 @@ let open_section id =
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
 
-let discharge_item = function
+let discharge_item = Libobject.(function
   | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
   | ExportObject _ -> None
-  | AtomicObject obj -> discharge_object obj
+  | AtomicObject obj -> discharge_object obj)
 
 let close_section () =
   let (secdecls,mark,before) = split_lib_at_opening () in
