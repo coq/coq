@@ -10,7 +10,6 @@
 
 open Util
 open Names
-open Libnames
 
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
@@ -75,12 +74,12 @@ let register_ref s c =
 (* Generic functions to find Coq objects *)
 
 let has_suffix_in_dirs dirs ref =
-  let dir = dirpath (Nametab.path_of_global ref) in
-  List.exists (fun d -> is_dirpath_prefix_of d dir) dirs
+  let dir = Libnames.dirpath (Nametab.path_of_global ref) in
+  List.exists (fun d -> Libnames.is_dirpath_prefix_of d dir) dirs
 
 let gen_reference_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
-  let qualid = qualid_of_string s in
+  let qualid = Libnames.qualid_of_string s in
   let all = Nametab.locate_all qualid in
   let all = List.sort_uniquize GlobRef.UserOrd.compare all in
   let these = List.filter (has_suffix_in_dirs dirs) all in
