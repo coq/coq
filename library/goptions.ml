@@ -15,7 +15,6 @@ open CErrors
 open Util
 open Libobject
 open Libnames
-open Mod_subst
 
 type option_name = string list
 type option_value =
@@ -65,7 +64,7 @@ module MakeTable =
           module Set : CSig.SetS with type elt = t
           val table : (string * key table_of_A) list ref
           val encode : Environ.env -> key -> t
-          val subst : substitution -> t -> t
+          val subst : Mod_subst.substitution -> t -> t
           val printer : t -> Pp.t
           val key : option_name
           val title : string
@@ -170,7 +169,7 @@ sig
   type t
   module Set : CSig.SetS with type elt = t
   val encode : Environ.env -> qualid -> t
-  val subst : substitution -> t -> t
+  val subst : Mod_subst.substitution -> t -> t
   val printer : t -> Pp.t
   val key : option_name
   val title : string
