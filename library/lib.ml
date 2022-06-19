@@ -12,14 +12,13 @@ open Pp
 open CErrors
 open Util
 open Names
-open Libnames
 
 type is_type = bool (* Module Type or just Module *)
 type export_flag = Export | Import
 type export = (export_flag * Libobject.open_filter) option (* None for a Module Type *)
 
 let make_oname Nametab.{ obj_dir; obj_mp } id =
-  Names.(make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
+  Names.(Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id))
 
 let oname_prefix (sp, kn) =
   { Nametab.obj_dir = Libnames.dirpath sp; obj_mp = KerName.modpath kn }
@@ -34,7 +33,7 @@ let node_prefix = function
   | OpenedModule (_,_,prefix,_)
   | OpenedSection (prefix,_) -> prefix
 
-let prefix_id prefix = snd (split_dirpath prefix.Nametab.obj_dir)
+let prefix_id prefix = snd (Libnames.split_dirpath prefix.Nametab.obj_dir)
 
 type library_segment = (node * Libobject.t list) list
 
@@ -92,7 +91,7 @@ let classify_segment seg =
    paths based on the library path. *)
 
 let initial_prefix = Nametab.{
-  obj_dir = default_library;
+  obj_dir = Libnames.default_library;
   obj_mp  = ModPath.initial;
 }
 
@@ -111,7 +110,7 @@ let initial_lib_state = {
 let lib_state = ref initial_lib_state
 
 let library_dp () =
-  match !lib_state.comp_name with Some m -> m | None -> default_library
+  match !lib_state.comp_name with Some m -> m | None -> Libnames.default_library
 
 (* [path_prefix] is a pair of absolute dirpath and a pair of current
    module path and relative section path *)
@@ -187,7 +186,9 @@ let is_opening_node = function
   | _ -> false
 
 let start_mod is_type export id mp fs =
-  let dir = add_dirpath_suffix (!lib_state.path_prefix.Nametab.obj_dir) id in
+  let dir =
+    Libnames.add_dirpath_suffix (!lib_state.path_prefix.Nametab.obj_dir) id
+  in
   let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; } in
   let exists =
     if is_type then Nametab.exists_cci (make_path id)
@@ -225,7 +226,7 @@ let pop_path_prefix () =
   lib_state := {
     !lib_state
     with path_prefix = Nametab.{
-        op with obj_dir = pop_dirpath op.obj_dir;
+        op with obj_dir = Libnames.pop_dirpath op.obj_dir;
       } }
 
 let end_mod is_type =
@@ -369,7 +370,7 @@ let section_instance ref =
 let open_section id =
   let () = Global.open_section () in
   let opp = !lib_state.path_prefix in
-  let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
+  let obj_dir = Libnames.add_dirpath_suffix opp.Nametab.obj_dir id in
   let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; } in
   if Nametab.exists_dir obj_dir then
     user_err (Id.print id ++ str " already exists.");
