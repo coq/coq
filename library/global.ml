@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Environ
 
 (** We introduce here the global environment of the system,
     and we declare it as a synchronized table. *)
@@ -118,19 +117,19 @@ let add_module_parameter mbid mte inl =
 
 (** Queries on the global environment *)
 
-let universes () = universes (env())
-let universes_lbound () = universes_lbound (env())
-let named_context () = named_context (env())
-let named_context_val () = named_context_val (env())
+let universes () = Environ.universes (env())
+let universes_lbound () = Environ.universes_lbound (env())
+let named_context () = Environ.named_context (env())
+let named_context_val () = Environ.named_context_val (env())
 
-let lookup_named id = lookup_named id (env())
-let lookup_constant kn = lookup_constant kn (env())
+let lookup_named id = Environ.lookup_named id (env())
+let lookup_constant kn = Environ.lookup_constant kn (env())
 let lookup_inductive ind = Inductive.lookup_mind_specif (env()) ind
 let lookup_pinductive (ind,_) = Inductive.lookup_mind_specif (env()) ind
-let lookup_mind kn = lookup_mind kn (env())
+let lookup_mind kn = Environ.lookup_mind kn (env())
 
-let lookup_module mp = lookup_module mp (env())
-let lookup_modtype kn = lookup_modtype kn (env())
+let lookup_module mp = Environ.lookup_module mp (env())
+let lookup_modtype kn = Environ.lookup_modtype kn (env())
 
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
@@ -181,15 +180,19 @@ let import c u d = globalize (Safe_typing.import c u d)
     environment and a given context. *)
 
 let env_of_context hyps =
-  reset_with_named_context hyps (env())
+  Environ.reset_with_named_context hyps (env())
 
-let is_polymorphic r = Environ.is_polymorphic (env()) r
+let is_polymorphic r =
+  Environ.is_polymorphic (env()) r
 
-let is_template_polymorphic r = is_template_polymorphic (env ()) r
+let is_template_polymorphic r =
+  Environ.is_template_polymorphic (env ()) r
 
-let get_template_polymorphic_variables r = get_template_polymorphic_variables (env ()) r
+let get_template_polymorphic_variables r =
+  Environ.get_template_polymorphic_variables (env ()) r
 
-let is_type_in_type r = is_type_in_type (env ()) r
+let is_type_in_type r =
+  Environ.is_type_in_type (env ()) r
 
 let current_modpath () =
   Safe_typing.current_modpath (safe_env ())
