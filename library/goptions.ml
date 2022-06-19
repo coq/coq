@@ -11,7 +11,6 @@
 (* This module manages customization parameters at the vernacular level     *)
 
 open Util
-open Libnames
 
 type option_name = string list
 type option_value =
@@ -22,7 +21,7 @@ type option_value =
 
 type table_value =
   | StringRefValue of string
-  | QualidRefValue of qualid
+  | QualidRefValue of Libnames.qualid
 
 (** Summary of an option status *)
 type option_state = {
@@ -169,7 +168,7 @@ module type RefConvertArg =
 sig
   type t
   module Set : CSig.SetS with type elt = t
-  val encode : Environ.env -> qualid -> t
+  val encode : Environ.env -> Libnames.qualid -> t
   val subst : Mod_subst.substitution -> t -> t
   val printer : t -> Pp.t
   val key : option_name
@@ -180,7 +179,7 @@ end
 module RefConvert = functor (A : RefConvertArg) ->
 struct
   type t = A.t
-  type key = qualid
+  type key = Libnames.qualid
   module Set = A.Set
   let table = ref_table
   let encode = A.encode
