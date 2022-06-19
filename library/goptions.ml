@@ -11,7 +11,6 @@
 (* This module manages customization parameters at the vernacular level     *)
 
 open Util
-open Libobject
 open Libnames
 
 type option_name = string list
@@ -97,10 +96,10 @@ module MakeTable =
             if p' == p then obj else
               (f,p')
         in
-        let inGo : option_mark * A.t -> obj =
+        let inGo : option_mark * A.t -> Libobject.obj =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
-                Libobject.open_function = simple_open load_options;
+                Libobject.open_function = Libobject.simple_open load_options;
                 Libobject.cache_function = cache_options;
                 Libobject.subst_function = subst_options;
                 Libobject.classify_function = (fun x -> Substitute)}
