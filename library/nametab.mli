@@ -10,7 +10,6 @@
 
 open Names
 open Libnames
-open Globnames
 
 (** This module contains the tables for globalization. *)
 
@@ -109,7 +108,7 @@ val push : visibility -> full_path -> GlobRef.t -> unit
 val push_modtype : visibility -> full_path -> ModPath.t -> unit
 val push_module : visibility -> DirPath.t -> ModPath.t -> unit
 val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
-val push_abbreviation : visibility -> full_path -> abbreviation -> unit
+val push_abbreviation : visibility -> full_path -> Globnames.abbreviation -> unit
 
 module UnivIdMap : CMap.ExtS with type key = Univ.UGlobal.t
 
@@ -121,9 +120,9 @@ val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
    [Not_found] *)
 
 val locate : qualid -> GlobRef.t
-val locate_extended : qualid -> extended_global_reference
+val locate_extended : qualid -> Globnames.extended_global_reference
 val locate_constant : qualid -> Constant.t
-val locate_abbreviation : qualid -> abbreviation
+val locate_abbreviation : qualid -> Globnames.abbreviation
 val locate_modtype : qualid -> ModPath.t
 val locate_dir : qualid -> GlobDirRef.t
 val locate_module : qualid -> ModPath.t
@@ -141,13 +140,13 @@ val global_inductive : qualid -> inductive
    if [qualid] is valid as such, it comes first in the list *)
 
 val locate_all : qualid -> GlobRef.t list
-val locate_extended_all : qualid -> extended_global_reference list
+val locate_extended_all : qualid -> Globnames.extended_global_reference list
 val locate_extended_all_dir : qualid -> GlobDirRef.t list
 val locate_extended_all_modtype : qualid -> ModPath.t list
 val locate_extended_all_module : qualid -> ModPath.t list
 
 (** Experimental completion support, API is _unstable_ *)
-val completion_canditates : qualid -> extended_global_reference list
+val completion_canditates : qualid -> Globnames.extended_global_reference list
 (** [completion_canditates qualid] will return the list of global
     references that have [qualid] as a prefix. UI usually will want to
     compose this with [shortest_qualid_of_global] *)
@@ -155,7 +154,7 @@ val completion_canditates : qualid -> extended_global_reference list
 (** Mapping a full path to a global reference *)
 
 val global_of_path : full_path -> GlobRef.t
-val extended_global_of_path : full_path -> extended_global_reference
+val extended_global_of_path : full_path -> Globnames.extended_global_reference
 
 (** {6 These functions tell if the given absolute name is already taken } *)
 
@@ -178,7 +177,7 @@ val full_name_module : qualid -> DirPath.t
 (** Returns the full path bound to a global reference or syntactic
    definition, and the (full) dirpath associated to a module path *)
 
-val path_of_abbreviation : abbreviation -> full_path
+val path_of_abbreviation : Globnames.abbreviation -> full_path
 val path_of_global : GlobRef.t -> full_path
 val dirpath_of_module : ModPath.t -> DirPath.t
 val path_of_modtype : ModPath.t -> full_path
@@ -204,7 +203,7 @@ val pr_global_env : Id.Set.t -> GlobRef.t -> Pp.t
    @raise Not_found for unknown objects. *)
 
 val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
-val shortest_qualid_of_abbreviation : ?loc:Loc.t -> Id.Set.t -> abbreviation -> qualid
+val shortest_qualid_of_abbreviation : ?loc:Loc.t -> Id.Set.t -> Globnames.abbreviation -> qualid
 val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
 val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
 

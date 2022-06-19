@@ -10,7 +10,6 @@
 
 open Names
 open Libnames
-open Globnames
 
 type object_prefix = {
   obj_dir : DirPath.t;
@@ -314,7 +313,7 @@ struct
       id, (DirPath.repr dir)
 end
 
-module ExtRefEqual = ExtRefOrdered
+module ExtRefEqual = Globnames.ExtRefOrdered
 module MPEqual = Names.ModPath
 
 module ExtRefTab = Make(FullPath)(ExtRefEqual)
@@ -346,8 +345,9 @@ let the_univtab = Summary.ref ~name:"univtab" (UnivTab.empty : univtab)
 (* Reversed name tables ***************************************************)
 
 (* This table translates extended_global_references back to section paths *)
-type globrevtab = full_path ExtRefMap.t
-let the_globrevtab = Summary.ref ~name:"globrevtab" (ExtRefMap.empty : globrevtab)
+type globrevtab = full_path Globnames.ExtRefMap.t
+let the_globrevtab =
+  Summary.ref ~name:"globrevtab" (Globnames.ExtRefMap.empty : globrevtab)
 
 
 type mprevtab = DirPath.t MPmap.t
@@ -403,7 +403,7 @@ let push_xref visibility sp xref =
   match visibility with
     | Until _ ->
         the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-        the_globrevtab := ExtRefMap.add xref sp !the_globrevtab
+        the_globrevtab := Globnames.ExtRefMap.add xref sp !the_globrevtab
     | _ ->
         begin
           if ExtRefTab.exists sp !the_ccitab then
@@ -487,7 +487,10 @@ let locate_section qid =
     | _ -> raise Not_found
 
 let locate_all qid =
-  List.fold_right (fun a l -> match a with TrueGlobal a -> a::l | _ -> l)
+  List.fold_right (fun a l ->
+    match a with
+    | Globnames.TrueGlobal a -> a::l
+    | _ -> l)
     (ExtRefTab.find_prefixes qid !the_ccitab) []
 
 let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
@@ -546,7 +549,7 @@ let path_of_global ref =
   let open GlobRef in
   match ref with
     | VarRef id -> make_path DirPath.empty id
-    | _ -> ExtRefMap.find (TrueGlobal ref) !the_globrevtab
+    | _ -> Globnames.ExtRefMap.find (TrueGlobal ref) !the_globrevtab
 
 let dirpath_of_global ref =
   fst (repr_path (path_of_global ref))
@@ -555,7 +558,7 @@ let basename_of_global ref =
   snd (repr_path (path_of_global ref))
 
 let path_of_abbreviation kn =
-  ExtRefMap.find (Abbrev kn) !the_globrevtab
+  Globnames.ExtRefMap.find (Abbrev kn) !the_globrevtab
 
 let dirpath_of_module mp =
   MPmap.find mp Modules.(!nametab.modrevtab)
@@ -573,7 +576,7 @@ let shortest_qualid_of_global ?loc ctx ref =
   match ref with
     | VarRef id -> make_qualid ?loc DirPath.empty id
     | _ ->
-        let sp = ExtRefMap.find (TrueGlobal ref) !the_globrevtab in
+        let sp =  Globnames.ExtRefMap.find (TrueGlobal ref) !the_globrevtab in
         ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
 let shortest_qualid_of_abbreviation ?loc ctx kn =
