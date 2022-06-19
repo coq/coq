@@ -84,7 +84,7 @@ foo@{uu u v} =
 Type@{u} -> Type@{v} -> Type@{uu}
      : Type@{max(uu+1,u+1,v+1)}
 (* uu u v |=  *)
-foo@{u u IMPORTANT} = 
+foo@{u u IMPORTANT} =
 Type@{u} -> Type@{IMPORTANT} -> Type@{u}
      : Type@{max(u+1,u+1,IMPORTANT+1)}
 (* u u IMPORTANT |=  *)
