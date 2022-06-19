@@ -8,10 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
-open CErrors
-open Util
-
 module Dyn = Dyn.Make ()
 
 module Stage = struct
@@ -48,9 +44,10 @@ let declare_ml_modules_summary decl =
 
 let check_name sumname = match Dyn.name sumname with
 | None -> ()
-| Some (Dyn.Any tag) ->
-  anomaly ~label:"Summary.declare_summary"
-    (str "Colliding summary names: " ++ str sumname ++ str " vs. " ++ str (Dyn.repr tag) ++ str ".")
+| Some (Dyn.Any t) ->
+  CErrors.anomaly ~label:"Summary.declare_summary"
+    Pp.(str "Colliding summary names: " ++ str sumname
+      ++ str " vs. " ++ str (Dyn.repr t) ++ str ".")
 
 let declare_summary_tag sumname decl =
   let () = check_name (mangle sumname) in
@@ -107,7 +104,7 @@ let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
   (* The unfreezing of [ml_modules_summary] has to be anticipated since it
    * may modify the content of [summaries] by loading new ML modules *)
   begin match !sum_mod with
-  | None -> anomaly (str "Undeclared ML-MODULES summary.")
+  | None -> CErrors.anomaly Pp.(str "Undeclared ML-MODULES summary.")
   | Some decl -> Option.iter decl.unfreeze_function ml_module
   end;
   (* We must be independent on the order of the map! *)
@@ -172,7 +169,7 @@ let get (key, name) =
 let ref (type a) ?(stage=Stage.Interp) ~name (init : a) : a local_ref =
   let () = check_name (mangle name) in
   let tag : a CEphemeron.key Dyn.tag = Dyn.create (mangle name) in
-  let r = pervasives_ref (CEphemeron.create init) in
+  let r = Util.pervasives_ref (CEphemeron.create init) in
   let () = sum_map := DynMap.add tag
     { stage;
       freeze_function = (fun ~marshallable -> !r);
