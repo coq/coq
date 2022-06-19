@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
-
 module Dyn = Dyn.Make ()
 
 type substitutivity = Dispose | Substitute | Keep | Anticipate
@@ -80,7 +78,8 @@ let default_object s = {
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ _ -> ());
   subst_function = (fun _ ->
-    CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
+    CErrors.anomaly Pp.(str "The object " ++ str s
+      ++ str " does not know how to substitute!"));
   classify_function = (fun _ -> Keep);
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x);
@@ -230,7 +229,9 @@ let global_object_nodischarge ?cat s ~cache ~subst =
     cache_function = cache;
     open_function = simple_open ?cat import;
     subst_function = (match subst with
-        | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
+        | None -> fun _ ->
+            CErrors.anomaly Pp.(str "The object " ++ str s
+              ++ str " does not know how to substitute!")
         | Some subst -> subst;
       );
     classify_function =
@@ -246,7 +247,9 @@ let superglobal_object_nodischarge s ~cache ~subst =
     load_function = (fun _ x -> cache x);
     cache_function = cache;
     subst_function = (match subst with
-        | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
+        | None -> fun _ ->
+            CErrors.anomaly Pp.(str "The object " ++ str s
+              ++ str " does not know how to substitute!")
         | Some subst -> subst;
       );
     classify_function =
