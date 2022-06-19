@@ -8,9 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
-open Util
-open Pp
 open Names
 open Libnames
 open Globnames
@@ -116,7 +113,7 @@ struct
    *)
   let warn_masking_absolute =
     CWarnings.create ~name:"masking-absolute-name" ~category:"deprecated"
-      (fun n -> str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
+      (fun n -> Pp.str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
 
   type user_name = U.t
 
@@ -173,14 +170,14 @@ struct
                 (* This is an absolute name, we must keep it otherwise it may
                    become unaccessible forever *)
                 (* But ours is also absolute! This is an error! *)
-                user_err Pp.(str @@ "Cannot mask the absolute name \""
+                CErrors.user_err Pp.(str @@ "Cannot mask the absolute name \""
                                    ^ U.to_string uname' ^ "\"!")
           | Nothing
           | Relative _ -> mktree (Absolute (uname,o)) tree.map
 
 let rec push_exactly uname o level tree = function
 | [] ->
-  anomaly (Pp.str "Prefix longer than path! Impossible!")
+  CErrors.anomaly (Pp.str "Prefix longer than path! Impossible!")
 | modid :: path ->
   if Int.equal level 0 then
     let this =
@@ -273,7 +270,8 @@ let shortest_qualid ?loc ctx uname tab =
 
 let push_node node l =
   match node with
-  | Absolute (_,o) | Relative (_,o) when not (List.mem_f E.equal o l) -> o::l
+  | Absolute (_,o) | Relative (_,o)
+    when not (Util.List.mem_f E.equal o l) -> o::l
   | _ -> l
 
 let rec flatten_idmap tab l =
@@ -329,7 +327,7 @@ module DirPath' =
 struct
   include DirPath
   let repr dir = match DirPath.repr dir with
-    | [] -> anomaly (Pp.str "Empty dirpath.")
+    | [] -> CErrors.anomaly (Pp.str "Empty dirpath.")
     | id :: l -> (id, l)
 end
 
@@ -523,8 +521,8 @@ let global qid =
   try match locate_extended qid with
     | TrueGlobal ref -> ref
     | Abbrev _ ->
-        user_err ?loc:qid.CAst.loc
-          (str "Unexpected reference to a notation: " ++
+        CErrors.user_err ?loc:qid.CAst.loc
+          Pp.(str "Unexpected reference to a notation: " ++
            pr_qualid qid ++ str ".")
   with Not_found as exn ->
     let _, info = Exninfo.capture exn in
@@ -606,5 +604,5 @@ let global_inductive qid =
   match global qid with
   | IndRef ind -> ind
   | ref ->
-      user_err ?loc:qid.CAst.loc
-        (pr_qualid qid ++ spc () ++ str "is not an inductive type.")
+      CErrors.user_err ?loc:qid.CAst.loc
+        Pp.(pr_qualid qid ++ spc () ++ str "is not an inductive type.")
