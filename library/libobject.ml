@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Pp
-open Names
 
 module Dyn = Dyn.Make ()
 
@@ -116,17 +115,17 @@ type obj = Dyn.t (* persistent dynamic objects *)
 
 type algebraic_objects =
   | Objs of t list
-  | Ref of ModPath.t * Mod_subst.substitution
+  | Ref of Names.ModPath.t * Mod_subst.substitution
 
 and t =
-  | ModuleObject of Id.t * substitutive_objects
-  | ModuleTypeObject of Id.t * substitutive_objects
+  | ModuleObject of Names.Id.t * substitutive_objects
+  | ModuleTypeObject of Names.Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
-  | KeepObject of Id.t * t list
-  | ExportObject of { mpl : (open_filter * ModPath.t) list }
+  | KeepObject of Names.Id.t * t list
+  | ExportObject of { mpl : (open_filter * Names.ModPath.t) list }
   | AtomicObject of obj
 
-and substitutive_objects = MBId.t list * algebraic_objects
+and substitutive_objects = Names.MBId.t list * algebraic_objects
 
 module DynMap = Dyn.Map (struct type 'a t = ('a, Nametab.object_prefix * 'a) object_declaration end)
 
@@ -139,7 +138,7 @@ let declare_object_full odecl =
   tag
 
 let make_oname Nametab.{ obj_dir; obj_mp } id =
-  Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id)
+  Libnames.make_path obj_dir id, Names.KerName.make obj_mp (Names.Label.of_id id)
 
 let declare_named_object_full odecl =
   let odecl =
