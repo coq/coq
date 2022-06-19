@@ -10,7 +10,6 @@
 
 open Names
 open Constr
-open Mod_subst
 
 type global_reference = GlobRef.t =
   | VarRef of variable     [@ocaml.deprecated "Use Names.GlobRef.VarRef"]
@@ -35,25 +34,25 @@ let destConstructRef = function ConstructRef ind -> ind | _ -> failwith "destCon
 let subst_global_reference subst ref = match ref with
   | VarRef var -> ref
   | ConstRef kn ->
-    let kn' = subst_constant subst kn in
+    let kn' = Mod_subst.subst_constant subst kn in
       if kn==kn' then ref else ConstRef kn'
   | IndRef ind ->
-    let ind' = subst_ind subst ind in
+    let ind' = Mod_subst.subst_ind subst ind in
       if ind==ind' then ref else IndRef ind'
   | ConstructRef ((kn,i),j as c) ->
-    let c' = subst_constructor subst c in
+    let c' = Mod_subst.subst_constructor subst c in
     if c'==c then ref else ConstructRef c'
 
 let subst_global subst ref = match ref with
   | VarRef var -> ref, None
   | ConstRef kn ->
-     let kn',t = subst_con subst kn in
+     let kn',t = Mod_subst.subst_con subst kn in
       if kn==kn' then ref, None else ConstRef kn', t
   | IndRef ind ->
-      let ind' = subst_ind subst ind in
+      let ind' = Mod_subst.subst_ind subst ind in
       if ind==ind' then ref, None else IndRef ind', None
   | ConstructRef ((kn,i),j as c) ->
-      let c' = subst_constructor subst c in
+      let c' = Mod_subst.subst_constructor subst c in
       if c'==c then ref,None else ConstructRef c', None
 
 let canonical_gr = function
@@ -118,5 +117,5 @@ module ExtRefMap = HMap.Make(ExtRefOrdered)
 module ExtRefSet = ExtRefMap.Set
 
 let subst_extended_reference sub = function
-  | Abbrev kn -> Abbrev (subst_kn sub kn)
+  | Abbrev kn -> Abbrev (Mod_subst.subst_kn sub kn)
   | TrueGlobal gr -> TrueGlobal (subst_global_reference sub gr)
