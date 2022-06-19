@@ -45,9 +45,6 @@
    All options are synchronized with the document.
 *)
 
-open Libnames
-open Mod_subst
-
 type option_name = string list
 
 type option_locality = OptDefault | OptLocal | OptExport | OptGlobal
@@ -89,8 +86,8 @@ module MakeRefTable :
     (A : sig
        type t
        module Set : CSig.SetS with type elt = t
-       val encode : Environ.env -> qualid -> t
-       val subst : substitution -> t -> t
+       val encode : Environ.env -> Libnames.qualid -> t
+       val subst : Mod_subst.substitution -> t -> t
        val printer : t -> Pp.t
        val key : option_name
        val title : string
@@ -167,7 +164,7 @@ type 'a table_of_A =  {
 val get_string_table :
   option_name -> string table_of_A
 val get_ref_table :
-  option_name -> qualid table_of_A
+  option_name -> Libnames.qualid table_of_A
 
 (** The first argument is a locality flag. *)
 val set_int_option_value_gen    : ?locality:option_locality -> option_name -> int option -> unit
@@ -190,7 +187,7 @@ type option_value =
 
 type table_value =
   | StringRefValue of string
-  | QualidRefValue of qualid
+  | QualidRefValue of Libnames.qualid
 
 val set_option_value : ?locality:option_locality ->
   ('a -> option_value -> option_value) -> option_name -> 'a -> unit
