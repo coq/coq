@@ -8,9 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
 open Util
-open Pp
 open Names
 open Libnames
 
@@ -52,7 +50,7 @@ let check_ind_ref s ind =
 let lib_ref s =
   try CString.Map.find s !table
   with Not_found ->
-    user_err Pp.(str "not found in table: " ++ str s)
+    CErrors.user_err Pp.(str "not found in table: " ++ str s)
 
 let add_ref s c =
   table := CString.Map.add s c !table
@@ -89,16 +87,16 @@ let gen_reference_in_modules locstr dirs s =
   match these with
     | [x] -> x
     | [] ->
-        anomaly ~label:locstr (str "cannot find " ++ str s ++
-        str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-        prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
+      CErrors.anomaly ~label:locstr Pp.(str "cannot find " ++ str s
+        ++ str " in module" ++ str (if List.length dirs > 1 then "s " else " ")
+        ++ prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
     | l ->
-      anomaly ~label:locstr
-        (str "ambiguous name " ++ str s ++ str " can represent " ++
-           prlist_with_sep pr_comma
-           (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
-           str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-           prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
+      CErrors.anomaly ~label:locstr
+        Pp.(str "ambiguous name " ++ str s ++ str " can represent "
+          ++ prlist_with_sep pr_comma (fun x ->
+            Libnames.pr_path (Nametab.path_of_global x)) l ++ str " in module"
+          ++ str (if List.length dirs > 1 then "s " else " ")
+          ++ prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
 
 (* For tactics/commands requiring vernacular libraries *)
 
@@ -113,8 +111,8 @@ let check_required_library d =
       | _ -> false
     in
     if not in_current_dir then
-      user_err
-        (str "Library " ++ DirPath.print dir ++ str " has to be required first.")
+      CErrors.user_err Pp.(str "Library " ++ DirPath.print dir
+        ++ str " has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects                                                 *)
@@ -321,4 +319,4 @@ let coq_or_ref     = Lazy.from_fun build_coq_or
 let coq_iff_ref    = Lazy.from_fun build_coq_iff
 
 (** Deprecated functions that search by library name. *)
-let build_sigma_set () = anomaly (Pp.str "Use build_sigma_type.")
+let build_sigma_set () = CErrors.anomaly (Pp.str "Use build_sigma_type.")
