@@ -26,4 +26,3 @@
  (modules votour)
  (flags :standard -open Coq_checklib)
  (libraries coq_checklib))
-
