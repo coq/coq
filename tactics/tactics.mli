@@ -279,9 +279,6 @@ type eliminator =
 | ElimTerm of EConstr.constr
 | ElimClause of EConstr.constr with_bindings
 
-val general_elim  : evars_flag -> clear_flag ->
-  constr with_bindings -> eliminator -> unit Proofview.tactic
-
 val general_elim_clause : evars_flag -> unify_flags -> Id.t option ->
   (EConstr.t * EConstr.t) -> eliminator -> unit Proofview.tactic
 
