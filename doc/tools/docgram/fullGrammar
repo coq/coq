@@ -1188,6 +1188,7 @@ ssexpr50: [
 
 ssexpr0: [
 | starredidentref
+| "()"
 | "(" test_only_starredidentrefs LIST0 starredidentref ")"
 | "(" test_only_starredidentrefs LIST0 starredidentref ")" "*"
 | "(" ssexpr35 ")"
