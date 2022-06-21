@@ -36,7 +36,6 @@ val search_guard :
   ?loc:Loc.t -> env -> int list list -> Constr.rec_declaration -> int array
 
 type typing_constraint =
-  | UnknownIfTermOrType (** E.g., unknown if manual implicit arguments allowed *)
   | IsType (** Necessarily a type *)
   | OfType of types (** A term of the expected type *)
   | WithoutTypeConstraint (** A term of unknown expected type *)
