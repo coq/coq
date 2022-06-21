@@ -1,0 +1,4 @@
+build-env: [
+  [ COQ_CONFIGURE_PREFIX = "%{prefix}" ]
+  [ COQ_CONFIGURE_NATIVE = "%{coq-native:installed}" ]
+]

@@ -32,10 +32,10 @@ depends: [
   "ocamlfind" {>= "1.8.1"}
   "zarith" {>= "1.11"}
   "ounit2" {with-test}
+  "odoc" {with-doc}
 ]
 build: [
-  # Requires dune 2.8 due to https://github.com/ocaml/dune/issues/3219
-  # ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   [ "./configure"
     "-prefix" prefix
     "-mandir" man
@@ -50,10 +50,16 @@ build: [
     name
     "-j"
     jobs
+    "--promote-install-files=false"
     "@install"
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
+  ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/coq/coq.git"
 depopts: ["coq-native"]
+build-env: [
+  [ COQ_CONFIGURE_PREFIX = "%{prefix}" ]
+  [ COQ_CONFIGURE_NATIVE = "%{coq-native:installed}" ]
+]
