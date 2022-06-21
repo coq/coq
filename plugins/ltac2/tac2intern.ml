@@ -581,7 +581,7 @@ let rec intern_patexpr env {loc;v=pat} = match pat with
 | CPatRef (qid, pl) ->
   let kn = get_constructor env qid in
   GEPatRef (kn, List.map (fun p -> intern_patexpr env p) pl)
-| CPatCnv _ | CPatOr _ ->
+| CPatAtm _ | CPatCnv _ | CPatOr _ | CPatAs _ | CPatRecord _ ->
   raise HardCase
 
 type pattern_kind =
@@ -622,11 +622,13 @@ let add_name accu = function
 | Anonymous -> accu
 
 let rec ids_of_pattern accu {v=pat} = match pat with
-| CPatVar Anonymous -> accu
+| CPatVar Anonymous | CPatAtm _ -> accu
 | CPatVar (Name id) -> Id.Set.add id accu
+| CPatAs (p,id) -> ids_of_pattern (Id.Set.add id.v accu) p
 | CPatRef (_, pl) | CPatOr pl ->
   List.fold_left ids_of_pattern accu pl
 | CPatCnv (pat, _) -> ids_of_pattern accu pat
+| CPatRecord pats -> List.fold_left (fun accu (_,pat) -> ids_of_pattern accu pat) accu pats
 
 let loc_of_relid = function
 | RelId {loc} -> loc
@@ -638,7 +640,7 @@ let is_unit_pattern = function
 
 let extract_pattern_type ({loc;v=p} as pat) = match p with
 | CPatCnv (pat, ty) -> pat, Some ty
-| CPatVar _ | CPatRef _ | CPatOr _ ->
+| CPatAtm _ | CPatVar _ | CPatRef _ | CPatOr _ | CPatAs _ | CPatRecord _ ->
   if is_unit_pattern p then
     (* Special handling of () patterns *)
     let t_unit = CAst.make ?loc @@ CTypRef (AbsKn (Tuple 0), []) in
@@ -717,10 +719,60 @@ let ctor_data_for_patterns kn data = {
   cindx = match data.cdata_indx with None -> Open kn | Some i -> Closed i;
 }
 
+let intern_record intern_rec_with_constraint env loc fs =
+  let map (proj, e) =
+    let loc = match proj with
+    | RelId {CAst.loc} -> loc
+    | AbsKn _ -> None
+    in
+    let proj = get_projection proj in
+    (loc, proj, e)
+  in
+  let fs = List.map map fs in
+  let kn = match fs with
+  | [] -> user_err ?loc (str "Cannot infer the corresponding record type")
+  | (_, proj, _) :: _ -> proj.pdata_type
+  in
+  let params, typdef = match Tac2env.interp_type kn with
+  | n, GTydRec def -> n, def
+  | _ -> assert false
+  in
+  let subst = Array.init params (fun _ -> fresh_id env) in
+  (* Set the answer [args] imperatively *)
+  let args = Array.make (List.length typdef) None in
+  let iter (loc, pinfo, e) =
+    if KerName.equal kn pinfo.pdata_type then
+      let index = pinfo.pdata_indx in
+      match args.(index) with
+      | None ->
+        let exp = subst_type (fun i -> GTypVar subst.(i)) pinfo.pdata_ptyp in
+        let e = intern_rec_with_constraint env e exp in
+        args.(index) <- Some e
+      | Some _ ->
+        let (name, _, _) = List.nth typdef pinfo.pdata_indx in
+        user_err ?loc (str "Field " ++ Id.print name ++ str " is defined \
+          several times")
+    else
+      user_err ?loc (str "Field " ++ (*KerName.print knp ++*) str " does not \
+        pertain to record definition " ++ pr_typref pinfo.pdata_type)
+  in
+  let () = List.iter iter fs in
+  let () = match Array.findi (fun _ o -> Option.is_empty o) args with
+  | None -> ()
+  | Some i ->
+    let (field, _, _) = List.nth typdef i in
+    user_err ?loc (str "Field " ++ Id.print field ++ str " is undefined")
+  in
+  let args = Array.map_to_list Option.get args in
+  let tparam = List.init params (fun i -> GTypVar subst.(i)) in
+  kn, tparam, args
+
 type wip_pat_r =
   | PatVar of Name.t
+  | PatAtm of atom
   | PatRef of ctor_data_for_patterns or_tuple * wip_pat list
   | PatOr of wip_pat list
+  | PatAs of wip_pat * lident
 and wip_pat = wip_pat_r CAst.t
 
 let catchall = CAst.make (PatVar Anonymous)
@@ -739,6 +791,21 @@ let rec intern_pat_rec env cpat t =
         let patvars = Id.Map.singleton id (loc,t) in
         patvars, CAst.make ?loc (PatVar x)
     end
+  | CPatAtm atm ->
+    let _, t' = intern_atm env atm in
+    let () = unify ?loc env t t' in
+    Id.Map.empty, CAst.make ?loc (PatAtm atm)
+  | CPatAs (p, x) ->
+    let patvars, p = intern_pat_rec env p t in
+    let patvars = Id.Map.update x.v (function
+        | Some _ ->
+          CErrors.user_err ?loc
+            Pp.(str "Variable " ++ Id.print x.v ++
+                str " is bound several times in this matching.")
+        | None -> Some (x.loc,t))
+        patvars
+    in
+    patvars, CAst.make ?loc (PatAs (p, x))
   | CPatRef (ctor,args) ->
     let ctor = get_constructor env ctor in
     let ctor, argts =
@@ -764,7 +831,9 @@ let rec intern_pat_rec env cpat t =
     let patvars, args = CList.fold_left2_map (fun patvars arg argt ->
         let argvars, arg = intern_pat_rec env arg argt in
         let patvars = Id.Map.union (fun id _ (loc,_) ->
-            CErrors.user_err ?loc Pp.(str "Variable " ++ Id.print id ++ str " is bound several times in this matching."))
+            CErrors.user_err ?loc
+              Pp.(str "Variable " ++ Id.print id ++
+                  str " is bound several times in this matching."))
             patvars argvars
         in
         patvars, arg)
@@ -773,6 +842,22 @@ let rec intern_pat_rec env cpat t =
         argts
     in
     patvars, CAst.make ?loc (PatRef (ctor,args))
+  | CPatRecord pats ->
+    let kn, tparam, args = intern_record intern_pat_rec env loc pats in
+    let () = unify ?loc env t (GTypRef (Other kn, tparam)) in
+    let patvars, args = CList.fold_left_map (fun patvars (argvars,arg) ->
+        let patvars = Id.Map.union (fun id _ (loc,_) ->
+            CErrors.user_err ?loc
+              Pp.(str "Variable " ++ Id.print id ++
+                  str " is bound several times in this matching."))
+            patvars argvars
+        in
+        patvars, arg)
+        Id.Map.empty
+        args
+    in
+    let ctor = { ctyp = kn; cnargs = List.length args; cindx = Closed 0 } in
+    patvars, CAst.make ?loc (PatRef (Other ctor, args))
   | CPatCnv (pat,typ) ->
     let typ = intern_type env typ in
     let () = unify ?loc env t typ in
@@ -800,8 +885,10 @@ let intern_pat env cpat t =
 
 let rec glb_of_wip_pat_r = function
   | PatVar x -> GPatVar x
+  | PatAtm atm -> GPatAtm atm
   | PatRef (ctor,pats) -> GPatRef (ctor, List.map glb_of_wip_pat pats)
   | PatOr pats -> GPatOr (List.map glb_of_wip_pat pats)
+  | PatAs (p,x) -> GPatAs (glb_of_wip_pat p, x.v)
 and glb_of_wip_pat pat = glb_of_wip_pat_r pat.CAst.v
 
 (** Pattern analysis for non-exhaustiveness and (TODO) useless patterns based on
@@ -809,16 +896,23 @@ and glb_of_wip_pat pat = glb_of_wip_pat_r pat.CAst.v
 let default_matrix =
   let rec default_row = function
     | [] -> assert false
-    | {v=PatRef _} :: _ -> []
+    | {v=PatRef _ | PatAtm _} :: _ -> []
     | {v=PatVar _} :: rest -> [rest]
     | {v=PatOr pats} :: rest -> List.map_append default_row (List.map (fun x -> x::rest) pats)
+    | {v=PatAs (p,_)} :: rest -> default_row (p::rest)
   in
   List.map_append default_row
 
+type generalized_ctor =
+  | AtomCtor of atom
+  | OtherCtor of ctor_data_for_patterns or_tuple
+
 let rec root_ctors = function
   | {v=PatVar _} -> []
-  | {v=PatRef (ctor,_)} -> [ctor]
+  | {v=PatRef (ctor,_)} -> [OtherCtor ctor]
+  | {v=PatAtm a} -> [AtomCtor a]
   | {v=PatOr pats} -> List.map_append root_ctors pats
+  | {v=PatAs (p,_)} -> root_ctors p
 
 let ctor_nargs = function
   | Tuple n -> n
@@ -827,7 +921,7 @@ let ctor_nargs = function
 (* XXX maybe should be ctor_data_for_patterns list or_tuple ??? *)
 type missing_ctors =
   | Unknown
-  | Extension
+  | Extension of { example : atom option }
   | Known of ctor_data_for_patterns or_tuple list
 
 type maybe_missing_ctors =
@@ -852,35 +946,66 @@ let make_ctor ctyp tdata is_const n =
     cnargs;
   }
 
+let make_int_example ints =
+  let rec aux i = if Int.Set.mem i ints then aux (i+1) else i
+  in aux 0
+
+let make_string_example strings =
+  let rec aux s = if String.Set.mem s strings then aux (s^"*") else s
+  in aux ""
+
+let make_atom_example = function
+  | AtomCtor (AtmInt i) :: rest ->
+    let ints = List.fold_left (fun ints c -> match c with
+        | AtomCtor (AtmInt i) -> Int.Set.add i ints
+        | _ -> assert false)
+        (Int.Set.singleton i)
+        rest
+    in
+    AtmInt (make_int_example ints)
+  | AtomCtor (AtmStr s) :: rest ->
+    let strings = List.fold_left (fun strings c -> match c with
+        | AtomCtor (AtmStr s) -> String.Set.add s strings
+        | _ -> assert false)
+        (String.Set.singleton s)
+        rest
+    in
+    AtmStr (make_string_example strings)
+  | OtherCtor _ :: _ | [] -> assert false
+
 (* We assume all the constructors in the list are from the same type t *)
 let missing_ctors_from env t = function
   | [] -> (* patterns are all wildcards *)
     (* TODO handle match on deep empty eg (empty,empty) *)
     if is_empty_type env t then NoMissing []
     else Missing Unknown
-  | Tuple _ as tup :: _ -> (* tuple has 1 constructor *) NoMissing [tup]
-  | Other {cindx=Open _} :: _ -> Missing Extension
-  | Other data :: _ as ctors ->
+  | AtomCtor _ :: _ as l -> Missing (Extension {example=Some (make_atom_example l)})
+  | OtherCtor (Tuple _ as tup) :: _ -> (* tuple has 1 constructor *) NoMissing [tup]
+  | OtherCtor (Other {cindx=Open _}) :: _ -> Missing (Extension {example=None})
+  | OtherCtor (Other data) :: _ as ctors ->
     let _, tdata = interp_type data.ctyp in
-    let tdata = match tdata with GTydAlg tdata -> tdata | _ -> assert false in
-    let const = Array.make tdata.galg_nconst false in
-    let nonconst = Array.make tdata.galg_nnonconst false in
-    let () = List.iter (function
-        | Other {cindx=Closed i; cnargs} ->
-          let which = if Int.equal 0 cnargs then const else nonconst in
-          which.(i) <- true
-        | Other {cindx=Open _} | Tuple _ -> assert false)
-        ctors
-    in
-    let fold is_const i (missing, present) ispresent =
-      let ctor = Other (make_ctor data.ctyp tdata is_const i) in
-      if ispresent then missing, ctor :: present
-      else ctor :: missing, present
-    in
-    let acc = CArray.fold_left_i (fold false) ([],[]) nonconst in
-    let missing, present = CArray.fold_left_i (fold true) acc const in
-    if List.is_empty missing then NoMissing present
-    else Missing (Known missing)
+    match tdata with
+    | GTydOpn | GTydDef _ -> assert false
+    | GTydRec _ -> NoMissing [Other data]
+    | GTydAlg tdata ->
+      let const = Array.make tdata.galg_nconst false in
+      let nonconst = Array.make tdata.galg_nnonconst false in
+      let () = List.iter (function
+          | OtherCtor (Other {cindx=Closed i; cnargs}) ->
+            let which = if Int.equal 0 cnargs then const else nonconst in
+            which.(i) <- true
+          | AtomCtor _ | OtherCtor (Other {cindx=Open _} | Tuple _) -> assert false)
+          ctors
+      in
+      let fold is_const i (missing, present) ispresent =
+        let ctor = Other (make_ctor data.ctyp tdata is_const i) in
+        if ispresent then missing, ctor :: present
+        else ctor :: missing, present
+      in
+      let acc = CArray.fold_left_i (fold false) ([],[]) nonconst in
+      let missing, present = CArray.fold_left_i (fold true) acc const in
+      if List.is_empty missing then NoMissing present
+      else Missing (Known missing)
 
 let specialized_types env ts ctor = match ts with
   | [] -> assert false
@@ -901,21 +1026,31 @@ let specialized_types env ts ctor = match ts with
         types
       | Other {ctyp; cnargs; cindx=Closed i} ->
         let ntargs, tdata = interp_type ctyp in
-        let tdata = match tdata with GTydAlg tdata -> tdata | _ -> assert false in
-        let ctors = List.filter (fun (_,argts) ->
-            if cnargs = 0
-            then List.is_empty argts
-            else not (List.is_empty argts))
-            tdata.galg_constructors
-        in
-        let _, argts = List.nth ctors i in
-        let subst = Array.init ntargs (fun _ -> fresh_id env) in
-        let substf i = GTypVar subst.(i) in
-        let types = List.map (fun t -> subst_type substf t) argts in
-        let targs = List.init ntargs substf in
-        let ans = GTypRef (Other ctyp, targs) in
-        let () = unify env t ans in
-        types
+        match tdata with
+        | GTydOpn | GTydDef _ -> assert false
+        | GTydRec tdata ->
+          let subst = Array.init ntargs (fun _ -> fresh_id env) in
+          let substf i = GTypVar subst.(i) in
+          let types = List.map (fun (_,_,t) -> subst_type substf t) tdata in
+          let targs = List.init ntargs substf in
+          let ans = GTypRef (Other ctyp, targs) in
+          let () = unify env t ans in
+          types
+        | GTydAlg tdata ->
+          let ctors = List.filter (fun (_,argts) ->
+              if cnargs = 0
+              then List.is_empty argts
+              else not (List.is_empty argts))
+              tdata.galg_constructors
+          in
+          let _, argts = List.nth ctors i in
+          let subst = Array.init ntargs (fun _ -> fresh_id env) in
+          let substf i = GTypVar subst.(i) in
+          let types = List.map (fun t -> subst_type substf t) argts in
+          let targs = List.init ntargs substf in
+          let ans = GTypRef (Other ctyp, targs) in
+          let () = unify env t ans in
+          types
     in
     List.append argts rest
 
@@ -937,16 +1072,20 @@ let specialized_matrix pats ctor =
     | {v=PatRef (ctor',args)} :: rest ->
       if same_ctor ctor ctor' then [List.append args rest]
       else []
+    | {v=PatAtm _} :: _ -> assert false
     | {v=PatVar _} :: rest -> [List.append (List.make (ctor_nargs ctor) catchall) rest]
     | {v=PatOr pats} :: rest -> List.map_append special_row (List.map (fun x -> x::rest) pats)
+    | {v=PatAs (p,_)} :: rest -> special_row (p::rest)
   in
   List.map_append special_row pats
 
 let rec lift_interned_pat pat = CAst.map lift_interned_pat_r pat
 and lift_interned_pat_r = let open PartialPat in function
     | PatVar x -> Var x
+    | PatAtm a -> Atom a
     | PatRef (ctor, pats) -> Ref (ctor, List.map lift_interned_pat pats)
     | PatOr pats -> Or (List.map lift_interned_pat pats)
+    | PatAs (p,x) -> As (lift_interned_pat p, x.v)
 
 (* invariant: ts is n types, pats is a matrix with n columns (nth pats i is row i) *)
 let rec missing_matches env ts pats n =
@@ -961,7 +1100,7 @@ let rec missing_matches env ts pats n =
       | None -> None
       | Some missing -> match missing_ctors with
         | Unknown -> Some (lift_interned_pat catchall :: missing)
-        | Extension -> Some (CAst.make PartialPat.Extension :: missing)
+        | Extension {example} -> Some (CAst.make (PartialPat.Extension {example}) :: missing)
         | Known missing_ctors ->
           let misspats = List.map (fun ctor ->
               CAst.make (PatRef (ctor, List.make (ctor_nargs ctor) catchall)))
@@ -1107,7 +1246,8 @@ let rec intern_rec env {loc;v=e} = match e with
   with HardCase -> GTacFullMatch (e',brs), rt
   end
 | CTacRec fs ->
-  intern_record env loc fs
+  let kn, tparam, args = intern_record intern_rec_with_constraint env loc fs in
+  (GTacCst (Other kn, 0, args), GTypRef (Other kn, tparam))
 | CTacPrj (e, proj) ->
   let pinfo = get_projection proj in
   let loc = e.loc in
@@ -1198,7 +1338,7 @@ and intern_let_rec env loc ids el e =
   let map env (pat, t, e) =
     let na = match pat.v with
     | CPatVar na -> na
-    | CPatRef _ | CPatCnv _ | CPatOr _ ->
+    | CPatAtm _ | CPatRef _ | CPatCnv _ | CPatOr _ | CPatAs _ | CPatRecord _ ->
       user_err ?loc:pat.loc (str "This kind of pattern is forbidden in let-rec bindings")
     in
     let id = fresh_id env in
@@ -1266,6 +1406,8 @@ and intern_case env loc e pl =
     | [] -> ()
     | (pat, br) :: rem ->
       let tbr = match pat.v with
+      | CPatAtm _ | CPatCnv _ | CPatOr _ | CPatAs _ | CPatRecord _ ->
+        raise HardCase
       | CPatVar (Name _) ->
         let loc = pat.loc in
         todo ?loc ()
@@ -1333,8 +1475,6 @@ and intern_case env loc e pl =
             else warn_redundant_clause ?loc ()
         in
         brT
-      | CPatCnv _ | CPatOr _ ->
-        raise HardCase
       in
       let () = unify ?loc:br.loc env tbr ret in
       intern_branch rem
@@ -1433,54 +1573,6 @@ and intern_constructor env loc kn args = match kn with
   let args = List.map2 map args types in
   let ans = GTypRef (Tuple n, types) in
   GTacCst (Tuple n, 0, args), ans
-
-and intern_record env loc fs =
-  let map (proj, e) =
-    let loc = match proj with
-    | RelId {CAst.loc} -> loc
-    | AbsKn _ -> None
-    in
-    let proj = get_projection proj in
-    (loc, proj, e)
-  in
-  let fs = List.map map fs in
-  let kn = match fs with
-  | [] -> user_err ?loc (str "Cannot infer the corresponding record type")
-  | (_, proj, _) :: _ -> proj.pdata_type
-  in
-  let params, typdef = match Tac2env.interp_type kn with
-  | n, GTydRec def -> n, def
-  | _ -> assert false
-  in
-  let subst = Array.init params (fun _ -> fresh_id env) in
-  (* Set the answer [args] imperatively *)
-  let args = Array.make (List.length typdef) None in
-  let iter (loc, pinfo, e) =
-    if KerName.equal kn pinfo.pdata_type then
-      let index = pinfo.pdata_indx in
-      match args.(index) with
-      | None ->
-        let exp = subst_type (fun i -> GTypVar subst.(i)) pinfo.pdata_ptyp in
-        let e = intern_rec_with_constraint env e exp in
-        args.(index) <- Some e
-      | Some _ ->
-        let (name, _, _) = List.nth typdef pinfo.pdata_indx in
-        user_err ?loc (str "Field " ++ Id.print name ++ str " is defined \
-          several times")
-    else
-      user_err ?loc (str "Field " ++ (*KerName.print knp ++*) str " does not \
-        pertain to record definition " ++ pr_typref pinfo.pdata_type)
-  in
-  let () = List.iter iter fs in
-  let () = match Array.findi (fun _ o -> Option.is_empty o) args with
-  | None -> ()
-  | Some i ->
-    let (field, _, _) = List.nth typdef i in
-    user_err ?loc (str "Field " ++ Id.print field ++ str " is undefined")
-  in
-  let args = Array.map_to_list Option.get args in
-  let tparam = List.init params (fun i -> GTypVar subst.(i)) in
-  (GTacCst (Other kn, 0, args), GTypRef (Other kn, tparam))
 
 and super_intern_case env loc e pl =
   let e, et = intern_rec env e in
@@ -1679,7 +1771,7 @@ and globalize_case ids (p, e) =
   (globalize_pattern ids p, globalize ids e)
 
 and globalize_pattern ids ({loc;v=pr} as p) = match pr with
-| CPatVar _ -> p
+| CPatVar _ | CPatAtm _ -> p
 | CPatRef (cst, pl) ->
   let knc = get_constructor () cst in
   let cst = AbsKn knc in
@@ -1691,6 +1783,15 @@ and globalize_pattern ids ({loc;v=pr} as p) = match pr with
 | CPatOr pl ->
   let pl = List.map (fun p -> globalize_pattern ids p) pl in
   CAst.make ?loc @@ CPatOr pl
+| CPatAs (p,x) ->
+  CAst.make ?loc @@ CPatAs (globalize_pattern ids p, x)
+| CPatRecord pats ->
+  let map (p, e) =
+    let p = get_projection0 p in
+    let e = globalize_pattern ids e in
+    (AbsKn p, e)
+  in
+  CAst.make ?loc @@ CPatRecord (List.map map pats)
 
 (** Kernel substitution *)
 
@@ -1715,7 +1816,7 @@ let rec subst_type subst t = match t with
   if kn' == kn && tl' == tl then t else GTypRef (kn', tl')
 
 let rec subst_glb_pat subst = function
-  | GPatVar _ as pat0 -> pat0
+  | (GPatVar _ | GPatAtm _) as pat0 -> pat0
   | GPatRef (ctor,pats) as pat0 ->
     let ctor' = match ctor with
       | Tuple _ -> ctor
@@ -1731,6 +1832,10 @@ let rec subst_glb_pat subst = function
     let pats' = List.Smart.map (subst_glb_pat subst) pats in
     if pats' == pats then pat0
     else GPatOr pats'
+  | GPatAs (p,x) as pat0 ->
+    let p' = subst_glb_pat subst p in
+    if p' == p then pat0
+    else GPatAs (p',x)
 
 let rec subst_expr subst e = match e with
 | GTacAtm _ | GTacVar _ | GTacPrm _ -> e
@@ -1853,7 +1958,7 @@ let subst_projection subst prj = match prj with
   if kn' == kn then prj else AbsKn kn'
 
 let rec subst_rawpattern subst ({loc;v=pr} as p) = match pr with
-| CPatVar _ -> p
+| CPatVar _ | CPatAtm _ -> p
 | CPatRef (c, pl) ->
   let pl' = List.Smart.map (fun p -> subst_rawpattern subst p) pl in
   let c' = subst_or_relid subst c in
@@ -1865,6 +1970,17 @@ let rec subst_rawpattern subst ({loc;v=pr} as p) = match pr with
 | CPatOr pl ->
   let pl' = List.Smart.map (fun p -> subst_rawpattern subst p) pl in
   if pl' == pl then p else CAst.make ?loc @@ CPatOr pl'
+| CPatAs (pat,x) ->
+  let pat' = subst_rawpattern subst pat in
+  if pat' == pat then p else CAst.make ?loc @@ CPatAs (pat', x)
+| CPatRecord el ->
+  let map (prj, e as p) =
+    let prj' = subst_projection subst prj in
+    let e' = subst_rawpattern subst e in
+    if prj' == prj && e' == e then p else (prj', e')
+  in
+  let el' = List.Smart.map map el in
+  if el' == el then p else CAst.make ?loc @@ CPatRecord el'
 
 (** Used for notations *)
 let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with

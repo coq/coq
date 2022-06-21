@@ -281,6 +281,10 @@ There is dedicated syntax for list and array literals.
    | [ {*; @ltac2_expr5 } ]
    | %{ {? {+ @tac2rec_fieldexpr } {? ; } } %}
    | @ltac2_tactic_atom
+   tac2rec_fieldpats ::= @tac2rec_fieldpat ; {? @tac2rec_fieldpats }
+   | @tac2rec_fieldpat ;
+   | @tac2rec_fieldpat
+   tac2rec_fieldpat ::= @qualid := @tac2pat1
    ltac2_tactic_atom ::= @integer
    | @string
    | @qualid
@@ -1138,11 +1142,15 @@ Match on values
       | @qualid
       | @tac2pat0 :: @tac2pat0
       | @tac2pat0 %| {+| @tac2pat1 }
+      | @tac2pat0 as @lident
       | @tac2pat0
       tac2pat0 ::= _
       | ()
+      | @integer
+      | @string
       | @qualid
       | ( {? @atomic_tac2pat } )
+      | %{ {? @tac2rec_fieldpats } %}
       | [ {*; @tac2pat1 } ]
       atomic_tac2pat ::= @tac2pat1 : @ltac2_type
       | @tac2pat1 , {*, @tac2pat1 }

@@ -127,12 +127,16 @@ GRAMMAR EXTEND Gram
       | p = tac2pat; "|"; pl = LIST1 tac2pat SEP "|" ->
         { let pl = p :: pl in
           CAst.make ~loc @@ CPatOr pl }
+      | p = tac2pat; "as"; id = lident -> { CAst.make ~loc @@ CPatAs (p,id) }
       ]
     | "0"
       [ "_" -> { CAst.make ~loc @@ CPatVar Anonymous }
       | "()" -> { CAst.make ~loc @@ CPatRef (AbsKn (Tuple 0), []) }
+      | n = Prim.integer -> { CAst.make ~loc @@ CPatAtm (AtmInt n) }
+      | s = Prim.string -> { CAst.make ~loc @@ CPatAtm (AtmStr s) }
       | qid = Prim.qualid -> { pattern_of_qualid qid }
       | "("; p = atomic_tac2pat; ")" -> { p }
+      | "{"; a = tac2rec_fieldpats; "}" -> { CAst.make ~loc @@ CPatRecord a }
       | "["; pats = LIST0 tac2pat SEP ";"; "]" ->
         {
           let nil = CAst.make ~loc @@ CPatRef (AbsKn (Other Tac2core.Core.c_nil), []) in
@@ -350,6 +354,15 @@ GRAMMAR EXTEND Gram
   ;
   tac2rec_fieldexpr:
     [ [ qid = Prim.qualid; ":="; e = ltac2_expr LEVEL "1" -> { RelId qid, e } ] ]
+  ;
+  tac2rec_fieldpats:
+    [ [ f = tac2rec_fieldpat; ";"; l = tac2rec_fieldpats -> { f :: l }
+      | f = tac2rec_fieldpat; ";" -> { [f] }
+      | f = tac2rec_fieldpat-> { [f] }
+      | -> { [] } ] ]
+  ;
+  tac2rec_fieldpat:
+    [ [ qid = Prim.qualid; ":="; e = tac2pat LEVEL "1" -> { RelId qid, e } ] ]
   ;
   tac2typ_prm:
     [ [ -> { [] }
