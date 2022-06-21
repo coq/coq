@@ -14,26 +14,26 @@ Version 8.16
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
-Coq version 8.16 integrates changes to the Coq kernel, performance improvements along
+Coq version 8.16 integrates changes to the Coq kernel and performance improvements along
 with a few new features. We highlight some of the most impactful changes here:
 
-  - The guard checker now ensures strong :ref:`normalization <816Normalization>`
+  - The guard checker (see :cmd:`Guarded`) now ensures strong :ref:`normalization <816Normalization>`
     under any reduction strategy.
 
-  - Irrelevant terms (in the strict propositions sort) are now squashed to a dummy
+  - Irrelevant terms (in the ``SProp`` sort) are now squashed to a dummy
     value during :ref:`conversion <816SPropConversion>`, fixing a subject reduction issue and making proof
-    conversion cheap.
+    conversion faster.
 
-  - Introduction of :ref:`reversible coercions <816ReversibleCoercions>` which
-    allow coercions relying on meta-level resolution like type-classes or canonical
+  - Introduction of :ref:`reversible coercions <816ReversibleCoercions>`, which
+    allow coercions relying on meta-level resolution such as type-classes or canonical
     structures. Also allow coercions that do not :ref:`fullfill the uniform inheritance condition <816UniformInh>`.
 
   - :ref:`Generalized rewriting <816GeneralizeRew>` support for rewriting with ``Type``-valued relations and in
     ``Type`` contexts, using the ``Classes.CMorphisms`` library.
 
-  - New :ref:`boolean equality <816BooleanEquality>` scheme command for decidable inductive types.
+  - Added the :ref:`boolean equality <816BooleanEquality>` scheme command for decidable inductive types.
 
-  - New :ref:`Print Notation <816PrintNotation>` command.
+  - Added a :ref:`Print Notation <816PrintNotation>` command.
 
   - Incompatibilities in :ref:`name generation <816ProgramObls>`` for Program obligations,
     :tacn:`eauto` treatment of :ref:`tactic failure levels <816EautoLevels>`, use of ``ident``
@@ -41,7 +41,7 @@ with a few new features. We highlight some of the most impactful changes here:
 
   - Standard library `reorganization and deprecations <816Stdlib>`.
 
-  - Improve the treatment of standard library numbers by ``Extraction``.
+  - Improve the treatment of standard library numbers by :cmd:`Extraction`.
 
 See the `Changes in 8.16.0`_ section below for the detailed list of changes,
 including potentially breaking changes marked with **Changed**.
@@ -89,7 +89,7 @@ Ramkumar Ramachandra, Pierre Roux, Takafumi Saikawa, Kazuhiko Sakaguchi, Gabriel
 Vincent Semeria, Kartik Singhal, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi, Laurent Théry,
 Anton Trunov, Li-yao Xia and Théo Zimmermann.
 
-The Coq community at large helped improve the design of this new version via
+The Coq community at large helped improve this new version via
 the GitHub issue and pull request system, the Coq development mailing list
 coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
 <https://coq.discourse.group/>`_ and the `Coq Zulip chat <https://coq.zulipchat.com>`_.
