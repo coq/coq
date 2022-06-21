@@ -1557,7 +1557,7 @@ type eliminator =
 | ElimTerm of EConstr.constr
 | ElimClause of EConstr.constr with_bindings
 
-let general_elim_clause with_evars flags where (c, ty) elim =
+let general_elim_clause0 with_evars flags where (c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
@@ -1617,9 +1617,12 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let flags = elim_flags () in
   Proofview.Unsafe.tclEVARS indclause.evd <*>
   Tacticals.tclTHEN
-    (general_elim_clause with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
+    (general_elim_clause0 with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
+
+let general_elim_clause with_evars flags where (c, ty) elim =
+  general_elim_clause0 with_evars flags where (c, ty) (ElimTerm elim)
 
 (* Case analysis tactics *)
 
