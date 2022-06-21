@@ -2101,6 +2101,12 @@ let expected_elimination_sort env tomatchl =
         if Sorts.family_leq s s' then s else s'
       | NotInd _ -> s) tomatchl Sorts.InType
 
+let typing_constraint_in_family (f:Sorts.family) = match f with
+  | InSProp -> OfType mkSProp
+  | InProp -> OfType mkProp
+  | InSet -> OfType mkSet
+  | InType -> IsType
+
 (* Builds the predicate. If the predicate is dependent, its context is
  * made of 1+nrealargs assumptions for each matched term in an inductive
  * type and 1 assumption for each term not _syntactically_ in an
@@ -2152,12 +2158,9 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
       (* We extract the signature of the arity *)
       let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
       let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming sigma) arsign env in
-      (* We put a type constraint on the predicate so that one
-         branch type-checked first does not lead to a lower type than
-         another branch; we take into account the possible elimination
-         constraints on the predicate *)
-      let sigma, rtnsort = fresh_sort_in_family sigma (expected_elimination_sort !!env tomatchs) in
-      let sigma, predcclj = typing_fun (OfType (mkSort rtnsort)) envar sigma rtntyp in
+      (* take into account the possible elimination constraints on the predicate *)
+      let rtnsort = typing_constraint_in_family (expected_elimination_sort !!env tomatchs) in
+      let sigma, predcclj = typing_fun rtnsort envar sigma rtntyp in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]
   in
