@@ -35,7 +35,7 @@ val clear_bidirectionality_hint : GlobRef.t -> unit
 val search_guard :
   ?loc:Loc.t -> env -> int list list -> Constr.rec_declaration -> int array
 
-type typing_constraint =
+type typing_constraint = Cases.typing_constraint =
   | IsType (** Necessarily a type *)
   | OfType of types (** A term of the expected type *)
   | WithoutTypeConstraint (** A term of unknown expected type *)
@@ -181,4 +181,4 @@ type pretyper = {
 val default_pretyper : pretyper
 (** Coq vanilla pretyper. *)
 
-val eval_pretyper : pretyper -> flags:pretype_flags -> Evardefine.type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment
+val eval_pretyper : pretyper -> flags:pretype_flags -> typing_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment

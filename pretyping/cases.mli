@@ -43,9 +43,11 @@ val irrefutable : env -> cases_pattern -> bool
 
 (** {6 Compilation primitive. } *)
 
+type typing_constraint = IsType | OfType of types | WithoutTypeConstraint
+
 val compile_cases :
   ?loc:Loc.t -> program_mode:bool -> case_style ->
-  (type_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment) * evar_map ->
+  (typing_constraint -> GlobEnv.t -> evar_map -> glob_constr -> evar_map * unsafe_judgment) * evar_map ->
   type_constraint ->
   GlobEnv.t -> glob_constr option * tomatch_tuples * cases_clauses ->
   evar_map * unsafe_judgment
@@ -114,13 +116,13 @@ type 'a pattern_matching_problem =
       mat       : 'a matrix;
       caseloc   : Loc.t option;
       casestyle : case_style;
-      typing_function: type_constraint -> GlobEnv.t -> evar_map -> 'a option -> evar_map * unsafe_judgment }
+      typing_function: typing_constraint -> GlobEnv.t -> evar_map -> 'a option -> evar_map * unsafe_judgment }
 
 val compile : program_mode:bool -> evar_map -> 'a pattern_matching_problem ->
   (int option * Names.Id.t CAst.t list) list * evar_map * unsafe_judgment
 
 val prepare_predicate : ?loc:Loc.t -> program_mode:bool ->
-           (type_constraint ->
+           (typing_constraint ->
             GlobEnv.t -> Evd.evar_map -> glob_constr -> Evd.evar_map * unsafe_judgment) ->
            GlobEnv.t ->
            Evd.evar_map ->

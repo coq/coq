@@ -41,6 +41,8 @@ open GlobEnv
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
+type typing_constraint = IsType | OfType of types | WithoutTypeConstraint
+
 (* Pattern-matching errors *)
 
 type pattern_matching_error =
@@ -262,7 +264,7 @@ type 'a pattern_matching_problem =
       mat       : 'a matrix;
       caseloc   : Loc.t option;
       casestyle : case_style;
-      typing_function: type_constraint -> GlobEnv.t -> evar_map -> 'a option -> evar_map * unsafe_judgment }
+      typing_function: typing_constraint -> GlobEnv.t -> evar_map -> 'a option -> evar_map * unsafe_judgment }
 
 (*--------------------------------------------------------------------------*
  * A few functions to infer the inductive type from the patterns instead of *
@@ -362,9 +364,9 @@ let find_tomatch_tycon env sigma loc = function
   (* Try if some 'in I ...' is present and can be used as a constraint *)
   | Some {CAst.v=(ind,realnal)} ->
       let sigma, tycon = inductive_template env sigma loc ind in
-      sigma, mk_tycon tycon, Some (List.rev realnal)
+      sigma, OfType tycon, Some (List.rev realnal)
   | None ->
-      sigma, empty_tycon, None
+      sigma, WithoutTypeConstraint, None
 
 let make_return_predicate_ltac_lvar env sigma na tm c =
   (* If we have an [x as x return ...] clause and [x] expands to [c],
@@ -1297,7 +1299,7 @@ let rec generalize_problem names sigma pb = function
 (* No more patterns: typing the right-hand side of equations *)
 let build_leaf sigma pb =
   let used, rhs = extract_rhs pb in
-  let sigma, j = pb.typing_function (mk_tycon pb.pred) rhs.rhs_env sigma rhs.it in
+  let sigma, j = pb.typing_function (OfType pb.pred) rhs.rhs_env sigma rhs.it in
   used, sigma, j_nf_evar sigma j
 
 (* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
@@ -2155,7 +2157,7 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
          another branch; we take into account the possible elimination
          constraints on the predicate *)
       let sigma, rtnsort = fresh_sort_in_family sigma (expected_elimination_sort !!env tomatchs) in
-      let sigma, predcclj = typing_fun (Some (mkSort rtnsort)) envar sigma rtntyp in
+      let sigma, predcclj = typing_fun (OfType (mkSort rtnsort)) envar sigma rtntyp in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]
   in
@@ -2432,7 +2434,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
              eqs_rels @ neqs_rels @ rhs_rels', arity
          in
          let _,rhs_env = push_rel_context ~hypnaming sigma rhs_rels' env in
-         let sigma, j = typing_fun (mk_tycon tycon) rhs_env sigma eqn.rhs.it in
+         let sigma, j = typing_fun (OfType tycon) rhs_env sigma eqn.rhs.it in
          let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
          and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
          let sigma, _btype = Typing.type_of !!env sigma bbody in
