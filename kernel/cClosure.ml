@@ -1565,11 +1565,13 @@ and case_inversion info tab ci u params indices v =
     (* indtyping enforces 1 ctor with no letins in the context *)
     let _, expect = mip.mind_nf_lc.(0) in
     let _ind, expect_args = destApp expect in
+    let tab = if info.i_cache.i_mode == Conversion then tab else KeyTable.create 17 in
+    let info = {info with i_cache = { info.i_cache with i_mode = Conversion}; i_flags=all} in
     let check_index i index =
       let expected = expect_args.(ci.ci_npar + i) in
       let expected = Vars.subst_instance_constr u expected in
       let expected = mk_clos psubst expected in
-      !conv {info with i_flags=all} tab expected index
+      !conv info tab expected index
     in
     if Array.for_all_i check_index 0 indices
     then Some v else None
