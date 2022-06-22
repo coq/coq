@@ -83,7 +83,7 @@ val simpleInjClause : inj_flags option -> evars_flag ->
   constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 
 val dEq : keep_proofs:(bool option) -> evars_flag -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
-val dEqThen : keep_proofs:(bool option) -> evars_flag -> (clear_flag -> constr -> int -> unit Proofview.tactic) -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
+val dEqThen : keep_proofs:(bool option) -> evars_flag -> (int -> unit Proofview.tactic) -> constr with_bindings Tactics.destruction_arg option -> unit Proofview.tactic
 
 val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> evar_map * (constr * constr * constr)
@@ -95,12 +95,6 @@ val cutRewriteInConcl : bool -> constr -> unit Proofview.tactic
 (* The family rewriteIn expect the proof of an equality *)
 val rewriteInHyp : bool -> constr -> Id.t -> unit Proofview.tactic
 val rewriteInConcl : bool -> constr -> unit Proofview.tactic
-
-(* Tells if tactic "discriminate" is applicable *)
-val discriminable : env -> evar_map -> constr -> constr -> bool
-
-(* Tells if tactic "injection" is applicable *)
-val injectable : env -> evar_map -> keep_proofs:(bool option) -> constr -> constr -> bool
 
 val set_keep_equality : inductive -> bool -> unit
 

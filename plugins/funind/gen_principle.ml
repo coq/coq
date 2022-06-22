@@ -1027,19 +1027,14 @@ let rec reflexivity_with_destruct_cases () =
                   with
                   | App (eq, [|_; t1; t2|])
                     when EConstr.eq_constr (Proofview.Goal.sigma g) eq eq_ind ->
-                    if
-                      Equality.discriminable (Proofview.Goal.env g)
-                        (Proofview.Goal.sigma g) t1 t2
-                    then Equality.discrHyp id
-                    else if
-                      Equality.injectable (Proofview.Goal.env g)
-                        (Proofview.Goal.sigma g) ~keep_proofs:None t1 t2
-                    then
+                    tclFIRST [
+                      Equality.discrHyp id;
                       tclTHENLIST
                         [ Equality.injHyp my_inj_flags ~injection_in_context:false None id
                         ; thin [id]
-                        ; intros_with_rewrite () ]
-                    else Proofview.tclUNIT ()
+                        ; intros_with_rewrite () ];
+                      Proofview.tclUNIT ()
+                    ]
                   | _ -> Proofview.tclUNIT ()))
       in
       tclFIRST

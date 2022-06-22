@@ -383,8 +383,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     | _ -> tac id
     end
   in
-  let deq_trailer id clear_flag _ neqns =
-    assert (clear_flag == None);
+  let deq_trailer id neqns =
     tclTHENLIST
       [if as_mode then clear [id] else tclIDTAC;
        (tclMAP_i (false,false) neqns (function (idopt,_) ->

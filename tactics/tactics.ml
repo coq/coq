@@ -415,16 +415,18 @@ let clear ids = clear_gen error_clear_dependency ids
 let clear_for_replacing ids = clear_gen error_replacing_dependency ids
 
 let apply_clear_request clear_flag dft c =
-  Proofview.tclEVARMAP >>= fun sigma ->
-  let check_isvar c =
-    if not (isVar sigma c) then
-      error KeepAndClearModifierOnlyForHypotheses in
   let doclear = match clear_flag with
-    | None -> dft && isVar sigma c
-    | Some true -> check_isvar c; true
-    | Some false -> false in
-  if doclear then clear [destVar sigma c]
-  else Tacticals.tclIDTAC
+    | None -> if dft then c else None
+    | Some true ->
+      begin match c with
+      | None -> error KeepAndClearModifierOnlyForHypotheses
+      | Some id -> Some id
+      end
+    | Some false -> None
+  in
+  match doclear with
+  | None -> Proofview.tclUNIT ()
+  | Some id -> clear [id]
 
 (* Moving hypotheses *)
 let move_hyp id dest =
@@ -1563,6 +1565,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let ct = Retyping.get_type_of env sigma c in
+  let id = try Some (destVar sigma c) with DestKO -> None in
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause  = make_clenv_binding env sigma (c, t) lbindc in
   let sigma = meta_merge sigma indclause.evd in
@@ -1570,7 +1573,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   Proofview.Unsafe.tclEVARS sigma <*>
   Tacticals.tclTHEN
     (general_elim_clause with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
-    (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c)
+    (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
 (* Case analysis tactics *)
@@ -1778,6 +1781,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
   Proofview.Goal.enter begin fun gl ->
   let concl = Proofview.Goal.concl gl in
   let sigma = Tacmach.project gl in
+  let id = try Some (destVar sigma c) with DestKO -> None in
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -1840,7 +1844,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
   in
     Tacticals.tclTHEN
       (try_main_apply with_destruct c)
-      (apply_clear_request clear_flag (use_clear_hyp_by_default ()) c)
+      (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
 let rec apply_with_bindings_gen b e = function
@@ -1937,6 +1941,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
     Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.project gl in
+    let idc = try Some (destVar (Tacmach.project gl) c) with DestKO -> None in
     let ts =
       if respect_opaque then Conv_oracle.get_transp_state (oracle env)
       else TransparentState.full
@@ -1948,7 +1953,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
       clenv_refine_in ?err with_evars targetid replace sigma clause
         (fun id ->
           replace_error_option err (
-            apply_clear_request clear_flag false c <*>
+            apply_clear_request clear_flag false idc <*>
             clear idstoclear) <*>
           tac id)
     with e when with_destruct && CErrors.noncritical e ->
