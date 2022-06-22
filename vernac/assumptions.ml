@@ -327,7 +327,8 @@ let type_of_constant cb = cb.Declarations.const_type
 
 let uses_uip mib =
   Array.exists (fun mip ->
-      mip.mind_relevance == Sorts.Irrelevant
+      mip.mind_kelim == InType
+      && mip.mind_relevance == Sorts.Irrelevant
       && Array.length mip.mind_nf_lc = 1
       && List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt)
     mib.mind_packets
