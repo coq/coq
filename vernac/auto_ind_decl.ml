@@ -21,7 +21,6 @@ open Inductiveops
 open Tactics
 open Ind_tables
 open Namegen
-open Tactypes
 
 module RelDecl = Context.Rel.Declaration
 
@@ -74,6 +73,7 @@ let induct_on  c = induction false None c None None
 let destruct_on c = destruct false None c None None
 
 let destruct_on_using c id =
+  let open Tactypes in
   destruct false None c
     (Some (CAst.make @@ IntroOrPattern [[CAst.make @@ IntroNaming IntroAnonymous];
                [CAst.make @@ IntroNaming (IntroIdentifier id)]]))
@@ -1116,6 +1116,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
               Tacticals.tclREPEAT (
                   Tacticals.tclTHENLIST [
                       Simple.apply_in freshz (EConstr.of_constr (andb_prop()));
+                      let open Tactypes in
                       destruct_on_as (EConstr.mkVar freshz)
                         (IntroOrPattern [[CAst.make @@ IntroNaming (IntroFresh (Id.of_string "Z"));
                                           CAst.make @@ IntroNaming (IntroIdentifier freshz)]])
