@@ -13,7 +13,6 @@
 
 open Util
 open Constr
-open Context
 open Vars
 open Termops
 open Declarations
@@ -45,8 +44,8 @@ exception InternalDependencies
 
 let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
 let name_assumption env = function
-| RelDecl.LocalAssum (na,t) -> RelDecl.LocalAssum (map_annot (named_hd env t) na, t)
-| RelDecl.LocalDef (na,c,t) -> RelDecl.LocalDef (map_annot (named_hd env c) na, c, t)
+| RelDecl.LocalAssum (na,t) -> RelDecl.LocalAssum (Context.map_annot (named_hd env t) na, t)
+| RelDecl.LocalDef (na,c,t) -> RelDecl.LocalDef (Context.map_annot (named_hd env c) na, c, t)
 let name_context env ctxt =
   snd
     (List.fold_left
@@ -102,8 +101,8 @@ let mkPartialInd env (ind,u) n =
   let _, recparams_ctx = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   mkApp (mkIndU (ind,u), Context.Rel.instance mkRel n recparams_ctx)
 
-let name_X = make_annot (Name (Id.of_string "X")) Sorts.Relevant
-let name_Y = make_annot (Name (Id.of_string "Y")) Sorts.Relevant
+let name_X = Context.make_annot (Name (Id.of_string "X")) Sorts.Relevant
+let name_Y = Context.make_annot (Name (Id.of_string "Y")) Sorts.Relevant
 let mk_eqb_over u = mkProd (name_X, u, (mkProd (name_Y, lift 1 u, bb ())))
 
 let check_bool_is_defined () =
@@ -314,7 +313,7 @@ let build_beq_scheme env handle kn =
   (* predef coq's boolean type *)
   (* here I leave the Naming thingy so that the type of
      the function is more readable for the user *)
-  let eqName = map_annot (function
+  let eqName = Context.map_annot (function
     | Name s -> Name (Id.of_string ("eq_"^(Id.to_string s)))
     | Anonymous -> Name (Id.of_string "eq_A"))
   in
@@ -456,7 +455,7 @@ let build_beq_scheme env handle kn =
           Array.map (translate_term_with_binders env_lift_pred) lbr) in
       (* in the restricted translation, only types are translated and
          the return predicate is necessarily a type *)
-      let p = mkProd (anonR, t, p) in
+      let p = mkProd (Context.anonR, t, p) in
       let lbr = Array.mapi (fun i (names, t) ->
         let ctx = branch_context env ci pms u names i in
         let env_lift' = List.fold_right push_env_lift ctx env_lift in
@@ -502,7 +501,7 @@ let build_beq_scheme env handle kn =
           None
     | Cast (c,k,t) ->
       begin
-        match translate_term_eq env_lift c, translate_type_eq env_lift anonR c t with
+        match translate_term_eq env_lift c, translate_type_eq env_lift Context.anonR c t with
         | Some c, Some t -> Some (mkCast (c,k,t))
         | None, None -> None
         | (None | Some _), _ -> assert false
@@ -568,7 +567,7 @@ let build_beq_scheme env handle kn =
           Constr.map_invert (lift n) iv,
           mkRel 1,
           Array.map (fun (names, br) -> (names, let q = Array.length names in liftn n (n+q+1) br)) lbr) in
-      let p = translate_type_eq env_lift_pred anonR c p in
+      let p = translate_type_eq env_lift_pred Context.anonR c p in
       let lbr = Array.mapi (fun i (names, t) ->
         let ctx = branch_context env ci pms u names i in
         let env_lift' = List.fold_right push_env_lift ctx env_lift in
@@ -593,7 +592,7 @@ let build_beq_scheme env handle kn =
               predicate different though convertible to itself, namely
               here a fix of match (see test-suite) *)
       let mkfix j = mkFix ((recindxs,j),recdef) in
-      let typarray = Array.mapi (fun i -> translate_type_eq env_lift anonR (mkfix i)) typarray in
+      let typarray = Array.mapi (fun i -> translate_type_eq env_lift Context.anonR (mkfix i)) typarray in
       let env_lift_types = push_rec_env_lift recdef env_lift in
       let bodies = Array.map (translate_term_eq env_lift_types) bodies in
       if Array.for_all Option.has_some bodies && Array.for_all Option.has_some typarray then
@@ -701,8 +700,8 @@ let build_beq_scheme env handle kn =
       let rec_name i =
         (Id.to_string (Array.get mib.mind_packets i).mind_typename)^"_eqrec"
       in
-      let names = Array.init nb_ind (fun i -> make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant) in
-      let types = Array.init nb_ind (fun i -> Option.get (translate_type_eq env_lift_recparams anonR (mkPartialInd env ((kn,i),u) 0) (Term.it_mkProd_or_LetIn (*any sort:*) mkSet nonrecparams_ctx))) in
+      let names = Array.init nb_ind (fun i -> Context.make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant) in
+      let types = Array.init nb_ind (fun i -> Option.get (translate_type_eq env_lift_recparams Context.anonR (mkPartialInd env ((kn,i),u) 0) (Term.it_mkProd_or_LetIn (*any sort:*) mkSet nonrecparams_ctx))) in
       let fix_ctx = List.rev (Array.to_list (Array.map2 (fun na t -> RelDecl.LocalAssum (na,t)) names types)) in
       shift_fix_env_lift kn mib.mind_nparams_rec recparams_ctx nb_ind env_lift_recparams, fix_ctx, names, types
     | Finite | BiFinite ->
@@ -734,7 +733,7 @@ let build_beq_scheme env handle kn =
       let rettyp_l, _ = decompose_prod_assum rettyp in
       (* construct the predicate for the Case part*)
       it_mkLambda_or_LetIn
-        (mkLambda (make_annot Anonymous Sorts.Relevant,
+        (mkLambda (Context.make_annot Anonymous Sorts.Relevant,
                    mkFullInd env indu (List.length rettyp_l),
                    (bb ())))
         rettyp_l in
@@ -1059,8 +1058,8 @@ let compute_bl_goal env handle (ind,u) lnamesparrec nparrec =
   let open Term in
   let create_input c =
       let bl_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                ( mkApp(eq (),[|bb (); mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt () |]))
                Sorts.Relevant
@@ -1068,24 +1067,24 @@ let compute_bl_goal env handle (ind,u) lnamesparrec nparrec =
           ))
         ) list_id in
       let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
-        mkNamedProd (make_annot sbl Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot sbl Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev bl_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,(bb ())))
+          mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,(bb ())))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd (make_annot seq Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot seq Sorts.Relevant) b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
     List.fold_left (fun a decl ->
-        let x = map_annot
+        let x = Context.map_annot
             (function Name s -> s | Anonymous -> next_ident_away (Id.of_string "A") avoid)
             (RelDecl.get_annot decl)
         in
         mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
      create_input (
-        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
-          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
+          mkNamedProd (Context.make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
             mkArrow
               (mkApp(eq (),[|bb ();mkApp(eqI,[|mkVar x;mkVar y|]);tt ()|]))
               Sorts.Relevant
@@ -1199,8 +1198,8 @@ let compute_lb_goal env handle (ind,u) lnamesparrec nparrec =
   let open Term in
     let create_input c =
       let lb_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                 ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
                 Sorts.Relevant
@@ -1208,25 +1207,25 @@ let compute_lb_goal env handle (ind,u) lnamesparrec nparrec =
           ))
         ) list_id in
       let lb_input = List.fold_left2 ( fun a (s,_,_,slb) b ->
-        mkNamedProd (make_annot slb Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot slb Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev lb_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,
-                 mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,bb))
+          mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,
+                 mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,bb))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd (make_annot seq Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot seq Sorts.Relevant) b a
       ) lb_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl ->
-          let x = map_annot
+          let x = Context.map_annot
               (function Name s -> s | Anonymous -> Id.of_string "A")
               (RelDecl.get_annot decl)
           in
           mkNamedProd x (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
       create_input (
-        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
-          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
+          mkNamedProd (Context.make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
             mkArrow
               (mkApp(eq,[|mkFullInd env (ind,u) (2*nparrec+2);mkVar x;mkVar y|]))
               Sorts.Relevant
@@ -1333,8 +1332,8 @@ let compute_dec_goal env ind lnamesparrec nparrec =
   let open Term in
     let create_input c =
       let lb_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                 ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
                 Sorts.Relevant
@@ -1342,8 +1341,8 @@ let compute_dec_goal env ind lnamesparrec nparrec =
           ))
         ) list_id in
       let bl_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                 ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
                 Sorts.Relevant
@@ -1352,21 +1351,21 @@ let compute_dec_goal env ind lnamesparrec nparrec =
         ) list_id in
 
       let lb_input = List.fold_left2 ( fun a (s,_,_,slb) b ->
-        mkNamedProd (make_annot slb Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot slb Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev lb_typ) in
       let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
-        mkNamedProd (make_annot sbl Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot sbl Sorts.Relevant) b a
       ) lb_input (List.rev list_id) (List.rev bl_typ) in
 
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,
-                 mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,bb))
+          mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,
+                 mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,bb))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd (make_annot seq Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot seq Sorts.Relevant) b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl ->
-          let x = map_annot
+          let x = Context.map_annot
               (function Name s -> s | Anonymous -> Id.of_string "A")
               (RelDecl.get_annot decl)
           in
@@ -1374,8 +1373,8 @@ let compute_dec_goal env ind lnamesparrec nparrec =
     in
         let eqnm = mkApp(eq,[|mkFullInd env ind (3*nparrec+2);mkVar x;mkVar y|]) in
         create_input (
-          mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env ind (3*nparrec)) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env ind (3*nparrec+1)) (
+          mkNamedProd (Context.make_annot x Sorts.Relevant) (mkFullInd env ind (3*nparrec)) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkFullInd env ind (3*nparrec+1)) (
               mkApp(sumbool(),[|eqnm;mkApp (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.not.type",[|eqnm|])|])
           )
         )
