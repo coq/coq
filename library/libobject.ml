@@ -8,9 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
-open Names
-
 module Dyn = Dyn.Make ()
 
 type substitutivity = Dispose | Substitute | Keep | Anticipate
@@ -81,7 +78,8 @@ let default_object s = {
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ _ -> ());
   subst_function = (fun _ ->
-    CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
+    CErrors.anomaly Pp.(str "The object " ++ str s
+      ++ str " does not know how to substitute!"));
   classify_function = (fun _ -> Keep);
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x);
@@ -116,17 +114,17 @@ type obj = Dyn.t (* persistent dynamic objects *)
 
 type algebraic_objects =
   | Objs of t list
-  | Ref of ModPath.t * Mod_subst.substitution
+  | Ref of Names.ModPath.t * Mod_subst.substitution
 
 and t =
-  | ModuleObject of Id.t * substitutive_objects
-  | ModuleTypeObject of Id.t * substitutive_objects
+  | ModuleObject of Names.Id.t * substitutive_objects
+  | ModuleTypeObject of Names.Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
-  | KeepObject of Id.t * t list
-  | ExportObject of { mpl : (open_filter * ModPath.t) list }
+  | KeepObject of Names.Id.t * t list
+  | ExportObject of { mpl : (open_filter * Names.ModPath.t) list }
   | AtomicObject of obj
 
-and substitutive_objects = MBId.t list * algebraic_objects
+and substitutive_objects = Names.MBId.t list * algebraic_objects
 
 module DynMap = Dyn.Map (struct type 'a t = ('a, Nametab.object_prefix * 'a) object_declaration end)
 
@@ -139,7 +137,7 @@ let declare_object_full odecl =
   tag
 
 let make_oname Nametab.{ obj_dir; obj_mp } id =
-  Libnames.make_path obj_dir id, KerName.make obj_mp (Label.of_id id)
+  Libnames.make_path obj_dir id, Names.KerName.make obj_mp (Names.Label.of_id id)
 
 let declare_named_object_full odecl =
   let odecl =
@@ -231,7 +229,9 @@ let global_object_nodischarge ?cat s ~cache ~subst =
     cache_function = cache;
     open_function = simple_open ?cat import;
     subst_function = (match subst with
-        | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
+        | None -> fun _ ->
+            CErrors.anomaly Pp.(str "The object " ++ str s
+              ++ str " does not know how to substitute!")
         | Some subst -> subst;
       );
     classify_function =
@@ -247,7 +247,9 @@ let superglobal_object_nodischarge s ~cache ~subst =
     load_function = (fun _ x -> cache x);
     cache_function = cache;
     subst_function = (match subst with
-        | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
+        | None -> fun _ ->
+            CErrors.anomaly Pp.(str "The object " ++ str s
+              ++ str " does not know how to substitute!")
         | Some subst -> subst;
       );
     classify_function =

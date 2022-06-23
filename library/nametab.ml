@@ -8,12 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
-open Util
-open Pp
 open Names
 open Libnames
-open Globnames
 
 type object_prefix = {
   obj_dir : DirPath.t;
@@ -116,7 +112,7 @@ struct
    *)
   let warn_masking_absolute =
     CWarnings.create ~name:"masking-absolute-name" ~category:"deprecated"
-      (fun n -> str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
+      (fun n -> Pp.str ("Trying to mask the absolute name \"" ^ U.to_string n ^ "\"!"))
 
   type user_name = U.t
 
@@ -173,14 +169,14 @@ struct
                 (* This is an absolute name, we must keep it otherwise it may
                    become unaccessible forever *)
                 (* But ours is also absolute! This is an error! *)
-                user_err Pp.(str @@ "Cannot mask the absolute name \""
+                CErrors.user_err Pp.(str @@ "Cannot mask the absolute name \""
                                    ^ U.to_string uname' ^ "\"!")
           | Nothing
           | Relative _ -> mktree (Absolute (uname,o)) tree.map
 
 let rec push_exactly uname o level tree = function
 | [] ->
-  anomaly (Pp.str "Prefix longer than path! Impossible!")
+  CErrors.anomaly (Pp.str "Prefix longer than path! Impossible!")
 | modid :: path ->
   if Int.equal level 0 then
     let this =
@@ -273,7 +269,8 @@ let shortest_qualid ?loc ctx uname tab =
 
 let push_node node l =
   match node with
-  | Absolute (_,o) | Relative (_,o) when not (List.mem_f E.equal o l) -> o::l
+  | Absolute (_,o) | Relative (_,o)
+    when not (Util.List.mem_f E.equal o l) -> o::l
   | _ -> l
 
 let rec flatten_idmap tab l =
@@ -316,7 +313,7 @@ struct
       id, (DirPath.repr dir)
 end
 
-module ExtRefEqual = ExtRefOrdered
+module ExtRefEqual = Globnames.ExtRefOrdered
 module MPEqual = Names.ModPath
 
 module ExtRefTab = Make(FullPath)(ExtRefEqual)
@@ -329,7 +326,7 @@ module DirPath' =
 struct
   include DirPath
   let repr dir = match DirPath.repr dir with
-    | [] -> anomaly (Pp.str "Empty dirpath.")
+    | [] -> CErrors.anomaly (Pp.str "Empty dirpath.")
     | id :: l -> (id, l)
 end
 
@@ -348,8 +345,9 @@ let the_univtab = Summary.ref ~name:"univtab" (UnivTab.empty : univtab)
 (* Reversed name tables ***************************************************)
 
 (* This table translates extended_global_references back to section paths *)
-type globrevtab = full_path ExtRefMap.t
-let the_globrevtab = Summary.ref ~name:"globrevtab" (ExtRefMap.empty : globrevtab)
+type globrevtab = full_path Globnames.ExtRefMap.t
+let the_globrevtab =
+  Summary.ref ~name:"globrevtab" (Globnames.ExtRefMap.empty : globrevtab)
 
 
 type mprevtab = DirPath.t MPmap.t
@@ -405,7 +403,7 @@ let push_xref visibility sp xref =
   match visibility with
     | Until _ ->
         the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-        the_globrevtab := ExtRefMap.add xref sp !the_globrevtab
+        the_globrevtab := Globnames.ExtRefMap.add xref sp !the_globrevtab
     | _ ->
         begin
           if ExtRefTab.exists sp !the_ccitab then
@@ -489,7 +487,10 @@ let locate_section qid =
     | _ -> raise Not_found
 
 let locate_all qid =
-  List.fold_right (fun a l -> match a with TrueGlobal a -> a::l | _ -> l)
+  List.fold_right (fun a l ->
+    match a with
+    | Globnames.TrueGlobal a -> a::l
+    | _ -> l)
     (ExtRefTab.find_prefixes qid !the_ccitab) []
 
 let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
@@ -523,8 +524,8 @@ let global qid =
   try match locate_extended qid with
     | TrueGlobal ref -> ref
     | Abbrev _ ->
-        user_err ?loc:qid.CAst.loc
-          (str "Unexpected reference to a notation: " ++
+        CErrors.user_err ?loc:qid.CAst.loc
+          Pp.(str "Unexpected reference to a notation: " ++
            pr_qualid qid ++ str ".")
   with Not_found as exn ->
     let _, info = Exninfo.capture exn in
@@ -548,7 +549,7 @@ let path_of_global ref =
   let open GlobRef in
   match ref with
     | VarRef id -> make_path DirPath.empty id
-    | _ -> ExtRefMap.find (TrueGlobal ref) !the_globrevtab
+    | _ -> Globnames.ExtRefMap.find (TrueGlobal ref) !the_globrevtab
 
 let dirpath_of_global ref =
   fst (repr_path (path_of_global ref))
@@ -557,7 +558,7 @@ let basename_of_global ref =
   snd (repr_path (path_of_global ref))
 
 let path_of_abbreviation kn =
-  ExtRefMap.find (Abbrev kn) !the_globrevtab
+  Globnames.ExtRefMap.find (Abbrev kn) !the_globrevtab
 
 let dirpath_of_module mp =
   MPmap.find mp Modules.(!nametab.modrevtab)
@@ -575,7 +576,7 @@ let shortest_qualid_of_global ?loc ctx ref =
   match ref with
     | VarRef id -> make_qualid ?loc DirPath.empty id
     | _ ->
-        let sp = ExtRefMap.find (TrueGlobal ref) !the_globrevtab in
+        let sp =  Globnames.ExtRefMap.find (TrueGlobal ref) !the_globrevtab in
         ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
 let shortest_qualid_of_abbreviation ?loc ctx kn =
@@ -606,5 +607,5 @@ let global_inductive qid =
   match global qid with
   | IndRef ind -> ind
   | ref ->
-      user_err ?loc:qid.CAst.loc
-        (pr_qualid qid ++ spc () ++ str "is not an inductive type.")
+      CErrors.user_err ?loc:qid.CAst.loc
+        Pp.(pr_qualid qid ++ spc () ++ str "is not an inductive type.")

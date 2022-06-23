@@ -10,12 +10,7 @@
 
 (* This module manages customization parameters at the vernacular level     *)
 
-open Pp
-open CErrors
 open Util
-open Libobject
-open Libnames
-open Mod_subst
 
 type option_name = string list
 type option_value =
@@ -26,7 +21,7 @@ type option_value =
 
 type table_value =
   | StringRefValue of string
-  | QualidRefValue of qualid
+  | QualidRefValue of Libnames.qualid
 
 (** Summary of an option status *)
 type option_state = {
@@ -40,12 +35,14 @@ type option_state = {
 let nickname table = String.concat " " table
 
 let error_no_table_of_this_type ~kind key =
-  user_err
-    (str ("There is no " ^ kind ^ "-valued table with this name: \"" ^ nickname key ^ "\"."))
+  CErrors.user_err
+    Pp.(str ("There is no " ^ kind ^ "-valued table with this name: \""
+      ^ nickname key ^ "\"."))
 
 let error_undeclared_key key =
-  user_err
-    (str ("There is no flag, option or table with this name: \"" ^ nickname key ^ "\"."))
+  CErrors.user_err
+    Pp.(str ("There is no flag, option or table with this name: \""
+      ^ nickname key ^ "\"."))
 
 (****************************************************************************)
 (* 1- Tables                                                                *)
@@ -65,7 +62,7 @@ module MakeTable =
           module Set : CSig.SetS with type elt = t
           val table : (string * key table_of_A) list ref
           val encode : Environ.env -> key -> t
-          val subst : substitution -> t -> t
+          val subst : Mod_subst.substitution -> t -> t
           val printer : t -> Pp.t
           val key : option_name
           val title : string
@@ -78,9 +75,11 @@ module MakeTable =
 
     let nick = nickname A.key
 
-    let _ =
+    let () =
       if String.List.mem_assoc nick !A.table then
-        user_err Pp.(str "Sorry, this table name (" ++ str nick ++ str ") is already used.")
+        CErrors.user_err
+          Pp.(strbrk "Sorry, this table name (" ++ str nick
+            ++ strbrk ") is already used.")
 
     module MySet = A.Set
 
@@ -96,10 +95,10 @@ module MakeTable =
             if p' == p then obj else
               (f,p')
         in
-        let inGo : option_mark * A.t -> obj =
+        let inGo : option_mark * A.t -> Libobject.obj =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
-                Libobject.open_function = simple_open load_options;
+                Libobject.open_function = Libobject.simple_open load_options;
                 Libobject.cache_function = cache_options;
                 Libobject.subst_function = subst_options;
                 Libobject.classify_function = (fun x -> Substitute)}
@@ -109,7 +108,7 @@ module MakeTable =
 
     let print_table table_name printer table =
       Feedback.msg_notice
-        (str table_name ++
+        Pp.(str table_name ++
            (hov 0
               (if MySet.is_empty table then str " None" ++ fnl ()
                else MySet.fold
@@ -152,7 +151,7 @@ struct
   let table = string_table
   let encode _env x = x
   let subst _ x = x
-  let printer = str
+  let printer = Pp.str
   let key = A.key
   let title = A.title
   let member_message = A.member_message
@@ -169,8 +168,8 @@ module type RefConvertArg =
 sig
   type t
   module Set : CSig.SetS with type elt = t
-  val encode : Environ.env -> qualid -> t
-  val subst : substitution -> t -> t
+  val encode : Environ.env -> Libnames.qualid -> t
+  val subst : Mod_subst.substitution -> t -> t
   val printer : t -> Pp.t
   val key : option_name
   val title : string
@@ -180,7 +179,7 @@ end
 module RefConvert = functor (A : RefConvertArg) ->
 struct
   type t = A.t
-  type key = qualid
+  type key = Libnames.qualid
   module Set = A.Set
   let table = ref_table
   let encode = A.encode
@@ -240,18 +239,19 @@ let get_option key = OptionMap.find key !value_tab
 
 let check_key key = try
   let _ = get_option key in
-  user_err Pp.(str "Sorry, this option name ("++ str (nickname key) ++ str ") is already used.")
+  CErrors.user_err Pp.(str "Sorry, this option name ("
+    ++ str (nickname key) ++ str ") is already used.")
 with Not_found ->
   if String.List.mem_assoc (nickname key) !string_table
     || String.List.mem_assoc (nickname key) !ref_table
-  then user_err Pp.(str "Sorry, this option name (" ++ str (nickname key) ++ str ") is already used.")
+  then CErrors.user_err Pp.(str "Sorry, this option name ("
+    ++ str (nickname key) ++ str ") is already used.")
 
 open Libobject
 
 let warn_deprecated_option =
-  CWarnings.create ~name:"deprecated-option" ~category:"deprecated"
-         (fun key -> str "Option" ++ spc () ++ str (nickname key) ++
-                       strbrk " is deprecated")
+  CWarnings.create ~name:"deprecated-option" ~category:"deprecated" (fun key ->
+    Pp.(str "Option" ++ spc () ++ str (nickname key) ++ strbrk " is deprecated"))
 
 let declare_option cast uncast append ?(preprocess = fun x -> x)
   { optdepr=depr; optkey=key; optread=read; optwrite=write } =
@@ -306,23 +306,23 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
 let declare_int_option =
   declare_option
     (fun v -> IntValue v)
-    (function IntValue v -> v | _ -> anomaly (Pp.str "async_option."))
-    (fun _ _ -> anomaly (Pp.str "async_option."))
+    (function IntValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
+    (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
 let declare_bool_option =
   declare_option
     (fun v -> BoolValue v)
-    (function BoolValue v -> v | _ -> anomaly (Pp.str "async_option."))
-    (fun _ _ -> anomaly (Pp.str "async_option."))
+    (function BoolValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
+    (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
 let declare_string_option =
   declare_option
     (fun v -> StringValue v)
-    (function StringValue v -> v | _ -> anomaly (Pp.str "async_option."))
+    (function StringValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
     (fun x y -> x^","^y)
 let declare_stringopt_option =
   declare_option
     (fun v -> StringOptValue v)
-    (function StringOptValue v -> v | _ -> anomaly (Pp.str "async_option."))
-    (fun _ _ -> anomaly (Pp.str "async_option."))
+    (function StringOptValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
+    (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
 
 
 type 'a opt_decl = depr:bool -> key:option_name -> 'a
@@ -417,7 +417,7 @@ let declare_interpreted_string_option_and_ref ~depr ~key ~(value:'a) from_string
 let warn_unknown_option =
   CWarnings.create
     ~name:"unknown-option" ~category:"option"
-    (fun key -> strbrk "There is no flag or option with this name: \"" ++
+    Pp.(fun key -> strbrk "There is no flag or option with this name: \"" ++
                   str (nickname key) ++ str "\".")
 
 let set_option_value ?(locality = OptDefault) check_and_cast key v =
@@ -428,12 +428,11 @@ let set_option_value ?(locality = OptDefault) check_and_cast key v =
     write locality (check_and_cast v (read ()))
 
 let bad_type_error ~expected ~got =
-  user_err Pp.(str "Bad type of value for this option:" ++ spc() ++
-               str "expected " ++ str expected ++
-               str ", got " ++ str got ++ str ".")
+  CErrors.user_err Pp.(strbrk "Bad type of value for this option:" ++ spc()
+    ++ str "expected " ++ str expected ++ str ", got " ++ str got ++ str ".")
 
 let error_flag () =
-  user_err Pp.(str "This is a flag. It does not take a value.")
+  CErrors.user_err Pp.(str "This is a flag. It does not take a value.")
 
 let check_int_value v = function
   | BoolValue _ -> error_flag ()
@@ -443,7 +442,9 @@ let check_int_value v = function
 
 let check_bool_value v = function
   | BoolValue _ -> BoolValue v
-  | _ -> user_err Pp.(str "This is an option. A value must be provided.")
+  | _ ->
+      CErrors.user_err
+        Pp.(str "This is an option. A value must be provided.")
 
 let check_string_value v = function
   | BoolValue _ -> error_flag ()
@@ -455,7 +456,9 @@ let check_unset_value v = function
   | BoolValue _ -> BoolValue false
   | IntValue _ -> IntValue None
   | StringOptValue _ -> StringOptValue None
-  | StringValue _ -> user_err Pp.(str "This option does not support the \"Unset\" command.")
+  | StringValue _ ->
+      CErrors.user_err
+        Pp.(str "This option does not support the \"Unset\" command.")
 
 (* Nota: For compatibility reasons, some errors are treated as
    warnings. This allows a script to refer to an option that doesn't
@@ -483,25 +486,25 @@ let set_string_option_value opt v = set_string_option_value_gen opt v
 
 (* Printing options/tables *)
 
-let msg_option_value v =
-  match v with
-    | BoolValue true  -> str "on"
-    | BoolValue false -> str "off"
-    | IntValue (Some n) -> int n
-    | IntValue None   -> str "undefined"
-    | StringValue s   -> quote (str s)
-    | StringOptValue None   -> str"undefined"
-    | StringOptValue (Some s)   -> quote (str s)
-(*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
+let msg_option_value = Pp.(function
+  | BoolValue true -> str "on"
+  | BoolValue false -> str "off"
+  | IntValue (Some n) -> int n
+  | IntValue None -> str "undefined"
+  | StringValue s -> quote (str s)
+  | StringOptValue None -> str "undefined"
+  | StringOptValue (Some s) -> quote (str s))
 
 let print_option_value key =
   let (depr, (read,_,_)) = get_option key in
   let s = read () in
   match s with
     | BoolValue b ->
-        Feedback.msg_notice (prlist_with_sep spc str key ++ str " is " ++ str (if b then "on" else "off"))
+        Feedback.msg_notice Pp.(prlist_with_sep spc str key ++ str " is "
+          ++ str (if b then "on" else "off"))
     | _ ->
-        Feedback.msg_notice (str "Current value of " ++ prlist_with_sep spc str key ++ str " is " ++ msg_option_value s)
+        Feedback.msg_notice Pp.(str "Current value of "
+          ++ prlist_with_sep spc str key ++ str " is " ++ msg_option_value s)
 
 let get_tables () =
   let tables = !value_tab in
@@ -515,6 +518,7 @@ let get_tables () =
   OptionMap.fold fold tables OptionMap.empty
 
 let print_tables () =
+  let open Pp in
   let print_option key value depr =
     let msg = str "  " ++ str (nickname key) ++ str ": " ++ msg_option_value value in
     if depr then msg ++ str " [DEPRECATED]" ++ fnl ()

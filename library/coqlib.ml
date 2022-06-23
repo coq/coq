@@ -8,11 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
 open Util
-open Pp
 open Names
-open Libnames
 
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
@@ -52,7 +49,7 @@ let check_ind_ref s ind =
 let lib_ref s =
   try CString.Map.find s !table
   with Not_found ->
-    user_err Pp.(str "not found in table: " ++ str s)
+    CErrors.user_err Pp.(str "not found in table: " ++ str s)
 
 let add_ref s c =
   table := CString.Map.add s c !table
@@ -77,28 +74,28 @@ let register_ref s c =
 (* Generic functions to find Coq objects *)
 
 let has_suffix_in_dirs dirs ref =
-  let dir = dirpath (Nametab.path_of_global ref) in
-  List.exists (fun d -> is_dirpath_prefix_of d dir) dirs
+  let dir = Libnames.dirpath (Nametab.path_of_global ref) in
+  List.exists (fun d -> Libnames.is_dirpath_prefix_of d dir) dirs
 
 let gen_reference_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
-  let qualid = qualid_of_string s in
+  let qualid = Libnames.qualid_of_string s in
   let all = Nametab.locate_all qualid in
   let all = List.sort_uniquize GlobRef.UserOrd.compare all in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
     | [x] -> x
     | [] ->
-        anomaly ~label:locstr (str "cannot find " ++ str s ++
-        str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-        prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
+      CErrors.anomaly ~label:locstr Pp.(str "cannot find " ++ str s
+        ++ str " in module" ++ str (if List.length dirs > 1 then "s " else " ")
+        ++ prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
     | l ->
-      anomaly ~label:locstr
-        (str "ambiguous name " ++ str s ++ str " can represent " ++
-           prlist_with_sep pr_comma
-           (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
-           str " in module" ++ str (if List.length dirs > 1 then "s " else " ") ++
-           prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
+      CErrors.anomaly ~label:locstr
+        Pp.(str "ambiguous name " ++ str s ++ str " can represent "
+          ++ prlist_with_sep pr_comma (fun x ->
+            Libnames.pr_path (Nametab.path_of_global x)) l ++ str " in module"
+          ++ str (if List.length dirs > 1 then "s " else " ")
+          ++ prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
 
 (* For tactics/commands requiring vernacular libraries *)
 
@@ -113,8 +110,8 @@ let check_required_library d =
       | _ -> false
     in
     if not in_current_dir then
-      user_err
-        (str "Library " ++ DirPath.print dir ++ str " has to be required first.")
+      CErrors.user_err Pp.(str "Library " ++ DirPath.print dir
+        ++ str " has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects                                                 *)
@@ -321,4 +318,4 @@ let coq_or_ref     = Lazy.from_fun build_coq_or
 let coq_iff_ref    = Lazy.from_fun build_coq_iff
 
 (** Deprecated functions that search by library name. *)
-let build_sigma_set () = anomaly (Pp.str "Use build_sigma_type.")
+let build_sigma_set () = CErrors.anomaly (Pp.str "Use build_sigma_type.")

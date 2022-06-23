@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
-open CErrors
 open Util
 open Names
 
@@ -58,14 +56,16 @@ let add_dirpath_suffix p id = DirPath.make (id :: DirPath.repr p)
 let parse_dir s =
   let len = String.length s in
   let rec decoupe_dirs dirs n =
-    if Int.equal n len && n > 0 then user_err Pp.(str @@ s ^ " is an invalid path.");
+    if Int.equal n len && n > 0 then
+      CErrors.user_err Pp.(str @@ s ^ " is an invalid path.");
     if n >= len then dirs else
     let pos =
       try
         String.index_from s n '.'
       with Not_found -> len
     in
-    if Int.equal pos n then user_err Pp.(str @@ s ^ " is an invalid path.");
+    if Int.equal pos n then
+      CErrors.user_err Pp.(str @@ s ^ " is an invalid path.");
     let dir = String.sub s n (pos-n) in
     decoupe_dirs ((Id.of_string dir)::dirs) (pos+1)
   in
@@ -123,7 +123,7 @@ let path_of_string s =
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
 
-let pr_path sp = str (string_of_path sp)
+let pr_path sp = Pp.str (string_of_path sp)
 
 (*s qualified names *)
 type qualid_r = full_path
