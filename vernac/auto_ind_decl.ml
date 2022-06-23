@@ -22,7 +22,6 @@ open Tactics
 open Ind_tables
 open Namegen
 open Tactypes
-open Proofview.Notations
 
 module RelDecl = Context.Rel.Declaration
 
@@ -914,6 +913,7 @@ let do_replace_lb handle aavoid narg p q =
     let env = Tacmach.pf_env gl in
     let (ind,u as indu),v = destruct_ind env sigma type_of_pq in
     let c = get_scheme handle (!lb_scheme_kind_aux ()) ind in
+    let open Proofview.Notations in
     let lb_type_of_p = mkConstU (c,u) in
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
@@ -991,6 +991,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
     | ([],[]) -> Proofview.tclUNIT ()
     | _ -> Tacticals.tclZEROMSG Pp.(str "Both side of the equality must have the same arity.")
   in
+  let open Proofview.Notations in
   Proofview.tclEVARMAP >>= fun sigma ->
   begin try Proofview.tclUNIT (destApp sigma lft)
     with DestKO -> Tacticals.tclZEROMSG Pp.(str "replace failed.")
