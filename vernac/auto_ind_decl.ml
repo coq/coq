@@ -11,7 +11,6 @@
 (* This file is about the automatic generation of schemes about
    decidable equality, created by Vincent Siles, Oct 2007 *)
 
-open CErrors
 open Util
 open Pp
 open Term
@@ -895,7 +894,7 @@ let do_replace_lb handle aavoid narg p q =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else user_err
+            else CErrors.user_err
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
@@ -942,7 +941,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else user_err
+            else CErrors.user_err
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
@@ -1155,7 +1154,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 let make_bl_scheme env handle mind =
   let mib = Environ.lookup_mind mind env in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
-    user_err
+    CErrors.user_err
       (str "Automatic building of boolean->Leibniz lemmas not supported");
 
   (* Setting universes *)
@@ -1283,7 +1282,7 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
 let make_lb_scheme env handle mind =
   let mib = Environ.lookup_mind mind env in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
-    user_err
+    CErrors.user_err
       (str "Automatic building of Leibniz->boolean lemmas not supported");
   let ind = (mind,0) in
 
