@@ -17,7 +17,7 @@ open Termops
 open Declarations
 open Names
 open Inductiveops
-open Tactics
+(* open Tactics *)
 
 module RelDecl = Context.Rel.Declaration
 
@@ -66,18 +66,18 @@ let float64_eqb () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqli
 let sumbool () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.sumbool.type")
 let andb = fun _ -> UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.andb")
 
-let induct_on  c = induction false None c None None
-let destruct_on c = destruct false None c None None
+let induct_on  c = Tactics.induction false None c None None
+let destruct_on c = Tactics.destruct false None c None None
 
 let destruct_on_using c id =
   let open Tactypes in
-  destruct false None c
+  Tactics.destruct false None c
     (Some (CAst.make @@ IntroOrPattern [[CAst.make @@ IntroNaming IntroAnonymous];
                [CAst.make @@ IntroNaming (IntroIdentifier id)]]))
     None
 
 let destruct_on_as c l =
-  destruct false None c (Some (CAst.make l)) None
+  Tactics.destruct false None c (Some (CAst.make l)) None
 
 let inj_flags = Some {
     Equality.keep_proof_equalities = true; (* necessary *)
@@ -921,7 +921,7 @@ let do_replace_lb handle aavoid narg p q =
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
            Tacticals.tclTHENLIST [
-             Equality.replace p q ; apply app ; Auto.default_auto]
+             Equality.replace p q ; Tactics.apply app ; Auto.default_auto]
   end
 
 (* used in the bool -> leb side *)
@@ -980,7 +980,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
                 in
                 Tacticals.tclTHENLIST [
                   Equality.replace_by t1 t2
-                    (Tacticals.tclTHEN (apply app) (Auto.default_auto)) ;
+                    (Tacticals.tclTHEN (Tactics.apply app) (Auto.default_auto)) ;
                   aux q1 q2 ]
               )
         )
@@ -1096,6 +1096,7 @@ let compute_bl_tact handle ind lnamesparrec nparrec =
     @ ( List.map (fun (_,seq,_,_ ) -> seq) list_id )
     @ ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
   in
+  let open Tactics in
   intros_using_then first_intros begin fun fresh_first_intros ->
     Tacticals.tclTHENLIST [
         intro_using_then (Id.of_string "x") (fun freshn -> induct_on (EConstr.mkVar freshn));
@@ -1238,6 +1239,7 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
     @ ( List.map (fun (_,seq,_,_) -> seq) list_id )
     @ ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
+  let open Tactics in
   intros_using_then first_intros begin fun fresh_first_intros ->
     Tacticals.tclTHENLIST [
         intro_using_then (Id.of_string "x") (fun freshn -> induct_on (EConstr.mkVar freshn));
@@ -1393,6 +1395,7 @@ let compute_dec_tact handle (ind,u) lnamesparrec nparrec =
     @ ( List.map (fun (_,_,sbl,_) -> sbl) list_id )
     @ ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
+  let open Tactics in
   let fresh_id s gl = fresh_id_in_env (Id.Set.empty) s (Proofview.Goal.env gl) in
   intros_using_then first_intros begin fun fresh_first_intros ->
     let eqI =
