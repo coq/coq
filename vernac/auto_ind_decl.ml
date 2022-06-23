@@ -16,8 +16,6 @@ open Constr
 open Termops
 open Declarations
 open Names
-open Inductiveops
-(* open Tactics *)
 
 module RelDecl = Context.Rel.Declaration
 
@@ -738,6 +736,7 @@ let build_beq_scheme env handle kn =
                ...
                Cn => match Y with ... end |]  part *)
     let rci = Sorts.Relevant in (* returning a boolean, hence relevant *)
+    let open Inductiveops in
     let constrs =
       let params = Context.Rel.instance_list mkRel 0 params_ctx in
       get_constructors env (make_ind_family (indu, params))
