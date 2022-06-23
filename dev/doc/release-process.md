@@ -128,6 +128,11 @@
   the opportunity to fix the `.mailmap` file.  Same thing if you want
   to have the full name of a contributor shown instead of a pseudonym.
 
+- [ ] Put the branch name in CACHEKEY in [`.gitlab-ci.yml`](../../.gitlab-ci.yml)
+  (for instance ``bionic_coq-V2022-05-20-c34331afa5`` to ``"bionic_coq-v8.16-V2022-05-20-c34331afa5``)
+  to indicate that it shouldn't be cleaned up even once it gets old.
+  This should be done after all PRs touching CACHEKEY have been merged.
+
 ## For each release (preview, final, patch-level) ##
 
 - [ ] Ensure that there exists a milestone for the following version.
