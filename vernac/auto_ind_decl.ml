@@ -12,7 +12,6 @@
    decidable equality, created by Vincent Siles, Oct 2007 *)
 
 open Util
-open Pp
 open Term
 open Constr
 open Context
@@ -895,7 +894,7 @@ let do_replace_lb handle aavoid narg p q =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
             else CErrors.user_err
-                   (str "Var " ++ Id.print s ++ str " seems unknown.")
+                   Pp.(str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
     | Const (cst,u) ->
@@ -942,7 +941,7 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
             else CErrors.user_err
-                   (str "Var " ++ Id.print s ++ str " seems unknown.")
+                   Pp.(str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
     | Const (cst,u) ->
@@ -991,30 +990,30 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
         )
         end
     | ([],[]) -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclZEROMSG (str "Both side of the equality must have the same arity.")
+    | _ -> Tacticals.tclZEROMSG Pp.(str "Both side of the equality must have the same arity.")
   in
   Proofview.tclEVARMAP >>= fun sigma ->
   begin try Proofview.tclUNIT (destApp sigma lft)
-    with DestKO -> Tacticals.tclZEROMSG (str "replace failed.")
+    with DestKO -> Tacticals.tclZEROMSG Pp.(str "replace failed.")
   end >>= fun (ind1,ca1) ->
   begin try Proofview.tclUNIT (destApp sigma rgt)
-    with DestKO -> Tacticals.tclZEROMSG (str "replace failed.")
+    with DestKO -> Tacticals.tclZEROMSG Pp.(str "replace failed.")
   end >>= fun (ind2,ca2) ->
   begin try Proofview.tclUNIT (fst (destInd sigma ind1))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind1)))
-        with DestKO -> Tacticals.tclZEROMSG (str "The expected type is an inductive one.")
+        with DestKO -> Tacticals.tclZEROMSG Pp.(str "The expected type is an inductive one.")
       end
   end >>= fun (sp1,i1) ->
   begin try Proofview.tclUNIT (fst (destInd sigma ind2))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind2)))
-        with DestKO -> Tacticals.tclZEROMSG (str "The expected type is an inductive one.")
+        with DestKO -> Tacticals.tclZEROMSG Pp.(str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->
   Proofview.tclENV >>= fun env ->
   if not (Environ.QMutInd.equal env sp1 sp2) || not (Int.equal i1 i2)
-  then Tacticals.tclZEROMSG (str "Eq should be on the same type")
+  then Tacticals.tclZEROMSG Pp.(str "Eq should be on the same type")
   else aux (Array.to_list ca1) (Array.to_list ca2)
 
 (*
@@ -1140,10 +1139,10 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                             (ca.(1)))
                          Auto.default_auto
                      else
-                       Tacticals.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
-                  | _ -> Tacticals.tclZEROMSG (str" Failure while solving Boolean->Leibniz.")
+                       Tacticals.tclZEROMSG Pp.(str "Failure while solving Boolean->Leibniz.")
+                  | _ -> Tacticals.tclZEROMSG Pp.(str" Failure while solving Boolean->Leibniz.")
                 )
-                | _ -> Tacticals.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
+                | _ -> Tacticals.tclZEROMSG Pp.(str "Failure while solving Boolean->Leibniz.")
                 end
 
             ]
@@ -1155,7 +1154,7 @@ let make_bl_scheme env handle mind =
   let mib = Environ.lookup_mind mind env in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     CErrors.user_err
-      (str "Automatic building of boolean->Leibniz lemmas not supported");
+      Pp.(str "Automatic building of boolean->Leibniz lemmas not supported");
 
   (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in
@@ -1269,10 +1268,10 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
                                      nparrec
                                      ca'.(n-2) ca'.(n-1)
                                 | _ ->
-                                   Tacticals.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                                   Tacticals.tclZEROMSG Pp.(str "Failure while solving Leibniz->Boolean.")
                                )
                 | _ ->
-                   Tacticals.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                   Tacticals.tclZEROMSG Pp.(str "Failure while solving Leibniz->Boolean.")
                 end
             ]
           end
@@ -1283,7 +1282,7 @@ let make_lb_scheme env handle mind =
   let mib = Environ.lookup_mind mind env in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
     CErrors.user_err
-      (str "Automatic building of Leibniz->boolean lemmas not supported");
+      Pp.(str "Automatic building of Leibniz->boolean lemmas not supported");
   let ind = (mind,0) in
 
   (* Setting universes *)
