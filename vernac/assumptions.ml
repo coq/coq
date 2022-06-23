@@ -19,7 +19,6 @@
 open Util
 open Names
 open Declarations
-open Mod_subst
 open Printer
 open Context.Named.Declaration
 
@@ -58,6 +57,7 @@ let rec search_mind_label lab = function
 let rec fields_of_functor f subs mp0 args = function
   | NoFunctor a -> f subs mp0 args a
   | MoreFunctor (mbid,_,e) ->
+    let open Mod_subst in
     match args with
     | [] -> assert false (* we should only encounter applied functors *)
     | mpa :: args ->
@@ -83,6 +83,7 @@ and memoize_fields_of_mp mp =
     l
 
 and fields_of_mp mp =
+  let open Mod_subst in
   let mb = lookup_module_in_impl mp in
   let fields,inner_mp,subs = fields_of_mb empty_subst mb [] in
   let subs =
@@ -106,7 +107,7 @@ and fields_of_signature x =
 
 and fields_of_expr subs mp0 args = function
   | MEident mp ->
-    let mb = lookup_module_in_impl (subst_mp subs mp) in
+    let mb = lookup_module_in_impl (Mod_subst.subst_mp subs mp) in
     fields_of_mb subs mb args
   | MEapply (me1,mp2) -> fields_of_expr subs mp0 (mp2::args) me1
   | MEwith _ -> assert false (* no 'with' in [mod_expr] *)
