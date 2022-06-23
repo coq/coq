@@ -19,7 +19,6 @@
 open Util
 open Names
 open Declarations
-open Printer
 
 module NamedDecl = Context.Named.Declaration
 
@@ -338,6 +337,7 @@ let uses_uip mib =
     mib.mind_packets
 
 let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
+  let open Printer in
   (* Only keep the transitive dependencies *)
   let (_, graph, ax2ty) = traverse (label_of gr) t in
   let open GlobRef in
