@@ -20,7 +20,6 @@ open Util
 open Names
 open Declarations
 open Printer
-open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
@@ -345,7 +344,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   let fold obj _ accu = match obj with
   | VarRef id ->
     let decl = Global.lookup_named id in
-    if is_local_assum decl then
+    if Context.Named.Declaration.is_local_assum decl then
       let t = Context.Named.Declaration.get_type decl in
       ContextObjectMap.add (Variable id) t accu
     else accu
