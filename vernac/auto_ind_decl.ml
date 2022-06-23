@@ -19,7 +19,6 @@ open Declarations
 open Names
 open Inductiveops
 open Tactics
-open Ind_tables
 
 module RelDecl = Context.Rel.Declaration
 
@@ -116,7 +115,7 @@ let is_irrelevant env c =
   | Sort SProp -> true
   | _ -> false
 
-let get_scheme handle k ind = match local_lookup_scheme handle k ind with
+let get_scheme handle k ind = match Ind_tables.local_lookup_scheme handle k ind with
 | None -> assert false
 | Some c -> c
 
@@ -304,7 +303,7 @@ let branch_context env ci params u nas i =
 
 let build_beq_scheme_deps env kn =
   let inds = get_inductive_deps ~noprop:true env kn in
-  List.map (fun ind -> SchemeMutualDep (ind, !beq_scheme_kind_aux ())) inds
+  List.map (fun ind -> Ind_tables.SchemeMutualDep (ind, !beq_scheme_kind_aux ())) inds
 
 let build_beq_scheme env handle kn =
   check_bool_is_defined ();
@@ -853,7 +852,7 @@ let build_beq_scheme env handle kn =
   res, uctx
 
 let beq_scheme_kind =
-  declare_mutual_scheme_object "_beq"
+  Ind_tables.declare_mutual_scheme_object "_beq"
   ~deps:build_beq_scheme_deps
   build_beq_scheme
 
@@ -1176,11 +1175,11 @@ let make_bl_scheme env handle mind =
 
 let make_bl_scheme_deps env ind =
   let inds = get_inductive_deps ~noprop:false env ind in
-  let map ind = SchemeMutualDep (ind, !bl_scheme_kind_aux ()) in
-  SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
+  let map ind = Ind_tables.SchemeMutualDep (ind, !bl_scheme_kind_aux ()) in
+  Ind_tables.SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
 let bl_scheme_kind =
-  declare_mutual_scheme_object "_dec_bl"
+  Ind_tables.declare_mutual_scheme_object "_dec_bl"
   ~deps:make_bl_scheme_deps
   make_bl_scheme
 
@@ -1305,11 +1304,11 @@ let make_lb_scheme env handle mind =
 
 let make_lb_scheme_deps env ind =
   let inds = get_inductive_deps ~noprop:false env ind in
-  let map ind = SchemeMutualDep (ind, !lb_scheme_kind_aux ()) in
-  SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
+  let map ind = Ind_tables.SchemeMutualDep (ind, !lb_scheme_kind_aux ()) in
+  Ind_tables.SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
 let lb_scheme_kind =
-  declare_mutual_scheme_object "_dec_lb"
+  Ind_tables.declare_mutual_scheme_object "_dec_lb"
   ~deps:make_lb_scheme_deps
   make_lb_scheme
 
@@ -1488,7 +1487,7 @@ let make_eq_decidability env handle mind =
   ([|ans|], ctx)
 
 let eq_dec_scheme_kind =
-  declare_mutual_scheme_object "_eq_dec"
+  Ind_tables.declare_mutual_scheme_object "_eq_dec"
   ~deps:(fun _ ind -> [SchemeMutualDep (ind, bl_scheme_kind); SchemeMutualDep (ind, lb_scheme_kind)])
   make_eq_decidability
 
