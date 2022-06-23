@@ -16,7 +16,6 @@
 (* Initial author: Arnaud Spiwack
    Module-traversing code: Pierre Letouzey *)
 
-open CErrors
 open Util
 open Names
 open Constr
@@ -130,7 +129,10 @@ let lookup_constant_in_impl cst fallback =
        - The label has not been found in the structure. This is an error *)
     match fallback with
       | Some cb -> cb
-      | None -> anomaly Pp.(str "Print Assumption: unknown constant " ++ Constant.print cst ++ str ".")
+      | None ->
+        CErrors.anomaly
+          Pp.(str "Print Assumption: unknown constant "
+            ++ Constant.print cst ++ str ".")
 
 let lookup_constant cst =
   let env = Global.env() in
@@ -147,7 +149,9 @@ let lookup_mind_in_impl mind =
     let fields = memoize_fields_of_mp mp in
       search_mind_label lab fields
   with Not_found ->
-    anomaly Pp.(str "Print Assumption: unknown inductive " ++ MutInd.print mind ++ str ".")
+    CErrors.anomaly
+      Pp.(str "Print Assumption: unknown inductive "
+        ++ MutInd.print mind ++ str ".")
 
 let lookup_mind mind =
   let env = Global.env() in
