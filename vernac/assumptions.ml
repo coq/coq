@@ -18,7 +18,6 @@
 
 open Util
 open Names
-open Constr
 open Declarations
 open Mod_subst
 open Printer
@@ -169,6 +168,7 @@ let label_of = let open GlobRef in function
 
 let fold_with_full_binders g f n acc c =
   let open Context.Rel.Declaration in
+  let open Constr in
   match kind c with
   | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
@@ -205,6 +205,7 @@ let get_constant_body kn =
 
 let rec traverse current ctx accu t =
   let open GlobRef in
+  let open Constr in
   match Constr.kind t with
 | Var id ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
