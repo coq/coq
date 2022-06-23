@@ -81,7 +81,6 @@ before_script:
       - config/coq_config.ml
       - config/dune.c_flags
       - dmesg.txt
-    expire_in: 1 month
   script:
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
     - make clean # ensure that `make clean` works on a fresh clone
@@ -122,7 +121,6 @@ before_script:
     paths:
       - _build/log
       - _build.tar.bz2
-    expire_in: 1 month
 
 .dune-ci-template:
   stage: build
@@ -141,7 +139,6 @@ before_script:
   artifacts:
     when: always
     name: "$CI_JOB_NAME"
-    expire_in: 2 months
 
 # every non build job must set "needs" otherwise all build
 # artifacts are used together and we may get some random Coq. To that
@@ -164,7 +161,6 @@ before_script:
     name: "$CI_JOB_NAME"
     paths:
       - _install_ci/share/doc/coq/
-    expire_in: 2 months
 
 # set "needs" when using
 .test-suite-template:
@@ -188,8 +184,6 @@ before_script:
     when: on_failure
     paths:
       - test-suite/logs
-    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
-    # expire_in: never
 
 # set "needs" when using
 .validate-template:
@@ -213,7 +207,6 @@ before_script:
     name: "$CI_JOB_NAME.logs"
     paths:
       - coqchk.log
-    expire_in: 2 months
 
 .ci-template:
   stage: build
@@ -381,8 +374,6 @@ pkg:opam-split:
     when: on_failure
     paths:
       - nix-build-coq.drv-0/*/test-suite/logs
-    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
-    # expire_in: never
 
 # broken, see eg https://gitlab.com/coq/coq/-/jobs/1754045983
 # pkg:nix:deploy:
@@ -537,8 +528,6 @@ test-suite:edge:dune:dev:
     when: on_failure
     paths:
       - _build/default/test-suite/logs
-    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
-    # expire_in: never
 
 .test-suite:ocaml+beta+dune-template:
   stage: build
@@ -564,7 +553,6 @@ test-suite:edge:dune:dev:
     paths:
       - _build/log
       - _build/default/test-suite/logs
-    expire_in: 2 week
   allow_failure: true
 
 # test-suite:4.12+trunk+dune:
