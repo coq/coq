@@ -13,7 +13,6 @@
 
 open Util
 open Constr
-open Vars
 open Termops
 open Declarations
 open Names
@@ -759,7 +758,7 @@ let build_beq_scheme env handle kn =
           | RelDecl.LocalAssum (na,cc) ->
               if is_irrelevant env_lift.env cc then (ndx-1,env_lift',l)
               else
-                if noccur_between 1 (nb_cstr_args-ndx) cc then
+                if Vars.noccur_between 1 (nb_cstr_args-ndx) cc then
                   let cc = lift (ndx-nb_cstr_args) cc in
                   match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch cc with
                   | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
@@ -790,7 +789,7 @@ let build_beq_scheme env handle kn =
                    | RelDecl.LocalAssum (na,cc) ->
                      if is_irrelevant env_lift.env cc then (ndx-1,env_lift',l)
                      else
-                       if noccur_between 1 (nb_cstr_args-ndx) cc then
+                       if Vars.noccur_between 1 (nb_cstr_args-ndx) cc then
                          let cc = lift (ndx-nb_cstr_args) cc in
                          match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch_csargsij cc with
                          | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
