@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open CErrors
-
 (** The type of parsing attribute data *)
 type vernac_flag_type =
   | FlagIdent of string
@@ -98,10 +96,12 @@ open Notations
 
 let assert_empty ?loc k v =
   if v <> VernacFlagEmpty
-  then user_err ?loc Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
+  then CErrors.user_err ?loc
+    Pp.(str "Attribute " ++ str k ++ str " does not accept arguments")
 
 let error_twice ?loc ~name : 'a =
-  user_err ?loc Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
+  CErrors.user_err ?loc
+    Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
 
 let assert_once ?loc ~name prev =
   if Option.has_some prev then
@@ -166,7 +166,9 @@ let get_bool_value ?loc ~key ~default =
     true
   | VernacFlagLeaf (FlagIdent "no") ->
     false
-  | _ -> user_err ?loc Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
+  | _ ->
+    CErrors.user_err ?loc
+      Pp.(str "Attribute " ++ str key ++ str " only accepts boolean values.")
 
 let enable_attribute ~key ~default : bool attribute =
   fun atts ->
