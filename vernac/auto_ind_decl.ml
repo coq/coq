@@ -20,7 +20,6 @@ open Names
 open Inductiveops
 open Tactics
 open Ind_tables
-open Namegen
 
 module RelDecl = Context.Rel.Declaration
 
@@ -40,7 +39,7 @@ exception ConstructorWithNonParametricInductiveType of inductive
 exception DecidabilityIndicesNotSupported
 exception InternalDependencies
 
-let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
+let named_hd env t na = Namegen.named_hd env (Evd.from_env env) (EConstr.of_constr t) na
 let name_assumption env = function
 | RelDecl.LocalAssum (na,t) -> RelDecl.LocalAssum (Context.map_annot (named_hd env t) na, t)
 | RelDecl.LocalDef (na,c,t) -> RelDecl.LocalDef (Context.map_annot (named_hd env c) na, c, t)
