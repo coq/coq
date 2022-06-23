@@ -12,7 +12,6 @@
    decidable equality, created by Vincent Siles, Oct 2007 *)
 
 open Util
-open Term
 open Constr
 open Context
 open Vars
@@ -724,6 +723,7 @@ let build_beq_scheme env handle kn =
     let env_lift_recparams_fix_nonrecparams_tomatch =
       shiftn_env_lift 2 env_lift_recparams_fix_nonrecparams in
     (* current inductive we are working on *)
+    let open Term in
     let pred =
       let cur_packet = mib.mind_packets.(cur) in
       (* Inductive toto : [rettyp] := *)
@@ -1056,6 +1056,7 @@ let compute_bl_goal env handle (ind,u) lnamesparrec nparrec =
   let avoid = avoid_of_list_id list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
+  let open Term in
   let create_input c =
       let bl_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
@@ -1195,6 +1196,7 @@ let compute_lb_goal env handle (ind,u) lnamesparrec nparrec =
   let eqI = eqI handle (ind,u) list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
+  let open Term in
     let create_input c =
       let lb_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
@@ -1328,6 +1330,7 @@ let compute_dec_goal env ind lnamesparrec nparrec =
   let avoid = avoid_of_list_id list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
+  let open Term in
     let create_input c =
       let lb_typ = List.map (fun (s,seq,_,_) ->
         mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
