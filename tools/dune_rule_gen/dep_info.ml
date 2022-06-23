@@ -27,7 +27,9 @@ let make ~args ~(dir_info : _ Dir_info.t) =
   let args = "-dyndep" :: "opt" :: List.map Arg.to_string args in
   if debug_coqdep then Format.eprintf "coqdep: %s@\n%!" (String.concat " " args);
   let args = Coqdeplib.Args.parse (Coqdeplib.Args.make ()) args in
-  let st = CD.Common.init args in
+  (* We are sane w.r.t. path separators *)
+  let make_separator_hack = false in
+  let st = CD.Common.init ~make_separator_hack args in
   let () =
     Dir_info.iter dir_info ~f:(fun ~prefix:_ files ->
         let files = List.map Coq_module.source files in

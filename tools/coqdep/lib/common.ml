@@ -22,12 +22,18 @@ let basename_noext filename =
 *)
 let vAccu = ref ([] : (string * string) list)
 
+let separator_hack = ref true
+let filename_concat dir name =
+  if !separator_hack
+  then System.(dir // name)
+  else Filename.concat dir name
+
 (* This is used to overcome makefile limitations w.r.t. filenames,
    (bar/../foo is not the same than ./foo for make) but it is a crude
    hack and we should remove it, and instead require users to follow
    the same naming convention *)
 let canonize f =
-  let f' = System.(Loadpath.absolute_dir (Filename.dirname f) // Filename.basename f) in
+  let f' = filename_concat (Loadpath.absolute_dir (Filename.dirname f)) (Filename.basename f) in
   match List.filter (fun (_,full) -> f' = full) !vAccu with
     | (f,_) :: _ -> f
     | _ -> f
@@ -97,7 +103,7 @@ let safe_assoc st ?(what=Library) from verbose file k =
 
 let file_name s = function
   | None     -> s
-  | Some d   -> System.(d // s)
+  | Some d   -> filename_concat d s
 
 module VData = struct
   type t = string list option * string list
@@ -254,7 +260,7 @@ let rec treat_file old_dirname old_name =
       (* EGJA: We should disable this buggy normalization stuff for
          "./foo -> foo" but it breaks dune coq.theory! *)
       | (None,d) -> Some d
-      | (Some d1,d2) -> Some (System.(d1 // d2))
+      | (Some d1,d2) -> Some (filename_concat d1 d2)
   in
   let complete_name = file_name name dirname in
   let stat_res =
@@ -268,14 +274,14 @@ let rec treat_file old_dirname old_name =
        let newdirname =
          match dirname with
          | None -> name
-         | Some d -> System.(d // name)
+         | Some d -> filename_concat d name
        in
        Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
   | Unix.S_REG ->
     (match Loadpath.get_extension name [".v"] with
      | base,".v" ->
        let name = file_name base dirname in
-       let absname = Loadpath.absolute_file_name base dirname in
+       let absname = Loadpath.absolute_file_name ~filename_concat base dirname in
        addQueue vAccu (name, absname)
      | _ -> ())
   | _ -> ()
@@ -335,7 +341,8 @@ let add_include st (rc, r, ln) =
   else
     Loadpath.add_q_include st r ln
 
-let init args =
+let init ~make_separator_hack args =
+  separator_hack := make_separator_hack;
   vAccu := [];
   if not Coq_config.has_natdynlink then Makefile.set_dyndep "no";
   let st = Loadpath.State.make ~boot:args.Args.boot in

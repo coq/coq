@@ -24,16 +24,18 @@ let absolute_dir dir =
       Sys.chdir current;
       dir'
 
-let absolute_file_name basename odir =
+let absolute_file_name ~filename_concat basename odir =
   let dir = match odir with Some dir -> dir | None -> "." in
   (* XXX: Attention to System.(//) which does weird things and it is
      not the same than Filename.concat ; using Filename.concat here
      makes the windows build fail *)
-  System.(absolute_dir dir // basename)
+  filename_concat (absolute_dir dir) basename
 
-let compare_file f1 f2 =
-  absolute_file_name (Filename.basename f1) (Some (Filename.dirname f1))
-  = absolute_file_name (Filename.basename f2) (Some (Filename.dirname f2))
+let equal_file f1 f2 =
+  let filename_concat = Filename.concat in
+  String.equal
+    (absolute_file_name ~filename_concat (Filename.basename f1) (Some (Filename.dirname f1)))
+    (absolute_file_name ~filename_concat (Filename.basename f2) (Some (Filename.dirname f2)))
 
 (** Files found in the loadpaths.
     For the ML files, the string is the basename without extension.
@@ -201,7 +203,7 @@ let search_mllib_known { State.mllib ; _ } = State.gen_search mllib
 let add_mlpack_known { State.mlpack ; _ } = State.gen_add mlpack
 let search_mlpack_known { State.mlpack ; _ } = State.gen_search mlpack
 
-let add_set f l = f :: CList.remove compare_file f l
+let add_set f l = f :: CList.remove equal_file f l
 
 let insert_key root (full,f) m =
   (* An exact match takes precedence over non-exact matches *)

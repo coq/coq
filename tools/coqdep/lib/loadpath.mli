@@ -70,4 +70,4 @@ val find_dir_logpath : string -> string list
 
 (* Used only in "canonize" *)
 val absolute_dir : string -> string
-val absolute_file_name : string -> string option -> string
+val absolute_file_name : filename_concat:(string -> string -> string) -> string -> string option -> string
