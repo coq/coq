@@ -2638,7 +2638,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
           | Some (evd, pred, arsign) -> evd, pred
           | None -> sigma, lift nar t
         in
-        sigma, Option.get tycon, pred
+        sigma, lift (List.length tomatchs_lets) (Option.get tycon), pred
   in
   let neqs, arity =
     let ctx = context_of_arsign eqs in
@@ -2703,6 +2703,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
     (* We check for unused patterns *)
     check_unused_pattern !!env used matx;
     let body = it_mkLambda_or_LetIn (applist (j.uj_val, args)) lets in
+    let tycon = it_mkProd_wo_LetIn tycon tomatchs_lets in
     let j =
       { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
         (* XXX: is this normalization needed? *)
