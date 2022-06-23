@@ -937,13 +937,6 @@ let warn_future_coercion_class_constructor =
     ~default:CWarnings.AsError
     Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
 
-(* deprecated in 8.16, to be removed at the end of the deprecation phase
-   (c.f., https://github.com/coq/coq/pull/15802 ) *)
-let warn_future_coercion_class_field =
-  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
-      str "A coercion will be introduced in future versions when using ':>' in 'Class' declarations. "
-      ++ str "Use '#[global] Existing Instance field.' instead if you don't want the coercion.")
-
 (* declaring structures, common data to refactor *)
 let class_structure udecl kind def ~template ~cumulative ~poly ~primitive_proj finite records =
   let template, impargs, params, univs, variances, data =
@@ -954,8 +947,6 @@ let class_structure udecl kind def ~template ~cumulative ~poly ~primitive_proj f
       CErrors.user_err (str "Mutual definitional classes are not handled.")
   in
   if is_coercion then warn_future_coercion_class_constructor ();
-  if List.exists (function (_, { rf_subclass = Vernacexpr.BackInstance; _ }) -> true | _ -> false) cfs then
-    warn_future_coercion_class_field ();
   let coers = List.map (fun (_, { rf_subclass; rf_reverse; rf_priority }) ->
       if rf_reverse <> None then
         Attributes.(unsupported_attributes

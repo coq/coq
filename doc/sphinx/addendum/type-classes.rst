@@ -274,19 +274,11 @@ This declares singleton classes for reflexive and transitive relations,
 (see the :ref:`singleton class <singleton-class>` variant for an
 explanation). These may be used as parts of other classes:
 
-.. coqtop:: none
-
-   Set Warnings "-future-coercion-class-field".
-
 .. coqtop:: all
 
    Class PreOrder (A : Type) (R : relation A) :=
      { PreOrder_Reflexive :> Reflexive A R ;
        PreOrder_Transitive :> Transitive A R }.
-
-.. coqtop:: none
-
-   Set Warnings "+future-coercion-class-field".
 
 The syntax ``:>`` indicates that each ``PreOrder`` can be seen as a
 ``Reflexive`` relation. So each time a reflexive relation is needed, a
@@ -339,17 +331,6 @@ Summary of the commands
       .. warn:: @ident is already declared as a typeclass
 
          This command has no effect when used on a typeclass.
-
-.. _warn-future-coercion-class-field:
-
-   .. warn:: A coercion will be introduced in future versions when using ':>' in 'Class' declarations. Use '#[global] Existing Instance field.' instead if you don't want the coercion.
-
-      In future versions, :g:`:>` will also
-      declare a :ref:`coercion<coercions>`, as it does
-      for other :cmd:`Record` commands.
-      To eliminate the warning or to avoid creating the coercion
-      in the future, use :cmd:`Existing Instance` or :cmd:`Coercion` separately rather
-      than :g:`:>`.
 
    .. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
 
