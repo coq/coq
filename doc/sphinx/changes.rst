@@ -110,7 +110,7 @@ Changes in 8.16.0
 Kernel
 ^^^^^^
 
- .. _816Normalization
+ .. _816Normalization:
 
 - **Changed:**
   Fixpoints are now expected to be guarded even in subterms erasable
