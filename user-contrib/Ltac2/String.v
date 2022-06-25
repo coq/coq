@@ -14,3 +14,9 @@ Ltac2 @external make : int -> char -> string := "ltac2" "string_make".
 Ltac2 @external length : string -> int := "ltac2" "string_length".
 Ltac2 @external get : string -> int -> char := "ltac2" "string_get".
 Ltac2 @external set : string -> int -> char -> unit := "ltac2" "string_set".
+Ltac2 @external concat : string -> string list -> string := "ltac2" "string_concat".
+Ltac2 @external app : string -> string := "ltac2" "string_app".
+Ltac2 @external equal : string -> string -> bool := "ltac2" "string_equal".
+Ltac2 @external compare : string -> string -> int := "ltac2" "string_compare".
+
+Ltac2 is_empty s := match s with "" => true | _ => false end.

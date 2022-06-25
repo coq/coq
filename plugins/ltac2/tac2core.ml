@@ -271,7 +271,11 @@ let () = define1 "message_of_int" int begin fun n ->
 end
 
 let () = define1 "message_of_string" string begin fun s ->
-  return (Value.of_pp (str (Bytes.to_string s)))
+  return (Value.of_pp (str s))
+end
+
+let () = define1 "message_to_string" pp begin fun pp ->
+  return (Value.of_string (Pp.string_of_ppcmds pp))
 end
 
 let () = define1 "message_of_constr" constr begin fun c ->
@@ -319,7 +323,7 @@ let () = define1 "format_ident" format begin fun s ->
 end
 
 let () = define2 "format_literal" string format begin fun lit s ->
-  return (Value.of_ext val_format (Tac2print.FmtLiteral (Bytes.to_string lit) :: s))
+  return (Value.of_ext val_format (Tac2print.FmtLiteral lit :: s))
 end
 
 let () = define1 "format_alpha" format begin fun s ->
@@ -344,7 +348,7 @@ let () = define2 "format_kfprintf" closure format begin fun k fmt ->
       eval (Pp.app accu (Pp.str s)) args fmt
     | FmtString ->
       let (s, args) = pop1 args in
-      let pp = Pp.str (Bytes.to_string (to_string s)) in
+      let pp = Pp.str (to_string s) in
       eval (Pp.app accu pp) args fmt
     | FmtInt ->
       let (i, args) = pop1 args in
@@ -417,11 +421,11 @@ let () = define2 "ident_equal" ident ident begin fun id1 id2 ->
 end
 
 let () = define1 "ident_to_string" ident begin fun id ->
-  return (Value.of_string (Bytes.of_string (Id.to_string id)))
+  return (Value.of_string (Id.to_string id))
 end
 
 let () = define1 "ident_of_string" string begin fun s ->
-  let id = try Some (Id.of_string (Bytes.to_string s)) with _ -> None in
+  let id = try Some (Id.of_string s) with _ -> None in
   return (Value.of_option Value.of_ident id)
 end
 
@@ -476,22 +480,38 @@ end
 
 let () = define2 "string_make" int char begin fun n c ->
   if n < 0 || n > Sys.max_string_length then throw err_outofbounds
-  else wrap (fun () -> Value.of_string (Bytes.make n c))
+  else wrap (fun () -> Value.of_bytes (Bytes.make n c))
 end
 
-let () = define1 "string_length" string begin fun s ->
+let () = define1 "string_length" bytes begin fun s ->
   return (Value.of_int (Bytes.length s))
 end
 
-let () = define3 "string_set" string int char begin fun s n c ->
+let () = define3 "string_set" bytes int char begin fun s n c ->
   if n < 0 || n >= Bytes.length s then throw err_outofbounds
   else wrap_unit (fun () -> Bytes.set s n c)
 end
 
-let () = define2 "string_get" string int begin fun s n ->
+let () = define2 "string_get" bytes int begin fun s n ->
   if n < 0 || n >= Bytes.length s then throw err_outofbounds
   else wrap (fun () -> Value.of_char (Bytes.get s n))
 end
+
+let () = define2 "string_concat" bytes (list bytes) begin fun sep l ->
+    return (Value.of_bytes (Bytes.concat sep l))
+  end
+
+let () = define2 "string_app" bytes bytes begin fun a b ->
+    return (Value.of_bytes (Bytes.concat Bytes.empty [a; b]))
+  end
+
+let () = define2 "string_equal" bytes bytes begin fun a b ->
+    return (Value.of_bool (Bytes.equal a b))
+  end
+
+let () = define2 "string_compare" bytes bytes begin fun a b ->
+    return (Value.of_int (Bytes.compare a b))
+  end
 
 (** Terms *)
 
@@ -1119,7 +1139,6 @@ let () = define2 "abstract" (option ident) closure begin fun id f ->
 end
 
 let () = define2 "time" (option string) closure begin fun s f ->
-  let s = Option.map Bytes.to_string s in
   Proofview.tclTIME s (thaw f)
 end
 

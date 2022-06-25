@@ -546,7 +546,7 @@ end
 
 let () = register_init "string" begin fun _ _ s ->
   let s = to_string s in
-  Pp.quote (str (Bytes.to_string s))
+  Pp.quote (str s)
 end
 
 let () = register_init "ident" begin fun _ _ id ->

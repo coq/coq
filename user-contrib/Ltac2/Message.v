@@ -14,6 +14,8 @@ Ltac2 @ external print : message -> unit := "ltac2" "print".
 
 Ltac2 @ external of_string : string -> message := "ltac2" "message_of_string".
 
+Ltac2 @ external to_string : message -> string := "ltac2" "message_to_string".
+
 Ltac2 @ external of_int : int -> message := "ltac2" "message_of_int".
 
 Ltac2 @ external of_ident : ident -> message := "ltac2" "message_of_ident".
