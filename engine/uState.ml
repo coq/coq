@@ -458,7 +458,7 @@ type ('a, 'b) gen_universe_decl = {
   univdecl_extensible_constraints : bool (* Can new constraints be added *) }
 
 type universe_decl =
-  (lident list, Constraints.t) gen_universe_decl
+  (Level.t list, Constraints.t) gen_universe_decl
 
 let default_univ_decl =
   { univdecl_instance = [];
@@ -490,34 +490,22 @@ let _ = CErrors.register_handler (function
     | UnboundUnivs (left,uctx) -> Some (pr_error_unbound_universes left uctx)
     | _ -> None)
 
-let universe_context ~names ~extensible uctx =
+let universe_context ~prefix ~extensible uctx =
   let levels = ContextSet.levels uctx.local in
-  let newinst, left =
-    List.fold_right
-      (fun { CAst.loc; v = id } (newinst, acc) ->
-         let l =
-           try universe_of_name uctx id
-           with Not_found -> assert false
-         in (l :: newinst, Level.Set.remove l acc))
-      names ([], levels)
-  in
+  let left = List.fold_left (fun acc l -> Level.Set.remove l acc) levels prefix in
   if not extensible && not (Level.Set.is_empty left)
   then error_unbound_universes left uctx
   else
     let left = ContextSet.sort_levels (Array.of_list (Level.Set.elements left)) in
-    let inst = Array.append (Array.of_list newinst) left in
+    let inst = Array.append (Array.of_list prefix) left in
     let inst = Instance.of_array inst in
     (inst, ContextSet.constraints uctx.local)
 
-let check_universe_context_set ~names ~extensible uctx =
+let check_universe_context_set ~prefix ~extensible uctx =
   if extensible then ()
   else
-    let left = List.fold_left (fun left { CAst.loc; v = id } ->
-        let l =
-          try universe_of_name uctx id
-          with Not_found -> assert false
-        in Level.Set.remove l left)
-        (ContextSet.levels uctx.local) names
+    let left = List.fold_left (fun left l -> Level.Set.remove l left)
+        (ContextSet.levels uctx.local) prefix
     in
     if not (Level.Set.is_empty left)
     then error_unbound_universes left uctx
@@ -533,9 +521,9 @@ let check_implication uctx cstrs cstrs' =
 
 let check_mono_univ_decl uctx decl =
   let () =
-    let names = decl.univdecl_instance in
+    let prefix = decl.univdecl_instance in
     let extensible = decl.univdecl_extensible_instance in
-    check_universe_context_set ~names ~extensible uctx
+    check_universe_context_set ~prefix ~extensible uctx
   in
   if not decl.univdecl_extensible_constraints then
     check_implication uctx
@@ -548,16 +536,16 @@ let check_univ_decl ~poly uctx decl =
     check_implication uctx
       decl.univdecl_constraints
       (ContextSet.constraints uctx.local);
-  let names = decl.univdecl_instance in
+  let prefix = decl.univdecl_instance in
   let extensible = decl.univdecl_extensible_instance in
   let (binders, rbinders) = uctx.names in
   if poly then
-    let inst, csts = universe_context ~names ~extensible uctx in
+    let inst, csts = universe_context ~prefix ~extensible uctx in
     let nas = compute_instance_binders rbinders inst in
     let uctx = UContext.make nas (inst, csts) in
     Polymorphic_entry uctx, binders
   else
-    let () = check_universe_context_set ~names ~extensible uctx in
+    let () = check_universe_context_set ~prefix ~extensible uctx in
     Monomorphic_entry uctx.local, binders
 
 let is_bound l lbound = match lbound with
