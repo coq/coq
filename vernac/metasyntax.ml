@@ -1703,7 +1703,6 @@ let add_notation_interpretation ~local env (decl_ntn, main_data, notation_symbol
 let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_symbols, ntn, syntax_rules) =
   let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
   let notation = make_notation_interpretation ~local:true main_data notation_symbols ntn syntax_rules df env ~impls c sc in
-  syntax_rules_iter (fun sy -> Lib.add_leaf (inSyntaxExtension (true,(ntn,sy)))) syntax_rules;
   Lib.add_leaf (inNotation notation);
   Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
