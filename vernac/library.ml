@@ -141,12 +141,6 @@ let library_full_filename dir =
   try DPmap.find dir !libraries_filename_table
   with Not_found -> "<unavailable filename>"
 
-let overwrite_library_filenames f =
-  let f =
-    if Filename.is_relative f then Filename.concat (Sys.getcwd ()) f else f in
-  DPmap.iter (fun dir _ -> register_library_filename dir f)
-    !libraries_table
-
 let library_is_loaded dir =
   try let _ = find_library dir in true
   with Not_found -> false
