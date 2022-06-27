@@ -48,7 +48,7 @@ val definition_structure
       { id : Id.t
       ; idbuild : Id.t
       ; is_coercion : bool
-      ; coers : projection_flags list
+      ; proj_flags : projection_flags list
       ; rdata : raw_data
       ; inhabitant_id : Id.t
       }

@@ -139,7 +139,7 @@ module Data = struct
   { id : Id.t
   ; idbuild : Id.t
   ; is_coercion : bool
-  ; coers : projection_flags list
+  ; proj_flags : projection_flags list
   ; rdata : raw_data
   ; inhabitant_id : Id.t
   }
@@ -614,7 +614,7 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     | _ -> implicits_of_context params @ impls in
   let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
   let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
-    let coers = List.map (fun (_, { rf_subclass ; rf_reversible ; rf_priority ; rf_canonical }) ->
+    let proj_flags = List.map (fun (_, { rf_subclass ; rf_reversible ; rf_priority ; rf_canonical }) ->
       let pf_subclass, pf_reversible =
         match rf_subclass with
         | Vernacexpr.BackInstance -> true, Option.default true rf_reversible
@@ -634,7 +634,7 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
       | Some n, _ -> n
     in
     let is_coercion = match is_coercion with AddCoercion -> true | NoCoercion -> false in
-    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers; inhabitant_id }
+    { Data.id = name.CAst.v; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }
   in
   let data = List.map2 map data records in
   let projections_kind =
@@ -712,10 +712,10 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj
   in
-  let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; inhabitant_id; id; _ } =
+  let map i { Data.is_coercion; proj_flags; rdata = { DataR.implfs; fields; _}; inhabitant_id; id; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
-    let projections = declare_projections rsp (projunivs,ubinders) ~kind:projections_kind inhabitant_id coers implfs fields in
+    let projections = declare_projections rsp (projunivs,ubinders) ~kind:projections_kind inhabitant_id proj_flags implfs fields in
     let build = GlobRef.ConstructRef cstr in
     let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly ~nonuniform:false ~reversible:true in
     let struc = Structure.make (Global.env ()) rsp projections in
@@ -725,10 +725,10 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
   List.mapi map records, []
 
 let get_class_params = function
-  | [{ Data.id; idbuild; rdata; is_coercion; coers; inhabitant_id }] ->
+  | [{ Data.id; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }] ->
     let hint { Data.pf_subclass; pf_priority } =
       if pf_subclass then Some { hint_priority = pf_priority; hint_pattern = None } else None in
-    id, idbuild, rdata, is_coercion, List.map hint coers, inhabitant_id
+    id, idbuild, rdata, is_coercion, List.map hint proj_flags, inhabitant_id
   | _ ->
     CErrors.user_err (str "Mutual definitional classes are not supported.")
 
@@ -736,7 +736,7 @@ let get_class_params = function
 (* [data] is a list with a single [Data.t] with a single field (in [Data.rdata])
    and [Data.is_coercion] must be [false] *)
 let declare_class_constant ~univs paramimpls params data =
-  let id, _, rdata, is_coercion, coers, inhabitant_id = get_class_params data in
+  let id, _, rdata, is_coercion, proj_flags, inhabitant_id = get_class_params data in
   assert (not is_coercion);  (* should be ensured by caller *)
   let implfs = rdata.DataR.implfs in
   let field, binder, proj_name = match rdata.DataR.fields with
@@ -774,7 +774,7 @@ let declare_class_constant ~univs paramimpls params data =
   Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
     [Tacred.EvalConstRef cst] false;
-  let sub = List.hd coers in
+  let sub = List.hd proj_flags in
   let m = {
     meth_name = Name proj_name;
     meth_info = sub;
@@ -814,7 +814,7 @@ let warn_future_coercion_class_constructor =
 
   *)
 let declare_class ~univs params inds def data =
-  let id, idbuild, rdata, is_coercion, coers, inhabitant_id = get_class_params data in
+  let id, idbuild, rdata, is_coercion, proj_flags, inhabitant_id = get_class_params data in
   if is_coercion then warn_future_coercion_class_constructor ();
   let fields = rdata.DataR.fields in
   let map ind =
@@ -825,7 +825,7 @@ let declare_class ~univs params inds def data =
     } in
     let l = match ind with
       | GlobRef.IndRef ind ->
-         List.map3 map (List.rev fields) coers (Structure.find_projections ind)
+         List.map3 map (List.rev fields) proj_flags (Structure.find_projections ind)
       | _ -> def in
     ind, l
   in
@@ -911,7 +911,7 @@ let declare_existing_class g =
     | _ -> user_err
              (Pp.str"Unsupported class type, only constants and inductives are allowed.")
 
-(** [fs] corresponds to fields and [ps] to parameters; [coers] is a
+(** [fs] corresponds to fields and [ps] to parameters; [proj_flags] is a
     list telling if the corresponding fields must me declared as coercions
     or subinstances. *)
 
@@ -928,7 +928,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
          List.map (fun d ->
              { d with
                Data.is_coercion = false
-             ; coers = List.map (fun _ -> { Data.pf_subclass = false ; pf_reversible = false ; pf_priority = None ; pf_canonical = true }) d.Data.coers
+             ; proj_flags = List.map (fun _ -> { Data.pf_subclass = false ; pf_reversible = false ; pf_priority = None ; pf_canonical = true }) d.Data.proj_flags
            }) data in
        let structure = interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind records data in
        declare_structure structure in
