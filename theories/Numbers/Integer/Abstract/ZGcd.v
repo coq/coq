@@ -170,13 +170,11 @@ Proof.
   (* First, a version restricted to natural numbers *)
   assert (aux : forall n, 0<=n -> forall m, 0<=m -> Bezout n m (gcd n m)). {
     intros n Hn; pattern n.
-    apply (fun H => strong_right_induction _ H 0); trivial.
-    { unfold Bezout. solve_proper. }
+    apply (fun H => strong_right_induction H 0); trivial.
     clear n Hn. intros n Hn IHn.
     apply le_lteq in Hn; destruct Hn as [Hn|Hn].
     - intros m Hm; pattern m.
-      apply (fun H => strong_right_induction _ H 0); trivial.
-      { unfold Bezout. solve_proper. }
+      apply (fun H => strong_right_induction H 0); trivial.
       clear m Hm. intros m Hm IHm.
       destruct (lt_trichotomy n m) as [LT|[EQ|LT]].
       + (* n < m *)

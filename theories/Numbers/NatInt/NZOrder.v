@@ -363,22 +363,16 @@ some other number has a predecessor. The proof of this fact by regular
 induction does not go through, so we need to use strong
 (course-of-value) induction. *)
 
-Lemma lt_exists_pred_strong :
-  forall z n m, z < m -> m <= n -> exists k, m == S k /\ z <= k.
-Proof.
-intros z n; nzinduct n z.
-- order.
-- intro n; split; intros IH m H1 H2.
-  + apply le_succ_r in H2. destruct H2 as [H2 | H2].
-    * now apply IH. * exists n. now split; [| rewrite <- lt_succ_r; rewrite <- H2].
-  + apply IH. * assumption. * now apply le_le_succ_r.
-Qed.
-
 Theorem lt_exists_pred :
   forall z n, z < n -> exists k, n == S k /\ z <= k.
 Proof.
-intros z n H; apply (lt_exists_pred_strong z n).
-- assumption. - apply le_refl.
+intros z n Hzn. assert (exists m, n <= m) as [m Hnm] by now exists n.
+revert n Hzn Hnm. nzinduct m z.
+- order.
+- intro m; split; intros IH n H1 H2.
+  + apply le_succ_r in H2. destruct H2 as [H2 | H2].
+    * now apply IH. * exists m. now split; [| rewrite <- lt_succ_r; rewrite <- H2].
+  + apply IH. * assumption. * now apply le_le_succ_r.
 Qed.
 
 Lemma lt_succ_pred : forall z n, z < n -> S (P n) == n.
@@ -387,6 +381,51 @@ Proof.
  destruct (lt_exists_pred _ _ H) as (n' & EQ & LE).
  rewrite EQ. now rewrite pred_succ.
 Qed.
+
+Section WF.
+
+Variable z : t.
+
+Let Rlt (n m : t) := z <= n < m.
+Let Rgt (n m : t) := m < n <= z.
+
+Instance Rlt_wd : Proper (eq ==> eq ==> iff) Rlt.
+Proof.
+intros x1 x2 H1 x3 x4 H2; unfold Rlt. now rewrite H1, H2.
+Qed.
+
+Instance Rgt_wd : Proper (eq ==> eq ==> iff) Rgt.
+Proof.
+intros x1 x2 H1 x3 x4 H2; unfold Rgt; now rewrite H1, H2.
+Qed.
+
+Theorem lt_wf : well_founded Rlt.
+Proof.
+intros a. constructor. revert a.
+refine (central_induction _ _ z _ _).
+- solve_proper.
+- intros y [??]. order.
+- intros x. split.
+  + intros IH y [? [? | ->]%lt_succ_r%lt_eq_cases].
+    * now apply IH.
+    * now constructor.
+  + intros IH y [? ?%lt_lt_succ_r]. now apply IH.
+Qed.
+
+Theorem gt_wf : well_founded Rgt.
+Proof.
+intros a. constructor. revert a.
+refine (central_induction _ _ z _ _).
+- solve_proper.
+- intros y [??]. order.
+- intros x. split.
+  + intros IH y [?%lt_succ_l ?]. now apply IH.
+  + intros IH y [[? | <-]%le_succ_l%lt_eq_cases ?].
+    * now apply IH.
+    * now constructor.
+Qed.
+
+End WF.
 
 (** Stronger variant of induction with assumptions n >= 0 (n < 0)
 in the induction step *)
@@ -407,43 +446,22 @@ Let right_step :=   forall n, z <= n -> A n -> A (S n).
 Let right_step' :=  forall n, z <= n -> A' n -> A n.
 Let right_step'' := forall n, A' n <-> A' (S n).
 
-Lemma rs_rs' :  A z -> right_step -> right_step'.
+Theorem strong_right_induction: right_step' -> forall n, z <= n -> A n.
 Proof.
-intros Az RS n H1 H2.
+intros Hstep. refine (well_founded_induction (lt_wf z) _ _).
+intros x IH Hzx. apply Hstep; [trivial|].
+intros y ??. apply IH; [split|]; order.
+Qed.
+
+Theorem right_induction : A z -> right_step -> forall n, z <= n -> A n.
+Proof.
+intros Az RS; apply strong_right_induction.
+intros n H1 H2.
 le_elim H1.
 - apply lt_exists_pred in H1. destruct H1 as [k [H3 H4]].
   rewrite H3. apply RS; trivial. apply H2; trivial.
   rewrite H3; apply lt_succ_diag_r.
 - rewrite <- H1; apply Az.
-Qed.
-
-Lemma rs'_rs'' : right_step' -> right_step''.
-Proof.
-intros RS' n; split; intros H1 m H2 H3.
-- apply lt_succ_r in H3; le_elim H3;
-    [now apply H1 | rewrite H3 in *; now apply RS'].
-- apply H1; [assumption | now apply lt_lt_succ_r].
-Qed.
-
-Lemma rbase : A' z.
-Proof.
-intros m H1 H2. apply le_ngt in H1. false_hyp H2 H1.
-Qed.
-
-Lemma A'A_right : (forall n, A' n) -> forall n, z <= n -> A n.
-Proof.
-intros H1 n H2. apply (H1 (S n)); [assumption | apply lt_succ_diag_r].
-Qed.
-
-Theorem strong_right_induction: right_step' -> forall n, z <= n -> A n.
-Proof.
-intro RS'; apply A'A_right; unfold A'; intro n; nzinduct n z;
-[apply rbase | apply rs'_rs''; apply RS'].
-Qed.
-
-Theorem right_induction : A z -> right_step -> forall n, z <= n -> A n.
-Proof.
-intros Az RS; apply strong_right_induction; now apply rs_rs'.
 Qed.
 
 Theorem right_induction' :
@@ -479,42 +497,19 @@ Let left_step :=   forall n, n < z -> A (S n) -> A n.
 Let left_step' :=  forall n, n <= z -> A' (S n) -> A n.
 Let left_step'' := forall n, A' n <-> A' (S n).
 
-Lemma ls_ls' :  A z -> left_step -> left_step'.
-Proof.
-intros Az LS n H1 H2. le_elim H1.
-- apply LS; trivial. apply H2; [now apply le_succ_l | now apply eq_le_incl].
-- rewrite H1; apply Az.
-Qed.
-
-Lemma ls'_ls'' : left_step' -> left_step''.
-Proof.
-intros LS' n; split; intros H1 m H2 H3.
-- apply le_succ_l in H3. apply lt_le_incl in H3. now apply H1.
-- le_elim H3.
-  + apply le_succ_l in H3. now apply H1.
-  + rewrite <- H3 in *; now apply LS'.
-Qed.
-
-Lemma lbase : A' (S z).
-Proof.
-intros m H1 H2. apply le_succ_l in H2.
-apply le_ngt in H1. false_hyp H2 H1.
-Qed.
-
-Lemma A'A_left : (forall n, A' n) -> forall n, n <= z -> A n.
-Proof.
-intros H1 n H2. apply (H1 n); [assumption | now apply eq_le_incl].
-Qed.
-
 Theorem strong_left_induction: left_step' -> forall n, n <= z -> A n.
 Proof.
-intro LS'; apply A'A_left; unfold A'; intro n; nzinduct n (S z);
-[apply lbase | apply ls'_ls''; apply LS'].
+intros Hstep. refine (well_founded_induction (gt_wf z) _ _).
+intros x IH Hzx. apply Hstep; [trivial|].
+intros y ? ?%le_succ_l. apply IH; [split|]; order.
 Qed.
 
 Theorem left_induction : A z -> left_step -> forall n, n <= z -> A n.
 Proof.
-intros Az LS; apply strong_left_induction; now apply ls_ls'.
+intros Az LS; apply strong_left_induction.
+intros n H1 H2. le_elim H1.
+- apply LS; trivial. apply H2; [now apply le_succ_l | now apply eq_le_incl].
+- rewrite H1; apply Az.
 Qed.
 
 Theorem left_induction' :
@@ -535,7 +530,8 @@ Theorem strong_left_induction' :
 Proof.
 intros R L n.
 destruct (lt_trichotomy n z) as [H | [H | H]].
-- apply strong_left_induction; auto. now apply lt_le_incl.
+- apply strong_left_induction.
+  + trivial. + now apply lt_le_incl.
 - rewrite H; apply R; now apply eq_le_incl.
 - apply R; now apply lt_le_incl.
 Qed.
@@ -613,46 +609,36 @@ Tactic Notation "nzord_induct" ident(n) :=
 Tactic Notation "nzord_induct" ident(n) constr(z) :=
   induction_maker n ltac:(apply order_induction with z).
 
-Section WF.
+(** Induction principles with respect to a measure. *)
 
-Variable z : t.
+Section MeasureInduction.
 
-Let Rlt (n m : t) := z <= n < m.
-Let Rgt (n m : t) := m < n <= z.
+Variable X : Type.
+Variable f : X -> t.
 
-Instance Rlt_wd : Proper (eq ==> eq ==> iff) Rlt.
+Theorem measure_right_induction : forall (A : X -> Type) (z : t),
+  (forall x, z <= f x -> (forall y, z <= f y < f x -> A y) -> A x) ->
+  forall x, z <= f x -> A x.
 Proof.
-intros x1 x2 H1 x3 x4 H2; unfold Rlt. rewrite H1; now rewrite H2.
-Qed.
+  intros A z IH x Hx.
+  enough (H : forall y, f y = f x -> A y) by now apply H.
+  induction (lt_wf z (f x)) as [n _ IH'].
+  intros y Hy. subst n. apply (IH y Hx).
+  intros y' Hy'. now apply (IH' _ Hy').
+Defined.
 
-Instance Rgt_wd : Proper (eq ==> eq ==> iff) Rgt.
+Lemma measure_left_induction : forall (A : X -> Type) (z : t),
+  (forall x, f x <= z -> (forall y, f x < f y <= z -> A y) -> A x) ->
+  forall x, f x <= z -> A x.
 Proof.
-intros x1 x2 H1 x3 x4 H2; unfold Rgt; rewrite H1; now rewrite H2.
-Qed.
+  intros A z IH x Hx.
+  enough (H : forall y, f y = f x -> A y) by now apply H.
+  induction (gt_wf z (f x)) as [n _ IH'].
+  intros y Hy. subst n. apply (IH y Hx).
+  intros y' Hy'. now apply (IH' _ Hy').
+Defined.
 
-Theorem lt_wf : well_founded Rlt.
-Proof.
-unfold well_founded.
-apply (strong_right_induction' _ _ z).
-- intros n H; constructor; intros y [H1 H2].
-  apply nle_gt in H2. elim H2. now apply le_trans with z.
-- intros n H1 H2; constructor; intros m [H3 H4]. now apply H2.
-Qed.
-
-Theorem gt_wf : well_founded Rgt.
-Proof.
-unfold well_founded.
-apply (strong_left_induction' _ _ z).
-- intros n H; constructor; intros y [H1 H2].
-  apply nle_gt in H2.
-  + elim H2.
-  + now apply le_lt_trans with n.
-- intros n H1 H2; constructor; intros m [H3 H4].
-  apply H2.
-  + assumption. + now apply le_succ_l.
-Qed.
-
-End WF.
+End MeasureInduction.
 
 End NZOrderProp.
 

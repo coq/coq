@@ -228,6 +228,21 @@ Lemma mod_mul_r : forall a b c, b~=0 -> c~=0 ->
  a mod (b*c) == a mod b + b*((a/b) mod c).
 Proof. intros. apply mod_mul_r; auto'. Qed.
 
+Lemma add_mul_mod_distr_l : forall a b c d, b~=0 -> 0<=d<c ->
+  (c*a+d) mod (c*b) == c*(a mod b)+d.
+Proof.
+  intros a b c d Hb ?. apply add_mul_mod_distr_l.
+  - apply le_0_l.
+  - assert (H'b := le_0_l b). order.
+  - assumption.
+Qed.
+
+Lemma add_mul_mod_distr_r : forall a b c d, b~=0 -> 0<=d<c ->
+  (a*c+d) mod (b*c) == (a mod b)*c+d.
+Proof.
+  intros a b c d ? ?. now rewrite !(mul_comm _ c), add_mul_mod_distr_l.
+Qed.
+
 (** A last inequality: *)
 
 Theorem div_mul_le:

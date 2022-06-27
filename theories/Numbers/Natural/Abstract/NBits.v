@@ -356,7 +356,7 @@ Qed.
 Lemma bits_inj : forall a b, testbit a === testbit b -> a == b.
 Proof.
  intros a. pattern a.
- apply strong_right_induction with 0;[solve_proper|clear a|apply le_0_l].
+ apply strong_right_induction with 0;[clear a|apply le_0_l].
  intros a _ IH b H.
  destruct (eq_0_gt_0_cases a) as [EQ|LT].
  - rewrite EQ in H |- *. symmetry. apply bits_inj_0.

@@ -297,6 +297,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NStrongRec.v
     theories/Numbers/Natural/Abstract/NSub.v
     theories/Numbers/Natural/Abstract/NDiv.v
+    theories/Numbers/Natural/Abstract/NDiv0.v
     theories/Numbers/Natural/Abstract/NMaxMin.v
     theories/Numbers/Natural/Abstract/NParity.v
     theories/Numbers/Natural/Abstract/NPow.v
@@ -304,6 +305,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NLog.v
     theories/Numbers/Natural/Abstract/NGcd.v
     theories/Numbers/Natural/Abstract/NLcm.v
+    theories/Numbers/Natural/Abstract/NLcm0.v
     theories/Numbers/Natural/Abstract/NBits.v
     theories/Numbers/Natural/Abstract/NProperties.v
     theories/Numbers/Natural/Binary/NBinary.v

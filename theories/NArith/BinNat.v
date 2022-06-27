@@ -884,10 +884,16 @@ Proof.
  - apply pos_ldiff_spec.
 Qed.
 
+Lemma div_0_r a : a / 0 = 0.
+Proof. now destruct a. Qed.
+
+Lemma mod_0_r a : a mod 0 = a.
+Proof. now destruct a. Qed.
+
 (** Instantiation of generic properties of advanced functions
     (pow, sqrt, log2, div, gcd, ...) *)
 
-Include NExtraProp.
+Include NExtraPreProp <+ NExtraProp0.
 
 (** In generic statements, the predicates [lt] and [le] have been
   favored, whereas [gt] and [ge] don't even exist in the abstract
