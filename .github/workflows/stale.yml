@@ -5,9 +5,14 @@ on:
     # Every workday at 2am
     - cron: '0 2 * * 1-5'
 
+permissions:
+  contents: read
+
 jobs:
   stale_prs:
     # Do not run on forks (we want this request to happen only once every night)
+    permissions:
+      contents: none
     if: github.repository_owner == 'coq'
     runs-on: ubuntu-latest
     steps:

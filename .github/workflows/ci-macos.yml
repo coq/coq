@@ -2,6 +2,9 @@ name: GitHub macOS CI
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   macOS:
     runs-on: macOS-10.15
