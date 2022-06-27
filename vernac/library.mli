@@ -68,9 +68,6 @@ val loaded_libraries : unit -> DirPath.t list
   (** - Return the full filename of a loaded library. *)
 val library_full_filename : DirPath.t -> string
 
-  (** - Overwrite the filename of all libraries (used when restoring a state) *)
-val overwrite_library_filenames : string -> unit
-
 (** {6 Native compiler. } *)
 val native_name_from_filename : string -> string
 
