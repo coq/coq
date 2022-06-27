@@ -788,13 +788,6 @@ let warn_future_coercion_class_constructor =
     ~default:CWarnings.AsError
     Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
 
-(* deprecated in 8.16, to be removed at the end of the deprecation phase
-   (c.f., https://github.com/coq/coq/pull/15802 ) *)
-let warn_future_coercion_class_field =
-  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
-      str "A coercion will be introduced in future versions when using ':>' in 'Class' declarations. "
-      ++ str "Use '#[global] Existing Instance field.' instead if you don't want the coercion.")
-
 (** [declare_class] will prepare and declare a [Class]. This is done in
    2 steps:
 
@@ -822,8 +815,6 @@ let warn_future_coercion_class_field =
 let declare_class ~univs params inds def data =
   let id, idbuild, rdata, is_coercion, coers, inhabitant_id = get_class_params data in
   if is_coercion then warn_future_coercion_class_constructor ();
-  if List.exists (fun pf -> pf <> None) coers then
-    warn_future_coercion_class_field ();
   let fields = rdata.DataR.fields in
   let map ind =
     let map decl b y = {
