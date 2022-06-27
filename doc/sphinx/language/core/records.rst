@@ -18,14 +18,15 @@ Defining record types
 .. cmd:: {| Record | Structure } @record_definition
    :name: Record; Structure
 
-   .. insertprodn record_definition field_spec
+   .. insertprodn record_definition of_type_inst
 
    .. prodn::
       record_definition ::= {? > } @ident_decl {* @binder } {? : @sort } {? := {? @ident } %{ {*; @record_field } {? ; } %} {? as @ident } }
       record_field ::= {* #[ {*, @attribute } ] } @name {? @field_spec } {? %| @natural }
-      field_spec ::= {* @binder } @of_type
+      field_spec ::= {* @binder } @of_type_inst
       | {* @binder } := @term
-      | {* @binder } @of_type := @term
+      | {* @binder } @of_type_inst := @term
+      of_type_inst ::= {| : | :> | :: | ::> } @type
 
    Defines a non-recursive record type, creating projections for each field
    that has a name other than `_`. The field body and type can depend on previous
@@ -85,20 +86,28 @@ Defining record types
      :n:`| @natural`
        Specifies the priority of the field.  It is only allowed in :cmd:`Class` commands.
 
-   In :n:`@field_spec`:
+     :n:`:`
+       Specifies the type of the field.
 
-     :n:`:>` in :n:`@of_type`
+     :n:`:>`
        If specified, the field is declared as a coercion from the record name
        to the class of the field type. See :ref:`coercions`.
        Note that this currently does something else in :cmd:`Class` commands.
 
-     - :n:`{+ @binder } : @of_type` is equivalent to
-       :n:`: forall {+ @binder } , @of_type`
+     :n:`::`
+       If specified, the field is declared a typeclass instance of the class
+       of the field type. See :ref:`typeclasses`.
+
+     :n:`::>`
+       Acts as a combination of :n:`::` and :n:`:>`.
+
+     - :n:`{+ @binder } : @of_type_inst` is equivalent to
+       :n:`: forall {+ @binder } , @of_type_inst`
 
      - :n:`{+ @binder } := @term` is equivalent to
        :n:`:= fun {+ @binder } => @term`
 
-     - :n:`{+ @binder } @of_type := @term` is equivalent to
+     - :n:`{+ @binder } @of_type_inst := @term` is equivalent to
        :n:`: forall {+ @binder } , @type := fun {+ @binder } => @term`
 
      :n:`:= @term`, if present, gives the value of the field, which may depend

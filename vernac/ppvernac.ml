@@ -523,22 +523,25 @@ let pr_lconstrarg c =
   spc () ++ pr_lconstr c
 let pr_intarg n = spc () ++ int n
 
-let pr_oc = function
-  | NoInstance -> str" :"
-  | BackInstance -> str" :>"
+let pr_oc coe ins = match coe, ins with
+  | NoCoercion, NoInstance -> str" :"
+  | AddCoercion, NoInstance -> str" :>"
+  | NoCoercion, BackInstance -> str" ::"
+  | AddCoercion, BackInstance -> str" ::>"
+  | _, BackInstanceWarning -> str" :>"  (* remove this line at end of deprecation phase *)
 
-let pr_record_field (x, { rf_subclass = oc ; rf_priority = pri ; rf_notation = ntn }) =
+let pr_record_field (x, { rf_coercion = coe ; rf_instance = ins ; rf_priority = pri ; rf_notation = ntn }) =
   let prx = match x with
     | AssumExpr (id,binders,t) ->
       hov 1 (pr_lname id ++
              pr_binders_arg binders ++ spc() ++
-             pr_oc oc ++ spc() ++
+             pr_oc coe ins ++ spc() ++
              pr_lconstr_expr t)
     | DefExpr(id,binders,b,opt) -> (match opt with
         | Some t ->
           hov 1 (pr_lname id ++
                  pr_binders_arg binders ++ spc() ++
-                 pr_oc oc ++ spc() ++
+                 pr_oc coe ins ++ spc() ++
                  pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
         | None ->
           hov 1 (pr_lname id ++ str" :=" ++ spc() ++
@@ -842,9 +845,8 @@ let pr_vernac_expr v =
     return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                    pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
   | VernacInductive (f,l) ->
-    let pr_constructor (coe,(id,c)) =
-      hov 2 (pr_lident id ++ str" " ++
-             str(match coe with AddCoercion -> ":>" | NoCoercion -> ":") ++
+    let pr_constructor ((coe,ins),(id,c)) =
+      hov 2 (pr_lident id ++ pr_oc coe ins ++
              Flags.without_option Flags.beautify pr_spc_lconstr c)
     in
     let pr_constructor_list l = match l with

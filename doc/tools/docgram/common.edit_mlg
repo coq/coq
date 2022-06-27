@@ -660,6 +660,14 @@ of_type: [
 | [ ":" | ":>" ] type
 ]
 
+of_type_inst: [
+| DELETENT
+]
+
+of_type_inst: [
+| [ ":" | ":>" | "::" | "::>" ] type
+]
+
 def_body: [
 | DELETE binders ":=" reduce lconstr
 | REPLACE binders ":" lconstr ":=" reduce lconstr
@@ -1459,10 +1467,10 @@ binder_tactic: [
 ]
 
 field_body: [
-| REPLACE binders of_type lconstr
-| WITH binders of_type
-| REPLACE binders of_type lconstr ":=" lconstr
-| WITH binders of_type ":=" lconstr
+| REPLACE binders of_type_inst lconstr
+| WITH binders of_type_inst
+| REPLACE binders of_type_inst lconstr ":=" lconstr
+| WITH binders of_type_inst ":=" lconstr
 ]
 
 assumpt: [
@@ -1471,8 +1479,8 @@ assumpt: [
 ]
 
 constructor_type: [
-| REPLACE binders [ of_type lconstr | ]
-| WITH binders OPT of_type
+| REPLACE binders [ of_type_inst lconstr | ]
+| WITH binders OPT of_type_inst
 ]
 
 (* todo: is this really correct? Search for "Pvernac.register_proof_mode" *)

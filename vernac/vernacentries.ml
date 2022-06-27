@@ -920,10 +920,9 @@ let preprocess_inductive_decl ~atts kind indl =
     in
     if fst id = AddCoercion then
       user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
-    let (coe, (lid, ce)) = l in
-    let coe' = match coe with AddCoercion -> BackInstance | NoCoercion -> NoInstance in
+    let ((rf_coercion, rf_instance), (lid, ce)) = l in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
-            { rf_subclass = coe' ; rf_reversible = None ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
+            { rf_coercion ; rf_reversible = None ; rf_instance ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
     let recordl = [id, bl, c, None, [f], None] in
     let kind = Class true in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in

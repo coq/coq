@@ -326,6 +326,22 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
 
 (* We build projections *)
 
+(** Declare projection [ref] over [from] a coercion
+   or a typeclass instance according to [flags]. *)
+(* remove the last argument (it will become alway true) after deprecation phase
+   (started in 8.17, c.f. https://github.com/coq/coq/pull/16230) *)
+let declare_proj_coercion_instance ~flags ref from ~poly ~with_coercion =
+  if with_coercion && flags.Data.pf_coercion then begin
+    let cl = ComCoercion.class_of_global from in
+    ComCoercion.try_add_new_coercion_with_source ref ~local:false ~poly ~nonuniform:false ~reversible:flags.Data.pf_reversible ~source:cl
+  end;
+  if flags.Data.pf_instance then begin
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let info = Typeclasses.{ hint_priority = flags.Data.pf_priority; hint_pattern = None } in
+    Classes.declare_instance ~warn:true env sigma (Some info) SuperGlobal ref
+  end
+
 (* TODO: refactor the declaration part here; this requires some
    surgery as Evarutil.finalize is called too early in the path *)
 (** This builds and _declares_ a named projection, the code looks
@@ -382,16 +398,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   let refi = GlobRef.ConstRef kn in
   Impargs.maybe_declare_manual_implicits false refi impls;
-  if flags.Data.pf_coercion then begin
-    let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
-    ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~nonuniform:false ~reversible:flags.Data.pf_reversible ~source:cl
-  end;
-  if flags.Data.pf_instance then begin
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    let info = Typeclasses.{ hint_priority = flags.Data.pf_priority; hint_pattern = None } in
-    Classes.declare_instance ~warn:true env sigma (Some info) SuperGlobal refi
-  end;
+  declare_proj_coercion_instance ~flags refi (GlobRef.IndRef indsp) ~poly ~with_coercion:true;
   let i = if is_local_assum decl then i+1 else i in
   (Some kn, i, Projection term::subst)
 
@@ -608,12 +615,12 @@ let warn_future_coercion_class_constructor =
     ~default:CWarnings.AsError
     Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
 
-(* deprecated in 8.16, to be removed at the end of the deprecation phase
-   (c.f., https://github.com/coq/coq/pull/15802 ) *)
+(* deprecated in 8.17, to be removed at the end of the deprecation phase
+   (c.f., https://github.com/coq/coq/pull/16230 ) *)
 let warn_future_coercion_class_field =
   CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
-      str "A coercion will be introduced in future versions when using ':>' in 'Class' declarations. "
-      ++ str "Use '#[global] Existing Instance field.' instead if you don't want the coercion.")
+    strbrk "A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. "
+    ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17).")
 
 let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite (records : Ast.t list) =
   let open Vernacexpr in
@@ -635,19 +642,22 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     | _ -> implicits_of_context params @ impls in
   let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
   let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
-    let proj_flags = List.map (fun (_, { rf_subclass ; rf_reversible ; rf_priority ; rf_canonical }) ->
+    let proj_flags = List.map (fun (_, rf) ->
       let pf_coercion, pf_reversible =
-        if kind_class kind <> NotClass then false, false else
-        match rf_subclass with
-        | Vernacexpr.BackInstance -> true, Option.default true rf_reversible
-        | Vernacexpr.NoInstance ->
-          if rf_reversible <> None then
+        match rf.rf_coercion with
+        (* replace "kind_class kind = NotClass" with true after deprecation phase *)
+        | Vernacexpr.AddCoercion -> kind_class kind = NotClass, Option.default true rf.rf_reversible
+        | Vernacexpr.NoCoercion ->
+          if rf.rf_reversible <> None then
             Attributes.(unsupported_attributes
               [CAst.make ("reversible (without :>)",VernacFlagEmpty)]);
           false, false in
-      let pf_instance = kind_class kind <> NotClass && rf_subclass <> Vernacexpr.NoInstance in
-      let pf_priority = rf_priority in
-      { Data.pf_coercion; pf_reversible; pf_instance; pf_priority; pf_canonical = rf_canonical })
+      let pf_instance =
+        match rf.rf_instance with NoInstance -> false | BackInstance -> true
+        | BackInstanceWarning -> kind_class kind <> NotClass in
+      let pf_priority = rf.rf_priority in
+      let pf_canonical = rf.rf_canonical in
+      Data.{ pf_coercion; pf_reversible; pf_instance; pf_priority; pf_canonical })
       cfs
     in
     let inhabitant_id =
@@ -659,7 +669,7 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     let is_coercion = match is_coercion with AddCoercion -> true | NoCoercion -> false in
     if kind_class kind <> NotClass then begin
       if is_coercion then warn_future_coercion_class_constructor ();
-      if List.exists (function (_, Vernacexpr.{ rf_subclass = BackInstance; _ }) -> true | _ -> false) cfs then
+      if List.exists (function (_, Vernacexpr.{ rf_instance = BackInstanceWarning; _ }) -> true | _ -> false) cfs then
         warn_future_coercion_class_field ()
     end;
     { Data.id = name.CAst.v; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }
@@ -760,7 +770,7 @@ let get_class_params = function
 
 (* declare definitional class (typeclasses that are not record) *)
 (* [data] is a list with a single [Data.t] with a single field (in [Data.rdata])
-   and [Data.is_coercion] must be [false] *)
+   and [Data.is_coercion] must be [NoCoercion] *)
 let declare_class_constant ~univs paramimpls params data =
   let id, _, rdata, is_coercion, proj_flags, inhabitant_id = get_class_params data in
   assert (not is_coercion);  (* should be ensured by caller *)
@@ -800,19 +810,10 @@ let declare_class_constant ~univs paramimpls params data =
   Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
     [Tacred.EvalConstRef cst] false;
-  (* uncomment after deprecation phase (started in 8.17) *)
-  (* if proj_flags.Data.pf_coercion then begin
-   *   let csb = Global.lookup_constant proj_cst in
-   *   let poly = Declareops.constant_is_polymorphic csb in
-   *   let cl = ComCoercion.class_of_global (GlobRef.ConstRef proj_cst) in
-   *   ComCoercion.try_add_new_coercion_with_source cref ~local:false ~poly ~nonuniform:false ~reversible:proj_flags.Data.pf_reversible ~source:cl
-   * end; *)
-  if proj_flags.Data.pf_instance then begin
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    let info = Typeclasses.{ hint_priority = proj_flags.Data.pf_priority; hint_pattern = None } in
-    Classes.declare_instance ~warn:true env sigma (Some info) SuperGlobal (GlobRef.ConstRef proj_cst)
-  end;
+  let () =
+    let csb = Global.lookup_constant cst in
+    let poly = Declareops.constant_is_polymorphic csb in
+    declare_proj_coercion_instance ~flags:proj_flags (GlobRef.ConstRef proj_cst) cref ~poly ~with_coercion:false in
   let m = {
     meth_name = Name proj_name;
     meth_info = None;
