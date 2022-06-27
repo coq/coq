@@ -185,7 +185,7 @@ type 'a with_coercion = coercion_flag * 'a
 (* Attributes of a record field declaration *)
 type record_field_attr = {
   rf_subclass: instance_flag; (* the projection is an implicit coercion or an instance *)
-  rf_reverse: bool option;
+  rf_reversible: bool option;
   rf_priority: int option; (* priority of the instance, if relevant *)
   rf_notation: decl_notation list;
   rf_canonical: bool; (* use this projection in the search for canonical instances *)

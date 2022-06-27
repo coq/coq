@@ -614,12 +614,12 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     | _ -> implicits_of_context params @ impls in
   let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
   let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
-    let coers = List.map (fun (_, { rf_subclass ; rf_reverse ; rf_priority ; rf_canonical }) ->
+    let coers = List.map (fun (_, { rf_subclass ; rf_reversible ; rf_priority ; rf_canonical }) ->
       let pf_subclass, pf_reversible =
         match rf_subclass with
-        | Vernacexpr.BackInstance -> true, Option.default true rf_reverse
+        | Vernacexpr.BackInstance -> true, Option.default true rf_reversible
         | Vernacexpr.NoInstance ->
-          if rf_reverse <> None then
+          if rf_reversible <> None then
             Attributes.(unsupported_attributes
               [CAst.make ("reversible (without :>)",VernacFlagEmpty)]);
           false, false in
