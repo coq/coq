@@ -386,6 +386,12 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
     let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
     ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~nonuniform:false ~reversible:flags.Data.pf_reversible ~source:cl
   end;
+  if flags.Data.pf_instance then begin
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let info = Typeclasses.{ hint_priority = flags.Data.pf_priority; hint_pattern = None } in
+    Classes.declare_instance ~warn:true env sigma (Some info) SuperGlobal refi
+  end;
   let i = if is_local_assum decl then i+1 else i in
   (Some kn, i, Projection term::subst)
 
@@ -595,6 +601,20 @@ let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
+(* deprecated in 8.16, to be removed at the end of the deprecation phase
+   (c.f., https://github.com/coq/coq/pull/15802 ) *)
+let warn_future_coercion_class_constructor =
+  CWarnings.create ~name:"future-coercion-class-constructor" ~category:"records"
+    ~default:CWarnings.AsError
+    Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
+
+(* deprecated in 8.16, to be removed at the end of the deprecation phase
+   (c.f., https://github.com/coq/coq/pull/15802 ) *)
+let warn_future_coercion_class_field =
+  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
+      str "A coercion will be introduced in future versions when using ':>' in 'Class' declarations. "
+      ++ str "Use '#[global] Existing Instance field.' instead if you don't want the coercion.")
+
 let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite (records : Ast.t list) =
   let open Vernacexpr in
   let () = check_unique_names records in
@@ -637,6 +657,11 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
       | Some n, _ -> n
     in
     let is_coercion = match is_coercion with AddCoercion -> true | NoCoercion -> false in
+    if kind_class kind <> NotClass then begin
+      if is_coercion then warn_future_coercion_class_constructor ();
+      if List.exists (function (_, Vernacexpr.{ rf_subclass = BackInstance; _ }) -> true | _ -> false) cfs then
+        warn_future_coercion_class_field ()
+    end;
     { Data.id = name.CAst.v; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }
   in
   let data = List.map2 map data records in
@@ -729,9 +754,7 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
 
 let get_class_params = function
   | [{ Data.id; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }] ->
-    let hint { Data.pf_instance; pf_priority } =
-      if pf_instance then Some { hint_priority = pf_priority; hint_pattern = None } else None in
-    id, idbuild, rdata, is_coercion, List.map hint proj_flags, inhabitant_id
+    id, idbuild, rdata, is_coercion, proj_flags, inhabitant_id
   | _ ->
     CErrors.user_err (str "Mutual definitional classes are not supported.")
 
@@ -742,11 +765,11 @@ let declare_class_constant ~univs paramimpls params data =
   let id, _, rdata, is_coercion, proj_flags, inhabitant_id = get_class_params data in
   assert (not is_coercion);  (* should be ensured by caller *)
   let implfs = rdata.DataR.implfs in
-  let field, binder, proj_name = match rdata.DataR.fields with
+  let field, binder, proj_name, proj_flags = match rdata.DataR.fields, proj_flags with
     | [ LocalAssum ({binder_name=Name proj_name} as binder, field)
-      | LocalDef ({binder_name=Name proj_name} as binder, _, field) ] ->
+      | LocalDef ({binder_name=Name proj_name} as binder, _, field) ], [proj_flags] ->
       let binder = {binder with binder_name=Name inhabitant_id} in
-      field, binder, proj_name
+      field, binder, proj_name, proj_flags
     | _ -> assert false in  (* should be ensured by caller *)
   let class_body = it_mkLambda_or_LetIn field params in
   let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
@@ -777,20 +800,25 @@ let declare_class_constant ~univs paramimpls params data =
   Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
     [Tacred.EvalConstRef cst] false;
-  let sub = List.hd proj_flags in
+  (* uncomment after deprecation phase (started in 8.17) *)
+  (* if proj_flags.Data.pf_coercion then begin
+   *   let csb = Global.lookup_constant proj_cst in
+   *   let poly = Declareops.constant_is_polymorphic csb in
+   *   let cl = ComCoercion.class_of_global (GlobRef.ConstRef proj_cst) in
+   *   ComCoercion.try_add_new_coercion_with_source cref ~local:false ~poly ~nonuniform:false ~reversible:proj_flags.Data.pf_reversible ~source:cl
+   * end; *)
+  if proj_flags.Data.pf_instance then begin
+    let env = Global.env () in
+    let sigma = Evd.from_env env in
+    let info = Typeclasses.{ hint_priority = proj_flags.Data.pf_priority; hint_pattern = None } in
+    Classes.declare_instance ~warn:true env sigma (Some info) SuperGlobal (GlobRef.ConstRef proj_cst)
+  end;
   let m = {
     meth_name = Name proj_name;
-    meth_info = sub;
+    meth_info = None;
     meth_const = Some proj_cst;
   } in
   [cref], [m]
-
-(* deprecated in 8.16, to be removed at the end of the deprecation phase
-   (c.f., https://github.com/coq/coq/pull/15802 ) *)
-let warn_future_coercion_class_constructor =
-  CWarnings.create ~name:"future-coercion-class-constructor" ~category:"records"
-    ~default:CWarnings.AsError
-    Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
 
 (** [declare_class] will prepare and declare a [Class]. This is done in
    2 steps:
@@ -817,18 +845,17 @@ let warn_future_coercion_class_constructor =
 
   *)
 let declare_class ~univs params inds def data =
-  let id, idbuild, rdata, is_coercion, proj_flags, inhabitant_id = get_class_params data in
-  if is_coercion then warn_future_coercion_class_constructor ();
+  let id, idbuild, rdata, is_coercion, _, inhabitant_id = get_class_params data in
   let fields = rdata.DataR.fields in
   let map ind =
-    let map decl b y = {
+    let map decl y = {
       meth_name = RelDecl.get_name decl;
-      meth_info = b;
+      meth_info = None;
       meth_const = y;
     } in
     let l = match ind with
       | GlobRef.IndRef ind ->
-         List.map3 map (List.rev fields) proj_flags (Structure.find_projections ind)
+         List.map2 map (List.rev fields) (Structure.find_projections ind)
       | _ -> def in
     ind, l
   in
@@ -855,13 +882,12 @@ let declare_class ~univs params inds def data =
         cl_props = fields;
         cl_projs = projs }
     in
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    Classes.add_class env sigma k
+    Classes.add_class k
   in
   List.iter map data
 
-let add_constant_class env sigma cst =
+let add_constant_class cst =
+  let env = Global.env () in
   let ty, univs = Typeops.type_of_global_in_context env (GlobRef.ConstRef cst) in
   let r = (Environ.lookup_constant cst env).const_relevance in
   let ctx, _ = decompose_prod_assum ty in
@@ -877,11 +903,12 @@ let add_constant_class env sigma cst =
       cl_unique = typeclasses_unique ()
     }
   in
-  Classes.add_class env sigma tc;
+  Classes.add_class tc;
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
     [Tacred.EvalConstRef cst] false
 
-let add_inductive_class env sigma ind =
+let add_inductive_class ind =
+  let env = Global.env () in
   let mind, oneind = Inductive.lookup_mind_specif env ind in
   let k =
     let ctx = oneind.mind_arity_ctxt in
@@ -897,20 +924,18 @@ let add_inductive_class env sigma ind =
         cl_strict = typeclasses_strict ();
         cl_unique = typeclasses_unique () }
   in
-  Classes.add_class env sigma k
+  Classes.add_class k
 
 let warn_already_existing_class =
   CWarnings.create ~name:"already-existing-class" ~category:"automation" Pp.(fun g ->
       Printer.pr_global g ++ str " is already declared as a typeclass.")
 
 let declare_existing_class g =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
   if Typeclasses.is_class g then warn_already_existing_class g
   else
     match g with
-    | GlobRef.ConstRef x -> add_constant_class env sigma x
-    | GlobRef.IndRef x -> add_inductive_class env sigma x
+    | GlobRef.ConstRef x -> add_constant_class x
+    | GlobRef.IndRef x -> add_inductive_class x
     | _ -> user_err
              (Pp.str"Unsupported class type, only constants and inductives are allowed.")
 

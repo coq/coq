@@ -70,7 +70,7 @@ val declare_new_instance
   -> Vernacexpr.hint_info_expr
   -> unit
 
-val add_class : env -> Evd.evar_map -> typeclass -> unit
+val add_class : typeclass -> unit
 
 (** Setting opacity *)
 
