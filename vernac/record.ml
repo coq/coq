@@ -558,9 +558,16 @@ let check_unique_names records =
   | [] -> ()
   | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id) ++ str ".")
 
+type kind_class = NotClass | RecordClass | DefClass
+
+let kind_class =
+  let open Vernacexpr in
+  function Class true -> DefClass | Class false -> RecordClass
+  | Inductive_kw | CoInductive | Variant | Record | Structure -> NotClass
+
 let check_priorities kind records =
   let open Vernacexpr in
-  let isnot_class = match kind with Class false -> false | _ -> true in
+  let isnot_class = kind_class kind <> RecordClass in
   let has_priority { Ast.cfs; _ } =
     List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
   in
@@ -582,13 +589,6 @@ let extract_record_data records =
     ps
   in
   ps, data
-
-type kind_class = NotClass | RecordClass | DefClass
-
-let kind_class =
-  let open Vernacexpr in
-  function Class true -> DefClass | Class false -> RecordClass
-  | Inductive_kw | CoInductive | Variant | Record | Structure -> NotClass
 
 let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
