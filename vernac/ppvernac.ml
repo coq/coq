@@ -837,14 +837,14 @@ let pr_vernac_expr v =
     let n = List.length (List.flatten (List.map fst (List.map snd l))) in
     let pr_params (c, (xl, t)) =
       hov 2 (prlist_with_sep sep pr_ident_decl xl ++ spc() ++
-             (if c then str":>" else str":" ++ spc() ++ pr_lconstr_expr t)) in
+             str(match c with AddCoercion -> ":>" | NoCoercion -> ":") ++ spc() ++ pr_lconstr_expr t) in
     let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
     return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                    pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
   | VernacInductive (f,l) ->
     let pr_constructor (coe,(id,c)) =
       hov 2 (pr_lident id ++ str" " ++
-             (if coe then str":>" else str":") ++
+             str(match coe with AddCoercion -> ":>" | NoCoercion -> ":") ++
              Flags.without_option Flags.beautify pr_spc_lconstr c)
     in
     let pr_constructor_list l = match l with
@@ -860,7 +860,7 @@ let pr_vernac_expr v =
     let pr_oneind key (((coe,iddecl),(indupar,indpar),s,lc),ntn) =
       hov 0 (
         str key ++ spc() ++
-        (if coe then str"> " else str"") ++ pr_cumul_ident_decl iddecl ++
+        str(match coe with AddCoercion -> "> " | NoCoercion -> "") ++ pr_cumul_ident_decl iddecl ++
         pr_and_type_binders_arg indupar ++
         pr_opt (fun p -> str "|" ++ spc() ++ pr_and_type_binders_arg p) indpar ++
         pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++

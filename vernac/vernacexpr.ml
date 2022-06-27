@@ -105,7 +105,7 @@ type search_restriction =
   | SearchOutside of qualid list
 
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
-type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
+type coercion_flag  = AddCoercion | NoCoercion
 type instance_flag  = BackInstance | NoInstance
 
 type export_flag = Lib.export_flag = Export | Import

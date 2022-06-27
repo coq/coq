@@ -633,6 +633,7 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
       | None, _ -> Namegen.next_ident_away name.CAst.v (Termops.vars_of_env (Global.env()))
       | Some n, _ -> n
     in
+    let is_coercion = match is_coercion with AddCoercion -> true | NoCoercion -> false in
     { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers; inhabitant_id }
   in
   let data = List.map2 map data records in

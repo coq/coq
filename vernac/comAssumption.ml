@@ -29,7 +29,10 @@ let declare_variable is_coe ~kind typ univs imps impl {CAst.v=name} =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = Classes.declare_instance env sigma None Hints.Local r in
-  let () = if is_coe then ComCoercion.try_add_new_coercion r ~local:true ~poly:false ~nonuniform:false ~reversible:true in
+  let () =
+    if is_coe = Vernacexpr.AddCoercion then
+      ComCoercion.try_add_new_coercion
+        r ~local:true ~poly:false ~nonuniform:false ~reversible:true in
   ()
 
 let instance_of_univ_entry = function
@@ -62,7 +65,10 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) imps nl {CAst.
     | Locality.ImportNeedQualified -> true
     | Locality.ImportDefaultBehavior -> false
   in
-  let () = if is_coe then ComCoercion.try_add_new_coercion gr ~local ~poly ~nonuniform:false ~reversible:true in
+  let () =
+    if is_coe = Vernacexpr.AddCoercion then
+      ComCoercion.try_add_new_coercion
+        gr ~local ~poly ~nonuniform:false ~reversible:true in
   let inst = instance_of_univ_entry univs in
   (gr,inst)
 
@@ -191,7 +197,7 @@ let context_insection sigma ~poly ctx =
     let () = match d with
       | name, None, t, impl ->
         let kind = Decls.Context in
-        declare_variable false ~kind t univs [] impl (CAst.make name)
+        declare_variable NoCoercion ~kind t univs [] impl (CAst.make name)
       | name, Some b, t, impl ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         (* XXX Fixme: Use Declare.prepare_definition *)

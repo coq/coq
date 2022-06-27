@@ -419,8 +419,8 @@ GRAMMAR EXTEND Gram
   ;
 *)
   opt_coercion:
-    [ [ ">" -> { true }
-      |  -> { false } ] ]
+    [ [ ">" -> { AddCoercion }
+      |  -> { NoCoercion } ] ]
   ;
   (* (co)-fixpoints *)
   fix_definition:
@@ -508,15 +508,15 @@ GRAMMAR EXTEND Gram
   ;
   assumpt:
     [ [ idl = LIST1 ident_decl; oc = of_type; c = lconstr ->
-        { (oc <> NoInstance,(idl,c)) } ] ]
+        { ((if oc <> NoInstance then AddCoercion else NoCoercion),(idl,c)) } ] ]
   ;
 
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type; c = lconstr ->
-                    { fun l id -> (coe <> NoInstance,(id,mkProdCN ~loc l c)) }
+                    { fun l id -> ((if coe <> NoInstance then AddCoercion else NoCoercion),(id,mkProdCN ~loc l c)) }
             |  ->
-                 { fun l id -> (false,(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
+                 { fun l id -> (NoCoercion,(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
          -> { t l }
      ]]
 ;

@@ -918,10 +918,10 @@ let preprocess_inductive_decl ~atts kind indl =
       | bl, None -> bl
       | _ -> CErrors.user_err Pp.(str "Definitional classes do not support the \"|\" syntax.")
     in
-    if fst id then
+    if fst id = AddCoercion then
       user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
     let (coe, (lid, ce)) = l in
-    let coe' = if coe then BackInstance else NoInstance in
+    let coe' = match coe with AddCoercion -> BackInstance | NoCoercion -> NoInstance in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
             { rf_subclass = coe' ; rf_reverse = None ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
     let recordl = [id, bl, c, None, [f], None] in
@@ -964,7 +964,7 @@ let preprocess_inductive_decl ~atts kind indl =
     | Variant | Inductive_kw | CoInductive -> ()
     in
     let check_name ((na, _, _, _), _) = match na with
-    | (true, _) ->
+    | (AddCoercion, _) ->
       user_err (str "Variant types do not handle the \"> Name\" \
         syntax, which is reserved for records. Use the \":>\" \
         syntax on constructors instead.")

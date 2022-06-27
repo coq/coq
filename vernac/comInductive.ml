@@ -713,7 +713,7 @@ let eq_params (up1,p1) (up2,p2) =
 
 let extract_coercions indl =
   let mkqid (_,({CAst.v=id},_)) = qualid_of_ident id in
-  let extract lc = List.filter (fun (iscoe,_) -> iscoe) lc in
+  let extract lc = List.filter (fun (iscoe,_) -> iscoe = Vernacexpr.AddCoercion) lc in
   List.map mkqid (List.flatten(List.map (fun (_,_,_,lc) -> extract lc) indl))
 
 let extract_params indl =
