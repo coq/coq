@@ -129,8 +129,9 @@ end
 
 module Data = struct
   type projection_flags = {
-    pf_subclass: bool;
+    pf_coercion: bool;
     pf_reversible: bool;
+    pf_instance: bool;
     pf_priority: int option;
     pf_canonical: bool;
   }
@@ -253,9 +254,9 @@ let warn_cannot_define_projection =
          (fun msg -> hov 0 msg)
 
 (* If a projection is not definable, we throw an error if the user
-asked it to be a coercion. Otherwise, we just print an info
+asked it to be a coercion or instance. Otherwise, we just print an info
 message. The user might still want to name the field of the record. *)
-let warning_or_error ~info coe indsp err =
+let warning_or_error ~info flags indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
         let s,have = if List.length projs > 1 then "s","were" else "","was" in
@@ -278,7 +279,7 @@ let warning_or_error ~info coe indsp err =
           | _ ->
               (Id.print fi ++ strbrk " cannot be defined because it is not typable.")
   in
-  if coe then user_err ~info st;
+  if flags.Data.pf_coercion || flags.Data.pf_instance then user_err ~info st;
   warn_cannot_define_projection (hov 0 st)
 
 type field_status =
@@ -381,7 +382,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   in
   let refi = GlobRef.ConstRef kn in
   Impargs.maybe_declare_manual_implicits false refi impls;
-  if flags.Data.pf_subclass then begin
+  if flags.Data.pf_coercion then begin
     let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
     ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~nonuniform:false ~reversible:flags.Data.pf_reversible ~source:cl
   end;
@@ -404,7 +405,7 @@ let build_proj env mib indsp primitive x rp lifted_fields ~poly paramdecls param
             subst nfi ti i indsp mib lifted_fields x rp
       with NotDefinable why as exn ->
         let _, info = Exninfo.capture exn in
-        warning_or_error ~info flags.Data.pf_subclass indsp why;
+        warning_or_error ~info flags indsp why;
         (None,i,NoProjection fi::subst)
   in
   (nfi - 1, i,
@@ -615,7 +616,8 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
   let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
   let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
     let proj_flags = List.map (fun (_, { rf_subclass ; rf_reversible ; rf_priority ; rf_canonical }) ->
-      let pf_subclass, pf_reversible =
+      let pf_coercion, pf_reversible =
+        if kind_class kind <> NotClass then false, false else
         match rf_subclass with
         | Vernacexpr.BackInstance -> true, Option.default true rf_reversible
         | Vernacexpr.NoInstance ->
@@ -623,8 +625,9 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
             Attributes.(unsupported_attributes
               [CAst.make ("reversible (without :>)",VernacFlagEmpty)]);
           false, false in
+      let pf_instance = kind_class kind <> NotClass && rf_subclass <> Vernacexpr.NoInstance in
       let pf_priority = rf_priority in
-      { Data.pf_subclass; pf_reversible; pf_priority; pf_canonical = rf_canonical })
+      { Data.pf_coercion; pf_reversible; pf_instance; pf_priority; pf_canonical = rf_canonical })
       cfs
     in
     let inhabitant_id =
@@ -726,8 +729,8 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
 
 let get_class_params = function
   | [{ Data.id; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }] ->
-    let hint { Data.pf_subclass; pf_priority } =
-      if pf_subclass then Some { hint_priority = pf_priority; hint_pattern = None } else None in
+    let hint { Data.pf_instance; pf_priority } =
+      if pf_instance then Some { hint_priority = pf_priority; hint_pattern = None } else None in
     id, idbuild, rdata, is_coercion, List.map hint proj_flags, inhabitant_id
   | _ ->
     CErrors.user_err (str "Mutual definitional classes are not supported.")
@@ -925,11 +928,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
        (* remove the following block after deprecation phase
           (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
        let data = if kind_class kind = NotClass then data else
-         List.map (fun d ->
-             { d with
-               Data.is_coercion = false
-             ; proj_flags = List.map (fun _ -> { Data.pf_subclass = false ; pf_reversible = false ; pf_priority = None ; pf_canonical = true }) d.Data.proj_flags
-           }) data in
+         List.map (fun d -> { d with Data.is_coercion = false }) data in
        let structure = interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind records data in
        declare_structure structure in
   if kind_class kind <> NotClass then declare_class ~univs params inds def data;
@@ -937,8 +936,9 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
 
 module Internal = struct
   type nonrec projection_flags = Data.projection_flags = {
-    pf_subclass: bool;
+    pf_coercion: bool;
     pf_reversible: bool;
+    pf_instance: bool;
     pf_priority: int option;
     pf_canonical: bool;
   }

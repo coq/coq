@@ -38,8 +38,9 @@ val definition_structure
 
   module Data : sig
     type projection_flags = {
-      pf_subclass: bool;
+      pf_coercion: bool;
       pf_reversible: bool;
+      pf_instance: bool;
       pf_priority: int option;
       pf_canonical: bool;
     }
@@ -90,8 +91,9 @@ val declare_existing_class : GlobRef.t -> unit
    current user Elpi, see https://github.com/LPCIC/coq-elpi/pull/151 *)
 module Internal : sig
   type projection_flags = {
-    pf_subclass: bool;
+    pf_coercion: bool;
     pf_reversible: bool;
+    pf_instance: bool;
     pf_priority: int option;
     pf_canonical: bool;
   }
