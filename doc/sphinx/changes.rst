@@ -435,6 +435,9 @@ Commands and options
   (`#15650 <https://github.com/coq/coq/pull/15650>`_,
   fixes `#15600 <https://github.com/coq/coq/issues/15600>`_,
   by Enrico Tassi).
+
+  .. _816PrintNotation:
+
 - **Added:**
   :cmd:`Print Notation` command that prints the level and
   associativity of a given notation definition string
