@@ -263,7 +263,7 @@ let warn_deprecated_hint_rewrite_without_locality =
     without specifying an explicit locality attribute is therefore deprecated. It is \
     recommended to use \"export\" whenever possible. Use the attributes \
     #[local], #[global] and #[export] depending on your choice. For example: \
-    \"#[export] Hint Rewrite foo : bar.\"")
+    \"#[export] Hint Rewrite foo : bar.\" This is supported since Coq 8.14.")
 
 let default_hint_rewrite_locality () =
   if Global.sections_are_opened () then Hints.Local

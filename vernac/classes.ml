@@ -40,7 +40,8 @@ let warn_deprecated_tc_transparency_without_locality =
    sections without specifying an explicit locality attribute is \
    therefore deprecated. It is recommended to use \"export\" whenever \
    possible. Use the attributes #[local], #[global] and #[export] \
-   depending on your choice. For example: \"#[export] Typeclasses Transparent foo.\"")
+   depending on your choice. For example: \"#[export] Typeclasses Transparent foo.\". \
+   This is supported since Coq 8.15.")
 
 let default_tc_transparency_locality () =
   if Global.sections_are_opened () then Hints.Local
