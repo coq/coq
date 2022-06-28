@@ -43,8 +43,6 @@ type t =
   (** override default browser command [for CoqIDE] *)
   ; withdoc : bool
   (** Build documentation [controls makefile variable]  *)
-  ; byteonly : bool
-  (** Whether to build a byte-only version of Coq *)
   ; bin_annot : bool
   ; annot : bool
   (** OCaml annot options [only relevant to coq_makefile] *)
@@ -56,10 +54,6 @@ type t =
   (** Override Coq's website, used by distributions  *)
   ; warn_error : bool
   (** Enable/disable warn-error in makefile build *)
-  ; dune_profile : string
-  (** Dune profile to use {dev/release}  *)
-  ; install_enabled : bool
-  (** Enable install [set to no when in -profile devel] *)
   ; debug : bool
   (** Debug package and environment detection *)
   }

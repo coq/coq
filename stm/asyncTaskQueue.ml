@@ -118,7 +118,7 @@ module Make(T : Task) () = struct
           | "-load-vernac-source" | "-l" | "-load-vernac-source-verbose" | "-lv"
           | "-require-import" | "-require-export" | "-ri" | "-re"
           | "-load-vernac-object"
-          | "-set" | "-unset" | "-compat" | "-mangle-names" | "-diffs" | "-w"
+          | "-set" | "-unset" | "-compat" | "-mangle-names" | "-diffs"
           | "-async-proofs-cache" | "-async-proofs-j" | "-async-proofs-tac-j"
           | "-async-proofs-private-flags" | "-async-proofs-tactic-error-resilience"
           | "-async-proofs-command-error-resilience" | "-async-proofs-delegation-threshold"
@@ -132,6 +132,7 @@ module Make(T : Task) () = struct
         | ( "-I" | "-nI" | "-include" | "-top" | "-topfile" | "-coqlib" | "-exclude-dir"
           | "-color" | "-init-file"
           | "-profile-ltac-cutoff" | "-main-channel" | "-control-channel"
+          | "-native-output-dir" | "-w"
           | "-dump-glob" | "-bytecode-compiler" | "-native-compiler" as x) :: a :: tl ->
           x :: a :: set_slave_opt tl
         (* We need to pass some options with two arguments *)

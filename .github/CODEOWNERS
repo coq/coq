@@ -9,7 +9,8 @@
 
 ########## Build system ##########
 
-/Makefile*                      @coq/legacy-build-maintainers
+/Makefile                       @coq/build-maintainers
+/Makefile.dune                  @coq/build-maintainers
 /dev/tools/make_git_revision.sh @coq/legacy-build-maintainers
 
 /configure              @coq/legacy-build-maintainers @coq/build-maintainers
@@ -44,9 +45,6 @@
 /CODE_OF_CONDUCT.md    @coq/code-of-conduct-team
 
 /doc/                  @coq/doc-maintainers
-/Makefile.doc          @coq/doc-maintainers
-/Makefile.docgram      @coq/doc-maintainers
-
 /dev/doc/              @coq/doc-maintainers
 
 /doc/changelog/*/*.rst @ghost

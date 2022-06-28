@@ -1,6 +1,0 @@
-(executable
- (name coq_flock)
- (foreign_stubs
-  (language c)
-  (names flock))
- (libraries unix))

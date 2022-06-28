@@ -166,7 +166,6 @@ let msg_no_dynlink_cmxa prefs =
   cprintf prefs "and then run ./configure -natdynlink no"
 
 let check_native prefs camlenv =
-  let () = if prefs.byteonly then raise Not_found in
   let version, _ = tryrun camlexec.find ["opt";"-version"] in
   if version = "" then let () = msg_no_ocamlopt () in raise Not_found
   else if fst (tryrun camlexec.find ["query";"dynlink"]) = ""
@@ -405,9 +404,9 @@ let print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdi
   pr "  Coq web site                : %s\n" prefs.coqwebsite;
   pr "  Bytecode VM enabled         : %B\n" prefs.bytecodecompiler;
   pr "  Native Compiler enabled     : %s\n\n" (pr_native prefs.nativecompiler);
-  (pr "  Paths for true installation:\n";
+  (pr "  Paths where installation is expected:\n";
    List.iter
-     (fun ((_,msg),(dir,_)) -> pr "  - %s will be copied in %s\n" msg (esc dir))
+     (fun ((_,msg),(dir,_)) -> pr "  - %s is expected in in %s\n" msg (esc dir))
      install_dirs);
   pr "\n";
   pr "If anything is wrong above, please restart './configure'.\n\n";
@@ -544,8 +543,6 @@ let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags co
   pr "# Option to produce precompiled files for native_compute\n";
   pr "NATIVECOMPUTE=%s\n" (if prefs.nativecompiler = NativeYes then "-native-compiler yes" else "");
   pr "COQWARNERROR=%s\n" (if prefs.warn_error then "-w +default" else "");
-  pr "CONFIGURE_DPROFILE=%s\n" prefs.dune_profile;
-  pr "COQ_INSTALL_ENABLED=%b\n" prefs.install_enabled;
   ()
 
 let write_dune_c_flags cflags o =

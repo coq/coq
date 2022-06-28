@@ -8,13 +8,4 @@
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
 
-# The default build system is make-based one.
-ifndef COQ_USE_DUNE
-include Makefile.make
-else
-ifdef OPAM_PACKAGE_NAME # installing through opam: ignore COQ_USE_DUNE
-include Makefile.make
-else
 include Makefile.dune
-endif
-endif

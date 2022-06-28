@@ -24,7 +24,7 @@
 { pkgs ? import ./dev/nixpkgs.nix {}
 , ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_12
 , buildIde ? true
-, buildDoc ? true
+, buildDoc ? false
 , doInstallCheck ? true
 , shell ? false
   # We don't use lib.inNixShell because that would also apply
@@ -86,12 +86,28 @@ stdenv.mkDerivation rec {
 
   prefixKey = "-prefix ";
 
+  # Note that Coq's Makefile.dune will force sequential setup, more
+  # fine control can be gained by Nix by using dune directly on
+  # coq-core and coq-stdlib.
   enableParallelBuilding = true;
 
-  buildFlags = [ "world" ] ++ optional buildDoc "doc-html";
+  buildFlags = [ "world" ];
 
-  installTargets =
-    [ "install" ] ++ optional buildDoc "install-doc-html";
+  # TODO, building of documentation package when not in dev mode
+  # https://github.com/coq/coq/issues/16198
+  # buildFlags = [ "world" ] ++ optional buildDoc "refman-html";
+
+  # From https://github.com/NixOS/nixpkgs/blob/master/pkgs/build-support/ocaml/dune.nix
+  installPhase = ''
+    runHook preInstall
+    dune install --prefix $out --libdir $OCAMLFIND_DESTDIR coq-core coq-stdlib coq coqide-server coqide
+    runHook postInstall
+  '';
+
+  # installTargets =
+  #   [ "install" ];
+    # fixme, do we have to do a target, or can we just do a copy?
+    # ++ optional buildDoc "install-doc-html";
 
   createFindlibDestdir = !shell;
 

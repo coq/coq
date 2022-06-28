@@ -1,12 +1,10 @@
 This file documents what a Coq developer needs to know about the
-Dune-based build system. If you want to enhance the build system
-itself (or are curious about its implementation details), see
-build-system.dev.txt, and in particular its initial HISTORY section.
+Dune-based build system.
 
 About Dune
 ==========
 
-Coq can now be built using [Dune](https://github.com/ocaml/dune).
+Coq uses the [Dune](https://github.com/ocaml/dune) build system.
 
 ## Quick Start
 
@@ -14,28 +12,22 @@ Usually, using the latest version of Dune is recommended, see the
 first line of the `dune-project` file for the minimum required
 version.
 
-If you set `COQ_USE_DUNE=1`, then you don't need to explicitly add `-f
-Makefile.dune` in any of the commands below. However, you will then
-need an explicit `-f Makefile.make` if you want to use one of the
-legacy targets.
-
 It is strongly recommended that you use the helper targets available
-in `Makefile.dune`, `make -f Makefile.dune` will display help. Note
-that dune will call configure for you if needed, so no need to call
-`./configure` in the regular development workflow.
+in `Makefile.dune`, `make` will display help. Note that dune will call
+configure for you if needed, so no need to call `./configure` in the
+regular development workflow, unless you want to tweak options.
 
-4 common operations targets are:
+4 common operations are:
 
-- `make -f Makefile.dune check` : build all ml targets as fast as possible
-- `make -f Makefile.dune world` : build a complete Coq distribution
+- `make check` : build all ml targets as fast as possible
+- `make world` : build a complete Coq distribution
 - `dune exec -- dev/shim/coqtop-prelude` : build and launch coqtop + prelude [equivalent to `make states`].
 - `dune build $target`: where `$target` can refer to the build
   directory or the source directory [but will be placed under
   `_build`]
 
 `dune build @install` will build all the public Coq artifacts; `dune
-build` will build all the targets in the workspace, including tests
-and documentation (so this is usually not what you want).
+build` builds the `@default` alias, defined in the top level `dune` file.
 
 Dune puts build artifacts in a separate directory `_build/$context`;
 usual `context` is `default`; dune also produces an "install" layout
@@ -59,6 +51,53 @@ including library management, `merlin` setup, linking order,
 etc... You should not have to modify `dune` files in regular workflow
 unless you are adding a new binary, library, or plugin, or want to
 tweak some low-level option.
+
+## The bootstrap process / rule generation
+
+Dune is able to build all the OCaml parts of Coq in a pretty standard
+way, using its built-in rule generation for OCaml. Public tools
+written in OCaml are distributed in the `coq-core` package.
+
+The set of public `.v` files present in this repository, usually
+referred as the "Coq Standard Library" are distributed in the
+`coq-stdlib` package. As of June 2022, Dune has a set of built-in
+rules for `.v` files which is capable of building Coq's standard
+library.
+
+However, in order to have a bit more control, we generate ourselves a
+set of custom rules using the `tools/dune_rule_gen` binary, which are
+then stored in the `theories/dune` file. This allows us to have a
+finer control over the build rules without having to bump the Dune
+version. The generation of the `theories/dune` and
+`user-contrib/*/dune` files is known as "bootstrap".
+
+The rule generation code in `tools/dune_rule_gen` is mostly derived
+from Dune's built-in rules, and it works in an straightforward way: it
+will scan a directory with `.v` files in it, and output the
+corresponding build rule. The script will look at some configuration
+values such as whether native is enabled or not and adapt rule
+generation accordingly.
+
+In the case of native, the script supports two modes, `coqc
+-native-compiler on` and `coqnative`. The default is the first, as
+currently `coqnative` incurs a 33% build time overhead on a powerful
+16-core machine.
+
+There are several modes for the rule generation script to work,
+depending on the parameter passed. As of today, it support `-async`
+and `-vio`.
+
+`-async` will pass `-async-proofs on` to `coqc`.
+
+`-vio` will have the script setup compilation such that `.vo` files
+are generated first going thru `.vio` files.
+
+In particular, `-vio` mode has several pitfalls, for example, no
+`.glob` files are generated (this is inherited from Coq
+itself). Moreover, it is not possible to do a full parallel build
+doing `.v -> .vio` and `.vio -> .vo`, as it'd be racy, so a barrier
+must be used (the first process must be completed) before running the
+`.vio -> .vo` step.
 
 ## Per-User Custom Settings
 
@@ -116,15 +155,15 @@ builds, please see below.
 
 There are two ways to run the test suite using Dune:
 
-- After building Coq with `make -f Makefile.dune world`, you can run the test-suite
+- After building Coq with `make world`, you can run the test-suite
   in place, generating output files in the source tree
   by running `make -C test-suite` from the top directory of the source tree
   (equivalent to running `make test-suite` from the `test-suite` directory).
   This permits incremental usage since output files will be preserved.
 
-- You can also run the test suite in a hygienic way using `make -f
-  Makefile.dune test-suite` or `dune runtest`. This is convenient for
-  full runs from scratch, for instance in CI.
+- You can also run the test suite in a hygienic way using `make
+  test-suite` or `dune runtest`. This is convenient for full runs from
+  scratch, for instance in CI.
 
   Since `dune` still invokes the test-suite makefile, the
   environment variable `NJOBS` is used to set the `-j` option
@@ -218,9 +257,9 @@ enables stronger compiler optimizations.
 
 ## OPAM file generation
 
-`.opam` files are automatically generated by Dune from the package
+`.opam` files will be automatically generated by Dune from the package
 descriptions in the `dune-project` file; see Dune's manual for more
-details.
+details. For now we have disabled this due to some bugs.
 
 ## Stanzas
 

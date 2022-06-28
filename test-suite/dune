@@ -18,7 +18,6 @@
    ; File that should be promoted.
    misc/universes/all_stdlib.v
    ; Dependencies of the legacy makefile
-   ../Makefile.common
    ../config/Makefile
    ; Stuff for the compat script test
    ../dev/header.ml

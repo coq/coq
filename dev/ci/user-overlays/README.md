@@ -60,9 +60,7 @@ named `more_efficient_tc`.
 - Compile your PR.
 - For each broken project, run `make <job name>`, e.g. `make ci-elpi`,
   which checks out, builds and runs the project in the
-  `_build_ci/<job name>` directory.  (Make sure the `_build_vo`
-  directory does not exist in your source tree.  Or, soon, run
-  `make -f Makefile.dune ci-foo`.)
+  `_build_ci/<job name>` directory.
 - Make necessary changes, then rerun the script to verify they work.
 - From the `<job name>` subdirectory, commit your changes to a new
   branch, based on the base branch name listed in `ci-basic-overlay.sh`,

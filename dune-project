@@ -26,6 +26,7 @@
   (ocamlfind (>= 1.8.1))
   (zarith (>= 1.11))
   (ounit2 :with-test))
+ (depopts coq-native)
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
@@ -49,6 +50,7 @@ prelude, now living in the coq-stdlib package."))
  (name coq-stdlib)
  (depends
   (coq-core (= :version)))
+ (depopts coq-native)
  (synopsis "The Coq Proof Assistant -- Standard Library")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable

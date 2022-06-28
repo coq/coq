@@ -2,6 +2,7 @@
  (targets coqtop-prelude)
  (deps
   %{bin:coqtop}
+   ; XXX: bug, we are missing the dep on the _install meta file...
   %{project_root}/theories/Init/Prelude.vo)
  (action
   (with-stdout-to coqtop-prelude
