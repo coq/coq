@@ -39,4 +39,3 @@
 | File | Description |
 | ---- | ----------- |
 | [`dev/tools/coqdev.el`](tools/coqdev.el) | Helper customizations for everyday Coq development, eg making `compile` work in subdirectories
-| [`dev/tools/objects.el`](tools/objects.el) | Various development utilities at emacs level |
