@@ -4,7 +4,7 @@ Class Foo.
 
 Goal True.
 
-Instance foo: Foo.
+#[export] Instance foo: Foo.
 Qed.
 
 trivial.

@@ -10,7 +10,7 @@ Proof.
   intuition congruence.
 Qed.
 
-Hint Extern 100 (Decidable (?A = ?B)) => abstract (abstract (abstract (apply Decidable_sumbool; decide equality))) : typeclass_instances.
+#[export] Hint Extern 100 (Decidable (?A = ?B)) => abstract (abstract (abstract (apply Decidable_sumbool; decide equality))) : typeclass_instances.
 
 Goal forall (a b : Foo), {a=b}+{a<>b}.
 intros.

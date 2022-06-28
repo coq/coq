@@ -11,7 +11,7 @@ Variable lem1 : forall x, g x x = f x.
 Variable lem2 : forall n x, h (S n) x = g (h n x) (h n x).
 Variable lem3 : forall x, h 0 x = x.
 
-Hint Rewrite lem0 lem1 lem2 lem3 : rew.
+#[export] Hint Rewrite lem0 lem1 lem2 lem3 : rew.
 
 Goal forall x, h 10 x = f x.
 Proof. 

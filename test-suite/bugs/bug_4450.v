@@ -3,7 +3,7 @@ Polymorphic Axiom inhabited@{u} : Type@{u} -> Prop.
 Polymorphic Axiom unit@{u} : Type@{u}.
 Polymorphic Axiom tt@{u} : inhabited unit@{u}.
 
-Polymorphic Hint Resolve tt : the_lemmas.
+#[export] Polymorphic Hint Resolve tt : the_lemmas.
 Set Printing All.
 Set Printing Universes.
 Goal inhabited unit.
@@ -21,7 +21,7 @@ Goal (forall U, f U) -> (*(f unit -> False) ->  *)False /\ False.
   eauto using (fapp unit funi). (* The two fapp's have different universes *)
 Qed.
 
-Hint Resolve (fapp unit funi) : mylems.
+#[export] Hint Resolve (fapp unit funi) : mylems.
 
 Goal (forall U, f U) -> (*(f unit -> False) ->  *)False /\ False.
   eauto with mylems. (* Forces the two fapps at the same level *)

@@ -3,7 +3,7 @@ Require Import Coq.Classes.Morphisms Coq.Classes.RelationClasses Coq.Program.Pro
 
 Global Set Implicit Arguments.
 
-Hint Extern 0 => apply reflexivity : typeclass_instances.
+#[export] Hint Extern 0 => apply reflexivity : typeclass_instances.
 
 Inductive Comp : Type -> Type :=
 | Pick : forall A, (A -> Prop) -> Comp A.

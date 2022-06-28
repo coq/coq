@@ -13,15 +13,15 @@ Set Typeclasses Unique Instances.
 Class D.
 Class C (A : Type) := c : A.
 
-Hint Mode C +.
+#[export] Hint Mode C +.
 Fail Definition test := c.
 
 Unset Typeclasses Unique Instances.
-Instance cN1 : B -> D -> C nat := fun _ _ => 0.
-Instance cN2 : A -> D -> C nat := fun _ _ => 1.
-Instance cB : B -> C bool := fun _ => true.
+#[export] Instance cN1 : B -> D -> C nat := fun _ _ => 0.
+#[export] Instance cN2 : A -> D -> C nat := fun _ _ => 1.
+#[export] Instance cB : B -> C bool := fun _ => true.
 
-Instance Copt : forall A, C A -> C (option A) := fun A _ => None.
+#[export] Instance Copt : forall A, C A -> C (option A) := fun A _ => None.
 
 Set Typeclasses Debug.
 
@@ -49,10 +49,10 @@ Module BacktrackGreenCut.
 
   Class D (A : Type) : Type := { c_of_d :> C A }.
 
-  Instance D1 : D unit.
+  #[export] Instance D1 : D unit.
   Admitted.
 
-  Instance D2 : D unit.
+  #[export] Instance D2 : D unit.
   Admitted.
 
   (** Two instances of D unit, but when searching for [C unit], no
@@ -71,8 +71,8 @@ Module BacktrackGreenCut.
   Class PartialOrder (A : Type) := { partialorder_trans :> Transitive A }.
   Class PartialOrder' (A : Type) := { partialorder_trans' :> Transitive A }.
 
-  Instance: PreOrder nat. Admitted.
-  Instance: PartialOrder nat. Admitted.
+  #[export] Instance: PreOrder nat. Admitted.
+  #[export] Instance: PartialOrder nat. Admitted.
 
   Class NoInst (A : Type) := {}.
 

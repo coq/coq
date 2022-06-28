@@ -39,7 +39,7 @@ Record Equiv A B :=
       equiv_isequiv :> IsEquiv equiv_fun
     }.
 
-Existing Instance equiv_isequiv.
+#[export] Existing Instance equiv_isequiv.
 
 Notation "A <~> B" := (Equiv A B) (at level 85) : equiv_scope.
 

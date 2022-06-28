@@ -10,7 +10,7 @@ Arguments vector : clear implicits.
 
 Coercion vec_list : vector >-> list.
 
-Hint Rewrite @vec_len : datatypes.
+#[export] Hint Rewrite @vec_len : datatypes.
 
 Ltac crush := repeat (program_simplify ; autorewrite with list datatypes ; auto with *).
 
@@ -21,7 +21,7 @@ Program Definition vnil {A} : vector A 0 := {| vec_list := [] |}.
 Program Definition vcons {A n} (a : A) (v : vector A n) : vector A (S n) :=
   {| vec_list := cons a (vec_list v) |}.
 
-Hint Rewrite map_length rev_length : datatypes.
+#[export] Hint Rewrite map_length rev_length : datatypes.
 
 Program Definition vmap {A B n} (f : A -> B) (v : vector A n) : vector B n :=
   {| vec_list := map f v |}.

@@ -2,7 +2,7 @@ Module monomorphic.
   Class Inhabited (A : Type) : Prop := populate { _ : A }.
   Arguments populate {_} _.
 
-  Instance prod_inhabited {A B : Type} (iA : Inhabited A)
+  #[export] Instance prod_inhabited {A B : Type} (iA : Inhabited A)
            (iB : Inhabited B) :   Inhabited (A * B) :=
     match iA, iB with
       | populate x, populate y => populate (x,y)
@@ -21,7 +21,7 @@ Module polymorphic.
   Class Inhabited (A : Type) : Prop := populate { _ : A }.
   Arguments populate {_} _.
 
-  Instance prod_inhabited {A B : Type} (iA : Inhabited A)
+  #[export] Instance prod_inhabited {A B : Type} (iA : Inhabited A)
            (iB : Inhabited B) :   Inhabited (A * B) :=
     match iA, iB with
       | populate x, populate y => populate (x,y)

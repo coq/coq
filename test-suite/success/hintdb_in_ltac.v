@@ -1,6 +1,6 @@
 Definition x := 0.
 
-Hint Unfold x : mybase.
+#[export] Hint Unfold x : mybase.
 
 Ltac autounfoldify base := autounfold with base.
 

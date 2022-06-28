@@ -57,7 +57,7 @@ move=> P2; apply: ex_intro (exist _ 2 _) _.
 match goal with |- @sval _ _ (@exist _ _ 2 P2) = 2 => done | _ => fail end.
 Qed.
 
-Hint Resolve P1.
+#[export] Hint Resolve P1.
 
 Lemma testmE12 : myEx.
 Proof.
@@ -69,7 +69,7 @@ Qed.
 
 Create HintDb SSR.
 
-Hint Resolve P11 : SSR.
+#[export] Hint Resolve P11 : SSR.
 
 Ltac ssrautoprop := trivial with SSR.
 
@@ -85,7 +85,7 @@ Definition R1 := fun (x : nat) (p : P x) m (q : P (x+1)) (r : Q x p) => m > 0.
 Inductive myEx1 : Type :=
   ExI1 : forall n (pn : P n) pn' (q : Q n pn), R1 n pn n pn' q -> myEx1.
 
-Hint Resolve (Q1 P1) : SSR.
+#[export] Hint Resolve (Q1 P1) : SSR.
 
 (* tests that goals in prop are solved in the right order, propagating instantiations,
    thus the goal Q 1 ?p1 is faced by trivial after ?p1, and is thus evar free *)

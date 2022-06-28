@@ -21,7 +21,7 @@ auto.
 Qed.
 End feq.
 Infix "=f":= feq  (at level 80, right associativity).
-Hint Unfold feq. Hint Resolve feq_refl feq_sym feq_trans.
+#[export] Hint Unfold feq. #[export] Hint Resolve feq_refl feq_sym feq_trans.
 
 Variable K:(nat -> nat)->Prop.
 Variable K_ext:forall a b, (K a)->(a =f b)->(K b).

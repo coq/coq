@@ -15,7 +15,7 @@ Tactic Notation "destruct_decide" constr(dec) :=
 
 
 (** * Monadic operations *)
-Instance option_guard: MGuard option := λ P dec A f,
+#[export] Instance option_guard: MGuard option := λ P dec A f,
   match dec with left H => f H | _ => None end.
 
 (** * Tactics *)

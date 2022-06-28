@@ -19,7 +19,7 @@ Proof.
 firstorder.
 Qed.
 
-Instance Included_PreOrder : forall A, PreOrder (@Included A).
+#[export] Instance Included_PreOrder : forall A, PreOrder (@Included A).
 Proof.
 firstorder.
 Qed.

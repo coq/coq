@@ -15,7 +15,7 @@ Module ForConv.
 
   Class Bla := { bla : Type }.
 
-  Instance bli : Bla := { bla := nat }.
+  #[export] Instance bli : Bla := { bla := nat }.
 
   Inductive vs := C : forall x : bla, x = 2 -> vs.
   (* here we need to resolve TC to pass the conversion problem if we

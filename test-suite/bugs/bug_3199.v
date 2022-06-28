@@ -3,9 +3,9 @@ Axiom admit : forall n : nat, P n -> P n -> n = S n.
 Axiom foo : forall n, P n.
 
 Create HintDb bar.
-Hint Extern 3 => symmetry : bar.
-Hint Resolve admit : bar.
-Hint Immediate foo : bar.
+#[export] Hint Extern 3 => symmetry : bar.
+#[export] Hint Resolve admit : bar.
+#[export] Hint Immediate foo : bar.
 
 Lemma qux : forall n : nat, n = S n.
 Proof.

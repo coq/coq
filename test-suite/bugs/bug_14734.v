@@ -7,7 +7,7 @@
     }.
 Monomorphic Inductive X@{s | Set < s} : Type@{s} := x.
 
-#[refine]
+#[refine, export]
  Instance t_X_refl {A} : t X A A := {|prf := _|}.
 Proof. auto. Qed.
 

@@ -50,7 +50,7 @@ with slist_in : list sv -> list sv -> Prop :=
   slist_in sv sv' ->
   slist_in (s::sv) sv'.
 
-Hint Constructors sin slt slist_in.
+#[export] Hint Constructors sin slt slist_in.
 
 Require Import Program.
 

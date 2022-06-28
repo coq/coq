@@ -8,7 +8,7 @@ Inductive Erasable(A : Set) : Prop :=
 
 Arguments erasable [A] _.
 
-Hint Constructors Erasable.
+#[export] Hint Constructors Erasable.
 
 Scheme Erasable_elim := Induction for Erasable Sort Prop.
 
@@ -51,7 +51,7 @@ Ltac ring_simplify' := rewrite ?Twoto0; ring_simplify.
 
 Definition mp2a1s(x : Z)(n : nat) := x * 2^n + (2^n-1).
 
-Hint Unfold mp2a1s.
+#[export] Hint Unfold mp2a1s.
 
 Definition zotval(n1s : nat)(is2 : bool)(next_value : Z) : Z :=
   2 * mp2a1s next_value n1s + if is2 then 2 else 0.

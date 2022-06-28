@@ -15,7 +15,7 @@ Require Import ssreflect.
 Axiom daemon : False. Ltac myadmit := case: daemon.
 
 Class foo (T : Type) := { n : nat }.
-Instance five : foo nat := {| n := 5 |}.
+#[export] Instance five : foo nat := {| n := 5 |}.
 
 Definition bar T {f : foo T} m : Prop :=
   @n _ f = m.
@@ -51,7 +51,7 @@ Qed.
 
 Unset SsrHave NoTCResolution.
 
-Instance test : foo bool.
+#[export] Instance test : foo bool.
 Proof.
   have : foo nat.
 Abort.

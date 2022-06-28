@@ -230,14 +230,14 @@ Program Definition sum_Sum (A B : Type) : (@Sum Type_Cat A B) :=
 Next Obligation. simpl; auto. Defined.
 Next Obligation. simpl; auto. Defined.
 
-Program Instance Type_Cat_Has_Sums : Has_Sums Type_Cat := sum_Sum.
+#[export] Program Instance Type_Cat_Has_Sums : Has_Sums Type_Cat := sum_Sum.
 
 Definition Sum_Func {C : Category} {HS : Has_Sums C} :
   Functor (Prod_Cat C C) C := Opposite_Functor (Prod_Func (Opposite C) HS).
 
 Arguments Sum_Func _ _, _ {_}.
 
-Program Instance unit_Type_term : Terminal Type_Cat :=
+#[export] Program Instance unit_Type_term : Terminal Type_Cat :=
 {
   terminal := unit;
   t_morph := fun _ _=> tt

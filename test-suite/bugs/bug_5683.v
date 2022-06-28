@@ -41,7 +41,7 @@ Class Monad M `{Functor M} :=
 (bind m f) g = bind m (fun x => bind (f x) g)
 }.
 
-Instance Succ_Functor : Functor Succ.
+#[export] Instance Succ_Functor : Functor Succ.
 Proof.
   unshelve econstructor.
   - intros A B f fa.

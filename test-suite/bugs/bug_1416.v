@@ -11,7 +11,7 @@ Record Place (Env A: Type) : Type := {
   write_read: forall (e:Env), (write e (read e))=e
 }.
 
-Hint Rewrite -> write_read: placeeq.
+#[export] Hint Rewrite -> write_read: placeeq.
 
 Record sumPl (Env A B: Type) (vL:(Place Env A)) (vR:(Place Env B)) : Type :=
  {
@@ -20,7 +20,7 @@ Record sumPl (Env A B: Type) (vL:(Place Env A)) (vR:(Place Env B)) : Type :=
  }.
 
 (* when the following line is commented, the bug does not appear *)
-Hint Rewrite -> mkEnv2writeL: placeeq.
+#[export] Hint Rewrite -> mkEnv2writeL: placeeq.
 
 Lemma autorewrite_raise_anomaly: forall (Env A:Type) (e: Env) (p:Place Env A),
   (exists e1:Env, e=(write p e1 (read p e))).

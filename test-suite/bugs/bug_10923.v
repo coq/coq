@@ -11,7 +11,7 @@ Reserved Notation "A <- X ; B" (at level 70, X at next level, right associativit
 Notation "v <- x ; f" := (bind x (fun v => f)).
 Axiom bind_Proper : Proper (eq ==> (eq ==> eq) ==> eq) bind.
 Axiom bind_Proper' : Proper (eq ==> pointwise_relation _ eq ==> eq) bind.
-Existing Instances bind_Proper bind_Proper'.
+#[export] Existing Instances bind_Proper bind_Proper'.
 
 Module Thunked.
   Definition nat_rect P (O_case : unit -> P) (S_case : nat -> P -> P) (n : nat) : P

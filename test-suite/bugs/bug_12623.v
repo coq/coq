@@ -12,7 +12,7 @@ Class Seq (C : Type) :=
   seq : C -> gtactic.
 Arguments seq {C _} _.
 
-Instance seq_one : Seq@{Set _ _} (gtactic) := fun t2 => fun g => raise.
+#[export] Instance seq_one : Seq@{Set _ _} (gtactic) := fun t2 => fun g => raise.
 
 Definition x1 : gtactic := @seq@{_ _ _} _ _ (fun g : goal => raise).
 Definition x2 : gtactic := @seq@{_ _ _} _ seq_one (fun g : goal => raise).

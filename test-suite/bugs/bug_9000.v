@@ -2,7 +2,7 @@ Set Primitive Projections.
 Class type (t : Type) : Type :=
   { bar : t -> Prop  }.
 
-Instance type_nat : type nat :=
+#[export] Instance type_nat : type nat :=
   { bar := fun _ => True }.
 
 Definition foo_bar {n : nat} : bar n := I.

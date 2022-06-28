@@ -10,9 +10,9 @@ Set Universe Polymorphism.
 Class Contr_internal (A : Type) := BuildContr { center : A }.
 Arguments center A {_}.
 Class Contr (A : Type) : Type := Contr_is_trunc : Contr_internal A.
-Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
+#[export] Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
 Definition contr_paths_contr0 {A} `{Contr A} : Contr A := {| center := center A |}.
-Instance contr_paths_contr1 {A} `{Contr A} : Contr A := {| center := center A |}.
+#[export] Instance contr_paths_contr1 {A} `{Contr A} : Contr A := {| center := center A |}.
 Check @contr_paths_contr0@{i}.
 Check @contr_paths_contr1@{i}. (* Error: Universe instance should have length 2 *)
 (** It should have length 1, just like contr_paths_contr0 *)

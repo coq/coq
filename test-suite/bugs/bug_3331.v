@@ -12,7 +12,7 @@ Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) : Type :=
     | trunc_S n' => forall (x y : A), IsTrunc_internal n' (x = y)
   end.
 Class IsTrunc (n : trunc_index) (A : Type) : Type := Trunc_is_trunc : IsTrunc_internal n A.
-Instance istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A) : IsTrunc n (x = y) := H x y.
+#[export] Instance istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A) : IsTrunc n (x = y) := H x y.
 Notation Contr := (IsTrunc minus_two).
 Section groupoid_category.
   Variable X : Type.

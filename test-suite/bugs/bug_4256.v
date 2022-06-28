@@ -21,7 +21,7 @@ Record pType :=
   { pointed_type : Type ;
     ispointed_type : IsPointed pointed_type }.
 Coercion pointed_type : pType >-> Sortclass.
-Existing Instance ispointed_type.
+#[export] Existing Instance ispointed_type.
 
 Private Inductive Trunc (n : trunc_index) (A :Type) : Type :=
   tr : A -> Trunc n A.

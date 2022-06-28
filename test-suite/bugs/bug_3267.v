@@ -40,7 +40,7 @@ End d.
 Parameter A B : Prop.
 Axiom a:B.
 
-Hint Extern 1 => match goal with H:_ -> id _ |- _ => try (unfold id in H) end.
+#[export] Hint Extern 1 => match goal with H:_ -> id _ |- _ => try (unfold id in H) end.
 Goal (B -> id A) -> A.
 intros.
 eauto using a.

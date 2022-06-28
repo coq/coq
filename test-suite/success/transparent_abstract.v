@@ -1,5 +1,5 @@
 Class by_transparent_abstract {T} (x : T) := make_by_transparent_abstract : T.
-Hint Extern 0 (@by_transparent_abstract ?T ?x) => change T; transparent_abstract exact_no_check x : typeclass_instances.
+#[export] Hint Extern 0 (@by_transparent_abstract ?T ?x) => change T; transparent_abstract exact_no_check x : typeclass_instances.
 
 Goal True /\ True.
 Proof.

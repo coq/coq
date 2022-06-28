@@ -3,9 +3,9 @@ Set Nested Proofs Allowed.
 Class Foo.
 Class Bar := b : Type.
 
-Instance foo : Foo.
+#[export] Instance foo : Foo.
 
-Instance bar : Bar.
+#[export] Instance bar : Bar.
 exact Type.
 Defined.
 

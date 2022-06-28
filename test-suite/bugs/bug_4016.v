@@ -1,7 +1,7 @@
 Require Import Setoid.
 
 Parameter eq : relation nat.
-Declare Instance Equivalence_eq : Equivalence eq.
+#[export] Declare Instance Equivalence_eq : Equivalence eq.
 
 Lemma foo : forall z, eq z 0 -> forall x, eq x 0 -> eq z x.
 Proof.

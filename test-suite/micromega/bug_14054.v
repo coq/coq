@@ -36,7 +36,7 @@ Module LittleEndian.
   Admitted.
 End LittleEndian.
 
-Instance InjByteTuple{n: nat}: InjTyp (tuple byte n) Z := {|
+#[export] Instance InjByteTuple{n: nat}: InjTyp (tuple byte n) Z := {|
   inj := LittleEndian.combine n;
   pred x := 0 <= x < 2 ^ (8 * Z.of_nat n);
   cstr := @LittleEndian.combine_bound n;

@@ -32,7 +32,7 @@ Class Isomorphism `{C : Category} (X Y : @ob C) : Type := {
   ; iso_from_to : compose from to = id
 }.
 
-Program Instance isomorphism_equivalence `{C : Category} :
+#[export] Program Instance isomorphism_equivalence `{C : Category} :
   Equivalence Isomorphism.
 Next Obligation.
   repeat intro.

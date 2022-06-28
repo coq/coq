@@ -10,15 +10,15 @@ Class StateIs := {
   stateIs : valueType -> sProp
 }.
 
-Instance NatStateIs : StateIs := {
+#[export] Instance NatStateIs : StateIs := {
   valueType := nat;
   stateIs := fun _ => sp
 }.
 Canonical Structure NatStateIs.
 
 Class LogicOps F := { land: F -> F }.
-Instance : LogicOps sProp. Admitted.
-Instance : LogicOps Prop. Admitted.
+#[export] Instance : LogicOps sProp. Admitted.
+#[export] Instance : LogicOps Prop. Admitted.
 
 Parameter (n : nat).
 (* If this is a [Definition], the resolution goes through fine. *)
@@ -32,11 +32,11 @@ Definition BAD : sProp :=
 
 
 Class A T := { foo : T -> Prop }.
-Instance: A nat. Admitted.
-Instance: A Set. Admitted.
+#[export] Instance: A nat. Admitted.
+#[export] Instance: A Set. Admitted.
 
 Class B := { U : Type ; b : U }.
-Instance bi: B := {| U := nat ; b := 0 |}.
+#[export] Instance bi: B := {| U := nat ; b := 0 |}.
 Canonical Structure bi.
 
 Notation b0N := (@b _ : nat).

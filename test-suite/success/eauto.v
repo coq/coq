@@ -9,11 +9,11 @@
 (************************************************************************)
 
 Class A (A : Type).
-  Instance an: A nat := {}.
+#[export] Instance an: A nat := {}.
 
 Class B (A : Type) (a : A).
-Instance bn0: B nat 0 := {}.
-Instance bn1: B nat 1 := {}.
+#[export] Instance bn0: B nat 0 := {}.
+#[export] Instance bn1: B nat 1 := {}.
 
 Goal A nat.
 Proof.
@@ -30,7 +30,7 @@ Proof.
   eexists. typeclasses eauto.
 Defined.
 
-Hint Extern 0 (_ /\ _) => constructor : typeclass_instances.
+#[export] Hint Extern 0 (_ /\ _) => constructor : typeclass_instances.
 
 Existing Class and.
 
@@ -39,7 +39,7 @@ Proof.
   eexists. eexists. typeclasses eauto.
 Defined.
 
-Instance ab: A bool := {}. (* Backtrack on A instance *)
+#[export] Instance ab: A bool := {}. (* Backtrack on A instance *)
 Goal exists (T : Type) (t : T), A T /\ B T t.
 Proof.
   eexists. eexists. typeclasses eauto.
@@ -47,11 +47,11 @@ Defined.
 
 Class C {T} `(a : A T) (t : T). 
 Require Import Classes.Init.
-Hint Extern 0 { x : ?A & _ } =>
+#[export] Hint Extern 0 { x : ?A & _ } =>
   unshelve class_apply @existT : typeclass_instances.
 Existing Class sigT.
 Set Typeclasses Debug.
-Instance can: C an 0 := {}.
+#[export] Instance can: C an 0 := {}.
 (* Backtrack on instance implementation *)
 Goal exists (T : Type) (t : T), { x : A T & C x t }.
 Proof.
@@ -59,7 +59,7 @@ Proof.
 Defined.
 
 Class D T `(a: A T).
-  Instance: D _ an := {}.
+#[export] Instance: D _ an := {}.
 Goal exists (T : Type), { x : A T & D T x }.
 Proof.
   eexists. typeclasses eauto.
@@ -114,18 +114,18 @@ Parameter fooTobar : forall a (H : Foo a), {b: myType & Bar b}.
 
 Parameter barToqux : forall a (H : Bar a), {b: myType & Qux b}.
 
-Hint Extern 5 (Bar ?D.1) =>
+#[export] Hint Extern 5 (Bar ?D.1) =>
     destruct D; simpl : typeclass_instances.
 
-Hint Extern 5 (Qux ?D.1) =>
+#[export] Hint Extern 5 (Qux ?D.1) =>
     destruct D; simpl : typeclass_instances.
 
-Hint Extern 1 myType =>
+#[export] Hint Extern 1 myType =>
   unshelve refine (fooTobar _ _).1 : typeclass_instances.
 
-Hint Extern 1 myType => unshelve refine (barToqux _ _).1 : typeclass_instances.
+#[export] Hint Extern 1 myType => unshelve refine (barToqux _ _).1 : typeclass_instances.
 
-Hint Extern 0 { x : _ & _ } => simple refine (existT _ _ _) : typeclass_instances.
+#[export] Hint Extern 0 { x : _ & _ } => simple refine (existT _ _ _) : typeclass_instances.
 
 Unset Typeclasses Debug.
 Definition trivial a (H : Foo a) : {b : myType & Qux b}. 
@@ -157,19 +157,19 @@ Parameter fooTobar : forall a (H : Foo a), {b: myType & Bar b}.
 
 Parameter barToqux : forall a (H : Bar a), {b: myType & Qux b}.
 
-Hint Extern 5 (Bar ?D.1) =>
+#[export] Hint Extern 5 (Bar ?D.1) =>
     destruct D; simpl : typeclass_instances.
 
-Hint Extern 5 (Qux ?D.1) =>
+#[export] Hint Extern 5 (Qux ?D.1) =>
     destruct D; simpl : typeclass_instances.
 
-Hint Extern 1 myType =>
+#[export] Hint Extern 1 myType =>
   unshelve notypeclasses refine (fooTobar _ _).1 : typeclass_instances.
 
-Hint Extern 1 myType =>
+#[export] Hint Extern 1 myType =>
   unshelve notypeclasses refine (barToqux _ _).1 : typeclass_instances.
 
-Hint Extern 0 { x : _ & _ } =>
+#[export] Hint Extern 0 { x : _ & _ } =>
   unshelve notypeclasses refine (existT _ _ _) : typeclass_instances.
 
 Unset Typeclasses Debug.
@@ -213,7 +213,7 @@ Axiom
     forall (l1 l2 : list (nat * nat)) (n : nat),
     not_in_list l1 n -> not_in_list l2 n -> not_in_list (l1 ++ l2) n.
 
-Hint Resolve lem1 lem2 lem3 lem4: essai.
+#[export] Hint Resolve lem1 lem2 lem3 lem4: essai.
 
 Goal
 forall (l : list (nat * nat)) (n p q : nat),

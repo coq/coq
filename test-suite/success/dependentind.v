@@ -66,7 +66,7 @@ Inductive term : ctx -> type -> Type :=
 
 where " Γ ⊢ τ " := (term Γ τ) : type_scope.
 
-Hint Constructors term : lambda.
+#[export] Hint Constructors term : lambda.
 
 Local Open Scope context_scope.
 

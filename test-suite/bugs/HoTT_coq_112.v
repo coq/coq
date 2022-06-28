@@ -35,7 +35,7 @@ Notation "A <~> B" := (Equiv A B) (at level 85) : equiv_scope.
 Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3) : equiv_scope.
 Local Open Scope equiv_scope.
 
-Instance isequiv_path {A B : Type} (p : A = B)
+#[export] Instance isequiv_path {A B : Type} (p : A = B)
   : IsEquiv (transport (fun X:Type => X) p) | 0
   := admit.
 Definition equiv_path (A B : Type) (p : A = B) : A <~> B

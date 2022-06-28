@@ -28,7 +28,7 @@ Fixpoint list_equiv `{Setoid A} (xs ys : list A) : Type :=
 Axiom proof_admitted : False.
 Tactic Notation "admit" := abstract case proof_admitted.
 
-Program Instance list_equivalence `{Setoid A} : Equivalence list_equiv.
+#[export] Program Instance list_equivalence `{Setoid A} : Equivalence list_equiv.
 Next Obligation.
   repeat intro.
   induction x; simpl; split; auto.

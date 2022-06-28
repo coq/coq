@@ -44,7 +44,7 @@ Notation "p # x" := (transport _ p x) (right associativity, at level 65, only pa
 Class IsEquiv {A B : Type} (f : A -> B) := { equiv_inv : B -> A }.
 Notation "f ^-1" := (@equiv_inv _ _ f _) (at level 3).
 Axiom path_sigma_uncurried : forall {A : Type} (P : A -> Type) (u v : sigT P) (pq : {p : u.1 = v.1 &  p # u.2 = v.2}), u = v.
-Instance isequiv_pr1_contr {A} {P : A -> Type} : IsEquiv (@pr1 A P) | 100.
+#[export] Instance isequiv_pr1_contr {A} {P : A -> Type} : IsEquiv (@pr1 A P) | 100.
 Admitted.
 
 Definition path_sigma_hprop {A : Type} {P : A -> Type} (u v : sigT P) : u.1 = v.1 -> u = v :=

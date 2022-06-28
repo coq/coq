@@ -45,7 +45,7 @@ Class IsTrunc (n : trunc_index) (A : Type) : Type :=
 
 Notation Contr := (IsTrunc minus_two).
 
-Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
+#[export] Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
 
 Definition path_contr `{Contr A} (x y : A) : x = y
   := admit.
@@ -54,7 +54,7 @@ Definition path_sigma' {A : Type} (P : A -> Type) {x x' : A} {y : P x} {y' : P x
            (p : x = x') (q : transport _ p y = y')
 : existT _ x y = existT _ x' y'
   := admit.
-Instance trunc_sigma `{P : A -> Type}
+#[export] Instance trunc_sigma `{P : A -> Type}
          `{IsTrunc n A} `{forall a, IsTrunc n (P a)}
 : IsTrunc n (sigT P) | 100.
 

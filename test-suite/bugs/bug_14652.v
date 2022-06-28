@@ -2,11 +2,11 @@ Record myRecord := {
   my_class : Type ;
 }.
 
-Fail Instance my_instance : forall x, my_class x.
+Fail #[export] Instance my_instance : forall x, my_class x.
 
 Existing Class my_class.
 
-Instance my_instance : forall x, my_class x. Abort.
+#[export] Instance my_instance : forall x, my_class x. Abort.
 
 Definition my_existing_instance : forall x, my_class x. Admitted.
 
@@ -19,11 +19,11 @@ Record myOtherRecord := {
   my_other_class : Type ;
 }.
 
-Fail Instance my_other_instance : forall x, my_other_class x.
+Fail #[export] Instance my_other_instance : forall x, my_other_class x.
 
 Existing Class my_other_class.
 
-Instance my_other_instance : forall x, my_other_class x. Abort.
+#[export] Instance my_other_instance : forall x, my_other_class x. Abort.
 
 Definition my_other_existing_instance : forall x, my_other_class x. Admitted.
 

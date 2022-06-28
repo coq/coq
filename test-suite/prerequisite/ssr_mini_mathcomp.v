@@ -91,7 +91,7 @@ Notation eqxx := eq_refl.
 Lemma eq_sym (T : eqType) (x y : T) : (x == y) = (y == x).
 Proof. exact/eqP/eqP. Qed.
 
-Hint Resolve eq_refl eq_sym.
+#[global] Hint Resolve eq_refl eq_sym.
 
 
 Definition eqb b := addb (~~ b).
@@ -422,7 +422,7 @@ Lemma leq0n n : 0 <= n.                 Proof. by []. Qed.
 Lemma ltn0Sn n : 0 < n.+1.              Proof. by []. Qed.
 Lemma ltn0 n : n < 0 = false.           Proof. by []. Qed.
 Lemma leqnn n : n <= n.                 Proof. by elim: n. Qed.
-Hint Resolve leqnn.
+#[global] Hint Resolve leqnn.
 Lemma leqnSn n : n <= n.+1.             Proof. by elim: n. Qed.
 
 Lemma leq_trans n m p : m <= n -> n <= p -> m <= p.
@@ -431,10 +431,10 @@ Lemma leq_ltn_trans n m p : m <= n -> n < p -> m < p.
 Admitted.
 Lemma leqW m n : m <= n -> m <= n.+1.
 Admitted.
-Hint Resolve leqnSn.
+#[global] Hint Resolve leqnSn.
 Lemma ltnW m n : m < n -> m <= n.
 Proof. exact: leq_trans. Qed.
-Hint Resolve ltnW.
+#[global] Hint Resolve ltnW.
 
 Definition addn_rec := plus.
 Notation "m + n" := (addn_rec m n) : nat_rec_scope.
@@ -1323,7 +1323,7 @@ Admitted.
 Lemma mem_index_enum T i : i \in index_enum T.
 Admitted.
 
-Hint Resolve mem_index_enum.
+#[global] Hint Resolve mem_index_enum.
 
 (*
 Lemma filter_index_enum T P : filter P (index_enum T) = enum P.

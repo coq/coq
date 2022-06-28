@@ -18,7 +18,7 @@ Structure bi :=
        bi_impl : bi_car → bi_car → bi_car;
        bi_forall : ∀ A, (A → bi_car) → bi_car; }.
 
-Declare Instance bi_equiv `{PROP:bi} : Equiv (bi_car PROP).
+#[export] Declare Instance bi_equiv `{PROP:bi} : Equiv (bi_car PROP).
 
 Arguments bi_car : simpl never.
 Arguments bi_entails {PROP} _%I _%I : simpl never, rename.

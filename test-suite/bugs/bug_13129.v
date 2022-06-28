@@ -29,8 +29,8 @@ Structure ofeT := OfeT {
   ofe_dist : Dist ofe_car;
   ofe_mixin : OfeMixin ofe_car
 }.
-Hint Extern 0 (Equiv _) => eapply (@ofe_equiv _) : typeclass_instances.
-Hint Extern 0 (Dist _) => eapply (@ofe_dist _) : typeclass_instances.
+#[export] Hint Extern 0 (Equiv _) => eapply (@ofe_equiv _) : typeclass_instances.
+#[export] Hint Extern 0 (Dist _) => eapply (@ofe_dist _) : typeclass_instances.
 
 (** Lifting properties from the mixin *)
 Section ofe_mixin.

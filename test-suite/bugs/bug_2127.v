@@ -4,5 +4,5 @@
 (* (this is a simplification of the original bug report) *)
 
 Module A.
-Hint Rewrite eq_sym using apply eq_refl : foo.
+#[global] Hint Rewrite eq_sym using apply eq_refl : foo.
 End A.

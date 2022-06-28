@@ -30,7 +30,7 @@ Proof.
   constructor.
   exact (T^-1 x).
 Defined.
-Hint Immediate isisomorphism_components_of : typeclass_instances.
+#[export] Hint Immediate isisomorphism_components_of : typeclass_instances.
 Goal forall (x3 x9 : PreCategory) (x12 f0 : Functor x9 x3)
             (x35 : @Isomorphic (@functor_category x9 x3) f0 x12)
             (x37 : object x9)

@@ -11,7 +11,7 @@ Module A.
   Existing Class IsTrunc.
 
 
-  Instance is_trunc_unit : IsTrunc 0 unit.
+  #[export] Instance is_trunc_unit : IsTrunc 0 unit.
   Proof. apply BuildContr with (center:=tt). now intros []. Defined.
 
   Check (_ : IsTrunc 0 unit).
@@ -26,7 +26,7 @@ Module B.
 
   Existing Class IsTrunc.
 
-  Instance is_trunc_unit : IsTrunc 0 unit.
+  #[export] Instance is_trunc_unit : IsTrunc 0 unit.
   Proof. exact I. Defined.
 
   Check (_ : IsTrunc 0 unit).

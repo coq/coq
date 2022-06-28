@@ -1,6 +1,6 @@
 Require Import TestSuite.admit.
 Module JGross.
-  Hint Extern 1 => match goal with |- match ?E with end => case E end.
+  #[global] Hint Extern 1 => match goal with |- match ?E with end => case E end.
 
   Goal forall H : False, match H return Set with end.
   Proof.

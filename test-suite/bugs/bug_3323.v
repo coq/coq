@@ -16,7 +16,7 @@ Definition transport {A : Type} (P : A -> Type) {x y : A} (p : x = y) (u : P x) 
 Definition Sect {A B : Type} (s : A -> B) (r : B -> A) := forall x : A, r (s x) = x.
 Class IsEquiv {A B : Type} (f : A -> B) := BuildIsEquiv { equiv_inv : B -> A ; eisretr : Sect equiv_inv f }.
 Record Equiv A B := BuildEquiv { equiv_fun :> A -> B ; equiv_isequiv :> IsEquiv equiv_fun }.
-Existing Instance equiv_isequiv.
+#[export] Existing Instance equiv_isequiv.
 Global Instance isequiv_inverse `{IsEquiv A B f} : IsEquiv (@equiv_inv _ _ f _) | 10000 := admit.
 Definition equiv_path_sigma `(P : A -> Type) (u v : sigT P)
 : Equiv {p : projT1 u = projT1 v &  transport _ p (projT2 u) = projT2 v} (u = v) := admit.

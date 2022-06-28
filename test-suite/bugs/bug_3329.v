@@ -9,7 +9,7 @@ Notation "g 'o' f" := (compose g f).
 Inductive paths {A : Type} (a : A) : A -> Type := idpath : paths a a where "x = y" := (@paths _ x y) : type_scope.
 Arguments idpath {A a} , [A] a.
 Definition pointwise_paths {A} {P:A->Type} (f g:forall x:A, P x) : Type := forall x:A, f x = g x.
-Hint Unfold pointwise_paths : typeclass_instances.
+#[export] Hint Unfold pointwise_paths : typeclass_instances.
 Definition apD10 {A} {B:A->Type} {f g : forall x, B x} (h:f=g)
 : forall x, f x = g x
   := fun x => match h with idpath => idpath end.

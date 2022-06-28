@@ -8,11 +8,11 @@ Inductive R A : A -> A -> Type :=
    (* with crelation A here and CMorphisms on top: no failure *)
 | cR1 l : R l l
 | cR2 l : R l l.  (* with only one constructor, only Fail 1 fails *)
-Hint Constructors R : core.
+#[export] Hint Constructors R : core.
 
-Instance R_refl A : Reflexive (@R A).
+#[export] Instance R_refl A : Reflexive (@R A).
 Proof. auto. Qed.
-Instance R_trans A : Transitive (@R A).
+#[export] Instance R_trans A : Transitive (@R A).
 Proof. intros x y z HR1 HR2; destruct HR1, HR2; auto. Qed.
 
 Goal forall (a b : nat), R a b -> R (id a) (id b).
@@ -30,9 +30,9 @@ Abort.
 
 Definition GuR A (uu : unit) := match uu with unit => @R A end.
 
-Instance GuR_refl A uu : Reflexive (@GuR A uu).
+#[export] Instance GuR_refl A uu : Reflexive (@GuR A uu).
 Proof. destruct uu; apply R_refl. Qed.
-Instance GuR_trans A uu : Transitive (@GuR A uu).
+#[export] Instance GuR_trans A uu : Transitive (@GuR A uu).
 Proof. destruct uu; apply R_trans. Qed.
 
 Goal forall uu (a b : nat), GuR uu a b -> GuR uu (id a) (id b).
@@ -47,9 +47,9 @@ Abort.
 
 Definition GbR A (bb : bool) := if bb then @R A else @R A.
 
-Instance GbR_refl A bb : Reflexive (@GbR A bb).
+#[export] Instance GbR_refl A bb : Reflexive (@GbR A bb).
 Proof. destruct bb; apply R_refl. Qed.
-Instance GbR_trans A bb : Transitive (@GbR A bb).
+#[export] Instance GbR_trans A bb : Transitive (@GbR A bb).
 Proof. destruct bb; apply R_trans. Qed.
 
 Goal forall bb (a b : nat), GbR bb a b -> GbR bb (id a) (id b).

@@ -1,6 +1,6 @@
 Class C (A : Type) := c : A.
 
-Hint Mode C ! : typeclass_instances.
+#[export] Hint Mode C ! : typeclass_instances.
 
 Goal forall f : (forall A, C A -> C (list A)), True.
 intros.

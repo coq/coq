@@ -26,7 +26,7 @@ Abort.
 
 Require Import DeclConstant.
 
-Instance Dsqrt : DeclaredConstant Z.sqrt := {}.
+#[export] Instance Dsqrt : DeclaredConstant Z.sqrt := {}.
 
 Goal ( IZR (Z.sqrt 4) = 2)%R.
 Proof.
@@ -46,7 +46,7 @@ Proof.
   Fail lra.
 Abort.
 
-Instance Dplus : DeclaredConstant Init.Nat.add := {}.
+#[export] Instance Dplus : DeclaredConstant Init.Nat.add := {}.
 
 Goal ( 1 ^ (2 + 2) = 1)%R.
 Proof.

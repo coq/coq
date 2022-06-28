@@ -3,10 +3,10 @@ Module applydestruct.
   Class Foo (A : Type) :=
     { bar : nat -> A;
       baz  : A -> nat }.
-  Hint Mode Foo + : typeclass_instances.
+  #[export] Hint Mode Foo + : typeclass_instances.
 
   Class C (A : Type).
-  Hint Mode C + : typeclass_instances.
+  #[export] Hint Mode C + : typeclass_instances.
 
   Variable fool : forall {A} {F : Foo A} (x : A), C A -> bar 0 = x.
   (* apply leaves non-dependent subgoals of typeclass type
@@ -65,7 +65,7 @@ Module onlyclasses.
 (* In 8.6 we still allow non-class subgoals *)
   Variable Foo : Type.
   Variable foo : Foo.
-  Hint Extern 0 Foo => exact foo : typeclass_instances.
+  #[export] Hint Extern 0 Foo => exact foo : typeclass_instances.
   Goal Foo * Foo.
     split. shelve.
     Set Typeclasses Debug.
@@ -76,8 +76,8 @@ Module onlyclasses.
   Module RJung.
     Class Foo (x : nat).
       
-      Instance foo x : x = 2 -> Foo x := {}.
-      Hint Extern 0 (_ = _) => reflexivity : typeclass_instances.
+      #[export] Instance foo x : x = 2 -> Foo x := {}.
+      #[export] Hint Extern 0 (_ = _) => reflexivity : typeclass_instances.
       Typeclasses eauto := debug.
       Check (_ : Foo 2).
 
@@ -90,9 +90,9 @@ End onlyclasses.
 Module shelve_non_class_subgoals.
   Variable Foo : Type.
   Variable foo : Foo.
-  Hint Extern 0 Foo => exact foo : typeclass_instances.
+  #[export] Hint Extern 0 Foo => exact foo : typeclass_instances.
   Class Bar := {}.
-  Instance bar1 (f:Foo) : Bar := {}.
+  #[export] Instance bar1 (f:Foo) : Bar := {}.
 
   Typeclasses eauto := debug.
   Set Typeclasses Debug Verbosity 2.
@@ -105,9 +105,9 @@ End shelve_non_class_subgoals.
 Module RefineVsNoTceauto.
 
   Class Foo (A : Type) := foo : A.
-  Instance: Foo nat := { foo := 0 }.
-  Instance: Foo nat := { foo := 42 }.
-  Hint Extern 0 (_ = _) => refine eq_refl : typeclass_instances.
+  #[export] Instance: Foo nat := { foo := 0 }.
+  #[export] Instance: Foo nat := { foo := 42 }.
+  #[export] Hint Extern 0 (_ = _) => refine eq_refl : typeclass_instances.
   Goal exists (f : Foo nat), @foo _ f = 0.
   Proof.
     unshelve (notypeclasses refine (ex_intro _ _ _)). 
@@ -125,7 +125,7 @@ End RefineVsNoTceauto.
 Module Leivantex2PR339.
   (** Was a bug preventing to find hints associated with no pattern *)
   Class Bar := {}.
-  Instance bar1 (t:Type) : Bar := {}.
+  #[export] Instance bar1 (t:Type) : Bar := {}.
   Local Hint Extern 0 => exact True : typeclass_instances.
   Typeclasses eauto := debug.
   Goal Bar.
@@ -156,13 +156,13 @@ Record Equ (A : Type) (R : A -> A -> Prop).
 Definition equiv {A} R (e : Equ A R) := R.
 Record Refl (A : Type) (R : A -> A -> Prop).
 Axiom equ_refl : forall A R (e : Equ A R), Refl _ (@equiv A R e).
-Hint Extern 0 (Refl _ _) => unshelve class_apply @equ_refl; [shelve|] : foo.
+#[export] Hint Extern 0 (Refl _ _) => unshelve class_apply @equ_refl; [shelve|] : foo.
 
 Variable R : nat -> nat -> Prop.
 Lemma bas : Equ nat R.
 Admitted.
-Hint Resolve bas : foo.
-Hint Extern 1 => match goal with |- (_ -> _ -> Prop) => shelve end : foo.
+#[export] Hint Resolve bas : foo.
+#[export] Hint Extern 1 => match goal with |- (_ -> _ -> Prop) => shelve end : foo.
 
 Goal exists R, @Refl nat R.
   eexists.
@@ -219,7 +219,7 @@ Module deftwice.
 
   Record Inhab (A : Type) := { witness : A }.
 
-  Instance inhab_C : C Type := Inhab.
+  #[export] Instance inhab_C : C Type := Inhab.
 
   Axiom full : forall A (X : C A), forall x : A, c x.
 
@@ -254,8 +254,8 @@ End sec.
 Module UniqueSolutions.
   Set Typeclasses Unique Solutions.
   Class Eq (A : Type) : Set.
-    Instance eqa : Eq nat := {}.
-    Instance eqb : Eq nat := {}.
+    #[export] Instance eqa : Eq nat := {}.
+    #[export] Instance eqb : Eq nat := {}.
 
     Goal Eq nat.
       try apply _.
@@ -269,10 +269,10 @@ Module UniqueInstances.
       for it. *)
   Set Typeclasses Unique Instances.
   Class Eq (A : Type) : Set.
-    Instance eqa : Eq nat. Qed.
-    Instance eqb : Eq nat := {}.
+    #[export] Instance eqa : Eq nat. Qed.
+    #[export] Instance eqb : Eq nat := {}.
     Class Foo (A : Type) (e : Eq A) : Set.
-    Instance fooa : Foo _ eqa := {}.
+    #[export] Instance fooa : Foo _ eqa := {}.
 
     Tactic Notation "refineu" open_constr(c) := unshelve refine c.
 
@@ -291,10 +291,10 @@ Module IterativeDeepening.
   Class B.
   Class C.
 
-  Instance: B -> A | 0 := {}.
-  Instance: C -> A | 0 := {}.
-  Instance: C -> B -> A | 0 := {}.
-  Instance: A -> A | 0 := {}.
+  #[export] Instance: B -> A | 0 := {}.
+  #[export] Instance: C -> A | 0 := {}.
+  #[export] Instance: C -> B -> A | 0 := {}.
+  #[export] Instance: A -> A | 0 := {}.
   
   Goal C -> A.
     intros.
@@ -318,7 +318,7 @@ Module AxiomsAreNotInstances.
   Fail Definition testdef2 : TestClass2 := _.
 
   (* we didn't break typeclasses *)
-  Existing Instance testax2.
+  #[export] Existing Instance testax2.
   Definition testdef2 : TestClass2 := _.
 
 End AxiomsAreNotInstances.
@@ -334,7 +334,7 @@ Module InternalHintBacktracking.
   Local Hint Extern 0 (A _) => exact a1 + exact a0 : typeclass_instances.
 
   Class B (T : Type).
-  Instance b0 : B nat := {}.
+  #[export] Instance b0 : B nat := {}.
 
   Definition foo {T} {x : A T} {b : B T} : T := ofA.
   (* This definition only passes because we backtrack on [exact a1] above and try a0 : A nat *)

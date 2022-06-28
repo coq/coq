@@ -16,8 +16,8 @@ Record bar :=
 Existing Class myprop.
 Existing Class myotherprop.
 
-Instance : forall O, myprop O. Abort.
-Instance : forall (O : bar), myotherprop O.
+#[export] Instance : forall O, myprop O. Abort.
+#[export] Instance : forall (O : bar), myotherprop O.
 Proof.
   intros O. destruct O; cbn. exact someprop0.
 Defined.
