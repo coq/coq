@@ -1881,7 +1881,7 @@ Other kinds of objects:
 #### Writing subst_thing functions
 
 The subst_thing should not copy the thing if it hasn't actually
-changed. There are some cool emacs macros in dev/objects.el 
+changed.
 to help writing subst functions this way quickly and without errors.
 Also there are *_smartmap functions in Util.
 
