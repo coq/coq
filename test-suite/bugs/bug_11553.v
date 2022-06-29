@@ -22,7 +22,7 @@ vl_rename (sb : var -> var) v : vl :=
   | var_vl x => var_vl (sb x)
   end.
 
-Instance rename_vl : Rename vl := vl_rename.
+#[export] Instance rename_vl : Rename vl := vl_rename.
 
 Lemma foo ξ x: rename_vl ξ (var_vl x) = var_vl x.
 (* Succeeds *)

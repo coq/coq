@@ -8,7 +8,7 @@ Class IsEquiv {A B : Type} (f : A -> B) := { equiv_inv : B -> A }.
 Record Equiv A B := { equiv_fun :> A -> B ; equiv_isequiv :> IsEquiv equiv_fun }.
 Notation "A <~> B" := (Equiv A B) (at level 85) : equiv_scope.
 Axiom IsHSet : Type -> Type.
-Instance isequiv_compose `{IsEquiv A B f} `{IsEquiv B C g} : IsEquiv (compose g f) | 1000.
+#[export] Instance isequiv_compose `{IsEquiv A B f} `{IsEquiv B C g} : IsEquiv (compose g f) | 1000.
 admit.
 Defined.
 Set Primitive Projections.

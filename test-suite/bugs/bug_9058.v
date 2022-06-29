@@ -1,8 +1,8 @@
 Class A (X : Type) := {}.
-Hint Mode A ! : typeclass_instances.
+#[export] Hint Mode A ! : typeclass_instances.
 
 Class B X {aX: A X} Y := { opB: X -> Y -> Y }.
-Hint Mode B - - ! : typeclass_instances.
+#[export] Hint Mode B - - ! : typeclass_instances.
 
 Section Section.
 

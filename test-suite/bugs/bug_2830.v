@@ -180,7 +180,7 @@ intros. apply fmap_respects. assumption. Qed.
 
 (* HERE IS THE PROBLEMATIC INSTANCE. If we change this to a regular Definition,
    then the problem goes away. *)
-Instance functor_comp `{C:Category} `{D:Category} `{E:Category}
+#[export] Instance functor_comp `{C:Category} `{D:Category} `{E:Category}
   {Gim} (G:Functor D E Gim) {Fim} (F:Functor C D Fim)
   : Functor C E (Basics.compose Gim Fim).
 intros. apply Build_Functor with (fmap := fun a b f => fmap G (fmap F f)).
@@ -190,12 +190,12 @@ abstract (intros; repeat (rewrite fmap_preserves_comp); reflexivity).
 Defined.
 
 Definition skel {A:Type} : relation A := @eq A.
-Instance skel_equiv A : Equivalence (@skel A).
+#[export] Instance skel_equiv A : Equivalence (@skel A).
 Admitted.
 
 Import FunctionalExtensionality.
 
-Instance set_cat : Category Type (fun A B => A -> B).
+#[export] Instance set_cat : Category Type (fun A B => A -> B).
 refine {|
   id := fun A => fun x => x
   ; comp c b a f g := fun x => f (g x)
@@ -211,7 +211,7 @@ Defined.
 Require Import List.
 
 Definition setList (A:set_cat) := list A.
-Instance list_functor : Functor set_cat set_cat setList.
+#[export] Instance list_functor : Functor set_cat set_cat setList.
 apply Build_Functor with (fmap := @map).
 intros. rewrite H. reflexivity.
 intros; simpl; apply functional_extensionality.

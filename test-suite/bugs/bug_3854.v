@@ -10,7 +10,7 @@ Arguments BuildhProp _ {_}.
 Canonical Structure default_hProp := fun T P => (@BuildhProp T P).
 Generalizable Variables A B f g e n.
 Axiom trunc_forall : forall `{P : A -> Type}, IsHProp (forall a, P a).
-Existing Instance trunc_forall.
+#[export] Existing Instance trunc_forall.
 Inductive V : Type := | set {A : Type} (f : A -> V) : V.
 Axiom mem : V -> V -> hProp.
 Axiom mem_induction

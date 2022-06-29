@@ -203,7 +203,7 @@ Definition znat := mk nat 0%nat.
 Require Import ZifyClasses.
 Require Import ZifyInst.
 
-Instance Zero : CstOp (@zero znat : nat) := Op_O.
+#[export] Instance Zero : CstOp (@zero znat : nat) := Op_O.
 Add Zify CstOp Zero.
 
 
@@ -260,7 +260,7 @@ Qed.
 
 Require Import ZifyBool.
 
-Instance Op_bool_inj : UnOp (inj : bool -> bool) :=
+#[export] Instance Op_bool_inj : UnOp (inj : bool -> bool) :=
   { TUOp := id; TUOpInj := fun _ => eq_refl }.
 Add Zify UnOp Op_bool_inj.
 

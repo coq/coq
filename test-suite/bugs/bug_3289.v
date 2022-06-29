@@ -5,19 +5,19 @@ Class Contr_internal (A : Type) :=
                contr : (forall y : A, True) }.
 Class Contr A := Contr_is_contr : Contr_internal A.
 Inductive Unit : Set := tt.
-Instance contr_unit : Contr Unit | 0 :=
+#[export] Instance contr_unit : Contr Unit | 0 :=
   let x := {|
         center := tt;
         contr := fun t : Unit => I
       |} in x. (* success *)
 
-Instance contr_internal_unit' : Contr_internal Unit | 0 :=
+#[export] Instance contr_internal_unit' : Contr_internal Unit | 0 :=
   {|
     center := tt;
     contr := fun t : Unit => I
   |}.
 
-Instance contr_unit' : Contr Unit | 0 :=
+#[export] Instance contr_unit' : Contr Unit | 0 :=
   {|
     center := tt;
     contr := fun t : Unit => I

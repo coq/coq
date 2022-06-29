@@ -6,7 +6,7 @@ Ltac force_clear :=
          end.
 
 Class abstract_term {T} (x : T) := by_abstract_term : T.
-Hint Extern 0 (@abstract_term ?T ?x) => force_clear; change T; abstract (exact x) : typeclass_instances.
+#[export] Hint Extern 0 (@abstract_term ?T ?x) => force_clear; change T; abstract (exact x) : typeclass_instances.
 
 Goal True.
 (* These work: *)

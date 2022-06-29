@@ -157,8 +157,8 @@ End mult.
 Parameter beq_nat : forall x y : nat, bool.
 
 Class Foo (A : Type) := {foo_neg : A -> A ; foo_prf : forall x : A, x = foo_neg x}.
-Instance: Foo nat. admit. Defined.
-Instance: Foo bool. admit. Defined.
+#[export] Instance: Foo nat. admit. Defined.
+#[export] Instance: Foo bool. admit. Defined.
 
 Goal forall (x : nat) (y : bool), beq_nat (foo_neg x) 0 = foo_neg y.
 Proof. intros. setoid_rewrite <- foo_prf. change (beq_nat x 0 = y). Abort.
@@ -171,7 +171,7 @@ Proof. intros. setoid_rewrite <- @foo_prf at 1. change (beq_nat x 0 = foo_neg y)
 Definition t := nat -> bool.
 Definition h (a b : t) := forall n, a n = b n.
 
-Instance subrelh : subrelation h (Morphisms.pointwise_relation nat eq).
+#[export] Instance subrelh : subrelation h (Morphisms.pointwise_relation nat eq).
 Proof. intros x y H; assumption. Qed.
 
 Goal forall a b, h a b -> a 0 = b 0.
@@ -194,7 +194,7 @@ Qed.
 
 Axiom add_0_r_peq : forall x : nat, eq (x + 0)%nat x.
 
-Instance All_proper {A} :
+#[export] Instance All_proper {A} :
   CMorphisms.Proper ((pointwise_relation A iffT) ==> eq ==> iffT) All.
 Proof.
   intros f g Hfg x y e. destruct e. split; apply All_impl, Hfg.
@@ -276,29 +276,29 @@ Arguments peq_refl {A a}.
 #[universes(polymorphic)]
 Axiom add_0_r_peq : forall x : nat, peq (x + 0)%nat x.
 
-#[universes(polymorphic)]
+#[universes(polymorphic), export]
 Instance peq_left {A : Type} {B : Type} {R : crelation B} (f : A -> B) `{Reflexive B R} : Proper (peq ==> R) f.
 Admitted.
 
-Instance reflexive_eq_dom_reflexive@{i j jr mij mijr} {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
+#[export] Instance reflexive_eq_dom_reflexive@{i j jr mij mijr} {A : Type@{i}} {B : Type@{j}} (R : crelation@{j jr} B) :
   Reflexive@{j jr} R ->
   Reflexive@{mij mijr} (@peq A ==> R)%signatureT.
 Proof.
   intros hr x ? ? e. destruct e. apply hr.
 Qed.
 
-#[universes(polymorphic)]
+#[universes(polymorphic), export]
 Instance All_proper {A} :
   CMorphisms.Proper ((pointwise_relation A iffT) ==> peq ==> iffT) All.
 Proof.
   intros f g Hfg x y e. destruct e. split; apply All_impl, Hfg.
 Qed.
 
-#[universes(polymorphic)]
+#[universes(polymorphic), export]
 Instance eq_proper_proxy@{i} {A : Type@{i}} (x : A) : ProperProxy@{i i} peq x.
 Proof. red. exact peq_refl. Defined.
 
-#[universes(polymorphic)]
+#[universes(polymorphic), export]
 Instance peq_equiv {A} : Equivalence (@peq A).
 Proof.
   split.

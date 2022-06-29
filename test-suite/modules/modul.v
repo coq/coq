@@ -4,7 +4,7 @@ Module M.
 
   Axiom w : forall n : nat, rel 0 (S n).
 
-  Hint Resolve w.
+  #[export] Hint Resolve w.
 
   (* <Warning> : Grammar is replaced by Notation *)
 

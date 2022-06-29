@@ -5,9 +5,9 @@ Class Empty T := { empty : T }.
 Class EmptyIn (A T : Type) `{In A T} `{Empty T} :=
  { isempty : forall x, IsIn x empty -> False }.
 
-Hint Mode EmptyIn ! ! - - : typeclass_instances.
-Hint Mode Empty ! : typeclass_instances.
-Hint Mode In ! - : typeclass_instances.
+#[export] Hint Mode EmptyIn ! ! - - : typeclass_instances.
+#[export] Hint Mode Empty ! : typeclass_instances.
+#[export] Hint Mode In ! - : typeclass_instances.
 Existing Class IsIn.
 Goal forall A T `{In A T} `{Empty T} `{EmptyIn A T}, forall x : A, IsIn x empty -> False.
  Proof.
@@ -43,8 +43,8 @@ Module BestEffort.
   Class B (T : Type).
   Global Hint Mode B + : typeclass_instances.
 
-  Instance a_imp_b T : A T -> B T := {}.
-  Instance anat : B nat := {}.
+  #[export] Instance a_imp_b T : A T -> B T := {}.
+  #[export] Instance anat : B nat := {}.
   Lemma b : B nat * A nat.
   Proof.
     Fail split; typeclasses eauto.

@@ -12,7 +12,7 @@ Module Type PO.
   Axiom le_trans : forall x y z : T, le x y -> le y z -> le x z.
   Axiom le_antis : forall x y : T, le x y -> le y x -> x = y.
 
-  Hint Resolve le_refl le_trans le_antis.
+  #[global] Hint Resolve le_refl le_trans le_antis.
 End PO.
 
 
@@ -20,7 +20,7 @@ Module Pair (X: PO) (Y: PO) <: PO.
   Definition T := (X.T * Y.T)%type.
   Definition le p1 p2 := X.le (fst p1) (fst p2) /\ Y.le (snd p1) (snd p2).
 
-  Hint Unfold le.
+  #[global] Hint Unfold le.
 
   Lemma le_refl : forall p : T, le p p.
     auto.

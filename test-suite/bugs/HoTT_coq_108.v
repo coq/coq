@@ -52,7 +52,7 @@ Fixpoint IsTrunc_internal (n : trunc_index) (A : Type) : Type :=
 Class IsTrunc (n : trunc_index) (A : Type) : Type :=
   Trunc_is_trunc : IsTrunc_internal n A.
 
-Instance istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A)
+#[export] Instance istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A)
 : IsTrunc n (x = y)
   := H x y.
 
@@ -66,7 +66,7 @@ Global Instance contr_forall `{Funext} `{P : A -> Type} `{forall a, Contr (P a)}
 : Contr (forall a, P a) | 100.
 admit.
 Defined.
-Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
+#[export] Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
 Global Instance trunc_forall `{Funext} `{P : A -> Type} `{forall a, IsTrunc n (P a)}
 : IsTrunc n (forall a, P a) | 100.
 Proof.
@@ -83,7 +83,7 @@ Record PreCategory :=
     compose : forall s d d', morphism d d' -> morphism s d -> morphism s d';
     trunc_morphism : forall s d, IsHSet (morphism s d) }.
 
-Existing Instance trunc_morphism.
+#[export] Existing Instance trunc_morphism.
 Infix "o" := (@compose _ _ _ _) : morphism_scope.
 Local Open Scope morphism_scope.
 

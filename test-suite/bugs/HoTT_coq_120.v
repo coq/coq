@@ -44,11 +44,11 @@ Notation IsHSet := (IsTrunc 0).
 Class Funext := {}.
 Inductive Unit : Set := tt.
 
-Instance contr_unit : Contr Unit | 0 := let x := {|
+#[export] Instance contr_unit : Contr Unit | 0 := let x := {|
                                               center := tt;
                                               contr := fun t : Unit => match t with tt => idpath end
                                             |} in x.
-Instance trunc_succ `{IsTrunc n A} : IsTrunc (trunc_S n) A | 1000.
+#[export] Instance trunc_succ `{IsTrunc n A} : IsTrunc (trunc_S n) A | 1000.
 admit.
 Defined.
 Record hProp := hp { hproptype :> Type ; isp : IsHProp hproptype}.
@@ -90,7 +90,7 @@ Definition set_cat : PreCategory
                         (fun x y => forall _ : x, y)%core
                         (fun _ _ _ f g x => f (g x))%core.
 Inductive minus1Trunc (A :Type) : Type := min1 : A -> minus1Trunc A.
-Instance minus1Trunc_is_prop {A : Type} : IsHProp (minus1Trunc A) | 0. Admitted.
+#[export] Instance minus1Trunc_is_prop {A : Type} : IsHProp (minus1Trunc A) | 0. Admitted.
 Definition hexists {X} (P:X->Type):Type:= minus1Trunc (sigT  P).
 Definition isepi {X Y} `(f:X->Y) := forall Z: hSet,
                                     forall g h: Y -> Z, (fun x => g (f x)) = (fun x => h (f x)) -> g = h.

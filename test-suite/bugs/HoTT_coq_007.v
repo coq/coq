@@ -18,7 +18,7 @@ Module Comment1.
 
   Create HintDb functor discriminated.
 
-  Hint Rewrite @FIdentityOf : functor.
+  #[export] Hint Rewrite @FIdentityOf : functor.
 
   Polymorphic Definition ComposeFunctors objC C objD D objE E (G : @Functor objD D objE E) (F : @Functor objC C objD D) : Functor C E.
   refine {| ObjectOf := (fun c => G (F c));
@@ -66,7 +66,7 @@ Module Comment2.
 
   Create HintDb morphism discriminated.
 
-  Polymorphic Hint Resolve @LeftIdentity : morphism.
+  #[export] Polymorphic Hint Resolve @LeftIdentity : morphism.
 
   Polymorphic Definition ProductCategory objC (C : Category objC) objD (D : Category objD) : @Category (objC * objD)%type.
   refine {|
@@ -107,8 +107,8 @@ Module Comment3.
   trivial.
   Qed.
 
-  Polymorphic Hint Resolve foo. (* success *)
-  Polymorphic Hint Rewrite @foo. (* Success *)
-  Polymorphic Hint Resolve @foo. (* Error: @foo is a term and cannot be made a polymorphic hint, only global references can be polymorphic hints. *)
-  Fail Polymorphic Hint Rewrite foo. (* Error: Cannot infer the implicit parameter obj of foo. *)
+  #[export] Polymorphic Hint Resolve foo. (* success *)
+  #[export] Polymorphic Hint Rewrite @foo. (* Success *)
+  #[export] Polymorphic Hint Resolve @foo. (* Error: @foo is a term and cannot be made a polymorphic hint, only global references can be polymorphic hints. *)
+  Fail #[export] Polymorphic Hint Rewrite foo. (* Error: Cannot infer the implicit parameter obj of foo. *)
 End Comment3.

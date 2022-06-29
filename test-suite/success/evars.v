@@ -66,7 +66,7 @@ Check (fun f:(forall (v:Type->Type), v (v nat) -> nat) => f _ (Some (Some O))).
 
 Theorem contradiction : forall p, ~ p -> p -> False.
 Proof. trivial. Qed.
-Hint Resolve contradiction.
+#[export] Hint Resolve contradiction.
 Goal False.
 eauto.
 Abort.

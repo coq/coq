@@ -15,7 +15,7 @@ Notation "!!!" := (pack _) (at level 0, only printing).
 
 Class EvenNat the_even := {half : nat; half_prop : 2 * half = the_even}.
 
-Instance EvenNat0 : EvenNat 0 := {half := 0; half_prop := eq_refl}.
+#[export] Instance EvenNat0 : EvenNat 0 := {half := 0; half_prop := eq_refl}.
 
 Lemma even_rec n h : 2 * h = n -> 2 * S h = S (S n).
 Proof.
@@ -24,7 +24,7 @@ Proof.
   reflexivity.
 Qed.
 
-Instance EvenNat_rec n (p : EvenNat n) : EvenNat (S (S n)) :=
+#[export] Instance EvenNat_rec n (p : EvenNat n) : EvenNat (S (S n)) :=
  {half := S (@half _ p); half_prop := even_rec n (@half _ p) (@half_prop _ p)}.
 
 Definition tuto_div2 n (p : EvenNat n) := @half _ p.

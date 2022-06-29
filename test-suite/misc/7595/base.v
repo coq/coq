@@ -9,7 +9,7 @@ Global Generalizable All Variables.
 (** This type class by (Spitters/van der Weegen, 2011) collects decidable
 propositions. *)
 Class Decision (P : Prop) := decide : {P} + {¬P}.
-Hint Mode Decision ! : typeclass_instances.
+#[export] Hint Mode Decision ! : typeclass_instances.
 Arguments decide _ {_} : simpl never, assert.
 
 (** ** Proof irrelevant types *)
@@ -17,7 +17,7 @@ Arguments decide _ {_} : simpl never, assert.
 elements of the type are equal. We use this notion only used for propositions,
 but by universe polymorphism we can generalize it. *)
 Class ProofIrrel (A : Type) : Prop := proof_irrel (x y : A) : x = y.
-Hint Mode ProofIrrel ! : typeclass_instances.
+#[export] Hint Mode ProofIrrel ! : typeclass_instances.
 
 Class MGuard (M : Type → Type) :=
   mguard: ∀ P {dec : Decision P} {A}, (P → M A) → M A.

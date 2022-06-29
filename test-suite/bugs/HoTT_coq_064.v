@@ -37,7 +37,7 @@ Module Export Overture.
 
   Class Funext.
   Axiom isequiv_apD10 : `{Funext} -> forall (A : Type) (P : A -> Type) f g, IsEquiv (@apD10 A P f g) .
-  Existing Instance isequiv_apD10.
+  #[export] Existing Instance isequiv_apD10.
 
   Definition path_forall `{Funext} {A : Type} {P : A -> Type} (f g : forall x : A, P x) :
     (forall x, f x = g x) -> f = g
@@ -178,7 +178,7 @@ Definition IsColimit `{Funext} C D (F : Functor D C)
 
 Generalizable All Variables.
 Axiom fs : Funext.
-Existing Instance fs.
+#[export] Existing Instance fs.
 
 Section bar.
 

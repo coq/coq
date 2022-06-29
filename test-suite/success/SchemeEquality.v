@@ -21,7 +21,7 @@ Module C.
   Parameter eq_A : A->A->bool.
   Parameter A_bl : forall x y, eq_A x y = true -> x = y.
   Parameter A_lb : forall x y, x = y -> eq_A x y = true.
-  Hint Resolve A_bl A_lb : core.
+  #[export] Hint Resolve A_bl A_lb : core.
   Inductive I := C : A -> I.
   Scheme Equality for I.
   Inductive J := D : list A -> J.

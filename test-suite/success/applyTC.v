@@ -7,7 +7,7 @@ Admitted.
 
 Notation "{val:= v }" := (@val _ v).
 
-Instance zero : class nat := {| val := 0 |}.
+#[export] Instance zero : class nat := {| val := 0 |}.
 
 Lemma test : P 0.
 Fail apply usetc.

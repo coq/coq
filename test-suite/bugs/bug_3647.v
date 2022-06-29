@@ -55,7 +55,7 @@ Section MorphConsts.
     mkMorph (fun x => mkMorph (f x) (p x)) q.
 
 End MorphConsts.
-Instance Equiv_PropP : Equiv Prop.
+#[export] Instance Equiv_PropP : Equiv Prop.
 admit.
 Defined.
 
@@ -172,10 +172,10 @@ Section Exponentials.
 End Exponentials.
 
 Inductive empty : Set := .
-Instance empty_Equiv : Equiv empty.
+#[export] Instance empty_Equiv : Equiv empty.
 admit.
 Defined.
-Instance empty_type : type empty.
+#[export] Instance empty_type : type empty.
 admit.
 Defined.
 
@@ -282,7 +282,7 @@ Class ILogic Frm {ILOps: ILogicOps Frm} := {
                                             landAdj: forall P Q C, C |-- (P -->> Q) -> C //\\ P |-- Q;
                                             limplAdj: forall P Q C, C //\\ P |-- Q -> C |-- (P -->> Q)
                                           }.
-Hint Extern 0 (?x |-- ?x) => reflexivity.
+#[export] Hint Extern 0 (?x |-- ?x) => reflexivity.
 
 Section ILogicExtra.
   Context `{IL: ILogic Frm}.
@@ -344,7 +344,7 @@ Next Obligation.
   admit.
 Defined.
 
-Instance ILogicOps_Prop : ILogicOps Prop | 2 := {|
+#[export] Instance ILogicOps_Prop : ILogicOps Prop | 2 := {|
                                                  lentails P Q := (P : Prop) -> Q;
                                                  ltrue        := True;
                                                  lfalse       := False;
@@ -355,7 +355,7 @@ Instance ILogicOps_Prop : ILogicOps Prop | 2 := {|
                                                  lexists  T F := exists x:T, F x
                                                |}.
 
-Instance ILogic_Prop : ILogic Prop.
+#[export] Instance ILogic_Prop : ILogic Prop.
 admit.
 Defined.
 
@@ -433,7 +433,7 @@ Inductive Action :=
 
 Definition Actions := list Action.
 
-Instance ActionsEquiv : Equiv Actions := {
+#[export] Instance ActionsEquiv : Equiv Actions := {
                                           equiv a1 a2 := a1 = a2
                                         }.
 
@@ -461,14 +461,14 @@ Record PointedOPred := mkPointedOPred {
                            OPred_inhabited: IsPointed_OPred OPred_pred
                          }.
 
-Existing Instance OPred_inhabited.
+#[export] Existing Instance OPred_inhabited.
 
 Canonical Structure default_PointedOPred O `{IsPointed_OPred O} : PointedOPred
   := {| OPred_pred := O ; OPred_inhabited := _ |}.
-Instance IsPointed_eq_opred x : IsPointed_OPred (eq_opred x).
+#[export] Instance IsPointed_eq_opred x : IsPointed_OPred (eq_opred x).
 admit.
 Defined.
-Instance IsPointed_catOP `{IsPointed_OPred P, IsPointed_OPred Q} : IsPointed_OPred (catOP P Q).
+#[export] Instance IsPointed_catOP `{IsPointed_OPred P, IsPointed_OPred Q} : IsPointed_OPred (catOP P Q).
 admit.
 Defined.
 
@@ -492,15 +492,15 @@ Definition PState : Type.
 admit.
 Defined.
 
-Instance PStateEquiv : Equiv PState.
+#[export] Instance PStateEquiv : Equiv PState.
 admit.
 Defined.
 
-Instance PStateType : type PState.
+#[export] Instance PStateType : type PState.
 admit.
 Defined.
 
-Instance PStateSepAlgOps: SepAlgOps PState.
+#[export] Instance PStateSepAlgOps: SepAlgOps PState.
 admit.
 Defined.
 Definition SPred : Type.
@@ -584,7 +584,7 @@ Defined.
 Axiom behead : forall {T}, list T -> list T.
 Axiom all : forall {T}, (T -> bool) -> list T -> bool.
 Axiom all_behead : forall {T} (xs : list T) P, all P xs = true -> all P (behead xs) = true.
-Instance IsPointed_foldlOP A B C f g (init : A * B) `{IsPointed_OPred (g init)}
+#[export] Instance IsPointed_foldlOP A B C f g (init : A * B) `{IsPointed_OPred (g init)}
          `{forall a acc, IsPointed_OPred (g acc) -> IsPointed_OPred (g (f acc a))}
          (ls : list C)
 : IsPointed_OPred (g (foldl f init ls)).

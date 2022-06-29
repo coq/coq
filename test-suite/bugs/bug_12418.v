@@ -14,7 +14,7 @@ Class Cava  := {
 
 Axiom F : forall {A : Type}, (bool -> A) -> Datatypes.unit.
 
-Fail Instance T : Cava := {
+Fail #[export] Instance T : Cava := {
 
   constant b := match b with
     | true => ret tt

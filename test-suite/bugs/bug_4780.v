@@ -33,7 +33,7 @@ Delimit Scope path_scope with path.
 Local Open Scope path_scope.
 Definition concat {A : Type} {x y z : A} (p : x = y) (q : y = z) : x = z :=
   match p, q with idpath, idpath => idpath end.
-Instance transitive_paths {A} : Transitive (@paths A) | 0 := @concat A.
+#[export] Instance transitive_paths {A} : Transitive (@paths A) | 0 := @concat A.
 Definition inverse {A : Type} {x y : A} (p : x = y) : y = x
   := match p with idpath => idpath end.
 Notation "1" := idpath : path_scope.

@@ -10,7 +10,7 @@ Notation "x = y" := (x = y :> _).
 Record foo := { x : Type; H : x = x }.
 
 Create HintDb bar discriminated.
-Hint Resolve H : bar.
+#[export] Hint Resolve H : bar.
 Goal forall y : foo, @x y = @x y.
 intro y.
 progress auto with bar. (* failed to progress *)

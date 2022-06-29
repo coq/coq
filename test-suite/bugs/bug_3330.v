@@ -62,7 +62,7 @@ Definition concat {A : Type} {x y z : A} (p : x = y) (q : y = z) : x = z :=
 Definition inverse {A : Type} {x y : A} (p : x = y) : y = x
   := match p with idpath => idpath end.
 
-Instance symmetric_paths {A} : Symmetric (@paths A) | 0 := @inverse A.
+#[global] Instance symmetric_paths {A} : Symmetric (@paths A) | 0 := @inverse A.
 
 Notation "1" := idpath : path_scope.
 
@@ -79,7 +79,7 @@ Definition ap {A B:Type} (f:A -> B) {x y:A} (p:x = y) : f x = f y
 Definition pointwise_paths {A} {P:A->Type} (f g:forall x:A, P x) : Type
   := forall x:A, f x = g x.
 
-Hint Unfold pointwise_paths : typeclass_instances.
+#[global] Hint Unfold pointwise_paths : typeclass_instances.
 
 Notation "f == g" := (pointwise_paths f g) (at level 70, no associativity) : type_scope.
 
@@ -211,9 +211,9 @@ Definition Build_PreCategory
        right_identity
        (fun _ => left_identity _ _ _).
 
-Existing Instance trunc_morphism.
+#[global] Existing Instance trunc_morphism.
 
-Hint Resolve @left_identity @right_identity @associativity : category morphism.
+#[global] Hint Resolve @left_identity @right_identity @associativity : category morphism.
 
 Module Export CategoryCoreNotations.
 

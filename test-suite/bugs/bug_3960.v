@@ -9,7 +9,7 @@ Class myClass (A: Type) :=
     bar : A -> Prop
   }.
 
-Program Instance myInstance : myClass nat :=
+#[export] Program Instance myInstance : myClass nat :=
   {
     bar := foo
   }.
@@ -20,7 +20,7 @@ Class myClassP (A : Type)  :=
     barP : forall (a : A), bar a
   }.
 
-Instance myInstanceP : myClassP nat :=
+#[export] Instance myInstanceP : myClassP nat :=
   {
     barP := fooP
   }.

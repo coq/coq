@@ -6,7 +6,7 @@ Axiom IsHSet : Type -> Type.
 Existing Class IsHSet.
 Record PreCategory := { object :> Type }.
 Notation IsStrictCategory C := (IsHSet (object C)).
-Instance trunc_prod `{IsHSet A} `{IsHSet B} : IsHSet (A * B) | 100.
+#[export] Instance trunc_prod `{IsHSet A} `{IsHSet B} : IsHSet (A * B) | 100.
 admit.
 Defined.
 Typeclasses Transparent object.
@@ -20,7 +20,7 @@ Defined.
 Set Typeclasses Debug.
 (* File reduced by coq-bug-finder from original input, then from 7425 lines to 154 lines, then from 116 lines to 20 lines *)
 Class Contr (A : Type) := { center : A }.
-Instance contr_unit : Contr unit | 0 := {| center := tt |}.
+#[export] Instance contr_unit : Contr unit | 0 := {| center := tt |}.
 Module non_prim.
   Unset Primitive Projections.
   Record PreCategory := { object :> Type }.

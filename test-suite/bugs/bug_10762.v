@@ -7,7 +7,7 @@ Parameter val: Type.
 Class Enc (A:Type) : Type :=
   make_Enc { enc : A -> val }.
 
-Hint Mode Enc + : typeclass_instances.
+#[export] Hint Mode Enc + : typeclass_instances.
 
 Parameter bar : forall A (EA:Enc A), EA = EA.
 

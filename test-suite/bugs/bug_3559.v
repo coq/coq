@@ -31,7 +31,7 @@ Fixpoint IsTrunc_internal (n : trunc_index) (A : Type@{i}) : Type@{i} :=
 Notation minus_one:=(trunc_S minus_two).
 Class IsTrunc (n : trunc_index) (A : Type) : Type := Trunc_is_trunc :
 IsTrunc_internal n A.
-Instance istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A) :
+#[export] Instance istrunc_paths (A : Type) n `{H : IsTrunc (trunc_S n) A} (x y : A) :
 IsTrunc n (x = y) := H x y.
 
 Axiom cheat : forall {A}, A.
@@ -65,7 +65,7 @@ Axiom path_iff_hprop_uncurried : forall `{IsHProp A, IsHProp B}, (A <-> B) -> A
 = B.
 Inductive V : Type@{U'} := | set {A : Type@{U}} (f : A -> V) : V.
 Axiom is0trunc_V : IsTrunc (trunc_S (trunc_S minus_two)) V.
-Existing Instance is0trunc_V.
+#[export] Existing Instance is0trunc_V.
 Axiom bisimulation : V@{U' U} -> V@{U' U} -> hProp@{U'}.
 Axiom bisimulation_refl : forall (v : V), bisimulation v v.
 Axiom bisimulation_eq : forall (u v : V), bisimulation u v -> u = v.

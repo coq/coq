@@ -24,7 +24,7 @@ Ltac cat :=
   auto with category_laws;
   try reflexivity.
 
-Hint Extern 4 (equiv ?A ?A) => reflexivity : category_laws.
+#[export] Hint Extern 4 (equiv ?A ?A) => reflexivity : category_laws.
 
 Ltac proper := repeat intro; simpl; try cat; intuition.
 
@@ -81,7 +81,7 @@ Coercion fobj : Functor >-> Funclass.
 Notation "fmap[ F ]" := (@fmap _ _ F%functor _ _)
   (at level 9, format "fmap[ F ]") : morphism_scope.
 
-Hint Rewrite @fmap_id : categories.
+#[export] Hint Rewrite @fmap_id : categories.
 
 Definition Product (C D : Category) : Category := {|
   obj     := C * D;
@@ -137,7 +137,7 @@ End Bifunctor.
 Notation "bimap[ F ]" := (@bimap _ _ _ F%functor _ _ _ _)
   (at level 9, format "bimap[ F ]") : morphism_scope.
 
-Hint Rewrite @bimap_id_id : categories.
+#[export] Hint Rewrite @bimap_id_id : categories.
 
 Reserved Infix "⨂" (at level 30, right associativity).
 
@@ -150,7 +150,7 @@ Notation "x ⨂ y" := (@tensor _ _ (x%object, y%object))
 Notation "f ⨂ g" := (bimap[@tensor _ _] f g)
   (at level 30, right associativity) : morphism_scope.
 
-Program Instance PP
+#[export] Program Instance PP
         {C : Category} {D : Category} `{@Monoidal D}
         {F : Functor C D} {G : Functor C D} : Functor C D := {
   fobj := fun x => (F x ⨂ G x)%object;

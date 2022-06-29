@@ -26,14 +26,14 @@ Axiom euclid : nat -> { x : nat | x > 0 } -> nat.
 Definition eq_proj {A} {s : A -> Prop} : relation (sig s) :=
   fun x y => `x = `y.
 
-Program Instance foo {A : Type} {s : A -> Prop} : @Equivalence (sig s) eq_proj.
+#[export] Program Instance foo {A : Type} {s : A -> Prop} : @Equivalence (sig s) eq_proj.
 
 Next Obligation.
 Proof.
   cbv in *;congruence.
 Qed.
 
-Instance bar : Proper (eq ==> eq_proj ==> eq) euclid.
+#[export] Instance bar : Proper (eq ==> eq_proj ==> eq) euclid.
 Proof.
 Admitted.
 

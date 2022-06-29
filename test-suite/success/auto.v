@@ -11,7 +11,7 @@ Parameters
   (L: forall A (P: A -> Prop), G A P -> forall x, F (P x))
   (Q: unit -> Prop).
 
-Hint Resolve L.
+#[export] Hint Resolve L.
 
 Goal G unit Q -> F (Q tt).
   intro.
@@ -29,17 +29,17 @@ Qed.
 Create HintDb test discriminated.
 
 Parameter foo : forall x, x = x + 0.
-Hint Resolve foo : test.
+#[export] Hint Resolve foo : test.
 
 Variable C : nat -> Type -> Prop.
 
 Variable c_inst : C 0 nat.
 
-Hint Resolve c_inst : test.
+#[export] Hint Resolve c_inst : test.
 
-Hint Mode C - + : test.
-Hint Resolve c_inst : test2.
-Hint Mode C + + : test2.
+#[export] Hint Mode C - + : test.
+#[export] Hint Resolve c_inst : test2.
+#[export] Hint Mode C + + : test2.
 
 Goal exists n, C n nat.
 Proof.
@@ -52,7 +52,7 @@ Qed.
 
 Class B (A : Type).
 Class I. 
-Instance i : I := {}.
+#[export] Instance i : I := {}.
   
 Definition flip {A B C : Type} (f : A -> B -> C) := fun y x => f x y.
 Class D (f : nat -> nat -> nat).
@@ -96,7 +96,7 @@ Module InstnopatApply.
 End InstnopatApply.
   
 Module InstPat.
-  Hint Extern 3 (B nat) => split : typeclass_instances.
+  #[export] Hint Extern 3 (B nat) => split : typeclass_instances.
   (* map_eauto -> Extern hint *)
   (* Constr_matching.matches -> true *)
   Check (_ : B nat).
@@ -115,7 +115,7 @@ Module InstPat.
     Fail typeclasses eauto.
   Abort.
 
-  Hint Extern 0 (D (flip _)) => apply flipD : typeclass_instances.
+  #[export] Hint Extern 0 (D (flip _)) => apply flipD : typeclass_instances.
   Module withftest.
     Local Instance: D ftest := {}.
 
@@ -125,7 +125,7 @@ Module InstPat.
     (* ... : D (flip ftest) *)
   End withftest.
   Module withoutftest.
-    Hint Extern 0 (D ftest) => split : typeclass_instances.
+    #[export] Hint Extern 0 (D ftest) => split : typeclass_instances.
     Check (_ : D _).
     (* ? : D ?, _not_ looping *)
     Check (_ : D (flip _)).

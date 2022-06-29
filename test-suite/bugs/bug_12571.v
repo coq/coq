@@ -2,7 +2,7 @@ Axiom IsTrunc : Type -> Type.
 
 Existing Class IsTrunc.
 
-Declare Instance trunc_forall :
+#[export] Declare Instance trunc_forall :
   forall (A : Type) (P : A -> Type),
   IsTrunc (forall a : A, P a).
 

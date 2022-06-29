@@ -5,7 +5,7 @@ Set Debug Ssreflect.
 
 Class Class sort := { op : sort → bool }.
 Arguments op {_ _}.
-Hint Mode Class !.
+#[export] Hint Mode Class !.
 
 Lemma opP A (C: Class A) (a: A) : reflect True (op a).
 Proof. Admitted.

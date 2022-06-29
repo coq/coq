@@ -1,2 +1,2 @@
 Require Import List.
-Fail Hint Resolve -> in_map.
+Fail #[export] Hint Resolve -> in_map.

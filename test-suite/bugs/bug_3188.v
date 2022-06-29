@@ -3,8 +3,8 @@
 Module Long.
   Require Import Coq.Classes.RelationClasses.
 
-  Hint Extern 0 => apply reflexivity : typeclass_instances.
-  Hint Extern 1 => symmetry.
+  #[export] Hint Extern 0 => apply reflexivity : typeclass_instances.
+  #[export] Hint Extern 1 => symmetry.
 
   Lemma foo : exists m' : Type, True.
     intuition. (* Anomaly: Uncaught exception Not_found. Please report. *)
@@ -14,7 +14,7 @@ End Long.
 Module Short.
   Require Import Coq.Classes.RelationClasses.
 
-  Hint Extern 0 => apply reflexivity : typeclass_instances.
+  #[export] Hint Extern 0 => apply reflexivity : typeclass_instances.
 
   Lemma foo : exists m' : Type, True.
     try symmetry. (* Anomaly: Uncaught exception Not_found. Please report. *)

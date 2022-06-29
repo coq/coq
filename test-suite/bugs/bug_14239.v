@@ -4,7 +4,7 @@ Parameter reli : forall (dummy:unit)(R:relation unit), relation unit.
 
 Parameter f g : unit -> unit.
 
-Declare Instance c
+#[export] Declare Instance c
   (dummy : unit) (R : relation unit) :
   Proper (reli dummy R ==> R) f.
 

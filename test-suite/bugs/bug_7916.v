@@ -10,7 +10,7 @@ Lemma test {A}
 Proof.
   intros list_lookup_op l1 l2.
   (* setoid_rewrite list_lookup_op. Undo. *)
-Hint Mode Reflexive ! ! : typeclass_instances.
+#[export] Hint Mode Reflexive ! ! : typeclass_instances.
 
   setoid_rewrite list_lookup_op.
 Abort.
@@ -454,10 +454,10 @@ Module SSr.
 
    End RealLemmas.
 
-   Hint Resolve eqR_refl leRR ltRW.
+   #[export] Hint Resolve eqR_refl leRR ltRW.
 
-   Existing Instance real_equality.
-   Existing Instance addR_Proper.
+   #[export] Existing Instance real_equality.
+   #[export] Existing Instance addR_Proper.
 
    Section RealMorph.
 

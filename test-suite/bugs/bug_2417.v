@@ -1,6 +1,6 @@
 Parameter x y : nat.
 Axiom H : x = y.
-Hint Rewrite H : mybase.
+#[export] Hint Rewrite H : mybase.
 
 Ltac bar base := autorewrite with base.
 

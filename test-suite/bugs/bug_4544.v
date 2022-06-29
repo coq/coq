@@ -174,7 +174,7 @@ Global Instance istrunc_paths (A : Type) n `{H : IsTrunc n.+1 A} (x y : A)
 Notation Contr := (IsTrunc -2).
 Notation IsHProp := (IsTrunc -1).
 
-Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
+#[global] Hint Extern 0 => progress change Contr_internal with Contr in * : typeclass_instances.
 
 Monomorphic Axiom dummy_funext_type : Type0.
 Monomorphic Class Funext := { dummy_funext_value : dummy_funext_type }.

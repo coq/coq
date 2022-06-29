@@ -48,7 +48,7 @@ Open Scope functor_type_scope.
 Notation "C ⟶ D" := (@Functor C%category D%category)
   (at level 90, right associativity) : functor_type_scope.
 
-Hint Rewrite @fmap_id : categories.
+#[export] Hint Rewrite @fmap_id : categories.
 
 Ltac cat_simpl :=
   simpl; intros;

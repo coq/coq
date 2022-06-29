@@ -4,7 +4,7 @@ Axiom Hfg : forall n m, n = n -> f n m = g n m.
 Axiom LetIn : forall {A B} (x : A) (f : A -> B), B.
 Axiom LetIn_Proper : forall A B, Proper (eq ==> pointwise_relation _ eq ==> eq)
 (@ LetIn A B).
-Existing Instance LetIn_Proper.
+#[export] Existing Instance LetIn_Proper.
 
 Goal forall n, LetIn n (fun n' => f 1 n') = LetIn n (fun n' => g 1 n').
 Proof.

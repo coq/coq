@@ -1,7 +1,7 @@
 Parameter Foo : Prop.
 Axiom H : Foo.
 
-Hint Resolve H : mybase.
+#[export] Hint Resolve H : mybase.
 
 Ltac foo base := eauto with base.
 

@@ -10,7 +10,7 @@ Axiom FG : forall f, f None = None -> F f = G f.
 
 Axiom admit : forall {T}, T.
 
-Existing Instance eq_Reflexive.
+#[export] Existing Instance eq_Reflexive.
 
 Global Instance foo (A := nat)
   : Proper ((pointwise_relation _ eq)

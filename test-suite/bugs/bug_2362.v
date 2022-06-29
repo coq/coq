@@ -14,7 +14,7 @@ Set Implicit Arguments.
 
 Notation "( x ,> y )" := (fpair x y) (at level 0).
 
-Instance Pointed_FPair B neutral:
+#[export] Instance Pointed_FPair B neutral:
  Pointed (fun A => FPair A B neutral) :=
  { creturn := fun A (a:A) => (a,> neutral) }.
 Definition blah_fail (x:bool) : FPair bool nat O :=
@@ -27,7 +27,7 @@ Definition blah_explicit (x:bool) : FPair bool nat O :=
 Print blah_explicit.
 
 
-Instance Pointed_FPair_mono:
+#[export] Instance Pointed_FPair_mono:
  Pointed (fun A => FPair A nat 0) :=
  { creturn := fun A (a:A) => (a,> 0) }.
 

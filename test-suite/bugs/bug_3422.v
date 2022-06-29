@@ -6,7 +6,7 @@ Axiom admit : forall {T}, T.
 Reserved Infix "o" (at level 40, left associativity).
 Class IsEquiv {A B : Type} (f : A -> B) := { equiv_inv : B -> A }.
 Record Equiv A B := { equiv_fun :> A -> B ; equiv_isequiv :> IsEquiv equiv_fun }.
-Existing Instance equiv_isequiv.
+#[export] Existing Instance equiv_isequiv.
 Delimit Scope equiv_scope with equiv.
 Local Open Scope equiv_scope.
 Notation "A <~> B" := (Equiv A B) (at level 85) : equiv_scope.

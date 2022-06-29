@@ -15,7 +15,7 @@ Infix "|--"  := lentails (at level 79, no associativity).
 Class ILogic Frm {ILOps: ILogicOps Frm} := { lentailsPre:> PreOrder lentails }.
 Definition lequiv `{ILogic Frm} P Q := P |-- Q /\ Q |-- P.
 Infix "-|-"  := lequiv (at level 85, no associativity).
-Instance lequiv_inverse_lentails `{ILogic Frm} {inverse} : subrelation lequiv (inverse lentails) := admit.
+#[export] Instance lequiv_inverse_lentails `{ILogic Frm} {inverse} : subrelation lequiv (inverse lentails) := admit.
 Record ILFunFrm (T : Type) `{e : Equiv T} `{ILOps : ILogicOps Frm} := mkILFunFrm { ILFunFrm_pred :> T -> Frm }.
 Section ILogic_Fun.
   Context (T: Type) `{TType: type T}.
@@ -24,13 +24,13 @@ Section ILogic_Fun.
   Definition ILFun_ILogic : ILogic (@ILFunFrm T _ Frm _) := admit.
 End ILogic_Fun.
 Arguments ILFunFrm _ {e} _ {ILOps}.
-Instance ILogicOps_Prop : ILogicOps Prop | 2 := {| lentails P Q := (P : Prop) -> Q;
+#[export] Instance ILogicOps_Prop : ILogicOps Prop | 2 := {| lentails P Q := (P : Prop) -> Q;
                                                    ltrue        := True;
                                                    land     P Q := P /\ Q;
                                                    lor      P Q := P \/ Q |}.
 Axiom Action : Set.
 Definition Actions := list Action.
-Instance ActionsEquiv : Equiv Actions := { equiv a1 a2 := a1 = a2 }.
+#[export] Instance ActionsEquiv : Equiv Actions := { equiv a1 a2 := a1 = a2 }.
 Definition OPred := ILFunFrm Actions Prop.
 Local Existing Instance ILFun_Ops.
 Local Existing Instance ILFun_ILogic.
@@ -45,10 +45,10 @@ Record PointedOPred := mkPointedOPred {
                            OPred_pred :> OPred;
                            OPred_inhabited: IsPointed_OPred OPred_pred
                          }.
-Existing Instance OPred_inhabited.
+#[export] Existing Instance OPred_inhabited.
 Canonical Structure default_PointedOPred O `{IsPointed_OPred O} : PointedOPred
   := {| OPred_pred := O ; OPred_inhabited := _ |}.
-Instance IsPointed_catOP `{IsPointed_OPred P, IsPointed_OPred Q} : IsPointed_OPred (catOP P Q) := admit.
+#[export] Instance IsPointed_catOP `{IsPointed_OPred P, IsPointed_OPred Q} : IsPointed_OPred (catOP P Q) := admit.
 Goal forall (T : Type) (O0 : T -> OPred) (O1 : T -> PointedOPred)
             (tr : T -> T) (O2 : PointedOPred) (x : T)
             (H : forall x0 : T, catOP (O0 x0) (O1 (tr x0)) |-- O1 x0),

@@ -3,8 +3,8 @@
 
 Class Foo (n:nat) := {x : bool}.
 
-Instance bar n : Foo n. Admitted.
+#[export] Instance bar n : Foo n. Admitted.
 
-Instance bar' n : Foo n. split. abstract exact true. Qed.
+#[export] Instance bar' n : Foo n. split. abstract exact true. Qed.
 
-Instance bar'' n : Foo n. split. abstract exact true. Defined.
+#[export] Instance bar'' n : Foo n. split. abstract exact true. Defined.

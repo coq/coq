@@ -2,8 +2,8 @@ Axiom P : nat -> Prop.
 Axiom PS : forall n, P n -> P (S n).
 Axiom P0 : P 0.
 
-Hint Resolve PS : foobar.
-Hint Resolve P0 : foobar.
+#[export] Hint Resolve PS : foobar.
+#[export] Hint Resolve P0 : foobar.
 
 Goal P 100.
 Proof.

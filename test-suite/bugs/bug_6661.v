@@ -33,7 +33,7 @@ Global Set Printing Universes.
  Inductive unit : UU0 := tt : unit.
 
 Inductive paths@{i} {A:Type@{i}} (a:A) : A -> Type@{i} := idpath : paths a a.
-Hint Resolve idpath : core .
+#[export] Hint Resolve idpath : core .
 Notation "a = b" := (paths a b) (at level 70, no associativity) : type_scope.
 
 Set Primitive Projections.
@@ -61,7 +61,7 @@ Proof.
   intros. induction e1. exact e2.
 Defined.
 
-Hint Resolve @pathscomp0 : pathshints.
+#[export] Hint Resolve @pathscomp0 : pathshints.
 
 Notation "p @ q" := (pathscomp0 p q).
 

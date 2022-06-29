@@ -21,7 +21,7 @@ Module Simple_sparse_proof.
   Definition edge_notin G l : node -> node -> Prop :=
     Foo.inter node (has_edge G) (notin l).
 
-  Hint Unfold Foo.inter notin edge_notin : rel_crush.
+  #[export] Hint Unfold Foo.inter notin edge_notin : rel_crush.
 
   Lemma edge_notin_nil G : forall x y, edge_notin G nil x y <-> has_edge G x y.
   Proof.

@@ -26,7 +26,7 @@ Structure cofeT := CofeT {
   cofe_dist : Dist cofe_car;
   cofe_mixin : CofeMixin cofe_car
 }.
-Existing Instances cofe_equiv cofe_dist.
+#[export] Existing Instances cofe_equiv cofe_dist.
 Arguments cofe_car : simpl never.
 
 Section cofe_mixin.

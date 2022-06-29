@@ -7,7 +7,7 @@ Lemma pred_le_refl : forall A (P:A->Prop),
   pred_le P P.
 Proof. unfold pred_le. auto. Qed.
 
-Hint Resolve pred_le_refl.
+#[export] Hint Resolve pred_le_refl.
 
 Lemma test :
   forall (P1 P2:nat->Prop),

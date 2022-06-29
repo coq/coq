@@ -14,7 +14,7 @@ Tactic Notation "wfinduction" constr(term) "on" ne_hyp_list(Hs) "as" ident(H) :=
   induction R as [R H] using wfi_lt;
   intros; subst R.
 
-Hint Rewrite @app_comm_cons @app_assoc @app_length : app_rws.
+#[export] Hint Rewrite @app_comm_cons @app_assoc @app_length : app_rws.
 
 Ltac solve_nat := autorewrite with app_rws in *; cbn in *; lia.
 

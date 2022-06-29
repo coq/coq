@@ -11,7 +11,7 @@ Class Eqdec A := eqdec : forall a b : A, {a=b}+{a<>b}.
 
 Require Bool.
 
-Instance Bool_eqdec : Eqdec bool := Bool.bool_dec.
+#[export] Instance Bool_eqdec : Eqdec bool := Bool.bool_dec.
 
 Context `{vect_sigT_eqdec : forall A : Type, Eqdec A -> Eqdec {a : nat & vect A a}}.
 
