@@ -134,8 +134,8 @@ let rec interp (ist : environment) = function
   return (eval_pure Id.Map.empty (Some kn) data)
 | GTacFun (ids, e) ->
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-  let f = interp_app cls in
-  return (Tac2ffi.of_closure f)
+  let f = interp_closure cls in
+  return f
 | GTacApp (f, args) ->
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
@@ -151,7 +151,7 @@ let rec interp (ist : environment) = function
   let map (na, e) = match e with
   | GTacFun (ids, e) ->
     let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
-    let f = Tac2ffi.of_closure (interp_app cls) in
+    let f = interp_closure cls in
     na, cls, f
   | _ -> anomaly (str "Ill-formed recursive function")
   in
@@ -191,7 +191,7 @@ let rec interp (ist : environment) = function
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
 
-and interp_app f =
+and interp_closure f =
   let ans = fun args ->
     let { clos_env = ist; clos_var = ids; clos_exp = e; clos_ref = kn } = f in
     let frame = match kn with
@@ -202,7 +202,7 @@ and interp_app f =
     let ist = List.fold_left2 push_name ist ids args in
     with_frame frame (interp ist e)
   in
-  Tac2ffi.abstract (List.length f.clos_var) ans
+  Tac2ffi.(of_closure (abstract (List.length f.clos_var) ans))
 
 and interp_case ist e cse0 cse1 =
   if Valexpr.is_int e then
@@ -253,8 +253,7 @@ and eval_pure bnd kn = function
   eval_pure bnd (Some kn) e
 | GTacFun (na, e) ->
   let cls = { clos_ref = kn; clos_env = bnd; clos_var = na; clos_exp = e } in
-  let f = interp_app cls in
-  Tac2ffi.of_closure f
+  interp_closure cls
 | GTacCst (_, n, []) -> Valexpr.make_int n
 | GTacCst (_, n, el) -> Valexpr.make_block n (eval_pure_args bnd el)
 | GTacOpn (kn, el) -> Tac2ffi.of_open (kn, eval_pure_args bnd el)
