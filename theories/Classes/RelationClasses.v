@@ -60,18 +60,14 @@ Section Defs.
   (** A [PreOrder] is both Reflexive and Transitive. *)
   
   Class PreOrder (R : relation A) : Prop := {
-    PreOrder_Reflexive : Reflexive R | 2 ;
-    PreOrder_Transitive : Transitive R | 2 }.
-  #[global] Existing Instance PreOrder_Reflexive.
-  #[global] Existing Instance PreOrder_Transitive.
+    PreOrder_Reflexive :> Reflexive R | 2 ;
+    PreOrder_Transitive :> Transitive R | 2 }.
 
   (** A [StrictOrder] is both Irreflexive and Transitive. *)
 
   Class StrictOrder (R : relation A) : Prop := {
-    StrictOrder_Irreflexive : Irreflexive R ;
-    StrictOrder_Transitive : Transitive R }.
-  #[global] Existing Instance StrictOrder_Irreflexive.
-  #[global] Existing Instance StrictOrder_Transitive.
+    StrictOrder_Irreflexive :> Irreflexive R ;
+    StrictOrder_Transitive :> Transitive R }.
 
   (** By definition, a strict order is also asymmetric *)
   Global Instance StrictOrder_Asymmetric `(StrictOrder R) : Asymmetric R.
@@ -80,20 +76,15 @@ Section Defs.
   (** A partial equivalence relation is Symmetric and Transitive. *)
   
   Class PER (R : relation A) : Prop := {
-    PER_Symmetric : Symmetric R | 3 ;
-    PER_Transitive : Transitive R | 3 }.
-  #[global] Existing Instance PER_Symmetric.
-  #[global] Existing Instance PER_Transitive.
+    PER_Symmetric :> Symmetric R | 3 ;
+    PER_Transitive :> Transitive R | 3 }.
 
   (** Equivalence relations. *)
 
   Class Equivalence (R : relation A) : Prop := {
-    Equivalence_Reflexive : Reflexive R ;
-    Equivalence_Symmetric : Symmetric R ;
-    Equivalence_Transitive : Transitive R }.
-  #[global] Existing Instance Equivalence_Reflexive.
-  #[global] Existing Instance Equivalence_Symmetric.
-  #[global] Existing Instance Equivalence_Transitive.
+    Equivalence_Reflexive :> Reflexive R ;
+    Equivalence_Symmetric :> Symmetric R ;
+    Equivalence_Transitive :> Transitive R }.
 
   (** An Equivalence is a PER plus reflexivity. *)
   
