@@ -63,12 +63,13 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 
 # EDGE switch, dune 2.8 is required for OCaml 4.12
 ENV COMPILER_EDGE="4.12.0" \
-    BASE_OPAM_EDGE="dune.2.8.5 dune-release.1.4.0"
+    BASE_OPAM_EDGE="dune.2.8.5 dune-release.1.4.0" \
+    COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.2"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
 RUN opam switch create 4.12.0+flambda --packages="ocaml-variants.${COMPILER_EDGE}+options,ocaml-option-flambda" && eval $(opam env) && \
-    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM $CI_OPAM
+    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
 
 RUN opam clean -a -c
 
