@@ -77,6 +77,8 @@ module CInfo : sig
   val make :
     name : Id.t
     -> typ:'constr
+    -> ?loc:Loc.t
+    (** (Optional) location in the file where the constant was declared. *)
     -> ?args:Name.t list
     -> ?impargs:Impargs.manual_implicits
     -> ?using:Proof_using.t
@@ -393,6 +395,7 @@ val declare_constant
   :  ?local:Locality.import_status
   -> name:Id.t
   -> kind:Decls.logical_kind
+  -> ?loc:Loc.t
   -> ?typing_flags:Declarations.typing_flags
   -> constant_entry
   -> Constant.t

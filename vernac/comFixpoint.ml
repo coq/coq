@@ -89,9 +89,9 @@ let warn_non_recursive =
           strbrk "Not a truly recursive " ++ str k ++ str ".")
 
 let check_true_recursivity env evd ~isfix fixl =
-  let names = List.map fst fixl in
+  let names = List.map (fun x -> fst (fst x)) fixl in
   let preorder =
-    List.map (fun (id,def) ->
+    List.map (fun ((id,_loc),def) ->
       (id, List.filter (fun id' -> Termops.occur_var env evd id' def) names))
       fixl in
   let po = partial_order Id.equal preorder in
@@ -151,7 +151,7 @@ let compute_possible_guardness_evidences (ctx,_,recindex) =
       List.interval 0 (Context.Rel.nhyps ctx - 1)
 
 type ('constr, 'types) recursive_preentry =
-  Id.t list * Sorts.relevance list * 'constr option list * 'types list
+  (Id.t * Loc.t option) list * Sorts.relevance list * 'constr option list * 'types list
 
 (* Wellfounded definition *)
 
@@ -161,7 +161,7 @@ let fix_proto sigma =
 let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen list) =
   let open Context.Named.Declaration in
   let open EConstr in
-  let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v) fixl in
+  let fixnames = List.map (fun fix -> fix.Vernacexpr.fname.CAst.v, fix.Vernacexpr.fname.CAst.loc) fixl in
 
   (* Interp arities allowing for unresolved types *)
   let all_universes =
@@ -190,7 +190,7 @@ let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen
     fixctximps fixcclimps fixctxs in
   let sigma, rec_sign =
     List.fold_left2
-      (fun (sigma, env') id t ->
+      (fun (sigma, env') (id,_loc) t ->
          if program_mode then
            let sigma, sort = Typing.type_of ~refresh:true env sigma t in
            let sigma, fixprot =
@@ -207,7 +207,7 @@ let interp_recursive env ~program_mode ~cofix (fixl : 'a Vernacexpr.fix_expr_gen
   let env_rec = push_named_context rec_sign env in
 
   (* Get interpretation metadatas *)
-  let impls = compute_internalization_env env sigma Recursive fixnames fixtypes fiximps in
+  let impls = compute_internalization_env env sigma Recursive (List.map fst fixnames) fixtypes fiximps in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let sigma, fixdefs =
@@ -259,13 +259,13 @@ let build_recthms ~indexes ?using fixnames fixtypes fiximps =
     | None -> Decls.CoFixpoint, true
   in
   let thms =
-    List.map3 (fun name typ (ctx,impargs,_) ->
+    List.map3 (fun (name,loc) typ (ctx,impargs,_) ->
         let env = Global.env() in
         let evd = Evd.from_env env in
         let terms = [EConstr.of_constr typ] in
         let using = Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using in
         let args = List.map Context.Rel.Declaration.get_name ctx in
-        Declare.CInfo.make ~name ~typ ~args ~impargs ?using ()
+        Declare.CInfo.make ~name ~typ ?loc ~args ~impargs ?using ()
       ) fixnames fixtypes fiximps
   in
   fix_kind, cofix, thms
@@ -287,7 +287,7 @@ let declare_fixpoint_generic ?indexes ?scope ~poly ?typing_flags ?using ((fixnam
   (* We shortcut the proof process *)
   let fix_kind, cofix, fixitems = build_recthms ~indexes ?using fixnames fixtypes fiximps in
   let fixdefs = List.map Option.get fixdefs in
-  let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
+  let rec_declaration = prepare_recursive_declaration (List.map fst fixnames) fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in
   let info = Declare.Info.make ?scope ~kind:fix_kind ~poly ~udecl ?typing_flags () in
   let cinfo = fixitems in

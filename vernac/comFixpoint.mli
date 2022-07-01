@@ -53,7 +53,8 @@ val adjust_rec_order
   -> lident option
 
 (** names / relevance / defs / types *)
-type ('constr, 'types) recursive_preentry = Id.t list * Sorts.relevance list * 'constr option list * 'types list
+type ('constr, 'types) recursive_preentry =
+  (Id.t * Loc.t option) list * Sorts.relevance list * 'constr option list * 'types list
 
 (** Exported for Program *)
 val interp_recursive :

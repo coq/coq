@@ -450,18 +450,23 @@ let canonical_info ref =
     | path -> spc() ++ str "(syntactically equal to" ++ spc() ++ pr_path path ++ str ")"
     | exception Not_found -> spc() ++ str "(missing canonical, bug?)"
 
+let find_location cst : Loc.t option =
+  Option.bind (Declaremods.data_of_path (Constant.modpath cst) (Constant.label cst)) Libobject.Data.loc
+
 let pr_located_qualid = function
   | Term ref ->
-      let ref_str = let open GlobRef in match ref with
-          ConstRef _ -> "Constant"
-        | IndRef _ -> "Inductive"
-        | ConstructRef _ -> "Constructor"
-        | VarRef _ -> "Variable"
+      let ref_str, loc = let open GlobRef in match ref with
+          ConstRef kn -> "Constant", find_location kn
+        | IndRef _ -> "Inductive", None
+        | ConstructRef _ -> "Constructor", None
+        | VarRef _ -> "Variable", None
       in
       let extra = canonical_info ref in
+      let pr_loc = Option.map Loc.pr loc in
       str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref) ++ extra
+      ++ pr_opt (fun x -> fnl () ++ x) pr_loc
   | Abbreviation kn ->
-      str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
+    str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
   | Dir dir ->
       let s,mp =
         let open Nametab in
@@ -474,10 +479,10 @@ let pr_located_qualid = function
   | Module mp ->
     str "Module" ++ spc () ++ DirPath.print (Nametab.dirpath_of_module mp)
   | ModuleType mp ->
-      str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
+    str "Module Type" ++ spc () ++ pr_path (Nametab.path_of_modtype mp)
   | Other (obj, info) -> info.name obj
   | Undefined qid ->
-      pr_qualid qid ++ spc () ++ str "not a defined object."
+    pr_qualid qid ++ spc () ++ str "not a defined object."
 
 let canonize_ref = let open GlobRef in function
   | ConstRef c ->
@@ -507,9 +512,9 @@ let display_alias = function
 let locate_term qid =
   let expand = function
     | TrueGlobal ref ->
-        Term ref, Nametab.shortest_qualid_of_global Id.Set.empty ref
+      Term ref, Nametab.shortest_qualid_of_global Id.Set.empty ref
     | Abbrev kn ->
-        Abbreviation kn, Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn
+      Abbreviation kn, Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn
   in
   List.map expand (Nametab.locate_extended_all qid)
 
@@ -561,21 +566,21 @@ let print_located_qualid name flags qid =
     String.Map.fold (fun s _ accu -> locate_other s qid @ accu) !locatable_map []
   in
   match located with
-    | [] ->
-        let (dir,id) = repr_qualid qid in
-        if DirPath.is_empty dir then
-          str "No " ++ str name ++ str " of basename" ++ spc () ++ Id.print id
-        else
-          str "No " ++ str name ++ str " of suffix" ++ spc () ++ pr_qualid qid
-    | l ->
-        prlist_with_sep fnl
-        (fun (o,oqid) ->
-          hov 2 (pr_located_qualid o ++
-          (if not (qualid_eq oqid qid) then
-            spc() ++ str "(shorter name to refer to it in current context is "
-            ++ pr_qualid oqid ++ str")"
-           else mt ()) ++
-          display_alias o)) l
+  | [] ->
+    let (dir,id) = repr_qualid qid in
+    if DirPath.is_empty dir then
+      str "No " ++ str name ++ str " of basename" ++ spc () ++ Id.print id
+    else
+      str "No " ++ str name ++ str " of suffix" ++ spc () ++ pr_qualid qid
+  | l ->
+    prlist_with_sep fnl
+      (fun (o,oqid) ->
+         hov 2 (pr_located_qualid o ++
+                (if not (qualid_eq oqid qid) then
+                   spc() ++ str "(shorter name to refer to it in current context is "
+                   ++ pr_qualid oqid ++ str")"
+                 else mt ()) ++
+                display_alias o)) l
 
 let print_located_term ref = print_located_qualid "term" LocTerm ref
 let print_located_other s ref = print_located_qualid s (LocOther s) ref

@@ -1688,3 +1688,13 @@ let end_modtype () =
 let declare_include me_asts =
   let l = Synterp.declare_include me_asts in
   Interp.declare_include l
+
+(* Utility *)
+let data_of_path mp lbl =
+  let modmap = modmap () in
+  match Names.MPmap.find_opt mp modmap with
+  | None -> None
+  | Some { module_substituted_objects_by_name; _ } ->
+    match Id.Map.find_opt (Label.to_id lbl) module_substituted_objects_by_name with
+    | Some (AtomicObject { data }) -> Some data
+    | _ -> None

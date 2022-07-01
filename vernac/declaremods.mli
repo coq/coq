@@ -160,7 +160,6 @@ val end_library :
 (** append a function to be executed at end_library *)
 val append_end_library_hook : (unit -> unit) -> unit
 
-
 (** {6 ... } *)
 (** [iter_all_interp_segments] iterate over all segments, the modules'
     segments first and then the current segment. Modules are presented
@@ -169,7 +168,6 @@ val append_end_library_hook : (unit -> unit) -> unit
 
 val iter_all_interp_segments :
   (Nametab.object_prefix -> Libobject.t -> unit) -> unit
-
 
 val debug_print_modtab : unit -> Pp.t
 
@@ -229,3 +227,6 @@ type module_objects = private
   }
 
 val modmap : unit -> module_objects Names.MPmap.t
+
+(** This likely wants to be moved*)
+val data_of_path : Names.ModPath.t -> Names.Label.t -> Libobject.Data.t option

@@ -637,7 +637,7 @@ let vernac_set_used_variables_opt ?using pstate =
 
 (* XXX: Interpretation of lemma command, duplication with ComFixpoint
    / ComDefinition ? *)
-let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
+let interp_lemma ?loc ~program_mode ~flags ~scope env0 evd thms =
   let inference_hook = if program_mode then Some program_inference_hook else None in
   List.fold_left_map (fun evd ((id, _), (bl, t)) ->
       let evd, (impls, ((env, ctx), imps)) =
@@ -649,7 +649,7 @@ let interp_lemma ~program_mode ~flags ~scope env0 evd thms =
       let ids = List.map Context.Rel.Declaration.get_name ctx in
       check_name_freshness scope id;
       let thm = Declare.CInfo.make ~name:id.CAst.v ~typ:(EConstr.it_mkProd_or_LetIn t' ctx)
-          ~args:ids ~impargs:(imps @ imps') () in
+          ?loc ~args:ids ~impargs:(imps @ imps') () in
       evd, thm)
     evd thms
 
@@ -664,13 +664,13 @@ let post_check_evd ~udecl ~poly evd =
   else (* We fix the variables to ensure they won't be lowered to Set *)
     Evd.fix_undefined_variables evd
 
-let start_lemma_com ~typing_flags ~program_mode ~poly ~scope ~kind ?using ?hook thms =
+let start_lemma_com ?loc ~typing_flags ~program_mode ~poly ~scope ~kind ?using ?hook thms =
   let env0 = Global.env () in
   let env0 = Environ.update_typing_flags ?typing_flags env0 in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let decl = fst (List.hd thms) in
   let evd, udecl = Constrintern.interp_univ_decl_opt env0 (snd decl) in
-  let evd, thms = interp_lemma ~program_mode ~flags ~scope env0 evd thms in
+  let evd, thms = interp_lemma ?loc ~program_mode ~flags ~scope env0 evd thms in
   let mut_analysis = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   let info = Declare.Info.make ?hook ~poly ~scope ~kind ~udecl ?typing_flags () in
@@ -719,7 +719,7 @@ let vernac_definition_name lid local =
   in
   lid
 
-let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
+let vernac_definition_interactive ~atts (discharge, kind) ?loc (lid, pl) bl t =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic ~nonuniform:atts.nonuniform ~reversible:atts.reversible kind in
@@ -727,9 +727,9 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let poly = atts.polymorphic in
   let typing_flags = atts.typing_flags in
   let name = vernac_definition_name lid local in
-  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?using:atts.using ?hook [(name, pl), (bl, t)]
+  start_lemma_com ~typing_flags ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?loc ?using:atts.using ?hook [(name, pl), (bl, t)]
 
-let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
+let vernac_definition ~atts ~pm (discharge, kind) ?loc (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind ~nonuniform:atts.nonuniform ~reversible:atts.reversible in
@@ -749,16 +749,17 @@ let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_
   else
     let () =
       ComDefinition.do_definition ~name:name.v
-        ~poly:atts.polymorphic ?typing_flags ~scope ~kind ?using:atts.using pl bl red_option c typ_opt ?hook in
+        ~poly:atts.polymorphic ?loc ?typing_flags ~scope ~kind ?using:atts.using pl bl red_option c typ_opt ?hook in
     pm
 
 (* NB: pstate argument to use combinators easily *)
-let vernac_start_proof ~atts kind l =
+let vernac_start_proof ~atts ?loc kind l =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   start_lemma_com
+    ?loc
     ~typing_flags:atts.typing_flags
     ~program_mode:atts.program
     ~poly:atts.polymorphic
@@ -2220,7 +2221,7 @@ let vernac_search ~pstate ~atts s gopt r =
     (* if goal selector is given and wrong, then let exceptions be raised. *)
     | Some g -> get_goal_or_global_context ~pstate g
   in
-  interp_search env sigma s r
+  interp_search ~print_loc:true env sigma s r
 
 let vernac_locate ~pstate = let open Constrexpr in function
   | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid qid
@@ -2399,15 +2400,15 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
     vtmodifyprogram (fun ~pm ->
       with_def_attributes ~coercion ~atts
-       vernac_definition ~pm discharge lid bl red_option c typ)
+       vernac_definition ~pm discharge ?loc lid bl red_option c typ)
   | VernacDefinition (discharge,lid,ProveBody(bl,typ)) ->
     let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
     vtopenproof(fun () ->
       with_def_attributes ~coercion ~atts
-       vernac_definition_interactive discharge lid bl typ)
+       vernac_definition_interactive discharge ?loc lid bl typ)
 
   | VernacStartTheoremProof (k,l) ->
-    vtopenproof(fun () -> with_def_attributes ~atts vernac_start_proof k l)
+    vtopenproof(fun () -> with_def_attributes ~atts vernac_start_proof ?loc k l)
   | VernacExactProof c ->
     vtcloseproof (fun ~lemma ->
         unsupported_attributes atts;

@@ -106,11 +106,11 @@ let () =
       optread  = (fun () -> !search_output_name_only);
       optwrite = (:=) search_output_name_only }
 
-let interp_search env sigma s r =
+let interp_search ?(print_loc=false) env sigma s r =
   let r = interp_search_restriction r in
   let get_pattern c = snd (Constrintern.intern_constr_pattern env sigma c) in
   let warnlist = ref [] in
-  let pr_search ref kind env c =
+  let pr_search ?loc ref kind env c =
     let pr = pr_global ref in
     let pp = if !search_output_name_only
       then pr
@@ -124,7 +124,9 @@ let interp_search env sigma s r =
              (List.skipn_at_least (Termops.nb_prod_modulo_zeta Evd.(from_env env) (EConstr.of_constr c)) impargs)
           then warnlist := pr :: !warnlist;
         let pc = pr_ltype_env env Evd.(from_env env) ~impargs c in
-        hov 2 (pr ++ str":" ++ spc () ++ pc)
+        let loc_hdr =
+          Option.map (fun loc -> if print_loc then str "in " ++ Loc.pr loc ++ fnl () else mt ()) loc in
+        pr_opt (fun x -> x) loc_hdr ++ hov 2 (pr ++ str":" ++ spc () ++ pc)
       end
     in Feedback.msg_notice pp
   in

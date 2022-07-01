@@ -30,6 +30,7 @@ val do_definition
   -> name:Id.t
   -> ?scope:Locality.definition_scope
   -> poly:bool
+  -> ?loc:Loc.t
   -> ?typing_flags:Declarations.typing_flags
   -> kind:Decls.definition_object_kind
   -> ?using:Vernacexpr.section_subset_expr

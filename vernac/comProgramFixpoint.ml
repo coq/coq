@@ -286,7 +286,7 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
   let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
     (* Solve remaining evars *)
   let evd = nf_evar_map_undefined evd in
-  let collect_evars name def typ impargs =
+  let collect_evars (name,_) def typ impargs =
     (* Generalize by the recursive prototypes  *)
     let terms = [def; typ] in
     let using = Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using in
@@ -307,9 +307,9 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
       let possible_indexes = List.map ComFixpoint.compute_possible_guardness_evidences info in
       (* XXX: are we allowed to have evars here? *)
       let fixtypes = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixtypes in
-      let fixdefs = List.map (EConstr.Vars.subst_vars evd (List.rev fixnames)) fixdefs in
+      let fixdefs = List.map (EConstr.Vars.subst_vars evd (List.rev fixnames |> List.map fst)) fixdefs in
       let fixdefs = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixdefs in
-      let fixdecls = Array.of_list (List.map2 (fun x r -> make_annot (Name x) r) fixnames fixrs),
+      let fixdecls = Array.of_list (List.map2 (fun (x,_loc) r -> make_annot (Name x) r) fixnames fixrs),
         Array.of_list fixtypes,
         Array.of_list fixdefs
       in

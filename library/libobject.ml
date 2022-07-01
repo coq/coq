@@ -110,6 +110,8 @@ module Data : sig
 
   val empty : t
   val make : ?loc:Loc.t -> ?doc:string -> ?name:Names.Id.t -> unit -> t
+  val loc : t -> Loc.t option
+  val doc : t -> string option
   val name : t -> Names.Id.t option
 
 end = struct
@@ -122,6 +124,8 @@ end = struct
 
   let make ?loc ?doc ?name () = { loc; doc; name }
   let empty = make ()
+  let loc { loc } = loc
+  let doc { doc } = doc
   let name { name } = name
 end
 

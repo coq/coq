@@ -140,6 +140,8 @@ module Data : sig
 
   val empty : t
   val make : ?loc:Loc.t -> ?doc:string -> ?name:Id.t -> unit -> t
+  val loc : t -> Loc.t option
+  val doc : t -> string option
   val name : t -> Id.t option
 
 end

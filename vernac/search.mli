@@ -28,8 +28,9 @@ type glob_search_request =
 
 type filter_function =
   GlobRef.t -> Decls.logical_kind option -> env -> Evd.evar_map -> constr -> bool
+
 type display_function =
-  GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit
+  ?loc:Loc.t -> GlobRef.t -> Decls.logical_kind option -> env -> constr -> unit
 
 (** {6 Generic filter functions} *)
 

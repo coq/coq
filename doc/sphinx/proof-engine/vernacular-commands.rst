@@ -98,9 +98,10 @@ described elsewhere
    are not considered.  The :table:`Search Blacklist` table can also
    be used to exclude some things from all calls to :cmd:`Search`.
 
-   The output of the command is a list of qualified identifiers and
-   their types.  If the :flag:`Search Output Name Only` flag is on,
-   the types are omitted.
+   The output of the command is a list of qualified identifiers, their
+   types, and the locations. See `Locate` for more information on the
+   location information that is displayed. If the :flag:`Search Output
+   Name Only` flag is on, the types are omitted.
 
    .. insertprodn search_query search_query
 
@@ -403,12 +404,17 @@ Requests to the environment
 
    Displays the full name of objects from Coq's various qualified namespaces
    such as terms, modules and Ltac, thereby showing the module they are defined
-   in.  It also displays notation definitions.
+   in and the location inside the file.  It also displays notation definitions.
 
    Note that objects are reported only when the module containing them has
    been loaded, such as through a :cmd:`Require` command.  Notation definitions
    are reported only when the containing module has been imported
    (e.g. with :cmd:`Require Import` or :cmd:`Import`).
+
+   Also note that the filename reported in the location is relative to
+   the ``coqc`` call used to generate it; in order to jump to the
+   concrete file, the original project build info is needed by the
+   user inteface.
 
    :n:`@qualid`
      refers to object names that end with :n:`@qualid`.

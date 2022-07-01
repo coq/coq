@@ -53,6 +53,8 @@ module CInfo = struct
     (** Name of theorem *)
     ; typ : 'constr
     (** Type of theorem  *)
+    ; loc : Loc.t option
+    (** (Optional) location if the constant has one *)
     ; args : Name.t list
     (** Names to pre-introduce  *)
     ; impargs : Impargs.manual_implicits
@@ -62,8 +64,8 @@ module CInfo = struct
     }
 
 
-  let make ~name ~typ ?(args=[]) ?(impargs=[]) ?using () =
-    { name; typ; args; impargs; using }
+  let make ~name ~typ ?loc ?(args=[]) ?(impargs=[]) ?using () =
+    { name; typ; loc; args; impargs; using }
 
   let to_constr sigma thm = { thm with typ = EConstr.to_constr sigma thm.typ }
 
@@ -162,10 +164,10 @@ let local_csts = Summary.ref ~name:"local-csts" Cset_env.empty
 
 let is_local_constant c = Cset_env.mem c !local_csts
 
-type constant_obj = {
-  cst_kind : Decls.logical_kind;
-  cst_locl : Locality.import_status;
-}
+type constant_obj =
+  { cst_kind : Decls.logical_kind
+  ; cst_locl : Locality.import_status
+  }
 
 let load_constant i ((sp,kn), obj) =
   if Nametab.exists_cci sp then
@@ -219,9 +221,9 @@ let update_tables c =
   Impargs.declare_constant_implicits c;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstRef c)
 
-let register_constant kn kind local =
+let register_constant ?loc kn kind local =
   let id = Label.to_id (Constant.label kn) in
-  let data = Libobject.Data.make ~name:id () in
+  let data = Libobject.Data.make ~name:id ?loc () in
   let o = inConstant (id, { cst_kind = kind; cst_locl = local; }) in
   let () = Lib.add_leaf ~data o in
   update_tables kn
@@ -428,7 +430,7 @@ let declare_constant_core ~name ~typing_flags cd =
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
   kn, delayed
 
-let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags cd =
+let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ?loc ~typing_flags cd =
   let () = check_exists name in
   let kn, delayed = declare_constant_core ~typing_flags ~name cd in
   (* Register the libobjects attached to the constants *)
@@ -442,7 +444,10 @@ let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typi
       Opaques.declare_defined_opaque ?feedback_id i body
     | Def _ | Undef _ | Primitive _ -> assert false
   in
-  let () = register_constant kn kind local in
+  let debug_missing_loc = false in
+  if debug_missing_loc && Option.is_empty loc then
+    Format.eprintf "declaring %s without loc@\n%!" (Id.to_string name);
+  let () = register_constant ?loc kn kind local in
   kn
 
 let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~name ~kind de =
@@ -645,7 +650,7 @@ let declare_definition_scheme ~internal ~univs ~role ~name c =
   kn, eff
 
 (* Locality stuff *)
-let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags ?hook ~obls ~impargs ~uctx entry =
+let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags ?loc ?hook ~obls ~impargs ~uctx entry =
   let should_suggest =
     entry.proof_entry_opaque
     && not (List.is_empty (Global.named_context()))
@@ -657,7 +662,7 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ~kind ~typing_flags
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
-    let kn = declare_constant ~name ~local ~kind ~typing_flags (DefinitionEntry entry) in
+    let kn = declare_constant ~name ~local ~kind ~typing_flags ?loc (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
     gr
@@ -699,9 +704,9 @@ let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declar
       uctx, univs
   in
   let csts = CList.map2
-      (fun CInfo.{ name; typ; impargs; using } body ->
+      (fun CInfo.{ name; typ; impargs; using; loc } body ->
          let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
-         declare_entry ~name ~scope ~kind ~impargs ~uctx ~typing_flags entry)
+         declare_entry ~name ~scope ~kind ~impargs ~uctx ~typing_flags ?loc entry)
       cinfo fixdecls
   in
   let isfix = Option.has_some possible_indexes in
@@ -764,10 +769,10 @@ let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
   entry, uctx
 
 let declare_definition_core ~info ~cinfo ~opaque ~obls ~body sigma =
-  let { CInfo.name; impargs; typ; using; _ } = cinfo in
+  let { CInfo.name; impargs; typ; using; loc; _ } = cinfo in
   let entry, uctx = prepare_definition ~info ~opaque ?using ~body ~typ sigma in
   let { Info.scope; kind; hook; typing_flags; _ } = info in
-  declare_entry_core ~name ~scope ~kind ~impargs ~typing_flags ~obls ?hook ~uctx entry, uctx
+  declare_entry_core ~name ~scope ~kind ~impargs ~typing_flags ~obls ?loc ?hook ~uctx entry, uctx
 
 let declare_definition ~info ~cinfo ~opaque ~body sigma =
   declare_definition_core ~obls:[] ~info ~cinfo ~opaque ~body sigma |> fst
@@ -1926,7 +1931,7 @@ end = struct
         Pp.(str "Not a proof by induction: " ++
             Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
 
-  let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; _} =
+  let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; loc; _} =
     let { Proof_info.info; compute_guard; _ } = pinfo in
     let { Info.hook; scope; kind; typing_flags; _ } = info in
     (* if i = 0 , we don't touch the type; this is for compat
@@ -1947,7 +1952,7 @@ end = struct
         Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
     in
-    declare_entry ~name ~scope ~kind ?hook ~impargs ~typing_flags ~uctx pe
+    declare_entry ~name ~scope ~kind ?hook ~impargs ~typing_flags ?loc ~uctx pe
 
   let declare_mutdef ~pinfo ~uctx ~entry =
     let pe = match pinfo.Proof_info.compute_guard with
@@ -2559,8 +2564,8 @@ end
 
 module OblState = Obls_.State
 
-let declare_constant ?local ~name ~kind ?typing_flags =
-  declare_constant ?local ~name ~kind ~typing_flags
+let declare_constant ?local ~name ~kind ?loc ?typing_flags =
+  declare_constant ?local ~name ~kind ~typing_flags ?loc
 
 let declare_entry ~name ?scope ~kind =
-  declare_entry ~name ?scope ~kind ~typing_flags:None
+  declare_entry ~name ?scope ~kind ~typing_flags:None ?loc:None
