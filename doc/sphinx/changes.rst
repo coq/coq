@@ -35,7 +35,7 @@ with a few new features. We highlight some of the most impactful changes here:
 
   - Added a :ref:`Print Notation <816PrintNotation>` command.
 
-  - Incompatibilities in :ref:`name generation <816ProgramObls>`` for Program obligations,
+  - Incompatibilities in :ref:`name generation <816ProgramObls>` for Program obligations,
     :tacn:`eauto` treatment of :ref:`tactic failure levels <816EautoLevels>`, use of ``ident``
     :ref:`in notations <816IdentNotations>`, parsing of :ref:`module expressions <816ModuleExprs>`.
 
@@ -80,7 +80,7 @@ page for more details.
 The 57 contributors to the 8.16 versions are Tanaka Akira, Frédéric Besson, Martin Bodin, Ana Borges,
 Ali Caglayan, Minki Cho, Cyril Cohen, Juan Conejero, "stop-cran", Adrian Dapprich, Maxime Dénès,
 Stéphane Desarzens, Christian Doczkal, Andrej Dudenhefner, Andres Erbsen, Jim Fehrle,
-Paolo G. Giarrusso, Emilio Jesús Gallego Arias, Attila Gáspár, Gaëtan Gilbert, Rudi Grinberg, Jason Gross, Hugo Herbelin,
+Emilio Jesús Gallego Arias, Attila Gáspár, Paolo G. Giarrusso, Gaëtan Gilbert, Rudi Grinberg, Jason Gross, Hugo Herbelin,
 Wolf Honore, Jasper Hugunin, Bart Jacobs, Pierre Jouvelot,
 Ralf Jung, Grant Jurgensen, Jan-Oliver Kaiser, Wojciech Karpiel, Thomas Klausner,
 Ethan Kuefner, Fabian Kunze, Olivier Laurent, Yishuai Li, Erik Martin-Dorel, Guillaume Melquiond,
