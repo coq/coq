@@ -19,7 +19,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2020-11-26-V93"
+  CACHEKEY: "bionic_coq-v8.13-V2020-11-26-V94"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"

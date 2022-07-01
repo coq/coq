@@ -48,6 +48,11 @@ let () = at_exit (fun () ->
           Pp.(str "Native compile: failed to cleanup: " ++
               str(Printexc.to_string e) ++ fnl()))
 
+let delay_cleanup_file =
+  let toclean = ref [] in
+  let () = at_exit (fun () -> List.iter (fun f -> if Sys.file_exists f then Sys.remove f) !toclean) in
+  fun f -> if not !Flags.debug then toclean := f :: !toclean
+
 (* We have to delay evaluation of include_dirs because coqlib cannot
    be guessed until flags have been properly initialized. It also lets
    us avoid forcing [my_temp_dir] if we don't need it (eg stdlib file
@@ -142,7 +147,9 @@ let call_compiler ?profile:(profile=false) ml_filename =
 let compile fn code ~profile:profile =
   write_ml_code fn code;
   let r = call_compiler ~profile fn in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn;
+  (* NB: to prevent reusing the same filename we MUST NOT remove the file until exit
+     cf #15263 *)
+  delay_cleanup_file fn;
   r
 
 type native_library = Nativecode.global list * Nativevalues.symbols
@@ -160,7 +167,7 @@ let compile_library (code, symb) fn =
   let fn = dirname / basename in
   write_ml_code fn ~header code;
   let _ = call_compiler fn in
-  if (not !Flags.debug) && Sys.file_exists fn then Sys.remove fn
+  delay_cleanup_file fn
 
 (* call_linker links dynamically the code for constants in environment or a  *)
 (* conversion test. *)
