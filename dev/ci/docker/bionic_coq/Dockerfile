@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2020-11-26-V93"
+# CACHEKEY: "bionic_coq-v8.13-V2020-11-26-V94"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -64,11 +64,12 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 
 # EDGE switch
 ENV COMPILER_EDGE="4.11.1" \
-    BASE_OPAM_EDGE="dune.2.5.1 dune-release.1.3.3"
+    BASE_OPAM_EDGE="dune.2.5.1 dune-release.1.3.3" \
+    COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.2"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
 RUN opam switch create "${COMPILER_EDGE}+flambda" && eval $(opam env) && \
-    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM $CI_OPAM
+    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
 
 RUN opam clean -a -c
