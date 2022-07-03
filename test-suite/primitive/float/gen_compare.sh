@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # -*- compile-command: "mv -f compare.v{,~} && ./gen_compare.sh" -*-
 set -e
 

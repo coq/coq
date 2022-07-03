@@ -31,7 +31,7 @@ aggregate profile on a component-by-component basis. Here is how to do the
 second for the standard library ([example output](https://cdn.rawgit.com/andres-erbsen/b29b29cb6480dfc6a662062e4fcd0ae3/raw/304fc3fea9630c8e453929aa7920ca8a2a570d0b/stdlib_categorized_outermost.svg)).
 
 ~~~~~
-#!/bin/bash
+#!/usr/bin/env bash
 make clean
 make states
 perf record -F99  `# ~1GB of data` --call-graph=dwarf -- make -f Makefile.dune world
