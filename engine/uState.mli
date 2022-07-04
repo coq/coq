@@ -110,6 +110,11 @@ val add_universe_constraints : t -> UnivProblem.Set.t -> t
 val universe_of_name : t -> Id.t -> Univ.Level.t
 (** Retrieve the universe associated to the name. *)
 
+
+val name_level : Univ.Level.t -> Id.t -> t -> t
+(** Gives a name to the level (making it a binder).
+    Asserts the name is not already used by a level *)
+
 (** {5 Unification} *)
 
 (** [restrict_universe_context lbound (univs,csts) keep] restricts [univs] to
@@ -123,6 +128,13 @@ val restrict_universe_context : lbound:UGraph.Bound.t -> ContextSet.t -> Level.S
    (from [demote_seff_univs]). Transitive constraints between retained
    universes are preserved. *)
 val restrict : t -> Univ.Level.Set.t -> t
+
+
+(** [restrict_even_binders uctx ctx] restricts the local universes of [uctx] to
+   [ctx] extended by side effect universes
+   (from [demote_seff_univs]). Transitive constraints between retained
+   universes are preserved. *)
+val restrict_even_binders : t -> Univ.Level.Set.t -> t
 
 type rigid =
   | UnivRigid
