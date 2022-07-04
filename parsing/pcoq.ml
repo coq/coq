@@ -432,10 +432,26 @@ type frozen_t =
 let freeze ~marshallable : frozen_t =
   (!grammar_stack, CLexer.get_keyword_state ())
 
+(* Physical equality here was missing a lot of same-entries, which
+   resulted in huge slowdown in Pcoq.freeze in some interactive users
+
+   Ideally we would have grammar_entry / gramstate provide their own
+   equality function but turns out that they use Dyn and Store so
+   that's very tricky.
+
+   Using polymorphic equality should be OK as it seems that already we
+   require these types to be marshallable, IIANM.
+
+   Both components of the tuple suffer from this problem :(
+*)
+let eq_grammar_entry e1 e2 = e1 = e2
+let eq_gramstore st1 st2 = st1 = st2
+let eq_grams (e1, st1) (e2, st2) = eq_grammar_entry e1 e2 && eq_gramstore st1 st2
+
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
 let factorize_grams l1 l2 =
-  if l1 == l2 then ([], [], l1) else List.share_tails l1 l2
+  if l1 == l2 then ([], [], l1) else List.share_tails eq_grams l1 l2
 
 let rec number_of_entries accu = function
 | [] -> accu

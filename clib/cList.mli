@@ -277,7 +277,7 @@ val insert : 'a eq -> 'a -> 'a list -> 'a list
 (** Insert at the (first) position so that if the list is ordered wrt to the
     total order given as argument, the order is preserved *)
 
-val share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
+val share_tails : 'a eq -> 'a list -> 'a list -> 'a list * 'a list * 'a list
 (** [share_tails l1 l2] returns [(l1',l2',l)] such that [l1] is
     [l1'\@l] and [l2] is [l2'\@l] and [l] is maximal amongst all such
     decompositions *)
