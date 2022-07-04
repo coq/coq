@@ -406,7 +406,7 @@ let print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdi
   pr "  Native Compiler enabled     : %s\n\n" (pr_native prefs.nativecompiler);
   (pr "  Paths where installation is expected:\n";
    List.iter
-     (fun ((_,msg),(dir,_)) -> pr "  - %s is expected in in %s\n" msg (esc dir))
+     (fun ((_,msg),(dir,_)) -> pr "  - %s is expected in %s\n" msg (esc dir))
      install_dirs);
   pr "\n";
   pr "If anything is wrong above, please restart './configure'.\n\n";
