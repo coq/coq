@@ -973,7 +973,7 @@ let unfold_entry cst = Hints.HintsUnfoldEntry [Tacred.EvalConstRef cst]
 
 let add_hint local prg cst =
   (* XXX checking sections here is suspicious but matches historical (unintended?) behaviour *)
-  let locality = if local || Global.sections_are_opened () then Hints.Local else Hints.SuperGlobal in
+  let locality = if local || Global.sections_are_opened () then Hints.Local else Hints.Export in
   Hints.add_hints ~locality [Id.to_string prg.prg_cinfo.CInfo.name] (unfold_entry cst)
 
 let declare_obligation prg obl ~uctx ~types ~body =
