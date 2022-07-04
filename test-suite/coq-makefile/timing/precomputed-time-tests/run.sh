@@ -15,3 +15,4 @@ set -e
 ./005-correct-diff-sorting-order-mem/run.sh
 ./006-zero-before/run.sh
 ./007-no-output-sync/run.sh
+./008-strip-leading-pwd/run.sh
