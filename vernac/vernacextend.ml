@@ -98,18 +98,9 @@ module OutProof = struct
   type _ t =
     | No : unit t
     | Close : unit t
-    | Yes : Declare.Proof.t t
+    | Update : Declare.Proof.t t
+    | New : Declare.Proof.t t
 
-  type result =
-    | Ignored
-    | Closed
-    | Open of Declare.Proof.t
-
-  let cast (type a) (x:a) (ty:a t) : result =
-    match ty with
-    | No -> Ignored
-    | Close -> Closed
-    | Yes -> Open x
 end
 
 type ('inprog,'outprog,'inproof,'outproof) vernac_type = {
@@ -149,14 +140,14 @@ let vtcloseproof f =
               }
 
 let vtopenproof f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = Yes;
+  TypedVernac { inprog = Ignore; outprog = No; inproof = Ignore; outproof = New;
                 run = (fun ~pm:() ~proof:() ->
                     let proof = f () in
                     (), proof)
               }
 
 let vtmodifyproof f =
-  TypedVernac { inprog = Ignore; outprog = No; inproof = Use; outproof = Yes;
+  TypedVernac { inprog = Ignore; outprog = No; inproof = Use; outproof = Update;
                 run = (fun ~pm:() ~proof ->
                     let proof = f ~pstate:proof in
                     (), proof)
@@ -191,14 +182,14 @@ let vtmodifyprogram f =
               }
 
 let vtdeclareprogram f =
-  TypedVernac { inprog = Use; outprog = No; inproof = Ignore; outproof = Yes;
+  TypedVernac { inprog = Use; outprog = No; inproof = Ignore; outproof = New;
                 run = (fun ~pm ~proof:() ->
                     let proof = f ~pm in
                     (), proof)
               }
 
 let vtopenproofprogram f =
-  TypedVernac { inprog = Use; outprog = Yes; inproof = Ignore; outproof = Yes;
+  TypedVernac { inprog = Use; outprog = Yes; inproof = Ignore; outproof = New;
                 run = (fun ~pm ~proof:() ->
                     let pm, proof = f ~pm in
                     pm, proof)
