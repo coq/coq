@@ -16,7 +16,8 @@ open Coqargs
 
 let () = at_exit flush_all
 
-let get_version () =
+let get_version ~boot =
+  if boot then Coq_config.version else
   try
     let env = Boot.Env.init () in
     let revision = Boot.Env.revision env |> Boot.Path.to_string in
@@ -27,8 +28,8 @@ let get_version () =
     Printf.sprintf "%s (%s)" ver rev
   with _ -> Coq_config.version
 
-let print_header () =
-  Feedback.msg_info (str "Welcome to Coq " ++ str (get_version ()));
+let print_header ~boot () =
+  Feedback.msg_info (str "Welcome to Coq " ++ str (get_version ~boot));
   flush_all ()
 
 
@@ -187,7 +188,7 @@ let init_toploop opts stm_opts injections =
 let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
   if run_mode != Interactive then Flags.quiet := true;
   init_color (if opts.config.print_emacs then `EMACS else color_mode);
-  Flags.if_verbose print_header ();
+  Flags.if_verbose (print_header ~boot:opts.pre.boot) ();
   DebugHook.Intf.(set
     { read_cmd = ltac_debug_parse
     ; submit_answer = ltac_debug_answer
