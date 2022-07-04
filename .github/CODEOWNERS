@@ -11,12 +11,14 @@
 
 /Makefile                       @coq/build-maintainers
 /Makefile.dune                  @coq/build-maintainers
-/dev/tools/make_git_revision.sh @coq/legacy-build-maintainers
+/dev/tools/make_git_revision.sh @coq/build-maintainers
 
-/configure              @coq/legacy-build-maintainers @coq/build-maintainers
-/tools/configure/*      @coq/legacy-build-maintainers @coq/build-maintainers
+/configure                      @coq/build-maintainers
+/tools/configure/*              @coq/build-maintainers
 
-/boot/               @coq/build-maintainers
+/tools/coqdep/                  @coq/build-maintainers
+
+/boot/                          @coq/build-maintainers
 
 ########## CI infrastructure ##########
 
@@ -52,7 +54,6 @@
 # Trick to avoid getting review requests
 # each time someone modifies the changelog
 
-/dev/doc/build-system*.txt    @coq/legacy-build-maintainers
 /dev/doc/build-system.dune.md @coq/build-maintainers
 /dev/doc/critical-bugs        @coq/kernel-maintainers
 /dev/doc/econstr.md           @coq/engine-maintainers
@@ -246,8 +247,6 @@
 
 /tools/TimeFileMaker.py   @coq/coq-makefile-maintainers
 /tools/make-*-tim*.py     @coq/coq-makefile-maintainers
-
-/tools/coqdep*  @coq/legacy-build-maintainers @coq/build-maintainers
 
 /tools/coq_tex*        @silene
 # Secondary maintainer @gares
