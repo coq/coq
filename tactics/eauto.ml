@@ -199,6 +199,9 @@ module Search = struct
     else if not (Int.equal d' 0) then d'
     else subgoals_order p1 p2
 
+  let get_shelf_size =
+    Proofview.tclEVARMAP >>= fun sigma -> Proofview.tclUNIT @@ List.length (Evd.shelf sigma)
+
   (* We cannot determine statically the cost of an Extern hint, so we evaluate
      it locally, backtrack and return a dummy tactic that immediately sets the
      result. *)
@@ -210,12 +213,14 @@ module Search = struct
     Proofview.tclORELSE (Proofview.UnsafeRepr.make begin
       let open Logic_monad.BackState in
       get >>= fun s ->
+      Proofview.UnsafeRepr.repr get_shelf_size >>= fun sn ->
       Proofview.UnsafeRepr.repr (Proofview.tclONCE tac) >>= fun () ->
       get >>= fun r ->
+      Proofview.UnsafeRepr.repr get_shelf_size >>= fun rn ->
       Proofview.UnsafeRepr.repr Proofview.numgoals >>= fun n ->
       set s >>= fun () ->
       let tac = Proofview.UnsafeRepr.make (set r) in
-      let cost = { cost with cost_subgoals = Some n } in
+      let cost = { cost with cost_subgoals = Some (n + (if rn > sn then 1 else 0)) } in
       return (Some (tac, cost, pp))
     end) (fun _ -> Proofview.tclUNIT None)
     end
