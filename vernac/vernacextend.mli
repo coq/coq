@@ -98,17 +98,13 @@ module InProof : sig
 end
 
 module OutProof : sig
+
   type _ t =
     | No : unit t
     | Close : unit t
-    | Yes : Declare.Proof.t t
+    | Update : Declare.Proof.t t
+    | New : Declare.Proof.t t
 
-  type result =
-    | Ignored
-    | Closed
-    | Open of Declare.Proof.t
-
-  val cast : 'a -> 'a t -> result
 end
 
 type ('inprog,'outprog,'inproof,'outproof) vernac_type = {

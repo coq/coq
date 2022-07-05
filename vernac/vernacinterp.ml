@@ -22,12 +22,14 @@ let interp_typed_vernac (Vernacextend.TypedVernac { inprog; outprog; inproof; ou
       ~proof:(InProof.cast proof inproof)
   in
   let pm = OutProg.cast pm' outprog pm in
-  let stack = let open OutProof in match stack, OutProof.cast proof' outproof with
-    | stack, Ignored -> stack
-    | Some stack, Closed -> snd (LStack.pop stack)
-    | None, Closed -> assert false
-    | Some stack, Open proof -> Some (LStack.map_top ~f:(fun _ -> proof) stack)
-    | None, Open proof -> Some (LStack.push None proof)
+  let stack = let open OutProof in
+    match stack, outproof with
+    | stack, No -> stack
+    | None, Close -> assert false
+    | Some stack, Close -> snd (LStack.pop stack)
+    | None, Update -> assert false
+    | Some stack, Update -> Some (LStack.map_top ~f:(fun _ -> proof') stack)
+    | stack, New -> Some (LStack.push stack proof')
   in
   stack, pm
 
