@@ -483,25 +483,22 @@ overall.
 
 **Need for ``Proof using``**
 
-When a theorem is part of a section, typechecking the statement of this theorem
-might be insufficient for deducing the type of this statement as of at the end
-of the section. Indeed, the proof of the theorem could make use of section
+When a theorem is in a section, typechecking the statement of the theorem
+may be insufficient to deduce the type of the statement at the end
+of the section. For example, the proof of the theorem may make use of section
 variables or section hypotheses that are not mentioned in the statement of the
 theorem.
 
-For this reason, proofs inside section should begin with :cmd:`Proof using`
-instead of :cmd:`Proof`, where after the ``using`` clause one should provide
-the list of the names of the section variables that are required for the proof
-but are not involved in the typechecking of the statement. Note that it is safe
-to write ``Proof using.`` instead of ``Proof.`` also for proofs that are not
-within a section.
+For this reason, proofs in sections should begin with :cmd:`Proof using`
+instead of :cmd:`Proof`.  The `using` clause should give
+the names of the section variables that are required for the proof
+that are not involved in the typechecking of the statement. See :flag:`Suggest Proof Using`.
+(Note it's fine to use ``Proof using.`` instead of ``Proof.`` for proofs that are not
+in a section.)
 
-.. warn:: You should use the “Proof using [...].” syntax instead of “Proof.” to enable skipping this proof which is located inside a section. Give as argument to “Proof using” the list of section variables that are not needed to typecheck the statement but that are required by the proof.
-
-     If Coq is invoked using the ``-vos`` option, whenever it finds the
-     command ``Proof.`` inside a section, it will compile the proof, that is,
-     refuse to skip it, and it will raise a warning. To disable the warning, one
-     may pass the flag ``-w -proof-without-using-in-section``.
+When using ``-vos``, proofs in sections with :cmd:`Proof using` are skipped.  Proofs
+in sections without :cmd:`Proof using` are fully processed (much slower) and will raise a warning.
+To disable the warning, pass the flag ``-w -proof-without-using-in-section``.
 
 **Interaction with standard compilation**
 
