@@ -24,7 +24,7 @@
 { pkgs ? import ./dev/nixpkgs.nix {}
 , ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_12
 , buildIde ? true
-, buildDoc ? false
+, buildDoc ? true
 , doInstallCheck ? true
 , shell ? false
   # We don't use lib.inNixShell because that would also apply
