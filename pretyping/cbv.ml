@@ -632,12 +632,13 @@ and cbv_stack_value info env = function
       begin match List.chop nargs appl with
       | (args, appl) ->
         let stk = if List.is_empty appl then stk else stack_app appl stk in
-        match VredNative.red_prim info.env () op u (Array.of_list args) with
+        begin match VredNative.red_prim info.env () op u (Array.of_list args) with
         | Some (CONSTR (c, args)) ->
           (* args must be moved to the stack to allow future reductions *)
           cbv_stack_value info env (CONSTR(c, [||]), stack_vect_app args stk)
         | Some v ->  cbv_stack_value info env (v,stk)
         | None -> mkSTACK(PRIMITIVE(op,c,Array.of_list args), stk)
+        end
       | exception Failure _ ->
         (* partial application *)
               (assert (stk = TOP);
