@@ -1668,7 +1668,6 @@ End Fold_Right_Recursor.
       - intros n d; destruct n; destruct d; simpl; auto.
         + destruct a; destruct (split l); simpl; auto.
         + destruct a; destruct (split l); simpl in *; auto.
-          apply IHl.
     Qed.
 
     Lemma split_length_l : forall (l:list (A*B)),

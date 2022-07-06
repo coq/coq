@@ -1503,7 +1503,6 @@ Lemma sqrt2_spec : forall x y,
  assert (Hb: 0 <= wB) by (red; intros HH; discriminate).
  assert (Hi2: Φ(WW ih il ) < (φ max_int + 1) ^ 2). {
   apply Z.le_lt_trans with ((wB - 1) * wB + (wB - 1)); auto with zarith.
-  2: apply refl_equal.
   case (to_Z_bounded ih); case (to_Z_bounded il); intros H1 H2 H3 H4.
   unfold zn2z_to_Z; auto with zarith.
  }
