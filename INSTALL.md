@@ -39,6 +39,9 @@ To compile Coq yourself, you need:
 
 - [optional] GNU Make (version >= 3.81)
 
+See [below](#Known-Problems) for a discussion of platform-specific
+issues with dependencies.
+
 Primitive floating-point numbers require IEEE-754 compliance
 (`Require Import Floats`). Common sources of incompatibility
 are checked at configure time, preventing compilation. In the
@@ -116,3 +119,11 @@ like `COQLIB="some path"`, that is a variable name followed by `=` and
 a string that follows OCaml's escaping conventions. This feature can be
 used by installers of binary package to make Coq aware of its installation
 path.
+
+Known problems
+--------------
+
+- On OSX, when using Opam with sandboxing and Dune < 3.0 with caching
+  enabled, Coq may fail to install, due to Opam's sandboxing
+  restricting the permissions needed for the Dune 2.x caching
+  daemon. See https://github.com/coq/coq/issues/15138 more details.
