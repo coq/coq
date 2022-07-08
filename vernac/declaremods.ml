@@ -192,7 +192,9 @@ end
 type module_objects =
   { module_prefix : Nametab.object_prefix;
     module_substituted_objects : Libobject.t list;
+    module_substituted_objects_by_name : Libobject.t Id.Map.t;
     module_keep_objects : Libobject.t list;
+    module_keep_objects_by_name : Libobject.t Id.Map.t
   }
 
 (** The [StagedModS] abstraction describes module operations at a given stage. *)
@@ -245,9 +247,9 @@ and subst_sobjs sub (mbids,aobjs as sobjs) =
 and subst_objects subst seg =
   let subst_one node =
     match node with
-    | AtomicObject obj ->
+    | AtomicObject { data; obj } ->
       let obj' = Libobject.subst_object (subst,obj) in
-      if obj' == obj then node else AtomicObject obj'
+      if obj' == obj then node else AtomicObject { data; obj=obj' }
     | ModuleObject (id, sobjs) ->
       let sobjs' = subst_sobjs subst sobjs in
       if sobjs' == sobjs then node else ModuleObject (id, sobjs')
@@ -358,6 +360,17 @@ module ModObjs :
 
 (** Iterate some function [iter_objects] on all components of a module *)
 
+let get_libobject_name (o : Libobject.t) = match o with
+  | Libobject.AtomicObject { data; _ } ->
+    Libobject.Data.name data
+  | _ -> None
+
+let build_obj_map objs : Libobject.t Id.Map.t =
+  List.fold_left (fun om obj ->
+      let name = get_libobject_name obj in
+      Option.cata (fun name -> Id.Map.add name obj om) om name
+    ) Id.Map.empty objs
+
 let do_module iter_objects i obj_dir obj_mp sobjs kobjs =
   let prefix = Nametab.{ obj_dir ; obj_mp; } in
   Actions.enter_module obj_mp obj_dir i;
@@ -365,10 +378,15 @@ let do_module iter_objects i obj_dir obj_mp sobjs kobjs =
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
     let objs = expand_sobjs sobjs in
+    (* Format.eprintf "do_module: subst: %d | keep %d@\n%!" (List.length objs) (List.length kobjs); *)
+    let module_substituted_objects_by_name = build_obj_map objs in
+    let module_keep_objects_by_name = build_obj_map kobjs in
     let module_objects =
-      { module_prefix = prefix;
-        module_substituted_objects = objs;
-        module_keep_objects = kobjs;
+      { module_prefix = prefix
+      ; module_substituted_objects = objs
+      ; module_substituted_objects_by_name
+      ; module_keep_objects = kobjs
+      ; module_keep_objects_by_name
       }
     in
     ModObjs.set obj_mp module_objects;
@@ -395,7 +413,8 @@ let load_modtype i sp mp sobjs =
 
 let rec load_object i (prefix, obj) =
   match obj with
-  | AtomicObject o -> Libobject.load_object i (prefix, o)
+  | AtomicObject { obj; data } ->
+    Libobject.load_object i (prefix, obj)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     do_module' load_objects i (name, sobjs)
@@ -496,7 +515,8 @@ let open_modtype i ((sp,kn),_) =
 
 let rec open_object f i (prefix, obj) =
   match obj with
-  | AtomicObject o -> Libobject.open_object f i (prefix, o)
+  | AtomicObject { obj; data } ->
+    Libobject.open_object f i (prefix, obj)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     let dir = dir_of_sp (fst name) in
@@ -546,7 +566,8 @@ and cache_keep ((sp,kn),kobjs) =
 
 let cache_object (prefix, obj) =
   match obj with
-  | AtomicObject o -> Libobject.cache_object (prefix, o)
+  | AtomicObject { obj; _ } ->
+    Libobject.cache_object (prefix, obj)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     do_module' load_objects 1 (name, sobjs)
@@ -603,8 +624,6 @@ let handle_missing_substobjs mp = match mp with
     assert false (* Only inner parts of module types should be missing *)
 
 let () = ModSubstObjs.set_missing_handler handle_missing_substobjs
-
-
 
 (** {6 From module expression to substitutive objects} *)
 
@@ -687,6 +706,8 @@ module InterpVisitor : StagedModS
   with type env = InterpActions.env
   with type typexpr = Constr.t * Univ.AbstractContext.t option
  = StagedMod(InterpActions)
+
+let modmap () = InterpVisitor.ModObjs.all ()
 
 (** {6 Modules : start, end, declare} *)
 
@@ -1037,7 +1058,6 @@ let end_module_core id m_info objects fs =
     | [], _ | _, _ :: _ -> special@[node]
     | _ -> special@[node;KeepObject (id,keep)]
   in
-
   mp, objects
 
 let end_module () =

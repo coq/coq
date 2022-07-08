@@ -369,7 +369,8 @@ let register_ltac ?deprecation ?(local = false) ?(mut = false) isrec tactics =
       tacdef_type = t;
       tacdef_deprecation = deprecation;
     } in
-    Lib.add_leaf (inTacDef id def)
+    let data = Libobject.Data.make ~name:id () in
+    Lib.add_leaf ~data (inTacDef id def)
   in
   List.iter iter defs
 
@@ -460,7 +461,9 @@ let register_typedef ?(local = false) isrec types =
     (id, typdef)
   in
   let types = List.map map types in
-  let iter (id, def) = Lib.add_leaf (inTypDef id def) in
+  let iter (id, def) =
+    let data = Libobject.Data.make ~name:id () in
+    Lib.add_leaf ~data (inTypDef id def) in
   List.iter iter types
 
 let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
@@ -489,7 +492,8 @@ let register_primitive ?deprecation ?(local = false) {loc;v=id} t ml =
     tacdef_type = t;
     tacdef_deprecation = deprecation;
   } in
-  Lib.add_leaf (inTacDef id def)
+  let data = Libobject.Data.make ~name:id () in
+  Lib.add_leaf ~data (inTacDef id def)
 
 let register_open ?(local = false) qid (params, def) =
   let kn =
@@ -837,7 +841,8 @@ let register_notation_interpretation = function
   | Abbreviation (id, deprecation, body) ->
     let body = Tac2intern.globalize Id.Set.empty body in
     let abbr = { abbr_body = body; abbr_depr = deprecation } in
-    Lib.add_leaf (inTac2Abbreviation id abbr)
+    let data = Libobject.Data.make ~name:id () in
+    Lib.add_leaf ~data (inTac2Abbreviation id abbr)
   | Synext (local,kn,ids,body) ->
     let body = Tac2intern.globalize ids body in
     Lib.add_leaf (inTac2NotationInterp (local,kn,body))

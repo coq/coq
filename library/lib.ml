@@ -57,7 +57,7 @@ let classify_segment seg =
           clean (substl, o::keepl, anticipl) stk
         | ExportObject _ ->
           clean (o::substl, keepl, anticipl) stk
-        | AtomicObject obj as o ->
+        | AtomicObject { obj ; _ } as o ->
           begin match classify_object obj with
             | Dispose -> clean acc stk
             | Keep ->
@@ -322,7 +322,9 @@ let section_instance ref =
 let discharge_item = Libobject.(function
   | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
   | ExportObject _ -> None
-  | AtomicObject obj -> discharge_object obj)
+  | AtomicObject { obj; data } ->
+    let oobj = discharge_object obj in
+    Option.map (fun obj -> (data, obj)) oobj)
 
 (* Misc *)
 
@@ -483,22 +485,24 @@ module InterpActions : LibActions = struct
 
 end
 
-let add_discharged_leaf obj =
+let add_discharged_leaf ?data obj =
+  let data = Option.default (Libobject.Data.make ()) data in
   let newobj = Libobject.rebuild_object obj in
   Libobject.cache_object (prefix(),newobj);
   match Libobject.object_stage newobj with
   | Summary.Stage.Synterp ->
-    SynterpActions.add_leaf_entry (AtomicObject newobj)
+    SynterpActions.add_leaf_entry (AtomicObject { obj = newobj; data } )
   | Summary.Stage.Interp ->
-    InterpActions.add_leaf_entry (AtomicObject newobj)
+    InterpActions.add_leaf_entry (AtomicObject { obj = newobj; data } )
 
-let add_leaf obj =
+let add_leaf ?data obj =
+  let data = Option.default (Libobject.Data.make ()) data in
   Libobject.cache_object (prefix(),obj);
   match Libobject.object_stage obj with
   | Summary.Stage.Synterp ->
-    SynterpActions.add_leaf_entry (AtomicObject obj)
+    SynterpActions.add_leaf_entry (AtomicObject { obj; data} )
   | Summary.Stage.Interp ->
-    InterpActions.add_leaf_entry (AtomicObject obj)
+    InterpActions.add_leaf_entry (AtomicObject { obj; data} )
 
 module type StagedLibS = sig
 
@@ -602,7 +606,7 @@ let close_section () =
   Actions.pop_path_prefix ();
   let newdecls = List.map discharge_item secdecls in
   Actions.close_section fs;
-  List.iter (Option.iter add_discharged_leaf) newdecls
+  List.iter (Option.iter (fun (data, obj) -> add_discharged_leaf ~data obj)) newdecls
 
 end
 

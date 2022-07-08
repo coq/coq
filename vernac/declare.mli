@@ -558,7 +558,7 @@ val is_local_constant : Constant.t -> bool
 
 module Internal : sig
 
-  (* Liboject exports *)
+  (* Libobject exports *)
   module Constant : sig
     type t
     val tag : (Id.t * t) Libobject.Dyn.tag

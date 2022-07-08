@@ -12,8 +12,8 @@
 
 type source =
   (* OCaml won't allow using DirPath.t in InFile *)
-  | InFile of { dirpath : string option; file : string }
   | ToplevelInput
+  | InFile of { dirpath : string option; file : string }
 
 type t = {
   fname : source; (** filename or toplevel input *)

@@ -112,7 +112,8 @@ let declare_abbreviation ~local ?(also_in_cases_pattern=true) deprecation id ~on
       abbrev_activated = true;
     }
   in
-  add_leaf (inAbbreviation id (local,abbrev))
+  let data = Data.make ~name:id () in
+  add_leaf ~data (inAbbreviation id (local,abbrev))
 
 let pr_abbreviation kn = pr_qualid (Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn)
 

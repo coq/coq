@@ -104,6 +104,27 @@ let ident_subst_function (_,a) = a
 
 type obj = Dyn.t (* persistent dynamic objects *)
 
+module Data : sig
+
+  type t
+
+  val empty : t
+  val make : ?loc:Loc.t -> ?doc:string -> ?name:Names.Id.t -> unit -> t
+  val name : t -> Names.Id.t option
+
+end = struct
+
+  type t =
+    { loc : Loc.t option
+    ; doc : string option
+    ; name : Names.Id.t option
+    }
+
+  let make ?loc ?doc ?name () = { loc; doc; name }
+  let empty = make ()
+  let name { name } = name
+end
+
 (** {6 Substitutive objects}
 
     - The list of bound identifiers is nonempty only if the objects
@@ -124,7 +145,7 @@ and t =
   | IncludeObject of algebraic_objects
   | KeepObject of Names.Id.t * t list
   | ExportObject of { mpl : (open_filter * Names.ModPath.t) list }
-  | AtomicObject of obj
+  | AtomicObject of { data : Data.t ; obj : obj }
 
 and substitutive_objects = Names.MBId.t list * algebraic_objects
 

@@ -77,7 +77,7 @@ let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> co
   List.iter (fun d -> fn (GlobRef.VarRef (NamedDecl.get_id d)) None env (NamedDecl.get_type d))
     (Environ.named_context env);
   let iter_obj prefix lobj = match lobj with
-    | AtomicObject o ->
+    | AtomicObject { obj } ->
       let handler =
         DynHandle.add Declare.Internal.Constant.tag begin fun (id,obj) ->
           let kn = KerName.make prefix.Nametab.obj_mp (Label.of_id id) in
@@ -104,7 +104,7 @@ let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> co
         end @@
         DynHandle.empty
       in
-      handle handler o
+      handle handler obj
     | _ -> ()
   in
   try Declaremods.iter_all_interp_segments iter_obj

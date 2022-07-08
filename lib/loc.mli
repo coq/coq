@@ -11,8 +11,8 @@
 (** {5 Basic types} *)
 
 type source =
-  | InFile of { dirpath : string option; file : string }
   | ToplevelInput
+  | InFile of { dirpath : string option; file : string }
 
 type t = {
   fname : source; (** filename or toplevel input *)

@@ -218,3 +218,14 @@ val end_modtype : unit -> ModPath.t
 val declare_include :
   (Constrexpr.module_ast * inline) list ->
   unit
+
+(** Experimental API *)
+type module_objects = private
+  { module_prefix : Nametab.object_prefix
+  ; module_substituted_objects : Libobject.t list
+  ; module_substituted_objects_by_name : Libobject.t Id.Map.t
+  ; module_keep_objects : Libobject.t list
+  ; module_keep_objects_by_name : Libobject.t Id.Map.t
+  }
+
+val modmap : unit -> module_objects Names.MPmap.t

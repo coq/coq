@@ -108,7 +108,8 @@ let declare_mind ?typing_flags mie =
       Declare.check_exists typ;
       List.iter Declare.check_exists cons) names;
   let mind = Global.add_mind ?typing_flags id mie in
-  let () = Lib.add_leaf (inInductive (id, { ind_names = names })) in
+  let data = Libobject.Data.make ~name:id () in
+  let () = Lib.add_leaf ~data (inInductive (id, { ind_names = names })) in
   if is_unsafe_typing_flags() then feedback_axiom ();
   let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
   Impargs.declare_mib_implicits mind;

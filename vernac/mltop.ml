@@ -388,7 +388,7 @@ let () =
     ; Summary.unfreeze_function = unfreeze_ml_modules
     ; Summary.init_function = reset_loaded_modules }
 
-(* Liboject entries of declared ML Modules *)
+(* Libobject entries of declared ML Modules *)
 type ml_module_object =
   { mlocal : Vernacexpr.locality_flag
   ; mnames : PluginSpec.t list

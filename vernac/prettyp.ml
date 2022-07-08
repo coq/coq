@@ -709,7 +709,7 @@ let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
    needs to be done in a more principled way. *)
 let gallina_print_library_leaf env sigma with_values mp lobj =
   match lobj with
-  | AtomicObject o ->
+  | AtomicObject { obj; _ } ->
     let handler =
       DynHandle.add Declare.Internal.objVariable begin fun id ->
           (* Outside sections, VARIABLES still exist but only with universes
@@ -726,7 +726,7 @@ let gallina_print_library_leaf env sigma with_values mp lobj =
       end @@
       DynHandle.empty
     in
-    handle handler o
+    handle handler obj
   | ModuleObject (id,_) ->
     Some (print_module ~with_body:with_values (MPdot (mp,Label.of_id id)))
   | ModuleTypeObject (id,_) ->
@@ -877,7 +877,7 @@ let print_full_pure_atomic env sigma mp lobj =
   handleF handler lobj
 
 let print_full_pure_leaf env sigma mp = function
-  | AtomicObject lobj -> print_full_pure_atomic env sigma mp lobj
+  | AtomicObject { obj; _ } -> print_full_pure_atomic env sigma mp obj
   | ModuleObject (id, _) ->
     (* TODO: make it reparsable *)
     print_module (MPdot (mp,Label.of_id id)) ++ str "." ++ fnl () ++ fnl ()

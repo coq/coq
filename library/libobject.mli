@@ -133,21 +133,43 @@ val ident_subst_function : substitution * 'a -> 'a
    will hand back two functions, the "injection" and "projection"
    functions for dynamically typed library-objects. *)
 
+(** Common metadata for objects that are stored in modules / .vo files *)
+module Data : sig
+
+  type t
+
+  val empty : t
+  val make : ?loc:Loc.t -> ?doc:string -> ?name:Id.t -> unit -> t
+  val name : t -> Id.t option
+
+end
+
 module Dyn : Dyn.S
 
 type obj = Dyn.t
 
+(** EJGA: Should we attach info to all objects? *)
 type algebraic_objects =
   | Objs of t list
   | Ref of ModPath.t * Mod_subst.substitution
 
 and t =
   | ModuleObject of Id.t * substitutive_objects
+  (** Information and contents for a Coq Module *)
   | ModuleTypeObject of Id.t * substitutive_objects
+  (** Similar but for module types *)
   | IncludeObject of algebraic_objects
+  (** Similar but for include *)
   | KeepObject of Id.t * t list
+  (** A Keep Object is stored at module closing time after the
+     [ModuleObject] proper, and with the goal to register the objects
+     that survive the module with the [Declaremods] registration
+     table. Some other checks are also done. *)
   | ExportObject of { mpl : (open_filter * ModPath.t) list }
-  | AtomicObject of obj
+  (** [ExportObject] stores a list of objects that must be opened in
+     the local context *)
+  | AtomicObject of { data : Data.t; obj : obj }
+  (** Regular  *)
 
 and substitutive_objects = MBId.t list * algebraic_objects
 

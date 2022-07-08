@@ -379,6 +379,10 @@ let v_compiled_lib =
 
 let v_obj = Dyn
 
+let v_source = Sum("source",1, [| [| Opt String; String |] |])
+let v_loc = Tuple("loc", [| v_source ; Int; Int; Int; Int; Int; Int |])
+let v_obj_data = Tuple("obj_data", [| Opt v_loc; Opt String; Opt v_id |])
+
 let v_open_filter = Sum ("open_filter",1,[|[|v_pred String|]|])
 
 let rec v_aobjs = Sum("algebraic_objects", 0,
@@ -393,7 +397,7 @@ and v_libobjt = Sum("Libobject.t",0,
      [| v_aobjs |];
      [| v_id; v_libobjs |];
      [| List (v_pair v_open_filter v_mp)|];
-     [| v_obj |]
+     [| v_obj_data; v_obj |]
   |])
 
 and v_libobjs = List v_libobjt
