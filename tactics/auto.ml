@@ -70,12 +70,48 @@ let auto_unif_flags =
 let unify_resolve flags h = Hints.hint_res_pf ~flags h
 let unify_resolve_nodelta h = Hints.hint_res_pf ~flags:auto_unif_flags h
 
-let exact h =
+let rec first_delayed_map f = function
+  | [] -> Tacticals.tclZEROMSG (str "No applicable tactic.")
+  | t::rest -> Proofview.tclORELSE (f t) (fun _ -> first_delayed_map f rest)
+
+let e_exact h =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sigma, c = Hints.fresh_hint env sigma h in
-    Proofview.Unsafe.tclEVARS sigma <*> exact_check c
+    let sigma, tc = Typing.type_of env sigma c in
+    let concl = Proofview.Goal.concl gl in
+    if occur_existential sigma tc || occur_existential sigma concl then
+      let sigma = Evd.clear_metas sigma in
+      try
+        let sigma = Unification.w_unify env sigma CONV ~flags:auto_unif_flags concl tc in
+        Proofview.Unsafe.tclEVARSADVANCE sigma <*>
+        exact_no_check c
+      with e when CErrors.noncritical e ->
+        Proofview.tclZERO e
+    else exact_check c
+  end
+
+let e_assumption =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let hyps = Proofview.Goal.hyps gl in
+    let concl = Proofview.Goal.concl gl in
+    let not_ground = occur_existential sigma concl in
+    first_delayed_map begin fun decl ->
+      let id = Context.Named.Declaration.get_id decl in
+      let t = Context.Named.Declaration.get_type decl in
+      if not_ground || occur_existential sigma t then
+        let sigma = Evd.clear_metas sigma in
+        try
+          let sigma = Unification.w_unify env sigma CONV ~flags:auto_unif_flags concl t in
+          Proofview.Unsafe.tclEVARSADVANCE sigma <*>
+          exact_no_check (EConstr.mkVar id)
+        with e when CErrors.noncritical e ->
+          Proofview.tclZERO e
+      else exact_check (EConstr.mkVar id)
+    end hyps
   end
 
 (* Util *)
@@ -273,7 +309,7 @@ let exists_evaluable_reference env = function
   | Tacred.EvalVarRef v -> try ignore(lookup_named v env); true with Not_found -> false
 
 let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro") intro
-let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption
+let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") e_assumption
 
 let rec trivial_fail_db dbg db_list local_db =
   let intro_tac =
@@ -307,7 +343,7 @@ and tac_of_hint dbg db_list local_db concl h =
     | ERes_pf _ -> Proofview.Goal.enter (fun gl ->
         let info = Exninfo.reify () in
         Tacticals.tclZEROMSG ~info (str "eres_pf"))
-    | Give_exact h  -> exact h
+    | Give_exact h  -> e_exact h
     | Res_pf_THEN_trivial_fail h ->
       Tacticals.tclTHEN
         (unify_resolve_nodelta h)
