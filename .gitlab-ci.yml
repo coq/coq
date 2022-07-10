@@ -796,7 +796,7 @@ library:ci-vst:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-flocq3
+  - library:ci-flocq
 
 library:ci-deriving:
   extends: .ci-template-flambda
