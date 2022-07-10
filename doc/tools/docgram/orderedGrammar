@@ -669,10 +669,6 @@ pattern_occs: [
 | one_term OPT ( "at" occs_nums )
 ]
 
-variant_definition: [
-| ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
-]
-
 record_definition: [
 | OPT ">" ident_decl LIST0 binder OPT [ ":" sort ] OPT ( ":=" OPT ident "{" LIST0 record_field SEP ";" OPT ";" "}" OPT [ "as" ident ] )
 ]
@@ -1063,7 +1059,7 @@ command: [
 | "Constraint" LIST1 univ_constraint SEP ","
 | "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "CoInductive" record_definition LIST0 ( "with" record_definition )
-| "Variant" variant_definition
+| "Variant" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
 | [ "Record" | "Structure" ] record_definition
 | "Class" record_definition
 | "Class" ident_decl LIST0 binder OPT [ ":" sort ] ":=" constructor
