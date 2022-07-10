@@ -23,6 +23,10 @@ cd "$CI_BUILD_DIR/sf"
   make
 )
 
+( cd slf-current
+  make
+)
+
 # ( cd qc-current
 #   make clean
 #   make
