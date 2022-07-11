@@ -123,12 +123,19 @@ the top directory of your package's source tree.  We recommend using the
 avoid putting your code into subdirectories such as "src" unless you want
 that to be part of the :term:`logical path` in Coq.
 
-For example, here's a minimal _CoqProject file for the `MyProject` package
-(the logical name of the package), which has two script files `File1.v`
-and `SubDir/File2.v` whose logical paths
-are `MyProject.File1` and `MyProject.SubDir.File2`.  `_CoqProject` should be
-in the top-level directory of your project.  We recommend naming that directory
-`MyProject`, the same as the logical name::
+For example, here's a minimal _CoqProject file for the `MyPackage` package
+(the logical name of the package), which includes all the ``.v`` files (and
+other file types) in the current directory and its subdirectories::
+
+  -R . MyPackage
+  .
+
+You can list multiple directories if you wish.
+
+In addition, you can list individual files, for example for the two script files
+`File1.v` and `SubDir/File2.v` whose logical paths are `MyPackage.File1` and
+`MyPackage.SubDir.File2`.  We recommend naming that directory `MyPackage`, the
+same as the logical name::
 
   -R . MyPackage
   File1.v
@@ -136,10 +143,9 @@ in the top-level directory of your project.  We recommend naming that directory
 
 :n:`-R . MyPackage` (see :ref:`here <-Q-option>`) declares that all `.v` files in the directory containing
 `_CoqProject` or any subdirectory are part of the package `MyPackage`.  We recommend
-using a single `-R` with `.` as the :term:`physical path` for simplicity.  It's
-also necessary to (redundantly) list every `.v` file that's part of the package.
-Perhaps this will be simplified in the future.  The order of the entries does not
-matter.
+using a single `-R` with `.` as the :term:`physical path` for simplicity.  You must also
+identify all the `.v` files in your package.  We recommend using directory names
+where possible for brevity.  The order of the entries doesn't matter.
 
 .. I think dotted names are not useful.  For example, this doesn't produce usable
    .vo files because a.v and b.v are not in an `Abc` subdirectory::
@@ -163,8 +169,8 @@ Then:
 
 - Compile your project with :n:`make -f CoqMakefile` as needed.
 
-If you add new files to your project, add them to `_CoqProject` and
-re-run `coq_makefile` and `make`.
+If you add more files to your project that are not in directories listed
+in `_CoqProject`, update `_CoqProject` and re-run `coq_makefile` and `make`.
 
 .. todo we should use a standard name for the makefile so IDEs can find it.
    Maybe you should be allowed to include "-o MAKEFILENAME" in the _CoqProject,
@@ -373,7 +379,8 @@ separated by whitespace:
   are ``-Q``, ``-I``, ``-R`` and ``-native-compiler``.
 * ``-arg`` options for other options of coqc that don’t fall in the above set.
 * Options specific to ``coq_makefile``. Currently this is only ``-docroot``.
-* Paths to files belonging to the project.
+* Directory names, which include all appropriate files in the directory and
+  its subdirectories.
 * Comments, started with an unquoted ``#`` and continuing to the end of the
   line.
 
@@ -383,12 +390,11 @@ A simple example of a ``_CoqProject`` file follows:
 
     -R theories/ MyCode
     -arg "-w all"
-    theories/foo.v
-    theories/bar.v
+    # include everything under "theories", e.g. foo.v and bar.v
+    theories
     -I src/
-    src/baz.mlg
-    src/bazaux.ml
-    src/qux_plugin.mlpack
+    # include everything under "src", e.g. baz.mlg bazaux.ml and qux_plugin.mlpack
+    src
     -generate-meta-for-package my-package
 
 Lines in the form ``-arg foo`` pass the argument ``foo`` to ``coqc``: in the

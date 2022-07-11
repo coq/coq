@@ -13,6 +13,7 @@
    bootstrapped. *)
 
 type arg_source = CmdLine | ProjectFile
+(* items from expansion of directories are labelled ProjectFile *)
 
 type 'a sourced = { thing : 'a; source : arg_source }
 
@@ -24,12 +25,8 @@ type project = {
   native_compiler : native_compiler option;
   docroot : string option;
 
-  v_files : string sourced list;
-  mli_files : string sourced list;
-  mlg_files : string sourced list;
-  ml_files : string sourced list;
-  mllib_files : string sourced list;
-  mlpack_files : string sourced list;
+  files : string sourced list; (* .v, .ml, .mlg, .mli, .mllib, .mlpack files *)
+  cmd_line_files : string sourced list;
   meta_file : meta_file;
 
   ml_includes : path sourced list;
@@ -52,12 +49,8 @@ let mk_project project_file makefile native_compiler = {
   native_compiler;
   docroot = None;
 
-  v_files = [];
-  mli_files = [];
-  mlg_files = [];
-  ml_files = [];
-  mllib_files = [];
-  mlpack_files = [];
+  files = [];
+  cmd_line_files = [];
   ml_includes = [];
   meta_file = Absent;
   r_includes = [];
@@ -187,6 +180,31 @@ let process_extra_args arg =
     out_list := buffer buf :: !out_list;
   List.rev !out_list
 
+let expand_paths project =
+  let orig_dir = Filename.current_dir_name in
+  let orig_dir = if orig_dir = "." then "" else orig_dir in
+  let abs_f f = CUnix.correct_path f orig_dir in  (* need a better function name *)
+  let rec expand_dir path rv =
+    let add_file f =
+      if List.mem (Filename.extension f)
+               [".v"; ".mli"; ".ml"; ".mlg"; ".mlpack"; ".mllib"] then
+        rv := {thing=abs_f f; source=ProjectFile} :: !rv
+    in
+    if Sys.file_exists path && Sys.is_directory path then
+      System.process_directory (fun fname ->
+        match fname with
+        | FileRegular f -> add_file (if path <> "." then Filename.concat path f else f)
+        | FileDir (p,_) -> expand_dir p rv
+      ) path
+    else
+      add_file path
+  in
+  List.fold_left (fun rv path ->
+      let exp = ref [] in
+      expand_dir path.thing exp;
+      (List.sort (fun a b -> String.compare a.thing b.thing) !exp) @ rv)
+    [] project.files
+
 let process_cmd_line ~warning_fn orig_dir proj args =
   let parsing_project_file = ref (proj.project_file <> None) in
   let sourced x = { thing = x; source = if !parsing_project_file then ProjectFile else CmdLine } in
@@ -253,37 +271,31 @@ let process_cmd_line ~warning_fn orig_dir proj args =
     aux { proj with extra_args = proj.extra_args @ List.map sourced (process_extra_args a) } r
   | f :: r ->
       let abs_f = CUnix.correct_path f orig_dir in
+      let ext = Filename.extension abs_f in
       let proj =
-        match Filename.extension abs_f with
-        | ".v" ->
+        match ext with
+        | ".v"
+        | ".ml"
+        | ".mli"
+        | ".mlg"
+        | ".mllib"
+        | ".mlpack" ->
           check_filename f;
-          { proj with v_files = proj.v_files @ [sourced abs_f] }
-        | ".ml" ->
-          check_filename f;
-          { proj with ml_files = proj.ml_files @ [sourced abs_f] }
+          { proj with files = (sourced abs_f) :: proj.files }
         | ".ml4" ->
           let msg = Printf.sprintf "camlp5 macro files not supported anymore, please port %s to coqpp" abs_f in
           raise (Parsing_error msg)
-        | ".mlg" ->
-          check_filename f;
-          { proj with mlg_files = proj.mlg_files @ [sourced abs_f] }
-        | ".mli" ->
-          check_filename f;
-          { proj with mli_files = proj.mli_files @ [sourced abs_f] }
-        | ".mllib" ->
-          check_filename f;
-          { proj with mllib_files = proj.mllib_files @ [sourced abs_f] }
-        | ".mlpack" ->
-          check_filename f;
-          { proj with mlpack_files = proj.mlpack_files @ [sourced abs_f] }
         | _ ->
           if CString.is_prefix "META." (Filename.basename abs_f) then
             if proj.meta_file = Absent then
               { proj with meta_file = Present abs_f }
             else
               raise (Parsing_error "only one META.package file can be specified")
-          else
-            raise (Parsing_error ("Unknown option " ^ f)) in
+          else if ext = "" && not (CString.is_prefix "-" f) then begin
+            check_filename f; (* consider it a directory *)
+            { proj with files = (sourced abs_f) :: proj.files }
+          end else
+              raise (Parsing_error ("Unknown option " ^ f)) in
       aux proj r
  in
   let proj = aux proj args in
@@ -297,7 +309,12 @@ let process_cmd_line ~warning_fn orig_dir proj args =
     let proj = filter_extra proj r in
     { proj with extra_args = extra :: proj.extra_args }
   in
-  filter_extra proj proj.extra_args
+  let project = filter_extra proj proj.extra_args in
+  let cmd_line_files = CList.rev (CList.map_filter
+                       (function {thing; source=CmdLine} -> Some {thing; source=CmdLine}
+                               | {source=ProjectFile}    -> None)
+                     project.files) in
+  { project with cmd_line_files; files = expand_paths project }
 
  (******************************* API ************************************)
 
@@ -316,9 +333,10 @@ let rec find_project_file ~from ~projfile_name =
     if newdir = from then None
     else find_project_file ~from:newdir ~projfile_name
 
-let all_files { v_files; ml_files; mli_files; mlg_files;
-                mllib_files; mlpack_files } =
-  v_files @ mli_files @ mlg_files @ ml_files @ mllib_files @ mlpack_files
+let all_files { files } = files
+
+let files_by_suffix files suffixes =
+  List.filter (fun file -> List.mem (Filename.extension file.thing) suffixes) files
 
 let map_sourced_list f l = List.map (fun x -> f x.thing) l
 
@@ -336,10 +354,6 @@ let coqtop_args_from_project
     map (fun ({ canonical_path = p }, l) -> ["-R"; p; l]) r_includes @
     [map (fun x -> x) extra_args] in
   List.flatten args
-
-let filter_cmdline l = CList.map_filter
-    (function {thing; source=CmdLine} -> Some thing | {source=ProjectFile} -> None)
-    l
 
 let forget_source {thing} = thing
 

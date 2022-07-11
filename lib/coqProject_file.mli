@@ -24,12 +24,8 @@ type project = {
    * the user-contrib folder) *)
   docroot : string option;
 
-  v_files : string sourced list;
-  mli_files : string sourced list;
-  mlg_files : string sourced list;
-  ml_files : string sourced list;
-  mllib_files : string sourced list;
-  mlpack_files : string sourced list;
+  files : string sourced list; (* .v, .ml, .mlg, .mli, .mllib, .mlpack files *)
+  cmd_line_files : string sourced list;
   meta_file : meta_file;
 
   ml_includes : path sourced list;
@@ -60,13 +56,11 @@ val coqtop_args_from_project : project -> string list
 val find_project_file : from:string -> projfile_name:string -> string option
 
 val all_files : project -> string sourced list
+val files_by_suffix : string sourced list -> string list -> string sourced list
 
 val map_sourced_list : ('a -> 'b) -> 'a sourced list -> 'b list
 
 (** Only uses the elements with source=CmdLine *)
 val map_cmdline : ('a -> 'b) -> 'a sourced list -> 'b list
-
-(** Only uses the elements with source=CmdLine *)
-val filter_cmdline : 'a sourced list -> 'a list
 
 val forget_source : 'a sourced -> 'a
