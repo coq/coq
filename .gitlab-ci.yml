@@ -691,9 +691,6 @@ library:ci-fiat_crypto_ocaml:
   - plugin:ci-rewriter
   - library:ci-fiat_crypto
 
-library:ci-flocq3:
-  extends: .ci-template-flambda
-
 library:ci-flocq:
   extends: .ci-template-flambda
 
@@ -796,7 +793,7 @@ library:ci-vst:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-flocq3
+  - library:ci-flocq
 
 library:ci-deriving:
   extends: .ci-template-flambda
