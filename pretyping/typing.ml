@@ -99,11 +99,14 @@ let checked_appvect env sigma f args =
 
 let checked_applist env sigma f args = checked_appvect env sigma f (Array.of_list args)
 
-let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
-  let (sigma, j) = judge_of_apply env sigma funj argjv in
+let judge_of_applied_inductive_knowing_parameters_nocheck env sigma funj ind argjv =
   let ar = inductive_type_knowing_parameters env sigma ind argjv in
   let typ = hnf_prod_appvect env sigma (EConstr.of_constr ar) (Array.map j_val argjv) in
-  sigma, { uj_val = j.uj_val; uj_type = typ }
+  sigma, { uj_val = (mkApp (j_val funj, Array.map j_val argjv)); uj_type = typ }
+
+let judge_of_applied_inductive_knowing_parameters env sigma funj ind argjv =
+  let (sigma, j) = judge_of_apply env sigma funj argjv in
+  judge_of_applied_inductive_knowing_parameters_nocheck env sigma funj ind argjv
 
 let check_branch_types env sigma (ind,u) cj (lfj,explft) =
   if not (Int.equal (Array.length lfj) (Array.length explft)) then
@@ -515,3 +518,214 @@ let solve_evars env sigma c =
   sigma, nf_evar sigma j.uj_val
 
 let _ = Evarconv.set_solve_evars (fun env sigma c -> solve_evars env sigma c)
+
+type change_kind = Same | Changed of {bodyonly : bool Lazy.t }
+
+let merge_changes a b = match a,b with
+  | Same, v | v, Same -> v
+  | Changed {bodyonly=a}, Changed {bodyonly=b} ->
+    Changed {bodyonly = lazy (Lazy.force a && Lazy.force b)}
+
+let unchanged = function
+  | Same -> true
+  | Changed _ -> false
+
+let bodyonly = function
+  | Same -> true
+  | Changed {bodyonly} -> Lazy.force bodyonly
+
+let judge_of_apply_against env sigma changedf funj argjv =
+  let rec apply_rec sigma changedf n subs typ = function
+  | [] ->
+    let typ = Vars.esubst Vars.lift_substituend subs typ in
+    sigma,
+    { uj_val  = mkApp (j_val funj, Array.map (fun (_,j) -> j_val j) argjv);
+      uj_type = typ }
+  | (changedh,hj)::restjl ->
+    let sigma, c1, subs, c2 = match EConstr.kind sigma typ with
+    | Prod (_, c1, c2) ->
+      (* Fast path *)
+      let c1 = Vars.esubst Vars.lift_substituend subs c1 in
+      let subs = Esubst.subs_cons (Vars.make_substituend hj.uj_val) subs in
+      sigma, c1, subs, c2
+    | _ ->
+      let typ = Vars.esubst Vars.lift_substituend subs typ in
+      let subs = Esubst.subs_cons (Vars.make_substituend hj.uj_val) (Esubst.subs_id 0) in
+      match EConstr.kind sigma (whd_all env sigma typ) with
+      | Prod (_, c1, c2) -> sigma, c1, subs, c2
+      | Evar ev ->
+        let (sigma,t) = Evardefine.define_evar_as_product env sigma ev in
+        let (_, c1, c2) = destProd sigma t in
+        sigma, c1, subs, c2
+      | _ ->
+        error_cant_apply_not_functional env sigma funj (Array.map snd argjv)
+    in
+    if bodyonly changedf then begin match changedh with
+      | Same -> apply_rec sigma changedf (n+1) subs c2 restjl
+      | Changed {bodyonly=lazy true} ->
+        (* TODO if non dependent product then changedf else bodyonly = false *)
+        apply_rec sigma (Changed {bodyonly=lazy false}) (n+1) subs c2 restjl
+      | Changed {bodyonly=lazy false} ->
+        match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
+        | sigma ->
+          apply_rec sigma (Changed {bodyonly=lazy false}) (n+1) subs c2 restjl
+        | exception Evarconv.UnableToUnify _ ->
+          error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj (Array.map snd argjv)
+    end
+    else
+      match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
+      | sigma ->
+        apply_rec sigma changedf (n+1) subs c2 restjl
+      | exception Evarconv.UnableToUnify _ ->
+        error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj (Array.map snd argjv)
+  in
+  apply_rec sigma changedf 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
+
+(* Assuming "env |- good : some type", infer "env |- c : other type" *)
+let rec recheck_against env sigma good c =
+  if EConstr.eq_constr sigma good c then sigma, Same, make_judge c (Retyping.get_type_of env sigma c)
+  else
+    let assume_unchanged_type sigma =
+      let gt = Retyping.get_type_of env sigma good in
+      sigma, Changed {bodyonly=Lazy.from_val true}, make_judge c gt
+    in
+    let maybe_changed (sigma, j) =
+      let bodyonly = lazy (EConstr.eq_constr sigma (Retyping.get_type_of env sigma good) j.uj_type) in
+      let change = Changed {bodyonly} in
+      sigma, change, j
+    in
+    let default () = maybe_changed (execute env sigma c) in
+    match kind sigma good, kind sigma c with
+    (* No subterms *)
+    | _, (Meta _ | Rel _ | Var _ | Const _ | Ind _ | Construct _
+         | Sort _ | Int _ | Float _) ->
+      default ()
+
+    (* Evar (todo deal with Evar differently??? execute recurses on its type)
+       others: too annoying for now *)
+    | _, (Evar _ | Fix _ | CoFix _ | LetIn _ | Array _) ->
+     default ()
+
+    | Case (gci, gu, gpms, gp, giv, gc, glf),
+      Case (ci, u, pms, p, iv, c, lf) ->
+      let (gci, gp, giv, gc, glf) = EConstr.expand_case env sigma (gci, gu, gpms, gp, giv, gc, glf) in
+      let case = (ci, u, pms, p, iv, c, lf) in
+      let (ci, p, iv, c, lf) = EConstr.expand_case env sigma case in
+      let sigma, changedc, cj = recheck_against env sigma gc c in
+      let sigma, changedp, pj = recheck_against env sigma gp p in
+      let (sigma, changedlf), lfj =
+        if Array.length glf <> Array.length lf then
+          Array.fold_left_map (fun (sigma,changed) c ->
+              let sigma, j = execute env sigma c in
+              (sigma, changed), j)
+            (sigma, Changed {bodyonly=lazy false})
+            lf
+        else
+          Array.fold_left2_map (fun (sigma,changed) good c ->
+              let sigma, changed', t = recheck_against env sigma good c in
+              (sigma, merge_changes changed changed'), t)
+            (sigma,Same) glf lf
+      in
+      let sigma, changediv = match giv, iv with
+        | _, NoInvert -> sigma, Same
+        | NoInvert, CaseInvert {indices} ->
+          (* likely bug but accept for now *)
+          let args = Array.append pms indices in
+          let t = mkApp (mkIndU (ci.ci_ind,u), args) in
+          let sigma, tj = execute env sigma t in
+          let sigma, tj = type_judgment env sigma tj in
+          let sigma = check_actual_type env sigma cj tj.utj_val in
+          sigma, Changed {bodyonly=Lazy.from_val false}
+        | CaseInvert {indices=gindices}, CaseInvert {indices} ->
+          let gargs = Array.append gpms gindices in
+          let args = Array.append pms indices in
+          let gt = mkApp (mkIndU (gci.ci_ind,u), gargs) in
+          let t = mkApp (mkIndU (ci.ci_ind,u), args) in
+          let sigma, changediv, tj = recheck_against env sigma gt t in
+          let sigma, tj = type_judgment env sigma tj in
+          let sigma = check_actual_type env sigma cj tj.utj_val in
+          sigma, changediv
+      in
+      if unchanged changedc && unchanged changedp && unchanged changediv && bodyonly changedlf
+      then assume_unchanged_type sigma
+      else maybe_changed (judge_of_case env sigma case ci pj iv cj lfj)
+
+    | Proj (gp, gc),
+      Proj (p, c) ->
+      if not (QProjection.equal env gp p) then default ()
+      else
+        let sigma, changed, c = recheck_against env sigma gc c in
+        maybe_changed (sigma, judge_of_projection env sigma p c)
+
+    | App (gf, gargs),
+      App (f, args) ->
+      if Array.length gargs <> Array.length args then
+        let sigma, _, fj = recheck_against env sigma gf f in
+        let sigma, jl = execute_array env sigma args in
+        (match EConstr.kind sigma f with
+         | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
+           maybe_changed (judge_of_applied_inductive_knowing_parameters env sigma fj (ind, u) jl)
+         | _ ->
+           (* No template polymorphism *)
+           maybe_changed (judge_of_apply env sigma fj jl))
+      else begin
+        let (sigma, changedargs), jl =
+          Array.fold_left2_map (fun (sigma,changed) good c ->
+              let sigma, changed', t = recheck_against env sigma good c in
+              (sigma, merge_changes changed changed'), (changed', t))
+            (sigma,Same) gargs args
+        in
+        let sigma, changedf, fj = recheck_against env sigma gf f in
+        if unchanged changedargs && bodyonly changedf
+        then assume_unchanged_type sigma
+        else
+          (match EConstr.kind sigma f with
+           | Ind (ind, u) when EInstance.is_empty u && Environ.template_polymorphic_ind ind env ->
+             let sigma, _ = judge_of_apply_against env sigma changedf fj jl in
+             let jl = Array.map snd jl in
+             maybe_changed (judge_of_applied_inductive_knowing_parameters_nocheck env sigma fj (ind, u) jl)
+           | _ ->
+             (* No template polymorphism *)
+             maybe_changed (judge_of_apply_against env sigma changedf fj jl))
+      end
+
+    | Lambda (_, gc1, gc2),
+      Lambda (name, c1, c2) ->
+      let sigma, changedj, j = recheck_against env sigma gc1 c1 in
+      let sigma, var = type_judgment env sigma j in
+      let name = check_binder_annot var.utj_type name in
+      let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
+      let sigma, changedj', j' = if unchanged changedj then recheck_against env1 sigma gc2 c2
+        else let sigma, j' = execute env1 sigma c2 in
+          sigma, Changed {bodyonly=lazy false}, j'
+      in
+      sigma, merge_changes changedj' changedj, judge_of_abstraction env1 name.binder_name var j'
+
+    | Prod (_, gc1, gc2),
+      Prod (name, c1, c2) ->
+      let sigma, changedj, j = recheck_against env sigma gc1 c1 in
+      let sigma, var = type_judgment env sigma j in
+      let name = check_binder_annot var.utj_type name in
+      let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
+      let sigma, changedj', j' = if unchanged changedj then recheck_against env1 sigma gc2 c2
+        else let sigma, j' = execute env1 sigma c2 in
+          sigma, Changed {bodyonly=lazy false}, j'
+      in
+      let sigma, j' = type_judgment env1 sigma j' in
+      sigma, merge_changes changedj' changedj, judge_of_product env1 name.binder_name var j'
+
+    | Cast (gc, _, gt),
+      Cast (c, k, t) ->
+      let sigma, changedc, cj = recheck_against env sigma gc c in
+      let sigma, changedt, tj = recheck_against env sigma gt t in
+      if unchanged changedt && bodyonly changedc
+      then assume_unchanged_type sigma
+      else
+        let sigma, tj = type_judgment env sigma tj in
+        maybe_changed (judge_of_cast env sigma cj k tj)
+
+    | _, (Case _ | App _ | Lambda _ | Prod _ | Cast _ | Proj _) -> default ()
+
+let recheck_against env sigma a b =
+  let sigma, _, j = recheck_against env sigma a b in
+  sigma, j.uj_type

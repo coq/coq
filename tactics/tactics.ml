@@ -2774,9 +2774,12 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
   match with_eq with
   | Some (lr,heq) ->
       let eqdata = build_coq_eq_data () in
-      let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
+      let args = if lr then [mkVar id;c] else [c;mkVar id]in
       let (sigma, eq) = Evd.fresh_global env sigma eqdata.eq in
       let (sigma, refl) = Evd.fresh_global env sigma eqdata.refl in
+      (* NB we are not in the right env for [id] so we only check the partial application.
+         This is enough to produce the desired univ constraint between univ of eq and univ of t *)
+      let sigma, eq = Typing.checked_applist env sigma eq [t] in
       let eq = applist (eq,args) in
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [LocalAssum (make_annot heq Sorts.Relevant,eq); decl] lastlhyp env in
@@ -3785,7 +3788,7 @@ let mk_term_eq homogeneous env sigma ty t ty' t' =
 
 let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
   let open Context.Rel.Declaration in
-  Refine.refine ~typecheck:false begin fun sigma ->
+  Refine.refine ~typecheck:true begin fun sigma ->
   let eqslen = List.length eqs in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
   let sigma, abshypeq, abshypt =
