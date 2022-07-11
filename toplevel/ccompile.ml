@@ -11,53 +11,11 @@
 open Pp
 open Coqargs
 open Coqcargs
-
-let fatal_error msg =
-  Topfmt.std_logger Feedback.Error msg;
-  flush_all ();
-  exit 1
+open Common_compile
 
 (******************************************************************************)
 (* File Compilation                                                           *)
 (******************************************************************************)
-let warn_file_no_extension =
-  CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
-         (fun (f,ext) ->
-          str "File \"" ++ str f ++
-            strbrk "\" has been implicitly expanded to \"" ++
-            str f ++ str ext ++ str "\"")
-
-let ensure_ext ext f =
-  if Filename.check_suffix f ext then f
-  else begin
-    warn_file_no_extension (f,ext);
-    f ^ ext
-  end
-
-let chop_extension f =
-  try Filename.chop_extension f with _ -> f
-
-let ensure_bname src tgt =
-  let src, tgt = Filename.basename src, Filename.basename tgt in
-  let src, tgt = chop_extension src, chop_extension tgt in
-  if src <> tgt then
-    fatal_error (str "Source and target file names must coincide, directories can differ" ++ fnl () ++
-                   str "Source: " ++ str src                                                ++ fnl () ++
-                   str "Target: " ++ str tgt)
-
-let ensure ext src tgt = ensure_bname src tgt; ensure_ext ext tgt
-
-let ensure_exists f =
-  if not (Sys.file_exists f) then
-    fatal_error (hov 0 (str "Can't find file" ++ spc () ++ str f))
-
-let ensure_exists_with_prefix f_in f_out src_suffix tgt_suffix =
-  let long_f_dot_src = ensure src_suffix f_in f_in in
-  ensure_exists long_f_dot_src;
-  let long_f_dot_tgt = match f_out with
-    | None -> chop_extension long_f_dot_src ^ tgt_suffix
-    | Some f -> ensure tgt_suffix long_f_dot_src f in
-  long_f_dot_src, long_f_dot_tgt
 
 let create_empty_file filename =
   let f = open_out filename in
@@ -91,12 +49,12 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
      | BuildVok -> ".v", ".vok"
   in
   let long_f_dot_in, long_f_dot_out =
-    ensure_exists_with_prefix f_in f_out ext_in ext_out in
+    ensure_exists_with_prefix ~src:f_in ~tgt:f_out ~src_ext:ext_in ~tgt_ext:ext_out in
   let dump_empty_vos () =
-    let long_f_dot_vos = (chop_extension long_f_dot_out) ^ ".vos" in
+    let long_f_dot_vos = (safe_chop_extension long_f_dot_out) ^ ".vos" in
     create_empty_file long_f_dot_vos in
   let dump_empty_vok () =
-    let long_f_dot_vok = (chop_extension long_f_dot_out) ^ ".vok" in
+    let long_f_dot_vok = (safe_chop_extension long_f_dot_out) ^ ".vok" in
     create_empty_file long_f_dot_vok in
   match mode with
   | BuildVo | BuildVok ->
@@ -204,7 +162,7 @@ let check_vio_tasks copts =
   Flags.async_proofs_worker_id := "VioChecking";
   let rc =
     List.fold_left (fun acc (n,f) ->
-        let f_in = ensure ".vio" f f in
+        let f_in = ensure ~ext:".vio" ~src:f ~tgt:f in
         ensure_exists f_in;
         Vio_checking.check_vio (n,f_in) && acc)
       true copts.vio_tasks in
@@ -213,7 +171,7 @@ let check_vio_tasks copts =
 (* vio files *)
 let schedule_vio copts =
   let l =
-    List.map (fun f -> let f_in = ensure ".vio" f f in ensure_exists f_in; f_in)
+    List.map (fun f -> let f_in = ensure ~ext:".vio" ~src:f ~tgt:f in ensure_exists f_in; f_in)
       copts.vio_files in
   if copts.vio_checking then
     Vio_checking.schedule_vio_checking copts.vio_files_j l
