@@ -182,7 +182,7 @@ let init_document opts stm_options injections =
 
 let init_toploop opts stm_opts injections =
   let state = init_document opts stm_opts injections in
-  let state = Ccompile.load_init_vernaculars opts ~state in
+  let state = Load.load_init_vernaculars opts ~state in
   state
 
 let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =

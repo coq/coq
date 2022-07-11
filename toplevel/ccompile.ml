@@ -18,35 +18,6 @@ let fatal_error msg =
   exit 1
 
 (******************************************************************************)
-(* Interactive Load File Simulation                                           *)
-(******************************************************************************)
-
-let load_init_file opts ~state =
-  if opts.pre.load_rcfile then
-    Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
-        Coqrc.load_rcfile ~rcfile:opts.config.rcfile ~state) ()
-  else begin
-    Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
-    state
-  end
-
-let load_vernacular opts ~state =
-  List.fold_left
-    (fun state (f_in, echo) ->
-      let s = Loadpath.locate_file f_in in
-      (* Should make the beautify logic clearer *)
-      let load_vernac f = Vernac.load_vernac ~echo ~interactive:false ~check:true ~state f in
-      if !Flags.beautify
-      then Flags.with_option Flags.beautify_file load_vernac f_in
-      else load_vernac s
-    ) state opts.pre.load_vernacular_list
-
-let load_init_vernaculars opts ~state =
-  let state = load_init_file opts ~state in
-  let state = load_vernacular opts ~state in
-  state
-
-(******************************************************************************)
 (* File Compilation                                                           *)
 (******************************************************************************)
 let warn_file_no_extension =
@@ -133,7 +104,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
           Stm.new_doc
           Stm.{ doc_type = VoDoc long_f_dot_out; injections; stm_options; } in
       let state = { doc; sid; proof = None; time = opts.config.time } in
-      let state = load_init_vernaculars opts ~state in
+      let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_out)
@@ -184,7 +155,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
               } in
 
       let state = { doc; sid; proof = None; time = opts.config.time } in
-      let state = load_init_vernaculars opts ~state in
+      let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_in in
       let doc = Stm.finish ~doc:state.doc in

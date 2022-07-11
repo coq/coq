@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** [compile_file opts] compile file specified in [opts] *)
-val compile_file : Coqargs.t -> Stm.AsyncOpts.stm_opt -> Coqcargs.t -> Coqargs.injection_command list -> unit
-
-(** [do_vio opts] process [.vio] files in [opts] *)
-val do_vio : Coqargs.t -> Coqcargs.t -> Coqargs.injection_command list -> unit
+  (** [load_init_vernaculars opts ~state] Load vernaculars from
+   the init (rc) file *)
+val load_init_vernaculars : Coqargs.t -> state:Vernac.State.t-> Vernac.State.t
