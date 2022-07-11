@@ -11,7 +11,7 @@
 let coqc_init ((_,color_mode),_) injections ~opts =
   Flags.quiet := true;
   System.trust_file_cache := true;
-  Coqtop.init_color (if opts.Coqargs.config.Coqargs.print_emacs then `EMACS else color_mode);
+  Colors.init_color (if opts.Coqargs.config.Coqargs.print_emacs then `EMACS else color_mode);
   DebugHook.Intf.(set
     { read_cmd = Coqtop.ltac_debug_parse
     ; submit_answer = Coqtop.ltac_debug_answer
@@ -73,10 +73,10 @@ let coqc_run copts ~opts injections =
     let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
     exit exit_code
 
-let custom_coqc : ((Coqcargs.t * Coqtop.color) * Stm.AsyncOpts.stm_opt, 'b) Coqtop.custom_toplevel
+let custom_coqc : ((Coqcargs.t * Colors.color) * Stm.AsyncOpts.stm_opt, 'b) Coqtop.custom_toplevel
  = Coqtop.{
   parse_extra = (fun extras ->
-    let color_mode, extras = Coqtop.parse_extra_colors extras in
+    let color_mode, extras = Colors.parse_extra_colors extras in
     let stm_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
     let coqc_opts = Coqcargs.parse extras in
     ((coqc_opts, color_mode), stm_opts), []);

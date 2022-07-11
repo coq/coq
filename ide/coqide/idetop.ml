@@ -563,7 +563,7 @@ let msg_format = ref (fun () ->
 let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
   match run_mode with
   | Coqtop.Batch -> exit 0
-  | Coqtop.(Query PrintTags) -> Coqtop.print_style_tags color_mode; exit 0
+  | Coqtop.(Query PrintTags) -> Colors.print_style_tags color_mode; exit 0
   | Coqtop.(Query _) -> Printf.eprintf "Unknown query"; exit 1
   | Coqtop.Interactive ->
   let open Vernac.State in
