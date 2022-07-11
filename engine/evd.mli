@@ -196,6 +196,9 @@ val find_undefined : evar_map -> Evar.t -> evar_info
 (** Same as {!find} but restricted to undefined evars. For efficiency
     reasons. *)
 
+val find_defined : evar_map -> Evar.t -> evar_info
+(** Same as {!find} but restricted to defined evars *)
+
 val remove : evar_map -> Evar.t -> evar_map
 (** Remove an evar from an evar map. Use with caution. *)
 

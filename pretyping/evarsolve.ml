@@ -848,6 +848,11 @@ let check_evar_instance unify flags env evd evk1 body =
   | Success evd -> evd
   | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,ty,evi.evar_concl))
 
+let check_and_define_evar_instance unify flags ?(inh_typeclass=false) env evd evk body =
+  let evd' = if inh_typeclass then Evd.define_with_evar evk body evd else Evd.define evk body evd in
+  try check_evar_instance unify flags env evd' evk body
+  with IllTypedInstance (evenv,_,ty,ty') -> raise (IllTypedInstance (evenv,evd,ty,ty'))
+
 (***************)
 (* Unification *)
 
@@ -980,8 +985,7 @@ let project_with_effects aliases sigma t subst =
 let rec do_projection_effects unify flags define_fun env ty evd = function
   | ProjectVar -> evd
   | ProjectEvar ((evk,argsv),evi,id,p) ->
-      let evd = check_evar_instance unify flags env evd evk (mkVar id) in
-      let evd = Evd.define evk (EConstr.mkVar id) evd in
+      let evd = check_and_define_evar_instance unify flags env evd evk (mkVar id) in
       (* TODO: simplify constraints involving evk *)
       let evd = do_projection_effects unify flags define_fun env ty evd p in
       let ty = whd_all env evd (Lazy.force ty) in
@@ -1344,13 +1348,10 @@ let update_evar_info ev1 ev2 evd =
 let solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 (evk2,_ as ev2) =
   try
     let evd,body = project_evar_on_evar force unify flags env evd aliases 0 pbty ev1 ev2 in
-    let evd' = Evd.define_with_evar evk2 body evd in
-    let evd' =
-      if is_obligation_evar evd evk2 then
-        update_evar_info evk2 (fst (destEvar evd' body)) evd'
-      else evd'
-    in
-    check_evar_instance unify flags env evd' evk2 body
+    let evd' = check_and_define_evar_instance unify flags ~inh_typeclass:true env evd evk2 body in
+    if is_obligation_evar evd evk2 then
+      update_evar_info evk2 (fst (destEvar evd' body)) evd'
+    else evd'
   with EvarSolvedOnTheFly (evd,c) ->
     f env evd pbty ev2 c
 
@@ -1483,11 +1484,10 @@ let solve_candidates unify flags env evd (evk,argsv) rhs =
       match aux l with
       | [], c::_ -> raise (IncompatibleCandidates c)
       | [c,evd], _ ->
-          (* solve_candidates might have been called recursively in the mean *)
-          (* time and the evar been solved by the filtering process *)
+          (* solve_candidates might have been called recursively in the *)
+          (* meantime and the evar been solved by the filtering process *)
          if Evd.is_undefined evd evk then
-           let evd' = Evd.define evk c evd in
-             check_evar_instance unify flags env evd' evk c
+           check_and_define_evar_instance unify flags env evd evk c
          else evd
       | l, _::_  (* At least one discarded candidate *) ->
           let candidates = List.map fst l in
@@ -1516,8 +1516,7 @@ let instantiate_evar unify flags env evd evk body =
      checking could involve the same evar definition problem again otherwise *)
   let allowed_evars = AllowedEvars.remove evk flags.allowed_evars in
   let flags = { flags with allowed_evars } in
-  let evd' = check_evar_instance unify flags env evd evk body in
-  Evd.define evk body evd'
+  check_and_define_evar_instance unify flags env evd evk body
 
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
@@ -1649,8 +1648,7 @@ let rec invert_definition unify flags choose imitate_defs
              (* Try now to invert args in terms of args' *)
             try
               let evd,body = project_evar_on_evar false unify flags env' evd aliases 0 None ev'' ev' in
-              let evd = Evd.define evk' body evd in
-                check_evar_instance unify flags env' evd evk' body
+              check_and_define_evar_instance unify flags env' evd evk' body
             with
             | EvarSolvedOnTheFly _ -> assert false (* ev has no candidates *)
             | CannotProject (evd,ev'') ->

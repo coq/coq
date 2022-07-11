@@ -709,6 +709,8 @@ let find d e =
 
 let find_undefined d e = EvMap.find e d.undf_evars
 
+let find_defined d e = EvMap.find e d.defn_evars
+
 let mem d e = EvMap.mem e d.undf_evars || EvMap.mem e d.defn_evars
 
 let undefined_map d = d.undf_evars
