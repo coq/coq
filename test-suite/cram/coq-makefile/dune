@@ -1,0 +1,2 @@
+(cram
+ (deps %{bin:coqc} %{bin:coqdep} %{bin:coq_makefile}))

@@ -136,10 +136,9 @@ in the top-level directory of your project.  We recommend naming that directory
 
 :n:`-R . MyPackage` (see :ref:`here <-Q-option>`) declares that all `.v` files in the directory containing
 `_CoqProject` or any subdirectory are part of the package `MyPackage`.  We recommend
-using a single `-R` with `.` as the :term:`physical path` for simplicity.  It's
-also necessary to (redundantly) list every `.v` file that's part of the package.
-Perhaps this will be simplified in the future.  The order of the entries does not
-matter.
+using a single `-R` with `.` as the :term:`physical path` for simplicity.  You must also
+identify all the `.v` files in your package.  We recommend using file names with wildcards
+(e.g. ``SubDir/*.v``) where possible for brevity.  The order of the entries doesn't matter.
 
 .. I think dotted names are not useful.  For example, this doesn't produce usable
    .vo files because a.v and b.v are not in an `Abc` subdirectory::
@@ -163,8 +162,8 @@ Then:
 
 - Compile your project with :n:`make -f CoqMakefile` as needed.
 
-If you add new files to your project, add them to `_CoqProject` and
-re-run `coq_makefile` and `make`.
+If you add more files to your project that don't match existing filename wildcard
+expressions, update `_CoqProject` and re-run `coq_makefile` and `make`.
 
 .. todo we should use a standard name for the makefile so IDEs can find it.
    Maybe you should be allowed to include "-o MAKEFILENAME" in the _CoqProject,
@@ -373,7 +372,8 @@ separated by whitespace:
   are ``-Q``, ``-I``, ``-R`` and ``-native-compiler``.
 * ``-arg`` options for other options of coqc that don’t fall in the above set.
 * Options specific to ``coq_makefile``. Currently this is only ``-docroot``.
-* Paths to files belonging to the project.
+* Paths to files belonging to the project, which can use the wildcards ``*``,
+  ``?`` and ``[...]`` except in the file suffix.
 * Comments, started with an unquoted ``#`` and continuing to the end of the
   line.
 

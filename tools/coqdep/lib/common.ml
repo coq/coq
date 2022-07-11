@@ -320,6 +320,20 @@ let sort st =
   in
   List.iter (fun (name, _) -> loop name) !vAccu
 
+let expand_wildcards paths =
+  let open CoqProject_file in
+  let paths = List.map (fun {thing} -> thing) paths in
+  let temp = Filename.temp_file "coqdep" "wild" in
+  let cmd = Printf.sprintf "echo %s >%s" (String.concat " " paths) temp in
+  let rv = Sys.command cmd in
+  if rv <> 0 then
+    raise (Sys_error (Printf.sprintf "Can't expand wildcards; return code is %d" rv));
+  let fin = open_in temp in
+  let expanded = input_line fin in
+  close_in fin;
+  Sys.remove temp;
+  String.split_on_char ' ' expanded
+
 let treat_coqproject st f =
   let open CoqProject_file in
   let iter_sourced f = List.iter (fun {thing} -> f thing) in
@@ -333,7 +347,7 @@ let treat_coqproject st f =
   iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_q_include st path l) project.q_includes;
   iter_sourced (fun ({ path }, l) -> Loadpath.add_r_include st path l) project.r_includes;
-  iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
+  List.iter (fun f' -> treat_file_coq_project f f') (expand_wildcards (all_files project))
 
 let add_include st (rc, r, ln) =
   if rc then

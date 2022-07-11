@@ -256,18 +256,23 @@ let generate_conf_files oc
   { v_files; mli_files; mlg_files; ml_files; mllib_files; mlpack_files; meta_file }
 =
   let module S = String in
-  let map = map_sourced_list in
+  (* shell_echo is to expand wildcards *)
+  let shell_echo s = if s = "" then s else Printf.sprintf "$(shell echo %s)" s in
+  let fout varname values =
+    let rhs = map_sourced_list quote values in
+    fprintf oc "COQMF_%s = %s\n" varname (shell_echo (S.concat " " rhs))
+  in
   section oc "Project files.";
-  fprintf oc "COQMF_VFILES = %s\n"      (S.concat " " (map quote v_files));
-  fprintf oc "COQMF_MLIFILES = %s\n"    (S.concat " " (map quote mli_files));
-  fprintf oc "COQMF_MLFILES = %s\n"     (S.concat " " (map quote ml_files));
-  fprintf oc "COQMF_MLGFILES = %s\n"    (S.concat " " (map quote mlg_files));
-  fprintf oc "COQMF_MLPACKFILES = %s\n" (S.concat " " (map quote mlpack_files));
-  fprintf oc "COQMF_MLLIBFILES = %s\n"  (S.concat " " (map quote mllib_files));
+  fout "VFILES" v_files;
+  fout "MLIFILES" mli_files;
+  fout "MLFILES" ml_files;
+  fout "MLGFILES" mlg_files;
+  fout "MLPACKFILES" mlpack_files;
+  fout "MLLIBFILES" mllib_files;
   fprintf oc "COQMF_METAFILE = %s\n"  (match meta_file with Present x -> x | _ -> "");
   let cmdline_vfiles = filter_cmdline v_files in
-  fprintf oc "COQMF_CMDLINE_VFILES = %s\n" (S.concat " " (List.map quote cmdline_vfiles));
-;;
+  fprintf oc "COQMF_CMDLINE_VFILES = %s\n"
+    (shell_echo (S.concat " " (List.map quote cmdline_vfiles)))
 
 let rec all_start_with prefix = function
   | [] -> true

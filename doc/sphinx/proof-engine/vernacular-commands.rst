@@ -562,21 +562,18 @@ file is a particular case of a module called a *library file*.
    :n:`@dirpath.{* @ident__implicit. }@qualid` or
    :n:`{* @ident__implicit. }@qualid`
    (that is, matches where the implicit part is empty). If the name exactly
-   matches in multiple `-R` or `-Q` options, the file corresponding to the most
-   recent `-R` or `-Q` is used.  If there is no exact match, the
-   matches from the most recent `-R` or `-Q` are selected. If this
+   matches in multiple `-R` or `-Q` options, the file corresponding to the last
+   `-R` or `-Q` specified is used.  (In :cmd:`Print LoadPath`, that's the first
+   match from the top.)
+
+   If there is no exact match, the
+   matches from the last `-R` or `-Q` are selected. If this
    results in a unique match, the corresponding file is selected. If
    this results in several matches, it is an error. The difference
    between the `-R` and the `-Q` option is that non-exact matches are
-   allowed for `-Q` only if `From` is present, that is if a prefix is
-   given.  Matching is done when the script is compiled
-   or processed rather than when its .vo file is loaded.  .vo files use
+   allowed for `-Q` only if `From` is present.  Matching is done when the script
+   is compiled or processed rather than when its .vo file is loaded.  .vo files use
    fully-qualified names.
-
-   Note that if the same logical name is given by multiple `-R` or `-Q` options,
-   the last one specified is used.  The output of :cmd:`Print LoadPath` will
-   show both options in last to first order (i.e., `Require` uses the first match
-   from the top).
 
    We recommend you use `-R` only to refer to files in the same package.  Use `-Q`
    (if necessary) to refer to files in a different package.
