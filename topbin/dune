@@ -15,7 +15,7 @@
 
 (executable
  (name coqc_bin)
- (public_name coqc)
+ (public_name coqc_stm)
  (package coq-core)
  (modules coqc_bin)
  (libraries coq-core.toplevel))
