@@ -922,7 +922,8 @@ let preprocess_inductive_decl ~atts kind indl =
       user_err Pp.(str "Definitional classes do not support the \">\" syntax.");
     let ((rf_coercion, rf_instance), (lid, ce)) = l in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), [], ce),
-            { rf_coercion ; rf_reversible = None ; rf_instance ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
+            { rf_coercion ; rf_reversible = None ; rf_instance ; rf_priority = None ;
+              rf_locality = Goptions.OptDefault ; rf_notation = [] ; rf_canonical = true } in
     let recordl = [id, bl, c, None, [f], None] in
     let kind = Class true in
     let records = vernac_record ~template udecl ~cumulative kind ~poly ?typing_flags ~primitive_proj finite recordl in

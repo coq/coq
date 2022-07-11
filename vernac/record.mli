@@ -42,6 +42,7 @@ val definition_structure
       pf_reversible: bool;
       pf_instance: bool;
       pf_priority: int option;
+      pf_locality: Goptions.option_locality;
       pf_canonical: bool;
     }
     type raw_data
@@ -95,6 +96,7 @@ module Internal : sig
     pf_reversible: bool;
     pf_instance: bool;
     pf_priority: int option;
+    pf_locality: Goptions.option_locality;
     pf_canonical: bool;
   }
 

@@ -133,6 +133,7 @@ module Data = struct
     pf_reversible: bool;
     pf_instance: bool;
     pf_priority: int option;
+    pf_locality: Goptions.option_locality;
     pf_canonical: bool;
   }
   type raw_data = DataR.t
@@ -333,13 +334,19 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
 let declare_proj_coercion_instance ~flags ref from ~poly ~with_coercion =
   if with_coercion && flags.Data.pf_coercion then begin
     let cl = ComCoercion.class_of_global from in
-    ComCoercion.try_add_new_coercion_with_source ref ~local:false ~poly ~nonuniform:false ~reversible:flags.Data.pf_reversible ~source:cl
+    let local = flags.Data.pf_locality = Goptions.OptLocal in
+    ComCoercion.try_add_new_coercion_with_source ref ~local ~poly ~nonuniform:false ~reversible:flags.Data.pf_reversible ~source:cl
   end;
   if flags.Data.pf_instance then begin
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let info = Typeclasses.{ hint_priority = flags.Data.pf_priority; hint_pattern = None } in
-    Classes.declare_instance ~warn:true env sigma (Some info) SuperGlobal ref
+    let local =
+      match flags.Data.pf_locality with
+      | Goptions.OptLocal -> Hints.Local
+      | Goptions.(OptDefault | OptExport) -> Hints.Export
+      | Goptions.OptGlobal -> Hints.SuperGlobal in
+    Classes.declare_instance ~warn:true env sigma (Some info) local ref
   end
 
 (* TODO: refactor the declaration part here; this requires some
@@ -620,10 +627,62 @@ let warn_future_coercion_class_constructor =
 let warn_future_coercion_class_field =
   CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun () ->
     strbrk "A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. "
-    ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17).")
+    ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently. Add an explicit #[global] attribute to the field if you need to keep the current behavior. For example: \"Class foo := { #[global] field :: bar }.\"")
+
+(* deprecated in 8.17 (c.f., https://github.com/coq/coq/pull/16230 ) *)
+let warn_deprecated_field_instance_without_locality =
+  let open Pp in
+  CWarnings.create ~name:"deprecated-field-instance-without-locality" ~category:"deprecated"
+    (fun () -> strbrk "The default value for field instance locality is \
+    currently \"global\", but is scheduled to change in a future release. \
+    For the time being, adding field instances without specifying an explicit \
+    locality attribute is therefore deprecated. It is recommended to use \
+    \"export\" whenever possible. Use the attributes #[local], #[global] \
+    and #[export] depending on your choice. For example: \
+    \"Class foo := { #[export] field :: bar }.\"")
+
+let check_proj_flags kind rf =
+  let open Vernacexpr in
+  let pf_coercion, pf_reversible =
+    match rf.rf_coercion with
+    (* replace "kind_class kind = NotClass" with true after deprecation phase *)
+    | AddCoercion -> kind_class kind = NotClass, Option.default true rf.rf_reversible
+    | NoCoercion ->
+       if rf.rf_reversible <> None then
+         Attributes.(unsupported_attributes
+           [CAst.make ("reversible (without :>)",VernacFlagEmpty)]);
+       false, false in
+  let pf_instance =
+    match rf.rf_instance with NoInstance -> false | BackInstance -> true
+    | BackInstanceWarning -> kind_class kind <> NotClass in
+  let pf_priority = rf.rf_priority in
+  let pf_locality =
+    begin match rf.rf_coercion, rf.rf_instance with
+    | NoCoercion, NoInstance ->
+       if rf.rf_locality <> Goptions.OptDefault then
+         Attributes.(unsupported_attributes
+           [CAst.make ("locality (without :> or ::)",VernacFlagEmpty)])
+    | AddCoercion, NoInstance ->
+       if rf.rf_locality = Goptions.OptExport then
+         Attributes.(unsupported_attributes
+           [CAst.make ("export (without ::)",VernacFlagEmpty)])
+    (* remove following case after deprecation phase (started in 8.17,
+       c.f., https://github.com/coq/coq/pull/16230 ) *)
+    | _, BackInstanceWarning when kind_class kind <> NotClass ->
+       if rf.rf_locality = Goptions.OptDefault then
+         warn_deprecated_field_instance_without_locality ()
+    | _ -> ()
+    end; rf.rf_locality in
+  (* remove following let after deprecation phase (started in 8.17,
+     c.f., https://github.com/coq/coq/pull/16230 ) *)
+  let pf_locality =
+    match rf.rf_instance, rf.rf_locality with
+    | BackInstanceWarning, Goptions.OptDefault -> Goptions.OptGlobal
+    | _ -> pf_locality in
+  let pf_canonical = rf.rf_canonical in
+  Data.{ pf_coercion; pf_reversible; pf_instance; pf_priority; pf_locality; pf_canonical }
 
 let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite (records : Ast.t list) =
-  let open Vernacexpr in
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
@@ -642,24 +701,7 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     | _ -> implicits_of_context params @ impls in
   let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
   let map rdata { Ast.name; is_coercion; cfs; idbuild; default_inhabitant_id; _ } =
-    let proj_flags = List.map (fun (_, rf) ->
-      let pf_coercion, pf_reversible =
-        match rf.rf_coercion with
-        (* replace "kind_class kind = NotClass" with true after deprecation phase *)
-        | Vernacexpr.AddCoercion -> kind_class kind = NotClass, Option.default true rf.rf_reversible
-        | Vernacexpr.NoCoercion ->
-          if rf.rf_reversible <> None then
-            Attributes.(unsupported_attributes
-              [CAst.make ("reversible (without :>)",VernacFlagEmpty)]);
-          false, false in
-      let pf_instance =
-        match rf.rf_instance with NoInstance -> false | BackInstance -> true
-        | BackInstanceWarning -> kind_class kind <> NotClass in
-      let pf_priority = rf.rf_priority in
-      let pf_canonical = rf.rf_canonical in
-      Data.{ pf_coercion; pf_reversible; pf_instance; pf_priority; pf_canonical })
-      cfs
-    in
+    let proj_flags = List.map (fun (_, rf) -> check_proj_flags kind rf) cfs in
     let inhabitant_id =
       match default_inhabitant_id, kind_class kind with
       | None, NotClass -> data_name name.CAst.v rdata
@@ -966,6 +1008,7 @@ module Internal = struct
     pf_reversible: bool;
     pf_instance: bool;
     pf_priority: int option;
+    pf_locality: Goptions.option_locality;
     pf_canonical: bool;
   }
   let declare_projections = declare_projections
