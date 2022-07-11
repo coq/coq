@@ -51,7 +51,7 @@ let coqc_main ((copts,_),stm_opts) injections ~opts =
   (* Careful this will modify the load-path and state so after this
      point some stuff may not be safe anymore. *)
   Topfmt.(in_phase ~phase:CompilationPhase)
-    Ccompile.do_vio opts copts injections;
+    Vio_compile.do_vio opts copts injections;
 
   flush_all();
 
