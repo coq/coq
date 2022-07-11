@@ -130,7 +130,7 @@ val edit_at : doc:doc -> Stateid.t -> doc * edit_focus
 val observe : doc:doc -> Stateid.t -> doc
 
 (* [finish doc] Fully checks a document up to the "current" tip. *)
-val finish : doc:doc -> doc
+val finish : doc:doc -> doc * Vernacstate.t
 
 (* Internal use (fake_ide) only, do not use *)
 val wait : doc:doc -> doc
@@ -138,7 +138,7 @@ val wait : doc:doc -> doc
 val stop_worker : string -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
-val join : doc:doc -> doc
+val join : doc:doc -> doc * Vernacstate.t
 
 (* Saves on the disk a .vio corresponding to the current status:
    - if the worker pool is empty, all tasks are saved

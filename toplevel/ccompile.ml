@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Pp
 open Coqargs
 open Coqcargs
 open Common_compile
@@ -20,18 +19,6 @@ open Common_compile
 let create_empty_file filename =
   let f = open_out filename in
   close_out f
-
-let check_pending_proofs filename =
-  let pfs = Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"] in
-  if not (CList.is_empty pfs) then
-    fatal_error (str "There are pending proofs in file " ++ str filename ++ str": "
-                 ++ (pfs
-                     |> List.rev
-                     |> prlist_with_sep pr_comma Names.Id.print)
-                 ++ str ".");
-  let pm = Vernacstate.Declare.get_program () [@ocaml.warning "-3"] in
-  let what_for = Pp.str ("file " ^ filename) in
-  NeList.iter (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm) pm
 
 (* Compile a vernac file *)
 let compile opts stm_options injections copts ~echo ~f_in ~f_out =
@@ -75,9 +62,9 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
       let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state ~ldir long_f_dot_in in
-      let _doc = Stm.join ~doc:state.doc in
+      let doc, state = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
-      check_pending_proofs long_f_dot_in;
+      ensure_no_pending_proofs ~filename:long_f_dot_in state;
       (* In .vo production, dump a complete .vo file. *)
       if mode = BuildVo
         then Library.save_library_to ~output_native_objects Library.ProofsTodoNone ldir long_f_dot_out;
@@ -116,8 +103,8 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_in in
-      let doc = Stm.finish ~doc:state.doc in
-      check_pending_proofs long_f_dot_in;
+      let doc, state = Stm.finish ~doc:state.doc in
+      ensure_no_pending_proofs state ~filename:long_f_dot_in;
       let create_vos = (mode = BuildVos) in
       (* In .vos production, the output .vos file contains compiled statements.
          In .vio production, the output .vio file contains compiled statements and suspended proofs. *)

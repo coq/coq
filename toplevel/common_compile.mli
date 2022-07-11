@@ -26,5 +26,9 @@ val ensure_exists : string -> unit
    [src_ext] and [tgt_ext] are expected to begin with dot, eg [".v"]. *)
 val ensure_exists_with_prefix : src:string -> tgt:string option -> src_ext:string -> tgt_ext:string -> string * string
 
-(* [safe_chop_extension f] is like Filename.chop_extension but fail safe *)
+(* [chop_extension f] is like Filename.chop_extension but fail safe *)
 val safe_chop_extension : string -> string
+
+(* [ensure_no_pending_proofs ~filename] checks that no proof or obligation
+   is open *)
+val ensure_no_pending_proofs : filename:string -> Vernacstate.t -> unit
