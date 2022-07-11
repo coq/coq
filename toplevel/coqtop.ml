@@ -109,7 +109,7 @@ type run_mode = Interactive | Batch | Query of query
 
 type toplevel_options = {
   run_mode : run_mode;
-  color_mode : Colors.color;
+  color_mode : Compiler.Colors.color;
 }
 
 let init_document opts stm_options injections =
@@ -136,7 +136,7 @@ let init_toploop opts stm_opts injections =
 
 let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
   if run_mode != Interactive then Flags.quiet := true;
-  Colors.init_color (if opts.config.print_emacs then `EMACS else color_mode);
+  Compiler.Colors.init_color (if opts.config.print_emacs then `EMACS else color_mode);
   Flags.if_verbose (print_header ~boot:opts.pre.boot) ();
   DebugHook.Intf.(set
     { read_cmd = ltac_debug_parse
@@ -153,7 +153,7 @@ let coqtop_parse_extra extras =
     let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
   | [] -> run_mode, [] in
   let run_mode, extras = parse_extra Interactive extras in
-  let color_mode, extras = Colors.parse_extra_colors extras in
+  let color_mode, extras = Compiler.Colors.parse_extra_colors extras in
   let async_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
   ({ run_mode; color_mode}, async_opts), extras
 
@@ -174,7 +174,7 @@ let get_native_name s =
 let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   match run_mode with
   | Interactive -> Coqloop.loop ~opts ~state;
-  | Query PrintTags -> Colors.print_style_tags color_mode; exit 0
+  | Query PrintTags -> Compiler.Colors.print_style_tags color_mode; exit 0
   | Query (PrintModUid sl) ->
       let s = String.concat " " (List.map get_native_name sl) in
       print_endline s;

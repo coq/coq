@@ -1,0 +1,5 @@
+(library
+ (name compiler)
+ (public_name coq-core.compiler)
+ (synopsis "Coq's batch compiler")
+ (libraries coq-core.vernac coq-core.sysinit))

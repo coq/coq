@@ -10,7 +10,7 @@
 
 open Coqargs
 open Coqcargs
-open Common_compile
+open Compiler.Common_compile
 
 (******************************************************************************)
 (* File Compilation                                                           *)

@@ -39,7 +39,7 @@ type run_mode = Interactive | Batch | Query of query
 
 type toplevel_options = {
   run_mode : run_mode;
-  color_mode : Colors.color;
+  color_mode : Compiler.Colors.color;
 }
 
 val coqtop_toplevel : (toplevel_options * Stm.AsyncOpts.stm_opt,Vernac.State.t) custom_toplevel
