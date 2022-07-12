@@ -277,10 +277,10 @@ explanation). These may be used as parts of other classes:
 .. coqtop:: all
 
    Class PreOrder (A : Type) (R : relation A) :=
-     { PreOrder_Reflexive :> Reflexive A R ;
-       PreOrder_Transitive :> Transitive A R }.
+     { PreOrder_Reflexive :: Reflexive A R ;
+       PreOrder_Transitive :: Transitive A R }.
 
-The syntax ``:>`` indicates that each ``PreOrder`` can be seen as a
+The syntax ``::`` indicates that each ``PreOrder`` can be seen as a
 ``Reflexive`` relation. So each time a reflexive relation is needed, a
 preorder can be used instead. This is very similar to the coercion
 mechanism of ``Structure`` declarations. The implementation simply
@@ -332,9 +332,19 @@ Summary of the commands
 
          This command has no effect when used on a typeclass.
 
+.. _warn-future-coercion-class-field:
+
+   .. warn:: A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17).
+
+      In future versions, :g:`:>` will
+      declare a :ref:`coercion<coercions>`, as it does
+      for other :cmd:`Record` commands.
+      To eliminate the warning,
+      use :g:`::`.
+
    .. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
 
-      Using this ``:>`` syntax with a right-hand-side that is not itself a Class
+      Using this ``::`` (or deprecated ``:>``) syntax with a right-hand-side that is not itself a Class
       has no effect (apart from emitting this warning).
 
 .. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_val } %} | := @term } }

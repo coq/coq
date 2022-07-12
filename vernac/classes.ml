@@ -272,17 +272,6 @@ let class_input : typeclass -> obj =
 let add_class cl =
   Lib.add_leaf (class_input cl)
 
-let add_class env sigma cl =
-  add_class cl;
-  List.iter (fun m ->
-      match m.meth_info with
-      | Some info ->
-        (match m.meth_const with
-         | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
-         | Some b -> declare_instance ~warn:true env sigma (Some info) SuperGlobal (GlobRef.ConstRef b))
-      | _ -> ())
-    cl.cl_projs
-
 let intern_info {hint_priority;hint_pattern} =
   let env = Global.env() in
   let sigma = Evd.from_env env in

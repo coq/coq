@@ -997,8 +997,8 @@ record_fields: [
 ]
 
 field_body: [
-| binders of_type lconstr
-| binders of_type lconstr ":=" lconstr
+| binders of_type_inst lconstr
+| binders of_type_inst lconstr ":=" lconstr
 | binders ":=" lconstr
 ]
 
@@ -1021,7 +1021,7 @@ assumpt: [
 ]
 
 constructor_type: [
-| binders [ of_type lconstr | ]
+| binders [ of_type_inst lconstr | ]
 ]
 
 constructor: [
@@ -1031,6 +1031,14 @@ constructor: [
 of_type: [
 | ":>"
 | ":" ">"
+| ":"
+]
+
+of_type_inst: [
+| ":>"
+| ":" ">"
+| "::"
+| "::>"
 | ":"
 ]
 

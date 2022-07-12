@@ -51,6 +51,7 @@ let def_body = Entry.create "def_body"
 let decl_notations = Entry.create "decl_notations"
 let record_field = Entry.create "record_field"
 let of_type = Entry.create "of_type"
+let of_type_inst = Entry.create "of_type_inst"
 let section_subset_expr = Entry.create "section_subset_expr"
 let scope_delimiter = Entry.create "scope_delimiter"
 let syntax_modifiers = Entry.create "syntax_modifiers"
@@ -208,7 +209,7 @@ let test_variance_ident =
 
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
-  GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type
+  GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type of_type_inst
     record_field decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
 
   gallina:
@@ -419,8 +420,8 @@ GRAMMAR EXTEND Gram
   ;
 *)
   opt_coercion:
-    [ [ ">" -> { true }
-      |  -> { false } ] ]
+    [ [ ">" -> { AddCoercion }
+      |  -> { NoCoercion } ] ]
   ;
   (* (co)-fixpoints *)
   fix_definition:
@@ -472,9 +473,12 @@ GRAMMAR EXTEND Gram
   [ [ attr = LIST0 quoted_attributes ;
       bd = record_binder; rf_priority = OPT [ "|"; n = natural -> { n } ];
       rf_notation = decl_notations -> {
-      let rf_canonical, rf_reverse = attr |> List.flatten |> parse Notations.(canonical_field ++ reversible) in
-      let rf_subclass, rf_decl = bd in
-      rf_decl, { rf_subclass ; rf_reverse ; rf_priority ; rf_notation ; rf_canonical } } ] ]
+      let (rf_canonical, rf_reversible), rf_locality = attr |> List.flatten
+        |> parse Notations.(canonical_field ++ reversible ++ option_locality) in
+      let (rf_coercion, rf_instance), rf_decl = bd in
+      rf_decl,
+      { rf_coercion ; rf_reversible ; rf_instance ; rf_priority ; rf_locality ;
+        rf_notation ; rf_canonical } } ] ]
   ;
   record_fields:
     [ [ f = record_field; ";"; fs = record_fields -> { f :: fs }
@@ -483,21 +487,21 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   field_body:
-    [ [ l = binders; oc = of_type;
+    [ [ l = binders; oc = of_type_inst;
          t = lconstr -> { fun id -> (oc,AssumExpr (id,l,t)) }
-      | l = binders; oc = of_type;
+      | l = binders; oc = of_type_inst;
          t = lconstr; ":="; b = lconstr -> { fun id ->
            (oc,DefExpr (id,l,b,Some t)) }
       | l = binders; ":="; b = lconstr -> { fun id ->
         (* Why are we dropping cast info here? *)
          match b.CAst.v with
          | CCast(b', _, t) ->
-             (NoInstance,DefExpr(id,l,b',Some t))
+             ((NoCoercion,NoInstance),DefExpr(id,l,b',Some t))
          | _ ->
-             (NoInstance,DefExpr(id,l,b,None)) } ] ]
+             ((NoCoercion,NoInstance),DefExpr(id,l,b,None)) } ] ]
   ;
   record_binder:
-    [ [ id = name -> { (NoInstance,AssumExpr(id, [], CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) }
+    [ [ id = name -> { ((NoCoercion,NoInstance),AssumExpr(id, [], CAst.make ~loc @@ CHole (None, IntroAnonymous, None))) }
       | id = name; f = field_body -> { f id } ] ]
   ;
   assum_list:
@@ -508,15 +512,15 @@ GRAMMAR EXTEND Gram
   ;
   assumpt:
     [ [ idl = LIST1 ident_decl; oc = of_type; c = lconstr ->
-        { (oc <> NoInstance,(idl,c)) } ] ]
+        { (oc,(idl,c)) } ] ]
   ;
 
   constructor_type:
     [[ l = binders;
-      t= [ coe = of_type; c = lconstr ->
-                    { fun l id -> (coe <> NoInstance,(id,mkProdCN ~loc l c)) }
+      t= [ coe = of_type_inst; c = lconstr ->
+                    { fun l id -> (coe,(id,mkProdCN ~loc l c)) }
             |  ->
-                 { fun l id -> (false,(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
+                 { fun l id -> ((NoCoercion,NoInstance),(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
          -> { t l }
      ]]
 ;
@@ -525,9 +529,16 @@ GRAMMAR EXTEND Gram
     [ [ id = identref; c=constructor_type -> { c id } ] ]
   ;
   of_type:
-    [ [   ":>" -> { BackInstance }
-        | ":"; ">" -> { BackInstance }
-        | ":" -> { NoInstance } ] ]
+    [ [   ":>" -> { AddCoercion }
+        | ":"; ">" -> { AddCoercion }
+        | ":" -> { NoCoercion } ] ]
+  ;
+  of_type_inst:
+    [ [   ":>" -> { (AddCoercion, BackInstanceWarning) (* replace with NoInstance at end of deprecation phase *) }
+        | ":"; ">" -> { (AddCoercion, BackInstanceWarning) (* replace with NoInstance at end of deprecation phase *) }
+        | "::" -> { (NoCoercion, BackInstance) }
+        | "::>" -> { (AddCoercion, BackInstance) }
+        | ":" -> { (NoCoercion, NoInstance) } ] ]
   ;
 END
 

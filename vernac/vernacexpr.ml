@@ -105,8 +105,11 @@ type search_restriction =
   | SearchOutside of qualid list
 
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
-type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
-type instance_flag  = BackInstance | NoInstance
+type coercion_flag  = AddCoercion | NoCoercion
+(* Remove BackInstanceWarning at end of deprecation phase
+   (this is just to print a warning when :> is used instead of ::
+   to declare instances in classes) *)
+type instance_flag  = BackInstance | BackInstanceWarning | NoInstance
 
 type export_flag = Lib.export_flag = Export | Import
 
@@ -182,15 +185,18 @@ type inductive_kind = Inductive_kw | CoInductive | Variant | Record | Structure 
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
+type 'a with_coercion_instance = (coercion_flag * instance_flag) * 'a
 (* Attributes of a record field declaration *)
 type record_field_attr = {
-  rf_subclass: instance_flag; (* the projection is an implicit coercion or an instance *)
-  rf_reverse: bool option;
+  rf_coercion: coercion_flag; (* the projection is an implicit coercion *)
+  rf_reversible: bool option; (* coercion is reversible, if relevant *)
+  rf_instance: instance_flag; (* the projection is an instance *)
   rf_priority: int option; (* priority of the instance, if relevant *)
+  rf_locality: Goptions.option_locality; (* locality of coercion and instance *)
   rf_notation: decl_notation list;
   rf_canonical: bool; (* use this projection in the search for canonical instances *)
   }
-type constructor_expr = (lident * constr_expr) with_coercion
+type constructor_expr = (lident * constr_expr) with_coercion_instance
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * (local_decl_expr * record_field_attr) list * lident option

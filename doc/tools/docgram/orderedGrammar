@@ -678,9 +678,13 @@ record_field: [
 ]
 
 field_spec: [
-| LIST0 binder of_type
+| LIST0 binder of_type_inst
 | LIST0 binder ":=" term
-| LIST0 binder of_type ":=" term
+| LIST0 binder of_type_inst ":=" term
+]
+
+of_type_inst: [
+| [ ":" | ":>" | "::" | "::>" ] type
 ]
 
 term_record: [
@@ -705,7 +709,7 @@ inductive_definition: [
 ]
 
 constructor: [
-| ident LIST0 binder OPT of_type
+| ident LIST0 binder OPT of_type_inst
 ]
 
 import_categories: [

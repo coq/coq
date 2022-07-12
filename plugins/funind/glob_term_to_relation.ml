@@ -1480,7 +1480,7 @@ let do_build_inductive evd (funconstants : pconstant list)
   let ext_rels_constructors =
     Array.map
       (List.map (fun (id, t) ->
-           ( false
+           ( Vernacexpr.(NoCoercion, NoInstance)
            , ( CAst.make id
              , with_full_print
                  Constrextern.(extern_glob_type empty_extern_env)
@@ -1531,7 +1531,7 @@ let do_build_inductive evd (funconstants : pconstant list)
     let repacked_rel_inds =
       List.map
         (fun ((a, b, c, l), ntn) ->
-          (((false, (a, None)), b, c, Vernacexpr.Constructors l), ntn))
+          (Vernacexpr.((NoCoercion, (a, None)), b, c, Constructors l), ntn))
         rel_inds
     in
     let msg =
@@ -1554,7 +1554,7 @@ let do_build_inductive evd (funconstants : pconstant list)
     let repacked_rel_inds =
       List.map
         (fun ((a, b, c, l), ntn) ->
-          (((false, (a, None)), b, c, Vernacexpr.Constructors l), ntn))
+          (Vernacexpr.((NoCoercion, (a, None)), b, c, Constructors l), ntn))
         rel_inds
     in
     let msg =

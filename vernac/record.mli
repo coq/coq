@@ -38,9 +38,11 @@ val definition_structure
 
   module Data : sig
     type projection_flags = {
-      pf_subclass: bool;
+      pf_coercion: bool;
       pf_reversible: bool;
+      pf_instance: bool;
       pf_priority: int option;
+      pf_locality: Goptions.option_locality;
       pf_canonical: bool;
     }
     type raw_data
@@ -48,7 +50,7 @@ val definition_structure
       { id : Id.t
       ; idbuild : Id.t
       ; is_coercion : bool
-      ; coers : projection_flags list
+      ; proj_flags : projection_flags list
       ; rdata : raw_data
       ; inhabitant_id : Id.t
       }
@@ -90,9 +92,11 @@ val declare_existing_class : GlobRef.t -> unit
    current user Elpi, see https://github.com/LPCIC/coq-elpi/pull/151 *)
 module Internal : sig
   type projection_flags = {
-    pf_subclass: bool;
+    pf_coercion: bool;
     pf_reversible: bool;
+    pf_instance: bool;
     pf_priority: int option;
+    pf_locality: Goptions.option_locality;
     pf_canonical: bool;
   }
 
