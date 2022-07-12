@@ -180,40 +180,52 @@ let check_utf8_trailing_byte loc cs c =
 
 (* Recognize utf8 blocks (of length less than 4 bytes) *)
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
-let lookup_utf8 loc cs =
+let lookup_utf8_char loc cs =
   match Stream.peek cs with
-  | None -> EmptyStream
+  | None -> []
   | Some c1 ->
-    let n, unicode =
     match c1 with
-    | '\x00'..'\x7F' -> 1, Char.code c1
+    | '\x00'..'\x7F' -> [c1]
     | c1 ->
       let c1 = Char.code c1 in
       if Int.equal (c1 land 0x40) 0 || Int.equal (c1 land 0x38) 0x38 then error_utf8 loc cs else
       if Int.equal (c1 land 0x20) 0 then
-      match Stream.npeek 2 cs with
-      | [_;c2] ->
-          check_utf8_trailing_byte loc cs c2;
-          2, (c1 land 0x1F) lsl 6 + (Char.code c2 land 0x3F)
-      | _ -> error_utf8 loc cs
+        match Stream.npeek 2 cs with
+        | [_;c2] as l -> check_utf8_trailing_byte loc cs c2; l
+        | _ -> error_utf8 loc cs
       else if Int.equal (c1 land 0x10) 0 then
-      match Stream.npeek 3 cs with
-      | [_;c2;c3] ->
+        match Stream.npeek 3 cs with
+        | [_;c2;c3] as l ->
           check_utf8_trailing_byte loc cs c2;
           check_utf8_trailing_byte loc cs c3;
-          3, (c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 +
-          (Char.code c3 land 0x3F)
-      | _ -> error_utf8 loc cs
+          l
+        | _ -> error_utf8 loc cs
       else match Stream.npeek 4 cs with
-      | [_;c2;c3;c4] ->
+      | [_;c2;c3;c4] as l ->
           check_utf8_trailing_byte loc cs c2;
           check_utf8_trailing_byte loc cs c3;
           check_utf8_trailing_byte loc cs c4;
-          4, (c1 land 0x07) lsl 18 + (Char.code c2 land 0x3F) lsl 12 +
-          (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
+          l
       | _ -> error_utf8 loc cs
+
+let status_of_utf8 = function
+  | [] -> EmptyStream
+  | l ->
+    let n, unicode = match l with
+    | [c1] -> 1, Char.code c1
+    | [c1;c2] -> 2, (Char.code c1 land 0x1F) lsl 6 + (Char.code c2 land 0x3F)
+    | [c1;c2;c3] ->
+       3, (Char.code c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 +
+            (Char.code c3 land 0x3F)
+    | [c1;c2;c3;c4] ->
+       4, (Char.code c1 land 0x07) lsl 18 + (Char.code c2 land 0x3F) lsl 12 +
+            (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
+    | _ -> assert false
     in
     Utf8Token (Unicode.classify unicode, n)
+
+let lookup_utf8 loc cs =
+  status_of_utf8 (lookup_utf8_char loc cs)
 
 let unlocated f x =
   let dummy_loc = Loc.(initial ToplevelInput) in
