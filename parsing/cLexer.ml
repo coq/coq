@@ -165,14 +165,6 @@ let error_utf8 loc cs =
   let loc = set_loc_pos loc bp (bp+1) in
   err loc Illegal_character
 
-let utf8_char_size loc cs = function
-  (* Utf8 leading byte *)
-  | '\x00'..'\x7F' -> 1
-  | '\xC0'..'\xDF' -> 2
-  | '\xE0'..'\xEF' -> 3
-  | '\xF0'..'\xF7' -> 4
-  | _ (* '\x80'..\xBF'|'\xF8'..'\xFF' *) -> error_utf8 loc cs
-
 let njunk n = Util.repeat n Stream.junk
 
 let check_utf8_trailing_byte loc cs c =
@@ -478,40 +470,39 @@ let rec comment loc bp s =
 
 (* Parse a special token, using the [token_tree] *)
 
-(* Peek as much utf-8 lexemes as possible *)
-(* and retain the longest valid special token obtained *)
-let rec progress_further loc last nj tt cs =
-  try progress_from_byte loc last nj tt cs (List.nth (Stream.npeek (nj+1) cs) nj)
-  with Failure _ -> last
+(* Below, [last] is the last valid token found in the table *)
+(* [nj] is the number of bytes read since then and *)
+(* these bytes form a complete utf-8 sequence *)
+(* [tt] is the tree after having taken into account these [nj] bytes *)
 
-and update_longest_valid_token loc last nj tt cs =
+let update_longest_valid_token last nj tt cs =
   match tt.node with
   | Some _ as last' ->
-    Stream.njunk nj cs;
-    progress_further loc last' 0 tt cs
+    (* [last] extended with the [nj] bytes constitutes a valid token *)
+    (* we update cs, last and nj *)
+    Stream.njunk nj cs; 0, last'
   | None ->
-    progress_further loc last nj tt cs
+    (* [last] extended with the [nj] bytes does not form a full valid token *)
+    nj, last
 
-(* nj is the number of char peeked since last valid token *)
-(* n the number of char in utf8 block *)
-and progress_utf8 loc last nj n c tt cs =
+(* try to progress by peeking the next utf-8 lexeme *)
+(* and retain the longest valid special token obtained *)
+let rec progress_further loc last nj tt cs =
+  match lookup_utf8_char loc nj cs with
+  | [] -> snd (update_longest_valid_token last nj tt cs)
+  | l -> progress_utf8 loc last nj tt cs l
+
+(* under the same assumptions as [update_longest_valid_token], *)
+(* read the [n] bytes of the current utf-8 lexeme whose first byte is [c] *)
+and progress_utf8 loc last nj tt cs l =
+  (* compute longest match before considering utf8 block [l] *)
+  let nj, last = update_longest_valid_token last nj tt cs in
   try
-    let tt = CharMap.find c tt.branch in
-    if Int.equal n 1 then
-      update_longest_valid_token loc last (nj+n) tt cs
-    else
-      match Util.List.skipn (nj+1) (Stream.npeek (nj+n) cs) with
-      | l when Int.equal (List.length l) (n - 1) ->
-         List.iter (check_utf8_trailing_byte loc cs) l;
-         let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
-         update_longest_valid_token loc last (nj+n) tt cs
-      | _ ->
-          error_utf8 loc cs
+    (* descend in tree according to current utf8 block [l] *)
+    let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
+    progress_further loc last (nj + List.length l) tt cs
   with Not_found ->
     last
-
-and progress_from_byte loc last nj tt cs c =
-  progress_utf8 loc last nj (utf8_char_size loc cs c) c tt cs
 
 let blank_or_eof cs =
   match Stream.peek cs with
@@ -620,8 +611,8 @@ let process_sequence loc bp c cs =
   aux 1 cs
 
 (* Must be a special token *)
-let process_chars ~diff_mode loc bp c cs =
-  let t = progress_from_byte loc None (-1) !token_tree cs c in
+let process_chars ~diff_mode loc bp l cs =
+  let t = progress_utf8 loc None (- (List.length l)) !token_tree cs l in
   let ep = Stream.count cs in
   match t with
     | Some (t,NoQuotation) -> (KEYWORD t, set_loc_pos loc bp ep)
@@ -629,15 +620,11 @@ let process_chars ~diff_mode loc bp c cs =
         let txt, loc = parse_quotation loc bp cs in
         QUOTATION(c, txt), loc
     | None ->
-        let ep' = bp + utf8_char_size loc cs c in
         if diff_mode then begin
-          let len = ep' - bp in
-          ignore (store 0 c);
-          ignore (nstore (len - 1) 1 cs);
-          IDENT (get_buff len), set_loc_pos loc bp ep
+          let s = String.concat "" (List.map (String.make 1) l) in
+          IDENT s, set_loc_pos loc bp ep
         end else begin
-          njunk (ep' - ep) cs;
-          let loc = set_loc_pos loc bp ep' in
+          let loc = set_loc_pos loc bp ep in
           err loc Undefined_token
         end
 
@@ -653,7 +640,7 @@ let parse_after_dot ~diff_mode loc c bp s =
               let ep = Stream.count s in
               FIELD field, set_loc_pos loc bp ep end
   | Utf8Token _ | EmptyStream ->
-      process_chars ~diff_mode loc bp c s
+      process_chars ~diff_mode loc bp [c] s
 
 (* Parse what follows a question mark *)
 
@@ -661,7 +648,7 @@ let parse_after_qmark ~diff_mode loc bp s =
   match lookup_utf8 loc s with
   | Utf8Token (st, _) when Unicode.is_valid_ident_initial st -> LEFTQMARK
   | EmptyStream -> KEYWORD "?"
-  | Utf8Token _ -> fst (process_chars ~diff_mode loc bp '?' s)
+  | Utf8Token _ -> fst (process_chars ~diff_mode loc bp ['?'] s)
 
 (* Parse a token in a char stream *)
 
@@ -698,7 +685,7 @@ let rec next_token ~diff_mode loc s =
       Stream.junk s;
       let t,new_between_commands =
         if !between_commands then process_sequence loc bp c s, true
-        else process_chars ~diff_mode loc bp c s,false
+        else process_chars ~diff_mode loc bp [c] s,false
       in
       comment_stop bp; between_commands := new_between_commands; t
   | Some '?' ->
@@ -747,7 +734,7 @@ let rec next_token ~diff_mode loc s =
             comm_loc bp;
             push_string "(*";
             let loc = comment loc bp s in next_token ~diff_mode loc s
-        | _ -> let t = process_chars ~diff_mode loc bp c s in comment_stop bp; t
+        | _ -> let t = process_chars ~diff_mode loc bp [c] s in comment_stop bp; t
       with Stream.Failure -> raise (Stream.Error "")
       end
   | Some ('{' | '}' as c) ->
@@ -755,11 +742,12 @@ let rec next_token ~diff_mode loc s =
       let ep = Stream.count s in
       let t,new_between_commands =
         if !between_commands then (KEYWORD (String.make 1 c), set_loc_pos loc bp ep), true
-        else process_chars ~diff_mode loc bp c s, false
+        else process_chars ~diff_mode loc bp [c] s, false
       in
       comment_stop bp; between_commands := new_between_commands; t
   | _ ->
-      match lookup_utf8 loc s with
+      let l = lookup_utf8_char loc 0 s in
+      match status_of_utf8 l with
         | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
             let len = ident_tail loc (nstore n 0 s) s in
             let id = get_buff len in
@@ -768,8 +756,9 @@ let rec next_token ~diff_mode loc s =
             with Not_found ->
               let ep = Stream.count s in
               IDENT id, set_loc_pos loc bp ep end
-        | Utf8Token _ ->
-            let t = process_chars ~diff_mode loc bp (Stream.next s) s in
+        | Utf8Token (_, n) ->
+            Stream.njunk n s;
+            let t = process_chars ~diff_mode loc bp l s in
             comment_stop bp; t
         | EmptyStream ->
             comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
