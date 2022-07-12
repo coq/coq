@@ -481,7 +481,7 @@ files contain nontrivial proofs, or if the files have many linear chains of
 dependencies, or if one has many cores available, compilation should be faster
 overall.
 
-**Need for ``Proof using``**
+**Need for Proof using**
 
 When a theorem is in a section, typechecking the statement of the theorem
 may be insufficient to deduce the type of the statement at the end
@@ -497,8 +497,7 @@ that are not involved in the typechecking of the statement. See :flag:`Suggest P
 in a section.)
 
 When using ``-vos``, proofs in sections with :cmd:`Proof using` are skipped.  Proofs
-in sections without :cmd:`Proof using` are fully processed (much slower) and will raise a warning.
-To disable the warning, pass the flag ``-w -proof-without-using-in-section``.
+in sections without :cmd:`Proof using` are fully processed (much slower).
 
 **Interaction with standard compilation**
 
