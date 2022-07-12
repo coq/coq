@@ -20,13 +20,23 @@
 
 (executable
  (name coqc_bin)
- (public_name coqc)
+ (public_name coqc_stm)
  (package coq-core)
  (modules coqc_bin)
  (libraries coq-core.toplevel findlib.dynload)
  (modes native byte))
  ; Adding -ccopt -flto to links options could be interesting, however,
  ; it doesn't work on Windows
+
+
+(executable
+ (name rc_bin)
+ (public_name coqc)
+ (package coq-core)
+ (modules rc_bin)
+ (libraries coq-core.compiler findlib.dynload)
+ (modes native byte))
+
 
 (install
  (section bin)

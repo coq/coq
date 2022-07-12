@@ -77,6 +77,7 @@ COQEXTRAFLAGS?=
 COQFLAGS?=$(COQEXTRAFLAGS)
 
 coqc := $(BIN)coqc -q -R prerequisite TestSuite $(COQFLAGS)
+coqc_stm := $(BIN)coqc_stm -q -R prerequisite TestSuite $(COQFLAGS)
 coqchk := $(BIN)coqchk -R prerequisite TestSuite
 coqdoc := $(BIN)coqdoc
 coqtop := $(BIN)coqtop -q -test-mode -R prerequisite TestSuite
@@ -88,7 +89,7 @@ else
 coqidetop := $(BIN)coqidetop.byte
 endif
 
-coqc_interactive := $(coqc) -test-mode -async-proofs-cache force
+coqc_interactive := $(coqc_stm) -test-mode -async-proofs-cache force
 coqdep := $(BIN)coqdep
 
 # This is the convention for coq_makefile
@@ -374,7 +375,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
+	  $(coqc_stm) "$<" $(call get_coq_prog_args,"$<") -async-proofs on \
 	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
@@ -711,8 +712,8 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 %.vio.log:%.v
 	@echo "TEST      $<"
 	$(HIDE){ \
-	  $(coqc) -vio -R vio vio $* 2>&1 && \
-	  $(coqc) -R vio vio -vio2vo $*.vio 2>&1 && \
+	  $(coqc_stm) -vio -R vio vio $* 2>&1 && \
+	  $(coqc_stm) -R vio vio -vio2vo $*.vio 2>&1 && \
 	  $(coqchk) -R vio vio -norec $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
