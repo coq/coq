@@ -157,7 +157,6 @@ let after loc =
 
 type token_kind =
   | Utf8Token of (Unicode.status * int)
-  | AsciiChar
   | EmptyStream
 
 let error_utf8 loc cs =
@@ -181,11 +180,16 @@ let check_utf8_trailing_byte loc cs c =
 
 (* Recognize utf8 blocks (of length less than 4 bytes) *)
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
-let lookup_utf8_tail loc c cs =
-  let c1 = Char.code c in
-  if Int.equal (c1 land 0x40) 0 || Int.equal (c1 land 0x38) 0x38 then error_utf8 loc cs
-  else
+let lookup_utf8 loc cs =
+  match Stream.peek cs with
+  | None -> EmptyStream
+  | Some c1 ->
     let n, unicode =
+    match c1 with
+    | '\x00'..'\x7F' -> 1, Char.code c1
+    | c1 ->
+      let c1 = Char.code c1 in
+      if Int.equal (c1 land 0x40) 0 || Int.equal (c1 land 0x38) 0x38 then error_utf8 loc cs else
       if Int.equal (c1 land 0x20) 0 then
       match Stream.npeek 2 cs with
       | [_;c2] ->
@@ -211,12 +215,6 @@ let lookup_utf8_tail loc c cs =
     in
     Utf8Token (Unicode.classify unicode, n)
 
-let lookup_utf8 loc cs =
-  match Stream.peek cs with
-    | Some ('\x00'..'\x7F') -> AsciiChar
-    | Some ('\x80'..'\xFF' as c) -> lookup_utf8_tail loc c cs
-    | None -> EmptyStream
-
 let unlocated f x =
   let dummy_loc = Loc.(initial ToplevelInput) in
   f dummy_loc x
@@ -231,27 +229,19 @@ let check_keyword str =
     | _ ->
         match unlocated lookup_utf8 s with
         | Utf8Token (_,n) -> njunk n s; loop_symb s
-        | AsciiChar -> Stream.junk s; loop_symb s
         | EmptyStream -> ()
   in
   loop_symb (Stream.of_string str)
 
 let check_ident str =
-  let rec loop_id intail s = match Stream.peek s with
-    | Some ('a'..'z' | 'A'..'Z' | '_') ->
-        Stream.junk s;
+  let rec loop_id intail s =
+    match unlocated lookup_utf8 s with
+    | Utf8Token (st, n) when not intail && Unicode.is_valid_ident_initial st -> njunk n s; loop_id true s
+    | Utf8Token (st, n) when intail && Unicode.is_valid_ident_trailing st ->
+        njunk n s;
         loop_id true s
-    | Some ('0'..'9' | '\'') when intail ->
-        Stream.junk s;
-        loop_id true s
-    | _ ->
-        match unlocated lookup_utf8 s with
-        | Utf8Token (st, n) when not intail && Unicode.is_valid_ident_initial st -> njunk n s; loop_id true s
-        | Utf8Token (st, n) when intail && Unicode.is_valid_ident_trailing st ->
-          njunk n s;
-          loop_id true s
-        | EmptyStream -> ()
-        | Utf8Token _ | AsciiChar -> bad_token str
+    | EmptyStream -> ()
+    | Utf8Token _ -> bad_token str
   in
   loop_id false (Stream.of_string str)
 
@@ -307,19 +297,15 @@ let warn_unrecognized_unicode =
           strbrk (Printf.sprintf "Not considering unicode character \"%s\" of unknown \
                                   lexical status as part of identifier \"%s\"." u id))
 
-let rec ident_tail loc len s = match Stream.peek s with
-  | Some ('a'..'z' | 'A'..'Z' | '0'..'9' | '\'' | '_' as c) ->
-      Stream.junk s;
-      ident_tail loc (store len c) s
-  | _ ->
-      match lookup_utf8 loc s with
-      | Utf8Token (st, n) when Unicode.is_valid_ident_trailing st ->
-          ident_tail loc (nstore n len s) s
-      | Utf8Token (st, n) when Unicode.is_unknown st ->
-          let id = get_buff len in
-          let u = String.concat "" (List.map (String.make 1) (Stream.npeek n s)) in
-          warn_unrecognized_unicode ~loc (u,id); len
-      | _ -> len
+let rec ident_tail loc len s =
+  match lookup_utf8 loc s with
+  | Utf8Token (st, n) when Unicode.is_valid_ident_trailing st ->
+      ident_tail loc (nstore n len s) s
+  | Utf8Token (st, n) when Unicode.is_unknown st ->
+      let id = get_buff len in
+      let u = String.concat "" (List.map (String.make 1) (Stream.npeek n s)) in
+      warn_unrecognized_unicode ~loc (u,id); len
+  | _ -> len
 
 let warn_comment_terminator_in_string =
   CWarnings.create ~name:"comment-terminator-in-string" ~category:"parsing"
@@ -645,41 +631,25 @@ let process_chars ~diff_mode loc bp c cs =
 
 (* Parse what follows a dot *)
 
-let parse_after_dot ~diff_mode loc c bp s = match Stream.peek s with
-  | Some ('a'..'z' | 'A'..'Z' | '_' as d) ->
-      Stream.junk s;
-      let len =
-        try ident_tail loc (store 0 d) s with
-          Stream.Failure -> raise (Stream.Error "")
-      in
+let parse_after_dot ~diff_mode loc c bp s =
+  match lookup_utf8 loc s with
+  | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
+      let len = ident_tail loc (nstore n 0 s) s in
       let field = get_buff len in
       begin try find_keyword loc ("."^field) bp s
-      with Not_found ->
-        let ep = Stream.count s in
-        FIELD field, set_loc_pos loc bp ep end
-  | _ ->
-      match lookup_utf8 loc s with
-      | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
-          let len = ident_tail loc (nstore n 0 s) s in
-          let field = get_buff len in
-          begin try find_keyword loc ("."^field) bp s
-          with Not_found ->
-            let ep = Stream.count s in
-            FIELD field, set_loc_pos loc bp ep end
-      | AsciiChar | Utf8Token _ | EmptyStream ->
-          process_chars ~diff_mode loc bp c s
+            with Not_found ->
+              let ep = Stream.count s in
+              FIELD field, set_loc_pos loc bp ep end
+  | Utf8Token _ | EmptyStream ->
+      process_chars ~diff_mode loc bp c s
 
 (* Parse what follows a question mark *)
 
 let parse_after_qmark ~diff_mode loc bp s =
-  match Stream.peek s with
-    | Some ('a'..'z' | 'A'..'Z' | '_') -> LEFTQMARK
-    | None -> KEYWORD "?"
-    | _ ->
-        match lookup_utf8 loc s with
-          | Utf8Token (st, _) when Unicode.is_valid_ident_initial st -> LEFTQMARK
-          | AsciiChar | Utf8Token _ | EmptyStream ->
-            fst (process_chars ~diff_mode loc bp '?' s)
+  match lookup_utf8 loc s with
+  | Utf8Token (st, _) when Unicode.is_valid_ident_initial st -> LEFTQMARK
+  | EmptyStream -> KEYWORD "?"
+  | Utf8Token _ -> fst (process_chars ~diff_mode loc bp '?' s)
 
 (* Parse a token in a char stream *)
 
@@ -786,7 +756,7 @@ let rec next_token ~diff_mode loc s =
             with Not_found ->
               let ep = Stream.count s in
               IDENT id, set_loc_pos loc bp ep end
-        | AsciiChar | Utf8Token _ ->
+        | Utf8Token _ ->
             let t = process_chars ~diff_mode loc bp (Stream.next s) s in
             comment_stop bp; t
         | EmptyStream ->
