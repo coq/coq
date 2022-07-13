@@ -180,8 +180,8 @@ let check_utf8_trailing_byte loc cs c =
 
 (* Recognize utf8 blocks (of length less than 4 bytes) *)
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
-let lookup_utf8_char loc cs =
-  match Stream.peek cs with
+let lookup_utf8_char loc nj cs =
+  match try Some (List.nth (Stream.npeek (nj+1) cs) nj) with Failure _ -> None with
   | None -> []
   | Some c1 ->
     match c1 with
@@ -190,17 +190,17 @@ let lookup_utf8_char loc cs =
       let c1 = Char.code c1 in
       if Int.equal (c1 land 0x40) 0 || Int.equal (c1 land 0x38) 0x38 then error_utf8 loc cs else
       if Int.equal (c1 land 0x20) 0 then
-        match Stream.npeek 2 cs with
+        match List.skipn nj (Stream.npeek (nj+2) cs) with
         | [_;c2] as l -> check_utf8_trailing_byte loc cs c2; l
         | _ -> error_utf8 loc cs
       else if Int.equal (c1 land 0x10) 0 then
-        match Stream.npeek 3 cs with
+        match List.skipn nj (Stream.npeek (nj+3) cs) with
         | [_;c2;c3] as l ->
           check_utf8_trailing_byte loc cs c2;
           check_utf8_trailing_byte loc cs c3;
           l
         | _ -> error_utf8 loc cs
-      else match Stream.npeek 4 cs with
+      else match List.skipn nj (Stream.npeek (nj+4) cs) with
       | [_;c2;c3;c4] as l ->
           check_utf8_trailing_byte loc cs c2;
           check_utf8_trailing_byte loc cs c3;
@@ -225,7 +225,7 @@ let status_of_utf8 = function
     Utf8Token (Unicode.classify unicode, n)
 
 let lookup_utf8 loc cs =
-  status_of_utf8 (lookup_utf8_char loc cs)
+  status_of_utf8 (lookup_utf8_char loc 0 cs)
 
 let unlocated f x =
   let dummy_loc = Loc.(initial ToplevelInput) in
