@@ -93,11 +93,11 @@ before_script:
 
     - dev/ci/gitlab-section.sh start coq.build coq.build
     - make dunestrap
-    - dune build -p coq-core,coq-stdlib,coqide-server,coqide,coq
+    - dune build -p coq-runtime-types,coq-core,coq-stdlib,coqide-server,coqide,coq
     - dev/ci/gitlab-section.sh end coq.build
 
     - dev/ci/gitlab-section.sh start coq.install coq.install
-    - dune install --prefix="$(pwd)/_install_ci" coq-core coq-stdlib coqide-server coqide coq
+    - dune install --prefix="$(pwd)/_install_ci" coq-runtime-types,coq-core coq-stdlib coqide-server coqide coq
     - dev/ci/gitlab-section.sh end coq.install
 
 # Developer build, with build layout. Faster and useful for those
