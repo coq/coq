@@ -38,7 +38,7 @@ jobs:
           eval $(opam env)
           ./configure -prefix "$(pwd)/_install_ci" -warn-error yes -native-compiler no -coqide opt
           make dunestrap
-          dune build -p coq-core,coq-stdlib,coqide-server,coqide,coq
+          dune build -p coq-runtime-types,coq-core,coq-stdlib,coqide-server,coqide,coq
         env:
           MACOSX_DEPLOYMENT_TARGET: "10.11"
           NJOBS: "2"
@@ -46,7 +46,7 @@ jobs:
       - name: Install Coq
         run: |
           eval $(opam env)
-          dune install --prefix="$(pwd)/_install_ci" coq-core coq-stdlib coqide-server coqide coq
+          dune install --prefix="$(pwd)/_install_ci" coq-runtime-types coq-core coq-stdlib coqide-server coqide coq
 
       - name: Run Coq Test Suite
         run: |
