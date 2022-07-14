@@ -383,17 +383,6 @@ let h_trivial ?(debug=Off) lems l = gen_trivial ~debug lems l
 (*                       The classical Auto tactic                        *)
 (**************************************************************************)
 
-let possible_resolve env sigma dbg db_list local_db secvars cl =
-  try
-    let head =
-      try let hdconstr = decompose_app_bound sigma cl in
-          Some hdconstr
-      with Bound -> None
-    in
-      List.map (tac_of_hint dbg db_list local_db cl)
-        (my_find_search env sigma db_list local_db secvars head cl)
-  with Not_found -> []
-
 (* Introduce an hypothesis, then call the continuation tactic [kont]
    with the hint db extended with the so-obtained hypothesis *)
 
@@ -407,6 +396,12 @@ let intro_register dbg kont db =
       in
       Tacticals.onLastDecl (fun decl -> kont (extend_local_db decl db))
     end)
+
+let rec lazy_map_first f = function
+  | [] ->
+      let info = Exninfo.reify () in
+      Tacticals.tclZEROMSG ~info (str"No applicable tactic.")
+  | t::rest -> Proofview.tclORELSE (f t) (fun _ -> lazy_map_first f rest)
 
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
@@ -423,35 +418,47 @@ let search d n db_list local_db lems =
       Tacticals.tclORELSE0 (dbg_assumption d) @@
         Tacticals.tclORELSE0 (intro_register d (search d n [] None) local_db) @@
           Proofview.Goal.enter begin fun gl ->
-          let concl = Proofview.Goal.concl gl in
-          let sigma = Proofview.Goal.sigma gl in
-          let env = Proofview.Goal.env gl in
-          let hyps = Proofview.Goal.hyps gl in
-          let secvars =
-            match secvars with
-            | None -> secvars_of_hyps hyps
-            | Some secvars -> secvars
-          in
-          let d' = incr_dbg d in
-          Tacticals.tclFIRST @@
-            List.map
-              (fun ntac -> Tacticals.tclTHEN ntac
+            let concl = Proofview.Goal.concl gl in
+            let sigma = Proofview.Goal.sigma gl in
+            let env = Proofview.Goal.env gl in
+            let hyps = Proofview.Goal.hyps gl in
+            let secvars =
+              match secvars with
+              | None -> secvars_of_hyps hyps
+              | Some secvars -> secvars
+            in
+            let d' = incr_dbg d in
+            let head =
+              try let hdconstr = decompose_app_bound sigma concl in Some hdconstr
+              with Bound -> None
+            in
+            lazy_map_first begin fun db ->
+              let hints =
+                try hintmap_of env sigma secvars head concl db
+                with Not_found -> []
+              in
+              lazy_map_first begin fun h ->
+                let tac = tac_of_hint d' db_list local_db concl h in
+                Tacticals.tclTHEN tac
                 (Proofview.Goal.enter begin fun gl ->
                  let concl' = Proofview.Goal.concl gl in
                  let sigma' = Proofview.Goal.sigma gl in
                  let env' = Proofview.Goal.env gl in
                  let hyps' = Proofview.Goal.hyps gl in
                  let (concls, secvars, local_db) =
-                   if hyps' == hyps then (concl::concls, Some secvars, local_db)
-                   (* update local_db if local hypotheses have changed *)
-                   else ([], None, make_local_hint_db env' sigma' false lems)
+                 if hyps' == hyps then (concl::concls, Some secvars, local_db)
+                 (* update local_db if local hypotheses have changed *)
+                 else ([], None, make_local_hint_db env' sigma' false lems)
                  in
                  (* abort branch if the conclusion was seen previously *)
-                 if List.mem concl' concls then Tacticals.tclZEROMSG (str "repeating conclusion")
+                 if List.mem concl' concls then
+                   let info = Exninfo.reify () in
+                   Tacticals.tclZEROMSG ~info (str "repeating conclusion")
                  else search d' (n-1) concls secvars local_db
-                 end))
-              (possible_resolve env sigma d db_list local_db secvars concl)
-           end
+                 end)
+              end hints
+            end (local_db::db_list)
+          end
   in
   search d n [] None local_db
 
