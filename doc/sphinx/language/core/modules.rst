@@ -879,81 +879,72 @@ and :math:`Γ_C` is :math:`[c_1{:}∀ Γ_P, C_1 ; …; c_n{:}∀ Γ_P, C_n ]`.
 
 .. extracted from Gallina extensions chapter
 
-Libraries and qualified names
----------------------------------
-
-.. _names-of-libraries:
-
-Names of libraries
-~~~~~~~~~~~~~~~~~~
-
-The theories developed in Coq are stored in *library files* which are
-hierarchically classified into *libraries* and *sublibraries*. To
-express this hierarchy, library names are represented by qualified
-identifiers qualid, i.e. as list of identifiers separated by dots (see
-:ref:`qualified-names`). For instance, the library file ``Mult`` of the standard
-Coq library ``Arith`` is named ``Coq.Arith.Mult``. The identifier that starts
-the name of a library is called a *library root*. All library files of
-the standard library of Coq have the reserved root Coq but library
-filenames based on other roots can be obtained by using Coq commands
-(coqc, coqtop, coqdep, …) options ``-Q`` or ``-R`` (see :ref:`command-line-options`).
-Also, when an interactive Coq session starts, a library of root ``Top`` is
-started, unless option ``-top`` or ``-notop`` is set (see :ref:`command-line-options`).
-
 .. _qualified-names:
 
-Qualified identifiers
-~~~~~~~~~~~~~~~~~~~~~
+Qualified names
+---------------
 
-.. insertprodn qualid field_ident
+Qualified names (:token:`qualid`\s) are hierarchical names that are used to
+identify items such as definitions, theorems and parameters that may be defined
+inside modules (see :cmd:`Module`).  In addition, they are used to identify
+compiled files.  Syntactically, they have this form:
+
+.. insertprodn qualid qualid
 
 .. prodn::
-   qualid ::= @ident {* @field_ident }
-   field_ident ::= .@ident
+   qualid ::= @ident {* .@ident }
 
-Library files are modules which possibly contain submodules which
-eventually contain constructions (axioms, parameters, definitions,
-lemmas, theorems, remarks or facts). The *absolute name*, or *full
-name*, of a construction in some library file is a qualified
-identifier starting with the logical name of the library file,
-followed by the sequence of submodules names encapsulating the
-construction and ended by the proper name of the construction.
-Typically, the absolute name ``Coq.Init.Logic.eq`` denotes Leibniz’
-equality defined in the module Logic in the sublibrary ``Init`` of the
-standard library of Coq.
+*Fully qualified* or *absolute* qualified names uniquely identify files
+(as in the `Require` command) and items within files, such as a single
+:cmd:`Variable` definition.  It's usually possible to use a suffix of the fully
+qualified name (a *short name*) that uniquely identifies an item.
 
-The proper name that ends the name of a construction is the short name
-(or sometimes base name) of the construction (for instance, the short
-name of ``Coq.Init.Logic.eq`` is ``eq``). Any partial suffix of the absolute
-name is a *partially qualified name* (e.g. ``Logic.eq`` is a partially
-qualified name for ``Coq.Init.Logic.eq``). Especially, the short name of a
-construction is its shortest partially qualified name.
+The first part of a fully qualified name identifies a file, which may be followed
+by a second part that identifies a specific item within that file.  Qualified names
+that identify files don't have a second part.
 
-Coq does not accept two constructions (definition, theorem, …) with
-the same absolute name but different constructions can have the same
-short name (or even same partially qualified names as soon as the full
-names are different).
+While qualified names always consist of a series of dot-separated :n:`@ident`\s,
+*the following few paragraphs omit the dots for the sake of simplicity.*
 
-Notice that the notion of absolute, partially qualified and short
-names also applies to library filenames.
+**File part.** Files are identified by :gdef:`logical paths <logical path>`,
+which are prefixes in the form :n:`{* @ident__logical } {+ @ident__file }`, such
+as :n:`Coq.Init.Logic`, in which:
 
-**Visibility**
+- :n:`{* @ident__logical }`, the :gdef:`logical name`, maps to one or more
+  directories (or :gdef:`physical paths <physical path>`) in the user's file system.
+  The logical name
+  is used so that Coq scripts don't depend on where files are installed.
+  For example, the directory associated with :n:`Coq` contains Coq's standard library.
+  The logical name is generally a single :n:`@ident`.
 
-Coq maintains a table called the name table which maps partially qualified
-names of constructions to absolute names. This table is updated by the
-commands :cmd:`Require`, :cmd:`Import` and :cmd:`Export` and
-also each time a new declaration is added to the context. An absolute
-name is called visible from a given short or partially qualified name
-when this latter name is enough to denote it. This means that the
-short or partially qualified name is mapped to the absolute name in
-Coq name table. Definitions with the :attr:`local` attribute are only accessible with
+- :n:`{+ @ident__file }` corresponds to the file system path of the file relative
+  to the directory that contains it.  For example, :n:`Init.Logic`
+  corresponds to the file system path :n:`Init/Logic.v` on Linux)
+
+When Coq is processing a script that hasn't been saved in a file, such as a new
+buffer in CoqIDE or anything in coqtop, definitions in the script are associated
+with the logical name :n:`Top` and there is no associated file system path.
+
+**Item part.** Items are further qualified by a suffix in the form
+:n:`{* @ident__module } @ident__base` in which:
+
+- :n:`{* @ident__module }` gives the names of the nested modules, if any,
+  that syntactically contain the definition of the item.  (See :cmd:`Module`.)
+
+- :n:`@ident__base` is the base name used in the command defining
+  the item.  For example, :n:`eq` in the :cmd:`Inductive` command defining it
+  in `Coq.Init.Logic` is the base name for `Coq.Init.Logic.eq`, the standard library
+  definition of :term:`Leibniz equality`.
+
+If :n:`@qualid` is the fully qualified name of an item, Coq
+always interprets :n:`@qualid` as a reference to that item.  If :n:`@qualid` is also a
+partially qualified name for another item, then you must use provide a more-qualified
+name to uniquely identify that other item.  For example, if there are two
+fully qualified items named `Foo.Bar` and `Coq.X.Foo.Bar`, then `Foo.Bar` refers
+to the first item and `X.Foo.Bar` is the shortest name for referring to the second item.
+
+Definitions with the :attr:`local` attribute are only accessible with
 their fully qualified name (see :ref:`gallina-definitions`).
-
-It may happen that a visible name is hidden by the short name or a
-qualified name of another construction. In this case, the name that
-has been hidden must be referred to using one more level of
-qualification. To ensure that a construction always remains
-accessible, absolute names can never be hidden.
 
 .. example::
 
@@ -971,59 +962,8 @@ accessible, absolute names can never be hidden.
 
 .. seealso:: Commands :cmd:`Locate`.
 
-.. _libraries-and-filesystem:
-
-Libraries and filesystem
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-Compiled files (``.vo`` and ``.vio``) store sub-libraries. In order to refer
-to them inside Coq, a translation from file-system names to Coq names
-is needed. In this translation, names in the file system are called
-*physical* paths while Coq names are contrastingly called *logical*
-names.
-
-A logical prefix Lib can be associated with a physical path using
-either the command line option ``-Q`` `path` ``Lib`` or the command
-line option ``-R`` `path` ``Lib``. All subfolders of path are
-recursively associated with the logical path ``Lib`` extended with the
-corresponding suffix coming from the physical path. For instance, the
-folder ``path/Foo/Bar`` maps to ``Lib.Foo.Bar``. Subdirectories corresponding
-to invalid Coq identifiers are skipped, and, by convention,
-subdirectories named ``CVS`` or ``_darcs`` are skipped too.
-
-Thanks to this mechanism, ``.vo`` files are made available through the
-logical name of the folder they are in, extended with their own
-basename. For example, the name associated with the file
-``path/Foo/Bar/File.vo`` is ``Lib.Foo.Bar.File``. The same caveat applies for
-invalid identifiers. When compiling a source file, the ``.vo`` file stores
-its logical name, so that an error is issued if it is loaded with the
-wrong loadpath afterwards.
-
-Some folders have a special status and are automatically put in the
-path. Coq commands automatically associate a logical path to files in
-the repository tree rooted at the directory from where the command is
-launched, ``coqlib/user-contrib/``, the directories listed in the
-``$COQPATH``, ``${XDG_DATA_HOME}/coq/`` and ``${XDG_DATA_DIRS}/coq/``
-environment variables (see `XDG base directory specification
-<http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_)
-with the same physical-to-logical translation and with an empty logical prefix.
-
-.. todo: Needs a more better explanation of COQPATH and XDG* with example(s)
-   and suggest best practices for their use
-
-The choice between ``-Q`` and ``-R`` impacts how ambiguous names are
-resolved in :cmd:`Require` (see :ref:`compiled-files`).
-
-There also exists another independent loadpath mechanism attached to
-OCaml object files (``.cmo`` or ``.cmxs``) rather than Coq object
-files as described above. The OCaml loadpath is managed using
-the option ``-I`` `path` (in the OCaml world, there is neither a
-notion of logical name prefix nor a way to access files in
-subdirectories of path). See the command :cmd:`Declare ML Module` in
-:ref:`compiled-files` to understand the need of the OCaml loadpath.
-
-See :ref:`command-line-options` for a more general view over the Coq command
-line options.
+:ref:`logical-paths-load-path` describes how :term:`logical paths <logical path>`
+become associated with specific files.
 
 .. _controlling-locality-of-commands:
 
@@ -1060,7 +1000,7 @@ while noting a few exceptional commands for which :attr:`local` and
       **Exception:** when :attr:`local` is applied to
       :cmd:`Definition`, :cmd:`Theorem` or their variants, its
       semantics are different: it makes the defined objects available
-      only through their fully-qualified names rather than their
+      only through their fully qualified names rather than their
       unqualified names after an :cmd:`Import`.
 
 .. attr:: export

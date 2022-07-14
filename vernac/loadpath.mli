@@ -75,7 +75,8 @@ type vo_path =
   ; coq_path  : DirPath.t
   (** Coq prefix for the path *)
   ; implicit  : bool
-  (** [implicit = true] avoids having to qualify with [coq_path] *)
+  (** [implicit = true] avoids having to qualify with [coq_path]
+      true for -R, false for -Q in command line *)
   ; has_ml    : bool
   (** If [has_ml] is true, the directory will also be added to the ml include path *)
   ; recursive : bool

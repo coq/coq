@@ -1,53 +1,363 @@
 .. _utilities:
 
----------------------
- Utilities
----------------------
-
-The distribution provides utilities to simplify some tedious works
-beside proof development, tactics writing or documentation.
-
-
-Using Coq as a library
-------------------------
-
-In previous versions, ``coqmktop`` was used to build custom
-toplevels - for example for better debugging or custom static
-linking. Nowadays, the preferred method is to use ``ocamlfind``.
-
-The most basic custom toplevel is built using:
-
-::
-
-   % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
-                 -package coq.toplevel \
-                 topbin/coqtop_bin.ml -o my_toplevel.native
-
-
-For example, to statically link |Ltac|, you can just do:
-
-::
-
-   % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
-                 -package coq.toplevel,coq.plugins.ltac \
-                 topbin/coqtop_bin.ml -o my_toplevel.native
-
-and similarly for other plugins.
-
-.. _building_coq_project:
-
-Building a Coq project
+----------------------
+ Building Coq Projects
 ----------------------
 
-As of today it is possible to build Coq projects using two tools:
+Coq configuration basics
+------------------------
 
-- ``coq_makefile``, which is distributed by Coq and is based on generating a makefile,
-- Dune, the standard OCaml build tool, which, since version 1.9, supports building Coq libraries.
+Describes the basics of Coq configuration that affect
+running and compiling Coq scripts.  It recommends preferred ways to
+install Coq, manage installed packages and structure your project
+directories for maximum ease of use.
+
+Installing Coq and Coq packages with opam
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The easiest way to install Coq is with the
+`Coq Platform <https://github.com/coq/platform>`_, which relies
+on the `opam package manager <https://coq.inria.fr/opam-using.html>`_.
+
+The Coq platform installation process provides options to automatically install
+some of the most frequently used packages at the
+same time.  While there's currently no guarantee that user-developed packages
+will compile on the current version of Coq, all packages
+that Coq platform installs should compile without difficulty--this is part of
+the Coq platform release process.
+
+Once you've installed Coq, you can search for additional user-developed packages
+from the `package list <https://coq.inria.fr/opam/www/>`_ or other opam repositories.
+These commands may be helpful:
+
+- `opam list "coq-*"` to see the list of available and installed packages
+- `opam list "coq-*" --installed` to see the list of installed packages
+- `opam install <package name>` to install a package on your system.
+- `opam update` as needed to update the list of available packages
+
+For example, this command shows the installed packages with the package name,
+its version and short description::
+
+   $ opam list "coq-*" --installed
+   coq-bignums               8.15.0          Bignums, the Coq library of arbitrary large numbers
+
+Note that packages marked `released` in the package list web page are more stable
+than those marked `extra-dev`.  To install `extra-dev` packages,
+first add the `coq-extra-dev` opam repository to your local opam installation
+with this command::
+
+  opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+
+While this is the easiest way to install packages, it is not the only way.
+
+You will then need to find the :term:`logical name` used to refer to the package
+in :cmd:`Require` commands.  There are a couple ways to do this:
+
+- If you installed with opam, use :n:`opam show --list-files coq-bignums | head -n1` -
+  the last component of the filename is the logical name (`Bignums`).
+
+- On Linux, :n:`ls $(coqtop -where)/user-contrib` shows the logical names of all
+  installed user-contributed packages.  You should be able to guess which one you
+  need.
+
+- Use the :cmd:`Print LoadPath` command when running Coq, which shows the mapping
+  from :term:`logical path`\s to directories.  Again, you should be able to guess.
+
+The last two methods work even if you didn't install with opam.  Perhaps in the
+future the package name to logical name mapping will be more readily available.
+
+Once you know the logical name of the package, use it to load compiled
+files from the package with the :cmd:`Require` command.
+
+
+Setup for working on your own projects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The working and master copies of source code for your own projects should
+not be in the directory tree where Coq is installed.  In particular, when you upgrade
+to a new version of Coq, any directories you created in the old version won't
+be copied or moved.
+
+We encourage you to use a source code control system for any non-trivial
+project because it makes it easy to track the history of your changes.
+`git <https://git-scm.com/>`_ is the system most used by Coq projects.
+Typically, each package has its own git repository.
+
+**Single directory projects.**  If your project has a single file (and
+depends only on packages in the Coq installation), put it in any directory
+you like and run Coq from that directory.  If your project has multiple files,
+then you need to compile them in an order that matches their dependencies.
+If B.v depends on A.v, then you should compile A.v before B.v.  You can do this
+with :n:`coqc A.v` followed by :n:`coqc B.v`, but you may find it tedious to manage
+the dependencies.  You may find it easier to treat your project as a
+multi-directory project.
+
+**Multi-directory projects.**  For these, we recommend using `_CoqProject` files
+to define one or more packages for your project.  With that, you can automatically
+generate a makefile that matches the dependencies.
+A :gdef:`package` is a group of files in a top directory and its subdirectories
+that's built and installed as a unit, just like the opam packages mentioned above.
+`_CoqProject` must be in the top directory.
+
+Large projects that have multiple packages (either their own code or dependencies
+on packages that you've not installed as user-contributed packages) need
+additional setup.  The :ref:`COQPATH <COQPATH>` environment variable is good mechanism
+for such projects.
+
+Scripts in `.v` files must be compiled to `.vo` files using `coqc` before they
+can be :cmd:`Require`\d in other files.  Currently, each `.vo` file is created in
+the same directory as its `.v` file.  Furthermore, Coq has to know the :term:`logical
+path` to associate with the directories containing your compiled files.
+
+.. _building_with_coqproject:
+
+Building a package with _CoqProject (overview)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Note: building with `dune` is experimental.  See :ref:`building_dune`.
+
+The `_CoqProject` file contains the information needed to generate a makefile
+for building your project.  Your `_CoqProject` file should be in
+the top directory of your package's source tree.  We recommend using the
+:term:`logical name` of the package as the name of the top directory.  Also,
+avoid putting your code into subdirectories such as "src" unless you want
+that to be part of the :term:`logical path` in Coq.
+
+For example, here's a minimal _CoqProject file for the `MyProject` package
+(the logical name of the package), which has two script files `File1.v`
+and `SubDir/File2.v` whose logical paths
+are `MyProject.File1` and `MyProject.SubDir.File2`.  `_CoqProject` should be
+in the top-level directory of your project.  We recommend naming that directory
+`MyProject`, the same as the logical name::
+
+  -R . MyPackage
+  File1.v
+  SubDir/File2.v
+
+:n:`-R . MyPackage` (see :ref:`here <-Q-option>`) declares that all `.v` files in the directory containing
+`_CoqProject` or any subdirectory are part of the package `MyPackage`.  We recommend
+using a single `-R` with `.` as the :term:`physical path` for simplicity.  It's
+also necessary to (redundantly) list every `.v` file that's part of the package.
+Perhaps this will be simplified in the future.  The order of the entries does not
+matter.
+
+.. I think dotted names are not useful.  For example, this doesn't produce usable
+   .vo files because a.v and b.v are not in an `Abc` subdirectory::
+
+   -R . Michael.Abc
+   a.v
+   b.v
+
+We suggest choosing a logical name that's different from those used for commonly
+used packages, particularly if you plan to make your package available to others.
+Or you can easily do a global replace, if necessary, on the package name
+before it is (widely) used.  After that, a name change may begin to impact
+a large number of users.  Alas, there's currently no easy way to discover what
+:term:`logical name`\s have already been used.  The :cmd:`Print LoadPath` command helps
+a bit; it shows the logical names defined in the Coq process.
+
+Then:
+
+- Generate a makefile from _CoqProject with
+  :n:`coq_makefile -f _CoqProject -o CoqMakefile` and
+
+- Compile your project with :n:`make -f CoqMakefile` as needed.
+
+If you add new files to your project, add them to `_CoqProject` and
+re-run `coq_makefile` and `make`.
+
+.. todo we should use a standard name for the makefile so IDEs can find it.
+   Maybe you should be allowed to include "-o MAKEFILENAME" in the _CoqProject,
+   maybe default to "makefile"; provide a name only if you want to use a wrapper
+   Then mandate that the file be called simply "makefile" so IDEs can find it.
+
+We recommend checking `CoqMakefile` and `CoqMakefile.conf` into your source code
+control system.  Also we recommend updating them with `coq_makefile` when you switch
+to a new version of Coq.
+
+In CoqIDE, you must explicitly save modified buffers before running `make` and
+restart the Coq interpreter in any buffers in which you're running code.
+More details :ref:`here <coqide_make_note>`.
+
+If you want to build an entire multi-package project at once, you're on your own.
+There's currently no tooling to identify the internal dependencies between the packages
+(and thus the order in which to build the packages).
+
+See :ref:`coq_makefile` for a complete description of `coq_makefile` and the
+files it generates.
+
+.. todo: describe -vos option, a way to do quicker builds with some caveats
+
+.. _logical-paths-load-path:
+
+Logical paths and the load path
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Coq commands such as :cmd:`Require` identify files with :term:`logical paths<logical path>` rather
+than file system paths so that scripts don't have to be modified to run on
+different computers.  The :cmd:`Print LoadPath` command displays the :gdef:`load path`,
+which is a list of (logical path, :term:`physical path`) pairs for directories.
+
+For example, you may see::
+
+  Logical Path / Physical path:
+  Bignums /home/jef/coq/lib/coq/user-contrib/Bignums
+  Bignums.BigZ /home/jef/coq/lib/coq/user-contrib/Bignums/BigZ
+  Ltac2 /home/jef/coq/lib/coq/user-contrib/Ltac2
+  Coq /home/jef/coq/lib/coq/theories
+  Coq.Numbers /home/jef/coq/lib/coq/theories/Numbers
+  Coq.Numbers.Natural /home/jef/coq/lib/coq/theories/Numbers/Natural
+  Coq.Numbers.Natural.Binary /home/jef/coq/lib/coq/theories/Numbers/Natural/Binary
+  Coq.Numbers.Integer /home/jef/coq/lib/coq/theories/Numbers/Integer
+  Coq.Arith /home/jef/coq/lib/coq/theories/Arith
+  <> /home/jef/myproj
+
+The components of each pair share suffixes, e.g. `Bignums.BigZ` and `Bignums/BigZ` or
+`Coq.Numbers.Natural` and `Numbers/Natural`.  Physical pathnames should
+always use `/` rather than `\\`, even when running on Windows.
+Packages with a physical path containing `user-contrib` were installed
+with the Coq binaries (e.g. `Ltac2`), with the Coq Platform or with opam (e.g. `Bignums`)
+or perhaps by other means.  Note that, for these entries, the entire logical path
+appears in the directory name.
+Packages that begin with `Coq` were installed with the Coq binaries.  Note
+that the :term:`logical name` `Coq` doesn't appear in the physical path.
+
+The `<>` in the final entry represents an empty logical pathname, which
+permits loading files from the
+associated directory with just the basename of the script file,
+e.g. specify `Foo` to load `Foo.vo`.  This entry corresponds to the
+current directory when Coq was started.  Note that the :cmd:`Cd` command
+doesn't change the associated directory--you would need to restart CoqIDE.
+
+With some exceptions noted below, the :term:`load path` is generated from files loaded
+from the following directories and their subdirectories in the order shown.  The
+associated logical path is determined from the filesystem path, relative to the
+directory, e.g. the file `Foo/Bar/script.vo` becomes `Foo.Bar.script`:
+
+- directories specified with :ref:`-R and -Q command line options <-Q-option>`,
+- the current directory where the Coq process was launched (without
+  including subdirectories),
+- the directories listed in the `COQPATH` environment variable (separated with
+  colons, or, on Windows, with semicolons)
+
+.. not working - the ``coq`` subdirectory for each directory  listed in the ``XDG_DATA_DIRS``
+  environment variable (separated with colons, or, on Windows, with semicolons)
+
+- the ``${XDG_DATA_HOME}/coq/`` directory (see `XDG base directory specification
+  <http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`_).
+  However, CoqIDE relies on the default setting; therefore we recommend not
+  setting this variable.
+- installed packages from the `user-contrib` directory in the Coq installation,
+- the Coq standard library from the `theories` directory in the Coq installation
+  (with `Coq` prepended to the logical path),
+
+.. todo: XDG* with example(s) and suggest best practices for their use
+
+.. todo: document loadpath for ml files
+
+Each directory may contain multiple `.v`/`.vo` files.  For example,
+:n:`Require Import Coq.Numbers.Natural.Binary.NBinary` loads the file
+:n:`NBinary.vo` from the associated directory.  Note that a short name
+is often sufficient in :cmd:`Require` instead of a fully qualified
+name.
+
+In :cmd:`Require` commands referring to the current package (if `_CoqProject`
+uses `-R`) or Coq's standard library can be referenced with a short name without
+a `From` clause provided that the logical path is unambiguous (as if they are
+available through `-R`).  In contrast, :cmd:`Require` commands that load files from other
+locations such as `user-contrib` or `COQPATH` must either use an exact logical path
+or include a `From` clause (as if they are available through `-Q`).  This is done
+to reduce the number of ambiguous logical paths.
+
+The mechanisms for creating logical paths for your multi-directory project are:
+
+- Through command line options passed on the command line to `coqc` and `coqide`,
+  such as :n:`-Q <filesystem path> <logical name>`.  The resulting logical path
+  is the logical name followed by a suffix of the physical path (as for `Coq`
+  above).  Use these options directly if you must.  Command line options are described
+  :ref:`here <command-line-options>`.
+
+- Using the command line options given in the `_CoqProject` file.
+  When you compile a file with `coqc` or step through a file with CoqIDE or
+  the other IDEs, they automatically look for a `_CoqProject` file in a
+  parent directory of the script file, and, if found, they apply the parameters from
+  `_CoqProject`.  Note that the `_CoqProject` file is ignored when Coq loads
+  compiled files from the package; every `.vo` file under the package directory is loaded.
+
+  Coq tools are limited to using only one `_CoqProject` at a time, so multi-package
+  projects need another mechanism.
+
+.. _COQPATH:
+
+- The `COQPATH` environment variable, which contains a list of directories.
+  Each of their subdirectories is a separately-compiled package.  The entire
+  logical path is derived from the directory name (as for `Bignums` above).
+  See :ref:`customization-by-environment-variables`.
+
+  .. todo improve what's written at the hyperlink
+
+- :cmd:`Add LoadPath` adds a new logical path/physical path pair.  We recommend
+  you avoid using :cmd:`Add LoadPath` because embedding physical paths in your scripts
+  makes it harder to install and use them on another computer.
+
+We recommend using `COQPATH`.  For simpler developments, it could have a single
+entry pointing to a directory that contains your various separate projects,
+each in its own subdirectory.  For more advanced
+development work, you may want to set `COQPATH` differently for different projects
+or different versions of a project.  Currently, if you want to change `COQPATH`
+while you're using CoqIDE, you must restart CoqIDE or start another CoqIDE process
+after making the change.  Perhaps in the future CoqIDE will show the current
+setting for and allow changing `COQPATH`.
+
+  .. note ::
+     Packages that have only the directory name ``.`` in ``-R <dirname> <dirpath>``
+     have logical names that map exactly to the directory names.  Including such
+     packages in a directory in `COQPATH` will work fine.
+
+     In contrast, packages that have a directory name other than `.` in `-R`
+     have subdirectories that don't become part of the :term:`logical path`.  If they're
+     installed in the Coq directories, they're fine.  If they're in `COQPATH`,
+     the `_CoqProject` file is essential to getting the correct logical paths within the packages.
+     Since Coq tools currently support only  a single `_CoqProject` file, such packages
+     work correctly only if the IDE is running a script that's part of that package.
+
+     Perhaps Coq will eventually support multiple `_CoqProject` files at once to eliminate
+     this limitation.
+
+Alternatively, if you have a single-package project that depends on external
+packages that were not installed with the Coq binaries or accessible through
+`COQPATH`, you could add `-Q` options to the `_CoqProject` that point to the
+dependencies.  Of course, this makes your `_CoqProject` system dependent.
+Those added options shouldn't appear in published packages.
+
+.. todo I thought @herbelin added code to complain about ambiguous short names
+   I made up some stuff below, need to check it:
+
+If you associate the same logical name with more than one directory, Coq
+uses the last one added (i.e., that appears earlier in :cmd:`Print LoadPath`).
+
+Upgrading to a new version of Coq
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`.vo` files are specific to the version of Coq that compiled them.  When you
+upgrade to a new version of Coq, you must recompile all the projects
+that you want to run in the new version.  This is necessary to assure that
+your proofs still work in the new version.  Once their projects build on the
+new version, most users no longer have a need to run on the old version.
+
+If, however, you want to overlap working on your project on both the old and new
+versions, you'll need to create separate source directories for your project
+for the different Coq versions.  Currently the compiled `.vo` files are kept
+in the same directory as their corresponding `.v` file.
+
+.. todo: Making your packages available with opam
 
 .. _coq_makefile:
 
-Building a Coq project with coq_makefile
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Building a Coq project with coq_makefile (details)
+--------------------------------------------------
+
+The ``coq_makefile`` tool is included with Coq and is based on generating a makefile.
 
 The majority of Coq projects are very similar: a collection of ``.v``
 files and eventually some ``.ml`` ones (a Coq plugin). The main piece of
@@ -82,40 +392,40 @@ A simple example of a ``_CoqProject`` file follows:
     -generate-meta-for-package my-package
 
 Lines in the form ``-arg foo`` pass the argument ``foo`` to ``coqc``: in the
-example, this allows to pass the two-word option ``-w all`` (see
+example, this passes the two-word option ``-w all`` (see
 :ref:`command line options <command-line-options>`).
 
-Note that it is mandatory to specify a ``-R/-Q`` flag for your
-project, so its modules are properly qualified. Omitting it will
-generate object files that are not usable except for expert cases.
+You must specify a ``-R/-Q`` flag for your
+project so its modules are properly qualified. Omitting it will
+generate object files that are unusable except by experts.
 
-Also note that when a project includes a plugin it also needs to include a
+Projects that include plugins (i.e. `.ml` or `.mlg` OCaml source files) must have a
 ``META`` file, as per `findlib <http://projects.camlcity.org/projects/findlib.html>`_.
-If the project includes exactly one plugin, the ``META`` file is
+If the project has only a single plugin, the ``META`` file is
 generated automatically when the option ``-generate-meta-for-package my-package``
-is given. The generated file will make the plugin available
-to the :cmd:`Declare ML Module` as ``my-package.plugin``. If this does not suite
-you, or you project features more than one plugin, then a file named
-``META.my-package`` must be hand written and listed in the ``_CoqProject`` file.
-One can use ``ocamlfind lint META.my-package`` to lint the hand written file.
+is given. The generated file makes the plugin available
+to the :cmd:`Declare ML Module` as ``my-package.plugin``. If the generated file
+doesn't suit your needs or your project has multiple plugins, then create a file named
+``META.my-package`` and list it in the ``_CoqProject`` file.
+You can use ``ocamlfind lint META.my-package`` to lint the hand written file.
 Typically ``my-package`` is the name of the ``OPAM`` package for your project.
 
-The ``-native-compiler`` option given in the ``_CoqProject`` file will override
+The ``-native-compiler`` option given in the ``_CoqProject`` file overrides
 the global one passed at configure time.
 
 CoqIDE, Proof General, VsCoq and Coqtail all
 understand ``_CoqProject`` files and can be used to invoke Coq with the desired options.
 
 The ``coq_makefile`` utility can be used to set up a build infrastructure
-for the Coq project based on makefiles. The recommended way of
-invoking ``coq_makefile`` is the following one:
+for the Coq project based on makefiles. We recommend
+invoking ``coq_makefile`` this way:
 
 ::
 
     coq_makefile -f _CoqProject -o CoqMakefile
 
 
-Such command generates the following files:
+This command generates the following files:
 
 CoqMakefile
   is a makefile for ``GNU Make`` with targets to build the project
@@ -131,7 +441,7 @@ CoqMakefile.conf
 Run ``coq_makefile --help`` for a description of command line options.
 
 The recommended approach is to invoke ``CoqMakefile`` from a standard
-``Makefile`` of the following form:
+``Makefile`` in the following form:
 
 .. example::
 
@@ -210,8 +520,10 @@ since it results in a “packed” plugin: All auxiliary modules (as
 (``Qux_plugin``). This reduces the chances of begin unable to load two
 distinct plugins because of a clash in their auxiliary module names.
 
+.. todo: don't want "Comments" to appear in the TOC, but won't build with "+++++++"
+
 Comments
-++++++++
+~~~~~~~~
 ``#`` outside of double quotes starts a comment that continues to the end of the
 line. Comments are ignored.
 
@@ -252,7 +564,7 @@ But if the ``_CoqProject`` file contains something like:
     theories/Foo/Foo.v
     theories/Bar/Bar.v
 
-the Coq files of the project don’t have a logical path in common and
+the Coq files of the project don’t have a :term:`logical path` in common and
 ``coq_makefile`` doesn’t know where to install the documentation. It will give
 a warning: "No common logical root" and generate a Makefile that installs the
 documentation in some folder beginning with "orphan", in the above example,
@@ -706,8 +1018,12 @@ strings to ``coq_makefile`` using a ``_CoqProject`` file:
 In addition, it is impossible to pass strings containing ``'`` to coqc via
 ``-arg``.
 
+.. _building_dune:
+
 Building a Coq project with Dune
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------
+
+Dune, the standard OCaml build tool, has supported building Coq libraries since version 1.9.
 
 .. note::
 
@@ -800,8 +1116,8 @@ syntax for `Declare ML Module`, see example below:
 
 .. _coqdep:
 
-Computing Module dependencies
------------------------------
+coqdep: Computing Module dependencies
+-------------------------------------
 
 In order to compute module dependencies (to be used by ``make`` or
 ``dune``), Coq provides the ``coqdep`` tool.
@@ -850,6 +1166,32 @@ same semantics as if the native compilation process had been performed through
 + ``-R`` and ``-Q`` are equivalent
 
 + ``-I`` is a no-op that is accepted only for scripting convenience
+
+Using Coq as a library
+------------------------
+
+In previous versions, ``coqmktop`` was used to build custom
+toplevels - for example for better debugging or custom static
+linking. Nowadays, the preferred method is to use ``ocamlfind``.
+
+The most basic custom toplevel is built using:
+
+::
+
+   % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
+                 -package coq.toplevel \
+                 topbin/coqtop_bin.ml -o my_toplevel.native
+
+
+For example, to statically link |Ltac|, you can just do:
+
+::
+
+   % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
+                 -package coq.toplevel,coq.plugins.ltac \
+                 topbin/coqtop_bin.ml -o my_toplevel.native
+
+and similarly for other plugins.
 
 Embedded Coq phrases inside |Latex| documents
 -----------------------------------------------

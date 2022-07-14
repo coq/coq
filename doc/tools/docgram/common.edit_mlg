@@ -240,14 +240,10 @@ fullyqualid: [
 | qualid
 ]
 
-field_ident: [
-| "." ident
-]
-
 qualid: [ | DELETENT ]
 
 qualid: [
-| ident LIST0 field_ident
+| ident LIST0 ("." ident)
 ]
 
 field: [ | DELETENT ]
