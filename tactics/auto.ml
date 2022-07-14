@@ -338,7 +338,7 @@ and trivial_resolve env sigma dbg db_list local_db secvars cl =
   try
     let head =
       try let hdconstr = decompose_app_bound sigma cl in
-            Some hdconstr
+          Some hdconstr
       with Bound -> None
     in
       List.map (tac_of_hint dbg db_list local_db cl)
@@ -387,7 +387,7 @@ let possible_resolve env sigma dbg db_list local_db secvars cl =
   try
     let head =
       try let hdconstr = decompose_app_bound sigma cl in
-            Some hdconstr
+          Some hdconstr
       with Bound -> None
     in
       List.map (tac_of_hint dbg db_list local_db cl)
@@ -401,59 +401,57 @@ let intro_register dbg kont db =
   Tacticals.tclTHEN (dbg_intro dbg)
     (Proofview.Goal.enter begin fun gl ->
       let extend_local_db decl db =
-        let env = Tacmach.pf_env gl in
-        let sigma = Tacmach.project gl in
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
         push_resolve_hyp env sigma (Context.Named.Declaration.get_id decl) db
       in
       Tacticals.onLastDecl (fun decl -> kont (extend_local_db decl db))
     end)
 
 (* n is the max depth of search *)
-(* concls contains a list of seen Conclusions for the current Hypotheses *)
 (* local_db contains the local Hypotheses *)
 
 let search d n db_list local_db lems =
+  (* concls contains a list of seen Conclusions for the current Hypotheses *)
+  (* secvars contains an optional list of relevant Section Variables *)
+  (* precondition: there is at most one goal in focus *)
   let rec search d n concls secvars local_db =
-    (* spiwack: the test of [n] to 0 must be done independently in
-       each goal. Hence the [tclEXTEND] *)
-    Proofview.tclEXTEND [] begin
-      if Int.equal n 0 then
-        let info = Exninfo.reify () in
-        Tacticals.tclZEROMSG ~info (str"BOUND 2")
-      else
-        (Tacticals.tclORELSE0 (dbg_assumption d)
-          (Tacticals.tclORELSE0 (intro_register d (search d n [] None) local_db)
-             ( Proofview.Goal.enter begin fun gl ->
-               let concl = Proofview.Goal.concl gl in
-               let sigma = Proofview.Goal.sigma gl in
-               let env = Proofview.Goal.env gl in
-               let hyps = Proofview.Goal.hyps gl in
-               let secvars =
-                 match secvars with
-                 | None -> secvars_of_hyps hyps
-                 | Some secvars -> secvars
-               in
-               let d' = incr_dbg d in
-               Tacticals.tclFIRST
-                 (List.map
-                    (fun ntac -> Tacticals.tclTHEN ntac
-                       (Proofview.Goal.enter begin fun gl ->
-                       let concl' = Proofview.Goal.concl gl in
-                       let sigma' = Proofview.Goal.sigma gl in
-                       let env' = Proofview.Goal.env gl in
-                       let hyps' = Proofview.Goal.hyps gl in
-                       let (concls, secvars, local_db) =
-                         if hyps' == hyps then (concl::concls, Some secvars, local_db)
-                         (* update local_db if local hypotheses have changed *)
-                         else ([], None, make_local_hint_db env' sigma' false lems)
-                       in
-                       (* abort branch if the conclusion was seen previously *)
-                       if List.mem concl' concls then Tacticals.tclZEROMSG (Pp.str "REPEATING")
-                       else search d' (n-1) concls secvars local_db
-                       end))
-                    (possible_resolve env sigma d db_list local_db secvars concl))
-             end)))
-    end []
+    if Int.equal n 0 then
+      let info = Exninfo.reify () in
+      Tacticals.tclZEROMSG ~info (str"BOUND 2")
+    else
+      Tacticals.tclORELSE0 (dbg_assumption d) @@
+        Tacticals.tclORELSE0 (intro_register d (search d n [] None) local_db) @@
+          Proofview.Goal.enter begin fun gl ->
+          let concl = Proofview.Goal.concl gl in
+          let sigma = Proofview.Goal.sigma gl in
+          let env = Proofview.Goal.env gl in
+          let hyps = Proofview.Goal.hyps gl in
+          let secvars =
+            match secvars with
+            | None -> secvars_of_hyps hyps
+            | Some secvars -> secvars
+          in
+          let d' = incr_dbg d in
+          Tacticals.tclFIRST @@
+            List.map
+              (fun ntac -> Tacticals.tclTHEN ntac
+                (Proofview.Goal.enter begin fun gl ->
+                 let concl' = Proofview.Goal.concl gl in
+                 let sigma' = Proofview.Goal.sigma gl in
+                 let env' = Proofview.Goal.env gl in
+                 let hyps' = Proofview.Goal.hyps gl in
+                 let (concls, secvars, local_db) =
+                   if hyps' == hyps then (concl::concls, Some secvars, local_db)
+                   (* update local_db if local hypotheses have changed *)
+                   else ([], None, make_local_hint_db env' sigma' false lems)
+                 in
+                 (* abort branch if the conclusion was seen previously *)
+                 if List.mem concl' concls then Tacticals.tclZEROMSG (str "repeating conclusion")
+                 else search d' (n-1) concls secvars local_db
+                 end))
+              (possible_resolve env sigma d db_list local_db secvars concl)
+           end
   in
   search d n [] None local_db
 
