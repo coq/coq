@@ -413,7 +413,7 @@ let intro_register dbg kont db =
 (* local_db contains the local Hypotheses *)
 
 let search d n db_list local_db lems =
-  let rec search d n concls local_db =
+  let rec search d n concls secvars local_db =
     (* spiwack: the test of [n] to 0 must be done independently in
        each goal. Hence the [tclEXTEND] *)
     Proofview.tclEXTEND [] begin
@@ -422,13 +422,17 @@ let search d n db_list local_db lems =
         Tacticals.tclZEROMSG ~info (str"BOUND 2")
       else
         (Tacticals.tclORELSE0 (dbg_assumption d)
-          (Tacticals.tclORELSE0 (intro_register d (search d n []) local_db)
+          (Tacticals.tclORELSE0 (intro_register d (search d n [] None) local_db)
              ( Proofview.Goal.enter begin fun gl ->
                let concl = Proofview.Goal.concl gl in
                let sigma = Proofview.Goal.sigma gl in
                let env = Proofview.Goal.env gl in
                let hyps = Proofview.Goal.hyps gl in
-               let secvars = compute_secvars gl in
+               let secvars =
+                 match secvars with
+                 | None -> secvars_of_hyps hyps
+                 | Some secvars -> secvars
+               in
                let d' = incr_dbg d in
                Tacticals.tclFIRST
                  (List.map
@@ -438,20 +442,20 @@ let search d n db_list local_db lems =
                        let sigma' = Proofview.Goal.sigma gl in
                        let env' = Proofview.Goal.env gl in
                        let hyps' = Proofview.Goal.hyps gl in
-                       let (concls, local_db) =
-                         if hyps' == hyps then (concl::concls, local_db)
+                       let (concls, secvars, local_db) =
+                         if hyps' == hyps then (concl::concls, Some secvars, local_db)
                          (* update local_db if local hypotheses have changed *)
-                         else ([], make_local_hint_db env' sigma' false lems)
+                         else ([], None, make_local_hint_db env' sigma' false lems)
                        in
                        (* abort branch if the conclusion was seen previously *)
                        if List.mem concl' concls then Tacticals.tclZEROMSG (Pp.str "REPEATING")
-                       else search d' (n-1) concls local_db
+                       else search d' (n-1) concls secvars local_db
                        end))
                     (possible_resolve env sigma d db_list local_db secvars concl))
              end)))
     end []
   in
-  search d n [] local_db
+  search d n [] None local_db
 
 let default_search_depth = ref 5
 
