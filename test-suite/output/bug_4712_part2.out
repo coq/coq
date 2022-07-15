@@ -1,0 +1,8 @@
+File "./output/bug_4712_part2.v", line 6, characters 21-28:
+The command has indeed failed with message:
+The reference foobarA was not found in the current environment.
+File "./output/bug_4712_part2.v", line 8, characters 21-22:
+Error: Syntax Error: Lexer: Undefined token
+
+
+coqc exited with code 1
