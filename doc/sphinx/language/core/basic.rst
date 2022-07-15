@@ -189,10 +189,10 @@ Other tokens
   tokens.
 
   When multiple tokens match the beginning of a sequence of characters,
-  the longest matching token not cutting the sequence of characters in the middle of a subsequence forming a valid identifier is used.
+  the longest matching token not cutting a subsequence of contiguous letters in the middle is used.
   Occasionally you may need to insert spaces to separate tokens.  For example,
   if ``~`` and ``~~`` are both defined as tokens, the inputs ``~ ~`` and
-  ``~~`` generate different tokens, whereas if `~~` is not defined, then the
+  ``~~`` generate different tokens, whereas if ``~~`` is not defined, then the
   two inputs are equivalent. Also, if ``~`` and ``~_h`` are both
   defined as tokens, the input ``~_ho`` is interpreted as ``~ _ho``
   rather than ``~_h o`` so as not to cut the identifier-like

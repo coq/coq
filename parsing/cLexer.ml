@@ -219,15 +219,10 @@ let status_of_utf8 = function
 let lookup_utf8 loc cs =
   status_of_utf8 (lookup_utf8_char loc 0 cs)
 
-let is_ident_head l =
+let is_letter l =
   match status_of_utf8 l with
   | EmptyStream -> false
-  | Utf8Token (st,_) -> Unicode.is_valid_ident_initial st
-
-let is_ident_trailing l =
-  match status_of_utf8 l with
-  | EmptyStream -> false
-  | Utf8Token (st,_) -> Unicode.is_valid_ident_trailing st
+  | Utf8Token (st,_) -> Unicode.is_letter st
 
 let unlocated f x =
   let dummy_loc = Loc.(initial ToplevelInput) in
@@ -497,22 +492,22 @@ let update_longest_valid_token last nj tt cs =
 
 (* try to progress by peeking the next utf-8 lexeme *)
 (* and retain the longest valid special token obtained *)
-let rec progress_further loc last nj in_ident_part tt cs =
+let rec progress_further loc last nj last_is_letter tt cs =
   match lookup_utf8_char loc nj cs with
   | [] -> snd (update_longest_valid_token last nj tt cs)
-  | l -> progress_utf8 loc last nj in_ident_part tt cs l
+  | l -> progress_utf8 loc last nj last_is_letter tt cs l
 
 (* under the same assumptions as [update_longest_valid_token], *)
 (* read the [n] bytes of the current utf-8 lexeme whose first byte is [c] *)
-and progress_utf8 loc last nj in_ident_part tt cs l =
-  let in_ident_part' = if in_ident_part then is_ident_trailing l else is_ident_head l in
+and progress_utf8 loc last nj last_is_letter tt cs l =
+  let is_letter' = is_letter l in
   (* compute longest match before considering utf8 block [l] *)
   (* not allowing update if in the middle of an ident part *)
-  let nj, last = if in_ident_part && in_ident_part' then nj, last else update_longest_valid_token last nj tt cs in
+  let nj, last = if last_is_letter && is_letter' then nj, last else update_longest_valid_token last nj tt cs in
   try
     (* descend in tree according to current utf8 block [l] *)
     let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
-    progress_further loc last (nj + List.length l) in_ident_part' tt cs
+    progress_further loc last (nj + List.length l) is_letter' tt cs
   with Not_found ->
     last
 
