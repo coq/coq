@@ -1,2 +1,3 @@
-(cram
- (deps %{bin:coqc} %{bin:coqdep} %{bin:coq_makefile}))
+;see https://github.com/coq/coq/pull/16308#issuecomment-1186045010
+;(cram
+; (deps %{bin:coqc} %{bin:coqdep} %{bin:coq_makefile}))

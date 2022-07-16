@@ -1,7 +1,7 @@
 (lang dune 2.9)
 (name coq)
 (using coq 0.3)
-(cram enable)
+; (cram enable) see https://github.com/coq/coq/pull/16308#issuecomment-1186045010
 
 (formatting
  (enabled_for ocaml))
