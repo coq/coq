@@ -256,11 +256,21 @@ let generate_conf_files oc
   { v_files; mli_files; mlg_files; ml_files; mllib_files; mlpack_files; meta_file }
 =
   let module S = String in
-  (* shell_echo is to expand wildcards *)
-  let shell_echo s = if s = "" then s else Printf.sprintf "$(shell echo %s)" s in
+  let wild_re = Str.regexp {|[\*\?\[]|} in
+  let wildcards l = if l = [] then "" else
+    Printf.sprintf " $(wildcard %s)" (S.concat " " l)
+  in
+  let rec split paths wild nonwild =
+    match paths with
+    | path :: tl ->
+      (try ignore(Str.search_forward wild_re path 0); split tl (path :: wild) nonwild
+      with Not_found -> split tl wild (path :: nonwild))
+    | [] -> List.rev wild, List.rev nonwild
+  in
   let fout varname values =
-    let rhs = map_sourced_list quote values in
-    fprintf oc "COQMF_%s = %s\n" varname (shell_echo (S.concat " " rhs))
+    let paths = map_sourced_list quote values in
+    let (wild, nonwild) = split paths [] [] in
+    fprintf oc "COQMF_%s = %s%s\n" varname (S.concat " " nonwild) (wildcards wild)
   in
   section oc "Project files.";
   fout "VFILES" v_files;
@@ -271,8 +281,9 @@ let generate_conf_files oc
   fout "MLLIBFILES" mllib_files;
   fprintf oc "COQMF_METAFILE = %s\n"  (match meta_file with Present x -> x | _ -> "");
   let cmdline_vfiles = filter_cmdline v_files in
-  fprintf oc "COQMF_CMDLINE_VFILES = %s\n"
-    (shell_echo (S.concat " " (List.map quote cmdline_vfiles)))
+  let (wild, nonwild) = split cmdline_vfiles [] [] in
+  fprintf oc "COQMF_CMDLINE_VFILES = %s%s\n" (S.concat " " (List.map quote nonwild))
+    (wildcards (List.map quote wild))
 
 let rec all_start_with prefix = function
   | [] -> true

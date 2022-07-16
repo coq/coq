@@ -321,18 +321,28 @@ let sort st =
   List.iter (fun (name, _) -> loop name) !vAccu
 
 let expand_wildcards paths =
+  let wild_re = Str.regexp {|[\*\?\[]|} in
+  let rec split paths wild nonwild =
+    match paths with
+    | path :: tl ->
+      (try ignore(Str.search_forward wild_re path 0); split tl (path :: wild) nonwild
+      with Not_found -> split tl wild (path :: nonwild))
+    | [] -> List.rev wild, List.rev nonwild
+  in
   let open CoqProject_file in
   let paths = List.map (fun {thing} -> thing) paths in
+  let (wild, nonwild) = split paths [] [] in
   let temp = Filename.temp_file "coqdep" "wild" in
-  let cmd = Printf.sprintf "echo %s >%s" (String.concat " " paths) temp in
+  let cmd = Printf.sprintf "echo %s >%s" (String.concat " " wild) temp in
   let rv = Sys.command cmd in
   if rv <> 0 then
-    raise (Sys_error (Printf.sprintf "Can't expand wildcards; return code is %d" rv));
+    raise (Sys_error (Printf.sprintf
+      "Can't expand wildcards (len = %d); return code is %d" (String.length cmd) rv));
   let fin = open_in temp in
   let expanded = input_line fin in
   close_in fin;
   Sys.remove temp;
-  String.split_on_char ' ' expanded
+  nonwild @ (String.split_on_char ' ' expanded)
 
 let treat_coqproject st f =
   let open CoqProject_file in
