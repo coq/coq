@@ -2429,7 +2429,11 @@ let observe ~doc id =
 let finish ~doc =
   let head = VCS.current_branch () in
   let doc = observe ~doc (VCS.get_branch_pos head) in
-  VCS.print (); doc
+  let tip = VCS.cur_tip () in
+  if not (State.is_cached ~cache:true tip) then
+    CErrors.anomaly Pp.(str "Stm.join: tip not cached");
+  VCS.print ();
+  doc, State.get_cached tip
 
 let wait ~doc =
   let doc = observe ~doc (VCS.get_branch_pos VCS.Branch.master) in
@@ -2469,8 +2473,11 @@ let join ~doc =
   stm_prerr_endline (fun () -> "Checking no error states");
   ignore(check_no_err_states ~doc (Stateid.Set.singleton Stateid.initial)
     (VCS.get_branch_pos VCS.Branch.master));
+  let tip = VCS.cur_tip () in
+  if not (State.is_cached ~cache:true tip) then
+    CErrors.anomaly Pp.(str "Stm.join: tip not cached");
   VCS.print ();
-  doc
+  doc, State.get_cached tip
 
 type tasks = Opaqueproof.opaque_handle option Slaves.tasks
 let check_task name tasks i =
@@ -2534,7 +2541,7 @@ let handle_failure (e, info) vcs =
   Exninfo.iraise (e, info)
 
 let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
-  let doc = finish ~doc in
+  let doc, _ = finish ~doc in
   if List.length (VCS.branches ()) > 1 then
     CErrors.user_err (str"Cannot dump a vio with open proofs.");
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,

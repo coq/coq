@@ -8,5 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** [compile_file opts] compile file specified in [opts] *)
-val compile_file : Coqargs.t -> Stm.AsyncOpts.stm_opt -> Coqcargs.t -> Coqargs.injection_command list -> unit
+(** [do_vio opts] process [.vio] files in [opts] *)
+val do_vio : Coqargs.t -> Coqcargs.t -> Coqargs.injection_command list -> unit

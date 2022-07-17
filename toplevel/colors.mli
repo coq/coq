@@ -8,5 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** [compile_file opts] compile file specified in [opts] *)
-val compile_file : Coqargs.t -> Stm.AsyncOpts.stm_opt -> Coqcargs.t -> Coqargs.injection_command list -> unit
+(** Initializer color for output *)
+
+type color = [`ON | `AUTO | `EMACS | `OFF]
+
+val init_color : color -> unit
+val parse_extra_colors : string list -> color * string list
+val print_style_tags : color -> unit

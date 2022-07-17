@@ -28,14 +28,6 @@ type ('a,'b) custom_toplevel =
    [custom.run]. *)
 val start_coq : ('a * Stm.AsyncOpts.stm_opt,'b) custom_toplevel -> unit
 
-(** Initializer color for output *)
-
-type color = [`ON | `AUTO | `EMACS | `OFF]
-
-val init_color : color -> unit
-val parse_extra_colors : string list -> color * string list
-val print_style_tags : color -> unit
-
 (** Prepare state for interactive loop *)
 
 val init_toploop : Coqargs.t -> Stm.AsyncOpts.stm_opt -> Coqargs.injection_command list -> Vernac.State.t
@@ -47,7 +39,7 @@ type run_mode = Interactive | Batch | Query of query
 
 type toplevel_options = {
   run_mode : run_mode;
-  color_mode : color;
+  color_mode : Colors.color;
 }
 
 val coqtop_toplevel : (toplevel_options * Stm.AsyncOpts.stm_opt,Vernac.State.t) custom_toplevel

@@ -81,57 +81,6 @@ let start_coq custom =
 (** ****************************************)
 (** Specific support for coqtop executable *)
 
-type color = [`ON | `AUTO | `EMACS | `OFF]
-
-let init_color opts =
-  let has_color = match opts with
-  | `OFF -> false
-  | `EMACS -> false
-  | `ON -> true
-  | `AUTO ->
-    Terminal.has_style Unix.stdout &&
-    Terminal.has_style Unix.stderr &&
-    (* emacs compilation buffer does not support colors by default,
-       its TERM variable is set to "dumb". *)
-    try Sys.getenv "TERM" <> "dumb" with Not_found -> false
-  in
-  let term_color =
-    if has_color then begin
-      let colors = try Some (Sys.getenv "COQ_COLORS") with Not_found -> None in
-      match colors with
-      | None -> Topfmt.default_styles (); true        (* Default colors *)
-      | Some "" -> false                              (* No color output *)
-      | Some s -> Topfmt.parse_color_config s; true   (* Overwrite all colors *)
-    end
-    else begin
-      Topfmt.default_styles (); false                 (* textual markers, no color *)
-    end
-  in
-  if opts = `EMACS then
-    Topfmt.set_emacs_print_strings ()
-  else if not term_color then begin
-      Proof_diffs.write_color_enabled term_color;
-    if Proof_diffs.show_diffs () then
-      (prerr_endline "Error: -diffs requires enabling -color"; exit 1)
-  end;
-  Topfmt.init_terminal_output ~color:term_color
-
-let print_style_tags opts =
-  let () = init_color opts in
-  let tags = Topfmt.dump_tags () in
-  let iter (t, st) =
-    let opt = Terminal.eval st ^ t ^ Terminal.reset ^ "\n" in
-    print_string opt
-  in
-  let make (t, st) =
-    let tags = List.map string_of_int (Terminal.repr st) in
-    (t ^ "=" ^ String.concat ";" tags)
-  in
-  let repr = List.map make tags in
-  let () = Printf.printf "COQ_COLORS=\"%s\"\n" (String.concat ":" repr) in
-  let () = List.iter iter tags in
-  flush_all ()
-
 let ltac_debug_answer = let open DebugHook.Answer in function
     | Prompt prompt ->
       (* No newline *)
@@ -160,7 +109,7 @@ type run_mode = Interactive | Batch | Query of query
 
 type toplevel_options = {
   run_mode : run_mode;
-  color_mode : color;
+  color_mode : Colors.color;
 }
 
 let init_document opts stm_options injections =
@@ -182,12 +131,12 @@ let init_document opts stm_options injections =
 
 let init_toploop opts stm_opts injections =
   let state = init_document opts stm_opts injections in
-  let state = Ccompile.load_init_vernaculars opts ~state in
+  let state = Load.load_init_vernaculars opts ~state in
   state
 
 let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
   if run_mode != Interactive then Flags.quiet := true;
-  init_color (if opts.config.print_emacs then `EMACS else color_mode);
+  Colors.init_color (if opts.config.print_emacs then `EMACS else color_mode);
   Flags.if_verbose (print_header ~boot:opts.pre.boot) ();
   DebugHook.Intf.(set
     { read_cmd = ltac_debug_parse
@@ -195,22 +144,6 @@ let coqtop_init ({ run_mode; color_mode }, async_opts) injections ~opts =
     ; isTerminal = true
     });
   init_toploop opts async_opts injections
-
-let set_color = function
-  | "yes" | "on" -> `ON
-  | "no" | "off" -> `OFF
-  | "auto" ->`AUTO
-  | _ ->
-    error_wrong_arg ("Error: on/off/auto expected after option color")
-
-let parse_extra_colors extras =
-  let rec parse_extra color_mode = function
-  | "-color" :: next :: rest -> parse_extra (set_color next) rest
-  | "-list-tags" :: rest -> parse_extra color_mode rest
-  | x :: rest ->
-    let color_mode, rest = parse_extra color_mode rest in color_mode, x :: rest
-  | [] -> color_mode, [] in
-  parse_extra `AUTO extras
 
 let coqtop_parse_extra extras =
   let rec parse_extra run_mode  = function
@@ -220,7 +153,7 @@ let coqtop_parse_extra extras =
     let run_mode, rest = parse_extra run_mode rest in run_mode, x :: rest
   | [] -> run_mode, [] in
   let run_mode, extras = parse_extra Interactive extras in
-  let color_mode, extras = parse_extra_colors extras in
+  let color_mode, extras = Colors.parse_extra_colors extras in
   let async_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
   ({ run_mode; color_mode}, async_opts), extras
 
@@ -241,7 +174,7 @@ let get_native_name s =
 let coqtop_run ({ run_mode; color_mode },_) ~opts state =
   match run_mode with
   | Interactive -> Coqloop.loop ~opts ~state;
-  | Query PrintTags -> print_style_tags color_mode; exit 0
+  | Query PrintTags -> Colors.print_style_tags color_mode; exit 0
   | Query (PrintModUid sl) ->
       let s = String.concat " " (List.map get_native_name sl) in
       print_endline s;
