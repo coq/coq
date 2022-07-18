@@ -341,7 +341,7 @@ let intro_register dbg kont db =
         Tacticals.onLastDecl (fun decl -> kont (Some (extend_local_db decl db)))
       end
 
-let rec trivial_fail_db ?(evars=true) dbg db_list lems local_db =
+let rec trivial_fail_db ?(with_evars=true) dbg db_list lems local_db =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
@@ -354,29 +354,29 @@ let rec trivial_fail_db ?(evars=true) dbg db_list lems local_db =
     let secvars = compute_secvars gl in
     let head = head_constr sigma concl in
     let tacs =
-      try List.map (fun h -> Tacticals.tclCOMPLETE (tac_of_hint ~evars dbg db_list local_db concl h))
+      try List.map (fun h -> Tacticals.tclCOMPLETE (tac_of_hint ~with_evars dbg db_list local_db concl h))
         (priority @@ List.map_append (hintmap_of env sigma secvars head concl) (local_db::db_list))
       with Not_found -> []
     in
     Tacticals.tclFIRST @@
-      ((if evars then dbg_eassumption else dbg_assumption) dbg)::
-        (intro_register dbg (trivial_fail_db ~evars dbg db_list lems) (Some local_db))::
+      ((if with_evars then dbg_eassumption else dbg_assumption) dbg)::
+        (intro_register dbg (trivial_fail_db ~with_evars dbg db_list lems) (Some local_db))::
           tacs
   end
 
-and tac_of_hint ?(evars=true) dbg db_list local_db concl h =
+and tac_of_hint ?(with_evars=true) dbg db_list local_db concl h =
   let tactic = function
     | Res_pf h -> unify_resolve_nodelta h
     | ERes_pf _ -> Proofview.Goal.enter (fun gl ->
         let info = Exninfo.reify () in
         Tacticals.tclZEROMSG ~info (str "eres_pf"))
-    | Give_exact h -> (if evars then e_exact else exact) h
+    | Give_exact h -> (if with_evars then e_exact else exact) h
     | Res_pf_THEN_trivial_fail h ->
       Tacticals.tclTHEN
         (unify_resolve_nodelta h)
         (* With "(debug) trivial", we shouldn't end here, and
            with "debug auto" we don't display the details of inner trivial *)
-        (trivial_fail_db ~evars (no_dbg dbg) db_list [] (Some local_db))
+        (trivial_fail_db ~with_evars (no_dbg dbg) db_list [] (Some local_db))
     | Unfold_nth c ->
       Proofview.Goal.enter begin fun gl ->
        if exists_evaluable_reference (Tacmach.pf_env gl) c then
@@ -408,7 +408,7 @@ let gen_trivial ?(debug=Off) lems dbnames =
       | Some dbnames -> make_db_list dbnames
       | None -> current_pure_db ()
     in
-    tclTRY_dbg d (trivial_fail_db ~evars:false d db_list lems None)
+    tclTRY_dbg d (trivial_fail_db ~with_evars:true d db_list lems None)
   end
 
 let trivial ?(debug=Off) lems dbnames = gen_trivial ~debug lems (Some dbnames)
@@ -452,7 +452,7 @@ let search d n db_list lems =
             with Not_found -> []
           in
           first_delayed_map begin fun h ->
-            let tac = tac_of_hint ~evars:true d db_list local_db concl h in
+            let tac = tac_of_hint ~with_evars:true d db_list local_db concl h in
             Tacticals.tclTHEN tac @@
               Proofview.Goal.enter begin fun gl ->
                 let hyps' = Proofview.Goal.hyps gl in
