@@ -332,17 +332,27 @@ let expand_wildcards paths =
   let open CoqProject_file in
   let paths = List.map (fun {thing} -> thing) paths in
   let (wild, nonwild) = split paths [] [] in
+  let temp_make = Filename.temp_file "coqdep" ".make" in
+  let fout = open_out temp_make in
+  let makefile = Printf.sprintf "X = $(wildcard %s)\n\n\
+                          all:\n\
+                          \t@for name in $X; do \\\n\
+                          \t\techo $${name}; \\\n\
+                          \tdone\n" (String.concat " " wild) in
+  Printf.fprintf fout "%s" makefile;
+  close_out fout;
   let temp = Filename.temp_file "coqdep" "wild" in
-  let cmd = Printf.sprintf "echo %s >%s" (String.concat " " wild) temp in
+  let cmd = Printf.sprintf "make --no-print-directory -f %s >%s" temp_make temp in
   let rv = Sys.command cmd in
   if rv <> 0 then
-    raise (Sys_error (Printf.sprintf
-      "Can't expand wildcards (len = %d); return code is %d" (String.length cmd) rv));
+    raise (Sys_error (Printf.sprintf "Can't expand wildcards; return code is %d" rv));
   let fin = open_in temp in
-  let expanded = input_line fin in
+  let rec read rv = try read ((input_line fin) :: rv) with End_of_file -> rv in
+  let elist = List.rev (read []) in
   close_in fin;
+  Sys.remove temp_make;
   Sys.remove temp;
-  nonwild @ (String.split_on_char ' ' expanded)
+  nonwild @ elist
 
 let treat_coqproject st f =
   let open CoqProject_file in
