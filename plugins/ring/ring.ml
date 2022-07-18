@@ -17,7 +17,6 @@ open Constr
 open EConstr
 open Vars
 open CClosure
-open Environ
 open Glob_term
 open Locus
 open Tacexpr
@@ -26,7 +25,6 @@ open Mod_subst
 open Tacinterp
 open Libobject
 open Printer
-open Declare
 open Ring_ast
 open Proofview.Notations
 
@@ -142,15 +140,12 @@ let ic_unsafe env sigma c = (*FIXME remove *)
   fst (Constrintern.interp_constr env sigma c)
 
 let decl_constant name univs c =
-  let open Constr in
   let vars = CVars.universes_of_constr c in
   let univs = UState.restrict_universe_context ~lbound:(Global.universes_lbound ()) univs vars in
   let () = DeclareUctx.declare_universe_context ~poly:false univs in
-  let types = (Typeops.infer (Global.env ()) c).uj_type in
-  let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
-  mkConst(declare_constant ~name
-            ~kind:Decls.(IsProof Lemma)
-            (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c)))
+  (* XXX Not sure we really need to typecheck here *)
+  let _ : Environ.unsafe_judgment = Typeops.infer (Global.env ()) c in
+  c
 
 let decl_constant na suff univs c =
   let na = Namegen.next_global_ident_away (Nameops.add_suffix na suff) Id.Set.empty in
