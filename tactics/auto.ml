@@ -411,7 +411,7 @@ let intro_register dbg kont db =
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
-let search d n db_list local_db =
+let search d n db_list local_db lems =
   let rec search d n local_db =
     (* spiwack: the test of [n] to 0 must be done independently in
        each goal. Hence the [tclEXTEND] *)
@@ -423,14 +423,26 @@ let search d n db_list local_db =
         Tacticals.tclORELSE0 (dbg_assumption d)
           (Tacticals.tclORELSE0 (intro_register d (search d n) local_db)
              ( Proofview.Goal.enter begin fun gl ->
-               let concl = Tacmach.pf_concl gl in
-               let sigma = Tacmach.project gl in
+               let concl = Proofview.Goal.concl gl in
+               let sigma = Proofview.Goal.sigma gl in
                let env = Proofview.Goal.env gl in
+               let hyps = Proofview.Goal.hyps gl in
                let secvars = compute_secvars gl in
                let d' = incr_dbg d in
                Tacticals.tclFIRST
                  (List.map
-                    (fun ntac -> Tacticals.tclTHEN ntac (search d' (n-1) local_db))
+                    (fun ntac -> Tacticals.tclTHEN ntac
+                       (Proofview.Goal.enter begin fun gl ->
+                       let sigma = Proofview.Goal.sigma gl in
+                       let env = Proofview.Goal.env gl in
+                       let hyps' = Proofview.Goal.hyps gl in
+                       let local_db =
+                         if hyps' == hyps then local_db
+                         (* update local_db if local hypotheses have changed *)
+                         else make_local_hint_db env sigma false lems
+                       in
+                       search d' (n-1) local_db
+                       end))
                     (possible_resolve env sigma d db_list local_db secvars concl))
              end))
     end []
@@ -439,42 +451,28 @@ let search d n db_list local_db =
 
 let default_search_depth = ref 5
 
-let delta_auto debug n lems dbnames =
+let gen_auto ?(debug=Off) n lems dbnames =
   Hints.wrap_hint_warning @@
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.project gl in
-  let db_list = make_db_list dbnames in
-  let d = mk_auto_dbg debug in
-  let hints = make_local_hint_db env sigma false lems in
-  tclTRY_dbg d
-    (search d n db_list hints)
+    Proofview.Goal.enter begin fun gl ->
+    let n = match n with None -> !default_search_depth | Some n -> n in
+    let db_list =
+      match dbnames with
+      | Some dbnames -> make_db_list dbnames
+      | None -> current_pure_db ()
+    in
+    let d = mk_auto_dbg debug in
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let hints = make_local_hint_db env sigma false lems in
+    tclTRY_dbg d (search d n db_list hints lems)
   end
 
-let auto ?(debug=Off) n = delta_auto debug n
+let auto ?(debug=Off) n lems dbnames = gen_auto ~debug (Some n) lems (Some dbnames)
 
 let default_auto = auto !default_search_depth [] []
 
-let delta_full_auto ?(debug=Off) n lems =
-  Hints.wrap_hint_warning @@
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.project gl in
-  let db_list = current_pure_db () in
-  let d = mk_auto_dbg debug in
-  let hints = make_local_hint_db env sigma false lems in
-  tclTRY_dbg d
-    (search d n db_list hints)
-  end
-
-let full_auto ?(debug=Off) n = delta_full_auto ~debug n
+let full_auto ?(debug=Off) n lems = gen_auto ~debug (Some n) lems None
 
 let default_full_auto = full_auto !default_search_depth []
-
-let gen_auto ?(debug=Off) n lems dbnames =
-  let n = match n with None -> !default_search_depth | Some n -> n in
-  match dbnames with
-  | None -> full_auto ~debug n lems
-  | Some l -> auto ~debug n lems l
 
 let h_auto ?(debug=Off) n lems l = gen_auto ~debug n lems l
