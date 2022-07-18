@@ -416,6 +416,8 @@ val build_by_tactic
   -> unit Proofview.tactic
   -> Constr.constr * Constr.types option * (UState.named_universes_entry) * bool * UState.t
 
+val export_side_effects : Evd.side_effects -> unit
+
 (** {2 Program mode API} *)
 
 (** Coq's Program mode support. This mode extends declarations of
