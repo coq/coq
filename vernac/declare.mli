@@ -416,12 +416,6 @@ val build_by_tactic
   -> unit Proofview.tactic
   -> Constr.constr * Constr.types option * (UState.named_universes_entry) * bool * UState.t
 
-(** [export_side_effects eff] makes the side effects [eff] global. This
-    usually happens at the end of a proof (during Qed or Defined), but
-    one may need to declare them by hand, for example because the
-    tactic was run as part of a command *)
-val export_side_effects : Evd.side_effects -> unit
-
 (** {2 Program mode API} *)
 
 (** Coq's Program mode support. This mode extends declarations of
@@ -576,5 +570,11 @@ module Internal : sig
   end
 
   val objVariable : Id.t Libobject.Dyn.tag
+
+  (** [export_side_effects eff] makes the side effects [eff] global. This
+    usually happens at the end of a proof (during Qed or Defined), but
+    one may need to declare them by hand, for example because the
+    tactic was run as part of a command *)
+  val export_side_effects : Evd.side_effects -> unit
 
 end
