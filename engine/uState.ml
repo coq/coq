@@ -166,6 +166,11 @@ let of_names (ubind,revubind) =
 let universe_of_name uctx s =
   UNameMap.find s (fst uctx.names)
 
+let name_level level id uctx =
+  assert(not(Names.Id.Map.mem id (fst uctx.names)));
+  { uctx with names = (Names.Id.Map.add id level (fst uctx.names), Univ.Level.Map.add level { uname = Some id; uloc = None } (snd uctx.names)) }
+
+
 let universe_binders uctx =
   let named, _ = uctx.names in
   named
@@ -571,6 +576,11 @@ let restrict uctx vars =
   let vars = Names.Id.Map.fold (fun na l vars -> Level.Set.add l vars)
       (fst uctx.names) vars
   in
+  let uctx' = restrict_universe_context ~lbound:uctx.universes_lbound uctx.local vars in
+  { uctx with local = uctx' }
+
+let restrict_even_binders uctx vars =
+  let vars = Level.Set.union vars uctx.seff_univs in
   let uctx' = restrict_universe_context ~lbound:uctx.universes_lbound uctx.local vars in
   { uctx with local = uctx' }
 
