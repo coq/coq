@@ -38,11 +38,11 @@ let subst_hint subst hint =
 
 module HintIdent =
 struct
-  type t = int * rew_rule
+  type t = KerName.t * rew_rule
 
-  let compare (i, t) (j, t') = i - j
+  let compare (kn, t) (kn', t') = KerName.compare kn kn'
 
-  let subst s (i,t) = (i,subst_hint s t)
+  let subst s (kn, t) = (subst_kn s kn, subst_hint s t)
 
   let constr_of (i,t) = t.rew_pat
 end
@@ -193,12 +193,8 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (rbase,lrl) =
   let base = try raw_find_base rbase with Not_found -> HintDN.empty in
-  let max = try fst (Util.List.last (HintDN.find_all base)) with Failure _ -> 0
-  in
   let lrl = HintDN.refresh_metas lrl in
-  let lrl = HintDN.map (fun (i,h) -> (i + max, h)) lrl in
-    rewtab:=String.Map.add rbase (HintDN.union lrl base) !rewtab
-
+  rewtab := String.Map.add rbase (HintDN.union lrl base) !rewtab
 
 let subst_hintrewrite (subst,(rbase,list as node)) =
   let list' = HintDN.subst subst list in
@@ -271,9 +267,25 @@ let default_hint_rewrite_locality () =
     let () = warn_deprecated_hint_rewrite_without_locality () in
     Hints.SuperGlobal
 
+(* Same hack as auto hints: we generate an essentially unique identifier for
+   rewrite hints. *)
+let fresh_key =
+  let id = Summary.ref ~name:"REWHINT-COUNTER" 0 in
+  fun () ->
+    let cur = incr id; !id in
+    let lbl = Id.of_string ("_" ^ string_of_int cur) in
+    let kn = Lib.make_kn lbl in
+    let (mp, _) = KerName.repr kn in
+    (* We embed the full path of the kernel name in the label so that
+       the identifier should be unique. This ensures that including
+       two modules together won't confuse the corresponding labels. *)
+    let lbl = Id.of_string_soft (Printf.sprintf "%s#%i"
+      (ModPath.to_string mp) cur)
+    in
+    KerName.make mp (Label.of_id lbl)
+
 (* To add rewriting rules to a base *)
 let add_rew_rules ~locality base lrul =
-  let counter = ref 0 in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let ist = Genintern.empty_glob_sign (Global.env ()) in
@@ -287,8 +299,9 @@ let add_rew_rules ~locality base lrul =
         let rul = { rew_lemma = c; rew_type = EConstr.Unsafe.to_constr info.hyp_ty;
                     rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
                     rew_tac = Option.map intern t}
-        in incr counter;
-          HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
+        in
+        let key = fresh_key () in
+        HintDN.add pat (key, rul) dn) HintDN.empty lrul
   in
   let open Hints in
   match locality with
