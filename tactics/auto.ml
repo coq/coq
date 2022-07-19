@@ -408,7 +408,7 @@ let gen_trivial ?(debug=Off) lems dbnames =
       | Some dbnames -> make_db_list dbnames
       | None -> current_pure_db ()
     in
-    tclTRY_dbg d (trivial_fail_db ~with_evars:true d db_list lems None)
+    tclTRY_dbg d (trivial_fail_db ~with_evars:false d db_list lems None)
   end
 
 let trivial ?(debug=Off) lems dbnames = gen_trivial ~debug lems (Some dbnames)
@@ -431,7 +431,7 @@ let search d n db_list lems =
       let info = Exninfo.reify () in
       Tacticals.tclZEROMSG ~info (str"BOUND 2")
     else
-      Tacticals.tclORELSE0 (dbg_eassumption d) @@
+      Tacticals.tclORELSE0 (dbg_assumption d) @@
       Tacticals.tclORELSE0 (intro_register d (search d n) local_db) @@
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
