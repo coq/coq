@@ -19,7 +19,8 @@ open Mod_subst
 open Locus
 
 (* Rewriting rules *)
-type rew_rule = { rew_lemma: constr;
+type rew_rule = { rew_id : KerName.t;
+                  rew_lemma : constr;
                   rew_type: types;
                   rew_pat: constr;
                   rew_ctx: Univ.ContextSet.t;
@@ -34,23 +35,13 @@ struct
   let rew_tac r = r.rew_tac
 end
 
-let subst_hint subst hint =
-  let cst' = subst_mps subst hint.rew_lemma in
-  let typ' = subst_mps subst hint.rew_type in
-  let pat' = subst_mps subst hint.rew_pat in
-  let t' = Option.Smart.map (Genintern.generic_substitute subst) hint.rew_tac in
-    if hint.rew_lemma == cst' && hint.rew_type == typ' && hint.rew_tac == t' then hint else
-      { hint with
-        rew_lemma = cst'; rew_type = typ';
-        rew_pat = pat';	rew_tac = t' }
-
 module HintIdent =
 struct
-  type t = int * rew_rule
+  type t = rew_rule
 
-  let compare (i, t) (j, t') = i - j
+  let compare r1 r2 = KerName.compare r1.rew_id r2.rew_id
 
-  let constr_of (i,t) = t.rew_pat
+  let constr_of t = t.rew_pat
 end
 
 (* Representation/approximation of terms to use in the dnet:
@@ -298,7 +289,7 @@ let align_prod_letin sigma c a =
   let search_pattern dn cpat =
     let _dctx, dpat = Term.decompose_prod_assum cpat in
     let whole_c = EConstr.of_constr cpat in
-    List.sort (fun x y -> HintIdent.compare y x) @@ List.fold_left
+    List.fold_left
       (fun acc id ->
          let c_id = EConstr.of_constr @@ Ident.constr_of id in
          let (ctx,wc) =
@@ -308,13 +299,25 @@ let align_prod_letin sigma c a =
         else acc
       ) (TDnet.lookup dn decomp dpat) []
 
-  let find_all dn = List.sort HintIdent.compare (TDnet.lookup dn (fun () -> Everything) ())
+  let find_all dn = TDnet.lookup dn (fun () -> Everything) ()
 
 end
 
+type rewrite_db = {
+  rdb_hintdn : HintDN.t;
+  rdb_order : int KNmap.t;
+  rdb_maxuid : int;
+}
+
+let empty_rewrite_db = {
+  rdb_hintdn = HintDN.empty;
+  rdb_order = KNmap.empty;
+  rdb_maxuid = 0;
+}
+
 (* Summary and Object declaration *)
 let rewtab =
-  Summary.ref (String.Map.empty : HintDN.t String.Map.t) ~name:"autorewrite"
+  Summary.ref (String.Map.empty : rewrite_db String.Map.t) ~name:"autorewrite"
 
 let raw_find_base bas = String.Map.find bas !rewtab
 
@@ -325,12 +328,15 @@ let find_base bas =
       (str "Rewriting base " ++ str bas ++ str " does not exist.")
 
 let find_rewrites bas =
-  List.rev_map snd (HintDN.find_all (find_base bas))
+  let db = find_base bas in
+  let sort r1 r2 = Int.compare (KNmap.find r2.rew_id db.rdb_order) (KNmap.find r1.rew_id db.rdb_order) in
+  List.sort sort (HintDN.find_all db.rdb_hintdn)
 
 let find_matches bas pat =
   let base = find_base bas in
-  let res = HintDN.search_pattern base pat in
-  List.map snd res
+  let res = HintDN.search_pattern base.rdb_hintdn pat in
+  let sort r1 r2 = Int.compare (KNmap.find r2.rew_id base.rdb_order) (KNmap.find r1.rew_id base.rdb_order) in
+  List.sort sort res
 
 let print_rewrite_hintdb bas =
   let env = Global.env () in
@@ -424,6 +430,23 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 let auto_multi_rewrite ?(conds=Naive) lems cl =
   Proofview.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds (Proofview.tclUNIT()) lems cl)
 
+(* Same hack as auto hints: we generate an essentially unique identifier for
+   rewrite hints. *)
+let fresh_key =
+  let id = Summary.ref ~name:"REWHINT-COUNTER" 0 in
+  fun () ->
+    let cur = incr id; !id in
+    let lbl = Id.of_string ("_" ^ string_of_int cur) in
+    let kn = Lib.make_kn lbl in
+    let (mp, _) = KerName.repr kn in
+    (* We embed the full path of the kernel name in the label so that
+       the identifier should be unique. This ensures that including
+       two modules together won't confuse the corresponding labels. *)
+    let lbl = Id.of_string_soft (Printf.sprintf "%s#%i"
+      (ModPath.to_string mp) cur)
+    in
+    KerName.make mp (Label.of_id lbl)
+
 let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
   let onconcl = match cl.Locus.concl_occs with NoOccurrences -> false | _ -> true in
   match onconcl,cl.Locus.onhyps with
@@ -439,13 +462,28 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (rbase,lrl) =
-  let base = try raw_find_base rbase with Not_found -> HintDN.empty in
-  let max = try fst (Util.List.last (HintDN.find_all base)) with Failure _ -> 0 in
-  let fold i accu r = HintDN.add r.rew_pat (i + max + 1, r) accu in
-  let base = List.fold_left_i fold 0 base lrl in
+  let base = try raw_find_base rbase with Not_found -> empty_rewrite_db in
+  let fold accu r = {
+    rdb_hintdn = HintDN.add r.rew_pat r accu.rdb_hintdn;
+    rdb_order = KNmap.add r.rew_id accu.rdb_maxuid accu.rdb_order;
+    rdb_maxuid = accu.rdb_maxuid + 1;
+  } in
+  let base = List.fold_left fold base lrl in
   rewtab := String.Map.add rbase base !rewtab
 
 let subst_hintrewrite (subst,(rbase,list as node)) =
+  let subst_hint subst hint =
+    let id' = subst_kn subst hint.rew_id in
+    let cst' = subst_mps subst hint.rew_lemma in
+    let typ' = subst_mps subst hint.rew_type in
+    let pat' = subst_mps subst hint.rew_pat in
+    let t' = Option.Smart.map (Genintern.generic_substitute subst) hint.rew_tac in
+      if hint.rew_id == id' && hint.rew_lemma == cst' && hint.rew_type == typ' &&
+         hint.rew_tac == t' && hint.rew_pat == pat' then hint else
+        { hint with
+          rew_lemma = cst'; rew_type = typ';
+          rew_pat = pat';	rew_tac = t' }
+  in
   let list' = List.Smart.map (fun h -> subst_hint subst h) list in
     if list' == list then node else
       (rbase,list')
@@ -526,7 +564,8 @@ let add_rew_rules ~locality base lrul =
     let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
     let info = find_applied_relation ?loc env sigma c b in
     let pat = EConstr.Unsafe.to_constr info.hyp_pat in
-    { rew_lemma = c; rew_type = EConstr.Unsafe.to_constr info.hyp_ty;
+    let uid = fresh_key () in
+    { rew_id = uid; rew_lemma = c; rew_type = EConstr.Unsafe.to_constr info.hyp_ty;
       rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
       rew_tac = Option.map intern t }
   in
