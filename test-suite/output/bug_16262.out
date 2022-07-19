@@ -1,0 +1,11 @@
+nat -> nat
+     : Set
+nat -> nat
+     : Set
+(1->2)%foo
+     : nat * nat
+File "./output/bug_16262.v", line 9, characters 0-116:
+Warning: Notation "_ -> _" was already defined with a different format.
+[notation-incompatible-format,parsing,default]
+nat->nat
+     : Set
