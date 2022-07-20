@@ -629,18 +629,6 @@ let warn_future_coercion_class_field =
     strbrk "A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. "
     ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently. Add an explicit #[global] attribute to the field if you need to keep the current behavior. For example: \"Class foo := { #[global] field :: bar }.\"")
 
-(* deprecated in 8.17 (c.f., https://github.com/coq/coq/pull/16230 ) *)
-let warn_deprecated_field_instance_without_locality =
-  let open Pp in
-  CWarnings.create ~name:"deprecated-field-instance-without-locality" ~category:"deprecated"
-    (fun () -> strbrk "The default value for field instance locality is \
-    currently \"global\", but is scheduled to change in a future release. \
-    For the time being, adding field instances without specifying an explicit \
-    locality attribute is therefore deprecated. It is recommended to use \
-    \"export\" whenever possible. Use the attributes #[local], #[global] \
-    and #[export] depending on your choice. For example: \
-    \"Class foo := { #[export] field :: bar }.\"")
-
 let check_proj_flags kind rf =
   let open Vernacexpr in
   let pf_coercion, pf_reversible =
@@ -666,11 +654,6 @@ let check_proj_flags kind rf =
        if rf.rf_locality = Goptions.OptExport then
          Attributes.(unsupported_attributes
            [CAst.make ("export (without ::)",VernacFlagEmpty)])
-    (* remove following case after deprecation phase (started in 8.17,
-       c.f., https://github.com/coq/coq/pull/16230 ) *)
-    | _, BackInstanceWarning when kind_class kind <> NotClass ->
-       if rf.rf_locality = Goptions.OptDefault then
-         warn_deprecated_field_instance_without_locality ()
     | _ -> ()
     end; rf.rf_locality in
   (* remove following let after deprecation phase (started in 8.17,
