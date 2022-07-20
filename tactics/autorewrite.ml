@@ -45,8 +45,6 @@ struct
   let constr_of (i,t) = t.rew_pat
 end
 
-module RelDecl = Context.Rel.Declaration
-
 (* Representation/approximation of terms to use in the dnet:
  *
  * - no meta or evar (use ['a pattern] for that)
@@ -443,13 +441,13 @@ let split_app sigma c = match EConstr.kind sigma c with
 
 exception CannotFilter
 
-let filtering sigma env cv_pb c1 c2 =
+let filtering env sigma cv_pb c1 c2 =
   let open EConstr in
   let open Vars in
   let evm = ref Evar.Map.empty in
   let define cv_pb e1 ev c1 =
     try let (e2,c2) = Evar.Map.find ev !evm in
-    let shift = List.length e1 - List.length e2 in
+    let shift = e1 - e2 in
     if Termops.constr_cmp sigma cv_pb c1 (lift shift c2) then () else raise CannotFilter
     with Not_found ->
       evm := Evar.Map.add ev (e1,c1) !evm
@@ -467,7 +465,7 @@ let filtering sigma env cv_pb c1 c2 =
         end
       | Prod (n,t1,c1), Prod (_,t2,c2) ->
           aux env cv_pb t1 t2;
-          aux (RelDecl.LocalAssum (n,t1) :: env) cv_pb c1 c2
+          aux (env + 1) cv_pb c1 c2
       | _, Evar (ev,_) -> define cv_pb env ev c1
       | Evar (ev,_), _ -> define cv_pb env ev c2
       | _ ->
@@ -476,16 +474,17 @@ let filtering sigma env cv_pb c1 c2 =
           else raise CannotFilter
           (* TODO: le reste des binders *)
   in
-  aux env cv_pb c1 c2; !evm
+  try let () = aux env cv_pb c1 c2 in true with CannotFilter -> false
 
 let align_prod_letin sigma c a =
   let open Termops in
   let (lc,_) = EConstr.decompose_prod_assum sigma c in
   let (l,a) = EConstr.decompose_prod_assum sigma a in
   let lc = List.length lc in
-  if not (List.length l >= lc) then invalid_arg "align_prod_letin";
-  let (l1,l2) = Util.List.chop lc l in
-  l2,it_mkProd_or_LetIn a l1
+  let n = List.length l in
+  if n < lc then invalid_arg "align_prod_letin";
+  let l1 = CList.firstn lc l in
+  n - lc, it_mkProd_or_LetIn a l1
 
   let search_pat cpat dpat dn =
     let whole_c = EConstr.of_constr cpat in
@@ -496,12 +495,9 @@ let align_prod_letin sigma c a =
          let c_id = EConstr.of_constr @@ Ident.constr_of id in
          let (ctx,wc) =
            try align_prod_letin Evd.empty whole_c c_id (* FIXME *)
-           with Invalid_argument _ -> [],c_id in
-         let wc,whole_c = whole_c,wc in
-         try
-          let _ = filtering Evd.empty ctx Reduction.CUMUL wc whole_c in
-          id :: acc
-         with CannotFilter -> acc
+           with Invalid_argument _ -> 0, c_id in
+        if filtering ctx Evd.empty Reduction.CUMUL whole_c wc then id :: acc
+        else acc
       ) (TDnet.find_match dpat dn) []
 
   (*
