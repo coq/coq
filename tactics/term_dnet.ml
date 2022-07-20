@@ -17,6 +17,7 @@ open Mod_subst
 open Pp (* debug *)
 (*i*)
 
+module RelDecl = Context.Rel.Declaration
 
 (* Representation/approximation of terms to use in the dnet:
  *
@@ -409,6 +410,63 @@ struct
        | Meta m -> str"["++Pp.int (Obj.magic m)++str"]"
     ) (pr_dconstr pr_term_pattern) p*)
 
+(* App(c,[t1,...tn]) -> ([c,t1,...,tn-1],tn)
+   App(c,[||]) -> ([],c) *)
+let split_app sigma c = match EConstr.kind sigma c with
+    App(c,l) ->
+      let len = Array.length l in
+      if Int.equal len 0 then ([],c) else
+        let last = Array.get l (len-1) in
+        let prev = Array.sub l 0 (len-1) in
+        c::(Array.to_list prev), last
+  | _ -> assert false
+
+exception CannotFilter
+
+let filtering sigma env cv_pb c1 c2 =
+  let open EConstr in
+  let open Vars in
+  let evm = ref Evar.Map.empty in
+  let define cv_pb e1 ev c1 =
+    try let (e2,c2) = Evar.Map.find ev !evm in
+    let shift = List.length e1 - List.length e2 in
+    if Termops.constr_cmp sigma cv_pb c1 (lift shift c2) then () else raise CannotFilter
+    with Not_found ->
+      evm := Evar.Map.add ev (e1,c1) !evm
+  in
+  let rec aux env cv_pb c1 c2 =
+    match EConstr.kind sigma c1, EConstr.kind sigma c2 with
+      | App _, App _ ->
+        let ((p1,l1),(p2,l2)) = (split_app sigma c1),(split_app sigma c2) in
+        let () = aux env cv_pb l1 l2 in
+        begin match p1, p2 with
+        | [], [] -> ()
+        | (h1 :: p1), (h2 :: p2) ->
+          aux env cv_pb (applist (h1, p1)) (applist (h2, p2))
+        | _ -> assert false
+        end
+      | Prod (n,t1,c1), Prod (_,t2,c2) ->
+          aux env cv_pb t1 t2;
+          aux (RelDecl.LocalAssum (n,t1) :: env) cv_pb c1 c2
+      | _, Evar (ev,_) -> define cv_pb env ev c1
+      | Evar (ev,_), _ -> define cv_pb env ev c2
+      | _ ->
+          if Termops.compare_constr_univ sigma
+          (fun pb c1 c2 -> aux env pb c1 c2; true) cv_pb c1 c2 then ()
+          else raise CannotFilter
+          (* TODO: le reste des binders *)
+  in
+  aux env cv_pb c1 c2; !evm
+
+let align_prod_letin sigma c a =
+  let open Termops in
+  let (lc,_) = EConstr.decompose_prod_assum sigma c in
+  let (l,a) = EConstr.decompose_prod_assum sigma a in
+  let lc = List.length lc in
+  if not (List.length l >= lc) then invalid_arg "align_prod_letin";
+  let (l1,l2) = Util.List.chop lc l in
+  l2,it_mkProd_or_LetIn a l1
+
   let search_pat cpat dpat dn =
     let whole_c = EConstr.of_constr cpat in
     (* if we are at the root, add an empty context *)
@@ -418,13 +476,13 @@ struct
          let c_id = Opt.reduce (Ident.constr_of id) in
          let c_id = EConstr.of_constr c_id in
          let (ctx,wc) =
-           try Termops.align_prod_letin Evd.empty whole_c c_id (* FIXME *)
+           try align_prod_letin Evd.empty whole_c c_id (* FIXME *)
            with Invalid_argument _ -> [],c_id in
          let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
          try
-          let _ = Termops.filtering Evd.empty ctx Reduction.CUMUL wc whole_c in
+          let _ = filtering Evd.empty ctx Reduction.CUMUL wc whole_c in
           id :: acc
-         with Termops.CannotFilter -> (* msgnl(str"recon "++Termops.print_constr_env (Global.env()) wc); *) acc
+         with CannotFilter -> acc
       ) (TDnet.find_match dpat dn) []
 
   (*

@@ -98,7 +98,7 @@ let extends_undefined evars evars' =
 
 let app_poly_check env evars f args =
   let (evars, cstrs), fc = f env evars in
-  let evars, t = Typing.solve_evars env evars (mkApp (fc, args)) in
+  let evars, t = Typing.checked_appvect env evars fc args in
   (evars, cstrs), t
 
 let app_poly_nocheck env evars f args =
