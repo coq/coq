@@ -47,13 +47,7 @@ struct
   let constr_of (i,t) = t.rew_pat
 end
 
-module HintOpt =
-struct
-  let reduce c = c
-  let direction = true
-end
-
-module HintDN = Term_dnet.Make(HintIdent)(HintOpt)
+module HintDN = Term_dnet.Make(HintIdent)
 
 (* Summary and Object declaration *)
 let rewtab =

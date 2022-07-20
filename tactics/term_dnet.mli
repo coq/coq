@@ -19,10 +19,6 @@ open Mod_subst
    same ident), and there must be a way to recover the full term from
    the identifier (function constr_of).
 
-   Optionally, a pre-treatment on terms can be performed before adding
-   or searching (reduce). Practically, it is used to do some kind of
-   delta-reduction on terms before indexing them.
-
    The results returned here are perfect, since post-filtering is done
    inside here.
 
@@ -39,19 +35,6 @@ module type IDENT = sig
 
   (** how to recover the term from the identifier *)
   val constr_of : t -> constr
-end
-
-(** Options : *)
-module type OPT = sig
-
-  (** pre-treatment to terms before adding or searching *)
-  val reduce : constr -> constr
-
-  (** direction of post-filtering w.r.t sort subtyping :
-     - true means query <= terms in the structure
-     - false means terms <= query
- *)
-  val direction : bool
 end
 
 module type S =
@@ -88,5 +71,4 @@ end
 
 module Make :
   functor (Ident : IDENT) ->
-  functor (Opt : OPT) ->
     S with type ident = Ident.t

@@ -283,15 +283,8 @@ sig
   val constr_of : t -> constr
 end
 
-module type OPT =
-sig
-  val reduce : constr -> constr
-  val direction : bool
-end
-
 module Make =
   functor (Ident : IDENT) ->
-  functor (Opt : OPT) ->
 struct
 
   module TDnet : Dnet.S with type ident=Ident.t
@@ -385,7 +378,6 @@ struct
   let union = TDnet.union
 
   let add (c:constr) (id:Ident.t) (dn:t) =
-    let c = Opt.reduce c in
     let c = empty_ctx (pat_of_constr c) in
     TDnet.add dn c id
 
@@ -473,12 +465,11 @@ let align_prod_letin sigma c a =
     let dpat = under_prod (empty_ctx dpat) in
     TDnet.Idset.fold
       (fun id acc ->
-         let c_id = Opt.reduce (Ident.constr_of id) in
-         let c_id = EConstr.of_constr c_id in
+         let c_id = EConstr.of_constr @@ Ident.constr_of id in
          let (ctx,wc) =
            try align_prod_letin Evd.empty whole_c c_id (* FIXME *)
            with Invalid_argument _ -> [],c_id in
-         let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
+         let wc,whole_c = whole_c,wc in
          try
           let _ = filtering Evd.empty ctx Reduction.CUMUL wc whole_c in
           id :: acc
@@ -490,7 +481,6 @@ let align_prod_letin sigma c a =
    *)
 
   let search_pattern dn pat =
-    let pat = Opt.reduce pat in
     search_pat pat (empty_ctx (pat_of_constr pat)) dn
 
   let find_all dn = Idset.elements (TDnet.find_all dn)
