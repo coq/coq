@@ -42,8 +42,6 @@ struct
 
   let compare (i, t) (j, t') = i - j
 
-  let subst s (i,t) = (i,subst_hint s t)
-
   let constr_of (i,t) = t.rew_pat
 end
 
@@ -312,11 +310,6 @@ sig
      closed term or a pattern (with untyped Evars). No Metas accepted *)
   val add : constr -> ident -> t -> t
 
-  (** merge of dnets. Faster than re-adding all terms *)
-  val union : t -> t -> t
-
-  val subst : substitution -> t -> t
-
   (*
    * High-level primitives describing specific search problems
    *)
@@ -328,9 +321,6 @@ sig
   (** [find_all dn] returns all idents contained in dn *)
   val find_all : t -> ident list
 
-  val map : (ident -> ident) -> t -> t
-
-  val refresh_metas : t -> t
 end
 =
 struct
@@ -416,19 +406,9 @@ struct
 
   let empty = TDnet.empty
 
-  let subst s t =
-    let sleaf id = Ident.subst s id in
-    let snode = function
-      | DTerm.DRef gr -> DTerm.DRef (fst (Globnames.subst_global s gr))
-      | n -> n in
-    TDnet.map sleaf snode t
-
-  let union = TDnet.union
-
   let add (c:constr) (id:Ident.t) (dn:t) =
     let c = empty_ctx (pat_of_constr c) in
     TDnet.add dn c id
-
 
   let new_meta () = Meta (fresh_meta ())
 
@@ -533,18 +513,6 @@ let align_prod_letin sigma c a =
 
   let find_all dn = Idset.elements (TDnet.find_all dn)
 
-  let map f dn = TDnet.map f (fun x -> x) dn
-
-  let refresh_metas dn =
-    let new_metas = ref Int.Map.empty in
-    let refresh_one_meta i =
-      try Int.Map.find i !new_metas
-      with Not_found ->
-        let new_meta = fresh_meta () in
-        let () = new_metas := Int.Map.add i new_meta !new_metas in
-        new_meta
-    in
-    TDnet.map_metas refresh_one_meta dn
 end
 
 (* Summary and Object declaration *)
@@ -685,26 +653,24 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (rbase,lrl) =
   let base = try raw_find_base rbase with Not_found -> HintDN.empty in
-  let max = try fst (Util.List.last (HintDN.find_all base)) with Failure _ -> 0
-  in
-  let lrl = HintDN.refresh_metas lrl in
-  let lrl = HintDN.map (fun (i,h) -> (i + max, h)) lrl in
-    rewtab:=String.Map.add rbase (HintDN.union lrl base) !rewtab
-
+  let max = try fst (Util.List.last (HintDN.find_all base)) with Failure _ -> 0 in
+  let fold i accu r = HintDN.add r.rew_pat (i + max + 1, r) accu in
+  let base = List.fold_left_i fold 0 base lrl in
+  rewtab := String.Map.add rbase base !rewtab
 
 let subst_hintrewrite (subst,(rbase,list as node)) =
-  let list' = HintDN.subst subst list in
+  let list' = List.Smart.map (fun h -> subst_hint subst h) list in
     if list' == list then node else
       (rbase,list')
 
 (* Declaration of the Hint Rewrite library object *)
-let inGlobalHintRewrite : string * HintDN.t -> Libobject.obj =
+let inGlobalHintRewrite : string * rew_rule list -> Libobject.obj =
   let open Libobject in
   declare_object @@ superglobal_object_nodischarge "HINT_REWRITE_GLOBAL"
     ~cache:cache_hintrewrite
     ~subst:(Some subst_hintrewrite)
 
-let inExportHintRewrite : string * HintDN.t -> Libobject.obj =
+let inExportHintRewrite : string * rew_rule list -> Libobject.obj =
   let open Libobject in
   declare_object @@ global_object_nodischarge ~cat:Hints.hint_cat "HINT_REWRITE_EXPORT"
     ~cache:cache_hintrewrite
@@ -765,23 +731,19 @@ let default_hint_rewrite_locality () =
 
 (* To add rewriting rules to a base *)
 let add_rew_rules ~locality base lrul =
-  let counter = ref 0 in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let ist = Genintern.empty_glob_sign (Global.env ()) in
   let intern tac = snd (Genintern.generic_intern ist tac) in
-  let lrul =
-    List.fold_left
-      (fun dn {CAst.loc;v=((c,ctx),b,t)} ->
-        let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
-        let info = find_applied_relation ?loc env sigma c b in
-        let pat = EConstr.Unsafe.to_constr info.hyp_pat in
-        let rul = { rew_lemma = c; rew_type = EConstr.Unsafe.to_constr info.hyp_ty;
-                    rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
-                    rew_tac = Option.map intern t}
-        in incr counter;
-          HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
+  let map {CAst.loc;v=((c,ctx),b,t)} =
+    let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
+    let info = find_applied_relation ?loc env sigma c b in
+    let pat = EConstr.Unsafe.to_constr info.hyp_pat in
+    { rew_lemma = c; rew_type = EConstr.Unsafe.to_constr info.hyp_ty;
+      rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
+      rew_tac = Option.map intern t }
   in
+  let lrul = List.map map lrul in
   let open Hints in
   match locality with
   | Local -> cache_hintrewrite (base,lrul)
