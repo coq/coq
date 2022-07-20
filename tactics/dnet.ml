@@ -36,10 +36,6 @@ sig
   val add : t -> term_pattern -> ident -> t
   val find_all : t -> Idset.t
   val find_match : term_pattern -> t -> Idset.t
-  val inter : t -> t -> t
-  val union : t -> t -> t
-  val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
-  val map_metas : (meta -> meta) -> t -> t
 end
 
 module Make =
@@ -202,27 +198,6 @@ struct
          | _ -> assert false
       ) t1 t2
 
-  let rec union (t1:t) (t2:t) : t =
-    let union_map f (Nodes (t1,m1):t) (Nodes (t2,m2):t) : t =
-      Nodes
-        (Tmap.fold
-           ( fun k e acc ->
-               try Tmap.add k (f e (Tmap.find k acc)) acc
-               with Not_found -> Tmap.add k e acc
-           ) t1 t2,
-         Mmap.fold
-           ( fun m s acc ->
-               try Mmap.add m (Idset.inter s (Mmap.find m acc)) acc
-               with Not_found -> Mmap.add m s acc
-           ) m1 m2
-        ) in
-    union_map
-      (fun n1 n2 -> match n1,n2 with
-         | Terminal (e1,s1), Terminal (_,s2) -> Terminal (e1,Idset.union s1 s2)
-         | Node e1, Node e2 -> Node (T.map2 union e1 e2)
-         | _ -> assert false
-      ) t1 t2
-
   let find_match (p:term_pattern) (t:t) : idset =
     let metas = ref Mmap.empty in
     let (mset,lset) = fold_pattern ~complete:false
@@ -234,23 +209,5 @@ struct
          OIdset.union (Some mset) all
       ) None p t in
     Option.get (OIdset.inter mset lset)
-
-  let idset_map f is = Idset.fold (fun e acc -> Idset.add (f e) acc) is Idset.empty
-  let tmap_map f g m = Tmap.fold (fun k e acc -> Tmap.add (f k) (g e) acc) m Tmap.empty
-
-  let rec map sidset sterm (Nodes (t,m)) : t =
-    let snode = function
-      | Terminal (e,is) -> Terminal (e,idset_map sidset is)
-      | Node e -> Node (T.map (map sidset sterm) e) in
-    Nodes (tmap_map sterm snode t, Mmap.map (idset_map sidset) m)
-
-  let rec map_metas f (Nodes (t, m)) : t =
-    let f_node = function
-      | Terminal (e, is) -> Terminal (T.map (map_metas f) e, is)
-      | Node e -> Node (T.map (map_metas f) e)
-    in
-    let m' = Mmap.fold (fun m s acc -> Mmap.add (f m) s acc) m Mmap.empty in
-    let t' = Tmap.fold (fun k n acc -> Tmap.add k (f_node n) acc) t Tmap.empty in
-    Nodes (t', m')
 
 end

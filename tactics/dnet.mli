@@ -101,14 +101,6 @@ sig
      t. *)
   val find_match : term_pattern -> t -> Idset.t
 
-  (** set operations on dnets *)
-  val inter : t -> t -> t
-  val union : t -> t -> t
-
-  (** apply a function on each identifier and node of terms in a dnet *)
-  val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
-
-  val map_metas : (meta -> meta) -> t -> t
 end
 
 module Make :
