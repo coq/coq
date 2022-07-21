@@ -306,19 +306,8 @@ let rec extract_type env sg db j c args =
         (match flag_of_type env sg typ with
            | (Logic,_) -> assert false (* Cf. logical cases above *)
            | (Info, TypeScheme) ->
-               let mlt = extract_type_app env sg db (r, type_sign env sg typ) args in
-               (match (lookup_constant kn env).const_body with
-                 | Undef _ | OpaqueDef _ | Primitive _ -> mlt
-                 | Def _ when is_custom (GlobRef.ConstRef kn) -> mlt
-                 | Def lbody ->
-                      let newc = applistc (get_body lbody) args in
-                      let mlt' = extract_type env sg db j newc [] in
-                      (* ML type abbreviations interact badly with Coq *)
-                      (* reduction, so [mlt] and [mlt'] might be different: *)
-                      (* The more precise is [mlt'], extracted after reduction *)
-                      (* The shortest is [mlt], which use abbreviations *)
-                      (* If possible, we take [mlt], otherwise [mlt']. *)
-                      if eq_ml_type (expand env mlt) (expand env mlt') then mlt else mlt')
+             let mlt = extract_type_app env sg db (r, type_sign env sg typ) args in
+             mlt
            | (Info, Default) ->
                (* Not an ML type, for example [(c:forall X, X->X) Type nat] *)
                (match (lookup_constant kn env).const_body with
