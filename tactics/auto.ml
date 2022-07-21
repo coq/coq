@@ -398,56 +398,53 @@ let possible_resolve env sigma dbg db_list local_db secvars cl =
    with the hint db extended with the so-obtained hypothesis *)
 
 let intro_register dbg kont db =
-  Tacticals.tclTHEN (dbg_intro dbg)
-    (Proofview.Goal.enter begin fun gl ->
+  dbg_intro dbg >>= fun () ->
+    Proofview.Goal.enter begin fun gl ->
       let extend_local_db decl db =
-        let env = Tacmach.pf_env gl in
-        let sigma = Tacmach.project gl in
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
         push_resolve_hyp env sigma (Context.Named.Declaration.get_id decl) db
       in
       Tacticals.onLastDecl (fun decl -> kont (extend_local_db decl db))
-    end)
+    end
 
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
-let search d n db_list local_db lems =
-  let rec search d n local_db =
-    (* spiwack: the test of [n] to 0 must be done independently in
-       each goal. Hence the [tclEXTEND] *)
-    Proofview.tclEXTEND [] begin
+let search d n db_list lems =
+  let rec search d n hyps secvars local_db =
+    Proofview.Goal.enter begin fun gl ->
       if Int.equal n 0 then
         let info = Exninfo.reify () in
         Tacticals.tclZEROMSG ~info (str"BOUND 2")
       else
-        Tacticals.tclORELSE0 (dbg_assumption d)
-          (Tacticals.tclORELSE0 (intro_register d (search d n) local_db)
-             ( Proofview.Goal.enter begin fun gl ->
-               let concl = Proofview.Goal.concl gl in
-               let sigma = Proofview.Goal.sigma gl in
-               let env = Proofview.Goal.env gl in
-               let hyps = Proofview.Goal.hyps gl in
-               let secvars = compute_secvars gl in
-               let d' = incr_dbg d in
-               Tacticals.tclFIRST
-                 (List.map
-                    (fun ntac -> Tacticals.tclTHEN ntac
-                       (Proofview.Goal.enter begin fun gl ->
-                       let sigma = Proofview.Goal.sigma gl in
-                       let env = Proofview.Goal.env gl in
-                       let hyps' = Proofview.Goal.hyps gl in
-                       let local_db =
-                         if hyps' == hyps then local_db
-                         (* update local_db if local hypotheses have changed *)
-                         else make_local_hint_db env sigma false lems
-                       in
-                       search d' (n-1) local_db
-                       end))
-                    (possible_resolve env sigma d db_list local_db secvars concl))
-             end))
-    end []
+        Tacticals.tclORELSE0 (dbg_assumption d) @@
+          Tacticals.tclORELSE0 (intro_register d (search d n None secvars) local_db) @@
+            let concl = Proofview.Goal.concl gl in
+            let sigma = Proofview.Goal.sigma gl in
+            let env = Proofview.Goal.env gl in
+            let hyps' = Proofview.Goal.hyps gl in
+            let (secvars', local_db') =
+              match hyps with
+              | None -> (secvars, local_db)
+              | Some hyps ->
+                if hyps' == hyps then (secvars, local_db)
+                else (compute_secvars gl, make_local_hint_db env sigma false lems)
+            in
+            let d' = incr_dbg d in
+            Tacticals.tclFIRST
+              (List.map
+                (fun ntac -> ntac >>= fun () -> search d' (n-1) (Some hyps') secvars' local_db')
+                (possible_resolve env sigma d db_list local_db' secvars' concl))
+    end
   in
-  search d n local_db
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let secvars = compute_secvars gl in
+    let local_db = make_local_hint_db env sigma false lems in
+    search d n None secvars local_db
+  end
 
 let default_search_depth = ref 5
 
@@ -461,10 +458,7 @@ let gen_auto ?(debug=Off) n lems dbnames =
       | None -> current_pure_db ()
     in
     let d = mk_auto_dbg debug in
-    let sigma = Proofview.Goal.sigma gl in
-    let env = Proofview.Goal.env gl in
-    let hints = make_local_hint_db env sigma false lems in
-    tclTRY_dbg d (search d n db_list hints lems)
+    tclTRY_dbg d (search d n db_list lems)
   end
 
 let auto ?(debug=Off) n lems dbnames = gen_auto ~debug (Some n) lems (Some dbnames)
