@@ -607,6 +607,10 @@ gallina: [
 | "Scheme" OPT "Boolean" "Equality" "for" smart_global
 ]
 
+SPLICE: [
+| variant_definition
+]
+
 finite_token: [
 | DELETENT
 ]
