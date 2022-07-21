@@ -74,7 +74,7 @@ let unify_e_resolve flags h =
 
 type cost = {
   cost_priority : int;
-  cost_subgoals : int option;
+  cost_subgoals : int;
 }
 
 let hintmap_of env sigma secvars concl =
@@ -124,7 +124,7 @@ and e_my_find_search env sigma db_list local_db secvars concl =
   in
   let tac_of_hint =
     fun (st, h) ->
-      let b = match FullHint.repr h with
+      let priority = match FullHint.repr h with
       | Unfold_nth _ -> 1
       | _ -> FullHint.priority h
       in
@@ -138,7 +138,13 @@ and e_my_find_search env sigma db_list local_db secvars concl =
       | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
       | Extern (pat, tacast) -> conclPattern concl pat tacast
       in
-      let b = { cost_priority = b; cost_subgoals = FullHint.subgoals h } in
+      (* We cannot determine statically the cost of subgoals of an Extern hint,
+         so approximate it by the hint's priority. *)
+      let subgoals = match FullHint.subgoals h with
+      | Some subgoals -> subgoals
+      | None -> priority
+      in
+      let b = { cost_priority = priority; cost_subgoals = subgoals } in
       let tac = FullHint.run h tac in
       (tac, b, lazy (FullHint.print env sigma h))
   in
@@ -173,20 +179,12 @@ and prev_search_state = (* for info eauto *)
 
 module Search = struct
 
-  let is_solved p = match p.cost_subgoals with
-  | Some n -> Int.equal n 0
-  | None -> assert false (* Ruled out by partial_eval *)
+  let is_solved p = Int.equal p.cost_subgoals 0
 
   let solve_order p1 p2 = match is_solved p1, is_solved p2 with
   | true, true | false, false -> 0
   | false, true -> 1
   | true, false -> -1 (* solved comes first *)
-
-  let subgoals_order p1 p2 = match p1.cost_subgoals, p2.cost_subgoals with
-  | Some n1, Some n2 -> Int.compare n1 n2
-  | Some _, None -> -1
-  | None, Some _ -> 1
-  | None, None -> 0
 
   (* Ordering of states is lexicographic:
      1. tactics known to solve the goal
@@ -197,28 +195,7 @@ module Search = struct
     let d' = Int.compare p1.cost_priority p2.cost_priority in
     if not (Int.equal d 0) then d
     else if not (Int.equal d' 0) then d'
-    else subgoals_order p1 p2
-
-  (* We cannot determine statically the cost of an Extern hint, so we evaluate
-     it locally, backtrack and return a dummy tactic that immediately sets the
-     result. *)
-  let partial_eval (tac, cost, pp) = match cost.cost_subgoals with
-  | Some _ -> Proofview.tclUNIT (Some (tac, cost, pp))
-  | None ->
-    (* Assert that we are focussed *)
-    Proofview.Goal.enter_one begin fun _ ->
-    Proofview.tclORELSE (Proofview.UnsafeRepr.make begin
-      let open Logic_monad.BackState in
-      get >>= fun s ->
-      Proofview.UnsafeRepr.repr (Proofview.tclONCE tac) >>= fun () ->
-      get >>= fun r ->
-      Proofview.UnsafeRepr.repr Proofview.numgoals >>= fun n ->
-      set s >>= fun () ->
-      let tac = Proofview.UnsafeRepr.make (set r) in
-      let cost = { cost with cost_subgoals = Some n } in
-      return (Some (tac, cost, pp))
-    end) (fun _ -> Proofview.tclUNIT None)
-    end
+    else Int.compare p1.cost_subgoals p2.cost_subgoals
 
   let branching db dblist local_lemmas =
     Proofview.Goal.enter_one begin fun gl ->
@@ -246,7 +223,6 @@ module Search = struct
           else make_local_hint_db env sigma ~ts:TransparentState.full true local_lemmas
       in
       let tacs = e_possible_resolve env sigma dblist db secvars concl in
-      Proofview.Monad.List.map_filter partial_eval tacs >>= fun tacs ->
       let tacs = List.sort compare tacs in
       let tacs = List.map (fun (tac, _, pp) -> (true, mkdb, tac, pp)) tacs in
       Proofview.tclUNIT tacs
