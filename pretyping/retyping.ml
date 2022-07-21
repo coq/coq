@@ -95,13 +95,20 @@ let subst_type env sigma typ args = subst_type env sigma [] typ args
 (* [sort_of_atomic_type] computes ft[args] which has to be a sort *)
 
 let sort_of_atomic_type env sigma ft args =
-  let rec concl_of_arity env n ar args =
-    match EConstr.kind sigma (whd_all env sigma ar), args with
-    | Prod (na, t, b), h::l ->
-      concl_of_arity (push_rel (LocalDef (na, lift n h, t)) env) (n + 1) b l
+  let rec concl_of_arity env topush n ar args =
+    match EConstr.kind sigma ar, args with
+    | Prod (na, t, b), h::l -> concl_of_arity env ((na,n,h,t) :: topush) (n + 1) b l
     | Sort s, [] -> ESorts.kind sigma s
-    | _ -> retype_error NotASort
-  in concl_of_arity env 0 ft (Array.to_list args)
+    | _ ->
+      let env = List.fold_right (fun (na,n,h,t) env -> push_rel (LocalDef (na, lift n h, t)) env)
+          topush env
+      in
+      match EConstr.kind sigma (whd_all env sigma ar), args with
+      | Prod (na, t, b), h::l ->
+        concl_of_arity env [na,n,h,t] (n + 1) b l
+      | Sort s, [] -> ESorts.kind sigma s
+      | _ -> retype_error NotASort
+  in concl_of_arity env [] 0 ft (Array.to_list args)
 
 let type_of_var env id =
   try NamedDecl.get_type (lookup_named id env)
