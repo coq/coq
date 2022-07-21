@@ -26,6 +26,14 @@ type rew_rule = { rew_lemma: constr;
                   rew_l2r: bool;
                   rew_tac: Genarg.glob_generic_argument option }
 
+module RewRule =
+struct
+  type t = rew_rule
+  let rew_lemma r = (r.rew_ctx, r.rew_lemma)
+  let rew_l2r r = r.rew_l2r
+  let rew_tac r = r.rew_tac
+end
+
 let subst_hint subst hint =
   let cst' = subst_mps subst hint.rew_lemma in
   let typ' = subst_mps subst hint.rew_type in
