@@ -12,13 +12,17 @@ DECLARE PLUGIN "coq-core.plugins.ltac2_ltac1"
 
 {
 
+open Pcoq
 open Pcoq.Prim
+open Attributes
 open Ltac2_plugin
 open Tac2expr
 open Ltac_plugin
 open Ltac2_plugin.G_ltac2
 
 let ltac_expr = Pltac.ltac_expr
+
+let tac2def_ltac1_notation = Entry.make "tac2def_ltac1_notation"
 
 let inj_wit wit loc x = CAst.make ~loc @@ CTacExt (wit, x)
 
@@ -28,7 +32,7 @@ let inj_ltac1val loc e = inj_wit Tac2quote_ltac1.wit_ltac1val loc e
 }
 
 GRAMMAR EXTEND Gram
-  GLOBAL: ltac2_atom;
+  GLOBAL: ltac2_atom tac2def_ltac1_notation;
   ltac2_atom: TOP
   [ [ IDENT "ltac1"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1 loc qid }
     | IDENT "ltac1val"; ":"; "("; qid = ltac1_expr_in_env; ")" -> { inj_ltac1val loc qid } ] ]
@@ -38,4 +42,35 @@ GRAMMAR EXTEND Gram
       | e = ltac_expr -> { [], e }
     ] ]
   ;
+  tac2def_ltac1_notation:
+    [ [ toks = LIST1 ltac2_scope; n = syn_level; ":=";
+        e = ltac2_expr ->
+        { (toks, n, e) }
+    ] ]
+  ;
+  syn_level:
+    [ [ -> { None }
+      | ":"; n = Prim.natural -> { Some n }
+    ] ]
+  ;
+END
+
+{
+
+let pr_ltac2def_ltac1 _ = Pp.mt () (* FIXME *)
+
+}
+VERNAC ARGUMENT EXTEND ltac2def_ltac1
+PRINTED BY { pr_ltac2def_ltac1 }
+| [ tac2def_ltac1_notation(e) ] -> { e }
+END
+
+VERNAC COMMAND EXTEND Ltac2Ltac1Notation
+| #[ raw_attributes ] [ "Ltac2" "Ltac1" "Notation" ltac2def_ltac1(e) ] => { Vernacextend.(VtSideff ([], VtNow)) } SYNTERP AS synterpv {
+    let (toks, n, body) = e in
+    Tac2entries_ltac1.register_ltac1_notation raw_attributes toks n body
+  } ->
+  {
+    Tac2entries_ltac1.register_ltac1_notation_interpretation synterpv
+  }
 END
