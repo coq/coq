@@ -20,6 +20,8 @@ let cons x s = Lazy.from_val (Cons (x, s))
 
 let peek x : _ node = Lazy.force x
 
+let create f : _ t = lazy (Lazy.force (f ()))
+
 let thunk f : _ t = Lazy.from_fun f
 
 let rec force s = match peek s with

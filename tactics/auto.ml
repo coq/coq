@@ -9,13 +9,8 @@
 (************************************************************************)
 
 open Pp
-open Util
 open Names
-open Termops
-open Environ
-open Genredexpr
 open Tactics
-open Locus
 open Proofview.Notations
 open Hints
 
@@ -27,11 +22,18 @@ open Hints
 (*          tactics with a trace mechanism for automatic search           *)
 (**************************************************************************)
 
-let priority l = List.filter (fun hint -> Int.equal (FullHint.priority hint) 0) l
-
 let compute_secvars gl =
   let hyps = Proofview.Goal.hyps gl in
   secvars_of_hyps hyps
+
+exception SearchFailure
+
+let rec first_in_stream tacs =
+  match IStream.peek tacs with
+  | Nil ->
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info SearchFailure
+  | Cons (tac, tacs) -> Proofview.tclORELSE tac (fun _ -> first_in_stream tacs)
 
 (* tell auto not to reuse already instantiated metas in unification (for
    compatibility, since otherwise, apply succeeds oftener) *)
@@ -105,7 +107,7 @@ let conclPattern concl pat tac =
   in
   Proofview.Goal.enter begin fun gl ->
      let env = Proofview.Goal.env gl in
-     let sigma = Tacmach.project gl in
+     let sigma = Proofview.Goal.sigma gl in
      constr_bindings env sigma >>= fun constr_bindings ->
      Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
      let open Genarg in
@@ -258,11 +260,15 @@ let tclTRY_dbg d tac =
 let auto_flags_of_state st =
   auto_unif_flags_of TransparentState.full st
 
-let hintmap_of env sigma secvars hdc concl =
+let hintmap_of env sigma secvars concl =
+  let hdc =
+    try Some (decompose_app_bound sigma concl)
+    with Bound -> None
+  in
   match hdc with
   | None -> Hint_db.map_none ~secvars
   | Some hdc ->
-     if occur_existential sigma concl then
+     if Termops.occur_existential sigma concl then
        (fun db -> match Hint_db.map_eauto env sigma ~secvars hdc concl db with
                   | ModeMatch (_, l) -> l
                   | ModeMismatch -> [])
@@ -270,38 +276,49 @@ let hintmap_of env sigma secvars hdc concl =
 
 let exists_evaluable_reference env = function
   | Tacred.EvalConstRef _ -> true
-  | Tacred.EvalVarRef v -> try ignore(lookup_named v env); true with Not_found -> false
+  | Tacred.EvalVarRef v -> try ignore(Environ.lookup_named v env); true with Not_found -> false
 
 let dbg_intro dbg = tclLOG dbg (fun _ _ -> str "intro") intro
 let dbg_assumption dbg = tclLOG dbg (fun _ _ -> str "assumption") assumption
 
+(* Introduce a hypothesis, then call the continuation tactic [kont]
+   with the hint db extended with the so-obtained hypothesis *)
+
+let intro_register dbg kont db =
+  Proofview.tclTHEN (dbg_intro dbg) @@
+    Proofview.Goal.enter begin fun gl ->
+      let extend_local_db decl db =
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
+        push_resolve_hyp env sigma (Context.Named.Declaration.get_id decl) db
+      in
+      Tacticals.onLastDecl (fun decl -> kont (extend_local_db decl db))
+    end
+
 let rec trivial_fail_db dbg db_list local_db =
-  let intro_tac =
-    Tacticals.tclTHEN (dbg_intro dbg)
-      ( Proofview.Goal.enter begin fun gl ->
-          let sigma = Tacmach.project gl in
-          let env = Proofview.Goal.env gl in
-          let decl = Tacmach.pf_last_hyp gl in
-          let hyp = Context.Named.Declaration.get_id decl in
-          let local_db = push_resolve_hyp env sigma hyp local_db in
-          trivial_fail_db dbg db_list local_db
-      end)
-  in
   Proofview.Goal.enter begin fun gl ->
-    let concl = Tacmach.pf_concl gl in
-    let sigma = Tacmach.project gl in
-    let env = Proofview.Goal.env gl in
-    let secvars = compute_secvars gl in
-    Tacticals.tclFIRST
-      ((dbg_assumption dbg)::intro_tac::
-          (List.map Tacticals.tclCOMPLETE
-             (trivial_resolve env sigma dbg db_list local_db secvars concl)))
+    IStream.create begin fun () ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let concl = Proofview.Goal.concl gl in
+      let secvars = compute_secvars gl in
+      let hintmap = hintmap_of env sigma secvars concl in
+      let hinttac = tac_of_hint dbg db_list local_db concl in
+      IStream.of_list (local_db::db_list)
+      |> IStream.map (fun db -> try hintmap db with Not_found -> [])
+      |> IStream.concat_map IStream.of_list
+      |> IStream.map_filter begin fun h ->
+           if Int.equal (FullHint.priority h) 0 then
+             Some (Tacticals.tclCOMPLETE (hinttac h))
+           else None
+         end
+    end
+    |> IStream.cons (intro_register dbg (trivial_fail_db dbg db_list) local_db)
+    |> IStream.cons (dbg_assumption dbg)
+    |> first_in_stream
   end
 
-and my_find_search env sigma db_list local_db secvars hdc concl =
-  List.map_append (hintmap_of env sigma secvars hdc concl) (local_db::db_list)
-
-and tac_of_hint dbg db_list local_db concl h =
+and tac_of_hint dbg db_list local_db concl =
   let tactic = function
     | Res_pf h -> unify_resolve_nodelta h
     | ERes_pf _ -> Proofview.Goal.enter (fun gl ->
@@ -316,7 +333,7 @@ and tac_of_hint dbg db_list local_db concl h =
         (trivial_fail_db (no_dbg dbg) db_list local_db)
     | Unfold_nth c ->
       Proofview.Goal.enter begin fun gl ->
-       if exists_evaluable_reference (Tacmach.pf_env gl) c then
+       if exists_evaluable_reference (Proofview.Goal.env gl) c then
          Tacticals.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
        else
          let info = Exninfo.reify () in
@@ -325,88 +342,44 @@ and tac_of_hint dbg db_list local_db concl h =
     | Extern (p, tacast) ->
       conclPattern concl p tacast
   in
-  let pr_hint env sigma =
+  let pr_hint h env sigma =
     let origin = match FullHint.database h with
     | None -> mt ()
     | Some n -> str " (in " ++ str n ++ str ")"
     in
     FullHint.print env sigma h ++ origin
   in
-  tclLOG dbg pr_hint (FullHint.run h tactic)
-
-and trivial_resolve env sigma dbg db_list local_db secvars cl =
-  try
-    let head =
-      try let hdconstr = decompose_app_bound sigma cl in
-            Some hdconstr
-      with Bound -> None
-    in
-      List.map (tac_of_hint dbg db_list local_db cl)
-        (priority
-            (my_find_search env sigma db_list local_db secvars head cl))
-  with Not_found -> []
+  fun h -> tclLOG dbg (pr_hint h) (FullHint.run h tactic)
 
 (** The use of the "core" database can be de-activated by passing
     "nocore" amongst the databases. *)
 
-let trivial ?(debug=Off) lems dbnames =
+let gen_trivial ?(debug=Off) lems dbnames =
   Hints.wrap_hint_warning @@
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.project gl in
-  let db_list = make_db_list dbnames in
-  let d = mk_trivial_dbg debug in
-  let hints = make_local_hint_db env sigma false lems in
-  tclTRY_dbg d
-    (trivial_fail_db d db_list hints)
+    Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let db_list =
+      match dbnames with
+      | Some dbnames -> make_db_list dbnames
+      | None -> current_pure_db ()
+    in
+    let d = mk_trivial_dbg debug in
+    let hints = make_local_hint_db env sigma false lems in
+    tclTRY_dbg d (trivial_fail_db d db_list hints)
   end
 
-let full_trivial ?(debug=Off) lems =
-  Hints.wrap_hint_warning @@
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.project gl in
-  let db_list = current_pure_db () in
-  let d = mk_trivial_dbg debug in
-  let hints = make_local_hint_db env sigma false lems in
-  tclTRY_dbg d
-    (trivial_fail_db d db_list hints)
-  end
+let trivial ?(debug=Off) lems dbnames = gen_trivial ~debug lems (Some dbnames)
 
-let gen_trivial ?(debug=Off) lems = function
-  | None -> full_trivial ~debug lems
-  | Some l -> trivial ~debug lems l
+let full_trivial ?(debug=Off) lems = gen_trivial ~debug lems None
 
-let h_trivial ?(debug=Off) lems l = gen_trivial ~debug lems l
+let h_trivial ?(debug=Off) lems dbnames = gen_trivial ~debug lems dbnames
 
 (**************************************************************************)
 (*                       The classical Auto tactic                        *)
 (**************************************************************************)
 
-let possible_resolve env sigma dbg db_list local_db secvars cl =
-  try
-    let head =
-      try let hdconstr = decompose_app_bound sigma cl in
-            Some hdconstr
-      with Bound -> None
-    in
-      List.map (tac_of_hint dbg db_list local_db cl)
-        (my_find_search env sigma db_list local_db secvars head cl)
-  with Not_found -> []
-
-(* Introduce an hypothesis, then call the continuation tactic [kont]
-   with the hint db extended with the so-obtained hypothesis *)
-
-let intro_register dbg kont db =
-  dbg_intro dbg >>= fun () ->
-    Proofview.Goal.enter begin fun gl ->
-      let extend_local_db decl db =
-        let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in
-        push_resolve_hyp env sigma (Context.Named.Declaration.get_id decl) db
-      in
-      Tacticals.onLastDecl (fun decl -> kont (extend_local_db decl db))
-    end
+exception SearchBound
 
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
@@ -416,26 +389,34 @@ let search d n db_list lems =
     Proofview.Goal.enter begin fun gl ->
       if Int.equal n 0 then
         let info = Exninfo.reify () in
-        Tacticals.tclZEROMSG ~info (str"BOUND 2")
+        Proofview.tclZERO ~info SearchBound
       else
-        Tacticals.tclORELSE0 (dbg_assumption d) @@
-          Tacticals.tclORELSE0 (intro_register d (search d n None secvars) local_db) @@
-            let concl = Proofview.Goal.concl gl in
-            let sigma = Proofview.Goal.sigma gl in
-            let env = Proofview.Goal.env gl in
-            let hyps' = Proofview.Goal.hyps gl in
-            let (secvars', local_db') =
-              match hyps with
-              | None -> (secvars, local_db)
-              | Some hyps ->
-                if hyps' == hyps then (secvars, local_db)
-                else (compute_secvars gl, make_local_hint_db env sigma false lems)
-            in
-            let d' = incr_dbg d in
-            Tacticals.tclFIRST
-              (List.map
-                (fun ntac -> ntac >>= fun () -> search d' (n-1) (Some hyps') secvars' local_db')
-                (possible_resolve env sigma d db_list local_db' secvars' concl))
+        IStream.create begin fun () ->
+          let env = Proofview.Goal.env gl in
+          let sigma = Proofview.Goal.sigma gl in
+          let concl = Proofview.Goal.concl gl in
+          let hyps' = Proofview.Goal.hyps gl in
+          let (secvars', local_db') =
+            match hyps with
+            | None -> (secvars, local_db)
+            | Some hyps ->
+              if hyps' == hyps then (secvars, local_db)
+              else (compute_secvars gl, make_local_hint_db env sigma false lems)
+          in
+          let d' = incr_dbg d in
+          let hintmap = hintmap_of env sigma secvars' concl in
+          let hinttac = tac_of_hint d db_list local_db' concl in
+          IStream.of_list (local_db'::db_list)
+          |> IStream.map (fun db -> try hintmap db with Not_found -> [])
+          |> IStream.concat_map IStream.of_list
+          |> IStream.map begin fun h ->
+               Proofview.tclTHEN (hinttac h) @@
+                 search d' (n-1) (Some hyps') secvars' local_db'
+             end
+        end
+        |> IStream.cons (intro_register d (search d n None secvars) local_db)
+        |> IStream.cons (dbg_assumption d)
+        |> first_in_stream
     end
   in
   Proofview.Goal.enter begin fun gl ->

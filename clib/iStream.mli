@@ -30,6 +30,9 @@ val empty : 'a t
 val cons : 'a -> 'a t -> 'a t
 (** Append an element in front of a stream. *)
 
+val create : (unit -> 'a t) -> 'a t
+(** Internalize the laziness of a stream. *)
+
 val thunk : (unit -> 'a node) -> 'a t
 (** Internalize the laziness of a stream. *)
 
