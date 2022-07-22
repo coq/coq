@@ -40,12 +40,6 @@ let instance_of_univ_entry = function
   | UState.Monomorphic_entry _ -> Univ.Instance.empty
 
 let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) imps nl {CAst.v=name} =
-  let do_instance = let open Decls in match kind with
-  | Context -> true
-    (* The typeclass behaviour of Variable and Context doesn't depend
-       on section status *)
-  | Definitional | Logical | Conjectural -> false
-  in
   let inl = let open Declaremods in match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
@@ -58,9 +52,6 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) imps nl {CAst.
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
   let () = Declare.assumption_message name in
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  let () = if do_instance then Classes.declare_instance env sigma None Hints.SuperGlobal gr in
   let local = match local with
     | Locality.ImportNeedQualified -> true
     | Locality.ImportDefaultBehavior -> false
