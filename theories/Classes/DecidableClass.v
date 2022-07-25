@@ -63,7 +63,7 @@ Tactic Notation "decide" constr(P) :=
 
 (** Some usual instances. *)
 
-Require Import Bool Arith ZArith.
+Require Import Bool Arith ZArith QArith Strings.Byte Ascii String.
 
 #[global]
 Program Instance Decidable_not {P} `{Decidable P} : Decidable (~ P) := {
@@ -77,17 +77,17 @@ Next Obligation.
 Qed.
 
 #[global]
-Instance Decidable_eq_bool : forall (x y : bool), Decidable (eq x y) := {
+Instance Decidable_eq_bool : forall (x y : bool), Decidable (x = y) := {
   Decidable_spec := eqb_true_iff x y
 }.
 
 #[global]
-Instance Decidable_eq_nat : forall (x y : nat), Decidable (eq x y) := {
+Instance Decidable_eq_nat : forall (x y : nat), Decidable (x = y) := {
   Decidable_spec := Nat.eqb_eq x y
 }.
 
 #[global]
-Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y) := {
+Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y)%nat := {
   Decidable_spec := Nat.leb_le x y
 }.
 
@@ -96,7 +96,7 @@ Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y) := {
    resolution seems to understand. *)
 
 #[global]
-Instance Decidable_eq_Z : forall (x y : Z), Decidable (eq x y) := {
+Instance Decidable_eq_Z : forall (x y : Z), Decidable (x = y) := {
   Decidable_spec := Z.eqb_eq x y
 }.
 
@@ -119,3 +119,34 @@ Instance Decidable_ge_Z : forall (x y : Z), DecidableClass.Decidable (x >= y)%Z 
 Instance Decidable_gt_Z : forall (x y : Z), DecidableClass.Decidable (x > y)%Z := {
   Decidable_spec := Z.gtb_gt x y
 }.
+
+#[global]
+Instance Decidable_eq_Q: forall (x y : Q), DecidableClass.Decidable (x == y)%Q := {
+  Decidable_spec := Qeq_bool_iff x y
+}.
+
+#[global]
+Instance Decidable_le_Q: forall (x y : Q), DecidableClass.Decidable (x <= y)%Q := {
+  Decidable_spec := Qle_bool_iff x y
+}.
+
+#[global]
+Instance Decidable_eq_byte: forall (x y : byte), DecidableClass.Decidable (x = y) := {
+  Decidable_spec := conj (Byte.byte_dec_bl x y) (@Byte.byte_dec_lb x y)
+}.
+
+#[global]
+Program Instance Decidable_eq_ascii: forall (x y : ascii), DecidableClass.Decidable (x = y) := {
+  Decidable_witness := Ascii.eqb x y
+}.
+Next Obligation.
+  now case (Ascii.eqb_spec x y).
+Qed.
+
+#[global]
+Program Instance Decidable_eq_string: forall (x y : string), DecidableClass.Decidable (x = y) := {
+  Decidable_witness := String.eqb x y
+}.
+Next Obligation.
+  now case (String.eqb_spec x y).
+Qed.
