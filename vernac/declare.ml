@@ -631,6 +631,8 @@ module Internal = struct
 
   let objVariable = objVariable
 
+  let export_side_effects = export_side_effects
+
 end
 
 let declare_definition_scheme ~internal ~univs ~role ~name c =
