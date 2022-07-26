@@ -2822,6 +2822,9 @@ let pose_tac na c =
   end
 
 let letin_tac with_eq id c ty occs =
+  if Option.is_empty with_eq && Option.is_empty ty && Locusops.is_nowhere occs then
+    pose_tac id c
+  else
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
