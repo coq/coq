@@ -545,6 +545,8 @@ val extract_changed_conv_pbs : evar_map ->
 val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
 val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t option
 
+val pr_last_mods : evar_map -> Pp.t
+
 (** The following functions return the set of undefined evars
     contained in the object. *)
 

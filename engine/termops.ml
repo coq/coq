@@ -292,6 +292,8 @@ let pr_evar_map_gen with_univs pr_evars env sigma =
     else
     str "CONSTRAINTS:" ++ brk (0, 1) ++
       pr_evar_constraints sigma conv_pbs ++ fnl ()
+  and last_mods =
+    str "LAST MODS:" ++ brk (0, 1) ++ Evd.pr_last_mods sigma ++ fnl ()
   and typeclasses =
     let evars = Evd.get_typeclass_evars sigma in
     if Evar.Set.is_empty evars then mt ()
@@ -313,7 +315,7 @@ let pr_evar_map_gen with_univs pr_evars env sigma =
   and future_goals =
     str "FUTURE GOALS STACK:" ++ brk (0, 1) ++ Evd.pr_future_goals_stack sigma ++ fnl ()
   in
-  evs ++ svs ++ cstrs ++ typeclasses ++ obligations ++ metas ++ shelf ++ future_goals
+  evs ++ svs ++ last_mods ++ cstrs ++ typeclasses ++ obligations ++ metas ++ shelf ++ future_goals
 
 let pr_evar_list env sigma l =
   let open Evd in

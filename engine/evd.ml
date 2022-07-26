@@ -906,6 +906,9 @@ let extract_changed_conv_pbs evd p =
 let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
 
+let pr_last_mods evd =
+  pr_sequence (fun x -> int (Evar.repr x)) (Evar.Set.elements evd.last_mods)
+
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind (fst (decompose_app t1)) with
   | Evar (evk1,_) -> fst (evar_source evk1 evd)
