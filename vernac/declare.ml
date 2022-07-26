@@ -971,13 +971,6 @@ let shrink_body c ty =
 (* Saving an obligation                                                *)
 (***********************************************************************)
 
-let unfold_entry cst = Hints.HintsUnfoldEntry [Tacred.EvalConstRef cst]
-
-let add_hint local prg cst =
-  (* XXX checking sections here is suspicious but matches historical (unintended?) behaviour *)
-  let locality = if local || Global.sections_are_opened () then Hints.Local else Hints.SuperGlobal in
-  Hints.add_hints ~locality [Id.to_string prg.prg_cinfo.CInfo.name] (unfold_entry cst)
-
 let declare_obligation prg obl ~uctx ~types ~body =
   let poly = prg.prg_info.Info.poly in
   let univs = UState.univ_entry ~poly uctx in
@@ -1002,8 +995,6 @@ let declare_obligation prg obl ~uctx ~types ~body =
         ~kind:Decls.(IsProof Property)
         (DefinitionEntry ce)
     in
-    if not opaque then
-      add_hint (Locality.make_section_locality None) prg constant;
     definition_message obl.obl_name;
     let body =
       match fst univs with
@@ -1362,7 +1353,6 @@ let obligation_admitted_terminator ~pm {name; num; auto} uctx' dref =
       (Univ.UContext.instance uctx, uctx')
   in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
-  let () = if transparent then add_hint true prg cst in
   update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto
 
 end
