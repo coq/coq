@@ -164,20 +164,6 @@ val prod_applist_assum : Evd.evar_map -> int -> constr -> constr list -> constr
    [strip_outer_cast (Cast (Cast ... (Cast c, t) ... ))] is [c]. *)
 val strip_outer_cast : Evd.evar_map -> constr -> constr
 
-exception CannotFilter
-
-(** Lightweight first-order filtering procedure. Unification
-   variables ar represented by (untyped) Evars.
-   [filtering c1 c2] returns the substitution n'th evar ->
-   (context,term), or raises [CannotFilter].
-   Warning: Outer-kernel sort subtyping are taken into account: c1 has
-   to be smaller than c2 wrt. sorts. *)
-type subst = (rel_context * constr) Evar.Map.t
-val filtering : Evd.evar_map -> rel_context -> Reduction.conv_pb -> constr -> constr -> subst
-
-val decompose_prod_letin : Evd.evar_map -> constr -> int * rel_context * constr
-val align_prod_letin : Evd.evar_map -> constr -> constr -> rel_context * constr
-
 (** [nb_lam] {% $ %}[x_1:T_1]...[x_n:T_n]c{% $ %} where {% $ %}c{% $ %} is not an abstraction
    gives {% $ %}n{% $ %} (casts are ignored) *)
 val nb_lam : Evd.evar_map -> constr -> int

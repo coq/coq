@@ -35,13 +35,7 @@ sig
   val empty : t
   val add : t -> term_pattern -> ident -> t
   val find_all : t -> Idset.t
-  val fold_pattern :
-    ('a -> (Idset.t * meta * t) -> 'a) -> 'a -> term_pattern -> t -> Idset.t option * 'a
   val find_match : term_pattern -> t -> Idset.t
-  val inter : t -> t -> t
-  val union : t -> t -> t
-  val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
-  val map_metas : (meta -> meta) -> t -> t
 end
 
 module Make =
@@ -124,49 +118,6 @@ struct
              Idset.union acc s2
          ) t Idset.empty)
 
-(*   (\* optimization hack: Not_found is caught in fold_pattern *\) *)
-(*   let fast_inter s1 s2 = *)
-(*     if Idset.is_empty s1 || Idset.is_empty s2 then raise Not_found *)
-(*     else Idset.inter s1 s2 *)
-
-(*   let option_any2 f s1 s2 = match s1,s2 with *)
-(*     | Some s1, Some s2 -> f s1 s2 *)
-(*     | (Some s, _ | _, Some s) -> s *)
-(*     | _ -> raise Not_found *)
-
-(*   let fold_pattern ?(complete=true) f acc pat dn = *)
-(*     let deferred = ref [] in *)
-(*     let leafs,metas = ref None, ref None in *)
-(*     let leaf s = leafs := match !leafs with *)
-(*       | None -> Some s *)
-(*       | Some s' -> Some (fast_inter s s') in *)
-(*     let meta s = metas := match !metas with *)
-(*       | None -> Some s *)
-(*       | Some s' -> Some (Idset.union s s') in *)
-(*     let defer c = deferred := c::!deferred in *)
-(*     let rec fp_rec (p:term_pattern) (Nodes(t,m) as dn:t) = *)
-(*       Mmap.iter (fun _ -> meta) m; (\* TODO: gérer patterns nonlin ici *\) *)
-(*       match p with *)
-(* 	| Meta m -> defer (m,dn) *)
-(* 	| Term w -> *)
-(* 	    try match select t w with *)
-(* 	      | Terminal (_,is) -> leaf is *)
-(* 	      | Node e -> *)
-(* 		  if complete then T.fold2 (fun _ -> fp_rec) () w e else *)
-(* 		    if T.fold2 *)
-(* 		      (fun b p dn -> match p with *)
-(* 			 | Term _ -> fp_rec p dn; false *)
-(* 			 | Meta _ -> b *)
-(* 		      ) true w e *)
-(* 		    then T.choose (T.choose fp_rec w) e *)
-(* 	    with Not_found -> *)
-(* 	      if Mmap.is_empty m then raise Not_found else () *)
-(*     in try *)
-(*       fp_rec pat dn; *)
-(*       (try Some (option_any2 Idset.union !leafs !metas) with Not_found -> None), *)
-(*       List.fold_left (fun acc (m,dn) -> f m dn acc) acc !deferred *)
-(*     with Not_found -> None,acc *)
-
   (* Sets with a neutral element for inter *)
   module OSet (S:Set.S) = struct
     type t = S.t option
@@ -247,27 +198,6 @@ struct
          | _ -> assert false
       ) t1 t2
 
-  let rec union (t1:t) (t2:t) : t =
-    let union_map f (Nodes (t1,m1):t) (Nodes (t2,m2):t) : t =
-      Nodes
-        (Tmap.fold
-           ( fun k e acc ->
-               try Tmap.add k (f e (Tmap.find k acc)) acc
-               with Not_found -> Tmap.add k e acc
-           ) t1 t2,
-         Mmap.fold
-           ( fun m s acc ->
-               try Mmap.add m (Idset.inter s (Mmap.find m acc)) acc
-               with Not_found -> Mmap.add m s acc
-           ) m1 m2
-        ) in
-    union_map
-      (fun n1 n2 -> match n1,n2 with
-         | Terminal (e1,s1), Terminal (_,s2) -> Terminal (e1,Idset.union s1 s2)
-         | Node e1, Node e2 -> Node (T.map2 union e1 e2)
-         | _ -> assert false
-      ) t1 t2
-
   let find_match (p:term_pattern) (t:t) : idset =
     let metas = ref Mmap.empty in
     let (mset,lset) = fold_pattern ~complete:false
@@ -279,25 +209,5 @@ struct
          OIdset.union (Some mset) all
       ) None p t in
     Option.get (OIdset.inter mset lset)
-
-  let fold_pattern f acc p dn = fold_pattern ~complete:true f acc p dn
-
-  let idset_map f is = Idset.fold (fun e acc -> Idset.add (f e) acc) is Idset.empty
-  let tmap_map f g m = Tmap.fold (fun k e acc -> Tmap.add (f k) (g e) acc) m Tmap.empty
-
-  let rec map sidset sterm (Nodes (t,m)) : t =
-    let snode = function
-      | Terminal (e,is) -> Terminal (e,idset_map sidset is)
-      | Node e -> Node (T.map (map sidset sterm) e) in
-    Nodes (tmap_map sterm snode t, Mmap.map (idset_map sidset) m)
-
-  let rec map_metas f (Nodes (t, m)) : t =
-    let f_node = function
-      | Terminal (e, is) -> Terminal (T.map (map_metas f) e, is)
-      | Node e -> Node (T.map (map_metas f) e)
-    in
-    let m' = Mmap.fold (fun m s acc -> Mmap.add (f m) s acc) m Mmap.empty in
-    let t' = Tmap.fold (fun k n acc -> Tmap.add k (f_node n) acc) t Tmap.empty in
-    Nodes (t', m')
 
 end

@@ -4,5 +4,5 @@
  (public_name coq-core.tactics)
  (wrapped false)
  ; until ocaml/dune#4892 fixed
- ; (private_modules btermdn dnet dn term_dnet)
+ ; (private_modules btermdn dnet dn)
  (libraries printing))

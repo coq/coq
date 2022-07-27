@@ -97,26 +97,10 @@ sig
   (** [find_all t] returns all identifiers contained in t. *)
   val find_all : t -> Idset.t
 
-  (** [fold_pattern f acc p dn] folds f on each meta of p, passing the
-     meta and the sub-dnet under it. The result includes:
-     - Some set if identifiers were gathered on the leafs of the term
-     - None if the pattern contains no leaf (only Metas at the leafs).
-  *)
-  val fold_pattern :
-    ('a -> (Idset.t * meta * t) -> 'a) -> 'a -> term_pattern -> t -> Idset.t option * 'a
-
   (** [find_match p t] returns identifiers of all terms matching p in
      t. *)
   val find_match : term_pattern -> t -> Idset.t
 
-  (** set operations on dnets *)
-  val inter : t -> t -> t
-  val union : t -> t -> t
-
-  (** apply a function on each identifier and node of terms in a dnet *)
-  val map : (ident -> ident) -> (unit structure -> unit structure) -> t -> t
-
-  val map_metas : (meta -> meta) -> t -> t
 end
 
 module Make :

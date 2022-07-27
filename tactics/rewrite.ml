@@ -98,7 +98,7 @@ let extends_undefined evars evars' =
 
 let app_poly_check env evars f args =
   let (evars, cstrs), fc = f env evars in
-  let evars, t = Typing.solve_evars env evars (mkApp (fc, args)) in
+  let evars, t = Typing.checked_appvect env evars fc args in
   (evars, cstrs), t
 
 let app_poly_nocheck env evars f args =
@@ -1369,22 +1369,23 @@ module Strategies =
         fail cs
 
     let inj_open hint = (); fun sigma ->
-      let ctx = UState.of_context_set hint.Autorewrite.rew_ctx in
+      let (ctx, lemma) = Autorewrite.RewRule.rew_lemma hint in
+      let ctx = UState.of_context_set ctx in
       let sigma = Evd.merge_universe_context sigma ctx in
-      (sigma, (EConstr.of_constr hint.Autorewrite.rew_lemma, NoBindings))
+      (sigma, (EConstr.of_constr lemma, NoBindings))
 
     let old_hints (db : string) : 'a pure_strategy =
       let rules = Autorewrite.find_rewrites db in
         lemmas
-          (List.map (fun hint -> (inj_open hint, hint.Autorewrite.rew_l2r,
-                                  hint.Autorewrite.rew_tac)) rules)
+          (List.map (fun hint -> (inj_open hint, Autorewrite.RewRule.rew_l2r hint,
+                                  Autorewrite.RewRule.rew_tac hint)) rules)
 
     let hints (db : string) : 'a pure_strategy = { strategy =
       fun ({ term1 = t } as input) ->
       let t = EConstr.Unsafe.to_constr t in
       let rules = Autorewrite.find_matches db t in
-      let lemma hint = (inj_open hint, hint.Autorewrite.rew_l2r,
-                        hint.Autorewrite.rew_tac) in
+      let lemma hint = (inj_open hint, Autorewrite.RewRule.rew_l2r hint,
+                        Autorewrite.RewRule.rew_tac hint) in
       let lems = List.map lemma rules in
       (lemmas lems).strategy input
                                                  }

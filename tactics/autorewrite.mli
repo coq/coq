@@ -27,16 +27,17 @@ val autorewrite : ?conds:conditions -> unit Proofview.tactic -> string list -> u
 val autorewrite_in : ?conds:conditions -> Names.Id.t -> unit Proofview.tactic -> string list -> unit Proofview.tactic
 
 (** Rewriting rules *)
-type rew_rule = { rew_lemma: constr;
-                  rew_type: types;
-                  rew_pat: constr;
-                  rew_ctx: Univ.ContextSet.t;
-                  rew_l2r: bool;
-                  rew_tac: Genarg.glob_generic_argument option }
+module RewRule :
+sig
+   type t
+   val rew_lemma : t -> Univ.ContextSet.t * constr
+   val rew_l2r : t -> bool
+   val rew_tac : t -> Genarg.glob_generic_argument option
+end
 
-val find_rewrites : string -> rew_rule list
+val find_rewrites : string -> RewRule.t list
 
-val find_matches : string -> constr -> rew_rule list
+val find_matches : string -> constr -> RewRule.t list
 
 val auto_multi_rewrite : ?conds:conditions -> string list -> Locus.clause -> unit Proofview.tactic
 
