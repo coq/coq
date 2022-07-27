@@ -68,8 +68,6 @@ usage () {
     echo -e "\tAdd debugging information in the Coq executables\n"
     echo "-profile"
     echo -e "\tAdd profiling information in the Coq executables\n"
-    echo "-annotate"
-    echo -e "\tCompiles Coq with -dtypes option"
 }
 
 
@@ -102,6 +100,8 @@ COQSRC=`pwd`
 while : ; do
   case "$1" in
     "") break;;
+    -help|--help) usage
+                  exit;;
     -prefix|--prefix) prefix_spec=yes
                       prefix="$2"
 		      shift;;
