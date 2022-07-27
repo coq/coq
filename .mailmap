@@ -27,6 +27,7 @@ Frédéric Besson <frederic.besson@inria.fr>         BESSON Frederic <frederic.b
 Siddharth Bhat <siddu.druid@gmail.com>             Siddharth <siddu.druid@gmail.com>
 Lasse Blaauwbroek <lasse@blaauwbroek.eu>           Lasse Blaauwbroek <lasse@lasse-work.localdomain>
 Martin Bodin <martin.bodin@ens-lyon.org>           Martin Bodin <mbodin@ic.ac.uk>
+Martin Bodin <martin.bodin@ens-lyon.org>           Martin Bodin <martin.bodin@inria.fr>
 Ana Borges <ana.agvb@gmail.com>                    Ana <ana.agvb@gmail.com>
 Ana Borges <ana.agvb@gmail.com>                    ana-borges <ana-borges@users.noreply.github.com>
 Simon Boulier <simon.boulier@ens-rennes.fr>        SimonBoulier <simon.boulier@ens-rennes.fr>
@@ -54,6 +55,7 @@ Maxime Dénès <mail@maximedenes.fr>                 Maxime Dénès <maxime.dene
 Maxime Dénès <mail@maximedenes.fr>                 maximedenes <maximedenes@users.noreply.github.com>
 Stéphane Desarzens <8899730+Columbus240@users.noreply.github.com>     Columbus240 <8899730+Columbus240@users.noreply.github.com>
 Olivier Desmettre <desmettr@gforge>                desmettr <desmettr@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Christian Doczkal <christian.doczkal@inria.fr>     Christian Doczkal <christian.doczkal@ens-lyon.fr>
 Damien Doligez <doligez@gforge>                    doligez <doligez@85f007b7-540e-0410-9357-904b9bb8a0f7>
 İsmail Dönmez <ismail-s@users.noreply.github.com>  Ismail <ismail-s@users.noreply.github.com>
 formalize.eth <formalize@protonmail.com>           ilya <ilya@localhost.localdomain>
@@ -61,6 +63,7 @@ Andres Erbsen <andreser@mit.edu>                   Andres Erbsen <andres@kevix.c
 Jim Fehrle <jim.fehrle@gmail.com>                  Jim <jfehrle@sbcglobal.net>
 Jim Fehrle <jim.fehrle@gmail.com>                  Jim Fehrle <jim.fehrle@gmail.com>
 Jim Fehrle <jim.fehrle@gmail.com>                  jfehrle <jfehrle@users.noreply.github.com>
+Jim Fehrle <jim.fehrle@gmail.com>                  Jim Fehrle <jfehrle@sbcglobal.net>
 Jean-Christophe Filliâtre <Jean-Christophe.Filliatre@lri.fr> filliatr <filliatr@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Jean-Christophe Filliâtre <Jean-Christophe.Filliatre@lri.fr> Jean-Christophe Filliatre <Jean-Christophe.Filliatre@lri.fr>
 Julien Forest <julien.forest@ensiie.fr>            jforest <jforest@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -86,6 +89,8 @@ Jason Gross <jgross@mit.edu>                       JasonGross <JasonGross@users.
 Vincent Gross <vgross@gforge>                      vgross <vgross@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Samuel Gruetter <samuel.gruetter@epfl.ch>          Samuel Gruetter <saemi472@gmail.com>
 Huang Guan-Shieng <huang@gforge>                   huang <huang@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Armaël Guéneau <armael.gueneau@ens-lyon.org>       Armael <armael@isomorphis.me>
+Armaël Guéneau <armael.gueneau@ens-lyon.org>       Armaël Guéneau <armael.gueneau@ens-lyon.fr>
 Hugo Herbelin <Hugo.Herbelin@inria.fr>             herbelin <herbelin@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Hugo Herbelin <Hugo.Herbelin@inria.fr>             Hugo Herbelin <herbelin@users.noreply.github.com>
 Hugo Herbelin <Hugo.Herbelin@inria.fr>             herbelin <herbelin@users.noreply.github.com>
@@ -95,9 +100,11 @@ Jasper Hugunin <jasper@hugunin.net>                Jasper Hugunin <jasper@hashpl
 Tom Hutchinson <thutchin@gforge>                   thutchin <thutchin@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Jacques-Henri Jourdan <jacques-henri.jourdan@normalesup.org> Jacques-Henri Jourdan <jacques-henri.jourdan@inria.fr>
 Pierre Jouvelot <pierre.jouvelot@mines-paristech.fr> jouvelot <pierre.jouvelot@mines-paristech.fr>
-Jan-Oliver Kaiser <Janno@users.noreply.github.com> Janno <Janno@users.noreply.github.com>
+Jan-Oliver Kaiser <janno@mpi-sws.org>              Janno <Janno@users.noreply.github.com>
+Jan-Oliver Kaiser <janno@mpi-sws.org>              Jan-Oliver Kaiser <janno@bedrocksystems.com>
 Cezary Kaliszyk <cek@gforge>                       cek <cek@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Wojciech Karpiel <w.karpiel@o2.pl>                 WojciechKarpiel <w.karpiel@o2.pl>
+Wojciech Karpiel <w.karpiel@o2.pl>                 Wojciech Karpiel <w.karpiel@avsystem.com>
 Florent Kirchner <fkirchne@gforge>                 fkirchne <fkirchne@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Florent Kirchner <fkirchne@gforge>                 kirchner <kirchner@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Johannes Kloos <jkloos@mpi-sws.org>                jkloos <jkloos@mpi-sws.org>
@@ -119,6 +126,7 @@ Pierre Letouzey <pierre.letouzey@inria.fr>         letouzey <letouzey@85f007b7-5
 Pierre Letouzey <pierre.letouzey@inria.fr>         letouzey <pierre.letouzey@inria.fr>
 Nick Lewycky <nicholas@mxc.ca>                     nlewycky <nicholas@mxc.ca>
 Yishuai Li <yishuai@cis.upenn.edu>                 Yishuai Li <yishuai@upenn.edu>
+Yishuai Li <yishuai@cis.upenn.edu>                 Yishuai Li <liyishuai@users.noreply.github.com>
 Assia Mahboubi <assia.mahboubi@inria.fr>           amahboub <amahboub@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Kenji Maillard <kenji.maillard@inria.fr>           Kenji Maillard <kenji@maillard.blue>
 Evgeny Makarov <emakarov@gforge>                   emakarov <emakarov@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -152,6 +160,7 @@ Clément Pit-Claudel <clement.pitclaudel@live.com>  Clément Pit--Claudel <cleme
 Clément Pit-Claudel <clement.pitclaudel@live.com>  Clément Pit-Claudel <cpitclaudel@users.noreply.github.com>
 Loïc Pottier <pottier@gforge>                      pottier <pottier@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Matthias Puech <puech@gforge>                      puech <puech@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Ramkumar Ramachandra <r@artagnon.com>              Ramkumar Ramachandra <artagnon@gmail.com>
 Robert Rand <rnrand@gmail.com>                     Robert Rand <rxtreme@gmail.com>
 Lars Rasmusson <lars.rasmusson@sics.se>            larsr <Lars.Rasmusson@sics.se>
 Lars Rasmusson <lars.rasmusson@sics.se>            larsr <Lars.Rasmusson@gmail.com>
@@ -171,7 +180,9 @@ Kazuhiko Sakaguchi <pi8027@gmail.com>              Kazuhiko Sakaguchi <sakaguchi
 Kazuhiko Sakaguchi <pi8027@gmail.com>              Kazuhiko Sakaguchi <sakaguchi@peano-system.jp>
 Kazuhiko Sakaguchi <pi8027@gmail.com>              pi8027 <pi8027@users.noreply.github.com>
 Vincent Siles <vsiles@gforge>                      vsiles <vsiles@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Kartik Singhal <kartiksinghal@gmail.com>           Kartik Singhal <ks@cs.uchicago.edu>
 Michael Soegtrop <michael.soegtrop@intel.com>      Michael Soegtrop <7895506+MSoegtropIMC@users.noreply.github.com>
+Michael Soegtrop <michael.soegtrop@intel.com>      MSoegtropIMC <7895506+MSoegtropIMC@users.noreply.github.com>
 Michael Soegtrop <michael.soegtrop@intel.com>      MSoegtropIMC <MSoegtropIMC@users.noreply.github.com>
 Elie Soubiran <soubiran@gforge>                    soubiran <soubiran@85f007b7-540e-0410-9357-904b9bb8a0f7>
 Matthieu Sozeau <mattam@mattam.org>                msozeau <msozeau@85f007b7-540e-0410-9357-904b9bb8a0f7>
@@ -179,6 +190,7 @@ Matthieu Sozeau <mattam@mattam.org>                Matthieu Sozeau <matthieu.soz
 Matthieu Sozeau <mattam@mattam.org>                Matthieu Sozeau <mattam@eduroam-prg-sg-1-46-137.net.univ-paris-diderot.fr>
 Matthieu Sozeau <mattam@mattam.org>                mattam82 <mattam82@users.noreply.github.com>
 Arnaud Spiwack <arnaud@spiwack.net>                aspiwack <aspiwack@85f007b7-540e-0410-9357-904b9bb8a0f7>
+Naveen Srinivasan <172697+naveensrinivasan@users.noreply.github.com> naveen <172697+naveensrinivasan@users.noreply.github.com>
 Paul Steckler <steck@stecksoft.com>                Paul Steckler <psteck@mit.edu>
 Frank Steffahn <fdsteffahn@gmail.com>              staffehn <fdsteffahn@gmail.com>
 Enrico Tassi <Enrico.Tassi@inria.fr>               gareuselesinge <gareuselesinge@85f007b7-540e-0410-9357-904b9bb8a0f7>
