@@ -181,7 +181,7 @@ let normalize_scope sc =
 type scope_item = OpenScopeItem of scope_name | LonelyNotationItem of notation
 type scopes = scope_item list
 
-let scope_eq s1 s2 = match s1, s2 with
+let scope_item_eq s1 s2 = match s1, s2 with
 | OpenScopeItem s1, OpenScopeItem s2 -> String.equal s1 s2
 | LonelyNotationItem s1, LonelyNotationItem s2 -> notation_eq s1 s2
 | OpenScopeItem _, LonelyNotationItem _
@@ -199,7 +199,7 @@ let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 (* TODO: push nat_scope, z_scope, ... in scopes summary *)
 
 let open_scope sc = scope_stack := OpenScopeItem sc :: !scope_stack
-let close_scope sc = scope_stack := List.remove scope_eq (OpenScopeItem sc) !scope_stack
+let close_scope sc = scope_stack := List.remove scope_item_eq (OpenScopeItem sc) !scope_stack
 
 let empty_scope_stack = []
 
