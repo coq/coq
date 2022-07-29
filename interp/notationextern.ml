@@ -86,17 +86,8 @@ type notation_rule = interp_rule * interpretation * notation_applicative_status
 let notation_rule_eq (rule1,pat1,s1 as x1) (rule2,pat2,s2 as x2) =
   x1 == x2 || (rule1 = rule2 && interpretation_eq pat1 pat2 && s1 = s2)
 
-let adjust_application c1 c2 =
-  match c1, c2 with
-  | NApp (t1, a1), (NList (_,_,NApp (_, a2),_,_) | NApp (_, a2)) when List.length a1 >= List.length a2 ->
-      NApp (t1, List.firstn (List.length a2) a1)
-  | NApp (t1, a1), _ ->
-      t1
-  | _ -> c1
-
-let strictly_finer_interpretation_than (_,(_,(vars1,c1),_)) (_,(_,(vars2,c2),_)) =
-  let c1 = adjust_application c1 c2 in
-  Notation_ops.strictly_finer_notation_constr (List.map fst vars1, List.map fst vars2) c1 c2
+let strictly_finer_interpretation_than (_,(_,interp1,_)) (_,(_,interp2,_)) =
+  Notation_ops.strictly_finer_interpretation_than interp1 interp2
 
 let keymap_add key interp map =
   let old = try KeyMap.find key map with Not_found -> [] in
