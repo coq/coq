@@ -68,6 +68,8 @@ type extended_global_reference =
   | TrueGlobal of GlobRef.t
   | Abbrev of abbreviation
 
+let abbreviation_eq = KerName.equal
+
 (* We order [extended_global_reference] via their user part
    (cf. pretty printer) *)
 
