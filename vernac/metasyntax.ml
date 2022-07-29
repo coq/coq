@@ -1915,7 +1915,7 @@ let load_notation_toggle _ _ = ()
 let open_notation_toggle _ (local,(on,use,pat,rule)) =
   match rule with
   | NotationRule ntn -> toggle_notation ~on ntn ~use pat
-  | AbbrevRule kn -> Abbreviation.activate_abbreviation ~on kn
+  | AbbrevRule kn -> Abbreviation.toggle_abbreviation ~on ~use kn
 
 let cache_notation_toggle o =
   load_notation_toggle 1 o;

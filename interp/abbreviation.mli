@@ -10,6 +10,7 @@
 
 open Names
 open Notation_term
+open Notationextern
 open Globnames
 
 (** Abbreviations. *)
@@ -24,4 +25,6 @@ val search_filtered_abbreviation : ?loc:Loc.t ->
 
 val import_abbreviation : int -> Libnames.full_path -> KerName.t -> unit
 
-val activate_abbreviation : on:bool -> abbreviation -> unit
+val toggle_abbreviation : on:bool -> use:notation_use -> abbreviation -> unit
+
+val toggle_abbreviations : on:bool -> use:notation_use -> (interpretation -> bool) -> unit
