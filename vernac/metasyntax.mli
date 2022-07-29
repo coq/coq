@@ -65,7 +65,7 @@ val pr_keywords : unit -> Pp.t
 
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
 
-val declare_notation_toggle : locality_flag -> on:bool -> use:Notationextern.notation_use -> Notationextern.interp_rule -> unit
+val declare_notation_toggle : locality_flag -> on:bool -> all:bool -> Notation.notation_query_pattern -> unit
 
 val declare_custom_entry : locality_flag -> string -> unit
 (** Declare given string as a custom grammar entry *)

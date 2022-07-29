@@ -27,4 +27,4 @@ val import_abbreviation : int -> Libnames.full_path -> KerName.t -> unit
 
 val toggle_abbreviation : on:bool -> use:notation_use -> abbreviation -> unit
 
-val toggle_abbreviations : on:bool -> use:notation_use -> (interpretation -> bool) -> unit
+val toggle_abbreviations : on:bool -> use:notation_use -> (KerName.t -> interpretation -> bool) -> unit

@@ -538,15 +538,46 @@ let vernac_notation ~atts ~infix =
 let vernac_custom_entry ~module_local s =
   Metasyntax.declare_custom_entry module_local s
 
-let vernac_toggle_notation ~module_local ~on ~use rule =
-  let open Notationextern in
-  let rule = match rule with
-    | NotationRule (sc,s) -> NotationRule (sc,s)
-    | AbbrevRule qid ->
+let interp_enable_notation_rule on rule interp flags scope =
+  let open Notation in
+  let rule = Option.map (function
+    | Inl ntn -> Inl (interpret_notation_string ntn)
+    | Inr qid ->
       match Nametab.locate_extended qid with
-      | Globnames.TrueGlobal _ -> user_err (str "Not a notation.")
-      | Globnames.Abbrev kn -> AbbrevRule kn in
-  Metasyntax.declare_notation_toggle module_local ~on ~use rule
+      | Globnames.TrueGlobal _ -> user_err (str "Not an abbreviation.")
+      | Globnames.Abbrev kn -> Inr kn) rule in
+  let rec parse_notation_enable_flags all query = function
+    | [] -> all, query
+    | EnableNotationEntry entry :: flags ->
+      parse_notation_enable_flags all { query with notation_entry_pattern = entry :: query.notation_entry_pattern } flags
+    | EnableNotationOnly use :: flags ->
+      parse_notation_enable_flags all { query with use_pattern = use } flags
+    | EnableNotationAll :: flags -> parse_notation_enable_flags true query flags in
+  (* TODO: get the notation variables when a notation key is given (see metasyntax.ml) *)
+  let nenv = {
+    Notation_term.ninterp_var_type = Id.Map.empty;
+    Notation_term.ninterp_rec_vars = Id.Map.empty;
+  } in
+  let interp = Option.map (fun c ->
+    let (acvars, ac, reversibility) = Constrintern.interp_notation_constr (Global.env ()) nenv c in
+    ([], ac)) interp in
+  let default_notation_enable_pattern = {
+    notation_entry_pattern = [];
+    interp_rule_key_pattern = rule;
+    use_pattern = ParsingAndPrinting;
+    scope_pattern = scope;
+    interpretation_pattern = interp;
+    }
+  in
+  let all, notation_pattern =
+    parse_notation_enable_flags false default_notation_enable_pattern flags in
+  on, all, notation_pattern
+
+let vernac_enable_notation ~module_local on rule interp flags scope =
+  let () = match rule, interp, scope with
+    | None, None, None -> user_err (str "No notation provided.") | _ -> () in
+  let on, all, notation_pattern = interp_enable_notation_rule on rule interp flags scope in
+  Metasyntax.declare_notation_toggle module_local ~on ~all notation_pattern
 
 (***********)
 (* Gallina *)
@@ -2320,8 +2351,8 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () -> vernac_notation ~atts ~infix c infpl sc)
   | VernacDeclareCustomEntry s ->
     vtdefault(fun () -> with_module_locality ~atts vernac_custom_entry s)
-  | VernacToggleNotation (on,use,rule) ->
-    vtdefault(fun () -> with_module_locality ~atts vernac_toggle_notation ~on ~use rule)
+  | VernacEnableNotation (on,rule,interp,flags,scope) ->
+    vtdefault(fun () -> with_module_locality ~atts vernac_enable_notation on rule interp flags scope)
 
   (* Gallina *)
 

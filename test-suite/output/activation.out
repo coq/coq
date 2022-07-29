@@ -1,0 +1,22 @@
+The following notations have been disabled:
+Notation "x + y" := (Nat.add x y)
+The following notations have been disabled:
+Notation "'exists2' x : A , p & q" := (ex2 (fun x => p) (fun x => q))
+Notation "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
+Notation "'exists2' ' x : A , p & q" := (ex2 (fun x => p) (fun x => q))
+Notation "'exists2' ' x , p & q" := (ex2 (fun x => p) (fun x => q))
+The following notations have been disabled:
+Notation "x <= y <= z" := (and (le x y) (le y z))
+Notation "x <= y < z" := (and (le x y) (lt y z))
+Notation "n <= m" := (le n m)
+Notation "x < y <= z" := (and (lt x y) (le y z))
+The following notations have been disabled:
+Notation "x >= y" := (ge x y)
+Notation "x > y" := (gt x y)
+Notation "x < y < z" := (and (lt x y) (lt y z))
+Notation "x < y" := (lt x y)
+Notation "x - y" := (Nat.sub x y)
+Notation "x * y" := (Nat.mul x y)
+File "./output/activation.v", line 5, characters 0-22:
+The command has indeed failed with message:
+No notation provided.

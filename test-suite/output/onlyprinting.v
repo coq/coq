@@ -19,13 +19,13 @@ Notation "x +_c y" := (plus x y) (at level 50, only printing) : nat_scope.
 Check 1 +_a 2.
 Check 1 +_b 2.
 Print Scope nat_scope.
-Deactivate Notation "_ +_c _" : nat_scope.
+Disable Notation "_ +_c _" : nat_scope.
 Check 1 +_a 2.
-Deactivate Notation "x +_b y" : nat_scope.
+Disable Notation "x +_b y" : nat_scope.
 Check 1 +_a 2.
-Deactivate Notation "_ +_a _" (only printing) : nat_scope.
+Disable Notation "_ +_a _" (only printing) : nat_scope.
 Check 1 +_a 2.
-Activate Notation "a +_c b" (only printing) : nat_scope.
+Enable Notation "a +_c b" (only printing) : nat_scope.
 Check 1 +_a 2.
 
 End B.

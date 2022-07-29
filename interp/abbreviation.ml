@@ -54,7 +54,7 @@ let toggle_abbreviation ~on ~use kn =
 
 let toggle_abbreviations ~on ~use filter =
   KNmap.fold (fun kn abbrev () ->
-      if filter abbrev.abbrev_pattern then toggle_abbreviation ~on ~use kn)
+      if filter kn abbrev.abbrev_pattern then toggle_abbreviation ~on ~use kn)
   !abbrev_table ()
 
 let load_abbreviation i ((sp,kn),(_local,abbrev)) =

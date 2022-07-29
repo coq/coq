@@ -157,6 +157,11 @@ type syntax_modifier =
   | SetOnlyPrinting
   | SetFormat of notation_format
 
+type notation_enable_modifier =
+  | EnableNotationEntry of notation_entry
+  | EnableNotationOnly of Notationextern.notation_use
+  | EnableNotationAll
+
 type decl_notation =
   { decl_ntn_string : lstring
   ; decl_ntn_interp : constr_expr
@@ -351,7 +356,7 @@ type nonrec vernac_expr =
       infix_flag * constr_expr * (lstring * syntax_modifier CAst.t list) *
       scope_name option
   | VernacDeclareCustomEntry of string
-  | VernacToggleNotation of bool * Notationextern.notation_use * qualid Notationextern.interp_rule_gen
+  | VernacEnableNotation of bool * (string, qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_with_optional_scope option
 
   (* Gallina *)
   | VernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr

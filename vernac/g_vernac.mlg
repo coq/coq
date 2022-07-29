@@ -1232,40 +1232,43 @@ GRAMMAR EXTEND Gram
      | IDENT "Reserved"; IDENT "Notation"; s = ne_lstring; l = syntax_modifiers ->
            { VernacReservedNotation (false,(s,l)) }
 
-     | IDENT "Deactivate"; IDENT "Notation"; d = toggle_notation
-         -> { let use, rule = (match fst d with None -> Notationextern.ParsingAndPrinting | Some b -> b), snd d in
-              VernacToggleNotation (false,use,rule) }
-
-     | IDENT "Activate"; IDENT "Notation"; d = toggle_notation
-         -> { let use, rule = (match fst d with None -> Notationextern.ParsingAndPrinting | Some b -> b), snd d in
-              VernacToggleNotation (true,use,rule) }
+     | on = enable_enable_disable; IDENT "Notation";
+       rule = enable_notation_rule; interp = enable_notation_interpretation;
+       flags = enable_notation_flags; scope = opt_scope ->
+           { VernacEnableNotation (on, rule, interp, flags, scope) }
 
      (* "Print" "Grammar" and "Declare" "Scope" should be here but are in "command" entry in order
         to factorize with other "Print"-based or "Declare"-based vernac entries *)
   ] ]
   ;
-  toggle_notation:
-    [ [ s = ne_string; flags = toggle_flags; sc = opt_scope ->
-        { fst flags, Notationextern.NotationRule (sc,(snd flags,s)) }
-      | qid = global; use = OPT [ "("; use = notation_use; ")" -> { use } ] ->
-        { use, Notationextern.AbbrevRule qid } ] ]
+  enable_enable_disable:
+    [ [ IDENT "Enable" -> { true }
+      | IDENT "Disable" -> { false } ] ]
   ;
-  toggle_flags:
-    [ [ "("; "in"; IDENT "custom"; x = IDENT; use = OPT notation_use; ")" -> { (use, InCustomEntry x) }
-      | "("; use = notation_use; ")" -> { (Some use, InConstrEntry) }
-      | -> { (None, InConstrEntry) } ] ]
+  enable_notation_rule:
+    [ [ s = ne_string -> { Some (Inl s) }
+      | qid = global -> { Some (Inr qid) }
+      | -> { None } ] ]
   ;
-  notation_use:
-    [ [ IDENT "only"; IDENT "parsing" -> { Notationextern.OnlyParsing }
-      | IDENT "only"; IDENT "printing" -> { Notationextern.OnlyPrinting } ] ]
+  enable_notation_interpretation:
+    [ [ ":="; c = constr -> { Some c }
+      | -> { None } ] ]
   ;
-  in_custom:
-    [ [ "("; "in"; IDENT "custom"; x = IDENT; ")" -> { InCustomEntry x }
-      | -> { InConstrEntry } ] ]
+  enable_notation_flags:
+    [ [ "("; l = LIST1 enable_notation_flag SEP ","; ")" -> { l }
+      | -> { [] } ] ]
+  ;
+  enable_notation_flag:
+    [ [ IDENT "all" -> { EnableNotationAll }
+      | IDENT "only"; IDENT "parsing" -> { EnableNotationOnly Notationextern.OnlyParsing }
+      | IDENT "only"; IDENT "printing" -> { EnableNotationOnly Notationextern.OnlyPrinting }
+      | "in"; IDENT "custom"; x = IDENT -> { EnableNotationEntry (InCustomEntry x) }
+      | "in"; IDENT "constr" -> { EnableNotationEntry InConstrEntry } ] ]
   ;
   opt_scope:
-    [ [ ":"; sc = IDENT -> { NotationInScope sc }
-      | -> { LastLonelyNotation } ] ]
+    [ [ ":"; sc = IDENT -> { Some (NotationInScope sc) }
+      | ":"; IDENT "no"; IDENT "scope" -> { Some LastLonelyNotation }
+      | -> { None } ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> { NumLevel n }

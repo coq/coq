@@ -780,27 +780,28 @@ let pr_vernac_expr v =
     return (
       keyword "Declare Custom Entry " ++ str s
     )
-  | VernacToggleNotation (b,use,s) ->
-    let in_custom = function
-      | InConstrEntry -> []
-      | InCustomEntry s -> ["in custom " ^ s] in
-    let in_use = function
-      | Notationextern.ParsingAndPrinting -> []
-      | Notationextern.OnlyParsing -> ["only parsing"]
-      | Notationextern.OnlyPrinting -> ["only printing"] in
+  | VernacEnableNotation (on,rule,interp,flags,scope) ->
+    let pr_flag = function
+      | EnableNotationEntry InConstrEntry -> str "in constr"
+      | EnableNotationEntry (InCustomEntry s) -> str "in custom " ++ str s
+      | EnableNotationOnly OnlyParsing -> str "only parsing"
+      | EnableNotationOnly OnlyPrinting -> str "only printing"
+      | EnableNotationOnly ParsingAndPrinting -> assert false
+      | EnableNotationAll -> str "all" in
     let pr_flags = function
       | [] -> mt ()
-      | l -> str "(" ++ prlist_with_sep pr_comma str l ++ str ")" in
-    let pp = match s with
-    | Notationextern.NotationRule (sc,(custom,s)) ->
-       let pr_opt_scope = function
-         | NotationInScope s -> spc () ++ str ": " ++ str s
-         | LastLonelyNotation -> mt () in
-       quote (str s) ++ pr_flags (in_custom custom @ in_use use) ++ pr_opt_scope sc
-    | Notationextern.AbbrevRule qid -> pr_qualid qid ++ pr_flags (in_use use) in
-    let s = if b then "Activate" else "Deactivate" in
+      | l -> str "(" ++ prlist_with_sep pr_comma pr_flag l ++ str ")" in
+    let pr_rule = match rule with
+      | None -> mt ()
+      | Some (Inl ntn) -> quote (str ntn)
+      | Some (Inr qid) -> pr_qualid qid in
+    let pr_opt_scope = function
+      | None -> mt ()
+      | Some (NotationInScope s) -> spc () ++ str ": " ++ str s
+      | Some LastLonelyNotation -> str ":" ++ spc () ++ str "none" in
+    let pp = pr_rule ++ pr_flags flags ++ pr_opt_scope scope in
     return (
-      keyword (s ^ "Notation ") ++ pp
+      keyword (if on then "Enable Notation " else "Disable Notation ") ++ pp
     )
 
   (* Gallina *)

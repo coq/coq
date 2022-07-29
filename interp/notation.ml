@@ -1511,82 +1511,6 @@ let is_printing_inactive_rule rule pat =
 let availability_of_notation (ntn_scope,ntn) scopes =
   find_without_delimiters (has_active_parsing_rule_in_scope ntn) (ntn_scope,Some ntn) (make_current_scopes scopes)
 
-let show_scope scopt =
-  match scopt with
-  | LastLonelyNotation -> str ""
-  | NotationInScope sc -> spc () ++ str "in scope" ++ spc () ++ str sc
-
-let find_notation_err ntn inscope =
-  let sc = match inscope with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
-  try
-    let scope = find_scope sc in
-    NotationMap.find ntn scope.notations, scope
-  with Not_found -> user_err
-                        (pr_notation ntn ++ spc () ++ str "does not exist"
-                         ++ (match inscope with
-                             | LastLonelyNotation -> spc () ++ str "in the empty scope."
-                             | NotationInScope _ -> show_scope inscope ++ str "."))
-
-let toggle (inscope,ntn) b1 b2 =
-  if b1 && b2 then
-    Feedback.msg_warning
-      (str "Notation" ++ spc () ++ pr_notation ntn ++ spc () ++
-       str "is already active" ++ show_scope inscope ++ str ".");
-  if not b1 && not b2 then
-    Feedback.msg_warning
-      (str "Notation" ++ spc () ++ pr_notation ntn ++ spc () ++
-       str "is already inactive" ++ show_scope inscope ++ str ".");
-  not b1
-
-let toggle_main_notation ~on (inscope,ntn) ~use test main =
-  match main, use with
-  | OnlyParsingData (is_on,d), OnlyPrinting when test d ->
-    user_err (strbrk "Unexpected only printing for an only parsing notation.")
-  | OnlyParsingData (is_on,d), (OnlyParsing | ParsingAndPrinting) when test d ->
-    OnlyParsingData (toggle (inscope,ntn) is_on on,d)
-  | ParsingAndPrintingData (is_parsing_on,is_printing_on,d), _ when test d ->
-     let is_parsing_on = match use with
-       | OnlyPrinting -> is_parsing_on
-       | OnlyParsing | ParsingAndPrinting -> toggle (inscope,ntn) is_parsing_on on in
-     let is_printing_on = match use with
-       | OnlyParsing -> is_printing_on
-       | OnlyPrinting | ParsingAndPrinting -> toggle (inscope,ntn) is_printing_on on in
-     ParsingAndPrintingData (is_parsing_on,is_printing_on,d)
-  | (NoParsingData | OnlyParsingData _ | ParsingAndPrintingData _), _ -> main
-
-let toggle_extra_only_printing_notation ~on (inscope,ntn) ~use (is_on,d) =
-  match use with
-  | OnlyParsing ->
-    user_err (strbrk "Unexpected only parsing for an only printing notation.")
-  | OnlyPrinting | ParsingAndPrinting ->
-    (toggle (inscope,ntn) is_on on,d)
-
-let toggle_selected_interpretation ~on (inscope,ntn) ~use main extra pat =
-  let found = ref false in
-  let test d = if interpretation_eq pat d.not_interp then (found:=true; true) else false in
-  let extra =
-    List.map (fun (_,d as x) ->
-        if test d then toggle_extra_only_printing_notation ~on (inscope,ntn) ~use x
-        else x) extra in
-  let main = toggle_main_notation ~on (inscope,ntn) ~use test main in
-  if not !found then
-    user_err (strbrk "No such notation with this interpretation.");
-  (main,extra)
-
-let toggle_notation ~on (inscope,ntn) ~use pat_opt =
-  let (main,extra),scope = find_notation_err ntn inscope in
-  let (main,extra) =
-    match pat_opt with
-    | Some pat -> toggle_selected_interpretation ~on (inscope,ntn) ~use main extra pat
-    | None ->
-      if List.length extra + (if main = NoParsingData then 0 else 1) > 1 then
-        user_err (strbrk "More than one interpretation bound to this notation, interpretation should be given explicitly.");
-      (toggle_main_notation ~on (inscope,ntn) ~use (fun _ -> true) main,
-       List.map (toggle_extra_only_printing_notation ~on (inscope,ntn) ~use) extra) in
-  let sc = match inscope with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
-  let newsc = {scope with notations = NotationMap.add ntn (main,extra) scope.notations } in
-  scope_map := String.Map.add sc newsc !scope_map
-
 (* We support coercions from a custom entry at some level to an entry
    at some level (possibly the same), and from and to the constr entry. E.g.:
 
@@ -2050,7 +1974,7 @@ let rec string_of_symbol = function
 let make_notation_key from symbols =
   (from,String.concat " " (List.flatten (List.map string_of_symbol symbols)))
 
-let decompose_notation_key (from,s) =
+let decompose_notation_pure_key s =
   let len = String.length s in
   let rec decomp_ntn dirs n =
     if n>=len then List.rev dirs else
@@ -2065,7 +1989,10 @@ let decompose_notation_key (from,s) =
       | s -> Terminal (String.drop_simple_quotes s) in
     decomp_ntn (tok::dirs) (pos+1)
   in
-    from, decomp_ntn [] 0
+    decomp_ntn [] 0
+
+let decompose_notation_key (from,s) =
+  from, decompose_notation_pure_key s
 
 (************)
 (* Printing *)
@@ -2093,13 +2020,13 @@ let pr_notation_info prglob ntn c =
   prglob (Notation_ops.glob_constr_of_notation_constr c)
 
 let pr_notation_status on_parsing on_printing =
-  let deactivated b = if b then [] else ["deactivated"] in
+  let disabled b = if b then [] else ["disabled"] in
   let l = match on_parsing, on_printing with
-  | Some on, None -> "only parsing" :: deactivated on
-  | None, Some on -> "only printing" :: deactivated on
-  | Some false, Some false -> ["deactivated"]
-  | Some true, Some false -> ["deactivated for printing"]
-  | Some false, Some true -> ["deactivated for parsing"]
+  | Some on, None -> "only parsing" :: disabled on
+  | None, Some on -> "only printing" :: disabled on
+  | Some false, Some false -> ["disabled"]
+  | Some true, Some false -> ["disabled for printing"]
+  | Some false, Some true -> ["disabled for parsing"]
   | Some true, Some true -> []
   | None, None -> assert false in
   match l with
@@ -2307,19 +2234,20 @@ let is_approximation ntn ntn' =
   let _,toks' = interp_list_parser [] (raw_analyze_anonymous_notation_tokens (split_notation_string ntn')) in
   aux toks toks'
 
+let match_notation_key strict ntn ntn' =
+  if String.contains ntn ' ' then
+    if String.string_contains ~where:ntn' ~what:".." then is_approximation ntn ntn'
+    else String.equal ntn ntn'
+  else
+    let toks = decompose_notation_pure_key ntn' in
+    let get_terminals = function Terminal ntn -> Some ntn | _ -> None in
+    let trms = List.map_filter get_terminals toks in
+    if strict then String.List.equal [ntn] trms
+    else String.List.mem ntn trms
+
 let browse_notation strict ntn map =
   let ntn = interpret_notation_string ntn in
-  let find (from,ntn' as fullntn') =
-    if String.contains ntn ' ' then
-      if String.string_contains ~where:ntn' ~what:".." then is_approximation ntn ntn'
-      else String.equal ntn ntn'
-    else
-      let _,toks = decompose_notation_key fullntn' in
-      let get_terminals = function Terminal ntn -> Some ntn | _ -> None in
-      let trms = List.map_filter get_terminals toks in
-      if strict then String.List.equal [ntn] trms
-      else String.List.mem ntn trms
-  in
+  let find (from,ntn') = match_notation_key strict ntn ntn' in
   let l =
     String.Map.fold
       (fun scope_name sc ->
@@ -2436,6 +2364,161 @@ let pr_scope_stack prglob stack =
 let pr_visibility prglob = function
   | Some scope -> pr_scope_stack prglob (push_scope scope !scope_stack)
   | None -> pr_scope_stack prglob !scope_stack
+
+(* Enabling/disabling notations *)
+
+let toggle_main_notation ~on ~use found test ntn_rule main =
+  let found d = found := (d.not_location, Some d.not_interp) :: !found in
+  match main, use with
+  | OnlyParsingData (is_on,d), OnlyPrinting when test d.not_interp ->
+    user_err (strbrk "Unexpected only printing for an only parsing notation.")
+  | OnlyParsingData (is_on,d) as x, (OnlyParsing | ParsingAndPrinting) when test d.not_interp ->
+    if is_on <> on then begin found d; OnlyParsingData (on, d) end else x
+  | ParsingAndPrintingData (is_parsing_on,is_printing_on,d) as x, _ when test d.not_interp ->
+     let parsing_changed = match use with
+       | OnlyPrinting -> false
+       | OnlyParsing | ParsingAndPrinting -> is_parsing_on <> on in
+     let printing_changed = match use with
+       | OnlyParsing -> false
+       | OnlyPrinting | ParsingAndPrinting -> is_printing_on <> on in
+     if parsing_changed || printing_changed then
+       let () = found d in
+       ParsingAndPrintingData (is_parsing_on <> parsing_changed,is_printing_on <> printing_changed,d)
+     else
+       x
+  | (NoParsingData | OnlyParsingData _ | ParsingAndPrintingData _), _ -> main
+
+let toggle_extra_only_printing_notation ~on ~use found test ntn_rule (is_on,d as x) =
+  let found d = found := (d.not_location, Some d.not_interp) :: !found in
+  match use with
+  | OnlyParsing ->
+    user_err (strbrk "Unexpected only parsing for an only printing notation.")
+  | OnlyPrinting | ParsingAndPrinting ->
+    if test d.not_interp then
+      if is_on <> on then let () = found d in (on,d) else x
+    else
+      x
+
+let toggle_notation_data ~on ~use found test ntn_rule (main,extra as data) =
+  let main' = toggle_main_notation ~on ~use found test ntn_rule main in
+  let extra' = List.Smart.map (toggle_extra_only_printing_notation ~on ~use found test ntn_rule) extra in
+  if main' == main && extra' == extra then data else (main',extra')
+
+type 'a notation_query_pattern_gen = {
+    notation_entry_pattern : notation_entry list;
+    interp_rule_key_pattern : (notation_key, 'a) Util.union option;
+    use_pattern : notation_use;
+    scope_pattern : notation_with_optional_scope option;
+    interpretation_pattern : interpretation option;
+  }
+
+type notation_query_pattern = Globnames.abbreviation notation_query_pattern_gen
+
+let match_notation_interpretation notation_interpretation pat =
+  match notation_interpretation with
+  | None -> true
+  | Some pat' -> Notation_ops.finer_interpretation_than pat pat'
+
+let match_notation_entry notation_entry_pattern notation_entry =
+  List.is_empty notation_entry_pattern ||
+  List.exists (notation_entry_eq notation_entry) notation_entry_pattern
+
+let match_notation_rule interp_rule_key_pattern notation_key =
+  match interp_rule_key_pattern with
+  | None -> true
+  | Some (Inl ntn) -> match_notation_key false ntn notation_key
+  | Some (Inr _) -> false
+
+let toggle_notations_by_interpretation ~on found ntn_pattern ntn_rule (main,extra as data) =
+  let use = ntn_pattern.use_pattern in
+  let test = match_notation_interpretation ntn_pattern.interpretation_pattern in
+  toggle_notation_data ~on ~use found test ntn_rule data
+
+let toggle_notations_in_scope ~on found inscope ntn_pattern ntns =
+  match ntn_pattern.notation_entry_pattern, ntn_pattern.interp_rule_key_pattern with
+  | _, Some (Inr kn) -> ntns (* This is the table of notations, not of abbreviations *)
+  | _ :: _ as ntn_entries, Some (Inl ntn) ->
+    (* shortcut *)
+    List.fold_right (fun ntn_entry ntns ->
+      NotationMap.add (ntn_entry, ntn)
+        (toggle_notations_by_interpretation ~on found ntn_pattern
+           (NotationRule (inscope,(ntn_entry,ntn)))
+           (NotationMap.find (ntn_entry, ntn) ntns))
+        ntns) ntn_entries ntns
+    (* Deal with full notations *)
+  | ntn_entries, ntn_rule -> (* This is the table of notations, not of abbreviations *)
+    NotationMap.mapi (fun (ntn_entry,ntn_key' as ntn') data ->
+        if match_notation_entry ntn_entries ntn_entry && match_notation_rule ntn_rule ntn_key' then
+          toggle_notations_by_interpretation ~on found ntn_pattern
+            (NotationRule (inscope,ntn'))
+            data
+        else
+          data) ntns
+
+let warn_abbreviation_not_bound_to_entry =
+  CWarnings.create ~name:"conflicting-abbreviation-entry" ~category:"query"
+                   (fun () ->
+                    strbrk "Activation of abbreviations does not expect mentioning a grammar entry.")
+
+let warn_abbreviation_not_bound_to_scope =
+  CWarnings.create ~name:"conflicting-abbreviation-scope" ~category:"query"
+                   (fun () ->
+                    strbrk "Activation of abbreviations does not expect mentioning a scope.")
+
+let toggle_abbreviations ~on found ntn_pattern =
+  let data_of_interp kn i =
+    let q = Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn in
+    ((DirPath.empty, DirPath.empty), string_of_qualid q), i in
+  match ntn_pattern.interp_rule_key_pattern, ntn_pattern.notation_entry_pattern, ntn_pattern.scope_pattern with
+  | Some (Inr kn), [], None ->
+    found := data_of_interp kn ntn_pattern.interpretation_pattern :: !found;
+    Abbreviation.toggle_abbreviation ~on ~use:ntn_pattern.use_pattern kn
+  | Some (Inr kn), entries, inscope ->
+    if not (List.is_empty entries) then warn_abbreviation_not_bound_to_entry ();
+    if Option.has_some inscope then warn_abbreviation_not_bound_to_scope ()
+  | Some (Inl _), _, _ | None, _::_, _ | None, _, Some _ -> () (* Not about abbreviation *)
+  | None, [], None ->
+    let test kn a =
+      let res = match_notation_interpretation ntn_pattern.interpretation_pattern a in
+      if res then found := data_of_interp kn (Some a) :: !found; res in
+    Abbreviation.toggle_abbreviations ~on ~use:ntn_pattern.use_pattern test
+
+let toggle_notations ~on ~all prglob ntn_pattern =
+  let found = ref [] in
+  (* Deal with (parsing) notations *)
+  begin
+    match ntn_pattern.scope_pattern with
+    | None ->
+      scope_map := String.Map.mapi (fun sc {notations;delimiters} ->
+                      let inscope = if String.equal sc default_scope then LastLonelyNotation else NotationInScope sc in
+                      {notations = toggle_notations_in_scope ~on found inscope ntn_pattern notations;delimiters}) !scope_map;
+    | Some inscope ->
+      (* shortcut when a scope is given *)
+      let sc = match inscope with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
+      scope_map := String.Map.add sc (let {notations;delimiters} = find_scope sc in {notations = toggle_notations_in_scope ~on found inscope ntn_pattern notations;delimiters}) !scope_map
+  end;
+  (* Deal with abbreviations *)
+  toggle_abbreviations ~on found ntn_pattern;
+  match !found with
+  | [] ->
+    user_err (strbrk "Found no matching notation to enable or disable.")
+  | _::_::_ when not all ->
+    user_err (strbrk "More than one interpretation bound to this notation, confirm with the \"all\" modifier.")
+  | _ ->
+     Feedback.msg_info
+       (str "The following notations have been " ++
+          str (if on then "enabled" else "disabled") ++
+          (match ntn_pattern.use_pattern with
+           | OnlyParsing -> str " for parsing"
+           | OnlyPrinting -> str " for printing"
+           | ParsingAndPrinting -> mt ()) ++
+          str ":" ++ fnl () ++
+          prlist_with_sep fnl (function
+              | (_, s), None -> str "Notation " ++ str s
+              | l, Some i ->
+                 let data = { not_interp = i; not_location = l; not_deprecation = None } in
+                 str "Notation " ++ pr_notation_data prglob (Some true,Some true,data))
+            !found)
 
 (**********************************************************************)
 (* Synchronisation with reset *)

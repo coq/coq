@@ -267,8 +267,18 @@ val availability_of_notation : specific_notation -> subscopes ->
   (scope_name option * delimiters option) option
 
 val is_printing_inactive_rule : Notationextern.interp_rule -> interpretation -> bool
-val toggle_notation : on:bool -> notation_with_optional_scope * notation ->
-  use:notation_use -> interpretation option -> unit
+
+type 'a notation_query_pattern_gen = {
+    notation_entry_pattern : notation_entry list;
+    interp_rule_key_pattern : (notation_key, 'a) Util.union option;
+    use_pattern : notation_use;
+    scope_pattern : notation_with_optional_scope option;
+    interpretation_pattern : interpretation option;
+  }
+
+type notation_query_pattern = Globnames.abbreviation notation_query_pattern_gen
+
+val toggle_notations : on:bool -> all:bool -> (glob_constr -> Pp.t) -> notation_query_pattern -> unit
 
 (** {6 Miscellaneous} *)
 
