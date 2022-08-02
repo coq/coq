@@ -691,7 +691,13 @@ Proof.
   intros n m H; inversion H.
   left;trivial.
   right; exists m0; split; trivial.
-Restart.
+Abort.
+
+Theorem le_reverse_rules :
+ forall n m:nat, n <= m ->
+                   n = m \/
+                   exists p, n <=  p /\ m = S p.
+Proof.
   intros n m H; inversion_clear H.
   left;trivial.
   right; exists m0; split; trivial.

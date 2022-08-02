@@ -17,7 +17,9 @@ Lemma essai : forall x : nat, x = x.
                    | S p => _
                    end)).
 
-Restart.
+Abort.
+
+Lemma essai : forall x : nat, x = x.
 
  refine
  (fun x0 : nat => match x0 as n return (n = n) with
@@ -25,15 +27,15 @@ Restart.
                   | S p => _
                   end). (* OK *)
 
-Restart.
+Abort.
+
+Lemma essai : forall x : nat, x = x.
 
  refine
  (fun x0 : nat => match x0 as n return (n = n) with
                   | O => _
                   | S p => _
                   end). (* OK *)
-
-Restart.
 
 (**
 Refine [x0:nat]Cases x0 of O => ? | (S p) => ? end. (* cannot be executed *)
@@ -57,7 +59,9 @@ Lemma essai2 : forall x : nat, x = x.
 
 refine (fix f (x : nat) : x = x := _).
 
-Restart.
+Abort.
+
+Lemma essai2 : forall x : nat, x = x.
 
  refine
  (fix f (x : nat) : x = x :=
@@ -66,7 +70,9 @@ Restart.
     | S p => _
     end).
 
-Restart.
+Abort.
+
+Lemma essai2 : forall x : nat, x = x.
 
  refine
  (fix f (x : nat) : x = x :=
@@ -75,7 +81,9 @@ Restart.
     | S p => _
     end).
 
-Restart.
+Abort.
+
+Lemma essai2 : forall x : nat, x = x.
 
  refine
  (fix f (x : nat) : x = x :=
@@ -84,7 +92,9 @@ Restart.
     | S p => f_equal S _
     end).
 
-Restart.
+Abort.
+
+Lemma essai2 : forall x : nat, x = x.
 
  refine
  (fix f (x : nat) : x = x :=
@@ -103,7 +113,9 @@ Lemma essai : nat.
 
  refine (f _ ((fun x : nat => _:nat) 0)).
 
-Restart.
+Abort.
+
+Lemma essai : nat.
 
  refine (f _ 0).
 
@@ -118,13 +130,19 @@ Lemma essai : {x : nat | x = 1}.
 
  refine (exist _ 1 _).  (* ECHEC *)
 
-Restart.
+Abort.
+
+Lemma essai : {x : nat | x = 1}.
+
 
 (* mais si on contraint par le but alors ca marche : *)
 (* Remarque : on peut toujours faire ça *)
  refine (exist _ 1 _:{x : nat | x = 1}).
 
-Restart.
+Abort.
+
+Lemma essai : {x : nat | x = 1}.
+
 
  refine (exist (fun x : nat => x = 1) 1 _).
 
@@ -142,7 +160,9 @@ Lemma essai : forall n : nat, {x : nat | x = S n}.
   | S p => _
   end).
 
-Restart.
+Abort.
+
+Lemma essai : forall n : nat, {x : nat | x = S n}.
 
  refine
    (fun n : nat => match n with
@@ -150,7 +170,9 @@ Restart.
                   | S p => _
                   end).
 
-Restart.
+Abort.
+
+Lemma essai : forall n : nat, {x : nat | x = S n}.
 
  refine
  (fun n : nat =>
@@ -159,7 +181,9 @@ Restart.
   | S p => _
   end).
 
-Restart.
+Abort.
+
+Lemma essai : forall n : nat, {x : nat | x = S n}.
 
  refine
  (fix f (n : nat) : {x : nat | x = S n} :=
@@ -168,7 +192,9 @@ Restart.
     | S p => _
     end).
 
-Restart.
+Abort.
+
+Lemma essai : forall n : nat, {x : nat | x = S n}.
 
  refine
  (fix f (n : nat) : {x : nat | x = S n} :=

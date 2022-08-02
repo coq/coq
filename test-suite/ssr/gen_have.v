@@ -117,13 +117,17 @@ wlog H : (m := n) (z := (X in n <= X)) ngt0 / m != z.
     |- (forall m z : nat,
           is_true(0 < m) -> is_true(m != z) -> is_true(m <= z)) ->
             is_true(n <= 0)   => idtac end.
-Restart.
+Abort.
+
+Lemma testw2 n (ngt0 : 0 < n) : n <= 0.
 wlog H : (m := n) (one := (X in X <= _)) ngt0 / m != one.
   match goal with
     |- (forall m one : nat,
           is_true(one <= m) -> is_true(m != one) -> is_true(m <= 0)) ->
             is_true(n <= 0)   => idtac end.
-Restart.
+Abort.
+
+Lemma testw2 n (ngt0 : 0 < n) : n <= 0.
 wlog H : {n} (m := n) (z := (X in _ <= X)) ngt0 / m != z.
   match goal with
     |- (forall m z : nat,
@@ -155,7 +159,9 @@ wlog H : (y := x) (@twoy := (X in _ <= X)) / twoy = 2 * y.
          let twoy := y + y in
          twoy = 2 * y -> is_true(n + y <= twoy)) ->
        is_true(n + x <= twox) => myadmit end.
-Restart.
+Abort.
+
+Lemma testw3x n (ngt0 : 0 < n) : n + x <= twox.
 wlog H : (y := x) (@twoy := (id _ as X in _ <= X)) / twoy = 2 * y.
   match goal with
     |- (forall y : nat,
