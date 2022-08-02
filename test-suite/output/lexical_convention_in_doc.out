@@ -1,0 +1,17 @@
+not (not True)
+     : Prop
+not True
+     : Prop
+not (not True)
+     : Prop
+not (not True)
+     : Prop
+not False
+     : Prop
+(fun x : Prop => not (not x)) o
+     : Prop
+File "./output/lexical_convention_in_doc.v", line 50, characters 12-15:
+The command has indeed failed with message:
+The reference _ho was not found in the current environment.
+True
+     : Prop
