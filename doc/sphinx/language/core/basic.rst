@@ -188,6 +188,8 @@ Other tokens
   Note that loading additional modules or plugins may expand the set of defined
   tokens.
 
+.. _lexing-unseparated-keywords:
+
   When multiple tokens match the beginning of a sequence of characters,
   the longest matching token not cutting a subsequence of contiguous letters in the middle is used.
   Occasionally you may need to insert spaces to separate tokens.  For example,
