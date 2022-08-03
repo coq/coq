@@ -82,7 +82,14 @@ type exported_private_constant = Constant.t * exported_opaque option
 
 val repr_exported_opaque : exported_opaque -> Opaqueproof.opaque_handle * Opaqueproof.opaque_proofterm
 
+(* Asserts the private constants are not in the env already and declares them.*)
 val export_private_constants :
+  private_constants ->
+  exported_private_constant list safe_transformer
+
+(* Asserts the private constants are in the env, and just returns the info
+   needed in order to inhabit their opaque body *)
+val export_existing_private_constants :
   private_constants ->
   exported_private_constant list safe_transformer
 

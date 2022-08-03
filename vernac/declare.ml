@@ -107,6 +107,9 @@ type 'a pproof_entry = {
   proof_entry_universes   : UState.named_universes_entry;
   proof_entry_opaque      : bool;
   proof_entry_inline_code : bool;
+  (* True if the proof is declared in an environment which does not
+     contain its side effects and hence should export them. *)
+  proof_leaks_seff        : bool;
 }
 
 type proof_entry = Evd.side_effects Opaques.const_entry_body pproof_entry
@@ -128,7 +131,7 @@ let default_named_univ_entry = default_univ_entry, UnivNames.empty_binders
 
 (** [univsbody] are universe-constraints attached to the body-only,
    used in vio-delayed opaque constants and private poly universes *)
-let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types
+let definition_entry_core ?(leak_seff=true) ?(opaque=false) ?using ?(inline=false) ?types
     ?(univs=default_named_univ_entry) ?(eff=Evd.empty_side_effects) ?(univsbody=Univ.ContextSet.empty) body =
   { proof_entry_body = Future.from_val ((body,univsbody), eff);
     proof_entry_secctx = using;
@@ -136,10 +139,12 @@ let definition_entry_core ?(opaque=false) ?using ?(inline=false) ?types
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
-    proof_entry_inline_code = inline}
+    proof_entry_inline_code = inline;
+    proof_leaks_seff = leak_seff;
+    }
 
 let definition_entry =
-  definition_entry_core ?eff:None ?univsbody:None
+  definition_entry_core ?leak_seff:None ?eff:None ?univsbody:None
 
 let parameter_entry ?inline ?(univs=default_named_univ_entry) typ = {
   parameter_entry_secctx = None;
@@ -248,6 +253,10 @@ let export_side_effects eff =
   let export = get_roles export eff in
   List.iter register_side_effect export
 
+let export_existing_side_effects eff =
+  let inhabit = Global.export_existing_private_constants eff.Evd.seff_private in
+  List.iter (fun (_,body) -> Option.iter Opaques.declare_private_opaque body) inhabit
+
 let record_aux env s_ty s_bo =
   let open Environ in
   let in_ty = keep_hyps env s_ty in
@@ -268,7 +277,9 @@ let pure_definition_entry ?(opaque=false) ?(inline=false) ?types
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
-    proof_entry_inline_code = inline}
+    proof_entry_inline_code = inline;
+    proof_leaks_seff = false;
+    }
 
 let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types body =
   { proof_entry_body = body
@@ -278,6 +289,7 @@ let delayed_definition_entry ~opaque ?feedback_id ~using ~univs ?types body =
   ; proof_entry_opaque = opaque
   ; proof_entry_feedback = feedback_id
   ; proof_entry_inline_code = false
+  ; proof_leaks_seff = false
   }
 
 let extract_monomorphic = function
@@ -378,7 +390,9 @@ let declare_constant_core ~name ~typing_flags cd =
         let body, eff = Future.force de.proof_entry_body in
         (* This globally defines the side-effects in the environment
            and registers their libobjects. *)
-        let () = export_side_effects eff in
+        let () =
+          if de.proof_leaks_seff then () (* export_existing_side_effects already called *)
+          else export_side_effects eff in
         let de = { de with proof_entry_body = body, () } in
         let e, ctx = cast_proof_entry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
@@ -460,6 +474,7 @@ let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~na
   | Some r -> Cmap.singleton kn r
   in
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
+  export_existing_side_effects eff;
   kn, eff
 
 let inline_private_constants ~uctx env ce =
@@ -501,7 +516,7 @@ let declare_variable_core ~name ~kind d =
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
       let ((body, body_uctx), eff) = Future.force de.proof_entry_body in
-      let () = export_side_effects eff in
+      let () = if de.proof_leaks_seff then () else export_side_effects eff in
       let poly, type_uctx = match fst de.proof_entry_universes with
         | UState.Monomorphic_entry uctx -> false, uctx
         | UState.Polymorphic_entry uctx -> true, Univ.ContextSet.of_context uctx
@@ -757,7 +772,8 @@ let prepare_definition ~info ~opaque ?using ~body ~typ sigma =
   Option.iter (check_evars_are_solved env sigma) types;
   check_evars_are_solved env sigma body;
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  let entry = definition_entry ~opaque ?using ~inline ?types ~univs body in
+  let eff = Evd.eval_side_effects sigma in
+  let entry = definition_entry_core ~eff ~opaque ?using ~inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
   entry, uctx
 
@@ -1614,7 +1630,7 @@ let private_poly_univs =
 
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
 (* XXX: Unsafe_typ:true is needed by vio files, see bf0499bc507d5a39c3d5e3bf1f69191339270729 *)
-let prepare_proof ~unsafe_typ { proof } =
+let prepare_proof ~unsafe_typ ~opaque { proof; pinfo } =
   let Proof.{name=pid;entry;poly} = Proof.data proof in
   let initial_goals = Proofview.initial_goals entry in
   let evd = Proof.return ~pid proof in
@@ -1634,20 +1650,23 @@ let prepare_proof ~unsafe_typ { proof } =
       Vars.universes_of_constr t, t
     else to_constr_body t
   in
-  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-     side-effects... This may explain why one need to uniquize side-effects
-     thereafter... *)
-  (* EJGA: actually side-effects de-duplication and this codepath is
-     unrelated. Duplicated side-effects arise from incorrect scheme
-     generation code, the main bulk of it was mostly fixed by #9836
-     but duplication can still happen because of rewriting schemes I
-     think; however the code below is mostly untested, the only
-     code-paths that generate several proof entries are derive and
-     equations and so far there is no code in the CI that will
-     actually call those and do a side-effect, TTBOMK *)
-  (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
-  let proofs = List.map (fun (_, body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
-  proofs, Evd.evar_universe_context evd
+  let make_proof eff (_, body, typ) =
+      (to_constr_body body, eff), to_constr_typ typ in
+  let regular_preparation initial_goals =
+    let fst_eff, more_eff =
+      if opaque then eff, eff
+      else eff, Evd.empty_side_effects in
+    let fst_goal, more_goals = List.hd initial_goals, List.tl initial_goals in
+    let fst_proof = make_proof fst_eff fst_goal in
+    let more_proofs = List.map (make_proof more_eff) more_goals in
+    fst_proof :: more_proofs, Evd.evar_universe_context evd in
+
+  let ending = CEphemeron.default pinfo.proof_ending Proof_ending.Regular in
+  match ending with
+  | Proof_ending.End_derive _ -> regular_preparation (List.tl initial_goals)
+  | Proof_ending.End_equations _ when initial_goals = [] ->
+      [], Evd.evar_universe_context evd
+  | _ -> regular_preparation initial_goals
 
 let make_univs_deferred ~poly ~initial_euctx ~uctx ~udecl
     (used_univs_typ, typ) (used_univs_body, body) =
@@ -1683,16 +1702,16 @@ let make_univs ~poly ~uctx ~udecl (used_univs_typ, typ) (used_univs_body, body) 
   let utyp = UState.check_univ_decl ~poly uctx udecl in
   utyp, Univ.ContextSet.empty
 
-let close_proof ~opaque ~keep_body_ucst_separate ps =
+let close_proof ?(leak_seff=true) ~opaque ~keep_body_ucst_separate ps =
 
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.name; poly } = Proof.data proof in
   let unsafe_typ = keep_body_ucst_separate && not poly in
-  let elist, uctx = prepare_proof ~unsafe_typ ps in
   let opaque = match opaque with
     | Vernacexpr.Opaque -> true
     | Vernacexpr.Transparent -> false in
+  let elist, uctx = prepare_proof ~unsafe_typ ~opaque ps in
 
   let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
     let utyp, ubody =
@@ -1706,14 +1725,14 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
       then make_univs_private_poly ~poly ~uctx ~udecl t b
       else make_univs ~poly ~uctx ~udecl t b
     in
-    definition_entry_core ~opaque ?using ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
+    definition_entry_core ~leak_seff ~opaque ?using ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map make_entry elist  in
   { name; entries; uctx; pinfo }
 
 type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
-let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
+let stm_close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
   let { using; proof; initial_euctx; pinfo } = ps in
   let { Proof_info.info = { Info.udecl } } = pinfo in
   let { Proof.name; poly; entry; sigma } = Proof.data proof in
@@ -1754,9 +1773,11 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
   let entries = CList.map_i make_entry 0 (Proofview.initial_goals entry) in
   { name; entries; uctx = initial_euctx; pinfo }
 
-let close_future_proof = close_proof_delayed
+let stm_close_future_proof = stm_close_proof_delayed
+let stm_close_proof ~opaque ~keep_body_ucst_separate t =
+  close_proof ~leak_seff:false ~opaque ~keep_body_ucst_separate t
 
-let return_partial_proof { proof } =
+let stm_return_partial_proof { proof } =
  let proofs = Proof.partial_proof proof in
  let Proof.{sigma=evd} = Proof.data proof in
  let eff = Evd.eval_side_effects evd in
@@ -1766,8 +1787,8 @@ let return_partial_proof { proof } =
  let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
  proofs, Evd.evar_universe_context evd
 
-let return_proof ps =
-  let p, uctx = prepare_proof ~unsafe_typ:false ps in
+let stm_return_opaque_proof ps =
+  let p, uctx = prepare_proof ~unsafe_typ:false ~opaque:true ps in
   List.map (fun (((_ub, body),eff),_) -> (body,eff)) p, uctx
 
 let update_sigma_univs ugraph p =
@@ -1926,6 +1947,10 @@ end = struct
             Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
 
   let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; _} =
+    let pe =
+      if i > 0 && not pe.proof_entry_opaque then
+        Internal.map_entry_body pe ~f:(fun (x,_) -> x,Evd.empty_side_effects)
+      else pe in
     let { Proof_info.info; compute_guard; _ } = pinfo in
     let { Info.hook; scope; kind; typing_flags; _ } = info in
     (* if i = 0 , we don't touch the type; this is for compat
@@ -2036,8 +2061,7 @@ let finish_derived ~f ~name ~entries =
 
   let f_def, lemma_def =
     match entries with
-    | [_;f_def;lemma_def] ->
-      f_def, lemma_def
+    | [f_def;lemma_def] -> f_def, lemma_def
     | _ -> assert false
   in
   (* The opacity of [f_def] is adjusted to be [false], as it
@@ -2094,9 +2118,9 @@ let check_single_entry { entries; uctx } label =
   | _ ->
     CErrors.anomaly ~label Pp.(str "close_proof returned more than one proof term")
 
-let finalize_proof ~pm proof_obj proof_info =
+let finalize_proof ~pm proof_obj (proof_info : Proof_info.t) =
   let open Proof_ending in
-  match CEphemeron.default proof_info.Proof_info.proof_ending Regular with
+  match CEphemeron.default proof_info.proof_ending Proof_ending.Regular with
   | Regular ->
     let entry, uctx = check_single_entry proof_obj "Proof.save" in
     pm, MutualEntry.declare_mutdef ~entry ~uctx ~pinfo:proof_info
@@ -2127,7 +2151,6 @@ let process_idopt_for_save ~idopt info =
     in { info with Proof_info.cinfo }
 
 let save ~pm ~proof ~opaque ~idopt =
-  (* Env and sigma are just used for error printing in save_remaining_recthms *)
   let proof_obj = close_proof ~opaque ~keep_body_ucst_separate:false proof in
   let proof_info = process_idopt_for_save ~idopt proof.pinfo in
   finalize_proof ~pm proof_obj proof_info

@@ -278,19 +278,19 @@ module Proof : sig
   type closed_proof_output
 
   (** Requires a complete proof. *)
-  val return_proof : t -> closed_proof_output
+  val stm_return_opaque_proof : t -> closed_proof_output
 
   (** An incomplete proof is allowed (no error), and a warn is given if
       the proof is complete. *)
-  val return_partial_proof : t -> closed_proof_output
+  val stm_return_partial_proof : t -> closed_proof_output
 
   (** XXX: This is an internal, low-level API and could become scheduled
       for removal from the public API, use higher-level declare APIs
       instead *)
   type proof_object
 
-  val close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
-  val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
+  val stm_close_proof : opaque:Vernacexpr.opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
+  val stm_close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
 
   (** Special cases for delayed proofs, in this case we must provide the
       proof information so the proof won't be forced. *)

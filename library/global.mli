@@ -51,6 +51,11 @@ val export_private_constants :
   Safe_typing.private_constants ->
   Safe_typing.exported_private_constant list
 
+val export_existing_private_constants :
+  Safe_typing.private_constants ->
+  Safe_typing.exported_private_constant list
+
+
 val add_constant :
   ?typing_flags:typing_flags ->
   Id.t -> Safe_typing.global_declaration -> Constant.t

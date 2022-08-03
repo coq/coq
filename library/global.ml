@@ -89,6 +89,7 @@ let is_cumulative_sprop () = (typing_flags()).Declarations.cumulative_sprop
 let set_allow_sprop b = globalize0 (Safe_typing.set_allow_sprop b)
 let sprop_allowed () = Environ.sprop_allowed (env())
 let export_private_constants cd = globalize (Safe_typing.export_private_constants cd)
+let export_existing_private_constants cd = globalize (Safe_typing.export_existing_private_constants cd)
 let add_constant ?typing_flags id d = globalize (Safe_typing.add_constant ?typing_flags (i2l id) d)
 let add_private_constant id u d = globalize (Safe_typing.add_private_constant (i2l id) u d)
 let fill_opaque c = globalize0 (Safe_typing.fill_opaque c)

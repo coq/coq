@@ -779,14 +779,14 @@ let translate_direct_opaque ~sec_univs env kn ce =
   let () = assert (is_empty_private u) in
   { cb with const_body = OpaqueDef c }
 
-let export_side_effects senv eff =
+let export_side_effects senv seff =
   let sec_univs = Option.map Section.all_poly_univs senv.sections in
   let env = senv.env in
-  let not_exists e = not (Environ.mem_constant e.seff_constant env) in
-  let aux (acc,sl) e =
-    if not (not_exists e) then acc, sl
-    else e :: acc, e.seff_certif :: sl in
-  let seff, signatures = List.fold_left aux ([],[]) (SideEffects.repr eff) in
+  let seff = List.rev (SideEffects.repr seff) in
+  let exists e = Environ.mem_constant e.seff_constant env in
+  if List.exists exists seff then
+    CErrors.anomaly Pp.(str"export_side_effects: already existing seff");
+  let signatures = List.map (fun e -> e.seff_certif) seff in
   let trusted = check_signatures senv signatures in
   let push_seff env eff =
     let { seff_constant = kn; seff_body = cb ; _ } = eff in
@@ -820,6 +820,21 @@ let export_side_effects senv eff =
     in
     recheck_seff seff Univ.ContextSet.empty [] env
 
+let export_hcons_eff eff =
+  let body = eff.seff_body.const_body in
+  let body = match body with
+    | OpaqueDef body -> OpaqueDef (Constr.hcons body)
+    | x -> x in
+  (eff.seff_constant, { eff.seff_body with const_body = body })
+
+let export_existing_side_effects senv eff =
+  let env = senv.env in
+  let effs = List.rev (SideEffects.repr eff) in
+  let not_exists e = not (Environ.mem_constant e.seff_constant env) in
+  if List.exists not_exists effs then
+    CErrors.anomaly Pp.(str"export_existing_side_effects: nonexistent seff");
+  List.map export_hcons_eff effs
+
 let push_opaque_proof senv =
   let o, otab = Opaqueproof.create (library_dp_of_senv senv) senv.opaquetab in
   let senv = { senv with opaquetab = otab } in
@@ -849,6 +864,23 @@ let export_private_constants eff senv =
   let fold senv (kn, cb, _) = add_constant_aux senv (kn, cb) in
   let senv = List.fold_left fold senv bodies in
   exported, senv
+
+let export_existing_private_constants eff senv =
+  let already_exported = export_existing_side_effects senv eff in
+  let map (kn,c) =
+    match c.const_body, (Environ.lookup_constant kn senv.env).const_body with
+    | OpaqueDef body, OpaqueDef o ->
+        let (_, _, _, h) = Opaqueproof.repr o in
+        let univs = match c.const_universes with
+        | Monomorphic -> None
+        | Polymorphic auctx -> Some (Univ.AbstractContext.size auctx)
+        in
+        let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in
+        Some (kn, Some opaque)
+    | _ -> None
+  in
+  let already_exported = CList.filter_map map already_exported in
+  already_exported, senv
 
 let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
@@ -954,15 +986,12 @@ let add_private_constant l uctx decl senv : (Constant.t * private_constants) * s
       | DefinitionEff ce ->
         let () = assert (check_constraints uctx ce.Entries.const_entry_universes) in
         Term_typing.translate_constant ~sec_univs senv.env kn (Entries.DefinitionEntry ce)
-    in
-  let dcb = match cb.const_body with
-  | Def _ as const_body -> { cb with const_body }
+      in
+  let senv, dcb = match cb.const_body with
+  | Def _ as const_body -> senv, { cb with const_body }
   | OpaqueDef _ ->
-    (* We drop the body, to save the definition of an opaque and thus its
-       hashconsing. It does not matter since this only happens inside a proof,
-       and depending of the opaque status of the latter, this proof term will be
-       either inlined or reexported. *)
-    { cb with const_body = Undef None }
+      let senv, o = push_opaque_proof senv in
+      senv, { cb with const_body = OpaqueDef o }
   | Undef _ | Primitive _ -> assert false
   in
   let senv = add_constant_aux senv (kn, dcb) in

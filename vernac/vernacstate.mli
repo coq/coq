@@ -101,8 +101,8 @@ module Declare : sig
   val with_current_proof :
       (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
 
-  val return_proof : unit -> Declare.Proof.closed_proof_output
-  val return_partial_proof : unit -> Declare.Proof.closed_proof_output
+  val stm_return_opaque_proof : unit -> Declare.Proof.closed_proof_output
+  val stm_return_partial_proof : unit -> Declare.Proof.closed_proof_output
 
   val close_future_proof
     : feedback_id:Stateid.t

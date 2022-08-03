@@ -185,14 +185,14 @@ module Declare_ = struct
       s_lemmas := Some stack;
       res
 
-  let return_proof () = cc Declare.Proof.return_proof
-  let return_partial_proof () = cc Declare.Proof.return_partial_proof
+  let stm_return_opaque_proof () = cc Declare.Proof.stm_return_opaque_proof
+  let stm_return_partial_proof () = cc Declare.Proof.stm_return_partial_proof
 
   let close_future_proof ~feedback_id pf =
-    cc (fun pt -> Declare.Proof.close_future_proof ~feedback_id pt pf)
+    cc (fun pt -> Declare.Proof.stm_close_future_proof ~feedback_id pt pf)
 
   let close_proof ~opaque ~keep_body_ucst_separate =
-    cc (fun pt -> Declare.Proof.close_proof ~opaque ~keep_body_ucst_separate pt)
+    cc (fun pt -> Declare.Proof.stm_close_proof ~opaque ~keep_body_ucst_separate pt)
 
   let discard_all () = s_lemmas := None
   let update_sigma_univs ugraph = dd (Declare.Proof.update_sigma_univs ugraph)
