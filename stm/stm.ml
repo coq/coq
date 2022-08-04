@@ -306,7 +306,6 @@ module VCS : sig
     mutable n_reached : int;      (* debug cache: how many times was computed *)
     mutable n_goals : int;        (* open goals: indentation *)
     mutable state : cached_state; (* state value *)
-    mutable proof_mode : Pvernac.proof_mode option;
     mutable vcs_backup : vcs option * backup option;
   }
 
@@ -323,7 +322,7 @@ module VCS : sig
   val branches : unit -> Branch.t list
   val get_branch : Branch.t -> branch_info
   val get_branch_pos : Branch.t -> id
-  val new_node : ?id:Stateid.t -> Pvernac.proof_mode option -> unit -> id
+  val new_node : ?id:Stateid.t -> unit -> id
   val merge : id -> ours:transaction -> ?into:Branch.t -> Branch.t -> unit
   val rewrite_merge : id -> ours:transaction -> at:id -> Branch.t -> unit
   val delete_branch : Branch.t -> unit
@@ -342,7 +341,6 @@ module VCS : sig
   val get_state : id -> cached_state
   val set_parsing_state : id -> Vernacstate.Parser.t -> unit
   val get_parsing_state : id -> Vernacstate.Parser.t option
-  val get_proof_mode : id -> Pvernac.proof_mode option
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
   val slice : block_start:id -> block_stop:id -> vcs
@@ -380,14 +378,12 @@ end = struct (* {{{ *)
     mutable n_reached : int;      (* debug cache: how many times was computed *)
     mutable n_goals : int;        (* open goals: indentation *)
     mutable state : cached_state; (* state value *)
-    mutable proof_mode : Pvernac.proof_mode option;
     mutable vcs_backup : vcs option * backup option;
   }
-  let default_info proof_mode =
+  let default_info () =
     {
       n_reached = 0; n_goals = 0;
       state = EmptyState;
-      proof_mode;
       vcs_backup = (None,None);
     }
 
@@ -523,7 +519,7 @@ end = struct (* {{{ *)
   let init dt id ps =
     doc_type := dt;
     vcs := empty id;
-    let info = { (default_info None) with state = ParsingState ps } in
+    let info = { (default_info ()) with state = ParsingState ps } in
     vcs := set_info !vcs id info;
     dummy_doc
 
@@ -549,9 +545,9 @@ end = struct (* {{{ *)
   let branches () = branches !vcs
   let get_branch head = get_branch !vcs head
   let get_branch_pos head = (get_branch head).pos
-  let new_node ?(id=Stateid.fresh ()) proof_mode () =
+  let new_node ?(id=Stateid.fresh ()) () =
     assert(Vcs_.get_info !vcs id = None);
-    vcs := set_info !vcs id (default_info proof_mode);
+    vcs := set_info !vcs id (default_info ());
     id
   let merge id ~ours ?into branch =
     vcs := merge !vcs id ~ours ~theirs:Noop ?into branch
@@ -604,8 +600,6 @@ end = struct (* {{{ *)
     in
     info.state <- new_state
 
-  let get_proof_mode id = (get_info id).proof_mode
-
   let reached id =
     let info = get_info id in
     info.n_reached <- info.n_reached + 1
@@ -629,8 +623,7 @@ end = struct (* {{{ *)
   let propagate_sideff ~action =
     List.map (fun b ->
       checkout b;
-      let proof_mode = get_proof_mode @@ get_branch_pos b in
-      let id = new_node proof_mode () in
+      let id = new_node () in
       merge id ~ours:(Sideff action) ~into:b Branch.master;
       id)
     (List.filter (fun b -> not (Branch.equal b Branch.master)) (branches ()))
@@ -638,8 +631,7 @@ end = struct (* {{{ *)
   let propagate_qed () =
     List.iter (fun b ->
       checkout b;
-      let proof_mode = get_proof_mode @@ get_branch_pos b in
-      let id = new_node proof_mode () in
+      let id = new_node () in
       let parsing = Option.get @@ get_parsing_state (get_branch_pos b) in
       merge id ~ours:(Sideff CherryPickEnv) ~into:b Branch.master;
       set_parsing_state id parsing)
@@ -2504,7 +2496,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
   match brinfo with
   | { VCS.kind = Proof _ } ->
       VCS.checkout VCS.Branch.master;
-      let id = VCS.new_node ?id None () in
+      let id = VCS.new_node ?id () in
       let parsing = Option.get @@ VCS.get_parsing_state (VCS.cur_tip ()) in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.set_parsing_state id parsing;
@@ -2571,8 +2563,7 @@ let process_back_meta_command ~newtip ~head oid aast =
     List.iter (fun b ->
         VCS.checkout b;
         let id = if (VCS.Branch.equal b head) then Some newtip else None in
-        let proof_mode = VCS.get_proof_mode @@ VCS.cur_tip () in
-        let id = VCS.new_node ?id proof_mode () in
+        let id = VCS.new_node ?id () in
         VCS.commit id (Alias (oid,aast));
         VCS.set_parsing_state id old_parsing)
       (VCS.branches ());
@@ -2596,7 +2587,6 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
     VCS.checkout head;
     let head_parsing =
       Option.get @@ VCS.(get_parsing_state (get_branch_pos head)) in
-    let proof_mode = VCS.(get_proof_mode (get_branch_pos head)) in
     let rc = begin
       stm_prerr_endline (fun () ->
         "  classified as: " ^ Vernac_classifier.string_of_vernac_classification c);
@@ -2608,7 +2598,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
 
       (* Query *)
       | VtQuery ->
-          let id = VCS.new_node ~id:newtip proof_mode () in
+          let id = VCS.new_node ~id:newtip () in
           let queue =
             if VCS.is_vio_doc () &&
                VCS.((get_branch head).kind = Master) &&
@@ -2632,8 +2622,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
            |> Exninfo.iraise
          else
 
-          let proof_mode = Some (Vernacinterp.get_default_proof_mode ()) in
-          let id = VCS.new_node ~id:newtip proof_mode () in
+          let id = VCS.new_node ~id:newtip () in
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;
           if VCS.Branch.equal head VCS.Branch.master then begin
@@ -2643,11 +2632,13 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
             VCS.branch bname (Proof (VCS.proof_nesting () + 1));
             VCS.merge id ~ours:(Fork (x, bname, guarantee, names)) head
           end;
-          VCS.set_parsing_state id head_parsing;
+          let proof_mode = Some (Pvernac.get_default_proof_mode ()) in
+          let ps = Vernacstate.Parser.set_proof_mode proof_mode head_parsing in
+          VCS.set_parsing_state id ps;
           Backtrack.record (); Ok
 
       | VtProofStep { proof_block_detection = cblock } ->
-          let id = VCS.new_node ~id:newtip proof_mode () in
+          let id = VCS.new_node ~id:newtip () in
           let queue = MainQueue in
           VCS.commit id (mkTransTac x cblock queue);
           (* Static proof block detection delayed until an error really occurs.
@@ -2667,7 +2658,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
 
       (* Side effect in a (still open) proof is replayed on all branches*)
       | VtSideff (l, w) ->
-          let id = VCS.new_node ~id:newtip proof_mode () in
+          let id = VCS.new_node ~id:newtip () in
           let new_ids =
             match (VCS.get_branch head).VCS.kind with
             | Edit _ -> VCS.commit id (mkTransCmd x l true MainQueue); []
@@ -2702,10 +2693,11 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
               VCS.set_parsing_state id parsing_state) new_ids;
           Ok
 
-      | VtProofMode proof_mode ->
-        let id = VCS.new_node ~id:newtip (Some proof_mode) () in
+      | VtProofMode pm ->
+        let id = VCS.new_node ~id:newtip () in
         VCS.commit id (mkTransCmd x [] false MainQueue);
-        VCS.set_parsing_state id head_parsing;
+        let ps = Vernacstate.Parser.set_proof_mode (Some pm) head_parsing in
+        VCS.set_parsing_state id ps;
         Backtrack.record (); Ok
 
     end in
@@ -2733,8 +2725,7 @@ let stop_worker n = Slaves.cancel_worker n
 
 let parse_sentence ~doc sid ~entry pa =
   let ps = Option.get @@ VCS.get_parsing_state sid in
-  let proof_mode = VCS.get_proof_mode sid in
-  Vernacstate.Parser.parse ps (entry proof_mode) pa
+  Vernacstate.Parser.parse ps entry pa
 
 (* You may need to know the len + indentation of previous command to compute
  * the indentation of the current one.

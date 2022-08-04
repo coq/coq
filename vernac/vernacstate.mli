@@ -14,7 +14,8 @@ module Parser : sig
   val init : unit -> t
   val cur_state : unit -> t
 
-  val parse : t -> 'a Pcoq.Entry.t -> Pcoq.Parsable.t -> 'a
+  val set_proof_mode : Pvernac.proof_mode option -> t -> t
+  val parse : t -> (Pvernac.proof_mode option -> 'a Pcoq.Entry.t) -> Pcoq.Parsable.t -> 'a
 
 end
 

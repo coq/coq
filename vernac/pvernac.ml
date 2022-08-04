@@ -76,4 +76,24 @@ let main_entry proof_mode =
   Vernac_.main_entry
 
 let () =
-  register_grammar Genredexpr.wit_red_expr (Vernac_.red_expr);
+  register_grammar Genredexpr.wit_red_expr (Vernac_.red_expr)
+
+(* Default proof mode, to be set at the beginning of proofs for
+programs that cannot be statically classified. *)
+let proof_mode_opt_name = ["Default";"Proof";"Mode"]
+
+let get_default_proof_mode =
+  Goptions.declare_interpreted_string_option_and_ref
+    ~stage:Summary.Stage.Synterp
+    ~depr:false
+    ~key:proof_mode_opt_name
+    ~value:(register_proof_mode "Noedit" Vernac_.noedit_mode)
+    (fun name -> match lookup_proof_mode name with
+    | Some pm -> pm
+    | None -> CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." name)))
+    proof_mode_to_string
+
+let current_proof_mode = Summary.ref ~stage:Summary.Stage.Synterp ~name:"proof_mode" None
+
+let get_current_proof_mode () : proof_mode option =  !current_proof_mode
+let set_current_proof_mode m = current_proof_mode := m
