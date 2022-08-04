@@ -31,22 +31,13 @@ let interp_typed_vernac (Vernacextend.TypedVernac { inprog; outprog; inproof; ou
     | Some stack, Update -> Some (LStack.map_top ~f:(fun _ -> proof') stack)
     | stack, New -> Some (LStack.push stack proof')
   in
+  let () =
+    match outproof with
+    | New -> Pvernac.set_current_proof_mode (Some (Pvernac.get_default_proof_mode ()))
+    | Close when stack = None -> Pvernac.set_current_proof_mode None
+    | _ -> ()
+  in
   stack, pm
-
-(* Default proof mode, to be set at the beginning of proofs for
-   programs that cannot be statically classified. *)
-let proof_mode_opt_name = ["Default";"Proof";"Mode"]
-
-let get_default_proof_mode =
-  Goptions.declare_interpreted_string_option_and_ref
-    ~stage:Summary.Stage.Synterp
-    ~depr:false
-    ~key:proof_mode_opt_name
-    ~value:(Pvernac.register_proof_mode "Noedit" Pvernac.Vernac_.noedit_mode)
-    (fun name -> match Pvernac.lookup_proof_mode name with
-    | Some pm -> pm
-    | None -> CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." name)))
-    Pvernac.proof_mode_to_string
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
@@ -196,7 +187,7 @@ and vernac_load ~verbosely fname =
       (Pcoq.Entry.parse (Pvernac.main_entry proof_mode))
   in
   let rec load_loop ~pm ~stack =
-    let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
+    let proof_mode = Option.map (fun _ -> Pvernac.get_default_proof_mode ()) stack in
     match parse_sentence proof_mode input with
     | None -> stack, pm
     | Some stm ->

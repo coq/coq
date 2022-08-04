@@ -53,3 +53,8 @@ val main_entry : proof_mode option -> vernac_control option Entry.t
 val register_proof_mode : string -> Vernacexpr.vernac_expr Entry.t -> proof_mode
 val lookup_proof_mode : string -> proof_mode option
 val proof_mode_to_string : proof_mode -> string
+
+val proof_mode_opt_name : string list
+val get_default_proof_mode : unit -> proof_mode
+val get_current_proof_mode : unit -> proof_mode option
+val set_current_proof_mode : proof_mode option -> unit

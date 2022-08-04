@@ -10,16 +10,18 @@
 
 module Parser = struct
 
-  type t = Pcoq.frozen_t
+  type t = Pcoq.frozen_t * Pvernac.proof_mode option
 
-  let init () = Pcoq.freeze ~marshallable:false
+  let init () = Pcoq.freeze ~marshallable:false, None
 
-  let cur_state () = Pcoq.freeze ~marshallable:false
+  let cur_state () = Pcoq.freeze ~marshallable:false, Pvernac.get_current_proof_mode ()
 
-  let parse ps entry pa =
+  let set_proof_mode pm (t,_) = (t,pm)
+
+  let parse (ps,proof_mode) entry pa =
     Pcoq.unfreeze ps;
     Flags.with_option Flags.we_are_parsing
-      (fun () -> Pcoq.Entry.parse entry pa)
+      (fun () -> Pcoq.Entry.parse (entry proof_mode) pa)
       ()
 
 end
@@ -131,7 +133,8 @@ let unfreeze_interp_state { system; lemmas; program; parsing; opaques } =
   s_lemmas := lemmas;
   s_program := program;
   Opaques.Summary.unfreeze opaques;
-  Pcoq.unfreeze parsing
+  Pcoq.unfreeze (fst parsing);
+  Pvernac.set_current_proof_mode (snd parsing)
 
 (* Compatibility module *)
 module Declare_ = struct
