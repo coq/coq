@@ -12,8 +12,8 @@ rm -f ${OUT}
 
 set -x
 
-$coqc_stm ${IN_V} -vos
-$coqc_stm ${IN_V} -vok
+coqc_stm ${IN_V} -vos
+coqc_stm ${IN_V} -vok
 if [ ! -f ${OUT_VOK} ]; then
   echo "coqc -vok not working in -vos mode"
   rm -f ${OUT}
@@ -22,7 +22,7 @@ fi
 
 rm -f ${OUT}
 
-$coqc_stm ${IN_V} -o ${OUT_VO}
+coqc_stm ${IN_V} -o ${OUT_VO}
 if [ ! -f ${OUT_VOK} ]; then
   echo "vok not produced in -o mode"
   rm -f ${OUT}
@@ -31,8 +31,8 @@ fi
 
 rm -f ${OUT}
 
-$coqc_stm ${IN_V} -vio
-$coqc_stm -vio2vo ${OUT_VIO}
+coqc_stm ${IN_V} -vio
+coqc_stm -vio2vo ${OUT_VIO}
 if [ ! -f ${OUT_VOK} ]; then
   echo "vok not produced in -vio2vo mode"
   rm -f ${OUT}

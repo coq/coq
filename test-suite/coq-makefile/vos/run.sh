@@ -12,16 +12,16 @@ export COQEXTRAFLAGS="$COQEXTRAFLAGS -async-proofs off"
 
 # Test building all vos, then all vok
 coq_makefile -f _CoqProject -o Makefile
-make vos
-make vok
+make vos COQC=coqc_stm
+make vok COQC=coqc_stm
 
 # Cleanup
 make clean
 
 # Test using compilation in custom order
 set -x #echo on
-coqc A.v
-coqc -vos B.v
-coqc -vos C.v
-coqc -vok B.v
-coqc -vok C.v
+coqc_stm A.v
+coqc_stm -vos B.v
+coqc_stm -vos C.v
+coqc_stm -vok B.v
+coqc_stm -vok C.v
