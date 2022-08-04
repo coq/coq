@@ -111,7 +111,7 @@ Module RefineVsNoTceauto.
   Goal exists (f : Foo nat), @foo _ f = 0.
   Proof.
     unshelve (notypeclasses refine (ex_intro _ _ _)). 
-    Set Typeclasses Debug. Set Printing All.
+    (*Set Typeclasses Debug. Set Printing All.*)
     all:once (typeclasses eauto).
     Fail idtac. (* Check no subgoals are left *)
     Undo 3.

@@ -23,11 +23,11 @@ Fail Check ιι _ ιι.
 
 #[program]
 Fixpoint f (n: nat) {wf lt n} : nat := _.
-Reset f.
+Next Obligation. Admitted.
 
 #[program=yes]
-Fixpoint f (n: nat) {wf lt n} : nat := _.
-Reset f.
+Fixpoint f1 (n: nat) {wf lt n} : nat := _.
+Next Obligation. Admitted.
 
 #[deprecated(since="8.9.0")]
 Ltac foo := foo.
@@ -53,8 +53,8 @@ Fail #[ export ] Export Foo.
 Set Warnings "-deprecated-attribute-syntax".
 
 #[program=yes]
-Fixpoint f (n: nat) {wf lt n} : nat := _.
-Reset f.
+Fixpoint f2 (n: nat) {wf lt n} : nat := _.
+Next Obligation. Admitted.
 
 #[universes(polymorphic=no)]
 Definition ιιι T (x: T) := x.

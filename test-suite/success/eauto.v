@@ -85,7 +85,7 @@ Lemma simpl_plus_l_rr1 :
   Undo.
   Set Typeclasses Debug.
   Set Typeclasses Iterative Deepening.
-  Time typeclasses eauto 6 with nocore. Show Proof.
+  Time typeclasses eauto 6 with nocore. (*Show Proof.*)
   Undo.
   Time eauto. (* does EApply H *)
 Qed.
