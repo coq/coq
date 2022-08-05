@@ -188,12 +188,21 @@ Other tokens
   Note that loading additional modules or plugins may expand the set of defined
   tokens.
 
+.. _lexing-unseparated-keywords:
+
   When multiple tokens match the beginning of a sequence of characters,
-  the longest matching token is used.
+  the longest matching token not cutting a subsequence of contiguous letters in the middle is used.
   Occasionally you may need to insert spaces to separate tokens.  For example,
   if ``~`` and ``~~`` are both defined as tokens, the inputs ``~ ~`` and
-  ``~~`` generate different tokens, whereas if `~~` is not defined, then the
-  two inputs are equivalent.
+  ``~~`` generate different tokens, whereas if ``~~`` is not defined, then the
+  two inputs are equivalent. Also, if ``~`` and ``~_h`` are both
+  defined as tokens, the input ``~_ho`` is interpreted as ``~ _ho``
+  rather than ``~_h o`` so as not to cut the identifier-like
+  subsequence ``ho``. Contrastingly, if only ``~_h`` is defined as a token,
+  then ``~_ho`` is an error because no token can be found that includes
+  the whole subsequence ``ho`` without cutting it in the middle. Finally, if
+  all of ``~``, ``~_h`` and ``~_ho`` are defined as tokens, the input
+  ``~_ho`` is interpreted using the longest match rule, i.e. as the token ``~_ho``.
 
 Essential vocabulary
 --------------------

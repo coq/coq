@@ -219,6 +219,11 @@ let status_of_utf8 = function
 let lookup_utf8 loc cs =
   status_of_utf8 (lookup_utf8_char loc 0 cs)
 
+let is_letter l =
+  match status_of_utf8 l with
+  | EmptyStream -> false
+  | Utf8Token (st,_) -> Unicode.is_letter st
+
 let unlocated f x =
   let dummy_loc = Loc.(initial ToplevelInput) in
   f dummy_loc x
@@ -487,20 +492,22 @@ let update_longest_valid_token last nj tt cs =
 
 (* try to progress by peeking the next utf-8 lexeme *)
 (* and retain the longest valid special token obtained *)
-let rec progress_further loc last nj tt cs =
+let rec progress_further loc last nj last_is_letter tt cs =
   match lookup_utf8_char loc nj cs with
   | [] -> snd (update_longest_valid_token last nj tt cs)
-  | l -> progress_utf8 loc last nj tt cs l
+  | l -> progress_utf8 loc last nj last_is_letter tt cs l
 
 (* under the same assumptions as [update_longest_valid_token], *)
 (* read the [n] bytes of the current utf-8 lexeme whose first byte is [c] *)
-and progress_utf8 loc last nj tt cs l =
+and progress_utf8 loc last nj last_is_letter tt cs l =
+  let is_letter' = is_letter l in
   (* compute longest match before considering utf8 block [l] *)
-  let nj, last = update_longest_valid_token last nj tt cs in
+  (* not allowing update if in the middle of an ident part *)
+  let nj, last = if last_is_letter && is_letter' then nj, last else update_longest_valid_token last nj tt cs in
   try
     (* descend in tree according to current utf8 block [l] *)
     let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
-    progress_further loc last (nj + List.length l) tt cs
+    progress_further loc last (nj + List.length l) is_letter' tt cs
   with Not_found ->
     last
 
@@ -593,7 +600,7 @@ let find_keyword loc id bp s =
     end
   else
   let tt = ttree_find !token_tree id in
-  match progress_further loc tt.node 0 tt s with
+  match progress_further loc tt.node 0 true tt s with
   | None -> raise Not_found
   | Some (c,NoQuotation) ->
       let ep = Stream.count s in
@@ -612,7 +619,7 @@ let process_sequence loc bp c cs =
 
 (* Must be a special token *)
 let process_chars ~diff_mode loc bp l cs =
-  let t = progress_utf8 loc None (- (List.length l)) !token_tree cs l in
+  let t = progress_utf8 loc None (- (List.length l)) false !token_tree cs l in
   let ep = Stream.count cs in
   match t with
     | Some (t,NoQuotation) -> (KEYWORD t, set_loc_pos loc bp ep)

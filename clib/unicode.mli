@@ -25,6 +25,9 @@ val is_valid_ident_initial : status -> bool
 (** Tells if a valid non-initial character for an identifier *)
 val is_valid_ident_trailing : status -> bool
 
+(** Tells if a letter *)
+val is_letter : status -> bool
+
 (** Tells if a character is unclassified *)
 val is_unknown : status -> bool
 

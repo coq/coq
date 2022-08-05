@@ -253,6 +253,10 @@ let is_ident_sep = function
   | IdentSep -> true
   | Letter | IdentPart | Symbol | Unknown | Separator | Control -> false
 
+let is_letter = function
+  | Letter -> true
+  | IdentSep | IdentPart | Symbol | Unknown | Separator | Control -> false
+
 let ident_refutation s =
   if s = ".." then None else try
     let j, n = next_utf8 s 0 in
