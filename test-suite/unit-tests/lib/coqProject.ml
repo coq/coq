@@ -22,12 +22,8 @@ let t () =
       native_compiler = None;
       docroot = None;
 
-      v_files = [];
-      ml_files = [];
-      mli_files = [];
-      mlg_files = [];
-      mllib_files = [];
-      mlpack_files = [];
+      files = [];
+      cmd_line_files = [];
       meta_file = Absent;
 
       ml_includes = [];
@@ -52,12 +48,8 @@ let t () =
       native_compiler = None;
       docroot = None;
 
-      v_files = [];
-      ml_files = [];
-      mli_files = [];
-      mlg_files = [];
-      mllib_files = [];
-      mlpack_files = [];
+      files = [];
+      cmd_line_files = [];
       meta_file = Absent;
 
       ml_includes = [];
