@@ -3,7 +3,7 @@ Require Import Ltac2.Ltac2.
 Module Foo.
 
 Ltac2 foo := ().
-Ltac2 Type bar := [ BAR ].
+Ltac2 Type bar := [ BAR ].
 Ltac2 Type quz := [ .. ].
 Ltac2 Type quz ::= [ QUZ ].
 

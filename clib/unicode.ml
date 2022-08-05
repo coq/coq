@@ -10,7 +10,7 @@
 
 (** Unicode utilities *)
 
-type status = Letter | IdentPart | Symbol | IdentSep | Unknown
+type status = Letter | IdentPart | Symbol | IdentSep | Separator | Control | Unknown
 
 (* The following table stores classes of Unicode characters that
    are used by the lexer. There are 5 different classes so 3 bits
@@ -31,6 +31,8 @@ let mask i = function
   | IdentPart -> 2 lsl ((i land 7) * 3) (* 010 *)
   | Symbol    -> 3 lsl ((i land 7) * 3) (* 011 *)
   | IdentSep  -> 4 lsl ((i land 7) * 3) (* 100 *)
+  | Separator -> 5 lsl ((i land 7) * 3) (* 101 *)
+  | Control   -> 6 lsl ((i land 7) * 3) (* 110 *)
   | Unknown   -> 0 lsl ((i land 7) * 3) (* 000 *)
 
 (* Helper to reset 3 bits in a word. *)
@@ -59,6 +61,8 @@ let lookup x =
     else if v = 2 then IdentPart
     else if v = 3 then Symbol
     else if v = 4 then IdentSep
+    else if v = 5 then Separator
+    else if v = 6 then Control
     else Unknown
 
 (* [classify] discriminates between 5 different kinds of
@@ -69,6 +73,7 @@ let classify =
     (* General tables. *)
     mk_lookup_table_from_unicode_tables_for Symbol
       [
+        Unicodetable.sk;           (* Symbol, modifiers.                *)
         Unicodetable.sm;           (* Symbol, maths.                    *)
         Unicodetable.sc;           (* Symbol, currency.                 *)
         Unicodetable.so;           (* Symbol, modifier.                 *)
@@ -113,10 +118,20 @@ let classify =
         [(0x02074, 0x02079)];      (* Superscript 4-9.                  *)
         single 0x0002E;            (* Dot.                              *)
       ];
+    mk_lookup_table_from_unicode_tables_for Separator
+      [
+        Unicodetable.zs;           (* Separator, Space.                 *)
+        Unicodetable.zl;           (* Separator, Line.                  *)
+        Unicodetable.zp;           (* Separator, Paragraph.             *)
+      ];
+    mk_lookup_table_from_unicode_tables_for Control
+      [
+        Unicodetable.cc;           (* Other, Control.                   *)
+      ];
     mk_lookup_table_from_unicode_tables_for IdentSep
       [
         single 0x005F;             (* Underscore.                       *)
-        single 0x00A0;             (* Non breaking space.               *)
+        single 0x00A0;             (* Non breaking space, overrides Sep *)
       ];
     mk_lookup_table_from_unicode_tables_for IdentPart
       [
@@ -206,7 +221,7 @@ let escaped_if_non_utf8 s =
 
 let is_valid_ident_initial = function
   | Letter | IdentSep -> true
-  | IdentPart | Symbol | Unknown -> false
+  | IdentPart | Symbol | Separator | Control | Unknown -> false
 
 let initial_refutation j n s =
   if is_valid_ident_initial (classify n) then None
@@ -217,7 +232,7 @@ let initial_refutation j n s =
 
 let is_valid_ident_trailing = function
   | Letter | IdentSep | IdentPart -> true
-  | Symbol | Unknown -> false
+  | Symbol | Separator | Control | Unknown -> false
 
 let trailing_refutation i j n s =
   if is_valid_ident_trailing (classify n) then None
@@ -228,15 +243,15 @@ let trailing_refutation i j n s =
 
 let is_unknown = function
   | Unknown -> true
-  | Letter | IdentSep | IdentPart | Symbol -> false
+  | Letter | IdentSep | IdentPart | Symbol | Separator | Control -> false
 
 let is_ident_part = function
   | IdentPart -> true
-  | Letter | IdentSep | Symbol | Unknown -> false
+  | Letter | IdentSep | Symbol | Unknown | Separator | Control -> false
 
 let is_ident_sep = function
   | IdentSep -> true
-  | Letter | IdentPart | Symbol | Unknown -> false
+  | Letter | IdentPart | Symbol | Unknown | Separator | Control -> false
 
 let ident_refutation s =
   if s = ".." then None else try
