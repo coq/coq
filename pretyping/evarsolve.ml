@@ -706,6 +706,8 @@ let solve_pattern_eqn env sigma l c =
  * useful to ensure the uniqueness of a projection.
 *)
 
+type esubst = { esubst : (Evd.econstr * Names.Id.t) list Int.Map.t }
+
 let make_projectable_subst aliases sigma evi args =
   let sign = evar_filtered_context evi in
   let evar_aliases = compute_var_aliases sign sigma in
@@ -742,7 +744,7 @@ let make_projectable_subst aliases sigma evi args =
                 (rest,all,cstrs,revmap))
         | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
       sign (List.rev args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
-  (full_subst,cstr_subst)
+  ({ esubst = full_subst },cstr_subst)
 
 (*------------------------------------*
  * operations on the evar constraints *
@@ -939,7 +941,7 @@ let rec find_projectable_vars aliases sigma y subst =
       | [] -> subst'
       | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
   in
-  let subst1,subst2 = Int.Map.fold is_projectable subst ([],[]) in
+  let subst1,subst2 = Int.Map.fold is_projectable subst.esubst ([],[]) in
   (* We return the substitution with ProjectVar first (from most
      recent to oldest var), followed by ProjectEvar (from most recent
      to oldest var too) *)
@@ -958,7 +960,7 @@ let project_with_effects aliases sigma t subst =
     try assoc_up_to_alias sigma aliases t idcl :: accu
     with Not_found -> accu
   in
-  filter_solution (Int.Map.fold is_projectable subst [])
+  filter_solution (Int.Map.fold is_projectable subst.esubst [])
 
 (* In case the solution to a projection problem requires the instantiation of
  * subsidiary evars, [do_projection_effects] performs them; it
