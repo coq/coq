@@ -706,7 +706,44 @@ let solve_pattern_eqn env sigma l c =
  * useful to ensure the uniqueness of a projection.
 *)
 
-type esubst = { esubst : (Evd.econstr * Names.Id.t) list Int.Map.t }
+module EAlias :
+sig
+  type t
+  val make : Evd.evar_map -> EConstr.t -> t option
+  val is_constr : Evd.evar_map -> EConstr.t -> t -> bool
+  val to_alias : Evd.evar_map -> t -> alias option
+  val to_evar : Evd.evar_map -> t -> existential option
+end =
+struct
+
+type t =
+| ERel of int
+| EVar of Id.t
+| EEvar of existential
+
+let make sigma c = match EConstr.kind sigma c with
+| Rel n -> Some (ERel n)
+| Var id -> Some (EVar id)
+| Evar ev -> Some (EEvar ev)
+| _ -> None
+
+let is_constr sigma c a = match a with
+| ERel n -> isRelN sigma n c
+| EVar id -> isVarId sigma id c
+| EEvar ev -> EConstr.eq_constr sigma (mkEvar ev) c
+
+let to_alias sigma a = match a with
+| ERel n -> Some (RelAlias n)
+| EVar id -> Some (VarAlias id)
+| EEvar ev -> to_alias sigma (mkEvar ev)
+
+let to_evar sigma a = match a with
+| ERel _ | EVar _ -> None
+| EEvar ev -> try Some (destEvar sigma (mkEvar ev)) with DestKO -> None
+
+end
+
+type esubst = { esubst : (EAlias.t * Names.Id.t) list Int.Map.t }
 
 let make_projectable_subst aliases sigma evi args =
   let sign = evar_filtered_context evi in
@@ -724,7 +761,8 @@ let make_projectable_subst aliases sigma evi args =
                   let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
               | _ -> cstrs in
-            let all = Int.Map.add i [a, id] all in
+            let sub = match EAlias.make sigma a with None -> [] | Some v -> [v, id] in
+            let all = Int.Map.add i sub all in
             (rest,all,cstrs,revmap)
         | LocalDef ({binder_name=id},c,_), a::rest ->
             let revmap = Id.Map.add id i revmap in
@@ -734,13 +772,18 @@ let make_projectable_subst aliases sigma evi args =
                 let ic, sub =
                   try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
                   with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
-                if List.exists (fun (c, _) -> EConstr.eq_constr sigma a c) sub then
+                if List.exists (fun (c, _) -> EAlias.is_constr sigma a c) sub then
                   (rest,all,cstrs,revmap)
                 else
-                  let all = Int.Map.add ic ((a, id)::sub) all in
+                  let sub = match EAlias.make sigma a with
+                  | None -> sub
+                  | Some v -> (v, id) :: sub
+                  in
+                  let all = Int.Map.add ic sub all in
                   (rest,all,cstrs,revmap)
             | _ ->
-                let all = Int.Map.add i [a, id] all in
+                let sub = match EAlias.make sigma a with None -> [] | Some v -> [v, id] in
+                let all = Int.Map.add i sub all in
                 (rest,all,cstrs,revmap))
         | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
       sign (List.rev args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
@@ -910,7 +953,7 @@ exception NotUniqueInType of (Id.t * evar_projection) list
 let rec assoc_up_to_alias sigma aliases y = function
   | [] -> raise Not_found
   | (c, id)::l ->
-    match to_alias sigma c with
+    match EAlias.to_alias sigma c with
     | None -> assoc_up_to_alias sigma aliases y l
     | Some c ->
       if eq_alias c y then id
@@ -925,12 +968,12 @@ let rec find_projectable_vars aliases sigma y subst =
     with Not_found ->
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
-      let f (c, id) = isEvar sigma c in
-      let idcl' = List.filter f idcl in
+      let f (c, id) = match EAlias.to_evar sigma c with None -> None | Some ev -> Some (ev, id) in
+      let idcl' = List.map_filter f idcl in
       match idcl' with
       | [c, id] ->
         begin
-          let (evk,argsv as t) = destEvar sigma c in
+          let (evk,argsv as t) = c in
           let evi = Evd.find sigma evk in
           let subst,_ = make_projectable_subst aliases sigma evi argsv in
           let l = find_projectable_vars aliases sigma y subst in
