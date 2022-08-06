@@ -347,12 +347,8 @@ let type_of_inductive env (ind,u) =
 (* Constructors. *)
 
 let type_of_constructor env (c,_u as cu) =
-  let () =
-    let ((kn,_),_) = c in
-    let mib = lookup_mind kn env in
-    check_hyps_inclusion env (GlobRef.ConstructRef c) mib.mind_hyps
-  in
-  let specif = lookup_mind_specif env (inductive_of_constructor c) in
+  let (mib, _ as specif) = lookup_mind_specif env (inductive_of_constructor c) in
+  let () = check_hyps_inclusion env (GlobRef.ConstructRef c) mib.mind_hyps in
   let t,cst = constrained_type_of_constructor cu specif in
   let () = check_constraints cst env in
   t
