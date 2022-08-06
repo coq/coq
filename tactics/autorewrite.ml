@@ -71,14 +71,14 @@ struct
     | DRef    of GlobRef.t
     | DProd
     | DLet
-    | DLambda of 't * 't
-    | DApp    of 't * 't (* binary app *)
-    | DCase   of case_info * 't * 't * 't array
-    | DFix    of int array * int * 't array * 't array
-    | DCoFix  of int * 't array * 't array
+    | DLambda
+    | DApp
+    | DCase   of case_info
+    | DFix    of int array * int
+    | DCoFix  of int
     | DInt    of Uint63.t
     | DFloat  of Float64.t
-    | DArray  of 't array * 't * 't
+    | DArray
 
   let compare_ci ci1 ci2 =
     let c = Ind.CanOrd.compare ci1.ci_ind ci2.ci_ind in
@@ -92,7 +92,7 @@ struct
       else c
     else c
 
-  let compare cmp t1 t2 = match t1, t2 with
+  let compare t1 t2 = match t1, t2 with
   | DRel, DRel -> 0
   | DRel, _ -> -1 | _, DRel -> 1
   | DSort, DSort -> 0
@@ -106,44 +106,24 @@ struct
   | DLet, DLet -> 0
   | DLet, _ -> -1 | _, DLet -> 1
 
-  | DLambda (tl1, tr1), DLambda (tl2, tr2)
-  | DApp (tl1, tr1), DApp (tl2, tr2) ->
-    let c = cmp tl1 tl2 in
-    if c = 0 then cmp tr1 tr2 else c
-  | DLambda _, _ -> -1 | _, DLambda _ -> 1
-  | DApp _, _ -> -1 | _, DApp _ -> 1
+  | DLambda, DLambda
+  | DApp, DApp -> 0
+  | DLambda, _ -> -1 | _, DLambda -> 1
+  | DApp, _ -> -1 | _, DApp -> 1
 
-  | DCase (ci1, c1, t1, p1), DCase (ci2, c2, t2, p2) ->
-    let c = cmp c1 c2 in
-    if c = 0 then
-      let c = cmp t1 t2 in
-      if c = 0 then
-        let c = Array.compare cmp p1 p2 in
-        if c = 0 then compare_ci ci1 ci2
-        else c
-      else c
-    else c
+  | DCase ci1, DCase ci2 ->
+    compare_ci ci1 ci2
   | DCase _, _ -> -1 | _, DCase _ -> 1
 
-  | DFix (i1, j1, tl1, pl1), DFix (i2, j2, tl2, pl2) ->
+  | DFix (i1, j1), DFix (i2, j2) ->
     let c = Int.compare j1 j2 in
     if c = 0 then
-      let c = Array.compare Int.compare i1 i2 in
-      if c = 0 then
-        let c = Array.compare cmp tl1 tl2 in
-        if c = 0 then Array.compare cmp pl1 pl2
-        else c
-      else c
+      Array.compare Int.compare i1 i2
     else c
   | DFix _, _ -> -1 | _, DFix _ -> 1
 
-  | DCoFix (i1, tl1, pl1), DCoFix (i2, tl2, pl2) ->
-    let c = Int.compare i1 i2 in
-    if c = 0 then
-      let c = Array.compare cmp tl1 tl2 in
-      if c = 0 then Array.compare cmp pl1 pl2
-      else c
-    else c
+  | DCoFix i1, DCoFix i2 ->
+    Int.compare i1 i2
   | DCoFix _, _ -> -1 | _, DCoFix _ -> 1
 
   | DInt i1, DInt i2 -> Uint63.compare i1 i2
@@ -154,18 +134,7 @@ struct
 
   | DFloat _, _ -> -1 | _, DFloat _ -> 1
 
-  | DArray(t1,def1,ty1), DArray(t2,def2,ty2) ->
-    let c =  Array.compare cmp t1 t2 in
-    if c = 0 then
-      let c = cmp def1 def2 in
-      if c = 0 then
-      cmp ty1 ty2
-      else c
-    else c
-
-  let dummy_cmp () () = 0
-
-  let compare t1 t2 = compare dummy_cmp t1 t2
+  | DArray, DArray -> 1
 
 end
 
@@ -228,25 +197,25 @@ struct
     | Evar (i,_)     -> None
     | Case (ci,u1,pms1,c1,_iv,c2,ca)     ->
       let f_ctx (_, p) = p in
-      Some (DCase(ci, (), (), [||]), [f_ctx c1; c2] @ Array.map_to_list f_ctx ca)
+      Some (DCase(ci), [f_ctx c1; c2] @ Array.map_to_list f_ctx ca)
     | Fix ((ia,i),(_,ta,ca)) ->
-      Some (DFix(ia,i,[||],[||]), Array.to_list ta @ Array.to_list ca)
+      Some (DFix(ia,i), Array.to_list ta @ Array.to_list ca)
     | CoFix (i,(_,ta,ca))    ->
-      Some (DCoFix(i, [||], [||]), Array.to_list ta @ Array.to_list ca)
+      Some (DCoFix(i), Array.to_list ta @ Array.to_list ca)
     | Cast (c,_,_)   -> pat_of_constr c
-    | Lambda (_,t,c) -> Some (DLambda ((), ()), [t; c])
+    | Lambda (_,t,c) -> Some (DLambda, [t; c])
     | Prod (_, t, u) -> Some (DProd, [t; u])
     | LetIn (_, c, t, u) -> Some (DLet, [c; t; u])
     | App (f,ca)     ->
       let len = Array.length ca in
       let a = ca.(len - 1) in
       let ca = Array.sub ca 0 (len - 1) in
-      Some (DApp ((), ()), [mkApp (f, ca); a])
+      Some (DApp, [mkApp (f, ca); a])
     | Proj (p,c) -> pat_of_constr (mkApp (mkConst (Projection.constant p), [|c|]))
     | Int i -> Some (DInt i, [])
     | Float f -> Some (DFloat f, [])
     | Array (_u,t,def,ty) ->
-      Some (DArray ([||], (), ()), Array.to_list t @ [def ; ty])
+      Some (DArray, Array.to_list t @ [def ; ty])
     in
     pat_of_constr c
 
