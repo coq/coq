@@ -655,12 +655,74 @@ let should_print_dependent_evars =
     ~key:["Printing";"Dependent";"Evars";"Line"]
     ~value:false
 
+let evar_nodes_of_term c =
+  let rec evrec acc c =
+    match kind c with
+    | Evar (n, l) -> Evar.Set.add n (List.fold_left evrec acc l)
+    | _ -> Constr.fold evrec acc c
+  in
+  evrec Evar.Set.empty (EConstr.Unsafe.to_constr c)
+
+(* spiwack: a few functions to gather evars on which goals depend. *)
+let queue_set q is_dependent set =
+  Evar.Set.iter (fun a -> Queue.push (is_dependent,a) q) set
+let queue_term q is_dependent c =
+  queue_set q is_dependent (evar_nodes_of_term c)
+
+let process_dependent_evar q acc evm is_dependent e =
+  let evi = Evd.find evm e in
+  (* Queues evars appearing in the types of the goal (conclusion, then
+     hypotheses), they are all dependent. *)
+  queue_term q true evi.evar_concl;
+  List.iter begin fun decl ->
+    let open NamedDecl in
+    queue_term q true (NamedDecl.get_type decl);
+    match decl with
+    | LocalAssum _ -> ()
+    | LocalDef (_,b,_) -> queue_term q true b
+  end (EConstr.named_context_of_val evi.evar_hyps);
+  match evi.evar_body with
+  | Evar_empty ->
+      if is_dependent then Evar.Map.add e None acc else acc
+  | Evar_defined b ->
+      let subevars = evar_nodes_of_term b in
+      (* evars appearing in the definition of an evar [e] are marked
+         as dependent when [e] is dependent itself: if [e] is a
+         non-dependent goal, then, unless they are reach from another
+         path, these evars are just other non-dependent goals. *)
+      queue_set q is_dependent subevars;
+      if is_dependent then Evar.Map.add e (Some subevars) acc else acc
+
+(** [gather_dependent_evars evm seeds] classifies the evars in [evm]
+    as dependent_evars and goals (these may overlap). A goal is an evar
+    appearing in the (partial) definition [seeds] (including defined evars). A
+    dependent evar is an evar appearing in the type
+    (hypotheses and conclusion) of a goal, or in the type or (partial)
+    definition of a dependent evar.  The value return is a map
+    associating to each dependent evar [None] if it has no (partial)
+    definition or [Some s] if [s] is the list of evars appearing in
+    its (partial) definition. This completely breaks the EConstr abstraction. *)
+let gather_dependent_evars evm l =
+  let q = Queue.create () in
+  List.iter (queue_term q false) l;
+  let acc = ref Evar.Map.empty in
+  while not (Queue.is_empty q) do
+    let (is_dependent,e) = Queue.pop q in
+    (* checks if [e] has already been added to [!acc] *)
+    begin if not (Evar.Map.mem e !acc) then
+        acc := process_dependent_evar q !acc evm is_dependent e
+    end
+  done;
+  !acc
+
+(* /spiwack *)
+
 let gather_dependent_evars_goal sigma goals =
   let map evk =
     let evi = Evd.find sigma evk in
     EConstr.mkEvar (evk, Evd.evar_identity_subst evi)
   in
-  Evarutil.gather_dependent_evars sigma (List.map map goals)
+  gather_dependent_evars sigma (List.map map goals)
 
 let print_dependent_evars_core gl sigma evars =
   let mt_pp = mt () in
@@ -701,7 +763,7 @@ let print_dependent_evars_entry gl sigma = function
   | Some entry ->
     if should_print_dependent_evars () then
       let terms = List.map pi2 (Proofview.initial_goals entry) in
-      let evars = Evarutil.gather_dependent_evars sigma terms in
+      let evars = gather_dependent_evars sigma terms in
       print_dependent_evars_core gl sigma evars
     else mt ()
 
@@ -877,7 +939,8 @@ let pr_goal_emacs ~proof gid sid =
     in
     try
       let { Proof.sigma } = Proof.data proof in
-      pr sigma (Evar.unsafe_of_int gid)
+      let gl = Evar.unsafe_of_int gid in
+      v 0 (pr sigma gl ++ print_dependent_evars (Some gl) sigma [ gl ])
     with Not_found -> user_err Pp.(str "No such goal.")
 
 (* Printer function for sets of Assumptions.assumptions.

@@ -95,17 +95,6 @@ val has_undefined_evars : evar_map -> constr -> bool
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
 
-(** [gather_dependent_evars evm seeds] classifies the evars in [evm]
-    as dependent_evars and goals (these may overlap). A goal is an evar
-    appearing in the (partial) definition [seeds] (including defined evars). A
-    dependent evar is an evar appearing in the type
-    (hypotheses and conclusion) of a goal, or in the type or (partial)
-    definition of a dependent evar.  The value return is a map
-    associating to each dependent evar [None] if it has no (partial)
-    definition or [Some s] if [s] is the list of evars appearing in
-    its (partial) definition. *)
-val gather_dependent_evars : evar_map -> EConstr.t list -> (Evar.Set.t option) Evar.Map.t
-
 (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
     the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially)

@@ -201,8 +201,6 @@ val pr_evars_int           : evar_map -> shelf:Evar.t list -> given_up:Evar.t li
 val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t
 
-val print_dependent_evars : Evar.t option -> evar_map -> Evar.t list -> Pp.t
-
 (** Declarations for the "Print Assumption" command *)
 type axiom =
   | Constant of Constant.t (* An axiom or a constant. *)
