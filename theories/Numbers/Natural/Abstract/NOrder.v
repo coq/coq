@@ -252,5 +252,12 @@ intros n m; cases n.
 - intro n. rewrite pred_succ. apply succ_le_mono.
 Qed.
 
-End NOrderProp.
+Lemma measure_induction : forall (X : Type) (f : X -> t) (A : X -> Type),
+  (forall x, (forall y, f y < f x -> A y) -> A x) ->
+  forall x, A x.
+Proof.
+  intros X f A IH x. apply (measure_right_induction X f A 0); [|apply le_0_l].
+  intros y _ IH'. apply IH. intros. apply IH'. now split; [apply le_0_l|].
+Defined.
 
+End NOrderProp.

@@ -745,9 +745,15 @@ Proof. inversion H. Qed.
 Definition shiftl_spec_high a n m (_:0<=m) := shiftl_specif_high a n m.
 Definition shiftr_spec a n m (_:0<=m) := shiftr_specif a n m.
 
+Lemma div_0_r a : a / 0 = 0.
+Proof. reflexivity. Qed.
+
+Lemma mod_0_r a : a mod 0 = a.
+Proof. reflexivity. Qed.
+
 (** Properties of advanced functions (pow, sqrt, log2, ...) *)
 
-Include NExtraProp.
+Include NExtraPreProp <+ NExtraProp0.
 
 (** Properties of tail-recursive addition and multiplication *)
 

@@ -34,6 +34,13 @@ Module Type NZDivSpec (Import A : NZOrdAxiomsSig')(Import B : DivMod' A).
  Axiom mod_bound_pos : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
 End NZDivSpec.
 
+(** Euclidean Division with a / 0 == 0 and a mod 0 == a *)
+
+Module Type NZDivSpec0 (Import A : Eq')(Import B : ZeroSuccPred' A)(Import C : DivMod' A).
+  Axiom div_0_r : forall a, a / 0 == 0.
+  Axiom mod_0_r : forall a, a mod 0 == a.
+End NZDivSpec0.
+
 (** The different divisions will only differ in the conditions
     they impose on [modulo]. For NZ, we have only described the
     behavior on positive numbers.
@@ -560,4 +567,3 @@ Proof.
 Qed.
 
 End NZDivProp.
-

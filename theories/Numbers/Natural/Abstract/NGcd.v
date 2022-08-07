@@ -16,15 +16,55 @@ Module Type NGcdProp
  (Import A : NAxiomsSig')
  (Import B : NSubProp A).
 
- Include NZGcdProp A A B.
+Module Import Private_NZGcdProp := NZGcdProp A A B.
 
-(** Results concerning divisibility*)
+(** Properties of divide *)
 
-Definition divide_1_r n : (n | 1) -> n == 1
- := divide_1_r_nonneg n (le_0_l n).
+#[global] Instance divide_wd : Proper (eq==>eq==>iff) divide := divide_wd.
+Definition divide_1_r n := divide_1_r_nonneg n (le_0_l n).
+Definition divide_1_l := divide_1_l.
+Definition divide_0_r := divide_0_r.
+Definition divide_0_l := divide_0_l.
+Definition divide_refl := divide_refl.
+Definition divide_trans := divide_trans.
+#[global] Instance divide_reflexive : Reflexive divide | 5 := divide_refl.
+#[global] Instance divide_transitive : Transitive divide | 5 := divide_trans.
+Definition divide_antisym n m := divide_antisym_nonneg n m (le_0_l n) (le_0_l m).
+Definition mul_divide_mono_l := mul_divide_mono_l.
+Definition mul_divide_mono_r := mul_divide_mono_r.
+Definition mul_divide_cancel_l := mul_divide_cancel_l.
+Definition mul_divide_cancel_r := mul_divide_cancel_r.
+Definition divide_add_r := divide_add_r.
+Definition divide_mul_l := divide_mul_l.
+Definition divide_mul_r := divide_mul_r.
+Definition divide_factor_l := divide_factor_l.
+Definition divide_factor_r := divide_factor_r.
+Definition divide_pos_le := divide_pos_le.
 
-Definition divide_antisym n m : (n | m) -> (m | n) -> n == m
- := divide_antisym_nonneg n m (le_0_l n) (le_0_l m).
+(** Properties of gcd *)
+
+Definition gcd_0_l n : gcd 0 n == n := gcd_0_l_nonneg n (le_0_l n).
+Definition gcd_0_r n : gcd n 0 == n := gcd_0_r_nonneg n (le_0_l n).
+Definition gcd_diag n : gcd n n == n := gcd_diag_nonneg n (le_0_l n).
+Definition gcd_unique n m p := gcd_unique n m p (le_0_l p).
+Definition gcd_unique_alt n m p := gcd_unique_alt n m p (le_0_l p).
+Definition divide_gcd_iff n m := divide_gcd_iff n m (le_0_l n).
+#[global] Instance gcd_wd : Proper (eq==>eq==>eq) gcd := gcd_wd.
+Definition gcd_comm := gcd_comm.
+Definition gcd_assoc := gcd_assoc.
+Definition gcd_eq_0_l := gcd_eq_0_l.
+Definition gcd_eq_0_r := gcd_eq_0_r.
+Definition gcd_eq_0 := gcd_eq_0.
+Definition gcd_mul_diag_l n m := gcd_mul_diag_l n m (le_0_l n).
+
+#[deprecated(since="8.17",note="Use divide_antisym instead.")]
+Notation divide_antisym_nonneg := divide_antisym_nonneg (only parsing).
+#[deprecated(since="8.17",note="Use gcd_unique instead.")]
+Notation gcd_unique' n m p := gcd_unique (only parsing).
+#[deprecated(since="8.17",note="Use gcd_unique_alt instead.")]
+Notation gcd_unique_alt' := gcd_unique_alt.
+#[deprecated(since="8.17",note="Use divide_gcd_iff instead.")]
+Notation divide_gcd_iff' := divide_gcd_iff.
 
 Lemma divide_add_cancel_r : forall n m p, (n | m) -> (n | m + p) -> (n | p).
 Proof.
@@ -42,18 +82,9 @@ Proof.
    now rewrite add_comm, sub_add.
 Qed.
 
-(** Properties of gcd *)
-
-Definition gcd_0_l n : gcd 0 n == n := gcd_0_l_nonneg n (le_0_l n).
-Definition gcd_0_r n : gcd n 0 == n := gcd_0_r_nonneg n (le_0_l n).
-Definition gcd_diag n : gcd n n == n := gcd_diag_nonneg n (le_0_l n).
-Definition gcd_unique' n m p := gcd_unique n m p (le_0_l p).
-Definition gcd_unique_alt' n m p := gcd_unique_alt n m p (le_0_l p).
-Definition divide_gcd_iff' n m := divide_gcd_iff n m (le_0_l n).
-
 Lemma gcd_add_mult_diag_r : forall n m p, gcd n (m+p*n) == gcd n m.
 Proof.
- intros n m p. apply gcd_unique_alt'.
+ intros n m p. apply gcd_unique_alt.
  intros. rewrite gcd_divide_iff. split; intros (U,V); split; trivial.
  - apply divide_add_r; trivial. now apply divide_mul_r.
  - apply divide_add_cancel_r with (p*n); trivial.
@@ -94,51 +125,62 @@ Proof.
  - rewrite add_comm, <- H. now apply divide_mul_r.
 Qed.
 
+(** Bezout on natural numbers commutes *)
+
+Theorem bezout_comm : forall a b g,
+  b ~= 0 -> Bezout a b g -> Bezout b a g.
+Proof.
+  intros a b g Hb [p [q Hpq]].
+  destruct (eq_decidable a 0) as [Ha|Ha].
+  { exists 0, 0. symmetry in Hpq.
+    rewrite Ha, mul_0_r in Hpq.
+    apply eq_add_0 in Hpq as [-> _].
+    now nzsimpl. }
+  exists (a*(p+1)*(q+1)-q), (b*(p+1)*(q+1)-p).
+  enough (E' : (a*(p+1)*(q+1)-q+q)*b == (b*(p+1)*(q+1)-p+p)*a).
+  { rewrite (mul_add_distr_r _ _ a), (mul_add_distr_r _ _ b), Hpq in E'.
+    rewrite add_assoc, (add_comm _ g) in E'.
+    now apply add_cancel_r in E'. }
+  rewrite !sub_add.
+  - now rewrite !(mul_comm _ b), !mul_assoc, !(mul_comm _ a), !mul_assoc.
+  - rewrite <- mul_1_r at 1. apply mul_le_mono; [|apply le_add_l].
+    rewrite <- mul_1_l at 1. apply mul_le_mono; [|apply le_add_r].
+    rewrite one_succ. apply le_succ_l. assert (H := le_0_l b). order.
+  - rewrite <- mul_1_l at 1. apply mul_le_mono; [|apply le_add_r].
+    rewrite <- mul_1_l at 1. apply mul_le_mono; [|apply le_add_l].
+    rewrite one_succ. apply le_succ_l. assert (H := le_0_l a). order.
+Qed.
+
+Lemma gcd_bezout_pos : forall n m, 0 < n -> Bezout n m (gcd n m).
+Proof.
+  enough (H : forall nm, 0 < fst nm -> Bezout (fst nm) (snd nm) (gcd (fst nm) (snd nm))).
+  { intros n m. apply (H (n, m)). }
+  intros nm.
+  induction nm as [[n m] IH] using (measure_induction _ (fun '(n, m) => n + m)).
+  enough (H : forall n' m', n+m == n'+m' -> 0<n'<m' -> Bezout n' m' (gcd n' m')).
+  { cbn. intros ?. destruct (lt_trichotomy n m) as [Hnm|[Hnm|Hnm]].
+    - now apply H.
+    - exists 1, 0. now rewrite Hnm, mul_1_l, mul_0_l, add_0_r, gcd_diag.
+    - destruct (eq_0_gt_0_cases m) as [->|?].
+      + exists 1, 0. now rewrite gcd_0_r, mul_1_l, mul_0_l, add_0_r.
+      + apply bezout_comm; [order|].
+        rewrite gcd_comm. now apply H; [apply add_comm|]. }
+  intros n' m' E' [Hn' Hn'm'].
+  assert (Hlt : n' + (m' - n') < n + m).
+  { rewrite (add_comm n'), E', sub_add by order.
+    now apply lt_add_pos_l. }
+  destruct (IH (n', m'-n') Hlt Hn') as [a [b Hab]].
+  cbn in Hab. exists (a+b), b.
+  rewrite mul_add_distr_r, Hab, mul_sub_distr_l, gcd_sub_diag_r by order.
+  now rewrite <- add_assoc, sub_add by (apply mul_le_mono_l; order).
+Qed.
+
 (** For strictly positive numbers, we have Bezout in the two directions. *)
 
 Lemma gcd_bezout_pos_pos : forall n, 0<n -> forall m, 0<m ->
  Bezout n m (gcd n m) /\ Bezout m n (gcd n m).
 Proof.
- intros n Hn. rewrite <- le_succ_l, <- one_succ in Hn.
- pattern n. apply (fun H => strong_right_induction _ H 1); trivial.
- { unfold Bezout. solve_proper. }
- clear n Hn. intros n Hn IHn.
- intros m Hm. rewrite <- le_succ_l, <- one_succ in Hm.
- pattern m. apply (fun H => strong_right_induction _ H 1); trivial.
- { unfold Bezout. solve_proper. }
- clear m Hm. intros m Hm IHm.
- destruct (lt_trichotomy n m) as [LT|[EQ|LT]].
- - (* n < m *)
-   destruct (IHm (m-n)) as ((a & b & EQ), (a' & b' & EQ')).
-   + rewrite one_succ, le_succ_l.
-     apply lt_add_lt_sub_l; now nzsimpl.
-   + apply sub_lt; order'.
-   + split.
-     * exists (a+b). exists b.
-       rewrite mul_add_distr_r, EQ, mul_sub_distr_l, <- add_assoc.
-       rewrite gcd_sub_diag_r by order.
-       rewrite sub_add. { reflexivity. } apply mul_le_mono_l; order.
-     * exists a'. exists (a'+b').
-       rewrite gcd_sub_diag_r in EQ' by order.
-       rewrite (add_comm a'), mul_add_distr_r, add_assoc, <- EQ'.
-       rewrite mul_sub_distr_l, sub_add. { reflexivity. } apply mul_le_mono_l; order.
- - (* n = m *)
-   rewrite EQ. rewrite gcd_diag.
-   split.
-   + exists 1. exists 0. now nzsimpl.
-   + exists 1. exists 0. now nzsimpl.
- - (* m < n *)
-   rewrite gcd_comm, and_comm.
-   apply IHn; trivial.
-   now rewrite <- le_succ_l, <- one_succ.
-Qed.
-
-Lemma gcd_bezout_pos : forall n m, 0<n -> Bezout n m (gcd n m).
-Proof.
- intros n m Hn.
- destruct (eq_0_gt_0_cases m) as [EQ|LT].
- - rewrite EQ, gcd_0_r. exists 1. exists 0. now nzsimpl.
- - now apply gcd_bezout_pos_pos.
+ intros ????. split; [|rewrite gcd_comm]; now apply gcd_bezout_pos.
 Qed.
 
 (** For arbitrary natural numbers, we could only say that at least
@@ -153,99 +195,10 @@ Proof.
  - left. now apply gcd_bezout_pos.
 Qed.
 
-(** Bezout on natural numbers commutes *)
-
-Theorem bezout_comm : forall a b g,
-  b ~= 0 -> Bezout a b g -> Bezout b a g.
-Proof.
- intros a b g Hbz (u & v & Huv).
- destruct (eq_0_gt_0_cases a) as [Haz| Haz].
- -rewrite Haz in Huv |-*.
-  rewrite mul_0_r in Huv; symmetry in Huv.
-  apply eq_add_0 in Huv.
-  rewrite (proj1 Huv).
-  now exists 0, 0; nzsimpl.
- -apply neq_0_lt_0 in Haz.
-  destruct (lt_trichotomy (u / b) (v / a)) as [Hm| Hm].
-  +apply lt_le_incl in Hm.
-   remember (v / a + 1) as k eqn:Hk.
-   exists (k * a - v), (k * b - u).
-   do 2 rewrite mul_sub_distr_r.
-   rewrite Huv.
-   rewrite (add_comm _ (v * b)).
-   rewrite sub_add_distr.
-   rewrite add_sub_assoc.
-   *rewrite add_comm, add_sub.
-    now rewrite mul_shuffle0.
-   *apply (add_le_mono_r _ _ (v * b)).
-    rewrite <- Huv.
-    rewrite sub_add.
-    --apply mul_le_mono_r.
-      rewrite Hk.
-      specialize (div_mod u b Hbz) as H1.
-      rewrite mul_add_distr_r, mul_1_l, mul_comm.
-      rewrite H1 at 1.
-      apply add_le_mono.
-      ++now apply mul_le_mono_l.
-      ++apply lt_le_incl.
-        apply mod_bound_pos.
-        **apply le_0_l.
-        **now apply neq_0_lt_0.
-    --rewrite mul_shuffle0.
-      apply mul_le_mono_r.
-      rewrite Hk.
-      specialize (div_mod v a Haz) as H1.
-      rewrite mul_add_distr_r, mul_1_l, mul_comm.
-      rewrite H1 at 1.
-      apply add_le_mono_l.
-      apply lt_le_incl.
-      apply mod_bound_pos.
-      ++apply le_0_l.
-      ++now apply neq_0_lt_0.
-  +remember (u / b + 1) as k eqn:Hk.
-   exists (k * a - v), (k * b - u).
-   do 2 rewrite mul_sub_distr_r.
-   rewrite Huv.
-   rewrite (add_comm _ (v * b)).
-   rewrite sub_add_distr.
-   rewrite add_sub_assoc.
-   *rewrite add_comm, add_sub.
-    now rewrite mul_shuffle0.
-   *apply (add_le_mono_r _ _ (v * b)).
-    rewrite sub_add.
-    --rewrite <- Huv.
-      apply mul_le_mono_r.
-      rewrite Hk.
-      specialize (div_mod u b Hbz) as H1.
-      rewrite mul_add_distr_r, mul_1_l, mul_comm.
-      rewrite H1 at 1.
-      apply add_le_mono_l.
-      apply lt_le_incl.
-      apply mod_bound_pos.
-      ++apply le_0_l.
-      ++now apply neq_0_lt_0.
-    --rewrite mul_shuffle0.
-      apply mul_le_mono_r.
-      rewrite Hk.
-      specialize (div_mod v a Haz) as H1.
-      rewrite mul_add_distr_r, mul_1_l, mul_comm.
-      rewrite H1 at 1.
-      apply add_le_mono.
-      ++apply mul_le_mono_l.
-        destruct Hm as [Hm| Hm].
-        **now rewrite Hm.
-        **now apply lt_le_incl.
-      ++apply lt_le_incl.
-        apply mod_bound_pos.
-        **apply le_0_l.
-        **now apply neq_0_lt_0.
-Qed.
-
 Lemma gcd_mul_mono_l :
   forall n m p, gcd (p * n) (p * m) == p * gcd n m.
 Proof.
-  intros n m p.
-  apply gcd_unique'.
+  intros n m p. apply gcd_unique.
   - apply mul_divide_mono_l, gcd_divide_l.
   - apply mul_divide_mono_l, gcd_divide_r.
   - intros q H H'.
