@@ -89,13 +89,15 @@ module Error = struct
         ++ str s ++ spc () ++ str "has not been found in" ++ spc () ++ str m ++ str ".")
 
     | InvalidFindlibPluginName (f, s) ->
-      Some Pp.(str (Printf.sprintf "in file %s, %s is not a valid plugin name anymore." f s)
-        ++ str "Plugins should be loaded using their public name according to findlib," ++ spc ()
-        ++ str "for example package-name.foo and not foo_plugin." ++ spc ()
-        ++ str "If you are using a buid system that doesn't yet support the new loading method" ++ spc ()
-        ++ str "(such as Dune) you must specify both" ++ spc ()
-        ++ str "the legacy and the findlib plugin name as in:" ++ spc ()
-        ++ str "Declare ML Module \"foo_plugin:package-name.foo\".")
+      Some Pp.(str "in file " ++ quote (str f) ++ str "." ++ spc () ++ str "The name "
+        ++ quote (str s) ++ strbrk " is no longer a valid plugin name." ++ spc ()
+        ++ strbrk "Plugins should be loaded using their public name according to \
+        findlib, for example " ++ quote (str "package-name.foo") ++ str " and not "
+        ++ quote (str "foo_plugin") ++ str "." ++ spc () ++ strbrk "If you are \
+        using a buid system that does not yet support the new loading method \
+        (such as Dune) you must specify both the legacy and the findlib plugin \
+        name as in:" ++ spc ()
+        ++ str "      Declare ML Module \"foo_plugin:package-name.foo\".")
 
     | CannotFindMeta (f, package) ->
       Some Pp.(str "in file" ++ spc () ++ str f ++ str "," ++ spc ()
