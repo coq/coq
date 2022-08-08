@@ -60,10 +60,6 @@ end
  * - [Rel]s and [Sort]s are not taken into account (that's why we need
  *   a second pass of linear filterin on the results - it's not a perfect
  *   term indexing structure)
-
- * - Foralls and LetIns are represented by a context DCtx (a list of
- *   generalization, similar to rel_context, and coded with DCons and
- *   DNil). This allows for matching under an unfinished context
  *)
 
 module DTerm =
@@ -73,57 +69,16 @@ struct
     | DRel
     | DSort
     | DRef    of GlobRef.t
-    | DCtx    of 't * 't (* (binding list, subterm) = Prods and LetIns *)
-    | DLambda of 't * 't
-    | DApp    of 't * 't (* binary app *)
-    | DCase   of case_info * 't * 't * 't array
-    | DFix    of int array * int * 't array * 't array
-    | DCoFix  of int * 't array * 't array
+    | DProd
+    | DLet
+    | DLambda
+    | DApp
+    | DCase   of case_info
+    | DFix    of int array * int
+    | DCoFix  of int
     | DInt    of Uint63.t
     | DFloat  of Float64.t
-    | DArray  of 't array * 't * 't
-
-    (* special constructors only inside the left-hand side of DCtx or
-       DApp. Used to encode lists of foralls/letins/apps as contexts *)
-    | DCons   of ('t * 't option) * 't
-    | DNil
-
-  (* debug *)
-  let _pr_dconstr f : 'a t -> Pp.t = function
-    | DRel -> str "*"
-    | DSort -> str "Sort"
-    | DRef _ -> str "Ref"
-    | DCtx (ctx,t) -> f ctx ++ spc() ++ str "|-" ++ spc () ++ f t
-    | DLambda (t1,t2) -> str "fun"++ spc() ++ f t1 ++ spc() ++ str"->" ++ spc() ++ f t2
-    | DApp (t1,t2) -> f t1 ++ spc() ++ f t2
-    | DCase (_,t1,t2,ta) -> str "case"
-    | DFix _ -> str "fix"
-    | DCoFix _ -> str "cofix"
-    | DInt _ -> str "INT"
-    | DFloat _ -> str "FLOAT"
-    | DCons ((t,dopt),tl) -> f t ++ (match dopt with
-          Some t' -> str ":=" ++ f t'
-        | None -> str "") ++ spc() ++ str "::" ++ spc() ++ f tl
-    | DNil -> str "[]"
-    | DArray _ -> str "ARRAY"
-
-  (*
-   * Functional iterators for the t datatype
-   * a.k.a boring and error-prone boilerplate code
-   *)
-
-  let map f = function
-    | (DRel | DSort | DNil | DRef _ | DInt _ | DFloat _) as c -> c
-    | DCtx (ctx,c) -> DCtx (f ctx, f c)
-    | DLambda (t,c) -> DLambda (f t, f c)
-    | DApp (t,u) -> DApp (f t,f u)
-    | DCase (ci,p,c,bl) -> DCase (ci, f p, f c, Array.map f bl)
-    | DFix (ia,i,ta,ca) ->
-        DFix (ia,i,Array.map f ta,Array.map f ca)
-    | DCoFix(i,ta,ca) ->
-        DCoFix (i,Array.map f ta,Array.map f ca)
-    | DCons ((t,topt),u) -> DCons ((f t,Option.map f topt), f u)
-    | DArray (t,def,ty) -> DArray(Array.map f t, f def, f ty)
+    | DArray
 
   let compare_ci ci1 ci2 =
     let c = Ind.CanOrd.compare ci1.ci_ind ci2.ci_ind in
@@ -137,7 +92,7 @@ struct
       else c
     else c
 
-  let compare cmp t1 t2 = match t1, t2 with
+  let compare t1 t2 = match t1, t2 with
   | DRel, DRel -> 0
   | DRel, _ -> -1 | _, DRel -> 1
   | DSort, DSort -> 0
@@ -145,46 +100,30 @@ struct
   | DRef gr1, DRef gr2 -> GlobRef.CanOrd.compare gr1 gr2
   | DRef _, _ -> -1 | _, DRef _ -> 1
 
-  | DCtx (tl1, tr1), DCtx (tl2, tr2)
-  | DLambda (tl1, tr1), DLambda (tl2, tr2)
-  | DApp (tl1, tr1), DApp (tl2, tr2) ->
-    let c = cmp tl1 tl2 in
-    if c = 0 then cmp tr1 tr2 else c
-  | DCtx _, _ -> -1 | _, DCtx _ -> 1
-  | DLambda _, _ -> -1 | _, DLambda _ -> 1
-  | DApp _, _ -> -1 | _, DApp _ -> 1
+  | DProd, DProd -> 0
+  | DProd, _ -> -1 | _, DProd -> 1
 
-  | DCase (ci1, c1, t1, p1), DCase (ci2, c2, t2, p2) ->
-    let c = cmp c1 c2 in
-    if c = 0 then
-      let c = cmp t1 t2 in
-      if c = 0 then
-        let c = Array.compare cmp p1 p2 in
-        if c = 0 then compare_ci ci1 ci2
-        else c
-      else c
-    else c
+  | DLet, DLet -> 0
+  | DLet, _ -> -1 | _, DLet -> 1
+
+  | DLambda, DLambda
+  | DApp, DApp -> 0
+  | DLambda, _ -> -1 | _, DLambda -> 1
+  | DApp, _ -> -1 | _, DApp -> 1
+
+  | DCase ci1, DCase ci2 ->
+    compare_ci ci1 ci2
   | DCase _, _ -> -1 | _, DCase _ -> 1
 
-  | DFix (i1, j1, tl1, pl1), DFix (i2, j2, tl2, pl2) ->
+  | DFix (i1, j1), DFix (i2, j2) ->
     let c = Int.compare j1 j2 in
     if c = 0 then
-      let c = Array.compare Int.compare i1 i2 in
-      if c = 0 then
-        let c = Array.compare cmp tl1 tl2 in
-        if c = 0 then Array.compare cmp pl1 pl2
-        else c
-      else c
+      Array.compare Int.compare i1 i2
     else c
   | DFix _, _ -> -1 | _, DFix _ -> 1
 
-  | DCoFix (i1, tl1, pl1), DCoFix (i2, tl2, pl2) ->
-    let c = Int.compare i1 i2 in
-    if c = 0 then
-      let c = Array.compare cmp tl1 tl2 in
-      if c = 0 then Array.compare cmp pl1 pl2
-      else c
-    else c
+  | DCoFix i1, DCoFix i2 ->
+    Int.compare i1 i2
   | DCoFix _, _ -> -1 | _, DCoFix _ -> 1
 
   | DInt i1, DInt i2 -> Uint63.compare i1 i2
@@ -195,107 +134,7 @@ struct
 
   | DFloat _, _ -> -1 | _, DFloat _ -> 1
 
-  | DArray(t1,def1,ty1), DArray(t2,def2,ty2) ->
-    let c =  Array.compare cmp t1 t2 in
-    if c = 0 then
-      let c = cmp def1 def2 in
-      if c = 0 then
-      cmp ty1 ty2
-      else c
-    else c
-
-  | DArray _, _ -> -1 | _, DArray _ -> 1
-
-  | DCons ((t1, ot1), u1), DCons ((t2, ot2), u2) ->
-     let c = cmp t1 t2 in
-     if Int.equal c 0 then
-       let c = Option.compare cmp ot1 ot2 in
-       if Int.equal c 0 then cmp u1 u2
-       else c
-     else c
-  | DCons _, _ -> -1 | _, DCons _ -> 1
-
-  | DNil, DNil -> 0
-
-  let fold f acc = function
-    | (DRel | DNil | DSort | DRef _ | DInt _ | DFloat _) -> acc
-    | DCtx (ctx,c) -> f (f acc ctx) c
-    | DLambda (t,c) -> f (f acc t) c
-    | DApp (t,u) -> f (f acc t) u
-    | DCase (ci,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
-    | DFix (ia,i,ta,ca) ->
-        Array.fold_left f (Array.fold_left f acc ta) ca
-    | DCoFix(i,ta,ca) ->
-        Array.fold_left f (Array.fold_left f acc ta) ca
-    | DArray(t,def,ty) -> f (f (Array.fold_left f acc t) def) ty
-    | DCons ((t,topt),u) -> f (Option.fold_left f (f acc t) topt) u
-
-  let choose f = function
-    | (DRel | DSort | DNil | DRef _ | DInt _ | DFloat _) -> invalid_arg "choose"
-    | DCtx (ctx,c) -> f ctx
-    | DLambda (t,c) -> f t
-    | DApp (t,u) -> f u
-    | DCase (ci,p,c,bl) -> f c
-    | DFix (ia,i,ta,ca) -> f ta.(0)
-    | DCoFix (i,ta,ca) -> f ta.(0)
-    | DCons ((t,topt),u) -> f u
-    | DArray(t,def,ty) -> f t.(0)
-
-  let dummy_cmp () () = 0
-
-  let fold2 (f:'a -> 'b -> 'c -> 'a) (acc:'a) (c1:'b t) (c2:'c t) : 'a =
-    let head w = map (fun _ -> ()) w in
-    if not (Int.equal (compare dummy_cmp (head c1) (head c2)) 0)
-    then invalid_arg "fold2:compare" else
-      match c1,c2 with
-        | (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _
-           | DInt _, DInt _ | DFloat _, DFloat _) -> acc
-        | (DCtx (c1,t1), DCtx (c2,t2)
-          | DApp (c1,t1), DApp (c2,t2)
-          | DLambda (c1,t1), DLambda (c2,t2)) -> f (f acc c1 c2) t1 t2
-        | DCase (ci,p1,c1,bl1),DCase (_,p2,c2,bl2) ->
-            Array.fold_left2 f (f (f acc p1 p2) c1 c2) bl1 bl2
-        | DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
-            Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
-        | DCoFix(i,ta1,ca1), DCoFix(_,ta2,ca2) ->
-            Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
-              | DArray(t1,def1,ty1), DArray(t2,def2,ty2) ->
-            f (f (Array.fold_left2 f acc t1 t2) def1 def2) ty1 ty2
-        | DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
-            f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
-        | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
-           | DFix _ | DCoFix _ | DCons _ | DInt _ | DFloat _| DArray _), _ -> assert false
-
-  let map2 (f:'a -> 'b -> 'c) (c1:'a t) (c2:'b t) : 'c t =
-    let head w = map (fun _ -> ()) w in
-    if not (Int.equal (compare dummy_cmp (head c1) (head c2)) 0)
-    then invalid_arg "map2_t:compare" else
-      match c1,c2 with
-        | (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _
-           | DInt _, DInt _ | DFloat _, DFloat _) as cc ->
-            let (c,_) = cc in c
-        | DCtx (c1,t1), DCtx (c2,t2) -> DCtx (f c1 c2, f t1 t2)
-        | DLambda (t1,c1), DLambda (t2,c2) -> DLambda (f t1 t2, f c1 c2)
-        | DApp (t1,u1), DApp (t2,u2) -> DApp (f t1 t2,f u1 u2)
-        | DCase (ci,p1,c1,bl1), DCase (_,p2,c2,bl2) ->
-            DCase (ci, f p1 p2, f c1 c2, Array.map2 f bl1 bl2)
-        | DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
-            DFix (ia,i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
-        | DCoFix (i,ta1,ca1), DCoFix (_,ta2,ca2) ->
-            DCoFix (i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
-              | DArray(t1,def1,ty1), DArray(t2,def2,ty2) ->
-                DArray(Array.map2 f t1 t2, f def1 def2, f ty1 ty2)
-        | DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
-            DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
-        | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
-           | DFix _ | DCoFix _ | DCons _ | DInt _ | DFloat _ | DArray _), _ -> assert false
-
-  let terminal = function
-    | (DRel | DSort | DNil | DRef _ | DInt _ | DFloat _) -> true
-    | DLambda _ | DApp _ | DCase _ | DFix _ | DCoFix _ | DCtx _ | DCons _ | DArray _ ->
-      false
-
-  let compare t1 t2 = compare dummy_cmp t1 t2
+  | DArray, DArray -> 1
 
 end
 
@@ -331,80 +170,54 @@ end
 =
 struct
   module Ident = HintIdent
-  module TDnet : Dnet.S with type ident=Ident.t
-                        and  type 'a structure = 'a DTerm.t
-                        and  type meta = int
-    = Dnet.Make(DTerm)(Ident)(Int)
+  module PTerm =
+  struct
+    type t = unit DTerm.t
+    let compare = DTerm.compare
+  end
+  module TDnet = Dn.Make(PTerm)(Ident)
 
   type t = TDnet.t
 
-  type ident = TDnet.ident
-
-  (** We will freshen metas on the fly, to cope with the implementation defect
-      of Term_dnet which requires metas to be all distinct. *)
-  let fresh_meta =
-    let index = ref 0 in
-    fun () ->
-      let ans = !index in
-      let () = index := succ ans in
-      ans
+  type ident = HintIdent.t
 
   open DTerm
   open TDnet
 
-  let pat_of_constr c : term_pattern =
+  let pat_of_constr c : (unit DTerm.t * Constr.t list) option =
     let open GlobRef in
-    (* To each evar we associate a unique identifier. *)
-    let metas = ref Evar.Map.empty in
     let rec pat_of_constr c = match Constr.kind c with
-    | Rel _          -> Term DRel
-    | Sort _         -> Term DSort
-    | Var i          -> Term (DRef (VarRef i))
-    | Const (c,u)    -> Term (DRef (ConstRef c))
-    | Ind (i,u)      -> Term (DRef (IndRef i))
-    | Construct (c,u)-> Term (DRef (ConstructRef c))
+    | Rel _          -> Some (DRel, [])
+    | Sort _         -> Some (DSort, [])
+    | Var i          -> Some (DRef (VarRef i), [])
+    | Const (c,u)    -> Some (DRef (ConstRef c), [])
+    | Ind (i,u)      -> Some (DRef (IndRef i), [])
+    | Construct (c,u)-> Some (DRef (ConstructRef c), [])
     | Meta _         -> assert false
-    | Evar (i,_)     ->
-      let meta =
-        try Evar.Map.find i !metas
-        with Not_found ->
-          let meta = fresh_meta () in
-          let () = metas := Evar.Map.add i meta !metas in
-          meta
-      in
-      Meta meta
+    | Evar (i,_)     -> None
     | Case (ci,u1,pms1,c1,_iv,c2,ca)     ->
-      let f_ctx (_, p) = pat_of_constr p in
-      Term(DCase(ci,f_ctx c1,pat_of_constr c2,Array.map f_ctx ca))
+      let f_ctx (_, p) = p in
+      Some (DCase(ci), [f_ctx c1; c2] @ Array.map_to_list f_ctx ca)
     | Fix ((ia,i),(_,ta,ca)) ->
-      Term(DFix(ia,i,Array.map pat_of_constr ta, Array.map pat_of_constr ca))
+      Some (DFix(ia,i), Array.to_list ta @ Array.to_list ca)
     | CoFix (i,(_,ta,ca))    ->
-      Term(DCoFix(i,Array.map pat_of_constr ta,Array.map pat_of_constr ca))
+      Some (DCoFix(i), Array.to_list ta @ Array.to_list ca)
     | Cast (c,_,_)   -> pat_of_constr c
-    | Lambda (_,t,c) -> Term(DLambda (pat_of_constr t, pat_of_constr c))
-    | (Prod _ | LetIn _)   ->
-      let (ctx,c) = ctx_of_constr (Term DNil) c in Term (DCtx (ctx,c))
+    | Lambda (_,t,c) -> Some (DLambda, [t; c])
+    | Prod (_, t, u) -> Some (DProd, [t; u])
+    | LetIn (_, c, t, u) -> Some (DLet, [c; t; u])
     | App (f,ca)     ->
-      Array.fold_left (fun c a -> Term (DApp (c,a)))
-        (pat_of_constr f) (Array.map pat_of_constr ca)
-    | Proj (p,c) ->
-        Term (DApp (Term (DRef (ConstRef (Projection.constant p))), pat_of_constr c))
-    | Int i -> Term (DInt i)
-    | Float f -> Term (DFloat f)
+      let len = Array.length ca in
+      let a = ca.(len - 1) in
+      let ca = Array.sub ca 0 (len - 1) in
+      Some (DApp, [mkApp (f, ca); a])
+    | Proj (p,c) -> pat_of_constr (mkApp (mkConst (Projection.constant p), [|c|]))
+    | Int i -> Some (DInt i, [])
+    | Float f -> Some (DFloat f, [])
     | Array (_u,t,def,ty) ->
-      Term (DArray (Array.map pat_of_constr t, pat_of_constr def, pat_of_constr ty))
-
-    and ctx_of_constr ctx c = match Constr.kind c with
-    | Prod (_,t,c)   -> ctx_of_constr (Term(DCons((pat_of_constr t,None),ctx))) c
-    | LetIn(_,d,t,c) -> ctx_of_constr (Term(DCons((pat_of_constr t, Some (pat_of_constr d)),ctx))) c
-    | _ -> ctx,pat_of_constr c
+      Some (DArray, Array.to_list t @ [def ; ty])
     in
     pat_of_constr c
-
-  let empty_ctx : term_pattern -> term_pattern = function
-    | Meta _ as c -> c
-    | Term (DCtx(_,_)) as c -> c
-    | c -> Term (DCtx (Term DNil, c))
 
   (*
    * Basic primitives
@@ -413,28 +226,12 @@ struct
   let empty = TDnet.empty
 
   let add (c:constr) (id:Ident.t) (dn:t) =
-    let c = empty_ctx (pat_of_constr c) in
+    (* We used to consider the types of the product as well, but since the dnet
+       is only computing an approximation rectified by [filtering] we do not
+       anymore. *)
+    let (ctx, c) = Term.decompose_prod_assum c in
+    let c = TDnet.pattern pat_of_constr c in
     TDnet.add dn c id
-
-  let new_meta () = Meta (fresh_meta ())
-
-  let rec remove_cap : term_pattern -> term_pattern = function
-    | Term (DCons (t,u)) -> Term (DCons (t,remove_cap u))
-    | Term DNil -> new_meta()
-    | Meta _ as m -> m
-    | _ -> assert false
-
-  let under_prod : term_pattern -> term_pattern = function
-    | Term (DCtx (t,u)) -> Term (DCtx (remove_cap t,u))
-    | Meta m -> Term (DCtx(new_meta(), Meta m))
-    | _ -> assert false
-
-  (* debug *)
-(*  let rec pr_term_pattern p =
-    (fun pr_t -> function
-       | Term t -> pr_t t
-       | Meta m -> str"["++Pp.int (Obj.magic m)++str"]"
-    ) (pr_dconstr pr_term_pattern) p*)
 
 (* App(c,[t1,...tn]) -> ([c,t1,...,tn-1],tn)
    App(c,[||]) -> ([],c) *)
@@ -494,28 +291,24 @@ let align_prod_letin sigma c a =
   let l1 = CList.firstn lc l in
   n - lc, it_mkProd_or_LetIn a l1
 
-  let search_pat cpat dpat dn =
+  let decomp pat = match pat_of_constr pat with
+  | None -> Dn.Everything
+  | Some (lbl, args) -> Dn.Label (lbl, args)
+
+  let search_pattern dn cpat =
+    let _dctx, dpat = Term.decompose_prod_assum cpat in
     let whole_c = EConstr.of_constr cpat in
-    (* if we are at the root, add an empty context *)
-    let dpat = under_prod (empty_ctx dpat) in
-    TDnet.Idset.fold
-      (fun id acc ->
+    List.sort (fun x y -> HintIdent.compare y x) @@ List.fold_left
+      (fun acc id ->
          let c_id = EConstr.of_constr @@ Ident.constr_of id in
          let (ctx,wc) =
            try align_prod_letin Evd.empty whole_c c_id (* FIXME *)
            with Invalid_argument _ -> 0, c_id in
         if filtering ctx Evd.empty Reduction.CUMUL whole_c wc then id :: acc
         else acc
-      ) (TDnet.find_match dpat dn) []
+      ) (TDnet.lookup dn decomp dpat) []
 
-  (*
-   * High-level primitives describing specific search problems
-   *)
-
-  let search_pattern dn pat =
-    search_pat pat (empty_ctx (pat_of_constr pat)) dn
-
-  let find_all dn = Idset.elements (TDnet.find_all dn)
+  let find_all dn = List.sort HintIdent.compare (TDnet.lookup dn (fun () -> Everything) ())
 
 end
 
