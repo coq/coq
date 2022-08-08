@@ -761,17 +761,23 @@ let make_projectable_subst aliases sigma evi args =
                   let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
               | _ -> cstrs in
-            let sub = match EAlias.make sigma a with None -> [] | Some v -> [v, id] in
-            let all = Int.Map.add i sub all in
+            let all = match EAlias.make sigma a with
+            | None -> all
+            | Some v -> Int.Map.add i [v, id] all
+            in
             (rest,all,cstrs,revmap)
         | LocalDef ({binder_name=id},c,_), a::rest ->
             let revmap = Id.Map.add id i revmap in
             (match EConstr.kind sigma c with
             | Var id' ->
                 let idc = normalize_alias_var evar_aliases id' in
-                let ic, sub =
-                  try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
-                  with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
+                let ic, sub = match Id.Map.find_opt idc revmap with
+                | Some ic ->
+                  ic, (try Int.Map.find ic all with Not_found -> [])
+                | None ->
+                  (* e.g. [idc] is a filtered variable: treat [id] as an assumption *)
+                  i, []
+                in
                 if List.exists (fun (c, _) -> EAlias.is_constr sigma a c) sub then
                   (rest,all,cstrs,revmap)
                 else
@@ -779,11 +785,13 @@ let make_projectable_subst aliases sigma evi args =
                   | None -> sub
                   | Some v -> (v, id) :: sub
                   in
-                  let all = Int.Map.add ic sub all in
+                  let all = if List.is_empty sub then all else Int.Map.add ic sub all in
                   (rest,all,cstrs,revmap)
             | _ ->
-                let sub = match EAlias.make sigma a with None -> [] | Some v -> [v, id] in
-                let all = Int.Map.add i sub all in
+                let all = match EAlias.make sigma a with
+                | None -> all
+                | Some v -> Int.Map.add i [v, id] all
+                in
                 (rest,all,cstrs,revmap))
         | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
       sign (List.rev args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
