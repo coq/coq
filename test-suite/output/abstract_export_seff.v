@@ -18,3 +18,10 @@ Definition foo4 : nat.
 Proof.
     abstract (exact 1) using toto4.
 Qed.
+Fail Print toto4.
+
+Definition foo5 : nat.
+Proof.
+    abstract (exact 1) using toto5.
+Abort.
+Fail Print toto5.

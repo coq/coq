@@ -6,3 +6,9 @@ toto2 = 1
      : nat
 toto3 = 1
      : nat
+File "./output/abstract_export_seff.v", line 21, characters 11-16:
+The command has indeed failed with message:
+toto4 not a defined object.
+File "./output/abstract_export_seff.v", line 27, characters 11-16:
+The command has indeed failed with message:
+toto5 not a defined object.
