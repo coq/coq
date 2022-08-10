@@ -140,6 +140,11 @@ let is_undo ast =
   | Vernacexpr.VernacUndo _ -> true
   | _ -> false
 
+let is_reset_initial ast =
+  match ast.CAst.v.Vernacexpr.expr with
+  | Vernacexpr.VernacResetInitial -> true
+  | _ -> false
+
 let history : Vernacstate.t list ref = ref []
 let history_limit = 5
 
@@ -167,7 +172,7 @@ let compile_file ~c_opts ~opts injections =
 
   let wall_clock1 = Unix.gettimeofday () in
   Coqinit.start_library ~top injections;
-  let state = Vernacstate.freeze_interp_state ~marshallable:false in
+  let state0 = Vernacstate.freeze_interp_state ~marshallable:false in
   (* let state = Load.load_init_vernaculars opts ~state in *)
   let rec loop (state as old_state) =
     let open Vernacstate in
@@ -176,13 +181,15 @@ let compile_file ~c_opts ~opts injections =
     | Some ast when CompatTestSuite.is_undo ast ->
         let state = CompatTestSuite.handle_undo ast in
         loop state
+    | Some ast when CompatTestSuite.is_reset_initial ast ->
+        loop state0
     | Some ast ->
         hack_last_location := ast.CAst.loc;
         let state = Vernacinterp.interp ~verbosely:false ~st:state ast in
         CompatTestSuite.update_undo_state old_state;
         loop state
   in
-  let state = loop state in
+  let state = loop state0 in
   let wall_clock2 = Unix.gettimeofday () in
   
   close_in_out ~opts ~time:(wall_clock2 -. wall_clock1) state handle
