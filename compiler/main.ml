@@ -76,12 +76,15 @@ let parse_extra extras =
   let c_opts, extras = Options.parse Options.default [] extras in
   (c_opts, color_mode), extras
 
+let hack_last_location = ref None
+
 let warning_feed { Feedback.contents } =
   let open Feedback in
   match contents with
   (* Re-enable when we switch back to feedback-based error printing *)
   | Message (Error,loc,msg) -> ()
   | Message (lvl,loc,msg) ->
+    let loc = if lvl = Warning then Option.append loc !hack_last_location else loc in
     let pre_hdr = Option.map Pp.(fun x -> Loc.pr x ++ str ":") loc in
     Topfmt.std_logger ?pre_hdr lvl msg
   | _ -> ()
@@ -174,6 +177,7 @@ let compile_file ~c_opts ~opts injections =
         let state = CompatTestSuite.handle_undo ast in
         loop state
     | Some ast ->
+        hack_last_location := ast.CAst.loc;
         let state = Vernacinterp.interp ~verbosely:false ~st:state ast in
         CompatTestSuite.update_undo_state old_state;
         loop state
