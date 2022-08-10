@@ -89,7 +89,7 @@ else
 coqidetop := $(BIN)coqidetop.byte
 endif
 
-coqc_interactive := $(coqc_stm) -test-mode -async-proofs-cache force
+coqc_interactive := $(coqc) -test-mode
 coqdep := $(BIN)coqdep
 
 # This is the convention for coq_makefile
@@ -434,6 +434,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	    | grep -a -v "\[Loading ML file" \
 	    | grep -a -v "Skipping rcfile loading" \
 	    | grep -a -v "^<W>" \
+	    | sed 's?"output/?"./output/?' \
 	    > $$output; \
 	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
