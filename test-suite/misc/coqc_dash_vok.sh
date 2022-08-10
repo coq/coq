@@ -8,6 +8,9 @@ OUT_VOK=misc/coqc_cmdline.vok
 OUT_GLOB=misc/coqc_cmdline.glob
 OUT="${OUT_VO} ${OUT_VIO} ${OUT_VOS} ${OUT_VOK} ${OUT_GLOB}"
 
+export COQBIN=$BIN
+export PATH=$COQBIN:$PATH
+
 rm -f ${OUT}
 
 set -x
