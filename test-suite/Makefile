@@ -90,6 +90,7 @@ coqidetop := $(BIN)coqidetop.byte
 endif
 
 coqc_interactive := $(coqc) -test-mode
+coqc_stm_interactive := $(coqc_stm) -test-mode -async-proofs-cache force
 coqdep := $(BIN)coqdep
 
 # This is the convention for coq_makefile
@@ -139,7 +140,7 @@ FAIL = >&2 echo 'FAILED    $@'
 COMPLEXITY := $(if $(bogomips),complexity)
 INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
-VSUBSYSTEMS := prerequisite success failure bugs output output-coqtop \
+VSUBSYSTEMS := prerequisite success failure bugs output output-stm output-coqtop \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
   coqdoc ssr $(wildcard primitive/*) ltac2
 
@@ -226,6 +227,7 @@ summary:
 	  $(call summary_dir, "Failure tests", failure); \
 	  $(call summary_dir, "Bugs tests", bugs); \
 	  $(call summary_dir, "Output tests", output); \
+	  $(call summary_dir, "Output tests with stm", output-stm); \
 	  $(call summary_dir, "Output tests with coqtop", output-coqtop); \
 	  $(call summary_dir, "Output (modulo time changes) tests", output-modulo-time); \
 	  $(call summary_dir, "Interactive tests", interactive); \
@@ -435,6 +437,34 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	    | grep -a -v "Skipping rcfile loading" \
 	    | grep -a -v "^<W>" \
 	    | sed 's?"output/?"./output/?' \
+	    > $$output; \
+	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	    rm $$output; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (unexpected output)"; \
+	    $(FAIL); \
+	  fi; \
+	} > "$@"
+
+$(addsuffix .log,$(wildcard output-stm/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  output=$*.out.real; \
+	  export LC_CTYPE=C; \
+	  export LANG=C; \
+	  { $(coqc_stm_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1; \
+	      R=$$?; \
+	      if ! [ $$R = 0 ]; then printf '\ncoqc exited with code %s\n' "$$R"; fi; \
+	  } | grep -a -v "Welcome to Coq" \
+	    | grep -a -v "\[Loading ML file" \
+	    | grep -a -v "Skipping rcfile loading" \
+	    | grep -a -v "^<W>" \
+	    | sed 's?"./output-stm/?"./output/?' \
 	    > $$output; \
 	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
