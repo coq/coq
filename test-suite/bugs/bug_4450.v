@@ -52,7 +52,7 @@ Goal list Type@{x}.
 Proof.
   eauto using (foo Type). (* Refreshes the term *)
   Undo.
-  eauto using foo. Show Universes.
+  eauto using foo. (*Show Universes.*)
   Undo.
   eauto using foop. Show Proof. Show Universes.
 Qed.

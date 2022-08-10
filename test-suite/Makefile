@@ -140,12 +140,12 @@ FAIL = >&2 echo 'FAILED    $@'
 COMPLEXITY := $(if $(bogomips),complexity)
 INTERACTIVE := interactive
 UNIT_TESTS := unit-tests
-VSUBSYSTEMS := prerequisite success failure bugs output output-stm output-coqtop \
+VSUBSYSTEMS := prerequisite success failure bugs bugs-stm output output-stm output-coqtop \
   output-modulo-time $(INTERACTIVE) micromega $(COMPLEXITY) modules stm \
   coqdoc ssr $(wildcard primitive/*) ltac2
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc ide bugs ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
+SUBSYSTEMS := $(VSUBSYSTEMS) misc ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
 .csdp.cache: .csdp.cache.test-suite
 	cp $< $@
@@ -226,6 +226,7 @@ summary:
 	  $(call summary_dir, "Success tests", success); \
 	  $(call summary_dir, "Failure tests", failure); \
 	  $(call summary_dir, "Bugs tests", bugs); \
+	  $(call summary_dir, "Bugs tests with stm", bugs-stm); \
 	  $(call summary_dir, "Output tests", output); \
 	  $(call summary_dir, "Output tests with stm", output-stm); \
 	  $(call summary_dir, "Output tests with coqtop", output-coqtop); \
@@ -282,6 +283,22 @@ $(addsuffix .log,$(wildcard bugs/*.v)): %.v.log: %.v
 	    $(FAIL); \
 	  fi; \
 	} > "$@"
+
+$(addsuffix .log,$(wildcard bugs-stm/*.v)): %.v.log: %.v
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  $(coqc_stm) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (bug seems to be opened, please check)"; \
+	    $(FAIL); \
+	  fi; \
+	} > "$@"
+
 
 #######################################################################
 # Unit tests
