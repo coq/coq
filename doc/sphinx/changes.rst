@@ -26,7 +26,7 @@ with a few new features. We highlight some of the most impactful changes here:
 
   - Introduction of :ref:`reversible coercions <816ReversibleCoercions>`, which
     allow coercions relying on meta-level resolution such as type-classes or canonical
-    structures. Also allow coercions that do not :ref:`fullfill the uniform inheritance condition <816UniformInh>`.
+    structures. Also :ref:`allow coercions <816UniformInh>` that do not fullfill the :term:`uniform inheritance condition`.
 
   - :ref:`Generalized rewriting <816GeneralizeRew>` support for rewriting with ``Type``-valued relations and in
     ``Type`` contexts, using the ``Classes.CMorphisms`` library.
@@ -39,7 +39,7 @@ with a few new features. We highlight some of the most impactful changes here:
     :tacn:`eauto` treatment of :ref:`tactic failure levels <816EautoLevels>`, use of ``ident``
     :ref:`in notations <816IdentNotations>`, parsing of :ref:`module expressions <816ModuleExprs>`.
 
-  - Standard library `reorganization and deprecations <816Stdlib>`.
+  - Standard library :ref:`reorganization and deprecations <816Stdlib>`.
 
   - Improve the treatment of standard library numbers by :cmd:`Extraction`.
 
@@ -50,8 +50,8 @@ Coq's `reference manual for 8.16 <https://coq.github.io/doc/v8.16/refman>`_,
 and `developer documentation of the 8.16 ML API <https://coq.github.io/doc/v8.16/api>`_
 are also available.
 
-Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
-Soegtrop and Théo Zimmermann worked on maintaining and improving the
+Ali Caglayan, Emilio Jesús Gallego Arias, Gaëtan Gilbert
+and Théo Zimmermann worked on maintaining and improving the
 continuous integration system and package building infrastructure.
 
 Erik Martin-Dorel has maintained the `Coq Docker images
@@ -64,9 +64,10 @@ contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
 
 The `Coq Platform <https://github.com/coq/platform>`_ has been maintained
-by Michael Soegtrop and Enrico Tassi.
+by Michael Soegtrop, with help from Karl Palmskog, Enrico Tassi and
+Théo Zimmermann.
 
-Our current maintainers are Yves Bertot, Frédéric Besson, Ana de Almeida Borges,
+Our current maintainers are Yves Bertot, Frédéric Besson, Ana Borges,
 Ali Caglayan, Tej Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès,
 Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert,
 Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin,
@@ -90,9 +91,9 @@ Vincent Semeria, Kartik Singhal, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi
 Anton Trunov, Li-yao Xia and Théo Zimmermann.
 
 The Coq community at large helped improve this new version via
-the GitHub issue and pull request system, the Coq development mailing list
-coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
-<https://coq.discourse.group/>`_ and the `Coq Zulip chat <https://coq.zulipchat.com>`_.
+the GitHub issue and pull request system, the coq-club@inria.fr mailing list,
+the `Discourse forum <https://coq.discourse.group/>`_ and the
+`Coq Zulip chat <https://coq.zulipchat.com>`_.
 
 Version 8.16's development spanned 6 months from the release of
 Coq 8.15.0. Pierre-Marie Pédrot is the release manager of Coq 8.16.
