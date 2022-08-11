@@ -97,7 +97,7 @@ the `Discourse forum <https://coq.discourse.group/>`_ and the
 
 Version 8.16's development spanned 6 months from the release of
 Coq 8.15.0. Pierre-Marie Pédrot is the release manager of Coq 8.16.
-This release is the result of 356 merged PRs, closing 35 issues.
+This release is the result of 356 merged PRs, closing 99 issues.
 
 | Nantes, June 2022,
 | Matthieu Sozeau for the Coq development team
@@ -721,7 +721,7 @@ coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
 
 Version 8.15's development spanned 3 months from the release of
 Coq 8.14.0. Gaëtan Gilbert is the release manager of Coq 8.15.
-This release is the result of 384 merged PRs, closing 67 issues.
+This release is the result of 384 merged PRs, closing 143 issues.
 
 | Nantes, January 2022,
 | Matthieu Sozeau for the Coq development team
