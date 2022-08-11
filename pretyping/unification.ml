@@ -144,7 +144,7 @@ let occurrence_test _ _ _ env sigma _ c1 c2 =
   | None -> false, sigma
   | Some cstr ->
      try true, Evd.add_universe_constraints sigma cstr
-     with UniversesDiffer -> false, sigma
+     with UniversesDiffer | UGraph.UniverseInconsistency _ -> false, sigma
 
 let abstract_list_all_with_dependencies env evd typ c l =
   let (evd, ev) = new_evar env evd typ in
