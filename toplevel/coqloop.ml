@@ -438,16 +438,7 @@ let process_toplevel_command ~state stm =
   | VernacShowGoal { gid; sid } ->
     let proof = Stm.get_proof ~doc:state.doc (Stateid.of_int sid) in
     let goal = Printer.pr_goal_emacs ~proof gid sid in
-    let evars =
-      match proof with
-      | None -> mt()
-      | Some p ->
-        let gl = (Evar.unsafe_of_int gid) in
-        let { Proof.sigma } = Proof.data p in
-        try Printer.print_dependent_evars (Some gl) sigma [ gl ]
-        with Not_found -> mt()
-    in
-    Feedback.msg_notice (v 0 (goal ++ evars));
+    let () = Feedback.msg_notice goal in
     state
 
   | VernacShowProofDiffs diff_opt ->

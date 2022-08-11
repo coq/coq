@@ -646,62 +646,6 @@ let clear_hyps2_in_evi env sigma hyps t concl ids =
   | (sigma,nhyps,[t;nconcl]) -> (sigma,nhyps,t,nconcl)
   | _ -> assert false
 
-let evar_nodes_of_term c =
-  let rec evrec acc c =
-    match kind c with
-    | Evar (n, l) -> Evar.Set.add n (List.fold_left evrec acc l)
-    | _ -> Constr.fold evrec acc c
-  in
-  evrec Evar.Set.empty (EConstr.Unsafe.to_constr c)
-
-(* spiwack: a few functions to gather evars on which goals depend. *)
-let queue_set q is_dependent set =
-  Evar.Set.iter (fun a -> Queue.push (is_dependent,a) q) set
-let queue_term q is_dependent c =
-  queue_set q is_dependent (evar_nodes_of_term c)
-
-let process_dependent_evar q acc evm is_dependent e =
-  let evi = Evd.find evm e in
-  (* Queues evars appearing in the types of the goal (conclusion, then
-     hypotheses), they are all dependent. *)
-  queue_term q true evi.evar_concl;
-  List.iter begin fun decl ->
-    let open NamedDecl in
-    queue_term q true (NamedDecl.get_type decl);
-    match decl with
-    | LocalAssum _ -> ()
-    | LocalDef (_,b,_) -> queue_term q true b
-  end (EConstr.named_context_of_val evi.evar_hyps);
-  match evi.evar_body with
-  | Evar_empty ->
-      if is_dependent then Evar.Map.add e None acc else acc
-  | Evar_defined b ->
-      let subevars = evar_nodes_of_term b in
-      (* evars appearing in the definition of an evar [e] are marked
-         as dependent when [e] is dependent itself: if [e] is a
-         non-dependent goal, then, unless they are reach from another
-         path, these evars are just other non-dependent goals. *)
-      queue_set q is_dependent subevars;
-      if is_dependent then Evar.Map.add e (Some subevars) acc else acc
-
-let gather_dependent_evars q evm =
-  let acc = ref Evar.Map.empty in
-  while not (Queue.is_empty q) do
-    let (is_dependent,e) = Queue.pop q in
-    (* checks if [e] has already been added to [!acc] *)
-    begin if not (Evar.Map.mem e !acc) then
-        acc := process_dependent_evar q !acc evm is_dependent e
-    end
-  done;
-  !acc
-
-let gather_dependent_evars evm l =
-  let q = Queue.create () in
-  List.iter (queue_term q false) l;
-  gather_dependent_evars q evm
-
-(* /spiwack *)
-
 (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
     the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially)
