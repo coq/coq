@@ -94,6 +94,7 @@ let val_pattern = Val.create "pattern"
 let val_preterm = Val.create "preterm"
 let val_matching_context = Val.create "matching_context"
 let val_pp = Val.create "pp"
+let val_evar = Val.create "evar"
 let val_sort = Val.create "sort"
 let val_cast = Val.create "cast"
 let val_inductive = Val.create "inductive"
@@ -233,6 +234,10 @@ let ident = repr_ext val_ident
 let of_pattern c = of_ext val_pattern c
 let to_pattern c = to_ext val_pattern c
 let pattern = repr_ext val_pattern
+
+let of_evar ev = of_ext val_evar ev
+let to_evar ev = to_ext val_evar ev
+let evar = repr_ext val_evar
 
 let internal_err =
   let open Names in

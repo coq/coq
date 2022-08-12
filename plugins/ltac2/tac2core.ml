@@ -586,7 +586,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let n = Value.to_int n in
     EConstr.mkMeta n
   | (3, [|evk; args|]) ->
-    let evk = Evar.unsafe_of_int (Value.to_int evk) in
+    let evk = to_evar evk in
     let args = Value.to_array Value.to_constr args in
     EConstr.mkEvar (evk, Array.to_list args)
   | (4, [|s|]) ->
@@ -954,8 +954,7 @@ let () = define0 "shelve_unifiable" begin
   Proofview.shelve_unifiable >>= fun () -> return v_unit
 end
 
-let () = define1 "new_goal" int begin fun ev ->
-  let ev = Evar.unsafe_of_int ev in
+let () = define1 "new_goal" evar begin fun ev ->
   Proofview.tclEVARMAP >>= fun sigma ->
   if Evd.mem sigma ev then
     Proofview.Unsafe.tclNEWGOALS [Proofview.with_empty_state ev] <*> Proofview.tclUNIT v_unit
