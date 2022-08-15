@@ -96,7 +96,7 @@ development of interactive proofs."))
 
 (package
  (name coq-doc)
- (license "OPL-1.0")
+ (license "OPUBL-1.0")
  (depends
   (conf-python-3 :build)
   (coq (and :build (= :version))))
