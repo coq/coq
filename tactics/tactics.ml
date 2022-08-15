@@ -1567,10 +1567,9 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let ct = Retyping.get_type_of env sigma c in
   let id = try Some (destVar sigma c) with DestKO -> None in
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
-  let indclause  = make_clenv_binding env sigma (c, t) lbindc in
-  let sigma = meta_merge (Evd.meta_list sigma) indclause.evd in
+  let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
-  Proofview.Unsafe.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS indclause.evd <*>
   Tacticals.tclTHEN
     (general_elim_clause with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
