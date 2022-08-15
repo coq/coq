@@ -11,7 +11,7 @@ semi-interactive development of machine-checked proofs.
 This package provides the Coq Reference Manual."""
 maintainer: ["The Coq development team <coqdev@inria.fr>"]
 authors: ["The Coq development team, INRIA, CNRS, and contributors"]
-license: "OPL-1.0"
+license: "OPUBL-1.0"
 homepage: "https://coq.inria.fr/"
 doc: "https://coq.github.io/doc/"
 bug-reports: "https://github.com/coq/coq/issues"
