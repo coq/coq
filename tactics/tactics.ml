@@ -1454,7 +1454,7 @@ let clenv_refine_in ?err with_evars targetid replace sigma0 clenv tac =
   if not with_evars && occur_meta evd new_hyp_typ then
     error (CannotFindInstance (new_hyp_typ,clenv));
   let new_hyp_prf = clenv_value clenv in
-  let exact_tac = Logic.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
+  let exact_tac = Logic.refiner EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
   Tacticals.tclTHEN
     (Proofview.Unsafe.tclEVARS (clear_metas evd))

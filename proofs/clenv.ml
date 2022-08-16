@@ -637,7 +637,7 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
     let clenv = update_clenv_evd clenv evd' in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-      (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
+      (Logic.refiner EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en

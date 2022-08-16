@@ -860,7 +860,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
       in loop sigma t [] n in
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env env sigma t));
     Tacticals.tclTHENLIST [
-      Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
+      Logic.refiner EConstr.Unsafe.(to_constr t);
       Proofview.(if first_goes_last then cycle 1 else tclUNIT ())
     ]
   end

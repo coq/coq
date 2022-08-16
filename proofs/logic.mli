@@ -26,7 +26,7 @@ open Evd
 
 (** The primitive refiner. *)
 
-val refiner : check:bool -> constr -> unit Proofview.tactic
+val refiner : constr -> unit Proofview.tactic
 
 (** {6 Refiner errors. } *)
 
