@@ -948,7 +948,6 @@ let thin id sigma goal =
   let evi = Evd.find sigma goal in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let cl = Evd.evar_concl evi in
-  let sigma = Evd.clear_metas sigma in
   let ans =
     try Some (Evarutil.clear_hyps_in_evi env sigma (Environ.named_context_val env) cl ids)
     with Evarutil.ClearDependencyError _ -> None
