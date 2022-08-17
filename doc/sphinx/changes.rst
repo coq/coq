@@ -11,6 +11,97 @@ Recent changes
 Version 8.16
 ------------
 
+Summary of changes
+~~~~~~~~~~~~~~~~~~
+
+Coq version 8.16 integrates changes to the Coq kernel and performance improvements along
+with a few new features. We highlight some of the most impactful changes here:
+
+  - The guard checker (see :cmd:`Guarded`) now ensures strong :ref:`normalization <816Normalization>`
+    under any reduction strategy.
+
+  - Irrelevant terms (in the ``SProp`` sort) are now squashed to a dummy
+    value during :ref:`conversion <816SPropConversion>`, fixing a subject reduction issue and making proof
+    conversion faster.
+
+  - Introduction of :ref:`reversible coercions <816ReversibleCoercions>`, which
+    allow coercions relying on meta-level resolution such as type-classes or canonical
+    structures. Also :ref:`allow coercions <816UniformInh>` that do not fullfill the :term:`uniform inheritance condition`.
+
+  - :ref:`Generalized rewriting <816GeneralizeRew>` support for rewriting with ``Type``-valued relations and in
+    ``Type`` contexts, using the ``Classes.CMorphisms`` library.
+
+  - Added the :ref:`boolean equality <816BooleanEquality>` scheme command for decidable inductive types.
+
+  - Added a :ref:`Print Notation <816PrintNotation>` command.
+
+  - Incompatibilities in :ref:`name generation <816ProgramObls>` for Program obligations,
+    :tacn:`eauto` treatment of :ref:`tactic failure levels <816EautoLevels>`, use of ``ident``
+    :ref:`in notations <816IdentNotations>`, parsing of :ref:`module expressions <816ModuleExprs>`.
+
+  - Standard library :ref:`reorganization and deprecations <816Stdlib>`.
+
+  - Improve the treatment of standard library numbers by :cmd:`Extraction`.
+
+See the `Changes in 8.16.0`_ section below for the detailed list of changes,
+including potentially breaking changes marked with **Changed**.
+Coq's `reference manual for 8.16 <https://coq.github.io/doc/v8.16/refman>`_,
+`documentation of the 8.16 standard library <https://coq.github.io/doc/v8.16/stdlib>`_
+and `developer documentation of the 8.16 ML API <https://coq.github.io/doc/v8.16/api>`_
+are also available.
+
+Ali Caglayan, Emilio Jesús Gallego Arias, Gaëtan Gilbert
+and Théo Zimmermann worked on maintaining and improving the
+continuous integration system and package building infrastructure.
+
+Erik Martin-Dorel has maintained the `Coq Docker images
+<https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
+projects for continuous integration.
+
+The OPAM repository for Coq packages has been maintained by
+Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
+contributions from many users. A list of packages is available at
+https://coq.inria.fr/opam/www/.
+
+The `Coq Platform <https://github.com/coq/platform>`_ has been maintained
+by Michael Soegtrop, with help from Karl Palmskog, Enrico Tassi and
+Théo Zimmermann.
+
+Our current maintainers are Yves Bertot, Frédéric Besson, Ana Borges,
+Ali Caglayan, Tej Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès,
+Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert,
+Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin,
+Vincent Laporte, Olivier Laurent, Assia Mahboubi, Kenji Maillard,
+Guillaume Melquiond, Pierre-Marie Pédrot, Clément Pit-Claudel, Pierre Roux,
+Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Arnaud Spiwack,
+Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov, Li-yao Xia
+and Théo Zimmermann. See the `Coq Team face book <https://coq.inria.fr/coq-team.html>`_
+page for more details.
+
+The 57 contributors to the 8.16 versions are Tanaka Akira, Frédéric Besson, Martin Bodin, Ana Borges,
+Ali Caglayan, Minki Cho, Cyril Cohen, Juan Conejero, "stop-cran", Adrian Dapprich, Maxime Dénès,
+Stéphane Desarzens, Christian Doczkal, Andrej Dudenhefner, Andres Erbsen, Jim Fehrle,
+Emilio Jesús Gallego Arias, Attila Gáspár, Paolo G. Giarrusso, Gaëtan Gilbert, Rudi Grinberg, Jason Gross, Hugo Herbelin,
+Wolf Honore, Jasper Hugunin, Bart Jacobs, Pierre Jouvelot,
+Ralf Jung, Grant Jurgensen, Jan-Oliver Kaiser, Wojciech Karpiel, Thomas Klausner,
+Ethan Kuefner, Fabian Kunze, Olivier Laurent, Yishuai Li, Erik Martin-Dorel, Guillaume Melquiond,
+Jean-Francois Monin, Pierre-Marie Pédrot, Rudy Peterson, Clément Pit-Claudel, Seth Poulsen,
+Ramkumar Ramachandra, Pierre Roux, Takafumi Saikawa, Kazuhiko Sakaguchi, Gabriel Scherer,
+Vincent Semeria, Kartik Singhal, Michael Soegtrop, Matthieu Sozeau, Enrico Tassi, Laurent Théry,
+Anton Trunov, Li-yao Xia and Théo Zimmermann.
+
+The Coq community at large helped improve this new version via
+the GitHub issue and pull request system, the coq-club@inria.fr mailing list,
+the `Discourse forum <https://coq.discourse.group/>`_ and the
+`Coq Zulip chat <https://coq.zulipchat.com>`_.
+
+Version 8.16's development spanned 6 months from the release of
+Coq 8.15.0. Pierre-Marie Pédrot is the release manager of Coq 8.16.
+This release is the result of 356 merged PRs, closing 99 issues.
+
+| Nantes, June 2022,
+| Matthieu Sozeau for the Coq development team
+
 Changes in 8.16.0
 ~~~~~~~~~~~~~~~~~
 
@@ -19,6 +110,8 @@ Changes in 8.16.0
 
 Kernel
 ^^^^^^
+
+ .. _816Normalization:
 
 - **Changed:**
   Fixpoints are now expected to be guarded even in subterms erasable
@@ -51,6 +144,9 @@ Kernel
   (`#15412 <https://github.com/coq/coq/pull/15412>`_,
   fixes `#15403 <https://github.com/coq/coq/issues/15403>`_,
   by Hugo Herbelin).
+
+  .. _816SPropConversion:
+
 - **Fixed:**
   We introduce a new irrelevant term in the reduction machine.
   It is used to shortcut computation of terms living in a strict
@@ -75,6 +171,9 @@ Specification language, type inference
   projections
   (`#14563 <https://github.com/coq/coq/pull/14563>`_,
   by Hugo Herbelin).
+
+  .. _816ReversibleCoercions:
+
 - **Added:**
   :term:`Reversible coercions <reversible coercion>` are coercions which cannot be
   represented by a regular coercion (a Gallina function)
@@ -83,6 +182,9 @@ Specification language, type inference
   (`#15693 <https://github.com/coq/coq/pull/15693>`_,
   by Cyril Cohen, Pierre Roux, Enrico Tassi,
   reviewed by Ali Caglayan, Jim Fehrle and Gaëtan Gilbert).
+
+  .. _816UniformInh:
+
 - **Added:**
   support for coercions not fulfilling
   the uniform inheritance condition,
@@ -104,6 +206,8 @@ Specification language, type inference
 
 Notations
 ^^^^^^^^^
+
+ .. _816IdentNotations:
 
 - **Removed:**
   ``_`` in ``ident`` entries in notations, which was deprecated
@@ -155,6 +259,9 @@ Tactics
   (`#14138 <https://github.com/coq/coq/pull/14138>`_,
   fixes `#13618 <https://github.com/coq/coq/issues/13618>`_,
   by Matthieu Sozeau).
+
+  .. _816EautoLevels:
+
 - **Changed:**
   The :tacn:`eauto` tactic does not propagate internal Ltac failures
   with level > 0 anymore. Any failure caused by a hint now behaves as if it
@@ -179,6 +286,9 @@ Tactics
   the monadic tactic engine in 8.5, it was behaving as the identity
   (`#15277 <https://github.com/coq/coq/pull/15277>`_,
   by Pierre-Marie Pédrot).
+
+  .. _816GeneralizeRew:
+
 - **Added:**
   generalized rewriting now supports rewriting with (possibly polymorphic)
   relations valued in ``Type``. Use ``Classes.CMorphisms`` instead of
@@ -249,6 +359,8 @@ SSReflect
 Commands and options
 ^^^^^^^^^^^^^^^^^^^^
 
+ .. _816ModuleExprs:
+
 - **Changed:**
   :cmd:`Module` now only allows parentheses around module arguments. For instance, ``Module M := (F X).`` is now a parsing error
   (`#15355 <https://github.com/coq/coq/pull/15355>`_,
@@ -263,6 +375,9 @@ Commands and options
   (`#15424 <https://github.com/coq/coq/pull/15424>`_,
   fixes `#15410 <https://github.com/coq/coq/issues/15410>`_,
   by Gaëtan Gilbert).
+
+  .. _816ProgramObls:
+
 - **Changed:**
   The algorithm for name generation of anonymous variables
   for ``Program`` subproofs is now the same as the one
@@ -296,6 +411,9 @@ Commands and options
   a buggy implementation, it is unlikely this is used in the wild
   (`#15752 <https://github.com/coq/coq/pull/15752>`_,
   by Pierre-Marie Pédrot).
+
+  .. _816BooleanEquality:
+
 - **Added:**
   :cmd:`Scheme Boolean Equality` command to generate the boolean
   equality for an inductive type whose equality is
@@ -318,6 +436,9 @@ Commands and options
   (`#15650 <https://github.com/coq/coq/pull/15650>`_,
   fixes `#15600 <https://github.com/coq/coq/issues/15600>`_,
   by Enrico Tassi).
+
+  .. _816PrintNotation:
+
 - **Added:**
   :cmd:`Print Notation` command that prints the level and
   associativity of a given notation definition string
@@ -376,6 +497,8 @@ Command-line tools
 
 Standard library
 ^^^^^^^^^^^^^^^^
+
+  .. _816Stdlib:
 
 - **Changed:**
   the ``signature`` scope of ``Classes.CMorphisms`` into ``signatureT``
@@ -485,6 +608,8 @@ Infrastructure and dependencies
 
 Extraction
 ^^^^^^^^^^
+
+  .. _816Extraction:
 
 - **Changed:**
   `ExtrOCamlInt63` no longer extracts `comparison` to `int` in OCaml;
@@ -596,7 +721,7 @@ coqdev@inria.fr, the coq-club@inria.fr mailing list, the `Discourse forum
 
 Version 8.15's development spanned 3 months from the release of
 Coq 8.14.0. Gaëtan Gilbert is the release manager of Coq 8.15.
-This release is the result of 384 merged PRs, closing 67 issues.
+This release is the result of 384 merged PRs, closing 143 issues.
 
 | Nantes, January 2022,
 | Matthieu Sozeau for the Coq development team
@@ -2371,7 +2496,7 @@ and Théo Zimmermann.
 The 51 contributors to this version are Reynald Affeldt, Tanaka Akira, Frédéric
 Besson, Lasse Blaauwbroek, Clément Blaudeau, Martin Bodin, Ali Caglayan, Tej Chajed,
 Cyril Cohen, Julien Coolen, Matthew Dempsky, Maxime Dénès, Andres Erbsen,
-Jim Fehrle, Emilio Jesús Gallego Arias, Paolo G. Giarrusso, Attila Gáspár, Gaëtan Gilbert,
+Jim Fehrle, Emilio Jesús Gallego Arias, Attila Gáspár, Paolo G. Giarrusso, Gaëtan Gilbert,
 Jason Gross, Benjamin Grégoire, Hugo Herbelin, Wolf Honore, Jasper Hugunin, Ignat Insarov,
 Ralf Jung, Fabian Kunze, Vincent Laporte, Olivier Laurent, Larry D. Lee Jr,
 Thomas Letan, Yishuai Li, James Lottes, Jean-Christophe Léchenet,
