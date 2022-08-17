@@ -452,10 +452,9 @@ Commands and options
   (`#15760 <https://github.com/coq/coq/pull/15760>`_,
   by Pierre Roux).
 - **Added:**
-  A deprecation warning that the :g:`Class >` syntax, that is currently
-  doing nothing, will in the future
-  declare :ref:`coercions <coercions>` as it does when used in
-  :cmd:`Record` commands
+  A deprecation warning that the :g:`Class >` syntax, which currently
+  does nothing, will in the future declare :ref:`coercions <coercions>`
+  as it does when used in :cmd:`Record` commands
   (`#15802 <https://github.com/coq/coq/pull/15802>`_,
   by Pierre Roux, reviewed by Gaëtan Gilbert, Ali Caglayan,
   Jason Gross, Jim Fehrle and Théo Zimmermann).
