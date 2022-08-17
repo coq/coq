@@ -4287,6 +4287,22 @@ let guess_elim isrec dep s hyp0 gl =
   let scheme = compute_elim_sig sigma elimt in
   sigma, (elimc, elimt), mkIndU (mind, u), scheme
 
+let guess_elim_shape isrec s hyp0 gl =
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let tmptyp0 = Tacmach.pf_get_hyp_typ hyp0 gl in
+  let (mind, _), _ = Tacred.reduce_to_quantified_ind env sigma tmptyp0 in
+  if isrec && not (is_nonrec env mind)
+  then
+    let gr = lookup_eliminator env mind s in
+    let sigma, ind = Evd.fresh_global env sigma gr in
+    let elimt = Retyping.get_type_of env sigma ind in
+    let scheme = compute_elim_sig sigma elimt in
+    (scheme.indref, scheme.nparams)
+  else
+    let mib = Environ.lookup_mind (fst mind) env in
+    (Some (IndRef mind), mib.mind_nparams)
+
 let given_elim hyp0 (elimc,lbind as e) gl =
   let sigma = Tacmach.project gl in
   let tmptyp0 = Tacmach.pf_get_hyp_typ hyp0 gl in
@@ -4306,10 +4322,10 @@ let find_induction_type isrec elim hyp0 gl =
     match elim with
     | None ->
        let sort = Tacticals.elimination_sort_of_goal gl in
-       let _, _,_, scheme = guess_elim isrec false sort hyp0 gl in
+       let indref, nparams = guess_elim_shape isrec sort hyp0 gl in
        (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
           needs no update to sigma at this point. *)
-       Tacmach.project gl, scheme.indref, scheme.nparams, ElimOver (isrec,hyp0)
+       Tacmach.project gl, indref, nparams, ElimOver (isrec, hyp0)
     | Some e ->
         let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
         let scheme = compute_elim_sig sigma elimt in
