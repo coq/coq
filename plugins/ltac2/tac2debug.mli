@@ -24,6 +24,6 @@ val read_loop : unit -> unit
 val fmt_stack2 : (string * Loc.t option) list option -> unit ->
                 string list
 
-val fmt_vars2 : varmap list -> int -> Interface.db_vars_rty
+val fmt_vars2 : varmap list -> int -> DebuggerTypes.db_vars_rty
 
 val dump_expr2 : ?indent:int -> ?p:string -> Tac2expr.glb_tacexpr -> unit

@@ -37,7 +37,7 @@ let explain_logic_error_no_anomaly e = CErrors.print_no_report e
 
 type varmap = Geninterp.Val.t Names.Id.Map.t
 
-let fmt_vars1 : varmap list -> int -> Interface.db_vars_rty = fun varmaps framenum ->
+let fmt_vars1 : varmap list -> int -> DebuggerTypes.db_vars_rty = fun varmaps framenum ->
   let varmap = List.nth varmaps framenum in
   let open Names in
   List.map (fun b ->

@@ -1,3 +1,15 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+open DebuggerTypes
+
 val set_debug : bool -> unit
 
 val get_debug : unit -> bool
@@ -39,13 +51,13 @@ val isTerminal : unit -> bool
 *)
 
 type fmt_stack_f = unit -> string list
-type fmt_vars_f = int -> Interface.db_vars_rty
+type fmt_vars_f = int -> db_vars_rty
 type chunk = Loc.t option list * fmt_stack_f * fmt_vars_f  (* todo: record? *)
 val empty_chunk : chunk
 
 val read : unit -> DebugHook.Action.t
 
-val format_stack : string option list -> Loc.t option list -> Interface.db_stack_rty
+val format_stack : string option list -> Loc.t option list -> db_stack_rty
 
 val db_pr_goals : unit Proofview.tactic
 

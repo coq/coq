@@ -6,6 +6,6 @@
  (modules_without_implementation vernacexpr)
  ; until ocaml/dune#4892 fixed
  ; (private_modules comProgramFixpoint egramcoq)
- (libraries tactics parsing findlib.dynload protocol))
+ (libraries tactics parsing findlib.dynload))
 
 (coq.pp (modules g_proofs g_vernac))

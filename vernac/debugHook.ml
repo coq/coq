@@ -27,7 +27,7 @@ module Action = struct
     | Configd
     | GetStack
     | GetVars of int
-    | Subgoals of Interface.goal_flags
+    | Subgoals of DebuggerTypes.goal_flags
     | RunCnt of int
     | RunBreakpoint of string
     | Command of string
@@ -94,15 +94,13 @@ module Action = struct
 end
 
 module Answer = struct
-  type stack = (string * (string * int list) option) list
-  type vars = (string * Pp.t) list
   type t =
     | Prompt of Pp.t
     | Output of Pp.t
     | Init
-    | Stack of stack
-    | Vars of vars
-    | Subgoals of Interface.goals_rty
+    | Stack of (string * (string * int list) option) list
+    | Vars of (string * Pp.t) list
+    | Subgoals of DebuggerTypes.goals_rty
 end
 
 module Intf = struct
@@ -122,7 +120,7 @@ module Intf = struct
 
 end
 
-let fwd_db_subgoals = Interface.(ref ((fun x y -> failwith "fwd_db_subgoals")
+let fwd_db_subgoals = DebuggerTypes.(ref ((fun x y -> failwith "fwd_db_subgoals")
                   : goal_flags -> (Evd.evar_map * Evar.t list) option -> subgoals_rty))
 
 (* MOVE *)
@@ -130,5 +128,5 @@ let fwd_db_subgoals = Interface.(ref ((fun x y -> failwith "fwd_db_subgoals")
 let debug_proof = ref None
 
 (* tells whether we're in the debugger or not *)
-let set_in_debug in_debug =
-  if not in_debug then debug_proof := None
+let set_in_debug read_in_debug =
+  if not read_in_debug then debug_proof := None
