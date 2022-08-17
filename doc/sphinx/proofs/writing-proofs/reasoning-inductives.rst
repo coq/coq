@@ -959,9 +959,8 @@ Helper tactics
 
 .. tacn:: decide @one_term__1 with @one_term__2
 
-   Replaces occurences of :n:`@one_term__1` in the goal
+   Replaces occurrences of :n:`@one_term__1` in the form :g:`{P}+{~P}` in the goal
    with :g:`(left _)` or :g:`(right _)`, depending on :n:`@one_term__2`.
-   :n:`@one_term__1` must be of type :g:`{P}+{~P}`,
    :n:`@one_term__2` must be of type either :g:`P` or :g:`~P`,
    and :g:`P` must be of type :g:`Prop`.
 
