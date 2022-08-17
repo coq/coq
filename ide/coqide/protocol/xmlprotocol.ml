@@ -21,6 +21,7 @@ let msg_format = ref (Richpp { width = 72; depth = max_int })
 
 open Util
 open Interface
+open DebuggerTypes
 open Serialize
 open Xml_datatype
 
@@ -793,8 +794,6 @@ let db_vars x     : db_vars_rty call     = Db_vars x
 let db_configd x  : db_configd_rty call  = Db_configd x
 let subgoals x    : subgoals_rty call    = Subgoals x
 
-let in_debug = ref false (* tells whether we're in the Ltac debugger or not *)
-
 let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c ->
   let send = ref true in
   let mkGood : type a. a -> bool * a value = fun x -> !send, (Good x) in
@@ -826,7 +825,8 @@ let abstract_eval_call : type a. _ -> a call -> bool * a value = fun handler c -
     | Db_stack x   -> send := false; mkGood (handler.db_stack x)
     | Db_vars x    -> send := false; mkGood (handler.db_vars x)
     | Db_configd x -> mkGood (handler.db_configd x)
-    | Subgoals x   -> send := not !in_debug; mkGood (handler.subgoals x)
+    | Subgoals x   -> send := not !DebuggerTypes.read_in_debug;
+                      mkGood (handler.subgoals x)
   with any ->
     let any = Exninfo.capture any in
     true, Fail (handler.handle_exn any)

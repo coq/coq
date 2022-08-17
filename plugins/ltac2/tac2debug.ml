@@ -126,7 +126,7 @@ let rec fmt_var : Tac2ffi.valexpr -> string -> (string * Pp.t) = fun v name ->
     | _ ->
       id_type, str "(exception)" (* just in case *)
 
-let fmt_vars2 : varmap list -> int -> Interface.db_vars_rty = fun varmaps framenum ->
+let fmt_vars2 : varmap list -> int -> DebuggerTypes.db_vars_rty = fun varmaps framenum ->
   let varmap = List.nth varmaps framenum in
   let open Names in
   List.map (fun b -> let (id, v) = b in fmt_var v (Id.to_string id)) (Id.Map.bindings varmap)

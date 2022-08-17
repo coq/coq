@@ -1,10 +1,22 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+open DebuggerTypes
+
 (* tells whether Ltac Debug is set *)
 let debug = ref false  (* todo: relation to tacinterp.is_traced *)
 
 
 (* todo: here? *)
 type fmt_stack_f = unit -> string list
-type fmt_vars_f = int -> Interface.db_vars_rty
+type fmt_vars_f = int -> db_vars_rty
 type chunk = Loc.t option list * fmt_stack_f * fmt_vars_f
 
 let empty_chunk = [], (fun _ -> []), (fun _ -> [])
