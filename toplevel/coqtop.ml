@@ -94,7 +94,7 @@ let ltac_debug_answer = let open DebugHook.Answer in function
     | Subgoals _ -> CErrors.anomaly (str "ltac_debug_answer: unsupported Answer type")
 
 let ltac_debug_parse in_debug =
-  Xmlprotocol.in_debug := in_debug;
+  DebuggerTypes.in_debug := in_debug;
   let open DebugHook in
   let act =
     try Action.parse (read_line ())

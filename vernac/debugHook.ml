@@ -23,7 +23,7 @@ module Action = struct
     | Configd
     | GetStack
     | GetVars of int
-    | Subgoals of Interface.goal_flags
+    | Subgoals of DebuggerTypes.goal_flags
     | RunCnt of int
     | RunBreakpoint of string
     | Command of string
@@ -71,7 +71,7 @@ module Answer = struct
     | Init
     | Stack of (string * (string * int list) option) list
     | Vars of (string * Pp.t) list
-    | Subgoals of Interface.goals_rty
+    | Subgoals of DebuggerTypes.goals_rty
 end
 
 module Intf = struct
@@ -91,5 +91,5 @@ module Intf = struct
 
 end
 
-let fwd_db_subgoals = Interface.(ref ((fun x y -> failwith "fwd_db_subgoals")
+let fwd_db_subgoals = DebuggerTypes.(ref ((fun x y -> failwith "fwd_db_subgoals")
                   : goal_flags -> (Evd.evar_map * Evar.t list) option -> subgoals_rty))

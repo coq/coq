@@ -46,7 +46,6 @@ val db_vars     : db_vars_sty     -> db_vars_rty call
 val db_configd  : db_configd_sty  -> db_configd_rty call
 val subgoals    : subgoals_sty -> subgoals_rty call
 
-val in_debug : bool ref (* tells whether we're in the Ltac debugger or not *)
 val abstract_eval_call : handler -> 'a call -> bool * 'a value
 
 (** * Protocol version *)

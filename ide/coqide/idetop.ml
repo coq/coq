@@ -211,7 +211,7 @@ let process_goal short sigma g =
       in
       hyps
   in
-  { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = Proof.goal_uid g; Interface.goal_name = name }
+  DebuggerTypes.{ goal_hyp = List.rev hyps; goal_ccl = ccl; goal_id = Proof.goal_uid g; goal_name = name }
 
 let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
   let env = Global.env () in
@@ -221,11 +221,11 @@ let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
   | None, _ | _, None -> None
   in
   let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal ~short ?og_s (Proof_diffs.make_goal env nsigma ng) in
-  { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp;
-    Interface.goal_id = Proof.goal_uid ng; Interface.goal_name = name }
+  DebuggerTypes.{ goal_hyp = hyps_pp_list; goal_ccl = concl_pp;
+    goal_id = Proof.goal_uid ng; goal_name = name }
 
 let export_pre_goals flags Proof.{ sigma; goals; stack } bg_proof process0 =
-  let open Interface in
+  let open DebuggerTypes in
   let process x = List.map (process0 sigma) x in
   let fg_goals = if flags.gf_fg then process goals else [] in
   let bg_goals =
@@ -256,16 +256,16 @@ let get_proof_data debug_proof =
 
 let db_subgoals flags debug_proof =
   let doc = get_doc () in
-  if not !Xmlprotocol.in_debug then
+  if not !DebuggerTypes.in_debug then
     ignore (Stm.finish ~doc : Vernacstate.t);
-  let short = match flags.Interface.gf_mode with
+  let short = match flags.DebuggerTypes.gf_mode with
   | "short" -> true
   | _ -> false
   in
   try
     let proof_data, bg_proof_data = get_proof_data debug_proof in
     (* todo: get correct data for diffs in the debugger *)
-    if Proof_diffs.show_diffs () && not !Xmlprotocol.in_debug then begin
+    if Proof_diffs.show_diffs () && not !DebuggerTypes.in_debug then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       (try
         let diff_goal_map = match oldp with
@@ -290,23 +290,23 @@ let debug_cmd = ref DebugHook.Action.Ignore
 
 let subgoals flags =
   let doc = get_doc () in
-  if !Xmlprotocol.in_debug then begin
+  if !DebuggerTypes.in_debug then begin
     debug_cmd := DebugHook.Action.Subgoals flags;
     None (* return value passed through DebugHook.Answer *)
   end else begin
-    set_doc @@ fst @@ Stm.finish ~doc;
+    ignore (Stm.finish ~doc : Vernacstate.t);
     db_subgoals flags None
   end
 
 let goals () =
-  let open Interface in
+  let open DebuggerTypes in
   let all = { gf_mode = "full"; gf_fg = true; gf_bg = true; gf_shelved = true; gf_given_up = true } in
   subgoals all
 
 let evars () =
   try
     let doc = get_doc () in
-    if not !Xmlprotocol.in_debug then
+    if not !DebuggerTypes.in_debug then
       ignore (Stm.finish ~doc : Vernacstate.t);
     let Proof.{ sigma }, _ = get_proof_data None in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
@@ -671,7 +671,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
 
   (* XXX: no need to have a ref here *)
   let ltac_debug_parse in_debug =
-    Xmlprotocol.in_debug := in_debug;
+    DebuggerTypes.in_debug := in_debug;
     let raw_cmd =
       debug_cmd := DebugHook.Action.Ignore;
       process_xml_msg xml_ic xml_oc out_ch;
@@ -693,7 +693,7 @@ let loop ( { Coqtop.run_mode; color_mode },_) ~opts:_ state =
       });
 
   while not !quit do
-    Xmlprotocol.in_debug := false;
+    DebuggerTypes.in_debug := false;
     process_xml_msg xml_ic xml_oc out_ch
   done;
   pr_debug "Exiting gracefully.";

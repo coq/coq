@@ -11,6 +11,7 @@
 open Util
 open Coq
 open Interface
+open DebuggerTypes
 open Feedback
 
 type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string Loc.located | `WARNING of string Loc.located ]
