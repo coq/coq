@@ -1927,6 +1927,7 @@ simple_tactic: [
 | "zify"
 | "assert_fails" ltac_expr3
 | "assert_succeeds" ltac_expr3
+| "decide" one_term "with" one_term
 | "dependent" "destruction" ident OPT ( "generalizing" LIST1 ident ) OPT ( "using" one_term )
 | "dependent" "induction" ident OPT ( [ "generalizing" | "in" ] LIST1 ident ) OPT ( "using" one_term )
 | "field" OPT ( "[" LIST1 one_term "]" )
