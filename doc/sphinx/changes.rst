@@ -495,6 +495,16 @@ Command-line tools
   fixes `#15497 <https://github.com/coq/coq/issues/15497>`_,
   by Hugo Herbelin).
 
+CoqIDE
+^^^^^^
+
+- **Added:**
+  Documentation of editing failed async mode proofs,
+  how to configure key bindings and various previously
+  undocumented details
+  (`#16070 <https://github.com/coq/coq/pull/16070>`_,
+  by Jim Fehrle).
+
 Standard library
 ^^^^^^^^^^^^^^^^
 
@@ -571,6 +581,10 @@ Standard library
   support for primitive floats in Scheme Boolean Equality
   (`#15719 <https://github.com/coq/coq/pull/15719>`_,
   by Pierre Roux, reviewed by Hugo Herbelin).
+- **Added:**
+  lemma :g:`le_add_l` to ``NAddOrder.v``. Use :g:`Nat.le_add_l` as replacement for the deprecated :g:`Plus.le_plus_r`
+  (`#16184 <https://github.com/coq/coq/pull/16184>`_,
+  by Andrej Dudenhefner).
 
 Infrastructure and dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
