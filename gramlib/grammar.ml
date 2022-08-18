@@ -120,7 +120,7 @@ module type S = sig
   | Reuse of string option * 'a Production.t list
   | Fresh of Gramext.position * 'a single_extend_statement list
 
-  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
+  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('b, norec, 'c) Symbol.t option
 
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
@@ -1902,7 +1902,7 @@ let level_of_nonterm sym = match sym with
 exception SelfSymbol
 
 let rec generalize_symbol :
-  type a tr s. (s, tr, a) Symbol.t -> (s, norec, a) ty_symbol =
+  type a tr s u. (s, tr, a) Symbol.t -> (u, norec, a) ty_symbol =
   function
   | Stoken tok ->
     Stoken tok
@@ -1932,8 +1932,8 @@ let rec generalize_symbol :
     Snterml (e, l)
   | Stree r ->
     Stree (generalize_tree r)
-and generalize_tree : type a tr s .
-  (s, tr, a) ty_tree -> (s, norec, a) ty_tree = fun r ->
+and generalize_tree : type a tr s u.
+  (s, tr, a) ty_tree -> (u, norec, a) ty_tree = fun r ->
   match r with
   | Node (fi, n) ->
     let fi = match fi with
