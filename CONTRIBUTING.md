@@ -576,8 +576,6 @@ We have a linter that checks a few different things:
   the documented syntax is edited to make the documentation more
   readable.  In this case, you may have to edit
   `doc/tools/docgram/common.edit_mlg` to make `doc_gram_rsts` pass.
-  The same applies if you update documented syntax of a Ltac-defined
-  tactic whose syntax in not defined the grammar.
   See [doc_grammar's README][doc_gram] for details.
 
   Note that in the case where you added new commands or tactics, you
