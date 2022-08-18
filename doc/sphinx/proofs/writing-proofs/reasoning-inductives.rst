@@ -957,6 +957,31 @@ This section describes some special purpose tactics to work with
 Helper tactics
 ~~~~~~~~~~~~~~
 
+.. tacn:: decide @one_term__1 with @one_term__2
+
+   Replaces occurrences of :n:`@one_term__1` in the form :g:`{P}+{~P}` in the goal
+   with :g:`(left _)` or :g:`(right _)`, depending on :n:`@one_term__2`.
+   :n:`@one_term__2` must be of type either :g:`P` or :g:`~P`,
+   and :g:`P` must be of type :g:`Prop`.
+
+   .. example:: Using :tacn:`decide` to rewrite the goal
+
+      .. coqtop:: in
+
+         Goal forall (P Q : Prop) (Hp : {P} + {~P}) (Hq : {Q} + {~Q}),
+             P -> ~Q -> (if Hp then true else false) = (if Hq then false else true).
+
+      .. coqtop:: all
+
+         intros P Q Hp Hq p nq.
+         decide Hp with p.
+         decide Hq with nq.
+
+      .. coqtop:: in
+
+         reflexivity.
+         Qed.
+
 .. tacn:: decide equality
 
    Solves a goal of the form :g:`forall x y : R, {x = y} + {~ x = y}`,

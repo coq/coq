@@ -1878,6 +1878,7 @@ ltac_defined_tactics: [
 tactic_notation_tactics: [
 | "assert_fails" ltac_expr3
 | "assert_succeeds" ltac_expr3
+| "decide" constr "with" constr
 | "dependent" "destruction" ident OPT ( "generalizing" LIST1 hyp )  OPT ( "using" constr )
 | "dependent" "induction" ident OPT ( [ "generalizing" | "in" ] LIST1 hyp )  OPT ( "using" constr )
 | "dintuition" OPT ltac_expr5
