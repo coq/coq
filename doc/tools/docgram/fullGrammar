@@ -700,6 +700,7 @@ command: [
 | "Print" "Ltac2" "Signatures"      (* ltac2 plugin *)
 | "Ltac2" "Check" ltac2_expr6      (* ltac2 plugin *)
 | "Ltac2" "Globalize" ltac2_expr6      (* ltac2 plugin *)
+| "Ltac2" "Ltac1" "Notation" ltac2def_ltac1      (* ltac2_ltac1 plugin *)
 ]
 
 reference_or_constr: [
@@ -3349,5 +3350,18 @@ tac2mode: [
 ltac1_expr_in_env: [
 | test_ltac1_env LIST0 identref "|-" ltac_expr5      (* ltac2_ltac1 plugin *)
 | ltac_expr5      (* ltac2_ltac1 plugin *)
+]
+
+tac2def_ltac1_notation: [
+| LIST1 ltac2_scope G_LTAC2_LTAC1_syn_level ":=" ltac2_expr6      (* ltac2_ltac1 plugin *)
+]
+
+G_LTAC2_LTAC1_syn_level: [
+|      (* ltac2_ltac1 plugin *)
+| ":" Prim.natural      (* ltac2_ltac1 plugin *)
+]
+
+ltac2def_ltac1: [
+| tac2def_ltac1_notation      (* ltac2_ltac1 plugin *)
 ]
 

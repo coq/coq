@@ -982,6 +982,7 @@ command: [
 | "Print" "Ltac2" "Signatures"      (* ltac2 plugin *)
 | "Ltac2" "Check" ltac2_expr      (* ltac2 plugin *)
 | "Ltac2" "Globalize" ltac2_expr      (* ltac2 plugin *)
+| "Ltac2" "Ltac1" "Notation" ltac2def_ltac1      (* ltac2_ltac1 plugin *)
 | "Hint" "Resolve" LIST1 [ qualid | one_term ] OPT hint_info OPT ( ":" LIST1 ident )
 | "Hint" "Resolve" [ "->" | "<-" ] LIST1 qualid OPT natural OPT ( ":" LIST1 ident )
 | "Hint" "Immediate" LIST1 [ qualid | one_term ] OPT ( ":" LIST1 ident )
@@ -2029,6 +2030,18 @@ ltac2_scope: [
 | integer      (* ltac2 plugin *)
 | name      (* Ltac2 plugin *)
 | name "(" LIST1 ltac2_scope SEP "," ")"      (* Ltac2 plugin *)
+]
+
+tac2def_ltac1_notation: [
+| LIST1 ltac2_scope OPT G_LTAC2_LTAC1_syn_level ":=" ltac2_expr      (* ltac2_ltac1 plugin *)
+]
+
+G_LTAC2_LTAC1_syn_level: [
+| ":" natural      (* ltac2_ltac1 plugin *)
+]
+
+ltac2def_ltac1: [
+| tac2def_ltac1_notation      (* ltac2_ltac1 plugin *)
 ]
 
 ltac2_expr: [
