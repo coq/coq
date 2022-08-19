@@ -1256,7 +1256,6 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
         let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
         sigma, applist(exist_term,[a;p_i_minus_1;ev;tuple_tail])
   in
-  let sigma = Evd.clear_metas sigma in
   let sigma, scf = sigrec_clausal_form sigma siglen ty in
   sigma, Evarutil.nf_evar sigma scf
 
