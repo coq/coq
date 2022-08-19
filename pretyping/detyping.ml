@@ -130,8 +130,8 @@ let make ~fast ids =
   if fast then
     let fold id accu =
       let id, ss = get_subscript id in
-      let old_ss = try Id.Map.find id accu with Not_found -> Subscript.zero in
-      if Subscript.compare ss old_ss <= 0 then accu else Id.Map.add id ss accu
+      let old_ss = Id.Map.find_opt id accu in
+      if Option.compare Subscript.compare (Some ss) old_ss <= 0 then accu else Id.Map.add id ss accu
     in
     let avoid = Id.Set.fold fold ids Id.Map.empty in
     Fast avoid
