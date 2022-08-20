@@ -1445,7 +1445,7 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?err with_evars targetid replace sigma0 clenv tac =
+let clenv_refine_in ?err with_evars targetid replace sigma0 clenv =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
   let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd in
   let clenv = Clenv.update_clenv_evd clenv evd in
@@ -1456,13 +1456,13 @@ let clenv_refine_in ?err with_evars targetid replace sigma0 clenv tac =
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Logic.refiner EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
-  (Proofview.Unsafe.tclEVARS (clear_metas evd)) <*>
-  Tacticals.tclTHENFIRST (Proofview.Goal.enter begin fun gl ->
+  Proofview.Unsafe.tclEVARS (clear_metas evd) <*>
+  Proofview.Goal.enter begin fun gl ->
     let id = find_name replace (LocalAssum (make_annot Anonymous Sorts.Relevant, new_hyp_typ)) naming gl in
     Tacticals.tclTHENLAST
       (replace_error_option err (internal_cut replace id new_hyp_typ <*> Proofview.cycle 1))
       exact_tac
-  end) (tac targetid)
+  end
 
 
 (********************************************)
@@ -1512,7 +1512,6 @@ let elimination_in_clause_scheme env sigma with_evars ~flags
   if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
     error (NothingToRewrite id);
   clenv_refine_in with_evars id true sigma elimclause''
-    (fun id -> Proofview.tclUNIT ())
 
 (*
  * Elimination tactic with bindings and using an arbitrary
@@ -1958,12 +1957,12 @@ let apply_in_once ?(respect_opaque = false) with_delta
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
       let clause = apply_in_once_main flags (id, t') env sigma (loc,c,lbind) in
-      clenv_refine_in ?err with_evars targetid replace sigma clause
-        (fun id ->
-          replace_error_option err (
-            apply_clear_request clear_flag false idc <*>
-            clear idstoclear) <*>
-          tac id)
+      let cleartac =
+        replace_error_option err (
+          apply_clear_request clear_flag false idc <*>
+          clear idstoclear) <*> tac targetid
+      in
+      Tacticals.tclTHENFIRST (clenv_refine_in ?err with_evars targetid replace sigma clause) cleartac
     with e when with_destruct && CErrors.noncritical e ->
       let err = Option.default (Exninfo.capture e) err in
         (descend_in_conjunctions (Id.Set.singleton targetid)
