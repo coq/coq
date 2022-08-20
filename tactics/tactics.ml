@@ -1456,10 +1456,14 @@ let clenv_refine_in ?err with_evars targetid replace sigma0 clenv tac =
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Logic.refiner EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
-  Tacticals.tclTHEN
-    (Proofview.Unsafe.tclEVARS (clear_metas evd))
-    (Tacticals.tclTHENLAST
-      (assert_after_then_gen ?err replace naming new_hyp_typ tac) exact_tac)
+  (Proofview.Unsafe.tclEVARS (clear_metas evd)) <*>
+  Tacticals.tclTHENFIRST (Proofview.Goal.enter begin fun gl ->
+    let id = find_name replace (LocalAssum (make_annot Anonymous Sorts.Relevant, new_hyp_typ)) naming gl in
+    Tacticals.tclTHENLAST
+      (replace_error_option err (internal_cut replace id new_hyp_typ <*> Proofview.cycle 1))
+      exact_tac
+  end) (tac targetid)
+
 
 (********************************************)
 (*       Elimination tactics                *)
