@@ -1445,7 +1445,7 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in ?err with_evars targetid replace sigma0 clenv =
+let clenv_refine_in with_evars targetid replace sigma0 clenv =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
   let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd in
   let clenv = Clenv.update_clenv_evd clenv evd in
@@ -1459,9 +1459,7 @@ let clenv_refine_in ?err with_evars targetid replace sigma0 clenv =
   Proofview.Unsafe.tclEVARS (clear_metas evd) <*>
   Proofview.Goal.enter begin fun gl ->
     let id = find_name replace (LocalAssum (make_annot Anonymous Sorts.Relevant, new_hyp_typ)) naming gl in
-    Tacticals.tclTHENLAST
-      (replace_error_option err (internal_cut replace id new_hyp_typ <*> Proofview.cycle 1))
-      exact_tac
+    Tacticals.tclTHENLAST (internal_cut replace id new_hyp_typ <*> Proofview.cycle 1) exact_tac
   end
 
 
@@ -1953,12 +1951,9 @@ let apply_in_once ?(respect_opaque = false) with_delta
       if with_delta then default_unify_flags () else default_no_delta_unify_flags ts in
     try
       let clause = apply_in_once_main flags (id, t') env sigma (loc,c,lbind) in
-      let cleartac =
-        replace_error_option err (
-          apply_clear_request clear_flag false idc <*>
-          clear idstoclear) <*> tac targetid
-      in
-      Tacticals.tclTHENFIRST (clenv_refine_in ?err with_evars targetid replace sigma clause) cleartac
+      let cleartac = apply_clear_request clear_flag false idc <*> clear idstoclear in
+      let refine = Tacticals.tclTHENFIRST (clenv_refine_in with_evars targetid replace sigma clause) cleartac in
+      Tacticals.tclTHENFIRST (replace_error_option err refine) (tac targetid)
     with e when with_destruct && CErrors.noncritical e ->
       let err = Option.default (Exninfo.capture e) err in
         (descend_in_conjunctions (Id.Set.singleton targetid)
