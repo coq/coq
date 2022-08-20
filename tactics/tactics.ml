@@ -1498,21 +1498,6 @@ let rec contract_letin_in_lam_header sigma c =
   | LetIn (x,b,t,c) -> contract_letin_in_lam_header sigma (subst1 b c)
   | _ -> c
 
-let elimination_in_clause_scheme env sigma with_evars ~flags
-    id hypmv elimclause =
-  let hyp = mkVar id in
-  let hyp_typ = Retyping.get_type_of env sigma hyp in
-  let elimclause'' =
-    try clenv_instantiate ~flags hypmv elimclause (hyp, hyp_typ)
-    with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
-      (* Set the hypothesis name in the message *)
-      raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
-  in
-  let new_hyp_typ  = clenv_type elimclause'' in
-  if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
-    error (NothingToRewrite id);
-  clenv_refine_in with_evars id true sigma elimclause''
-
 (*
  * Elimination tactic with bindings and using an arbitrary
  * elimination constant called elimc. This constant should end
@@ -1560,7 +1545,18 @@ let general_elim_clause with_evars flags where (c, ty) elim =
       | _ -> error IllFormedEliminationType
     in
     let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
-    elimination_in_clause_scheme env sigma with_evars ~flags id hypmv elimclause
+    let hyp = mkVar id in
+    let hyp_typ = Retyping.get_type_of env sigma hyp in
+    let elimclause =
+      try clenv_instantiate ~flags hypmv elimclause (hyp, hyp_typ)
+      with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
+        (* Set the hypothesis name in the message *)
+        raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
+    in
+    let new_hyp_typ  = clenv_type elimclause in
+    if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
+      error (NothingToRewrite id);
+    clenv_refine_in with_evars id true sigma elimclause
   end
 
 let general_elim with_evars clear_flag (c, lbindc) elim =
