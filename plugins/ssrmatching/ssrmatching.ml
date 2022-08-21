@@ -57,7 +57,6 @@ let _ =
 let pp s = !pp_ref s
 
 (** Utils *)(* {{{ *****************************************************************)
-let env_size env = List.length (Environ.named_context env)
 let safeDestApp sigma c =
   match EConstr.kind sigma c with App (f, a) -> f, a | _ -> c, [| |]
 (* Toplevel constr must be globalized twice ! *)
@@ -342,32 +341,6 @@ let pr_econstr_pat env sigma c0 =
   let env = Environ.push_named dummy_decl env in
   pr_econstr_env env sigma (wipe_evar c0)
 
-(* Turn (new) evars into metas *)
-let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
-  let open EConstr in
-  let ise = ref ise0 in
-  let sigma = ref ise0 in
-  let nenv = env_size env + if hack then 1 else 0 in
-  let rec put c = match EConstr.kind !sigma c with
-  | Evar (k, a) ->
-    if rigid k then map !sigma put c else
-    let evi = Evd.find !sigma k in
-    let dc = List.firstn (max 0 (List.length a - nenv)) (evar_filtered_context evi) in
-    let abs_dc (d, c) = function
-    | Context.Named.Declaration.LocalDef (x, b, t) ->
-        d, mkNamedLetIn x (put b) (put t) c
-    | Context.Named.Declaration.LocalAssum (x, t) ->
-        mkVar x.binder_name :: d, mkNamedProd x (put t) c in
-    let a, t =
-      Context.Named.fold_inside abs_dc ~init:([], put evi.evar_concl) dc
-    in
-    let m = Evarutil.new_meta () in
-    ise := meta_declare m t !ise;
-    sigma := Evd.define k (applistc (mkMeta m) a) !sigma;
-    put c
-  | _ -> map !sigma put c in
-  let c1 = put c0 in !ise, c1
-
 (* Compile a match pattern from a term; t is the term to fill. *)
 (* p_origin can be passed to obtain a better error message     *)
 let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env (ise, t) dir p =
@@ -393,8 +366,8 @@ let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env (ise, t) dir p
     | Lambda _ -> KpatLam, f, a
     | _ -> KpatRigid, f, a in
   let aa = Array.of_list a in
-  let ise', p' = evars_for_FO ~hack ~rigid env ise (mkApp (f, aa)) in
-  ise',
+  let p' = mkApp (f, aa) in
+  ise,
   { up_k = k; up_FO = p'; up_f = f;
     up_a = aa; up_ok = ok; up_dir = dir; up_t = t}
 
