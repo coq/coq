@@ -847,20 +847,40 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
     Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    let t, sigma = if n = 0 then t, sigma else
+    let sigma = Evd.push_future_goals sigma in
+    let hyps = Environ.named_context_val env in
+    let inst = EConstr.identity_subst_val hyps in
+    let identity = Evd.Identity.make inst in
+    let t, args, sigma =
       let rec loop sigma bo args = function (* saturate with metas *)
-        | 0 -> EConstr.mkApp (t, Array.of_list (List.rev args)), sigma
-        | n -> match EConstr.kind sigma bo with
+        | 0 -> (t, args, sigma)
+        | n ->
+          match EConstr.kind sigma bo with
           | Lambda (_, ty, bo) ->
-              if not (EConstr.Vars.closed0 sigma ty) then
-                raise dependent_apply_error;
-              let m = Evarutil.new_meta () in
-              loop (meta_declare m ty sigma) bo ((EConstr.mkMeta m)::args) (n-1)
+            let () = if not (EConstr.Vars.closed0 sigma ty) then raise dependent_apply_error in
+            let ty = Reductionops.nf_betaiota env sigma ty in
+            let src = Loc.tag Evar_kinds.GoalEvar in
+            let (sigma, evk) = Evarutil.new_pure_evar ~src ~typeclass_candidate:false ~identity hyps sigma ty in
+            loop sigma bo (evk :: args) (n - 1)
           | _ -> assert false
-      in loop sigma t [] n in
+      in
+      loop sigma t [] n
+    in
+    let _, sigma = Evd.pop_future_goals sigma in
     pp(lazy(str"Refiner.refiner " ++ Printer.pr_econstr_env env sigma t));
+
+    let map evk = Proofview.goal_with_state evk (Proofview.Goal.state gl) in
+    let sgl = List.rev_map map args in
+    let ans = EConstr.applist (t, List.rev_map (fun evk -> EConstr.mkEvar (evk, inst)) args) in
+    let evk = Proofview.Goal.goal gl in
+    let _ =
+      if not (Evarutil.occur_evar_upto sigma evk ans) then ()
+      else Pretype_errors.error_occur_check env sigma evk ans
+    in
+    let sigma = Evd.define evk ans sigma in
     Tacticals.tclTHENLIST [
-      Logic.refiner ~check:false EConstr.Unsafe.(to_constr t);
+      Proofview.Unsafe.tclEVARS sigma;
+      Proofview.Unsafe.tclSETGOALS sgl;
       Proofview.(if first_goes_last then cycle 1 else tclUNIT ())
     ]
   end

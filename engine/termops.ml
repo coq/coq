@@ -105,7 +105,7 @@ let pr_meta_map env sigma =
            str " : " ++ print_constr env sigma t.rebus ++
            spc () ++ pr_instance_status s ++ fnl ())
   in
-  prlist pr_meta_binding (meta_list sigma)
+  prlist pr_meta_binding (Evd.Metamap.bindings (meta_list sigma))
 
 let pr_decl env sigma (decl,ok) =
   let open NamedDecl in
@@ -305,7 +305,7 @@ let pr_evar_map_gen with_univs pr_evars env sigma =
       str "OBLIGATIONS:" ++ brk (0, 1) ++
       prlist_with_sep spc Evar.print (Evar.Set.elements evars) ++ fnl ()
   and metas =
-    if List.is_empty (Evd.meta_list sigma) then mt ()
+    if Evd.Metamap.is_empty (Evd.meta_list sigma) then mt ()
     else
       str "METAS:" ++ brk (0, 1) ++ pr_meta_map env sigma
   and shelf =

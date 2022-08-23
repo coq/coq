@@ -1425,7 +1425,7 @@ let cut c =
 let check_unresolved_evars_of_metas sigma clenv =
   (* This checks that Metas turned into Evars by *)
   (* Refiner.pose_all_metas_as_evars are resolved *)
-  List.iter (fun (mv,b) -> match b with
+  Metamap.iter (fun mv b -> match b with
   | Clval (_,(c,_),_) ->
     (match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
     | Evar (evk,_) when Evd.is_undefined clenv.evd evk
@@ -1454,7 +1454,7 @@ let clenv_refine_in ?err with_evars targetid replace sigma0 clenv tac =
   if not with_evars && occur_meta evd new_hyp_typ then
     error (CannotFindInstance (new_hyp_typ,clenv));
   let new_hyp_prf = clenv_value clenv in
-  let exact_tac = Logic.refiner ~check:false EConstr.Unsafe.(to_constr new_hyp_prf) in
+  let exact_tac = Logic.refiner EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
   Tacticals.tclTHEN
     (Proofview.Unsafe.tclEVARS (clear_metas evd))
@@ -1545,7 +1545,7 @@ let general_elim_clause with_evars flags where (c, ty) elim =
        | _  -> error IllFormedEliminationType)
   in
   (* Assumes that the metas of [c] are part of [sigma] already *)
-  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge sigma elimclause.Clenv.evd) in
+  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge (Evd.meta_list sigma) elimclause.Clenv.evd) in
   match where with
   | None ->
     let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
@@ -1567,10 +1567,9 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let ct = Retyping.get_type_of env sigma c in
   let id = try Some (destVar sigma c) with DestKO -> None in
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
-  let indclause  = make_clenv_binding env sigma (c, t) lbindc in
-  let sigma = meta_merge sigma indclause.evd in
+  let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
-  Proofview.Unsafe.tclEVARS sigma <*>
+  Proofview.Unsafe.tclEVARS indclause.evd <*>
   Tacticals.tclTHEN
     (general_elim_clause with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
@@ -1902,7 +1901,12 @@ let progress_with_clause flags (id, t) clause mvs =
   if List.is_empty mvs then raise UnableToApply;
   let f mv =
     let rec find innerclause =
-      try Some (clenv_fchain mv ~flags clause innerclause)
+      try
+        let clause =
+          Clenv.update_clenv_evd clause
+            (meta_merge (Evd.meta_list innerclause.Clenv.evd) clause.Clenv.evd)
+        in
+        Some (clenv_instantiate mv ~flags clause (clenv_value innerclause, clenv_type innerclause))
       with e when noncritical e ->
       match clenv_push_prod innerclause with
       | Some (_, _, innerclause) -> find innerclause

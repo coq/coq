@@ -19,7 +19,6 @@ open Termops
 open Environ
 open Reductionops
 open Inductiveops
-open Typing
 open Retyping
 
 module NamedDecl = Context.Named.Declaration
@@ -41,12 +40,6 @@ exception RefinerError of Environ.env * Evd.evar_map * refiner_error
 
 
 let error_no_such_hypothesis env sigma id = raise (RefinerError (env, sigma, NoSuchHyp id))
-
-(* The check flag tells if the refiner should check that the submitted rules do
-   not produce invalid subgoals *)
-
-let check_typability ~check env sigma c =
-  if check then fst (type_of env sigma (EConstr.of_constr c)) else sigma
 
 (************************************************************************)
 (************************************************************************)
@@ -296,14 +289,6 @@ let check_meta_variables env sigma c =
   if not (List.distinct_f Int.compare (collect_meta_variables c)) then
     raise (RefinerError (env, sigma, NonLinearProof c))
 
-let check_conv_leq_goal ~check env sigma arg ty conclty =
-  if check then
-    let ans = Reductionops.infer_conv env sigma (EConstr.of_constr ty) conclty in
-    match ans with
-    | Some evm -> evm
-    | None -> raise (RefinerError (env, sigma, BadType (arg,ty,conclty)))
-  else sigma
-
 exception Stop of EConstr.t list
 let meta_free_prefix sigma a =
   try
@@ -314,11 +299,8 @@ let meta_free_prefix sigma a =
     in a
   with Stop acc -> Array.rev_of_list acc
 
-let goal_type_of ~check env sigma c =
-  if check then
-    let (sigma,t) = type_of env sigma (EConstr.of_constr c) in
-    (sigma, EConstr.Unsafe.to_constr t)
-  else (sigma, EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c)))
+let goal_type_of env sigma c =
+  (sigma, EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c)))
 
 (* Old style mk_goal primitive *)
 let mk_goal evars hyps concl =
@@ -336,28 +318,23 @@ let mk_goal evars hyps concl =
   let ev = EConstr.mkEvar (evk,inst) in
   (evk, ev, evars)
 
-let rec mk_refgoals ~check env sigma goalacc conclty trm =
+let rec mk_refgoals env sigma goalacc conclty trm =
   let hyps = Environ.named_context_val env in
-    if (not check) && not (occur_meta sigma (EConstr.of_constr trm)) then
+    if not (occur_meta sigma (EConstr.of_constr trm)) then
       let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
       let t'ty = EConstr.Unsafe.to_constr t'ty in
-      let sigma = check_conv_leq_goal ~check env sigma trm t'ty conclty in
         (goalacc,t'ty,sigma,trm)
     else
       match kind trm with
       | Meta _ ->
         let conclty = nf_betaiota env sigma conclty in
-          if check && occur_meta sigma conclty then
-            raise (RefinerError (env, sigma, MetaInType conclty));
           let (gl,ev,sigma) = mk_goal sigma hyps conclty in
           let ev = EConstr.Unsafe.to_constr ev in
           let conclty = EConstr.Unsafe.to_constr conclty in
           gl::goalacc, conclty, sigma, ev
 
       | Cast (t,k, ty) ->
-        let sigma = check_typability ~check env sigma ty in
-        let sigma = check_conv_leq_goal ~check env sigma trm ty conclty in
-        let res = mk_refgoals ~check env sigma goalacc (EConstr.of_constr ty) t in
+        let res = mk_refgoals env sigma goalacc (EConstr.of_constr ty) t in
         (* we keep the casts (in particular VMcast and NATIVEcast) except
            when they are annotating metas *)
         if isMeta t then begin
@@ -380,15 +357,14 @@ let rec mk_refgoals ~check env sigma goalacc conclty trm =
             let ty = EConstr.Unsafe.to_constr ty in
               goalacc, ty, sigma, f
           else
-            mk_hdgoals ~check env sigma goalacc f
+            mk_hdgoals env sigma goalacc f
         in
-        let ((acc'',conclty',sigma), args) = mk_arggoals ~check env sigma acc' hdty l in
-        let sigma = check_conv_leq_goal ~check env sigma trm conclty' conclty in
+        let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
       | Proj (p,c) ->
-        let (acc',cty,sigma,c') = mk_hdgoals ~check env sigma goalacc c in
+        let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
         let c = mkProj (p, c') in
         let ty = get_type_of env sigma (EConstr.of_constr c) in
         let ty = EConstr.Unsafe.to_constr ty in
@@ -397,9 +373,8 @@ let rec mk_refgoals ~check env sigma goalacc conclty trm =
       | Case (ci, u, pms, p, iv, c, lf) ->
         (* XXX Is ignoring iv OK? *)
         let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
-        let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals ~check env sigma goalacc p c in
-        let sigma = check_conv_leq_goal ~check env sigma trm conclty' conclty in
-        let (acc'',sigma,rbranches) = treat_case ~check env sigma ci lbrty lf acc' in
+        let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals env sigma goalacc p c in
+        let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
@@ -410,25 +385,22 @@ let rec mk_refgoals ~check env sigma goalacc conclty trm =
       | _ ->
         if occur_meta sigma (EConstr.of_constr trm) then
           anomaly (Pp.str "refiner called with a meta in non app/case subterm.");
-        let (sigma, t'ty) = goal_type_of ~check env sigma trm in
-        let sigma = check_conv_leq_goal ~check env sigma trm t'ty conclty in
+        let (sigma, t'ty) = goal_type_of env sigma trm in
           (goalacc,t'ty,sigma, trm)
 
 (* Same as mkREFGOALS but without knowing the type of the term. Therefore,
  * Metas should be casted. *)
 
-and mk_hdgoals ~check env sigma goalacc trm =
+and mk_hdgoals env sigma goalacc trm =
   let hyps = Environ.named_context_val env in
   match kind trm with
     | Cast (c,_, ty) when isMeta c ->
-        let sigma = check_typability ~check env sigma ty in
         let (gl,ev,sigma) = mk_goal sigma hyps (nf_betaiota env sigma (EConstr.of_constr ty)) in
         let ev = EConstr.Unsafe.to_constr ev in
         gl::goalacc,ty,sigma,ev
 
     | Cast (t,_, ty) ->
-        let sigma = check_typability ~check env sigma ty in
-        mk_refgoals ~check env sigma goalacc (EConstr.of_constr ty) t
+        mk_refgoals env sigma goalacc (EConstr.of_constr ty) t
 
     | App (f,l) ->
         let (acc',hdty,sigma,applicand) =
@@ -436,17 +408,17 @@ and mk_hdgoals ~check env sigma goalacc trm =
           then
             let l' = meta_free_prefix sigma l in
            (goalacc,EConstr.Unsafe.to_constr (type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) l'),sigma,f)
-          else mk_hdgoals ~check env sigma goalacc f
+          else mk_hdgoals env sigma goalacc f
         in
-        let ((acc'',conclty',sigma), args) = mk_arggoals ~check env sigma acc' hdty l in
+        let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
     | Case (ci, u, pms, p, iv, c, lf) ->
         (* XXX is ignoring iv OK? *)
         let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
-        let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals ~check env sigma goalacc p c in
-        let (acc'',sigma,rbranches) = treat_case ~check env sigma ci lbrty lf acc' in
+        let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals env sigma goalacc p c in
+        let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
         let lf' = Array.rev_of_list rbranches in
         let ans =
           if p' == p && c' == c && Array.equal (==) lf' lf then trm
@@ -455,19 +427,17 @@ and mk_hdgoals ~check env sigma goalacc trm =
         (acc'',conclty',sigma, ans)
 
     | Proj (p,c) ->
-         let (acc',cty,sigma,c') = mk_hdgoals ~check env sigma goalacc c in
+         let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
          let c = mkProj (p, c') in
          let ty = get_type_of env sigma (EConstr.of_constr c) in
          let ty = EConstr.Unsafe.to_constr ty in
            (acc',ty,sigma,c)
 
     | _ ->
-        if check && occur_meta sigma (EConstr.of_constr trm) then
-          anomaly (Pp.str "refine called with a dependent meta.");
-        let (sigma, ty) = goal_type_of env ~check sigma trm in
+        let (sigma, ty) = goal_type_of env sigma trm in
         goalacc, ty, sigma, trm
 
-and mk_arggoals ~check env sigma goalacc funty allargs =
+and mk_arggoals env sigma goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
     let t = whd_all env sigma (EConstr.of_constr funty) in
     let t = EConstr.Unsafe.to_constr t in
@@ -478,17 +448,17 @@ and mk_arggoals ~check env sigma goalacc funty allargs =
     let t = collapse t in
     match kind t with
     | Prod (_, c1, b) ->
-      let (acc, hargty, sigma, arg) = mk_refgoals ~check env sigma goalacc (EConstr.of_constr c1) harg in
+      let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (EConstr.of_constr c1) harg in
       (acc, subst1 harg b, sigma), arg
     | _ ->
       raise (RefinerError (env,sigma,CannotApply (t, harg)))
   in
   Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
-and mk_casegoals ~check env sigma goalacc p c =
-  let (acc',ct,sigma,c') = mk_hdgoals ~check env sigma goalacc c in
+and mk_casegoals env sigma goalacc p c =
+  let (acc',ct,sigma,c') = mk_hdgoals env sigma goalacc c in
   let ct = EConstr.of_constr ct in
-  let (acc'',pt,sigma,p') = mk_hdgoals ~check env sigma acc' p in
+  let (acc'',pt,sigma,p') = mk_hdgoals env sigma acc' p in
   let ((ind, u), spec) =
     try Tacred.find_hnf_rectype env sigma ct
     with Not_found -> anomaly (Pp.str "mk_casegoals.") in
@@ -496,7 +466,7 @@ and mk_casegoals ~check env sigma goalacc p c =
   let (lbrty,conclty) = type_case_branches_with_names env sigma indspec p c in
   (acc'',lbrty,conclty,sigma,p',c')
 
-and treat_case ~check env sigma ci lbrty lf acc' =
+and treat_case env sigma ci lbrty lf acc' =
   let rec strip_outer_cast c = match kind c with
   | Cast (c,_,_) -> strip_outer_cast c
   | _ -> c in
@@ -521,14 +491,13 @@ and treat_case ~check env sigma ci lbrty lf acc' =
         let head = strip_outer_cast head in
         if isMeta head then begin
           assert (args = Context.Rel.instance mkRel 0 ctx);
-          let (r,_,s,head'') = mk_refgoals ~check env sigma lacc ty head in
+          let (r,_,s,head'') = mk_refgoals env sigma lacc ty head in
           let fi' = it_mkLambda_or_LetIn (mkApp (head'',args)) ctx in
           (r,s,fi'::bacc)
         end
         else
           (* Supposed to be meta-free *)
-          let sigma, t'ty = goal_type_of ~check env sigma fi in
-          let sigma = check_conv_leq_goal ~check env sigma fi t'ty ty in
+          let sigma, t'ty = goal_type_of env sigma fi in
           (lacc,sigma,fi::bacc))
     (acc',sigma,[]) lbrty lf ci.ci_cstr_ndecls
 
@@ -556,7 +525,7 @@ let convert_hyp ~check ~reorder env sigma d =
 (************************************************************************)
 (* Primitive tactics are handled here *)
 
-let refiner ~check r =
+let refiner r =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
@@ -564,7 +533,7 @@ let refiner ~check r =
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
   check_meta_variables env sigma r;
-  let (sgl,cl',sigma,oterm) = mk_refgoals ~check env sigma [] cl r in
+  let (sgl,cl',sigma,oterm) = mk_refgoals env sigma [] cl r in
   let map gl = Proofview.goal_with_state gl st in
   let sgl = List.rev_map map sgl in
   let evk = Proofview.Goal.goal gl in

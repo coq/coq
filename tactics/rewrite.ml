@@ -1848,8 +1848,8 @@ let check_evar_map_of_evars_defs env evd =
          (Logic.RefinerError (env, evd, Logic.UnresolvedBindings [Evd.meta_name evd m]))
      end)
  in
-  List.iter
-   (fun (_,binding) ->
+  Evd.Metamap.iter
+   (fun _ binding ->
      match binding with
         Evd.Cltyp (_,{Evd.rebus=rebus; Evd.freemetas=freemetas}) ->
          check_freemetas_is_empty rebus freemetas

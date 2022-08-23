@@ -50,7 +50,6 @@ let update_clenv_evd clenv evd =
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
-let clenv_term clenv c = meta_instance clenv.env clenv.cache c
 let clenv_meta_type clenv mv =
   let ty =
     try Evd.meta_ftype clenv.evd mv
@@ -339,7 +338,7 @@ let adjust_meta_source evd mv = function
           | None -> None)
         | _ -> None
       else None in
-    let id = try List.find_map f (Evd.meta_list evd) with Not_found -> id in
+    let id = try List.find_map f (Evd.Metamap.bindings (Evd.meta_list evd)) with Not_found -> id in
     loc,Evar_kinds.VarInstance id
   | src -> src
 
@@ -422,27 +421,6 @@ let clenv_instantiate ?(flags=fchain_flags ()) mv clenv (c, ty) =
   let clenv = clenv_unify ~flags CUMUL ty (clenv_meta_type clenv mv) clenv in
   clenv_assign mv c clenv
 
-let clenv_fchain ?(flags=fchain_flags ()) mv clenv nextclenv =
-  (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
-  let evd = meta_merge nextclenv.evd clenv.evd in
-  let clenv' =
-    { templval = clenv.templval;
-      templtyp = clenv.templtyp;
-      evd;
-      env = nextclenv.env;
-      cache = create_meta_instance_subst evd } in
-  (* unify the type of the template of [nextclenv] with the type of [mv] *)
-  let clenv'' =
-    clenv_unify ~flags CUMUL
-      (clenv_term clenv' nextclenv.templtyp)
-      (clenv_meta_type clenv' mv)
-      clenv' in
-  (* assign the metavar *)
-  let clenv''' =
-    clenv_assign mv (clenv_term clenv' nextclenv.templval) clenv''
-  in
-  clenv'''
-
 (***************************************************************)
 (* Bindings *)
 
@@ -486,7 +464,7 @@ let explain_no_such_bound_variable mvl {CAst.v=id;loc} =
 
 let meta_with_name evd ({CAst.v=id} as lid) =
   let na = Name id in
-  let fold (l1, l2 as l) (n, clb) =
+  let fold n clb (l1, l2 as l) =
     let (na',def) = match clb with
     | Cltyp (na, _) -> (na, false)
     | Clval (na, _, _) -> (na, true)
@@ -494,17 +472,17 @@ let meta_with_name evd ({CAst.v=id} as lid) =
     if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
     else l
   in
-  let (mvl, mvnodef) = List.fold_left fold ([], []) (Evd.meta_list evd) in
-  match mvnodef, mvl with
+  let (mvl, mvnodef) = Evd.Metamap.fold fold (Evd.meta_list evd) ([], []) in
+  match List.rev mvnodef, List.rev mvl with
     | _,[]  ->
-      let fold l (n, clb) =
+      let fold n clb l =
         let na = match clb with
           | Cltyp (na, _) -> na
           | Clval (na, _, _) -> na
         in
         if na != Anonymous then Name.get_id na :: l else l
       in
-      let mvl = List.fold_left fold [] (Evd.meta_list evd) in
+      let mvl = Evd.Metamap.fold fold (Evd.meta_list evd) [] in
       explain_no_such_bound_variable mvl lid
     | (n::_,_|_,n::_) ->
         n
@@ -659,7 +637,7 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
     let clenv = update_clenv_evd clenv evd' in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-      (refiner ~check:false EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
+      (Logic.refiner EConstr.Unsafe.(to_constr (clenv_cast_meta clenv (clenv_value clenv))))
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
