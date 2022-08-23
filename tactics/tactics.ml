@@ -1451,8 +1451,6 @@ let clenv_refine_in with_evars targetid replace sigma0 clenv =
   let clenv = Clenv.update_clenv_evd clenv evd in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
-  if not with_evars && occur_meta evd new_hyp_typ then
-    error (CannotFindInstance (new_hyp_typ,clenv));
   let new_hyp_prf = clenv_value clenv in
   let exact_tac = Logic.refiner EConstr.Unsafe.(to_constr new_hyp_prf) in
   let naming = NamingMustBe (CAst.make targetid) in
