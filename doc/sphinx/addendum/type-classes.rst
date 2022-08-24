@@ -366,10 +366,10 @@ Summary of the commands
 
    .. deprecated:: 8.14
 
-      The default value for instance locality will change in a future
-      release. Instances added outside of sections without an explicit
-      locality are now deprecated. We recommend using :attr:`export`
-      where possible.
+      The default value for instance locality will change in a future release.
+      Instances added outside of sections without an explicit locality are
+      deprecated. We recommend using :attr:`export` where possible. This warning
+      is treated as an error by default.
 
    Like :cmd:`Definition`, it also supports the :attr:`program`
    attribute to switch the type checking to `Program` (chapter
