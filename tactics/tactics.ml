@@ -1451,8 +1451,7 @@ let clenv_refine_in with_evars targetid replace sigma0 clenv =
   let clenv = Clenv.update_clenv_evd clenv evd in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
-  let new_hyp_prf = clenv_value clenv in
-  let exact_tac = Logic.refiner EConstr.Unsafe.(to_constr new_hyp_prf) in
+  let [@ocaml.warning "-3"] exact_tac = Clenv.Internal.refiner (clenv_value clenv) in
   let naming = NamingMustBe (CAst.make targetid) in
   Proofview.Unsafe.tclEVARS (clear_metas evd) <*>
   Proofview.Goal.enter begin fun gl ->

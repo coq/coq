@@ -154,3 +154,12 @@ val solve_evar_clause : env -> evar_map -> bool -> clause -> EConstr.constr bind
 
 val rename_with : unit -> bool
 (** For funind *)
+
+module Internal :
+sig
+
+(** The legacy refiner. Do not use. *)
+val refiner : constr -> unit Proofview.tactic
+[@@ocaml.deprecated]
+
+end
