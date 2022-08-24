@@ -1163,15 +1163,67 @@ let rec intros_using_then_helper tac acc = function
   | str::l -> intro_using_then str (fun str' -> intros_using_then_helper tac (str'::acc) l)
 let intros_using_then l tac = intros_using_then_helper tac [] l
 
-let intros = Tacticals.tclREPEAT intro
+let is_overbound bound n = match bound with None -> false | Some p -> n >= p
 
-let intro_forthcoming_then_gen name_flag move_flag dep_flag bound n tac =
+let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
+  let open RelDecl in
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
+    let avoid =
+      let avoid' = ids_of_named_context_val (named_context_val env) in
+      if Id.Set.is_empty avoid then avoid' else Id.Set.union avoid' avoid
+    in
+    let rec decompose env avoid n concl subst decls ndecls =
+      let decl =
+        if is_overbound bound n then None
+        else match EConstr.kind sigma concl with
+        | Prod (na, t, u) when not dep_flag || not (noccurn sigma 1 u) ->
+          Some (LocalAssum (na, t), u)
+        | LetIn (na, b, t, u) when not dep_flag || not (noccurn sigma 1 u) ->
+          Some (LocalDef (na, b, t), u)
+        | _ -> None
+      in
+      match decl with
+      | None -> ndecls, decls, Vars.esubst Vars.lift_substituend subst concl
+      | Some (decl, concl) ->
+        let id = default_id env sigma decl in
+        let id = next_ident_away_in_goal (Global.env ()) id avoid in
+        let avoid = Id.Set.add id avoid in
+        let env = EConstr.push_rel decl env in
+        let ndecl = NamedDecl.of_rel_decl (fun _ -> id) decl in
+        let ndecl = NamedDecl.map_constr (fun c -> Vars.esubst Vars.lift_substituend subst c) ndecl in
+        let subst = Esubst.subs_cons (make_substituend @@ mkVar id) subst in
+        decompose env avoid (n + 1) concl subst (decl :: decls) (ndecl :: ndecls)
+    in
+    let (ndecls, decls, nconcl) = decompose env avoid n concl (Esubst.subs_id 0) [] [] in
+    let ids = List.map NamedDecl.get_id ndecls in
+    if List.is_empty ids then tac []
+    else Refine.refine ~typecheck:false begin fun sigma ->
+      let ctx = named_context_val env in
+      let nctx = List.fold_right push_named_context_val ndecls ctx in
+      let inst = identity_subst_val (named_context_val env) in
+      let ninst = List.init (List.length decls) (fun i -> mkRel (i + 1)) @ inst in
+      let (sigma, ev) = new_pure_evar nctx sigma nconcl ~principal:true in
+      (sigma, it_mkLambda_or_LetIn (mkEvar (ev, ninst)) decls)
+    end <*> tac ids
+  end
+
+let intros =
+  intro_forthcoming_last_then_gen Id.Set.empty false None 0 (fun _ -> tclIDTAC)
+
+let intro_forthcoming_then_gen avoid move_flag dep_flag bound n tac = match move_flag with
+| MoveLast ->
+  (* Fast path *)
+  intro_forthcoming_last_then_gen avoid dep_flag bound n tac
+| MoveFirst | MoveAfter _ | MoveBefore _ ->
   let rec aux n ids =
     (* Note: we always use the bound when there is one for "*" and "**" *)
-    if (match bound with None -> true | Some p -> n < p) then
+    if not (is_overbound bound n) then
     Proofview.tclORELSE
       begin
-      intro_then_gen name_flag move_flag false dep_flag
+      intro_then_gen (NamingAvoid avoid) move_flag false dep_flag
          (fun id -> aux (n+1) (id::ids))
       end
       begin function (e, info) -> match e with
@@ -2544,19 +2596,21 @@ let rec intro_patterns_core with_evars avoid ids thin destopt bound n tac =
         [CAst.make @@ IntroNaming IntroAnonymous]
   | {CAst.loc;v=pat} :: l ->
   if exceed_bound n bound then error ?loc (UnexpectedExtraPattern(bound,pat)) else
-  let naming = make_naming_pattern avoid l pat in
   match pat with
   | IntroForthcoming onlydeps ->
+      let naming = Id.Set.union avoid (explicit_intro_names l) in
       intro_forthcoming_then_gen naming destopt onlydeps bound n
         (fun ids -> intro_patterns_core with_evars avoid ids thin destopt bound
           (n+List.length ids) tac l)
   | IntroAction pat ->
+      let naming = make_naming_action avoid l pat in
       intro_then_gen naming destopt true false
         (intro_pattern_action ?loc with_evars pat thin destopt
           (fun thin bound' -> intro_patterns_core with_evars avoid ids thin destopt bound' 0
             (fun ids thin ->
               intro_patterns_core with_evars avoid ids thin destopt bound (n+1) tac l)))
   | IntroNaming pat ->
+      let naming = make_naming avoid l pat in
       intro_then_gen naming destopt true false
         (fun id -> intro_patterns_core with_evars avoid (id::ids) thin destopt bound (n+1) tac l)
 
