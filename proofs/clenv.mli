@@ -159,7 +159,7 @@ module Internal :
 sig
 
 (** The legacy refiner. Do not use. *)
-val refiner : constr -> unit Proofview.tactic
+val refiner : clausenv -> unit Proofview.tactic
 [@@ocaml.deprecated]
 
 end

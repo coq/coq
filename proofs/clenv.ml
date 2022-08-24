@@ -862,9 +862,9 @@ and treat_case env sigma ci lbrty lf acc' =
           (lacc,sigma,fi::bacc))
     (acc',sigma,[]) lbrty lf ci.ci_cstr_ndecls
 
-let refiner r =
+let refiner clenv =
   let open Proofview.Notations in
-  let r = EConstr.Unsafe.to_constr r in
+  let r = EConstr.Unsafe.to_constr (clenv_cast_meta clenv @@ clenv_value clenv) in
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
@@ -910,7 +910,7 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
     let clenv = update_clenv_evd clenv evd' in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-      (Internal.refiner (clenv_cast_meta clenv (clenv_value clenv)))
+      (Internal.refiner clenv)
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
