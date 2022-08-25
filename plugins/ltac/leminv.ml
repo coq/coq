@@ -167,7 +167,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
                (revargs,hyps))
           env ~init:([],[])
       in
-      let pty = it_mkNamedProd_or_LetIn (mkSort sort) ownsign in
+      let pty = it_mkNamedProd_or_LetIn sigma (mkSort sort) ownsign in
       let goal = mkArrow i Sorts.Relevant (applist(mkVar p, List.rev revargs)) in
       (pty,goal)
   in
@@ -227,7 +227,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   in
   let c = fill_holes pfterm in
   (* warning: side-effect on ownSign *)
-  let invProof = it_mkNamedLambda_or_LetIn c !ownSign in
+  let invProof = it_mkNamedLambda_or_LetIn sigma c !ownSign in
   invProof, sigma
 
 let add_inversion_lemma ~poly name env sigma t sort dep inv_op =

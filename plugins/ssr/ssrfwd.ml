@@ -325,8 +325,8 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
         EConstr.push_rel rd env, c) (env, c) gens in
     let sigma, _, ct, _ = pf_interp_ty env sigma ist ct in
     let rec var2rel c g s = match EConstr.kind sigma c, g with
-      | Prod({binder_name=Anonymous} as x,_,c), [] -> EConstr.mkProd(x, EConstr.Vars.subst_vars s ct, c)
-      | Sort _, [] -> EConstr.Vars.subst_vars s ct
+      | Prod({binder_name=Anonymous} as x,_,c), [] -> EConstr.mkProd(x, EConstr.Vars.subst_vars sigma s ct, c)
+      | Sort _, [] -> EConstr.Vars.subst_vars sigma s ct
       | LetIn({binder_name=Name id} as n,b,ty,c), _::g -> EConstr.mkLetIn (n,b,ty,var2rel c g (id::s))
       | Prod({binder_name=Name id} as n,ty,c), _::g -> EConstr.mkProd (n,ty,var2rel c g (id::s))
       | _ -> CErrors.anomaly(str"SSR: wlog: var2rel: " ++ pr_econstr_env env sigma c) in

@@ -206,9 +206,9 @@ and nf_univ_args ~nb_univs mk env sigma stk =
 
 and nf_evar env sigma evk stk =
   let evi = try Evd.find sigma evk with Not_found -> assert false in
-  let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
-  let concl = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
+  let hyps = EConstr.named_context_of_val (Evd.evar_filtered_hyps evi) in
   if List.is_empty hyps then
+    let concl = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
     nf_stk env sigma (mkEvar (evk, [])) concl stk
   else match stk with
   | Zapp args :: stk ->
@@ -216,9 +216,11 @@ and nf_evar env sigma evk stk =
        really an invariant? *)
     (* Let-bound arguments are present in the evar arguments but not in the
        type, so we turn the let into a product. *)
+    let concl = Evd.evar_concl evi in
     let hyps = Context.Named.drop_bodies hyps in
-    let fold accu d = Term.mkNamedProd_or_LetIn d accu in
+    let fold accu d = EConstr.mkNamedProd_or_LetIn sigma d accu in
     let t = List.fold_left fold concl hyps in
+    let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
     let t, args = nf_args env sigma args t in
     let inst, args = Array.chop (List.length hyps) args in
     (* Evar instances are reversed w.r.t. argument order *)

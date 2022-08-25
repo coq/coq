@@ -121,11 +121,12 @@ let idx = Id.of_string "x"
 let idy = Id.of_string "y"
 
 let mkGenDecideEqGoal rectype ops g =
+  let sigma = Proofview.Goal.sigma g in
   let hypnames = pf_ids_set_of_hyps g in
   let xname    = next_ident_away idx hypnames in
   let yname    = next_ident_away idy (Id.Set.add xname hypnames) in
-  (mkNamedProd (make_annot xname Sorts.Relevant) rectype
-     (mkNamedProd (make_annot yname Sorts.Relevant) rectype
+  (mkNamedProd sigma (make_annot xname Sorts.Relevant) rectype
+     (mkNamedProd sigma (make_annot yname Sorts.Relevant) rectype
         (mkDecideEqGoal true ops
           rectype (mkVar xname) (mkVar yname))))
 

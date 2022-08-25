@@ -292,13 +292,6 @@ let make_evar_instance_array info args =
   else
     evar_instance_array (NamedDecl.get_id %> isVarId) info args
 
-let instantiate_evar_array info c args =
-  let inst = make_evar_instance_array info args in
-  match inst with
-  | [] -> c
-  | _ -> replace_vars inst c
-
-
 type 'a in_evar_universe_context = 'a * UState.t
 
 (*******************************************************************)
@@ -603,6 +596,47 @@ type evar_map = {
   extras : Store.t;
 }
 
+let rec thin_val = function
+  | [] -> []
+  | (id, c) :: tl ->
+    match Constr.kind c with
+    | Constr.Var v ->
+      if Id.equal id v then thin_val tl
+      else (id, make_substituend c) :: (thin_val tl)
+    | _ -> (id, make_substituend c) :: (thin_val tl)
+
+let rec find_var id = function
+| [] -> raise_notrace Not_found
+| (idc, c) :: subst ->
+  if Id.equal id idc then c
+  else find_var id subst
+
+let replace_vars sigma var_alist x =
+  let var_alist = thin_val var_alist in
+  match var_alist with
+  | [] -> x
+  | _ ->
+    let rec substrec n c = match Constr.kind c with
+    | Constr.Var x ->
+      begin match find_var x var_alist with
+      | var -> (lift_substituend n var)
+      | exception Not_found -> c
+      end
+    | Constr.Evar (evk, args) ->
+      let () = assert (EvMap.mem evk sigma.undf_evars || EvMap.mem evk sigma.defn_evars) in
+      let args' = List.Smart.map (fun c -> substrec n c) args in
+      if args' == args then c
+      else Constr.mkEvar (evk, args')
+    | _ -> Constr.map_with_binders succ substrec n c
+    in
+    substrec 0 x
+
+let instantiate_evar_array sigma info c args =
+  let inst = make_evar_instance_array info args in
+  match inst with
+  | [] -> c
+  | _ -> replace_vars sigma inst c
+
 let get_is_maybe_typeclass, (is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t) = Hook.make ~default:(fun evd c -> false) ()
 
 let is_maybe_typeclass sigma c = Hook.get get_is_maybe_typeclass sigma c
@@ -759,7 +793,7 @@ let existential_opt_value d (n, args) =
   | None -> None
   | Some info ->
     match evar_body info with
-    | Evar_defined c -> Some (instantiate_evar_array info c args)
+    | Evar_defined c -> Some (instantiate_evar_array d info c args)
     | Evar_empty -> None (* impossible but w/e *)
 
 let existential_value d ev = match existential_opt_value d ev with
@@ -783,7 +817,7 @@ let existential_type d (n, args) =
     try find d n
     with Not_found ->
       anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared.") in
-  instantiate_evar_array info info.evar_concl args
+  instantiate_evar_array d info info.evar_concl args
 
 let existential_type0 = existential_type
 
@@ -1502,6 +1536,7 @@ module MiniEConstr = struct
       end
     | _ -> c
 
+  let replace_vars = replace_vars
   let kind sigma c = Constr.kind (whd_evar sigma c)
   let kind_upto = kind
   let of_kind = Constr.of_kind

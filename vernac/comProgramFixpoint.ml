@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Constr
 open Context
-open Vars
 open Declare
 open Names
 open Libnames
@@ -293,8 +292,8 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
     (* Generalize by the recursive prototypes  *)
     let terms = [def; typ] in
     let using = Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using in
-    let def = nf_evar evd (Termops.it_mkNamedLambda_or_LetIn def rec_sign) in
-    let typ = nf_evar evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign) in
+    let def = nf_evar evd (Termops.it_mkNamedLambda_or_LetIn evd def rec_sign) in
+    let typ = nf_evar evd (Termops.it_mkNamedProd_or_LetIn evd typ rec_sign) in
     let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
       RetrieveObl.retrieve_obligations env name evm
@@ -310,10 +309,11 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
       let possible_indexes = List.map ComFixpoint.compute_possible_guardness_evidences info in
       (* XXX: are we allowed to have evars here? *)
       let fixtypes = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixtypes in
+      let fixdefs = List.map (EConstr.Vars.subst_vars evd (List.rev fixnames)) fixdefs in
       let fixdefs = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixdefs in
       let fixdecls = Array.of_list (List.map2 (fun x r -> make_annot (Name x) r) fixnames fixrs),
         Array.of_list fixtypes,
-        Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
+        Array.of_list fixdefs
       in
       let indexes =
         let env = Global.env () in

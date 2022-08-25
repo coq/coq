@@ -681,7 +681,8 @@ let () = define3 "constr_substnl" (list constr) int constr begin fun subst k c -
 end
 
 let () = define3 "constr_closenl" (list ident) int constr begin fun ids k c ->
-  let ans = EConstr.Vars.substn_vars k ids c in
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let ans = EConstr.Vars.substn_vars sigma k ids c in
   return (Value.of_constr ans)
 end
 

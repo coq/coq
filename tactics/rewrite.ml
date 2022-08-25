@@ -828,7 +828,7 @@ let resolve_morphism env m args args' (b,cstr) evars =
     let env' = EConstr.push_named (LocalDef (make_annot dosub_id Sorts.Relevant, dosub, appsub)) env in
     let evars, morph = new_cstr_evar evars env' app in
     (* Replace the free [dosub_id] in the evar by the global reference *)
-    let morph = Vars.replace_vars [dosub_id , dosub] morph in
+    let morph = Vars.replace_vars (fst evars) [dosub_id , dosub] morph in
     evars, morph, sigargs, appm, morphobjs, morphobjs'
   in
   let projargs, subst, evars, respars, typeargs =

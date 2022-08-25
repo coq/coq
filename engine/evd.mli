@@ -280,7 +280,7 @@ val evar_handler : evar_map -> constr evar_handler
 val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info ->
   'a list -> (Id.t * 'a) list
 
-val instantiate_evar_array : evar_info -> econstr -> econstr list -> econstr
+val instantiate_evar_array : evar_map -> evar_info -> econstr -> econstr list -> econstr
 
 val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
   evar_map ->  evar_map -> evar_map
@@ -749,6 +749,8 @@ module MiniEConstr : sig
   val kind_upto : evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
 
   val whd_evar : evar_map -> t -> t
+
+  val replace_vars : evar_map -> (Id.t * t) list -> t -> t
 
   val of_kind : (t, t, ESorts.t, EInstance.t) Constr.kind_of_term -> t
 

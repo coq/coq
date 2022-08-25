@@ -647,9 +647,6 @@ open Environ
 let cast_list : type a b. (a,b) eq -> a list -> b list =
   fun Refl x -> x
 
-let cast_list_snd : type a b. (a,b) eq -> ('c * a) list -> ('c * b) list =
-  fun Refl x -> x
-
 let cast_vect : type a b. (a,b) eq -> a array -> b array =
   fun Refl x -> x
 
@@ -696,11 +693,22 @@ let substnl_decl subst n d = of_rel_decl (Vars.substnl_decl (cast_list unsafe_eq
 let substl_decl subst d = of_rel_decl (Vars.substl_decl (cast_list unsafe_eq subst) (to_rel_decl d))
 let subst1_decl c d = of_rel_decl (Vars.subst1_decl (to_constr c) (to_rel_decl d))
 
-let replace_vars subst c =
-  of_constr (Vars.replace_vars (cast_list_snd unsafe_eq subst) (to_constr c))
-let substn_vars n subst c = of_constr (Vars.substn_vars n subst (to_constr c))
-let subst_vars subst c = of_constr (Vars.subst_vars subst (to_constr c))
-let subst_var subst c = of_constr (Vars.subst_var subst (to_constr c))
+type substituend = Vars.substituend
+let make_substituend c = Vars.make_substituend (unsafe_to_constr c)
+let lift_substituend n s = of_constr (Vars.lift_substituend n s)
+
+let replace_vars = replace_vars
+
+(* (subst_var str t) substitute (Var str) by (Rel 1) in t *)
+let subst_var sigma str t = replace_vars sigma [(str, mkRel 1)] t
+
+(* (subst_vars [id1;...;idn] t) substitute (Var idj) by (Rel j) in t *)
+let substn_vars sigma p vars c =
+  let _,subst =
+    List.fold_left (fun (n,l) var -> ((n+1),(var, mkRel n)::l)) (p,[]) vars
+  in replace_vars sigma (List.rev subst) c
+
+let subst_vars sigma subst c = substn_vars sigma 1 subst c
 
 let subst_univs_level_constr subst c =
   of_constr (Vars.subst_univs_level_constr subst (to_constr c))
@@ -766,11 +774,6 @@ let esubst : (int -> 'a -> t) -> 'a Esubst.subs -> t -> t =
 match unsafe_eq with
 | Refl -> Vars.esubst
 
-type substituend = Vars.substituend
-let make_substituend c = Vars.make_substituend (unsafe_to_constr c)
-let lift_substituend n s = of_constr (Vars.lift_substituend n s)
-
-
 end
 
 let rec isArity sigma c =
@@ -807,21 +810,21 @@ let mkLambda_or_LetIn decl c =
   | LocalAssum (na,t) -> mkLambda (na, t, c)
   | LocalDef (na,b,t) -> mkLetIn (na, b, t, c)
 
-let mkNamedProd id typ c = mkProd (map_annot Name.mk_name id, typ, Vars.subst_var id.binder_name c)
-let mkNamedLambda id typ c = mkLambda (map_annot Name.mk_name id, typ, Vars.subst_var id.binder_name c)
-let mkNamedLetIn id c1 t c2 = mkLetIn (map_annot Name.mk_name id, c1, t, Vars.subst_var id.binder_name c2)
+let mkNamedProd sigma id typ c = mkProd (map_annot Name.mk_name id, typ, Vars.subst_var sigma id.binder_name c)
+let mkNamedLambda sigma id typ c = mkLambda (map_annot Name.mk_name id, typ, Vars.subst_var sigma id.binder_name c)
+let mkNamedLetIn sigma id c1 t c2 = mkLetIn (map_annot Name.mk_name id, c1, t, Vars.subst_var sigma id.binder_name c2)
 
-let mkNamedProd_or_LetIn decl c =
+let mkNamedProd_or_LetIn sigma decl c =
   let open Context.Named.Declaration in
   match decl with
-    | LocalAssum (id,t) -> mkNamedProd id t c
-    | LocalDef (id,b,t) -> mkNamedLetIn id b t c
+    | LocalAssum (id,t) -> mkNamedProd sigma id t c
+    | LocalDef (id,b,t) -> mkNamedLetIn sigma id b t c
 
-let mkNamedLambda_or_LetIn decl c =
+let mkNamedLambda_or_LetIn sigma decl c =
   let open Context.Named.Declaration in
   match decl with
-    | LocalAssum (id,t) -> mkNamedLambda id t c
-    | LocalDef (id,b,t) -> mkNamedLetIn id b t c
+    | LocalAssum (id,t) -> mkNamedLambda sigma id t c
+    | LocalDef (id,b,t) -> mkNamedLetIn sigma id b t c
 
 let it_mkProd_or_LetIn t ctx = List.fold_left (fun c d -> mkProd_or_LetIn d c) t ctx
 let it_mkLambda_or_LetIn t ctx = List.fold_left (fun c d -> mkLambda_or_LetIn d c) t ctx

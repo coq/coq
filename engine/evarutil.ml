@@ -331,7 +331,7 @@ let push_rel_decl_to_named_context
     else
       let nc = replace_var_named_declaration id0 id nc in
       let vsubst = [id0 , mkVar id] in
-      push_named_context_val (map_decl (fun c -> replace_vars vsubst c) decl) nc
+      push_named_context_val (map_decl (fun c -> replace_vars sigma vsubst c) decl) nc
   in
   let extract_if_neq id = function
     | Anonymous -> None
@@ -492,7 +492,7 @@ let generalize_evar_over_rels sigma (ev,args) =
   let sign = named_context_of_val evi.evar_hyps in
   List.fold_left2
     (fun (c,inst as x) a d ->
-      if isRel sigma a then (mkNamedProd_or_LetIn d c,a::inst) else x)
+      if isRel sigma a then (mkNamedProd_or_LetIn sigma d c,a::inst) else x)
      (evi.evar_concl,[]) args sign
 
 (************************************)

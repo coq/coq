@@ -694,7 +694,7 @@ let solve_pattern_eqn env sigma l c =
           let d = map_constr (lift n) (lookup_rel n env) in
           mkLambda_or_LetIn d c'
       | VarAlias id ->
-          let d = lookup_named id env in mkNamedLambda_or_LetIn d c'
+          let d = lookup_named id env in mkNamedLambda_or_LetIn sigma d c'
     )
     l c in
   (* Warning: we may miss some opportunity to eta-reduce more since c'
@@ -1029,7 +1029,7 @@ let rec do_projection_effects unify flags define_fun env ty evd = function
            one (however, regarding coercions, because t is obtained by
            unif, we know that no coercion can be inserted) *)
         let subst = make_pure_subst evi argsv in
-        let ty' = replace_vars subst evi.evar_concl in
+        let ty' = replace_vars evd subst evi.evar_concl in
         if isEvar evd ty' then define_fun env evd (Some false) (destEvar evd ty') ty else evd
       else
         evd
@@ -1257,7 +1257,7 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
  *)
 
 let filter_compatible_candidates unify flags env evd evi args rhs c =
-  let c' = instantiate_evar_array evi c args in
+  let c' = instantiate_evar_array evd evi c args in
   match unify flags TermUnification env evd Reduction.CONV rhs c' with
   | Success evd -> Inl (c,evd)
   | UnifFailure _ -> Inr c'
@@ -1277,7 +1277,7 @@ let restrict_candidates unify flags env evd filter1 (evk1,argsv1) (evk2,argsv2) 
   | Some l1, Some l2 ->
       let l1 = filter_effective_candidates evd evi1 filter1 l1 in
       let l1' = List.filter (fun c1 ->
-        let c1' = instantiate_evar_array evi1 c1 argsv1 in
+        let c1' = instantiate_evar_array evd evi1 c1 argsv1 in
         let filter c2 =
           let compatibility = filter_compatible_candidates unify flags env evd evi2 argsv2 c1' c2 in
           match compatibility with

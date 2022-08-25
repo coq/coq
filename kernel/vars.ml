@@ -235,6 +235,8 @@ let replace_vars var_alist x =
       | var -> lift_substituend n var
       | exception Not_found -> c
       end
+    | Constr.Evar _ ->
+      CErrors.anomaly (Pp.str "Substituting an evar in the kernel")
     | _ -> Constr.map_with_binders succ substrec n c
     in
     substrec 0 x

@@ -408,8 +408,8 @@ let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
     let concl = evi.evar_concl in
     let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
-    | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t x.binder_relevance c)
-    | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
+    | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn sigma x b t (mkArrow t x.binder_relevance c)
+    | NamedDecl.LocalAssum (x,t) -> mkNamedProd sigma x t c in
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
     Evarutil.nf_evar sigma t in
   let rec put evlist c = match EConstr.kind sigma c with
@@ -478,8 +478,8 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     let concl = evi.evar_concl in
     let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
-    | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn x b t (mkArrow t x.binder_relevance c)
-    | NamedDecl.LocalAssum (x,t) -> mkNamedProd x t c in
+    | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn sigma x b t (mkArrow t x.binder_relevance c)
+    | NamedDecl.LocalAssum (x,t) -> mkNamedProd sigma x t c in
     let t = Context.Named.fold_inside abs_dc ~init:concl dc in
     Evarutil.nf_evar sigma0 (Evarutil.nf_evar sigma t) in
   let rec put evlist c = match EConstr.kind sigma c with
@@ -654,7 +654,8 @@ let discharge_hyp (id', (id, mode)) =
   let open EConstr in
   let open Tacmach in
   Proofview.Goal.enter begin fun gl ->
-  let cl' = Vars.subst_var id (Tacmach.pf_concl gl) in
+  let sigma = Proofview.Goal.sigma gl in
+  let cl' = Vars.subst_var sigma id (Tacmach.pf_concl gl) in
   let decl = pf_get_hyp id gl in
   match decl, mode with
   | NamedDecl.LocalAssum _, _ | NamedDecl.LocalDef _, "(" ->
@@ -1093,12 +1094,12 @@ let abs_wgen env sigma keep_let f gen (args,c) =
      sigma,
      (if NamedDecl.is_local_def decl then args else EConstr.mkVar x :: args),
      EConstr.mkProd_or_LetIn (decl |> NamedDecl.to_rel_decl |> RelDecl.set_name (Name (f x)))
-                     (EConstr.Vars.subst_var x c)
+                     (EConstr.Vars.subst_var sigma x c)
   | _, Some ((x, _), None) ->
      let x = hoi_id x in
      let hyp = get_hyp env sigma x in
      let x' = make_annot (Name (f x)) (NamedDecl.get_relevance hyp) in
-     let prod = EConstr.mkProd (x', NamedDecl.get_type hyp, EConstr.Vars.subst_var x c) in
+     let prod = EConstr.mkProd (x', NamedDecl.get_type hyp, EConstr.Vars.subst_var sigma x c) in
      sigma, EConstr.mkVar x :: args, prod
   | _, Some ((x, "@"), Some p) ->
      let x = hoi_id x in
@@ -1175,7 +1176,7 @@ let unsafe_intro env decl b =
     let ninst = EConstr.mkRel 1 :: inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
     let sigma, ev = Evarutil.new_pure_evar ~principal:true nctx sigma nb in
-    sigma, EConstr.mkNamedLambda_or_LetIn decl (EConstr.mkEvar (ev, ninst))
+    sigma, EConstr.mkNamedLambda_or_LetIn sigma decl (EConstr.mkEvar (ev, ninst))
   end
 
 let set_decl_id id = let open Context in function

@@ -1342,7 +1342,7 @@ let abstract_type sigma gl =
   Environ.fold_named_context_reverse (fun t decl ->
                                         if is_proof_var decl then
                                           let decl = Termops.map_named_decl EConstr.of_constr decl in
-                                          mkNamedProd_or_LetIn decl t
+                                          mkNamedProd_or_LetIn sigma decl t
                                         else
                                           t
                                       ) ~init:(Evd.evar_concl evi) env

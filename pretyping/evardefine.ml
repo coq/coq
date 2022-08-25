@@ -101,7 +101,7 @@ let define_pure_evar_as_product env evd evk =
         let evd3 = Evd.set_leq_sort evenv evd3 prods (ESorts.kind evd1 s) in
           evd3, rng
   in
-  let prod = mkProd (make_annot (Name id) rdom, dom, subst_var id rng) in
+  let prod = mkProd (make_annot (Name id) rdom, dom, subst_var evd2 id rng) in
   let evd3 = Evd.define evk prod evd2 in
     evd3,prod
 
@@ -144,7 +144,7 @@ let define_pure_evar_as_lambda env evd evk =
   let src = subterm_source evk ~where:Body (evar_source evk evd1) in
   let abstract_arguments = Abstraction.abstract_last evi.evar_abstract_arguments in
   let evd2,body = new_evar newenv evd1 ~src (subst1 (mkVar id.binder_name) rng) ~filter ~abstract_arguments in
-  let lam = mkLambda (map_annot Name.mk_name id, dom, subst_var id.binder_name body) in
+  let lam = mkLambda (map_annot Name.mk_name id, dom, subst_var evd2 id.binder_name body) in
   Evd.define evk lam evd2, lam
 
 let define_evar_as_lambda env evd (evk,args) =
