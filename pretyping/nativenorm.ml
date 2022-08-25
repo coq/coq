@@ -407,7 +407,7 @@ and nf_evar env sigma evk args =
   if List.is_empty hyps then begin
     assert (Array.is_empty args);
     let ty = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
-    mkEvar (evk, []), ty
+    mkEvar (evk, SList.empty), ty
   end
   else
     (* Let-bound arguments are present in the evar arguments but not
@@ -421,7 +421,7 @@ and nf_evar env sigma evk args =
     (* nf_args takes arguments in the reverse order but produces them
        in the correct one, so we have to reverse them again for the
        evar node *)
-    mkEvar (evk, List.rev args), ty
+    mkEvar (evk, SList.of_full_list @@ List.rev args), ty
 
 and nf_array env sigma t typ =
   let ty, allargs = app_type env sigma (EConstr.of_constr typ) in

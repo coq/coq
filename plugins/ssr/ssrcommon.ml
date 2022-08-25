@@ -415,7 +415,7 @@ let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
   let rec put evlist c = match EConstr.kind sigma c with
   | Evar (k, a) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k || List.mem k rigid then evlist else
-    let n = max 0 (List.length a - nenv) in
+    let n = max 0 (SList.length a - nenv) in
     let t = abs_evar n k in (k, (n, t)) :: put evlist t
   | _ -> EConstr.fold sigma put evlist c in
   let evlist = put [] c0 in
@@ -430,7 +430,7 @@ let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
     | Evar (ev, a) ->
       let j, n = lookup ev i evlist in
       if j = 0 then EConstr.map sigma (get i) c else if n = 0 then mkRel j else
-      let a = Array.of_list a in
+      let a = Array.of_list @@ Evd.expand_existential sigma (ev, a) in
       mkApp (mkRel j, Array.init n (fun k -> get i a.(n - 1 - k)))
     | _ -> EConstr.map_with_binders sigma ((+) 1) get i c in
     let rec loop c i = function
@@ -485,7 +485,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   let rec put evlist c = match EConstr.kind sigma c with
   | Evar (k, a) ->
     if List.mem_assoc k evlist || Evd.mem sigma0 k then evlist else
-    let n = max 0 (List.length a - nenv) in
+    let n = max 0 (SList.length a - nenv) in
     let k_ty =
       Retyping.get_sort_family_of
         env sigma (Evd.evar_concl (Evd.find sigma k)) in
@@ -522,7 +522,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   | Evar (ev, a) ->
     let j, n = lookup ev i evlist in
     if j = 0 then EConstr.map sigma (get evlist i) c else if n = 0 then mkRel j else
-    let a = Array.of_list a in
+    let a = Array.of_list @@ Evd.expand_existential sigma (ev, a) in
     mkApp (mkRel j, Array.init n (fun k -> get evlist i a.(n - 1 - k)))
   | _ -> EConstr.map_with_binders sigma ((+) 1) (get evlist) i c in
   let rec app extra_args i c = match decompose_app sigma c with
@@ -851,7 +851,6 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
     let sigma = Evd.push_future_goals sigma in
     let hyps = Environ.named_context_val env in
     let inst = EConstr.identity_subst_val hyps in
-    let identity = Evd.Identity.make inst in
     let t, args, sigma =
       let rec loop sigma bo args = function (* saturate with metas *)
         | 0 -> (t, args, sigma)
@@ -861,7 +860,7 @@ let applyn ~with_evars ?beta ?(with_shelve=false) ?(first_goes_last=false) n t =
             let () = if not (EConstr.Vars.closed0 sigma ty) then raise dependent_apply_error in
             let ty = Reductionops.nf_betaiota env sigma ty in
             let src = Loc.tag Evar_kinds.GoalEvar in
-            let (sigma, evk) = Evarutil.new_pure_evar ~src ~typeclass_candidate:false ~identity hyps sigma ty in
+            let (sigma, evk) = Evarutil.new_pure_evar ~src ~typeclass_candidate:false hyps sigma ty in
             loop sigma bo (evk :: args) (n - 1)
           | _ -> assert false
       in
@@ -1173,7 +1172,7 @@ let unsafe_intro env decl b =
     let ctx = Environ.named_context_val env in
     let nctx = EConstr.push_named_context_val decl ctx in
     let inst = EConstr.identity_subst_val (Environ.named_context_val env) in
-    let ninst = EConstr.mkRel 1 :: inst in
+    let ninst = SList.cons (EConstr.mkRel 1) inst in
     let nb = EConstr.Vars.subst1 (EConstr.mkVar (get_id decl)) b in
     let sigma, ev = Evarutil.new_pure_evar ~principal:true nctx sigma nb in
     sigma, EConstr.mkNamedLambda_or_LetIn sigma decl (EConstr.mkEvar (ev, ninst))

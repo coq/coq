@@ -71,7 +71,7 @@ let occur_meta_or_undefined_evar evd c =
     | Evar (ev,args) ->
         (match evar_body (Evd.find evd ev) with
         | Evar_defined c ->
-            occrec (EConstr.Unsafe.to_constr c); List.iter occrec args
+            occrec (EConstr.Unsafe.to_constr c); SList.Skip.iter occrec args
         | Evar_empty -> raise Occur)
     | _ -> Constr.iter occrec c
   in try occrec c; false with Occur | Not_found -> true
@@ -150,7 +150,7 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let (evd, ev) = new_evar env evd typ in
   let evd,ev' = evar_absorb_arguments env evd (destEvar evd ev) l in
   let n = List.length l in
-  let () = assert (n <= List.length (snd ev')) in
+  let () = assert (n <= SList.length (snd ev')) in
   let argoccs = set_occurrences_of_last_arg n in
   let evd,b =
     Evarconv.second_order_matching
@@ -618,7 +618,7 @@ let subst_defined_metas_evars sigma (bl,el) c =
       substrec (EConstr.Unsafe.to_constr (pi2 (List.find select bl)))
     | Evar (evk,args) ->
       let eq c1 c2 = Constr.equal c1 (EConstr.Unsafe.to_constr c2) in
-      let select (_,(evk',args'),_) = Evar.equal evk evk' && List.for_all2 eq args args' in
+      let select (_,(evk',args'),_) = Evar.equal evk evk' && SList.equal eq args args' in
       begin match List.find select el with
       | (_, _, c) -> substrec (EConstr.Unsafe.to_constr c)
       | exception Not_found -> Constr.map substrec c
@@ -1873,8 +1873,8 @@ let rec make sigma c0 = match EConstr.kind sigma c0 with
   let t = make sigma t in
   { proj = c0; self = Proj (p, t); data = t.data }
 | Evar (e, al) ->
-  let al = List.map (fun c -> make sigma c) al in
-  let data = List.fold_left (fun accu v -> max accu v.data) 0 al in
+  let al = SList.Skip.map (fun c -> make sigma c) al in
+  let data = SList.Skip.fold (fun accu v -> max accu v.data) 0 al in
   { proj = c0; self = Evar (e, al); data }
 | Case (ci, u, pms, p, iv, c, bl) ->
   let pmsd, pms = make_array sigma pms in

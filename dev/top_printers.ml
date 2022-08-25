@@ -296,7 +296,11 @@ let constr_display csr =
       "LetIn("^(name_display na)^","^(term_display b)^","
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
-  | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display (Array.of_list l))^")"
+  | Evar (e,l) ->
+    let l = SList.to_list l in
+    let map = function None -> "?" | Some t -> term_display t in
+    let l = List.map map l in
+    "Evar("^(Pp.string_of_ppcmds (Evar.print e))^", [|"^(String.concat "; " l)^"|])"
   | Const (c,u) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
   | Ind ((sp,i),u) ->
       "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^")"
@@ -393,7 +397,8 @@ let print_pure_constr csr =
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string ")"
   | Evar (e,l) -> print_string "Evar#"; print_int (Evar.repr e); print_string "{";
-      List.iter (fun x -> print_space (); box_display x) l;
+      let iter = function None -> print_space (); print_string "?" | Some t -> print_space (); box_display t in
+      List.iter iter (SList.to_list l);
       print_string"}"
   | Const (c,u) -> print_string "Cons(";
       sp_con_display c;

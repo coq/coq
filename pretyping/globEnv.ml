@@ -98,14 +98,9 @@ let push_rec_types ~hypnaming sigma (lna,typarray) env =
   Array.map get_annot ctx, env
 
 let new_evar env sigma ?src ?naming typ =
-  let inst_vars = EConstr.identity_subst_val (named_context_val env.renamed_env) in
-  let rec rel_list n accu =
-    if n <= 0 then accu
-    else rel_list (n - 1) (mkRel n :: accu)
-  in
-  let instance = rel_list (nb_rel env.renamed_env) inst_vars in
-  let (subst, _, sign) = Lazy.force env.extra in
-  let typ' = csubst_subst subst typ in
+  let (subst, _, sign) as ext = Lazy.force env.extra in
+  let instance = Evarutil.default_ext_instance ext in
+  let typ' = csubst_subst sigma subst typ in
   let (sigma, evk) = new_pure_evar sign sigma typ' ?src ?naming in
   (sigma, mkEvar (evk, instance))
 

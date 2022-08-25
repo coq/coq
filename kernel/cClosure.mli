@@ -94,6 +94,8 @@ type finvert
 
 type 'a usubs = 'a subs Univ.puniverses
 
+type evar_repack
+
 type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
@@ -109,7 +111,7 @@ type fterm =
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr usubs
   | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr usubs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr usubs
-  | FEvar of existential * fconstr usubs
+  | FEvar of Evar.t * constr list * fconstr usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr

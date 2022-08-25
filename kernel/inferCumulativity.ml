@@ -177,9 +177,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
       | Meta _ -> infer_stack infos variances stk
       | _ -> assert false
     end
-  | FEvar ((_,args),e) ->
-    let variances = infer_stack infos variances stk in
-    infer_list infos variances (List.map (mk_clos e) args)
+  | FEvar _ -> assert false
   | FRel _ -> infer_stack infos variances stk
   | FInt _ -> infer_stack infos variances stk
   | FFloat _ -> infer_stack infos variances stk
@@ -282,9 +280,6 @@ and infer_stack infos variances (stk:CClosure.stack) =
 
 and infer_vect infos variances v =
   Array.fold_left (fun variances c -> infer_fterm CONV infos variances c []) variances v
-
-and infer_list infos variances v =
-  List.fold_left (fun variances c -> infer_fterm CONV infos variances c []) variances v
 
 let infer_term cv_pb env variances c =
   let open CClosure in

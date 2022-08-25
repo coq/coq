@@ -386,7 +386,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
                then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
                else raise NotConvertible
            | _ -> raise NotConvertible)
-    | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
+    | (FEvar (ev1, args1, env1, _), FEvar (ev2, args2, env2, _)) ->
         (* TODO: handle irrelevance *)
         if Evar.equal ev1 ev2 then
           let el1 = el_stack lft1 v1 in

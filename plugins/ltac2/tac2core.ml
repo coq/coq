@@ -485,6 +485,7 @@ let () = define1 "constr_kind" constr begin fun c ->
   | Meta n ->
     v_blk 2 [|Value.of_int n|]
   | Evar (evk, args) ->
+    let args = Evd.expand_existential sigma (evk, args) in
     v_blk 3 [|
       Value.of_int (Evar.repr evk);
       Value.of_array Value.of_constr (Array.of_list args);
@@ -588,7 +589,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
   | (3, [|evk; args|]) ->
     let evk = to_evar evk in
     let args = Value.to_array Value.to_constr args in
-    EConstr.mkEvar (evk, Array.to_list args)
+    EConstr.mkLEvar sigma (evk, Array.to_list args)
   | (4, [|s|]) ->
     let s = Value.to_ext Value.val_sort s in
     EConstr.mkSort (EConstr.Unsafe.to_sorts s)
@@ -729,8 +730,8 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state evk] >>= fun () ->
       thaw c >>= fun _ ->
       Proofview.Unsafe.tclSETGOALS [Proofview.with_empty_state (Proofview.Goal.goal gl)] >>= fun () ->
-      let args = List.map (fun d -> EConstr.mkVar (get_id d)) (EConstr.named_context env) in
-      let args = EConstr.mkRel 1 :: args in
+      let args = EConstr.identity_subst_val (Environ.named_context_val env) in
+      let args = SList.cons (EConstr.mkRel 1) args in
       let ans = EConstr.mkEvar (evk, args) in
       let ans = EConstr.mkLambda (Context.make_annot (Name id) Sorts.Relevant, t, ans) in
       return (Value.of_constr ans)

@@ -481,12 +481,12 @@ let rec lambda_of_constr cache env sigma c =
      let ty = meta_type sigma mv in
      Lmeta (mv, lambda_of_constr cache env sigma ty)
 
-  | Evar (evk,args as ev) ->
+  | Evar ev ->
      (match evar_value sigma ev with
-     | None ->
+     | Constr.EvarUndefined (evk, args) ->
         let args = Array.map_of_list (fun c -> lambda_of_constr cache env sigma c) args in
         Levar(evk, args)
-     | Some t -> lambda_of_constr cache env sigma t)
+     | Constr.EvarDefined t -> lambda_of_constr cache env sigma t)
 
   | Cast (c, _, _) -> lambda_of_constr cache env sigma c
 

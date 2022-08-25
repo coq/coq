@@ -184,7 +184,7 @@ let occur_rigidly flags env evd (evk,_) t =
       if Evar.equal evk evk' then Rigid true
       else if is_evar_allowed flags evk' then
         Reducible
-        else Rigid (List.exists (fun x -> rigid_normal_occ (aux x)) l)
+        else Rigid (SList.Skip.exists (fun x -> rigid_normal_occ (aux x)) l)
     | Cast (p, _, _) -> aux p
     | Lambda (na, t, b) -> aux b
     | LetIn (na, _, _, b) -> aux b
@@ -544,15 +544,15 @@ let conv_fun f flags on_types =
 let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
   let has_evar = ref false in
   let evar_expand ev =
-    let v = existential_opt_value0 sigma ev in
-    if Option.is_empty v then has_evar := true;
+    let v = existential_expand_value0 sigma ev in
+    let () = match v with
+    | Constr.EvarUndefined _ -> has_evar := true
+    | Constr.EvarDefined _ -> ()
+    in
     v
   in
-  let evar_relevance (evk, _) = match Evd.find sigma evk with
-  | evi -> evi.Evd.evar_relevance
-  | exception Not_found -> Sorts.Relevant
-  in
-  let conv pb ~l2r sigma = Reduction.generic_conv pb ~l2r { evar_expand; evar_relevance } in
+  let evar_handler = { (Evd.evar_handler sigma) with evar_expand } in
+  let conv pb ~l2r sigma = Reduction.generic_conv pb ~l2r evar_handler in
   match infer_conv_gen conv ~catch_incon:false ~pb ~ts env sigma t1 t2 with
   | Some sigma -> Some (Success sigma)
   | None ->
@@ -1108,6 +1108,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           if Evar.equal sp1 sp2 then
             match ise_stack2 false env evd (evar_conv_x flags) sk1 sk2 with
             |None, Success i' ->
+              let al1 = Evd.expand_existential i' (sp1, al1) in
+              let al2 = Evd.expand_existential i' (sp2, al2) in
               ise_inst2 i' (fun i' -> evar_conv_x flags env i' CONV) al1 al2
             |_, (UnifFailure _ as x) -> x
             |Some _, _ -> UnifFailure (evd,NotSameArgSize)
@@ -1264,8 +1266,9 @@ let first_order_unification flags env evd (ev1,l1) (term2,l2) =
         solve_simple_eqn ~choose:true ~imitate_defs:false
           evar_unify flags env i (None,ev1,t2))]
 
-let choose_less_dependent_instance evk evd term args =
+let choose_less_dependent_instance evd term (evk, args) =
   let evi = Evd.find_undefined evd evk in
+  let args = Evd.expand_existential evd (evk, args) in
   let subst = make_pure_subst evi args in
   let subst' = List.filter (fun (id,c) -> EConstr.eq_constr evd c term) subst in
   match subst' with
@@ -1312,7 +1315,12 @@ let apply_on_subterm env evd fixed f test c t =
   let rec applyrec (env,(k,c) as acc) t =
     if occur_evars !evdref !fixedref t then
       match EConstr.kind !evdref t with
-      | Evar (ev, args) when Evar.Set.mem ev !fixedref -> t
+      | Evar (evk, args) ->
+        if Evar.Set.mem evk !fixedref then t
+        else
+          let args = Evd.expand_existential !evdref (evk, args) in
+          let args = List.Smart.map (applyrec acc) args in
+          EConstr.mkLEvar !evdref (evk, args)
       | _ -> map_constr_with_binders_left_to_right env !evdref
               (fun d (env,(k,c)) -> (push_rel d env, (k+1,lift 1 c)))
               applyrec acc t
@@ -1409,6 +1417,7 @@ let thin_evars env sigma sign c =
     match kind !sigma t with
     | Evar (ev, args) ->
        let evi = Evd.find_undefined !sigma ev in
+       let args = Evd.expand_existential !sigma (ev, args) in
        let filter = List.map (fun c -> Id.Set.subset (collect_vars !sigma c) ctx) args in
        let filter = Filter.make filter in
        let candidates = Option.map (List.map EConstr.of_constr) (evar_candidates evi) in
@@ -1436,14 +1445,14 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   debug_ho_unification (fun () ->
      Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs ++ fnl () ++
          str"env evars: " ++ Termops.Internal.print_env env_evar));
+  let args = Evd.expand_existential evd (evk, args) in
   let args = List.map (nf_evar evd) args in
   let argsubst = List.map2 (fun decl c -> (NamedDecl.get_id decl, c)) ctxt args in
-  let instance = evar_identity_subst evi in
   let rhs = nf_evar evd rhs in
   if not (noccur_evar env_rhs evd evk rhs) then raise (TypingFailed evd);
   (* Ensure that any progress made by Typing.e_solve_evars will not contradict
       the solution we are trying to build here by adding the problem as a constraint. *)
-  let evd = Evarutil.add_unification_pb (CONV,env_rhs,mkEvar (evk,args),rhs) evd in
+  let evd = Evarutil.add_unification_pb (CONV,env_rhs,mkLEvar evd (evk, args),rhs) evd in
   let prc env evd c = Termops.Internal.print_constr_env env evd c in
   let rec make_subst = function
     | decl'::ctxt', c::l, occs::occsl when isVarId evd (NamedDecl.get_id decl') c ->
@@ -1491,7 +1500,6 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
             Pp.(str"abstracting one occurrence " ++ prc env_rhs evd inst ++
                 str" of type: " ++ prc env_evar evd evty ++
                 str " for " ++ prc env_rhs evd c));
-          let instance = Filter.filter_list filter instance in
           (* Allow any type lower than the variable's type as the
              abstracted subterm might have a smaller type, which could be
              crucial to make the surrounding context typecheck. *)
@@ -1501,6 +1509,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                 env_evar_unf evd evty
             else evd, evty in
           let (evd, evk) = new_pure_evar sign evd evty ~filter in
+          let instance = Evd.evar_identity_subst (Evd.find evd evk) in
           let fixed = Evar.Set.add evk fixed in
           evsref := (evk,evty,inst,prefer_abstraction)::!evsref;
           evd, fixed, mkEvar (evk, instance)
@@ -1616,6 +1625,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
 
 let default_evar_selection flags evd (ev,args) =
   let evi = Evd.find_undefined evd ev in
+  let args = Evd.expand_existential evd (ev, args) in
   let rec aux args abs =
     match args, abs with
     | _ :: args, a :: abs ->
@@ -1653,6 +1663,11 @@ let is_beyond_capabilities = function
   | CannotSolveConstraint (pb,ProblemBeyondCapabilities) -> true
   | _ -> false
 
+let is_constant_instance sigma (evk, args) alias =
+  let args = Evd.expand_existential sigma (evk, args) in
+  List.for_all (fun a -> EConstr.eq_constr sigma a alias || isEvar sigma a)
+    (remove_instance_local_defs sigma evk args)
+
 let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
   let t1 = apprec_nohdbeta flags env evd (whd_head_evar evd t1) in
   let t2 = apprec_nohdbeta flags env evd (whd_head_evar evd t2) in
@@ -1666,22 +1681,20 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
   match EConstr.kind evd term1, EConstr.kind evd term2 with
   | Evar (evk1,args1), (Rel _|Var _) when app_empty
       && is_evar_allowed flags evk1
-      && List.for_all (fun a -> EConstr.eq_constr evd a term2 || isEvar evd a)
-        (remove_instance_local_defs evd evk1 args1) ->
+      && is_constant_instance evd (evk1, args1) term2 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
-      (match choose_less_dependent_instance evk1 evd term2 args1 with
+      (match choose_less_dependent_instance evd term2 (evk1, args1) with
       | Some evd -> Success evd
       | None ->
          let reason = ProblemBeyondCapabilities in
          UnifFailure (evd, CannotSolveConstraint ((pbty,env,t1,t2),reason)))
   | (Rel _|Var _), Evar (evk2,args2) when app_empty
     && is_evar_allowed flags evk2
-    && List.for_all (fun a -> EConstr.eq_constr evd a term1 || isEvar evd a)
-        (remove_instance_local_defs evd evk2 args2) ->
+    && is_constant_instance evd (evk2, args2) term1 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
-      (match choose_less_dependent_instance evk2 evd term1 args2 with
+      (match choose_less_dependent_instance evd term1 (evk2, args2) with
       | Some evd -> Success evd
       | None ->
          let reason = ProblemBeyondCapabilities in

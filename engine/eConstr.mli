@@ -160,6 +160,9 @@ val mkNamedProd : Evd.evar_map -> Id.t Context.binder_annot -> types -> types ->
 val mkNamedLambda_or_LetIn : Evd.evar_map -> named_declaration -> types -> types
 val mkNamedProd_or_LetIn : Evd.evar_map -> named_declaration -> types -> types
 
+val mkLEvar : Evd.evar_map -> Evar.t * t list -> t
+(** Variant of {!mkEvar} that removes identity variable instances from its argument. *)
+
 (** {6 Simple case analysis} *)
 
 val isRel  : Evd.evar_map -> t -> bool
@@ -246,6 +249,7 @@ val eq_constr : Evd.evar_map -> t -> t -> bool
 val eq_constr_nounivs : Evd.evar_map -> t -> t -> bool
 val eq_constr_universes : Environ.env -> Evd.evar_map -> ?nargs:int -> t -> t -> UnivProblem.Set.t option
 val leq_constr_universes : Environ.env -> Evd.evar_map -> ?nargs:int -> t -> t -> UnivProblem.Set.t option
+val eq_existential : Evd.evar_map ->  (t -> t -> bool) -> existential -> existential -> bool
 
 (** [eq_constr_universes_proj] can equate projections and their eta-expanded constant form. *)
 val eq_constr_universes_proj : Environ.env -> Evd.evar_map -> t -> t -> UnivProblem.Set.t option
@@ -258,6 +262,7 @@ val map : Evd.evar_map -> (t -> t) -> t -> t
 val map_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> t) -> 'a -> t -> t
 val map_branches : (t -> t) -> case_branch array -> case_branch array
 val map_return_predicate : (t -> t) -> case_return -> case_return
+val map_existential : Evd.evar_map -> (t -> t) -> existential -> existential
 val iter : Evd.evar_map -> (t -> unit) -> t -> unit
 val iter_with_binders : Evd.evar_map -> ('a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
 val iter_with_full_binders : Environ.env -> Evd.evar_map -> (rel_declaration -> 'a -> 'a) -> ('a -> t -> unit) -> 'a -> t -> unit
@@ -347,7 +352,7 @@ val map_rel_context_in_env :
 val match_named_context_val :
   named_context_val -> (named_declaration * lazy_val * named_context_val) option
 
-val identity_subst_val : named_context_val -> t list
+val identity_subst_val : named_context_val -> t SList.t
 
 (* XXX Missing Sigma proxy *)
 val fresh_global :

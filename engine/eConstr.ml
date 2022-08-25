@@ -14,6 +14,8 @@ open Names
 open Constr
 open Context
 
+module NamedDecl = Context.Named.Declaration
+
 module ESorts = struct
   include Evd.MiniEConstr.ESorts
 
@@ -88,6 +90,8 @@ let mkRef (gr,u) = let open GlobRef in match gr with
   | IndRef ind -> mkIndU (ind,u)
   | ConstructRef c -> mkConstructU (c,u)
   | VarRef x -> mkVar x
+
+let mkLEvar = Evd.MiniEConstr.mkLEvar
 
 let type1 = mkSort Sorts.type1
 
@@ -347,17 +351,61 @@ let map_return_predicate f p =
   let f c = unsafe_to_constr (f (of_constr c)) in
   of_return (Constr.map_return_predicate f (unsafe_to_return p))
 
+let map_instance sigma f evk args =
+  let rec map ctx args = match ctx, SList.view args with
+  | [], None -> SList.empty
+  | decl :: ctx, Some (Some c, rem) ->
+    let c' = f c in
+    let rem' = map ctx rem in
+    if c' == c && rem' == rem then args
+    else if Constr.isVarId (NamedDecl.get_id decl) c' then SList.default rem'
+    else SList.cons c' rem'
+  | decl :: ctx, Some (None, rem) ->
+    let c = Constr.mkVar (NamedDecl.get_id decl) in
+    let c' = f c in
+    let rem' = map ctx rem in
+    if c' == c && rem' == rem then args
+    else SList.cons c' rem'
+  | [], Some _ | _ :: _, None -> assert false
+  in
+  let ctx = Evd.evar_filtered_context @@ Evd.find sigma evk in
+  map ctx args
+
 let map sigma f c =
   let f c = unsafe_to_constr (f (of_constr c)) in
-  of_constr (Constr.map f (unsafe_to_constr (whd_evar sigma c)))
+  let c = unsafe_to_constr @@ whd_evar sigma c in
+  match Constr.kind c with
+  | Evar (evk, args) ->
+    let args' = map_instance sigma f evk args in
+    if args' == args then of_constr c else of_constr @@ Constr.mkEvar (evk, args')
+  | _ -> of_constr (Constr.map f c)
 
 let map_with_binders sigma g f l c =
   let f l c = unsafe_to_constr (f l (of_constr c)) in
-  of_constr (Constr.map_with_binders g f l (unsafe_to_constr (whd_evar sigma c)))
+  let c = unsafe_to_constr @@ whd_evar sigma c in
+  match Constr.kind c with
+  | Evar (evk, args) ->
+    let args' = map_instance sigma (fun c -> f l c) evk args in
+    if args' == args then of_constr c else of_constr @@ Constr.mkEvar (evk, args')
+  | _ -> of_constr (Constr.map_with_binders g f l c)
+
+let map_existential sigma f ((evk, args) as ev : existential) =
+  let f c = unsafe_to_constr (f (of_constr c)) in
+  let args : Constr.t SList.t = match Evd.MiniEConstr.unsafe_eq with Refl -> args in
+  let args' = map_instance sigma f evk args in
+  if args' == args then ev
+  else
+    let args' : t SList.t = match Evd.MiniEConstr.unsafe_eq with Refl -> args' in
+    (evk, args')
 
 let iter sigma f c =
   let f c = f (of_constr c) in
-  Constr.iter f (unsafe_to_constr (whd_evar sigma c))
+  let c = unsafe_to_constr @@ whd_evar sigma c in
+  match Constr.kind c with
+  | Evar ((evk, _) as ev) ->
+    let args = Evd.expand_existential0 sigma ev in
+    List.iter (fun c -> f c) args
+  | _ -> Constr.iter f c
 
 let expand_case env _sigma (ci, u, pms, p, iv, c, bl) =
   let u = EInstance.unsafe_to_instance u in
@@ -422,7 +470,9 @@ let iter_with_full_binders env sigma g f n c =
   | Lambda (na,t,c) -> f n t; f (g (LocalAssum (na, t)) n) c
   | LetIn (na,b,t,c) -> f n b; f n t; f (g (LocalDef (na, b, t)) n) c
   | App (c,l) -> f n c; Array.Fun1.iter f n l
-  | Evar (_,l) -> List.iter (fun c -> f n c) l
+  | Evar ((_,l) as ev) ->
+    let l = Evd.expand_existential sigma ev in
+    List.iter (fun c -> f n c) l
   | Case (ci,u,pms,p,iv,c,bl) ->
     let (ci, _, pms, p, iv, c, bl) = annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
     let f_ctx (ctx, c) = f (List.fold_right g ctx n) c in
@@ -440,32 +490,56 @@ let iter_with_full_binders env sigma g f n c =
 
 let iter_with_binders sigma g f n c =
   let f l c = f l (of_constr c) in
-  Constr.iter_with_binders g f n (unsafe_to_constr (whd_evar sigma c))
+  let c = unsafe_to_constr @@ whd_evar sigma c in
+  match Constr.kind c with
+  | Evar ((evk, _) as ev) ->
+    let args = Evd.expand_existential0 sigma ev in
+    List.iter (fun c -> f n c) args
+  | _ -> Constr.iter_with_binders g f n c
 
 let fold sigma f acc c =
   let f acc c = f acc (of_constr c) in
-  Constr.fold f acc (unsafe_to_constr (whd_evar sigma c))
+  let c = unsafe_to_constr @@ whd_evar sigma c in
+  match Constr.kind c with
+  | Evar ((evk, _) as ev) ->
+    let args = Evd.expand_existential0 sigma ev in
+    List.fold_left f acc args
+  | _ -> Constr.fold f acc c
 
-let fold_with_binders sigma g f acc e c =
+let fold_with_binders sigma g f e acc c =
   let f e acc c = f e acc (of_constr c) in
-  Constr.fold_constr_with_binders g f acc e (unsafe_to_constr (whd_evar sigma c))
+  let c = unsafe_to_constr @@ whd_evar sigma c in
+  match Constr.kind c with
+  | Evar ((evk, _) as ev) ->
+    let args = Evd.expand_existential0 sigma ev in
+    List.fold_left (fun acc c -> f e acc c) acc args
+  | _ -> Constr.fold_constr_with_binders g f e acc c
 
-let compare_gen k eq_inst eq_sort eq_constr nargs c1 c2 =
-  (c1 == c2) || Constr.compare_head_gen_with k k eq_inst eq_sort eq_constr nargs c1 c2
+let compare_gen k eq_inst eq_sort eq_constr eq_evars nargs c1 c2 =
+  (c1 == c2) || Constr.compare_head_gen_with k k eq_inst eq_sort eq_constr eq_evars nargs c1 c2
+
+let eq_existential sigma eq (evk1, args1) (evk2, args2) =
+  if Evar.equal evk1 evk2 then
+    let args1 = Evd.expand_existential sigma (evk1, args1) in
+    let args2 = Evd.expand_existential sigma (evk2, args2) in
+    List.equal eq args1 args2
+  else false
 
 let eq_constr sigma c1 c2 =
   let kind c = kind sigma c in
   let eq_inst _ i1 i2 = EInstance.equal sigma i1 i2 in
   let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
+  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
   let rec eq_constr nargs c1 c2 =
-    compare_gen kind eq_inst eq_sorts eq_constr nargs c1 c2
+    compare_gen kind eq_inst eq_sorts (eq_existential eq_constr) eq_constr nargs c1 c2
   in
   eq_constr 0 c1 c2
 
 let eq_constr_nounivs sigma c1 c2 =
   let kind c = kind sigma c in
+  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
   let rec eq_constr nargs c1 c2 =
-    compare_gen kind (fun _ _ _ -> true) (fun _ _ -> true) eq_constr nargs c1 c2
+    compare_gen kind (fun _ _ _ -> true) (fun _ _ -> true) (eq_existential eq_constr) eq_constr nargs c1 c2
   in
   eq_constr 0 c1 c2
 
@@ -473,8 +547,9 @@ let compare_constr sigma cmp c1 c2 =
   let kind c = kind sigma c in
   let eq_inst _ i1 i2 = EInstance.equal sigma i1 i2 in
   let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
+  let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
   let cmp nargs c1 c2 = cmp c1 c2 in
-  compare_gen kind eq_inst eq_sorts cmp 0 c1 c2
+  compare_gen kind eq_inst eq_sorts (eq_existential cmp) cmp 0 c1 c2
 
 let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
   let open UnivProblem in
@@ -563,16 +638,17 @@ let test_constr_universes env sigma leq ?(nargs=0) m n =
            (ULe (s1, s2)) !cstrs;
          true)
     in
-    let rec eq_constr' nargs m n = compare_gen kind eq_universes eq_sorts eq_constr' nargs m n in
+    let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
+    let rec eq_constr' nargs m n = compare_gen kind eq_universes eq_sorts (eq_existential eq_constr') eq_constr' nargs m n in
     let res =
       if leq then
         let rec compare_leq nargs m n =
-          Constr.compare_head_gen_leq_with kind kind leq_universes leq_sorts
+          Constr.compare_head_gen_leq_with kind kind leq_universes leq_sorts (eq_existential eq_constr')
             eq_constr' leq_constr' nargs m n
         and leq_constr' nargs m n = m == n || compare_leq nargs m n in
         compare_leq nargs m n
       else
-        Constr.compare_head_gen_with kind kind eq_universes eq_sorts eq_constr' nargs m n
+        Constr.compare_head_gen_with kind kind eq_universes eq_sorts (eq_existential eq_constr') eq_constr' nargs m n
     in
     if res then Some !cstrs else None
 
@@ -581,7 +657,7 @@ let eq_constr_universes env sigma ?nargs m n =
 let leq_constr_universes env sigma ?nargs m n =
   test_constr_universes env sigma true ?nargs m n
 
-let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
+let compare_head_gen_proj env sigma equ eqs eqev eqc' nargs m n =
   let kind c = kind sigma c in
   match kind m, kind n with
   | Proj (p, c), App (f, args)
@@ -593,7 +669,7 @@ let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
             eqc' 0 c args.(npars)
           else false
       | _ -> false)
-  | _ -> Constr.compare_head_gen_with kind kind equ eqs eqc' nargs m n
+  | _ -> Constr.compare_head_gen_with kind kind equ eqs eqev eqc' nargs m n
 
 let eq_constr_universes_proj env sigma m n =
   let open UnivProblem in
@@ -610,8 +686,9 @@ let eq_constr_universes_proj env sigma m n =
            (UEq (s1, s2)) !cstrs;
          true)
     in
+    let eq_existential eq e1 e2 = eq_existential sigma (eq 0) e1 e2 in
     let rec eq_constr' nargs m n =
-      m == n || compare_head_gen_proj env sigma eq_universes eq_sorts eq_constr' nargs m n
+      m == n || compare_head_gen_proj env sigma eq_universes eq_sorts (eq_existential eq_constr') eq_constr' nargs m n
     in
     let res = eq_constr' 0 m n in
     if res then Some !cstrs else None
@@ -723,6 +800,7 @@ let subst_instance_constr subst c =
 let noccurn sigma n term =
   let rec occur_rec n c = match kind sigma c with
     | Rel m -> if Int.equal m n then raise LocalOccur
+    | Evar (_, l) -> SList.Skip.iter (fun c -> occur_rec n c) l
     | _ -> iter_with_binders sigma succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -730,6 +808,7 @@ let noccurn sigma n term =
 let noccur_between sigma n m term =
   let rec occur_rec n c = match kind sigma c with
     | Rel p -> if n<=p && p<n+m then raise LocalOccur
+    | Evar (_, l) -> SList.Skip.iter (fun c -> occur_rec n c) l
     | _        -> iter_with_binders sigma succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -737,6 +816,7 @@ let noccur_between sigma n m term =
 let closedn sigma n c =
   let rec closed_rec n c = match kind sigma c with
     | Rel m -> if m>n then raise LocalOccur
+    | Evar (_, l) -> SList.Skip.iter (fun c -> closed_rec n c) l
     | _ -> iter_with_binders sigma succ closed_rec n c
   in
   try closed_rec n c; true with LocalOccur -> false
@@ -843,7 +923,7 @@ let val_of_named_context e = val_of_named_context (cast_named_context unsafe_eq 
 let named_context_of_val e = cast_named_context (sym unsafe_eq) (named_context_of_val e)
 
 let of_existential : Constr.existential -> existential =
-  let gen : type a b. (a,b) eq -> 'c * b list -> 'c * a list = fun Refl x -> x in
+  let gen : type a b. (a,b) eq -> 'c * b SList.t -> 'c * a SList.t = fun Refl x -> x in
   gen unsafe_eq
 
 let lookup_rel i e = cast_rel_decl (sym unsafe_eq) (lookup_rel i e)
@@ -864,8 +944,8 @@ let match_named_context_val :
   match unsafe_eq with
   | Refl -> match_named_context_val
 
-let identity_subst_val : named_context_val -> t list =
-  match unsafe_eq with Refl -> fun ctx -> ctx.env_named_var
+let identity_subst_val : named_context_val -> t SList.t = fun ctx ->
+  SList.defaultn (List.length ctx.Environ.env_named_ctx) SList.empty
 
 let fresh_global ?loc ?rigid ?names env sigma reference =
   let (evd,t) = Evd.fresh_global ?loc ?rigid ?names env sigma reference in

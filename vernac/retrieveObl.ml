@@ -71,6 +71,7 @@ let subst_evar_constr evm evs n idf t =
          and we must not apply to defined ones (i.e. LetIn's)
       *)
       let args =
+        let args = Evd.expand_existential evm (k, args) in
         let n = match chop with None -> 0 | Some c -> c in
         let l, r = CList.chop n (List.rev args) in
         List.rev r

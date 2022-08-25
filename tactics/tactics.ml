@@ -315,8 +315,8 @@ let unsafe_intro env decl b =
   Refine.refine ~typecheck:false begin fun sigma ->
     let ctx = named_context_val env in
     let nctx = push_named_context_val decl ctx in
-    let inst = identity_subst_val (named_context_val env) in
-    let ninst = mkRel 1 :: inst in
+    let inst = EConstr.identity_subst_val (named_context_val env) in
+    let ninst = SList.cons (mkRel 1) inst in
     let nb = subst1 (mkVar (NamedDecl.get_id decl)) b in
     let (sigma, ev) = new_pure_evar nctx sigma nb ~principal:true in
     (sigma, mkLambda_or_LetIn (NamedDecl.to_rel_decl decl) (mkEvar (ev, ninst)))
@@ -486,10 +486,17 @@ let rename_hyp repl =
       let subst c = Vars.replace_vars sigma subst c in
       let replace id = try List.assoc_f Id.equal id repl with Not_found -> id in
       let map decl = decl |> NamedDecl.map_id replace |> NamedDecl.map_constr subst in
-      let nhyps = List.map map (named_context_of_val sign) in
+      let ohyps = named_context_of_val sign in
+      let nhyps = List.map map ohyps in
       let nconcl = subst concl in
       let nctx = val_of_named_context nhyps in
-      let instance = EConstr.identity_subst_val (Environ.named_context_val env) in
+      let fold odecl ndecl accu =
+        if Id.equal (NamedDecl.get_id odecl) (NamedDecl.get_id ndecl) then
+          SList.default accu
+        else
+          SList.cons (mkVar @@ NamedDecl.get_id odecl) accu
+      in
+      let instance = List.fold_right2 fold ohyps nhyps SList.empty in
       Refine.refine ~typecheck:false begin fun sigma ->
         let sigma, ev = Evarutil.new_pure_evar nctx sigma nconcl ~principal:true in
         sigma, mkEvar (ev, instance)
@@ -1204,8 +1211,9 @@ let intro_forthcoming_last_then_gen avoid dep_flag bound n tac =
     else Refine.refine ~typecheck:false begin fun sigma ->
       let ctx = named_context_val env in
       let nctx = List.fold_right push_named_context_val ndecls ctx in
-      let inst = identity_subst_val (named_context_val env) in
-      let ninst = List.init (List.length decls) (fun i -> mkRel (i + 1)) @ inst in
+      let inst = SList.defaultn (List.length @@ Environ.named_context env) SList.empty in
+      let rels = List.init (List.length decls) (fun i -> mkRel (i + 1)) in
+      let ninst = List.fold_right (fun c accu -> SList.cons c accu) rels inst in
       let (sigma, ev) = new_pure_evar nctx sigma nconcl ~principal:true in
       (sigma, it_mkLambda_or_LetIn (mkEvar (ev, ninst)) decls)
     end <*> tac ids
@@ -2866,7 +2874,7 @@ let pose_tac na c =
       let nhyps = EConstr.push_named_context_val (NamedDecl.LocalDef (id, c, t)) hyps in
       let (sigma, ev) = Evarutil.new_pure_evar nhyps sigma concl in
       let inst = EConstr.identity_subst_val hyps in
-      let body = mkEvar (ev, mkRel 1 :: inst) in
+      let body = mkEvar (ev, SList.cons (mkRel 1) inst) in
       (sigma, mkLetIn (map_annot Name.mk_name id, c, t, body))
     end
   end

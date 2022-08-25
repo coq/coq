@@ -646,10 +646,9 @@ let map_constr_with_binders_left_to_right env sigma g f l c =
     let b' = f l b in
       if b' == b then c
       else mkProj (p, b')
-  | Evar (e,al) ->
-    let al' = List.map_left (f l) al in
-      if List.for_all2 (==) al' al then c
-      else mkEvar (e, al')
+  | Evar ev ->
+    let ev' = EConstr.map_existential sigma (fun c -> f l c) ev in
+    if ev' == ev then c else mkEvar ev'
   | Case (ci,u,pms,p,iv,b,bl) ->
       let (ci, _, pms, p0, _, b, bl0) = annotate_case env sigma (ci, u, pms, p, iv, b, bl) in
       let f_ctx (nas, _ as r) (ctx, c) =
@@ -713,9 +712,9 @@ let map_constr_with_full_binders env sigma g f l cstr =
   | Proj (p,c) ->
       let c' = f l c in
         if c' == c then cstr else mkProj (p, c')
-  | Evar (e,al) ->
-      let al' = List.map (f l) al in
-      if List.for_all2 (==) al al' then cstr else mkEvar (e, al')
+  | Evar ev ->
+    let ev' = EConstr.map_existential sigma (fun c -> f l c) ev in
+    if ev' == ev then cstr else mkEvar ev'
   | Case (ci, u, pms, p, iv, c, bl) ->
       let (ci, _, pms, p0, _, c, bl0) = annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
       let f_ctx (nas, _ as r) (ctx, c) =
@@ -767,7 +766,9 @@ let fold_constr_with_full_binders env sigma g f n acc c =
   | LetIn (na,b,t,c) -> f (g (LocalDef (na,b,t)) n) (f n (f n acc b) t) c
   | App (c,l) -> Array.fold_left (f n) (f n acc c) l
   | Proj (_,c) -> f n acc c
-  | Evar (_,l) -> List.fold_left (f n) acc l
+  | Evar ev ->
+    let args = Evd.expand_existential sigma ev in
+    List.fold_left (fun c -> f n c) acc args
   | Case (ci, u, pms, p, iv, c, bl) ->
     let (ci, _, pms, p, _, c, bl) = EConstr.annotate_case env sigma (ci, u, pms, p, iv, c, bl) in
     let f_ctx acc (ctx, c) = f (List.fold_right g ctx n) acc c in

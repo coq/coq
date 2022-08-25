@@ -631,13 +631,13 @@ open Renv
 let rec lambda_of_constr env c =
   match Constr.kind c with
   | Meta _ -> raise (Invalid_argument "Vmbytegen.lambda_of_constr: Meta")
-  | Evar (evk, args as ev) ->
-      begin match env.evar_body.evar_expand ev with
-      | None ->
-          let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
-          Levar (evk, args)
-      | Some t -> lambda_of_constr env t
-      end
+  | Evar ev ->
+    begin match env.evar_body.evar_expand ev with
+    | Constr.EvarUndefined (evk, args) ->
+        let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
+        Levar (evk, args)
+    | Constr.EvarDefined t -> lambda_of_constr env t
+    end
 
   | Cast (c, _, _) -> lambda_of_constr env c
 

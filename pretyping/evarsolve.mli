@@ -127,7 +127,7 @@ val refresh_universes :
   env -> evar_map -> types -> evar_map * types
 
 val solve_refl : ?can_drop:bool -> conversion_check -> unify_flags -> env ->  evar_map ->
-  bool option -> Evar.t -> constr list -> constr list -> evar_map
+  bool option -> Evar.t -> constr SList.t -> constr SList.t -> evar_map
 
 val solve_evar_evar : ?force:bool ->
   (env -> evar_map -> bool option -> existential -> constr -> evar_map) ->

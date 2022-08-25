@@ -52,6 +52,9 @@ sig
   val filter_array : t -> 'a array -> 'a array
   (** Filter an array. Sizes must coincide. *)
 
+  val filter_slist : t  -> 'a SList.t -> 'a SList.t
+  (** Filter a sparse list. Sizes must coincide. *)
+
   val extend : int -> t -> t
   (** [extend n f] extends [f] on the left with [n]-th times [true]. *)
 
@@ -89,15 +92,6 @@ module Abstraction : sig
   val abstract_last : t -> t
 end
 
-module Identity :
-sig
-  type t
-  (** Identity substitutions *)
-
-  val make : econstr list -> t
-  val none : unit -> t
-end
-
 (** {6 Evar infos} *)
 
 type evar_body =
@@ -123,9 +117,6 @@ type evar_info = {
   (** Information about the evar. *)
   evar_candidates : econstr list option;
   (** List of possible solutions when known that it is a finite list *)
-  evar_identity : Identity.t;
-  (** Default evar instance, i.e. a list of Var nodes projected from the
-      filtered environment. *)
   evar_relevance : Sorts.relevance;
   (** Relevance of the conclusion of the evar. *)
 }
@@ -141,7 +132,7 @@ val evar_candidates : evar_info -> constr list option
 val evar_filter : evar_info -> Filter.t
 val evar_env : env -> evar_info -> env
 val evar_filtered_env : env -> evar_info -> env
-val evar_identity_subst : evar_info -> econstr list
+val evar_identity_subst : evar_info -> econstr SList.t
 
 val map_evar_body : (econstr -> econstr) -> evar_body -> evar_body
 val map_evar_info : (econstr -> econstr) -> evar_info -> evar_info
@@ -277,10 +268,18 @@ val existential_opt_value0 : evar_map -> existential -> constr option
 
 val evar_handler : evar_map -> constr evar_handler
 
-val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info ->
-  'a list -> (Id.t * 'a) list
+val existential_expand_value0 : evar_map -> existential -> constr Constr.evar_expansion
 
-val instantiate_evar_array : evar_map -> evar_info -> econstr -> econstr list -> econstr
+val expand_existential : evar_map -> econstr pexistential -> econstr list
+(** Returns the full evar instance with implicit default variables turned into
+    explicit [Var] nodes. *)
+
+val expand_existential0 : evar_map -> constr pexistential -> constr list
+
+val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info ->
+  'a SList.t -> (Id.t * 'a) list
+
+val instantiate_evar_array : evar_map -> evar_info -> econstr -> econstr SList.t -> econstr
 
 val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
   evar_map ->  evar_map -> evar_map
@@ -746,6 +745,8 @@ module MiniEConstr : sig
   val kind_upto : evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
 
   val whd_evar : evar_map -> t -> t
+
+  val mkLEvar : evar_map -> Evar.t * t list -> t
 
   val replace_vars : evar_map -> (Id.t * t) list -> t -> t
 

@@ -465,6 +465,7 @@ let matches_core env sigma allow_bound_rels
           Array.fold_left2 (fun subst na1 na2 -> add_binders na1 na2 binding_vars subst) subst lna1 lna2
 
       | PEvar (c1,args1), Evar (c2,args2) when Evar.equal c1 c2 ->
+        let args2 = Evd.expand_existential sigma (c2, args2) in
          List.fold_left2 (sorec ctx env) subst args1 args2
       | PInt i1, Int i2 when Uint63.equal i1 i2 -> subst
 
