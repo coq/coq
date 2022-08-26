@@ -197,9 +197,9 @@ let pose_all_metas_as_evars env evd t =
          evdref := meta_reassign mv (c,(Conv,TypeNotProcessed)) !evdref;
          c
        | None ->
-        let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
+        let {rebus=ty;freemetas=mvs} = Evd.meta_ftype !evdref mv in
         let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
-        let ty = nf_betaiota env evd ty in
+        let ty = nf_betaiota env !evdref ty in
         let src = Evd.evar_source_of_meta mv !evdref in
         let evd, ev = Evarutil.new_evar env !evdref ~src ty in
         evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) evd;
