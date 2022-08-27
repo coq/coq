@@ -676,6 +676,11 @@ let () = define1 "constr_check" constr begin fun c ->
   end
 end
 
+let () = define3 "constr_liftn" int int constr begin fun n k c ->
+  let ans = EConstr.Vars.liftn n k c in
+  return (Value.of_constr ans)
+end
+
 let () = define3 "constr_substnl" (list constr) int constr begin fun subst k c ->
   let ans = EConstr.Vars.substnl subst k c in
   return (Value.of_constr ans)
