@@ -67,6 +67,19 @@ Ltac2 @ external closenl : ident list -> int -> constr -> constr := "ltac2" "con
 (** [closenl [x₁;...;xₙ] k c] abstracts over variables [x₁;...;xₙ] and replaces them with
     [Rel(k); ...; Rel(k+n-1)] in [c]. If two names are identical, the one of least index is kept. *)
 
+Ltac2 @ external closedn : int -> constr -> bool := "ltac2" "constr_closedn".
+(** [closedn n c] is true iff [c] is a closed term under [n] binders *)
+
+Ltac2 is_closed (c : constr) : bool := closedn 0 c.
+(** [is_closed c] is true iff [c] is a closed term (contains no [Rel]s) *)
+
+Ltac2 @ external occur_between : int -> int -> constr -> bool := "ltac2" "constr_occur_between".
+(** [occur_between n m c] returns true iff [Rel p] occurs in term [c]
+  for [n <= p < n+m] *)
+
+Ltac2 occurn (n : int) (c : constr) : bool := occur_between n 1 c.
+(** [occurn n c] returns true iff [Rel n] occurs in term [c] *)
+
 Ltac2 @ external case : inductive -> case := "ltac2" "constr_case".
 (** Generate the case information for a given inductive type. *)
 
