@@ -229,7 +229,7 @@ let module_rule ~(cctx : Context.t) coq_module =
   let deps = cctx.async_deps @ deps in
   (* Build rule *)
   let vfile_base = Path.basename vfile in
-  let action = Format.asprintf "(run coqc %s %s)" flags vfile_base in
+  let action = Format.asprintf "(run coqc %s %%{dep:%s})" flags vfile_base in
   let targets = Coq_module.obj_files ~tname ~rule coq_module in
   let alias = if rule = Coq_module.Rule_type.Quick then Some "vio" else None in
   { Dune_file.Rule.targets; deps; action; alias }
