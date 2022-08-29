@@ -432,11 +432,6 @@ let mp_of_global = let open GlobRef in function
   | IndRef ind -> Names.Ind.modpath ind
   | ConstructRef constr -> Names.Construct.modpath constr
 
-let rec dp_of_mp = function
-  |Names.MPfile dp -> dp
-  |Names.MPbound _ -> library_dp ()
-  |Names.MPdot (mp,_) -> dp_of_mp mp
-
 let rec split_modpath = function
   |Names.MPfile dp -> dp, []
   |Names.MPbound mbid -> library_dp (), [Names.MBId.to_id mbid]
@@ -446,7 +441,7 @@ let rec split_modpath = function
 
 let library_part = function
   | GlobRef.VarRef id -> library_dp ()
-  | ref -> dp_of_mp (mp_of_global ref)
+  | ref -> ModPath.dp (mp_of_global ref)
 
 let discharge_proj_repr p =
   let ind = Projection.Repr.inductive p in
