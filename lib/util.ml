@@ -51,7 +51,7 @@ end
 
 (* Strings *)
 
-module String : CString.ExtS = CString
+module String = CString
 
 let subst_command_placeholder s t =
   let buff = Buffer.create (String.length s + String.length t) in

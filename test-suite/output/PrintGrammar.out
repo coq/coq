@@ -1,0 +1,153 @@
+Entry binder_constr is
+[ LEFTA
+  [ "exists2"; "'"; pattern LEVEL "0"; ":"; term LEVEL "200"; ","; term LEVEL
+    "200"; "&"; term LEVEL "200"
+  | "exists2"; "'"; pattern LEVEL "0"; ","; term LEVEL "200"; "&"; term LEVEL
+    "200"
+  | "exists2"; name; ":"; term LEVEL "200"; ","; term LEVEL "200"; "&"; term
+    LEVEL "200"
+  | "exists2"; name; ","; term LEVEL "200"; "&"; term LEVEL "200"
+  | "exists"; "!"; open_binders; ","; term LEVEL "200"
+  | "exists"; open_binders; ","; term LEVEL "200"
+  | "forall"; open_binders; ","; term LEVEL "200"
+  | "fun"; open_binders; "=>"; term LEVEL "200"
+  | "let"; "fix"; fix_decl; "in"; term LEVEL "200"
+  | "let"; "cofix"; cofix_body; "in"; term LEVEL "200"
+  | "let"; "'"; pattern LEVEL "200"; ":="; term LEVEL "200"; "in"; term LEVEL
+    "200"
+  | "let"; "'"; pattern LEVEL "200"; ":="; term LEVEL "200"; case_type; "in";
+    term LEVEL "200"
+  | "let"; "'"; pattern LEVEL "200"; "in"; pattern LEVEL "200"; ":="; term
+    LEVEL "200"; case_type; "in"; term LEVEL "200"
+  | "let"; name; binders; let_type_cstr; ":="; term LEVEL "200"; "in"; term
+    LEVEL "200"
+  | "let"; [ "("; LIST0 name SEP ","; ")" | "()" ]; as_return_type; ":=";
+    term LEVEL "200"; "in"; term LEVEL "200"
+  | "if"; term LEVEL "200"; as_return_type; "then"; term LEVEL "200"; "else";
+    term LEVEL "200"
+  | "fix"; fix_decls
+  | "cofix"; cofix_decls ] ]
+
+Entry constr is
+[ LEFTA
+  [ "@"; global; univ_annot
+  | term LEVEL "8" ] ]
+
+Entry lconstr is
+[ LEFTA
+  [ term LEVEL "200" ] ]
+
+Entry term is
+[ "200" RIGHTA
+  [ binder_constr ]
+| "100" RIGHTA
+  [ SELF; "<:"; term LEVEL "200"
+  | SELF; "<<:"; term LEVEL "200"
+  | SELF; ":"; term LEVEL "200" ]
+| "99" RIGHTA
+  [ SELF; "->"; term LEVEL "200" ]
+| "95" RIGHTA
+  [ SELF; "<->"; NEXT ]
+| "90" RIGHTA
+  [  ]
+| "85" RIGHTA
+  [ SELF; "\\/"; term LEVEL "85" ]
+| "80" RIGHTA
+  [ SELF; "/\\"; term LEVEL "80" ]
+| "75" RIGHTA
+  [ "~"; term LEVEL "75" ]
+| "70" RIGHTA
+  [ SELF; ">"; NEXT
+  | SELF; ">="; NEXT
+  | SELF; "<"; NEXT; "<="; NEXT
+  | SELF; "<"; NEXT; "<"; NEXT
+  | SELF; "<"; NEXT
+  | SELF; "<="; NEXT; "<"; NEXT
+  | SELF; "<="; NEXT; "<="; NEXT
+  | SELF; "<="; NEXT
+  | SELF; "<>"; NEXT; ":>"; NEXT
+  | SELF; "<>"; NEXT
+  | SELF; "="; NEXT; "="; NEXT
+  | SELF; "="; NEXT; ":>"; NEXT
+  | SELF; "="; NEXT ]
+| "60" RIGHTA
+  [ SELF; "++"; term LEVEL "60"
+  | SELF; "::"; term LEVEL "60" ]
+| "50" LEFTA
+  [ SELF; "||"; NEXT
+  | SELF; "-"; NEXT
+  | SELF; "+"; NEXT ]
+| "40" LEFTA
+  [ SELF; "&&"; NEXT
+  | SELF; "/"; NEXT
+  | SELF; "*"; NEXT ]
+| "35" RIGHTA
+  [ "/"; term LEVEL "35"
+  | "-"; term LEVEL "35" ]
+| "30" RIGHTA
+  [ SELF; "^"; term LEVEL "30" ]
+| "10" LEFTA
+  [ SELF; LIST1 arg
+  | "@"; global; univ_annot; LIST0 NEXT
+  | "@"; pattern_ident; LIST1 identref ]
+| "9" LEFTA
+  [ ".."; term LEVEL "0"; ".." ]
+| "8" LEFTA
+  [  ]
+| "1" LEFTA
+  [ SELF; ".("; "@"; global; univ_annot; LIST0 (term LEVEL "9"); ")"
+  | SELF; ".("; global; univ_annot; LIST0 arg; ")"
+  | SELF; "%"; IDENT ]
+| "0" LEFTA
+  [ IDENT "ltac"; ":"; "("; ltac_expr; ")"
+  | "("; term LEVEL "200"; ","; term LEVEL "200"; ","; LIST1 (term LEVEL
+    "200") SEP ","; ")"
+  | "("; term LEVEL "200"; ","; term LEVEL "200"; ")"
+  | "("; term LEVEL "200"; ")"
+  | "{|"; record_declaration; '|}'
+  | "{"; "'"; pattern LEVEL "0"; "&"; term LEVEL "200"; "&"; term LEVEL
+    "200"; "}"
+  | "{"; "'"; pattern LEVEL "0"; "&"; term LEVEL "200"; "}"
+  | "{"; "'"; pattern LEVEL "0"; ":"; term LEVEL "200"; "&"; term LEVEL
+    "200"; "&"; term LEVEL "200"; "}"
+  | "{"; "'"; pattern LEVEL "0"; ":"; term LEVEL "200"; "&"; term LEVEL
+    "200"; "}"
+  | "{"; "'"; pattern LEVEL "0"; ":"; term LEVEL "200"; "|"; term LEVEL
+    "200"; "&"; term LEVEL "200"; "}"
+  | "{"; "'"; pattern LEVEL "0"; ":"; term LEVEL "200"; "|"; term LEVEL
+    "200"; "}"
+  | "{"; "'"; pattern LEVEL "0"; "|"; term LEVEL "200"; "&"; term LEVEL
+    "200"; "}"
+  | "{"; "'"; pattern LEVEL "0"; "|"; term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; "&"; term LEVEL "200"; "&"; term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; "&"; term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; ":"; term LEVEL "200"; "&"; term LEVEL "200"; "&";
+    term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; ":"; term LEVEL "200"; "&"; term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; ":"; term LEVEL "200"; "|"; term LEVEL "200"; "&";
+    term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; ":"; term LEVEL "200"; "|"; term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; "|"; term LEVEL "200"; "&"; term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; "|"; term LEVEL "200"; "}"
+  | "{"; term LEVEL "99"; "}"
+  | "{"; binder_constr; "}"
+  | "`{"; term LEVEL "200"; "}"
+  | "`("; term LEVEL "200"; ")"
+  | NUMBER
+  | atomic_constr
+  | term_match
+  | ident; fields; univ_annot
+  | ident; univ_annot
+  | test_array_opening; "["; "|"; array_elems; "|"; lconstr; type_cstr;
+    test_array_closing; "|"; "]"; univ_annot ] ]
+
+Entry univ_annot is
+[ LEFTA
+  [ "@{"; LIST0 universe_level; "}"
+  |  ] ]
+
+Entry fix_decls is
+[ LEFTA
+  [ fix_decl; "with"; LIST1 fix_decl SEP "with"; "for"; identref
+  | fix_decl ] ]
+

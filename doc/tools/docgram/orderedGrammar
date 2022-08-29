@@ -880,7 +880,7 @@ command: [
 | "Type" term
 | "Print" "All"
 | "Print" "Section" qualid
-| "Print" "Grammar" ident
+| "Print" "Grammar" LIST0 ident
 | "Print" "Custom" "Grammar" ident
 | "Print" "Keywords"
 | "Print" "LoadPath" OPT dirpath

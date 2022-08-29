@@ -57,7 +57,7 @@ val add_abbreviation : local:bool -> Deprecation.t option -> env ->
 
 (** Print the Camlp5 state of a grammar *)
 
-val pr_grammar : string -> Pp.t
+val pr_grammar : string list -> Pp.t
 val pr_custom_grammar : string -> Pp.t
 val pr_keywords : unit -> Pp.t
 

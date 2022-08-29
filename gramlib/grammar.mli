@@ -43,6 +43,9 @@ module type S = sig
     val parse_token_stream : 'a t -> te LStream.t -> 'a
     val print : Format.formatter -> 'a t -> unit
     val is_empty : 'a t -> bool
+
+    type any_t = Any : 'a t -> any_t
+    val accumulate_in : 'a t -> any_t list CString.Map.t
   end
 
   module rec Symbol : sig

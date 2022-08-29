@@ -534,20 +534,19 @@ Displaying information about notations
    Prints the current reserved :ref:`keywords <keywords>` and parser tokens, one
    per line. Keywords cannot be used as identifiers.
 
-.. cmd:: Print Grammar @ident
+.. cmd:: Print Grammar {* @ident }
 
-   Shows the grammar for the nonterminal :token:`ident`, which must be one of the following:
+   When no :token:`ident` is provided, shows the whole grammar.
+   Otherwise shows the grammar for the nonterminal :token:`ident`\s, except for
+   the following, which will include some related nonterminals:
 
    - `constr` - for :token:`term`\s
-   - `pattern` - for :token:`pattern`\s
    - `tactic` - for currently-defined tactic notations, :token:`tactic`\s and tacticals
      (corresponding to :token:`ltac_expr` in the documentation).
    - `vernac` - for :token:`command`\s
    - `ltac2` - for Ltac2 notations (corresponding to :token:`ltac2_expr`)
 
-   This command doesn't display all nonterminals of the grammar.  For example,
-   productions shown by `Print Grammar tactic` refer to nonterminals `tactic_then_locality`
-   and `for_each_goal` which are not shown and can't be printed.
+   This command can display any nonterminal in the grammar reachable from `vernac_control`.
 
    Most of the grammar in the documentation was updated in 8.12 to make it accurate and
    readable.  This was done using a new developer tool that extracts the grammar from the

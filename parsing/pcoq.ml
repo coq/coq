@@ -406,9 +406,7 @@ let extend_dyn_grammar (e, _) = match e with
 
 (** Registering extra grammar *)
 
-type any_entry = AnyEntry : 'a Entry.t -> any_entry
-
-let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
+let grammar_names : Entry.any_t list String.Map.t ref = ref String.Map.empty
 
 let register_grammars_by_name name grams =
   grammar_names := String.Map.add name grams !grammar_names
@@ -417,7 +415,7 @@ let find_grammars_by_name name =
   try String.Map.find name !grammar_names
   with Not_found ->
     let fold (EntryDataMap.Any (tag, EntryData.Ex map)) accu =
-      try AnyEntry (String.Map.find name map) :: accu
+      try Entry.Any (String.Map.find name map) :: accu
       with Not_found -> accu
     in
     EntryDataMap.fold fold !camlp5_entries []
