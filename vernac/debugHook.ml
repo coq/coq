@@ -8,6 +8,48 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+
+(** The type of coqtop goals *)
+type goal = {
+  goal_id : string;
+  (** Unique goal identifier *)
+  goal_hyp : Pp.t list;
+  (** List of hypotheses *)
+  goal_ccl : Pp.t;
+  (** Goal conclusion *)
+  goal_name : string option;
+  (** User-level goal name *)
+}
+
+(** Subset of goals to print. *)
+type goal_flags = {
+   gf_mode : string;
+   gf_fg : bool;
+   gf_bg : bool;
+   gf_shelved : bool;
+   gf_given_up : bool;
+ }
+
+type 'a pre_goals = {
+  fg_goals : 'a list;
+  (** List of the focused goals *)
+  bg_goals : ('a list * 'a list) list;
+  (** Zipper representing the unfocused background goals *)
+  shelved_goals : 'a list;
+  (** List of the goals on the shelf. *)
+  given_up_goals : 'a list;
+  (** List of the goals that have been given up *)
+}
+
+type goals = goal pre_goals
+
+(* specific return types *)
+
+type subgoals_rty = goals option
+type goals_rty = goals option
+type db_stack_rty = (string * (string * int list) option) list
+type db_vars_rty = (string * Pp.t) list
+
 (** Ltac debugger interface; clients should register hooks to interact
    with their provided interface. *)
 module Action = struct
@@ -23,7 +65,7 @@ module Action = struct
     | Configd
     | GetStack
     | GetVars of int
-    | Subgoals of DebuggerTypes.goal_flags
+    | Subgoals of goal_flags
     | RunCnt of int
     | RunBreakpoint of string
     | Command of string
@@ -71,7 +113,7 @@ module Answer = struct
     | Init
     | Stack of (string * (string * int list) option) list
     | Vars of (string * Pp.t) list
-    | Subgoals of DebuggerTypes.goals_rty
+    | Subgoals of goals_rty
 end
 
 module Intf = struct
@@ -91,5 +133,5 @@ module Intf = struct
 
 end
 
-let fwd_db_subgoals = DebuggerTypes.(ref ((fun x y -> failwith "fwd_db_subgoals")
+let fwd_db_subgoals = (ref ((fun x y -> failwith "fwd_db_subgoals")
                   : goal_flags -> (Evd.evar_map * Evar.t list) option -> subgoals_rty))
