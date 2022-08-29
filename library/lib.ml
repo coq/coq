@@ -378,7 +378,7 @@ let open_section id =
   let fs = Summary.freeze_summaries ~marshallable:false in
   add_entry (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-  Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection prefix));
+  Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection obj_dir));
   lib_state := { !lib_state with path_prefix = prefix }
 
 (* Restore lib_stk and summaries as before the section opening, and

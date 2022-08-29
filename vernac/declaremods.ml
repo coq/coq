@@ -718,7 +718,7 @@ let start_module export id args res fs =
   let () = Global.push_context_set ~strict:true ctx in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
-  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix));
+  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule mp));
   mp
 
 let end_module () =
@@ -852,7 +852,7 @@ let start_modtype id args mtys fs =
   let () = Global.push_context_set ~strict:true cst in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
-  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype prefix));
+  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype mp));
   mp
 
 let end_modtype () =
