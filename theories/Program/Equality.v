@@ -33,7 +33,7 @@ Ltac block_goal := match goal with [ |- ?T ] => change (block T) end.
 Ltac unblock_goal := unfold block in *.
 
 (** Notation for heterogeneous equality. *)
-
+#[deprecated(since="8.17")]
 Notation " x ~= y " := (@JMeq _ x _ y) (at level 70, no associativity).
 
 (** Do something on an heterogeneous equality appearing in the context. *)
