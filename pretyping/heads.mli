@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Constr
+open EConstr
 open Environ
 
 (** This module is about the computation of an approximation of the
@@ -19,4 +19,4 @@ open Environ
 (** [is_rigid] tells if some term is known to ultimately reduce to a term
     with a rigid head symbol *)
 
-val is_rigid : env -> constr -> bool
+val is_rigid : env -> Evd.evar_map -> constr -> bool
