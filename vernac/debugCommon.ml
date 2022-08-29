@@ -474,6 +474,9 @@ let db_fmt_goals () =
 
 let isTerminal () = (hook ()).isTerminal
 
+(* for displaying goals when stopped in debugger (only sigma and goals) *)
+let debug_proof = ref None
+
 let db_pr_goals =  (* todo: drop the "db_" prefix *)
   let open Proofview in
   let open Notations in
@@ -484,7 +487,7 @@ let db_pr_goals =  (* todo: drop the "db_" prefix *)
     | [] -> Evd.empty
   in
   let goals = List.map (fun gl -> Goal.goal gl) gls in
-  DebugHook.debug_proof := Some (sigma, goals);
+  debug_proof := Some (sigma, goals);
   let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
       Pp.seq (List.map db_fmt_goal gls) in
     Proofview.tclLIFT (
@@ -505,6 +508,7 @@ let read () =
     let open DebugHook.Action in
     (* handle operations that don't change Ltac* or history state *)
     begin match cmd with
+      | Ignore -> l ()
       | UpdBpts updates -> upd_bpts updates; l ()
       | GetStack ->
         ((hook)()).submit_answer (Stack (fmt_stack ()));
@@ -514,8 +518,8 @@ let read () =
         l ()
       | Subgoals flags ->
         begin
-          match !DebugHook.debug_proof with
-          | Some _ -> (hook ()).submit_answer (Subgoals (!DebugHook.fwd_db_subgoals flags !DebugHook.debug_proof))
+          match !debug_proof with
+          | Some _ -> (hook ()).submit_answer (Subgoals (!DebugHook.fwd_db_subgoals flags !debug_proof))
           | None -> failwith "no proof in debugger"
         end;
         l ()
