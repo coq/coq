@@ -24,10 +24,6 @@ open Evd
   check that the name exist and that its type is convertible\\
 *)
 
-(** The primitive refiner. *)
-
-val refiner : constr -> unit Proofview.tactic
-
 (** {6 Refiner errors. } *)
 
 type refiner_error =
