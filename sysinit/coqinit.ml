@@ -125,6 +125,27 @@ let print_memory_stat () =
     close_out oc
   with _ -> ()
 
+let init_load_paths opts =
+  let open Coqargs in
+  let boot_ml_path, boot_vo_path =
+    if opts.pre.boot then [],[]
+    else
+      let coqenv = Boot.Env.init () in
+      Coqloadpath.init_load_path ~coqenv
+  in
+  let ml_path = opts.pre.ml_includes @ boot_ml_path in
+  List.iter Mltop.add_ml_dir (List.rev ml_path);
+  List.iter Loadpath.add_vo_path boot_vo_path;
+  List.iter Loadpath.add_vo_path opts.pre.vo_includes;
+  let env_ocamlpath =
+    try [Sys.getenv "OCAMLPATH"]
+    with Not_found -> []
+  in
+  let env_ocamlpath = ml_path @ env_ocamlpath in
+  let ocamlpathsep = if Sys.unix then ":" else ";" in
+  let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
+  Findlib.init ~env_ocamlpath ()
+
 let init_runtime opts =
   let open Coqargs in
   Lib.init ();
@@ -145,15 +166,7 @@ let init_runtime opts =
   Nativelib.include_dirs := opts.config.native_include_dirs;
 
   (* Paths for loading stuff *)
-  let ml_load_path, vo_load_path = Coqargs.build_load_path opts in
-  List.iter Mltop.add_ml_dir ml_load_path;
-  List.iter Loadpath.add_vo_path vo_load_path;
-  let ocamlpathsep = if Sys.unix then ":" else ";" in
-  let ocamlpath = String.concat ocamlpathsep ml_load_path in
-  let env_ocamlpath =
-    try Sys.getenv "OCAMLPATH" ^ ocamlpathsep ^ ocamlpath
-    with Not_found -> ocamlpath in
-  Findlib.init ~env_ocamlpath ();
+  init_load_paths opts;
 
   injection_commands opts
 

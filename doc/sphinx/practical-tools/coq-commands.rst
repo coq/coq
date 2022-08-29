@@ -184,6 +184,9 @@ and ``coqtop``, unless stated otherwise:
   (``.cmo`` or ``.cmxs``).  Subdirectories are not included.
   See the command :cmd:`Declare ML Module`.
 
+  Directories added with ``-I`` are searched after the current directory,
+  in the order in which they were given on the command line
+
 .. TODO PR: is that right about Declare ML Module? it's not a directory like -I
 
   .. seealso::

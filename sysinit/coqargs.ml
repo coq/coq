@@ -442,15 +442,6 @@ let prelude_data = "Prelude", Some "Coq", Some Lib.Import
 let injection_commands opts =
   if opts.pre.load_init then RequireInjection prelude_data :: opts.pre.injections else opts.pre.injections
 
-let build_load_path opts =
-  let ml_path, vo_path =
-    if opts.pre.boot then [],[]
-    else
-      let coqenv = Boot.Env.init () in
-      Coqloadpath.init_load_path ~coqenv in
-  ml_path @ opts.pre.ml_includes ,
-  vo_path @ opts.pre.vo_includes
-
 let dirpath_of_file f =
   let ldir0 =
     try
