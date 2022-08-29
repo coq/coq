@@ -882,6 +882,7 @@ command: [
 | "Print" "Section" qualid
 | "Print" "Grammar" ident
 | "Print" "Custom" "Grammar" ident
+| "Print" "Keywords"
 | "Print" "LoadPath" OPT dirpath
 | "Print" "Libraries"
 | "Print" "ML" "Path"

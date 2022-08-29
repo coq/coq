@@ -155,6 +155,8 @@ Strings
   user a way to define custom parsers and printers for
   :token:`string`.
 
+.. _keywords:
+
 Keywords
   The following character sequences are keywords defined in the main Coq grammar
   that cannot be used as identifiers (even when starting Coq with the `-noinit`
@@ -170,6 +172,8 @@ Keywords
 
   Note that loading additional modules or plugins may expand the set of reserved
   keywords.
+
+  :cmd:`Print Keywords` can be used to print the current keywords and tokens.
 
 Other tokens
   The following character sequences are tokens defined in the main Coq grammar

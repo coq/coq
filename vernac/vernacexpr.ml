@@ -31,6 +31,7 @@ type printable =
   | PrintInspect of int
   | PrintGrammar of string
   | PrintCustomGrammar of string
+  | PrintKeywords
   | PrintLoadPath of DirPath.t option
   | PrintLibraries
   | PrintModule of qualid
