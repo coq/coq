@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open DebuggerTypes
+
 (** Ltac debugger interface; clients should register hooks to interact
    with their provided interface. *)
 module Action = struct
@@ -27,7 +29,7 @@ module Action = struct
     | Configd
     | GetStack
     | GetVars of int
-    | Subgoals of DebuggerTypes.goal_flags
+    | Subgoals of goal_flags
     | RunCnt of int
     | RunBreakpoint of string
     | Command of string
@@ -100,7 +102,7 @@ module Answer = struct
     | Init
     | Stack of (string * (string * int list) option) list
     | Vars of (string * Pp.t) list
-    | Subgoals of DebuggerTypes.goals_rty
+    | Subgoals of goals_rty
 end
 
 module Intf = struct
@@ -120,13 +122,5 @@ module Intf = struct
 
 end
 
-let fwd_db_subgoals = DebuggerTypes.(ref ((fun x y -> failwith "fwd_db_subgoals")
+let fwd_db_subgoals = (ref ((fun x y -> failwith "fwd_db_subgoals")
                   : goal_flags -> (Evd.evar_map * Evar.t list) option -> subgoals_rty))
-
-(* MOVE *)
-(* for displaying goals when stopped in debugger (only sigma and goals) *)
-let debug_proof = ref None
-
-(* tells whether we're in the debugger or not *)
-let set_in_debug read_in_debug =
-  if not read_in_debug then debug_proof := None
