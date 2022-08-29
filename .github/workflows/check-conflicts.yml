@@ -3,8 +3,13 @@ on: [push]
 # Only on push because @coqbot already takes care of checking for
 # conflicts when PRs are opened or synchronized
 
+permissions:
+  contents: read
+
 jobs:
   main:
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: eps1lon/actions-label-merge-conflict@b8bf8341285ec9a4567d4318ba474fee998a6919
