@@ -16,15 +16,9 @@
 (* Initial author: Arnaud Spiwack
    Module-traversing code: Pierre Letouzey *)
 
-open Pp
-open CErrors
 open Util
 open Names
-open Constr
 open Declarations
-open Mod_subst
-open Printer
-open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
 
@@ -61,6 +55,7 @@ let rec search_mind_label lab = function
 let rec fields_of_functor f subs mp0 args = function
   | NoFunctor a -> f subs mp0 args a
   | MoreFunctor (mbid,_,e) ->
+    let open Mod_subst in
     match args with
     | [] -> assert false (* we should only encounter applied functors *)
     | mpa :: args ->
@@ -86,6 +81,7 @@ and memoize_fields_of_mp mp =
     l
 
 and fields_of_mp mp =
+  let open Mod_subst in
   let mb = lookup_module_in_impl mp in
   let fields,inner_mp,subs = fields_of_mb empty_subst mb [] in
   let subs =
@@ -109,7 +105,7 @@ and fields_of_signature x =
 
 and fields_of_expr subs mp0 args = function
   | MEident mp ->
-    let mb = lookup_module_in_impl (subst_mp subs mp) in
+    let mb = lookup_module_in_impl (Mod_subst.subst_mp subs mp) in
     fields_of_mb subs mb args
   | MEapply (me1,mp2) -> fields_of_expr subs mp0 (mp2::args) me1
   | MEwith _ -> assert false (* no 'with' in [mod_expr] *)
@@ -131,7 +127,10 @@ let lookup_constant_in_impl cst fallback =
        - The label has not been found in the structure. This is an error *)
     match fallback with
       | Some cb -> cb
-      | None -> anomaly (str "Print Assumption: unknown constant " ++ Constant.print cst ++ str ".")
+      | None ->
+        CErrors.anomaly
+          Pp.(str "Print Assumption: unknown constant "
+            ++ Constant.print cst ++ str ".")
 
 let lookup_constant cst =
   let env = Global.env() in
@@ -148,7 +147,9 @@ let lookup_mind_in_impl mind =
     let fields = memoize_fields_of_mp mp in
       search_mind_label lab fields
   with Not_found ->
-    anomaly (str "Print Assumption: unknown inductive " ++ MutInd.print mind ++ str ".")
+    CErrors.anomaly
+      Pp.(str "Print Assumption: unknown inductive "
+        ++ MutInd.print mind ++ str ".")
 
 let lookup_mind mind =
   let env = Global.env() in
@@ -166,6 +167,7 @@ let label_of = let open GlobRef in function
 
 let fold_with_full_binders g f n acc c =
   let open Context.Rel.Declaration in
+  let open Constr in
   match kind c with
   | Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _ | Construct _  | Int _ | Float _ -> acc
   | Cast (c,_, t) -> f n (f n acc c) t
@@ -202,6 +204,7 @@ let get_constant_body kn =
 
 let rec traverse current ctx accu t =
   let open GlobRef in
+  let open Constr in
   match Constr.kind t with
 | Var id ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
@@ -334,13 +337,14 @@ let uses_uip mib =
     mib.mind_packets
 
 let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
+  let open Printer in
   (* Only keep the transitive dependencies *)
   let (_, graph, ax2ty) = traverse (label_of gr) t in
   let open GlobRef in
   let fold obj _ accu = match obj with
   | VarRef id ->
     let decl = Global.lookup_named id in
-    if is_local_assum decl then
+    if Context.Named.Declaration.is_local_assum decl then
       let t = Context.Named.Declaration.get_type decl in
       ContextObjectMap.add (Variable id) t accu
     else accu

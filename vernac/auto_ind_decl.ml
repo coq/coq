@@ -11,22 +11,10 @@
 (* This file is about the automatic generation of schemes about
    decidable equality, created by Vincent Siles, Oct 2007 *)
 
-open CErrors
 open Util
-open Pp
-open Term
 open Constr
-open Context
-open Vars
-open Termops
 open Declarations
 open Names
-open Inductiveops
-open Tactics
-open Ind_tables
-open Namegen
-open Tactypes
-open Proofview.Notations
 
 module RelDecl = Context.Rel.Declaration
 
@@ -46,10 +34,10 @@ exception ConstructorWithNonParametricInductiveType of inductive
 exception DecidabilityIndicesNotSupported
 exception InternalDependencies
 
-let named_hd env t na = named_hd env (Evd.from_env env) (EConstr.of_constr t) na
+let named_hd env t na = Namegen.named_hd env (Evd.from_env env) (EConstr.of_constr t) na
 let name_assumption env = function
-| RelDecl.LocalAssum (na,t) -> RelDecl.LocalAssum (map_annot (named_hd env t) na, t)
-| RelDecl.LocalDef (na,c,t) -> RelDecl.LocalDef (map_annot (named_hd env c) na, c, t)
+| RelDecl.LocalAssum (na,t) -> RelDecl.LocalAssum (Context.map_annot (named_hd env t) na, t)
+| RelDecl.LocalDef (na,c,t) -> RelDecl.LocalDef (Context.map_annot (named_hd env c) na, c, t)
 let name_context env ctxt =
   snd
     (List.fold_left
@@ -75,17 +63,18 @@ let float64_eqb () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqli
 let sumbool () = UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.sumbool.type")
 let andb = fun _ -> UnivGen.constr_of_monomorphic_global (Global.env ()) (Coqlib.lib_ref "core.bool.andb")
 
-let induct_on  c = induction false None c None None
-let destruct_on c = destruct false None c None None
+let induct_on  c = Tactics.induction false None c None None
+let destruct_on c = Tactics.destruct false None c None None
 
 let destruct_on_using c id =
-  destruct false None c
+  let open Tactypes in
+  Tactics.destruct false None c
     (Some (CAst.make @@ IntroOrPattern [[CAst.make @@ IntroNaming IntroAnonymous];
                [CAst.make @@ IntroNaming (IntroIdentifier id)]]))
     None
 
 let destruct_on_as c l =
-  destruct false None c (Some (CAst.make l)) None
+  Tactics.destruct false None c (Some (CAst.make l)) None
 
 let inj_flags = Some {
     Equality.keep_proof_equalities = true; (* necessary *)
@@ -105,8 +94,8 @@ let mkPartialInd env (ind,u) n =
   let _, recparams_ctx = Inductive.inductive_nonrec_rec_paramdecls (mib,u) in
   mkApp (mkIndU (ind,u), Context.Rel.instance mkRel n recparams_ctx)
 
-let name_X = make_annot (Name (Id.of_string "X")) Sorts.Relevant
-let name_Y = make_annot (Name (Id.of_string "Y")) Sorts.Relevant
+let name_X = Context.make_annot (Name (Id.of_string "X")) Sorts.Relevant
+let name_Y = Context.make_annot (Name (Id.of_string "Y")) Sorts.Relevant
 let mk_eqb_over u = mkProd (name_X, u, (mkProd (name_Y, lift 1 u, bb ())))
 
 let check_bool_is_defined () =
@@ -122,7 +111,7 @@ let is_irrelevant env c =
   | Sort SProp -> true
   | _ -> false
 
-let get_scheme handle k ind = match local_lookup_scheme handle k ind with
+let get_scheme handle k ind = match Ind_tables.local_lookup_scheme handle k ind with
 | None -> assert false
 | Some c -> c
 
@@ -310,14 +299,14 @@ let branch_context env ci params u nas i =
 
 let build_beq_scheme_deps env kn =
   let inds = get_inductive_deps ~noprop:true env kn in
-  List.map (fun ind -> SchemeMutualDep (ind, !beq_scheme_kind_aux ())) inds
+  List.map (fun ind -> Ind_tables.SchemeMutualDep (ind, !beq_scheme_kind_aux ())) inds
 
 let build_beq_scheme env handle kn =
   check_bool_is_defined ();
   (* predef coq's boolean type *)
   (* here I leave the Naming thingy so that the type of
      the function is more readable for the user *)
-  let eqName = map_annot (function
+  let eqName = Context.map_annot (function
     | Name s -> Name (Id.of_string ("eq_"^(Id.to_string s)))
     | Anonymous -> Name (Id.of_string "eq_A"))
   in
@@ -459,7 +448,7 @@ let build_beq_scheme env handle kn =
           Array.map (translate_term_with_binders env_lift_pred) lbr) in
       (* in the restricted translation, only types are translated and
          the return predicate is necessarily a type *)
-      let p = mkProd (anonR, t, p) in
+      let p = mkProd (Context.anonR, t, p) in
       let lbr = Array.mapi (fun i (names, t) ->
         let ctx = branch_context env ci pms u names i in
         let env_lift' = List.fold_right push_env_lift ctx env_lift in
@@ -505,7 +494,7 @@ let build_beq_scheme env handle kn =
           None
     | Cast (c,k,t) ->
       begin
-        match translate_term_eq env_lift c, translate_type_eq env_lift anonR c t with
+        match translate_term_eq env_lift c, translate_type_eq env_lift Context.anonR c t with
         | Some c, Some t -> Some (mkCast (c,k,t))
         | None, None -> None
         | (None | Some _), _ -> assert false
@@ -533,7 +522,7 @@ let build_beq_scheme env handle kn =
     | Ind (ind',u) ->
       begin
         match find_ind_env_lift env_lift ind' with
-        | Some (_,recparamsctx,n) -> Some (it_mkLambda_or_LetIn (mkRel n) (translate_context env_lift recparamsctx))
+        | Some (_,recparamsctx,n) -> Some (Termops.it_mkLambda_or_LetIn (mkRel n) (translate_context env_lift recparamsctx))
         | None ->
             try Some (mkConstU (get_scheme handle (!beq_scheme_kind_aux()) ind',u))
             with Not_found -> raise(EqNotFound ind')
@@ -571,7 +560,7 @@ let build_beq_scheme env handle kn =
           Constr.map_invert (lift n) iv,
           mkRel 1,
           Array.map (fun (names, br) -> (names, let q = Array.length names in liftn n (n+q+1) br)) lbr) in
-      let p = translate_type_eq env_lift_pred anonR c p in
+      let p = translate_type_eq env_lift_pred Context.anonR c p in
       let lbr = Array.mapi (fun i (names, t) ->
         let ctx = branch_context env ci pms u names i in
         let env_lift' = List.fold_right push_env_lift ctx env_lift in
@@ -596,7 +585,7 @@ let build_beq_scheme env handle kn =
               predicate different though convertible to itself, namely
               here a fix of match (see test-suite) *)
       let mkfix j = mkFix ((recindxs,j),recdef) in
-      let typarray = Array.mapi (fun i -> translate_type_eq env_lift anonR (mkfix i)) typarray in
+      let typarray = Array.mapi (fun i -> translate_type_eq env_lift Context.anonR (mkfix i)) typarray in
       let env_lift_types = push_rec_env_lift recdef env_lift in
       let bodies = Array.map (translate_term_eq env_lift_types) bodies in
       if Array.for_all Option.has_some bodies && Array.for_all Option.has_some typarray then
@@ -704,8 +693,8 @@ let build_beq_scheme env handle kn =
       let rec_name i =
         (Id.to_string (Array.get mib.mind_packets i).mind_typename)^"_eqrec"
       in
-      let names = Array.init nb_ind (fun i -> make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant) in
-      let types = Array.init nb_ind (fun i -> Option.get (translate_type_eq env_lift_recparams anonR (mkPartialInd env ((kn,i),u) 0) (Term.it_mkProd_or_LetIn (*any sort:*) mkSet nonrecparams_ctx))) in
+      let names = Array.init nb_ind (fun i -> Context.make_annot (Name (Id.of_string (rec_name i))) Sorts.Relevant) in
+      let types = Array.init nb_ind (fun i -> Option.get (translate_type_eq env_lift_recparams Context.anonR (mkPartialInd env ((kn,i),u) 0) (Term.it_mkProd_or_LetIn (*any sort:*) mkSet nonrecparams_ctx))) in
       let fix_ctx = List.rev (Array.to_list (Array.map2 (fun na t -> RelDecl.LocalAssum (na,t)) names types)) in
       shift_fix_env_lift kn mib.mind_nparams_rec recparams_ctx nb_ind env_lift_recparams, fix_ctx, names, types
     | Finite | BiFinite ->
@@ -726,6 +715,7 @@ let build_beq_scheme env handle kn =
     let env_lift_recparams_fix_nonrecparams_tomatch =
       shiftn_env_lift 2 env_lift_recparams_fix_nonrecparams in
     (* current inductive we are working on *)
+    let open Term in
     let pred =
       let cur_packet = mib.mind_packets.(cur) in
       (* Inductive toto : [rettyp] := *)
@@ -736,7 +726,7 @@ let build_beq_scheme env handle kn =
       let rettyp_l, _ = decompose_prod_assum rettyp in
       (* construct the predicate for the Case part*)
       it_mkLambda_or_LetIn
-        (mkLambda (make_annot Anonymous Sorts.Relevant,
+        (mkLambda (Context.make_annot Anonymous Sorts.Relevant,
                    mkFullInd env indu (List.length rettyp_l),
                    (bb ())))
         rettyp_l in
@@ -745,6 +735,7 @@ let build_beq_scheme env handle kn =
                ...
                Cn => match Y with ... end |]  part *)
     let rci = Sorts.Relevant in (* returning a boolean, hence relevant *)
+    let open Inductiveops in
     let constrs =
       let params = Context.Rel.instance_list mkRel 0 params_ctx in
       get_constructors env (make_ind_family (indu, params))
@@ -765,7 +756,7 @@ let build_beq_scheme env handle kn =
           | RelDecl.LocalAssum (na,cc) ->
               if is_irrelevant env_lift.env cc then (ndx-1,env_lift',l)
               else
-                if noccur_between 1 (nb_cstr_args-ndx) cc then
+                if Vars.noccur_between 1 (nb_cstr_args-ndx) cc then
                   let cc = lift (ndx-nb_cstr_args) cc in
                   match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch cc with
                   | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
@@ -796,7 +787,7 @@ let build_beq_scheme env handle kn =
                    | RelDecl.LocalAssum (na,cc) ->
                      if is_irrelevant env_lift.env cc then (ndx-1,env_lift',l)
                      else
-                       if noccur_between 1 (nb_cstr_args-ndx) cc then
+                       if Vars.noccur_between 1 (nb_cstr_args-ndx) cc then
                          let cc = lift (ndx-nb_cstr_args) cc in
                          match translate_term_eq env_lift_recparams_fix_nonrecparams_tomatch_csargsij cc with
                          | None -> raise (EqUnknown "type") (* A supported type should have an eq *)
@@ -846,19 +837,19 @@ let build_beq_scheme env handle kn =
               raise (NonSingletonProp (kn,i));
             let decrArg = Context.Rel.length nonrecparams_ctx_with_eqs in
             let fix = mkFix (((Array.make nb_ind decrArg),i),(names,types,cores)) in
-            it_mkLambda_or_LetIn fix recparams_ctx_with_eqs)
+            Termops.it_mkLambda_or_LetIn fix recparams_ctx_with_eqs)
       | Finite | BiFinite ->
          assert (Int.equal nb_ind 1);
          (* If the inductive type is not recursive, the fixpoint is
              not used, so let's replace it with garbage *)
          let kelim = Inductive.elim_sort (mib,mib.mind_packets.(0)) in
          if not (Sorts.family_leq InSet kelim) then raise (NonSingletonProp (kn,0));
-         [|it_mkLambda_or_LetIn (make_one_eq 0) recparams_ctx_with_eqs|]
+         [|Termops.it_mkLambda_or_LetIn (make_one_eq 0) recparams_ctx_with_eqs|]
   in
   res, uctx
 
 let beq_scheme_kind =
-  declare_mutual_scheme_object "_beq"
+  Ind_tables.declare_mutual_scheme_object "_beq"
   ~deps:build_beq_scheme_deps
   build_beq_scheme
 
@@ -895,8 +886,8 @@ let do_replace_lb handle aavoid narg p q =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else user_err
-                   (str "Var " ++ Id.print s ++ str " seems unknown.")
+            else CErrors.user_err
+                   Pp.(str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
     | Const (cst,u) ->
@@ -917,6 +908,7 @@ let do_replace_lb handle aavoid narg p q =
     let env = Tacmach.pf_env gl in
     let (ind,u as indu),v = destruct_ind env sigma type_of_pq in
     let c = get_scheme handle (!lb_scheme_kind_aux ()) ind in
+    let open Proofview.Notations in
     let lb_type_of_p = mkConstU (c,u) in
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
@@ -927,7 +919,7 @@ let do_replace_lb handle aavoid narg p q =
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
            Tacticals.tclTHENLIST [
-             Equality.replace p q ; apply app ; Auto.default_auto]
+             Equality.replace p q ; Tactics.apply app ; Auto.default_auto]
   end
 
 (* used in the bool -> leb side *)
@@ -942,8 +934,8 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
     let rec find i =
       if Id.equal avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
-            else user_err
-                   (str "Var " ++ Id.print s ++ str " seems unknown.")
+            else CErrors.user_err
+                   Pp.(str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
     | Const (cst,u) ->
@@ -986,36 +978,37 @@ let do_replace_bl handle (ind,u as indu) aavoid narg lft rgt =
                 in
                 Tacticals.tclTHENLIST [
                   Equality.replace_by t1 t2
-                    (Tacticals.tclTHEN (apply app) (Auto.default_auto)) ;
+                    (Tacticals.tclTHEN (Tactics.apply app) (Auto.default_auto)) ;
                   aux q1 q2 ]
               )
         )
         end
     | ([],[]) -> Proofview.tclUNIT ()
-    | _ -> Tacticals.tclZEROMSG (str "Both side of the equality must have the same arity.")
+    | _ -> Tacticals.tclZEROMSG Pp.(str "Both side of the equality must have the same arity.")
   in
+  let open Proofview.Notations in
   Proofview.tclEVARMAP >>= fun sigma ->
   begin try Proofview.tclUNIT (destApp sigma lft)
-    with DestKO -> Tacticals.tclZEROMSG (str "replace failed.")
+    with DestKO -> Tacticals.tclZEROMSG Pp.(str "replace failed.")
   end >>= fun (ind1,ca1) ->
   begin try Proofview.tclUNIT (destApp sigma rgt)
-    with DestKO -> Tacticals.tclZEROMSG (str "replace failed.")
+    with DestKO -> Tacticals.tclZEROMSG Pp.(str "replace failed.")
   end >>= fun (ind2,ca2) ->
   begin try Proofview.tclUNIT (fst (destInd sigma ind1))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind1)))
-        with DestKO -> Tacticals.tclZEROMSG (str "The expected type is an inductive one.")
+        with DestKO -> Tacticals.tclZEROMSG Pp.(str "The expected type is an inductive one.")
       end
   end >>= fun (sp1,i1) ->
   begin try Proofview.tclUNIT (fst (destInd sigma ind2))
     with DestKO ->
       begin try Proofview.tclUNIT (fst (fst (destConstruct sigma ind2)))
-        with DestKO -> Tacticals.tclZEROMSG (str "The expected type is an inductive one.")
+        with DestKO -> Tacticals.tclZEROMSG Pp.(str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->
   Proofview.tclENV >>= fun env ->
   if not (Environ.QMutInd.equal env sp1 sp2) || not (Int.equal i1 i2)
-  then Tacticals.tclZEROMSG (str "Eq should be on the same type")
+  then Tacticals.tclZEROMSG Pp.(str "Eq should be on the same type")
   else aux (Array.to_list ca1) (Array.to_list ca2)
 
 (*
@@ -1058,10 +1051,11 @@ let compute_bl_goal env handle (ind,u) lnamesparrec nparrec =
   let avoid = avoid_of_list_id list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
+  let open Term in
   let create_input c =
       let bl_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                ( mkApp(eq (),[|bb (); mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt () |]))
                Sorts.Relevant
@@ -1069,24 +1063,24 @@ let compute_bl_goal env handle (ind,u) lnamesparrec nparrec =
           ))
         ) list_id in
       let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
-        mkNamedProd (make_annot sbl Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot sbl Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev bl_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,(bb ())))
+          mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,(bb ())))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd (make_annot seq Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot seq Sorts.Relevant) b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
     List.fold_left (fun a decl ->
-        let x = map_annot
+        let x = Context.map_annot
             (function Name s -> s | Anonymous -> next_ident_away (Id.of_string "A") avoid)
             (RelDecl.get_annot decl)
         in
         mkNamedProd x (RelDecl.get_type decl) a) eq_input lnamesparrec
     in
      create_input (
-        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
-          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
+          mkNamedProd (Context.make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
             mkArrow
               (mkApp(eq (),[|bb ();mkApp(eqI,[|mkVar x;mkVar y|]);tt ()|]))
               Sorts.Relevant
@@ -1100,6 +1094,7 @@ let compute_bl_tact handle ind lnamesparrec nparrec =
     @ ( List.map (fun (_,seq,_,_ ) -> seq) list_id )
     @ ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
   in
+  let open Tactics in
   intros_using_then first_intros begin fun fresh_first_intros ->
     Tacticals.tclTHENLIST [
         intro_using_then (Id.of_string "x") (fun freshn -> induct_on (EConstr.mkVar freshn));
@@ -1117,6 +1112,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
               Tacticals.tclREPEAT (
                   Tacticals.tclTHENLIST [
                       Simple.apply_in freshz (EConstr.of_constr (andb_prop()));
+                      let open Tactypes in
                       destruct_on_as (EConstr.mkVar freshz)
                         (IntroOrPattern [[CAst.make @@ IntroNaming (IntroFresh (Id.of_string "Z"));
                                           CAst.make @@ IntroNaming (IntroIdentifier freshz)]])
@@ -1141,10 +1137,10 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                             (ca.(1)))
                          Auto.default_auto
                      else
-                       Tacticals.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
-                  | _ -> Tacticals.tclZEROMSG (str" Failure while solving Boolean->Leibniz.")
+                       Tacticals.tclZEROMSG Pp.(str "Failure while solving Boolean->Leibniz.")
+                  | _ -> Tacticals.tclZEROMSG Pp.(str" Failure while solving Boolean->Leibniz.")
                 )
-                | _ -> Tacticals.tclZEROMSG (str "Failure while solving Boolean->Leibniz.")
+                | _ -> Tacticals.tclZEROMSG Pp.(str "Failure while solving Boolean->Leibniz.")
                 end
 
             ]
@@ -1155,8 +1151,8 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 let make_bl_scheme env handle mind =
   let mib = Environ.lookup_mind mind env in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
-    user_err
-      (str "Automatic building of boolean->Leibniz lemmas not supported");
+    CErrors.user_err
+      Pp.(str "Automatic building of boolean->Leibniz lemmas not supported");
 
   (* Setting universes *)
   let auctx = Declareops.universes_context mib.mind_universes in
@@ -1177,11 +1173,11 @@ let make_bl_scheme env handle mind =
 
 let make_bl_scheme_deps env ind =
   let inds = get_inductive_deps ~noprop:false env ind in
-  let map ind = SchemeMutualDep (ind, !bl_scheme_kind_aux ()) in
-  SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
+  let map ind = Ind_tables.SchemeMutualDep (ind, !bl_scheme_kind_aux ()) in
+  Ind_tables.SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
 let bl_scheme_kind =
-  declare_mutual_scheme_object "_dec_bl"
+  Ind_tables.declare_mutual_scheme_object "_dec_bl"
   ~deps:make_bl_scheme_deps
   make_bl_scheme
 
@@ -1197,10 +1193,11 @@ let compute_lb_goal env handle (ind,u) lnamesparrec nparrec =
   let eqI = eqI handle (ind,u) list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
+  let open Term in
     let create_input c =
       let lb_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                 ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
                 Sorts.Relevant
@@ -1208,25 +1205,25 @@ let compute_lb_goal env handle (ind,u) lnamesparrec nparrec =
           ))
         ) list_id in
       let lb_input = List.fold_left2 ( fun a (s,_,_,slb) b ->
-        mkNamedProd (make_annot slb Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot slb Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev lb_typ) in
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,
-                 mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,bb))
+          mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,
+                 mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,bb))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd (make_annot seq Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot seq Sorts.Relevant) b a
       ) lb_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl ->
-          let x = map_annot
+          let x = Context.map_annot
               (function Name s -> s | Anonymous -> Id.of_string "A")
               (RelDecl.get_annot decl)
           in
           mkNamedProd x (RelDecl.get_type decl)  a) eq_input lnamesparrec
     in
       create_input (
-        mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
-          mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec)) (
+          mkNamedProd (Context.make_annot y Sorts.Relevant) (mkFullInd env (ind,u) (2*nparrec+1)) (
             mkArrow
               (mkApp(eq,[|mkFullInd env (ind,u) (2*nparrec+2);mkVar x;mkVar y|]))
               Sorts.Relevant
@@ -1240,6 +1237,7 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
     @ ( List.map (fun (_,seq,_,_) -> seq) list_id )
     @ ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
+  let open Tactics in
   intros_using_then first_intros begin fun fresh_first_intros ->
     Tacticals.tclTHENLIST [
         intro_using_then (Id.of_string "x") (fun freshn -> induct_on (EConstr.mkVar freshn));
@@ -1270,10 +1268,10 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
                                      nparrec
                                      ca'.(n-2) ca'.(n-1)
                                 | _ ->
-                                   Tacticals.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                                   Tacticals.tclZEROMSG Pp.(str "Failure while solving Leibniz->Boolean.")
                                )
                 | _ ->
-                   Tacticals.tclZEROMSG (str "Failure while solving Leibniz->Boolean.")
+                   Tacticals.tclZEROMSG Pp.(str "Failure while solving Leibniz->Boolean.")
                 end
             ]
           end
@@ -1283,8 +1281,8 @@ let compute_lb_tact handle ind lnamesparrec nparrec =
 let make_lb_scheme env handle mind =
   let mib = Environ.lookup_mind mind env in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
-    user_err
-      (str "Automatic building of Leibniz->boolean lemmas not supported");
+    CErrors.user_err
+      Pp.(str "Automatic building of Leibniz->boolean lemmas not supported");
   let ind = (mind,0) in
 
   (* Setting universes *)
@@ -1305,11 +1303,11 @@ let make_lb_scheme env handle mind =
 
 let make_lb_scheme_deps env ind =
   let inds = get_inductive_deps ~noprop:false env ind in
-  let map ind = SchemeMutualDep (ind, !lb_scheme_kind_aux ()) in
-  SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
+  let map ind = Ind_tables.SchemeMutualDep (ind, !lb_scheme_kind_aux ()) in
+  Ind_tables.SchemeMutualDep (ind, beq_scheme_kind) :: List.map map inds
 
 let lb_scheme_kind =
-  declare_mutual_scheme_object "_dec_lb"
+  Ind_tables.declare_mutual_scheme_object "_dec_lb"
   ~deps:make_lb_scheme_deps
   make_lb_scheme
 
@@ -1330,10 +1328,11 @@ let compute_dec_goal env ind lnamesparrec nparrec =
   let avoid = avoid_of_list_id list_id in
   let x = next_ident_away (Id.of_string "x") avoid in
   let y = next_ident_away (Id.of_string "y") (Id.Set.add x avoid) in
+  let open Term in
     let create_input c =
       let lb_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                 ( mkApp(eq,[|mkVar s;mkVar x;mkVar y|]))
                 Sorts.Relevant
@@ -1341,8 +1340,8 @@ let compute_dec_goal env ind lnamesparrec nparrec =
           ))
         ) list_id in
       let bl_typ = List.map (fun (s,seq,_,_) ->
-        mkNamedProd (make_annot x Sorts.Relevant) (mkVar s) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkVar s) (
+        mkNamedProd (Context.make_annot x Sorts.Relevant) (mkVar s) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkVar s) (
               mkArrow
                 ( mkApp(eq,[|bb;mkApp(mkVar seq,[|mkVar x;mkVar y|]);tt|]))
                 Sorts.Relevant
@@ -1351,21 +1350,21 @@ let compute_dec_goal env ind lnamesparrec nparrec =
         ) list_id in
 
       let lb_input = List.fold_left2 ( fun a (s,_,_,slb) b ->
-        mkNamedProd (make_annot slb Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot slb Sorts.Relevant) b a
       ) c (List.rev list_id) (List.rev lb_typ) in
       let bl_input = List.fold_left2 ( fun a (s,_,sbl,_) b ->
-        mkNamedProd (make_annot sbl Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot sbl Sorts.Relevant) b a
       ) lb_input (List.rev list_id) (List.rev bl_typ) in
 
       let eqs_typ = List.map (fun (s,_,_,_) ->
-          mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,
-                 mkProd(make_annot Anonymous Sorts.Relevant,mkVar s,bb))
+          mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,
+                 mkProd(Context.make_annot Anonymous Sorts.Relevant,mkVar s,bb))
           ) list_id in
       let eq_input = List.fold_left2 ( fun a (s,seq,_,_) b ->
-        mkNamedProd (make_annot seq Sorts.Relevant) b a
+        mkNamedProd (Context.make_annot seq Sorts.Relevant) b a
       ) bl_input (List.rev list_id) (List.rev eqs_typ) in
       List.fold_left (fun a decl ->
-          let x = map_annot
+          let x = Context.map_annot
               (function Name s -> s | Anonymous -> Id.of_string "A")
               (RelDecl.get_annot decl)
           in
@@ -1373,8 +1372,8 @@ let compute_dec_goal env ind lnamesparrec nparrec =
     in
         let eqnm = mkApp(eq,[|mkFullInd env ind (3*nparrec+2);mkVar x;mkVar y|]) in
         create_input (
-          mkNamedProd (make_annot x Sorts.Relevant) (mkFullInd env ind (3*nparrec)) (
-            mkNamedProd (make_annot y Sorts.Relevant) (mkFullInd env ind (3*nparrec+1)) (
+          mkNamedProd (Context.make_annot x Sorts.Relevant) (mkFullInd env ind (3*nparrec)) (
+            mkNamedProd (Context.make_annot y Sorts.Relevant) (mkFullInd env ind (3*nparrec+1)) (
               mkApp(sumbool(),[|eqnm;mkApp (UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coqlib.lib_ref "core.not.type",[|eqnm|])|])
           )
         )
@@ -1394,6 +1393,7 @@ let compute_dec_tact handle (ind,u) lnamesparrec nparrec =
     @ ( List.map (fun (_,_,sbl,_) -> sbl) list_id )
     @ ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
+  let open Tactics in
   let fresh_id s gl = fresh_id_in_env (Id.Set.empty) s (Proofview.Goal.env gl) in
   intros_using_then first_intros begin fun fresh_first_intros ->
     let eqI =
@@ -1487,7 +1487,7 @@ let make_eq_decidability env handle mind =
   ([|ans|], ctx)
 
 let eq_dec_scheme_kind =
-  declare_mutual_scheme_object "_eq_dec"
+  Ind_tables.declare_mutual_scheme_object "_eq_dec"
   ~deps:(fun _ ind -> [SchemeMutualDep (ind, bl_scheme_kind); SchemeMutualDep (ind, lb_scheme_kind)])
   make_eq_decidability
 
