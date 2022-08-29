@@ -1379,6 +1379,29 @@ let splay_lam_n env sigma n =
   in
   decrec env n Context.Rel.empty
 
+let dest_prod_assum env sigma =
+  let rec prodec_rec env l ty =
+    let rty = whd_allnolet env sigma ty in
+    match EConstr.kind sigma rty with
+    | Prod (x,t,c)  ->
+        let d = LocalAssum (x,t) in
+        prodec_rec (push_rel d env) (Context.Rel.add d l) c
+    | LetIn (x,b,t,c) ->
+        let d = LocalDef (x,b,t) in
+        prodec_rec (push_rel d env) (Context.Rel.add d l) c
+    | _               ->
+      let rty' = whd_all env sigma rty in
+      if EConstr.eq_constr sigma rty' rty then l, rty
+      else prodec_rec env l rty'
+  in
+  prodec_rec env Context.Rel.empty
+
+let dest_arity env sigma c =
+  let l, c = dest_prod_assum env sigma c in
+  match EConstr.kind sigma c with
+    | Sort s -> l,s
+    | _ -> raise Reduction.NotArity
+
 let is_sort env sigma t =
   match EConstr.kind sigma (whd_all env sigma t) with
   | Sort s -> true

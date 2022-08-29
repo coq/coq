@@ -197,6 +197,9 @@ val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
 (** Raises [Invalid_argument] *)
 
+val dest_arity : env -> evar_map -> constr -> rel_context * ESorts.t
+(** Raises [Reduction.NotArity] *)
+
 val reducible_mind_case : evar_map -> constr -> bool
 
 val find_conclusion : env -> evar_map -> constr -> (constr, constr, ESorts.t, EInstance.t) kind_of_term
