@@ -23,7 +23,7 @@ open Printer
 *)
 val traverse :
   Label.t -> constr ->
-    (GlobRef.Set_env.t * GlobRef.Set_env.t GlobRef.Map_env.t *
+    (GlobRef.Set_env.t * GlobRef.Set_env.t option GlobRef.Map_env.t *
      (Label.t * Constr.rel_context * types) list GlobRef.Map_env.t)
 
 (** Collects all the assumptions (optionally including opaque definitions)
