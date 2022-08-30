@@ -391,7 +391,15 @@ and open_keep f i ((sp,kn),kobjs) =
   let prefix = Nametab.{ obj_dir; obj_mp; } in
   open_objects f i prefix kobjs
 
-let rec cache_object (prefix, obj) =
+let cache_include (prefix, aobjs) =
+  let o = expand_aobjs aobjs in
+  load_objects 1 prefix o;
+  open_objects unfiltered 1 prefix o
+
+and cache_keep ((sp,kn),kobjs) =
+  anomaly (Pp.str "This module should not be cached!")
+
+let cache_object (prefix, obj) =
   match obj with
   | AtomicObject o -> Libobject.cache_object (prefix, o)
   | ModuleObject (id,sobjs) ->
@@ -407,14 +415,6 @@ let rec cache_object (prefix, obj) =
   | KeepObject (id,objs) ->
     let name = Lib.make_oname prefix id in
     cache_keep (name, objs)
-
-and cache_include (prefix, aobjs) =
-  let o = expand_aobjs aobjs in
-  load_objects 1 prefix o;
-  open_objects unfiltered 1 prefix o
-
-and cache_keep ((sp,kn),kobjs) =
-  anomaly (Pp.str "This module should not be cached!")
 
 (* Adding operations with containers *)
 
