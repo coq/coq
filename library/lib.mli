@@ -118,7 +118,6 @@ val end_compilation : DirPath.t -> Nametab.object_prefix * classified_objects
 val library_dp : unit -> DirPath.t
 
 (** Extract the library part of a name even if in a section *)
-val dp_of_mp : ModPath.t -> DirPath.t
 val split_modpath : ModPath.t -> DirPath.t * Id.t list
 val library_part :  GlobRef.t -> DirPath.t
 
