@@ -76,6 +76,10 @@ module CM=Map.Make(Constr)
 
 module History=Set.Make(Hitem)
 
+type history = History.t
+
+type cmap = GlobRef.t list CM.t
+
 let cm_add sigma typ nam cm=
   let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   try
@@ -98,9 +102,9 @@ module HP=Heap.Functional(OrderedFormula)
 type t=
     {redexes:HP.t;
      context:(GlobRef.t list) CM.t;
-     latoms:constr list;
+     latoms:atom list;
      gl:types;
-     glatom:constr option;
+     glatom:atom option;
      cnt:counter;
      history:History.t;
      depth:int}
@@ -120,8 +124,8 @@ let lookup env sigma item seq=
             | Some (m2, t2)-> GlobRef.equal id id2 && m2>m && more_general env sigma (m2, EConstr.of_constr t2) (m, EConstr.of_constr t) in
           History.exists p seq.history
 
-let add_formula env sigma side nam t seq =
-  match build_formula env sigma side nam t seq.cnt with
+let add_formula ~flags env sigma side nam t seq =
+  match build_formula ~flags env sigma side nam t seq.cnt with
       Left f->
         begin
           match side with
@@ -138,10 +142,10 @@ let add_formula env sigma side nam t seq =
     | Right t->
         match side with
             Concl ->
-              {seq with gl=t;glatom=Some t}
+              {seq with gl=t.atom;glatom=Some t}
           | _ ->
               {seq with
-                 context=cm_add sigma t nam seq.context;
+                 context=cm_add sigma t.atom nam seq.context;
                  latoms=t::seq.latoms}
 
 let re_add_formula_list sigma lf seq=
@@ -193,17 +197,17 @@ let expand_constructor_hints =
     | gr ->
         [gr])
 
-let extend_with_ref_list env sigma l seq =
+let extend_with_ref_list ~flags env sigma l seq =
   let l = expand_constructor_hints l in
   let f gr (seq, sigma) =
     let sigma, c = Evd.fresh_global env sigma gr in
     let sigma, typ= Typing.type_of env sigma c in
-      (add_formula env sigma Hyp gr typ seq, sigma) in
+      (add_formula ~flags env sigma Hyp gr typ seq, sigma) in
     List.fold_right f l (seq, sigma)
 
 open Hints
 
-let extend_with_auto_hints env sigma l seq =
+let extend_with_auto_hints ~flags env sigma l seq =
   let f (seq,sigma) p_a_t =
     match FullHint.repr p_a_t with
     | Res_pf c | Give_exact c
@@ -213,7 +217,7 @@ let extend_with_auto_hints env sigma l seq =
        | exception Constr.DestKO -> seq, sigma
        | gr, _ ->
          let sigma, typ = Typing.type_of env sigma c in
-         add_formula env sigma Hint gr typ seq, sigma)
+         add_formula ~flags env sigma Hint gr typ seq, sigma)
     | _ -> seq, sigma
   in
   let h acc dbname =

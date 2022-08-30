@@ -16,21 +16,20 @@ open Instances
 open Tacmach
 open Tacticals
 
-let update_flags ()=
+let get_flags qflag =
   let open TransparentState in
   let f accu coe = match coe.Coercionops.coe_value with
     | Names.GlobRef.ConstRef kn -> { accu with tr_cst = Names.Cpred.remove kn accu.tr_cst }
     | _ -> accu
   in
   let flags = List.fold_left f TransparentState.full (Coercionops.coercions ()) in
-    red_flags:=
+  { Formula.reds =
     CClosure.RedFlags.red_add_transparent
       CClosure.all
-      flags
+      flags; qflag }
 
-let ground_tac solver startseq =
+let ground_tac ~flags solver startseq =
   Proofview.Goal.enter begin fun gl ->
-  update_flags ();
   let rec toptac skipped seq =
     Proofview.Goal.enter begin fun gl ->
     let () =
@@ -50,24 +49,24 @@ let ground_tac solver startseq =
                   begin
                     match rpat with
                         Rand->
-                          and_tac backtrack continue (re_add seq1)
+                          and_tac ~flags backtrack continue (re_add seq1)
                       | Rforall->
                           let backtrack1=
-                            if !qflag then
+                            if flags.qflag then
                               tclFAIL (Pp.str "reversible in 1st order mode")
                             else
                               backtrack in
-                            forall_tac backtrack1 continue (re_add seq1)
+                            forall_tac ~flags backtrack1 continue (re_add seq1)
                       | Rarrow->
-                          arrow_tac backtrack continue (re_add seq1)
+                          arrow_tac ~flags backtrack continue (re_add seq1)
                       | Ror->
-                          or_tac  backtrack continue (re_add seq1)
+                          or_tac ~flags backtrack continue (re_add seq1)
                       | Rfalse->backtrack
                       | Rexists(i,dom,triv)->
                           let (lfp,seq2)=collect_quantified (project gl) seq in
                           let backtrack2=toptac (lfp@skipped) seq2 in
-                            if  !qflag && seq.depth>0 then
-                              quantified_tac lfp backtrack2
+                            if flags.qflag && seq.depth>0 then
+                              quantified_tac ~flags lfp backtrack2
                                 continue (re_add seq)
                             else
                               backtrack2 (* need special backtracking *)
@@ -78,22 +77,22 @@ let ground_tac solver startseq =
                         Lfalse->
                           left_false_tac hd.id
                       | Land ind->
-                          left_and_tac ind backtrack
+                          left_and_tac ~flags ind backtrack
                           hd.id continue (re_add seq1)
                       | Lor ind->
-                          left_or_tac ind backtrack
+                          left_or_tac ~flags ind backtrack
                           hd.id continue (re_add seq1)
                       | Lforall (_,_,_)->
                           let (lfp,seq2)=collect_quantified (project gl) seq in
                           let backtrack2=toptac (lfp@skipped) seq2 in
-                            if  !qflag && seq.depth>0 then
-                              quantified_tac lfp backtrack2
+                            if flags.qflag && seq.depth>0 then
+                              quantified_tac ~flags lfp backtrack2
                                 continue (re_add seq)
                             else
                               backtrack2 (* need special backtracking *)
                       | Lexists ind ->
-                          if !qflag then
-                            left_exists_tac ind backtrack hd.id
+                          if flags.qflag then
+                            left_exists_tac ~flags ind backtrack hd.id
                               continue (re_add seq1)
                           else backtrack
                       | LA (typ,lap)->
@@ -103,28 +102,28 @@ let ground_tac solver startseq =
                                   LLatom -> backtrack
                                 | LLand (ind,largs) | LLor(ind,largs)
                                 | LLfalse (ind,largs)->
-                                    (ll_ind_tac ind largs backtrack
+                                    (ll_ind_tac ~flags ind largs backtrack
                                        hd.id continue (re_add seq1))
                                 | LLforall p ->
-                                    if seq.depth>0 && !qflag then
-                                      (ll_forall_tac p backtrack
+                                    if seq.depth>0 && flags.qflag then
+                                      (ll_forall_tac ~flags p backtrack
                                          hd.id continue (re_add seq1))
                                     else backtrack
                                 | LLexists (ind,l) ->
-                                    if !qflag then
-                                      ll_ind_tac ind l backtrack
+                                    if flags.qflag then
+                                      ll_ind_tac ~flags ind l backtrack
                                         hd.id continue (re_add seq1)
                                     else
                                       backtrack
                                 | LLarrow (a,b,c) ->
-                                    (ll_arrow_tac a b c backtrack
+                                    (ll_arrow_tac ~flags a b c backtrack
                                        hd.id continue (re_add seq1))
                             end in
-                            ll_atom_tac typ la_tac hd.id continue (re_add seq1)
+                            ll_atom_tac ~flags typ la_tac hd.id continue (re_add seq1)
                   end
             with Heap.EmptyHeap->solver
       end
     end in
     let n = List.length (Proofview.Goal.hyps gl) in
-    startseq (fun seq -> wrap n true (toptac []) seq)
+    startseq (fun seq -> wrap ~flags n true (toptac []) seq)
   end

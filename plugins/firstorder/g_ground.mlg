@@ -11,7 +11,6 @@
 {
 
 open Ltac_plugin
-open Formula
 open Sequent
 open Ground
 open Goptions
@@ -62,10 +61,9 @@ END
 {
 
 let gen_ground_tac flag taco ids bases =
-  let backup= !qflag in
+  let flags = Ground.get_flags flag in
   Proofview.tclOR begin
   Proofview.Goal.enter begin fun gl ->
-      qflag:=flag;
       let solver=
         match taco with
         | Some tac -> tac
@@ -74,17 +72,16 @@ let gen_ground_tac flag taco ids bases =
       let startseq k =
         Proofview.Goal.enter begin fun gl ->
         let seq=empty_seq (ground_depth ()) in
-        let seq, sigma = extend_with_ref_list (pf_env gl) (project gl) ids seq in
-        let seq, sigma = extend_with_auto_hints (pf_env gl) sigma bases seq in
+        let seq, sigma = extend_with_ref_list ~flags (pf_env gl) (project gl) ids seq in
+        let seq, sigma = extend_with_auto_hints ~flags (pf_env gl) sigma bases seq in
         tclTHEN (Proofview.Unsafe.tclEVARS sigma) (k seq)
         end
       in
-      let result=ground_tac solver startseq in
-      qflag := backup;
+      let result=ground_tac ~flags solver startseq in
       result
   end
   end
-  (fun (e, info) -> qflag := backup; Proofview.tclZERO ~info e)
+  (fun (e, info) -> Proofview.tclZERO ~info e)
 
 (* special for compatibility with Intuition
 

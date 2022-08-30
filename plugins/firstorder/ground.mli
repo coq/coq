@@ -8,7 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+val get_flags : bool -> Formula.flags
 
-val ground_tac: unit Proofview.tactic ->
+val ground_tac: flags:Formula.flags -> unit Proofview.tactic ->
   ((Sequent.t -> unit Proofview.tactic) -> unit Proofview.tactic) -> unit Proofview.tactic
 

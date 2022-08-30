@@ -18,9 +18,10 @@ open Declarations
 
 module RelDecl = Context.Rel.Declaration
 
-let qflag=ref true
-
-let red_flags=ref CClosure.betaiotazeta
+type flags = {
+  qflag : bool;
+  reds : CClosure.RedFlags.reds;
+}
 
 let (=?) f g i1 i2 j1 j2=
   let c=f i1 i2 in
@@ -34,7 +35,9 @@ type ('a,'b) sum = Left of 'a | Right of 'b
 
 type counter = bool -> metavariable
 
-exception Is_atom of constr
+type atom = { atom : constr }
+
+exception Is_atom of atom
 
 let meta_succ m = m+1
 
@@ -61,11 +64,11 @@ let ind_hyps env sigma nevar ind largs =
       fst (decompose_prod_assum sigma t2) in
     Array.map myhyps types
 
-let special_nf env sigma t =
-  Reductionops.clos_norm_flags !red_flags env sigma t
+let special_nf ~flags env sigma t =
+  Reductionops.clos_norm_flags flags.reds env sigma t
 
-let special_whd env sigma t =
-  Reductionops.clos_whd_flags !red_flags env sigma t
+let special_whd ~flags env sigma t =
+  Reductionops.clos_whd_flags flags.reds env sigma t
 
 type kind_of_formula=
     Arrow of constr*constr
@@ -74,13 +77,13 @@ type kind_of_formula=
   | Or of pinductive*constr list*bool
   | Exists of pinductive*constr list
   | Forall of constr*constr
-  | Atom of constr
+  | Atom of atom
 
 let pop t = Vars.lift (-1) t
 
-let kind_of_formula env sigma term =
-  let normalize = special_nf env sigma in
-  let cciterm = special_whd env sigma term in
+let kind_of_formula ~flags env sigma term =
+  let normalize = special_nf ~flags env sigma in
+  let cciterm = special_whd ~flags env sigma term in
     match match_with_imp_term env sigma cciterm with
         Some (a,b)-> Arrow (a, pop b)
       |_->
@@ -103,7 +106,7 @@ let kind_of_formula env sigma term =
                           if Inductiveops.mis_is_recursive (ind,mib,mip) ||
                             (has_realargs && not is_trivial)
                           then
-                            Atom cciterm
+                            Atom { atom = cciterm }
                           else
                             if Int.equal nconstr 1 then
                               And((ind,u),l,is_trivial)
@@ -115,9 +118,9 @@ let kind_of_formula env sigma term =
                           let (ind, u) = EConstr.destInd sigma i in
                           let u = EConstr.EInstance.kind sigma u in
                           Exists((ind, u), l)
-                      |_-> Atom (normalize cciterm)
+                      |_-> Atom { atom = normalize cciterm }
 
-type atoms = {positive:constr list;negative:constr list}
+type atoms = {positive:atom list;negative:atom list}
 
 type side = Hyp | Concl | Hint
 
@@ -125,13 +128,13 @@ let no_atoms = (false,{positive=[];negative=[]})
 
 let dummy_id=GlobRef.VarRef (Id.of_string "_") (* "_" cannot be parsed *)
 
-let build_atoms env sigma metagen side cciterm =
+let build_atoms ~flags env sigma metagen side cciterm =
   let trivial =ref false
   and positive=ref []
   and negative=ref [] in
-  let normalize=special_nf env sigma in
+  let normalize=special_nf ~flags env sigma in
   let rec build_rec subst polarity cciterm=
-    match kind_of_formula env sigma cciterm with
+    match kind_of_formula ~flags env sigma cciterm with
         False(_,_)->if not polarity then trivial:=true
       | Arrow (a,b)->
           build_rec subst (not polarity) a;
@@ -139,7 +142,7 @@ let build_atoms env sigma metagen side cciterm =
       | And(i,l,b) | Or(i,l,b)->
           if b then
             begin
-              let unsigned=normalize (substnl subst 0 cciterm) in
+              let unsigned= { atom = normalize (substnl subst 0 cciterm) } in
                 if polarity then
                   positive:= unsigned :: !positive
                 else
@@ -164,8 +167,8 @@ let build_atoms env sigma metagen side cciterm =
           let var=mkMeta (metagen true) in
             build_rec (var::subst) polarity b
       | Atom t->
-          let unsigned=substnl subst 0 t in
-            if not (isMeta sigma unsigned) then (* discarding wildcard atoms *)
+          let unsigned= { atom = substnl subst 0 t.atom } in
+            if not (isMeta sigma unsigned.atom) then (* discarding wildcard atoms *)
               if polarity then
                 positive:= unsigned :: !positive
               else
@@ -213,19 +216,19 @@ type t={id:GlobRef.t;
         pat:(left_pattern,right_pattern) sum;
         atoms:atoms}
 
-let build_formula env sigma side nam typ metagen=
-  let normalize = special_nf env sigma in
+let build_formula ~flags env sigma side nam typ metagen=
+  let normalize = special_nf ~flags env sigma in
     try
       let m=meta_succ(metagen false) in
       let trivial,atoms=
-        if !qflag then
-          build_atoms env sigma metagen side typ
+        if flags.qflag then
+          build_atoms ~flags env sigma metagen side typ
         else no_atoms in
       let pattern=
         match side with
             Concl ->
               let pat=
-                match kind_of_formula env sigma typ with
+                match kind_of_formula ~flags env sigma typ with
                     False(_,_)        -> Rfalse
                   | Atom a       -> raise (Is_atom a)
                   | And(_,_,_)        -> Rand
@@ -238,16 +241,16 @@ let build_formula env sigma side nam typ metagen=
                 Right pat
           | _ ->
               let pat=
-                match kind_of_formula env sigma typ with
+                match kind_of_formula ~flags env sigma typ with
                     False(i,_)        ->  Lfalse
                   | Atom a       ->  raise (Is_atom a)
                   | And(i,_,b)         ->
                       if b then
-                        let nftyp=normalize typ in raise (Is_atom nftyp)
+                        let nftyp=normalize typ in raise (Is_atom { atom = nftyp })
                       else Land i
                   | Or(i,_,b)          ->
                       if b then
-                        let nftyp=normalize typ in raise (Is_atom nftyp)
+                        let nftyp=normalize typ in raise (Is_atom { atom = nftyp })
                       else Lor i
                   | Exists (ind,_) ->  Lexists ind
                   | Forall (d,_) ->
@@ -255,7 +258,7 @@ let build_formula env sigma side nam typ metagen=
                   | Arrow (a,b) ->
                       let nfa=normalize a in
                         LA (nfa,
-                            match kind_of_formula env sigma a with
+                            match kind_of_formula ~flags env sigma a with
                                 False(i,l)-> LLfalse(i,l)
                               | Atom t->     LLatom
                               | And(i,l,_)-> LLand(i,l)
