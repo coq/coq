@@ -423,7 +423,7 @@ let add_leaf obj =
   Lib.add_leaf_entry obj;
   ()
 
-let add_leaves id objs =
+let add_leaves objs =
   let add_obj obj =
     Lib.add_leaf_entry obj;
     load_object 1 (Lib.prefix (),obj)
@@ -692,12 +692,12 @@ let openmodtype_info =
 
 module RawModOps = struct
 
-let start_module export id args res fs =
+let start_module_core id args res fs =
   let mp = Global.start_module id in
   let params, ctx = intern_args args in
   let () = Global.push_context_set ~strict:true ctx in
   let env = Global.env () in
-  let res_entry_o, subtyps, ctx = match res with
+  let res_entry_o, subtyps, ctx' = match res with
     | Enforce (res,ann) ->
         let inl = inl2intopt ann in
         let (mte, base, kind) = Modintern.intern_module_ast Modintern.ModType res in
@@ -712,16 +712,18 @@ let start_module export id args res fs =
       let typs, ctx = build_subtypes env mp params resl in
       None, typs, ctx
   in
-  let () = Global.push_context_set ~strict:true ctx in
+  let () = Global.push_context_set ~strict:true ctx' in
+  mp, res_entry_o, subtyps, params, Univ.ContextSet.union ctx ctx'
+
+let start_module export id args res fs =
+  let mp, res_entry_o, subtyps, _, _ = start_module_core id args res fs in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix));
   mp
 
-let end_module () =
-  let oldprefix,fs,lib_stack = Lib.end_module () in
-  let {Lib.substobjs = substitute; keepobjs = keep; anticipateobjs = special; } = lib_stack in
-  let m_info = !openmod_info in
+let end_module_core id m_info objects fs =
+  let {Lib.substobjs = substitute; keepobjs = keep; anticipateobjs = special; } = objects in
 
   (* For sealed modules, we use the substitutive objects of their signatures *)
   let sobjs0, keep, special = match m_info.cur_typ with
@@ -729,7 +731,6 @@ let end_module () =
     | Some (mty, inline) ->
       get_module_sobjs false (Global.env()) inline mty, [], []
   in
-  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
 
   let struc = current_struct () in
   let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) m_info.cur_typ in
@@ -758,7 +759,16 @@ let end_module () =
     | [], _ | _, _ :: _ -> special@[node]
     | _ -> special@[node;KeepObject (id,keep)]
   in
-  let () = add_leaves id objects in
+
+  mp, objects
+
+let end_module () =
+  let oldprefix,fs,objects = Lib.end_module () in
+  let m_info = !openmod_info in
+  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
+  let mp,objects = end_module_core id m_info objects fs in
+
+  let () = add_leaves objects in
 
   (* Name consistency check : start_ vs. end_module, kernel vs. library *)
   assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
@@ -770,27 +780,8 @@ let end_module () =
 let declare_module id args res mexpr_o fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp = Global.start_module id in
-  let params, ctx = intern_args args in
+  let mp, mty_entry_o, subs, params, ctx = start_module_core id args res fs in
   let env = Global.env () in
-  let env = Environ.push_context_set ~strict:true ctx env in
-  let mty_entry_o, subs, inl_res, ctx' = match res with
-    | Enforce (mty,ann) ->
-        let inl = inl2intopt ann in
-        let (mte, base, kind) = Modintern.intern_module_ast Modintern.ModType mty in
-        let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
-        let env = Environ.push_context_set ~strict:true ctx env in
-        (* We check immediately that mte is well-formed *)
-        let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
-        let _, _, _, (_, cst) = Mod_typing.translate_mse state env None inl mte in
-        let ctx = Univ.ContextSet.add_constraints cst ctx in
-        Some mte, [], inl, ctx
-    | Check mtys ->
-      let typs, ctx = build_subtypes env mp params mtys in
-      None, typs, default_inline (), ctx
-  in
-  let env = Environ.push_context_set ~strict:true ctx' env in
-  let ctx = Univ.ContextSet.union ctx ctx' in
   let mexpr_entry_o, inl_expr, ctx' = match mexpr_o with
     | None -> None, default_inline (), Univ.ContextSet.empty
     | Some (mexpr,ann) ->
@@ -800,10 +791,10 @@ let declare_module id args res mexpr_o fs =
   in
   let env = Environ.push_context_set ~strict:true ctx' env in
   let ctx = Univ.ContextSet.union ctx ctx' in
-  let entry = match mexpr_entry_o, mty_entry_o with
+  let entry, inl_res = match mexpr_entry_o, mty_entry_o with
     | None, None -> assert false (* No body, no type ... *)
-    | None, Some typ -> MType (params, typ)
-    | Some body, otyp -> MExpr (params, body, otyp)
+    | None, Some (typ, inl) -> MType (params, typ), inl
+    | Some body, otyp -> MExpr (params, body, Option.map fst otyp), Option.cata snd (default_inline ()) otyp
   in
   let sobjs, mp0 = match entry with
     | MType (_,mte) | MExpr (_,_,Some mte) ->
@@ -840,40 +831,46 @@ end
 
 module RawModTypeOps = struct
 
-let start_modtype id args mtys fs =
+let start_modtype_core id args mtys fs =
   let mp = Global.start_modtype id in
-  let arg_entries_r, cst = intern_args args in
-  let () = Global.push_context_set ~strict:true cst in
+  let params, params_ctx = intern_args args in
+  let () = Global.push_context_set ~strict:true params_ctx in
   let env = Global.env () in
-  let sub_mty_l, cst = build_subtypes env mp arg_entries_r mtys in
-  let () = Global.push_context_set ~strict:true cst in
+  let sub_mty_l, sub_mty_ctx = build_subtypes env mp params mtys in
+  let () = Global.push_context_set ~strict:true sub_mty_ctx in
+  mp, params, sub_mty_l, Univ.ContextSet.union params_ctx sub_mty_ctx
+
+let start_modtype id args mtys fs =
+  let mp, _, sub_mty_l, _ = start_modtype_core id args mtys fs in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype prefix));
   mp
 
-let end_modtype () =
-  let oldprefix,fs,lib_stack = Lib.end_modtype () in
-  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
-  let {Lib.substobjs = substitute; keepobjs = _; anticipateobjs = special; } = lib_stack in
-  let sub_mty_l = !openmodtype_info in
+let end_modtype_core id sub_mty_l objects fs =
+  let {Lib.substobjs = substitute; keepobjs = _; anticipateobjs = special; } = objects in
   let mp, mbids = Global.end_modtype fs id in
   let () = check_subtypes_mt mp sub_mty_l in
   let modtypeobjs = (mbids, Objs substitute) in
-  let () = add_leaves id (special@[ModuleTypeObject (id,modtypeobjs)]) in
+  let objects = special@[ModuleTypeObject (id,modtypeobjs)] in
+  mp, objects
+
+let end_modtype () =
+  let oldprefix,fs,objects = Lib.end_modtype () in
+  let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
+  let sub_mty_l = !openmodtype_info in
+  let mp, objects = end_modtype_core id sub_mty_l objects fs in
+  let () = add_leaves objects in
   (* Check name consistence : start_ vs. end_modtype, kernel vs. library *)
   assert (DirPath.equal (Lib.prefix()).Nametab.obj_dir olddp);
   assert (ModPath.equal oldprefix.Nametab.obj_mp mp);
-
   mp
 
 let declare_modtype id args mtys (mty,ann) fs =
   let inl = inl2intopt ann in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp = Global.start_modtype id in
-  let params, arg_ctx = intern_args args in
-  let () = Global.push_context_set ~strict:true arg_ctx in
+  let mp, params, sub_mty_l, ctx = start_modtype_core id args mtys fs in
   let env = Global.env () in
   let mte, base, kind = Modintern.intern_module_ast Modintern.ModType mty in
   let mte, mte_ctx = Modintern.interp_module_ast env kind base mte in
@@ -883,10 +880,7 @@ let declare_modtype id args mtys (mty,ann) fs =
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
   let _, _, _, (_, mte_cst) = Mod_typing.translate_mse state env None inl mte in
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
-  let env = Global.env () in
   let entry = params, mte in
-  let sub_mty_l, sub_mty_ctx = build_subtypes env mp params mtys in
-  let () = Global.push_context_set ~strict:true sub_mty_ctx in
   let env = Global.env () in
   let sobjs = get_functor_sobjs false env inl entry in
   let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in
@@ -897,10 +891,9 @@ let declare_modtype id args mtys (mty,ann) fs =
   Summary.unfreeze_summaries fs;
 
   (* We enrich the global environment *)
-  let () = Global.push_context_set ~strict:true arg_ctx in
+  let () = Global.push_context_set ~strict:true ctx in
   let () = Global.push_context_set ~strict:true mte_ctx in
   let () = Global.push_context_set ~strict:true (Univ.Level.Set.empty,mte_cst) in
-  let () = Global.push_context_set ~strict:true sub_mty_ctx in
   let mp_env = Global.add_modtype id entry inl in
 
   (* Name consistency check : kernel vs. library *)
@@ -947,14 +940,14 @@ let type_of_incl env is_mod = function
     instantiated by fields of the current "self" module, i.e. using
     subtyping, by the current module itself. *)
 
-let declare_one_include (me_ast,annot) =
+let declare_one_include_core (me_ast,annot) =
   let env = Global.env() in
   let me, base, kind = Modintern.intern_module_ast Modintern.ModAny me_ast in
   let me, cst = Modintern.interp_module_ast env kind base me in
   let () = Global.push_context_set ~strict:true cst in
   let env = Global.env () in
   let is_mod = (kind == Modintern.Module) in
-  let cur_mp = Lib.current_mp () in
+  let cur_mp = Global.current_modpath () in
   let inl = inl2intopt annot in
   let mbids,aobjs = get_module_sobjs is_mod env inl me in
   let subst_self =
@@ -998,14 +991,16 @@ let declare_one_include (me_ast,annot) =
 
   let resolver = Global.add_include me is_mod inl in
   let subst = join subst_self (map_mp base_mp cur_mp resolver) in
-  let aobjs = subst_aobjs subst aobjs in
+  subst_aobjs subst aobjs
+
+let declare_one_include (me_ast,annot) =
+  let aobjs = declare_one_include_core (me_ast,annot) in
   cache_include (Lib.prefix(), aobjs);
   Lib.add_leaf_entry (IncludeObject aobjs)
 
 let declare_include me_asts = List.iter declare_one_include me_asts
 
 end
-
 
 (** {6 Module operations handling summary freeze/unfreeze} *)
 
@@ -1023,14 +1018,42 @@ let start_module export id args res =
 
 let end_module = RawModOps.end_module
 
+(** Declare a module in terms of a list of module bodies, by including them.
+Typically used for `Module M := N <+ P`.
+*)
+let declare_module_includes id args res mexpr_l fs =
+  let mp, res_entry_o, subtyps, _, _ = RawModOps.start_module_core id args res fs in
+  let mod_info = { cur_typ = res_entry_o; cur_typs = subtyps } in
+  let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.declare_one_include_core x)) mexpr_l in
+  let objects = Lib.{
+    substobjs = incl_objs;
+    keepobjs = [];
+    anticipateobjs = [];
+  } in
+  let mp, objects = RawModOps.end_module_core id mod_info objects fs in
+  add_leaves objects;
+  mp
+
+(** Declare a module type in terms of a list of module bodies, by including them.
+Typically used for `Module Type M := N <+ P`.
+*)
+let declare_modtype_includes id args res mexpr_l fs =
+  let mp, _, subtyps, _ = RawModTypeOps.start_modtype_core id args res fs in
+  let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.declare_one_include_core x)) mexpr_l in
+  let objects = Lib.{
+    substobjs = incl_objs;
+    keepobjs = [];
+    anticipateobjs = [];
+  } in
+  let mp, objects = RawModTypeOps.end_modtype_core id subtyps objects fs in
+  add_leaves objects;
+  mp
+
 let declare_module id args mtys me_l =
   let declare_me fs = match me_l with
     | [] -> RawModOps.declare_module id args mtys None fs
     | [me] -> RawModOps.declare_module id args mtys (Some me) fs
-    | me_l ->
-        ignore (RawModOps.start_module None id args mtys fs);
-        RawIncludeOps.declare_include me_l;
-        RawModOps.end_module ()
+    | me_l -> declare_module_includes id args mtys me_l fs
   in
   protect_summaries declare_me
 
@@ -1043,10 +1066,7 @@ let declare_modtype id args mtys mty_l =
   let declare_mt fs = match mty_l with
     | [] -> assert false
     | [mty] -> RawModTypeOps.declare_modtype id args mtys mty fs
-    | mty_l ->
-        ignore (RawModTypeOps.start_modtype id args mtys fs);
-        RawIncludeOps.declare_include mty_l;
-        RawModTypeOps.end_modtype ()
+    | mty_l -> declare_modtype_includes id args mtys mty_l fs
   in
   protect_summaries declare_mt
 
