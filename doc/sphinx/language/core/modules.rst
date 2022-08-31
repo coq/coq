@@ -179,7 +179,7 @@ are now available through the dot notation.
    expression then the system tries to instantiate :n:`@module_type_inl` with the current
    interactive module.
 
-   Including multiple modules is a single :cmd:`Include` is equivalent to including each module
+   Including multiple modules in a single :cmd:`Include` is equivalent to including each module
    in a separate :cmd:`Include` command.
 
 .. cmd:: Include Type {+<+ @module_type_inl }
