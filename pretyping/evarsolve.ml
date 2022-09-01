@@ -745,57 +745,58 @@ end
 
 type esubst = { esubst : (EAlias.t * Names.Id.t) list Int.Map.t }
 
-let make_projectable_subst aliases sigma evi args =
-  let sign = evar_filtered_context evi in
+let make_constructor_subst sigma sign args =
+  let fold decl a accu = match decl with
+  | LocalAssum ({ binder_name = id }, _) ->
+    let a', args = decompose_app_vect sigma a in
+    begin match EConstr.kind sigma a' with
+    | Construct (cstr, _) ->
+      let l = try Constrmap.find cstr accu with Not_found -> [] in
+      Constrmap.add cstr ((args, id) :: l) accu
+    | _ -> accu
+    end
+  | LocalDef _ -> accu
+  in
+  List.fold_right2 fold sign args Constrmap.empty
+
+let make_projectable_subst aliases sigma sign args =
   let evar_aliases = compute_var_aliases sign sigma in
-  let (_,full_subst,cstr_subst,_) =
-    List.fold_right_i
-      (fun i decl (args,all,cstrs,revmap) ->
-        match decl,args with
-        | LocalAssum ({binder_name=id},c), a::rest ->
-            let revmap = Id.Map.add id i revmap in
-            let cstrs =
-              let a',args = decompose_app_vect sigma a in
-              match EConstr.kind sigma a' with
-              | Construct cstr ->
-                  let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
-                  Constrmap.add (fst cstr) ((args,id)::l) cstrs
-              | _ -> cstrs in
-            let all = match EAlias.make sigma a with
-            | None -> all
-            | Some v -> Int.Map.add i [v, id] all
-            in
-            (rest,all,cstrs,revmap)
-        | LocalDef ({binder_name=id},c,_), a::rest ->
-            let revmap = Id.Map.add id i revmap in
-            (match EConstr.kind sigma c with
-            | Var id' ->
-                let idc = normalize_alias_var evar_aliases id' in
-                let ic, sub = match Id.Map.find_opt idc revmap with
-                | Some ic ->
-                  ic, (try Int.Map.find ic all with Not_found -> [])
-                | None ->
-                  (* e.g. [idc] is a filtered variable: treat [id] as an assumption *)
-                  i, []
-                in
-                if List.exists (fun (c, _) -> EAlias.is_constr sigma a c) sub then
-                  (rest,all,cstrs,revmap)
-                else
-                  let sub = match EAlias.make sigma a with
-                  | None -> sub
-                  | Some v -> (v, id) :: sub
-                  in
-                  let all = if List.is_empty sub then all else Int.Map.add ic sub all in
-                  (rest,all,cstrs,revmap)
-            | _ ->
-                let all = match EAlias.make sigma a with
-                | None -> all
-                | Some v -> Int.Map.add i [v, id] all
-                in
-                (rest,all,cstrs,revmap))
-        | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
-      sign (List.rev args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
-  ({ esubst = full_subst },cstr_subst)
+  let fold decl a (i, all, revmap) =
+    let id = get_id decl in
+    let revmap = Id.Map.add id i revmap in
+    let oldbindings = match decl with
+    | LocalAssum _ -> None
+    | LocalDef (_, c, _) ->
+      match EConstr.kind sigma c with
+      | Var id' ->
+        let idc = normalize_alias_var evar_aliases id' in
+        let ic, sub = match Id.Map.find_opt idc revmap with
+        | Some ic ->
+          ic, (try Int.Map.find ic all with Not_found -> [])
+        | None ->
+          (* [idc] is a filtered variable: treat [id] as an assumption *)
+          i, []
+        in
+        Some (ic, sub)
+      | _ -> None
+    in
+    let all = match oldbindings with
+    | None ->
+      begin match EAlias.make sigma a with
+      | None -> all
+      | Some v -> Int.Map.add i [v, id] all
+      end
+    | Some (ic, sub) ->
+      (* Necessarily a let-binding aliasing a variable *)
+      if List.exists (fun (c, _) -> EAlias.is_constr sigma a c) sub then all
+      else match EAlias.make sigma a with
+      | None -> all
+      | Some v -> Int.Map.add ic ((v, id) :: sub) all
+    in
+    (i + 1, all, revmap)
+  in
+  let (_, full_subst, _) = List.fold_right2 fold sign args (0, Int.Map.empty, Id.Map.empty) in
+  { esubst = full_subst }
 
 (*------------------------------------*
  * operations on the evar constraints *
@@ -983,7 +984,7 @@ let rec find_projectable_vars aliases sigma y subst =
         begin
           let (evk,argsv as t) = c in
           let evi = Evd.find sigma evk in
-          let subst,_ = make_projectable_subst aliases sigma evi argsv in
+          let subst = make_projectable_subst aliases sigma (evar_filtered_context evi) argsv in
           let l = find_projectable_vars aliases sigma y subst in
           match l with
           | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
@@ -1120,7 +1121,7 @@ let extract_candidates sols =
 
 let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
-  let subst,_ = make_projectable_subst aliases evd evi argsv in
+  let subst = make_projectable_subst aliases evd (evar_filtered_context evi) argsv in
   let invert arg =
     let p = invert_arg fullenv evd aliases k evk subst arg in
     extract_unique_projection p
@@ -1600,7 +1601,9 @@ let rec invert_definition unify flags choose imitate_defs
   let evdref = ref evd in
   let progress = ref false in
   let evi = Evd.find evd evk in
-  let subst,cstr_subst = make_projectable_subst aliases evd evi argsv in
+  let sign = evar_filtered_context evi in
+  let subst = make_projectable_subst aliases evd sign argsv in
+  let cstr_subst = make_constructor_subst evd sign argsv in
 
   (* Projection *)
   let project_variable t =
