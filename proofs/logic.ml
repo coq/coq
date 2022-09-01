@@ -180,7 +180,7 @@ let () = CErrors.register_handler (function
     | CannotMoveHyp { from; hto; hyp } ->
       Some Pp.(str "Cannot move " ++ Id.print from ++
                pr_move_location Id.print hto ++
-               str ": it occurs in the type of " ++
+               str ": it occurs in the declaration of " ++
                Id.print hyp ++ str ".")
     | _ -> None)
 
