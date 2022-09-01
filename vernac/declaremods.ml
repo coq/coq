@@ -210,15 +210,12 @@ let consistency_checks exists dir =
       user_err
         (DirPath.print dir ++ str " already exists.")
 
-let compute_visibility exists i =
-  if exists then Nametab.Exactly i else Nametab.Until i
-
 (** Iterate some function [iter_objects] on all components of a module *)
 
-let do_module exists iter_objects i obj_dir obj_mp sobjs kobjs =
+let do_module iter_objects i obj_dir obj_mp sobjs kobjs =
   let prefix = Nametab.{ obj_dir ; obj_mp; } in
-  consistency_checks exists obj_dir;
-  Nametab.push_module (compute_visibility exists i) obj_dir obj_mp;
+  consistency_checks false obj_dir;
+  Nametab.push_module (Until i) obj_dir obj_mp;
   ModSubstObjs.set obj_mp sobjs;
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
@@ -234,8 +231,8 @@ let do_module exists iter_objects i obj_dir obj_mp sobjs kobjs =
     iter_objects (i+1) prefix kobjs
   end
 
-let do_module' exists iter_objects i ((sp,kn),sobjs) =
-  do_module exists iter_objects i (dir_of_sp sp) (mp_of_kn kn) sobjs []
+let do_module' iter_objects i ((sp,kn),sobjs) =
+  do_module iter_objects i (dir_of_sp sp) (mp_of_kn kn) sobjs []
 
 (** Nota: Interactive modules and module types cannot be recached!
     This used to be checked here via a flag along the substobjs. *)
@@ -258,7 +255,7 @@ let rec load_object i (prefix, obj) =
   | AtomicObject o -> Libobject.load_object i (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
-    do_module' false load_objects i (name, sobjs)
+    do_module' load_objects i (name, sobjs)
   | ModuleTypeObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     let (sp,kn) = name in
@@ -394,12 +391,20 @@ and open_keep f i ((sp,kn),kobjs) =
   let prefix = Nametab.{ obj_dir; obj_mp; } in
   open_objects f i prefix kobjs
 
-let rec cache_object (prefix, obj) =
+let cache_include (prefix, aobjs) =
+  let o = expand_aobjs aobjs in
+  load_objects 1 prefix o;
+  open_objects unfiltered 1 prefix o
+
+and cache_keep ((sp,kn),kobjs) =
+  anomaly (Pp.str "This module should not be cached!")
+
+let cache_object (prefix, obj) =
   match obj with
   | AtomicObject o -> Libobject.cache_object (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
-    do_module' false load_objects 1 (name, sobjs)
+    do_module' load_objects 1 (name, sobjs)
   | ModuleTypeObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     let (sp,kn) = name in
@@ -410,14 +415,6 @@ let rec cache_object (prefix, obj) =
   | KeepObject (id,objs) ->
     let name = Lib.make_oname prefix id in
     cache_keep (name, objs)
-
-and cache_include (prefix, aobjs) =
-  let o = expand_aobjs aobjs in
-  load_objects 1 prefix o;
-  open_objects unfiltered 1 prefix o
-
-and cache_keep ((sp,kn),kobjs) =
-  anomaly (Pp.str "This module should not be cached!")
 
 (* Adding operations with containers *)
 
@@ -561,7 +558,7 @@ let process_module_binding mbid me =
   let sobjs = get_module_sobjs false (Global.env()) (default_inline ()) me in
   let subst = map_mp (get_module_path me) mp empty_delta_resolver in
   let sobjs = subst_sobjs subst sobjs in
-  do_module false load_objects 1 dir mp sobjs []
+  do_module load_objects 1 dir mp sobjs []
 
 (** Process a declaration of functor parameter(s) (Id1 .. Idn : Typ)
     i.e. possibly multiple names with the same module type.
@@ -590,7 +587,7 @@ let intern_arg (acc, cst) (idl,(typ,ann)) =
     let mp = MPbound mbid in
     let resolver = Global.add_module_parameter mbid mty inl in
     let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
-    do_module false load_objects 1 dir mp sobjs [];
+    do_module load_objects 1 dir mp sobjs [];
     (mbid,mty,inl)::acc
   in
   let acc = List.fold_left fold acc idl in
@@ -1083,7 +1080,7 @@ let register_library dir cenv (objs:library_objects) digest univ =
         anomaly (Pp.str "Unexpected disk module name.");
   in
   let sobjs,keepobjs = objs in
-  do_module false load_objects 1 dir mp ([],Objs sobjs) keepobjs
+  do_module load_objects 1 dir mp ([],Objs sobjs) keepobjs
 
 let start_library dir =
   let mp = Global.start_library dir in
