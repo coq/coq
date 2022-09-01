@@ -912,14 +912,7 @@ let rec assoc_up_to_alias sigma aliases y = function
     | None -> assoc_up_to_alias sigma aliases y l
     | Some c ->
       if eq_alias c y then id
-      else
-        match l with
-        | _ :: _ -> assoc_up_to_alias sigma aliases y l
-        | [] ->
-          (* Last chance, we reason up to alias conversion *)
-          let cc = normalize_alias sigma aliases c in
-          let yc = normalize_alias sigma aliases y in
-          if eq_alias cc yc then id else raise Not_found
+      else assoc_up_to_alias sigma aliases y l
 
 let rec find_projectable_vars aliases sigma y subst =
   let is_projectable _ idcl (subst1,subst2 as subst') =
