@@ -1653,6 +1653,15 @@ let prepare_proof ~unsafe_typ ~opaque { proof; pinfo } =
   let make_proof eff (_, body, typ) =
       (to_constr_body body, eff), to_constr_typ typ in
   let regular_preparation initial_goals =
+    (* When a bunch of constants are generated from the same proof
+       session effects:
+        - are attached to the first one if the constants are transparent
+        - are attached to each constant if the constants are opaque
+       This is because effects are not inlined in transparent constants (so the effects
+       of the first constant are also visible by the other ones), while they are
+       in case of opaque constants, so they are hidden inside each of them.
+       As an optimization one could attach only the ones actually used in the
+       opaque case. *)
     let fst_eff, more_eff =
       if opaque then eff, eff
       else eff, Evd.empty_side_effects in
@@ -1663,7 +1672,9 @@ let prepare_proof ~unsafe_typ ~opaque { proof; pinfo } =
 
   let ending = CEphemeron.default pinfo.proof_ending Proof_ending.Regular in
   match ending with
+  (* derive skips the first goal *)
   | Proof_ending.End_derive _ -> regular_preparation (List.tl initial_goals)
+  (* Equations calls prepare_proof even if there is no goal *)
   | Proof_ending.End_equations _ when initial_goals = [] ->
       [], Evd.evar_universe_context evd
   | _ -> regular_preparation initial_goals
