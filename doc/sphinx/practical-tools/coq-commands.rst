@@ -171,7 +171,12 @@ The following command-line options are recognized by the commands ``coqc``
 and ``coqtop``, unless stated otherwise:
 
 :-I *directory*, -include *directory*: Add physical path *directory*
-  to the OCaml loadpath.
+  to the OCaml loadpath, which is needed to load OCaml object code files
+  (``.cmo`` or ``.cmxs``).  Subdirectories are not included.
+  See the command :cmd:`Declare ML Module`.
+
+  Directories added with ``-I`` are searched after the current directory,
+  in the order in which they were given on the command line
 
   .. seealso::
 
