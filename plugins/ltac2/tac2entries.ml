@@ -938,7 +938,7 @@ let () = CErrors.register_additional_error_info begin fun info ->
   if !Tac2interp.print_ltac2_backtrace then
     let bt = Exninfo.get info backtrace in
     let bt = match bt with
-    | Some bt -> bt
+    | Some bt -> List.rev bt
     | None -> []
     in
     let bt =
