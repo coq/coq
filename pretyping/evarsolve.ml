@@ -715,12 +715,11 @@ let solve_pattern_eqn env sigma l c =
  * useful to ensure the uniqueness of a projection.
 *)
 
-type ebind = { bnd_alias : (alias * Id.t) list; bnd_value : (existential * Id.t) option }
-(* We enforce that both projections cannot be empty at the same time *)
-
 type esubst = {
-  esubst : ebind Int.Map.t;
+  ealias : (alias * Id.t) list Int.Map.t;
+  evalue : (existential * Id.t) Int.Map.t;
   eindex : Int.Set.t AlsMap.t;
+  (** Reverse map of indices in [ealias] containing the corresponding alias *)
 }
 
 let make_constructor_subst sigma sign args =
@@ -739,7 +738,8 @@ let make_constructor_subst sigma sign args =
 
 let make_projectable_subst aliases sigma sign args =
   let evar_aliases = compute_var_aliases sign sigma in
-  let fold decl a (i, all, revmap) =
+  (* First compute aliasing equivalence classes *)
+  let fold decl a (i, all, vals, revmap) =
     let id = get_id decl in
     let revmap = Id.Map.add id i revmap in
     let oldbindings = match decl with
@@ -751,48 +751,47 @@ let make_projectable_subst aliases sigma sign args =
         let ic, sub = match Id.Map.find_opt idc revmap with
         | Some ic ->
           let bnd = match Int.Map.find_opt ic all with
-          | None -> { bnd_alias = []; bnd_value = None }
+          | None -> []
           | Some bnd -> bnd
           in
           ic, bnd
         | None ->
           (* [idc] is a filtered variable: treat [id] as an assumption *)
-          i, { bnd_alias = []; bnd_value = None }
+          i, []
         in
         Some (ic, sub)
       | _ -> None
     in
-    let all = match oldbindings with
+    let all, vals = match oldbindings with
     | None ->
       begin match to_alias sigma a with
-      | Some v -> Int.Map.add i { bnd_alias = [v, id]; bnd_value = None } all
+      | Some v -> Int.Map.add i [v, id] all, vals
       | None ->
         match destEvar sigma a with
-        | ev -> Int.Map.add i { bnd_alias = []; bnd_value = Some (ev, id) } all
-        | exception DestKO -> all
+        | ev -> all, Int.Map.add i (ev, id) vals
+        | exception DestKO -> all, vals
       end
     | Some (ic, sub) ->
       (* Necessarily a let-binding aliasing a variable *)
       match to_alias sigma a with
-      | None -> all
+      | None -> all, vals
       | Some v ->
-        if List.exists (fun (c, _) -> eq_alias v c) sub.bnd_alias then all
-        else
-          let sub = { sub with bnd_alias = (v, id) :: sub.bnd_alias } in
-          Int.Map.add ic sub all
+        if List.exists (fun (c, _) -> eq_alias v c) sub then all, vals
+        else Int.Map.add ic ((v, id) :: sub) all, vals
     in
-    (i + 1, all, revmap)
+    (i + 1, all, vals, revmap)
   in
-  let (_, esubst, _) = List.fold_right2 fold sign args (0, Int.Map.empty, Id.Map.empty) in
+  let (_, ealias, evalue, _) = List.fold_right2 fold sign args (0, Int.Map.empty, Int.Map.empty, Id.Map.empty) in
+  (* Then extract the backpointers. *)
   let fold i bnd eindex =
     let fold accu (a, _) = match AlsMap.find a accu with
     | set -> AlsMap.add a (Int.Set.add i set) accu
     | exception Not_found -> AlsMap.add a (Int.Set.singleton i) accu
     in
-    List.fold_left fold eindex bnd.bnd_alias
+    List.fold_left fold eindex bnd
   in
-  let eindex = Int.Map.fold fold esubst AlsMap.empty in
-  { esubst; eindex }
+  let eindex = Int.Map.fold fold ealias AlsMap.empty in
+  { eindex; ealias; evalue }
 
 (*------------------------------------*
  * operations on the evar constraints *
@@ -956,36 +955,35 @@ exception NotUnique
 exception NotUniqueInType of (Id.t * evar_projection) list
 
 let rec assoc_up_to_alias sigma aliases y = function
-  | [] -> raise Not_found
+  | [] -> assert false
   | (c, id)::l ->
     if eq_alias c y then id
     else assoc_up_to_alias sigma aliases y l
 
 let rec find_projectable_vars aliases sigma y subst =
-  let is_projectable _ idcl (subst1,subst2 as subst') =
+  let indices = try AlsMap.find y subst.eindex with Not_found -> Int.Set.empty in
+  let is_projectable_var i subst1 =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
-    try
-      let id = assoc_up_to_alias sigma aliases y idcl.bnd_alias in
-      (id,ProjectVar)::subst1,subst2
-    with Not_found ->
+    let idcl = Int.Map.find i subst.ealias in
+    let id = assoc_up_to_alias sigma aliases y idcl in
+    (id, ProjectVar)::subst1
+  in
+  let is_projectable_evar i (c, id) subst2 =
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
-      match idcl.bnd_value with
-      | Some (c, id) when not @@ Evd.is_defined sigma (fst c) ->
-        (* Check for definedness because it might have been instantiated under
-           our feet. *)
-        begin
-          let (evk,argsv as t) = c in
-          let evi = Evd.find sigma evk in
-          let subst = make_projectable_subst aliases sigma (evar_filtered_context evi) argsv in
-          let l = find_projectable_vars aliases sigma y subst in
-          match l with
-          | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
-          | _ -> subst'
-        end
-      | Some _ | None -> subst'
+    if Int.Set.mem i indices then subst2 (* already found by is_projectable_var *)
+    else if Evd.is_defined sigma (fst c) then subst2 (* already solved *)
+    else
+      let (evk,argsv as t) = c in
+      let evi = Evd.find sigma evk in
+      let subst = make_projectable_subst aliases sigma (evar_filtered_context evi) argsv in
+      let l = find_projectable_vars aliases sigma y subst in
+      match l with
+      | [id',p] -> (id, ProjectEvar (t, evi, id', p)) :: subst2
+      | _ -> subst2
   in
-  let subst1,subst2 = Int.Map.fold is_projectable subst.esubst ([],[]) in
+  let subst1 = Int.Set.fold is_projectable_var indices [] in
+  let subst2 = Int.Map.fold is_projectable_evar subst.evalue [] in
   (* We return the substitution with ProjectVar first (from most
      recent to oldest var), followed by ProjectEvar (from most recent
      to oldest var too) *)
@@ -1002,9 +1000,8 @@ let filter_solution = function
 let project_with_effects aliases sigma t subst =
   let indices = AlsMap.find t subst.eindex in
   let is_projectable i accu =
-    let idcl = Int.Map.find i subst.esubst in
-    try assoc_up_to_alias sigma aliases t idcl.bnd_alias :: accu
-    with Not_found -> accu
+    let idcl = Int.Map.find i subst.ealias in
+    assoc_up_to_alias sigma aliases t idcl :: accu
   in
   filter_solution (Int.Set.fold is_projectable indices [])
 
