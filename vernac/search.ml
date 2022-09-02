@@ -86,13 +86,8 @@ let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> co
   in
   List.iter iter_var (Environ.named_context env);
   let globals = Environ.Globals.view env.env_globals in
-  try
-    Cmap_env.iter iter_constant globals.constants;
-    Mindmap_env.iter iter_inductive globals.inductives
-  with Not_found ->
-    (* Not sure what is supposed to raise Not_found, TODO try removing
-       this catch and add comment if actually needed *)
-    ()
+  Cmap_env.iter iter_constant globals.constants;
+  Mindmap_env.iter iter_inductive globals.inductives
 
 (** This module defines a preference on constrs in the form of a
     [compare] function (preferred constr must be big for this
