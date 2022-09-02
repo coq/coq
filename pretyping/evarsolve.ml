@@ -706,44 +706,10 @@ let solve_pattern_eqn env sigma l c =
  * useful to ensure the uniqueness of a projection.
 *)
 
-module EAlias :
-sig
-  type t
-  val make : Evd.evar_map -> EConstr.t -> t option
-  val is_constr : Evd.evar_map -> EConstr.t -> t -> bool
-  val to_alias : Evd.evar_map -> t -> alias option
-  val to_evar : Evd.evar_map -> t -> existential option
-end =
-struct
+type ebind = { bnd_alias : (alias * Id.t) list; bnd_value : (existential * Id.t) option }
+(* We enforce that both projections cannot be empty at the same time *)
 
-type t =
-| ERel of int
-| EVar of Id.t
-| EEvar of existential
-
-let make sigma c = match EConstr.kind sigma c with
-| Rel n -> Some (ERel n)
-| Var id -> Some (EVar id)
-| Evar ev -> Some (EEvar ev)
-| _ -> None
-
-let is_constr sigma c a = match a with
-| ERel n -> isRelN sigma n c
-| EVar id -> isVarId sigma id c
-| EEvar ev -> EConstr.eq_constr sigma (mkEvar ev) c
-
-let to_alias sigma a = match a with
-| ERel n -> Some (RelAlias n)
-| EVar id -> Some (VarAlias id)
-| EEvar ev -> to_alias sigma (mkEvar ev)
-
-let to_evar sigma a = match a with
-| ERel _ | EVar _ -> None
-| EEvar ev -> try Some (destEvar sigma (mkEvar ev)) with DestKO -> None
-
-end
-
-type esubst = { esubst : (EAlias.t * Names.Id.t) list Int.Map.t }
+type esubst = { esubst : ebind Int.Map.t }
 
 let make_constructor_subst sigma sign args =
   let fold decl a accu = match decl with
@@ -772,26 +738,36 @@ let make_projectable_subst aliases sigma sign args =
         let idc = normalize_alias_var evar_aliases id' in
         let ic, sub = match Id.Map.find_opt idc revmap with
         | Some ic ->
-          ic, (try Int.Map.find ic all with Not_found -> [])
+          let bnd = match Int.Map.find_opt ic all with
+          | None -> { bnd_alias = []; bnd_value = None }
+          | Some bnd -> bnd
+          in
+          ic, bnd
         | None ->
           (* [idc] is a filtered variable: treat [id] as an assumption *)
-          i, []
+          i, { bnd_alias = []; bnd_value = None }
         in
         Some (ic, sub)
       | _ -> None
     in
     let all = match oldbindings with
     | None ->
-      begin match EAlias.make sigma a with
-      | None -> all
-      | Some v -> Int.Map.add i [v, id] all
+      begin match to_alias sigma a with
+      | Some v -> Int.Map.add i { bnd_alias = [v, id]; bnd_value = None } all
+      | None ->
+        match destEvar sigma a with
+        | ev -> Int.Map.add i { bnd_alias = []; bnd_value = Some (ev, id) } all
+        | exception DestKO -> all
       end
     | Some (ic, sub) ->
       (* Necessarily a let-binding aliasing a variable *)
-      if List.exists (fun (c, _) -> EAlias.is_constr sigma a c) sub then all
-      else match EAlias.make sigma a with
+      match to_alias sigma a with
       | None -> all
-      | Some v -> Int.Map.add ic ((v, id) :: sub) all
+      | Some v ->
+        if List.exists (fun (c, _) -> eq_alias v c) sub.bnd_alias then all
+        else
+          let sub = { sub with bnd_alias = (v, id) :: sub.bnd_alias } in
+          Int.Map.add ic sub all
     in
     (i + 1, all, revmap)
   in
@@ -962,25 +938,22 @@ exception NotUniqueInType of (Id.t * evar_projection) list
 let rec assoc_up_to_alias sigma aliases y = function
   | [] -> raise Not_found
   | (c, id)::l ->
-    match EAlias.to_alias sigma c with
-    | None -> assoc_up_to_alias sigma aliases y l
-    | Some c ->
-      if eq_alias c y then id
-      else assoc_up_to_alias sigma aliases y l
+    if eq_alias c y then id
+    else assoc_up_to_alias sigma aliases y l
 
 let rec find_projectable_vars aliases sigma y subst =
   let is_projectable _ idcl (subst1,subst2 as subst') =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
     try
-      let id = assoc_up_to_alias sigma aliases y idcl in
+      let id = assoc_up_to_alias sigma aliases y idcl.bnd_alias in
       (id,ProjectVar)::subst1,subst2
     with Not_found ->
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
-      let f (c, id) = match EAlias.to_evar sigma c with None -> None | Some ev -> Some (ev, id) in
-      let idcl' = List.map_filter f idcl in
-      match idcl' with
-      | [c, id] ->
+      match idcl.bnd_value with
+      | Some (c, id) when not @@ Evd.is_defined sigma (fst c) ->
+        (* Check for definedness because it might have been instantiated under
+           our feet. *)
         begin
           let (evk,argsv as t) = c in
           let evi = Evd.find sigma evk in
@@ -990,8 +963,7 @@ let rec find_projectable_vars aliases sigma y subst =
           | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
           | _ -> subst'
         end
-      | [] -> subst'
-      | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
+      | Some _ | None -> subst'
   in
   let subst1,subst2 = Int.Map.fold is_projectable subst.esubst ([],[]) in
   (* We return the substitution with ProjectVar first (from most
@@ -1009,7 +981,7 @@ let filter_solution = function
 
 let project_with_effects aliases sigma t subst =
   let is_projectable _ idcl accu =
-    try assoc_up_to_alias sigma aliases t idcl :: accu
+    try assoc_up_to_alias sigma aliases t idcl.bnd_alias :: accu
     with Not_found -> accu
   in
   filter_solution (Int.Map.fold is_projectable subst.esubst [])
