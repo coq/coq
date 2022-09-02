@@ -339,6 +339,15 @@ let eq_alias a b = match a, b with
 | VarAlias id1, VarAlias id2 -> Id.equal id1 id2
 | _ -> false
 
+let compare_alias a b = match a, b with
+| RelAlias n, RelAlias m -> Int.compare n m
+| VarAlias id1, VarAlias id2 -> Id.compare id1 id2
+| RelAlias _, VarAlias _ -> -1
+| VarAlias _, RelAlias _ -> 1
+
+module AlsOrd = struct type t = alias let compare = compare_alias end
+module AlsMap = Map.Make(AlsOrd)
+
 (* A chain of let-in ended either by a declared variable or a non-variable term *)
 (* e.g. [x:=t;y:=x;z:=y] binds [z] to [NonVarAliasChain ([y;x],t)] *)
 (* and. [a:T;x:=a;y:=x;z:=y] binds [z] to [VarAliasChain ([y;x],a)] *)
@@ -709,7 +718,10 @@ let solve_pattern_eqn env sigma l c =
 type ebind = { bnd_alias : (alias * Id.t) list; bnd_value : (existential * Id.t) option }
 (* We enforce that both projections cannot be empty at the same time *)
 
-type esubst = { esubst : ebind Int.Map.t }
+type esubst = {
+  esubst : ebind Int.Map.t;
+  eindex : Int.Set.t AlsMap.t;
+}
 
 let make_constructor_subst sigma sign args =
   let fold decl a accu = match decl with
@@ -771,8 +783,16 @@ let make_projectable_subst aliases sigma sign args =
     in
     (i + 1, all, revmap)
   in
-  let (_, full_subst, _) = List.fold_right2 fold sign args (0, Int.Map.empty, Id.Map.empty) in
-  { esubst = full_subst }
+  let (_, esubst, _) = List.fold_right2 fold sign args (0, Int.Map.empty, Id.Map.empty) in
+  let fold i bnd eindex =
+    let fold accu (a, _) = match AlsMap.find a accu with
+    | set -> AlsMap.add a (Int.Set.add i set) accu
+    | exception Not_found -> AlsMap.add a (Int.Set.singleton i) accu
+    in
+    List.fold_left fold eindex bnd.bnd_alias
+  in
+  let eindex = Int.Map.fold fold esubst AlsMap.empty in
+  { esubst; eindex }
 
 (*------------------------------------*
  * operations on the evar constraints *
@@ -980,11 +1000,13 @@ let filter_solution = function
   | [id] -> mkVar id
 
 let project_with_effects aliases sigma t subst =
-  let is_projectable _ idcl accu =
+  let indices = AlsMap.find t subst.eindex in
+  let is_projectable i accu =
+    let idcl = Int.Map.find i subst.esubst in
     try assoc_up_to_alias sigma aliases t idcl.bnd_alias :: accu
     with Not_found -> accu
   in
-  filter_solution (Int.Map.fold is_projectable subst.esubst [])
+  filter_solution (Int.Set.fold is_projectable indices [])
 
 (* In case the solution to a projection problem requires the instantiation of
  * subsidiary evars, [do_projection_effects] performs them; it
