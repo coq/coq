@@ -1,0 +1,4 @@
+File "./output/ltac2_match_warning_14135.v", line 19, characters 4-10:
+Warning: The following clause is redundant. [redundant-clause,ltac]
+File "./output/ltac2_match_warning_14135.v", line 26, characters 4-5:
+Warning: The following clause is redundant. [redundant-clause,ltac]
