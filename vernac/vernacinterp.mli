@@ -8,7 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** The main interpretation function of vernacular expressions *)
+(** The main interpretation function of vernacular expressions.
+
+    Caveat: we don't correctly handle proof modes in the case of nested proofs,
+    in particular ending the inner one does not restore the proof mode of the
+    outern one if it is not the standard one.  *)
 val interp : ?verbosely:bool -> st:Vernacstate.t -> Vernacexpr.vernac_control -> Vernacstate.t
 
 (** Execute a Qed but with a proof_object which may contain a delayed
