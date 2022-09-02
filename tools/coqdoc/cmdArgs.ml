@@ -230,9 +230,13 @@ let parse_args () =
 (* Deprecated options *)
 let single_hyphen_opts =
   ["-html"; "-latex"; "-texmacs"; "-raw"; "-dvi"; "-ps"; "-pdf"; "-stdout"; "-output"; "-directory"; "-gallina"; "-short"; "-light"; "-title"; "-body-only"; "-no-preamble"; "-with-header"; "-with-footer"; "-no-index"; "-multi-index"; "-index"; "-toc"; "-table-of-contents"; "-vernac-file"; "-tex-file"; "-preamble"; "-files-from"; "-files"; "-glob-from"; "-no-glob"; "-quiet"; "-verbose"; "-no-externals"; "-external"; "-coqlib_url"; "-coqlib"; "-latin1"; "-utf8"; "-charset"; "-inputenc"; "-interpolate"; "-raw-comments"; "-parse-comments"; "-plain-comments"; "-toc-depth"; "-no-lib-name"; "-lib-name"; "-lib-subtitles"; "-inline-notmono"; "-version"] in
+let deprecated_mapper_opts =
+  [("-noindex", "--no-index"); ("-nopreamble", "--no-preamble"); ("-noexternals", "--no-externals"); ("-V", "--version")] in
   let new_argv = Array.map (fun s -> match List.find_opt (fun m -> m = s) single_hyphen_opts with
     | Some _ -> Printf.sprintf "-%s" s
-    | None -> s) Sys.argv in
+    | None -> (match List.assoc_opt s deprecated_mapper_opts with
+               | Some b -> b
+               | None -> s)) Sys.argv in
   try
     Arg.parse_argv new_argv args_options add_input_files usage_msg
   with
