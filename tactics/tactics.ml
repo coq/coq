@@ -1668,22 +1668,18 @@ let find_ind_eliminator env sigma ind s =
   let gr = lookup_eliminator env ind s in
   Evd.fresh_global env sigma gr
 
-let find_eliminator c gl =
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  let concl = Proofview.Goal.concl gl in
-  let sigma, t = Typing.type_of env sigma c in
-  let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
-  if is_nonrec env ind then raise IsNonrec;
-  let sigma, c = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
-  sigma, ElimTerm c
-
 let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
     (Proofview.Goal.enter begin fun gl ->
-      let sigma, elim = find_eliminator c gl in
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let concl = Proofview.Goal.concl gl in
+      let sigma, t = Typing.type_of env sigma c in
+      let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
+      if is_nonrec env ind then raise IsNonrec;
+      let sigma, elim = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-      (general_elim with_evars clear_flag cx elim)
+      (general_elim with_evars clear_flag cx (ElimTerm elim))
     end)
     begin function (e, info) -> match e with
       | IsNonrec ->
