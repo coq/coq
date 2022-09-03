@@ -72,47 +72,55 @@ type substitutivity = Dispose | Substitute | Keep | Anticipate
 
 type object_name = Libnames.full_path * KerName.t
 
-type open_filter
+module Open_filter : sig
+
+  type t
+
+  val unfiltered : t
+
+  val make : finite:bool -> string CAst.t list -> t
+  (** Anomaly when the list is empty. *)
+
+  module Category : sig
+
+    type t
+    val make : string -> t
+    (** Anomaly if called more than once for a given string. *)
+
+  end
+
+  val simple_open : ?cat:Category.t -> ('i -> 'a -> unit) ->
+    t -> 'i -> 'a -> unit
+  (** Combinator for making objects with simple category-based open
+      behaviour. When [cat:None], can be opened by Unfiltered, but also
+      by Filtered with a negative set. *)
+
+  val in_ : cat:Category.t option -> t -> bool
+  (** On [cat:None], returns whether the filter allows opening
+      uncategorized objects.
+
+      On [cat:(Some category)], returns whether the filter allows
+      opening objects in the given [category]. *)
+
+
+  val and_ : t -> t -> t option
+  (** Returns [None] when the intersection is empty. *)
+
+  val or_ :  t -> t -> t
+
+end
 
 type ('a,'b) object_declaration = {
   object_name : string;
   object_stage : Summary.Stage.t;
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
-  open_function : open_filter -> int -> 'b -> unit;
+  open_function : Open_filter.t -> int -> 'b -> unit;
   classify_function : 'a -> substitutivity;
   subst_function :  substitution * 'a -> 'a;
   discharge_function : 'a -> 'a option;
   rebuild_function : 'a -> 'a;
 }
-
-val unfiltered : open_filter
-
-val make_filter : finite:bool -> string CAst.t list -> open_filter
-(** Anomaly when the list is empty. *)
-
-type category
-
-val create_category : string -> category
-(** Anomaly if called more than once for a given string. *)
-
-val in_filter : cat:category option -> open_filter -> bool
-(** On [cat:None], returns whether the filter allows opening
-   uncategorized objects.
-
-    On [cat:(Some category)], returns whether the filter allows
-   opening objects in the given [category]. *)
-
-val simple_open : ?cat:category -> ('i -> 'a -> unit) ->
-  open_filter -> 'i -> 'a -> unit
-(** Combinator for making objects with simple category-based open
-   behaviour. When [cat:None], can be opened by Unfiltered, but also
-   by Filtered with a negative set. *)
-
-val filter_and : open_filter -> open_filter -> open_filter option
-(** Returns [None] when the intersection is empty. *)
-
-val filter_or :  open_filter -> open_filter -> open_filter
 
 (** The default object is a "Keep" object with empty methods.
    Object creators are advised to use the construction
@@ -146,7 +154,7 @@ and t =
   | ModuleTypeObject of Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of Id.t * t list
-  | ExportObject of { mpl : (open_filter * ModPath.t) list }
+  | ExportObject of { mpl : (Open_filter.t * ModPath.t) list }
   | AtomicObject of obj
 
 and substitutive_objects = MBId.t list * algebraic_objects
@@ -181,7 +189,7 @@ val declare_named_object_gen :
 
 val cache_object : object_prefix * obj -> unit
 val load_object : int -> object_prefix * obj -> unit
-val open_object : open_filter -> int -> object_prefix * obj -> unit
+val open_object : Open_filter.t -> int -> object_prefix * obj -> unit
 val subst_object : substitution * obj -> obj
 val classify_object : obj -> substitutivity
 val discharge_object : obj -> obj option
@@ -211,13 +219,13 @@ val local_object_nodischarge : string ->
   cache:('a -> unit) ->
   ('a,'a) object_declaration
 
-val global_object : ?cat:category -> string ->
+val global_object : ?cat:Open_filter.Category.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:('a -> 'a option) ->
   ('a,'a) object_declaration
 
-val global_object_nodischarge : ?cat:category -> string ->
+val global_object_nodischarge : ?cat:Open_filter.Category.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   ('a,'a) object_declaration

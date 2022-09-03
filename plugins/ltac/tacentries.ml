@@ -286,11 +286,11 @@ let subst_tactic_notation (subst, (tobj, body)) =
 
 let classify_tactic_notation tacobj = Substitute
 
-let ltac_notation_cat = Libobject.create_category "ltac.notations"
+let ltac_notation_cat = Libobject.Open_filter.Category.make "ltac.notations"
 
 let inTacticGrammar : tactic_grammar_obj * Tacenv.alias_tactic -> obj =
   declare_object {(default_object "TacticGrammar") with
-       open_function = simple_open ~cat:ltac_notation_cat open_tactic_notation;
+       open_function = Open_filter.simple_open ~cat:ltac_notation_cat open_tactic_notation;
        load_function = load_tactic_notation;
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;
@@ -323,7 +323,7 @@ let classify_tactic_syntax tacobj = Substitute
 let inTacticSyntax : tactic_grammar_obj -> obj =
   declare_object {(default_object "TacticSyntax") with
        object_stage = Summary.Stage.Synterp;
-       open_function = simple_open ~cat:ltac_notation_cat open_tactic_syntax;
+       open_function = Open_filter.simple_open ~cat:ltac_notation_cat open_tactic_syntax;
        load_function = load_tactic_syntax;
        cache_function = cache_tactic_syntax;
        subst_function = subst_tactic_syntax;

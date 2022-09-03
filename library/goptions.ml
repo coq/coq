@@ -99,7 +99,7 @@ module MakeTable =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.object_stage = Summary.Stage.Synterp;
                 Libobject.load_function = load_options;
-                Libobject.open_function = Libobject.simple_open load_options;
+                Libobject.open_function = Libobject.Open_filter.simple_open load_options;
                 Libobject.cache_function = cache_options;
                 Libobject.subst_function = subst_options;
                 Libobject.classify_function = (fun x -> Substitute)}
@@ -293,7 +293,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
           { (default_object (nickname key)) with
             object_stage = stage;
             load_function = load_options;
-            open_function = simple_open open_options;
+            open_function = Open_filter.simple_open open_options;
             cache_function = cache_options;
             subst_function = subst_options;
             discharge_function = discharge_options;

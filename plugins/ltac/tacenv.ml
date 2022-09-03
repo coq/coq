@@ -200,7 +200,7 @@ let inMD : tacdef -> obj =
   declare_named_object_gen {(default_object "TAC-DEFINITION") with
      cache_function = cache_md;
      load_function = load_md;
-     open_function = simple_open open_md;
+     open_function = Open_filter.simple_open open_md;
      subst_function = subst_md;
      classify_function = classify_md}
 

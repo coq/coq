@@ -76,9 +76,9 @@ val start_modtype :
 
 val end_modtype : unit -> ModPath.t
 
-val import_module : Libobject.open_filter -> export:Lib.export_flag -> ModPath.t -> unit
+val import_module : Libobject.Open_filter.t -> export:Lib.export_flag -> ModPath.t -> unit
 
-val import_modules : export:Lib.export_flag -> (Libobject.open_filter * ModPath.t) list -> unit
+val import_modules : export:Lib.export_flag -> (Libobject.Open_filter.t * ModPath.t) list -> unit
 
 val register_library : library_name -> library_objects -> unit
 
@@ -139,11 +139,11 @@ val register_library :
    or when [mp] corresponds to a functor. If [export] is [true], the module is also
    opened every time the module containing it is. *)
 
-val import_module : Libobject.open_filter -> export:Lib.export_flag -> ModPath.t -> unit
+val import_module : Libobject.Open_filter.t -> export:Lib.export_flag -> ModPath.t -> unit
 
 (** Same as [import_module] but for multiple modules, and more optimized than
     iterating [import_module]. *)
-val import_modules : export:Lib.export_flag -> (Libobject.open_filter * ModPath.t) list -> unit
+val import_modules : export:Lib.export_flag -> (Libobject.Open_filter.t * ModPath.t) list -> unit
 
 (** Include  *)
 
@@ -183,7 +183,7 @@ val process_module_binding :
 
 (** Compatibility layer *)
 
-val import_module : Libobject.open_filter -> export:Lib.export_flag -> ModPath.t -> unit
+val import_module : Libobject.Open_filter.t -> export:Lib.export_flag -> ModPath.t -> unit
 
 val declare_module :
   Id.t ->

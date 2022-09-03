@@ -923,7 +923,7 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object
     {(default_object "SYNTAX-EXTENSION") with
      object_stage = Summary.Stage.Synterp;
-     open_function = simple_open ~cat:notation_cat open_syntax_extension;
+     open_function = Open_filter.simple_open ~cat:notation_cat open_syntax_extension;
      cache_function = cache_syntax_extension;
      subst_function = subst_syntax_extension;
      classify_function = classify_syntax_definition}
@@ -1515,7 +1515,7 @@ let classify_notation nobj =
 
 let inNotation : notation_obj -> obj =
   declare_object {(default_object "NOTATION") with
-       open_function = simple_open ~cat:notation_cat open_notation;
+       open_function = Open_filter.simple_open ~cat:notation_cat open_notation;
        cache_function = cache_notation;
        subst_function = subst_notation;
        load_function = load_notation;
@@ -1542,7 +1542,7 @@ let classify_scope (local,_,_) =
 let inScope : bool * bool * scope_name -> obj =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
-      open_function = simple_open ~cat:notation_cat open_scope;
+      open_function = Libobject.Open_filter.simple_open ~cat:notation_cat open_scope;
       subst_function = subst_scope;
       discharge_function = discharge_scope;
       classify_function = classify_scope }
@@ -1883,7 +1883,7 @@ let classify_scope_command (local, _, _) =
 let inScopeCommand : locality_flag * scope_name * scope_command -> obj =
   declare_object {(default_object "DELIMITERS") with
       cache_function = cache_scope_command;
-      open_function = simple_open ~cat:notation_cat open_scope_command;
+      open_function = Open_filter.simple_open ~cat:notation_cat open_scope_command;
       load_function = load_scope_command;
       subst_function = subst_scope_command;
       classify_function = classify_scope_command}
@@ -1960,7 +1960,7 @@ let classify_notation_toggle (local,_) =
 let inNotationActivation : locality_flag * (bool * bool * notation_query_pattern) -> obj =
   declare_object {(default_object "NOTATION-TOGGLE") with
       cache_function = cache_notation_toggle;
-      open_function = simple_open open_notation_toggle;
+      open_function = Open_filter.simple_open open_notation_toggle;
       load_function = load_notation_toggle;
       subst_function = subst_notation_toggle;
       classify_function = classify_notation_toggle}

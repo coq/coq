@@ -78,7 +78,7 @@ let declare_tactic_option ?(default=CAst.make (Tacexpr.TacId[])) name =
       { (default_object name) with
         cache_function = cache;
         load_function = load;
-        open_function = simple_open import;
+        open_function = Open_filter.simple_open import;
         classify_function = classify;
         subst_function = subst}
   in

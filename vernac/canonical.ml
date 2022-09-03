@@ -25,11 +25,11 @@ let discharge_canonical_structure (x, local) =
   if local || (Globnames.isVarRef gref && Lib.is_in_section gref) then None
   else Some (x, local)
 
-let canon_cat = create_category "canonicals"
+let canon_cat = Open_filter.Category.make "canonicals"
 
 let inCanonStruc : Instance.t * bool -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
-                  open_function = simple_open ~cat:canon_cat open_canonical_structure;
+                  open_function = Open_filter.simple_open ~cat:canon_cat open_canonical_structure;
                   cache_function = cache_canonical_structure;
                   subst_function = (fun (subst,(c,local)) -> Instance.subst subst c, local);
                   classify_function = (fun x -> Substitute);

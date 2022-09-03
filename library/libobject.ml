@@ -14,59 +14,65 @@ type substitutivity = Dispose | Substitute | Keep | Anticipate
 
 type object_name = Libnames.full_path * Names.KerName.t
 
-type open_filter =
-  | Unfiltered
-  | Filtered of CString.Pred.t
+module Open_filter = struct
 
-type category = string
+  type t =
+    | Unfiltered
+    | Filtered of CString.Pred.t
 
-let known_cats = ref CString.Set.empty
+  module Category = struct
+    type t = string
 
-let create_category s =
-  let cats' = CString.Set.add s !known_cats in
-  if !known_cats == cats' then CErrors.anomaly Pp.(str "create_category called twice on " ++ str s);
-  known_cats := cats';
-  s
+    let known = ref CString.Set.empty
 
-let unfiltered = Unfiltered
-let make_filter ~finite cats =
-  if CList.is_empty cats then CErrors.anomaly Pp.(str "Libobject.make_filter got an empty list.");
-  let cats = List.fold_left
-      (fun cats CAst.{v=cat;loc} ->
-         if not (CString.Set.mem cat !known_cats)
-         then CErrors.user_err ?loc Pp.(str "Unknown import category " ++ str cat ++ str".");
-         CString.Pred.add cat cats)
-      CString.Pred.empty
-      cats
-  in
-  let cats = if finite then cats else CString.Pred.complement cats in
-  Filtered cats
+    let make s =
+      let cats' = CString.Set.add s !known in
+      if !known == cats' then CErrors.anomaly Pp.(str "create_category called twice on " ++ str s);
+      known := cats';
+      s
+  end
 
-let in_filter ~cat f =
-  match cat, f with
-  | _, Unfiltered -> true
-  | None, Filtered f -> not (CString.Pred.is_finite f)
-  | Some cat, Filtered f -> CString.Pred.mem cat f
+  let unfiltered = Unfiltered
 
-let simple_open ?cat f filter i o = if in_filter ~cat filter then f i o
+  let make ~finite cats =
+    if CList.is_empty cats then CErrors.anomaly Pp.(str "Libobject.make_filter got an empty list.");
+    let cats = List.fold_left
+        (fun cats CAst.{v=cat;loc} ->
+           if not (CString.Set.mem cat !Category.known)
+           then CErrors.user_err ?loc Pp.(str "Unknown import category " ++ str cat ++ str".");
+           CString.Pred.add cat cats)
+        CString.Pred.empty
+        cats
+    in
+    let cats = if finite then cats else CString.Pred.complement cats in
+    Filtered cats
 
-let filter_and f1 f2 = match f1, f2 with
-  | Unfiltered, f | f, Unfiltered -> Some f
-  | Filtered f1, Filtered f2 ->
-    let f = CString.Pred.inter f1 f2 in
-    if CString.Pred.is_empty f then None
-    else Some (Filtered f)
+  let in_ ~cat f =
+    match cat, f with
+    | _, Unfiltered -> true
+    | None, Filtered f -> not (CString.Pred.is_finite f)
+    | Some cat, Filtered f -> CString.Pred.mem cat f
 
-let filter_or f1 f2 = match f1, f2 with
-  | Unfiltered, f | f, Unfiltered -> Unfiltered
-  | Filtered f1, Filtered f2 -> Filtered (CString.Pred.union f1 f2)
+  let simple_open ?cat f filter i o = if in_ ~cat filter then f i o
+
+  let and_ f1 f2 = match f1, f2 with
+    | Unfiltered, f | f, Unfiltered -> Some f
+    | Filtered f1, Filtered f2 ->
+      let f = CString.Pred.inter f1 f2 in
+      if CString.Pred.is_empty f then None
+      else Some (Filtered f)
+
+  let or_ f1 f2 = match f1, f2 with
+    | Unfiltered, f | f, Unfiltered -> Unfiltered
+    | Filtered f1, Filtered f2 -> Filtered (CString.Pred.union f1 f2)
+end
 
 type ('a,'b) object_declaration = {
   object_name : string;
   object_stage : Summary.Stage.t;
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
-  open_function : open_filter -> int -> 'b -> unit;
+  open_function : Open_filter.t -> int -> 'b -> unit;
   classify_function : 'a -> substitutivity;
   subst_function :  Mod_subst.substitution * 'a -> 'a;
   discharge_function : 'a -> 'a option;
@@ -123,7 +129,7 @@ and t =
   | ModuleTypeObject of Names.Id.t * substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of Names.Id.t * t list
-  | ExportObject of { mpl : (open_filter * Names.ModPath.t) list }
+  | ExportObject of { mpl : (Open_filter.t * Names.ModPath.t) list }
   | AtomicObject of obj
 
 and substitutive_objects = Names.MBId.t list * algebraic_objects
@@ -234,7 +240,7 @@ let global_object_nodischarge ?cat s ~cache ~subst =
   let import i o = if Int.equal i 1 then cache o in
   { (default_object s) with
     cache_function = cache;
-    open_function = simple_open ?cat import;
+    open_function = Open_filter.simple_open ?cat import;
     subst_function = (match subst with
         | None -> fun _ ->
             CErrors.anomaly Pp.(str "The object " ++ str s

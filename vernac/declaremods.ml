@@ -98,7 +98,7 @@ module type ModActions = sig
 
   val enter_modtype : ModPath.t -> full_path -> int -> unit
 
-  val open_module : open_filter -> ModPath.t -> DirPath.t -> int -> unit
+  val open_module : Open_filter.t -> ModPath.t -> DirPath.t -> int -> unit
 
   module Lib : Lib.StagedLibS
 
@@ -129,7 +129,7 @@ struct
 
   let open_module f obj_mp obj_dir i =
     consistency_checks true obj_dir;
-    if in_filter ~cat:None f then Nametab.push_module (Nametab.Exactly i) obj_dir obj_mp
+    if Open_filter.in_ ~cat:None f then Nametab.push_module (Nametab.Exactly i) obj_dir obj_mp
 
   module Lib = Lib.Synterp
 
@@ -205,8 +205,11 @@ module type StagedModS = sig
 
   val do_module : (int -> Nametab.object_prefix -> Libobject.t list -> unit) -> int -> DirPath.t -> ModPath.t -> substitutive_objects -> Libobject.t list -> unit
   val load_objects : int -> Nametab.object_prefix -> Libobject.t list -> unit
-  val open_object : open_filter -> int -> Nametab.object_prefix * Libobject.t -> unit
-  val collect_modules : (open_filter * ModPath.t) list -> open_filter MPmap.t * (open_filter * (Nametab.object_prefix * Libobject.t)) list -> open_filter MPmap.t * (open_filter * (Nametab.object_prefix * Libobject.t)) list
+  val open_object : Open_filter.t -> int -> Nametab.object_prefix * Libobject.t -> unit
+  val collect_modules :
+    (Open_filter.t * ModPath.t) list ->
+    Open_filter.t MPmap.t * (Open_filter.t * (Nametab.object_prefix * Libobject.t)) list ->
+    Open_filter.t MPmap.t * (Open_filter.t * (Nametab.object_prefix * Libobject.t)) list
 
   val add_leaf : Libobject.t -> unit
   val add_leaves : Libobject.t list -> unit
@@ -460,12 +463,12 @@ and collect_objects f i prefix objs acc =
     (List.rev objs)
 
 and collect_export f (f',mp) (exports,objs as acc) =
-  match filter_and f f' with
+  match Open_filter.and_ f f' with
   | None -> acc
   | Some f ->
     let exports' = MPmap.update mp (function
         | None -> Some f
-        | Some f0 -> Some (filter_or f f0))
+        | Some f0 -> Some (Open_filter.or_ f f0))
         exports
     in
     (* If the map doesn't change there is nothing new to export.
@@ -539,7 +542,7 @@ and open_keep f i ((sp,kn),kobjs) =
 let cache_include (prefix, aobjs) =
   let o = expand_aobjs aobjs in
   load_objects 1 prefix o;
-  open_objects unfiltered 1 prefix o
+  open_objects Open_filter.unfiltered 1 prefix o
 
 and cache_keep ((sp,kn),kobjs) =
   anomaly (Pp.str "This module should not be cached!")

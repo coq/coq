@@ -34,7 +34,7 @@ let mkRef (env,sigmaref) r =
 let mkConstruct esig c = mkRef esig (ConstructRef c)
 let mkInd esig i = mkRef esig (IndRef i)
 
-let notation_cat = Libobject.create_category "notations"
+let notation_cat = Libobject.Open_filter.Category.make "notations"
 
 
 (*s A scope is a set of notations; it includes
@@ -1223,7 +1223,7 @@ let open_prim_token_interpretation i o =
 
 let inPrimTokenInterp : prim_token_infos -> obj =
   declare_object {(default_object "PRIM-TOKEN-INTERP") with
-     open_function  = simple_open ~cat:notation_cat open_prim_token_interpretation;
+     open_function  = Open_filter.simple_open ~cat:notation_cat open_prim_token_interpretation;
      cache_function = cache_prim_token_interpretation;
      subst_function = subst_prim_token_interpretation;
      classify_function = classify_prim_token_interpretation}

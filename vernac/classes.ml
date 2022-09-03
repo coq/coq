@@ -139,7 +139,7 @@ let instance_input : instance_obj -> obj =
     { (default_object "type classes instances state") with
       cache_function = cache_instance;
       load_function = load_instance;
-      open_function = simple_open ~cat:Hints.hint_cat open_instance;
+      open_function = Open_filter.simple_open ~cat:Hints.hint_cat open_instance;
       classify_function = classify_instance;
       discharge_function = discharge_instance;
       rebuild_function = rebuild_instance;

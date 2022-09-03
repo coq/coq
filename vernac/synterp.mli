@@ -61,19 +61,19 @@ type synterp_entry =
   | EVernacEndSegment of Names.lident
   | EVernacRequire of
       Library.library_t list * DirPath.t list * Vernacexpr.export_with_cats option * (qualid * Vernacexpr.import_filter_expr) list
-  | EVernacImport of (Vernacexpr.export_flag * Libobject.open_filter) *
+  | EVernacImport of (Vernacexpr.export_flag * Libobject.Open_filter.t) *
       (Names.ModPath.t CAst.t * Vernacexpr.import_filter_expr) list
   | EVernacDeclareModule of Lib.export * lident *
       Declaremods.module_params_expr *
       module_entry
   | EVernacDefineModule of Lib.export * lident *
       Declaremods.module_params_expr *
-      ((Vernacexpr.export_flag * Libobject.open_filter) * Names.ModPath.t) list *
+      ((Vernacexpr.export_flag * Libobject.Open_filter.t) * Names.ModPath.t) list *
       module_entry Declaremods.module_signature *
       module_entry list
   | EVernacDeclareModuleType of lident *
       Declaremods.module_params_expr *
-      ((Vernacexpr.export_flag * Libobject.open_filter) * Names.ModPath.t) list *
+      ((Vernacexpr.export_flag * Libobject.Open_filter.t) * Names.ModPath.t) list *
       module_entry list *
       module_entry list
   | EVernacInclude of Declaremods.module_expr list

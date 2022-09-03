@@ -28,7 +28,7 @@ val secvars_of_hyps : ('c, 't) Context.Named.pt -> Id.Pred.t
 
 val empty_hint_info : 'a Typeclasses.hint_info_gen
 
-val hint_cat : Libobject.category
+val hint_cat : Libobject.Open_filter.Category.t
 
 (** Pre-created hint databases *)
 

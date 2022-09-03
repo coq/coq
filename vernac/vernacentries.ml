@@ -1161,8 +1161,8 @@ let import_names ~export m ns =
 
 let interp_import_cats cats =
   Option.cata
-    (fun cats -> Libobject.make_filter ~finite:(not cats.negative) cats.import_cats)
-    Libobject.unfiltered
+    (fun cats -> Libobject.Open_filter.make ~finite:(not cats.negative) cats.import_cats)
+    Libobject.Open_filter.unfiltered
     cats
 
 (* Assumes cats is irrelevant if f is ImportNames *)

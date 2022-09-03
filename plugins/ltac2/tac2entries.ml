@@ -100,7 +100,7 @@ let inTacDef : Id.t -> tacdef -> obj =
   declare_named_object {(default_object "TAC2-DEFINITION") with
      cache_function  = cache_tacdef;
      load_function   = load_tacdef;
-     open_function   = simple_open open_tacdef;
+     open_function   = Open_filter.simple_open open_tacdef;
      subst_function = subst_tacdef;
      classify_function = classify_tacdef}
 
@@ -207,7 +207,7 @@ let inTypDef : Id.t -> typdef -> obj =
   declare_named_object {(default_object "TAC2-TYPE-DEFINITION") with
      cache_function  = cache_typdef;
      load_function   = load_typdef;
-     open_function   = simple_open open_typdef;
+     open_function   = Open_filter.simple_open open_typdef;
      subst_function = subst_typdef;
      classify_function = classify_typdef}
 
@@ -277,7 +277,7 @@ let inTypExt : typext -> obj =
   declare_named_object_gen {(default_object "TAC2-TYPE-EXTENSION") with
      cache_function  = cache_typext;
      load_function   = load_typext;
-     open_function   = simple_open open_typext;
+     open_function   = Open_filter.simple_open open_typext;
      subst_function = subst_typext;
      classify_function = classify_typext}
 
@@ -707,13 +707,13 @@ let subst_synext (subst, syn) =
 let classify_synext o =
   if o.synext_loc then Dispose else Substitute
 
-let ltac2_notation_cat = Libobject.create_category "ltac2.notations"
+let ltac2_notation_cat = Libobject.Open_filter.Category.make "ltac2.notations"
 
 let inTac2Notation : synext -> obj =
   declare_object {(default_object "TAC2-NOTATION") with
      object_stage = Summary.Stage.Synterp;
      cache_function  = cache_synext;
-     open_function   = simple_open ~cat:ltac2_notation_cat open_synext;
+     open_function   = Open_filter.simple_open ~cat:ltac2_notation_cat open_synext;
      subst_function = subst_synext;
      classify_function = classify_synext}
 
@@ -735,7 +735,7 @@ let classify_synext_interp (local,_,_) =
 let inTac2NotationInterp : (bool*KerName.t*raw_tacexpr) -> obj =
   declare_object {(default_object "TAC2-NOTATION-INTERP") with
      cache_function  = cache_synext_interp;
-     open_function   = simple_open ~cat:ltac2_notation_cat open_synext_interp;
+     open_function   = Open_filter.simple_open ~cat:ltac2_notation_cat open_synext_interp;
      subst_function = subst_synext_interp;
      classify_function = classify_synext_interp}
 
@@ -766,7 +766,7 @@ let inTac2Abbreviation : Id.t -> abbreviation -> obj =
   declare_named_object {(default_object "TAC2-ABBREVIATION") with
      cache_function  = cache_abbreviation;
      load_function   = load_abbreviation;
-     open_function   = simple_open ~cat:ltac2_notation_cat open_abbreviation;
+     open_function   = Open_filter.simple_open ~cat:ltac2_notation_cat open_abbreviation;
      subst_function = subst_abbreviation;
      classify_function = classify_abbreviation}
 
@@ -872,7 +872,7 @@ let inTac2Redefinition : redefinition -> obj =
   declare_object
     {(default_object "TAC2-REDEFINITION") with
      cache_function  = perform_redefinition;
-     open_function   = simple_open (fun _ -> perform_redefinition);
+     open_function   = Open_filter.simple_open (fun _ -> perform_redefinition);
      subst_function = subst_redefinition;
      classify_function = classify_redefinition;
     }

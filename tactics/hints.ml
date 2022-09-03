@@ -1246,14 +1246,14 @@ let discharge_autohint obj =
     if is_trivial_action action then None
     else Some { obj with hint_action = action }
 
-let hint_cat = create_category "hints"
+let hint_cat = Open_filter.Category.make "hints"
 
 let inAutoHint : hint_obj -> obj =
   declare_object
     {(default_object "AUTOHINT") with
      cache_function = cache_autohint;
      load_function = load_autohint;
-     open_function = simple_open ~cat:hint_cat open_autohint;
+     open_function = Open_filter.simple_open ~cat:hint_cat open_autohint;
      subst_function = subst_autohint;
      classify_function = classify_autohint;
      discharge_function = discharge_autohint;

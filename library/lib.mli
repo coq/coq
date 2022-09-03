@@ -18,7 +18,7 @@ open Names
 
 type is_type = bool (* Module Type or just Module *)
 type export_flag = Export | Import
-type export = (export_flag * Libobject.open_filter) option (* None for a Module Type *)
+type export = (export_flag * Libobject.Open_filter.t) option (* None for a Module Type *)
 
 val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
 val make_foname : Names.Id.t -> Libobject.object_name

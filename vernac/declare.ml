@@ -208,7 +208,7 @@ let (objConstant : (Id.t * constant_obj) Libobject.Dyn.tag) =
   declare_named_object_full { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
-    open_function = simple_open open_constant;
+    open_function = Open_filter.simple_open open_constant;
     classify_function = classify_constant;
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
