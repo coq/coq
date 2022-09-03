@@ -737,7 +737,7 @@ let lookup_eliminator env ind_sp s =
   else
     (* Then try to get a user-defined eliminator in some other places *)
     (* using short name (e.g. for "eq_rec") *)
-    try Nametab.locate (qualid_of_ident id)
+    try Nametab.GlobRef.locate (qualid_of_ident id)
     with Not_found ->
       user_err
         (strbrk "Cannot find the elimination combinator " ++

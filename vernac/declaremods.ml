@@ -48,14 +48,14 @@ let inl2intopt = function
 let consistency_checks exists dir =
   if exists then
     let _ =
-      try Nametab.locate_module (qualid_of_dirpath dir)
+      try Nametab.Module.locate (qualid_of_dirpath dir)
       with Not_found ->
         user_err
           (DirPath.print dir ++ str " should already exist!")
     in
     ()
   else
-    if Nametab.exists_module dir then
+    if Nametab.Module.exists dir then
       user_err
         (DirPath.print dir ++ str " already exists.")
 
@@ -98,7 +98,7 @@ module type ModActions = sig
 
   val enter_modtype : ModPath.t -> full_path -> int -> unit
 
-  val open_module : open_filter -> ModPath.t -> DirPath.t -> int -> unit
+  val open_module : Libobject.open_filter -> ModPath.t -> DirPath.t -> int -> unit
 
   module Lib : Lib.StagedLibS
 
@@ -120,16 +120,16 @@ struct
 
   let enter_module obj_mp obj_dir i =
     consistency_checks false obj_dir;
-    Nametab.push_module (Until i) obj_dir obj_mp
+    Nametab.Module.push (Until i) obj_dir obj_mp
 
   let enter_modtype mp sp i =
-    if Nametab.exists_modtype sp then
+    if Nametab.ModType.exists sp then
       anomaly (pr_path sp ++ str " already exists.");
-    Nametab.push_modtype (Nametab.Until i) sp mp
+    Nametab.ModType.push (Nametab.Until i) sp mp
 
   let open_module f obj_mp obj_dir i =
     consistency_checks true obj_dir;
-    if in_filter ~cat:None f then Nametab.push_module (Nametab.Exactly i) obj_dir obj_mp
+    if Libobject.in_filter ~cat:None f then Nametab.Module.push (Nametab.Exactly i) obj_dir obj_mp
 
   module Lib = Lib.Synterp
 
@@ -231,7 +231,7 @@ let subst_filtered sub (f,mp as x) =
   else f, mp'
 
 let rec subst_aobjs sub = function
-  | Objs o as objs ->
+  | Libobject.Objs o as objs ->
     let o' = subst_objects sub o in
     if o == o' then objs else Objs o'
   | Ref (mp, sub0) as r ->
@@ -245,7 +245,7 @@ and subst_sobjs sub (mbids,aobjs as sobjs) =
 and subst_objects subst seg =
   let subst_one node =
     match node with
-    | AtomicObject obj ->
+    | Libobject.AtomicObject obj ->
       let obj' = Libobject.subst_object (subst,obj) in
       if obj' == obj then node else AtomicObject obj'
     | ModuleObject (id, sobjs) ->
@@ -306,7 +306,7 @@ module ModSubstObjs :
  end
 
 let expand_aobjs = function
-  | Objs o -> o
+  | Libobject.Objs o -> o
   | Ref (mp, sub) ->
     match ModSubstObjs.get mp with
       | (_,Objs o) -> subst_objects sub o
@@ -395,7 +395,7 @@ let load_modtype i sp mp sobjs =
 
 let rec load_object i (prefix, obj) =
   match obj with
-  | AtomicObject o -> Libobject.load_object i (prefix, o)
+  | Libobject.AtomicObject o -> Libobject.load_object i (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     do_module' load_objects i (name, sobjs)
@@ -450,7 +450,7 @@ and collect_module (f,mp) acc =
 
 and collect_object f i prefix obj acc =
   match obj with
-  | ExportObject { mpl } -> collect_exports f i mpl acc
+  | Libobject.ExportObject { mpl } -> collect_exports f i mpl acc
   | AtomicObject _ | IncludeObject _ | KeepObject _
   | ModuleObject _ | ModuleTypeObject _ -> mark_object f (prefix,obj) acc
 
@@ -460,12 +460,12 @@ and collect_objects f i prefix objs acc =
     (List.rev objs)
 
 and collect_export f (f',mp) (exports,objs as acc) =
-  match filter_and f f' with
+  match Libobject.filter_and f f' with
   | None -> acc
   | Some f ->
     let exports' = MPmap.update mp (function
         | None -> Some f
-        | Some f0 -> Some (filter_or f f0))
+        | Some f0 -> Some (Libobject.filter_or f f0))
         exports
     in
     (* If the map doesn't change there is nothing new to export.
@@ -487,16 +487,16 @@ and collect_exports f i mpl acc =
 let open_modtype i ((sp,kn),_) =
   let mp = mp_of_kn kn in
   let mp' =
-    try Nametab.locate_modtype (qualid_of_path sp)
+    try Nametab.ModType.locate (qualid_of_path sp)
     with Not_found ->
       anomaly (pr_path sp ++ str " should already exist!");
   in
   assert (ModPath.equal mp mp');
-  Nametab.push_modtype (Nametab.Exactly i) sp mp
+  Nametab.ModType.push (Nametab.Exactly i) sp mp
 
 let rec open_object f i (prefix, obj) =
   match obj with
-  | AtomicObject o -> Libobject.open_object f i (prefix, o)
+  | Libobject.AtomicObject o -> Libobject.open_object f i (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     let dir = dir_of_sp (fst name) in
@@ -539,14 +539,14 @@ and open_keep f i ((sp,kn),kobjs) =
 let cache_include (prefix, aobjs) =
   let o = expand_aobjs aobjs in
   load_objects 1 prefix o;
-  open_objects unfiltered 1 prefix o
+  open_objects Libobject.unfiltered 1 prefix o
 
 and cache_keep ((sp,kn),kobjs) =
   anomaly (Pp.str "This module should not be cached!")
 
 let cache_object (prefix, obj) =
   match obj with
-  | AtomicObject o -> Libobject.cache_object (prefix, o)
+  | Libobject.AtomicObject o -> Libobject.cache_object (prefix, o)
   | ModuleObject (id,sobjs) ->
     let name = Lib.make_oname prefix id in
     do_module' load_objects 1 (name, sobjs)
@@ -588,7 +588,7 @@ let add_leaves objs =
 let mp_id mp id = MPdot (mp, Label.of_id id)
 
 let rec register_mod_objs mp obj = match obj with
-  | ModuleObject (id,sobjs) -> ModSubstObjs.set (mp_id mp id) sobjs
+  | Libobject.ModuleObject (id,sobjs) -> ModSubstObjs.set (mp_id mp id) sobjs
   | ModuleTypeObject (id,sobjs) -> ModSubstObjs.set (mp_id mp id) sobjs
   | IncludeObject aobjs ->
     List.iter (register_mod_objs mp) (expand_aobjs aobjs)
@@ -625,7 +625,7 @@ let get_applications mexpr =
 let rec replace_module_object idl mp0 objs0 mp1 objs1 =
   match idl, objs0 with
   | _,[] -> []
-  | id::idl,(ModuleObject (id', sobjs))::tail when Id.equal id id' ->
+  | id::idl,(Libobject.ModuleObject (id', sobjs))::tail when Id.equal id id' ->
     begin
       let mp_id = MPdot(mp0, Label.of_id id) in
       let objs = match idl with
@@ -644,7 +644,7 @@ let rec get_module_sobjs is_mod env inl = function
   | MEident mp ->
     begin match ModSubstObjs.get mp with
     | (mbids,Objs _) when not (ModPath.is_bound mp) ->
-      (mbids,Ref (mp, empty_subst)) (* we create an alias *)
+      (mbids,Libobject.Ref (mp, empty_subst)) (* we create an alias *)
     | sobjs -> sobjs
     end
   | MEwith (mty, WithDef _) -> get_module_sobjs is_mod env inl mty
@@ -780,7 +780,7 @@ let start_module export id args res =
   let mp, res_entry_o, mbids, sign, args = start_module_core id args res in
   set_openmod_syntax_info { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids };
   let prefix = Lib.Synterp.start_module export id mp fs in
-  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix.obj_mp));
+  Nametab.Dir.push (Until 1) (prefix.obj_dir) (Nametab.GlobDirRef.DirOpenModule prefix.obj_mp);
   mp, args, sign
 
 let end_module_core id (m_info : current_module_syntax_info) objects fs =
@@ -1034,7 +1034,7 @@ let end_module_core id m_info objects fs =
       | Some (mty, _) ->
         subst_sobjs (map_mp (get_module_path mty) mp resolver) sobjs
   in
-  let node = ModuleObject (id,sobjs) in
+  let node = Libobject.ModuleObject (id,sobjs) in
   (* We add the keep objects, if any, and if this isn't a functor *)
   let objects = match keep, mbids with
     | [], _ | _, _ :: _ -> special@[node]
@@ -1131,7 +1131,7 @@ let start_modtype id args mtys =
   let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys in
   set_openmod_syntax_info { cur_mp = mp; cur_typ = None; cur_mbids = mbids };
   let prefix = Lib.Synterp.start_modtype id mp fs in
-  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype prefix.obj_mp));
+  Nametab.Dir.push (Until 1) (prefix.obj_dir) (Nametab.GlobDirRef.DirOpenModtype prefix.obj_mp);
   mp, args, sub_mty_l
 
 let end_modtype_core id mbids objects fs =
@@ -1186,7 +1186,7 @@ let start_modtype id args mtys =
   let mp, _, sub_mty_l, _ = start_modtype_core id args mtys in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.Interp.start_modtype id mp fs in
-  Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype mp));
+  Nametab.Dir.push (Until 1) (prefix.obj_dir) (Nametab.GlobDirRef.DirOpenModtype mp);
   mp
 
 let end_modtype_core id sub_mty_l objects fs =

@@ -1192,7 +1192,7 @@ let string_of_evaluable_ref env = function
   | EvalVarRef id -> Id.to_string id
   | EvalConstRef kn ->
       Libnames.string_of_qualid
-        (Nametab.shortest_qualid_of_global (vars_of_env env) (GlobRef.ConstRef kn))
+        (Nametab.GlobRef.shortest_qualid (vars_of_env env) (GlobRef.ConstRef kn))
 
 (* Removing fZETA for finer behaviour would break many developments *)
 let unfold_side_flags = RedFlags.[fBETA;fMATCH;fFIX;fCOFIX;fZETA]

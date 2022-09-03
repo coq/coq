@@ -44,15 +44,15 @@ let inductive_names sp kn obj =
 
 let load_inductive i ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
+  List.iter (fun (sp, ref) -> Nametab.GlobRef.push (Nametab.Until i) sp ref ) names
 
 let open_inductive i ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Exactly i) sp ref) names
+  List.iter (fun (sp, ref) -> Nametab.GlobRef.push (Nametab.Exactly i) sp ref) names
 
 let cache_inductive ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
+  List.iter (fun (sp, ref) -> Nametab.GlobRef.push (Nametab.Until 1) sp ref) names
 
 let discharge_inductive names =
   Some names

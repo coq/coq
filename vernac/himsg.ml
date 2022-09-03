@@ -998,12 +998,12 @@ let rec explain_pretype_error env sigma err =
 (* Module errors *)
 
 let pr_modpath mp =
-  Libnames.pr_qualid (Nametab.shortest_qualid_of_module mp)
+  Libnames.pr_qualid (Nametab.Module.shortest_qualid Id.Set.empty mp)
 
 let pr_modtype_subpath upper mp =
   let rec aux mp =
     try
-      let (dir,id) = Libnames.repr_qualid (Nametab.shortest_qualid_of_modtype mp) in
+      let (dir,id) = Libnames.repr_qualid (Nametab.ModType.shortest_qualid Id.Set.empty mp) in
       Libnames.add_dirpath_suffix dir id, []
     with Not_found ->
       match mp with

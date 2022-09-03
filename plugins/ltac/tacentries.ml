@@ -568,7 +568,7 @@ let pr_ltac_fun_arg n = spc () ++ Name.print n
 
 let print_ltac_body qid tac =
   let filter mp =
-    try Some (Nametab.shortest_qualid_of_module mp)
+    try Some (Nametab.Module.shortest_qualid Id.Set.empty mp)
     with Not_found -> None
   in
   let mods = List.map_filter filter tac.Tacenv.tac_redef in

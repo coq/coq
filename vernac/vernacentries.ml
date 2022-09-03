@@ -183,18 +183,18 @@ let print_libraries () =
 
 
 let print_module qid =
-  match Nametab.locate_module qid with
+  match Nametab.Module.locate qid with
   | mp -> Printmod.print_module ~with_body:true mp
   | exception Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid ++ str".")
 
 let print_modtype qid =
   try
-    let kn = Nametab.locate_modtype qid in
+    let kn = Nametab.ModType.locate qid in
     Printmod.print_modtype kn
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
-      let mp = Nametab.locate_module qid in
+      let mp = Nametab.Module.locate qid in
       Printmod.print_module ~with_body:false mp
     with Not_found ->
       user_err (str"Unknown Module Type or Module " ++ pr_qualid qid ++ str".")
@@ -366,7 +366,7 @@ let dump_universes_gen prl g s =
 let universe_subgraph ?loc kept univ =
   let open Univ in
   let parse q =
-    try Level.make (Nametab.locate_universe q)
+    try Level.make (Nametab.Universe.locate q)
     with Not_found ->
       CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid q ++ str".")
   in
@@ -545,8 +545,8 @@ let vernac_enable_notation ~module_local on rule interp flags scope =
 
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
-  if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable (Global.env ()) id ||
-     locality <> Locality.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
+  if Nametab.GlobRef.exists (Lib.make_path id) || Termops.is_section_variable (Global.env ()) id ||
+     locality <> Locality.Discharge && Nametab.GlobRef.exists (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
 
@@ -1152,7 +1152,7 @@ let add_subnames_of ?loc len n ns full_n ref =
       ns Sorts.all_families
 
 let interp_names m ns =
-  let dp_m = Nametab.dirpath_of_module m in
+  let dp_m = Nametab.Module.path m in
   let ns =
     List.fold_left (fun ns (n,etc) ->
         let len, full_n =
@@ -1163,7 +1163,7 @@ let interp_names m ns =
           with Not_found ->
             CErrors.user_err ?loc:n.loc
               Pp.(str "Cannot find name " ++ pr_qualid n ++ spc() ++
-                  str "in module " ++ pr_qualid (Nametab.shortest_qualid_of_module m) ++ str ".")
+                  str "in module " ++ pr_qualid (Nametab.Module.shortest_qualid Id.Set.empty m) ++ str ".")
         in
         (* TODO dumpglob? *)
         match ref with
@@ -1179,13 +1179,13 @@ let cache_name (len,n) =
   let open Globnames in
   let open GlobRef in
   match n with
-  | Abbrev kn -> Abbreviation.import_abbreviation (len+1) (Nametab.path_of_abbreviation kn) kn
+  | Abbrev kn -> Abbreviation.import_abbreviation (len+1) (Nametab.Abbrev.path kn) kn
   | TrueGlobal (VarRef _) -> assert false
   | TrueGlobal (ConstRef c) when Declare.is_local_constant c ->
     (* Can happen through functor application *)
     warn_not_importable c
   | TrueGlobal gr ->
-    Nametab.(push (Exactly (len+1)) (path_of_global gr) gr)
+    Nametab.(GlobRef.push (Exactly (len+1)) (GlobRef.path gr) gr)
 
 let cache_names ns = List.iter cache_name ns
 

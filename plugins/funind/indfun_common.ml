@@ -19,7 +19,7 @@ let get_name avoid ?(default = "H") = function
   | Name n -> Name n
 
 let array_get_start a = Array.init (Array.length a - 1) (fun i -> a.(i))
-let locate qid = Nametab.locate qid
+let locate qid = Nametab.GlobRef.locate qid
 
 let locate_ind ref =
   match locate ref with GlobRef.IndRef x -> x | _ -> raise Not_found
@@ -76,7 +76,7 @@ let coq_constant s = UnivGen.constr_of_monomorphic_global (Global.env ()) @@ Coq
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
-  Nametab.locate (make_qualid dp (Id.of_string s))
+  Nametab.GlobRef.locate (make_qualid dp (Id.of_string s))
 
 let eq = lazy (EConstr.of_constr (coq_constant "core.eq.type"))
 let refl_equal = lazy (EConstr.of_constr (coq_constant "core.eq.refl"))
@@ -256,7 +256,7 @@ let in_Function : function_info -> Libobject.obj =
 let find_or_none id =
   try
     Some
-      ( match Nametab.locate (qualid_of_ident id) with
+      ( match Nametab.GlobRef.locate (qualid_of_ident id) with
       | GlobRef.ConstRef c -> c
       | _ -> CErrors.anomaly (Pp.str "Not a constant.") )
   with Not_found -> None
@@ -278,7 +278,7 @@ let add_Function is_general f =
   and prop_lemma = find_or_none (Nameops.add_suffix f_id "_ind")
   and sprop_lemma = find_or_none (Nameops.add_suffix f_id "_sind")
   and graph_ind =
-    match Nametab.locate (qualid_of_ident (mk_rel_id f_id)) with
+    match Nametab.GlobRef.locate (qualid_of_ident (mk_rel_id f_id)) with
     | GlobRef.IndRef ind -> ind
     | _ -> CErrors.anomaly (Pp.str "Not an inductive.")
   in

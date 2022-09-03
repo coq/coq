@@ -1654,7 +1654,7 @@ let pr_searchtable env sigma =
 
 let print_mp mp =
   try
-    let qid = Nametab.shortest_qualid_of_module mp in
+    let qid = Nametab.Module.shortest_qualid Id.Set.empty mp in
     str " from "  ++ pr_qualid qid
   with Not_found -> mt ()
 

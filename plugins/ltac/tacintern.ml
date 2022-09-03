@@ -397,7 +397,7 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
          subterm matched when a pattern *)
       let r = match r with
       | {v=AN r} -> r
-      | {loc} -> (qualid_of_path ?loc (Nametab.path_of_global (smart_global r))) in
+      | {loc} -> (qualid_of_path ?loc (Nametab.GlobRef.path (smart_global r))) in
       let sign = {
         Constrintern.ltac_vars = ist.ltacvars;
         ltac_bound = Id.Set.empty;

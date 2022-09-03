@@ -893,7 +893,7 @@ let free_rels_and_unqualified_refs sigma t =
       if not (GlobRef.Set_env.mem g gseen) then begin
         try
           let gseen = GlobRef.Set_env.add g gseen in
-          let short = Nametab.shortest_qualid_of_global Id.Set.empty g in
+          let short = Nametab.GlobRef.shortest_qualid Id.Set.empty g in
           let dir, id = Libnames.repr_qualid short in
           let ids = if DirPath.is_empty dir then Id.Set.add id ids else ids in
           (gseen, vseen, ids)

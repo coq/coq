@@ -278,7 +278,7 @@ let safe_basename_of_global r =
     | VarRef v -> v
 
 let string_of_global r =
- try string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty r)
+ try string_of_qualid (Nametab.GlobRef.shortest_qualid Id.Set.empty r)
  with Not_found -> Id.to_string (safe_basename_of_global r)
 
 let safe_pr_global r = str (string_of_global r)
@@ -294,10 +294,10 @@ let safe_pr_long_global r =
     | _ -> assert false
 
 let pr_long_mp mp =
-  let lid = DirPath.repr (Nametab.dirpath_of_module mp) in
+  let lid = DirPath.repr (Nametab.Module.path mp) in
   str (String.concat "." (List.rev_map Id.to_string lid))
 
-let pr_long_global ref = pr_path (Nametab.path_of_global ref)
+let pr_long_global ref = pr_path (Nametab.GlobRef.path ref)
 
 (*S Warning and Error messages. *)
 

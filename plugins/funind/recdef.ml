@@ -25,7 +25,6 @@ open Util
 open UnivGen
 open Tacticals
 open Tactics
-open Nametab
 open Tacred
 open Glob_term
 open Pretyping
@@ -49,7 +48,7 @@ let coq_init_constant s =
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
-  locate (make_qualid dp (Id.of_string s))
+  Nametab.GlobRef.locate (make_qualid dp (Id.of_string s))
 
 let declare_fun name kind ?univs value =
   let ce = Declare.definition_entry ?univs value (*FIXME *) in
@@ -1724,7 +1723,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
   let tcc_lemma_constr = ref Undefined in
   (* let _ = Pp.msgnl (fun _ _ -> str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
   let hook {Declare.Hook.S.uctx; _} =
-    let term_ref = Nametab.locate (qualid_of_ident term_id) in
+    let term_ref = Nametab.GlobRef.locate (qualid_of_ident term_id) in
     let f_ref =
       declare_f function_name Decls.(IsProof Lemma) arg_types term_ref
     in
@@ -1751,7 +1750,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls
         true
     in
     if not stop then
-      let eq_ref = Nametab.locate (qualid_of_ident equation_id) in
+      let eq_ref = Nametab.GlobRef.locate (qualid_of_ident equation_id) in
       let f_ref = destConst (constr_of_monomorphic_global (Global.env ()) f_ref)
       and functional_ref =
         destConst (constr_of_monomorphic_global (Global.env ()) functional_ref)

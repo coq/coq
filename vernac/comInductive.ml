@@ -811,7 +811,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation ~local:false (Global.env ())) where_notations;
   (* Declare the coercions *)
-  List.iter (fun qid -> ComCoercion.try_add_new_coercion (Nametab.locate qid) ~local:false ~poly ~reversible:true) coercions
+  List.iter (fun qid -> ComCoercion.try_add_new_coercion (Nametab.GlobRef.locate qid) ~local:false ~poly ~reversible:true) coercions
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
@@ -850,7 +850,7 @@ let make_cases ind =
            Id.to_string n' :: rename (Id.Set.add n' avoid) l in
        let al' = rename Id.Set.empty al in
        let consref = GlobRef.ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
-       (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
+       (Libnames.string_of_qualid (Nametab.GlobRef.shortest_qualid Id.Set.empty consref) :: al') :: l)
     mip.mind_nf_lc []
 
 module Internal =

@@ -78,7 +78,7 @@ let declare_individual_scheme_object s ?deps ?(aux="") f =
 (* Defining/retrieving schemes *)
 
 let is_visible_name id =
-  try ignore (Nametab.locate (Libnames.qualid_of_ident id)); true
+  try ignore (Nametab.GlobRef.locate (Libnames.qualid_of_ident id)); true
   with Not_found -> false
 
 let compute_name internal id =

@@ -248,7 +248,7 @@ let add_glob_gen ?loc sp lib_dp ty =
 
 let add_glob ?loc ref =
   if dump () then
-    let sp = Nametab.path_of_global ref in
+    let sp = Nametab.GlobRef.path ref in
     let lib_dp = Lib.library_part ref in
     let ty = type_of_global_ref ref in
     add_glob_gen ?loc sp lib_dp ty
@@ -259,7 +259,7 @@ let mp_of_kn kn =
 
 let add_glob_kn ?loc kn =
   if dump () then
-    let sp = Nametab.path_of_abbreviation kn in
+    let sp = Nametab.Abbrev.path kn in
     let lib_dp = Names.ModPath.dp (mp_of_kn kn) in
     add_glob_gen ?loc sp lib_dp "abbrev"
 

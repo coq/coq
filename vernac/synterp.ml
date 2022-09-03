@@ -102,7 +102,7 @@ let import_module_syntax_with_filter ~export cats m f =
 
 let synterp_import_mod (export,cats) qid f =
   let loc = qid.loc in
-  let m = try Nametab.locate_module qid
+  let m = try Nametab.Module.locate qid
     with Not_found ->
       CErrors.user_err ?loc Pp.(str "Cannot find module " ++ pr_qualid qid)
   in

@@ -220,14 +220,14 @@ let string_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
   | CL_CONST sp ->
-    string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.ConstRef sp))
+    string_of_qualid (Nametab.GlobRef.shortest_qualid Id.Set.empty (GlobRef.ConstRef sp))
   | CL_PROJ sp ->
     let sp = Projection.Repr.constant sp in
-    string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.ConstRef sp))
+    string_of_qualid (Nametab.GlobRef.shortest_qualid Id.Set.empty (GlobRef.ConstRef sp))
   | CL_IND sp ->
-      string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.IndRef sp))
+      string_of_qualid (Nametab.GlobRef.shortest_qualid Id.Set.empty (GlobRef.IndRef sp))
   | CL_SECVAR sp ->
-      string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.VarRef sp))
+      string_of_qualid (Nametab.GlobRef.shortest_qualid Id.Set.empty (GlobRef.VarRef sp))
 
 let pr_class x = str (string_of_class x)
 

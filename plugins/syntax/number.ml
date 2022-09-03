@@ -45,12 +45,12 @@ let get_constructors ind =
     (Array.mapi (fun j c -> GlobRef.ConstructRef (ind, j + 1)) mc)
 
 let qualid_of_ref n =
-  n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
+  n |> Coqlib.lib_ref |> Nametab.GlobRef.shortest_qualid Id.Set.empty
 
 let q_option () = qualid_of_ref "core.option.type"
 
 let unsafe_locate_ind q =
-  match Nametab.locate q with
+  match Nametab.GlobRef.locate q with
   | GlobRef.IndRef i -> i
   | _ -> raise Not_found
 
@@ -427,11 +427,11 @@ let locate_global_inductive_or_int63_or_float env allow_params qid =
     if allow_params && Coqlib.has_ref int63n
        && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref int63n)
     then TargetPrim (mkRefC (qualid_of_string int63w), [Coqlib.lib_ref int63c],
-                     (Nametab.path_of_global (Coqlib.lib_ref int63n), []))
+                     (Nametab.GlobRef.path (Coqlib.lib_ref int63n), []))
     else if allow_params && Coqlib.has_ref floatn
        && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref floatn)
     then TargetPrim (mkRefC (qualid_of_string floatw), [Coqlib.lib_ref floatc],
-                     (Nametab.path_of_global (Coqlib.lib_ref floatn), []))
+                     (Nametab.GlobRef.path (Coqlib.lib_ref floatn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
 
 let vernac_number_notation local ty f g opts scope =
@@ -522,7 +522,7 @@ let vernac_number_notation local ty f g opts scope =
          match via with
          | None -> elaborate_to_post_params env sigma tyc params
          | Some (ty, l) -> elaborate_to_post_via env sigma ty tyc l in
-       to_post, (Nametab.path_of_global (GlobRef.IndRef tyc), []), pt_refs in
+       to_post, (Nametab.GlobRef.path (GlobRef.IndRef tyc), []), pt_refs in
   let o = { to_kind; to_ty; to_post; of_kind; of_ty; ty_name;
             warning = opts }
   in

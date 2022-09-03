@@ -81,14 +81,14 @@ let is_imported_ref = let open GlobRef in function
 
 let is_global id =
   try
-    let ref = Nametab.locate (qualid_of_ident id) in
+    let ref = Nametab.GlobRef.locate (qualid_of_ident id) in
     not (is_imported_ref ref)
   with Not_found ->
     false
 
 let is_constructor id =
   try
-    match Nametab.locate (qualid_of_ident id) with
+    match Nametab.GlobRef.locate (qualid_of_ident id) with
       | GlobRef.ConstructRef _ -> true
       | _ -> false
   with Not_found ->
@@ -281,7 +281,7 @@ let visible_ids sigma (nenv, c) =
     let g = global_of_constr c in
     if not (GlobRef.Set_env.mem g gseen) then
       let gseen = GlobRef.Set_env.add g gseen in
-      let ids = match Nametab.shortest_qualid_of_global Id.Set.empty g with
+      let ids = match Nametab.GlobRef.shortest_qualid Id.Set.empty g with
       | short ->
         let dir, id = repr_qualid short in
         if DirPath.is_empty dir then Id.Set.add id ids else ids

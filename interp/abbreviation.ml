@@ -44,11 +44,11 @@ let toggle_abbreviation ~on ~use kn =
       | OnlyParsing | ParsingAndPrinting ->
          if on then
            begin
-             Nametab.push_abbreviation ?deprecated:data.abbrev_deprecation (Nametab.Until 1) sp kn;
-             Nametab.push_abbreviation (Nametab.Exactly 1) sp kn
+             Nametab.Abbrev.push ?deprecated:data.abbrev_deprecation (Nametab.Until 1) sp kn;
+             Nametab.Abbrev.push (Nametab.Exactly 1) sp kn
            end
          else
-           Nametab.remove_abbreviation sp kn
+           Nametab.Abbrev.remove sp kn
     end
 
 let toggle_abbreviations ~on ~use filter =
@@ -57,15 +57,15 @@ let toggle_abbreviations ~on ~use filter =
   !abbrev_table ()
 
 let load_abbreviation i ((sp,kn),(_local,abbrev)) =
-  if Nametab.exists_cci sp then
+  if Nametab.GlobRef.exists sp then
     user_err
       (Id.print (basename sp) ++ str " already exists.");
   add_abbreviation kn sp abbrev;
-  Nametab.push_abbreviation ?deprecated:abbrev.abbrev_deprecation (Nametab.Until i) sp kn
+  Nametab.Abbrev.push ?deprecated:abbrev.abbrev_deprecation (Nametab.Until i) sp kn
 
 let is_alias_of_already_visible_name sp = function
   | _,NRef (ref,None) ->
-      let (dir,id) = repr_qualid (Nametab.shortest_qualid_of_global Id.Set.empty ref) in
+      let (dir,id) = repr_qualid (Nametab.GlobRef.shortest_qualid Id.Set.empty ref) in
       DirPath.is_empty dir && Id.equal id (basename sp)
   | _ ->
       false
@@ -73,7 +73,7 @@ let is_alias_of_already_visible_name sp = function
 let open_abbreviation i ((sp,kn),(_local,abbrev)) =
   let pat = abbrev.abbrev_pattern in
   if not (Int.equal i 1 && is_alias_of_already_visible_name sp pat) then begin
-    Nametab.push_abbreviation (Nametab.Exactly i) sp kn;
+    Nametab.Abbrev.push (Nametab.Exactly i) sp kn;
     if not abbrev.abbrev_onlyparsing then
       (* Redeclare it to be used as (short) name in case an other (distfix)
          notation was declared in between *)

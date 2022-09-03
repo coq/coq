@@ -925,7 +925,7 @@ let do_replace (evd : Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num
                   equation_lemma =
                     Some
                       ( match
-                          Nametab.locate (qualid_of_ident equation_lemma_id)
+                          Nametab.GlobRef.locate (qualid_of_ident equation_lemma_id)
                         with
                       | GlobRef.ConstRef c -> c
                       | _ -> CErrors.anomaly (Pp.str "Not a constant.") ) }

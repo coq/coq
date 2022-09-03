@@ -81,13 +81,13 @@ let register_ref s c =
 (* Generic functions to find Coq objects *)
 
 let has_suffix_in_dirs dirs ref =
-  let dir = Libnames.dirpath (Nametab.path_of_global ref) in
+  let dir = Libnames.dirpath (Nametab.GlobRef.path ref) in
   List.exists (fun d -> Libnames.is_dirpath_prefix_of d dir) dirs
 
 let gen_reference_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
   let qualid = Libnames.qualid_of_string s in
-  let all = Nametab.locate_all qualid in
+  let all = Nametab.GlobRef.locate_all qualid in
   let all = List.sort_uniquize GlobRef.UserOrd.compare all in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
@@ -100,7 +100,7 @@ let gen_reference_in_modules locstr dirs s =
       CErrors.anomaly ~label:locstr
         Pp.(str "ambiguous name " ++ str s ++ str " can represent "
           ++ prlist_with_sep pr_comma (fun x ->
-            Libnames.pr_path (Nametab.path_of_global x)) l ++ str " in module"
+            Libnames.pr_path (Nametab.GlobRef.path x)) l ++ str " in module"
           ++ str (if List.length dirs > 1 then "s " else " ")
           ++ prlist_with_sep pr_comma DirPath.print dirs ++ str ".")
 

@@ -172,8 +172,13 @@ let constr_of_string s =
 open Declarations;;
 open Declareops;;
 
+let locate_constant qid =
+  match Nametab.GlobRef.locate qid with
+  | GlobRef.ConstRef c -> c
+  | _ -> raise Not_found
+
 let constbody_of_string s =
-  let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_string s)) in
+  let b = Global.lookup_constant (locate_constant (qualid_of_string s)) in
   Option.get (Global.body_of_constant_body Library.indirect_accessor b);;
 
 (* Get the current goal *)

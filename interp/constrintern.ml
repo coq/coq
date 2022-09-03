@@ -120,7 +120,7 @@ let explain_bad_patterns_number n1 n2 =
 
 let inductive_of_record s =
   let inductive = GlobRef.IndRef (s.Structure.name) in
-  Nametab.shortest_qualid_of_global Id.Set.empty inductive
+  Nametab.GlobRef.shortest_qualid Id.Set.empty inductive
 
 let explain_field_not_a_projection field_id =
   pr_qualid field_id ++ str ": Not a projection"
@@ -789,7 +789,7 @@ let terms_of_binders bl =
     | PatVar (Name id)   -> CRef (qualid_of_ident id, None)
     | PatVar (Anonymous) -> error_cannot_coerce_wildcard_term ?loc ()
     | PatCstr (c,l,_) ->
-       let qid = qualid_of_path ?loc (Nametab.path_of_global (GlobRef.ConstructRef c)) in
+       let qid = qualid_of_path ?loc (Nametab.GlobRef.path (GlobRef.ConstructRef c)) in
        let hole = CAst.make ?loc @@ CHole (None,IntroAnonymous) in
        let params = List.make (Inductiveops.inductive_nparams (Global.env()) (fst c)) hole in
        CAppExpl ((qid,None),params @ List.map term_of_pat l)) pt in
@@ -1171,7 +1171,7 @@ let intern_sort_name ~local_univs = function
     match local with
     | Some u -> GUniv u
     | None ->
-      try GUniv (Univ.Level.make (Nametab.locate_universe qid))
+      try GUniv (Univ.Level.make (Nametab.Universe.locate qid))
       with Not_found ->
         if is_id && local_univs.unb_univs
         then GLocalUniv (CAst.make ?loc:qid.loc (qualid_basename qid))
@@ -2820,7 +2820,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
 let known_universe_level_name evd lid =
   try Evd.universe_of_name evd lid.CAst.v
   with Not_found ->
-    let u = Nametab.locate_universe (Libnames.qualid_of_lident lid) in
+    let u = Nametab.Universe.locate (Libnames.qualid_of_lident lid) in
     Univ.Level.make u
 
 let known_glob_level evd = function

@@ -355,18 +355,18 @@ module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = 
 
   let check_mod_fresh ~is_type prefix id =
     let exists =
-      if is_type then Nametab.exists_cci (Libnames.make_path prefix.Nametab.obj_dir id)
-      else Nametab.exists_module prefix.Nametab.obj_dir
+      if is_type then Nametab.GlobRef.exists (Libnames.make_path prefix.Nametab.obj_dir id)
+      else Nametab.Module.exists prefix.Nametab.obj_dir
     in
     if exists then
       CErrors.user_err Pp.(Id.print id ++ str " already exists.")
 
   let check_section_fresh obj_dir id =
-    if Nametab.exists_dir obj_dir then
+    if Nametab.Dir.exists obj_dir then
       CErrors.user_err Pp.(Id.print id ++ str " already exists.")
 
   let push_section_name obj_dir =
-    Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection obj_dir))
+    Nametab.Dir.push (Until 1) obj_dir (Nametab.GlobDirRef.DirOpenSection obj_dir)
 
   let close_section fs = Summary.Synterp.unfreeze_summaries fs
 

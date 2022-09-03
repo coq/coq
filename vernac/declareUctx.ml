@@ -16,7 +16,7 @@ let name_instance inst =
       assert false
     | Some na ->
       try
-        let qid = Nametab.shortest_qualid_of_universe Names.Id.Map.empty na in
+        let qid = Nametab.Universe.shortest_qualid Names.Id.Set.empty na in
         Names.Name (Libnames.qualid_basename qid)
       with Not_found ->
         (* Best-effort naming from the string representation of the level.

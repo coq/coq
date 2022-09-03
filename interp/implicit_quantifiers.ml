@@ -188,7 +188,7 @@ let implicit_application env ty =
       let ({CAst.v=(qid, _, _)} as clapp) = destClassAppExpl ty in
       if Libnames.idset_mem_qualid qid env then None
       else
-        let gr = Nametab.locate qid in
+        let gr = Nametab.GlobRef.locate qid in
         Option.map (fun cl -> cl, clapp) (Typeclasses.class_info gr)
     with Not_found -> None
   in

@@ -99,107 +99,59 @@ val error_global_not_found : info:Exninfo.info -> qualid -> 'a
    containing ...) the object is opened (imported)
 
 *)
-
 type visibility = Until of int | Exactly of int
 
 val map_visibility : (int -> int) -> visibility -> visibility
 
-val push : ?deprecated:Deprecation.t -> visibility -> full_path -> GlobRef.t -> unit
-val push_modtype : visibility -> full_path -> ModPath.t -> unit
-val push_module : visibility -> DirPath.t -> ModPath.t -> unit
-val push_dir : visibility -> DirPath.t -> GlobDirRef.t -> unit
-val push_abbreviation : ?deprecated:Deprecation.t -> visibility -> full_path -> Globnames.abbreviation -> unit
+(** Type of imperative nametabs *)
+module type S = sig
 
-module UnivIdMap : CMap.ExtS with type key = Univ.UGlobal.t
+  type elt
+  type path
 
-val push_universe : visibility -> full_path -> Univ.UGlobal.t -> unit
-
-(** Deprecation info *)
-
-val is_deprecated_xref : Globnames.extended_global_reference -> Deprecation.t option
-
-val warn_deprecated_xref : ?loc:Loc.t -> Deprecation.t -> Globnames.extended_global_reference -> unit
-
-(** {6 The following functions perform globalization of qualified names } *)
-
-(** These functions globalize a (partially) qualified name or fail with
-   [Not_found] *)
-
-val locate : qualid -> GlobRef.t
-val locate_extended : qualid -> Globnames.extended_global_reference
-val locate_constant : qualid -> Constant.t
-val locate_abbreviation : qualid -> Globnames.abbreviation
-val locate_modtype : qualid -> ModPath.t
-val locate_dir : qualid -> GlobDirRef.t
-val locate_module : qualid -> ModPath.t
-val locate_section : qualid -> DirPath.t
-val locate_universe : qualid -> Univ.UGlobal.t
-
-val locate_extended_nowarn : qualid -> Globnames.extended_global_reference * Deprecation.t option
-
-(** Remove the binding to an abbreviation *)
-
-val remove_abbreviation : full_path -> Globnames.abbreviation -> unit
-
-(** These functions globalize user-level references into global
-   references, like [locate] and co, but raise a nice error message
-   in case of failure *)
-
-val global : qualid -> GlobRef.t
-val global_inductive : qualid -> inductive
-
-(** These functions locate all global references with a given suffix;
-   if [qualid] is valid as such, it comes first in the list *)
-
-val locate_all : qualid -> GlobRef.t list
-val locate_extended_all : qualid -> Globnames.extended_global_reference list
-val locate_extended_all_dir : qualid -> GlobDirRef.t list
-val locate_extended_all_modtype : qualid -> ModPath.t list
-val locate_extended_all_module : qualid -> ModPath.t list
-
-(** Experimental completion support, API is _unstable_ *)
-val completion_canditates : qualid -> Globnames.extended_global_reference list
-(** [completion_canditates qualid] will return the list of global
-    references that have [qualid] as a prefix. UI usually will want to
-    compose this with [shortest_qualid_of_global] *)
-
-(** Mapping a full path to a global reference *)
-
-val global_of_path : full_path -> GlobRef.t
-val extended_global_of_path : full_path -> Globnames.extended_global_reference
-
-(** {6 These functions tell if the given absolute name is already taken } *)
-
-val exists_cci : full_path -> bool
-val exists_modtype : full_path -> bool
-val exists_module : DirPath.t -> bool
-val exists_dir : DirPath.t -> bool
-val exists_universe : full_path -> bool
-
-(** {6 These functions locate qualids into full user names } *)
-
-val full_name_modtype : qualid -> full_path
-val full_name_module : qualid -> DirPath.t
+  val push : ?deprecated:Deprecation.t -> visibility -> path -> elt -> unit
+  val remove : path -> elt -> unit
+  val locate : qualid -> elt
+  val locate_all : qualid -> elt list
+  val exists : path -> bool
+end
 
 (** {6 Reverse lookup }
   Finding user names corresponding to the given
   internal name *)
 
-(** Returns the full path bound to a global reference or syntactic
-   definition, and the (full) dirpath associated to a module path *)
+(** Type of imperative nametabs with reverse resolution *)
+module type SR = sig
+  include S
 
-val path_of_abbreviation : Globnames.abbreviation -> full_path
-val path_of_global : GlobRef.t -> full_path
-val dirpath_of_module : ModPath.t -> DirPath.t
-val path_of_modtype : ModPath.t -> full_path
+  (** [path] Returns the full path bound to a [elt], and the (full)
+     [path] associated to it *)
+  val path : elt -> path
 
-(** A universe_id might not be registered with a corresponding user name.
-    @raise Not_found if the universe was not introduced by the user. *)
-val path_of_universe : Univ.UGlobal.t -> full_path
+  (** The [shortest_qualid] functions given an object with [user_name]
+      Coq.A.B.x, try to find the shortest among x, B.x, A.B.x and
+      Coq.A.B.x that denotes the same object.
+      @raise Not_found for unknown objects. *)
+  val shortest_qualid : ?loc:Loc.t -> Names.Id.Set.t -> elt -> qualid
+end
+
+(***********************************************************************)
+(** Nametab for [GlobRef.t]  *)
+
+(** Helper *)
+val locate_constant : qualid -> Constant.t
+
+(** These functions globalize user-level references into global
+   references, like [locate] and co, but raise a nice error message
+   in case of failure *)
+val global : qualid -> GlobRef.t
+val global_inductive : qualid -> inductive
+
+(** Mapping a full path to a global reference *)
+val global_of_path : full_path -> GlobRef.t
 
 (** Returns in particular the dirpath or the basename of the full path
    associated to global reference *)
-
 val dirpath_of_global : GlobRef.t -> DirPath.t
 val basename_of_global : GlobRef.t -> Id.t
 
@@ -207,19 +159,48 @@ val basename_of_global : GlobRef.t -> Id.t
     @raise Not_found when the reference is not in the global tables. *)
 val pr_global_env : Id.Set.t -> GlobRef.t -> Pp.t
 
+module GlobRef : SR with type elt := GlobRef.t and type path := full_path
 
-(** The [shortest_qualid] functions given an object with [user_name]
-   Coq.A.B.x, try to find the shortest among x, B.x, A.B.x and
-   Coq.A.B.x that denotes the same object.
-   @raise Not_found for unknown objects. *)
+(***********************************************************************)
+(** Abbreviations  *)
+module Abbrev : SR with type elt := Globnames.abbreviation and type path := full_path
 
-val shortest_qualid_of_global : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
-val shortest_qualid_of_abbreviation : ?loc:Loc.t -> Id.Set.t -> Globnames.abbreviation -> qualid
-val shortest_qualid_of_modtype : ?loc:Loc.t -> ModPath.t -> qualid
-val shortest_qualid_of_module : ?loc:Loc.t -> ModPath.t -> qualid
+(***********************************************************************)
+(** Common functions for Global Refs and abbreviations *)
 
-(** In general we have a [UnivNames.universe_binders] around rather than a [Id.Set.t] *)
-val shortest_qualid_of_universe : ?loc:Loc.t -> 'u Id.Map.t -> Univ.UGlobal.t -> qualid
+(** These functions locate all global references with a given suffix;
+   if [qualid] is valid as such, it comes first in the list *)
+val locate_extended : qualid -> Globnames.extended_global_reference
+val locate_extended_nowarn : qualid -> Globnames.extended_global_reference * Deprecation.t option
+val locate_extended_all : qualid -> Globnames.extended_global_reference list
+val extended_global_of_path : full_path -> Globnames.extended_global_reference
+
+val warn_deprecated_xref : ?loc:Loc.t -> Deprecation.t -> Globnames.extended_global_reference -> unit
+
+(** Locate qualids into full user names *)
+val full_name_cci : qualid -> full_path
+
+(** [completion_canditates qualid] will return the list of global
+    references that have [qualid] as a prefix. UI usually will want to
+    compose this with [shortest_qualid_of_global].
+    Experimental API, note that it is _unstable_ *)
+val completion_canditates : qualid -> Globnames.extended_global_reference list
+
+(***********************************************************************)
+(** Modules *)
+module ModType : SR with type elt := ModPath.t and type path := full_path
+val full_name_modtype : qualid -> full_path
+
+module Module : SR with type elt := ModPath.t and type path := DirPath.t
+val full_name_module : qualid -> DirPath.t
+
+module Dir : S with type elt := GlobDirRef.t and type path := DirPath.t
+val locate_section : qualid -> DirPath.t
+
+(** Note for [Universe.path]: A universe_id might not be registered
+   with a corresponding user name. @raise Not_found if the universe
+   was not introduced by the user. *)
+module Universe : SR with type elt := Univ.UGlobal.t and type path := full_path
 
 (** {5 Generic name handling} *)
 

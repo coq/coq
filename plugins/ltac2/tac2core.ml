@@ -1218,13 +1218,13 @@ let () = define1 "env_expand" (list ident) begin fun ids ->
     let (id, path) = List.sep_last ids in
     let path = DirPath.make (List.rev path) in
     let qid = Libnames.make_qualid path id in
-    Nametab.locate_all qid
+    Nametab.GlobRef.locate_all qid
   in
   return (Value.of_list Value.of_reference r)
 end
 
 let () = define1 "env_path" reference begin fun r ->
-  match Nametab.path_of_global r with
+  match Nametab.GlobRef.path r with
   | fp ->
     let (path, id) = Libnames.repr_path fp in
     let path = DirPath.repr path in
@@ -1780,7 +1780,7 @@ let () =
     GlbVal (GlobRef.VarRef id), gtypref t_reference
   | Tac2qexpr.QReference qid ->
     let gr =
-      try Nametab.locate qid
+      try Nametab.GlobRef.locate qid
       with Not_found as exn ->
         let _, info = Exninfo.capture exn in
         Nametab.error_global_not_found ~info qid

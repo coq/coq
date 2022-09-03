@@ -583,7 +583,7 @@ let warns () =
 let rec locate_ref = function
   | [] -> [],[]
   | qid::l ->
-      let mpo = try Some (Nametab.locate_module qid) with Not_found -> None
+      let mpo = try Some (Nametab.Module.locate qid) with Not_found -> None
       and ro =
         try Some (Smartlocate.global_with_alias qid)
         with Nametab.GlobalizationError _ | UserError _ -> None

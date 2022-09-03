@@ -182,7 +182,7 @@ let rec pattern_filter pat ref env sigma typ =
   | _ -> false
 
 let full_name_of_reference ref =
-  let (dir,id) = repr_path (Nametab.path_of_global ref) in
+  let (dir,id) = repr_path (Nametab.GlobRef.path ref) in
   DirPath.to_string dir ^ "." ^ Id.to_string id
 
 (** Whether a reference is blacklisted *)
@@ -192,7 +192,7 @@ let blacklist_filter ref kind env sigma typ =
   CString.Set.for_all is_not_bl (SearchBlacklist.v ())
 
 let module_filter (mods, outside) ref kind env sigma typ =
-  let sp = Nametab.path_of_global ref in
+  let sp = Nametab.GlobRef.path ref in
   let sl = dirpath sp in
   let is_outside md = not (is_dirpath_prefix_of md sl) in
   let is_inside md = is_dirpath_prefix_of md sl in
@@ -310,7 +310,7 @@ let interface_search env sigma =
   in
   let filter_function ref env constr =
     let id = Names.Id.to_string (Nametab.basename_of_global ref) in
-    let path = Libnames.dirpath (Nametab.path_of_global ref) in
+    let path = Libnames.dirpath (Nametab.GlobRef.path ref) in
     let toggle x b = if x then b else not b in
     let match_name (regexp, flag) =
       toggle (Str.string_match regexp id 0) flag
@@ -335,7 +335,7 @@ let interface_search env sigma =
   let ans = ref [] in
   let print_function ref env constr =
     let fullpath = DirPath.repr (Nametab.dirpath_of_global ref) in
-    let qualid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
+    let qualid = Nametab.GlobRef.shortest_qualid Id.Set.empty ref in
     let (shortpath, basename) = Libnames.repr_qualid qualid in
     let shortpath = DirPath.repr shortpath in
     (* [shortpath] is a suffix of [fullpath] and we're looking for the missing

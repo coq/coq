@@ -20,7 +20,8 @@ type univ_name_list = Names.lname list
 let qualid_of_level ctx l =
   match Level.name l with
   | Some qid  ->
-    (try Some (Nametab.shortest_qualid_of_universe ctx qid)
+    let ctx = Id.Map.domain ctx in
+    (try Some (Nametab.Universe.shortest_qualid ctx qid)
      with Not_found -> None)
   | None -> None
 

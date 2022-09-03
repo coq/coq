@@ -30,7 +30,7 @@ type universe_source =
 type universe_name_decl = universe_source * (Id.t * Univ.UGlobal.t) list
 
 let check_exists_universe sp =
-  if Nametab.exists_universe sp then
+  if Nametab.Universe.exists sp then
     raise (AlreadyDeclared (Some "Universe", Libnames.basename sp))
   else ()
 
@@ -45,7 +45,7 @@ let qualify_univ i dp src id =
 let do_univ_name ~check i dp src (id,univ) =
   let i, sp = qualify_univ i dp src id in
   if check then check_exists_universe sp;
-  Nametab.push_universe i sp univ
+  Nametab.Universe.push i sp univ
 
 let cache_univ_names (prefix, (src, univs)) =
   let depth = Lib.sections_depth () in

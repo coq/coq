@@ -198,7 +198,7 @@ let path_of_global = function
   | GlobRef.ConstructRef ((ind,n),p) -> Libnames.make_path (dirpath_of_modpath (MutInd.modpath ind)) (Id.of_string_soft ("<constructor:" ^ Label.to_string (MutInd.label ind) ^ ":" ^ string_of_int n ^ ":" ^ string_of_int (p+1) ^ ">"))
 
 let default_extern_reference ?loc vars r =
-  try Nametab.shortest_qualid_of_global ?loc vars r
+  try Nametab.GlobRef.shortest_qualid ?loc vars r
   with Not_found when GlobRef.is_bound r -> qualid_of_path (path_of_global r)
 
 let my_extern_reference = ref default_extern_reference
@@ -428,7 +428,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop
       match availability_of_entry_coercion custom (InConstrEntry, 0) with
       | None -> raise No_match
       | Some coercion ->
-      let qid = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
+      let qid = Nametab.Abbrev.shortest_qualid ?loc vars kn in
       let l1 =
         List.rev_map (fun (c,(subentry,(scopt,scl))) ->
           extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes)) vars c)
@@ -793,7 +793,7 @@ let extended_glob_local_binder_of_decl ?loc u = DAst.make ?loc (extended_glob_lo
 
 (* this helper function is copied from notation.ml as it's not exported *)
 let qualid_of_ref n =
-  n |> Coqlib.lib_ref |> Nametab.shortest_qualid_of_global Id.Set.empty
+  n |> Coqlib.lib_ref |> Nametab.GlobRef.shortest_qualid Id.Set.empty
 
 let q_infinity () = qualid_of_ref "num.float.infinity"
 let q_neg_infinity () = qualid_of_ref "num.float.neg_infinity"
@@ -1269,7 +1269,7 @@ and extern_notation inctx (custom,scopes as allscopes) vars t rules =
                   extern true (subentry,(scopt,scl@snd scopes)) (vars,uvars) c)
                   terms
               in
-              let cf = Nametab.shortest_qualid_of_abbreviation ?loc vars kn in
+              let cf = Nametab.Abbrev.shortest_qualid ?loc vars kn in
               let a = CRef (cf,None) in
               let args = fill_arg_scopes args argsscopes allscopes in
               let args = extern_args (extern true) (vars,uvars) args in
