@@ -33,6 +33,7 @@ myrefl : forall {C : Type} (x : A), C -> myEq C x x
 myrefl is not universe polymorphic
 Arguments myrefl {C}%type_scope x _
   (where some original arguments have been renamed)
+myrefl uses section variable A.
 Expands to: Constructor Arguments_renaming.Test1.myrefl
 myplus =
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=

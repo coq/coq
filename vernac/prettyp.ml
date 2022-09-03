@@ -349,6 +349,23 @@ let print_arguments ref =
      (if not_renamed then mt () else
       fnl () ++ str "  (where some original arguments have been renamed)")]
 
+let print_section_deps ref =
+  let hyps = let open GlobRef in match ref with
+  | VarRef _ -> None
+  | ConstRef c ->
+    let bd = Global.lookup_constant c in
+    Some bd.const_hyps
+  | IndRef (mind,_) | ConstructRef ((mind,_),_) ->
+    let mb = Global.lookup_mind mind in
+    Some mb.mind_hyps
+  in
+  let hyps = Option.map (List.filter NamedDecl.is_local_assum) hyps in
+  match hyps with
+  | None | Some [] -> []
+  | Some hyps ->
+    [hov 0 (pr_global ref ++ str (String.plural (List.length hyps) " uses section variable") ++ spc () ++
+            hv 1 (prlist_with_sep spc (fun d -> Id.print (NamedDecl.get_id d)) (List.rev hyps)) ++ str ".")]
+
 let print_name_infos ref =
   let type_info_for_implicit =
     if need_expansion (select_impargs_size 0 (implicits_of_global ref)) ref then
@@ -361,6 +378,7 @@ let print_name_infos ref =
   print_primitive ref @
   type_info_for_implicit @
   print_arguments ref @
+  print_section_deps ref @
   print_if_is_coercion ref
 
 let print_inductive_args sp mipv =
