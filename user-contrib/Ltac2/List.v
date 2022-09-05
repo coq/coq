@@ -308,22 +308,25 @@ Ltac2 rec exist f ls :=
                end
   end.
 
-Ltac2 rec for_all2 f xs ys :=
+Ltac2 rec for_all2_aux (on_length_mismatch : 'a list -> 'b list -> bool) f xs ys :=
   match xs with
   | [] => match ys with
           | [] => true
-          | y :: ys' => Control.throw_invalid_argument "List.for_all2"
+          | y :: ys' => on_length_mismatch xs ys
           end
   | x :: xs'
     => match ys with
-       | [] => Control.throw_invalid_argument "List.for_all2"
+       | [] => on_length_mismatch xs ys
        | y :: ys'
          => match f x y with
-            | true => for_all2 f xs' ys'
+            | true => for_all2_aux on_length_mismatch f xs' ys'
             | false => false
             end
        end
   end.
+
+Ltac2 for_all2 f xs ys := for_all2_aux (fun _ _ => Control.throw_invalid_argument "List.for_all2") f xs ys.
+Ltac2 equal f xs ys := for_all2_aux (fun _ _ => false) f xs ys.
 
 Ltac2 rec exist2 f xs ys :=
   match xs with
