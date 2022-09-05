@@ -1389,14 +1389,12 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
       (* ?X : Π Δ. Type i = ?Y : Π Δ'. Type j.
          The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
       let evienv = Evd.evar_env env evi in
-      let concl1 = EConstr.Unsafe.to_constr evi.evar_concl in
-      let ctx1, i = Reduction.dest_arity evienv concl1 in
-      let ctx1 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx1 in
+      let ctx1, i = Reductionops.dest_arity evienv evd evi.evar_concl in
       let evi2 = Evd.find evd evk2 in
       let evi2env = Evd.evar_env env evi2 in
-      let concl2 = EConstr.Unsafe.to_constr evi2.evar_concl in
-      let ctx2, j = Reduction.dest_arity evi2env concl2 in
-      let ctx2 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx2 in
+      let ctx2, j = Reductionops.dest_arity evi2env evd evi2.evar_concl in
+      let i = ESorts.kind evd i in
+      let j = ESorts.kind evd j in
         if i == j || Evd.check_eq evd i j
         then (* Shortcut, i = j *)
           evd
