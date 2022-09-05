@@ -621,7 +621,7 @@ let lookup_reversible_path_to_common_point env sigma ~src_expected ~src_inferred
     aux r
 
 let inh_coerce_to_fail ?(use_coercions=true) flags env sigma rigidonly v v_ty target_type =
-  if not use_coercions || (rigidonly && not (Heads.is_rigid env (EConstr.Unsafe.to_constr target_type) && Heads.is_rigid env (EConstr.Unsafe.to_constr v_ty)))
+  if not use_coercions || (rigidonly && not (Heads.is_rigid env sigma target_type && Heads.is_rigid env sigma v_ty))
   then
     raise NoCoercion
   else
