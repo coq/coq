@@ -773,6 +773,130 @@ let get_pattern_kind env pl = match pl with
   in
   get_kind p pl
 
+(** For now, patterns recognized by the pattern-matching compiling are limited
+    to depth-one where leaves are either variables or catch-all *)
+let to_simple_case env ?loc (e,t) pl =
+  let todo () = raise HardCase in
+  match get_pattern_kind env pl with
+  | PKind_any ->
+    let (pat, b) = List.hd pl in
+    let na = match to_patexpr env pat with
+    | GEPatVar na -> na
+    | _ -> assert false
+    in
+    let () = check_redundant_clause (List.tl pl) in
+    GTacLet (false, [na, e], b)
+  | PKind_empty ->
+    let kn = check_elt_empty loc env t in
+    GTacCse (e, Other kn, [||], [||])
+  | PKind_variant kn ->
+    let (nconst, nnonconst, arities) = match kn with
+    | Tuple 0 -> 1, 0, [0]
+    | Tuple n -> 0, 1, [n]
+    | Other kn ->
+      let (_, def) = Tac2env.interp_type kn in
+      let galg = match def with
+        | GTydAlg c -> c
+        | GTydRec _ -> raise HardCase
+        | _ -> assert false
+      in
+      let arities = List.map (fun (_, args) -> List.length args) galg.galg_constructors in
+      galg.galg_nconst, galg.galg_nnonconst, arities
+    in
+    let const = Array.make nconst None in
+    let nonconst = Array.make nnonconst None in
+    let rec intern_branch = function
+    | [] -> ()
+    | (pat, br) :: rem ->
+      let () = match pat.v with
+      | PatAtm _ | PatOr _ | PatAs _ ->
+        raise HardCase
+      | PatVar (Name _) -> todo ()
+      | PatVar Anonymous ->
+        let () = check_redundant_clause rem in
+        (* Fill all remaining branches *)
+        let fill (ncst, narg) arity =
+          if Int.equal arity 0 then
+            let () =
+              if Option.is_empty const.(ncst) then const.(ncst) <- Some br
+            in
+            (succ ncst, narg)
+          else
+            let () =
+              if Option.is_empty nonconst.(narg) then
+                let ids = Array.make arity Anonymous in
+                nonconst.(narg) <- Some (ids, br)
+            in
+            (ncst, succ narg)
+        in
+        let _, _ = List.fold_left fill (0, 0) arities in
+        ()
+      | PatRef (ctor, args) ->
+        let loc = pat.loc in
+        let index = match ctor with
+        | Tuple _ -> 0
+        | Other {cindx=Closed i} -> i
+        | Other {cindx=Open _} -> assert false (* Open in PKind_variant is forbidden by typing *)
+        in
+        let get_id pat = match pat.v with
+        | PatVar na -> na
+        | _ -> todo ()
+        in
+        let ids = List.map get_id args in
+        let () =
+          if List.is_empty args then
+            if Option.is_empty const.(index) then const.(index) <- Some br
+            else warn_redundant_clause ?loc ()
+          else
+            let ids = Array.of_list ids in
+            if Option.is_empty nonconst.(index) then nonconst.(index) <- Some (ids, br)
+            else warn_redundant_clause ?loc ()
+        in
+        ()
+      in
+      intern_branch rem
+    in
+    let () = intern_branch pl in
+    let map n is_const = function
+    | None -> assert false (* exhaustivity check *)
+    | Some x -> x
+    in
+    let const = Array.mapi (fun i o -> map i true o) const in
+    let nonconst = Array.mapi (fun i o -> map i false o) nonconst in
+    GTacCse (e, kn, const, nonconst)
+  | PKind_open ->
+    let rec intern_branch map = function
+    | [] ->
+      user_err ?loc (str "Missing default case")
+    | (pat, br) :: rem ->
+      match to_patexpr env pat with
+      | GEPatVar na ->
+        let () = check_redundant_clause rem in
+        let def = (na, br) in
+        (map, def)
+      | GEPatRef (knc, args) ->
+        let get = function
+        | GEPatVar na -> na
+        | GEPatRef _ -> todo ()
+        in
+        let loc = pat.loc in
+        let knc = match knc with
+        | Other {cindx=Open knc} -> knc
+        | Other {cindx=Closed _} | Tuple _ -> assert false (* Closed / Tuple in PKind_open is forbidden by typing *)
+        in
+        let ids = List.map get args in
+        let map =
+          if KNmap.mem knc map then
+            let () = warn_redundant_clause ?loc () in
+            map
+          else
+            KNmap.add knc (Anonymous, Array.of_list ids, br) map
+        in
+        intern_branch map rem
+    in
+    let (map, def) = intern_branch KNmap.empty pl in
+    GTacWth { opn_match = e; opn_branch = map; opn_default = def }
+
 let rec intern_rec env {loc;v=e} = match e with
 | CTacAtm atm -> intern_atm env atm
 | CTacRef qid ->
@@ -881,9 +1005,9 @@ let rec intern_rec env {loc;v=e} = match e with
   let () = unify ?loc:loc1 env t1 t2 in
   (GTacCse (e, Other t_bool, [|e1; e2|], [||]), t2)
 | CTacCse (e, pl) ->
-  let e,brs,rt = super_intern_case env loc e pl in
+  let e,brs,rt = intern_case env loc e pl in
   begin try
-    let cse = intern_case env ?loc e brs in
+    let cse = to_simple_case env ?loc e brs in
     cse, rt
   with HardCase ->
     let e, _ = e in
@@ -1012,130 +1136,6 @@ and intern_let_rec env loc ids el e =
   let (e, t) = intern_rec env e in
   (GTacLet (true, el, e), t)
 
-(** For now, patterns recognized by the pattern-matching compiling are limited
-    to depth-one where leaves are either variables or catch-all *)
-and intern_case env ?loc (e,t) pl =
-  let todo () = raise HardCase in
-  match get_pattern_kind env pl with
-  | PKind_any ->
-    let (pat, b) = List.hd pl in
-    let na = match to_patexpr env pat with
-    | GEPatVar na -> na
-    | _ -> assert false
-    in
-    let () = check_redundant_clause (List.tl pl) in
-    GTacLet (false, [na, e], b)
-  | PKind_empty ->
-    let kn = check_elt_empty loc env t in
-    GTacCse (e, Other kn, [||], [||])
-  | PKind_variant kn ->
-    let (nconst, nnonconst, arities) = match kn with
-    | Tuple 0 -> 1, 0, [0]
-    | Tuple n -> 0, 1, [n]
-    | Other kn ->
-      let (_, def) = Tac2env.interp_type kn in
-      let galg = match def with
-        | GTydAlg c -> c
-        | GTydRec _ -> raise HardCase
-        | _ -> assert false
-      in
-      let arities = List.map (fun (_, args) -> List.length args) galg.galg_constructors in
-      galg.galg_nconst, galg.galg_nnonconst, arities
-    in
-    let const = Array.make nconst None in
-    let nonconst = Array.make nnonconst None in
-    let rec intern_branch = function
-    | [] -> ()
-    | (pat, br) :: rem ->
-      let () = match pat.v with
-      | PatAtm _ | PatOr _ | PatAs _ ->
-        raise HardCase
-      | PatVar (Name _) -> todo ()
-      | PatVar Anonymous ->
-        let () = check_redundant_clause rem in
-        (* Fill all remaining branches *)
-        let fill (ncst, narg) arity =
-          if Int.equal arity 0 then
-            let () =
-              if Option.is_empty const.(ncst) then const.(ncst) <- Some br
-            in
-            (succ ncst, narg)
-          else
-            let () =
-              if Option.is_empty nonconst.(narg) then
-                let ids = Array.make arity Anonymous in
-                nonconst.(narg) <- Some (ids, br)
-            in
-            (ncst, succ narg)
-        in
-        let _, _ = List.fold_left fill (0, 0) arities in
-        ()
-      | PatRef (ctor, args) ->
-        let loc = pat.loc in
-        let index = match ctor with
-        | Tuple _ -> 0
-        | Other {cindx=Closed i} -> i
-        | Other {cindx=Open _} -> assert false (* Open in PKind_variant is forbidden by typing *)
-        in
-        let get_id pat = match pat.v with
-        | PatVar na -> na
-        | _ -> todo ()
-        in
-        let ids = List.map get_id args in
-        let () =
-          if List.is_empty args then
-            if Option.is_empty const.(index) then const.(index) <- Some br
-            else warn_redundant_clause ?loc ()
-          else
-            let ids = Array.of_list ids in
-            if Option.is_empty nonconst.(index) then nonconst.(index) <- Some (ids, br)
-            else warn_redundant_clause ?loc ()
-        in
-        ()
-      in
-      intern_branch rem
-    in
-    let () = intern_branch pl in
-    let map n is_const = function
-    | None -> assert false (* exhaustivity check *)
-    | Some x -> x
-    in
-    let const = Array.mapi (fun i o -> map i true o) const in
-    let nonconst = Array.mapi (fun i o -> map i false o) nonconst in
-    GTacCse (e, kn, const, nonconst)
-  | PKind_open ->
-    let rec intern_branch map = function
-    | [] ->
-      user_err ?loc (str "Missing default case")
-    | (pat, br) :: rem ->
-      match to_patexpr env pat with
-      | GEPatVar na ->
-        let () = check_redundant_clause rem in
-        let def = (na, br) in
-        (map, def)
-      | GEPatRef (knc, args) ->
-        let get = function
-        | GEPatVar na -> na
-        | GEPatRef _ -> todo ()
-        in
-        let loc = pat.loc in
-        let knc = match knc with
-        | Other {cindx=Open knc} -> knc
-        | Other {cindx=Closed _} | Tuple _ -> assert false (* Closed / Tuple in PKind_open is forbidden by typing *)
-        in
-        let ids = List.map get args in
-        let map =
-          if KNmap.mem knc map then
-            let () = warn_redundant_clause ?loc () in
-            map
-          else
-            KNmap.add knc (Anonymous, Array.of_list ids, br) map
-        in
-        intern_branch map rem
-    in
-    let (map, def) = intern_branch KNmap.empty pl in
-    GTacWth { opn_match = e; opn_branch = map; opn_default = def }
-
 and intern_constructor env loc kn args = match kn with
 | Other kn ->
   let cstr = interp_constructor kn in
@@ -1163,7 +1163,7 @@ and intern_constructor env loc kn args = match kn with
   let ans = GTypRef (Tuple n, types) in
   GTacCst (Tuple n, 0, args), ans
 
-and super_intern_case env loc e pl =
+and intern_case env loc e pl =
   let e, et = intern_rec env e in
   let rt = GTypVar (fresh_id env) in
   let pl = List.map (fun (cpat,cbr) ->
