@@ -275,15 +275,8 @@ type elim_scheme = {
 
 val compute_elim_sig : evar_map -> types -> elim_scheme
 
-type eliminator =
-| ElimTerm of EConstr.constr
-| ElimClause of EConstr.constr with_bindings
-
-val general_elim  : evars_flag -> clear_flag ->
-  constr with_bindings -> eliminator -> unit Proofview.tactic
-
 val general_elim_clause : evars_flag -> unify_flags -> Id.t option ->
-  (EConstr.t * EConstr.t) -> eliminator -> unit Proofview.tactic
+  (EConstr.t * EConstr.types) -> EConstr.t -> unit Proofview.tactic
 
 val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
   unit Proofview.tactic

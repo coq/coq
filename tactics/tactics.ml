@@ -1557,7 +1557,7 @@ type eliminator =
 | ElimTerm of EConstr.constr
 | ElimClause of EConstr.constr with_bindings
 
-let general_elim_clause with_evars flags where (c, ty) elim =
+let general_elim_clause0 with_evars flags where (c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
@@ -1617,9 +1617,12 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let flags = elim_flags () in
   Proofview.Unsafe.tclEVARS indclause.evd <*>
   Tacticals.tclTHEN
-    (general_elim_clause with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
+    (general_elim_clause0 with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
+
+let general_elim_clause with_evars flags where (c, ty) elim =
+  general_elim_clause0 with_evars flags where (c, ty) (ElimTerm elim)
 
 (* Case analysis tactics *)
 
@@ -1665,22 +1668,18 @@ let find_ind_eliminator env sigma ind s =
   let gr = lookup_eliminator env ind s in
   Evd.fresh_global env sigma gr
 
-let find_eliminator c gl =
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  let concl = Proofview.Goal.concl gl in
-  let sigma, t = Typing.type_of env sigma c in
-  let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
-  if is_nonrec env ind then raise IsNonrec;
-  let sigma, c = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
-  sigma, ElimTerm c
-
 let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
     (Proofview.Goal.enter begin fun gl ->
-      let sigma, elim = find_eliminator c gl in
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let concl = Proofview.Goal.concl gl in
+      let sigma, t = Typing.type_of env sigma c in
+      let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
+      if is_nonrec env ind then raise IsNonrec;
+      let sigma, elim = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-      (general_elim with_evars clear_flag cx elim)
+      (general_elim with_evars clear_flag cx (ElimTerm elim))
     end)
     begin function (e, info) -> match e with
       | IsNonrec ->
