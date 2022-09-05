@@ -1,0 +1,6 @@
+Axioms:
+foo : nat
+0
+     : nat
+Axioms:
+axiom : nat
