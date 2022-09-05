@@ -31,25 +31,24 @@
 
 open Util
 
-type _focus_kind = int
-type 'a focus_kind = _focus_kind
-type focus_info = Obj.t
+module FocusKind = Dyn.Make()
+
+type 'a focus_kind = 'a FocusKind.tag
 type reason = NotThisWay | AlreadyNoFocus
 type unfocusable =
   | Cannot of reason
   | Loose
   | Strict
-type _focus_condition =
-  | CondNo       of bool * _focus_kind
-  | CondDone     of bool * _focus_kind
-  | CondEndStack of        _focus_kind (* loose_end is false here *)
-type 'a focus_condition = _focus_condition
+type 'a focus_condition =
+  | CondNo       of bool * 'a focus_kind
+  | CondDone     of bool * 'a focus_kind
+  | CondEndStack of        'a focus_kind (* loose_end is false here *)
 
 let next_kind = ref 0
 let new_focus_kind () =
   let r = !next_kind in
   incr next_kind;
-  r
+  FocusKind.anonymous r
 
 (* To be authorized to unfocus one must meet the condition prescribed by
     the action which focused.*)
@@ -84,21 +83,27 @@ end
 let check_cond_kind c k =
   let kind_of_cond = function
     | CondNo (_,k) | CondDone(_,k) | CondEndStack k -> k in
-  Int.equal (kind_of_cond c) k
+  FocusKind.eq (kind_of_cond c) k
+
+let equal_kind c k = match FocusKind.eq c k with
+| None -> false
+| Some _ -> true
 
 let test_cond c k1 pw =
   match c with
-  | CondNo(_,     k) when Int.equal k k1 -> Strict
+  | CondNo(_,     k) when equal_kind k k1 -> Strict
   | CondNo(true,  _)             -> Loose
   | CondNo(false, _)             -> Cannot NotThisWay
-  | CondDone(_,     k) when Int.equal k k1 && Proofview.finished pw -> Strict
+  | CondDone(_,     k) when equal_kind k k1 && Proofview.finished pw -> Strict
   | CondDone(true,  _)                                      -> Loose
   | CondDone(false, _)                                      -> Cannot NotThisWay
-  | CondEndStack k when Int.equal k k1 -> Strict
+  | CondEndStack k when equal_kind k k1 -> Strict
   | CondEndStack _             -> Cannot AlreadyNoFocus
 
 let no_cond ?(loose_end=false) k = CondNo (loose_end, k)
 let done_cond ?(loose_end=false) k = CondDone (loose_end,k)
+
+type focus_element = FocusElt : 'a focus_condition * 'a * Proofview.focus_context -> focus_element
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
    are under control of the undo mechanism *)
@@ -107,7 +112,7 @@ type t =
   (** Current focused proofview *)
   ; entry : Proofview.entry
   (** Entry for the proofview *)
-  ; focus_stack: (_focus_condition*focus_info*Proofview.focus_context) list
+  ; focus_stack: focus_element list
   (** History of the focusings, provides information on how to unfocus
      the proof and the extra information stored while focusing.  The
      list is empty when the proof is fully unfocused. *)
@@ -129,13 +134,12 @@ let proof p =
     | [_] -> []
     | a::l -> f a :: (map_minus_one f l)
   in
-  let stack =
-    map_minus_one (fun (_,_,c) -> Proofview.focus_context c) p.focus_stack
-  in
+  let map (FocusElt (_, _, c)) = Proofview.focus_context c in
+  let stack = map_minus_one map p.focus_stack in
   (goals,stack,sigma)
 
 let rec unroll_focus pv = function
-  | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
+  | FocusElt (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
   | [] -> pv
 
 (* spiwack: a proof is considered completed even if its still focused, if the focus
@@ -167,12 +171,14 @@ let partial_proof p = Proofview.partial_proof p.entry p.proofview
 
 (* An auxiliary function to push a {!focus_context} on the focus stack. *)
 let push_focus cond inf context pr =
-  { pr with focus_stack = (cond,inf,context)::pr.focus_stack }
+  { pr with focus_stack = FocusElt(cond,inf,context)::pr.focus_stack }
+
+type any_focus_condition = AnyFocusCond : 'a focus_condition -> any_focus_condition
 
 (* An auxiliary function to read the kind of the next focusing step *)
 let cond_of_focus pr =
   match pr.focus_stack with
-  | (cond,_,_)::_ -> cond
+  | FocusElt (cond,_,_)::_ -> AnyFocusCond cond
   | _ -> raise FullyUnfocused
 
 (* An auxiliary function to pop and read the last {!Proofview.focus_context}
@@ -194,14 +200,14 @@ let _focus cond inf i j pr =
    if the proof is already fully unfocused.
    This function does not care about the condition of the current focus. *)
 let _unfocus pr =
-  let pr, (_,_,fc) = pop_focus pr in
+  let pr, FocusElt (_,_,fc) = pop_focus pr in
    { pr with proofview = Proofview.unfocus fc pr.proofview }
 
 (* Focus command (focuses on the [i]th subgoal) *)
 (* spiwack: there could also, easily be a focus-on-a-range tactic, is there
    a need for it? *)
 let focus cond inf i pr =
-  try _focus cond (Obj.repr inf) i i pr
+  try _focus cond inf i i pr
   with CList.IndexOutOfRange -> raise (NoSuchGoals (i,i))
 
 (* Focus on the goal named id *)
@@ -212,7 +218,7 @@ let focus_id cond inf id pr =
      begin match CList.safe_index Evar.equal ev focused_goals with
      | Some i ->
         (* goal is already under focus *)
-        _focus cond (Obj.repr inf) i i pr
+        _focus cond inf i i pr
      | None ->
         if CList.mem_f Evar.equal ev (Evd.shelf evar_map) then
           (* goal is on the shelf, put it in focus *)
@@ -224,7 +230,7 @@ let focus_id cond inf id pr =
             try CList.index Evar.equal ev focused_goals
             with Not_found -> assert false
           in
-          _focus cond (Obj.repr inf) i i pr
+          _focus cond inf i i pr
         else
           raise CannotUnfocusThisWay
      end
@@ -233,7 +239,7 @@ let focus_id cond inf id pr =
   end
 
 let rec unfocus kind pr () =
-  let cond = cond_of_focus pr in
+  let AnyFocusCond cond = cond_of_focus pr in
   match test_cond cond kind pr.proofview with
   | Cannot NotThisWay -> raise CannotUnfocusThisWay
   | Cannot AlreadyNoFocus -> raise FullyUnfocused
@@ -249,18 +255,20 @@ let rec unfocus kind pr () =
 
 exception NoSuchFocus
 (* no handler: should not be allowed to reach toplevel. *)
-let rec get_in_focus_stack kind stack =
+let rec get_in_focus_stack : type a. a focus_kind -> _ -> a = fun kind stack ->
   match stack with
-  | (cond,inf,_)::stack ->
-      if check_cond_kind cond kind then inf
-      else get_in_focus_stack kind stack
+  | FocusElt (cond,inf,_)::stack ->
+    begin match check_cond_kind cond kind with
+    | Some Refl -> inf
+    | None -> get_in_focus_stack kind stack
+    end
   | [] -> raise NoSuchFocus
 let get_at_focus kind pr =
-  Obj.magic (get_in_focus_stack kind pr.focus_stack)
+  get_in_focus_stack kind pr.focus_stack
 
 let is_last_focus kind pr =
-  let (cond,_,_) = List.hd pr.focus_stack in
-  check_cond_kind cond kind
+  let FocusElt (cond,_,_) = List.hd pr.focus_stack in
+  Option.has_some (check_cond_kind cond kind)
 
 let no_focused_goal p =
   Proofview.finished p.proofview
@@ -289,7 +297,7 @@ let start ~name ~poly ?typing_flags sigma goals =
     ; poly
     ; typing_flags
   } in
-  _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
+  _focus end_of_stack () 1 (List.length goals) pr
 
 let dependent_start ~name ~poly ?typing_flags goals =
   let entry, proofview = Proofview.dependent_init goals in
@@ -302,7 +310,7 @@ let dependent_start ~name ~poly ?typing_flags goals =
     ; typing_flags
   } in
   let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
-  _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
+  _focus end_of_stack () 1 number_of_goals pr
 
 type open_error_reason =
   | UnfinishedProof
@@ -435,8 +443,8 @@ let data { proofview; focus_stack; entry; name; poly } =
     | [_] -> []
     | a::l -> f a :: (map_minus_one f l)
   in
-  let stack =
-    map_minus_one (fun (_,_,c) -> Proofview.focus_context c) focus_stack in
+  let map (FocusElt (_, _, c)) = Proofview.focus_context c in
+  let stack = map_minus_one map focus_stack in
   { sigma; goals; entry; stack; name; poly }
 
 let pr_goal e = Pp.(str "GOAL:" ++ int (Evar.repr e))
