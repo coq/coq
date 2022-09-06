@@ -132,14 +132,14 @@ let is_rec_rhs = function
 | GTacCse _ | GTacOpn _ | GTacWth _ | GTacFullMatch _-> false
 
 let warn_not_unit =
-  CWarnings.create ~name:"not-unit" ~category:"ltac"
+  CWarnings.create ~name:"not-unit" ~category:"ltac2"
     (fun (env, t) ->
       strbrk "This expression should have type unit but has type " ++
       pr_glbtype env t ++ str ".")
 
 let warn_redundant_clause =
-  CWarnings.create ~name:"redundant-clause" ~category:"ltac"
-    (fun () -> strbrk "The following clause is redundant.")
+  CWarnings.create ~name:"redundant-clause" ~category:"ltac2"
+    (fun () -> strbrk "Redundant branch in match.")
 
 let check_elt_unit loc env t =
   let maybe_unit = match kind env t with
