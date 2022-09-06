@@ -540,6 +540,7 @@ let find_applied_relation ?loc env sigma c left2right =
 
 let warn_deprecated_hint_rewrite_without_locality =
   CWarnings.create ~name:"deprecated-hint-rewrite-without-locality" ~category:"deprecated"
+    ~default:CWarnings.AsError
     (fun () -> strbrk "The default value for rewriting hint locality is currently \
     \"local\" in a section and \"global\" otherwise, but is scheduled to change \
     in a future release. For the time being, adding rewriting hints outside of sections \

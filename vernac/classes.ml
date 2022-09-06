@@ -148,6 +148,7 @@ let instance_input : instance_obj -> obj =
 let warn_deprecated_instance_without_locality =
   let open Pp in
   CWarnings.create ~name:"deprecated-instance-without-locality" ~category:"deprecated"
+    ~default:CWarnings.AsError
     (fun () -> strbrk "The default value for instance locality is currently \
     \"local\" in a section and \"global\" otherwise, but is scheduled to change \
     in a future release. For the time being, adding instances outside of sections \
