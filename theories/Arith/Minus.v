@@ -53,11 +53,11 @@ Notation minus_plus_simpl_l_reverse := Arith_prebase.minus_plus_simpl_l_reverse_
 
 #[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.add_sub_eq_l (and symmetry of equality) instead.")]
 Notation plus_minus := Arith_prebase.plus_minus_stt.
-#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.add_sub (together with Nat.add_com) instead.")]
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.add_sub (together with Nat.add_comm) instead.")]
 Notation minus_plus := Arith_prebase.minus_plus_stt.
-#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_add (together with Nat.add_com) instead.")]
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_add (together with Nat.add_comm) instead.")]
 Notation le_plus_minus_r := Arith_prebase.le_plus_minus_r_stt.
-#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_add (together with Nat.add_com) instead.")]
+#[deprecated(since="8.16",note="The Arith.Minus file is obsolete. Use Nat.sub_add (together with Nat.add_comm) instead.")]
 Notation le_plus_minus := Arith_prebase.le_plus_minus_stt.
 
 (** * Relation with order *)
