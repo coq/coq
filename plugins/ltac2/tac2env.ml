@@ -67,6 +67,8 @@ let interp_global kn =
   let data = KNmap.find kn ltac_state.contents.ltac_tactics in
   data
 
+let globals () = (!ltac_state).ltac_tactics
+
 let define_constructor kn t =
   let state = !ltac_state in
   ltac_state := { state with ltac_constructors = KNmap.add kn t state.ltac_constructors }
@@ -179,6 +181,8 @@ let locate_extended_all_ltac qid =
   let tab = !nametab in
   RfTab.find_prefixes qid tab.tab_ltac
 
+let path_of_ltac kn = RfMap.find kn (!nametab).tab_ltac_rev
+
 let shortest_qualid_of_ltac kn =
   let tab = !nametab in
   let sp = RfMap.find kn tab.tab_ltac_rev in
@@ -197,6 +201,8 @@ let locate_constructor qid =
 let locate_extended_all_constructor qid =
   let tab = !nametab in
   KnTab.find_prefixes qid tab.tab_cstr
+
+let path_of_constructor kn = KNmap.find kn (!nametab).tab_cstr_rev
 
 let shortest_qualid_of_constructor kn =
   let tab = !nametab in

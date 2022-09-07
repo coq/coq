@@ -358,6 +358,17 @@ Ltac2 Definitions
       the `f` in the body is resolved dynamically. This is witnessed by
       the second re-definition.
 
+Printing Ltac2 tactics
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. cmd:: Print Ltac2 @qualid
+
+   :cmd:`Print` can print defined Ltac2 tactics and can avoid printing
+   other objects by using `Print Ltac2`.
+
+.. cmd:: Print Ltac2 Signatures
+
+   This command displays a list of all defined tactics in scope with their types.
 
 Reduction
 ~~~~~~~~~

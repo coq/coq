@@ -950,7 +950,77 @@ end
 
 (** Printing *)
 
-let print_ltac qid =
+let print_constant ~print_def qid data =
+  let e = data.Tac2env.gdata_expr in
+  let (_, t) = data.Tac2env.gdata_type in
+  let name = int_name () in
+  let def = if print_def then fnl () ++ hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e) else mt() in
+  hov 0 (
+    hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ def
+  )
+
+let print_tacref ~print_def qid = function
+  | TacConstant kn ->
+    let data = Tac2env.interp_global kn in
+    print_constant ~print_def qid data
+  | TacAlias kn -> str "Alias to ..."
+
+let locatable_ltac2 = "Ltac2"
+
+type ltac2_object =
+  | Constructor of ltac_constructor
+  | TacRef of tacref
+
+let locate_object qid =
+  try Constructor (Tac2env.locate_constructor qid)
+  with Not_found ->
+    TacRef (Tac2env.locate_ltac qid)
+
+let locate_all_object qid =
+  let open Tac2env in
+  (List.map (fun x -> Constructor x) (locate_extended_all_constructor qid))
+   @ (List.map (fun x -> TacRef x) (locate_extended_all_ltac qid))
+
+let shortest_qualid_of_object = function
+  | Constructor kn -> Tac2env.shortest_qualid_of_constructor kn
+  | TacRef kn -> Tac2env.shortest_qualid_of_ltac kn
+
+let path_of_object = function
+  | Constructor kn -> Tac2env.path_of_constructor kn
+  | TacRef kn -> Tac2env.path_of_ltac kn
+
+let print_object ~print_def qid = function
+  | Constructor _ -> str "Ltac2 Constructor" ++ spc() ++ pr_qualid qid
+  | TacRef kn -> str "Ltac2 " ++ print_tacref ~print_def qid kn
+
+let () =
+  let open Prettyp in
+  let locate qid = try Some (qid, locate_object qid) with Not_found -> None in
+  let locate_all qid = List.map (fun x -> qid, x) (locate_all_object qid) in
+  let shortest_qualid (_,kn) = shortest_qualid_of_object kn in
+  let name (_,kn) =
+    let hdr = match kn with
+      | TacRef (TacConstant _) -> str "Ltac2"
+      | TacRef (TacAlias _) -> str "Ltac2 Notation"
+      | Constructor _ -> str "Ltac2 Constructor"
+    in
+    hdr ++ spc () ++ pr_path (path_of_object kn)
+  in
+  let print (qid,kn) = print_object ~print_def:true qid kn in
+  let about (qid,kn) = print_object ~print_def:false qid kn in
+  register_locatable locatable_ltac2 {
+    locate;
+    locate_all;
+    shortest_qualid;
+    name;
+    print;
+    about;
+  }
+
+let print_located_tactic qid =
+  Feedback.msg_notice (Prettyp.print_located_other locatable_ltac2 qid)
+
+let print_ltac2 qid =
   if Tac2env.is_constructor qid then
     let kn =
       try Tac2env.locate_constructor qid
@@ -963,20 +1033,26 @@ let print_ltac qid =
       try Tac2env.locate_ltac qid
       with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown tactic " ++ pr_qualid qid)
     in
-    match kn with
-    | TacConstant kn ->
-      let data = Tac2env.interp_global kn in
-      let e = data.Tac2env.gdata_expr in
-      let (_, t) = data.Tac2env.gdata_type in
-      let name = int_name () in
-      Feedback.msg_notice (
-        hov 0 (
-          hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t) ++ fnl () ++
-          hov 2 (pr_qualid qid ++ spc () ++ str ":=" ++ spc () ++ pr_glbexpr e)
-        )
-      )
-    | TacAlias kn ->
-      Feedback.msg_notice (str "Alias to ...")
+    Feedback.msg_notice (print_tacref ~print_def:true qid kn)
+
+let print_signatures () =
+  let entries = KNmap.bindings (Tac2env.globals ()) in
+  let sort (kn1, _) (kn2, _) = KerName.compare kn1 kn2 in
+  let entries = List.sort sort entries in
+  let map (kn, entry) =
+    let qid =
+      try Some (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
+      with Not_found -> None
+    in
+    match qid with
+    | None -> None
+    | Some qid -> Some (qid, entry)
+  in
+  let entries = List.map_filter map entries in
+  let pr_entry (qid, data) =
+    hov 2 (print_constant ~print_def:false qid data)
+  in
+  Feedback.msg_notice (prlist_with_sep fnl pr_entry entries)
 
 (** Calling tactics *)
 
