@@ -309,10 +309,6 @@ val unfold : EConstr.t list -> unit Proofview.tactic
 val tclINTERP_AST_CLOSURE_TERM_AS_CONSTR :
   ast_closure_term -> EConstr.t list Proofview.tactic
 
-val tacREDUCE_TO_QUANTIFIED_IND :
-  EConstr.types ->
-    ((Names.inductive * EConstr.EInstance.t) * EConstr.types) Proofview.tactic
-
 val tacTYPEOF : EConstr.t -> EConstr.types Proofview.tactic
 
 val tclINTRO_ID : Id.t -> unit Proofview.tactic

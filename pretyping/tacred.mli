@@ -101,6 +101,10 @@ val reduce_to_atomic_ind : env ->  evar_map -> types -> (inductive * EInstance.t
    returns [I] and [t'] or fails with a user error *)
 val reduce_to_quantified_ind : env ->  evar_map -> types -> (inductive * EInstance.t) * types
 
+(** Same as {!reduce_to_quantified_ind} but more efficient because it does not
+    return the normalized type. *)
+val eval_to_quantified_ind : env -> evar_map -> types -> (inductive * EInstance.t)
+
 (** [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
    [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
 val reduce_to_quantified_ref :

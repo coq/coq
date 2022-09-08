@@ -561,7 +561,7 @@ let injectl2rtac sigma c = match EConstr.kind sigma c with
 
 let is_injection_case env sigma c =
   let sigma, cty = Typing.type_of env sigma c in
-  let (mind,_), _ = Tacred.reduce_to_quantified_ind env sigma cty in
+  let (mind,_) = Tacred.eval_to_quantified_ind env sigma cty in
   Coqlib.check_ind_ref "core.eq.type" mind
 
 let perform_injection c =

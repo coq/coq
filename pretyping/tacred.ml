@@ -1284,6 +1284,25 @@ let reduce_to_ind_gen allow_product env sigma t =
 let reduce_to_quantified_ind env sigma c = reduce_to_ind_gen true env sigma c
 let reduce_to_atomic_ind env sigma c = reduce_to_ind_gen false env sigma c
 
+let eval_to_quantified_ind env sigma t =
+  let rec elimrec env t =
+    let t = hnf_constr0 env sigma t in
+    match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
+      | Ind (ind, _ as indu) ->
+        let () = check_privacy env ind in
+        indu
+      | Prod (n,ty,t') ->
+        elimrec (push_rel (Context.Rel.Declaration.LocalAssum (n,ty)) env) t'
+      | _ ->
+          (* Last chance: we allow to bypass the Opaque flag (as it
+             was partially the case between V5.10 and V8.1 *)
+          let t' = whd_all env sigma t in
+          match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
+            | Ind (ind, _ as indu) -> check_privacy env ind; indu
+            | _ -> user_err Pp.(str"Not an inductive product.")
+  in
+  elimrec env t
+
 let find_hnf_rectype env sigma t =
   let ind,t = reduce_to_atomic_ind env sigma t in
   ind, snd (decompose_app sigma t)
