@@ -75,6 +75,9 @@ let pr_grammar = function
 
 let pr_custom_grammar name = pr_registered_grammar ("custom:"^name)
 
+let pr_keywords () =
+  Pp.prlist_with_sep Pp.fnl Pp.str (CString.Set.elements (CLexer.keywords ()))
+
 (**********************************************************************)
 (* Parse a format (every terminal starting with a letter or a single
    quote (except a single quote alone) must be quoted) *)

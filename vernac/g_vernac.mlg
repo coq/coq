@@ -1027,6 +1027,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Custom"; IDENT "Grammar"; ent = IDENT ->
           (* Should also be in "syntax" section *)
           { PrintCustomGrammar ent }
+      | IDENT "Keywords" ->
+          { PrintKeywords }
       | IDENT "LoadPath"; dir = OPT dirpath -> { PrintLoadPath dir }
       | IDENT "Libraries" -> { PrintLibraries }
 

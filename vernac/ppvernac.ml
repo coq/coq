@@ -562,6 +562,8 @@ let pr_printable = function
     keyword "Print Grammar" ++ spc() ++ str ent
   | PrintCustomGrammar ent ->
     keyword "Print Custom Grammar" ++ spc() ++ str ent
+  | PrintKeywords ->
+    keyword "Print Keywords"
   | PrintLoadPath dir ->
     keyword "Print LoadPath" ++ pr_opt DirPath.print dir
   | PrintLibraries ->

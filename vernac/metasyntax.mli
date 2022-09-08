@@ -59,6 +59,7 @@ val add_abbreviation : local:bool -> Deprecation.t option -> env ->
 
 val pr_grammar : string -> Pp.t
 val pr_custom_grammar : string -> Pp.t
+val pr_keywords : unit -> Pp.t
 
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
 

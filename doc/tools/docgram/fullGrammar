@@ -1279,6 +1279,7 @@ printable: [
 | "Section" global
 | "Grammar" IDENT
 | "Custom" "Grammar" IDENT
+| "Keywords"
 | "LoadPath" OPT dirpath
 | "Libraries"
 | "Notation" string

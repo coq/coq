@@ -529,6 +529,11 @@ Displaying information about notations
     :cmd:`Locate` for information on the definitions and scopes associated with
     a notation.
 
+.. cmd:: Print Keywords
+
+   Prints the current reserved :ref:`keywords <keywords>` and parser tokens, one
+   per line. Keywords cannot be used as identifiers.
+
 .. cmd:: Print Grammar @ident
 
    Shows the grammar for the nonterminal :token:`ident`, which must be one of the following:

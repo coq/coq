@@ -2069,6 +2069,7 @@ let vernac_print ~pstate =
   | PrintInspect n -> Prettyp.inspect env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
+  | PrintKeywords -> Metasyntax.pr_keywords ()
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintLibraries -> print_libraries ()
   | PrintModule qid -> print_module qid
