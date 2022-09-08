@@ -339,6 +339,15 @@ let eq_alias a b = match a, b with
 | VarAlias id1, VarAlias id2 -> Id.equal id1 id2
 | _ -> false
 
+let compare_alias a b = match a, b with
+| RelAlias n, RelAlias m -> Int.compare n m
+| VarAlias id1, VarAlias id2 -> Id.compare id1 id2
+| RelAlias _, VarAlias _ -> -1
+| VarAlias _, RelAlias _ -> 1
+
+module AlsOrd = struct type t = alias let compare = compare_alias end
+module AlsMap = Map.Make(AlsOrd)
+
 (* A chain of let-in ended either by a declared variable or a non-variable term *)
 (* e.g. [x:=t;y:=x;z:=y] binds [z] to [NonVarAliasChain ([y;x],t)] *)
 (* and. [a:T;x:=a;y:=x;z:=y] binds [z] to [VarAliasChain ([y;x],a)] *)
@@ -457,23 +466,23 @@ let lift_aliases n aliases =
   in
   { aliases with rel_aliases }
 
-let get_alias_chain_of sigma aliases x = match x with
+let get_alias_chain_of aliases x = match x with
   | RelAlias n -> (try Some (Int.Map.find n aliases.rel_aliases) with Not_found -> None)
   | VarAlias id -> (try Some (cast_alias_chain (Id.Map.find id aliases.var_aliases)) with Not_found -> None)
 
 (* Expand an alias as much as possible while remaining a variable *)
 (* i.e. returns either a declared variable [y], or the last expansion
    of [x] defined to be [c] and [c] is not a variable *)
-let normalize_alias sigma aliases x =
-  match get_alias_chain_of sigma aliases x with
+let normalize_alias aliases x =
+  match get_alias_chain_of aliases x with
   | None | Some (NonVarAliasChain ([], _)) -> x
   | Some (NonVarAliasChain (l, _)) -> List.last l
   | Some (VarAliasChain (_, a)) -> a
 
 (* Idem, specifically for named variables *)
-let normalize_alias_var sigma var_aliases id =
+let normalize_alias_var var_aliases id =
   let aliases = { var_aliases; rel_aliases = Int.Map.empty } in
-  match normalize_alias sigma aliases (VarAlias id) with
+  match normalize_alias aliases (VarAlias id) with
   | VarAlias id -> id
   | RelAlias _ -> assert false (** var only aliases to variables *)
 
@@ -501,27 +510,27 @@ let extend_alias sigma decl { var_aliases; rel_aliases } =
     | LocalAssum _ -> rel_aliases in
   { var_aliases; rel_aliases }
 
-let expand_alias_once sigma aliases x =
-  match get_alias_chain_of sigma aliases x with
+let expand_alias_once aliases x =
+  match get_alias_chain_of aliases x with
   | None -> None
   | Some (VarAliasChain (x :: _, _) | NonVarAliasChain (x :: _, _) | VarAliasChain ([], x)) -> Some (Alias.make (of_alias x))
   | Some (NonVarAliasChain ([], a)) -> Some a
 
-let expansions_of_var sigma aliases x =
-  match get_alias_chain_of sigma aliases x with
+let expansions_of_var aliases x =
+  match get_alias_chain_of aliases x with
   | None -> [x]
   | Some (VarAliasChain (l, y)) -> x :: l @ [y]
   | Some (NonVarAliasChain (l, _)) -> x :: l
 
 let expansion_of_var sigma aliases x =
-  match get_alias_chain_of sigma aliases x with
+  match get_alias_chain_of aliases x with
   | None -> (false, Some x, [])
   | Some (VarAliasChain (l, x)) -> (true, Some x, l)
   | Some (NonVarAliasChain (l, a)) -> (true, Alias.repr sigma a, l)
 
 let rec expand_vars_in_term_using env sigma aliases t = match EConstr.kind sigma t with
-  | Rel n -> of_alias (normalize_alias sigma aliases (RelAlias n))
-  | Var id -> of_alias (normalize_alias sigma aliases (VarAlias id))
+  | Rel n -> of_alias (normalize_alias aliases (RelAlias n))
+  | Var id -> of_alias (normalize_alias aliases (VarAlias id))
   | _ ->
     let self aliases c = expand_vars_in_term_using env sigma aliases c in
     map_constr_with_full_binders env sigma (extend_alias sigma) self aliases t
@@ -574,8 +583,8 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
 (* Managing pattern-unification *)
 (********************************)
 
-let expand_and_check_vars sigma aliases l =
-  let map a = match get_alias_chain_of sigma aliases a with
+let expand_and_check_vars aliases l =
+  let map a = match get_alias_chain_of aliases a with
   | None -> Some a
   | Some (VarAliasChain (_, a)) -> Some a
   | Some (NonVarAliasChain ([], c)) -> None
@@ -621,7 +630,7 @@ let remove_instance_local_defs evd evk args =
 
 let find_unification_pattern_args env evd l t =
   let aliases = make_alias_map env evd in
-  match expand_and_check_vars evd aliases l with
+  match expand_and_check_vars aliases l with
   | Some l as x when distinct_actual_deps env evd aliases l t -> x
   | _ -> None
 
@@ -706,43 +715,83 @@ let solve_pattern_eqn env sigma l c =
  * useful to ensure the uniqueness of a projection.
 *)
 
-let make_projectable_subst aliases sigma evi args =
-  let sign = evar_filtered_context evi in
+type esubst = {
+  ealias : (alias * Id.t) list Int.Map.t;
+  evalue : (existential * Id.t) Int.Map.t;
+  eindex : Int.Set.t AlsMap.t;
+  (** Reverse map of indices in [ealias] containing the corresponding alias *)
+}
+
+let make_constructor_subst sigma sign args =
+  let fold decl a accu = match decl with
+  | LocalAssum ({ binder_name = id }, _) ->
+    let a', args = decompose_app_vect sigma a in
+    begin match EConstr.kind sigma a' with
+    | Construct (cstr, _) ->
+      let l = try Constrmap.find cstr accu with Not_found -> [] in
+      Constrmap.add cstr ((args, id) :: l) accu
+    | _ -> accu
+    end
+  | LocalDef _ -> accu
+  in
+  List.fold_right2 fold sign args Constrmap.empty
+
+let make_projectable_subst aliases sigma sign args =
   let evar_aliases = compute_var_aliases sign sigma in
-  let (_,full_subst,cstr_subst,_) =
-    List.fold_right_i
-      (fun i decl (args,all,cstrs,revmap) ->
-        match decl,args with
-        | LocalAssum ({binder_name=id},c), a::rest ->
-            let revmap = Id.Map.add id i revmap in
-            let cstrs =
-              let a',args = decompose_app_vect sigma a in
-              match EConstr.kind sigma a' with
-              | Construct cstr ->
-                  let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
-                  Constrmap.add (fst cstr) ((args,id)::l) cstrs
-              | _ -> cstrs in
-            let all = Int.Map.add i [a, id] all in
-            (rest,all,cstrs,revmap)
-        | LocalDef ({binder_name=id},c,_), a::rest ->
-            let revmap = Id.Map.add id i revmap in
-            (match EConstr.kind sigma c with
-            | Var id' ->
-                let idc = normalize_alias_var sigma evar_aliases id' in
-                let ic, sub =
-                  try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
-                  with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
-                if List.exists (fun (c, _) -> EConstr.eq_constr sigma a c) sub then
-                  (rest,all,cstrs,revmap)
-                else
-                  let all = Int.Map.add ic ((a, id)::sub) all in
-                  (rest,all,cstrs,revmap)
-            | _ ->
-                let all = Int.Map.add i [a, id] all in
-                (rest,all,cstrs,revmap))
-        | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
-      sign (List.rev args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
-  (full_subst,cstr_subst)
+  (* First compute aliasing equivalence classes *)
+  let fold decl a (i, all, vals, revmap) =
+    let id = get_id decl in
+    let revmap = Id.Map.add id i revmap in
+    let oldbindings = match decl with
+    | LocalAssum _ -> None
+    | LocalDef (_, c, _) ->
+      match EConstr.kind sigma c with
+      | Var id' ->
+        let idc = normalize_alias_var evar_aliases id' in
+        let ic, sub = match Id.Map.find_opt idc revmap with
+        | Some ic ->
+          let bnd = match Int.Map.find_opt ic all with
+          | None -> []
+          | Some bnd -> bnd
+          in
+          ic, bnd
+        | None ->
+          (* [idc] is a filtered variable: treat [id] as an assumption *)
+          i, []
+        in
+        Some (ic, sub)
+      | _ -> None
+    in
+    let all, vals = match oldbindings with
+    | None ->
+      begin match to_alias sigma a with
+      | Some v -> Int.Map.add i [v, id] all, vals
+      | None ->
+        match destEvar sigma a with
+        | ev -> all, Int.Map.add i (ev, id) vals
+        | exception DestKO -> all, vals
+      end
+    | Some (ic, sub) ->
+      (* Necessarily a let-binding aliasing a variable *)
+      match to_alias sigma a with
+      | None -> all, vals
+      | Some v ->
+        if List.exists (fun (c, _) -> eq_alias v c) sub then all, vals
+        else Int.Map.add ic ((v, id) :: sub) all, vals
+    in
+    (i + 1, all, vals, revmap)
+  in
+  let (_, ealias, evalue, _) = List.fold_right2 fold sign args (0, Int.Map.empty, Int.Map.empty, Id.Map.empty) in
+  (* Then extract the backpointers. *)
+  let fold i bnd eindex =
+    let fold accu (a, _) = match AlsMap.find a accu with
+    | set -> AlsMap.add a (Int.Set.add i set) accu
+    | exception Not_found -> AlsMap.add a (Int.Set.singleton i) accu
+    in
+    List.fold_left fold eindex bnd
+  in
+  let eindex = Int.Map.fold fold ealias AlsMap.empty in
+  { eindex; ealias; evalue }
 
 (*------------------------------------*
  * operations on the evar constraints *
@@ -906,40 +955,35 @@ exception NotUnique
 exception NotUniqueInType of (Id.t * evar_projection) list
 
 let rec assoc_up_to_alias sigma aliases y = function
-  | [] -> raise Not_found
+  | [] -> assert false
   | (c, id)::l ->
-    match to_alias sigma c with
-    | None -> assoc_up_to_alias sigma aliases y l
-    | Some c ->
-      if eq_alias c y then id
-      else assoc_up_to_alias sigma aliases y l
+    if eq_alias c y then id
+    else assoc_up_to_alias sigma aliases y l
 
 let rec find_projectable_vars aliases sigma y subst =
-  let is_projectable _ idcl (subst1,subst2 as subst') =
+  let indices = try AlsMap.find y subst.eindex with Not_found -> Int.Set.empty in
+  let is_projectable_var i subst1 =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
-    try
-      let id = assoc_up_to_alias sigma aliases y idcl in
-      (id,ProjectVar)::subst1,subst2
-    with Not_found ->
+    let idcl = Int.Map.find i subst.ealias in
+    let id = assoc_up_to_alias sigma aliases y idcl in
+    (id, ProjectVar)::subst1
+  in
+  let is_projectable_evar i (c, id) subst2 =
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
-      let f (c, id) = isEvar sigma c in
-      let idcl' = List.filter f idcl in
-      match idcl' with
-      | [c, id] ->
-        begin
-          let (evk,argsv as t) = destEvar sigma c in
-          let evi = Evd.find sigma evk in
-          let subst,_ = make_projectable_subst aliases sigma evi argsv in
-          let l = find_projectable_vars aliases sigma y subst in
-          match l with
-          | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
-          | _ -> subst'
-        end
-      | [] -> subst'
-      | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
+    if Int.Set.mem i indices then subst2 (* already found by is_projectable_var *)
+    else if Evd.is_defined sigma (fst c) then subst2 (* already solved *)
+    else
+      let (evk,argsv as t) = c in
+      let evi = Evd.find sigma evk in
+      let subst = make_projectable_subst aliases sigma (evar_filtered_context evi) argsv in
+      let l = find_projectable_vars aliases sigma y subst in
+      match l with
+      | [id',p] -> (id, ProjectEvar (t, evi, id', p)) :: subst2
+      | _ -> subst2
   in
-  let subst1,subst2 = Int.Map.fold is_projectable subst ([],[]) in
+  let subst1 = Int.Set.fold is_projectable_var indices [] in
+  let subst2 = Int.Map.fold is_projectable_evar subst.evalue [] in
   (* We return the substitution with ProjectVar first (from most
      recent to oldest var), followed by ProjectEvar (from most recent
      to oldest var too) *)
@@ -954,11 +998,12 @@ let filter_solution = function
   | [id] -> mkVar id
 
 let project_with_effects aliases sigma t subst =
-  let is_projectable _ idcl accu =
-    try assoc_up_to_alias sigma aliases t idcl :: accu
-    with Not_found -> accu
+  let indices = AlsMap.find t subst.eindex in
+  let is_projectable i accu =
+    let idcl = Int.Map.find i subst.ealias in
+    assoc_up_to_alias sigma aliases t idcl :: accu
   in
-  filter_solution (Int.Map.fold is_projectable subst [])
+  filter_solution (Int.Set.fold is_projectable indices [])
 
 (* In case the solution to a projection problem requires the instantiation of
  * subsidiary evars, [do_projection_effects] performs them; it
@@ -1026,7 +1071,7 @@ let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_
   and aux' k t =
     try project_with_effects aliases evd t subst_in_env_extended_with_k_binders
     with Not_found ->
-      match expand_alias_once evd aliases t with
+      match expand_alias_once aliases t with
       | None -> raise Not_found
       | Some c -> aux k (Alias.eval (Alias.lift k c)) in
   try
@@ -1067,7 +1112,7 @@ let extract_candidates sols =
 
 let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
-  let subst,_ = make_projectable_subst aliases evd evi argsv in
+  let subst = make_projectable_subst aliases evd (evar_filtered_context evi) argsv in
   let invert arg =
     let p = invert_arg fullenv evd aliases k evk subst arg in
     extract_unique_projection p
@@ -1545,7 +1590,9 @@ let rec invert_definition unify flags choose imitate_defs
   let evdref = ref evd in
   let progress = ref false in
   let evi = Evd.find evd evk in
-  let subst,cstr_subst = make_projectable_subst aliases evd evi argsv in
+  let sign = evar_filtered_context evi in
+  let subst = make_projectable_subst aliases evd sign argsv in
+  let cstr_subst = make_constructor_subst evd sign argsv in
 
   (* Projection *)
   let project_variable t =
@@ -1573,7 +1620,7 @@ let rec invert_definition unify flags choose imitate_defs
           let ty = Retyping.get_type_of env !evdref t' in
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define unify flags ~choose) env !evdref 0 ev ty in
-          let ts = expansions_of_var evd aliases t in
+          let ts = expansions_of_var aliases t in
           let test c = isEvar evd c || List.exists (is_alias evd c) ts in
           let filter = restrict_upon_filter evd evk test argsv' in
           let filter = closure_of_filter ~can_drop:choose evd evk' filter in
