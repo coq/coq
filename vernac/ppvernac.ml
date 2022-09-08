@@ -1120,7 +1120,7 @@ let pr_vernac_expr v =
       hov 2 (
         keyword "Arguments" ++ spc() ++
         pr_smart_global q ++
-        let pr_s = function None -> str"" | Some {v=s} -> str "%" ++ str s in
+        let pr_s = prlist (fun {v=s} -> str "%" ++ str s) in
         let pr_if b x = if b then x else str "" in
         let pr_one_arg (x,k) = pr_if k (str"!") ++ Name.print x in
         let pr_br imp force x =
@@ -1133,11 +1133,11 @@ let pr_vernac_expr v =
           left ++ x ++ right
         in
         let get_arguments_like s imp tl =
-          if s = None && imp = Glob_term.Explicit then [], tl
+          if s = [] && imp = Glob_term.Explicit then [], tl
           else
             let rec fold extra = function
               | RealArg arg :: tl when
-                  Option.equal (fun a b -> String.equal a.CAst.v b.CAst.v) arg.notation_scope s
+                  List.equal (fun a b -> String.equal a.CAst.v b.CAst.v) arg.notation_scope s
                   && arg.implicit_status = imp ->
                 fold ((arg.name,arg.recarg_like) :: extra) tl
               | args -> List.rev extra, args

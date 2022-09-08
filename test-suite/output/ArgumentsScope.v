@@ -28,3 +28,30 @@ End A.
 About negb.
 About negb'.
 About negb''.
+
+(* Check multiple scopes *)
+
+Declare Scope A_scope.
+Delimit Scope A_scope with A.
+Declare Scope B_scope.
+Delimit Scope B_scope with B.
+Notation "'tt'" := true : A_scope.
+Notation "'tt'" := false : B_scope.
+
+Definition f (x : bool) := x.
+
+Arguments f x%A%B.
+About f.
+
+Check f tt.
+Set Printing All.
+Check f tt.
+Unset Printing All.
+
+Arguments f x%B%A.
+About f.
+
+Check f tt.
+Set Printing All.
+Check f tt.
+Unset Printing All.

@@ -294,7 +294,7 @@ type module_binder = export_with_cats option * lident list * module_ast_inl
 type vernac_one_argument_status = {
   name : Name.t;
   recarg_like : bool;
-  notation_scope : string CAst.t option;
+  notation_scope : string CAst.t list;
   implicit_status : Glob_term.binding_kind;
 }
 

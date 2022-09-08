@@ -1184,7 +1184,7 @@ let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
    recvars level allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
-    Option.equal String.equal sc1 sc2 &&
+    List.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
   in
   let check (x, y) =

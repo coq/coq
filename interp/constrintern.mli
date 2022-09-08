@@ -63,7 +63,7 @@ val compute_internalization_env : env -> evar_map -> ?impls:internalization_env 
   internalization_env
 
 val extend_internalization_data :
-  var_internalization_data -> Impargs.implicit_status -> scope_name option -> var_internalization_data
+  var_internalization_data -> Impargs.implicit_status -> scope_name list -> var_internalization_data
 
 type ltac_sign = {
   ltac_vars : Id.Set.t;

@@ -11,7 +11,6 @@
 {
 
 open Pp
-open CErrors
 open Util
 open Names
 open Glob_term
@@ -839,8 +838,8 @@ GRAMMAR EXTEND Gram
     [ [ "%"; key = IDENT -> { key } ] ]
   ;
   argument_spec: [
-       [ b = OPT "!"; id = name ; s = OPT scope_delimiter ->
-       { id.CAst.v, not (Option.is_empty b), Option.map (fun x -> CAst.make ~loc x) s }
+       [ b = OPT "!"; id = name ; s = LIST0 scope_delimiter ->
+       { id.CAst.v, not (Option.is_empty b), List.map (fun x -> CAst.make ~loc x) s }
     ]
   ];
   (* List of arguments implicit status, scope, modifiers *)
@@ -852,29 +851,23 @@ GRAMMAR EXTEND Gram
              implicit_status = Explicit}] }
     | "/" -> { [VolatileArg] }
     | "&" -> { [BidiArg] }
-    | "("; items = LIST1 argument_spec; ")"; sc = OPT scope_delimiter ->
-       { let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
-         | Some _, Some _ -> user_err ~loc Pp.(str "scope declared twice") in
+    | "("; items = LIST1 argument_spec; ")"; scl = LIST0 scope_delimiter ->
+       { let scl = List.map (CAst.make ~loc) scl in
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
-                 notation_scope=f notation_scope;
+                 notation_scope = notation_scope @ scl;
                  implicit_status = Explicit}) items }
-    | "["; items = LIST1 argument_spec; "]"; sc = OPT scope_delimiter ->
-       { let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
-         | Some _, Some _ -> user_err ~loc Pp.(str "scope declared twice") in
+    | "["; items = LIST1 argument_spec; "]"; scl = LIST0 scope_delimiter ->
+       { let scl = List.map (CAst.make ~loc) scl in
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
-                 notation_scope=f notation_scope;
+                 notation_scope = notation_scope @ scl;
                  implicit_status = NonMaxImplicit}) items }
-    | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope_delimiter ->
-       { let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
-         | Some _, Some _ -> user_err ~loc Pp.(str "scope declared twice") in
+    | "{"; items = LIST1 argument_spec; "}"; scl = LIST0 scope_delimiter ->
+       { let scl = List.map (CAst.make ~loc) scl in
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
-                 notation_scope=f notation_scope;
+                 notation_scope = notation_scope @ scl;
                  implicit_status = MaxImplicit}) items }
     ]
   ];

@@ -74,3 +74,23 @@ negb'' is not universe polymorphic
 Arguments negb'' b
 negb'' is transparent
 Expands to: Constant ArgumentsScope.negb''
+f : bool -> bool
+
+f is not universe polymorphic
+Arguments f x%A_scope%B_scope
+f is transparent
+Expands to: Constant ArgumentsScope.f
+f tt
+     : bool
+f true
+     : bool
+f : bool -> bool
+
+f is not universe polymorphic
+Arguments f x%B_scope%A_scope
+f is transparent
+Expands to: Constant ArgumentsScope.f
+f tt
+     : bool
+f false
+     : bool

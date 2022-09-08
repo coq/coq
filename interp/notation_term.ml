@@ -59,7 +59,7 @@ type scope_name = string
 
 type tmp_scope_name = scope_name
 
-type subscopes = tmp_scope_name option * scope_name list
+type subscopes = tmp_scope_name list * scope_name list
 
 type extended_subscopes = Constrexpr.notation_entry_level * subscopes
 

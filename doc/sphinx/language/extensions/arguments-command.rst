@@ -11,10 +11,10 @@ Setting properties of a function's arguments
       arg_specs ::= @argument_spec
       | /
       | &
-      | ( {+ @argument_spec } ) {? % @scope }
-      | [ {+ @argument_spec } ] {? % @scope }
-      | %{ {+ @argument_spec } %} {? % @scope }
-      argument_spec ::= {? ! } @name {? % @scope }
+      | ( {+ @argument_spec } ) {* % @scope }
+      | [ {+ @argument_spec } ] {* % @scope }
+      | %{ {+ @argument_spec } %} {* % @scope }
+      argument_spec ::= {? ! } @name {* % @scope }
       implicits_alt ::= @name
       | [ {+ @name } ]
       | %{ {+ @name } %}
@@ -65,28 +65,35 @@ Setting properties of a function's arguments
          .. exn:: The & modifier may only occur once.
             :undocumented:
 
-      :n:`( ... ) {? % @scope }`
-         :n:`(@name__1 @name__2 ...)%@scope` is shorthand for :n:`@name__1%@scope @name__2%@scope ...`
+      :n:`( {+ @argument_spec } ) {* % @scope }`
+         :n:`(@name__1 @name__2 ...){* %@scope }` is shorthand for
+         :n:`@name__1{* %@scope } @name__2{* %@scope } ...`
 
-      :n:`[ ... ] {? % @scope }`
+      :n:`[ {+ @argument_spec } ] {* % @scope }`
          declares the enclosed names as implicit, non-maximally inserted.
-         :n:`[@name__1 @name__2 ... ]%@scope` is equivalent to :n:`[@name__1]%@scope [@name__2]%@scope ...`
+         :n:`[@name__1 @name__2 ... ]{* %@scope }` is equivalent to
+         :n:`[@name__1]{* %@scope } [@name__2]{* %@scope } ...`
 
-      :n:`%{ ... %} {? % @scope }`
+      :n:`%{ {+ @argument_spec } %} {* % @scope }`
          declares the enclosed names as implicit, maximally inserted.
-         :n:`%{@name__1 @name__2 ... %}%@scope` is equivalent to :n:`%{@name__1%}%@scope %{@name__2%}%@scope ...`
+         :n:`%{@name__1 @name__2 ... %}{* %@scope }` is equivalent to
+         :n:`%{@name__1%}{* %@scope } %{@name__2%}{* %@scope } ...`
 
       `!`
          the function will be unfolded only if all the arguments marked with `!`
          evaluate to constructors.  See :ref:`Args_effect_on_unfolding`.
 
-      :n:`@name {? % @scope }`
+      :n:`@name {* % @scope }`
          a *formal parameter* of the function :n:`@reference` (i.e.
          the parameter name used in the function definition).  Unless `rename` is specified,
          the list of :n:`@name`\s must be a prefix of the formal parameters, including all implicit
          arguments.  `_` can be used to skip over a formal parameter.
-         The construct :n:`@name {? % @scope }` declares :n:`@name` as non-implicit if `clear implicits` is specified or at least one other name is declared implicit in the same list of :n:`@name`\s.
-         :token:`scope` can be either a scope name or its delimiting key.  See :ref:`binding_to_scope`.
+         This construct declares :n:`@name` as
+         non-implicit if `clear implicits` is specified or any
+         other :n:`@name` in the :cmd:`Arguments` command is declared implicit.
+         :token:`scope` can be either scope names or their delimiting
+         keys. When multiple scopes are present, notations are interpreted in the
+         leftmost scope containing them. See :ref:`binding_to_scope`.
 
          .. exn:: To rename arguments the 'rename' flag must be specified.
             :undocumented:
@@ -274,24 +281,26 @@ Renaming implicit arguments
 
 .. _binding_to_scope:
 
-Binding arguments to a scope
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Binding arguments to scopes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    The following command declares that the first two arguments of :g:`plus_fct`
-   are in the :token:`scope` delimited by the key ``F`` (``Rfun_scope``) and the third
-   argument is in the scope delimited by the key ``R`` (``R_scope``).
+   are interpreted in the :token:`scope` delimited by the key ``F``
+   and the third argument is first interpreted in the scope delimited by
+   the key ``R``, then in ``F`` (when a notation has
+   no interpretation in ``R``).
 
       .. coqdoc::
 
-         Arguments plus_fct (f1 f2)%F x%R.
+         Arguments plus_fct (f1 f2)%F x%R%F.
 
    When interpreting a term, if some of the arguments of :token:`reference` are built
    from a notation, then this notation is interpreted in the scope stack
-   extended by the scope bound (if any) to this argument. The effect of
-   the scope is limited to the argument itself. It does not propagate to
+   extended by the scopes bound (if any) to this argument. The effect of
+   these scopes is limited to the argument itself. It does not propagate to
    subterms but the subterms that, after interpretation of the notation,
    turn to be themselves arguments of a reference are interpreted
-   accordingly to the argument scopes bound to this reference.
+   according to the argument scopes bound to this reference.
 
 .. note::
 
