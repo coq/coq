@@ -221,7 +221,7 @@ let rec traverse current ctx accu t =
       let (curr, data, ax2ty) = accu in
       let obj = ConstRef kn in
       let already_in = GlobRef.Map_env.mem obj data in
-      let data = if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
+      let data = if not already_in then GlobRef.Map_env.add obj None data else data in
       let ty = (current, ctx, Vars.subst1 mkProp oty) in
       let ax2ty =
         try let l = GlobRef.Map_env.find obj ax2ty in GlobRef.Map_env.add obj (ty::l) ax2ty
@@ -240,12 +240,12 @@ and traverse_object (curr, data, ax2ty) body obj =
     if already_in then data, ax2ty
     else match body () (* Beware: this can be very costly *) with
     | None ->
-      GlobRef.Map_env.add obj GlobRef.Set_env.empty data, ax2ty
+      GlobRef.Map_env.add obj None data, ax2ty
     | Some body ->
       let contents,data,ax2ty =
         traverse (label_of obj) Context.Rel.empty
                  (GlobRef.Set_env.empty,data,ax2ty) body in
-      GlobRef.Map_env.add obj contents data, ax2ty
+      GlobRef.Map_env.add obj (Some contents) data, ax2ty
   in
   (GlobRef.Set_env.add obj curr, data, ax2ty)
 
@@ -294,9 +294,9 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
        let contents = GlobRef.Set_env.remove firstind_ref contents in
        Array.fold_left_i (fun n data oib ->
        let ind = (mind, n) in
-       let data = GlobRef.Map_env.add (GlobRef.IndRef ind) contents data in
+       let data = GlobRef.Map_env.add (GlobRef.IndRef ind) (Some contents) data in
        Array.fold_left_i (fun k data _ ->
-         GlobRef.Map_env.add (GlobRef.ConstructRef (ind, k+1)) contents data
+         GlobRef.Map_env.add (GlobRef.ConstructRef (ind, k+1)) (Some contents) data
        ) data oib.mind_consnames) data mib.mind_packets
      in
      (data, ax2ty)
@@ -336,7 +336,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   (* Only keep the transitive dependencies *)
   let (_, graph, ax2ty) = traverse (label_of gr) t in
   let open GlobRef in
-  let fold obj _ accu = match obj with
+  let fold obj contents accu = match obj with
   | VarRef id ->
     let decl = Global.lookup_named id in
     if is_local_assum decl then
@@ -357,7 +357,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
       in
-    if not (Declareops.constant_has_body cb) then
+    if not (Option.has_some contents) then
       let t = type_of_constant cb in
       let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
       ContextObjectMap.add (Axiom (Constant kn,l)) t accu
@@ -397,3 +397,13 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       in
       accu
   in GlobRef.Map_env.fold fold graph ContextObjectMap.empty
+
+(* Reexport a wrapper to preserve the 8.16 API *)
+let traverse current t =
+  let (curr, graph, ax2ty) = traverse current t in
+  let map = function
+  | None -> GlobRef.Set_env.empty
+  | Some s -> s
+  in
+  let graph = GlobRef.Map_env.map map graph in
+  (curr, graph, ax2ty)
