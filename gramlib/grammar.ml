@@ -18,8 +18,21 @@ module type S = sig
 
   module Parsable : sig
     type t
+    (** [Parsable.t] Stream tokenizers with Coq-specific funcitonality *)
+
     val make : ?loc:Loc.t -> char Stream.t -> t
+    (** [make ?loc strm] Build a parsable from stream [strm], resuming
+       at position [?loc] *)
+
     val comments : t -> ((int * int) * string) list
+
+    val loc : t -> Loc.t
+    (** [loc pa] Return parsing position for [pa] *)
+
+    val consume : t -> int -> unit
+    (** [consume pa n] Discard [n] tokens from [pa], updating the
+       parsing position *)
+
   end
 
   module Entry : sig
@@ -1654,6 +1667,8 @@ module Parsable = struct
 
   let comments p = L.State.get_comments !(p.lexer_state)
 
+  let loc t = LStream.current_loc t.pa_tok_strm
+  let consume { pa_tok_strm } len = LStream.njunk len pa_tok_strm
 end
 
 module Entry = struct

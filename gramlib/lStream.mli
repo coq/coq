@@ -43,6 +43,9 @@ val npeek : int -> 'a t -> 'a list
 val junk : 'a t -> unit
   (** consumes the next element if there is one *)
 
+val njunk : int -> 'a t -> unit
+(** [njunk n strm] consumes [n] elements from [strm] *)
+
 val next : 'a t -> 'a
   (** [next strm] returns and consumes the next element;
       raise [Stream.Failure] if the stream is empty *)

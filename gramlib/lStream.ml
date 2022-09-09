@@ -75,5 +75,6 @@ let peek_nth n strm =
   loop list n
 
 let junk strm = Stream.junk strm.strm
+let njunk len strm = Stream.njunk len strm.strm
 
 let next strm = Stream.next strm.strm
