@@ -122,6 +122,8 @@ ci-vst: ci-flocq
 
 ci-compcert: ci-menhir ci-flocq
 
+ci-relation_algebra: ci-aac_tactics ci-mathcomp
+
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
 	+./dev/ci/ci-wrapper.sh $*
