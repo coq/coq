@@ -524,8 +524,9 @@ let vernac_delimiters ~module_local sc action =
   | Some lr -> Metasyntax.add_delimiters module_local sc lr
   | None -> Metasyntax.remove_delimiters module_local sc
 
-let vernac_bind_scope ~module_local sc cll =
-  Metasyntax.add_class_scope module_local sc (List.map scope_class_of_qualid cll)
+let vernac_bind_scope ~atts sc cll =
+  let module_local, where = Attributes.(parse Notations.(module_locality ++ bind_scope_where) atts) in
+  Metasyntax.add_class_scope module_local sc where (List.map scope_class_of_qualid cll)
 
 let vernac_open_close_scope ~section_local (b,s) =
   Notation.open_close_scope (section_local,b,s)
@@ -2302,7 +2303,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacDelimiters (sc,lr) ->
     vtdefault(fun () -> with_module_locality ~atts vernac_delimiters sc lr)
   | VernacBindScope (sc,rl) ->
-    vtdefault(fun () -> with_module_locality ~atts vernac_bind_scope sc rl)
+    vtdefault(fun () -> vernac_bind_scope ~atts sc rl)
   | VernacOpenCloseScope (b, s) ->
     vtdefault(fun () -> with_section_locality ~atts vernac_open_close_scope (b,s))
   | VernacNotation (infix,c,infpl,sc) ->

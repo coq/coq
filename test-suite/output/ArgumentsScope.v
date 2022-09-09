@@ -55,3 +55,26 @@ Check f tt.
 Set Printing All.
 Check f tt.
 Unset Printing All.
+
+(* Check binding scope inside/outside *)
+
+Bind Scope A_scope with bool.
+#[add_bottom] Bind Scope B_scope with bool.
+
+Definition g (x : bool) := x.
+
+About g.
+
+Bind Scope A_scope with nat.
+#[add_top] Bind Scope B_scope with nat.
+
+Definition g' (x : nat) := x.
+
+About g'.
+
+Bind Scope A_scope with unit.
+Bind Scope B_scope with unit.  (* default: reset *)
+
+Definition g'' (x : unit) := x.
+
+About g''.

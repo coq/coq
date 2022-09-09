@@ -94,3 +94,21 @@ f tt
      : bool
 f false
      : bool
+g : bool -> bool
+
+g is not universe polymorphic
+Arguments g x%A_scope%B_scope
+g is transparent
+Expands to: Constant ArgumentsScope.g
+g' : nat -> nat
+
+g' is not universe polymorphic
+Arguments g' x%B_scope%A_scope
+g' is transparent
+Expands to: Constant ArgumentsScope.g'
+g'' : unit -> unit
+
+g'' is not universe polymorphic
+Arguments g'' x%B_scope
+g'' is transparent
+Expands to: Constant ArgumentsScope.g''

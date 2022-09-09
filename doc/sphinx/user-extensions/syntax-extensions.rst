@@ -1424,15 +1424,16 @@ The arguments of an :ref:`abbreviation <Abbreviations>` can be interpreted
 in a scope stack locally extended with a given scope by using the modifier
 :n:`{+, @ident } in scope @scope_name`.s
 
-Binding types or coercion classes to a notation scope
-++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Binding types or coercion classes to notation scopes
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. cmd:: Bind Scope @scope_name with {+ @class }
 
    Binds the notation scope :token:`scope_name` to the type or coercion class :token:`class`.
    When bound, arguments of that type for any function will be interpreted in
    that scope by default.  This default can be overridden for individual functions
-   with the :cmd:`Arguments` command.  The association may be convenient
+   with the :cmd:`Arguments` command. See :ref:`binding_to_scope` for details.
+   The association may be convenient
    when a notation scope is naturally associated with a :token:`type` (e.g.
    `nat` and the natural numbers).
 
@@ -1441,6 +1442,20 @@ Binding types or coercion classes to a notation scope
    :g:`forall X:Type, X -> X` and type :g:`t` is bound to a scope ``scope``,
    then :g:`a` of type :g:`t` in :g:`f t a` is not recognized as an argument to
    be interpreted in scope ``scope``.
+
+   This command supports the :attr:`local`, :attr:`global`,
+   :attr:`add_top` and :attr:`add_bottom` attributes.
+
+   .. attr:: add_top
+      :undocumented:
+
+   .. attr:: add_bottom
+
+      These :ref:`attributes <attribute>` allow adding additional
+      bindings at the top or bottom of the stack of already declared
+      bindings. In absence of such attributes, any new binding clears
+      the previous ones. This makes it possible to bind multiple scopes
+      to the same :token:`class`.
 
    .. coqtop:: in reset
 

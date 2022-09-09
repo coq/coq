@@ -1960,8 +1960,15 @@ let initial_scope_class_map : scope_name list ScopeClassMap.t =
 
 let scope_class_map = ref initial_scope_class_map
 
-let declare_scope_class sc cl =
-  scope_class_map := ScopeClassMap.add cl [sc] !scope_class_map
+type add_scope_where = AddScopeTop | AddScopeBottom
+
+let declare_scope_class sc ?where cl =
+  let scl = match where with
+    | None -> [sc]
+    | Some where ->
+       let scl = try ScopeClassMap.find cl !scope_class_map with Not_found -> [] in
+       match where with AddScopeTop -> sc :: scl | AddScopeBottom -> scl @ [sc] in
+  scope_class_map := ScopeClassMap.add cl scl !scope_class_map
 
 let find_scope_class cl =
   ScopeClassMap.find cl !scope_class_map

@@ -62,6 +62,7 @@ val canonical_field : bool attribute
 val canonical_instance : bool attribute
 val using : string option attribute
 val hint_locality : default:(unit -> Hints.hint_locality) -> Hints.hint_locality attribute
+val bind_scope_where : Notation.add_scope_where option attribute
 
 (** With the warning for Hint (and not for Instance etc) *)
 val really_hint_locality : Hints.hint_locality attribute

@@ -27,7 +27,7 @@ val add_notation_extra_printing_rule : string -> string -> string -> unit
 val declare_scope : locality_flag -> scope_name -> unit
 val add_delimiters : locality_flag -> scope_name -> string -> unit
 val remove_delimiters : locality_flag -> scope_name -> unit
-val add_class_scope : locality_flag -> scope_name -> scope_class list -> unit
+val add_class_scope : locality_flag -> scope_name -> add_scope_where option -> scope_class list -> unit
 
 (** Add a notation interpretation associated to a "where" clause (already has pa/pp rules) *)
 
