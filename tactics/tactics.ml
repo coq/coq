@@ -3617,7 +3617,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
       toclear := hyp::!toclear;
       rhyp
     end else
-      let dephyp0 = List.is_empty inhyps &&
+      let dephyp0 = not !before && List.is_empty inhyps &&
         (Option.cata (fun id -> occur_var_in_decl env sigma id decl) false hyp0_opt)
       in
       let depother = List.is_empty inhyps &&
