@@ -454,14 +454,14 @@ let pr_located_qualid = function
   | Abbreviation kn ->
       str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
   | Dir dir ->
-      let s,dir =
+      let s,mp =
         let open Nametab in
         let open GlobDirRef in match dir with
-        | DirOpenModule { obj_dir ; _ } -> "Open Module", obj_dir
-        | DirOpenModtype { obj_dir ; _ } -> "Open Module Type", obj_dir
-        | DirOpenSection { obj_dir ; _ } -> "Open Section", obj_dir
+        | DirOpenModule mp -> "Open Module", mp
+        | DirOpenModtype mp -> "Open Module Type", mp
+        | DirOpenSection _ -> anomaly (Pp.str"Sections are not locatable")
       in
-      str s ++ spc () ++ DirPath.print dir
+      str s ++ spc () ++ str (ModPath.to_string mp)
   | Module mp ->
     str "Module" ++ spc () ++ DirPath.print (Nametab.dirpath_of_module mp)
   | ModuleType mp ->

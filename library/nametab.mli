@@ -79,9 +79,9 @@ val eq_op : object_prefix -> object_prefix -> bool
 (** to this type are mapped [DirPath.t]'s in the nametab *)
 module GlobDirRef : sig
   type t =
-    | DirOpenModule of object_prefix
-    | DirOpenModtype of object_prefix
-    | DirOpenSection of object_prefix
+    | DirOpenModule of ModPath.t
+    | DirOpenModtype of ModPath.t
+    | DirOpenSection of DirPath.t
   val equal : t -> t -> bool
 end
 

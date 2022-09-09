@@ -23,14 +23,14 @@ let eq_op op1 op2 =
 (* to this type are mapped DirPath.t's in the nametab *)
 module GlobDirRef = struct
   type t =
-    | DirOpenModule of object_prefix
-    | DirOpenModtype of object_prefix
-    | DirOpenSection of object_prefix
+    | DirOpenModule of ModPath.t
+    | DirOpenModtype of ModPath.t
+    | DirOpenSection of DirPath.t
 
   let equal r1 r2 = match r1, r2 with
-    | DirOpenModule op1, DirOpenModule op2 -> eq_op op1 op2
-    | DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
-    | DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
+    | DirOpenModule op1, DirOpenModule op2 -> ModPath.equal op1 op2
+    | DirOpenModtype op1, DirOpenModtype op2 -> ModPath.equal op1 op2
+    | DirOpenSection op1, DirOpenSection op2 -> DirPath.equal op1 op2
     | (DirOpenModule _ | DirOpenModtype _ | DirOpenSection _), _ -> false
 
 end
@@ -483,7 +483,7 @@ let full_name_module qid = MPDTab.user_name qid Modules.(!nametab.modtab)
 
 let locate_section qid =
   match locate_dir qid with
-    | GlobDirRef.DirOpenSection { obj_dir; _ } -> obj_dir
+    | GlobDirRef.DirOpenSection dir -> dir
     | _ -> raise Not_found
 
 let locate_all qid =
