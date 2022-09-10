@@ -815,21 +815,22 @@ let to_simple_case env ?loc (e,t) pl =
       | PatVar Anonymous ->
         let () = check_redundant_clause rem in
         (* Fill all remaining branches *)
-        let fill (ncst, narg) arity =
+        let fill (ncst, narg, redundant) arity =
           if Int.equal arity 0 then
-            let () =
-              if Option.is_empty const.(ncst) then const.(ncst) <- Some br
+            let fill_needed = Option.is_empty const.(ncst) in
+            let () = if fill_needed then const.(ncst) <- Some br
             in
-            (succ ncst, narg)
+            (succ ncst, narg, redundant && not fill_needed)
           else
-            let () =
-              if Option.is_empty nonconst.(narg) then
+            let fill_needed = Option.is_empty nonconst.(narg) in
+            let () = if fill_needed then
                 let ids = Array.make arity Anonymous in
                 nonconst.(narg) <- Some (ids, br)
             in
-            (ncst, succ narg)
+            (ncst, succ narg, redundant && not fill_needed)
         in
-        let _, _ = List.fold_left fill (0, 0) arities in
+        let (_, _, redundant) = List.fold_left fill (0, 0, true) arities in
+        let () = if redundant then warn_redundant_clause ?loc:pat.loc () in
         ()
       | PatRef (ctor, args) ->
         let loc = pat.loc in
