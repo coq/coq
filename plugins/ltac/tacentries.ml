@@ -192,7 +192,7 @@ let add_tactic_entry (kn, ml, tg) state =
   ([r], state)
 
 let tactic_grammar =
-  create_grammar_command "TacticGrammar" add_tactic_entry
+  create_grammar_command "TacticGrammar" { gext_fun = add_tactic_entry; gext_eq = (==) (* FIXME *) }
 
 let extend_tactic_grammar kn ml ntn = extend_grammar_command tactic_grammar (kn, ml, ntn)
 
