@@ -817,7 +817,7 @@ library:ci-jasmin:
 # Plugins are by definition the projects that depend on Coq's ML API
 
 plugin:ci-aac_tactics:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 plugin:ci-itauto:
   extends: .ci-template
@@ -878,7 +878,11 @@ plugin:ci-reduction_effects:
   extends: .ci-template
 
 plugin:ci-relation_algebra:
-  extends: .ci-template
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - plugin:ci-aac_tactics
+  - library:ci-mathcomp
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
