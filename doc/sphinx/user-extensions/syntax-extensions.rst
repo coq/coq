@@ -1457,21 +1457,64 @@ Binding types or coercion classes to notation scopes
       the previous ones. This makes it possible to bind multiple scopes
       to the same :token:`class`.
 
-   .. coqtop:: in reset
+   .. example:: Binding scopes to a type
 
-      Parameter U : Set.
-      Declare Scope U_scope.
-      Bind Scope U_scope with U.
-      Parameter Uplus : U -> U -> U.
-      Parameter P : forall T:Set, T -> U -> Prop.
-      Parameter f : forall T:Set, T -> U.
-      Infix "+" := Uplus : U_scope.
-      Unset Printing Notations.
-      Open Scope nat_scope.
+      Let's declare two scopes with a notation in each and an arbitrary
+      function on type ``bool``.
 
-   .. coqtop:: all
+      .. coqtop:: in reset
 
-      Check (fun x y1 y2 z t => P _ (x + t) ((f _ (y1 + y2) + z))).
+         Declare Scope T_scope.
+         Declare Scope F_scope.
+         Notation "#" := true (only parsing) : T_scope.
+         Notation "#" := false (only parsing) : F_scope.
+
+         Parameter f : bool -> bool.
+
+      By default, the argument of ``f`` is interpreted in the
+      currently opened scopes.
+
+      .. coqtop:: all
+
+         Open Scope T_scope.
+         Check f #.
+         Open Scope F_scope.
+         Check f #.
+
+      This can be changed by binding scopes to the type ``bool``.
+
+      .. coqtop:: all
+
+         Bind Scope T_scope with bool.
+         Check f #.
+
+      When multiple scopes are attached to a type, notations are
+      interpreted in the first scope containing them, from the top of
+      the stack.
+
+      .. coqtop:: all
+
+         #[add_top] Bind Scope F_scope with bool.
+         Check f #.
+
+         Notation "##" := (negb false) (only parsing) : T_scope.
+         Check f ##.
+
+      Bindings for functions can be displayed with the
+      :cmd:`About` command.
+
+      .. coqtop:: all
+
+         About f.
+
+      .. note:: Such stacks of scopes can be handy to share notations
+         between multiple types. For instance, the scope ``T_scope``
+         above could contain many generic notations used for both the
+         ``bool`` and ``nat`` types, while the scope ``F_scope`` could
+         override some of these notations specifically for
+         ``bool`` and another ``F'_scope`` could override them
+         specifically for ``nat``, which could then be bound to
+         ``%F'_scope%T_scope``.
 
    .. note:: When active, a bound scope has effect on all defined functions
              (even if they are defined after the :cmd:`Bind Scope` directive), except
