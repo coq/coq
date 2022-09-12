@@ -53,7 +53,7 @@ and lam_branches =
 and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
 type evars =
-    { evars_val : existential -> constr option;
+    { evars_val : constr evar_handler;
       evars_metas : metavariable -> types }
 
 val empty_evars : evars

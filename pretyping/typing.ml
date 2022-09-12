@@ -295,7 +295,7 @@ let judge_of_letin env name defj typj j =
 
 let check_hyps_inclusion env sigma x hyps =
   let env = Environ.set_universes (Evd.universes sigma) env in
-  let evars = Evd.existential_opt_value0 sigma in
+  let evars = Evd.evar_handler sigma in
   Typeops.check_hyps_inclusion env ~evars x hyps
 
 let type_of_constant env sigma (c,u) =

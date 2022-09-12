@@ -898,7 +898,7 @@ let compile_constant_body ~fail_on_error env univs = function
             let con= Constant.make1 (Constant.canonical kn') in
               Some (BCalias (get_alias env con))
         | _ ->
-            let sigma _ = assert false in
+            let sigma = { evar_expand = fun _ -> assert false } in
             let res = compile ~fail_on_error ~universes:instance_size env sigma body in
             Option.map (fun (code, fv) -> BCdefined (code, fv)) res
 

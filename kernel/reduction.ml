@@ -189,7 +189,7 @@ type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 (* functions of this type can be called from outside the kernel *)
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
-  ?evars:(existential->constr option) ->
+  ?evars:constr evar_handler ->
   'a -> 'a -> unit
 
 exception NotConvertible
@@ -907,7 +907,7 @@ let () =
   in
   CClosure.set_conv conv
 
-let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _ -> None)) t1 t2 =
+let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler) t1 t2 =
   let univs = Environ.universes env in
   let b =
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2

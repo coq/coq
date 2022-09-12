@@ -764,6 +764,10 @@ let existential_value d ev = match existential_opt_value d ev with
   | None -> raise NotInstantiatedEvar
   | Some v -> v
 
+let evar_handler sigma = {
+  evar_expand = (fun ev -> existential_opt_value sigma ev);
+}
+
 let existential_value0 = existential_value
 
 let existential_opt_value0 = existential_opt_value

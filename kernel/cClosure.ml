@@ -291,7 +291,7 @@ let update ~share v1 mark t =
 
 type infos_cache = {
   i_env : env;
-  i_sigma : existential -> constr option;
+  i_sigma : constr evar_handler;
   i_share : bool;
   i_univs : UGraph.t;
   i_mode : mode;
@@ -1415,7 +1415,7 @@ and knht info e t stk =
       { mark = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
     | Evar ev ->
       (* FIXME: handle relevance *)
-      begin match info.i_cache.i_sigma ev with
+      begin match info.i_cache.i_sigma.evar_expand ev with
       | Some c -> knht info e c stk
       | None -> { mark = Whnf; term = FEvar (ev, e) }, stk
       end
@@ -1678,7 +1678,7 @@ let whd_stack infos tab m stk = match m.mark with
   in
   k
 
-let create_conv_infos ?univs ?(evars=fun _ -> None) flgs env =
+let create_conv_infos ?univs ?(evars=default_evar_handler) flgs env =
   let univs = Option.default (universes env) univs in
   let share = (Environ.typing_flags env).Declarations.share_reduction in
   let cache = {
@@ -1690,7 +1690,7 @@ let create_conv_infos ?univs ?(evars=fun _ -> None) flgs env =
   } in
   { i_flags = flgs; i_relevances = Range.empty; i_cache = cache }
 
-let create_clos_infos ?univs ?(evars=fun _ -> None) flgs env =
+let create_clos_infos ?univs ?(evars=default_evar_handler) flgs env =
   let univs = Option.default (universes env) univs in
   let share = (Environ.typing_flags env).Declarations.share_reduction in
   let cache = {

@@ -23,7 +23,7 @@ module NamedDecl = Context.Named.Declaration
 
 let create_clos_infos env sigma flags =
   let open CClosure in
-  let evars ev = Evd.existential_opt_value0 sigma ev in
+  let evars = Evd.evar_handler sigma in
   create_clos_infos ~univs:(Evd.universes sigma) ~evars flags env
 
 

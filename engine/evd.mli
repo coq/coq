@@ -273,6 +273,8 @@ val existential_opt_value : evar_map -> econstr pexistential -> econstr option
 
 val existential_opt_value0 : evar_map -> existential -> constr option
 
+val evar_handler : evar_map -> constr evar_handler
+
 val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info ->
   'a list -> (Id.t * 'a) list
 

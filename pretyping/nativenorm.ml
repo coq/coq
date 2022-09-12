@@ -432,7 +432,7 @@ and nf_array env sigma t typ =
   mkArray(u, t, nf_val env sigma vdef typ_elem, typ_elem)
 
 let evars_of_evar_map sigma =
-  { Nativelambda.evars_val = Evd.existential_opt_value0 sigma;
+  { Nativelambda.evars_val = Evd.evar_handler sigma;
     Nativelambda.evars_metas = Evd.meta_type0 sigma }
 
 (* fork perf process, return profiler's process id *)

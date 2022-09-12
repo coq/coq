@@ -55,10 +55,10 @@ let rec rebuild_mp mp l =
   | i::r -> rebuild_mp (MPdot(mp,Label.of_id i)) r
 
 let infer_gen_conv state env c1 c2 =
-  Reduction.generic_conv Reduction.CONV ~l2r:false (fun _ -> None) TransparentState.full env state c1 c2
+  Reduction.generic_conv Reduction.CONV ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
 
 let infer_gen_conv_leq state env c1 c2 =
-  Reduction.generic_conv Reduction.CUMUL ~l2r:false (fun _ -> None) TransparentState.full env state c1 c2
+  Reduction.generic_conv Reduction.CUMUL ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
 
 let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
   let lab,idl = match idl with

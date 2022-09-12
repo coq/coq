@@ -1464,6 +1464,14 @@ type rel_context = rel_declaration list
 type named_context = named_declaration list
 type compacted_context = compacted_declaration list
 
+type 'constr evar_handler = {
+   evar_expand : 'constr pexistential -> 'constr option;
+}
+
+let default_evar_handler = {
+  evar_expand = fun _ -> None;
+}
+
 (** Minimalistic constr printer, typically for debugging *)
 
 let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =

@@ -179,9 +179,9 @@ val destFLambda :
 type clos_infos
 type clos_tab
 val create_conv_infos :
-  ?univs:UGraph.t -> ?evars:(existential->constr option) -> reds -> env -> clos_infos
+  ?univs:UGraph.t -> ?evars:constr evar_handler -> reds -> env -> clos_infos
 val create_clos_infos :
-  ?univs:UGraph.t -> ?evars:(existential->constr option) -> reds -> env -> clos_infos
+  ?univs:UGraph.t -> ?evars:constr evar_handler -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
 val create_tab : unit -> clos_tab

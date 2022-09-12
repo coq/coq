@@ -1050,7 +1050,7 @@ let f_conv_leq ?l2r ?reds env ?evars x y =
 
 let test_trans_conversion (f: constr Reduction.extended_conversion_function) reds env sigma x y =
   try
-    let evars ev = existential_opt_value0 sigma ev in
+    let evars = Evd.evar_handler sigma in
     let env = Environ.set_universes (Evd.universes sigma) env in
     let _ = f ~reds env ~evars x y in
     true
@@ -1071,7 +1071,7 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
     | Reduction.CUMUL -> f_conv_leq
   in
     let env = Environ.set_universes (Evd.universes sigma) env in
-    try f ~reds:ts env ~evars:(existential_opt_value0 sigma) x y; true
+    try f ~reds:ts env ~evars:(Evd.evar_handler sigma) x y; true
     with Reduction.NotConvertible -> false
     | UGraph.UniverseInconsistency _ -> false
     | e ->
@@ -1161,7 +1161,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     report_anomaly e
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
-      Reduction.generic_conv pb ~l2r (existential_opt_value0 sigma))
+      Reduction.generic_conv pb ~l2r (Evd.evar_handler sigma))
 
 let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     ?(ts=TransparentState.full) env sigma x y =
@@ -1179,7 +1179,7 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
         let y = EConstr.Unsafe.to_constr y in
         let env = Environ.set_universes (Evd.universes sigma) env in
         let cstr =
-          Reduction.generic_conv pb ~l2r:false (existential_opt_value0 sigma) ts
+          Reduction.generic_conv pb ~l2r:false (Evd.evar_handler sigma) ts
             env (UnivProblem.Set.empty, univproblem_univ_state) x y in
         Some cstr
   with
@@ -1191,12 +1191,12 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
 
 let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
   infer_conv_gen (fun pb ~l2r sigma ts ->
-      Vconv.vm_conv_gen pb (Evd.existential_opt_value0 sigma))
+      Vconv.vm_conv_gen pb (Evd.evar_handler sigma))
     ~catch_incon:true ~pb env sigma t1 t2
 
 let native_conv_generic pb sigma t =
   let evars_of_evar_map sigma =
-    { Nativelambda.evars_val = Evd.existential_opt_value0 sigma;
+    { Nativelambda.evars_val = Evd.evar_handler sigma;
       Nativelambda.evars_metas = Evd.meta_type0 sigma }
   in
   Nativeconv.native_conv_gen pb (evars_of_evar_map sigma) t

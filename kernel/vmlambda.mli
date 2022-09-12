@@ -33,7 +33,7 @@ and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
 exception TooLargeInductive of Pp.t
 
-val lambda_of_constr : optimize:bool -> env -> (existential -> constr option) -> Constr.t -> lambda
+val lambda_of_constr : optimize:bool -> env -> constr evar_handler -> Constr.t -> lambda
 
 val decompose_Llam : lambda -> Name.t Context.binder_annot array * lambda
 
