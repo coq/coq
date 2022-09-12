@@ -1413,7 +1413,12 @@ and knht info e t stk =
       { mark = Whnf; term = FProd (n, mk_clos e t, c, e) }, stk
     | LetIn (n,b,t,c) ->
       { mark = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
-    | Evar ev -> { mark = Red; term = FEvar (ev, e) }, stk
+    | Evar ev ->
+      (* FIXME: handle relevance *)
+      begin match info.i_cache.i_sigma ev with
+      | Some c -> knht info e c stk
+      | None -> { mark = Whnf; term = FEvar (ev, e) }, stk
+      end
     | Array(u,t,def,ty) ->
       let len = Array.length t in
       let ty = mk_clos e ty in
@@ -1482,11 +1487,6 @@ let rec knr info tab m stk =
     else (m, stk)
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info tab (on_fst (subs_cons v) e) bd stk
-  | FEvar(ev,env) ->
-    (* FIXME: handle relevance *)
-      (match info.i_cache.i_sigma ev with
-          Some c -> knit info tab env c stk
-        | None -> (m,stk))
   | FInt _ | FFloat _ | FArray _ ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
      | (_, _, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
@@ -1518,7 +1518,7 @@ let rec knr info tab m stk =
     let stk = skip_irrelevant_stack stk in
     (m, stk)
   | FProd _ | FAtom _ | FInd _ (* relevant statically *)
-  | FCaseInvert _ | FProj _ | FFix _ (* relevant because of knh(t) *)
+  | FCaseInvert _ | FProj _ | FFix _ | FEvar _ (* relevant because of knh(t) *)
   | FLambda _ | FFlex _ | FRel _ (* irrelevance handled by conversion *)
   | FLetIn _ (* only happens in reduction mode *) ->
     (m, stk)
