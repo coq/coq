@@ -804,22 +804,26 @@ let apply_to_hyp ctxt id f =
 
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value ctxt =
-  let rec remove_hyps ctxt = match match_named_context_val ctxt with
-  | None -> empty_named_context_val, false
-  | Some (d, v, rctxt) ->
-     let open Context.Named.Declaration in
-    let (ans, seen) = remove_hyps rctxt in
-    if Id.Set.mem (get_id d) ids then (ans, true)
-    else if not seen then ctxt, false
-    else
-      let rctxt' = ans in
-      let d' = check_context d in
-      let v' = check_value v in
-      if d == d' && v == v' && rctxt == rctxt' then
-        ctxt, true
-      else push_named_context_val_val d' v' rctxt', true
+  let rec remove_hyps ids ctxt =
+    if Id.Set.is_empty ids then ctxt, false
+    else match match_named_context_val ctxt with
+    | None -> empty_named_context_val, false
+    | Some (d, v, rctxt) ->
+      let id0 = Context.Named.Declaration.get_id d in
+      let removed = Id.Set.mem id0 ids in
+      let ids = if removed then Id.Set.remove id0 ids else ids in
+      let (ans, seen) = remove_hyps ids rctxt in
+      if removed then (ans, true)
+      else if not seen then ctxt, false
+      else
+        let rctxt' = ans in
+        let d' = check_context d in
+        let v' = check_value v in
+        if d == d' && v == v' && rctxt == rctxt' then
+          ctxt, true
+        else push_named_context_val_val d' v' rctxt', true
   in
-  fst (remove_hyps ctxt)
+  fst (remove_hyps ids ctxt)
 
 (* A general request *)
 
