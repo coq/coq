@@ -168,6 +168,8 @@ let rec infer_fterm cv_pb infos variances hd stk =
   Control.check_for_interrupt ();
   let hd,stk = whd_stack infos hd stk in
   let open CClosure in
+  let push_relevance (infos, tab) n = (push_relevance infos n, tab) in
+  let push_relevances (infos, tab) n = (push_relevances infos n, tab) in
   match fterm_of hd with
   | FAtom a ->
     begin match kind a with
@@ -206,12 +208,12 @@ let rec infer_fterm cv_pb infos variances hd stk =
     let variances = infer_fterm CONV infos variances c [] in
     infer_stack infos variances stk
   | FLambda _ ->
-    let (_,ty,bd) = destFLambda mk_clos hd in
+    let (na,ty,bd) = destFLambda mk_clos hd in
     let variances = infer_fterm CONV infos variances ty [] in
-    infer_fterm CONV infos variances bd []
-  | FProd (_,dom,codom,e) ->
+    infer_fterm CONV (push_relevance infos na) variances bd []
+  | FProd (na,dom,codom,e) ->
     let variances = infer_fterm CONV infos variances dom [] in
-    infer_fterm cv_pb infos variances (mk_clos (CClosure.usubs_lift e) codom) []
+    infer_fterm cv_pb (push_relevance infos na) variances (mk_clos (CClosure.usubs_lift e) codom) []
   | FInd (ind, u) ->
     let variances =
       let nargs = stack_args_size stk in
@@ -224,11 +226,14 @@ let rec infer_fterm cv_pb infos variances hd stk =
       infer_constructor_instance_eq (info_env (fst infos)) variances ctor nargs u
     in
     infer_stack infos variances stk
-  | FFix ((_,(_,tys,cl)),e) | FCoFix ((_,(_,tys,cl)),e) ->
+  | FFix ((_,(na,tys,cl)),e) | FCoFix ((_,(na,tys,cl)),e) ->
     let n = Array.length cl in
     let variances = infer_vect infos variances (Array.map (mk_clos e) tys) in
     let le = CClosure.usubs_liftn n e in
-    let variances = infer_vect infos variances (Array.map (mk_clos le) cl) in
+    let variances =
+      let infos = push_relevances infos na in
+      infer_vect infos variances (Array.map (mk_clos le) cl)
+    in
     infer_stack infos variances stk
   | FArray (u,elemsdef,ty) ->
     let variances = infer_generic_instance_eq variances u in
