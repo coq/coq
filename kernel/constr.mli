@@ -611,7 +611,8 @@ val eq_invert : ('a -> 'a -> bool)
   -> 'a pcase_invert -> 'a pcase_invert -> bool
 
 type 'constr evar_handler = {
-   evar_expand : 'constr pexistential -> 'constr option;
+  evar_expand : 'constr pexistential -> 'constr option;
+  evar_relevance : 'constr pexistential -> Sorts.relevance;
 }
 
 val default_evar_handler : 'constr evar_handler

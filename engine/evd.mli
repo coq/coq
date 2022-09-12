@@ -126,6 +126,8 @@ type evar_info = {
   evar_identity : Identity.t;
   (** Default evar instance, i.e. a list of Var nodes projected from the
       filtered environment. *)
+  evar_relevance : Sorts.relevance;
+  (** Relevance of the conclusion of the evar. *)
 }
 
 val make_evar : named_context_val -> etypes -> evar_info

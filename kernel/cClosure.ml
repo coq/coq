@@ -1414,10 +1414,13 @@ and knht info e t stk =
     | LetIn (n,b,t,c) ->
       { mark = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
     | Evar ev ->
-      (* FIXME: handle relevance *)
       begin match info.i_cache.i_sigma.evar_expand ev with
       | Some c -> knht info e c stk
-      | None -> { mark = Whnf; term = FEvar (ev, e) }, stk
+      | None ->
+        if is_irrelevant info.i_cache.i_mode (info.i_cache.i_sigma.evar_relevance ev) then
+          (mk_irrelevant, skip_irrelevant_stack stk)
+        else
+          { mark = Whnf; term = FEvar (ev, e) }, stk
       end
     | Array(u,t,def,ty) ->
       let len = Array.length t in

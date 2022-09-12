@@ -56,7 +56,7 @@ val new_evar :
 *)
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?identity:Identity.t ->
+  ?identity:Identity.t -> ?relevance:Sorts.relevance ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
   ?typeclass_candidate:bool ->

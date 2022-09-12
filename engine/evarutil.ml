@@ -403,7 +403,7 @@ let push_rel_context_to_named_context ~hypnaming env sigma typ =
 
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
-let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
+let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity ?(relevance = Sorts.Relevant)
   ?(abstract_arguments = Abstraction.identity) ?candidates
   ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
   let name = match naming with
@@ -427,6 +427,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity
     evar_source = src;
     evar_candidates = candidates;
     evar_identity = identity;
+    evar_relevance = relevance;
   }
   in
   let typeclass_candidate = if principal then Some false else typeclass_candidate in
@@ -453,7 +454,8 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
     | None -> instance
     | Some filter -> Filter.filter_list filter instance in
   let identity = if Int.equal (Environ.nb_rel env) 0 then Some (Identity.make instance) else None in
-  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?identity ?abstract_arguments ?candidates ?naming
+  let relevance = Sorts.Relevant in (* FIXME: relevant_of_type not defined yet *)
+  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?identity ~relevance ?abstract_arguments ?candidates ?naming
     ?typeclass_candidate ?principal in
   (evd, EConstr.mkEvar (evk, instance))
 
