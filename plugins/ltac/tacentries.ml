@@ -286,7 +286,7 @@ let subst_tactic_notation (subst, (tobj, body)) =
 
 let classify_tactic_notation tacobj = Substitute
 
-let ltac_notation_cat = Libobject.Open_filter.Category.make "ltac.notations"
+let ltac_notation_cat = Libobject.Category.make "ltac.notations"
 
 let inTacticGrammar : tactic_grammar_obj * Tacenv.alias_tactic -> obj =
   declare_object {(default_object "TacticGrammar") with

@@ -17,7 +17,7 @@ open Notationextern
 
 (** Notations *)
 
-val notation_cat : Libobject.Open_filter.Category.t
+val notation_cat : Libobject.Category.t
 
 val pr_notation : notation -> Pp.t
 (** Printing *)

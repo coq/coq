@@ -72,6 +72,15 @@ type substitutivity = Dispose | Substitute | Keep | Anticipate
 
 type object_name = Libnames.full_path * KerName.t
 
+module Category : sig
+
+  type t
+
+  val make : string -> t
+  (** Anomaly if called more than once for a given string. *)
+
+end
+
 module Open_filter : sig
 
   type t
@@ -80,14 +89,6 @@ module Open_filter : sig
 
   val make : finite:bool -> string CAst.t list -> t
   (** Anomaly when the list is empty. *)
-
-  module Category : sig
-
-    type t
-    val make : string -> t
-    (** Anomaly if called more than once for a given string. *)
-
-  end
 
   val simple_open : ?cat:Category.t -> ('i -> 'a -> unit) ->
     t -> 'i -> 'a -> unit
@@ -219,13 +220,13 @@ val local_object_nodischarge : string ->
   cache:('a -> unit) ->
   ('a,'a) object_declaration
 
-val global_object : ?cat:Open_filter.Category.t -> string ->
+val global_object : ?cat:Category.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   discharge:('a -> 'a option) ->
   ('a,'a) object_declaration
 
-val global_object_nodischarge : ?cat:Open_filter.Category.t -> string ->
+val global_object_nodischarge : ?cat:Category.t -> string ->
   cache:('a -> unit) ->
   subst:(Mod_subst.substitution * 'a -> 'a) option ->
   ('a,'a) object_declaration

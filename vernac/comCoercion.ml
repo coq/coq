@@ -254,7 +254,7 @@ let rebuild_coercion c =
 let classify_coercion obj =
   if obj.coe_local then Dispose else Substitute
 
-let coe_cat = Open_filter.Category.make "coercions"
+let coe_cat = Category.make "coercions"
 
 let inCoercion : coe_info_typ -> obj =
   declare_object {(default_object "COERCION") with

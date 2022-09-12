@@ -14,23 +14,25 @@ type substitutivity = Dispose | Substitute | Keep | Anticipate
 
 type object_name = Libnames.full_path * Names.KerName.t
 
+module Category = struct
+
+  type t = string
+
+  let known = ref CString.Set.empty
+
+  let make s =
+    let cats' = CString.Set.add s !known in
+    if !known == cats' then CErrors.anomaly Pp.(str "create_category called twice on " ++ str s);
+    known := cats';
+    s
+
+end
+
 module Open_filter = struct
 
   type t =
     | Unfiltered
     | Filtered of CString.Pred.t
-
-  module Category = struct
-    type t = string
-
-    let known = ref CString.Set.empty
-
-    let make s =
-      let cats' = CString.Set.add s !known in
-      if !known == cats' then CErrors.anomaly Pp.(str "create_category called twice on " ++ str s);
-      known := cats';
-      s
-  end
 
   let unfiltered = Unfiltered
 

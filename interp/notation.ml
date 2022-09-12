@@ -34,7 +34,7 @@ let mkRef (env,sigmaref) r =
 let mkConstruct esig c = mkRef esig (ConstructRef c)
 let mkInd esig i = mkRef esig (IndRef i)
 
-let notation_cat = Libobject.Open_filter.Category.make "notations"
+let notation_cat = Libobject.Category.make "notations"
 
 
 (*s A scope is a set of notations; it includes

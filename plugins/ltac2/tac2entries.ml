@@ -707,7 +707,7 @@ let subst_synext (subst, syn) =
 let classify_synext o =
   if o.synext_loc then Dispose else Substitute
 
-let ltac2_notation_cat = Libobject.Open_filter.Category.make "ltac2.notations"
+let ltac2_notation_cat = Libobject.Category.make "ltac2.notations"
 
 let inTac2Notation : synext -> obj =
   declare_object {(default_object "TAC2-NOTATION") with

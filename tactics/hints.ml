@@ -1246,7 +1246,7 @@ let discharge_autohint obj =
     if is_trivial_action action then None
     else Some { obj with hint_action = action }
 
-let hint_cat = Open_filter.Category.make "hints"
+let hint_cat = Category.make "hints"
 
 let inAutoHint : hint_obj -> obj =
   declare_object

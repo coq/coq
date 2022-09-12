@@ -25,7 +25,7 @@ let discharge_canonical_structure (x, local) =
   if local || (Globnames.isVarRef gref && Lib.is_in_section gref) then None
   else Some (x, local)
 
-let canon_cat = Open_filter.Category.make "canonicals"
+let canon_cat = Category.make "canonicals"
 
 let inCanonStruc : Instance.t * bool -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
