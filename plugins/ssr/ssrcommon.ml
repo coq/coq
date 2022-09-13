@@ -1153,9 +1153,9 @@ let tclINTERP_AST_CLOSURE_TERM_AS_CONSTR c =
   tclUNIT t
 end
 
-let tacREDUCE_TO_QUANTIFIED_IND ty =
+let tacEVAL_TO_QUANTIFIED_IND ty =
   pf_apply begin fun env sigma ->
-  try tclUNIT (Tacred.reduce_to_quantified_ind env sigma ty)
+  try tclUNIT (Tacred.eval_to_quantified_ind env sigma ty)
   with e -> tclZERO e
   end
 
@@ -1311,7 +1311,7 @@ let tclOPTION o d =
 
 let tacIS_INJECTION_CASE ?ty t = begin
   tclOPTION ty (tacTYPEOF t) >>= fun ty ->
-  tacREDUCE_TO_QUANTIFIED_IND ty >>= fun ((mind,_),_) ->
+  tacEVAL_TO_QUANTIFIED_IND ty >>= fun (mind,_) ->
   tclUNIT (Coqlib.check_ind_ref "core.eq.type" mind)
 end
 

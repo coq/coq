@@ -43,7 +43,6 @@ val pf_get_hyp_typ        : Id.t -> Proofview.Goal.t -> types
 val pf_last_hyp           : Proofview.Goal.t -> named_declaration
 
 val pf_nf_concl : Proofview.Goal.t -> types
-val pf_reduce_to_quantified_ind : Proofview.Goal.t -> types -> (inductive * EInstance.t) * types
 
 val pf_hnf_constr : Proofview.Goal.t -> constr -> types
 val pf_hnf_type_of : Proofview.Goal.t -> constr -> types

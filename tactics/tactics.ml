@@ -1632,7 +1632,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let t = Retyping.get_type_of env sigma c in
-  let (mind,_) = reduce_to_quantified_ind env sigma t in
+  let mind = eval_to_quantified_ind env sigma t in
   let sort = Tacticals.elimination_sort_of_goal gl in
   let mind = on_snd (fun u -> EInstance.kind sigma u) mind in
   let (sigma, elim, _elimty) =
@@ -1675,7 +1675,7 @@ let default_elim with_evars clear_flag (c,_ as cx) =
       let sigma = Proofview.Goal.sigma gl in
       let concl = Proofview.Goal.concl gl in
       let sigma, t = Typing.type_of env sigma c in
-      let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
+      let (ind,u) = eval_to_quantified_ind env sigma t in
       if is_nonrec env ind then raise IsNonrec;
       let sigma, elim = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
@@ -2420,7 +2420,7 @@ let intro_or_and_pattern ?loc with_evars ll thin tac id =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let {uj_type=t} = Typing.judge_of_variable env id in
-  let (ind,t) = reduce_to_quantified_ind env sigma t in
+  let ind = eval_to_quantified_ind env sigma t in
   let branchsigns = compute_constructor_signatures env ~rec_flag:false ind in
   let nv_with_let = Array.map List.length branchsigns in
   let ll = fix_empty_or_and_pattern (Array.length branchsigns) ll in
@@ -4308,11 +4308,9 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
-let guess_elim isrec dep s hyp0 gl =
-  let tmptyp0 =	Tacmach.pf_get_hyp_typ hyp0 gl in
-  let (mind, u), _ = Tacmach.pf_reduce_to_quantified_ind gl tmptyp0 in
-  let env = Tacmach.pf_env gl in
-  let sigma = Tacmach.project gl in
+let guess_elim env sigma isrec dep s hyp0 =
+  let tmptyp0 = Typing.type_of_variable env hyp0 in
+  let (mind, u) = Tacred.eval_to_quantified_ind env sigma tmptyp0 in
   let sigma, elimc, elimt =
     if isrec && not (is_nonrec env mind)
     then
@@ -4331,11 +4329,9 @@ let guess_elim isrec dep s hyp0 gl =
   let scheme = compute_elim_sig sigma elimt in
   sigma, (elimc, elimt), mkIndU (mind, u), scheme
 
-let guess_elim_shape isrec s hyp0 gl =
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  let tmptyp0 = Tacmach.pf_get_hyp_typ hyp0 gl in
-  let (mind, _), _ = Tacred.reduce_to_quantified_ind env sigma tmptyp0 in
+let guess_elim_shape env sigma isrec s hyp0 =
+  let tmptyp0 = Typing.type_of_variable env hyp0 in
+  let (mind, _) = Tacred.eval_to_quantified_ind env sigma tmptyp0 in
   if isrec && not (is_nonrec env mind)
   then
     let gr = lookup_eliminator env mind s in
@@ -4366,10 +4362,12 @@ let find_induction_type isrec elim hyp0 gl =
     match elim with
     | None ->
        let sort = Tacticals.elimination_sort_of_goal gl in
-       let indref, nparams = guess_elim_shape isrec sort hyp0 gl in
+       let env = Proofview.Goal.env gl in
+       let sigma = Proofview.Goal.sigma gl in
+       let indref, nparams = guess_elim_shape env sigma isrec sort hyp0 in
        (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
           needs no update to sigma at this point. *)
-       Tacmach.project gl, indref, nparams, ElimOver (isrec, hyp0)
+       sigma, indref, nparams, ElimOver (isrec, hyp0)
     | Some e ->
         let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
         let scheme = compute_elim_sig sigma elimt in
@@ -4392,12 +4390,12 @@ let is_functional_induction elimc gl =
 (* Wait the last moment to guess the eliminator so as to know if we
    need a dependent one or not *)
 
-let get_eliminator elim dep s gl =
+let get_eliminator env sigma elim dep s =
   match elim with
   | ElimUsing (elim,indsign) ->
-      Tacmach.project gl, (* bugged, should be computed *) true, elim, indsign
+      sigma, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc, elimt), ind_type_guess, scheme = guess_elim isrec dep s id gl in
+      let evd, (elimc, elimt), ind_type_guess, scheme = guess_elim env sigma isrec dep s id in
       let l = compute_scheme_signature evd scheme id ind_type_guess in
       evd, isrec, (ElimTerm elimc, elimt), l
 
@@ -4473,7 +4471,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     let deps_cstr =
       List.fold_left
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in
-    let (sigma, isrec, elim, indsign) = get_eliminator elim dep s gl in
+    let (sigma, isrec, elim, indsign) = get_eliminator env sigma elim dep s in
     let branchletsigns =
       let f (_,is_not_let,_,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in

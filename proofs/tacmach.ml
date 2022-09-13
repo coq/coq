@@ -82,9 +82,6 @@ let pf_whd_all gl t = pf_apply whd_all gl t
 
 let pf_get_type_of gl t = pf_apply Retyping.get_type_of gl t
 
-let pf_reduce_to_quantified_ind gl t =
-  pf_apply reduce_to_quantified_ind gl t
-
 let pf_hnf_constr gl t = pf_apply hnf_constr gl t
 let pf_hnf_type_of gl t =
   pf_whd_all gl (pf_get_type_of gl t)
