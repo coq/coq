@@ -206,21 +206,21 @@ let pr_partial_pat_gen =
         | E1 | E2 | E3 | E4 | E5 -> fun x -> x
       in
       paren (hv 0 (pr_pat E1 p ++ spc() ++ str "as" ++ spc () ++ Id.print x))
-    | Ref (Tuple 0, _) -> str "()"
-    | Ref (Tuple _, args) ->
+    | Ref ({ctyp=None; cnargs=0}, _) -> str "()"
+    | Ref ({ctyp=None}, args) ->
       let paren = match lvl with
         | E0 | E1 -> paren
         | E2 | E3 | E4 | E5 -> fun x -> x
       in
       paren (prlist_with_sep (fun () -> str "," ++ spc ()) (pr_pat E1) args)
-    | Ref (Other {cindx=Open kn}, args) ->
+    | Ref ({cindx=Open kn}, args) ->
       let paren = match lvl with
         | E0 -> paren
         | E1 | E2 | E3 | E4 | E5 -> fun x -> x
       in
       let c = pr_constructor kn in
       paren (hov 0 (c ++ spc () ++ (pr_sequence (pr_pat E0) args)))
-    | Ref (Other {ctyp; cindx=Closed i}, args) ->
+    | Ref ({ctyp=Some ctyp; cindx=Closed i}, args) ->
       (* TODO when we have patterns for records this will need an update *)
       let factorized =
         if KerName.equal ctyp t_list then

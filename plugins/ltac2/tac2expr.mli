@@ -129,7 +129,7 @@ type ctor_indx =
   | Open of ltac_constructor
 
 type ctor_data_for_patterns = {
-  ctyp : type_constant;
+  ctyp : type_constant option; (* [None] means [Tuple cnargs] and [cindx = Closed 0] *)
   cnargs : int;
   cindx : ctor_indx;
 }
@@ -137,7 +137,7 @@ type ctor_data_for_patterns = {
 type glb_pat =
   | GPatVar of Name.t
   | GPatAtm of atom
-  | GPatRef of ctor_data_for_patterns or_tuple * glb_pat list
+  | GPatRef of ctor_data_for_patterns * glb_pat list
   | GPatOr of glb_pat list
   | GPatAs of glb_pat * Id.t
 
@@ -145,7 +145,7 @@ module PartialPat : sig
   type r =
     | Var of Name.t
     | Atom of atom
-    | Ref of ctor_data_for_patterns or_tuple * t list
+    | Ref of ctor_data_for_patterns * t list
     | Or of t list
     | As of t * Id.t
     | Extension of { example : atom option }
