@@ -984,10 +984,10 @@ Helper tactics
 
 .. tacn:: decide equality
 
-   Solves a goal of the form :g:`forall x y : R, {x = y} + {~ x = y}`,
-   where :g:`R` is an inductive type such that its constructors do not take
-   proofs or functions as arguments, nor objects in dependent types. It
-   solves goals of the form :g:`{x = y} + {~ x = y}` as well.
+   Solves a goal of the form :n:`{? forall x y : R, } {x = y} + {~ x = y}` or
+   :n:`{? forall x y : R, } (x = y) \/ (~ x = y)`, where :g:`R` is an
+   inductive type whose constructors do not take proofs or functions as
+   arguments, nor objects in dependent types.
 
 .. tacn:: compare @one_term__1 @one_term__2
 
