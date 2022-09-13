@@ -45,7 +45,14 @@ val parse_scope : sexpr -> scope_rule
 
 (** {5 Inspecting} *)
 
-val print_ltac : Libnames.qualid -> unit
+val print_located_tactic : Libnames.qualid -> unit
+(** Display the absolute name of a tactic. *)
+
+val print_ltac2 : Libnames.qualid -> unit
+(** Display the definition of a tactic. *)
+
+val print_signatures : unit -> unit
+(** Print types of all definitions in scope. *)
 
 (** {5 Eval loop} *)
 

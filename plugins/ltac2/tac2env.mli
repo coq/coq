@@ -29,6 +29,8 @@ type global_data = {
 val define_global : ltac_constant -> global_data -> unit
 val interp_global : ltac_constant -> global_data
 
+val globals : unit -> global_data KNmap.t
+
 (** {5 Toplevel definition of types} *)
 
 val define_type : type_constant -> glb_quant_typedef -> unit
@@ -87,11 +89,13 @@ val push_ltac : visibility -> full_path -> tacref -> unit
 val locate_ltac : qualid -> tacref
 val locate_extended_all_ltac : qualid -> tacref list
 val shortest_qualid_of_ltac : tacref -> qualid
+val path_of_ltac : tacref -> full_path
 
 val push_constructor : visibility -> full_path -> ltac_constructor -> unit
 val locate_constructor : qualid -> ltac_constructor
 val locate_extended_all_constructor : qualid -> ltac_constructor list
 val shortest_qualid_of_constructor : ltac_constructor -> qualid
+val path_of_constructor : ltac_constructor -> full_path
 
 val push_type : visibility -> full_path -> type_constant -> unit
 val locate_type : qualid -> type_constant
