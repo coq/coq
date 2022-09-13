@@ -126,6 +126,8 @@ type evar_info = {
   evar_identity : Identity.t;
   (** Default evar instance, i.e. a list of Var nodes projected from the
       filtered environment. *)
+  evar_relevance : Sorts.relevance;
+  (** Relevance of the conclusion of the evar. *)
 }
 
 val make_evar : named_context_val -> etypes -> evar_info
@@ -272,6 +274,8 @@ val existential_opt_value : evar_map -> econstr pexistential -> econstr option
     exception. *)
 
 val existential_opt_value0 : evar_map -> existential -> constr option
+
+val evar_handler : evar_map -> constr evar_handler
 
 val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info ->
   'a list -> (Id.t * 'a) list

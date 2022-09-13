@@ -610,6 +610,13 @@ val compare_head_gen_leq : Univ.Instance.t instance_compare_fn ->
 val eq_invert : ('a -> 'a -> bool)
   -> 'a pcase_invert -> 'a pcase_invert -> bool
 
+type 'constr evar_handler = {
+  evar_expand : 'constr pexistential -> 'constr option;
+  evar_relevance : 'constr pexistential -> Sorts.relevance;
+}
+
+val default_evar_handler : 'constr evar_handler
+
 (** {6 Hashconsing} *)
 
 val hash : constr -> int

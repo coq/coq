@@ -543,11 +543,16 @@ let conv_fun f flags on_types =
 
 let infer_conv_noticing_evars ~pb ~ts env sigma t1 t2 =
   let has_evar = ref false in
-  let conv pb ~l2r sigma = Reduction.generic_conv pb ~l2r (fun ev ->
-      let v = existential_opt_value0 sigma ev in
-      if Option.is_empty v then has_evar := true;
-      v)
+  let evar_expand ev =
+    let v = existential_opt_value0 sigma ev in
+    if Option.is_empty v then has_evar := true;
+    v
   in
+  let evar_relevance (evk, _) = match Evd.find sigma evk with
+  | evi -> evi.Evd.evar_relevance
+  | exception Not_found -> Sorts.Relevant
+  in
+  let conv pb ~l2r sigma = Reduction.generic_conv pb ~l2r { evar_expand; evar_relevance } in
   match infer_conv_gen conv ~catch_incon:false ~pb ~ts env sigma t1 t2 with
   | Some sigma -> Some (Success sigma)
   | None ->

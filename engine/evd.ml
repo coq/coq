@@ -183,6 +183,7 @@ type evar_info = {
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_identity : Identity.t;
+  evar_relevance: Sorts.relevance;
 }
 
 let make_evar hyps ccl = {
@@ -194,6 +195,7 @@ let make_evar hyps ccl = {
   evar_source = Loc.tag @@ Evar_kinds.InternalHole;
   evar_candidates = None;
   evar_identity = Identity.none ();
+  evar_relevance = Sorts.Relevant; (* FIXME *)
 }
 
 let instance_mismatch () =
@@ -763,6 +765,14 @@ let existential_opt_value d (n, args) =
 let existential_value d ev = match existential_opt_value d ev with
   | None -> raise NotInstantiatedEvar
   | Some v -> v
+
+let evar_handler sigma =
+  let evar_expand ev = existential_opt_value sigma ev in
+  let evar_relevance (evk, _) = match find sigma evk with
+  | evi -> evi.evar_relevance
+  | exception Not_found -> Sorts.Relevant
+  in
+  { evar_expand; evar_relevance }
 
 let existential_value0 = existential_value
 

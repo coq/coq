@@ -59,7 +59,7 @@ and lam_branches =
 and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
 type evars =
-    { evars_val : existential -> constr option;
+    { evars_val : constr evar_handler;
       evars_metas : metavariable -> types }
 
 (*s Constructors *)
@@ -453,12 +453,12 @@ let is_lazy t =
   | App _ | LetIn _ | Case _ | Proj _ -> true
   | _ -> false
 
-let evar_value sigma ev = sigma.evars_val ev
+let evar_value sigma ev = sigma.evars_val.evar_expand ev
 
 let meta_type sigma mv = sigma.evars_metas mv
 
 let empty_evars =
-  { evars_val = (fun _ -> None);
+  { evars_val = default_evar_handler;
     evars_metas = (fun _ -> assert false) }
 
 (** Extract the inductive type over which a fixpoint is decreasing *)

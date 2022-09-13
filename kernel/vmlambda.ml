@@ -587,7 +587,7 @@ struct
 
   type t = {
     global_env : env;
-    evar_body : existential -> constr option;
+    evar_body : constr evar_handler;
     name_rel : Name.t Vect.t;
     construct_tbl : (constructor, constructor_info) Hashtbl.t;
   }
@@ -632,7 +632,7 @@ let rec lambda_of_constr env c =
   match Constr.kind c with
   | Meta _ -> raise (Invalid_argument "Vmbytegen.lambda_of_constr: Meta")
   | Evar (evk, args as ev) ->
-      begin match env.evar_body ev with
+      begin match env.evar_body.evar_expand ev with
       | None ->
           let args = Array.map_of_list (fun c -> lambda_of_constr env c) args in
           Levar (evk, args)

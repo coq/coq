@@ -431,5 +431,5 @@ let cbv_vm env sigma c t  =
   (* This evar-normalizes terms beforehand *)
   let c = EConstr.Unsafe.to_constr c in
   let t = EConstr.Unsafe.to_constr t in
-  let v = Vmsymtable.val_of_constr env (Evd.existential_opt_value0 sigma) c in
+  let v = Vmsymtable.val_of_constr env (Evd.evar_handler sigma) c in
   EConstr.of_constr (nf_val env sigma v t)

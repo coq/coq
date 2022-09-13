@@ -90,7 +90,7 @@ let check_conv_error error why state poly pb env a1 a2 =
         fst state
       with NotConvertible -> error (IncompatiblePolymorphism (env, a1, a2))
     else
-      Reduction.generic_conv pb ~l2r:false (fun _ -> None) TransparentState.full env state a1 a2
+      Reduction.generic_conv pb ~l2r:false default_evar_handler TransparentState.full env state a1 a2
   with NotConvertible -> error why
      | UGraph.UniverseInconsistency e -> error (IncompatibleUniverses e)
 
