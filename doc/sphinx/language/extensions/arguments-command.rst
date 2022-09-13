@@ -8,13 +8,13 @@ Setting properties of a function's arguments
    .. insertprodn argument_spec args_modifier
 
    .. prodn::
-      argument_spec ::= {? ! } @name {? % @scope_key }
+      argument_spec ::= {? ! } @name {? % @scope }
       arg_specs ::= @argument_spec
       | /
       | &
-      | ( {+ @argument_spec } ) {? % @scope_key }
-      | [ {+ @argument_spec } ] {? % @scope_key }
-      | %{ {+ @argument_spec } %} {? % @scope_key }
+      | ( {+ @argument_spec } ) {? % @scope }
+      | [ {+ @argument_spec } ] {? % @scope }
+      | %{ {+ @argument_spec } %} {? % @scope }
       implicits_alt ::= @name
       | [ {+ @name } ]
       | %{ {+ @name } %}
