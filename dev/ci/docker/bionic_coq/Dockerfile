@@ -45,8 +45,8 @@ ENV COMPILER="4.09.0"
 
 # Common OPAM packages
 ENV BASE_OPAM="zarith.1.11 ounit2.2.2.3" \
-    CI_OPAM="ocamlgraph.1.8.8 yojson.1.7.0 cppo.1.6.8" \
-    BASE_ONLY_OPAM="dune.2.9.1 elpi.1.16.5 stdlib-shims.0.1.0 ocamlfind.1.8.1 odoc.1.5.3"
+    CI_OPAM="ocamlgraph.1.8.8 cppo.1.6.8" \
+    BASE_ONLY_OPAM="dune.2.9.1 stdlib-shims.0.1.0 ocamlfind.1.8.1 odoc.1.5.3 yojson.1.7.0"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
 ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.2"
@@ -66,6 +66,7 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 # EDGE switch
 ENV COMPILER_EDGE="4.14.0" \
     BASE_OPAM_EDGE="dune.2.9.3 dune-release.1.6.1 ocamlfind.1.9.1 odoc.2.0.2" \
+    CI_OPAM_EDGE="elpi.1.16.5 ppx_import.1.10.0 cmdliner.1.1.1 sexplib.v0.15.1 ppx_sexp_conv.v0.15.1 ppx_hash.v0.15.0 ppx_compare.v0.15.0 ppx_deriving_yojson.3.7.0 yojson.1.7.0" \
     COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.2"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
@@ -73,7 +74,7 @@ ENV COMPILER_EDGE="4.14.0" \
 RUN opam switch create "${COMPILER_EDGE}+flambda" \
       --repositories default,ocaml-beta=git+https://github.com/ocaml/ocaml-beta-repository.git \
       --packages="ocaml-variants.${COMPILER_EDGE}+options,ocaml-option-flambda" && eval $(opam env) && \
-    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
+    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM $CI_OPAM_EDGE
 
 RUN opam clean -a -c
 

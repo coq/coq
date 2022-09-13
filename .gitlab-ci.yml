@@ -16,7 +16,7 @@ variables:
   # Format: $IMAGE-V$DATE-$hash
   # The $hash is the first 10 characters of the md5 of the Dockerfile. e.g.
   # echo $(md5sum dev/ci/docker/bionic_coq/Dockerfile | head -c 10)
-  CACHEKEY: "bionic_coq-V2022-07-24-4b61cc61ca"
+  CACHEKEY: "bionic_coq-V2022-09-28-7c5d9666eb"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -721,24 +721,24 @@ library:ci-mczify:
   - library:ci-mathcomp
 
 library:ci-mathcomp_base:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 library:ci-finmap:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
+  - build:edge+flambda
   - library:ci-mathcomp_base
 
 library:ci-bigenough:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
+  - build:edge+flambda
   - library:ci-mathcomp_base
 
 library:ci-analysis:
-  extends: .ci-template
+  extends: .ci-template-flambda
   needs:
-  - build:base
+  - build:edge+flambda
   - library:ci-mathcomp_base
   - library:ci-finmap
   - library:ci-bigenough
@@ -806,7 +806,7 @@ plugin:ci-coqhammer:
   extends: .ci-template-flambda
 
 plugin:ci-elpi:
-  extends: .ci-template
+  extends: .ci-template-flambda
 
 plugin:ci-equations:
   extends: .ci-template
@@ -857,6 +857,12 @@ plugin:ci-relation_algebra:
 
 plugin:ci-rewriter:
   extends: .ci-template-flambda
+
+plugin:ci-serapi:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp_base
 
 plugin:ci-vscoq:
   extends: .ci-template

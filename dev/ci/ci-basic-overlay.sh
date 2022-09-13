@@ -339,3 +339,8 @@ project jasmin "https://github.com/jasmin-lang/jasmin" "main"
 # Lean Importer
 ########################################################################
 project lean_importer "https://github.com/SkySkimmer/coq-lean-import" "master"
+
+########################################################################
+# SerAPI
+########################################################################
+project serapi "https://github.com/ejgallego/coq-serapi" "main"
