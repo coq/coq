@@ -1990,10 +1990,11 @@ let compute_proof_using_for_admitted proof typ iproof =
       match Proof.partial_proof iproof with
       | pproof :: _ ->
         let env = Global.env () in
-        let ids_typ = Environ.global_vars_set env typ in
+        let sigma = (Proof.data iproof).Proof.sigma in
+        let ids_typ = Termops.global_vars_set env sigma typ in
         (* [pproof] is evar-normalized by [partial_proof]. We don't
            count variables appearing only in the type of evars. *)
-        let ids_def = Environ.global_vars_set env (EConstr.Unsafe.to_constr pproof) in
+        let ids_def = Termops.global_vars_set env sigma pproof in
         Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
       | [] -> None
 
@@ -2012,7 +2013,6 @@ let save_admitted ~pm ~proof =
     | [_, _, typ] -> typ
     | _ -> CErrors.anomaly ~label:"Lemmas.save_lemma_admitted" (Pp.str "more than one statement.")
   in
-  let typ = EConstr.Unsafe.to_constr typ in
   let iproof = get proof in
   let sec_vars = compute_proof_using_for_admitted proof typ iproof in
   let uctx = get_initial_euctx proof in
