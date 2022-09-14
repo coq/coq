@@ -49,6 +49,12 @@ Proof using A dec.
      * right. inversion_clear 1. tauto.
 Qed.
 
+
+Lemma NoDup_list_decidable (l:list A) : NoDup l -> forall x y:A, In x l -> In y l -> decidable (x=y).
+Proof using A.
+  clear dec; intros Hl; induction Hl; firstorder congruence.
+Qed.
+
 End Dec_in_Prop.
 
 Section Dec_in_Type.
@@ -86,7 +92,7 @@ End Dec_in_Type.
 Lemma uniquify_map A B (d:decidable_eq B)(f:A->B)(l:list A) :
  exists l', NoDup (map f l') /\ incl (map f l) (map f l').
 Proof.
- induction l.
+ induction l as [|a l IHl].
  - exists nil. simpl. split; [now constructor | red; trivial].
  - destruct IHl as (l' & N & I).
    destruct (In_decidable d (f a) (map f l')).
