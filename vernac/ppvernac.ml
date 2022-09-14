@@ -559,7 +559,8 @@ let pr_printable = function
   | PrintSectionContext s ->
     keyword "Print Section" ++ spc() ++ Libnames.pr_qualid s
   | PrintGrammar ent ->
-    keyword "Print Grammar" ++ spc() ++ str ent
+    keyword "Print Grammar" ++ spc() ++
+    prlist_with_sep spc str ent
   | PrintCustomGrammar ent ->
     keyword "Print Custom Grammar" ++ spc() ++ str ent
   | PrintKeywords ->

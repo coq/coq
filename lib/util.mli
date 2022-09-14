@@ -53,7 +53,7 @@ end
 
 (** {6 Strings. } *)
 
-module String : CString.ExtS
+module String = CString
 
 (** Substitute %s in the first chain by the second chain *)
 val subst_command_placeholder : string -> string -> string

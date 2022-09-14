@@ -33,6 +33,8 @@ module type S = sig
     val parse_token_stream : 'a t -> te LStream.t -> 'a
     val print : Format.formatter -> 'a t -> unit
     val is_empty : 'a t -> bool
+    type any_t = Any : 'a t -> any_t
+    val accumulate_in : 'a t -> any_t list CString.Map.t
   end
 
   module rec Symbol : sig
@@ -1679,6 +1681,63 @@ module Entry = struct
   let is_empty e = match e.edesc with
   | Dparser _ -> failwith "Arbitrary parser entry"
   | Dlevels elev -> List.is_empty elev
+
+  type any_t = Any : 'a t -> any_t
+
+  let rec iter_in f e = match e.edesc with
+    | Dparser _ -> ()
+    | Dlevels elev ->
+      List.iter (fun (Level lev) ->
+          let rules =
+            List.map (fun (ExS t) -> ExS (TCns (MayRec2, Sself, t))) (flatten_tree lev.lsuffix) @
+            flatten_tree lev.lprefix
+          in
+          List.iter (fun (ExS rule) -> iter_in_symbols f rule) rules)
+        elev
+
+  and iter_in_symbols : type s tr p. _ -> (s, tr, p) ty_symbols -> unit = fun f symbols ->
+    match symbols with
+    | TNil -> ()
+    | TCns (_, symbol, symbols) ->
+      iter_in_symbol f symbol;
+      iter_in_symbols f symbols
+
+  and iter_in_symbol : type s tr r. _ -> (s, tr, r) ty_symbol -> unit = fun f ->
+    function
+    | Snterml (e, _) | Snterm e -> f (Any e)
+    | Slist0 s -> iter_in_symbol f s
+    | Slist0sep (s, t, _) -> iter_in_symbol f s; iter_in_symbol f t
+    | Slist1 s -> iter_in_symbol f s
+    | Slist1sep (s, t, _) -> iter_in_symbol f s; iter_in_symbol f t
+    | Sopt s -> iter_in_symbol f s
+    | Stoken _ | Stokens _ -> ()
+    | Sself | Snext -> ()
+    | Stree t -> List.iter (fun (ExS rule) -> iter_in_symbols f rule) (flatten_tree t)
+
+  let same_entry (Any e) (Any e') = (Obj.magic e) == (Obj.magic e')
+
+  let accumulate_in e =
+    let initial = Any e in
+    let todo = ref [initial] in
+    let visited = ref (String.Map.singleton (name e) [initial]) in
+    while not (List.is_empty !todo) do
+      let Any e = List.hd !todo in
+      todo := List.tl !todo;
+      iter_in (fun (Any e as any) ->
+          let visited' = String.Map.update e.ename (function
+              | None -> Some [any]
+              | Some vl as v ->
+                let any = any in
+                if List.mem_f same_entry any vl then v else Some (any :: vl))
+              !visited
+          in
+          if not (!visited == visited') then begin
+            visited := visited';
+            todo := any :: !todo
+          end)
+        e
+    done;
+    !visited
 end
 
 module rec Symbol : sig

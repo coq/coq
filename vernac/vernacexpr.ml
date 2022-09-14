@@ -29,7 +29,7 @@ type printable =
   | PrintFullContext
   | PrintSectionContext of qualid
   | PrintInspect of int
-  | PrintGrammar of string
+  | PrintGrammar of string list
   | PrintCustomGrammar of string
   | PrintKeywords
   | PrintLoadPath of DirPath.t option

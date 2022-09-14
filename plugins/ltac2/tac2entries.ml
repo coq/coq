@@ -51,9 +51,9 @@ end
 
 let () =
   let entries = [
-    Pcoq.AnyEntry Pltac.ltac2_expr;
+    Pcoq.Entry.Any Pltac.ltac2_expr;
   ] in
-  Pcoq.register_grammars_by_name "coq-core.plugins.ltac2" entries
+  Pcoq.register_grammars_by_name "ltac2" entries
 
 (** Tactic definition *)
 

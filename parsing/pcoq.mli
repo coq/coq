@@ -270,10 +270,8 @@ val parser_summary_tag : frozen_t Summary.Dyn.tag
 
 (** Registering grammars by name *)
 
-type any_entry = AnyEntry : 'a Entry.t -> any_entry
-
-val register_grammars_by_name : string -> any_entry list -> unit
-val find_grammars_by_name : string -> any_entry list
+val register_grammars_by_name : string -> Entry.any_t list -> unit
+val find_grammars_by_name : string -> Entry.any_t list
 
 (** Parsing state handling *)
 val freeze : marshallable:bool -> frozen_t

@@ -591,11 +591,12 @@ let print_ltac id =
 (** Grammar *)
 
 let () =
+  let open Pcoq.Entry in
   let entries = [
-    AnyEntry Pltac.ltac_expr;
-    AnyEntry Pltac.binder_tactic;
-    AnyEntry Pltac.simple_tactic;
-    AnyEntry Pltac.tactic_value;
+    Any Pltac.ltac_expr;
+    Any Pltac.binder_tactic;
+    Any Pltac.simple_tactic;
+    Any Pltac.tactic_value;
   ] in
   register_grammars_by_name "tactic" entries
 

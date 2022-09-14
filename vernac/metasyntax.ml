@@ -37,41 +37,90 @@ let pr_entry e =
   let () = Pcoq.Entry.print ft e in
   str (Buffer.contents entry_buf)
 
+let error_unknown_entry ?loc name =
+  user_err ?loc Pp.(str "Unknown or unprintable grammar entry " ++ str name ++ str".")
+
 let pr_registered_grammar name =
   let gram = Pcoq.find_grammars_by_name name in
   match gram with
-  | [] -> user_err Pp.(str "Unknown or unprintable grammar entry.")
+  | [] -> error_unknown_entry name
   | entries ->
-    let pr_one (Pcoq.AnyEntry e) =
+    let pr_one (Pcoq.Entry.Any e) =
       str "Entry " ++ str (Pcoq.Entry.name e) ++ str " is" ++ fnl () ++
       pr_entry e
     in
     prlist pr_one entries
 
-let pr_grammar = function
+let pr_grammar_subset grammar =
+  let pp = String.Map.mapi (fun name l -> match l with
+      | []  -> assert false
+      | entries ->
+        str "Entry " ++ str name ++ str " is" ++ fnl() ++
+        prlist_with_sep (fun () -> str "or" ++ fnl())
+          (fun (Pcoq.Entry.Any e) -> pr_entry e)
+          entries)
+      grammar
+  in
+  let pp = CString.Map.bindings pp in
+  prlist_with_sep fnl (fun (_,pp) -> pp) pp
+
+let is_known = let open Pcoq.Entry in function
   | "constr" | "term" | "binder_constr" ->
-      str "Entry constr is" ++ fnl () ++
-      pr_entry Pcoq.Constr.constr ++
-      str "and lconstr is" ++ fnl () ++
-      pr_entry Pcoq.Constr.lconstr ++
-      str "where binder_constr is" ++ fnl () ++
-      pr_entry Pcoq.Constr.binder_constr ++
-      str "and term is" ++ fnl () ++
-      pr_entry Pcoq.Constr.term
-  | "pattern" ->
-      pr_entry Pcoq.Constr.pattern
+    Some [ Any Pcoq.Constr.constr;
+      Any Pcoq.Constr.lconstr;
+      Any Pcoq.Constr.binder_constr;
+      Any Pcoq.Constr.term;
+    ]
   | "vernac" ->
-      str "Entry vernac_control is" ++ fnl () ++
-      pr_entry Pvernac.Vernac_.vernac_control ++
-      str "Entry command is" ++ fnl () ++
-      pr_entry Pvernac.Vernac_.command ++
-      str "Entry syntax is" ++ fnl () ++
-      pr_entry Pvernac.Vernac_.syntax ++
-      str "Entry gallina is" ++ fnl () ++
-      pr_entry Pvernac.Vernac_.gallina ++
-      str "Entry gallina_ext is" ++ fnl () ++
-      pr_entry Pvernac.Vernac_.gallina_ext
-  | name -> pr_registered_grammar name
+    Some Pvernac.Vernac_.[
+        Any vernac_control;
+        (* main_entry="vernac", included not because it's interesting but because otherwise it's shadowed by the "vernac" group defined here *)
+        Any main_entry;
+        Any command;
+        Any syntax;
+        Any gallina;
+        Any gallina_ext;
+    ]
+  | name ->
+    let gram = Pcoq.find_grammars_by_name name in
+    match gram with
+    | [] -> None
+    | entries -> Some entries
+
+let full_grammar () = Pcoq.Entry.accumulate_in Pvernac.Vernac_.vernac_control
+
+let same_entry (Pcoq.Entry.Any e) (Pcoq.Entry.Any e') = (Obj.magic e) == (Obj.magic e')
+
+let pr_grammar = function
+  | [] ->
+    let grammar = full_grammar () in
+    pr_grammar_subset grammar
+  | names ->
+    let known, other = List.fold_left (fun (known,other) name ->
+        match is_known name with
+        | Some v -> v @ known, other
+        | None -> known, name::other)
+        ([],[])
+        names
+    in
+    let grammar = if List.is_empty other then String.Map.empty else full_grammar () in
+    let () = List.iter (fun name ->
+        if not (String.Map.mem name grammar)
+        then error_unknown_entry name)
+        other
+    in
+    let other = String.Set.of_list other in
+    let grammar = String.Map.filter (fun name _ -> String.Set.mem name other) grammar in
+    let grammar = List.fold_left (fun grammar (Pcoq.Entry.Any e as any) ->
+        String.Map.update (Pcoq.Entry.name e) (function
+            | None -> Some [any]
+            | Some vl as v ->
+              if List.mem_f same_entry any vl
+              then v else Some (any :: vl))
+          grammar)
+        grammar known
+    in
+    pr_grammar_subset grammar
 
 let pr_custom_grammar name = pr_registered_grammar ("custom:"^name)
 

@@ -1279,7 +1279,7 @@ printable: [
 | "Term" smart_global OPT univ_name_list
 | "All"
 | "Section" global
-| "Grammar" IDENT
+| "Grammar" LIST0 IDENT
 | "Custom" "Grammar" IDENT
 | "Keywords"
 | "LoadPath" OPT dirpath

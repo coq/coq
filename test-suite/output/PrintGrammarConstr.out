@@ -1,11 +1,4 @@
-Entry constr is
-[ LEFTA
-  [ "@"; global; univ_annot
-  | term LEVEL "8" ] ]
-and lconstr is
-[ LEFTA
-  [ term LEVEL "200" ] ]
-where binder_constr is
+Entry binder_constr is
 [ LEFTA
   [ "forall"; open_binders; ","; term LEVEL "200"
   | "fun"; open_binders; "=>"; term LEVEL "200"
@@ -25,7 +18,17 @@ where binder_constr is
     term LEVEL "200"
   | "fix"; fix_decls
   | "cofix"; cofix_decls ] ]
-and term is
+
+Entry constr is
+[ LEFTA
+  [ "@"; global; univ_annot
+  | term LEVEL "8" ] ]
+
+Entry lconstr is
+[ LEFTA
+  [ term LEVEL "200" ] ]
+
+Entry term is
 [ "200" RIGHTA
   [ binder_constr ]
 | "100" RIGHTA
