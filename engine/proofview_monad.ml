@@ -64,7 +64,7 @@ end
 
 (** We typically label nodes of [Trace.tree] with messages to
     print. But we don't want to compute the result. *)
-type lazy_msg = Environ.env -> Evd.evar_map -> Pp.t
+type lazy_msg = unit -> Pp.t
 
 (** Info trace. *)
 module Info = struct
@@ -79,7 +79,7 @@ module Info = struct
   type state = tag Trace.incr
   type tree = tag Trace.forest
 
-  let pr_in_comments env sigma m = Pp.(str"(* "++ m env sigma ++str" *)")
+  let pr_in_comments m = Pp.(str"(* "++ m () ++str" *)")
 
   let unbranch = function
     | Trace.Seq (DBranch,brs) -> brs
@@ -109,31 +109,31 @@ module Info = struct
 
   (** [with_sep] is [true] when [Tactic m] must be printed with a
       trailing semi-colon. *)
-  let rec pr_tree env sigma with_sep = let open Trace in function
-    | Seq (Msg m,[]) -> pr_in_comments env sigma m
+  let rec pr_tree with_sep = let open Trace in function
+    | Seq (Msg m,[]) -> pr_in_comments m
     | Seq (Tactic m,_) ->
         let tail = if with_sep then Pp.str";" else Pp.mt () in
-        Pp.(m env sigma ++ tail)
+        Pp.(m () ++ tail)
     | Seq (Dispatch,brs) ->
         let tail = if with_sep then Pp.str";" else Pp.mt () in
-        Pp.(pr_dispatch env sigma brs++tail)
+        Pp.(pr_dispatch brs++tail)
     | Seq (Msg _,_::_) | Seq (DBranch,_) -> assert false
-  and pr_dispatch env sigma brs =
+  and pr_dispatch brs =
     let open Pp in
     let brs = List.map unbranch brs in
     match brs with
-    | [br] -> pr_forest env sigma br
+    | [br] -> pr_forest br
     | _ ->
         let sep () = spc()++str"|"++spc() in
-        let branches = prlist_with_sep sep (pr_forest env sigma) brs in
+        let branches = prlist_with_sep sep pr_forest brs in
         str"[>"++spc()++branches++spc()++str"]"
-  and pr_forest env sigma = function
+  and pr_forest = function
     | [] -> Pp.mt ()
-    | [tr] -> pr_tree env sigma false tr
-    | tr::l -> Pp.(pr_tree env sigma true tr ++ pr_forest env sigma l)
+    | [tr] -> pr_tree false tr
+    | tr::l -> Pp.(pr_tree true tr ++ pr_forest l)
 
-  let print env sigma f =
-    pr_forest env sigma (compress f)
+  let print _env _sigma f =
+    pr_forest (compress f)
 
   let rec collapse_tree n t =
     let open Trace in

@@ -45,7 +45,7 @@ end
 
 (** We typically label nodes of [Trace.tree] with messages to
     print. But we don't want to compute the result. *)
-type lazy_msg = Environ.env -> Evd.evar_map -> Pp.t
+type lazy_msg = unit -> Pp.t
 
 (** Info trace. *)
 module Info : sig
