@@ -1027,9 +1027,9 @@ let reduce redexp cl =
     let pr = ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e), pr_evaluable_reference, pr_constr_pattern_env) in
     Pp.(hov 2 (Ppred.pr_red_expr_env env sigma pr str redexp))
   in
-  Proofview.Trace.name_tactic trace begin
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
   let hyps = concrete_clause_of (fun () -> Tacmach.pf_ids_of_hyps gl) cl in
   let nbcl = (if cl.concl_occs = NoOccurrences then 0 else 1) + List.length hyps in
   let check = match redexp with Fold _ | Pattern _ -> true | _ -> false in
@@ -1043,6 +1043,7 @@ let reduce redexp cl =
   | ExtraRedExpr _ -> StableHypConv (* Should we be that lenient ?*)
   in
   let redexp = Redexpr.eval_red_expr env redexp in
+  Proofview.Trace.name_tactic (fun () -> trace env sigma) begin
   begin match cl.concl_occs with
   | NoOccurrences -> Proofview.tclUNIT ()
   | occs ->

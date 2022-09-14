@@ -620,7 +620,7 @@ let shelve =
   let open Proof in
   Comb.get >>= fun initial ->
   Comb.set [] >>
-  InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve")) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve")) >>
   let initial = CList.map drop_state initial in
   Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution initial })
 
@@ -629,7 +629,7 @@ let shelve_goals l =
   Comb.get >>= fun initial ->
   let comb = CList.filter (fun g -> not (CList.mem (drop_state g) l)) initial in
   Comb.set comb >>
-  InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve_goals")) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve_goals")) >>
   Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution l })
 
 (** [depends_on sigma src tgt] checks whether the goal [src] appears
@@ -695,7 +695,7 @@ let shelve_unifiable_informative =
   Pv.get >>= fun initial ->
   let (u,n) = partition_unifiable initial.solution initial.comb in
   Comb.set n >>
-  InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"shelve_unifiable")) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"shelve_unifiable")) >>
   let u = CList.map drop_state u in
   Pv.modify (fun pv -> { pv with solution = Evd.shelve pv.solution u }) >>
   tclUNIT u
@@ -784,7 +784,7 @@ let goodmod p m =
 
 let cycle n =
   let open Proof in
-  InfoL.leaf (Info.Tactic (fun _ _ -> Pp.(str"cycle "++int n))) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.(str"cycle "++int n))) >>
   Comb.modify begin fun initial ->
     let l = CList.length initial in
     let n' = goodmod n l in
@@ -794,7 +794,7 @@ let cycle n =
 
 let swap i j =
   let open Proof in
-  InfoL.leaf (Info.Tactic (fun _ _ -> Pp.(hov 2 (str"swap"++spc()++int i++spc()++int j)))) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.(hov 2 (str"swap"++spc()++int i++spc()++int j)))) >>
   Comb.modify begin fun initial ->
     let l = CList.length initial in
     let i = if i>0 then i-1 else i and j = if j>0 then j-1 else j in
@@ -809,7 +809,7 @@ let swap i j =
 
 let revgoals =
   let open Proof in
-  InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"revgoals")) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"revgoals")) >>
   Comb.modify CList.rev
 
 let numgoals =
@@ -853,7 +853,7 @@ let give_up =
   Comb.get >>= fun initial ->
   Comb.set [] >>
   mark_as_unsafe >>
-  InfoL.leaf (Info.Tactic (fun _ _ -> Pp.str"give_up")) >>
+  InfoL.leaf (Info.Tactic (fun () -> Pp.str"give_up")) >>
   Pv.modify (give_up initial)
 
 
