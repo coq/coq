@@ -33,7 +33,7 @@
 /dev/ci/nix          @coq/nix-maintainers
 *.nix                @coq/nix-maintainers
 
-/dev/ci/user-overlays/*.sh @ghost
+/dev/ci/user-overlays/*.sh
 # Trick to avoid getting review requests
 # each time someone adds an overlay
 
@@ -49,8 +49,8 @@
 /doc/                  @coq/doc-maintainers
 /dev/doc/              @coq/doc-maintainers
 
-/doc/changelog/*/*.rst @ghost
-/dev/doc/changes.md    @ghost
+/doc/changelog/*/*.rst
+/dev/doc/changes.md
 # Trick to avoid getting review requests
 # each time someone modifies the changelog
 
