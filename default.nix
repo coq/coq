@@ -22,7 +22,7 @@
 # a symlink to where Coq was installed.
 
 { pkgs ? import ./dev/nixpkgs.nix {}
-, ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_12
+, ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_14
 , buildIde ? true
 , buildDoc ? true
 , doInstallCheck ? true
@@ -41,15 +41,20 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     hostname
-    python3 time dune_2 # coq-makefile timing tools
+    python3
+    # coq-makefile timing tools
+    time
+    dune_3
   ]
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
-    glib gnome3.adwaita-icon-theme wrapGAppsHook
+    glib
+    gnome.adwaita-icon-theme
+    wrapGAppsHook
   ]
   ++ optionals buildDoc [
     # Sphinx doc dependencies
-    pkgconfig (python3.withPackages
+    pkg-config (python3.withPackages
       (ps: [ ps.sphinx ps.sphinx_rtd_theme ps.pexpect ps.beautifulsoup4
              ps.antlr4-python3-runtime ps.sphinxcontrib-bibtex ]))
     antlr4
@@ -57,12 +62,30 @@ stdenv.mkDerivation rec {
   ]
   ++ optionals doInstallCheck [
     # Test-suite dependencies
-    ocamlPackages.ounit rsync which
+    ocamlPackages.ounit
+    rsync
+    which
   ]
   ++ optionals shell (
-    [ jq curl gitFull gnupg ] # Dependencies of the merging script
-    ++ (with ocamlPackages; [ ocaml-lsp merlin ocp-indent ocp-index utop ocamlformat ]) # Dev tools
-    ++ [ graphviz ] # Useful for STM debugging
+    [ # Dependencies of the merging script
+      jq
+      curl
+      gitFull
+      gnupg
+    ]
+    ++ (with ocamlPackages; [
+      # Dev tools
+      ocaml-lsp
+      merlin
+      ocp-indent
+      ocp-index
+      utop
+      ocamlformat
+      ])
+    ++ [
+      # Useful for STM debugging
+      graphviz
+    ]
   );
 
   # OCaml and findlib are needed so that native_compute works
@@ -86,9 +109,6 @@ stdenv.mkDerivation rec {
 
   prefixKey = "-prefix ";
 
-  # Note that Coq's Makefile.dune will force sequential setup, more
-  # fine control can be gained by Nix by using dune directly on
-  # coq-core and coq-stdlib.
   enableParallelBuilding = true;
 
   buildFlags = [ "world" ];
