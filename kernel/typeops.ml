@@ -194,12 +194,13 @@ let type_of_apply env func funt argsv argstv =
       let () = assert (check_empty_stack stk) in
       match fterm_of typ with
       | FProd (_, c1, c2, e) ->
-        let arg = argsv.(i) in
         let argt = argstv.(i) in
-        begin match conv_leq_fconstr env argt c1 with (* << checks that the type of the argument is compatible with the type of the binder *)
-        | () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
+        begin match conv_leq_fconstr env argt c1 with
+        | () ->
+          let arg = argsv.(i) in
+          apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
         | exception NotConvertible ->
-          let c1 = term_of_fconstr c1 in
+          let c1 = term_of_fconstr c1 in (* << this was already done inside [conv_leq_fconstr] *)
           error_cant_apply_bad_type env
             (i+1,c1,argt)
             (make_judge func funt)
