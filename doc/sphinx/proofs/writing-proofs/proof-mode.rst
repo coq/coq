@@ -67,7 +67,8 @@ local context:
 
 After applying the :tacn:`intros` :term:`tactic`, we see hypotheses above the line.
 The names of variables (`n` and `m`) and hypotheses (`H`) appear before a colon, followed by
-the type they represent.
+their type.  The type doesn't have to be a provable statement.
+For example, `0 = 1` and `False` are both valid and useful types.
 
 .. coqtop:: all
 

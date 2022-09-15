@@ -923,7 +923,6 @@ command: [
 | "Print" "Namespace" dirpath
 | "Inspect" natural
 | "Add" "ML" "Path" string
-| OPT "Export" "Set" setting_name
 | "Print" "Table" setting_name
 | "Add" setting_name LIST1 [ qualid | string ]
 | "Test" setting_name OPT ( "for" LIST1 [ qualid | string ] )
@@ -1687,7 +1686,7 @@ simple_tactic: [
 | "decompose" "sum" one_term
 | "decompose" "record" one_term
 | "absurd" one_type
-| "contradiction"
+| "contradiction" OPT one_term_with_bindings
 | "autorewrite" OPT "*" "with" LIST1 ident OPT occurrences OPT ( "using" ltac_expr )
 | "rewrite" "*" OPT [ "->" | "<-" ] one_term OPT ( "in" ident ) OPT ( "at" rewrite_occs ) OPT ( "by" ltac_expr3 )
 | "rewrite" "*" OPT [ "->" | "<-" ] one_term "at" rewrite_occs "in" ident OPT ( "by" ltac_expr3 )
