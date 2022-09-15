@@ -44,23 +44,25 @@ let global_head_of_constr sigma c =
     try fst (EConstr.destRef sigma f)
     with DestKO -> CErrors.anomaly (str "global_head_of_constr.")
 
-let global_of_constr_nofail c =
-  try fst @@ Constr.destRef c
+let global_of_constr_nofail sigma c =
+  try fst @@ EConstr.destRef sigma c
   with DestKO -> GlobRef.VarRef (Id.of_string "dummy")
 
-let rec mk_clos_but f_map n t =
-  let (f, args) = Constr.decompose_appvect t in
-  match f_map (global_of_constr_nofail f) with
+let mk_atom c = CClosure.mk_atom (EConstr.Unsafe.to_constr c)
+
+let rec mk_clos_but sigma f_map n t =
+  let (f, args) = Termops.decompose_app_vect sigma t in
+  match f_map (global_of_constr_nofail sigma f) with
   | Some tag ->
-      let map i t = tag_arg f_map n (tag i) t in
+      let map i t = tag_arg sigma f_map n (tag i) t in
       if Array.is_empty args then map (-1) f
       else mk_red (FApp (map (-1) f, Array.mapi map args))
   | None -> mk_atom t
 
-and tag_arg f_map n tag c = match tag with
-| Eval -> mk_clos (Esubst.subs_id n, Univ.Instance.empty) c
+and tag_arg sigma f_map n tag c = match tag with
+| Eval -> mk_clos (Esubst.subs_id n, Univ.Instance.empty) (EConstr.Unsafe.to_constr c)
 | Prot -> mk_atom c
-| Rec -> mk_clos_but f_map n c
+| Rec -> mk_clos_but sigma f_map n c
 
 let interp_map l t =
   try Some(List.assoc_f GlobRef.equal t l) with Not_found -> None
@@ -72,16 +74,15 @@ let lookup_map map =
   with Not_found ->
     CErrors.user_err (str "Map " ++ qs map ++ str "not found.")
 
-let protect_red map env sigma c0 =
-  let c = EConstr.Unsafe.to_constr c0 in
+let protect_red map env sigma c =
   let tab = create_tab () in
   let infos = Evarutil.create_clos_infos env sigma all in
-  let map = lookup_map map sigma c0 in
-  let rec eval n c = match Constr.kind c with
-  | Prod (na, t, u) -> Constr.mkProd (na, eval n t, eval (n + 1) u)
-  | _ -> kl infos tab (mk_clos_but map n c)
+  let map = lookup_map map sigma c in
+  let rec eval n c = match EConstr.kind sigma c with
+  | Prod (na, t, u) -> EConstr.mkProd (na, eval n t, eval (n + 1) u)
+  | _ -> EConstr.of_constr @@ kl infos tab (mk_clos_but sigma map n c)
   in
-  EConstr.of_constr (eval 0 c)
+  eval 0 c
 
 let protect_tac map =
   Tactics.reduct_option ~check:false (protect_red map,DEFAULTcast) None
@@ -514,8 +515,7 @@ let make_hyp_list env sigma lH =
         (plapp sigma coq_nil [|carrier|])
   in
   let sigma, l' = Typing.solve_evars env sigma l in
-  let l' = EConstr.Unsafe.to_constr l' in
-  sigma, Evarutil.nf_evars_universes sigma l'
+  sigma, l'
 
 let interp_power env sigma pow =
   let sigma, carrier = Evd.fresh_global env sigma (Lazy.force coq_hypo) in
@@ -683,7 +683,7 @@ let ring_lookup (f : Value.t) lH rl t =
     let sigma, l = make_term_list env sigma (EConstr.of_constr e.ring_carrier) rl in
     let rl = Value.of_constr l in
     let sigma, l = make_hyp_list env sigma lH in
-    let lH = carg l in
+    let lH = Value.of_constr l in
     let ring = ltac_ring_structure e in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Value.apply f (ring@[lH;rl]))
   end
@@ -975,7 +975,7 @@ let field_lookup (f : Value.t) lH rl t =
     let sigma, c = make_term_list env sigma (EConstr.of_constr e.field_carrier) rl in
     let rl = Value.of_constr c in
     let sigma, l = make_hyp_list env sigma lH in
-    let lH = carg l in
+    let lH = Value.of_constr l in
     let field = ltac_field_structure e in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Value.apply f (field@[lH;rl]))
   end
