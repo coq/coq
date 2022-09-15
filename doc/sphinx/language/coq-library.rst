@@ -942,9 +942,6 @@ tactics (see Chapter :ref:`tactics`), there are also:
     Goal forall x y z:R, x * y * z <> 0.
     intros; split_Rmult.
 
-These tactics has been written with the tactic language |Ltac|
-described in Chapter :ref:`ltac`.
-
 List library
 ~~~~~~~~~~~~
 

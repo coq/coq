@@ -82,8 +82,9 @@ tactic to specific goals.  The local context is only shown for the first goal.
 
    split.
 
-"Variables" may refer specifically to local context items for which the type of their type
-is `Set` or `Type`, and :gdef:`"hypotheses" <hypothesis>` refers to items that are
+:gdef:`"Variables" <variable>` may refer specifically to local context items introduced
+from :n:`forall` variables for which the type of their type
+is `Set` or `Type`. :gdef:`"Hypotheses" <hypothesis>` refers to items that are
 :term:`propositions <proposition>`,
 for which the type of their type is `Prop` or `SProp`,
 but these terms are also used interchangeably.
@@ -1213,6 +1214,8 @@ Delaying solving unification constraints
    problems are resolved using heuristics. Unsetting this :term:`flag` disables this
    behavior, allowing tactics to leave unification constraints unsolved. Use the
    :tacn:`solve_constraints` tactic at any point to solve the constraints.
+
+.. _proof-maintenance:
 
 Proof maintenance
 -----------------

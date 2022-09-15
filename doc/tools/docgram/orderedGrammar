@@ -299,8 +299,8 @@ ssr_one_term_pattern: [
 where: [
 | "at" "top"
 | "at" "bottom"
-| "after" ident
 | "before" ident
+| "after" ident
 ]
 
 add_zify: [
@@ -1608,7 +1608,7 @@ simple_tactic: [
 | "eright" OPT ( "with" bindings )
 | "constructor" OPT nat_or_var OPT ( "with" bindings )
 | "econstructor" OPT ( nat_or_var OPT ( "with" bindings ) )
-| "specialize" one_term OPT ( "with" bindings ) OPT ( "as" simple_intropattern )
+| "specialize" one_term_with_bindings OPT ( "as" simple_intropattern )
 | "symmetry" OPT simple_occurrences
 | "split" OPT ( "with" bindings )
 | "esplit" OPT ( "with" bindings )
@@ -1616,17 +1616,14 @@ simple_tactic: [
 | "eexists" LIST0 bindings SEP ","
 | "intros" "until" [ ident | natural ]
 | "intro" OPT ident OPT where
-| "move" ident OPT where
+| "move" ident where
 | "rename" LIST1 ( ident "into" ident ) SEP ","
 | "revert" LIST1 ident
 | "simple" "induction" [ ident | natural ]
 | "simple" "destruct" [ ident | natural ]
 | "admit"
-| "clear" LIST0 ident
-| "clear" "-" LIST1 ident
+| "clear" [ OPT ( OPT "-" LIST1 ident ) | natural ]
 | "clearbody" LIST1 ident
-| "generalize" "dependent" one_term
-| "replace" one_term "with" one_term OPT occurrences OPT ( "by" ltac_expr3 )
 | "simplify_eq" OPT induction_arg
 | "esimplify_eq" OPT induction_arg
 | "discriminate" OPT induction_arg
@@ -1680,22 +1677,18 @@ simple_tactic: [
 | "decompose" "sum" one_term
 | "decompose" "record" one_term
 | "absurd" one_term
-| "contradiction" OPT ( one_term OPT ( "with" bindings ) )
+| "contradiction" OPT one_term_with_bindings
 | "autorewrite" OPT "*" "with" LIST1 ident OPT occurrences OPT ( "using" ltac_expr )
 | "rewrite" "*" OPT [ "->" | "<-" ] one_term OPT ( "in" ident ) OPT ( "at" rewrite_occs ) OPT ( "by" ltac_expr3 )
 | "rewrite" "*" OPT [ "->" | "<-" ] one_term "at" rewrite_occs "in" ident OPT ( "by" ltac_expr3 )
-| "refine" one_term
-| "simple" "refine" one_term
-| "notypeclasses" "refine" one_term
-| "simple" "notypeclasses" "refine" one_term
+| OPT "simple" OPT "notypeclasses" "refine" one_term
 | "solve_constraints"
 | "subst" LIST0 ident
 | "simple" "subst"
 | "evar" "(" ident ":" term ")"
 | "evar" one_term
-| "instantiate" "(" ident ":=" term ")"
+| "instantiate" OPT ( "(" ident ":=" term ")" )
 | "instantiate" "(" integer ":=" term ")" OPT hloc
-| "instantiate"
 | "stepl" one_term OPT ( "by" ltac_expr )
 | "stepr" one_term OPT ( "by" ltac_expr )
 | "generalize_eqs" ident
@@ -1760,9 +1753,9 @@ simple_tactic: [
 | "progress_evars" ltac_expr
 | "rewrite_strat" rewstrategy OPT ( "in" ident )
 | "rewrite_db" ident OPT ( "in" ident )
-| "substitute" OPT [ "->" | "<-" ] one_term OPT ( "with" bindings )
-| "setoid_rewrite" OPT [ "->" | "<-" ] one_term OPT ( "with" bindings ) OPT ( "at" rewrite_occs ) OPT ( "in" ident )
-| "setoid_rewrite" OPT [ "->" | "<-" ] one_term OPT ( "with" bindings ) "in" ident "at" rewrite_occs
+| "substitute" OPT [ "->" | "<-" ] one_term_with_bindings
+| "setoid_rewrite" OPT [ "->" | "<-" ] one_term_with_bindings OPT ( "at" rewrite_occs ) OPT ( "in" ident )
+| "setoid_rewrite" OPT [ "->" | "<-" ] one_term_with_bindings "in" ident "at" rewrite_occs
 | "setoid_symmetry" OPT ( "in" ident )
 | "setoid_reflexivity"
 | "setoid_transitivity" one_term
@@ -1771,12 +1764,12 @@ simple_tactic: [
 | "eintros" LIST0 intropattern
 | "decide" "equality"
 | "compare" one_term one_term
-| "apply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
-| "eapply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
-| "simple" "apply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
-| "simple" "eapply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
-| "elim" one_term_with_bindings OPT ( "using" one_term OPT ( "with" bindings ) )
-| "eelim" one_term_with_bindings OPT ( "using" one_term OPT ( "with" bindings ) )
+| "apply" LIST1 ( OPT ">" one_term_with_bindings ) SEP "," OPT in_hyp_as
+| "eapply" LIST1 ( OPT ">" one_term_with_bindings ) SEP "," OPT in_hyp_as
+| "simple" "apply" LIST1 ( OPT ">" one_term_with_bindings ) SEP "," OPT in_hyp_as
+| "simple" "eapply" LIST1 ( OPT ">" one_term_with_bindings ) SEP "," OPT in_hyp_as
+| "elim" OPT ">" one_term_with_bindings OPT ( "using" one_term_with_bindings )
+| "eelim" OPT ">" one_term_with_bindings OPT ( "using" one_term_with_bindings )
 | "case" LIST1 induction_clause SEP "," OPT induction_principle
 | "ecase" LIST1 induction_clause SEP "," OPT induction_principle
 | "fix" ident natural OPT ( "with" LIST1 ( "(" ident LIST0 simple_binder OPT ( "{" "struct" name "}" ) ":" type ")" ) )
@@ -1785,26 +1778,26 @@ simple_tactic: [
 | "pose" one_term OPT as_name
 | "epose" bindings_with_parameters
 | "epose" one_term OPT as_name
+| "pose" "proof" "(" ident ":=" term ")"
+| "pose" "proof" term OPT as_ipat
+| "epose" "proof" "(" ident ":=" term ")"
+| "epose" "proof" term OPT as_ipat
 | "set" bindings_with_parameters OPT occurrences
 | "set" one_term OPT as_name OPT occurrences
 | "eset" bindings_with_parameters OPT occurrences
 | "eset" one_term OPT as_name OPT occurrences
 | "remember" one_term OPT as_name OPT ( "eqn" ":" naming_intropattern ) OPT ( "in" goal_occurrences )
 | "eremember" one_term OPT as_name OPT ( "eqn" ":" naming_intropattern ) OPT ( "in" goal_occurrences )
-| "assert" "(" ident ":=" term ")"
-| "eassert" "(" ident ":=" term ")"
 | "assert" "(" ident ":" term ")" OPT ( "by" ltac_expr3 )
+| "assert" one_term OPT as_ipat OPT ( "by" ltac_expr3 )
 | "eassert" "(" ident ":" term ")" OPT ( "by" ltac_expr3 )
+| "eassert" one_term OPT as_ipat OPT ( "by" ltac_expr3 )
 | "enough" "(" ident ":" term ")" OPT ( "by" ltac_expr3 )
 | "eenough" "(" ident ":" term ")" OPT ( "by" ltac_expr3 )
-| "assert" one_term OPT as_ipat OPT ( "by" ltac_expr3 )
-| "eassert" one_term OPT as_ipat OPT ( "by" ltac_expr3 )
-| "pose" "proof" "(" ident ":=" term ")"
-| "epose" "proof" "(" ident ":=" term ")"
-| "pose" "proof" term OPT as_ipat
-| "epose" "proof" term OPT as_ipat
 | "enough" one_term OPT as_ipat OPT ( "by" ltac_expr3 )
 | "eenough" one_term OPT as_ipat OPT ( "by" ltac_expr3 )
+| "generalize" "dependent" one_term
+| "replace" one_term "with" one_term OPT occurrences OPT ( "by" ltac_expr3 )
 | "generalize" one_term OPT ( LIST1 one_term )
 | "generalize" one_term OPT ( "at" occs_nums ) OPT as_name LIST0 [ "," pattern_occs OPT as_name ]
 | "induction" LIST1 induction_clause SEP "," OPT induction_principle
@@ -1839,8 +1832,8 @@ simple_tactic: [
 | "firstorder" OPT ltac_expr OPT ( "using" LIST1 qualid SEP "," ) OPT ( "with" LIST1 ident )
 | "gintuition" OPT ltac_expr
 | "functional" "inversion" [ ident | natural ] OPT qualid      (* funind plugin *)
-| "functional" "induction" term OPT ( "using" one_term OPT ( "with" bindings ) ) OPT ( "as" simple_intropattern )      (* funind plugin *)
-| "soft" "functional" "induction" LIST1 one_term OPT ( "using" one_term OPT ( "with" bindings ) ) OPT ( "as" simple_intropattern )      (* funind plugin *)
+| "functional" "induction" term OPT ( "using" one_term_with_bindings ) OPT ( "as" simple_intropattern )      (* funind plugin *)
+| "soft" "functional" "induction" LIST1 one_term OPT ( "using" one_term_with_bindings ) OPT ( "as" simple_intropattern )      (* funind plugin *)
 | "xlra_Q" ltac_expr      (* micromega plugin *)
 | "wlra_Q" ident one_term      (* micromega plugin *)
 | "xlra_R" ltac_expr      (* micromega plugin *)
@@ -1873,7 +1866,6 @@ simple_tactic: [
 | "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
 | "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* ring plugin *)
 | "by" ssrhintarg      (* SSR plugin *)
-| "clear" natural      (* SSR plugin *)
 | "move" OPT ( OPT ssrarg [ "->" | "<-" ] )      (* SSR plugin *)
 | "move" ssrarg OPT ssr_in      (* SSR plugin *)
 | "case" OPT ( ssrarg OPT ssr_in )      (* SSR plugin *)
@@ -1923,6 +1915,7 @@ simple_tactic: [
 | "now_show" one_term
 | "nra"
 | "over"      (* SSR plugin *)
+| "rapply" one_term
 | "split_Rabs"
 | "split_Rmult"
 | "tauto"
@@ -1940,6 +1933,7 @@ simple_tactic: [
 | "now" ltac_expr
 | "nsatz" OPT ( "with" "radicalmax" ":=" one_term "strategy" ":=" one_term "parameters" ":=" one_term "variables" ":=" one_term )
 | "psatz" one_term OPT nat_or_var
+| "revert" "dependent" ident
 | "ring" OPT ( "[" LIST1 one_term "]" )
 | "ring_simplify" OPT ( "[" LIST1 one_term "]" ) LIST1 one_term OPT ( "in" ident )
 | "match" ltac2_expr5 "with" OPT ltac2_branches "end"
@@ -1954,6 +1948,10 @@ hloc: [
 | "in" "(" "value" "of" ident ")"
 ]
 
+in_hyp_as: [
+| "in" LIST1 [ ident OPT as_ipat ] SEP ","
+]
+
 as_ipat: [
 | "as" simple_intropattern
 ]
@@ -1963,11 +1961,7 @@ as_name: [
 ]
 
 oriented_rewriter: [
-| OPT [ "->" | "<-" ] OPT natural OPT [ "?" | "!" ] one_term_with_bindings
-]
-
-one_term_with_bindings: [
-| OPT ">" one_term OPT ( "with" bindings )
+| OPT [ "->" | "<-" ] OPT natural OPT [ "?" | "!" ] OPT ">" one_term_with_bindings
 ]
 
 induction_clause: [
@@ -1975,12 +1969,12 @@ induction_clause: [
 ]
 
 induction_arg: [
-| one_term_with_bindings
+| OPT ">" one_term_with_bindings
 | natural
 ]
 
 induction_principle: [
-| "using" one_term OPT ( "with" bindings ) OPT occurrences
+| "using" one_term_with_bindings OPT occurrences
 ]
 
 auto_using: [
@@ -2027,9 +2021,13 @@ equality_intropattern: [
 | "[=" LIST0 intropattern "]"
 ]
 
+one_term_with_bindings: [
+| one_term OPT ( "with" bindings )
+]
+
 bindings: [
-| LIST1 ( "(" [ ident | natural ] ":=" term ")" )
 | LIST1 one_term
+| LIST1 ( "(" [ ident | natural ] ":=" term ")" )
 ]
 
 int_or_var: [
@@ -2046,6 +2044,11 @@ comparison: [
 
 bindings_with_parameters: [
 | "(" ident LIST0 simple_binder ":=" term ")"
+]
+
+simple_binder: [
+| name
+| "(" LIST1 name ":" term ")"
 ]
 
 q_clause: [
@@ -2423,15 +2426,6 @@ tac2mode: [
 | "SearchPattern" one_pattern OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
 | "SearchRewrite" one_pattern OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
 | "Search" LIST1 ( search_query ) OPT ( [ "inside" | "in" | "outside" ] LIST1 qualid )
-]
-
-in_hyp_as: [
-| "in" LIST1 [ ident OPT as_ipat ] SEP ","
-]
-
-simple_binder: [
-| name
-| "(" LIST1 name ":" term ")"
 ]
 
 func_scheme_def: [

@@ -827,7 +827,7 @@ to build incomplete proofs beginning with a :g:`match` construction.
 Pattern-matching on inductive objects involving local definitions
 -----------------------------------------------------------------
 
-If local definitions occur in the type of a constructor, then there
+If local definitions (`let :=`) occur in the type of a constructor, then there
 are two ways to match on this constructor. Either the local
 definitions are skipped and matching is done only on the true
 arguments of the constructors, or the bindings for local definitions

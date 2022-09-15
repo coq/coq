@@ -1373,7 +1373,7 @@ Tactics
 - Equality tactics (Rewrite, Reflexivity, Symmetry, Transitivity) now
   understand JM equality
 - Simpl and Change now apply to subterms also
-- "Simpl f" reduces subterms whose head constant is f
+- "Simpl f" reduces subterms whose :term:`head constant` is f
 - Double Induction now referring to hypotheses like "Intros until"
 - "Inversion" now applies also on quantified hypotheses (naming as
   for Intros until)

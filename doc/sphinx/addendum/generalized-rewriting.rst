@@ -569,8 +569,8 @@ pass additional arguments such as ``using relation``.
           setoid_symmetry {? in @ident }
           setoid_transitivity @one_term
           setoid_etransitivity
-          setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } {? at @rewrite_occs } {? in @ident }
-          setoid_rewrite {? {| -> | <- } } @one_term {? with @bindings } in @ident at @rewrite_occs
+          setoid_rewrite {? {| -> | <- } } @one_term_with_bindings {? at @rewrite_occs } {? in @ident }
+          setoid_rewrite {? {| -> | <- } } @one_term_with_bindings in @ident at @rewrite_occs
           setoid_replace @one_term with @one_term {? using relation @one_term } {? in @ident } {? at {+ @int_or_var } } {? by @ltac_expr3 }
    :name: setoid_reflexivity; setoid_symmetry; setoid_transitivity; setoid_etransitivity; setoid_rewrite; _; setoid_replace
 

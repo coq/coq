@@ -99,11 +99,10 @@ Rewriting with Leibniz and setoid equality
 
 .. tacn:: rewrite {+, @oriented_rewriter } {? @occurrences } {? by @ltac_expr3 }
 
-   .. insertprodn oriented_rewriter one_term_with_bindings
+   .. insertprodn oriented_rewriter oriented_rewriter
 
    .. prodn::
-      oriented_rewriter ::= {? {| -> | <- } } {? @natural } {? {| ? | ! } } @one_term_with_bindings
-      one_term_with_bindings ::= {? > } @one_term {? with @bindings }
+      oriented_rewriter ::= {? {| -> | <- } } {? @natural } {? {| ? | ! } } {? > } @one_term_with_bindings
 
    Replaces subterms with other subterms that have been proven to be equal.
    The type of :n:`@one_term` must have the form:
@@ -270,7 +269,7 @@ Rewriting with Leibniz and setoid equality
 
          Use :tacn:`replace` instead.
 
-.. tacn:: substitute {? {| -> | <- } } @one_term {? with @bindings }
+.. tacn:: substitute {? {| -> | <- } } @one_term_with_bindings
    :undocumented:
 
 .. tacn:: subst {* @ident }
@@ -282,8 +281,8 @@ Rewriting with Leibniz and setoid equality
    the first one is used.  If no :n:`@ident` is given, replacement is done for all
    hypotheses in the appropriate form in top to bottom order.
 
-   If :n:`@ident` is a local definition of the form :n:`@ident := @term`, it is also
-   unfolded and cleared.
+   If :n:`@ident` is a :term:`local definition <context-local definition>` of the form
+   :n:`@ident := @term`, it is also unfolded and cleared.
 
    If :n:`@ident` is a section variable it must have no
    indirect occurrences in the goal, i.e. no global declarations
@@ -311,8 +310,9 @@ Rewriting with Leibniz and setoid equality
         and :n:`@ident__2 = g @ident__1` which without the
         flag would be a cause of failure of :tacn:`subst`.
 
-      Additionally, it prevents a local definition such as :n:`@ident := t` from being
-      unfolded which otherwise it would exceptionally unfold in configurations
+      Additionally, it prevents a :term:`local definition <context-local definition>`
+      such as :n:`@ident := t` from being
+      unfolded which otherwise would exceptionally unfold in configurations
       containing hypotheses of the form :n:`@ident = u`, or :n:`u′ = @ident`
       with `u′` not a variable. Finally, it preserves the initial order of
       hypotheses, which without the flag it may break.
@@ -567,7 +567,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
       A variant form of :tacn:`cbv`.
 
-   :opt:`Debug` ``"Cbv"`` makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
+   Setting :opt:`Debug` ``"Cbv"`` makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
    information about the constants it encounters and the unfolding decisions it
    makes.
 
@@ -619,7 +619,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    :tacn:`cbn` may unfold constants even when they cannot be reused in recursive calls:
    in the previous example, :g:`succ t` is reduced to :g:`S t`.
 
-   :opt:`Debug` ``"RAKAM"`` makes :tacn:`cbn` print various debugging information.
+   Setting :opt:`Debug` ``"RAKAM"`` makes :tacn:`cbn` print various debugging information.
    ``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
 
 .. tacn:: hnf @simple_occurrences
@@ -640,17 +640,20 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
 .. tacn:: red @simple_occurrences
 
-   βιζ-reduces the constant at the head of `T` (which may be called
-   the :gdef:`head constant`; :gdef:`head` means the beginning
-   of the term), if possible,
-   in the selected hypotheses and/or the goal, which must have the form:
+   βιζ-reduces the :term:`head constant` of `T`, if possible, in the selected
+   hypotheses and/or the goal which have the form:
 
-     :n:`{? forall @open_binders,} T`
+     :n:`{? forall @open_binders , } T`
 
    (where `T` does not begin with a `forall`) to :n:`c t__1 … t__n`
    where :g:`c` is a constant.
    If :g:`c` is transparent then it replaces :g:`c` with its
    definition and reduces again until no further reduction is possible.
+
+   In the term :n:`{? forall @open_binders , } t__1 ... t__n`, where :n:`t__1` is not a
+   :n:`term_application`, :n:`t__1` is the :gdef:`head` of the term.
+   In a term with the form :n:`{? forall @open_binders , } c t__1 ... t__n`, where
+   :n:`c` is a :term:`constant`, :n:`c` is the :gdef:`head constant`.
 
    .. exn:: No head constant to reduce.
       :undocumented:
@@ -665,8 +668,8 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
    :n:`@reference_occs`
      If :n:`@reference` is a :n:`@qualid`, it must be a defined transparent
-     constant or local definition (see :ref:`gallina-definitions` and
-     :ref:`controlling-the-reduction-strategies`).
+     constant or :term:`local definition <context-local definition>`
+     (see :ref:`gallina-definitions` and :ref:`controlling-the-reduction-strategies`).
 
      If :n:`@reference` is a :n:`@string {? @scope_key}`, the :n:`@string` is
      the discriminating
@@ -783,6 +786,8 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
    This tactic can be used, for instance, when the tactic :tacn:`apply` fails
    on matching or to better control the behavior of :tacn:`rewrite`.
+
+   See the example :ref:`here <example_apply_pattern>`.
 
 Fast reduction tactics: vm_compute and native_compute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -988,7 +993,7 @@ which supports additional fine-tuning.
    constants, both at the tactic level and at the kernel level. This
    command associates a :n:`@strategy_level` with the qualified names in the :n:`@reference`
    sequence. Whenever two
-   expressions with two distinct head constants are compared (for
+   expressions with two distinct :term:`head constants <head constant>` are compared (for
    example, typechecking `f x` where `f : A -> B` and `x : C` will result in
    converting `A` and `C`), the one
    with lower level is expanded first. In case of a tie, the second one

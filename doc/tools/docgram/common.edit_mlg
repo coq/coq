@@ -979,6 +979,8 @@ simple_occurrences: [
 ]
 
 simple_tactic: [
+| DELETE "assert" "(" identref ":=" lconstr ")"
+| DELETE "eassert" "(" identref ":=" lconstr ")"
 | DELETE "autorewrite" "with" LIST1 preident clause
 | DELETE "autorewrite" "with" LIST1 preident clause "using" tactic
 | DELETE "autorewrite" "*" "with" LIST1 preident clause
@@ -1002,6 +1004,10 @@ simple_tactic: [
 | WITH "cbn" strategy_flag simple_occurrences
 | REPLACE "fold" LIST1 constr clause_dft_concl
 | WITH "fold" LIST1 constr simple_occurrences
+| DELETE "clear" LIST0 hyp
+| DELETE "clear" natural
+| REPLACE "clear" "-" LIST1 hyp
+| WITH "clear" [ OPT ( OPT "-" LIST1 hyp ) | natural ]
 | DELETE "cofix" ident
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
@@ -1045,6 +1051,9 @@ simple_tactic: [
 | REPLACE "einjection" destruction_arg "as" LIST0 simple_intropattern
 | WITH "einjection" OPT destruction_arg OPT ( "as" LIST0 simple_intropattern )
 | EDIT "simple" "injection" ADD_OPT destruction_arg
+| REPLACE "instantiate" "(" ident ":=" lglob ")"
+| WITH "instantiate" OPT ( "(" ident ":=" lglob ")" )
+| DELETE "instantiate"
 | DELETE "intro"  (* todo: change the mlg to simplify! *)
 | DELETE "intro" ident
 | DELETE "intro" ident "at" "top"
@@ -1066,7 +1075,12 @@ simple_tactic: [
 | DELETE "move" hyp "at" "bottom"
 | DELETE "move" hyp "after" hyp
 | DELETE "move" hyp "before" hyp
-| "move" ident OPT where
+| "move" ident where
+| REPLACE "refine" uconstr
+| WITH OPT "simple" OPT "notypeclasses" "refine" uconstr
+| DELETE "simple" "refine" uconstr
+| DELETE "notypeclasses" "refine" uconstr
+| DELETE "simple" "notypeclasses" "refine" uconstr
 | DELETE "replace" "->" uconstr clause
 | DELETE "replace" "<-" uconstr clause
 | DELETE "replace" uconstr clause
@@ -1854,6 +1868,7 @@ document: [
 (* add in ltac and Tactic Notation tactics that appear in the doc: *)
 ltac_defined_tactics: [
 | "case_eq" constr
+(* | "case_eq" induction_clause_list ??? *)
 | "classical_left"
 | "classical_right"
 | "contradict" ident
@@ -1867,6 +1882,7 @@ ltac_defined_tactics: [
 | "now_show" constr
 | "nra"
 | "over"  TAG SSR
+| "rapply" constr
 | "split_Rabs"
 | "split_Rmult"
 | "tauto"
@@ -1890,6 +1906,7 @@ tactic_notation_tactics: [
 | "now" ltac_expr5
 | "nsatz" OPT ( "with" "radicalmax" ":=" constr "strategy" ":=" constr "parameters" ":=" constr "variables" ":=" constr )
 | "psatz" constr OPT nat_or_var
+| "revert" "dependent" hyp
 | "ring" OPT ( "[" LIST1 constr "]" )
 | "ring_simplify" OPT ( "[" LIST1 constr "]" ) LIST1 constr OPT ( "in" ident )  (* todo: ident was "hyp", worth keeping? *)
 ]
@@ -2756,7 +2773,6 @@ SPLICE: [
 | fun_ind_using
 | with_names
 | eauto_search_strategy_name
-| constr_with_bindings
 | simple_binding
 | ssexpr35 (* strange in mlg, ssexpr50 is after this *)
 | number_string_mapping
@@ -2787,6 +2803,7 @@ SPLICE: [
 | induction_clause_list
 | as_or_and_ipat
 | singleton_class_definition
+| constr_with_bindings_arg
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2844,7 +2861,7 @@ RENAME: [
 | pattern_occ pattern_occs
 | hypident_occ hyp_occs
 | concl_occ concl_occs
-| constr_with_bindings_arg one_term_with_bindings
+| constr_with_bindings one_term_with_bindings
 | red_flag reduction
 | strategy_flag reductions
 | delta_flag delta_reductions

@@ -244,7 +244,7 @@ Tactics
 
 - **Changed:**
   The ``RewriteRelation`` type class is now used to declare relations
-  inferrable by the :tacn:`setoid_rewrite` tactic to construct
+  inferable by the :tacn:`setoid_rewrite` tactic to construct
   ``Proper`` instances. This can break developments that relied on
   existing ``Reflexive`` instances to infer relations. The fix is
   to simply add a (backwards compatible) ``RewriteRelation`` declaration
@@ -2836,7 +2836,8 @@ Tactics
 
 - **Changed:**
   In :tacn:`refine`, new existential variables unified with existing ones are no
-  longer considered as fresh. The behavior of :tacn:`simple refine` no longer depends on
+  longer considered as fresh. The behavior of :tacn:`simple refine <refine>` no
+  longer depends on
   the orientation of evar-evar unification problems, and new existential variables
   are always turned into (unshelved) goals. This can break compatibility in
   some cases (`#7825 <https://github.com/coq/coq/pull/7825>`_, by Matthieu
@@ -2880,7 +2881,7 @@ Tactics
   (As `lia` gets more powerful, this may break proof scripts relying on `lia` failure.)
   (`#11906 <https://github.com/coq/coq/pull/11906>`_,  by Frédéric Besson).
 - **Added:**
-  :tacn:`apply … in` supports several hypotheses
+  :tacn:`apply … in <apply>` supports several hypotheses
   (`#12246 <https://github.com/coq/coq/pull/12246>`_,
   by Hugo Herbelin; grants
   `#9816 <https://github.com/coq/coq/pull/9816>`_).
