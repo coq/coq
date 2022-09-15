@@ -139,7 +139,7 @@ before_script:
   script:
     - ulimit -s 16384
     - tar xfj _build.tar.bz2
-    - make -f Makefile.dune --display=short "$DUNE_TARGET"
+    - make DUNEOPT="--display=short" "$DUNE_TARGET"
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
