@@ -36,7 +36,7 @@ while IFS= read -r commit; do
     then bad_ws+=("$commit")
     fi
 
-    if ! make -f Makefile.dune check
+    if ! make check
     then bad_compile+=("$commit")
     fi
 done < <(git rev-list "$HEAD_COMMIT" --not "$BASE_COMMIT" --)

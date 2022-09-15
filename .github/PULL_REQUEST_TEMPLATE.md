@@ -16,7 +16,7 @@ Fixes / closes #????
 - [ ] Added / updated **documentation**.
   <!-- Check if the following applies, otherwise remove these lines. -->
   - [ ] Documented any new / changed **user messages**.
-  - [ ] Updated **documented syntax** by running `make -f Makefile.dune doc_gram_rsts`.
+  - [ ] Updated **documented syntax** by running `make doc_gram_rsts`.
 
 <!-- If this breaks external libraries or plugins in CI: -->
 - [ ] Opened **overlay** pull requests.

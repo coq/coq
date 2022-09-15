@@ -21,7 +21,7 @@ the one used in the Coq repository), e.g.:
 
 - You will get faster rebuilds if you enable Dune caching. This is
   true in all cases, but even more so when using the targets in
-  `Makefile.dune` (see below).
+  `Makefile` (see below).
 
   To set up Dune caching, you should append the following line to your
   Dune configuration file:
@@ -44,10 +44,9 @@ the one used in the Coq repository), e.g.:
 
 ## Building `coqtop` / `coqc` binaries
 
-We recommend that you use the targets in `Makefile.dune`.  See
-[`build-system.dune.md`](build-system.dune.md) to learn more about
-them. `Makefile` is just an alias for `Makefile.dune` so you can just
-call `make` directly.
+We recommend that you use the targets in the `Makefile`. Calling `make` will
+show the available targets. See [`build-system.dune.md`](build-system.dune.md)
+to learn more about them.
 
 ```
 $ git clone https://github.com/coq/coq.git

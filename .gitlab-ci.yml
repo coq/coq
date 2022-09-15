@@ -113,7 +113,7 @@ before_script:
     # See also https://github.com/ocaml/ocaml/issues/7842#issuecomment-596863244
     # and https://github.com/coq/coq/pull/11916#issuecomment-609977375
     - ulimit -s 16384
-    - make -f Makefile.dune $DUNE_TARGET
+    - make $DUNE_TARGET
     - find _build -name '*.vio' -exec rm -f {} \;
     - tar cfj _build.tar.bz2 _build
   variables:
@@ -139,7 +139,7 @@ before_script:
   script:
     - ulimit -s 16384
     - tar xfj _build.tar.bz2
-    - make -f Makefile.dune "$DUNE_TARGET"
+    - make "$DUNE_TARGET"
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
@@ -512,7 +512,7 @@ test-suite:edge:dev:
     - build:edge+flambda:dev
   script:
     - tar xfj _build.tar.bz2
-    - make -f Makefile.dune test-suite
+    - make test-suite
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
@@ -539,7 +539,7 @@ test-suite:edge:dev:
     - opam install dune zarith
     - eval $(opam env)
     - export COQ_UNIT_TEST=noop
-    - make -f Makefile.dune test-suite
+    - make test-suite
   variables:
     OPAM_SWITCH: base
   artifacts:

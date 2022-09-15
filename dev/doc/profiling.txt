@@ -34,7 +34,7 @@ second for the standard library ([example output](https://cdn.rawgit.com/andres-
 #!/usr/bin/env bash
 make clean
 make states
-perf record -F99  `# ~1GB of data` --call-graph=dwarf -- make -f Makefile.dune world
+perf record -F99  `# ~1GB of data` --call-graph=dwarf -- make world
 perf script --time '0%-100%'  |
         stackcollapse-perf.pl |
         grep Coqtop__compile |
