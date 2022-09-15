@@ -73,7 +73,8 @@ Section :ref:`let-in`).
 The expression :n:`forall @ident : @type__1, @type__2` denotes the
 :gdef:`product type <product>` (or *product*) of the variable :n:`@ident` of
 type :n:`@type__1` over the type :n:`@type__2`.  If :n:`@ident` is used in
-:n:`@type__2`, then we say the expression is a :gdef:`dependent product`.
+:n:`@type__2`, then we say the expression is a :gdef:`dependent product`,
+and otherwise a :gdef:`non-dependent product`.
 
 The intention behind a dependent product
 :g:`forall x : A, B` is twofold. It denotes either
@@ -105,6 +106,8 @@ As for abstractions, :g:`forall` is followed by a binder list, and products
 over several variables are equivalent to an iteration of one-variable
 products.
 
+.. _function_application:
+
 Function application
 --------------------
 
@@ -118,6 +121,9 @@ Function application
    | @term1
 
 :n:`@term1__fun @term1` denotes applying the function :n:`@term1__fun` to :token:`term1`.
+
+.. todo: What is the relevant definition of a function here?
+         See https://github.com/coq/coq/pull/16659#discussion_r1039540851
 
 :n:`@term1__fun {+ @term1__i }` denotes applying
 :n:`@term1__fun` to the arguments :n:`@term1__i`.  It is
