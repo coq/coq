@@ -176,12 +176,16 @@ let type_of_abstraction _env name var ty =
 let make_judgev c t =
   Array.map2 make_judge c t
 
+let make_judgev_fconstr c t =
+  Array.map2 make_judge c (Array.map CClosure.term_of_fconstr t)
+
+
 let rec check_empty_stack = function
 | [] -> true
 | CClosure.Zupdate _ :: s -> check_empty_stack s
 | _ -> false
 
-let type_of_apply env func funt argsv argstv =
+let type_of_apply env func funt argsv (argstv : CClosure.fconstr array) =
   let open CClosure in
   let len = Array.length argsv in
   let infos = create_clos_infos all env in
@@ -195,22 +199,22 @@ let type_of_apply env func funt argsv argstv =
       match fterm_of typ with
       | FProd (_, c1, c2, e) ->
         let arg = argsv.(i) in
-        let argt = term_of_fconstr argstv.(i) in
-        let c1 = term_of_fconstr c1 in
-        begin match conv_leq env argt c1 with
+        let argt = argstv.(i) in
+        begin match conv_leq_fconstr2 env argt c1 with (* << checks that the type of the argument is compatible with the type of the binder *)
         | () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
         | exception NotConvertible ->
+          let c1 = term_of_fconstr c1 in
           error_cant_apply_bad_type env
-            (i+1,c1,argt)
-            (make_judge func funt)
-            (make_judgev argsv (Array.map term_of_fconstr argstv))
+            (i+1,c1,term_of_fconstr argt)
+            (make_judge func (CClosure.term_of_fconstr funt))
+            (make_judgev_fconstr argsv argstv)
         end
       | _ ->
         error_cant_apply_not_functional env
-          (make_judge func funt)
-          (make_judgev argsv (Array.map term_of_fconstr argstv))
+          (make_judge func (CClosure.term_of_fconstr funt))
+          (make_judgev_fconstr argsv argstv)
   in
-  apply_rec 0 (inject funt)
+  apply_rec 0 funt
 
 (* Type of primitive constructs *)
 let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match prim with
@@ -605,10 +609,11 @@ and execute_fconstr env cstr =
         let f', ft =
           match kind f with
           | Ind ind when Environ.template_polymorphic_pind ind env ->
-            f, type_of_inductive_knowing_parameters env ind (Array.map CClosure.term_of_fconstr argst)
+            let ty = type_of_inductive_knowing_parameters env ind (Array.map CClosure.term_of_fconstr argst) in
+            f, CClosure.inject ty
           | _ ->
             (* No template polymorphism *)
-            execute env f
+            execute_fconstr env f
         in
         let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
         cstr, type_of_apply env f' ft args' argst

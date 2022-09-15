@@ -10,6 +10,7 @@
 
 open Constr
 open Environ
+open CClosure
 
 (***********************************************************************
   s Reduction functions *)
@@ -29,10 +30,13 @@ val nf_betaiota      : env -> constr -> constr
 exception NotConvertible
 
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
-type 'a extended_conversion_function =
+
+type ('l,'r) extended_conversion_function_2 =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:constr evar_handler ->
-  'a -> 'a -> unit
+  'l -> 'r -> unit
+
+type 'a extended_conversion_function = ('a,'a) extended_conversion_function_2
 
 type conv_pb = CONV | CUMUL
 
@@ -69,8 +73,13 @@ val checked_universes : UGraph.t universe_compare
 
 (** These two functions can only raise NotConvertible *)
 val conv : constr extended_conversion_function
+val conv_fconstr : (constr, fconstr) extended_conversion_function_2
 
 val conv_leq : types extended_conversion_function
+val conv_leq_fconstr2 : (fconstr, fconstr) extended_conversion_function_2
+val conv_leq_fconstr : (types, fconstr) extended_conversion_function_2
+
+
 
 (** Depending on the universe state functions, this might raise
   [UniverseInconsistency] in addition to [NotConvertible] (for better error

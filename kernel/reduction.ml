@@ -187,10 +187,12 @@ let whd_allnolet env t =
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
 
 (* functions of this type can be called from outside the kernel *)
-type 'a extended_conversion_function =
+type ('l,'r) extended_conversion_function_2 =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:constr evar_handler ->
-  'a -> 'a -> unit
+  'l -> 'r -> unit
+
+type 'a extended_conversion_function = ('a,'a) extended_conversion_function_2
 
 exception NotConvertible
 
@@ -853,7 +855,7 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
   convert_list l2r infos lft1 lft2 v1 v2 cuniv
 | _, _ -> raise NotConvertible
 
-let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
+let clos_gen_conv trans cv_pb l2r evars env graph univs l r =
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
   let infos = create_conv_infos ~univs:graph ~evars reds env in
   let infos = {
@@ -861,7 +863,7 @@ let clos_gen_conv trans cv_pb l2r evars env graph univs t1 t2 =
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
-  ccnv cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs
+  ccnv cv_pb l2r infos el_id el_id l r univs
 
 
 let check_eq univs u u' =
@@ -915,16 +917,40 @@ let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=defaul
   in
     if b then ()
     else
-      let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
+      let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) (inject t1) (inject t2) in
         ()
 
 let conv = gen_conv CONV
 let conv_leq = gen_conv CUMUL
 
+
+let gen_conv_fconstr cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler) t1 t2 =
+  let univs = Environ.universes env in
+  let b =
+    if cv_pb = CUMUL then leq_constr_univs univs t1 (term_of_fconstr t2)
+    else eq_constr_univs univs t1 (term_of_fconstr t2)
+  in
+  if b then ()
+  else
+    let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) (inject t1) t2 in
+    ()
+
+let conv_fconstr = gen_conv_fconstr CONV
+let conv_leq_fconstr = gen_conv_fconstr CUMUL
+
+
+let gen_conv_fconstr2 cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler) t1 t2 =
+  let univs = Environ.universes env in
+  let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
+  ()
+
+(* let conv_fconstr2 = gen_conv_fconstr2 CONV *)
+let conv_leq_fconstr2 = gen_conv_fconstr2 CUMUL
+
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
   let graph = Environ.universes env in
   let (s, _) =
-    clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2
+    clos_gen_conv reds cv_pb l2r evars env graph univs (inject t1) (inject t2)
   in s
 
 let default_conv cv_pb env t1 t2 =
