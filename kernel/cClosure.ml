@@ -339,7 +339,7 @@ let empty_stack = []
 let append_stack v s =
   if Int.equal (Array.length v) 0 then s else
   match s with
-  | Zapp l :: s -> Zapp (Array.append v l) :: s
+  | Zapp l :: s -> Zapp (Array.append v l) :: s (* <<<< this is an allocation *)
   | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _) :: _ | [] ->
     Zapp v :: s
 
