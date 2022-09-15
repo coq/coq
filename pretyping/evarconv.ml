@@ -903,10 +903,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                 (fun i -> evar_conv_x flags env i CUMUL t2 t1)]);
              (fun i -> evar_conv_x flags env i CONV b1 b2);
              (fun i ->
-               let b = nf_evar i b1 in
-               let t = nf_evar i t1 in
                let na = Nameops.Name.pick_annot na1 na2 in
-               evar_conv_x flags (push_rel (RelDecl.LocalDef (na,b,t)) env) i pbty c'1 c'2);
+               evar_conv_x flags (push_rel (RelDecl.LocalDef (na,b1,t1)) env) i pbty c'1 c'2);
              (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
         and f2 i =
           let out1 = whd_betaiota_deltazeta_for_iota_state flags.open_ts env i (v1,sk1)
@@ -1019,9 +1017,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         ise_and evd
           [(fun i -> evar_conv_x flags env i CONV c1 c2);
            (fun i ->
-             let c = nf_evar i c1 in
              let na = Nameops.Name.pick_annot na1 na2 in
-             evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i CONV c'1 c'2);
+             evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c1)) env) i CONV c'1 c'2);
            (* When in modulo_betaiota = false case, lambda's are not reduced *)
            (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk1 sk2)]
 
@@ -1082,9 +1079,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             ise_and evd
               [(fun i -> evar_conv_x flags env i CONV c1 c2);
                (fun i ->
-                 let c = nf_evar i c1 in
                  let na = Nameops.Name.pick_annot n1 n2 in
-                 evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i pbty c'1 c'2)]
+                 evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c1)) env) i pbty c'1 c'2)]
 
         | Rel x1, Rel x2 ->
             if Int.equal x1 x2 then
@@ -1428,7 +1424,6 @@ let thin_evars env sigma sign c =
 let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   try
   let evi = Evd.find_undefined evd evk in
-  let evi = nf_evar_info evd evi in
   let env_evar_unf = evar_env env_rhs evi in
   let env_evar = evar_filtered_env env_rhs evi in
   let sign = named_context_val env_evar in
@@ -1436,10 +1431,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   debug_ho_unification (fun () ->
      Pp.(str"env rhs: " ++ Termops.Internal.print_env env_rhs ++ fnl () ++
          str"env evars: " ++ Termops.Internal.print_env env_evar));
-  let args = List.map (nf_evar evd) args in
   let argsubst = List.map2 (fun decl c -> (NamedDecl.get_id decl, c)) ctxt args in
   let instance = evar_identity_subst evi in
-  let rhs = nf_evar evd rhs in
   if not (noccur_evar env_rhs evd evk rhs) then raise (TypingFailed evd);
   (* Ensure that any progress made by Typing.e_solve_evars will not contradict
       the solution we are trying to build here by adding the problem as a constraint. *)
@@ -1457,17 +1450,15 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
       let id = NamedDecl.get_annot decl' in
       let t = NamedDecl.get_type decl' in
       let evs = ref [] in
-      let c = nf_evar evd c in
       (* ty is in env_rhs now *)
       let ty = replace_vars argsubst t in
-      let filter' = filter_possible_projections evd c (nf_evar evd ty) ctxt args in
+      let filter' = filter_possible_projections evd c ty ctxt args in
       (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
     | _, _, [] -> []
     | _ -> anomaly (Pp.str "Signature or instance are shorter than the occurrences list.")
   in
   let rec set_holes env_rhs evd fixed rhs = function
   | (id,idty,c,cty,evsref,filter,occs)::subst ->
-     let c = nf_evar evd c in
      debug_ho_unification (fun () ->
        Pp.(str"set holes for: " ++
                                 prc env_rhs evd (mkVar id.binder_name) ++ spc () ++
@@ -1486,7 +1477,6 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
           else evd, fixed, inst
        | Unspecified prefer_abstraction ->
           let evd, fixed, evty = set_holes env_rhs evd fixed cty subst in
-          let evty = nf_evar evd evty in
           debug_ho_unification (fun () ->
             Pp.(str"abstracting one occurrence " ++ prc env_rhs evd inst ++
                 str" of type: " ++ prc env_evar evd evty ++
@@ -1516,7 +1506,6 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   let subst = make_subst (ctxt,args,argoccs) in
 
   let evd, _, rhs' = set_holes env_rhs evd Evar.Set.empty rhs subst in
-  let rhs' = nf_evar evd rhs' in
   (* Thin evars making the term typable in env_evar *)
   let evd, rhs' = thin_evars env_evar evd ctxt rhs' in
   (* We instantiate the evars of which the value is forced by typing *)
@@ -1528,7 +1517,6 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
     with e when Pretype_errors.precatchable_exception e ->
       (* Could not revert all subterms *)
       raise (TypingFailed evd) in
-  let rhs' = nf_evar evd rhs' in
   (* We instantiate the evars of which the value is forced by typing *)
   debug_ho_unification (fun () ->
     Pp.(str"after solve_evars: " ++ prc env_evar evd rhs' ++ fnl () ++
@@ -1537,7 +1525,6 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   let rec abstract_free_holes evd = function
    | (id,idty,c,cty,evsref,_,_)::l ->
      let id = id.binder_name in
-     let c = nf_evar evd c in
      debug_ho_unification (fun () ->
        Pp.(str"abstracting: " ++
              prc env_rhs evd (mkVar id) ++ spc () ++
@@ -1597,15 +1584,12 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
        try
          let evi = Evd.find_undefined evd evk in
          let evenv = evar_env env_rhs evi in
-         let rhs' = nf_evar evd rhs' in
            debug_ho_unification (fun () ->
              Pp.(str"abstracted type before second solve_evars: " ++
                    prc evenv evd rhs'));
-         (* solve_evars is not commuting with nf_evar, because restricting
-             an evar might provide a more specific type. *)
           let evd, _ = !solve_evars evenv evd rhs' in
           debug_ho_unification (fun () ->
-            Pp.(str"abstracted type: " ++ prc evenv evd (nf_evar evd rhs')));
+            Pp.(str"abstracted type: " ++ prc evenv evd rhs'));
           let flags = default_flags_of TransparentState.full in
             Evarsolve.instantiate_evar evar_unify flags env_rhs evd evk rhs'
          with IllTypedInstance _ -> raise (TypingFailed evd)

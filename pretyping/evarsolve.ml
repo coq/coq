@@ -1751,7 +1751,7 @@ let rec invert_definition unify flags choose imitate_defs
       Id.Set.subset (collect_vars evd rhs) !names
   in
   let body =
-    if fast rhs then nf_evar evd rhs (* FIXME? *)
+    if fast rhs then rhs
     else
       let t' = imitate (env,0) rhs in
         if !progress then

@@ -12,7 +12,6 @@ open EConstr
 open Evd
 open Environ
 
-val env_nf_evar : evar_map -> env -> env
 val env_nf_betaiotaevar : evar_map -> env -> env
 
 type type_constraint = types option

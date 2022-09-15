@@ -514,8 +514,7 @@ let type_of ?(refresh=false) env sigma c =
 
 let solve_evars env sigma c =
   let sigma, j = execute env sigma c in
-  (* side-effect on evdref *)
-  sigma, nf_evar sigma j.uj_val
+  sigma, j.uj_val
 
 let _ = Evarconv.set_solve_evars (fun env sigma c -> solve_evars env sigma c)
 
