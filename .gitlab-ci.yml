@@ -43,7 +43,6 @@ docker-boot:
   except:
     variables:
       - $SKIP_DOCKER == "true"
-      - $ONLY_WINDOWS == "true"
   tags:
     - docker
 
@@ -68,9 +67,6 @@ before_script:
 # Regular "release" build of Coq, with final installed layout
 .build-template:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   artifacts:
     name: "$CI_JOB_NAME"
@@ -104,9 +100,6 @@ before_script:
 # jobs needing _build
 .build-template:dev:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
     # flambda can be pretty stack hungry, specially with -O3
@@ -130,9 +123,6 @@ before_script:
 
 .dev-ci-template:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   needs:
     - build:edge+flambda:dev
@@ -156,9 +146,6 @@ before_script:
 # set "needs" when using
 .test-suite-template:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   needs:
     - not-a-real-job
@@ -181,9 +168,6 @@ before_script:
 # set "needs" when using
 .validate-template:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   needs:
     - not-a-real-job
@@ -204,9 +188,6 @@ before_script:
 
 .ci-template:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
     - ulimit -s 16384           # For flambda + native
@@ -229,9 +210,6 @@ before_script:
 
 .deploy-template:
   stage: deploy
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   before_script:
     - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
     - eval $(ssh-agent -s)
@@ -310,9 +288,6 @@ build:vio:
 
 lint:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   script: dev/lint-repository.sh
   variables:
     GIT_DEPTH: "" # we need an unknown amount of history for per-commit linting
@@ -321,9 +296,6 @@ lint:
 
 .pkg:opam-template:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   # OPAM will build out-of-tree so no point in importing artifacts
   script:
@@ -352,9 +324,6 @@ pkg:opam:native:
 .nix-template:
   stage: build
   needs: []
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
   variables:
@@ -504,9 +473,6 @@ test-suite:edge+flambda:
 
 test-suite:edge:dev:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   needs:
     - build:edge+flambda:dev
@@ -526,9 +492,6 @@ test-suite:edge:dev:
 
 .test-suite:ocaml+beta+dune-template:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
     - opam switch create $OCAMLVER --empty
@@ -860,9 +823,6 @@ plugin:ci-perennial:
 
 plugin:plugin-tutorial:
   stage: build
-  except:
-    variables:
-      - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
     - ./configure -prefix "$(pwd)/_install_ci" -warn-error yes
