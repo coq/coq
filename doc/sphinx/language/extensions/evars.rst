@@ -70,22 +70,159 @@ with a named-goal selector, see :ref:`goal-selectors`).
 Inferable subterms
 ~~~~~~~~~~~~~~~~~~
 
+.. todo: This topic deserves considerably more explanation, but this will have
+   to do for now
+   @name allows `_` (used in 43 places in the grammar), but IIUC is semantically restricted.
+   Some of the cases:
+   * match expressions in terms (see :n:`@term_match`)
+   * binders (see :n:`@name`) in let, functions
+   * function parameters
+   * universe levels
+   relation to implicit arguments?
+   also intropatterns and hints paths, which are not terms
+
+   :n:`@term`\s may use :gdef:`holes <hole>`, denoted by :n:`_`, for purposes such as:
+
+   * Omitting redundant subterms.  Redundant subterms that Coq is able to infer can
+     be replaced with :n:`_`.  For example HELP ME HERE.
+   * Indicating where existential variables should be created in e* tactics such as
+     :tacn:`assert`.
+
+   is it possible to see holes in the context for any of these?
+
 Expressions often contain redundant pieces of information. Subterms that can be
 automatically inferred by Coq can be replaced by the symbol ``_`` and Coq will
 guess the missing piece of information.
+
+e* tactics that can create existential variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A number of tactics have companion tactics that create existential variables
+when the base tactic would fail because of uninstantiated variables.
+The companion tactic names begin with an :n:`e` followed by the name of the
+base tactic.
+For example, :tacn:`eapply` works the same way as :tacn:`apply`, except that
+it will create new existential variable(s) when :tacn:`apply` would fail.
+
+   .. example:: apply vs eapply
+
+      Both tactics unify the goal with :n:`n < p` in the theorem.  :n:`m` is
+      unspecified.  This makes :tacn:`apply` fail, while :tacn:`eapply`
+      creates a new existential variable :n:`?m`.
+
+      .. coqtop:: none reset
+
+         Require Import Arith.
+         Goal forall i j, i < j.
+         intros.
+
+      .. coqtop:: all
+
+         (* Theorem lt_trans : forall n m p, n < m -> m < p -> n < p. *)
+
+         Fail apply Nat.lt_trans.
+         eapply Nat.lt_trans.
+
+The :n:`e*` tactics include:
+
+   .. list-table::
+
+      * - :tacn:`eapply`
+        - :tacn:`eassert`
+        - :tacn:`eassumption`
+        - :tacn:`eauto`
+
+      * - :tacn:`ecase`
+        - :tacn:`econstructor`
+        - :tacn:`edestruct`
+        - :tacn:`ediscriminate`
+
+      * - :tacn:`eelim`
+        - :tacn:`eenough`
+        - :tacn:`eexact`
+        - :tacn:`eexists`
+
+      * - :tacn:`einduction`
+        - :tacn:`einjection`
+        - :tacn:`eintros`
+        - :tacn:`eleft`
+
+      * - :tacn:`epose`
+        - :tacn:`eremember`
+        - :tacn:`erewrite`
+        - :tacn:`eright`
+
+      * - :tacn:`eset`
+        - :tacn:`esimplify_eq`
+        - :tacn:`esplit`
+        - :tacn:`etransitivity`
+
+Note that :tacn:`eassumption` and :tacn:`eauto` behave differently from the
+others.
+
+Automatic resolution of existential variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Existential variables that are used in other goals are generally resolved
+automatically as a side effect of other tactics.
+
+.. _automatic-evar-resolution:
+
+.. example:: Automatic resolution of existential variables
+
+   :n:`?x` and :n:`?m` are used in other goals.  The :tacn:`exact`
+   shown below determines the values of these variables by unification,
+   which resolves them.
+
+   .. coqtop:: reset in
+
+      Require Import Arith.
+      Set Printing Goal Names.
+      Goal forall n m, n <= m -> ~ m < n.
+
+   .. coqtop:: all
+
+      intros x y H1 H2.
+      eapply Nat.lt_irrefl. (* creates ?x : nat as a shelved goal *)
+      eapply Nat.le_lt_trans. (* creates ?m : nat as a shelved goal *)
+      Unshelve. (* moves the shelved goals into focus--not needed and usually not done *)
+      exact H1. (* resolves the first goal and by side effect ?x and ?m *)
+
+   The :n:`?x` and :n:`?m` goals ask for proof that :n:`nat` has a
+   :term:`witness`, i.e. it is not an empty type.  This can be proved directly
+   by applying a constructor of :n:`nat`, which assigns values for :n:`?x` and
+   :n:`?m`.  However if you choose poorly, you can end up with unprovable goals
+   (in this case :n:`0 < 0`).  Like this:
+
+   .. coqtop:: reset none
+
+      Require Import Arith.
+      Set Printing Goal Names.
+      Goal forall n m, n <= m -> ~ m < n.
+      intros x y H1 H2.
+      eapply Nat.lt_irrefl. (* creates ?x : nat as a shelved goal *)
+      eapply Nat.le_lt_trans. (* creates ?m : nat as a shelved goal *)
+
+   .. coqtop:: out
+
+      Unshelve. (* moves the shelved goals into focus--not needed and usually not done *)
+
+   .. coqtop:: all
+
+      3-4: apply 0.  (* assigns values to ?x and ?m *)
 
 .. extracted from Gallina extensions chapter
 
 .. _explicit-display-existentials:
 
-Explicit displaying of existential instances for pretty-printing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Explicit display of existential instances for pretty-printing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. flag:: Printing Existential Instances
 
-   This :term:`flag` (off by default) activates the full display of how the
+   Activates the full display of how the
    context of an existential variable is instantiated at each of the
-   occurrences of the existential variable.
+   occurrences of the existential variable.  Off by default.
 
 .. coqtop:: all
 

@@ -268,6 +268,10 @@ type: [
 | term200
 ]
 
+one_type: [
+| constr
+]
+
 term_forall_or_fun: [
 | "forall" open_binders "," type
 ]
@@ -979,8 +983,35 @@ simple_occurrences: [
 ]
 
 simple_tactic: [
-| DELETE "assert" "(" identref ":=" lconstr ")"
-| DELETE "eassert" "(" identref ":=" lconstr ")"
+(* TODO: REMOVE NEXT 2 LINES IN NEXT PR: *)
+| REPLACE "contradiction" OPT constr_with_bindings
+| WITH "contradiction"
+| REPLACE "assert" "(" identref ":" lconstr ")" by_tactic
+| WITH "assert" "(" identref ":" type ")" by_tactic
+| REPLACE "assert" constr as_ipat by_tactic
+| WITH "assert" one_type as_ipat by_tactic
+| REPLACE "eassert" "(" identref ":" lconstr ")" by_tactic
+| WITH "eassert" "(" identref ":" type ")" by_tactic
+| REPLACE "eassert" constr as_ipat by_tactic
+| WITH "eassert" one_type as_ipat by_tactic
+| REPLACE "elimtype" constr
+| WITH "elimtype" one_type
+| REPLACE "cut" constr
+| WITH "cut" one_type
+| REPLACE "evar" constr
+| WITH "evar" one_type
+| REPLACE "absurd" constr
+| WITH "absurd" one_type
+| REPLACE "casetype" constr
+| WITH "casetype" one_type
+| REPLACE "enough" "(" identref ":" lconstr ")" by_tactic
+| WITH "enough" "(" identref ":" type ")" by_tactic
+| REPLACE "enough" constr as_ipat by_tactic
+| WITH "enough" one_type as_ipat by_tactic
+| REPLACE "eenough" "(" identref ":" lconstr ")" by_tactic
+| WITH "eenough" "(" identref ":" type ")" by_tactic
+| REPLACE "eenough" constr as_ipat by_tactic
+| WITH "eenough" one_type as_ipat by_tactic
 | DELETE "autorewrite" "with" LIST1 preident clause
 | DELETE "autorewrite" "with" LIST1 preident clause "using" tactic
 | DELETE "autorewrite" "*" "with" LIST1 preident clause
@@ -1005,9 +1036,8 @@ simple_tactic: [
 | REPLACE "fold" LIST1 constr clause_dft_concl
 | WITH "fold" LIST1 constr simple_occurrences
 | DELETE "clear" LIST0 hyp
-| DELETE "clear" natural
 | REPLACE "clear" "-" LIST1 hyp
-| WITH "clear" [ OPT ( OPT "-" LIST1 hyp ) | natural ]
+| WITH "clear" OPT ( OPT "-" LIST1 hyp )
 | DELETE "cofix" ident
 | REPLACE "cofix" ident "with" LIST1 cofixdecl
 | WITH "cofix" ident OPT ( "with" LIST1 cofixdecl )
@@ -1035,7 +1065,11 @@ simple_tactic: [
 | WITH "fix" ident natural OPT ( "with" LIST1 fixdecl )
 | DELETE "generalize" constr
 | REPLACE "generalize" constr LIST1 constr
-| WITH "generalize" constr OPT ( LIST1 constr )
+| WITH "generalize" LIST1 constr
+| REPLACE "generalize" constr occs as_name LIST0 [ "," pattern_occ as_name ]
+| WITH "generalize" LIST1 [ pattern_occ as_name ] SEP ","
+| REPLACE "evar" "(" ident ":" lconstr ")"
+| WITH "evar" "(" ident ":" type ")"
 | EDIT "simplify_eq" ADD_OPT destruction_arg
 | EDIT "esimplify_eq" ADD_OPT destruction_arg
 | EDIT "discriminate" ADD_OPT destruction_arg
@@ -1106,7 +1140,7 @@ simple_tactic: [
 | WITH "unify" constr constr OPT ( "with" preident )
 | DELETE "cutrewrite" orient constr
 | REPLACE "cutrewrite" orient constr "in" hyp
-| WITH "cutrewrite" orient constr OPT ( "in" hyp )
+| WITH "cutrewrite" orient one_type OPT ( "in" hyp )
 | DELETE "destauto"
 | REPLACE "destauto" "in" hyp
 | WITH "destauto" OPT ( "in" hyp )
@@ -1136,7 +1170,7 @@ simple_tactic: [
 | WITH "esplit" OPT ( "with" bindings )
 | DELETE "specialize" constr_with_bindings
 | REPLACE "specialize" constr_with_bindings "as" simple_intropattern
-| WITH "specialize" constr_with_bindings OPT ( "as" simple_intropattern )
+| WITH "specialize" constr_with_bindings as_ipat
 | DELETE "exists"
 | REPLACE "exists" LIST1 bindings SEP ","
 | WITH "exists" LIST0 bindings SEP ","
@@ -1237,6 +1271,10 @@ or_and_intropattern: [
 | DELETE "(" simple_intropattern ")"
 | REPLACE "(" simple_intropattern "," LIST1 simple_intropattern SEP "," ")"
 |   WITH  "(" LIST0 simple_intropattern SEP "," ")"
+  (* makes the grammar a little ambiguous for "()" and "( simple_intropattern )"
+     but semantically doesn't matter *)
+| REPLACE "(" simple_intropattern "&" LIST1 simple_intropattern SEP "&" ")"
+|   WITH  "(" LIST0 simple_intropattern SEP "&" ")"
 ]
 
 bar_cbrace: [
@@ -1364,6 +1402,10 @@ command: [
 | REPLACE "Remove" IDENT IDENT LIST1 table_value
 | WITH "Remove" setting_name LIST1 table_value
 | DELETE "Remove" IDENT LIST1 table_value
+
+(* hide special case command that looks like a "Set" command *)
+| DELETE "Set" "Firstorder" "Solver" tactic
+
 | DELETE "Show"
 | DELETE "Show" natural
 | DELETE "Show" ident
@@ -1879,7 +1921,7 @@ ltac_defined_tactics: [
 | "lia"
 | "lra"
 | "nia"
-| "now_show" constr
+| "now_show" one_type
 | "nra"
 | "over"  TAG SSR
 | "rapply" constr
@@ -1894,6 +1936,7 @@ ltac_defined_tactics: [
 tactic_notation_tactics: [
 | "assert_fails" ltac_expr3
 | "assert_succeeds" ltac_expr3
+| "clear" "dependent" hyp
 | "decide" constr "with" constr
 | "dependent" "destruction" ident OPT ( "generalizing" LIST1 hyp )  OPT ( "using" constr )
 | "dependent" "induction" ident OPT ( [ "generalizing" | "in" ] LIST1 hyp )  OPT ( "using" constr )
@@ -2869,6 +2912,11 @@ RENAME: [
 | destruction_arg induction_arg
 | field_body field_spec
 | field_def field_val
+| bindings_with_parameters alias_definition
+]
+
+bullet: [
+| [ LIST1 "-" | LIST1 "+" | LIST1 "*" ]
 ]
 
 simple_tactic: [

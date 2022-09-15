@@ -694,6 +694,8 @@ The syntax for adding a new field is
       which is the completeness of equality on coefficients
       w.r.t. the field equality.
 
+.. cmd:: Print Fields
+   :undocumented:
 
 History of ring
 --------------------

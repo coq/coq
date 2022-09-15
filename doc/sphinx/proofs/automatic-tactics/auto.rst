@@ -98,10 +98,10 @@ Programmable proof search
 
    Generalizes :tacn:`auto`. While :tacn:`auto` does not try
    resolution hints which would leave existential variables in the goal,
-   :tacn:`eauto` does try them (informally speaking, it internally uses a tactic
-   close to :tacn:`simple eapply` instead of a tactic close to :tacn:`simple apply`
-   in the case of :tacn:`auto`). As a consequence, :tacn:`eauto`
-   can solve such a goal:
+   :tacn:`eauto` will try them.  Also, :tacn:`eauto` internally uses :tacn:`eassumption`
+   instead of :tacn:`assumption` and a tactic similar to :tacn:`simple eapply`
+   instead of a tactic similar to :tacn:`simple apply`.
+   As a consequence, :tacn:`eauto` can solve goals such as:
 
    .. example::
 
@@ -123,7 +123,7 @@ Programmable proof search
 
       The various options for :tacn:`info_eauto` are the same as for :tacn:`info_auto`.
 
-   :tacn:`eauto` also obeys the following flags:
+   :tacn:`eauto` uses the following flags:
 
    .. flag:: Info Eauto
              Debug Eauto

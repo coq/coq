@@ -227,6 +227,12 @@ Rewriting with Leibniz and setoid equality
       the same key as the left- or right-hand side of the lemma given to rewrite, and the arguments
       are then unified up to full reduction.
 
+   .. cmd:: Declare Equivalent Keys @one_term @one_term
+      :undocumented:
+
+   .. cmd:: Print Equivalent Keys
+      :undocumented:
+
 .. tacn:: rewrite * {? {| -> | <- } } @one_term {? in @ident } {? at @rewrite_occs } {? by @ltac_expr3 }
           rewrite * {? {| -> | <- } } @one_term at @rewrite_occs in @ident {? by @ltac_expr3 }
    :name: rewrite *; _
@@ -261,9 +267,9 @@ Rewriting with Leibniz and setoid equality
    .. exn:: Terms do not have convertible types.
       :undocumented:
 
-   .. tacn:: cutrewrite {? {| -> | <- } } @one_term {? in @ident }
+   .. tacn:: cutrewrite {? {| -> | <- } } @one_type {? in @ident }
 
-      Where :n:`@one_term` is an equality.
+      Where :n:`@one_type` is an equality.
 
       .. deprecated:: 8.5
 
@@ -393,9 +399,9 @@ Rewriting with definitional equality
    .. exn:: Found an "at" clause without "with" clause
       :undocumented:
 
-   .. tacn:: now_show @one_term
+   .. tacn:: now_show @one_type
 
-      A synonym for :n:`change @one_term`. It can be used to
+      A synonym for :n:`change @one_type`. It can be used to
       make some proof steps explicit when refactoring a proof script
       to make it readable.
 
@@ -588,6 +594,10 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    + When reducing a constant unfolding to (co)fixpoints, the tactic
      uses the name of the constant the (co)fixpoint comes from instead of
      the (co)fixpoint definition in recursive calls.
+
+   :n:`@occs_nums`
+     Selects which occurrences of :n:`@one_term` to process (counting from
+     left to right on the expression printed using the :flag:`Printing All` flag)
 
    :n:`@simple_occurrences`
      Permits selecting whether to reduce the conclusion and/or one or more
@@ -788,6 +798,22 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    on matching or to better control the behavior of :tacn:`rewrite`.
 
    See the example :ref:`here <example_apply_pattern>`.
+
+.. tacn:: hresolve_core ( @ident := @one_term ) {? at @nat_or_var } in @one_term
+   :undocumented:
+
+   .. From Théo Zimmermann: resolve_core and hget_evar were added in
+      https://github.com/coq/coq/commit/028cbb32785b559c637f77864ce5172e0255d0d0
+      https://sf.snu.ac.kr/gil.hur/Hpattern/readme.txt explains their purpose.
+
+      These seem to be internal tactics for a library implementing a
+      generalization of pattern that is distributed on a website. We should
+      investigate whether this library is actively maintained, still useful,
+      and justifies keeping these tactics / whether it should be integrated
+      into Coq or Coq-community and distributed more widely.
+
+.. tacn:: hget_evar @nat_or_var
+   :undocumented:
 
 Fast reduction tactics: vm_compute and native_compute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -83,6 +83,9 @@ described elsewhere
    Displays the type of :n:`@term`. When called in proof mode, the
    term is checked in the local context of the selected goal.
 
+.. cmd:: Type @term
+   :undocumented:
+
 .. cmd:: Search {+ @search_query } {? {| inside | in | outside } {+ @qualid } }
 
    This command can be used to filter the goal and the global context
@@ -428,6 +431,9 @@ Requests to the environment
 .. cmd:: Locate Ltac @qualid
 
    Like :cmd:`Locate`, but limits the search to tactics
+
+.. cmd:: Locate Ltac2 @qualid
+   :undocumented:
 
 .. cmd:: Locate Library @qualid
 
@@ -970,8 +976,8 @@ Controlling display
 .. flag:: Printing Unfocused
 
    This :term:`flag` controls whether unfocused goals are displayed. Such goals are
-   created by focusing other goals with bullets (see :ref:`bullets` or
-   :ref:`curly braces <curly-braces>`). It is off by default.
+   created by focusing other goals with :ref:`bullets <bullets>` or
+   :ref:`curly braces <curly-braces>`. It is off by default.
 
 .. flag:: Printing Dependent Evars Line
 
@@ -1138,6 +1144,9 @@ Exposing constants to OCaml libraries
    to define the return type of the :g:`#int63_eq` primitive.
 
    .. seealso:: :ref:`primitive-integers`
+
+.. cmd:: Print Registered
+   :undocumented:
 
 Inlining hints for the fast reduction machines
 ``````````````````````````````````````````````

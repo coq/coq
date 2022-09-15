@@ -393,3 +393,9 @@ Generation of induction principles with ``Functional`` ``Scheme``
   .. coqtop:: all
 
     Check tree_size_ind2.
+
+.. cmd:: Functional Case @func_scheme_def
+   :undocumented:
+
+.. cmd:: Generate graph for @qualid
+   :undocumented:

@@ -1284,12 +1284,12 @@ Note that `_` by itself is a valid :n:`@name` but is not a valid :n:`@ident`.
           nested with correct precedences. Especially, every notation involving
           a pattern of the form ``"{ x }"`` is parsed as a notation where the
           pattern ``"{ x }"`` has been simply replaced by ``"x"`` and the curly
-          brackets are parsed separately. E.g. ``"y + { z }"`` is not parsed as a
+          braces are parsed separately. E.g. ``"y + { z }"`` is not parsed as a
           term of the given form but as a term of the form ``"y + z"`` where ``z``
           has been parsed using the rule parsing ``"{ x }"``. Especially, level
           and precedences for a rule including patterns of the form ``"{ x }"``
           are relative not to the textual notation but to the notation where the
-          curly brackets have been removed (e.g. the level and the associativity
+          curly braces have been removed (e.g. the level and the associativity
           given to some notation, say ``"{ y } & { z }"`` in fact applies to the
           underlying ``"{ x }"``\-free rule which is ``"y & z"``).
 
@@ -2469,6 +2469,8 @@ Tactic notations allow customizing the syntax of tactics.
              ``integer``, ``reference``, ``strategy_level``,
              ``strategy_level_or_var``, or ``int_or_var``.
 
+.. cmd:: Format Notation @string @string @string
+   :undocumented:
 
 .. rubric:: Footnotes
 

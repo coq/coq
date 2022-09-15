@@ -335,6 +335,9 @@ are now available through the dot notation.
    leaving only their names, for the commands :cmd:`Print Module` and
    :cmd:`Print Module Type`.
 
+.. cmd:: Print Namespace @dirpath
+   :undocumented:
+
 .. _module_examples:
 
 Examples

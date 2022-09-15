@@ -407,6 +407,8 @@ Summary of the commands
 
    Shows the list of instances associated with the typeclass :token:`reference`.
 
+.. cmd:: Print TypeClasses
+   :undocumented:
 
 .. tacn:: typeclasses eauto {? {| bfs | dfs | best_effort } } {? @nat_or_var } {? with {+ @ident } }
 
