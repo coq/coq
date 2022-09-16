@@ -403,18 +403,20 @@ and  nf_predicate env sigma ind mip params v pT =
 
 and nf_evar env sigma evk args =
   let evi = try Evd.find sigma evk with Not_found -> assert false in
-  let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
-  let ty = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
+  let hyps = EConstr.named_context_of_val (Evd.evar_filtered_hyps evi) in
   if List.is_empty hyps then begin
     assert (Array.is_empty args);
+    let ty = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
     mkEvar (evk, []), ty
   end
   else
     (* Let-bound arguments are present in the evar arguments but not
        in the type, so we turn the let into a product. *)
+    let ty = Evd.evar_concl evi in
     let hyps = Context.Named.drop_bodies hyps in
-    let fold accu d = Term.mkNamedProd_or_LetIn d accu in
+    let fold accu d = EConstr.mkNamedProd_or_LetIn sigma d accu in
     let t = List.fold_left fold ty hyps in
+    let t = EConstr.to_constr ~abort_on_undefined_evars:false sigma t in
     let ty, args = nf_args env sigma args t in
     (* nf_args takes arguments in the reverse order but produces them
        in the correct one, so we have to reverse them again for the

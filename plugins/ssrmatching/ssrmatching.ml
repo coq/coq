@@ -355,9 +355,9 @@ let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
     let dc = List.firstn (max 0 (List.length a - nenv)) (evar_filtered_context evi) in
     let abs_dc (d, c) = function
     | Context.Named.Declaration.LocalDef (x, b, t) ->
-        d, mkNamedLetIn x (put b) (put t) c
+        d, mkNamedLetIn !sigma x (put b) (put t) c
     | Context.Named.Declaration.LocalAssum (x, t) ->
-        mkVar x.binder_name :: d, mkNamedProd x (put t) c in
+        mkVar x.binder_name :: d, mkNamedProd !sigma x (put t) c in
     let a, t =
       Context.Named.fold_inside abs_dc ~init:([], put evi.evar_concl) dc
     in

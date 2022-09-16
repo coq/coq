@@ -565,8 +565,8 @@ let eval_type_pretyper self ~flags tycon env sigma t =
 let pretype_instance self ~flags env sigma loc hyps evk update =
   let f decl (subst,update,sigma) =
     let id = NamedDecl.get_id decl in
-    let b = Option.map (replace_vars subst) (NamedDecl.get_value decl) in
-    let t = replace_vars subst (NamedDecl.get_type decl) in
+    let b = Option.map (replace_vars sigma subst) (NamedDecl.get_value decl) in
+    let t = replace_vars sigma subst (NamedDecl.get_type decl) in
     let check_body sigma id c =
       match b, c with
       | Some b, Some c ->

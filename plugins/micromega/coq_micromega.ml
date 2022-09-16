@@ -1350,13 +1350,13 @@ let make_goal_of_formula gl dexpr form =
      * TODO: reverse the list of bindings!
   *)
 
-let set l concl =
+let set sigma l concl =
   let rec xset acc = function
     | [] -> acc
     | e :: l ->
       let name, expr, typ = e in
       xset
-        (EConstr.mkNamedLetIn
+        (EConstr.mkNamedLetIn sigma
            (make_annot (Names.Id.of_string name) Sorts.Relevant)
            expr typ acc)
         l
@@ -1513,9 +1513,10 @@ let micromega_order_change spec cert cert_typ env ff (*: unit Proofview.tactic*)
   let vm = dump_varmap spec.typ (vm_of_list env) in
   (* todo : directly generate the proof term - or generalize before conversion? *)
   Proofview.Goal.enter (fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
       Tacticals.tclTHENLIST
         [ Tactics.change_concl
-            (set
+            (set sigma
                [ ( "__ff"
                  , ff
                  , EConstr.mkApp
@@ -1996,9 +1997,10 @@ let micromega_order_changer cert env ff =
   let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
   let vm = dump_varmap typ (vm_of_list env) in
   Proofview.Goal.enter (fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
       Tacticals.tclTHENLIST
         [ Tactics.change_concl
-            (set
+            (set sigma
                [ ( "__ff"
                  , ff
                  , EConstr.mkApp

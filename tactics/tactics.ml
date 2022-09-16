@@ -483,7 +483,7 @@ let rename_hyp repl =
       (* All is well *)
       let make_subst (src, dst) = (src, mkVar dst) in
       let subst = List.map make_subst repl in
-      let subst c = Vars.replace_vars subst c in
+      let subst c = Vars.replace_vars sigma subst c in
       let replace id = try List.assoc_f Id.equal id repl with Not_found -> id in
       let map decl = decl |> NamedDecl.map_id replace |> NamedDecl.map_constr subst in
       let nhyps = List.map map (named_context_of_val sign) in
@@ -608,7 +608,7 @@ let internal_cut ?(check=true) replace id t =
       (Refine.refine ~typecheck:false begin fun sigma ->
         let (sigma, ev) = Evarutil.new_evar env sigma nf_t in
         let (sigma, ev') = Evarutil.new_evar ~principal:true env' sigma concl in
-        let term = mkLetIn (make_annot (Name id) r, ev, t, EConstr.Vars.subst_var id ev') in
+        let term = mkLetIn (make_annot (Name id) r, ev, t, EConstr.Vars.subst_var sigma id ev') in
         (sigma, term)
       end)
   end
@@ -698,7 +698,7 @@ let mutual_fix f n rest j = Proofview.Goal.enter begin fun gl ->
   Refine.refine ~typecheck:false begin fun sigma ->
     let (sigma, evs) = mk_holes nenv sigma (List.map pi3 all) in
     let ids = List.map pi1 all in
-    let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
+    let evs = List.map (Vars.subst_vars sigma (List.rev ids)) evs in
     let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
     (* TODO relevance *)
     let funnames = Array.of_list (List.map (fun i -> make_annot (Name i) Sorts.Relevant) ids) in
@@ -743,7 +743,7 @@ let mutual_cofix f others j = Proofview.Goal.enter begin fun gl ->
   Refine.refine ~typecheck:false begin fun sigma ->
     let (ids, types) = List.split all in
     let (sigma, evs) = mk_holes nenv sigma types in
-    let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
+    let evs = List.map (Vars.subst_vars sigma (List.rev ids)) evs in
     (* TODO relevance *)
     let funnames = Array.of_list (List.map (fun i -> make_annot (Name i) Sorts.Relevant) ids) in
     let typarray = Array.of_list types in
@@ -890,7 +890,7 @@ let reduct_option ~check (redfun, sty) where =
 
 type change_arg = Ltac_pretype.patvar_map -> env -> evar_map -> evar_map * EConstr.constr
 
-let make_change_arg c pats env sigma = (sigma, replace_vars (Id.Map.bindings pats) c)
+let make_change_arg c pats env sigma = (sigma, replace_vars sigma (Id.Map.bindings pats) c)
 
 let check_types env sigma mayneedglobalcheck deep newc origc =
   let t1 = Retyping.get_type_of env sigma newc in
@@ -2276,8 +2276,9 @@ let bring_hyps hyps =
     let hyps = List.rev hyps in
     Proofview.Goal.enter begin fun gl ->
       let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
       let concl = Tacmach.pf_concl gl in
-      let newcl = it_mkNamedProd_or_LetIn concl hyps in
+      let newcl = it_mkNamedProd_or_LetIn sigma concl hyps in
       let args = Context.Named.instance mkVar hyps in
       Refine.refine ~typecheck:false begin fun sigma ->
         let (sigma, ev) =
@@ -2771,7 +2772,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           let sigma, eq = Typing.checked_applist env sigma eq [t] in
           let eq = applist (eq, args) in
           let refl = applist (refl, [t;mkVar id]) in
-          let term = mkNamedLetIn (make_annot id rel) c t
+          let term = mkNamedLetIn sigma (make_annot id rel) c t
               (mkLetIn (make_annot (Name heq) Sorts.Relevant, refl, eq, ccl)) in
           let ans = term,
             Tacticals.tclTHENLIST
@@ -2781,7 +2782,7 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
           in
           (sigma, ans)
       | None ->
-          (sigma, (mkNamedLetIn (make_annot id rel) c t ccl, Proofview.tclUNIT ()))
+          (sigma, (mkNamedLetIn sigma (make_annot id rel) c t ccl, Proofview.tclUNIT ()))
     in
       Tacticals.tclTHENLIST
       [ Proofview.Unsafe.tclEVARS sigma;
@@ -2833,12 +2834,12 @@ let mkletin_goal env sigma with_eq dep (id,lastlhyp,ccl,c) ty =
       let refl = applist (refl, [t;mkVar id]) in
       let newenv = insert_before [LocalAssum (make_annot heq Sorts.Relevant,eq); decl] lastlhyp env in
       let (sigma, x) = new_evar newenv sigma ~principal:true ccl in
-      (sigma, mkNamedLetIn (make_annot id r) c t
-         (mkNamedLetIn (make_annot heq Sorts.Relevant) refl eq x))
+      (sigma, mkNamedLetIn sigma (make_annot id r) c t
+         (mkNamedLetIn sigma (make_annot heq Sorts.Relevant) refl eq x))
   | None ->
       let newenv = insert_before [decl] lastlhyp env in
       let (sigma, x) = new_evar newenv sigma ~principal:true ccl in
-      (sigma, mkNamedLetIn (make_annot id r) c t x)
+      (sigma, mkNamedLetIn sigma (make_annot id r) c t x)
 
 let pose_tac na c =
   Proofview.Goal.enter begin fun gl ->
@@ -3013,7 +3014,7 @@ let generalize_dep ?(with_let=false) c =
           -> tothin@[id]
       | _ -> tothin
   in
-  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
+  let cl' = it_mkNamedProd_or_LetIn sigma (pf_concl gl) to_quantify in
   let is_var, body = match EConstr.kind sigma c with
   | Var id ->
     let body = NamedDecl.get_value (pf_get_hyp id gl) in
@@ -3250,6 +3251,7 @@ let unfold_body x =
   Proofview.Goal.enter begin fun gl ->
   (* We normalize the given hypothesis immediately. *)
   let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
   let xval = match Environ.lookup_named x env with
   | LocalAssum _ -> error (VariableHasNoValue x)
   | LocalDef (_,xval,_) -> xval
@@ -3257,7 +3259,7 @@ let unfold_body x =
   let xval = EConstr.of_constr xval in
   Tacticals.afterHyp x begin fun aft ->
   let hl = List.fold_right (fun decl cl -> (NamedDecl.get_id decl, InHyp) :: cl) aft [] in
-  let rfun _ _ c = replace_vars [x, xval] c in
+  let rfun _ _ c = replace_vars sigma [x, xval] c in
   let reducth h = reduct_in_hyp ~check:false ~reorder:false rfun h in
   let reductc = reduct_in_concl ~cast:false ~check:false (rfun, DEFAULTcast) in
   Tacticals.tclTHENLIST [Tacticals.tclMAP reducth hl; reductc]
@@ -4467,7 +4469,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
     let dep_in_concl = Option.cata (fun id -> occur_var env sigma id concl) false hyp0 in
     let dep = dep_in_hyps || dep_in_concl in
-    let tmpcl = it_mkNamedProd_or_LetIn concl deps in
+    let tmpcl = it_mkNamedProd_or_LetIn sigma concl deps in
     let s = Retyping.get_sort_family_of env sigma tmpcl in
     let deps_cstr =
       List.fold_left

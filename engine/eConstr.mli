@@ -154,11 +154,11 @@ val mkLambda_or_LetIn : rel_declaration -> t -> t
 val it_mkProd_or_LetIn : t -> rel_context -> t
 val it_mkLambda_or_LetIn : t -> rel_context -> t
 
-val mkNamedLambda : Id.t Context.binder_annot -> types -> constr -> constr
-val mkNamedLetIn : Id.t Context.binder_annot -> constr -> types -> constr -> constr
-val mkNamedProd : Id.t Context.binder_annot -> types -> types -> types
-val mkNamedLambda_or_LetIn : named_declaration -> types -> types
-val mkNamedProd_or_LetIn : named_declaration -> types -> types
+val mkNamedLambda : Evd.evar_map -> Id.t Context.binder_annot -> types -> constr -> constr
+val mkNamedLetIn : Evd.evar_map -> Id.t Context.binder_annot -> constr -> types -> constr -> constr
+val mkNamedProd : Evd.evar_map -> Id.t Context.binder_annot -> types -> types -> types
+val mkNamedLambda_or_LetIn : Evd.evar_map -> named_declaration -> types -> types
+val mkNamedProd_or_LetIn : Evd.evar_map -> named_declaration -> types -> types
 
 (** {6 Simple case analysis} *)
 
@@ -289,10 +289,10 @@ val substnl_decl : substl -> int -> rel_declaration -> rel_declaration
 val substl_decl : substl -> rel_declaration -> rel_declaration
 val subst1_decl : t -> rel_declaration -> rel_declaration
 
-val replace_vars : (Id.t * t) list -> t -> t
-val substn_vars : int -> Id.t list -> t -> t
-val subst_vars : Id.t list -> t -> t
-val subst_var : Id.t -> t -> t
+val replace_vars : Evd.evar_map -> (Id.t * t) list -> t -> t
+val substn_vars : Evd.evar_map -> int -> Id.t list -> t -> t
+val subst_vars : Evd.evar_map -> Id.t list -> t -> t
+val subst_var : Evd.evar_map -> Id.t -> t -> t
 
 val noccurn : Evd.evar_map -> int -> t -> bool
 val noccur_between : Evd.evar_map -> int -> int -> t -> bool

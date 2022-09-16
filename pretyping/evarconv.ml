@@ -1459,7 +1459,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
       let evs = ref [] in
       let c = nf_evar evd c in
       (* ty is in env_rhs now *)
-      let ty = replace_vars argsubst t in
+      let ty = replace_vars evd argsubst t in
       let filter' = filter_possible_projections evd c (nf_evar evd ty) ctxt args in
       (id,t,c,ty,evs,Filter.make filter',occs) :: make_subst (ctxt',l,occsl)
     | _, _, [] -> []

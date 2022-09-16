@@ -1015,8 +1015,9 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =
   build_coq_I () >>= fun i ->
   ind_scheme_of_eq lbeq to_kind >>= fun eq_elim ->
     pf_constr_of_global eq_elim >>= fun eq_elim ->
+    Proofview.tclEVARMAP >>= fun sigma ->
     Proofview.tclUNIT
-       (applist (eq_elim, [t;t1;mkNamedLambda (make_annot e Sorts.Relevant) t discriminator;i;t2]))
+       (applist (eq_elim, [t;t1;mkNamedLambda sigma (make_annot e Sorts.Relevant) t discriminator;i;t2]))
 
 type equality = {
   eq_data  : (coq_eq_data * (EConstr.t * EConstr.t * EConstr.t));
@@ -1410,7 +1411,7 @@ let inject_at_positions env sigma l2r eq posns tac =
     try
       (* arbitrarily take t1' as the injector default value *)
       let sigma, (injbody,resty) = build_injector e_env !evdref t1' (mkVar e) cpath in
-      let injfun = mkNamedLambda (make_annot e Sorts.Relevant) t injbody in
+      let injfun = mkNamedLambda sigma (make_annot e Sorts.Relevant) t injbody in
       let sigma,congr = Evd.fresh_global env sigma eq.congr in
       (* pf : eq t t1 t2 -> eq resty (injfun t1) (injfun t2) *)
       let mk c = Retyping.get_judgment_of env sigma c in

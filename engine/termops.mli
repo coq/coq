@@ -39,9 +39,9 @@ val it_mkLambda : constr -> (Name.t Context.binder_annot * types) list -> constr
 val it_mkProd_or_LetIn : types -> rel_context -> types
 val it_mkProd_wo_LetIn : types -> rel_context -> types
 val it_mkLambda_or_LetIn : Constr.constr -> Constr.rel_context -> Constr.constr
-val it_mkNamedProd_or_LetIn : types -> named_context -> types
+val it_mkNamedProd_or_LetIn : Evd.evar_map -> types -> named_context -> types
 val it_mkNamedProd_wo_LetIn : Constr.types -> Constr.named_context -> Constr.types
-val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
+val it_mkNamedLambda_or_LetIn : Evd.evar_map -> constr -> named_context -> constr
 
 (* Ad hoc version reinserting letin, assuming the body is defined in
    the context where the letins are expanded *)
