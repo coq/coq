@@ -1090,7 +1090,7 @@ END
 {
 
 let pr_hint env sigma prt arg =
-  if arg = nohint then mt() else str "by " ++ pr_hintarg env sigma prt arg
+  if arg = nohint then mt() else spc () ++ str "by" ++ spc () ++ pr_hintarg env sigma prt arg
 let pr_ssrhint env sigma _ _ = pr_hint env sigma
 
 }
@@ -1488,10 +1488,10 @@ END
 
 {
 
-(* This does not print the type, it should be fixed... *)
-let pr_ssrsetfwd _ _ _ (((fk,_),(t,_)), docc) =
-  pr_gen_fwd (fun _ _ -> pr_cpattern)
-    (fun _ -> mt()) (fun _ -> mt()) fk ([Bcast ()],t)
+let pr_ssrsetfwd _ _ _ (((fk,_),(c,t)), docc) =
+  let t = Option.default [] @@ Option.map (fun t -> [Bcast t]) t in
+  pr_gen_fwd (fun _ _ c -> Pp.(pr_docc docc ++ pr_cpattern c))
+    (fun _ -> mt()) pr_ast_closure_term fk (t, c)
 
 }
 
