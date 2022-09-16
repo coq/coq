@@ -37,6 +37,7 @@ type ssrarg = ssrfwdview * (ssreqid * (cpattern ssragens * ssripats))
 val wit_ssrseqdir : ssrdir Genarg.uniform_genarg_type
 val wit_ssrseqarg : (Tacexpr.raw_tactic_expr ssrseqarg, Tacexpr.glob_tactic_expr ssrseqarg, Geninterp.Val.t ssrseqarg) Genarg.genarg_type
 
+val wit_ssrintros_ne : ssripats Genarg.uniform_genarg_type
 val wit_ssrintrosarg :
   (Tacexpr.raw_tactic_expr * ssripats,
    Tacexpr.glob_tactic_expr * ssripats,
@@ -49,6 +50,7 @@ val wit_ssrsufffwd :
 
 val wit_ssripatrep : ssripat Genarg.uniform_genarg_type
 val wit_ssrarg : ssrarg Genarg.uniform_genarg_type
+val wit_ssrrwarg : ssrrwarg Genarg.uniform_genarg_type
 val wit_ssrrwargs : ssrrwarg list Genarg.uniform_genarg_type
 val wit_ssrclauses : clauses Genarg.uniform_genarg_type
 val wit_ssrcasearg : (cpattern ssragens) ssrmovearg Genarg.uniform_genarg_type
@@ -59,6 +61,10 @@ val wit_ssrhavefwdwbinders :
    Tacexpr.glob_tactic_expr fwdbinders,
    Tacinterp.Value.t fwdbinders) Genarg.genarg_type
 val wit_ssrhintarg :
+  (Tacexpr.raw_tactic_expr ssrhint,
+   Tacexpr.glob_tactic_expr ssrhint,
+   Tacinterp.Value.t ssrhint) Genarg.genarg_type
+val wit_ssrhint3arg :
   (Tacexpr.raw_tactic_expr ssrhint,
    Tacexpr.glob_tactic_expr ssrhint,
    Tacinterp.Value.t ssrhint) Genarg.genarg_type
