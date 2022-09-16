@@ -63,7 +63,10 @@ let kind_of_term_upto = EConstr.kind_upto
 
 let nf_evars_universes sigma t = EConstr.to_constr ~abort_on_undefined_evars:false sigma (EConstr.of_constr t)
 let whd_evar = EConstr.whd_evar
-let nf_evar sigma c = EConstr.of_constr (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
+
+let nf_evar sigma c =
+  let evar_value ev = Evd.existential_opt_value0 sigma ev in
+  EConstr.of_constr @@ UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) (EConstr.Unsafe.to_constr c)
 
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
