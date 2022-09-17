@@ -245,8 +245,6 @@ build:edge+flambda:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
     COQ_EXTRA_CONF: "-native-compiler yes"
-    # Redundant, but was explicit?
-    COQIDE: "opt"
 
 build:edge+flambda:dev:
   extends: .build-template:dev
@@ -255,8 +253,6 @@ build:base+async:
   extends: .build-template
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes"
-    # Redundant, but was explicit?
-    COQIDE: "opt"
     COQ_DUNE_EXTRA_OPT: "-async"
   after_script:
     - dmesg > dmesg.txt
