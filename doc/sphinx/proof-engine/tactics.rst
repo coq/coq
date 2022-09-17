@@ -1799,7 +1799,7 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
    find in the current context (after all intros) a hypothesis that is
    equivalent to an empty inductive type (e.g. :g:`False`), to the negation of
    a singleton inductive type (e.g. :g:`True` or :g:`x=x`), or two contradictory
-   hypotheses.
+   hypotheses :g:`P` and :g:`not P`.
 
    .. exn:: No such assumption.
       :undocumented:
