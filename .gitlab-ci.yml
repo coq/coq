@@ -68,6 +68,8 @@ before_script:
 .build-template:
   stage: build
   interruptible: true
+  variables:
+    COQIDE: "opt"
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -79,6 +81,8 @@ before_script:
       - config/dune.c_flags
     expire_in: 1 month
   script:
+    - PKGS=coq-core,coq-stdlib,coqide-server,coq
+    - if [ "$COQIDE" != "no" ]; then PKGS=${PKGS},coqide; fi
     - dev/ci/gitlab-section.sh start coq.clean coq.clean
     - make clean # ensure that `make clean` works on a fresh clone
     - dev/ci/gitlab-section.sh end coq.clean
@@ -89,11 +93,11 @@ before_script:
 
     - dev/ci/gitlab-section.sh start coq.build coq.build
     - make dunestrap
-    - dune build -p coq-core,coq-stdlib,coqide-server,coqide,coq
+    - dune build -p $PKGS
     - dev/ci/gitlab-section.sh end coq.build
 
     - dev/ci/gitlab-section.sh start coq.install coq.install
-    - dune install --prefix="$(pwd)/_install_ci" coq-core coq-stdlib coqide-server coqide coq
+    - dune install --prefix="$(pwd)/_install_ci" $(sed -e 's/,/ /g' <<< ${PKGS})
     - dev/ci/gitlab-section.sh end coq.install
 
 # Developer build, with build layout. Faster and useful for those
@@ -230,6 +234,7 @@ build:base+32bit:
   variables:
     OPAM_VARIANT: "+32bit"
     COQ_EXTRA_CONF: "-native-compiler yes"
+    COQIDE: "no"
   only: &full-ci
     variables:
       - $FULL_CI == "true"
