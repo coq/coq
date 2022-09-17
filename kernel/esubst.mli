@@ -44,6 +44,9 @@ val subs_lift: 'a subs -> 'a subs
 (** Assuming Γ ⊢ σ : Δ and |Ξ| = n, then Γ, Ξ ⊢ subs_liftn n σ : Δ, Ξ *)
 val subs_liftn: int -> 'a subs -> 'a subs
 
+(** map *)
+val subs_map: ('a -> 'b) -> 'a subs -> 'b subs
+
 (** [expand_rel k subs] expands de Bruijn [k] in the explicit substitution
     [subs]. The result is either (Inl(lams,v)) when the variable is
     substituted by value [v] under [lams] binders (i.e. v *has* to be

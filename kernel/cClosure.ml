@@ -271,6 +271,46 @@ and fterm =
 
 and finvert = fconstr array
 
+let copy_fconstr (x : fconstr) : fconstr =
+  (* note: it could be worthwhile to try to copy the [fconstr] lazily.
+     doing this would probably mean that we should use a better
+  *)
+  let module SF = Hashtbl in
+  let memo = SF.create 17 in
+  let rec copy_fconstr x =
+    try SF.find memo x
+    with Not_found ->
+      let y = { mark = x.mark ; term = copy_fterm x.term } in
+      let () = SF.add memo x y in
+      y
+  and copy_fterm = function
+    | FRel _ as x -> x
+    | FAtom _ as x -> x
+    | FFlex _ as x -> x
+    | FInd _ as x -> x
+    | FConstruct _ as x -> x
+    | FApp (a, b) -> FApp (copy_fconstr a, Array.map copy_fconstr b)
+    | FProj (a, t) -> FProj (a, copy_fconstr t)
+    | FFix (f, ts) -> FFix (f, copy_usubs ts)
+    | FCoFix (f, ts) -> FCoFix (f, copy_usubs ts)
+    | FCaseT (ci, us, cs, cr, f, cbs, ts) ->
+      FCaseT (ci, us, cs, cr, copy_fconstr f, cbs, copy_usubs ts)
+    | FCaseInvert (ci, u, cs, cr, fs, f, cbs, ts) ->
+      FCaseInvert (ci, u, cs, cr, Array.map copy_fconstr fs, copy_fconstr f, cbs, copy_usubs ts)
+    | FLambda (i, l, c, ts) -> FLambda (i, l, c, copy_usubs ts)
+    | FProd (p, f, c, ts) -> FProd (p, copy_fconstr f, c, copy_usubs ts)
+    | FLetIn (b, t1, t2, c, ts) -> FLetIn (b, copy_fconstr t1, copy_fconstr t2, c, copy_usubs ts)
+    | FEvar (e, ts) -> FEvar (e, copy_usubs ts)
+    | FArray (u, p, f) -> FArray (u, Parray.map copy_fconstr p, copy_fconstr f)
+    | FLIFT (i, f) -> FLIFT (i, copy_fconstr f)
+    | FCLOS (c, ts) -> FCLOS (c, copy_usubs ts)
+    | FInt _ as x -> x
+    | FFloat _ as x -> x
+    | FIrrelevant as x -> x
+    | FLOCKED as x -> x
+  and copy_usubs x = (Esubst.subs_map copy_fconstr (fst x), snd x)
+  in copy_fconstr x
+
 let fterm_of v = v.term
 let set_ntrl v = v.mark <- Ntrl
 let is_val v = match v.mark with Ntrl -> true | Cstr | Whnf | Red -> false

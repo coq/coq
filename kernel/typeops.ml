@@ -195,7 +195,12 @@ let type_of_apply env func funt argsv argstv =
       match fterm_of typ with
       | FProd (_, c1, c2, e) ->
         let argt = argstv.(i) in
-        begin match conv_leq_fconstr env argt c1 with
+        (* reductions necessary to compare the type of the argument
+           to the type of [c1] should *not* be retained when checking
+           the rest of the term. To achieve this, while retaining sharing,
+           we perform the conversion check on a copy of [c1].
+         *)
+        begin match conv_leq_fconstr env argt (copy_fconstr c1) with
         | () ->
           let arg = argsv.(i) in
           apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)

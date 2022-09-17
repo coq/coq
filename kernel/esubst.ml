@@ -115,7 +115,20 @@ type 'a tree =
 
 *)
 
+let or_var_map f = function
+  | Arg x -> Arg (f x)
+  | Var x -> Var x
+
+let rec tree_map f = function
+  | Leaf (s, x) -> Leaf (s, or_var_map f x)
+  | Node (s1, x, l, r, s2) -> Node (s1, or_var_map f x, tree_map f l, tree_map f r, s2)
+
 type 'a subs = Nil of shf * int | Cons of int * 'a tree * 'a subs
+
+let rec subs_map f = function
+  | Nil _ as x -> x
+  | Cons (i, t, s) -> Cons (i, tree_map f t, subs_map f s)
+
 (*
   In the naive semantics mentioned above, we have the following.
 
