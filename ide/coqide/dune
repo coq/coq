@@ -30,7 +30,6 @@
  (foreign_stubs
   (language c)
   (names coqide_os_stubs))
- (optional)
  (libraries coqide-server.protocol coqide-server.core lablgtk3-sourceview3))
 
 (executable
@@ -54,7 +53,6 @@
  (name coqide_main)
  (public_name coqide)
  (package coqide)
- (optional)
  (modules coqide_main)
  (modes exe byte)
  (libraries coqide_gui))
