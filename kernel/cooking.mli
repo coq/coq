@@ -23,7 +23,12 @@ open Constr
     (because the substitution are represented by their domain) but
     here, local definitions of the context have been dropped *)
 
-type abstr_inst_info
+type abstr_inst_info = {
+  abstr_rev_inst : Id.t list;
+  (** The variables to reapply (excluding "let"s of the context), in reverse order *)
+  abstr_uinst : Univ.Instance.t;
+  (** Abstracted universe variables to reapply *)
+}
 
 type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
 type expand_info = abstr_inst_info entry_map
@@ -51,6 +56,8 @@ val names_info : cooking_info -> Id.Set.t
 val universe_context_of_cooking_info : cooking_info -> Univ.AbstractContext.t
 
 val instance_of_cooking_info : cooking_info -> Constr.t array
+
+val expand_info_of_cooking_info : cooking_info -> expand_info
 
 type cooking_cache
 

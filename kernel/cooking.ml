@@ -333,6 +333,9 @@ let universe_context_of_cooking_info info =
 let instance_of_cooking_info info =
   Named.instance mkVar info.abstr_info.abstr_ctx
 
+let expand_info_of_cooking_info info =
+  info.expand_info
+
 let instance_of_cooking_cache { info; _ } =
   instance_of_cooking_info info
 
