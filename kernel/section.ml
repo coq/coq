@@ -97,6 +97,10 @@ let open_section ~custom prev =
 let close_section sec =
   sec.prev, sec.entries, sec.mono_universes, sec.custom
 
+let on_previous_section f sec =
+  let e, prev = f sec.prev in
+  e, { sec with prev }
+
 let push_local d sec =
   { sec with context = d :: sec.context }
 
