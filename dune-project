@@ -84,7 +84,8 @@ structured way."))
 (package
  (name coqide)
  (depends
-  (coqide-server (= :version)))
+  (coqide-server (= :version))
+  (lablgtk3-sourceview3 (>= 3.1.2)))
  (synopsis "The Coq Proof Assistant --- GTK3 IDE")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
