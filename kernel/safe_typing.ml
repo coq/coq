@@ -988,9 +988,7 @@ let check_mind mie lab =
     assert (Id.equal (Label.to_id lab) oie.mind_entry_typename)
 
 let add_checked_mind kn mib senv =
-  let mib =
-    match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib
-  in
+  let mib = if sections_are_opened senv then mib else Declareops.hcons_mind mib in
   add_field (MutInd.label kn,SFBmind mib) (I kn) senv
 
 let add_mind l mie senv =
