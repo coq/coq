@@ -40,6 +40,9 @@ val close_section : 'a t -> 'a t option * section_entry list * ContextSet.t * 'a
     of global monomorphic constraints added in this section, and the custom data
     provided at the opening of the section. *)
 
+val on_previous_section : ('a t option -> 'b * 'a t option) -> 'a t -> 'b * 'a t
+(** Apply an action on the prev segment of the section *)
+
 (** {6 Extending sections} *)
 
 val push_local : Constr.named_declaration -> 'a t -> 'a t
