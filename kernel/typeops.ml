@@ -205,7 +205,7 @@ let type_of_apply env func funt argsv argstv =
           let arg = argsv.(i) in
           apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
         | exception NotConvertible ->
-          let c1 = term_of_fconstr c1 in (* << this was already done inside [conv_leq_fconstr] *)
+          let c1 = term_of_fconstr c1 in
           error_cant_apply_bad_type env
             (i+1,c1,argt)
             (make_judge func funt)
