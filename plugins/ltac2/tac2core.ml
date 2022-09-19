@@ -151,6 +151,10 @@ let thaw f = Tac2ffi.apply f [v_unit]
 
 let fatal_flag : unit Exninfo.t = Exninfo.make ()
 
+let has_fatal_flag info = match Exninfo.get info fatal_flag with
+  | None -> false
+  | Some () -> true
+
 let set_bt info =
   if !Tac2interp.print_ltac2_backtrace then
     Tac2interp.get_backtrace >>= fun bt ->
@@ -175,13 +179,33 @@ let wrap f =
 let wrap_unit f =
   return () >>= fun () -> f (); return v_unit
 
+let catchable_exception = function
+  | Logic_monad.Exception _ -> false
+  | e -> CErrors.noncritical e
+
+(* Adds ltac2 backtrace
+   With [passthrough:false], acts like [Proofview.wrap_exceptions] + Ltac2 backtrace handling
+*)
+let wrap_exceptions ?(passthrough=false) f =
+  try f ()
+  with e ->
+    let e, info = Exninfo.capture e in
+    set_bt info >>= fun info ->
+    if not passthrough && catchable_exception e
+    then begin if has_fatal_flag info
+      then Proofview.tclLIFT (Proofview.NonLogical.raise (e, info))
+      else Proofview.tclZERO ~info e
+    end
+    else Exninfo.iraise (e, info)
+
 let assert_focussed =
   Proofview.Goal.goals >>= fun gls ->
   match gls with
   | [_] -> Proofview.tclUNIT ()
   | [] | _ :: _ :: _ -> throw err_notfocussed
 
-let pf_apply f =
+let pf_apply ?(catch_exceptions=false) f =
+  let f env sigma = wrap_exceptions ~passthrough:(not catch_exceptions) (fun () -> f env sigma) in
   Proofview.Goal.goals >>= function
   | [] ->
     Proofview.tclENV >>= fun env ->
@@ -458,12 +482,11 @@ end
 (** constr -> constr *)
 let () = define1 "constr_type" constr begin fun c ->
   let get_type env sigma =
-  Proofview.wrap_exceptions begin fun () ->
     let (sigma, t) = Typing.type_of env sigma c in
     let t = Value.of_constr t in
     Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
-  end in
-  pf_apply get_type
+  in
+  pf_apply ~catch_exceptions:true get_type
 end
 
 (** constr -> constr *)
@@ -758,26 +781,25 @@ end
 
 (** preterm -> constr *)
 let () = define1 "constr_pretype" (repr_ext val_preterm) begin fun c ->
-  let open Pretyping in
-  let open Ltac_pretype in
-  let pretype env sigma =
-  Proofview.wrap_exceptions begin fun () ->
-    (* For now there are no primitives to create preterms with a non-empty
-       closure. I do not know whether [closed_glob_constr] is really the type
-       we want but it does not hurt in the meantime. *)
-    let { closure; term } = c in
-    let vars = {
-      ltac_constrs = closure.typed;
-      ltac_uconstrs = closure.untyped;
-      ltac_idents = closure.idents;
-      ltac_genargs = Id.Map.empty;
-    } in
-    let flags = constr_flags in
-    let sigma, t = understand_ltac flags env sigma vars WithoutTypeConstraint term in
-    let t = Value.of_constr t in
-    Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
-  end in
-  pf_apply pretype
+    let open Pretyping in
+    let open Ltac_pretype in
+    let pretype env sigma =
+      (* For now there are no primitives to create preterms with a non-empty
+         closure. I do not know whether [closed_glob_constr] is really the type
+         we want but it does not hurt in the meantime. *)
+      let { closure; term } = c in
+      let vars = {
+        ltac_constrs = closure.typed;
+        ltac_uconstrs = closure.untyped;
+        ltac_idents = closure.idents;
+        ltac_genargs = Id.Map.empty;
+      } in
+      let flags = constr_flags in
+      let sigma, t = understand_ltac flags env sigma vars WithoutTypeConstraint term in
+      let t = Value.of_constr t in
+      Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
+    in
+    pf_apply ~catch_exceptions:true pretype
 end
 
 let () = define2 "constr_binder_make" (option ident) constr begin fun na ty ->
@@ -1261,25 +1283,14 @@ let intern_constr self ist c =
   let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
   (GlbVal c, gtypref t_constr)
 
-let catchable_exception = function
-  | Logic_monad.Exception _ -> false
-  | e -> CErrors.noncritical e
-
 let interp_constr flags ist c =
   let open Pretyping in
   let ist = to_lvar ist in
-  pf_apply begin fun env sigma ->
-  try
+  pf_apply ~catch_exceptions:true begin fun env sigma ->
     let (sigma, c) = understand_ltac flags env sigma ist WithoutTypeConstraint c in
     let c = Value.of_constr c in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT c
-  with e when catchable_exception e ->
-    let (e, info) = Exninfo.capture e in
-    set_bt info >>= fun info ->
-    match Exninfo.get info fatal_flag with
-    | None -> Proofview.tclZERO ~info e
-    | Some () -> throw ~info e
   end
 
 let () =

@@ -1,0 +1,11 @@
+File "./output/ltac2_anomaly_backtrace.v", line 9, characters 0-18:
+Error:
+Backtrace:
+Call foo
+Call Std.eval_hnf
+Prim <coq-core.plugins.ltac2:eval_hnf>
+Anomaly "Uncaught exception Not_found."
+Please report at http://coq.inria.fr/bugs/.
+
+
+coqc exited with code 129
