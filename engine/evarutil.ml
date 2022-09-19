@@ -220,11 +220,6 @@ let next_ident_away id avoid =
   let avoid id = Id.Set.mem id avoid in
   next_ident_away_from id avoid
 
-let next_name_away na avoid =
-  let avoid id = Id.Set.mem id avoid in
-  let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
-  next_ident_away_from id avoid
-
 type subst_val =
 | SRel of int
 | SVar of Id.t
@@ -305,10 +300,6 @@ struct
   let variables env id = is_section_variable env id
 end
 
-let program_naming =
-  Goptions.declare_bool_option_and_ref ~depr:true
-    ~key:["Program";"Naming"] ~value:false
-
 type naming_mode =
   | RenameExistingBut of VarSet.t
   | FailIfConflict
@@ -340,17 +331,9 @@ let push_rel_decl_to_named_context
   in
   let na = RelDecl.get_name decl in
   let id =
-    (* ppedrot: we want to infer nicer names for the refine tactic, but
-        keeping at the same time backward compatibility in other code
-        using this function. For now, we only attempt to preserve the
-        old behaviour of Program, but ultimately, one should do something
-        about this whole name generation problem. *)
-    match hypnaming with
-    | ProgramNaming _ when program_naming () -> next_name_away na avoid
-    | ProgramNaming _ | RenameExistingBut _ | FailIfConflict ->
-      (* id_of_name_using_hdchar only depends on the rel context which is empty
-         here *)
-      next_ident_away (id_of_name_using_hdchar empty_env sigma (RelDecl.get_type decl) na) avoid
+    (* id_of_name_using_hdchar only depends on the rel context which is empty
+        here *)
+    next_ident_away (id_of_name_using_hdchar empty_env sigma (RelDecl.get_type decl) na) avoid
   in
   match extract_if_neq id na with
   | Some id0 ->
