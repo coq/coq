@@ -624,15 +624,15 @@ Add Zify UnOpSpec ZabsSpec.
 Instance SatPowPos : Saturate Z.pow :=
   { PArg1 x := 0 < x;
     PArg2 y := 0 <= y;
-    PRes r := 0 < r;
-    SatOk := Z.pow_pos_nonneg }.
+    PRes _ _ r := 0 < r;
+    SatOk := fun x y => Z.pow_pos_nonneg x y}.
 Add Zify Saturate SatPowPos.
 
 #[global]
 Instance SatPowNonneg : Saturate Z.pow :=
   { PArg1 x := 0 <= x;
     PArg2 y := True;
-    PRes r := 0 <= r;
+    PRes _ _ r := 0 <= r;
     SatOk a b Ha _ := @Z.pow_nonneg a b Ha }.
 Add Zify Saturate SatPowNonneg.
 
