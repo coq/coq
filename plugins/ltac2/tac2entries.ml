@@ -944,7 +944,7 @@ let () = CErrors.register_additional_error_info begin fun info ->
     let bt =
       str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt ++ fnl ()
     in
-    Some (Loc.tag bt)
+    Some bt
   else None
 end
 

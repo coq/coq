@@ -704,7 +704,7 @@ let is_defined_ltac trace =
   | [] -> false in
   aux (List.rev trace)
 
-let explain_ltac_call_trace last trace loc =
+let explain_ltac_call_trace last trace =
   let calls = last :: List.rev_map snd trace in
   let pr_call ck = match ck with
     | Tacexpr.LtacNotationCall kn -> quote (Pptactic.pr_alias_key kn)
@@ -751,36 +751,21 @@ let skip_extensions trace =
   | [] -> [] in
   List.rev (aux (List.rev trace))
 
-let extract_ltac_trace ?loc trace =
+let extract_ltac_trace trace =
   let trace = skip_extensions trace in
-  let (tloc,c),tail = List.sep_last trace in
+  let (_,c),tail = List.sep_last trace in
   if is_defined_ltac trace then
     (* We entered a user-defined tactic,
        we display the trace with location of the call *)
-    let msg = hov 0 (explain_ltac_call_trace c tail loc ++ fnl()) in
-    (if Loc.finer loc tloc then loc else tloc), msg
+    let msg = hov 0 (explain_ltac_call_trace c tail ++ fnl()) in
+    msg
   else
-    (* We entered a primitive tactic, we don't display trace but
-       report on the finest location *)
-    let best_loc =
-      (* trace is with innermost call coming first *)
-      let rec aux best_loc = function
-        | (loc,_)::tail ->
-           if Option.is_empty best_loc ||
-              not (Option.is_empty loc) && Loc.finer loc best_loc
-           then
-             aux loc tail
-           else
-             aux best_loc tail
-        | [] -> best_loc in
-        aux loc trace in
-    best_loc, mt ()
+    mt ()
 
 let get_ltac_trace info =
   let ltac_trace = Exninfo.get info ltac_trace_info in
-  let loc = Loc.get_loc info in
   match ltac_trace with
   | None -> None
-  | Some trace -> Some (extract_ltac_trace ?loc trace)
+  | Some trace -> Some (extract_ltac_trace trace)
 
 let () = CErrors.register_additional_error_info get_ltac_trace

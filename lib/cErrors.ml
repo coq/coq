@@ -93,7 +93,7 @@ let is_anomaly = function
 (** Printing of additional error info, from Exninfo *)
 let additional_error_info_handler = ref []
 
-let register_additional_error_info (f : Exninfo.info -> (Pp.t Loc.located) option) =
+let register_additional_error_info (f : Exninfo.info -> Pp.t option) =
   additional_error_info_handler := f :: !additional_error_info_handler
 
 (** [print_gen] is a general exception printer which tries successively
@@ -115,7 +115,7 @@ let print_gen ~anomaly (e, info) =
   let extra_msg =
     CList.map_filter (fun f -> f info) !additional_error_info_handler
     (* Location info in the handler is ignored *)
-    |> List.map snd |> Pp.seq
+    |> Pp.seq
   in
   try
     print_gen ~anomaly ~extra_msg !handle_stack e
