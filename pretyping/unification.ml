@@ -88,6 +88,7 @@ let occur_meta_evd sigma mv c =
     let c = whd_meta sigma c in
     match EConstr.kind sigma c with
     | Meta mv' when Int.equal mv mv' -> raise Occur
+    | Evar (_, args) -> SList.Skip.iter occrec args
     | _ -> EConstr.iter sigma occrec c
   in try occrec c; false with Occur -> true
 

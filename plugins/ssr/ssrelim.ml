@@ -56,6 +56,7 @@ let analyze_eliminator elimty env sigma =
        let count = ref 0 in
        let rec occur_rec n c = match EConstr.kind sigma c with
          | Rel m -> if m = n then incr count
+         | Evar (_, args) -> SList.Skip.iter (fun c -> occur_rec n c) args
          | _ -> EConstr.iter_with_binders sigma succ occur_rec n c
        in
        occur_rec n term; !count in

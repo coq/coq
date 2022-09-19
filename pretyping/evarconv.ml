@@ -1302,7 +1302,9 @@ let occur_evars sigma evs c =
   if Evar.Set.is_empty evs then false
   else
     let rec occur_rec c = match EConstr.kind sigma c with
-      | Evar (sp,_) when Evar.Set.mem sp evs -> raise Occur
+      | Evar (sp, args) ->
+        if Evar.Set.mem sp evs then raise Occur
+        else SList.Skip.iter occur_rec args
       | _ -> EConstr.iter sigma occur_rec c
     in
     try occur_rec c; false with Occur -> true

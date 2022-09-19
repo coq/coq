@@ -798,6 +798,7 @@ exception Occur
 let occur_meta sigma c =
   let rec occrec c = match EConstr.kind sigma c with
     | Meta _ -> raise Occur
+    | Evar (_, args) -> SList.Skip.iter occrec args
     | _ -> EConstr.iter sigma occrec c
   in try occrec c; false with Occur -> true
 
@@ -817,13 +818,16 @@ let occur_meta_or_existential sigma c =
 let occur_metavariable sigma m c =
   let rec occrec c = match EConstr.kind sigma c with
   | Meta m' -> if Int.equal m m' then raise Occur
+  | Evar (_, args) -> SList.Skip.iter occrec args
   | _ -> EConstr.iter sigma occrec c
   in
   try occrec c; false with Occur -> true
 
 let occur_evar sigma n c =
   let rec occur_rec c = match EConstr.kind sigma c with
-    | Evar (sp,_) when Evar.equal sp n -> raise Occur
+    | Evar (sp, args) ->
+      if Evar.equal sp n then raise Occur
+      else SList.Skip.iter occur_rec args
     | _ -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; false with Occur -> true
@@ -921,6 +925,7 @@ let collect_metas sigma c =
   let rec collrec acc c =
     match EConstr.kind sigma c with
       | Meta mv -> List.add_set Int.equal mv acc
+      | Evar (_, args) -> SList.Skip.fold collrec acc args
       | _       -> EConstr.fold sigma collrec acc c
   in
   List.rev (collrec [] c)
