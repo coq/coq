@@ -100,16 +100,14 @@ let register_additional_error_info (f : Exninfo.info -> Pp.t option) =
     all the handlers of a list, and finally a [bottom] handler if all
     others have failed *)
 
-let rec print_gen ~anomaly ~extra_msg stk e =
+let rec print_gen ~anomaly stk e =
   match stk with
   | [] ->
     print_anomaly anomaly e
   | h::stk' ->
     match h e with
-    | Some err_msg ->
-      extra_msg ++ err_msg
-    | None ->
-      print_gen ~anomaly ~extra_msg stk' e
+    | Some err_msg -> err_msg
+    | None -> print_gen ~anomaly stk' e
 
 let print_gen ~anomaly (e, info) =
   let extra_msg =
@@ -118,13 +116,13 @@ let print_gen ~anomaly (e, info) =
     |> Pp.seq
   in
   try
-    print_gen ~anomaly ~extra_msg !handle_stack e
+    extra_msg ++ print_gen ~anomaly !handle_stack e
   with exn ->
     let exn, info = Exninfo.capture exn in
     (* exception in error printer *)
     str "<in exception printer>:" ++ spc() ++ print_anomaly anomaly exn ++
     print_backtrace info ++ fnl() ++
-    str "<original exception>:" ++ spc() ++ print_anomaly false e
+    str "<original exception>:" ++ spc() ++ extra_msg ++ print_anomaly false e
 
 (** The standard exception printer *)
 let iprint (e, info) =
