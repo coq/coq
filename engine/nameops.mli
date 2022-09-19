@@ -52,6 +52,22 @@ sig
 
 end
 
+module Fresh :
+sig
+  type t
+  val empty : t
+  val add : Id.t -> t -> t
+  val remove : Id.t -> t -> t
+  val mem : Id.t -> t -> bool
+  val next : Id.t -> t -> Id.t
+  val fresh : Id.t -> t -> Id.t * t
+
+  val of_list : Id.t list -> t
+  val of_set : Id.Set.t -> t
+  val of_named_context_val : Environ.named_context_val -> t
+end
+
+
 val has_subscript       : Id.t -> bool
 
 val get_subscript : Id.t -> Id.t * Subscript.t
