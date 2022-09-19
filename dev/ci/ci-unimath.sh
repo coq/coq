@@ -13,10 +13,8 @@ export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/unimath"
   # these files consumes too much memory for the shared workers
   # (at least with -j 2 when the scheduler runs them in parallel)
-  for f in DisplayedBicats/Examples/DisplayedInserter.v \
-               PseudoFunctors/Preservation/BiadjunctionPreserveInserters.v;
-  do
-      sed -i.bak "s|$f||"  UniMath/Bicategories/.package/files
+  for p in SubstitutionSystems Bicategories; do
+      sed -i.bak "s|PACKAGES += $p||" Makefile
   done
   make BUILD_COQ=no
 )
