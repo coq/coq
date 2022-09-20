@@ -36,7 +36,6 @@ build: [
     "-prefix" prefix
     "-mandir" man
     "-libdir" "%{lib}%/coq"
-    "-coqide" "no"
     "-native-compiler" "yes" {coq-native:installed} "no" {!coq-native:installed}
   ]
   [ make "dunestrap" "COQ_DUNE_EXTRA_OPT=-split" ]

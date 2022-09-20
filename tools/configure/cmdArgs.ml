@@ -12,8 +12,6 @@ open Util
 
 (** * Command-line parsing *)
 
-type ide = Opt | Byte | No
-
 type nativecompiler = NativeYes | NativeNo | NativeOndemand
 
 module Prefs = struct
@@ -28,7 +26,6 @@ type t = {
   docdir : string option;
   arch : string option;
   natdynlink : bool;
-  coqide : ide option;
   macintegration : bool;
   browser : string option;
   withdoc : bool;
@@ -55,7 +52,6 @@ let default_prefs = {
   docdir = None;
   arch = None;
   natdynlink = true;
-  coqide = None;
   macintegration = true;
   browser = None;
   withdoc = false;
@@ -74,12 +70,6 @@ let get_bool = function
   | "false" | "no" | "n" -> false
   | s -> raise (Arg.Bad ("boolean argument expected instead of "^s))
 
-let get_ide = function
-  | "opt" -> Opt
-  | "byte" -> Byte
-  | "no" -> No
-  | s -> raise (Arg.Bad ("(opt|byte|no) argument expected instead of "^s))
-
 let get_native = function
   | "yes" -> NativeYes
   | "no" -> NativeNo
@@ -94,8 +84,6 @@ let arg_string f = Arg.String (fun s -> prefs := f !prefs s)
 let arg_string_option f = Arg.String (fun s -> prefs := f !prefs (Some s))
 
 let arg_set f = Arg.Unit (fun () -> prefs := f !prefs)
-
-let arg_ide f = Arg.String (fun s -> prefs := f !prefs (Some (get_ide s)))
 
 let arg_native f = Arg.String (fun s -> prefs := f !prefs (get_native s))
 
@@ -127,8 +115,6 @@ let args_options = Arg.align [
     "<arch> Specifies the architecture";
   "-natdynlink", arg_bool (fun p natdynlink -> { p with natdynlink }),
     "(yes|no) Use dynamic loading of native code or not";
-  "-coqide", arg_ide (fun p coqide -> { p with coqide }),
-    "(opt|byte|no) Specifies whether or not to compile CoqIDE";
   "-nomacintegration", arg_set (fun p -> { p with macintegration = false}),
     " Do not try to build CoqIDE MacOS integration";
   "-browser", arg_string_option (fun p browser -> { p with browser }),

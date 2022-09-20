@@ -226,6 +226,15 @@ let arch = function
     else if arch <> "" then arch
     else try_archs arch_progs
 
+let idearchdef ~ocamlfind ~macintegration ~arch =
+  match arch with
+    | "Darwin" when macintegration ->
+      let osxdir,_ = tryrun ocamlfind ["query";"lablgtkosx"] in
+      if osxdir <> "" then "QUARTZ" else "X11"
+    | "win32" ->
+      "WIN32"
+    | _ -> "X11"
+
 let write_config_file ~file ?(bin=false) action =
   safe_remove file;
   let o = if bin then open_out_bin file else open_out file in
