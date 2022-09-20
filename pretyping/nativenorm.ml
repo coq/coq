@@ -421,7 +421,7 @@ and nf_evar env sigma evk args =
     (* nf_args takes arguments in the reverse order but produces them
        in the correct one, so we have to reverse them again for the
        evar node *)
-    mkEvar (evk, SList.of_full_list @@ List.rev args), ty
+    EConstr.(Unsafe.to_constr @@ mkLEvar sigma (evk, List.rev_map of_constr args)), ty
 
 and nf_array env sigma t typ =
   let ty, allargs = app_type env sigma (EConstr.of_constr typ) in
