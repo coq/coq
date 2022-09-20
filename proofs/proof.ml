@@ -376,7 +376,7 @@ let run_tactic env tac pr =
       they to be marked as unresolvable. *)
     let retrieved, sigma = Evd.pop_future_goals sigma in
     let retrieved = Evd.FutureGoals.filter (Evd.is_undefined sigma) retrieved in
-    let retrieved = List.rev retrieved.Evd.FutureGoals.comb in
+    let retrieved = List.rev (Evd.FutureGoals.comb retrieved) in
     let sigma = Proofview.Unsafe.mark_as_goals sigma retrieved in
     let to_shelve, sigma = Evd.pop_shelf sigma in
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->

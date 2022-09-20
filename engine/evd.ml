@@ -458,17 +458,11 @@ type side_effects = {
 
 module FutureGoals : sig
 
-  type t = private {
-    comb : Evar.t list;
-    principal : Evar.t option; (** if [Some e], [e] must be
-                                   contained in
-                                   [comb]. The evar
-                                   [e] will inherit
-                                   properties (now: the
-                                   name) of the evar which
-                                   will be instantiated with
-                                   a term containing [e]. *)
-  }
+  type t
+
+  val comb : t -> Evar.t list
+
+  val principal : t -> Evar.t option
 
   val map_filter : (Evar.t -> Evar.t option) -> t -> t
   (** Applies a function on the future goals *)
@@ -503,6 +497,10 @@ end = struct
                                    will be instantiated with
                                    a term containing [e]. *)
   }
+
+  let comb g = g.comb
+
+  let principal g = g.principal
 
   type stack = t list
 

@@ -766,7 +766,7 @@ let with_shelf tac =
   (* TODO: is it still relevant since the removal of the compat layer? *)
   let fgl, sigma = Evd.pop_future_goals sigma in
   (* Ensure we mark and return only unsolved goals *)
-  let gls' = CList.rev_append fgl.Evd.FutureGoals.comb gls in
+  let gls' = CList.rev_append (Evd.FutureGoals.comb fgl) gls in
   let gls' = undefined_evars sigma gls' in
   let sigma = mark_in_evm ~goal:false sigma gls' in
   let npv = { npv with solution = sigma } in
