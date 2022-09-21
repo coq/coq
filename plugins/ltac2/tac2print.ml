@@ -564,7 +564,7 @@ end
 
 let () = register_init "err" begin fun _ _ e ->
   let e = to_ext val_exn e in
-  str "err:(" ++ CErrors.iprint e ++ str ")"
+  str "err:(" ++ CErrors.iprint_no_report e ++ str ")"
 end
 
 let () =
