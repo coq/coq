@@ -30,8 +30,6 @@ sig
   val mkProduct : (Sorts.t * Sorts.t) -> t
   val mkAppli : (t * t) -> t
   val mkConstructor : cinfo -> t
-
-  val equal : t -> t -> bool (* does not depend on cached values *)
   val constr : t -> constr
   val nth_arg : t -> int -> t
 end

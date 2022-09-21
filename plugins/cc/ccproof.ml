@@ -11,7 +11,6 @@
 (* This file uses the (non-compressed) union-find structure to generate *)
 (* proof-trees that will be transformed into proof-terms in cctac.mlg   *)
 
-open CErrors
 open Constr
 open Ccalgo
 open Pp
@@ -45,11 +44,9 @@ let rec ptrans p1 p3=
     | Congr(p1,p2), Trans({p_rule=Congr(p3,p4)},p5) ->
         ptrans (pcongr (ptrans p1 p3) (ptrans p2 p4)) p5
   | _, _ ->
-      if ATerm.equal p1.p_rhs p3.p_lhs then
-        {p_lhs=p1.p_lhs;
-         p_rhs=p3.p_rhs;
-         p_rule=Trans (p1,p3)}
-      else anomaly (Pp.str "invalid cc transitivity.")
+      {p_lhs=p1.p_lhs;
+        p_rhs=p3.p_rhs;
+        p_rule=Trans (p1,p3)}
 
 let rec psym p =
   match p.p_rule with
