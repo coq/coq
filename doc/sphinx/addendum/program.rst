@@ -110,13 +110,6 @@ coercions.
    definition.  An alternative and commonly used syntax is to use the legacy ``Program``
    prefix (cf. :n:`@legacy_attr`) as it is elsewhere in this chapter.
 
-.. flag:: Program Naming
-
-   Activates the legacy algorithm for generating fresh names for
-   anonymous variables in |Program| obligations.
-
-   .. deprecated:: 8.16
-
 .. _syntactic_control:
 
 Syntactic control over equalities
