@@ -379,17 +379,14 @@ val declare_principal_goal : Evar.t -> evar_map -> evar_map
 
 module FutureGoals : sig
 
-  type t = private {
-    comb : Evar.t list;
-    principal : Evar.t option; (** if [Some e], [e] must be
-                                   contained in
-                                   [future_comb]. The evar
-                                   [e] will inherit
-                                   properties (now: the
-                                   name) of the evar which
-                                   will be instantiated with
-                                   a term containing [e]. *)
-  }
+  type t
+
+  val comb : t -> Evar.t list
+
+  val principal : t -> Evar.t option
+  (** if [Some e], [e] must be contained in [future_comb]. The evar [e] will
+      inherit properties (now: the name) of the evar which will be instantiated
+      with a term containing [e]. *)
 
   val map_filter : (Evar.t -> Evar.t option) -> t -> t
   (** Applies a function on the future goals *)

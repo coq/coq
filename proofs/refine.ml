@@ -83,7 +83,7 @@ let generic_refine ~typecheck f gl =
     (* Nothing to do, the goal has been solved by side-effect *)
     sigma
   | Some self ->
-    match future_goals.Evd.FutureGoals.principal with
+    match (Evd.FutureGoals.principal future_goals) with
     | None -> Evd.define self c sigma
     | Some evk ->
         let id = Evd.evar_ident self sigma in
@@ -93,8 +93,8 @@ let generic_refine ~typecheck f gl =
         | Some id -> Evd.rename evk id sigma
   in
   (* Mark goals *)
-  let sigma = Proofview.Unsafe.mark_as_goals sigma future_goals.Evd.FutureGoals.comb in
-  let comb = CList.rev_map (fun x -> Proofview.goal_with_state x state) future_goals.Evd.FutureGoals.comb in
+  let sigma = Proofview.Unsafe.mark_as_goals sigma (Evd.FutureGoals.comb future_goals) in
+  let comb = CList.rev_map (fun x -> Proofview.goal_with_state x state) (Evd.FutureGoals.comb future_goals) in
   let trace () = Pp.(hov 2 (str"simple refine"++spc()++
                                    Termops.Internal.print_constr_env env sigma c)) in
   Proofview.Trace.name_tactic trace (Proofview.tclUNIT v) >>= fun v ->

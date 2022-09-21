@@ -458,17 +458,11 @@ type side_effects = {
 
 module FutureGoals : sig
 
-  type t = private {
-    comb : Evar.t list;
-    principal : Evar.t option; (** if [Some e], [e] must be
-                                   contained in
-                                   [comb]. The evar
-                                   [e] will inherit
-                                   properties (now: the
-                                   name) of the evar which
-                                   will be instantiated with
-                                   a term containing [e]. *)
-  }
+  type t
+
+  val comb : t -> Evar.t list
+
+  val principal : t -> Evar.t option
 
   val map_filter : (Evar.t -> Evar.t option) -> t -> t
   (** Applies a function on the future goals *)
@@ -493,7 +487,9 @@ module FutureGoals : sig
 end = struct
 
   type t = {
-    comb : Evar.t list;
+    uid : int;
+    comb : Evar.t Int.Map.t;
+    revmap : int Evar.Map.t;
     principal : Evar.t option; (** if [Some e], [e] must be
                                    contained in
                                    [comb]. The evar
@@ -504,6 +500,12 @@ end = struct
                                    a term containing [e]. *)
   }
 
+  let comb g =
+    (* Keys are reversed, highest number is last introduced *)
+    Int.Map.fold (fun _ evk accu -> evk :: accu) g.comb []
+
+  let principal g = g.principal
+
   type stack = t list
 
   let set f = function
@@ -513,7 +515,8 @@ end = struct
 
   let add ~principal evk stack =
     let add fgl =
-      let comb = evk :: fgl.comb in
+      let comb = Int.Map.add fgl.uid evk fgl.comb in
+      let revmap = Evar.Map.add evk fgl.uid fgl.revmap in
       let principal =
         if principal then
           match fgl.principal with
@@ -521,7 +524,9 @@ end = struct
           | None -> Some evk
         else fgl.principal
       in
-      { comb; principal }
+      let uid = fgl.uid + 1 in
+      let () = assert (0 <= uid) in
+      { comb; revmap; principal; uid }
     in
     set add stack
 
@@ -529,14 +534,19 @@ end = struct
     let remove fgl =
       let filter e' = not (Evar.equal e e') in
       let principal = Option.filter filter fgl.principal in
-      let comb = List.filter filter fgl.comb in
-      { principal; comb }
+      let comb, revmap = match Evar.Map.find e fgl.revmap with
+      | index -> (Int.Map.remove index fgl.comb, Evar.Map.remove e fgl.revmap)
+      | exception Not_found -> fgl.comb, fgl.revmap
+      in
+      { principal; comb; revmap; uid = fgl.uid }
     in
     List.map remove stack
 
   let empty = {
+    uid = 0;
     principal = None;
-    comb = [];
+    comb = Int.Map.empty;
+    revmap = Evar.Map.empty;
   }
 
   let empty_stack = [empty]
@@ -551,22 +561,32 @@ end = struct
 
   let fold f acc stack =
     let future_goals = List.hd stack in
-    List.fold_left f acc future_goals.comb
+    List.fold_left f acc (comb future_goals)
 
   let filter f fgl =
-    let comb = List.filter f fgl.comb in
+    let fold index evk (comb, revmap) =
+      if f evk then (comb, revmap)
+      else (Int.Map.remove index comb, Evar.Map.remove evk revmap)
+    in
+    let (comb, revmap) = Int.Map.fold fold fgl.comb (fgl.comb, fgl.revmap) in
     let principal = Option.filter f fgl.principal in
-    { comb; principal }
+    { comb; principal; revmap; uid = fgl.uid }
 
   let map_filter f fgl =
-    let comb = List.map_filter f fgl.comb in
+    let fold index evk (comb, revmap) = match f evk with
+    | None -> (comb, revmap)
+    | Some evk' ->
+      (Int.Map.add index evk' comb, Evar.Map.add evk' index revmap)
+    in
+    let (comb, revmap) = Int.Map.fold fold fgl.comb (Int.Map.empty, Evar.Map.empty) in
     let principal = Option.bind fgl.principal f in
-    { comb; principal }
+    { comb; revmap; principal; uid = fgl.uid }
 
   let pr_stack stack =
     let open Pp in
     let pr_future_goals fgl =
-      prlist_with_sep spc Evar.print fgl.comb ++
+      let comb = comb fgl in
+      prlist_with_sep spc Evar.print comb ++
         pr_opt (fun ev -> str"(principal: " ++ Evar.print ev ++ str")") fgl.principal
     in
     if List.is_empty stack then str"(empty stack)"
