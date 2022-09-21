@@ -10,7 +10,6 @@
 ########## Build system ##########
 
 /Makefile                       @coq/build-maintainers
-/Makefile.dune                  @coq/build-maintainers
 /dev/tools/make_git_revision.sh @coq/build-maintainers
 
 /configure                      @coq/build-maintainers

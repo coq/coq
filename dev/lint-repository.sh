@@ -37,6 +37,6 @@ dev/tools/check-cachekey.sh || CODE=1
 
 # Check that doc/tools/docgram/fullGrammar is up-to-date
 echo Checking grammar files
-make -f Makefile.dune SHOW='@true ""' doc_gram_verify || CODE=1
+make SHOW='@true ""' doc_gram_verify || CODE=1
 
 exit $CODE

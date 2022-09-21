@@ -13,7 +13,7 @@ first line of the `dune-project` file for the minimum required
 version.
 
 It is strongly recommended that you use the helper targets available
-in `Makefile.dune`, `make` will display help. Note that dune will call
+in `Makefile`, `make` will display help. Note that dune will call
 configure for you if needed, so no need to call `./configure` in the
 regular development workflow, unless you want to tweak options.
 

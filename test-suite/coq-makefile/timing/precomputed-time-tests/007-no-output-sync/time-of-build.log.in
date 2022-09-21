@@ -3,8 +3,11 @@
 [0;m[0KUsing Docker executor with image registry.gitlab.com/coq/coq:bionic_coq-V2020-08-28-V92 ...
 [0;m[0KPulling docker image registry.gitlab.com/coq/coq:bionic_coq-V2020-08-28-V92 ...
 [0;m[0KUsing docker image sha256:f232f9802a06400390b5d6afa5fd280d73c89890309a27e840013ef2e9809c91 for registry.gitlab.com/coq/coq:bionic_coq-V2020-08-28-V92 ...
-[0;msection_start:1598963621:prepare_script[0KRunning on runner-curNbQZR-project-6138686-concurrent-1 via roquableu...
-section_end:1598963624:prepare_script[0Ksection_start:1598963624:get_sources[0KReinitialized existing Git repository in /builds/coq/coq/.git/
+[0;msection_start:1598963621:prepare_script
+[0KRunning on runner-curNbQZR-project-6138686-concurrent-1 via roquableu...
+section_end:1598963624:prepare_script
+[0Ksection_start:1598963624:get_sources
+[0KReinitialized existing Git repository in /builds/coq/coq/.git/
 Removing _build_ci/
 Removing _install_ci/
 Removing config/Makefile
@@ -21,11 +24,17 @@ See "git help gc" for manual housekeeping.
 [32;1mChecking out fdbbc0cb as pr-12653...[0;m
 
 [32;1mSkipping Git submodules setup[0;m
-section_end:1598963638:get_sources[0Ksection_start:1598963638:restore_cache[0Ksection_end:1598963641:restore_cache[0Ksection_start:1598963641:download_artifacts[0K[32;1mDownloading artifacts for build:base (713526714)...[0;m
+section_end:1598963638:get_sources
+[0Ksection_start:1598963638:restore_cache
+[0Ksection_end:1598963641:restore_cache
+[0Ksection_start:1598963641:download_artifacts
+[0K[32;1mDownloading artifacts for build:base (713526714)...[0;m
 Downloading artifacts from coordinator... ok      [0;m  id[0;m=713526714 responseStatus[0;m=200 OK token[0;m=CwEA_cmf
 [32;1mDownloading artifacts for plugin:ci-equations (713526793)...[0;m
 Downloading artifacts from coordinator... ok      [0;m  id[0;m=713526793 responseStatus[0;m=200 OK token[0;m=hxEjzCme
-section_end:1598963691:download_artifacts[0Ksection_start:1598963691:build_script[0K[32;1m$ cat /proc/{cpu,mem}info || true[0;m
+section_end:1598963691:download_artifacts
+[0Ksection_start:1598963691:build_script
+[0K[32;1m$ cat /proc/{cpu,mem}info || true[0;m
 processor	: 0
 vendor_id	: GenuineIntel
 cpu family	: 6
@@ -752,7 +761,6 @@ Makefile.ci
 Makefile.common
 Makefile.dev
 Makefile.doc
-Makefile.dune
 Makefile.ide
 Makefile.install
 Makefile.make
@@ -5625,5 +5633,10 @@ Traceback (most recent call last):
 ValueError: too many values to unpack
 Makefile.ci:90: recipe for target 'ci-metacoq' failed
 make: *** [ci-metacoq] Error 1
-section_end:1598965182:build_script[0Ksection_start:1598965182:after_script[0Ksection_end:1598965184:after_script[0Ksection_start:1598965184:upload_artifacts_on_failure[0Ksection_end:1598965189:upload_artifacts_on_failure[0K[31;1mERROR: Job failed: exit code 1
+section_end:1598965182:build_script
+[0Ksection_start:1598965182:after_script
+[0Ksection_end:1598965184:after_script
+[0Ksection_start:1598965184:upload_artifacts_on_failure
+[0Ksection_end:1598965189:upload_artifacts_on_failure
+[0K[31;1mERROR: Job failed: exit code 1
 [0;m
