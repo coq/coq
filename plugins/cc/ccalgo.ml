@@ -135,7 +135,6 @@ module ATerm :
 sig
   type t
   val proj : t -> t term
-  val make : t term -> t
   val mkSymb : constr -> t
   val mkProduct : (Sorts.t * Sorts.t) -> t
   val mkEps : Id.t -> t
