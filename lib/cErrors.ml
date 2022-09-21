@@ -122,8 +122,9 @@ let print_gen ~anomaly (e, info) =
   with exn ->
     let exn, info = Exninfo.capture exn in
     (* exception in error printer *)
-    str "<in exception printer>:" ++ print_backtrace info ++
-    str "<original exception:" ++ print_anomaly anomaly exn
+    str "<in exception printer>:" ++ spc() ++ print_anomaly anomaly exn ++
+    print_backtrace info ++ fnl() ++
+    str "<original exception>:" ++ spc() ++ print_anomaly false e
 
 (** The standard exception printer *)
 let iprint (e, info) =
