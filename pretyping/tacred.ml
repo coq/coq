@@ -95,7 +95,7 @@ let evaluable_reference_eq sigma r1 r2 = match r1, r2 with
 | EvalVar id1, EvalVar id2 -> Id.equal id1 id2
 | EvalRel i1, EvalRel i2 -> Int.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
-  Evar.equal e1 e2 && List.equal (EConstr.eq_constr sigma) ctx1 ctx2
+  EConstr.eq_constr sigma (mkEvar (e1, ctx1)) (mkEvar (e2, ctx2))
 | _ -> false
 
 let mkEvalRef ref u =
@@ -392,7 +392,7 @@ let substl_with_function subst sigma constr =
         let (sigma, evk) = Evarutil.new_pure_evar empty_named_context_val sigma dummy in
         evd := sigma;
         minargs := Evar.Map.add evk (min, fx, ref) !minargs;
-        mkEvar (evk, [])
+        mkEvar (evk, SList.empty)
       | (fx, None) -> Vars.lift k fx
     else mkRel (i - Array.length v)
   | _ ->
@@ -439,7 +439,7 @@ let substl_checking_arity env subst sigma c =
   (* we propagate the constraints: solved problems are substituted;
      the other ones are replaced by the function symbol *)
   let rec nf_fix k c = match EConstr.kind sigma c with
-  | Evar (i, []) ->
+  | Evar (i, SList.Nil) ->
     (* FIXME: find a less hackish way of doing this *)
     begin match Evar.Map.find i minargs with
     | (_, fx, ref) ->

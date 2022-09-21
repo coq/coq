@@ -209,7 +209,7 @@ and nf_evar env sigma evk stk =
   let hyps = EConstr.named_context_of_val (Evd.evar_filtered_hyps evi) in
   if List.is_empty hyps then
     let concl = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
-    nf_stk env sigma (mkEvar (evk, [])) concl stk
+    nf_stk env sigma (mkEvar (evk, SList.empty)) concl stk
   else match stk with
   | Zapp args :: stk ->
     (* We assume that there is no consecutive Zapp nodes in a VM stack. Is that
@@ -224,8 +224,9 @@ and nf_evar env sigma evk stk =
     let t, args = nf_args env sigma args t in
     let inst, args = Array.chop (List.length hyps) args in
     (* Evar instances are reversed w.r.t. argument order *)
-    let inst = Array.rev_to_list inst in
-    let c = mkApp (mkEvar (evk, inst), args) in
+    let inst = Array.to_list inst in
+    let ev = EConstr.(Unsafe.to_constr @@ mkLEvar sigma (evk, List.rev_map of_constr inst)) in
+    let c = mkApp (ev, args) in
     nf_stk env sigma c t stk
   | _ ->
     CErrors.anomaly (Pp.str "Argument size mismatch when decompiling an evar")

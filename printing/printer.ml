@@ -658,7 +658,7 @@ let should_print_dependent_evars =
 let evar_nodes_of_term c =
   let rec evrec acc c =
     match kind c with
-    | Evar (n, l) -> Evar.Set.add n (List.fold_left evrec acc l)
+    | Evar (n, l) -> Evar.Set.add n (SList.Skip.fold evrec acc l)
     | _ -> Constr.fold evrec acc c
   in
   evrec Evar.Set.empty (EConstr.Unsafe.to_constr c)

@@ -671,9 +671,8 @@ let mk_goal evars hyps concl =
       created. *)
   let evars = Evd.push_future_goals evars in
   let inst = EConstr.identity_subst_val hyps in
-  let identity = Evd.Identity.make inst in
   let (evars,evk) =
-    Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false ~identity hyps evars concl
+    Evarutil.new_pure_evar ~src:(Loc.tag Evar_kinds.GoalEvar) ~typeclass_candidate:false hyps evars concl
   in
   let _, evars = Evd.pop_future_goals evars in
   let ev = EConstr.mkEvar (evk,inst) in
@@ -1012,16 +1011,15 @@ let make_evar_clause env sigma ?len t =
     | Cast (t, _, _) -> clrec (sigma, holes) inst n t
     | Prod (na, t1, t2) ->
       (* Share the evar instances as we are living in the same context *)
-      let inst, ctx, args, identity, subst = match inst with
+      let inst, ctx, args, subst = match inst with
       | None ->
         (* Dummy type *)
         let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
         let ctx, _, args, subst = push_rel_context_to_named_context ~hypnaming env sigma mkProp in
-        let id = if Int.equal (Environ.nb_rel env) 0 then Identity.make args else Identity.none () in
-        Some (ctx, args, id, subst), ctx, args, id, subst
-      | Some (ctx, args, id, subst) -> inst, ctx, args, id, subst
+        Some (ctx, args, subst), ctx, args, subst
+      | Some (ctx, args, subst) -> inst, ctx, args, subst
       in
-      let (sigma, ev) = new_pure_evar ~identity ~typeclass_candidate:false ctx sigma (csubst_subst subst t1) in
+      let (sigma, ev) = new_pure_evar ~typeclass_candidate:false ctx sigma (csubst_subst sigma subst t1) in
       let ev = mkEvar (ev, args) in
       let dep = not (noccurn sigma 1 t2) in
       let hole = {

@@ -63,7 +63,10 @@ let kind_of_term_upto = EConstr.kind_upto
 
 let nf_evars_universes sigma t = EConstr.to_constr ~abort_on_undefined_evars:false sigma (EConstr.of_constr t)
 let whd_evar = EConstr.whd_evar
-let nf_evar sigma c = EConstr.of_constr (EConstr.to_constr ~abort_on_undefined_evars:false sigma c)
+
+let nf_evar sigma c =
+  let evar_value ev = Evd.existential_opt_value0 sigma ev in
+  EConstr.of_constr @@ UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) (EConstr.Unsafe.to_constr c)
 
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;
@@ -252,7 +255,7 @@ let empty_csubst = {
   csubst_rev = Id.Map.empty;
 }
 
-let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
+let csubst_subst sigma { csubst_len = k; csubst_var = v; csubst_rel = s } c =
   (* Safe because this is a substitution *)
   let c = EConstr.Unsafe.to_constr c in
   let rec subst n c = match Constr.kind c with
@@ -262,7 +265,23 @@ let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
     else mkRel (m - k)
   | Var id ->
     begin try Id.Map.find id v with Not_found -> c end
+  | Evar (evk, args) ->
+    let evi = Evd.find sigma evk in
+    let args' = subst_instance n (evar_filtered_context evi) args in
+    if args' == args then c else Constr.mkEvar (evk, args') (* FIXME: preserve sharing *)
   | _ -> Constr.map_with_binders succ subst n c
+
+  and subst_instance n ctx args = match ctx, SList.view args with
+  | [], None -> SList.empty
+  | decl :: ctx, Some (c, args) ->
+    let c' = match c with
+    | None -> begin try Some (Id.Map.find (NamedDecl.get_id decl) v) with Not_found -> c end
+    | Some c ->
+      let c' = subst n c in
+      if isVarId (NamedDecl.get_id decl) c' then None else Some c'
+    in
+    SList.cons_opt c' (subst_instance n ctx args)
+  | _ :: _, None | [], Some _ -> assert false
   in
   let c = if k = 0 && Id.Map.is_empty v then c else subst 0 c in
   EConstr.of_constr c
@@ -361,7 +380,7 @@ let push_rel_decl_to_named_context
             incorrect. We revert to a less robust behaviour where
             the new binder has name [id]. Which amounts to the same
             behaviour than when [id=id0]. *)
-        let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst subst) in
+        let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst sigma subst) in
         (push_var id subst, Id.Set.add id avoid, push_named_context_val d nc)
       else
         (* spiwack: if [id<>id0], rather than introducing a new
@@ -369,7 +388,7 @@ let push_rel_decl_to_named_context
             by the user) and rename [id0] into [id] in the named
             context. Unless [id] is a section variable. *)
         let subst = update_var id0 id subst in
-        let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst subst) in
+        let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst sigma subst) in
         let nc = replace_var_named_declaration id0 id nc in
         let avoid = Id.Set.add id (Id.Set.add id0 avoid) in
         (push_var id0 subst, avoid, push_named_context_val d nc)
@@ -377,25 +396,37 @@ let push_rel_decl_to_named_context
        user_err Pp.(Id.print id0 ++ str " is already used.")
     end
   | None ->
-    let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst subst) in
+    let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst sigma subst) in
     (push_var id subst, Id.Set.add id avoid, push_named_context_val d nc)
+
+let csubst_instance subst ctx =
+  let fold decl accu = match Id.Map.find (NamedDecl.get_id decl) subst.csubst_rev with
+  | SRel n -> SList.cons (EConstr.mkRel (subst.csubst_len - n)) accu
+  | SVar id -> SList.cons (EConstr.mkVar id) accu
+  | exception Not_found -> SList.default accu
+  in
+  List.fold_right fold ctx SList.empty
+
+let default_ext_instance (subst, _, ctx) =
+  csubst_instance subst (named_context_of_val ctx)
 
 let push_rel_context_to_named_context ~hypnaming env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
   let open EConstr in
-  let inst_vars = EConstr.identity_subst_val (named_context_val env) in
+  let ctx = named_context_val env in
   if List.is_empty (Environ.rel_context env) then
-    (named_context_val env, typ, inst_vars, empty_csubst)
+    let inst = SList.defaultn (List.length @@ named_context_of_val ctx) SList.empty in
+    (ctx, typ, inst, empty_csubst)
   else
     let avoid = Environ.ids_of_named_context_val (named_context_val env) in
-    let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
     (* move the rel context to a named context and extend the named instance *)
     (* with vars of the rel context *)
     (* We do keep the instances corresponding to local definition (see above) *)
-    let (subst, _, env) =
+    let (subst, _, env) as ext =
       Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ~hypnaming sigma d acc)
-        (rel_context env) ~init:(empty_csubst, avoid, named_context_val env) in
-    (env, csubst_subst subst typ, inst_rels@inst_vars, subst)
+        (rel_context env) ~init:(empty_csubst, avoid, ctx) in
+    let inst = default_ext_instance ext in
+    (env, csubst_subst sigma subst typ, inst, subst)
 
 (*------------------------------------*
  * Entry points to define new evars   *
@@ -403,7 +434,7 @@ let push_rel_context_to_named_context ~hypnaming env sigma typ =
 
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
-let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity ?(relevance = Sorts.Relevant)
+let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance = Sorts.Relevant)
   ?(abstract_arguments = Abstraction.identity) ?candidates
   ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
   let name = match naming with
@@ -414,10 +445,6 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity ?(
     let id = Namegen.next_ident_away_from id has_name in
     Some id
   in
-  let identity = match identity with
-  | None -> Identity.none ()
-  | Some inst -> inst
-  in
   let evi = {
     evar_hyps = sign;
     evar_concl = typ;
@@ -426,7 +453,6 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?identity ?(
     evar_abstract_arguments = abstract_arguments;
     evar_source = src;
     evar_candidates = candidates;
-    evar_identity = identity;
     evar_relevance = relevance;
   }
   in
@@ -447,15 +473,14 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
   | None -> RenameExistingBut (VarSet.variables (Global.env ()))
   in
   let sign,typ',instance,subst = push_rel_context_to_named_context ~hypnaming env evd typ in
-  let map c = csubst_subst subst c in
+  let map c = csubst_subst evd subst c in
   let candidates = Option.map (fun l -> List.map map l) candidates in
   let instance =
     match filter with
     | None -> instance
-    | Some filter -> Filter.filter_list filter instance in
-  let identity = if Int.equal (Environ.nb_rel env) 0 then Some (Identity.make instance) else None in
+    | Some filter -> Filter.filter_slist filter instance in
   let relevance = Sorts.Relevant in (* FIXME: relevant_of_type not defined yet *)
-  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ?identity ~relevance ?abstract_arguments ?candidates ?naming
+  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ~relevance ?abstract_arguments ?candidates ?naming
     ?typeclass_candidate ?principal in
   (evd, EConstr.mkEvar (evk, instance))
 
@@ -489,6 +514,7 @@ let add_unification_pb ?(tail=false) pb evd =
 let generalize_evar_over_rels sigma (ev,args) =
   let open EConstr in
   let evi = Evd.find sigma ev in
+  let args = Evd.expand_existential sigma (ev, args) in
   let sign = named_context_of_val evi.evar_hyps in
   List.fold_left2
     (fun (c,inst as x) a d ->
@@ -562,6 +588,7 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
                   (* Check if some id to clear occurs in the instance
                      a of rid in ev and remember the dependency *)
                     let check id = if Id.Set.mem id ids then raise (Depends id) in
+                    let a = match a with None -> mkVar (NamedDecl.get_id h) | Some a -> a in
                     let () = Id.Set.iter check (collect_vars !evdref (EConstr.of_constr a)) in
                   (* Check if some rid to clear in the context of ev
                      has dependencies in another hyp of the context of ev
@@ -574,7 +601,7 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
                   (* No dependency at all, we can keep this ev's context hyp *)
                     (ri, true::filter)
                   with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter))
-                ctxt l (Id.Map.empty,[]) in
+                ctxt (SList.to_list l) (Id.Map.empty,[]) in
             (* Check if some rid to clear in the context of ev has dependencies
                in the type of ev and adjust the source of the dependency *)
             let _nconcl : Constr.t =
@@ -690,7 +717,7 @@ let undefined_evars_of_term evd t =
     match EConstr.kind evd c with
       | Evar (n, l) ->
         let acc = Evar.Set.add n acc in
-        List.fold_left evrec acc l
+        SList.Skip.fold evrec acc l
       | _ -> EConstr.fold evd evrec acc c
   in
   evrec Evar.Set.empty t
@@ -837,9 +864,13 @@ let eq_constr_univs_test ~evd ~extended_evd t u =
       try sigma := add_universe_constraints !sigma UnivProblem.(Set.singleton (UEq (s1, s2))); true
       with UGraph.UniverseInconsistency _ | UniversesDiffer -> false
   in
+  let eq_existential eq e1 e2 =
+    let eq c1 c2 = eq 0 (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) in
+    EConstr.eq_existential evd eq (EConstr.of_existential e1) (EConstr.of_existential e2)
+  in
   let kind1 = kind_of_term_upto evd in
   let kind2 = kind_of_term_upto extended_evd in
   let rec eq_constr' nargs m n =
-    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' nargs m n
+    Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts (eq_existential eq_constr') eq_constr' nargs m n
   in
-  Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts eq_constr' 0 t u
+  Constr.compare_head_gen_with kind1 kind2 eq_universes eq_sorts (eq_existential eq_constr') eq_constr' 0 t u

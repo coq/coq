@@ -842,7 +842,14 @@ and detype_r d flags avoid env sigma t =
           | None -> Termops.evar_suggested_name (snd env) sigma evk
           | Some id -> id
           in
-          let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
+          let info = Evd.find sigma evk in
+          let cl = Evd.expand_existential sigma (evk, cl) in
+          let ctx = Evd.evar_filtered_context info in
+          let get_instance f =
+            let fold d c acc = if f d c then acc else (get_id d, c) :: acc in
+            List.fold_right2 fold ctx cl []
+          in
+          let l = get_instance bound_to_itself_or_letin in
           (* If the instance is {x:=y; y:=y; z:=z} we print {x:=y; y:=y}
              ie the non-identity part + the variables which also instantiate other variables
              NB if the instance is {x:=f y; y:=y} we only print {x:=f y}
@@ -855,18 +862,18 @@ and detype_r d flags avoid env sigma t =
               (Id.Set.empty,Int.Set.empty)
               l
           in
-          let l = Evd.evar_instance_array (fun d c ->
+          let l = get_instance (fun d c ->
               not !print_evar_arguments
               && bound_to_itself_or_letin d c
               && not (match EConstr.kind sigma c with
                   | Rel n -> Int.Set.mem n rels
                   | Var id -> Id.Set.mem id fvs
                   | _ -> false))
-              (Evd.find sigma evk)
-              cl
           in
           id,List.map (fun (id,c) -> (CAst.make id,c)) l
         with Not_found ->
+          let map = function None -> mkMeta 0 | Some c -> c in (* FIXME? *)
+          let cl = List.map map @@ SList.to_list cl in
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)),
           (List.map (fun c -> (CAst.make @@ Id.of_string "__",c)) cl)
       in

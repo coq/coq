@@ -223,7 +223,7 @@ let nf_open_term sigma0 ise c =
   let s' = ref sigma0 in
   let rec nf c' = match EConstr.kind ise c' with
   | Evar ex ->
-    let k, a = ex in let a' = List.map nf a in
+    let k, a = ex in let a' = SList.Skip.map nf a in
     if not (Evd.mem !s' k) then
       s' := Evd.add !s' k (Evarutil.nf_evar_info ise (Evd.find ise k));
     mkEvar (k, a')
@@ -261,7 +261,7 @@ let unify_HO env sigma0 t1 t2 =
 
 (* This is what the definition of iter_constr should be... *)
 let iter_constr_LR sigma f c = match EConstr.kind sigma c with
-  | Evar (k, a) -> List.iter f a
+  | Evar (k, a) -> SList.Skip.iter f a
   | Cast (cc, _, t) -> f cc; f t
   | Prod (_, t, b) | Lambda (_, t, b)  -> f t; f b
   | LetIn (_, v, t, b) -> f v; f t; f b
@@ -352,7 +352,7 @@ let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
   | Evar (k, a) ->
     if rigid k then map !sigma put c else
     let evi = Evd.find !sigma k in
-    let dc = List.firstn (max 0 (List.length a - nenv)) (evar_filtered_context evi) in
+    let dc = List.firstn (max 0 (SList.length a - nenv)) (evar_filtered_context evi) in
     let abs_dc (d, c) = function
     | Context.Named.Declaration.LocalDef (x, b, t) ->
         d, mkNamedLetIn !sigma x (put b) (put t) c
@@ -574,7 +574,8 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
         | KpatFixed | KpatConst -> ise
         | KpatEvar _ ->
           let open EConstr in
-          let _, pka = destEvar ise u.up_f and _, ka = destEvar ise f in
+          let pka = Evd.expand_existential ise @@ destEvar ise u.up_f in
+          let ka = Evd.expand_existential ise @@ destEvar ise f in
           let fold ise pk k = unif_HO env ise pk k in
           List.fold_left2 fold ise pka ka
         | KpatLet ->

@@ -71,7 +71,7 @@ let decomp sigma t =
     | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
     | Proj (p, c) ->
       (* Hack: fake evar to generate [Everything] in the functions below *)
-      let hole = mkEvar (Evar.unsafe_of_int (-1), []) in
+      let hole = mkEvar (Evar.unsafe_of_int (-1), SList.empty) in
       let params = List.make (Projection.npars p) hole in
       (mkConst (Projection.constant p), params @ c :: acc)
     | Cast (c1,_,_) -> decrec acc c1

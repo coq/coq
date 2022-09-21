@@ -94,7 +94,7 @@ val mkFloat : Float64.t -> constr
 val mkMeta : metavariable -> constr
 
 (** Constructs an existential variable *)
-type existential = Evar.t * constr list
+type existential = Evar.t * constr SList.t
 val mkEvar : existential -> constr
 
 (** Construct a sort *)
@@ -231,7 +231,7 @@ val mkCoFix : cofixpoint -> constr
 
 (** [constr list] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
-type 'constr pexistential = Evar.t * 'constr list
+type 'constr pexistential = Evar.t * 'constr SList.t
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Rel       of int
@@ -555,7 +555,7 @@ type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
    the immediate subterms of [c1] of [c2] if needed; Cast's, binders
    name and Cases annotations are not taken into account *)
 
-val compare_head : constr constr_compare_fn -> constr constr_compare_fn
+val compare_head : (existential -> existential -> bool) -> constr constr_compare_fn -> constr constr_compare_fn
 
 (** Convert a global reference applied to 2 instances. The int says
    how many arguments are given (as we can only use cumulativity for
@@ -570,6 +570,7 @@ type 'univs instance_compare_fn = (GlobRef.t * int) option ->
 
 val compare_head_gen : Univ.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
+  (existential -> existential -> bool) ->
   constr constr_compare_fn ->
   constr constr_compare_fn
 
@@ -578,6 +579,7 @@ val compare_head_gen_leq_with :
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   'univs instance_compare_fn ->
   ('sort -> 'sort -> bool) ->
+  ('v pexistential -> 'v pexistential -> bool) ->
   'v constr_compare_fn ->
   'v constr_compare_fn ->
   'v constr_compare_fn
@@ -591,6 +593,7 @@ val compare_head_gen_with :
   ('v -> ('v, 'v, 'sort, 'univs) kind_of_term) ->
   'univs instance_compare_fn ->
   ('sort -> 'sort -> bool) ->
+  ('v pexistential -> 'v pexistential -> bool) ->
   'v constr_compare_fn ->
   'v constr_compare_fn
 
@@ -603,6 +606,7 @@ val compare_head_gen_with :
 
 val compare_head_gen_leq : Univ.Instance.t instance_compare_fn ->
   (Sorts.t -> Sorts.t -> bool) ->
+  (existential -> existential -> bool) ->
   constr constr_compare_fn ->
   constr constr_compare_fn ->
   constr constr_compare_fn
@@ -610,8 +614,13 @@ val compare_head_gen_leq : Univ.Instance.t instance_compare_fn ->
 val eq_invert : ('a -> 'a -> bool)
   -> 'a pcase_invert -> 'a pcase_invert -> bool
 
+type 'a evar_expansion =
+| EvarDefined of 'a
+| EvarUndefined of Evar.t * 'a list
+
 type 'constr evar_handler = {
-  evar_expand : 'constr pexistential -> 'constr option;
+  evar_expand : 'constr pexistential -> 'constr evar_expansion;
+  evar_repack : Evar.t * 'constr list -> 'constr;
   evar_relevance : 'constr pexistential -> Sorts.relevance;
 }
 

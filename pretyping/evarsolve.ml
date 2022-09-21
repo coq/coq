@@ -275,7 +275,7 @@ let restrict_applied_evar evd (evk,argsv) filter candidates =
   | Some filter ->
       let evi = Evd.find evd evk in
       let subfilter = Filter.compose (evar_filter evi) filter in
-      Filter.filter_list subfilter argsv in
+      Filter.filter_slist subfilter argsv in
   evd,(newevk,newargsv)
 
 (* Restrict an evar in the current evar_map *)
@@ -286,7 +286,7 @@ let restrict_evar evd evk filter candidates =
 let restrict_instance evd evk filter argsv =
   match filter with None -> argsv | Some filter ->
   let evi = Evd.find evd evk in
-  Filter.filter_list (Filter.compose (evar_filter evi) filter) argsv
+  Filter.filter_slist (Filter.compose (evar_filter evi) filter) argsv
 
 open Context.Rel.Declaration
 let noccur_evar env evd evk c =
@@ -297,7 +297,7 @@ let noccur_evar env evd evk c =
     if Evar.equal evk evk' then raise Occur
     else (if check_types then
             occur_rec false acc (existential_type evd ev');
-          List.iter (occur_rec check_types acc) args')
+          SList.Skip.iter (occur_rec check_types acc) args')
   | Rel i when i > k ->
      if not (Int.Set.mem (i-k) !cache) then
        let decl = Environ.lookup_rel i env in
@@ -653,6 +653,7 @@ let is_unification_pattern_meta env evd nb m l t =
 let is_unification_pattern_evar env evd (evk,args) l t =
   match Option.List.map (fun c -> to_alias evd c) l with
   | Some l when noccur_evar env evd evk t ->
+    let args = Evd.expand_existential evd (evk, args) in
     let args = remove_instance_local_defs evd evk args in
     let args = Option.List.map (fun c -> to_alias evd c) args in
     begin match args with
@@ -860,8 +861,8 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
             t_in_sign sign filter inst_in_env in
           evd, Context.Named.Declaration.LocalDef (id,b,t_in_sign) in
       (push_named_context_val d' sign, Filter.extend 1 filter,
-       (mkRel 1)::(List.map (lift 1) inst_in_env),
-       (mkRel 1)::(List.map (lift 1) inst_in_sign),
+       SList.cons (mkRel 1) (SList.Skip.map (lift 1) inst_in_env),
+       SList.cons (mkRel 1) (SList.Skip.map (lift 1) inst_in_sign),
        push_rel d env,evd,Id.Set.add id.binder_name avoid))
       rel_sign
       (sign1,filter1,args1,inst_in_sign,env1,evd,avoid)
@@ -976,6 +977,7 @@ let rec find_projectable_vars aliases sigma y subst =
     else
       let (evk,argsv as t) = c in
       let evi = Evd.find sigma evk in
+      let argsv = Evd.expand_existential sigma t in
       let subst = make_projectable_subst aliases sigma (evar_filtered_context evi) argsv in
       let l = find_projectable_vars aliases sigma y subst in
       match l with
@@ -1028,6 +1030,7 @@ let rec do_projection_effects unify flags define_fun env ty evd = function
            evar it may commit to a univ level which is not the right
            one (however, regarding coercions, because t is obtained by
            unif, we know that no coercion can be inserted) *)
+        let argsv = Evd.expand_existential evd (evk, argsv) in
         let subst = make_pure_subst evi argsv in
         let ty' = replace_vars evd subst evi.evar_concl in
         if isEvar evd ty' then define_fun env evd (Some false) (destEvar evd ty') ty else evd
@@ -1112,6 +1115,7 @@ let extract_candidates sols =
 
 let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
+  let argsv = Evd.expand_existential evd (evk, argsv) in
   let subst = make_projectable_subst aliases evd (evar_filtered_context evi) argsv in
   let invert arg =
     let p = invert_arg fullenv evd aliases k evk subst arg in
@@ -1219,6 +1223,7 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
       || List.exists (fun (id', _) -> Id.equal id id') sols
   | _ -> true
   in
+  let argsv = Evd.expand_existential evd (evk, argsv) in
   let filter = restrict_upon_filter evd evk filter argsv in
       (* Keep only variables that occur in rhs *)
       (* This is not safe: is the variable is a local def, its body *)
@@ -1351,6 +1356,7 @@ exception EvarSolvedOnTheFly of evar_map * EConstr.constr
 let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 as ev1) (evk2,argsv2 as ev2) =
   (* Apply filtering on ev1 so that fvs(ev1) are in fvs(ev2). *)
   let fvs2 = free_vars_and_rels_up_alias_expansion env evd aliases (mkEvar ev2) in
+  let argsv1 = Evd.expand_existential evd ev1 in
   let filter1 = restrict_upon_filter evd evk1
     (has_constrainable_free_vars env evd aliases force k2 evk2 fvs2)
     argsv1 in
@@ -1367,7 +1373,8 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
   (* Rules out non-linear instances. *)
   if Option.is_empty pbty && is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1) then
     try
-      evd,mkEvar (evk1',invert_invertible_arg env evd aliases k2 ev2 args1)
+      let args1 = Evd.expand_existential evd ev1' in
+      evd, EConstr.mkLEvar evd (evk1', invert_invertible_arg env evd aliases k2 ev2 args1)
     with NotEnoughInformationToInvert ->
       raise (CannotProject (evd,ev1'))
   else
@@ -1472,15 +1479,17 @@ let solve_refl ?(can_drop=false) unify flags env evd pbty evk argsv1 argsv2 =
     try evdref := Evd.add_universe_constraints !evdref cstr; true
     with UniversesDiffer -> false
   in
-  if List.equal eq_constr argsv1 argsv2 then !evdref else
+  let argsv1e = Evd.expand_existential !evdref (evk, argsv1) in
+  let argsv2e = Evd.expand_existential !evdref (evk, argsv2) in
+  if List.equal eq_constr argsv1e argsv2e then !evdref else
   (* Filter and restrict if needed *)
-  let args = List.map2 (fun a1 a2 -> (a1, a2)) argsv1 argsv2 in
+  let args = List.map2 (fun a1 a2 -> (a1, a2)) argsv1e argsv2e in
   let untypedfilter =
     restrict_upon_filter evd evk
       (fun (a1,a2) -> unify flags TermUnification env evd Reduction.CONV a1 a2) args in
   let candidates = filter_candidates evd evk untypedfilter NoUpdate in
   let filter = closure_of_filter ~can_drop:false evd evk untypedfilter in
-  let evd',ev1 = restrict_applied_evar evd (evk,argsv1) filter candidates in
+  let evd',ev1 = restrict_applied_evar evd (evk, argsv1) filter candidates in
   let allowed = is_evar_allowed flags evk in
   if Evar.equal (fst ev1) evk && (not allowed || can_drop) then
     (* No refinement needed *) evd'
@@ -1491,7 +1500,7 @@ let solve_refl ?(can_drop=false) unify flags env evd pbty evk argsv1 argsv2 =
     (* don't know if ?y has to be unified with ?y, until e is resolved *)
   if not allowed then
     (* We cannot prune a frozen evar *)
-    add_conv_oriented_pb (pbty,env,mkEvar (evk, argsv1),mkEvar (evk,argsv2)) evd
+    add_conv_oriented_pb (pbty,env,mkEvar (evk, argsv1),mkEvar (evk, argsv2)) evd
   else
     let argsv2 = restrict_instance evd' evk filter argsv2 in
     let ev2 = (fst ev1,argsv2) in
@@ -1538,7 +1547,7 @@ let occur_evar_upto_types sigma n c =
     | Evar (sp,_) when Evar.equal sp n -> raise Occur
     | Evar (sp,args as e) ->
        if Evar.Set.mem sp !seen then
-         List.iter occur_rec args
+         SList.Skip.iter occur_rec args
        else (
          seen := Evar.Set.add sp !seen;
          Option.iter occur_rec (existential_opt_value0 sigma e);
@@ -1590,6 +1599,8 @@ let rec invert_definition unify flags choose imitate_defs
   let evdref = ref evd in
   let progress = ref false in
   let evi = Evd.find evd evk in
+  let argsvo = argsv in
+  let argsv = Evd.expand_existential evd ev in
   let sign = evar_filtered_context evi in
   let subst = make_projectable_subst aliases evd sign argsv in
   let cstr_subst = make_constructor_subst evd sign argsv in
@@ -1622,6 +1633,7 @@ let rec invert_definition unify flags choose imitate_defs
             materialize_evar (evar_define unify flags ~choose) env !evdref 0 ev ty in
           let ts = expansions_of_var aliases t in
           let test c = isEvar evd c || List.exists (is_alias evd c) ts in
+          let argsv' = Evd.expand_existential evd (evk, argsv') in
           let filter = restrict_upon_filter evd evk test argsv' in
           let filter = closure_of_filter ~can_drop:choose evd evk' filter in
           let candidates = extract_candidates sols in
@@ -1668,7 +1680,7 @@ let rec invert_definition unify flags choose imitate_defs
         (* Note that we don't need to declare ?evk'' yet: it may remain virtual *)
         let aliases = lift_aliases k aliases in
         (try
-          let ev = normalize_evar !evdref (evk,List.map (lift k) argsv) in
+          let ev = normalize_evar !evdref (evk,SList.Skip.map (lift k) argsvo) in
           let evd,body = project_evar_on_evar false unify flags env' !evdref aliases k None ev' ev in
           evdref := evd;
           body

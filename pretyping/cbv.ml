@@ -500,13 +500,14 @@ let rec norm_head info env t stack =
       else
         (CBN(t,env), stack) (* Should we consider a commutative cut ? *)
 
-  | Evar ev ->
+  | Evar ((e, _) as ev) ->
       (match Evd.existential_opt_value0 info.sigma ev with
           Some c -> norm_head info env c stack
         | None ->
-          let e, xs = ev in
-          let xs' = List.map (apply_env env) xs in
-          (VAL(0, mkEvar (e,xs')), stack))
+          let ev = EConstr.of_existential ev in
+          let map c = EConstr.of_constr @@ apply_env env (EConstr.Unsafe.to_constr c) in
+          let ev' = EConstr.map_existential info.sigma map ev in
+          (VAL(0, EConstr.Unsafe.to_constr @@ EConstr.mkEvar ev'), stack))
 
   (* non-neutral cases *)
   | Lambda _ ->

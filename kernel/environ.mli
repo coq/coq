@@ -62,10 +62,8 @@ type named_context_val = private {
   env_named_ctx : Constr.named_context;
   env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
   (** Identifier-indexed version of [env_named_ctx] *)
-  env_named_var : Constr.t list;
-  (** List of identifiers in [env_named_ctx], in the same order, including
-      let-ins. This is not used in the kernel, but is critical to preserve
-      sharing of evar instances in the proof engine. *)
+  env_named_idx : Constr.named_declaration Range.t;
+  (** Same as env_named_ctx but with a fast-access list. *)
 }
 
 type rel_context_val = private {

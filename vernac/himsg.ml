@@ -66,7 +66,9 @@ let rec contract3' env sigma a b c = function
   | OccurCheck (evk,d) ->
     let x,d = contract4 env sigma a b c d in x,OccurCheck(evk, d)
   | NotClean ((evk,args),env',d) ->
+      let args = Evd.expand_existential sigma (evk, args) in
       let env',d,args = contract1 env' sigma d args in
+      let args = SList.of_full_list args in
       contract3 env sigma a b c,NotClean((evk,args),env',d)
   | ConversionFailed (env',t1,t2) ->
       let (env',t1,t2) = contract2 env' sigma t1 t2 in
@@ -301,6 +303,7 @@ let explain_unification_error env sigma p1 p2 = function
         strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
      | NotClean ((evk,args),env,c) ->
+        let args = Evd.expand_existential sigma (evk, args) in
         let env = make_all_name_different env sigma in
         [str "cannot instantiate " ++ quote (pr_existential_key env sigma evk)
         ++ strbrk " because " ++ pr_leconstr_env env sigma c ++

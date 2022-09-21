@@ -48,7 +48,6 @@ val new_evar :
 (** Low-level interface to create an evar.
   @param src User-facing source for the evar
   @param filter See {!Evd.Filter}, must be the same length as [named_context_val]
-  @param identity See {!Evd.Identity}, must be the name projection of [named_context_val]
   @param naming A naming scheme for the evar
   @param principal Whether the evar is the principal goal
   @param named_context_val The context of the evar
@@ -56,7 +55,7 @@ val new_evar :
 *)
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
-  ?identity:Identity.t -> ?relevance:Sorts.relevance ->
+  ?relevance:Sorts.relevance ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
   ?typeclass_candidate:bool ->
@@ -252,17 +251,19 @@ val check_and_clear_in_constr
 type csubst
 
 val empty_csubst : csubst
-val csubst_subst : csubst -> constr -> constr
+val csubst_subst : Evd.evar_map -> csubst -> constr -> constr
 
 type ext_named_context =
   csubst * Id.Set.t * named_context_val
+
+val default_ext_instance : ext_named_context -> constr SList.t
 
 val push_rel_decl_to_named_context : hypnaming:naming_mode ->
   evar_map -> rel_declaration -> ext_named_context -> ext_named_context
 
 val push_rel_context_to_named_context : hypnaming:naming_mode ->
   Environ.env -> evar_map -> types ->
-  named_context_val * types * constr list * csubst
+  named_context_val * types * constr SList.t * csubst
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 

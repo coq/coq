@@ -240,6 +240,8 @@ let neutr = function
 
 type 'a usubs = 'a subs Univ.puniverses
 
+type evar_repack = constr list -> constr
+
 type fconstr = {
   mutable mark : red_state;
   mutable term: fterm;
@@ -260,7 +262,7 @@ and fterm =
   | FLambda of int * (Name.t Context.binder_annot * constr) list * constr * fconstr usubs
   | FProd of Name.t Context.binder_annot * fconstr * constr * fconstr usubs
   | FLetIn of Name.t Context.binder_annot * fconstr * fconstr * constr * fconstr usubs
-  | FEvar of existential * fconstr usubs
+  | FEvar of Evar.t * constr list * fconstr usubs * evar_repack
   | FInt of Uint63.t
   | FFloat of Float64.t
   | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
@@ -288,7 +290,6 @@ let update ~share v1 mark t =
   else {mark;term=t;}
 
 (** Reduction cache *)
-
 type infos_cache = {
   i_env : env;
   i_sigma : constr evar_handler;
@@ -607,9 +608,9 @@ let rec to_constr (lfts, usubst as ulfts) v =
         mkLetIn (n, to_constr ulfts b,
                     to_constr ulfts t,
                     subst_constr subs f)
-    | FEvar ((ev,args),env) ->
+    | FEvar (_, args, env, repack) ->
       let subs = comp_subs ulfts env in
-        mkEvar(ev, List.map (fun a -> subst_constr subs a) args)
+      repack(List.map (fun a -> subst_constr subs a) args)
     | FLIFT (k,a) -> to_constr (el_shft k lfts, usubst) a
 
     | FInt i ->
@@ -1415,12 +1416,13 @@ and knht info e t stk =
       { mark = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
     | Evar ev ->
       begin match info.i_cache.i_sigma.evar_expand ev with
-      | Some c -> knht info e c stk
-      | None ->
+      | EvarDefined c -> knht info e c stk
+      | EvarUndefined (evk, args) ->
         if is_irrelevant info.i_cache.i_mode (info.i_cache.i_sigma.evar_relevance ev) then
           (mk_irrelevant, skip_irrelevant_stack stk)
         else
-          { mark = Whnf; term = FEvar (ev, e) }, stk
+          let repack args = info.i_cache.i_sigma.evar_repack (evk, args) in
+          { mark = Whnf; term = FEvar (evk, args, e, repack) }, stk
       end
     | Array(u,t,def,ty) ->
       let len = Array.length t in
@@ -1619,8 +1621,8 @@ and norm_head info tab m =
           let ftys = Array.map (fun ty -> klt info tab e ty) tys in
           let fbds = Array.map (fun bd -> klt infobd tab (usubs_liftn (Array.length na) e) bd) bds in
           mkFix (n, (na, ftys, fbds))
-      | FEvar((i,args),env) ->
-          mkEvar(i, List.map (fun a -> klt info tab env a) args)
+      | FEvar(_, args, env, repack) ->
+          repack (List.map (fun a -> klt info tab env a) args)
       | FProj (p,c) ->
           mkProj (p, kl info tab c)
       | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _

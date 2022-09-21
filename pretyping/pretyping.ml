@@ -643,7 +643,7 @@ struct
         with Not_found -> error_evar_not_found ?loc:locid !!env sigma id in
       let hyps = evar_filtered_context (Evd.find sigma evk) in
       let sigma, args = pretype_instance self ~flags env sigma loc hyps evk inst in
-      let c = mkEvar (evk, args) in
+      let c = mkLEvar sigma (evk, args) in
       let j = Retyping.get_judgment_of !!env sigma c in
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma j tycon
 
