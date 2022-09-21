@@ -12,8 +12,8 @@ open Ccalgo
 open Constr
 
 type rule=
-    Ax of constr
-  | SymAx of constr
+    Ax of axiom
+  | SymAx of axiom
   | Refl of ATerm.t
   | Trans of proof*proof
   | Congr of proof*proof

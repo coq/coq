@@ -36,19 +36,17 @@ sig
   val nth_arg : t -> int -> t
 end
 
-module Constrhash :
-sig
-  type 'a t
-  val find : 'a t -> constr -> 'a
-end
-
 type ccpattern =
     PApp of ATerm.t * ccpattern list
   | PVar of int * ccpattern list
 
+type axiom
+
+val constr_of_axiom : axiom -> constr
+
 type rule=
     Congruence
-  | Axiom of constr * bool
+  | Axiom of axiom * bool
   | Injection of int * pa_constructor * int * pa_constructor * int
 
 type from=
@@ -81,7 +79,7 @@ val debug_congruence : CDebug.t
 
 val forest : state -> forest
 
-val axioms : forest -> (ATerm.t * ATerm.t) Constrhash.t
+val axioms : forest -> axiom -> ATerm.t * ATerm.t
 
 val epsilons : forest -> pa_constructor list
 

@@ -229,9 +229,13 @@ type ccpattern =
     PApp of ATerm.t * ccpattern list (* arguments are reversed *)
   | PVar of int * ccpattern list (* arguments are reversed *)
 
+type axiom = constr
+
+let constr_of_axiom c = c
+
 type rule=
     Congruence
-  | Axiom of constr * bool
+  | Axiom of axiom * bool
   | Injection of int * pa_constructor * int * pa_constructor * int
 
 type from=
@@ -408,7 +412,7 @@ let get_constructor_info uf i=
 let size uf i=
   (get_representative uf i).weight
 
-let axioms uf = uf.axioms
+let axioms uf c = Constrhash.find uf.axioms c
 
 let epsilons uf = uf.epsilons
 

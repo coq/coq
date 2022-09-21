@@ -315,9 +315,9 @@ let constr_of_term c = EConstr.of_constr (ATerm.constr c)
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
   match p.p_rule with
-      Ax c -> exact_check (EConstr.of_constr c)
+      Ax c -> exact_check (EConstr.of_constr (constr_of_axiom c))
     | SymAx c ->
-        let c = EConstr.of_constr c in
+        let c = EConstr.of_constr (constr_of_axiom c) in
         let l=constr_of_term p.p_lhs and
             r=constr_of_term p.p_rhs in
         type_and_refresh l (fun typ ->
