@@ -764,9 +764,13 @@ end
 
 let () = define2 "constr_binder_make" (option ident) constr begin fun na ty ->
   pf_apply begin fun env sigma ->
-  let rel = Retyping.relevance_of_type env sigma ty in
-  let na = match na with None -> Anonymous | Some id -> Name id in
-  return (Value.of_ext val_binder (Context.make_annot na rel, ty))
+    match Retyping.relevance_of_type env sigma ty with
+    | rel ->
+      let na = match na with None -> Anonymous | Some id -> Name id in
+      return (Value.of_ext val_binder (Context.make_annot na rel, ty))
+    | exception (Retyping.RetypeError _ as e) ->
+      let e, info = Exninfo.capture e in
+      fail ~info (CErrors.UserError Pp.(str "Not a type."))
   end
 end
 
