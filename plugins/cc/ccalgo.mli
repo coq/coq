@@ -54,8 +54,8 @@ type rule=
 type from=
     Goal
   | Hyp of constr
-  | HeqG of constr
-  | HeqnH of constr*constr
+  | HeqG of Id.t
+  | HeqnH of Id.t * Id.t
 
 type 'a eq = {lhs:int;rhs:int;rule:'a}
 
@@ -89,7 +89,7 @@ val empty : Environ.env -> Evd.evar_map -> int -> state
 
 val add_aterm : state -> ATerm.t -> int
 
-val add_equality : state -> constr -> ATerm.t -> ATerm.t -> unit
+val add_equality : state -> Id.t -> ATerm.t -> ATerm.t -> unit
 
 val add_disequality : state -> from -> ATerm.t -> ATerm.t -> unit
 

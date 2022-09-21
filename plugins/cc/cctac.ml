@@ -220,22 +220,21 @@ let make_prb gls depth additional_terms b =
       (fun decl ->
          let id = NamedDecl.get_id decl in
          begin
-           let cid=Constr.mkVar id in
            match litteral_of_constr b env sigma (NamedDecl.get_type decl) with
-               `Eq (t,a,b) -> add_equality state cid a b
-             | `Neq (t,a,b) -> add_disequality state (Hyp cid) a b
+               `Eq (t,a,b) -> add_equality state id a b
+             | `Neq (t,a,b) -> add_disequality state (Hyp (Constr.mkVar id)) a b
              | `Other ph ->
                  List.iter
-                   (fun (cidn,nh) ->
-                      add_disequality state (HeqnH (cid,cidn)) ph nh)
+                   (fun (idn,nh) ->
+                      add_disequality state (HeqnH (id, idn)) ph nh)
                    !neg_hyps;
-                 pos_hyps:=(cid,ph):: !pos_hyps
+                 pos_hyps:=(id,ph):: !pos_hyps
              | `Nother nh ->
                  List.iter
-                   (fun (cidp,ph) ->
-                      add_disequality state (HeqnH (cidp,cid)) ph nh)
+                   (fun (idp,ph) ->
+                      add_disequality state (HeqnH (idp, id)) ph nh)
                    !pos_hyps;
-                 neg_hyps:=(cid,nh):: !neg_hyps
+                 neg_hyps:=(id,nh):: !neg_hyps
              | `Rule patts -> add_quant state id true patts
              | `Nrule patts -> add_quant state id false patts
          end) (Proofview.Goal.hyps gls);
@@ -402,7 +401,7 @@ let convert_to_goal_tac c t1 t2 p =
     let e = Tacmach.pf_get_new_id (Id.of_string "e") gl in
     let x = Tacmach.pf_get_new_id (Id.of_string "X") gl in
     let identity=mkLambda (make_annot (Name x) Sorts.Relevant,sort,mkRel 1) in
-    let endt = app_global _eq_rect [|sort;tt1;identity;c;tt2;mkVar e|] in
+    let endt = app_global _eq_rect [|sort; tt1; identity; mkVar c; tt2; mkVar e|] in
     Tacticals.tclTHENS (neweq (assert_before (Name e)))
                            [proof_tac p; endt refine_exact_check]
   in type_and_refresh tt2 k
@@ -412,7 +411,7 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
   Proofview.Goal.enter begin fun gl ->
   let tt2=constr_of_term t2 in
   let h = Tacmach.pf_get_new_id (Id.of_string "H") gl in
-  let false_t=mkApp (c2,[|mkVar h|]) in
+  let false_t=mkApp (mkVar c2,[|mkVar h|]) in
     Tacticals.tclTHENS (assert_before (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
        simplest_elim false_t]
@@ -492,11 +491,8 @@ let cc_tactic depth additional_terms b =
           Goal -> proof_tac p
         | Hyp id -> refute_tac (EConstr.of_constr id) ta tb p
         | HeqG id ->
-          let id = EConstr.of_constr id in
           convert_to_goal_tac id ta tb p
         | HeqnH (ida,idb) ->
-          let ida = EConstr.of_constr ida in
-          let idb = EConstr.of_constr idb in
           convert_to_hyp_tac ida ta idb tb p
   end
 
