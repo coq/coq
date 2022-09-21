@@ -1370,8 +1370,8 @@ module Strategies =
 
     let inj_open hint = (); fun sigma ->
       let (ctx, lemma) = Autorewrite.RewRule.rew_lemma hint in
-      let ctx = UState.of_context_set ctx in
-      let sigma = Evd.merge_universe_context sigma ctx in
+      (* not sure sideff:true is really needed here *)
+      let sigma = Evd.merge_context_set ~sideff:true UnivRigid sigma ctx in
       (sigma, (EConstr.of_constr lemma, NoBindings))
 
     let old_hints (db : string) : 'a pure_strategy =

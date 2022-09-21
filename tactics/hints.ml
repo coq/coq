@@ -1769,7 +1769,7 @@ let connect_hint_clenv h gl =
      data in its evarmap is the set of metas. The [evar_reset_evd] function
      below just replaces the metas of sigma by those coming from the clenv. *)
   let sigma = Tacmach.project gl in
-  let evd = Evd.evars_reset_evd ~with_conv_pbs:true ~with_univs:false sigma clenv.evd in
+  let evd = Evd.evars_reset_evd ~with_conv_pbs:true sigma clenv.evd in
   (* Still, we need to update the universes *)
   match h.hint_uctx with
   | Some ctx ->

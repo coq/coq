@@ -2092,7 +2092,7 @@ let exact_proof c =
   Proofview.Goal.enter begin fun gl ->
   Refine.refine ~typecheck:false begin fun sigma ->
     let (c, ctx) = Constrintern.interp_casted_constr (pf_env gl) sigma c (pf_concl gl) in
-    let sigma = Evd.merge_universe_context sigma ctx in
+    let sigma = Evd.set_universe_context sigma ctx in
     (sigma, c)
   end
   end
