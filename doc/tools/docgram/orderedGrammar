@@ -793,16 +793,16 @@ reference: [
 ]
 
 argument_spec: [
-| OPT "!" name OPT ( "%" scope_key )
+| OPT "!" name OPT ( "%" scope )
 ]
 
 arg_specs: [
 | argument_spec
 | "/"
 | "&"
-| "(" LIST1 argument_spec ")" OPT ( "%" scope_key )
-| "[" LIST1 argument_spec "]" OPT ( "%" scope_key )
-| "{" LIST1 argument_spec "}" OPT ( "%" scope_key )
+| "(" LIST1 argument_spec ")" OPT ( "%" scope )
+| "[" LIST1 argument_spec "]" OPT ( "%" scope )
+| "{" LIST1 argument_spec "}" OPT ( "%" scope )
 ]
 
 implicits_alt: [

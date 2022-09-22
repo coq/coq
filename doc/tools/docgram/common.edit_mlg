@@ -356,7 +356,7 @@ scope: [
 
 scope_delimiter: [
 | REPLACE "%" IDENT
-| WITH "%" scope_key
+| WITH "%" scope
 ]
 
 term100: [
@@ -1736,7 +1736,7 @@ search_query: [
 
 search_item: [
 | REPLACE search_where ":" ne_string OPT scope_delimiter
-| WITH OPT ( search_where ":" ) ne_string OPT scope_delimiter
+| WITH OPT ( search_where ":" ) ne_string OPT ( "%" scope_key )
 | DELETE ne_string OPT scope_delimiter
 | REPLACE search_where ":" constr_pattern
 | WITH OPT ( search_where ":" ) constr_pattern
