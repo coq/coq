@@ -485,6 +485,11 @@ Additional settings
 
    If this :term:`flag` is set, fully expand Coq types in ML.  See the Coq source code to learn more.
 
+.. opt:: Extraction Output Directory @string
+
+   Sets the directory where extracted files will be written.
+   The default is the current directory, which can be displayed with :cmd:`Pwd`.
+
 Differences between Coq and ML type systems
 ----------------------------------------------
 
