@@ -13,5 +13,3 @@
 Require Export Coq.Compat.Coq816.
 
 Local Set Warnings "-deprecated".
-
-Set Program Naming.
