@@ -299,7 +299,7 @@ let map_evar_info f evi =
 exception NotInstantiatedEvar
 
 (* Note: let-in contributes to the instance *)
-let evar_instance_array test_id info args =
+let evar_instance_array info args =
   let rec instrec pos filter args = match filter with
   | Filter.Empty -> if SList.is_empty args then [] else instance_mismatch ()
   | Filter.TCons (n, filter) -> instpush pos n filter args
@@ -310,8 +310,9 @@ let evar_instance_array test_id info args =
     | SList.Nil -> assert false
     | SList.Cons (c, args) ->
       let d = Range.get info.evar_hyps.env_named_idx pos in
-      if test_id d c then instpush (pos + 1) (n - 1) filter args
-      else (NamedDecl.get_id d, c) :: instpush (pos + 1) (n - 1) filter args
+      let id = NamedDecl.get_id d in
+      if isVarId id c then instpush (pos + 1) (n - 1) filter args
+      else (id, c) :: instpush (pos + 1) (n - 1) filter args
     | SList.Default (m, args) ->
       if m <= n then instpush (pos + m) (n - m) filter args
       else instrec (pos + n) filter (SList.defaultn (m - n) args)
@@ -322,8 +323,9 @@ let evar_instance_array test_id info args =
     | SList.Nil -> []
     | SList.Cons (c, args) ->
       let d = Range.get info.evar_hyps.env_named_idx pos in
-      if test_id d c then instance (pos + 1) args
-      else (NamedDecl.get_id d, c) :: instance (pos + 1) args
+      let id = NamedDecl.get_id d in
+      if isVarId id c then instance (pos + 1) args
+      else (id, c) :: instance (pos + 1) args
     | SList.Default (n, args) -> instance (pos + n) args
     in
     instance 0 args
@@ -332,8 +334,7 @@ let evar_instance_array test_id info args =
 
 let make_evar_instance_array info args = match args with
 | SList.Default (_, SList.Nil) -> []
-| _ ->
-  evar_instance_array (NamedDecl.get_id %> isVarId) info args
+| _ -> evar_instance_array info args
 
 type 'a in_evar_universe_context = 'a * UState.t
 
