@@ -123,6 +123,8 @@ before_script:
     paths:
       - _build/log
       - _build.tar.bz2
+      - theories/dune
+      - user-contrib/Ltac2/dune
     expire_in: 1 month
 
 .dev-ci-template:
