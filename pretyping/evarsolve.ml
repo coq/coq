@@ -1038,9 +1038,7 @@ let rec do_projection_effects unify flags define_fun env ty evd = function
            evar it may commit to a univ level which is not the right
            one (however, regarding coercions, because t is obtained by
            unif, we know that no coercion can be inserted) *)
-        let argsv = Evd.expand_existential evd (evk, argsv) in
-        let subst = make_pure_subst evi argsv in
-        let ty' = replace_vars evd subst evi.evar_concl in
+        let ty' = instantiate_evar_array evd evi evi.evar_concl argsv in
         if isEvar evd ty' then define_fun env evd (Some false) (destEvar evd ty') ty else evd
       else
         evd
