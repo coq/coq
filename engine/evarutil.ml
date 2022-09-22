@@ -174,18 +174,6 @@ let non_instantiated sigma =
   let listev = Evd.undefined_map sigma in
   Evar.Map.Smart.map (fun evi -> nf_evar_info sigma evi) listev
 
-(************************)
-(* Manipulating filters *)
-(************************)
-
-let make_pure_subst evi args =
-  snd (List.fold_right
-    (fun decl (args,l) ->
-      match args with
-        | a::rest -> (rest, (NamedDecl.get_id decl, a)::l)
-        | _ -> anomaly (Pp.str "Instance does not match its signature."))
-    (evar_filtered_context evi) (List.rev args,[]))
-
 (*------------------------------------*
  * functional operations on evar sets *
  *------------------------------------*)
