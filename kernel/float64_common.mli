@@ -37,7 +37,7 @@ val compile : t -> string
 val of_float : float -> t
 
 (** All NaNs are normalized to [Stdlib.nan].
- * @since 8.15 *)
+    @since 8.15 *)
 val to_float : t -> float
 
 (** Return [true] for "-", [false] for "+". *)

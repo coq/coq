@@ -143,7 +143,8 @@ val subst : int -> t -> t -> t
 (** [div c1 v1] returns the mutiplication by the inverse of c1 i.e (1/c1).v1 *)
 val div : Q.t -> t -> t
 
-(** [uminus v] @return -v the opposite vector of v i.e. (-1).v  *)
+(** [uminus v]
+    @return -v the opposite vector of v i.e. (-1).v  *)
 val uminus : t -> t
 
 (** {1 Iterators} *)

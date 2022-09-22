@@ -36,19 +36,24 @@ val create : unit -> 'a document
 
 (* Functions that work on the focused part of the document ******************* *)
 
-(** The last sentence.  @raise Invalid_argument if tip has no id.  @raise Empty *)
+(** The last sentence.
+    @raise Invalid_argument if tip has no id.
+    @raise Empty *)
 val tip       : 'a document -> id
 
-(** The last sentence.  @raise Empty *)
+(** The last sentence.
+    @raise Empty *)
 val tip_data  : 'a document -> 'a
 
 (** Add a sentence on the top (with no state_id) *)
 val push : 'a document -> 'a -> unit
 
-(** Remove the tip setence.  @raise Empty *)
+(** Remove the tip setence.
+    @raise Empty *)
 val pop : 'a document -> 'a
 
-(** Assign the state_id of the tip.  @raise Empty *)
+(** Assign the state_id of the tip.
+    @raise Empty *)
 val assign_tip_id : 'a document -> id -> unit
 
 (** [cut_at d id] cuts the document at [id] that is the new tip.
@@ -60,11 +65,13 @@ val cut_at : 'a document -> id -> 'a list
 
 (** returns the id of the topmost sentence validating the predicate and
     a boolean that is true if one needs to unfocus the document to access
-    such sentence.  @raise Not_found *)
+    such sentence.
+    @raise Not_found *)
 val find_id : 'a document -> (id -> 'a -> bool) -> id * bool
 
 (** look for a sentence validating the predicate.  The boolean is true
-    if the sentence is in the zone currently focused.  @raise Not_found *)
+    if the sentence is in the zone currently focused.
+    @raise Not_found *)
 val find : 'a document -> (bool -> id option -> 'a -> bool) -> 'a
 val find_map : 'a document -> (bool -> id option -> 'a -> 'b option) -> 'b
 
@@ -98,8 +105,9 @@ val is_in_focus : 'a document -> id -> bool
 val fold_all :
   'a document -> 'c -> ('c -> bool -> id option -> 'a -> 'c) -> 'c
 
-(** Returns (top,bot) such that the document is morally (top @ s @ bot) where
-    s is the focused part.  @raise Invalid_argument *)
+(** Returns (top,bot) such that the document is morally [top @ s @ bot] where
+    s is the focused part.
+    @raise Invalid_argument *)
 val context : 'a document -> (id * 'a) list * (id * 'a) list
 
 (** debug print *)

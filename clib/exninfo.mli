@@ -47,7 +47,8 @@ val record_backtrace : bool -> unit
 val capture : exn -> iexn
 (** Add the current backtrace information to the given exception.
 
-    The intended use case is of the form: {[
+    The intended use case is of the form:
+    {[
 
     try foo
     with
@@ -62,7 +63,8 @@ val capture : exn -> iexn
 
     WARNING: any intermediate code between the [with] and the handler may
     modify the backtrace. Yes, that includes [when] clauses. Ideally, what you
-    should do is something like: {[
+    should do is something like:
+    {[
 
     try foo
     with exn ->

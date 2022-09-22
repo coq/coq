@@ -52,7 +52,7 @@ module EInstance :
 sig
   type t
   (** Type of universe instances up-to universe unification. Similar to
-      {ESorts.t} for {Univ.Instance.t}. *)
+      [ESorts.t] for [Univ.Instance.t]. *)
 
   val make : Univ.Instance.t -> t
   val kind : Evd.evar_map -> t -> Univ.Instance.t

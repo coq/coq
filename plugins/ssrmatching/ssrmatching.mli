@@ -181,7 +181,8 @@ val mk_tpattern_matcher :
     are replaced by a De Bruijn index. The [rw_progress] extra check
     selects only occurrences that are not rewritten to themselves (e.g.
     an occurrence "x + x" rewritten with the commutativity law of addition
-    is skipped) {[
+    is skipped)
+{[
   let find_R, conclude = match pat with
   | Some (_, In_T _) ->
       let aux (sigma, pats) (d, r, lhs, rhs) =
@@ -194,7 +195,8 @@ val mk_tpattern_matcher :
       fun cl -> let rdx, d, r = end_R () in (d,r),rdx
   | _ -> ... in
   let concl = eval_pattern env0 sigma0 concl0 pat occ find_R in
-  let (d, r), rdx = conclude concl in ]} *)
+  let (d, r), rdx = conclude concl in
+]} *)
 
 (* convenience shortcut: [fill_occ_term env concl sigma occ (sigma,t)] returns
  * [concl] where [occ] occurrences of [t] have been replaced
@@ -212,7 +214,8 @@ val fill_occ_term : Environ.env -> Evd.evar_map -> EConstr.t -> occ -> evar_map 
 (** [do_once r f] calls [f] and updates the ref only once *)
 val do_once : 'a option ref -> (unit -> 'a) -> unit
 
-(** [assert_done r] return the content of r. @raise Anomaly is r is [None] *)
+(** [assert_done r] return the content of r.
+    @raise Anomaly is r is [None] *)
 val assert_done : 'a option ref -> 'a
 
 (** Very low level APIs.
