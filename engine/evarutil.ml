@@ -552,27 +552,33 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
                removed *)
             let evi = Evd.find_undefined !evdref evk in
             let ctxt = Evd.evar_filtered_context evi in
-            let (rids,filter) =
-              List.fold_right2
-                (fun h a (ri,filter) ->
-                  try
-                  (* Check if some id to clear occurs in the instance
-                     a of rid in ev and remember the dependency *)
-                    let check id = if Id.Set.mem id ids then raise (Depends id) in
-                    let a = match a with None -> mkVar (NamedDecl.get_id h) | Some a -> a in
-                    let () = Id.Set.iter check (collect_vars !evdref (EConstr.of_constr a)) in
-                  (* Check if some rid to clear in the context of ev
-                     has dependencies in another hyp of the context of ev
-                     and transitively remember the dependency *)
-                    let check id _ =
-                      if occur_var_in_decl env !evdref id h
-                      then raise (Depends id)
-                    in
-                    let () = Id.Map.iter check ri in
-                  (* No dependency at all, we can keep this ev's context hyp *)
-                    (ri, true::filter)
-                  with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter))
-                ctxt (SList.to_list l) (Id.Map.empty,[]) in
+            let rec fold accu ctxt args = match ctxt, SList.view args with
+            | [], Some _ | _ :: _, None -> assert false
+            | [], None -> accu
+            | h :: ctxt, Some (a, args) ->
+              let (ri, filter) = fold accu ctxt args in
+              try
+              (* Check if some id to clear occurs in the instance
+                  a of rid in ev and remember the dependency *)
+                let check id = if Id.Set.mem id ids then raise (Depends id) in
+                let a = match a with
+                | None -> Id.Set.singleton (NamedDecl.get_id h)
+                | Some a -> collect_vars !evdref (EConstr.of_constr a)
+                in
+                let () = Id.Set.iter check a in
+              (* Check if some rid to clear in the context of ev
+                  has dependencies in another hyp of the context of ev
+                  and transitively remember the dependency *)
+                let check id _ =
+                  if occur_var_in_decl env !evdref id h
+                  then raise (Depends id)
+                in
+                let () = Id.Map.iter check ri in
+              (* No dependency at all, we can keep this ev's context hyp *)
+                (ri, true::filter)
+              with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter)
+            in
+            let (rids, filter) = fold (Id.Map.empty, []) ctxt l in
             (* Check if some rid to clear in the context of ev has dependencies
                in the type of ev and adjust the source of the dependency *)
             let _nconcl : Constr.t =
