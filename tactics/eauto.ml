@@ -373,6 +373,7 @@ let eauto_with_bases ?debug ?depth lems db_list =
   Hints.wrap_hint_warning (e_search_auto ?debug ?depth lems db_list)
 
 let gen_eauto ?debug ?depth lems dbs =
+  Proofview.wrap_exceptions @@ fun () ->
   let dbs = match dbs with None -> current_pure_db () | Some dbs -> make_db_list dbs in
   eauto_with_bases ?debug ?depth lems dbs
 
