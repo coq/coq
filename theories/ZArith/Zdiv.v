@@ -227,7 +227,7 @@ Lemma Z_mod_same_full : forall a, a mod a = 0.
 Proof. intros a. zero_or_not a. apply Z.mod_same; auto. Qed.
 
 Lemma Z_mod_mult : forall a b, (a*b) mod b = 0.
-Proof. intros a b. now zero_or_not b; [apply Z.mul_0_r|apply Z.mod_mul]. Qed.
+Proof. intros a b. zero_or_not b. now apply Z.mod_mul. Qed.
 
 Lemma Z_div_mult_full : forall a b:Z, b <> 0 -> (a*b)/b = a.
 Proof Z.div_mul.
@@ -566,9 +566,8 @@ Theorem Zdiv_mult_le:
  forall a b c, 0<=a -> 0<=b -> 0<=c -> c*(a/b) <= (c*a)/b.
 Proof.
   intros a b c ? ? ?. zero_or_not b.
-  - now rewrite Z.mul_0_r.
-  - apply Z.div_mul_le; auto.
-    apply Z.le_neq; auto.
+  apply Z.div_mul_le; auto.
+  apply Z.le_neq; auto.
 Qed.
 
 (** Z.modulo is related to divisibility (see more in Znumtheory) *)

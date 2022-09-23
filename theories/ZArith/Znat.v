@@ -571,7 +571,6 @@ Proof.
    - now apply Z.quot_pos.
  }
  destruct n, m; trivial; simpl.
- - trivial.
  - now rewrite <- Pos2Z.opp_pos, Z.quot_opp_r, inj_opp.
  - now rewrite <- Pos2Z.opp_pos, Z.quot_opp_l, inj_opp.
  - now rewrite <- 2 Pos2Z.opp_pos, Z.quot_opp_opp.
@@ -586,7 +585,6 @@ Proof.
    - now apply Z.rem_nonneg.
  }
  destruct n, m; trivial; simpl.
- - trivial.
  - now rewrite <- Pos2Z.opp_pos, Z.rem_opp_r.
  - now rewrite <- Pos2Z.opp_pos, Z.rem_opp_l, inj_opp.
  - now rewrite <- 2 Pos2Z.opp_pos, Z.rem_opp_opp, inj_opp.

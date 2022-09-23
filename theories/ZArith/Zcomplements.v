@@ -42,7 +42,6 @@ Proof.
  - rewrite !Pos2Z.inj_xI, (Pos2Z.inj_xO (xO _)), Pos2Z.inj_xO.
    split.
    + apply Z.le_trans with (2 * Z.pos p); auto with zarith.
-     rewrite <- (Z.add_0_r (2 * Z.pos p)) at 1; auto with zarith.
    + apply Z.lt_le_trans with (2 * (Z.pos p + 1)).
      * rewrite Z.mul_add_distr_l, Z.mul_1_r.
        apply Zplus_lt_compat_l; red; auto with zarith.

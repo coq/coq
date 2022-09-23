@@ -215,10 +215,9 @@ Proof.
 intros s1; elim s1; simpl; auto.
 - intros s2 n; rewrite Nat.add_comm; simpl; auto.
 - intros a s1' Rec s2 n; case n; simpl; auto.
-  + generalize (Rec s2 O); simpl; auto.
-  + intros.
-    (replace (n0 + S (length s1'))
-      with (S n0 + length s1') by now rewrite Nat.add_succ_r); auto.
+  intros.
+  (replace (n0 + S (length s1'))
+    with (S n0 + length s1') by now rewrite Nat.add_succ_r); auto.
 Qed.
 
 (** *** Substrings *)
