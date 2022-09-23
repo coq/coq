@@ -456,10 +456,11 @@ let locate_file f =
   let file = Flags.silently Loadpath.locate_file f in
   str file
 
-let msg_found_library = function
-  | Loadpath.LibLoaded, fulldir, file ->
+let msg_found_library (fulldir, file) =
+  if Library.library_is_loaded fulldir then
+    let file = Library.library_full_filename fulldir in
     hov 0 (DirPath.print fulldir ++ strbrk " has been loaded from file " ++ str file)
-  | Loadpath.LibInPath, fulldir, file ->
+  else
     hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
 
 let err_unmapped_library ?from qid =
@@ -1451,7 +1452,7 @@ let vernac_require from export qidl =
   let locate (qid,_) =
     let open Loadpath in
     match locate_qualified_library ?root qid with
-    | Ok (_,dir,f) -> dir, f
+    | Ok (dir,f) -> dir, f
     | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
     | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
   in
