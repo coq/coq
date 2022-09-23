@@ -26,7 +26,6 @@ type t = {
   docdir : string option;
   arch : string option;
   natdynlink : bool;
-  macintegration : bool;
   browser : string option;
   withdoc : bool;
   bin_annot : bool;
@@ -52,7 +51,6 @@ let default_prefs = {
   docdir = None;
   arch = None;
   natdynlink = true;
-  macintegration = true;
   browser = None;
   withdoc = false;
   bin_annot = false;
@@ -115,8 +113,6 @@ let args_options = Arg.align [
     "<arch> Specifies the architecture";
   "-natdynlink", arg_bool (fun p natdynlink -> { p with natdynlink }),
     "(yes|no) Use dynamic loading of native code or not";
-  "-nomacintegration", arg_set (fun p -> { p with macintegration = false}),
-    " Do not try to build CoqIDE MacOS integration";
   "-browser", arg_string_option (fun p browser -> { p with browser }),
     "<command> Use <command> to open URL %s";
   "-with-doc", arg_bool (fun p withdoc -> { p with withdoc }),

@@ -56,6 +56,7 @@ config/Makefile
 config/coq_config.ml
 config/coq_config.py
 config/dune.c_flags
+ide/coqide/config.ml
 dev/ocamldebug-coq
 coqdoc.sty
 coqdoc.css

@@ -370,7 +370,7 @@ let cmd_editor =
   new preference ~name:["cmd_editor"] ~init ~repr:Repr.(string)
 
 let text_font =
-  let init = match Coq_config.gtk_platform with
+  let init = match Config.gtk_platform with
   | `QUARTZ -> "Arial Unicode MS 11"
   | _ -> "Monospace 10"
   in

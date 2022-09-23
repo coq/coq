@@ -35,11 +35,11 @@
 (executable
  (name gen_gtk_platform)
  (modules gen_gtk_platform)
- (libraries coq-core.config))
+ (libraries conf))
 
 (rule
- (targets gtk_platform.conf)
- (action (with-stdout-to %{targets} (run ./gen_gtk_platform.exe))))
+ (targets gtk_platform.conf config.ml)
+ (action (run ./gen_gtk_platform.exe)))
 
 (rule
  (targets coqide_os_specific.ml)

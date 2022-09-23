@@ -1641,7 +1641,7 @@ let build_ui () =
   Coqide_ui.ui_m#insert_action_group help_menu 0;
   w#add_accel_group Coqide_ui.ui_m#get_accel_group ;
   GtkMain.Rc.parse_string "gtk-can-change-accels = 1";
-  if Coq_config.gtk_platform <> `QUARTZ
+  if Config.gtk_platform <> `QUARTZ
   then vbox#pack (Coqide_ui.ui_m#get_widget "/CoqIDE MenuBar");
 
   (* Connect some specific actions *)
