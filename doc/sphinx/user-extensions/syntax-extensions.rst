@@ -1313,7 +1313,7 @@ Note that `_` by itself is a valid :n:`@name` but is not a valid :n:`@ident`.
 Notation scopes
 ---------------
 
-A *notation scope* is a set of notations for terms with their
+A :gdef:`notation scope` is a set of notations for terms with their
 interpretations. Notation scopes provide a weak, purely
 syntactic form of notation overloading: a symbol may
 refer to different definitions depending on which notation scopes

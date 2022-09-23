@@ -35,10 +35,10 @@ Setting properties of a function's arguments
    control over the elaboration process (i.e. the translation of Gallina language
    extensions into the core language used by the kernel).  The command's effects include:
 
-   * Making arguments implicit. Afterward, implicit arguments
+   * Making arguments implicit. Afterward, :term:`implicit arguments <implicit argument>`
      must be omitted in any expression that applies :token:`reference`.
    * Declaring that some arguments of a given function should
-     be interpreted in a given scope.
+     be interpreted in a given :term:`notation scope`.
    * Affecting when the :tacn:`simpl` and :tacn:`cbn` tactics unfold the function.
      See :ref:`Args_effect_on_unfolding`.
    * Providing bidirectionality hints.  See :ref:`bidirectionality_hints`.
