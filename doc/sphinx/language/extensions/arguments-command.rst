@@ -5,16 +5,16 @@ Setting properties of a function's arguments
 
 .. cmd:: Arguments @reference {* @arg_specs } {* , {* @implicits_alt } } {? : {+, @args_modifier } }
 
-   .. insertprodn argument_spec args_modifier
+   .. insertprodn arg_specs args_modifier
 
    .. prodn::
-      argument_spec ::= {? ! } @name {? % @scope }
       arg_specs ::= @argument_spec
       | /
       | &
       | ( {+ @argument_spec } ) {? % @scope }
       | [ {+ @argument_spec } ] {? % @scope }
       | %{ {+ @argument_spec } %} {? % @scope }
+      argument_spec ::= {? ! } @name {? % @scope }
       implicits_alt ::= @name
       | [ {+ @name } ]
       | %{ {+ @name } %}
