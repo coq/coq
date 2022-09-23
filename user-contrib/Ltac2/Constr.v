@@ -14,7 +14,10 @@ Ltac2 @ external type : constr -> constr := "ltac2" "constr_type".
 (** Return the type of a term *)
 
 Ltac2 @ external equal : constr -> constr -> bool := "ltac2" "constr_equal".
-(** Strict syntactic equality: only up to α-conversion and evar expansion *)
+(** Strict syntactic equality: only up to α-conversion, evar expansion, and casts *)
+
+Ltac2 @ external equal_nounivs : constr -> constr -> bool := "ltac2" "constr_equal_nounivs".
+(** Syntactic equality up to α-conversion, evar expansion, casts, and ignoring universes *)
 
 Module Unsafe.
 

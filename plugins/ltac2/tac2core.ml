@@ -473,6 +473,12 @@ let () = define2 "constr_equal" constr constr begin fun c1 c2 ->
   Proofview.tclUNIT (Value.of_bool b)
 end
 
+let () = define2 "constr_equal_nounivs" constr constr begin fun c1 c2 ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let b = EConstr.eq_constr_nounivs sigma c1 c2 in
+  Proofview.tclUNIT (Value.of_bool b)
+end
+
 let () = define1 "constr_kind" constr begin fun c ->
   let open Constr in
   Proofview.tclEVARMAP >>= fun sigma ->
