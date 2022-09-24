@@ -42,7 +42,7 @@ Instance SatDiv : Saturate Z.div :=
   {|
     PArg1 := fun x => 0 <= x;
     PArg2 := fun y => 0 <= y;
-    PRes  := fun r => 0 <= r;
+    PRes  := fun _ _ r => 0 <= r;
     SatOk := Z_div_nonneg_nonneg
   |}.
 Add Zify Saturate SatDiv.
@@ -52,7 +52,7 @@ Instance SatMod : Saturate Z.modulo :=
   {|
     PArg1 := fun x => 0 <= x;
     PArg2 := fun y => 0 <= y;
-    PRes  := fun r => 0 <= r;
+    PRes  := fun _ _ r => 0 <= r;
     SatOk := Z_mod_nonneg_nonneg
   |}.
 Add Zify Saturate SatMod.
