@@ -58,3 +58,15 @@ Ltac2 bind (x : 'a option) (f : 'a -> 'b option) :=
 Ltac2 ret (x : 'a) := Some x.
 
 Ltac2 lift (f : 'a -> 'b) (x : 'a option) := map f x.
+
+Ltac2 equal (eq : 'a -> 'b -> bool) (a : 'a option) (b : 'b option) : bool
+  := match a with
+     | None => match b with
+               | None => true
+               | _ => false
+               end
+     | Some a => match b with
+                 | Some b => eq a b
+                 | _ => false
+                 end
+     end.
