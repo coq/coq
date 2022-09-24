@@ -66,6 +66,9 @@ Ltac2 equal x y :=
 
 (** * Boolean operators with lazy evaluation of the second argument *)
 
+(** We place the notations in a separate module so that we can import them separately *)
+Module Export BoolNotations.
+
 Ltac2 Notation x(self) "&&" y(thunk(self)) : 2 :=
   match x with
   | true => y ()
@@ -77,3 +80,5 @@ Ltac2 Notation x(self) "||" y(thunk(self)) : 3 :=
   | true => true
   | false => y ()
   end.
+
+End BoolNotations.
