@@ -9,10 +9,5 @@
 (************************************************************************)
 
 Require Import Ltac2.Init.
-Require Ltac2.Int.
 
-Ltac2 @external of_int : int -> char := "ltac2" "char_of_int".
-Ltac2 @external to_int : char -> int := "ltac2" "char_to_int".
-
-Ltac2 equal (x : char) (y : char) : bool := Int.equal (to_int x) (to_int y).
-Ltac2 compare (x : char) (y : char) : int := Int.compare (to_int x) (to_int y).
+Ltac2 @ external equal : constant -> constant -> bool := "ltac2" "constant_equal".
