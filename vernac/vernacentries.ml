@@ -458,7 +458,6 @@ let locate_file f =
 
 let msg_found_library (fulldir, file) =
   if Library.library_is_loaded fulldir then
-    let file = Library.library_full_filename fulldir in
     hov 0 (DirPath.print fulldir ++ strbrk " has been loaded from file " ++ str file)
   else
     hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
