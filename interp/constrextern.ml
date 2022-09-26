@@ -137,7 +137,7 @@ let deactivate_notation nr =
      (* shouldn't we check whether it is well defined? *)
      inactive_notations_table := IRuleSet.add nr !inactive_notations_table
   | NotationRule (inscope, ntn) ->
-     let scopt = match inscope with NotationInScope sc -> Some sc | LastLonelyNotation -> None in
+     let scopt = match inscope with NotationInScope sc -> [sc] | LastLonelyNotation -> [] in
      match availability_of_notation (inscope, ntn) (scopt, []) with
      | None -> user_err
                         (pr_notation ntn ++ spc () ++ str "does not exist"
@@ -338,7 +338,7 @@ let rec fill_arg_scopes args subscopes (entry,(_,scopes) as all) =
   | a :: args, scopt :: subscopes ->
     (a, (entry, (scopt, scopes))) :: fill_arg_scopes args subscopes all
   | a :: args, [] ->
-    (a, (entry, (None, scopes))) :: fill_arg_scopes args [] all
+    (a, (entry, ([], scopes))) :: fill_arg_scopes args [] all
 
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
@@ -614,7 +614,7 @@ let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
            |None           -> CAst.make @@ CPatCstr (c, Some args, [])
 
 let extern_cases_pattern vars p =
-  extern_cases_pattern_in_scope (InConstrEntrySomeLevel,(None,[])) vars p
+  extern_cases_pattern_in_scope (InConstrEntrySomeLevel,([],[])) vars p
 
 (**********************************************************************)
 (* Externalising applications *)
@@ -1164,9 +1164,9 @@ let rec extern inctx ?impargs scopes vars r =
   in insert_entry_coercion coercion (CAst.make ?loc c)
 
 and extern_typ ?impargs (subentry,(_,scopes)) =
-  extern true ?impargs (subentry,(Notation.current_type_scope_name (),scopes))
+  extern true ?impargs (subentry,(Notation.current_type_scope_names (),scopes))
 
-and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,(None,scopes))
+and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,([],scopes))
 
 and factorize_prod ?impargs scopes vars na bk t c =
   let implicit_type = is_reserved_type na t in
@@ -1414,10 +1414,10 @@ and extern_applied_proj inctx scopes vars (cst,us) params c extraargs =
   extern_projection inctx (f,us) nparams args imps
 
 let extern_glob_constr vars c =
-  extern false (InConstrEntrySomeLevel,(None,[])) vars c
+  extern false (InConstrEntrySomeLevel,([],[])) vars c
 
 let extern_glob_type ?impargs vars c =
-  extern_typ ?impargs (InConstrEntrySomeLevel,(None,[])) vars c
+  extern_typ ?impargs (InConstrEntrySomeLevel,([],[])) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -1425,6 +1425,7 @@ let extern_glob_type ?impargs vars c =
 let extern_constr ?lax ?(inctx=false) ?scope env sigma t =
   let r = Detyping.detype Detyping.Later ?lax false Id.Set.empty env sigma t in
   let vars = extern_env env sigma in
+  let scope = Option.cata (fun x -> [x]) [] scope in
   extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
 
 let extern_constr_in_scope ?lax ?inctx scope env sigma t =
@@ -1450,6 +1451,7 @@ let extern_closed_glob ?lax ?(goal_concl_style=false) ?(inctx=false) ?scope env 
     Detyping.detype_closed_glob ?lax goal_concl_style avoid env sigma t
   in
   let vars = extern_env env sigma in
+  let scope = Option.cata (fun x -> [x]) [] scope in
   extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
 
 (******************************************************************)
@@ -1591,7 +1593,7 @@ and glob_of_pat_under_context avoid env sigma (nas, pat) =
   (Array.rev_of_list nas, pat)
 
 let extern_constr_pattern env sigma pat =
-  extern true (InConstrEntrySomeLevel,(None,[]))
+  extern true (InConstrEntrySomeLevel,([],[]))
     (* XXX no vars? *)
     (Id.Set.empty, Evd.universe_binders sigma)
     (glob_of_pat Id.Set.empty env sigma pat)
@@ -1600,4 +1602,4 @@ let extern_rel_context where env sigma sign =
   let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in
   let vars = extern_env env sigma in
   let a = List.map (extended_glob_local_binder_of_decl) a in
-  pi3 (extern_local_binder (InConstrEntrySomeLevel,(None,[])) vars a)
+  pi3 (extern_local_binder (InConstrEntrySomeLevel,([],[])) vars a)

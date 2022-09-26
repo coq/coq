@@ -79,7 +79,7 @@ let ntpe_eq t1 t2 = match t1, t2 with
 
 let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
   notation_entry_level_eq entry1 entry2 &&
-  pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
+  pair_eq (List.equal String.equal) (List.equal String.equal) sc1 sc2 &&
   ntpe_eq tp1 tp2
 
 let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =
@@ -265,8 +265,8 @@ let push_scope sc scopes = OpenScopeItem sc :: scopes
 
 let push_scopes = List.fold_right push_scope
 
-let make_current_scopes (tmp_scope,scopes) =
-  Option.fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
+let make_current_scopes (tmp_scopes,scopes) =
+  push_scopes tmp_scopes (push_scopes scopes !scope_stack)
 
 (**********************************************************************)
 (* Delimiters *)
@@ -1955,20 +1955,27 @@ end
 
 module ScopeClassMap = Map.Make(ScopeClassOrd)
 
-let initial_scope_class_map : scope_name ScopeClassMap.t =
+let initial_scope_class_map : scope_name list ScopeClassMap.t =
   ScopeClassMap.empty
 
 let scope_class_map = ref initial_scope_class_map
 
-let declare_scope_class sc cl =
-  scope_class_map := ScopeClassMap.add cl sc !scope_class_map
+type add_scope_where = AddScopeTop | AddScopeBottom
+
+let declare_scope_class sc ?where cl =
+  let scl = match where with
+    | None -> [sc]
+    | Some where ->
+       let scl = try ScopeClassMap.find cl !scope_class_map with Not_found -> [] in
+       match where with AddScopeTop -> sc :: scl | AddScopeBottom -> scl @ [sc] in
+  scope_class_map := ScopeClassMap.add cl scl !scope_class_map
 
 let find_scope_class cl =
   ScopeClassMap.find cl !scope_class_map
 
 let find_scope_class_opt = function
-  | None -> None
-  | Some cl -> try Some (find_scope_class cl) with Not_found -> None
+  | None -> []
+  | Some cl -> try find_scope_class cl with Not_found -> []
 
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
@@ -1991,7 +1998,7 @@ let compute_arguments_scope env sigma t = fst (compute_arguments_scope_full env 
 let compute_type_scope env sigma t =
   find_scope_class_opt (try Some (compute_scope_class env sigma t) with Not_found -> None)
 
-let current_type_scope_name () =
+let current_type_scope_names () =
    find_scope_class_opt (Some CL_SORT)
 
 let scope_class_of_class (x : cl_typ) : scope_class =
@@ -2004,7 +2011,7 @@ let scope_class_of_class (x : cl_typ) : scope_class =
 
 let update_scope cl sco =
   match find_scope_class_opt cl with
-  | None -> sco
+  | [] -> sco
   | sco' -> sco'
 
 let rec update_scopes cls scl = match cls, scl with
@@ -2020,7 +2027,7 @@ type arguments_scope_discharge_request =
   | ArgsScopeNoDischarge
 
 let load_arguments_scope _ (_,r,n,scl,cls) =
-  List.iter (Option.iter check_scope) scl;
+  List.iter (List.iter check_scope) scl;
   let initial_stamp = ScopeClassMap.empty in
   arguments_scope := GlobRef.Map.add r (scl,cls,initial_stamp) !arguments_scope
 
@@ -2078,7 +2085,7 @@ type arguments_scope_obj =
     arguments_scope_discharge_request * GlobRef.t *
     (* Used to communicate information from discharge to rebuild *)
     (* set to 0 otherwise *) int *
-    scope_name option list * scope_class option list
+    scope_name list list * scope_class option list
 
 let inArgumentsScope : arguments_scope_obj -> obj =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
@@ -2172,7 +2179,7 @@ let pr_delimiters_info = function
   | Some key -> str "Delimiting key is " ++ str key
 
 let classes_of_scope sc =
-  ScopeClassMap.fold (fun cl sc' l -> if String.equal sc sc' then cl::l else l) !scope_class_map []
+  ScopeClassMap.fold (fun cl sc' l -> if List.mem_f String.equal sc sc' then cl::l else l) !scope_class_map []
 
 let pr_scope_class = pr_class
 

@@ -300,9 +300,9 @@ val interp_notation_as_global_reference : ?loc:Loc.t -> head:bool -> (GlobRef.t 
 
 (** Declares and looks for scopes associated to arguments of a global ref *)
 val declare_arguments_scope :
-  bool (** true=local *) -> GlobRef.t -> scope_name option list -> unit
+  bool (** true=local *) -> GlobRef.t -> scope_name list list -> unit
 
-val find_arguments_scope : GlobRef.t -> scope_name option list
+val find_arguments_scope : GlobRef.t -> scope_name list list
 
 type scope_class
 
@@ -312,14 +312,16 @@ val scope_class_compare : scope_class -> scope_class -> int
 val subst_scope_class :
   Environ.env -> Mod_subst.substitution -> scope_class -> scope_class option
 
-val declare_scope_class : scope_name -> scope_class -> unit
+type add_scope_where = AddScopeTop | AddScopeBottom
+(** add new scope at top or bottom of existing stack (default is reset) *)
+val declare_scope_class : scope_name -> ?where:add_scope_where -> scope_class -> unit
 val declare_ref_arguments_scope : Evd.evar_map -> GlobRef.t -> unit
 
-val compute_arguments_scope : Environ.env -> Evd.evar_map -> EConstr.types -> scope_name option list
-val compute_type_scope : Environ.env -> Evd.evar_map -> EConstr.types -> scope_name option
+val compute_arguments_scope : Environ.env -> Evd.evar_map -> EConstr.types -> scope_name list list
+val compute_type_scope : Environ.env -> Evd.evar_map -> EConstr.types -> scope_name list
 
-(** Get the current scope bound to Sortclass, if it exists *)
-val current_type_scope_name : unit -> scope_name option
+(** Get the current scopes bound to Sortclass *)
+val current_type_scope_names : unit -> scope_name list
 
 val scope_class_of_class : Coercionops.cl_typ -> scope_class
 

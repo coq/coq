@@ -68,7 +68,7 @@ type var_internalization_data =
     (* signature of impargs of the variable *)
     Impargs.implicit_status list *
     (* subscopes of the args of the variable *)
-    scope_name option list *
+    scope_name list list *
     (* unique ID for coqdoc links *)
     var_unique_id
 
@@ -254,7 +254,7 @@ type intern_env = {
   ids: Id.Set.t;
   unb: bool;
   local_univs: local_univs;
-  tmp_scope: Notation_term.tmp_scope_name option;
+  tmp_scope: Notation_term.tmp_scope_name list;
   scopes: Notation_term.scope_name list;
   impls: internalization_env;
   binder_block_names: abstraction_kind option (* None = unknown *) option;
@@ -271,9 +271,9 @@ type pattern_intern_env = {
 (* Remembering the parsing scope of variables in notations            *)
 
 let make_current_scope tmp scopes = match tmp, scopes with
-  | Some tmp_scope, (sc :: _) when String.equal sc tmp_scope -> scopes
-  | Some tmp_scope, scopes -> tmp_scope :: scopes
-  | None, scopes -> scopes
+  | [], scopes -> scopes
+  | [tmp_scope], (sc :: _) when String.equal sc tmp_scope -> scopes
+  | tmp_scope, scopes -> tmp_scope @ scopes
 
 let pr_scope_stack begin_of_sentence l =
   let bstr x =
@@ -327,9 +327,9 @@ let set_var_is_binder ?loc id ntnvars =
     (* Not in a notation *)
     ()
 
-let set_type_scope env = {env with tmp_scope = Notation.current_type_scope_name ()}
+let set_type_scope env = {env with tmp_scope = Notation.current_type_scope_names ()}
 
-let reset_tmp_scope env = {env with tmp_scope = None}
+let reset_tmp_scope env = {env with tmp_scope = []}
 
 let set_env_scopes env (scopt,subscopes) =
   {env with tmp_scope = scopt; scopes = subscopes @ env.scopes}
@@ -634,15 +634,15 @@ let intern_generalization intern env ntnvars loc bk c =
   let env', c' =
     let abs =
       let pi =
-        match Notation.current_type_scope_name () with
-        | Some type_scope ->
+        match Notation.current_type_scope_names () with
+        | [] -> false
+        | type_scopes ->
           let is_type_scope = match env.tmp_scope with
-            | None -> false
-            | Some sc -> String.equal sc type_scope
+            | [] -> false
+            | scl -> List.equal String.equal scl type_scopes
           in
           is_type_scope ||
-          String.List.mem type_scope env.scopes
-        | None -> false
+          List.exists (fun sc -> String.List.mem sc env.scopes) type_scopes
       in
         if pi then
           (fun {loc=loc';v=id} acc ->
@@ -851,7 +851,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
      of the expression by variables bound by the notation (see #3892) *)
   let avoid = Id.Map.domain ntnvars in
   let rec aux (terms,binderopt,iteropt as subst') (renaming,env) c =
-    let subinfos = renaming,{env with tmp_scope = None} in
+    let subinfos = renaming,{env with tmp_scope = []} in
     match c with
     | NVar id when Id.equal id ldots_var ->
         let rec aux_letin env = function
@@ -882,7 +882,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
         try
           let (bl,(scopt,subscopes)) = Id.Map.find x binderlists in
           let env,bl' = List.fold_left (intern_local_binder_aux intern ntnvars) (env,[]) bl in
-          terms_of_binders (if revert then bl' else List.rev bl'),(None,[])
+          terms_of_binders (if revert then bl' else List.rev bl'),([],[])
         with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation.") in
       let l = List.map (fun a -> AddTermIter ((Id.Map.add y (a,(scopt,subscopes)) terms))) l in
@@ -1383,7 +1383,7 @@ let interp_reference vars r =
     intern_applied_reference ~isproj:false (fun _ -> error_not_enough_arguments ?loc:None)
       {ids = Id.Set.empty; unb = false;
        local_univs = empty_local_univs;(* <- doesn't matter here *)
-       tmp_scope = None; scopes = []; impls = empty_internalization_env;
+       tmp_scope = []; scopes = []; impls = empty_internalization_env;
        binder_block_names = None}
       Environ.empty_named_context_val
       (vars, Id.Map.empty) None [] r
@@ -1398,22 +1398,22 @@ let interp_reference vars r =
 type 'a raw_cases_pattern_expr_r =
   | RCPatAlias of 'a raw_cases_pattern_expr * lname
   | RCPatCstr  of GlobRef.t * 'a raw_cases_pattern_expr list
-  | RCPatAtom  of (lident * (Notation_term.tmp_scope_name option * Notation_term.scope_name list)) option
+  | RCPatAtom  of (lident * (Notation_term.tmp_scope_name list * Notation_term.scope_name list)) option
   | RCPatOr    of 'a raw_cases_pattern_expr list
 and 'a raw_cases_pattern_expr = ('a raw_cases_pattern_expr_r, 'a) DAst.t
 
 (** {6 Elementary bricks } *)
 
 let apply_scope_env env = function
-  | [] -> {env with tmp_scope = None}, []
+  | [] -> {env with tmp_scope = []}, []
   | sc::scl -> {env with tmp_scope = sc}, scl
 
 let rec simple_adjust_scopes n scopes =
-  (* Note: they can be less scopes than arguments but also more scopes *)
+  (* Note: there can be less scopes than arguments but also more scopes *)
   (* than arguments because extra scopes are used in the presence of *)
   (* coercions to funclass *)
   if Int.equal n 0 then [] else match scopes with
-  | [] -> None :: simple_adjust_scopes (n-1) []
+  | [] -> [] :: simple_adjust_scopes (n-1) []
   | sc::scopes -> sc :: simple_adjust_scopes (n-1) scopes
 
 let rec adjust_to_up l l' default =
@@ -1759,7 +1759,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       Dumpglob.dump_notation_location (patntn_loc ?loc fullargs ntn) ntn df;
       in_not test_kind loc scopes subst extrargs c
     | CPatDelimiters (key, e) ->
-      in_pat test_kind (None,find_delimiters_scope ?loc key::snd scopes) e
+      in_pat test_kind ([],find_delimiters_scope ?loc key::snd scopes) e
     | CPatPrim p ->
       let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc test_kind_inner.test_kind p scopes in
       rcp_of_glob scopes pat
@@ -1808,12 +1808,12 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
           if Int.equal n 0 then select_impargs_size npats impls_st
           else List.skipn_at_least n (select_stronger_impargs impls_st) in
       adjust_to_down tags imps None in
-    let subscopes = adjust_to_down tags (List.skipn_at_least n (find_arguments_scope gr)) None in
+    let subscopes = adjust_to_down tags (List.skipn_at_least n (find_arguments_scope gr)) [] in
     let has_letin = check_has_letin ?loc gr expanded npats (List.count is_status_implicit imps) tags in
     let rec aux imps subscopes tags pats =
     match imps, subscopes, tags, pats with
     | _, _, true::tags, p::pats when has_letin ->
-      in_pat_sc scopes None p :: aux imps subscopes tags pats
+      in_pat_sc scopes [] p :: aux imps subscopes tags pats
     | _, _, true::tags, _ ->
       default :: aux imps subscopes tags pats
     | imp::imps, sc::subscopes, false::tags, _ when is_status_implicit imp ->
@@ -2071,7 +2071,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let idl = Array.map2 (fun (_,_,_,_,bd) (n,bl,ty,before_impls) ->
             (* We add the binders common to body and type to the environment *)
             let env_body = restore_binders_impargs env_rec before_impls in
-            (n,bl,ty,intern {env_body with tmp_scope = None} bd)) dl idl_temp in
+            (n,bl,ty,intern {env_body with tmp_scope = []} bd)) dl idl_temp in
         DAst.make ?loc @@
         GRec (GFix
                 (Array.map (fun (ro,_,_,_) -> ro) idl,n),
@@ -2105,7 +2105,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let idl = Array.map2 (fun (_,_,_,bd) (b,c,bl_impls) ->
           (* We add the binders common to body and type to the environment *)
           let env_body = restore_binders_impargs env_rec bl_impls in
-          (b,c,intern {env_body with tmp_scope = None} bd)) dl idl_tmp in
+          (b,c,intern {env_body with tmp_scope = []} bd)) dl idl_tmp in
         DAst.make ?loc @@
         GRec (GCoFix n,
               Array.of_list lf,
@@ -2138,7 +2138,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CPrim p ->
         fst (Notation.interp_prim_token ?loc p (env.tmp_scope,env.scopes))
     | CDelimiters (key, e) ->
-        intern {env with tmp_scope = None;
+        intern {env with tmp_scope = [];
                   scopes = find_delimiters_scope ?loc key :: env.scopes} e
     | CProj (expl, f, args, c) ->
         intern_proj ?loc env expl f args c []
@@ -2342,7 +2342,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern env n pl =
-    let env = { pat_ids = None; pat_scopes = (None,env.scopes) } in
+    let env = { pat_ids = None; pat_scopes = ([],env.scopes) } in
     let idsl_pll = List.map (intern_cases_pattern test_kind_tolerant globalenv ntnvars env empty_alias) pl in
     let loc = loc_of_multiple_pattern pl in
     check_number_of_pattern loc n pl;
@@ -2531,9 +2531,9 @@ let extract_ids env =
 let bound_univs sigma = Evd.universe_binders sigma
 
 let scope_of_type_kind env sigma = function
-  | IsType -> Notation.current_type_scope_name ()
+  | IsType -> Notation.current_type_scope_names ()
   | OfType typ -> compute_type_scope env sigma typ
-  | WithoutTypeConstraint -> None
+  | WithoutTypeConstraint -> []
 
 let allowed_binder_kind_of_type_kind = function
   | IsType -> AbsPi
@@ -2548,7 +2548,7 @@ let empty_ltac_sign = {
 let intern_gen kind env sigma
                ?(impls=empty_internalization_env) ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
                c =
-  let tmp_scope = Option.cata (scope_of_type_kind env sigma) None kind in
+  let tmp_scope = Option.cata (scope_of_type_kind env sigma) [] kind in
   let k = Option.map allowed_binder_kind_of_type_kind kind in
   internalize env {ids = extract_ids env; unb = false;
                    local_univs = { bound = bound_univs sigma; unb_univs = true };
@@ -2565,7 +2565,7 @@ let intern_gen kind env sigma ?impls ?pattern_mode ?ltacvars c =
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
 let intern_type env sigma c = intern_gen IsType env sigma c
 let intern_pattern globalenv patt =
-  let env = {pat_ids = None; pat_scopes = (None, [])} in
+  let env = {pat_ids = None; pat_scopes = ([], [])} in
   intern_cases_pattern test_kind_tolerant globalenv Id.Map.empty env empty_alias patt
 
 (*********************************************************************)
@@ -2660,20 +2660,20 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
   let vl = Id.Map.map (function
     | (NtnInternTypeAny None | NtnInternTypeOnlyBinder) as typ -> (ref false, ref None, typ)
     | NtnInternTypeAny (Some scope) as typ ->
-        (ref false, ref (Some (Some scope,[])), typ)
+        (ref false, ref (Some ([scope],[])), typ)
     ) nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize env
       {ids; unb = false;
        local_univs = empty_local_univs;
-       tmp_scope = None; scopes = []; impls; binder_block_names = None}
+       tmp_scope = []; scopes = []; impls; binder_block_names = None}
       false (empty_ltac_sign, vl) a
   in
   (* Splits variables into those that are binding, bound, or both *)
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a, reversible = notation_constr_of_glob_constr nenv c in
   (* binding and bound *)
-  let out_scope = function None -> None,[] | Some (a,l) -> a,l in
+  let out_scope = function None -> [],[] | Some (a,l) -> a,l in
   let unused = match reversible with NonInjective ids -> ids | _ -> [] in
   let vars = Id.Map.mapi (fun id (used_as_binder, sc, typ) ->
     (!used_as_binder && not (List.mem_f Id.equal id unused), out_scope !sc)) vl in
@@ -2707,7 +2707,7 @@ let intern_context env ~bound_univs impl_env binders =
                (env, bl))
             ({ids; unb = false;
               local_univs = { bound = bound_univs; unb_univs = true };
-              tmp_scope = None; scopes = []; impls = impl_env;
+              tmp_scope = []; scopes = []; impls = impl_env;
               binder_block_names = Some (Some AbsPi)}, []) binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)
 
@@ -2756,7 +2756,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
      extract_ids env in
   let int_env = {ids; unb = false;
               local_univs = { bound = bound_univs sigma; unb_univs = true };
-              tmp_scope = None; scopes = []; impls = impl_env;
+              tmp_scope = []; scopes = []; impls = impl_env;
               binder_block_names = Some (Some AbsPi)} in
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
   let (int_env, (env, sigma, bl, impls)) =

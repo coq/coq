@@ -1313,7 +1313,7 @@ Note that `_` by itself is a valid :n:`@name` but is not a valid :n:`@ident`.
 Notation scopes
 ---------------
 
-A *notation scope* is a set of notations for terms with their
+A :gdef:`notation scope` is a set of notations for terms with their
 interpretations. Notation scopes provide a weak, purely
 syntactic form of notation overloading: a symbol may
 refer to different definitions depending on which notation scopes
@@ -1424,15 +1424,16 @@ The arguments of an :ref:`abbreviation <Abbreviations>` can be interpreted
 in a scope stack locally extended with a given scope by using the modifier
 :n:`{+, @ident } in scope @scope_name`.s
 
-Binding types or coercion classes to a notation scope
-++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Binding types or coercion classes to notation scopes
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. cmd:: Bind Scope @scope_name with {+ @class }
 
    Binds the notation scope :token:`scope_name` to the type or coercion class :token:`class`.
    When bound, arguments of that type for any function will be interpreted in
    that scope by default.  This default can be overridden for individual functions
-   with the :cmd:`Arguments` command.  The association may be convenient
+   with the :cmd:`Arguments` command. See :ref:`binding_to_scope` for details.
+   The association may be convenient
    when a notation scope is naturally associated with a :token:`type` (e.g.
    `nat` and the natural numbers).
 
@@ -1442,21 +1443,78 @@ Binding types or coercion classes to a notation scope
    then :g:`a` of type :g:`t` in :g:`f t a` is not recognized as an argument to
    be interpreted in scope ``scope``.
 
-   .. coqtop:: in reset
+   This command supports the :attr:`local`, :attr:`global`,
+   :attr:`add_top` and :attr:`add_bottom` attributes.
 
-      Parameter U : Set.
-      Declare Scope U_scope.
-      Bind Scope U_scope with U.
-      Parameter Uplus : U -> U -> U.
-      Parameter P : forall T:Set, T -> U -> Prop.
-      Parameter f : forall T:Set, T -> U.
-      Infix "+" := Uplus : U_scope.
-      Unset Printing Notations.
-      Open Scope nat_scope.
+   .. attr:: add_top
+      :undocumented:
 
-   .. coqtop:: all
+   .. attr:: add_bottom
 
-      Check (fun x y1 y2 z t => P _ (x + t) ((f _ (y1 + y2) + z))).
+      These :ref:`attributes <attribute>` allow adding additional
+      bindings at the top or bottom of the stack of already declared
+      bindings. In absence of such attributes, any new binding clears
+      the previous ones. This makes it possible to bind multiple scopes
+      to the same :token:`class`.
+
+   .. example:: Binding scopes to a type
+
+      Let's declare two scopes with a notation in each and an arbitrary
+      function on type ``bool``.
+
+      .. coqtop:: in reset
+
+         Declare Scope T_scope.
+         Declare Scope F_scope.
+         Notation "#" := true (only parsing) : T_scope.
+         Notation "#" := false (only parsing) : F_scope.
+
+         Parameter f : bool -> bool.
+
+      By default, the argument of ``f`` is interpreted in the
+      currently opened scopes.
+
+      .. coqtop:: all
+
+         Open Scope T_scope.
+         Check f #.
+         Open Scope F_scope.
+         Check f #.
+
+      This can be changed by binding scopes to the type ``bool``.
+
+      .. coqtop:: all
+
+         Bind Scope T_scope with bool.
+         Check f #.
+
+      When multiple scopes are attached to a type, notations are
+      interpreted in the first scope containing them, from the top of
+      the stack.
+
+      .. coqtop:: all
+
+         #[add_top] Bind Scope F_scope with bool.
+         Check f #.
+
+         Notation "##" := (negb false) (only parsing) : T_scope.
+         Check f ##.
+
+      Bindings for functions can be displayed with the
+      :cmd:`About` command.
+
+      .. coqtop:: all
+
+         About f.
+
+      .. note:: Such stacks of scopes can be handy to share notations
+         between multiple types. For instance, the scope ``T_scope``
+         above could contain many generic notations used for both the
+         ``bool`` and ``nat`` types, while the scope ``F_scope`` could
+         override some of these notations specifically for
+         ``bool`` and another ``F'_scope`` could override them
+         specifically for ``nat``, which could then be bound to
+         ``%F'_scope%T_scope``.
 
    .. note:: When active, a bound scope has effect on all defined functions
              (even if they are defined after the :cmd:`Bind Scope` directive), except

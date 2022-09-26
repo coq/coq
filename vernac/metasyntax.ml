@@ -1184,7 +1184,7 @@ let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
    recvars level allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
-    Option.equal String.equal sc1 sc2 &&
+    List.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
   in
   let check (x, y) =
@@ -1810,7 +1810,7 @@ type scope_command =
   | ScopeDeclare
   | ScopeDelimAdd of string
   | ScopeDelimRemove
-  | ScopeClasses of scope_class list
+  | ScopeClasses of add_scope_where option * scope_class list
 
 let load_scope_command_common silently_define_scope_if_undefined _ (local,scope,o) =
   let declare_scope_if_needed =
@@ -1822,7 +1822,7 @@ let load_scope_command_common silently_define_scope_if_undefined _ (local,scope,
   (* the call to declare_scope_if_needed will have to be removed below *)
   | ScopeDelimAdd dlm -> declare_scope_if_needed scope
   | ScopeDelimRemove -> declare_scope_if_needed scope
-  | ScopeClasses cl -> declare_scope_if_needed scope
+  | ScopeClasses _ -> declare_scope_if_needed scope
 
 let load_scope_command =
   load_scope_command_common true
@@ -1833,20 +1833,20 @@ let open_scope_command i (local,scope,o) =
     | ScopeDeclare -> ()
     | ScopeDelimAdd dlm -> Notation.declare_delimiters scope dlm
     | ScopeDelimRemove -> Notation.remove_delimiters scope
-    | ScopeClasses cl -> List.iter (Notation.declare_scope_class scope) cl
+    | ScopeClasses (where, cl) -> List.iter (Notation.declare_scope_class scope ?where) cl
 
 let cache_scope_command o =
   load_scope_command_common false 1 o;
   open_scope_command 1 o
 
 let subst_scope_command (subst,(local,scope,o as x)) = match o with
-  | ScopeClasses cl ->
+  | ScopeClasses (where, cl) ->
       let env = Global.env () in
       let cl' = List.map_filter (subst_scope_class env subst) cl in
       let cl' =
         if List.for_all2eq (==) cl cl' then cl
         else cl' in
-      local, scope, ScopeClasses cl'
+      local, scope, ScopeClasses (where, cl')
   | _ -> x
 
 let classify_scope_command (local, _, _) =
@@ -1869,8 +1869,8 @@ let add_delimiters local scope key =
 let remove_delimiters local scope =
   Lib.add_leaf (inScopeCommand(local,scope,ScopeDelimRemove))
 
-let add_class_scope local scope cl =
-  Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses cl))
+let add_class_scope local scope where cl =
+  Lib.add_leaf (inScopeCommand(local,scope,ScopeClasses (where, cl)))
 
 let interp_abbreviation_modifiers deprecation modl =
   let mods, skipped = interp_non_syntax_modifiers ~reserved:false ~infix:false ~abbrev:true deprecation modl in

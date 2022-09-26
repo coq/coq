@@ -360,4 +360,11 @@ let typing_flags_parser : Declarations.typing_flags key_parser = fun ?loc orig a
 let typing_flags =
   attribute_of_list ["bypass_check", typing_flags_parser]
 
+let bind_scope_where =
+  let name = "where to bind scope" in
+  attribute_of_list [
+    ("add_top", single_key_parser ~name ~key:"add_top" Notation.AddScopeTop);
+    ("add_bottom", single_key_parser ~name ~key:"add_bottom" Notation.AddScopeBottom);
+  ]
+
 let raw_attributes : _ attribute = fun flags -> [], flags

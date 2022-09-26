@@ -1224,16 +1224,16 @@ scope_delimiter: [
 ]
 
 argument_spec: [
-| OPT "!" name OPT scope_delimiter
+| OPT "!" name LIST0 scope_delimiter
 ]
 
 arg_specs: [
 | argument_spec
 | "/"
 | "&"
-| "(" LIST1 argument_spec ")" OPT scope_delimiter
-| "[" LIST1 argument_spec "]" OPT scope_delimiter
-| "{" LIST1 argument_spec "}" OPT scope_delimiter
+| "(" LIST1 argument_spec ")" LIST0 scope_delimiter
+| "[" LIST1 argument_spec "]" LIST0 scope_delimiter
+| "{" LIST1 argument_spec "}" LIST0 scope_delimiter
 ]
 
 implicits_alt: [

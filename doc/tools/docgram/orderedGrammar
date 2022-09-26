@@ -792,17 +792,17 @@ reference: [
 | string OPT [ "%" scope_key ]
 ]
 
-argument_spec: [
-| OPT "!" name OPT ( "%" scope )
-]
-
 arg_specs: [
 | argument_spec
 | "/"
 | "&"
-| "(" LIST1 argument_spec ")" OPT ( "%" scope )
-| "[" LIST1 argument_spec "]" OPT ( "%" scope )
-| "{" LIST1 argument_spec "}" OPT ( "%" scope )
+| "(" LIST1 argument_spec ")" LIST0 ( "%" scope )
+| "[" LIST1 argument_spec "]" LIST0 ( "%" scope )
+| "{" LIST1 argument_spec "}" LIST0 ( "%" scope )
+]
+
+argument_spec: [
+| OPT "!" name LIST0 ( "%" scope )
 ]
 
 implicits_alt: [

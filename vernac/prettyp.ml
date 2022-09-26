@@ -268,12 +268,12 @@ let dummy = {
   Vernacexpr.implicit_status = Glob_term.Explicit;
    name = Anonymous;
    recarg_like = false;
-   notation_scope = None;
+   notation_scope = [];
  }
 
 let is_dummy = function
   | Vernacexpr.(RealArg {implicit_status; name; recarg_like; notation_scope}) ->
-    name = Anonymous && not recarg_like && notation_scope = None && implicit_status = Glob_term.Explicit
+    name = Anonymous && not recarg_like && notation_scope = [] && implicit_status = Glob_term.Explicit
   | _ -> false
 
 let rec main_implicits i renames recargs scopes impls =
@@ -290,8 +290,8 @@ let rec main_implicits i renames recargs scopes impls =
       | [], (None::_ | []) -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
-      | scope :: _ -> Option.map CAst.make scope
-      | [] -> None
+      | scope :: _ -> List.map CAst.make scope
+      | [] -> []
     in
     let status = {Vernacexpr.implicit_status; name; recarg_like; notation_scope} in
     let tl = function [] -> [] | _::tl -> tl in

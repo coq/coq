@@ -129,9 +129,9 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   let rec check_extra_args extra_args =
     match extra_args with
     | [] -> ()
-    | { notation_scope = None } :: _ ->
-      CErrors.user_err Pp.(str"Extra arguments should specify a scope.")
-    | { notation_scope = Some _ } :: args -> check_extra_args args
+    | { notation_scope = [] } :: _ ->
+      CErrors.user_err Pp.(str"Extra arguments should specify scopes.")
+    | { notation_scope = _ :: _ } :: args -> check_extra_args args
   in
 
   let args, scopes =
@@ -150,7 +150,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   if Option.cata (fun n -> n > num_args) false nargs_before_bidi then
     CErrors.user_err Pp.(str "The \"&\" modifier should be put before any extra scope.");
 
-  let scopes_specified = List.exists Option.has_some scopes in
+  let scopes_specified = List.exists ((<>) []) scopes in
 
   if scopes_specified && clear_scopes_flag then
     CErrors.user_err Pp.(str "The \"clear scopes\" flag is incompatible with scope annotations.");
@@ -265,7 +265,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   end;
 
   if scopes_specified || clear_scopes_flag then begin
-    let scopes = List.map (Option.map (fun {loc;v=k} ->
+    let scopes = List.map (List.map (fun {loc;v=k} ->
         try ignore (Notation.find_scope k); k
         with CErrors.UserError _ ->
           Notation.find_delimiters_scope ?loc k)) scopes
