@@ -763,7 +763,13 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       Tacticals.tclZEROMSG (str "Variable already exists")
     else
       let open Context.Named.Declaration in
-      let nenv = EConstr.push_named (LocalAssum (Context.make_annot id Sorts.Relevant, t)) env in
+      let sigma, t_rel =
+        let t_ty = Retyping.get_type_of env sigma t in
+        (* If the user passed eg ['_] for the type we force it to indeed be a type *)
+        let sigma, j = Typing.type_judgment env sigma {uj_val=t; uj_type=t_ty} in
+        sigma, Sorts.relevance_of_sort j.utj_type
+      in
+      let nenv = EConstr.push_named (LocalAssum (Context.make_annot id t_rel, t)) env in
       let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in
       let (sigma, evk) = Evarutil.new_pure_evar (Environ.named_context_val nenv) sigma evt in
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
@@ -773,7 +779,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
       let args = EConstr.identity_subst_val (Environ.named_context_val env) in
       let args = SList.cons (EConstr.mkRel 1) args in
       let ans = EConstr.mkEvar (evk, args) in
-      let ans = EConstr.mkLambda (Context.make_annot (Name id) Sorts.Relevant, t, ans) in
+      let ans = EConstr.mkLambda (Context.make_annot (Name id) t_rel, t, ans) in
       return (Value.of_constr ans)
   | _ ->
     throw err_notfocussed
