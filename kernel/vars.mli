@@ -37,7 +37,7 @@ val noccur_with_meta : int -> int -> constr -> bool
 (** [exliftn el c] lifts [c] with arbitrary complex lifting [el] *)
 val exliftn : Esubst.lift -> constr -> constr
 
-(** [liftn n k c] lifts by [n] indexes above or equal to [k] in [c]
+(** [liftn n k c] lifts by [n] indices greater than or equal to [k] in [c]
    Note that with respect to substitution calculi's terminology, [n]
    is the _shift_ and [k] is the _lift_. *)
 val liftn : int -> int -> constr -> constr

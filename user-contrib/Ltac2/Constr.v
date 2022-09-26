@@ -59,6 +59,11 @@ Ltac2 @ external check : constr -> constr result := "ltac2" "constr_check".
     current environment, and returns it, or the error otherwise. Panics if
     not focused. *)
 
+Ltac2 @ external liftn : int -> int -> constr -> constr := "ltac2" "constr_liftn".
+(** [liftn n k c] lifts by [n] indices greater than or equal to [k] in [c]
+    Note that with respect to substitution calculi's terminology, [n]
+    is the _shift_ and [k] is the _lift_. *)
+
 Ltac2 @ external substnl : constr list -> int -> constr -> constr := "ltac2" "constr_substnl".
 (** [substnl [r₁;...;rₙ] k c] substitutes in parallel [Rel(k+1); ...; Rel(k+n)] with
     [r₁;...;rₙ] in [c]. *)
