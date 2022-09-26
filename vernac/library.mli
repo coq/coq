@@ -65,9 +65,6 @@ val library_is_loaded : DirPath.t -> bool
   (** - Tell which libraries are loaded *)
 val loaded_libraries : unit -> DirPath.t list
 
-  (** - Return the full filename of a loaded library. *)
-val library_full_filename : DirPath.t -> string
-
 (** {6 Native compiler. } *)
 val native_name_from_filename : string -> string
 

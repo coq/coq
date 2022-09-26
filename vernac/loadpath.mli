@@ -48,14 +48,13 @@ val locate_file : string -> string
     it does not respect the visibility of paths. *)
 
 (** {6 Locate a library in the load path } *)
-type library_location = LibLoaded | LibInPath
 type locate_error = LibUnmappedDir | LibNotFound
 type 'a locate_result = ('a, locate_error) result
 
 val locate_qualified_library
   :  ?root:DirPath.t
   -> Libnames.qualid
-  -> (library_location * DirPath.t * CUnix.physical_path) locate_result
+  -> (DirPath.t * CUnix.physical_path) locate_result
 
 (** Locates a library by implicit name.
 

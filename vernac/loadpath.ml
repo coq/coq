@@ -141,7 +141,6 @@ let locate_file fname =
 (************************************************************************)
 (*s Locate absolute or partially qualified library names in the path *)
 
-type library_location = LibLoaded | LibInPath
 type locate_error = LibUnmappedDir | LibNotFound
 type 'a locate_result = ('a, locate_error) result
 
@@ -211,7 +210,7 @@ let locate_absolute_library dir : CUnix.physical_path locate_result =
     | Error fail -> Error fail
 
 let locate_qualified_library ?root qid :
-  (library_location * DP.t * CUnix.physical_path) locate_result =
+  (DP.t * CUnix.physical_path) locate_result =
   (* Search library in loadpath *)
   let dir, base = Libnames.repr_qualid qid in
   match expand_path ?root dir with
@@ -235,11 +234,7 @@ let locate_qualified_library ?root qid :
     match result with
     | Ok (dir,file) ->
       let library = Libnames.add_dirpath_suffix dir base in
-      (* Look if loaded *)
-      if Library.library_is_loaded library
-      then Ok (LibLoaded, library, Library.library_full_filename library)
-      (* Otherwise, look for it in the file system *)
-      else Ok (LibInPath, library, file)
+      Ok (library, file)
     | Error _ as e -> e
 
 let error_unmapped_dir qid =
