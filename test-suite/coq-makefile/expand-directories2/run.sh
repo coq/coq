@@ -2,9 +2,15 @@
 
 . ../template/path-init.sh
 
+rm -rf _test
+mkdir _test
+find . -maxdepth 1 -not -name . -not -name _test -exec cp -r '{}' -t _test ';'
+
+cd _test || exit 1
+
 # check cmd line arg is included in coqdep
 # preserves order of args (cmd line args last)
-actual=`coq_makefile -sources-of -f _CoqProject -o CoqMakefile b.v`
+actual=$(coq_makefile -sources-of -f _CoqProject -o CoqMakefile b.v)
 expected="x/a.v b.v"
 if [ "$actual" != "$expected" ]; then
   echo actual: $actual
@@ -22,7 +28,7 @@ COQC x/a.v
 EOT
 
 grep -v "make" makeout >actual
-if [ "`diff actual expected`" != "" ]; then
+if [ "$(diff actual expected)" != "" ]; then
   echo expected:
   cat expected
   echo actual:
@@ -42,7 +48,7 @@ COQC x/c.v
 EOT
 
 grep -v "make" makeout >actual
-if [ "`diff actual expected`" != "" ]; then
+if [ "$(diff actual expected)" != "" ]; then
   echo expected:
   cat expected
   echo actual:
