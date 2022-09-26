@@ -41,7 +41,7 @@
    (source_tree .))
    ; Finer-grained dependencies would look like this and be generated
    ; by coqdep; that would allow tests to be run incrementally.
-   ; ../tools/CoqMakefile.in
+   ; ../tools/coq_makefile/CoqMakefile.in
    ; ../theories/Init/Prelude.vo
    ; %{bin:coqc}
    ; %{bin:coq_makefile}

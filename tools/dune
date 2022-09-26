@@ -1,10 +1,4 @@
 (install
- (section lib)
- (package coq-core)
- (files
-  (CoqMakefile.in as tools/CoqMakefile.in)))
-
-(install
  (section libexec)
  (package coq-core)
  (files
@@ -12,13 +6,6 @@
   (make-one-time-file.py as tools/make-one-time-file.py)
   (make-both-time-files.py as tools/make-both-time-files.py)
   (make-both-single-timing-files.py as tools/make-both-single-timing-files.py)))
-
-(executable
- (name coq_makefile)
- (public_name coq_makefile)
- (package coq-core)
- (modules coq_makefile)
- (libraries coq-core.boot coq-core.lib))
 
 (executable
  (name coqworkmgr)

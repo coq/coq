@@ -937,8 +937,8 @@ merlin-hook::
 debug:
 	$(foreach v,\
 		$(sort $(filter-out $(INITIAL_VARS) INITIAL_VARS,\
-	       		$(.VARIABLES))),\
-	       	$(info $(v) = $($(v))))
+			$(.VARIABLES))),\
+		$(info $(v) = $($(v))))
 .PHONY: debug
 
 .DEFAULT_GOAL := all

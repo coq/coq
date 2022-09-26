@@ -130,7 +130,7 @@ let quote s = if String.contains s ' ' || CString.is_empty s then "'" ^ s ^ "'" 
 let generate_makefile oc conf_file local_file local_late_file dep_file args project =
   let env = Boot.Env.init () in
   (* XX coq makefile should ship files on its own dir *)
-  let cmf_dir = Boot.Env.tool env "" in
+  let cmf_dir = Boot.Env.tool env "coq_makefile" in
   let makefile_template = Boot.Path.relative cmf_dir "CoqMakefile.in" in
   if not (Boot.Path.exists makefile_template) then
     begin

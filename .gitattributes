@@ -60,7 +60,7 @@ Dockerfile whitespace=blank-at-eol,tab-in-indent
 
 # tabs are allowed in Makefiles.
 Makefile* whitespace=blank-at-eol
-tools/CoqMakefile.in whitespace=blank-at-eol
+tools/coq_makefile/CoqMakefile.in whitespace=blank-at-eol
 
 # CR is desired for these Windows files.
 *.bat whitespace=cr-at-eol,blank-at-eol,tab-in-indent

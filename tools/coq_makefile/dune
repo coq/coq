@@ -1,0 +1,12 @@
+(install
+ (section lib)
+ (package coq-core)
+ (files
+  (CoqMakefile.in as tools/coq_makefile/CoqMakefile.in)))
+
+(executable
+ (name coq_makefile)
+ (public_name coq_makefile)
+ (package coq-core)
+ (modules coq_makefile)
+ (libraries coq-core.boot coq-core.lib))
