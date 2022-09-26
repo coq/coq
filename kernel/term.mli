@@ -96,7 +96,8 @@ val lambda_appvect_assum : int -> constr -> constr array -> constr
 
 (** pseudo-reduction rule *)
 
-(** [prod_appvect] [forall (x1:B1;...;xn:Bn), B] [a1...an] @return [B[a1...an]] *)
+(** [prod_appvect] [forall (x1:B1;...;xn:Bn), B] [a1...an]
+    @return [B[a1...an]] *)
 val prod_appvect : types -> constr array -> types
 val prod_applist : types -> constr list -> types
 

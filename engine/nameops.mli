@@ -112,7 +112,8 @@ module Name : sig
       It is [Anonymous,a] otherwise. *)
 
   val get_id : Name.t -> Id.t
-  (** [get_id] associates [id] to [Name id]. @raise IsAnonymous otherwise. *)
+  (** [get_id] associates [id] to [Name id].
+      @raise IsAnonymous otherwise. *)
 
   val pick : Name.t -> Name.t -> Name.t
   (** [pick na na'] returns [Anonymous] if both names are [Anonymous].

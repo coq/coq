@@ -270,7 +270,7 @@ module Proof : sig
       environment and empty evar_map. *)
   val get_current_context : t -> Evd.evar_map * Environ.env
 
-  (** {2 Proof delay API, warning, internal, not stable *)
+  (** {2 Proof delay API, warning, internal, not stable} *)
 
   (* Intermediate step necessary to delegate the future.
    * Both access the current proof state. The former is supposed to be

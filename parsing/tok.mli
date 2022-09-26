@@ -52,7 +52,7 @@ val token_text : 'c p -> string
 val trim_quotation : string -> char option * string
 
 (** for camlp5,
-    eg GRAMMAR EXTEND ..... [ IDENT "x" -> .... END
+    eg [GRAMMAR EXTEND ..... [ IDENT "x" -> .... ] END]
     is a pattern (PIDENT (Some "x"))
 *)
 val match_pattern : 'c p -> t -> 'c

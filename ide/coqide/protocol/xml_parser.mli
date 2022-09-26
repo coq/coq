@@ -34,14 +34,15 @@ type t
 
 (** {6:exc Xml Exceptions} *)
 
-(** Several exceptions can be raised when parsing an Xml document : {ul
+(** Several exceptions can be raised when parsing an Xml document :
+    {ul
         {li {!Xml.Error} is raised when an xml parsing error occurs. the
                 {!Xml.error_msg} tells you which error occurred during parsing
                 and the {!Xml.error_pos} can be used to retrieve the document
                 location where the error occurred at.}
         {li {!Xml.File_not_found} is raised when an error occurred while
                 opening a file with the {!Xml.parse_file} function.}
-        }
+     }
  *)
 
 type error_pos

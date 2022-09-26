@@ -218,7 +218,7 @@ val whd_stack :
     to the conversion of the eta expansion of t, considered as an inhabitant
     of ind, and the Constructor c of this inductive type applied to arguments
     s.
-    @assumes [t] is a rigid term, and not a constructor. [ind] is the inductive
+    Assumes [t] is a rigid term, and not a constructor. [ind] is the inductive
     of the constructor term [c]
     @raise Not_found if the inductive is not a primitive record, or if the
     constructor is partially applied.

@@ -17,7 +17,7 @@
     {!Tacexpr.glob_tactic_expr} representing the left-hand side of the
     corresponding matching rule, a matching substitution to be
     applied, a context substitution mapping identifier to context like
-    those of {!Matching.matching_result}), and a {!Term.constr}
+    those of {!Constr_matching.matching_result}), and a {!Constr.t}
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
   subst : Constr_matching.bound_ident_map * Ltac_pretype.extended_patvar_map ;

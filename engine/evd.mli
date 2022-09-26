@@ -14,10 +14,10 @@ open Names
 open Constr
 open Environ
 
-(** This file defines the pervasive unification state used everywhere in Coq
-    tactic engine. It is very low-level and most of the functions exported here
-    are irrelevant to the standard API user. Consider using {!Evarutil},
-    {!Sigma} or {!Proofview} instead.
+(** This file defines the pervasive unification state used everywhere
+    in Coq tactic engine. It is very low-level and most of the
+    functions exported here are irrelevant to the standard API user.
+    Consider using {!Evarutil} or {!Proofview} instead.
 
     A unification state (of type [evar_map]) is primarily a finite mapping
     from existential variables to records containing the type of the evar
