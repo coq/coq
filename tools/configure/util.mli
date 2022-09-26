@@ -40,6 +40,8 @@ val read_lines_and_close : in_channel -> string * string list
 
 val arch : string option -> string
 
+val idearchdef : ocamlfind:string -> macintegration:bool -> arch:string -> string
+
 (* bin is used to avoid adding \r on Cygwin/Windows *)
 val write_config_file : file:string -> ?bin:bool -> (out_channel -> unit) -> unit
 

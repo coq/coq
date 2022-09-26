@@ -382,7 +382,7 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 let pr_native = function
   | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
 
-let print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdir hasnatdynlink idearchdef browser =
+let print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink idearchdef browser =
   let { CamlConf.caml_version; camlbin; camllib } = camlenv in
   let pr s = printf s in
   pr "\n";
@@ -393,11 +393,8 @@ let print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdi
   pr "  OCaml library in            : %s\n" (esc camllib);
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
-  if coqide <> "no" then
-    pr "  Lablgtk3 library in         : %s\n" (esc lablgtkdir);
   if idearchdef = "QUARTZ" then
     pr "  Mac OS integration is on\n";
-  pr "  CoqIDE                      : %s\n" coqide;
   pr "  Documentation               : %s\n"
     (if prefs.withdoc then "All" else "None");
   pr "  Web browser                 : %s\n" browser;
@@ -502,7 +499,7 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
 
 (** * Build the config/Makefile file *)
 
-let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags coqide arch exe o =
+let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags arch exe o =
   let pr s = fprintf o s in
   pr "###### config/Makefile : Configuration file for Coq ##############\n";
   pr "#                                                                #\n";
@@ -535,9 +532,6 @@ let write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags co
   pr "EXE=%s\n" exe;
   pr "# the command MKDIR (try to use mkdirhier if you have problems)\n";
   pr "MKDIR=mkdir -p\n\n";
-  pr "# CoqIDE (no/byte/opt)\n";
-  pr "HASCOQIDE=%s\n" coqide;
-  pr "# Defining REVISION\n";
   pr "# Option to control compilation and installation of the documentation\n";
   pr "WITHDOC=%s\n\n" (if prefs.withdoc then "all" else "no");
   pr "# Option to produce precompiled files for native_compute\n";
@@ -576,20 +570,19 @@ let main () =
   let coq_caml_flags = coq_caml_flags prefs in
   let hasnatdynlink = hasnatdynlink prefs best_compiler in
   check_for_zarith prefs;
-  let coqide, lablgtkdir = Coqide.coqide camlexec.find prefs best_compiler camlenv.CamlConf.camllib in
-  let idearchdef = Coqide.idearchdef camlexec.find prefs coqide arch in
+  let idearchdef = idearchdef ~ocamlfind:camlexec.find ~macintegration:prefs.macintegration ~arch in
   (if prefs.withdoc then check_doc ());
   let install_dirs = install_dirs prefs arch in
   let coqenv = resolve_coqenv install_dirs in
   let cflags, sse2_math = compute_cflags () in
   check_fmath sse2_math;
   if prefs.interactive then
-    print_summary prefs arch camlenv best_compiler install_dirs coqide lablgtkdir hasnatdynlink idearchdef browser;
+    print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink idearchdef browser;
   write_config_file ~file:"dev/ocamldebug-coq" ~bin:true (write_dbg_wrapper camlenv);
   write_config_file ~file:"config/coq_config.ml"
     (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs);
   write_config_file ~file:"config/Makefile"
-    (write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags coqide arch exe);
+    (write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags arch exe);
   write_config_file ~file:"config/dune.c_flags" (write_dune_c_flags cflags);
   write_config_file ~file:"config/coq_config.py" write_configpy;
   ()

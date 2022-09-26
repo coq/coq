@@ -8,9 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* This is to be eventually deprecated in favor of packages *)
-type ide = Opt | Byte | No
-
 type nativecompiler = NativeYes | NativeNo | NativeOndemand
 
 module Prefs : sig
@@ -35,8 +32,6 @@ type t =
   (** override arch auto-detection *)
   ; natdynlink : bool
   (** native dynlink enabled [only relevant to coq_makefile] *)
-  ; coqide : ide option
-  (** coqide build [yes/no/byte] *)
   ; macintegration : bool
   (** whether to integrate CoqIDE with OSX  *)
   ; browser : string option
