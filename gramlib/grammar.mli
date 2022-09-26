@@ -30,6 +30,8 @@ module type S = sig
     type t
     val make : ?loc:Loc.t -> char Stream.t -> t
     val comments : t -> ((int * int) * string) list
+    val loc : t -> Loc.t
+    val consume : t -> int -> unit
   end
 
   module Entry : sig
