@@ -1076,7 +1076,7 @@ order to enable the usual recursive organization of Coq projects add
 
     (include_subdirs qualified)
 
-to you ``dune`` file.
+to your ``dune`` file.
 
 Once your project is set up, `dune build` will generate the
 `pkg.install` files and all the files necessary for the installation
