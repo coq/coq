@@ -240,7 +240,7 @@ let neutr = function
 
 type 'a usubs = 'a subs Univ.puniverses
 
-type evar_repack = constr list -> constr
+type evar_repack = Evar.t * constr list -> constr
 
 type fconstr = {
   mutable mark : red_state;
@@ -608,9 +608,9 @@ let rec to_constr (lfts, usubst as ulfts) v =
         mkLetIn (n, to_constr ulfts b,
                     to_constr ulfts t,
                     subst_constr subs f)
-    | FEvar (_, args, env, repack) ->
+    | FEvar (ev, args, env, repack) ->
       let subs = comp_subs ulfts env in
-      repack(List.map (fun a -> subst_constr subs a) args)
+      repack (ev, List.map (fun a -> subst_constr subs a) args)
     | FLIFT (k,a) -> to_constr (el_shft k lfts, usubst) a
 
     | FInt i ->
@@ -1421,7 +1421,7 @@ and knht info e t stk =
         if is_irrelevant info.i_cache.i_mode (info.i_cache.i_sigma.evar_relevance ev) then
           (mk_irrelevant, skip_irrelevant_stack stk)
         else
-          let repack args = info.i_cache.i_sigma.evar_repack (evk, args) in
+          let repack = info.i_cache.i_sigma.evar_repack in
           { mark = Whnf; term = FEvar (evk, args, e, repack) }, stk
       end
     | Array(u,t,def,ty) ->
@@ -1621,8 +1621,8 @@ and norm_head info tab m =
           let ftys = Array.map (fun ty -> klt info tab e ty) tys in
           let fbds = Array.map (fun bd -> klt infobd tab (usubs_liftn (Array.length na) e) bd) bds in
           mkFix (n, (na, ftys, fbds))
-      | FEvar(_, args, env, repack) ->
-          repack (List.map (fun a -> klt info tab env a) args)
+      | FEvar(ev, args, env, repack) ->
+          repack (ev, List.map (fun a -> klt info tab env a) args)
       | FProj (p,c) ->
           mkProj (p, kl info tab c)
       | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _
