@@ -135,7 +135,6 @@ module ATerm :
 sig
   type t
   val proj : t -> t term
-  val make : t term -> t
   val mkSymb : constr -> t
   val mkProduct : (Sorts.t * Sorts.t) -> t
   val mkEps : Id.t -> t
@@ -230,16 +229,20 @@ type ccpattern =
     PApp of ATerm.t * ccpattern list (* arguments are reversed *)
   | PVar of int * ccpattern list (* arguments are reversed *)
 
+type axiom = constr
+
+let constr_of_axiom c = c
+
 type rule=
     Congruence
-  | Axiom of constr * bool
+  | Axiom of axiom * bool
   | Injection of int * pa_constructor * int * pa_constructor * int
 
 type from=
     Goal
   | Hyp of constr
-  | HeqG of constr
-  | HeqnH of constr * constr
+  | HeqG of Id.t
+  | HeqnH of Id.t * Id.t
 
 type 'a eq = {lhs:int;rhs:int;rule:'a}
 
@@ -409,7 +412,7 @@ let get_constructor_info uf i=
 let size uf i=
   (get_representative uf i).weight
 
-let axioms uf = uf.axioms
+let axioms uf c = Constrhash.find uf.axioms c
 
 let epsilons uf = uf.epsilons
 
@@ -591,11 +594,14 @@ let rec add_aterm state t' =
                       Not_found -> Int.Set.empty));
             b
 
-let add_equality state c s' t' =
+let add_equality0 state c s' t' =
   let i = add_aterm state s' in
   let j = add_aterm state t' in
     Queue.add {lhs=i;rhs=j;rule=Axiom(c,false)} state.combine;
     Constrhash.add state.uf.axioms c (s',t')
+
+let add_equality state id s t =
+  add_equality0 state (mkVar id) s t
 
 let add_disequality state from s' t' =
   let i = add_aterm state s' in
@@ -646,7 +652,7 @@ let add_inst state (inst,int_subst) =
                    (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
                   (str "  [" ++ Printer.pr_econstr_env state.env state.sigma (EConstr.of_constr prf) ++ str " : " ++
                            pr_term state.env state.sigma s ++ str " == " ++ pr_term state.env state.sigma t ++ str "]"));
-                add_equality state prf s t
+                add_equality0 state prf s t
               end
             else
               begin

@@ -12,44 +12,14 @@ open Ccalgo
 open Constr
 
 type rule=
-    Ax of constr
-  | SymAx of constr
+    Ax of axiom
+  | SymAx of axiom
   | Refl of ATerm.t
   | Trans of proof*proof
   | Congr of proof*proof
   | Inject of proof*pconstructor*int*int
 and proof =
     private {p_lhs:ATerm.t;p_rhs:ATerm.t;p_rule:rule}
-
-(** Proof smart constructors *)
-
-val prefl:ATerm.t -> proof
-
-val pcongr: proof -> proof -> proof
-
-val ptrans: proof -> proof -> proof
-
-val psym: proof -> proof
-
-val pax : (ATerm.t * ATerm.t) Ccalgo.Constrhash.t ->
-           Ccalgo.Constrhash.key -> proof
-
-val psymax :  (ATerm.t * ATerm.t) Ccalgo.Constrhash.t ->
-           Ccalgo.Constrhash.key -> proof
-
-val pinject :  proof -> pconstructor -> int -> int -> proof
-
-(** Proof building functions *)
-
-val equal_proof : Environ.env -> Evd.evar_map -> forest -> int -> int -> proof
-
-val edge_proof : Environ.env -> Evd.evar_map -> forest -> (int*int)*equality -> proof
-
-val path_proof : Environ.env -> Evd.evar_map -> forest -> int -> ((int*int)*equality) list -> proof
-
-val congr_proof : Environ.env -> Evd.evar_map -> forest -> int -> int -> proof
-
-val ind_proof : Environ.env -> Evd.evar_map -> forest -> int -> pa_constructor -> int -> pa_constructor -> proof
 
 (** Main proof building function *)
 
