@@ -240,7 +240,7 @@ let windrive s =
 
 let generate_conf_coq_config oc =
   section oc "Coq configuration.";
-  Envars.print_config ~prefix_var_name:"COQMF_" oc;
+  Cm_config.print_config oc;
   let env = Boot.Env.init () in
   let coqlib = Boot.Env.(coqlib env |> Path.to_string) in
   (* XXX: FIXME, why does this variable needs the root lib *)

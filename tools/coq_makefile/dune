@@ -8,5 +8,5 @@
  (name coq_makefile)
  (public_name coq_makefile)
  (package coq-core)
- (modules coq_makefile)
+ (modules cm_config coq_makefile)
  (libraries coq-core.boot coq-core.lib))

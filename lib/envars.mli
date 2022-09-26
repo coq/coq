@@ -27,22 +27,13 @@ val expand_path_macros : warn:(string -> unit) -> string -> string
 val home : warn:(string -> unit) -> string
 
 (** [docdir] is the path to the installed documentation. *)
-val docdir : unit -> string
+(* val docdir : unit -> string *)
 
 (** [datadir] is the path to the installed data directory. *)
 val datadir : unit -> string
 
 (** [configdir] is the path to the installed config directory. *)
 val configdir : unit -> string
-
-(** [coqbin] is the name of the current executable. *)
-val coqbin : string
-
-(** [coqroot] is the path to [coqbin].
-    The following value only makes sense when executables are running from
-    source tree (e.g. during build or in local mode).
-*)
-val coqroot : string
 
 (** [coqpath] is the standard path to coq.
     Notice that coqpath is stored in reverse order, since that is
@@ -51,6 +42,7 @@ val coqpath : string list
 
 (** [camlfind ()] is the path to the ocamlfind binary. *)
 val ocamlfind : unit -> string
+(* XXX used in nativelib *)
 
 (** Coq tries to honor the XDG Base Directory Specification to access
     the user's configuration files.
@@ -62,5 +54,5 @@ val xdg_data_home   : (string -> unit) -> string
 val xdg_data_dirs   : (string -> unit) -> string list
 val xdg_dirs : warn : (string -> unit) -> string list
 
-(** {6 Prints the configuration information } *)
-val print_config : ?prefix_var_name:string -> out_channel -> unit
+(** {6 Prints the configuration information for core Coq} *)
+val print_config : out_channel -> unit

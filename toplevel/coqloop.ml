@@ -508,7 +508,7 @@ let init_ocaml_path () =
   let env = Boot.Env.init () in
   let corelib = Boot.Env.corelib env |> Boot.Path.to_string in
   let add_subdir dl = Mltop.add_ml_dir (Filename.concat corelib dl) in
-  List.iter add_subdir ("dev" :: Coq_config.all_src_dirs)
+  List.iter add_subdir ("dev" :: Coq_mf_config.all_src_dirs)
 
 let loop ~opts ~state =
   drop_args := Some opts;

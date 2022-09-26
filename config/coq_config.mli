@@ -24,9 +24,6 @@ val docdirsuffix : string    (* doc directory relative to installation prefix *)
 (* used in envars (likely for coq_makefile) *)
 val ocamlfind : string
 
-(* used in envars for coq_makefile *)
-val caml_flags : string     (* arguments passed to ocamlc (ie. CAMLFLAGS) *)
-
 (* Used in coqide *)
 val arch : string       (* architecture *)
 
@@ -37,9 +34,6 @@ val version : string    (* version number of Coq *)
 val caml_version : string    (* OCaml version used to compile Coq *)
 val caml_version_nums : int list    (* OCaml version used to compile Coq by components *)
 val vo_version : int32
-
-(* used in envars for coq_makefile *)
-val all_src_dirs : string list
 
 (* Used in micromega *)
 val exec_extension : string (* "" under Unix, ".exe" under MS-windows *)
