@@ -281,7 +281,7 @@ val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info 
 
 val instantiate_evar_array : evar_map -> evar_info -> econstr -> econstr SList.t -> econstr
 
-val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
+val evars_reset_evd  : ?with_conv_pbs:bool ->
   evar_map ->  evar_map -> evar_map
 (** spiwack: this function seems to somewhat break the abstraction. *)
 

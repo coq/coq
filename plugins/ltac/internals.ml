@@ -174,16 +174,14 @@ let hResolve id c occ t =
   let t_raw = Detyping.detype Detyping.Now true env_ids env sigma t in
   let rec resolve_hole t_hole =
     try
-      Pretyping.understand env sigma t_hole
+      Pretyping.understand_tcc_ty ~flags:Pretyping.all_and_fail_flags env sigma t_hole
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
           let (e, info) = Exninfo.capture e in
           let loc_begin = Option.cata (fun l -> fst (Loc.unloc l)) 0 (Loc.get_loc info) in
           resolve_hole (subst_hole_with_term loc_begin c_raw t_hole)
   in
-  let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
-  let sigma = Evd.merge_universe_context sigma ctx in
-  let t_constr_type = Retyping.get_type_of env sigma t_constr in
+  let sigma, t_constr, t_constr_type = resolve_hole (subst_var_with_hole occ id t_raw) in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (change_concl (mkLetIn (Context.make_annot Name.Anonymous Sorts.Relevant,t_constr,t_constr_type,concl)))
   end

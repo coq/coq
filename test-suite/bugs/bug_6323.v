@@ -1,6 +1,6 @@
 Goal True.
-  simple refine (let X : Type := _ in _);
-    [ abstract exact Set using Set'
+simple refine (let X : Type := _ in _);
+    [ abstract exact Set
     | let X' := (eval cbv delta [X] in X) in
       clear X;
       simple refine (let id' : { x : X' | True } -> X' := _ in _);
