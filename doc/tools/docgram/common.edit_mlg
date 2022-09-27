@@ -1683,6 +1683,12 @@ ltac2_rewriter: [
 
 ltac2_expr0: [
 | DELETE "(" ")"
+| REPLACE "{" test_ident_with_or_lpar_or_rbrac ltac2_expr0 "with" tac2rec_fieldexprs "}"
+| WITH "{" ltac2_expr0 "with" tac2rec_fieldexprs "}"
+(*
+| REPLACE "{" [  | LIST1 tac2rec_fieldexpr OPT ";" ] "}"
+| WITH "{" OPT ( LIST1 tac2rec_fieldexpr OPT ";" ) "}"
+*)
 ]
 
 tac2type_body: [
@@ -2061,14 +2067,6 @@ ltac2_orient: [
 
 SPLICE: [
 | ltac2_orient
-]
-
-ltac2_expr0: [
-(*
-| DELETE "(" ")" (* covered by "()" prodn *)
-| REPLACE "{" [  | LIST1 tac2rec_fieldexpr OPT ";" ] "}"
-| WITH "{" OPT ( LIST1 tac2rec_fieldexpr OPT ";" ) "}"
-*)
 ]
 
 (* todo: should

@@ -2359,6 +2359,7 @@ ltac2_expr0: [
 | "(" ltac2_expr ":" ltac2_type ")"      (* ltac2 plugin *)
 | "()"      (* ltac2 plugin *)
 | "[" LIST0 ltac2_expr5 SEP ";" "]"      (* ltac2 plugin *)
+| "{" ltac2_expr0 "with" OPT ( LIST1 tac2rec_fieldexpr OPT ";" ) "}"
 | "{" OPT ( LIST1 tac2rec_fieldexpr OPT ";" ) "}"      (* ltac2 plugin *)
 | ltac2_tactic_atom      (* ltac2 plugin *)
 ]

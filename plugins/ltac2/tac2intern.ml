@@ -318,9 +318,9 @@ let ctor_data_for_patterns kn data = {
   cindx = match data.cdata_indx with None -> Open kn | Some i -> Closed i;
 }
 
-type 'a field =
+type ('a,'b) field =
   | PresentField of 'a
-  | MissingField of Id.t
+  | MissingField of 'b
 
 let intern_record env loc fs =
   let map (proj, e) =
@@ -360,7 +360,10 @@ let intern_record env loc fs =
   in
   let () = List.iter iter fs in
   let args = Array.mapi (fun i arg -> match arg with
-      | None -> let field, _, _ = List.nth typdef i in MissingField field
+      | None ->
+        let field, _, typ = List.nth typdef i in
+        let typ' = subst_type (fun i -> GTypVar subst.(i)) typ in
+        MissingField (i, field, typ, typ')
       | Some arg -> PresentField arg)
       args
   in
@@ -1019,15 +1022,60 @@ let rec intern_rec env {loc;v=e} = match e with
     let brs = List.map (fun (p,br) -> glb_of_wip_pat p, br) brs in
     GTacFullMatch (e,brs), rt
   end
-| CTacRec fs ->
+| CTacRec (def, fs) ->
   let kn, tparam, args = intern_record env loc fs in
+  let def, args = match def with
+    | None ->
+      let args = Array.map (function
+          | PresentField _ as arg -> arg
+          | MissingField (_, field, _, _) -> user_err ?loc (str "Field " ++ Id.print field ++ str " is undefined"))
+          args
+      in
+      None, args
+    | Some def ->
+      (* To get the best locs on type errors, the order of operations must be
+         - unify deftyp expectedtyp
+         - intern_rec_with_constraint def
+         - intern_rec_with_constraint present fields
+      *)
+      let deftparam = Array.init (List.length tparam) (fun _ -> GTypVar (fresh_id env)) in
+      let used = ref false in
+      let args = Array.map (function
+          | PresentField _ as arg -> arg
+          | MissingField (i, _, ftyp, expectedtyp) ->
+            used := true;
+            let deftyp = subst_type (fun i -> deftparam.(i)) ftyp in
+            (* Can this fail? ie does loc matter? *)
+            let () = unify ?loc env deftyp expectedtyp in
+            MissingField i)
+          args
+      in
+      let () = if not !used then
+          user_err ?loc (str "All the fields are explicitly listed in this record:" ++
+                         spc() ++ str "the 'with' clause is useless.");
+      in
+      let def = intern_rec_with_constraint env def (GTypRef (Other kn, Array.to_list deftparam)) in
+      let var = match def with
+        | GTacVar var -> var
+        | _ -> fresh_var (bound_vars env)
+      in
+      Some (var, def), args
+  in
   let args = CArray.map_to_list (function
-      | PresentField arg -> arg
-      | MissingField field -> user_err ?loc (str "Field " ++ Id.print field ++ str " is undefined"))
+      | PresentField (arg,argty) -> intern_rec_with_constraint env arg argty
+      | MissingField i -> match def with
+        | None -> assert false
+        | Some (var, _) -> GTacPrj (kn, GTacVar var, i))
       args
   in
-  let args = List.map (fun (arg,argty) -> intern_rec_with_constraint env arg argty) args in
-  (GTacCst (Other kn, 0, args), GTypRef (Other kn, tparam))
+  let e = GTacCst (Other kn, 0, args) in
+  let e = match def with
+    | None -> e
+    | Some (var, GTacVar var') when Id.equal var var' -> e
+    | Some (var, def) ->
+      GTacLet (false, [Name var, def], e)
+  in
+  (e,  GTypRef (Other kn, tparam))
 | CTacPrj (e, proj) ->
   let pinfo = get_projection proj in
   let loc = e.loc in
@@ -1340,13 +1388,14 @@ let rec globalize ids ({loc;v=er} as e) = match er with
   let e = globalize ids e in
   let bl = List.map (fun b -> globalize_case ids b) bl in
   CAst.make ?loc @@ CTacCse (e, bl)
-| CTacRec r ->
+| CTacRec (def, r) ->
+  let def = Option.map (globalize ids) def in
   let map (p, e) =
     let p = get_projection0 p in
     let e = globalize ids e in
     (AbsKn p, e)
   in
-  CAst.make ?loc @@ CTacRec (List.map map r)
+  CAst.make ?loc @@ CTacRec (def, List.map map r)
 | CTacPrj (e, p) ->
   let e = globalize ids e in
   let p = get_projection0 p in
@@ -1624,14 +1673,15 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
   let e' = subst_rawexpr subst e in
   let bl' = List.Smart.map map bl in
   if e' == e && bl' == bl then t else CAst.make ?loc @@ CTacCse (e', bl')
-| CTacRec el ->
+| CTacRec (def, el) ->
+  let def' = Option.Smart.map (subst_rawexpr subst) def in
   let map (prj, e as p) =
     let prj' = subst_projection subst prj in
     let e' = subst_rawexpr subst e in
     if prj' == prj && e' == e then p else (prj', e')
   in
   let el' = List.Smart.map map el in
-  if el' == el then t else CAst.make ?loc @@ CTacRec el'
+  if def' == def && el' == el then t else CAst.make ?loc @@ CTacRec (def',el')
 | CTacPrj (e, prj) ->
     let prj' = subst_projection subst prj in
     let e' = subst_rawexpr subst e in

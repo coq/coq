@@ -206,7 +206,7 @@ let of_hyp_location ?loc ((occs, id), flag) =
 let of_clause {loc;v=cl} =
   let hyps = of_option ?loc (fun l -> of_list ?loc of_hyp_location l) cl.q_onhyps in
   let concl = of_occurrences cl.q_concl_occs in
-  CAst.make ?loc @@ CTacRec ([
+  CAst.make ?loc @@ CTacRec (None, [
     std_proj "on_hyps", hyps;
     std_proj "on_concl", concl;
   ])
@@ -223,7 +223,7 @@ let of_induction_clause {loc;v=cl} =
   let eqn = of_option ?loc of_intro_pattern_naming cl.indcl_eqn in
   let as_ = of_option ?loc of_or_and_intro_pattern cl.indcl_as in
   let in_ = of_option ?loc of_clause cl.indcl_in in
-  CAst.make ?loc @@ CTacRec ([
+  CAst.make ?loc @@ CTacRec (None, [
     std_proj "indcl_arg", arg;
     std_proj "indcl_eqn", eqn;
     std_proj "indcl_as", as_;
@@ -315,7 +315,7 @@ let of_rewriting {loc;v=rew} =
   in
   let repeat = of_repeat rew.rew_repeat in
   let equatn = thunk (of_constr_with_bindings rew.rew_equatn) in
-  CAst.make ?loc @@ CTacRec ([
+  CAst.make ?loc @@ CTacRec (None, [
     std_proj "rew_orient", orient;
     std_proj "rew_repeat", repeat;
     std_proj "rew_equatn", equatn;
@@ -382,7 +382,7 @@ let of_reference r =
 let of_strategy_flag {loc;v=flag} =
   let open Genredexpr in
   let flag = make_red_flag flag in
-  CAst.make ?loc @@ CTacRec ([
+  CAst.make ?loc @@ CTacRec (None, [
     std_proj "rBeta", of_bool ?loc flag.rBeta;
     std_proj "rMatch", of_bool ?loc flag.rMatch;
     std_proj "rFix", of_bool ?loc flag.rFix;
