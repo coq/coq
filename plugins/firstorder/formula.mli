@@ -32,7 +32,9 @@ val construct_nhyps : Environ.env -> pinductive -> int array
 val ind_hyps : Environ.env -> Evd.evar_map -> int -> pinductive ->
   constr list -> EConstr.rel_context array
 
-type atom = private { atom : EConstr.t }
+type atom
+
+val repr_atom : atom -> EConstr.t
 
 type atoms = { positive:atom list; negative:atom list }
 

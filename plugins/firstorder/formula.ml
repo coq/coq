@@ -37,6 +37,8 @@ type counter = bool -> metavariable
 
 type atom = { atom : constr }
 
+let repr_atom a = a.atom
+
 exception Is_atom of atom
 
 let meta_succ m = m+1

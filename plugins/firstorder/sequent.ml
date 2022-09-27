@@ -142,10 +142,10 @@ let add_formula ~flags env sigma side nam t seq =
     | Right t->
         match side with
             Concl ->
-              {seq with gl=t.atom;glatom=Some t}
+              {seq with gl= repr_atom t;glatom=Some t}
           | _ ->
               {seq with
-                 context=cm_add sigma t.atom nam seq.context;
+                 context=cm_add sigma (repr_atom t) nam seq.context;
                  latoms=t::seq.latoms}
 
 let re_add_formula_list sigma lf seq=

@@ -126,9 +126,10 @@ let mk_rel_inst evd t=
   in
   let nt=renum_rec 0 t in (!new_rel - 1,nt)
 
-let unif_atoms env evd i dom { Formula.atom = t1 } { Formula.atom = t2 } =
+let unif_atoms env evd i dom t1 t2 =
   try
-    let t=Int.List.assoc i (unif env evd t1 t2) in
+    let t1 = Formula.repr_atom t1 in
+    let t=Int.List.assoc i (unif env evd t1 (Formula.repr_atom t2)) in
       if isMeta evd t then Some (Phantom dom)
       else Some (Real(mk_rel_inst evd t,value evd i t1))
   with
