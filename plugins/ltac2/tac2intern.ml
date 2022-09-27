@@ -318,7 +318,11 @@ let ctor_data_for_patterns kn data = {
   cindx = match data.cdata_indx with None -> Open kn | Some i -> Closed i;
 }
 
-let intern_record intern_rec_with_constraint env loc fs =
+type 'a field =
+  | PresentField of 'a
+  | MissingField of Id.t
+
+let intern_record env loc fs =
   let map (proj, e) =
     let loc = match proj with
     | RelId {CAst.loc} -> loc
@@ -345,8 +349,7 @@ let intern_record intern_rec_with_constraint env loc fs =
       match args.(index) with
       | None ->
         let exp = subst_type (fun i -> GTypVar subst.(i)) pinfo.pdata_ptyp in
-        let e = intern_rec_with_constraint env e exp in
-        args.(index) <- Some e
+        args.(index) <- Some (e, exp)
       | Some _ ->
         let (name, _, _) = List.nth typdef pinfo.pdata_indx in
         user_err ?loc (str "Field " ++ Id.print name ++ str " is defined \
@@ -356,13 +359,11 @@ let intern_record intern_rec_with_constraint env loc fs =
         pertain to record definition " ++ pr_typref pinfo.pdata_type)
   in
   let () = List.iter iter fs in
-  let () = match Array.findi (fun _ o -> Option.is_empty o) args with
-  | None -> ()
-  | Some i ->
-    let (field, _, _) = List.nth typdef i in
-    user_err ?loc (str "Field " ++ Id.print field ++ str " is undefined")
+  let args = Array.mapi (fun i arg -> match arg with
+      | None -> let field, _, _ = List.nth typdef i in MissingField field
+      | Some arg -> PresentField arg)
+      args
   in
-  let args = Array.map_to_list Option.get args in
   let tparam = List.init params (fun i -> GTypVar subst.(i)) in
   kn, tparam, args
 
@@ -442,16 +443,20 @@ let rec intern_pat_rec env cpat t =
     in
     patvars, CAst.make ?loc (PatRef (ctor,args))
   | CPatRecord pats ->
-    let kn, tparam, args = intern_record intern_pat_rec env loc pats in
+    let kn, tparam, args = intern_record env loc pats in
     let () = unify ?loc env t (GTypRef (Other kn, tparam)) in
-    let patvars, args = CList.fold_left_map (fun patvars (argvars,arg) ->
-        let patvars = Id.Map.union (fun id _ (loc,_) ->
-            CErrors.user_err ?loc
-              Pp.(str "Variable " ++ Id.print id ++
-                  str " is bound several times in this matching."))
-            patvars argvars
-        in
-        patvars, arg)
+    let args = Array.to_list args in
+    let patvars, args = CList.fold_left_map (fun patvars -> function
+        | MissingField _ -> patvars, catchall
+        | PresentField (arg, argty) ->
+          let (argvars,arg) = intern_pat_rec env arg argty in
+          let patvars = Id.Map.union (fun id _ (loc,_) ->
+              CErrors.user_err ?loc
+                Pp.(str "Variable " ++ Id.print id ++
+                    str " is bound several times in this matching."))
+              patvars argvars
+          in
+          patvars, arg)
         Id.Map.empty
         args
     in
@@ -1015,7 +1020,13 @@ let rec intern_rec env {loc;v=e} = match e with
     GTacFullMatch (e,brs), rt
   end
 | CTacRec fs ->
-  let kn, tparam, args = intern_record intern_rec_with_constraint env loc fs in
+  let kn, tparam, args = intern_record env loc fs in
+  let args = CArray.map_to_list (function
+      | PresentField arg -> arg
+      | MissingField field -> user_err ?loc (str "Field " ++ Id.print field ++ str " is undefined"))
+      args
+  in
+  let args = List.map (fun (arg,argty) -> intern_rec_with_constraint env arg argty) args in
   (GTacCst (Other kn, 0, args), GTypRef (Other kn, tparam))
 | CTacPrj (e, proj) ->
   let pinfo = get_projection proj in
