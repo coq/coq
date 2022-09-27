@@ -42,9 +42,6 @@ type side = Hyp | Concl | Hint
 
 val dummy_id: GlobRef.t
 
-val build_atoms : flags:flags -> Environ.env -> Evd.evar_map -> counter ->
-  side -> constr -> bool * atoms
-
 type right_pattern =
     Rarrow
   | Rand
