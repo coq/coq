@@ -249,27 +249,12 @@ let add_paths recur root table phys_dir log_dir basename =
   let iter n = safe_add table root (n, file) in
   List.iter iter paths
 
-(* XXX: There are some differences in add_coqlib_known and add_known
-   that we need to solve *)
-
-(* Loadpath.add_rec_dir_import    (Loadpath.add_coqlib_known lst) stdlib       ["Coq"]; *)
-(* Loadpath.add_rec_dir_no_import (Loadpath.add_coqlib_known lst) user_contrib [];      *)
-(* let add_coqlib_known st recur root phys_dir log_dir f =
- *   let root = (phys_dir, log_dir) in
- *   match get_extension f [".vo"; ".vio"; ".vos"] with
- *     | (basename, (".vo" | ".vio" | ".vos")) ->
- *         add_paths recur root st.State.coqlib phys_dir log_dir basename
- *     | _ -> ()
- *)
-
 let add_known st recur root phys_dir log_dir f =
   match get_extension f [".v"; ".vo"; ".vio"; ".vos"] with
-    | (basename,".v") ->
-        add_paths recur root st.State.vfiles phys_dir log_dir basename
-    | (basename, (".vo" | ".vio" | ".vos")) when not st.State.boot ->
-        add_paths recur root st.State.vfiles phys_dir log_dir basename
+    | (basename, (".v" | ".vo" | ".vio" | ".vos")) ->
+      add_paths recur root st.State.vfiles phys_dir log_dir basename
     | (f,_) ->
-        add_paths recur root st.State.other phys_dir log_dir f
+      add_paths recur root st.State.other phys_dir log_dir f
 
 (** -I semantic: do not go in subdirs. *)
 let add_caml_dir st phys_dir =
@@ -280,5 +265,6 @@ let add_caml_dir st phys_dir =
 let add_current_dir st dir =
   add_directory false (add_known st true) dir []
 
-let add_loadpath st ~implicit path l =
-  add_directory implicit (add_known st implicit) path l
+let add_loadpath st ~implicit ~in_tree path l =
+  if in_tree then
+    add_directory implicit (add_known st implicit) path l

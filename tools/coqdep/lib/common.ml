@@ -333,12 +333,12 @@ let treat_coqproject st f =
     | UnableToOpenProjectFile msg -> Error.cannot_open_project_file msg
   in
   iter_sourced (fun { path } -> Loadpath.add_caml_dir st path) project.ml_includes;
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_loadpath ~implicit:false st path (split_period l)) project.q_includes;
-  iter_sourced (fun ({ path }, l) -> Loadpath.add_loadpath ~implicit:true st path (split_period l)) project.r_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_loadpath ~implicit:false ~in_tree:true st path (split_period l)) project.q_includes;
+  iter_sourced (fun ({ path }, l) -> Loadpath.add_loadpath ~implicit:true ~in_tree:true st path (split_period l)) project.r_includes;
   iter_sourced (fun f' -> treat_file_coq_project f f') (all_files project)
 
 let add_include st (implicit, r, ln) =
-  Loadpath.add_loadpath ~implicit st r (split_period ln)
+  Loadpath.add_loadpath ~implicit ~in_tree:true st r (split_period ln)
 
 let init ~make_separator_hack args =
   separator_hack := make_separator_hack;

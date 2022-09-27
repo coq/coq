@@ -36,17 +36,18 @@ let coqdep () =
    with Not_found -> Loadpath.add_current_dir lst ".");
   (* We don't setup any loadpath if the -boot is passed *)
   if not args.Args.boot then begin
+    let in_tree = false in
     let env = Boot.Env.init () in
     let stdlib = Boot.Env.(stdlib env |> Path.to_string) in
     let plugins = Boot.Env.(plugins env |> Path.to_string) in
     let user_contrib = Boot.Env.(user_contrib env |> Path.to_string) in
-    Loadpath.add_loadpath ~implicit:true lst stdlib ["Coq"];
-    Loadpath.add_loadpath ~implicit:true lst plugins ["Coq"];
+    Loadpath.add_loadpath ~implicit:true ~in_tree lst stdlib ["Coq"];
+    Loadpath.add_loadpath ~implicit:true ~in_tree lst plugins ["Coq"];
     if Sys.file_exists user_contrib
-    then Loadpath.add_loadpath ~implicit:false lst user_contrib [];
-    List.iter (fun s -> Loadpath.add_loadpath ~implicit:false lst s [])
+    then Loadpath.add_loadpath ~implicit:false ~in_tree lst user_contrib [];
+    List.iter (fun s -> Loadpath.add_loadpath ~implicit:false ~in_tree lst s [])
       (Envars.xdg_dirs ~warn:(fun x -> Warning.give "%s" x));
-    List.iter (fun s -> Loadpath.add_loadpath ~implicit:false lst s []) Envars.coqpath;
+    List.iter (fun s -> Loadpath.add_loadpath ~implicit:false ~in_tree lst s []) Envars.coqpath;
   end;
   if args.Args.sort then
     sort st

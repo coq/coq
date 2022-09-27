@@ -40,7 +40,11 @@ val add_caml_dir : State.t -> dirname -> unit
     by the implicit adding of the current path. *)
 val add_current_dir : State.t -> dirname -> unit
 
-val add_loadpath : State.t -> implicit:bool -> dirname -> dirpath -> unit
+(** [add_loadpath st ~implicit ~in_tree dn dp] Adds a loadpath to
+   coqdep's search path. [implicit] controls -Q/-R options, [in_tree]
+   controls whether the path was added by the user or by Coq's auto
+   initialization. *)
+val add_loadpath : State.t -> implicit:bool -> in_tree:bool -> dirname -> dirpath -> unit
 
 (** [find_dir_logpath phys_dir] Return the logical path of directory
    [dir] if it has been given one. Raise [Not_found] otherwise. In
