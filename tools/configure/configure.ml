@@ -382,7 +382,7 @@ let esc s = if String.contains s ' ' then "\"" ^ s ^ "\"" else s
 let pr_native = function
   | NativeYes -> "yes" | NativeNo -> "no" | NativeOndemand -> "ondemand"
 
-let print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink idearchdef browser =
+let print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink browser =
   let { CamlConf.caml_version; camlbin; camllib } = camlenv in
   let pr s = printf s in
   pr "\n";
@@ -393,8 +393,6 @@ let print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink id
   pr "  OCaml library in            : %s\n" (esc camllib);
   if best_compiler = "opt" then
     pr "  Native dynamic link support : %B\n" hasnatdynlink;
-  if idearchdef = "QUARTZ" then
-    pr "  Mac OS integration is on\n";
   pr "  Documentation               : %s\n"
     (if prefs.withdoc then "All" else "None");
   pr "  Web browser                 : %s\n" browser;
@@ -423,7 +421,7 @@ let write_dbg_wrapper camlenv o =
 
 (** * Build the config/coq_config.ml file *)
 
-let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs o =
+let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs o =
   let { CoqEnv.coqlib; coqlibsuffix; configdir; configdirsuffix; docdir; docdirsuffix; datadir; datadirsuffix } = coqenv in
   let { CamlConf.caml_version } = camlenv in
   let pr s = fprintf o s in
@@ -452,7 +450,6 @@ let write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win3
   pr_s "arch" arch;
   pr_b "arch_is_win32" arch_is_win32;
   pr_s "exec_extension" !exe;
-  pr "let gtk_platform = `%s\n" idearchdef;
   pr_b "has_natdynlink" hasnatdynlink;
   pr_i32 "vo_version" vo_magic;
   pr_s "browser" browser;
@@ -570,17 +567,16 @@ let main () =
   let coq_caml_flags = coq_caml_flags prefs in
   let hasnatdynlink = hasnatdynlink prefs best_compiler in
   check_for_zarith prefs;
-  let idearchdef = idearchdef ~ocamlfind:camlexec.find ~macintegration:prefs.macintegration ~arch in
   (if prefs.withdoc then check_doc ());
   let install_dirs = install_dirs prefs arch in
   let coqenv = resolve_coqenv install_dirs in
   let cflags, sse2_math = compute_cflags () in
   check_fmath sse2_math;
   if prefs.interactive then
-    print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink idearchdef browser;
+    print_summary prefs arch camlenv best_compiler install_dirs hasnatdynlink browser;
   write_config_file ~file:"dev/ocamldebug-coq" ~bin:true (write_dbg_wrapper camlenv);
   write_config_file ~file:"config/coq_config.ml"
-    (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser idearchdef prefs);
+    (write_configml camlenv coqenv caml_flags caml_version_nums arch arch_is_win32 hasnatdynlink browser prefs);
   write_config_file ~file:"config/Makefile"
     (write_makefile prefs install_dirs best_compiler caml_flags coq_caml_flags arch exe);
   write_config_file ~file:"config/dune.c_flags" (write_dune_c_flags cflags);

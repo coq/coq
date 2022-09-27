@@ -32,8 +32,6 @@ type t =
   (** override arch auto-detection *)
   ; natdynlink : bool
   (** native dynlink enabled [only relevant to coq_makefile] *)
-  ; macintegration : bool
-  (** whether to integrate CoqIDE with OSX  *)
   ; browser : string option
   (** override default browser command [for CoqIDE] *)
   ; withdoc : bool

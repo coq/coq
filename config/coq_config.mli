@@ -41,8 +41,6 @@ val browser : string
 (** default web browser to use, may be overridden by environment
     variable COQREMOTEBROWSER *)
 
-val gtk_platform : [`QUARTZ | `WIN32 | `X11]
-
 val has_natdynlink : bool
 
 val wwwcoq : string

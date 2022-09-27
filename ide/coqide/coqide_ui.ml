@@ -171,7 +171,7 @@ let init () =
 \n  <toolitem action='Next' />\
 \n</toolbar>\
 \n</ui>"
-    (if Coq_config.gtk_platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
+    (if Config.gtk_platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
     (Buffer.contents (list_items "Template" Coq_commands.commands))
     (Buffer.contents (list_queries "User-Query" Preferences.user_queries#get))
  in
