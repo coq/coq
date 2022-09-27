@@ -692,6 +692,18 @@ let () = define3 "constr_closenl" (list ident) int constr begin fun ids k c ->
   return (Value.of_constr ans)
 end
 
+let () = define2 "constr_closedn" int constr begin fun n c ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let ans = EConstr.Vars.closedn sigma n c in
+  return (Value.of_bool ans)
+end
+
+let () = define3 "constr_occur_between" int int constr begin fun n m c ->
+  Proofview.tclEVARMAP >>= fun sigma ->
+  let ans = EConstr.Vars.noccur_between sigma n m c in
+  return (Value.of_bool (not ans))
+end
+
 let () = define1 "constr_case" (repr_ext val_inductive) begin fun ind ->
   Proofview.tclENV >>= fun env ->
   try
