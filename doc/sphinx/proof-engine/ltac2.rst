@@ -274,7 +274,7 @@ There is dedicated syntax for list and array literals.
    | @ltac2_expr0 .( @qualid )
    | @ltac2_expr0 .( @qualid ) := @ltac2_expr5
    | @ltac2_expr0
-   tac2rec_fieldexpr ::= @qualid := @ltac2_expr1
+   tac2rec_fieldexpr ::= @qualid {? := @ltac2_expr1 }
    ltac2_expr0 ::= ( @ltac2_expr )
    | ( @ltac2_expr : @ltac2_type )
    | ()
@@ -284,7 +284,7 @@ There is dedicated syntax for list and array literals.
    tac2rec_fieldpats ::= @tac2rec_fieldpat ; {? @tac2rec_fieldpats }
    | @tac2rec_fieldpat ;
    | @tac2rec_fieldpat
-   tac2rec_fieldpat ::= @qualid := @tac2pat1
+   tac2rec_fieldpat ::= @qualid {? := @tac2pat1 }
    ltac2_tactic_atom ::= @integer
    | @string
    | @qualid
@@ -298,7 +298,10 @@ lowercase letter.
 
 :n:`'@term` is equivalent to :n:`open_constr:(@term)`.
 
-
+Record expressions and patterns support "punning": in
+:n:`@tac2rec_fieldexpr` and :n:`@tac2rec_fieldpat`, omitting the
+optional part is equivalent to using :n:`:= @ident` where the
+identifier is the identifier part of the field name (i.e. the :n:`@qualid`).
 
 Ltac2 Definitions
 ~~~~~~~~~~~~~~~~~

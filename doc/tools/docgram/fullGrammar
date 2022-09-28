@@ -3471,7 +3471,7 @@ tac2rec_fieldexprs: [
 ]
 
 tac2rec_fieldexpr: [
-| Prim.qualid ":=" ltac2_expr1      (* ltac2 plugin *)
+| Prim.qualid OPT [ ":=" ltac2_expr1 ]      (* ltac2 plugin *)
 ]
 
 tac2rec_fieldpats: [
@@ -3482,7 +3482,7 @@ tac2rec_fieldpats: [
 ]
 
 tac2rec_fieldpat: [
-| Prim.qualid ":=" tac2pat1      (* ltac2 plugin *)
+| Prim.qualid OPT [ ":=" tac2pat1 ]      (* ltac2 plugin *)
 ]
 
 tac2typ_prm: [

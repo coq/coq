@@ -353,7 +353,16 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   tac2rec_fieldexpr:
-    [ [ qid = Prim.qualid; ":="; e = ltac2_expr LEVEL "1" -> { RelId qid, e } ] ]
+    [ [ qid = Prim.qualid; e = OPT [ ":="; e = ltac2_expr LEVEL "1" -> { e } ] ->
+        { let e = match e with
+          | Some e -> e
+          | None ->
+            (* punning: [Foo.bar] becomes [Foo.bar := bar] *)
+            let id = Libnames.qualid_basename qid in
+            CAst.make ~loc @@ CTacRef (RelId (Libnames.qualid_of_ident ~loc id))
+          in
+          RelId qid, e }
+    ] ]
   ;
   tac2rec_fieldpats:
     [ [ f = tac2rec_fieldpat; ";"; l = tac2rec_fieldpats -> { f :: l }
@@ -362,7 +371,16 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   tac2rec_fieldpat:
-    [ [ qid = Prim.qualid; ":="; e = tac2pat LEVEL "1" -> { RelId qid, e } ] ]
+    [ [ qid = Prim.qualid; e = OPT [ ":="; e = tac2pat LEVEL "1" -> { e } ] ->
+        { let e = match e with
+          | Some e -> e
+          | None ->
+            (* punning: [Foo.bar] becomes [Foo.bar := bar] *)
+            let id = Libnames.qualid_basename qid in
+            CAst.make ~loc @@ CPatVar (Name id)
+          in
+          RelId qid, e }
+    ] ]
   ;
   tac2typ_prm:
     [ [ -> { [] }

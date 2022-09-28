@@ -158,7 +158,7 @@ type ('a,'b) factorization =
   | ListPrefix of 'a list * 'a
   | Other of 'b
 
-let pr_factorized_constructor pr_rec lvl tpe = function
+let pr_factorized_constructor isid pr_rec lvl tpe = function
   | FullList l ->
       let pr e = pr_rec E4 e in
       hov 2 (str "[" ++ prlist_with_sep pr_semicolon pr (List.rev l) ++ str "]")
@@ -235,7 +235,11 @@ let pr_partial_pat_gen =
           | Some e -> ListPrefix (l,e)
         else Other (i,args)
       in
-      pr_factorized_constructor pr_pat lvl ctyp factorized
+      let isid id = function
+        | {CAst.v = Var (Name id')} -> Id.equal id id'
+        | _ -> false
+      in
+      pr_factorized_constructor isid pr_pat lvl ctyp factorized
     | Extension {example=None} -> str "*extension*"
     | Extension {example=Some a} -> pr_atom a
     | Or pats ->
@@ -416,7 +420,11 @@ let pr_glbexpr_gen lvl c =
         | Some e -> ListPrefix (l,e)
       else Other (n,cl)
     in
-    pr_factorized_constructor pr_glbexpr lvl tpe factorized
+    let isid id = function
+      | GTacVar id' -> Id.equal id id'
+      | _ -> false
+    in
+    pr_factorized_constructor isid pr_glbexpr lvl tpe factorized
   in
   hov 0 (pr_glbexpr lvl c)
 

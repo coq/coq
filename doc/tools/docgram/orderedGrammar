@@ -2340,7 +2340,7 @@ ltac2_expr1: [
 ]
 
 tac2rec_fieldexpr: [
-| qualid ":=" ltac2_expr1      (* ltac2 plugin *)
+| qualid OPT [ ":=" ltac2_expr1 ]      (* ltac2 plugin *)
 ]
 
 ltac2_expr0: [
@@ -2359,7 +2359,7 @@ tac2rec_fieldpats: [
 ]
 
 tac2rec_fieldpat: [
-| qualid ":=" tac2pat1      (* ltac2 plugin *)
+| qualid OPT [ ":=" tac2pat1 ]      (* ltac2 plugin *)
 ]
 
 ltac2_tactic_atom: [
