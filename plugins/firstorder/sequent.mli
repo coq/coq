@@ -12,7 +12,7 @@ open Names
 open EConstr
 open Formula
 
-type h_item = GlobRef.t * (int*Constr.t) option
+type h_item = GlobRef.t * Unify.Item.t option
 
 type history
 type cmap

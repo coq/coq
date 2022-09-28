@@ -56,19 +56,14 @@ struct
         (priority e1.pat) - (priority e2.pat)
 end
 
-type h_item = GlobRef.t * (int*Constr.t) option
+type h_item = GlobRef.t * Unify.Item.t option
 
 module Hitem=
 struct
   type t = h_item
   let compare (id1,co1) (id2,co2)=
     let c = GlobRef.CanOrd.compare id1 id2 in
-    if c = 0 then
-      let cmp (i1, c1) (i2, c2) =
-        let c = Int.compare i1 i2 in
-        if c = 0 then Constr.compare c1 c2 else c
-      in
-      Option.compare cmp co1 co2
+    if c = 0 then Option.compare Unify.Item.compare co1 co2
     else c
 end
 
@@ -117,11 +112,11 @@ let lookup env sigma item seq=
   History.mem item seq.history ||
   match item with
       (_,None)->false
-    | (id,Some (m, t))->
+    | (id,Some i1)->
         let p (id2,o)=
           match o with
               None -> false
-            | Some (m2, t2)-> GlobRef.equal id id2 && m2>m && more_general env sigma (m2, EConstr.of_constr t2) (m, EConstr.of_constr t) in
+            | Some i2 -> GlobRef.equal id id2 && more_general env sigma i2 i1 in
           History.exists p seq.history
 
 let add_formula ~flags env sigma side nam t seq =

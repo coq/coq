@@ -105,6 +105,21 @@ let value evd i t=
         if vr<0 then -1 else vr+1 in
     vaux t
 
+module Item =
+struct
+
+type t = int * constr
+
+let repr i = i
+
+let compare (i1, c1) (i2, c2) =
+  let c = Int.compare i1 i2 in
+  if c = 0 then Constr.compare (EConstr.Unsafe.to_constr c1) (EConstr.Unsafe.to_constr c2) else c
+
+let is_ground (m, _) = Int.equal m 0
+
+end
+
 type instance=
     Real of (int*constr)*int
   | Phantom of constr
@@ -141,6 +156,7 @@ let renum_metas_from k n t= (* requires n = max (free_rels t) *)
     substl l t
 
 let more_general env evd (m1,t1) (m2,t2)=
+  m1 > m2 &&
   let mt1=renum_metas_from 0 m1 t1
   and mt2=renum_metas_from m1 m2 t2 in
     try
