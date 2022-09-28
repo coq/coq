@@ -75,5 +75,5 @@ val noncritical : exn -> bool
    exceptions. This method is fragile and should be considered
    deprecated *)
 val register_additional_error_info
-  :  (Exninfo.info -> Pp.t Loc.located option)
+  :  (Exninfo.info -> Pp.t option)
   -> unit
