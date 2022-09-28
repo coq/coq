@@ -71,11 +71,10 @@ END
 
 {
 
-let pr_intro_as_pat _prc _ _ pat =
+let pr_intro_as_pat prc pat =
   match pat with
     | Some pat ->
-      spc () ++ str "as" ++ spc () ++ (* Miscprint.pr_intro_pattern prc  pat *)
-        str"<simple_intropattern>"
+      str "as" ++ spc () ++ Miscprint.pr_intro_pattern prc pat
     | None -> mt ()
 
 let out_disjunctive = CAst.map (function
@@ -84,7 +83,10 @@ let out_disjunctive = CAst.map (function
 
 }
 
-ARGUMENT EXTEND with_names TYPED AS intro_pattern option PRINTED BY { pr_intro_as_pat }
+ARGUMENT EXTEND with_names TYPED AS intro_pattern option
+  PRINTED BY { fun prc _ _ -> pr_intro_as_pat (fun c -> prc env sigma @@ snd @@ c env sigma) }
+  RAW_PRINTED BY { fun prc _ _ -> pr_intro_as_pat (prc env sigma) }
+  GLOB_PRINTED BY { fun prc _ _ -> pr_intro_as_pat (prc env sigma) }
 | [ "as"  simple_intropattern(ipat) ] -> { Some ipat }
 | []  -> { None }
 END
