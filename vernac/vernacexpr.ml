@@ -351,7 +351,6 @@ type nonrec vernac_expr =
   | VernacNotation of
       infix_flag * constr_expr * (lstring * syntax_modifier CAst.t list) *
       scope_name option
-  | VernacNotationAddFormat of string * string * string
   | VernacDeclareCustomEntry of string
 
   (* Gallina *)

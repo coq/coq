@@ -777,10 +777,6 @@ let pr_vernac_expr v =
       keyword "Reserved Notation" ++ spc() ++ pr_ast qs s ++
       pr_syntax_modifiers l
     )
-  | VernacNotationAddFormat(s,k,v) ->
-    return (
-      keyword "Format Notation " ++ qs s ++ spc () ++ qs k ++ spc() ++ qs v
-    )
   | VernacDeclareCustomEntry s ->
     return (
       keyword "Declare Custom Entry " ++ str s

@@ -1226,8 +1226,6 @@ GRAMMAR EXTEND Gram
          modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
            { VernacNotation (false,c,(s,modl),sc) }
-     | IDENT "Format"; IDENT "Notation"; n = STRING; s = STRING; fmt = STRING ->
-           { VernacNotationAddFormat (n,s,fmt) }
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring; l = syntax_modifiers ->
            { VernacReservedNotation (true,(s,l)) }

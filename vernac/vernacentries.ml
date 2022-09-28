@@ -2308,10 +2308,6 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () -> with_section_locality ~atts vernac_open_close_scope (b,s))
   | VernacNotation (infix,c,infpl,sc) ->
     vtdefault(fun () -> vernac_notation ~atts ~infix c infpl sc)
-  | VernacNotationAddFormat(n,k,v) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        Metasyntax.add_notation_extra_printing_rule n k v)
   | VernacDeclareCustomEntry s ->
     vtdefault(fun () -> with_module_locality ~atts vernac_custom_entry s)
 
