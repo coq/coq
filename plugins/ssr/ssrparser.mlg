@@ -2439,7 +2439,10 @@ END
 
 {
 
-let pr_unlockarg (occ, t) = pr_occ occ ++ pr_term t
+let pr_unlockarg (occ, t) =
+  (match occ with
+   | None -> Pp.mt ()
+   | _ -> pr_occ occ) ++ pr_term t
 let pr_ssrunlockarg _ _ _ = pr_unlockarg
 
 }
