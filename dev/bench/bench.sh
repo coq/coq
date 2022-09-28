@@ -16,6 +16,20 @@ bt='`'               # backtick
 start_code_block='```'
 end_code_block='```'
 
+# We put local binaries such as opam in .bin and extend PATH
+BIN=$(pwd)/.bin
+mkdir "$BIN"
+wget https://github.com/ocaml/opam/releases/download/2.1.3/opam-2.1.3-x86_64-linux -O "$BIN"/opam
+chmod +x "$BIN"/opam
+
+export PATH="$BIN":$PATH
+
+echo "Global env info:"
+echo "----------------"
+echo "pwd: $PWD"
+echo "path: $PATH"
+echo "opam version: `opam --version`"
+
 number_of_processors=$(cat /proc/cpuinfo | grep '^processor *' | wc -l)
 
 program_name="$0"
@@ -34,8 +48,6 @@ check_variable () {
       exit 1
   fi
 }
-
-echo $PWD
 
 #check_variable "BUILD_ID"
 #check_variable "BUILD_URL"
