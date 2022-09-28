@@ -19,6 +19,7 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [EditAt](#command-editAt)
   - [Init](#command-init)
   - [Goal](#command-goal)
+  - [Subgoals](#command-subgoals)
   - [Status](#command-status)
   - [Query](#command-query)
   - [Evars](#command-evars)
@@ -304,6 +305,30 @@ Pseudocode for listing all of the goals in order: `rev (flat_map fst background)
 
 -------------------------------
 
+### <a name="command-subgoals">**Subgoals(flags: goal_flags)**</a>
+Similar to [Goal](#command-goal), but with `flags` to control whether to include
+information about `fg`, `bg`, `shelved`, or `given_up` goals. The flags also
+include `mode`, which is either "full" (return hypotheses and conclusion for
+each goal) or "short" (return only the conclusion). The "short" mode is useful
+for speeding up goal display when there are many shelved or admitted goals with
+large proof contexts, but the IDE only needs to know their conclusions or how
+many there are.
+```html
+<call val="Subgoals">
+  <goal_flags>
+    <string>${mode}</string>
+    <bool val="${fg}"/>
+    <bool val="${bg}"/>
+    <bool val="${shelved}"/>
+    <bool val="${given_up}"/>
+  </goal_flags>
+</call>
+```
+
+#### Returns
+* The same as [Goal](#command-goal).
+
+-------------------------------
 
 ### <a name="command-status">**Status(force: bool)**</a>
 Returns information about the current proofs. CoqIDE typically sends this
