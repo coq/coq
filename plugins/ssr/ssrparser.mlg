@@ -63,6 +63,7 @@ let is_ssr_loaded () =
   !ssr_loaded ||
   (if CLexer.is_keyword "SsrSyntax_is_Imported" then ssr_loaded:=true;
    !ssr_loaded)
+let () = Pptactic.ssr_loaded_hook is_ssr_loaded
 
 }
 

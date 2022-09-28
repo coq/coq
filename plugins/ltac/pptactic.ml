@@ -492,7 +492,15 @@ let string_of_genarg_arg (ArgumentType arg) =
         (prlist_with_sep (fun () -> str",")
            (fun id -> spc () ++ pr_hyp_location pr_id id) l ++ pr_occs)
 
-  let pr_orient b = if b then mt () else str "<- "
+
+  (* When the [ssreflect.SsrSynax] module is imported, ssreflect operates
+     in reduced compatibility mode. During printing, we try to account for
+     this when this module is imported. See [plugins/ssr/ssrparser.mlg] for
+     the code that enables the reduced compatibility mode. *)
+  let ssr_loaded = ref (fun () -> false)
+  let ssr_loaded_hook f = ssr_loaded := f
+
+  let pr_orient b = if b then if !ssr_loaded () then str "-> " else mt () else str "<- "
 
   let pr_multi = let open Equality in function
     | Precisely 1 -> mt ()
