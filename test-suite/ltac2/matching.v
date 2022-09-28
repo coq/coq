@@ -159,6 +159,10 @@ Module Record.
        r.(contents) := 1;
        check_eq_int (bang r) 0.
 
+  Ltac2 Type foo := { a : int; b : int }.
+
+  Ltac2 bar x := match x with { a := a } => a end.
+
 End Record.
 
 Module Atom.
