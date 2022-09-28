@@ -108,3 +108,6 @@ val wit_ssrcpat : ssripat Genarg.uniform_genarg_type
 val wit_ssrdgens : cpattern ssragens Genarg.uniform_genarg_type
 val wit_ssrdgens_tl : cpattern ssragens Genarg.uniform_genarg_type
 val wit_ssrdir : ssrdir Genarg.uniform_genarg_type
+
+val wit_ssr_idcomma : Names.Id.t option option Genarg.uniform_genarg_type
+val wit_ssrclear : (ssrhyps, ssrclear, ssrclear) Genarg.genarg_type
