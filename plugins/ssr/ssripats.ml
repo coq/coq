@@ -952,11 +952,14 @@ let tacFIND_ABSTRACT_PROOF check_lock abstract_n =
 end
 
 let ssrabstract dgens =
-  let main _ (_,cid) = Goal.enter begin fun g ->
+  let main _ (_,cid) =
     Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
     Ssrcommon.tacMK_SSR_CONST "abstract_key" >>= fun abstract_key ->
-    Ssrcommon.tacINTERP_CPATTERN cid >>= fun cid ->
-    let id = EConstr.mkVar (Option.get (Ssrmatching.id_of_pattern (Goal.sigma g) cid)) in
+    Ssrcommon.tacINTERP_CPATTERN cid >>= fun cid -> Goal.enter @@ fun g ->
+    let id =
+      match Ssrmatching.id_of_pattern (Goal.sigma g) cid with
+      | None -> Ssrcommon.errorstrm Pp.(strbrk "argument is not a hypothesis")
+      | Some id -> EConstr.mkVar id in
     tacEXAMINE_ABSTRACT id >>= fun (idty, args_id) ->
     let abstract_n = args_id.(1) in
     tacFIND_ABSTRACT_PROOF true abstract_n >>= fun abstract_proof ->
@@ -985,8 +988,7 @@ let ssrabstract dgens =
     tclDISPATCH [
       Tacticals.tclSOLVE [Tactics.apply proof];
       Ssrcommon.unfold[abstract;abstract_key]
-    ]
-  end in
+    ] in
   let interp_gens { gens } ~conclusion = Goal.enter begin fun gl ->
      let open Ssrmatching in
      let open Tacmach in
