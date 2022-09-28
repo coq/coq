@@ -10,7 +10,6 @@
 
 open Util
 open Pp
-open CErrors
 open Notation
 open Constrexpr
 
@@ -48,7 +47,6 @@ type unparsing =
   | UnpCut of ppcut
 
 type unparsing_rule = unparsing list
-type extra_unparsing_rules = (string * string) list
 
 let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
   | UnpMetaVar (p1,s1), UnpMetaVar (p2,s2) -> entry_relative_level_eq p1 p2 && s1 = s2
@@ -66,7 +64,6 @@ let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
 type notation_printing_rules = {
   notation_printing_unparsing : unparsing_rule;
   notation_printing_level : entry_level;
-  notation_printing_extra : extra_unparsing_rules;
 }
 
 type generic_notation_printing_rules = {
@@ -100,25 +97,3 @@ let find_notation_printing_rule which ntn =
   | None -> raise Not_found (* Normally not the case *)
   | Some which -> (find_specific_notation_printing_rule (which,ntn))
   with Not_found -> (find_generic_notation_printing_rule ntn).notation_printing_rules
-
-let find_notation_extra_printing_rules which ntn =
-  try match which with
-  | None -> raise Not_found
-  | Some which -> (find_specific_notation_printing_rule (which,ntn)).notation_printing_extra
-  with Not_found -> (find_generic_notation_printing_rule ntn).notation_printing_rules.notation_printing_extra
-
-let add_notation_extra_printing_rule ntn k v =
-  try
-    generic_notation_printing_rules :=
-      let { notation_printing_reserved; notation_printing_rules } = NotationMap.find ntn !generic_notation_printing_rules in
-      let rules = {
-          notation_printing_reserved;
-          notation_printing_rules = {
-              notation_printing_rules with
-              notation_printing_extra = (k,v) :: notation_printing_rules.notation_printing_extra
-            }
-        } in
-      NotationMap.add ntn rules !generic_notation_printing_rules
-  with Not_found ->
-    user_err
-      (str "No such Notation.")

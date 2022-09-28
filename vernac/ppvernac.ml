@@ -479,8 +479,7 @@ let pr_syntax_modifier = let open Gramlib.Gramext in CAst.with_val (function
     | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_simple_entry_type typ
     | SetOnlyPrinting -> keyword "only printing"
     | SetOnlyParsing -> keyword "only parsing"
-    | SetFormat (TextFormat s) -> keyword "format " ++ pr_ast qs s
-    | SetFormat (ExtraFormat (k,s)) -> keyword "format " ++ qs k ++ spc() ++ pr_ast qs s)
+    | SetFormat (TextFormat s) -> keyword "format " ++ pr_ast qs s)
 
 let pr_syntax_modifiers = function
   | [] -> mt()
