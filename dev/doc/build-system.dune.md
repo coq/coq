@@ -21,7 +21,7 @@ regular development workflow, unless you want to tweak options.
 
 - `make check` : build all ml targets as fast as possible
 - `make world` : build a complete Coq distribution
-- `dune exec -- dev/shim/coqtop-prelude` : build and launch coqtop + prelude [equivalent to `make states`].
+- `dune exec -- dev/shim/coqtop` : build and launch coqtop + prelude [equivalent to `make states`].
 - `dune build $target`: where `$target` can refer to the build
   directory or the source directory [but will be placed under
   `_build`]
@@ -116,13 +116,12 @@ Instead, you should use the provided "shims" for running `coqtop` and
 `coqide` in a fast build. In order to use them, do:
 
 ```
-$ dune exec -- dev/shim/coqtop-prelude
+$ dune exec -- dev/shim/coqtop
 ```
 
-or `quickide` / `dev/shim/coqide-prelude` for CoqIDE, etc.... See
-`dev/shim/dune` for a complete list of targets. These targets enjoy
-quick incremental compilation thanks to `-opaque` so they tend to be
-very fast while developing.
+or `quickide` / `dev/shim/coqide` for CoqIDE, etc.... See `dev/shim/dune` for a
+complete list of targets. These targets enjoy quick incremental compilation
+thanks to `-opaque` so they tend to be very fast while developing.
 
 Note that for a fast developer build of ML files, the `check` target
 is faster, as it doesn't link the binaries and uses the non-optimizing
@@ -226,7 +225,7 @@ For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
 
 The following commands should work:
 ```
-dune exec -- dev/shim/coqbyte-prelude
+dune exec -- dev/shim/coqbyte
 > Drop.
 # #directory "dev";;
 # #use "include";;

@@ -12,7 +12,7 @@
   %{project_root}/theories/Init/Prelude.vo))
 
 (rule
- (targets coqtop-prelude)
+ (targets coqtop)
  (deps (alias coqtop-prelude))
  (action
   (with-stdout-to %{targets}
@@ -20,6 +20,11 @@
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
     (run chmod +x %{targets})))))
+
+; TODO remove
+(rule
+ (targets coqtop-prelude)
+ (action (echo "*** Error: shim coqtop-prelude has been renamed to coqtop")))
 
 ; coqc
 
@@ -30,7 +35,7 @@
   %{project_root}/theories/Init/Prelude.vo))
 
 (rule
- (targets coqc-prelude)
+ (targets coqc)
  (deps (alias coqc-prelude))
  (action
   (with-stdout-to %{targets}
@@ -38,6 +43,11 @@
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
+
+; TODO remove
+(rule
+ (targets coqc-prelude)
+ (action (echo "*** Error: shim coqc-prelude has been renamed to coqc")))
 
 ; coqbyte
 
@@ -72,7 +82,7 @@
   %{lib:coq-core.plugins.ltac:ltac_plugin.cma}))
 
 (rule
- (targets coqbyte-prelude)
+ (targets coqbyte)
  (deps (alias coqbyte-prelude))
  (action
   (with-stdout-to %{targets}
@@ -80,6 +90,11 @@
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop.byte} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
+
+; TODO remove
+(rule
+ (targets coqbyte-prelude)
+ (action (echo "*** Error: shim coqbyte-prelude has been renamed to coqbyte")))
 
 ; coqide
 
@@ -99,7 +114,7 @@
   %{project_root}/coqide.install))
 
 (rule
- (targets coqide-prelude)
+ (targets coqide)
  (deps (alias coqide-prelude))
  (action
   (with-stdout-to %{targets}
@@ -107,3 +122,8 @@
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqide} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
+
+; TODO remove
+(rule
+ (targets coqide-prelude)
+ (action (echo "*** Error: shim coqide-prelude has been renamed to coqide")))
