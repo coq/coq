@@ -20,6 +20,13 @@ system doesn't generate it automatically (see the documentation of
 `-generate-meta-for-package` for how `coq_makefile` can generate it
 automatically).
 
+### XML protocol
+
+See xml-protocol.md for details.
+
+- Added a `Subgoals` command to give more fine-grained control over which of the
+  foreground, background, shelved and given up goals are returned.
+
 ## Changes between Coq 8.14 and Coq 8.15
 
 ### XML protocol
