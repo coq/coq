@@ -59,16 +59,6 @@ val map_constr_with_full_binders :
   (rel_declaration -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 
-(** [fold_constr_with_binders g f n acc c] folds [f n] on the immediate
-   subterms of [c] starting from [acc] and proceeding from left to
-   right according to the usual representation of the constructions as
-   [fold_constr] but it carries an extra data [n] (typically a lift
-   index) which is processed by [g] (which typically add 1 to [n]) at
-   each binder traversal; it is not recursive *)
-
-val fold_constr_with_binders : Evd.evar_map ->
-  ('a -> 'a) -> ('a -> 'b -> constr -> 'b) -> 'a -> 'b -> constr -> 'b
-
 val fold_constr_with_full_binders : Environ.env -> Evd.evar_map ->
   (rel_declaration -> 'a -> 'a) ->
   ('a -> 'b -> constr -> 'b) ->
