@@ -1251,8 +1251,8 @@ Here are the syntax elements used by the various notation commands.
       | right associativity
       | no associativity
       | only parsing
+      | format @string
       | only printing
-      | format @string {? @string }
       explicit_subentry ::= ident
       | name
       | global

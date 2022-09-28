@@ -1430,7 +1430,6 @@ syntax: [
 | "Infix" ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 | "Notation" identref LIST0 ident ":=" constr syntax_modifiers
 | "Notation" lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
-| "Format" "Notation" STRING STRING STRING
 | "Reserved" "Infix" ne_lstring syntax_modifiers
 | "Reserved" "Notation" ne_lstring syntax_modifiers
 ]
@@ -1449,7 +1448,7 @@ syntax_modifier: [
 | "no" "associativity"
 | "only" "printing"
 | "only" "parsing"
-| "format" STRING OPT STRING
+| "format" lstring
 | IDENT; "," LIST1 IDENT SEP "," [ "at" level | "in" "scope" IDENT ]
 | IDENT; "at" level OPT binder_interp
 | IDENT; "in" "scope" IDENT
