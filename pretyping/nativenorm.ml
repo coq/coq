@@ -168,7 +168,7 @@ let branch_of_switch lvl ans bs =
     let ci =
       if Int.equal arity 0 then mk_const tag
       else mk_block tag (mk_rels_accu lvl arity) in
-    bs ci in
+    apply bs ci in
   Array.init (Array.length tbl) branch
 
 let get_proj env (ind, proj_arg) =
@@ -273,7 +273,7 @@ and nf_atom env sigma atom =
     let n = make_annot n rdom in
     let vn = mk_rel_accu (nb_rel env) in
     let env = push_rel (LocalAssum (n,dom)) env in
-    let codom = nf_type env sigma (codom vn) in
+    let codom = nf_type env sigma (apply codom vn) in
     mkProd(n,dom,codom)
   | Ameta (mv,_) -> mkMeta mv
   | Aproj (p, c) ->
@@ -354,7 +354,7 @@ and nf_atom_type env sigma atom =
       let n = make_annot n r1 in
       let vn = mk_rel_accu (nb_rel env) in
       let env = push_rel (LocalAssum (n,dom)) env in
-      let codom,s2 = nf_type_sort env sigma (codom vn) in
+      let codom,s2 = nf_type_sort env sigma (apply codom vn) in
       mkProd(n,dom,codom), Typeops.type_of_product env n s1 s2
   | Aevar(evk,args) ->
     nf_evar env sigma evk args

@@ -25,9 +25,9 @@ let rec conv_val env pb lvl v1 v2 cu =
         let v = mk_rel_accu lvl in
         conv_val env CONV (lvl+1) (f1 v) (f2 v) cu
     | Vfun _f1, _ ->
-        conv_val env CONV lvl v1 (fun x -> v2 x) cu
+      conv_val env CONV lvl v1 (eta_expand v2) cu
     | _, Vfun _f2 ->
-        conv_val env CONV lvl (fun x -> v1 x) v2 cu
+        conv_val env CONV lvl (eta_expand v1) v2 cu
     | Vaccu k1, Vaccu k2 ->
         conv_accu env pb lvl k1 k2 cu
     | Vconst i1, Vconst i2 ->
@@ -102,7 +102,7 @@ and conv_atom env pb lvl a1 a2 cu =
               let ci =
                 if Int.equal arity 0 then mk_const tag
                 else mk_block tag (mk_rels_accu lvl arity) in
-              let bi1 = bs1 ci and bi2 = bs2 ci in
+              let bi1 = apply bs1 ci and bi2 = apply bs2 ci in
               if Int.equal i max then conv_val env CONV (lvl + arity) bi1 bi2 cu
               else aux (i+1) (conv_val env CONV (lvl + arity) bi1 bi2 cu) in
             aux 0 cu
@@ -121,7 +121,7 @@ and conv_atom env pb lvl a1 a2 cu =
     | Aprod(_,d1,_c1), Aprod(_,d2,_c2) ->
        let cu = conv_val env CONV lvl d1 d2 cu in
        let v = mk_rel_accu lvl in
-       conv_val env pb (lvl + 1) (d1 v) (d2 v) cu
+       conv_val env pb (lvl + 1) (apply d1 v) (apply d2 v) cu
     | Aproj((ind1, i1), ac1), Aproj((ind2, i2), ac2) ->
        if not (Ind.CanOrd.equal ind1 ind2 && Int.equal i1 i2) then raise NotConvertible
        else conv_accu env CONV lvl ac1 ac2 cu
