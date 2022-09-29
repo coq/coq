@@ -113,7 +113,8 @@ This package provides the Coq Reference Manual."))
  (name coq)
  (depends
   (coq-core (= :version))
-  (coq-stdlib (= :version)))
+  (coq-stdlib (= :version))
+  (coqide-server (= :version)))
  (synopsis "The Coq Proof Assistant")
  (description "Coq is a formal proof management system. It provides
 a formal language to write mathematical definitions, executable
