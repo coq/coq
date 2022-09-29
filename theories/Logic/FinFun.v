@@ -32,22 +32,42 @@ Definition Bijective {A B} (f : A->B) :=
 Definition Full {A:Type} (l:list A) := forall a:A, In a l.
 Definition Finite (A:Type) := exists (l:list A), Full l.
 
-(** In many following proofs, it will be convenient to have
+(** In many of the following proofs, it will be convenient to have
     list enumerations without duplicates. As soon as we have
     decidability of equality (in Prop), this is equivalent
-    to the previous notion. *)
+    to the previous notion (s. lemma Finite_dec). *)
 
 Definition Listing {A:Type} (l:list A) := NoDup l /\ Full l.
 Definition Finite' (A:Type) := exists (l:list A), Listing l.
 
-Lemma Finite_alt A (d:decidable_eq A) : Finite A <-> Finite' A.
+Lemma Listing_decidable_eq {A:Type} (l:list A): Listing l -> decidable_eq A.
+Proof.
+  intros (Hnodup & Hfull) a a'.
+  now apply (NoDup_list_decidable Hnodup).
+Qed.
+
+Lemma Finite_dec {A:Type}: Finite A /\ decidable_eq A <-> Finite' A.
+Proof.
+  split.
+  - intros ((l, Hfull) & Hdec).
+    destruct (uniquify Hdec l) as (l' & H_nodup & H_inc).
+    exists l'. split; trivial.
+    intros a. apply H_inc. apply Hfull.
+  - intros (l & Hlist).
+    apply Listing_decidable_eq in Hlist as Heqdec.
+    destruct Hlist as (Hnodup & Hfull).
+    split; [ exists l | ]; assumption.
+Qed.
+
+(* Finite_alt is a weaker version of Finite_dec and has been deprecated.  *)
+Lemma Finite_alt_deprecated A (d:decidable_eq A) : Finite A <-> Finite' A.
 Proof.
  split.
- - intros (l,F). destruct (uniquify d l) as (l' & N & I).
-   exists l'. split; trivial.
-   intros x. apply I, F.
+ - intros F. now apply Finite_dec.
  - intros (l & _ & F). now exists l.
 Qed.
+#[deprecated(since="8.17", note="Use Finite_dec instead.")]
+Notation Finite_alt := Finite_alt_deprecated.
 
 (** Injections characterized in term of lists *)
 
@@ -96,7 +116,7 @@ Lemma Surjective_list_carac A B (f:A->B):
   Surjective f <-> (forall lB, exists lA, incl lB (map f lA)).
 Proof.
  split.
- - intros Su.
+ - intros Su lB.
    induction lB as [|b lB IH].
    + now exists nil.
    + destruct (Su b) as (a,E).
@@ -113,7 +133,7 @@ Qed.
 Lemma Surjective_carac A B : Finite B -> decidable_eq B ->
   forall f:A->B, Surjective f <-> (exists lA, Listing (map f lA)).
 Proof.
- intros (lB,FB) d. split.
+ intros (lB,FB) d f. split.
  - rewrite Surjective_list_carac.
    intros Su. destruct (Su lB) as (lA,IC).
    destruct (uniquify_map d f lA) as (lA' & N & IC').
@@ -131,7 +151,7 @@ Lemma Endo_Injective_Surjective :
   forall f:A->A, Injective f <-> Surjective f.
 Proof.
  intros A F d f. rewrite (Surjective_carac F d). split.
- - apply (Finite_alt d) in F. destruct F as (l,L).
+ - assert (Finite' A) as (l, L) by (now apply Finite_dec); clear F.
    rewrite (Injective_carac L); intros.
    exists l; split; trivial.
    destruct L as (N,F).
@@ -168,7 +188,7 @@ Lemma Finite_Empty_or_not A :
   Finite A -> (A->False) \/ exists a:A,True.
 Proof.
  intros (l,F).
- destruct l.
+ destruct l as [|a l].
  - left; exact F.
  - right; now exists a.
 Qed.
@@ -216,9 +236,9 @@ Qed.
 
 Lemma Fin_Finite n : Finite (Fin.t n).
 Proof.
- induction n.
+ induction n as [|n IHn].
  - exists nil.
-   red;inversion a.
+   red;inversion 1.
  - destruct IHn as (l,Hl).
    exists (Fin.F1 :: map Fin.FS l).
    intros a. revert n a l Hl.
