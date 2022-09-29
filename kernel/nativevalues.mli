@@ -372,8 +372,6 @@ val arraydefault : t -> t -> t (* accu A t *)
 val arrayset : t -> t -> t -> t -> t -> t (* accu A t n v *)
 val arraycopy : t -> t -> t -> t (* accu A t *)
 val arraylength : t -> t -> t -> t (* accu A t *)
-val arrayinit : t -> t -> t -> t (* accu A n f def *)
-val arraymap : t -> t -> t (* accu A B f t *)
 
 val no_check_arraymake : t -> t -> t
 [@@ocaml.inline always]
