@@ -82,6 +82,7 @@ type compilation_unit_name = DirPath.t
 
 type library_disk = {
   md_compiled : Safe_typing.compiled_library;
+  md_syntax_objects : Declaremods.library_objects;
   md_objects : Declaremods.library_objects;
 }
 
@@ -317,7 +318,10 @@ let native_name_from_filename f =
 
 let register_library m =
   let l = m.library_data in
-  Declaremods.register_library
+  Declaremods.Synterp.register_library
+    m.library_name
+    l.md_syntax_objects;
+  Declaremods.Interp.register_library
     m.library_name
     l.md_compiled
     l.md_objects
@@ -451,7 +455,7 @@ let save_library_to todo_proofs ~output_native_objects dir f =
   let () = assert (not (Future.UUIDSet.is_empty except) ||
     Safe_typing.is_joined_environment (Global.safe_env ()))
   in
-  let cenv, seg, ast = Declaremods.end_library ~output_native_objects dir in
+  let cenv, seg, syntax_seg, ast = Declaremods.end_library ~output_native_objects dir in
   let tasks, utab =
     match todo_proofs with
     | ProofsTodoNone -> None, None
@@ -473,6 +477,7 @@ let save_library_to todo_proofs ~output_native_objects dir f =
   } in
   let md = {
     md_compiled = cenv;
+    md_syntax_objects = syntax_seg;
     md_objects = seg;
   } in
   if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then

@@ -904,6 +904,7 @@ let open_syntax_extension i o =
 let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object
     {(default_object "SYNTAX-EXTENSION") with
+     object_stage = Summary.Stage.Synterp;
      open_function = simple_open ~cat:notation_cat open_syntax_extension;
      cache_function = cache_syntax_extension;
      subst_function = subst_syntax_extension;
@@ -1925,6 +1926,7 @@ let classify_custom_entry (local,s) =
 
 let inCustomEntry : locality_flag * string -> obj =
   declare_object {(default_object "CUSTOM-ENTRIES") with
+      object_stage = Summary.Stage.Synterp;
       cache_function = cache_custom_entry;
       load_function = load_custom_entry;
       subst_function = subst_custom_entry;

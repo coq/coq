@@ -710,6 +710,7 @@ let ltac2_notation_cat = Libobject.create_category "ltac2.notations"
 
 let inTac2Notation : synext -> obj =
   declare_object {(default_object "TAC2-NOTATION") with
+     object_stage = Summary.Stage.Synterp;
      cache_function  = cache_synext;
      open_function   = simple_open ~cat:ltac2_notation_cat open_synext;
      subst_function = subst_synext;
@@ -1111,6 +1112,7 @@ let load_ltac2_init _ () =
 (** Dummy object that register global rules when Require is called *)
 let inTac2Init : unit -> obj =
   declare_object {(default_object "TAC2-INIT") with
+    object_stage = Summary.Stage.Synterp;
     cache_function = cache_ltac2_init;
     load_function = load_ltac2_init;
   }

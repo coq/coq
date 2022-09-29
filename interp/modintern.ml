@@ -24,6 +24,8 @@ exception ModuleInternalizationError of module_internalization_error
 
 type module_kind = Module | ModType | ModAny
 
+type module_struct_expr = (universe_decl_expr option * constr_expr) Declarations.module_alg_expr
+
 let error_not_a_module_loc ~info kind loc qid =
   let e = match kind with
     | Module -> NotAModule qid

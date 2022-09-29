@@ -36,18 +36,6 @@ val node_prefix : node -> Nametab.object_prefix
 
 type library_segment = (node * Libobject.t list) list
 
-type classified_objects = {
-  substobjs : Libobject.t list;
-  keepobjs : Libobject.t list;
-  anticipateobjs : Libobject.t list;
-}
-
-(** {6 ... } *)
-(** Low-level adding operations (does not cache) *)
-
-val add_entry : node -> unit
-val add_leaf_entry : Libobject.t -> unit
-
 (** {6 ... } *)
 (** Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
@@ -76,7 +64,6 @@ val make_kn : Id.t -> KerName.t
 
 (** Are we inside an opened section *)
 val sections_are_opened : unit -> bool
-[@@ocaml.deprecated "Use Global.sections_are_opened"]
 val sections_depth : unit -> int
 
 (** Are we inside an opened module type *)
@@ -87,31 +74,60 @@ val is_modtype : unit -> bool
 val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
 
-(** Returns the opening node of a given name *)
-val find_opening_node : Id.t -> node
+(** The [StagedLibS] abstraction describes operations and traversal for Lib at a
+    given stage. *)
+module type StagedLibS = sig
 
-(** {6 Modules and module types } *)
+  type classified_objects = {
+    substobjs : Libobject.t list;
+    keepobjs : Libobject.t list;
+    anticipateobjs : Libobject.t list;
+  }
+  val classify_segment : Libobject.t list -> classified_objects
 
-val start_module :
-  export -> module_ident -> ModPath.t ->
-  Summary.frozen -> Nametab.object_prefix
+  (** Returns the opening node of a given name *)
+  val find_opening_node : Id.t -> node
 
-val start_modtype :
-  module_ident -> ModPath.t ->
-  Summary.frozen -> Nametab.object_prefix
+  val add_entry : node -> unit
+  val add_leaf_entry : Libobject.t -> unit
 
-val end_module :
-  unit ->
-  Nametab.object_prefix * Summary.frozen * classified_objects
+  (** {6 Sections } *)
+  val open_section : Id.t -> unit
+  val close_section : unit -> unit
 
-val end_modtype :
-  unit ->
-  Nametab.object_prefix * Summary.frozen * classified_objects
+  (** {6 Modules and module types } *)
+
+  val start_module :
+    export -> module_ident -> ModPath.t ->
+    Summary.frozen -> Nametab.object_prefix
+
+  val start_modtype :
+    module_ident -> ModPath.t ->
+    Summary.frozen -> Nametab.object_prefix
+
+  val end_module :
+    unit ->
+    Nametab.object_prefix * Summary.frozen * classified_objects
+
+  val end_modtype :
+    unit ->
+    Nametab.object_prefix * Summary.frozen * classified_objects
+
+end
+
+(** We provide two instances of [StagedLibS], corresponding to the Synterp and
+    Interp stages. *)
+
+module Synterp : StagedLibS
+module Interp : StagedLibS
 
 (** {6 Compilation units } *)
 
 val start_compilation : DirPath.t -> ModPath.t -> unit
-val end_compilation : DirPath.t -> Nametab.object_prefix * classified_objects
+
+(** Finalize the compilation of a library and return respectively the library
+    prefix, the regular objects, and the syntax-related objects. *)
+val end_compilation : DirPath.t -> Nametab.object_prefix * Interp.classified_objects * Synterp.classified_objects
 
 (** The function [library_dp] returns the [DirPath.t] of the current
    compiling library (or [default_library]) *)
@@ -121,10 +137,6 @@ val library_dp : unit -> DirPath.t
 val split_modpath : ModPath.t -> DirPath.t * Id.t list
 val library_part :  GlobRef.t -> DirPath.t
 
-(** {6 Sections } *)
-
-val open_section : Id.t -> unit
-val close_section : unit -> unit
 
 (** {6 We can get and set the state of the operations (used in [States]). } *)
 
@@ -149,3 +161,8 @@ val is_in_section : GlobRef.t -> bool
 (** {6 Discharge: decrease the section level if in the current section } *)
 
 val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
+
+(** Compatibility layer *)
+
+val open_section : Id.t -> unit
+val close_section : unit -> unit

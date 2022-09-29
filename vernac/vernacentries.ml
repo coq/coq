@@ -1201,7 +1201,8 @@ let interp_import_cats cats =
 (* Assumes cats is irrelevant if f is ImportNames *)
 let import_module_with_filter ~export cats m f =
   match f with
-  | ImportAll -> Declaremods.import_module cats ~export m
+  | ImportAll ->
+    Declaremods.import_module cats ~export m
   | ImportNames ns -> import_names ~export m ns
 
 let check_no_filter_when_using_cats l =
@@ -1339,7 +1340,8 @@ let vernac_include l = Declaremods.declare_include l
 
 let vernac_begin_section ~poly ({v=id} as lid) =
   Dumpglob.dump_definition lid true "sec";
-  Lib.open_section id;
+  Lib.Synterp.open_section id;
+  Lib.Interp.open_section id;
   (* If there was no polymorphism attribute this just sets the option
      to its current value ie noop. *)
   set_bool_option_value_gen ~locality:OptLocal ["Universe"; "Polymorphism"] poly
@@ -1347,7 +1349,8 @@ let vernac_begin_section ~poly ({v=id} as lid) =
 let vernac_end_section {CAst.loc; v} =
   Dumpglob.dump_reference ?loc
     (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
-  Lib.close_section ()
+  Lib.Synterp.close_section ();
+  Lib.Interp.close_section ()
 
 let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
 
@@ -1363,7 +1366,7 @@ let msg_of_subsection ss id =
   Pp.str kind ++ spc () ++ Id.print id
 
 let vernac_end_segment ~pm ~proof ({v=id} as lid) =
-  let ss = Lib.find_opening_node id in
+  let ss = Lib.Interp.find_opening_node id in
   let what_for = msg_of_subsection ss lid.v in
   if Option.has_some proof then
     CErrors.user_err (Pp.str "Command not supported (Open proofs remain).");
