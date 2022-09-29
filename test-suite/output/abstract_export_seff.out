@@ -9,6 +9,5 @@ toto3 = 1
 File "./output/abstract_export_seff.v", line 21, characters 11-16:
 The command has indeed failed with message:
 toto4 not a defined object.
-File "./output/abstract_export_seff.v", line 27, characters 11-16:
-The command has indeed failed with message:
-toto5 not a defined object.
+toto5 = 1
+     : nat

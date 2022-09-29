@@ -12,7 +12,7 @@ Definition foo3 : nat.
 Proof.
     abstract (exact 1) using toto3.
 Admitted.
-Print toto3.
+Fail Print toto3.
 
 Definition foo4 : nat.
 Proof.
@@ -24,4 +24,4 @@ Definition foo5 : nat.
 Proof.
     abstract (exact 1) using toto5.
 Abort.
-Fail Print toto5.
+Print toto5.

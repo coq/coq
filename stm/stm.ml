@@ -2274,7 +2274,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       let iexn = Exninfo.capture exn in
                       Exninfo.iraise (State.exn_on id ~valid:eop iexn)
                 in
-                if keep <> VtKeep VtKeepAxiom then
+                if keep <> VtDrop then
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in
                 let st = Vernacstate.freeze_interp_state ~marshallable:false in
