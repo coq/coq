@@ -195,7 +195,7 @@ let type_of_apply env func funt argsv argstv =
       match fterm_of typ with
       | FProd (_, c1, c2, e) ->
         let arg = argsv.(i) in
-        let argt = argstv.(i) in
+        let argt = term_of_fconstr argstv.(i) in
         let c1 = term_of_fconstr c1 in
         begin match conv_leq env argt c1 with
         | () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
@@ -203,12 +203,12 @@ let type_of_apply env func funt argsv argstv =
           error_cant_apply_bad_type env
             (i+1,c1,argt)
             (make_judge func funt)
-            (make_judgev argsv argstv)
+            (make_judgev argsv (Array.map term_of_fconstr argstv))
         end
       | _ ->
         error_cant_apply_not_functional env
           (make_judge func funt)
-          (make_judgev argsv argstv)
+          (make_judgev argsv (Array.map term_of_fconstr argstv))
   in
   apply_rec 0 (inject funt)
 
@@ -601,11 +601,11 @@ and execute_fconstr env cstr =
   match kind cstr with
     (* Lambda calculus operators *)
     | App (f,args) ->
-      let args', argst = execute_array env args in
+      let args', argst = execute_array_fconstr env args in
         let f', ft =
           match kind f with
           | Ind ind when Environ.template_polymorphic_pind ind env ->
-            f, type_of_inductive_knowing_parameters env ind argst
+            f, type_of_inductive_knowing_parameters env ind (Array.map CClosure.term_of_fconstr argst)
           | _ ->
             (* No template polymorphism *)
             execute env f
@@ -633,6 +633,11 @@ and execute_recdef env (names,lar,vdef as recdef) i =
 and execute_array env cs =
   let tys = Array.make (Array.length cs) mkProp in
   let cs = Array.Smart.map_i (fun i c -> let c, ty = execute env c in tys.(i) <- ty; c) cs in
+  cs, tys
+
+and execute_array_fconstr env cs =
+  let tys = Array.make (Array.length cs) (CClosure.inject mkProp) in
+  let cs = Array.Smart.map_i (fun i c -> let c, ty = execute_fconstr env c in tys.(i) <- ty; c) cs in
   cs, tys
 
 
@@ -698,7 +703,7 @@ let dest_judgev v =
 
 let judge_of_apply env funj argjv =
   let args, argtys = dest_judgev argjv in
-  let typ = type_of_apply env funj.uj_val funj.uj_type args argtys in
+  let typ = type_of_apply env funj.uj_val funj.uj_type args (Array.map CClosure.inject argtys) in
   make_judge (mkApp (funj.uj_val, args)) (CClosure.term_of_fconstr typ)
 
 (* let judge_of_abstraction env x varj bodyj = *)
