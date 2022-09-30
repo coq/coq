@@ -84,6 +84,21 @@ Proof using A dec.
      * right. inversion_clear 1. tauto.
 Qed.
 
+Lemma not_NoDup (l: list A):
+    ~ NoDup l -> exists a l1 l2 l3, l = l1++a::l2++a::l3.
+Proof using A dec.
+intro H. induction l.
+- exfalso; apply H. constructor.
+- destruct (NoDup_dec l).
+  + assert (In a l) by now apply (dup_cons_in dec).
+    exists a. exists nil. destruct (in_split _ _ H0) as [l2[l3]].
+    exists l2. exists l3. now rewrite H1.
+  + specialize (IHl n). destruct IHl as [b[?l[?l[?l]]]]. exists b.
+    destruct l0 as [|a0 l0].
+    * exists (a::nil). exists l1. exists l2. now rewrite H0.
+    * exists (a::a0::l0). exists l1. exists l2. now rewrite H0.
+Qed.
+
 End Dec_in_Type.
 
 (** An extra result: thanks to decidability, a list can be purged
