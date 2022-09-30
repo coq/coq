@@ -200,6 +200,12 @@ let type_of_apply env func funt argsv (argstv : CClosure.fconstr array) =
       | FProd (_, c1, c2, e) ->
         let arg = argsv.(i) in
         let argt = argstv.(i) in
+        (* it is necessary to copy [c1] to avoid retaining reduction when
+           type checking in [c2]. this is currently implemented by converting
+           to [constr] and back, but it would be nicer if we could retain
+           some of the sharing that exists in [c1]. This would require a
+           [copy_fconstr] function.
+         *)
         let c1 = term_of_fconstr c1 in
         begin match conv_leq_fconstr env argt c1 with (* << checks that the type of the argument is compatible with the type of the binder *)
         | () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
