@@ -374,12 +374,20 @@ let generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n
         let erefl_ty = Retyping.get_type_of env sigma erefl in
         let eq_ty = Retyping.get_type_of env sigma erefl_ty in
         let ucst = Evd.evar_universe_context sigma in
+        let evds = Evar.Map.bind (Evd.find sigma) @@
+          Evd.evars_of_term sigma new_concl in
         let gen_eq_tac =
           let open Proofview.Notations in
           Proofview.Goal.enter begin fun s ->
           let sigma = Proofview.Goal.sigma s in
           let sigma = Evd.merge_universe_context sigma ucst in
+          let sigma, shelve = Evar.Map.fold (fun e info (sigma, shelve) ->
+              if not @@ Evd.mem sigma e then
+                Evd.add sigma e info, e::shelve else
+                (sigma, shelve))
+              evds (sigma, []) in
           Proofview.Unsafe.tclEVARS sigma <*>
+          Proofview.shelve_goals @@ shelve <*>
           Tactics.apply_type ~typecheck:true new_concl [erefl]
           end
         in
