@@ -22,4 +22,4 @@
    plugin_list
   (env_var PWD) ; used in the fallback of COQ_CONFIGURE_PREFIX
   (env_var COQ_CONFIGURE_PREFIX))
- (action (chdir %{project_root} (run %{project_root}/tools/configure/configure.exe -no-ask -native-compiler no -bin-annot))))
+ (action (chdir %{project_root} (run %{project_root}/tools/configure/configure.exe -no-ask -native-compiler no))))

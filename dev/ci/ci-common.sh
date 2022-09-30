@@ -27,15 +27,6 @@ then
     then
         export CI_PULL_REQUEST="${CI_BRANCH#pr-}"
     fi
-elif [ -d "$PWD/_build_vo/" ] && [ -z "$CI_PURE_DUNE" ]
-then
-    # Dune Ocaml build, vo build using make
-    export OCAMLPATH="$PWD/_build_vo/default/lib/$OCAMLFINDSEP$OCAMLPATH"
-    export COQBIN="$PWD/_build_vo/default/bin"
-    export COQLIB="$PWD/_build_vo/default/lib/coq"
-    export COQCORELIB="$PWD/_build_vo/default/lib/coq-core"
-    CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-    export CI_BRANCH
 elif [ -d "$PWD/_build/install/default/" ];
 then
     # Full Dune build, we basically do what `dune exec --` does

@@ -41,7 +41,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     hostname
-    python3 time flock dune_2 # coq-makefile timing tools
+    python3 time dune_2 # coq-makefile timing tools
   ]
   ++ optionals buildIde [
     ocamlPackages.lablgtk3-sourceview3
