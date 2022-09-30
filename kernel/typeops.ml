@@ -187,7 +187,7 @@ let type_of_apply env func funt argsv argstv =
   let infos = create_clos_infos all env in
   let tab = create_tab () in
   let rec apply_rec i typ =
-    if Int.equal i len then term_of_fconstr typ
+    if Int.equal i len then typ
     else
       let typ, stk = whd_stack infos tab typ [] in
       (** The return stack is known to be empty *)
@@ -486,18 +486,9 @@ let rec execute env cstr =
       cstr, type_of_projection env p c' ct
 
     (* Lambda calculus operators *)
-    | App (f,args) ->
-      let args', argst = execute_array env args in
-        let f', ft =
-          match kind f with
-          | Ind ind when Environ.template_polymorphic_pind ind env ->
-            f, type_of_inductive_knowing_parameters env ind argst
-          | _ ->
-            (* No template polymorphism *)
-            execute env f
-        in
-        let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
-        cstr, type_of_apply env f' ft args' argst
+    | App _ ->
+      let cstr, typ = execute_fconstr env cstr in
+      cstr , CClosure.term_of_fconstr typ
 
     | Lambda (name,c1,c2) ->
       let c1', s = execute_is_type env c1 in
@@ -606,6 +597,26 @@ let rec execute env cstr =
     | Evar _ ->
         anomaly (Pp.str "the kernel does not support existential variables.")
 
+and execute_fconstr env cstr =
+  match kind cstr with
+    (* Lambda calculus operators *)
+    | App (f,args) ->
+      let args', argst = execute_array env args in
+        let f', ft =
+          match kind f with
+          | Ind ind when Environ.template_polymorphic_pind ind env ->
+            f, type_of_inductive_knowing_parameters env ind argst
+          | _ ->
+            (* No template polymorphism *)
+            execute env f
+        in
+        let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
+        cstr, type_of_apply env f' ft args' argst
+    | _ ->
+      let cstr, typ = execute env cstr in
+      cstr , CClosure.inject typ
+
+
 and execute_is_type env constr =
   let c, t = execute env constr in
     c, check_type env constr t
@@ -623,6 +634,7 @@ and execute_array env cs =
   let tys = Array.make (Array.length cs) mkProp in
   let cs = Array.Smart.map_i (fun i c -> let c, ty = execute env c in tys.(i) <- ty; c) cs in
   cs, tys
+
 
 (* Derived functions *)
 
@@ -686,7 +698,8 @@ let dest_judgev v =
 
 let judge_of_apply env funj argjv =
   let args, argtys = dest_judgev argjv in
-  make_judge (mkApp (funj.uj_val, args)) (type_of_apply env funj.uj_val funj.uj_type args argtys)
+  let typ = type_of_apply env funj.uj_val funj.uj_type args argtys in
+  make_judge (mkApp (funj.uj_val, args)) (CClosure.term_of_fconstr typ)
 
 (* let judge_of_abstraction env x varj bodyj = *)
 (*   make_judge (mkLambda (x, varj.utj_val, bodyj.uj_val)) *)
