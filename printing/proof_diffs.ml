@@ -320,13 +320,14 @@ let goal_info goal =
     ( List.rev !line_idents, !map, concl_pp )
   with _ -> ([], !map, Pp.mt ())
 
-let diff_goal_info o_info n_info =
+let diff_goal_info ~short o_info n_info =
   let (o_idents_in_lines, o_hyp_map, o_concl_pp) = o_info in
   let (n_idents_in_lines, n_hyp_map, n_concl_pp) = n_info in
   let show_removed = Some (show_removed ()) in
   let concl_pp = diff_pp_combined ~tokenize_string ?show_removed o_concl_pp n_concl_pp in
 
-  let hyp_diffs_list = diff_hyps o_idents_in_lines o_hyp_map n_idents_in_lines n_hyp_map in
+  let hyp_diffs_list =
+    if short then [] else diff_hyps o_idents_in_lines o_hyp_map n_idents_in_lines n_hyp_map in
   (hyp_diffs_list, concl_pp)
 
 let unwrap g_s =
@@ -334,8 +335,8 @@ let unwrap g_s =
   | Some g_s -> goal_info g_s
   | None -> ([], CString.Map.empty, Pp.mt ())
 
-let diff_goal ?og_s ng =
-  diff_goal_info (unwrap og_s) (goal_info ng)
+let diff_goal ?(short=false) ?og_s ng =
+  diff_goal_info ~short (unwrap og_s) (goal_info ng)
 
 (*** Code to determine which calls to compare between the old and new proofs ***)
 
