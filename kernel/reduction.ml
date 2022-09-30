@@ -926,18 +926,11 @@ let conv_leq = gen_conv CUMUL
 
 let gen_conv_fconstr cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler) t1 t2 =
   let univs = Environ.universes env in
-  let b =
-    if cv_pb = CUMUL then leq_constr_univs univs t1 (term_of_fconstr t2)
-    else eq_constr_univs univs t1 (term_of_fconstr t2)
-  in
-  if b then ()
-  else
-    let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) (inject t1) t2 in
-    ()
+  let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 (inject t2) in
+  ()
 
 let conv_fconstr = gen_conv_fconstr CONV
 let conv_leq_fconstr = gen_conv_fconstr CUMUL
-
 
 let gen_conv_fconstr2 cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=default_evar_handler) t1 t2 =
   let univs = Environ.universes env in

@@ -73,11 +73,11 @@ val checked_universes : UGraph.t universe_compare
 
 (** These two functions can only raise NotConvertible *)
 val conv : constr extended_conversion_function
-val conv_fconstr : (constr, fconstr) extended_conversion_function_2
+val conv_fconstr : (fconstr, types) extended_conversion_function_2
 
 val conv_leq : types extended_conversion_function
+val conv_leq_fconstr : (fconstr, types) extended_conversion_function_2
 val conv_leq_fconstr2 : (fconstr, fconstr) extended_conversion_function_2
-val conv_leq_fconstr : (types, fconstr) extended_conversion_function_2
 
 
 

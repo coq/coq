@@ -200,10 +200,10 @@ let type_of_apply env func funt argsv (argstv : CClosure.fconstr array) =
       | FProd (_, c1, c2, e) ->
         let arg = argsv.(i) in
         let argt = argstv.(i) in
-        begin match conv_leq_fconstr2 env argt c1 with (* << checks that the type of the argument is compatible with the type of the binder *)
+        let c1 = term_of_fconstr c1 in
+        begin match conv_leq_fconstr env argt c1 with (* << checks that the type of the argument is compatible with the type of the binder *)
         | () -> apply_rec (i+1) (mk_clos (CClosure.usubs_cons (inject arg) e) c2)
         | exception NotConvertible ->
-          let c1 = term_of_fconstr c1 in
           error_cant_apply_bad_type env
             (i+1,c1,term_of_fconstr argt)
             (make_judge func (CClosure.term_of_fconstr funt))
@@ -708,7 +708,7 @@ let dest_judgev v =
 
 let judge_of_apply env funj argjv =
   let args, argtys = dest_judgev argjv in
-  let typ = type_of_apply env funj.uj_val funj.uj_type args (Array.map CClosure.inject argtys) in
+  let typ = type_of_apply env funj.uj_val (CClosure.inject funj.uj_type) args (Array.map CClosure.inject argtys) in
   make_judge (mkApp (funj.uj_val, args)) (CClosure.term_of_fconstr typ)
 
 (* let judge_of_abstraction env x varj bodyj = *)
