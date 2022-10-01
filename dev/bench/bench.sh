@@ -24,6 +24,8 @@ chmod +x "$BIN"/opam
 
 export PATH="$BIN":$PATH
 
+export OPAMCLI=2.0
+
 echo "Global env info:"
 echo "----------------"
 echo "pwd: $PWD"
