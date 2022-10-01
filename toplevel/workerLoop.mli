@@ -11,4 +11,4 @@
 (* Register a STM worker of a given executable name *)
 val start :
   init:(unit -> unit) ->
-  loop:(unit -> unit) -> string -> unit
+  loop:(unit -> unit) -> unit

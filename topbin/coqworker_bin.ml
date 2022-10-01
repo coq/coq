@@ -8,7 +8,23 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module W = AsyncTaskQueue.MakeWorker(Stm.ProofTask) ()
+module WProof = AsyncTaskQueue.MakeWorker(Stm.ProofTask) ()
+module WQuery = AsyncTaskQueue.MakeWorker(Stm.QueryTask) ()
+module WTactic = AsyncTaskQueue.MakeWorker(Partac.TacTask) ()
+
+let error s () =
+  Format.eprintf "Usage: coqworker.opt --kind=[proof|query|tactic] $args@\ngot %s\n%!" s;
+  exit 1
 
 let () =
-  WorkerLoop.start ~init:W.init_stdout ~loop:W.main_loop "coqproofworker"
+  if Array.length Sys.argv < 2
+  then error "no argument" ()
+  else
+    let init, loop =
+      match Sys.argv.(1) with
+      | "--kind=proof" -> WProof.init_stdout, WProof.main_loop
+      | "--kind=query" -> WQuery.init_stdout, WQuery.main_loop
+      | "--kind=tactic" -> WTactic.init_stdout, WTactic.main_loop
+      | s -> error s ()
+    in
+    WorkerLoop.start ~init ~loop

@@ -146,9 +146,10 @@ module Make(T : Task) () = struct
           set_slave_opt tl
       in
       let args =
-        Array.of_list (set_slave_opt (List.tl (Array.to_list Sys.argv))) in
+        let wselect = "--kind=" ^ !T.name in
+        Array.of_list (wselect :: set_slave_opt (List.tl (Array.to_list Sys.argv))) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in
-      let worker_name = System.get_toplevel_path ("coq" ^ !T.name) in
+      let worker_name = System.get_toplevel_path ("coqworker") in
       Worker.spawn ~env worker_name args in
     name, proc, CThread.prepare_in_channel_for_thread_friendly_io ic, oc
 

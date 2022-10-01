@@ -1387,7 +1387,7 @@ end = struct (* {{{ *)
     | RespError of error
     | RespStates of (Stateid.t * State.partial_state) list
 
-  let name = ref "proofworker"
+  let name = ref "proof"
   let extra_env () = !async_proofs_workers_extra_env
 
   let perspective = ref []
@@ -1818,7 +1818,7 @@ end = struct (* {{{ *)
     { r_where : Stateid.t ; r_for : Stateid.t ; r_what : aast; r_doc : VCS.vcs }
   type response = unit
 
-  let name = ref "queryworker"
+  let name = ref "query"
   let extra_env _ = [||]
   type competence = unit
   type worker_status = Fresh | Old of competence

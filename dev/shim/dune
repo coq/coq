@@ -106,9 +106,7 @@
   ; there is no problem with the other shims since they don't depend on optional build products
   %{project_root}/ide/coqide/coqide_main.exe
 
-  %{bin:coqqueryworker.opt}
-  %{bin:coqtacticworker.opt}
-  %{bin:coqproofworker.opt}
+  %{bin:coqworker.opt}
   %{project_root}/theories/Init/Prelude.vo
   %{project_root}/coqide-server.install
   %{project_root}/coqide.install))
