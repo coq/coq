@@ -195,14 +195,14 @@ let process_goal short sigma g =
   in
   { Interface.goal_hyp = List.rev hyps; Interface.goal_ccl = ccl; Interface.goal_id = Proof.goal_uid g; Interface.goal_name = name }
 
-let process_goal_diffs diff_goal_map oldp nsigma ng =
+let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
   let env = Global.env () in
   let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env nsigma ng)) else None in
   let og_s = match oldp, diff_goal_map with
   | Some oldp, Some diff_goal_map -> Proof_diffs.map_goal ng diff_goal_map
   | None, _ | _, None -> None
   in
-  let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal ?og_s (Proof_diffs.make_goal env nsigma ng) in
+  let (hyps_pp_list, concl_pp) = Proof_diffs.diff_goal ~short ?og_s (Proof_diffs.make_goal env nsigma ng) in
   { Interface.goal_hyp = hyps_pp_list; Interface.goal_ccl = concl_pp;
     Interface.goal_id = Proof.goal_uid ng; Interface.goal_name = name }
 
@@ -240,7 +240,7 @@ let subgoals flags =
         | None -> None
         | Some oldp -> Some (Proof_diffs.make_goal_map oldp newp)
         in
-        Some (export_pre_goals flags Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
+        Some (export_pre_goals flags Proof.(data newp) (process_goal_diffs ~short diff_goal_map oldp))
        with Pp_diff.Diff_Failure msg ->
          Proof_diffs.notify_proof_diff_failure msg;
          Some (export_pre_goals flags Proof.(data newp) (process_goal short)))

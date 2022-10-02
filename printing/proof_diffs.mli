@@ -42,9 +42,14 @@ raise Diff_Failure under some "impossible" conditions.
 
 If you want to make your call especially bulletproof, catch these
 exceptions, print a user-visible message, then recall this routine with
-the first argument set to None, which will skip the diff.
+the second argument ('og_s') set to None, which will skip the diff.
+
+The 'short' flag skips computing the diffs of the hypotheses, which allows the
+Subgoals XML command to fetch just the conclusion of a goal.  This is useful,
+for example, when an IDE only needs to display the number of admitted goals or
+preview the next unsolved goal.
 *)
-val diff_goal : ?og_s:goal -> goal -> Pp.t list * Pp.t
+val diff_goal : ?short:bool -> ?og_s:goal -> goal -> Pp.t list * Pp.t
 
 (** Convert a string to a list of token strings using the lexer *)
 val tokenize_string : string -> string list
