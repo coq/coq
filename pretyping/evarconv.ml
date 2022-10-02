@@ -1268,12 +1268,19 @@ let first_order_unification flags env evd (ev1,l1) (term2,l2) =
 
 let choose_less_dependent_instance evd term (evk, args) =
   let evi = Evd.find_undefined evd evk in
-  let args = Evd.expand_existential evd (evk, args) in
-  let subst = make_pure_subst evi args in
-  let subst' = List.filter (fun (id,c) -> EConstr.eq_constr evd c term) subst in
-  match subst' with
+  let rec get_subst accu decls args = match decls, SList.view args with
+  | [], Some _ | _ :: _, None -> assert false
+  | [], None -> accu
+  | decl :: decls, Some (arg, args) ->
+    let accu = get_subst accu decls args in
+    let arg = match arg with None -> mkVar (NamedDecl.get_id decl) | Some a -> a in
+    if EConstr.eq_constr evd arg term then NamedDecl.get_id decl :: accu
+    else accu
+  in
+  let subst = get_subst [] (evar_filtered_context evi) args in
+  match subst with
   | [] -> None
-  | (id, _) :: _ -> Some (Evd.define evk (mkVar id) evd)
+  | id :: _ -> Some (Evd.define evk (mkVar id) evd)
 
 type occurrence_match_test =
   env -> evar_map -> constr ->

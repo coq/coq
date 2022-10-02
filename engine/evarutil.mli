@@ -73,8 +73,6 @@ val new_type_evar :
 
 val new_Type : ?rigid:rigid -> evar_map -> evar_map * constr
 
-val make_pure_subst : evar_info -> 'a list -> (Id.t * 'a) list
-
 (** {6 Evars/Metas switching...} *)
 
 val non_instantiated : evar_map -> evar_info Evar.Map.t

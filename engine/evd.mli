@@ -276,9 +276,6 @@ val expand_existential : evar_map -> econstr pexistential -> econstr list
 
 val expand_existential0 : evar_map -> constr pexistential -> constr list
 
-val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info ->
-  'a SList.t -> (Id.t * 'a) list
-
 val instantiate_evar_array : evar_map -> evar_info -> econstr -> econstr SList.t -> econstr
 
 val evars_reset_evd  : ?with_conv_pbs:bool ->

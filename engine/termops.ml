@@ -783,12 +783,6 @@ let fold_constr_with_full_binders env sigma g f n acc c =
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | Array(_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
 
-let fold_constr_with_binders sigma g f n acc c =
-  let open EConstr in
-  let f l acc c = f l acc (of_constr c) in
-  let c = Unsafe.to_constr (whd_evar sigma c) in
-  Constr.fold_constr_with_binders g f n acc c
-
 (***************************)
 (* occurs check functions  *)
 (***************************)
@@ -886,7 +880,8 @@ let local_occur_var_in_decl sigma hyp decl =
 let free_rels sigma m =
   let rec frec depth acc c = match EConstr.kind sigma c with
     | Rel n       -> if n >= depth then Int.Set.add (n-depth+1) acc else acc
-    | _ -> fold_constr_with_binders sigma succ frec depth acc c
+    | Evar (_, args) -> SList.Skip.fold (fun acc c -> frec depth acc c) acc args
+    | _ -> EConstr.fold_with_binders sigma succ frec depth acc c
   in
   frec 1 Int.Set.empty m
 

@@ -724,8 +724,11 @@ type esubst = {
 }
 
 let make_constructor_subst sigma sign args =
-  let fold decl a accu = match decl with
-  | LocalAssum ({ binder_name = id }, _) ->
+  let rec fold decls args accu = match decls, SList.view args with
+  | _ :: _, None | [], Some _ -> assert false
+  | [], None -> accu
+  | LocalAssum ({ binder_name = id }, _) :: decls, Some (Some a, args) ->
+    let accu = fold decls args accu in
     let a', args = decompose_app_vect sigma a in
     begin match EConstr.kind sigma a' with
     | Construct (cstr, _) ->
@@ -733,15 +736,21 @@ let make_constructor_subst sigma sign args =
       Constrmap.add cstr ((args, id) :: l) accu
     | _ -> accu
     end
-  | LocalDef _ -> accu
+  | LocalAssum _ :: decls, Some (None, args) -> fold decls args accu
+  | LocalDef _ :: decls, Some (_, args) -> fold decls args accu
   in
-  List.fold_right2 fold sign args Constrmap.empty
+  fold sign args Constrmap.empty
 
 let make_projectable_subst aliases sigma sign args =
   let evar_aliases = compute_var_aliases sign sigma in
   (* First compute aliasing equivalence classes *)
-  let fold decl a (i, all, vals, revmap) =
+  let rec fold accu args decls = match SList.view args, decls with
+  | None, _ :: _ | Some _, [] -> assert false
+  | None, [] -> accu
+  | Some (a, args), decl :: decls ->
+    let (i, all, vals, revmap) = fold accu args decls in
     let id = get_id decl in
+    let a = match a with None -> mkVar id | Some a -> a in
     let revmap = Id.Map.add id i revmap in
     let oldbindings = match decl with
     | LocalAssum _ -> None
@@ -782,7 +791,7 @@ let make_projectable_subst aliases sigma sign args =
     in
     (i + 1, all, vals, revmap)
   in
-  let (_, ealias, evalue, _) = List.fold_right2 fold sign args (0, Int.Map.empty, Int.Map.empty, Id.Map.empty) in
+  let (_, ealias, evalue, _) = fold (0, Int.Map.empty, Int.Map.empty, Id.Map.empty) args sign in
   (* Then extract the backpointers. *)
   let fold i bnd eindex =
     let fold accu (a, _) = match AlsMap.find a accu with
@@ -977,7 +986,6 @@ let rec find_projectable_vars aliases sigma y subst =
     else
       let (evk,argsv as t) = c in
       let evi = Evd.find sigma evk in
-      let argsv = Evd.expand_existential sigma t in
       let subst = make_projectable_subst aliases sigma (evar_filtered_context evi) argsv in
       let l = find_projectable_vars aliases sigma y subst in
       match l with
@@ -1030,9 +1038,7 @@ let rec do_projection_effects unify flags define_fun env ty evd = function
            evar it may commit to a univ level which is not the right
            one (however, regarding coercions, because t is obtained by
            unif, we know that no coercion can be inserted) *)
-        let argsv = Evd.expand_existential evd (evk, argsv) in
-        let subst = make_pure_subst evi argsv in
-        let ty' = replace_vars evd subst evi.evar_concl in
+        let ty' = instantiate_evar_array evd evi evi.evar_concl argsv in
         if isEvar evd ty' then define_fun env evd (Some false) (destEvar evd ty') ty else evd
       else
         evd
@@ -1115,7 +1121,6 @@ let extract_candidates sols =
 
 let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
-  let argsv = Evd.expand_existential evd (evk, argsv) in
   let subst = make_projectable_subst aliases evd (evar_filtered_context evi) argsv in
   let invert arg =
     let p = invert_arg fullenv evd aliases k evk subst arg in
@@ -1599,8 +1604,6 @@ let rec invert_definition unify flags choose imitate_defs
   let evdref = ref evd in
   let progress = ref false in
   let evi = Evd.find evd evk in
-  let argsvo = argsv in
-  let argsv = Evd.expand_existential evd ev in
   let sign = evar_filtered_context evi in
   let subst = make_projectable_subst aliases evd sign argsv in
   let cstr_subst = make_constructor_subst evd sign argsv in
@@ -1680,7 +1683,7 @@ let rec invert_definition unify flags choose imitate_defs
         (* Note that we don't need to declare ?evk'' yet: it may remain virtual *)
         let aliases = lift_aliases k aliases in
         (try
-          let ev = normalize_evar !evdref (evk,SList.Skip.map (lift k) argsvo) in
+          let ev = normalize_evar !evdref (evk,SList.Skip.map (lift k) argsv) in
           let evd,body = project_evar_on_evar false unify flags env' !evdref aliases k None ev' ev in
           evdref := evd;
           body
@@ -1750,12 +1753,12 @@ let rec invert_definition unify flags choose imitate_defs
     let filter_ctxt = evar_filtered_context evi in
     let names = ref Id.Set.empty in
     let rec is_id_subst ctxt s =
-      match ctxt, s with
-      | (decl :: ctxt'), (c :: s') ->
+      match ctxt, SList.view s with
+      | (decl :: ctxt'), Some (c, s') ->
         let id = get_id decl in
         names := Id.Set.add id !names;
-        isVarId evd id c && is_id_subst ctxt' s'
-      | [], [] -> true
+        (match c with None -> true | Some c -> isVarId evd id c) && is_id_subst ctxt' s'
+      | [], None -> true
       | _ -> false
     in
       is_id_subst filter_ctxt argsv &&
