@@ -1031,7 +1031,7 @@ let pr_goal_selector ~toplevel s =
               keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
             | TacComplete t ->
               pr_tac (LevelLe lcomplete) t, lcomplete
-            | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, latom
+            | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, ltactical
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
             | TacAtom t ->
