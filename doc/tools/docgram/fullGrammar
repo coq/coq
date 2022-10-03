@@ -1837,7 +1837,6 @@ simple_tactic: [
 | "pose" ssrcofixfwd      (* SSR plugin *)
 | "pose" ssrfwdid ssrposefwd      (* SSR plugin *)
 | "set" ssrfwdid ssrsetfwd ssrclauses      (* SSR plugin *)
-| "abstract" ssrdgens      (* SSR plugin *)
 | "have" ssrhavefwdwbinders      (* SSR plugin *)
 | "have" "suff" ssrhpats_nobs ssrhavefwd      (* SSR plugin *)
 | "have" "suffices" ssrhpats_nobs ssrhavefwd      (* SSR plugin *)

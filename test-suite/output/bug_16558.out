@@ -1,0 +1,1 @@
+Ltac t x y := abstract : x 

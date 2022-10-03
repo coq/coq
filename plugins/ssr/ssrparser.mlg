@@ -2494,20 +2494,32 @@ END
 
 (* Pltac. *)
 
+{
+
+  let tclabstractkey =
+    let open Pptactic in
+    let prods = [ TacTerm "abstract"; mk_non_term wit_ssrdgens (Names.Id.of_string "gens") ] in
+    let tac = begin fun args ist -> match args with
+      | [gens] ->
+        let gens = cast_arg wit_ssrdgens gens in
+        if List.length (fst gens) <> 1 then
+          errorstrm (str"dependents switches '/' not allowed here");
+        Ssripats.ssrabstract (ssrdgens_of_parsed_dgens gens)
+      | _ -> assert false
+      end in
+    register_ssrtac "tclabstract" tac prods
+
+let tclabstract_expr ?loc gens =
+  let arg = in_gen (rawwit wit_ssrdgens) gens in
+  ssrtac_expr ?loc tclabstractkey [arg]
+
+}
+
 (* The standard TACTIC EXTEND does not work for abstract *)
 GRAMMAR EXTEND Gram
   GLOBAL: ltac_expr;
   ltac_expr: LEVEL "3"
-    [ [ IDENT "abstract"; gens = ssrdgens ->
-               { CAst.make ~loc (TacML (
-                     ssrtac_entry "abstract", [Tacexpr.TacGeneric (None, Genarg.in_gen (Genarg.rawwit wit_ssrdgens) gens)]))
-                 } ]];
-END
-TACTIC EXTEND ssrabstract
-| [ "abstract" ssrdgens(gens) ] -> {
-    if List.length (fst gens) <> 1 then
-      errorstrm (str"dependents switches '/' not allowed here");
-    Ssripats.ssrabstract (ssrdgens_of_parsed_dgens gens) }
+    [ [ IDENT "abstract"; gens = ssrdgens -> { tclabstract_expr ~loc gens } ] ];
 END
 
 TACTIC EXTEND ssrhave
