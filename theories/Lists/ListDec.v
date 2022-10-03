@@ -87,16 +87,15 @@ Qed.
 Lemma not_NoDup (l: list A):
     ~ NoDup l -> exists a l1 l2 l3, l = l1++a::l2++a::l3.
 Proof using A dec.
-intro H0. induction l.
+intro H0. induction l as [|a l IHl].
 - exfalso; apply H0. constructor.
 - destruct (NoDup_dec l) as [H1|H1].
-  + assert (In a l) as H2 by now apply (dup_cons_in dec).
-    destruct (in_split _ _ H2) as (l1 & l2 & ->).
-    now exists a, nil, l1, l2.
-  + specialize (IHl H1). destruct IHl as (b & l1 & l2 & l3 & ->).
-    destruct l1 as [|a1 l1].
-    * now exists b,(a::nil),l2,l3.
-    * now exists b,(a::a1::l1),l2,l3.
+  + destruct (In_dec a l) as [H2|H2].
+    * destruct (in_split _ _ H2) as (l1 & l2 & ->).
+      now exists a, nil, l1, l2.
+    * now contradiction H0; constructor.
+  + destruct (IHl H1) as (b & l1 & l2 & l3 & ->).
+    now exists b, (a::l1), l2, l3.
 Qed.
 
 End Dec_in_Type.
