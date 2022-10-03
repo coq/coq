@@ -205,6 +205,9 @@ before_script:
     when: always
   needs:
     - build:base
+  only: &full-ci
+    variables:
+      - $FULL_CI == "true"
 
 .ci-template-flambda:
   extends: .ci-template
@@ -237,9 +240,7 @@ build:base+32bit:
     OPAM_VARIANT: "+32bit"
     COQ_EXTRA_CONF: "-native-compiler yes"
     COQIDE: "no"
-  only: &full-ci
-    variables:
-      - $FULL_CI == "true"
+  only: *full-ci
 
 build:edge+flambda:
   extends: .build-template
