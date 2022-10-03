@@ -2355,14 +2355,6 @@ Section ReDun.
   intros. now apply NoDup_remove.
   Qed.
 
-  Lemma NoDup_cons_cons a b (H: a <> b) l:
-    NoDup (a::l) -> NoDup (b::l) -> NoDup (a::b::l).
-  Proof.
-  intros N1 N2. constructor. 2: exact N2.
-  apply not_in_cons. split. 1: exact H.
-  now apply (NoDup_remove_2 nil).
-  Qed.
-
   Theorem NoDup_cons_iff a l:
     NoDup (a::l) <-> ~ In a l /\ NoDup l.
   Proof.
@@ -2390,21 +2382,9 @@ Section ReDun.
     apply filter_In in H; intuition.
   Qed.
 
-  Hypothesis decA: forall x y : A, {x = y} + {x <> y}.
-
-  Lemma dup_cons_in l a:
-    NoDup l -> ~ NoDup (a :: l) -> In a l.
-  Proof using decA.
-  intros. induction l.
-  - exfalso; apply H0. constructor; auto.
-  - cbn. destruct (decA a a0).
-    + left. now symmetry.
-    + right. apply IHl.
-      * apply (NoDup_remove_1 nil l a0). exact H.
-      * intro. apply H0. apply NoDup_cons_cons; assumption.
-  Qed.
-
   (** Effective computation of a list without duplicates *)
+
+  Hypothesis decA: forall x y : A, {x = y} + {x <> y}.
 
   Fixpoint nodup (l : list A) : list A :=
     match l with

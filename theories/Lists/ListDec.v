@@ -88,7 +88,7 @@ Lemma not_NoDup (l: list A):
     ~ NoDup l -> exists a l1 l2 l3, l = l1++a::l2++a::l3.
 Proof using A dec.
 intro H0. induction l as [|a l IHl].
-- exfalso; apply H0. constructor.
+- contradiction H0; constructor.
 - destruct (NoDup_dec l) as [H1|H1].
   + destruct (In_dec a l) as [H2|H2].
     * destruct (in_split _ _ H2) as (l1 & l2 & ->).
