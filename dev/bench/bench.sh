@@ -24,8 +24,6 @@ chmod +x "$BIN"/opam
 
 export PATH="$BIN":$PATH
 
-export OPAMCLI=2.0
-
 echo "Global env info:"
 echo "----------------"
 echo "pwd: $PWD"
@@ -338,7 +336,7 @@ create_opam() {
 
     # For some reason opam guesses an incorrect upper bound on the
     # number of jobs available on Travis, so we set it here manually:
-    opam config set-global jobs $number_of_processors
+    opam var --global jobs=$number_of_processors >/dev/null
     if [ ! -z "$BENCH_DEBUG" ]; then opam config list; fi
 
     opam repo add -q --this-switch coq-extra-dev "$OPAM_COQ_DIR/extra-dev"
@@ -447,13 +445,13 @@ for coq_opam_package in $sorted_coq_opam_packages; do
 
         # OPAM 2.0 likes to ignore the -j when it feels like :S so we
         # workaround that here.
-        opam config set-global jobs $number_of_processors
+        opam var --global jobs=$number_of_processors >/dev/null
 
         opam install $coq_opam_package -v -b -j$number_of_processors --deps-only -y \
              3>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stdout.log 1>&3 \
              4>$log_dir/$coq_opam_package.$RUNNER.opam_install.deps_only.stderr.log 2>&4 || continue 2
 
-        opam config set-global jobs 1
+        opam var --global jobs=1 >/dev/null
 
         if [ ! -z "$BENCH_DEBUG" ]; then ls -l $working_dir; fi
 
