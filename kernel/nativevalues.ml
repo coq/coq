@@ -819,12 +819,6 @@ let arraylength accu vA t =
 let parray_of_array t def =
   (Obj.magic (Parray.unsafe_of_obj (Obj.repr t) def) : t)
 
-let arrayinit n (f:t->t) def =
-  of_parray (Parray.init (to_uint n) (Obj.magic f) def)
-
-let arraymap f t =
-  of_parray (Parray.map f (to_parray t))
-
 let hobcnv = Array.init 256 (fun i -> Printf.sprintf "%02x" i)
 let bohcnv = Array.init 256 (fun i -> i -
                                       (if 0x30 <= i then 0x30 else 0) -
