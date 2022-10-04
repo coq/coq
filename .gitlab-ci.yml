@@ -170,6 +170,7 @@ before_script:
       - test-suite/logs
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
+  timeout: 60min
 
 # set "needs" when using
 .validate-template:
