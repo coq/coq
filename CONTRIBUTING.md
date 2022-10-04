@@ -1025,7 +1025,7 @@ need to know to prepare an overlay manually is in the README in the
 [user-overlays][] directory.  You might want to use some additional
 tooling such as the `make ci-*` targets of `Makefile.ci`, the Nix
 support for getting the dependencies of the external projects (see the
-README in [`dev/ci/nix`][dev-ci-nix], and the (so far undocumented)
+[Coq Nix Toolbox][Coq-Nix-Toolbox] documentation), and the (so far undocumented)
 [`dev/tools/create_overlays.sh`][dev-tools-create_overlays.sh] script.
 
 More work is to be done on understanding how each developer proceeds
@@ -1268,12 +1268,12 @@ can be found [on the wiki][wiki-CUDW].
 [coqdoc-documentation]: https://coq.inria.fr/refman/practical-tools/utilities.html#documenting-coq-files-with-coqdoc
 [Coq-documentation]: https://coq.inria.fr/documentation
 [Coq-issue-tracker]: https://github.com/coq/coq/issues
+[Coq-Nix-Toolbox]: https://github.com/coq-community/coq-nix-toolbox
 [Coq-package-index]: https://coq.inria.fr/packages
 [coq-pushers]: https://github.com/orgs/coq/teams/pushers/teams
 [coq-repository]: https://github.com/coq/coq
 [Coq-website-repository]: https://github.com/coq/www
 [debugging-doc]: dev/doc/debugging.md
-[dev-ci-nix]: dev/ci/nix/README.md
 [dev-doc-README]: dev/doc/README.md
 [dev-doc-dune]: dev/doc/build-system.dune.md
 [dev-README]: dev/README.md
