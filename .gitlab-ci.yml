@@ -249,6 +249,7 @@ build:edge+flambda:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
     COQ_EXTRA_CONF: "-native-compiler yes"
+  only: *full-ci
 
 build:edge+flambda:dev:
   extends: .build-template:dev
@@ -264,7 +265,7 @@ build:base+async:
   allow_failure: true # See https://github.com/coq/coq/issues/9658
   only:
     variables:
-      - $UNRELIABLE =~ /enabled/
+      - $UNRELIABLE =~ /enabled/ && $FULL_CI == "true"
   artifacts:
     when: always
     paths:
@@ -538,7 +539,7 @@ test-suite:base+async:
   allow_failure: true
   only:
     variables:
-      - $UNRELIABLE =~ /enabled/
+      - $UNRELIABLE =~ /enabled/ && $FULL_CI == "true"
 
 validate:base:
   extends: .validate-template
