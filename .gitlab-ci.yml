@@ -99,6 +99,8 @@ before_script:
     - dev/ci/gitlab-section.sh start coq.install coq.install
     - dune install --prefix="$(pwd)/_install_ci" $(sed -e 's/,/ /g' <<< ${PKGS})
     - dev/ci/gitlab-section.sh end coq.install
+  tags:
+    - inria-cloudstack
 
 # Developer build, with build layout. Faster and useful for those
 # jobs needing _build
@@ -126,6 +128,8 @@ before_script:
       - theories/dune
       - user-contrib/Ltac2/dune
     expire_in: 1 month
+  tags:
+    - inria-cloudstack
 
 .dev-ci-template:
   stage: build
@@ -143,6 +147,8 @@ before_script:
     when: always
     name: "$CI_JOB_NAME"
     expire_in: 2 months
+  tags:
+    - inria-cloudstack
 
 # every non build job must set "needs" otherwise all build
 # artifacts are used together and we may get some random Coq. To that
@@ -170,6 +176,8 @@ before_script:
       - test-suite/logs
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
+  tags:
+    - inria-cloudstack
 
 # set "needs" when using
 .validate-template:
@@ -191,6 +199,8 @@ before_script:
     paths:
       - coqchk.log
     expire_in: 2 months
+  tags:
+    - inria-cloudstack
 
 .ci-template:
   stage: build
@@ -227,6 +237,8 @@ before_script:
     - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
     - git config --global user.name "coqbot"
     - git config --global user.email "coqbot@users.noreply.github.com"
+  tags:
+    - inria-cloudstack
 
 build:base:
   extends: .build-template
