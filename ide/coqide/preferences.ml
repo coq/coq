@@ -786,7 +786,27 @@ let configure ?(apply=(fun () -> ())) parent =
   let cmd_coqdoc = pstring "     coqdoc" cmd_coqdoc in
   let cmd_print = pstring "   Print ps" cmd_print in
 
-  let config_font =
+  let config_font = match Coq_config.arch with
+  | "Darwin" ->
+    (* A poor man's font selection. Work around #16136, which is ultimately a GTK bug. *)
+    let box = GPack.vbox () in
+    let () = box#set_height_request 200 in
+    let () = box#set_height_request 300 in
+    let w = GEdit.entry ~text:text_font#get () in
+    let () = box#pack ~expand:false w#coerce in
+    let text = GMisc.label ~text:"Goal (∃n : nat, n ≤ 0)∧(∀x,y,z, x∈y⋃z↔x∈y∨x∈z)." () in
+    let () = text#set_ypad 10 in
+    let () = box#pack ~expand:false text#coerce in
+    let set_font () =
+      let fd = GPango.font_description_from_string w#text in
+      let () = text_font#set fd#to_string in
+      let () = text#misc#modify_font_by_name fd#to_string in
+      w#set_text fd#to_string
+    in
+    let () = text#misc#modify_font_by_name text_font#get in
+    let _ = w#connect#activate ~callback:set_font in
+    custom ~label:"Fonts for text" box set_font true
+  | _ ->
     let box = GPack.hbox () in
     let w = GMisc.font_selection () in
     w#set_preview_text
