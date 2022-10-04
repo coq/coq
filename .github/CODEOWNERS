@@ -29,7 +29,6 @@
 /dev/ci/platform/    @coq/windows-build-maintainers
 /Makefile.ci         @coq/ci-maintainers
 
-/dev/ci/nix          @coq/nix-maintainers
 *.nix                @coq/nix-maintainers
 
 /dev/ci/user-overlays/*.sh

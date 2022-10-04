@@ -1,4 +1,0 @@
-{ corn }:
-{
-  coqBuildInputs = [ corn ];
-}

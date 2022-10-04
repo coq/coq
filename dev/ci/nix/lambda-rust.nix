@@ -1,4 +1,0 @@
-{ iris }:
-{
-  coqBuildInputs = [ iris ];
-}
