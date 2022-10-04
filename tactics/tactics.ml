@@ -3483,13 +3483,11 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let tmptyp0 = Tacmach.pf_get_hyp_typ hyp0 gl in
-  let reduce_to_quantified_ref = Tacmach.pf_apply reduce_to_quantified_ref gl in
-  let typ0 = reduce_to_quantified_ref indref tmptyp0 in
-  let prods, indtyp = decompose_prod_assum sigma typ0 in
+  let reduce_to_atomic_ref = Tacmach.pf_apply reduce_to_atomic_ref gl in
+  let indtyp = reduce_to_atomic_ref indref tmptyp0 in
   let hd,argl = decompose_app sigma indtyp in
-  let env' = push_rel_context prods env in
   let params = List.firstn nparams argl in
-  let params' = List.map (expand_projections env' sigma) params in
+  let params' = List.map (expand_projections env sigma) params in
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i args args' avoid =
     if Int.equal i nparams then
@@ -3507,7 +3505,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
                current environment so that it is clearable after destruction *)
             atomize_one (i-1) (c::args) (c::args') (Id.Set.add id avoid)
         | _ ->
-           let c' = expand_projections env' sigma c in
+           let c' = expand_projections env sigma c in
             let dependent t = dependent sigma c t in
             if List.exists dependent params' ||
                List.exists dependent args'
