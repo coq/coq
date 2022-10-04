@@ -1,43 +1,21 @@
-# How to use?
-
-# If you have Nix installed, you can get in an environment with everything
-# needed to compile Coq and CoqIDE by running:
-# $ nix-shell
-# at the root of the Coq repository.
-
-# How to tweak default arguments?
-
-# nix-shell supports the --arg option (see Nix doc) that allows you for
-# instance to do this:
-# $ nix-shell --arg ocamlPackages "(import <nixpkgs> {}).ocaml-ng.ocamlPackages_4_09" --arg buildIde false
-
-# You can also compile Coq and "install" it by running:
-# $ make clean # (only needed if you have left-over compilation files)
-# $ nix-build
-# at the root of the Coq repository.
-# nix-build also supports the --arg option, so you will be able to do:
-# $ nix-build --arg doInstallCheck false
-# if you want to speed up things by not running the test-suite.
-# Once the build is finished, you will find, in the current directory,
-# a symlink to where Coq was installed.
-
-{ pkgs ? import ./dev/nixpkgs.nix {}
-, ocamlPackages ? pkgs.ocaml-ng.ocamlPackages_4_14
+{ lib, stdenv, hostname, writeText
+, ocamlPackages, dune_3, ocamlformat
+, python3, time, glib, wrapGAppsHook, pkg-config
+, antlr4, ncurses, rsync, which, jq, curl, gitFull, gnupg, graphviz, gnome
 , buildIde ? true
 , buildDoc ? true
 , doInstallCheck ? true
-, shell ? false
-  # We don't use lib.inNixShell because that would also apply
-  # when in a nix-shell of some package depending on this one.
-, coq-version ? "8.14-git"
+, shell ? true
+, coq-version ? "8.17-git"
+, ...
 }:
 
-with pkgs;
-with pkgs.lib;
+with lib;
 
 stdenv.mkDerivation rec {
 
-  name = "coq";
+  pname = "coq-full";
+  version = "dev";
 
   buildInputs = [
     hostname
@@ -93,15 +71,14 @@ stdenv.mkDerivation rec {
   # ocamlfind looks for zarith when building plugins
   # This follows a similar change in the nixpkgs repo (cf. NixOS/nixpkgs#94230)
   propagatedBuildInputs = with ocamlPackages; [ ocaml findlib zarith ];
+  ocamlBuildInputs = propagatedBuildInputs;
 
   propagatedUserEnvPkgs = with ocamlPackages; [ ocaml findlib ];
 
   src =
-    if shell then null
-    else
-      with builtins; filterSource
-        (path: _:
-           !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci" "_build_vo" "nix"]) ./.;
+    with builtins; filterSource
+      (path: _:
+        !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci" "_build_vo" ".nix"]) ../../..;
 
   preConfigure = ''
     patchShebangs dev/tools/ doc/stdlib
