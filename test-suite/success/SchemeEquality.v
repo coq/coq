@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-native-compiler" "no"); -*- *)
 (* Examples of use of Scheme Equality *)
 
 Module A.
