@@ -4591,22 +4591,38 @@ let clear_unselected_context id inhyps cls =
   | None -> Proofview.tclUNIT ()
   end
 
+let splay_prod_until env sigma glb =
+  let rec decrec env m t =
+    if EConstr.isRefX sigma glb t then m, t else
+      let t = whd_all env sigma t in
+      match EConstr.kind sigma t with
+      | Prod (n,a,c0) ->
+        decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::m) c0
+      | _ -> m,t
+  in
+  decrec env []
+
 let use_bindings env sigma elim must_be_closed (c,lbind) typ =
   let typ =
-    if elim == None then
+    (* Normalize [typ] until the induction reference becomes plainly visible *)
+    match elim with
+    | None ->
       (* w/o an scheme, the term has to be applied at least until
          obtaining an inductive type (even though the arity might be
          known only by pattern-matching, as in the case of a term of
          the form "nat_rect ?A ?o ?s n", with ?A to be inferred by
          matching. *)
       let sign,t = splay_prod env sigma typ in it_mkProd t sign
-    else
-      (* Otherwise, we exclude the case of an induction argument in an
-         explicitly functional type. Henceforth, we can complete the
-         pattern until it has as type an atomic type (even though this
-         atomic type can hide a functional type, for which the "using"
-         clause has a scheme). *)
-      typ in
+    | Some (elimc, _) ->
+      (* Otherwise, we compute the induction reference of the scheme
+         and go looking for that. *)
+      let sigma, elimt = Typing.type_of env sigma elimc in
+      let scheme = compute_elim_sig sigma elimt in
+      match scheme.indref with
+      | None -> error CannotFindInductiveArgument
+      | Some indref ->
+        let sign,t = splay_prod_until env sigma indref typ in it_mkProd t sign
+  in
   let rec find_clause typ =
     try
       let indclause = make_clenv_binding env sigma (c,typ) lbind in
