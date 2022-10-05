@@ -93,7 +93,6 @@ type atom =
   | Afix of t array * t array * rec_pos * int
             (* types, bodies, rec_pos, pos *)
   | Acofix of t array * t array * int * vcofix
-  | Aprod of Name.t * t * t
   | Ameta of metavariable * t
   | Aevar of Evar.t * t array
   | Aproj of (inductive * int) * accumulator
@@ -189,8 +188,19 @@ let mk_var_accu id =
 let mk_sw_accu annot c p ac =
   mk_accu (Acase(annot,c,p,ac))
 
-let mk_prod_accu s dom codom =
-  mk_accu (Aprod (s,dom,codom))
+let prod_tag = 2
+
+let mk_prod s dom codom =
+  (* [Prod (s, dom, codom)] is coded as [tag:0|[tag:2|s; dom; codom]]
+     This looks like a PArray but has a tag distinct from all PArray values on
+     the inner block. This cannot be an accumulator because all accumulators
+     have length >= 2. *)
+  let block = Obj.new_block prod_tag 3 in
+  let block : Obj.t array = Obj.obj block in
+  let () = block.(0) <- (Obj.repr s) in
+  let () = block.(1) <- (Obj.repr dom) in
+  let () = block.(2) <- (Obj.repr codom) in
+  (Obj.magic (ref block) : t)
 
 let mk_meta_accu mv = of_fun (fun ty ->
   mk_accu (Ameta (mv,ty)))
@@ -283,6 +293,7 @@ let block_tag (b:block) =
 
 type kind_of_value =
   | Vaccu of accumulator
+  | Vprod of Name.t * t * t
   | Vfun of (t -> t)
   | Vconst of int
   | Vint64 of int64
@@ -296,7 +307,15 @@ let kind_of_value (v:t) =
   else
     let tag = Obj.tag o in
     if Int.equal tag accumulate_tag then
-      if Int.equal (Obj.size o) 1 then Varray (Obj.magic v)
+      if Int.equal (Obj.size o) 1 then
+        let w = Obj.field o 0 in
+        let tag = Obj.tag w in
+        if Int.equal tag prod_tag then
+          let na : Name.t = Obj.obj (Obj.field w 0) in
+          let dom : t = Obj.obj (Obj.field w 1) in
+          let codom : t = Obj.obj (Obj.field w 2) in
+          Vprod (na, dom, codom)
+        else Varray (Obj.magic v)
       else Vaccu (Obj.magic v)
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
@@ -788,6 +807,9 @@ let next_down accu x =
   else apply accu x
 
 let is_parray t =
+  (* This is only used over values known to inhabit an array type, so we just
+     have to discriminate between actual arrays and accumulators. The latter
+     are always closures with the tag set to 0, so they have size >= 2. *)
   let t = Obj.magic t in
   Obj.is_block t && Obj.size t = 1
 

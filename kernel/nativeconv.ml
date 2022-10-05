@@ -30,6 +30,10 @@ let rec conv_val env pb lvl v1 v2 cu =
         conv_val env CONV lvl (eta_expand v1) v2 cu
     | Vaccu k1, Vaccu k2 ->
         conv_accu env pb lvl k1 k2 cu
+    | Vprod(_,d1,c1), Vprod(_,d2,c2) ->
+       let cu = conv_val env CONV lvl d1 d2 cu in
+       let v = mk_rel_accu lvl in
+       conv_val env pb (lvl + 1) (apply c1 v) (apply c2 v) cu
     | Vconst i1, Vconst i2 ->
         if Int.equal i1 i2 then cu else raise NotConvertible
     | Vint64 i1, Vint64 i2 ->
@@ -54,7 +58,7 @@ let rec conv_val env pb lvl v1 v2 cu =
             aux lvl max b1 b2 (i+1) cu
         in
         aux lvl (n1-1) b1 b2 0 cu
-    | (Vaccu _ | Vconst _ | Vint64 _ | Vfloat64 _ | Varray _ | Vblock _), _ -> raise NotConvertible
+    | (Vaccu _ | Vprod _ | Vconst _ | Vint64 _ | Vfloat64 _ | Varray _ | Vblock _), _ -> raise NotConvertible
 
 and conv_accu env pb lvl k1 k2 cu =
   let n1 = accu_nargs k1 in
@@ -117,15 +121,11 @@ and conv_atom env pb lvl a1 a2 cu =
         else
           if not (Int.equal (Array.length f1) (Array.length f2)) then raise NotConvertible
           else conv_fix env lvl t1 f1 t2 f2 cu
-    | Aprod(_,d1,c1), Aprod(_,d2,c2) ->
-       let cu = conv_val env CONV lvl d1 d2 cu in
-       let v = mk_rel_accu lvl in
-       conv_val env pb (lvl + 1) (apply c1 v) (apply c2 v) cu
     | Aproj((ind1, i1), ac1), Aproj((ind2, i2), ac2) ->
        if not (Ind.CanOrd.equal ind1 ind2 && Int.equal i1 i2) then raise NotConvertible
        else conv_accu env CONV lvl ac1 ac2 cu
     | Arel _, _ | Aind _, _ | Aconstant _, _ | Asort _, _ | Avar _, _
-    | Acase _, _ | Afix _, _ | Acofix _, _ | Aprod _, _
+    | Acase _, _ | Afix _, _ | Acofix _, _
     | Aproj _, _ | Ameta _, _ | Aevar _, _ -> raise NotConvertible
 
 (* Precondition length t1 = length f1 = length f2 = length t2 *)
