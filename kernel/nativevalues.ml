@@ -81,6 +81,8 @@ type rec_pos = int array
 
 let eq_rec_pos = Array.equal Int.equal
 
+type vcofix = CofixLazy of t | CofixValue of t
+
 type atom =
   | Arel of int
   | Aconstant of pconstant
@@ -90,8 +92,7 @@ type atom =
   | Acase of annot_sw * accumulator * t * t
   | Afix of t array * t array * rec_pos * int
             (* types, bodies, rec_pos, pos *)
-  | Acofix of t array * t array * int * t
-  | Acofixe of t array * t array * int * t
+  | Acofix of t array * t array * int * vcofix
   | Aprod of Name.t * t * t
   | Ameta of metavariable * t
   | Aevar of Evar.t * t array
@@ -217,26 +218,26 @@ let mk_fix_accu rec_pos pos types bodies =
   mk_accu (Afix(types,bodies,rec_pos, pos))
 
 let mk_cofix_accu pos types norm =
-  mk_accu (Acofix(types,norm,pos,(Obj.magic 0 : t)))
+  mk_accu (Acofix (types, norm, pos, CofixLazy (Obj.magic 0 : t)))
 
 let upd_cofix (cofix :t) (cofix_fun : t) =
   let atom = atom_of_accu (Obj.magic cofix) in
   match atom with
   | Acofix (typ,norm,pos,_) ->
-      set_atom_of_accu (Obj.magic cofix) (Acofix(typ,norm,pos,cofix_fun))
+    set_atom_of_accu (Obj.magic cofix) (Acofix (typ, norm, pos, CofixLazy cofix_fun))
   | _ -> assert false
 
 let force_cofix (cofix : t) =
   let accu = (Obj.magic cofix : accumulator) in
   let atom = atom_of_accu accu in
   match atom with
-  | Acofix(typ,norm,pos,f) ->
+  | Acofix (typ, norm, pos, CofixLazy f) ->
     let args = args_of_accu accu in
     let f = Array.fold_right (fun arg f -> apply f arg) args f in
     let v = apply f (Obj.magic ()) in
-    set_atom_of_accu accu (Acofixe(typ,norm,pos,v));
+    let () = set_atom_of_accu accu (Acofix (typ, norm, pos, CofixValue v)) in
       v
-  | Acofixe(_,_,_,v) -> v
+  | Acofix (_, _, _, CofixValue v) -> v
   | _ -> cofix
 
 let mk_const tag = Obj.magic tag
