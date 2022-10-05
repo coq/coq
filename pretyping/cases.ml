@@ -6547,9 +6547,11 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
   let judgment_of_glob_constr (type env) ?(tycon : env ETerm.t option)
       (env : env GlobalEnv.t) (constr : Glob_term.glob_constr) :
       (env EJudgment.t) EvarMapMonad.t =
+(*
     Format.eprintf "initial return pred: %a in env: %a@." Pp.pp_with
       (Printer.pr_lglob_constr_env (GlobalEnv.env env) sigma constr)
       Pp.pp_with (Env.print (GlobalEnv.env env));
+*)
     Eq.cast (EvarMapMonad.eq (Eq.sym EJudgment.eq) Refl)
       (fun sigma ->
         typing_fun (Eq.cast (Eq.option ETerm.eq) tycon)
