@@ -1,10 +1,10 @@
 ; Default flags for all Coq libraries.
 (env
- (dev     (flags :standard -rectypes -w -9-27@60-70 \ -short-paths)
+ (dev     (flags :standard -w -9-27@60-70 \ -short-paths)
           (coq (flags :standard -w +default)))
- (release (flags :standard -rectypes)
+ (release (flags :standard)
           (ocamlopt_flags :standard -O3 -unbox-closures))
- (ireport (flags :standard -rectypes -w -9-27+60-70)
+ (ireport (flags :standard -w -9-27+60-70)
           (ocamlopt_flags :standard -O3 -unbox-closures -inlining-report)))
 
 ; Information about flags for release mode:
@@ -17,7 +17,7 @@
 ; The _ profile could help factoring the above, however it doesn't
 ; seem to work like we'd expect/like:
 ;
-; (_ (flags :standard -rectypes)))
+; (_ (flags :standard)))
 
 (alias
  (name default)

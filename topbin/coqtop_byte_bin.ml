@@ -36,14 +36,6 @@ let load_plugin fmt ps =
     Topfind.load_deeply [lib]
 
 let drop_setup () =
-  begin
-    (* Enable rectypes in the toplevel if it has the directive #rectypes *)
-    match _get_directive "rectypes" with
-    | None -> ()
-    | Some (Toploop.Directive_none f) -> f ()
-    | Some _ ->
-      Format.eprintf "Warning: rectypes directive has changed!!@\n%!"
-  end;
   let ppf = Format.std_formatter in
   Mltop.(set_top
            { load_plugin = load_plugin ppf

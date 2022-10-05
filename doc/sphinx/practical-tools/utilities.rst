@@ -1184,7 +1184,7 @@ The most basic custom toplevel is built using:
 
 ::
 
-   % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
+   % ocamlfind ocamlopt -thread -linkall -linkpkg \
                  -package coq.toplevel \
                  topbin/coqtop_bin.ml -o my_toplevel.native
 
@@ -1193,7 +1193,7 @@ For example, to statically link |Ltac|, you can just do:
 
 ::
 
-   % ocamlfind ocamlopt -thread -rectypes -linkall -linkpkg \
+   % ocamlfind ocamlopt -thread -linkall -linkpkg \
                  -package coq.toplevel,coq.plugins.ltac \
                  topbin/coqtop_bin.ml -o my_toplevel.native
 
