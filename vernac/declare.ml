@@ -830,7 +830,7 @@ module ProgramDecl = struct
     { prg_cinfo : constr CInfo.t
     ; prg_info : Info.t
     ; prg_opaque : bool
-    ; prg_hook : 'a Hook.g option
+    ; prg_hook : 'a option
     ; prg_body : constr
     ; prg_uctx : UState.t
     ; prg_obligations : obligations
@@ -1024,7 +1024,13 @@ module ProgMap = Id.Map
 
 module State = struct
 
-  type t = t ProgramDecl.t CEphemeron.key ProgMap.t
+  type t = prg_hook ProgramDecl.t CEphemeron.key ProgMap.t
+  and prg_hook = PrgHook of t Hook.g
+
+  let call_prg_hook { prg_hook=hook } x pm =
+    let hook = Option.map (fun (PrgHook h) -> h) hook in
+    Hook.call_g ?hook x pm
+
 
   let empty = ProgMap.empty
 
@@ -1136,7 +1142,7 @@ let declare_definition ~pm prg =
   let kn, uctx = declare_definition_core ~cinfo ~info ~obls ~body ~opaque sigma in
   (* XXX: We call the obligation hook here, by consistency with the
      previous imperative behaviour, however I'm not sure this is right *)
-  let pm = Hook.call_g ?hook:prg.prg_hook
+  let pm = State.call_prg_hook prg
       { Hook.S.uctx; obls; scope = prg.prg_info.Info.scope; dref = kn} pm in
   let pm = progmap_remove pm prg in
   pm, kn
@@ -1222,7 +1228,7 @@ let declare_mutual_definition ~pm l =
   Hook.call ?hook:first.prg_info.Info.hook s_hook;
   (* XXX: We call the obligation hook here, by consistency with the
      previous imperative behaviour, however I'm not sure this is right *)
-  let pm = Hook.call_g ?hook:first.prg_hook s_hook pm in
+  let pm = State.call_prg_hook first s_hook pm in
   let pm = List.fold_left progmap_remove pm l in
   pm, dref
 
@@ -2452,6 +2458,7 @@ let msg_generating_obl name obls =
 
 let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
     ?tactic ?(reduce = reduce) ?(opaque = false) obls =
+  let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let prg =
     ProgramDecl.make ~info ~cinfo ~body:term ~opaque ~uctx ~reduce ~ntns:[] ~deps:[] ~fixpoint_kind:None ?obl_hook obls
   in
@@ -2473,6 +2480,7 @@ let add_definition ~pm ~cinfo ~info ?obl_hook ?term ~uctx
 
 let add_mutual_definitions l ~pm ~info ?obl_hook ~uctx
     ?tactic ?(reduce = reduce) ?(opaque = false) ~ntns fixkind =
+  let obl_hook = Option.map (fun h -> State.PrgHook h) obl_hook in
   let deps = List.map (fun (ci,_,_) -> CInfo.get_name ci) l in
   let pm =
     List.fold_left
