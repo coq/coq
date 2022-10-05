@@ -185,9 +185,9 @@ and nf_whd env sigma whd typ =
   | Vint64 i -> i |> Uint63.of_int64 |> mkInt
   | Vfloat64 f -> f |> Float64.of_float |> mkFloat
   | Varray t -> nf_array env sigma t typ
-  | Vatom_stk(Aid idkey, stk) ->
+  | Vaccu (Aid idkey, stk) ->
       constr_type_of_idkey env sigma idkey stk
-  | Vatom_stk(Aind ((mi,i) as ind), stk) ->
+  | Vaccu (Aind ((mi, i) as ind), stk) ->
      let mib = Environ.lookup_mind mi env in
      let nb_univs =
        Univ.AbstractContext.size (Declareops.inductive_polymorphic_context mib)
@@ -196,7 +196,7 @@ and nf_whd env sigma whd typ =
        let pind = (ind, u) in (mkIndU pind, type_of_ind env pind)
      in
      nf_univ_args ~nb_univs mk env sigma stk
-  | Vatom_stk(Asort s, stk) ->
+  | Vaccu (Asort s, stk) ->
     assert (List.is_empty stk); mkSort s
 
 and nf_univ_args ~nb_univs mk env sigma stk =

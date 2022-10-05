@@ -273,6 +273,7 @@ type to_update = values
 
 type whd =
   | Vprod of vprod
+  | Vaccu of atom * stack
   | Vfun of vfun
   | Vfix of vfix * arguments option
   | Vcofix of vcofix * to_update * arguments option
@@ -281,7 +282,6 @@ type whd =
   | Vint64 of int64
   | Vfloat64 of float
   | Varray of values Parray.t
-  | Vatom_stk of atom * stack
 
 (* Functions over arguments *)
 let nargs : arguments -> int = fun args -> Obj.size (Obj.repr args) - 3
@@ -306,7 +306,7 @@ let rec whd_accu a stk =
   match Obj.tag at with
   | i when Int.equal i type_atom_tag ->
      begin match stk with
-     | [] -> Vatom_stk(Obj.magic at, stk)
+     | [] -> Vaccu (Obj.magic at, stk)
      | [Zapp args] ->
         let args = Array.init (nargs args) (arg args) in
         let s = Obj.obj (Obj.field at 0) in
@@ -314,13 +314,13 @@ let rec whd_accu a stk =
         | Sorts.Type u ->
           let inst = Instance.of_array (Array.map uni_lvl_val args) in
           let u = Univ.subst_instance_universe inst u in
-          Vatom_stk (Asort (Sorts.sort_of_univ u), [])
+          Vaccu (Asort (Sorts.sort_of_univ u), [])
         | _ -> assert false
         end
      | _ -> assert false
      end
   | i when i <= max_atom_tag ->
-      Vatom_stk(Obj.magic at, stk)
+      Vaccu (Obj.magic at, stk)
   | i when Int.equal i proj_tag ->
      let zproj = Zproj (Obj.obj (Obj.field at 0)) in
      whd_accu (Obj.field at 1) (zproj :: stk)
@@ -383,7 +383,7 @@ let whd_val (v: values) =
       | VCfun -> Vfun (Obj.obj o)
       | VCfix -> Vfix (Obj.obj o, None)
       | VCfix_partial -> Vfix (Obj.obj (Obj.field o 2), Some (Obj.obj o))
-      | VCaccu -> Vatom_stk (Aid (RelKey (int_tcode (fun_code o) 1)), [])
+      | VCaccu -> Vaccu (Aid (RelKey (int_tcode (fun_code o) 1)), [])
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
     else
@@ -645,7 +645,8 @@ let rec pr_atom a =
   | Aind (mi,i) -> str "Aind(" ++ MutInd.print mi ++ str "#" ++ int i ++ str ")"
   | Asort _ -> str "Asort(")
 and pr_whd w =
-  Pp.(match w with
+  let open Pp in
+  match w with
   | Vprod _ -> str "Vprod"
   | Vfun _ -> str "Vfun"
   | Vfix _ -> str "Vfix"
@@ -655,7 +656,7 @@ and pr_whd w =
   | Vint64 i -> i |> Format.sprintf "Vint64(%LiL)" |> str
   | Vfloat64 f -> str "Vfloat64(" ++ str (Float64.(to_string (of_float f))) ++ str ")"
   | Varray _ -> str "Varray"
-  | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")")
+  | Vaccu (a, stk) -> str "Vaccu(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
 and pr_stack stk =
   Pp.(match stk with
       | [] -> str "[]"

@@ -179,6 +179,6 @@ let apply_whd k whd =
       push_ra stop;
       push_val v;
       interprete (cofix_upd_code to_up) (cofix_upd_val to_up) (cofix_upd_env to_up) 0
-  | Vatom_stk(a,stk) ->
+  | Vaccu (a, stk) ->
       apply_stack (val_of_atom a) stk v
 

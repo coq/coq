@@ -83,7 +83,7 @@ and ppwhd whd =
   | Vint64 i -> printf "int64(%LiL)" i
   | Vfloat64 f -> printf "float64(%.17g)" f
   | Varray t -> ppvarray t
-  | Vatom_stk(a,s) ->
+  | Vaccu (a, s) ->
       open_hbox();ppatom a;close_box();
       print_string"@";ppstack s
 
