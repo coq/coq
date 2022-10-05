@@ -6558,22 +6558,17 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
   let hypnaming = naming_of_program_mode program_mode in
   let infer_return_pred = predopt = None in
   let return_pred return_pred_context =
-    prerr_endline "return_pred";
     let return_pred_env =
       GlobalEnv.push_rel_context ~hypnaming sigma
         (ERelContext.with_height return_pred_context) env in
     match predopt with
     | Some term ->
-        prerr_endline "some";
         let* s = Evd.new_sort_variable Evd.univ_flexible_alg in
-        prerr_endline "judgment_of_glob_constr";
         let* j =
           judgment_of_glob_constr ~tycon:(ETerm.mkSort s) return_pred_env
             term in
-        prerr_endline "return";
         return (EJudgment.uj_val j)
     | None ->
-        prerr_endline "none";
         match tycon with
         | None ->
             let* (ty, _) =
