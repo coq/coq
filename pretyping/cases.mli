@@ -13,7 +13,9 @@ open Constr
 open Evd
 open Environ
 open EConstr
+(*
 open Inductiveops
+*)
 open Glob_term
 open Evardefine
 
@@ -50,6 +52,7 @@ val compile_cases :
   GlobEnv.t -> glob_constr option * tomatch_tuples * cases_clauses ->
   evar_map * unsafe_judgment
 
+(*
 val constr_of_pat :
            Environ.env ->
            Evd.evar_map ->
@@ -74,7 +77,8 @@ type 'a equation =
       eqn_loc      : Loc.t option;
       orig         : int option;
       catch_all_vars : Id.t CAst.t list }
-
+*)
+(*
 type 'a matrix = 'a equation list
 
 (* 1st argument of IsInd is the original ind before extracting the summary *)
@@ -95,9 +99,10 @@ type tomatch_status =
   | Abstract of int * rel_declaration
 
 type tomatch_stack = tomatch_status list
-
+*)
 (* We keep a constr for aliases and a cases_pattern for error message *)
 
+(*
 type pattern_history =
   | Top
   | MakeConstructor of constructor * pattern_continuation
@@ -105,7 +110,8 @@ type pattern_history =
 and pattern_continuation =
   | Continuation of int * cases_pattern list * pattern_history
   | Result of cases_pattern list
-
+*)
+(*
 type 'a pattern_matching_problem =
     { env       : GlobEnv.t;
       pred      : constr;
@@ -128,6 +134,6 @@ val prepare_predicate : ?loc:Loc.t -> program_mode:bool ->
            rel_context list ->
            constr option ->
            glob_constr option -> (Evd.evar_map * (Name.t * Name.t list) list * constr) list
-
+*)
 val make_return_predicate_ltac_lvar : GlobEnv.t -> Evd.evar_map -> Name.t ->
   Glob_term.glob_constr -> constr -> GlobEnv.t

@@ -100,20 +100,6 @@ module Eq = struct
 *)
 end
 
-type 'a rhs =
-    { rhs_env    : GlobEnv.t;
-      rhs_vars   : Names.Id.Set.t;
-      avoid_ids  : Names.Id.Set.t;
-      it         : 'a option}
-
-type 'a equation =
-    { patterns     : Glob_term.cases_pattern list;
-      rhs          : 'a rhs;
-      alias_stack  : Names.Name.t list;
-      eqn_loc      : Loc.t option;
-      orig         : int option;
-      catch_all_vars : Names.Id.t CAst.t list }
-
 module Phantom (Type : TypeS) : sig
   type 'a t
 
@@ -6515,13 +6501,17 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
             | None -> true
             | Some { pattern_structure = Exists pattern_structure; _ } ->
                 Pattern.args_all_vars pattern_structure.args } then
+        begin
         let* return_pred = return_pred.f return_pred_context.context.context in
         let return_pred = return_pred |> Eq.cast (ETerm.morphism
           (Env.morphism Refl return_pred_context.context.eq)) in
         return return_pred
+end
       else
+        begin
         make_inverted_return_pred env tomatches (Exists return_pred_context)
-          return_pred in
+          return_pred
+end in
 (*
     let* _, return_pred_env =
       push_rel_context_m return_pred_context.context env in
@@ -6557,6 +6547,9 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
   let judgment_of_glob_constr (type env) ?(tycon : env ETerm.t option)
       (env : env GlobalEnv.t) (constr : Glob_term.glob_constr) :
       (env EJudgment.t) EvarMapMonad.t =
+    Format.eprintf "initial return pred: %a in env: %a@." Pp.pp_with
+      (Printer.pr_lglob_constr_env (GlobalEnv.env env) sigma constr)
+      Pp.pp_with (Env.print (GlobalEnv.env env));
     Eq.cast (EvarMapMonad.eq (Eq.sym EJudgment.eq) Refl)
       (fun sigma ->
         typing_fun (Eq.cast (Eq.option ETerm.eq) tycon)
@@ -6565,17 +6558,22 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
   let hypnaming = naming_of_program_mode program_mode in
   let infer_return_pred = predopt = None in
   let return_pred return_pred_context =
+    prerr_endline "return_pred";
     let return_pred_env =
       GlobalEnv.push_rel_context ~hypnaming sigma
         (ERelContext.with_height return_pred_context) env in
     match predopt with
     | Some term ->
+        prerr_endline "some";
         let* s = Evd.new_sort_variable Evd.univ_flexible_alg in
+        prerr_endline "judgment_of_glob_constr";
         let* j =
           judgment_of_glob_constr ~tycon:(ETerm.mkSort s) return_pred_env
             term in
+        prerr_endline "return";
         return (EJudgment.uj_val j)
     | None ->
+        prerr_endline "none";
         match tycon with
         | None ->
             let* (ty, _) =
@@ -6594,7 +6592,7 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
   let Exists tomatches = Vector.of_list tomatchl in
   let module V = Vector.UseMonad (Monad.State) in
   let sigma, tomatches =
-   EvarMapMonad.run sigma (V.map make_tomatch_tuple tomatches) in
+    EvarMapMonad.run sigma (V.map make_tomatch_tuple tomatches) in
   let Exists eqns = Vector.of_list eqns in
   let make_clause (type tomatch_count) (tomatch_count : tomatch_count Nat.t)
       ({ v = (ids, pats, rhs); loc } : Glob_term.cases_clause) :
@@ -6658,3 +6656,17 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
     let judgment = Eq.cast EJudgment.eq judgment in
     return judgment
   end
+
+let make_return_predicate_ltac_lvar env sigma (na : Names.Name.t)
+      (tm : Glob_term.glob_constr) c =
+  (* If we have an [x as x return ...] clause and [x] expands to [c],
+     we have to update the status of [x] in the substitution:
+     - if [c] is a variable [id'], then [x] should now become [id']
+     - otherwise, [x] should be hidden *)
+  match na, DAst.get tm with
+  | Name id, (GVar id' | GRef (VarRef id', _)) when Names.Id.equal id id' ->
+     let expansion : Names.Name.t = match EConstr.kind sigma c with
+       | Var id' -> Name id'
+       | _ -> Anonymous in
+       GlobEnv.hide_variable env expansion id
+  | _ -> env
