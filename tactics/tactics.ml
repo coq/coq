@@ -4591,17 +4591,6 @@ let clear_unselected_context id inhyps cls =
   | None -> Proofview.tclUNIT ()
   end
 
-let splay_prod_until env sigma glb =
-  let rec decrec env m t =
-    if EConstr.isRefX sigma glb t then m, t else
-      let t = whd_all env sigma t in
-      match EConstr.kind sigma t with
-      | Prod (n,a,c0) ->
-        decrec (push_rel (LocalAssum (n,a)) env) ((n,a)::m) c0
-      | _ -> m,t
-  in
-  decrec env []
-
 let use_bindings env sigma elim must_be_closed (c,lbind) typ =
   let typ =
     (* Normalize [typ] until the induction reference becomes plainly visible *)
@@ -4621,7 +4610,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       match scheme.indref with
       | None -> error CannotFindInductiveArgument
       | Some indref ->
-        let sign,t = splay_prod_until env sigma indref typ in it_mkProd t sign
+        Tacred.reduce_to_quantified_ref env sigma indref typ
   in
   let rec find_clause typ =
     try
