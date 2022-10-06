@@ -1420,7 +1420,8 @@ let declare_module id args mtys me_l =
   let declare_me fs = match me_l with
     | [] ->
       let mp, args, body, sign = RawModOps.Synterp.declare_module id args mtys None fs in
-      (assert (Option.is_empty body); mp, args, [], sign)
+      assert (Option.is_empty body);
+      mp, args, [], sign
     | [me] ->
       let mp, args, body, sign = RawModOps.Synterp.declare_module id args mtys (Some me) fs in
       mp, args, [Option.get body], sign
