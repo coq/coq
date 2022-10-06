@@ -75,10 +75,11 @@ stdenv.mkDerivation rec {
 
   propagatedUserEnvPkgs = with ocamlPackages; [ ocaml findlib ];
 
-  src =
-    with builtins; filterSource
-      (path: _:
-        !elem (baseNameOf path) [".git" "result" "bin" "_build" "_build_ci" "_build_vo" ".nix"]) ../../..;
+  src = lib.cleanSourceWith {
+      filter = name: type:
+        ! ( ( type == "directory" ) && ( elem ( baseNameOf name ) ["_build" "_build_ci" ".nix"] ) );
+      src = lib.cleanSource ../../..;
+  };
 
   preConfigure = ''
     patchShebangs dev/tools/ doc/stdlib
