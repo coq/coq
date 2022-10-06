@@ -4610,7 +4610,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
       match scheme.indref with
       | None -> error CannotFindInductiveArgument
       | Some indref ->
-        Tacred.reduce_to_quantified_ref env sigma indref typ
+        Tacred.reduce_to_quantified_ref ~allow_failure:true env sigma indref typ
   in
   let rec find_clause typ =
     try

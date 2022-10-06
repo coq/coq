@@ -1263,26 +1263,33 @@ let reduce_to_ind_gen allow_product env sigma t =
     match EConstr.kind sigma (fst (decompose_app_vect sigma t)) with
       | Ind (ind, _ as indu) ->
         let t = nf_betaiota env sigma t in
-        check_privacy env ind; (indu, it_mkProd_or_LetIn t l)
+        check_privacy env ind; (Some indu, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
           let open Context.Rel.Declaration in
           if allow_product then
             let ty = nf_betaiota env sigma ty in
             elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
           else
-            user_err Pp.(str"Not an inductive definition.")
+            None, it_mkProd_or_LetIn t l
       | _ ->
           (* Last chance: we allow to bypass the Opaque flag (as it
              was partially the case between V5.10 and V8.1 *)
           let t' = whd_all env sigma t in
           match EConstr.kind sigma (fst (decompose_app_vect sigma t')) with
-            | Ind (ind, _ as indu) -> check_privacy env ind; (indu, it_mkProd_or_LetIn t' l)
-            | _ -> user_err Pp.(str"Not an inductive product.")
+            | Ind (ind, _ as indu) -> check_privacy env ind; (Some indu, it_mkProd_or_LetIn t' l)
+            | _ -> None, it_mkProd_or_LetIn t l
+
   in
   elimrec env t []
 
-let reduce_to_quantified_ind env sigma c = reduce_to_ind_gen true env sigma c
-let reduce_to_atomic_ind env sigma c = reduce_to_ind_gen false env sigma c
+let reduce_to_quantified_ind env sigma c =
+  match reduce_to_ind_gen true env sigma c with
+  | None, _ -> user_err Pp.(str"Not an inductive definition.")
+  | Some i, t -> i, t
+let reduce_to_atomic_ind env sigma c =
+  match reduce_to_ind_gen false env sigma c with
+  | None, _ -> user_err Pp.(str"Not an inductive definition.")
+  | Some i, t -> i, t
 
 let eval_to_quantified_ind env sigma t =
   let rec elimrec env t =
@@ -1349,24 +1356,26 @@ let error_cannot_recognize ref =
     Pp.(str "Cannot recognize a statement based on " ++
         Nametab.pr_global_env Id.Set.empty ref ++ str".")
 
-let reduce_to_ref_gen allow_product env sigma ref t =
-  if Globnames.isIndRef ref then
-    let ((mind,u),t) = reduce_to_ind_gen allow_product env sigma t in
-    begin match ref with
-    | GlobRef.IndRef mind' when Ind.CanOrd.equal mind mind' -> t
-    | _ -> error_cannot_recognize ref
-    end
-  else
-  (* lazily reduces to match the head of [t] with the expected [ref] *)
-  let rec elimrec env t l =
-    let c, _ = decompose_app_vect sigma t in
-    match EConstr.kind sigma c with
+let reduce_to_ref_gen allow_failure allow_product env sigma ref t =
+  match ref with
+  | GlobRef.IndRef mind' ->
+    let (i,t) = reduce_to_ind_gen allow_product env sigma t in
+    if allow_failure then t else
+      (match i with
+       | Some (mind,u) when Ind.CanOrd.equal mind mind' -> t
+       | _ -> error_cannot_recognize ref)
+  | _ -> (* lazily reduces to match the head of [t] with the expected [ref] *)
+    let rec elimrec env t l =
+      let c, _ = decompose_app_vect sigma t in
+      match EConstr.kind sigma c with
       | Prod (n,ty,t') ->
-          if allow_product then
-            let open Context.Rel.Declaration in
-            elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
-          else
-            error_cannot_recognize ref
+        if allow_product then
+          let open Context.Rel.Declaration in
+          elimrec (push_rel (LocalAssum (n,ty)) env) t' ((LocalAssum (n,ty))::l)
+        else if allow_failure then
+          it_mkProd_or_LetIn t l
+        else
+          error_cannot_recognize ref
       | _ ->
         if isRefX sigma ref c
         then it_mkProd_or_LetIn t l
@@ -1374,9 +1383,13 @@ let reduce_to_ref_gen allow_product env sigma ref t =
           try
             let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in
             elimrec env t' l
-          with NotStepReducible -> error_cannot_recognize ref
-  in
-  elimrec env t []
+          with NotStepReducible ->
+            if allow_failure then
+              it_mkProd_or_LetIn t l
+            else
+              error_cannot_recognize ref
+    in
+    elimrec env t []
 
-let reduce_to_quantified_ref = reduce_to_ref_gen true
-let reduce_to_atomic_ref = reduce_to_ref_gen false
+let reduce_to_quantified_ref ?(allow_failure=false) = reduce_to_ref_gen allow_failure true
+let reduce_to_atomic_ref ?(allow_failure=false) = reduce_to_ref_gen allow_failure false
