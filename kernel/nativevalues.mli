@@ -14,7 +14,17 @@ open Names
 the native compiler. Be careful when removing apparently dead code from this
 interface, as it may be used by programs generated at runtime. *)
 
-type t = t -> t
+type t
+
+val apply : t -> t -> t
+val of_fun : (t -> t) -> t
+
+val eta_expand : t -> t
+
+type ('a,'b) eq = ('a,'b) Util.eq = Refl : ('a,'a) eq
+val t_eq : (t, t -> t) eq
+(** When -rectypes, matching on this makes [t = ('a -> 'a) as 'a].
+    When not -rectypes, it does nothing AFAICT so you have to generalize your problem to use this. *)
 
 type accumulator
 
@@ -47,11 +57,11 @@ type atom =
   | Aind of pinductive
   | Asort of Sorts.t
   | Avar of Id.t
-  | Acase of annot_sw * accumulator * t * (t -> t)
+  | Acase of annot_sw * accumulator * t * t
   | Afix of t array * t array * rec_pos * int
   | Acofix of t array * t array * int * t
   | Acofixe of t array * t array * int * t
-  | Aprod of Name.t * t * (t -> t)
+  | Aprod of Name.t * t * t
   | Ameta of metavariable * t
   | Aevar of Evar.t * t array (* arguments *)
   | Aproj of (inductive * int) * accumulator
@@ -368,7 +378,7 @@ val is_parray : t -> bool
 
 val arraymake : t -> t -> t -> t -> t (* accu A n def *)
 val arrayget : t -> t -> t -> t -> t (* accu A t n *)
-val arraydefault : t -> t -> t (* accu A t *)
+val arraydefault : t -> t -> t -> t (* accu A t *)
 val arrayset : t -> t -> t -> t -> t -> t (* accu A t n v *)
 val arraycopy : t -> t -> t -> t (* accu A t *)
 val arraylength : t -> t -> t -> t (* accu A t *)
@@ -376,7 +386,7 @@ val arraylength : t -> t -> t -> t (* accu A t *)
 val no_check_arraymake : t -> t -> t
 [@@ocaml.inline always]
 
-val no_check_arrayget : t -> t -> t -> t
+val no_check_arrayget : t -> t -> t
 [@@ocaml.inline always]
 
 val no_check_arraydefault : t -> t

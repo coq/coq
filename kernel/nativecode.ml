@@ -1898,12 +1898,20 @@ let pp_array fmt t =
     Format.fprintf fmt "%a" pp_mllam t.(len - 1);
   Format.fprintf fmt "|]@]"
 
+let type_of_global gn c = match gn with
+  | Ginternal "symbols_tbl" -> ""
+  | _ -> match c with
+    | MLprimitive (Lazy, _) -> " : Nativevalues.t Lazy.t"
+    | MLlam ([|_|], MLprimitive (Lazy, _)) -> " : Nativevalues.t -> Nativevalues.t Lazy.t"
+    | MLprimitive ((Mk_ind | Mk_const), [|_|]) -> " : Univ.Level.t array -> Nativevalues.t"
+    | MLsetref (_,_) -> " : unit"
+    | _ -> " : Nativevalues.t"
+
 let pp_global fmt g =
   match g with
   | Glet (gn, c) ->
-      let ids, c = decompose_MLlam c in
-      Format.fprintf fmt "@[let %a%a =@\n  %a@]@\n@." pp_gname gn
-        pp_ldecls ids
+      Format.fprintf fmt "@[let %a%s = let Refl = Nativevalues.t_eq in@\n  %a@]@\n@." pp_gname gn
+        (type_of_global gn c)
         pp_mllam c
   | Gopen s ->
       Format.fprintf fmt "@[open %s@]@." s
@@ -1926,13 +1934,13 @@ let pp_global fmt g =
     in
     Format.fprintf fmt "@[type ind_%s =@\n%a@]@\n@." (string_of_ind ind) pp_const_sigs lar
   | Gtblfixtype (g, params, t) ->
-      Format.fprintf fmt "@[let %a %a =@\n  %a@]@\n@." pp_gname g
+      Format.fprintf fmt "@[let %a %a : Nativevalues.t array = let Refl = Nativevalues.t_eq in@\n  %a@]@\n@." pp_gname g
         pp_ldecls params pp_array t
   | Gtblnorm (g, params, t) ->
-      Format.fprintf fmt "@[let %a %a =@\n  %a@]@\n@." pp_gname g
+      Format.fprintf fmt "@[let %a %a : Nativevalues.t array = let Refl = Nativevalues.t_eq in@\n  %a@]@\n@." pp_gname g
         pp_ldecls params pp_array t
   | Gletcase(gn,params,annot,a,accu,bs) ->
-      Format.fprintf fmt "@[(* Hash = %i *)@\nlet rec %a %a =@\n  %a@]@\n@."
+      Format.fprintf fmt "@[(* Hash = %i *)@\nlet rec %a %a : Nativevalues.t = let Refl = Nativevalues.t_eq in@\n  %a@]@\n@."
       (hash_global g)
         pp_gname gn pp_ldecls params
         pp_mllam (MLmatch(annot,a,accu,bs))
