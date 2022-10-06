@@ -510,7 +510,7 @@ let () = define1 "constr_kind" constr begin fun c ->
   | Evar (evk, args) ->
     let args = Evd.expand_existential sigma (evk, args) in
     v_blk 3 [|
-      Value.of_int (Evar.repr evk);
+      Value.of_evar evk;
       Value.of_array Value.of_constr (Array.of_list args);
     |]
   | Sort s ->
