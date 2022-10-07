@@ -761,7 +761,7 @@ follows:
 
    Adds an additional dependency of the current `.v`  file on an external file.  This
    information is included in the ``coqdep`` tool generated list of dependencies.
-   The file name :n:`@string` must exist relative to only one of the top directories
+   The file name :n:`@string` must exist relative to one of the top directories
    associated with :n:`@dirpath`.  :n:`@string` can include directory separators
    (``/``) to select a file in a subdirectory.
    Path elements in :n:`@string` must be valid Coq identifiers, e.g. they cannot
@@ -774,6 +774,12 @@ in a plugin, to access the full path of the external file via the API
 This command has been available through the :cmd:`Comments` command,
 e.g. :n:`Comments From … Dependency …`.  The :n:`Comments` form is deprecated
 in Coq 8.16.
+
+.. warn:: File ... found twice in ...
+
+   The file is found in more than once in the top directories
+   associated to the given :n:`@dirpath`. In this case the first occurrence
+   is selected.
 
 .. _backtracking_subsection:
 
