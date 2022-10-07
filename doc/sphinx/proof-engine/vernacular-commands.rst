@@ -775,11 +775,11 @@ This command has been available through the :cmd:`Comments` command,
 e.g. :n:`Comments From … Dependency …`.  The :n:`Comments` form is deprecated
 in Coq 8.16.
 
-.. warn:: File ... found twice in ...
+   .. warn:: File ... found twice in ...
 
-   The file is found in more than once in the top directories
-   associated to the given :n:`@dirpath`. In this case the first occurrence
-   is selected.
+      The file is found in more than once in the top directories
+      associated with the given :n:`@dirpath`. In this case the first occurrence
+      is selected.
 
 .. _backtracking_subsection:
 
