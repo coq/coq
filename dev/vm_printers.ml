@@ -2,6 +2,7 @@ open Format
 open Term
 open Names
 open Vmemitcodes
+open Values
 open Vmvalues
 
 let ppripos (ri,pos) =
