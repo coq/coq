@@ -126,7 +126,6 @@ type whd =
   | Vfloat64 of float
   | Varray of values Parray.t
   | Vatom_stk of atom * stack
-  | Vuniv_level of Univ.Level.t
 
 (** For debugging purposes only *)
 

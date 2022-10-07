@@ -187,8 +187,6 @@ and nf_whd env sigma whd typ =
      nf_univ_args ~nb_univs mk env sigma stk
   | Vatom_stk(Asort s, stk) ->
     assert (List.is_empty stk); mkSort s
-  | Vuniv_level lvl ->
-    assert false
 
 and nf_univ_args ~nb_univs mk env sigma stk =
   let u =

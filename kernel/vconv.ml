@@ -41,12 +41,6 @@ let rec conv_val env pb k v1 v2 cu =
 and conv_whd env pb k whd1 whd2 cu =
 (*  Pp.(msg_debug (str "conv_whd(" ++ pr_whd whd1 ++ str ", " ++ pr_whd whd2 ++ str ")")) ; *)
   match whd1, whd2 with
-  | Vuniv_level _ , _
-  | _ , Vuniv_level _ ->
-    (** Both of these are invalid since universes are handled via
-     ** special cases in the code.
-     **)
-    assert false
   | Vprod p1, Vprod p2 ->
       let cu = conv_val env CONV k (dom p1) (dom p2) cu in
       conv_fun env pb k (codom p1) (codom p2) cu
