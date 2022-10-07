@@ -2363,6 +2363,20 @@ Section ReDun.
     + now constructor.
   Qed.
 
+  Lemma NoDup_app_remove_l l l' : NoDup (l++l') -> NoDup l'.
+  Proof.
+  induction l as [|a l IHl]; intro H.
+  - exact H.
+  - apply IHl, (NoDup_remove_1 nil _ _ H).
+  Qed.
+
+  Lemma NoDup_app_remove_r l l' : NoDup (l++l') -> NoDup l.
+  Proof.
+  induction l' as [|a l' IHl']; intro H.
+  - now rewrite app_nil_r in H.
+  - apply IHl', (NoDup_remove_1 _ _ _ H).
+  Qed.
+
   Lemma NoDup_rev l : NoDup l -> NoDup (rev l).
   Proof.
     induction l as [|a l IHl]; simpl; intros Hnd; [ constructor | ].
