@@ -394,6 +394,10 @@ let process_universe_constraints uctx cstrs =
   let extra = { UnivMinim.above_prop = local.local_above_prop; UnivMinim.weak_constraints = local.local_weak } in
   !vars, extra, local.local_cst
 
+let process_universe_constraints uctx cstrs =
+  if UGraph.type_in_type uctx.universes then uctx.univ_variables, uctx.minim_extra, Constraints.empty
+  else process_universe_constraints uctx cstrs
+
 let add_constraints uctx cstrs =
   let univs, old_cstrs = uctx.local in
   let cstrs' = Constraints.fold (fun (l,d,r) acc ->
