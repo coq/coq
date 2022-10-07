@@ -1,5 +1,8 @@
 image: "$IMAGE"
 
+default:
+  interruptible: true
+
 stages:
   - docker
   - build
