@@ -2403,7 +2403,7 @@ module GlobalEnv = struct
   let push_rel_context (type env height) ~hypnaming
       sigma (Exists { context; _ } : (env, height) ERelContext.with_height)
       (glob_env : env t) : (env * height) t =
-    let _, env =
+    let _rel_context, env =
       GlobEnv.push_rel_context ~hypnaming sigma
         (ERelContext.to_concrete context)
         (Eq.cast eq glob_env) in
@@ -6560,6 +6560,7 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
   let hypnaming = naming_of_program_mode program_mode in
   let infer_return_pred = predopt = None in
   let return_pred return_pred_context =
+    let* sigma = EvarMapMonad.get in
     let return_pred_env =
       GlobalEnv.push_rel_context ~hypnaming sigma
         (ERelContext.with_height return_pred_context) env in
@@ -6598,8 +6599,8 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
     let Refl = Option.get (Nat.is_eq tomatch_count (Pattern.length pats)) in
     let length = Pattern.size_of_args pats Nat.O in
     let f ({ globenv; return_pred; _ } : _ Rhs.args) =
-      let* sigma = EvarMapMonad.get in
 (*
+      let* sigma = EvarMapMonad.get in
       Format.eprintf "Typing rhs in %a (expected type: %a)." Pp.pp_with
         (Env.print (GlobalEnv.env globenv))
         Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma return_pred);
