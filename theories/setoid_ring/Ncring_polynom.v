@@ -43,7 +43,7 @@ Definition cI:C . exact ring1. Defined.
  Definition P1 := Pc 1.
 
 Variable Ceqb:C->C->bool.
-#[universes(template)]
+
 Class Equalityb (A : Type):= {equalityb : A -> A -> bool}.
 Notation "x =? y" := (equalityb x y) (at level 70, no associativity).
 Variable Ceqb_eq: forall x y:C, Ceqb x y = true -> (x == y).

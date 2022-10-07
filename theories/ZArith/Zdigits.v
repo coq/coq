@@ -47,7 +47,7 @@ Section VALUE_OF_BOOLEAN_VECTORS.
     - exact 0%Z.
 
     - inversion H0.
-      exact (bit_value h + 2 * H H2)%Z.
+      exact (bit_value h + 2 * H X)%Z.
   Defined.
 
   Lemma two_compl_value : forall n:nat, Bvector (S n) -> Z.
@@ -57,7 +57,7 @@ Section VALUE_OF_BOOLEAN_VECTORS.
       exact (- bit_value h)%Z.
 
     - inversion H0.
-      exact (bit_value h + 2 * H H2)%Z.
+      exact (bit_value h + 2 * H X)%Z.
   Defined.
 
 End VALUE_OF_BOOLEAN_VECTORS.

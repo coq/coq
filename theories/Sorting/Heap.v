@@ -87,40 +87,6 @@ Section defs.
     intros; inversion H; auto with datatypes.
   Qed.
 
-  (* This lemma ought to be generated automatically by the Inversion tools *)
-  Lemma is_heap_rect :
-    forall P:Tree -> Type,
-      P Tree_Leaf ->
-      (forall (a:A) (T1 T2:Tree),
-	leA_Tree a T1 ->
-	leA_Tree a T2 ->
-	is_heap T1 -> P T1 -> is_heap T2 -> P T2 -> P (Tree_Node a T1 T2)) ->
-      forall T:Tree, is_heap T -> P T.
-  Proof.
-    simple induction T; auto with datatypes.
-    intros a G PG D PD PN.
-    elim (invert_heap a G D); auto with datatypes.
-    intros H1 H2; elim H2; intros H3 H4; elim H4; intros.
-    apply X0; auto with datatypes.
-  Qed.
-
-  (* This lemma ought to be generated automatically by the Inversion tools *)
-  Lemma is_heap_rec :
-    forall P:Tree -> Set,
-      P Tree_Leaf ->
-      (forall (a:A) (T1 T2:Tree),
-	leA_Tree a T1 ->
-	leA_Tree a T2 ->
-	is_heap T1 -> P T1 -> is_heap T2 -> P T2 -> P (Tree_Node a T1 T2)) ->
-      forall T:Tree, is_heap T -> P T.
-  Proof.
-    simple induction T; auto with datatypes.
-    intros a G PG D PD PN.
-    elim (invert_heap a G D); auto with datatypes.
-    intros H1 H2; elim H2; intros H3 H4; elim H4; intros.
-    apply X; auto with datatypes.
-  Qed.
-
   Lemma low_trans :
     forall (T:Tree) (a b:A), leA a b -> leA_Tree b T -> leA_Tree a T.
   Proof.

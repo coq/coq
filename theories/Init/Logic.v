@@ -878,18 +878,6 @@ Definition ex2_eta {A : Prop} {P Q} (p : exists2 a : A, P a & Q a)
   : p = ex_intro2 _ _ (ex_proj1 (ex_of_ex2 p)) (ex_proj2 (ex_of_ex2 p)) (ex_proj3 p).
 Proof. destruct p; reflexivity. Defined.
 
-Section ex_Prop.
-  Variables (A:Prop) (P:A->Prop).
-
-  Definition ex_rect (P0 : ex P -> Type) (f : forall x p, P0 (ex_intro P x p))
-    : forall e, P0 e
-    := fun e => rew <- ex_eta e in f _ _.
-  Definition ex_rec : forall (P0 : ex P -> Set) (f : forall x p, P0 (ex_intro P x p)),
-      forall e, P0 e
-    := ex_rect.
-
-End ex_Prop.
-
 (** Equality for [ex] *)
 Section ex.
   Local Unset Implicit Arguments.
@@ -1018,18 +1006,6 @@ Section ex.
   Defined.
 End ex.
 Global Arguments eq_ex_intro A P _ _ _ _ !p !q / .
-
-Section ex2_Prop.
-  Variables (A:Prop) (P Q:A->Prop).
-
-  Definition ex2_rect (P0 : ex2 P Q -> Type) (f : forall x p q, P0 (ex_intro2 P Q x p q))
-    : forall e, P0 e
-    := fun e => rew <- ex2_eta e in f _ _ _.
-  Definition ex2_rec : forall (P0 : ex2 P Q -> Set) (f : forall x p q, P0 (ex_intro2 P Q x p q)),
-      forall e, P0 e
-    := ex2_rect.
-
-End ex2_Prop.
 
 (** Equality for [ex2] *)
 Section ex2.

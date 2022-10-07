@@ -65,18 +65,6 @@ Section defs.
     intros a l H; inversion H; auto.
   Qed.
 
-  Lemma Sorted_rect :
-    forall P:list A -> Type,
-      P [] ->
-      (forall a l, Sorted l -> P l -> HdRel a l -> P (a :: l)) ->
-      forall l:list A, Sorted l -> P l.
-  Proof.
-    intros P ? ? l.
-    induction l.
-    - firstorder using Sorted_inv.
-    - firstorder using Sorted_inv.
-  Qed.
-
   Lemma Sorted_LocallySorted_iff : forall l, Sorted l <-> LocallySorted l.
   Proof.
     split; [induction 1 as [|a l [|]]| induction 1];
@@ -96,24 +84,6 @@ Section defs.
   Proof.
     intros a l H; inversion H; auto.
   Defined.
-
-  Lemma StronglySorted_rect :
-    forall P:list A -> Type,
-      P [] ->
-      (forall a l, StronglySorted l -> P l -> Forall (R a) l -> P (a :: l)) ->
-      forall l, StronglySorted l -> P l.
-  Proof.
-    intros P ? ? l; induction l; firstorder using StronglySorted_inv.
-  Defined.
-
-  Lemma StronglySorted_rec :
-    forall P:list A -> Type,
-      P [] ->
-      (forall a l, StronglySorted l -> P l -> Forall (R a) l -> P (a :: l)) ->
-      forall l, StronglySorted l -> P l.
-  Proof.
-    firstorder using StronglySorted_rect.
-  Qed.
 
   Lemma StronglySorted_Sorted : forall l, StronglySorted l -> Sorted l.
   Proof.

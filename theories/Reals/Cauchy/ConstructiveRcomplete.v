@@ -686,7 +686,7 @@ Lemma CRealComplete :  forall xn : nat -> CReal,
   {n : nat |
   forall i : nat, (n <= i)%nat -> (CReal_abs (xn i + - l)) <= (inject_Q (1 # p))}}.
 Proof.
-  intros. destruct (Rcauchy_complete xn) as [l cv].
+  intros xn H. destruct (Rcauchy_complete xn) as [l cv].
   - intro p. destruct (H p) as [n a]. exists n. intros.
     exact (a i j H0 H1).
   - exists l. intros p. destruct (cv p).

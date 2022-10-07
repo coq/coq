@@ -89,8 +89,8 @@ Structure ConstructiveReals : Type :=
     CRltLinear : isLinearOrder CRlt;
 
     CRle (x y : CRcarrier) := CRlt y x -> False;
-    CReq (x y : CRcarrier) := CRle y x /\ CRle x y;
-    CRapart (x y : CRcarrier) := sum (CRlt x y) (CRlt y x);
+    CReq (x y : CRcarrier) := CRle y x /\ CRle x y : Prop;
+    CRapart (x y : CRcarrier) := sum (CRlt x y) (CRlt y x) : Set;
 
     (* The propositional truncation of CRlt. It facilitates proofs
        when computations are not considered important, for example in

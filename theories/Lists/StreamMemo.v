@@ -73,7 +73,7 @@ End MemoFunction.
     reused thanks to a temporary hiding of the dependency
     in a "container" [memo_val]. *)
 
-#[universes(template)]
+
 Inductive memo_val {A : nat -> Type} : Type :=
   memo_mval: forall n, A n -> memo_val.
 Arguments memo_val : clear implicits.

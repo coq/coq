@@ -12,7 +12,7 @@
 
 Set Implicit Arguments.
 
-#[universes(template)]
+
 Variant carry (A : Type) :=
 | C0 : A -> carry A
 | C1 : A -> carry A.

@@ -25,7 +25,7 @@ Module AutoNo.
 End AutoNo.
 
 Module Yes.
-  #[universes(template)]
+
   Inductive Box@{i} (A:Type@{i}) : Type@{i} := box : A -> Box A.
 
   About Box.
@@ -56,7 +56,7 @@ Module DefaultProp.
 End DefaultProp.
 
 Module ExplicitTemplate.
-  #[universes(template)]
+
   Inductive identity@{i} (A : Type@{i}) (a : A) : A -> Type@{i} := id_refl : identity A a a.
 
   (* There used to be a weird interaction of template polymorphism and inductive
@@ -156,7 +156,7 @@ Module TestTemplateAttribute.
     Set Warnings "+no-template-universe".
 
     (* Failing as Bar cannot be made template polymorphic at all *)
-    Fail #[universes(template)] Inductive Bar :=
+    Fail  Inductive Bar :=
     | bar : A -> Bar.
 
   End Foo.
@@ -192,7 +192,7 @@ Module TemplateUnit.
 Set Warnings "-no-template-universe".
 
 (* This is marked as template without any actual template universe. *)
-#[universes(template)] Inductive foo := Foo.
+ Inductive foo := Foo.
 
 Check (foo : Prop).
 
@@ -202,10 +202,10 @@ Module TemplateParamUnit.
 
 (* In theory, A could be template but the upper layers don't mark it as such *)
 Set Warnings "+no-template-universe".
-Fail #[universes(template)] Inductive foo (A : Type) := Foo.
+Fail  Inductive foo (A : Type) := Foo.
 
 Set Warnings "-no-template-universe".
-#[universes(template)] Inductive foo (A : Type) := Foo.
+ Inductive foo (A : Type) := Foo.
 
 Check (foo unit : Prop).
 

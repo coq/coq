@@ -87,7 +87,7 @@ Definition CRealLtProp (x y : CReal) : Prop
   := exists n : Z, Qlt (2 * 2 ^ n)(seq y n - seq x n).
 
 Definition CRealGt (x y : CReal) := CRealLt y x.
-Definition CReal_appart (x y : CReal) := sum (CRealLt x y) (CRealLt y x).
+Definition CReal_appart (x y : CReal) : Set := sum (CRealLt x y) (CRealLt y x).
 
 Infix "<" := CRealLt : CReal_scope.
 Infix ">" := CRealGt : CReal_scope.

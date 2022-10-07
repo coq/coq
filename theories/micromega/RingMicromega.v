@@ -653,7 +653,7 @@ end.
 Definition  eval_pexpr : PolEnv -> PExpr C -> R :=
  PEeval rplus rtimes rminus ropp phi pow_phi rpow.
 
-#[universes(template)]
+
 Record Formula (T:Type) : Type := Build_Formula{
   Flhs : PExpr T;
   Fop : Op2;

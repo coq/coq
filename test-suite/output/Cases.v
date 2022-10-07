@@ -43,7 +43,7 @@ Print foo.
 
 (* Accept and use notation with binded parameters *)
 
-#[universes(template)]
+
 Inductive I (A: Type) : Type := C : A -> I A.
 Notation "x <: T" := (C T x) (at level 38).
 

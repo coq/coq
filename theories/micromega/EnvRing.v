@@ -20,7 +20,7 @@ Local Open Scope positive_scope.
 Import RingSyntax.
 
 (** Definition of polynomial expressions *)
-#[universes(template)]
+
 Inductive PExpr {C} : Type :=
 | PEc : C -> PExpr
 | PEX : positive -> PExpr
@@ -61,7 +61,7 @@ Register PEpow as micromega.PExpr.PEpow.
     - (Pinj i (Pc c)) is (Pc c)
  *)
 
-#[universes(template)]
+
 Inductive Pol {C} : Type :=
 | Pc : C -> Pol
 | Pinj : positive -> Pol -> Pol

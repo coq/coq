@@ -216,7 +216,7 @@ Module Discharge.
   Section S.
     Variables (A:Type).
     (* ensure params are scanned for needed section variables even with template arity *)
-    #[universes(template)] Inductive bar (d:A) := .
+     Inductive bar (d:A) := .
   End S.
   Check @bar nat 0.
 End Discharge.

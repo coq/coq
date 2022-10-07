@@ -45,7 +45,7 @@ NOTA BENE: all shift operations expect predecessor of size as parameter
 (they only work on non-empty vectors).
 *)
 
-Definition Bvector := Vector.t bool.
+Definition Bvector : nat -> Set := Vector.t bool.
 
 Definition Bnil := @Vector.nil bool.
 

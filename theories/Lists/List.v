@@ -2819,12 +2819,6 @@ Section Exists_Forall.
       inversion_clear HF; simpl; apply Forall_app; intuition.
     Qed.
 
-    Lemma Forall_rect : forall (Q : list A -> Type),
-      Q [] -> (forall b l, P b -> Q (b :: l)) -> forall l, Forall l -> Q l.
-    Proof.
-      intros Q H H' l; induction l; intro; [|eapply H', Forall_inv]; eassumption.
-    Qed.
-
     Lemma Forall_dec :
       (forall x:A, {P x} + { ~ P x }) ->
       forall l:list A, {Forall l} + {~ Forall l}.

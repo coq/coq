@@ -34,7 +34,7 @@ Definition interp_carry {A} (sign:Z)(B:Z)(interp:A -> Z) c :=
     (plus a special case for zero). High half of the new number comes
     first.
  *)
-#[universes(template)]
+
 Variant zn2z {znz : Type} :=
 | W0 : zn2z
 | WW : znz -> znz -> zn2z.

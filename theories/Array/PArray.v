@@ -1,7 +1,7 @@
 Require Import Uint63.
 
 Set Universe Polymorphism.
-
+Set Universe Checking.
 Primitive array := #array_type.
 
 Primitive make : forall A, int -> A -> array A := #array_make.
@@ -37,7 +37,7 @@ Local Open Scope uint63_scope.
 Local Open Scope array_scope.
 
 Primitive max_length := #array_max_length.
-
+Unset Universe Checking.
 (** Axioms *)
 Axiom get_out_of_bounds : forall A (t:array A) i, (i <? length t) = false -> t.[i] = default t.
 

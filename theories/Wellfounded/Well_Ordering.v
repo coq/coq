@@ -14,7 +14,7 @@
 
 Require Import EqdepFacts.
 
-#[universes(template)]
+
 Inductive WO (A : Type) (B : A -> Type) : Type :=
   sup : forall (a:A) (f:B a -> WO A B), WO A B.
 

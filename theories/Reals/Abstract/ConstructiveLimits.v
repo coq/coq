@@ -240,7 +240,7 @@ Lemma Un_cv_real_nat : forall {R : ConstructiveReals}
       -> { p : nat & forall i:nat, le p i -> CRabs R (un i - l) < eps })
     -> CR_cv R un l.
 Proof.
-  intros. intros n.
+  intros R un l H n.
   specialize (H (CR_of_Q R (1#n))) as [p pmaj].
   - apply CR_of_Q_lt. reflexivity.
   - exists p. intros. apply CRlt_asym. apply pmaj. apply H.

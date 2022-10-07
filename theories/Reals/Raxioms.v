@@ -210,7 +210,7 @@ Proof.
       + replace 0%R with (Rabst 0%CReal).
         2: unfold IZR; rewrite RbaseSymbolsImpl.R0_def; reflexivity.
         rewrite Rquot2. reflexivity. }
-  pose proof (CRealLt_morph 0%CReal 0%CReal (CRealEq_refl _) 1%CReal 0%CReal H).
+  pose proof (CRealLt_morph 0%CReal 0%CReal (CRealEq_refl _) 1%CReal 0%CReal H) as H0.
   apply (CRealLt_irrefl 0%CReal). apply H0. apply CRealLt_0_1.
 Qed.
 #[global]

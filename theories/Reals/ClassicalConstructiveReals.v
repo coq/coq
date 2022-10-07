@@ -141,7 +141,7 @@ Qed.
 Lemma Rleft_inverse :
   forall r : R, (sum (r < IQR 0) (IQR 0 < r)) -> Req_constr (/ r * r) (IQR 1).
 Proof.
-  intros. rewrite Rinv_l.
+  intros r H. rewrite Rinv_l.
   - unfold IQR. rewrite <- R1_def. apply Req_constr_refl.
   - destruct H.
     + intro abs. subst r. unfold IQR in r0. rewrite <- R0_def in r0.
@@ -152,7 +152,7 @@ Qed.
 
 Lemma Rinv_pos : forall r : R, (sum (r < IQR 0) (IQR 0 < r)) -> IQR 0 < r -> IQR 0 < / r.
 Proof.
-  intros. rewrite Rlt_def. apply CRealLtForget.
+  intros r H H0. rewrite Rlt_def. apply CRealLtForget.
   rewrite Rlt_def in H0. apply CRealLtEpsilon in H0.
   unfold IQR in H0. rewrite Rquot2 in H0.
   rewrite (Rrepr_inv r (inr H0)). unfold IQR. rewrite Rquot2.
@@ -280,7 +280,7 @@ Lemma Rcomplete : forall xn : nat -> R,
   {n : nat |
   forall i : nat, (n <= i)%nat -> IQR (1 # p) < Rabst (CReal_abs (Rrepr (xn i + - l))) -> False}}.
 Proof.
-  intros. destruct (Rcauchy_complete (fun n => Rrepr (xn n))) as [l llim].
+  intros xn H. destruct (Rcauchy_complete (fun n => Rrepr (xn n))) as [l llim].
   - intro p. specialize (H p) as [n nmaj]. exists n. intros.
     specialize (nmaj i j H H0). unfold IQR in nmaj.
     intro abs. apply nmaj. rewrite Rlt_def. apply CRealLtForget.

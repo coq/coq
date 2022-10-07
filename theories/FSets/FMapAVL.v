@@ -50,7 +50,7 @@ Hint Transparent key : core.
 
    The fifth field of [Node] is the height of the tree *)
 
-#[universes(template)]
+
 Inductive tree {elt : Type} :=
   | Leaf : tree
   | Node : tree -> key -> elt -> tree -> int -> tree.
@@ -1845,7 +1845,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Module Raw := Raw I X.
  Import Raw.Proofs.
 
- #[universes(template)]
+
  Record bst (elt:Type) :=
   Bst {this :> Raw.tree elt; is_bst : Raw.bst this}.
 
