@@ -3,7 +3,7 @@ Unset Universe Checking.
 Definition bad1@{|Set < Set} := Prop.
 
 Set Universe Polymorphism.
-Axiom ax : Type.
+Axiom ax@{u} : Type@{u}.
 Inductive I@{u} : Prop := foo : ax@{u} -> I.
 
 Definition bad2@{v} (x:I@{v}) : I@{Set} := x.

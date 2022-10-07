@@ -40,10 +40,13 @@ let fresh_level () =
   Univ.Level.make (new_univ_global ())
 
 let fresh_instance auctx =
-  let inst = Array.init (AbstractContext.size auctx) (fun _ -> fresh_level()) in
-  let ctx = Array.fold_right Level.Set.add inst Level.Set.empty in
-  let inst = Instance.of_array inst in
-  inst, (ctx, AbstractContext.instantiate inst auctx)
+  if UGraph.type_in_type @@ Global.universes ()
+  then Instance.of_array @@ Array.make (AbstractContext.size auctx) UGraph.dummy_level, ContextSet.empty
+  else
+    let inst = Array.init (AbstractContext.size auctx) (fun _ -> fresh_level()) in
+    let ctx = Array.fold_right Level.Set.add inst Level.Set.empty in
+    let inst = Instance.of_array inst in
+    inst, (ctx, AbstractContext.instantiate inst auctx)
 
 let existing_instance ?loc auctx inst =
   let () =
@@ -94,17 +97,20 @@ let constr_of_monomorphic_global env gr =
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
 
+let new_global_univ () =
+  if UGraph.type_in_type @@ Global.universes ()
+  then Univ.Universe.make UGraph.dummy_level, ContextSet.empty
+  else
+    let u = fresh_level () in
+    (Univ.Universe.make u, ContextSet.singleton u)
+
 let fresh_sort_in_family = function
   | InSProp -> Sorts.sprop, ContextSet.empty
   | InProp -> Sorts.prop, ContextSet.empty
   | InSet -> Sorts.set, ContextSet.empty
   | InType ->
-    let u = fresh_level () in
-      sort_of_univ (Univ.Universe.make u), ContextSet.singleton u
-
-let new_global_univ () =
-  let u = fresh_level () in
-  (Univ.Universe.make u, ContextSet.singleton u)
+    let u, ctx = new_global_univ () in
+    sort_of_univ u, ctx
 
 let fresh_universe_context_set_instance ctx =
   if ContextSet.is_empty ctx then Level.Map.empty, ctx

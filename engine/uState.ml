@@ -713,6 +713,11 @@ let new_univ_variable ?loc rigid name uctx =
   let uctx = add_universe ?loc name false uctx.universes_lbound uctx u in
   uctx, u
 
+let new_univ_variable ?loc rigid name uctx =
+  if Option.is_empty name && UGraph.type_in_type @@ uctx.universes
+  then uctx, UGraph.dummy_level
+  else new_univ_variable ?loc rigid name uctx
+
 let add_global_univ uctx u = add_universe None true UGraph.Bound.Set uctx u
 
 let make_with_initial_binders ~lbound univs us =

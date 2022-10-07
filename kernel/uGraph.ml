@@ -41,7 +41,14 @@ type 'a check_function = t -> 'a -> 'a -> bool
 
 let set_cumulative_sprop b g = {g with sprop_cumulative=b}
 
-let set_type_in_type b g = {g with type_in_type=b}
+let dummy_level = Level.make @@ UGlobal.make (Names.DirPath.make []) "type_in_type" 0
+
+let set_type_in_type b g =
+  let g = if b && not g.type_in_type then
+      try {g with graph = G.add dummy_level g.graph} with G.AlreadyDeclared -> g
+    else g
+  in
+  {g with type_in_type=b}
 
 let type_in_type g = g.type_in_type
 let cumulative_sprop g = g.sprop_cumulative

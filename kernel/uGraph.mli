@@ -18,6 +18,8 @@ val set_cumulative_sprop : bool -> t -> t
 
 val set_type_in_type : bool -> t -> t
 
+val dummy_level : Level.t
+
 (** When [type_in_type], functions adding constraints do not fail and
    may instead ignore inconsistent constraints.
 
