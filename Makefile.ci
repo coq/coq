@@ -49,7 +49,7 @@ CI_TARGETS= \
     ci-mathcomp \
     ci-mathcomp_word \
     ci-mczify \
-    ci-mathcomp_base \
+    ci-mathcomp \
     ci-finmap \
     ci-bigenough \
     ci-analysis \
@@ -104,8 +104,8 @@ ci-oddorder: ci-mathcomp
 ci-fcsl_pcm: ci-mathcomp
 ci-mczify: ci-mathcomp
 ci-mathcomp_word: ci-mathcomp
-ci-finmap: ci-mathcomp_base
-ci-bigenough: ci-mathcomp_base
+ci-finmap: ci-mathcomp
+ci-bigenough: ci-mathcomp
 ci-analysis: ci-elpi ci-finmap ci-bigenough
 
 ci-jasmin: ci-mathcomp_word
@@ -125,7 +125,7 @@ ci-compcert: ci-menhir ci-flocq
 
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
-ci-serapi: ci-mathcomp_base
+ci-serapi: ci-mathcomp
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
