@@ -169,14 +169,14 @@ and nf_whd env sigma whd typ =
       let t = ta.(i) in
       let _, args = nf_args env sigma vargs t in
       mkApp(cfd,args)
-  | Vconstr_const n ->
+  | Vconst n ->
     construct_of_constr_const env sigma n typ
-  | Vconstr_block b ->
+  | Vblock b ->
       let tag = btag b in
       let (tag,ofs) =
         if tag = Obj.last_non_constant_constructor_tag then
           match whd_val (bfield b 0) with
-          | Vconstr_const tag -> (tag+Obj.last_non_constant_constructor_tag, 1)
+          | Vconst tag -> (tag+Obj.last_non_constant_constructor_tag, 1)
           | _ -> assert false
         else (tag, 0) in
       let capp,ctyp = construct_of_constr_block env sigma tag typ in

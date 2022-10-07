@@ -277,8 +277,8 @@ type whd =
   | Vfun of vfun
   | Vfix of vfix * arguments option
   | Vcofix of vcofix * to_update * arguments option
-  | Vconstr_const of int
-  | Vconstr_block of vblock
+  | Vconst of int
+  | Vblock of vblock
   | Vint64 of int64
   | Vfloat64 of float
   | Varray of values Parray.t
@@ -369,7 +369,7 @@ let accumulate = accumulate ()
 
 let whd_val (v: values) =
   let o = Obj.repr v in
-  if Obj.is_int o then Vconstr_const (Obj.obj o)
+  if Obj.is_int o then Vconst (Obj.obj o)
   else
     let tag = Obj.tag o in
     if Int.equal tag 0 then
@@ -387,7 +387,7 @@ let whd_val (v: values) =
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
     else
-      Vconstr_block (Obj.obj o)
+      Vblock (Obj.obj o)
 
 (**********************************************)
 (* Constructors *******************************)
@@ -651,8 +651,8 @@ and pr_whd w =
   | Vfun _ -> str "Vfun"
   | Vfix _ -> str "Vfix"
   | Vcofix _ -> str "Vcofix"
-  | Vconstr_const i -> str "Vconstr_const(" ++ int i ++ str ")"
-  | Vconstr_block _b -> str "Vconstr_block"
+  | Vconst i -> str "Vconst(" ++ int i ++ str ")"
+  | Vblock _b -> str "Vblock"
   | Vint64 i -> i |> Format.sprintf "Vint64(%LiL)" |> str
   | Vfloat64 f -> str "Vfloat64(" ++ str (Float64.(to_string (of_float f))) ++ str ")"
   | Varray _ -> str "Varray"

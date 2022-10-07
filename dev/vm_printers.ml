@@ -78,8 +78,8 @@ and ppwhd whd =
   | Vfun _ -> print_string "function"
   | Vfix _ -> print_vfix()
   | Vcofix _ -> print_string "cofix"
-  | Vconstr_const i -> print_string "C(";print_int i;print_string")"
-  | Vconstr_block b -> ppvblock b
+  | Vconst i -> print_string "C(";print_int i;print_string")"
+  | Vblock b -> ppvblock b
   | Vint64 i -> printf "int64(%LiL)" i
   | Vfloat64 f -> printf "float64(%.17g)" f
   | Varray t -> ppvarray t
