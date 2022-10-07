@@ -714,6 +714,12 @@ library:ci-math_classes:
 library:ci-mathcomp:
   extends: .ci-template-flambda
 
+library:ci-mathcomp_test:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+
 library:ci-mczify:
   extends: .ci-template-flambda
   needs:
