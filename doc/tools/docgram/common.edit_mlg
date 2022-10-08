@@ -2202,15 +2202,15 @@ ltac2_induction_clause: [
 | WITH ltac2_destruction_arg ltac2_as_or_and_ipat ltac2_eqn_ipat OPT ltac2_clause  TAG Ltac2
 ]
 
-starredidentref: [
+starred_ident_ref: [
 | EDIT identref ADD_OPT "*"
 | EDIT "Type" ADD_OPT "*"
 | "All"
 ]
 
 ssexpr0: [
-| DELETE "(" LIST0 starredidentref ")"
-| DELETE "(" LIST0 starredidentref ")" "*"
+| DELETE "(" LIST0 starred_ident_ref ")"
+| DELETE "(" LIST0 starred_ident_ref ")" "*"
 | DELETE "(" ssexpr35 ")"
 | DELETE "(" ssexpr35 ")" "*"
 | "(" section_subset_expr ")" OPT "*"
@@ -2882,7 +2882,6 @@ RENAME: [
 | Pltac.tactic ltac_expr  (* many uses in EXTENDs *)
 | ltac2_type5 ltac2_type
 | ltac2_expr6 ltac2_expr
-| starredidentref starred_ident_ref
 | ssrocc ssr_occurrences
 | ssrsimpl_ne s_item
 | ssrclear_ne ssrclear

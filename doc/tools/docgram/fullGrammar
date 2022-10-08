@@ -1176,11 +1176,11 @@ module_type: [
 ]
 
 section_subset_expr: [
-| test_only_starredidentrefs LIST0 starredidentref
+| test_only_starredidentrefs LIST0 starred_ident_ref
 | ssexpr35
 ]
 
-starredidentref: [
+starred_ident_ref: [
 | identref
 | identref "*"
 | "Type"
@@ -1199,10 +1199,10 @@ ssexpr50: [
 ]
 
 ssexpr0: [
-| starredidentref
+| starred_ident_ref
 | "()"
-| "(" test_only_starredidentrefs LIST0 starredidentref ")"
-| "(" test_only_starredidentrefs LIST0 starredidentref ")" "*"
+| "(" test_only_starredidentrefs LIST0 starred_ident_ref ")"
+| "(" test_only_starredidentrefs LIST0 starred_ident_ref ")" "*"
 | "(" ssexpr35 ")"
 | "(" ssexpr35 ")" "*"
 ]
