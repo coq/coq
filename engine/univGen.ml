@@ -49,13 +49,13 @@ let fresh_instance auctx =
     inst, (ctx, AbstractContext.instantiate inst auctx)
 
 let existing_instance ?loc auctx inst =
-  let () =
+
     let actual = Array.length (Instance.to_array inst)
     and expect = AbstractContext.size auctx in
       if not (Int.equal actual expect) then
-        Loc.raise ?loc (UniverseLengthMismatch { actual; expect })
-      else ()
-  in
+ fresh_instance auctx
+      else
+
   inst, (Level.Set.empty, AbstractContext.instantiate inst auctx)
 
 let fresh_instance_from ?loc ctx = function
