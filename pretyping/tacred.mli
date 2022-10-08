@@ -106,12 +106,14 @@ val reduce_to_quantified_ind : env ->  evar_map -> types -> (inductive * EInstan
 val eval_to_quantified_ind : env -> evar_map -> types -> (inductive * EInstance.t)
 
 (** [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
-   [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
+    [t'=(x1:A1)..(xn:An)(ref args)]. When this is not possible, if [allow_failure]
+    is specified, [t] is unfolded until the point where this impossibility is plainly
+    visible. Otherwise, it fails with user error. *)
 val reduce_to_quantified_ref :
-  env ->  evar_map -> GlobRef.t -> types -> types
+  ?allow_failure:bool -> env ->  evar_map -> GlobRef.t -> types -> types
 
 val reduce_to_atomic_ref :
-  env ->  evar_map -> GlobRef.t -> types -> types
+  ?allow_failure:bool -> env ->  evar_map -> GlobRef.t -> types -> types
 
 val find_hnf_rectype :
   env ->  evar_map -> types -> (inductive * EInstance.t) * constr list

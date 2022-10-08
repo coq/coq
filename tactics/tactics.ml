@@ -3483,13 +3483,11 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   let tmptyp0 = Tacmach.pf_get_hyp_typ hyp0 gl in
-  let reduce_to_quantified_ref = Tacmach.pf_apply reduce_to_quantified_ref gl in
-  let typ0 = reduce_to_quantified_ref indref tmptyp0 in
-  let prods, indtyp = decompose_prod_assum sigma typ0 in
+  let reduce_to_atomic_ref = Tacmach.pf_apply reduce_to_atomic_ref gl in
+  let indtyp = reduce_to_atomic_ref indref tmptyp0 in
   let hd,argl = decompose_app sigma indtyp in
-  let env' = push_rel_context prods env in
   let params = List.firstn nparams argl in
-  let params' = List.map (expand_projections env' sigma) params in
+  let params' = List.map (expand_projections env sigma) params in
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i args args' avoid =
     if Int.equal i nparams then
@@ -3507,7 +3505,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
                current environment so that it is clearable after destruction *)
             atomize_one (i-1) (c::args) (c::args') (Id.Set.add id avoid)
         | _ ->
-           let c' = expand_projections env' sigma c in
+           let c' = expand_projections env sigma c in
             let dependent t = dependent sigma c t in
             if List.exists dependent params' ||
                List.exists dependent args'
@@ -4595,20 +4593,25 @@ let clear_unselected_context id inhyps cls =
 
 let use_bindings env sigma elim must_be_closed (c,lbind) typ =
   let typ =
-    if elim == None then
+    (* Normalize [typ] until the induction reference becomes plainly visible *)
+    match elim with
+    | None ->
       (* w/o an scheme, the term has to be applied at least until
          obtaining an inductive type (even though the arity might be
          known only by pattern-matching, as in the case of a term of
          the form "nat_rect ?A ?o ?s n", with ?A to be inferred by
          matching. *)
       let sign,t = splay_prod env sigma typ in it_mkProd t sign
-    else
-      (* Otherwise, we exclude the case of an induction argument in an
-         explicitly functional type. Henceforth, we can complete the
-         pattern until it has as type an atomic type (even though this
-         atomic type can hide a functional type, for which the "using"
-         clause has a scheme). *)
-      typ in
+    | Some (elimc, _) ->
+      (* Otherwise, we compute the induction reference of the scheme
+         and go looking for that. *)
+      let sigma, elimt = Typing.type_of env sigma elimc in
+      let scheme = compute_elim_sig sigma elimt in
+      match scheme.indref with
+      | None -> error CannotFindInductiveArgument
+      | Some indref ->
+        Tacred.reduce_to_quantified_ref ~allow_failure:true env sigma indref typ
+  in
   let rec find_clause typ =
     try
       let indclause = make_clenv_binding env sigma (c,typ) lbind in
