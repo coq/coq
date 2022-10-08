@@ -263,7 +263,6 @@ coq_opam_packages
     [ pri new_t.num_cycles; pri old_t.num_cycles; prf perc.num_cycles ];
     [ pri new_t.num_instr; pri old_t.num_instr; prf perc.num_instr ];
     [ pri new_t.num_mem; pri old_t.num_mem; prf perc.num_mem ];
-    [ pri new_t.num_faults; pri old_t.num_faults; prf perc.num_faults ];
   ]
 
   end
@@ -276,11 +275,10 @@ coq_opam_packages
       "CPU cycles";
       "CPU instructions";
       "max resident mem [KB]";
-      "mem faults";
     ] in
 
     let descr = ["NEW"; "OLD"; "PDIFF"] in
-    let top = [ [ "package_name" ]; descr; descr; descr; descr; descr ] in
+    let top = [ [ "package_name" ]; descr; descr; descr; descr ] in
 
     printf "%s%!" (Table.print headers top measurements ())
 ;
@@ -316,12 +314,6 @@ Columns:
 
      Maximum resident set size of the process during its lifetime, in Kilobytes.
      (In other words, \"%%M\" quantity provided by the \"/usr/bin/time\" command.)
-
-  5. mem faults
-
-     Number of major, or I/O-requiring, page faults that occurred while the process was running.
-     These are faults where the page has actually migrated out of primary memory.
-     (In other words, \"%%F\" quantity provided by the \"/usr/bin/time\" command.)
 
 " new_coq_version old_coq_version;
 end
