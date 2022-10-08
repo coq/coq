@@ -90,7 +90,7 @@ let with_fail ~loc ~st f =
   Vernacstate.unfreeze_interp_state st;
   match res with
   | Error () ->
-    CErrors.user_err (Pp.str "The command has not failed!")
+    Feedback.msg_notice (Pp.str "The command has not failed!")
   | Ok (eloc, msg) ->
     let loc = if !test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
     if not !Flags.quiet || !test_mode
