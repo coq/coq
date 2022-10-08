@@ -655,17 +655,17 @@ GRAMMAR EXTEND Gram
         { id,Locus.InHypValueOnly }
     ] ]
   ;
-  hypident_occ:
+  hyp_occs:
     [ [ h=hypident; occs=occs -> { let (id,l) = h in ((occs,id),l) } ] ]
   ;
   in_clause:
     [ [ "*"; occs=occs ->
         { { q_onhyps = None; q_concl_occs = occs } }
-      | "*"; "|-"; occs = concl_occ ->
+      | "*"; "|-"; occs = concl_occs ->
         { { q_onhyps = None; q_concl_occs = occs } }
-      | hl = LIST0 hypident_occ SEP ","; "|-"; occs = concl_occ ->
+      | hl = LIST0 hyp_occs SEP ","; "|-"; occs = concl_occs ->
         { { q_onhyps = Some hl; q_concl_occs = occs } }
-      | hl = LIST0 hypident_occ SEP "," ->
+      | hl = LIST0 hyp_occs SEP "," ->
         { { q_onhyps = Some hl; q_concl_occs = CAst.make ~loc QNoOccurrences } }
     ] ]
   ;
@@ -678,7 +678,7 @@ GRAMMAR EXTEND Gram
   q_clause:
     [ [ cl = clause -> { cl } ] ]
   ;
-  concl_occ:
+  concl_occs:
     [ [ "*"; occs = occs -> { occs }
       | -> { CAst.make ~loc QNoOccurrences }
     ] ]
@@ -768,7 +768,7 @@ GRAMMAR EXTEND Gram
       | IDENT "fix" -> { CAst.make ~loc @@ QFix }
       | IDENT "cofix" -> { CAst.make ~loc @@ QCofix }
       | IDENT "zeta" -> { CAst.make ~loc @@ QZeta }
-      | IDENT "delta"; d = delta_flag -> { d }
+      | IDENT "delta"; d = delta_reductions -> { d }
     ] ]
   ;
   refglobal:
@@ -783,21 +783,21 @@ GRAMMAR EXTEND Gram
   refglobals:
     [ [ gl = LIST1 refglobal -> { CAst.make ~loc gl } ] ]
   ;
-  delta_flag:
+  delta_reductions:
     [ [ "-"; "["; idl = refglobals; "]" -> { CAst.make ~loc @@ QDeltaBut idl }
       | "["; idl = refglobals; "]" -> { CAst.make ~loc @@ QConst idl }
       | -> { CAst.make ~loc @@ QDeltaBut (CAst.make ~loc []) }
     ] ]
   ;
-  strategy_flag:
+  reductions:
     [ [ s = LIST1 ltac2_red_flag -> { CAst.make ~loc s }
-      | d = delta_flag ->
+      | d = delta_reductions ->
       { CAst.make ~loc
           [CAst.make ~loc QBeta; CAst.make ~loc QIota; CAst.make ~loc QZeta; d] }
     ] ]
   ;
   q_strategy_flag:
-    [ [ flag = strategy_flag -> { flag } ] ]
+    [ [ flag = reductions -> { flag } ] ]
   ;
   hintdb:
     [ [ "*" -> { CAst.make ~loc @@ QHintAll }

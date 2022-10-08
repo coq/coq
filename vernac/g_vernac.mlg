@@ -486,7 +486,7 @@ GRAMMAR EXTEND Gram
       | -> { [] }
     ] ]
   ;
-  field_body:
+  field_spec:
     [ [ l = binders; oc = of_type_inst;
          t = lconstr -> { fun id -> (oc,AssumExpr (id,l,t)) }
       | l = binders; oc = of_type_inst;
@@ -502,7 +502,7 @@ GRAMMAR EXTEND Gram
   ;
   record_binder:
     [ [ id = name -> { ((NoCoercion,NoInstance),AssumExpr(id, [], CAst.make ~loc @@ CHole (None, IntroAnonymous))) }
-      | id = name; f = field_body -> { f id } ] ]
+      | id = name; f = field_spec -> { f id } ] ]
   ;
   assum_list:
     [ [ bl = LIST1 assum_coe -> { bl } | b = assumpt -> { [b] } ] ]

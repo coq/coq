@@ -1641,8 +1641,8 @@ Here is the syntax for the :n:`q_*` nonterminals:
    ltac2_clause ::= in @ltac2_in_clause
    | at @ltac2_occs_nums
    ltac2_in_clause ::= * {? @ltac2_occs }
-   | * %|- {? @ltac2_concl_occ }
-   | {*, @ltac2_hypident_occ } {? %|- {? @ltac2_concl_occ } }
+   | * %|- {? @ltac2_concl_occs }
+   | {*, @ltac2_hyp_occs } {? %|- {? @ltac2_concl_occs } }
 
 .. insertprodn q_occurrences ltac2_hypident
 
@@ -1650,8 +1650,8 @@ Here is the syntax for the :n:`q_*` nonterminals:
    q_occurrences ::= {? @ltac2_occs }
    ltac2_occs ::= at @ltac2_occs_nums
    ltac2_occs_nums ::= {? - } {+ {| @natural | $ @ident } }
-   ltac2_concl_occ ::= * {? @ltac2_occs }
-   ltac2_hypident_occ ::= @ltac2_hypident {? @ltac2_occs }
+   ltac2_concl_occs ::= * {? @ltac2_occs }
+   ltac2_hyp_occs ::= @ltac2_hypident {? @ltac2_occs }
    ltac2_hypident ::= @ident_or_anti
    | ( type of @ident_or_anti )
    | ( value of @ident_or_anti )

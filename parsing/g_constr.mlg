@@ -217,11 +217,11 @@ GRAMMAR EXTEND Gram
     [ [ fs = fields_def -> { CAst.make ~loc @@ CRecord fs } ] ]
   ;
   fields_def:
-    [ [ f = field_def; ";"; fs = fields_def -> { f :: fs }
-      | f = field_def -> { [f] }
+    [ [ f = field_val; ";"; fs = fields_def -> { f :: fs }
+      | f = field_val -> { [f] }
       | -> { [] } ] ]
   ;
-  field_def:
+  field_val:
     [ [ id = global; bl = binders; ":="; c = lconstr ->
         { (id, mkLambdaCN ~loc bl c) } ] ]
   ;

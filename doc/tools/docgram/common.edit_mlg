@@ -62,8 +62,8 @@ SPLICE: [
 ]
 
 RENAME: [
-| G_LTAC2_delta_flag ltac2_delta_reductions
-| G_LTAC2_strategy_flag ltac2_reductions
+| G_LTAC2_delta_reductions ltac2_delta_reductions
+| G_LTAC2_reductions ltac2_reductions
 | G_LTAC2_binder ltac2_binder
 | G_LTAC2_branches ltac2_branches
 | G_LTAC2_let_clause ltac2_let_clause
@@ -85,8 +85,8 @@ RENAME: [
 | G_LTAC2_in_clause ltac2_in_clause
 | G_LTAC2_occs ltac2_occs
 | G_LTAC2_occs_nums ltac2_occs_nums
-| G_LTAC2_concl_occ ltac2_concl_occ
-| G_LTAC2_hypident_occ ltac2_hypident_occ
+| G_LTAC2_concl_occs ltac2_concl_occs
+| G_LTAC2_hyp_occs ltac2_hyp_occs
 | G_LTAC2_hypident ltac2_hypident
 | G_LTAC2_induction_clause ltac2_induction_clause
 | G_LTAC2_as_or_and_ipat ltac2_as_or_and_ipat
@@ -422,9 +422,9 @@ term0: [
 (* @Zimmi48: This rule is a hack, according to Hugo, and should not be shown in the manual. *)
 | DELETE "{" binder_constr "}"
 | REPLACE "{|" record_declaration bar_cbrace
-| WITH "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
+| WITH "{|" LIST0 field_val SEP ";" OPT ";" bar_cbrace
 | MOVETO number_or_string NUMBER
-| MOVETO term_record "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
+| MOVETO term_record "{|" LIST0 field_val SEP ";" OPT ";" bar_cbrace
 | MOVETO term_generalizing "`{" term200 "}"
 | MOVETO term_generalizing "`(" term200 ")"
 | MOVETO term_ltac "ltac" ":" "(" ltac_expr5 ")"
@@ -445,9 +445,9 @@ cofix_decls: [
 ]
 
 fields_def: [
-| REPLACE field_def ";" fields_def
-| WITH LIST1 field_def SEP ";"
-| DELETE field_def
+| REPLACE field_val ";" fields_def
+| WITH LIST1 field_val SEP ";"
+| DELETE field_val
 ]
 
 binders_fixannot: [
@@ -682,7 +682,7 @@ def_body: [
 | WITH LIST0 binder ":" type
 ]
 
-delta_flag: [
+delta_reductions: [
 | REPLACE "-" "[" LIST1 smart_global "]"
 | WITH OPT "-" "[" LIST1 smart_global "]"
 | DELETE "[" LIST1 smart_global "]"
@@ -697,11 +697,9 @@ ltac2_branches: [
 | EDIT ADD_OPT "|" LIST1 branch SEP "|"      (* Ltac2 plugin *)
 ]
 
-strategy_flag: [
-| REPLACE OPT delta_flag
-| WITH delta_flag
-(*| REPLACE LIST1 red_flags
-| WITH LIST1 red_flag*)
+reductions: [
+| REPLACE OPT delta_reductions
+| WITH delta_reductions
 | (* empty *)
 ]
 
@@ -1023,18 +1021,18 @@ simple_tactic: [
 | WITH "autounfold" hintbases OPT simple_occurrences
 | REPLACE "red" clause_dft_concl
 | WITH "red" simple_occurrences
-| REPLACE "simpl" OPT delta_flag OPT ref_or_pattern_occ clause_dft_concl
-| WITH "simpl" OPT delta_flag OPT ref_or_pattern_occ simple_occurrences
+| REPLACE "simpl" OPT delta_reductions OPT ref_or_pattern_occs clause_dft_concl
+| WITH "simpl" OPT delta_reductions OPT ref_or_pattern_occs simple_occurrences
 | REPLACE "hnf" clause_dft_concl
 | WITH "hnf" simple_occurrences
-| REPLACE "cbv" strategy_flag clause_dft_concl
-| WITH "cbv" strategy_flag simple_occurrences
-| REPLACE "compute" OPT delta_flag clause_dft_concl
-| WITH "compute" OPT delta_flag simple_occurrences
-| REPLACE "lazy" strategy_flag clause_dft_concl
-| WITH "lazy" strategy_flag simple_occurrences
-| REPLACE "cbn" strategy_flag clause_dft_concl
-| WITH "cbn" strategy_flag simple_occurrences
+| REPLACE "cbv" reductions clause_dft_concl
+| WITH "cbv" reductions simple_occurrences
+| REPLACE "compute" OPT delta_reductions clause_dft_concl
+| WITH "compute" OPT delta_reductions simple_occurrences
+| REPLACE "lazy" reductions clause_dft_concl
+| WITH "lazy" reductions simple_occurrences
+| REPLACE "cbn" reductions clause_dft_concl
+| WITH "cbn" reductions simple_occurrences
 | REPLACE "fold" LIST1 constr clause_dft_concl
 | WITH "fold" LIST1 constr simple_occurrences
 | DELETE "clear" LIST0 hyp
@@ -1068,8 +1066,8 @@ simple_tactic: [
 | DELETE "generalize" constr
 | REPLACE "generalize" constr LIST1 constr
 | WITH "generalize" LIST1 constr
-| REPLACE "generalize" constr occs as_name LIST0 [ "," pattern_occ as_name ]
-| WITH "generalize" LIST1 [ pattern_occ as_name ] SEP ","
+| REPLACE "generalize" constr occs as_name LIST0 [ "," pattern_occs as_name ]
+| WITH "generalize" LIST1 [ pattern_occs as_name ] SEP ","
 | REPLACE "evar" "(" ident ":" lconstr ")"
 | WITH "evar" "(" ident ":" type ")"
 | EDIT "simplify_eq" ADD_OPT destruction_arg
@@ -1518,7 +1516,7 @@ binder_tactic: [
 | MOVEALLBUT ltac_builtins
 ]
 
-field_body: [
+field_spec: [
 | REPLACE binders of_type_inst lconstr
 | WITH binders of_type_inst
 | REPLACE binders of_type_inst lconstr ":=" lconstr
@@ -1603,8 +1601,8 @@ constructors_or_record: [
 ]
 
 record_binder: [
-| REPLACE name field_body
-| WITH name OPT field_body
+| REPLACE name field_spec
+| WITH name OPT field_spec
 | DELETE name
 ]
 
@@ -1693,7 +1691,7 @@ tac2type_body: [
 
 record_declaration: [
 | DELETE fields_def
-| LIST0 field_def
+| LIST0 field_val
 ]
 
 fields_def: [ | DELETENT ]
@@ -1717,18 +1715,18 @@ simple_reserv: [
 
 in_clause: [
 | DELETE in_clause'
-| REPLACE LIST1 hypident_occ SEP "," "|-" concl_occ
-| WITH LIST1 hypident_occ SEP "," OPT ( "|-" concl_occ )
-| DELETE LIST1 hypident_occ SEP ","
+| REPLACE LIST1 hyp_occs SEP "," "|-" concl_occs
+| WITH LIST1 hyp_occs SEP "," OPT ( "|-" concl_occs )
+| DELETE LIST1 hyp_occs SEP ","
 | REPLACE "*" occs
-| WITH concl_occ
-(* todo: perhaps concl_occ should be "*" | "at" occs_nums *)
+| WITH concl_occs
+(* todo: perhaps concl_occs should be "*" | "at" occs_nums *)
 ]
 
 ltac2_in_clause: [
-| REPLACE LIST0 ltac2_hypident_occ SEP "," "|-" ltac2_concl_occ      (* Ltac2 plugin *)
-| WITH LIST0 ltac2_hypident_occ SEP "," OPT ( "|-" ltac2_concl_occ )  TAG Ltac2
-| DELETE LIST0 ltac2_hypident_occ SEP ","      (* Ltac2 plugin *)
+| REPLACE LIST0 ltac2_hyp_occs SEP "," "|-" ltac2_concl_occs      (* Ltac2 plugin *)
+| WITH LIST0 ltac2_hyp_occs SEP "," OPT ( "|-" ltac2_concl_occs )  TAG Ltac2
+| DELETE LIST0 ltac2_hyp_occs SEP ","      (* Ltac2 plugin *)
 ]
 
 decl_notations: [
@@ -2562,11 +2560,11 @@ hypident: [
 | DELETE "(" "value" "of" ident ")"      (* SSR plugin *)
 ]
 
-ref_or_pattern_occ: [
+ref_or_pattern_occs: [
 | DELETE smart_global OPT occs
 | DELETE constr OPT occs
-| unfold_occ
-| pattern_occ
+| reference_occs
+| pattern_occs
 ]
 
 clause_dft_concl: [
@@ -2828,7 +2826,7 @@ SPLICE: [
 | syn_level
 | firstorder_rhs
 | firstorder_using
-| ref_or_pattern_occ
+| ref_or_pattern_occs
 | cumul_ident_decl
 | variance
 | variance_identref
@@ -2902,18 +2900,8 @@ RENAME: [
 | hints_path hints_regexp
 | clause_dft_concl occurrences
 | in_clause goal_occurrences
-| unfold_occ reference_occs
-| pattern_occ pattern_occs
-| hypident_occ hyp_occs
-| concl_occ concl_occs
 | constr_with_bindings one_term_with_bindings
-| red_flag reduction
-| strategy_flag reductions
-| delta_flag delta_reductions
-| q_strategy_flag q_reductions
 | destruction_arg induction_arg
-| field_body field_spec
-| field_def field_val
 | bindings_with_parameters alias_definition
 ]
 
@@ -2963,7 +2951,7 @@ NOTINRSTS: [
 | q_destruction_arg
 | q_with_bindings
 | q_bindings
-| q_reductions
+| q_strategy_flag
 | q_reference
 | q_clause
 | q_occurrences

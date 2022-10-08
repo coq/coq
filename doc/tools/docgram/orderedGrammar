@@ -338,7 +338,7 @@ NOTINRSTS: [
 | q_destruction_arg
 | q_with_bindings
 | q_bindings
-| q_reductions
+| q_strategy_flag
 | q_reference
 | q_clause
 | q_occurrences
@@ -2073,8 +2073,8 @@ ltac2_clause: [
 
 ltac2_in_clause: [
 | "*" OPT ltac2_occs      (* ltac2 plugin *)
-| "*" "|-" OPT ltac2_concl_occ      (* ltac2 plugin *)
-| LIST0 ltac2_hypident_occ SEP "," OPT ( "|-" OPT ltac2_concl_occ )      (* Ltac2 plugin *)
+| "*" "|-" OPT ltac2_concl_occs      (* ltac2 plugin *)
+| LIST0 ltac2_hyp_occs SEP "," OPT ( "|-" OPT ltac2_concl_occs )      (* Ltac2 plugin *)
 ]
 
 q_occurrences: [
@@ -2089,11 +2089,11 @@ ltac2_occs_nums: [
 | OPT "-" LIST1 [ natural | "$" ident ]      (* Ltac2 plugin *)
 ]
 
-ltac2_concl_occ: [
+ltac2_concl_occs: [
 | "*" OPT ltac2_occs      (* ltac2 plugin *)
 ]
 
-ltac2_hypident_occ: [
+ltac2_hyp_occs: [
 | ltac2_hypident OPT ltac2_occs      (* ltac2 plugin *)
 ]
 
@@ -2153,7 +2153,7 @@ ltac2_goal_tactics: [
 | LIST0 ( OPT ltac2_expr ) SEP "|"      (* Ltac2 plugin *)
 ]
 
-q_reductions: [
+q_strategy_flag: [
 | ltac2_reductions      (* ltac2 plugin *)
 ]
 

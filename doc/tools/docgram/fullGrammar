@@ -134,12 +134,12 @@ record_declaration: [
 ]
 
 fields_def: [
-| field_def ";" fields_def
-| field_def
+| field_val ";" fields_def
+| field_val
 |
 ]
 
-field_def: [
+field_val: [
 | global binders ":=" lconstr
 ]
 
@@ -1000,7 +1000,7 @@ record_fields: [
 |
 ]
 
-field_body: [
+field_spec: [
 | binders of_type_inst lconstr
 | binders of_type_inst lconstr ":=" lconstr
 | binders ":=" lconstr
@@ -1008,7 +1008,7 @@ field_body: [
 
 record_binder: [
 | name
-| name field_body
+| name field_spec
 ]
 
 assum_list: [
@@ -1780,7 +1780,7 @@ simple_tactic: [
 | "eenough" constr as_ipat by_tactic
 | "generalize" constr
 | "generalize" constr LIST1 constr
-| "generalize" constr lookup_at_as_comma occs as_name LIST0 [ "," pattern_occ as_name ]
+| "generalize" constr lookup_at_as_comma occs as_name LIST0 [ "," pattern_occs as_name ]
 | "induction" induction_clause_list
 | "einduction" induction_clause_list
 | "destruct" induction_clause_list
@@ -1794,16 +1794,16 @@ simple_tactic: [
 | "inversion" quantified_hypothesis "using" constr in_hyp_list
 | "red" clause_dft_concl
 | "hnf" clause_dft_concl
-| "simpl" delta_flag OPT ref_or_pattern_occ clause_dft_concl
-| "cbv" strategy_flag clause_dft_concl
-| "cbn" strategy_flag clause_dft_concl
-| "lazy" strategy_flag clause_dft_concl
-| "compute" delta_flag clause_dft_concl
-| "vm_compute" OPT ref_or_pattern_occ clause_dft_concl
-| "native_compute" OPT ref_or_pattern_occ clause_dft_concl
-| "unfold" LIST1 unfold_occ SEP "," clause_dft_concl
+| "simpl" delta_reductions OPT ref_or_pattern_occs clause_dft_concl
+| "cbv" reductions clause_dft_concl
+| "cbn" reductions clause_dft_concl
+| "lazy" reductions clause_dft_concl
+| "compute" delta_reductions clause_dft_concl
+| "vm_compute" OPT ref_or_pattern_occs clause_dft_concl
+| "native_compute" OPT ref_or_pattern_occs clause_dft_concl
+| "unfold" LIST1 reference_occs SEP "," clause_dft_concl
 | "fold" LIST1 constr clause_dft_concl
-| "pattern" LIST1 pattern_occ SEP "," clause_dft_concl
+| "pattern" LIST1 pattern_occs SEP "," clause_dft_concl
 | "change" conversion clause_dft_concl
 | "change_no_check" conversion clause_dft_concl
 | "start" "ltac" "profiling"
@@ -1989,10 +1989,10 @@ by_arg_tac: [
 in_clause: [
 | in_clause'
 | "*" occs
-| "*" "|-" concl_occ
-| "|-" concl_occ
-| LIST1 hypident_occ SEP "," "|-" concl_occ
-| LIST1 hypident_occ SEP ","
+| "*" "|-" concl_occs
+| "|-" concl_occs
+| LIST1 hyp_occs SEP "," "|-" concl_occs
+| LIST1 hyp_occs SEP ","
 ]
 
 test_lpar_id_colon: [
@@ -2415,16 +2415,16 @@ occs: [
 |
 ]
 
-pattern_occ: [
+pattern_occs: [
 | constr occs
 ]
 
-ref_or_pattern_occ: [
+ref_or_pattern_occs: [
 | smart_global occs
 | constr occs
 ]
 
-unfold_occ: [
+reference_occs: [
 | smart_global occs
 ]
 
@@ -2492,40 +2492,40 @@ with_bindings: [
 |
 ]
 
-red_flag: [
+reduction: [
 | "beta"
 | "iota"
 | "match"
 | "fix"
 | "cofix"
 | "zeta"
-| "delta" delta_flag
+| "delta" delta_reductions
 ]
 
-delta_flag: [
+delta_reductions: [
 | "-" "[" LIST1 smart_global "]"
 | "[" LIST1 smart_global "]"
 |
 ]
 
-strategy_flag: [
-| LIST1 red_flag
-| delta_flag
+reductions: [
+| LIST1 reduction
+| delta_reductions
 ]
 
 red_expr: [
 | "red"
 | "hnf"
-| "simpl" delta_flag OPT ref_or_pattern_occ
-| "cbv" strategy_flag
-| "cbn" strategy_flag
-| "lazy" strategy_flag
-| "compute" delta_flag
-| "vm_compute" OPT ref_or_pattern_occ
-| "native_compute" OPT ref_or_pattern_occ
-| "unfold" LIST1 unfold_occ SEP ","
+| "simpl" delta_reductions OPT ref_or_pattern_occs
+| "cbv" reductions
+| "cbn" reductions
+| "lazy" reductions
+| "compute" delta_reductions
+| "vm_compute" OPT ref_or_pattern_occs
+| "native_compute" OPT ref_or_pattern_occs
+| "unfold" LIST1 reference_occs SEP ","
 | "fold" LIST1 constr
-| "pattern" LIST1 pattern_occ SEP ","
+| "pattern" LIST1 pattern_occs SEP ","
 | IDENT
 ]
 
@@ -2537,7 +2537,7 @@ hypident: [
 | "(" "value" "of" Prim.identref ")"      (* SSR plugin *)
 ]
 
-hypident_occ: [
+hyp_occs: [
 | hypident occs
 ]
 
@@ -2558,7 +2558,7 @@ opt_clause: [
 |
 ]
 
-concl_occ: [
+concl_occs: [
 | "*" occs
 |
 ]
@@ -3717,15 +3717,15 @@ G_LTAC2_hypident: [
 | "(" "value" "of" ident_or_anti ")"      (* ltac2 plugin *)
 ]
 
-G_LTAC2_hypident_occ: [
+G_LTAC2_hyp_occs: [
 | G_LTAC2_hypident G_LTAC2_occs      (* ltac2 plugin *)
 ]
 
 G_LTAC2_in_clause: [
 | "*" G_LTAC2_occs      (* ltac2 plugin *)
-| "*" "|-" G_LTAC2_concl_occ      (* ltac2 plugin *)
-| LIST0 G_LTAC2_hypident_occ SEP "," "|-" G_LTAC2_concl_occ      (* ltac2 plugin *)
-| LIST0 G_LTAC2_hypident_occ SEP ","      (* ltac2 plugin *)
+| "*" "|-" G_LTAC2_concl_occs      (* ltac2 plugin *)
+| LIST0 G_LTAC2_hyp_occs SEP "," "|-" G_LTAC2_concl_occs      (* ltac2 plugin *)
+| LIST0 G_LTAC2_hyp_occs SEP ","      (* ltac2 plugin *)
 ]
 
 clause: [
@@ -3737,7 +3737,7 @@ q_clause: [
 | clause      (* ltac2 plugin *)
 ]
 
-G_LTAC2_concl_occ: [
+G_LTAC2_concl_occs: [
 | "*" G_LTAC2_occs      (* ltac2 plugin *)
 |      (* ltac2 plugin *)
 ]
@@ -3811,7 +3811,7 @@ ltac2_red_flag: [
 | "fix"      (* ltac2 plugin *)
 | "cofix"      (* ltac2 plugin *)
 | "zeta"      (* ltac2 plugin *)
-| "delta" G_LTAC2_delta_flag      (* ltac2 plugin *)
+| "delta" G_LTAC2_delta_reductions      (* ltac2 plugin *)
 ]
 
 refglobal: [
@@ -3828,19 +3828,19 @@ refglobals: [
 | LIST1 refglobal      (* ltac2 plugin *)
 ]
 
-G_LTAC2_delta_flag: [
+G_LTAC2_delta_reductions: [
 | "-" "[" refglobals "]"      (* ltac2 plugin *)
 | "[" refglobals "]"      (* ltac2 plugin *)
 |      (* ltac2 plugin *)
 ]
 
-G_LTAC2_strategy_flag: [
+G_LTAC2_reductions: [
 | LIST1 ltac2_red_flag      (* ltac2 plugin *)
-| G_LTAC2_delta_flag      (* ltac2 plugin *)
+| G_LTAC2_delta_reductions      (* ltac2 plugin *)
 ]
 
 q_strategy_flag: [
-| G_LTAC2_strategy_flag      (* ltac2 plugin *)
+| G_LTAC2_reductions      (* ltac2 plugin *)
 ]
 
 hintdb: [

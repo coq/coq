@@ -262,16 +262,16 @@ GRAMMAR EXTEND Gram
   occs:
     [ [ "at"; occs = occs_nums -> { occs } | -> { AllOccurrences } ] ]
   ;
-  pattern_occ:
+  pattern_occs:
     [ [ c = constr; nl = occs -> { (nl,c) } ] ]
   ;
-  ref_or_pattern_occ:
+  ref_or_pattern_occs:
     (* If a string, it is interpreted as a ref
        (anyway a Coq string does not reduce) *)
     [ [ c = smart_global; nl = occs -> { nl,Inl c }
       | c = constr; nl = occs -> { nl,Inr c } ] ]
   ;
-  unfold_occ:
+  reference_occs:
     [ [ c = smart_global; nl = occs -> { (nl,c) } ] ]
   ;
   intropatterns:
@@ -341,40 +341,40 @@ GRAMMAR EXTEND Gram
   with_bindings:
     [ [ "with"; bl = bindings -> { bl } | -> { NoBindings } ] ]
   ;
-  red_flag:
+  reduction:
     [ [ IDENT "beta" -> { [FBeta] }
       | IDENT "iota" -> { [FMatch;FFix;FCofix] }
       | IDENT "match" -> { [FMatch] }
       | IDENT "fix" -> { [FFix] }
       | IDENT "cofix" -> { [FCofix] }
       | IDENT "zeta" -> { [FZeta] }
-      | IDENT "delta"; d = delta_flag -> { [d] }
+      | IDENT "delta"; d = delta_reductions -> { [d] }
     ] ]
   ;
-  delta_flag:
+  delta_reductions:
     [ [ "-"; "["; idl = LIST1 smart_global; "]" -> { FDeltaBut idl }
       | "["; idl = LIST1 smart_global; "]" -> { FConst idl }
       | -> { FDeltaBut [] }
     ] ]
   ;
-  strategy_flag:
-    [ [ s = LIST1 red_flag -> { Redops.make_red_flag (List.flatten s) }
-      | d = delta_flag -> { all_with d }
+  reductions:
+    [ [ s = LIST1 reduction -> { Redops.make_red_flag (List.flatten s) }
+      | d = delta_reductions -> { all_with d }
     ] ]
   ;
   red_expr:
     [ [ IDENT "red" -> { Red false }
       | IDENT "hnf" -> { Hnf }
-      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with d,po) }
-      | IDENT "cbv"; s = strategy_flag -> { Cbv s }
-      | IDENT "cbn"; s = strategy_flag -> { Cbn s }
-      | IDENT "lazy"; s = strategy_flag -> { Lazy s }
-      | IDENT "compute"; delta = delta_flag -> { Cbv (all_with delta) }
-      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }
-      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> { CbvNative po }
-      | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> { Unfold ul }
+      | IDENT "simpl"; d = delta_reductions; po = OPT ref_or_pattern_occs -> { Simpl (all_with d,po) }
+      | IDENT "cbv"; s = reductions -> { Cbv s }
+      | IDENT "cbn"; s = reductions -> { Cbn s }
+      | IDENT "lazy"; s = reductions -> { Lazy s }
+      | IDENT "compute"; delta = delta_reductions -> { Cbv (all_with delta) }
+      | IDENT "vm_compute"; po = OPT ref_or_pattern_occs -> { CbvVm po }
+      | IDENT "native_compute"; po = OPT ref_or_pattern_occs -> { CbvNative po }
+      | IDENT "unfold"; ul = LIST1 reference_occs SEP "," -> { Unfold ul }
       | IDENT "fold"; cl = LIST1 constr -> { Fold cl }
-      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> { Pattern pl }
+      | IDENT "pattern"; pl = LIST1 pattern_occs SEP"," -> { Pattern pl }
       | s = IDENT -> { ExtraRedExpr s } ] ]
   ;
   hypident:
@@ -389,7 +389,7 @@ GRAMMAR EXTEND Gram
         id,InHypValueOnly }
     ] ]
   ;
-  hypident_occ:
+  hyp_occs:
     [ [ h=hypident; occs=occs ->
         { let (id,l) = h in
         let id : lident = id in
@@ -398,13 +398,13 @@ GRAMMAR EXTEND Gram
   in_clause:
     [ [ "*"; occs=occs ->
           { {onhyps=None; concl_occs=occs} }
-      | "*"; "|-"; occs=concl_occ ->
+      | "*"; "|-"; occs=concl_occs ->
           { {onhyps=None; concl_occs=occs} }
-      | "|-"; occs=concl_occ ->
+      | "|-"; occs=concl_occs ->
           { {onhyps=Some []; concl_occs=occs} }
-      | hl = LIST1 hypident_occ SEP ","; "|-"; occs=concl_occ ->
+      | hl = LIST1 hyp_occs SEP ","; "|-"; occs=concl_occs ->
           { {onhyps=Some hl; concl_occs=occs} }
-      | hl = LIST1 hypident_occ SEP "," ->
+      | hl = LIST1 hyp_occs SEP "," ->
           { {onhyps=Some hl; concl_occs=NoOccurrences} } ] ]
   ;
   clause_dft_concl:
@@ -421,7 +421,7 @@ GRAMMAR EXTEND Gram
       | "at"; occs = occs_nums -> { Some {onhyps=Some[]; concl_occs=occs} }
       | -> { None } ] ]
   ;
-  concl_occ:
+  concl_occs:
     [ [ "*"; occs = occs -> { occs }
       | -> { NoOccurrences } ] ]
   ;
@@ -632,7 +632,7 @@ GRAMMAR EXTEND Gram
           CAst.make ~loc @@ TacAtom (TacGeneralize (List.map gen_everywhere (c::l))) }
       | IDENT "generalize"; c = constr; lookup_at_as_comma; nl = occs;
           na = as_name;
-          l = LIST0 [","; c = pattern_occ; na = as_name -> { (c,na) } ] ->
+          l = LIST0 [","; c = pattern_occs; na = as_name -> { (c,na) } ] ->
           { CAst.make ~loc @@ TacAtom (TacGeneralize (((nl,c),na)::l)) }
 
       (* Derived basic tactics *)
@@ -678,25 +678,25 @@ GRAMMAR EXTEND Gram
           { CAst.make ~loc @@ TacAtom (TacReduce (Red false, cl)) }
       | IDENT "hnf"; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Hnf, cl)) }
-      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+      | IDENT "simpl"; d = delta_reductions; po = OPT ref_or_pattern_occs; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Simpl (all_with d, po), cl)) }
-      | IDENT "cbv"; s = strategy_flag; cl = clause_dft_concl ->
+      | IDENT "cbv"; s = reductions; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbv s, cl)) }
-      | IDENT "cbn"; s = strategy_flag; cl = clause_dft_concl ->
+      | IDENT "cbn"; s = reductions; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbn s, cl)) }
-      | IDENT "lazy"; s = strategy_flag; cl = clause_dft_concl ->
+      | IDENT "lazy"; s = reductions; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Lazy s, cl)) }
-      | IDENT "compute"; delta = delta_flag; cl = clause_dft_concl ->
+      | IDENT "compute"; delta = delta_reductions; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Cbv (all_with delta), cl)) }
-      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+      | IDENT "vm_compute"; po = OPT ref_or_pattern_occs; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (CbvVm po, cl)) }
-      | IDENT "native_compute"; po = OPT ref_or_pattern_occ; cl = clause_dft_concl ->
+      | IDENT "native_compute"; po = OPT ref_or_pattern_occs; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (CbvNative po, cl)) }
-      | IDENT "unfold"; ul = LIST1 unfold_occ SEP ","; cl = clause_dft_concl ->
+      | IDENT "unfold"; ul = LIST1 reference_occs SEP ","; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Unfold ul, cl)) }
       | IDENT "fold"; l = LIST1 constr; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Fold l, cl)) }
-      | IDENT "pattern"; pl = LIST1 pattern_occ SEP","; cl = clause_dft_concl ->
+      | IDENT "pattern"; pl = LIST1 pattern_occs SEP","; cl = clause_dft_concl ->
           { CAst.make ~loc @@ TacAtom (TacReduce (Pattern pl, cl)) }
 
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
