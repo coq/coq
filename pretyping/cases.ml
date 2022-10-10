@@ -46,6 +46,9 @@ let error_wrong_numarg_inductive ?loc env ~ind ~expanded ~nargs ~expected_nassum
   raise_pattern_matching_error ?loc (env, Evd.empty,
     WrongNumargInductive {ind; expanded; nargs; expected_nassums; expected_ndecls})
 
+let error_non_exhaustive ?loc env cases =
+  raise_pattern_matching_error ?loc (env, Evd.empty, NonExhaustive cases)
+
 let rec irrefutable env (pat : Glob_term.cases_pattern) =
   match DAst.get pat with
   | PatVar name -> true
@@ -3214,17 +3217,17 @@ module TomatchType = struct
     }
 
   type ('env, 'ind, 'height) t =
-    | None : ('env, none, Nat.zero) t
-    | Some : ('env, 'ind, 'params, 'nrealargs, 'nrealdecls) desc ->
+    | Not_inductive : { as_name : Names.Name.t } -> ('env, none, Nat.one) t
+    | Inductive : ('env, 'ind, 'params, 'nrealargs, 'nrealdecls) desc ->
           ('env, 'ind some, 'nrealdecls Nat.succ) t
 
   let exliftn (type a b ind height) (el : (a, b) Lift.t)
       (t : (a, ind, height) t) : (b, ind, height) t =
     match t with
-    | None -> None
-    | Some { inductive_type; pattern_structure = Exists { args; terms };
+    | Not_inductive { as_name } -> Not_inductive { as_name }
+    | Inductive { inductive_type; pattern_structure = Exists { args; terms };
           predicate_pattern } ->
-        Some { inductive_type = InductiveType.exliftn el inductive_type;
+        Inductive { inductive_type = InductiveType.exliftn el inductive_type;
           pattern_structure =
             Exists { args; terms = Vector.map (ETerm.exliftn el) terms };
           predicate_pattern }
@@ -3557,11 +3560,16 @@ module Tomatch = struct
       return_pred_context = Exists { return_context with context };
       return_pred_height = tomatch.return_pred_height; }
 
-  let make_no_inductive (type env) (judgment : env EJudgment.t) =
+  let make_not_inductive (type env) (judgment : env EJudgment.t) as_name =
     { judgment;
-      inductive_type = None;
-      return_pred_height = Height.zero;
-      return_pred_context = ERelContext.with_height [];
+      inductive_type = Not_inductive { as_name };
+      return_pred_height = Height.one;
+      return_pred_context =
+        ERelContext.with_height [
+          EDeclaration.assum
+            (Context.make_annot as_name Relevant)
+            (Eq.cast (ETerm.morphism (Eq.sym Env.zero_r))
+              (EJudgment.uj_type judgment))];
     }
 
   let make_inductive (type env ind params nrealargs nrealdecls)
@@ -3596,7 +3604,7 @@ module Tomatch = struct
       Pattern.of_terms env sigma terms in
     { judgment;
       inductive_type =
-        Some { inductive_type; pattern_structure; predicate_pattern };
+        Inductive { inductive_type; pattern_structure; predicate_pattern };
       return_pred_context = ERelContext.with_height return_pred_context;
       return_pred_height
     }
@@ -3605,8 +3613,8 @@ module Tomatch = struct
       (judgment : env EJudgment.t) (tomatch : (_, ind, height) t) :
       (env, ind, height) t =
     match tomatch.inductive_type with
-    | None -> make_no_inductive judgment
-    | Some { inductive_type; predicate_pattern; _ } ->
+    | Not_inductive { as_name } -> make_not_inductive judgment as_name
+    | Inductive { inductive_type; predicate_pattern; _ } ->
         match
           InductiveType.of_term_opt_whd_all env sigma
             (EJudgment.uj_type judgment)
@@ -3692,8 +3700,9 @@ module TomatchVector = struct
           let height = Height.Ops.(return_pred_height + tl_height) in
           let hd =
             match inductive_type with
-            | None -> ETerm.lift height (EJudgment.uj_val judgment)
-            | Some _ ->
+            | Not_inductive _as_name ->
+                ETerm.lift height (EJudgment.uj_val judgment)
+            | Inductive _ ->
                 ETerm.mkReln (Rel.zero ()) tl_height |>
                 Eq.(cast (ETerm.morphism (
                   Env.morphism (Env.plus_succ ()) Refl ++
@@ -4270,15 +4279,14 @@ module PrepareTomatch (EqnLength : Type) = struct
         infer_type env judgment pats in
       match inferred with
       | Unknown ->
-          begin
+          let as_name =
             match predicate_pattern with
-            | _, None -> ()
+            | as_name, None -> as_name
             | _, Some { loc; _ } ->
                 CErrors.user_err ?loc (Pp.str
-                "Unexpected type annotation for a term of non inductive type.")
-          end;
+              "Unexpected type annotation for a term of non inductive type.") in
           return (Exists {
-            tomatch = Tomatch.make_no_inductive judgment;
+            tomatch = Tomatch.make_not_inductive judgment as_name;
             pats;
           })
       | Known inductive_type ->
@@ -5277,8 +5285,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         (env ETerm.t, height) Vector.t =
   fun env tomatch ->
     match tomatch.inductive_type with
-    | None -> []
-    | Some { inductive_type; _ } ->
+    | Not_inductive _ -> [EJudgment.uj_val tomatch.judgment]
+    | Inductive { inductive_type; _ } ->
         let args =
           ERelContext.subst_of_instance
             (InductiveFamily.get_arity env inductive_type.family)
@@ -5710,9 +5718,10 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       Format.eprintf "self judgment: %a@." Pp.pp_with
         (EJudgment.print (GlobalEnv.env globenv) sigma self_judgment);
 *)
-      let self_tomatch = self_judgment |>
-        EJudgment.lift generalize_count |>
-        Tomatch.make_no_inductive in
+      let self_tomatch =
+        Tomatch.make_not_inductive
+          (EJudgment.lift generalize_count self_judgment)
+          Anonymous in
       let new_tomatches =
         TomatchVector.append section (I self_tomatch :: new_tail_tomatches)
           plus in
@@ -5789,9 +5798,10 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         Pp.pp_with (ReturnPred.debug_print generalized_return_pred);
 *)
       let generalized_return_pred = generalized_return_pred |>
-        ReturnPred.lift_return new_height.diff |>
-        ReturnPred.morphism Refl
-          Eq.(Env.morphism Refl (sym Env.zero_l) ++ new_height.plus) in
+        ReturnPred.lift_return Height.one |>
+        ReturnPred.lift_return new_height.diff in
+      let generalized_return_pred = generalized_return_pred |>
+        ReturnPred.morphism Refl new_height.plus in
       let Exists return_pred_context =
         TomatchVector.make_return_pred_context new_tomatches in
 (*
@@ -6329,15 +6339,15 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       V.map Clause.extract_pat_var problem.eqns, problem.eqns,
       tomatch.inductive_type
     with
-    | None, _, Some _
-    | Some _, [], Some _ ->
+    | None, _, Inductive _
+    | Some _, [], Inductive _ ->
         begin match tomatch.inductive_type with
-        | None -> assert false
-        | Some desc -> compile_destruct tomatch desc problem
+        | Not_inductive _ -> assert false
+        | Inductive desc -> compile_destruct tomatch desc problem
         end
     | Some vars, _, _ ->
         compile_case_trivial tomatch vars problem
-    | None, _, None ->
+    | None, _, Not_inductive _ ->
         assert false
 
   let compile_loop
@@ -6350,7 +6360,9 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     match problem.tomatches with
     | [] ->
         begin match problem.eqns with
-        | [] -> assert false
+        | [] ->
+            (* TODO: compute the history *)
+            error_non_exhaustive (Eq.cast Env.eq (GlobalEnv.env problem.env)) []
         | _ :: _ -> compile_base problem
         end
     | I tomatch :: _ ->
@@ -6382,8 +6394,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         fun (type annot annot_tail)
           (I tomatch : (_, annot, annot_tail) TomatchVector.A.t) ->
         match tomatch.inductive_type with
-        | None -> 0, []
-        | Some { pattern_structure = Exists { args; _ }; _ } ->
+        | Not_inductive _ -> 0, []
+        | Inductive { pattern_structure = Exists { args; _ }; _ } ->
             Nat.to_int (Pattern.size_of_args args O),
             Vector.map (
               fun pattern ->
@@ -6498,20 +6510,22 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       if tomatches |> TomatchVector.for_all { f = fun (type annot annot_tail)
           (I tomatch : (_, annot, annot_tail) TomatchVector.A.t) ->
             match tomatch.inductive_type with
-            | None -> true
-            | Some { pattern_structure = Exists pattern_structure; _ } ->
+            | Not_inductive _ -> true
+            | Inductive { pattern_structure = Exists pattern_structure; _ } ->
                 Pattern.args_all_vars pattern_structure.args } then
         begin
-        let* return_pred = return_pred.f return_pred_context.context.context in
-        let return_pred = return_pred |> Eq.cast (ETerm.morphism
-          (Env.morphism Refl return_pred_context.context.eq)) in
-        return return_pred
-end
+          let* return_pred =
+            return_pred.f return_pred_context.context.context in
+          let return_pred = return_pred |>
+            Eq.cast (ETerm.morphism
+              (Env.morphism Refl return_pred_context.context.eq)) in
+          return return_pred
+        end
       else
         begin
-        make_inverted_return_pred env tomatches (Exists return_pred_context)
-          return_pred
-end in
+          make_inverted_return_pred env tomatches (Exists return_pred_context)
+            return_pred
+        end in
 (*
     let* _, return_pred_env =
       push_rel_context_m return_pred_context.context env in
