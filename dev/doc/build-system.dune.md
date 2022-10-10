@@ -185,10 +185,6 @@ You can create a developer shell with `dune utop $library`, where
 `dune utop engine` or `dune utop plugins/ltac` will launch `utop` with
 the right libraries already loaded.
 
-Note that you must invoke the `#rectypes;;` toplevel flag in order to
-use Coq libraries. The provided `.ocamlinit` file does this
-automatically.
-
 ## ocamldebug
 
 You can use [ocamldebug](https://ocaml.org/learn/tutorials/debug.html#The-OCaml-debugger) with Dune; after a build, do:

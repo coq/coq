@@ -141,9 +141,11 @@ end
 
 (** A view type for the logical monad, which is a form of list, hence
     we can decompose it with as a list. *)
-type ('a, 'b, 'e) list_view =
+type ('a, 'b, 'e) list_view_ =
   | Nil of 'e
-  | Cons of 'a * ('e -> 'b)
+  | Cons of 'a * 'b
+
+type ('a, 'b, 'e) list_view = ('a, 'e -> 'b, 'e) list_view_
 
 module BackState =
 struct
@@ -241,25 +243,26 @@ struct
 
   (** For [reflect] and [split] see the "Backtracking, Interleaving,
       and Terminating Monad Transformers" paper.  *)
-  type ('a, 'e) reified = ('a, ('a, 'e) reified, 'e) list_view NonLogical.t
+  type ('a, 'e) reified = ('a, ('a, 'e) reified_, 'e) list_view_ NonLogical.t
+  and ('a, 'e) reified_ = {r : 'e -> ('a, 'e) reified} [@@unboxed]
 
   let rec reflect (m : ('a * 'o, 'e) reified) =
     { iolist = fun s0 nil cons ->
       let next = function
       | Nil e -> nil e
-      | Cons ((x, s), l) -> cons x s (fun e -> (reflect (l e)).iolist s0 nil cons)
+      | Cons ((x, s), {r=l}) -> cons x s (fun e -> (reflect (l e)).iolist s0 nil cons)
       in
       NonLogical.(m >>= next)
     }
 
-  let split m : ((_, _, _) list_view, _, _, _) t =
+  let split m : (_ list_view, _, _, _) t =
     let rnil e = NonLogical.return (Nil e) in
-    let rcons p s l = NonLogical.return (Cons ((p, s), l)) in
+    let rcons p s l = NonLogical.return (Cons ((p, s), {r=l})) in
     { iolist = fun s nil cons ->
       let open NonLogical in
       m.iolist s rnil rcons >>= begin function
       | Nil e -> cons (Nil e) s nil
-      | Cons ((x, s), l) ->
+      | Cons ((x, s), {r=l}) ->
         let l e = reflect (l e) in
         cons (Cons (x, l)) s nil
       end }
@@ -268,7 +271,7 @@ struct
     let rnil e = NonLogical.return (Nil e) in
     let rcons x s l =
       let p = (x, s) in
-      NonLogical.return (Cons (p, l))
+      NonLogical.return (Cons (p, {r=l}))
     in
     m.iolist s rnil rcons
 
@@ -324,6 +327,7 @@ struct
   type iexn = Exninfo.iexn
 
   type 'a reified = ('a, iexn) BackState.reified
+  type 'a reified_ = ('a, iexn) BackState.reified_
 
   (** Inherited from Backstate *)
 
@@ -379,7 +383,7 @@ struct
     let rnil e = NonLogical.return (Nil e) in
     let rcons x s l =
       let p = (x, s.sstate, s.wstate, s.ustate) in
-      NonLogical.return (Cons (p, l))
+      NonLogical.return (Cons (p, {r=l}))
     in
     m.iolist s rnil rcons
 

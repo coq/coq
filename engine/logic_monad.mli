@@ -108,9 +108,11 @@ end
 
 (** A view type for the logical monad, which is a form of list, hence
     we can decompose it with as a list. *)
-type ('a, 'b, 'e) list_view =
+type ('a, 'b, 'e) list_view_ =
 | Nil of 'e
-| Cons of 'a * ('e -> 'b)
+| Cons of 'a * 'b
+
+type ('a, 'b, 'e) list_view = ('a, 'e -> 'b, 'e) list_view_
 
 module BackState : sig
 
@@ -144,8 +146,9 @@ module BackState : sig
   val lift : 'a NonLogical.t -> ('a, 's, 's, 'e) t
 
   type ('a, 'e) reified
+  type ('a, 'e) reified_
 
-  val repr : ('a, 'e) reified -> ('a, ('a, 'e) reified, 'e) list_view NonLogical.t
+  val repr : ('a, 'e) reified -> ('a, ('a, 'e) reified_, 'e) list_view_ NonLogical.t
 
   val run : ('a, 'i, 'o, 'e) t -> 'i -> ('a * 'o, 'e) reified
 
@@ -199,8 +202,9 @@ module Logical (P:Param) : sig
   val lift : 'a NonLogical.t -> 'a t
 
   type 'a reified = ('a, Exninfo.iexn) BackState.reified
+  type 'a reified_ = ('a, Exninfo.iexn) BackState.reified_
 
-  val repr : 'a reified -> ('a, 'a reified, Exninfo.iexn) list_view NonLogical.t
+  val repr : 'a reified -> ('a, 'a reified_, Exninfo.iexn) list_view_ NonLogical.t
 
   val run : 'a t -> P.e -> P.s -> ('a * P.s * P.w * P.u) reified
 

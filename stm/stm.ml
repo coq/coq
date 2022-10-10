@@ -209,21 +209,6 @@ type cached_state =
 type branch = Vcs_.Branch.t * Vcs_.branch_info
 type backup = { mine : branch; others : branch list }
 
-type 'vcs state_info = { (* TODO: Make this record private to VCS *)
-  mutable n_reached : int;      (* debug cache: how many times was computed *)
-  mutable n_goals : int;        (* open goals: indentation *)
-  mutable state : cached_state; (* state value *)
-  mutable proof_mode : Pvernac.proof_mode option;
-  mutable vcs_backup : 'vcs option * backup option;
-}
-let default_info proof_mode =
-  {
-    n_reached = 0; n_goals = 0;
-    state = EmptyState;
-    proof_mode;
-    vcs_backup = (None,None);
-  }
-
 module DynBlockData : Dyn.S = Dyn.Make ()
 
 (* Clusters of nodes implemented as Dag properties.  While Dag and Vcs impose
@@ -327,7 +312,14 @@ module VCS : sig
     pos  : id;
   }
 
-  type vcs = (transaction, vcs state_info, box) Vcs_.t
+  type vcs = (transaction, state_info, box) Vcs_.t
+  and state_info = { (* TODO: Make this record private to VCS *)
+    mutable n_reached : int;      (* debug cache: how many times was computed *)
+    mutable n_goals : int;        (* open goals: indentation *)
+    mutable state : cached_state; (* state value *)
+    mutable proof_mode : Pvernac.proof_mode option;
+    mutable vcs_backup : vcs option * backup option;
+  }
 
   val init : stm_doc_type -> id -> Vernacstate.Parser.t -> doc
   (* val get_type : unit -> stm_doc_type *)
@@ -354,7 +346,7 @@ module VCS : sig
   val reachable : id -> Stateid.Set.t
   val cur_tip : unit -> id
 
-  val get_info : id -> vcs state_info
+  val get_info : id -> state_info
   val reached : id -> unit
   val goals : id -> int -> unit
   val set_state : id -> cached_state -> unit
@@ -393,6 +385,22 @@ end = struct (* {{{ *)
   exception Expired = Vcs_aux.Expired
 
   open Printf
+
+  type vcs = (transaction, state_info, box) t
+  and state_info = { (* TODO: Make this record private to VCS *)
+    mutable n_reached : int;      (* debug cache: how many times was computed *)
+    mutable n_goals : int;        (* open goals: indentation *)
+    mutable state : cached_state; (* state value *)
+    mutable proof_mode : Pvernac.proof_mode option;
+    mutable vcs_backup : vcs option * backup option;
+  }
+  let default_info proof_mode =
+    {
+      n_reached = 0; n_goals = 0;
+      state = EmptyState;
+      proof_mode;
+      vcs_backup = (None,None);
+    }
 
   let print_dag vcs () =
 
@@ -518,7 +526,6 @@ end = struct (* {{{ *)
     ignore(Sys.command
       ("dot -Tpdf -Gcharset=latin1 " ^ fname_dot ^ " -o" ^ fname_ps))
 
-  type vcs = (transaction, vcs state_info, box) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
   let doc_type = ref (Interactive (Coqargs.TopLogical (Names.DirPath.make [])))
