@@ -43,6 +43,10 @@ val find_load_path : CUnix.physical_path -> t
 val find_with_logical_path : Names.DirPath.t -> t list
 (** get the list of load paths that correspond to a given logical path *)
 
+val find_extra_dep_with_logical_path :
+  ?loc:Loc.t -> from:Names.DirPath.t -> file:string -> unit -> CUnix.physical_path
+(** finds a file rooted in from. @raise UserError if the file is not found *)
+
 val locate_file : string -> string
 (** Locate a file among the registered paths. Do not use this function, as
     it does not respect the visibility of paths. *)
