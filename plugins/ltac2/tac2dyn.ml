@@ -25,5 +25,3 @@ struct
   type _ pack = Pack : ('raw, 'glb) M.t -> ('raw * 'glb) pack
   include Arg.Map(struct type 'a t = 'a pack end)
 end
-
-module Val = Dyn.Make(struct end)

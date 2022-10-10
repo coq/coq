@@ -561,7 +561,7 @@ let () = register_init "constr" begin fun env sigma c ->
 end
 
 let () = register_init "preterm" begin fun env sigma c ->
-  let c = to_ext val_preterm c in
+  let c = repr_to preterm c in
   let c = try Printer.pr_closed_glob_env env sigma c with _ -> str "..." in
   str "preterm:(" ++ c ++ str ")"
 end
@@ -577,7 +577,7 @@ let () = register_init "message" begin fun _ _ pp ->
 end
 
 let () = register_init "err" begin fun _ _ e ->
-  let e = to_ext val_exn e in
+  let e = to_exn e in
   str "err:(" ++ CErrors.iprint_no_report e ++ str ")"
 end
 
@@ -603,7 +603,7 @@ type format =
 | FmtLiteral of string
 | FmtAlpha
 
-let val_format = Tac2dyn.Val.create "format"
+let format : format list repr = magic_repr ()
 
 exception InvalidFormat
 

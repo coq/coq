@@ -121,3 +121,6 @@ val unify : constr -> constr -> unit tactic
 val inversion : Inv.inversion_kind -> destruction_arg -> intro_pattern option -> Id.t list option -> unit tactic
 
 val contradiction : constr_with_bindings option -> unit tactic
+
+(** Type adapter *)
+val mk_qhyp : Tac2types.quantified_hypothesis -> Tactypes.quantified_hypothesis

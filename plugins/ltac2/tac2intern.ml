@@ -1145,7 +1145,8 @@ let rec intern_rec env {loc;v=e} = match e with
   let (e2, t2) = intern_rec env e2 in
   let () = unify ?loc env t (GTypRef (Other t_bool, [])) in
   let () = unify ?loc:loc1 env t1 t2 in
-  (GTacCse (e, Other t_bool, [|e1; e2|], [||]), t2)
+  (* bool = false | true *)
+  (GTacCse (e, Other t_bool, [|e2; e1|], [||]), t2)
 | CTacCse (e, pl) ->
   let e,brs,rt = intern_case env loc e pl in
   begin try

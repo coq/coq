@@ -9,30 +9,12 @@
 (************************************************************************)
 
 open Names
-open EConstr
-open Tac2dyn
 
 (** {5 Toplevel values} *)
 
 type closure
 
-type valexpr =
-| ValInt of int
-  (** Immediate integers *)
-| ValBlk of int * valexpr array
-  (** Structured blocks *)
-| ValStr of Bytes.t
-  (** Strings *)
-| ValCls of closure
-  (** Closures *)
-| ValOpn of KerName.t * valexpr array
-  (** Open constructors *)
-| ValExt : 'a Tac2dyn.Val.tag * 'a -> valexpr
-  (** Arbitrary data *)
-| ValUint63 of Uint63.t
-  (** Primitive integers *)
-| ValFloat of Float64.t
-  (** Primitive floats *)
+type valexpr
 
 type 'a arity
 
@@ -62,6 +44,10 @@ val repr_to : 'a repr -> valexpr -> 'a
 val make_repr : ('a -> valexpr) -> (valexpr -> 'a) -> 'a repr
 
 val map_repr : ('a -> 'b) -> ('b -> 'a) -> 'a repr -> 'b repr
+
+(** Make sure the instantiated ['a] does not involve types with
+    different representations (closures, open types). *)
+val magic_repr : unit -> 'a repr
 
 (** These functions allow to convert back and forth between OCaml and Ltac2
     data representation. The [to_*] functions raise an anomaly whenever the data
@@ -127,8 +113,6 @@ val of_pair : ('a -> valexpr) -> ('b -> valexpr) -> 'a * 'b -> valexpr
 val to_pair : (valexpr -> 'a) -> (valexpr -> 'b) -> valexpr -> 'a * 'b
 val pair : 'a repr -> 'b repr -> ('a * 'b) repr
 
-val of_triple : ('a -> valexpr) -> ('b -> valexpr) -> ('c -> valexpr) -> 'a * 'b * 'c -> valexpr
-val to_triple : (valexpr -> 'a) -> (valexpr -> 'b) -> (valexpr -> 'c) -> valexpr -> 'a * 'b * 'c
 val triple : 'a repr -> 'b repr -> 'c repr -> ('a * 'b * 'c) repr
 
 val of_option : ('a -> valexpr) -> 'a option -> valexpr
@@ -155,10 +139,6 @@ val of_reference : GlobRef.t -> valexpr
 val to_reference : valexpr -> GlobRef.t
 val reference : GlobRef.t repr
 
-val of_ext : 'a Val.tag -> 'a -> valexpr
-val to_ext : 'a Val.tag -> valexpr -> 'a
-val repr_ext : 'a Val.tag -> 'a repr
-
 val of_open : KerName.t * valexpr array -> valexpr
 val to_open : valexpr -> KerName.t * valexpr array
 val open_ : (KerName.t * valexpr array) repr
@@ -180,31 +160,20 @@ val fun1 : 'a repr -> 'b repr -> ('a, 'b) fun1 repr
 
 val valexpr : valexpr repr
 
-(** {5 Dynamic tags} *)
-
-val val_constr : EConstr.t Val.tag
-val val_ident : Id.t Val.tag
-val val_pattern : Pattern.constr_pattern Val.tag
-val val_preterm : Ltac_pretype.closed_glob_constr Val.tag
-val val_matching_context : Constr_matching.context Val.tag
-val val_evar : Evar.t Val.tag
-val val_pp : Pp.t Val.tag
-val val_sort : ESorts.t Val.tag
-val val_cast : Constr.cast_kind Val.tag
-val val_inductive : inductive Val.tag
-val val_constant : Constant.t Val.tag
-val val_constructor : constructor Val.tag
-val val_projection : Projection.t Val.tag
-val val_case : Constr.case_info Val.tag
-val val_binder : (Name.t Context.binder_annot * types) Val.tag
-val val_univ : Univ.Level.t Val.tag
-val val_free : Id.Set.t Val.tag
-val val_ltac1 : Geninterp.Val.t Val.tag
-val val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag
-
-val val_exn : Exninfo.iexn Tac2dyn.Val.tag
-(** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]
-    should be put into a value with tag [val_exn]. *)
+(** Extra reprs *)
+val preterm : Ltac_pretype.closed_glob_constr repr
+val matching_context : Constr_matching.context repr
+val sort : EConstr.ESorts.t repr
+val cast : Constr.cast_kind repr
+val inductive : inductive repr
+val constructor : constructor repr
+val projection : Projection.t repr
+val case : Constr.case_info repr
+val binder : (Name.t Context.binder_annot * EConstr.types) repr
+val univ : Univ.Level.t repr
+val free : Id.Set.t repr
+val ltac1 : Geninterp.Val.t repr
+val ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) repr
 
 (** Closures *)
 

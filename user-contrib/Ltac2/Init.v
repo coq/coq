@@ -36,6 +36,7 @@ Ltac2 Type constr.
 Ltac2 Type preterm.
 Ltac2 Type binder.
 
+Ltac2 Type loc.
 Ltac2 Type message.
 Ltac2 Type ('a, 'b, 'c, 'd) format.
 Ltac2 Type exn := [ .. ].
@@ -47,7 +48,7 @@ Ltac2 Type 'a option := [ None | Some ('a) ].
 
 Ltac2 Type 'a ref := { mutable contents : 'a }.
 
-Ltac2 Type bool := [ true | false ].
+Ltac2 Type bool := [ false | true ].
 
 Ltac2 Type 'a result := [ Val ('a) | Err (exn) ].
 

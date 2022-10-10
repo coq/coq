@@ -16,8 +16,8 @@ Ltac2 Type t := pattern.
 Ltac2 Type context.
 
 Ltac2 Type match_kind := [
-| MatchPattern
 | MatchContext
+| MatchPattern
 ].
 
 Ltac2 @ external empty_context : unit -> context :=

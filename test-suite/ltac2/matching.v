@@ -38,6 +38,17 @@ in
 match! '(nat -> bool) with context [?a] => f a end.
 Abort.
 
+
+Goal True /\ (1 = 2).
+Proof.
+  Fail lazy_match! goal with
+  | [ |- ?a = ?b ] => ()
+  end.
+  lazy_match! goal with
+  | [ |- context [ ?a = ?b ] ] => ()
+  end.
+Abort.
+
 Goal forall (i j : unit) (x y : nat) (b : bool), True.
 Proof.
 Fail match! goal with

@@ -18,63 +18,18 @@ open Proofview.Notations
 
 module Value = Tac2ffi
 
-(** Make a representation with a dummy from function *)
-let make_to_repr f = Tac2ffi.make_repr (fun _ -> assert false) f
-
 let return x = Proofview.tclUNIT x
 let v_unit = Value.of_unit ()
 let thaw r f = Tac2ffi.app_fun1 f unit r ()
-let uthaw r f = Tac2ffi.app_fun1 (to_fun1 unit r f) unit r ()
 let thunk r = fun1 unit r
 
-let to_name c = match Value.to_option Value.to_ident c with
-| None -> Anonymous
-| Some id -> Name id
+let name : Name.t repr = magic_repr ()
 
-let name = make_to_repr to_name
+let occurrences : occurrences repr = magic_repr ()
 
-let to_occurrences = function
-| ValInt 0 -> AllOccurrences
-| ValBlk (0, [| vl |]) -> AllOccurrencesBut (Value.to_list Value.to_int vl)
-| ValInt 1 -> NoOccurrences
-| ValBlk (1, [| vl |]) -> OnlyOccurrences (Value.to_list Value.to_int vl)
-| _ -> assert false
+let clause : clause repr = magic_repr ()
 
-let occurrences = make_to_repr to_occurrences
-
-let to_hyp_location_flag v = match Value.to_int v with
-| 0 -> InHyp
-| 1 -> InHypTypeOnly
-| 2 -> InHypValueOnly
-| _ -> assert false
-
-let to_clause v = match Value.to_tuple v with
-| [| hyps; concl |] ->
-  let cast v = match Value.to_tuple v with
-  | [| hyp; occ; flag |] ->
-    (Value.to_ident hyp, to_occurrences occ, to_hyp_location_flag flag)
-  | _ -> assert false
-  in
-  let hyps = Value.to_option (fun h -> Value.to_list cast h) hyps in
-  { onhyps = hyps; concl_occs = to_occurrences concl; }
-| _ -> assert false
-
-let clause = make_to_repr to_clause
-
-let to_red_flag v = match Value.to_tuple v with
-| [| beta; iota; fix; cofix; zeta; delta; const |] ->
-  {
-    rBeta = Value.to_bool beta;
-    rMatch = Value.to_bool iota;
-    rFix = Value.to_bool fix;
-    rCofix = Value.to_bool cofix;
-    rZeta = Value.to_bool zeta;
-    rDelta = Value.to_bool delta;
-    rConst = Value.to_list Value.to_reference const;
-  }
-| _ -> assert false
-
-let red_flags = make_to_repr to_red_flag
+let red_flags : GlobRef.t glob_red_flag repr = magic_repr ()
 
 let pattern_with_occs = pair pattern occurrences
 
@@ -82,134 +37,27 @@ let constr_with_occs = pair constr occurrences
 
 let reference_with_occs = pair reference occurrences
 
-let rec to_intro_pattern v = match Value.to_block v with
-| (0, [| b |]) -> IntroForthcoming (Value.to_bool b)
-| (1, [| pat |]) -> IntroNaming (to_intro_pattern_naming pat)
-| (2, [| act |]) -> IntroAction (to_intro_pattern_action act)
-| _ -> assert false
+let intro_pattern : intro_pattern repr = magic_repr ()
 
-and to_intro_pattern_naming = function
-| ValBlk (0, [| id |]) -> IntroIdentifier (Value.to_ident id)
-| ValBlk (1, [| id |]) -> IntroFresh (Value.to_ident id)
-| ValInt 0 -> IntroAnonymous
-| _ -> assert false
+let intro_patterns = list intro_pattern
 
-and to_intro_pattern_action = function
-| ValInt 0 -> IntroWildcard
-| ValBlk (0, [| op |]) -> IntroOrAndPattern (to_or_and_intro_pattern op)
-| ValBlk (1, [| inj |]) ->
-  let map ipat = to_intro_pattern ipat in
-  IntroInjection (Value.to_list map inj)
-| ValBlk (2, [| c; ipat |]) ->
-  let c = Value.to_fun1 Value.unit Value.constr c in
-  IntroApplyOn (c, to_intro_pattern ipat)
-| ValBlk (3, [| b |]) -> IntroRewrite (Value.to_bool b)
-| _ -> assert false
+let destruction_arg : destruction_arg repr = magic_repr ()
 
-and to_or_and_intro_pattern v = match Value.to_block v with
-| (0, [| ill |]) ->
-  IntroOrPattern (Value.to_list to_intro_patterns ill)
-| (1, [| il |]) ->
-  IntroAndPattern (to_intro_patterns il)
-| _ -> assert false
+let induction_clause : induction_clause repr = magic_repr ()
 
-and to_intro_patterns il =
-  Value.to_list to_intro_pattern il
+let assertion : assertion repr = magic_repr ()
 
-let intro_pattern = make_to_repr to_intro_pattern
+let rewriting : rewriting repr = magic_repr ()
 
-let intro_patterns = make_to_repr to_intro_patterns
+let debug : Hints.debug repr = magic_repr ()
 
-let to_destruction_arg v = match Value.to_block v with
-| (0, [| c |]) ->
-  let c = uthaw constr_with_bindings c in
-  ElimOnConstr c
-| (1, [| id |]) -> ElimOnIdent (Value.to_ident id)
-| (2, [| n |]) -> ElimOnAnonHyp (Value.to_int n)
-| _ -> assert false
+let strategy : Class_tactics.search_strategy repr = magic_repr ()
 
-let destruction_arg = make_to_repr to_destruction_arg
+let inversion_kind : Inv.inversion_kind repr = magic_repr ()
 
-let to_induction_clause v = match Value.to_tuple v with
-| [| arg; eqn; as_; in_ |] ->
-  let arg = to_destruction_arg arg in
-  let eqn = Value.to_option to_intro_pattern_naming eqn in
-  let as_ = Value.to_option to_or_and_intro_pattern as_ in
-  let in_ = Value.to_option to_clause in_ in
-  (arg, eqn, as_, in_)
-| _ ->
-  assert false
+let move_location : Id.t Logic.move_location repr = magic_repr ()
 
-let induction_clause = make_to_repr to_induction_clause
-
-let to_assertion v = match Value.to_block v with
-| (0, [| ipat; t; tac |]) ->
-  let to_tac t = Value.to_fun1 Value.unit Value.unit t in
-  let ipat = Value.to_option to_intro_pattern ipat in
-  let t = Value.to_constr t in
-  let tac = Value.to_option to_tac tac in
-  AssertType (ipat, t, tac)
-| (1, [| id; c |]) ->
-  AssertValue (Value.to_ident id, Value.to_constr c)
-| _ -> assert false
-
-let assertion = make_to_repr to_assertion
-
-let to_multi = function
-| ValBlk (0, [| n |]) -> Precisely (Value.to_int n)
-| ValBlk (1, [| n |]) -> UpTo (Value.to_int n)
-| ValInt 0 -> RepeatStar
-| ValInt 1 -> RepeatPlus
-| _ -> assert false
-
-let to_rewriting v = match Value.to_tuple v with
-| [| orient; repeat; c |] ->
-  let orient = Value.to_option Value.to_bool orient in
-  let repeat = to_multi repeat in
-  let c = uthaw constr_with_bindings c in
-  (orient, repeat, c)
-| _ -> assert false
-
-let rewriting = make_to_repr to_rewriting
-
-let to_debug v = match Value.to_int v with
-| 0 -> Hints.Off
-| 1 -> Hints.Info
-| 2 -> Hints.Debug
-| _ -> assert false
-
-let debug = make_to_repr to_debug
-
-let to_strategy v = match Value.to_int v with
-| 0 -> Class_tactics.Bfs
-| 1 -> Class_tactics.Dfs
-| _ -> assert false
-
-let strategy = make_to_repr to_strategy
-
-let to_inversion_kind v = match Value.to_int v with
-| 0 -> Inv.SimpleInversion
-| 1 -> Inv.FullInversion
-| 2 -> Inv.FullInversionClear
-| _ -> assert false
-
-let inversion_kind = make_to_repr to_inversion_kind
-
-let to_move_location = function
-| ValInt 0 -> Logic.MoveFirst
-| ValInt 1 -> Logic.MoveLast
-| ValBlk (0, [|id|]) -> Logic.MoveAfter (Value.to_ident id)
-| ValBlk (1, [|id|]) -> Logic.MoveBefore (Value.to_ident id)
-| _ -> assert false
-
-let move_location = make_to_repr to_move_location
-
-let to_generalize_arg v = match Value.to_tuple v with
-| [| c; occs; na |] ->
-  (Value.to_constr c, to_occurrences occs, to_name na)
-| _ -> assert false
-
-let generalize_arg = make_to_repr to_generalize_arg
+let generalize_arg = triple constr occurrences name
 
 (** Standard tactics sharing their implementation with Ltac1 *)
 
@@ -458,7 +306,7 @@ let () = define_prim2 "tac_right" bool bindings begin fun ev bnd ->
 end
 
 let () = define_prim1 "tac_introsuntil" qhyp begin fun h ->
-  Tactics.intros_until h
+  Tactics.intros_until (Tac2tactics.mk_qhyp h)
 end
 
 let () = define_prim1 "tac_exactnocheck" constr begin fun c ->

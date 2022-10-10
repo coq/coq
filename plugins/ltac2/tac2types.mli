@@ -10,7 +10,6 @@
 
 open Names
 open EConstr
-open Proofview
 
 (** Redefinition of Ltac1 data structures because of impedance mismatch *)
 
@@ -19,9 +18,9 @@ type advanced_flag = bool
 
 type 'a thunk = (unit, 'a) Tac2ffi.fun1
 
-type quantified_hypothesis = Tactypes.quantified_hypothesis =
+type quantified_hypothesis =
 | AnonHyp of int
-| NamedHyp of lident
+| NamedHyp of Id.t
 
 type explicit_bindings = (quantified_hypothesis * EConstr.t) list
 
@@ -33,7 +32,7 @@ type bindings =
 type constr_with_bindings = EConstr.constr * bindings
 
 type core_destruction_arg =
-| ElimOnConstr of constr_with_bindings tactic
+| ElimOnConstr of constr_with_bindings thunk
 | ElimOnIdent of Id.t
 | ElimOnAnonHyp of int
 
@@ -87,7 +86,7 @@ type multi = Equality.multi =
 type rewriting =
   bool option *
   multi *
-  constr_with_bindings tactic
+  constr_with_bindings thunk
 
 type assertion =
 | AssertType of intro_pattern option * constr * unit thunk option

@@ -61,7 +61,7 @@ type format =
 | FmtLiteral of string
 | FmtAlpha
 
-val val_format : format list Tac2dyn.Val.tag
+val format : format list Tac2ffi.repr
 
 exception InvalidFormat
 

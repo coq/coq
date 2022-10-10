@@ -102,7 +102,7 @@ Ltac2 Type repeat := [
 | RepeatPlus
 ].
 
-Ltac2 Type orientation := [ LTR | RTL ].
+Ltac2 Type orientation := [ RTL | LTR ].
 
 Ltac2 Type rewriting := {
   rew_orient : orientation option;
@@ -246,9 +246,9 @@ Ltac2 @ external subst_all : unit -> unit := "ltac2" "tac_substall".
 
 (** auto *)
 
-Ltac2 Type debug := [ Off | Info | Debug ].
+Ltac2 Type debug := [ Debug | Info | Off ].
 
-Ltac2 Type strategy := [ BFS | DFS ].
+Ltac2 Type strategy := [ DFS | BFS ].
 
 Ltac2 @ external trivial : debug -> (unit -> constr) list -> ident list option -> unit := "ltac2" "tac_trivial".
 

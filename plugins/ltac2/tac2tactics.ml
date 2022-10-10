@@ -40,10 +40,14 @@ let delayed_of_tactic tac env sigma =
 let delayed_of_thunk r tac env sigma =
   delayed_of_tactic (thaw r tac) env sigma
 
+let mk_qhyp = function
+  | AnonHyp i -> Tactypes.AnonHyp i
+  | NamedHyp id -> Tactypes.NamedHyp (CAst.make id)
+
 let mk_bindings = function
 | ImplicitBindings l -> Tactypes.ImplicitBindings l
 | ExplicitBindings l ->
-  let l = List.map CAst.make l in
+  let l = List.map (fun v -> CAst.make (on_fst mk_qhyp v)) l in
   Tactypes.ExplicitBindings l
 | NoBindings -> Tactypes.NoBindings
 
@@ -111,7 +115,7 @@ let apply adv ev cb cl =
 
 let mk_destruction_arg = function
 | ElimOnConstr c ->
-  let c = c >>= fun c -> return (mk_with_bindings c) in
+  let c = thaw constr_with_bindings c >>= fun c -> return (mk_with_bindings c) in
   Tactics.ElimOnConstr (delayed_of_tactic c)
 | ElimOnIdent id -> Tactics.ElimOnIdent CAst.(make id)
 | ElimOnAnonHyp n -> Tactics.ElimOnAnonHyp n
@@ -175,7 +179,7 @@ let change pat c cl =
 
 let rewrite ev rw cl by =
   let map_rw (orient, repeat, c) =
-    let c = c >>= fun c -> return (mk_with_bindings c) in
+    let c = thaw constr_with_bindings c >>= fun c -> return (mk_with_bindings c) in
     (Option.default true orient, repeat, None, delayed_of_tactic c)
   in
   let rw = List.map map_rw rw in
@@ -342,7 +346,7 @@ let on_destruction_arg tac ev arg =
     | ElimOnConstr c ->
       let env = Proofview.Goal.env gl in
       Proofview.tclEVARMAP >>= fun sigma ->
-      c >>= fun (c, lbind) ->
+      thaw constr_with_bindings c >>= fun (c, lbind) ->
       let lbind = mk_bindings lbind in
       Proofview.tclEVARMAP >>= fun sigma' ->
       let flags = tactic_infer_flags ev in

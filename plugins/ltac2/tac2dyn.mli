@@ -31,6 +31,3 @@ sig
   val find : ('a, 'b) Arg.tag -> t -> ('a * 'b) pack
   val mem : ('a, 'b) Arg.tag -> t -> bool
 end
-
-module Val : Dyn.S
-(** Toplevel values *)

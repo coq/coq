@@ -82,34 +82,34 @@ let return = Proofview.tclUNIT
 
 exception NoMatch
 
+let fields v = Array.init (Obj.size v) (fun i -> Obj.field v i)
+
 let match_ctor_against ctor v =
-  match ctor, v with
-  | { cindx = Open ctor }, ValOpn (ctor', vs) ->
+  match ctor with
+  | { cindx = Open ctor } ->
+    let (ctor', vs) = Obj.magic v in
     if KerName.equal ctor ctor' then vs
     else raise NoMatch
-  | { cindx = Open _ }, _ -> assert false
-  | { cnargs = 0; cindx = Closed i }, ValInt i' ->
-    if Int.equal i i' then [| |]
+  | { cnargs = 0; cindx = Closed i } ->
+    if Obj.is_int v && Int.equal i (Obj.obj v : int) then [| |]
     else raise NoMatch
-  | { cnargs = 0; cindx = Closed _ }, ValBlk _ -> raise NoMatch
-  | _, ValInt _ -> raise NoMatch
-  | { cindx = Closed i }, ValBlk (i', vs) ->
-    if Int.equal i i' then vs
+  | { cindx = Closed i } ->
+    if Obj.is_block v && Int.equal i (Obj.tag v) then fields v
     else raise NoMatch
-  | { cindx = Closed _ }, ValOpn _ -> assert false
-  | _, (ValStr _ | ValCls _ | ValExt _ | ValUint63 _ | ValFloat _) -> assert false
 
 let check_atom_against atm v =
-  match atm, v with
-  | AtmInt n, ValInt n' -> if not (Int.equal n n') then raise NoMatch
-  | AtmStr s, ValStr s' -> if not (String.equal s (Bytes.unsafe_to_string s')) then raise NoMatch
-  | (AtmInt _ | AtmStr _), _ -> assert false
+  match atm with
+  | AtmInt n -> if not (Obj.is_int v && Int.equal n (Obj.obj v : int)) then raise NoMatch
+  | AtmStr s ->
+    if not (Int.equal Obj.string_tag (Obj.tag v) &&
+            String.equal s (Bytes.unsafe_to_string (Obj.obj v : Bytes.t)))
+    then raise NoMatch
 
 let rec match_pattern_against ist pat v =
   match pat with
-  | GPatVar x -> push_name ist x v
+  | GPatVar x -> push_name ist x (Obj.obj v : valexpr)
   | GPatAtm atm -> check_atom_against atm v; ist
-  | GPatAs (p,x) -> match_pattern_against (push_name ist (Name x) v) p v
+  | GPatAs (p,x) -> match_pattern_against (push_name ist (Name x) (Obj.obj v : valexpr)) p v
   | GPatRef (ctor,pats) ->
     let vs = match_ctor_against ctor v in
     List.fold_left_i (fun i ist pat -> match_pattern_against ist pat vs.(i)) 0 ist pats
@@ -227,7 +227,7 @@ and interp_with ist e cse def =
 and interp_full_match ist e = function
   | [] -> CErrors.anomaly Pp.(str "ltac2 match not exhaustive")
   | (pat,br) :: rest ->
-    begin match match_pattern_against ist pat e with
+    begin match match_pattern_against ist pat (Obj.repr e) with
     | exception NoMatch -> interp_full_match ist e rest
     | ist -> interp ist br
     end
