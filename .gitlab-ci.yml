@@ -717,36 +717,38 @@ library:ci-math_classes:
 library:ci-mathcomp:
   extends: .ci-template-flambda
 
+library:ci-mathcomp_test:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - library:ci-mathcomp
+
 library:ci-mczify:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
 
-library:ci-mathcomp_base:
-  extends: .ci-template-flambda
-
 library:ci-finmap:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_base
+  - library:ci-mathcomp
 
 library:ci-bigenough:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_base
+  - library:ci-mathcomp
 
 library:ci-analysis:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_base
+  - library:ci-mathcomp
   - library:ci-finmap
   - library:ci-bigenough
   - plugin:ci-elpi  # for Hierarchy Builder
-  # we need a mathcomp_base here as elpi requires OCaml < 4.13
 
 library:ci-paco:
   extends: .ci-template
@@ -865,7 +867,7 @@ plugin:ci-serapi:
   extends: .ci-template-flambda
   needs:
   - build:edge+flambda
-  - library:ci-mathcomp_base
+  - library:ci-mathcomp
 
 plugin:ci-vscoq:
   extends: .ci-template

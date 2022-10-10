@@ -11,6 +11,5 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/mathcomp/mathcomp"
   make
-  make test-suite
   make install
 )
