@@ -215,8 +215,6 @@ type strexpr =
     base cases, namely closures, strings, named constructors, and dynamic type
     coming from the Coq implementation. *)
 
-type tag = int
-
 type frame =
 | FrLtac of ltac_constant
 | FrAnon of glb_tacexpr

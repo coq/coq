@@ -11,7 +11,6 @@
 open Names
 open EConstr
 open Tac2dyn
-open Tac2expr
 
 (** {5 Toplevel values} *)
 
@@ -20,7 +19,7 @@ type closure
 type valexpr =
 | ValInt of int
   (** Immediate integers *)
-| ValBlk of tag * valexpr array
+| ValBlk of int * valexpr array
   (** Structured blocks *)
 | ValStr of Bytes.t
   (** Strings *)

@@ -11,7 +11,6 @@
 open Util
 open Names
 open Tac2dyn
-open Tac2expr
 open Proofview.Notations
 
 type ('a, _) arity0 =
@@ -21,7 +20,7 @@ type ('a, _) arity0 =
 type valexpr =
 | ValInt of int
   (** Immediate integers *)
-| ValBlk of tag * valexpr array
+| ValBlk of int * valexpr array
   (** Structured blocks *)
 | ValStr of Bytes.t
   (** Strings *)
