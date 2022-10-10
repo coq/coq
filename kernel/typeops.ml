@@ -77,6 +77,32 @@ let check_assumption env x t ty =
   in
   x
 
+let check_binding_relevance na1 na2 =
+  (* Since we know statically the relevance here, we are stricter *)
+  assert (Sorts.relevance_equal (binder_relevance na1) (binder_relevance na2))
+
+let instantiate_context u subst nas ctx =
+  let open Context.Rel.Declaration in
+  let rec instantiate i ctx = match ctx with
+  | [] ->
+    if 0 <= i then raise (InductiveError BadEntry) (* TODO: find a better error *)
+    else []
+  | LocalAssum (na, ty) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let subst = Esubst.subs_liftn i subst in
+    let ty = Vars.esubst Vars.lift_substituend subst (subst_instance_constr u ty) in
+    let () = check_binding_relevance na nas.(i) in
+    LocalAssum (nas.(i), ty) :: ctx
+  | LocalDef (na, ty, bdy) :: ctx ->
+    let ctx = instantiate (pred i) ctx in
+    let subst = Esubst.subs_liftn i subst in
+    let ty = Vars.esubst Vars.lift_substituend subst (subst_instance_constr u ty) in
+    let bdy = Vars.esubst Vars.lift_substituend subst (subst_instance_constr u bdy) in
+    let () = check_binding_relevance na nas.(i) in
+    LocalDef (nas.(i), ty, bdy) :: ctx
+  in
+  instantiate (Array.length nas - 1) ctx
+
 (************************************************)
 (* Incremental typing rules: builds a typing judgment given the *)
 (* judgments for the subterms. *)
@@ -211,6 +237,30 @@ let type_of_apply env func funt argsv argstv =
           (make_judgev argsv argstv)
   in
   apply_rec 0 (inject funt)
+
+(* Checks that an array of terms has the type of a telescope. We assume that all
+   inputs are well-typed separately. *)
+let type_of_parameters env ctx u argsv argstv =
+  let open Context.Rel.Declaration in
+  let ctx = List.rev ctx in
+  let rec apply_rec i subst ctx = match ctx with
+  | [] ->
+    if Int.equal i (Array.length argsv) then subst
+    else raise (InductiveError BadEntry) (* TODO: find a better error *)
+  | LocalAssum (_, t) :: ctx ->
+    let arg = argsv.(i) in
+    let argt = argstv.(i) in
+    let t = Vars.esubst Vars.lift_substituend subst (Vars.subst_instance_constr u t) in
+    begin match conv_leq env argt t with
+    | () -> apply_rec (i + 1) (Esubst.subs_cons (Vars.make_substituend arg) subst) ctx
+    | exception NotConvertible ->
+      error_actual_type env (make_judge arg argt) t
+    end
+  | LocalDef (_, b, _) :: ctx ->
+    let b = Vars.esubst Vars.lift_substituend subst (Vars.subst_instance_constr u b) in
+    apply_rec i (Esubst.subs_cons (Vars.make_substituend b) subst) ctx
+  in
+  apply_rec 0 (Esubst.subs_id 0) ctx
 
 (* Type of primitive constructs *)
 let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match prim with
@@ -376,12 +426,15 @@ let should_invert_case env ci =
   Array.length mip.mind_nf_lc = 1 &&
   List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
 
-let type_of_case env ci p pt iv c ct _lf lft =
+let type_of_case env ci (pctx, p, pt) iv c ct _lf lft =
+  let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
   let (pind, _ as indspec) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
-  let _, sp = try dest_arity env pt
-    with NotArity -> error_elim_arity env pind c (make_judge p pt) None in
+  let sp = match destSort (whd_all (push_rel_context pctx env) pt) with
+  | sp -> sp
+  | exception DestKO -> error_elim_arity env pind c pj None
+  in
   let rp = Sorts.relevance_of_sort sp in
   let ci = if ci.ci_relevance == rp then ci
     else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
@@ -395,8 +448,7 @@ let type_of_case env ci p pt iv c ct _lf lft =
     if not (is_inversion = should_invert_case env ci)
     then error_bad_invert env
   in
-  let (bty,rslty) =
-    type_case_branches env indspec (make_judge p pt) c in
+  let (bty, rslty) = type_case_branches env indspec pj c in
   let () = check_branch_types env pind c ct lft bty in
   ci, rslty
 
@@ -542,8 +594,6 @@ let rec execute env cstr =
       cstr, type_of_constructor env c
 
     | Case (ci, u, pms, p, iv, c, lf) ->
-        (** FIXME: change type_of_case to handle the compact form *)
-        let (ci, p, iv, c, lf) = expand_case env (ci, u, pms, p, iv, c, lf) in
         let c', ct = execute env c in
         let iv' = match iv with
           | NoInvert -> NoInvert
@@ -556,11 +606,40 @@ let rec execute env cstr =
             if args == args' then iv
             else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
         in
-        let p', pt = execute env p in
-        let lf', lft = execute_array env lf in
-        let ci', t = type_of_case env ci p' pt iv' c' ct lf' lft in
-        let cstr = if ci == ci' && c == c' && p == p' && iv == iv' && lf == lf' then cstr
-          else mkCase (Inductive.contract_case env (ci',p',iv',c',lf'))
+        let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
+        let cst = Inductive.instantiate_inductive_constraints mib u in
+        let () = check_constraints cst env in
+        let pms', pmst = execute_array env pms in
+        let paramsubst = type_of_parameters env mib.mind_params_ctxt u pms' pmst in
+        let (pctx, p', pt) =
+          let (nas, p) = p in
+          let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+          let self =
+            let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
+            let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
+            mkApp (mkIndU (ci.ci_ind, inst), args)
+          in
+          let realdecls = LocalAssum (Context.make_annot Anonymous mip.mind_relevance, self) :: realdecls in
+          let realdecls = instantiate_context u paramsubst nas realdecls in
+          let p_env = Environ.push_rel_context realdecls env in
+          let p', pt = execute p_env p in
+          (realdecls, p', pt)
+        in
+        let lft = Array.make (Array.length lf) mkProp in
+        let build_one_branch i (nas, br as b) =
+          let (ctx, _) = mip.mind_nf_lc.(i) in
+          let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
+          let ctx = instantiate_context u paramsubst nas ctx in
+          let br_env = Environ.push_rel_context ctx env in
+          let br', brt = execute br_env br in
+          let () = lft.(i) <- it_mkProd_or_LetIn brt ctx in
+          if br == br' then b else (nas, br')
+        in
+        let lf' = Array.Smart.map_i build_one_branch lf in
+        let ci', t = type_of_case env ci (pctx, p', pt) iv' c' ct lf' lft in
+        let eqbr (_, br1) (_, br2) = br1 == br2 in
+        let cstr = if ci == ci' && pms == pms' && c == c' && snd p == p' && iv == iv' && Array.equal eqbr lf lf' then cstr
+          else mkCase (ci', u, pms', (fst p, p'), iv', c', lf')
         in
         cstr, t
 
