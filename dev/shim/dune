@@ -1,30 +1,48 @@
-(rule
- (targets coqtop-prelude)
+;
+; Shims for running coq binaries with minimal dependencies
+;
+
+; coqtop
+
+(alias
+ (name coqtop-prelude)
  (deps
   %{bin:coqtop}
    ; XXX: bug, we are missing the dep on the _install meta file...
-  %{project_root}/theories/Init/Prelude.vo)
+  %{project_root}/theories/Init/Prelude.vo))
+
+(rule
+ (targets coqtop-prelude)
+ (deps (alias coqtop-prelude))
  (action
-  (with-stdout-to coqtop-prelude
+  (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
     (run chmod +x %{targets})))))
 
-(rule
- (targets coqc-prelude)
+; coqc
+
+(alias
+ (name coqc-prelude)
  (deps
   %{bin:coqc}
-  %{project_root}/theories/Init/Prelude.vo)
+  %{project_root}/theories/Init/Prelude.vo))
+
+(rule
+ (targets coqc-prelude)
+ (deps (alias coqc-prelude))
  (action
-  (with-stdout-to coqc-prelude
+  (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
 
-(rule
- (targets coqbyte-prelude)
+; coqbyte
+
+(alias
+ (name coqbyte-prelude)
  (deps
   %{project_root}/theories/Init/Prelude.vo
   %{bin:coqtop.byte}
@@ -51,7 +69,11 @@
   %{lib:coq-core.plugins.tauto:tauto_plugin.cma}
   %{lib:coq-core.plugins.cc:cc_plugin.cma}
   %{lib:coq-core.plugins.firstorder:firstorder_plugin.cma}
-  %{lib:coq-core.plugins.ltac:ltac_plugin.cma})
+  %{lib:coq-core.plugins.ltac:ltac_plugin.cma}))
+
+(rule
+ (targets coqbyte-prelude)
+ (deps (alias coqbyte-prelude))
  (action
   (with-stdout-to %{targets}
    (progn
@@ -59,8 +81,10 @@
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop.byte} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
 
-(rule
- (targets coqide-prelude)
+; coqide
+
+(alias
+ (name coqide-prelude)
  (deps
   ; without this if the gtk libs are not available dune can try to use
   ; coqide from PATH instead of giving a nice error
@@ -72,9 +96,13 @@
   %{bin:coqproofworker.opt}
   %{project_root}/theories/Init/Prelude.vo
   %{project_root}/coqide-server.install
-  %{project_root}/coqide.install)
+  %{project_root}/coqide.install))
+
+(rule
+ (targets coqide-prelude)
+ (deps (alias coqide-prelude))
  (action
-  (with-stdout-to coqide-prelude
+  (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqide} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
