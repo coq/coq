@@ -91,19 +91,7 @@ Section first_definitions.
   Definition set_In : A -> set -> Prop := In (A:=A).
 
   Lemma set_In_dec : forall (a:A) (x:set), {set_In a x} + {~ set_In a x}.
-
-  Proof.
-    unfold set_In.
-    (** Realizer set_mem. Program_all. **)
-    simple induction x.
-    - auto.
-    - intros a0 x0 Ha0. case (Aeq_dec a a0); intro eq.
-      + rewrite eq; simpl; auto with datatypes.
-      + elim Ha0.
-        * auto with datatypes.
-        * right; simpl; unfold not; intros [Hc1| Hc2];
-            auto with datatypes.
-  Qed.
+  Proof. exact (List.In_dec Aeq_dec). Qed.
 
   Lemma set_mem_ind :
    forall (B:Type) (P:B -> Prop) (y z:B) (a:A) (x:set),
