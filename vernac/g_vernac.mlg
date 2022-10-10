@@ -705,7 +705,7 @@ GRAMMAR EXTEND Gram
   section_subset_expr:
     [ [ test_only_starredidentrefs; l = LIST0 starred_ident_ref ->
           { starredidentreflist_to_expr l }
-      | e = ssexpr -> { e } ]]
+      | e = section_var_expr -> { e } ]]
   ;
   starred_ident_ref:
     [ [ i = identref -> { SsSingl i }
@@ -713,12 +713,12 @@ GRAMMAR EXTEND Gram
       | "Type" -> { SsType }
       | "Type"; "*" -> { SsFwdClose SsType } ]]
   ;
-  ssexpr:
+  section_var_expr:
     [ "35"
-      [ "-"; e = ssexpr -> { SsCompl e } ]
+      [ "-"; e = section_var_expr -> { SsCompl e } ]
     | "50"
-      [ e1 = ssexpr; "-"; e2 = ssexpr-> { SsSubstr(e1,e2) }
-      | e1 = ssexpr; "+"; e2 = ssexpr-> { SsUnion(e1,e2) } ]
+      [ e1 = section_var_expr; "-"; e2 = section_var_expr-> { SsSubstr(e1,e2) }
+      | e1 = section_var_expr; "+"; e2 = section_var_expr-> { SsUnion(e1,e2) } ]
     | "0"
       [ i = starred_ident_ref -> { i }
       | "()" -> { SsEmpty }
@@ -726,8 +726,8 @@ GRAMMAR EXTEND Gram
           { starredidentreflist_to_expr l }
       | "("; test_only_starredidentrefs; l = LIST0 starred_ident_ref; ")"; "*" ->
           { SsFwdClose(starredidentreflist_to_expr l) }
-      | "("; e = ssexpr; ")"-> { e }
-      | "("; e = ssexpr; ")"; "*" -> { SsFwdClose e } ] ]
+      | "("; e = section_var_expr; ")"-> { e }
+      | "("; e = section_var_expr; ")"; "*" -> { SsFwdClose e } ] ]
   ;
 END
 

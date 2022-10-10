@@ -2206,16 +2206,16 @@ starred_ident_ref: [
 | "All"
 ]
 
-ssexpr0: [
+section_var_expr0: [
 | DELETE "(" LIST0 starred_ident_ref ")"
 | DELETE "(" LIST0 starred_ident_ref ")" "*"
-| DELETE "(" ssexpr35 ")"
-| DELETE "(" ssexpr35 ")" "*"
+| DELETE "(" section_var_expr35 ")"
+| DELETE "(" section_var_expr35 ")" "*"
 | "(" section_subset_expr ")" OPT "*"
 ]
 
-ssexpr35: [
-| EDIT ADD_OPT "-" ssexpr50
+section_var_expr35: [
+| EDIT ADD_OPT "-" section_var_expr50
 ]
 
 simple_binding: [
@@ -2815,7 +2815,7 @@ SPLICE: [
 | with_names
 | eauto_search_strategy_name
 | simple_binding
-| ssexpr35 (* strange in mlg, ssexpr50 is after this *)
+| section_var_expr35 (* strange in mlg, section_var_expr50 is after this *)
 | number_string_mapping
 | number_options
 | string_option
@@ -2866,8 +2866,6 @@ RENAME: [
 | term200 term
 | pattern100 pattern
 (*| impl_ident_tail impl_ident*)
-| ssexpr50 section_var_expr50
-| ssexpr0 section_var_expr0
 | section_subset_expr section_var_expr
 | fun_scheme_arg func_scheme_def
 

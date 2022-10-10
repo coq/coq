@@ -1177,7 +1177,7 @@ module_type: [
 
 section_subset_expr: [
 | test_only_starredidentrefs LIST0 starred_ident_ref
-| ssexpr35
+| section_var_expr35
 ]
 
 starred_ident_ref: [
@@ -1187,24 +1187,24 @@ starred_ident_ref: [
 | "Type" "*"
 ]
 
-ssexpr35: [
-| "-" ssexpr50
-| ssexpr50
+section_var_expr35: [
+| "-" section_var_expr50
+| section_var_expr50
 ]
 
-ssexpr50: [
-| ssexpr0 "-" ssexpr0
-| ssexpr0 "+" ssexpr0
-| ssexpr0
+section_var_expr50: [
+| section_var_expr0 "-" section_var_expr0
+| section_var_expr0 "+" section_var_expr0
+| section_var_expr0
 ]
 
-ssexpr0: [
+section_var_expr0: [
 | starred_ident_ref
 | "()"
 | "(" test_only_starredidentrefs LIST0 starred_ident_ref ")"
 | "(" test_only_starredidentrefs LIST0 starred_ident_ref ")" "*"
-| "(" ssexpr35 ")"
-| "(" ssexpr35 ")" "*"
+| "(" section_var_expr35 ")"
+| "(" section_var_expr35 ")" "*"
 ]
 
 args_modifier: [
