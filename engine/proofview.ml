@@ -165,16 +165,23 @@ let cleared_alias evd g =
 (** [undefined defs l] is the list of goals in [l] which are still
     unsolved (after advancing cleared goals). Note that order matters. *)
 let undefined_evars defs l =
-  List.fold_right (fun evk l ->
-      match Evarutil.advance defs evk with
-      | Some evk -> List.add_set Evar.equal evk l
-      | None -> l) l []
-let goal_with_state_equal x y = Evar.equal (drop_state x) (drop_state y)
+  let fold evk (seen, ans as accu) = match Evarutil.advance defs evk with
+  | None -> accu
+  | Some evk ->
+    if Evar.Set.mem evk seen then accu
+    else (Evar.Set.add evk seen, evk :: ans)
+  in
+  snd @@ List.fold_right fold l (Evar.Set.empty, [])
+
 let undefined defs l =
-  List.fold_right (fun evk l ->
-      match cleared_alias defs evk with
-      | Some evk -> List.add_set goal_with_state_equal evk l
-      | None -> l) l []
+  let fold gl (seen, ans as accu) = match cleared_alias defs gl with
+  | None -> accu
+  | Some gl ->
+    let evk = drop_state gl in
+    if Evar.Set.mem evk seen then accu
+    else (Evar.Set.add evk seen, gl :: ans)
+  in
+  snd @@ List.fold_right fold l (Evar.Set.empty, [])
 
 (** Unfocuses a proofview with respect to a context. *)
 let unfocus (left, right) sp =
