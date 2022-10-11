@@ -136,11 +136,11 @@ let combineCG t1 t2 f g = match t1, t2 with
         match k with
         | Suff ->
             Proofview.Unsafe.tclSETGOALS (glf @ gl) <*>
-            Proofview.tclFOCUS 1 1 Tactics.New.reduce_after_refine
+            Proofview.tclFOCUS 1 1 Tactics.reduce_after_refine
         | Have | HaveTransp ->
             let ngoals = List.length gl + 1 in
             Proofview.Unsafe.tclSETGOALS (gl @ glf) <*>
-            Proofview.tclFOCUS ngoals ngoals Tactics.New.reduce_after_refine
+            Proofview.tclFOCUS ngoals ngoals Tactics.reduce_after_refine
       end
     end
 
@@ -428,7 +428,7 @@ let intro_lock ipats =
   let protect_subgoal env sigma hd args =
     Ssrcommon.tacMK_SSR_CONST "Under_rel" >>= fun under_rel ->
     Ssrcommon.tacMK_SSR_CONST "Under_rel_from_rel" >>= fun under_from_rel ->
-    Tactics.New.refine ~typecheck:true (fun sigma ->
+    Tactics.refine ~typecheck:true (fun sigma ->
         let lm2 = Array.length args - 2 in
         let sigma, carrier =
           Typing.type_of env sigma args.(lm2) in

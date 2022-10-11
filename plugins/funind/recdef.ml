@@ -222,25 +222,21 @@ let (declare_f :
  fun f_id kind input_type fterm_ref ->
   declare_fun f_id kind (value_f input_type fterm_ref)
 
-module New = struct
-  open Tacticals
+let observe_tac = observe_tac ~header:(Pp.mt ())
 
-  let observe_tac = New.observe_tac ~header:(Pp.mt ())
-
-  let observe_tclTHENLIST s tacl =
-    if do_observe () then
-      let rec aux n = function
-        | [] -> tclIDTAC
-        | [tac] ->
-          observe_tac (fun env sigma -> s env sigma ++ spc () ++ int n) tac
-        | tac :: tacl ->
-          observe_tac
-            (fun env sigma -> s env sigma ++ spc () ++ int n)
-            (tclTHEN tac (aux (succ n) tacl))
-      in
-      aux 0 tacl
-    else tclTHENLIST tacl
-end
+let observe_tclTHENLIST s tacl =
+  if do_observe () then
+    let rec aux n = function
+      | [] -> tclIDTAC
+      | [tac] ->
+        observe_tac (fun env sigma -> s env sigma ++ spc () ++ int n) tac
+      | tac :: tacl ->
+        observe_tac
+          (fun env sigma -> s env sigma ++ spc () ++ int n)
+          (tclTHEN tac (aux (succ n) tacl))
+    in
+    aux 0 tacl
+  else tclTHENLIST tacl
 
 (* Conclusion tactics *)
 
@@ -253,11 +249,11 @@ let tclUSER tac is_mes l =
     | None -> tclIDTAC
     | Some l -> tclMAP (fun id -> tclTRY (clear [id])) (List.rev l)
   in
-  New.observe_tclTHENLIST
+  observe_tclTHENLIST
     (fun _ _ -> str "tclUSER1")
     [ clear_tac
     ; ( if is_mes then
-        New.observe_tclTHENLIST
+        observe_tclTHENLIST
           (fun _ _ -> str "tclUSER2")
           [ unfold_in_concl
               [ ( Locus.AllOccurrences
@@ -405,12 +401,12 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos :
       in
       let rev_ids = pf_get_new_ids (List.rev ids) g in
       let new_b = substl (List.map mkVar rev_ids) b in
-      New.observe_tclTHENLIST
+      observe_tclTHENLIST
         (fun _ _ -> str "treat_case1")
         [ h_intros (List.rev rev_ids)
         ; intro_using_then teq_id (fun _ -> Proofview.tclUNIT ())
         ; Tacticals.onLastHypId (fun heq ->
-              New.observe_tclTHENLIST
+              observe_tclTHENLIST
                 (fun _ _ -> str "treat_case2")
                 [ clear to_intros
                 ; h_intros to_intros
@@ -530,7 +526,7 @@ and travel_args jinfo is_final continuation_tac infos =
     travel jinfo new_continuation_tac {infos with info = arg; is_final = false}
 
 and travel jinfo continuation_tac expr_info =
-  New.observe_tac
+  observe_tac
     (fun env sigma ->
       str jinfo.message ++ Printer.pr_leconstr_env env sigma expr_info.info)
     (travel_aux jinfo continuation_tac expr_info)
@@ -559,15 +555,15 @@ let rec prove_lt hyple =
             (List.tl
                (snd (decompose_app sigma (Tacmach.pf_get_hyp_typ h g))))
         in
-        New.observe_tclTHENLIST
+        observe_tclTHENLIST
           (fun _ _ -> str "prove_lt1")
           [ apply (mkApp (le_lt_trans (), [|varx; y; varz; mkVar h|]))
-          ; New.observe_tac (fun _ _ -> str "prove_lt") (prove_lt hyple) ]
+          ; observe_tac (fun _ _ -> str "prove_lt") (prove_lt hyple) ]
       with Not_found ->
-        New.observe_tclTHENLIST
+        observe_tclTHENLIST
           (fun _ _ -> str "prove_lt2")
           [ apply (delayed_force lt_S_n)
-          ; New.observe_tac
+          ; observe_tac
               (fun _ _ ->
                 str "assumption: "
                 ++ Printer.Debug.pr_goal g)
@@ -585,15 +581,15 @@ let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
         let h' = next_ident_away_in_goal h'_id ids in
         let ids = h' :: ids in
         let def = next_ident_away_in_goal def_id ids in
-        New.observe_tclTHENLIST
+        observe_tclTHENLIST
           (fun _ _ -> str "destruct_bounds_aux1")
           [ split (ImplicitBindings [s_max])
           ; intro_then (fun id ->
-                New.observe_tac
+                observe_tac
                   (fun _ _ -> str "destruct_bounds_aux")
                   (tclTHENS
                      (simplest_case (mkVar id))
-                     [ New.observe_tclTHENLIST
+                     [ observe_tclTHENLIST
                          (fun _ _ -> str "")
                          [ intro_using_then h_id
                              (* We don't care about the refreshed name,
@@ -602,22 +598,22 @@ let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
                          ; simplest_elim
                              (mkApp (delayed_force lt_n_O, [|s_max|]))
                          ; default_full_auto ]
-                     ; New.observe_tclTHENLIST
+                     ; observe_tclTHENLIST
                          (fun _ _ -> str "destruct_bounds_aux2")
-                         [ New.observe_tac
+                         [ observe_tac
                              (fun _ _ -> str "clearing k ")
                              (clear [id])
                          ; h_intros [k; h'; def]
-                         ; New.observe_tac
+                         ; observe_tac
                              (fun _ _ -> str "simple_iter")
                              (simpl_iter Locusops.onConcl)
-                         ; New.observe_tac
+                         ; observe_tac
                              (fun _ _ -> str "unfold functional")
                              (unfold_in_concl
                                 [ ( Locus.OnlyOccurrences [1]
                                   , evaluable_of_global_reference infos.func )
                                 ])
-                         ; New.observe_tclTHENLIST
+                         ; observe_tclTHENLIST
                              (fun _ _ -> str "test")
                              [ list_rewrite true
                                  (List.fold_right
@@ -627,21 +623,21 @@ let rec destruct_bounds_aux infos (bound, hyple, rechyps) lbounds =
                              ; (* list_rewrite true *)
                                (*   (List.map (fun e -> (mkVar e,true)) infos.eqs) *)
                                (*   ; *)
-                               New.observe_tac
+                               observe_tac
                                  (fun _ _ -> str "finishing")
                                  (tclORELSE intros_reflexivity
-                                    (New.observe_tac
+                                    (observe_tac
                                        (fun _ _ -> str "calling prove_lt")
                                        (prove_lt hyple))) ] ] ])) ]
       | (_, v_bound) :: l ->
-        New.observe_tclTHENLIST
+        observe_tclTHENLIST
           (fun _ _ -> str "destruct_bounds_aux3")
           [ simplest_elim (mkVar v_bound)
           ; clear [v_bound]
           ; tclDO 2 intro
           ; onNthHypId 1 (fun p_hyp ->
                 onNthHypId 2 (fun p ->
-                    New.observe_tclTHENLIST
+                    observe_tclTHENLIST
                       (fun _ _ -> str "destruct_bounds_aux4")
                       [ simplest_elim
                           (mkApp (delayed_force max_constr, [|bound; mkVar p|]))
@@ -663,26 +659,26 @@ let destruct_bounds infos =
 
 let terminate_app f_and_args expr_info continuation_tac infos =
   if expr_info.is_final && expr_info.is_main_branch then
-    New.observe_tclTHENLIST
+    observe_tclTHENLIST
       (fun _ _ -> str "terminate_app1")
       [ continuation_tac infos
-      ; New.observe_tac
+      ; observe_tac
           (fun _ _ -> str "first split")
           (split (ImplicitBindings [infos.info]))
-      ; New.observe_tac
+      ; observe_tac
           (fun _ _ -> str "destruct_bounds (1)")
           (destruct_bounds infos) ]
   else continuation_tac infos
 
 let terminate_others _ expr_info continuation_tac infos =
   if expr_info.is_final && expr_info.is_main_branch then
-    New.observe_tclTHENLIST
+    observe_tclTHENLIST
       (fun _ _ -> str "terminate_others")
       [ continuation_tac infos
-      ; New.observe_tac
+      ; observe_tac
           (fun _ _ -> str "first split")
           (split (ImplicitBindings [infos.info]))
-      ; New.observe_tac
+      ; observe_tac
           (fun _ _ -> str "destruct_bounds")
           (destruct_bounds infos) ]
   else continuation_tac infos
@@ -751,7 +747,7 @@ let mkDestructEq not_on_hyp env sigma expr =
   in
   let tac =
     pf_typel new_hyps (fun _ ->
-        New.observe_tclTHENLIST
+        observe_tclTHENLIST
           (fun _ _ -> str "mkDestructEq")
           [ generalize new_hyps
           ; Proofview.Goal.enter (fun g2 ->
@@ -790,7 +786,7 @@ let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
         mkDestructEq [expr_info.rec_arg_id] env sigma a'
       in
       let to_thin_intro = List.rev rev_to_thin_intro in
-      New.observe_tac
+      observe_tac
         (fun _ _ ->
           str "treating cases ("
           ++ int (Array.length l)
@@ -801,7 +797,7 @@ let terminate_case next_step (ci, a, iv, t, l) expr_info continuation_tac infos
           tclTHENS destruct_tac
             (List.map_i
                (fun i e ->
-                  New.observe_tac
+                  observe_tac
                     (fun _ _ -> str "do treat case")
                     (treat_case f_is_present to_thin_intro
                        (next_step continuation_tac)
@@ -823,25 +819,25 @@ let terminate_app_rec (f, args) expr_info continuation_tac _ =
             args expr_info.args_assoc
         in
         let new_infos = {expr_info with info = v} in
-        New.observe_tclTHENLIST
+        observe_tclTHENLIST
           (fun _ _ -> str "terminate_app_rec")
           [ continuation_tac new_infos
           ; ( if expr_info.is_final && expr_info.is_main_branch then
-              New.observe_tclTHENLIST
+              observe_tclTHENLIST
                 (fun _ _ -> str "terminate_app_rec1")
-                [ New.observe_tac
+                [ observe_tac
                     (fun _ _ -> str "first split")
                     (split (ImplicitBindings [new_infos.info]))
-                ; New.observe_tac
+                ; observe_tac
                     (fun _ _ -> str "destruct_bounds (3)")
                     (destruct_bounds new_infos) ]
             else Proofview.tclUNIT () ) ]
       with Not_found ->
-        New.observe_tac
+        observe_tac
           (fun _ _ -> str "terminate_app_rec not found")
           (tclTHENS
              (simplest_elim (mkApp (mkVar expr_info.ih, Array.of_list args)))
-             [ New.observe_tclTHENLIST
+             [ observe_tclTHENLIST
                  (fun _ _ -> str "terminate_app_rec2")
                  [ intro_using_then rec_res_id
                      (* refreshed name gotten from onNthHypId *)
@@ -857,28 +853,28 @@ let terminate_app_rec (f, args) expr_info continuation_tac _ =
                              ; args_assoc =
                                  (args, mkVar v) :: expr_info.args_assoc }
                            in
-                           New.observe_tclTHENLIST
+                           observe_tclTHENLIST
                              (fun _ _ -> str "terminate_app_rec3")
                              [ continuation_tac new_infos
                              ; ( if
                                  expr_info.is_final && expr_info.is_main_branch
                                then
-                                 New.observe_tclTHENLIST
+                                 observe_tclTHENLIST
                                    (fun _ _ -> str "terminate_app_rec4")
-                                   [ New.observe_tac
+                                   [ observe_tac
                                        (fun _ _ -> str "first split")
                                        (split
                                           (ImplicitBindings [new_infos.info]))
-                                   ; New.observe_tac
+                                   ; observe_tac
                                        (fun _ _ -> str "destruct_bounds (2)")
                                        (destruct_bounds new_infos) ]
                                else Proofview.tclUNIT () ) ])) ]
-             ; New.observe_tac
+             ; observe_tac
                  (fun _ _ -> str "proving decreasing")
                  (tclTHENS (* proof of args < formal args *)
                     (apply (Lazy.force expr_info.acc_inv))
-                    [ New.observe_tac (fun _ _ -> str "assumption") assumption
-                    ; New.observe_tclTHENLIST
+                    [ observe_tac (fun _ _ -> str "assumption") assumption
+                    ; observe_tclTHENLIST
                         (fun _ _ -> str "terminate_app_rec5")
                         [ tclTRY
                             (list_rewrite true
@@ -906,7 +902,7 @@ let prove_terminate = travel terminate_info
 (* Equation proof *)
 
 let equation_case next_step case expr_info continuation_tac infos =
-  New.observe_tac
+  observe_tac
     (fun _ _ -> str "equation case")
     (terminate_case next_step case expr_info continuation_tac infos)
 
@@ -940,10 +936,10 @@ let rec prove_le () =
                 let _, args = decompose_app sigma t in
                 List.hd (List.tl args)
               in
-              New.observe_tclTHENLIST
+              observe_tclTHENLIST
                 (fun _ _ -> str "prove_le")
                 [ apply (mkApp (le_trans (), [|x; y; z; mkVar h|]))
-                ; New.observe_tac
+                ; observe_tac
                     (fun _ _ -> str "prove_le (rec)")
                     (prove_le ()) ]
             with Not_found -> Tacticals.tclFAIL (mt ())
@@ -953,10 +949,10 @@ let rec make_rewrite_list expr_info max = function
   | [] -> Proofview.tclUNIT ()
   | (_, p, hp) :: l ->
     let open Tacticals in
-    New.observe_tac
+    observe_tac
       (fun _ _ -> str "make_rewrite_list")
       (tclTHENS
-         (New.observe_tac
+         (observe_tac
             (fun _ _ -> str "rewrite heq on " ++ Id.print p)
             (Proofview.Goal.enter (fun g ->
                  let sigma = Proofview.Goal.sigma g in
@@ -976,19 +972,19 @@ let rec make_rewrite_list expr_info max = function
                        ; CAst.make @@ (NamedHyp (CAst.make k), f_S max) ] )
                    )))
          [ make_rewrite_list expr_info max l
-         ; New.observe_tclTHENLIST
+         ; observe_tclTHENLIST
              (fun _ _ -> str "make_rewrite_list")
              [ (* x < S max proof *)
                apply (delayed_force le_lt_n_Sm)
-             ; New.observe_tac (fun _ _ -> str "prove_le(2)") (prove_le ()) ] ])
+             ; observe_tac (fun _ _ -> str "prove_le(2)") (prove_le ()) ] ])
 
 let make_rewrite expr_info l hp max =
   let open Tacticals in
   tclTHENFIRST
-    (New.observe_tac
+    (observe_tac
        (fun _ _ -> str "make_rewrite")
        (make_rewrite_list expr_info max l))
-    (New.observe_tac
+    (observe_tac
        (fun _ _ -> str "make_rewrite")
        (tclTHENS
           (Proofview.Goal.enter (fun g ->
@@ -1001,7 +997,7 @@ let make_rewrite expr_info l hp max =
                  ( Nameops.Name.get_id k_na.binder_name
                  , Nameops.Name.get_id def_na.binder_name )
                in
-               New.observe_tac
+               observe_tac
                  (fun _ _ -> str "general_rewrite_bindings")
                  (general_rewrite ~where:None ~l2r:false Locus.AllOccurrences ~freeze:true
                     (* dep proofs also: *) ~dep:true ~with_evars:false
@@ -1010,27 +1006,27 @@ let make_rewrite expr_info l hp max =
                         [ CAst.make @@ (NamedHyp (CAst.make def), expr_info.f_constr)
                         ; CAst.make @@ (NamedHyp (CAst.make k), f_S (f_S max)) ] )
                     )))
-          [ New.observe_tac
+          [ observe_tac
               (fun _ _ -> str "make_rewrite finalize")
               ((* tclORELSE( h_reflexivity) *)
-               New.observe_tclTHENLIST
+               observe_tclTHENLIST
                  (fun _ _ -> str "make_rewrite")
                  [ simpl_iter Locusops.onConcl
-                 ; New.observe_tac
+                 ; observe_tac
                      (fun _ _ -> str "unfold functional")
                      (unfold_in_concl
                         [ ( Locus.OnlyOccurrences [1]
                           , evaluable_of_global_reference expr_info.func ) ])
                  ; list_rewrite true
                      (List.map (fun e -> (mkVar e, true)) expr_info.eqs)
-                 ; New.observe_tac
+                 ; observe_tac
                      (fun _ _ -> str "h_reflexivity")
                      intros_reflexivity ])
-          ; New.observe_tclTHENLIST
+          ; observe_tclTHENLIST
               (fun _ _ -> str "make_rewrite1")
               [ (* x < S (S max) proof *)
                 apply (EConstr.of_constr (delayed_force le_lt_SS))
-              ; New.observe_tac (fun _ _ -> str "prove_le (3)") (prove_le ()) ]
+              ; observe_tac (fun _ _ -> str "prove_le (3)") (prove_le ()) ]
           ]))
 
 let rec compute_max rew_tac max l =
@@ -1038,7 +1034,7 @@ let rec compute_max rew_tac max l =
   | [] -> rew_tac max
   | (_, p, _) :: l ->
     let open Tacticals in
-    New.observe_tclTHENLIST
+    observe_tclTHENLIST
       (fun _ _ -> str "compute_max")
       [ simplest_elim (mkApp (delayed_force max_constr, [|max; mkVar p|]))
       ; tclDO 3 intro
@@ -1054,18 +1050,18 @@ let rec destruct_hex expr_info acc l =
     match List.rev acc with
     | [] -> Proofview.tclUNIT ()
     | (_, p, hp) :: tl ->
-      New.observe_tac
+      observe_tac
         (fun _ _ -> str "compute max ")
         (compute_max (make_rewrite expr_info tl hp) (mkVar p) tl) )
   | (v, hex) :: l ->
-    New.observe_tclTHENLIST
+    observe_tclTHENLIST
       (fun _ _ -> str "destruct_hex")
       [ simplest_case (mkVar hex)
       ; clear [hex]
       ; tclDO 2 intro
       ; onNthHypId 1 (fun hp ->
             onNthHypId 2 (fun p ->
-                New.observe_tac
+                observe_tac
                   (fun _ _ ->
                     str "destruct_hex after " ++ Id.print hp ++ spc ()
                     ++ Id.print p)
@@ -1074,7 +1070,7 @@ let rec destruct_hex expr_info acc l =
 let rec intros_values_eq expr_info acc =
   let open Tacticals in
   tclORELSE
-    (New.observe_tclTHENLIST
+    (observe_tclTHENLIST
        (fun _ _ -> str "intros_values_eq")
        [ tclDO 2 intro
        ; onNthHypId 1 (fun hex ->
@@ -1085,18 +1081,18 @@ let rec intros_values_eq expr_info acc =
 let equation_others _ expr_info continuation_tac infos =
   let open Tacticals in
   if expr_info.is_final && expr_info.is_main_branch then
-    New.observe_tac
+    observe_tac
       (fun env sigma ->
         str "equation_others (cont_tac +intros) "
         ++ Printer.pr_leconstr_env env sigma expr_info.info)
       (tclTHEN (continuation_tac infos)
-         (New.observe_tac
+         (observe_tac
             (fun env sigma ->
               str "intros_values_eq equation_others "
               ++ Printer.pr_leconstr_env env sigma expr_info.info)
             (intros_values_eq expr_info [])))
   else
-    New.observe_tac
+    observe_tac
       (fun env sigma ->
         str "equation_others (cont_tac) "
         ++ Printer.pr_leconstr_env env sigma expr_info.info)
@@ -1104,7 +1100,7 @@ let equation_others _ expr_info continuation_tac infos =
 
 let equation_app f_and_args expr_info continuation_tac infos =
   if expr_info.is_final && expr_info.is_main_branch then
-    New.observe_tac
+    observe_tac
       (fun _ _ -> str "intros_values_eq equation_app")
       (intros_values_eq expr_info [])
   else continuation_tac infos
@@ -1119,26 +1115,26 @@ let equation_app_rec (f, args) expr_info continuation_tac info =
             args expr_info.args_assoc
         in
         let new_infos = {expr_info with info = v} in
-        New.observe_tac
+        observe_tac
           (fun _ _ -> str "app_rec found")
           (continuation_tac new_infos)
       with Not_found ->
         if expr_info.is_final && expr_info.is_main_branch then
-          New.observe_tclTHENLIST
+          observe_tclTHENLIST
             (fun _ _ -> str "equation_app_rec")
             [ simplest_case (mkApp (expr_info.f_terminate, Array.of_list args))
             ; continuation_tac
                 { expr_info with
                   args_assoc =
                     (args, delayed_force coq_O) :: expr_info.args_assoc }
-            ; New.observe_tac
+            ; observe_tac
                 (fun _ _ -> str "app_rec intros_values_eq")
                 (intros_values_eq expr_info []) ]
         else
-          New.observe_tclTHENLIST
+          observe_tclTHENLIST
             (fun _ _ -> str "equation_app_rec1")
             [ simplest_case (mkApp (expr_info.f_terminate, Array.of_list args))
-            ; New.observe_tac
+            ; observe_tac
                 (fun _ _ -> str "app_rec not_found")
                 (continuation_tac
                    { expr_info with
@@ -1229,7 +1225,7 @@ let termination_proof_header is_mes input_type ids args_id relation rec_arg_num
       in
       tclTHEN (h_intros args_id)
         (tclTHENS
-           (New.observe_tac
+           (observe_tac
               (fun _ _ -> str "first assert")
               (assert_before (Name wf_rec_arg)
                  (mkApp
@@ -1237,32 +1233,32 @@ let termination_proof_header is_mes input_type ids args_id relation rec_arg_num
                     , [|input_type; relation; mkVar rec_arg_id|] ))))
            [ (* accesibility proof *)
              tclTHENS
-               (New.observe_tac
+               (observe_tac
                   (fun _ _ -> str "second assert")
                   (assert_before (Name wf_thm)
                      (mkApp
                         (delayed_force well_founded, [|input_type; relation|]))))
                [ (* interactive proof that the relation is well_founded *)
-                 New.observe_tac
+                 observe_tac
                    (fun _ _ -> str "wf_tac")
                    (wf_tac is_mes (Some args_id))
                ; (* this gives the accessibility argument *)
-                 New.observe_tac
+                 observe_tac
                    (fun _ _ -> str "apply wf_thm")
                    (Simple.apply (mkApp (mkVar wf_thm, [|mkVar rec_arg_id|])))
                ]
            ; (* rest of the proof *)
-             New.observe_tclTHENLIST
+             observe_tclTHENLIST
                (fun _ _ -> str "rest of proof")
-               [ New.observe_tac
+               [ observe_tac
                    (fun _ _ -> str "generalize")
                    (onNLastHypsId (nargs + 1)
                       (tclMAP (fun id ->
                            tclTHEN (Tactics.generalize [mkVar id]) (clear [id]))))
-               ; New.observe_tac (fun _ _ -> str "fix") (fix hrec (nargs + 1))
+               ; observe_tac (fun _ _ -> str "fix") (fix hrec (nargs + 1))
                ; h_intros args_id
                ; Simple.intro wf_rec_arg
-               ; New.observe_tac
+               ; observe_tac
                    (fun _ _ -> str "tac")
                    (tac wf_rec_arg hrec wf_rec_arg acc_inv) ] ]))
 
@@ -1457,7 +1453,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
       let open Tacticals in
       Proofview.Goal.enter (fun gl ->
           let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gl) in
-          New.observe_tclTHENLIST
+          observe_tclTHENLIST
             (fun _ _ -> mt ())
             [ generalize [lemma]
             ; Simple.intro hid
@@ -1538,12 +1534,12 @@ let com_terminate interactive_proof tcc_lemma_name tcc_lemma_ref is_mes
     let lemma =
       fst
       @@ Declare.Proof.by
-           (New.observe_tac (fun _ _ -> str "starting_tac") tac_start)
+           (observe_tac (fun _ _ -> str "starting_tac") tac_start)
            lemma
     in
     fst
     @@ Declare.Proof.by
-         (New.observe_tac
+         (observe_tac
             (fun _ _ -> str "whole_start")
             (whole_start tac_end nb_args is_mes fonctional_ref input_type
                relation rec_arg_num))
@@ -1575,18 +1571,18 @@ let start_equation (f : GlobRef.t) (term_f : GlobRef.t)
         nb_prod sigma (EConstr.of_constr (type_of_const (Global.env ()) sigma terminate_constr))
       in
       let x = n_x_id ids nargs in
-      New.observe_tac
+      observe_tac
         (fun _ _ -> str "start_equation")
-        (New.observe_tclTHENLIST
+        (observe_tclTHENLIST
            (fun _ _ -> str "start_equation")
            [ h_intros x
            ; unfold_in_concl
                [(Locus.AllOccurrences, evaluable_of_global_reference f)]
-           ; New.observe_tac
+           ; observe_tac
                (fun _ _ -> str "simplest_case")
                (simplest_case
                   (mkApp (terminate_constr, Array.of_list (List.map mkVar x))))
-           ; New.observe_tac (fun _ _ -> str "prove_eq") (cont_tactic x) ]))
+           ; observe_tac (fun _ _ -> str "prove_eq") (cont_tactic x) ]))
 
 let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref
     equation_lemma_type =

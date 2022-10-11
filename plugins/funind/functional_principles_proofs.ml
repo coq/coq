@@ -45,7 +45,7 @@ type 'a dynamic_info =
 type body_info = constr dynamic_info
 
 let observe_tac s =
-  New.observe_tac ~header:(str "observation") (fun _ _ -> Pp.str s)
+  observe_tac ~header:(str "observation") (fun _ _ -> Pp.str s)
 
 let finish_proof dynamic_infos = observe_tac "finish" assumption
 let thin = clear
@@ -719,7 +719,7 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
         | Array _ -> CErrors.user_err Pp.(str "Arrays not handled yet"))
   and build_proof do_finalize dyn_infos =
     (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
-    Indfun_common.New.observe_tac ~header:(str "observation")
+    Indfun_common.observe_tac ~header:(str "observation")
       (fun env sigma ->
         str "build_proof with " ++ pr_leconstr_env env sigma dyn_infos.info)
       (build_proof_aux do_finalize dyn_infos)
@@ -1143,7 +1143,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
             if this_fix_info.idx + 1 = 0 then Proofview.tclUNIT ()
               (* Someone  tries to defined a principle on a fully parametric definition declared as a fixpoint (strange but ....) *)
             else
-              Indfun_common.New.observe_tac ~header:(str "observation")
+              Indfun_common.observe_tac ~header:(str "observation")
                 (fun _ _ -> str "h_fix " ++ int (this_fix_info.idx + 1))
                 (fix this_fix_info.name (this_fix_info.idx + 1))
           else

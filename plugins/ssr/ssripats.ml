@@ -405,7 +405,7 @@ let tclMK_ABSTRACT_VAR id = Goal.enter begin fun gl ->
   end in
   Ssrcommon.tacMK_SSR_CONST "abstract_lock" >>= fun ablock ->
   Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
-  Tactics.New.refine ~typecheck:false (step ablock abstract) <*>
+  Tactics.refine ~typecheck:false (step ablock abstract) <*>
   tclFOCUS 1 3 Proofview.shelve
 end
 

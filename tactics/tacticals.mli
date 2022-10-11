@@ -24,8 +24,8 @@ exception FailError of int * Pp.t Lazy.t
     multi-goal backtracking tactics. They do not have the same
     semantics as the similarly named tacticals in [Proofview]. The
     tactical of [Proofview] are used in the definition of the
-    tacticals of [Tacticals.New], but they are more atomic. In
-    particular [Tacticals.New.tclORELSE] sees lack of progress as a
+    tacticals of [Tacticals], but they are more atomic. In
+    particular [Tacticals.tclORELSE] sees lack of progress as a
     failure, whereas [Proofview.tclORELSE] doesn't. Additionally every
     tactic which can catch failure ([tclOR], [tclORELSE], [tclTRY],
     [tclREPEAt], etc…) are run into each goal independently (failures
