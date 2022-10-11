@@ -292,7 +292,6 @@ type kind_of_value =
 let kind_of_value (v:t) =
   let o = Obj.repr v in
   if Obj.is_int o then Vconst (Obj.magic v)
-  else if Obj.tag o == Obj.double_tag then Vfloat64 (Obj.magic v)
   else
     let tag = Obj.tag o in
     if Int.equal tag accumulate_tag then
