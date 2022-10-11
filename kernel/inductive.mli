@@ -114,8 +114,9 @@ val instantiate_context : Instance.t -> Vars.substl -> Name.t Context.binder_ann
    the universe constraints generated.
  *)
 val type_case_branches :
-  env -> pinductive * constr list -> unsafe_judgment -> constr
-    -> types array * types
+  env -> pinductive * constr list ->
+  Instance.t -> constr array -> rel_context * constr * types * Sorts.t -> constr ->
+  types array * types
 
 val build_branches_type :
   pinductive -> mutual_inductive_body * one_inductive_body ->

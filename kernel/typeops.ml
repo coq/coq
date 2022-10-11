@@ -426,7 +426,7 @@ let should_invert_case env ci =
   Array.length mip.mind_nf_lc = 1 &&
   List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
 
-let type_of_case env ci (pctx, p, pt) iv c ct _lf lft =
+let type_of_case env ci u pms (pctx, p, pt) iv c ct _lf lft =
   let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
   let (pind, _ as indspec) =
     try find_rectype env ct
@@ -448,7 +448,8 @@ let type_of_case env ci (pctx, p, pt) iv c ct _lf lft =
     if not (is_inversion = should_invert_case env ci)
     then error_bad_invert env
   in
-  let (bty, rslty) = type_case_branches env indspec pj c in
+  let lft = Array.map (fun (ctx, br) -> it_mkProd_or_LetIn br ctx) lft in
+  let (bty, rslty) = type_case_branches env indspec u pms (pctx, p, pt, sp) c in
   let () = check_branch_types env pind c ct lft bty in
   ci, rslty
 
@@ -625,18 +626,18 @@ let rec execute env cstr =
           let p', pt = execute p_env p in
           (realdecls, p', pt)
         in
-        let lft = Array.make (Array.length lf) mkProp in
+        let lft = Array.make (Array.length lf) ([], mkProp) in
         let build_one_branch i (nas, br as b) =
           let (ctx, _) = mip.mind_nf_lc.(i) in
           let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
           let ctx = instantiate_context u paramsubst nas ctx in
           let br_env = Environ.push_rel_context ctx env in
           let br', brt = execute br_env br in
-          let () = lft.(i) <- it_mkProd_or_LetIn brt ctx in
+          let () = lft.(i) <- (ctx, brt) in
           if br == br' then b else (nas, br')
         in
         let lf' = Array.Smart.map_i build_one_branch lf in
-        let ci', t = type_of_case env ci (pctx, p', pt) iv' c' ct lf' lft in
+        let ci', t = type_of_case env ci u pms' (pctx, p', pt) iv' c' ct lf' lft in
         let eqbr (_, br1) (_, br2) = br1 == br2 in
         let cstr = if ci == ci' && pms == pms' && c == c' && snd p == p' && iv == iv' && Array.equal eqbr lf lf' then cstr
           else mkCase (ci', u, pms', (fst p, p'), iv', c', lf')

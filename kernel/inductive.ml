@@ -82,11 +82,6 @@ let instantiate_params t u args sign =
   let () = if not (List.is_empty rem_args) then fail () in
   substl subs ty
 
-let full_inductive_instantiate mib u params sign =
-  let dummy = Sorts.prop in
-  let t = Term.mkArity (Vars.subst_instance_context u sign,dummy) in
-    fst (Term.destArity (instantiate_params t u params mib.mind_params_ctxt))
-
 let full_constructor_instantiate (_,u,(mib,_),params) t =
   let inst_ind = subst_instance_constr u t in
    instantiate_params inst_ind u params mib.mind_params_ctxt
@@ -315,10 +310,6 @@ let inductive_sort_family mip =
 let mind_arity mip =
   mip.mind_arity_ctxt, inductive_sort_family mip
 
-let get_instantiated_arity (_ind,u) (mib,mip) params =
-  let sign, s = mind_arity mip in
-  full_inductive_instantiate mib u params sign, s
-
 let elim_sort (_,mip) = mip.mind_kelim
 
 let is_private (mib,_) = mib.mind_private = Some true
@@ -327,13 +318,6 @@ let is_primitive_record (mib,_) =
   | PrimRecord _ -> true
   | NotRecord | FakeRecord -> false
 
-let build_dependent_inductive ind (_,mip) params =
-  let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
-  Term.applist
-    (mkIndU ind,
-       List.map (lift mip.mind_nrealdecls) params
-       @ Context.Rel.instance_list mkRel 0 realargs)
-
 (* This exception is local *)
 exception LocalArity of (Sorts.family * Sorts.family * Sorts.family * arity_error) option
 
@@ -341,48 +325,6 @@ let check_allowed_sort ksort specif =
   if not (Sorts.family_leq ksort (elim_sort specif)) then
     let s = inductive_sort_family (snd specif) in
     raise (LocalArity (Some(elim_sort specif, ksort,s,error_elim_explain ksort s)))
-
-let check_correct_arity env c pj ind specif params =
-  (* We use l2r:true for compat with old versions which used CONV
-     instead of CUMUL called with arguments flipped. It is relevant
-     for performance eg in bedrock / Kami. *)
-  let arsign,_ = get_instantiated_arity ind specif params in
-  let rec srec env ar pt =
-    let pt' = whd_all env pt in
-    match ar, kind pt' with
-    | (LocalAssum (_,a1))::ar', Prod (na1,a1',t) ->
-      let () =
-        try conv_leq ~l2r:true env a1 a1'
-        with NotConvertible -> raise (LocalArity None) in
-      srec (push_rel (LocalAssum (na1,a1)) env) ar' t
-    (* The last Prod domain is the type of the scrutinee *)
-    | [], Prod (na1,a1',a2) ->
-      let env' = push_rel (LocalAssum (na1,a1')) env in
-      let ksort = match kind (whd_all env' a2) with
-      | Sort s -> Sorts.family s
-      | _ -> raise (LocalArity None)
-      in
-      let dep_ind = build_dependent_inductive ind specif params in
-      let () =
-        (* This ensures that the type of the scrutinee is <= the
-           inductive type declared in the predicate. *)
-        try conv_leq ~l2r:true env dep_ind a1'
-        with NotConvertible -> raise (LocalArity None)
-      in
-      let () = check_allowed_sort ksort specif in
-      (* We return the "higher" inductive universe instance from the predicate,
-         the branches must be typeable using these universes.
-         The find_rectype call cannot fail due to the cumulativity check above. *)
-      let (pind, _args) = find_rectype env a1' in
-      pind
-    | (LocalDef _ as d)::ar', _ ->
-      srec (push_rel d env) ar' (lift 1 pt')
-    | _ ->
-      raise (LocalArity None)
-  in
-  try srec env (List.rev arsign) pj.uj_type
-  with LocalArity kinds ->
-    error_elim_arity env ind c pj kinds
 
 (** {6 Changes of representation of Case nodes} *)
 
@@ -490,19 +432,31 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
     Term.it_mkProd_or_LetIn base cstrsign in
   Array.mapi build_one_branch mip.mind_nf_lc
 
-(* [p] is the predicate, [c] is the match object, [realargs] is the
-   list of real args of the inductive type *)
-let build_case_type env n p c realargs =
-  whd_betaiota env (Term.lambda_appvect_assum (n+1) p (Array.of_list (realargs@[c])))
-
-let type_case_branches env ((ind, _ as pind),largs) pj c =
-  let specif = lookup_mind_specif env ind in
-  let nparams = inductive_params specif in
-  let (params,realargs) = List.chop nparams largs in
-  let p = pj.uj_val in
-  let pind = check_correct_arity env c pj pind specif params in
-  let lc = build_branches_type pind specif params p in
-  let ty = build_case_type env (snd specif).mind_nrealdecls p c realargs in
+let type_case_branches env ((ind, u'), largs) u pms (pctx, p, pt, ps) c =
+  let (mib, _mip as specif) = lookup_mind_specif env ind in
+  let (params, realargs) = List.chop mib.mind_nparams largs in
+  (* Check that the type of the scrutinee is <= the expected argument type *)
+  let () = Array.iter2 (fun p1 p2 -> Reduction.conv ~l2r:true env p1 p2) (Array.of_list params) pms in
+  (* We use l2r:true for compat with old versions which used CONV with arguments
+     flipped. It is relevant for performance eg in bedrock / Kami. *)
+  let cst = match mib.mind_variance with
+  | None -> Univ.enforce_eq_instances u u' Univ.Constraints.empty
+  | Some variance -> Univ.enforce_leq_variance_instances variance u' u Univ.Constraints.empty
+  in
+  let () =
+    if Environ.check_constraints cst env then ()
+    else error_unsatisfied_constraints env cst
+  in
+  let pj = make_judge (Term.it_mkLambda_or_LetIn p pctx) (Term.it_mkProd_or_LetIn pt pctx) in
+  let () =
+    try check_allowed_sort (Sorts.family ps) specif
+    with LocalArity kinds -> error_elim_arity env (ind, u) c pj kinds
+  in
+  (* We return the "higher" inductive universe instance from the predicate,
+     the branches must be typeable using these universes. *)
+  let lc = build_branches_type (ind, u) specif params (Term.it_mkLambda_or_LetIn p pctx) in
+  let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
+  let ty = Vars.substl subst p in
   (lc, ty)
 
 (************************************************************************)
