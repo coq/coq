@@ -410,9 +410,8 @@ let type_of_constructor env (c,_u as cu) =
 
 exception NotConvertibleBranch of int * rel_context * types * types
 
-let check_branch_types env ci u pms c _ct lft (pctx, p) =
+let check_branch_types env (_mib, mip) ci u pms c _ct lft (pctx, p) =
   let open Context.Rel.Declaration in
-  let _mib, mip = lookup_mind_specif env ci.ci_ind in
   let rec instantiate ctx args subst = match ctx, args with
   | [], [] -> subst
   | LocalAssum _ :: ctx, a :: args ->
@@ -456,14 +455,37 @@ let should_invert_case env ci =
   Array.length mip.mind_nf_lc = 1 &&
   List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
 
-let type_of_case env ci u pms (pctx, p, pt) iv c ct _lf lft =
-  let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
+let type_case_branches env (mib, mip) ((ind, u'), largs) u pms (pctx, p, pt, ps) c =
+  let (params, realargs) = List.chop mib.mind_nparams largs in
+  (* Check that the type of the scrutinee is <= the expected argument type *)
+  let () = Array.iter2 (fun p1 p2 -> Reduction.conv ~l2r:true env p1 p2) (Array.of_list params) pms in
+  (* We use l2r:true for compat with old versions which used CONV with arguments
+     flipped. It is relevant for performance eg in bedrock / Kami. *)
+  let cst = match mib.mind_variance with
+  | None -> Univ.enforce_eq_instances u u' Univ.Constraints.empty
+  | Some variance -> Univ.enforce_leq_variance_instances variance u' u Univ.Constraints.empty
+  in
+  let () = check_constraints cst env in
+  let () =
+    let ksort = Sorts.family ps in
+    if not (Sorts.family_leq ksort mip.mind_kelim) then
+      let s = inductive_sort_family mip in
+      let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
+      let kinds = Some (mip.mind_kelim, ksort, s, error_elim_explain ksort s) in
+      error_elim_arity env (ind, u) c pj kinds
+  in
+  let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
+  Vars.substl subst p
+
+let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
   let (pind, _ as indspec) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
   let sp = match destSort (whd_all (push_rel_context pctx env) pt) with
   | sp -> sp
-  | exception DestKO -> error_elim_arity env pind c pj None
+  | exception DestKO ->
+    let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
+    error_elim_arity env pind c pj None
   in
   let rp = Sorts.relevance_of_sort sp in
   let ci = if ci.ci_relevance == rp then ci
@@ -478,10 +500,10 @@ let type_of_case env ci u pms (pctx, p, pt) iv c ct _lf lft =
     if not (is_inversion = should_invert_case env ci)
     then error_bad_invert env
   in
-  let rslty = type_case_branches env indspec u pms (pctx, p, pt, sp) c in
+  let rslty = type_case_branches env (mib, mip) indspec u pms (pctx, p, pt, sp) c in
   (* We return the "higher" inductive universe instance from the predicate,
      the branches must be typeable using these universes. *)
-  let () = check_branch_types env ci u pms c ct lft (pctx, p) in
+  let () = check_branch_types env (mib, mip) ci u pms c ct lft (pctx, p) in
   ci, rslty
 
 let type_of_projection env p c ct =
@@ -674,7 +696,7 @@ let rec execute env cstr =
           if br == br' then b else (nas, br')
         in
         let lf' = Array.Smart.map_i build_one_branch lf in
-        let ci', t = type_of_case env ci u pms' (pctx, p', pt) iv' c' ct lf' lft in
+        let ci', t = type_of_case env (mib, mip) ci u pms' (pctx, p', pt) iv' c' ct lf' lft in
         let eqbr (_, br1) (_, br2) = br1 == br2 in
         let cstr = if ci == ci' && pms == pms' && c == c' && snd p == p' && iv == iv' && Array.equal eqbr lf lf' then cstr
           else mkCase (ci', u, pms', (fst p, p'), iv', c', lf')

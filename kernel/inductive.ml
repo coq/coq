@@ -318,14 +318,6 @@ let is_primitive_record (mib,_) =
   | PrimRecord _ -> true
   | NotRecord | FakeRecord -> false
 
-(* This exception is local *)
-exception LocalArity of (Sorts.family * Sorts.family * Sorts.family * arity_error) option
-
-let check_allowed_sort ksort specif =
-  if not (Sorts.family_leq ksort (elim_sort specif)) then
-    let s = inductive_sort_family (snd specif) in
-    raise (LocalArity (Some(elim_sort specif, ksort,s,error_elim_explain ksort s)))
-
 (** {6 Changes of representation of Case nodes} *)
 
 (** Provided:
@@ -431,30 +423,6 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
     let base = Term.lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
     Term.it_mkProd_or_LetIn base cstrsign in
   Array.mapi build_one_branch mip.mind_nf_lc
-
-let type_case_branches env ((ind, u'), largs) u pms (pctx, p, pt, ps) c =
-  let (mib, _mip as specif) = lookup_mind_specif env ind in
-  let (params, realargs) = List.chop mib.mind_nparams largs in
-  (* Check that the type of the scrutinee is <= the expected argument type *)
-  let () = Array.iter2 (fun p1 p2 -> Reduction.conv ~l2r:true env p1 p2) (Array.of_list params) pms in
-  (* We use l2r:true for compat with old versions which used CONV with arguments
-     flipped. It is relevant for performance eg in bedrock / Kami. *)
-  let cst = match mib.mind_variance with
-  | None -> Univ.enforce_eq_instances u u' Univ.Constraints.empty
-  | Some variance -> Univ.enforce_leq_variance_instances variance u' u Univ.Constraints.empty
-  in
-  let () =
-    if Environ.check_constraints cst env then ()
-    else error_unsatisfied_constraints env cst
-  in
-  let pj = make_judge (Term.it_mkLambda_or_LetIn p pctx) (Term.it_mkProd_or_LetIn pt pctx) in
-  let () =
-    try check_allowed_sort (Sorts.family ps) specif
-    with LocalArity kinds -> error_elim_arity env (ind, u) c pj kinds
-  in
-  let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
-  let ty = Vars.substl subst p in
-  ty
 
 (************************************************************************)
 (* Checking the case annotation is relevant *)
