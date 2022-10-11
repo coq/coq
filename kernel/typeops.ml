@@ -81,6 +81,9 @@ let check_binding_relevance na1 na2 =
   (* Since we know statically the relevance here, we are stricter *)
   assert (Sorts.relevance_equal (binder_relevance na1) (binder_relevance na2))
 
+let esubst u s c =
+  Vars.esubst Vars.lift_substituend s (subst_instance_constr u c)
+
 let instantiate_context u subst nas ctx =
   let open Context.Rel.Declaration in
   let rec instantiate i ctx = match ctx with
@@ -90,14 +93,14 @@ let instantiate_context u subst nas ctx =
   | LocalAssum (na, ty) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let subst = Esubst.subs_liftn i subst in
-    let ty = Vars.esubst Vars.lift_substituend subst (subst_instance_constr u ty) in
+    let ty = esubst u subst ty in
     let () = check_binding_relevance na nas.(i) in
     LocalAssum (nas.(i), ty) :: ctx
   | LocalDef (na, ty, bdy) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let subst = Esubst.subs_liftn i subst in
-    let ty = Vars.esubst Vars.lift_substituend subst (subst_instance_constr u ty) in
-    let bdy = Vars.esubst Vars.lift_substituend subst (subst_instance_constr u bdy) in
+    let ty = esubst u subst ty in
+    let bdy = esubst u subst bdy in
     let () = check_binding_relevance na nas.(i) in
     LocalDef (nas.(i), ty, bdy) :: ctx
   in
@@ -250,14 +253,14 @@ let type_of_parameters env ctx u argsv argstv =
   | LocalAssum (_, t) :: ctx ->
     let arg = argsv.(i) in
     let argt = argstv.(i) in
-    let t = Vars.esubst Vars.lift_substituend subst (Vars.subst_instance_constr u t) in
+    let t = esubst u subst t in
     begin match conv_leq env argt t with
     | () -> apply_rec (i + 1) (Esubst.subs_cons (Vars.make_substituend arg) subst) ctx
     | exception NotConvertible ->
       error_actual_type env (make_judge arg argt) t
     end
   | LocalDef (_, b, _) :: ctx ->
-    let b = Vars.esubst Vars.lift_substituend subst (Vars.subst_instance_constr u b) in
+    let b = esubst u subst b in
     apply_rec i (Esubst.subs_cons (Vars.make_substituend b) subst) ctx
   in
   apply_rec 0 (Esubst.subs_id 0) ctx
@@ -405,13 +408,40 @@ let type_of_constructor env (c,_u as cu) =
 
 (* Case. *)
 
-let check_branch_types env (ind,u) c ct lft explft =
-  try conv_leq_vecti env lft explft
-  with
-      NotConvertibleVect i ->
-        error_ill_formed_branch env c ((ind,i+1),u) lft.(i) explft.(i)
-    | Invalid_argument _ ->
-        error_number_branches env (make_judge c ct) (Array.length explft)
+exception NotConvertibleBranch of int * rel_context * types * types
+
+let check_branch_types env ci u pms c _ct lft (pctx, p) =
+  let open Context.Rel.Declaration in
+  let _mib, mip = lookup_mind_specif env ci.ci_ind in
+  let rec instantiate ctx args subst = match ctx, args with
+  | [], [] -> subst
+  | LocalAssum _ :: ctx, a :: args ->
+    let subst = Esubst.subs_cons (Vars.make_substituend a) subst in
+    instantiate ctx args subst
+  | LocalDef (_, a, _) :: ctx, args ->
+    let a = Vars.esubst Vars.lift_substituend subst a in
+    let subst = Esubst.subs_cons (Vars.make_substituend a) subst in
+    instantiate ctx args subst
+  | _ -> assert false
+  in
+  let iter i (brctx, brt, constrty) =
+    let brenv = push_rel_context brctx env in
+    let nargs = List.length brctx in
+    let pms = Array.map (fun c -> lift nargs c) pms in
+    let cargs = Context.Rel.instance mkRel 0 brctx in
+    let cstr = mkApp (mkConstructU ((ci.ci_ind, i + 1), u), Array.append pms cargs) in
+    let (_, retargs) = find_rectype brenv constrty in
+    let indices = List.lastn mip.mind_nrealargs retargs in
+    let subst = instantiate (List.rev pctx) (indices @ [cstr]) (Esubst.subs_shft (nargs, Esubst.subs_id 0)) in
+    let expbrt = Vars.esubst Vars.lift_substituend subst p in
+    try conv_leq brenv brt expbrt
+    with NotConvertible -> raise (NotConvertibleBranch (i, brctx, brt, expbrt))
+  in
+  try Array.iteri iter lft
+  with NotConvertibleBranch (i, brctx, brt, expbrt) ->
+    let brt = it_mkLambda_or_LetIn brt brctx in
+    let expbrt = it_mkLambda_or_LetIn expbrt brctx in
+    error_ill_formed_branch env c ((ci.ci_ind, i + 1), u) brt expbrt
 
 let should_invert_case env ci =
   ci.ci_relevance == Sorts.Relevant &&
@@ -448,9 +478,10 @@ let type_of_case env ci u pms (pctx, p, pt) iv c ct _lf lft =
     if not (is_inversion = should_invert_case env ci)
     then error_bad_invert env
   in
-  let lft = Array.map (fun (ctx, br) -> it_mkProd_or_LetIn br ctx) lft in
-  let (bty, rslty) = type_case_branches env indspec u pms (pctx, p, pt, sp) c in
-  let () = check_branch_types env pind c ct lft bty in
+  let rslty = type_case_branches env indspec u pms (pctx, p, pt, sp) c in
+  (* We return the "higher" inductive universe instance from the predicate,
+     the branches must be typeable using these universes. *)
+  let () = check_branch_types env ci u pms c ct lft (pctx, p) in
   ci, rslty
 
 let type_of_projection env p c ct =
@@ -626,14 +657,20 @@ let rec execute env cstr =
           let p', pt = execute p_env p in
           (realdecls, p', pt)
         in
-        let lft = Array.make (Array.length lf) ([], mkProp) in
+        let () =
+          let nbranches = Array.length mip.mind_nf_lc in
+          if not (Int.equal (Array.length lf) nbranches) then
+            error_number_branches env (make_judge c ct) nbranches
+        in
+        let lft = Array.make (Array.length lf) ([], mkProp, mkProp) in
         let build_one_branch i (nas, br as b) =
-          let (ctx, _) = mip.mind_nf_lc.(i) in
+          let (ctx, cty) = mip.mind_nf_lc.(i) in
           let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
           let ctx = instantiate_context u paramsubst nas ctx in
           let br_env = Environ.push_rel_context ctx env in
           let br', brt = execute br_env br in
-          let () = lft.(i) <- (ctx, brt) in
+          let cty = esubst u (Esubst.subs_liftn mip.mind_consnrealdecls.(i) paramsubst) cty in
+          let () = lft.(i) <- (ctx, brt, cty) in
           if br == br' then b else (nas, br')
         in
         let lf' = Array.Smart.map_i build_one_branch lf in

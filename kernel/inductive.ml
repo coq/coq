@@ -452,12 +452,9 @@ let type_case_branches env ((ind, u'), largs) u pms (pctx, p, pt, ps) c =
     try check_allowed_sort (Sorts.family ps) specif
     with LocalArity kinds -> error_elim_arity env (ind, u) c pj kinds
   in
-  (* We return the "higher" inductive universe instance from the predicate,
-     the branches must be typeable using these universes. *)
-  let lc = build_branches_type (ind, u) specif params (Term.it_mkLambda_or_LetIn p pctx) in
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
   let ty = Vars.substl subst p in
-  (lc, ty)
+  ty
 
 (************************************************************************)
 (* Checking the case annotation is relevant *)
