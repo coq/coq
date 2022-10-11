@@ -1619,7 +1619,7 @@ simple_tactic: [
 | "evar" test_lpar_id_colon "(" ident ":" lconstr ")"
 | "evar" constr
 | "instantiate" "(" ident ":=" lglob ")"
-| "instantiate" "(" integer ":=" lglob ")" hloc
+| "instantiate" "(" natural ":=" lglob ")" hloc
 | "instantiate"
 | "stepl" constr "by" tactic
 | "stepl" constr

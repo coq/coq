@@ -374,7 +374,7 @@ END
 TACTIC EXTEND instantiate
 | [ "instantiate" "(" ident(id) ":=" lglob(c) ")" ] ->
     { instantiate_tac_by_name id c }
-| [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
+| [ "instantiate" "(" natural(i) ":=" lglob(c) ")" hloc(hl) ] ->
     { instantiate_tac i c hl }
 END
 
