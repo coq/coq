@@ -218,13 +218,26 @@ let rec pr_disjunction pr = function
   | a::l -> pr a ++ str "," ++ spc () ++ pr_disjunction pr l
   | [] -> assert false
 
-let explain_elim_arity env sigma ind c pj okinds =
+type arity_error =
+  | NonInformativeToInformative
+  | StrongEliminationOnNonSmallType
+  | WrongArity
+
+let error_elim_explain kp ki =
+  let open Sorts in
+  match kp,ki with
+  | (InType | InSet), InProp -> NonInformativeToInformative
+  | InType, InSet -> StrongEliminationOnNonSmallType (* if Set impredicative *)
+  | _ -> WrongArity
+
+let explain_elim_arity env sigma ind c okinds =
   let open EConstr in
   let env = make_all_name_different env sigma in
   let pi = pr_inductive env (fst ind) in
   let pc = pr_leconstr_env env sigma c in
   let msg = match okinds with
-  | Some(sorts,kp,ki,explanation) ->
+  | Some (pj, sorts, kp, ki) ->
+      let explanation = error_elim_explain kp ki in
       let sorts = Inductiveops.sorts_below sorts in
       let pki = Sorts.pr_sort_family ki in
       let pkp = Sorts.pr_sort_family kp in
@@ -785,8 +798,8 @@ let explain_type_error env sigma err =
       explain_bad_assumption env sigma c
   | ReferenceVariables (id,c) ->
       explain_reference_variables sigma id c
-  | ElimArity (ind, c, pj, okinds) ->
-      explain_elim_arity env sigma ind c pj okinds
+  | ElimArity (ind, c, okinds) ->
+      explain_elim_arity env sigma ind c okinds
   | CaseNotInductive cj ->
       explain_case_not_inductive env sigma cj
   | NumberBranches (cj, n) ->

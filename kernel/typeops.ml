@@ -84,12 +84,12 @@ let check_binding_relevance na1 na2 =
 let esubst u s c =
   Vars.esubst Vars.lift_substituend s (subst_instance_constr u c)
 
+exception ArgumentsMismatch
+
 let instantiate_context u subst nas ctx =
   let open Context.Rel.Declaration in
   let rec instantiate i ctx = match ctx with
-  | [] ->
-    if 0 <= i then raise (InductiveError BadEntry) (* TODO: find a better error *)
-    else []
+  | [] -> if 0 <= i then raise ArgumentsMismatch else []
   | LocalAssum (na, ty) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let subst = Esubst.subs_liftn i subst in
@@ -247,9 +247,7 @@ let type_of_parameters env ctx u argsv argstv =
   let open Context.Rel.Declaration in
   let ctx = List.rev ctx in
   let rec apply_rec i subst ctx = match ctx with
-  | [] ->
-    if Int.equal i (Array.length argsv) then subst
-    else raise (InductiveError BadEntry) (* TODO: find a better error *)
+  | [] -> if Int.equal i (Array.length argsv) then subst else raise ArgumentsMismatch
   | LocalAssum (_, t) :: ctx ->
     let arg = argsv.(i) in
     let argt = argstv.(i) in
@@ -477,8 +475,7 @@ let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
   let sp = match destSort (whd_all (push_rel_context pctx env) pt) with
   | sp -> sp
   | exception DestKO ->
-    let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
-    error_elim_arity env (ind, u') c pj None
+    error_elim_arity env (ind, u') c None
   in
   let rp = Sorts.relevance_of_sort sp in
   let ci = if ci.ci_relevance == rp then ci
@@ -498,8 +495,8 @@ let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
     if not (Sorts.family_leq ksort mip.mind_kelim) then
       let s = inductive_sort_family mip in
       let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
-      let kinds = Some (mip.mind_kelim, ksort, s, error_elim_explain ksort s) in
-      error_elim_arity env (ind, u') c pj kinds
+      let kinds = Some (pj, mip.mind_kelim, ksort, s) in
+      error_elim_arity env (ind, u') c kinds
   in
   (* Check that the scrutinee has the right type *)
   let rslty = type_case_scrutinee env (mib, mip) (u', largs) u pms (pctx, p) c in
@@ -666,7 +663,10 @@ let rec execute env cstr =
         let cst = Inductive.instantiate_inductive_constraints mib u in
         let () = check_constraints cst env in
         let pms', pmst = execute_array env pms in
-        let paramsubst = type_of_parameters env mib.mind_params_ctxt u pms' pmst in
+        let paramsubst =
+          try type_of_parameters env mib.mind_params_ctxt u pms' pmst
+          with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c' None
+        in
         let (pctx, p', pt) =
           let (nas, p) = p in
           let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
@@ -676,7 +676,10 @@ let rec execute env cstr =
             mkApp (mkIndU (ci.ci_ind, inst), args)
           in
           let realdecls = LocalAssum (Context.make_annot Anonymous mip.mind_relevance, self) :: realdecls in
-          let realdecls = instantiate_context u paramsubst nas realdecls in
+          let realdecls =
+            try instantiate_context u paramsubst nas realdecls
+            with ArgumentsMismatch -> error_elim_arity env (ci.ci_ind, u) c' None
+          in
           let p_env = Environ.push_rel_context realdecls env in
           let p', pt = execute p_env p in
           (realdecls, p', pt)
@@ -690,7 +693,12 @@ let rec execute env cstr =
         let build_one_branch i (nas, br as b) =
           let (ctx, cty) = mip.mind_nf_lc.(i) in
           let ctx, _ = List.chop mip.mind_consnrealdecls.(i) ctx in
-          let ctx = instantiate_context u paramsubst nas ctx in
+          let ctx =
+            try instantiate_context u paramsubst nas ctx
+            with ArgumentsMismatch ->
+              (* Despite the name, the toplevel message is reasonable *)
+              error_elim_arity env (ci.ci_ind, u) c' None
+          in
           let br_env = Environ.push_rel_context ctx env in
           let br', brt = execute br_env br in
           let cty = esubst u (Esubst.subs_liftn mip.mind_consnrealdecls.(i) paramsubst) cty in

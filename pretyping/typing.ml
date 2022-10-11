@@ -125,7 +125,7 @@ let max_sort l =
 let is_correct_arity env sigma c pj ind specif params =
   let arsign = make_arity_signature env sigma true (make_ind_family (ind,params)) in
   let allowed_sorts = sorts_below (elim_sort specif) in
-  let error () = Pretype_errors.error_elim_arity env sigma ind c pj None in
+  let error () = Pretype_errors.error_elim_arity env sigma ind c None in
   let rec srec env sigma pt ar =
     let pt' = whd_all env sigma pt in
     match EConstr.kind sigma pt', ar with
@@ -209,11 +209,10 @@ let check_allowed_sort env sigma ind c p =
   let _, s = splay_prod env sigma pj.uj_type in
   let ksort = match EConstr.kind sigma s with
   | Sort s -> Sorts.family (ESorts.kind sigma s)
-  | _ -> error_elim_arity env sigma ind c pj None in
+  | _ -> error_elim_arity env sigma ind c None in
   if not (Sorts.family_leq ksort sorts) then
     let s = inductive_sort_family (snd specif) in
-    error_elim_arity env sigma ind c pj
-      (Some(sorts,ksort,s,Type_errors.error_elim_explain ksort s))
+    error_elim_arity env sigma ind c (Some (pj, sorts, ksort, s))
   else
     Sorts.relevance_of_sort_family ksort
 

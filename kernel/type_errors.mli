@@ -47,19 +47,14 @@ type fix_guard_error = constr pfix_guard_error
 type cofix_guard_error = constr pcofix_guard_error
 type guard_error = constr pguard_error
 
-type arity_error =
-  | NonInformativeToInformative
-  | StrongEliminationOnNonSmallType
-  | WrongArity
-
 type ('constr, 'types) ptype_error =
   | UnboundRel of int
   | UnboundVar of variable
   | NotAType of ('constr, 'types) punsafe_judgment
   | BadAssumption of ('constr, 'types) punsafe_judgment
   | ReferenceVariables of Id.t * GlobRef.t
-  | ElimArity of pinductive * 'constr * ('constr, 'types) punsafe_judgment
-      * (Sorts.family * Sorts.family * Sorts.family * arity_error) option
+  | ElimArity of pinductive * 'constr *
+      (('constr, 'types) punsafe_judgment * Sorts.family * Sorts.family * Sorts.family) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
@@ -115,8 +110,8 @@ val error_assumption : env -> unsafe_judgment -> 'a
 val error_reference_variables : env -> Id.t -> GlobRef.t -> 'a
 
 val error_elim_arity :
-  env -> pinductive -> constr -> unsafe_judgment ->
-      (Sorts.family * Sorts.family * Sorts.family * arity_error) option -> 'a
+  env -> pinductive -> constr ->
+    (unsafe_judgment * Sorts.family * Sorts.family * Sorts.family) option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
 
@@ -142,8 +137,6 @@ val error_ill_formed_rec_body :
 
 val error_ill_typed_rec_body  :
   env -> int -> Name.t Context.binder_annot array -> unsafe_judgment array -> types array -> 'a
-
-val error_elim_explain : Sorts.family -> Sorts.family -> arity_error
 
 val error_unsatisfied_constraints : env -> Constraints.t -> 'a
 
