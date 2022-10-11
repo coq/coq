@@ -455,7 +455,7 @@ let should_invert_case env ci =
   Array.length mip.mind_nf_lc = 1 &&
   List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
 
-let type_case_branches env (mib, mip) ((ind, u'), largs) u pms (pctx, p, pt, ps) c =
+let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let (params, realargs) = List.chop mib.mind_nparams largs in
   (* Check that the type of the scrutinee is <= the expected argument type *)
   let () = Array.iter2 (fun p1 p2 -> Reduction.conv ~l2r:true env p1 p2) (Array.of_list params) pms in
@@ -466,32 +466,25 @@ let type_case_branches env (mib, mip) ((ind, u'), largs) u pms (pctx, p, pt, ps)
   | Some variance -> Univ.enforce_leq_variance_instances variance u' u Univ.Constraints.empty
   in
   let () = check_constraints cst env in
-  let () =
-    let ksort = Sorts.family ps in
-    if not (Sorts.family_leq ksort mip.mind_kelim) then
-      let s = inductive_sort_family mip in
-      let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
-      let kinds = Some (mip.mind_kelim, ksort, s, error_elim_explain ksort s) in
-      error_elim_arity env (ind, u) c pj kinds
-  in
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
   Vars.substl subst p
 
 let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
-  let (pind, _ as indspec) =
+  let ((ind, u'), largs) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
+  (* Various well-formedness conditions *)
   let sp = match destSort (whd_all (push_rel_context pctx env) pt) with
   | sp -> sp
   | exception DestKO ->
     let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
-    error_elim_arity env pind c pj None
+    error_elim_arity env (ind, u') c pj None
   in
   let rp = Sorts.relevance_of_sort sp in
   let ci = if ci.ci_relevance == rp then ci
     else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
   in
-  let () = check_case_info env pind rp ci in
+  let () = check_case_info env (ind, u') rp ci in
   let () =
     let is_inversion = match iv with
       | NoInvert -> false
@@ -500,7 +493,16 @@ let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
     if not (is_inversion = should_invert_case env ci)
     then error_bad_invert env
   in
-  let rslty = type_case_branches env (mib, mip) indspec u pms (pctx, p, pt, sp) c in
+  let () =
+    let ksort = Sorts.family sp in
+    if not (Sorts.family_leq ksort mip.mind_kelim) then
+      let s = inductive_sort_family mip in
+      let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
+      let kinds = Some (mip.mind_kelim, ksort, s, error_elim_explain ksort s) in
+      error_elim_arity env (ind, u') c pj kinds
+  in
+  (* Check that the scrutinee has the right type *)
+  let rslty = type_case_scrutinee env (mib, mip) (u', largs) u pms (pctx, p) c in
   (* We return the "higher" inductive universe instance from the predicate,
      the branches must be typeable using these universes. *)
   let () = check_branch_types env (mib, mip) ci u pms c ct lft (pctx, p) in
