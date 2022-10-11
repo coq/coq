@@ -651,7 +651,7 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
    definition and reduces again until no further reduction is possible.
 
    In the term :n:`{? forall @open_binders , } t__1 ... t__n`, where :n:`t__1` is not a
-   :n:`term_application`, :n:`t__1` is the :gdef:`head` of the term.
+   :n:`@term_application`, :n:`t__1` is the :gdef:`head` of the term.
    In a term with the form :n:`{? forall @open_binders , } c t__1 ... t__n`, where
    :n:`c` is a :term:`constant`, :n:`c` is the :gdef:`head constant`.
 
