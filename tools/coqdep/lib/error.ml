@@ -38,7 +38,7 @@ let _ = CErrors.register_handler @@ function
       ++ strbrk "Plugins should be loaded using their public name according to \
       findlib, for example " ++ quote (str "package-name.foo") ++ str " and not "
       ++ quote (str "foo_plugin") ++ str "." ++ spc () ++ strbrk "If you are \
-      using a buid system that does not yet support the new loading method \
+      using a build system that does not yet support the new loading method \
       (such as Dune) you must specify both the legacy and the findlib plugin \
       name as in:" ++ spc ()
       ++ str "      Declare ML Module \"foo_plugin:package-name.foo\".")
