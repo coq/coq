@@ -883,14 +883,25 @@ let perform_eval ~pstate e =
 
 (** Toplevel entries *)
 
+let warn_modtype = CWarnings.create ~name:"ltac2-in-modtype" ~category:"ltac2" ~default:AsError
+    Pp.(fun what -> strbrk "Ltac2 " ++ str what ++ strbrk " should not be defined inside module types: functor application to arguments of this module type will be unchecked")
+
+
+let check_modtype what =
+  if Lib.is_modtype ()
+  then warn_modtype what
+
 let register_struct atts str = match str with
 | StrVal (mut, isrec, e) ->
+  check_modtype "definitions";
   let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
   register_ltac ?deprecation ?local ~mut isrec e
 | StrTyp (isrec, t) ->
+  check_modtype "types";
   let local = Attributes.(parse locality) atts in
   register_type ?local isrec t
 | StrPrm (id, t, ml) ->
+  check_modtype "externals";
   let deprecation, local = Attributes.(parse Notations.(deprecation ++ locality)) atts in
   register_primitive ?deprecation ?local id t ml
 | StrSyn (tok, lev, e) ->
