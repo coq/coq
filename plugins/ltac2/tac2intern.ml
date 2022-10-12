@@ -1167,7 +1167,18 @@ and intern_constructor env loc kn args = match kn with
   else
     error_nargs_mismatch ?loc kn nargs (List.length args)
 | Tuple n ->
-  assert (Int.equal n (List.length args));
+  let () = if not (Int.equal n (List.length args)) then begin
+      if Int.equal 0 n then
+        (* parsing [() bla] produces [CTacApp (Tuple 0, [bla])] but parsing
+           [((), ()) bla] produces [CTacApp (CTacApp (Tuple 2, [(); ()]), [bla])]
+           so we only need to produce a sensible error for [Tuple 0] *)
+        let t = GTypRef (Tuple 0, []) in
+        CErrors.user_err ?loc Pp.(
+            str "This expression has type" ++ spc () ++ pr_glbtype env t ++
+            spc () ++ str "and is not a function")
+      else assert false
+    end
+  in
   let types = List.init n (fun i -> GTypVar (fresh_id env)) in
   let map arg tpe = intern_rec_with_constraint env arg tpe in
   let args = List.map2 map args types in
