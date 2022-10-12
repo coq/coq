@@ -5284,17 +5284,15 @@ end
 
 
 (** Tacticals defined directly in term of Proofview *)
-module New = struct
-  let reduce_after_refine =
-    (* For backward compatibility reasons, we do not contract let-ins, but we unfold them. *)
-    let redfun env t =
-      let open CClosure in
-      let flags = RedFlags.red_add_transparent allnolet TransparentState.empty in
-      clos_norm_flags flags env t
-    in
-    reduct_in_concl ~cast:false ~check:false (redfun,DEFAULTcast)
+let reduce_after_refine =
+  (* For backward compatibility reasons, we do not contract let-ins, but we unfold them. *)
+  let redfun env t =
+    let open CClosure in
+    let flags = RedFlags.red_add_transparent allnolet TransparentState.empty in
+    clos_norm_flags flags env t
+  in
+  reduct_in_concl ~cast:false ~check:false (redfun,DEFAULTcast)
 
-  let refine ~typecheck c =
-    Refine.refine ~typecheck c <*>
-    reduce_after_refine
-end
+let refine ~typecheck c =
+  Refine.refine ~typecheck c <*>
+  reduce_after_refine

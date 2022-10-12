@@ -328,30 +328,28 @@ let print_debug_queue b e =
 
 (* print_debug_queue false e; *)
 
-module New = struct
-  let do_observe_tac ~header s tac =
-    let open Proofview.Notations in
-    let open Proofview in
-    Goal.enter (fun gl ->
-        let goal = Printer.Debug.pr_goal gl in
-        let env, sigma = (Goal.env gl, Goal.sigma gl) in
-        let s = s env sigma in
-        let lmsg = seq [header; str " : " ++ s] in
-        tclLIFT (NonLogical.make (fun () -> Feedback.msg_debug (s ++ fnl ())))
-        >>= fun () ->
-        tclOR
-          ( Stack.push (lmsg, goal) debug_queue;
-            tac
-            >>= fun v ->
-            ignore (Stack.pop debug_queue);
-            Proofview.tclUNIT v )
-          (fun (exn, info) ->
-            if not (Stack.is_empty debug_queue) then print_debug_queue true exn;
-            tclZERO ~info exn))
+let do_observe_tac ~header s tac =
+  let open Proofview.Notations in
+  let open Proofview in
+  Goal.enter (fun gl ->
+      let goal = Printer.Debug.pr_goal gl in
+      let env, sigma = (Goal.env gl, Goal.sigma gl) in
+      let s = s env sigma in
+      let lmsg = seq [header; str " : " ++ s] in
+      tclLIFT (NonLogical.make (fun () -> Feedback.msg_debug (s ++ fnl ())))
+      >>= fun () ->
+      tclOR
+        ( Stack.push (lmsg, goal) debug_queue;
+          tac
+          >>= fun v ->
+          ignore (Stack.pop debug_queue);
+          Proofview.tclUNIT v )
+        (fun (exn, info) ->
+           if not (Stack.is_empty debug_queue) then print_debug_queue true exn;
+           tclZERO ~info exn))
 
-  let observe_tac ~header s tac =
-    if do_observe () then do_observe_tac ~header s tac else tac
-end
+let observe_tac ~header s tac =
+  if do_observe () then do_observe_tac ~header s tac else tac
 
 let is_strict_tcc =
   Goptions.declare_bool_option_and_ref ~depr:false ~key:["Function_raw_tcc"]

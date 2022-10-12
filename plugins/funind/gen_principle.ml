@@ -14,7 +14,7 @@ open Indfun_common
 module RelDecl = Context.Rel.Declaration
 
 let observe_tac s =
-  New.observe_tac ~header:(Pp.str "observation") (fun _ _ -> Pp.str s)
+  observe_tac ~header:(Pp.str "observation") (fun _ _ -> Pp.str s)
 
 (*
    Construct a fixpoint as a Glob_term

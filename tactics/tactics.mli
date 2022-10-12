@@ -445,13 +445,9 @@ end
 
 (** {6 Tacticals defined directly in term of Proofview} *)
 
-module New : sig
+val refine : typecheck:bool -> (evar_map -> evar_map * constr) -> unit Proofview.tactic
+(** [refine ~typecheck c] is [Refine.refine ~typecheck c]
+    followed by beta-iota-reduction of the conclusion. *)
 
-  val refine : typecheck:bool -> (evar_map -> evar_map * constr) -> unit Proofview.tactic
-  (** [refine ~typecheck c] is [Refine.refine ~typecheck c]
-      followed by beta-iota-reduction of the conclusion. *)
-
-  val reduce_after_refine : unit Proofview.tactic
-  (** The reducing tactic called after {!refine}. *)
-
-end
+val reduce_after_refine : unit Proofview.tactic
+(** The reducing tactic called after {!refine}. *)

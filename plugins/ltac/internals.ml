@@ -102,7 +102,7 @@ let refine_tac ist ~simple ~with_classes c =
     let refine = Refine.refine ~typecheck:false update in
     if simple then refine
     else refine <*>
-           Tactics.New.reduce_after_refine <*>
+           Tactics.reduce_after_refine <*>
            Proofview.shelve_unifiable
   end
 

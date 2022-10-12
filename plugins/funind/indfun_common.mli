@@ -68,13 +68,11 @@ val pr_info : Environ.env -> Evd.evar_map -> function_info -> Pp.t
 
 val pr_table : Environ.env -> Evd.evar_map -> Pp.t
 
-module New : sig
-  val observe_tac :
-       header:Pp.t
-    -> (Environ.env -> Evd.evar_map -> Pp.t)
-    -> unit Proofview.tactic
-    -> unit Proofview.tactic
-end
+val observe_tac :
+  header:Pp.t
+  -> (Environ.env -> Evd.evar_map -> Pp.t)
+  -> unit Proofview.tactic
+  -> unit Proofview.tactic
 
 (* val function_debug : bool ref  *)
 val observe : Pp.t -> unit

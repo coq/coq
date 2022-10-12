@@ -389,7 +389,7 @@ let declare_instance_open sigma ?hook ~tac ~locality ~poly id pri impargs udecl 
         Tacticals.tclTHENLIST [
           Refine.refine ~typecheck:false (fun sigma -> sigma, term);
           Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
-          Tactics.New.reduce_after_refine;
+          Tactics.reduce_after_refine;
         ]
       in
       let lemma, _ = Declare.Proof.by init_refine lemma in

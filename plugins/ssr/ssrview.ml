@@ -340,7 +340,7 @@ let pose_proof subject_name p =
   | id :: _ -> Ssrcommon.tclRENAME_HD_PROD (Name.Name id)
   | _ -> tclUNIT() end
   <*>
-  Tactics.New.reduce_after_refine
+  Tactics.reduce_after_refine
 
 (* returns true if the last item was a tactic *)
 let rec apply_all_views_aux ~clear_if_id vs finalization conclusion s0 =
