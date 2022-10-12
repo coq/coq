@@ -50,7 +50,6 @@ CI_TARGETS= \
     ci-mathcomp_test \
     ci-mathcomp_word \
     ci-mczify \
-    ci-mathcomp \
     ci-finmap \
     ci-bigenough \
     ci-analysis \
