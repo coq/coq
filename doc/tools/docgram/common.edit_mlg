@@ -165,6 +165,7 @@ DELETE: [
 | test_array_opening
 | test_array_closing
 | test_variance_ident
+| test_ident_with_or_lpar_or_rbrac
 
   (* SSR *)
 | ssr_null_entry
@@ -1683,12 +1684,6 @@ ltac2_rewriter: [
 
 ltac2_expr0: [
 | DELETE "(" ")"
-| REPLACE "{" test_ident_with_or_lpar_or_rbrac ltac2_expr0 "with" tac2rec_fieldexprs "}"
-| WITH "{" ltac2_expr0 "with" tac2rec_fieldexprs "}"
-(*
-| REPLACE "{" [  | LIST1 tac2rec_fieldexpr OPT ";" ] "}"
-| WITH "{" OPT ( LIST1 tac2rec_fieldexpr OPT ";" ) "}"
-*)
 ]
 
 tac2type_body: [
@@ -2087,7 +2082,7 @@ tac2rec_fieldexprs: [
 | DELETE tac2rec_fieldexpr ";" tac2rec_fieldexprs
 | DELETE tac2rec_fieldexpr ";"
 | DELETE tac2rec_fieldexpr
-| LIST1 tac2rec_fieldexpr OPT ";"
+| LIST1 tac2rec_fieldexpr SEP ";" OPT ";"
 ]
 
 tac2rec_fields: [

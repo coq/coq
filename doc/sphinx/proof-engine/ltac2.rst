@@ -279,8 +279,8 @@ There is dedicated syntax for list and array literals.
    | ( @ltac2_expr : @ltac2_type )
    | ()
    | [ {*; @ltac2_expr5 } ]
-   | %{ @ltac2_expr0 with {? {+ @tac2rec_fieldexpr } {? ; } } %}
-   | %{ {? {+ @tac2rec_fieldexpr } {? ; } } %}
+   | %{ @ltac2_expr0 with {? {+; @tac2rec_fieldexpr } {? ; } } %}
+   | %{ {? {+; @tac2rec_fieldexpr } {? ; } } %}
    | @ltac2_tactic_atom
    tac2rec_fieldpats ::= @tac2rec_fieldpat ; {? @tac2rec_fieldpats }
    | @tac2rec_fieldpat ;
