@@ -3724,29 +3724,26 @@ module TomatchVector = struct
 end
 
 module Rhs = struct
-  type ('env, 'length, 'matches, 'nrealdecls, 'nrealargs) args = {
+  type ('env, 'matches, 'nrealdecls, 'nrealargs) args = {
       globenv : ('env * 'nrealdecls) GlobalEnv.t;
       context : ('env, 'nrealdecls, 'nrealargs) ERelContext.t;
       return_pred : ('env * 'nrealdecls) ETerm.t;
       matches : (('env * 'nrealdecls) ETerm.t, 'matches) Vector.t;
     }
 
-  type ('env, 'length, 'matches, 'nrealdecls, 'nrealargs) f' =
-      ('env, 'length, 'matches, 'nrealdecls, 'nrealargs) args ->
+  type ('env, 'matches, 'nrealdecls, 'nrealargs) f =
+      ('env, 'matches, 'nrealdecls, 'nrealargs) args ->
           ('env * 'nrealdecls) EJudgment.t EvarMapMonad.t
 
-  type ('env, 'length, 'nrealdecls, 'nrealargs) f =
-      ('env, 'length, 'length, 'nrealdecls, 'nrealargs) f'
-
-  type ('env, 'length, 'matches) poly = {
+  type ('env, 'matches) poly = {
       f : 'nrealdecls 'nrealargs .
-        ('env, 'length, 'matches, 'nrealdecls, 'nrealargs) f';
+        ('env, 'matches, 'nrealdecls, 'nrealargs) f;
     } [@@ocaml.unboxed]
 
   type ('env, 'length, 'matched, 'matches) cont = {
       length : 'length Nat.t;
       sum : ('matched, 'length, 'matches) Nat.plus;
-      f : ('env, 'length, 'matches) poly;
+      f : ('env, 'matches) poly;
     }
 
   type ('env, 'length, 'matched, 'matches) desc = {
@@ -3758,8 +3755,22 @@ module Rhs = struct
         ('env, 'length, 'matched, 'matches) desc -> ('env, 'length) t
             [@@ocaml.unboxed]
 
+  type ('env, 'nrealdecls) untyped_args = {
+      globenv : ('env * 'nrealdecls) GlobalEnv.t;
+      return_pred : ('env * 'nrealdecls) ETerm.t;
+    }
+
+  type ('env, 'nrealdecls) untyped_f =
+      ('env, 'nrealdecls) untyped_args ->
+          ('env * 'nrealdecls) EJudgment.t EvarMapMonad.t
+
+  type 'env untyped_poly = {
+      f : 'nrealdecls .
+        ('env, 'nrealdecls) untyped_f;
+    } [@@ocaml.unboxed]
+
   let make (type env length) (length : length Nat.t)
-      (f : (env, length, length) poly) : (env, length) t =
+      (f : (env, length) poly) : (env, length) t =
     Exists { matches = []; cont = { length; sum = Nat.Zero_l; f }}
 
   let length (type env length) (Exists rhs : (env, length) t) : length Nat.t =
@@ -3791,7 +3802,7 @@ module Rhs = struct
       Eq.(cast (Vector.eq (ETerm.morphism Env.succ)))
       (Vector.map (ETerm.lift Height.one) matches) in
     let f (type nrealdecls nrealargs) :
-        (env Nat.succ, length, _, nrealdecls, nrealargs) f' =
+        (env Nat.succ, _, nrealdecls, nrealargs) f =
     fun { globenv; context; return_pred; matches } ->
       let open EvarMapMonad.Ops in
       let context = ERelContext.morphism (Eq.sym Env.succ) context in
@@ -3829,7 +3840,7 @@ module Rhs = struct
     let mpnpb = Nat.plus_assoc_rec npb mpl mpn in
     let eq = Nat.plus_fun mpnpb npmpb in
     let f (type nrealdecls nrealargs) :
-        (env, length', _, nrealdecls, nrealargs) f' =
+        (env, _, nrealdecls, nrealargs) f =
     fun args ->
       let others, matched =
         Vector.cut (Nat.plus_commut length' sum') args.matches in
@@ -3848,7 +3859,7 @@ module Rhs = struct
     let open EvarMapMonad.Ops in
     let { length; sum; f } = rhs in
     let f (type nrealdecls' nrealargs') :
-        (env * nrealdecls, length, _, nrealdecls', nrealargs') f' =
+        (env * nrealdecls, _, nrealdecls', nrealargs') f =
     fun { globenv; context; return_pred; matches } ->
       let Exists push = ERelContext.push context context' in
       let eq' = Eq.(
@@ -3877,32 +3888,32 @@ module Rhs = struct
 end
 
 module Clause = struct
-  type ('env, 'pats, 'height) desc = {
+  type ('env, 'pats, 'rhs) desc = {
       env : 'env GlobalEnv.t;
       ids : Names.Id.Set.t;
       pats : 'pats;
-      rhs : ('env, 'height) Rhs.t;
+      rhs : 'rhs;
     }
 
   type ('env, 'pats, 'height) content =
       ('env, 'pats, 'height) desc CAst.t
 
   type ('env, 'length) untyped =
-      Exists :
+    | Exists :
         ('env, ('length, 'height, Nat.zero) Pattern.args,
-          'height) content ->
-             ('env, 'length) untyped [@@ocaml.unboxed]
+          'env Rhs.untyped_poly) content ->
+             ('env, 'length) untyped
 
   type ('env, 'length, 'ind) t =
       Exists :
         ('env, ('env, 'length, <ind: 'ind; size: 'height>) Patterns.t,
-          'height) content ->
+          ('env, 'height) Rhs.t) content ->
             ('env, 'length, 'ind) t [@@ocaml.unboxed]
 
   let check (type height_pat height_rhs) ?loc
       (clause :
         ('env, ('env, 'length, <ind: 'ind; size: height_pat>) Patterns.t,
-          height_rhs) desc) =
+          ('env, height_rhs) Rhs.t) desc) =
     let size_pat = Patterns.size clause.pats in
     let Refl = Option.get (Nat.is_eq size_pat (Rhs.length clause.rhs)) in
     Exists (CAst.make ?loc clause)
@@ -4334,7 +4345,12 @@ module PrepareTomatch (EqnLength : Type) = struct
           (env, length) Clause.untyped) :
         (env, 'length, 'ind) Clause.t =
       let Exists pats = proj_pats index v in
-      Clause.check ?loc { env; ids; pats; rhs }
+      let length = Patterns.size pats in
+      let rhs : (env, _) Rhs.t =
+        Exists { matches = []; cont = { length; sum = Zero_l;
+          f = { f = fun { globenv; return_pred; _ } ->
+            rhs.f { globenv; return_pred }}}} in
+      Exists (CAst.make ?loc ({ env; ids; pats; rhs } : _ Clause.desc))
 
     let to_clauses (type env length) (env : env GlobalEnv.t)
         (clauses : ((env, length) Clause.untyped,
@@ -5501,7 +5517,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       Exists :
         ('env, ('env, 'arity, 'size, 'tail_length, 'ind_tail,
            'size_tail) prepare_pattern,
-         'size Nat.succ) Clause.content ->
+         ('env, 'size Nat.succ) Rhs.t) Clause.content ->
            ('env, 'arity, 'tail_length, 'ind_tail)
              prepare_clause [@@ocaml.unboxed]
 
@@ -6611,8 +6627,7 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
       ('env, tomatch_count) Clause.untyped =
     let Exists pats = Pattern.args_of_concrete pats in
     let Refl = Option.get (Nat.is_eq tomatch_count (Pattern.length pats)) in
-    let length = Pattern.size_of_args pats Nat.O in
-    let f ({ globenv; return_pred; _ } : _ Rhs.args) =
+    let f ({ globenv; return_pred } : _ Rhs.untyped_args) =
 (*
       let* sigma = EvarMapMonad.get in
       Format.eprintf "Typing rhs in %a (expected type: %a)." Pp.pp_with
@@ -6622,7 +6637,7 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
       judgment_of_glob_constr ~tycon:return_pred globenv rhs in
     let desc : _ Clause.desc =
       { env; ids = Names.Id.Set.of_list ids; pats;
-        rhs = Rhs.make length { f }} in
+        rhs = ({ f } : _ Rhs.untyped_poly)} in
     Exists (CAst.make ?loc desc) in
   let eqns = Vector.map (make_clause (Vector.length tomatches)) eqns in
   let try_with ~small_inversion =
