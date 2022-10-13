@@ -386,6 +386,16 @@ Conversion machines
   risk: none, unless mixing open terms and primitive floats inside primitive
   arrays; critical otherwise
 
+  component: "native" conversion machine (translation to OCaml which compiles to native code)
+  summary: conversion of Prod / Prod values was comparing the wrong components
+  introduced: V8.5
+  impacted released versions: V8.5-V8.16.0 (when built with native computation enabled)
+  impacted coqchk versions: none (no native computation in coqchk)
+  fixed in: 8.16.1
+  found by: Melquiond
+  GH issue number: #16645
+  risk: systematic
+
 Side-effects
 
   component: side-effects
