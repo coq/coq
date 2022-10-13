@@ -2114,6 +2114,15 @@ Section Cutting.
     now rewrite skipn_firstn_comm, L.
   Qed.
 
+  Lemma skipn_skipn : forall x y l, skipn x (skipn y l) = skipn (x + y) l.
+  Proof.
+    intros x y. rewrite Nat.add_comm. induction y as [|y IHy].
+    - reflexivity.
+    - intros [|].
+      + now rewrite skipn_nil.
+      + now rewrite skipn_cons, IHy.
+  Qed.
+
   Lemma firstn_skipn : forall n l, firstn n l ++ skipn n l = l.
   Proof.
     intro n; induction n.
