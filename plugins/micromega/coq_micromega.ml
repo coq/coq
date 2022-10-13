@@ -64,6 +64,11 @@ let use_nra_cache =
 
 let use_csdp_cache () = true
 
+(* Enable/disable conversion instead of (syntactic) equality during parsing *)
+
+let use_conversion =
+  declare_bool_option_and_ref ~depr:false ~key:["Psatz"; "Conversion"] ~value:false
+
 (**
   * Initialize a tag type to the Tag module declaration (see Mutils).
   *)
@@ -662,13 +667,19 @@ module Env = struct
 
   (** [eq_constr gl x y] returns an updated [gl] if x and y can be unified *)
   let eq_constr (env, sigma) x y =
-    match EConstr.eq_constr_universes_proj env sigma x y with
-    | Some csts -> (
-      let csts = UnivProblem.Set.force csts in
-      match Evd.add_universe_constraints sigma csts with
-      | sigma -> Some (env, sigma)
-      | exception UGraph.UniverseInconsistency _ -> None )
-    | None -> None
+    if use_conversion ()
+    then
+      match Reductionops.infer_conv env sigma x y with
+      | None -> None
+      | Some sigma' -> Some(env,sigma')
+    else
+        match EConstr.eq_constr_universes_proj env sigma x y with
+          | Some csts -> (
+            let csts = UnivProblem.Set.force csts in
+            match Evd.add_universe_constraints sigma csts with
+            | sigma -> Some (env, sigma)
+            | exception UGraph.UniverseInconsistency _ -> None )
+          | None -> None
 
   let compute_rank_add env v is_prop =
     let rec _add gl vars n v =
