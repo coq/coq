@@ -111,12 +111,12 @@ type library_t = {
 
 let libraries_table : string DPmap.t ref = ref DPmap.empty
 
-let register_loaded_library senv libname file =
+let register_loaded_library libname file =
   let () = assert (not @@ DPmap.mem libname !libraries_table) in
   let () = libraries_table := DPmap.add libname file !libraries_table in
   let prefix = Nativecode.mod_uid_of_dirpath libname ^ "." in
   let () = Nativecode.register_native_file prefix in
-  senv
+  ()
 
 let mk_library sd f md digests univs =
   {
@@ -169,14 +169,12 @@ and intern_mandatory_library caller from libs (dir,d) =
     over library " ++ DirPath.print dir);
   libs
 
-let register_library senv m =
-  let mp = MPfile m.library_name in
-  let mp', senv = Safe_typing.import m.library_data m.library_extra_univs m.library_digests senv in
-  let () =
-    if not (ModPath.equal mp mp') then
-      anomaly (Pp.str "Unexpected disk module name.")
-  in
-  register_loaded_library senv m.library_name m.library_file
+let register_library env m =
+  let lib = m.library_data in
+  let linkinfo = Nativecode.link_info_of_dirpath m.library_name in
+  let env = Modops.add_linked_module (Safe_typing.module_of_library lib) linkinfo env in
+  register_loaded_library m.library_name m.library_file;
+  env
 
 let save_library_to env dir f lib =
   let mp = MPfile dir in
@@ -263,25 +261,27 @@ let fb_handler = function
     | _ -> ()
 
 let init_coq () =
-  let senv = Safe_typing.empty_environment in
+  let env = Environ.empty_env in
   let () = Flags.set_native_compiler true in
-  let senv = Safe_typing.set_native_compiler true senv in
-  let () = Safe_typing.allow_delayed_constants := false in
-  let dummy = Names.DirPath.make [Names.Id.of_string_soft "@native"] in
-  let _, senv = Safe_typing.start_library dummy senv in
-  senv
+  let env =
+    Environ.set_typing_flags
+      { (Environ.typing_flags env) with
+        enable_native_compiler = true }
+      env
+  in
+  env
 
-let compile senv ~in_file =
+let compile env ~in_file =
   let lib = Library.intern_from_file in_file in
   let dir = lib.Library.library_name in
   (* Require the dependencies **only once** *)
   let deps, contents = Library.intern_library_deps ([], DPmap.empty) dir lib in_file in
-  let fold senv dep = Library.register_library senv (DPmap.find dep contents) in
-  let senv = List.fold_left fold senv (List.rev deps) in
+  let fold env dep = Library.register_library env (DPmap.find dep contents) in
+  let env = List.fold_left fold env (List.rev deps) in
   (* Extract the native code and compile it *)
   let modl = (Safe_typing.module_of_library lib.Library.library_data).Declarations.mod_type in
   let out_vo = Filename.(remove_extension in_file) ^ ".vo" in
-  Library.save_library_to (Safe_typing.env_of_safe_env senv) dir out_vo modl
+  Library.save_library_to env dir out_vo modl
 
 module Usage :
 sig
@@ -365,8 +365,8 @@ let () =
     let opts, in_file = parse_args (List.tl @@ Array.to_list Sys.argv) opts in
     let () = init_load_path ~boot:opts.boot ~vo_path:(List.rev opts.vo_path) in
     let () = Nativelib.include_dirs := List.rev opts.ml_path in
-    let senv = init_coq () in
-    compile senv ~in_file
+    let env = init_coq () in
+    compile env ~in_file
   with exn ->
     Format.eprintf "Error: @[%a@]@\n%!" Pp.pp_with (CErrors.print exn);
     let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
