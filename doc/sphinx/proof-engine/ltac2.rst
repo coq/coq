@@ -1003,6 +1003,8 @@ Match over goals
       gmatch_rule ::= @gmatch_pattern => @ltac2_expr
       gmatch_pattern ::= [ {*, @gmatch_hyp_pattern } %|- @ltac2_match_pattern ]
       gmatch_hyp_pattern ::= @name : @ltac2_match_pattern
+      | @name := [ @ltac2_match_pattern ] : @ltac2_match_pattern
+      | @name := @ltac2_match_pattern
 
    Matches over goals, similar to Ltac1 :tacn:`match goal`.
    Use this form to match hypotheses and/or goals in the local context.  These patterns have zero or
@@ -1023,9 +1025,7 @@ Match over goals
       Patterns to match with hypotheses.  Each pattern must match a distinct hypothesis in order
       for the branch to match.
 
-      Hypotheses have the form :n:`@name {? := @term__binder } : @type`.  Currently Ltac2 doesn't
-      allow matching on or capturing the value of :n:`@term__binder`.  It only supports matching on
-      the :token:`name` and the :token:`type`, for example `n : ?t`.
+      Hypotheses have the form :n:`@name {? := @term__binder } : @type`.  If :n:`@term__binder` is not specified, the pattern matches hypotheses even if they have a body.
 
       .. currently only supports the first row
          :list-table::

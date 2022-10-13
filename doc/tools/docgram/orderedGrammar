@@ -2244,6 +2244,8 @@ gmatch_pattern: [
 
 gmatch_hyp_pattern: [
 | name ":" ltac2_match_pattern      (* ltac2 plugin *)
+| name ":=" "[" ltac2_match_pattern "]" ":" ltac2_match_pattern      (* ltac2 plugin *)
+| name ":=" ltac2_match_pattern      (* ltac2 plugin *)
 ]
 
 q_move_location: [

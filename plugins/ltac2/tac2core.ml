@@ -925,21 +925,30 @@ let () = define2 "pattern_matches_subterm_vect" pattern constr begin fun pat c -
   end
 end
 
-let () = define3 "pattern_matches_goal" bool (list (pair bool pattern)) (pair bool pattern) begin fun rev hp cp ->
+let match_pattern = map_repr
+    (fun (b,pat) -> if b then Tac2match.MatchPattern pat else Tac2match.MatchContext pat)
+    (function Tac2match.MatchPattern pat -> (true, pat) | MatchContext pat -> (false, pat))
+    (pair bool pattern)
+
+let () = define3 "pattern_matches_goal" bool
+    (list (pair (option match_pattern) match_pattern))
+    match_pattern
+  begin fun rev hp cp ->
   assert_focussed >>= fun () ->
   Proofview.Goal.enter_one begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
-  let mk_pattern (b, pat) = if b then Tac2match.MatchPattern pat else Tac2match.MatchContext pat in
-  let r = (List.map mk_pattern hp, mk_pattern cp) in
-  Tac2match.match_goal env sigma concl ~rev r >>= fun (hyps, ctx, subst) ->
+  Tac2match.match_goal env sigma concl ~rev (hp, cp) >>= fun (hyps, ctx, subst) ->
     let of_ctxopt ctx = Value.of_ext val_matching_context (Option.default empty_context ctx) in
-    let hids = Value.of_array Value.of_ident (Array.map_of_list fst hyps) in
-    let hctx = Value.of_array of_ctxopt (Array.map_of_list snd hyps) in
+    let hids = Value.of_array Value.of_ident (Array.map_of_list pi1 hyps) in
+    let hbctx = Value.of_array of_ctxopt
+        (Array.of_list (CList.filter_map (fun (_,bctx,_) -> bctx) hyps))
+    in
+    let hctx = Value.of_array of_ctxopt (Array.map_of_list pi3 hyps) in
     let subs = Value.of_array Value.of_constr (Array.map_of_list snd (Id.Map.bindings subst)) in
     let cctx = of_ctxopt ctx in
-    let ans = Value.of_tuple [| hids; hctx; subs; cctx |] in
+    let ans = Value.of_tuple [| hids; hbctx; hctx; subs; cctx |] in
     Proofview.tclUNIT ans
   end
 end
