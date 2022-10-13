@@ -322,8 +322,8 @@ lint:
     OPAM_VARIANT: "+flambda"
   only: *full-ci
 
-pkg:opam:
-  extends: .pkg:opam-template
+# pkg:opam:
+#   extends: .pkg:opam-template
 
 pkg:opam:native:
   extends: .pkg:opam-template
