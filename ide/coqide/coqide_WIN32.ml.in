@@ -41,10 +41,16 @@ let reroute_stdout_stderr () =
 
 external win32_interrupt : int -> unit = "win32_interrupt"
 
+let interrupter pid = 
+  (* indicate which process to interrupt *)
+  let fd = open_out (Shared.get_interrupt_fname pid) in
+  close_out fd;
+  win32_interrupt pid
+      
 let () =
   Coq.gio_channel_of_descr_socket := Glib.Io.channel_of_descr_socket;
   set_win32_path ();
-  Coq.interrupter := win32_interrupt;
+  Coq.interrupter := interrupter;
   reroute_stdout_stderr ();
   try ignore (Unix.getenv "GTK_CSD") with Not_found -> Unix.putenv "GTK_CSD" "0"
 
