@@ -8,19 +8,19 @@ stages:
   - build
   - deploy
 
-# When a job has no dependencies, it goes to stage 1. Otherwise, we
-# set "needs" to contain all transitive dependencies (with "artifacts:
-# false" when we don't want the artifacts). We include the transitive
-# dependencies due to gitlab bugs sometimes starting the job even if a
-# transitive dep failed, see #10699 / 7b59d8c9d9b2104de7162ec0e40f6182a6830046.
+# We set "needs" to contain all transitive dependencies. We include the
+# transitive dependencies as otherwise we don't get their artifacts
+# (eg if color had just needs: bignums it wouldn't get the artifact containing coq)
 
 # some default values
 variables:
-  # Format: $IMAGE-V$DATE-$hash
+  # Format: bionic_coq-V$DATE-$hash
+  # $DATE is so we can tell what's what in the image list
   # The $hash is the first 10 characters of the md5 of the Dockerfile. e.g.
   # echo $(md5sum dev/ci/docker/bionic_coq/Dockerfile | head -c 10)
   CACHEKEY: "bionic_coq-V2022-10-13-2c0347368a"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
+
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
   # Used to select special compiler switches such as flambda, 32bits, etc...
@@ -29,25 +29,6 @@ variables:
 
 include:
   - local: '/dev/bench/gitlab-bench.yml'
-
-docker-boot:
-  stage: docker
-  image: docker:stable
-  services:
-    - docker:dind
-  before_script: []
-  script:
-    - dev/tools/check-cachekey.sh
-    - docker login -u gitlab-ci-token -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
-    - cd dev/ci/docker/bionic_coq/
-    - if docker pull "$IMAGE"; then echo "Image prebuilt!"; exit 0; fi
-    - docker build -t "$IMAGE" .
-    - docker push "$IMAGE"
-  except:
-    variables:
-      - $SKIP_DOCKER == "true"
-  tags:
-    - docker
 
 before_script:
   - dev/ci/gitlab-section.sh start before_script before_script
@@ -63,10 +44,6 @@ before_script:
   - opam config list
   - dev/tools/check-cachekey.sh
   - dev/ci/gitlab-section.sh end before_script
-
-################ GITLAB CACHING ######################
-# - use artifacts between jobs                       #
-######################################################
 
 # Regular "release" build of Coq, with final installed layout
 .build-template:
@@ -148,10 +125,9 @@ before_script:
     name: "$CI_JOB_NAME"
     expire_in: 2 months
 
-# every non build job must set "needs" otherwise all build
-# artifacts are used together and we may get some random Coq. To that
-# purpose, we add a spurious dependency `not-a-real-job` that must be
-# overridden otherwise the CI will fail.
+# The used Coq must be set explicitly for each job with "needs:".
+# We add a spurious dependency `not-a-real-job` that must be
+# overridden otherwise the CI will fail (to help debugging missing needs).
 
 # set "needs" when using
 .test-suite-template:
@@ -197,6 +173,8 @@ before_script:
       - coqchk.log
     expire_in: 2 months
 
+# This template defaults to "needs: build:base"
+# Remember to include it as a transitive dependency if you want additional "needs:"
 .ci-template:
   stage: build
   interruptible: true
@@ -232,6 +210,66 @@ before_script:
     - ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
     - git config --global user.name "coqbot"
     - git config --global user.email "coqbot@users.noreply.github.com"
+
+.pkg:opam-template:
+  stage: build
+  interruptible: true
+  # OPAM will build out-of-tree so no point in importing artifacts
+  script:
+    - opam pin add --kind=path coq-core.dev .
+    - opam pin add --kind=path coq-stdlib.dev .
+    - opam pin add --kind=path coqide-server.dev .
+    - opam pin add --kind=path coqide.dev .
+  variables:
+    OPAM_SWITCH: "edge"
+    OPAM_VARIANT: "+flambda"
+  only: *full-ci
+
+.nix-template:
+  stage: build
+  needs: []
+  interruptible: true
+  image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
+  variables:
+    GIT_STRATEGY: none # Required because we don't have git
+    USER: root # Variable required by Cachix
+  before_script:
+    - cat /proc/{cpu,mem}info || true
+    # Use current worktree as tmpdir to allow exporting artifacts in case of failure
+    - export TMPDIR=$PWD
+    # Install Cachix as documented at https://github.com/cachix/cachix
+    - nix-env -iA cachix -f https://cachix.org/api/v1/install
+    - cachix use coq
+  artifacts:
+    name: "$CI_JOB_NAME.logs"
+    when: on_failure
+    paths:
+      - nix-build-coq.drv-0/*/test-suite/logs
+    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
+    # expire_in: never
+
+##############################################################################
+########################## End of templates ##################################
+##############################################################################
+
+docker-boot:
+  stage: docker
+  image: docker:stable
+  services:
+    - docker:dind
+  before_script: []
+  script:
+    - dev/tools/check-cachekey.sh
+    - docker login -u gitlab-ci-token -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
+    - cd dev/ci/docker/bionic_coq/
+    - if docker pull "$IMAGE"; then echo "Image prebuilt!"; exit 0; fi
+    - docker build -t "$IMAGE" .
+    - docker push "$IMAGE"
+  except:
+    variables:
+      - $SKIP_DOCKER == "true"
+  tags:
+    - docker
 
 build:base:
   extends: .build-template
@@ -308,20 +346,6 @@ lint:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
-.pkg:opam-template:
-  stage: build
-  interruptible: true
-  # OPAM will build out-of-tree so no point in importing artifacts
-  script:
-    - opam pin add --kind=path coq-core.dev .
-    - opam pin add --kind=path coq-stdlib.dev .
-    - opam pin add --kind=path coqide-server.dev .
-    - opam pin add --kind=path coqide.dev .
-  variables:
-    OPAM_SWITCH: "edge"
-    OPAM_VARIANT: "+flambda"
-  only: *full-ci
-
 # pkg:opam:
 #   extends: .pkg:opam-template
 
@@ -334,29 +358,6 @@ pkg:opam:native:
     - echo "Definition f x := x + x." > test_native.v
     - coqc -native-compiler yes test_native.v
     - test -f .coq-native/Ntest_native.cmxs
-
-.nix-template:
-  stage: build
-  needs: []
-  interruptible: true
-  image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
-  variables:
-    GIT_STRATEGY: none # Required because we don't have git
-    USER: root # Variable required by Cachix
-  before_script:
-    - cat /proc/{cpu,mem}info || true
-    # Use current worktree as tmpdir to allow exporting artifacts in case of failure
-    - export TMPDIR=$PWD
-    # Install Cachix as documented at https://github.com/cachix/cachix
-    - nix-env -iA cachix -f https://cachix.org/api/v1/install
-    - cachix use coq
-  artifacts:
-    name: "$CI_JOB_NAME.logs"
-    when: on_failure
-    paths:
-      - nix-build-coq.drv-0/*/test-suite/logs
-    # Gitlab doesn't support yet "expire_in: never" so we use the instance default
-    # expire_in: never
 
 # broken, see eg https://gitlab.com/coq/coq/-/jobs/1754045983
 # pkg:nix:deploy:
@@ -527,11 +528,6 @@ test-suite:edge:dev:
       - _build/default/test-suite/logs
     expire_in: 2 week
   allow_failure: true
-
-# test-suite:4.12+trunk+dune:
-#   extends: .test-suite:ocaml+beta+dune-template
-#   variables:
-#     OCAMLVER: 4.12.0+trunk
 
 test-suite:base+async:
   extends: .test-suite-template
