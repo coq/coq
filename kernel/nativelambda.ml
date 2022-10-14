@@ -30,25 +30,25 @@ type lambda =
   | Lrec          of Name.t Context.binder_annot * lambda
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
-  | Lconst        of prefix * pconstant
-  | Lproj         of prefix * inductive * int (* prefix, inductive, index starting from 0 *)
-  | Lprim         of prefix * pconstant * CPrimitives.t * lambda array
+  | Lconst        of pconstant
+  | Lproj         of inductive * int (* inductive, index starting from 0 *)
+  | Lprim         of pconstant * CPrimitives.t * lambda array
         (* No check if None *)
   | Lcase         of annot_sw * lambda * lambda * lam_branches
                   (* annotations, term being matched, accu, branches *)
   | Lif           of lambda * lambda * lambda
-  | Lfix          of (int array * (string * inductive) array * int) * fix_decl
+  | Lfix          of (int array * inductive array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int (* a constant constructor *)
   | Lparray       of lambda array * lambda
-  | Lmakeblock    of prefix * inductive * int * lambda array
-                  (* prefix, inductive name, constructor tag, arguments *)
+  | Lmakeblock    of inductive * int * lambda array
+                  (* inductive name, constructor tag, arguments *)
         (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t
   | Lfloat        of Float64.t
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
-  | Lind          of prefix * pinductive
+  | Lind          of pinductive
   | Lforce
 
 and lam_branches =
@@ -141,9 +141,9 @@ let map_lam_with_binders g f n lam =
       let fct' = f n fct in
       let args' = Array.Smart.map (f n) args in
       if fct == fct' && args == args' then lam else mkLapp fct' args'
-  | Lprim(prefix,kn,op,args) ->
+  | Lprim(kn,op,args) ->
       let args' = Array.Smart.map (f n) args in
-      if args == args' then lam else Lprim(prefix,kn,op,args')
+      if args == args' then lam else Lprim(kn,op,args')
   | Lcase(annot,t,a,branches) ->
     let const = branches.constant_branches in
     let nonconst = branches.nonconstant_branches in
@@ -179,9 +179,9 @@ let map_lam_with_binders g f n lam =
       let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
       if ltypes == ltypes' && lbodies == lbodies' then lam
       else Lcofix(init,(ids,ltypes',lbodies'))
-  | Lmakeblock(prefix,cn,tag,args) ->
+  | Lmakeblock(cn,tag,args) ->
       let args' = Array.Smart.map (f n) args in
-      if args == args' then lam else Lmakeblock(prefix,cn,tag,args')
+      if args == args' then lam else Lmakeblock(cn,tag,args')
   | Levar (evk, args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Levar (evk, args')
@@ -349,20 +349,19 @@ let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
 
 (* Translation of constructors *)
-let expand_constructor prefix ind tag nparams arity =
+let expand_constructor ind tag nparams arity =
   let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
   let ids = Array.make (nparams + arity) anon in
   if Int.equal arity 0 then mkLlam ids (Lint tag)
   else
   let args = make_args arity 1 in
-  Llam(ids, Lmakeblock (prefix, ind, tag, args))
+  Llam(ids, Lmakeblock (ind, tag, args))
 
 (* [nparams] is the number of parameters still expected *)
-let makeblock env ind tag nparams arity args =
+let makeblock _env ind tag nparams arity args =
   let nargs = Array.length args in
   if nparams > 0 || nargs < arity then
-    let prefix = get_mind_prefix env (fst ind) in
-    mkLapp (expand_constructor prefix ind tag nparams arity) args
+    mkLapp (expand_constructor ind tag nparams arity) args
   else
   (* The constructor is fully applied *)
   if Int.equal arity 0 then Lint tag
@@ -376,8 +375,7 @@ let makeblock env ind tag nparams arity args =
       Array.iteri (fun i v -> a.(i) <- get_value v) args; a in
     Lval (Nativevalues.mk_block tag args)
   else
-    let prefix = get_mind_prefix env (fst ind) in
-    Lmakeblock(prefix, ind, tag, args)
+    Lmakeblock(ind, tag, args)
 
 let makearray args def =
   Lparray (args, def)
@@ -393,9 +391,8 @@ let rec get_alias env (kn, u as p) =
        | Vmemitcodes.BCalias kn' -> get_alias env (kn', u)
        | _ -> p
 
-let prim env kn p args =
-  let prefix = get_const_prefix env (fst kn) in
-  Lprim(prefix, kn, p, args)
+let prim _env kn p args =
+  Lprim(kn, p, args)
 
 let expand_prim env kn op arity =
   (* primitives are always Relevant *)
@@ -496,9 +493,7 @@ let rec lambda_of_constr cache env sigma c =
 
   | Sort s -> Lsort s
 
-  | Ind (ind,_u as pind) ->
-      let prefix = get_mind_prefix env (fst ind) in
-      Lind (prefix, pind)
+  | Ind pind -> Lind pind
 
   | Prod(id, dom, codom) ->
       let ld = lambda_of_constr cache env sigma dom in
@@ -528,8 +523,7 @@ let rec lambda_of_constr cache env sigma c =
 
   | Proj (p, c) ->
     let ind = Projection.inductive p in
-    let prefix = get_mind_prefix env (fst ind) in
-    mkLapp (Lproj (prefix, ind, Projection.arg p)) [|lambda_of_constr cache env sigma c|]
+    mkLapp (Lproj (ind, Projection.arg p)) [|lambda_of_constr cache env sigma c|]
 
   | Case (ci, u, pms, t, iv, a, br) -> (* XXX handle iv *)
     let (ci, t, _iv, a, branches) = Inductive.expand_case env (ci, u, pms, t, iv, a, br) in
@@ -579,11 +573,7 @@ let rec lambda_of_constr cache env sigma c =
 
   | Fix((pos, i), (names,type_bodies,rec_bodies)) ->
       let ltypes = lambda_of_args cache env sigma 0 type_bodies in
-      let map i t =
-        let ind = get_fix_struct env i t in
-        let prefix = get_mind_prefix env (fst ind) in
-        (prefix, ind)
-      in
+      let map i t = get_fix_struct env i t in
       let inds = Array.map2 map pos type_bodies in
       let env = Environ.push_rec_types (names, type_bodies, rec_bodies) env in
       let lbodies = lambda_of_args cache env sigma 0 rec_bodies in
@@ -615,16 +605,14 @@ and lambda_of_app cache env sigma f args =
           if cb.const_inline_code then
             lambda_of_app cache env sigma csubst args
           else
-          let prefix = get_const_prefix env kn in
           let t =
             if is_lazy csubst then
-              mkLapp Lforce [|Lconst (prefix, (kn,u))|]
-            else Lconst (prefix, (kn,u))
+              mkLapp Lforce [|Lconst (kn, u)|]
+            else Lconst (kn, u)
           in
         mkLapp t (lambda_of_args cache env sigma 0 args)
       | OpaqueDef _ | Undef _ ->
-          let prefix = get_const_prefix env kn in
-          mkLapp (Lconst (prefix, (kn,u))) (lambda_of_args cache env sigma 0 args)
+          mkLapp (Lconst (kn, u)) (lambda_of_args cache env sigma 0 args)
       end
   | Construct ((ind,_ as c),_) ->
     let tag, nparams, arity = Cache.get_construct_info cache env c in

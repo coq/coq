@@ -25,24 +25,24 @@ type lambda =
   | Lrec          of Name.t Context.binder_annot * lambda
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
-  | Lconst        of prefix * pconstant
-  | Lproj         of prefix * inductive * int (* prefix, inductive, index starting from 0 *)
-  | Lprim         of prefix * pconstant * CPrimitives.t * lambda array
+  | Lconst        of pconstant
+  | Lproj         of inductive * int (* inductive, index starting from 0 *)
+  | Lprim         of pconstant * CPrimitives.t * lambda array
   | Lcase         of annot_sw * lambda * lambda * lam_branches
                   (* annotations, term being matched, accu, branches *)
   | Lif           of lambda * lambda * lambda
-  | Lfix          of (int array * (string * inductive) array * int) * fix_decl
+  | Lfix          of (int array * inductive array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int (* a constant constructor *)
   | Lparray       of lambda array * lambda
-  | Lmakeblock    of prefix * inductive * int * lambda array
-                  (* prefix, inductive name, constructor tag, arguments *)
+  | Lmakeblock    of inductive * int * lambda array
+                  (* inductive name, constructor tag, arguments *)
         (* A fully applied non-constant constructor *)
   | Luint         of Uint63.t
   | Lfloat        of Float64.t
   | Lval          of Nativevalues.t
   | Lsort         of Sorts.t
-  | Lind          of prefix * pinductive
+  | Lind          of pinductive
   | Lforce
 
 and lam_branches =
@@ -64,6 +64,7 @@ val decompose_Llam_Llet : lambda -> (Name.t Context.binder_annot * lambda option
 val is_lazy : constr -> bool
 
 val get_mind_prefix : env -> MutInd.t -> string
+val get_const_prefix : env -> Constant.t -> string
 
 val get_alias : env -> pconstant -> pconstant
 
