@@ -15,6 +15,7 @@ open Context
 open Declarations
 open Util
 open Nativevalues
+open Genlambda
 open Nativelambda
 open Environ
 

@@ -17,6 +17,7 @@ open Names
 open Vmvalues
 open Vmbytecodes
 open Vmemitcodes
+open Genlambda
 open Vmlambda
 open Constr
 open Declarations

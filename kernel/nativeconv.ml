@@ -165,7 +165,6 @@ let native_conv_gen pb sigma env univs t1 t2 =
 let native_conv_gen pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_native_compiler then
     let () = warn_no_native_compiler () in
-    let sigma = { Vmlambda.evars_val = sigma.Nativelambda.evars_val; evars_metas = sigma.Nativelambda.evars_metas } in
     Vconv.vm_conv_gen pb sigma env univs t1 t2
   else native_conv_gen pb sigma env univs t1 t2
 

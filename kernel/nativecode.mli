@@ -11,7 +11,6 @@ open Names
 open Constr
 open Declarations
 open Environ
-open Nativelambda
 open Nativevalues
 
 (** This file defines the mllambda code generation phase of the native
@@ -71,8 +70,8 @@ val compile_constant_field : env -> Constant.t ->
 val compile_mind_field : ModPath.t -> Label.t ->
   global list -> mutual_inductive_body -> global list
 
-val mk_conv_code : env -> evars -> string -> constr -> constr -> linkable_code
-val mk_norm_code : env -> evars -> string -> constr -> linkable_code
+val mk_conv_code : env -> Genlambda.evars -> string -> constr -> constr -> linkable_code
+val mk_norm_code : env -> Genlambda.evars -> string -> constr -> linkable_code
 
 val mk_library_header : Nativevalues.symbols -> global list
 

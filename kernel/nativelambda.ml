@@ -13,6 +13,7 @@ open Esubst
 open Constr
 open Declarations
 open Environ
+open Genlambda
 open Nativevalues
 
 module RelDecl = Context.Rel.Declaration
@@ -20,47 +21,7 @@ module RelDecl = Context.Rel.Declaration
 (** This file defines the lambda code generation phase of the native compiler *)
 type prefix = string
 
-type case_annot = case_info * reloc_table * Declarations.recursivity_kind
-
-type lambda =
-  | Lrel          of Name.t * int
-  | Lvar          of Id.t
-  | Lmeta         of metavariable * lambda (* type *)
-  | Levar         of Evar.t * lambda array (* arguments *)
-  | Lprod         of lambda * lambda
-  | Llam          of Name.t Context.binder_annot array * lambda
-  | Llet          of Name.t Context.binder_annot * lambda * lambda
-  | Lapp          of lambda * lambda array
-  | Lconst        of pconstant
-  | Lproj         of Projection.Repr.t * lambda
-  | Lprim         of pconstant * CPrimitives.t * lambda array
-        (* No check if None *)
-  | Lcase         of case_annot * lambda * lambda * lam_branches
-                  (* annotations, term being matched, accu, branches *)
-  | Lfix          of (int array * inductive array * int) * fix_decl
-  | Lcofix        of int * fix_decl
-  | Lint          of int (* a constant constructor *)
-  | Lparray       of lambda array * lambda
-  | Lmakeblock    of inductive * int * lambda array
-                  (* inductive name, constructor tag, arguments *)
-        (* A fully applied non-constant constructor *)
-  | Luint         of Uint63.t
-  | Lfloat        of Float64.t
-  | Lval          of Nativevalues.t
-  | Lsort         of Sorts.t
-  | Lind          of pinductive
-  | Lforce
-
-and lam_branches =
-  { constant_branches : lambda array;
-    nonconstant_branches : (Name.t Context.binder_annot array * lambda) array;
-  }
-
-and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
-
-type evars =
-    { evars_val : constr evar_handler;
-      evars_metas : metavariable -> types }
+type lambda = Nativevalues.t Genlambda.lambda
 
 (*s Constructors *)
 
@@ -417,10 +378,6 @@ let is_lazy t =
 let evar_value sigma ev = sigma.evars_val.evar_expand ev
 
 let meta_type sigma mv = sigma.evars_metas mv
-
-let empty_evars =
-  { evars_val = default_evar_handler;
-    evars_metas = (fun _ -> assert false) }
 
 (** Extract the inductive type over which a fixpoint is decreasing *)
 let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
