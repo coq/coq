@@ -734,7 +734,7 @@ let expand_existential sigma (evk, args) =
 
 let expand_existential0 = expand_existential
 
-let get_is_maybe_typeclass, (is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t) = Hook.make ~default:(fun evd c -> false) ()
+let get_is_maybe_typeclass, (is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t) = Hook.make ()
 
 let is_maybe_typeclass sigma c = Hook.get get_is_maybe_typeclass sigma c
 

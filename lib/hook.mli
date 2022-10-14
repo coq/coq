@@ -17,7 +17,7 @@ type 'a t
 type 'a value
 (** The content part of a hook. *)
 
-val make : ?default:'a -> unit -> ('a value * 'a t)
+val make : unit -> ('a value * 'a t)
 (** Create a new hook together with a way to retrieve its runtime value. *)
 
 val get : 'a value -> 'a
