@@ -1169,9 +1169,11 @@ let compile_prim env decl cond paux =
      let prefix = env.env_const_prefix c in
      let args = ml_of_instance env.env_univ u in
      mkMLapp (MLglobal(Gconstant (prefix, c))) args
-  | Lproj (ind, i) ->
+  | Lproj (p, c) ->
+    let ind = Projection.Repr.inductive p in
+    let i = Projection.Repr.arg p in
     let prefix = env.env_mind_prefix (fst ind) in
-    MLglobal(Gproj (prefix, ind, i))
+    MLapp (MLglobal(Gproj (prefix, ind, i)), [| ml_of_lam env l c |])
   | Lprim _ ->
     let decl,cond,paux = extract_prim env (ml_of_lam env l) t in
     compile_prim env decl cond paux

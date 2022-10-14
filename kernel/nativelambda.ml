@@ -30,7 +30,7 @@ type lambda =
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
-  | Lproj         of inductive * int (* inductive, index starting from 0 *)
+  | Lproj         of Projection.Repr.t * lambda
   | Lprim         of pconstant * CPrimitives.t * lambda array
         (* No check if None *)
   | Lcase         of annot_sw * lambda * lambda * lam_branches
@@ -484,8 +484,8 @@ let rec lambda_of_constr cache env sigma c =
   | Construct _ ->  lambda_of_app cache env sigma c empty_args
 
   | Proj (p, c) ->
-    let ind = Projection.inductive p in
-    mkLapp (Lproj (ind, Projection.arg p)) [|lambda_of_constr cache env sigma c|]
+    let c = lambda_of_constr cache env sigma c in
+    Lproj (Projection.repr p, c)
 
   | Case (ci, u, pms, t, iv, a, br) -> (* XXX handle iv *)
     let (ci, t, _iv, a, branches) = Inductive.expand_case env (ci, u, pms, t, iv, a, br) in

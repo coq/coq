@@ -25,7 +25,7 @@ type lambda =
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
-  | Lproj         of inductive * int (* inductive, index starting from 0 *)
+  | Lproj         of Projection.Repr.t * lambda
   | Lprim         of pconstant * CPrimitives.t * lambda array
   | Lcase         of annot_sw * lambda * lambda * lam_branches
                   (* annotations, term being matched, accu, branches *)
