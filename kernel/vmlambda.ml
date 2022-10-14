@@ -10,6 +10,8 @@ open Pp
 
 let pr_con sp = str(Names.Label.to_string (Constant.label sp))
 
+type case_annot = case_info * reloc_table * Declarations.recursivity_kind
+
 type lambda =
   | Lrel          of Name.t * int
   | Lvar          of Id.t
@@ -20,19 +22,20 @@ type lambda =
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
+  | Lproj         of Projection.Repr.t * lambda
   | Lprim         of pconstant * CPrimitives.t * lambda array
-  | Lcase         of case_info * reloc_table * lambda * lambda * lam_branches
-  | Lfix          of (int array * int) * fix_decl
+  | Lcase         of case_annot * lambda * lambda * lam_branches
+  | Lfix          of (int array * inductive array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int
   | Lparray       of lambda array * lambda
-  | Lmakeblock    of int * lambda array
+  | Lmakeblock    of inductive * int * lambda array
   | Luint         of Uint63.t
   | Lfloat        of Float64.t
   | Lval          of structured_values
   | Lsort         of Sorts.t
   | Lind          of pinductive
-  | Lproj         of Projection.Repr.t * lambda
+  | Lforce
 
 (* We separate branches for constant and non-constant constructors. If the OCaml
    limitation on non-constant constructors is reached, remaining branches are
@@ -104,7 +107,7 @@ let rec pp_lam lam =
                         prlist_with_sep spc pp_lam (Array.to_list args) ++
                         str")")
   | Lconst (kn,_) -> pr_con kn
-  | Lcase(_ci, _rtbl, t, a, branches) ->
+  | Lcase(_annot, t, a, branches) ->
     let ic = ref (-1) in
     let ib = ref 0 in
     v 0 (str"<" ++ pp_lam t ++ str">" ++ cut() ++
@@ -122,7 +125,7 @@ let rec pp_lam lam =
                   pp_names ids ++ str " => " ++ pp_lam c)
                (Array.to_list branches.nonconstant_branches)))
          ++ cut() ++ str "end")
-  | Lfix((t,i),(lna,tl,bl)) ->
+  | Lfix ((t, _, i), (lna, tl, bl)) ->
     let fixl = Array.mapi (fun i id -> (id,t.(i),tl.(i),bl.(i))) lna in
     hov 1
       (str"fix " ++ int i ++ spc() ++  str"{" ++
@@ -149,7 +152,7 @@ let rec pp_lam lam =
       (str "(array " ++ spc() ++
        prlist_with_sep spc pp_lam (Array.to_list args) ++
        spc () ++ str "|" ++ spc () ++ pp_lam def ++ str")")
-  | Lmakeblock(tag, args) ->
+  | Lmakeblock(_, tag, args) ->
     hov 1
       (str "(makeblock " ++ int tag ++ spc() ++
        prlist_with_sep spc pp_lam (Array.to_list args) ++
@@ -170,6 +173,7 @@ let rec pp_lam lam =
        ++ str ")")
   | Lint i ->
     Pp.(str "(int:" ++ int i ++ str ")")
+  | Lforce -> Pp.str "force"
 
 (*s Constructors *)
 
@@ -226,7 +230,7 @@ let map_lam_with_binders g f n lam =
     let fct' = f n fct in
     let args' = Array.Smart.map (f n) args in
     if fct == fct' && args == args' then lam else mkLapp fct' args'
-  | Lcase(ci,rtbl,t,a,branches) ->
+  | Lcase (annot, t, a, branches) ->
     let const = branches.constant_branches in
     let nonconst = branches.nonconstant_branches in
     let t' = f n t in
@@ -245,7 +249,7 @@ let map_lam_with_binders g f n lam =
           nonconstant_branches = nonconst' }
     in
     if t == t' && a == a' && branches == branches' then lam else
-      Lcase(ci,rtbl,t',a',branches')
+      Lcase(annot, t', a', branches')
   | Lfix(init,(ids,ltypes,lbodies)) ->
     let ltypes' = Array.Smart.map (f n) ltypes in
     let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
@@ -260,15 +264,16 @@ let map_lam_with_binders g f n lam =
     let args' = Array.Smart.map (f n) args in
     let def' = f n def in
     if args == args' && def == def' then lam else Lparray (args', def')
-  | Lmakeblock(tag,args) ->
+  | Lmakeblock (inds, tag, args) ->
     let args' = Array.Smart.map (f n) args in
-    if args == args' then lam else Lmakeblock(tag,args')
+    if args == args' then lam else Lmakeblock (inds, tag,args')
   | Lprim(kn,op,args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Lprim(kn,op,args')
   | Lproj(p,arg) ->
     let arg' = f n arg in
     if arg == arg' then lam else Lproj(p,arg')
+  | Lforce -> Lforce
 
 (*s Lift and substitution *)
 
@@ -398,7 +403,7 @@ let rec occurrence k kind lam =
       if kind then false else raise Not_found
     else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
-  | Lfloat _ -> kind
+  | Lfloat _ | Lforce -> kind
   | Lmeta (_, ty) ->
     occurrence k kind ty
   | Levar (_, args) ->
@@ -413,9 +418,9 @@ let rec occurrence k kind lam =
     occurrence_args k (occurrence k kind f) args
   | Lparray (args, def) ->
     occurrence_args k (occurrence k kind def) args
-  | Lprim(_,_,args) | Lmakeblock(_,args) ->
+  | Lprim(_,_,args) | Lmakeblock(_, _,args) ->
     occurrence_args k kind args
-  | Lcase(_ci,_rtbl,t,a,branches) ->
+  | Lcase(_, t, a, branches) ->
     let kind = occurrence k (occurrence k kind t) a in
     let r = ref kind in
     Array.iter (fun c -> r := occurrence k kind c  && !r) branches.constant_branches;
@@ -496,18 +501,18 @@ let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
 
 (* Translation of constructors *)
-let expand_constructor tag nparams arity =
+let expand_constructor ind tag nparams arity =
   let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
   let ids = Array.make (nparams + arity) anon in
   if arity = 0 then mkLlam ids (Lint tag)
   else
     let args = make_args arity 1 in
-    Llam(ids, Lmakeblock (tag, args))
+    Llam (ids, Lmakeblock (ind, tag, args))
 
-let makeblock tag nparams arity args =
+let makeblock ind tag nparams arity args =
   let nargs = Array.length args in
   if nparams > 0 || nargs < arity then
-    mkLapp (expand_constructor tag nparams arity) args
+    mkLapp (expand_constructor ind tag nparams arity) args
   else
     (* The constructor is fully applied *)
   if arity = 0 then Lint tag
@@ -519,7 +524,7 @@ let makeblock tag nparams arity args =
       let args = Array.map get_value args in
       let args = Array.append [| val_of_int (tag - Obj.last_non_constant_constructor_tag) |] args in
       Lval(val_of_block Obj.last_non_constant_constructor_tag args)
-  else Lmakeblock(tag, args)
+  else Lmakeblock (ind, tag, args)
 
 let makearray args def = Lparray (args, def)
 
@@ -741,14 +746,16 @@ let rec lambda_of_constr env c =
       { constant_branches = consts;
         nonconstant_branches = blocks }
     in
-    Lcase(ci, rtbl, lt, la, branches)
+    let annot = (ci, rtbl, mib.mind_finite) in
+    Lcase (annot, lt, la, branches)
 
-  | Fix(rec_init,(names,type_bodies,rec_bodies)) ->
+  | Fix ((ln, i), (names, type_bodies, rec_bodies)) ->
     let ltypes = lambda_of_args env 0 type_bodies in
     Renv.push_rels env names;
     let lbodies = lambda_of_args env 0 rec_bodies in
     Renv.popn env (Array.length names);
-    Lfix(rec_init, (names, ltypes, lbodies))
+    let dummy = [||] in (* FIXME: not used by the VM, requires the environment to be computed *)
+    Lfix ((ln, dummy, i), (names, ltypes, lbodies))
 
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
     let rec_bodies = Array.map2 (Reduction.eta_expand env.global_env) rec_bodies type_bodies in
@@ -784,8 +791,8 @@ and lambda_of_app env f args =
       let nargs = Array.length args in
       if nparams < nargs then (* got all parameters *)
         let args = lambda_of_args env nparams args in
-        makeblock tag 0 arity args
-      else makeblock tag (nparams - nargs) arity empty_args
+        makeblock (fst c) tag 0 arity args
+      else makeblock (fst c) tag (nparams - nargs) arity empty_args
   | _ ->
       let f = lambda_of_constr env f in
       let args = lambda_of_args env 0 args in

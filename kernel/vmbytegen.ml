@@ -593,7 +593,7 @@ let rec compile_lam env cenv lam sz cont =
     | _ -> comp_app (compile_lam env) (compile_lam env) cenv f args sz cont
     end
 
-  | Lfix ((rec_args, init), (_decl, types, bodies)) ->
+  | Lfix ((rec_args, _, init), (_decl, types, bodies)) ->
       let ndef = Array.length types in
       let rfv = ref empty_fv in
       let lbl_types = Array.make ndef Label.no in
@@ -661,7 +661,7 @@ let rec compile_lam env cenv lam sz cont =
       compile_fv cenv fv.fv_rev sz
         (Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
 
-  | Lcase(ci,rtbl,t,a,branches) ->
+  | Lcase ((ci, rtbl, _), t, a, branches) ->
       let ind = ci.ci_ind in
       let mib = lookup_mind (fst ind) env in
       let oib = mib.mind_packets.(snd ind) in
@@ -756,16 +756,18 @@ let rec compile_lam env cenv lam sz cont =
       in
       compile_lam env cenv a sz code_sw
 
-  | Lmakeblock (tag,args) ->
+  | Lmakeblock (_, tag, args) ->
     let arity = Array.length args in
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
     comp_args (compile_lam env) cenv args sz cont
 
   | Lparray (args, def) ->
     (* Hack: brutally pierce through the abstraction of PArray *)
-    let ar = Lmakeblock(0, args) in (* build the ocaml array *)
-    let kind = Lmakeblock(0, [|ar; def|]) in (* Parray.Array *)
-    let v = Lmakeblock(0,[|kind|]) (* the reference *) in
+    let dummy = KerName.make (ModPath.MPfile DirPath.empty) (Names.Label.of_id @@ Id.of_string "dummy") in
+    let dummy = (MutInd.make1 dummy, 0) in
+    let ar = Lmakeblock (dummy, 0, args) in (* build the ocaml array *)
+    let kind = Lmakeblock (dummy, 0, [|ar; def|]) in (* Parray.Array *)
+    let v = Lmakeblock (dummy, 0, [|kind|]) (* the reference *) in
     compile_lam env cenv v sz cont
 
   | Lprim (kn, op, args) ->
@@ -793,6 +795,8 @@ let rec compile_lam env cenv lam sz cont =
     | None ->
       comp_args (compile_lam env) cenv args sz (Kprim(op, kn)::cont)
     end
+
+  | Lforce -> CErrors.anomaly Pp.(str "The VM should not use force")
 
 and compile_get_global cenv (kn,u) sz cont =
   set_max_stack_size sz;

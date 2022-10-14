@@ -3,6 +3,8 @@ open Constr
 open Vmvalues
 open Environ
 
+type case_annot = case_info * reloc_table * Declarations.recursivity_kind
+
 type lambda =
   | Lrel          of Name.t * int
   | Lvar          of Id.t
@@ -13,19 +15,20 @@ type lambda =
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
+  | Lproj         of Projection.Repr.t * lambda
   | Lprim         of pconstant * CPrimitives.t * lambda array
-  | Lcase         of case_info * reloc_table * lambda * lambda * lam_branches
-  | Lfix          of (int array * int) * fix_decl
+  | Lcase         of case_annot * lambda * lambda * lam_branches
+  | Lfix          of (int array * inductive array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int
   | Lparray       of lambda array * lambda
-  | Lmakeblock    of int * lambda array
+  | Lmakeblock    of inductive * int * lambda array
   | Luint         of Uint63.t
   | Lfloat        of Float64.t
   | Lval          of structured_values
   | Lsort         of Sorts.t
   | Lind          of pinductive
-  | Lproj         of Projection.Repr.t * lambda
+  | Lforce
 
 and lam_branches =
   { constant_branches : lambda array;
