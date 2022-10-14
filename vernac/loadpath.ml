@@ -48,6 +48,41 @@ let find_load_path phys_dir =
 let find_with_logical_path dirpath =
   List.filter (fun p -> Names.DirPath.equal p.path_logical dirpath) !load_paths
 
+let warn_file_found_multiple_times =
+  CWarnings.create ~name:"ambiguous-extra-dep" ~category:"filesystem"
+    (fun (file,from,other,extra) ->
+      Pp.(str "File " ++ str file ++ str " found twice in " ++
+      Names.DirPath.print from ++ str":" ++ spc () ++ str other ++ str " (selected)," ++
+      spc() ++ str extra ++ str ".") )
+
+let rec first_path_containing ?loc from file acc = function
+  | [] ->
+      begin match acc with
+      | Some x -> x
+      | None ->
+        CErrors.user_err Pp.(str "File " ++ str file ++ str " not found in " ++
+        Names.DirPath.print from ++ str".")
+     end
+  | x :: xs ->
+      let abspath = x ^ "/" ^ file in
+      if Sys.file_exists abspath then begin
+        match acc with
+        | None -> first_path_containing ?loc from file (Some abspath) xs
+        | Some other ->
+            warn_file_found_multiple_times ?loc (file,from,other,abspath);
+            first_path_containing ?loc from file acc xs
+      end else
+        first_path_containing ?loc from file acc xs
+
+let find_extra_dep_with_logical_path ?loc ~from ~file () =
+  match find_with_logical_path from with
+  | _ :: _ as paths ->
+    let paths = List.map physical paths in
+    first_path_containing ?loc from file None paths
+  | [] -> CErrors.user_err
+      Pp.(str "No LoadPath found for " ++ Names.DirPath.print from ++ str".")
+
+
 let remove_load_path dir =
   let filter p = not (String.equal p.path_physical dir) in
   load_paths := List.filter filter !load_paths
