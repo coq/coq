@@ -11,7 +11,7 @@ The tactics presented here specialize :tacn:`apply` and
 .. tacn:: constructor {? @nat_or_var } {? with @bindings }
 
    First does :n:`repeat intro; hnf` on the goal.  If the result is an inductive
-   type, then apply the appropriate constructor(s), and otherwise fail.
+   type :g:`I`, then apply the appropriate constructor(s), and otherwise fail.
    If :n:`@nat_or_var` is specified and has the
    value `i`, it uses :n:`apply c__i`, where :n:`c__i` is the i-th constructor
    of :g:`I`.  If not specified, the tactic tries all the constructors,
@@ -239,7 +239,7 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
       term and the outcomes of the case analysis.  We recommend using the
       :tacn:`destruct` tactic with an `eqn:` clause instead.
 
-.. tacn:: casetype @one_term
+.. tacn:: casetype @one_type
    :undocumented:
 
 .. tacn:: simple destruct {| @ident | @natural }
@@ -252,6 +252,44 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
 
    There is a long example of :tacn:`dependent destruction` and an explanation
    of the underlying technique :ref:`here <dependent-induction-examples>`.
+
+.. tacn:: decompose [ {+ @one_term } ] @one_term
+
+   Recursively decomposes a complex proposition in order to obtain atomic ones.
+
+   .. example::
+
+      .. coqtop:: reset all
+
+         Goal forall A B C:Prop, A /\ B /\ C \/ B /\ C \/ C /\ A -> C.
+           intros A B C H; decompose [and or] H.
+           all: assumption.
+         Qed.
+
+   .. note::
+
+      :tacn:`decompose` does not work on right-hand sides of implications or
+      products.
+
+   .. tacn:: decompose sum @one_term
+
+      This decomposes sum types (like :g:`or`).
+
+   .. tacn:: decompose record @one_term
+
+      This decomposes record types (inductive types with one constructor,
+      like :g:`and` and :g:`exists` and those defined with the :cmd:`Record`
+      command.
+
+.. tacn:: destauto {? in @ident }
+
+   .. todo: keep or remove destauto?
+      destauto added in https://github.com/coq/coq/commit/f3a53027589813ff19b3a7c46d84e5bd2fc65741
+
+   Reduces one :n:`match t with ...` by doing :n:`destruct t`.  If :n:`t` is
+   not a variable, the tactic does
+   :n:`case_eq t;intros ... heq;rewrite heq in *|-`.
+   :n:`heq` is preserved.
 
 Induction
 ---------
@@ -367,9 +405,9 @@ Induction
       If the type of :n:`@one_term` has dependent premises, this turns them into
       existential variables to be resolved later on.
 
-.. tacn:: elimtype @one_term
+.. tacn:: elimtype @one_type
 
-   The argument :token:`type` must be inductively defined. :n:`elimtype I` is
+   The argument :token:`one_type` must be inductively defined. :n:`elimtype I` is
    equivalent to :tacn:`cut` :n:`I. intro Hn; elim Hn;` :tacn:`clear` :n:`Hn.` Therefore the
    hypothesis :g:`Hn` will not appear in the context(s) of the subgoal(s).
    Conversely, if :g:`t` is a :n:`@one_term` of (inductive) type :g:`I` that does
@@ -445,12 +483,6 @@ Induction
    .. seealso:: :tacn:`functional induction`
 
 .. tacn:: fix @ident @natural {? with {+ ( @ident {* @simple_binder } {? %{ struct @name %} } : @type ) } }
-
-   .. insertprodn simple_binder simple_binder
-
-   .. prodn::
-      simple_binder ::= @name
-      | ( {+ @name } : @term )
 
    A primitive tactic that starts a proof by induction. Generally,
    higher-level tactics such as :tacn:`induction` or :tacn:`elim`

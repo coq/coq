@@ -395,8 +395,9 @@ Selectors can also be used nested within a tactic expression with the
       The selected goals are the union of the specified :token:`range_selector`\s.
 
    :n:`[ @ident ]`
-      Limits the application of :token:`ltac_expr3` to the goal previously named :token:`ident`
-      by the user (see :ref:`existential-variables`).
+      Limits the application of :token:`ltac_expr3` to the goal previously named
+      :token:`ident` by the user (see :ref:`existential-variables`).  This works
+      even when the goal is not in focus.
 
    :n:`@natural`
       Selects a single goal.
@@ -1599,6 +1600,9 @@ succeeds, and results in an error otherwise.
 
    Like :tacn:`constr_eq_strict`, but all universes are considered equal.
 
+.. tacn:: head_of_constr @ident @one_term
+   :undocumented:
+
 .. tacn:: unify @one_term @one_term {? with @ident }
 
    Succeeds if the arguments are unifiable, potentially
@@ -1618,6 +1622,9 @@ succeeds, and results in an error otherwise.
 
    .. exn:: Not an evar.
       :undocumented:
+
+.. tacn:: not_evar @one_term
+   :undocumented:
 
 .. tacn:: has_evar @one_term
 
@@ -2398,6 +2405,12 @@ A non-interactive mode for the debugger is available via the flag:
    CoqIDE debugger.)  The debug log thus created, which does not require
    user input to generate when this flag is set, can then be run through
    external tools such as diff.
+
+.. todo: maybe drop Debug
+
+.. cmd:: Debug {| On | Off }
+
+   Equivalent to :n:`Set Ltac Debug` or :n:`Unset Ltac Debug`.
 
 Profiling |Ltac| tactics
 ~~~~~~~~~~~~~~~~~~~~~~~~

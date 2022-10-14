@@ -287,13 +287,16 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
      A special feature of the Coq language is that types can depend
      on terms (we say that the language is `dependently-typed
      <https://en.wikipedia.org/wiki/Dependent_type>`_).  Because of
-     this, types and terms share a common syntax.  All types are terms,
-     but not all terms are types:
+     this, types and terms share a common syntax.  All types are :term:`terms <term>`,
+     but not all terms are types.  The syntactic aliases :n:`@type` and
+     :n:`@one_type` are used to make clear when the provided :term:`term`
+     must semantically be a type:
 
-     .. insertprodn type type
+     .. insertprodn type one_type
 
      .. prodn::
         type ::= @term
+        one_type ::= @one_term
 
      Intuitively, types may be viewed as sets containing terms.  We
      say that a type is :gdef:`inhabited` if it contains at least one

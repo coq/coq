@@ -1535,7 +1535,7 @@ Other nonterminals that have syntactic classes are listed here.
 
       * - :n:`pose`
         - :token:`pose`
-        - :token:`bindings_with_parameters`
+        - :token:`alias_definition`
 
       * - :n:`assert`
         - :token:`assertion`
@@ -1559,13 +1559,17 @@ Here is the syntax for the :n:`q_*` nonterminals:
    | **
    | @ltac2_simple_intropattern
 
-.. insertprodn ltac2_simple_intropattern ltac2_naming_intropattern
+.. insertprodn ltac2_simple_intropattern ltac2_equality_intropattern
 
 .. prodn::
    ltac2_simple_intropattern ::= @ltac2_naming_intropattern
    | _
    | @ltac2_or_and_intropattern
    | @ltac2_equality_intropattern
+   ltac2_naming_intropattern ::= ? @lident
+   | ?$ @lident
+   | ?
+   | @ident_or_anti
    ltac2_or_and_intropattern ::= [ {+| @ltac2_intropatterns } ]
    | ()
    | ( {+, @ltac2_simple_intropattern } )
@@ -1573,10 +1577,6 @@ Here is the syntax for the :n:`q_*` nonterminals:
    ltac2_equality_intropattern ::= ->
    | <-
    | [= @ltac2_intropatterns ]
-   ltac2_naming_intropattern ::= ? @lident
-   | ?$ @lident
-   | ?
-   | @ident_or_anti
 
 .. insertprodn ident_or_anti ident_or_anti
 

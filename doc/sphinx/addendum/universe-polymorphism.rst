@@ -544,6 +544,7 @@ The syntax has been extended to allow users to explicitly bind names
 to universes and explicitly instantiate polymorphic definitions.
 
 .. cmd:: Universe {+ @ident }
+         Universes {+ @ident }
 
    In the monomorphic case, declares new global universes
    with the given names.  Global universe names live in a separate namespace.

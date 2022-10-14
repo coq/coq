@@ -286,6 +286,8 @@ following rules.
    ------------------------------------
    \WTEG{λ x:T\mto t}{∀ x:T,~U}
 
+.. _app_rule:
+
 .. inference:: App
 
    \WTEG{t}{∀ x:U,~T}

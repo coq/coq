@@ -175,7 +175,7 @@ include :tacn:`assert`, :tacn:`intros` and :tacn:`destruct`.
    | ?@ident
    or_and_intropattern ::= [ {*| {* @intropattern } } ]
    | ( {*, @simple_intropattern } )
-   | ( @simple_intropattern & {+& @simple_intropattern } )
+   | ( {*& @simple_intropattern } )
    equality_intropattern ::= ->
    | <-
    | [= {* @intropattern } ]
@@ -627,8 +627,9 @@ Applying theorems
 
    .. tacn:: eassumption
 
-      Behaves like :tacn:`assumption` but is able to handle
-      goals and hypotheses with existential variables.
+      Behaves like :tacn:`assumption` but is able to process
+      goals and hypotheses with existential variables.  It can also
+      resolve existential variables, which :tacn:`assumption` will not.
 
 .. tacn:: {? simple } {? notypeclasses } refine @one_term
    :name: refine
@@ -1111,6 +1112,9 @@ Applying theorems
 
       apply Rmp.
 
+.. todo the following title isn't the greatest.  Perhaps more like "trivial tactics"
+   or "simple tactics"???
+
 .. _managingthelocalcontext:
 
 Managing the local context
@@ -1257,397 +1261,332 @@ Managing the local context
    for any unresolved variables rather than failing.  Typically this happens when
    using a ``%`` intropattern (see :n:`@simple_intropattern`).
 
-.. tacn:: clear @ident
-   :name: clear
+.. tacn:: clear {? {? - } {+ @ident } }
 
-   This tactic erases the hypothesis named :n:`@ident` in the local context of
-   the current goal. As a consequence, :n:`@ident` is no more displayed and no
-   more usable in the proof development.
+   Erases *unneeded* hypotheses from the context of the current goal.  "Unneeded"
+   means that the unselected hypotheses and the goal don't depend directly or
+   indirectly on the erased hypotheses.  That means the hypotheses will no longer
+   appear in the context and therefore can't be used in subsequent proof steps.
+   Note that erasing an uneeded hypothesis may turn a goal that was provable
+   into an unprovable goal.
 
-   .. exn:: No such hypothesis.
-      :undocumented:
+   :n:`clear`
+     All unneeded hypotheses are erased.  This may leave the context unchanged; this form
+     never fails.
 
-   .. exn:: @ident is used in the conclusion.
-      :undocumented:
+   :n:`clear {+ @ident }`
+     Erases the named hypotheses if they are unneeded and fails otherwise.
 
-   .. exn:: @ident is used in the hypothesis @ident.
-      :undocumented:
+      .. exn:: @ident is used in the conclusion.
+         :undocumented:
 
-   .. tacv:: clear {+ @ident}
+      .. exn:: @ident is used in the hypothesis @ident.
+         :undocumented:
 
-      This is equivalent to :n:`clear @ident. ... clear @ident.`
+   :n:`clear - {+ @ident }`
+     Selects all hypotheses that are not named by the :n:`@ident`\s, then
+     erases those that are unneeded.
+     This may leave the context unchanged; this form never fails as long as the
+     :n:`@ident`\s name hypotheses in the context.
 
-   .. tacv:: clear - {+ @ident}
+   .. tacn:: clearbody {+ @ident }
 
-      This variant clears all the hypotheses except the ones depending in the
-      hypotheses named :n:`{+ @ident}` and in the goal.
-
-   .. tacv:: clear
-
-      This variants clears all the hypotheses except the ones the goal depends on.
-
-   .. tacv:: clear dependent @ident
-
-      This clears the hypothesis :token:`ident` and all the hypotheses that
-      depend on it.
-
-   .. tacv:: clearbody {+ @ident}
-      :name: clearbody
-
-      This tactic expects :n:`{+ @ident}` to be local definitions and clears
-      their respective bodies.
+      This tactic expects :n:`{+ @ident}` to be :term:`local definitions <context-local definition>`
+      and clears their respective bodies.
       In other words, it turns the given definitions into assumptions.
 
       .. exn:: @ident is not a local definition.
          :undocumented:
 
-.. tacn:: revert {+ @ident}
-   :name: revert
+   .. tacn:: clear dependent @ident
 
-   This applies to any goal with variables :n:`{+ @ident}`. It moves the hypotheses
-   (possibly defined) to the goal, if this respects dependencies. This tactic is
+      Clears the hypothesis :token:`ident` and all the hypotheses that depend on it.
+
+.. tacn:: revert {+ @ident }
+
+   Moves the specified hypotheses and :term:`local definitions <context-local definition>`
+   to the goal, if this respects dependencies. This is
    the inverse of :tacn:`intro`.
-
-   .. exn:: No such hypothesis.
-      :undocumented:
 
    .. exn:: @ident__1 is used in the hypothesis @ident__2.
       :undocumented:
 
-   .. tacv:: revert dependent @ident
-      :name: revert dependent
+   .. tacn:: revert dependent @ident
 
-      This moves to the goal the hypothesis :token:`ident` and all the
-      hypotheses that depend on it.
+      Moves the named hypothesis and all the hypotheses that depend on it to the goal.
 
-.. tacn:: move @ident__1 after @ident__2
+.. tacn:: move @ident__from @where
 
-   This moves the hypothesis named :n:`@ident__1` in the local context after
-   the hypothesis named :n:`@ident__2`, where “after” is in reference to the
-   direction of the move. The proof term is not changed.
+   .. insertprodn where where
 
-   If :n:`@ident__1` comes before :n:`@ident__2` in the order of dependencies,
-   then all the hypotheses between :n:`@ident__1` and :n:`@ident__2` that
-   (possibly indirectly) depend on :n:`@ident__1` are moved too, and all of
-   them are thus moved after :n:`@ident__2` in the order of dependencies.
+   .. prodn::
+      where ::= at top
+      | at bottom
+      | before @ident
+      | after @ident
 
-   If :n:`@ident__1` comes after :n:`@ident__2` in the order of dependencies,
-   then all the hypotheses between :n:`@ident__1` and :n:`@ident__2` that
-   (possibly indirectly) occur in the type of :n:`@ident__1` are moved too,
-   and all of them are thus moved before :n:`@ident__2` in the order of
-   dependencies.
+   Moves a hypothesis :n:`@ident__from` and hypotheses that directly or indirectly
+   refer to :n:`@ident__from` that appear between :n:`@ident__from` and :n:`@ident`.
+   `at top` and `at bottom` are
+   equivalent to giving the name of the first or last hypotheses in the context.  The
+   dependent hypotheses will appear after :n:`@ident__from`, appearing in dependency order.
+   This lets users show and group hypotheses in the order they prefer.  It doesn't
+   change the goal or the proof term.
 
-   .. tacv:: move @ident__1 before @ident__2
-      :name: move … before …
+   .. todo: "at top and at bottom are equivalent to giving the name of the first or
+      last hypotheses in the context."  Equivalent to "after first" and
+      "after last"??
 
-      This moves :n:`@ident__1` towards and just before the hypothesis
-      named :n:`@ident__2`.  As for :tacn:`move`, dependencies
-      over :n:`@ident__1` (when :n:`@ident__1` comes before :n:`@ident__2` in
-      the order of dependencies) or in the type of :n:`@ident__1`
-      (when :n:`@ident__1` comes after :n:`@ident__2` in the order of
-      dependencies) are moved too.
+   .. note::
 
-   .. tacv:: move @ident at top
-      :name: move … at top
+      Perhaps confusingly, "before" and "after" are interpeted with respect to the direction
+      in which the hypotheses are moved rather than in the order of the resulting
+      list of hypotheses.  If :n:`@ident__from` is before :n:`@ident` in the context, these
+      notions are the
+      same: for hypotheses `A B C`, `move A after B` gives `B A C`, whereas if :n:`@ident__from`
+      is after :n:`@ident` in the context, they are the opposite: `move C after A` gives
+      `C B A` because the direction of movement is reversed.
 
-      This moves :token:`ident` at the top of the local context (at the beginning
-      of the context).
+      .. todo This is dreadful behavior
 
-   .. tacv:: move @ident at bottom
-      :name: move … at bottom
-
-      This moves :token:`ident` at the bottom of the local context (at the end of
-      the context).
-
-   .. exn:: No such hypothesis.
+   .. exn:: Cannot move @ident__from after @ident: it occurs in the type of @ident.
       :undocumented:
 
-   .. exn:: Cannot move @ident__1 after @ident__2: it occurs in the type of @ident__2.
+   .. exn:: Cannot move @ident__from after @ident: it depends on @ident.
       :undocumented:
 
-   .. exn:: Cannot move @ident__1 after @ident__2: it depends on @ident__2.
-      :undocumented:
+   .. example:: move
 
-   .. example::
+      .. coqtop:: reset none
 
-      .. coqtop:: reset all
+         Goal forall x :nat, x = 0 -> forall y z:nat, y=y-> 0=x.
 
-         Goal forall x :nat, x = 0 -> forall z y:nat, y=y-> 0=x.
-           intros x H z y H0.
-           move x after H0.
+      .. coqtop:: out
+
+           intros x Hx y z Hy.
+
+      .. coqtop:: in
+
+           (*                    x Hx y z Hy *)
+           move y after z.  (*    x Hx z y Hy   (z was left of y, intuitive case) *)
            Undo.
-           move x before H0.
+           move z after y.  (*    x Hx z y Hy   (z was right of y, see Note above) *)
            Undo.
-           move H0 after H.
+           move x after Hy.  (*   y z Hy x Hx   (Hx depends on x, so moved) *)
            Undo.
-           move H0 before H.
+           move x before Hy.  (*  y z x Hx Hy *)
+           Undo.
+           move Hy after Hx.  (*  x y Hy Hx z *)
+           Undo.
+           move Hy before Hx.  (* x Hx y Hy z *)
 
-.. tacn:: rename @ident__1 into @ident__2
-   :name: rename
+.. tacn:: rename {+, @ident__1 into @ident__2 }
 
-   This renames hypothesis :n:`@ident__1` into :n:`@ident__2` in the current
-   context. The name of the hypothesis in the proof-term, however, is left
-   unchanged.
-
-   .. tacv:: rename {+, @ident__i into @ident__j}
-
-      This renames the variables :n:`@ident__i` into :n:`@ident__j` in parallel.
-      In particular, the target identifiers may contain identifiers that exist in
-      the source context, as long as the latter are also renamed by the same
-      tactic.
-
-   .. exn:: No such hypothesis.
-      :undocumented:
+   Renames hypothesis :n:`@ident__1` into :n:`@ident__2` for each pair of :n:`@ident`\s.
+   Renaming is done simultaneously, which permits swapping the names of 2 hypotheses.
+   (Note that the renaming is applied in the context and the existential
+   variables, but the proof term doesn't change.)
 
    .. exn:: @ident is already used.
       :undocumented:
 
-.. tacn:: set (@ident := @term)
-   :name: set
+.. tacn:: set @alias_definition {? @occurrences }
+          set @one_term {? @as_name } {? @occurrences }
+   :name: set; _
 
-   This replaces :token:`term` by :token:`ident` in the conclusion of the
-   current goal and adds the new definition :n:`@ident := @term` to the
-   local context.
+   .. insertprodn alias_definition as_name
 
-   If :token:`term` has holes (i.e. subexpressions of the form “`_`”), the
-   tactic first checks that all subterms matching the pattern are compatible
-   before doing the replacement using the leftmost subterm matching the
-   pattern.
+   .. prodn::
+      alias_definition ::= ( @ident {* @simple_binder } := @term )
+      simple_binder ::= @name
+      | ( {+ @name } : @term )
+      as_name ::= as @ident
 
-   .. exn:: The variable @ident is already defined.
+   The first form adds a new local definition :n:`@ident := …`.  If
+   :n:`@simple_binder` is not specified, the definition body is :n:`@term` and
+   otherwise :n:`fun {* @simple_binder } => @term`.  Then the tactic replaces
+   the body expression with the new variable :n:`@ident` in the goal or as
+   specified by :n:`@occurrences`.  The tactic may succeed and add the local
+   definition even if no replacements are made.
+
+   The second form is equivalent to :n:`set (@ident := @one_term) {? @occurrences }`
+   using :n:`@ident`, if present, or an auto-generated name if not provided.
+
+   If :token:`term` or :token:`one_term` has holes (i.e. subexpressions with the
+   form “`_`”), the tactic first checks that all subterms matching the pattern
+   are compatible before doing the replacement using the leftmost subterm
+   matching the pattern.
+
+   .. exn:: The variable @ident is already declared.
       :undocumented:
 
-   .. tacv:: set (@ident := @term) in @goal_occurrences
+   .. example:: set with a :n:`@simple_binder`
 
-      This notation allows specifying which occurrences of :token:`term` have
-      to be substituted in the context. The :n:`in @goal_occurrences` clause
-      is an occurrence clause whose syntax and behavior are described in
-      :ref:`goal occurrences <occurrenceclauses>`.
+      :n:`set` does a simple syntactic replacement in the goal:
 
-   .. tacv:: set (@ident {* @binder } := @term) {? in @goal_occurrences }
+      .. coqtop:: reset none
 
-      This is equivalent to :n:`set (@ident := fun {* @binder } => @term) {? in @goal_occurrences }`.
+         Goal forall n, n = 0.
 
-   .. tacv:: set @term {? in @goal_occurrences }
+      .. coqtop:: out
 
-      This behaves as :n:`set (@ident := @term) {? in @goal_occurrences }`
-      but :token:`ident` is generated by Coq.
+         intros.
 
-   .. tacv:: eset (@ident {* @binder } := @term) {? in @goal_occurrences }
-             eset @term {? in @goal_occurrences }
+      .. coqtop:: all
+
+         pattern n. (* without this, "set" won't replace anything in the goal *)
+         set (f x := x = 0).
+
+   .. tacn:: eset @alias_definition {? @occurrences }
+             eset @one_term {? @as_name } {? @occurrences }
       :name: eset; _
 
-      While the different variants of :tacn:`set` expect that no existential
-      variables are generated by the tactic, :tacn:`eset` removes this
-      constraint. In practice, this is relevant only when :tacn:`eset` is
+      Similar to :tacn:`set`, but instead of failing because of uninstantiated
+      variables, generates existential variables for them.
+      In practice, this is relevant only when :tacn:`eset` is
       used as a synonym of :tacn:`epose`, i.e. when the :token:`term` does
       not occur in the goal.
 
-.. tacn:: remember @term as @ident__1 {? eqn:@naming_intropattern }
-   :name: remember
+.. tacn:: remember @one_term {? @as_name } {? eqn : @naming_intropattern } {? in @goal_occurrences }
 
-   This behaves as :n:`set (@ident := @term) in *`, using a logical
-   (Leibniz’s) equality instead of a local definition.
-   Use :n:`@naming_intropattern` to name or split up the new equation.
+   Similar to :n:`set (@ident := @one_term) in *` but creates a hypothesis using
+   :term:`Leibniz equality` to remember the relation between the introduced
+   variable and the term rather than creating a
+   :term:`local definition <context-local definition>`.  If :n:`@as_name` is not
+   specified a fresh name is used.
+   Use :n:`@naming_intropattern` to name the new equation.
 
-   .. tacv:: remember @term as @ident__1 {? eqn:@naming_intropattern } in @goal_occurrences
+   .. tacn:: eremember @one_term {? @as_name } {? eqn : @naming_intropattern } {? in @goal_occurrences }
 
-      This is a more general form of :tacn:`remember` that remembers the
-      occurrences of :token:`term` specified by an occurrence set.
+      Similar to :tacn:`remember`, but instead of failing because of uninstantiated
+      variables, generates existential variables for them.
 
-   .. tacv:: eremember @term as @ident__1 {? eqn:@naming_intropattern } {? in @goal_occurrences }
-      :name: eremember
+.. tacn:: pose @alias_definition
+          pose @one_term {? @as_name }
+   :name: pose; _
 
-      While the different variants of :tacn:`remember` expect that no
-      existential variables are generated by the tactic, :tacn:`eremember`
-      removes this constraint.
+   Similar to :tacn:`set`.  Adds a :term:`local definition <context-local definition>`
+   to the context but without doing any replacement.
 
-.. tacn:: pose (@ident := @term)
-   :name: pose
-
-   This adds the local definition :n:`@ident := @term` to the current context
-   without performing any replacement in the goal or in the hypotheses. It is
-   equivalent to :n:`set (@ident := @term) in |-`.
-
-   .. tacv:: pose (@ident {* @binder } := @term)
-
-      This is equivalent to :n:`pose (@ident := fun {* @binder } => @term)`.
-
-   .. tacv:: pose @term
-
-      This behaves as :n:`pose (@ident := @term)` but :token:`ident` is
-      generated by Coq.
-
-   .. tacv:: epose (@ident {* @binder } := @term)
-             epose @term
+   .. tacn:: epose @alias_definition
+             epose @one_term {? @as_name }
       :name: epose; _
 
-      While the different variants of :tacn:`pose` expect that no
-      existential variables are generated by the tactic, :tacn:`epose`
-      removes this constraint.
+      Similar to :tacn:`pose`, but instead of failing because of uninstantiated
+      variables, generates existential variables for them.
 
-.. tacn:: decompose [{+ @qualid}] @term
-   :name: decompose
+.. todo: the following title seems inappropriate.  How about something
+   more like "Introducing new hypotheses", as in adding arbitrary terms rather
+   than transformations of existing terms??  But then I think the tactics in the
+   previous section (set, remember, pose, maybe decompose) should be moved into
+   this section.  But maybe hard to make the section seem like an crisp, intuitive grouping.
+   I can do the moving that after we've reviewed all the text.  WDYT?
 
-   This tactic recursively decomposes a complex proposition in order to
-   obtain atomic ones.
-
-   .. example::
-
-      .. coqtop:: reset all
-
-         Goal forall A B C:Prop, A /\ B /\ C \/ B /\ C \/ C /\ A -> C.
-           intros A B C H; decompose [and or] H.
-           all: assumption.
-         Qed.
-
-   .. note::
-
-      :tacn:`decompose` does not work on right-hand sides of implications or
-      products.
-
-   .. tacv:: decompose sum @term
-
-      This decomposes sum types (like :g:`or`).
-
-   .. tacv:: decompose record @term
-
-      This decomposes record types (inductive types with one constructor,
-      like :g:`and` and :g:`exists` and those defined with the :cmd:`Record`
-      command.
-
+   See https://github.com/coq/coq/pull/16498#discussion_r989928078
 
 .. _controllingtheproofflow:
 
 Controlling the proof flow
 ------------------------------
 
-.. tacn:: assert (@ident : @type)
-   :name: assert
+.. tacn:: assert ( @ident : @type ) {? by @ltac_expr3 }
+          assert ( @ident := @term )
+          assert @one_type {? @as_ipat } {? by @ltac_expr3 }
+   :name: assert; _; _
 
-   This tactic applies to any goal. :n:`assert (H : U)` adds a new hypothesis
-   of name :n:`H` asserting :g:`U` to the current goal and opens a new subgoal
-   :g:`U` [2]_. The subgoal :g:`U` comes first in the list of subgoals remaining to
-   prove.
+   Adds a new hypothesis to the current subgoal and a new subgoal before
+   it to prove the hypothesis.  Then, if :n:`@ltac_expr3`
+   is specified, it applies that tactic to fully prove the new subgoal (and
+   otherwise fails).
 
-   .. exn:: Not a proposition or a type.
+   The first form adds a new hypothesis named :n:`@ident` of type :n:`@type`.
+   (This corresponds to the cut rule of sequent calculus.)
 
-      Arises when the argument :token:`type` is neither of type :g:`Prop`,
-      :g:`Set` nor :g:`Type`.
+   The second form is equivalent to :n:`assert (@ident : @type) by exact (@term)` where
+   :n:`@type` is the type of :n:`@term`.  It is also equivalent to using
+   :tacn:`pose proof`. If the head of :n:`@term` is :n:`@ident`, the tactic
+   is equivalent to :tacn:`specialize`.
 
-   .. tacv:: assert @type
+   In the third form, if :n:`@as_ipat` isn't specified, the tactic adds the
+   hypothesis :n:`@one_type` with a fresh name.  Otherwise, it transforms the
+   hypothesis as specified by :n:`@as_ipat` and adds the resulting new hypotheses
+   and goals.  See :ref:`intropatterns`.
 
-      This behaves as :n:`assert (@ident : @type)` but :n:`@ident` is
-      generated by Coq.
+   .. exn:: The term "@type" has type "@type__1" which should be Set, Prop or Type.
 
-   .. tacv:: assert @type by @tactic
+      Occurs when the argument :n:`@type` (in the first form) or :n:`@one_type`
+      (in the third form) is not of type :g:`Prop`, :g:`Set` nor :g:`Type`.
 
-      This tactic behaves like :tacn:`assert` but applies tactic to solve the
-      subgoals generated by assert.
+   .. exn:: Proof is not complete.
+      :name: Proof is not complete. (assert)
 
-      .. exn:: Proof is not complete.
-         :name: Proof is not complete. (assert)
-         :undocumented:
+      :n:`@ltac_expr3` was not able to prove the new hypothesis.
 
-   .. tacv:: assert @type as @simple_intropattern
+   .. tacn:: eassert ( @ident : @type ) {? by @ltac_expr3 }
+             eassert ( @ident := @term )
+             eassert @one_type {? @as_ipat } {? by @ltac_expr3 }
+      :name: eassert; _; _
 
-      If :n:`simple_intropattern` is an intro pattern (see :ref:`intropatterns`),
-      the hypothesis is named after this introduction pattern (in particular, if
-      :n:`simple_intropattern` is :n:`@ident`, the tactic behaves like
-      :n:`assert (@ident : @type)`). If :n:`simple_intropattern` is an action
-      introduction pattern, the tactic behaves like :n:`assert @type` followed by
-      the action done by this introduction pattern.
+      Unlike :tacn:`assert`, the :n:`@type`, :n:`@term` or :n:`@one_type` in
+      :tacn:`eassert` may contain :gdef:`holes <hole>`, denoted by :n:`_`,
+      for which the tactic will create existential variables.  This lets you
+      avoid specifying the asserted statement completely before starting to
+      prove it.
 
-   .. tacv:: assert @type as @simple_intropattern by @tactic
+.. tacn:: enough ( @ident : @type ) {? by @ltac_expr3 }
+          enough @one_type {? @as_ipat } {? by @ltac_expr3 }
+   :name: enough; _
 
-      This combines the two previous variants of :tacn:`assert`.
+   Adds a new hypothesis to the current subgoal and a new subgoal after it
+   to prove the hypothesis.
 
-   .. tacv:: assert (@ident := @term)
+   The first form adds a new hypothesis :n:`@ident : @type`
+   and :n:`@type` as the new subgoal.  Then, if :n:`@ltac_expr3` is
+   specified, it applies that tactic to prove the current subgoal
+   with the added hypothesis (and otherwise fails).
 
-      This behaves as :n:`assert (@ident : @type) by exact @term` where
-      :token:`type` is the type of :token:`term`. This is equivalent to using
-      :tacn:`pose proof`. If the head of term is :token:`ident`, the tactic
-      behaves as :tacn:`specialize`.
+   In the second form, if :n:`@as_ipat` isn't specified, the tactic adds a new
+   hypothesis :n:`@one_type` with a name chosen by Coq.  Otherwise, it transforms
+   :n:`@one_type` as specified by :n:`@as_ipat` and adds the resulting new hypotheses.
+   The :n:`@as_ipat` may also expand the current subgoal into multiple subgoals.
+   Then, if :n:`@ltac_expr3` is specified, it is applied to and must succeed on all
+   of them.
 
-      .. exn:: Variable @ident is already declared.
-         :undocumented:
+   .. tacn:: eenough ( @ident : @type ) {? by @ltac_expr3 }
+             eenough @one_type {? @as_ipat } {? by @ltac_expr3 }
+      :name: eenough; _
 
-.. tacv:: eassert @type as @simple_intropattern by @tactic
-   :name: eassert
+      Unlike :tacn:`enough`, the :n:`@type` and :n:`@one_type` in
+      :tacn:`eenough` may contain :term:`holes <hole>`, denoted by :n:`_`,
+      for which the tactic will create existential variables.  This lets you
+      avoid specifying the asserted statement completely until you start to use
+      the hypothesis or later start to prove the statement.
 
-   While the different variants of :tacn:`assert` expect that no existential
-   variables are generated by the tactic, :tacn:`eassert` removes this constraint.
-   This lets you avoid specifying the asserted statement completely before starting
-   to prove it.
+.. tacn:: cut @one_type
 
-.. tacv:: pose proof @term {? as @simple_intropattern}
-   :name: pose proof
+   Implements the non-dependent case of the :ref:`App <app_rule>` typing rule,
+   the Modus Ponens inference rule.  It is equivalent to
+   :n:`enough (@ident: @one_type). revert @ident.`
+   This tactic is generally considered obsolete but it is still widely
+   used in old scripts.
 
-   This tactic behaves like :n:`assert @type {? as @simple_intropattern} by exact @term`
-   where :token:`type` is the type of :token:`term`. In particular,
-   :n:`pose proof @term as @ident` behaves as :n:`assert (@ident := @term)`
-   and :n:`pose proof @term as @simple_intropattern` is the same as applying the
-   :token:`simple_intropattern` to :token:`term`.
+.. tacn:: pose proof @term {? @as_ipat }
+          pose proof ( @ident := @term )
+   :name: pose proof; _
 
-.. tacv:: epose proof @term {? as @simple_intropattern}
-   :name: epose proof
+   The first form behaves like :n:`assert @one_type {? @as_ipat } by exact @term`
+   where :token:`one_type` is the type of :token:`term`.
 
-   While :tacn:`pose proof` expects that no existential variables are generated by
-   the tactic, :tacn:`epose proof` removes this constraint.
+   .. Théo notes it's odd that the first form uses @term instead of @one_term
 
-.. tacv:: pose proof (@ident := @term)
+   The second form is equivalent to :n:`assert (@ident := @term)`.
 
-   This is an alternative syntax for :n:`assert (@ident := @term)` and
-   :n:`pose proof @term as @ident`, following the model of :n:`pose
-   (@ident := @term)` but dropping the value of :token:`ident`.
+   .. tacn:: epose proof @term {? @as_ipat }
+             epose proof ( @ident := @term )
+      :name: epose proof; _
 
-.. tacv:: epose proof (@ident := @term)
-
-   This is an alternative syntax for :n:`eassert (@ident := @term)`
-   and :n:`epose proof @term as @ident`, following the model of
-   :n:`epose (@ident := @term)` but dropping the value of
-   :token:`ident`.
-
-.. tacv:: enough (@ident : @type)
-   :name: enough
-
-   This adds a new hypothesis of name :token:`ident` asserting :token:`type` to the
-   goal the tactic :tacn:`enough` is applied to. A new subgoal stating :token:`type` is
-   inserted after the initial goal rather than before it as :tacn:`assert` would do.
-
-.. tacv:: enough @type
-
-   This behaves like :n:`enough (@ident : @type)` with the name :token:`ident` of
-   the hypothesis generated by Coq.
-
-.. tacv:: enough @type as @simple_intropattern
-
-   This behaves like :n:`enough @type` using :token:`simple_intropattern` to name or
-   destruct the new hypothesis.
-
-.. tacv:: enough (@ident : @type) by @tactic
-          enough @type {? as @simple_intropattern } by @tactic
-
-   This behaves as above but with :token:`tactic` expected to solve the initial goal
-   after the extra assumption :token:`type` is added and possibly destructed. If the
-   :n:`as @simple_intropattern` clause generates more than one subgoal, :token:`tactic` is
-   applied to all of them.
-
-.. tacv:: eenough @type {? as @simple_intropattern } {? by @tactic }
-          eenough (@ident : @type) {? by @tactic }
-   :name: eenough; _
-
-   While the different variants of :tacn:`enough` expect that no existential
-   variables are generated by the tactic, :tacn:`eenough` removes this constraint.
-
-.. tacv:: cut @type
-   :name: cut
-
-   This tactic applies to any goal. It implements the non-dependent case of
-   the “App” rule given in :ref:`typing-rules`. (This is Modus Ponens inference
-   rule.) :n:`cut U` transforms the current goal :g:`T` into the two following
-   subgoals: :g:`U -> T` and :g:`U`. The subgoal :g:`U -> T` comes first in the
-   list of remaining subgoal to prove.
+      While :tacn:`pose proof` expects that no existential variables are generated by
+      the tactic, :tacn:`epose proof` removes this constraint.
 
 .. tacv:: specialize (@ident {* @term}) {? as @simple_intropattern}
           specialize @ident with @bindings {? as @simple_intropattern}
@@ -1676,68 +1615,80 @@ Controlling the proof flow
    .. exn:: @ident is used in conclusion.
       :undocumented:
 
-.. tacn:: generalize @term
-   :name: generalize
+   .. tacn:: specialize_eqs @ident
+      :undocumented:
 
-   This tactic applies to any goal. It generalizes the conclusion with
-   respect to some term.
+.. tacn:: generalize {+ @one_term }
+          generalize {+, @pattern_occs {? @as_name } }
+   :name: generalize; _
 
-.. example::
+   For each :n:`@one_term` (which may be in the :n:`@pattern_occs`), replaces the
+   goal `G` with `forall (x:T), G'`,
+   where :n:`@one_term` is a subterm of `G` of type `T` and `G'` is obtained
+   by replacing all occurrences of :n:`@one_term` with `x` within `G`.  `x` is
+   a fresh variable chosen based on `T`.  Specifying multiple :n:`@one_term`\s is
+   equivalent to :n:`generalize @one_term__n; … ; generalize @one_term__1`.
+   (Note they are processed *right to left*.)
 
-   .. coqtop:: reset none
+   :n:`@as_name`
+     The name to use for `x` instead of a fresh name.
 
-      Goal forall x y:nat, 0 <= x + y + y.
-      Proof. intros *.
+   .. example::
 
-   .. coqtop:: all abort
+      .. coqtop:: reset none
 
-      Show.
-      generalize (x + y + y).
+         Goal forall x y:nat, 0 <= x + y + y.
+         Proof. intros *.
 
-If the goal is :g:`G` and :g:`t` is a subterm of type :g:`T` in the goal,
-then :n:`generalize t` replaces the goal by :g:`forall (x:T), G′` where :g:`G′`
-is obtained from :g:`G` by replacing all occurrences of :g:`t` by :g:`x`. The
-name of the variable (here :g:`n`) is chosen based on :g:`T`.
+      .. coqtop:: out
 
-.. tacv:: generalize {+ @term}
+         Show.
 
-   This is equivalent to :n:`generalize @term; ... ; generalize @term`.
-   Note that the sequence of term :sub:`i` 's are processed from n to 1.
+      .. coqtop:: all abort
 
-.. tacv:: generalize @term at {+ @natural}
+         generalize (x + y + y).   (* get a simpler goal that can be proven by induction *)
 
-   This is equivalent to :n:`generalize @term` but it generalizes only over the
-   specified occurrences of :n:`@term` (counting from left to right on the
-   expression printed using the :flag:`Printing All` flag).
+   .. tacn:: generalize dependent @one_term
 
-.. tacv:: generalize @term as @ident
+      Generalizes :n:`@one_term` and all hypotheses that depend on :n:`@one_term`. It
+      clears the generalized hypotheses.
 
-   This is equivalent to :n:`generalize @term` but it uses :n:`@ident` to name
-   the generalized hypothesis.
+   .. tacn:: dependent generalize_eqs @ident
+      :undocumented:
 
-.. tacv:: generalize {+, @term at {+ @natural} as @ident}
+   .. tacn:: dependent generalize_eqs_vars @ident
+      :undocumented:
 
-   This is the most general form of :n:`generalize` that combines the previous
-   behaviors.
+   .. tacn:: generalize_eqs @ident
+      :undocumented:
 
-.. tacv:: generalize dependent @term
+   .. tacn:: generalize_eqs_vars @ident
+      :undocumented:
 
-   This generalizes term but also *all* hypotheses that depend on :n:`@term`. It
-   clears the generalized hypotheses.
+.. tacn:: evar ( @ident : @type )
+          evar @one_type
+   :name: evar; _
 
-.. tacn:: evar (@ident : @term)
-   :name: evar
+   The :n:`evar` tactic creates a new :term:`local definition <context-local definition>`
+   named :n:`@ident` with type :n:`@type` or :n:`@one_type` in the context.
+   The body of this binding is a fresh existential variable.  If the second
+   form is used, Coq chooses the name.
 
-   The :n:`evar` tactic creates a new local definition named :n:`@ident` with type
-   :n:`@term` in the context. The body of this binding is a fresh existential
-   variable.
+.. tacn:: instantiate {? ( @ident := @term ) }
+          instantiate ( @integer := @term ) {? @hloc }
+   :name: instantiate; _
 
-.. tacn:: instantiate (@ident := @term )
-   :name: instantiate
+   .. insertprodn hloc hloc
 
-   The instantiate tactic refines (see :tacn:`refine`) an existential variable
+   .. prodn::
+      hloc ::= in %|- *
+      | in @ident
+      | in ( type of @ident )
+      | in ( value of @ident )
+
+   The first form refines (see :tacn:`refine`) an existential variable
    :n:`@ident` with the term :n:`@term`. It is equivalent to
-   :n:`only [ident]: refine @term` (preferred alternative).
+   :n:`only [@ident]: refine @term`.
 
    .. note:: To be able to refer to an existential variable by name, the user
              must have given the name explicitly (see :ref:`Existential-Variables`).
@@ -1747,45 +1698,50 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
              name the variable in the current goal and in the context of the
              existential variable. This can lead to surprising behaviors.
 
-.. tacv:: instantiate (@natural := @term)
-
-   This variant selects an existential variable by its position.  The
-   :n:`@natural` argument is the position of the existential variable
-   *from right to left* in the conclusion of the goal.  (Use one of
-   the variants below to select an existential variable in a
-   hypothesis.)  Counting starts at 1 and multiple occurrences of the
-   same existential variable are counted multiple times.  Because this
-   variant is not robust to slight changes in the goal, its use is
-   strongly discouraged.
-
-.. tacv:: instantiate ( @natural := @term ) in @ident
-          instantiate ( @natural := @term ) in ( value of @ident )
-          instantiate ( @natural := @term ) in ( type of @ident )
-
-   These allow to refer respectively to existential variables occurring in a
-   hypothesis or in the body or the type of a local definition (named :n:`@ident`).
-
-.. tacv:: instantiate
-
-   This tactic behaves functionally as :tacn:`idtac`.
-
    .. deprecated:: 8.16
 
-.. tacn:: admit
-   :name: admit
+      The no argument form is equivalent to :tacn:`idtac`.  This form (only)
+      is deprecated in 8.16.
 
-   This tactic allows temporarily skipping a subgoal so as to
-   progress further in the rest of the proof. A proof containing admitted
-   goals cannot be closed with :cmd:`Qed` but only with :cmd:`Admitted`.
+   The second form refines an existential variable selected by its position.  The
+   :n:`@natural` argument is the position of the existential variable
+   *from right to left* in the goal.  (Use the :n:`@hloc` clause
+   to select an existential variable in a
+   hypothesis.)  Counting starts at 1 and multiple occurrences of the
+   same existential variable are counted multiple times.  Using this form
+   is discouraged because slight changes to the goal may change the needed index,
+   causing a maintenance issue.
 
-.. tacv:: give_up
+   Advanced users may want to define and use an Ltac tactic to get more consistent
+   behavior, such as:
 
-   Synonym of :tacn:`admit`.
+   .. coqdoc::
 
-.. tacn:: absurd @term
-   :name: absurd
+      Ltac instantiate_ltac_variable ev term :=
+        let H := fresh in
+        pose ev as H;
+        instantiate (1 := term) in (value of H);
+        clear H.
 
-   This tactic applies to any goal. The argument term is any proposition
+   :n:`in @ident`
+     Selects the hypothesis :n:`@ident`.
+
+   :n:`in %|- *`
+     Selects the goal.  This is the default behavior.
+
+   :n:`in ( type of @ident )`
+     Selects existential variables in the type of the
+     :term:`local definition <context-local definition>` :n:`@ident`.
+     (The body is not included.)
+
+   :n:`in ( value of @ident )`
+     Selects existential variables in the body of the
+     :term:`local definition <context-local definition>` :n:`@ident`.
+     (The type is not included.)
+
+.. tacn:: absurd @one_type
+
+   :n:`@one_type` is any proposition
    :g:`P` of type :g:`Prop`. This tactic applies False elimination, that is it
    deduces the current goal from False, and generates as subgoals :g:`∼P` and
    :g:`P`. It is very useful in proofs by cases, where some cases are
@@ -1821,23 +1777,21 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
    + H: A ⊢ ¬B becomes H: B ⊢ ¬A
 
 .. tacn:: exfalso
-   :name: exfalso
 
-   This tactic implements the “ex falso quodlibet” logical principle: an
+   Implements the “ex falso quodlibet” logical principle: an
    elimination of False is performed on the current goal, and the user is
    then required to prove that False is indeed provable in the current
-   context. This tactic is a macro for :n:`elimtype False`.
+   context. This tactic is equivalent to :tacn:`elimtype` :n:`False`.
 
 Classical tactics
 -----------------
 
 In order to ease the proving process, when the ``Classical`` module is
 loaded, a few more tactics are available. Make sure to load the module
-using the ``Require Import`` command.
+using the :cmd:`Require Import` command.
 
 .. tacn:: classical_left
           classical_right
-   :name: classical_left; classical_right
 
    These tactics are the analog of :tacn:`left` and :tacn:`right`
    but using classical logic. They can only be used for
@@ -1849,10 +1803,9 @@ using the ``Require Import`` command.
 Performance-oriented tactic variants
 ------------------------------------
 
-.. todo: move the following adjacent to the `exact` tactic in the rewriting chapter?
+.. todo: move the following adjacent to the `exact` tactic?
 
-.. tacn:: exact_no_check @term
-   :name: exact_no_check
+.. tacn:: exact_no_check @one_term
 
    For advanced usage. Similar to :tacn:`exact` :n:`@term`, but as an optimization,
    it skips checking that :n:`@term` has the goal's type, relying on the kernel
@@ -1866,8 +1819,7 @@ Performance-oriented tactic variants
            exact_no_check I.
          Fail Qed.
 
-   .. tacv:: vm_cast_no_check @term
-      :name: vm_cast_no_check
+   .. tacn:: vm_cast_no_check @one_term
 
       For advanced usage. Similar to :tacn:`exact_no_check` :n:`@term`, but additionally
       instructs the kernel to use :tacn:`vm_compute` to compare the
@@ -1881,8 +1833,7 @@ Performance-oriented tactic variants
               vm_cast_no_check I.
             Fail Qed.
 
-   .. tacv:: native_cast_no_check @term
-      :name: native_cast_no_check
+   .. tacn:: native_cast_no_check @one_term
 
       for advanced usage. similar to :tacn:`exact_no_check` :n:`@term`, but additionally
       instructs the kernel to use :tacn:`native_compute` to compare the goal's
@@ -1895,5 +1846,3 @@ Performance-oriented tactic variants
             Goal False.
               native_cast_no_check I.
             Fail Qed.
-
-.. [2] This corresponds to the cut rule of sequent calculus.

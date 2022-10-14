@@ -629,6 +629,9 @@ Deprecated syntax and backward incompatibilities
    Notice that the syntax is not completely backward compatible since the
    identifier was not required.
 
+.. cmd:: Add Parametric Setoid {* @binder } : @one_term @one_term @one_term as @ident
+   :undocumented:
+
 .. cmd:: Add Morphism @one_term : @ident
          Add Morphism @one_term with signature @term as @ident
    :name: Add Morphism; _

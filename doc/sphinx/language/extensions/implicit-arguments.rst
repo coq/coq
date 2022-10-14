@@ -219,6 +219,7 @@ The syntax is also supported in internal binders. For instance, in the
 following kinds of expressions, the type of each declaration present
 in :n:`{* @binder }` can be bracketed to mark the declaration as
 implicit:
+
 * :n:`fun (@ident:forall {* @binder }, @type) => @term`,
 * :n:`forall (@ident:forall {* @binder }, @type), @type`,
 * :n:`let @ident {* @binder } := @term in @term`,

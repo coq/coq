@@ -93,6 +93,9 @@ in the Coq sources.
    if the extraction and the OCaml compilation succeed. It fails
    if the current target language of the extraction is not OCaml.
 
+.. cmd:: Show Extraction
+   :undocumented:
+
 Extraction Options
 -------------------
 

@@ -116,12 +116,25 @@ term after using the :tacn:`split` tactic above:
 
 The incomplete parts, the goals, are represented by
 :term:`existential variables <existential variable>`
-with names that begin with `?Goal`.  The :cmd:`Show Existentials` command
-shows each existential with the hypotheses and conclusion for the associated goal.
+with names that begin with `?Goal`.  (Note that some existential variables
+are not goals.)  The :cmd:`Show Existentials` command shows each existential with
+the hypotheses and conclusion for the associated goal.
 
 .. coqtop:: all
 
    Show Existentials.
+
+Users can control which goals are displayed in the context by :term:`focusing <focus>`
+goals.  Focusing lets the user (initially) pick a single goal to work on.  Focusing
+operations can be nested.
+
+Tactics such as :tacn:`eapply` create existential variables as placeholders for
+undetermined variables that become :term:`shelved <shelved>` goals.
+Shelved goals are not shown in the context by default, but they can be unshelved
+to make them visible.  Other tactics may automatically resolve these goals
+(whether shelved or not); the purpose of shelving is to hide goals that the
+user usually doesn't need to think about.  See :ref:`existential-variables`
+and :ref:`this example <automatic-evar-resolution>`.
 
 Coq's kernel verifies the correctness of proof terms when it exits
 proof mode by checking that the proof term is :term:`well-typed` and
@@ -512,8 +525,12 @@ be changed using the following option.
    Some external plugins also define their own proof mode, which can be
    activated with this command.
 
-Navigation in the proof tree
-----------------------------
+.. cmd:: Proof Mode @string
+
+   Sets the proof mode within the current proof.
+
+Managing goals
+--------------
 
 .. cmd:: Undo {? {? To } @natural }
 
@@ -528,30 +545,21 @@ Navigation in the proof tree
    .. exn:: No focused proof to restart.
       :undocumented:
 
-.. cmd:: Focus {? @natural }
+.. _focused_goals:
 
-   Focuses the attention on the first goal to prove or, if :token:`natural` is
-   specified, the :token:`natural`\-th.  The
-   printing of the other goals is suspended until the focused goal
-   is solved or unfocused.
+Focusing goals
+``````````````
 
-   .. deprecated:: 8.8
-
-      Prefer the use of bullets or focusing brackets with a goal selector (see below).
-
-.. cmd:: Unfocus
-
-   This command restores to focus the goal that were suspended by the
-   last :cmd:`Focus` command.
-
-   .. deprecated:: 8.8
-
-.. cmd:: Unfocused
-
-   Succeeds if the proof is fully unfocused, fails if there are some
-   goals out of focus.
+:gdef:`Focusing <focus>` lets you limit the context display to (initially) a
+single goal.  If a tactic creates additional goals from a focused goal, the
+subgoals are also focused.  The two focusing constructs are
+:ref:`curly braces <curly-braces>` (`{` and `}`) and :ref:`bullets <bullets>`
+(e.g. `-`, `+` or `*`).  These constructs can be nested.
 
 .. _curly-braces:
+
+Curly braces
+~~~~~~~~~~~~
 
 .. tacn:: {? {| @natural | [ @ident ] } : } %{
           %}
@@ -574,56 +582,37 @@ Navigation in the proof tree
    :n:`@natural:`
      Focuses on the :token:`natural`\-th goal to prove.
 
+.. _focus_shelved_goal:
+
    :n:`[ @ident ]: %{`
-     Focuses on the named goal :token:`ident`.
+     Focuses on the goal named :token:`ident` even if the goal is not in focus.
+     Goals are :term:`existential variables <existential variable>`, which don't
+     have names by default.  You can give a name to a goal by using
+     :n:`refine ?[@ident]`.
 
-   .. note::
-
-      Goals are just existential variables and existential variables do not
-      get a name by default. You can give a name to a goal by using :n:`refine ?[@ident]`.
-      You may also wrap this in an Ltac-definition like:
+   .. example:: Working with named goals
 
       .. coqtop:: in
 
-         Ltac name_goal name := refine ?[name].
-
-   .. seealso:: :ref:`existential-variables`
-
-   .. example::
-
-      This first example uses the Ltac definition above, and the named goals
-      only serve for documentation.
+         Ltac name_goal name := refine ?[name].  (* for convenience *)
+         Set Printing Goal Names.  (* show goal names, e.g. "(?base)" and "(?step)" *)
 
       .. coqtop:: all
 
          Goal forall n, n + 0 = n.
          Proof.
          induction n; [ name_goal base | name_goal step ].
+         (* focus on the goal named "base" *)
          [base]: {
-
-      .. coqtop:: all
-
-         reflexivity.
+           reflexivity.
 
       .. coqtop:: in
 
          }
 
-      .. coqtop:: all
-
-         [step]: {
-
-      .. coqtop:: all
-
-         simpl.
-         f_equal.
-         assumption.
-         }
-         Qed.
-
       This can also be a way of focusing on a shelved goal, for instance:
 
-      .. coqtop:: all
+      .. coqtop:: all reset
 
          Goal exists n : nat, n = n.
          eexists ?[x].
@@ -651,53 +640,58 @@ Navigation in the proof tree
 .. _bullets:
 
 Bullets
-```````
+~~~~~~~
 
 Alternatively, proofs can be structured with bullets instead of ``{`` and ``}``. The
-use of a bullet ``b`` for the first time focuses on the first goal ``g``, the
-same bullet cannot be used again until the proof of ``g`` is completed,
-then it is mandatory to focus the next goal with ``b``. The consequence is
-that ``g`` and all goals present when ``g`` was focused are focused with the
+first use of a bullet ``b`` focuses on the first goal ``g``.  The
+same bullet can't be used again until the proof of ``g`` is completed,
+then the next goal must be focused with another ``b``. Thus,
+all the goals present just before the first use of the bullet must be focused with the
 same bullet ``b``. See the example below.
 
-Different bullets can be used to nest levels. The scope of bullet does
-not go beyond enclosing ``{`` and ``}``, so bullets can be reused as further
-nesting levels provided they are delimited by these. Bullets are made of
-repeated ``-``, ``+`` or ``*`` symbols:
+Different bullets can be used to nest levels. The scope of each bullet
+is limited to the enclosing ``{`` and ``}``, so bullets can be reused as further
+nesting levels provided they are delimited by curly braces. Bullets are made from
+``-``, ``+`` or ``*`` characters (with no spaces and no period afterward):
 
-.. prodn:: bullet ::= {| {+ - } | {+ + } | {+ * } }
+.. tacn:: @bullet
+   :undocumented:
+   :name: bullet
 
-Note again that when a focused goal is proved a message is displayed
-together with a suggestion about the right bullet or ``}`` to unfocus it
-or focus the next one.
+   .. insertprodn bullet bullet
+
+   .. prodn::
+      bullet ::= {| {+ - } | {+ + } | {+ * } }
+
+When a focused goal is proved, Coq displays a message suggesting use of
+``}`` or the correct matching bullet to unfocus the goal or focus the next subgoal.
 
 .. note::
 
    In Proof General (``Emacs`` interface to Coq), you must use
-   bullets with the priority ordering shown above to have a correct
-   indentation. For example ``-`` must be the outer bullet and ``**`` the inner
+   bullets with the priority ordering shown above to have correct
+   indentation. For example ``-`` must be the outer bullet and ``+`` the inner
    one in the example below.
 
-The following example script illustrates all these features:
+.. example:: Use of bullets
 
-.. example::
+  For the sake of brevity, the output for this example is summarized in comments.
+  Note that the tactic following a bullet is frequently put on the same line with the bullet.
+  Observe that this proof still works even if all the bullets in it are omitted.
 
-  .. coqtop:: all
+  .. coqtop:: in
 
-    Goal (((True /\ True) /\ True) /\ True) /\ True.
+    Goal (1=1 /\ 2=2) /\ 3=3.
     Proof.
-    split.
-    - split.
-    + split.
-    ** { split.
-    - trivial.
-    - trivial.
-    }
-    ** trivial.
-    + trivial.
-    - assert True.
-    { trivial. }
-    assumption.
+    split.     (*     1 = 1 /\ 2 = 2 and 3 = 3 *)
+    -          (* 1 = 1 /\ 2 = 2 *)
+     split.    (*    1 = 1 and 2 = 2 *)
+     +         (* 1 = 1 *)
+      trivial.  (* subproof complete *)
+     +         (* 2 = 2 *)
+      trivial.  (* subproof complete *)
+    -          (* 3 = 3 *)
+     trivial.  (*  No more subgoals *)
     Qed.
 
 .. exn:: Wrong bullet @bullet__1: Current bullet @bullet__2 is not finished.
@@ -716,24 +710,13 @@ The following example script illustrates all these features:
    You tried to apply a tactic but no goals were under focus.
    Using :n:`@bullet` is  mandatory here.
 
-.. FIXME: the :noindex: below works around a Sphinx issue.
-   (https://github.com/sphinx-doc/sphinx/issues/4979)
-   It should be removed once that issue is fixed.
-
 .. exn:: No such goal. Try unfocusing with %}.
-   :noindex:
 
    You just finished a goal focused by ``{``, you must unfocus it with ``}``.
 
-Mandatory Bullets
-~~~~~~~~~~~~~~~~~
-
-Using :opt:`Default Goal Selector` with the ``!`` selector forces
-tactic scripts to keep focus to exactly one goal (e.g. using bullets)
-or use explicit goal selectors.
-
-Set Bullet Behavior
-~~~~~~~~~~~~~~~~~~~
+.. note:: Use :opt:`Default Goal Selector` with the ``!`` selector to force
+   the use of focusing mechanisms (bullets, braces) and goal selectors so
+   that it is always explicit to which goal(s) a tactic is applied.
 
 .. opt:: Bullet Behavior {| "None" | "Strict Subproofs" }
 
@@ -742,90 +725,61 @@ Set Bullet Behavior
    - "None": this makes bullets inactive.
    - "Strict Subproofs": this makes bullets active (this is the default behavior).
 
-Modifying the order of goals
-````````````````````````````
+Other focusing commands
+~~~~~~~~~~~~~~~~~~~~~~~
 
-.. tacn:: cycle @int_or_var
+.. cmd:: Unfocused
 
-   Reorders the selected goals so that the first :n:`@integer` goals appear after the
-   other selected goals.
-   If :n:`@integer` is negative, it puts the last :n:`@integer` goals at the
-   beginning of the list.
-   The tactic is only useful with a goal selector, most commonly `all:`.
-   Note that other selectors reorder goals; `1,3: cycle 1` is not equivalent
-   to `all: cycle 1`.  See :tacn:`… : … (goal selector)`.
+   Succeeds if there are no unfocused goals.  Otherwise the command fails.
 
-.. example::
+.. cmd:: Focus {? @natural }
 
-   .. coqtop:: none reset
+   Focuses the attention on the first goal to prove or, if :token:`natural` is
+   specified, the :token:`natural`\-th.  The
+   printing of the other goals is suspended until the focused goal
+   is solved or unfocused.
 
-      Parameter P : nat -> Prop.
+   .. deprecated:: 8.8
 
-   .. coqtop:: all abort
+      Prefer the use of bullets or focusing braces with a goal selector (see above).
 
-      Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
-      repeat split.
-      all: cycle 2.
-      all: cycle -3.
+.. cmd:: Unfocus
 
-.. tacn:: swap @int_or_var @int_or_var
+   Restores to focus the goals that were suspended by the last :cmd:`Focus` command.
 
-   Exchanges the position of the specified goals.
-   Negative values for :n:`@integer` indicate counting goals
-   backward from the end of the list of selected goals. Goals are indexed from 1.
-   The tactic is only useful with a goal selector, most commonly `all:`.
-   Note that other selectors reorder goals; `1,3: swap 1 3` is not equivalent
-   to `all: swap 1 3`.  See :tacn:`… : … (goal selector)`.
+   .. deprecated:: 8.8
 
-.. example::
+.. _shelved_goals:
 
-   .. coqtop:: all abort
-
-      Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
-      repeat split.
-      all: swap 1 3.
-      all: swap 1 -1.
-
-.. tacn:: revgoals
-
-   Reverses the order of the selected goals.  The tactic is only useful with a goal
-   selector, most commonly `all :`.   Note that other selectors reorder goals;
-   `1,3: revgoals` is not equivalent to `all: revgoals`.  See :tacn:`… : … (goal selector)`.
-
-   .. example::
-
-      .. coqtop:: all abort
-
-         Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
-         repeat split.
-         all: revgoals.
-
-Postponing the proof of some goals
-``````````````````````````````````
+Shelving goals
+``````````````
 
 Goals can be :gdef:`shelved` so they are no longer displayed in the proof state.
-They can then be :gdef:`unshelved` to make them visible again.
+Shelved goals can be unshelved with the :cmd:`Unshelve` command, which
+makes all shelved goals visible in the proof state.  You can use
+the goal selector :n:`[ @ident ]: %{` to focus on a single shelved goal
+(see :ref:`here <focus_shelved_goal>`).  Currently there's no single command or
+tactic that unshelves goals by name.
 
 .. tacn:: shelve
 
-   This tactic moves all goals under focus to a shelf. While on the
-   shelf, goals will not be focused on. They can be solved by
-   unification, or they can be called back into focus with the command
-   :cmd:`Unshelve`.
+   Moves the focused goals to the shelf.  They will no longer be displayed in
+   the context.  The :cmd:`Show Existentials` command will still show
+   these goals, which will be marked "(shelved)".
 
-   .. tacn:: shelve_unifiable
+.. tacn:: shelve_unifiable
 
-      Shelves only the goals under focus that are mentioned in other goals.
-      Goals that appear in the type of other goals can be solved by unification.
+   Shelves only the goals under focus that are mentioned in other goals.
+   Goals that appear in the type of other goals can be solved by unification.
 
-      .. example::
+   .. example:: shelve_unifiable
 
-         .. coqtop:: all abort
+      .. coqtop:: all abort
 
-            Goal exists n, n=0.
-            refine (ex_intro _ _ _).
-            all: shelve_unifiable.
-            reflexivity.
+         Goal exists n, n=0.
+         refine (ex_intro _ _ _).
+         all: shelve_unifiable.
+         reflexivity.
 
 .. cmd:: Unshelve
 
@@ -838,15 +792,71 @@ They can then be :gdef:`unshelved` to make them visible again.
    Performs :n:`@tactic`, then unshelves existential variables added to the
    shelf by the execution of :n:`@tactic`, prepending them to the current goal.
 
-.. tacn:: give_up
+.. tacn:: admit
+          give_up
 
-   This tactic removes the focused goals from the proof. They are not
-   solved, and cannot be solved later in the proof. As the goals are not
-   solved, the proof cannot be closed.
+   Allows skipping a subgoal to permit further progress on the rest of the
+   proof.  The selected goals are removed from the context.  They are not
+   solved and cannot be solved later in the proof. Since the goals are not
+   solved, the proof cannot be closed with :cmd:`Qed` but only with :cmd:`Admitted`.
 
-   The ``give_up`` tactic can be used while editing a proof, to choose to
-   write the proof script in a non-sequential order.
+Reordering goals
+````````````````
 
+.. tacn:: cycle @int_or_var
+
+   Reorders the selected goals so that the first :n:`@integer` goals appear after the
+   other selected goals.
+   If :n:`@integer` is negative, it puts the last :n:`@integer` goals at the
+   beginning of the list.
+   The tactic is only useful with a goal selector, most commonly `all:`.
+   Note that other selectors reorder goals; `1,3: cycle 1` is not equivalent
+   to `all: cycle 1`.  See :tacn:`… : … (goal selector)`.
+
+   .. example:: cycle
+
+      .. coqtop:: none reset
+
+         Parameter P : nat -> Prop.
+
+      .. coqtop:: in abort
+
+         Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
+         repeat split.    (*  P 1, P 2, P 3, P 4, P 5 *)
+         all: cycle 2.    (*  P 3, P 4, P 5, P 1, P 2 *)
+         all: cycle -3.   (* P 5, P 1, P 2, P 3, P 4 *)
+
+.. tacn:: swap @int_or_var @int_or_var
+
+   Exchanges the position of the specified goals.
+   Negative values for :n:`@integer` indicate counting goals
+   backward from the end of the list of selected goals. Goals are indexed from 1.
+   The tactic is only useful with a goal selector, most commonly `all:`.
+   Note that other selectors reorder goals; `1,3: swap 1 3` is not equivalent
+   to `all: swap 1 3`.  See :tacn:`… : … (goal selector)`.
+
+   .. example:: swap
+
+      .. coqtop:: in abort
+
+         Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
+         repeat split.    (*   P 1, P 2, P 3, P 4, P 5 *)
+         all: swap 1 3.   (*  P 3, P 2, P 1, P 4, P 5 *)
+         all: swap 1 -1.  (* P 5, P 2, P 1, P 4, P 3 *)
+
+.. tacn:: revgoals
+
+   Reverses the order of the selected goals.  The tactic is only useful with a goal
+   selector, most commonly `all :`.   Note that other selectors reorder goals;
+   `1,3: revgoals` is not equivalent to `all: revgoals`.  See :tacn:`… : … (goal selector)`.
+
+   .. example:: revgoals
+
+      .. coqtop:: in abort
+
+         Goal P 1 /\ P 2 /\ P 3 /\ P 4 /\ P 5.
+         repeat split.    (*  P 1, P 2, P 3, P 4, P 5 *)
+         all: revgoals.   (* P 5, P 4, P 3, P 2, P 1 *)
 
 Proving a subgoal as a separate lemma: abstract
 -----------------------------------------------
