@@ -378,7 +378,8 @@ separated by whitespace:
 * Selected options of coqc, which are forwarded directly to it. Currently these
   are ``-Q``, ``-I``, ``-R`` and ``-native-compiler``.
 * ``-arg`` options for other options of coqc that don’t fall in the above set.
-* Options specific to ``coq_makefile``. Currently this is only ``-docroot``.
+* Options specific to ``coq_makefile``. Currently there are two options:
+  ``-generate-meta-for-package`` (see below for details), and ``-docroot``.
 * Directory names, which include all appropriate files in the directory and
   its subdirectories.
 * Comments, started with an unquoted ``#`` and continuing to the end of the
@@ -407,14 +408,19 @@ generate object files that are unusable except by experts.
 
 Projects that include plugins (i.e. `.ml` or `.mlg` OCaml source files) must have a
 ``META`` file, as per `findlib <http://projects.camlcity.org/projects/findlib.html>`_.
-If the project has only a single plugin, the ``META`` file is
+If the project has only a single plugin, the ``META`` file can be
 generated automatically when the option ``-generate-meta-for-package my-package``
 is given. The generated file makes the plugin available
 to the :cmd:`Declare ML Module` as ``my-package.plugin``. If the generated file
-doesn't suit your needs or your project has multiple plugins, then create a file named
+doesn't suit your needs (for instance because it depends on some OCaml
+packages) or your project has multiple plugins, then create a file named
 ``META.my-package`` and list it in the ``_CoqProject`` file.
 You can use ``ocamlfind lint META.my-package`` to lint the hand written file.
-Typically ``my-package`` is the name of the ``OPAM`` package for your project.
+Typically ``my-package`` is the name of the ``OPAM`` package for your
+project (which conventionally starts with ``coq-``). If the project
+includes a ``.mlg`` file (to be pre-processed by ``coqpp``) that
+declares a plugin, then the given name must match the ``findlib`` plugin
+name, e.g. ``DECLARE PLUGIN "my-package.plugin"``.
 
 The ``-native-compiler`` option given in the ``_CoqProject`` file overrides
 the global one passed at configure time.
