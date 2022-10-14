@@ -1188,6 +1188,14 @@ let compile_prim env decl cond paux =
          (* Remark: if we do not want to compile the predicate we
             should a least compute the fv, then store the lambda representation
             of the predicate (not the mllambda) *)
+      let annot =
+        let (ci, tbl, knd) = annot in {
+          asw_ind = ci.ci_ind;
+          asw_ci = ci;
+          asw_reloc = tbl;
+          asw_finite = knd <> CoFinite;
+          asw_prefix = env.env_mind_prefix (fst ci.ci_ind);
+      } in
       let env_p = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
       let pn = fresh_gpred l in
       let mlp = ml_of_lam env_p l p in

@@ -15,6 +15,8 @@ open Nativevalues
 (** This file defines the lambda code generation phase of the native compiler *)
 type prefix = string
 
+type case_annot = case_info * reloc_table * Declarations.recursivity_kind
+
 type lambda =
   | Lrel          of Name.t * int
   | Lvar          of Id.t
@@ -27,7 +29,7 @@ type lambda =
   | Lconst        of pconstant
   | Lproj         of Projection.Repr.t * lambda
   | Lprim         of pconstant * CPrimitives.t * lambda array
-  | Lcase         of annot_sw * lambda * lambda * lam_branches
+  | Lcase         of case_annot * lambda * lambda * lam_branches
                   (* annotations, term being matched, accu, branches *)
   | Lfix          of (int array * inductive array * int) * fix_decl
   | Lcofix        of int * fix_decl

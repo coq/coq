@@ -20,6 +20,8 @@ module RelDecl = Context.Rel.Declaration
 (** This file defines the lambda code generation phase of the native compiler *)
 type prefix = string
 
+type case_annot = case_info * reloc_table * Declarations.recursivity_kind
+
 type lambda =
   | Lrel          of Name.t * int
   | Lvar          of Id.t
@@ -33,7 +35,7 @@ type lambda =
   | Lproj         of Projection.Repr.t * lambda
   | Lprim         of pconstant * CPrimitives.t * lambda array
         (* No check if None *)
-  | Lcase         of annot_sw * lambda * lambda * lam_branches
+  | Lcase         of case_annot * lambda * lambda * lam_branches
                   (* annotations, term being matched, accu, branches *)
   | Lfix          of (int array * inductive array * int) * fix_decl
   | Lcofix        of int * fix_decl
@@ -489,19 +491,12 @@ let rec lambda_of_constr cache env sigma c =
 
   | Case (ci, u, pms, t, iv, a, br) -> (* XXX handle iv *)
     let (ci, t, _iv, a, branches) = Inductive.expand_case env (ci, u, pms, t, iv, a, br) in
-    let (mind,i as ind) = ci.ci_ind in
+    let (mind, i) = ci.ci_ind in
     let mib = lookup_mind mind env in
     let oib = mib.mind_packets.(i) in
     let tbl = oib.mind_reloc_tbl in
     (* Building info *)
-    let prefix = get_mind_prefix env mind in
-    let annot_sw =
-      { asw_ind = ind;
-        asw_ci = ci;
-        asw_reloc = tbl;
-        asw_finite = mib.mind_finite <> CoFinite;
-        asw_prefix = prefix}
-    in
+    let annot_sw = (ci, tbl, mib.mind_finite) in
     (* translation of the argument *)
     let la = lambda_of_constr cache env sigma a in
     (* translation of the type *)
