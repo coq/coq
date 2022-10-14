@@ -27,7 +27,6 @@ type lambda =
   | Levar         of Evar.t * lambda array (* arguments *)
   | Lprod         of lambda * lambda
   | Llam          of Name.t Context.binder_annot array * lambda
-  | Lrec          of Name.t Context.binder_annot * lambda
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
@@ -130,9 +129,6 @@ let map_lam_with_binders g f n lam =
   | Llam(ids,body) ->
       let body' = f (g (Array.length ids) n) body in
       if body == body' then lam else mkLlam ids body'
-  | Lrec(id,body) ->
-      let body' = f (g 1 n) body in
-      if body == body' then lam else Lrec(id,body')
   | Llet(id,def,body) ->
       let def' = f n def in
       let body' = f (g 1 n) body in

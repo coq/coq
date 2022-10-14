@@ -1158,11 +1158,6 @@ let compile_prim env decl cond paux =
   | Llam(ids,body) ->
     let lnames,env = push_rels env ids in
     MLlam(lnames, ml_of_lam env l body)
-  | Lrec(id,body) ->
-      let ids,body = decompose_Llam body in
-      let lname, env = push_rel env id in
-      let lnames, env = push_rels env ids in
-      MLletrec([|lname, lnames, ml_of_lam env l body|], MLlocal lname)
   | Llet(id,def,body) ->
       let def = ml_of_lam env l def in
       let lname, env = push_rel env id in

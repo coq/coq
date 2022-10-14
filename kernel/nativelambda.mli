@@ -22,7 +22,6 @@ type lambda =
   | Levar         of Evar.t * lambda array (* arguments *)
   | Lprod         of lambda * lambda
   | Llam          of Name.t Context.binder_annot array * lambda
-  | Lrec          of Name.t Context.binder_annot * lambda
   | Llet          of Name.t Context.binder_annot * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of pconstant
