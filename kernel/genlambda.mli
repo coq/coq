@@ -80,6 +80,12 @@ val simplify : ('v lambda -> bool) -> 'v lambda Esubst.subs -> 'v lambda -> 'v l
 
 val remove_let : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
 
+(** {5 Translation functions} *)
+
+val get_alias : Environ.env -> Constant.t -> Constant.t
+val make_args : int -> int -> 'v lambda array
+val lambda_of_prim : Environ.env -> pconstant -> CPrimitives.t -> 'v lambda array -> 'v lambda
+
 (** {5 Printing} *)
 
 val pp_lam : 'v lambda -> Pp.t

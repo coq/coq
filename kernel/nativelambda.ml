@@ -69,9 +69,6 @@ let get_value lc =
   | Lfloat f -> Nativevalues.mk_float f
   | _ -> raise Not_found
 
-let make_args start _end =
-  Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
-
 (* Translation of constructors *)
 let expand_constructor ind tag nparams arity =
   let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
@@ -103,36 +100,6 @@ let makeblock _env ind tag nparams arity args =
 
 let makearray args def =
   Lparray (args, def)
-
-(* Translation of constants *)
-
-let rec get_alias env (kn, u as p) =
-  let tps = (lookup_constant kn env).const_body_code in
-    match tps with
-    | None -> p
-    | Some tps ->
-       match tps with
-       | Vmemitcodes.BCalias kn' -> get_alias env (kn', u)
-       | _ -> p
-
-let prim _env kn p args =
-  Lprim(kn, p, args)
-
-let expand_prim env kn op arity =
-  (* primitives are always Relevant *)
-  let ids = Array.make arity Context.anonR in
-  let args = make_args arity 1 in
-  Llam(ids, prim env kn op args)
-
-let lambda_of_prim env kn op args =
-  let arity = CPrimitives.arity op in
-  match Int.compare (Array.length args) arity with
-  | 0 -> prim env kn op args
-  | x when x > 0 ->
-    let prim_args = Array.sub args 0 arity in
-    let extra_args = Array.sub args arity (Array.length args - arity) in
-    mkLapp(prim env kn op prim_args) extra_args
-  | _ -> mkLapp (expand_prim env kn op arity) args
 
 (*i Global environment *)
 
@@ -309,8 +276,8 @@ let rec lambda_of_constr cache env sigma c =
 
 and lambda_of_app cache env sigma f args =
   match kind f with
-  | Const (_kn,_u as c) ->
-      let kn,u = get_alias env c in
+  | Const (kn, u as c) ->
+      let kn = get_alias env kn in
       let cb = lookup_constant kn env in
       begin match cb.const_body with
       | Primitive op -> lambda_of_prim env c op (lambda_of_args cache env sigma 0 args)

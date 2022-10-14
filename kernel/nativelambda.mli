@@ -22,6 +22,4 @@ val is_lazy : constr -> bool
 val get_mind_prefix : env -> MutInd.t -> string
 val get_const_prefix : env -> Constant.t -> string
 
-val get_alias : env -> pconstant -> pconstant
-
 val lambda_of_constr : env -> evars -> Constr.constr -> lambda

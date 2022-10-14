@@ -92,39 +92,6 @@ let makeblock ind tag nparams arity args =
 
 let makearray args def = Lparray (args, def)
 
-(* Compiling constants *)
-
-let rec get_alias env kn =
-  let cb = lookup_constant kn env in
-  let tps = cb.const_body_code in
-  match tps with
-  | None -> kn
-  | Some tps ->
-    (match tps with
-     | Vmemitcodes.BCalias kn' -> get_alias env kn'
-     | _ -> kn)
-
-(* Compilation of primitive *)
-
-let prim kn p args =
-  Lprim (kn, p, args)
-
-let expand_prim kn op arity =
-  (* primitives are always Relevant *)
-  let ids = Array.make arity Context.anonR in
-  let args = make_args arity 1 in
-  Llam(ids, prim kn op args)
-
-let lambda_of_prim kn op args =
-  let arity = CPrimitives.arity op in
-  match Int.compare (Array.length args) arity with
-  | 0 -> prim kn op args
-  | x when x > 0 ->
-    let prim_args = Array.sub args 0 arity in
-    let extra_args = Array.sub args arity (Array.length args - arity) in
-    mkLapp(prim kn op prim_args) extra_args
-  | _ -> mkLapp (expand_prim kn op arity) args
-
 (*i Global environment *)
 
 let get_names decl =
@@ -345,7 +312,7 @@ and lambda_of_app env f args =
       let kn = get_alias env.global_env kn in
       let cb = lookup_constant kn env.global_env in
       begin match cb.const_body with
-      | Primitive op -> lambda_of_prim (kn,u) op (lambda_of_args env 0 args)
+      | Primitive op -> lambda_of_prim env.global_env (kn,u) op (lambda_of_args env 0 args)
       | Def csubst when cb.const_inline_code ->
           lambda_of_app env csubst args
       | Def _ | OpaqueDef _ | Undef _ -> mkLapp (Lconst c) (lambda_of_args env 0 args)
