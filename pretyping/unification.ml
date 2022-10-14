@@ -1569,7 +1569,7 @@ let check_types env flags (sigma,_,_ as subst) m n =
 
 let try_resolve_typeclasses env evd flag m n =
   if flag then
-    Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~split:false
+    Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~split:true
       ~fail:true env evd
   else evd
 
