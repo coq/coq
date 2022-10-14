@@ -1137,10 +1137,9 @@ module Height = struct
     let rev (Exists {vector; eq }) =
       Exists { vector = Vector.rev vector; eq }
 
-(*
     let to_list (Exists { vector; _ }) =
       Vector.to_list vector
-*)
+    [@@ocaml.warning "-32"]
   end
 end
 
@@ -1566,6 +1565,10 @@ module ETerm = struct
       of_constr (Constr.exliftn el (Evd.MiniEConstr.unsafe_to_constr t))
   end)
 
+  let mkIndU (ind : 'ind InductiveDef.t) instance : 'env t =
+    Eq.(cast (sym ((InductiveDef.eq ^* Refl) ^-> eq)))
+      EConstr.mkIndU (ind, instance)
+
   let whd_all (type env) (env : env Env.t) sigma (term : env t) =
     Eq.(cast (sym (Env.eq ^-> Refl ^-> eq ^-> eq)))
       Reductionops.whd_all env sigma term
@@ -1743,6 +1746,16 @@ module EvarMapMonad = struct
     let* sigma = get in
     set (Evd.set_eq_sort (Eq.cast Env.eq env) sigma s s')
 *)
+
+  let fresh_inductive_instance env ind =
+    let open Ops in
+    let* sigma = get in
+    let sigma, pind =
+      Eq.(cast (sym (Env.eq ^-> Refl ^-> InductiveDef.eq ^->
+        (Refl ^* (InductiveDef.eq ^* Refl)))))
+        Evd.fresh_inductive_instance env sigma ind in
+    let* () = set sigma in
+    return pind
 end
 
 module AbstractJudgment = struct
@@ -2693,8 +2706,10 @@ module InductiveType = struct
     let* args = EvarMapMonad.array_init nb_args (fun _ ->
       let* (e, _) = EvarMapMonad.new_type_evar env Evd.univ_flexible_alg in
       EvarMapMonad.new_evar env e) in
+    let* (ind, instance) = EvarMapMonad.fresh_inductive_instance env ind in
+    let term =
+      ETerm.mkApp (ETerm.mkIndU ind (EConstr.EInstance.make instance)) args in
     let* sigma = EvarMapMonad.get in
-    let term = ETerm.mkApp (ETerm.mkInd ind) args in
     match of_term_opt env sigma term with
     | None -> assert false
     | Some (Exists ind) ->
@@ -5307,7 +5322,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           ERelContext.subst_of_instance
             (InductiveFamily.get_arity env inductive_type.family)
             (Vector.rev inductive_type.realargs) in
-        EJudgment.uj_val tomatch.judgment :: args
+        EJudgment.uj_val tomatch.judgment :: Vector.rev args
 
   let compile_case_trivial
       (type env ind tail_length ind_tail eqns_length return_pred_height
@@ -5969,11 +5984,11 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
             let locals : _ Vector.t =
               let hd :: tl = Vector.rev refine.locals in
               let arity = ERelContext.lift tomatch_height arity in
-              hd :: ERelContext.subst_of_instance arity tl in
+              hd :: Vector.rev (ERelContext.subst_of_instance arity tl) in
             let terms : _ Vector.t =
               let hd :: tl = Vector.rev refine.terms in
               let arity = ERelContext.lift refine_height arity in
-              hd :: ERelContext.subst_of_instance arity tl in
+              hd :: Vector.rev (ERelContext.subst_of_instance arity tl) in
             let old_previously_bounds =
               Vector.map (Rel.lift height) old_previously_bounds in
             let Exists { vector = old_previously_bounds; _ } =
@@ -6284,10 +6299,11 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       TomatchVector.concat_rev_map { f = fun tomatch ->
         get_tomatch_args (GlobalEnv.env problem.env) tomatch } |>
       Height.Vector.rev in
-    let vector =
+    let tail_return_height_vector =
       Height.Vector.map (ETerm.lift tomatch.return_pred_height)
         tail_return_vector in
-    let local_return_pred = ETerm.substl vector return_pred in
+    let local_return_pred =
+      ETerm.substl tail_return_height_vector return_pred in
     let case =
       let return_pred =
         ERelContext.it_mkLambda_or_LetIn tomatch.return_pred_context
@@ -6319,17 +6335,31 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
 *)
     let case = ETerm.mkApp case (Array.of_list apply') in
 (*
+    let* sigma = EvarMapMonad.get in
     Format.eprintf "compiled case: %a@.in env: %a@."
       Pp.pp_with (ETerm.print env sigma case)
       Pp.pp_with (Env.print env);
 *)
-    let* sigma = EvarMapMonad.get in
     let ty = ReturnPred.get problem.return_pred in
     let ty = Eq.cast (ETerm.morphism (Eq.sym Env.assoc)) ty in
-    let ty = ETerm.substl vector ty in
+    let ty = ETerm.substl tail_return_height_vector ty in
+(*
+    Format.eprintf "case type: %a@.in env: %a@."
+      Pp.pp_with (ETerm.debug_print ty)
+      Pp.pp_with (Env.print env);
+    Format.eprintf "tomatch_args: %a@."
+      Pp.pp_with (Pp.pr_sequence (ETerm.print env sigma)
+        (Vector.to_list (get_tomatch_args env tomatch)));
+*)
     let ty =
       ETerm.substl (Height.Vector.of_vector (get_tomatch_args env tomatch))
         ty in
+(*
+    let* sigma = EvarMapMonad.get in
+    Format.eprintf "case type: %a@.in env: %a@."
+      Pp.pp_with (ETerm.print env sigma ty)
+      Pp.pp_with (Env.print env);
+*)
     (*
     let ty = ETerm.prod_applist sigma
       (ETerm.substl (Height.Vector.of_vector (get_tomatch_args env tomatch))
@@ -6662,22 +6692,20 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
       with _ ->
         try_with ~small_inversion:true sigma in
   EvarMapMonad.run sigma begin
-    let* sigma = EvarMapMonad.get in
 (*
+    let* sigma = EvarMapMonad.get in
     Format.eprintf "Coerce 3: %a@." Pp.pp_with (EJudgment.print (GlobalEnv.env env) sigma judgment);
 *)
     let* judgment =
       EJudgment.inh_conv_coerce_to_tycon ~program_mode (GlobalEnv.env env)
         judgment tycon in
-    let* sigma = EvarMapMonad.get in
 (*
+    let* sigma = EvarMapMonad.get in
     Format.eprintf "Coerce 3 done: %a@." Pp.pp_with (EJudgment.print (GlobalEnv.env env) sigma judgment);
 *)
 (*
-    let v = ETerm.nf_evar sigma (EJudgment.uj_val judgment) in
-    let ty = ETerm.nf_evar sigma (EJudgment.uj_type judgment) in
     Format.eprintf "%a@." Pp.pp_with (EJudgment.print (GlobalEnv.env env) sigma
-      (EJudgment.make v ty));
+      judgment);
     Format.eprintf "%a@." Pp.pp_with (ETerm.debug_print (EJudgment.uj_val judgment));
 *)
     let judgment = Eq.cast EJudgment.eq judgment in
