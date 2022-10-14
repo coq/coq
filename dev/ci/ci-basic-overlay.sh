@@ -344,3 +344,8 @@ project lean_importer "https://github.com/SkySkimmer/coq-lean-import" "master"
 # SerAPI
 ########################################################################
 project serapi "https://github.com/ejgallego/coq-serapi" "main"
+
+########################################################################
+# SMTCoq
+########################################################################
+project smtcoq "https://github.com/smtcoq/smtcoq" "coq-master"
