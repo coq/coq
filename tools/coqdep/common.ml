@@ -273,10 +273,9 @@ let find_META package =
 
 let findlib_resolve f package legacy_name plugin =
   let open Fl_metascanner in
-  match find_META package, legacy_name with
-  | None, Some p -> None, p
-  | None, None -> Error.no_meta f package
-  | Some (meta_file, meta), _ ->
+  match find_META package with
+  | None -> Error.no_meta f package
+  | Some (meta_file, meta) ->
       let rec find_plugin path p { pkg_defs ; pkg_children  } =
         match p with
         | [] -> path, pkg_defs
@@ -299,7 +298,7 @@ let findlib_resolve f package legacy_name plugin =
       in
       let path = [find_plugin_field "directory" (Some ".") meta.pkg_defs] in
       let path, plug = find_plugin path plugin meta in
-      Some meta_file, String.concat "/" path ^ "/" ^
+      meta_file, String.concat "/" path ^ "/" ^
         Filename.chop_extension @@ find_plugin_field "plugin" None plug
 
 let legacy_mapping = Core_plugins_findlib_compat.legacy_to_findlib
@@ -343,13 +342,14 @@ let rec find_dependencies st basename =
         | Declare sl ->
             let public_to_private_name = function
               | [[x]] when List.mem_assoc x legacy_mapping ->
-                  findlib_resolve f "coq-core" (Some x) (List.assoc x legacy_mapping)
+                  None, x
               | [[x]] ->
                   Error.findlib_name f x
               | [[legacy]; package :: plugin] ->
-                  findlib_resolve f package (Some legacy) plugin
+                  None, legacy
               | [package :: plugin] ->
-                  findlib_resolve f package None plugin
+                  let meta, cmxs = findlib_resolve f package None plugin in
+                  Some meta, cmxs
               | plist ->
                 CErrors.user_err
                   Pp.(str "Failed to resolve plugin " ++
