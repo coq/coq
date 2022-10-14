@@ -58,13 +58,6 @@ Ltac contradict H :=
    | _ => (elim H;fail) || pos H
   end.
 
-(* To contradict an hypothesis without copying its type. *)
-
-Ltac absurd_hyp H :=
-  idtac "absurd_hyp is OBSOLETE: use contradict instead.";
-  let T := type of H in
-  absurd T.
-
 (* A useful complement to contradict. Here H:A while G allows concluding ~A *)
 
 Ltac false_hyp H G :=
