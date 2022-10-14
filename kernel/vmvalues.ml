@@ -371,10 +371,6 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcofix, res, Some args)
       | _           -> assert false
       end
-  | i when Int.equal i Obj.custom_tag ->
-    Vint64 (Obj.magic i)
-  | i when Int.equal i Obj.double_tag ->
-    Vfloat64 (Obj.magic i)
   | tg ->
     CErrors.anomaly
       Pp.(strbrk "Failed to parse VM value. Tag = " ++ int tg ++ str ".")
