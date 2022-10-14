@@ -24,8 +24,9 @@ let coqdep () =
   in
   let v_files = args.Args.files in
   (* We are in makefile hack mode *)
+  let enable_output_meta = true in
   let make_separator_hack = true in
-  let st = init ~make_separator_hack args in
+  let st = init ~enable_output_meta ~make_separator_hack args in
   let lst = Common.State.loadpath st in
   List.iter treat_file_command_line v_files;
 
