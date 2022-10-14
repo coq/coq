@@ -289,11 +289,10 @@ let map_lam_with_binders g f n lam =
   | Lforce -> Lforce
 
 (*s Operators on substitution *)
-(* let subst_id = subs_id 0 *)
-(* let lift = subs_lift *)
+let lift = subs_lift
 let liftn = subs_liftn
-(* let cons v subst = subs_cons v subst *)
-(* let shift subst = subs_shft (1, subst) *)
+let cons v subst = subs_cons v subst
+let shift subst = subs_shft (1, subst)
 
 (*s Lift and substitution *)
 
@@ -323,3 +322,72 @@ let rec lam_exsubst subst lam =
 let lam_subst_args subst args =
   if is_subs_id subst then args
   else Array.Smart.map (lam_exsubst subst) args
+
+(* [simplify can_subst subst lam] simplifies the expression [lam_subst subst lam] by: *)
+(* - Reducing [let] is the definition can be substituted *)
+(* - Transforming beta redex into [let] expression *)
+(* - Moving arguments under [let] *)
+(* Invariant: Terms in [subst] are already simplified and can be substituted *)
+
+let simplify can_subst subst lam =
+  let rec simplify subst lam =
+    match lam with
+    | Lrel(id,i) -> lam_subst_rel lam id i subst
+
+    | Llet(id,def,body) ->
+        let def' = simplify subst def in
+        if can_subst def' then simplify (cons def' subst) body
+        else
+          let body' = simplify (lift subst) body in
+          if def == def' && body == body' then lam
+          else Llet(id,def',body')
+
+    | Lapp(f,args) ->
+        begin match simplify_app subst f subst args with
+        | Lapp(f',args') when f == f' && args == args' -> lam
+        | lam' -> lam'
+        end
+
+    | _ -> map_lam_with_binders liftn simplify subst lam
+
+  and simplify_app substf f substa args =
+    match f with
+    | Lrel(id, i) ->
+      begin match lam_subst_rel f id i substf with
+        | Llam(ids, body) ->
+          reduce_lapp
+            (subs_id 0) (Array.to_list ids) body
+            substa (Array.to_list args)
+        | f' -> mkLapp f' (simplify_args substa args)
+      end
+    | Llam(ids, body) ->
+      reduce_lapp substf (Array.to_list ids) body substa (Array.to_list args)
+    | Llet(id, def, body) ->
+      let def' = simplify substf def in
+      if can_subst def' then
+        simplify_app (cons def' substf) body substa args
+      else
+        Llet(id, def', simplify_app (lift substf) body (shift substa) args)
+    | Lapp(f, args') ->
+      let args = Array.append
+          (lam_subst_args substf args') (lam_subst_args substa args) in
+      simplify_app substf f (subs_id 0) args
+    | _ -> mkLapp (simplify substf f) (simplify_args substa args)
+
+  and simplify_args subst args = Array.Smart.map (fun c -> simplify subst c) args
+
+  and reduce_lapp substf lids body substa largs =
+    match lids, largs with
+    | id::lids, a::largs ->
+      let a = simplify substa a in
+      if can_subst a then
+        reduce_lapp (subs_cons a substf) lids body substa largs
+      else
+        let body = reduce_lapp (lift substf) lids body (shift substa) largs in
+        Llet(id, a, body)
+    | [], [] -> simplify substf body
+    | _::_, _ ->
+      Llam(Array.of_list lids, simplify (liftn (List.length lids) substf) body)
+    | [], _ -> simplify_app substf body substa (Array.of_list largs)
+  in
+  simplify subst lam

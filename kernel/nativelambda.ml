@@ -27,10 +27,6 @@ type lambda = Nativevalues.t Genlambda.lambda
 
 (*s Operators on substitution *)
 let subst_id = subs_id 0
-let lift = subs_lift
-let liftn = subs_liftn
-let cons v subst = subs_cons v subst
-let shift subst = subs_shft (1, subst)
 
 (* Linked code location utilities *)
 let get_mind_prefix env mind =
@@ -47,84 +43,14 @@ let get_const_prefix env c =
 
 (** Simplification of lambda expression *)
 
-(* [simplify subst lam] simplify the expression [lam_subst subst lam] *)
-(* that is :                                                          *)
-(* - Reduce [let] is the definition can be substituted i.e:           *)
-(*    - a variable (rel or Id.t)                                *)
- (*    - a constant                                                    *)
-(*    - a structured constant                                         *)
-(*    - a function                                                    *)
-(* - Transform beta redex into [let] expression                       *)
-(* - Move arguments under [let]                                       *)
-(* Invariant : Terms in [subst] are already simplified and can be     *)
-(*             substituted                                            *)
-
+(* TODO: make the VM and native agree *)
 let can_subst lam =
   match lam with
   | Lrel _ | Lvar _ | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Llam _
   | Lmeta _ | Levar _ -> true
   | _ -> false
 
-let rec simplify subst lam =
-  match lam with
-  | Lrel(id,i) -> lam_subst_rel lam id i subst
-
-  | Llet(id,def,body) ->
-      let def' = simplify subst def in
-      if can_subst def' then simplify (cons def' subst) body
-      else
-        let body' = simplify (lift subst) body in
-        if def == def' && body == body' then lam
-        else Llet(id,def',body')
-
-  | Lapp(f,args) ->
-      begin match simplify_app subst f subst args with
-      | Lapp(f',args') when f == f' && args == args' -> lam
-      | lam' -> lam'
-      end
-
-  | _ -> map_lam_with_binders liftn simplify subst lam
-
-and simplify_app substf f substa args =
-  match f with
-  | Lrel(id, i) ->
-      begin match lam_subst_rel f id i substf with
-      | Llam(ids, body) ->
-          reduce_lapp
-            subst_id (Array.to_list ids) body
-            substa (Array.to_list args)
-      | f' -> mkLapp f' (simplify_args substa args)
-      end
-  | Llam(ids, body) ->
-      reduce_lapp substf (Array.to_list ids) body substa (Array.to_list args)
-  | Llet(id, def, body) ->
-      let def' = simplify substf def in
-      if can_subst def' then
-        simplify_app (cons def' substf) body substa args
-      else
-        Llet(id, def', simplify_app (lift substf) body (shift substa) args)
-  | Lapp(f, args') ->
-      let args = Array.append
-          (lam_subst_args substf args') (lam_subst_args substa args) in
-      simplify_app substf f subst_id args
-  (* TODO | Lproj -> simplify if the argument is known or a known global *)
-  | _ -> mkLapp (simplify substf f) (simplify_args substa args)
-
-and simplify_args subst args = Array.Smart.map (simplify subst) args
-
-and reduce_lapp substf lids body substa largs =
-  match lids, largs with
-  | id::lids, a::largs ->
-      let a = simplify substa a in
-      if can_subst a then
-        reduce_lapp (cons a substf) lids body substa largs
-      else
-        let body = reduce_lapp (lift substf) lids body (shift substa) largs in
-        Llet(id, a, body)
-  | [], [] -> simplify substf body
-  | _::_, _ ->
-      Llam(Array.of_list lids,  simplify (liftn (List.length lids) substf) body)
-  | [], _::_ -> simplify_app substf body substa (Array.of_list largs)
+let simplify subst lam = simplify can_subst subst lam
 
 (*s Translation from [constr] to [lambda] *)
 

@@ -74,6 +74,10 @@ val lam_subst_rel : 'v lambda -> Name.t -> int -> 'v lambda Esubst.subs -> 'v la
 val lam_exsubst : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
 val lam_subst_args : 'v lambda Esubst.subs -> 'v lambda array -> 'v lambda array
 
+(* {5 Simplification} *)
+
+val simplify : ('v lambda -> bool) -> 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
+
 (** {5 Printing} *)
 
 val pp_lam : 'v lambda -> Pp.t
