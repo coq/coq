@@ -1688,7 +1688,7 @@ simple_tactic: [
 | "evar" "(" ident ":" term ")"
 | "evar" one_term
 | "instantiate" OPT ( "(" ident ":=" term ")" )
-| "instantiate" "(" integer ":=" term ")" OPT hloc
+| "instantiate" "(" natural ":=" term ")" OPT hloc
 | "stepl" one_term OPT ( "by" ltac_expr )
 | "stepr" one_term OPT ( "by" ltac_expr )
 | "generalize_eqs" ident
