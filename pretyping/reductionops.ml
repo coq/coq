@@ -1190,8 +1190,12 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
     report_anomaly e
 
 let vm_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
+  let evars_of_evar_map sigma =
+    { Vmlambda.evars_val = Evd.evar_handler sigma;
+      Vmlambda.evars_metas = Evd.meta_type0 sigma }
+  in
   infer_conv_gen (fun pb ~l2r sigma ts ->
-      Vconv.vm_conv_gen pb (Evd.evar_handler sigma))
+      Vconv.vm_conv_gen pb (evars_of_evar_map sigma))
     ~catch_incon:true ~pb env sigma t1 t2
 
 let native_conv_generic pb sigma t =

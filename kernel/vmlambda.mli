@@ -6,6 +6,7 @@ open Environ
 type lambda =
   | Lrel          of Name.t * int
   | Lvar          of Id.t
+  | Lmeta         of metavariable * lambda (* type *)
   | Levar         of Evar.t * lambda array
   | Lprod         of lambda * lambda
   | Llam          of Name.t Context.binder_annot array * lambda
@@ -34,7 +35,13 @@ and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
 exception TooLargeInductive of Pp.t
 
-val lambda_of_constr : optimize:bool -> env -> constr evar_handler -> Constr.t -> lambda
+type evars =
+    { evars_val : constr evar_handler;
+      evars_metas : metavariable -> types }
+
+val empty_evars : evars
+
+val lambda_of_constr : optimize:bool -> env -> evars -> Constr.t -> lambda
 
 val decompose_Llam : lambda -> Name.t Context.binder_annot array * lambda
 

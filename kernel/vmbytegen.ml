@@ -528,6 +528,10 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lvar id -> pos_named id cenv :: cont
 
+  | Lmeta (_mv, _ty) ->
+    (* TODO: handle me *)
+    raise (Invalid_argument "Vmbytegen.compile_lam: Meta")
+
   | Levar (evk, args) ->
       if Array.is_empty args then
         compile_fv_elem cenv (FVevar evk) sz cont
@@ -905,8 +909,7 @@ let compile_constant_body ~fail_on_error env univs = function
             let con= Constant.make1 (Constant.canonical kn') in
               Some (BCalias (get_alias env con))
         | _ ->
-            let sigma = Constr.default_evar_handler in
-            let res = compile ~fail_on_error ~universes:instance_size env sigma body in
+            let res = compile ~fail_on_error ~universes:instance_size env empty_evars body in
             Option.map (fun (code, fv) -> BCdefined (code, fv)) res
 
 (* Shortcut of the previous function used during module strengthening *)

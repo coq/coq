@@ -17,7 +17,7 @@ open Environ
 (** Should only be used for monomorphic terms *)
 val compile :
   fail_on_error:bool -> ?universes:int ->
-  env -> constr evar_handler -> constr ->
+  env -> Vmlambda.evars -> constr ->
   (to_patch * fv) option
 (** init, fun, fv *)
 

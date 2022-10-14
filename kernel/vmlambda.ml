@@ -13,6 +13,7 @@ let pr_con sp = str(Names.Label.to_string (Constant.label sp))
 type lambda =
   | Lrel          of Name.t * int
   | Lvar          of Id.t
+  | Lmeta         of metavariable * lambda (* type *)
   | Levar         of Evar.t * lambda array
   | Lprod         of lambda * lambda
   | Llam          of Name.t Context.binder_annot array * lambda
@@ -43,6 +44,14 @@ and lam_branches =
 
 and fix_decl =  Name.t Context.binder_annot array * lambda array * lambda array
 
+type evars =
+    { evars_val : constr evar_handler;
+      evars_metas : metavariable -> types }
+
+let empty_evars =
+  { evars_val = default_evar_handler;
+    evars_metas = (fun _ -> assert false) }
+
 (** Printing **)
 
 let pr_annot x = Name.print x.Context.binder_name
@@ -64,6 +73,8 @@ let rec pp_lam lam =
   match lam with
   | Lrel (id,n) -> pp_rel id n
   | Lvar id -> Id.print id
+  | Lmeta (mv, ty) ->
+    hov 1 (str "meta(" ++ int mv ++ str ":" ++ spc () ++ pp_lam ty ++ str ")")
   | Levar (evk, args) ->
     hov 1 (str "evar(" ++ Evar.print evk ++ str "," ++ spc () ++
       prlist_with_sep spc pp_lam (Array.to_list args) ++ str ")")
@@ -194,6 +205,9 @@ let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
   | Lfloat _ -> lam
+  | Lmeta (mv, ty) ->
+    let ty' = f n ty in
+    if ty == ty' then lam else Lmeta (mv, ty')
   | Levar (evk, args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Levar (evk, args')
@@ -385,6 +399,8 @@ let rec occurrence k kind lam =
     else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
   | Lfloat _ -> kind
+  | Lmeta (_, ty) ->
+    occurrence k kind ty
   | Levar (_, args) ->
     occurrence_args k kind args
   | Lprod(dom, codom) ->
@@ -597,13 +613,15 @@ struct
   type t = {
     global_env : env;
     evar_body : constr evar_handler;
+    meta_type : metavariable -> types;
     name_rel : Name.t Vect.t;
     construct_tbl : (constructor, constructor_info) Hashtbl.t;
   }
 
   let make env sigma = {
     global_env = env;
-    evar_body = sigma;
+    evar_body = sigma.evars_val;
+    meta_type = sigma.evars_metas;
     name_rel = Vect.make 16 Anonymous;
     construct_tbl = Hashtbl.create 111
   }
@@ -639,7 +657,9 @@ open Renv
 
 let rec lambda_of_constr env c =
   match Constr.kind c with
-  | Meta _ -> raise (Invalid_argument "Vmbytegen.lambda_of_constr: Meta")
+  | Meta mv ->
+    let ty = lambda_of_constr env (env.meta_type mv) in
+    Lmeta (mv, ty)
   | Evar ev ->
     begin match env.evar_body.evar_expand ev with
     | Constr.EvarUndefined (evk, args) ->
