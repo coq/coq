@@ -18,8 +18,6 @@ exception TooLargeInductive of Pp.t
 
 val lambda_of_constr : optimize:bool -> env -> Genlambda.evars -> Constr.t -> lambda
 
-val decompose_Llam : lambda -> Name.t Context.binder_annot array * lambda
-
 val get_alias : env -> Constant.t -> Constant.t
 
 (** Dump the VM lambda code after compilation (for debugging purposes) *)

@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** Intermediate language used by both the VM and native. *)
+
 open Names
 open Constr
 
@@ -53,3 +55,25 @@ type evars =
       evars_metas : metavariable -> types }
 
 val empty_evars : evars
+
+(** {5 Manipulation functions} *)
+
+val mkLapp : 'v lambda -> 'v lambda array -> 'v lambda
+val mkLlam : Name.t Context.binder_annot array -> 'v lambda -> 'v lambda
+val decompose_Llam : 'v lambda -> Name.t Context.binder_annot array * 'v lambda
+val decompose_Llam_Llet : 'v lambda -> (Name.t Context.binder_annot * 'v lambda option) array * 'v lambda
+
+val map_lam_with_binders : (int -> 'a -> 'a) -> ('a -> 'v lambda -> 'v lambda) ->
+  'a -> 'v lambda -> 'v lambda
+
+(* {5 Lift and substitution} *)
+
+val lam_exlift : Esubst.lift -> 'v lambda -> 'v lambda
+val lam_lift : int -> 'v lambda -> 'v lambda
+val lam_subst_rel : 'v lambda -> Name.t -> int -> 'v lambda Esubst.subs -> 'v lambda
+val lam_exsubst : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
+val lam_subst_args : 'v lambda Esubst.subs -> 'v lambda array -> 'v lambda array
+
+(** {5 Printing} *)
+
+val pp_lam : 'v lambda -> Pp.t
