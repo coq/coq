@@ -35,7 +35,6 @@ type lambda =
         (* No check if None *)
   | Lcase         of annot_sw * lambda * lambda * lam_branches
                   (* annotations, term being matched, accu, branches *)
-  | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * inductive array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int (* a constant constructor *)
@@ -160,11 +159,6 @@ let map_lam_with_binders g f n lam =
     in
     if t == t' && a == a' && branches == branches' then lam else
       Lcase(annot,t',a',branches')
-  | Lif(t,bt,bf) ->
-      let t' = f n t in
-      let bt' = f n bt in
-      let bf' = f n bf in
-      if t == t' && bt == bt' && bf == bf' then lam else Lif(t',bt',bf')
   | Lfix(init,(ids,ltypes,lbodies)) ->
       let ltypes' = Array.Smart.map (f n) ltypes in
       let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
@@ -235,26 +229,6 @@ let can_subst lam =
   | Lmeta _ | Levar _ -> true
   | _ -> false
 
-let can_merge_if bt bf =
-  match bt, bf with
-  | Llam(_idst,_), Llam(_idsf,_) -> true
-  | _ -> false
-
-let merge_if t bt bf =
-  let (idst,bodyt) = decompose_Llam bt in
-  let (idsf,bodyf) = decompose_Llam bf in
-  let nt = Array.length idst in
-  let nf = Array.length idsf in
-  let common,idst,idsf =
-    if Int.equal nt nf then idst, [||], [||]
-    else
-      if nt < nf then idst,[||], Array.sub idsf nt (nf - nt)
-      else idsf, Array.sub idst nf (nt - nf), [||] in
-  Llam(common,
-       Lif(lam_lift (Array.length common) t,
-           mkLlam idst bodyt,
-           mkLlam idsf bodyf))
-
 let rec simplify subst lam =
   match lam with
   | Lrel(id,i) -> lam_subst_rel lam id i subst
@@ -273,14 +247,6 @@ let rec simplify subst lam =
       | lam' -> lam'
       end
 
-  | Lif(t,bt,bf) ->
-      let t' = simplify subst t in
-      let bt' = simplify subst bt in
-      let bf' = simplify subst bf in
-      if can_merge_if bt' bf' then merge_if t' bt' bf'
-      else
-        if t == t' && bt == bt' && bf == bf' then lam
-        else Lif(t',bt',bf')
   | _ -> map_lam_with_binders liftn simplify subst lam
 
 and simplify_app substf f substa args =

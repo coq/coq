@@ -1230,8 +1230,6 @@ let compile_prim env decl cond paux =
         if annot.asw_finite then arg
         else mkForceCofix annot.asw_prefix annot.asw_ind arg in
       mkMLapp (MLapp (MLglobal cn, fv_args env fvn fvr)) [|force|]
-  | Lif(t,bt,bf) ->
-      MLif(ml_of_lam env l t, ml_of_lam env l bt, ml_of_lam env l bf)
   | Lfix ((rec_pos, inds, start), (ids, tt, tb)) ->
       (* let type_f fvt = [| type fix |]
          let norm_f1 fv f1 .. fn params1 = body1
