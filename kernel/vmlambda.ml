@@ -24,6 +24,7 @@ type lambda =
   | Lfix          of (int array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int
+  | Lparray       of lambda array * lambda
   | Lmakeblock    of int * lambda array
   | Luint         of Uint63.t
   | Lfloat        of Float64.t
@@ -132,6 +133,11 @@ let rec pp_lam lam =
                pr_annot na ++ str":" ++ pp_lam ty ++
                cut() ++ str":=" ++ pp_lam bd) (Array.to_list fixl)) ++
        str"}")
+  | Lparray (args, def) ->
+    hov 1
+      (str "(array " ++ spc() ++
+       prlist_with_sep spc pp_lam (Array.to_list args) ++
+       spc () ++ str "|" ++ spc () ++ pp_lam def ++ str")")
   | Lmakeblock(tag, args) ->
     hov 1
       (str "(makeblock " ++ int tag ++ spc() ++
@@ -236,6 +242,10 @@ let map_lam_with_binders g f n lam =
     let lbodies' = Array.Smart.map (f (g (Array.length ids) n)) lbodies in
     if ltypes == ltypes' && lbodies == lbodies' then lam
     else Lcofix(init,(ids,ltypes',lbodies'))
+  | Lparray (args, def) ->
+    let args' = Array.Smart.map (f n) args in
+    let def' = f n def in
+    if args == args' && def == def' then lam else Lparray (args', def')
   | Lmakeblock(tag,args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Lmakeblock(tag,args')
@@ -385,6 +395,8 @@ let rec occurrence k kind lam =
     occurrence (k+1) (occurrence k kind def) body
   | Lapp(f, args) ->
     occurrence_args k (occurrence k kind f) args
+  | Lparray (args, def) ->
+    occurrence_args k (occurrence k kind def) args
   | Lprim(_,_,args) | Lmakeblock(_,args) ->
     occurrence_args k kind args
   | Lcase(_ci,_rtbl,t,a,branches) ->
@@ -493,10 +505,7 @@ let makeblock tag nparams arity args =
       Lval(val_of_block Obj.last_non_constant_constructor_tag args)
   else Lmakeblock(tag, args)
 
-let makearray args def =
-    let ar = Lmakeblock(0, args) in (* build the ocaml array *)
-    let kind = Lmakeblock(0, [|ar; def|]) in (* Parray.Array *)
-    Lmakeblock(0,[|kind|]) (* the reference *)
+let makearray args def = Lparray (args, def)
 
 (* Compiling constants *)
 

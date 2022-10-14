@@ -757,6 +757,13 @@ let rec compile_lam env cenv lam sz cont =
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
     comp_args (compile_lam env) cenv args sz cont
 
+  | Lparray (args, def) ->
+    (* Hack: brutally pierce through the abstraction of PArray *)
+    let ar = Lmakeblock(0, args) in (* build the ocaml array *)
+    let kind = Lmakeblock(0, [|ar; def|]) in (* Parray.Array *)
+    let v = Lmakeblock(0,[|kind|]) (* the reference *) in
+    compile_lam env cenv v sz cont
+
   | Lprim (kn, op, args) ->
 
     begin match get_caml_prim op with

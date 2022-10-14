@@ -17,6 +17,7 @@ type lambda =
   | Lfix          of (int array * int) * fix_decl
   | Lcofix        of int * fix_decl
   | Lint          of int
+  | Lparray       of lambda array * lambda
   | Lmakeblock    of int * lambda array
   | Luint         of Uint63.t
   | Lfloat        of Float64.t
