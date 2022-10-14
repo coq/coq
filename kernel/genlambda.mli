@@ -78,6 +78,8 @@ val lam_subst_args : 'v lambda Esubst.subs -> 'v lambda array -> 'v lambda array
 
 val simplify : ('v lambda -> bool) -> 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
 
+val remove_let : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
+
 (** {5 Printing} *)
 
 val pp_lam : 'v lambda -> Pp.t

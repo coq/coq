@@ -391,3 +391,74 @@ let simplify can_subst subst lam =
     | [], _ -> simplify_app substf body substa (Array.of_list largs)
   in
   simplify subst lam
+
+(* [occurrence kind k lam]:
+   If [kind] is [true] return [true] if the variable [k] does not appear in
+   [lam], return [false] if the variable appear one time and not
+   under a lambda, a fixpoint, a cofixpoint; else raise Not_found.
+   If [kind] is [false] return [false] if the variable does not appear in [lam]
+   else raise [Not_found]
+*)
+
+let rec occurrence k kind lam =
+  match lam with
+  | Lrel (_,n) ->
+    if n = k then
+      if kind then false else raise Not_found
+    else kind
+  | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
+  | Lfloat _ | Lforce -> kind
+  | Lmeta (_, ty) ->
+    occurrence k kind ty
+  | Levar (_, args) ->
+    occurrence_args k kind args
+  | Lprod(dom, codom) ->
+    occurrence k (occurrence k kind dom) codom
+  | Llam(ids,body) ->
+    let _ = occurrence (k+Array.length ids) false body in kind
+  | Llet(_,def,body) ->
+    occurrence (k+1) (occurrence k kind def) body
+  | Lapp(f, args) ->
+    occurrence_args k (occurrence k kind f) args
+  | Lparray (args, def) ->
+    occurrence_args k (occurrence k kind def) args
+  | Lprim(_,_,args) | Lmakeblock(_, _,args) ->
+    occurrence_args k kind args
+  | Lcase(_, t, a, branches) ->
+    let kind = occurrence k (occurrence k kind t) a in
+    let r = ref kind in
+    Array.iter (fun c -> r := occurrence k kind c  && !r) branches.constant_branches;
+    let on_b (ids,c) =
+      r := occurrence (k+Array.length ids) kind c && !r
+    in
+    Array.iter on_b branches.nonconstant_branches;
+    !r
+  | Lfix(_,(ids,ltypes,lbodies))
+  | Lcofix(_,(ids,ltypes,lbodies)) ->
+    let kind = occurrence_args k kind ltypes in
+    let _ = occurrence_args (k+Array.length ids) false lbodies in
+    kind
+  | Lproj(_,arg) ->
+    occurrence k kind arg
+
+and occurrence_args k kind args =
+  Array.fold_left (occurrence k) kind args
+
+let occur_once lam =
+  try let _ = occurrence 1 true lam in true
+  with Not_found -> false
+
+(* [remove_let lam] remove let expression in [lam] if the variable is *)
+(* used at most once time in the body, and does not appear under      *)
+(* a lambda or a fix or a cofix                                       *)
+
+let rec remove_let subst lam =
+  match lam with
+  | Lrel(id,i) -> lam_subst_rel lam id i subst
+  | Llet(id,def,body) ->
+    let def' = remove_let subst def in
+    if occur_once body then remove_let (cons def' subst) body
+    else
+      let body' = remove_let (lift subst) body in
+      if def == def' && body == body' then lam else Llet(id,def',body')
+  | _ -> map_lam_with_binders liftn remove_let subst lam
