@@ -1675,7 +1675,7 @@ Controlling the proof flow
    form is used, Coq chooses the name.
 
 .. tacn:: instantiate {? ( @ident := @term ) }
-          instantiate ( @integer := @term ) {? @hloc }
+          instantiate ( @natural := @term ) {? @hloc }
    :name: instantiate; _
 
    .. insertprodn hloc hloc
