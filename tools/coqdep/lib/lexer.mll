@@ -120,14 +120,10 @@ and extra_dep_rule from = parse
 and require_modifiers from = parse
   | "(*"
       { comment lexbuf; require_modifiers from lexbuf }
-  | "Import" space+
+  | "Import" space*
       { require_file from lexbuf }
-  | "Export" space+
+  | "Export" space*
       { require_file from lexbuf }
-  | "Import" "("
-      { skip_parenthesized lexbuf; require_file from lexbuf }
-  | "Export" "("
-      { skip_parenthesized lexbuf; require_file from lexbuf }
   | space+
       { require_modifiers from lexbuf }
   | eof
@@ -192,7 +188,7 @@ and load_file = parse
 and require_file from = parse
   | "(*"
       { comment lexbuf; require_file from lexbuf }
-  | "("
+  | ("-" space*)? "("
     { skip_parenthesized lexbuf; require_file from lexbuf }
   | space+
       { require_file from lexbuf }
