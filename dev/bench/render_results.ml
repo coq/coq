@@ -26,7 +26,6 @@ type ('a,'b) pkg_timings = {
   num_instr  : 'b;
   num_cycles : 'b;
   num_mem    : 'b;
-  num_faults : 'b;
 }
 ;;
 
@@ -35,7 +34,6 @@ let reduce_pkg_timings (m_f : 'a list -> 'c) (m_a : 'b list -> 'd) (t : ('a,'b) 
   ; num_instr  = m_a @@ CList.map (fun x -> x.num_instr)  t
   ; num_cycles = m_a @@ CList.map (fun x -> x.num_cycles) t
   ; num_mem    = m_a @@ CList.map (fun x -> x.num_mem)    t
-  ; num_faults = m_a @@ CList.map (fun x -> x.num_faults) t
   }
 ;;
 
@@ -139,7 +137,6 @@ let add_timings a b =
     num_instr = a.num_instr + b.num_instr;
     num_cycles = a.num_cycles + b.num_cycles;
     num_mem = a.num_mem + b.num_mem;
-    num_faults = a.num_faults + b.num_faults;
   }
 
 let mk_pkg_timings work_dir pkg_name suffix iteration =
@@ -162,7 +159,6 @@ let mk_pkg_timings work_dir pkg_name suffix iteration =
                run |> String.rchop ~n:1 |> int_of_string
            with Failure _ -> 0)
       ; num_mem = time_command_output |> nth 1 |> int_of_string
-      ; num_faults = time_command_output |> nth 2 |> int_of_string
       })
   in
   match timings with
@@ -228,7 +224,6 @@ coq_opam_packages
        ; num_instr  = proportional_difference_of_integers new_t.num_instr  old_t.num_instr
        ; num_cycles = proportional_difference_of_integers new_t.num_cycles old_t.num_cycles
        ; num_mem    = proportional_difference_of_integers new_t.num_mem    old_t.num_mem
-       ; num_faults = proportional_difference_of_integers new_t.num_faults old_t.num_faults
        })
 
 (* sort the table with results *)
