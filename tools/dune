@@ -20,13 +20,6 @@
  (modules coq_makefile)
  (libraries coq-core.boot coq-core.lib))
 
-(executable
- (name coqworkmgr)
- (public_name coqworkmgr)
- (package coq-core)
- (modules coqworkmgr)
- (libraries coq-core.stm))
-
 ; Bare-bones mllib/mlpack parser
 (executable
  (name ocamllibdep)
