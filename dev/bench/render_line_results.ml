@@ -49,7 +49,7 @@ let read_timing_lines file =
           (* Difference *)
           let diff = time2 -. time1 in
           (* Percentage diff *)
-          let pdiff = if time1 <> 0.0 then (diff *. 100.0) /. time1 else Float.infinity in
+          let pdiff = if time1 <> 0.0 then (diff *. 100.0) /. time1 else Float.nan in
           (* We accumulate the timing data in a tuple if the difference is non-zero *)
           (* We also check that timed values are not too small (tolerence is trial and error) *)
           if Float.abs diff <= 1e-4 then
@@ -89,23 +89,44 @@ let render_table ?(reverse=false) title num table =
 
 let main () =
   let () = Printexc.record_backtrace true in
-  let table =
+  let unsorted_data =
     Unix.getcwd ()
     |> list_html_files
     |> CList.filter_map read_timing_lines
     |> CList.flatten
-    (* Do we want to do a unique sort? *)
-    (* |> CList.sort_uniq (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y) *)
+  in
+  let table =
+    unsorted_data
     |> CList.sort (fun (_,_,x,_,_,_) (_,_,y,_,_,_) -> Float.compare x y)
     |> CList.map list_timing_data
     |> CList.map (fun x -> [ x ])
   in
+  (* This is instead sorted by pdiff *)
+  let table_sorted_pdiff =
+    unsorted_data
+    (* We filter NaN *)
+    |> CList.filter (fun (_,_,_,x,_,_) -> not (Float.is_nan x))
+    (* We also filter insignifant changes *)
+    |> CList.filter (fun (_,_,x,_,_,_) -> x >= 0.01)
+    |> CList.sort (fun (_,_,_,x,_,_) (_,_,_,y,_,_) -> Float.compare x y)
+    |> CList.map list_timing_data
+    |> CList.map (fun x -> [ x ])
+  in
+
   (* What is a good number to choose? *)
-  let num = 25 in
-  let num = min num (CList.length table) in
-  let slow_table = render_table (Printf.sprintf "TOP %d SLOW DOWNS" num) ~reverse:true num table in
+  let base_num = 50 in
+  let reverse = true in
+  (* Sorted by absolute difference: *)
+  let num = min base_num (CList.length table) in
+  let slow_table = render_table (Printf.sprintf "TOP %d SLOW DOWNS" num) ~reverse num table in
   let fast_table = render_table (Printf.sprintf "TOP %d SPEED UPS" num) num table in
   let timings_table = render_table "Significant line time changes in bench" (CList.length table) table in
+  (* Sorted by relative difference: *)
+  let num = min base_num (CList.length table_sorted_pdiff) in
+  let slow_table_pdiff = render_table (Printf.sprintf "TOP %d SLOW DOWNS (BY %%DIFF)" num) ~reverse num table_sorted_pdiff in
+  let fast_table_pdiff = render_table (Printf.sprintf "TOP %d SPEED UPS (BY %%DIFF)" num) num table_sorted_pdiff in
+  let timings_table_pdiff = render_table "Significant line time changes in bench (sorted by %diff)" (CList.length table_sorted_pdiff) table_sorted_pdiff in
+
   (* Print tables to stdout *)
   Printf.printf "%s\n%s\n" slow_table fast_table;
   (* Print slow table to slow_table file *)
@@ -119,6 +140,20 @@ let main () =
   (* Print all timing data to line_timings file *)
   let oc_timings = open_out "timings_table" in
   Printf.fprintf oc_timings "%s\n" timings_table;
+  close_out oc_timings;
+
+  Printf.printf "%s\n%s\n" slow_table_pdiff fast_table_pdiff;
+  (* Print slow table to slow_table_pdiff file *)
+  let oc_slow = open_out "slow_table_pdiff" in
+  Printf.fprintf oc_slow "%s\n" slow_table_pdiff;
+  close_out oc_slow;
+  (* Print fast table to fast_table_pdiff file *)
+  let oc_fast = open_out "fast_table_pdiff" in
+  Printf.fprintf oc_fast "%s\n" fast_table_pdiff;
+  close_out oc_fast;
+  (* Print all timing data to timings_table_pdiff file *)
+  let oc_timings = open_out "timings_table_pdiff" in
+  Printf.fprintf oc_timings "%s\n" timings_table_pdiff;
   close_out oc_timings;
   ()
 

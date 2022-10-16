@@ -565,7 +565,14 @@ if [ -d "$working_dir/html" ]; then # might not exist if all jobs failed
 cd "$working_dir/html"
 $render_line_results
 # Move line timing files to timings folder (they will become artifacts)
-mv fast_table slow_table timings_table $timings
+mv \
+fast_table \
+slow_table \
+timings_table \
+fast_table_pdiff \
+slow_table_pdiff \
+timings_table_pdiff \
+$timings
 fi
 
 echo "INFO: workspace = ${CI_JOB_URL}/artifacts/browse/${bench_dirname}"
