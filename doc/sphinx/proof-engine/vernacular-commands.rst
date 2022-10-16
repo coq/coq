@@ -80,11 +80,15 @@ described elsewhere
 
 .. cmd:: Check @term
 
-   Displays the type of :n:`@term`. When called in proof mode, the
-   term is checked in the local context of the selected goal.
+   Displays the type of :n:`@term`. When called in proof mode, the term is
+   checked in the local context of the selected goal (possibly by using
+   :ref:`single numbered goal selectors<goal-selectors>`). This command tries to
+   resolve existential variables as much as possible.
 
 .. cmd:: Type @term
-   :undocumented:
+
+   Displays the type of :n:`@term`, same as :cmd:`Check`, but will fail if any
+   existential variables are unable to be resolved.
 
 .. cmd:: Search {+ @search_query } {? {| inside | in | outside } {+ @qualid } }
 
