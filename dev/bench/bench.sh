@@ -68,6 +68,7 @@ check_variable () {
 : "${num_of_iterations:=1}"
 : "${timeout:=3h}"
 : "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-flocq3 coq-compcert coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst coq-category-theory}"
+: "${coq_native:=}"
 
 new_coq_commit=$(git rev-parse HEAD^2)
 old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
@@ -105,6 +106,7 @@ echo "DEBUG: num_of_iterations = $num_of_iterations"
 echo "DEBUG: coq_opam_packages = $coq_opam_packages"
 echo "DEBUG: coq_pr_number = $coq_pr_number"
 echo "DEBUG: coq_pr_comment_id = $coq_pr_comment_id"
+echo "DEBUG: coq_native = $coq_native"
 
 # --------------------------------------------------------------------------------
 
@@ -357,6 +359,8 @@ create_opam() {
     COQ_HASH_LONG=$(git log --pretty=%H | head -n 1)
 
     echo "$1_coq_commit_long = $COQ_HASH_LONG"
+
+    if [ ! -z "$coq_native" ]; then opam install coq-native; fi
 
     for package in coq-core coq-stdlib coqide-server coq; do
         export COQ_OPAM_PACKAGE=$package
