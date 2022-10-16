@@ -732,9 +732,9 @@ gallina_ext: [
 | REPLACE "Canonical" OPT "Structure" by_notation
 | WITH "Canonical" OPT "Structure" smart_global
 
-| DELETE "Coercion" global ":" class_rawexpr ">->" class_rawexpr
-| REPLACE "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr
-| WITH "Coercion" smart_global OPT [ ":" class_rawexpr ">->" class_rawexpr ]
+| DELETE "Coercion" global ":" coercion_class ">->" coercion_class
+| REPLACE "Coercion" by_notation ":" coercion_class ">->" coercion_class
+| WITH "Coercion" smart_global OPT [ ":" coercion_class ">->" coercion_class ]
 
 (* semantically restricted per https://github.com/coq/coq/pull/12936#discussion_r492705820 *)
 (* global OPT univ_decl is just ident_decl, the first OPT is moved to the rule above *)
@@ -1478,8 +1478,8 @@ syntax: [
 | WITH "Delimit" "Scope" scope_name; "with" scope_key
 | REPLACE "Undelimit" "Scope" IDENT
 | WITH "Undelimit" "Scope" scope_name
-| REPLACE "Bind" "Scope" IDENT; "with" LIST1 class_rawexpr
-| WITH "Bind" "Scope" scope_name; "with" LIST1 class_rawexpr
+| REPLACE "Bind" "Scope" IDENT; "with" LIST1 coercion_class
+| WITH "Bind" "Scope" scope_name; "with" LIST1 coercion_class
 ]
 
 opt_scope: [
@@ -2864,7 +2864,7 @@ RENAME: [
 
 | BULLET bullet
 | constr one_term (* many, many, many *)
-| class_rawexpr class  (* OCaml reserved word *)
+| coercion_class coercion_class
 | smart_global reference (* many, many *)
 (*
 | searchabout_query search_item

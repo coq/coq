@@ -21,32 +21,37 @@ typed modulo insertion of appropriate coercions. We allow to write:
  * :g:`f a` when ``f`` is not a function, but can be seen in a certain sense
    as a function: bijection, functor, any structure morphism etc.
 
+.. _classes-implicit-coercions:
 
-Classes
--------
+Coercion Classes
+----------------
 
-A class with :math:`n` parameters is any defined name with a type
-:n:`forall (@ident__1 : @type__1)..(@ident__n:@type__n), @sort`.  Thus a class with
-parameters is considered as a single class and not as a family of
-classes.  An object of a class is any term of type :n:`@class @term__1 .. @term__n`.
-In addition to these user-defined classes, we have two built-in classes:
+A class with :math:`n` parameters is any defined name with a type :n:`forall
+(@ident__1 : @type__1)..(@ident__n:@type__n), @sort`.  Thus a class with
+parameters is considered as a single class and not as a family of classes.  An
+object of a coercion class is any term of type :n:`@coercion_class @term__1 ..
+@term__n`. In addition to these user-defined classes, we have two built-in
+classes:
 
 
   * ``Sortclass``, the class of sorts; its objects are the terms whose type is a
     sort (e.g. :g:`Prop` or :g:`Type`).
-  * ``Funclass``, the class of functions; its objects are all the terms with a functional
-    type, i.e. of form :g:`forall x:A,B`.
+  * ``Funclass``, the class of functions; its objects are all the terms with a
+    functional type, i.e. of form :g:`forall x:A,B`.
 
 Formally, the syntax of classes is defined as:
 
-   .. insertprodn class class
+   .. insertprodn coercion_class coercion_class
 
    .. prodn::
-      class ::= Funclass
+      coercion_class ::= Funclass
       | Sortclass
       | @reference
 
 
+.. note::
+   Don't confuse coercion classes with typeclasses, which are records with
+   special properties defined with the :cmd:`Class` command.
 
 Coercions
 ---------
@@ -67,13 +72,13 @@ We then write :g:`f : C >-> D`.
 
 .. _ambiguous-paths:
 
-When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion
-paths with the same classes as existing ones are ignored. Coq will generate
-a warning when the two paths may be non convertible. When the :g:`x₁..xₖ` are exactly
-the :g:`v₁..vₙ` (in the same order), the coercion is said to satisfy
-the :gdef:`uniform inheritance condition`. When possible, we recommend
-using coercions that satisfy this condition. This guarantees that
-no spurious warning will be generated.
+When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion paths
+with the same classes as existing ones are ignored. Coq will generate a warning
+when the two paths may be non convertible. When the :g:`x₁..xₖ` are exactly the
+:g:`v₁..vₙ` (in the same order), the coercion is said to satisfy the
+:gdef:`uniform inheritance condition`. When possible, we recommend using
+coercions that satisfy this condition. This guarantees that no spurious warning
+will be generated.
 
 .. note:: The built-in class ``Sortclass`` can be used as a source class, but
           the built-in class ``Funclass`` cannot.
@@ -137,10 +142,10 @@ by the coercions ``f₁..fₖ``.  The application of a coercion path to a
 term consists of the successive application of its coercions.
 
 
-Declaring Coercions
--------------------------
+Coercion Classes
+----------------
 
-.. cmd:: Coercion @reference {? : @class >-> @class }
+.. cmd:: Coercion @reference {? : @coercion_class >-> @coercion_class }
          Coercion @ident_decl @def_body
 
   The first form declares the construction denoted by :token:`reference` as a coercion between
@@ -149,7 +154,7 @@ Declaring Coercions
   and then declares :token:`ident_decl` as a coercion between it source and its target.
   Both forms support the :attr:`local` attribute, which makes the coercion local to the current section.
 
-  :n:`{? : @class >-> @class }`
+  :n:`{? : @coercion_class >-> @coercion_class }`
     The source and target classes of the coercion.
     If unspecified, :n:`@reference` must already be a coercion, which
     enables modifying the :attr:`reversible` attribute of :n:`@reference`.
@@ -187,7 +192,7 @@ Declaring Coercions
 
      Coq can not infer a valid source class.
 
-  .. exn:: Cannot recognize @class as a source class of @qualid.
+  .. exn:: Cannot recognize @coercion_class as a source class of @qualid.
 
      The inferred source class of the coercion differs from the one specified.
 
@@ -196,7 +201,7 @@ Declaring Coercions
      The target class of the coercion is not specified and cannot be inferred.
      Make sure that the target is not a variable.
 
-  .. exn:: Found target class @class instead of @class
+  .. exn:: Found target class @coercion_class instead of @coercion_class
 
      The inferred target class of the coercion differs from the one specified.
 
@@ -231,9 +236,9 @@ Use :n:`:>` instead of :n:`:` before the
 :n:`@type` of the assumption to do so.  See :n:`@of_type`.
 
 
-.. cmd:: Identity Coercion @ident : @class >-> @class
+.. cmd:: Identity Coercion @ident : @coercion_class >-> @coercion_class
 
-   If ``C`` is the source `class` and ``D`` the destination, we check
+   If ``C`` is the source `coercion_class` and ``D`` the destination, we check
    that ``C`` is a :term:`constant` with a :term:`body` of the form
    :g:`fun (x₁:T₁)..(xₙ:Tₙ) => D t₁..tₘ` where `m` is the
    number of parameters of ``D``.  Then we define an identity
@@ -243,15 +248,15 @@ Use :n:`:>` instead of :n:`:` before the
 
    This command supports the :attr:`local` attribute, which makes the coercion local to the current section.
 
-   .. exn:: @class must be a transparent constant.
+   .. exn:: @coercion_class must be a transparent constant.
       :undocumented:
 
    .. cmd:: SubClass @ident_decl @def_body
 
-      If :n:`@type` is a class :n:`@ident'` applied to some arguments then
-      :n:`@ident` is defined and an identity coercion of name
-      :n:`Id_@ident_@ident'` is
-      declared. Otherwise said, this is an abbreviation for
+      If :n:`@type` is a coercion class :n:`@ident'` applied to some arguments
+      then :n:`@ident` is defined and an identity coercion of name
+      :n:`Id_@ident_@ident'` is declared. Otherwise said, this is an
+      abbreviation for
 
       :n:`Definition @ident := @type.`
       :n:`Identity Coercion Id_@ident_@ident' : @ident >-> @ident'`.
@@ -264,7 +269,7 @@ Displaying Available Coercions
 
 .. cmd:: Print Classes
 
-   Print the list of declared classes in the current context.
+   Print the list of declared coercion classes in the current context.
 
 .. cmd:: Print Coercions
 
@@ -274,7 +279,7 @@ Displaying Available Coercions
 
    Print the list of valid coercion paths in the current context.
 
-.. cmd:: Print Coercion Paths @class @class
+.. cmd:: Print Coercion Paths @coercion_class @coercion_class
 
    Print the list of valid coercion paths between the two given classes.
 

@@ -898,7 +898,7 @@ command: [
 | "Print" "Instances" reference
 | "Print" "Coercions"
 | "Print" "Notation" string OPT [ "in" "custom" ident ]
-| "Print" "Coercion" "Paths" class class
+| "Print" "Coercion" "Paths" coercion_class coercion_class
 | "Print" "Canonical" "Projections" LIST0 reference
 | "Print" "Typing" "Flags"
 | "Print" "Tables"
@@ -1083,8 +1083,8 @@ command: [
 | "Canonical" OPT "Structure" ident_decl def_body
 | "Canonical" OPT "Structure" reference
 | "Coercion" ident_decl def_body
-| "Identity" "Coercion" ident ":" class ">->" class
-| "Coercion" reference OPT [ ":" class ">->" class ]
+| "Identity" "Coercion" ident ":" coercion_class ">->" coercion_class
+| "Coercion" reference OPT [ ":" coercion_class ">->" coercion_class ]
 | "Context" LIST1 binder
 | "Instance" OPT ( ident_decl LIST0 binder ) ":" type OPT hint_info OPT [ ":=" "{" LIST0 field_val "}" | ":=" term ]
 | "Existing" "Instance" qualid OPT hint_info
@@ -1100,7 +1100,7 @@ command: [
 | "Close" "Scope" scope
 | "Delimit" "Scope" scope_name "with" scope_key
 | "Undelimit" "Scope" scope_name
-| "Bind" "Scope" scope_name "with" LIST1 class
+| "Bind" "Scope" scope_name "with" LIST1 coercion_class
 | "Infix" notation_declaration
 | "Notation" ident LIST0 ident ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Notation" notation_declaration
@@ -1544,7 +1544,7 @@ hints_regexp: [
 | "(" hints_regexp ")"
 ]
 
-class: [
+coercion_class: [
 | "Funclass"
 | "Sortclass"
 | reference

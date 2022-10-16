@@ -1063,9 +1063,9 @@ gallina_ext: [
 | "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
 | "Canonical" OPT "Structure" by_notation
 | "Coercion" global OPT [ OPT univ_decl def_body ]
-| "Identity" "Coercion" identref ":" class_rawexpr ">->" class_rawexpr
-| "Coercion" global ":" class_rawexpr ">->" class_rawexpr
-| "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr
+| "Identity" "Coercion" identref ":" coercion_class ">->" coercion_class
+| "Coercion" global ":" coercion_class ">->" coercion_class
+| "Coercion" by_notation ":" coercion_class ">->" coercion_class
 | "Context" LIST1 binder
 | "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | "Existing" "Instance" global hint_info
@@ -1293,7 +1293,7 @@ printable: [
 | "Typeclasses"
 | "Instances" smart_global
 | "Coercions"
-| "Coercion" "Paths" class_rawexpr class_rawexpr
+| "Coercion" "Paths" coercion_class coercion_class
 | "Canonical" "Projections" LIST0 smart_global
 | "Typing" "Flags"
 | "Tables"
@@ -1320,7 +1320,7 @@ printunivs_subgraph: [
 | "Subgraph" "(" LIST0 reference ")"
 ]
 
-class_rawexpr: [
+coercion_class: [
 | "Funclass"
 | "Sortclass"
 | smart_global
@@ -1425,7 +1425,7 @@ syntax: [
 | "Close" "Scope" IDENT
 | "Delimit" "Scope" IDENT; "with" IDENT
 | "Undelimit" "Scope" IDENT
-| "Bind" "Scope" IDENT; "with" LIST1 class_rawexpr
+| "Bind" "Scope" IDENT; "with" LIST1 coercion_class
 | "Infix" notation_declaration
 | "Notation" identref LIST0 ident ":=" constr syntax_modifiers
 | "Notation" notation_declaration
