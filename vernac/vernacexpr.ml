@@ -13,7 +13,7 @@ open Constrexpr
 open Libnames
 
 (** Vernac expressions, produced by the parser *)
-type class_rawexpr = FunClass | SortClass | RefClass of qualid or_by_notation
+type coercion_class = FunClass | SortClass | RefClass of qualid or_by_notation
 
 type goal_identifier = string
 type scope_name = string
@@ -46,7 +46,7 @@ type printable =
   | PrintTypeclasses
   | PrintInstances of qualid or_by_notation
   | PrintCoercions
-  | PrintCoercionPaths of class_rawexpr * class_rawexpr
+  | PrintCoercionPaths of coercion_class * coercion_class
   | PrintCanonicalConversions of qualid or_by_notation list
   | PrintUniverses of bool * qualid list option * string option
   | PrintHint of qualid or_by_notation
@@ -351,7 +351,7 @@ type nonrec vernac_expr =
   | VernacOpenCloseScope of bool * scope_name
   | VernacDeclareScope of scope_name
   | VernacDelimiters of scope_name * string option
-  | VernacBindScope of scope_name * class_rawexpr list
+  | VernacBindScope of scope_name * coercion_class list
   | VernacNotation of infix_flag * notation_declaration
   | VernacDeclareCustomEntry of string
   | VernacEnableNotation of bool * (string, Id.t list * qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_with_optional_scope option
@@ -381,8 +381,8 @@ type nonrec vernac_expr =
   | VernacImport of export_with_cats * (qualid * import_filter_expr) list
   | VernacCanonical of qualid or_by_notation
   | VernacCoercion of qualid or_by_notation *
-      (class_rawexpr * class_rawexpr) option
-  | VernacIdentityCoercion of lident * class_rawexpr * class_rawexpr
+      (coercion_class * coercion_class) option
+  | VernacIdentityCoercion of lident * coercion_class * coercion_class
   | VernacNameSectionHypSet of lident * section_subset_expr
 
   (* Type classes *)

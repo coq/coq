@@ -3,16 +3,18 @@
 Typeclasses
 ===========
 
-This chapter presents a quick reference of the commands related to type
-classes. For an actual introduction to typeclasses, there is a
-description of the system :cite:`sozeau08` and the literature on type
-classes in Haskell which also applies.
+Typeclasses are types whose values Coq can automatically infer by using user
+declared instances. It allows for a form of programmatic proof or term search.
+
+This chapter presents a quick reference of the commands related to typeclasses.
+Additional helpful information can be found in the paper introducing typeclasses
+to Coq :cite:`sozeau08` and the literature on type classes in Haskell.
 
 
-Class and Instance declarations
--------------------------------
+Typeclass and instance declarations
+-----------------------------------
 
-The syntax for class and instance declarations is the same as the record
+The syntax for typeclasses and instance declarations is the same as the record
 syntax of Coq:
 
 .. coqdoc::
@@ -21,13 +23,13 @@ syntax of Coq:
 
   Instance instancename q1 ⋯ qm : classname p1 ⋯ pn := { f1 := t1 ; ⋯ ; fm := tm }.
 
-The ``pi : ti`` variables are called the *parameters* of the class and
-the ``fi : ti`` are called the *methods*. Each class definition gives
+The ``pi : ti`` variables are called the *parameters* of the typeclass and
+the ``fi : ti`` are called the *methods*. Each typeclass definition gives
 rise to a corresponding record declaration and each instance is a
 regular definition whose name is given by `instancename` and type is an
 instantiation of the record type.
 
-We’ll use the following example class in the rest of the chapter:
+We’ll use the following example typeclass in the rest of the chapter:
 
 .. coqtop:: none
 
@@ -39,7 +41,7 @@ We’ll use the following example class in the rest of the chapter:
      { eqb : A -> A -> bool ;
        eqb_leibniz : forall x y, eqb x y = true -> x = y }.
 
-This class implements a boolean equality test which is compatible with
+This typeclass implements a boolean equality test which is compatible with
 Leibniz equality on some type. An example implementation is:
 
 .. coqtop:: in
@@ -86,16 +88,16 @@ use alternatively the :attr:`program` attribute to get richer
 facilities for dealing with obligations.
 
 
-Binding classes
----------------
+Binding typeclasses
+-------------------
 
-Once a typeclass is declared, one can use it in class binders:
+Once a typeclass is declared, one can use it in typeclass binders:
 
 .. coqtop:: all
 
    Definition neqb {A} {eqa : EqDec A} (x y : A) := negb (eqb x y).
 
-When one calls a class method, a constraint is generated that is
+When one calls a typeclass method, a constraint is generated that is
 satisfied only in contexts where the appropriate instances can be
 found. In the example above, a constraint ``EqDec A`` is generated and
 satisfied by ``eqa : EqDec A``. In case no satisfying constraint can be
@@ -119,10 +121,10 @@ However, the generalizing binders should be used instead as they have
 particular support for typeclasses:
 
 + They automatically set the maximally implicit status for typeclass
-  arguments, making derived functions as easy to use as class methods.
+  arguments, making derived functions as easy to use as typeclass methods.
   In the example above, ``A`` and ``eqa`` should be set maximally implicit.
-+ They support implicit quantification on partially applied type
-  classes (:ref:`implicit-generalization`). Any argument not given as part of a typeclass
++ They support implicit quantification on partially applied typeclasses
+  (:ref:`implicit-generalization`). Any argument not given as part of a typeclass
   binder will be automatically generalized.
 + They also support implicit quantification on :ref:`superclasses`.
 
@@ -138,7 +140,7 @@ Following the previous example, one can write:
 Here ``A`` is implicitly generalized, and the resulting function is
 equivalent to the one above.
 
-Parameterized Instances
+Parameterized instances
 -----------------------
 
 One can declare parameterized instances as in Haskell simply by giving
@@ -165,7 +167,7 @@ Sections and contexts
 
 To ease developments parameterized by many instances, one can use the
 :cmd:`Context` command to introduce the parameters into the :term:`local context`,
-it works similarly to the command :cmd:`Variable`, except it accepts any
+which works similarly to the command :cmd:`Variable`, except it accepts any
 binding context as an argument, so variables can be implicit, and
 :ref:`implicit-generalization` can be used.
 For example:
@@ -206,8 +208,8 @@ Building hierarchies
 Superclasses
 ~~~~~~~~~~~~
 
-One can also parameterize classes by other classes, generating a
-hierarchy of classes and superclasses. In the same way, we give the
+One can also parameterize typeclasses by other typeclasses, generating a
+hierarchy of typeclasses and superclasses. In the same way, we give the
 superclasses as a binding context:
 
 .. coqtop:: all
@@ -223,7 +225,7 @@ this declaration is equivalent to:
       { le : A -> A -> bool }.
 
 
-This declaration means that any instance of the ``Ord`` class must have
+This declaration means that any instance of the ``Ord`` typeclass must have
 an instance of ``EqDec``. The parameters of the subclass contain at
 least all the parameters of its superclasses in their order of
 appearance (here A is the only one). As we have seen, ``Ord`` is encoded
@@ -236,27 +238,24 @@ superclasses will be done automatically.
 
    Definition le_eqb `{Ord A} (x y : A) := andb (le x y) (le y x).
 
-In some cases, to be able to specify sharing of structures, one may
-want to give explicitly the superclasses. It is is possible to do it
-directly in regular binders, and using the ``!`` modifier in class
-binders. For example:
+To specify sharing of structures, you may want to explicitly specify the
+superclasses. You can do this directly in regular binders, and with the ``!``
+modifier before typeclass binders. For example:
 
 .. coqtop:: all
 
-   Definition lt `{eqa : EqDec A, ! Ord eqa} (x y : A) := andb (le x y) (neqb x y).
+   Definition lt `{eqa : EqDec A, !Ord eqa} (x y : A) := andb (le x y) (neqb x y).
 
-The ``!`` modifier switches the way a binder is parsed back to the usual
-interpretation of Coq. In particular, it uses the implicit arguments
-mechanism if available, as shown in the example.
+The ``!`` modifier switches how Coq interprets a binder. In particular, it uses
+the implicit arguments mechanism if available, as shown in the example.
 
 Substructures
 ~~~~~~~~~~~~~
 
 .. index:: :> (substructure)
 
-Substructures are components of a class which are instances of a class
-themselves. They often arise when using classes for logical
-properties, e.g.:
+Substructures are components of a typeclass which are themselves instances of a
+typeclass. They often arise when using typeclasses for logical properties, e.g.:
 
 .. coqtop:: none
 
@@ -270,9 +269,9 @@ properties, e.g.:
    Class Transitive (A : Type) (R : relation A) :=
      transitivity : forall x y z, R x y -> R y z -> R x z.
 
-This declares singleton classes for reflexive and transitive relations,
+This declares singleton typeclasses for reflexive and transitive relations,
 (see the :ref:`singleton class <singleton-class>` variant for an
-explanation). These may be used as parts of other classes:
+explanation). These may be used as parts of other typeclasses:
 
 .. coqtop:: all
 
@@ -287,11 +286,11 @@ mechanism of ``Structure`` declarations. The implementation simply
 declares each projection as an instance.
 
 One can also declare existing objects or structure projections using
-the Existing Instance command to achieve the same effect.
+the :cmd:`Existing Instance` command to achieve the same effect.
 
 
-Summary of the commands
------------------------
+Command summary
+---------------
 
 .. cmd:: Class @record_definition
          Class @ident_decl {* @binder } {? : @sort } := @constructor
@@ -301,15 +300,17 @@ Summary of the commands
 
    .. _singleton-class:
 
-   The second form declares a *singleton* class with a single method.  This
-   singleton class is a so-called definitional class, represented simply
+   The second form declares a *singleton* typeclass with a single projection.
+   This singleton typeclass is a so-called *definitional typeclass*, represented simply
    as a definition ``ident binders := term`` and whose instances are
-   themselves objects of this type. Definitional classes are not wrapped
+   themselves objects of this type.
+
+   Definitional typeclasses are not wrapped
    inside records, and the trivial projection of an instance of such a
-   class is convertible to the instance itself. This can be useful to
+   typeclass is convertible to the instance itself. This can be useful to
    make instances of existing objects easily and to reduce proof size by
-   not inserting useless projections. The class :term:`constant` itself is
-   declared rigid during resolution so that the class abstraction is
+   not inserting useless trivial projections. The typeclass :term:`constant` itself is
+   declared rigid during resolution so that the typeclass abstraction is
    maintained.
 
    The `>` in
@@ -320,12 +321,16 @@ Summary of the commands
    :attr:`universes(polymorphic)`, :attr:`universes(template)`,
    :attr:`universes(cumulative)` and :attr:`private(matching)` attributes.
 
+   .. note::
+      Don't confuse typeclasses with "coercion classes", described in
+      `implicit coercions<classes-implicit-coercions>`.
+
    When record syntax is used, this command also supports the
    :attr:`projections(primitive)` :term:`attribute`.
 
    .. cmd:: Existing Class @qualid
 
-      This variant declares a class from a previously declared :term:`constant` or
+      Declares a typeclass from a previously declared :term:`constant` or
       inductive definition. No methods or instances are defined.
 
       .. warn:: @ident is already declared as a typeclass
@@ -336,28 +341,28 @@ Summary of the commands
 
    .. warn:: A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17).
 
-      In future versions, :g:`:>` will
-      declare a :ref:`coercion<coercions>`, as it does
-      for other :cmd:`Record` commands.
-      To eliminate the warning,
-      use :g:`::`.
+      In future versions, :g:`:>` in the :n:`@record_definition` or
+      :n:`@constructor` will declare a :ref:`coercion<coercions>`, as
+      it does for other :cmd:`Record` commands. To eliminate the warning, use
+      :g:`::` instead.
 
    .. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
 
-      Using this ``::`` (or deprecated ``:>``) syntax with a right-hand-side that is not itself a Class
-      has no effect (apart from emitting this warning).
+      Using the ``::`` (or deprecated ``:>``) syntax in the :n:`@record_definition`
+      or :n:`@constructor` with a right-hand-side that
+      is not itself a Class has no effect (apart from emitting this warning).
 
 .. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_val } %} | := @term } }
 
-   Declares a typeclass instance named
-   :token:`ident_decl` of the class :n:`@type` with the specified parameters and with
+   Declares a typeclass instance named :token:`ident_decl` of the typeclass
+   :n:`@type` with the specified parameters and with
    fields defined by :token:`field_val`, where each field must be a declared field of
-   the class.
+   the typeclass.
 
-   Adds one or more :token:`binder`\s to declare a parameterized instance. :token:`hint_info`
-   may be used to specify the hint priority, where 0 is the highest priority as for
-   :tacn:`auto` hints. If the priority is not specified, the default is the number
-   of non-dependent binders of the instance.  If :token:`one_pattern` is given, terms
+   Adds one or more :token:`binder`\s to declare a parameterized instance.
+   :token:`hint_info` may be used to specify the hint priority. If the priority
+   is not specified, the default is the number of non-dependent binders of the
+   instance.  If :token:`one_pattern` is given, terms
    matching that pattern will trigger use of the instance.  Otherwise,
    use is triggered based on the conclusion of the type.
 
@@ -409,14 +414,14 @@ Summary of the commands
 
 .. cmd:: Print Typeclasses
 
-   Shows the list of typeclasses.
+   Shows the list of declared typeclasses.
 
 .. tacn:: typeclasses eauto {? {| bfs | dfs | best_effort } } {? @nat_or_var } {? with {+ @ident } }
 
    This proof search tactic uses the resolution engine that is run
-   implicitly during type checking. This tactic uses a different resolution
-   engine than :tacn:`eauto` and :tacn:`auto`. The main differences are the
-   following:
+   implicitly during type checking, known as *typeclass search*. This tactic uses a
+   different resolution
+   engine than :tacn:`eauto` and :tacn:`auto`. The main differences are the following:
 
    + Unlike :tacn:`eauto` and :tacn:`auto`, the resolution is done entirely in
      the proof engine, meaning that backtracking is
@@ -434,12 +439,12 @@ Summary of the commands
      resolution with the local hypotheses use full conversion during
      unification.
 
-   + The mode hints (see :cmd:`Hint Mode`) associated with a class are
+   + The mode hints (see :cmd:`Hint Mode`) associated with a typeclass are
      taken into account by :tacn:`typeclasses eauto`. When a goal
      does not match any of the declared modes for its head (if any),
      instead of failing like :tacn:`eauto`, the goal is suspended and
      resolution proceeds on the remaining goals.
-     If after one run of resolution, there remains suspended goals,
+     If after one run of resolution, there remain suspended goals,
      resolution is launched against on them, until it reaches a fixed
      point when the set of remaining suspended goals does not change.
      Using `solve [typeclasses eauto]` can be used to ensure that
@@ -504,9 +509,9 @@ Summary of the commands
      .. note::
         ``all:once (typeclasses eauto)`` faithfully
         mimics what happens during typeclass resolution when it is called
-        during refinement/type inference, except that *only* declared class
+        during refinement/type inference, except that *only* declared typeclass
         subgoals are considered at the start of resolution during type
-        inference, while ``all`` can select non-class subgoals as well. It might
+        inference, while ``all`` can select non-typeclass subgoals as well. It might
         move to ``all:typeclasses eauto`` in future versions when the
         refinement engine will be able to backtrack.
 
@@ -599,7 +604,7 @@ Settings
 
    Typeclass declarations introduced when this :term:`flag` is set have a
    stricter resolution behavior (the flag is off by default). When
-   looking for unifications of a goal with an instance of this class, we
+   looking for unifications of a goal with an instance of this typeclass, we
    “freeze” all the existentials appearing in the goals, meaning that
    they are considered rigid during unification and cannot be
    instantiated.
@@ -616,7 +621,7 @@ Settings
 
    Typeclass declarations introduced when this :term:`flag` is set have a more
    efficient resolution behavior (the flag is off by default). When a
-   solution to the typeclass goal of this class is found, we never
+   solution to the typeclass goal of this typeclass is found, we never
    backtrack on it, assuming that it is canonical.
 
 .. flag:: Typeclasses Iterative Deepening
