@@ -131,13 +131,14 @@ let declare_ml_to_file file decl =
   let meta_files = !meta_files in
   match decl with
   | [[x]] when List.mem_assoc x legacy_mapping ->
-    Fl.findlib_resolve ~meta_files ~file ~package:"coq-core" ~legacy_name:(Some x) ~plugin_name:(List.assoc x legacy_mapping)
+    None, x                     (* This case only exists for 3rd party packages, should remove in 8.17 *)
   | [[x]] ->
     Error.findlib_name file x
   | [[legacy]; package :: plugin_name] ->
-    Fl.findlib_resolve ~meta_files ~file ~package ~legacy_name:(Some legacy) ~plugin_name
+    None, legacy
   | [package :: plugin_name] ->
-    Fl.findlib_resolve ~meta_files ~file ~package ~legacy_name:None ~plugin_name
+    let meta, cmxs = Fl.findlib_resolve ~meta_files ~file ~package ~plugin_name in
+    Some meta, cmxs
   | plist ->
     CErrors.user_err
       Pp.(str "Failed to resolve plugin " ++

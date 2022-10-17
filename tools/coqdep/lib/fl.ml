@@ -86,11 +86,10 @@ let rec find_plugin meta_file plugin_name path p { Fl_metascanner.pkg_defs ; pkg
     let path = path @ [find_plugin_field "directory" "." c.Fl_metascanner.pkg_defs] in
     find_plugin meta_file plugin_name path ps c
 
-let findlib_resolve ~meta_files ~file ~package ~legacy_name ~plugin_name =
-  match find_parsable_META meta_files package, legacy_name with
-  | None, None -> Error.no_meta file package
-  | None, Some p -> None, p
-  | Some (meta_file, meta), _ ->
+let findlib_resolve ~meta_files ~file ~package ~plugin_name =
+  match find_parsable_META meta_files package with
+  | None -> Error.no_meta file package
+  | Some (meta_file, meta) ->
     (* let meta = parse_META meta_file package in *)
     let path = [find_plugin_field "directory" "." meta.Fl_metascanner.pkg_defs] in
     let path, plug = find_plugin meta_file plugin_name path plugin_name meta in
@@ -101,4 +100,4 @@ let findlib_resolve ~meta_files ~file ~package ~legacy_name ~plugin_name =
       | Some res_file ->
         String.concat "/" path ^ "/" ^ Filename.chop_extension res_file
     in
-    Some meta_file, cmxs_file
+    meta_file, cmxs_file
