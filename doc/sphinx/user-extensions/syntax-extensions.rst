@@ -2527,9 +2527,6 @@ Tactic notations allow customizing the syntax of tactics.
              ``integer``, ``reference``, ``strategy_level``,
              ``strategy_level_or_var``, or ``int_or_var``.
 
-.. cmd:: Format Notation @string @string @string
-   :undocumented:
-
 .. rubric:: Footnotes
 
 .. [#and_or_levels] which are the levels effectively chosen in the current
