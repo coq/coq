@@ -31,7 +31,8 @@ jobs:
 
       - name: Download Platform
         env:
-          PLATFORM: "https://github.com/coq/platform/archive/2022.04.0.zip"
+          # Use a dedicated branch that follows master with some lag (manually updated)
+          PLATFORM: "https://github.com/coq/platform/archive/coq-ci.zip"
         run: |
           .\dev\ci\platform\coq-pf-02-download.bat
 
