@@ -87,6 +87,17 @@ open Core
 let v_unit = Value.of_unit ()
 let v_blk = Valexpr.make_block
 
+let of_relevance = function
+  | Sorts.Relevant -> ValInt 0
+  | Sorts.Irrelevant -> ValInt 1
+
+let to_relevance = function
+  | ValInt 0 -> Sorts.Relevant
+  | ValInt 1 -> Sorts.Irrelevant
+  | _ -> assert false
+
+let relevance = make_repr of_relevance to_relevance
+
 let of_binder b =
   Value.of_ext Value.val_binder b
 
@@ -810,10 +821,19 @@ end
 
 let () = define2 "constr_binder_make" (option ident) constr begin fun na ty ->
   pf_apply begin fun env sigma ->
-  let rel = Retyping.relevance_of_type env sigma ty in
+    match Retyping.relevance_of_type env sigma ty with
+    | rel ->
+      let na = match na with None -> Anonymous | Some id -> Name id in
+      return (Value.of_ext val_binder (Context.make_annot na rel, ty))
+    | exception (Retyping.RetypeError _ as e) ->
+      let e, info = Exninfo.capture e in
+      fail ~info (CErrors.UserError Pp.(str "Not a type."))
+  end
+end
+
+let () = define3 "constr_binder_unsafe_make" (option ident) relevance constr begin fun na rel ty ->
   let na = match na with None -> Anonymous | Some id -> Name id in
   return (Value.of_ext val_binder (Context.make_annot na rel, ty))
-  end
 end
 
 let () = define1 "constr_binder_name" (repr_ext val_binder) begin fun (bnd, _) ->

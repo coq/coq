@@ -96,8 +96,14 @@ End Unsafe.
 
 Module Binder.
 
+Ltac2 Type relevance := [ Relevant | Irrelevant ].
+
 Ltac2 @ external make : ident option -> constr -> binder := "ltac2" "constr_binder_make".
-(** Create a binder given the name and the type of the bound variable. *)
+(** Create a binder given the name and the type of the bound variable.
+    Fails if the type is not a type in the current goal. *)
+
+Ltac2 @ external unsafe_make : ident option -> relevance -> constr -> binder := "ltac2" "constr_binder_unsafe_make".
+(** Create a binder given the name and the type and relevance of the bound variable. *)
 
 Ltac2 @ external name : binder -> ident option := "ltac2" "constr_binder_name".
 (** Retrieve the name of a binder. *)
