@@ -46,7 +46,7 @@ let get_const_prefix env c =
 (* TODO: make the VM and native agree *)
 let can_subst lam =
   match lam with
-  | Lrel _ | Lvar _ | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Llam _
+  | Lrel _ | Lvar _ | Lconst _ | Lval _ | Lsort _ | Lind _ | Llam _
   | Lmeta _ | Levar _ -> true
   | _ -> false
 
