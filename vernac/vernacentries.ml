@@ -2083,8 +2083,8 @@ let vernac_print ~pstate =
     dump_global qid;
     Prettyp.print_name env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
-  | PrintClasses -> Prettyp.print_classes()
-  | PrintTypeClasses -> Prettyp.print_typeclasses()
+  | PrintClasses -> Prettyp.print_classes ()
+  | PrintTypeclasses -> Prettyp.print_typeclasses ()
   | PrintInstances c -> Prettyp.print_instances (smart_global c)
   | PrintCoercions -> Prettyp.print_coercions ()
   | PrintNotation (entry, ntnstr) -> Prettyp.print_notation env sigma entry ntnstr

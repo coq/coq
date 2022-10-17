@@ -578,8 +578,8 @@ let pr_printable = function
     keyword "Print Graph"
   | PrintClasses ->
     keyword "Print Classes"
-  | PrintTypeClasses ->
-    keyword "Print TypeClasses"
+  | PrintTypeclasses ->
+    keyword "Print Typeclasses"
   | PrintInstances qid ->
     keyword "Print Instances" ++ spc () ++ pr_smart_global qid
   | PrintCoercions ->

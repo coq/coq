@@ -43,7 +43,7 @@ type printable =
   | PrintName of qualid or_by_notation * UnivNames.univ_name_list option
   | PrintGraph
   | PrintClasses
-  | PrintTypeClasses
+  | PrintTypeclasses
   | PrintInstances of qualid or_by_notation
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr

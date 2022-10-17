@@ -1035,7 +1035,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Debug"; IDENT "GC" -> { PrintDebugGC }
       | IDENT "Graph" -> { PrintGraph }
       | IDENT "Classes" -> {  PrintClasses }
-      | IDENT "TypeClasses" -> { PrintTypeClasses }
+      | IDENT "Typeclasses" -> { PrintTypeclasses }
       | IDENT "Instances"; qid = smart_global -> { PrintInstances qid }
       | IDENT "Coercions" -> { PrintCoercions }
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr ->
