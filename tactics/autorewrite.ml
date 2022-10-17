@@ -12,7 +12,6 @@ open Equality
 open Names
 open Pp
 open Constr
-open Termops
 open CErrors
 open Util
 open Mod_subst
@@ -273,14 +272,13 @@ let filtering env sigma cv_pb c1 c2 =
   try let () = aux env cv_pb c1 c2 in true with CannotFilter -> false
 
 let align_prod_letin sigma c a =
-  let open Termops in
   let (lc,_) = EConstr.decompose_prod_assum sigma c in
   let (l,a) = EConstr.decompose_prod_assum sigma a in
   let lc = List.length lc in
   let n = List.length l in
   if n < lc then invalid_arg "align_prod_letin";
   let l1 = CList.firstn lc l in
-  n - lc, it_mkProd_or_LetIn a l1
+  n - lc, EConstr.it_mkProd_or_LetIn a l1
 
   let decomp pat = match pat_of_constr pat with
   | None -> Dn.Everything
@@ -524,7 +522,7 @@ let decompose_applied_relation env sigma c ctype left2right =
     | Some c -> Some { hyp_pat = c; hyp_ty = ctype }
     | None ->
         let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
-        let ctype = it_mkProd_or_LetIn t' ctx in
+        let ctype = EConstr.it_mkProd_or_LetIn t' ctx in
         match find_rel ctype with
         | Some c -> Some { hyp_pat = c; hyp_ty = ctype }
         | None -> None

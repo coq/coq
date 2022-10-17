@@ -31,17 +31,38 @@ val lookup_rel_id : Id.t -> ('c, 't) Context.Rel.pt -> int * 'c option * 't
 val rel_vect : int -> int -> Constr.constr array
 val rel_list : int -> int -> constr list
 
-(** iterators/destructors on terms *)
+(** Prod/Lambda/LetIn destructors on econstr *)
+
 val mkProd_or_LetIn : rel_declaration -> types -> types
+  [@@ocaml.deprecated "Use synonymous [EConstr.mkProd_or_LetIn]."]
+
 val mkProd_wo_LetIn : rel_declaration -> types -> types
+  [@@ocaml.deprecated "Use synonymous [EConstr.mkProd_wo_LetIn]."]
+
 val it_mkProd : types -> (Name.t Context.binder_annot * types) list -> types
+  [@@ocaml.deprecated "Use synonymous [EConstr.it_mkProd]."]
+
 val it_mkLambda : constr -> (Name.t Context.binder_annot * types) list -> constr
+  [@@ocaml.deprecated "Use synonymous [EConstr.it_mkLambda]."]
+
 val it_mkProd_or_LetIn : types -> rel_context -> types
+  [@@ocaml.deprecated "Use synonymous [EConstr.it_mkProd_or_LetIn]."]
+
 val it_mkProd_wo_LetIn : types -> rel_context -> types
+  [@@ocaml.deprecated "Use synonymous [EConstr.it_mkProd_wo_LetIn]."]
+
 val it_mkLambda_or_LetIn : Constr.constr -> Constr.rel_context -> Constr.constr
+  [@@ocaml.deprecated "Use synonymous [Term.it_mkLambda_or_LetIn]."]
+
 val it_mkNamedProd_or_LetIn : Evd.evar_map -> types -> named_context -> types
-val it_mkNamedProd_wo_LetIn : Constr.types -> Constr.named_context -> Constr.types
+  [@@ocaml.deprecated "Use synonymous [EConstr.it_mkNamedProd_or_LetIn]."]
+
 val it_mkNamedLambda_or_LetIn : Evd.evar_map -> constr -> named_context -> constr
+  [@@ocaml.deprecated "Use synonymous [EConstr.it_mkNamedLambda_or_LetIn]."]
+
+(** Prod/Lambda/LetIn destructors on constr *)
+
+val it_mkNamedProd_wo_LetIn : Constr.types -> Constr.named_context -> Constr.types
 
 (* Ad hoc version reinserting letin, assuming the body is defined in
    the context where the letins are expanded *)

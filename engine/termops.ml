@@ -491,28 +491,21 @@ let lookup_rel_id id sign =
   in
   lookrec 1 sign
 
-(* Constructs either [forall x:t, c] or [let x:=b:t in c] *)
 let mkProd_or_LetIn = EConstr.mkProd_or_LetIn
-(* Constructs either [forall x:t, c] or [c] in which [x] is replaced by [b] *)
-let mkProd_wo_LetIn decl c =
-  let open EConstr in
-  let open RelDecl in
-  match decl with
-    | LocalAssum (na,t) -> mkProd (na, t, c)
-    | LocalDef (_,b,_) -> Vars.subst1 b c
+let mkProd_wo_LetIn = EConstr.mkProd_wo_LetIn
 
-let it_mkProd init = List.fold_left (fun c (n,t)  -> EConstr.mkProd (n, t, c)) init
-let it_mkLambda init = List.fold_left (fun c (n,t)  -> EConstr.mkLambda (n, t, c)) init
+let it_mkProd = EConstr.it_mkProd
+let it_mkLambda = EConstr.it_mkLambda
 
-let it_named_context_quantifier f ~init =
-  List.fold_left (fun c d -> f d c) init
+let it_mkProd_or_LetIn = EConstr.it_mkProd_or_LetIn
+let it_mkProd_wo_LetIn = EConstr.it_mkProd_wo_LetIn
+let it_mkLambda_or_LetIn = Term.it_mkLambda_or_LetIn
+let it_mkNamedProd_or_LetIn = EConstr.it_mkNamedProd_or_LetIn
+let it_mkNamedLambda_or_LetIn = EConstr.it_mkNamedLambda_or_LetIn
 
-let it_mkProd_or_LetIn init = it_named_context_quantifier mkProd_or_LetIn ~init
-let it_mkProd_wo_LetIn init = it_named_context_quantifier mkProd_wo_LetIn ~init
-let it_mkLambda_or_LetIn init = it_named_context_quantifier mkLambda_or_LetIn ~init
-let it_mkNamedProd_or_LetIn sigma init = it_named_context_quantifier (EConstr.mkNamedProd_or_LetIn sigma) ~init
+(* On Constr *)
+let it_named_context_quantifier f ~init = List.fold_left (fun c d -> f d c) init
 let it_mkNamedProd_wo_LetIn init = it_named_context_quantifier mkNamedProd_wo_LetIn ~init
-let it_mkNamedLambda_or_LetIn sigma init = it_named_context_quantifier (EConstr.mkNamedLambda_or_LetIn sigma) ~init
 
 let it_mkLambda_or_LetIn_from_no_LetIn c decls =
   let open RelDecl in

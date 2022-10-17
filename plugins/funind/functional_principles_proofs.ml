@@ -13,12 +13,12 @@ open CErrors
 open Util
 open Constr
 open Context
+open Termops
 open EConstr
 open Vars
 open Namegen
 open Names
 open Pp
-open Termops
 open Tactics
 open Indfun_common
 open Libnames

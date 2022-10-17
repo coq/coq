@@ -1418,7 +1418,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
             (body, typ, univs, opaque)
           with Found_type i ->
             let princ_body =
-              Termops.it_mkLambda_or_LetIn (Constr.mkFix ((idxs, i), decl)) ctxt
+              Term.it_mkLambda_or_LetIn (Constr.mkFix ((idxs, i), decl)) ctxt
             in
             (princ_body, Some scheme_type, univs, opaque))
         other_fun_princ_types
