@@ -145,7 +145,6 @@ type definition_expr =
 
 type notation_format =
   | TextFormat of lstring
-  | ExtraFormat of string * lstring
 
 type syntax_modifier =
   | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level
@@ -351,7 +350,6 @@ type nonrec vernac_expr =
   | VernacNotation of
       infix_flag * constr_expr * (lstring * syntax_modifier CAst.t list) *
       scope_name option
-  | VernacNotationAddFormat of string * string * string
   | VernacDeclareCustomEntry of string
 
   (* Gallina *)

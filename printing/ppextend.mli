@@ -41,14 +41,12 @@ type unparsing =
   | UnpCut of ppcut
 
 type unparsing_rule = unparsing list
-type extra_unparsing_rules = (string * string) list
 
 val unparsing_eq : unparsing -> unparsing -> bool
 
 type notation_printing_rules = {
   notation_printing_unparsing : unparsing_rule;
   notation_printing_level : entry_level;
-  notation_printing_extra : extra_unparsing_rules;
 }
 
 type generic_notation_printing_rules = {
@@ -62,5 +60,3 @@ val has_generic_notation_printing_rule : notation -> bool
 val find_generic_notation_printing_rule : notation -> generic_notation_printing_rules
 val find_specific_notation_printing_rule : specific_notation -> notation_printing_rules
 val find_notation_printing_rule : notation_with_optional_scope option -> notation -> notation_printing_rules
-val find_notation_extra_printing_rules : notation_with_optional_scope option -> notation -> extra_unparsing_rules
-val add_notation_extra_printing_rule : notation -> string -> string -> unit

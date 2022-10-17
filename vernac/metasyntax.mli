@@ -20,8 +20,6 @@ open Environ
 val add_notation : local:bool -> infix:bool -> Deprecation.t option -> env -> constr_expr ->
   (lstring * syntax_modifier CAst.t list) -> scope_name option -> unit
 
-val add_notation_extra_printing_rule : string -> string -> string -> unit
-
 (** Declaring scopes, delimiter keys and default scopes *)
 
 val declare_scope : locality_flag -> scope_name -> unit

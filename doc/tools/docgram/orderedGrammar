@@ -1106,7 +1106,6 @@ command: [
 | "Infix" string ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" ) OPT [ ":" scope_name ]
 | "Notation" ident LIST0 ident ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Notation" string ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" ) OPT [ ":" scope_name ]
-| "Format" "Notation" string string string
 | "Reserved" "Infix" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Reserved" "Notation" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Eval" red_expr "in" term
@@ -1555,8 +1554,8 @@ syntax_modifier: [
 | "right" "associativity"
 | "no" "associativity"
 | "only" "parsing"
+| "format" string
 | "only" "printing"
-| "format" string OPT string
 ]
 
 explicit_subentry: [

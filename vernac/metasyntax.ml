@@ -822,8 +822,7 @@ let check_reserved_format ntn rules rules' =
   try
     let { notation_printing_reserved = reserved; notation_printing_rules = generic_rules } = rules in
     if reserved &&
-       (not (List.for_all2eq unparsing_eq rules'.notation_printing_unparsing generic_rules.notation_printing_unparsing)
-       || rules'.notation_printing_extra <> generic_rules.notation_printing_extra)
+       (not (List.for_all2eq unparsing_eq rules'.notation_printing_unparsing generic_rules.notation_printing_unparsing))
     then
       warn_incompatible_format (None,ntn)
   with Not_found -> ()
@@ -832,8 +831,7 @@ let specific_format_to_declare (specific,ntn as specific_ntn) rules =
   try
     let specific_rules = Ppextend.find_specific_notation_printing_rule specific_ntn in
     if not (List.for_all2eq unparsing_eq rules.notation_printing_unparsing specific_rules.notation_printing_unparsing)
-       || rules.notation_printing_extra <> specific_rules.notation_printing_extra then
-      (warn_incompatible_format (Some specific,ntn); true)
+    then (warn_incompatible_format (Some specific,ntn); true)
     else false
   with Not_found -> true
 
@@ -925,7 +923,6 @@ type notation_modifier = {
 
   (* common to syn_data below *)
   format        : lstring option;
-  extra         : (string * string) list;
 }
 
 let default = {
@@ -933,7 +930,6 @@ let default = {
   level         = None;
   etyps         = [];
   format        = None;
-  extra         = [];
 }
 
 end
@@ -1017,7 +1013,6 @@ type notation_main_data = {
   deprecation  : Deprecation.t option;
   entry        : notation_entry;
   format       : unparsing Loc.located list option;
-  extra        : (string * string) list;
   itemscopes  : (Id.t * scope_name) list;
 }
 
@@ -1061,11 +1056,6 @@ let set_format ?loc main_data format =
   let format = if main_data.onlyparsing then (warn_irrelevant_format ?loc (); None) else Some (parse_format format) in
   { main_data with format }
 
-let set_extra_format ?loc main_data (k,s) =
-  if List.mem_assoc k main_data.extra then user_err ?loc Pp.(str "A format for " ++ str k ++ str " is given more than once.");
-  let extra = if main_data.onlyparsing then (warn_irrelevant_format ?loc (); main_data.extra) else (k,s.CAst.v)::main_data.extra in
-  { main_data with extra }
-
 let set_item_scope ?loc main_data ids sc =
   let itemscopes = List.map (fun id -> (Id.of_string id,sc)) ids @ main_data.itemscopes in
   match List.duplicates (fun (id1,_) (id2,_) -> Id.equal id1 id2) itemscopes  with
@@ -1075,7 +1065,7 @@ let set_item_scope ?loc main_data ids sc =
 let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
   let set (main_data,rest) = CAst.with_loc_val (fun ?loc -> function
     | SetOnlyParsing ->
-       if not (Option.is_empty main_data.format && List.is_empty main_data.extra) then
+       if not (Option.is_empty main_data.format) then
          (warn_only_parsing_discarded_format ?loc (); (main_data, rest))
        else
          (set_onlyparsing ?loc ~reserved main_data,rest)
@@ -1085,14 +1075,13 @@ let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
     | SetEntryType _ when infix -> user_err ?loc Pp.(str "Unexpected entry type in infix notation.")
     | SetItemLevel _ when infix -> user_err ?loc Pp.(str "Unexpected entry level in infix notation.")
     | SetFormat (TextFormat s) when not abbrev -> (set_format ?loc main_data s, rest)
-    | SetFormat (ExtraFormat (k,s)) when not abbrev -> (set_extra_format ?loc main_data (k,s), rest)
     | SetItemScope (ids,sc) -> (set_item_scope ?loc main_data ids sc, rest)
     | modif -> (main_data,(CAst.make ?loc modif)::rest))
   in
   let main_data =
     {
       onlyparsing = false; onlyprinting = false; deprecation;
-      entry = InConstrEntry; format = None; extra = []; itemscopes = []
+      entry = InConstrEntry; format = None; itemscopes = []
     }
   in
   List.fold_left set (main_data,[]) mods
@@ -1589,7 +1578,6 @@ let make_generic_printing_rules reserved main_data ntn sd =
         {
           notation_printing_unparsing = rule;
           notation_printing_level = level;
-          notation_printing_extra  = main_data.extra;
         }
     }
   in
@@ -1621,23 +1609,17 @@ let make_syntax_rules reserved main_data ntn sd =
 (**********************************************************************)
 (* Main entry point for building specific printing rules              *)
 
-let merge_extra extra1 extra2 =
-  List.fold_left (fun extras (k,s) -> (k,s) :: List.remove_assoc k extras)
-    extra1 extra2
-
-let make_specific_printing_rules etyps symbols level pp_rule (format,new_extra) =
+let make_specific_printing_rules etyps symbols level pp_rule format =
   match level with
   | None -> None
   | Some (_,level,_) ->
-  let old_extra = match pp_rule with Some { notation_printing_rules = { notation_printing_extra } } -> notation_printing_extra | None -> [] in
-  match format, new_extra, pp_rule with
-    | None, [], Some _ when not (has_implicit_format symbols) -> None
+  match format, pp_rule with
+    | None, Some _ when not (has_implicit_format symbols) -> None
     | _ ->
        Some
          {
            notation_printing_unparsing = make_pp_rule level (etyps,symbols) format;
            notation_printing_level = level;
-           notation_printing_extra = merge_extra old_extra new_extra;
          }
 
 (**********************************************************************)
@@ -1676,7 +1658,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     Some sy.synext_level, List.combine mainvars sy.synext_nottyps, main_data, sy.synext_notprint
   in
   (* Declare interpretation *)
-  let sy_pp_rules = make_specific_printing_rules i_typs symbols level sy_pp_rules (main_data.format, main_data.extra) in
+  let sy_pp_rules = make_specific_printing_rules i_typs symbols level sy_pp_rules main_data.format in
   let path = (Lib.library_dp(), Lib.current_dirpath true) in
   let df' = ntn, (path,df) in
   let i_vars = make_internalization_vars recvars i_typs in
@@ -1793,15 +1775,6 @@ let add_notation ~local ~infix deprecation env c ({CAst.loc;v=df},modifiers) sc 
   Lib.add_leaf (inNotation notation);
   (* Dump the location of the notation for coqdoc *)
   Dumpglob.dump_notation (CAst.make ?loc ntn) sc true
-
-(* Main entry point for Format Notation *)
-
-let add_notation_extra_printing_rule df k v =
-  let notk =
-    let { symbols }, isnumeral = analyze_notation_tokens ~onlyprinting:true ~infix:false InConstrEntry df in
-    if isnumeral then user_err (str "Notations for numbers are primitive.");
-    make_notation_key InConstrEntry symbols in
-  add_notation_extra_printing_rule notk k v
 
 (**********************************************************************)
 (* Scopes, delimiters and classes bound to scopes                     *)

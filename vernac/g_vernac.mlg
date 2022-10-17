@@ -1226,8 +1226,6 @@ GRAMMAR EXTEND Gram
          modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
            { VernacNotation (false,c,(s,modl),sc) }
-     | IDENT "Format"; IDENT "Notation"; n = STRING; s = STRING; fmt = STRING ->
-           { VernacNotationAddFormat (n,s,fmt) }
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring; l = syntax_modifiers ->
            { VernacReservedNotation (true,(s,l)) }
@@ -1252,11 +1250,7 @@ GRAMMAR EXTEND Gram
       | IDENT "no"; IDENT "associativity" -> { SetAssoc Gramlib.Gramext.NonA }
       | IDENT "only"; IDENT "printing" -> { SetOnlyPrinting }
       | IDENT "only"; IDENT "parsing" -> { SetOnlyParsing }
-      | IDENT "format"; s1 = [s = STRING -> { CAst.make ~loc s } ];
-                        s2 = OPT [s = STRING -> { CAst.make ~loc s } ] ->
-          { begin match s1, s2 with
-          | { CAst.v = k }, Some s -> SetFormat (ExtraFormat (k,s))
-          | s, None -> SetFormat (TextFormat s) end }
+      | IDENT "format"; s = lstring -> { SetFormat (TextFormat s) }
       | x = IDENT; ","; l = LIST1 IDENT SEP ","; v =
           [ "at"; lev = level -> { fun x l -> SetItemLevel (x::l,None,lev) }
           | "in"; IDENT "scope"; k = IDENT -> { fun x l -> SetItemScope(x::l,k) } ] -> { v x l }
