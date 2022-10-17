@@ -691,7 +691,7 @@ let perform_notation syn st =
     ([Pcoq.ExtendRuleReinit (Pltac.ltac2_expr, reinit, rule)], st)
 
 let ltac2_notation =
-  Pcoq.create_grammar_command "ltac2-notation" perform_notation
+  Pcoq.create_grammar_command "ltac2-notation" { gext_fun = perform_notation; gext_eq = (==) (* FIXME *) }
 
 let cache_synext syn =
   Pcoq.extend_grammar_command ltac2_notation syn

@@ -659,9 +659,9 @@ let drop_prefix cmp p l =
   in
   drop_prefix_rec (p,l)
 
-let share_tails l1 l2 =
+let share_tails eq l1 l2 =
   let rec shr_rev acc = function
-    | (x1 :: l1, x2 :: l2) when x1 == x2 -> shr_rev (x1 :: acc) (l1,l2)
+    | (x1 :: l1, x2 :: l2) when eq x1 x2 -> shr_rev (x1 :: acc) (l1,l2)
     | (l1, l2) -> (List.rev l1, List.rev l2, acc)
   in
   shr_rev [] (List.rev l1, List.rev l2)

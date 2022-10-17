@@ -322,7 +322,10 @@ let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
 
 module GramState = Store.Make ()
 
-type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
+type 'a grammar_extension = {
+  gext_fun : 'a -> GramState.t -> extend_rule list * GramState.t;
+  gext_eq : 'a -> 'a -> bool;
+}
 
 module GrammarCommand = Dyn.Make ()
 module GrammarInterp = struct type 'a t = 'a grammar_extension end
@@ -330,7 +333,10 @@ module GrammarInterpMap = GrammarCommand.Map(GrammarInterp)
 
 let grammar_interp = ref GrammarInterpMap.empty
 
-type ('a, 'b) entry_extension = 'a -> GramState.t -> string list * GramState.t
+type ('a, 'b) entry_extension = {
+  eext_fun : 'a -> GramState.t -> string list * GramState.t;
+  eext_eq : 'a -> 'a -> bool;
+}
 
 module EntryInterp = struct type _ t = Ex : ('a, 'b) entry_extension -> ('a * 'b) t end
 module EntryInterpMap = EntryCommand.Map(EntryInterp)
@@ -368,7 +374,7 @@ let extend_grammar_command tag g =
   | [] -> GramState.empty
   | (_, st) :: _ -> st
   in
-  let (rules, st) = modify g grammar_state in
+  let (rules, st) = modify.gext_fun g grammar_state in
   let () = List.iter iter_extend_sync rules in
   let nb = List.length rules in
   grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
@@ -379,7 +385,7 @@ let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) 
   | [] -> GramState.empty
   | (_, st) :: _ -> st
   in
-  let (names, st) = modify g grammar_state in
+  let (names, st) = modify.eext_fun g grammar_state in
   let entries = List.map (fun name -> Entry.make name) names in
   let iter name e =
     camlp5_state := ByEntry (tag, name, e) :: !camlp5_state;
@@ -430,10 +436,27 @@ type frozen_t =
 let freeze ~marshallable : frozen_t =
   (!grammar_stack, CLexer.get_keyword_state ())
 
+let eq_grams (g1, _) (g2, _) = match g1, g2 with
+| GramExt (_, GrammarCommand.Dyn (t1, v1)), GramExt (_, GrammarCommand.Dyn (t2, v2)) ->
+  begin match GrammarCommand.eq t1 t2 with
+  | None -> false
+  | Some Refl ->
+    let data = GrammarInterpMap.find t1 !grammar_interp in
+    data.gext_eq v1 v2
+  end
+| EntryExt (_, t1, v1), EntryExt (_, t2, v2) ->
+  begin match EntryCommand.eq t1 t2 with
+  | None -> false
+  | Some Refl ->
+    let EntryInterp.Ex data = EntryInterpMap.find t1 !entry_interp in
+    data.eext_eq v1 v2
+  end
+| (GramExt _, EntryExt _) | (EntryExt _, GramExt _) -> false
+
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
 let factorize_grams l1 l2 =
-  if l1 == l2 then ([], [], l1) else List.share_tails l1 l2
+  if l1 == l2 then ([], [], l1) else List.share_tails eq_grams l1 l2
 
 let rec number_of_entries accu = function
 | [] -> accu

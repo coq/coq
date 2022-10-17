@@ -225,7 +225,10 @@ type extend_rule =
 | ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
 | ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
 
-type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
+type 'a grammar_extension = {
+  gext_fun : 'a -> GramState.t -> extend_rule list * GramState.t;
+  gext_eq : 'a -> 'a -> bool;
+}
 (** Grammar extension entry point. Given some ['a] and a current grammar state,
     such a function must produce the list of grammar extensions that will be
     applied in the same order and kept synchronized w.r.t. the summary, together
@@ -244,7 +247,10 @@ type ('a, 'b) entry_command
 (** Type of synchronized entry creation. The ['a] type should be
     marshallable. *)
 
-type ('a, 'b) entry_extension = 'a -> GramState.t -> string list * GramState.t
+type ('a, 'b) entry_extension = {
+  eext_fun : 'a -> GramState.t -> string list * GramState.t;
+  eext_eq : 'a -> 'a -> bool;
+}
 (** Entry extension entry point. Given some ['a] and a current grammar state,
     such a function must produce the list of entry extensions that will be
     created and kept synchronized w.r.t. the summary, together
