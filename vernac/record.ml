@@ -45,7 +45,7 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
     List.fold_left2
       (fun (env, sigma, uimpls, params, impls_env) no d ->
          let sigma, (i, b, t), impl = match d with
-           | Vernacexpr.AssumExpr({CAst.loc;v=id},bl,t) ->
+           | Vernacexpr.AssumExpr({CAst.v=id},bl,t) ->
              (* Temporary compatibility with the type-classes heuristics *)
              (* which are applied after the interpretation of bl and *)
              (* before the one of t otherwise (see #13166) *)
@@ -53,7 +53,7 @@ let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
              let sigma, t, impl =
                ComAssumption.interp_assumption ~program_mode:false env sigma impls_env [] t in
              sigma, (id, None, t), impl
-           | Vernacexpr.DefExpr({CAst.loc;v=id},bl,b,t) ->
+           | Vernacexpr.DefExpr({CAst.v=id},bl,b,t) ->
              let sigma, (b, t), impl =
                ComDefinition.interp_definition ~program_mode:false env sigma impls_env bl None b t in
              let t = match t with Some t -> t | None -> Retyping.get_type_of env sigma b in
@@ -97,7 +97,7 @@ let error_parameters_must_be_named bk {CAst.loc; v=name} =
 let check_parameters_must_be_named = function
   | CLocalDef (b, _, _) ->
     error_parameters_must_be_named default_binder_kind b
-  | CLocalAssum (ls, bk, ce) ->
+  | CLocalAssum (ls, bk, _ce) ->
     List.iter (error_parameters_must_be_named bk) ls
   | CLocalPattern {CAst.loc} ->
     Loc.raise ?loc (Gramlib.Stream.Error "pattern with quote not allowed in record parameters")
@@ -147,11 +147,11 @@ module Data = struct
   }
 end
 
-let build_type_telescope newps env0 (sigma, template) { DataI.arity; _ } = match arity with
+let build_type_telescope newps env0 sigma { DataI.arity; _ } = match arity with
   | None ->
     let uvarkind = Evd.univ_flexible_alg in
     let sigma, s = Evd.new_sort_variable uvarkind sigma in
-    (sigma, template), (EConstr.mkSort s, s)
+    sigma, (EConstr.mkSort s, s)
   | Some t ->
     let env = EConstr.push_rel_context newps env0 in
     let poly =
@@ -167,10 +167,10 @@ let build_type_telescope newps env0 (sigma, template) { DataI.arity; _ } = match
           match Evd.is_sort_variable sigma s' with
           | Some l ->
             let sigma = Evd.make_flexible_variable sigma ~algebraic:true l in
-            (sigma, template), (s, s')
+            sigma, (s, s')
           | None ->
-            (sigma, false), (s, s')
-        else (sigma, false), (s, s'))
+            sigma, (s, s')
+        else sigma, (s, s'))
      | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
 
 type tc_result =
@@ -192,10 +192,10 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let env0 = if not poly && is_template then Environ.set_universes_lbound env0 UGraph.Bound.Prop else env0 in
   let sigma, decl, variances = Constrintern.interp_cumul_univ_decl_opt env0 udecl in
   let () = List.iter check_parameters_must_be_named ps in
-  let sigma, (impls_env, ((env1,newps), imps)) =
+  let sigma, (impls_env, ((_env1,newps), imps)) =
     Constrintern.interp_context_evars ~program_mode:false env0 sigma ps in
-  let (sigma, template), typs =
-    List.fold_left_map (build_type_telescope newps env0) (sigma, true) records in
+  let sigma, typs =
+    List.fold_left_map (build_type_telescope newps env0) sigma records in
   let arities = List.map (fun (typ, _) -> EConstr.it_mkProd_or_LetIn typ newps) typs in
   let relevances = List.map (fun (_,s) -> Sorts.relevance_of_sort s) typs in
   let fold accu { DataI.name; _ } arity r =
@@ -208,10 +208,10 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   in
   let ninds = List.length arities in
   let nparams = List.length newps in
-  let fold sigma { DataI.nots; fs; _ } arity =
+  let fold sigma { DataI.nots; fs; _ } =
     interp_fields_evars env_ar sigma ~ninds ~nparams impls_env nots fs
   in
-  let (sigma, data) = List.fold_left2_map fold sigma records arities in
+  let (sigma, data) = List.fold_left_map fold sigma records in
   let sigma =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
   let fold sigma (typ, sort) (_, newfs) =
@@ -264,7 +264,7 @@ let warning_or_error ~info flags indsp err =
            strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
            prlist_with_sep pr_comma Id.print projs ++ spc () ++ str have ++
            strbrk " not defined.")
-    | BadTypedProj (fi,ctx,te) ->
+    | BadTypedProj (fi,_ctx,te) ->
         match te with
           | ElimArity (_,_,_,Some (_,_,_,NonInformativeToInformative)) ->
               (Id.print fi ++
@@ -399,7 +399,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
     | None ->
       let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
       match decl with
-      | LocalDef (_,ci,_) when primitive -> body
+      | LocalDef _ when primitive -> body
       | _ -> applist (mkConstU (kn,uinstance),proj_args)
   in
   let refi = GlobRef.ConstRef kn in
@@ -465,7 +465,7 @@ let declare_projections indsp univs ?(kind=Decls.StructureComponent) inhabitant_
 
 open Typeclasses
 
-let load_structure i structure = Structure.register structure
+let load_structure _ structure = Structure.register structure
 
 let cache_structure o = load_structure 1 o
 
@@ -481,7 +481,7 @@ let inStruc : Structure.t -> Libobject.obj =
     cache_function = cache_structure;
     load_function = load_structure;
     subst_function = subst_structure;
-    classify_function = (fun x -> Substitute);
+    classify_function = (fun _ -> Substitute);
     discharge_function = discharge_structure;
     rebuild_function = rebuild_structure; }
 
@@ -556,7 +556,7 @@ module Ast = struct
     ; default_inhabitant_id : Id.t option
     }
 
-  let to_datai { name; is_coercion; cfs; idbuild; sort } =
+  let to_datai { name; cfs; sort; _ } =
     let fs = List.map fst cfs in
     { DataI.name = name.CAst.v
     ; arity = sort
@@ -711,7 +711,7 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
     | UState.Polymorphic_entry uctx -> true, Entries.Polymorphic_entry uctx
   in
   let ntypes = List.length data in
-  let mk_block i { Data.id; idbuild; rdata = { DataR.min_univ; arity; fields; _ }; _ } =
+  let mk_block i { Data.id; idbuild; rdata = { DataR.arity; fields; _ }; _ } =
     let nfields = List.length fields in
     let args = Context.Rel.instance_list mkRel nfields params in
     let ind = applist (mkRel (ntypes - i + nparams + nfields), args) in
@@ -743,8 +743,8 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   in
   let globnames, global_univ_decls = match ind_univs with
   | Monomorphic_ind_entry -> (univs, ubinders), Some global_univ_decls
-  | Template_ind_entry uctx -> (univs, ubinders), Some global_univ_decls
-  | Polymorphic_ind_entry uctx -> (univs, UnivNames.empty_binders), None
+  | Template_ind_entry _ -> (univs, ubinders), Some global_univ_decls
+  | Polymorphic_ind_entry _ -> (univs, UnivNames.empty_binders), None
   in
   let univs = ind_univs in
   let variance = ComInductive.variance_of_entry ~cumulative ~variances univs in
@@ -773,7 +773,7 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj
   in
-  let map i { Data.is_coercion; proj_flags; rdata = { DataR.implfs; fields; _}; inhabitant_id; id; _ } =
+  let map i { Data.is_coercion; proj_flags; rdata = { DataR.implfs; fields; _}; inhabitant_id; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
     let projections = declare_projections rsp (projunivs,ubinders) ~kind:projections_kind inhabitant_id proj_flags implfs fields in
@@ -785,9 +785,8 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
   in
   List.mapi map records, []
 
-let get_class_params = function
-  | [{ Data.id; idbuild; rdata; is_coercion; proj_flags; inhabitant_id }] ->
-    id, idbuild, rdata, is_coercion, proj_flags, inhabitant_id
+let get_class_params : Data.t list -> Data.t = function
+  | [data] -> data
   | _ ->
     CErrors.user_err (str "Mutual definitional classes are not supported.")
 
@@ -795,7 +794,7 @@ let get_class_params = function
 (* [data] is a list with a single [Data.t] with a single field (in [Data.rdata])
    and [Data.is_coercion] must be [NoCoercion] *)
 let declare_class_constant ~univs paramimpls params data =
-  let id, _, rdata, is_coercion, proj_flags, inhabitant_id = get_class_params data in
+  let {Data.id; rdata; is_coercion; proj_flags; inhabitant_id} = get_class_params data in
   assert (not is_coercion);  (* should be ensured by caller *)
   let implfs = rdata.DataR.implfs in
   let field, binder, proj_name, proj_flags = match rdata.DataR.fields, proj_flags with
@@ -869,7 +868,7 @@ let declare_class_constant ~univs paramimpls params data =
 
   *)
 let declare_class ~univs params inds def data =
-  let id, idbuild, rdata, is_coercion, _, inhabitant_id = get_class_params data in
+  let { Data.rdata } = get_class_params data in
   let fields = rdata.DataR.fields in
   let map ind =
     let map decl y = {
