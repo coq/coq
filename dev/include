@@ -2,7 +2,7 @@
 
 (* Typical usage :
 
-   $ dune exec -- dev/shim/coqbyte-prelude
+   $ dune exec -- dev/shim/coqbyte
    Coq < Drop.
    # #use "include";;
 

@@ -46,7 +46,7 @@
   "Setup `compile-command' for Coq development."
   (let ((dir (coqdev-default-directory)))
     (when dir (setq-local compile-command (concat "cd " (shell-quote-argument dir) "
-dune build @check # coq-core.install dev/shim/coqtop-prelude")))))
+dune build @check # coq-core.install dev/shim/coqtop")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-compile-command)
 
 (defvar camldebug-command-name) ; from camldebug.el (caml package)
@@ -84,7 +84,7 @@ Specifically `camldebug-command-name' and `ocamldebug-command-name'."
 Note that this function is executed before _Coqproject is read if it exists."
   (let ((dir (coqdev-default-directory)))
     (when dir
-      (setq-local coq-prog-name (concat dir "_build/default/dev/shim/coqtop-prelude")))))
+      (setq-local coq-prog-name (concat dir "_build/default/dev/shim/coqtop")))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-proofgeneral)
 
 (defvar coqdev-ocamldebug-command "dune exec -- dev/dune-dbg -emacs coqc /tmp/foo.v"
