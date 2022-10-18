@@ -93,7 +93,6 @@ type atom =
   | Afix of t array * t array * rec_pos * int
             (* types, bodies, rec_pos, pos *)
   | Acofix of t array * t array * int * vcofix
-  | Ameta of metavariable * t
   | Aevar of Evar.t * t array
   | Aproj of (inductive * int) * accumulator
 
@@ -104,7 +103,6 @@ type symbol =
   | SymbConst of Constant.t
   | SymbMatch of annot_sw
   | SymbInd of inductive
-  | SymbMeta of metavariable
   | SymbEvar of Evar.t
   | SymbLevel of Univ.Level.t
   | SymbProj of (inductive * int)
@@ -212,9 +210,6 @@ let mk_prod s dom codom =
      have length >= 2. *)
   let block = Obj.repr (Vprod (s, dom, codom)) in
   (Obj.magic (ref block) : t)
-
-let mk_meta_accu mv = of_fun (fun ty ->
-  mk_accu (Ameta (mv,ty)))
 
 let mk_evar_accu ev args =
   mk_accu (Aevar (ev, args))

@@ -23,7 +23,6 @@ type case_annot = case_info * reloc_table * Declarations.recursivity_kind
 type 'v lambda =
 | Lrel          of Name.t * int
 | Lvar          of Id.t
-| Lmeta         of metavariable * 'v lambda (* type *)
 | Levar         of Evar.t * 'v lambda array (* arguments *)
 | Lprod         of 'v lambda * 'v lambda
 | Llam          of Name.t Context.binder_annot array * 'v lambda
@@ -54,12 +53,10 @@ and 'v lam_branches =
 and 'v fix_decl = Name.t Context.binder_annot array * 'v lambda array * 'v lambda array
 
 type evars =
-    { evars_val : constr evar_handler;
-      evars_metas : metavariable -> types }
+  { evars_val : constr evar_handler }
 
 let empty_evars =
-  { evars_val = default_evar_handler;
-    evars_metas = (fun _ -> assert false) }
+  { evars_val = default_evar_handler }
 
 (** Printing **)
 
@@ -84,8 +81,6 @@ let rec pp_lam lam =
   match lam with
   | Lrel (id,n) -> pp_rel id n
   | Lvar id -> Id.print id
-  | Lmeta (mv, ty) ->
-    hov 1 (str "meta(" ++ int mv ++ str ":" ++ spc () ++ pp_lam ty ++ str ")")
   | Levar (evk, args) ->
     hov 1 (str "evar(" ++ Evar.print evk ++ str "," ++ spc () ++
       prlist_with_sep spc pp_lam (Array.to_list args) ++ str ")")
@@ -224,9 +219,6 @@ let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
   | Lfloat _ -> lam
-  | Lmeta (mv, ty) ->
-    let ty' = f n ty in
-    if ty == ty' then lam else Lmeta (mv, ty')
   | Levar (evk, args) ->
     let args' = Array.Smart.map (f n) args in
     if args == args' then lam else Levar (evk, args')
@@ -410,8 +402,6 @@ let rec occurrence k kind lam =
     else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _ | Lint _ | Luint _
   | Lfloat _ | Lforce -> kind
-  | Lmeta (_, ty) ->
-    occurrence k kind ty
   | Levar (_, args) ->
     occurrence_args k kind args
   | Lprod(dom, codom) ->
@@ -579,8 +569,6 @@ module Cache =
 
 let evar_value sigma ev = sigma.evars_val.evar_expand ev
 
-let meta_type sigma mv = sigma.evars_metas mv
-
 (** Extract the inductive type over which a fixpoint is decreasing *)
 let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
 | Prod (na, dom, t) ->
@@ -597,9 +585,8 @@ let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
 
 let rec lambda_of_constr cache env sigma c =
   match kind c with
-  | Meta mv ->
-     let ty = meta_type sigma mv in
-     Lmeta (mv, lambda_of_constr cache env sigma ty)
+  | Meta _ ->
+    raise (Invalid_argument "lambda_of_constr: Meta")
 
   | Evar ev ->
      (match evar_value sigma ev with

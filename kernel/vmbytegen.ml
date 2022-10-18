@@ -529,10 +529,6 @@ let rec compile_lam env cenv lam sz cont =
 
   | Lvar id -> pos_named id cenv :: cont
 
-  | Lmeta (_mv, _ty) ->
-    (* TODO: handle me *)
-    raise (Invalid_argument "Vmbytegen.compile_lam: Meta")
-
   | Levar (evk, args) ->
       if Array.is_empty args then
         compile_fv_elem cenv (FVevar evk) sz cont

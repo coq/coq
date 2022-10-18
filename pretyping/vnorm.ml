@@ -440,8 +440,7 @@ and nf_array env sigma t typ =
   mkArray(u, t, nf_val env sigma vdef typ_elem, typ_elem)
 
 let evars_of_evar_map sigma =
-  { Genlambda.evars_val = Evd.evar_handler sigma;
-    Genlambda.evars_metas = Evd.meta_type0 sigma }
+  { Genlambda.evars_val = Evd.evar_handler sigma }
 
 let cbv_vm env sigma c t  =
   if Termops.occur_meta sigma c then

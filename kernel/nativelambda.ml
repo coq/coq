@@ -25,7 +25,7 @@ type lambda = Nativevalues.t Genlambda.lambda
 let can_subst lam =
   match lam with
   | Lrel _ | Lvar _ | Lconst _ | Lval _ | Lsort _ | Lind _ | Llam _
-  | Lmeta _ | Levar _ -> true
+  | Levar _ -> true
   | _ -> false
 
 let simplify subst lam = simplify can_subst subst lam

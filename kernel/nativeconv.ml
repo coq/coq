@@ -74,8 +74,6 @@ and conv_atom env pb lvl a1 a2 cu =
   if a1 == a2 then cu
   else
     match a1, a2 with
-    | Ameta (m1,_), Ameta (m2,_) ->
-      if Int.equal m1 m2 then cu else raise NotConvertible
     | Aevar (ev1, args1), Aevar (ev2, args2) ->
       if Evar.equal ev1 ev2 then
         Array.fold_right2 (conv_val env CONV lvl) args1 args2 cu
@@ -126,7 +124,7 @@ and conv_atom env pb lvl a1 a2 cu =
        else conv_accu env CONV lvl ac1 ac2 cu
     | Arel _, _ | Aind _, _ | Aconstant _, _ | Asort _, _ | Avar _, _
     | Acase _, _ | Afix _, _ | Acofix _, _
-    | Aproj _, _ | Ameta _, _ | Aevar _, _ -> raise NotConvertible
+    | Aproj _, _ | Aevar _, _ -> raise NotConvertible
 
 (* Precondition length t1 = length f1 = length f2 = length t2 *)
 and conv_fix env lvl t1 f1 t2 f2 cu =
