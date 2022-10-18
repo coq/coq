@@ -771,7 +771,27 @@ let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj fini
     pre_process_structure udecl kind ~poly records in
   interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind data
 
-let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records } =
+let autocut ind projs =
+  let open Hints in
+  let rec fold f = function
+    | [] -> assert false
+    | [x] -> x
+    | x :: rest -> f x (fold f rest)
+  in
+  let seql = fold (fun x y -> PathSeq (x,y)) in
+  let orl = fold (fun x y -> PathOr (x,y)) in
+  let starany = PathStar (PathAtom PathAny) in
+  let atom gr = PathAtom (PathHints [gr]) in
+  let projs = List.filter_map (fun p ->
+      Option.map (fun c -> atom (GlobRef.ConstRef c)) p.Structure.proj_body)
+      projs
+  in
+  if List.is_empty projs then ()
+  else
+    let entry = HintsCutEntry (seql [starany; orl projs; starany; atom (GlobRef.ConstructRef (ind,1))]) in
+    add_hints ~locality:SuperGlobal [Class_tactics.typeclasses_db] entry
+
+let declare_structure k { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records } =
   Option.iter (DeclareUctx.declare_universe_context ~poly:false) global_univ_decls;
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj
@@ -784,6 +804,7 @@ let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; globa
     let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly ~nonuniform:false ~reversible:true in
     let struc = Structure.make (Global.env ()) rsp projections in
     let () = declare_structure_entry struc in
+    if k == RecordClass then autocut rsp projections;
     GlobRef.IndRef rsp
   in
   List.mapi map records, []
@@ -975,13 +996,13 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
   in
   let inds, def = match kind_class kind with
     | DefClass -> declare_class_constant ~univs impargs params data
-    | RecordClass | NotClass ->
+    | RecordClass | NotClass as k ->
       (* remove the following block after deprecation phase
          (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
       let data = if kind_class kind = NotClass then data else
           List.map (fun d -> { d with Data.is_coercion = false }) data in
       let structure = interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind data in
-      declare_structure structure
+      declare_structure k structure
   in
   if kind_class kind <> NotClass then declare_class ~univs params inds def data;
   inds
