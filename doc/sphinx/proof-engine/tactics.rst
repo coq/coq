@@ -679,7 +679,7 @@ Applying theorems
    :tacn:`refine` tactic. ``"ho-unification"`` prints information
    about higher order heuristics.
 
-.. tacn:: apply {+, {? > } @one_term_with_bindings } {? @in_hyp_as }
+.. tacn:: apply {+, @one_term_with_bindings } {? @in_hyp_as }
 
    .. insertprodn in_hyp_as as_ipat
 
@@ -986,7 +986,7 @@ Applying theorems
          Show Proof.     (* apply has instantiated P with (fun n : nat => n + y = y + n)
                         and the goal can be proven *)
 
-   .. tacn:: eapply {+, {? > } @one_term_with_bindings } {? @in_hyp_as }
+   .. tacn:: eapply {+, @one_term_with_bindings } {? @in_hyp_as }
 
       Behaves like :tacn:`apply`, but creates
       :ref:`existential variables <Existential-Variables>`
@@ -1009,7 +1009,7 @@ Applying theorems
       Note that you must :n:`Require Import Coq.Program.Tactics` to
       use :tacn:`rapply`.
 
-   .. tacn:: simple apply {+, {? > } @one_term_with_bindings } {? @in_hyp_as }
+   .. tacn:: simple apply {+, @one_term_with_bindings } {? @in_hyp_as }
 
       Behaves like :tacn:`apply` but it reasons modulo conversion only on subterms
       that contain no variables to instantiate and does not traverse tuples.
@@ -1030,7 +1030,7 @@ Applying theorems
       faster than :tacn:`apply` and it is thus well-suited for use in user-defined
       tactics that backtrack often.
 
-   .. tacn:: simple eapply {+, {? > } @one_term_with_bindings } {? @in_hyp_as }
+   .. tacn:: simple eapply {+, @one_term_with_bindings } {? @in_hyp_as }
       :undocumented:
 
    .. tacn:: lapply @one_term

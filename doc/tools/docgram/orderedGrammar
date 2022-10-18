@@ -1766,12 +1766,12 @@ simple_tactic: [
 | "eintros" LIST0 intropattern
 | "decide" "equality"
 | "compare" one_term one_term
-| "apply" LIST1 ( OPT ">" one_term_with_bindings ) SEP "," OPT in_hyp_as
-| "eapply" LIST1 ( OPT ">" one_term_with_bindings ) SEP "," OPT in_hyp_as
-| "simple" "apply" LIST1 ( OPT ">" one_term_with_bindings ) SEP "," OPT in_hyp_as
-| "simple" "eapply" LIST1 ( OPT ">" one_term_with_bindings ) SEP "," OPT in_hyp_as
-| "elim" OPT ">" one_term_with_bindings OPT ( "using" one_term_with_bindings )
-| "eelim" OPT ">" one_term_with_bindings OPT ( "using" one_term_with_bindings )
+| "apply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
+| "eapply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
+| "simple" "apply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
+| "simple" "eapply" LIST1 one_term_with_bindings SEP "," OPT in_hyp_as
+| "elim" one_term_with_bindings OPT ( "using" one_term_with_bindings )
+| "eelim" one_term_with_bindings OPT ( "using" one_term_with_bindings )
 | "case" LIST1 induction_clause SEP "," OPT induction_principle
 | "ecase" LIST1 induction_clause SEP "," OPT induction_principle
 | "fix" ident natural OPT ( "with" LIST1 ( "(" ident LIST0 simple_binder OPT ( "{" "struct" name "}" ) ":" type ")" ) )
@@ -1963,7 +1963,7 @@ as_ipat: [
 ]
 
 oriented_rewriter: [
-| OPT [ "->" | "<-" ] OPT natural OPT [ "?" | "!" ] OPT ">" one_term_with_bindings
+| OPT [ "->" | "<-" ] OPT natural OPT [ "?" | "!" ] one_term_with_bindings
 ]
 
 induction_clause: [
@@ -1971,7 +1971,7 @@ induction_clause: [
 ]
 
 induction_arg: [
-| OPT ">" one_term_with_bindings
+| one_term_with_bindings
 | natural
 ]
 

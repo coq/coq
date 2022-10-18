@@ -126,7 +126,7 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
 
    .. prodn::
       induction_clause ::= @induction_arg {? as @or_and_intropattern } {? eqn : @naming_intropattern } {? @occurrences }
-      induction_arg ::= {? > } @one_term_with_bindings
+      induction_arg ::= @one_term_with_bindings
       | @natural
 
    Performs case analysis by generating a subgoal for each constructor of the
@@ -384,7 +384,7 @@ Induction
       the unresolved premises are posed as existential variables to be inferred
       later, in the same way as :tacn:`eapply` does.
 
-.. tacn:: elim {? > } @one_term_with_bindings {? using @one_term_with_bindings }
+.. tacn:: elim @one_term_with_bindings {? using @one_term_with_bindings }
 
    An older, more basic induction tactic.  Unlike :tacn:`induction`, ``elim`` only
    modifies the goal; it does not modify the :term:`local context`.  We recommend
@@ -400,7 +400,7 @@ Induction
      :n:`@bindings` clause allows instantiating premises of the type of
      :n:`@one_term`.
 
-   .. tacn:: eelim {? > } @one_term_with_bindings {? using @one_term_with_bindings }
+   .. tacn:: eelim @one_term_with_bindings {? using @one_term_with_bindings }
 
       If the type of :n:`@one_term` has dependent premises, this turns them into
       existential variables to be resolved later on.

@@ -102,7 +102,7 @@ Rewriting with Leibniz and setoid equality
    .. insertprodn oriented_rewriter oriented_rewriter
 
    .. prodn::
-      oriented_rewriter ::= {? {| -> | <- } } {? @natural } {? {| ? | ! } } {? > } @one_term_with_bindings
+      oriented_rewriter ::= {? {| -> | <- } } {? @natural } {? {| ? | ! } } @one_term_with_bindings
 
    Replaces subterms with other subterms that have been proven to be equal.
    The type of :n:`@one_term` must have the form:
