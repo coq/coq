@@ -174,8 +174,7 @@ let build_type_telescope newps env0 (sigma, template) { DataI.arity; _ } = match
      | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
 
 type tc_result =
-  bool
-  * Impargs.manual_implicits
+  Impargs.manual_implicits
   (* Part relative to closing the definitions *)
   * UState.named_universes_entry
   * Entries.variance_entry
@@ -244,7 +243,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let univs = Evd.check_univ_decl ~poly sigma decl in
   let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
   let () = List.iter (iter_constr ce) (List.rev newps) in
-  template, imps, univs, variances, newps, ans
+  imps, univs, variances, newps, ans
 
 type record_error =
   | MissingProj of Id.t * Id.t list
@@ -665,11 +664,11 @@ let check_proj_flags kind rf =
   let pf_canonical = rf.rf_canonical in
   Data.{ pf_coercion; pf_reversible; pf_instance; pf_priority; pf_locality; pf_canonical }
 
-let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite (records : Ast.t list) =
+let pre_process_structure udecl kind ~poly (records : Ast.t list) =
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
-  let auto_template, impargs, univs, variances, params, data =
+  let impargs, univs, variances, params, data =
     (* In theory we should be able to use
        [Notation.with_notation_protection], due to the call to
        Metasyntax.set_notation_for_interpretation, however something
@@ -678,7 +677,6 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     Vernacstate.System.protect (fun () ->
         typecheck_params_and_fields (kind = Class true) poly udecl ps data) ()
   in
-  let template = template, auto_template in
   let adjust_impls impls = match kind_class kind with
     | NotClass -> impargs @ [CAst.make None] @ impls
     | _ -> implicits_of_context params @ impls in
@@ -702,9 +700,9 @@ let pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
   let data = List.map2 map data records in
   let projections_kind =
     Decls.(match kind_class kind with NotClass -> StructureComponent | _ -> Method) in
-  template, impargs, params, univs, variances, projections_kind, data
+  impargs, params, univs, variances, projections_kind, data
 
-let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params (template, _) ~projections_kind records data =
+let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind data =
   let nparams = List.length params in
   let (univs, ubinders) = univs in
   let poly, projunivs =
@@ -766,9 +764,9 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
 
 
 let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records =
-  let template, impargs, params, univs, variances, projections_kind, data =
-    pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
-  interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind records data
+  let impargs, params, univs, variances, projections_kind, data =
+    pre_process_structure udecl kind ~poly records in
+  interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind data
 
 let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records } =
   Option.iter (DeclareUctx.declare_universe_context ~poly:false) global_univ_decls;
@@ -971,17 +969,19 @@ let declare_existing_class g =
 
 let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     finite (records : Ast.t list) : GlobRef.t list =
-  let template, impargs, params, univs, variances, projections_kind, data =
-    pre_process_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records in
+  let impargs, params, univs, variances, projections_kind, data =
+    pre_process_structure udecl kind ~poly records
+  in
   let inds, def = match kind_class kind with
     | DefClass -> declare_class_constant ~univs impargs params data
     | RecordClass | NotClass ->
-       (* remove the following block after deprecation phase
-          (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
-       let data = if kind_class kind = NotClass then data else
-         List.map (fun d -> { d with Data.is_coercion = false }) data in
-       let structure = interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind records data in
-       declare_structure structure in
+      (* remove the following block after deprecation phase
+         (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
+      let data = if kind_class kind = NotClass then data else
+          List.map (fun d -> { d with Data.is_coercion = false }) data in
+      let structure = interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind data in
+      declare_structure structure
+  in
   if kind_class kind <> NotClass then declare_class ~univs params inds def data;
   inds
 
