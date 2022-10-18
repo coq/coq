@@ -899,7 +899,6 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq_evars eq le
   | Prod (_,t1,c1), Prod (_,t2,c2) -> eq 0 t1 t2 && leq 0 c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> eq 0 t1 t2 && eq 0 c1 c2
   | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> eq 0 b1 b2 && eq 0 t1 t2 && leq nargs c1 c2
-  (* Why do we suddenly make a special case for Cast here? *)
   | App (c1, l1), App (c2, l2) ->
     let len = Array.length l1 in
     Int.equal len (Array.length l2) &&
