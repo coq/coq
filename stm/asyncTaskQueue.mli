@@ -69,7 +69,7 @@ module type Task = sig
   type response
 
   (** UID of the task kind *)
-  val name : string ref
+  val name : string
 
   (** Extra arguments of the task kind *)
   val extra_env : unit -> string array
