@@ -29,7 +29,7 @@ module type Task = sig
   type request
   type response
 
-  val name : string ref (* UID of the task kind, for -toploop *)
+  val name : string (* UID of the task kind, for -toploop *)
   val extra_env : unit -> string array
 
   (* run by the master, on a thread *)
@@ -102,7 +102,7 @@ module Make(T : Task) () = struct
   type extra = (T.task * cancel_switch) TQueue.t
 
   let spawn id priority =
-    let name = Printf.sprintf "%s:%d" !T.name id in
+    let name = Printf.sprintf "%s:%d" T.name id in
     let proc, ic, oc =
       (* Filter arguments for slaves. *)
       let rec set_slave_opt = function
@@ -146,7 +146,7 @@ module Make(T : Task) () = struct
           set_slave_opt tl
       in
       let args =
-        let wselect = "--kind=" ^ !T.name in
+        let wselect = "--kind=" ^ T.name in
         Array.of_list (wselect :: set_slave_opt (List.tl (Array.to_list Sys.argv))) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in
       let worker_name = System.get_toplevel_path ("coqworker") in
