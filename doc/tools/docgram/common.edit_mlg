@@ -2486,7 +2486,7 @@ ssrapplyarg: [
 ]
 
 constr_with_bindings_arg: [
-| EDIT ADD_OPT ">" constr_with_bindings
+| DELETE ">" constr_with_bindings
 ]
 
 destruction_arg: [
