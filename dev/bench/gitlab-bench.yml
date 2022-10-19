@@ -25,3 +25,4 @@ bench:
     expire_in: 1 year
   environment: bench
   interruptible: false
+  timeout: 1d
