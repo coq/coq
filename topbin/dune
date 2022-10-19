@@ -42,14 +42,9 @@
  (link_flags -linkall))
 
 ; Workers
-(executables
- (names coqqueryworker_bin coqtacticworker_bin coqproofworker_bin)
- (public_names coqqueryworker.opt coqtacticworker.opt coqproofworker.opt)
+(executable
+ (name coqworker_bin)
+ (public_name coqworker.opt)
  (package coq-core)
- (modules :standard \ coqtop_byte_bin coqtop_bin coqc_bin coqnative_bin)
+ (modules coqworker_bin)
  (libraries coq-core.toplevel findlib.dynload))
-
-; Workers installed targets
-(alias
- (name topworkers)
- (deps %{bin:coqqueryworker.opt} %{bin:coqtacticworker.opt} %{bin:coqproofworker.opt}))

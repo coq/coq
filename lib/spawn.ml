@@ -93,8 +93,8 @@ let spawn_sock env prog args =
 let spawn_pipe env prog args =
   let master2worker_r,master2worker_w = Unix.pipe () in
   let worker2master_r,worker2master_w = Unix.pipe () in
-  let extra = [| prog; "-main-channel"; "stdfds" |] in
-  let args = Array.append extra args in
+  let extra = [| "-main-channel"; "stdfds" |] in
+  let args = Array.append [|prog|] (Array.append args extra) in
   Unix.set_close_on_exec master2worker_w;
   Unix.set_close_on_exec worker2master_r;
   prerr_endline ("EXEC: " ^ String.concat " " (Array.to_list args));
