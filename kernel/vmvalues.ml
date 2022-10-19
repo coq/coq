@@ -282,7 +282,6 @@ type whd =
   | Vfloat64 of float
   | Varray of values Parray.t
   | Vatom_stk of atom * stack
-  | Vuniv_level of Univ.Level.t
 
 (* Functions over arguments *)
 let nargs : arguments -> int = fun args -> Obj.size (Obj.repr args) - 3
@@ -297,29 +296,7 @@ let arg args i =
 (* Destructors ***********************************)
 (*************************************************)
 
-let uni_lvl_val (v : values) : Univ.Level.t =
-    let whd = Obj.magic v in
-    match whd with
-    | Vuniv_level lvl -> lvl
-    | _ ->
-      let pr =
-        let open Pp in
-        match whd with
-        | Vprod _ -> str "Vprod"
-        | Vfun _ -> str "Vfun"
-        | Vfix _ -> str "Vfix"
-        | Vcofix _ -> str "Vcofix"
-        | Vconstr_const _i -> str "Vconstr_const"
-        | Vconstr_block _b -> str "Vconstr_block"
-        | Vint64 _ -> str "Vint64"
-        | Vfloat64 _ -> str "Vfloat64"
-        | Varray _ -> str "Varray"
-        | Vatom_stk (_a,_stk) -> str "Vatom_stk"
-        | Vuniv_level _ -> assert false
-      in
-      CErrors.anomaly
-        Pp.(   strbrk "Parsing virtual machine value expected universe level, got "
-            ++ pr ++ str ".")
+let uni_lvl_val (v : values) : Univ.Level.t = Obj.magic v
 
 let rec whd_accu a stk =
   let stk =
@@ -430,7 +407,7 @@ let obj_of_str_const str =
   | Const_sort s -> obj_of_atom (Asort s)
   | Const_ind ind -> obj_of_atom (Aind ind)
   | Const_b0 tag -> Obj.repr tag
-  | Const_univ_level l -> Obj.repr (Vuniv_level l)
+  | Const_univ_level l -> Obj.repr l
   | Const_val v -> Obj.repr v
   | Const_uint i -> Obj.repr i
   | Const_float f -> Obj.repr f
@@ -678,8 +655,7 @@ and pr_whd w =
   | Vint64 i -> i |> Format.sprintf "Vint64(%LiL)" |> str
   | Vfloat64 f -> str "Vfloat64(" ++ str (Float64.(to_string (of_float f))) ++ str ")"
   | Varray _ -> str "Varray"
-  | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
-  | Vuniv_level _ -> assert false)
+  | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")")
 and pr_stack stk =
   Pp.(match stk with
       | [] -> str "[]"
