@@ -111,7 +111,7 @@ type raw_tacexpr_r =
 | CTacSeq of raw_tacexpr * raw_tacexpr
 | CTacIft of raw_tacexpr * raw_tacexpr * raw_tacexpr
 | CTacCse of raw_tacexpr * raw_taccase list
-| CTacRec of raw_recexpr
+| CTacRec of raw_tacexpr option * raw_recexpr
 | CTacPrj of raw_tacexpr * ltac_projection or_relid
 | CTacSet of raw_tacexpr * ltac_projection or_relid * raw_tacexpr
 | CTacExt : ('a, _) Tac2dyn.Arg.tag * 'a -> raw_tacexpr_r

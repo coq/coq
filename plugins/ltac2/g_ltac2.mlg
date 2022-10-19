@@ -71,6 +71,12 @@ let test_ltac1_env =
     lk_ident_list >> lk_kw "|-"
   end
 
+let test_ident_with_or_lpar_or_rbrac =
+  let open Pcoq.Lookahead in
+  to_entry "test_ident_with_or_lpar_or_rbrac" begin
+    (lk_ident >> lk_kw "with") <+> lk_kw "(" <+> lk_kw "{"
+  end
+
 let ltac2_expr = Tac2entries.Pltac.ltac2_expr
 let _ltac2_expr = ltac2_expr
 let ltac2_type = Entry.create "ltac2_type"
@@ -196,8 +202,10 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CTacCst (AbsKn (Tuple 0)) }
       | "["; a = LIST0 ltac2_expr LEVEL "5" SEP ";"; "]" ->
         { Tac2quote.of_list ~loc (fun x -> x) a }
+      | "{"; test_ident_with_or_lpar_or_rbrac; e = ltac2_expr LEVEL "0"; "with"; a = tac2rec_fieldexprs; "}" ->
+        { CAst.make ~loc @@ CTacRec (Some e, a) }
       | "{"; a = tac2rec_fieldexprs; "}" ->
-        { CAst.make ~loc @@ CTacRec a }
+        { CAst.make ~loc @@ CTacRec (None, a) }
       | a = tactic_atom -> { a } ]
     ]
   ;

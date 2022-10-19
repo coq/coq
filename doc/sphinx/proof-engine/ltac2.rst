@@ -279,7 +279,8 @@ There is dedicated syntax for list and array literals.
    | ( @ltac2_expr : @ltac2_type )
    | ()
    | [ {*; @ltac2_expr5 } ]
-   | %{ {? {+ @tac2rec_fieldexpr } {? ; } } %}
+   | %{ @ltac2_expr0 with {? {+; @tac2rec_fieldexpr } {? ; } } %}
+   | %{ {? {+; @tac2rec_fieldexpr } {? ; } } %}
    | @ltac2_tactic_atom
    tac2rec_fieldpats ::= @tac2rec_fieldpat ; {? @tac2rec_fieldpats }
    | @tac2rec_fieldpat ;
@@ -302,6 +303,11 @@ Record expressions and patterns support "punning": in
 :n:`@tac2rec_fieldexpr` and :n:`@tac2rec_fieldpat`, omitting the
 optional part is equivalent to using :n:`:= @ident` where the
 identifier is the identifier part of the field name (i.e. the :n:`@qualid`).
+
+A record value can be built from another by changing only a subset of
+its fields with the syntax :n:`%{ @ltac2_expr0 with {? {+; @qualid := @ltac2_expr1 } {? ; } } %}`. Fields
+that are not explicitly assigned a value take
+their value from :n:`@ltac2_expr0`.
 
 Ltac2 Definitions
 ~~~~~~~~~~~~~~~~~

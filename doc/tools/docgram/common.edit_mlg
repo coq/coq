@@ -165,6 +165,7 @@ DELETE: [
 | test_array_opening
 | test_array_closing
 | test_variance_ident
+| test_ident_with_or_lpar_or_rbrac
 
   (* SSR *)
 | ssr_null_entry
@@ -2063,14 +2064,6 @@ SPLICE: [
 | ltac2_orient
 ]
 
-ltac2_expr0: [
-(*
-| DELETE "(" ")" (* covered by "()" prodn *)
-| REPLACE "{" [  | LIST1 tac2rec_fieldexpr OPT ";" ] "}"
-| WITH "{" OPT ( LIST1 tac2rec_fieldexpr OPT ";" ) "}"
-*)
-]
-
 (* todo: should
 | tac2pat1 "," LIST0 tac2pat1 SEP ","
 use LIST1? *)
@@ -2089,7 +2082,7 @@ tac2rec_fieldexprs: [
 | DELETE tac2rec_fieldexpr ";" tac2rec_fieldexprs
 | DELETE tac2rec_fieldexpr ";"
 | DELETE tac2rec_fieldexpr
-| LIST1 tac2rec_fieldexpr OPT ";"
+| LIST1 tac2rec_fieldexpr SEP ";" OPT ";"
 ]
 
 tac2rec_fields: [
