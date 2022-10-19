@@ -51,6 +51,8 @@ type rec_pos = int array
 
 val eq_rec_pos : rec_pos -> rec_pos -> bool
 
+type vcofix
+
 type atom =
   | Arel of int
   | Aconstant of pconstant
@@ -59,8 +61,7 @@ type atom =
   | Avar of Id.t
   | Acase of annot_sw * accumulator * t * t
   | Afix of t array * t array * rec_pos * int
-  | Acofix of t array * t array * int * t
-  | Acofixe of t array * t array * int * t
+  | Acofix of t array * t array * int * vcofix
   | Aprod of Name.t * t * t
   | Ameta of metavariable * t
   | Aevar of Evar.t * t array (* arguments *)

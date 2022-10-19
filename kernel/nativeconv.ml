@@ -111,8 +111,7 @@ and conv_atom env pb lvl a1 a2 cu =
         if not (Int.equal s1 s2) || not (Array.equal Int.equal rp1 rp2) then raise NotConvertible;
         if f1 == f2 then cu
         else conv_fix env lvl t1 f1 t2 f2 cu
-    | (Acofix(t1,f1,s1,_) | Acofixe(t1,f1,s1,_)),
-      (Acofix(t2,f2,s2,_) | Acofixe(t2,f2,s2,_)) ->
+    | Acofix (t1, f1, s1, _), Acofix (t2, f2, s2, _) ->
         if not (Int.equal s1 s2) then raise NotConvertible;
         if f1 == f2 then cu
         else
@@ -126,7 +125,7 @@ and conv_atom env pb lvl a1 a2 cu =
        if not (Ind.CanOrd.equal ind1 ind2 && Int.equal i1 i2) then raise NotConvertible
        else conv_accu env CONV lvl ac1 ac2 cu
     | Arel _, _ | Aind _, _ | Aconstant _, _ | Asort _, _ | Avar _, _
-    | Acase _, _ | Afix _, _ | Acofix _, _ | Acofixe _, _ | Aprod _, _
+    | Acase _, _ | Afix _, _ | Acofix _, _ | Aprod _, _
     | Aproj _, _ | Ameta _, _ | Aevar _, _ -> raise NotConvertible
 
 (* Precondition length t1 = length f1 = length f2 = length t2 *)
