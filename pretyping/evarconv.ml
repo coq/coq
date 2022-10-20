@@ -41,7 +41,7 @@ let default_flags_of ?(subterm_ts=TransparentState.empty) ts =
   { modulo_betaiota = true;
     open_ts = ts; closed_ts = ts; subterm_ts;
     allowed_evars = AllowedEvars.all; with_cs = true;
-    allow_K_at_toplevel = true }
+  }
 
 let default_flags env =
   let ts = default_transparent_state env in
@@ -1638,16 +1638,8 @@ let default_evar_selection flags evd (ev,args) =
   let rec aux args abs =
     match args, abs with
     | _ :: args, a :: abs ->
-      let spec =
-        if not flags.allow_K_at_toplevel then
-          (* [evar_absorb_arguments] puts an Abstract flag for the
-             toplevel binders that were absorbed. *)
-          let occs =
-            if a == Abstraction.Abstract then Locus.AtLeastOneOccurrence
-            else Locus.AllOccurrences
-          in AtOccurrences occs
-        else Unspecified a
-      in spec :: aux args abs
+      let spec = Unspecified a in
+      spec :: aux args abs
     | l, [] -> List.map (fun _ -> default_occurrence_selection) l
     | [], _ :: _ -> assert false
   in aux args evi.evar_abstract_arguments

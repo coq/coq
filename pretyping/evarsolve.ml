@@ -56,7 +56,6 @@ type unify_flags = {
   closed_ts : TransparentState.t;
   subterm_ts : TransparentState.t;
   allowed_evars : AllowedEvars.t;
-  allow_K_at_toplevel : bool;
   with_cs : bool
 }
 
