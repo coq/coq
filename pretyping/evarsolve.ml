@@ -1600,11 +1600,31 @@ exception MetaOccurInBodyInternal
 
 let rec invert_definition unify flags choose imitate_defs
                           env evd pbty (evk,argsv as ev) rhs =
-  let aliases = make_alias_map env evd in
-  let evdref = ref evd in
-  let progress = ref false in
   let evi = Evd.find evd evk in
   let sign = evar_filtered_context evi in
+  let rhs = whd_beta env evd rhs (* heuristic *) in
+  let fast =
+    let names = ref Id.Set.empty in
+    let rec is_id_subst ctxt s =
+      match ctxt, SList.view s with
+      | (decl :: ctxt'), Some (c, s') ->
+        let id = get_id decl in
+        names := Id.Set.add id !names;
+        (match c with None -> true | Some c -> isVarId evd id c) && is_id_subst ctxt' s'
+      | [], None -> true
+      | _ -> false
+    in
+      is_id_subst sign argsv &&
+      closed0 evd rhs &&
+      Id.Set.subset (collect_vars evd rhs) !names
+  in
+
+  if fast then (evd, nf_evar evd rhs) (* FIXME? *)
+  else
+
+  let evdref = ref evd in
+  let progress = ref false in
+  let aliases = make_alias_map env evd in
   let subst = make_projectable_subst aliases evd sign argsv in
   let cstr_subst = make_constructor_subst evd sign argsv in
 
@@ -1748,31 +1768,10 @@ let rec invert_definition unify flags choose imitate_defs
           map_constr_with_full_binders env' !evdref (fun d (env,k) -> push_rel d env, k+1)
                                         imitate envk t
   in
-  let rhs = whd_beta env evd rhs (* heuristic *) in
-  let fast rhs =
-    let filter_ctxt = evar_filtered_context evi in
-    let names = ref Id.Set.empty in
-    let rec is_id_subst ctxt s =
-      match ctxt, SList.view s with
-      | (decl :: ctxt'), Some (c, s') ->
-        let id = get_id decl in
-        names := Id.Set.add id !names;
-        (match c with None -> true | Some c -> isVarId evd id c) && is_id_subst ctxt' s'
-      | [], None -> true
-      | _ -> false
-    in
-      is_id_subst filter_ctxt argsv &&
-      closed0 evd rhs &&
-      Id.Set.subset (collect_vars evd rhs) !names
-  in
-  let body =
-    if fast rhs then nf_evar evd rhs (* FIXME? *)
-    else
-      let t' = imitate (env,0) rhs in
-        if !progress then
-          (recheck_applications unify flags (evar_env env evi) evdref t'; t')
-        else t'
-  in (!evdref,body)
+
+  let t' = imitate (env, 0) rhs in
+  let body = if !progress then (recheck_applications unify flags (evar_env env evi) evdref t'; t') else t' in
+  (!evdref,body)
 
 (* [define] tries to solve the problem "?ev[args] = rhs" when "?ev" is
  * an (uninstantiated) evar such that "hyps |- ?ev : typ". Otherwise said,
