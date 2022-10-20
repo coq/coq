@@ -53,9 +53,9 @@ and conv_whd env pb k whd1 whd2 cu =
   | Vcofix (cf1,_,Some args1), Vcofix (cf2,_,Some args2) ->
       if nargs args1 <> nargs args2 then raise NotConvertible
       else conv_arguments env k args1 args2 (conv_cofix env k cf1 cf2 cu)
-  | Vconstr_const i1, Vconstr_const i2 ->
+  | Vconst i1, Vconst i2 ->
       if Int.equal i1 i2 then cu else raise NotConvertible
-  | Vconstr_block b1, Vconstr_block b2 ->
+  | Vblock b1, Vblock b2 ->
       let tag1 = btag b1 and tag2 = btag b2 in
       let sz = bsize b1 in
       if Int.equal tag1 tag2 && Int.equal sz (bsize b2) then
@@ -75,14 +75,14 @@ and conv_whd env pb k whd1 whd2 cu =
     let n = Parray.length_int t1 in
     if not (Int.equal n (Parray.length_int t2)) then raise NotConvertible;
     Parray.fold_left2 (fun cu v1 v2 -> conv_val env CONV k v1 v2 cu) cu t1 t2
-  | Vatom_stk(a1,stk1), Vatom_stk(a2,stk2) ->
+  | Vaccu (a1, stk1), Vaccu (a2, stk2) ->
       conv_atom env pb k a1 stk1 a2 stk2 cu
   | Vfun _, _ | _, Vfun _ ->
      (* on the fly eta expansion *)
       conv_val env CONV (k+1) (apply_whd k whd1) (apply_whd k whd2) cu
 
-  | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconstr_const _, _ | Vint64 _, _
-  | Vfloat64 _, _ | Varray _, _ | Vconstr_block _, _ | Vatom_stk _, _ -> raise NotConvertible
+  | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconst _, _ | Vint64 _, _
+  | Vfloat64 _, _ | Varray _, _ | Vblock _, _ | Vaccu _, _ -> raise NotConvertible
 
 
 and conv_atom env pb k a1 stk1 a2 stk2 cu =

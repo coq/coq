@@ -117,15 +117,15 @@ type stack = zipper list
 
 type whd =
   | Vprod of vprod
+  | Vaccu of atom * stack
   | Vfun of vfun
   | Vfix of vfix * arguments option
   | Vcofix of vcofix * to_update * arguments option
-  | Vconstr_const of int
-  | Vconstr_block of vblock
+  | Vconst of int
+  | Vblock of vblock
   | Vint64 of int64
   | Vfloat64 of float
   | Varray of values Parray.t
-  | Vatom_stk of atom * stack
 
 (** For debugging purposes only *)
 
