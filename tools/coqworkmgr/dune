@@ -1,0 +1,13 @@
+(library
+ (name coqworkmgrapi)
+ (public_name coq-core.coqworkmgrapi)
+ (modules coqworkmgrApi)
+ (wrapped false)
+ (libraries str unix))
+
+(executable
+ (name coqworkmgr)
+ (public_name coqworkmgr)
+ (package coq-core)
+ (modules coqworkmgr)
+ (libraries coqworkmgrapi))
