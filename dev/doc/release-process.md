@@ -129,7 +129,7 @@
   to have the full name of a contributor shown instead of a pseudonym.
 
 - [ ] Put the branch name in CACHEKEY in [`.gitlab-ci.yml`](../../.gitlab-ci.yml)
-  (for instance ``bionic_coq-V2022-05-20-c34331afa5`` to ``"bionic_coq-v8.16-V2022-05-20-c34331afa5``)
+  (for instance ``jammy_coq-V2022-05-20-c34331afa5`` to ``"jammy_coq-v8.16-V2022-05-20-c34331afa5``)
   to indicate that it shouldn't be cleaned up even once it gets old.
   This should be done after all PRs touching CACHEKEY have been merged.
 

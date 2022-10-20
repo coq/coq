@@ -15,11 +15,11 @@ stages:
 
 # some default values
 variables:
-  # Format: bionic_coq-V$DATE-$hash
+  # Format: jammy_coq-V$DATE-$hash
   # $DATE is so we can tell what's what in the image list
   # The $hash is the first 10 characters of the md5 of the Dockerfile. e.g.
-  # echo $(md5sum dev/ci/docker/bionic_coq/Dockerfile | head -c 10)
-  CACHEKEY: "bionic_coq-V2022-10-13-2c0347368a"
+  # echo $(md5sum dev/ci/docker/jammy_coq/Dockerfile | head -c 10)
+  CACHEKEY: "jammy_coq-V2022-10-21-d86aed0f86"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
 
   # By default, jobs run in the base switch; override to select another switch
@@ -261,7 +261,7 @@ docker-boot:
   script:
     - dev/tools/check-cachekey.sh
     - docker login -u gitlab-ci-token -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
-    - cd dev/ci/docker/bionic_coq/
+    - cd dev/ci/docker/jammy_coq/
     - if docker pull "$IMAGE"; then echo "Image prebuilt!"; exit 0; fi
     - docker build -t "$IMAGE" .
     - docker push "$IMAGE"
