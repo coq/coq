@@ -529,14 +529,9 @@ module Goal : sig
   val sigma : t -> Evd.evar_map
   val state : t -> Proofview_monad.StateStore.t
 
-  (** [nf_enter t] applies the goal-dependent tactic [t] in each goal
+  (** [enter t] applies the goal-dependent tactic [t] in each goal
       independently, in the manner of {!tclINDEPENDENT} except that
-      the current goal is also given as an argument to [t]. The goal
-      is normalised with respect to evars. *)
-  val nf_enter : (t -> unit tactic) -> unit tactic
-  [@@ocaml.deprecated "Normalization is enforced by EConstr, please use [enter]"]
-
-  (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
+      the current goal is also given as an argument to [t]. *)
   val enter : (t -> unit tactic) -> unit tactic
 
   (** Like {!enter}, but assumes exactly one goal under focus, raising

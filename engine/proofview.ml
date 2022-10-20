@@ -1085,26 +1085,6 @@ module Goal = struct
       state = state ;
       self = goal }
 
-  let nf_gmake env sigma goal =
-    let state = get_state goal in
-    let goal = drop_state goal in
-    let info = Evarutil.nf_evar_info sigma (Evd.find sigma goal) in
-    let sigma = Evd.add sigma goal info in
-    gmake_with info env sigma goal state , sigma
-
-  let nf_enter f =
-    InfoL.tag (Info.Dispatch) begin
-    iter_goal begin fun goal ->
-      tclENV >>= fun env ->
-      tclEVARMAP >>= fun sigma ->
-      try
-        let (gl, sigma) = nf_gmake env sigma goal in
-        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
-      with e when catchable_exception e ->
-        let (e, info) = Exninfo.capture e in
-        tclZERO ~info e
-    end
-    end
   let gmake env sigma goal =
     let state = get_state goal in
     let goal = drop_state goal in
