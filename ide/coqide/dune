@@ -31,7 +31,6 @@
  (foreign_stubs
   (language c)
   (names coqide_os_stubs))
- (optional)
  (libraries coqide-server.protocol coqide-server.core lablgtk3-sourceview3 platform_specific))
 
 (library
