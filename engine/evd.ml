@@ -814,6 +814,8 @@ let new_evar evd ?name ?typeclass_candidate evi =
   let evd = add_with_name evd ?name ?typeclass_candidate evk evi in
   (evd, evk)
 
+let default_source = Loc.tag @@ Evar_kinds.InternalHole
+
 let remove d e =
   let undf_evars = EvMap.remove e d.undf_evars in
   let defn_evars = EvMap.remove e d.defn_evars in
@@ -821,6 +823,10 @@ let remove d e =
   let evar_flags = remove_evar_flags e d.evar_flags in
   { d with undf_evars; defn_evars; future_goals;
            evar_flags }
+
+let undefine sigma e =
+  let evi = find sigma e in
+  add (remove sigma e) e { evi with evar_body = Evar_empty }
 
 let find_undefined d e = EvMap.find e d.undf_evars
 
@@ -1297,6 +1303,28 @@ let pr_shelf evd =
   let open Pp in
   if List.is_empty evd.shelf then str"(empty stack)"
   else prlist_with_sep (fun () -> str"||") (prlist_with_sep spc Evar.print) evd.shelf
+
+let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance = Sorts.Relevant)
+  ?(abstract_arguments = Abstraction.identity) ?candidates
+  ?name ?typeclass_candidate ?(principal=false) sign evd typ =
+  let evi = {
+    evar_hyps = sign;
+    evar_concl = typ;
+    evar_body = Evar_empty;
+    evar_filter = filter;
+    evar_abstract_arguments = abstract_arguments;
+    evar_source = src;
+    evar_candidates = candidates;
+    evar_relevance = relevance;
+  }
+  in
+  let typeclass_candidate = if principal then Some false else typeclass_candidate in
+  let (evd, newevk) = new_evar evd ?name ?typeclass_candidate evi in
+  let evd =
+    if principal then declare_principal_goal newevk evd
+    else declare_future_goal newevk evd
+  in
+  (evd, newevk)
 
 let define_aux def undef evk body =
   let oldinfo =

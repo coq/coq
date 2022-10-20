@@ -98,7 +98,7 @@ type evar_body =
   | Evar_empty
   | Evar_defined of econstr
 
-type evar_info = {
+type evar_info = private {
   evar_concl : econstr;
   (** Type of the evar. *)
   evar_hyps : named_context_val; (* TODO econstr? *)
@@ -178,6 +178,23 @@ val new_evar : evar_map ->
   ?name:Id.t -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
 (** Creates a fresh evar mapping to the given information. *)
 
+val new_pure_evar :
+  ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?relevance:Sorts.relevance ->
+  ?abstract_arguments:Abstraction.t -> ?candidates:econstr list ->
+  ?name:Id.t ->
+  ?typeclass_candidate:bool ->
+  ?principal:bool ->
+  named_context_val -> evar_map -> etypes -> evar_map * Evar.t
+(** Low-level interface to create an evar.
+  @param src User-facing source for the evar
+  @param filter See {!Evd.Filter}, must be the same length as [named_context_val]
+  @param name A name for the evar
+  @param principal Whether the evar is the principal goal
+  @param named_context_val The context of the evar
+  @param types The type of conclusion of the evar
+*)
+
 val add : evar_map -> Evar.t -> evar_info -> evar_map
 (** [add sigma ev info] adds [ev] with evar info [info] in sigma.
     Precondition: ev must not preexist in [sigma]. *)
@@ -191,6 +208,9 @@ val find_undefined : evar_map -> Evar.t -> evar_info
 
 val remove : evar_map -> Evar.t -> evar_map
 (** Remove an evar from an evar map. Use with caution. *)
+
+val undefine : evar_map -> Evar.t -> evar_map [@@ocaml.deprecated]
+(** Remove the body of an evar. Only there for backward compat, do not use. *)
 
 val mem : evar_map -> Evar.t -> bool
 (** Whether an evar is present in an evarmap. *)

@@ -1123,8 +1123,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
           str " did not instantiate ?" ++ int (Evar.repr e) ++ spc () ++
           str "Does the variable bound by the \"in\" construct occur "++
           str "in the pattern?") in
-    let sigma =
-      Evd.add (Evd.remove sigma e) e {e_def with Evd.evar_body = Evar_empty} in
+    let sigma = Evd.undefine sigma e [@@ocaml.warning "-3"] in
     sigma, e_body in
   let mk_upat_for ?hack ~rigid (sigma, t) =
     let sigma,pat= mk_tpattern ?hack ~rigid env0 (sigma, t) L2R (fs sigma t) in

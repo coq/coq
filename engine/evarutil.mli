@@ -45,19 +45,12 @@ val new_evar :
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> types -> evar_map * EConstr.t
 
-(** Low-level interface to create an evar.
-  @param src User-facing source for the evar
-  @param filter See {!Evd.Filter}, must be the same length as [named_context_val]
-  @param naming A naming scheme for the evar
-  @param principal Whether the evar is the principal goal
-  @param named_context_val The context of the evar
-  @param types The type of conclusion of the evar
-*)
+(** Alias of {!Evd.new_evar} *)
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?relevance:Sorts.relevance ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
-  ?naming:intro_pattern_naming_expr ->
+  ?name:Id.t ->
   ?typeclass_candidate:bool ->
   ?principal:bool ->
   named_context_val -> evar_map -> types -> evar_map * Evar.t
