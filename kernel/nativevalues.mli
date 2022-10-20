@@ -140,8 +140,8 @@ val block_tag : block -> int
 
 type kind_of_value =
   | Vaccu of accumulator
-  | Vprod of Name.t * t * t
   | Vfun of (t -> t)
+  | Vprod of Name.t * t * t
   | Vconst of int
   | Vint64 of int64
   | Vfloat64 of float

@@ -109,6 +109,18 @@ type symbol =
   | SymbLevel of Univ.Level.t
   | SymbProj of (inductive * int)
 
+type block
+
+type kind_of_value =
+  | Vaccu of accumulator
+  | Vfun of (t -> t)
+  | Vprod of Name.t * t * t
+  | Vconst of int
+  | Vint64 of int64
+  | Vfloat64 of float
+  | Varray of t Parray.t
+  | Vblock of block
+
 type symbols = symbol array
 
 let empty_symbols = [| |]
@@ -188,18 +200,17 @@ let mk_var_accu id =
 let mk_sw_accu annot c p ac =
   mk_accu (Acase(annot,c,p,ac))
 
-let prod_tag = 2
+let prod_tag =
+  (* We rely on the tag of Vprod! *)
+  let () = assert (Obj.tag (Obj.repr (Vprod (Anonymous, Obj.magic 0, Obj.magic 0))) == 2) in
+  2
 
 let mk_prod s dom codom =
   (* [Prod (s, dom, codom)] is coded as [tag:0|[tag:2|s; dom; codom]]
      This looks like a PArray but has a tag distinct from all PArray values on
      the inner block. This cannot be an accumulator because all accumulators
      have length >= 2. *)
-  let block = Obj.new_block prod_tag 3 in
-  let block : Obj.t array = Obj.obj block in
-  let () = block.(0) <- (Obj.repr s) in
-  let () = block.(1) <- (Obj.repr dom) in
-  let () = block.(2) <- (Obj.repr codom) in
+  let block = Obj.repr (Vprod (s, dom, codom)) in
   (Obj.magic (ref block) : t)
 
 let mk_meta_accu mv = of_fun (fun ty ->
@@ -281,8 +292,6 @@ let mk_uint (x : Uint63.t) = (Obj.magic x : t)
 let mk_float (x : Float64.t) = (Obj.magic x : t)
 [@@ocaml.inline always]
 
-type block
-
 let block_size (b:block) =
   Obj.size (Obj.magic b)
 
@@ -290,16 +299,6 @@ let block_field (b:block) i = (Obj.magic (Obj.field (Obj.magic b) i) : t)
 
 let block_tag (b:block) =
   Obj.tag (Obj.magic b)
-
-type kind_of_value =
-  | Vaccu of accumulator
-  | Vprod of Name.t * t * t
-  | Vfun of (t -> t)
-  | Vconst of int
-  | Vint64 of int64
-  | Vfloat64 of float
-  | Varray of t Parray.t
-  | Vblock of block
 
 let kind_of_value (v:t) =
   let o = Obj.repr v in
@@ -310,11 +309,7 @@ let kind_of_value (v:t) =
       if Int.equal (Obj.size o) 1 then
         let w = Obj.field o 0 in
         let tag = Obj.tag w in
-        if Int.equal tag prod_tag then
-          let na : Name.t = Obj.obj (Obj.field w 0) in
-          let dom : t = Obj.obj (Obj.field w 1) in
-          let codom : t = Obj.obj (Obj.field w 2) in
-          Vprod (na, dom, codom)
+        if Int.equal tag prod_tag then Obj.magic w
         else Varray (Obj.magic v)
       else Vaccu (Obj.magic v)
     else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
