@@ -12,7 +12,7 @@ open Pp
 
 let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (Spawned.process_id ()) s
 
-type 'a result = Val of 'a | Exn of exn
+type 'a result = Val of 'a | Exn of bool * Pp.t
 
 module TacTask : sig
 
@@ -53,7 +53,7 @@ end = struct (* {{{ *)
 
   type response =
     | RespBuiltSubProof of (Constr.constr * UState.t)
-    | RespError of Pp.t
+    | RespError of bool * Pp.t
     | RespNoProgress
 
   let name = ref "tactic"
@@ -83,9 +83,8 @@ end = struct (* {{{ *)
         assign t_assign (Val None);
         t_kill ();
         `Stay ((),[])
-    | RespError msg ->
-        let e = (AsyncTaskQueue.RemoteException msg) in
-        assign t_assign (Exn e);
+    | RespError (noncrt, msg) ->
+        assign t_assign (Exn (noncrt, msg));
         t_kill ();
         `Stay ((),[])
 
@@ -130,8 +129,9 @@ end = struct (* {{{ *)
                       str" solves the goal and leaves no unresolved existential variables. The following" ++
                       str" existentials remain unsolved: " ++ prlist (Termops.pr_existential_key (Global.env ()) sigma) (Evar.Set.elements evars))
        )
-    with e when CErrors.noncritical e ->
-      RespError (CErrors.print e ++ spc() ++ str "(for goal "++int r_goalno ++ str ")")
+    with e ->
+      let noncrit = CErrors.noncritical e in
+      RespError (noncrit, CErrors.print e ++ spc() ++ str "(for goal "++int r_goalno ++ str ")")
 
   let name_of_task { t_name } = t_name
   let name_of_request { r_name } = r_name
@@ -157,7 +157,9 @@ let assign_tac ~abstract res : unit Proofview.tactic =
         in
         (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
             (push_state uc <*> Tactics.exact_no_check (EConstr.of_constr pt))
-  | Some (Exn e) -> raise e
+  | Some (Exn (noncrt, msg)) ->
+    if noncrt then raise (AsyncTaskQueue.RemoteException msg)
+    else CErrors.anomaly msg
   end)
 
 let enable_par ~nworkers = ComTactic.set_par_implementation
