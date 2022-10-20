@@ -125,16 +125,13 @@ let init_load_path () =
   (* then directories in COQPATH *)
   List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix) coqpath;
   (* then current directory *)
-  add_path ~unix_path:"." ~coq_root:Check.default_root_prefix;
-  (* additional loadpath, given with -R/-Q options *)
-  List.iter
-    (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
-    (List.rev !includes);
-  includes := []
-
+  add_path ~unix_path:"." ~coq_root:Check.default_root_prefix
 
 let impredicative_set = ref false
 let set_impredicative_set () = impredicative_set := true
+
+let boot = ref false
+let set_boot () = boot := true
 
 let indices_matter = ref false
 
@@ -184,6 +181,7 @@ let print_usage_channel co command =
 \n  -Q dir coqdir               map physical dir to logical coqdir\
 \n  -R dir coqdir               synonymous for -Q\
 \n  -coqlib dir                 set coqchk's standard library location\
+\n  -boot                       don't initalize the library paths automatically\
 \n\
 \n  -admit module               load module and dependencies without checking\
 \n  -norec module               check module but admit dependencies without checking\
@@ -335,6 +333,10 @@ let parse_args argv =
       Boot.Env.set_coqlib s;
       parse rem
 
+    | "-boot" :: rem ->
+      set_boot ();
+      parse rem
+
     | ("-Q"|"-R") :: d :: p :: rem -> set_include d p;parse rem
     | ("-Q"|"-R") :: ([] | [_]) -> usage ()
 
@@ -379,7 +381,12 @@ let init_with_argv argv =
     CWarnings.set_flags ("+"^Typeops.warn_bad_relevance_name);
     if CDebug.(get_flag misc) then Printexc.record_backtrace true;
     Flags.if_verbose print_header ();
-    init_load_path ();
+    if not !boot then init_load_path ();
+    (* additional loadpath, given with -R/-Q options *)
+    List.iter
+      (fun (unix_path, coq_root) -> add_rec_path ~unix_path ~coq_root)
+      (List.rev !includes);
+    includes := [];
     make_senv ()
   with e ->
     fatal_error (str "Error during initialization :" ++ (explain_exn e)) (is_anomaly e)
