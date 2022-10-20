@@ -94,8 +94,7 @@ val compare_heads : env -> evar_map ->
     matching, using typing to select occurrences *)
 
 type occurrence_match_test =
-  env -> evar_map -> constr -> (* Used to precompute the local tests *)
-  env -> evar_map -> int -> constr -> constr -> bool * evar_map
+  env -> evar_map -> constr -> constr -> bool * evar_map
 
 (** When given the choice of abstracting an occurrence or leaving it,
     force abstration. *)

@@ -140,7 +140,7 @@ let set_occurrences_of_last_arg n =
   Evarconv.AtOccurrences AllOccurrences ::
     List.tl (List.init n (fun _ -> Evarconv.Unspecified Abstraction.Abstract))
 
-let occurrence_test _ _ _ env sigma _ c1 c2 =
+let occurrence_test env sigma c1 c2 =
   match EConstr.eq_constr_universes env sigma c1 c2 with
   | None -> false, sigma
   | Some cstr ->
