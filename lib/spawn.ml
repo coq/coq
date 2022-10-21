@@ -77,8 +77,8 @@ let accept (sr,sw) =
 
 let spawn_sock env prog args =
   let main_sock, main_sock_name = mk_socket_channel () in
-  let extra = [| prog; "-main-channel"; main_sock_name |] in
-  let args = Array.append extra args in
+  let extra = [| "-main-channel"; main_sock_name |] in
+  let args = Array.append [| prog |] (Array.append args extra) in
   prerr_endline ("EXEC: " ^ String.concat " " (Array.to_list args));
   let pid =
     Unix.create_process_env prog args env Unix.stdin Unix.stdout Unix.stderr in
