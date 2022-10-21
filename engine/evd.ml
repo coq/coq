@@ -264,18 +264,7 @@ let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
 let evar_env env evi =
   Environ.reset_with_named_context evi.evar_hyps env
 
-let evar_filtered_env env evi = match Filter.repr (evar_filter evi) with
-| None -> evar_env env evi
-| Some filter ->
-  let rec make_env filter ctxt = match filter, ctxt with
-  | [], [] -> reset_context env
-  | false :: filter, _ :: ctxt -> make_env filter ctxt
-  | true :: filter, decl :: ctxt ->
-    let env = make_env filter ctxt in
-    push_named decl env
-  | _ -> instance_mismatch ()
-  in
-  make_env filter (evar_context evi)
+let evar_filtered_env env evi = Environ.reset_with_named_context (evar_filtered_hyps evi) env
 
 let evar_identity_subst evi =
   let len = match Filter.repr evi.evar_filter with
