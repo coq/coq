@@ -53,7 +53,6 @@ let base_obj_files ~rule coq_module =
   let aux_objs = if quick then []
     else
       [ mod_to_obj coq_module ~ext:".glob"
-      ; "." ^ mod_to_obj coq_module ~ext:".aux"
       ; mod_to_obj coq_module ~ext:".vos"
       ]
   in
