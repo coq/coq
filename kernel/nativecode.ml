@@ -1822,7 +1822,7 @@ let pp_mllam fmt l =
     Array.iter pp_branch bs
 
   and pp_primitive fmt = function
-    | Mk_prod -> Format.fprintf fmt "mk_prod_accu"
+    | Mk_prod -> Format.fprintf fmt "mk_prod"
     | Mk_sort -> Format.fprintf fmt "mk_sort_accu"
     | Mk_ind -> Format.fprintf fmt "mk_ind_accu"
     | Mk_const -> Format.fprintf fmt "mk_constant_accu"

@@ -190,6 +190,7 @@ let get_proj env (ind, proj_arg) =
 let rec nf_val env sigma v typ =
   match kind_of_value v with
   | Vaccu accu -> nf_accu env sigma accu
+  | Vprod (na, dom, codom) -> fst @@ nf_prod env sigma (na, dom, codom)
   | Vfun f ->
       let lvl = nb_rel env in
       let name,dom,codom =
@@ -213,6 +214,7 @@ let rec nf_val env sigma v typ =
 and nf_type env sigma v =
   match kind_of_value v with
   | Vaccu accu -> nf_accu env sigma accu
+  | Vprod (na, dom, codom) -> fst @@ nf_prod env sigma (na, dom, codom)
   | _ -> assert false
 
 and nf_type_sort env sigma v =
@@ -226,6 +228,7 @@ and nf_type_sort env sigma v =
           CErrors.anomaly (Pp.str "Value should be a sort")
       in
       t, s
+  | Vprod (na, dom, codom) -> nf_prod env sigma (na, dom, codom)
   | _ -> assert false
 
 and nf_accu env sigma accu =
@@ -272,6 +275,15 @@ and nf_bargs env sigma b t =
       let c = nf_val env sigma (block_field b i) dom in
       t := subst1 c codom; c)
 
+and nf_prod env sigma (na, dom, codom) =
+  let dom, sdom = nf_type_sort env sigma dom in
+  let rdom = Sorts.relevance_of_sort sdom in
+  let na = make_annot na rdom in
+  let vn = mk_rel_accu (nb_rel env) in
+  let env = push_rel (LocalAssum (na, dom)) env in
+  let codom, scodom = nf_type_sort env sigma (apply codom vn) in
+  mkProd (na, dom, codom), destSort (Typeops.type_of_product env na sdom scodom)
+
 and nf_atom env sigma atom =
   match atom with
   | Arel i -> mkRel (nb_rel env - i)
@@ -279,14 +291,6 @@ and nf_atom env sigma atom =
   | Aind ind -> mkIndU ind
   | Asort s -> mkSort s
   | Avar id -> mkVar id
-  | Aprod(n,dom,codom) ->
-    let dom, sdom = nf_type_sort env sigma dom in
-    let rdom = Sorts.relevance_of_sort sdom in
-    let n = make_annot n rdom in
-    let vn = mk_rel_accu (nb_rel env) in
-    let env = push_rel (LocalAssum (n,dom)) env in
-    let codom = nf_type env sigma (apply codom vn) in
-    mkProd(n,dom,codom)
   | Ameta (mv,_) -> mkMeta mv
   | Aproj (p, c) ->
       let c = nf_accu env sigma c in
@@ -361,14 +365,6 @@ and nf_atom_type env sigma atom =
       let env = push_rec_types (names,tt,[||]) env in
       let ft = Array.mapi (fun i v -> nf_val env sigma (napply v fargs) tt.(i)) ft in
       mkCoFix(s,(names,tt,ft)), tt.(s)
-  | Aprod(n,dom,codom) ->
-      let dom,s1 = nf_type_sort env sigma dom in
-      let r1 = Sorts.relevance_of_sort s1 in
-      let n = make_annot n r1 in
-      let vn = mk_rel_accu (nb_rel env) in
-      let env = push_rel (LocalAssum (n,dom)) env in
-      let codom,s2 = nf_type_sort env sigma (apply codom vn) in
-      mkProd(n,dom,codom), Typeops.type_of_product env n s1 s2
   | Aevar(evk,args) ->
     nf_evar env sigma evk args
   | Ameta(mv,ty) ->

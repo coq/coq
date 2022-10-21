@@ -62,7 +62,6 @@ type atom =
   | Acase of annot_sw * accumulator * t * t
   | Afix of t array * t array * rec_pos * int
   | Acofix of t array * t array * int * vcofix
-  | Aprod of Name.t * t * t
   | Ameta of metavariable * t
   | Aevar of Evar.t * t array (* arguments *)
   | Aproj of (inductive * int) * accumulator
@@ -93,7 +92,6 @@ val mk_ind_accu : inductive -> Univ.Level.t array -> t
 val mk_sort_accu : Sorts.t -> Univ.Level.t array -> t
 val mk_var_accu : Id.t -> t
 val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
-val mk_prod_accu : Name.t -> t -> t -> t
 val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t
 val mk_cofix_accu : int -> t array -> t array -> t
 val mk_meta_accu : metavariable -> t
@@ -103,6 +101,7 @@ val upd_cofix : t -> t -> unit
 val force_cofix : t -> t
 val mk_const : tag -> t
 val mk_block : tag -> t array -> t
+val mk_prod : Name.t -> t -> t -> t
 
 val mk_bool : bool -> t
 [@@ocaml.inline always]
@@ -142,6 +141,7 @@ val block_tag : block -> int
 type kind_of_value =
   | Vaccu of accumulator
   | Vfun of (t -> t)
+  | Vprod of Name.t * t * t
   | Vconst of int
   | Vint64 of int64
   | Vfloat64 of float
