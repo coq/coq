@@ -712,7 +712,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
   let fail = ref false in
   let interp_rpattern env sigma gc =
     try interp_rpattern env sigma gc
-    with _ when snd mult = May -> fail := true; sigma, T EConstr.mkProp in
+    with _ when snd mult = May -> fail := true; { pat_sigma = sigma; pat_pat = T EConstr.mkProp } in
   let interp env sigma gc =
     try interp_term env sigma ist gc
     with _ when snd mult = May -> fail := true; (sigma, EConstr.mkProp) in
@@ -724,7 +724,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     (* Evarmaps below are extensions of sigma, so setting the universe context is correct *)
     let sigma = match rx with
     | None -> sigma
-    | Some (s,_) -> Evd.set_universe_context sigma (Evd.evar_universe_context s)
+    | Some { pat_sigma = s } -> Evd.set_universe_context sigma (Evd.evar_universe_context s)
     in
     let t = interp env sigma gt in
     let sigma = Evd.set_universe_context sigma  (Evd.evar_universe_context (fst t)) in
