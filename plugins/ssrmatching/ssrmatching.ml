@@ -311,6 +311,12 @@ type tpattern = {
   up_ok : EConstr.t -> evar_map -> bool; (* progress test for rewrite *)
   }
 
+type tpatterns = { tpat_sigma : Evd.evar_map; tpat_pats : tpattern list }
+
+let empty_tpatterns sigma = { tpat_sigma = sigma; tpat_pats = [] }
+(* Technically we only care about the metas of [sigma] in the [tpatterns] type.
+   Should we [create_evar_defs] here? *)
+
 let all_ok _ _ = true
 
 let proj_nparams c =
@@ -370,7 +376,7 @@ let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
 
 (* Compile a match pattern from a term; t is the term to fill. *)
 (* p_origin can be passed to obtain a better error message     *)
-let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env (ise, t) dir p =
+let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env t dir p { tpat_sigma = ise; tpat_pats = pats } =
   let open EConstr in
   let k, f, a =
     let f, a = Reductionops.whd_betaiota_stack env ise p in
@@ -394,9 +400,8 @@ let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env (ise, t) dir p
     | _ -> KpatRigid, f, a in
   let aa = Array.of_list a in
   let ise', p' = evars_for_FO ~hack ~rigid env ise (mkApp (f, aa)) in
-  ise',
-  { up_k = k; up_FO = p'; up_f = f;
-    up_a = aa; up_ok = ok; up_dir = dir; up_t = t}
+  { tpat_sigma = ise'; tpat_pats = pats @ [{ up_k = k; up_FO = p'; up_f = f;
+    up_a = aa; up_ok = ok; up_dir = dir; up_t = t}] }
 
 (* Specialize a pattern after a successful match: assign a precise head *)
 (* kind and arity for Proj and Flex patterns.                           *)
@@ -806,7 +811,7 @@ let conclude_tpattern ~raise_NoMatch ~upat_that_matched ~upats_origin ~upats { m
 
 (* upats_origin makes a better error message only            *)
 let mk_tpattern_matcher ?(all_instances=false)
-  ?(raise_NoMatch=false) ?upats_origin sigma0 occ (ise, upats)
+  ?(raise_NoMatch=false) ?upats_origin sigma0 occ { tpat_sigma = ise; tpat_pats = upats }
 =
   let occ_state = create_occ_state occ in
   let upat_that_matched = ref None in
@@ -1180,8 +1185,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
     let sigma = Evd.undefine sigma e [@@ocaml.warning "-3"] in
     sigma, e_body in
   let mk_upat_for ?hack ~rigid (sigma, t) =
-    let sigma,pat= mk_tpattern ?hack ~rigid env0 (sigma, t) L2R (fs sigma t) in
-    sigma, [pat] in
+    mk_tpattern ?hack ~rigid env0 t L2R (fs sigma t) (empty_tpatterns sigma)
+  in
   match pattern with
   | None -> do_subst env0 concl0 concl0 1, UState.empty
   | Some (sigma, (T rp | In_T rp)) ->
@@ -1290,11 +1295,9 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst =
   fst (eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ do_subst)
 
 let pf_fill_occ env concl occ sigma0 p (sigma, t) h =
- let ise = create_evar_defs sigma in
  let rigid ev = Evd.mem sigma0 ev in
- let ise, u = mk_tpattern ~rigid env (ise, t) L2R p in
- let find_U, end_U =
-   mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
+ let u = mk_tpattern ~rigid env t L2R p (empty_tpatterns (create_evar_defs sigma)) in
+ let find_U, end_U = mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ u in
  let concl = find_U env concl h ~k:(fun _ _ _ n -> EConstr.mkRel n) in
  let rdx, _, (c, sigma, uc, p) = end_U () in
  c, sigma, uc, p, concl, rdx
@@ -1369,10 +1372,10 @@ let ssrinstancesof arg =
   let sigma0, cpat = interp_cpattern env sigma arg None in
   let pat = match cpat with T x -> x | _ -> errorstrm (str"Not supported") in
   let rigid ev = Evd.mem sigma ev in
-  let etpat, tpat = mk_tpattern ~rigid env (sigma0, pat) L2R pat in
+  let tpat = mk_tpattern ~rigid env pat L2R pat (empty_tpatterns sigma0) in
   let find, conclude =
-    mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true
-      sigma None (etpat,[tpat]) in
+    mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true sigma None tpat
+  in
   let print env p c _ = ppnl (hov 1 (str"instance:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) p ++ spc()
                                      ++ str "matches:" ++ spc() ++ pr_econstr_env env (Proofview.Goal.sigma gl) c)); c in
   ppnl (str"BEGIN INSTANCES");
