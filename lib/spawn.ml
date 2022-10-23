@@ -130,7 +130,7 @@ let spawn_with_control prefer_sock env prog args =
     if not_Unix then
       let control_sock, control_sock_name = mk_socket_channel () in
       let extra = [| "-control-channel"; control_sock_name |] in
-      Array.append extra args, Some control_sock
+      Array.append args extra, Some control_sock
     else
       args, None in
   let (pid, cin, cout, s), is_sock =
