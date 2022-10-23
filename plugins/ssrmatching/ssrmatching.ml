@@ -214,8 +214,11 @@ let flags_FO env =
     Unification.resolve_evars =
       (Unification.default_no_delta_unify_flags ts).Unification.resolve_evars
   }
-let unif_FO env ise p c =
-  Unification.w_unify env ise Reduction.CONV ~flags:(flags_FO env) p c
+
+let unif_FO env ise metas p c =
+  let ise = Metamap.fold (fun mv t accu -> Evd.meta_declare mv t accu) metas ise in
+  let _ : Evd.evar_map = Unification.w_unify env ise Reduction.CONV ~flags:(flags_FO env) p c in
+  ()
 
 (* Perform evar substitution in main term and prune substitution. *)
 let nf_open_term sigma0 ise c =
@@ -303,7 +306,7 @@ type pattern_class =
 
 type tpattern = {
   up_k : pattern_class;
-  up_FO : EConstr.t;
+  up_FO : EConstr.t Metamap.t * EConstr.t;
   up_f : EConstr.t;
   up_a : EConstr.t array;
   up_t : EConstr.t;                      (* equation proof term or matched term *)
@@ -311,7 +314,10 @@ type tpattern = {
   up_ok : EConstr.t -> evar_map -> bool; (* progress test for rewrite *)
   }
 
-type tpatterns = { tpat_sigma : Evd.evar_map; tpat_pats : tpattern list }
+type tpatterns = {
+  tpat_sigma : Evd.evar_map;
+  tpat_pats : tpattern list;
+}
 
 let empty_tpatterns sigma = { tpat_sigma = sigma; tpat_pats = [] }
 (* Technically we only care about the metas of [sigma] in the [tpatterns] type.
@@ -351,7 +357,7 @@ let pr_econstr_pat env sigma c0 =
 (* Turn (new) evars into metas *)
 let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
   let open EConstr in
-  let ise = ref ise0 in
+  let metas = ref Metamap.empty in
   let sigma = ref ise0 in
   let nenv = env_size env + if hack then 1 else 0 in
   let rec put c = match EConstr.kind !sigma c with
@@ -368,11 +374,11 @@ let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
       Context.Named.fold_inside abs_dc ~init:([], put evi.evar_concl) dc
     in
     let m = Evarutil.new_meta () in
-    ise := meta_declare m t !ise;
+    let () = metas := Metamap.add m t !metas in
     sigma := Evd.define k (applistc (mkMeta m) a) !sigma;
     put c
   | _ -> map !sigma put c in
-  let c1 = put c0 in !ise, c1
+  let c1 = put c0 in !metas, c1
 
 (* Compile a match pattern from a term; t is the term to fill. *)
 (* p_origin can be passed to obtain a better error message     *)
@@ -399,9 +405,9 @@ let mk_tpattern ?p_origin ?(hack=false) ?(ok = all_ok) ~rigid env t dir p { tpat
     | Lambda _ -> KpatLam, f, a
     | _ -> KpatRigid, f, a in
   let aa = Array.of_list a in
-  let ise', p' = evars_for_FO ~hack ~rigid env ise (mkApp (f, aa)) in
-  { tpat_sigma = ise'; tpat_pats = pats @ [{ up_k = k; up_FO = p'; up_f = f;
-    up_a = aa; up_ok = ok; up_dir = dir; up_t = t}] }
+  let p' = evars_for_FO ~hack ~rigid env ise (mkApp (f, aa)) in
+  let pat = { up_k = k; up_FO = p'; up_f = f; up_a = aa; up_ok = ok; up_dir = dir; up_t = t} in
+  { tpat_sigma = ise; tpat_pats = pats @ [pat] }
 
 (* Specialize a pattern after a successful match: assign a precise head *)
 (* kind and arity for Proj and Flex patterns.                           *)
@@ -415,7 +421,7 @@ let ungen_upat lhs (c, sigma, uc, t) u =
   | LetIn _ -> KpatLet
   | Lambda _ -> KpatLam
   | _ -> KpatRigid in
-  c, sigma, uc, {u with up_k = k; up_FO = lhs; up_f = f; up_a = a; up_t = t}
+  c, sigma, uc, {u with up_k = k; up_FO = (Metamap.empty, lhs); up_f = f; up_a = a; up_t = t}
 
 let nb_cs_proj_args ise pc f u =
   let open EConstr in
@@ -485,7 +491,7 @@ let eq_prim_proj sigma c t = match EConstr.kind sigma t with
 
 let filter_upat_FO sigma i0 f n u fpats =
   let open EConstr in
-  let np = nb_args sigma u.up_FO in
+  let np = nb_args sigma (snd u.up_FO) in
   if n < np then fpats else
   let ok = match u.up_k with
   | KpatConst -> eq_constr_nounivs sigma u.up_f f
@@ -532,17 +538,23 @@ let match_upats_FO upats env sigma0 ise orig_c =
            if u.up_k == KpatFlex then begin i0 := i - 1; false end else
            begin if !i0 < np then i0 := np; true end in
          if skip || not (EConstr.Vars.closed0 ise c') then () else try
-           let _ = match u.up_k with
+           let () = match u.up_k with
            | KpatFlex ->
              let kludge v = mkLambda (make_annot Anonymous Sorts.Relevant, mkProp, v) in
-             unif_FO env ise (kludge u.up_FO) (kludge c')
+             let (metas, p_FO) = u.up_FO in
+             unif_FO env ise metas (kludge p_FO) (kludge c')
            | KpatLet ->
              let kludge vla =
                let vl, a = safeDestApp ise vla in
                let x, v, t, b = destLetIn ise vl in
-               mkApp (mkLambda (x, t, b), Array.cons v a) in
-             unif_FO env ise (kludge u.up_FO) (kludge c')
-           | _ -> unif_FO env ise u.up_FO c' in
+               mkApp (mkLambda (x, t, b), Array.cons v a)
+             in
+             let (metas, p_FO) = u.up_FO in
+             unif_FO env ise metas (kludge p_FO) (kludge c')
+           | _ ->
+             let (metas, p_FO) = u.up_FO in
+             unif_FO env ise metas p_FO c'
+           in
            let ise' = (* Unify again using HO to assign evars *)
              let p = mkApp (u.up_f, u.up_a) in
              try unif_HO env ise p c' with e when CErrors.noncritical e -> raise NoMatch in
