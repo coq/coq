@@ -271,7 +271,7 @@ $ending
     fi
     curl -sSX PATCH https://coq.zulipchat.com/api/v1/messages/"$zulip_post" \
          -u "$ZULIP_BENCH_BOT" \
-         --data-urlencode content="$msg" >/dev/null
+         --data-urlencode content="$msg" >/dev/null || echo "Failed to edit zulip post" >&2
 }
 zulip_autofail() {
     code=$?
