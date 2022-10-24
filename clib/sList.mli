@@ -61,6 +61,7 @@ sig
 val iter : ('a -> unit) -> 'a t -> unit
 val map : ('a -> 'b) -> 'a t -> 'b t
 val fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+val for_all : ('a -> bool) -> 'a t -> bool
 val exists : ('a -> bool) -> 'a t -> bool
 
 end
