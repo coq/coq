@@ -84,22 +84,19 @@ exception NoMatch
 
 let match_ctor_against ctor v =
   match ctor, v with
-  | Tuple 0, _ -> [| |]
-  | Tuple _, ValBlk (_,vs) -> vs
-  | Tuple _, _ -> assert false
-  | Other { cindx = Open ctor }, ValOpn (ctor', vs) ->
+  | { cindx = Open ctor }, ValOpn (ctor', vs) ->
     if KerName.equal ctor ctor' then vs
     else raise NoMatch
-  | Other { cindx = Open _ }, _ -> assert false
-  | Other { cnargs = 0; cindx = Closed i }, ValInt i' ->
+  | { cindx = Open _ }, _ -> assert false
+  | { cnargs = 0; cindx = Closed i }, ValInt i' ->
     if Int.equal i i' then [| |]
     else raise NoMatch
-  | Other { cnargs = 0 }, ValBlk _ -> raise NoMatch
-  | Other _, ValInt _ -> raise NoMatch
-  | Other { cindx = Closed i }, ValBlk (i', vs) ->
+  | { cnargs = 0; cindx = Closed _ }, ValBlk _ -> raise NoMatch
+  | _, ValInt _ -> raise NoMatch
+  | { cindx = Closed i }, ValBlk (i', vs) ->
     if Int.equal i i' then vs
     else raise NoMatch
-  | Other { cindx = Closed _ }, ValOpn _ -> assert false
+  | { cindx = Closed _ }, ValOpn _ -> assert false
   | _, (ValStr _ | ValCls _ | ValExt _ | ValUint63 _ | ValFloat _) -> assert false
 
 let check_atom_against atm v =
