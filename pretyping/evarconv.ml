@@ -1243,11 +1243,11 @@ let evar_conv_x flags = evar_conv_x flags
 
 let evar_unify = conv_fun evar_conv_x
 
-let evar_conv_hook_get, evar_conv_hook_set = Hook.make ~default:evar_conv_x ()
+let evar_conv_hook = ref evar_conv_x
 
-let evar_conv_x flags = Hook.get evar_conv_hook_get flags
+let evar_conv_x flags = !evar_conv_hook flags
 
-let set_evar_conv f = Hook.set evar_conv_hook_set f
+let set_evar_conv f = evar_conv_hook := f
 
 
 (* We assume here |l1| <= |l2| *)

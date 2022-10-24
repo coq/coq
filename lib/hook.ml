@@ -10,7 +10,6 @@
 
 type 'a content =
 | Unset
-| Default of 'a
 | Set of 'a
 
 type 'a t = 'a content ref
@@ -19,16 +18,12 @@ type 'a value = 'a t
 
 let get (hook : 'a value) = match !hook with
 | Unset -> assert false
-| Default data | Set data -> data
+| Set data -> data
 
 let set (hook : 'a t) data = match !hook with
-| Unset | Default _ -> hook := Set data
+| Unset -> hook := Set data
 | Set _ -> assert false
 
-let make ?default () =
-  let data = match default with
-  | None -> Unset
-  | Some data -> Default data
-  in
-  let ans = ref data in
+let make () =
+  let ans = ref Unset in
   (ans, ans)

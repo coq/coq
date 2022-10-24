@@ -266,28 +266,27 @@ val register_proof_block_delimiter :
  * the alternative toploop for the worker can be selected by changing
  * the name of the Task(s) above) *)
 
-val state_computed_hook : (doc:doc -> Stateid.t -> in_cache:bool -> unit) Hook.t
-val unreachable_state_hook :
-  (doc:doc -> Stateid.t -> Exninfo.iexn -> unit) Hook.t
+val state_computed_hook : (doc:doc -> Stateid.t -> in_cache:bool -> unit) -> unit
+val unreachable_state_hook : (doc:doc -> Stateid.t -> Exninfo.iexn -> unit) -> unit
 
 (* ready means that master has it at hand *)
-val state_ready_hook : (doc:doc -> Stateid.t -> unit) Hook.t
+val state_ready_hook : (doc:doc -> Stateid.t -> unit) -> unit
 
 (* Messages from the workers to the master *)
-val forward_feedback_hook : (Feedback.feedback -> unit) Hook.t
+val forward_feedback_hook : (Feedback.feedback -> unit) -> unit
 
 (*
  * Hooks into the UI for plugins (not for general use)
  *)
 
 (** User adds a sentence to the document (after parsing) *)
-val document_add_hook : (Vernacexpr.vernac_control -> Stateid.t -> unit) Hook.t
+val document_add_hook : (Vernacexpr.vernac_control -> Stateid.t -> unit) -> unit
 
 (** User edits a sentence in the document *)
-val document_edit_hook : (Stateid.t -> unit) Hook.t
+val document_edit_hook : (Stateid.t -> unit) -> unit
 
 (** User requests evaluation of a sentence *)
-val sentence_exec_hook : (Stateid.t -> unit) Hook.t
+val sentence_exec_hook : (Stateid.t -> unit) -> unit
 
 val get_doc : Feedback.doc_id -> doc
 

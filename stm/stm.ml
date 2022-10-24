@@ -87,35 +87,24 @@ let execution_error ?loc state_id msg =
 
 module Hooks = struct
 
-let state_computed, state_computed_hook = Hook.make
- ~default:(fun ~doc:_ state_id ~in_cache ->
-    feedback ~id:state_id Processed) ()
+let state_computed = ref (fun ~doc:_ state_id ~in_cache ->
+    feedback ~id:state_id Processed)
 
-let state_ready, state_ready_hook = Hook.make
- ~default:(fun ~doc:_ state_id -> ()) ()
+let state_ready = ref (fun ~doc:_ state_id -> ())
 
-let forward_feedback, forward_feedback_hook =
+let forward_feedback =
   let m = Mutex.create () in
-  Hook.make ~default:(function
+  ref (function
     | { doc_id = did; span_id = id; route; contents } ->
-        CThread.with_lock m ~scope:(fun () -> feedback ~did ~id ~route contents)) ()
+        CThread.with_lock m ~scope:(fun () -> feedback ~did ~id ~route contents))
 
-let unreachable_state, unreachable_state_hook = Hook.make
- ~default:(fun ~doc:_ _ _ -> ()) ()
+let unreachable_state = ref (fun ~doc:_ _ _ -> ())
 
-let document_add, document_add_hook = Hook.make
- ~default:(fun _ _ -> ()) ()
+let document_add = ref (fun _ _ -> ())
 
-let document_edit, document_edit_hook = Hook.make
- ~default:(fun _ -> ()) ()
+let document_edit = ref (fun _ -> ())
 
-let sentence_exec, sentence_exec_hook = Hook.make
- ~default:(fun _ -> ()) ()
-
-include Hook
-
-(* enables:  Hooks.(call foo args) *)
-let call = get
+let sentence_exec = ref (fun _ -> ())
 
 end
 
@@ -592,7 +581,7 @@ end = struct (* {{{ *)
       | EmptyState | ErrorState _ | ParsingState _ -> false
     in
     if async_proofs_is_master !cur_opt && is_full_state_valid then
-      Hooks.(call state_ready ~doc:dummy_doc (* XXX should be taken in input *) id)
+      !Hooks.state_ready ~doc:dummy_doc (* XXX should be taken in input *) id
 
   let get_state id = (get_info id).state
 
@@ -973,7 +962,7 @@ end = struct (* {{{ *)
       stm_prerr_endline (fun () -> "setting cur id to "^str_id);
       cur_id := id;
       if feedback_processed then
-        Hooks.(call state_computed ~doc id ~in_cache:false);
+        !Hooks.state_computed~doc id ~in_cache:false;
       VCS.reached id;
       if PG_compat.there_are_pending_proofs () then
         VCS.goals id (PG_compat.get_open_goals ())
@@ -989,7 +978,7 @@ end = struct (* {{{ *)
         | Some _, None -> (e, info)
         | Some (_,at), Some id -> (e, Stateid.add info ~valid:id at) in
       if cache then freeze_invalid id ie;
-      Hooks.(call unreachable_state ~doc id ie);
+      !Hooks.unreachable_state ~doc id ie;
       Exninfo.iraise ie
 
   let init_state = ref None
@@ -1352,7 +1341,7 @@ module rec ProofTask : sig
 
 end = struct (* {{{ *)
 
-  let forward_feedback msg = Hooks.(call forward_feedback msg)
+  let forward_feedback msg = !Hooks.forward_feedback msg
 
   type competence = Stateid.t list
   type task_build_proof = {
@@ -1841,7 +1830,7 @@ end = struct (* {{{ *)
 
   let on_task_cancellation_or_expiration_or_slave_death _ = ()
 
-  let forward_feedback msg = Hooks.(call forward_feedback msg)
+  let forward_feedback msg = !Hooks.forward_feedback msg
 
   let perform { r_where; r_doc; r_what; r_for } =
     VCS.restore r_doc;
@@ -2156,7 +2145,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
   and reach ?safe_id ?(redefine_qed=false) ?(cache=cache) id =
     stm_prerr_endline (fun () -> "reaching: " ^ Stateid.to_string id);
     if not redefine_qed && State.is_cached ~cache id then begin
-      Hooks.(call state_computed ~doc id ~in_cache:true);
+      !Hooks.state_computed ~doc id ~in_cache:true;
       stm_prerr_endline (fun () -> "reached (cache)");
       State.install_cached id
     end else
@@ -2421,7 +2410,7 @@ let new_doc { doc_type ; injections; stm_options } =
   doc, VCS.cur_tip ()
 
 let observe ~doc id =
-  Hooks.(call sentence_exec id);
+  !Hooks.sentence_exec id;
   let vcs = VCS.backup () in
   try
     Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
@@ -2789,7 +2778,7 @@ let compute_indentation ?loc sid = Option.cata (fun loc ->
 type add_focus = NewAddTip | Unfocus of Stateid.t
 
 let add ~doc ~ontop ?newtip verb ast =
-  Hooks.(call document_add ast ontop);
+  !Hooks.document_add ast ontop;
   let loc = ast.CAst.loc in
   let cur_tip = VCS.cur_tip () in
   if not (Stateid.equal ontop cur_tip) then
@@ -2837,7 +2826,7 @@ let query ~doc ~at ~route s =
   s
 
 let edit_at ~doc id =
-  Hooks.(call document_edit id);
+  !Hooks.document_edit id;
   if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy.") else
   let vcs = VCS.backup () in
   let on_cur_branch id =
@@ -2989,13 +2978,13 @@ let get_all_proof_names ~doc =
   List.map unmangle (CList.map_filter proofname (VCS.branches ()))
 
 (* Export hooks *)
-let state_computed_hook = Hooks.state_computed_hook
-let state_ready_hook = Hooks.state_ready_hook
-let forward_feedback_hook = Hooks.forward_feedback_hook
-let unreachable_state_hook = Hooks.unreachable_state_hook
-let document_add_hook = Hooks.document_add_hook
-let document_edit_hook = Hooks.document_edit_hook
-let sentence_exec_hook = Hooks.sentence_exec_hook
+let state_computed_hook v = Hooks.state_computed := v
+let state_ready_hook v = Hooks.state_ready := v
+let forward_feedback_hook v = Hooks.forward_feedback := v
+let unreachable_state_hook v = Hooks.unreachable_state := v
+let document_add_hook v = Hooks.document_add := v
+let document_edit_hook v = Hooks.document_edit := v
+let sentence_exec_hook v = Hooks.sentence_exec := v
 
 type document = VCS.vcs
 let backup () = VCS.backup ()
