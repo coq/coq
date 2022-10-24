@@ -405,18 +405,19 @@ let push_rel_context_to_named_context ~hypnaming env sigma typ =
 
 let new_pure_evar = Evd.new_pure_evar
 
+let next_evar_name sigma naming = match naming with
+| IntroAnonymous -> None
+| IntroIdentifier id -> Some id
+| IntroFresh id ->
+  let has_name id = try let _ = Evd.evar_key id sigma in true with Not_found -> false in
+  let id = Namegen.next_ident_away_from id has_name in
+  Some id
+
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 let new_evar ?src ?filter ?abstract_arguments ?candidates ?(naming = IntroAnonymous) ?typeclass_candidate
     ?principal ?hypnaming env evd typ =
-  let name = match naming with
-  | IntroAnonymous -> None
-  | IntroIdentifier id -> Some id
-  | IntroFresh id ->
-    let has_name id = try let _ = Evd.evar_key id evd in true with Not_found -> false in
-    let id = Namegen.next_ident_away_from id has_name in
-    Some id
-  in
+  let name = next_evar_name evd naming in
   let hypnaming = match hypnaming with
   | Some n -> n
   | None -> RenameExistingBut (VarSet.variables (Global.env ()))

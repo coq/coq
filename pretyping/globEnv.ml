@@ -101,14 +101,7 @@ let new_evar env sigma ?src ?(naming = Namegen.IntroAnonymous) typ =
   let (subst, _, sign) as ext = Lazy.force env.extra in
   let instance = Evarutil.default_ext_instance ext in
   let typ' = csubst_subst sigma subst typ in
-  let name = match naming with
-  | IntroAnonymous -> None
-  | IntroIdentifier id -> Some id
-  | IntroFresh id ->
-    let has_name id = try let _ = Evd.evar_key id sigma in true with Not_found -> false in
-    let id = Namegen.next_ident_away_from id has_name in
-    Some id
-  in
+  let name = Evarutil.next_evar_name sigma naming in
   let (sigma, evk) = new_pure_evar sign sigma typ' ?src ?name in
   (sigma, mkEvar (evk, instance))
 

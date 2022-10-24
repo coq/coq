@@ -24,6 +24,8 @@ val new_meta : unit -> metavariable
 
 (** {6 Creating a fresh evar given their type and context} *)
 
+val next_evar_name : evar_map -> intro_pattern_naming_expr -> Id.t option
+
 module VarSet :
 sig
   type t
