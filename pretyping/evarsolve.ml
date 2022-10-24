@@ -1388,8 +1388,7 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
 let update_evar_info ev1 ev2 evd =
   (* We update the source of obligation evars during evar-evar unifications. *)
   let loc, evs1 = evar_source ev1 evd in
-  let evi = Evd.find evd ev2 in
-  Evd.add evd ev2 {evi with evar_source = loc, evs1}
+  Evd.update_source evd ev2 (loc, evs1)
 
 let solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 (evk2,_ as ev2) =
   try

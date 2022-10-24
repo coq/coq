@@ -45,11 +45,7 @@ let compact el ({ solution } as pv) =
   let size = Evd.fold (fun _ _ i -> i+1) solution 0 in
   let new_el = List.map (fun (hyps,t,ty) -> nf_hyps hyps, nf t, nf ty) el in
   let pruned_solution = Evd.drop_all_defined solution in
-  let apply_subst_einfo _ ei =
-    Evd.({ ei with
-       evar_concl =  nf ei.evar_concl;
-       evar_hyps = nf_hyps ei.evar_hyps;
-       evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
+  let apply_subst_einfo _ ei = Evd.map_evar_info nf ei in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
   Feedback.msg_info (Pp.str (Printf.sprintf "Evars: %d -> %d\n" size new_size));
@@ -741,17 +737,17 @@ let mark_in_evm ~goal evd evars =
     if goal then
       let mark evd content =
         let info = Evd.find evd content in
-        let info =
-          { info with Evd.evar_source = match info.Evd.evar_source with
-                (* Two kinds for goal evars:
-                   - GoalEvar (morally not dependent)
-                   - VarInstance (morally dependent of some name).
-                   This is a heuristic for naming these evars. *)
-                | loc, (Evar_kinds.QuestionMark { Evar_kinds.qm_name=Names.Name id} |
-                        Evar_kinds.ImplicitArg (_,(_,Some id),_)) -> loc, Evar_kinds.VarInstance id
-                | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
-                | loc,_ -> loc,Evar_kinds.GoalEvar }
-        in Evd.add evd content info
+        let source = match info.Evd.evar_source with
+        (* Two kinds for goal evars:
+            - GoalEvar (morally not dependent)
+            - VarInstance (morally dependent of some name).
+            This is a heuristic for naming these evars. *)
+        | loc, (Evar_kinds.QuestionMark { Evar_kinds.qm_name=Names.Name id} |
+                Evar_kinds.ImplicitArg (_,(_,Some id),_)) -> loc, Evar_kinds.VarInstance id
+        | _, (Evar_kinds.VarInstance _ | Evar_kinds.GoalEvar) as x -> x
+        | loc,_ -> loc,Evar_kinds.GoalEvar
+        in
+        Evd.update_source evd content source
       in CList.fold_left mark evd evars
     else evd
   in
@@ -1089,26 +1085,6 @@ module Goal = struct
       state = state ;
       self = goal }
 
-  let nf_gmake env sigma goal =
-    let state = get_state goal in
-    let goal = drop_state goal in
-    let info = Evarutil.nf_evar_info sigma (Evd.find sigma goal) in
-    let sigma = Evd.add sigma goal info in
-    gmake_with info env sigma goal state , sigma
-
-  let nf_enter f =
-    InfoL.tag (Info.Dispatch) begin
-    iter_goal begin fun goal ->
-      tclENV >>= fun env ->
-      tclEVARMAP >>= fun sigma ->
-      try
-        let (gl, sigma) = nf_gmake env sigma goal in
-        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
-      with e when catchable_exception e ->
-        let (e, info) = Exninfo.capture e in
-        tclZERO ~info e
-    end
-    end
   let gmake env sigma goal =
     let state = get_state goal in
     let goal = drop_state goal in

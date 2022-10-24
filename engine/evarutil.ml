@@ -403,42 +403,21 @@ let push_rel_context_to_named_context ~hypnaming env sigma typ =
  * Entry points to define new evars   *
  *------------------------------------*)
 
-let default_source = Loc.tag @@ Evar_kinds.InternalHole
+let new_pure_evar = Evd.new_pure_evar
 
-let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance = Sorts.Relevant)
-  ?(abstract_arguments = Abstraction.identity) ?candidates
-  ?(naming = IntroAnonymous) ?typeclass_candidate ?(principal=false) sign evd typ =
-  let name = match naming with
-  | IntroAnonymous -> None
-  | IntroIdentifier id -> Some id
-  | IntroFresh id ->
-    let has_name id = try let _ = Evd.evar_key id evd in true with Not_found -> false in
-    let id = Namegen.next_ident_away_from id has_name in
-    Some id
-  in
-  let evi = {
-    evar_hyps = sign;
-    evar_concl = typ;
-    evar_body = Evar_empty;
-    evar_filter = filter;
-    evar_abstract_arguments = abstract_arguments;
-    evar_source = src;
-    evar_candidates = candidates;
-    evar_relevance = relevance;
-  }
-  in
-  let typeclass_candidate = if principal then Some false else typeclass_candidate in
-  let (evd, newevk) = Evd.new_evar evd ?name ?typeclass_candidate evi in
-  let evd =
-    if principal then Evd.declare_principal_goal newevk evd
-    else Evd.declare_future_goal newevk evd
-  in
-  (evd, newevk)
+let next_evar_name sigma naming = match naming with
+| IntroAnonymous -> None
+| IntroIdentifier id -> Some id
+| IntroFresh id ->
+  let has_name id = try let _ = Evd.evar_key id sigma in true with Not_found -> false in
+  let id = Namegen.next_ident_away_from id has_name in
+  Some id
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_candidate
+let new_evar ?src ?filter ?abstract_arguments ?candidates ?(naming = IntroAnonymous) ?typeclass_candidate
     ?principal ?hypnaming env evd typ =
+  let name = next_evar_name evd naming in
   let hypnaming = match hypnaming with
   | Some n -> n
   | None -> RenameExistingBut (VarSet.variables (Global.env ()))
@@ -451,7 +430,7 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
     | None -> instance
     | Some filter -> Filter.filter_slist filter instance in
   let relevance = Sorts.Relevant in (* FIXME: relevant_of_type not defined yet *)
-  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ~relevance ?abstract_arguments ?candidates ?naming
+  let (evd, evk) = new_pure_evar sign evd typ' ?src ?filter ~relevance ?abstract_arguments ?candidates ?name
     ?typeclass_candidate ?principal in
   (evd, EConstr.mkEvar (evk, instance))
 
