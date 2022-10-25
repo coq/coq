@@ -41,7 +41,7 @@ let warn_unsupported_attributes =
        let keys = List.map (fun x -> fst x.CAst.v) atts in
        let keys = List.sort_uniq String.compare keys in
        let conj = match keys with [_] -> "this attribute: " | _ -> "these attributes: " in
-       Pp.(str "This command does not support " ++ str conj ++ prlist str keys ++ str"."))
+       Pp.(str "This command does not support " ++ str conj ++ prlist_with_sep (fun () -> strbrk ", ") str keys ++ str"."))
 
 let unsupported_attributes = function
   | [] -> ()
