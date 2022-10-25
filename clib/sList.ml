@@ -34,6 +34,11 @@ let is_empty = function
 | Nil -> true
 | Cons _ | Default _ -> false
 
+let is_default = function
+| Nil -> true
+| Default (_, Nil) -> true
+| Cons _ | Default _ -> false
+
 let view = function
 | Nil -> None
 | Cons (x, l) -> Some (Some x, l)

@@ -39,6 +39,8 @@ val view : 'a t -> ('a option * 'a t) option
 
 val is_empty : 'a t -> bool
 
+val is_default : 'a t -> bool
+
 (** {5 Usual list-like operators} *)
 
 val length : 'a t -> int

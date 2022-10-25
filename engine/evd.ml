@@ -321,9 +321,9 @@ let evar_instance_array info args =
   | Some filter ->
     instrec 0 filter args
 
-let make_evar_instance_array info args = match args with
-| SList.Default (_, SList.Nil) -> []
-| _ -> evar_instance_array info args
+let make_evar_instance_array info args =
+  if SList.is_default args then []
+  else evar_instance_array info args
 
 type 'a in_evar_universe_context = 'a * UState.t
 
