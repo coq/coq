@@ -173,10 +173,6 @@ val has_shelved : evar_map -> bool
 (** [has_shelved sigma] is [true] if and only if
     there are shelved evars in [sigma]. *)
 
-val new_evar : evar_map ->
-  ?name:Id.t -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
-(** Creates a fresh evar mapping to the given information. *)
-
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?relevance:Sorts.relevance ->

@@ -798,11 +798,6 @@ let evar_counter_summary_name = "evar counter"
 let evar_ctr, evar_counter_summary_tag = Summary.ref_tag 0 ~name:evar_counter_summary_name
 let new_untyped_evar () = incr evar_ctr; Evar.unsafe_of_int !evar_ctr
 
-let new_evar evd ?name ?typeclass_candidate evi =
-  let evk = new_untyped_evar () in
-  let evd = add_with_name evd ?name ?typeclass_candidate evk evi in
-  (evd, evk)
-
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
 let remove d e =
@@ -1308,7 +1303,8 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance 
   }
   in
   let typeclass_candidate = if principal then Some false else typeclass_candidate in
-  let (evd, newevk) = new_evar evd ?name ?typeclass_candidate evi in
+  let newevk = new_untyped_evar () in
+  let evd = add_with_name evd ?name ?typeclass_candidate newevk evi in
   let evd =
     if principal then declare_principal_goal newevk evd
     else declare_future_goal newevk evd
