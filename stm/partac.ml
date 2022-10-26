@@ -139,24 +139,39 @@ module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask) ()
 let assign_tac ~abstract res : unit Proofview.tactic =
   Proofview.(Goal.enter begin fun g ->
   let gid = Goal.goal g in
-  let g_solution =
-    try List.assoc gid res
-    with Not_found -> CErrors.anomaly(str"Partac: wrong focus.") in
-  match !g_solution with
-  | None -> tclUNIT ()
-  | Some RespNoProgress -> tclUNIT ()
-  | Some (RespBuiltSubProof (pt, uc)) ->
+  match  List.assoc gid res with
+  | exception Not_found -> (* No progress *) tclUNIT ()
+  | (pt, uc) ->
     let open Notations in
-        let push_state ctx =
-            Proofview.tclEVARMAP >>= fun sigma ->
-            Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma ctx)
-        in
-        (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
-            (push_state uc <*> Tactics.exact_no_check (EConstr.of_constr pt))
-  | Some (RespError (noncrt, msg)) ->
-    if noncrt then raise (AsyncTaskQueue.RemoteException msg)
-    else CErrors.anomaly msg
+    let push_state ctx =
+      Proofview.tclEVARMAP >>= fun sigma ->
+      Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma ctx)
+    in
+    (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
+      (push_state uc <*> Tactics.exact_no_check (EConstr.of_constr pt))
   end)
+
+let get_results res =
+  (* If one of the goals failed others may be missing results, so we
+     need to check for RespError before complaining about missing
+     results *)
+  let missing = ref [] in
+  let res = CList.map_filter_i (fun i (g,v) -> match !v with
+      | None -> missing := i :: !missing; None
+      | Some (RespBuiltSubProof v) -> Some (g,v)
+      | Some RespNoProgress -> None
+      | Some (RespError (noncrt, msg)) ->
+        if noncrt then raise (AsyncTaskQueue.RemoteException msg)
+        else CErrors.anomaly msg)
+      res
+  in
+  match !missing with
+  | [] -> res
+  | missing ->
+    CErrors.anomaly
+      (str "Missing results (for " ++
+       str (CString.plural (List.length missing) "goal") ++
+       spc () ++ prlist_with_sep spc int missing ++ str ")")
 
 let enable_par ~nworkers = ComTactic.set_par_implementation
   (fun ~pstate ~info t_ast ~abstract ~with_end_tac ->
@@ -173,6 +188,7 @@ let enable_par ~nworkers = ComTactic.set_par_implementation
           t_kill = (fun () -> TaskQueue.cancel_all queue) };
       g, ans) 1 in
     TaskQueue.join queue;
+    let results = get_results results in
     let p,_,() =
       Proof.run_tactic (Global.env())
       (assign_tac ~abstract results) p in
