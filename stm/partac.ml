@@ -78,9 +78,8 @@ end = struct (* {{{ *)
   let use_response _ { t_assign; t_kill } resp =
     assign t_assign resp;
     let kill = match resp with
-    | RespBuiltSubProof o -> false
-    | RespNoProgress | RespError _ -> true
-
+    | RespNoProgress | RespBuiltSubProof _ -> false
+    | RespError _ -> true
     in
     if kill then t_kill ();
     `Stay ((),[])
