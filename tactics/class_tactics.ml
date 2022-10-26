@@ -1343,7 +1343,7 @@ let solve_inst env evd filter unique split fail =
   sigma
 
 let () =
-  Hook.set Typeclasses.solve_all_instances_hook solve_inst
+  Typeclasses.set_solve_all_instances solve_inst
 
 let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
   let (term, sigma) = Hints.wrap_hint_warning_fun env sigma begin fun sigma ->
@@ -1370,7 +1370,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
   (sigma, term)
 
 let () =
-  Hook.set Typeclasses.solve_one_instance_hook
+  Typeclasses.set_solve_one_instance
     (fun x y z w -> resolve_one_typeclass x ~sigma:y z w)
 
 (** Take the head of the arity of a constr.

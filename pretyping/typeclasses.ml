@@ -33,10 +33,12 @@ let get_typeclasses_unique_solutions =
     ~key:["Typeclasses";"Unique";"Solutions"]
     ~value:false
 
-let get_solve_one_instance, solve_one_instance_hook = Hook.make ()
+let solve_one_instance = ref (fun env evm t unique -> assert false)
 
 let resolve_one_typeclass ?(unique=get_typeclasses_unique_solutions ()) env evm t =
-  Hook.get get_solve_one_instance env evm t unique
+  !solve_one_instance env evm t unique
+
+let set_solve_one_instance f = solve_one_instance := f
 
 type class_method = {
   meth_name : Name.t;
@@ -236,10 +238,12 @@ let has_typeclasses filter evd =
   let check ev = filter ev (lazy (snd (Evd.find evd ev).evar_source)) in
   Evar.Set.exists check tcs
 
-let get_solve_all_instances, solve_all_instances_hook = Hook.make ()
+let solve_all_instances_hook = ref (fun env evd filter unique split fail -> assert false)
 
 let solve_all_instances env evd filter unique split fail =
-  Hook.get get_solve_all_instances env evd filter unique split fail
+  !solve_all_instances_hook env evd filter unique split fail
+
+let set_solve_all_instances f = solve_all_instances_hook := f
 
 let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
     ?(split=true) ?(fail=true) env evd =
