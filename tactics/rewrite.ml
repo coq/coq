@@ -298,7 +298,7 @@ end) = struct
     let mk_relty evars newenv ty obj =
       match obj with
       | None | Some (_, None) ->
-        let evars, relty = mk_relation env evars ty in
+        let evars, relty = mk_relation newenv evars ty in
           if closed0 (goalevars evars) ty then
             let env' = Environ.reset_with_named_context (Environ.named_context_val env) env in
               new_cstr_evar evars env' relty
