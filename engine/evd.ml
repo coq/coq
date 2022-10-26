@@ -219,17 +219,6 @@ type evar_info = {
   evar_relevance: Sorts.relevance;
 }
 
-let make_evar hyps ccl = {
-  evar_concl = ccl;
-  evar_hyps = hyps;
-  evar_body = Evar_empty;
-  evar_filter = Filter.identity;
-  evar_abstract_arguments = Abstraction.identity;
-  evar_source = Loc.tag @@ Evar_kinds.InternalHole;
-  evar_candidates = None;
-  evar_relevance = Sorts.Relevant; (* FIXME *)
-}
-
 let instance_mismatch () =
   anomaly (Pp.str "Signature and its instance do not match.")
 
