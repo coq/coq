@@ -1291,7 +1291,7 @@ printable: [
 | "Debug" "GC"
 | "Graph"
 | "Classes"
-| "TypeClasses"
+| "Typeclasses"
 | "Instances" smart_global
 | "Coercions"
 | "Coercion" "Paths" class_rawexpr class_rawexpr

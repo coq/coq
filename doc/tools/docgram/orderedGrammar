@@ -894,7 +894,7 @@ command: [
 | "Print" "Debug" "GC"
 | "Print" "Graph"
 | "Print" "Classes"
-| "Print" "TypeClasses"
+| "Print" "Typeclasses"
 | "Print" "Instances" reference
 | "Print" "Coercions"
 | "Print" "Notation" string OPT [ "in" "custom" ident ]
