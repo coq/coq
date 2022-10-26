@@ -93,6 +93,11 @@ let rec fold f accu = function
 | Cons (x, l) -> fold f (f accu x) l
 | Default (_, l) -> fold f accu l
 
+let rec for_all f l = match l with
+| Nil -> true
+| Cons (x, l) -> f x && for_all f l
+| Default (_, l) -> for_all f l
+
 let rec exists f l = match l with
 | Nil -> false
 | Cons (x, l) -> f x || exists f l

@@ -1359,14 +1359,12 @@ exception EvarSolvedOnTheFly of evar_map * EConstr.constr
 (* Try to project evk1[argsv1] on evk2[argsv2], if [ev1] is a pattern on
    the common domain of definition *)
 let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 as ev1) (evk2,argsv2 as ev2) =
-  if Option.is_empty pbty && SList.is_default argsv1 && SList.is_default argsv2 &&
-    let l1 = SList.length argsv1 in
-    Int.equal l1 (SList.length argsv2) &&
-    (* This ensures that the named context of [evk1] is a permutation of the one
-       from [env], and transitively also for [evk2]. In particular their filter
-       must be trivial. *)
-    Int.equal l1 (Range.length (Environ.named_context_val env).env_named_idx) &&
-    Option.is_empty (Evd.find evd evk1).evar_candidates && Option.is_empty (Evd.find evd evk2).evar_candidates
+  if Option.is_empty pbty && SList.is_default argsv2 &&
+    (* This ensures that the named context of [evk2] is a permutation of the one
+       from [env]. In particular its filter must be trivial. *)
+    Int.equal (SList.length argsv2) (Range.length (Environ.named_context_val env).env_named_idx) &&
+    SList.Skip.for_all (fun arg -> noccur_evar env evd evk2 arg && closed0 evd arg) argsv1 &&
+    Option.is_empty (Evd.find evd evk2).evar_candidates
   then
     evd, EConstr.mkEvar ev1
   else
