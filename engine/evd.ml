@@ -235,6 +235,10 @@ let evar_filtered_context evi =
 
 let evar_candidates evi = evi.evar_candidates
 
+let evar_abstract_arguments evi = evi.evar_abstract_arguments
+
+let evar_relevance evi = evi.evar_relevance
+
 let evar_hyps evi = evi.evar_hyps
 
 let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
@@ -991,7 +995,7 @@ let add_conv_pb ?(tail=false) pb d =
 
 let conv_pbs d = d.conv_pbs
 
-let evar_source evk d = (find d evk).evar_source
+let evar_source evi = evi.evar_source
 
 let evar_ident evk evd = EvNames.ident evk evd.evar_names
 let evar_key id evd = EvNames.key id evd.evar_names
@@ -1031,10 +1035,10 @@ let extract_all_conv_pbs evd =
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind (fst (decompose_app t1)) with
-  | Evar (evk1,_) -> fst (evar_source evk1 evd)
+  | Evar (evk1,_) -> fst (evar_source (find evd evk1))
   | _ ->
   match kind (fst (decompose_app t2)) with
-  | Evar (evk2,_) -> fst (evar_source evk2 evd)
+  | Evar (evk2,_) -> fst (evar_source (find evd evk2))
   | _             -> None
 
 (**********************************************************)

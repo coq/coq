@@ -166,7 +166,7 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
        else mkApp (f', args')
     | Evar (ev, a) when onevars ->
       let evi = Evd.find !evdref ev in
-      let ty = evi.evar_concl in
+      let ty = Evd.evar_concl evi in
       let ty' = refresh ~onlyalg univ_flexible ~direction:true ty in
       if ty == ty' then t
       else (evdref := Evd.downcast ev ty' !evdref; t)
@@ -261,7 +261,7 @@ let restrict_evar_key evd evk filter candidates =
       | None -> evar_filter evi
       | Some filter -> filter in
       let candidates = match candidates with
-      | NoUpdate -> evi.evar_candidates
+      | NoUpdate -> Evd.evar_candidates evi
       | UpdateWith c -> Some c in
       restrict_evar evd evk filter candidates
     end
@@ -849,7 +849,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let env1,rel_sign = env_rel_context_chop k env in
   let sign1 = evar_hyps evi1 in
   let filter1 = evar_filter evi1 in
-  let src = subterm_source evk1 evi1.evar_source in
+  let src = subterm_source evk1 (Evd.evar_source evi1) in
   let avoid = Environ.ids_of_named_context_val sign1 in
   let inst_in_sign = evar_identity_subst evi1 in
   let open Context.Rel.Declaration in
@@ -901,11 +901,11 @@ let check_evar_instance unify flags env evd evk1 body =
   let ty =
     try Retyping.get_type_of ~lax:true evenv evd body
     with Retyping.RetypeError _ ->
-      let loc, _ = evi.evar_source in user_err ?loc (Pp.(str "Ill-typed evar instance"))
+      let loc, _ = Evd.evar_source evi in user_err ?loc (Pp.(str "Ill-typed evar instance"))
   in
-  match unify flags TypeUnification evenv evd Reduction.CUMUL ty evi.evar_concl with
+  match unify flags TypeUnification evenv evd Reduction.CUMUL ty (Evd.evar_concl evi) with
   | Success evd -> evd
-  | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,ty,evi.evar_concl))
+  | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,ty, Evd.evar_concl evi))
 
 (***************)
 (* Unification *)
@@ -1038,7 +1038,7 @@ let rec do_projection_effects unify flags define_fun env ty evd = function
            evar it may commit to a univ level which is not the right
            one (however, regarding coercions, because t is obtained by
            unif, we know that no coercion can be inserted) *)
-        let ty' = instantiate_evar_array evd evi evi.evar_concl argsv in
+        let ty' = instantiate_evar_array evd evi (Evd.evar_concl evi) argsv in
         if isEvar evd ty' then define_fun env evd (Some false) (destEvar evd ty') ty else evd
       else
         evd
@@ -1154,7 +1154,7 @@ let filter_effective_candidates evd evi filter candidates =
 let filter_candidates evd evk filter candidates_update =
   let evi = Evd.find_undefined evd evk in
   let candidates = match candidates_update with
-  | NoUpdate -> evi.evar_candidates
+  | NoUpdate -> Evd.evar_candidates evi
   | UpdateWith c -> Some c
   in
   match candidates with
@@ -1281,7 +1281,7 @@ exception DoesNotPreserveCandidateRestriction
 let restrict_candidates unify flags env evd filter1 (evk1,argsv1) (evk2,argsv2) =
   let evi1 = Evd.find evd evk1 in
   let evi2 = Evd.find evd evk2 in
-  match evi1.evar_candidates, evi2.evar_candidates with
+  match Evd.evar_candidates evi1, Evd.evar_candidates evi2 with
   | _, None -> filter_candidates evd evk1 filter1 NoUpdate
   | None, Some _ -> raise DoesNotPreserveCandidateRestriction
   | Some l1, Some l2 ->
@@ -1364,7 +1364,7 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
        from [env]. In particular its filter must be trivial. *)
     Int.equal (SList.length argsv2) (Range.length (Environ.named_context_val env).env_named_idx) &&
     SList.Skip.for_all (fun arg -> noccur_evar env evd evk2 arg && closed0 evd arg) argsv1 &&
-    Option.is_empty (Evd.find evd evk2).evar_candidates
+    Option.is_empty (Evd.evar_candidates (Evd.find evd evk2))
   then
     evd, EConstr.mkEvar ev1
   else
@@ -1396,7 +1396,7 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
 
 let update_evar_info ev1 ev2 evd =
   (* We update the source of obligation evars during evar-evar unifications. *)
-  let loc, evs1 = evar_source ev1 evd in
+  let loc, evs1 = evar_source (Evd.find evd ev1) in
   Evd.update_source evd ev2 (loc, evs1)
 
 let solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 (evk2,_ as ev2) =
@@ -1454,10 +1454,10 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
       (* ?X : Π Δ. Type i = ?Y : Π Δ'. Type j.
          The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
       let evienv = Evd.evar_env env evi in
-      let ctx1, i = Reductionops.dest_arity evienv evd evi.evar_concl in
+      let ctx1, i = Reductionops.dest_arity evienv evd (Evd.evar_concl evi) in
       let evi2 = Evd.find evd evk2 in
       let evi2env = Evd.evar_env env evi2 in
-      let ctx2, j = Reductionops.dest_arity evi2env evd evi2.evar_concl in
+      let ctx2, j = Reductionops.dest_arity evi2env evd (Evd.evar_concl evi2) in
       let i = ESorts.kind evd i in
       let j = ESorts.kind evd j in
         if i == j || Evd.check_eq evd i j
@@ -1528,7 +1528,7 @@ exception IncompatibleCandidates of EConstr.t
 
 let solve_candidates unify flags env evd (evk,argsv) rhs =
   let evi = Evd.find evd evk in
-  match evi.evar_candidates with
+  match Evd.evar_candidates evi with
   | None -> raise NoCandidates
   | Some l ->
       let rec aux = function

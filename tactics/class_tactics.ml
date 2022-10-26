@@ -1209,7 +1209,7 @@ let is_inference_forced p evd ev =
   try
     if Evar.Set.mem ev (Evd.get_typeclass_evars evd) && p ev
     then
-      let (loc, k) = evar_source ev evd in
+      let (loc, k) = evar_source (Evd.find evd ev) in
       match k with
         | Evar_kinds.ImplicitArg (_, _, b) -> b
         | Evar_kinds.QuestionMark _ -> false
@@ -1228,7 +1228,7 @@ let error_unresolvable env comp evd =
   | Some s -> Evar.Set.mem ev s
   in
   let fold ev evi (found, accu) =
-    let ev_class = class_of_constr env evd evi.evar_concl in
+    let ev_class = class_of_constr env evd (Evd.evar_concl evi) in
     if not (Option.is_empty ev_class) && is_part ev then
       (* focus on one instance if only one was searched for *)
       if not found then (true, Some ev)
@@ -1315,7 +1315,7 @@ let resolve_all_evars depth unique env p oevd do_split fail =
 
 let initial_select_evars filter =
   fun evd ev evi ->
-    filter ev (Lazy.from_val (snd evi.Evd.evar_source)) &&
+    filter ev (Lazy.from_val (snd (Evd.evar_source evi))) &&
     (* Typeclass evars can contain evars whose conclusion is not
        yet determined to be a class or not. *)
     Typeclasses.is_class_evar evd evi
@@ -1417,5 +1417,5 @@ let autoapply c i =
   Clenv.res_pf ~with_evars:true ~with_classes:false ~flags ce <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables
-          (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.find sigma ev).evar_source))) sigma in
+          (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.evar_source (Evd.find sigma ev))))) sigma in
       Proofview.Unsafe.tclEVARS sigma) end

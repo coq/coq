@@ -1429,7 +1429,7 @@ let thin_evars env sigma sign c =
        let args = Evd.expand_existential !sigma (ev, args) in
        let filter = List.map (fun c -> Id.Set.subset (collect_vars !sigma c) ctx) args in
        let filter = Filter.make filter in
-       let candidates = Option.map (List.map EConstr.of_constr) (evar_candidates evi) in
+       let candidates = evar_candidates evi in
        let evd, ev = restrict_evar !sigma ev filter candidates in
        sigma := evd; whd_evar !sigma t
     | Var id ->
@@ -1578,11 +1578,11 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
              let evi = Evd.find evd ev in
                (match evar_candidates evi with
                | Some [t] ->
-                 if not (noccur_evar env_rhs evd ev (EConstr.of_constr t)) then
+                 if not (noccur_evar env_rhs evd ev t) then
                    raise (TypingFailed evd);
-                 instantiate_evar evar_unify flags env_rhs evd ev (EConstr.of_constr t)
+                 instantiate_evar evar_unify flags env_rhs evd ev t
                | Some l when abstract = Abstraction.Abstract &&
-                          List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
+                          List.exists (fun c -> isVarId evd id c) l ->
                  instantiate_evar evar_unify flags env_rhs evd ev vid
                | _ -> evd)
            with IllTypedInstance _ (* from instantiate_evar *) | TypingFailed _ ->
@@ -1650,7 +1650,7 @@ let default_evar_selection flags evd (ev,args) =
       in spec :: aux args abs
     | l, [] -> List.map (fun _ -> default_occurrence_selection) l
     | [], _ :: _ -> assert false
-  in aux args evi.evar_abstract_arguments
+  in aux args (Evd.evar_abstract_arguments evi)
 
 let second_order_matching_with_args flags env evd with_ho pbty ev l t =
   if with_ho then
@@ -1764,7 +1764,7 @@ let check_problems_are_solved env evd =
 exception MaxUndefined of (Evar.t * evar_info * EConstr.t list)
 
 let max_undefined_with_candidates evd =
-  let fold evk evi () = match evi.evar_candidates with
+  let fold evk evi () = match Evd.evar_candidates evi with
   | None -> ()
   | Some l -> raise (MaxUndefined (evk, evi, l))
   in
@@ -1803,7 +1803,7 @@ let rec solve_unconstrained_evars_with_candidates flags env evd =
 
 let solve_unconstrained_impossible_cases env evd =
   Evd.fold_undefined (fun evk ev_info evd' ->
-    match ev_info.evar_source with
+    match Evd.evar_source ev_info with
     | loc,Evar_kinds.ImpossibleCase ->
       let evd', j = coq_unit_judge env evd' in
       let ty = j_type j in

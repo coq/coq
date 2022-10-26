@@ -617,14 +617,14 @@ let rec explain_evar_kind env sigma evk ty =
   | Evar_kinds.SubEvar (where,evk') ->
       let rec find_source evk =
         let evi = Evd.find sigma evk in
-        match snd evi.evar_source with
+        match snd (Evd.evar_source evi) with
         | Evar_kinds.SubEvar (_,evk) -> find_source evk
         | src -> evi,src in
       let evi,src = find_source evk' in
-      let pc = match evi.evar_body with
+      let pc = match Evd.evar_body evi with
       | Evar_defined c -> pr_leconstr_env env sigma c
       | Evar_empty -> assert false in
-      let ty' = evi.evar_concl in
+      let ty' = Evd.evar_concl evi in
       pr_existential_key env sigma evk ++
       strbrk " in the partial instance " ++ pc ++
       strbrk " found for " ++
@@ -632,11 +632,11 @@ let rec explain_evar_kind env sigma evk ty =
       (pr_leconstr_env env sigma ty') src
 
 let explain_typeclass_resolution env sigma evi k =
-  match Typeclasses.class_of_constr env sigma evi.evar_concl with
+  match Typeclasses.class_of_constr env sigma (Evd.evar_concl evi) with
   | Some _ ->
     let env = Evd.evar_filtered_env env evi in
       fnl () ++ str "Could not find an instance for " ++
-      pr_leconstr_env env sigma evi.evar_concl ++
+      pr_leconstr_env env sigma (Evd.evar_concl evi) ++
       pr_trailing_ne_context_of env sigma
   | _ -> mt()
 
@@ -652,11 +652,11 @@ let explain_placeholder_kind env sigma c e =
 let explain_unsolvable_implicit env sigma evk explain =
   let evi = Evarutil.nf_evar_info sigma (Evd.find_undefined sigma evk) in
   let env = Evd.evar_filtered_env env evi in
-  let type_of_hole = pr_leconstr_env env sigma evi.evar_concl in
+  let type_of_hole = pr_leconstr_env env sigma (Evd.evar_concl evi) in
   let pe = pr_trailing_ne_context_of env sigma in
   strbrk "Cannot infer " ++
-  explain_evar_kind env sigma evk type_of_hole (snd evi.evar_source) ++
-  explain_placeholder_kind env sigma evi.evar_concl explain ++ pe
+  explain_evar_kind env sigma evk type_of_hole (snd (Evd.evar_source evi)) ++
+  explain_placeholder_kind env sigma (Evd.evar_concl evi) explain ++ pe
 
 let explain_var_not_found env id =
   str "The variable" ++ spc () ++ Id.print id ++
@@ -846,10 +846,10 @@ let explain_cannot_unify_occurrences env sigma nested ((cl2,pos2),t2) ((cl1,pos1
 let pr_constraints printenv env sigma evars cstrs =
   let (ev, evi) = Evar.Map.choose evars in
     if Evar.Map.for_all (fun ev' evi' ->
-      eq_named_context_val evi.evar_hyps evi'.evar_hyps) evars
+      eq_named_context_val (Evd.evar_hyps evi) (Evd.evar_hyps evi')) evars
     then
       let l = Evar.Map.bindings evars in
-      let env' = reset_with_named_context evi.evar_hyps env in
+      let env' = Evd.evar_env env evi in
       let pe =
         if printenv then
           pr_ne_context_of (str "In environment:") env' sigma
@@ -858,7 +858,7 @@ let pr_constraints printenv env sigma evars cstrs =
       let evs =
         prlist
         (fun (ev, evi) -> fnl () ++ pr_existential_key (Global.env ()) sigma ev ++
-            str " : " ++ pr_leconstr_env env' sigma evi.evar_concl ++ fnl ()) l
+            str " : " ++ pr_leconstr_env env' sigma (Evd.evar_concl evi) ++ fnl ()) l
       in
       h (pe ++ evs ++ pr_evar_constraints sigma cstrs)
     else

@@ -22,7 +22,7 @@ let check_evars env evm =
     (fun key evi ->
       if Evd.is_obligation_evar evm key then ()
       else
-        let loc, k = Evd.evar_source key evm in
+        let loc, k = Evd.evar_source evi in
         Pretype_errors.error_unsolvable_implicit ?loc env evm key None)
     (Evd.undefined_map evm)
 
@@ -235,13 +235,13 @@ let retrieve_obligations env name evm fs ?deps ?status t ty =
       (fun (id, (n, nstr), ev) l ->
         let hyps = Evd.evar_filtered_context ev in
         let hyps = trunc_named_context nc_len hyps in
-        let evtyp, deps, transp = etype_of_evar evm l hyps ev.Evd.evar_concl in
+        let evtyp, deps, transp = etype_of_evar evm l hyps (Evd.evar_concl ev) in
         let evtyp, hyps, chop =
           match chop_product fs evtyp with
           | Some t -> (t, trunc_named_context fs hyps, fs)
           | None -> (evtyp, hyps, 0)
         in
-        let loc, k = Evd.evar_source id evm in
+        let loc, k = Evd.evar_source (Evd.find evm id) in
         let status =
           match k with
           | Evar_kinds.QuestionMark {Evar_kinds.qm_obligation = o} -> o

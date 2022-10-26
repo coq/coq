@@ -371,7 +371,7 @@ let evars_for_FO ~hack ~rigid env (ise0:evar_map) c0 =
     | Context.Named.Declaration.LocalAssum (x, t) ->
         mkVar x.binder_name :: d, mkNamedProd !sigma x (put t) c in
     let a, t =
-      Context.Named.fold_inside abs_dc ~init:([], put evi.evar_concl) dc
+      Context.Named.fold_inside abs_dc ~init:([], put (Evd.evar_concl evi)) dc
     in
     let m = Evarutil.new_meta () in
     let () = metas := Metamap.add m t !metas in
@@ -1192,8 +1192,8 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
   let rigid ev = Evd.mem sigma0 ev in
   let fs sigma x = Reductionops.nf_evar sigma x in
   let pop_evar sigma e p =
-    let { Evd.evar_body = e_body } as e_def = Evd.find sigma e in
-    let e_body = match e_body with Evar_defined c -> c
+    let e_def = Evd.find sigma e in
+    let e_body = match Evd.evar_body e_def with Evar_defined c -> c
     | _ -> errorstrm (str "Matching the pattern " ++ pr_econstr_env env0 sigma0 p ++
           str " did not instantiate ?" ++ int (Evar.repr e) ++ spc () ++
           str "Does the variable bound by the \"in\" construct occur "++

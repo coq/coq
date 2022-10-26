@@ -179,7 +179,7 @@ let pattern_of_constr ~broken env sigma t =
         (match
           match kind f with
           | Evar (evk,args) ->
-            (match snd (Evd.evar_source evk sigma) with
+            (match snd (Evd.evar_source (Evd.find sigma evk)) with
               Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar id) -> Some id
             | _ -> None)
           | _ -> None
@@ -192,7 +192,7 @@ let pattern_of_constr ~broken env sigma t =
     | Proj (p, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->
-      (match snd (Evd.evar_source evk sigma) with
+      (match snd (Evd.evar_source (Evd.find sigma evk)) with
       | Evar_kinds.MatchingVar (Evar_kinds.FirstOrderPatVar id) ->
         PMeta (Some id)
       | Evar_kinds.GoalEvar | Evar_kinds.VarInstance _ ->

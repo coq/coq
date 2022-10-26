@@ -139,7 +139,7 @@ let rec is_class_type evd c =
     | _ -> is_class_constr evd c
 
 let is_class_evar evd evi =
-  is_class_type evd evi.Evd.evar_concl
+  is_class_type evd (Evd.evar_concl evi)
 
 let rec is_maybe_class_type evd c =
   let c, _ = Termops.decompose_app_vect evd c in
@@ -233,7 +233,7 @@ let no_goals_or_obligations _ source =
 
 let has_typeclasses filter evd =
   let tcs = get_typeclass_evars evd in
-  let check ev = filter ev (lazy (snd (Evd.find evd ev).evar_source)) in
+  let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find evd ev)))) in
   Evar.Set.exists check tcs
 
 let get_solve_all_instances, solve_all_instances_hook = Hook.make ()

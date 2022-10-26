@@ -929,7 +929,7 @@ let tacEXAMINE_ABSTRACT id =
 let find_abstract_proof env sigma check_lock abstract_n =
   let abstract = Ssrcommon.mkSsrRef "abstract" in
     let l = Evd.fold_undefined (fun e ei l ->
-      match EConstr.kind sigma ei.Evd.evar_concl with
+      match EConstr.kind sigma (Evd.evar_concl ei) with
       | App(hd, [|ty; n; lock|])
         when (not check_lock ||
                    (occur_existential_or_casted_meta sigma ty &&
