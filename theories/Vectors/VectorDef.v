@@ -106,12 +106,15 @@ Definition const {A} (a:A) := nat_rect _ [] (fun n x => cons _ a n x).
 Computational behavior of this function should be the same as
 ocaml function. *)
 Definition nth {A} :=
-fix nth_fix {m} (v' : t A m) (p : Fin.t m) {struct v'} : A :=
-match p in Fin.t m' return t A m' -> A with
- |Fin.F1 => caseS (fun n v' => A) (fun h n t => h)
- |Fin.FS p' => fun v => (caseS (fun n v' => Fin.t n -> A)
-   (fun h n t p0 => nth_fix t p0) v) p'
-end v'.
+  fix nth_fix {n : nat} (v : t A n) {struct v} : Fin.t n -> A :=
+    match v with
+    | nil _ => fun p => False_rect A (Fin.case0 _ p)
+    | cons _ x m v' => fun p =>
+      match p in (Fin.t m') return t A (pred m') -> A with
+      | Fin.F1 => fun _ => x
+      | Fin.FS p' => fun v' => nth_fix v' p'
+      end v'
+    end.
 
 (** An equivalent definition of [nth]. *)
 Definition nth_order {A} {n} (v: t A n) {p} (H: p < n) :=
