@@ -208,7 +208,7 @@ let retrieve_obligations env name evm fs ?deps ?status t ty =
   let nc = Environ.named_context env in
   let nc_len = Context.Named.length nc in
   let evm = Evarutil.nf_evar_map_undefined evm in
-  let evl = Evarutil.non_instantiated evm in
+  let evl = Evd.undefined_map evm in
   let evl = match deps with
   | None -> evl
   | Some deps -> Evar.Map.filter (fun ev _ -> Evar.Set.mem ev deps) evl

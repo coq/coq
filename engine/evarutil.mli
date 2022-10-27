@@ -68,10 +68,6 @@ val new_type_evar :
 
 val new_Type : ?rigid:rigid -> evar_map -> evar_map * constr
 
-(** {6 Evars/Metas switching...} *)
-
-val non_instantiated : evar_map -> evar_info Evar.Map.t
-
 (** {6 Unification utils} *)
 
 (** [head_evar c] returns the head evar of [c] if any *)

@@ -170,10 +170,6 @@ let new_meta () = incr meta_ctr; !meta_ctr
 
 (* The list of non-instantiated existential declarations (order is important) *)
 
-let non_instantiated sigma =
-  let listev = Evd.undefined_map sigma in
-  Evar.Map.Smart.map (fun evi -> nf_evar_info sigma evi) listev
-
 (*------------------------------------*
  * functional operations on evar sets *
  *------------------------------------*)
