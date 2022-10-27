@@ -12,32 +12,36 @@ open Pp
 
 let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (Spawned.process_id ()) s
 
-type 'a result = Val of 'a | Exn of bool * Pp.t
+type response =
+  | RespBuiltSubProof of (Constr.constr * UState.t)
+  | RespError of bool * Pp.t
+  | RespNoProgress
 
 module TacTask : sig
 
-  type output = (Constr.constr * UState.t) option
+  type nonrec response = response
+
   type task = {
     t_state    : Vernacstate.t;
-    t_assign   : output result option ref;
+    t_assign   : response option ref;
     t_ast      : ComTactic.interpretable;
     t_goalno   : int;
     t_goal     : Evar.t;
     t_kill     : unit -> unit;
     t_name     : string }
 
-  include AsyncTaskQueue.Task with type task := task
+  include AsyncTaskQueue.Task with type task := task and type response := response
 
 end = struct (* {{{ *)
 
   let forward_feedback { Feedback.doc_id = did; span_id = id; route; contents } =
     Feedback.feedback ~did ~id ~route contents
 
-  type output = (Constr.constr * UState.t) option
+  type nonrec response = response
 
   type task = {
     t_state    : Vernacstate.t;
-    t_assign   : output result option ref;
+    t_assign   : response option ref;
     t_ast      : ComTactic.interpretable;
     t_goalno   : int;
     t_goal     : Evar.t;
@@ -50,11 +54,6 @@ end = struct (* {{{ *)
     r_goalno   : int;
     r_goal     : Evar.t;
     r_name     : string }
-
-  type response =
-    | RespBuiltSubProof of (Constr.constr * UState.t)
-    | RespError of bool * Pp.t
-    | RespNoProgress
 
   let name = "tactic"
   let extra_env () = [||]
@@ -77,16 +76,14 @@ end = struct (* {{{ *)
     r := Some v
 
   let use_response _ { t_assign; t_kill } resp =
-    match resp with
-    | RespBuiltSubProof o -> assign t_assign (Val (Some o)); `Stay ((),[])
-    | RespNoProgress ->
-        assign t_assign (Val None);
-        t_kill ();
-        `Stay ((),[])
-    | RespError (noncrt, msg) ->
-        assign t_assign (Exn (noncrt, msg));
-        t_kill ();
-        `Stay ((),[])
+    assign t_assign resp;
+    let kill = match resp with
+    | RespBuiltSubProof o -> false
+    | RespNoProgress | RespError _ -> true
+
+    in
+    if kill then t_kill ();
+    `Stay ((),[])
 
   let on_marshal_error err { t_name } =
     stm_pr_err ("Fatal marshal error: " ^ t_name );
@@ -148,8 +145,8 @@ let assign_tac ~abstract res : unit Proofview.tactic =
     with Not_found -> CErrors.anomaly(str"Partac: wrong focus.") in
   match !g_solution with
   | None -> tclUNIT ()
-  | Some (Val None) -> tclUNIT ()
-  | Some (Val (Some (pt, uc))) ->
+  | Some RespNoProgress -> tclUNIT ()
+  | Some (RespBuiltSubProof (pt, uc)) ->
     let open Notations in
         let push_state ctx =
             Proofview.tclEVARMAP >>= fun sigma ->
@@ -157,7 +154,7 @@ let assign_tac ~abstract res : unit Proofview.tactic =
         in
         (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
             (push_state uc <*> Tactics.exact_no_check (EConstr.of_constr pt))
-  | Some (Exn (noncrt, msg)) ->
+  | Some (RespError (noncrt, msg)) ->
     if noncrt then raise (AsyncTaskQueue.RemoteException msg)
     else CErrors.anomaly msg
   end)
