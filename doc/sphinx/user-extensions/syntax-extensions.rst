@@ -441,6 +441,106 @@ Here are examples:
    end
    where "n + m" := (plus n m).
 
+Enabling and disabling notations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. cmd:: {| Enable | Disable } Notation {? {| @string | @qualid } } {? := @one_term } {? ( {+, @enable_notation_flag } ) } {? {| : @scope_name | : no scope } }
+   :name: Enable Notation; Disable Notation
+
+   .. insertprodn enable_notation_flag enable_notation_flag
+
+   .. prodn::
+      enable_notation_flag ::= all
+      | only parsing
+      | only printing
+      | in custom @ident
+      | in constr
+
+   Enables or disables notations previously defined with
+   :cmd:`Notation` or :cmd:`Notation (abbreviation)`.
+   It has no effect on notations reserved with :cmd:`Reserved Notation`.
+   At least one of
+   :token:`string`, :token:`qualid`, :token:`one_term` or :token:`scope_name` must be
+   provided.
+   When multiple clauses are provided, the notations enabled or
+   disabled must satisfy all of their constraints.
+
+   This command supports the :attr:`local` and :attr:`global`
+   attributes.
+
+   :n:`@string`
+      Notations to enable or disable. :n:`@string` can be a single
+      token in the notation such as "`->`" or a pattern that matches
+      the notation. See :ref:`locating-notations`.
+
+   :n:`@qualid`
+      :ref:`Abbreviation <Abbreviations>` to enable or disable.
+
+   :n:`{? := @one_term }`
+      Enable or disable notations matching :token:`one_term`.
+      :token:`one_term` can be written using notations or not, as well
+      as :n:`_`, just like in the :cmd:`Notation` command.
+
+   :n:`all`
+      Enable or disable all notations meeting the given constraints,
+      even if there are multiple ones. Otherwise, there must be a single
+      notation meeting the constraints.
+
+   :n:`only parsing`
+      The notation is enabled or disabled only for parsing.
+
+   :n:`only printing`
+      The notation is enabled or disabled only for printing.
+
+   :n:`in custom @ident`
+      Enable or disable notations in the given :ref:`custom entry
+      <custom-entries>`.
+
+   :n:`in constr`
+      Enable or disable notations in the custom entry for :n:`constr`.
+      See :ref:`custom entries <custom-entries>`.
+
+   :n:`{| : @scope_name | : no scope }`
+      If given, only notations in scope :token:`scope_name` are affected (or
+      :term:`lonely notations <lonely notation>` for :n:`no scope`).
+
+   .. exn:: Unexpected only printing for an only parsing notation.
+
+      Cannot enable or disable for printing a notation that was
+      originally defined as only parsing.
+
+   .. exn:: Unexpected only parsing for an only printing notation.
+
+      Cannot enable or disable for parsing a notation that was
+      originally defined as only printing.
+
+   .. exn:: Found no matching notation to enable or disable.
+
+      No previously defined notation satisfies the given constraints.
+
+   .. exn:: More than one interpretation bound to this notation, confirm with the "all" modifier.
+
+      Use :n:`all` to allow enabling or disabling multiple
+      notations in a single command.
+
+   .. exn:: Not an abbreviation.
+
+      No abbreviation matches the given :token:`qualid`.
+
+   .. exn:: No notation provided.
+
+      At least one of :token:`string`, :token:`qualid`,
+      :token:`one_term` or :token:`scope_name` must be provided.
+
+   .. warn:: Activation of abbreviations does not expect mentioning a grammar entry.
+
+      ``in custom`` and ``in constr`` are not compatible with
+      :ref:`abbreviations <Abbreviations>`.
+
+   .. warn:: Activation of abbreviations does not expect mentioning a scope.
+
+      Scopes are not compatible with :ref:`abbreviations <Abbreviations>`.
+
 Displaying information about notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

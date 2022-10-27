@@ -1432,6 +1432,42 @@ syntax: [
 | "Notation" lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 | "Reserved" "Infix" ne_lstring syntax_modifiers
 | "Reserved" "Notation" ne_lstring syntax_modifiers
+| enable_enable_disable "Notation" enable_notation_rule enable_notation_interpretation enable_notation_flags opt_scope
+]
+
+enable_enable_disable: [
+| "Enable"
+| "Disable"
+]
+
+enable_notation_rule: [
+| ne_string
+| global
+|
+]
+
+enable_notation_interpretation: [
+| ":=" constr
+|
+]
+
+enable_notation_flags: [
+| "(" LIST1 enable_notation_flag SEP "," ")"
+|
+]
+
+enable_notation_flag: [
+| "all"
+| "only" "parsing"
+| "only" "printing"
+| "in" "custom" IDENT
+| "in" "constr"
+]
+
+opt_scope: [
+| ":" IDENT
+| ":" "no" "scope"
+|
 ]
 
 level: [

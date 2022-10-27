@@ -1108,6 +1108,7 @@ command: [
 | "Notation" string ":=" one_term OPT ( "(" LIST1 syntax_modifier SEP "," ")" ) OPT [ ":" scope_name ]
 | "Reserved" "Infix" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Reserved" "Notation" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
+| [ "Enable" | "Disable" ] "Notation" OPT [ string | qualid ] OPT ( ":=" one_term ) OPT ( "(" LIST1 enable_notation_flag SEP "," ")" ) OPT [ ":" scope_name | ":" "no" "scope" ]
 | "Eval" red_expr "in" term
 | "Compute" term
 | "Check" term
@@ -1197,6 +1198,14 @@ logical_kind: [
 
 univ_name_list: [
 | "@{" LIST0 name "}"
+]
+
+enable_notation_flag: [
+| "all"
+| "only" "parsing"
+| "only" "printing"
+| "in" "custom" ident
+| "in" "constr"
 ]
 
 tacdef_body: [
