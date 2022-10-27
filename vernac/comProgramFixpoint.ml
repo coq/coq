@@ -272,9 +272,7 @@ let out_def = function
   | None -> user_err Pp.(str "Program Fixpoint needs defined bodies.")
 
 let collect_evars_of_term evd c ty =
-  let evars = Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty) in
-  Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
-  evars (Evd.from_ctx (Evd.evar_universe_context evd))
+  Evar.Set.union (Evd.evars_of_term evd c) (Evd.evars_of_term evd ty)
 
 let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
   let cofix = fixkind = Declare.Obls.IsCoFixpoint in
@@ -294,10 +292,10 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
     let using = Option.map (fun using -> Proof_using.definition_using env evd ~using ~terms) using in
     let def = nf_evar evd (EConstr.it_mkNamedLambda_or_LetIn evd def rec_sign) in
     let typ = nf_evar evd (EConstr.it_mkNamedProd_or_LetIn evd typ rec_sign) in
-    let evm = collect_evars_of_term evd def typ in
+    let deps = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
-      RetrieveObl.retrieve_obligations env name evm
-        (List.length rec_sign) def typ in
+      RetrieveObl.retrieve_obligations env name evd
+        (List.length rec_sign) ~deps def typ in
     let cinfo = Declare.CInfo.make ~name ~typ ~impargs ?using () in
     (cinfo, def, evars)
   in

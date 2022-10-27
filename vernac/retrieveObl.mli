@@ -27,6 +27,7 @@ val retrieve_obligations :
   -> Names.Id.t
   -> Evd.evar_map
   -> int
+  -> ?deps:Evar.Set.t
   -> ?status:Evar_kinds.obligation_definition_status
   -> EConstr.t
   -> EConstr.types
