@@ -67,7 +67,8 @@
   commit).
 - [ ] Push the new tag with `git push upstream VY.Y+alpha --dry-run`
   (remove the `--dry-run` and redo if everything looks OK).
-- [ ] Start a new project to track PR backporting. The project should
+- [ ] Start a new ["classic" project](https://github.com/coq/coq/projects?type=classic)
+  to track PR backporting. The project should
   have a `Request X.X+rc1 inclusion` column for the PRs that were
   merged in `master` that are to be considered for backporting, and a
   `Shipped in X.X+rc1` columns to put what was backported. A message
