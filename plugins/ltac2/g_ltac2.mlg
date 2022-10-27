@@ -242,6 +242,7 @@ GRAMMAR EXTEND Gram
       | "'"; c = Constr.constr -> { inj_open_constr loc c }
       | IDENT "constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_constr c }
       | IDENT "open_constr"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_open_constr c }
+      | IDENT "preterm"; ":"; "("; c = Constr.lconstr; ")" -> { Tac2quote.of_preterm c }
       | IDENT "ident"; ":"; "("; c = lident; ")" -> { Tac2quote.of_ident c }
       | IDENT "pat"; ":"; "("; c = Constr.cpattern; ")" -> { inj_pattern loc c }
       | IDENT "reference"; ":"; "("; c = globref; ")" -> { inj_reference loc c }
