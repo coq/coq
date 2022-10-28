@@ -310,6 +310,23 @@ Proof with auto.
   apply IHv...
 Qed.
 
+(** ** Properties of [In] *)
+
+Lemma In_cons A: forall n a b (v : t A n),
+  In a (b :: v) <-> (b = a \/ In a v).
+Proof.
+intros n a b v. split.
+- enough (H : forall n (v : t A n), In a v ->
+    match v with
+    | nil _ => False
+    | cons _ b _ v => b = a \/ In a v
+    end) by apply H.
+  now intros ?? []; [left|right].
+- intros [<-|?].
+  + apply In_cons_hd.
+  + now apply In_cons_tl.
+Qed.
+
 (** ** Properties of [Forall] and [Forall2] *)
 
 Lemma Forall_impl A: forall (P Q : A -> Prop), (forall a, P a -> Q a) ->
@@ -332,6 +349,16 @@ intros P n v; split.
   + apply IHv; intros a Ha.
     apply Hin; now constructor.
 Qed.
+
+Lemma Forall_cons A: forall (P : A -> Prop) a n (v : t A n),
+  Forall P (a :: v) <-> P a /\ Forall P v.
+Proof.
+intros P a n v. split.
+- rewrite !Forall_forall. intros H. split.
+  + apply H, In_cons_hd.
+  + intros b Hbv. apply H, In_cons_tl, Hbv.
+- intros [??]. now constructor.
+Qed. 
 
 Lemma Forall_nth_order A: forall P n (v : t A n),
   Forall P v <-> forall i (Hi : i < n), P (nth_order v Hi).
@@ -409,6 +436,70 @@ Proof.
 intros n v. induction v as [|a n v IH].
 - reflexivity.
 - cbn. now rewrite rev_snoc, IH.
+Qed.
+
+Lemma map_snoc A B: forall (f : A -> B) a n (v : t A n),
+  map f (snoc a v) = snoc (f a) (map f v).
+Proof.
+intros f a n v. induction v as [|b n v IH].
+- reflexivity.
+- cbn. apply f_equal, IH.
+Qed.
+
+Lemma map_rev A B: forall (f : A -> B) n (v : t A n),
+  map f (rev v) = rev (map f v).
+Proof.
+intros f n v. induction v as [|a n v IH].
+- reflexivity.
+- cbn. now rewrite map_snoc, IH.
+Qed.
+
+Lemma fold_right_snoc A B: forall (f : A -> B -> B) a b n (v : t A n),
+  fold_right f (snoc b v) a = fold_right f v (f b a).
+Proof.
+intros f a b n v. induction v as [|c n v IH].
+- reflexivity.
+- cbn. apply f_equal, IH.
+Qed.
+
+Lemma fold_left_rev_right A B: forall (f:A->B->B) n (v : t A n) a,
+  fold_right f (rev v) a = fold_left (fun x y => f y x) a v.
+Proof.
+intros f n v. induction v as [|b n v IH].
+- reflexivity.
+- intros a. cbn. rewrite fold_right_snoc. apply IH.
+Qed.
+
+Lemma In_snoc A: forall a b n (v : t A n),
+  In a (snoc b v) <-> (b = a \/ In a v).
+Proof.
+intros a b n v. induction v as [|c n v IH].
+- apply In_cons.
+- cbn. rewrite !In_cons. tauto.
+Qed.
+
+Lemma In_rev A: forall a n (v : t A n),
+  In a (rev v) <-> In a v.
+Proof.
+intros a n v. induction v as [|b n v IH].
+- easy.
+- cbn. now rewrite In_snoc, In_cons, IH.
+Qed.
+
+Lemma Forall_snoc A: forall (P : A -> Prop) a n (v : t A n),
+  Forall P (snoc a v) <-> (P a /\ Forall P v).
+Proof.
+intros P a n v. induction v as [|b n v IH].
+- apply Forall_cons.
+- cbn. rewrite !Forall_cons. tauto.
+Qed.
+
+Lemma Forall_rev A: forall (P : A -> Prop) n (v : t A n),
+  Forall P (rev v) <-> Forall P v.
+Proof.
+intros P n v. induction v as [|a n v IH].
+- easy.
+- cbn. now rewrite Forall_snoc, Forall_cons, IH.
 Qed.
 
 (** ** Properties of [to_list] *)
