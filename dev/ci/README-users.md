@@ -82,7 +82,7 @@ help to finish it.**
 You may also be interested in having your project tested in our
 performance benchmark. Currently this is done by providing an OPAM package
 in https://github.com/coq/opam-coq-archive and opening an issue at
-https://github.com/coq/coq-bench/issues.
+https://github.com/coq/coq/issues.
 
 ### Recommended branching policy.
 
