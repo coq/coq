@@ -217,11 +217,20 @@ Definition rev_append {A n p} (v: t A n) (w: t A p)
   :t A (n + p) :=
   rew (Nat.tail_add_spec n p) in (rev_append_tail v w).
 
-(** rev [a₁ ; a₂ ; .. ; an] is [an ; a{n-1} ; .. ; a₁]
+(* if v has length n, then
+   snoc a v = v ++ [a] of length S n (instead of n + 1) *)
+Fixpoint snoc {A n} (a : A) (v : t A n) : t A (S n) :=
+  match v with
+  | [] => a :: []
+  | b :: v => b :: (snoc a v)
+  end.
 
-Caution : There is a lot of rewrite garbage in this definition *)
-Definition rev {A n} (v : t A n) : t A n :=
- rew <- (plus_n_O _) in (rev_append v []).
+(** rev [a₁ ; a₂ ; .. ; an] is [an ; a{n-1} ; .. ; a₁] *)
+Fixpoint rev {A n} (v : t A n) : t A n :=
+  match v with
+  | [] => []
+  | a :: v => snoc a (rev v)
+  end.
 
 End BASES.
 Local Notation "v [@ p ]" := (nth v p) (at level 1).

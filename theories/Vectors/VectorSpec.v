@@ -387,6 +387,30 @@ intros P n v1 v2; split; induction n as [|n IHn].
     now rewrite <- (nth_order_tl _ _ _ _ Hi1), <- (nth_order_tl _ _ _ _ Hi2)  in HP.
 Qed.
 
+(** ** Properties of [rev] *)
+
+Lemma rev_snoc A: forall a n (v : t A n),
+  rev (snoc a v) = a :: rev v.
+Proof.
+intros a n v. induction v as [|b n v IH].
+- reflexivity.
+- cbn. now rewrite IH.
+Qed.
+
+Lemma snoc_rev A: forall a n (v : t A n),
+  snoc a (rev v) = rev (a :: v).
+Proof.
+reflexivity.
+Qed.
+
+Lemma rev_rev A: forall n (v : t A n),
+  rev (rev v) = v.
+Proof.
+intros n v. induction v as [|a n v IH].
+- reflexivity.
+- cbn. now rewrite rev_snoc, IH.
+Qed.
+
 (** ** Properties of [to_list] *)
 
 Lemma to_list_of_list_opp {A} (l: list A): to_list (of_list l) = l.
@@ -458,6 +482,13 @@ induction v1; simpl; trivial.
 now rewrite to_list_cons; f_equal.
 Qed.
 
+Lemma to_list_snoc A a n (v : t A n) : to_list (snoc a v) = (to_list v ++ a :: List.nil)%list.
+Proof.
+induction v as [|b n v IH].
+- reflexivity.
+- cbn. apply f_equal, IH.
+Qed.
+
 Lemma to_list_rev_append_tail A n m (v1 : t A n) (v2 : t A m):
   to_list (rev_append_tail v1 v2) = List.rev_append (to_list v1) (to_list v2).
 Proof. now revert m v2; induction v1 as [ | ? ? ? IHv1 ]; intros; [ | simpl; rewrite IHv1 ]. Qed.
@@ -469,8 +500,9 @@ Proof. unfold rev_append; rewrite <- (Nat.tail_add_spec n m); apply to_list_rev_
 Lemma to_list_rev A n (v : t A n):
   to_list (rev v) = List.rev (to_list v).
 Proof.
-unfold rev; rewrite (plus_n_O n); unfold eq_rect_r; simpl.
-now rewrite to_list_rev_append, List.rev_alt.
+induction v as [|a n v IH].
+- reflexivity.
+- simpl. now rewrite to_list_snoc, IH.
 Qed.
 
 Lemma to_list_map A B (f : A -> B) n (v : t A n) :
