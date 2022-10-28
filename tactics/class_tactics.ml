@@ -1222,24 +1222,6 @@ let is_inference_forced p evd ev =
 let is_mandatory p comp evd =
   Evar.Set.exists (is_inference_forced p evd) comp
 
-(** In case of unsatisfiable constraints, build a nice error message *)
-
-let error_unresolvable env comp evd =
-  let is_part ev = match comp with
-  | None -> true
-  | Some s -> Evar.Set.mem ev s
-  in
-  let fold ev evi (found, accu) =
-    let ev_class = class_of_constr env evd (Evd.evar_concl evi) in
-    if not (Option.is_empty ev_class) && is_part ev then
-      (* focus on one instance if only one was searched for *)
-      if not found then (true, Some ev)
-      else (found, None)
-    else (found, accu)
-   in
-  let (_, ev) = Evd.fold_undefined fold evd (true, None) in
-  Pretype_errors.unsatisfiable_constraints env evd ev comp
-
 (** Check if an evar is concerned by the current resolution attempt,
     (and in particular is in the current component).
     Invariant : this should only be applied to undefined evars. *)
@@ -1310,7 +1292,7 @@ let resolve_all_evars depth unique env p oevd do_split fail =
         if fail && (not do_split || is_mandatory (p evd') comp evd')
         then (* Unable to satisfy the constraints. *)
           let comp = if do_split then Some comp else None in
-          error_unresolvable env comp evd'
+          error_unresolvable env evd' comp
         else (* Best effort: use the best found solution on this component *)
           docomp evd' comps
   in docomp oevd split
