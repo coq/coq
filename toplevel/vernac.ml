@@ -72,7 +72,15 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       let (reraise, info) = Exninfo.capture reraise in
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
-      if interactive then ignore(Stm.edit_at ~doc:state.doc state.sid);
+      let reraise = if interactive then begin
+          (* Exceptions don't carry enough state to print themselves (typically missing the nametab)
+             so we need to print before resetting to an older state. See eg #16745 *)
+          let reraise = UserError (CErrors.print reraise) in
+          ignore(Stm.edit_at ~doc:state.doc state.sid);
+          reraise
+        end
+        else reraise
+      in
       let info = begin
         match Loc.get_loc info with
         | None   -> Option.cata (Loc.add_loc info) info loc

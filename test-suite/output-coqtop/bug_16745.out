@@ -1,0 +1,17 @@
+
+Coq < Coq < 1 goal
+  
+  ============================
+  True
+
+Unnamed_thm < 
+Unnamed_thm < Unnamed_thm < Unnamed_thm < Toplevel input, characters 111-112:
+>     | match goal with x := ?v |- _ => exact v end].
+>                                             ^
+Error:
+In environment
+x := Unnamed_thm_subproof : nat
+The term "Unnamed_thm_subproof" has type "nat"
+while it is expected to have type "True".
+
+Unnamed_thm < 
