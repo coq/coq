@@ -636,10 +636,8 @@ Applying theorems
 
    Behaves like :tacn:`exact` but allows holes (denoted by ``_``
    or :n:`(_ : @type)`) in :n:`@one_term`. :tacn:`refine` generates as many
-   subgoals as there are remaining holes in the elaborated term. The types
-   of these holes must be inferable or declared by an explicit cast
-   such as ``(_ : nat -> Prop)``. Any subgoal that
-   occurs in other subgoals is automatically shelved, as if calling
+   subgoals as there are remaining holes in the elaborated term. Any subgoal
+   that occurs in other subgoals is automatically shelved, as if calling
    :tacn:`shelve_unifiable`.
 
    `simple`
