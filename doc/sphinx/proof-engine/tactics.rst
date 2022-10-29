@@ -623,9 +623,7 @@ Applying theorems
    This tactic applies to any goal. It behaves like :tacn:`exact` with a big
    difference: the user can leave some holes (denoted by ``_``
    or :n:`(_ : @type)`) in the term. :tacn:`refine` will generate as many
-   subgoals as there are remaining holes in the elaborated term. The type
-   of holes must be either synthesized by the system or declared by an explicit cast
-   like ``(_ : nat -> Prop)``. Any subgoal that
+   subgoals as there are remaining holes in the elaborated term. Any subgoal that
    occurs in other subgoals is automatically shelved, as if calling
    :tacn:`shelve_unifiable`. The produced subgoals (shelved or not)
    are *not* candidates for typeclass resolution, even if they have a type-class
