@@ -130,7 +130,7 @@ let combineCG t1 t2 f g = match t1, t2 with
             let sigma, f = Evarutil.new_evar env sigma (mkArrow c r concl) in
             let gf = Proofview_monad.with_empty_state (fst @@ destEvar sigma f) in
             sigma, f, [gf] in
-      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Tactics.eapply f)
+      Proofview.Unsafe.tclEVARS sigma <*> Tactics.eapply ~with_classes:false f
       <*>
       Proofview.Unsafe.tclGETGOALS >>= begin fun gl ->
         match k with

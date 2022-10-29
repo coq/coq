@@ -1829,7 +1829,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
 (*            Resolution tactics                    *)
 (****************************************************)
 
-let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
+let general_apply ?(with_classes=true) ?(respect_opaque=false) with_delta with_destruct with_evars
     clear_flag {CAst.loc;v=(c,lbind : EConstr.constr with_bindings)} =
   Proofview.Goal.enter begin fun gl ->
   let concl = Proofview.Goal.concl gl in
@@ -1856,7 +1856,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         let n = nb_prod_modulo_zeta sigma thm_ty - nprod in
         if n<0 then error NotEnoughPremises;
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
-        Clenv.res_pf clause ~with_evars ~flags
+        Clenv.res_pf clause ~with_classes ~with_evars ~flags
       with exn when noncritical exn ->
         let exn, info = Exninfo.capture exn in
         Proofview.tclZERO ~info exn
@@ -1900,13 +1900,13 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
       (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
-let rec apply_with_bindings_gen b e = function
+let rec apply_with_bindings_gen ?with_classes b e = function
   | [] -> Proofview.tclUNIT ()
-  | [k,cb] -> general_apply b b e k cb
+  | [k,cb] -> general_apply ?with_classes b b e k cb
   | (k,cb)::cbl ->
       Tacticals.tclTHENLAST
-        (general_apply b b e k cb)
-        (apply_with_bindings_gen b e cbl)
+        (general_apply ?with_classes b b e k cb)
+        (apply_with_bindings_gen ?with_classes b e cbl)
 
 let apply_with_delayed_bindings_gen b e l =
   let one k {CAst.loc;v=f} =
@@ -1928,11 +1928,12 @@ let apply_with_delayed_bindings_gen b e l =
 
 let apply_with_bindings cb = apply_with_bindings_gen false false [None,(CAst.make cb)]
 
-let eapply_with_bindings cb = apply_with_bindings_gen false true [None,(CAst.make cb)]
+let eapply_with_bindings ?with_classes cb = apply_with_bindings_gen ?with_classes false true [None,(CAst.make cb)]
 
 let apply c = apply_with_bindings_gen false false [None,(CAst.make (c,NoBindings))]
 
-let eapply c = apply_with_bindings_gen false true [None,(CAst.make (c,NoBindings))]
+let eapply ?with_classes c =
+  apply_with_bindings_gen ?with_classes false true [None,(CAst.make (c,NoBindings))]
 
 let apply_list = function
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
