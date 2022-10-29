@@ -121,7 +121,6 @@ type evar_info = private {
   (** Relevance of the conclusion of the evar. *)
 }
 
-val make_evar : named_context_val -> etypes -> evar_info
 val evar_concl : evar_info -> econstr
 val evar_context : evar_info -> (econstr, etypes) Context.Named.pt
 val evar_filtered_context : evar_info -> (econstr, etypes) Context.Named.pt

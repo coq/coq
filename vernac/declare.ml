@@ -2208,8 +2208,6 @@ end
 
 let default_tactic = ref (Proofview.tclUNIT ())
 
-let evar_of_obligation o = Evd.make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
-
 let subst_deps expand obls deps t =
   let osubst = Obls_.obl_substitution expand obls deps in
     (Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) osubst) t)
@@ -2217,8 +2215,6 @@ let subst_deps expand obls deps t =
 let subst_deps_obl obls obl =
   let t' = subst_deps true obls obl.obl_deps obl.obl_type in
   Obligation.set_type ~typ:t' obl
-
-open Evd
 
 let is_defined obls x = not (Option.is_empty obls.(x).obl_body)
 
@@ -2255,12 +2251,11 @@ let solve_by_tac prg obls i tac =
   let uctx = Internal.get_uctx prg in
   let uctx = UState.update_sigma_univs uctx (Global.universes ()) in
   let poly = Internal.get_poly prg in
-  let evi = evar_of_obligation obl in
   (* the status of [build_by_tactic] is dropped. *)
   try
     let env = Global.env () in
     let body, types, _univs, _, uctx =
-      build_by_tactic env ~uctx ~poly ~typ:evi.evar_concl tac in
+      build_by_tactic env ~uctx ~poly ~typ:(EConstr.of_constr obl.obl_type) tac in
     Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
     Some (body, types, uctx)
   with
