@@ -612,7 +612,10 @@ let extract_record_data records =
 
 let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
-    (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
+    (List.rev (Anonymous :: (List.filter_map (function
+         | LocalDef _ -> None
+         | LocalAssum _ as d -> Some (RelDecl.get_name d))
+         ctx)))
 
 (* deprecated in 8.16, to be removed at the end of the deprecation phase
    (c.f., https://github.com/coq/coq/pull/15802 ) *)
@@ -817,8 +820,7 @@ let declare_class_constant ~univs paramimpls params data =
       Univ.UContext.instance uctx, univs
   in
   let cstu = (cst, inst) in
-  let inst_type = appvectc (mkConstU cstu)
-      (Termops.rel_vect 0 (List.length params)) in
+  let inst_type = appvectc (mkConstU cstu) (Context.Rel.instance mkRel 0 params) in
   let proj_type =
     it_mkProd_or_LetIn (mkProd(binder, inst_type, lift 1 field)) params in
   let proj_body =
