@@ -40,7 +40,7 @@ Basic notations
    If the command is inside a section, its effect is limited to the section.
 
    Specifying :token:`scope_name` associates the notation with that scope.  Otherwise
-   it is a *lonely notation*, that is, not associated with a scope.
+   it is a :gdef:`lonely notation`, that is, not associated with a scope.
 
    .. todo indentation of this chapter is not consistent with other chapters.  Do we have a standard?
 
@@ -1349,7 +1349,7 @@ Global interpretation rules for notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At any time, the interpretation of a notation for a term is done within
-a *stack* of notation scopes and lonely notations. If a
+a *stack* of notation scopes and :term:`lonely notations <lonely notation>`. If a
 notation is defined in multiple scopes, Coq uses the interpretation from
 the most recently opened notation scope or declared lonely notation.
 
@@ -1658,7 +1658,7 @@ Displaying information about scopes
    Displays, for each existing notation scope, all accessible notations
    (whether or not currently in the notation scope stack),
    the most-recently defined delimiting key and the class the notation scope is bound to.
-   The display also includes lonely notations.
+   The display also includes :term:`lonely notations <lonely notation>`.
 
    .. todo should the command report all delimiting keys?
 
