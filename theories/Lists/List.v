@@ -580,6 +580,18 @@ Section Elts.
     cbn. now apply IHn, Nat.succ_le_mono.
   Qed.
 
+  Lemma nth_error_ext l l':
+    (forall n, nth_error l n = nth_error l' n) -> l = l'.
+  Proof.
+    revert l'. induction l as [|a l IHl];
+      intros l' Hnth; destruct l'.
+    - reflexivity.
+    - discriminate (Hnth 0).
+    - discriminate (Hnth 0).
+    - injection (Hnth 0) as ->. f_equal. apply IHl.
+      intro n. exact (Hnth (S n)).
+  Qed.
+
   (** Results directly relating [nth] and [nth_error] *)
 
   Lemma nth_error_nth : forall (l : list A) (n : nat) (x d : A),
@@ -3341,6 +3353,21 @@ Proof.
   - f_equal; apply IHn.
 Qed.
 
+Lemma map_repeat A B (a:A) n (f : A -> B):
+  map f (repeat a n) = repeat (f a) n.
+Proof.
+  induction n as [|n IHn].
+  - reflexivity.
+  - cbn. f_equal. exact IHn.
+Qed.
+
+Lemma rev_repeat A n (a:A):
+  rev (repeat a n) = repeat a n.
+Proof.
+  induction n as [|n IHn].
+  - reflexivity.
+  - cbn. rewrite IHn. symmetry. apply repeat_cons.
+Qed.
 
 (** Sum of elements of a list of [nat]: [list_sum] *)
 
