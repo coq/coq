@@ -788,6 +788,27 @@ else
 TIMING_EXTRA =
 endif
 
+# can't make
+# https://www.gnu.org/software/make/manual/make.html#Static-Pattern
+# work with multiple target rules
+# so use eval in a loop instead
+# with grouped targets https://www.gnu.org/software/make/manual/make.html#Multiple-Targets
+# if available (GNU Make >= 4.3)
+ifneq (,$(filter grouped-target,$(.FEATURES)))
+define globvorule=
+
+# take care to $$ variables using $< etc
+  $(1).vo $(1).glob &: $(1).v | $(VDFILE)
+	$(SHOW)COQC $(1).v
+	$(HIDE)$$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $(1).v $$(TIMING_EXTRA)
+ifeq ($(COQDONATIVE), "yes")
+	$(SHOW)COQNATIVE $(1).vo
+	$(HIDE)$(call TIMER,$(1).vo.native) $(COQNATIVE) $(COQLIBS) $(1).vo
+endif
+
+endef
+else
+
 $(VOFILES): %.vo: %.v | $(VDFILE)
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
@@ -796,9 +817,14 @@ ifeq ($(COQDONATIVE), "yes")
 	$(HIDE)$(call TIMER,$@.native) $(COQNATIVE) $(COQLIBS) $@
 endif
 
-# FIXME ?merge with .vo / .vio ?
+# this is broken :( todo fix if we ever find a solution that doesn't need grouped targets
 $(GLOBFILES): %.glob: %.v
-	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
+	$(SHOW)'COQC $< (for .glob)'
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
+
+endif
+
+$(foreach vfile,$(VFILES:.v=),$(eval $(call globvorule,$(vfile))))
 
 $(VFILES:.v=.vio): %.vio: %.v
 	$(SHOW)COQC -vio $<
