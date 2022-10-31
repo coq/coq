@@ -15,6 +15,7 @@ let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (Spawned.process_id ()) s
 type response =
   | RespBuiltSubProof of (Constr.constr * UState.t)
   | RespError of bool * Pp.t
+  | RespKilled of int
   | RespNoProgress
 
 module TacTask : sig
@@ -80,6 +81,7 @@ end = struct (* {{{ *)
     let kill = match resp with
     | RespNoProgress | RespBuiltSubProof _ -> false
     | RespError _ -> true
+    | RespKilled _ -> assert false
     in
     if kill then t_kill ();
     `Stay ((),[])
@@ -89,7 +91,10 @@ end = struct (* {{{ *)
     flush_all (); exit 1
 
   let on_task_cancellation_or_expiration_or_slave_death = function
-    | Some { t_kill } -> t_kill ()
+    | Some { t_goalno; t_assign; t_kill } ->
+      t_kill ();
+      assert (Option.is_empty !t_assign);
+      t_assign := Some (RespKilled t_goalno)
     | _ -> ()
 
   let command_focus = Proof.new_focus_kind ()
@@ -154,20 +159,24 @@ let assign_tac ~abstract res : unit Proofview.tactic =
 let get_results res =
   (* If one of the goals failed others may be missing results, so we
      need to check for RespError before complaining about missing
-     results *)
+     results. Also if there are non-RespKilled errors we prefer to
+     report them. *)
   let missing = ref [] in
+  let killed = ref [] in
   let res = CList.map_filter_i (fun i (g,v) -> match !v with
-      | None -> missing := i :: !missing; None
+      | None -> missing := (succ i) :: !missing; None
       | Some (RespBuiltSubProof v) -> Some (g,v)
       | Some RespNoProgress -> None
+      | Some (RespKilled goalno) -> killed := goalno :: !killed; None
       | Some (RespError (noncrt, msg)) ->
         if noncrt then raise (AsyncTaskQueue.RemoteException msg)
         else CErrors.anomaly msg)
       res
   in
-  match !missing with
-  | [] -> res
-  | missing ->
+  match !killed, !missing with
+  | [], [] -> res
+  | killed :: _, _ -> CErrors.anomaly Pp.(str "Worker failed (for goal " ++ int killed ++ str")")
+  | [], missing ->
     CErrors.anomaly
       (str "Missing results (for " ++
        str (CString.plural (List.length missing) "goal") ++
