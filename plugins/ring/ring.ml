@@ -345,7 +345,7 @@ let find_ring_structure env sigma l =
               (str"Arguments of ring_simplify do not have all the same type.")
         in
         List.iter check cl';
-        (try ring_for_carrier (EConstr.to_constr sigma ty)
+        (try ring_for_carrier (EConstr.to_constr ~abort_on_undefined_evars:false sigma ty)
         with Not_found ->
           CErrors.user_err
             (str"Cannot find a declared ring structure over"++
