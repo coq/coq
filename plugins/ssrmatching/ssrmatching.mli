@@ -43,7 +43,11 @@ type ('ident, 'term) ssrpattern =
   | E_In_X_In_T of 'term * 'ident * 'term
   | E_As_X_In_T of 'term * 'ident * 'term
 
-type pattern = Evd.evar_map * (EConstr.existential, EConstr.t) ssrpattern
+type pattern = {
+  pat_sigma : Evd.evar_map;
+  pat_pat : (EConstr.existential, EConstr.t) ssrpattern;
+}
+
 val pp_pattern : env -> pattern -> Pp.t
 
 (** The type of rewrite patterns, the patterns of the [rewrite] tactic.
@@ -122,8 +126,10 @@ val fill_rel_occ_pattern :
 type ssrdir = L2R | R2L
 val pr_dir_side : ssrdir -> Pp.t
 
-(** a pattern for a term with wildcards *)
-type tpattern
+(** patterns for a term with wildcards *)
+type tpatterns
+
+val empty_tpatterns : Evd.evar_map -> tpatterns
 
 (** [mk_tpattern env sigma0 sigma_p ok p_origin dir t] compiles a term [t]
     living in [env] [sigma] (an extension of [sigma0]) intro a [tpattern].
@@ -136,9 +142,9 @@ val mk_tpattern :
   ?ok:(EConstr.t -> evar_map -> bool) ->
   rigid:(Evar.t -> bool) ->
   env ->
-  evar_map * EConstr.t ->
+  EConstr.t ->
   ssrdir -> EConstr.t ->
-    evar_map * tpattern
+  tpatterns -> tpatterns
 
 (** [findP env t i k] is a stateful function that finds the next occurrence
     of a tpattern and calls the callback [k] to map the subterm matched.
@@ -170,8 +176,7 @@ val mk_tpattern_matcher :
   ?all_instances:bool ->
   ?raise_NoMatch:bool ->
   ?upats_origin:ssrdir * EConstr.t ->
-  evar_map -> occ -> evar_map * tpattern list ->
-    find_P * conclude
+  evar_map -> occ -> tpatterns -> find_P * conclude
 
 (** Example of [mk_tpattern_matcher] to implement
     [rewrite \{occ\}\[in t\]rules].

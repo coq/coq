@@ -278,11 +278,9 @@ let unfoldintac occ rdx t (kt,_) =
   let beta env = Reductionops.clos_norm_flags red_flags env sigma0 in
   let unfold, conclude = match classify_pattern rdx with
   | None ->
-    let ise = Evd.create_evar_defs sigma in
     let rigid ev = Evd.mem sigma0 ev in
-    let ise, u = mk_tpattern env0 ~rigid (ise, t) L2R t in
-    let find_T, end_T =
-      mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[u]) in
+    let u = mk_tpattern env0 ~rigid t L2R t (empty_tpatterns (Evd.create_evar_defs sigma)) in
+    let find_T, end_T = mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ u in
     (fun env c _ h ->
       try find_T env c h ~k:(fun env c _ _ -> body env t c)
       with NoMatch when easy -> c
@@ -331,12 +329,10 @@ let foldtac occ rdx ft =
   let t = Reductionops.nf_evar sigma t in
   let fold, conclude = match classify_pattern rdx with
   | None ->
-    let ise = Evd.create_evar_defs sigma in
     let ut = red_product_skip_id env0 sigma t in
     let rigid ev = Evd.mem sigma0 ev in
-    let ise, ut = mk_tpattern ~rigid env0 (ise,t) L2R ut in
-    let find_T, end_T =
-      mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ (ise,[ut]) in
+    let ut = mk_tpattern ~rigid env0 t L2R ut (empty_tpatterns (Evd.create_evar_defs sigma)) in
+    let find_T, end_T = mk_tpattern_matcher ~raise_NoMatch:true sigma0 occ ut in
     (fun env c _ h -> try find_T env c h ~k:(fun env t _ _ -> t) with NoMatch ->c),
     (fun () -> try ignore @@ end_T () with NoMatch -> ())
   | Some _ ->
@@ -657,11 +653,12 @@ let rwrxtac ?under ?map_redex occ rdx_pat dir rule =
   let find_R, conclude = match classify_pattern rdx_pat with
   | None ->
       let upats_origin = dir, (snd rule) in
-      let rpat (sigma, pats) (d, r, lhs, rhs) =
-        let sigma, pat =
-          mk_tpattern ~ok:(rw_progress rhs) ~rigid env0 (sigma, Reductionops.nf_evar sigma r) d (Reductionops.nf_evar sigma lhs) in
-        sigma, pats @ [pat] in
-      let rpats = List.fold_left rpat (r_sigma,[]) rules in
+      let rpat pats (d, r, lhs, rhs) =
+        let r = Reductionops.nf_evar r_sigma r in
+        let lhs = Reductionops.nf_evar r_sigma lhs in
+        mk_tpattern ~ok:(rw_progress rhs) ~rigid env0 r d lhs pats
+      in
+      let rpats = List.fold_left rpat (empty_tpatterns r_sigma) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ ~upats_origin rpats in
       (fun e c _ i -> find_R ~k:(fun _ _ _ h -> EConstr.mkRel h) e c i),
       fun cl -> let rdx,d,r = end_R () in closed0_check env0 sigma0 cl rdx; (d,r),rdx
@@ -687,14 +684,12 @@ let ssrinstancesofrule ist dir arg =
   let r_sigma, rules = rwprocess_rule env0 dir rule in
   let find, conclude =
     let upats_origin = dir, (snd rule) in
-    let rpat (sigma, pats) (d, r, lhs, rhs) =
-      let sigma, pat =
-        mk_tpattern ~ok:(rw_progress rhs) ~rigid env0
-          (sigma, Reductionops.nf_evar sigma r)
-          d
-          (Reductionops.nf_evar sigma lhs) in
-      sigma, pats @ [pat] in
-    let rpats = List.fold_left rpat (r_sigma,[]) rules in
+    let rpat pats (d, r, lhs, rhs) =
+      let r = Reductionops.nf_evar r_sigma r in
+      let lhs = Reductionops.nf_evar r_sigma lhs in
+      mk_tpattern ~ok:(rw_progress rhs) ~rigid env0 r d lhs pats
+    in
+    let rpats = List.fold_left rpat (empty_tpatterns r_sigma) rules in
     mk_tpattern_matcher ~all_instances:true ~raise_NoMatch:true sigma0 None ~upats_origin rpats in
   let print env p c _ = Feedback.msg_info Pp.(hov 1 (str"instance:" ++ spc() ++ pr_econstr_env env r_sigma p ++ spc() ++ str "matches:" ++ spc() ++ pr_econstr_env env r_sigma c)); c in
   Feedback.msg_info Pp.(str"BEGIN INSTANCES");
@@ -717,7 +712,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
   let fail = ref false in
   let interp_rpattern env sigma gc =
     try interp_rpattern env sigma gc
-    with _ when snd mult = May -> fail := true; sigma, T EConstr.mkProp in
+    with _ when snd mult = May -> fail := true; { pat_sigma = sigma; pat_pat = T EConstr.mkProp } in
   let interp env sigma gc =
     try interp_term env sigma ist gc
     with _ when snd mult = May -> fail := true; (sigma, EConstr.mkProp) in
@@ -729,7 +724,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     (* Evarmaps below are extensions of sigma, so setting the universe context is correct *)
     let sigma = match rx with
     | None -> sigma
-    | Some (s,_) -> Evd.set_universe_context sigma (Evd.evar_universe_context s)
+    | Some { pat_sigma = s } -> Evd.set_universe_context sigma (Evd.evar_universe_context s)
     in
     let t = interp env sigma gt in
     let sigma = Evd.set_universe_context sigma  (Evd.evar_universe_context (fst t)) in
