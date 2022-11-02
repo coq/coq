@@ -242,7 +242,7 @@ GRAMMAR EXTEND Gram
         { let t, ty =
             match mpv with
             | Term t -> (match t with
-              | { CAst.v = CCast (t, _, ty) } -> Term t, Some (Term ty)
+              | { CAst.v = CCast (t, _, ty) } -> assert false
               | _ -> mpv, None)
             | _ -> mpv, None
           in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty) }
