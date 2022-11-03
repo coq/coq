@@ -261,7 +261,7 @@ let is_extrcompute () = !extrcompute
 
 let safe_basename_of_global r =
   let last_chance r =
-    try Nametab.basename_of_global r
+    try Nametab.GlobRef.path r |> basename
     with Not_found ->
       anomaly (Pp.str "Inductive object unknown to extraction and not globally visible.")
   in

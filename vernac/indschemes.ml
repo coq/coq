@@ -371,7 +371,7 @@ let rec name_and_process_schemes env l =
    -> let ind = smart_ind sch_qualid in
       let sort_of_ind = Inductive.inductive_sort_family (snd (Inductive.lookup_mind_specif env ind)) in
       let suffix = scheme_suffix_gen sch sort_of_ind in
-      let newid = Nameops.add_suffix (Nametab.basename_of_global (Names.GlobRef.IndRef ind)) suffix in
+      let newid = Nameops.add_suffix (Nametab.GlobRef.path (Names.GlobRef.IndRef ind) |> Libnames.basename) suffix in
       let newref = CAst.make newid in
       (newref, sch_isdep sch_type, ind, sch_sort) :: name_and_process_schemes env q
 

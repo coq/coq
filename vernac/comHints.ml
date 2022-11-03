@@ -48,7 +48,7 @@ let project_hint ~poly pri l2r r =
   in
   let name =
     Nameops.add_suffix
-      (Nametab.basename_of_global gr)
+      (Nametab.GlobRef.path gr |> Libnames.basename)
       ("_proj_" ^ if l2r then "l2r" else "r2l")
   in
   let ctx = Evd.univ_entry ~poly sigma in

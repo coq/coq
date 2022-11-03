@@ -208,11 +208,11 @@ let id_of_name = function
        | Const (cst,_) -> Label.to_id (Constant.label cst)
        | Construct (cstr,_) ->
           let ref = GlobRef.ConstructRef cstr in
-          let basename = Nametab.basename_of_global ref in
+          let basename = Nametab.GlobRef.path ref |> Libnames.basename in
           basename
        | Ind (ind,_) ->
           let ref = GlobRef.IndRef ind in
-          let basename = Nametab.basename_of_global ref in
+          let basename = Nametab.GlobRef.path ref |> Libnames.basename in
           basename
        | Sort s ->
           begin

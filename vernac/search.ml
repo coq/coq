@@ -199,7 +199,7 @@ let module_filter (mods, outside) ref kind env sigma typ =
   if outside then List.for_all is_outside mods
   else List.is_empty mods || List.exists is_inside mods
 
-let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
+let name_of_reference ref = Id.to_string (Nametab.GlobRef.path ref |> Libnames.basename)
 
 let search_filter query gr kind env sigma typ = match query with
 | GlobSearchSubPattern (where,head,pat) ->
@@ -309,7 +309,7 @@ let interface_search env sigma =
     extract_flags [] [] [] [] false flags
   in
   let filter_function ref env constr =
-    let id = Names.Id.to_string (Nametab.basename_of_global ref) in
+    let id = Names.Id.to_string (Libnames.basename (Nametab.GlobRef.path ref)) in
     let path = Libnames.dirpath (Nametab.GlobRef.path ref) in
     let toggle x b = if x then b else not b in
     let match_name (regexp, flag) =
@@ -334,7 +334,7 @@ let interface_search env sigma =
   in
   let ans = ref [] in
   let print_function ref env constr =
-    let fullpath = DirPath.repr (Nametab.dirpath_of_global ref) in
+    let fullpath = DirPath.repr (Nametab.GlobRef.path ref |> Libnames.dirpath) in
     let qualid = Nametab.GlobRef.shortest_qualid Id.Set.empty ref in
     let (shortpath, basename) = Libnames.repr_qualid qualid in
     let shortpath = DirPath.repr shortpath in

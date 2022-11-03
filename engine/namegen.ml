@@ -115,9 +115,9 @@ let head_name sigma c = (* Find the head constant of a constr if any *)
     | Cast (c,_,_) | App (c,_) -> hdrec c
     | Proj (kn,_) -> Some (Label.to_id (Constant.label (Projection.constant kn)))
     | Const _ | Ind _ | Construct _ | Var _ as c ->
-        Some (Nametab.basename_of_global (global_of_constr c))
+      Some (Nametab.GlobRef.path (global_of_constr c) |> basename)
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
-        Some (match lna.(i).binder_name with Name id -> id | _ -> assert false)
+      Some (match lna.(i).binder_name with Name id -> id | _ -> assert false)
     | Sort _ | Rel _ | Meta _|Evar _|Case _ | Int _ | Float _ | Array _ -> None
   in
   hdrec c
@@ -148,8 +148,12 @@ let hdchar env sigma c =
     | Cast (c,_,_) | App (c,_) -> hdrec k c
     | Proj (kn,_) -> lowercase_first_char (Label.to_id (Constant.label (Projection.constant kn)))
     | Const (kn,_) -> lowercase_first_char (Label.to_id (Constant.label kn))
-    | Ind (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.IndRef x)) with Not_found when !Flags.in_debugger -> "zz")
-    | Construct (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.ConstructRef x)) with Not_found when !Flags.in_debugger -> "zz")
+    | Ind (x,_) ->
+      (try lowercase_first_char (Nametab.GlobRef.path (GlobRef.IndRef x) |> basename)
+       with Not_found when !Flags.in_debugger -> "zz")
+    | Construct (x,_) ->
+      (try lowercase_first_char (Nametab.GlobRef.path (GlobRef.ConstructRef x) |> basename)
+       with Not_found when !Flags.in_debugger -> "zz")
     | Var id  -> lowercase_first_char id
     | Sort s -> sort_hdchar (ESorts.kind sigma s)
     | Rel n ->

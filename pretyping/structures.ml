@@ -271,8 +271,8 @@ let subst subst (gref,ind as obj) =
 let error_not_structure ref description =
   user_err
     (str"Could not declare a canonical structure " ++
-       (Id.print (Nametab.basename_of_global ref) ++ str"." ++ spc() ++
-          description) ++ str ".")
+     (Id.print (Nametab.GlobRef.path ref |> Libnames.basename) ++ str"." ++ spc() ++
+      description) ++ str ".")
 
 let make env sigma ref =
   let vc =

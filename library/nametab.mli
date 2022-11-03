@@ -147,11 +147,6 @@ val global_inductive : qualid -> inductive
 (** Mapping a full path to a global reference *)
 val global_of_path : full_path -> GlobRef.t
 
-(** Returns in particular the dirpath or the basename of the full path
-   associated to global reference *)
-val dirpath_of_global : GlobRef.t -> DirPath.t
-val basename_of_global : GlobRef.t -> Id.t
-
 (** Printing of global references using names as short as possible.
     @raise Not_found when the reference is not in the global tables. *)
 val pr_global_env : Id.Set.t -> GlobRef.t -> Pp.t

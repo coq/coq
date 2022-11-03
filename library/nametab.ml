@@ -524,10 +524,6 @@ let global_inductive qid =
     CErrors.user_err ?loc:qid.CAst.loc
       Pp.(pr_qualid qid ++ spc () ++ str "is not an inductive type.")
 
-(* Reverse locate functions ***********************************************)
-let dirpath_of_global ref = fst (repr_path (GlobRef.path ref))
-let basename_of_global ref = snd (repr_path (GlobRef.path ref))
-
 (***********************************************************************)
 (* Syntactic Definitions. *)
 module Abbrev : SR
