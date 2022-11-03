@@ -1432,6 +1432,19 @@ let understand_ltac flags env sigma lvar kind c =
   let (sigma, c, _) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
 
+(* Fully evaluate an untyped constr *)
+let understand_uconstr ?(flags = all_and_fail_flags)
+  ?(expected_type = WithoutTypeConstraint) env sigma c =
+  let open Ltac_pretype in
+  let { closure; term } = c in
+  let vars = {
+    ltac_constrs = closure.typed;
+    ltac_uconstrs = closure.untyped;
+    ltac_idents = closure.idents;
+    ltac_genargs = closure.genargs;
+  } in
+  understand_ltac flags env sigma vars expected_type term
+
 let path_convertible env sigma cl p q =
   let open Coercionops in
   let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in

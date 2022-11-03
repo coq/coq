@@ -1076,16 +1076,9 @@ let rec read_match_rule lfun ist env sigma = function
 (* Fully evaluate an untyped constr *)
 let type_uconstr ?(flags = (constr_flags ()))
   ?(expected_type = WithoutTypeConstraint) ist c =
-  begin fun env sigma ->
-  let { closure; term } = c in
-  let vars = {
-    ltac_constrs = closure.typed;
-    ltac_uconstrs = closure.untyped;
-    ltac_idents = closure.idents;
-    ltac_genargs = closure.genargs;
-  } in
   let flags = { flags with polymorphic = ist.Geninterp.poly } in
-  understand_ltac flags env sigma vars expected_type term
+  begin fun env sigma ->
+    Pretyping.understand_uconstr ~flags ~expected_type env sigma c
   end
 
 (* Interprets an l-tac expression into a value *)

@@ -107,6 +107,10 @@ val understand_ltac : inference_flags ->
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
   env -> evar_map -> glob_constr -> constr Evd.in_evar_universe_context
 
+val understand_uconstr :
+  ?flags:inference_flags -> ?expected_type:typing_constraint ->
+  env -> evar_map -> Ltac_pretype.closed_glob_constr -> evar_map * EConstr.t
+
 (** [hook env sigma ev] returns [Some (sigma', term)] if [ev] can be
    instantiated with a solution, [None] otherwise. Used to extend
    [solve_remaining_evars] below. *)
