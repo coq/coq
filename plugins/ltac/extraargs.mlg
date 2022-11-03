@@ -140,10 +140,10 @@ let pr_occurrences = pr_occurrences () () ()
 
 let pr_gen env sigma prc _prlc _prtac x = prc env sigma x
 
-let pr_globc env sigma _prc _prlc _prtac (_,glob) =
-  Printer.pr_glob_constr_env env sigma glob
+let pr_globc env sigma lvl _prc _prlc _prtac glob =
+  Printer.pr_closed_glob_n_env env sigma lvl glob
 
-let interp_glob ist env sigma (t,_) = (ist,t)
+let interp_glob ist env sigma t = Tacinterp.interp_glob_closure ist env sigma t
 
 let glob_glob = Tacintern.intern_constr
 
@@ -154,7 +154,7 @@ let subst_glob = Tacsubst.subst_glob_constr_and_expr
 }
 
 ARGUMENT EXTEND glob
-    PRINTED BY { pr_globc env sigma }
+    PRINTED BY { fun c -> pr_globc env sigma Ppconstr.lsimpleconstr c }
 
      INTERPRETED BY { interp_glob }
      GLOBALIZED BY { glob_glob }
@@ -179,7 +179,7 @@ END
 
 ARGUMENT EXTEND lglob
   TYPED AS glob
-    PRINTED BY { pr_globc env sigma }
+    PRINTED BY { fun c -> pr_globc env sigma Ppconstr.ltop c }
 
      INTERPRETED BY { interp_glob }
      GLOBALIZED BY { glob_glob }

@@ -9,12 +9,7 @@
 (************************************************************************)
 
 open Evd
-open Glob_term
-open Ltac_pretype
 
 (** Refinement of existential variables. *)
 
-type glob_constr_ltac_closure = ltac_var_map * glob_constr
-
-val w_refine : Evar.t * evar_info ->
-  glob_constr_ltac_closure -> Environ.env -> evar_map -> evar_map
+val w_refine : Evar.t -> Ltac_pretype.closed_glob_constr -> Environ.env -> evar_map -> evar_map

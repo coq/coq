@@ -17,27 +17,17 @@ open Evar_refiner
 open Tacexpr
 open Locus
 open Context.Named.Declaration
-open Ltac_pretype
 
 module NamedDecl = Context.Named.Declaration
 
 (* The instantiate tactic *)
 
-let instantiate_evar evk (ist,rawc) =
+let instantiate_evar evk rawc =
   let open Proofview.Notations in
   Proofview.tclENV >>= fun env ->
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
-  let evi = Evd.find sigma evk in
-  let filtered = Evd.evar_filtered_env env evi in
-  let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
-  let lvar = {
-    ltac_constrs = constrvars;
-    ltac_uconstrs = Names.Id.Map.empty;
-    ltac_idents = Names.Id.Map.empty;
-    ltac_genargs = ist.Geninterp.lfun;
-  } in
-  let sigma' = w_refine (evk,evi) (lvar ,rawc) env sigma in
+  let sigma' = w_refine evk rawc env sigma in
   Proofview.Unsafe.tclEVARS sigma'
   end
 
