@@ -821,7 +821,6 @@ let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
         if n = 0 then args, sigma
         else match EConstr.kind sigma c with
         | Lambda (_, argty, c) ->
-          let sigma = create_evar_defs sigma in
           let argty = Reductionops.nf_betaiota env sigma (EConstr.Vars.substl args argty) in
           let (sigma, x) = Evarutil.new_evar env sigma argty in
           saturate c (x :: args) sigma (n-1)
@@ -863,8 +862,7 @@ let applyn ?(beta=false) ~with_evars ?(first_goes_last=false) n t =
           | Lambda (_, ty, bo) ->
             let () = if not (EConstr.Vars.closed0 sigma ty) then raise dependent_apply_error in
             let ty = Reductionops.nf_betaiota env sigma ty in
-            let src = Loc.tag Evar_kinds.GoalEvar in
-            let (sigma, evk) = Evarutil.new_pure_evar ~src ~typeclass_candidate:false hyps sigma ty in
+            let (sigma, evk) = Evarutil.new_pure_evar ~typeclass_candidate:false hyps sigma ty in
             loop sigma bo (evk :: args) (n - 1)
           | _ -> assert false
       in
