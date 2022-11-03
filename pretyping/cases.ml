@@ -1725,10 +1725,13 @@ module EvarMapMonad = struct
     Eq.cast (Eq.pair Refl (Eq.pair (Eq.sym ETerm.eq) Refl))
       (Evarutil.new_type_evar (Eq.cast Env.eq env) sigma rigid)
 
-  let new_evar (env : 'env Env.t) (ty : 'env ETerm.t) : 'env ETerm.t t =
+  let new_evar (env : 'env Env.t) ?(candidates : 'env ETerm.t list option)
+        (ty : 'env ETerm.t) : 'env ETerm.t t =
   fun sigma ->
     Eq.cast (Eq.pair Refl (Eq.sym ETerm.eq))
-      (Evarutil.new_evar (Eq.cast Env.eq env) sigma (Eq.cast ETerm.eq ty))
+      (Evarutil.new_evar (Eq.cast Env.eq env) sigma (Eq.cast ETerm.eq ty)
+        ?candidates:(Eq.(cast (option (list ETerm.eq))) candidates))
+
 (*
   let merge_context_set ?loc ?sideff rigid ctx : unit t =
     let open Ops in
@@ -4760,18 +4763,20 @@ let union_accu
       Env.assoc ++
       Env.morphism Refl (Env.rev_plus accu.context.sum_binders)))) }
 
-let rec generalize_term : type env binders level sum_binders . env Env.t ->
+let rec generalize_term : type env binders level sum_binders .
+    allow_new_binders:bool ->
+    env Env.t ->
     Evd.evar_map -> env ETerm.t ->
     (env, binders, level, sum_binders) generalize_context_desc ->
     (env, binders, level, sum_binders) generalize_term =
-fun env sigma term context ->
+fun ~allow_new_binders env sigma term context ->
   let term' = ETerm.whd_all env sigma term in
   let f, args = ETerm.decompose_app sigma term' in
   match ETerm.destConstruct sigma f with
   | Some (Exists cstr, instance) ->
       let Exists args = Vector.of_list args in
       let Exists { accu; result = args } =
-        generalize_terms env sigma args context in
+        generalize_terms ~allow_new_binders env sigma args context in
       let result = ETerm.mkConstructU cstr instance in
       Exists { accu; result = ETerm.mkApp result (Vector.to_array args) }
   | None ->
@@ -4788,7 +4793,10 @@ fun env sigma term context ->
       | None ->
           let j = EJudgment.of_term env sigma term' in
           match
-            generalize_judgment env sigma (fun _ -> Context.anonR) j context
+            if allow_new_binders then
+              generalize_judgment env sigma (fun _ -> Context.anonR) j context
+            else
+              None
           with
           | None ->
               Exists {
@@ -4796,18 +4804,20 @@ fun env sigma term context ->
                 result = ETerm.lift context.height term }
           | Some { accu; result } ->
               Exists { accu; result = EJudgment.uj_val result }
-and generalize_terms : type env binders level sum_binders length . env Env.t ->
+and generalize_terms : type env binders level sum_binders length .
+    allow_new_binders:bool ->
+    env Env.t ->
     Evd.evar_map -> (env ETerm.t, length) Vector.t ->
     (env, binders, level, sum_binders) generalize_context_desc ->
     (env, binders, level, sum_binders, length) generalize_terms =
-fun env sigma terms context ->
+fun ~allow_new_binders env sigma terms context ->
     match terms with
     | [] -> Exists { accu = accu_zero context; result = [] }
     | hd :: tl ->
         let Exists desc =
-          generalize_term env sigma hd context in
+          generalize_term ~allow_new_binders env sigma hd context in
         let Exists { accu; result = tl } =
-          generalize_terms env sigma tl desc.accu.context in
+          generalize_terms ~allow_new_binders env sigma tl desc.accu.context in
         let Exists { accu; result = hd } = union_accu desc accu in
         Exists { accu; result = hd :: tl }
 
@@ -4878,7 +4888,8 @@ fun env sigma judgments context ->
       Exists { accu = accu_zero context; result = [] }
   | hd :: tl ->
       let Exists desc =
-        generalize_term env sigma (EJudgment.uj_val hd) context in
+        generalize_term ~allow_new_binders:true env sigma (EJudgment.uj_val hd)
+          context in
       let Exists { accu; result = tl } =
         generalize_judgments_rec env sigma tl desc.accu.context in
       let Exists { accu; result = v } = union_accu desc accu in
@@ -5289,21 +5300,17 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     let matches =
       Eq.(cast (Vector.eq (ETerm.morphism (sym Env.zero_r)))) rhs.matches in
     let Refl = Nat.zero_r_eq rhs.cont.sum in
-(*
     Format.eprintf "compile_base in env: %a@.return pred: %a@."
       Pp.pp_with (Env.print (GlobalEnv.env globenv))
       Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma return_pred);
-*)
     let* result = rhs.cont.f.f
         { globenv; context = []; return_pred; matches } in
     let* sigma = EvarMapMonad.get in
-(*
     Format.eprintf "Base: @[%a@] (return pred: @[%a@] in env @[%a@])@."
       Pp.pp_with (EJudgment.print (GlobalEnv.env globenv) sigma result)
       Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma
         return_pred)
       Pp.pp_with (Env.print (GlobalEnv.env globenv));
-*)
     let* (result, _trace) =
       EJudgment.inh_conv_coerce_to ~program_mode:MatchContext.program_mode
         ~resolve_tc:true (GlobalEnv.env globenv)
@@ -5712,8 +5719,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
               (Vector.to_list matches));
 *)
           let Exists { accu = { binders; _ }; result = matches } =
-            generalize_terms (GlobalEnv.env Case.env) sigma matches
-              generalize_context in
+            generalize_terms ~allow_new_binders:false (GlobalEnv.env Case.env)
+              sigma matches generalize_context in
           let Refl =
             match binders with
             | Zero_l -> Nat.zero_l_eq binders
@@ -5734,6 +5741,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         TomatchVector.exliftn Lift.(nrealdecls' & + generalize_count) |>
         TomatchVector.change (GlobalEnv.env genenv) sigma new_tomatches
           ~small_inversion:MatchContext.small_inversion in
+(*
       let self_judgment =
         if expand_self then
           let self = summary |>
@@ -5745,10 +5753,23 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           EJudgment.of_term (GlobalEnv.env globenv) sigma self
         else
           EJudgment.exliftn lift tomatch.judgment in
-(*
-      Format.eprintf "self judgment: %a@." Pp.pp_with
+      Format.eprintf "expand_self: %b@.self judgment: %a@." expand_self Pp.pp_with
         (EJudgment.print (GlobalEnv.env globenv) sigma self_judgment);
 *)
+        let self = summary |>
+          ConstructorSummary.exliftn lift |>
+          ConstructorSummary.build_dependent_constructor |>
+          ETerm.of_term |>
+          ETerm.substl (Height.Vector.of_vector
+            (Vector.rev_map EJudgment.uj_val generalizable)) in
+      let* self_type, _ =
+        EvarMapMonad.new_type_evar (GlobalEnv.env globenv)
+          Evd.univ_flexible_alg in
+      let* self_evar =
+        EvarMapMonad.new_evar (GlobalEnv.env globenv)
+          ~candidates:[ETerm.exliftn lift (EJudgment.uj_val tomatch.judgment);
+            self] self_type in
+      let self_judgment = EJudgment.make self_evar self_type in
       let self_tomatch =
         Tomatch.make_not_inductive
           (EJudgment.lift generalize_count self_judgment)
@@ -6142,7 +6163,6 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       let Exists { context; _ } =
         TomatchVector.make_return_pred_context tomatches in
       let Exists return_pred_desc = return_pred in
-(*
       Format.eprintf "previous: %a@.binders (tomatch): %a@."
         Pp.pp_with
         (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
@@ -6150,12 +6170,10 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         Pp.pp_with
         (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
           (Vector.to_list generalize_context.binders));
-*)
       let Exists { accu = { binders = diff_previous; context = context' };
           result = previous } =
-        generalize_terms (GlobalEnv.env env) sigma return_pred_desc.previous
-          generalize_context in
-(*
+        generalize_terms ~allow_new_binders:false (GlobalEnv.env env) sigma
+          return_pred_desc.previous generalize_context in
       Format.eprintf "generalized previous: %a@.binders: %a@."
         Pp.pp_with
         (Pp.pr_enum ETerm.debug_print
@@ -6163,7 +6181,6 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         Pp.pp_with
         (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
           (Vector.to_list context'.binders));
-*)
       let Refl =
         match diff_previous with
         | Zero_l -> Nat.zero_l_eq diff_previous
@@ -6403,6 +6420,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
          (env, tomatch_length, ind, eqns_length, return_pred_height,
            previously_bounds) PatternMatchingProblem.t) :
       env EJudgment.t EvarMapMonad.t =
+    Format.eprintf "compile in env: %a@."
+      Pp.pp_with (Env.print (GlobalEnv.env problem.env));
     match problem.tomatches with
     | [] ->
         begin match problem.eqns with
