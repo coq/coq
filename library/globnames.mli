@@ -19,6 +19,7 @@ val isConstructRef : GlobRef.t -> bool
 
 val canonical_gr : GlobRef.t -> GlobRef.t
 
+(** Will produce an anomaly if arguments not of the right kind *)
 val destVarRef : GlobRef.t -> variable
 val destConstRef : GlobRef.t -> Constant.t
 val destIndRef : GlobRef.t -> inductive

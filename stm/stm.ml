@@ -1712,7 +1712,8 @@ end = struct (* {{{ *)
     | ERROR_ADMITTED -> cst, false
     | OK_ADMITTED -> cst, false
     | OK name ->
-        let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
+        let con = Nametab.GlobRef.locate (Libnames.qualid_of_ident name) in
+        let con = match con with | GlobRef.ConstRef r -> r | _ -> raise Not_found in
         let c = Global.lookup_constant con in
         let () = match c.Declarations.const_body with
           | Declarations.OpaqueDef _ -> ()

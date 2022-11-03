@@ -493,12 +493,6 @@ end
 (* Completion *)
 let completion_canditates qualid = ExtRefTab.match_prefixes qualid !the_ccitab
 
-(* Derived functions *)
-let locate_constant qid =
-  match GlobRef.locate qid with
-  | ConstRef kn -> kn
-  | _ -> raise Not_found
-
 let global_of_path sp =
   match extended_global_of_path sp with
   | TrueGlobal ref -> ref

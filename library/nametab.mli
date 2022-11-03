@@ -138,9 +138,6 @@ end
 (***********************************************************************)
 (** Nametab for [GlobRef.t]  *)
 
-(** Helper *)
-val locate_constant : qualid -> Constant.t
-
 (** These functions globalize user-level references into global
    references, like [locate] and co, but raise a nice error message
    in case of failure *)

@@ -22,7 +22,6 @@ let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"
 let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 let destConstructRef = function ConstructRef ind -> ind | _ -> failwith "destConstructRef"
 
-
 let subst_global_reference subst ref = match ref with
   | VarRef var -> ref
   | ConstRef kn ->
