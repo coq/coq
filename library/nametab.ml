@@ -454,7 +454,6 @@ let locate_extended_nowarn qid =
   xref, depr
 
 let locate_extended_all qid = ExtRefTab.find_prefixes qid !the_ccitab
-let full_name_cci qid = ExtRefTab.user_name qid !the_ccitab
 
 module GlobRef : SR
   with type elt := GlobRef.t and type path := full_path =

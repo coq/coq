@@ -167,10 +167,8 @@ val locate_extended_nowarn : qualid -> Globnames.extended_global_reference * Dep
 val locate_extended_all : qualid -> Globnames.extended_global_reference list
 val extended_global_of_path : full_path -> Globnames.extended_global_reference
 
+(** Warning to be used by intern *)
 val warn_deprecated_xref : ?loc:Loc.t -> Deprecation.t -> Globnames.extended_global_reference -> unit
-
-(** Locate qualids into full user names *)
-val full_name_cci : qualid -> full_path
 
 (** [completion_canditates qualid] will return the list of global
     references that have [qualid] as a prefix. UI usually will want to
