@@ -1725,11 +1725,14 @@ module EvarMapMonad = struct
     Eq.cast (Eq.pair Refl (Eq.pair (Eq.sym ETerm.eq) Refl))
       (Evarutil.new_type_evar (Eq.cast Env.eq env) sigma rigid)
 
-  let new_evar (env : 'env Env.t) ?(candidates : 'env ETerm.t list option)
+  let new_evar (env : 'env Env.t)
+        ?(filter : Evd.Filter.t option)
+        ?(candidates : 'env ETerm.t list option)
         (ty : 'env ETerm.t) : 'env ETerm.t t =
   fun sigma ->
     Eq.cast (Eq.pair Refl (Eq.sym ETerm.eq))
       (Evarutil.new_evar (Eq.cast Env.eq env) sigma (Eq.cast ETerm.eq ty)
+        ?filter
         ?candidates:(Eq.(cast (option (list ETerm.eq))) candidates))
 
 (*
@@ -5765,8 +5768,17 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       let* self_type, _ =
         EvarMapMonad.new_type_evar (GlobalEnv.env globenv)
           Evd.univ_flexible_alg in
+      let free_rels =
+        Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_val tomatch.judgment)) in
+      let free_rels' =
+        Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_type tomatch.judgment)) in
+      let free_rels = Int.Set.union free_rels free_rels' in
+      let filter =
+        List.init (Eq.cast Env.eq (GlobalEnv.env globenv)).env_nb_rel
+          (fun i -> Int.Set.mem (i + 1) free_rels) in
       let* self_evar =
         EvarMapMonad.new_evar (GlobalEnv.env globenv)
+          ~filter:(Evd.Filter.make filter)
           ~candidates:[ETerm.exliftn lift (EJudgment.uj_val tomatch.judgment);
             self] self_type in
       let self_judgment = EJudgment.make self_evar self_type in
