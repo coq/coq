@@ -98,37 +98,44 @@ type evar_body =
   | Evar_empty
   | Evar_defined of econstr
 
-type evar_info = private {
-  evar_concl : econstr;
-  (** Type of the evar. *)
-  evar_hyps : named_context_val; (* TODO econstr? *)
-  (** Context of the evar. *)
-  evar_body : evar_body;
-  (** Optional content of the evar. *)
-  evar_filter : Filter.t;
-  (** Boolean mask over {!evar_hyps}. Should have the same length.
-      When filtered out, the corresponding variable is not allowed to occur
-      in the solution *)
-  evar_abstract_arguments : Abstraction.t;
-  (** Boolean information over {!evar_hyps}, telling if an hypothesis instance
-      can be imitated or should stay abstract in HO unification problems
-      and inversion (see [second_order_matching_with_args] for its use). *)
-  evar_source : Evar_kinds.t located;
-  (** Information about the evar. *)
-  evar_candidates : econstr list option;
-  (** List of possible solutions when known that it is a finite list *)
-  evar_relevance : Sorts.relevance;
-  (** Relevance of the conclusion of the evar. *)
-}
+type evar_info
+
+(** {6 Projections from evar infos} *)
 
 val evar_concl : evar_info -> econstr
+(** Type of the evar. *)
+
 val evar_context : evar_info -> (econstr, etypes) Context.Named.pt
-val evar_filtered_context : evar_info -> (econstr, etypes) Context.Named.pt
+(** Context of the evar. *)
+
 val evar_hyps : evar_info -> named_context_val
-val evar_filtered_hyps : evar_info -> named_context_val
+(** Context of the evar. *)
+
 val evar_body : evar_info -> evar_body
-val evar_candidates : evar_info -> constr list option
+(** Optional content of the evar. *)
+
+val evar_candidates : evar_info -> econstr list option
+(** List of possible solutions when known that it is a finite list *)
+
+val evar_source : evar_info -> Evar_kinds.t located
+
 val evar_filter : evar_info -> Filter.t
+(** Boolean mask over {!evar_hyps}. Should have the same length.
+    When filtered out, the corresponding variable is not allowed to occur
+    in the solution *)
+
+val evar_abstract_arguments : evar_info -> Abstraction.t
+(** Boolean information over {!evar_hyps}, telling if an hypothesis instance
+    can be imitated or should stay abstract in HO unification problems
+    and inversion (see [second_order_matching_with_args] for its use). *)
+
+val evar_relevance : evar_info -> Sorts.relevance
+(** Relevance of the conclusion of the evar. *)
+
+(** {6 Derived projections} *)
+
+val evar_filtered_context : evar_info -> (econstr, etypes) Context.Named.pt
+val evar_filtered_hyps : evar_info -> named_context_val
 val evar_env : env -> evar_info -> env
 val evar_filtered_env : env -> evar_info -> env
 val evar_identity_subst : evar_info -> econstr SList.t
@@ -172,10 +179,6 @@ val has_given_up : evar_map -> bool
 val has_shelved : evar_map -> bool
 (** [has_shelved sigma] is [true] if and only if
     there are shelved evars in [sigma]. *)
-
-val new_evar : evar_map ->
-  ?name:Id.t -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
-(** Creates a fresh evar mapping to the given information. *)
 
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
@@ -343,10 +346,6 @@ val is_obligation_evar : evar_map -> Evar.t -> bool
 val downcast : Evar.t-> etypes -> evar_map -> evar_map
 (** Change the type of an undefined evar to a new type assumed to be a
     subtype of its current type; subtyping must be ensured by caller *)
-
-val evar_source : Evar.t -> evar_map -> Evar_kinds.t located
-(** Convenience function. Wrapper around {!find} to recover the source of an
-    evar in a given evar map. *)
 
 val evar_ident : Evar.t -> evar_map -> Id.t option
 

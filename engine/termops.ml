@@ -39,14 +39,14 @@ let evar_suggested_name env sigma evk =
   let base_id evk' evi =
   match evar_ident evk' sigma with
   | Some id -> id
-  | None -> match evi.evar_source with
+  | None -> match Evd.evar_source evi with
   | _,Evar_kinds.ImplicitArg (c,(n,Some id),b) -> id
   | _,Evar_kinds.VarInstance id -> id
   | _,Evar_kinds.QuestionMark {Evar_kinds.qm_name = Name id} -> id
   | _,Evar_kinds.GoalEvar -> Id.of_string "Goal"
   | _ ->
-      let env = reset_with_named_context evi.evar_hyps env in
-      Namegen.id_of_name_using_hdchar env sigma evi.evar_concl Anonymous
+      let env = reset_with_named_context (Evd.evar_hyps evi) env in
+      Namegen.id_of_name_using_hdchar env sigma (Evd.evar_concl evi) Anonymous
   in
   let names = EvMap.mapi base_id (undefined_map sigma) in
   let id = EvMap.find evk names in
@@ -162,21 +162,21 @@ let pr_evar_info env sigma evi =
       in
       prlist_with_sep spc (pr_decl env sigma) (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
-  let pty = print_constr env sigma evi.evar_concl in
+  let pty = print_constr env sigma (Evd.evar_concl evi) in
   let pb =
-    match evi.evar_body with
+    match Evd.evar_body evi with
       | Evar_empty -> mt ()
       | Evar_defined c -> spc() ++ str"=> "  ++ print_constr env sigma c
   in
   let candidates =
-    match evi.evar_body, evi.evar_candidates with
+    match Evd.evar_body evi, Evd.evar_candidates evi with
       | Evar_empty, Some l ->
            spc () ++ str "{" ++
            prlist_with_sep (fun () -> str "|") (print_constr env sigma) l ++ str "}"
       | _ ->
           mt ()
   in
-  let src = str "(" ++ pr_evar_source env sigma (snd evi.evar_source) ++ str ")" in
+  let src = str "(" ++ pr_evar_source env sigma (snd (Evd.evar_source evi)) ++ str ")" in
   hov 2
     (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]" ++
        candidates ++ spc() ++ src)
@@ -326,7 +326,7 @@ let pr_evar_list env sigma l =
     h (Evar.print ev ++
       str "==" ++ pr_evar_info env sigma evi ++
       pr_alias ev ++
-      (if evi.evar_body == Evar_empty
+      (if Evd.evar_body evi == Evar_empty
        then str " {" ++ pr_existential_key env sigma ev ++ str "}"
        else mt ()))
   in
@@ -336,11 +336,11 @@ let to_list d =
   let open Evd in
   (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)
   let l = ref [] in
-  let fold_def evk evi () = match evi.evar_body with
+  let fold_def evk evi () = match Evd.evar_body evi with
     | Evar_defined _ -> l := (evk, evi) :: !l
     | Evar_empty -> ()
   in
-  let fold_undef evk evi () = match evi.evar_body with
+  let fold_undef evk evi () = match Evd.evar_body evi with
     | Evar_empty -> l := (evk, evi) :: !l
     | Evar_defined _ -> ()
   in
@@ -363,7 +363,7 @@ let pr_evar_by_filter filter env sigma =
   let open Evd in
   let elts = Evd.fold (fun evk evi accu -> (evk, evi) :: accu) sigma [] in
   let elts = List.rev elts in
-  let is_def (_, evi) = match evi.evar_body with
+  let is_def (_, evi) = match Evd.evar_body evi with
   | Evar_defined _ -> true
   | Evar_empty -> false
   in

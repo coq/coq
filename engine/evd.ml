@@ -235,6 +235,10 @@ let evar_filtered_context evi =
 
 let evar_candidates evi = evi.evar_candidates
 
+let evar_abstract_arguments evi = evi.evar_abstract_arguments
+
+let evar_relevance evi = evi.evar_relevance
+
 let evar_hyps evi = evi.evar_hyps
 
 let evar_filtered_hyps evi = match Filter.repr (evar_filter evi) with
@@ -798,11 +802,6 @@ let evar_counter_summary_name = "evar counter"
 let evar_ctr, evar_counter_summary_tag = Summary.ref_tag 0 ~name:evar_counter_summary_name
 let new_untyped_evar () = incr evar_ctr; Evar.unsafe_of_int !evar_ctr
 
-let new_evar evd ?name ?typeclass_candidate evi =
-  let evk = new_untyped_evar () in
-  let evd = add_with_name evd ?name ?typeclass_candidate evk evi in
-  (evd, evk)
-
 let default_source = Loc.tag @@ Evar_kinds.InternalHole
 
 let remove d e =
@@ -996,7 +995,7 @@ let add_conv_pb ?(tail=false) pb d =
 
 let conv_pbs d = d.conv_pbs
 
-let evar_source evk d = (find d evk).evar_source
+let evar_source evi = evi.evar_source
 
 let evar_ident evk evd = EvNames.ident evk evd.evar_names
 let evar_key id evd = EvNames.key id evd.evar_names
@@ -1036,10 +1035,10 @@ let extract_all_conv_pbs evd =
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind (fst (decompose_app t1)) with
-  | Evar (evk1,_) -> fst (evar_source evk1 evd)
+  | Evar (evk1,_) -> fst (evar_source (find evd evk1))
   | _ ->
   match kind (fst (decompose_app t2)) with
-  | Evar (evk2,_) -> fst (evar_source evk2 evd)
+  | Evar (evk2,_) -> fst (evar_source (find evd evk2))
   | _             -> None
 
 (**********************************************************)
@@ -1308,7 +1307,8 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance 
   }
   in
   let typeclass_candidate = if principal then Some false else typeclass_candidate in
-  let (evd, newevk) = new_evar evd ?name ?typeclass_candidate evi in
+  let newevk = new_untyped_evar () in
+  let evd = add_with_name evd ?name ?typeclass_candidate newevk evi in
   let evd =
     if principal then declare_principal_goal newevk evd
     else declare_future_goal newevk evd

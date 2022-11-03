@@ -461,11 +461,11 @@ let generalize_evar_over_rels sigma (ev,args) =
   let open EConstr in
   let evi = Evd.find sigma ev in
   let args = Evd.expand_existential sigma (ev, args) in
-  let sign = named_context_of_val evi.evar_hyps in
+  let sign = named_context_of_val (Evd.evar_hyps evi) in
   List.fold_left2
     (fun (c,inst as x) a d ->
       if isRel sigma a then (mkNamedProd_or_LetIn sigma d c,a::inst) else x)
-     (evi.evar_concl,[]) args sign
+     (Evd.evar_concl evi,[]) args sign
 
 (************************************)
 (* Removing a dependency in an evar *)
@@ -571,7 +571,6 @@ let rec check_and_clear_in_constr ~is_section_variable env evdref err ids ~globa
               let filter = Evd.Filter.apply_subfilter origfilter filter in
               let evd = !evdref in
               let candidates = Evd.evar_candidates evi in
-              let candidates = Option.map (List.map EConstr.of_constr) candidates in
               let (evd,_) = restrict_evar evd evk filter candidates in
               evdref := evd;
               Evd.existential_value0 !evdref ev
@@ -640,7 +639,7 @@ let clear_hyps2_in_evi env sigma hyps t concl ids =
    goal) it terminates quickly. *)
 let rec advance sigma evk =
   let evi = Evd.find sigma evk in
-  match evi.evar_body with
+  match Evd.evar_body evi with
   | Evar_empty -> Some evk
   | Evar_defined v ->
       match is_aliased_evar sigma evk with
@@ -681,13 +680,13 @@ let undefined_evars_of_named_context evd nc =
     ~init:Evar.Set.empty
 
 let undefined_evars_of_evar_info evd evi =
-  Evar.Set.union (undefined_evars_of_term evd evi.evar_concl)
+  Evar.Set.union (undefined_evars_of_term evd (Evd.evar_concl evi))
     (Evar.Set.union
-       (match evi.evar_body with
+       (match Evd.evar_body evi with
          | Evar_empty -> Evar.Set.empty
          | Evar_defined b -> undefined_evars_of_term evd b)
        (undefined_evars_of_named_context evd
-          (named_context_of_val evi.evar_hyps)))
+          (named_context_of_val (Evd.evar_hyps evi))))
 
 type undefined_evars_cache = {
   mutable cache : (EConstr.named_declaration * Evar.Set.t) ref Id.Map.t;
@@ -731,11 +730,11 @@ let filtered_undefined_evars_of_evar_info ?cache sigma evi =
     let fold decl accu = cached_evar_of_hyp cache sigma (EConstr.of_named_decl decl) accu in
     Context.Named.fold_outside fold nc ~init:accu
   in
-  let accu = match evi.evar_body with
+  let accu = match Evd.evar_body evi with
   | Evar_empty -> Evar.Set.empty
   | Evar_defined b -> evars_of_term sigma b
   in
-  let accu = Evar.Set.union (undefined_evars_of_term sigma evi.evar_concl) accu in
+  let accu = Evar.Set.union (undefined_evars_of_term sigma (Evd.evar_concl evi)) accu in
   let ctxt = EConstr.Unsafe.to_named_context (evar_filtered_context evi) in
   evars_of_named_context cache accu ctxt
 

@@ -408,7 +408,7 @@ let check_evars env sigma extsigma origsigma =
   match rest with
   | [] -> ()
   | (evk,evi) :: _ ->
-    let (loc,_) = evi.Evd.evar_source in
+    let (loc,_) = Evd.evar_source evi in
     Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
 
 let tclMAPDELAYEDWITHHOLES accept_unresolved_holes l tac =

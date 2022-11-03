@@ -47,7 +47,7 @@ val new_evar :
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> types -> evar_map * EConstr.t
 
-(** Alias of {!Evd.new_evar} *)
+(** Alias of {!Evd.new_pure_evar} *)
 val new_pure_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
   ?relevance:Sorts.relevance ->

@@ -532,9 +532,9 @@ let pr_evgl_sign env sigma evi =
     if List.is_empty ids then mt () else
       (str " (" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
-  let pc = pr_leconstr_env env sigma evi.evar_concl in
+  let pc = pr_leconstr_env env sigma (Evd.evar_concl evi) in
   let candidates =
-    match evi.evar_body, evi.evar_candidates with
+    match Evd.evar_body evi, Evd.evar_candidates evi with
     | Evar_empty, Some l ->
        spc () ++ str "= {" ++
          prlist_with_sep (fun () -> str "|") (pr_leconstr_env env sigma) l ++ str "}"
@@ -632,7 +632,7 @@ let print_evar_constraints gl sigma =
              spc () ++ pr_leconstr_env env sigma t2)
   in
   let pr_candidate ev evi (candidates,acc) =
-    if Option.has_some evi.evar_candidates then
+    if Option.has_some (Evd.evar_candidates evi) then
       (succ candidates, acc ++ pr_evar sigma (ev,evi) ++ fnl ())
     else (candidates, acc)
   in
@@ -673,15 +673,15 @@ let process_dependent_evar q acc evm is_dependent e =
   let evi = Evd.find evm e in
   (* Queues evars appearing in the types of the goal (conclusion, then
      hypotheses), they are all dependent. *)
-  queue_term q true evi.evar_concl;
+  queue_term q true (Evd.evar_concl evi);
   List.iter begin fun decl ->
     let open NamedDecl in
     queue_term q true (NamedDecl.get_type decl);
     match decl with
     | LocalAssum _ -> ()
     | LocalDef (_,b,_) -> queue_term q true b
-  end (EConstr.named_context_of_val evi.evar_hyps);
-  match evi.evar_body with
+  end (EConstr.named_context_of_val (Evd.evar_hyps evi));
+  match Evd.evar_body evi with
   | Evar_empty ->
       if is_dependent then Evar.Map.add e None acc else acc
   | Evar_defined b ->

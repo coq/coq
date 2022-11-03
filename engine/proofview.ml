@@ -737,7 +737,7 @@ let mark_in_evm ~goal evd evars =
     if goal then
       let mark evd content =
         let info = Evd.find evd content in
-        let source = match info.Evd.evar_source with
+        let source = match Evd.evar_source info with
         (* Two kinds for goal evars:
             - GoalEvar (morally not dependent)
             - VarInstance (morally dependent of some name).
@@ -892,10 +892,9 @@ module Progress = struct
     | _ -> false
 
   let eq_evar_info sigma1 sigma2 ei1 ei2 =
-    let open Evd in
-    eq_constr sigma1 sigma2 ei1.evar_concl ei2.evar_concl &&
-    eq_named_context_val sigma1 sigma2 (ei1.evar_hyps) (ei2.evar_hyps) &&
-    eq_evar_body sigma1 sigma2 ei1.evar_body ei2.evar_body
+    eq_constr sigma1 sigma2 (Evd.evar_concl ei1) (Evd.evar_concl ei2) &&
+    eq_named_context_val sigma1 sigma2 (Evd.evar_hyps ei1) (Evd.evar_hyps ei2) &&
+    eq_evar_body sigma1 sigma2 (Evd.evar_body ei1) (Evd.evar_body ei2)
 
   (** Equality function on goals *)
   let goal_equal ~evd ~extended_evd evar extended_evar =

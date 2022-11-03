@@ -188,7 +188,7 @@ let unsatisfiable_constraints env evd ev comp =
     let err = UnsatisfiableConstraints (None, comp) in
     raise (PretypeError (env,evd,err))
   | Some ev ->
-    let loc, kind = Evd.evar_source ev evd in
+    let loc, kind = Evd.evar_source (Evd.find evd ev) in
     let err = UnsatisfiableConstraints (Some (ev, kind), comp) in
     Loc.raise ?loc (PretypeError (env,evd,err))
 

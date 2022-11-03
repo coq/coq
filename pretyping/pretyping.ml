@@ -277,7 +277,7 @@ let check_extra_evars_are_solved env current_sigma frozen = match frozen with
   Evar.Set.iter
     (fun evk ->
       if not (Evd.is_defined current_sigma evk) then
-        let (loc,k) = evar_source evk current_sigma in
+        let (loc,k) = evar_source (Evd.find current_sigma evk) in
         match k with
         | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
         | _ ->
@@ -292,7 +292,7 @@ let check_evars env ?initial sigma c =
       (match initial with
        | Some initial when Evd.mem initial evk -> ()
        | _ ->
-         let (loc,k) = evar_source evk sigma in
+         let (loc,k) = evar_source (Evd.find sigma evk) in
          begin match k with
            | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
            | _ -> Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
@@ -339,7 +339,7 @@ let adjust_evar_source sigma na c =
   match na, kind sigma c with
   | Name id, Evar (evk,args) ->
      let evi = Evd.find sigma evk in
-     begin match evi.evar_source with
+     begin match Evd.evar_source evi with
      | loc, Evar_kinds.QuestionMark {
          Evar_kinds.qm_obligation=b;
          Evar_kinds.qm_name=Anonymous;

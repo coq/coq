@@ -405,7 +405,7 @@ let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
   let abs_evar n k =
     let open EConstr in
     let evi = Evd.find sigma k in
-    let concl = evi.evar_concl in
+    let concl = Evd.evar_concl evi in
     let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn sigma x b t (mkArrow t x.binder_relevance c)
@@ -475,7 +475,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   let abs_evar n k =
     let open EConstr in
     let evi = Evd.find sigma k in
-    let concl = evi.evar_concl in
+    let concl = Evd.evar_concl evi in
     let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
     | NamedDecl.LocalDef (x,b,t) -> mkNamedLetIn sigma x b t (mkArrow t x.binder_relevance c)
