@@ -181,7 +181,7 @@ let print_usage_channel co command =
 \n  -Q dir coqdir               map physical dir to logical coqdir\
 \n  -R dir coqdir               synonymous for -Q\
 \n  -coqlib dir                 set coqchk's standard library location\
-\n  -boot                       don't initalize the library paths automatically\
+\n  -boot                       don't initialize the library paths automatically\
 \n\
 \n  -admit module               load module and dependencies without checking\
 \n  -norec module               check module but admit dependencies without checking\

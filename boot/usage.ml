@@ -22,7 +22,7 @@ let print_usage_common co command =
   output_string co command;
   output_string co "Coq options are:\n";
   output_string co
-"  -I dir                 look for ML files in dir\
+ "  -I dir                 look for ML files in dir\
 \n  -include dir           (idem)\
 \n  -R dir coqdir          recursively map physical dir to logical coqdir\
 \n  -Q dir coqdir          map physical dir to logical coqdir\
