@@ -4,11 +4,13 @@
 (* ============================================== *)
 Inductive skel : Type :=
   | PROP : skel
-  | PROD : skel -> skel -> skel.
+  | PROD : nat -> bool -> skel.
 
 Parameter Can : skel -> Type.
 Parameter default_can : forall s : skel, Can s.
 
+
+Set Printing Existential Instances.
 
 Type
   (fun s1 s2 : skel =>

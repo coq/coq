@@ -1720,10 +1720,11 @@ module EvarMapMonad = struct
 
   type 'a t = ('a, Evd.evar_map) Monad.State.t
 
-  let new_type_evar (env : 'env Env.t) rigid : ('env ETerm.t * Sorts.t) t =
+  let new_type_evar (env : 'env Env.t)
+        ?(filter : Evd.Filter.t option) rigid : ('env ETerm.t * Sorts.t) t =
   fun sigma ->
     Eq.cast (Eq.pair Refl (Eq.pair (Eq.sym ETerm.eq) Refl))
-      (Evarutil.new_type_evar (Eq.cast Env.eq env) sigma rigid)
+      (Evarutil.new_type_evar ?filter (Eq.cast Env.eq env) sigma rigid)
 
   let new_evar (env : 'env Env.t)
         ?(filter : Evd.Filter.t option)
@@ -5289,6 +5290,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       return (PrepareTomatch.TomatchWithContextVector.of_vector vector)
   end
 
+  let debug = false
+
   let compile_base (type env)
       (problem :
         (env, Nat.zero, unit, _ Nat.succ, Nat.zero, _)
@@ -5303,17 +5306,19 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     let matches =
       Eq.(cast (Vector.eq (ETerm.morphism (sym Env.zero_r)))) rhs.matches in
     let Refl = Nat.zero_r_eq rhs.cont.sum in
-    Format.eprintf "compile_base in env: %a@.return pred: %a@."
-      Pp.pp_with (Env.print (GlobalEnv.env globenv))
-      Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma return_pred);
+    if debug then
+      Format.eprintf "compile_base in env: %a@.return pred: %a@."
+        Pp.pp_with (Env.print (GlobalEnv.env globenv))
+        Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma return_pred);
     let* result = rhs.cont.f.f
         { globenv; context = []; return_pred; matches } in
     let* sigma = EvarMapMonad.get in
-    Format.eprintf "Base: @[%a@] (return pred: @[%a@] in env @[%a@])@."
-      Pp.pp_with (EJudgment.print (GlobalEnv.env globenv) sigma result)
-      Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma
-        return_pred)
-      Pp.pp_with (Env.print (GlobalEnv.env globenv));
+    if debug then
+      Format.eprintf "Base: @[%a@] (return pred: @[%a@] in env @[%a@])@."
+        Pp.pp_with (EJudgment.print (GlobalEnv.env globenv) sigma result)
+        Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma
+                      return_pred)
+        Pp.pp_with (Env.print (GlobalEnv.env globenv));
     let* (result, _trace) =
       EJudgment.inh_conv_coerce_to ~program_mode:MatchContext.program_mode
         ~resolve_tc:true (GlobalEnv.env globenv)
@@ -5765,22 +5770,35 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           ETerm.of_term |>
           ETerm.substl (Height.Vector.of_vector
             (Vector.rev_map EJudgment.uj_val generalizable)) in
-      let* self_type, _ =
-        EvarMapMonad.new_type_evar (GlobalEnv.env globenv)
-          Evd.univ_flexible_alg in
+      let judgment =
+        EJudgment.exliftn lift tomatch.judgment in
       let free_rels =
-        Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_val tomatch.judgment)) in
+        Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_val judgment)) in
       let free_rels' =
-        Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_type tomatch.judgment)) in
-      let free_rels = Int.Set.union free_rels free_rels' in
+        Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_type judgment)) in
+      let free_rels'' =
+        Termops.free_rels sigma (Eq.cast ETerm.eq self) in
+      let free_rels = Int.Set.union (Int.Set.union free_rels free_rels') free_rels'' in
+      let free_ids =
+        Termops.collect_vars sigma (Eq.cast ETerm.eq (EJudgment.uj_val judgment)) in
+      let free_ids' =
+        Termops.collect_vars sigma (Eq.cast ETerm.eq (EJudgment.uj_type judgment)) in
+      let free_ids = Names.Id.Set.union free_ids free_ids' in
+      let nb_rel = (Eq.cast Env.eq (GlobalEnv.env globenv)).env_nb_rel in
       let filter =
-        List.init (Eq.cast Env.eq (GlobalEnv.env globenv)).env_nb_rel
-          (fun i -> Int.Set.mem (i + 1) free_rels) in
+        List.init nb_rel (fun i -> Int.Set.mem (i + 1) free_rels) @
+        List.map (fun decl ->
+          Names.Id.Set.mem (Context.Named.Declaration.get_id decl) free_ids)
+          (Environ.named_context (Eq.cast Env.eq (GlobalEnv.env globenv))) in
+      let filter =
+        Evd.Filter.make filter in
+      let* self_type, _ =
+        EvarMapMonad.new_type_evar (GlobalEnv.env globenv) ~filter
+          Evd.univ_flexible_alg in
       let* self_evar =
         EvarMapMonad.new_evar (GlobalEnv.env globenv)
-          ~filter:(Evd.Filter.make filter)
-          ~candidates:[ETerm.exliftn lift (EJudgment.uj_val tomatch.judgment);
-            self] self_type in
+          ~filter
+          ~candidates:[EJudgment.uj_val judgment; self] self_type in
       let self_judgment = EJudgment.make self_evar self_type in
       let self_tomatch =
         Tomatch.make_not_inductive
@@ -6175,24 +6193,26 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       let Exists { context; _ } =
         TomatchVector.make_return_pred_context tomatches in
       let Exists return_pred_desc = return_pred in
-      Format.eprintf "previous: %a@.binders (tomatch): %a@."
-        Pp.pp_with
-        (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
-          (Vector.to_list return_pred_desc.previous))
-        Pp.pp_with
-        (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
-          (Vector.to_list generalize_context.binders));
+      if debug then
+        Format.eprintf "previous: %a@.binders (tomatch): %a@."
+          Pp.pp_with
+          (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
+             (Vector.to_list return_pred_desc.previous))
+          Pp.pp_with
+          (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
+             (Vector.to_list generalize_context.binders));
       let Exists { accu = { binders = diff_previous; context = context' };
           result = previous } =
         generalize_terms ~allow_new_binders:false (GlobalEnv.env env) sigma
           return_pred_desc.previous generalize_context in
-      Format.eprintf "generalized previous: %a@.binders: %a@."
-        Pp.pp_with
-        (Pp.pr_enum ETerm.debug_print
-          (Vector.to_list previous))
-        Pp.pp_with
-        (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
-          (Vector.to_list context'.binders));
+      if debug then
+        Format.eprintf "generalized previous: %a@.binders: %a@."
+          Pp.pp_with
+          (Pp.pr_enum ETerm.debug_print
+             (Vector.to_list previous))
+          Pp.pp_with
+          (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
+             (Vector.to_list context'.binders));
       let Refl =
         match diff_previous with
         | Zero_l -> Nat.zero_l_eq diff_previous
@@ -6432,8 +6452,9 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
          (env, tomatch_length, ind, eqns_length, return_pred_height,
            previously_bounds) PatternMatchingProblem.t) :
       env EJudgment.t EvarMapMonad.t =
-    Format.eprintf "compile in env: %a@."
-      Pp.pp_with (Env.print (GlobalEnv.env problem.env));
+    if debug then
+      Format.eprintf "compile in env: %a@."
+        Pp.pp_with (Env.print (GlobalEnv.env problem.env));
     match problem.tomatches with
     | [] ->
         begin match problem.eqns with
