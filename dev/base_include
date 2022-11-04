@@ -106,7 +106,6 @@ open Notation_ops
 open Prettyp
 open Search
 
-open Evar_refiner
 open Logic
 open Proof
 open Proof_using
