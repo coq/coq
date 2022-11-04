@@ -801,16 +801,6 @@ let pr_goal_selector ~toplevel s =
                 else pr_pose_as_style (pr.pr_constr env sigma) na c) ++
               pr_opt (fun p -> pr_eqn_ipat p ++ spc ()) e ++
               pr_non_empty_arg (pr_clauses (Some b) pr.pr_name) cl)
-        (*  | TacInstantiate (n,c,ConclLocation ()) ->
-            hov 1 (str "instantiate" ++ spc() ++
-            hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
-            pr_lconstrarg c ++ str ")" ))
-            | TacInstantiate (n,c,HypLocation (id,hloc)) ->
-            hov 1 (str "instantiate" ++ spc() ++
-            hov 1 (str"(" ++ pr_arg int n ++ str" :=" ++
-            pr_lconstrarg c ++ str ")" )
-            ++ str "in" ++ pr_hyp_location pr.pr_name (id,[],(hloc,ref None)))
-        *)
 
         (* Derived basic tactics *)
         | TacInductionDestruct (isrec,ev,(l,el)) ->

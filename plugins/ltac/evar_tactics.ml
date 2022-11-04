@@ -14,7 +14,6 @@ open Constr
 open Context
 open CErrors
 open Evar_refiner
-open Tacexpr
 open Locus
 open Context.Named.Declaration
 
@@ -45,8 +44,8 @@ let instantiate_tac n c ido =
   let concl = Proofview.Goal.concl gl in
   let evl =
     match ido with
-        ConclLocation () -> evar_list sigma concl
-      | HypLocation (id,hloc) ->
+      | None -> evar_list sigma concl
+      | Some (id, hloc) ->
           let decl = Environ.lookup_named id env in
             match hloc with
                 InHyp ->

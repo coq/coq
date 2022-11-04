@@ -44,7 +44,7 @@ val wit_lconstr :
 val glob : constr_expr Pcoq.Entry.t
 val lglob : constr_expr Pcoq.Entry.t
 
-type 'id gen_place= ('id * Locus.hyp_location_flag,unit) location
+type 'id gen_place= ('id * Locus.hyp_location_flag) option
 
 type loc_place = lident gen_place
 type place = Id.t gen_place

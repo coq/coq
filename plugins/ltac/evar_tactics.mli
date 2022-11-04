@@ -9,11 +9,10 @@
 (************************************************************************)
 
 open Names
-open Tacexpr
 open Locus
 
 val instantiate_tac : int -> Ltac_pretype.closed_glob_constr ->
-  (Id.t * hyp_location_flag, unit) location -> unit Proofview.tactic
+  (Id.t * hyp_location_flag) option -> unit Proofview.tactic
 
 val instantiate_tac_by_name : Id.t ->
   Ltac_pretype.closed_glob_constr -> unit Proofview.tactic

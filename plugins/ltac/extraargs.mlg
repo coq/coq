@@ -16,7 +16,6 @@ open Tacarg
 open Pcoq.Prim
 open Pcoq.Constr
 open Names
-open Tacexpr
 open Taccoerce
 open Tacinterp
 open Locus
@@ -192,30 +191,30 @@ END
 
 {
 
-type 'id gen_place= ('id * hyp_location_flag,unit) location
+type 'id gen_place = ('id * hyp_location_flag) option
 
 type loc_place = lident gen_place
 type place = Id.t gen_place
 
 let pr_gen_place pr_id = function
-    ConclLocation () -> Pp.mt ()
-  | HypLocation (id,InHyp) -> str "in " ++ pr_id id
-  | HypLocation (id,InHypTypeOnly) ->
-      str "in (type of " ++ pr_id id ++ str ")"
-  | HypLocation (id,InHypValueOnly) ->
-      str "in (value of " ++ pr_id id ++ str ")"
+| None -> Pp.mt ()
+| Some (id, InHyp) -> str "in " ++ pr_id id
+| Some (id, InHypTypeOnly) ->
+  str "in (type of " ++ pr_id id ++ str ")"
+| Some (id, InHypValueOnly) ->
+  str "in (value of " ++ pr_id id ++ str ")"
 
 let pr_loc_place _ _ _ = pr_gen_place (fun { CAst.v = id } -> Id.print id)
 let pr_place _ _ _ = pr_gen_place Id.print
 let pr_hloc = pr_loc_place () () ()
 
 let intern_place ist = function
-    ConclLocation () -> ConclLocation ()
-  | HypLocation (id,hl) -> HypLocation (Tacintern.intern_hyp ist id,hl)
+| None -> None
+| Some (id, hl) -> Some (Tacintern.intern_hyp ist id, hl)
 
 let interp_place ist env sigma = function
-    ConclLocation () -> ConclLocation ()
-  | HypLocation (id,hl) -> HypLocation (Tacinterp.interp_hyp ist env sigma id,hl)
+| None -> None
+| Some (id, hl) -> Some (Tacinterp.interp_hyp ist env sigma id, hl)
 
 let subst_place subst pl = pl
 
@@ -229,15 +228,15 @@ ARGUMENT EXTEND hloc
     RAW_PRINTED BY { pr_loc_place }
     GLOB_PRINTED BY { pr_loc_place }
 | [ ] ->
-    { ConclLocation () }
+    { None }
   |  [ "in" "|-" "*" ] ->
-    { ConclLocation () }
+    { None }
 | [ "in" ident(id) ] ->
-    { HypLocation ((CAst.make id),InHyp) }
+    { Some ((CAst.make id), InHyp) }
 | [ "in" "(" "type" "of" ident(id) ")" ] ->
-    { HypLocation ((CAst.make id),InHypTypeOnly) }
+    { Some ((CAst.make id), InHypTypeOnly) }
 | [ "in" "(" "value" "of" ident(id) ")" ] ->
-    { HypLocation ((CAst.make id),InHypValueOnly) }
+    { Some ((CAst.make id), InHypValueOnly) }
 
  END
 
