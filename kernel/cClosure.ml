@@ -1604,7 +1604,12 @@ and klt info tab e t = match kind t with
     zip_term info tab (norm_head info tab nm) s
   | App _ -> assert false
   end
-| Var _ | Const _ | CoFix _ | Lambda _ | Fix _ | Prod _ | Evar _ | Case _ | Cast _ | LetIn _ | Proj _ | Array _ ->
+| Lambda (na, u, c) ->
+  let u' = klt info tab e u in
+  let c' = klt (push_relevance info na) tab (usubs_lift e) c in
+  if u' == u && c' == c then t
+  else mkLambda (na, u', c')
+| Var _ | Const _ | CoFix _ | Fix _ | Prod _ | Evar _ | Case _ | Cast _ | LetIn _ | Proj _ | Array _ ->
   let share = info.i_cache.i_share in
   let (nm,s) = knit info tab e t [] in
   let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
