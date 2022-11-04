@@ -50,9 +50,6 @@ type unify_flags = {
      unifications. *)
   allowed_evars : AllowedEvars.t;
   (* Disallowed evars are treated like rigid variables during unification: they can not be instantiated. *)
-  allow_K_at_toplevel : bool;
-  (* During higher-order unifications, allow to produce K-redexes: i.e. to produce
-     an abstraction for an unused argument *)
   with_cs : bool
   (* Enable canonical structure resolution during unification *)
 }
