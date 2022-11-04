@@ -1283,8 +1283,7 @@ let choose_less_dependent_instance evd term (evk, args) =
   | id :: _ -> Some (Evd.define evk (mkVar id) evd)
 
 type occurrence_match_test =
-  env -> evar_map -> constr ->
-  env -> evar_map -> int -> constr -> constr -> bool * evar_map
+  env -> evar_map -> constr -> constr -> bool * evar_map
 
 type occurrence_selection =
   | AtOccurrences of Locus.occurrences
@@ -1295,7 +1294,7 @@ type occurrences_selection =
 
 let default_occurrence_selection = Unspecified Abstraction.Imitate
 
-let default_occurrence_test ~allowed_evars ts _ origsigma _ env sigma _ c pat =
+let default_occurrence_test ~allowed_evars ts env sigma c pat =
   let flags = { (default_flags_of ~subterm_ts:ts ts) with allowed_evars } in
   match evar_conv_x flags env sigma CONV c pat with
   | Success sigma -> true, sigma
@@ -1317,7 +1316,6 @@ let occur_evars sigma evs c =
     try occur_rec c; false with Occur -> true
 
 let apply_on_subterm env evd fixed f test c t =
-  let test = test env evd c in
   let prc env evd = Termops.Internal.print_constr_env env evd in
   let evdref = ref evd in
   let fixedref = ref fixed in
@@ -1337,7 +1335,7 @@ let apply_on_subterm env evd fixed f test c t =
     (debug_ho_unification (fun () ->
      Pp.(str"Testing " ++ prc env !evdref c ++ str" against " ++ prc env !evdref t));
      let b, evd =
-        try test env !evdref k c t
+        try test env !evdref c t
         with e when CErrors.noncritical e -> assert false in
      if b then (debug_ho_unification (fun () -> Pp.str "succeeded");
                 let evd', fixed, t' = f !evdref !fixedref k t in
