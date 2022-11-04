@@ -1584,7 +1584,22 @@ let rec kl info tab m =
 
 and klt info tab e t = match kind t with
 | Rel i -> kl info tab (clos_rel (fst e) i)
-| Var _ |Const _|CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _ ->
+| App (hd, args) ->
+  begin match kind hd with
+  | Ind _ | Construct _ ->
+    let args' = Array.Smart.map (fun c -> klt info tab e c) args in
+    let hd' = subst_instance_constr (snd e) hd in
+    if hd' == hd && args' == args then t
+    else mkApp (hd', args')
+  | Var _ | Const _ | CoFix _ | Lambda _ | Fix _ | Prod _ | Evar _ | Case _
+  | Cast _ | LetIn _ | Proj _ | Array _ | Rel _ | Meta _ | Sort _ | Int _ | Float _ ->
+    let share = info.i_cache.i_share in
+    let (nm,s) = knit info tab e t [] in
+    let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
+    zip_term info tab (norm_head info tab nm) s
+  | App _ -> assert false
+  end
+| Var _ | Const _ | CoFix _ | Lambda _ | Fix _ | Prod _ | Evar _ | Case _ | Cast _ | LetIn _ | Proj _ | Array _ ->
   let share = info.i_cache.i_share in
   let (nm,s) = knit info tab e t [] in
   let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
