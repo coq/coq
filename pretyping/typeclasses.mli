@@ -123,5 +123,8 @@ val resolve_typeclasses : ?filter:evar_filter -> ?unique:bool ->
   ?split:bool -> ?fail:bool -> env -> evar_map -> evar_map
 val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
 
-val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) Hook.t
-val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
+(** A plugin can override the TC resolution engine by calling these two APIs.
+    Beware this action is not registed in the summary (the Undo system) so
+    it is up to the plugin to do so. *)
+val set_solve_all_instances : (env -> evar_map -> evar_filter -> bool -> bool -> bool -> evar_map) -> unit
+val set_solve_one_instance : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) -> unit
