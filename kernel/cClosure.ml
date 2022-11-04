@@ -1583,7 +1583,12 @@ let rec kl info tab m =
     zip_term info tab (norm_head info tab nm) s
 
 and klt info tab e t = match kind t with
-| Rel i -> kl info tab (clos_rel (fst e) i)
+| Rel i ->
+  begin match expand_rel i (fst e) with
+  | Inl (n, mt) -> kl info tab @@ lift_fconstr n mt
+  | Inr (k, None) -> if Int.equal k i then t else mkRel k
+  | Inr (k, Some p) -> kl info tab @@ lift_fconstr (k-p) {mark=Red;term=FFlex(RelKey p)}
+  end
 | App (hd, args) ->
   begin match kind hd with
   | Ind _ | Construct _ ->
