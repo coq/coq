@@ -163,10 +163,9 @@ let native_conv_gen pb sigma env univs t1 t2 =
   fst (conv_val env pb 0 rt1 rt2 univs)
 
 let native_conv_gen pb sigma env univs t1 t2 =
-  if not (typing_flags env).Declarations.enable_native_compiler then begin
-    warn_no_native_compiler ();
-    Vconv.vm_conv_gen pb sigma.Nativelambda.evars_val env univs t1 t2
-  end
+  if not (typing_flags env).Declarations.enable_native_compiler then
+    let () = warn_no_native_compiler () in
+    Vconv.vm_conv_gen pb sigma env univs t1 t2
   else native_conv_gen pb sigma env univs t1 t2
 
 (* Wrapper for [native_conv] above *)

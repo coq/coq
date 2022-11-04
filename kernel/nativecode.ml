@@ -15,6 +15,7 @@ open Context
 open Declarations
 open Util
 open Nativevalues
+open Genlambda
 open Nativelambda
 open Environ
 
@@ -804,14 +805,19 @@ type env =
       (* free variables *)
       env_urel : (int * mllambda) list ref; (* list of unbound rel *)
       env_named : (Id.t * mllambda) list ref;
-      env_univ : lname option}
+      env_univ : lname option;
+      env_const_prefix : Constant.t -> prefix;
+      env_mind_prefix : MutInd.t -> prefix;
+    }
 
-let empty_env univ =
+let empty_env univ get_const get_mind =
   { env_rel = [];
     env_bound = 0;
     env_urel = ref [];
     env_named = ref [];
-    env_univ = univ
+    env_univ = univ;
+    env_const_prefix = get_const;
+    env_mind_prefix = get_mind;
   }
 
 let push_rel env id =
@@ -1021,7 +1027,7 @@ let add_check cond targs args =
   in
   Array.fold_left2 aux cond targs args
 
-let extract_prim ml_of l =
+let extract_prim env ml_of l =
   let decl = ref [] in
   let cond = ref [] in
   let type_args p =
@@ -1029,12 +1035,13 @@ let extract_prim ml_of l =
     List.length params, Array.of_list args_ty in
   let rec aux l =
     match l with
-    | Lprim(prefix,kn,p,args) ->
+    | Lprim (kn, p, args) ->
+      let prefix = env.env_const_prefix (fst kn) in
       let nparams, targs = type_args p in
       let args = Array.map aux args in
       let checked_args = Array.init (Array.length args - nparams) (fun i -> args.(i+nparams)) in
       cond := add_check !cond targs checked_args;
-      PAprim(prefix,kn,p,args)
+      PAprim (prefix, kn, p, args)
     | Lrel _ | Lvar _ | Luint _ | Lval _ | Lconst _ -> PAml (ml_of l)
     | _ ->
       let x = fresh_lname Anonymous in
@@ -1152,11 +1159,6 @@ let compile_prim env decl cond paux =
   | Llam(ids,body) ->
     let lnames,env = push_rels env ids in
     MLlam(lnames, ml_of_lam env l body)
-  | Lrec(id,body) ->
-      let ids,body = decompose_Llam body in
-      let lname, env = push_rel env id in
-      let lnames, env = push_rels env ids in
-      MLletrec([|lname, lnames, ml_of_lam env l body|], MLlocal lname)
   | Llet(id,def,body) ->
       let def = ml_of_lam env l def in
       let lname, env = push_rel env id in
@@ -1164,12 +1166,17 @@ let compile_prim env decl cond paux =
       MLlet(lname,def,body)
   | Lapp(f,args) ->
       MLapp(ml_of_lam env l f, Array.map (ml_of_lam env l) args)
-  | Lconst (prefix, (c, u)) ->
+  | Lconst (c, u) ->
+     let prefix = env.env_const_prefix c in
      let args = ml_of_instance env.env_univ u in
      mkMLapp (MLglobal(Gconstant (prefix, c))) args
-  | Lproj (prefix, ind, i) -> MLglobal(Gproj (prefix, ind, i))
+  | Lproj (p, c) ->
+    let ind = Projection.Repr.inductive p in
+    let i = Projection.Repr.arg p in
+    let prefix = env.env_mind_prefix (fst ind) in
+    MLapp (MLglobal(Gproj (prefix, ind, i)), [| ml_of_lam env l c |])
   | Lprim _ ->
-    let decl,cond,paux = extract_prim (ml_of_lam env l) t in
+    let decl,cond,paux = extract_prim env (ml_of_lam env l) t in
     compile_prim env decl cond paux
   | Lcase (annot,p,a,bs) ->
       (* let predicate_uid fv_pred = compilation of p
@@ -1182,14 +1189,22 @@ let compile_prim env decl cond paux =
          (* Remark: if we do not want to compile the predicate we
             should a least compute the fv, then store the lambda representation
             of the predicate (not the mllambda) *)
-      let env_p = empty_env env.env_univ in
+      let annot =
+        let (ci, tbl, knd) = annot in {
+          asw_ind = ci.ci_ind;
+          asw_ci = ci;
+          asw_reloc = tbl;
+          asw_finite = knd <> CoFinite;
+          asw_prefix = env.env_mind_prefix (fst ci.ci_ind);
+      } in
+      let env_p = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
       let pn = fresh_gpred l in
       let mlp = ml_of_lam env_p l p in
       let mlp = generalize_fv env_p mlp in
       let (pfvn,pfvr) = !(env_p.env_named), !(env_p.env_urel) in
       let pn = push_global_let pn mlp in
       (* Compilation of the case *)
-      let env_c = empty_env env.env_univ in
+      let env_c = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
       let a_uid = fresh_lname Anonymous in
       let la_uid = MLlocal a_uid in
       (* compilation of branches *)
@@ -1226,8 +1241,6 @@ let compile_prim env decl cond paux =
         if annot.asw_finite then arg
         else mkForceCofix annot.asw_prefix annot.asw_ind arg in
       mkMLapp (MLapp (MLglobal cn, fv_args env fvn fvr)) [|force|]
-  | Lif(t,bt,bf) ->
-      MLif(ml_of_lam env l t, ml_of_lam env l bt, ml_of_lam env l bf)
   | Lfix ((rec_pos, inds, start), (ids, tt, tb)) ->
       (* let type_f fvt = [| type fix |]
          let norm_f1 fv f1 .. fn params1 = body1
@@ -1245,7 +1258,7 @@ let compile_prim env decl cond paux =
            start
       *)
       (* Compilation of type *)
-      let env_t = empty_env env.env_univ in
+      let env_t = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
       let ml_t = Array.map (ml_of_lam env_t l) tt in
       let params_t = fv_params env_t in
       let args_t = fv_args env !(env_t.env_named) !(env_t.env_urel) in
@@ -1254,7 +1267,7 @@ let compile_prim env decl cond paux =
       let mk_type = MLapp(MLglobal gft, args_t) in
       (* Compilation of norm_i *)
       let ndef = Array.length ids in
-      let lf,env_n = push_rels (empty_env env.env_univ) ids in
+      let lf,env_n = push_rels (empty_env env.env_univ env.env_const_prefix env.env_mind_prefix) ids in
       let t_params = Array.make ndef [||] in
       let t_norm_f = Array.make ndef (Gnorm (l,-1)) in
       let mk_let _envi (id,def) t = MLlet (id,def,t) in
@@ -1297,7 +1310,8 @@ let compile_prim env decl cond paux =
         let paramsi = t_params.(i) in
         let reci = MLlocal (paramsi.(rec_pos.(i))) in
         let pargsi = Array.map (fun id -> MLlocal id) paramsi in
-        let (prefix, ind) = inds.(i) in
+        let ind = inds.(i) in
+        let prefix = env.env_mind_prefix (fst ind) in
         let body =
           MLif(MLisaccu (prefix, ind, reci),
                mkMLapp
@@ -1311,7 +1325,7 @@ let compile_prim env decl cond paux =
       MLletrec(Array.mapi mkrec lf, lf_args.(start))
   | Lcofix (start, (ids, tt, tb)) ->
       (* Compilation of type *)
-      let env_t = empty_env env.env_univ in
+      let env_t = empty_env env.env_univ env.env_const_prefix env.env_mind_prefix in
       let ml_t = Array.map (ml_of_lam env_t l) tt in
       let params_t = fv_params env_t in
       let args_t = fv_args env !(env_t.env_named) !(env_t.env_urel) in
@@ -1320,7 +1334,7 @@ let compile_prim env decl cond paux =
       let mk_type = MLapp(MLglobal gft, args_t) in
       (* Compilation of norm_i *)
       let ndef = Array.length ids in
-      let lf,env_n = push_rels (empty_env env.env_univ) ids in
+      let lf,env_n = push_rels (empty_env env.env_univ env.env_const_prefix env.env_mind_prefix) ids in
       let t_params = Array.make ndef [||] in
       let t_norm_f = Array.make ndef (Gnorm (l,-1)) in
       let ml_of_fix i body =
@@ -1380,7 +1394,8 @@ let compile_prim env decl cond paux =
 
   | Lint tag -> MLprimitive (Mk_int, [|MLint tag|])
 
-  | Lmakeblock (prefix,cn,tag,args) ->
+  | Lmakeblock (cn,tag,args) ->
+     let prefix = env.env_mind_prefix (fst cn) in
      let args = Array.map (ml_of_lam env l) args in
      MLconstruct(prefix,cn,tag,args)
   | Luint i -> MLprimitive (Mk_uint, [|MLuint i|])
@@ -1399,13 +1414,14 @@ let compile_prim env decl cond paux =
     (* FIXME: use a dedicated cast function *)
     let uarg = MLprimitive (MLmagic, [|uarg|]) in
     MLprimitive (Mk_sort, [|get_sort_code i; uarg|])
-  | Lind (prefix, (ind, u)) ->
+  | Lind (ind, u) ->
+     let prefix = env.env_mind_prefix (fst ind) in
      let uargs = ml_of_instance env.env_univ u in
      mkMLapp (MLglobal (Gind (prefix, ind))) uargs
   | Lforce -> MLglobal (Ginternal "Lazy.force")
 
-let mllambda_of_lambda univ auxdefs l t =
-  let env = empty_env univ in
+let mllambda_of_lambda univ constpref mindpref auxdefs l t =
+  let env = empty_env univ constpref mindpref in
   global_stack := auxdefs;
   let ml = ml_of_lam env l t in
   let fv_rel = !(env.env_urel) in
@@ -1949,7 +1965,9 @@ let pp_global fmt g =
 
 (** Compilation of elements in environment **)
 let rec compile_with_fv ?(wrap = fun t -> t) env sigma univ auxdefs l t =
-  let (auxdefs,(fv_named,fv_rel),ml) = mllambda_of_lambda univ auxdefs l t in
+  let const_prefix c = get_const_prefix env c in
+  let mind_prefix c = get_mind_prefix env c in
+  let (auxdefs,(fv_named,fv_rel),ml) = mllambda_of_lambda univ const_prefix mind_prefix auxdefs l t in
   let ml = wrap ml in
   if List.is_empty fv_named && List.is_empty fv_rel then (auxdefs,ml)
   else apply_fv env sigma univ (fv_named,fv_rel) auxdefs ml
@@ -2141,8 +2159,8 @@ let compile_deps env sigma prefix init t =
   let rec aux env lvl init t =
   match kind t with
   | Ind ((mind,_),_u) -> compile_mind_deps env prefix init mind
-  | Const c ->
-    let c,_u = get_alias env c in
+  | Const (c, _u) ->
+    let c = get_alias env c in
     let cb,(nameref,_) = lookup_constant_key c env in
     let (_, (_, const_updates)) = init in
     if is_code_loaded nameref

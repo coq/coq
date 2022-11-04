@@ -186,7 +186,7 @@ let warn_bytecode_compiler_failed =
 
 let vm_conv_gen cv_pb sigma env univs t1 t2 =
   if not (typing_flags env).Declarations.enable_VM then
-    Reduction.generic_conv cv_pb ~l2r:false sigma
+    Reduction.generic_conv cv_pb ~l2r:false sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2
   else
   try
@@ -195,7 +195,7 @@ let vm_conv_gen cv_pb sigma env univs t1 t2 =
     fst (conv_val env cv_pb (nb_rel env) v1 v2 univs)
   with Not_found | Invalid_argument _ ->
     warn_bytecode_compiler_failed ();
-    Reduction.generic_conv cv_pb ~l2r:false sigma
+    Reduction.generic_conv cv_pb ~l2r:false sigma.Genlambda.evars_val
       TransparentState.full env univs t1 t2
 
 let vm_conv cv_pb env t1 t2 =
@@ -206,4 +206,4 @@ let vm_conv cv_pb env t1 t2 =
   in
   if not b then
     let state = (univs, checked_universes) in
-    let _ = vm_conv_gen cv_pb Constr.default_evar_handler env state t1 t2 in ()
+    let _ = vm_conv_gen cv_pb Genlambda.empty_evars env state t1 t2 in ()
