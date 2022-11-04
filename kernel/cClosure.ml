@@ -1609,7 +1609,12 @@ and klt info tab e t = match kind t with
   let c' = klt (push_relevance info na) tab (usubs_lift e) c in
   if u' == u && c' == c then t
   else mkLambda (na, u', c')
-| Var _ | Const _ | CoFix _ | Fix _ | Prod _ | Evar _ | Case _ | Cast _ | LetIn _ | Proj _ | Array _ ->
+| Prod (na, u, v) ->
+  let u' = klt info tab e u in
+  let v' = klt (push_relevance info na) tab (usubs_lift e) v in
+  if u' == u && v' == v then t
+  else mkProd (na, u', v')
+| Var _ | Const _ | CoFix _ | Fix _ | Evar _ | Case _ | Cast _ | LetIn _ | Proj _ | Array _ ->
   let share = info.i_cache.i_share in
   let (nm,s) = knit info tab e t [] in
   let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
