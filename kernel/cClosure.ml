@@ -1698,6 +1698,7 @@ let whd_val info tab v = term_of_fconstr (kh info tab v [])
 
 (* strong reduction *)
 let norm_val info tab v = kl info tab v
+let norm_term info tab e t = klt info tab e t
 
 let whd_stack infos tab m stk = match m.mark with
 | Whnf | Ntrl ->

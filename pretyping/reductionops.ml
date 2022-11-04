@@ -976,10 +976,10 @@ let nf_evar = Evarutil.nf_evar
    a [nf_evar] here *)
 let clos_norm_flags flgs env sigma t =
   try
-    EConstr.of_constr (CClosure.norm_val
+    EConstr.of_constr (CClosure.norm_term
       (Evarutil.create_clos_infos env sigma flgs)
       (CClosure.create_tab ())
-      (CClosure.inject (EConstr.Unsafe.to_constr t)))
+      (Esubst.subs_id 0, Univ.Instance.empty) (EConstr.Unsafe.to_constr t))
   with e when is_anomaly e -> user_err Pp.(str "Tried to normalize ill-typed term")
 
 let clos_whd_flags flgs env sigma t =
