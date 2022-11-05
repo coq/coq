@@ -1534,14 +1534,14 @@ let rec debug_print c =
   | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ str"," ++ debug_print c ++ str")"
   | Case (_ci,_u,pms,p,iv,c,bl) ->
     let pr_ctx (nas, c) =
-      prvect_with_sep spc (fun na -> Name.print na.binder_name) nas ++ spc () ++ str "|-" ++ spc () ++
-        debug_print c
+      hov 2 (hov 0 (prvect (fun na -> Name.print na.binder_name ++ spc ()) nas ++ str "|-") ++ spc () ++
+        debug_print c)
     in
-    v 0 (hv 0 (str"Case " ++
-             debug_print c ++ cut () ++ str "as" ++ cut () ++ prlist_with_sep cut debug_print (Array.to_list pms) ++
-             cut () ++ str"return"++ cut () ++ pr_ctx p ++ debug_invert iv ++ cut () ++ str"with") ++ cut() ++
-       prlist_with_sep (fun _ -> brk(1,2)) pr_ctx (Array.to_list bl) ++
-      cut() ++ str"end")
+    v 0 (hv 0 (str"Case" ++ brk (1,1) ++
+             debug_print c ++ spc () ++ str "params" ++ brk (1,1) ++ prvect (fun x -> spc () ++ debug_print x) pms ++
+             spc () ++ str"return"++ brk (1,1) ++ pr_ctx p ++ debug_invert iv ++ spc () ++ str"with") ++
+       prvect (fun b -> spc () ++ pr_ctx b) bl ++
+       spc () ++ str"end")
   | Fix f -> debug_print_fix debug_print f
   | CoFix(i,(lna,tl,bl)) ->
       let fixl = Array.mapi (fun i na -> (na,tl.(i),bl.(i))) lna in
