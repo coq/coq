@@ -308,6 +308,14 @@ let visible_ids sigma (nenv, c) =
       | _ -> ids
       in
       accu := (gseen, vseen, ids)
+  | Evar (_,args as ev) ->
+    (* Useful for at least debugger: do the same as in iter_with_binders *)
+    (* except that Not_found is not fatal *)
+    begin match Evd.expand_existential sigma ev with
+    | args -> List.iter (visible_ids n) args
+    | exception Not_found when !Flags.in_debugger ->
+      SList.Skip.iter (visible_ids n) args
+    end
   | _ -> EConstr.iter_with_binders sigma succ visible_ids n c
   in
   let () = visible_ids 1 c in (* n = 1 to count the binder to rename *)
