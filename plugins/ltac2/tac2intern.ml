@@ -209,6 +209,7 @@ let fresh_var avoid =
     Id.Set.mem id avoid ||
     (try ignore (locate_ltac (qualid_of_ident id)); true with Not_found -> false)
   in
+  (* Adjust /test-suite/bugs/bug_16543.v if you change the "p" *)
   Namegen.next_ident_away_from (Id.of_string "p") bad
 
 let add_name accu = function
@@ -223,6 +224,32 @@ let rec ids_of_pattern accu {v=pat} = match pat with
   List.fold_left ids_of_pattern accu pl
 | CPatCnv (pat, _) -> ids_of_pattern accu pat
 | CPatRecord pats -> List.fold_left (fun accu (_,pat) -> ids_of_pattern accu pat) accu pats
+
+(** Ids that are used as if they were bound.
+    Used to collect ids to avoid during pattern-expansion *)
+let rec ids_used_in_expr accu {v=expr} =
+  let id_of_relid accu = function
+    | RelId q -> let (_, id) = repr_qualid q in Id.Set.add id accu
+    | AbsKn _ -> accu
+  in
+  match expr with
+  | CTacAtm _ -> accu
+  | CTacRef r -> id_of_relid accu r
+  | CTacCst r -> id_of_relid accu r
+  | CTacFun (_, e) -> ids_used_in_expr accu e
+  | CTacApp (e, el)-> ids_used_in_exprs accu (e::el)
+  | CTacLet (_ , el, e) -> ids_used_in_exprs accu (e::(List.map snd el))
+  | CTacCnv (e, _) -> ids_used_in_expr accu e
+  | CTacSeq (e1, e2) -> ids_used_in_exprs accu [e1; e2]
+  | CTacIft (e1, e2, e3)-> ids_used_in_exprs accu [e1; e2; e3]
+  | CTacCse (e, el) -> ids_used_in_exprs accu (e::(List.map snd el))
+  | CTacRec (e, el) ->
+    let accu = Option.default accu @@ Option.map (ids_used_in_expr accu) e in
+    ids_used_in_exprs accu (List.map snd el)
+  | CTacPrj (e, _) -> ids_used_in_expr accu e
+  | CTacSet (e1, _, e2) -> ids_used_in_exprs accu [e1; e2]
+  | CTacExt _ -> accu
+and ids_used_in_exprs accu exprs = List.fold_left ids_used_in_expr accu exprs
 
 let loc_of_relid = function
 | RelId {loc} -> loc
@@ -1070,7 +1097,7 @@ let rec intern_rec env {loc;v=e} = match e with
   | Some t -> intern_type env t
   in
   let tl = List.map map bnd in
-  let (nas, exp) = expand_pattern (bound_vars env) bnd in
+  let (nas, exp) = expand_pattern (ids_used_in_expr (bound_vars env) e) bnd in
   let env = List.fold_left2 (fun env na t -> push_name na (monomorphic t) env) env nas tl in
   let (e, t) = intern_rec env (exp e) in
   let t = List.fold_right (fun t accu -> GTypArrow (t, accu)) tl t in
@@ -1271,6 +1298,7 @@ and intern_rec_with_constraint env e exp =
 
 and intern_let env loc ids el e =
   let avoid = Id.Set.union ids (bound_vars env) in
+  let avoid = ids_used_in_exprs avoid (e::List.map (fun (_, _, e) -> e) el) in
   let fold (pat, t, e) (avoid, accu) =
     let nas, exp = expand_pattern avoid [pat, t] in
     let na = match nas with [x] -> x | _ -> assert false in
