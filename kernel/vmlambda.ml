@@ -8,6 +8,8 @@ open Genlambda
 open Vmvalues
 open Environ
 
+module RelDecl = Context.Rel.Declaration
+
 type lambda = structured_values Genlambda.lambda
 
 (*s Operators on substitution *)
@@ -98,45 +100,6 @@ let get_names decl =
   let decl = Array.of_list decl in
   Array.map fst decl
 
-
-(* Rel Environment *)
-module Vect =
-struct
-  type 'a t = {
-    mutable elems : 'a array;
-    mutable size : int;
-  }
-
-  let make n a = {
-    elems = Array.make n a;
-    size = 0;
-  }
-
-  let extend (v : 'a t) =
-    if v.size = Array.length v.elems then
-      let new_size = min (2*v.size) Sys.max_array_length in
-      if new_size <= v.size then raise (Invalid_argument "Vect.extend");
-      let new_elems = Array.make new_size v.elems.(0) in
-      Array.blit v.elems 0 new_elems 0 (v.size);
-      v.elems <- new_elems
-
-  let push v a =
-    extend v;
-    v.elems.(v.size) <- a;
-    v.size <- v.size + 1
-
-  let popn (v : 'a t) n =
-    v.size <- max 0 (v.size - n)
-
-  let pop v = popn v 1
-
-  let get_last (v : 'a t) n =
-    if v.size <= n then raise
-        (Invalid_argument "Vect.get:index out of bounds");
-    v.elems.(v.size - n - 1)
-
-end
-
 let dummy_lambda = Lrel(Anonymous, 0)
 
 let empty_args = [||]
@@ -147,39 +110,34 @@ struct
   type constructor_info = tag * int * int (* nparam nrealargs *)
 
   type t = {
-    global_env : env;
+    env : env;
     evar_body : constr evar_handler;
     meta_type : metavariable -> types;
-    name_rel : Name.t Vect.t;
     construct_tbl : (constructor, constructor_info) Hashtbl.t;
   }
 
   let make env sigma = {
-    global_env = env;
+    env = env;
     evar_body = sigma.evars_val;
     meta_type = sigma.evars_metas;
-    name_rel = Vect.make 16 Anonymous;
     construct_tbl = Hashtbl.create 111
   }
 
-  let push_rel env id = Vect.push env.name_rel id.Context.binder_name
+  let push_rel env decl = { env with env = Environ.push_rel decl env.env }
 
-  let push_rels env ids =
-    Array.iter (push_rel env) ids
+  let push_rels env decls = { env with env = Environ.push_rel_context decls env.env }
 
-  let pop env = Vect.pop env.name_rel
-
-  let popn env n =
-    for _i = 1 to n do pop env done
+  let push_rec_types env rect = { env with env = Environ.push_rec_types rect env.env }
 
   let get env n =
-    Lrel (Vect.get_last env.name_rel (n-1), n)
+    let na = RelDecl.get_name @@ Environ.lookup_rel n env.env in
+    Lrel (na, n)
 
   let get_construct_info env c =
     try Hashtbl.find env.construct_tbl c
     with Not_found ->
       let ((mind,j), i) = c in
-      let oib = lookup_mind mind env.global_env in
+      let oib = lookup_mind mind env.env in
       let oip = oib.mind_packets.(j) in
       check_compilable oip;
       let tag,arity = oip.mind_reloc_tbl.(i-1) in
@@ -215,24 +173,21 @@ let rec lambda_of_constr env c =
 
   | Prod(id, dom, codom) ->
     let ld = lambda_of_constr env dom in
-    Renv.push_rel env id;
-    let lc = lambda_of_constr env codom in
-    Renv.pop env;
+    let nenv = Renv.push_rel env (RelDecl.LocalAssum (id, dom)) in
+    let lc = lambda_of_constr nenv codom in
     Lprod(ld, Llam([|id|], lc))
 
   | Lambda _ ->
     let params, body = decompose_lam c in
-    let ids = get_names (List.rev params) in
-    Renv.push_rels env ids;
-    let lb = lambda_of_constr env body in
-    Renv.popn env (Array.length ids);
-    mkLlam ids lb
+    let decls = List.map (fun (id, dom) -> RelDecl.LocalAssum (id, dom)) params in
+    let nenv = Renv.push_rels env decls in
+    let lb = lambda_of_constr nenv body in
+    mkLlam (get_names (List.rev params)) lb
 
-  | LetIn(id, def, _, body) ->
+  | LetIn(id, def, ty, body) ->
     let ld = lambda_of_constr env def in
-    Renv.push_rel env id;
-    let lb = lambda_of_constr env body in
-    Renv.pop env;
+    let nenv = Renv.push_rel env (RelDecl.LocalDef (id, def, ty)) in
+    let lb = lambda_of_constr nenv body in
     Llet(id, ld, lb)
 
   | App(f, args) -> lambda_of_app env f args
@@ -242,9 +197,9 @@ let rec lambda_of_constr env c =
   | Construct _ ->  lambda_of_app env c empty_args
 
   | Case (ci, u, pms, t, iv, a, br) -> (* XXX handle iv *)
-    let (ci, t, _iv, a, branches) = Inductive.expand_case env.global_env (ci, u, pms, t, iv, a, br) in
+    let (ci, t, _iv, a, branches) = Inductive.expand_case env.env (ci, u, pms, t, iv, a, br) in
     let ind = ci.ci_ind in
-    let mib = lookup_mind (fst ind) env.global_env in
+    let mib = lookup_mind (fst ind) env.env in
     let oib = mib.mind_packets.(snd ind) in
     let () = check_compilable oib in
     let rtbl = oib.mind_reloc_tbl in
@@ -282,18 +237,16 @@ let rec lambda_of_constr env c =
 
   | Fix ((ln, i), (names, type_bodies, rec_bodies)) ->
     let ltypes = lambda_of_args env 0 type_bodies in
-    Renv.push_rels env names;
-    let lbodies = lambda_of_args env 0 rec_bodies in
-    Renv.popn env (Array.length names);
+    let nenv = Renv.push_rec_types env (names, type_bodies, rec_bodies) in
+    let lbodies = lambda_of_args nenv 0 rec_bodies in
     let dummy = [||] in (* FIXME: not used by the VM, requires the environment to be computed *)
     Lfix ((ln, dummy, i), (names, ltypes, lbodies))
 
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
-    let rec_bodies = Array.map2 (Reduction.eta_expand env.global_env) rec_bodies type_bodies in
+    let rec_bodies = Array.map2 (Reduction.eta_expand env.env) rec_bodies type_bodies in
     let ltypes = lambda_of_args env 0 type_bodies in
-    Renv.push_rels env names;
-    let lbodies = lambda_of_args env 0 rec_bodies in
-    Renv.popn env (Array.length names);
+    let nenv = Renv.push_rec_types env (names, type_bodies, rec_bodies) in
+    let lbodies = lambda_of_args nenv 0 rec_bodies in
     Lcofix(init, (names, ltypes, lbodies))
 
   | Proj (p,c) ->
@@ -309,10 +262,10 @@ let rec lambda_of_constr env c =
 and lambda_of_app env f args =
   match Constr.kind f with
   | Const (kn,u as c) ->
-      let kn = get_alias env.global_env kn in
-      let cb = lookup_constant kn env.global_env in
+      let kn = get_alias env.env kn in
+      let cb = lookup_constant kn env.env in
       begin match cb.const_body with
-      | Primitive op -> lambda_of_prim env.global_env (kn,u) op (lambda_of_args env 0 args)
+      | Primitive op -> lambda_of_prim env.env (kn,u) op (lambda_of_args env 0 args)
       | Def csubst when cb.const_inline_code ->
           lambda_of_app env csubst args
       | Def _ | OpaqueDef _ | Undef _ -> mkLapp (Lconst c) (lambda_of_args env 0 args)
@@ -345,8 +298,6 @@ let optimize_lambda lam =
 
 let lambda_of_constr ~optimize genv sigma c =
   let env = Renv.make genv sigma in
-  let ids = List.rev_map Context.Rel.Declaration.get_annot (rel_context genv) in
-  Renv.push_rels env (Array.of_list ids);
   let lam = lambda_of_constr env c in
   let lam = if optimize then optimize_lambda lam else lam in
   if !dump_lambda then
