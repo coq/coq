@@ -89,6 +89,19 @@ val makeblock : (int -> 'v lambda array -> 'v option) ->
 
 val lambda_of_prim : Environ.env -> pconstant -> CPrimitives.t -> 'v lambda array -> 'v lambda
 
+module type S =
+sig
+  type value
+  val as_value : int -> value lambda array -> value option
+  val get_constant : pconstant -> Declarations.constant_body -> value lambda
+  val check_inductive : inductive -> Declarations.mutual_inductive_body -> unit
+end
+
+module Make (Val : S) :
+sig
+  val lambda_of_constr : Environ.env -> evars -> Constr.constr -> Val.value lambda
+end
+
 (** {5 Printing} *)
 
 val pp_lam : 'v lambda -> Pp.t
