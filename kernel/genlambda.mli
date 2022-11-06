@@ -84,6 +84,7 @@ val remove_let : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
 
 val get_alias : Environ.env -> Constant.t -> Constant.t
 val make_args : int -> int -> 'v lambda array
+val expand_constructor : inductive -> int -> int -> int -> 'v lambda
 val lambda_of_prim : Environ.env -> pconstant -> CPrimitives.t -> 'v lambda array -> 'v lambda
 
 (** {5 Printing} *)

@@ -477,10 +477,20 @@ let rec get_alias env kn =
      | Vmemitcodes.BCalias kn' -> get_alias env kn'
      | _ -> kn)
 
-(* Compilation of primitive *)
+(* Translation of constructors *)
 
 let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
+
+let expand_constructor ind tag nparams arity =
+  let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
+  let ids = Array.make (nparams + arity) anon in
+  if Int.equal arity 0 then mkLlam ids (Lint tag)
+  else
+  let args = make_args arity 1 in
+  Llam(ids, Lmakeblock (ind, tag, args))
+
+(* Compilation of primitive *)
 
 let prim _env kn p args =
   Lprim (kn, p, args)

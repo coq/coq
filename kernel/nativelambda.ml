@@ -56,13 +56,6 @@ let get_value lc =
   | _ -> raise Not_found
 
 (* Translation of constructors *)
-let expand_constructor ind tag nparams arity =
-  let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
-  let ids = Array.make (nparams + arity) anon in
-  if Int.equal arity 0 then mkLlam ids (Lint tag)
-  else
-  let args = make_args arity 1 in
-  Llam(ids, Lmakeblock (ind, tag, args))
 
 (* [nparams] is the number of parameters still expected *)
 let makeblock _env ind tag nparams arity args =

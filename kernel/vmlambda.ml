@@ -63,18 +63,7 @@ let get_value lc =
   | Lint i -> val_of_int i
   | _ -> raise Not_found
 
-let make_args start _end =
-  Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
-
 (* Translation of constructors *)
-let expand_constructor ind tag nparams arity =
-  let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
-  let ids = Array.make (nparams + arity) anon in
-  if arity = 0 then mkLlam ids (Lint tag)
-  else
-    let args = make_args arity 1 in
-    Llam (ids, Lmakeblock (ind, tag, args))
-
 let makeblock ind tag nparams arity args =
   let nargs = Array.length args in
   if nparams > 0 || nargs < arity then
