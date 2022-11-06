@@ -63,23 +63,19 @@ let get_value lc =
   | Lint i -> val_of_int i
   | _ -> raise Not_found
 
-(* Translation of constructors *)
-let makeblock ind tag nparams arity args =
-  let nargs = Array.length args in
-  if nparams > 0 || nargs < arity then
-    mkLapp (expand_constructor ind tag nparams arity) args
-  else
-    (* The constructor is fully applied *)
-  if arity = 0 then Lint tag
-  else
+let as_value tag args =
   if Array.for_all is_value args then
     if tag < Obj.last_non_constant_constructor_tag then
-      Lval(val_of_block tag (Array.map get_value args))
+      Some (val_of_block tag (Array.map get_value args))
     else
       let args = Array.map get_value args in
       let args = Array.append [| val_of_int (tag - Obj.last_non_constant_constructor_tag) |] args in
-      Lval(val_of_block Obj.last_non_constant_constructor_tag args)
-  else Lmakeblock (ind, tag, args)
+      Some (val_of_block Obj.last_non_constant_constructor_tag args)
+  else None
+
+(* Translation of constructors *)
+let makeblock ind tag nparams arity args =
+  Genlambda.makeblock as_value ind tag nparams arity args
 
 let makearray args def = Lparray (args, def)
 

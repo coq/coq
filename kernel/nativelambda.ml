@@ -55,17 +55,7 @@ let get_value lc =
   | Lfloat f -> Nativevalues.mk_float f
   | _ -> raise Not_found
 
-(* Translation of constructors *)
-
-(* [nparams] is the number of parameters still expected *)
-let makeblock _env ind tag nparams arity args =
-  let nargs = Array.length args in
-  if nparams > 0 || nargs < arity then
-    mkLapp (expand_constructor ind tag nparams arity) args
-  else
-  (* The constructor is fully applied *)
-  if Int.equal arity 0 then Lint tag
-  else
+let as_value tag args =
   if Array.for_all is_value args then
     let dummy_val = Obj.magic 0 in
     let args =
@@ -73,9 +63,14 @@ let makeblock _env ind tag nparams arity args =
          function eval_to_patch, file kernel/csymtable.ml *)
       let a = Array.make (Array.length args) dummy_val in
       Array.iteri (fun i v -> a.(i) <- get_value v) args; a in
-    Lval (Nativevalues.mk_block tag args)
-  else
-    Lmakeblock(ind, tag, args)
+    Some (Nativevalues.mk_block tag args)
+  else None
+
+(* Translation of constructors *)
+
+(* [nparams] is the number of parameters still expected *)
+let makeblock _env ind tag nparams arity args =
+  Genlambda.makeblock as_value ind tag nparams arity args
 
 let makearray args def =
   Lparray (args, def)

@@ -490,6 +490,17 @@ let expand_constructor ind tag nparams arity =
   let args = make_args arity 1 in
   Llam(ids, Lmakeblock (ind, tag, args))
 
+let makeblock as_val ind tag nparams arity args =
+  let nargs = Array.length args in
+  if nparams > 0 || nargs < arity then
+    mkLapp (expand_constructor ind tag nparams arity) args
+  else
+    (* The constructor is fully applied *)
+  if arity = 0 then Lint tag
+  else match as_val tag args with
+  | Some v -> Lval v
+  | None -> Lmakeblock (ind, tag, args)
+
 (* Compilation of primitive *)
 
 let prim _env kn p args =
