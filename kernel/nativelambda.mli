@@ -7,19 +7,14 @@
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
-open Names
 open Constr
 open Environ
 open Genlambda
 
 (** This file defines the lambda code generation phase of the native compiler *)
-type prefix = string
 
 type lambda = Nativevalues.t Genlambda.lambda
 
 val is_lazy : constr -> bool
-
-val get_mind_prefix : env -> MutInd.t -> string
-val get_const_prefix : env -> Constant.t -> string
 
 val lambda_of_constr : env -> evars -> Constr.constr -> lambda

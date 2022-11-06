@@ -19,7 +19,6 @@ open Nativevalues
 module RelDecl = Context.Rel.Declaration
 
 (** This file defines the lambda code generation phase of the native compiler *)
-type prefix = string
 
 type lambda = Nativevalues.t Genlambda.lambda
 
@@ -27,19 +26,6 @@ type lambda = Nativevalues.t Genlambda.lambda
 
 (*s Operators on substitution *)
 let subst_id = subs_id 0
-
-(* Linked code location utilities *)
-let get_mind_prefix env mind =
-   let _,name = lookup_mind_key mind env in
-   match !name with
-   | NotLinked -> ""
-   | Linked s -> s
-
-let get_const_prefix env c =
-   let _,(nameref,_) = lookup_constant_key c env in
-   match !nameref with
-   | NotLinked -> ""
-   | Linked s -> s
 
 (** Simplification of lambda expression *)
 
