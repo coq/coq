@@ -671,28 +671,28 @@ module Env = struct
     | None -> None
 
   let compute_rank_add env v is_prop =
-    let rec _add gl vars n v =
+    let rec add gl vars n v =
       match vars with
       | [] -> (gl, [(v, is_prop)], n)
       | (e, b) :: l -> (
         match eq_constr gl e v with
         | Some gl' -> (gl', vars, n)
         | None ->
-          let gl, l', n = _add gl l (n + 1) v in
+          let gl, l', n = add gl l (n + 1) v in
           (gl, (e, b) :: l', n) )
     in
-    let gl', vars', n = _add env.gl env.vars 1 v in
+    let gl', vars', n = add env.gl env.vars 1 v in
     ({vars = vars'; gl = gl'}, CamlToCoq.positive n)
 
   let get_rank env v =
     let gl = env.gl in
-    let rec _get_rank env n =
+    let rec get_rank env n =
       match env with
       | [] -> raise (Invalid_argument "get_rank")
       | (e, _) :: l -> (
-        match eq_constr gl e v with Some _ -> n | None -> _get_rank l (n + 1) )
+        match eq_constr gl e v with Some _ -> n | None -> get_rank l (n + 1) )
     in
-    _get_rank env.vars 1
+    get_rank env.vars 1
 
   let elements env = env.vars
 
