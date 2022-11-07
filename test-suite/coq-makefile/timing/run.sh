@@ -10,9 +10,9 @@ export make_both_time_files="$TTOOLSDIR"/make-both-time-files.py
 export make_one_time_file="$TTOOLSDIR"/make-one-time-file.py
 export make_both_single_timing_files="$TTOOLSDIR"/make-both-single-timing-files.py
 
-#
-NONATIVECOMP=$(grep "let native_compiler = NativeOff" ../../../config/coq_config.ml)||true
-if [[ ! $NONATIVECOMP ]]; then exit 0 ; fi
+# native stack overflows too easily, see eg
+# https://gitlab.com/coq/coq/-/jobs/3250939810
+export COQEXTRAFLAGS='-native-compiler no'
 
 . ../template/path-init.sh
 
