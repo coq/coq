@@ -461,9 +461,9 @@ Reserved Notation "[ || b1 | c ]" (at level 0).
 Reserved Notation "[ || b1 , b2 , .. , bn | c ]" (at level 0, format
   "'[hv' [ || '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/ '  |  c ] ']'").
 
-Reserved Notation "[ ==> b1 => c ]" (at level 0).
-Reserved Notation "[ ==> b1 , b2 , .. , bn => c ]" (at level 0, format
-  "'[hv' [ ==> '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/'  =>  c ] ']'").
+Reserved Notation "[= => b1 => c ]" (at level 0).
+Reserved Notation "[= => b1 , b2 , .. , bn => c ]" (at level 0, format
+  "'[hv' [= => '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/'  =>  c ] ']'").
 
 (**  Shorter delimiter  **)
 Delimit Scope bool_scope with B.
@@ -868,9 +868,19 @@ Notation "[ || b1 | c ]" := (b1 || c) (only parsing) : bool_scope.
 Notation "[ || b1 , b2 , .. , bn | c ]" := (b1 || (b2 || .. (bn || c) .. ))
   : bool_scope.
 
-Notation "[ ==> b1 , b2 , .. , bn => c ]" :=
+Notation "[= => b1 , b2 , .. , bn => c ]" :=
    (b1 ==> (b2 ==> .. (bn ==> c) .. )) : bool_scope.
-Notation "[ ==> b1 => c ]" := (b1 ==> c) (only parsing) : bool_scope.
+Notation "[= => b1 => c ]" := (b1 ==> c) (only parsing) : bool_scope.
+
+(* Quick test. *)
+Check [==> true, true => true].
+Check [==> true => true].
+(* As expected.
+[==> true, true => true]
+         : bool
+true ==> true
+         : bool
+*)
 
 Section AllAnd.
 
