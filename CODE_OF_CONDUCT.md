@@ -39,7 +39,7 @@ affect a person's ability to participate within them.
   Be kind to others. Do not insult or put down other participants. Harassment
   and other exclusionary behavior aren't acceptable.
   * Violent language or threats or personal insults have no chance to
-    resolve a dispute or to let a discussion florish. Worse, they can
+    resolve a dispute or to let a discussion flourish. Worse, they can
     hurt durably, or generate durable fears. They are thus unwelcome.
   * Not everyone is comfortable with sexually explicit or violent
     material, even as a joke. In an online open multicultural world, you
@@ -67,7 +67,7 @@ affect a person's ability to participate within them.
   signal the issue. If actions have been taken with you (e.g. bans or simple
   demands of apology, of rephrasing or keeping personal beliefs or troubles
   private), please understand that they are not intended as aggression or
-  punishment ― even if you they feel harsh to you ― but as ways to enforce a
+  punishment ― even if they feel harsh to you ― but as ways to enforce a
   calm communication for the other participants and to give you the opportunity
   to change your behavior. We understand you may feel hurt, or maybe you had a
   bad day, so please take this opportunity to question yourself, cool down if
