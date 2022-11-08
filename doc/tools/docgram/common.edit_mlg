@@ -166,6 +166,7 @@ DELETE: [
 | test_array_closing
 | test_variance_ident
 | test_ident_with_or_lpar_or_rbrac
+| test_leftsquarebracket_equal
 
   (* SSR *)
 | ssr_null_entry
@@ -1272,6 +1273,11 @@ or_and_intropattern: [
 |   WITH  "(" LIST0 simple_intropattern SEP "&" ")"
 ]
 
+equality_intropattern: [
+| REPLACE "[" "=" intropatterns "]"
+| WITH    "[=" intropatterns "]"
+]
+
 bar_cbrace: [
 | REPLACE "|" "}"
 | WITH "|}"
@@ -2125,6 +2131,11 @@ ltac2_or_and_intropattern: [
 | WITH "(" LIST1 ltac2_simple_intropattern SEP "&" ")" TAG Ltac2
 ]
 
+ltac2_equality_intropattern: [
+| REPLACE "[" "=" ltac2_intropatterns "]"
+| WITH    "[=" ltac2_intropatterns "]"
+]
+
 SPLICE: [
 | tac2def_val
 | tac2def_typ
@@ -2320,6 +2331,11 @@ ssrsimpl_ne: [
 hat: [
 | DELETE "^" "~" ident      (* SSR plugin *)
 | DELETE "^" "~" natural      (* SSR plugin *)
+]
+
+ssrcpat: [
+| REPLACE "[" "=" ssriorpat "]"
+| WITH    "[=" ssriorpat "]"
 ]
 
 ssriorpat: [

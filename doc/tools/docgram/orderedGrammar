@@ -1330,7 +1330,7 @@ ltac2_or_and_intropattern: [
 ltac2_equality_intropattern: [
 | "->"      (* ltac2 plugin *)
 | "<-"      (* ltac2 plugin *)
-| "[=" ltac2_intropatterns "]"      (* ltac2 plugin *)
+| "[=" ltac2_intropatterns "]"
 ]
 
 q_ident: [
@@ -1497,7 +1497,7 @@ ssriorpat: [
 ssrblockpat: [
 | "[" hat "]"      (* SSR plugin *)
 | "[" ssriorpat "]"      (* SSR plugin *)
-| "[=" ssriorpat "]"      (* SSR plugin *)
+| "[=" ssriorpat "]"
 ]
 
 ssrbinder: [
