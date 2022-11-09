@@ -296,11 +296,21 @@ module Monad = struct
 
     include Utils (Self)
 
+(*
     let get : type state . (state, state) t =
       fun state -> M.Ops.return (state, state)
+*)
 
+(*
     let set : type state . state -> (unit, state) t =
       fun new_state state -> M.Ops.return (new_state, ())
+*)
+
+    let use : type state . (state -> 'a) -> ('a, state) t =
+      fun f state -> M.Ops.return (state, f state)
+
+    let update : type state . (state -> state) -> (unit, state) t =
+      fun f state -> M.Ops.return (f state, ())
   end
 
   module State = struct
@@ -1743,9 +1753,7 @@ module EvarMapMonad = struct
     set (Evd.merge_context_set rigid sigma ctx)
 *)
   let set_leq_sort env s s' =
-    let open Ops in
-    let* sigma = get in
-    set (Evd.set_leq_sort (Eq.cast Env.eq env) sigma s s')
+    update (fun sigma -> Evd.set_leq_sort (Eq.cast Env.eq env) sigma s s')
 
 (*
   let set_eq_sort env s s' =
@@ -1755,14 +1763,10 @@ module EvarMapMonad = struct
 *)
 
   let fresh_inductive_instance env ind =
-    let open Ops in
-    let* sigma = get in
-    let sigma, pind =
+    fun sigma ->
       Eq.(cast (sym (Env.eq ^-> Refl ^-> InductiveDef.eq ^->
         (Refl ^* (InductiveDef.eq ^* Refl)))))
-        Evd.fresh_inductive_instance env sigma ind in
-    let* () = set sigma in
-    return pind
+        Evd.fresh_inductive_instance env sigma ind
 end
 
 module AbstractJudgment = struct
@@ -2716,11 +2720,10 @@ module InductiveType = struct
     let* (ind, instance) = EvarMapMonad.fresh_inductive_instance env ind in
     let term =
       ETerm.mkApp (ETerm.mkIndU ind (EConstr.EInstance.make instance)) args in
-    let* sigma = EvarMapMonad.get in
-    match of_term_opt env sigma term with
-    | None -> assert false
-    | Some (Exists ind) ->
-        return (term, Exists ind)
+    EvarMapMonad.use (fun sigma ->
+      match of_term_opt env sigma term with
+      | None -> assert false
+      | Some (Exists ind) -> (term, Exists ind))
 
   let make_case_or_project (type env ind params realargs realdecls)
     (env : env Env.t)
@@ -4120,8 +4123,8 @@ module ReturnPred = struct
           Env.morphism Refl (Env.morphism Refl (sym context.eq) ++
             Env.rev_plus context''.decls)))) return_pred in
       let return_pred, _ =
-        substn_binders (GlobalEnv.env globenv) sigma n diff plus subst
-          return_pred in
+        substn_binders (GlobalEnv.env globenv) sigma n diff
+          plus subst return_pred in
       let return_pred = return_pred |> Eq.(cast (ETerm.morphism (
         Env.morphism Refl (sym (Env.rev_plus context''.decls)) ++
         sym Env.assoc ++ Env.morphism Refl context.eq))) in
@@ -4288,10 +4291,11 @@ module PrepareTomatch (EqnLength : Type) = struct
         (pats : (Pattern.exists, EqnLength.t) Vector.t) :
         (env EJudgment.t * env infer_type) EvarMapMonad.t =
       let open EvarMapMonad.Ops in
-      let* sigma = EvarMapMonad.get in
-      match
-        InductiveType.of_term_opt_whd_all env sigma (EJudgment.uj_type judgment)
-      with
+      let* reduced_type =
+        EvarMapMonad.use (fun sigma ->
+          InductiveType.of_term_opt_whd_all env sigma
+            (EJudgment.uj_type judgment)) in
+      match reduced_type with
       | None ->
           infer env judgment (Nat.zero_r (Vector.length pats)) pats []
       | Some (Exists ind_type) ->
@@ -4331,10 +4335,10 @@ module PrepareTomatch (EqnLength : Type) = struct
                   (Eq.(cast (sym (InductiveDef.eq))) ind) = None then
                   CErrors.user_err ?loc (Pp.str "Wrong inductive type.");
           end;
-          let* sigma = EvarMapMonad.get in
-          let tomatch =
-            Tomatch.make_inductive ~small_inversion env sigma judgment
-              inductive_type predicate_pattern in
+          let* tomatch =
+            EvarMapMonad.use (fun sigma ->
+              Tomatch.make_inductive ~small_inversion env sigma judgment
+                inductive_type predicate_pattern) in
           return (Exists { tomatch; pats })
   end
 
@@ -5256,9 +5260,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     GlobalEnv.push_rel_context ~hypnaming sigma context env
 
   let push_rel_context_m context env =
-    let open EvarMapMonad.Ops in
-    let* sigma = EvarMapMonad.get in
-    return (push_rel_context sigma context env)
+    EvarMapMonad.use (fun sigma -> push_rel_context sigma context env)
 
   module TypeTomatch (EqnLength : TypeS) = struct
     module PrepareTomatch = PrepareTomatch (EqnLength)
@@ -5302,23 +5304,34 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       problem.eqns in
     let return_pred = ReturnPred.get problem.return_pred in
     let globenv = Eq.(cast (GlobalEnv.morphism (sym Env.zero_r)) env) in
-    let* sigma = EvarMapMonad.get in
     let matches =
       Eq.(cast (Vector.eq (ETerm.morphism (sym Env.zero_r)))) rhs.matches in
     let Refl = Nat.zero_r_eq rhs.cont.sum in
+    let* () =
     if debug then
+    begin
+      EvarMapMonad.use (fun sigma ->
       Format.eprintf "compile_base in env: %a@.return pred: %a@."
         Pp.pp_with (Env.print (GlobalEnv.env globenv))
-        Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma return_pred);
+        Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma return_pred))
+    end
+    else
+      EvarMapMonad.use (fun _sigma -> ()) in
     let* result = rhs.cont.f.f
         { globenv; context = []; return_pred; matches } in
-    let* sigma = EvarMapMonad.get in
+    let* () =
     if debug then
-      Format.eprintf "Base: @[%a@] (return pred: @[%a@] in env @[%a@])@."
+    begin
+      EvarMapMonad.use (fun sigma ->
+      Format.eprintf "Base: @[%a@] (return pred: @[%a@])@."
         Pp.pp_with (EJudgment.print (GlobalEnv.env globenv) sigma result)
         Pp.pp_with (ETerm.print (GlobalEnv.env globenv) sigma
-                      return_pred)
-        Pp.pp_with (Env.print (GlobalEnv.env globenv));
+                      return_pred);
+      Format.eprintf "in env @[%a@]@."
+        Pp.pp_with (Env.print (GlobalEnv.env globenv)));
+    end
+    else
+      EvarMapMonad.use (fun _sigma -> ()) in
     let* (result, _trace) =
       EJudgment.inh_conv_coerce_to ~program_mode:MatchContext.program_mode
         ~resolve_tc:true (GlobalEnv.env globenv)
@@ -5360,11 +5373,13 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
 *)
     let return_pred =
       ReturnPred.apply (Vector.rev substl) tail_height problem.return_pred in
-    let* sigma = EvarMapMonad.get in
     let self_name = Vector.find_name Fun.id vars in
-    let rel0, (_declaration, env) =
-      push_local_name sigma self_name tomatch.judgment problem.env in
+    let* rel0, (_declaration, env) =
+      EvarMapMonad.use (fun sigma ->
+      push_local_name sigma self_name tomatch.judgment problem.env) in
     let tomatches = TomatchVector.lift Height.one tail_tomatches in
+    let* rel_eqns =
+      EvarMapMonad.use (fun sigma ->
     let make_eqn (Exists { v; loc } :
         (env, tail_length Nat.succ, ind * ind_tail) Clause.t) :
         _ Rel.t option * (env * Nat.one, tail_length, ind_tail) Clause.t =
@@ -5380,6 +5395,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         Rhs.morphism (Eq.sym Env.succ) in
       rel1, Exists (CAst.make ?loc Clause.{ env; ids = v.ids; pats; rhs }) in
     let rel_eqns = Vector.map make_eqn problem.eqns in
+    rel_eqns) in
     let rels, eqns = Vector.split rel_eqns in
     let rel =
       match Vector.find_opt Fun.id rels with
@@ -5420,19 +5436,21 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       (return_pred_height : nrealdecls Nat.succ Height.t) :
       ((env * nrealdecls Nat.succ) * tail_height) ETerm.t EvarMapMonad.t =
     let open EvarMapMonad.Ops in
-    let* sigma = EvarMapMonad.get in
     let ty =
       InductiveFamily.build_dependent_inductive (GlobalEnv.env env)
         ind.family in
     let subcontext =
       ERelContext.(EDeclaration.assum Context.anonR ty :: arity) in
-    let subenv =
-      push_rel_context sigma (ERelContext.with_height subcontext) env in
+    let* subenv =
+      EvarMapMonad.use (fun sigma ->
+      push_rel_context sigma (ERelContext.with_height subcontext) env) in
     let tail_tomatches =
       TomatchVector.lift return_pred_height tail_tomatches in
     let Exists tail_context =
       TomatchVector.make_return_pred_context tail_tomatches in
-    let subenv = push_rel_context sigma (Exists tail_context.context) subenv in
+    let* subenv =
+      EvarMapMonad.use (fun sigma ->
+        push_rel_context sigma (Exists tail_context.context) subenv) in
     let module EqnLength = struct type t = Nat.one Nat.succ end in
     let module T = TypeTomatch (EqnLength) in
     let tail_height = TomatchVector.height tail_tomatches in
@@ -5470,8 +5488,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     let make_return_pred ({ globenv; context; matches; _ } : _ Rhs.args) =
       let env = GlobalEnv.env globenv in
       let subcontext_length = ERelContext.length context in
-      let* sigma = EvarMapMonad.get in
 (*
+      let* sigma = EvarMapMonad.get in
       Format.eprintf "matches: %a@."
         Pp.pp_with (Pp.pr_enum (ETerm.print env sigma) (Vector.to_list matches));
       Format.eprintf "make_return_pred: %a in %a@."
@@ -5500,24 +5518,24 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         ETerm.liftn (Height.of_nat subcontext_length)
           (Height.of_nat binders_length) |>
         ETerm.substl (Height.Vector.of_vector matches) in
-      let* sigma = EvarMapMonad.get in
       (*
       Format.eprintf "get_sort_of: %a@." Pp.pp_with
         (ETerm.print env sigma return_pred);
        *)
-      let s' =
-        ETerm.get_sort_of env sigma return_pred in
+      let* s' =
+        EvarMapMonad.use (fun sigma ->
+        ETerm.get_sort_of env sigma return_pred) in
       let* () = (*
         match s' with
         | SProp | Prop | Set -> EvarMapMonad.set_eq_sort env s' s
         | Type _ -> *) EvarMapMonad.set_leq_sort env s' s in
-      let* sigma = EvarMapMonad.get in
-      return (EJudgment.of_term env sigma return_pred) in
+      EvarMapMonad.use (fun sigma ->
+        EJudgment.of_term env sigma return_pred) in
     let make_unit_rhs ({ globenv; _ } : _ Rhs.args) =
       let env = GlobalEnv.env globenv in
       let* unit_judgment = EJudgment.unit_m env in
-      let* sigma = EvarMapMonad.get in
-      return (EJudgment.of_term env sigma (EJudgment.uj_type unit_judgment)) in
+      EvarMapMonad.use (fun sigma ->
+        EJudgment.of_term env sigma (EJudgment.uj_type unit_judgment)) in
     let problem = {
       PatternMatchingProblem.env;
       tomatches;
@@ -5647,10 +5665,10 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       let generalizable, refineds =
         Vector.cut tomatches_plus (Vector.rev matches) in
       let refineds = Vector.rev refineds in
-      let* sigma = EvarMapMonad.get in
-      let generalizable =
+      let* generalizable =
+        EvarMapMonad.use (fun sigma ->
         Vector.map (EJudgment.of_term (GlobalEnv.env globenv) sigma)
-          generalizable in
+          generalizable) in
       let* Exists prepare =
         prepare_sub_tomatches globenv generalizable clauses in
       let patterns_height = Height.of_nat (Vector.length arity_terms) in
@@ -5677,7 +5695,6 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         Eq.(cast (Height.morphism (Env.plus generalize_context.sum_binders))) in
       let Exists plus =
         Nat.to_plus (TomatchVector.length prepare.section) in
-      let* sigma = EvarMapMonad.get in
       let lift = Lift.(height & + nrealdecls') in
       let lift' = Lift.(liftn generalized_height lift) in
       let generalize_match (j : (env * generalized_height) ETerm.t) = j |>
@@ -5694,7 +5711,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           (sym Env.assoc)))) |>
         EJudgment.substnl (Height.Vector.of_vector refined_apply)
           generalize_count in
-      let eqns =
+      let* eqns =
+        EvarMapMonad.use (fun sigma ->
         Vector.map2 (fun
           (Exists { loc; v = clause } : _ prepare_clause)
           (Exists new_pats : _ Patterns.exists_section) :
@@ -5740,17 +5758,19 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           let matches = Vector.map generalize_match matches in
           let rhs : _ Rhs.t = Exists { matches; cont } in
           Clause.check ?loc { env; ids = clause.ids; pats; rhs })
-            clauses prepare.pats in
+            clauses prepare.pats) in
       let section = prepare.section |>
         TomatchVector.lift generalize_count in
       let new_tomatches =
         Vector.map generalize_tomatch new_tomatches in
-      let new_tail_tomatches = tail_tomatches |>
+      let* new_tail_tomatches =
+        EvarMapMonad.use (fun sigma -> tail_tomatches |>
         TomatchVector.exliftn Lift.(nrealdecls' & + generalize_count) |>
         TomatchVector.change (GlobalEnv.env genenv) sigma new_tomatches
-          ~small_inversion:MatchContext.small_inversion in
+          ~small_inversion:MatchContext.small_inversion) in
 (*
-      let self_judgment =
+      let* _self_judgment =
+        EvarMapMonad.use (fun sigma ->
         if expand_self then
           let self = summary |>
             ConstructorSummary.exliftn lift |>
@@ -5760,46 +5780,55 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
               (Vector.rev_map EJudgment.uj_val generalizable)) in
           EJudgment.of_term (GlobalEnv.env globenv) sigma self
         else
-          EJudgment.exliftn lift tomatch.judgment in
+          EJudgment.exliftn lift tomatch.judgment) in
+*)
+(*
       Format.eprintf "expand_self: %b@.self judgment: %a@." expand_self Pp.pp_with
         (EJudgment.print (GlobalEnv.env globenv) sigma self_judgment);
 *)
-        let self = summary |>
-          ConstructorSummary.exliftn lift |>
+      let self = summary |>
+        ConstructorSummary.exliftn lift |>
           ConstructorSummary.build_dependent_constructor |>
-          ETerm.of_term |>
-          ETerm.substl (Height.Vector.of_vector
-            (Vector.rev_map EJudgment.uj_val generalizable)) in
-      let judgment =
-        EJudgment.exliftn lift tomatch.judgment in
-      let free_rels =
-        Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_val judgment)) in
-      let free_rels' =
-        Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_type judgment)) in
-      let free_rels'' =
-        Termops.free_rels sigma (Eq.cast ETerm.eq self) in
-      let free_rels = Int.Set.union (Int.Set.union free_rels free_rels') free_rels'' in
-      let free_ids =
-        Termops.collect_vars sigma (Eq.cast ETerm.eq (EJudgment.uj_val judgment)) in
-      let free_ids' =
-        Termops.collect_vars sigma (Eq.cast ETerm.eq (EJudgment.uj_type judgment)) in
-      let free_ids = Names.Id.Set.union free_ids free_ids' in
-      let nb_rel = (Eq.cast Env.eq (GlobalEnv.env globenv)).env_nb_rel in
-      let filter =
-        List.init nb_rel (fun i -> Int.Set.mem (i + 1) free_rels) @
-        List.map (fun decl ->
-          Names.Id.Set.mem (Context.Named.Declaration.get_id decl) free_ids)
-          (Environ.named_context (Eq.cast Env.eq (GlobalEnv.env globenv))) in
-      let filter =
-        Evd.Filter.make filter in
-      let* self_type, _ =
-        EvarMapMonad.new_type_evar (GlobalEnv.env globenv) ~filter
-          Evd.univ_flexible_alg in
-      let* self_evar =
-        EvarMapMonad.new_evar (GlobalEnv.env globenv)
-          ~filter
-          ~candidates:[EJudgment.uj_val judgment; self] self_type in
-      let self_judgment = EJudgment.make self_evar self_type in
+        ETerm.of_term |>
+        ETerm.substl (Height.Vector.of_vector
+          (Vector.rev_map EJudgment.uj_val generalizable)) in
+      let* self_judgment =
+        if expand_self then
+          EvarMapMonad.use (fun sigma ->
+            EJudgment.of_term (GlobalEnv.env globenv) sigma self)
+        else
+          let judgment =
+            EJudgment.exliftn lift tomatch.judgment in
+          let* free_rels, free_ids =
+            EvarMapMonad.use (fun sigma ->
+              let free_rels =
+                Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_val judgment)) in
+              let free_rels' =
+                Termops.free_rels sigma (Eq.cast ETerm.eq (EJudgment.uj_type judgment)) in
+              let free_rels'' =
+                Termops.free_rels sigma (Eq.cast ETerm.eq self) in
+              let free_rels = Int.Set.union (Int.Set.union free_rels free_rels') free_rels'' in
+              let free_ids =
+                Termops.collect_vars sigma (Eq.cast ETerm.eq (EJudgment.uj_val judgment)) in
+              let free_ids' =
+                Termops.collect_vars sigma (Eq.cast ETerm.eq (EJudgment.uj_type judgment)) in
+              let free_ids = Names.Id.Set.union free_ids free_ids' in
+                free_rels, free_ids) in
+          let filter =
+            let nb_rel = (Eq.cast Env.eq (GlobalEnv.env globenv)).env_nb_rel in
+            Evd.Filter.make (
+              List.init nb_rel (fun i -> Int.Set.mem (i + 1) free_rels) @
+              List.map (fun decl ->
+                Names.Id.Set.mem (Context.Named.Declaration.get_id decl) free_ids)
+                  (Environ.named_context (Eq.cast Env.eq (GlobalEnv.env globenv)))) in
+          let* self_type, _ =
+            EvarMapMonad.new_type_evar (GlobalEnv.env globenv) ~filter
+              Evd.univ_flexible_alg in
+          let* self_evar =
+            EvarMapMonad.new_evar (GlobalEnv.env globenv)
+              ~filter
+              ~candidates:[EJudgment.uj_val judgment; self] self_type in
+          return (EJudgment.make self_evar self_type) in
       let self_tomatch =
         Tomatch.make_not_inductive
           (EJudgment.lift generalize_count self_judgment)
@@ -5901,8 +5930,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       let* judgment = MatchContext.compile_loop sub_problem in
       let sub_return_pred =
         ETerm.substl vector (ReturnPred.get generalized_return_pred) in
-      let* sigma = EvarMapMonad.get in
 (*
+      let* sigma = EvarMapMonad.get in
       Format.eprintf "inh_conv_coerce_to @[%a@] to @[%a@] in env @[%a@]@."
         Pp.pp_with (EJudgment.print (GlobalEnv.env sub_problem.env) sigma judgment)
         Pp.pp_with (ETerm.print (GlobalEnv.env sub_problem.env) sigma sub_return_pred)
@@ -5960,8 +5989,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           (Vector.to_list clauses) in
       let concrete_args =
         Array.of_list (List.rev (ERelContext.to_concrete args)) in
-      let* sigma = EvarMapMonad.get in
-      let names =
+      let* names =
+        EvarMapMonad.use (fun sigma ->
         Vector.init summary.arity (fun i ->
           let name =
             Vector.find_name
@@ -5982,19 +6011,19 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
               Names.Name (Namegen.next_name_away name all_vars)
             end
           else
-            name) in
+            name)) in
       let args = ERelContext.set_names (Vector.rev names) args in
       let* args_env = push_rel_context_m (ERelContext.with_height args) env in
-      let* sigma = EvarMapMonad.get in
       let self =
         ETerm.of_term
           (ConstructorSummary.build_dependent_constructor summary) in
-      let* branch =
-        match
+      let* patterns =
+        EvarMapMonad.use (fun sigma ->
           refine_patterns (GlobalEnv.env args_env) sigma arity_patterns.args
             (Vector.append_plus summary.concl_realargs [self]
-              (Nat.plus_one summary.nrealargs))
-        with
+              (Nat.plus_one summary.nrealargs))) in
+      let* branch =
+        match patterns with
         | None ->
             let* j = EJudgment.unit_m (GlobalEnv.env args_env) in
             return (EJudgment.uj_val j)
@@ -6056,8 +6085,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
                 tail_tomatches rhs_args in
             let make_idprop ({ globenv; _ } : _ Rhs.args) =
               EJudgment.unit_m (GlobalEnv.env globenv) in
-            let* sigma = EvarMapMonad.get in
   (*
+            let* sigma = EvarMapMonad.get in
             Format.eprintf "refine env: %a@." Pp.pp_with
               (Env.print (GlobalEnv.env args_env));
   *)
@@ -6097,11 +6126,8 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
                 (Height.Vector.of_vector (Vector.rev self_vector)) in
             let Exists return_pred_context =
               TomatchVector.make_return_pred_context tomatches in
-            let* return_pred_env =
-              push_rel_context_m (Exists return_pred_context.context)
-                args_env in
-            let* sigma = EvarMapMonad.get in
 (*
+            let* sigma = EvarMapMonad.get in
             Format.eprintf "refined return pred: %a in env %a@."
               Pp.pp_with (ETerm.print (GlobalEnv.env return_pred_env) sigma
                 return_pred)
@@ -6149,7 +6175,6 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         (previously_bounds : (env Rel.t, previously_bounds) Vector.t) :
         (env, ind, nrealdecls, tail_height) compile_branches EvarMapMonad.t =
       let open EvarMapMonad.Ops in
-      let* sigma = EvarMapMonad.get in
       let Exists arity_patterns = tomatch_type.pattern_structure in
 (*
        Format.eprintf "env: @[%a@]@.arity_patterns.terms: @[%a@]@."
@@ -6162,9 +6187,10 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       Format.eprintf "env: %a@."
         Pp.pp_with (Env.print (GlobalEnv.env env));
 *)
-      let generalize_context =
+      let* generalize_context =
+        EvarMapMonad.use (fun sigma ->
         generalize_context_of_binders (GlobalEnv.env env) sigma
-          arity_patterns.terms in
+          arity_patterns.terms) in
 (*
       Format.eprintf "binders: %a@."
         Pp.pp_with
@@ -6172,10 +6198,11 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           (let Exists context = generalize_context in
             Vector.to_list context.binders));
 *)
-      let Exists { context = generalize_context; old_previously_bounds;
+      let* Exists { context = generalize_context; old_previously_bounds;
           new_previously_bounds } =
+        EvarMapMonad.use (fun sigma ->
         generalize_previously_bounds (GlobalEnv.env env) sigma
-          previously_bounds generalize_context in
+          previously_bounds generalize_context) in
 (*
       Format.eprintf "previously_bounds: %a@.binders (previously bounds): %a@."
         Pp.pp_with
@@ -6185,14 +6212,16 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
           (Vector.to_list generalize_context.binders));
 *)
-      let Exists {
+      let* Exists {
         accu = { level = diff_tomatches; context = generalize_context };
         result = tomatch_vector } =
+        EvarMapMonad.use (fun sigma ->
         generalize_judgments (GlobalEnv.env env) sigma tomatch_vector
-          generalize_context in
+          generalize_context) in
       let Exists { context; _ } =
         TomatchVector.make_return_pred_context tomatches in
       let Exists return_pred_desc = return_pred in
+      (*
       if debug then
         Format.eprintf "previous: %a@.binders (tomatch): %a@."
           Pp.pp_with
@@ -6201,10 +6230,13 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           Pp.pp_with
           (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
              (Vector.to_list generalize_context.binders));
-      let Exists { accu = { binders = diff_previous; context = context' };
+             *)
+      let* Exists { accu = { binders = diff_previous; context = context' };
           result = previous } =
+        EvarMapMonad.use (fun sigma ->
         generalize_terms ~allow_new_binders:false (GlobalEnv.env env) sigma
-          return_pred_desc.previous generalize_context in
+          return_pred_desc.previous generalize_context) in
+      (*
       if debug then
         Format.eprintf "generalized previous: %a@.binders: %a@."
           Pp.pp_with
@@ -6213,6 +6245,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           Pp.pp_with
           (Pp.pr_enum (ETerm.print (GlobalEnv.env env) sigma)
              (Vector.to_list context'.binders));
+*)
       let Refl =
         match diff_previous with
         | Zero_l -> Nat.zero_l_eq diff_previous
@@ -6222,11 +6255,12 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       Format.eprintf "return pred: %a@." Pp.pp_with
         (ReturnPred.debug_print return_pred);
 *)
-      let sub_return_pred =
+      let* sub_return_pred =
         let hypnaming = naming_of_program_mode MatchContext.program_mode in
+        EvarMapMonad.use (fun sigma ->
         ReturnPred.generalize ~hypnaming env sigma (Exists context)
           patterns_height generalize_context.sum_binders
-          generalize_context.binders previous return_pred_desc in
+          generalize_context.binders previous return_pred_desc) in
 (*
       Format.eprintf "sub return pred: %a@." Pp.pp_with
         (ReturnPred.debug_print sub_return_pred);
@@ -6342,7 +6376,6 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       Compiler.compile_branches tomatch_type
         tomatch_vector problem.return_pred problem.tomatches
         branches problem.previously_bounds in
-    let* sigma = EvarMapMonad.get in
     let tail_return_vector =
       tail_tomatches |>
       TomatchVector.concat_rev_map { f = fun tomatch ->
@@ -6353,7 +6386,7 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
         tail_return_vector in
     let local_return_pred =
       ETerm.substl tail_return_height_vector return_pred in
-    let case =
+    let* case =
       let return_pred =
         ERelContext.it_mkLambda_or_LetIn tomatch.return_pred_context
           local_return_pred in
@@ -6365,18 +6398,20 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
       Format.eprintf "return_pred (debug): %a@." Pp.pp_with
         (ETerm.debug_print return_pred);
 *)
+        EvarMapMonad.use (fun sigma ->
       InductiveType.make_case_or_project (GlobalEnv.env problem.env) sigma
         tomatch_type.inductive_type
         MatchContext.style ~tomatch:(EJudgment.uj_val tomatch.judgment)
-        ~return_pred branches in
+        ~return_pred branches) in
     let apply = Vector.to_list (Vector.rev apply) in
 (*
     Format.eprintf "before degeneralize: %a@.in env: %a@."
       Pp.pp_with (ETerm.print env sigma case)
       Pp.pp_with (Env.print env);
 *)
-    let case, apply' =
-      degeneralize_list env sigma case apply in
+    let* case, apply' =
+        EvarMapMonad.use (fun sigma ->
+      degeneralize_list env sigma case apply) in
 (*
     Format.eprintf "after degeneralize: %a@.in env: %a@."
       Pp.pp_with (ETerm.print env sigma case)
@@ -6479,7 +6514,6 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
     let* subenv = push_rel_context_m (Exists context.context) env in
     let module EqnLength = struct type t = Nat.one Nat.succ end in
     let module T = TypeTomatch (EqnLength) in
-    let* sigma = EvarMapMonad.get in
     let tomatches_vector =
       context.context.context |>
       ERelContext.to_rel_vector |>
@@ -6534,23 +6568,23 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           Env.morphism Refl (
             sym (Env.rev_plus context'.decls)) ++
           sym Env.assoc))) in
-      let* sigma = EvarMapMonad.get in
 (*
       Format.eprintf "get_sort_of: %a@." Pp.pp_with
         (EJudgment.print env sigma return_pred);
 *)
-      let s' = ETerm.get_sort_of env sigma return_pred in
+      let* s' =
+        EvarMapMonad.use (fun sigma ->
+          ETerm.get_sort_of env sigma return_pred) in
       let* () = (*
         match s' with
         | SProp | Prop | Set -> EvarMapMonad.set_eq_sort env s' s
         | Type _ -> *) EvarMapMonad.set_leq_sort env s' s in
-      let* sigma = EvarMapMonad.get in
-      return (EJudgment.of_term env sigma return_pred) in
+      EvarMapMonad.use (fun sigma -> EJudgment.of_term env sigma return_pred) in
     let make_unit_rhs ({ globenv; _ } : _ Rhs.args) =
       let env = GlobalEnv.env globenv in
       let* unit_judgment = EJudgment.unit_m env in
-      let* sigma = EvarMapMonad.get in
-      return (EJudgment.of_term env sigma (EJudgment.uj_type unit_judgment)) in
+      EvarMapMonad.use (fun sigma ->
+        EJudgment.of_term env sigma (EJudgment.uj_type unit_judgment)) in
     let problem = {
       PatternMatchingProblem.env;
       tomatches;
@@ -6597,7 +6631,6 @@ module Make (MatchContext : MatchContextS) : CompilerS = struct
           Pattern.Ops.(pats.%(i)) in
         return (tuple, Vector.map get_pats pats)) in
     let* Exists tomatches = T.type_tomatches env tomatches in
-    let* sigma = EvarMapMonad.get in
     let eqns =
       T.PrepareTomatch.TomatchWithContextVector.to_clauses env eqns tomatches in
     let tomatches =
@@ -6672,10 +6705,10 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
   let hypnaming = naming_of_program_mode program_mode in
   let infer_return_pred = predopt = None in
   let return_pred return_pred_context =
-    let* sigma = EvarMapMonad.get in
-    let return_pred_env =
+    let* return_pred_env =
+        EvarMapMonad.use (fun sigma ->
       GlobalEnv.push_rel_context ~hypnaming sigma
-        (ERelContext.with_height return_pred_context) env in
+        (ERelContext.with_height return_pred_context) env) in
     match predopt with
     | Some term ->
         let* s = Evd.new_sort_variable Evd.univ_flexible_alg in
@@ -6756,8 +6789,14 @@ let compile_cases ?loc ~(program_mode : bool) (style : Constr.case_style)
     Format.eprintf "Coerce 3 done: %a@." Pp.pp_with (EJudgment.print (GlobalEnv.env env) sigma judgment);
 *)
 (*
+    Format.eprintf "evarmap: %a@." Pp.pp_with (Termops.pr_evar_map None (Eq.cast Env.eq (GlobalEnv.env env)) sigma);
+*)
+(*
+    let* () = EvarMapMonad.use (fun sigma ->
     Format.eprintf "%a@." Pp.pp_with (EJudgment.print (GlobalEnv.env env) sigma
-      judgment);
+      judgment)) in
+*)
+(*
     Format.eprintf "%a@." Pp.pp_with (ETerm.debug_print (EJudgment.uj_val judgment));
 *)
     let judgment = Eq.cast EJudgment.eq judgment in
