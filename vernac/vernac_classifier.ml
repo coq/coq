@@ -168,6 +168,7 @@ let classify_vernac e =
     (* These commands alter the parser *)
     | VernacDeclareCustomEntry _
     | VernacOpenCloseScope _ | VernacDeclareScope _
+    | VernacEnableNotation _
     | VernacDelimiters _ | VernacBindScope _
     | VernacNotation _ | VernacReservedNotation _
     | VernacSyntacticDefinition _

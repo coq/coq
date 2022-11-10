@@ -90,6 +90,7 @@ module type NAMETREE = sig
   val push : visibility -> user_name -> elt -> t -> t
   val locate : qualid -> t -> elt
   val find : user_name -> t -> elt
+  val remove : user_name -> t -> t
   val exists : user_name -> t -> bool
   val user_name : qualid -> t -> user_name
   val shortest_qualid_gen : ?loc:Loc.t -> (Id.t -> bool) -> user_name -> t -> qualid
@@ -117,17 +118,17 @@ struct
   type user_name = U.t
 
   type path_status =
-      Nothing
     | Relative of user_name * elt
     | Absolute of user_name * elt
 
   (* Dictionaries of short names *)
   type nametree =
-      { path : path_status;
+      { path : path_status list;
         map : nametree ModIdmap.t }
 
   let mktree p m = { path=p; map=m }
-  let empty_tree = mktree Nothing ModIdmap.empty
+  let empty_tree = mktree [] ModIdmap.empty
+  let is_empty_tree tree = tree.path = [] && ModIdmap.is_empty tree.map
 
   type t = nametree Id.Map.t
 
@@ -148,18 +149,17 @@ struct
         let this =
           if level <= 0 then
             match tree.path with
-              | Absolute (n,_) ->
+              | Absolute (n,_)::_ ->
                   (* This is an absolute name, we must keep it
                      otherwise it may become unaccessible forever *)
                 warn_masking_absolute n; tree.path
-              | Nothing
-              | Relative _ -> Relative (uname,o)
+              | current -> Relative (uname,o) :: current
           else tree.path
         in
         mktree this map
     | [] ->
         match tree.path with
-          | Absolute (uname',o') ->
+          | Absolute (uname',o') :: _ ->
               if E.equal o' o then begin
                 assert (U.equal uname uname');
                 tree
@@ -171,8 +171,7 @@ struct
                 (* But ours is also absolute! This is an error! *)
                 CErrors.user_err Pp.(str @@ "Cannot mask the absolute name \""
                                    ^ U.to_string uname' ^ "\"!")
-          | Nothing
-          | Relative _ -> mktree (Absolute (uname,o)) tree.map
+          | current -> mktree (Absolute (uname,o) :: current) tree.map
 
 let rec push_exactly uname o level tree = function
 | [] ->
@@ -181,12 +180,11 @@ let rec push_exactly uname o level tree = function
   if Int.equal level 0 then
     let this =
       match tree.path with
-        | Absolute (n,_) ->
+        | Absolute (n,_) :: _ ->
             (* This is an absolute name, we must keep it
                 otherwise it may become unaccessible forever *)
             warn_masking_absolute n; tree.path
-        | Nothing
-        | Relative _ -> Relative (uname,o)
+        | current -> Relative (uname,o) :: current
     in
     mktree this tree.map
   else (* not right level *)
@@ -212,6 +210,36 @@ let push visibility uname o tab =
     Id.Map.add id ptab tab
 
 
+let rec remove_path uname tree = function
+  | modid :: path ->
+      let map =
+        try
+          let submap = ModIdmap.find modid tree.map in
+          let submap = remove_path uname submap path in
+          if is_empty_tree submap then ModIdmap.empty
+          else ModIdmap.add modid submap tree.map
+        with Not_found ->
+          (* The name was actually not here *)
+          tree.map
+      in
+      let this =
+        let test = function Relative (uname',_) -> not (U.equal uname uname') | _ -> true in
+        List.filter test tree.path
+      in
+      mktree this map
+  | [] ->
+      let this =
+        let test = function Absolute (uname',_) -> not (U.equal uname uname') | _ -> true in
+        List.filter test tree.path
+      in
+      mktree this tree.map
+
+let remove uname tab =
+  let id,dir = U.repr uname in
+  let modify _ ptab = remove_path uname ptab dir in
+  try Id.Map.modify id modify tab
+  with Not_found -> tab
+
 let rec search tree = function
   | modid :: path -> search (ModIdmap.find modid tree.map) path
   | [] -> tree.path
@@ -222,22 +250,22 @@ let find_node qid tab =
 
 let locate qid tab =
   let o = match find_node qid tab with
-    | Absolute (uname,o) | Relative (uname,o) -> o
-    | Nothing -> raise Not_found
+    | (Absolute (uname,o) | Relative (uname,o)) :: _ -> o
+    | [] -> raise Not_found
   in
     o
 
 let user_name qid tab =
   let uname = match find_node qid tab with
-    | Absolute (uname,o) | Relative (uname,o) -> uname
-    | Nothing -> raise Not_found
+    | (Absolute (uname,o) | Relative (uname,o)) :: _ -> uname
+    | [] -> raise Not_found
   in
     uname
 
 let find uname tab =
   let id,l = U.repr uname in
     match search (Id.Map.find id tab) l with
-        Absolute (_,o) -> o
+        Absolute (_,o) :: _ -> o
       | _ -> raise Not_found
 
 let exists uname tab =
@@ -253,7 +281,7 @@ let shortest_qualid_gen ?loc hidden uname tab =
   let rec find_uname pos dir tree =
     let is_empty = match pos with [] -> true | _ -> false in
     match tree.path with
-    | Absolute (u,_) | Relative (u,_)
+    | (Absolute (u,_) | Relative (u,_)) :: _
           when U.equal u uname && not (is_empty && hidden) -> List.rev pos
     | _ ->
         match dir with
@@ -269,7 +297,7 @@ let shortest_qualid ?loc ctx uname tab =
 
 let push_node node l =
   match node with
-  | Absolute (_,o) | Relative (_,o)
+  | (Absolute (_,o) | Relative (_,o)) :: _
     when not (Util.List.mem_f E.equal o l) -> o::l
   | _ -> l
 
@@ -414,9 +442,13 @@ let push_xref visibility sp xref =
                   the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
               | _ ->
                   the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-            else
-              the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
+          else
+            the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
         end
+
+let remove_xref sp xref =
+  the_ccitab := ExtRefTab.remove sp !the_ccitab;
+  the_globrevtab := Globnames.ExtRefMap.remove xref !the_globrevtab
 
 let push_cci visibility sp ref =
   push_xref visibility sp (TrueGlobal ref)
@@ -424,6 +456,9 @@ let push_cci visibility sp ref =
 (* This is for Syntactic Definitions *)
 let push_abbreviation visibility sp kn =
   push_xref visibility sp (Abbrev kn)
+
+let remove_abbreviation sp kn =
+  remove_xref sp (Abbrev kn)
 
 let push = push_cci
 
@@ -457,10 +492,10 @@ let push_universe vis sp univ =
 (* Locate functions *******************************************************)
 
 
-(* This should be used when syntactic definitions are allowed *)
+(* This should be used when abbreviations are allowed *)
 let locate_extended qid = ExtRefTab.locate qid !the_ccitab
 
-(* This should be used when no syntactic definitions is expected *)
+(* This should be used when no abbreviations are expected *)
 let locate qid = match locate_extended qid with
   | TrueGlobal ref -> ref
   | Abbrev _ -> raise Not_found

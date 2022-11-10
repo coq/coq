@@ -684,8 +684,9 @@ let gallina_print_abbreviation env kn =
         prlist (fun id -> spc () ++ Id.print id) (List.map fst vars) ++
         spc () ++ str ":=") ++
      spc () ++
-     Constrextern.without_specific_symbols
-       [Notation_term.AbbrevRule kn] (pr_glob_constr_env env (Evd.from_env env)) c)
+     Vernacstate.System.protect (fun () ->
+         Abbreviation.toggle_abbreviation ~on:false ~use:ParsingAndPrinting kn;
+         pr_glob_constr_env env (Evd.from_env env) c) ())
 
 module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t option end)
 

@@ -16,6 +16,7 @@ open Constrexpr
 open Constrexpr_ops
 open Vernacexpr
 open Notation_term
+open Notationextern
 open Notation_gram
 open Notation_ops
 open Ppextend
@@ -1221,7 +1222,7 @@ let is_coercion level typs =
      | ETConstr _, _ ->
          let customkey = make_notation_entry_level custom n in
          let subentry = subentry_of_constr_prod_entry n e in
-         if notation_entry_level_eq subentry customkey then None
+         if Notationextern.notation_entry_level_eq subentry customkey then None
          else Some (IsEntryCoercion subentry)
      | ETGlobal, InCustomEntry s -> Some (IsEntryGlobal (s,n))
      | ETIdent, InCustomEntry s -> Some (IsEntryIdent (s,n))
@@ -1492,6 +1493,35 @@ let inNotation : notation_obj -> obj =
        classify_function = classify_notation}
 
 (**********************************************************************)
+(* Registration of interpretation scopes opening/closing              *)
+
+let open_scope i (local,op,sc) =
+  if Int.equal i 1 then
+    if op then Notation.open_scope sc else Notation.close_scope sc
+
+let cache_scope o =
+  open_scope 1 o
+
+let subst_scope (subst,sc) = sc
+
+let discharge_scope (local,_,_ as o) =
+  if local then None else Some o
+
+let classify_scope (local,_,_) =
+  if local then Dispose else Substitute
+
+let inScope : bool * bool * scope_name -> obj =
+  declare_object {(default_object "SCOPE") with
+      cache_function = cache_scope;
+      open_function = simple_open ~cat:notation_cat open_scope;
+      subst_function = subst_scope;
+      discharge_function = discharge_scope;
+      classify_function = classify_scope }
+
+let open_close_scope local ~to_open sc =
+  Lib.add_leaf (inScope (local,to_open,normalize_scope sc))
+
+(**********************************************************************)
 
 let with_lib_stk_protection f x =
   let fs = Lib.freeze () in
@@ -1738,7 +1768,7 @@ let set_notation_for_interpretation env impls (decl_ntn, main_data, notation_sym
   let { decl_ntn_string = { CAst.loc ; v = df }; decl_ntn_interp = c; decl_ntn_scope = sc } = decl_ntn in
   let notation = make_notation_interpretation ~local:true main_data notation_symbols ntn syntax_rules df env ~impls c sc in
   Lib.add_leaf (inNotation notation);
-  Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
+  Option.iter (fun sc -> Lib.add_leaf (inScope (false,true,sc))) sc
 
 (* Main entry point for command Notation *)
 
@@ -1876,6 +1906,36 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
   let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = only_parsing || fst (printability None [] false reversibility pat) in
   Abbreviation.declare_abbreviation ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
+
+(**********************************************************************)
+(* Activating/deactivating notations                                  *)
+
+let load_notation_toggle _ _ = ()
+
+let open_notation_toggle _ (local,(on,all,pat)) =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  toggle_notations ~on ~all (Constrextern.without_symbols (Printer.pr_glob_constr_env env sigma)) pat
+
+let cache_notation_toggle o =
+  load_notation_toggle 1 o;
+  open_notation_toggle 1 o
+
+let subst_notation_toggle (subst,x) = x (* TODO: pat *)
+
+let classify_notation_toggle (local,_) =
+  if local then Dispose else Substitute
+
+let inNotationActivation : locality_flag * (bool * bool * notation_query_pattern) -> obj =
+  declare_object {(default_object "NOTATION-TOGGLE") with
+      cache_function = cache_notation_toggle;
+      open_function = simple_open open_notation_toggle;
+      load_function = load_notation_toggle;
+      subst_function = subst_notation_toggle;
+      classify_function = classify_notation_toggle}
+
+let declare_notation_toggle local ~on ~all s =
+  Lib.add_leaf (inNotationActivation (local,(on,all,s)))
 
 (**********************************************************************)
 (* Declaration of custom entry                                        *)

@@ -1494,6 +1494,11 @@ syntax: [
 | WITH    "Notation" lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
 ]
 
+opt_scope: [
+| REPLACE ":" IDENT
+| WITH    ":" scope_name
+]
+
 syntax_modifier: [
 | DELETE "in" "custom" IDENT
 | REPLACE "in" "custom" IDENT; "at" "level" natural
@@ -2840,6 +2845,11 @@ SPLICE: [
 | as_or_and_ipat
 | singleton_class_definition
 | constr_with_bindings_arg
+| enable_enable_disable
+| enable_notation_rule
+| enable_notation_interpretation
+| enable_notation_flags
+| opt_scope
 ] (* end SPLICE *)
 
 RENAME: [

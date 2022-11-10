@@ -27,6 +27,10 @@ val add_delimiters : locality_flag -> scope_name -> string -> unit
 val remove_delimiters : locality_flag -> scope_name -> unit
 val add_class_scope : locality_flag -> scope_name -> add_scope_where option -> scope_class list -> unit
 
+(** Scope opening *)
+
+val open_close_scope : locality_flag -> to_open:bool -> scope_name -> unit
+
 (** Add a notation interpretation associated to a "where" clause (already has pa/pp rules) *)
 
 type where_decl_notation
@@ -60,6 +64,8 @@ val pr_custom_grammar : string -> Pp.t
 val pr_keywords : unit -> Pp.t
 
 val with_syntax_protection : ('a -> 'b) -> 'a -> 'b
+
+val declare_notation_toggle : locality_flag -> on:bool -> all:bool -> Notation.notation_query_pattern -> unit
 
 val declare_custom_entry : locality_flag -> string -> unit
 (** Declare given string as a custom grammar entry *)

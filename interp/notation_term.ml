@@ -106,7 +106,3 @@ type notation_interp_env = {
   ninterp_var_type : notation_var_internalization_type Id.Map.t;
   ninterp_rec_vars : Id.t Id.Map.t;
 }
-
-type interp_rule =
-  | NotationRule of Constrexpr.specific_notation
-  | AbbrevRule of KerName.t

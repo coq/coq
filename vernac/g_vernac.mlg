@@ -1232,9 +1232,43 @@ GRAMMAR EXTEND Gram
      | IDENT "Reserved"; IDENT "Notation"; s = ne_lstring; l = syntax_modifiers ->
            { VernacReservedNotation (false,(s,l)) }
 
+     | on = enable_enable_disable; IDENT "Notation";
+       rule = enable_notation_rule; interp = enable_notation_interpretation;
+       flags = enable_notation_flags; scope = opt_scope ->
+           { VernacEnableNotation (on, rule, interp, flags, scope) }
+
      (* "Print" "Grammar" and "Declare" "Scope" should be here but are in "command" entry in order
         to factorize with other "Print"-based or "Declare"-based vernac entries *)
   ] ]
+  ;
+  enable_enable_disable:
+    [ [ IDENT "Enable" -> { true }
+      | IDENT "Disable" -> { false } ] ]
+  ;
+  enable_notation_rule:
+    [ [ s = ne_string -> { Some (Inl s) }
+      | qid = global -> { Some (Inr qid) }
+      | -> { None } ] ]
+  ;
+  enable_notation_interpretation:
+    [ [ ":="; c = constr -> { Some c }
+      | -> { None } ] ]
+  ;
+  enable_notation_flags:
+    [ [ "("; l = LIST1 enable_notation_flag SEP ","; ")" -> { l }
+      | -> { [] } ] ]
+  ;
+  enable_notation_flag:
+    [ [ IDENT "all" -> { EnableNotationAll }
+      | IDENT "only"; IDENT "parsing" -> { EnableNotationOnly Notationextern.OnlyParsing }
+      | IDENT "only"; IDENT "printing" -> { EnableNotationOnly Notationextern.OnlyPrinting }
+      | "in"; IDENT "custom"; x = IDENT -> { EnableNotationEntry (InCustomEntry x) }
+      | "in"; IDENT "constr" -> { EnableNotationEntry InConstrEntry } ] ]
+  ;
+  opt_scope:
+    [ [ ":"; sc = IDENT -> { Some (NotationInScope sc) }
+      | ":"; IDENT "no"; IDENT "scope" -> { Some LastLonelyNotation }
+      | -> { None } ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> { NumLevel n }

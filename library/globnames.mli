@@ -39,6 +39,8 @@ type extended_global_reference =
   | TrueGlobal of GlobRef.t
   | Abbrev of abbreviation
 
+val abbreviation_eq : abbreviation -> abbreviation -> bool
+
 module ExtRefOrdered : sig
   type t = extended_global_reference
   val compare : t -> t -> int

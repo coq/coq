@@ -780,6 +780,29 @@ let pr_vernac_expr v =
     return (
       keyword "Declare Custom Entry " ++ str s
     )
+  | VernacEnableNotation (on,rule,interp,flags,scope) ->
+    let pr_flag = function
+      | EnableNotationEntry InConstrEntry -> str "in constr"
+      | EnableNotationEntry (InCustomEntry s) -> str "in custom " ++ str s
+      | EnableNotationOnly OnlyParsing -> str "only parsing"
+      | EnableNotationOnly OnlyPrinting -> str "only printing"
+      | EnableNotationOnly ParsingAndPrinting -> assert false
+      | EnableNotationAll -> str "all" in
+    let pr_flags = function
+      | [] -> mt ()
+      | l -> str "(" ++ prlist_with_sep pr_comma pr_flag l ++ str ")" in
+    let pr_rule = match rule with
+      | None -> mt ()
+      | Some (Inl ntn) -> quote (str ntn)
+      | Some (Inr qid) -> pr_qualid qid in
+    let pr_opt_scope = function
+      | None -> mt ()
+      | Some (NotationInScope s) -> spc () ++ str ": " ++ str s
+      | Some LastLonelyNotation -> str ":" ++ spc () ++ str "none" in
+    let pp = pr_rule ++ pr_flags flags ++ pr_opt_scope scope in
+    return (
+      keyword (if on then "Enable Notation " else "Disable Notation ") ++ pp
+    )
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),id,b) -> (* A verifier... *)

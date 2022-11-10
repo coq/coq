@@ -21,6 +21,12 @@ val strictly_finer_notation_constr : Id.t list * Id.t list -> notation_constr ->
     (this is a partial order and returning [false] does not mean that
     [t2] is finer than [t1]) *)
 
+val strictly_finer_interpretation_than : interpretation -> interpretation -> bool
+(** Tell if a notation interpretation is strictly included in another one *)
+
+val finer_interpretation_than : interpretation -> interpretation -> bool
+(** Tell if a notation interpretation is included in another one *)
+
 (** Substitution of kernel names in interpretation data                *)
 
 val subst_interpretation :

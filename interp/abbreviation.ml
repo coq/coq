@@ -15,6 +15,7 @@ open Libnames
 open Libobject
 open Lib
 open Notation_term
+open Notationextern
 
 (* Abbreviations. *)
 
@@ -23,6 +24,7 @@ type abbreviation =
     abbrev_onlyparsing : bool;
     abbrev_deprecation : Deprecation.t option;
     abbrev_also_in_cases_pattern : bool;
+    abbrev_activated : bool; (* Not really necessary in practice *)
   }
 
 let abbrev_table =
@@ -31,6 +33,29 @@ let abbrev_table =
 
 let add_abbreviation kn abbrev =
   abbrev_table := KNmap.add kn abbrev !abbrev_table
+
+let toggle_abbreviation ~on ~use kn =
+  let data = KNmap.find kn !abbrev_table in
+  if data.abbrev_activated != on then
+    begin
+      abbrev_table := KNmap.add kn {data with abbrev_activated = on} !abbrev_table;
+      let sp = Nametab.path_of_abbreviation kn in
+      match use with
+      | OnlyPrinting -> ()
+      | OnlyParsing | ParsingAndPrinting ->
+         if on then
+           begin
+             Nametab.push_abbreviation (Nametab.Until 1) sp kn;
+             Nametab.push_abbreviation (Nametab.Exactly 1) sp kn
+           end
+         else
+           Nametab.remove_abbreviation sp kn
+    end
+
+let toggle_abbreviations ~on ~use filter =
+  KNmap.fold (fun kn abbrev () ->
+      if filter kn abbrev.abbrev_pattern then toggle_abbreviation ~on ~use kn)
+  !abbrev_table ()
 
 let load_abbreviation i ((sp,kn),(_local,abbrev)) =
   if Nametab.exists_cci sp then
@@ -53,7 +78,7 @@ let open_abbreviation i ((sp,kn),(_local,abbrev)) =
     if not abbrev.abbrev_onlyparsing then
       (* Redeclare it to be used as (short) name in case an other (distfix)
          notation was declared in between *)
-      Notation.declare_uninterpretation ~also_in_cases_pattern:abbrev.abbrev_also_in_cases_pattern (AbbrevRule kn) pat
+      Notationextern.declare_uninterpretation ~also_in_cases_pattern:abbrev.abbrev_also_in_cases_pattern (AbbrevRule kn) pat
   end
 
 let import_abbreviation i sp kn =
@@ -85,6 +110,7 @@ let declare_abbreviation ~local ?(also_in_cases_pattern=true) deprecation id ~on
       abbrev_onlyparsing = onlyparsing;
       abbrev_deprecation = deprecation;
       abbrev_also_in_cases_pattern = also_in_cases_pattern;
+      abbrev_activated = true;
     }
   in
   add_leaf (inAbbreviation id (local,abbrev))
@@ -95,6 +121,7 @@ let warn_deprecated_abbreviation =
   Deprecation.create_warning ~object_name:"Notation" ~warning_name:"deprecated-syntactic-definition"
     pr_abbreviation
 
+(* Remark: do not check for activation (if not activated, it is already not supposed to be located) *)
 let search_abbreviation ?loc kn =
   let abbrev = KNmap.find kn !abbrev_table in
   Option.iter (fun d -> warn_deprecated_abbreviation ?loc (kn,d)) abbrev.abbrev_deprecation;

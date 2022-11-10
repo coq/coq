@@ -885,7 +885,11 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           terms_of_binders (if revert then bl' else List.rev bl'),([],[])
         with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation.") in
-      let l = List.map (fun a -> AddTermIter ((Id.Map.add y (a,(scopt,subscopes)) terms))) l in
+      let select_iter a =
+        match a.CAst.v with
+        | CRef (qid,None) when qualid_is_ident qid && Id.equal (qualid_basename qid) ldots_var -> AddNList
+        | _ -> AddTermIter (Id.Map.add y (a,(scopt,subscopes)) terms) in
+      let l = List.map select_iter l in
       aux (terms,None,Some (l,terminator,iter)) subinfos (NVar ldots_var)
     | NHole (knd, naming, arg) ->
       let knd = match knd with
