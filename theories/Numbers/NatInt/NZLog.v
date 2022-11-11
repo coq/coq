@@ -188,6 +188,9 @@ Proof.
    apply lt_succ_r, (pow_lt_mono_r_iff 2); order_pos.
 Qed.
 
+#[export] Instance _log2_le_mono: Proper (le ==> le) log2.
+Proof. simpl_relation. now apply log2_le_mono. Qed.
+
 (** No reverse result for <=, consider for instance log2 3 <= log2 2 *)
 
 Lemma log2_lt_cancel : forall a b, log2 a < log2 b -> a < b.
@@ -640,6 +643,9 @@ Proof.
    rewrite <- succ_le_mono. apply log2_le_mono, succ_le_mono.
    rewrite 2 lt_succ_pred with 1; order.
 Qed.
+
+#[export] Instance _log2_up_le_mono: Proper (le ==> le) log2_up.
+Proof. simpl_relation. now apply log2_up_le_mono. Qed.
 
 (** No reverse result for <=, consider for instance log2_up 4 <= log2_up 3 *)
 

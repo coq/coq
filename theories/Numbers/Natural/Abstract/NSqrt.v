@@ -33,6 +33,9 @@ Proof. wrap sqrt_square. Qed.
 Definition sqrt_le_mono : forall a b, a<=b -> √a <= √b
  := sqrt_le_mono.
 
+#[export] Instance _sqrt_le_mono: Proper (le ==> le) sqrt.
+Proof. simpl_relation. now apply sqrt_le_mono. Qed.
+
 Definition sqrt_lt_cancel : forall a b, √a < √b -> a < b
  := sqrt_lt_cancel.
 

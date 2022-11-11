@@ -213,6 +213,9 @@ intros n m H; elim H using le_ind_rel.
 - intros p q H1 _; now do 2 rewrite pred_succ.
 Qed.
 
+#[export] Instance _pred_le_mono: Proper (le ==> le) pred.
+Proof. simpl_relation. now apply pred_le_mono. Qed.
+
 Theorem pred_lt_mono : forall n m, n ~= 0 -> (n < m <-> P n < P m).
 Proof.
 intros n m H1; split; intro H2.

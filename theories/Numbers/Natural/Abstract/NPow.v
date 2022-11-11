@@ -77,6 +77,9 @@ Proof. wrap pow_lt_mono_l. Qed.
 Lemma pow_le_mono_l : forall a b c, a<=b -> a^c <= b^c.
 Proof. wrap pow_le_mono_l. Qed.
 
+#[export] Instance _pow_le_mono_l: Proper (le ==> eq ==> le) pow.
+Proof. intros a b H _ c ->. now apply pow_le_mono_l. Qed.
+
 Lemma pow_gt_1 : forall a b, 1<a -> b~=0 -> 1<a^b.
 Proof. wrap pow_gt_1. Qed.
 
