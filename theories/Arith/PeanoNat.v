@@ -1254,6 +1254,10 @@ Infix "?=" := Nat.compare (at level 70) : nat_scope.
 Infix "/" := Nat.div : nat_scope.
 Infix "mod" := Nat.modulo (at level 40, no associativity) : nat_scope.
 
+(** Re-export [Nat] hints *)
+
+Export (hints) Nat.
+
 #[global] Hint Unfold Nat.le : core.
 #[global] Hint Unfold Nat.lt : core.
 

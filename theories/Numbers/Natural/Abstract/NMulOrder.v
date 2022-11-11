@@ -56,6 +56,9 @@ Proof.
 intros; apply mul_le_mono_nonneg; try assumption; apply le_0_l.
 Qed.
 
+#[export] Instance _mul_le_mono: Proper (le ==> le ==> le) mul.
+Proof. now simpl_relation; apply mul_le_mono. Qed.
+
 Theorem lt_0_mul' : forall n m, n * m > 0 <-> n > 0 /\ m > 0.
 Proof.
 intros n m; split; [intro H | intros [H1 H2]].
