@@ -1834,31 +1834,6 @@ let default_morphism env sigma sign m =
 
 (** Bind to "rewrite" too *)
 
-(** Taken from original setoid_replace, to emulate the old rewrite semantics where
-    lemmas are first instantiated and then rewrite proceeds. *)
-
-let check_evar_map_of_evars_defs env evd =
- let metas = Evd.meta_list evd in
- let check_freemetas_is_empty rebus =
-  Evd.Metaset.iter
-   (fun m ->
-     if Evd.meta_defined evd m then ()
-     else begin
-       raise
-         (Logic.RefinerError (env, evd, Logic.UnresolvedBindings [Evd.meta_name evd m]))
-     end)
- in
-  Evd.Metamap.iter
-   (fun _ binding ->
-     match binding with
-        Evd.Cltyp (_,{Evd.rebus=rebus; Evd.freemetas=freemetas}) ->
-         check_freemetas_is_empty rebus freemetas
-      | Evd.Clval (_,({Evd.rebus=rebus1; Evd.freemetas=freemetas1},_),
-                 {Evd.rebus=rebus2; Evd.freemetas=freemetas2}) ->
-         check_freemetas_is_empty rebus1 freemetas1 ;
-         check_freemetas_is_empty rebus2 freemetas2
-   ) metas
-
 (* Find a subterm which matches the pattern to rewrite for "rewrite" *)
 let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   let (sigma,c') =
@@ -1881,7 +1856,6 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   let c1 = if l2r then nf c' else nf c1
   and c2 = if l2r then nf c2 else nf c'
   and car = nf car and rel = nf rel in
-  check_evar_map_of_evars_defs env sigma;
   let prf = nf prf in
   let prfty = nf (Retyping.get_type_of env sigma prf) in
   let sort = sort_of_rel env sigma but in
