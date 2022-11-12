@@ -281,7 +281,7 @@ pattern10: [
 ]
 
 pattern1: [
-| pattern0 "%" IDENT
+| pattern0 "%" scope_key
 | pattern0
 ]
 
@@ -379,6 +379,14 @@ preident: [
 | IDENT
 ]
 
+scope_name: [
+| IDENT
+]
+
+scope_key: [
+| IDENT
+]
+
 ident: [
 | IDENT
 ]
@@ -424,7 +432,7 @@ qualid: [
 ]
 
 by_notation: [
-| ne_string OPT [ "%" IDENT ]
+| ne_string OPT [ "%" scope_key ]
 ]
 
 smart_global: [
@@ -531,7 +539,7 @@ command: [
 | "Hint" hint opt_hintbases
 | "Comments" LIST0 comment
 | "Declare" "Instance" ident_decl binders ":" term200 hint_info
-| "Declare" "Scope" IDENT
+| "Declare" "Scope" scope_name
 | "Pwd"
 | "Cd"
 | "Cd" ne_string
@@ -926,7 +934,7 @@ reduce: [
 ]
 
 notation_declaration: [
-| lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
+| lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
 ]
 
 decl_sep: [
@@ -1222,7 +1230,7 @@ args_modifier: [
 ]
 
 scope_delimiter: [
-| "%" IDENT
+| "%" scope
 ]
 
 argument_spec: [
@@ -1267,6 +1275,11 @@ simple_reserv: [
 | LIST1 identref ":" lconstr
 ]
 
+scope: [
+| scope_key
+| scope_name
+]
+
 query_command: [
 | "Eval" red_expr "in" lconstr "."
 | "Compute" lconstr "."
@@ -1306,8 +1319,8 @@ printable: [
 | "Hint" "*"
 | "HintDb" IDENT
 | "Scopes"
-| "Scope" IDENT
-| "Visibility" OPT IDENT
+| "Scope" scope_name
+| "Visibility" OPT scope_name
 | "Implicit" smart_global
 | [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT ne_string
 | "Assumptions" smart_global
@@ -1424,11 +1437,11 @@ univ_name_list: [
 ]
 
 syntax: [
-| "Open" "Scope" IDENT
-| "Close" "Scope" IDENT
-| "Delimit" "Scope" IDENT; "with" IDENT
-| "Undelimit" "Scope" IDENT
-| "Bind" "Scope" IDENT; "with" LIST1 coercion_class
+| "Open" "Scope" scope
+| "Close" "Scope" scope
+| "Delimit" "Scope" scope_name "with" scope_key
+| "Undelimit" "Scope" scope_name
+| "Bind" "Scope" scope_name "with" LIST1 coercion_class
 | "Infix" notation_declaration
 | "Notation" identref LIST0 ident ":=" constr syntax_modifiers
 | "Notation" notation_declaration
@@ -1467,7 +1480,7 @@ enable_notation_flag: [
 ]
 
 opt_scope: [
-| ":" IDENT
+| ":" scope_name
 | ":" "no" "scope"
 |
 ]

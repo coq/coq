@@ -48,8 +48,14 @@ GRAMMAR EXTEND Gram
     bignat bigint natural integer identref name ident hyp preident
     fullyqualid qualid reference dirpath ne_lstring
     ne_string string lstring pattern_ident by_notation
-    smart_global bar_cbrace strategy_level fields;
+    smart_global bar_cbrace strategy_level fields scope_name scope_key;
   preident:
+    [ [ s = IDENT -> { s } ] ]
+  ;
+  scope_name:
+    [ [ s = IDENT -> { s } ] ]
+  ;
+  scope_key:
     [ [ s = IDENT -> { s } ] ]
   ;
   ident:
@@ -92,7 +98,7 @@ GRAMMAR EXTEND Gram
     [ [ qid = reference -> { qid } ] ]
   ;
   by_notation:
-    [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> { key } ] -> { (s, sc) } ] ]
+    [ [ s = ne_string; sc = OPT ["%"; key = scope_key -> { key } ] -> { (s, sc) } ] ]
   ;
   smart_global:
     [ [ c = reference -> { CAst.make ~loc @@ Constrexpr.AN c }

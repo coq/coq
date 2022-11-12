@@ -288,6 +288,8 @@ module Prim =
     (* Entries that can be referred via the string -> Entry.t table *)
     (* Typically for tactic or vernac extensions *)
     let preident = Entry.make "preident"
+    let scope_name = Entry.make "scope_name"
+    let scope_key = Entry.make "scope_key"
     let ident = Entry.make "ident"
     let natural = Entry.make "natural"
     let integer = Entry.make "integer"

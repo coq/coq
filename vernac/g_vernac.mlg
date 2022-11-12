@@ -55,6 +55,7 @@ let of_type_inst = Entry.make "of_type_inst"
 let section_subset_expr = Entry.make "section_subset_expr"
 let scope_delimiter = Entry.make "scope_delimiter"
 let syntax_modifiers = Entry.make "syntax_modifiers"
+let scope = Entry.make "scope"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -375,7 +376,7 @@ GRAMMAR EXTEND Gram
   notation_declaration:
     [ [ ntn = lstring; ":="; c = constr;
         modl = syntax_modifiers;
-        scopt = OPT [ ":"; sc = IDENT -> { sc } ] ->
+        scopt = OPT [ ":"; sc = scope_name -> { sc } ] ->
       { { ntn_decl_string = ntn; ntn_decl_interp = c;
           ntn_decl_scope = scopt;
           ntn_decl_modifiers = modl;
@@ -836,7 +837,7 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   scope_delimiter:
-    [ [ "%"; key = IDENT -> { key } ] ]
+    [ [ "%"; key = scope -> { key } ] ]
   ;
   argument_spec: [
        [ b = OPT "!"; id = name ; s = LIST0 scope_delimiter ->
@@ -904,7 +905,8 @@ GRAMMAR EXTEND Gram
 END
 
 GRAMMAR EXTEND Gram
-  GLOBAL: command query_command coercion_class gallina_ext search_query search_queries;
+  GLOBAL: command query_command coercion_class gallina_ext search_query search_queries scope
+    scope_key;
 
   gallina_ext: TOP
     [ [ IDENT "Export"; "Set"; table = setting_name; v = option_setting ->
@@ -912,6 +914,11 @@ GRAMMAR EXTEND Gram
       | IDENT "Export"; IDENT "Unset"; table = setting_name ->
           { VernacSynterp (VernacSetOption (true, table, OptionUnset)) }
     ] ];
+
+  scope:
+    [ [ sk = scope_key -> { sk }
+      | sn = scope_name -> { sn } ] ]
+  ;
 
   command:
     [ [ IDENT "Comments"; l = LIST0 comment -> { VernacSynPure (VernacComments l) }
@@ -923,7 +930,7 @@ GRAMMAR EXTEND Gram
            { VernacSynPure (VernacDeclareInstance (id, bl, t, info)) }
 
       (* Should be in syntax, but camlp5 would not factorize *)
-      | IDENT "Declare"; IDENT "Scope"; sc = IDENT ->
+      | IDENT "Declare"; IDENT "Scope"; sc = scope_name ->
           { VernacSynPure (VernacDeclareScope sc) }
 
       (* System directory *)
@@ -1051,8 +1058,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Hint"; "*" -> { PrintHintDb }
       | IDENT "HintDb"; s = IDENT -> { PrintHintDbName s }
       | IDENT "Scopes" -> { PrintScopes }
-      | IDENT "Scope"; s = IDENT -> { PrintScope s }
-      | IDENT "Visibility"; s = OPT IDENT -> { PrintVisibility s }
+      | IDENT "Scope"; s = scope_name -> { PrintScope s }
+      | IDENT "Visibility"; s = OPT scope_name -> { PrintVisibility s }
       | IDENT "Implicit"; qid = smart_global -> { PrintImplicit qid }
       | b = [ IDENT "Sorted" -> { true } | -> { false } ]; IDENT "Universes";
         g = OPT printunivs_subgraph; fopt = OPT ne_string ->
@@ -1201,18 +1208,18 @@ GRAMMAR EXTEND Gram
   GLOBAL: syntax syntax_modifiers;
 
   syntax:
-   [ [ IDENT "Open"; IDENT "Scope"; sc = IDENT ->
+   [ [ IDENT "Open"; IDENT "Scope"; sc = scope ->
          { VernacSynPure (VernacOpenCloseScope (true,sc)) }
 
-     | IDENT "Close"; IDENT "Scope"; sc = IDENT ->
+     | IDENT "Close"; IDENT "Scope"; sc = scope ->
          { VernacSynPure (VernacOpenCloseScope (false,sc)) }
 
-     | IDENT "Delimit"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
+     | IDENT "Delimit"; IDENT "Scope"; sc = scope_name; "with"; key = scope_key ->
          { VernacSynPure(VernacDelimiters (sc, Some key)) }
-     | IDENT "Undelimit"; IDENT "Scope"; sc = IDENT ->
+     | IDENT "Undelimit"; IDENT "Scope"; sc = scope_name ->
          { VernacSynPure(VernacDelimiters (sc, None)) }
 
-     | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
+     | IDENT "Bind"; IDENT "Scope"; sc = scope_name; "with";
        refl = LIST1 coercion_class -> { VernacSynPure (VernacBindScope (sc,refl)) }
 
      | IDENT "Infix"; ntn_decl = notation_declaration ->
@@ -1262,7 +1269,7 @@ GRAMMAR EXTEND Gram
       | "in"; IDENT "constr" -> { EnableNotationEntry (CAst.make ~loc InConstrEntry) } ] ]
   ;
   opt_scope:
-    [ [ ":"; sc = IDENT -> { Some (NotationInScope sc) }
+    [ [ ":"; sc = scope_name -> { Some (NotationInScope sc) }
       | ":"; IDENT "no"; IDENT "scope" -> { Some LastLonelyNotation }
       | -> { None } ] ]
   ;

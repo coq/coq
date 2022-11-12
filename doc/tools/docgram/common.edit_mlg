@@ -348,24 +348,6 @@ IDENT: [
 | ident
 ]
 
-scope_key: [
-| IDENT
-]
-
-scope_name: [
-| IDENT
-]
-
-scope: [
-| scope_name
-| scope_key
-]
-
-scope_delimiter: [
-| REPLACE "%" IDENT
-| WITH "%" scope
-]
-
 term100: [
 | REPLACE term99 "<:" term200
 | WITH term99 "<:" type
@@ -539,11 +521,6 @@ pattern10: [
 | REPLACE pattern1 LIST1 pattern1
 | WITH pattern1 LIST0 pattern1
 | DELETE pattern1
-]
-
-pattern1: [
-| REPLACE pattern0 "%" IDENT
-| WITH pattern0 "%" scope_key
 ]
 
 pattern0: [
@@ -1282,10 +1259,6 @@ bar_cbrace: [
 ]
 
 printable: [
-| REPLACE "Scope" IDENT
-| WITH "Scope" scope_name
-| REPLACE "Visibility" OPT IDENT
-| WITH "Visibility" OPT scope_name
 | REPLACE [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT ne_string
 | WITH OPT "Sorted" "Universes" OPT printunivs_subgraph OPT ne_string
 | DELETE "Term" smart_global OPT univ_name_list  (* readded in commands *)
@@ -1437,9 +1410,6 @@ command: [
 | REPLACE "Print" smart_global OPT univ_name_list
 | WITH "Print" OPT "Term" smart_global OPT univ_name_list
 
-| REPLACE "Declare" "Scope" IDENT
-| WITH "Declare" "Scope" scope_name
-
 (* odd that these are in command while other notation-related ones are in syntax *)
 | REPLACE "Number" "Notation" reference reference reference OPT number_options ":" preident
 | WITH "Number" "Notation" reference reference reference OPT number_options ":" scope_name
@@ -1471,24 +1441,6 @@ command: [
 | "Show" "Zify" show_zify  TAG Micromega
 | REPLACE "Goal" lconstr
 | WITH "Goal" type
-]
-
-syntax: [
-| REPLACE "Open" "Scope" IDENT
-| WITH "Open" "Scope" scope
-| REPLACE "Close" "Scope" IDENT
-| WITH "Close" "Scope" scope
-| REPLACE "Delimit" "Scope" IDENT; "with" IDENT
-| WITH "Delimit" "Scope" scope_name; "with" scope_key
-| REPLACE "Undelimit" "Scope" IDENT
-| WITH "Undelimit" "Scope" scope_name
-| REPLACE "Bind" "Scope" IDENT; "with" LIST1 coercion_class
-| WITH "Bind" "Scope" scope_name; "with" LIST1 coercion_class
-]
-
-opt_scope: [
-| REPLACE ":" IDENT
-| WITH    ":" scope_name
 ]
 
 syntax_modifier: [
@@ -1781,16 +1733,6 @@ search_item: [
 | REPLACE search_where ":" constr_pattern
 | WITH OPT ( search_where ":" ) constr_pattern
 | DELETE constr_pattern
-]
-
-by_notation: [
-| REPLACE ne_string OPT [ "%" IDENT ]
-| WITH ne_string OPT [ "%" scope_key ]
-]
-
-notation_declaration: [
-| REPLACE lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
-| WITH lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
 ]
 
 ltac_production_item: [

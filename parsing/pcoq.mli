@@ -143,6 +143,8 @@ module Prim :
     open Names
     open Libnames
     val preident : string Entry.t
+    val scope_name : string Entry.t
+    val scope_key : string Entry.t
     val ident : Id.t Entry.t
     val name : lname Entry.t
     val identref : lident Entry.t
