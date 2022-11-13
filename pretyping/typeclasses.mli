@@ -116,7 +116,7 @@ val no_goals_or_obligations : evar_filter
 
 val make_unresolvables : (Evar.t -> bool) -> evar_map -> evar_map
 
-val is_class_evar : evar_map -> evar_info -> bool
+val is_class_evar : evar_map -> undefined evar_info -> bool
 val is_class_type : evar_map -> EConstr.types -> bool
 
 val resolve_typeclasses : ?filter:evar_filter -> ?unique:bool ->

@@ -383,9 +383,9 @@ let check_evars env sigma extsigma origsigma =
                           (Evar.Map.domain (Evd.undefined_map origsigma))) in
   let rec is_undefined_up_to_restriction sigma evk =
     if Evd.mem origsigma evk then None else
-    let evi = Evd.find sigma evk in
+    let EvarInfo evi = Evd.find sigma evk in
     match Evd.evar_body evi with
-    | Evd.Evar_empty -> Some (evk,evi)
+    | Evd.Evar_empty -> Some (evk, Evd.EvarInfo evi)
     | Evd.Evar_defined c -> match Constr.kind (EConstr.Unsafe.to_constr c) with
       | Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
       | _ ->
@@ -407,7 +407,7 @@ let check_evars env sigma extsigma origsigma =
   in
   match rest with
   | [] -> ()
-  | (evk,evi) :: _ ->
+  | (evk, EvarInfo evi) :: _ ->
     let (loc,_) = Evd.evar_source evi in
     Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
 

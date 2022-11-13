@@ -241,7 +241,7 @@ let has_typeclasses filter evd =
 
 let get_filtered_typeclass_evars filter evd =
   let tcs = get_typeclass_evars evd in
-  let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find evd ev)))) in
+  let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find_undefined evd ev)))) in
   Evar.Set.filter check tcs
 
 let solve_all_instances_hook = ref (fun env evd filter unique split fail -> assert false)

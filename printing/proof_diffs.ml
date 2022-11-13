@@ -243,7 +243,7 @@ let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot 
     | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm)
 
 let make_goal env sigma g =
-  let evi = Evd.find sigma g in
+  let EvarInfo evi = Evd.find sigma g in
   let env = Evd.evar_filtered_env env evi in
   let ty  = Evd.evar_concl evi in
   { ty; env; sigma }

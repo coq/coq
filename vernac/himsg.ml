@@ -629,11 +629,11 @@ let rec explain_evar_kind env sigma evk ty =
       str " for the variable " ++ Id.print id
   | Evar_kinds.SubEvar (where,evk') ->
       let rec find_source evk =
-        let evi = Evd.find sigma evk in
+        let EvarInfo evi = Evd.find sigma evk in
         match snd (Evd.evar_source evi) with
         | Evar_kinds.SubEvar (_,evk) -> find_source evk
-        | src -> evi,src in
-      let evi,src = find_source evk' in
+        | src -> EvarInfo evi, src in
+      let EvarInfo evi, src = find_source evk' in
       let pc = match Evd.evar_body evi with
       | Evar_defined c -> pr_leconstr_env env sigma c
       | Evar_empty -> assert false in

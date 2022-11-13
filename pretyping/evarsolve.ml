@@ -273,7 +273,7 @@ let restrict_applied_evar evd (evk,argsv) filter candidates =
   let newargsv = match filter with
   | None -> (* optim *) argsv
   | Some filter ->
-      let evi = Evd.find evd evk in
+      let EvarInfo evi = Evd.find evd evk in
       let subfilter = Filter.compose (evar_filter evi) filter in
       Filter.filter_slist subfilter argsv in
   evd,(newevk,newargsv)
@@ -285,7 +285,7 @@ let restrict_evar evd evk filter candidates =
 (* Restrict an evar in the current evar_map *)
 let restrict_instance evd evk filter argsv =
   match filter with None -> argsv | Some filter ->
-  let evi = Evd.find evd evk in
+  let EvarInfo evi = Evd.find evd evk in
   Filter.filter_slist (Filter.compose (evar_filter evi) filter) argsv
 
 open Context.Rel.Declaration
@@ -617,7 +617,7 @@ let distinct_actual_deps env evd aliases l t =
 
 open Context.Named.Declaration
 let remove_instance_local_defs evd evk args =
-  let evi = Evd.find evd evk in
+  let EvarInfo evi = Evd.find evd evk in
   let rec aux sign args = match sign, args with
   | [], [] -> []
   | LocalAssum _ :: sign, c :: args -> c :: aux sign args
@@ -817,7 +817,8 @@ let define_evar_from_virtual_equation define_fun env evd src t_in_env ty_t_in_si
   let (evd, evk) = new_pure_evar sign evd ty_t_in_sign ~filter ~src in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd None (evk, inst_in_env) t_in_env in
-  let inst_in_sign = evar_identity_subst (Evd.find evd evk) in
+  let EvarInfo evi = Evd.find evd evk in
+  let inst_in_sign = evar_identity_subst evi in
   let evar_in_sign = mkEvar (evk, inst_in_sign) in
   (evd,whd_evar evd evar_in_sign)
 
@@ -894,7 +895,7 @@ let restrict_upon_filter evd evk p args =
   Filter.restrict_upon oldfullfilter len (fun i -> p (Array.unsafe_get args i))
 
 let check_evar_instance unify flags env evd evk1 body =
-  let evi = Evd.find evd evk1 in
+  let EvarInfo evi = Evd.find evd evk1 in
   let evenv = evar_env env evi in
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
@@ -959,7 +960,7 @@ let find_projectable_constructor env evd cstr k args cstr_subst =
 
 type evar_projection =
 | ProjectVar
-| ProjectEvar of EConstr.existential * evar_info * Id.t * evar_projection
+| ProjectEvar of EConstr.existential * undefined evar_info * Id.t * evar_projection
 
 exception NotUnique
 exception NotUniqueInType of (Id.t * evar_projection) list
@@ -1279,8 +1280,8 @@ let filter_compatible_candidates unify flags env evd evi args rhs c =
 exception DoesNotPreserveCandidateRestriction
 
 let restrict_candidates unify flags env evd filter1 (evk1,argsv1) (evk2,argsv2) =
-  let evi1 = Evd.find evd evk1 in
-  let evi2 = Evd.find evd evk2 in
+  let EvarInfo evi1 = Evd.find evd evk1 in
+  let EvarInfo evi2 = Evd.find evd evk2 in
   match Evd.evar_candidates evi1, Evd.evar_candidates evi2 with
   | _, None -> filter_candidates evd evk1 filter1 NoUpdate
   | None, Some _ -> raise DoesNotPreserveCandidateRestriction
@@ -1364,7 +1365,7 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
        from [env]. In particular its filter must be trivial. *)
     Int.equal (SList.length argsv2) (Range.length (Environ.named_context_val env).env_named_idx) &&
     SList.Skip.for_all (fun arg -> noccur_evar env evd evk2 arg && closed0 evd arg) argsv1 &&
-    Option.is_empty (Evd.evar_candidates (Evd.find evd evk2))
+    let EvarInfo evi2 = Evd.find evd evk2 in Option.is_empty (Evd.evar_candidates evi2)
   then
     evd, EConstr.mkEvar ev1
   else
@@ -1396,7 +1397,8 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
 
 let update_evar_info ev1 ev2 evd =
   (* We update the source of obligation evars during evar-evar unifications. *)
-  let loc, evs1 = evar_source (Evd.find evd ev1) in
+  let EvarInfo evi1 = Evd.find evd ev1 in
+  let loc, evs1 = evar_source evi1 in
   Evd.update_source evd ev2 (loc, evs1)
 
 let solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 (evk2,_ as ev2) =
@@ -1447,7 +1449,7 @@ let solve_evar_evar_aux force f unify flags env evd pbty (evk1,args1 as ev1) (ev
 (** Precondition: evk1 is not frozen *)
 let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let pbty = if force then None else pbty in
-  let evi = Evd.find evd evk1 in
+  let EvarInfo evi = Evd.find evd evk1 in
   let downcast evk t evd = downcast evk t evd in
   let evd =
     try
@@ -1455,7 +1457,7 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
          The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
       let evienv = Evd.evar_env env evi in
       let ctx1, i = Reductionops.dest_arity evienv evd (Evd.evar_concl evi) in
-      let evi2 = Evd.find evd evk2 in
+      let EvarInfo evi2 = Evd.find evd evk2 in
       let evi2env = Evd.evar_env env evi2 in
       let ctx2, j = Reductionops.dest_arity evi2env evd (Evd.evar_concl evi2) in
         if i == j || Evd.check_eq evd i j
@@ -1525,7 +1527,7 @@ exception NoCandidates
 exception IncompatibleCandidates of EConstr.t
 
 let solve_candidates unify flags env evd (evk,argsv) rhs =
-  let evi = Evd.find evd evk in
+  let EvarInfo evi = Evd.find evd evk in
   match Evd.evar_candidates evi with
   | None -> raise NoCandidates
   | Some l ->
@@ -1607,7 +1609,7 @@ exception MetaOccurInBodyInternal
 
 let rec invert_definition unify flags choose imitate_defs
                           env evd pbty (evk,argsv as ev) rhs =
-  let evi = Evd.find evd evk in
+  let EvarInfo evi = Evd.find evd evk in
   let sign = evar_filtered_context evi in
   let rhs = whd_beta env evd rhs (* heuristic *) in
   let fast =

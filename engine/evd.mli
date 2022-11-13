@@ -99,50 +99,55 @@ type evar_body =
   | Evar_empty
   | Evar_defined of econstr
 
-type evar_info
+type defined = [ `defined ]
+type undefined = [ `undefined ]
+
+type 'a evar_info
+
+type any_evar_info = EvarInfo : 'a evar_info -> any_evar_info
 
 (** {6 Projections from evar infos} *)
 
-val evar_concl : evar_info -> econstr
+val evar_concl : 'a evar_info -> econstr
 (** Type of the evar. *)
 
-val evar_context : evar_info -> (econstr, etypes) Context.Named.pt
+val evar_context : 'a evar_info -> (econstr, etypes) Context.Named.pt
 (** Context of the evar. *)
 
-val evar_hyps : evar_info -> named_context_val
+val evar_hyps : 'a evar_info -> named_context_val
 (** Context of the evar. *)
 
-val evar_body : evar_info -> evar_body
+val evar_body : 'a evar_info -> evar_body
 (** Optional content of the evar. *)
 
-val evar_candidates : evar_info -> econstr list option
+val evar_candidates : 'a evar_info -> econstr list option
 (** List of possible solutions when known that it is a finite list *)
 
-val evar_source : evar_info -> Evar_kinds.t located
+val evar_source : 'a evar_info -> Evar_kinds.t located
 
-val evar_filter : evar_info -> Filter.t
+val evar_filter : 'a evar_info -> Filter.t
 (** Boolean mask over {!evar_hyps}. Should have the same length.
     When filtered out, the corresponding variable is not allowed to occur
     in the solution *)
 
-val evar_abstract_arguments : evar_info -> Abstraction.t
+val evar_abstract_arguments : 'a evar_info -> Abstraction.t
 (** Boolean information over {!evar_hyps}, telling if an hypothesis instance
     can be imitated or should stay abstract in HO unification problems
     and inversion (see [second_order_matching_with_args] for its use). *)
 
-val evar_relevance : evar_info -> Sorts.relevance
+val evar_relevance : 'a evar_info -> Sorts.relevance
 (** Relevance of the conclusion of the evar. *)
 
 (** {6 Derived projections} *)
 
-val evar_filtered_context : evar_info -> (econstr, etypes) Context.Named.pt
-val evar_filtered_hyps : evar_info -> named_context_val
-val evar_env : env -> evar_info -> env
-val evar_filtered_env : env -> evar_info -> env
-val evar_identity_subst : evar_info -> econstr SList.t
+val evar_filtered_context : 'a evar_info -> (econstr, etypes) Context.Named.pt
+val evar_filtered_hyps : 'a evar_info -> named_context_val
+val evar_env : env -> 'a evar_info -> env
+val evar_filtered_env : env -> 'a evar_info -> env
+val evar_identity_subst : 'a evar_info -> econstr SList.t
 
 val map_evar_body : (econstr -> econstr) -> evar_body -> evar_body
-val map_evar_info : (econstr -> econstr) -> evar_info -> evar_info
+val map_evar_info : (econstr -> econstr) -> 'a evar_info -> 'a evar_info
 
 (** {6 Unification state} **)
 
@@ -198,14 +203,14 @@ val new_pure_evar :
   @param types The type of conclusion of the evar
 *)
 
-val add : evar_map -> Evar.t -> evar_info -> evar_map
+val add : evar_map -> Evar.t -> 'a evar_info -> evar_map
 (** [add sigma ev info] adds [ev] with evar info [info] in sigma.
     Precondition: ev must not preexist in [sigma]. *)
 
-val find : evar_map -> Evar.t -> evar_info
+val find : evar_map -> Evar.t -> any_evar_info
 (** Recover the data associated to an evar. *)
 
-val find_undefined : evar_map -> Evar.t -> evar_info
+val find_undefined : evar_map -> Evar.t -> undefined evar_info
 (** Same as {!find} but restricted to undefined evars. For efficiency
     reasons. *)
 
@@ -218,20 +223,22 @@ val undefine : evar_map -> Evar.t -> evar_map [@@ocaml.deprecated]
 val mem : evar_map -> Evar.t -> bool
 (** Whether an evar is present in an evarmap. *)
 
-val fold : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+val fold : (Evar.t -> any_evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 (** Apply a function to all evars and their associated info in an evarmap. *)
 
-val fold_undefined : (Evar.t -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+val fold_undefined : (Evar.t -> undefined evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 (** Same as {!fold}, but restricted to undefined evars. For efficiency
     reasons. *)
 
-val raw_map : (Evar.t -> evar_info -> evar_info) -> evar_map -> evar_map
+type map = { map : 'r. Evar.t -> 'r evar_info -> 'r evar_info }
+
+val raw_map : map -> evar_map -> evar_map
 (** Apply the given function to all evars in the map. Beware: this function
     expects the argument function to preserve the kind of [evar_body], i.e. it
     must send [Evar_empty] to [Evar_empty] and [Evar_defined c] to some
     [Evar_defined c']. *)
 
-val raw_map_undefined : (Evar.t -> evar_info -> evar_info) -> evar_map -> evar_map
+val raw_map_undefined : (Evar.t -> undefined evar_info -> undefined evar_info) -> evar_map -> evar_map
 (** Same as {!raw_map}, but restricted to undefined evars. For efficiency
     reasons. *)
 
@@ -262,7 +269,7 @@ val is_undefined : evar_map -> Evar.t-> bool
 val add_constraints : evar_map -> Univ.Constraints.t -> evar_map
 (** Add universe constraints in an evar map. *)
 
-val undefined_map : evar_map -> evar_info Evar.Map.t
+val undefined_map : evar_map -> undefined evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
 val drop_all_defined : evar_map -> evar_map
@@ -299,7 +306,7 @@ val expand_existential : evar_map -> econstr pexistential -> econstr list
 
 val expand_existential0 : evar_map -> constr pexistential -> constr list
 
-val instantiate_evar_array : evar_map -> evar_info -> econstr -> econstr SList.t -> econstr
+val instantiate_evar_array : evar_map -> 'a evar_info -> econstr -> econstr SList.t -> econstr
 
 (** {6 Misc} *)
 
@@ -562,7 +569,7 @@ val evars_of_term : evar_map -> econstr -> Evar.Set.t
 
 val evars_of_named_context : evar_map -> (econstr, etypes) Context.Named.pt -> Evar.Set.t
 
-val evars_of_filtered_evar_info : evar_map -> evar_info -> Evar.Set.t
+val evars_of_filtered_evar_info : evar_map -> 'a evar_info -> Evar.Set.t
 
 (** Metas *)
 val meta_list : evar_map -> clbinding Metamap.t

@@ -232,7 +232,9 @@ let nf_open_term sigma0 ise c =
       s' := Evd.add !s' k (Evarutil.nf_evar_info ise (Evd.find_undefined ise k));
     mkEvar (k, a')
   | _ -> map ise nf c' in
-  let copy_def k _ () = match Evd.evar_body (Evd.find ise k) with
+  let copy_def k _ () =
+  let EvarInfo evi = Evd.find ise k in
+  match Evd.evar_body evi with
   | Evar_defined c' ->
     let c' = nf c' in
     s' := Evd.define k c' !s'
@@ -1080,7 +1082,8 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
       let name = ref None in
       try ignore(Context.Named.lookup x ctx); (name, fun k ->
         if !name = None then
-        let nctx = Evd.evar_context (Evd.find sigma k) in
+        let EvarInfo evi = Evd.find sigma k in
+        let nctx = Evd.evar_context evi in
         let nlen = Context.Named.length nctx in
         if nlen > len then begin
           name := Some (Context.Named.Declaration.get_id (List.nth nctx (nlen - len - 1)))
@@ -1193,7 +1196,7 @@ let eval_pattern ?raise_NoMatch env0 sigma0 concl0 pattern occ (do_subst : subst
   let rigid ev = Evd.mem sigma0 ev in
   let fs sigma x = Reductionops.nf_evar sigma x in
   let pop_evar sigma e p =
-    let e_def = Evd.find sigma e in
+    let EvarInfo e_def = Evd.find sigma e in
     let e_body = match Evd.evar_body e_def with Evar_defined c -> c
     | _ -> errorstrm (str "Matching the pattern " ++ pr_econstr_env env0 sigma0 p ++
           str " did not instantiate ?" ++ int (Evar.repr e) ++ spc () ++

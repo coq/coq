@@ -1514,7 +1514,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                 env_evar_unf evd evty
             else evd, evty in
           let (evd, evk) = new_pure_evar sign evd evty ~filter in
-          let instance = Evd.evar_identity_subst (Evd.find evd evk) in
+          let EvarInfo evi = Evd.find evd evk in
+          let instance = Evd.evar_identity_subst evi in
           let fixed = Evar.Set.add evk fixed in
           evsref := (evk,evty,inst,prefer_abstraction)::!evsref;
           evd, fixed, mkEvar (evk, instance)
@@ -1571,7 +1572,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
          let candidates = [inst; vid] in
            try
              let evd, ev = Evarutil.restrict_evar evd evk (Evd.evar_filter evi) (Some candidates) in
-             let evi = Evd.find evd ev in
+             let EvarInfo evi = Evd.find evd ev in
                (match evar_candidates evi with
                | Some [t] ->
                  if not (noccur_evar env_rhs evd ev t) then
@@ -1585,7 +1586,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
               user_err (Pp.str "Cannot find an instance.")
          else
            ((debug_ho_unification (fun () ->
-               let evi = Evd.find evd evk in
+               let EvarInfo evi = Evd.find evd evk in
                let env = Evd.evar_env env_rhs evi in
                Pp.(str"evar is defined: " ++
                  int (Evar.repr evk) ++ spc () ++
@@ -1601,7 +1602,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
            instantiate evk itself. *)
        (debug_ho_unification (fun () ->
           begin
-            let evi = Evd.find evd evk in
+            let EvarInfo evi = Evd.find evd evk in
             let evenv = evar_env env_rhs evi in
             let body = match evar_body evi with Evar_empty -> assert false | Evar_defined c -> c in
             Pp.(str"evar was defined already as: " ++ prc evenv evd body)
@@ -1749,7 +1750,7 @@ let check_problems_are_solved env evd =
   | (pbty,env,t1,t2) as pb::_ -> error_cannot_unify env evd pb t1 t2
   | _ -> ()
 
-exception MaxUndefined of (Evar.t * evar_info * EConstr.t list)
+exception MaxUndefined of (Evar.t * undefined evar_info * EConstr.t list)
 
 let max_undefined_with_candidates evd =
   let fold evk evi () = match Evd.evar_candidates evi with

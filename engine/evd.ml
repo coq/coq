@@ -209,7 +209,10 @@ type evar_body =
   | Evar_empty
   | Evar_defined of constr
 
-type evar_info = {
+type defined = [ `defined ]
+type undefined = [ `undefined ]
+
+type evar_info0 = {
   evar_concl : constr;
   evar_hyps : named_context_val;
   evar_body : evar_body;
@@ -219,6 +222,10 @@ type evar_info = {
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_relevance: Sorts.relevance;
 }
+
+type 'a evar_info = evar_info0
+
+type any_evar_info = EvarInfo : 'a evar_info -> any_evar_info
 
 let instance_mismatch () =
   anomaly (Pp.str "Signature and its instance do not match.")
@@ -412,7 +419,7 @@ sig
 type t
 
 val empty : t
-val add_name_undefined : Id.t option -> Evar.t -> evar_info -> t -> t
+val add_name_undefined : Id.t option -> Evar.t -> 'a evar_info -> t -> t
 val remove_name_defined : Evar.t -> t -> t
 val rename : Evar.t -> Id.t -> t -> t
 val reassign_name_defined : Evar.t -> Evar.t -> t -> t
@@ -623,8 +630,8 @@ end
 
 type evar_map = {
   (* Existential variables *)
-  defn_evars : evar_info EvMap.t;
-  undf_evars : evar_info EvMap.t;
+  defn_evars : defined evar_info EvMap.t;
+  undf_evars : undefined evar_info EvMap.t;
   evar_names : EvNames.t;
   (** Universes *)
   universes  : UState.t;
@@ -644,8 +651,8 @@ type evar_map = {
 }
 
 let find d e =
-  try EvMap.find e d.undf_evars
-  with Not_found -> EvMap.find e d.defn_evars
+  try EvarInfo (EvMap.find e d.undf_evars)
+  with Not_found -> EvarInfo (EvMap.find e d.defn_evars)
 
 let rec thin_val = function
   | [] -> []
@@ -674,7 +681,7 @@ let replace_vars sigma var_alist x =
       | exception Not_found -> c
       end
     | Constr.Evar (evk, args) ->
-      let evi = find sigma evk in
+      let EvarInfo evi = find sigma evk in
       let args' = substrec_instance n (evar_filtered_context evi) args in
       if args' == args then c
       else Constr.mkEvar (evk, args')
@@ -706,7 +713,7 @@ let instantiate_evar_array sigma info c args =
   | _ -> replace_vars sigma inst c
 
 let expand_existential sigma (evk, args) =
-  let evi = find sigma evk in
+  let EvarInfo evi = find sigma evk in
   let rec expand ctx args = match ctx, SList.view args with
   | [], None -> []
   | _ :: ctx, Some (Some c, args) -> c :: expand ctx args
@@ -814,7 +821,7 @@ let remove d e =
            evar_flags }
 
 let undefine sigma e =
-  let evi = find sigma e in
+  let EvarInfo evi = find sigma e in
   add (remove sigma e) e { evi with evar_body = Evar_empty }
 
 let find_undefined d e = EvMap.find e d.undf_evars
@@ -828,13 +835,16 @@ let drop_all_defined d = { d with defn_evars = EvMap.empty }
 (* spiwack: not clear what folding over an evar_map, for now we shall
     simply fold over the inner evar_map. *)
 let fold f d a =
+  let f evk evi accu = f evk (EvarInfo evi) accu in
   EvMap.fold f d.defn_evars (EvMap.fold f d.undf_evars a)
 
 let fold_undefined f d a = EvMap.fold f d.undf_evars a
 
+type map = { map : 'r. Evar.t -> 'r evar_info -> 'r evar_info }
+
 let raw_map f d =
   let f evk info =
-    let ans = f evk info in
+    let ans = f.map evk info in
     let () = match info.evar_body, ans.evar_body with
     | Evar_defined _, Evar_empty
     | Evar_empty, Evar_defined _ ->
@@ -888,7 +898,7 @@ let existential_expand_value0 sigma (evk, args) = match existential_opt_value si
 | Some c -> Constr.EvarDefined c
 
 let mkLEvar sigma (evk, args) =
-  let evi = find sigma evk in
+  let EvarInfo evi = find sigma evk in
   let fold decl arg accu =
     if isVarId (NamedDecl.get_id decl) arg then SList.default accu
     else SList.cons arg accu
@@ -899,14 +909,14 @@ let mkLEvar sigma (evk, args) =
 let evar_handler sigma =
   let evar_expand ev = existential_expand_value0 sigma ev in
   let evar_relevance (evk, _) = match find sigma evk with
-  | evi -> evi.evar_relevance
+  | EvarInfo evi -> evi.evar_relevance
   | exception Not_found -> Sorts.Relevant
   in
   let evar_repack ev = mkLEvar sigma ev in
   { evar_expand; evar_relevance; evar_repack }
 
 let existential_type d (n, args) =
-  let info =
+  let EvarInfo info =
     try find d n
     with Not_found ->
       anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared.") in
@@ -1029,10 +1039,14 @@ let extract_all_conv_pbs evd =
 
 let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind (fst (decompose_app t1)) with
-  | Evar (evk1,_) -> fst (evar_source (find evd evk1))
+  | Evar (evk1,_) ->
+    let EvarInfo evi = find evd evk1 in
+    fst (evar_source evi)
   | _ ->
   match kind (fst (decompose_app t2)) with
-  | Evar (evk2,_) -> fst (evar_source (find evd evk2))
+  | Evar (evk2,_) ->
+    let EvarInfo evi = find evd evk2 in
+    fst (evar_source evi)
   | _             -> None
 
 (**********************************************************)
@@ -1509,7 +1523,7 @@ let retract_coercible_metas evd =
   !mc, set_metas evd metas
 
 let dependent_evar_ident ev evd =
-  let evi = find evd ev in
+  let EvarInfo evi = find evd ev in
   match evi.evar_source with
   | (_,Evar_kinds.VarInstance id) -> id
   | _ -> anomaly (str "Not an evar resulting of a dependent binding.")

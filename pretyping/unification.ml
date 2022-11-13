@@ -70,7 +70,8 @@ let occur_meta_or_undefined_evar evd c =
   let rec occrec c = match Constr.kind c with
     | Meta _ -> raise Occur
     | Evar (ev,args) ->
-        (match evar_body (Evd.find evd ev) with
+      let EvarInfo evi = Evd.find evd ev in
+        (match evar_body evi with
         | Evar_defined c ->
             occrec (EConstr.Unsafe.to_constr c); SList.Skip.iter occrec args
         | Evar_empty -> raise Occur)

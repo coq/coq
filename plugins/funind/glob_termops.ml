@@ -547,7 +547,7 @@ let expand_as =
 (* [resolve_and_replace_implicits ?expected_type env sigma rt] solves implicits of [rt] w.r.t. [env] and [sigma] and then replace them by their solution
  *)
 
-exception Found of Evd.evar_info
+exception Found of Evd.any_evar_info
 
 let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
     ?(expected_type = Pretyping.WithoutTypeConstraint) env sigma rt =
@@ -574,18 +574,18 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
 
         (* we scan the new evar map to find the evar corresponding to this hole (by looking the source *)
         Evd.fold (* to simulate an iter *)
-          (fun _ evi _ ->
+          (fun _ (EvarInfo evi) _ ->
             match Evd.evar_source evi with
             | loc_evi, ImplicitArg (gr_evi, p_evi, b_evi) ->
               if
                 GlobRef.equal grk gr_evi && pk = p_evi && bk = b_evi
                 && rt.CAst.loc = loc_evi
-              then raise (Found evi)
+              then raise (Found (EvarInfo evi))
             | _ -> ())
           ctx ();
         (* the hole was not solved : we do nothing *)
         rt
-      with Found evi -> (
+      with Found (EvarInfo evi) -> (
         (* we found the evar corresponding to this hole *)
         match Evd.evar_body evi with
         | Evar_defined c ->
@@ -598,16 +598,16 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
         try
           (* we scan the new evar map to find the evar corresponding to this hole (by looking the source *)
           Evd.fold (* to simulate an iter *)
-            (fun _ evi _ ->
+            (fun _ (EvarInfo evi) _ ->
               match Evd.evar_source evi with
               | loc_evi, BinderType na' ->
                 if Name.equal na na' && rt.CAst.loc = loc_evi then
-                  raise (Found evi)
+                  raise (Found (EvarInfo evi))
               | _ -> ())
             ctx ();
           (* the hole was not solved : we do nothing *)
           rt
-        with Found evi -> (
+        with Found (EvarInfo evi) -> (
           (* we found the evar corresponding to this hole *)
           match Evd.evar_body evi with
           | Evar_defined c ->

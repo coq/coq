@@ -378,7 +378,8 @@ let map_instance sigma f evk args =
     else SList.cons c' rem'
   | [], Some _ | _ :: _, None -> assert false
   in
-  let ctx = Evd.evar_filtered_context @@ Evd.find sigma evk in
+  let EvarInfo evi = Evd.find sigma evk in
+  let ctx = Evd.evar_filtered_context evi in
   map ctx args
 
 let map sigma f c =
