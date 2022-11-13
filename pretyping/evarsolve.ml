@@ -894,8 +894,7 @@ let restrict_upon_filter evd evk p args =
   let len = Array.length args in
   Filter.restrict_upon oldfullfilter len (fun i -> p (Array.unsafe_get args i))
 
-let check_evar_instance unify flags env evd evk1 body =
-  let EvarInfo evi = Evd.find evd evk1 in
+let check_evar_instance_evi unify flags env evd evi body =
   let evenv = evar_env env evi in
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
@@ -907,6 +906,10 @@ let check_evar_instance unify flags env evd evk1 body =
   match unify flags TypeUnification evenv evd Reduction.CUMUL ty (Evd.evar_concl evi) with
   | Success evd -> evd
   | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,ty, Evd.evar_concl evi))
+
+let check_evar_instance unify flags env evd evk body =
+  let evi = try Evd.find_undefined evd evk with Not_found -> assert false in
+  check_evar_instance_evi unify flags env evd evi body
 
 (***************)
 (* Unification *)
@@ -1404,13 +1407,14 @@ let update_evar_info ev1 ev2 evd =
 let solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 (evk2,_ as ev2) =
   try
     let evd,body = project_evar_on_evar force unify flags env evd aliases 0 pbty ev1 ev2 in
-    let evd' = Evd.define_with_evar evk2 body evd in
-    let evd' =
+    let evd =
       if is_obligation_evar evd evk2 then
-        update_evar_info evk2 (fst (destEvar evd' body)) evd'
-      else evd'
+        update_evar_info evk2 (fst (destEvar evd body)) evd
+      else evd
     in
-    check_evar_instance unify flags env evd' evk2 body
+    let evi = Evd.find_undefined evd evk2 in
+    let evd' = Evd.define_with_evar evk2 body evd in
+    check_evar_instance_evi unify flags env evd' evi body
   with EvarSolvedOnTheFly (evd,c) ->
     f env evd pbty ev2 c
 
@@ -1449,7 +1453,7 @@ let solve_evar_evar_aux force f unify flags env evd pbty (evk1,args1 as ev1) (ev
 (** Precondition: evk1 is not frozen *)
 let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   let pbty = if force then None else pbty in
-  let EvarInfo evi = Evd.find evd evk1 in
+  let evi = Evd.find_undefined evd evk1 in
   let downcast evk t evd = downcast evk t evd in
   let evd =
     try
@@ -1457,7 +1461,7 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
          The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
       let evienv = Evd.evar_env env evi in
       let ctx1, i = Reductionops.dest_arity evienv evd (Evd.evar_concl evi) in
-      let EvarInfo evi2 = Evd.find evd evk2 in
+      let evi2 = Evd.find_undefined evd evk2 in
       let evi2env = Evd.evar_env env evi2 in
       let ctx2, j = Reductionops.dest_arity evi2env evd (Evd.evar_concl evi2) in
         if i == j || Evd.check_eq evd i j
@@ -1728,8 +1732,9 @@ let rec invert_definition unify flags choose imitate_defs
              (* Try now to invert args in terms of args' *)
             try
               let evd,body = project_evar_on_evar false unify flags env' evd aliases 0 None ev'' ev' in
+              let evi = Evd.find_undefined evd evk' in
               let evd = Evd.define evk' body evd in
-                check_evar_instance unify flags env' evd evk' body
+                check_evar_instance_evi unify flags env' evd evi body
             with
             | EvarSolvedOnTheFly _ -> assert false (* ev has no candidates *)
             | CannotProject (evd,ev'') ->

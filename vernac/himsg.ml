@@ -637,7 +637,10 @@ let rec explain_evar_kind env sigma evk ty =
       let pc = match Evd.evar_body evi with
       | Evar_defined c -> pr_leconstr_env env sigma c
       | Evar_empty -> assert false in
-      let ty' = Evd.evar_concl evi in
+      let ty' = match Evd.evar_body evi with
+      | Evar_empty -> Evd.evar_concl evi
+      | Evar_defined b -> Retyping.get_type_of env sigma b
+      in
       pr_existential_key env sigma evk ++
       strbrk " in the partial instance " ++ pc ++
       strbrk " found for " ++

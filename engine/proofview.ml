@@ -891,8 +891,15 @@ module Progress = struct
     | Evar_defined t1, Evar_defined t2 -> eq_constr sigma1 sigma2 t1 t2
     | _ -> false
 
+  let eq_evar_concl (type a1 a2) sigma1 sigma2 (e1 : a1 Evd.evar_info) (e2 : a2 Evd.evar_info) =
+    let open Evd in
+    match Evd.evar_body e1, Evd.evar_body e2 with
+    | Evar_empty, Evar_empty -> eq_constr sigma1 sigma2 (Evd.evar_concl e1) (Evd.evar_concl e2)
+    | Evar_defined _, Evar_defined _ -> true
+    | _ -> false
+
   let eq_evar_info sigma1 sigma2 ei1 ei2 =
-    eq_constr sigma1 sigma2 (Evd.evar_concl ei1) (Evd.evar_concl ei2) &&
+    eq_evar_concl sigma1 sigma2 ei1 ei2 &&
     eq_named_context_val sigma1 sigma2 (Evd.evar_hyps ei1) (Evd.evar_hyps ei2) &&
     eq_evar_body sigma1 sigma2 (Evd.evar_body ei1) (Evd.evar_body ei2)
 
@@ -1087,7 +1094,7 @@ module Goal = struct
   let gmake env sigma goal =
     let state = get_state goal in
     let goal = drop_state goal in
-    let EvarInfo info = Evd.find sigma goal in
+    let info = Evd.find_undefined sigma goal in
     gmake_with info env sigma goal state
 
   let enter f =
@@ -1124,10 +1131,21 @@ module Goal = struct
       match cleared_alias sigma goal with
       | None -> None (* ppedrot: Is this check really necessary? *)
       | Some goal ->
+        let oinfo = Evd.find_undefined sigma (drop_state goal) in
         let gl =
           Env.get >>= fun env ->
           tclEVARMAP >>= fun sigma ->
-          tclUNIT (gmake env sigma goal)
+          let state = get_state goal in
+          let goal = drop_state goal in
+          let EvarInfo info = Evd.find sigma goal in
+          let goal = {
+            env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
+            sigma = sigma ;
+            concl = Evd.evar_concl oinfo;
+            state = state;
+            self = goal;
+          } in
+          tclUNIT goal
         in
         Some gl
     in

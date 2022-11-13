@@ -720,10 +720,9 @@ let filtered_undefined_evars_of_evar_info (type a) ?cache sigma (evi : a evar_in
     Context.Named.fold_outside fold nc ~init:accu
   in
   let accu = match Evd.evar_body evi with
-  | Evar_empty -> Evar.Set.empty
+  | Evar_empty -> undefined_evars_of_term sigma (Evd.evar_concl evi)
   | Evar_defined b -> evars_of_term sigma b
   in
-  let accu = Evar.Set.union (undefined_evars_of_term sigma (Evd.evar_concl evi)) accu in
   let ctxt = EConstr.Unsafe.to_named_context (evar_filtered_context evi) in
   evars_of_named_context cache accu ctxt
 

@@ -108,7 +108,7 @@ type any_evar_info = EvarInfo : 'a evar_info -> any_evar_info
 
 (** {6 Projections from evar infos} *)
 
-val evar_concl : 'a evar_info -> econstr
+val evar_concl : undefined evar_info -> econstr
 (** Type of the evar. *)
 
 val evar_context : 'a evar_info -> (econstr, etypes) Context.Named.pt

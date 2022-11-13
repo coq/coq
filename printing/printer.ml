@@ -471,7 +471,12 @@ let pr_transparent_state ts =
 
 let goal_repr sigma g =
   let EvarInfo evi = Evd.find sigma g in
-  Evd.evar_filtered_env (Global.env ()) evi, Evd.evar_concl evi
+  let env = Evd.evar_filtered_env (Global.env ()) evi in
+  let concl = match Evd.evar_body evi with
+  | Evd.Evar_empty -> Evd.evar_concl evi
+  | Evd.Evar_defined b -> Retyping.get_type_of env sigma b
+  in
+  env, concl
 
 (* display complete goal
  og_s has goal+sigma on the previous proof step for diffs
@@ -538,7 +543,11 @@ let pr_evgl_sign (type a) env sigma (evi : a evar_info) =
     if List.is_empty ids then mt () else
       (str " (" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
-  let pc = pr_leconstr_env env sigma (Evd.evar_concl evi) in
+  let concl = match Evd.evar_body evi with
+  | Evar_empty -> Evd.evar_concl evi
+  | Evar_defined b -> Retyping.get_type_of env sigma b (* FIXME ? *)
+  in
+  let pc = pr_leconstr_env env sigma concl in
   let candidates =
     match Evd.evar_body evi, Evd.evar_candidates evi with
     | Evar_empty, Some l ->
@@ -681,7 +690,11 @@ let process_dependent_evar q acc evm is_dependent e =
   let EvarInfo evi = Evd.find evm e in
   (* Queues evars appearing in the types of the goal (conclusion, then
      hypotheses), they are all dependent. *)
-  queue_term q true (Evd.evar_concl evi);
+  let () = match Evd.evar_body evi with
+  | Evar_empty ->
+    queue_term q true (Evd.evar_concl evi)
+  | Evar_defined b -> ()
+  in
   List.iter begin fun decl ->
     let open NamedDecl in
     queue_term q true (NamedDecl.get_type decl);
