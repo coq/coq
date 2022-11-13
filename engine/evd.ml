@@ -1410,14 +1410,6 @@ let set_metas evd metas = {
 
 let meta_list evd = evd.metas
 
-let undefined_metas evd =
-  let fold n b accu = match b with
-  | Clval(_,_,typ) -> accu
-  | Cltyp (_,typ)  -> n :: accu
-  in
-  let m = Metamap.fold fold evd.metas [] in
-  List.sort Int.compare m
-
 let map_metas_fvalue f evd =
   let map = function
   | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)

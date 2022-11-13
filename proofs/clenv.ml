@@ -230,6 +230,14 @@ let dependent_closure clenv mvs =
       mvs acc in
   aux mvs mvs
 
+let undefined_metas evd =
+  let fold n b accu = match b with
+  | Clval(_,_,typ) -> accu
+  | Cltyp (_,typ)  -> n :: accu
+  in
+  let m = Metamap.fold fold (Evd.meta_list evd) [] in
+  List.sort Int.compare m
+
 let clenv_dependent_gen hyps_only ?(iter=true) clenv =
   let all_undefined = undefined_metas clenv.evd in
   let deps_in_concl = (mk_freelisted (clenv_type clenv)).freemetas in
