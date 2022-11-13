@@ -138,7 +138,7 @@ let show_intro ~proof all =
   let open EConstr in
   let Proof.{goals;sigma} = Proof.data proof in
   if not (List.is_empty goals) then begin
-    let evi = Evd.find sigma (List.hd goals) in
+    let evi = Evd.find_undefined sigma (List.hd goals) in
     let env = Evd.evar_filtered_env (Global.env ()) evi in
     let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (Evd.evar_concl evi)) in
     if all then
@@ -591,7 +591,7 @@ let check_name_freshness locality {CAst.loc;v=id} : unit =
 
 let program_inference_hook env sigma ev =
   let tac = !Declare.Obls.default_tactic in
-  let evi = Evd.find sigma ev in
+  let evi = Evd.find_undefined sigma ev in
   let evi = Evarutil.nf_evar_info sigma evi in
   let env = Evd.evar_filtered_env env evi in
   try
@@ -2091,7 +2091,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
             Failure _ -> user_err ?loc
                           (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
-    let hyps = Evd.evar_filtered_context (Evd.find sigma ev) in
+    let hyps = Evd.evar_filtered_context (Evd.find_undefined sigma ev) in
     let decl = Context.Named.lookup id hyps in
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"

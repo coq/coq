@@ -1021,7 +1021,7 @@ let interp_term env sigma = function
 
 let thin id sigma goal =
   let ids = Id.Set.singleton id in
-  let evi = Evd.find sigma goal in
+  let evi = Evd.find_undefined sigma goal in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let cl = Evd.evar_concl evi in
   let ans =
@@ -1036,7 +1036,7 @@ let thin id sigma goal =
     in
     let sigma = Evd.remove_future_goal sigma evk in
     let id = Evd.evar_ident goal sigma in
-    let proof = EConstr.mkEvar (evk, Evd.evar_identity_subst @@ Evd.find sigma evk) in
+    let proof = EConstr.mkEvar (evk, Evd.evar_identity_subst @@ Evd.find_undefined sigma evk) in
     let sigma = Evd.define goal proof sigma in
     match id with
     | None -> sigma

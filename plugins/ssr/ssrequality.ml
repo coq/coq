@@ -444,7 +444,7 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
           let evs = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma t) in
           let open_evs = List.filter (fun k ->
             Sorts.InProp <> Retyping.get_sort_family_of
-              env sigma (Evd.evar_concl (Evd.find sigma k)))
+              env sigma (Evd.evar_concl (Evd.find_undefined sigma k)))
             evs in
           if open_evs <> [] then Some name else None)
           (List.combine (Array.to_list args) names)

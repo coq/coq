@@ -842,7 +842,7 @@ and detype_r d flags avoid env sigma t =
           | None -> Termops.evar_suggested_name (snd env) sigma evk
           | Some id -> id
           in
-          let info = Evd.find sigma evk in
+          let info = Evd.find_undefined sigma evk in
           let cl = Evd.expand_existential sigma (evk, cl) in
           let ctx = Evd.evar_filtered_context info in
           let get_instance f =

@@ -235,7 +235,7 @@ let no_goals_or_obligations _ source =
 
 let has_typeclasses filter evd =
   let tcs = get_typeclass_evars evd in
-  let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find evd ev)))) in
+  let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find_undefined evd ev)))) in
   Evar.Set.exists check tcs
 
 let get_filtered_typeclass_evars filter evd =

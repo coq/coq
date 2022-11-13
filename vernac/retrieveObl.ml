@@ -167,7 +167,7 @@ let evar_dependencies evm oev =
   let one_step deps =
     Evar.Set.fold
       (fun ev s ->
-        let evi = Evd.find evm ev in
+        let evi = Evd.find_undefined evm ev in
         let deps' = Evd.evars_of_filtered_evar_info evm evi in
         if Evar.Set.mem oev deps' then
           invalid_arg
@@ -241,7 +241,7 @@ let retrieve_obligations env name evm fs ?deps ?status t ty =
           | Some t -> (t, trunc_named_context fs hyps, fs)
           | None -> (evtyp, hyps, 0)
         in
-        let loc, k = Evd.evar_source (Evd.find evm id) in
+        let loc, k = Evd.evar_source (Evd.find_undefined evm id) in
         let status =
           match k with
           | Evar_kinds.QuestionMark {Evar_kinds.qm_obligation = o} -> o

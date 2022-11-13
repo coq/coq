@@ -26,7 +26,7 @@ let extract_prefix env info =
   share ctx1 ctx2 []
 
 let typecheck_evar ev env sigma =
-  let info = Evd.find sigma ev in
+  let info = Evd.find_undefined sigma ev in
   (* Typecheck the hypotheses. *)
   let type_hyp (sigma, env) decl =
     let t = NamedDecl.get_type decl in

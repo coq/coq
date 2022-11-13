@@ -639,7 +639,7 @@ let shelve_goals l =
     as an existential variable in the definition of the goal [tgt] in
     [sigma]. *)
 let depends_on sigma src tgt =
-  let evi = Evd.find sigma tgt in
+  let evi = Evd.find_undefined sigma tgt in
   Evar.Set.mem src (Evd.evars_of_filtered_evar_info sigma (Evarutil.nf_evar_info sigma evi))
 
 let unifiable_delayed g l =

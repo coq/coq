@@ -459,7 +459,7 @@ let add_unification_pb ?(tail=false) pb evd =
    the de Bruijn part of the context *)
 let generalize_evar_over_rels sigma (ev,args) =
   let open EConstr in
-  let evi = Evd.find sigma ev in
+  let evi = Evd.find_undefined sigma ev in
   let args = Evd.expand_existential sigma (ev, args) in
   let sign = named_context_of_val (Evd.evar_hyps evi) in
   List.fold_left2

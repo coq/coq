@@ -111,7 +111,7 @@ let set_typeclasses_strategy = function
   | Bfs -> Goptions.set_bool_option_value iterative_deepening_opt_name true
 
 let pr_ev evs ev =
-  let evi = Evd.find evs ev in
+  let evi = Evd.find_undefined evs ev in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   Printer.pr_econstr_env env evs (Evd.evar_concl evi)
 
@@ -385,12 +385,12 @@ let top_sort evm undefs =
       tosee := Evar.Set.remove ev !tosee;
       Evar.Set.iter (fun ev ->
         if Evar.Set.mem ev !tosee then
-          visit ev (Evd.find evm ev)) evs;
+          visit ev (Evd.find_undefined evm ev)) evs;
       l' := ev :: !l';
   in
     while not (Evar.Set.is_empty !tosee) do
       let ev = Evar.Set.choose !tosee in
-        visit ev (Evd.find evm ev)
+        visit ev (Evd.find_undefined evm ev)
     done;
     List.rev !l'
 
@@ -1127,7 +1127,7 @@ let is_inference_forced p evd ev =
   try
     if Evar.Set.mem ev (Evd.get_typeclass_evars evd) && p ev
     then
-      let (loc, k) = evar_source (Evd.find evd ev) in
+      let (loc, k) = evar_source (Evd.find_undefined evd ev) in
       match k with
         | Evar_kinds.ImplicitArg (_, _, b) -> b
         | Evar_kinds.QuestionMark _ -> false
@@ -1145,7 +1145,7 @@ let is_mandatory p comp evd =
 let select_and_update_evars p oevd in_comp evd ev =
   try
     if Evd.is_typeclass_evar oevd ev then
-      (in_comp ev && p evd ev (Evd.find evd ev))
+      (in_comp ev && p evd ev (Evd.find_undefined evd ev))
     else false
   with Not_found -> false
 
@@ -1317,5 +1317,5 @@ let autoapply c i =
   Clenv.res_pf ~with_evars:true ~with_classes:false ~flags ce <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables
-          (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.evar_source (Evd.find sigma ev))))) sigma in
+          (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.evar_source (Evd.find_undefined sigma ev))))) sigma in
       Proofview.Unsafe.tclEVARS sigma) end
