@@ -160,14 +160,16 @@ let clenv_assign mv rhs clenv =
   if Metaset.exists (mentions clenv mv) rhs_fls.freemetas then
     user_err Pp.(str "clenv_assign: circularity in unification");
   try
-    if meta_defined clenv.evd mv then
-      if not (EConstr.eq_constr clenv.evd (fst (meta_fvalue clenv.evd mv)).rebus rhs) then
+    begin match meta_opt_fvalue clenv.evd mv with
+    | Some (body, _) ->
+      if not (EConstr.eq_constr clenv.evd body.rebus rhs) then
         error_incompatible_inst clenv mv
       else
         clenv
-    else
+    | None ->
       let st = (Conv,TypeNotProcessed) in
       update_clenv_evd clenv (meta_assign mv (rhs_fls.rebus,st) clenv.evd)
+    end
   with Not_found ->
     user_err Pp.(str "clenv_assign: undefined meta")
 
@@ -537,10 +539,11 @@ let clenv_match_args bl clenv =
     List.fold_left
       (fun clenv {CAst.loc;v=(b,c)} ->
         let k = meta_of_binder clenv loc mvs b in
-        if meta_defined clenv.evd k then
-          if EConstr.eq_constr clenv.evd (fst (meta_fvalue clenv.evd k)).rebus c then clenv
+        match meta_opt_fvalue clenv.evd k with
+        | Some (body, _) ->
+          if EConstr.eq_constr clenv.evd body.rebus c then clenv
           else error_already_defined b
-        else
+        | None ->
           clenv_assign_binding clenv k c)
       clenv bl
 

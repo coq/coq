@@ -1434,22 +1434,9 @@ let meta_opt_fvalue evd mv =
     | Clval(_,b,_) -> Some b
     | Cltyp _ -> None
 
-let meta_defined evd mv =
-  match Metamap.find mv evd.metas with
-    | Clval _ -> true
-    | Cltyp _ -> false
-
-let try_meta_fvalue evd mv =
-  match Metamap.find mv evd.metas with
-    | Clval(_,b,_) -> b
-    | Cltyp _ -> raise Not_found
-
-let meta_fvalue evd mv =
-  try try_meta_fvalue evd mv
-  with Not_found -> anomaly ~label:"meta_fvalue" (Pp.str "meta has no value.")
-
-let meta_value evd mv =
-  (fst (try_meta_fvalue evd mv)).rebus
+let meta_value evd mv = match meta_opt_fvalue evd mv with
+| Some (body, _) -> body.rebus
+| None -> raise Not_found
 
 let meta_ftype evd mv =
   match Metamap.find mv evd.metas with

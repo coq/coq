@@ -1451,8 +1451,8 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
           else
             ((evd,c),([],[])),eqns
         in
-          if meta_defined evd mv then
-            let {rebus=c'},(status',_) = meta_fvalue evd mv in
+        begin match meta_opt_fvalue evd mv with
+        | Some ({ rebus = c' }, (status', _)) ->
             let (take_left,st,(evd,metas',evars')) =
               merge_instances env evd flags status' status c' c
             in
@@ -1461,7 +1461,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
               else meta_reassign mv (c,(st,TypeProcessed)) evd
             in
               w_merge_rec evd' (metas'@metas@metas'') (evars'@evars'') eqns
-          else
+        | None ->
             let evd' =
               if occur_meta_evd evd mv c then
                 if isMetaOf evd mv (whd_all env evd c) then evd
@@ -1469,6 +1469,7 @@ let w_merge env with_types flags (evd,metas,evars : subst0) =
               else
                 meta_assign mv (c,(status,TypeProcessed)) evd in
             w_merge_rec evd' (metas''@metas) evars'' eqns
+        end
     | [] ->
         (* Process type eqns *)
         let rec process_eqns failures = function
