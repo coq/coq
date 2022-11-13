@@ -379,8 +379,9 @@ let is_unique env sigma concl =
 let top_sort evm undefs =
   let l' = ref [] in
   let tosee = ref undefs in
+  let cache = Evarutil.create_undefined_evars_cache () in
   let rec visit ev evi =
-    let evs = Evarutil.undefined_evars_of_evar_info evm evi in
+    let evs = Evarutil.filtered_undefined_evars_of_evar_info ~cache evm evi in
       tosee := Evar.Set.remove ev !tosee;
       Evar.Set.iter (fun ev ->
         if Evar.Set.mem ev !tosee then

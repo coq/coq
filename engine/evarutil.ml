@@ -679,15 +679,6 @@ let undefined_evars_of_named_context evd nc =
     nc
     ~init:Evar.Set.empty
 
-let undefined_evars_of_evar_info evd evi =
-  Evar.Set.union (undefined_evars_of_term evd (Evd.evar_concl evi))
-    (Evar.Set.union
-       (match Evd.evar_body evi with
-         | Evar_empty -> Evar.Set.empty
-         | Evar_defined b -> undefined_evars_of_term evd b)
-       (undefined_evars_of_named_context evd
-          (named_context_of_val (Evd.evar_hyps evi))))
-
 type undefined_evars_cache = {
   mutable cache : (EConstr.named_declaration * Evar.Set.t) ref Id.Map.t;
 }
