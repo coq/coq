@@ -607,7 +607,7 @@ module type S = sig
   val print : unit -> unit
 end
 
-module MakeTable (E : Elt) = struct
+module MakeTable (E : Elt) : S = struct
   (** Given a term [c] and its arguments ai,
         we construct a HConstr.t table that is
         indexed by ai for i = E.get_key.
