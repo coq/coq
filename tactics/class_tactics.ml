@@ -1122,7 +1122,9 @@ module Search = struct
           | Some ev' -> Evar.Set.add ev acc
           | None -> acc) (Evar.Set.union goals nongoals) (Evd.get_typeclass_evars evm')
     in
-    let evm' = evars_reset_evd ~with_conv_pbs:true evm' evm in
+    (* FIXME: the need to merge metas seems to come from this being called
+       internally from Unification. It should be handled there instead. *)
+    let evm' = Evd.meta_merge (Evd.meta_list evm) (Evd.clear_metas evm') in
     let evm' = Evd.set_typeclass_evars evm' nongoals' in
     let () = ppdebug 1 (fun () ->
         str"New typeclass evars are: " ++
