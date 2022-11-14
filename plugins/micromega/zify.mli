@@ -30,10 +30,3 @@ val iter_specs : unit Proofview.tactic
 val assert_inj : EConstr.constr -> unit Proofview.tactic
 val iter_let : Ltac_plugin.Tacinterp.Value.t -> unit Proofview.tactic
 val elim_let : unit Proofview.tactic
-
-val declared_term :
-     Environ.env
-  -> Evd.evar_map
-  -> EConstr.t
-  -> EConstr.t array
-  -> EConstr.constr * EConstr.t array

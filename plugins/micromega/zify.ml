@@ -1120,28 +1120,6 @@ let pp_trans_expr env evd e res =
   debug_zify (fun () -> Pp.(str "\ntrans_expr " ++ pp_prf evd inj e.constr res));
   res
 
-let declared_term env evd hd args =
-  let match_operator (t, d) =
-    let decomp t i =
-      let n = Array.length args in
-      let t' = EConstr.mkApp (hd, Array.sub args 0 (n - i)) in
-      if is_convertible env evd t' t then Some (t, Array.sub args (n - i) i)
-      else None
-    in
-    match t with
-    | OtherTerm t -> ( match d with InjTyp _ -> None | _ -> Some (t, args) )
-    | Application t -> (
-      match d with
-      | CstOp _ -> decomp t 0
-      | UnOp _ -> decomp t 1
-      | BinOp _ -> decomp t 2
-      | BinRel _ -> decomp t 2
-      | PropOp _ -> decomp t 2
-      | PropUnOp _ -> decomp t 1
-      | _ -> None )
-  in
-  find_option match_operator (ConstrMap.find_all evd hd !table)
-
 let rec trans_expr env evd e =
   let inj = e.inj in
   let e = e.constr in
