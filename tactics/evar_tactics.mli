@@ -8,13 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Evd
-open Glob_term
-open Ltac_pretype
+open Names
+open Locus
 
-(** Refinement of existential variables. *)
+val instantiate_tac : int -> Ltac_pretype.closed_glob_constr ->
+  (Id.t * hyp_location_flag) option -> unit Proofview.tactic
 
-type glob_constr_ltac_closure = ltac_var_map * glob_constr
+val instantiate_tac_by_name : Id.t ->
+  Ltac_pretype.closed_glob_constr -> unit Proofview.tactic
 
-val w_refine : Evar.t * evar_info ->
-  glob_constr_ltac_closure -> Environ.env -> evar_map -> evar_map
+val let_evar : Name.t -> EConstr.types -> unit Proofview.tactic
+
+val hget_evar : int -> unit Proofview.tactic

@@ -12,7 +12,6 @@ open Genintern
 open Tacexpr
 open Names
 open Constrexpr
-open Glob_term
 
 val wit_orient : bool Genarg.uniform_genarg_type
 val orient : bool Pcoq.Entry.t
@@ -30,12 +29,12 @@ val wit_natural : int Genarg.uniform_genarg_type
 val wit_glob :
   (constr_expr,
   glob_constr_and_expr,
-  Tacinterp.interp_sign * glob_constr) Genarg.genarg_type
+  Ltac_pretype.closed_glob_constr) Genarg.genarg_type
 
 val wit_lglob :
   (constr_expr,
   glob_constr_and_expr,
-  Tacinterp.interp_sign * glob_constr) Genarg.genarg_type
+  Ltac_pretype.closed_glob_constr) Genarg.genarg_type
 
 val wit_lconstr :
   (constr_expr,
@@ -45,7 +44,7 @@ val wit_lconstr :
 val glob : constr_expr Pcoq.Entry.t
 val lglob : constr_expr Pcoq.Entry.t
 
-type 'id gen_place= ('id * Locus.hyp_location_flag,unit) location
+type 'id gen_place= ('id * Locus.hyp_location_flag) option
 
 type loc_place = lident gen_place
 type place = Id.t gen_place

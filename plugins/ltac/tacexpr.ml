@@ -43,8 +43,6 @@ type ('c,'d,'id) inversion_strength =
       Inv.inversion_kind * 'c option * 'd or_and_intro_pattern_expr CAst.t or_var option
   | InversionUsing of 'c * 'id list
 
-type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
-
 type 'id message_token =
   | MsgString of string
   | MsgInt of int
