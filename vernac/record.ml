@@ -788,7 +788,7 @@ let autocut ind projs =
   in
   if List.is_empty projs then ()
   else
-    let entry = HintsCutEntry (seql [starany; orl projs; starany; atom (GlobRef.ConstructRef (ind,1))]) in
+    let entry = HintsCutEntry (seql [starany; orl projs; atom (GlobRef.ConstructRef (ind,1))]) in
     add_hints ~locality:SuperGlobal [Class_tactics.typeclasses_db] entry
 
 let declare_structure k { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records } =
