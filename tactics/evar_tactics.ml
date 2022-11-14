@@ -74,7 +74,7 @@ let w_refine evk rawc env sigma =
                 (str "Instance is not well-typed in the environment of " ++
                  Termops.pr_existential_key env sigma evk ++ str ".")
   in
-  define_and_solve_constraints evk typed_c env (evars_reset_evd sigma' sigma)
+  define_and_solve_constraints evk typed_c env sigma'
 
 (* The instantiate tactic *)
 
