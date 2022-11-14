@@ -15,6 +15,7 @@ let stm_pr_err s  = Format.eprintf "%s] %s\n%!"     (Spawned.process_id ()) s
 type response =
   | RespBuiltSubProof of (Constr.constr * UState.t)
   | RespError of bool * Pp.t
+  | RespKilled of int
   | RespNoProgress
 
 module TacTask : sig
@@ -78,9 +79,9 @@ end = struct (* {{{ *)
   let use_response _ { t_assign; t_kill } resp =
     assign t_assign resp;
     let kill = match resp with
-    | RespBuiltSubProof o -> false
-    | RespNoProgress | RespError _ -> true
-
+    | RespNoProgress | RespBuiltSubProof _ -> false
+    | RespError _ -> true
+    | RespKilled _ -> assert false
     in
     if kill then t_kill ();
     `Stay ((),[])
@@ -90,7 +91,10 @@ end = struct (* {{{ *)
     flush_all (); exit 1
 
   let on_task_cancellation_or_expiration_or_slave_death = function
-    | Some { t_kill } -> t_kill ()
+    | Some { t_goalno; t_assign; t_kill } ->
+      t_kill ();
+      assert (Option.is_empty !t_assign);
+      t_assign := Some (RespKilled t_goalno)
     | _ -> ()
 
   let command_focus = Proof.new_focus_kind ()
@@ -140,24 +144,43 @@ module TaskQueue = AsyncTaskQueue.MakeQueue(TacTask) ()
 let assign_tac ~abstract res : unit Proofview.tactic =
   Proofview.(Goal.enter begin fun g ->
   let gid = Goal.goal g in
-  let g_solution =
-    try List.assoc gid res
-    with Not_found -> CErrors.anomaly(str"Partac: wrong focus.") in
-  match !g_solution with
-  | None -> tclUNIT ()
-  | Some RespNoProgress -> tclUNIT ()
-  | Some (RespBuiltSubProof (pt, uc)) ->
+  match  List.assoc gid res with
+  | exception Not_found -> (* No progress *) tclUNIT ()
+  | (pt, uc) ->
     let open Notations in
-        let push_state ctx =
-            Proofview.tclEVARMAP >>= fun sigma ->
-            Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma ctx)
-        in
-        (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
-            (push_state uc <*> Tactics.exact_no_check (EConstr.of_constr pt))
-  | Some (RespError (noncrt, msg)) ->
-    if noncrt then raise (AsyncTaskQueue.RemoteException msg)
-    else CErrors.anomaly msg
+    let push_state ctx =
+      Proofview.tclEVARMAP >>= fun sigma ->
+      Proofview.Unsafe.tclEVARS (Evd.merge_universe_context sigma ctx)
+    in
+    (if abstract then Abstract.tclABSTRACT None else (fun x -> x))
+      (push_state uc <*> Tactics.exact_no_check (EConstr.of_constr pt))
   end)
+
+let get_results res =
+  (* If one of the goals failed others may be missing results, so we
+     need to check for RespError before complaining about missing
+     results. Also if there are non-RespKilled errors we prefer to
+     report them. *)
+  let missing = ref [] in
+  let killed = ref [] in
+  let res = CList.map_filter_i (fun i (g,v) -> match !v with
+      | None -> missing := (succ i) :: !missing; None
+      | Some (RespBuiltSubProof v) -> Some (g,v)
+      | Some RespNoProgress -> None
+      | Some (RespKilled goalno) -> killed := goalno :: !killed; None
+      | Some (RespError (noncrt, msg)) ->
+        if noncrt then raise (AsyncTaskQueue.RemoteException msg)
+        else CErrors.anomaly msg)
+      res
+  in
+  match !killed, !missing with
+  | [], [] -> res
+  | killed :: _, _ -> CErrors.anomaly Pp.(str "Worker failed (for goal " ++ int killed ++ str")")
+  | [], missing ->
+    CErrors.anomaly
+      (str "Missing results (for " ++
+       str (CString.plural (List.length missing) "goal") ++
+       spc () ++ prlist_with_sep spc int missing ++ str ")")
 
 let enable_par ~nworkers = ComTactic.set_par_implementation
   (fun ~pstate ~info t_ast ~abstract ~with_end_tac ->
@@ -174,6 +197,7 @@ let enable_par ~nworkers = ComTactic.set_par_implementation
           t_kill = (fun () -> TaskQueue.cancel_all queue) };
       g, ans) 1 in
     TaskQueue.join queue;
+    let results = get_results results in
     let p,_,() =
       Proof.run_tactic (Global.env())
       (assign_tac ~abstract results) p in
