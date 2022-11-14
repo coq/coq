@@ -443,14 +443,23 @@ let locate_any_name qid =
     try String.Map.iter iter !locatable_map; Undefined qid
     with ObjFound obj -> obj
 
+let canonical_info ref =
+  let cref = canonical_gr ref in
+  if GlobRef.UserOrd.equal ref cref then mt ()
+  else match Nametab.path_of_global cref with
+    | path -> spc() ++ str "(syntactically equal to" ++ spc() ++ pr_path path ++ str ")"
+    | exception Not_found -> spc() ++ str "(missing canonical, bug?)"
+
 let pr_located_qualid = function
   | Term ref ->
       let ref_str = let open GlobRef in match ref with
           ConstRef _ -> "Constant"
         | IndRef _ -> "Inductive"
         | ConstructRef _ -> "Constructor"
-        | VarRef _ -> "Variable" in
-      str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref)
+        | VarRef _ -> "Variable"
+      in
+      let extra = canonical_info ref in
+      str ref_str ++ spc () ++ pr_path (Nametab.path_of_global ref) ++ extra
   | Abbreviation kn ->
       str "Notation" ++ spc () ++ pr_path (Nametab.path_of_abbreviation kn)
   | Dir dir ->

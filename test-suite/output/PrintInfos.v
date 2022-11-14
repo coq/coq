@@ -46,3 +46,9 @@ Goal forall n:nat, let g := newdef in n <> newdef n -> newdef n <> n -> False.
   About g.                              (* search hypothesis *)
   About h.                              (* search hypothesis *)
 Abort.
+
+Module Alias := Logic.
+
+About Alias.eq.
+About Alias.eq_refl.
+About Alias.eq_ind.
