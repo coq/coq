@@ -435,3 +435,27 @@ Module LocalRedef.
     Fail Qed.
   Abort.
 End LocalRedef.
+
+Module MatchCastInPattern.
+
+  Goal let x := True in True.
+  Proof.
+    intro x.
+    lazymatch goal with
+    | [ H := ?v : ?T |- _ ] => constr_eq T Prop
+    end.
+
+    Fail lazymatch goal with
+    | [ H := ?v <: ?T |- _ ] => constr_eq T Prop
+    end. (* Warning: Casts are ignored in patterns [cast-in-pattern,automation] *)
+
+    Set Warnings "+cast-in-pattern".
+    Fail lazymatch goal with
+    | [ H := ?v <: ?T |- _ ] => idtac
+    end.
+    Fail lazymatch goal with
+    | [ H := [ ?v : ?T ] : _ |- _ ] => idtac
+    end.
+  Abort.
+
+End MatchCastInPattern.
