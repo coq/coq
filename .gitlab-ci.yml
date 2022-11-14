@@ -641,6 +641,8 @@ library:ci-fcsl_pcm:
 
 library:ci-fiat_crypto:
   extends: .ci-template-flambda
+  variables:
+    COQEXTRAFLAGS: "-worker-id dummy" # hack to deactivate par:
   needs:
   - build:edge+flambda
   - library:ci-coqprime
