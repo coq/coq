@@ -367,7 +367,7 @@ module type Elt = sig
   (** [get_key] is the type-index used as key for the instance *)
   val get_key : int
 
-  (** [mk_elt evd i [a0,..,an]  returns the element of the table
+  (** [mk_elt evd i [a0,..,an]]  returns the element of the table
         built from the type-instance i and the arguments (type indexes and projections)
         of the type-class constructor. *)
   val mk_elt : Evd.evar_map -> EConstr.t -> EConstr.t array -> elt
