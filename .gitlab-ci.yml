@@ -816,6 +816,8 @@ library:ci-verdi_raft:
 
 library:ci-vst:
   extends: .ci-template-flambda
+  variables:
+    NJOBS: "1"
   needs:
   - build:edge+flambda
   - library:ci-flocq3
