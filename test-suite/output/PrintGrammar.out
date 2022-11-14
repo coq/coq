@@ -41,10 +41,10 @@ Entry term is
 [ "200" RIGHTA
   [ binder_constr ]
 | "100" RIGHTA
-  [ SELF; "<:"; term LEVEL "200"
-  | SELF; "<<:"; term LEVEL "200"
-  | SELF; ":>"; term LEVEL "200"
-  | SELF; ":"; term LEVEL "200" ]
+  [ SELF; "<:"; type_
+  | SELF; "<<:"; type_
+  | SELF; ":>"; type_
+  | SELF; ":"; type_ ]
 | "99" RIGHTA
   [ SELF; "->"; term LEVEL "200" ]
 | "95" RIGHTA

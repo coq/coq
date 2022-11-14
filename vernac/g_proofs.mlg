@@ -54,7 +54,7 @@ GRAMMAR EXTEND Gram
     | ":"; l = LIST1 [id = IDENT -> { id } ] -> { l } ] ]
   ;
   command: TOP
-    [ [ IDENT "Goal"; c = lconstr ->
+    [ [ IDENT "Goal"; c = type_ ->
         { VernacSynPure (VernacDefinition (Decls.(NoDischarge, Definition), ((CAst.make ~loc Names.Anonymous), None), ProveBody ([], c))) }
       | IDENT "Proof" -> { VernacSynPure (VernacProof (None,None)) }
       | IDENT "Proof"; IDENT "using"; l = G_vernac.section_subset_expr ->
@@ -128,7 +128,7 @@ GRAMMAR EXTEND Gram
     ;
   constr_body:
     [ [ ":="; c = lconstr -> { c }
-      | ":"; t = lconstr; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,Some C.DEFAULTcast, t) } ] ]
+      | ":"; t = type_; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,Some C.DEFAULTcast, t) } ] ]
   ;
   mode:
     [ [ l = LIST1 [ "+" -> { ModeInput }

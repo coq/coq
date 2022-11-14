@@ -135,6 +135,10 @@ RENAME: [
 | Constr.closed_binder closed_binder
 ]
 
+RENAME: [
+| type_ type  (* since "type" is an OCaml keyword *)
+]
+
 (* written in OCaml *)
 impl_ident_head: [
 | "{" ident
@@ -266,10 +270,6 @@ case_item: [
 | WITH term100 OPT ("as" name) OPT [ "in" pattern200 ]
 ]
 
-type: [
-| term200
-]
-
 one_type: [
 | constr
 ]
@@ -349,18 +349,12 @@ IDENT: [
 ]
 
 term100: [
-| REPLACE term99 "<:" term200
-| WITH term99 "<:" type
-| MOVETO term_cast term99 "<:" type
-| REPLACE term99 "<<:" term200
-| WITH term99 "<<:" type
-| MOVETO term_cast term99 "<<:" type
-| REPLACE term99 ":>" term200
-| WITH term99 ":>" type
-| MOVETO term_cast term99 ":>" type
-| REPLACE term99 ":" term200
-| WITH term99 ":" type
-| MOVETO term_cast term99 ":" type
+| MOVEALLBUT term_cast
+| term99
+]
+
+term100: [
+| term_cast
 ]
 
 constr: [
@@ -444,7 +438,7 @@ binder: [
 ]
 
 open_binders: [
-| REPLACE name LIST0 name ":" lconstr
+| REPLACE name LIST0 name ":" type
 | WITH LIST1 name ":" type
 (* @Zimmi48: Special token .. is for use in the Notation command. (see bug_3304.v) *)
 | DELETE name ".." name
@@ -456,7 +450,7 @@ open_binders: [
 closed_binder: [
 | name
 
-| REPLACE "(" name LIST1 name ":" lconstr ")"
+| REPLACE "(" name LIST1 name ":" type ")"
 | WITH "(" LIST1 name ":" type ")"
 | DELETE "(" name ":" lconstr ")"
 
@@ -562,8 +556,6 @@ variant_definition: [
 ]
 
 gallina: [
-| REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
-| WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
 | REPLACE inductive_token LIST1 inductive_or_record_definition SEP "with"
 | WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
@@ -653,9 +645,9 @@ of_type_inst: [
 
 def_body: [
 | DELETE binders ":=" reduce lconstr
-| REPLACE binders ":" lconstr ":=" reduce lconstr
+| REPLACE binders ":" type ":=" reduce lconstr
 | WITH LIST0 binder OPT (":" type) ":=" reduce lconstr
-| REPLACE binders ":" lconstr
+| REPLACE binders ":" type
 | WITH LIST0 binder ":" type
 ]
 
@@ -731,8 +723,8 @@ gallina_ext: [
 | DELETE "Export" "Set" setting_name option_setting
 | REPLACE "Export" "Unset" setting_name
 | WITH "Unset" setting_name
-| REPLACE "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
-| WITH "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
+| REPLACE "Instance" instance_name ":" type hint_info     [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
+| WITH    "Instance" instance_name ":" type hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
 
 | DELETE "Require" export_token LIST1 filtered_import
 | REPLACE "From" global "Require" export_token LIST1 filtered_import
@@ -963,12 +955,8 @@ simple_occurrences: [
 ]
 
 simple_tactic: [
-| REPLACE "assert" "(" identref ":" lconstr ")" by_tactic
-| WITH "assert" "(" identref ":" type ")" by_tactic
 | REPLACE "assert" constr as_ipat by_tactic
 | WITH "assert" one_type as_ipat by_tactic
-| REPLACE "eassert" "(" identref ":" lconstr ")" by_tactic
-| WITH "eassert" "(" identref ":" type ")" by_tactic
 | REPLACE "eassert" constr as_ipat by_tactic
 | WITH "eassert" one_type as_ipat by_tactic
 | REPLACE "elimtype" constr
@@ -981,12 +969,8 @@ simple_tactic: [
 | WITH "absurd" one_type
 | REPLACE "casetype" constr
 | WITH "casetype" one_type
-| REPLACE "enough" "(" identref ":" lconstr ")" by_tactic
-| WITH "enough" "(" identref ":" type ")" by_tactic
 | REPLACE "enough" constr as_ipat by_tactic
 | WITH "enough" one_type as_ipat by_tactic
-| REPLACE "eenough" "(" identref ":" lconstr ")" by_tactic
-| WITH "eenough" "(" identref ":" type ")" by_tactic
 | REPLACE "eenough" constr as_ipat by_tactic
 | WITH "eenough" one_type as_ipat by_tactic
 | DELETE "autorewrite" "with" LIST1 preident clause
@@ -1046,7 +1030,7 @@ simple_tactic: [
 | REPLACE "generalize" constr occs as_name LIST0 [ "," pattern_occs as_name ]
 | WITH "generalize" LIST1 [ pattern_occs as_name ] SEP ","
 | REPLACE "evar" "(" ident ":" lconstr ")"
-| WITH "evar" "(" ident ":" type ")"
+| WITH    "evar" "(" ident ":" type ")"
 | EDIT "simplify_eq" ADD_OPT destruction_arg
 | EDIT "esimplify_eq" ADD_OPT destruction_arg
 | EDIT "discriminate" ADD_OPT destruction_arg
@@ -1439,8 +1423,6 @@ command: [
 | DELETE "Show" "Zify" "BinOpSpec"      (* micromega plugin *)
 (* keep this one | "Show" "Zify" "Spec"      (* micromega plugin *)*)
 | "Show" "Zify" show_zify  TAG Micromega
-| REPLACE "Goal" lconstr
-| WITH "Goal" type
 ]
 
 syntax_modifier: [
@@ -1534,11 +1516,6 @@ fix_definition: [
 cofix_definition: [
 | REPLACE ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 | WITH ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
-]
-
-type_cstr: [
-| REPLACE ":" lconstr
-| WITH ":" type
 ]
 
 (* note that constructor -> identref constructor_type *)
@@ -1650,7 +1627,7 @@ fields_def: [ | DELETENT ]
 
 constr_body: [
 | DELETE ":=" lconstr
-| REPLACE ":" lconstr ":=" lconstr
+| REPLACE ":" type ":=" lconstr
 | WITH OPT ( ":" type ) ":=" lconstr
 ]
 
@@ -1658,11 +1635,6 @@ scheme: [
 | DELETE scheme_kind
 | REPLACE identref ":=" scheme_kind
 | WITH OPT ( identref ":=" ) scheme_kind
-]
-
-simple_reserv: [
-| REPLACE LIST1 identref ":" lconstr
-| WITH LIST1 identref ":" type
 ]
 
 in_clause: [
@@ -2181,16 +2153,6 @@ opt_clause: [
 | DELETE "at" occs_nums
 | DELETE
 | clause_dft_concl
-]
-
-fixdecl: [
-| REPLACE "(" ident LIST0 simple_binder struct_annot ":" lconstr ")"
-| WITH "(" ident LIST0 simple_binder struct_annot ":" type ")"
-]
-
-cofixdecl: [
-| REPLACE "(" ident LIST0 simple_binder ":" lconstr ")"
-| WITH "(" ident LIST0 simple_binder ":" type ")"
 ]
 
 ssrfwdview: [

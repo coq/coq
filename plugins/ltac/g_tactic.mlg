@@ -446,14 +446,14 @@ GRAMMAR EXTEND Gram
   ;
   fixdecl:
     [ [ "("; id = ident; bl=LIST0 simple_binder; ann=struct_annot;
-        ":"; ty=lconstr; ")" -> { (loc, id, bl, ann, ty) } ] ]
+        ":"; ty=type_; ")" -> { (loc, id, bl, ann, ty) } ] ]
   ;
   struct_annot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> { Some id }
       | -> { None } ] ]
   ;
   cofixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
+    [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=type_; ")" ->
         { (loc, id, bl, None, ty) } ] ]
   ;
   bindings_with_parameters:
@@ -584,21 +584,21 @@ GRAMMAR EXTEND Gram
 
       (* Alternative syntax for "assert c as id by tac" *)
       | IDENT "assert"; test_lpar_id_colon; "("; lid = identref; ":";
-          c = lconstr; ")"; tac=by_tactic ->
+          c = type_; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           CAst.make ?loc @@ TacAtom ( TacAssert (false,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eassert"; test_lpar_id_colon; "("; lid = identref; ":";
-          c = lconstr; ")"; tac=by_tactic ->
+          c = type_; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           CAst.make ?loc @@ TacAtom ( TacAssert (true,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "enough c as id by tac" *)
       | IDENT "enough"; test_lpar_id_colon; "("; lid = identref; ":";
-          c = lconstr; ")"; tac=by_tactic ->
+          c = type_; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           CAst.make ?loc @@ TacAtom ( TacAssert (false,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "eenough"; test_lpar_id_colon; "("; lid = identref; ":";
-          c = lconstr; ")"; tac=by_tactic ->
+          c = type_; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           CAst.make ?loc @@ TacAtom ( TacAssert (true,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 

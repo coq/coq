@@ -61,6 +61,10 @@ lconstr: [
 | term200
 ]
 
+type_: [
+| lconstr
+]
+
 constr: [
 | term8
 | "@" global univ_annot
@@ -72,10 +76,10 @@ term200: [
 ]
 
 term100: [
-| term99 "<:" term200
-| term99 "<<:" term200
-| term99 ":>" term200
-| term99 ":" term200
+| term99 "<:" type_
+| term99 "<<:" type_
+| term99 ":>" type_
+| term99 ":" type_
 | term99
 ]
 
@@ -308,7 +312,7 @@ binders_fixannot: [
 ]
 
 open_binders: [
-| name LIST0 name ":" lconstr
+| name LIST0 name ":" type_
 | name LIST0 name binders
 | name ".." name
 | closed_binder binders
@@ -325,7 +329,7 @@ binder: [
 ]
 
 closed_binder: [
-| "(" name LIST1 name ":" lconstr ")"
+| "(" name LIST1 name ":" type_ ")"
 | "(" name ":" lconstr ")"
 | "(" name ":=" lconstr ")"
 | "(" name ":" lconstr ":=" lconstr ")"
@@ -367,7 +371,7 @@ typeclass_constraint: [
 ]
 
 type_cstr: [
-| ":" lconstr
+| ":" type_
 |
 ]
 
@@ -503,7 +507,7 @@ opt_hintbases: [
 ]
 
 command: [
-| "Goal" lconstr
+| "Goal" type_
 | "Proof"
 | "Proof" "using" G_vernac.section_subset_expr
 | "Proof" "Mode" string
@@ -739,7 +743,7 @@ hint: [
 
 constr_body: [
 | ":=" lconstr
-| ":" lconstr ":=" lconstr
+| ":" type_ ":=" lconstr
 ]
 
 mode: [
@@ -814,7 +818,7 @@ subprf: [
 ]
 
 gallina: [
-| thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
+| thm_token ident_decl binders ":" type_ LIST0 [ "with" ident_decl binders ":" type_ ]
 | assumption_token inline assum_list
 | assumptions_token inline assum_list
 | def_token ident_decl def_body
@@ -924,8 +928,8 @@ finite_token: [
 
 def_body: [
 | binders ":=" reduce lconstr
-| binders ":" lconstr ":=" reduce lconstr
-| binders ":" lconstr
+| binders ":" type_ ":=" reduce lconstr
+| binders ":" type_
 ]
 
 reduce: [
@@ -1078,7 +1082,7 @@ gallina_ext: [
 | "Coercion" global ":" coercion_class ">->" coercion_class
 | "Coercion" by_notation ":" coercion_class ">->" coercion_class
 | "Context" LIST1 binder
-| "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
+| "Instance" instance_name ":" type_ hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | "Existing" "Instance" global hint_info
 | "Existing" "Instances" LIST1 global OPT [ "|" natural ]
 | "Existing" "Class" global
@@ -1272,7 +1276,7 @@ reserv_tuple: [
 ]
 
 simple_reserv: [
-| LIST1 identref ":" lconstr
+| LIST1 identref ":" type_
 ]
 
 scope: [
@@ -1779,10 +1783,10 @@ simple_tactic: [
 | "eremember" constr as_name eqn_ipat clause_dft_all
 | "assert" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
 | "eassert" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
-| "assert" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
-| "eassert" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
-| "enough" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
-| "eenough" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
+| "assert" test_lpar_id_colon "(" identref ":" type_ ")" by_tactic
+| "eassert" test_lpar_id_colon "(" identref ":" type_ ")" by_tactic
+| "enough" test_lpar_id_colon "(" identref ":" type_ ")" by_tactic
+| "eenough" test_lpar_id_colon "(" identref ":" type_ ")" by_tactic
 | "assert" constr as_ipat by_tactic
 | "eassert" constr as_ipat by_tactic
 | "pose" "proof" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
@@ -2598,7 +2602,7 @@ simple_binder: [
 ]
 
 fixdecl: [
-| "(" ident LIST0 simple_binder struct_annot ":" lconstr ")"
+| "(" ident LIST0 simple_binder struct_annot ":" type_ ")"
 ]
 
 struct_annot: [
@@ -2607,7 +2611,7 @@ struct_annot: [
 ]
 
 cofixdecl: [
-| "(" ident LIST0 simple_binder ":" lconstr ")"
+| "(" ident LIST0 simple_binder ":" type_ ")"
 ]
 
 bindings_with_parameters: [

@@ -335,6 +335,7 @@ module Constr =
     let term = Entry.make "term"
     let constr_eoi = eoi_entry constr
     let lconstr = Entry.make "lconstr"
+    let type_ = Entry.make "type_"
     let binder_constr = Entry.make "binder_constr"
     let ident = Entry.make "ident"
     let global = Entry.make "global"

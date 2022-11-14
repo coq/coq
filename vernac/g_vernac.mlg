@@ -215,9 +215,9 @@ GRAMMAR EXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = lconstr;
+    [ [ thm = thm_token; id = ident_decl; bl = binders; ":"; c = type_;
         l = LIST0
-          [ "with"; id = ident_decl; bl = binders; ":"; c = lconstr ->
+          [ "with"; id = ident_decl; bl = binders; ":"; c = type_ ->
           { (id,(bl,c)) } ] ->
           { VernacStartTheoremProof (thm, (id,(bl,c))::l) }
       | stre = assumption_token; nl = inline; bl = assum_list ->
@@ -364,9 +364,9 @@ GRAMMAR EXTEND Gram
         { match c.CAst.v with
           | CCast(c, Some C.DEFAULTcast, t) -> DefineBody (bl, red, c, Some t)
           | _ -> DefineBody (bl, red, c, None) }
-    | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
+    | bl = binders; ":"; t = type_; ":="; red = reduce; c = lconstr ->
         { DefineBody (bl, red, c, Some t) }
-    | bl = binders; ":"; t = lconstr ->
+    | bl = binders; ":"; t = type_ ->
         { ProveBody (bl, t) } ] ]
   ;
   reduce:
@@ -775,7 +775,7 @@ GRAMMAR EXTEND Gram
           { VernacSynPure (VernacContext (List.flatten c)) }
 
       | IDENT "Instance"; namesup = instance_name; ":";
-         t = term LEVEL "200";
+         t = type_;
          info = hint_info ;
          props = [ ":="; "{"; r = record_declaration; "}" -> { Some (true,r) } |
              ":="; c = lconstr -> { Some (false,c) } | -> { None } ] ->
@@ -899,7 +899,7 @@ GRAMMAR EXTEND Gram
     [ [ "("; a = simple_reserv; ")" -> { a } ] ]
   ;
   simple_reserv:
-    [ [ idl = LIST1 identref; ":"; c = lconstr -> { (idl,c) } ] ]
+    [ [ idl = LIST1 identref; ":"; c = type_ -> { (idl,c) } ] ]
   ;
 
 END
