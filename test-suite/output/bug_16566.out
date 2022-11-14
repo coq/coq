@@ -1,0 +1,2 @@
+Ltac t a b := rewrite a, b
+Ltac t a b := rewrite -> a, -> b
