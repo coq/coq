@@ -569,13 +569,11 @@ val evars_of_filtered_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 (** Metas *)
 val meta_list : evar_map -> clbinding Metamap.t
-val meta_defined : evar_map -> metavariable -> bool
 
 val meta_value     : evar_map -> metavariable -> econstr
 (** [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
    meta has no value *)
 
-val meta_fvalue    : evar_map -> metavariable -> econstr freelisted * instance_status
 val meta_opt_fvalue : evar_map -> metavariable -> (econstr freelisted * instance_status) option
 val meta_type      : evar_map -> metavariable -> etypes
 val meta_type0 : evar_map -> metavariable -> types
@@ -591,7 +589,6 @@ val clear_metas : evar_map -> evar_map
 (** [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : clbinding Metamap.t -> evar_map -> evar_map
 
-val undefined_metas : evar_map -> metavariable list
 val map_metas_fvalue : (econstr -> econstr) -> evar_map -> evar_map
 val map_metas : (econstr -> econstr) -> evar_map -> evar_map
 
