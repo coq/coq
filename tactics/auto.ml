@@ -79,7 +79,7 @@ let exact h =
         Proofview.Unsafe.tclEVARSADVANCE sigma <*>
         exact_no_check c
       with e when CErrors.noncritical e -> Proofview.tclZERO e
-    else exact_check c
+    else Proofview.Unsafe.tclEVARS sigma <*> exact_check c
   end
 
 (* Util *)
