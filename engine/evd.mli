@@ -571,8 +571,6 @@ val meta_value     : evar_map -> metavariable -> econstr
    meta has no value *)
 
 val meta_opt_fvalue : evar_map -> metavariable -> (econstr freelisted * instance_status) option
-val meta_type      : evar_map -> metavariable -> etypes
-val meta_type0 : evar_map -> metavariable -> types
 val meta_ftype     : evar_map -> metavariable -> etypes freelisted
 val meta_name      : evar_map -> metavariable -> Name.t
 val meta_declare   :
