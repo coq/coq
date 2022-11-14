@@ -84,7 +84,23 @@ val remove_let : 'v lambda Esubst.subs -> 'v lambda -> 'v lambda
 
 val get_alias : Environ.env -> Constant.t -> Constant.t
 val make_args : int -> int -> 'v lambda array
+val makeblock : (int -> 'v lambda array -> 'v option) ->
+  inductive -> int -> int -> int -> 'v lambda array -> 'v lambda
+
 val lambda_of_prim : Environ.env -> pconstant -> CPrimitives.t -> 'v lambda array -> 'v lambda
+
+module type S =
+sig
+  type value
+  val as_value : int -> value lambda array -> value option
+  val get_constant : pconstant -> Declarations.constant_body -> value lambda
+  val check_inductive : inductive -> Declarations.mutual_inductive_body -> unit
+end
+
+module Make (Val : S) :
+sig
+  val lambda_of_constr : Environ.env -> evars -> Constr.constr -> Val.value lambda
+end
 
 (** {5 Printing} *)
 

@@ -54,6 +54,21 @@ let fresh_lname n =
   incr lname_ctr;
   { lname = n; luid = !lname_ctr }
 
+type prefix = string
+
+(* Linked code location utilities *)
+let get_mind_prefix env mind =
+   let _,name = lookup_mind_key mind env in
+   match !name with
+   | NotLinked -> ""
+   | Linked s -> s
+
+let get_const_prefix env c =
+   let _,(nameref,_) = lookup_constant_key c env in
+   match !nameref with
+   | NotLinked -> ""
+   | Linked s -> s
+
 (** Global names **)
 type gname =
   | Gind of string * inductive (* prefix, inductive name *)
