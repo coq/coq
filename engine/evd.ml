@@ -975,13 +975,6 @@ let has_given_up evd = not (Evar.Set.is_empty evd.given_up)
 
 let has_shelved evd = not (List.for_all List.is_empty evd.shelf)
 
-let evars_reset_evd ?(with_conv_pbs=false) evd d =
-  let conv_pbs = if with_conv_pbs then evd.conv_pbs else d.conv_pbs in
-  let last_mods = if with_conv_pbs then evd.last_mods else d.last_mods in
-  { evd with
-    metas = d.metas;
-    last_mods; conv_pbs }
-
 let merge_universe_context evd uctx' =
   { evd with universes = UState.union evd.universes uctx' }
 
