@@ -592,6 +592,8 @@ beautify: $(BEAUTYFILES)
 # There rules can be extended in @LOCAL_FILE@
 # Extensions can't assume when they run.
 
+# findlib needs the package to not be installed, so we remove it before
+# installing it (see the fiddling with the META file)
 install: META
 	$(HIDE)code=0; for f in $(FILESTOINSTALL); do\
 	 if ! [ -f "$$f" ]; then >&2 echo $$f does not exist; code=1; fi \
@@ -606,8 +608,6 @@ install: META
 	   echo INSTALL "$$f" "$(COQLIBINSTALL)/$$df";\
 	 fi;\
 	done
-	# findlib needs the package to not be installed, so we remove it before
-	# installing it
 	$(call findlib_remove)
 	$(call findlib_install, META $(FINDLIBFILESTOINSTALL))
 	$(HIDE)$(MAKE) install-extra -f "$(SELF)"
