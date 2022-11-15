@@ -68,6 +68,7 @@ CI_TARGETS= \
     ci-sf \
     ci-simple_io \
     ci-smtcoq \
+    ci-stalmarck \
     ci-stdlib2 \
     ci-tlc \
     ci-unimath \
