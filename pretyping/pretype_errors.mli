@@ -109,7 +109,7 @@ val error_ill_typed_rec_body :
 val error_elim_arity :
   ?loc:Loc.t -> env -> Evd.evar_map ->
       pinductive -> constr ->
-      unsafe_judgment -> (Sorts.family * Sorts.family * Sorts.family * arity_error) option -> 'b
+      (unsafe_judgment * Sorts.family * Sorts.family * Sorts.family) option -> 'b
 
 val error_not_a_type :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b

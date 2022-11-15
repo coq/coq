@@ -113,9 +113,9 @@ let error_ill_typed_rec_body ?loc env sigma i na jl tys =
   raise_type_error ?loc
     (env, sigma, IllTypedRecBody (i, na, jl, tys))
 
-let error_elim_arity ?loc env sigma pi c j a =
+let error_elim_arity ?loc env sigma pi c a =
   raise_type_error ?loc
-    (env, sigma, ElimArity (pi, c, j, a))
+    (env, sigma, ElimArity (pi, c, a))
 
 let error_not_a_type ?loc env sigma j =
   raise_type_error ?loc (env, sigma, NotAType j)

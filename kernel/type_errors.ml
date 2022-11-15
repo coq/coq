@@ -46,19 +46,14 @@ type fix_guard_error = constr pfix_guard_error
 type cofix_guard_error = constr pcofix_guard_error
 type guard_error = constr pguard_error
 
-type arity_error =
-  | NonInformativeToInformative
-  | StrongEliminationOnNonSmallType
-  | WrongArity
-
 type ('constr, 'types) ptype_error =
   | UnboundRel of int
   | UnboundVar of variable
   | NotAType of ('constr, 'types) punsafe_judgment
   | BadAssumption of ('constr, 'types) punsafe_judgment
   | ReferenceVariables of Id.t * GlobRef.t
-  | ElimArity of pinductive * 'constr * ('constr, 'types) punsafe_judgment
-      * (Sorts.family * Sorts.family * Sorts.family * arity_error) option
+  | ElimArity of pinductive * 'constr *
+    (('constr, 'types) punsafe_judgment * Sorts.family * Sorts.family * Sorts.family) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
@@ -116,8 +111,8 @@ let error_assumption env j =
 let error_reference_variables env id c =
   raise (TypeError (env, ReferenceVariables (id,c)))
 
-let error_elim_arity env ind c pj okinds =
-  raise (TypeError (env, ElimArity (ind,c,pj,okinds)))
+let error_elim_arity env ind c okinds =
+  raise (TypeError (env, ElimArity (ind, c, okinds)))
 
 let error_case_not_inductive env j =
   raise (TypeError (env, CaseNotInductive j))
@@ -149,13 +144,6 @@ let error_ill_formed_rec_body env why lna i fixenv vdefj =
 
 let error_ill_typed_rec_body env i lna vdefj vargs =
   raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))
-
-let error_elim_explain kp ki =
-  let open Sorts in
-  match kp,ki with
-  | (InType | InSet), InProp -> NonInformativeToInformative
-  | InType, InSet -> StrongEliminationOnNonSmallType (* if Set impredicative *)
-  | _ -> WrongArity
 
 let error_unsatisfied_constraints env c =
   raise (TypeError (env, UnsatisfiedConstraints c))
@@ -205,7 +193,8 @@ let map_ptype_error f = function
 | NotAType j -> NotAType (on_judgment f j)
 | BadAssumption j -> BadAssumption (on_judgment f j)
 | ReferenceVariables (id, c) -> ReferenceVariables (id, c)
-| ElimArity (pi, c, j, ar) -> ElimArity (pi, f c, on_judgment f j, ar)
+| ElimArity (pi, c, ar) ->
+  ElimArity (pi, f c, Option.map (fun (j, s1, s2, s3) -> (on_judgment f j, s1, s2, s3)) ar)
 | CaseNotInductive j -> CaseNotInductive (on_judgment f j)
 | WrongCaseInfo (pi, ci) -> WrongCaseInfo (pi, ci)
 | NumberBranches (j, n) -> NumberBranches (on_judgment f j, n)

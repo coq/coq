@@ -106,17 +106,6 @@ val contract_case : env -> (case_info * constr * case_invert * constr * constr a
 val instantiate_context : Instance.t -> Vars.substl -> Name.t Context.binder_annot array ->
   rel_context -> rel_context
 
-(** [type_case_branches env (I,args) (p:A) c] computes useful types
-   about the following Cases expression:
-      <p>Cases (c :: (I args)) of b1..bn end
-   It computes the type of every branch (pattern variables are
-   introduced by products), the type for the whole expression, and
-   the universe constraints generated.
- *)
-val type_case_branches :
-  env -> pinductive * constr list -> unsafe_judgment -> constr
-    -> types array * types
-
 val build_branches_type :
   pinductive -> mutual_inductive_body * one_inductive_body ->
     constr list -> constr -> types array
