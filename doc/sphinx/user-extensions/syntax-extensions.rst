@@ -458,7 +458,8 @@ Enabling and disabling notations
 
    Enables or disables notations previously defined with
    :cmd:`Notation` or :cmd:`Notation (abbreviation)`.
-   It has no effect on notations reserved with :cmd:`Reserved Notation`.
+   Disabling a notation doesn't remove parsing rules or tokens defined by the notation.
+   The command has no effect on notations reserved with :cmd:`Reserved Notation`.
    At least one of
    :token:`string`, :token:`qualid`, :token:`one_term` or :token:`scope_name` must be
    provided.
