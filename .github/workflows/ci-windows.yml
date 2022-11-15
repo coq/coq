@@ -51,7 +51,7 @@ jobs:
           .\dev\ci\platform\coq-pf-04-installer.bat
 
       - name: Upload Installer
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: windows-installer
           path: artifacts
