@@ -593,7 +593,7 @@ beautify: $(BEAUTYFILES)
 # Extensions can't assume when they run.
 
 # findlib needs the package to not be installed, so we remove it before
-# installing it (see the fiddling with the META file)
+# installing it (see the call to findlib_remove)
 install: META
 	$(HIDE)code=0; for f in $(FILESTOINSTALL); do\
 	 if ! [ -f "$$f" ]; then >&2 echo $$f does not exist; code=1; fi \
