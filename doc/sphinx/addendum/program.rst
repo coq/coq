@@ -295,6 +295,14 @@ optional tactic is replaced by the default one if not specified.
 
    Start the proof of the next unsolved obligation.
 
+.. cmd:: Final Obligation {? of @ident } {? with @ltac_expr }
+
+   Like :cmd:`Next Obligation`, starts the proof of the next unsolved
+   obligation. Additionally, at :cmd:`Qed` time, after the
+   automatic solver has run on any remaining obligations, Coq checks
+   that no obligations remain for the given :token:`ident` when
+   provided and otherwise in the current module.
+
 .. cmd:: Solve Obligations {? of @ident } {? with @ltac_expr }
 
    Tries to solve each obligation of :token:`ident` using the given :token:`ltac_expr` or the default one.

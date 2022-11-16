@@ -1284,7 +1284,36 @@ type obligation_resolver =
   -> unit Proofview.tactic option
   -> State.t * progress
 
-type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
+type obl_check_final = AllFinal | SpecificFinal of Id.t
+
+type obligation_qed_info = {
+  name : Id.t;
+  num : int;
+  auto : obligation_resolver;
+  check_final : obl_check_final option;
+}
+
+let not_final_obligation n =
+  let msg = match n with
+    | AllFinal -> str "This obligation is not final."
+    | SpecificFinal n -> str "This obligation is not final for program " ++ Id.print n ++ str "."
+  in
+  CErrors.user_err msg
+
+let do_check_final ~pm = function
+  | None -> ()
+  | Some check_final ->
+    let final = match check_final with
+      | AllFinal -> begin match State.first_pending pm with
+          | Some _ -> false
+          | None -> true
+        end
+      | SpecificFinal n -> begin match State.get_unique_open_prog pm (Some n) with
+          | Error _ -> true
+          | Ok _ -> false
+        end
+    in
+    if not final then not_final_obligation check_final
 
 let obligation_uctx_terminator prg uctx ~poly ~defined =
   if poly then
@@ -1302,7 +1331,7 @@ let obligation_uctx_terminator prg uctx ~poly ~defined =
     UState.Internal.reboot (Global.env ()) uctx
   else uctx
 
-let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto} =
+let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final} =
   let env = Global.env () in
   let ty = entry.proof_entry_type in
   let body, uctx = inline_private_constants ~uctx env entry in
@@ -1328,6 +1357,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto} =
   let prg_ctx = obligation_uctx_terminator prg uctx ~poly ~defined in
   let pm =
     update_program_decl_on_defined ~pm prg obls num obl ~uctx:prg_ctx rem ~auto in
+  let () = do_check_final ~pm check_final in
   pm, cst
 
 (* Similar to the terminator but for the admitted path; this assumes
@@ -1335,7 +1365,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto} =
 
    FIXME: There is duplication of this code with obligation_terminator
    and Obligations.admit_obligations *)
-let obligation_admitted_terminator ~pm {name; num; auto} uctx' dref =
+let obligation_admitted_terminator ~pm {name; num; auto; check_final} uctx' dref =
   let prg = Option.get (State.find pm name) in
   let {obls; remaining = rem} = prg.prg_obligations in
   let obl = obls.(num) in
@@ -1359,7 +1389,9 @@ let obligation_admitted_terminator ~pm {name; num; auto} uctx' dref =
       (Univ.UContext.instance uctx, uctx')
   in
   let obl = {obl with obl_body = Some (DefinedObl (cst, inst))} in
-  update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto
+  let pm = update_program_decl_on_defined ~pm prg obls num obl ~uctx:uctx' rem ~auto in
+  let () = do_check_final ~pm check_final in
+  pm
 
 end
 
@@ -2330,7 +2362,7 @@ let auto_solve_obligations ~pm n ?oblset tac : State.t * progress =
   let prg = get_unique_prog ~pm n in
   solve_prg_obligations ~pm prg ?oblset tac
 
-let solve_obligation prg num tac =
+let solve_obligation ?check_final prg num tac =
   let user_num = succ num in
   let { obls; remaining=rem } = Internal.get_obligations prg in
   let obl = obls.(num) in
@@ -2348,7 +2380,7 @@ let solve_obligation prg num tac =
   let auto ~pm n oblset tac = auto_solve_obligations ~pm n ~oblset tac in
   let proof_ending =
     let name = Internal.get_name prg in
-    Proof_ending.End_obligation {name; num; auto}
+    Proof_ending.End_obligation {name; num; auto; check_final}
   in
   let using = Internal.get_using prg in
   let cinfo = CInfo.make ~name:obl.obl_name ~typ:(EConstr.of_constr obl.obl_type) ?using () in
@@ -2515,7 +2547,7 @@ let admit_obligations ~pm n =
     let pm = admit_prog ~pm prg in
     pm
 
-let next_obligation ~pm n tac =
+let next_obligation ~pm ?(final=false) n tac =
   let prg = match n with
     | None ->
       begin match State.first_pending pm with
@@ -2531,7 +2563,12 @@ let next_obligation ~pm n tac =
     | Some i -> i
     | None -> CErrors.anomaly (Pp.str "Could not find a solvable obligation.")
   in
-  solve_obligation prg i tac
+  let check_final = if not final then None
+    else match n with
+      | None -> Some AllFinal
+      | Some n -> Some (SpecificFinal n)
+  in
+  solve_obligation ?check_final prg i tac
 
 let check_program_libraries () =
   Coqlib.check_required_library Coqlib.datatypes_module_name;
