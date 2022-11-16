@@ -1694,6 +1694,14 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
     | Vernacexpr.Transparent -> false in
 
   let make_entry ((((_ub, body) as b), eff), ((_ut, typ) as t)) =
+    let uctx = if poly && opaque then
+        (* Opaque polymorphic constants put their body constraints in the main
+           univ entry, which gets processed before side effects are inlined.
+           Therefore we need to merge the seff univs into the main uctx *)
+        UState.merge ~sideff:true UState.univ_rigid uctx
+          (Safe_typing.universes_of_private eff.Evd.seff_private)
+      else uctx
+    in
     let utyp, ubody =
       (* allow_deferred case *)
       if not poly &&
