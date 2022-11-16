@@ -62,7 +62,7 @@ The syntax for formulas is:
    .. note the following is not an insertprodn
 
    .. prodn::
-      F ::= {| @A | P | True | False | @F /\\ @F | @F \\/ @F | @F <-> @F | @F -> @F | ~ @F | @F = @F }
+      F ::= {| @A | P | True | False | @F /\ @F | @F \/ @F | @F <-> @F | @F -> @F | ~ @F | @F = @F }
       A ::= {| @p = @p | @p > @p | @p < @p | @p >= @p | @p <= @p }
       p ::= {| c | x | −@p | @p − @p | @p + @p | @p * @p | @p ^ n }
 
