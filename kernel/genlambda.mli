@@ -20,7 +20,6 @@ type case_annot = case_info * reloc_table * Declarations.recursivity_kind
 type 'v lambda =
 | Lrel          of Name.t * int
 | Lvar          of Id.t
-| Lmeta         of metavariable * 'v lambda (* type *)
 | Levar         of Evar.t * 'v lambda array (* arguments *)
 | Lprod         of 'v lambda * 'v lambda
 | Llam          of Name.t Context.binder_annot array * 'v lambda
@@ -51,8 +50,7 @@ and 'v lam_branches =
 and 'v fix_decl = Name.t Context.binder_annot array * 'v lambda array * 'v lambda array
 
 type evars =
-    { evars_val : constr evar_handler;
-      evars_metas : metavariable -> types }
+  { evars_val : constr evar_handler }
 
 val empty_evars : evars
 

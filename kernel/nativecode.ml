@@ -172,7 +172,6 @@ let eq_symbol sy1 sy2 =
   | SymbConst kn1, SymbConst kn2 -> Constant.CanOrd.equal kn1 kn2
   | SymbMatch sw1, SymbMatch sw2 -> eq_annot_sw sw1 sw2
   | SymbInd ind1, SymbInd ind2 -> Ind.CanOrd.equal ind1 ind2
-  | SymbMeta m1, SymbMeta m2 -> Int.equal m1 m2
   | SymbEvar evk1, SymbEvar evk2 -> Evar.equal evk1 evk2
   | SymbLevel l1, SymbLevel l2 -> Univ.Level.equal l1 l2
   | SymbProj (i1, k1), SymbProj (i2, k2) -> Ind.CanOrd.equal i1 i2 && Int.equal k1 k2
@@ -186,10 +185,9 @@ let hash_symbol symb =
   | SymbConst c -> combinesmall 4 (Constant.CanOrd.hash c)
   | SymbMatch sw -> combinesmall 5 (hash_annot_sw sw)
   | SymbInd ind -> combinesmall 6 (Ind.CanOrd.hash ind)
-  | SymbMeta m -> combinesmall 7 m
-  | SymbEvar evk -> combinesmall 8 (Evar.hash evk)
-  | SymbLevel l -> combinesmall 9 (Univ.Level.hash l)
-  | SymbProj (i, k) -> combinesmall 10 (combine (Ind.CanOrd.hash i) k)
+  | SymbEvar evk -> combinesmall 7 (Evar.hash evk)
+  | SymbLevel l -> combinesmall 8 (Univ.Level.hash l)
+  | SymbProj (i, k) -> combinesmall 9 (combine (Ind.CanOrd.hash i) k)
 
 module HashedTypeSymbol = struct
   type t = symbol
@@ -232,11 +230,6 @@ let get_ind tbl i =
   match tbl.(i) with
     | SymbInd ind -> ind
     | _ -> anomaly (Pp.str "get_ind failed.")
-
-let get_meta tbl i =
-  match tbl.(i) with
-    | SymbMeta m -> m
-    | _ -> anomaly (Pp.str "get_meta failed.")
 
 let get_evar tbl i =
   match tbl.(i) with
@@ -289,7 +282,6 @@ type primitive =
   | Mk_int
   | Mk_bool
   | Val_to_int
-  | Mk_meta
   | Mk_evar
   | MLand
   | MLnot
@@ -314,7 +306,6 @@ type primitive =
   | Get_const
   | Get_match
   | Get_ind
-  | Get_meta
   | Get_evar
   | Get_level
   | Get_proj
@@ -336,7 +327,6 @@ let eq_primitive p1 p2 =
   | Cast_accu, Cast_accu -> true
   | Upd_cofix, Upd_cofix -> true
   | Force_cofix, Force_cofix -> true
-  | Mk_meta, Mk_meta -> true
   | Mk_evar, Mk_evar -> true
   | Mk_proj, Mk_proj -> true
   | MLarrayget, MLarrayget -> true
@@ -366,42 +356,40 @@ let primitive_hash = function
   | Mk_int -> 16
   | Mk_bool -> 17
   | Val_to_int -> 18
-  | Mk_meta -> 19
-  | Mk_evar -> 20
-  | MLand -> 21
-  | MLle -> 22
-  | MLlt -> 23
-  | MLinteq -> 24
-  | MLlsl -> 25
-  | MLlsr -> 26
-  | MLland -> 27
-  | MLlor -> 28
-  | MLlxor -> 29
-  | MLadd -> 30
-  | MLsub -> 31
-  | MLmul -> 32
-  | MLmagic -> 33
-  | Coq_primitive (prim, b) -> combinesmall 34 (combine (CPrimitives.hash prim) (Hashtbl.hash b))
-  | Mk_proj -> 35
-  | MLarrayget -> 36
-  | Mk_empty_instance -> 37
-  | Mk_float -> 38
-  | Is_float -> 39
-  | Is_parray -> 41
-  | MLnot -> 41
-  | MLparray_of_array -> 42
-  | Get_value -> 43
-  | Get_sort -> 44
-  | Get_name -> 45
-  | Get_const -> 46
-  | Get_match -> 47
-  | Get_ind -> 48
-  | Get_meta -> 49
-  | Get_evar -> 50
-  | Get_level -> 51
-  | Get_proj -> 52
-  | Get_symbols -> 53
-  | Lazy -> 54
+  | Mk_evar -> 19
+  | MLand -> 20
+  | MLle -> 21
+  | MLlt -> 22
+  | MLinteq -> 23
+  | MLlsl -> 24
+  | MLlsr -> 25
+  | MLland -> 26
+  | MLlor -> 27
+  | MLlxor -> 28
+  | MLadd -> 29
+  | MLsub -> 30
+  | MLmul -> 31
+  | MLmagic -> 32
+  | Coq_primitive (prim, b) -> combinesmall 33 (combine (CPrimitives.hash prim) (Hashtbl.hash b))
+  | Mk_proj -> 34
+  | MLarrayget -> 35
+  | Mk_empty_instance -> 36
+  | Mk_float -> 37
+  | Is_float -> 38
+  | Is_parray -> 39
+  | MLnot -> 40
+  | MLparray_of_array -> 41
+  | Get_value -> 42
+  | Get_sort -> 43
+  | Get_name -> 44
+  | Get_const -> 45
+  | Get_match -> 46
+  | Get_ind -> 47
+  | Get_evar -> 48
+  | Get_level -> 49
+  | Get_proj -> 50
+  | Get_symbols -> 51
+  | Lazy -> 52
 
 type mllambda =
   | MLlocal        of lname
@@ -967,10 +955,6 @@ let get_ind_code i =
   MLprimitive (Get_ind,
     [|MLglobal symbols_tbl_name; MLint i|])
 
-let get_meta_code i =
-  MLprimitive (Get_meta,
-    [|MLglobal symbols_tbl_name; MLint i|])
-
 let get_evar_code i =
   MLprimitive (Get_evar,
     [|MLglobal symbols_tbl_name; MLint i|])
@@ -1156,10 +1140,6 @@ let compile_prim env decl cond paux =
   match t with
   | Lrel(id ,i) -> get_rel env id i
   | Lvar id -> get_var env id
-  | Lmeta(mv,_ty) ->
-     let tyn = fresh_lname Anonymous in
-     let i = push_symbol (SymbMeta mv) in
-     MLprimitive (Mk_meta, [|get_meta_code i; MLlocal tyn|])
   | Levar(evk, args) ->
      let i = push_symbol (SymbEvar evk) in
      (** Arguments are *not* reversed in evar instances in native compilation *)
@@ -1882,7 +1862,6 @@ let pp_mllam fmt l =
     | Mk_int -> Format.fprintf fmt "mk_int"
     | Mk_bool -> Format.fprintf fmt "mk_bool"
     | Val_to_int -> Format.fprintf fmt "val_to_int"
-    | Mk_meta -> Format.fprintf fmt "mk_meta_accu"
     | Mk_evar -> Format.fprintf fmt "mk_evar_accu"
     | MLand -> Format.fprintf fmt "(&&)"
     | MLnot -> Format.fprintf fmt "not"
@@ -1910,7 +1889,6 @@ let pp_mllam fmt l =
     | Get_const -> Format.fprintf fmt "get_const"
     | Get_match -> Format.fprintf fmt "get_match"
     | Get_ind -> Format.fprintf fmt "get_ind"
-    | Get_meta -> Format.fprintf fmt "get_meta"
     | Get_evar -> Format.fprintf fmt "get_evar"
     | Get_level -> Format.fprintf fmt "get_level"
     | Get_proj -> Format.fprintf fmt "get_proj"

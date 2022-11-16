@@ -62,7 +62,6 @@ type atom =
   | Acase of annot_sw * accumulator * t * t
   | Afix of t array * t array * rec_pos * int
   | Acofix of t array * t array * int * vcofix
-  | Ameta of metavariable * t
   | Aevar of Evar.t * t array (* arguments *)
   | Aproj of (inductive * int) * accumulator
 
@@ -73,7 +72,6 @@ type symbol =
   | SymbConst of Constant.t
   | SymbMatch of annot_sw
   | SymbInd of inductive
-  | SymbMeta of metavariable
   | SymbEvar of Evar.t
   | SymbLevel of Univ.Level.t
   | SymbProj of (inductive * int)
@@ -94,7 +92,6 @@ val mk_var_accu : Id.t -> t
 val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
 val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t
 val mk_cofix_accu : int -> t array -> t array -> t
-val mk_meta_accu : metavariable -> t
 val mk_evar_accu : Evar.t -> t array -> t
 val mk_proj_accu : (inductive * int) -> accumulator -> t
 val upd_cofix : t -> t -> unit

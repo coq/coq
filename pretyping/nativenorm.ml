@@ -291,7 +291,6 @@ and nf_atom env sigma atom =
   | Aind ind -> mkIndU ind
   | Asort s -> mkSort s
   | Avar id -> mkVar id
-  | Ameta (mv,_) -> mkMeta mv
   | Aproj (p, c) ->
       let c = nf_accu env sigma c in
       let p = get_proj env p in
@@ -367,9 +366,6 @@ and nf_atom_type env sigma atom =
       mkCoFix(s,(names,tt,ft)), tt.(s)
   | Aevar(evk,args) ->
     nf_evar env sigma evk args
-  | Ameta(mv,ty) ->
-     let ty = nf_type env sigma ty in
-     mkMeta mv, ty
   | Aproj(p,c) ->
       let c,tc = nf_accu_type env sigma c in
       let cj = make_judge c tc in
@@ -443,8 +439,7 @@ and nf_array env sigma t typ =
   mkArray(u, t, nf_val env sigma vdef typ_elem, typ_elem)
 
 let evars_of_evar_map sigma =
-  { Genlambda.evars_val = Evd.evar_handler sigma;
-    Genlambda.evars_metas = Evd.meta_type0 sigma }
+  { Genlambda.evars_val = Evd.evar_handler sigma }
 
 (* fork perf process, return profiler's process id *)
 let start_profiler_linux profile_fn =
