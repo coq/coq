@@ -269,18 +269,21 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
   let TyCtx (env, tyj, declared, usubst, univs) = tyenv in
   let ((body, uctx), side_eff) = body in
   let (body, uctx', valid_signatures) = handle env body side_eff in
+  let uctx' =
+    if Level.Map.is_empty usubst then uctx'
+    else (* levels of inlined seffs are in the univ_entry for the constant so are locally in the env (and not in the safe env) *)
+      on_fst (Level.Set.filter (fun l -> not (Level.Map.mem l usubst))) uctx'
+  in
   let uctx = ContextSet.union uctx uctx' in
   let env, univs = match univs with
     | Monomorphic ->
        assert (is_empty_level_subst usubst);
        push_context_set uctx env, Opaqueproof.PrivateMonomorphic uctx
     | Polymorphic _ ->
-       assert (Int.equal valid_signatures 0);
        push_subgraph uctx env,
        let private_univs = on_snd (subst_univs_level_constraints usubst) uctx in
        Opaqueproof.PrivatePolymorphic private_univs
   in
-  (* Note: non-trivial trusted side-effects only in monomorphic case *)
   let body,env,ectx = skip_trusted_seff valid_signatures body env in
   let j = Typeops.infer env body in
   let j = unzip ectx j in
