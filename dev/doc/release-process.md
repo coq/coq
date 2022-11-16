@@ -80,7 +80,7 @@
 
 - [ ] Sign the Windows and MacOS packages and upload them on GitHub.
   + The Windows packages must be signed by the Inria IT security service. They should be sent as a link to the binary (via [filesender](https://filesender.renater.fr) for example) together with its SHA256 hash in a signed e-mail to `dsi.securite` @ `inria.fr` putting `@maximedenes` in carbon copy.
-  + The MacOS packages should be signed with our own certificate. A detailed step-by-step guide can be found [on the wiki](https://github.com/coq/coq/wiki/SigningReleases).
+  + The MacOS packages should be signed with our own certificate.
   + The Snap package has to be built and uploaded to the snap store by running a [platform CI job manually](https://github.com/coq/platform/tree/2021.02/linux/snap/github_actions).
-    Then ask `@gares` to publish the upload or give you the password for the `coq-team` account on the store so that you can do it yourself.
+    Then ask a Platform maintainer with access to the store to publish the upload or give you access so that you can do it yourself.
 - [ ] Announce the release to Coq-Club and Discourse (coq-club@inria.fr + coq+announcements@discoursemail.com).
