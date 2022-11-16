@@ -524,22 +524,15 @@ let is_irrelevant mode r = match mode, r with
 let shortcut_irrelevant mode r =
   if is_irrelevant mode r then raise Irrelevant
 
-let assoc_defined mode id env = match Environ.lookup_named id env with
-| LocalDef (na, c, _) ->
-  let () = shortcut_irrelevant mode (binder_relevance na) in
-  c
-| LocalAssum (na, _) ->
-  let () = shortcut_irrelevant mode (binder_relevance na) in
-  raise Not_found
+let assoc_defined = function
+| LocalDef (_, c, _) -> c
+| LocalAssum (_, _) -> raise Not_found
 
-let constant_value_in mode env (kn, u) =
-  let cb = lookup_constant kn env in
-  let () = shortcut_irrelevant mode (cb.const_relevance) in
-  match cb.const_body with
-    | Def b -> subst_instance_constr u b
-    | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
-    | Undef _ -> raise (NotEvaluableConst NoBody)
-    | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
+let constant_value_in u = function
+| Def b -> subst_instance_constr u b
+| OpaqueDef _ -> raise (NotEvaluableConst Opaque)
+| Undef _ -> raise (NotEvaluableConst NoBody)
+| Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
 
 let ref_value_cache env flags mode tab ref =
   try
@@ -563,10 +556,14 @@ let ref_value_cache env flags mode tab ref =
               | LocalDef (_, t, _) -> lift n t
             end
           | VarKey id ->
-            if TransparentState.is_transparent_variable flags id then assoc_defined mode id env
+            let def = Environ.lookup_named id env in
+            let () = shortcut_irrelevant mode (binder_relevance (get_annot def)) in
+            if TransparentState.is_transparent_variable flags id then assoc_defined def
             else raise Not_found
-          | ConstKey cst ->
-            if TransparentState.is_transparent_constant flags (fst cst) then constant_value_in mode env cst
+          | ConstKey (cst,u) ->
+            let cb = lookup_constant cst env in
+            let () = shortcut_irrelevant mode (cb.const_relevance) in
+            if TransparentState.is_transparent_constant flags cst then constant_value_in u cb.const_body
             else raise Not_found
         in
         Def (inject body)
