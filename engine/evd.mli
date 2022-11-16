@@ -300,10 +300,6 @@ val expand_existential0 : evar_map -> constr pexistential -> constr list
 
 val instantiate_evar_array : evar_map -> evar_info -> econstr -> econstr SList.t -> econstr
 
-val evars_reset_evd  : ?with_conv_pbs:bool ->
-  evar_map ->  evar_map -> evar_map
-(** spiwack: this function seems to somewhat break the abstraction. *)
-
 (** {6 Misc} *)
 
 val restrict : Evar.t-> Filter.t -> ?candidates:econstr list ->
