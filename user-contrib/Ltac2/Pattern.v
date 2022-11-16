@@ -45,13 +45,20 @@ Ltac2 @ external matches_subterm_vect : t -> constr -> context * constr array :=
   "ltac2" "pattern_matches_subterm_vect".
 (** Internal version of [matches_subterms] that does not return the identifiers. *)
 
-Ltac2 @ external matches_goal : bool -> (match_kind * t) list -> (match_kind * t) ->
-  ident array * context array * constr array * context :=
+Ltac2 @ external matches_goal :
+  bool ->
+  ((match_kind * t) option * (match_kind * t)) list ->
+  (match_kind * t) ->
+  ident array * context array * context array * constr array * context :=
   "ltac2" "pattern_matches_goal".
 (** Given a list of patterns [hpats] for hypotheses and one pattern [cpat] for the
     conclusion, [matches_goal rev hpats cpat] produces (a stream of) tuples of:
     - An array of idents, whose size is the length of [hpats], corresponding to the
       name of matched hypotheses.
+    - An array of contexts, whose size is the number of [hpats] which have non empty body pattern,
+      corresponding to the contexts matched for every body pattern.
+      In case the match kind of a body pattern was [MatchPattern],
+      the corresponding context is ensured to be empty.
     - An array of contexts, whose size is the length of [hpats], corresponding to
       the contexts matched for every hypothesis pattern. In case the match kind of
       a hypothesis was [MatchPattern], the corresponding context is ensured to be empty.
@@ -122,8 +129,8 @@ Ltac2 lazy_goal_match0 rev pats :=
     let (pat, f) := p in
     let (phyps, pconcl) := pat in
     let cur _ :=
-      let (hids, hctx, subst, cctx) := matches_goal rev phyps pconcl in
-      fun _ => f hids hctx subst cctx
+      let (hids, hbctx, hctx, subst, cctx) := matches_goal rev phyps pconcl in
+      fun _ => f hids hbctx hctx subst cctx
     in
     Control.plus cur next
   end in
@@ -137,8 +144,8 @@ Ltac2 multi_goal_match0 rev pats :=
     let (pat, f) := p in
     let (phyps, pconcl) := pat in
     let cur _ :=
-      let (hids, hctx, subst, cctx) := matches_goal rev phyps pconcl in
-      f hids hctx subst cctx
+      let (hids, hbctx, hctx, subst, cctx) := matches_goal rev phyps pconcl in
+      f hids hbctx hctx subst cctx
     in
     Control.plus cur next
   end in

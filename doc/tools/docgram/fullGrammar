@@ -3870,6 +3870,8 @@ q_constr_matching: [
 
 gmatch_hyp_pattern: [
 | Prim.name ":" G_LTAC2_match_pattern      (* ltac2 plugin *)
+| Prim.name ":=" "[" G_LTAC2_match_pattern "]" ":" G_LTAC2_match_pattern      (* ltac2 plugin *)
+| Prim.name ":=" G_LTAC2_match_pattern      (* ltac2 plugin *)
 ]
 
 gmatch_pattern: [

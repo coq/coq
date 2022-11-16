@@ -452,27 +452,45 @@ let of_goal_matching {loc;v=gm} =
     let hyps_pats = p.q_goal_match_hyps in
     let (concl_ctx, concl_pat, concl_knd) = mk_pat concl_pat in
     let vars = pattern_vars concl_pat in
-    let map accu (na, pat) =
-      let (ctx, pat, knd) = mk_pat pat in
-      let vars = pattern_vars pat in
-      (Id.Map.fold Id.Map.add vars accu, (na, ctx, pat, knd))
+    let map accu (na, bod, pat) = match bod with
+      | None ->
+        let (ctx, pat, knd) = mk_pat pat in
+        let vars = pattern_vars pat in
+        (Id.Map.fold Id.Map.add vars accu, (na, None, (ctx, knd, pat)))
+      | Some bod ->
+        let bctx, bpat, bknd = mk_pat bod in
+        let (ctx, pat, knd) = mk_pat pat in
+        let bvars = pattern_vars bpat in
+        let vars = pattern_vars pat in
+        let accu = Id.Map.fold Id.Map.add bvars accu in
+        let accu = Id.Map.fold Id.Map.add vars accu in
+        (accu, (na, Some ((bctx, bknd, bpat)), (ctx, knd, pat)))
     in
     let (vars, hyps_pats) = List.fold_left_map map vars hyps_pats in
-    let map (_, _, pat, knd) = of_tuple [knd; of_pattern pat] in
     let concl = of_tuple [concl_knd; of_pattern concl_pat] in
-    let r = of_tuple [of_list ?loc map hyps_pats; concl] in
-    let hyps = List.map (fun (na, _, _, _) -> na) hyps_pats in
-    let hctx = List.map (fun (_, na, _, _) -> na) hyps_pats in
+    let of_hyp_pat (_, bpat, (_, knd, pat)) =
+      let bpat = Option.map (fun (_, a, b) -> (a, b)) bpat in
+      let of_mpat (a, b) = of_tuple [a; of_pattern b] in
+      of_tuple [of_option of_mpat bpat; of_mpat (knd, pat)]
+    in
+    let r = of_tuple [
+        of_list ?loc of_hyp_pat hyps_pats;
+        concl]
+    in
+    let hyps = List.map (fun (na, _, _) -> na) hyps_pats in
+    let hbctx = CList.filter_map (fun (_, b, _) -> Option.map pi1 b) hyps_pats in
+    let hctx = CList.map (fun (_, _, (na, _, _)) -> na) hyps_pats in
     (* Order of elements is crucial here! *)
     let vars = Id.Map.bindings vars in
     let subst = List.map (fun (id, loc) -> CAst.make ?loc (Name id)) vars in
-    (r, hyps, hctx, subst, concl_ctx)
+    (r, hyps, hbctx, hctx, subst, concl_ctx)
   in
   let map {loc;v=(pat, tac)} =
-    let (pat, hyps, hctx, subst, cctx) = mk_gpat pat in
+    let (pat, hyps, hbctx, hctx, subst, cctx) = mk_gpat pat in
     let tac = CAst.make ?loc @@ CTacFun ([CAst.make ?loc @@ CPatVar cctx.CAst.v], tac) in
     let tac = abstract_vars loc subst tac in
     let tac = abstract_vars loc hctx tac in
+    let tac = abstract_vars loc hbctx tac in
     let tac = abstract_vars loc hyps tac in
     of_tuple ?loc [pat; tac]
   in

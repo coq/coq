@@ -2,6 +2,11 @@ Require Import Ltac2.Ltac2 Ltac2.Notations.
 
 Ltac2 Type exn ::= [ Nope ].
 
+Ltac2 check_constr x y := match Constr.equal x y with
+| true => ()
+| false => Control.throw Nope
+end.
+
 Ltac2 check_id id id' := match Ident.equal id id' with
 | true => ()
 | false => Control.throw Nope
@@ -48,6 +53,52 @@ match! reverse goal with
 | [ h : ?t, h' : ?t |- _ ] =>
   check_id h @j;
   check_id h' @i
+end.
+
+pose (def1 := 0 + 0).
+pose (def2 := true).
+match! goal with
+| [ h := _ |- _ ] => check_id h @def2
+end.
+match! reverse goal with
+| [ h := _ |- _ ] => check_id h @def1
+end.
+match! goal with
+| [ h := _ : nat |- _ ] => check_id h @def1
+end.
+match! goal with
+| [ h : nat |- _ ] => check_id h @def1
+end.
+match! reverse goal with
+| [ h : nat |- _ ] => check_id h @x
+end.
+match! goal with
+| [ h := ?v |- _ ] => check_constr v constr:(true)
+end.
+match! goal with
+| [ h := context c [ 0 ] |- _ ] => check_constr (Pattern.instantiate c constr:(3)) constr:(3 + 0)
+end.
+match! goal with
+| [ h1 : context [ unit ] , h2 := context [ 0 ] , h3 : context [ bool ] |- _ ] => ()
+end.
+match! goal with
+| [ h1 : unit , h2 := context [ 0 ] , h3 : context [ bool ] |- _ ] => ()
+end.
+lazy_match! goal with
+| [ h1 : context c1 [ ?t1 ] , h2 := context c2 [ Nat.add ?v2 ] , h3 : context c3 [ ?t2 ] |- _ ] =>
+    check_constr t1 'bool;
+    check_constr v2 '0;
+    check_constr t2 'bool;
+    check_constr (Pattern.instantiate c1 'Empty_set) 'Empty_set;
+    check_constr (Pattern.instantiate c2 '(Nat.add 1)) '(1 + 0);
+    check_constr (Pattern.instantiate c3 'unit) 'unit
+end.
+match! goal with
+| [ h1 : unit , h2 := context c2 [ Nat.add ?v2 ] , h3 : context c3 [ ?t2 ] |- _ ] =>
+    check_constr v2 '0;
+    check_constr t2 'bool;
+    check_constr (Pattern.instantiate c2 '(Nat.add 1)) '(1 + 0);
+    check_constr (Pattern.instantiate c3 'unit) 'unit
 end.
 Abort.
 

@@ -798,7 +798,21 @@ GRAMMAR EXTEND Gram
     [ [ m = match_list -> { m } ] ]
   ;
   gmatch_hyp_pattern:
-    [ [ na = Prim.name; ":"; pat = match_pattern -> { (na, pat) } ] ]
+    [ [ na = Prim.name; ":"; pat = match_pattern -> { (na, None, pat) }
+      | na = Prim.name; ":="; "["; bod = match_pattern; "]"; ":"; pat = match_pattern ->
+        { (na, Some bod, pat) }
+      | na = Prim.name; ":="; bod = match_pattern ->
+        { let bod, ty = match bod.CAst.v with
+              | QConstrMatchPattern { CAst.v = CCast (t, DEFAULTcast, ty) } ->
+                let t = CAst.make ?loc:t.loc @@ QConstrMatchPattern t in
+                let ty = CAst.make ?loc:ty.loc @@ QConstrMatchPattern ty in
+                t, ty
+              | _ ->
+                let ty = CAst.make @@ QConstrMatchPattern (CAst.make @@ CHole (None, IntroAnonymous, None)) in
+                bod, ty
+          in
+          (na, Some bod, ty) }
+  ] ]
   ;
   gmatch_pattern:
     [ [ "["; hl = LIST0 gmatch_hyp_pattern SEP ","; "|-"; p = match_pattern; "]" ->

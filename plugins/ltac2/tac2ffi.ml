@@ -85,6 +85,12 @@ let repr_to r x = r.r_to x
 
 let make_repr r_of r_to = { r_of; r_to; r_id = false; }
 
+let map_repr f g r = {
+  r_of = (fun x -> r.r_of (g x));
+  r_to = (fun x -> f (r.r_to x));
+  r_id = false;
+}
+
 (** Dynamic tags *)
 
 let val_exn = Val.create "exn"
@@ -296,6 +302,16 @@ let to_pair f g = function
 let pair r0 r1 = {
   r_of = (fun p -> of_pair r0.r_of r1.r_of p);
   r_to = (fun p -> to_pair r0.r_to r1.r_to p);
+  r_id = false;
+}
+
+let of_triple f g h (x, y, z) = ValBlk (0, [|f x; g y; h z|])
+let to_triple f g h = function
+| ValBlk (0, [|x; y; z|]) -> (f x, g y, h z)
+| _ -> assert false
+let triple r0 r1 r2 = {
+  r_of = (fun p -> of_triple r0.r_of r1.r_of r2.r_of p);
+  r_to = (fun p -> to_triple r0.r_to r1.r_to r2.r_to p);
   r_id = false;
 }
 

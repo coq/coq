@@ -19,8 +19,7 @@ type match_pattern =
 | MatchPattern of Pattern.constr_pattern
 | MatchContext of Pattern.constr_pattern
 
-(** TODO: handle definitions *)
-type match_context_hyps = match_pattern
+type match_context_hyps = match_pattern option * match_pattern
 
 type match_rule = match_context_hyps list * match_pattern
 
@@ -30,6 +29,6 @@ val match_goal:
   constr ->
   rev:bool ->
   match_rule ->
-    ((Id.t * context option) list * (* List of hypotheses matching: name + context *)
+    ((Id.t * context option option * context option) list * (* List of hypotheses matching: name + body context + context *)
     context option * (* Context for conclusion *)
     Ltac_pretype.patvar_map (* Pattern variable substitution *)) Proofview.tactic

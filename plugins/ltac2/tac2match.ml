@@ -23,8 +23,7 @@ type match_pattern =
 | MatchPattern of Pattern.constr_pattern
 | MatchContext of Pattern.constr_pattern
 
-(** TODO: handle definitions *)
-type match_context_hyps = match_pattern
+type match_context_hyps = match_pattern option * match_pattern
 
 type match_rule = match_context_hyps list * match_pattern
 
@@ -188,22 +187,20 @@ module PatternMatching (E:StaticEnvironment) = struct
     pick hyps >>= fun decl ->
     let id = NamedDecl.get_id decl in
     pattern_match_term pat (NamedDecl.get_type decl) >>= fun ctx ->
-    return (id, ctx)
+    return (id, None, ctx)
 
-  let _hyp_match_body_and_type bodypat typepat hyps =
+  let hyp_match_body_and_type bodypat typepat hyps =
     pick hyps >>= function
       | LocalDef (id,body,hyp) ->
           pattern_match_term bodypat body >>= fun ctx_body ->
           pattern_match_term typepat hyp >>= fun ctx_typ ->
-          return (id, ctx_body, ctx_typ)
+          return (id.binder_name, Some ctx_body, ctx_typ)
       | LocalAssum (id,hyp) -> fail
 
   let hyp_match pat hyps =
     match pat with
-    | typepat ->
-        hyp_match_type typepat hyps
-(*     | Def ((_,hypname),bodypat,typepat) -> *)
-(*         hyp_match_body_and_type hypname bodypat typepat hyps *)
+    | None, typepat -> hyp_match_type typepat hyps
+    | Some bodypat, typepat -> hyp_match_body_and_type bodypat typepat hyps
 
   (** [hyp_pattern_list_match pats hyps lhs], matches the list of
       patterns [pats] against the hypotheses in [hyps], and eventually
@@ -211,10 +208,10 @@ module PatternMatching (E:StaticEnvironment) = struct
   let rec hyp_pattern_list_match pats hyps accu =
     match pats with
     | pat::pats ->
-        hyp_match pat hyps >>= fun (matched_hyp, hyp_ctx) ->
+        hyp_match pat hyps >>= fun (matched_hyp, _, _ as v) ->
         let select_matched_hyp decl = Id.equal (NamedDecl.get_id decl) matched_hyp in
         let hyps = CList.remove_first select_matched_hyp hyps in
-        hyp_pattern_list_match pats hyps ((matched_hyp, hyp_ctx) :: accu)
+        hyp_pattern_list_match pats hyps (v :: accu)
     | [] -> return accu
 
   let rule_match_goal hyps concl = function
