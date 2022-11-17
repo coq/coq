@@ -541,6 +541,24 @@ let ref_value_cache env flags mode tab ref =
     in
     KeyTable.add tab ref v; v
 
+let rec subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.kind c with
+| Rel i ->
+  begin match expand_rel i subst with
+  | Inl (k, lazy v) -> Vars.lift k v
+  | Inr (m, _) -> mkRel m
+  end
+| Const _ | Ind _ | Construct _ | Sort _ -> subst_instance_constr usubst c
+| Case (ci, u, pms, p, iv, discr, br) ->
+  let u' = usubst_instance e u in
+  let c = if u == u' then c else mkCase (ci, u', pms, p, iv, discr, br) in
+  Constr.map_with_binders usubs_lift subst_constr e c
+| Array (u,elems,def,ty) ->
+  let u' = usubst_instance e u in
+  let c = if u == u' then c else mkArray (u',elems,def,ty) in
+  Constr.map_with_binders usubs_lift subst_constr e c
+| _ ->
+  Constr.map_with_binders usubs_lift subst_constr e c
+
 (* The inverse of mk_clos: move back to constr *)
 (* XXX should there be universes in lfts???? *)
 let rec to_constr (lfts, usubst as ulfts) v =
@@ -646,24 +664,6 @@ and to_constr_case (lfts,_ as ulfts) ci u pms p iv c ve env =
             iv,
             to_constr ulfts c,
             Array.map f_ctx ve)
-
-and subst_constr (subst,usubst as e) c = match [@ocaml.warning "-4"] Constr.kind c with
-| Rel i ->
-  begin match expand_rel i subst with
-  | Inl (k, lazy v) -> Vars.lift k v
-  | Inr (m, _) -> mkRel m
-  end
-| Const _ | Ind _ | Construct _ | Sort _ -> subst_instance_constr usubst c
-| Case (ci, u, pms, p, iv, discr, br) ->
-  let u' = usubst_instance e u in
-  let c = if u == u' then c else mkCase (ci, u', pms, p, iv, discr, br) in
-  Constr.map_with_binders usubs_lift subst_constr e c
-| Array (u,elems,def,ty) ->
-  let u' = usubst_instance e u in
-  let c = if u == u' then c else mkArray (u',elems,def,ty) in
-  Constr.map_with_binders usubs_lift subst_constr e c
-| _ ->
-  Constr.map_with_binders usubs_lift subst_constr e c
 
 and comp_subs (el,u) (s,u') =
   Esubst.lift_subst (fun el c -> lazy (to_constr (el,u) c)) el s, u'
