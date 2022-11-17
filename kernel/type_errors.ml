@@ -11,7 +11,6 @@
 open Names
 open Constr
 open Environ
-open Reduction
 open Univ
 
 (* Type errors. *)
@@ -93,9 +92,6 @@ type inductive_error =
 
 exception InductiveError of inductive_error
 
-let nfj env {uj_val=c;uj_type=ct} =
-  {uj_val=c;uj_type=nf_betaiota env ct}
-
 let error_unbound_rel env n =
   raise (TypeError (env, UnboundRel n))
 
@@ -118,11 +114,10 @@ let error_case_not_inductive env j =
   raise (TypeError (env, CaseNotInductive j))
 
 let error_number_branches env cj expn =
-  raise (TypeError (env, NumberBranches (nfj env cj,expn)))
+  raise (TypeError (env, NumberBranches (cj, expn)))
 
 let error_ill_formed_branch env c i actty expty =
-  raise (TypeError (env,
-    IllFormedBranch (c,i,nf_betaiota env actty, nf_betaiota env expty)))
+  raise (TypeError (env, IllFormedBranch (c, i, actty, expty)))
 
 let error_generalization env nvar c =
   raise (TypeError (env, Generalization (nvar,c)))
