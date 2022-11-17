@@ -1845,6 +1845,13 @@ let mkApp (c, al) =
   | _ ->
     { proj = mkApp (c.proj, Array.map proj al); self = App (c, al); data = max c.data (max_array data al) }
 
+let get_max_rel sigma c =
+  let rec aux n accu c = match EConstr.kind sigma c with
+  | Rel i -> if i <= n then accu else max accu (i - n)
+  | _ -> EConstr.fold_with_binders sigma succ aux n accu c
+  in
+  aux 0 0 c
+
 let rec make sigma c0 = match EConstr.kind sigma c0 with
 | (Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ | Int _ | Float _) as r ->
   { proj = c0; self = r; data = 0 }
@@ -1875,9 +1882,9 @@ let rec make sigma c0 = match EConstr.kind sigma c0 with
   let t = make sigma t in
   { proj = c0; self = Proj (p, t); data = t.data }
 | Evar (e, al) ->
-  let al = SList.Skip.map (fun c -> make sigma c) al in
-  let data = SList.Skip.fold (fun accu v -> max accu v.data) 0 al in
-  { proj = c0; self = Evar (e, al); data }
+  let data = SList.Skip.fold (fun accu v -> max accu (get_max_rel sigma v)) 0 al in
+  (* Ignore evar instances to save memory, they are not used below. *)
+  { proj = c0; self = Evar (e, SList.empty); data }
 | Case (ci, u, pms, p, iv, c, bl) ->
   let pmsd, pms = make_array sigma pms in
   let pd, p =
