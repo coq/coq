@@ -92,6 +92,10 @@ Ltac2 @ external constructor : inductive -> int -> constructor := "ltac2" "const
 (** Generate the i-th constructor for a given inductive type. Indexing starts
     at 0. Panics if there is no such constructor. *)
 
+Module Case.
+Ltac2 @ external equal : case -> case -> bool := "ltac2" "constr_case_equal".
+End Case.
+
 End Unsafe.
 
 Module Binder.

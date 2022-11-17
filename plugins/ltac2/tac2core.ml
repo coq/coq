@@ -243,6 +243,10 @@ let define2 name r0 r1 f = define_primitive name (arity_suc arity_one) begin fun
   f (Value.repr_to r0 x) (Value.repr_to r1 y)
 end
 
+let define_equality name r eq = define2 name r r begin fun x y ->
+    return (Value.of_bool (eq x y))
+end
+
 let define3 name r0 r1 r2 f = define_primitive name (arity_suc (arity_suc arity_one)) begin fun x y z ->
   f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z)
 end
@@ -850,6 +854,20 @@ let () = define1 "constr_has_evar" constr begin fun c ->
   let b = Evarutil.has_undefined_evars sigma c in
   Proofview.tclUNIT (Value.of_bool b)
 end
+
+(** Extra equalities *)
+
+let () = define_equality "evar_equal" evar Evar.equal
+let () = define_equality "float_equal" float Float64.equal
+let () = define_equality "uint63_equal" uint63 Uint63.equal
+let () = define_equality "meta_equal" int Int.equal
+
+let () = define_equality "constant_equal" constant Constant.UserOrd.equal
+let () = define_equality "constr_case_equal" (repr_ext val_case) begin fun x y ->
+    Ind.UserOrd.equal x.ci_ind y.ci_ind && Sorts.relevance_equal x.ci_relevance y.ci_relevance
+end
+let () = define_equality "constructor_equal" (repr_ext val_constructor) Construct.UserOrd.equal
+let () = define_equality "projection_equal" (repr_ext val_projection) Projection.UserOrd.equal
 
 (** Patterns *)
 
