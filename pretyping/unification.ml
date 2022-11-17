@@ -1807,12 +1807,17 @@ let keyed_unify env evd kop =
           | None -> false
           | Some kc -> Keys.equiv_keys kop kc
 
+type 'aconstr akind =
+  | AApp of 'aconstr * 'aconstr array
+  | ACast of 'aconstr (* only the main term *)
+  | AOther of 'aconstr array
+
 module AConstr :
 sig
   type t
   val proj : t -> EConstr.t
   val make : evar_map -> EConstr.t -> t
-  val kind : t -> (t, t, ESorts.t, EInstance.t) kind_of_term
+  val kind : t -> t akind
   val mkApp : t * t array -> t
   val closed0 : t -> bool
 end =
@@ -1820,7 +1825,7 @@ struct
 
 type t = {
   proj : EConstr.t;
-  self : (t, t, ESorts.t, EInstance.t) kind_of_term;
+  self : t akind;
   data : int;
 }
 
@@ -1840,10 +1845,10 @@ let kind v = v.self
 let mkApp (c, al) =
   if Array.is_empty al then c
   else match kind c with
-  | App (c0, al0) ->
-    { proj = mkApp (c.proj, Array.map proj al); self = App (c0, Array.append al0 al); data = max c.data (max_array data al) }
+  | AApp (c0, al0) ->
+    { proj = mkApp (c.proj, Array.map proj al); self = AApp (c0, Array.append al0 al); data = max c.data (max_array data al) }
   | _ ->
-    { proj = mkApp (c.proj, Array.map proj al); self = App (c, al); data = max c.data (max_array data al) }
+    { proj = mkApp (c.proj, Array.map proj al); self = AApp (c, al); data = max c.data (max_array data al) }
 
 let get_max_rel sigma c =
   let rec aux n accu c = match EConstr.kind sigma c with
@@ -1852,76 +1857,72 @@ let get_max_rel sigma c =
   in
   aux 0 0 c
 
+let get_max_rel_array sigma v = Array.fold_left (fun accu c -> max accu (get_max_rel sigma c)) 0 v
+
+let anorec = AOther [||]
+
 let rec make sigma c0 = match EConstr.kind sigma c0 with
-| (Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ | Int _ | Float _) as r ->
-  { proj = c0; self = r; data = 0 }
+| (Meta _ | Var _ | Sort _ | Const _ | Ind _ | Construct _ | Int _ | Float _) ->
+  { proj = c0; self = anorec; data = 0 }
 | Rel n ->
-  { proj = c0; self = Rel n; data = n }
+  { proj = c0; self = anorec; data = n }
 | Cast (c, k, t) ->
   let c = make sigma c in
-  let t = make sigma t in
-  { proj = c0; self = Cast (c, k, t); data = max c.data t.data }
-| Prod (na, t, c) ->
-  let t = make sigma t in
-  let c = make sigma c in
-  { proj = c0; self = Prod (na, t, c); data = max t.data (lift c.data) }
-| Lambda (na, t, c) ->
+  (* unification doesn't recurse in the type *)
+  let td = get_max_rel sigma t in
+  { proj = c0; self = ACast c; data = max c.data td }
+| Lambda (na, t, c) | Prod (na, t, c) ->
   let t = make sigma t in
   let c = make sigma c in
-  { proj = c0; self = Lambda (na, t, c); data = max t.data (lift c.data) }
+  { proj = c0; self = AOther [|t; c|]; data = max t.data (lift c.data) }
 | LetIn (na, b, t, c) ->
   let b = make sigma b in
-  let t = make sigma t in
+  (* unification doesn't recurse in the type *)
+  let td = get_max_rel sigma t in
   let c = make sigma c in
-  { proj = c0; self = LetIn (na, b, t, c); data = max b.data (max t.data (lift c.data)) }
+  { proj = c0; self = AOther [|b; c|]; data = max b.data (max td (lift c.data)) }
 | App (c, al) ->
   let c = make sigma c in
   let ald, al = make_array sigma al in
-  { proj = c0; self = App (c, al); data = max c.data ald }
+  { proj = c0; self = AApp (c, al); data = max c.data ald }
 | Proj (p, t) ->
   let t = make sigma t in
-  { proj = c0; self = Proj (p, t); data = t.data }
+  { proj = c0; self = AOther [|t|]; data = t.data }
 | Evar (e, al) ->
+  (* Unification doesn't recurse on the subterms in evar instances *)
   let data = SList.Skip.fold (fun accu v -> max accu (get_max_rel sigma v)) 0 al in
-  (* Ignore evar instances to save memory, they are not used below. *)
-  { proj = c0; self = Evar (e, SList.empty); data }
+  { proj = c0; self = AOther [||]; data }
 | Case (ci, u, pms, p, iv, c, bl) ->
-  let pmsd, pms = make_array sigma pms in
-  let pd, p =
+  let pmsd = get_max_rel_array sigma pms in
+  let pd =
     let (nas, p) = p in
-    let p = make sigma p in
-    liftn (Array.length nas) p.data, (nas, p)
+    let pd = get_max_rel sigma p in
+    liftn (Array.length nas) pd
   in
-  let ivd, iv = match iv with
-  | NoInvert -> 0, NoInvert
-  | CaseInvert { indices } ->
-    let n, indices = make_array sigma indices in
-    n, CaseInvert { indices }
+  let ivd = match iv with
+  | NoInvert -> 0
+  | CaseInvert { indices } -> get_max_rel_array sigma indices
   in
   let c = make sigma c in
   let fold accu (nas, p) =
     let p = make sigma p in
-    max accu (liftn (Array.length nas) p.data), (nas, p)
+    max accu (liftn (Array.length nas) p.data), p
   in
   let bld, bl = Array.fold_left_map fold 0 bl in
   let data = max pmsd @@ max pd @@ max ivd @@ max c.data bld in
-  { proj = c0; self = Case (ci, u, pms, p, iv, c, bl); data }
-| Fix (ln, (lna, tl, bl)) ->
+  (* Unification only recurses on the discriminee and the branches *)
+  { proj = c0; self = AOther (Array.append [|c|] bl); data }
+| Fix (_, (_, tl, bl)) | CoFix(_,(_,tl,bl)) ->
   let tld, tl = make_array sigma tl in
   let bld, bl = make_array sigma bl in
   let data = max tld (liftn (Array.length tl) bld) in
-  { proj = c0; self = Fix (ln, (lna, tl, bl)); data }
-| CoFix(ln,(lna,tl,bl)) ->
-  let tld, tl = make_array sigma tl in
-  let bld, bl = make_array sigma bl in
-  let data = max tld (liftn (Array.length tl) bld) in
-  { proj = c0; self = CoFix (ln, (lna, tl, bl)); data }
+  { proj = c0; self = AOther (Array.append tl bl); data }
 | Array(u,t,def,ty) ->
   let td, t = make_array sigma t in
   let def = make sigma def in
   let ty = make sigma ty in
   let data = max td (max def.data ty.data) in
-  { proj = c0; self = Array(u,t,def,ty); data }
+  { proj = c0; self = AOther (Array.append [|def;ty|] t); data }
 
 and make_array sigma v =
   let fold accu c =
@@ -1941,7 +1942,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let opgnd = if occur_meta_or_undefined_evar evd op then NotGround else Ground in
   let rec matchrec cl =
     let rec strip_outer_cast c = match AConstr.kind c with
-    | Cast (c, _, _) -> strip_outer_cast c
+    | ACast c -> strip_outer_cast c
     | _ -> c
     in
     let cl = strip_outer_cast cl in
@@ -1960,64 +1961,17 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
        else user_err Pp.(str "Bound 1")
      with ex when precatchable_exception ex ->
        (match AConstr.kind cl with
-          | App (f,args) ->
-              let n = Array.length args in
-              assert (n>0);
-              let c1 = AConstr.mkApp (f,Array.sub args 0 (n-1)) in
-              let c2 = args.(n-1) in
-              (try
-                 matchrec c1
-               with ex when precatchable_exception ex ->
-                 matchrec c2)
-          | Case(_,_,_,_,_,c,lf) -> (* does not search in the predicate *)
-               (try
-                 matchrec c
-               with ex when precatchable_exception ex ->
-                 iter_fail matchrec (Array.map snd lf))
-          | LetIn(_,c1,_,c2) ->
-               (try
-                 matchrec c1
-               with ex when precatchable_exception ex ->
-                 matchrec c2)
-
-          | Proj (p,c) -> matchrec c
-
-          | Fix(_,(_,types,terms)) ->
-               (try
-                 iter_fail matchrec types
-               with ex when precatchable_exception ex ->
-                 iter_fail matchrec terms)
-
-          | CoFix(_,(_,types,terms)) ->
-               (try
-                 iter_fail matchrec types
-               with ex when precatchable_exception ex ->
-                 iter_fail matchrec terms)
-
-          | Prod (_,t,c) ->
-              (try
-                 matchrec t
-               with ex when precatchable_exception ex ->
-                 matchrec c)
-
-          | Lambda (_,t,c) ->
-              (try
-                 matchrec t
-               with ex when precatchable_exception ex ->
-                 matchrec c)
-
-          | Array(_u,t,def,ty) ->
-            (try
-              matchrec def
-            with ex when precatchable_exception ex ->
-             try
-              matchrec ty
-            with ex when precatchable_exception ex ->
-              iter_fail matchrec t)
-
-          | Cast (_, _, _) (* Is this expected? *)
-          | Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Const _ | Ind _
-            | Construct _ | Int _ | Float _ -> user_err Pp.(str "Match_subterm")))
+        | ACast _ -> assert false (* just got stripped *)
+        | AApp (f,args) ->
+          let n = Array.length args in
+          assert (n>0);
+          let c1 = AConstr.mkApp (f,Array.sub args 0 (n-1)) in
+          let c2 = args.(n-1) in
+          (try
+             matchrec c1
+           with ex when precatchable_exception ex ->
+             matchrec c2)
+        | AOther a -> iter_fail matchrec a))
   in
   try matchrec cl
   with ex when precatchable_exception ex ->
