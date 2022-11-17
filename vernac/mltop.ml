@@ -72,11 +72,9 @@ module Fl_internals = struct
   (* We register errors at for Dynlink and Findlib, it is possible to
      do so Symtable too, as we used to do in the bytecode init code.
      *)
-  let _ = CErrors.register_handler (function
+  let () = CErrors.register_handler (function
       | Dynlink.Error msg ->
-        let paths = Findlib.search_path () in
-        Some (hov 0 (str "Dynlink error: " ++ str (Dynlink.error_message msg) ++
-                     cut () ++ str "Findlib paths:" ++ cut () ++ v 0 (prlist_with_sep cut str paths) ++ fnl()))
+        Some (hov 0 (str "Dynlink error: " ++ str (Dynlink.error_message msg)))
       | Fl_package_base.No_such_package(p,msg) ->
         let paths = Findlib.search_path () in
         Some (hov 0 (str "Findlib error: " ++ str p ++
