@@ -115,22 +115,14 @@ type zipper =
 
 type stack = zipper list
 
-type whd =
-  | Vprod of vprod
-  | Vaccu of atom * stack
-  | Vfun of vfun
-  | Vfix of vfix * arguments option
-  | Vcofix of vcofix * to_update * arguments option
-  | Vconst of int
-  | Vblock of vblock
-  | Vint64 of int64
-  | Vfloat64 of float
-  | Varray of values Parray.t
+type accumulator = atom * stack
+
+type kind = (values, accumulator, vfun, vprod, vfix * arguments option, vcofix * to_update * arguments option, vblock) Values.kind
 
 (** For debugging purposes only *)
 
 val pr_atom : atom -> Pp.t
-val pr_whd : whd -> Pp.t
+val pr_kind : kind -> Pp.t
 val pr_stack : stack -> Pp.t
 
 (** Constructors *)
@@ -150,7 +142,7 @@ external val_of_annot_switch : annot_switch -> values = "%identity"
 
 (** Destructors *)
 
-val whd_val : values -> whd
+val whd_val : values -> kind
 val uni_lvl_val : values -> Univ.Level.t
 
 (** Arguments *)

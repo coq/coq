@@ -9,6 +9,7 @@
 (************************************************************************)
 open Names
 open Univ
+open Values
 
 (********************************************)
 (* Initialization of the abstract machine ***)
@@ -270,18 +271,9 @@ type zipper =
 type stack = zipper list
 
 type to_update = values
+type accumulator = atom * stack
 
-type whd =
-  | Vprod of vprod
-  | Vaccu of atom * stack
-  | Vfun of vfun
-  | Vfix of vfix * arguments option
-  | Vcofix of vcofix * to_update * arguments option
-  | Vconst of int
-  | Vblock of vblock
-  | Vint64 of int64
-  | Vfloat64 of float
-  | Varray of values Parray.t
+type kind = (values, accumulator, vfun, vprod, vfix * arguments option, vcofix * to_update * arguments option, vblock) Values.kind
 
 (* Functions over arguments *)
 let nargs : arguments -> int = fun args -> Obj.size (Obj.repr args) - 3
@@ -644,7 +636,7 @@ let rec pr_atom a =
                             | _ -> str "...") ++ str ")"
   | Aind (mi,i) -> str "Aind(" ++ MutInd.print mi ++ str "#" ++ int i ++ str ")"
   | Asort _ -> str "Asort(")
-and pr_whd w =
+and pr_kind w =
   let open Pp in
   match w with
   | Vprod _ -> str "Vprod"

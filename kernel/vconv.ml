@@ -3,6 +3,7 @@ open Names
 open Environ
 open Reduction
 open Vm
+open Values
 open Vmvalues
 open Vmsymtable
 

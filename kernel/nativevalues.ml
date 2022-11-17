@@ -11,6 +11,7 @@
 open Util
 open CErrors
 open Names
+open Values
 open Constr
 
 (** This module defines the representation of values internally used by
@@ -108,16 +109,6 @@ type symbol =
   | SymbProj of (inductive * int)
 
 type block
-
-type kind_of_value =
-  | Vaccu of accumulator
-  | Vfun of (t -> t)
-  | Vprod of Name.t * t * t
-  | Vconst of int
-  | Vint64 of int64
-  | Vfloat64 of float
-  | Varray of t Parray.t
-  | Vblock of block
 
 type symbols = symbol array
 
@@ -294,6 +285,8 @@ let block_field (b:block) i = (Obj.magic (Obj.field (Obj.magic b) i) : t)
 
 let block_tag (b:block) =
   Obj.tag (Obj.magic b)
+
+type kind = (t, accumulator, t -> t, Name.t * t * t, Empty.t, Empty.t, block) Values.kind
 
 let kind_of_value (v:t) =
   let o = Obj.repr v in

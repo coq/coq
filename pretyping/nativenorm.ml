@@ -19,6 +19,7 @@ open Names
 open Inductive
 open Util
 open Nativecode
+open Values
 open Nativevalues
 open Context.Rel.Declaration
 
@@ -191,6 +192,7 @@ let rec nf_val env sigma v typ =
   match kind_of_value v with
   | Vaccu accu -> nf_accu env sigma accu
   | Vprod (na, dom, codom) -> fst @@ nf_prod env sigma (na, dom, codom)
+  | Vfix e | Vcofix e -> Empty.abort e
   | Vfun f ->
       let lvl = nb_rel env in
       let name,dom,codom =

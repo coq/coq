@@ -131,21 +131,11 @@ val block_size : block -> int
 val block_field : block -> int -> t
 val block_tag : block -> int
 
-
-
 (* kind_of_value *)
 
-type kind_of_value =
-  | Vaccu of accumulator
-  | Vfun of (t -> t)
-  | Vprod of Name.t * t * t
-  | Vconst of int
-  | Vint64 of int64
-  | Vfloat64 of float
-  | Varray of t Parray.t
-  | Vblock of block
+type kind = (t, accumulator, t -> t, Name.t * t * t, Util.Empty.t, Util.Empty.t, block) Values.kind
 
-val kind_of_value : t -> kind_of_value
+val kind_of_value : t -> kind
 
 val str_encode : 'a -> string
 val str_decode : string -> 'a

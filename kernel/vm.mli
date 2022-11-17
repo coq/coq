@@ -33,4 +33,4 @@ val decompose_vfun2  : int -> vfun -> vfun -> int * values * values
 
 (** Apply a value *)
 
-val apply_whd : int -> whd -> values
+val apply_whd : int -> kind -> values

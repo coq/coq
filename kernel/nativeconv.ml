@@ -11,6 +11,7 @@
 open Names
 open Reduction
 open Util
+open Values
 open Nativevalues
 open Nativecode
 open Environ
@@ -58,6 +59,7 @@ let rec conv_val env pb lvl v1 v2 cu =
             aux lvl max b1 b2 (i+1) cu
         in
         aux lvl (n1-1) b1 b2 0 cu
+    | (Vfix e | Vcofix e), _ | _, (Vfix e | Vcofix e) -> Empty.abort e
     | (Vaccu _ | Vprod _ | Vconst _ | Vint64 _ | Vfloat64 _ | Varray _ | Vblock _), _ -> raise NotConvertible
 
 and conv_accu env pb lvl k1 k2 cu =
