@@ -11,26 +11,6 @@
 open Names
 open CErrors
 
-let rec ensure_only_one_path_contains from file acc = function
-  | [] ->
-      begin match acc with
-      | Some x -> x
-      | None ->
-          user_err Pp.(str "File " ++ str file ++ str " not found in " ++
-            DirPath.print from ++ str".")
-     end
-  | x :: xs ->
-      let abspath = x ^ "/" ^ file in
-      if Sys.file_exists abspath then begin
-        match acc with
-        | None -> ensure_only_one_path_contains from file (Some abspath) xs
-        | Some other ->
-            user_err Pp.(str "File " ++ str file ++ str " found twice in " ++
-              DirPath.print from ++ str":" ++ spc () ++ str other ++ str "," ++
-              spc() ++ str abspath ++ str ".")
-      end else
-        ensure_only_one_path_contains from file acc xs
-
 let extra_deps = Summary.ref ~name:"extra_deps" Id.Map.empty
 
 let bind_extra_dep ?loc path id =
@@ -42,11 +22,7 @@ let bind_extra_dep ?loc path id =
   | None -> extra_deps := Id.Map.add id (path,loc) !extra_deps
 
 let declare_extra_dep ?loc ~from ~file id =
-  match Loadpath.find_with_logical_path from with
-  | _ :: _ as paths ->
-    let paths = List.map Loadpath.physical paths in
-    let file_path = ensure_only_one_path_contains from file None paths in
-    Option.iter (bind_extra_dep ?loc file_path) id
-  | [] -> user_err Pp.(str "No LoadPath found for " ++ DirPath.print from ++ str".")
+  let file_path = Loadpath.find_extra_dep_with_logical_path ?loc ~from ~file () in
+  Option.iter (bind_extra_dep ?loc file_path) id
 
 let query_extra_dep id = fst @@ Id.Map.find id !extra_deps
