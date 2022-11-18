@@ -64,6 +64,7 @@ let t_array = coq_core "array"
 let t_unit = coq_core "unit"
 let t_list = coq_core "list"
 let t_constr = coq_core "constr"
+let t_preterm = coq_core "preterm"
 let t_pattern = coq_core "pattern"
 let t_ident = coq_core "ident"
 let t_option = coq_core "option"
@@ -1407,6 +1408,10 @@ let () =
   define_ml_object Tac2quote.wit_pattern obj
 
 let () =
+  let intern self ist c =
+    let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
+    (GlbVal c, gtypref t_preterm)
+  in
   let interp _ c =
     let open Ltac_pretype in
     let closure = {
@@ -1421,7 +1426,7 @@ let () =
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let print env sigma c = str "preterm:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
   let obj = {
-    ml_intern = (fun _ _ e -> Empty.abort e);
+    ml_intern = intern;
     ml_interp = interp;
     ml_subst = subst;
     ml_print = print;
@@ -1874,6 +1879,16 @@ let () = add_scope "open_constr" (fun arg ->
         arg
     in
     let act e = Tac2quote.of_open_constr ~delimiters e in
+    Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
+  )
+
+let () = add_scope "preterm" (fun arg ->
+    let delimiters = List.map (function
+        | SexprRec (_, { v = Some s }, []) -> s
+        | _ -> scope_fail "preterm" arg)
+        arg
+    in
+    let act e = Tac2quote.of_preterm ~delimiters e in
     Tac2entries.ScopeRule (Pcoq.Symbol.nterm Pcoq.Constr.constr, act)
   )
 

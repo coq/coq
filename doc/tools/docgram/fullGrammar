@@ -3394,6 +3394,7 @@ G_LTAC2_tactic_atom: [
 | "'" Constr.constr      (* ltac2 plugin *)
 | "constr" ":" "(" Constr.lconstr ")"      (* ltac2 plugin *)
 | "open_constr" ":" "(" Constr.lconstr ")"      (* ltac2 plugin *)
+| "preterm" ":" "(" Constr.lconstr ")"      (* ltac2 plugin *)
 | "ident" ":" "(" lident ")"      (* ltac2 plugin *)
 | "pat" ":" "(" Constr.cpattern ")"      (* ltac2 plugin *)
 | "reference" ":" "(" globref ")"      (* ltac2 plugin *)

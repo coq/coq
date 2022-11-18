@@ -580,6 +580,7 @@ Built-in quotations
    ltac2_quotations ::= ident : ( @lident )
    | constr : ( @term )
    | open_constr : ( @term )
+   | preterm : ( @term )
    | pat : ( @cpattern )
    | reference : ( {| & @ident | @qualid } )
    | ltac1 : ( @ltac1_expr_in_env )
@@ -594,6 +595,8 @@ The current implementation recognizes the following built-in quotations:
   (type ``Init.constr``).
 - ``open_constr``, which parses Coq terms and produces a term potentially with
   holes at runtime (type ``Init.constr`` as well).
+- ``preterm``, which parses Coq terms and produces a value which must
+  be typechecked with ``Constr.pretype`` (type ``Init.preterm``).
 - ``pat``, which parses Coq patterns and produces a pattern used for term
   matching (type ``Init.pattern``).
 - ``reference``  Qualified names
@@ -611,9 +614,9 @@ The following syntactic sugar is provided for two common cases:
 Strict vs. non-strict mode
 ++++++++++++++++++++++++++
 
-Depending on the context, quotation-producing terms (i.e. ``constr`` or
-``open_constr``) are not internalized in the same way. There are two possible
-modes, the *strict* and the *non-strict* mode.
+Depending on the context, quotation-producing terms (i.e. ``constr``,
+``open_constr`` or ``preterm``) are not internalized in the same way.
+There are two possible modes, the *strict* and the *non-strict* mode.
 
 - In strict mode, all simple identifiers appearing in a term quotation are
   required to be resolvable statically. That is, they must be the short name of
@@ -1407,6 +1410,12 @@ table further down lists the classes that that are handled plainly.
 
   :n:`open_constr {? ( {+, @scope_key } ) }`
     Parses an open :token:`term`. Like :n:`constr` above, this class
+    accepts a list of notation scopes with the same effects.
+
+.. _preterm:
+
+  :n:`preterm {? ( {+, @scope_key } ) }`
+    Parses a non-typechecked :token:`term`. Like :n:`constr` above, this class
     accepts a list of notation scopes with the same effects.
 
   :n:`ident`

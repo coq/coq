@@ -120,6 +120,11 @@ let of_open_constr ?delimiters c =
   let c = quote_constr ?delimiters c in
   inj_wit ?loc wit_open_constr c
 
+let of_preterm ?delimiters c =
+  let loc = Constrexpr_ops.constr_loc c in
+  let c = quote_constr ?delimiters c in
+  inj_wit ?loc wit_preterm c
+
 let of_bool ?loc b =
   let c = if b then coq_core "true" else coq_core "false" in
   constructor ?loc c []

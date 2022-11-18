@@ -560,6 +560,12 @@ let () = register_init "constr" begin fun env sigma c ->
   str "constr:(" ++ c ++ str ")"
 end
 
+let () = register_init "preterm" begin fun env sigma c ->
+  let c = to_ext val_preterm c in
+  let c = try Printer.pr_closed_glob_env env sigma c with _ -> str "..." in
+  str "preterm:(" ++ c ++ str ")"
+end
+
 let () = register_init "pattern" begin fun env sigma c ->
   let c = to_pattern c in
   let c = try Printer.pr_lconstr_pattern_env env sigma c with _ -> str "..." in
