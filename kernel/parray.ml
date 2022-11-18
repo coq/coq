@@ -106,6 +106,10 @@ let length_int p =
 
 let length p = Uint63.of_int @@ length_int p
 
+let unsafe_get p n =
+  let t = reroot p in
+  UArray.unsafe_get t n
+
 let get p n =
   let t = reroot p in
   let l = UArray.length t in
@@ -164,38 +168,22 @@ let copy p =
   | Array (t, def) -> ref (Array (UArray.copy t, def))
   | Updated _ -> assert false
 
-let reroot t =
-  let _ = reroot t in
-  t
-
 let map f p =
-  let p = reroot p in
-  match !p with
-  | Array (t,def) ->
-    let t = uinit (UArray.length t) (fun i -> f (UArray.unsafe_get t i)) in
-    ref (Array (t, f def))
-  | Updated _ -> assert false
+  let t = uinit (length_int p) (fun i -> f (unsafe_get p i)) in
+  ref (Array (t, f (default p)))
 
 let fold_left f x p =
-  let p = reroot p in
-  match !p with
-  | Array (t,def) ->
-    let r = ref x in
-    for i = 0 to UArray.length t - 1 do
-      r := f !r (UArray.unsafe_get t i)
-    done;
-    f !r def
-  | Updated _ -> assert false
+  let r = ref x in
+  for i = 0 to length_int p - 1 do
+    r := f !r (unsafe_get p i)
+  done;
+  f !r (default p)
 
 let fold_left2 f a p1 p2 =
-  let p1 = reroot p1 in
-  let p2 = reroot p2 in
-  match !p1, !p2 with
-  | Array (t1, def1), Array (t2, def2) ->
-    if UArray.length t1 <> UArray.length t2 then invalid_arg "Array.fold_left2";
-    let r = ref a in
-    for i = 0 to UArray.length t1 - 1 do
-      r := f !r (UArray.unsafe_get t1 i) (UArray.unsafe_get t2 i)
-    done;
-    f !r def1 def2
-  | _ -> assert false
+  let lv1 = length_int p1 in
+  let rec fold a n =
+    if n >= lv1 then a else fold (f a (unsafe_get p1 n) (unsafe_get p2 n)) (succ n)
+  in
+  if length_int p2 <> lv1 then invalid_arg "Array.fold_left2";
+  let a = fold a 0 in
+  f a (default p1) (default p2)
