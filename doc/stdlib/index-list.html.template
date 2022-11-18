@@ -713,6 +713,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Compat/Coq815.v
     theories/Compat/Coq816.v
     theories/Compat/Coq817.v
+    theories/Compat/Coq818.v
   </dd>
 
   <dt> <b>Array</b>:
