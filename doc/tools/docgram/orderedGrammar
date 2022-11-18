@@ -1761,7 +1761,6 @@ simple_tactic: [
 | "not_evar" one_term
 | "is_ground" one_term
 | "autoapply" one_term "with" ident
-| "progress_evars" ltac_expr
 | "rewrite_strat" rewstrategy OPT ( "in" ident )
 | "rewrite_db" ident OPT ( "in" ident )
 | "substitute" OPT [ "->" | "<-" ] one_term_with_bindings

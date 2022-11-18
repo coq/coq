@@ -1724,7 +1724,6 @@ simple_tactic: [
 | "not_evar" constr
 | "is_ground" constr
 | "autoapply" constr "with" preident
-| "progress_evars" tactic
 | "decide" "equality"
 | "compare" constr constr
 | "rewrite_strat" rewstrategy "in" hyp

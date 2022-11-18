@@ -817,9 +817,6 @@ We can check if a tactic made progress with:
    .. exn:: Failed to progress.
       :undocumented:
 
-.. tacn:: progress_evars @ltac_expr
-   :undocumented:
-
 Success and failure
 -------------------
 
