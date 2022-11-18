@@ -123,6 +123,10 @@ val resolve_typeclasses : ?filter:evar_filter -> ?unique:bool ->
   ?split:bool -> ?fail:bool -> env -> evar_map -> evar_map
 val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
 
+val get_filtered_typeclass_evars : evar_filter -> evar_map -> Evar.Set.t
+
+val error_unresolvable : env -> evar_map -> Evar.Set.t option -> 'a
+
 (** A plugin can override the TC resolution engine by calling these two APIs.
     Beware this action is not registed in the summary (the Undo system) so
     it is up to the plugin to do so. *)

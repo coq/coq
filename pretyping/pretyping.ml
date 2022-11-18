@@ -232,19 +232,22 @@ let frozen_and_pending_holes (sigma, sigma') =
     end in
     FrozenProgress data
 
+let filter_frozen frozen = match frozen with
+  | FrozenId map -> fun evk -> Evar.Map.mem evk map
+  | FrozenProgress (lazy (frozen, _)) -> fun evk -> Evar.Set.mem evk frozen
+
+let typeclasses_filter ~program_mode frozen =
+  if program_mode
+  then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && not (filter_frozen frozen evk))
+  else (fun evk evi -> Typeclasses.no_goals evk evi && not (filter_frozen frozen evk))
+
 let apply_typeclasses ~program_mode ~fail_evar env sigma frozen =
-  let filter_frozen = match frozen with
-    | FrozenId map -> fun evk -> Evar.Map.mem evk map
-    | FrozenProgress (lazy (frozen, _)) -> fun evk -> Evar.Set.mem evk frozen
-  in
   let sigma = Typeclasses.resolve_typeclasses
-      ~filter:(if program_mode
-               then (fun evk evi -> Typeclasses.no_goals_or_obligations evk evi && not (filter_frozen evk))
-               else (fun evk evi -> Typeclasses.no_goals evk evi && not (filter_frozen evk)))
+      ~filter:(typeclasses_filter ~program_mode frozen)
       ~split:true ~fail:fail_evar env sigma in
   let sigma = if program_mode then (* Try optionally solving the obligations *)
       Typeclasses.resolve_typeclasses
-        ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && not (filter_frozen evk)) ~split:true ~fail:false env sigma
+        ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && not (filter_frozen frozen evk)) ~split:true ~fail:false env sigma
     else sigma in
   sigma
 
@@ -267,9 +270,14 @@ let apply_heuristics env sigma =
   try solve_unif_constraints_with_heuristics ~flags env sigma
   with e when CErrors.noncritical e -> sigma
 
-let check_typeclasses_instances_are_solved ~program_mode env current_sigma frozen =
-  (* Naive way, call resolution again with failure flag *)
-  apply_typeclasses ~program_mode ~fail_evar:true env current_sigma frozen
+let check_typeclasses_instances_are_solved ~program_mode env sigma frozen =
+  let tcs = Typeclasses.get_filtered_typeclass_evars
+      (typeclasses_filter ~program_mode frozen)
+      sigma
+  in
+  if not (Evar.Set.is_empty tcs) then begin
+    Typeclasses.error_unresolvable env sigma (Some tcs)
+  end
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with
 | FrozenId _ -> ()
@@ -301,7 +309,7 @@ let check_evars env ?initial sigma c =
   in proc_rec c
 
 let check_evars_are_solved ~program_mode env sigma frozen =
-  let sigma = check_typeclasses_instances_are_solved ~program_mode env sigma frozen in
+  check_typeclasses_instances_are_solved ~program_mode env sigma frozen;
   check_problems_are_solved env sigma;
   check_extra_evars_are_solved env sigma frozen
 

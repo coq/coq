@@ -238,6 +238,11 @@ let has_typeclasses filter evd =
   let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find evd ev)))) in
   Evar.Set.exists check tcs
 
+let get_filtered_typeclass_evars filter evd =
+  let tcs = get_typeclass_evars evd in
+  let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find evd ev)))) in
+  Evar.Set.filter check tcs
+
 let solve_all_instances_hook = ref (fun env evd filter unique split fail -> assert false)
 
 let solve_all_instances env evd filter unique split fail =
@@ -249,3 +254,21 @@ let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solut
     ?(split=true) ?(fail=true) env evd =
   if not (has_typeclasses filter evd) then evd
   else solve_all_instances env evd filter unique split fail
+
+(** In case of unsatisfiable constraints, build a nice error message *)
+
+let error_unresolvable env evd comp =
+  let is_part ev = match comp with
+  | None -> true
+  | Some s -> Evar.Set.mem ev s
+  in
+  let fold ev evi (found, accu) =
+    let ev_class = class_of_constr env evd (Evd.evar_concl evi) in
+    if not (Option.is_empty ev_class) && is_part ev then
+      (* focus on one instance if only one was searched for *)
+      if not found then (true, Some ev)
+      else (found, None)
+    else (found, accu)
+   in
+  let (_, ev) = Evd.fold_undefined fold evd (true, None) in
+  Pretype_errors.unsatisfiable_constraints env evd ev comp
