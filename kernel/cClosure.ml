@@ -1650,10 +1650,16 @@ and norm_head info tab m =
       | FEvar(ev, args, env, repack) ->
           repack (ev, List.map (fun a -> klt info tab env a) args)
       | FProj (p,c) ->
-          mkProj (p, kl info tab c)
+        mkProj (p, kl info tab c)
+      | FArray (u, a, ty) ->
+        let a, def = Parray.to_array a in
+        let a = Array.map (kl info tab) a in
+        let def = kl info tab def in
+        let ty = kl info tab ty in
+        mkArray (u, a, def, ty)
       | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _
       | FApp _ | FCaseT _ | FCaseInvert _ | FLIFT _ | FCLOS _ | FInt _
-      | FFloat _ | FArray _ -> term_of_fconstr m
+      | FFloat _ -> term_of_fconstr m
       | FIrrelevant -> assert false (* only introduced when converting *)
 
 and zip_term info tab m stk = match stk with
