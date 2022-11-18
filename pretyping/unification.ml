@@ -1575,19 +1575,6 @@ let w_typed_unify_array env evd flags f1 l1 f2 l2 =
   try_resolve_typeclasses env evd flags.resolve_evars
                           (mkApp(f1,l1)) (mkApp(f2,l2))
 
-(* takes a substitution s, an open term op and a closed term cl
-   try to find a subterm of cl which matches op, if op is just a Meta
-   FAIL because we cannot find a binding *)
-
-let iter_fail f a =
-  let n = Array.length a in
-  let rec ffail i =
-    if Int.equal i n then user_err Pp.(str "iter_fail")
-    else
-      try f a.(i)
-      with ex when precatchable_exception ex -> ffail (i+1)
-  in ffail 0
-
 (* make_abstraction: a variant of w_unify_to_subterm which works on
    contexts, with evars, and possibly with occurrences *)
 
@@ -1807,27 +1794,27 @@ let keyed_unify env evd kop =
           | None -> false
           | Some kc -> Keys.equiv_keys kop kc
 
-type 'aconstr akind =
-  | AApp of 'aconstr * 'aconstr array
-  | ACast of 'aconstr (* only the main term *)
-  | AOther of 'aconstr array
-
 module AConstr :
 sig
   type t
   val proj : t -> EConstr.t
   val make : evar_map -> EConstr.t -> t
-  val kind : t -> t akind
-  val mkApp : t * t array -> t
+  val strip_outer_cast : t -> t
+  val find_in_subterms : (t -> 'a) -> t -> 'a
   val closed0 : t -> bool
 end =
 struct
 
 type t = {
   proj : EConstr.t;
-  self : t akind;
+  self : akind;
   data : int;
 }
+
+and akind =
+  | AApp of t * t array
+  | ACast of t (* only the main term *)
+  | AOther of t array
 
 let proj c = c.proj
 
@@ -1840,15 +1827,39 @@ let liftn k (i : int) = if i < k then 0 else i - k
 
 let data v = v.data
 
-let kind v = v.self
-
 let mkApp (c, al) =
   if Array.is_empty al then c
-  else match kind c with
+  else match c.self with
   | AApp (c0, al0) ->
     { proj = mkApp (c.proj, Array.map proj al); self = AApp (c0, Array.append al0 al); data = max c.data (max_array data al) }
   | _ ->
     { proj = mkApp (c.proj, Array.map proj al); self = AApp (c, al); data = max c.data (max_array data al) }
+
+let rec strip_outer_cast c = match c.self with
+  | ACast c -> strip_outer_cast c
+  | _ -> c
+
+let iter_fail f a =
+  let n = Array.length a in
+  let rec ffail i =
+    if Int.equal i n then user_err Pp.(str "iter_fail")
+    else
+      try f a.(i)
+      with ex when precatchable_exception ex -> ffail (i+1)
+  in ffail 0
+
+let find_in_subterms test c = match c.self with
+  | ACast _ -> anomaly Pp.(str "AConstr.find_in_subterms: cast not allowed.")
+  | AApp (f, args) ->
+    let n = Array.length args in
+    assert (n>0);
+    let c1 = mkApp (f,Array.sub args 0 (n-1)) in
+    let c2 = args.(n-1) in
+    (try
+       test c1
+     with ex when precatchable_exception ex ->
+       test c2)
+  | AOther a -> iter_fail test a
 
 let get_max_rel sigma c =
   let rec aux n accu c = match EConstr.kind sigma c with
@@ -1941,11 +1952,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   let kop = Keys.constr_key (fun c -> EConstr.kind evd c) op in
   let opgnd = if occur_meta_or_undefined_evar evd op then NotGround else Ground in
   let rec matchrec cl =
-    let rec strip_outer_cast c = match AConstr.kind c with
-    | ACast c -> strip_outer_cast c
-    | _ -> c
-    in
-    let cl = strip_outer_cast cl in
+    let cl = AConstr.strip_outer_cast cl in
     (try
       let is_closed = AConstr.closed0 cl in
       let cl = AConstr.proj cl in
@@ -1960,18 +1967,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
             bestexn := Some ex; user_err Pp.(str "Unsat"))
        else user_err Pp.(str "Bound 1")
      with ex when precatchable_exception ex ->
-       (match AConstr.kind cl with
-        | ACast _ -> assert false (* just got stripped *)
-        | AApp (f,args) ->
-          let n = Array.length args in
-          assert (n>0);
-          let c1 = AConstr.mkApp (f,Array.sub args 0 (n-1)) in
-          let c2 = args.(n-1) in
-          (try
-             matchrec c1
-           with ex when precatchable_exception ex ->
-             matchrec c2)
-        | AOther a -> iter_fail matchrec a))
+       AConstr.find_in_subterms matchrec cl)
   in
   try matchrec cl
   with ex when precatchable_exception ex ->
