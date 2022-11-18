@@ -1812,7 +1812,7 @@ type t = {
 }
 
 and akind =
-  | AApp of t * t array
+  | AApp of t * t array * int (* AApp (c, al, n) represents App (c, Array.sub 0 n al) *)
   | ACast of t (* only the main term *)
   | AOther of t array
 
@@ -1821,19 +1821,20 @@ let proj c = c.proj
 let closed0 c = Int.equal c.data 0
 
 let max (i : int) (j : int) = if i < j then j else i
-let max_array f a = Array.fold_left (fun n v -> max (f v) n) 0 a
 let lift (i : int) = if Int.equal i 0 then 0 else i - 1
 let liftn k (i : int) = if i < k then 0 else i - k
 
-let data v = v.data
+let rec max_subarray (accu:int) a n =
+  if Int.equal n 0 then accu
+  else max_subarray (max accu a.(n-1).data) a (n-1)
 
-let mkApp (c, al) =
-  if Array.is_empty al then c
+let mkApp c al n =
+  if Int.equal n 0 then c
   else match c.self with
-  | AApp (c0, al0) ->
-    { proj = mkApp (c.proj, Array.map proj al); self = AApp (c0, Array.append al0 al); data = max c.data (max_array data al) }
-  | _ ->
-    { proj = mkApp (c.proj, Array.map proj al); self = AApp (c, al); data = max c.data (max_array data al) }
+    | AApp _-> assert false
+    | _ ->
+      let args = Array.init n (fun i -> al.(i).proj) in
+      { proj = mkApp (c.proj, args); self = AApp (c, al, n); data = max_subarray c.data al n }
 
 let rec strip_outer_cast c = match c.self with
   | ACast c -> strip_outer_cast c
@@ -1850,10 +1851,9 @@ let iter_fail f a =
 
 let find_in_subterms test c = match c.self with
   | ACast _ -> anomaly Pp.(str "AConstr.find_in_subterms: cast not allowed.")
-  | AApp (f, args) ->
-    let n = Array.length args in
+  | AApp (f, args, n) ->
     assert (n>0);
-    let c1 = mkApp (f,Array.sub args 0 (n-1)) in
+    let c1 = mkApp f args (n-1) in
     let c2 = args.(n-1) in
     (try
        test c1
@@ -1895,7 +1895,7 @@ let rec make sigma c0 = match EConstr.kind sigma c0 with
 | App (c, al) ->
   let c = make sigma c in
   let ald, al = make_array sigma al in
-  { proj = c0; self = AApp (c, al); data = max c.data ald }
+  { proj = c0; self = AApp (c, al, Array.length al); data = max c.data ald }
 | Proj (p, t) ->
   let t = make sigma t in
   { proj = c0; self = AOther [|t|]; data = t.data }
