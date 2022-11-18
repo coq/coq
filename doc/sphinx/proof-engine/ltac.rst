@@ -366,6 +366,9 @@ behavior.)
       Applies :n:`@ltac_expr` to all focused goals in parallel.
       The number of workers can be controlled via the command line option
       :n:`-async-proofs-tac-j @natural` to specify the desired number of workers.
+      In the special case where :n:`@natural` is 0, this completely prevents
+      Coq from spawning any new process, and `par` blocks are treated as a
+      variant of `all` that additionally checks that each subgoal is solved.
       Limitations: ``par:`` only works on goals that don't contain existential
       variables.  :n:`@ltac_expr` must either solve the goal completely or do
       nothing (i.e. it cannot make some progress).
