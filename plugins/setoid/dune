@@ -1,0 +1,5 @@
+(library
+ (name setoid_plugin)
+ (public_name coq-core.plugins.setoid)
+ (synopsis "Coq's setoid_rewrite tactic")
+ (libraries coq-core.plugins.ltac))

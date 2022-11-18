@@ -663,10 +663,6 @@ new :tacn:`setoid_rewrite` tactic differs slightly from the old one and
 :tacn:`rewrite`.
 
 
-.. tacn:: head_of_constr @ident @one_term
-
-   For internal use only.  It may be removed without warning.  Do not use.
-
 Extensions
 ----------
 

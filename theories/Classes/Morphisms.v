@@ -19,6 +19,8 @@ Require Import Coq.Program.Tactics.
 Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Classes.RelationClasses.
 
+Declare ML Module "setoid_plugin:coq-core.plugins.setoid".
+
 Generalizable Variables A eqA B C D R RA RB RC m f x y.
 Local Obligation Tactic := try solve [ simpl_relation ].
 

@@ -97,10 +97,6 @@ TACTIC EXTEND typeclasses_eauto
      typeclasses_eauto ~depth:d ~only_classes:true [Class_tactics.typeclasses_db] }
 END
 
-TACTIC EXTEND head_of_constr
-| [ "head_of_constr" ident(h) constr(c) ] -> { head_of_constr h c }
-END
-
 TACTIC EXTEND not_evar
 | [ "not_evar" constr(ty) ] -> { not_evar ty }
 END

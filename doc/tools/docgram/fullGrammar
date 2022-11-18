@@ -1717,7 +1717,6 @@ simple_tactic: [
 | "typeclasses" "eauto" "dfs" OPT nat_or_var
 | "typeclasses" "eauto" "best_effort" OPT nat_or_var
 | "typeclasses" "eauto" OPT nat_or_var
-| "head_of_constr" ident constr
 | "not_evar" constr
 | "is_ground" constr
 | "autoapply" constr "with" preident

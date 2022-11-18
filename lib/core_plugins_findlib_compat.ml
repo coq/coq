@@ -28,4 +28,5 @@ let legacy_to_findlib = [
   ("number_string_notation_plugin", ["plugins";"number_string_notation"]) ;
   ("zify_plugin",                   ["plugins";"zify"]) ;
   ("tauto_plugin",                  ["plugins";"tauto"]) ;
+  ("setoid_plugin",                 ["plugins";"setoid"]) ;
 ]
