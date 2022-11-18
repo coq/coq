@@ -1428,9 +1428,6 @@ let meta_ftype evd mv =
     | Cltyp (_,b) -> b
     | Clval(_,_,b) -> b
 
-let meta_type evd mv = (meta_ftype evd mv).rebus
-let meta_type0 = meta_type
-
 let meta_declare mv v ?(name=Anonymous) evd =
   let metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas in
   set_metas evd metas
