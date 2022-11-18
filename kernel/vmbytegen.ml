@@ -755,7 +755,8 @@ let rec compile_lam env cenv lam sz cont =
   | Lmakeblock (tag,args) ->
     let arity = Array.length args in
     let cont = code_makeblock ~stack_size:(sz+arity-1) ~arity ~tag cont in
-    comp_args (compile_lam env) cenv args sz cont
+    if Int.equal arity 0 then cont
+    else comp_args (compile_lam env) cenv args sz cont
 
   | Lprim (kn, op, args) ->
 

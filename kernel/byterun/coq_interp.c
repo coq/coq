@@ -925,10 +925,14 @@ value coq_interprete
         mlsize_t i;
         value block;
         print_instr("MAKEBLOCK, tag=");
-        Coq_alloc_small(block, wosize, tag);
-        Field(block, 0) = accu;
-        for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
-        accu = block;
+        if (wosize == 0) {
+          accu = Atom(tag);
+        } else {
+          Coq_alloc_small(block, wosize, tag);
+          Field(block, 0) = accu;
+          for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
+          accu = block;
+        }
         Next;
       }
       Instruct(MAKEBLOCK1) {
