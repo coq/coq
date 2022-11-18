@@ -178,11 +178,19 @@ let char = {
   r_id = false;
 }
 
-let of_string s = ValStr s
-let to_string = function
+let of_bytes s = ValStr s
+let to_bytes = function
 | ValStr s -> s
 | _ -> assert false
 
+let bytes = {
+  r_of = of_bytes;
+  r_to = to_bytes;
+  r_id = false;
+}
+
+let of_string s = of_bytes (Bytes.of_string s)
+let to_string s = Bytes.to_string (to_bytes s)
 let string = {
   r_of = of_string;
   r_to = to_string;

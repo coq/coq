@@ -124,7 +124,7 @@ and match_pattern_against_or ist pats v =
 
 let rec interp (ist : environment) = function
 | GTacAtm (AtmInt n) -> return (Tac2ffi.of_int n)
-| GTacAtm (AtmStr s) -> return (Tac2ffi.of_string (Bytes.of_string s))
+| GTacAtm (AtmStr s) -> return (Tac2ffi.of_string s)
 | GTacVar id -> return (get_var ist id)
 | GTacRef kn ->
   let data = get_ref ist kn in
