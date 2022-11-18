@@ -1578,8 +1578,39 @@ let rec kl info tab m =
     zip_term info tab (norm_head info tab nm) s
 
 and klt info tab e t = match kind t with
-| Rel i -> kl info tab (clos_rel (fst e) i)
-| Var _ |Const _|CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _ ->
+| Rel i ->
+  begin match expand_rel i (fst e) with
+  | Inl (n, mt) -> kl info tab @@ lift_fconstr n mt
+  | Inr (k, None) -> if Int.equal k i then t else mkRel k
+  | Inr (k, Some p) -> kl info tab @@ lift_fconstr (k-p) {mark=Red;term=FFlex(RelKey p)}
+  end
+| App (hd, args) ->
+  begin match kind hd with
+  | Ind _ | Construct _ ->
+    let args' = Array.Smart.map (fun c -> klt info tab e c) args in
+    let hd' = subst_instance_constr (snd e) hd in
+    if hd' == hd && args' == args then t
+    else mkApp (hd', args')
+  | Var _ | Const _ | CoFix _ | Lambda _ | Fix _ | Prod _ | Evar _ | Case _
+  | Cast _ | LetIn _ | Proj _ | Array _ | Rel _ | Meta _ | Sort _ | Int _ | Float _ ->
+    let share = info.i_cache.i_share in
+    let (nm,s) = knit info tab e t [] in
+    let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
+    zip_term info tab (norm_head info tab nm) s
+  | App _ -> assert false
+  end
+| Lambda (na, u, c) ->
+  let u' = klt info tab e u in
+  let c' = klt (push_relevance info na) tab (usubs_lift e) c in
+  if u' == u && c' == c then t
+  else mkLambda (na, u', c')
+| Prod (na, u, v) ->
+  let u' = klt info tab e u in
+  let v' = klt (push_relevance info na) tab (usubs_lift e) v in
+  if u' == u && v' == v then t
+  else mkProd (na, u', v')
+| Cast (t, _, _) -> klt info tab e t
+| Var _ | Const _ | CoFix _ | Fix _ | Evar _ | Case _ | LetIn _ | Proj _ | Array _ ->
   let share = info.i_cache.i_share in
   let (nm,s) = knit info tab e t [] in
   let () = if share then ignore (fapp_stack (nm, s)) in (* to unlock Zupdates! *)
@@ -1662,6 +1693,7 @@ let whd_val info tab v = term_of_fconstr (kh info tab v [])
 
 (* strong reduction *)
 let norm_val info tab v = kl info tab v
+let norm_term info tab e t = klt info tab e t
 
 let whd_stack infos tab m stk = match m.mark with
 | Whnf | Ntrl ->

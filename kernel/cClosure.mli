@@ -206,6 +206,9 @@ val infos_with_reds : clos_infos -> reds -> clos_infos
 (** [norm_val] is for strong normalization *)
 val norm_val : clos_infos -> clos_tab -> fconstr -> constr
 
+(** Same as [norm_val] but for terms *)
+val norm_term : clos_infos -> clos_tab -> fconstr usubs -> Constr.constr -> Constr.constr
+
 (** [whd_val] is for weak head normalization *)
 val whd_val : clos_infos -> clos_tab -> fconstr -> constr
 
