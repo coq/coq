@@ -12,7 +12,6 @@
 
 open Class_tactics
 open Stdarg
-open Tacarg
 open Classes
 
 }
@@ -112,39 +111,4 @@ END
 
 TACTIC EXTEND autoapply
 | [ "autoapply" constr(c) "with" preident(i) ] -> { autoapply c i }
-END
-
-{
-
-(** TODO: DEPRECATE *)
-(* A progress test that allows to see if the evars have changed *)
-open Constr
-open Proofview.Notations
-
-let rec eq_constr_mod_evars sigma x y =
-  let open EConstr in
-  match EConstr.kind sigma x, EConstr.kind sigma y with
-  | Evar (e1, l1), Evar (e2, l2) when not (Evar.equal e1 e2) -> true
-  | _, _ -> compare_constr sigma (fun x y -> eq_constr_mod_evars sigma x y) x y
-
-let progress_evars t =
-  Proofview.Goal.enter begin fun gl ->
-    let concl = Proofview.Goal.concl gl in
-    let check =
-      Proofview.Goal.enter begin fun gl' ->
-        let sigma = Tacmach.project gl' in
-        let newconcl = Proofview.Goal.concl gl' in
-        if eq_constr_mod_evars sigma concl newconcl
-        then
-          let info = Exninfo.reify () in
-          Tacticals.tclFAIL ~info (Pp.str"No progress made (modulo evars)")
-        else Proofview.tclUNIT ()
-      end
-    in t <*> check
-  end
-
-}
-
-TACTIC EXTEND progress_evars
-| [ "progress_evars" tactic(t) ] -> { progress_evars (Tacinterp.tactic_of_value ist t) }
 END
