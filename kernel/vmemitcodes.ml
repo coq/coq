@@ -335,8 +335,7 @@ let emit_instr env = function
   | Kconst c ->
       out env opGETGLOBAL; slot_for_const env c
   | Kmakeblock(n, t) ->
-      if Int.equal n 0 then invalid_arg "emit_instr : block size = 0"
-      else if n < 4 then (out env(opMAKEBLOCK1 + n - 1); out_int env t)
+      if 0 < n && n < 4 then (out env(opMAKEBLOCK1 + n - 1); out_int env t)
       else (out env opMAKEBLOCK; out_int env n; out_int env t)
   | Kmakeswitchblock(typlbl,swlbl,annot,sz) ->
       out env opMAKESWITCHBLOCK;
