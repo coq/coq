@@ -172,6 +172,13 @@ struct
   let pattern env st pat =
     Dn.pattern (bounded_constr_pat_discr env st) (pat, !dnet_depth)
 
+  let constr_pattern env sigma st pat =
+    let mk p = match bounded_constr_val_discr env st sigma p with
+    | Label l -> Some l
+    | Everything | Nothing -> None
+    in
+    Dn.pattern mk (pat, !dnet_depth)
+
   let empty = Dn.empty
   let add = Dn.add
   let rmv = Dn.rmv
