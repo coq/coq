@@ -596,10 +596,11 @@ not_installable_coq_opam_packages=$(comm -23 <(echo $sorted_coq_opam_packages | 
 
 coqbot_update_comment "done" "${rendered_results}" "${not_installable_coq_opam_packages}"
 
+touch $timings/bench_failures
 if [ -n "$not_installable_coq_opam_packages" ]; then
     # Tell the user that some of the provided OPAM-package(s)
     # is/are not installable.
-    printf '\n\nINFO: failed to install %s\n' "$not_installable_coq_opam_packages"
+    printf '\n\nINFO: failed to install %s\n' "$not_installable_coq_opam_packages" | tee $timings/bench_failures
     zulip_edit "Bench complete, failed to install packages:
 $not_installable_coq_opam_packages"
     exit 1
