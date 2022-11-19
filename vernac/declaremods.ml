@@ -1130,6 +1130,25 @@ let import_modules ~export mpl =
 let import_module f ~export mp =
   import_modules ~export [f,mp]
 
+(** {6 Iterators} *)
+
+let iter_all_segments f =
+  let rec apply_obj prefix obj = match obj with
+    | IncludeObject aobjs ->
+      let objs = expand_aobjs aobjs in
+      List.iter (apply_obj prefix) objs
+    | _ -> f prefix obj
+  in
+  let apply_mod_obj _ modobjs =
+    let prefix = modobjs.module_prefix in
+    List.iter (apply_obj prefix) modobjs.module_substituted_objects;
+    List.iter (apply_obj prefix) modobjs.module_keep_objects
+  in
+  let apply_nodes (node, os) = List.iter (fun o -> f (Lib.node_prefix node) o) os in
+  MPmap.iter apply_mod_obj (ModObjs.all ());
+  List.iter apply_nodes (Lib.contents ())
+
+
 (** {6 Some types used to shorten declaremods.mli} *)
 
 type module_params = (lident list * (Constrexpr.module_ast * inline)) list
