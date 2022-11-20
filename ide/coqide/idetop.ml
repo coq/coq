@@ -66,6 +66,7 @@ let coqide_known_option table = List.mem table [
   ["Printing";"Existential";"Instances"];
   ["Printing";"Universes"];
   ["Printing";"Unfocused"];
+  ["Printing";"Goal";"Names"];
   ["Diffs"]]
 
 let is_known_option cmd = match cmd with

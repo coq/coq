@@ -652,6 +652,8 @@ struct
   let universes = BoolOpt ["Printing"; "Universes"]
   let unfocused = BoolOpt ["Printing"; "Unfocused"]
   let goal_names = BoolOpt ["Printing"; "Goal"; "Names"]
+  let record = BoolOpt ["Printing"; "Records"]
+  let synth = BoolOpt ["Printing"; "Synth"]
   let diff = StringOpt ["Diffs"]
 
   type 'a descr = { opts : 'a t list; init : 'a; label : string }
@@ -671,7 +673,9 @@ struct
     { opts = [all_basic;existential;universes]; init = false;
       label = "Display all _low-level contents" };
     { opts = [unfocused]; init = false; label = "Display _unfocused goals" };
-    { opts = [goal_names]; init = false; label = "Display _goal names" }
+    { opts = [goal_names]; init = false; label = "Display _goal names" };
+    { opts = [record]; init = true; label = "Use _record syntax" };
+    { opts = [synth]; init = true; label = "Hide _synthesizable types" }
   ]
 
   let diff_item = { opts = [diff]; init = "off"; label = "Display _proof diffs" }
@@ -706,7 +710,9 @@ struct
      below are generally called one after the other. *)
   let enforce h k =
     let mkopt o v acc = (o, v) :: acc in
-    let opts = Hashtbl.fold mkopt current_state [] in
+    let opts = List.sort (fun a b ->
+          String.compare (String.concat " " (fst a)) (String.concat " " (fst b)))
+        (Hashtbl.fold mkopt current_state []) in
     eval_call (Xmlprotocol.set_options opts) h
       (function
         | Interface.Good () -> k ()

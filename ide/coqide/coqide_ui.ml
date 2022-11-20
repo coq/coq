@@ -86,6 +86,8 @@ let init () =
 \n    <menuitem action='Display all low-level contents' />\
 \n    <menuitem action='Display unfocused goals' />\
 \n    <menuitem action='Display goal names' />\
+\n    <menuitem action='Use record syntax' />\
+\n    <menuitem action='Hide synthesizable types' />\
 \n    <separator/>\
 \n    <menuitem action='Unset diff' />\
 \n    <menuitem action='Set diff' />\
