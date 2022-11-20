@@ -1287,6 +1287,10 @@ Controlling proof mode
    proof mode, which can be useful in cases of cross references
    between goals.
 
+.. flag:: Printing Goal Tags
+
+   Internal flag used to implement Proof General's proof-tree mode.
+
 Controlling memory usage
 ------------------------
 
