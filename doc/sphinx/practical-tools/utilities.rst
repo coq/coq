@@ -62,8 +62,10 @@ separated by whitespace:
 * Selected options of coqc, which are forwarded directly to it. Currently these
   are ``-Q``, ``-I``, ``-R`` and ``-native-compiler``.
 * ``-arg`` options for other options of coqc that don’t fall in the above set.
-* Options specific to ``coq_makefile``. Currently this is only ``-docroot``.
-* Paths to files belonging to the project.
+* Options specific to ``coq_makefile``. Currently there are two options:
+  ``-generate-meta-for-package`` (see below for details), and ``-docroot``.
+* Directory names, which include all appropriate files in the directory and
+  its subdirectories.
 * Comments, started with an unquoted ``#`` and continuing to the end of the
   line.
 
@@ -91,14 +93,19 @@ generate object files that are not usable except for expert cases.
 
 Also note that when a project includes a plugin it also needs to include a
 ``META`` file, as per `findlib <http://projects.camlcity.org/projects/findlib.html>`_.
-If the project includes exactly one plugin, the ``META`` file is
+If the project has only a single plugin, the ``META`` file can be
 generated automatically when the option ``-generate-meta-for-package my-package``
-is given. The generated file will make the plugin available
-to the :cmd:`Declare ML Module` as ``my-package.plugin``. If this does not suite
-you, or you project features more than one plugin, then a file named
-``META.my-package`` must be hand written and listed in the ``_CoqProject`` file.
-One can use ``ocamlfind lint META.my-package`` to lint the hand written file.
-Typically ``my-package`` is the name of the ``OPAM`` package for your project.
+is given. The generated file makes the plugin available
+to the :cmd:`Declare ML Module` as ``my-package.plugin``. If the generated file
+doesn't suit your needs (for instance because it depends on some OCaml
+packages) or your project has multiple plugins, then create a file named
+``META.my-package`` and list it in the ``_CoqProject`` file.
+You can use ``ocamlfind lint META.my-package`` to lint the hand written file.
+Typically ``my-package`` is the name of the ``OPAM`` package for your
+project (which conventionally starts with ``coq-``). If the project
+includes a ``.mlg`` file (to be pre-processed by ``coqpp``) that
+declares a plugin, then the given name must match the ``findlib`` plugin
+name, e.g. ``DECLARE PLUGIN "my-package.plugin"``.
 
 The ``-native-compiler`` option given in the ``_CoqProject`` file will override
 the global one passed at configure time.
@@ -705,6 +712,8 @@ strings to ``coq_makefile`` using a ``_CoqProject`` file:
 
 In addition, it is impossible to pass strings containing ``'`` to coqc via
 ``-arg``.
+
+.. _building_dune:
 
 Building a Coq project with Dune
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
