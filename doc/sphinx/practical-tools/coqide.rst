@@ -279,7 +279,7 @@ on the right-hand side.  Typing the key binding is equivalent to selecting
 the associated item from the menu.
 A GTK+ accelerator keymap is saved under the name ``coqide.keys`` in
 the ``coq`` subdirectory of the user configuration directory,
-e.g. in `~/.config/coq/` on Linux and `C:\Users\<USERNAME>\AppData\Local\coq`
+e.g. in `~/.config/coq/` on Linux and `C:\\Users\\<USERNAME>\\AppData\\Local\\coq`
 on Windows. On some systems (not Linux or Windows),
 you can modify the key binding ("accelerator") for a menu entry by
 going to the corresponding menu item without releasing the
