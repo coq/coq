@@ -349,3 +349,8 @@ project serapi "https://github.com/ejgallego/coq-serapi" "main"
 # SMTCoq
 ########################################################################
 project smtcoq "https://github.com/smtcoq/smtcoq" "coq-master"
+
+########################################################################
+# Stalmarck
+########################################################################
+project stalmarck "https://github.com/coq-community/stalmarck" "master"
