@@ -62,10 +62,6 @@ let op_not_morph = lazy (zify "not_morph")
 let op_True = lazy (zify "True")
 let op_I = lazy (zify "I")
 
-(** [unsafe_to_constr c] returns a [Constr.t] without considering an evar_map.
-    This is useful for calling Constr.hash *)
-let unsafe_to_constr = EConstr.Unsafe.to_constr
-
 let pr_constr env evd e = Printer.pr_econstr_env env evd e
 
 let gl_pr_constr e =
@@ -88,21 +84,24 @@ let rec find_option pred l =
   | e :: l -> ( match pred e with Some r -> r | None -> find_option pred l )
 
 module ConstrMap = struct
-  open Names.GlobRef
+  module Map = CMap.Make (Constr)
 
   type 'a t = 'a list Map.t
 
+  (* We only add real constrs (no evars) *)
   let add gr e m =
     Map.update gr (function None -> Some [e] | Some l -> Some (e :: l)) m
 
   let empty = Map.empty
 
+  let nf evd c = EConstr.Unsafe.to_constr (Evarutil.nf_evar evd c)
+
   let find evd h m =
-    match Map.find (fst (EConstr.destRef evd h)) m with
+    match Map.find (nf evd h) m with
     | e :: _ -> e
     | [] -> assert false
 
-  let find_all evd h m = Map.find (fst (EConstr.destRef evd h)) m
+  let find_all evd h m = Map.find (nf evd h) m
 
   let fold f m acc =
     Map.fold
@@ -114,7 +113,7 @@ module HConstr = struct
   module M = Map.Make (struct
     type t = EConstr.t
 
-    let compare c c' = Constr.compare (unsafe_to_constr c) (unsafe_to_constr c')
+    let compare c c' = Constr.compare (EConstr.Unsafe.to_constr c) (EConstr.Unsafe.to_constr c')
   end)
 
   type 'a t = 'a M.t
@@ -366,6 +365,8 @@ module type Elt = sig
   (** [get_key] is the type-index used as key for the instance *)
   val get_key : int
 
+  val allow_appterm : bool
+
   (** [mk_elt evd i [a0,..,an]]  returns the element of the table
         built from the type-instance i and the arguments (type indexes and projections)
         of the type-class constructor. *)
@@ -410,6 +411,7 @@ module EInj = struct
     ; cstr = (if is_cstr_true a.(3) then None else Some a.(4)) }
 
   let get_key = 0
+  let allow_appterm = false
 end
 
 let get_inj c =
@@ -475,6 +477,7 @@ module EBinOp = struct
     ; classify_binop =
         classify_op (mkconvert_binop i1 i2 i3) i3.EInjT.inj a.(6) tbop }
 
+  let allow_appterm = true
   let get_key = 6
   let cast x = BinOp x
   let dest = function BinOp x -> Some x | _ -> None
@@ -510,6 +513,7 @@ module ECstOp = struct
     ; cstinj = a.(5)
     ; is_construct = isConstruct a.(2) }
 
+  let allow_appterm = true
   let get_key = 2
 end
 
@@ -543,6 +547,7 @@ module EUnOp = struct
     ; classify_unop = classify_op (mkconvert_unop i1 i2) i2.EInjT.inj uop tuop
     }
 
+  let allow_appterm = true
   let get_key = 4
 end
 
@@ -570,6 +575,7 @@ module EBinRel = struct
     ; brelinj = a.(5)
     ; classify_rel = classify_op (mkconvert_rel i) i.EInjT.inj brel tbrel }
 
+  let allow_appterm = true
   let get_key = 2
 end
 
@@ -584,6 +590,7 @@ module EPropBinOp = struct
   let cast x = PropOp x
   let dest = function PropOp x -> Some x | _ -> None
   let mk_elt i a = {op = a.(0); op_iff = a.(1)}
+  let allow_appterm = true
   let get_key = 0
 end
 
@@ -598,13 +605,14 @@ module EPropUnOp = struct
   let cast x = PropUnOp x
   let dest = function PropUnOp x -> Some x | _ -> None
   let mk_elt i a = {op = a.(0); op_iff = a.(1)}
+  let allow_appterm = true
   let get_key = 0
 end
 
 let constr_of_term_kind = function Application c -> c | OtherTerm c -> c
 
 module type S = sig
-  val register : Libnames.qualid -> unit
+  val register : Constrexpr.constr_expr -> unit
   val print : unit -> unit
 end
 
@@ -622,26 +630,18 @@ module MakeTable (E : Elt) : S = struct
       failwith ("Cannot register term " ^ t)
     | Some a -> E.mk_elt i a
 
-  let safe_ref c =
-    try
-      fst (Constr.destRef c)
-    with DestKO ->
-      CErrors.user_err Pp.(str "Add Zify "++str E.name ++ str ": the term "++
-                           gl_pr_constr (econstr c) ++ str " should be a global reference")
-
   let register_hint t elt =
     match Constr.kind t with
-    | App (c, _) ->
-       let gr = safe_ref c in
-       E.table := ConstrMap.add gr (Application t, E.cast elt) !E.table
+    | App (c, _) when E.allow_appterm ->
+       E.table := ConstrMap.add c (Application t, E.cast elt) !E.table
     | _ ->
-       let gr = safe_ref t in
-       E.table := ConstrMap.add gr (OtherTerm t, E.cast elt) !E.table
+       E.table := ConstrMap.add t (OtherTerm t, E.cast elt) !E.table
 
   let register_constr c =
     let env = Global.env () in
     let evd = Evd.from_env env in
     let t = get_type_of env evd (econstr c) in
+    (* safe because no evars in c *)
     let t = EConstr.Unsafe.to_constr t in
     match Constr.kind t with
     | App (intyp, args) when Constr.isRefX (Lazy.force E.gref) intyp ->
@@ -670,14 +670,20 @@ module MakeTable (E : Elt) : S = struct
        registered as a [superglobal_object_nodischarge].
        TODO: pre-compute [get_type_of] - [cache_constr] is using another environment.
      *)
-  let register c =
-    try
-      let c = UnivGen.constr_of_monomorphic_global (Global.env ()) (Nametab.locate c) in
-      let _ = Lib.add_leaf (register_obj c) in
-      ()
-    with Not_found ->
-      raise
-        (CErrors.user_err Pp.(Libnames.pr_qualid c ++ str " does not exist."))
+  let register ({CAst.loc} as c) =
+    let env = Global.env() in
+    let c, uctx = Constrintern.interp_constr env (Evd.from_env env) c in
+    let (univs, _ as uctx), c =
+      Util.on_fst Evd.universe_context_set @@
+      Evarutil.finalize (Evd.from_ctx uctx) (fun nf -> nf c)
+    in
+    let () = if not (Univ.Level.Set.is_empty univs) then
+        CErrors.user_err ?loc
+          Pp.(str "Add Zify does not support terms producing new universe levels.")
+    in
+    let () = Global.push_context_set ~strict:true uctx in
+    let () = Lib.add_leaf (register_obj c) in
+    ()
 
   let pp_keys () =
     let env = Global.env () in
@@ -706,6 +712,7 @@ module ESat = struct
   let cast x = Saturate x
   let dest = function Saturate x -> Some x | _ -> None
   let mk_elt i a = {parg1 = a.(2); parg2 = a.(3); satOK = a.(5)}
+  let allow_appterm = true
   let get_key = 1
 end
 
@@ -720,6 +727,7 @@ module EUnopSpec = struct
   let cast x = UnOpSpec x
   let dest = function UnOpSpec x -> Some x | _ -> None
   let mk_elt i a = {spec = a.(4)}
+  let allow_appterm = true
   let get_key = 2
 end
 
@@ -734,6 +742,7 @@ module EBinOpSpec = struct
   let cast x = BinOpSpec x
   let dest = function BinOpSpec x -> Some x | _ -> None
   let mk_elt i a = {spec = a.(5)}
+  let allow_appterm = true
   let get_key = 3
 end
 
@@ -767,8 +776,8 @@ module CstrTable = struct
   module HConstr = Hashtbl.Make (struct
     type t = EConstr.t
 
-    let hash c = Constr.hash (unsafe_to_constr c)
-    let equal c c' = Constr.equal (unsafe_to_constr c) (unsafe_to_constr c')
+    let hash c = Constr.hash (EConstr.Unsafe.to_constr c)
+    let equal c c' = Constr.equal (EConstr.Unsafe.to_constr c) (EConstr.Unsafe.to_constr c')
   end)
 
   let table : EConstr.t HConstr.t = HConstr.create 10
@@ -998,7 +1007,7 @@ let app_binop env evd src binop arg1 prf1 arg2 prf2 =
       let a2, prf2 = interp_prf evd binop.inj2 arg2 prf2 in
       default a1 prf1 a2 prf2)
 
-type typed_constr = {constr : EConstr.t; typ : EConstr.t; inj : EInjT.t}
+type typed_constr = {constr : EConstr.t; typ : Constr.t; inj : EInjT.t}
 
 let get_injection env evd t =
   try
@@ -1119,7 +1128,7 @@ let match_operator env evd hd args (t, d) =
     | _ -> None )
 
 let pp_trans_expr env evd e res =
-  let {deriv = inj} = get_injection env evd e.typ in
+  let {deriv = inj} = get_injection env evd (econstr e.typ) in
   debug_zify (fun () -> Pp.(str "\ntrans_expr " ++ pp_prf evd inj e.constr res));
   res
 
@@ -1143,7 +1152,7 @@ let rec trans_expr env evd e =
         let evd, prf =
           trans_expr env evd
             { constr = a.(n - 1)
-            ; typ = econstr unop.EUnOpT.source1
+            ; typ = unop.EUnOpT.source1
             ; inj = unop.EUnOpT.inj1_t }
         in
         app_unop env evd e unop a.(n - 1) prf
@@ -1151,13 +1160,13 @@ let rec trans_expr env evd e =
         let evd, prf1 =
           trans_expr env evd
             { constr = a.(n - 2)
-            ; typ = econstr binop.EBinOpT.source1
+            ; typ = binop.EBinOpT.source1
             ; inj = binop.EBinOpT.inj1 }
         in
         let evd, prf2 =
           trans_expr env evd
             { constr = a.(n - 1)
-            ; typ = econstr binop.EBinOpT.source2
+            ; typ = binop.EBinOpT.source2
             ; inj = binop.EBinOpT.inj2 }
         in
         app_binop env evd e binop a.(n - 2) prf1 a.(n - 1) prf2
@@ -1172,7 +1181,7 @@ let trans_expr env evd e =
     raise
       (CErrors.user_err
          ( Pp.str "Missing injection for type "
-         ++ Printer.pr_leconstr_env env evd e.typ ))
+         ++ Printer.pr_leconstr_env env evd (econstr e.typ) ))
 
 type prfp =
   | TProof of EConstr.t * EConstr.t  (** Proof of tranformed proposition *)
@@ -1285,13 +1294,13 @@ let rec trans_prop env evd e =
         let evd, a1 =
           trans_expr env evd
             { constr = a.(n - 2)
-            ; typ = econstr rop.EBinRelT.source
+            ; typ = rop.EBinRelT.source
             ; inj = rop.EBinRelT.inj }
         in
         let evd, a2 =
           trans_expr env evd
             { constr = a.(n - 1)
-            ; typ = econstr rop.EBinRelT.source
+            ; typ = rop.EBinRelT.source
             ; inj = rop.EBinRelT.inj }
         in
         trans_binrel env evd e rop a.(n - 2) a1 a.(n - 1) a2

@@ -373,7 +373,7 @@ obtain :math:`-1`. Thus, by Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    The :tacn:`zify` tactic can be extended with new types and operators by declaring and registering new typeclass instances using the following commands.
    The typeclass declarations can be found in the module ``ZifyClasses`` and the default instances can be found in the module ``ZifyInst``.
 
-.. cmd:: Add Zify @add_zify @qualid
+.. cmd:: Add Zify @add_zify @one_term
 
    .. insertprodn add_zify add_zify
 

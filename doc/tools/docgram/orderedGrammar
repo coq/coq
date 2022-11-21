@@ -715,7 +715,7 @@ command: [
 | "Locate" "Term" reference
 | "Locate" "Module" qualid
 | "Info" natural ltac_expr
-| "Add" "Zify" add_zify qualid      (* Micromega plugin *)
+| "Add" "Zify" add_zify one_term      (* Micromega plugin *)
 | "Show" "Zify" show_zify      (* Micromega plugin *)
 | "Locate" "Ltac" qualid
 | "Locate" "Library" qualid

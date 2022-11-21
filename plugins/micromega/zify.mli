@@ -9,7 +9,7 @@
 (************************************************************************)
 
 module type S = sig
-  val register : Libnames.qualid -> unit
+  val register : Constrexpr.constr_expr -> unit
   val print : unit -> unit
 end
 

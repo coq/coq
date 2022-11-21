@@ -19,17 +19,17 @@ open Tacarg
 DECLARE PLUGIN "coq-core.plugins.zify"
 
 VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
-| ["Add" "Zify" "InjTyp"   reference(t) ] -> { Zify.InjTable.register t }
-| ["Add" "Zify" "BinOp"     reference(t) ] -> { Zify.BinOp.register t }
-| ["Add" "Zify" "UnOp"      reference(t) ] -> { Zify.UnOp.register t }
-| ["Add" "Zify" "CstOp"     reference(t) ] -> { Zify.CstOp.register t }
-| ["Add" "Zify" "BinRel"    reference(t) ] -> { Zify.BinRel.register t }
-| ["Add" "Zify" "PropOp"    reference(t) ] -> { Zify.PropBinOp.register t }
-| ["Add" "Zify" "PropBinOp"    reference(t) ] -> { Zify.PropBinOp.register t }
-| ["Add" "Zify" "PropUOp"   reference(t) ] -> { Zify.PropUnOp.register t }
-| ["Add" "Zify" "BinOpSpec" reference(t) ] -> { Zify.BinOpSpec.register t }
-| ["Add" "Zify" "UnOpSpec"  reference(t) ] -> { Zify.UnOpSpec.register t }
-| ["Add" "Zify" "Saturate"  reference(t) ] -> { Zify.Saturate.register t }
+| ["Add" "Zify" "InjTyp" constr(t) ] -> { Zify.InjTable.register t }
+| ["Add" "Zify" "BinOp" constr(t) ] -> { Zify.BinOp.register t }
+| ["Add" "Zify" "UnOp" constr(t) ] -> { Zify.UnOp.register t }
+| ["Add" "Zify" "CstOp" constr(t) ] -> { Zify.CstOp.register t }
+| ["Add" "Zify" "BinRel" constr(t) ] -> { Zify.BinRel.register t }
+| ["Add" "Zify" "PropOp" constr(t) ] -> { Zify.PropBinOp.register t }
+| ["Add" "Zify" "PropBinOp" constr(t) ] -> { Zify.PropBinOp.register t }
+| ["Add" "Zify" "PropUOp" constr(t) ] -> { Zify.PropUnOp.register t }
+| ["Add" "Zify" "BinOpSpec" constr(t) ] -> { Zify.BinOpSpec.register t }
+| ["Add" "Zify" "UnOpSpec" constr(t) ] -> { Zify.UnOpSpec.register t }
+| ["Add" "Zify" "Saturate" constr(t) ] -> { Zify.Saturate.register t }
 END
 
 TACTIC EXTEND ITER
@@ -37,18 +37,18 @@ TACTIC EXTEND ITER
 END
 
 TACTIC EXTEND TRANS
-| [ "zify_op"  ] -> { Zify.zify_tac }
-| [ "zify_saturate"  ] -> { Zify.saturate }
+| [ "zify_op" ] -> { Zify.zify_tac }
+| [ "zify_saturate" ] -> { Zify.saturate }
 | [ "zify_iter_let" tactic(t)] -> { Zify.iter_let t }
 | [ "zify_elim_let" ] -> { Zify.elim_let }
 END
 
 VERNAC COMMAND EXTEND ZifyPrint CLASSIFIED AS SIDEFF
 |[ "Show" "Zify" "InjTyp" ] -> { Zify.InjTable.print () }
-|[ "Show" "Zify" "BinOp" ]  -> { Zify.BinOp.print () }
-|[ "Show" "Zify" "UnOp" ]   -> { Zify.UnOp.print () }
-|[ "Show" "Zify" "CstOp"]   -> { Zify.CstOp.print () }
-|[ "Show" "Zify" "BinRel"]  -> { Zify.BinRel.print () }
+|[ "Show" "Zify" "BinOp" ] -> { Zify.BinOp.print () }
+|[ "Show" "Zify" "UnOp" ] -> { Zify.UnOp.print () }
+|[ "Show" "Zify" "CstOp"] -> { Zify.CstOp.print () }
+|[ "Show" "Zify" "BinRel"] -> { Zify.BinRel.print () }
 |[ "Show" "Zify" "UnOpSpec"] -> { Zify.UnOpSpec.print() }
 |[ "Show" "Zify" "BinOpSpec"] -> { Zify.BinOpSpec.print() }
 END
