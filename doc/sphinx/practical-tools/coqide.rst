@@ -309,7 +309,7 @@ use `%s` to denote the URL to open, for example:
 Preferences and key bindings are saved in the user configuration directory,
 which is ``$XDG_CONFIG_HOME/coq`` if the environment variable ``$XDG_CONFIG_HOME``
 is set.  If the variable isn't set, the directory is ``~/.config/coq`` on Linux
-and `C:\Users\<USERNAME>\AppData\Local\coq` on Windows.
+and `C:\\Users\\<USERNAME>\\AppData\\Local\\coq` on Windows.
 Preferences are in the file "coqiderc" and key bindings are in the file "coqide.keys".
 
 Key bindings
