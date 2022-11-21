@@ -683,9 +683,10 @@ let rec lambda_of_constr cache env sigma c =
       Lfix((pos, inds, i), (names, ltypes, lbodies))
 
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
-      let rec_bodies = Array.map2 (Reduction.eta_expand env) rec_bodies type_bodies in
       let ltypes = lambda_of_args cache env sigma 0 type_bodies in
       let env = Environ.push_rec_types (names, type_bodies, rec_bodies) env in
+      let map c ty = Reduction.eta_expand env c (Vars.lift (Array.length type_bodies) ty) in
+      let rec_bodies = Array.map2 map rec_bodies type_bodies in
       let lbodies = lambda_of_args cache env sigma 0 rec_bodies in
       Lcofix(init, (names, ltypes, lbodies))
 
