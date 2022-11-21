@@ -666,14 +666,23 @@ let tag_button () =
 let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
 let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"
 
+(* Attention: this only works with absolute normalized paths -
+   which can be assumed here since the path comes from  Glib.get_user_config_dir *)
+let rec mkdir_p path perms =
+  if not (Sys.file_exists path)
+  then
+    let parent = Filename.dirname path in
+    if not (Sys.file_exists parent) && parent<>path
+    then mkdir_p parent perms
+    else Unix.mkdir path perms
+  else ()
+
 let save_accel_pref () =
-  if not (Sys.file_exists (Minilib.coqide_config_home ()))
-  then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
+  mkdir_p (Minilib.coqide_config_home ()) 0o700;
   GtkData.AccelMap.save accel_file
 
 let save_rc_pref () =
-  if not (Sys.file_exists (Minilib.coqide_config_home ()))
-  then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
+  mkdir_p (Minilib.coqide_config_home ()) 0o700;
   let add = Util.String.Map.add in
   let fold key obj accu = add key (obj.get ()) accu in
   let prefs = Util.String.Map.fold fold !preferences Util.String.Map.empty in
