@@ -396,6 +396,16 @@ Conversion machines
   GH issue number: #16645
   risk: systematic
 
+  component: "virtual" and "native" conversion machines
+  summary: η-expansion of cofixpoints was performed in the wrong environment
+  introduced: V8.9
+  impacted released versions: V8.9-V8.16.0
+  impacted coqchk versions: none (no VM / native computation in coqchk)
+  fixed in: 8.16.1
+  found by: Gaëtan Gilbert and Pierre-Marie Pédrot
+  GH issue number: #16831
+  risk: low, as it requires carefully crafted cofixpoints
+
 Side-effects
 
   component: side-effects

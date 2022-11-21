@@ -676,10 +676,11 @@ let rec lambda_of_constr env c =
     Lfix(rec_init, (names, ltypes, lbodies))
 
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
-    let rec_bodies = Array.map2 (Reduction.eta_expand env.env) rec_bodies type_bodies in
     let ltypes = lambda_of_args env 0 type_bodies in
-    let nenv = Renv.push_rec_types env (names, type_bodies, rec_bodies) in
-    let lbodies = lambda_of_args nenv 0 rec_bodies in
+    let env = Renv.push_rec_types env (names, type_bodies, rec_bodies) in
+    let map c ty = Reduction.eta_expand env.env c (Vars.lift (Array.length type_bodies) ty) in
+    let rec_bodies = Array.map2 map rec_bodies type_bodies in
+    let lbodies = lambda_of_args env 0 rec_bodies in
     Lcofix(init, (names, ltypes, lbodies))
 
   | Proj (p,c) ->
