@@ -132,9 +132,6 @@ let whd_betaiota env t =
       end
     | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
 
-let nf_betaiota env t =
-  norm_term (create_clos_infos betaiota env) (create_tab ()) (Esubst.subs_id 0, Univ.Instance.empty) t
-
 let whd_betaiotazeta env x =
   match kind x with
   | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
