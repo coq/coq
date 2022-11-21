@@ -1502,11 +1502,6 @@ let meta_instance env subst b =
     let sfun = eval_subst env subst in
     instance env subst.sigma (Some sfun) b.rebus
 
-let nf_meta env sigma c =
-  let sigma = create_meta_instance_subst sigma in
-  let cl = mk_freelisted c in
-  meta_instance env sigma { cl with rebus = cl.rebus }
-
 module Infer = struct
 
 open Reduction

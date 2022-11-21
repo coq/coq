@@ -1358,6 +1358,11 @@ let w_coerce env evd mv c =
   let mvty = Typing.meta_type env evd mv in
   w_coerce_to_type env evd c cty mvty
 
+let nf_meta env sigma c =
+  let sigma = create_meta_instance_subst sigma in
+  let cl = mk_freelisted c in
+  meta_instance env sigma { cl with rebus = cl.rebus }
+
 let unify_to_type env sigma flags c status u =
   let sigma, c = refresh_universes (Some false) env sigma c in
   let t = get_type_of env sigma (nf_meta env sigma c) in

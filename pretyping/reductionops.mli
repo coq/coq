@@ -276,7 +276,6 @@ type meta_instance_subst
 val create_meta_instance_subst : Evd.evar_map -> meta_instance_subst
 
 val meta_instance : env -> meta_instance_subst -> constr freelisted -> constr
-val nf_meta       : env -> evar_map -> constr -> constr
 
 exception AnomalyInConversion of exn
 
