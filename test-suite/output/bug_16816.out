@@ -1,0 +1,9 @@
+File "./output/bug_16816.v", line 6, characters 15-16:
+The command has indeed failed with message:
+In environment
+s : Box unit
+T : Type
+x : T
+The term "x" has type "T" while it is expected to have type 
+"?S@{u0:=T}" (unable to find a well-typed instantiation for 
+"?S": cannot ensure that "Type" is a subtype of "Set").
