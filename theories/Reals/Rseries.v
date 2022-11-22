@@ -40,7 +40,7 @@ Section sequence.
   Definition Un_cv (l:R) : Prop :=
     forall eps:R,
       eps > 0 ->
-      exists N : nat, (forall n:nat, (n >= N)%nat -> R_dist (Un n) l < eps).
+      exists N : nat, (forall n:nat, (n >= N)%nat -> Rdist (Un n) l < eps).
 
 (*********)
   Definition Cauchy_crit : Prop :=
@@ -48,7 +48,7 @@ Section sequence.
       eps > 0 ->
       exists N : nat,
         (forall n m:nat,
-          (n >= N)%nat -> (m >= N)%nat -> R_dist (Un n) (Un m) < eps).
+          (n >= N)%nat -> (m >= N)%nat -> Rdist (Un n) (Un m) < eps).
 
 (*********)
   Definition Un_growing : Prop := forall n:nat, Un n <= Un (S n).
@@ -95,7 +95,7 @@ Section sequence.
     intros (N, H3).
     exists N.
     intros n H4.
-    unfold R_dist.
+    unfold Rdist.
     rewrite Rabs_left1, Ropp_minus_distr.
     - apply Rplus_lt_reg_l with (Un n - eps).
       apply Rlt_le_trans with (Un N).
@@ -290,7 +290,7 @@ Section sequence.
             clear H; intros; unfold EUn in H; elim H; clear H;
               intros; elim (H1 x2); clear H1; intro y.
     - unfold ge in H0; generalize (H0 x2 (le_n x) y); clear H0; intro;
-        rewrite <- H in H0; unfold R_dist in H0; elim (Rabs_def2 (Un x - x1) 1 H0);
+        rewrite <- H in H0; unfold Rdist in H0; elim (Rabs_def2 (Un x - x1) 1 H0);
         clear H0; intros; elim (Rmax_Rle x0 (Un x + 1) x1);
         intros; apply H4; clear H3 H4; right; clear H H0 y;
         apply (Rlt_le x1 (Un x + 1)); generalize (Rlt_minus (-1) (Un x - x1) H1);
@@ -326,7 +326,7 @@ Proof.
     elim (Req_dec x 0).
   - intros; exists 0%nat; intros; rewrite H1; rewrite Rminus_0_r; rewrite Rinv_1;
       cut (sum_f_R0 (fun n0:nat => 1 * 0 ^ n0) n = 1).
-    + intros; rewrite H3; rewrite R_dist_eq; auto.
+    + intros; rewrite H3; rewrite Rdist_eq; auto.
     + elim n; simpl.
       * ring.
       * intros; rewrite H3; ring.
@@ -338,7 +338,7 @@ Proof.
       * intros; rewrite H5;
           apply
             (Rmult_lt_reg_l (Rabs (1 - x))
-                            (R_dist (sum_f_R0 (fun n0:nat => x ^ n0) n) (/ (1 - x))) eps).
+                            (Rdist (sum_f_R0 (fun n0:nat => x ^ n0) n) (/ (1 - x))) eps).
         -- apply Rabs_pos_lt.
            apply Rminus_eq_contra.
            apply Rlt_dichotomy_converse.
@@ -346,7 +346,7 @@ Proof.
            apply (Rle_lt_trans x (Rabs x) 1).
            ++ apply RRle_abs.
            ++ assumption.
-        -- unfold R_dist; rewrite <- Rabs_mult.
+        -- unfold Rdist; rewrite <- Rabs_mult.
            rewrite Rmult_minus_distr_l.
            cut
              ((1 - x) * sum_f_R0 (fun n0:nat => x ^ n0) n =

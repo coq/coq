@@ -25,10 +25,10 @@ Proof.
   unfold continuity; intro.
   assert (H0 := continuity_cos (PI / 2 - x)).
   unfold continuity_pt in H0; unfold continue_in in H0; unfold limit1_in in H0;
-    unfold limit_in in H0; simpl in H0; unfold R_dist in H0;
+    unfold limit_in in H0; simpl in H0; unfold Rdist in H0;
       unfold continuity_pt; unfold continue_in;
         unfold limit1_in; unfold limit_in;
-          simpl; unfold R_dist; intros.
+          simpl; unfold Rdist; intros.
   elim (H0 _ H); intros.
   exists x0; intros.
   elim H1; intros.
@@ -94,8 +94,8 @@ Proof.
   }
   elim (H1 _ H3); intros N0 H4.
   exists N0; intros.
-  unfold R_dist; assert (H6 := H4 _ H5).
-  unfold R_dist in H5;
+  unfold Rdist; assert (H6 := H4 _ H5).
+  unfold Rdist in H5;
     replace
     (Rabs
       (Rabs (/ INR (fact (2 * S n + 1)) * r ^ (2 * S n)) /
@@ -169,7 +169,7 @@ Proof.
   }
   assert (H2 := SFL_continuity_pt _ cv _ X0 H0 _ H1).
   unfold continuity_pt in H2; unfold continue_in in H2; unfold limit1_in in H2;
-    unfold limit_in in H2; simpl in H2; unfold R_dist in H2.
+    unfold limit_in in H2; simpl in H2; unfold Rdist in H2.
   elim (H2 _ H); intros alp H3.
   elim H3; intros.
   exists (mkposreal _ H4).
@@ -190,7 +190,7 @@ Proof.
     eapply UL_sequence.
     - apply HUn.
     - unfold SP, fn; unfold Un_cv; intros; exists 1%nat; intros.
-      unfold R_dist;
+      unfold Rdist;
         replace
           (sum_f_R0 (fun k:nat => (-1) ^ k / INR (fact (2 * k + 1)) * 0 ^ (2 * k)) n)
         with 1.
@@ -216,7 +216,7 @@ Proof.
       unfold SP, fn, Un_cv; intros.
     elim (Hsin _ H10); intros N0 H11.
     exists N0; intros.
-    unfold R_dist; unfold R_dist in H11.
+    unfold Rdist; unfold Rdist in H11.
     replace
       (sum_f_R0 (fun k:nat => (-1) ^ k / INR (fact (2 * k + 1)) * h ^ (2 * k)) n)
       with
@@ -237,7 +237,7 @@ Proof.
   assert (continuity_pt sin 0) by apply continuity_sin.
   unfold continuity_pt in H3; unfold continue_in in H3;
     unfold limit1_in in H3; unfold limit_in in H3; simpl in H3;
-    unfold R_dist in H3.
+    unfold Rdist in H3.
   cut (0 < eps / 2); [ intro | assumption ].
   elim (H3 _ H4); intros del_c H5.
   assert (0 < Rmin del del_c). {

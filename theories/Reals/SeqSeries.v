@@ -37,8 +37,8 @@ Proof.
     exists (l1 - SP fn N x).
     unfold Un_cv in H; unfold Un_cv; intros.
     elim (H eps H2); intros N0 H3.
-    unfold R_dist in H3; exists N0; intros.
-    unfold R_dist, SP.
+    unfold Rdist in H3; exists N0; intros.
+    unfold Rdist, SP.
     replace
       (sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n -
          (l1 - sum_f_R0 (fun k:nat => fn k x) N)) with
@@ -78,8 +78,8 @@ Proof.
     exists (l2 - sum_f_R0 An N).
     unfold Un_cv in H0; unfold Un_cv; intros.
     elim (H0 eps H2); intros N0 H3.
-    unfold R_dist in H3; exists N0; intros.
-    unfold R_dist;
+    unfold Rdist in H3; exists N0; intros.
+    unfold Rdist;
       replace (sum_f_R0 (fun l:nat => An (S N + l)%nat) n - (l2 - sum_f_R0 An N))
       with (sum_f_R0 An N + sum_f_R0 (fun l:nat => An (S N + l)%nat) n - l2);
       [ idtac | ring ].
@@ -123,8 +123,8 @@ Proof.
     { apply H3. }
     unfold Un_cv in H0; unfold Un_cv; intros; elim (H0 eps H5);
       intros N0 H6.
-    unfold R_dist in H6; exists N0; intros.
-    unfold R_dist;
+    unfold Rdist in H6; exists N0; intros.
+    unfold Rdist;
       replace (sum_f_R0 (fun l:nat => An (S N + l)%nat) n - (l2 - sum_f_R0 An N))
       with (sum_f_R0 An N + sum_f_R0 (fun l:nat => An (S N + l)%nat) n - l2);
       [ idtac | ring ].
@@ -155,8 +155,8 @@ Proof.
   { apply H2. }
   unfold Un_cv in H; unfold Un_cv; intros.
   elim (H eps H4); intros N0 H5.
-  unfold R_dist in H5; exists N0; intros.
-  unfold R_dist, SP;
+  unfold Rdist in H5; exists N0; intros.
+  unfold Rdist, SP;
     replace
       (sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n -
          (l1 - sum_f_R0 (fun k:nat => fn k x) N)) with
@@ -204,15 +204,15 @@ Proof.
   intros; elim (H0 eps H1); intros.
   exists x; intros.
   cut
-    (R_dist (sum_f_R0 An n) (sum_f_R0 An m) <=
-      R_dist (sum_f_R0 Bn n) (sum_f_R0 Bn m)).
-  { intro; apply Rle_lt_trans with (R_dist (sum_f_R0 Bn n) (sum_f_R0 Bn m)).
+    (Rdist (sum_f_R0 An n) (sum_f_R0 An m) <=
+      Rdist (sum_f_R0 Bn n) (sum_f_R0 Bn m)).
+  { intro; apply Rle_lt_trans with (Rdist (sum_f_R0 Bn n) (sum_f_R0 Bn m)).
     - assumption.
     - apply H2; assumption. }
   destruct (lt_eq_lt_dec n m) as [[| -> ]|].
   - rewrite (tech2 An n m); [ idtac | assumption ].
     rewrite (tech2 Bn n m); [ idtac | assumption ].
-    unfold R_dist; unfold Rminus; do 2 rewrite Ropp_plus_distr;
+    unfold Rdist; unfold Rminus; do 2 rewrite Ropp_plus_distr;
       do 2 rewrite <- Rplus_assoc; do 2 rewrite Rplus_opp_r;
         do 2 rewrite Rplus_0_l; do 2 rewrite Rabs_Ropp; repeat rewrite Rabs_right.
     + apply sum_Rle; intros.
@@ -223,12 +223,12 @@ Proof.
       apply Rle_trans with (An (S n + n0)%nat); assumption.
     + apply Rle_ge; apply cond_pos_sum; intro.
       elim (H (S n + n0)%nat); intros; assumption.
-  - unfold R_dist; unfold Rminus;
+  - unfold Rdist; unfold Rminus;
     do 2 rewrite Rplus_opp_r; rewrite Rabs_R0; right;
       reflexivity.
   - rewrite (tech2 An m n); [ idtac | assumption ].
     rewrite (tech2 Bn m n); [ idtac | assumption ].
-    unfold R_dist; unfold Rminus; do 2 rewrite Rplus_assoc;
+    unfold Rdist; unfold Rminus; do 2 rewrite Rplus_assoc;
       rewrite (Rplus_comm (sum_f_R0 An m)); rewrite (Rplus_comm (sum_f_R0 Bn m));
         do 2 rewrite Rplus_assoc; do 2 rewrite Rplus_opp_l;
           do 2 rewrite Rplus_0_r; repeat rewrite Rabs_right.
@@ -275,7 +275,7 @@ Proof.
           -- prove_sup.
           -- apply Rabs_pos_lt;assumption.
       + elim (H5 _ H8); intros; exists x; intros; assert (H11 := H9 _ H10);
-          unfold R_dist in H11; unfold Rminus in H11; rewrite Ropp_0 in H11;
+          unfold Rdist in H11; unfold Rminus in H11; rewrite Ropp_0 in H11;
           rewrite Rplus_0_r in H11.
         apply Rle_lt_trans with (Rabs (C / sum_f_R0 An n)).
         { apply RRle_abs. }
@@ -289,7 +289,7 @@ Proof.
         * apply Rabs_no_R0;assumption.
   }
   elim H7; clear H7; intros N2 H7; set (N := max N1 N2); exists (S N); intros;
-    unfold R_dist;
+    unfold Rdist;
     replace (sum_f_R0 (fun k:nat => An k * Bn k) n / sum_f_R0 An n - l) with
     (sum_f_R0 (fun k:nat => An k * (Bn k - l)) n / sum_f_R0 An n).
   2:{ replace (sum_f_R0 (fun k:nat => An k * (Bn k - l)) n) with
@@ -315,7 +315,7 @@ Proof.
       + trivial.
     - apply Rle_ge; left; apply Rinv_0_lt_compat;trivial. }
 
-  unfold R_dist in H; unfold Rdiv; rewrite Rabs_mult;
+  unfold Rdist in H; unfold Rdiv; rewrite Rabs_mult;
     rewrite (Rabs_right (/ sum_f_R0 An n)).
   2:{ apply Rle_ge; left; apply Rinv_0_lt_compat;trivial. }
   apply Rle_lt_trans with
@@ -377,7 +377,7 @@ Proof.
         * apply lt_INR; apply Nat.lt_succ_r. trivial. }
   assert (H3 := Cesaro _ _ _ H H0 H2).
   unfold Un_cv; unfold Un_cv in H3; intros; elim (H3 _ H4); intros;
-    exists (S x); intros; unfold R_dist; unfold R_dist in H5;
+    exists (S x); intros; unfold Rdist; unfold Rdist in H5;
       apply Rle_lt_trans with
         (Rabs
           (sum_f_R0 (fun k:nat => An k * Bn k) (pred n) / sum_f_R0 An (pred n) - l)).

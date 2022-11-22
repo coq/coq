@@ -275,7 +275,7 @@ Proof.
   - intros; unfold neighbourhood in H0.
     elim H0; intros del1 H1.
     unfold continuity_pt in H; unfold continue_in in H; unfold limit1_in in H;
-      unfold limit_in in H; simpl in H; unfold R_dist in H.
+      unfold limit_in in H; simpl in H; unfold Rdist in H.
     assert (H2 := H del1 (cond_pos del1)).
     elim H2; intros del2 H3.
     elim H3; intros.
@@ -302,8 +302,8 @@ Proof.
         intros del1 H7.
       exists (pos del1); split.
       * apply (cond_pos del1).
-      * intros; elim H8; intros; simpl in H10; unfold R_dist in H10; simpl;
-          unfold R_dist; apply (H6 _ (H7 _ H10)).
+      * intros; elim H8; intros; simpl in H10; unfold Rdist in H10; simpl;
+          unfold Rdist; apply (H6 _ (H7 _ H10)).
     + unfold neighbourhood, disc; exists (mkposreal eps H0);
         unfold included; intros; assumption.
 Qed.
@@ -334,7 +334,7 @@ Proof.
   - intros; apply continuity_P2; assumption.
   - intros; unfold continuity; unfold continuity_pt;
       unfold continue_in; unfold limit1_in;
-      unfold limit_in; simpl; unfold R_dist;
+      unfold limit_in; simpl; unfold Rdist;
       intros; cut (open_set (disc (f x) (mkposreal _ H0))).
     + intro; assert (H2 := H _ H1).
       unfold open_set, image_rec in H2; cut (disc (f x) (mkposreal _ H0) (f x)).
@@ -994,7 +994,7 @@ Proof.
     + unfold continuity; intro; case (Rtotal_order x a); intro.
       * unfold continuity_pt; unfold continue_in;
           unfold limit1_in; unfold limit_in;
-          simpl; unfold R_dist; intros; exists (a - x);
+          simpl; unfold Rdist; intros; exists (a - x);
           split.
         -- change (0 < a - x); apply Rlt_Rminus; assumption.
         -- intros; elim H5; clear H5; intros _ H5; unfold h.
@@ -1012,9 +1012,9 @@ Proof.
            }
            assert (H6 := H0 _ H5); unfold continuity_pt in H6; unfold continue_in in H6;
              unfold limit1_in in H6; unfold limit_in in H6; simpl in H6;
-             unfold R_dist in H6; unfold continuity_pt;
+             unfold Rdist in H6; unfold continuity_pt;
              unfold continue_in; unfold limit1_in;
-             unfold limit_in; simpl; unfold R_dist;
+             unfold limit_in; simpl; unfold Rdist;
              intros; elim (H6 _ H7); intros; exists (Rmin x0 (b - a));
              split.
            ++ unfold Rmin; case (Rle_dec x0 (b - a)); intro.
@@ -1047,9 +1047,9 @@ Proof.
               }
               assert (H7 := H0 _ H6); unfold continuity_pt in H7; unfold continue_in in H7;
                 unfold limit1_in in H7; unfold limit_in in H7; simpl in H7;
-                unfold R_dist in H7; unfold continuity_pt;
+                unfold Rdist in H7; unfold continuity_pt;
                 unfold continue_in; unfold limit1_in;
-                unfold limit_in; simpl; unfold R_dist;
+                unfold limit_in; simpl; unfold Rdist;
                 intros; elim (H7 _ H8); intros; elim H9; clear H9;
                 intros.
               assert (H11 : 0 < x - a).
@@ -1097,9 +1097,9 @@ Proof.
                  }
                  assert (H8 := H0 _ H7); unfold continuity_pt in H8; unfold continue_in in H8;
                    unfold limit1_in in H8; unfold limit_in in H8; simpl in H8;
-                   unfold R_dist in H8; unfold continuity_pt;
+                   unfold Rdist in H8; unfold continuity_pt;
                    unfold continue_in; unfold limit1_in;
-                   unfold limit_in; simpl; unfold R_dist;
+                   unfold limit_in; simpl; unfold Rdist;
                    intros; elim (H8 _ H9); intros; exists (Rmin x0 (b - a));
                    split.
                  { unfold Rmin; case (Rle_dec x0 (b - a)); intro.
@@ -1135,7 +1135,7 @@ Proof.
                  apply Rmin_r.
               ** unfold continuity_pt; unfold continue_in;
                    unfold limit1_in; unfold limit_in;
-                   simpl; unfold R_dist; intros; exists (x - b);
+                   simpl; unfold Rdist; intros; exists (x - b);
                    split.
                  { change (0 < x - b); apply Rlt_Rminus; assumption. }
                  intros; elim H8; clear H8; intros.
@@ -1639,7 +1639,7 @@ Proof.
                  { assumption. }
                  assert (H4 := H _ H3); unfold continuity_pt in H4; unfold continue_in in H4;
                    unfold limit1_in in H4; unfold limit_in in H4; simpl in H4;
-                   unfold R_dist in H4; elim (H4 (eps / 2) (H1 eps));
+                   unfold Rdist in H4; elim (H4 (eps / 2) (H1 eps));
                    intros;
                    set
                      (E :=
@@ -1810,7 +1810,7 @@ Proof.
                    - assert (H12 :  exists x : R, E x). {
                        assert (H13 := H _ H9); unfold continuity_pt in H13;
                          unfold continue_in in H13; unfold limit1_in in H13;
-                         unfold limit_in in H13; simpl in H13; unfold R_dist in H13;
+                         unfold limit_in in H13; simpl in H13; unfold Rdist in H13;
                          elim (H13 _ (H1 eps)); intros; elim H12; clear H12;
                          intros; exists (Rmin x0 (M - m)); unfold E;
                          intros; split.

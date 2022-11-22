@@ -78,7 +78,7 @@ Proof.
     rewrite Rmult_1_r; apply le_INR; apply fact_le; apply Nat.le_succ_diag_r.
   - assert (H0 := cv_speed_pow_fact 1); unfold Un_cv; unfold Un_cv in H0;
       intros; elim (H0 _ H1); intros; exists x0; intros;
-      unfold R_dist in H2; unfold R_dist;
+      unfold Rdist in H2; unfold Rdist;
       replace (/ INR (fact n)) with (1 ^ n / INR (fact n));auto.
     unfold Rdiv; rewrite pow1; rewrite Rmult_1_l; reflexivity.
   - unfold infinite_sum in e; unfold Un_cv, tg_alt; intros; elim (e _ H0);
@@ -355,7 +355,7 @@ Proof.
   }
   exists (Rmin (y * (exp eps - 1)) (y * (1 - exp (- eps)))); split.
   { red; apply Rmin_case; nra. }
-  unfold dist, R_met, R_dist; simpl.
+  unfold dist, R_met, Rdist; simpl.
   intros x [[H3 H4] H5].
   assert (Hxyy:y * (x * / y) = x). {
     field. lra.
@@ -637,7 +637,7 @@ Proof.
   { apply ln_continue; auto. }
   assert (H0 := derivable_pt_lim_exp (ln y)); unfold derivable_pt_lim in H0;
     unfold limit1_in; unfold limit_in;
-      simpl; unfold R_dist; intros; elim (H0 _ H);
+      simpl; unfold Rdist; intros; elim (H0 _ H);
         intros; exists (pos x); split.
   { apply (cond_pos x). }
   intros; pattern y at 3; rewrite <- exp_ln.
@@ -654,7 +654,7 @@ Qed.
 Lemma derivable_pt_lim_ln : forall x:R, 0 < x -> derivable_pt_lim ln x (/ x).
 Proof.
   intros; assert (H0 := Dln x H); unfold D_in in H0; unfold limit1_in in H0;
-    unfold limit_in in H0; simpl in H0; unfold R_dist in H0;
+    unfold limit_in in H0; simpl in H0; unfold Rdist in H0;
       unfold derivable_pt_lim; intros; elim (H0 _ H1);
         intros; elim H2; clear H2; intros; set (alp := Rmin x0 (x / 2));
           assert (H4 : 0 < alp).

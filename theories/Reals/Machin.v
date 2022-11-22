@@ -156,10 +156,10 @@ assert (cv : Un_cv PI_2_3_7_tg 0).
   unfold PI_2_3_7_tg.
   rewrite <- (Rplus_0_l 0).
   apply Rle_lt_trans with
-    (1 := R_dist_plus (2 * Ratan_seq (/3) n) 0 (Ratan_seq (/7) n) 0).
+    (1 := Rdist_plus (2 * Ratan_seq (/3) n) 0 (Ratan_seq (/7) n) 0).
   replace eps with (2 * eps/3 + eps/3) by field.
   apply Rplus_lt_compat.
-  { unfold R_dist, Rminus, Rdiv.
+  { unfold Rdist, Rminus, Rdiv.
     rewrite <- (Rmult_0_r 2), <- Ropp_mult_distr_r_reverse.
     rewrite <- Rmult_plus_distr_l, Rabs_mult, (Rabs_pos_eq 2);[|lra].
     rewrite Rmult_assoc; apply Rmult_lt_compat_l;[lra | ].
@@ -176,7 +176,7 @@ assert (main : Un_cv (sum_f_R0 (tg_alt PI_2_3_7_tg)) (2 * v3 + v7)).
                                sum_f_R0 (tg_alt (Ratan_seq (/7))) n) (2 * v3 + v7)).
   { apply CV_plus;[ | assumption].
     apply CV_mult;[ | assumption].
-    exists 0%nat; intros; rewrite R_dist_eq; assumption. }
+    exists 0%nat; intros; rewrite Rdist_eq; assumption. }
   apply Un_cv_ext with (2 := main).
   intros n; rewrite scal_sum, <- plus_sum; apply sum_eq; intros.
   rewrite Rmult_comm; unfold PI_2_3_7_tg, tg_alt; field. }

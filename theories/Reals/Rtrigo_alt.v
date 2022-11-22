@@ -123,14 +123,14 @@ Proof.
         apply Rplus_le_compat_r.
       pose proof (pos_INR n0). nra.
   - assert (H3 := cv_speed_pow_fact a); unfold Un; unfold Un_cv in H3;
-      unfold R_dist in H3; unfold Un_cv; unfold R_dist;
+      unfold Rdist in H3; unfold Un_cv; unfold Rdist;
       intros; elim (H3 eps H4); intros N H5.
     exists N; intros; apply H5.
     lia.
   - unfold sin.
     destruct (exist_sin (Rsqr a)) as (x,p).
-    unfold sin_in, infinite_sum, R_dist in p;
-      unfold Un_cv, R_dist;
+    unfold sin_in, infinite_sum, Rdist in p;
+      unfold Un_cv, Rdist;
       intros.
     assert (H4:0 < eps / Rabs a). {
       unfold Rdiv; apply Rmult_lt_0_compat.
@@ -260,12 +260,12 @@ Proof.
     { nra. }
     pose proof (pos_INR n1);nra.
   -  assert (H4 := cv_speed_pow_fact a0); unfold Un; unfold Un_cv in H4;
-       unfold R_dist in H4; unfold Un_cv; unfold R_dist;
+       unfold Rdist in H4; unfold Un_cv; unfold Rdist;
        intros; elim (H4 eps H5); intros N H6; exists N; intros.
      apply H6; nia.
   - unfold cos. destruct (exist_cos (Rsqr a0)) as (x,p).
-    unfold cos_in, infinite_sum, R_dist in p;
-      unfold Un_cv, R_dist; intros.
+    unfold cos_in, infinite_sum, Rdist in p;
+      unfold Un_cv, Rdist; intros.
     destruct (p _ H4) as (N,H6).
     exists N; intros.
     replace (sum_f_R0 (tg_alt Un) n1) with
