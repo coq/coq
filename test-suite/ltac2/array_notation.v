@@ -19,9 +19,23 @@ Proof.
   split > [|constructor]. constructor.
 Qed.
 
+Goal forall a b: nat, a = b -> True /\ a = b /\ True.
+Proof.
+  intros.
+  (split > [|split]) > [|exact H|].
+  all: constructor.
+Qed.
+
 Set Default Proof Mode "Classic".
 
 Goal True /\ True.
 Proof.
   split; [|constructor]. constructor.
+Qed.
+
+Goal forall a b: nat, a = b -> True /\ a = b /\ True.
+Proof.
+  intros.
+  (split; [|split]); [|exact H|].
+  all: constructor.
 Qed.
