@@ -57,10 +57,10 @@ Proof.
   - intros (x,p).
     exists (- x).
     unfold Un_cv in p.
-    unfold R_dist in p.
+    unfold Rdist in p.
     unfold opp_seq in p.
     unfold Un_cv.
-    unfold R_dist.
+    unfold Rdist.
     intros.
     elim (p eps H1); intros.
     exists x0; intros.
@@ -401,7 +401,7 @@ Lemma cauchy_opp :
 Proof.
   intro.
   unfold Cauchy_crit.
-  unfold R_dist.
+  unfold Rdist.
   intros.
   elim (H eps H0); intros.
   exists x; intros.
@@ -588,7 +588,7 @@ Qed.
 Lemma UL_sequence :
   forall (Un:nat -> R) (l1 l2:R), Un_cv Un l1 -> Un_cv Un l2 -> l1 = l2.
 Proof.
-  intros Un l1 l2; unfold Un_cv; unfold R_dist; intros.
+  intros Un l1 l2; unfold Un_cv; unfold Rdist; intros.
   apply cond_eq.
   intros; cut (0 < eps / 2);
     [ intro
@@ -611,7 +611,7 @@ Lemma CV_plus :
   forall (An Bn:nat -> R) (l1 l2:R),
     Un_cv An l1 -> Un_cv Bn l2 -> Un_cv (fun i:nat => An i + Bn i) (l1 + l2).
 Proof.
-  unfold Un_cv; unfold R_dist; intros.
+  unfold Un_cv; unfold Rdist; intros.
   cut (0 < eps / 2);
     [ intro
       | unfold Rdiv; apply Rmult_lt_0_compat;
@@ -636,7 +636,7 @@ Lemma cv_cvabs :
   forall (Un:nat -> R) (l:R),
     Un_cv Un l -> Un_cv (fun i:nat => Rabs (Un i)) (Rabs l).
 Proof.
-  unfold Un_cv; unfold R_dist; intros.
+  unfold Un_cv; unfold Rdist; intros.
   elim (H eps H0); intros.
   exists x; intros.
   apply Rle_lt_trans with (Rabs (Un n - l)).
@@ -650,14 +650,14 @@ Lemma CV_Cauchy :
 Proof.
   intros Un X; elim X; intros.
   unfold Cauchy_crit; intros.
-  unfold Un_cv in p; unfold R_dist in p.
+  unfold Un_cv in p; unfold Rdist in p.
   cut (0 < eps / 2);
     [ intro
       | unfold Rdiv; apply Rmult_lt_0_compat;
         [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
   elim (p (eps / 2) H0); intros.
   exists x0; intros.
-  unfold R_dist;
+  unfold Rdist;
     apply Rle_lt_trans with (Rabs (Un n - x) + Rabs (x - Un m)).
   - replace (Un n - Un m) with (Un n - x + (x - Un m));
       [ apply Rabs_triang | ring ].
@@ -709,11 +709,11 @@ Proof.
   assert (H1 := maj_by_pos An X).
   elim H1; intros M H2.
   elim H2; intros.
-  unfold Un_cv; unfold R_dist; intros.
+  unfold Un_cv; unfold Rdist; intros.
   cut (0 < eps / (2 * M)).
   - intro.
     case (Req_dec l2 0); intro.
-    + unfold Un_cv in H0; unfold R_dist in H0.
+    + unfold Un_cv in H0; unfold Rdist in H0.
       elim (H0 (eps / (2 * M)) H6); intros.
       exists x; intros.
       apply Rle_lt_trans with
@@ -759,8 +759,8 @@ Proof.
         apply Rinv_0_lt_compat; apply Rmult_lt_0_compat;
           [ prove_sup0 | apply Rabs_pos_lt; assumption ].
       }
-      unfold Un_cv in H; unfold R_dist in H; unfold Un_cv in H0;
-        unfold R_dist in H0.
+      unfold Un_cv in H; unfold Rdist in H; unfold Un_cv in H0;
+        unfold Rdist in H0.
       elim (H (eps / (2 * Rabs l2)) H8); intros N1 H9.
       elim (H0 (eps / (2 * M)) H6); intros N2 H10.
       set (N := max N1 N2).
@@ -861,7 +861,7 @@ Proof.
     + intro; elim (H0 ((1 - k) / 2) H1); intros.
       exists x; intros.
       assert (H4 := H2 n H3).
-      unfold R_dist in H4; rewrite <- Rabs_Rabsolu;
+      unfold Rdist in H4; rewrite <- Rabs_Rabsolu;
         replace (Rabs (An (S n) / An n)) with (Rabs (An (S n) / An n) - k + k);
         [ idtac | ring ];
         apply Rle_lt_trans with (Rabs (Rabs (An (S n) / An n) - k) + Rabs k).
@@ -886,7 +886,7 @@ Proof.
   - left; assumption.
   - right; assumption.
   - cut (0 < Un n - l).
-    + intro; unfold Un_cv in H0; unfold R_dist in H0.
+    + intro; unfold Un_cv in H0; unfold Rdist in H0.
       elim (H0 (Un n - l) H1); intros N1 H2.
       set (N := max n N1).
       cut (Un n - l <= Un N - l).
@@ -911,7 +911,7 @@ Lemma CV_opp :
   forall (An:nat -> R) (l:R), Un_cv An l -> Un_cv (opp_seq An) (- l).
 Proof.
   intros An l.
-  unfold Un_cv; unfold R_dist; intros.
+  unfold Un_cv; unfold Rdist; intros.
   elim (H eps H0); intros.
   exists x; intros.
   unfold opp_seq; replace (- An n - - l) with (- (An n - l));
@@ -953,7 +953,7 @@ Definition cv_infty (Un:nat -> R) : Prop :=
 Lemma cv_infty_cv_0 :
   forall Un:nat -> R, cv_infty Un -> Un_cv (fun n:nat => / Un n) 0.
 Proof.
-  unfold cv_infty, Un_cv; unfold R_dist; intros Un H0 eps H1.
+  unfold cv_infty, Un_cv; unfold Rdist; intros Un H0 eps H1.
   elim (H0 (/ eps)); intros N0 H2.
   exists N0; intros n H3.
   unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r;
@@ -1013,7 +1013,7 @@ Proof.
       (Un_cv (fun n:nat => Rabs x ^ n / INR (fact n)) 0 ->
         Un_cv (fun n:nat => x ^ n / INR (fact n)) 0).
   { intro; apply H.
-    unfold Un_cv; unfold R_dist; intros; case (Req_dec x 0);
+    unfold Un_cv; unfold Rdist; intros; case (Req_dec x 0);
       intro.
     - exists 1%nat; intros.
       rewrite H1; unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r;
@@ -1023,7 +1023,7 @@ Proof.
     - assert (H2 := Rabs_pos_lt x H1); set (M := up (Rabs x)); cut (0 <= M)%Z.
       + intro; elim (IZN M H3); intros M_nat H4.
         set (Un := fun n:nat => Rabs x ^ (M_nat + n) / INR (fact (M_nat + n))).
-        cut (Un_cv Un 0); unfold Un_cv; unfold R_dist; intros.
+        cut (Un_cv Un 0); unfold Un_cv; unfold Rdist; intros.
         * elim (H5 eps H0); intros N H6.
           exists (M_nat + N)%nat; intros;
             cut (exists p : nat, (p >= N)%nat /\ n = (M_nat + p)%nat).
@@ -1045,7 +1045,7 @@ Proof.
           1:intro; cut (Un_decreasing Un).
           1:intro; cut (forall n:nat, Un (S n) <= Vn n).
           1:intro; cut (Un_cv Vn 0).
-          -- unfold Un_cv; unfold R_dist; intros.
+          -- unfold Un_cv; unfold Rdist; intros.
              elim (H10 eps0 H5); intros N1 H11.
              exists (S N1); intros.
              cut (forall n:nat, 0 < Vn n).
@@ -1065,7 +1065,7 @@ Proof.
              intro; apply Rlt_le_trans with (Un (S n0)); [ apply H7 | apply H9 ].
           -- cut (cv_infty (fun n:nat => INR (S n))).
              1:intro; cut (Un_cv (fun n:nat => / INR (S n)) 0).
-             1:unfold Un_cv, R_dist; intros; unfold Vn.
+             1:unfold Un_cv, Rdist; intros; unfold Vn.
              1:cut (0 < eps1 / (Rabs x * Un 0%nat)).
              ++ intro; elim (H11 _ H13); intros N H14.
                 exists N; intros;
@@ -1181,7 +1181,7 @@ Proof.
         { assumption. }
         elim (archimed (Rabs x)); intros; assumption.
   }
-  unfold Un_cv; unfold R_dist; intros; elim (H eps H0); intros.
+  unfold Un_cv; unfold Rdist; intros; elim (H eps H0); intros.
   exists x0; intros;
     apply Rle_lt_trans with (Rabs (Rabs x ^ n / INR (fact n) - 0)).
   - unfold Rminus; rewrite Ropp_0; do 2 rewrite Rplus_0_r;

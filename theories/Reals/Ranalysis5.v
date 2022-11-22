@@ -246,12 +246,12 @@ Proof.
   split.
   - apply Rle_cv_lim with (Vn:=dicho_up x y D) (Un:=fun n => x).
     + intro n ; exact (proj1 (Main n)).
-    + unfold Un_cv ; intros ; exists 0%nat ; intros ; unfold R_dist ; replace (x -x) with 0 by field ; rewrite Rabs_R0 ; assumption.
+    + unfold Un_cv ; intros ; exists 0%nat ; intros ; unfold Rdist ; replace (x -x) with 0 by field ; rewrite Rabs_R0 ; assumption.
     + assumption.
   - apply Rle_cv_lim with (Un:=dicho_up x y D) (Vn:=fun n => y).
     + intro n ; exact (proj2 (Main n)).
     + assumption.
-    + unfold Un_cv ; intros ; exists 0%nat ; intros ; unfold R_dist ; replace (y -y) with 0 by field ; rewrite Rabs_R0 ; assumption.
+    + unfold Un_cv ; intros ; exists 0%nat ; intros ; unfold Rdist ; replace (y -y) with 0 by field ; rewrite Rabs_R0 ; assumption.
 Qed.
 
 Lemma IVT_interv : forall (f : R -> R) (x y : R),
@@ -344,7 +344,7 @@ Proof.
       destruct (total_order_T 0 (f x0)) as [[Hlt|<-]|Hgt].
       - left; assumption.
       - right; reflexivity.
-      - unfold Un_cv in H7; unfold R_dist in H7.
+      - unfold Un_cv in H7; unfold Rdist in H7.
         cut (0 < - f x0).
         { intro.
           elim (H7 (- f x0) H8); intros.
@@ -367,7 +367,7 @@ Proof.
   { apply IVT_interv_prelim1 with (D:=(fun z : R => cond_positivity (f z))) ; assumption. }
   assert (H7 := continuity_seq f Vn x0 (H x0 Temp) H5).
   destruct (total_order_T 0 (f x0)) as [[Hlt|Heq]|].
-  - unfold Un_cv in H7; unfold R_dist in H7.
+  - unfold Un_cv in H7; unfold Rdist in H7.
     elim (H7 (f x0) Hlt); intros.
     cut (x2 >= x2)%nat; [ intro | unfold ge; apply le_n ].
     assert (H10 := H8 x2 H9).
@@ -414,7 +414,7 @@ Proof.
   - intro y_encad4.
     clear y_encad y_encad1 y_encad3.
     assert (Cont : forall a : R, lb <= a <= ub -> continuity_pt (fun x => f x - y) a).
-    { intros a a_encad. unfold continuity_pt, continue_in, limit1_in, limit_in ; simpl ; unfold R_dist.
+    { intros a a_encad. unfold continuity_pt, continue_in, limit1_in, limit_in ; simpl ; unfold Rdist.
       intros eps eps_pos. elim (f_cont_interv a a_encad eps eps_pos).
       intros alpha alpha_pos. destruct alpha_pos as (alpha_pos,Temp).
       exists alpha. split.
@@ -488,7 +488,7 @@ Proof.
     { intro cond. apply Rlt_le ; apply f_incr_interv ; assumption. }
     intro cond ; right ; rewrite cond ; reflexivity. }
   unfold continuity_pt, continue_in, limit1_in, limit_in ; intros eps eps_pos.
-  unfold dist ; simpl ; unfold R_dist.
+  unfold dist ; simpl ; unfold Rdist.
   assert (b_encad_e : f lb <= b <= f ub) by intuition.
   elim (f_interv_is_interv f lb ub b lb_lt_ub b_encad_e f_cont_interv) ; intros x Temp.
   destruct Temp as (x_encad,f_x_b).
@@ -665,9 +665,9 @@ Proof.
     exists deltatemp ; exact Htemp. }
   elim (Hf_deriv eps eps_pos).
   intros deltatemp Htemp.
-  red in Hlinv ; red in Hlinv ; unfold dist in Hlinv ; unfold R_dist in Hlinv.
+  red in Hlinv ; red in Hlinv ; unfold dist in Hlinv ; unfold Rdist in Hlinv.
   assert (Hlinv' := Hlinv (fun h => (f (y+h) - f y)/h) (fun h => h <>0) l 0).
-  unfold limit1_in, limit_in, dist in Hlinv' ; simpl in Hlinv'. unfold R_dist in Hlinv'.
+  unfold limit1_in, limit_in, dist in Hlinv' ; simpl in Hlinv'. unfold Rdist in Hlinv'.
   assert (Premisse : forall eps : R,
              eps > 0 ->
              exists alp : R,
@@ -792,7 +792,7 @@ Proof.
   unfold continuity_pt, continue_in, limit1_in, limit_in in g_cont_pur.
   elim (g_cont_pur mydelta mydelta_pos).
   intros delta3 cond3.
-  unfold dist in cond3 ; simpl in cond3 ; unfold R_dist in cond3.
+  unfold dist in cond3 ; simpl in cond3 ; unfold Rdist in cond3.
   unfold h'.
   assert (mydelta_le_alpha : mydelta <= alpha).
   { unfold mydelta, Rmin ; case (Rle_dec delta alpha).
@@ -800,7 +800,7 @@ Proof.
     intro ; intuition. }
   apply Rlt_le_trans with (r2:=mydelta).
   2:assumption.
-  unfold dist in g_cont ; simpl in g_cont ; unfold R_dist in g_cont ; apply g_cont.
+  unfold dist in g_cont ; simpl in g_cont ; unfold Rdist in g_cont ; apply g_cont.
   split.
   { unfold D_x ; simpl.
     split.
@@ -1239,12 +1239,12 @@ Proof.
     replace (h * fn' N c - h * g x) with (h * (fn' N c - g x)) by field.
     rewrite Rabs_mult.
     apply Rlt_trans with (Rabs h * eps / 4 + Rabs (f x - fn N x) + Rabs h * Rabs (fn' N c - g x)).
-    { apply Rplus_lt_compat_r ; apply Rplus_lt_compat_r ; unfold R_dist in fnxh_CV_fxh ;
+    { apply Rplus_lt_compat_r ; apply Rplus_lt_compat_r ; unfold Rdist in fnxh_CV_fxh ;
         rewrite Rabs_minus_sym ; apply fnxh_CV_fxh.
       unfold N; lia. }
     apply Rlt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 + Rabs h * Rabs (fn' N c - g x)).
     { apply Rplus_lt_compat_r ; apply Rplus_lt_compat_l.
-      unfold R_dist in fnx_CV_fx ; rewrite Rabs_minus_sym ; apply fnx_CV_fx.
+      unfold Rdist in fnx_CV_fx ; rewrite Rabs_minus_sym ; apply fnx_CV_fx.
       unfold N ; lia. }
     replace (fn' N c - g x)  with ((fn' N c - g c) +  (g c - g x)) by field.
     apply Rle_lt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 +
@@ -1325,12 +1325,12 @@ Proof.
   { replace (h * fn' N c - h * g x) with (h * (fn' N c - g x)) by field.
     rewrite Rabs_mult.
     apply Rlt_trans with (Rabs h * eps / 4 + Rabs (f x - fn N x) + Rabs h * Rabs (fn' N c - g x)).
-    { apply Rplus_lt_compat_r ; apply Rplus_lt_compat_r ; unfold R_dist in fnxh_CV_fxh ;
+    { apply Rplus_lt_compat_r ; apply Rplus_lt_compat_r ; unfold Rdist in fnxh_CV_fxh ;
         rewrite Rabs_minus_sym ; apply fnxh_CV_fxh.
       unfold N; lia. }
     apply Rlt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 + Rabs h * Rabs (fn' N c - g x)).
     { apply Rplus_lt_compat_r ; apply Rplus_lt_compat_l.
-      unfold R_dist in fnx_CV_fx ; rewrite Rabs_minus_sym ; apply fnx_CV_fx.
+      unfold Rdist in fnx_CV_fx ; rewrite Rabs_minus_sym ; apply fnx_CV_fx.
       unfold N ; lia. }
     replace (fn' N c - g x)  with ((fn' N c - g c) +  (g c - g x)) by field.
     apply Rle_lt_trans with (Rabs h * eps / 4 + Rabs h * eps / 4 +

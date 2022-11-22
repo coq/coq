@@ -93,7 +93,7 @@ Proof.
     intro; cut (forall n:nat, (n >= x)%nat -> An (S n) < / 2 * An n).
     { intro H4; replace (S x + S i)%nat with (S (S x + i)) by auto with zarith.
       apply H4; unfold ge; apply tech8. }
-    intros; unfold R_dist in H2; apply Rmult_lt_reg_l with (/ An n).
+    intros; unfold Rdist in H2; apply Rmult_lt_reg_l with (/ An n).
     { apply Rinv_0_lt_compat; apply H. }
     do 2 rewrite (Rmult_comm (/ An n)); rewrite Rmult_assoc;
     rewrite <- Rinv_r_sym.
@@ -146,8 +146,8 @@ Proof.
     elim (H0 (eps / 3) H7); intros.
     exists x; intros.
     assert (H10 := H8 n H9).
-    unfold R_dist; unfold Rminus; rewrite Ropp_0;
-      rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold R_dist in H10;
+    unfold Rdist; unfold Rminus; rewrite Ropp_0;
+      rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold Rdist in H10;
       unfold Rminus in H10; rewrite Ropp_0 in H10; rewrite Rplus_0_r in H10;
       rewrite Rabs_Rabsolu in H10; rewrite Rabs_right.
     2:{ left; change (0 < Vn (S n) / Vn n); unfold Rdiv;
@@ -260,7 +260,7 @@ Proof.
         + ring.
         + discrR.
       - discrR. }
-  unfold R_dist;
+  unfold Rdist;
     replace (sum_f_R0 Vn n - sum_f_R0 Wn n - (x - x0)) with
     (sum_f_R0 Vn n - x + - (sum_f_R0 Wn n - x0)) by ring;
     apply Rle_lt_trans with
@@ -268,9 +268,9 @@ Proof.
   { apply Rabs_triang. }
   rewrite Rabs_Ropp; apply Rlt_le_trans with (eps / 2 + eps / 2).
   + apply Rplus_lt_compat.
-    * unfold R_dist in H8; apply H8; unfold ge; apply Nat.le_trans with N;
+    * unfold Rdist in H8; apply H8; unfold ge; apply Nat.le_trans with N;
         [ unfold N; apply Nat.le_max_l | assumption ].
-    * unfold R_dist in H9; apply H9; unfold ge; apply Nat.le_trans with N;
+    * unfold Rdist in H9; apply H9; unfold ge; apply Nat.le_trans with N;
         [ unfold N; apply Nat.le_max_r | assumption ].
   + right; symmetry ; apply double_var.
 Qed.
@@ -294,7 +294,7 @@ Proof.
   2:{ unfold Rdiv; apply Rmult_lt_0_compat;
       [ assumption | apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption ]. }
   intro; elim (H1 (eps / Rabs x) H4); intros.
-  exists x0; intros; unfold R_dist; unfold Rminus;
+  exists x0; intros; unfold Rdist; unfold Rminus;
     rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       unfold Bn;
 	replace (An (S n) * x ^ S n / (An n * x ^ n)) with (An (S n) / An n * x).
@@ -311,9 +311,9 @@ Proof.
     rewrite <- Rinv_l_sym.
   2:{ apply Rabs_no_R0; assumption. }
   rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); unfold Rdiv in H5;
-    replace (Rabs (An (S n) / An n)) with (R_dist (Rabs (An (S n) * / An n)) 0).
+    replace (Rabs (An (S n) / An n)) with (Rdist (Rabs (An (S n) * / An n)) 0).
   { apply H5; assumption. }
-  unfold R_dist; unfold Rminus; rewrite Ropp_0;
+  unfold Rdist; unfold Rminus; rewrite Ropp_0;
     rewrite Rplus_0_r; rewrite Rabs_Rabsolu; unfold Rdiv;
       reflexivity.
 Qed.
@@ -324,7 +324,7 @@ Proof.
   intros; exists (An 0%nat).
   unfold Pser; unfold infinite_sum; intros; exists 0%nat; intros;
     replace (sum_f_R0 (fun n0:nat => An n0 * x ^ n0) n) with (An 0%nat).
-  - unfold R_dist; unfold Rminus; rewrite Rplus_opp_r;
+  - unfold Rdist; unfold Rminus; rewrite Rplus_opp_r;
       rewrite Rabs_R0; assumption.
   - induction  n as [| n Hrecn].
     + simpl; ring.
@@ -547,7 +547,7 @@ Proof.
           rewrite <- Rinv_r_sym.
           { lra. }
           apply pow_nonzero;lra. }
-      unfold R_dist.
+      unfold Rdist.
       rewrite Rabs_mult.
       replace (Rabs (An (S n) / An n) * Rabs x - k * Rabs x) with
         (Rabs x * (Rabs (An (S n) / An n) - k)) by ring.
@@ -560,14 +560,14 @@ Proof.
       2:{ apply Rabs_no_R0; lra. }
       rewrite Rmult_1_l.
       rewrite <- (Rmult_comm eps).
-      unfold R_dist in H5.
+      unfold Rdist in H5.
       unfold Rdiv; unfold Rdiv in H5; apply H5; assumption.
   - exists (An 0%nat).
     unfold Un_cv.
     intros.
     exists 0%nat.
     intros.
-    unfold R_dist.
+    unfold Rdist.
     replace (sum_f_R0 (fun i:nat => An i * x ^ i) n) with (An 0%nat).
     { unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0; assumption. }
     induction n as [| n Hrecn].
@@ -613,7 +613,7 @@ Proof.
           rewrite <- Rinv_r_sym.
           { lra. }
           apply pow_nonzero;lra. }
-      unfold R_dist.
+      unfold Rdist.
       rewrite Rabs_mult.
       replace (Rabs (An (S n) / An n) * Rabs x - k * Rabs x) with
         (Rabs x * (Rabs (An (S n) / An n) - k)); [ idtac | ring ].
@@ -627,7 +627,7 @@ Proof.
       2:{ apply Rabs_no_R0. lra. }
       rewrite Rmult_1_l.
       rewrite <- (Rmult_comm eps).
-      unfold R_dist in H5.
+      unfold Rdist in H5.
       unfold Rdiv; unfold Rdiv in H5; apply H5; assumption.
 Qed.
 

@@ -161,14 +161,14 @@ Proof.
     unfold Un_cv in H1; unfold Un_cv; intros.
     elim (H1 _ H3); intros.
     exists x; intros.
-    unfold R_dist; unfold R_dist in H4.
+    unfold Rdist; unfold Rdist in H4.
     rewrite Rminus_0_r; apply H4; assumption.
   }
   unfold Un_cv in H3.
   elim (H3 eps H); intros N0 H4.
   exists N0; intros.
   apply Rle_lt_trans with (Rabs (sum_f_R0 (fun k:nat => Rabs (An k)) n - s)).
-  2:{ unfold R_dist in H4; unfold Rminus in H4; rewrite Ropp_0 in H4.
+  2:{ unfold Rdist in H4; unfold Rminus in H4; rewrite Ropp_0 in H4.
       assert (H7 := H4 n H5).
       rewrite Rplus_0_r in H7; apply H7. }
   rewrite <- (Rabs_Ropp (sum_f_R0 (fun k:nat => Rabs (An k)) n - s));
@@ -202,7 +202,7 @@ Lemma CVU_continuity :
 Proof.
   intros; unfold continuity_pt; unfold continue_in;
     unfold limit1_in; unfold limit_in;
-      simpl; unfold R_dist; intros.
+      simpl; unfold Rdist; intros.
   unfold CVU in H.
   cut (0 < eps / 3);
     [ intro
@@ -230,7 +230,7 @@ Proof.
   }
   elim H6; intros del1 H7.
   unfold continuity_pt in H5; unfold continue_in in H5; unfold limit1_in in H5;
-    unfold limit_in in H5; simpl in H5; unfold R_dist in H5.
+    unfold limit_in in H5; simpl in H5; unfold Rdist in H5.
   elim (H5 _ H3); intros del2 H8.
   set (del := Rmin del1 del2).
   exists del; intros.
@@ -366,7 +366,7 @@ Lemma CVU_cv : forall f g c d, CVU f g c d ->
    forall x, Boule c d x -> Un_cv (fun n => f n x) (g x).
 Proof.
 intros f g c d cvu x bx eps ep; destruct (cvu eps ep) as [N Pn].
- exists N; intros n nN; rewrite R_dist_sym; apply Pn; assumption.
+ exists N; intros n nN; rewrite Rdist_sym; apply Pn; assumption.
 Qed.
 
 (* convergence is preserved through extensional equality *)
@@ -421,13 +421,13 @@ assert (ctrho : forall n z, Boule c d z -> continuity_pt (rho_ n) z). {
                               replace z with (z - x + x) by ring; rewrite zx0, Rplus_0_l].
     }
     assert (t' : forall y : R,
-               R_dist y z < Rmin delta (Rabs (z - x)) ->
+               Rdist y z < Rmin delta (Rabs (z - x)) ->
                (fun z : R => (f n z - f n x) / (z - x)) y = rho_ n y). {
       intros y dyz; unfold rho_; destruct (Req_EM_T y x) as [xy | xny].
       - rewrite xy in dyz.
         destruct (Rle_dec  delta (Rabs (z - x))).
-        + rewrite Rmin_left, R_dist_sym in dyz; unfold R_dist in dyz; lra.
-        + rewrite Rmin_right, R_dist_sym in dyz; unfold R_dist in dyz;
+        + rewrite Rmin_left, Rdist_sym in dyz; unfold Rdist in dyz; lra.
+        + rewrite Rmin_right, Rdist_sym in dyz; unfold Rdist in dyz;
             [case (Rlt_irrefl _ dyz) |apply Rlt_le, Rnot_le_gt; assumption].
       - reflexivity.
     }
@@ -528,18 +528,18 @@ assert (CVU rho_ rho c d ). {
         apply Rmult_lt_0_compat; repeat apply Rmin_glb_lt; try assumption.
         { apply cond_pos. }
         apply Rinv_0_lt_compat, Rlt_0_2. }
-      apply Rle_trans with (1 := R_dist_tri _ _ (rho_ n (y + Rmin (Rmin d' d2) delta/2))).
+      apply Rle_trans with (1 := Rdist_tri _ _ (rho_ n (y + Rmin (Rmin d' d2) delta/2))).
       replace (eps/2) with (eps/8 + (eps/4 + eps/8)) by field.
       apply Rplus_le_compat.
-      + rewrite R_dist_sym; apply Rlt_le, Pd;split;[split;[exact I | ] | ].
+      + rewrite Rdist_sym; apply Rlt_le, Pd;split;[split;[exact I | ] | ].
         * apply Rminus_not_eq_right; rewrite Rplus_comm; unfold Rminus;
             rewrite Rplus_assoc, Rplus_opp_r, Rplus_0_r; apply Rgt_not_eq; assumption.
-        * simpl; unfold R_dist.
+        * simpl; unfold Rdist.
           unfold Rminus; rewrite (Rplus_comm y), Rplus_assoc, Rplus_opp_r, Rplus_0_r.
           rewrite Rabs_pos_eq;[ |apply Rlt_le; assumption ].
           apply Rlt_le_trans with (Rmin (Rmin d' d2) delta);[lra | ].
           apply Rle_trans with (Rmin d' d2); apply Rmin_l.
-      + apply Rle_trans with (1 := R_dist_tri _ _ (rho_ p (y + Rmin (Rmin d' d2) delta/2))).
+      + apply Rle_trans with (1 := Rdist_tri _ _ (rho_ p (y + Rmin (Rmin d' d2) delta/2))).
         apply Rplus_le_compat.
         * apply Rlt_le.
           replace (rho_ n (y + Rmin (Rmin d' d2) delta / 2)) with
@@ -563,7 +563,7 @@ assert (CVU rho_ rho c d ). {
              now apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
 
         * apply Rlt_le, Pd2; split;[split;[exact I | apply Rlt_not_eq; lra] | ].
-          simpl; unfold R_dist.
+          simpl; unfold Rdist.
           unfold Rminus; rewrite (Rplus_comm y), Rplus_assoc, Rplus_opp_r, Rplus_0_r.
           rewrite Rabs_pos_eq;[ | lra].
           apply Rlt_le_trans with (Rmin (Rmin d' d2) delta); [lra |].
@@ -578,20 +578,20 @@ assert (CVU rho_ rho c d ). {
     assert (cvrho : forall y, Boule c d y -> Un_cv (fun n => rho_ n y) (rho y)). {
       intros y b_y; unfold rho_, rho; destruct (Req_EM_T y x).
       - intros eps' ep'; destruct (cvu eps' ep') as [N2 Pn2].
-        exists N2; intros n nN2; rewrite R_dist_sym; apply Pn2; assumption.
+        exists N2; intros n nN2; rewrite Rdist_sym; apply Pn2; assumption.
       - apply CV_mult.
         + apply CV_minus.
           * apply cvp; assumption.
           * apply cvp; assumption.
-        + intros eps' ep'; simpl; exists 0%nat; intros; rewrite R_dist_eq; assumption.
+        + intros eps' ep'; simpl; exists 0%nat; intros; rewrite Rdist_eq; assumption.
     }
     intros p pN y b_y.
     replace eps with (eps/2 + eps/2) by field.
     assert (ep2 : 0 < eps/2) by lra.
     destruct (cvrho y b_y _ ep2) as [N2 Pn2].
-    apply Rle_lt_trans with (1 := R_dist_tri _ _ (rho_ (max N N2) y)).
+    apply Rle_lt_trans with (1 := Rdist_tri _ _ (rho_ (max N N2) y)).
     apply Rplus_lt_le_compat.
-    - solve[rewrite R_dist_sym; apply Pn2, Nat.le_max_r].
+    - solve[rewrite Rdist_sym; apply Pn2, Nat.le_max_r].
     - apply unif_ac; auto; solve [apply Nat.le_max_l].
   }
   exists N; intros; apply unif_ac'; solve[auto].
@@ -603,7 +603,7 @@ replace ((g (x + h) - g x) / h) with (rho (x + h)).
 - replace (g' x) with (rho x).
   + apply Pd; unfold D_x, no_cond;split;[split;[solve[auto] | ] | ].
     * intros xxh; case hn0; replace h with (x + h - x) by ring; rewrite <- xxh; ring.
-    * simpl; unfold R_dist; replace (x + h - x) with h by ring; exact dh.
+    * simpl; unfold Rdist; replace (x + h - x) with h by ring; exact dh.
   + unfold rho; destruct (Req_EM_T x x) as [ _ | abs];[ | case abs]; reflexivity.
 - unfold rho; destruct (Req_EM_T (x + h) x) as [abs | _];[ | ].
   + case hn0; replace h with (x + h - x) by ring; rewrite abs; ring.

@@ -350,7 +350,7 @@ Proof.
         [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
   elim (H _ H1); intros N0 H2.
   exists (max (2 * S N0) 2); intros.
-  unfold R_dist in H2; unfold R_dist; rewrite Rminus_0_r;
+  unfold Rdist in H2; unfold Rdist; rewrite Rminus_0_r;
     unfold Majxy in H2; unfold maj_Reste_E.
   set (M := Rmax 1 (Rmax (Rabs x) (Rabs y))) in *.
   assert (HM1 : 1 <= M) by apply RmaxLess1.
@@ -450,7 +450,7 @@ Proof.
   intros; assert (H := maj_Reste_cv_R0 x y).
   unfold Un_cv in H; unfold Un_cv; intros; elim (H _ H0); intros.
   exists (max x0 1); intros.
-  unfold R_dist; rewrite Rminus_0_r.
+  unfold Rdist; rewrite Rminus_0_r.
   apply Rle_lt_trans with (maj_Reste_E x y n).
   - apply Reste_E_maj.
     apply Nat.lt_le_trans with 1%nat.
@@ -458,12 +458,12 @@ Proof.
     + apply Nat.le_trans with (max x0 1).
       * apply Nat.le_max_r.
       * apply H2.
-  - replace (maj_Reste_E x y n) with (R_dist (maj_Reste_E x y n) 0).
+  - replace (maj_Reste_E x y n) with (Rdist (maj_Reste_E x y n) 0).
     + apply H1.
       unfold ge; apply Nat.le_trans with (max x0 1).
       * apply Nat.le_max_l.
       * apply H2.
-    + unfold R_dist; rewrite Rminus_0_r; apply Rabs_right.
+    + unfold Rdist; rewrite Rminus_0_r; apply Rabs_right.
       apply Rle_ge; apply Rle_trans with (Rabs (Reste_E x y n)).
       * apply Rabs_pos.
       * apply Reste_E_maj.
@@ -560,7 +560,7 @@ Proof.
     unfold continuity in H1.
     assert (H2 := H1 0).
     unfold continuity_pt in H2; unfold continue_in in H2; unfold limit1_in in H2;
-      unfold limit_in in H2; simpl in H2; unfold R_dist in H2.
+      unfold limit_in in H2; simpl in H2; unfold Rdist in H2.
     elim (H2 _ H); intros alp H3.
     elim H3; intros.
     exists (mkposreal _ H4); intros.
@@ -579,7 +579,7 @@ Proof.
       { apply Hu. }
       unfold Un_cv, SP in |- *.
       intros; exists 1%nat; intros.
-      unfold R_dist; rewrite decomp_sum.
+      unfold Rdist; rewrite decomp_sum.
       2:lia.
       rewrite Rplus_comm.
       replace (fn 0%nat 0) with 1.
@@ -606,14 +606,14 @@ Proof.
       }
       elim (Hexp _ H9); intros N0 H10.
       exists N0; intros.
-      unfold R_dist.
+      unfold Rdist.
       apply Rmult_lt_reg_l with (Rabs h).
       { apply Rabs_pos_lt; assumption. }
       rewrite <- Rabs_mult.
       rewrite Rmult_minus_distr_l.
       replace (h * ((x - 1) / h)) with (x - 1).
       2:{ field. assumption. }
-      unfold R_dist in H10.
+      unfold Rdist in H10.
       replace (h * SP fn n h - (x - 1)) with
         (sum_f_R0 (fun i:nat => / INR (fact i) * h ^ i) (S n) - x).
       { rewrite (Rmult_comm (Rabs h)).
@@ -685,9 +685,9 @@ Proof.
     exists N0; intros.
     assert (hyp_sn:(S n >= N0)%nat) by lia.
     assert (H6 := H4 _ hyp_sn).
-    unfold R_dist in H6; rewrite Rminus_0_r in H6.
+    unfold Rdist in H6; rewrite Rminus_0_r in H6.
     rewrite Rabs_Rabsolu in H6.
-    unfold R_dist; rewrite Rminus_0_r.
+    unfold Rdist; rewrite Rminus_0_r.
     rewrite Rabs_Rabsolu.
     replace
       (Rabs (r ^ S n / INR (fact (S (S n)))) / Rabs (r ^ n / INR (fact (S n))))

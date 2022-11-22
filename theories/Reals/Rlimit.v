@@ -143,9 +143,9 @@ Definition limit_in (X X':Metric_Space) (f:Base X -> Base X')
 
 (*********)
 Definition R_met : Metric_Space :=
-  Build_Metric_Space R R_dist R_dist_pos R_dist_sym R_dist_refl R_dist_tri.
+  Build_Metric_Space R Rdist Rdist_pos Rdist_sym Rdist_refl Rdist_tri.
 
-Declare Equivalent Keys dist R_dist.
+Declare Equivalent Keys dist Rdist.
 
 (*******************************)
 (** *      Limit 1 arg         *)
@@ -201,11 +201,11 @@ Proof.
           split with (Rmin x1 x); split.
   - exact (Rmin_Rgt_r x1 x 0 (conj H H2)).
   - intros; elim H4; clear H4; intros;
-      cut (R_dist (f x2) l + R_dist (g x2) l' < eps).
-    + cut (R_dist (f x2 + g x2) (l + l') <= R_dist (f x2) l + R_dist (g x2) l').
+      cut (Rdist (f x2) l + Rdist (g x2) l' < eps).
+    + cut (Rdist (f x2 + g x2) (l + l') <= Rdist (f x2) l + Rdist (g x2) l').
       * exact (Rle_lt_trans _ _ _).
-      * exact (R_dist_plus _ _ _ _).
-    + elim (Rmin_Rgt_l x1 x (R_dist x2 x0) H5); clear H5; intros.
+      * exact (Rdist_plus _ _ _ _).
+    + elim (Rmin_Rgt_l x1 x (Rdist x2 x0) H5); clear H5; intros.
       generalize (H3 x2 (conj H4 H6)); generalize (H0 x2 (conj H4 H5)); intros;
         replace eps with (eps * / 2 + eps * / 2).
       * exact (Rplus_lt_compat _ _ _ _ H7 H8).
@@ -220,10 +220,10 @@ Proof.
   unfold limit1_in; unfold limit_in; simpl; intros;
     elim (H eps H0); clear H; intros; elim H; clear H;
       intros; split with x; split; auto; intros; generalize (H1 x1 H2);
-        clear H1; intro; unfold R_dist; unfold Rminus;
+        clear H1; intro; unfold Rdist; unfold Rminus;
           rewrite (Ropp_involutive l); rewrite (Rplus_comm (- f x1) l);
-            fold (l - f x1); fold (R_dist l (f x1));
-              rewrite R_dist_sym; assumption.
+            fold (l - f x1); fold (Rdist l (f x1));
+              rewrite Rdist_sym; assumption.
 Qed.
 
 (*********)
@@ -242,7 +242,7 @@ Lemma limit_free :
     limit1_in (fun h:R => f x) D (f x) x0.
 Proof.
   unfold limit1_in; unfold limit_in; simpl; intros;
-    split with eps; split; auto; intros; elim (R_dist_refl (f x) (f x));
+    split with eps; split; auto; intros; elim (Rdist_refl (f x) (f x));
       intros a b; rewrite (b (eq_refl (f x))); unfold Rgt in H;
         assumption.
 Qed.
@@ -260,7 +260,7 @@ Proof.
           clear H H0; simpl; intros; elim H; elim H0;
             clear H H0; intros; split with (Rmin x1 x); split.
   { exact (Rmin_Rgt_r x1 x 0 (conj H H2)). }
-  intros; elim H4; clear H4; intros; unfold R_dist;
+  intros; elim H4; clear H4; intros; unfold Rdist;
     replace (f x2 * g x2 - l * l') with (f x2 * (g x2 - l') + l' * (f x2 - l)).
   - cut (Rabs (f x2 * (g x2 - l')) + Rabs (l' * (f x2 - l)) < eps).
     { cut
@@ -276,7 +276,7 @@ Proof.
       (Rabs (f x2) * Rabs (g x2 - l') + Rabs l' * Rabs (f x2 - l) <
          (1 + Rabs l) * (eps * mul_factor l l') + Rabs l' * (eps * mul_factor l l')).
     + exact (Rlt_le_trans _ _ _).
-    + elim (Rmin_Rgt_l x1 x (R_dist x2 x0) H5); clear H5; intros;
+    + elim (Rmin_Rgt_l x1 x (Rdist x2 x0) H5); clear H5; intros;
         generalize (H0 x2 (conj H4 H5)); intro; generalize (Rmin_Rgt_l _ _ _ H7);
         intro; elim H8; intros; clear H0 H8; apply Rplus_lt_le_compat.
       * apply Rmult_ge_0_gt_0_lt_compat.
@@ -284,7 +284,7 @@ Proof.
            exact (Rabs_pos (g x2 - l')).
         -- rewrite (Rplus_comm 1 (Rabs l)); unfold Rgt; apply Rle_lt_0_plus_1;
              exact (Rabs_pos l).
-        -- unfold R_dist in H9;
+        -- unfold Rdist in H9;
              apply (Rplus_lt_reg_l (- Rabs l) (Rabs (f x2)) (1 + Rabs l)).
            rewrite <- (Rplus_assoc (- Rabs l) 1 (Rabs l));
              rewrite (Rplus_comm (- Rabs l) 1);
@@ -310,7 +310,7 @@ Qed.
 
 (*********)
 Definition adhDa (D:R -> Prop) (a:R) : Prop :=
-  forall alp:R, alp > 0 ->  exists x : R, D x /\ R_dist x a < alp.
+  forall alp:R, alp > 0 ->  exists x : R, D x /\ Rdist x a < alp.
 
 (*********)
 Lemma single_limit :
@@ -320,7 +320,7 @@ Proof.
   unfold limit1_in; unfold limit_in; intros.
   simpl in *.
   cut (forall eps:R, eps > 0 -> dist R_met l l' < 2 * eps).
-  - clear H0 H1; unfold dist in |- *; unfold R_met; unfold R_dist in |- *;
+  - clear H0 H1; unfold dist in |- *; unfold R_met; unfold Rdist in |- *;
       unfold Rabs; case (Rcase_abs (l - l')) as [Hlt|Hge]; intros.
     + cut (forall eps:R, eps > 0 -> - (l - l') < eps).
       * intro; generalize (prop_eps (- (l - l')) H1); intro;
@@ -370,16 +370,16 @@ Proof.
       simpl; simpl in H1, H4; generalize (Rmin_Rgt x x1 0);
       intro; elim H5; intros; clear H5; elim (H (Rmin x x1) (H7 (conj H3 H0)));
       intros; elim H5; intros; clear H5 H H6 H7;
-      generalize (Rmin_Rgt x x1 (R_dist x2 x0)); intro;
+      generalize (Rmin_Rgt x x1 (Rdist x2 x0)); intro;
       elim H; intros; clear H H6; unfold Rgt in H5; elim (H5 H9);
       intros; clear H5 H9; generalize (H1 x2 (conj H8 H6));
       generalize (H4 x2 (conj H8 H)); clear H8 H H6 H1 H4 H0 H3;
       intros;
       generalize
-        (Rplus_lt_compat (R_dist (f x2) l) eps (R_dist (f x2) l') eps H H0);
-      unfold R_dist; intros; rewrite (Rabs_minus_sym (f x2) l) in H1;
+        (Rplus_lt_compat (Rdist (f x2) l) eps (Rdist (f x2) l') eps H H0);
+      unfold Rdist; intros; rewrite (Rabs_minus_sym (f x2) l) in H1;
       rewrite (Rmult_comm 2 eps); replace (eps *2) with (eps + eps) by ring;
-      generalize (R_dist_tri l l' (f x2)); unfold R_dist;
+      generalize (Rdist_tri l l' (f x2)); unfold Rdist;
       intros;
       apply
         (Rle_lt_trans (Rabs (l - l')) (Rabs (l - f x2) + Rabs (f x2 - l'))
@@ -410,7 +410,7 @@ Lemma limit_inv :
     limit1_in f D l x0 -> l <> 0 -> limit1_in (fun x:R => / f x) D (/ l) x0.
 Proof.
   unfold limit1_in; unfold limit_in; simpl;
-    unfold R_dist; intros; elim (H (Rabs l / 2)).
+    unfold Rdist; intros; elim (H (Rabs l / 2)).
   - intros delta1 H2; elim (H (eps * (Rsqr l / 2))).
     + intros delta2 H3; elim H2; elim H3; intros; exists (Rmin delta1 delta2);
         split.

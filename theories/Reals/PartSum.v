@@ -225,7 +225,7 @@ Proof.
       set (N := max x0 x); cut (N >= x0)%nat.
       * cut (N >= x)%nat.
         -- intros; assert (H7 := H3 N H5); assert (H8 := H4 N H6).
-           cut (Rabs (l1 - l2) <= R_dist (sum_f_R0 An N) l1 + R_dist (sum_f_R0 An N) l2).
+           cut (Rabs (l1 - l2) <= Rdist (sum_f_R0 An N) l1 + Rdist (sum_f_R0 An N) l2).
            ++ intro; assert (H10 := Rplus_lt_compat _ _ _ _ H7 H8);
                 assert (H11 := Rle_lt_trans _ _ _ H9 H10); unfold Rdiv in H11;
                 rewrite Rabs_mult in H11.
@@ -238,7 +238,7 @@ Proof.
                    [ intro H20; generalize (lt_INR_0 2 (proj1 (Nat.neq_0_lt_0 2) (Nat.neq_sym 0 2 H20))); unfold INR;
                      intro; assumption
                    | discriminate ].
-           ++ unfold R_dist; rewrite <- (Rabs_Ropp (sum_f_R0 An N - l1));
+           ++ unfold Rdist; rewrite <- (Rabs_Ropp (sum_f_R0 An N - l1));
                 rewrite Ropp_minus_distr'.
               replace (l1 - l2) with (l1 - sum_f_R0 An N + (sum_f_R0 An N - l2));
                 [ idtac | ring ].
@@ -384,19 +384,19 @@ Proof.
   exists x.
   intros.
   cut
-    (R_dist (sum_f_R0 An n) (sum_f_R0 An m) <=
-      R_dist (sum_f_R0 (fun i:nat => Rabs (An i)) n)
+    (Rdist (sum_f_R0 An n) (sum_f_R0 An m) <=
+      Rdist (sum_f_R0 (fun i:nat => Rabs (An i)) n)
       (sum_f_R0 (fun i:nat => Rabs (An i)) m)).
   - intro.
     apply Rle_lt_trans with
-      (R_dist (sum_f_R0 (fun i:nat => Rabs (An i)) n)
+      (Rdist (sum_f_R0 (fun i:nat => Rabs (An i)) n)
               (sum_f_R0 (fun i:nat => Rabs (An i)) m)).
     + assumption.
     + apply H1; assumption.
   - destruct (lt_eq_lt_dec n m) as [[ | -> ]|].
     + rewrite (tech2 An n m); [ idtac | assumption ].
       rewrite (tech2 (fun i:nat => Rabs (An i)) n m); [ idtac | assumption ].
-      unfold R_dist.
+      unfold Rdist.
       unfold Rminus.
       do 2 rewrite Ropp_plus_distr.
       do 2 rewrite <- Rplus_assoc.
@@ -414,12 +414,12 @@ Proof.
       * apply Rle_ge.
         apply cond_pos_sum.
         intro; apply Rabs_pos.
-    + unfold R_dist.
+    + unfold Rdist.
       unfold Rminus; do 2 rewrite Rplus_opp_r.
       rewrite Rabs_R0; right; reflexivity.
     + rewrite (tech2 An m n); [ idtac | assumption ].
       rewrite (tech2 (fun i:nat => Rabs (An i)) m n); [ idtac | assumption ].
-      unfold R_dist.
+      unfold Rdist.
       unfold Rminus.
       do 2 rewrite Rplus_assoc.
       rewrite (Rplus_comm (sum_f_R0 An m)).
@@ -455,8 +455,8 @@ Proof.
     elim (p (eps / 2) H0); intros.
     exists x0.
     intros.
-    apply Rle_lt_trans with (R_dist (sum_f_R0 An n) x + R_dist (sum_f_R0 An m) x).
-    + unfold R_dist.
+    apply Rle_lt_trans with (Rdist (sum_f_R0 An n) x + Rdist (sum_f_R0 An m) x).
+    + unfold Rdist.
       replace (sum_f_R0 An n - sum_f_R0 An m) with
         (sum_f_R0 An n - x + - (sum_f_R0 An m - x)); [ idtac | ring ].
       rewrite <- (Rabs_Ropp (sum_f_R0 An m - x)).
@@ -512,7 +512,7 @@ Proof.
         set (N0 := max x N); cut (N0 >= x)%nat.
         -- intro; assert (H5 := H3 N0 H4).
            cut (l1 <= sum_f_R0 An N0).
-           ++ intro; unfold R_dist in H5; rewrite Rabs_right in H5.
+           ++ intro; unfold Rdist in H5; rewrite Rabs_right in H5.
               ** cut (sum_f_R0 An N0 < l1).
                  { intro; elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ H7 H6)). }
                  apply Rplus_lt_reg_l with (- l).
@@ -551,7 +551,7 @@ Proof.
         elim (H _ H3); intros Na H4.
         elim (H0 _ H3); intros Nb H5.
         set (N := max Na Nb).
-        unfold R_dist in H4, H5.
+        unfold Rdist in H4, H5.
         cut (Rabs (sum_f_R0 An N - l2) < (Rabs l1 - l2) / 2).
         1:intro; cut (Rabs (Rabs l1 - Rabs (SP fn N x)) < (Rabs l1 - l2) / 2).
         1:intro; cut (sum_f_R0 An N < (Rabs l1 + l2) / 2).
