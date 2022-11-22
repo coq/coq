@@ -26,6 +26,7 @@ Require Import ConstructiveCauchyRealsMult.
 Require Import ConstructiveRcomplete.
 Require Import ConstructiveLUB.
 Require Export Rdefinitions.
+Require Import RelationClasses.
 Local Open Scope R_scope.
 
 (*********************************************************)
@@ -255,6 +256,8 @@ Proof.
   apply CRealLtForget.
   apply (CReal_lt_trans (Rrepr r1) (Rrepr r2) (Rrepr r3)); assumption.
 Qed.
+#[global]
+Instance Rlt_Transitive : Transitive Rlt := Rlt_trans.
 
 (**********)
 Lemma Rplus_lt_compat_l : forall r r1 r2:R, r1 < r2 -> r + r1 < r + r2.

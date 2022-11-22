@@ -48,6 +48,7 @@ Require Import Rpow_def.
 Require Import ZArith.
 Require Export ZArithRing.
 Require Export RealField.
+Require Import RelationClasses.
 
 Local Open Scope Z_scope.
 Local Open Scope R_scope.
@@ -323,16 +324,23 @@ Proof.
   - now left; apply (Rlt_trans _ r2).
   - now left.
 Qed.
+#[global]
+Instance Rle_Transitive : Transitive Rle := Rle_trans.
 
 Lemma Rge_trans : forall r1 r2 r3, r1 >= r2 -> r2 >= r3 -> r1 >= r3.
 Proof.
   intros r1 r2 r3 H1%Rge_le H2%Rge_le.
   now apply Rle_ge, (Rle_trans _ r2).
 Qed.
+#[global]
+Instance Rge_Transitive : Transitive Rge := Rge_trans.
 
 Lemma Rgt_trans : forall r1 r2 r3, r1 > r2 -> r2 > r3 -> r1 > r3.
 Proof. now intros r1 r2 r3 H H'; apply (Rlt_trans _ r2). Qed.
+#[global]
+Instance Rgt_Transitive : Transitive Rgt := Rgt_trans.
 
+(**********)
 Lemma Rle_lt_trans : forall r1 r2 r3, r1 <= r2 -> r2 < r3 -> r1 < r3.
 Proof. now intros r1 r2 r3 [Hlt | ->]; try easy; apply (Rlt_trans _ r2). Qed.
 
