@@ -174,57 +174,52 @@ let is_rooted p = match !p with
   | Array _ -> true
   | Updated _ -> false
 
+type 'a cache = {
+  orig : 'a t;
+  mutable self : 'a UArray.t;
+  mutable rerooted_again : bool;
+}
+
+let make_cache p = {
+  orig = p;
+  self = reroot p;
+  rerooted_again = false;
+}
+
+let uget_cache cache i =
+  let () = if not cache.rerooted_again && not (is_rooted cache.orig)
+    then begin
+      cache.self <- UArray.copy (reroot cache.orig);
+      cache.rerooted_again <- true
+    end
+  in
+  UArray.unsafe_get cache.self i
+
 let map f p =
-  let t = reroot p in
-  let len = UArray.length t in
-  if Int.equal len 0 then make_int 0 (f (default p))
-  else
-    let res = UArray.make len (f (UArray.unsafe_get t 0)) in
-    let t = ref t in
-    let rerooted_again = ref false in
-    let check_rooted () = if not !rerooted_again && not (is_rooted p)
-      then (t := UArray.copy (reroot p); rerooted_again := true)
-    in
-    for i = 1 to len - 1 do
-      check_rooted ();
-      UArray.unsafe_set res i (f (UArray.unsafe_get !t i))
-    done;
-    let def = f (default p) in
-    ref (Array (res, def))
+  let t = make_cache p in
+  let len = UArray.length t.self in
+  let res = uinit len (fun i -> f (uget_cache t i)) in
+  let def = f (default p) in
+  ref (Array (res, def))
 
 let fold_left f x p =
   let r = ref x in
-  let t = ref (reroot p) in
-  let len = UArray.length !t in
-  let rerooted_again = ref false in
-  let check_rooted () = if not !rerooted_again && not (is_rooted p)
-    then (t := UArray.copy (reroot p); rerooted_again := true)
-  in
+  let t = make_cache p in
+  let len = UArray.length t.self in
   for i = 0 to len - 1 do
-    check_rooted ();
-    r := f !r (UArray.unsafe_get !t i)
+    r := f !r (uget_cache t i)
   done;
   f !r (default p)
 
 let fold_left2 f a p1 p2 =
   let r = ref a in
-  let t1 = ref (reroot p1) in
-  let len = UArray.length !t1 in
-  let t2 = ref (reroot p2) in
-  if UArray.length !t2 <> len then invalid_arg "Parray.fold_left2";
-  let rerooted_again1 = ref false in
-  let check_rooted1 () = if not !rerooted_again1 && not (is_rooted p1)
-    then (t1 := UArray.copy (reroot p1); rerooted_again1 := true)
-  in
-  let rerooted_again2 = ref false in
-  let check_rooted2 () = if not !rerooted_again2 && not (is_rooted p2)
-    then (t2 := UArray.copy (reroot p2); rerooted_again2 := true)
-  in
+  let t1 = make_cache p1 in
+  let len = UArray.length t1.self in
+  let t2 = make_cache p2 in
+  if UArray.length t2.self <> len then invalid_arg "Parray.fold_left2";
   for i = 0 to len - 1 do
-    check_rooted1 ();
-    let v1 = UArray.unsafe_get !t1 i in
-    check_rooted2 ();
-    let v2 = UArray.unsafe_get !t2 i in
+    let v1 = uget_cache t1 i in
+    let v2 = uget_cache t2 i in
     r := f !r v1 v2
   done;
   f !r (default p1) (default p2)
