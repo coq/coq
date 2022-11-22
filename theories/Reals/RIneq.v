@@ -63,11 +63,15 @@ Lemma Rle_refl : forall r, r <= r.
 Proof. now intros r; right. Qed.
 #[global]
 Hint Immediate Rle_refl: rorders.
+#[global]
+Instance Rle_Reflexive : Reflexive Rle := Rle_refl.
 
 Lemma Rge_refl : forall r, r >= r.
 Proof. now intros r; right. Qed.
 #[global]
 Hint Immediate Rge_refl: rorders.
+#[global]
+Instance Rge_Reflexive : Reflexive Rge := Rge_refl.
 
 Lemma Req_le : forall r1 r2, r1 = r2 -> r1 <= r2.
 Proof. now intros r1 r2 H; right. Qed.
@@ -1967,8 +1971,7 @@ Lemma Rle_lt_0_plus_1 : forall r, 0 <= r -> 0 < r + 1.
 Proof.
   intros r H; apply Rlt_le_trans with (1 := Rlt_0_1).
   rewrite <-(Rplus_0_l 1) at 1.
-  apply Rplus_le_compat; try easy.
-  exact (Rle_refl 1).
+  now apply Rplus_le_compat.
 Qed.
 #[global]
 Hint Resolve Rle_lt_0_plus_1: real.
@@ -1990,8 +1993,7 @@ Proof.
   apply (Rlt_trans _ 1); try easy.
   replace 2 with (1 + 1) by reflexivity.
   rewrite <-(Rplus_0_l 1) at 1.
-  apply Rplus_lt_le_compat; try easy.
-  exact (Rle_refl 1).
+  now apply Rplus_lt_le_compat.
 Qed.
 
 Lemma Rplus_diag : forall r, r + r = 2 * r.
