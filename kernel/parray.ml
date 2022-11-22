@@ -106,10 +106,6 @@ let length_int p =
 
 let length p = Uint63.of_int @@ length_int p
 
-let unsafe_get p n =
-  let t = reroot p in
-  UArray.unsafe_get t n
-
 let get p n =
   let t = reroot p in
   let l = UArray.length t in
@@ -138,8 +134,10 @@ let default p =
   | Array (_,def) -> def
   | Updated _ -> assert false
 
-let make n def =
-  ref (Array (UArray.make (trunc_size n) def, def))
+let make_int n def =
+  ref (Array (UArray.make n def, def))
+
+let make n def = make_int (trunc_size n) def
 
 let uinit n f =
   if Int.equal n 0 then UArray.empty
@@ -168,22 +166,65 @@ let copy p =
   | Array (t, def) -> ref (Array (UArray.copy t, def))
   | Updated _ -> assert false
 
+(* Higher order combinators: the callback may update the underlying
+   array requiring a reroot between each call. To avoid doing n
+   reroots (-> O(n^2)), we copy if we have to reroot again. *)
+
+let is_rooted p = match !p with
+  | Array _ -> true
+  | Updated _ -> false
+
 let map f p =
-  let t = uinit (length_int p) (fun i -> f (unsafe_get p i)) in
-  ref (Array (t, f (default p)))
+  let t = reroot p in
+  let len = UArray.length t in
+  if Int.equal len 0 then make_int 0 (f (default p))
+  else
+    let res = UArray.make len (f (UArray.unsafe_get t 0)) in
+    let t = ref t in
+    let rerooted_again = ref false in
+    let check_rooted () = if not !rerooted_again && not (is_rooted p)
+      then (t := UArray.copy (reroot p); rerooted_again := true)
+    in
+    for i = 1 to len - 1 do
+      check_rooted ();
+      UArray.unsafe_set res i (f (UArray.unsafe_get !t i))
+    done;
+    let def = f (default p) in
+    ref (Array (res, def))
 
 let fold_left f x p =
   let r = ref x in
-  for i = 0 to length_int p - 1 do
-    r := f !r (unsafe_get p i)
+  let t = ref (reroot p) in
+  let len = UArray.length !t in
+  let rerooted_again = ref false in
+  let check_rooted () = if not !rerooted_again && not (is_rooted p)
+    then (t := UArray.copy (reroot p); rerooted_again := true)
+  in
+  for i = 0 to len - 1 do
+    check_rooted ();
+    r := f !r (UArray.unsafe_get !t i)
   done;
   f !r (default p)
 
 let fold_left2 f a p1 p2 =
-  let lv1 = length_int p1 in
-  let rec fold a n =
-    if n >= lv1 then a else fold (f a (unsafe_get p1 n) (unsafe_get p2 n)) (succ n)
+  let r = ref a in
+  let t1 = ref (reroot p1) in
+  let len = UArray.length !t1 in
+  let t2 = ref (reroot p2) in
+  if UArray.length !t2 <> len then invalid_arg "Parray.fold_left2";
+  let rerooted_again1 = ref false in
+  let check_rooted1 () = if not !rerooted_again1 && not (is_rooted p1)
+    then (t1 := UArray.copy (reroot p1); rerooted_again1 := true)
   in
-  if length_int p2 <> lv1 then invalid_arg "Array.fold_left2";
-  let a = fold a 0 in
-  f a (default p1) (default p2)
+  let rerooted_again2 = ref false in
+  let check_rooted2 () = if not !rerooted_again2 && not (is_rooted p2)
+    then (t2 := UArray.copy (reroot p2); rerooted_again2 := true)
+  in
+  for i = 0 to len - 1 do
+    check_rooted1 ();
+    let v1 = UArray.unsafe_get !t1 i in
+    check_rooted2 ();
+    let v2 = UArray.unsafe_get !t2 i in
+    r := f !r v1 v2
+  done;
+  f !r (default p1) (default p2)
