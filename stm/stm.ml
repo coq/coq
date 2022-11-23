@@ -2354,7 +2354,8 @@ let init_process stm_flags =
 
 let init_core () =
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
-  if !Flags.async_proofs_worker_id = "master" then Partac.enable_par ~nworkers:!cur_opt.async_proofs_n_tacworkers;
+  if !Flags.async_proofs_worker_id = "master" && !cur_opt.async_proofs_n_tacworkers > 0 then
+    Partac.enable_par ~nworkers:!cur_opt.async_proofs_n_tacworkers;
   State.register_root_state ()
 
 
