@@ -1,6 +1,0 @@
-- **Fixed:**
-  Pass the correct environment to compute η-expansion of cofixpoints
-  in VM and native compilation
-  (`#16845 <https://github.com/coq/coq/pull/16845>`_,
-  fixes `#16831 <https://github.com/coq/coq/issues/16831>`_,
-  by Pierre-Marie Pédrot).
