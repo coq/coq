@@ -406,6 +406,17 @@ Conversion machines
   GH issue number: #16831
   risk: low, as it requires carefully crafted cofixpoints
 
+  component: all 3 kernel conversion machines (lazy, VM, native), primitive arrays
+  summary: conversion would compare the mutated version of primitive arrays instead of undoing mutation where needed
+  introduced: V8.13
+  impacted released versions: V8.13 to V8.16.0
+  impacted coqchk versions: same
+  fixed in: V8.16.1, V8.17
+  found by: Maxime Buyse and Andres Erbsen
+  exploit: Andres Erbsen
+  GH issue number: #16829
+  risk: some if using primitive arrays
+
 Side-effects
 
   component: side-effects

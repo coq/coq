@@ -134,8 +134,10 @@ let default p =
   | Array (_,def) -> def
   | Updated _ -> assert false
 
-let make n def =
-  ref (Array (UArray.make (trunc_size n) def, def))
+let make_int n def =
+  ref (Array (UArray.make n def, def))
+
+let make n def = make_int (trunc_size n) def
 
 let uinit n f =
   if Int.equal n 0 then UArray.empty
@@ -164,38 +166,60 @@ let copy p =
   | Array (t, def) -> ref (Array (UArray.copy t, def))
   | Updated _ -> assert false
 
-let reroot t =
-  let _ = reroot t in
-  t
+(* Higher order combinators: the callback may update the underlying
+   array requiring a reroot between each call. To avoid doing n
+   reroots (-> O(n^2)), we copy if we have to reroot again. *)
+
+let is_rooted p = match !p with
+  | Array _ -> true
+  | Updated _ -> false
+
+type 'a cache = {
+  orig : 'a t;
+  mutable self : 'a UArray.t;
+  mutable rerooted_again : bool;
+}
+
+let make_cache p = {
+  orig = p;
+  self = reroot p;
+  rerooted_again = false;
+}
+
+let uget_cache cache i =
+  let () = if not cache.rerooted_again && not (is_rooted cache.orig)
+    then begin
+      cache.self <- UArray.copy (reroot cache.orig);
+      cache.rerooted_again <- true
+    end
+  in
+  UArray.unsafe_get cache.self i
 
 let map f p =
-  let p = reroot p in
-  match !p with
-  | Array (t,def) ->
-    let t = uinit (UArray.length t) (fun i -> f (UArray.unsafe_get t i)) in
-    ref (Array (t, f def))
-  | Updated _ -> assert false
+  let t = make_cache p in
+  let len = UArray.length t.self in
+  let res = uinit len (fun i -> f (uget_cache t i)) in
+  let def = f (default p) in
+  ref (Array (res, def))
 
 let fold_left f x p =
-  let p = reroot p in
-  match !p with
-  | Array (t,def) ->
-    let r = ref x in
-    for i = 0 to UArray.length t - 1 do
-      r := f !r (UArray.unsafe_get t i)
-    done;
-    f !r def
-  | Updated _ -> assert false
+  let r = ref x in
+  let t = make_cache p in
+  let len = UArray.length t.self in
+  for i = 0 to len - 1 do
+    r := f !r (uget_cache t i)
+  done;
+  f !r (default p)
 
 let fold_left2 f a p1 p2 =
-  let p1 = reroot p1 in
-  let p2 = reroot p2 in
-  match !p1, !p2 with
-  | Array (t1, def1), Array (t2, def2) ->
-    if UArray.length t1 <> UArray.length t2 then invalid_arg "Array.fold_left2";
-    let r = ref a in
-    for i = 0 to UArray.length t1 - 1 do
-      r := f !r (UArray.unsafe_get t1 i) (UArray.unsafe_get t2 i)
-    done;
-    f !r def1 def2
-  | _ -> assert false
+  let r = ref a in
+  let t1 = make_cache p1 in
+  let len = UArray.length t1.self in
+  let t2 = make_cache p2 in
+  if UArray.length t2.self <> len then invalid_arg "Parray.fold_left2";
+  for i = 0 to len - 1 do
+    let v1 = uget_cache t1 i in
+    let v2 = uget_cache t2 i in
+    r := f !r v1 v2
+  done;
+  f !r (default p1) (default p2)
