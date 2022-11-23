@@ -57,8 +57,8 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_switch:=ocaml-base-compiler.4.09.1}"
-: "${old_ocaml_switch:=ocaml-base-compiler.4.09.1}"
+: "${new_ocaml_version:=4.09.1}"
+: "${old_ocaml_version:=4.09.1}"
 : "${new_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${old_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
@@ -69,6 +69,9 @@ check_variable () {
 : "${timeout:=3h}"
 : "${coq_opam_packages:=coq-bignums coq-hott coq-performance-tests-lite coq-engine-bench-lite coq-mathcomp-ssreflect coq-mathcomp-fingroup coq-mathcomp-algebra coq-mathcomp-solvable coq-mathcomp-field coq-mathcomp-character coq-mathcomp-odd-order coq-math-classes coq-corn coq-compcert coq-metacoq-template coq-metacoq-pcuic coq-metacoq-safechecker coq-metacoq-erasure coq-metacoq-translations coq-geocoq coq-color coq-coqprime coq-coqutil coq-bedrock2 coq-rewriter coq-fiat-core coq-fiat-parsers coq-fiat-crypto-with-bedrock coq-unimath coq-coquelicot coq-iris-examples coq-verdi coq-verdi-raft coq-fourcolor coq-rewriter-perf-SuperFast coq-perennial coq-vst coq-category-theory}"
 : "${coq_native:=}"
+
+new_ocaml_switch=ocaml-base-compiler.$new_ocaml_version
+old_ocaml_switch=ocaml-base-compiler.$old_ocaml_version
 
 new_coq_commit=$(git rev-parse HEAD^2)
 old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
@@ -314,13 +317,17 @@ initial_opam_packages="num ocamlfind dune"
 # $2 = compiler name
 # $3 = git hash of Coq to be installed
 # $4 = directory of coq opam archive
+# $5 = use flambda if nonempty
 create_opam() {
 
     local RUNNER="$1"
     local OPAM_DIR="$working_dir/opam.$RUNNER"
-    local OPAM_COMP="$2"
+    local OCAML_VER="$2"
     local COQ_HASH="$3"
     local OPAM_COQ_DIR="$4"
+    local USE_FLAMBDA="$5"
+
+    local OPAM_COMP=ocaml-base-compiler.$OCAML_VER
 
     export OPAMROOT="$OPAM_DIR"
     export COQ_RUNNER="$RUNNER"
@@ -333,7 +340,12 @@ create_opam() {
     # Rest of default switches
     opam repo add -q --set-default iris-dev "https://gitlab.mpi-sws.org/FP/opam-dev.git"
 
-    opam switch create -qy -j$number_of_processors "$OPAM_COMP"
+    if [[ $USE_FLAMBDA ]];
+    then flambda=--packages=ocaml-variants.${OCAML_VER}+options,ocaml-option-flambda
+    else flambda=
+    fi
+
+    opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" "$OPAM_COMP" $flambda
     eval $(opam env)
 
     # For some reason opam guesses an incorrect upper bound on the
@@ -389,11 +401,11 @@ create_opam() {
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
-create_opam "NEW" "$new_ocaml_switch" "$new_coq_commit" "$new_coq_opam_archive_dir"
+create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_opam_archive_dir"
 new_coq_commit_long="$COQ_HASH_LONG"
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
-create_opam "OLD" "$old_ocaml_switch" "$old_coq_commit" "$old_coq_opam_archive_dir"
+create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_opam_archive_dir"
 old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
@@ -516,8 +528,8 @@ for coq_opam_package in $sorted_coq_opam_packages; do
     # N.B. Not all packages end in .dev, e.g., coq-lambda-rust uses .dev.timestamp.
     # So we use a wildcard to catch such packages.  This will have to be updated if
     # ever there is a package that uses some different naming scheme.
-    new_base_path=$new_opam_root/$new_ocaml_switch/.opam-switch/build/$coq_opam_package.dev*/
-    old_base_path=$old_opam_root/$old_ocaml_switch/.opam-switch/build/$coq_opam_package.dev*/
+    new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/$coq_opam_package.dev*/
+    old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/$coq_opam_package.dev*/
     for vo in $(cd $new_base_path/; find . -name '*.vo'); do
         if [ -e $old_base_path/$vo ]; then
           echo "$coq_opam_package/$vo $(stat -c%s $old_base_path/$vo) $(stat -c%s $new_base_path/$vo)" >> "$log_dir/vosize.log"
