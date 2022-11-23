@@ -26,8 +26,8 @@ Local Ltac not_dep_intros :=
 Local Ltac axioms flags :=
   match reverse goal with
     | |- ?X1 => is_unit_or_eq flags X1; constructor 1
-    | _:?X1 |- _ => is_empty flags X1; elimtype X1; assumption
-    | _:?X1 |- ?X1 => assumption
+    | H:?X1 |- _ => is_empty flags X1; elim H
+    | _ => assumption
   end.
 
 Local Ltac simplif flags :=
