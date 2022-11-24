@@ -71,9 +71,6 @@ type doc
 (** [init_process] performs some low-level initialization, call early *)
 val init_process : AsyncOpts.stm_opt -> unit
 
-(** [init_core] snapshorts the initial system state *)
-val init_core : unit -> unit
-
 (** [new_doc opt] Creates a new document with options [opt] *)
 val new_doc  : stm_init_options -> doc * Stateid.t
 

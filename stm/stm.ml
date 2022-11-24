@@ -846,10 +846,6 @@ module State : sig
 
   val assign : Stateid.t -> partial_state -> unit
 
-  (* Handlers for initial state, prior to document creation. *)
-  val register_root_state : unit -> unit
-  val restore_root_state : unit -> unit
-
   val purify : ('a -> 'b) -> 'a -> 'b
 
 end = struct (* {{{ *)
@@ -986,15 +982,6 @@ end = struct (* {{{ *)
       if cache then freeze_invalid id ie;
       !Hooks.unreachable_state ~doc id ie;
       Exninfo.iraise ie
-
-  let init_state = ref None
-
-  let register_root_state () =
-    init_state := Some (Vernacstate.freeze_interp_state ~marshallable:false)
-
-  let restore_root_state () =
-    cur_id := Stateid.dummy;
-    Vernacstate.unfreeze_interp_state (Option.get !init_state)
 
   (* Protect against state changes *)
   let purify f x =
@@ -2358,20 +2345,14 @@ let init_process stm_flags =
   Spawned.init_channels ();
   CoqworkmgrApi.(init stm_flags.AsyncOpts.async_proofs_worker_priority)
 
-let init_core () =
-  if (cur_opt()).async_proofs_mode = APon then Control.enable_thread_delay := true;
-  if !Flags.async_proofs_worker_id = "master" && (cur_opt()).async_proofs_n_tacworkers > 0 then
-    Partac.enable_par ~nworkers:(cur_opt()).async_proofs_n_tacworkers;
-  State.register_root_state ()
-
-
 let new_doc { doc_type ; injections; stm_options } =
 
   (* Set the options from the new documents *)
   AsyncOpts.set_cur_opt stm_options;
 
-  (* We must reset the whole state before creating a document! *)
-  State.restore_root_state ();
+  if (cur_opt()).async_proofs_mode = APon then Control.enable_thread_delay := true;
+  if !Flags.async_proofs_worker_id = "master" && (cur_opt()).async_proofs_n_tacworkers > 0 then
+    Partac.enable_par ~nworkers:(cur_opt()).async_proofs_n_tacworkers;
 
   let doc = VCS.init doc_type Stateid.initial (Vernacstate.Parser.init ()) in
 
