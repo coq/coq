@@ -244,17 +244,19 @@ let parse_option_set opt =
 
 let get_native_compiler s =
   (* We use two boolean flags because the four states make sense, even if
-  only three are accessible to the user at the moment. The selection of the
-  produced artifact(s) (`.vo`, `.vio`, `.coq-native`, ...) should be done by
-  a separate flag, and the "ondemand" value removed. Once this is done, use
-  [get_bool] here. *)
+     only three are accessible to the user at the moment. The selection of the
+     produced artifact(s) (`.vo`, `.vio`, `.coq-native`, ...) should be done by
+     a separate flag, and the "ondemand" value removed. Once this is done, use
+     [get_bool] here. *)
   let n = match s with
     | ("yes" | "on") -> NativeOn {ondemand=false}
     | "ondemand" -> NativeOn {ondemand=true}
     | ("no" | "off") -> NativeOff
     | _ ->
-       error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler.") in
-  if Coq_config.native_compiler = NativeOff && n <> NativeOff then
+      error_wrong_arg ("Error: (yes|no|ondemand) expected after option -native-compiler.")
+  in
+  if n = NativeOff then n, []
+  else if Coq_config.native_compiler = NativeOff then
     NativeOff, [WarnNativeDeprecated; WarnNoNative s]
   else n, [WarnNativeDeprecated]
 
