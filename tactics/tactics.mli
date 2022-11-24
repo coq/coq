@@ -309,6 +309,7 @@ val induction_destruct : rec_flag -> evars_flag ->
 
 val case_type         : types -> unit Proofview.tactic
 val elim_type         : types -> unit Proofview.tactic
+val exfalso : unit Proofview.tactic
 
 (** {6 Constructor tactics. } *)
 

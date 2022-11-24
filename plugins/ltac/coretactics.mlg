@@ -66,6 +66,10 @@ TACTIC EXTEND elimtype
 | [ "elimtype" constr(c) ] -> { Tactics.elim_type c }
 END
 
+TACTIC EXTEND exfalso
+| [ "exfalso" ] -> { Tactics.exfalso }
+END
+
 TACTIC EXTEND lapply
 | [ "lapply" constr(c) ] -> { Tactics.cut_and_apply c }
 END

@@ -4943,6 +4943,13 @@ let case_type t =
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type (elimc, elimt) t)
   end
 
+let exfalso =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let (sigma, f) = Evd.fresh_global env sigma (Coqlib.lib_ref "core.False.type") in
+    Proofview.Unsafe.tclEVARS sigma <*> elim_type f
+  end
 
 (************************************************)
 (*  Tactics related with logic connectives      *)

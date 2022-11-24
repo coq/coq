@@ -35,9 +35,8 @@ let absurd c =
     let r = ESorts.relevance_of_sort sigma j.Environ.utj_type in
     Proofview.Unsafe.tclEVARS sigma <*>
     Tacticals.pf_constr_of_global (Coqlib.(lib_ref "core.not.type")) >>= fun coqnot ->
-    Tacticals.pf_constr_of_global (Coqlib.(lib_ref "core.False.type")) >>= fun coqfalse ->
     Tacticals.tclTHENLIST [
-      elim_type coqfalse;
+      Tactics.exfalso;
       Simple.apply (mk_absurd_proof coqnot r t)
     ]
   end

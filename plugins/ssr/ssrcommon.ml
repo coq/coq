@@ -1040,7 +1040,6 @@ let pf_interp_gen_aux env sigma ~concl to_ind ((oclr, occ), t) =
 
 let genclrtac cl cs clr =
   let open Proofview.Notations in
-  let open Tacticals in
   (* apply_type may give a type error, but the useful message is
    * the one of clear.  You type "move: x" and you get
    * "x is used in hyp H" instead of
@@ -1048,8 +1047,7 @@ let genclrtac cl cs clr =
   (Proofview.tclORELSE
     (Tactics.apply_type ~typecheck:true cl cs)
     (fun (type_err, info) ->
-      pf_constr_of_global Coqlib.(lib_ref "core.False.type") >>= fun f ->
-      (Tactics.elim_type f) <*>
+      (Tactics.exfalso) <*>
       (cleartac clr) <*>
       (Proofview.tclZERO ~info type_err)))
   <*>
