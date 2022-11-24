@@ -125,7 +125,7 @@ let init_document opts stm_options injections =
   let doc, sid =
     Stm.(new_doc
            { doc_type = Interactive opts.config.logic.toplevel_name;
-             injections; stm_options;
+             injections;
            }) in
   { doc; sid; proof = None; time = opts.config.time }
 
