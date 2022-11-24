@@ -91,9 +91,12 @@ from the toolbar and from the keyboard.  These include:
 - Run to cursor (`Ctrl-Right`) to run commands up to the cursor
 - Run to end (`Ctrl-End`) to run commands to the end of the buffer
 - Reset Coq (`Ctrl-Home`) to restart the Coq process
-- Interrupt to stop processing commands after the current command completes
+- Interrupt to stop processing commands after the current command completes.
+  (Note: on Windows but not on WSL, Interrupt doesn't work if you start CoqIDE
+  as a background process, e.g. `coqide &` in bash.  See Coq issue
+  `#16142 <https://github.com/coq/coq/pull/16142>`_).
 
-Tooltips identify the action assocaited with each toolbar icon.
+Tooltips identify the action associated with each toolbar icon.
 
 Commands may:
 
