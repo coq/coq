@@ -1,0 +1,4 @@
+- **Changed:**
+  Make :g:`Zlt_0_rec`, :g:`euclid`, and :g:`euclid_rec` transparent
+  (`#16905 <https://github.com/coq/coq/pull/16905>`_,
+  by Andres Erbsen).
