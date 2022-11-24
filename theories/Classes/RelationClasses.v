@@ -34,6 +34,9 @@ Section Defs.
   Class Reflexive (R : relation A) :=
     reflexivity : forall x : A, R x x.
 
+  Register Reflexive as rewrite.prop.reflexive_type.
+  Register reflexivity as rewrite.prop.reflexive_proof.
+
   Definition complement (R : relation A) : relation A := fun x y => R x y -> False.
 
   (** Opaque for proof-search. *)
@@ -49,11 +52,17 @@ Section Defs.
   Class Symmetric (R : relation A) :=
     symmetry : forall {x y}, R x y -> R y x.
   
+  Register Symmetric as rewrite.prop.symmetric_type.
+  Register symmetry as rewrite.prop.symmetric_proof.
+
   Class Asymmetric (R : relation A) :=
     asymmetry : forall {x y}, R x y -> R y x -> False.
   
   Class Transitive (R : relation A) :=
     transitivity : forall {x y z}, R x y -> R y z -> R x z.
+
+  Register Transitive as rewrite.prop.transitive_type.
+  Register transitivity as rewrite.prop.transitive_proof.
 
   (** Various combinations of reflexivity, symmetry and transitivity. *)
   
@@ -104,6 +113,8 @@ Section Defs.
   Class subrelation (R R' : relation A) : Prop :=
     is_subrelation : forall {x y}, R x y -> R' x y.
   
+  Register subrelation as rewrite.prop.subrelation.
+
   (** Any symmetric relation is equal to its inverse. *)
   
   Lemma subrelation_symmetric R `(Symmetric R) : subrelation (flip R) R.

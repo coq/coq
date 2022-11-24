@@ -26,10 +26,13 @@ Generalizable Variables A B C D R S T U l eqA eqB eqC eqD.
 Set Universe Polymorphism.
 
 Definition crelation (A : Type) := A -> A -> Type.
+Register crelation as rewrite.type.relation.
 
 Definition arrow (A B : Type) := A -> B.
+Register arrow as rewrite.type.arrow.
 
 Definition flip {A B C : Type} (f : A -> B -> C) := fun x y => f y x.
+Register flip as rewrite.type.flip.
 
 Definition iffT (A B : Type) := ((A -> B) * (B -> A))%type.
 
@@ -42,6 +45,9 @@ Section Defs.
 
   Class Reflexive (R : crelation A) :=
     reflexivity : forall x : A, R x x.
+
+  Register Reflexive as rewrite.type.reflexive_type.
+  Register reflexivity as rewrite.type.reflexive_proof.
 
   Definition complement (R : crelation A) : crelation A := 
     fun x y => R x y -> False.
@@ -58,12 +64,18 @@ Section Defs.
 
   Class Symmetric (R : crelation A) :=
     symmetry : forall {x y}, R x y -> R y x.
-  
+
+  Register Symmetric as rewrite.type.symmetric_type.
+  Register symmetry as rewrite.type.symmetric_proof.
+
   Class Asymmetric (R : crelation A) :=
     asymmetry : forall {x y}, R x y -> (complement R y x : Type).
   
   Class Transitive (R : crelation A) :=
     transitivity : forall {x y z}, R x y -> R y z -> R x z.
+
+  Register Transitive as rewrite.type.transitive_type.
+  Register transitivity as rewrite.type.transitive_proof.
 
   (** Various combinations of reflexivity, symmetry and transitivity. *)
   
@@ -110,6 +122,8 @@ Section Defs.
   Class subrelation (R R' : crelation A) :=
     is_subrelation : forall {x y}, R x y -> R' x y.
   
+  Register subrelation as rewrite.type.subrelation.
+
   (** Any symmetric crelation is equal to its inverse. *)
   
   Lemma subrelation_symmetric R `(Symmetric R) : subrelation (flip R) R.

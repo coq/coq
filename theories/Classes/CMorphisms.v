@@ -37,6 +37,8 @@ Section Proper.
   Class Proper (R : crelation A) (m : A) :=
     proper_prf : R m m.
 
+  Register Proper as rewrite.type.proper_class.
+
   (** Every element in the carrier of a reflexive relation is a morphism
    for this relation.  We use a proxy class for this case which is used
    internally to discharge reflexivity constraints.  The [Reflexive]
@@ -48,6 +50,8 @@ Section Proper.
 
   Class ProperProxy (R : crelation A) (m : A) :=
     proper_proxy : R m m.
+
+  Register ProperProxy as rewrite.type.proper_proxy_class.
 
   Lemma eq_proper_proxy (x : A) : ProperProxy (@eq A) x.
   Proof. firstorder. Qed.
@@ -74,6 +78,7 @@ Section Proper.
   
   Definition respectful {B} (R : crelation A) (R' : crelation B) : crelation (A -> B) :=
     Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').
+  Register respectful as rewrite.type.respectful.
 End Proper.
 
 (** We favor the use of Leibniz equality or a declared reflexive crelation 
@@ -158,10 +163,15 @@ Section Relations.
   Definition forall_relation (P : A -> Type)
              (sig : forall a, crelation (P a)) : crelation (forall x, P x) :=
     fun f g => forall a, sig a (f a) (g a).
+  Register forall_relation as rewrite.type.forall_relation.
 
   (** Non-dependent pointwise lifting *)
   Definition pointwise_relation {B} (R : crelation B) : crelation (A -> B) :=
     fun f g => forall a, R (f a) (g a).
+  Register pointwise_relation as rewrite.type.pointwise_relation.
+  Register pointwise_relation as rewrite.type.pointwise_relation_ref.
+
+  (** Dependent pointwise lifting of a crelation on the domain. *)
 
   Lemma pointwise_pointwise {B} (R : crelation B) :
     relation_equivalence (pointwise_relation R) (@eq A ==> R).
@@ -233,6 +243,9 @@ Ltac subrelation_tac T U :=
 Hint Extern 3 (@subrelation _ ?T ?U) => subrelation_tac T U : typeclass_instances.
 
 CoInductive apply_subrelation : Prop := do_subrelation.
+
+Register do_subrelation as rewrite.type.do_subrelation.
+Register apply_subrelation as rewrite.type.apply_subrelation.
 
 Ltac proper_subrelation :=
   match goal with

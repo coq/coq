@@ -37,6 +37,8 @@ Section Proper.
   Class Proper (R : relation A) (m : A) : Prop :=
     proper_prf : R m m.
 
+  Register Proper as rewrite.prop.proper_class.
+
   (** Every element in the carrier of a reflexive relation is a morphism
    for this relation.  We use a proxy class for this case which is used
    internally to discharge reflexivity constraints.  The [Reflexive]
@@ -48,6 +50,8 @@ Section Proper.
 
   Class ProperProxy (R : relation A) (m : A) : Prop :=
     proper_proxy : R m m.
+
+  Register ProperProxy as rewrite.prop.proper_proxy_class.
 
   Class ReflexiveProxy (R : relation A) : Prop :=
     reflexive_proxy : forall x, R x x.
@@ -90,11 +94,15 @@ Section Proper.
   Definition respectful (R : relation A) (R' : relation B) : relation (A -> B) :=
     Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').
 
+  Register respectful as rewrite.prop.respectful.
+
 End Proper.
 
 (** Non-dependent pointwise lifting *)
 Definition pointwise_relation A {B} (R : relation B) : relation (A -> B) :=
   fun f g => forall a, R (f a) (g a).
+Register pointwise_relation as rewrite.prop.pointwise_relation.
+Register pointwise_relation as rewrite.prop.pointwise_relation_ref.
 
 (** We let Coq infer these relations when a default relation should
   be found on the function space. *)
@@ -238,6 +246,8 @@ Section Relations.
              (sig : forall a, relation (P a)) : relation (forall x, P x) :=
     fun f g => forall a, sig a (f a) (g a).
 
+  Register forall_relation as rewrite.prop.forall_relation.
+
   Lemma pointwise_pointwise (R : relation B) :
     relation_equivalence (pointwise_relation A R) (@eq A ==> R).
   Proof. intros. split; reduce; subst; firstorder. Qed.
@@ -304,6 +314,9 @@ Ltac subrelation_tac T U :=
 Hint Extern 3 (@subrelation _ ?T ?U) => subrelation_tac T U : typeclass_instances.
 
 CoInductive apply_subrelation : Prop := do_subrelation.
+
+Register do_subrelation as rewrite.prop.do_subrelation.
+Register apply_subrelation as rewrite.prop.apply_subrelation.
 
 Ltac proper_subrelation :=
   match goal with

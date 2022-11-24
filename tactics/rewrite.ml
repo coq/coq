@@ -56,17 +56,19 @@ let find_reference dir s =
   Coqlib.find_reference "generalized rewriting" dir s
 [@@warning "-3"]
 
-let lazy_find_reference dir s =
-  let gr = lazy (find_reference dir s) in
-  fun () -> Lazy.force gr
 
 type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
-let find_global dir s =
-  let gr = lazy (find_reference dir s) in
-    fun env (evd,cstrs) ->
-      let (evd, c) = Evd.fresh_global env evd (Lazy.force gr) in
-        (evd, cstrs), c
+let lazy_find_global_by_ref s =
+  fun env (evd,cstrs) ->
+    let (evd, c) = Evd.fresh_global env evd (Lazy.force s) in
+      (evd, cstrs), c
+
+let lazy_find_global s arg =
+  let s = lazy (s arg) in
+  lazy_find_global_by_ref s
+
+let find_global dir s = lazy_find_global_by_ref (lazy (find_reference dir s))
 
 (** Utility for dealing with polymorphic applications *)
 
@@ -219,50 +221,44 @@ let decompose_applied_relation env sigma (c,l) =
 (** Utility functions *)
 
 module GlobalBindings (M : sig
-  val relation_classes : string list
-  val morphisms : string list
-  val relation : string list * string
+  val sort : string
   val app_poly : env -> evars -> (env -> evars -> evars * constr) -> constr array -> evars * constr
-  val arrow : env -> evars -> evars * constr
+
 end) = struct
   open M
   open Context.Rel.Declaration
-  let relation : env -> evars -> evars * constr = find_global (fst relation) (snd relation)
 
-  let reflexive_type = find_global relation_classes "Reflexive"
-  let reflexive_proof = find_global relation_classes "reflexivity"
-
-  let symmetric_type = find_global relation_classes "Symmetric"
-  let symmetric_proof = find_global relation_classes "symmetry"
-
-  let transitive_type = find_global relation_classes "Transitive"
-  let transitive_proof = find_global relation_classes "transitivity"
-
-  let forall_relation = find_global morphisms "forall_relation"
-  let pointwise_relation = find_global morphisms "pointwise_relation"
-
-  let forall_relation_ref = lazy_find_reference morphisms "forall_relation"
-  let pointwise_relation_ref = lazy_find_reference morphisms "pointwise_relation"
-
-  let respectful = find_global morphisms "respectful"
-
-  let default_relation = find_global ["Coq"; "Classes"; "SetoidTactics"] "DefaultRelation"
-
-  let coq_forall = find_global morphisms "forall_def"
-
-  let subrelation = find_global relation_classes "subrelation"
-  let do_subrelation = find_global morphisms "do_subrelation"
-  let apply_subrelation = find_global morphisms "apply_subrelation"
-
-  let rewrite_relation_class = find_global relation_classes "RewriteRelation"
+  let reg_name name = "rewrite." ^ sort ^ "." ^ name
+  let relation = lazy_find_global Coqlib.lib_ref (reg_name "relation")
+  let reflexive_type = lazy_find_global Coqlib.lib_ref (reg_name "reflexive_type")
+  let reflexive_proof = lazy_find_global Coqlib.lib_ref (reg_name "reflexive_proof")
+  let symmetric_type = lazy_find_global Coqlib.lib_ref (reg_name "symmetric_type")
+  let symmetric_proof = lazy_find_global Coqlib.lib_ref (reg_name "symmetric_proof")
+  let transitive_type = lazy_find_global Coqlib.lib_ref (reg_name "transitive_type")
+  let transitive_proof = lazy_find_global Coqlib.lib_ref (reg_name "transitive_proof")
+  let forall_relation = lazy_find_global Coqlib.lib_ref (reg_name "forall_relation")
+  let pointwise_relation = lazy_find_global Coqlib.lib_ref (reg_name "pointwise_relation")
+  let forall_relation_ref () = Lazy.force (lazy Coqlib.lib_ref) (reg_name "forall_relation_ref")
+  let pointwise_relation_ref () = Lazy.force (lazy Coqlib.lib_ref) (reg_name "pointwise_relation_ref")
+  let respectful = lazy_find_global Coqlib.lib_ref (reg_name "respectful")
+  let default_relation = lazy_find_global Coqlib.lib_ref (reg_name "default_relation")
+  let coq_forall = lazy_find_global Coqlib.lib_ref (reg_name "coq_forall")
+  let subrelation = lazy_find_global Coqlib.lib_ref (reg_name "subrelation")
+  let do_subrelation = lazy_find_global Coqlib.lib_ref (reg_name "do_subrelation")
+  let apply_subrelation = lazy_find_global Coqlib.lib_ref (reg_name "apply_subrelation")
+  let rewrite_relation_class = lazy_find_global Coqlib.lib_ref (reg_name "rewrite_relation_class")
+  let arrow = lazy_find_global Coqlib.lib_ref (reg_name "arrow")
+  let coq_inverse = lazy_find_global Coqlib.lib_ref (reg_name "flip")
 
   let proper_class =
-    let r = lazy (find_reference morphisms "Proper") in
+    let r = lazy (Coqlib.lib_ref (reg_name "proper_class")) in
     fun env sigma -> TC.class_info env sigma (Lazy.force r)
+(* Proper *)
 
   let proper_proxy_class =
-    let r = lazy (find_reference morphisms "ProperProxy") in
+    let r = lazy (Coqlib.lib_ref (reg_name "proper_proxy_class")) in
     fun env sigma -> TC.class_info env sigma (Lazy.force r)
+    (* find_reference morphisms "ProperProxy" *)
 
   let proper_proj env sigma =
     mkConst (Option.get (List.hd (proper_class env sigma).TC.cl_projs).TC.meth_const)
@@ -470,10 +466,10 @@ end) = struct
               | Some sigma -> Some (it_mkProd_or_LetIn t rels)
            with e when CErrors.noncritical e -> None)
   | _ -> None
-
 end
 
 let type_app_poly env env evd f args =
+
   let evars, c = app_poly_nocheck env evd f args in
   let evd', t = Typing.type_of env (goalevars evars) c in
     (evd', cstrevars evars), c
@@ -481,18 +477,16 @@ let type_app_poly env env evd f args =
 module PropGlobal = struct
   module Consts =
   struct
-    let relation_classes = ["Coq"; "Classes"; "RelationClasses"]
-    let morphisms = ["Coq"; "Classes"; "Morphisms"]
-    let relation = ["Coq"; "Relations";"Relation_Definitions"], "relation"
+    let sort = "prop"
+
     let app_poly = app_poly_nocheck
-    let arrow = find_global ["Coq"; "Program"; "Basics"] "arrow"
-    let coq_inverse = find_global ["Coq"; "Program"; "Basics"] "flip"
   end
 
   module G = GlobalBindings(Consts)
 
   include G
   include Consts
+
   let inverse env evd car rel =
     type_app_poly env env evd coq_inverse [| car ; car; mkProp; rel |]
       (* app_poly env evd coq_inverse [| car ; car; mkProp; rel |] *)
@@ -502,18 +496,13 @@ end
 module TypeGlobal = struct
   module Consts =
     struct
-      let relation_classes = ["Coq"; "Classes"; "CRelationClasses"]
-      let morphisms = ["Coq"; "Classes"; "CMorphisms"]
-      let relation = relation_classes, "crelation"
+      let sort = "type"
       let app_poly = app_poly_check
-      let arrow = find_global ["Coq"; "Classes"; "CRelationClasses"] "arrow"
-      let coq_inverse = find_global ["Coq"; "Classes"; "CRelationClasses"] "flip"
     end
 
   module G = GlobalBindings(Consts)
   include G
   include Consts
-
 
   let inverse env (evd,cstrs) car rel =
     let evd, car = Evarsolve.refresh_universes ~onlyalg:true (Some false) env evd car in

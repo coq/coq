@@ -78,3 +78,5 @@ Hint Resolve Build_preorder Build_order Build_equivalence Build_PER
 
 #[global]
 Hint Unfold inclusion same_relation commut: sets.
+
+Register relation as rewrite.prop.relation.
