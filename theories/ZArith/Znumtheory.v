@@ -23,7 +23,7 @@ Local Ltac Tauto.intuition_solver ::= auto with zarith.
 (** This file contains some notions of number theory upon Z numbers:
      - a divisibility predicate [Z.divide]
      - a gcd predicate [gcd]
-     - Euclid algorithm [euclid]
+     - Euclid algorithm [extgcd]
      - a relatively prime predicate [rel_prime]
      - a prime predicate [prime]
      - properties of the efficient [Z.gcd] function
@@ -287,71 +287,67 @@ Section extended_euclid_algorithm.
 
   Variables a b : Z.
 
-  (** The specification of Euclid's algorithm is the existence of
-      [u], [v] and [d] such that [ua+vb=d] and [(gcd a b d)]. *)
+  Let f := S(S(Z.to_nat(Z.log2_up(Z.log2_up(Z.abs(a*b)))))). (* log2(fuel) *)
 
-  Inductive Euclid : Set :=
-    Euclid_intro :
-    forall u v d:Z, u * a + v * b = d -> Zis_gcd a b d -> Euclid.
+  Local Definition extgcd_rec : forall r2 x1 y1 r1 x2 y2,
+    (True -> 0 <= r2 /\ x1 * a + y1 * b = r1 /\ x2 * a + y2 * b = r2 /\
+        (forall d : Z, Zis_gcd r1 r2 d -> Zis_gcd a b d))
+     -> { '(u, v, d) | True -> u * a + v * b = d /\ Zis_gcd a b d }.
+  Proof.
+    refine (Fix (Acc_intro_generator f (Z.lt_wf 0)) _ (fun r2 rec x1 y1 r1 x2 y2 H =>
+      if Z.eq_dec r2 0
+      then exist (fun '(u, v, d) => _) (x1, y1, r1) (fun _ => _)
+      else let q := r1 / r2 in
+           rec (r1 - q * r2) _ x2 y2 r2 (x1 - q * x2) (y1 - q * y2) (fun _ => _))).
+    all : abstract (intuition (solve
+      [ subst; eauto using Zis_gcd_0, Zis_gcd_for_euclid; ring
+      | subst q; rewrite <-Zmod_eq_full by trivial;
+        apply Z.mod_pos_bound, Z.le_neq; intuition congruence ])).
+  Defined.
 
-  (** The recursive part of Euclid's algorithm uses well-founded
-      recursion of non-negative integers. It maintains 6 integers
-      [u1,u2,u3,v1,v2,v3] such that the following invariant holds:
-      [u1*a+u2*b=u3] and [v1*a+v2*b=v3] and [gcd(u3,v3)=gcd(a,b)].
-      *)
+  Definition extgcd : Z*Z*Z.
+  Proof.
+    refine (proj1_sig (
+      if Z_le_gt_dec 0 b
+      then extgcd_rec b    1 0  a 0   1  (fun _ => _)
+      else extgcd_rec (-b) 1 0  a 0 (-1) (fun _ => _) )).
+    all : abstract (intuition (
+      (apply Z.opp_nonneg_nonpos, Z.lt_le_incl, Z.gt_lt + ring_simplify);
+      auto using Zis_gcd_sym, Zis_gcd_minus)).
+  Defined.
 
-  Lemma euclid_rec :
+  Lemma extgcd_correct [u v d] : extgcd = (u, v, d) -> u * a + v * b = d /\ Zis_gcd a b d.
+  Proof.
+    pose proof (proj2_sig _ : _ extgcd).
+    case extgcd as [[]?] in *; intuition congruence.
+  Qed.
+
+  Inductive deprecated_Euclid : Set :=
+    deprecated_Euclid_intro :
+    forall u v d:Z, u * a + v * b = d -> Zis_gcd a b d -> deprecated_Euclid.
+
+  Lemma deprecated_euclid : deprecated_Euclid.
+  Proof. case extgcd as [[]?] eqn:H; case (extgcd_correct H); esplit; eassumption. Qed.
+
+  Lemma deprecated_euclid_rec :
     forall v3:Z,
       0 <= v3 ->
       forall u1 u2 u3 v1 v2:Z,
-	u1 * a + u2 * b = u3 ->
-	v1 * a + v2 * b = v3 ->
-	(forall d:Z, Zis_gcd u3 v3 d -> Zis_gcd a b d) -> Euclid.
-  Proof.
-    intros v3 Hv3; generalize Hv3; pattern v3.
-    apply Zlt_0_rec.
-    - clear v3 Hv3; intros x H ? ? u1 u2 u3 v1 v2 H1 H2 H3.
-      destruct (Z_zerop x) as [Heq|Hneq].
-      + apply (Euclid_intro u1 u2 u3).
-        * assumption.
-        * apply H3.
-          rewrite Heq; auto with zarith.
-      + set (q := u3 / x) in *.
-        assert (Hq : 0 <= u3 - q * x < x). {
-          replace (u3 - q * x) with (u3 mod x).
-          - apply Z_mod_lt.
-            apply Z.lt_gt, Z.le_neq; auto.
-          - generalize (Z_div_mod_eq_full u3 x).
-            unfold q.
-            intro eq; pattern u3 at 2; rewrite eq; ring.
-        }
-        apply (H (u3 - q * x) Hq (proj1 Hq) v1 v2 x (u1 - q * v1) (u2 - q * v2)).
-        * tauto.
-        * replace ((u1 - q * v1) * a + (u2 - q * v2) * b) with
-            (u1 * a + u2 * b - q * (v1 * a + v2 * b)) by ring.
-          rewrite H1; rewrite H2; trivial.
-        * intros; apply H3.
-          apply Zis_gcd_for_euclid with q; assumption.
-    - assumption.
-  Qed.
-
-  (** We get Euclid's algorithm by applying [euclid_rec] on
-      [1,0,a,0,1,b] when [b>=0] and [1,0,a,0,-1,-b] when [b<0]. *)
-
-  Lemma euclid : Euclid.
-  Proof.
-    case (Z_le_gt_dec 0 b); intro.
-    - intros;
-        apply (fun H => euclid_rec b H 1 0 a 0 1);
-        auto; ring.
-    - intros;
-        apply (fun H => euclid_rec (- b) H 1 0 a 0 (-1));
-        auto; try ring.
-      + now apply Z.opp_nonneg_nonpos, Z.lt_le_incl, Z.gt_lt.
-      + auto with zarith.
-  Qed.
+       u1 * a + u2 * b = u3 ->
+       v1 * a + v2 * b = v3 ->
+       (forall d:Z, Zis_gcd u3 v3 d -> Zis_gcd a b d) -> deprecated_Euclid.
+  Proof. intros; apply deprecated_euclid. Qed.
 
 End extended_euclid_algorithm.
+
+#[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
+Notation Euclid := deprecated_Euclid (only parsing).
+#[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
+Notation Euclid_intro := deprecated_Euclid_intro (only parsing).
+#[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
+Notation euclid := deprecated_euclid (only parsing).
+#[deprecated(since="8.17", note="Use Coq.ZArith.Znumtheory.extgcd")]
+Notation euclid_rec := deprecated_euclid_rec (only parsing).
 
 Theorem Zis_gcd_uniqueness_apart_sign :
   forall a b d d':Z, Zis_gcd a b d -> Zis_gcd a b d' -> d = d' \/ d = - d'.
@@ -373,13 +369,9 @@ Inductive Bezout (a b d:Z) : Prop :=
 Lemma Zis_gcd_bezout : forall a b d:Z, Zis_gcd a b d -> Bezout a b d.
 Proof.
   intros a b d Hgcd.
-  elim (euclid a b); intros u v d0 e g.
-  generalize (Zis_gcd_uniqueness_apart_sign a b d d0 Hgcd g).
-  intro H; elim H; clear H; intros H.
-  - apply Bezout_intro with u v.
-    rewrite H; assumption.
-  - apply Bezout_intro with (- u) (- v).
-    rewrite H; rewrite <- e; ring.
+  case (extgcd a b) as [[u v] d0] eqn:E, (extgcd_correct _ _ E) as [G g].
+  case (Zis_gcd_uniqueness_apart_sign a b d d0 Hgcd g) as [H|H]; subst;
+    (apply Bezout_intro with u v + apply Bezout_intro with (- u) (- v)); ring.
 Qed.
 
 (** gcd of [ca] and [cb] is [c gcd(a,b)]. *)
