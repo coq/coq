@@ -242,6 +242,8 @@ analysis on inductive or coinductive objects (see :ref:`variants`).
 .. tacn:: casetype @one_type
    :undocumented:
 
+   .. deprecated:: 8.18
+
 .. tacn:: simple destruct {| @ident | @natural }
 
    Equivalent to :tacn:`intros` :n:`until {| @ident | @natural }; case @ident`
@@ -413,6 +415,8 @@ Induction
    Conversely, if :g:`t` is a :n:`@one_term` of (inductive) type :g:`I` that does
    not occur in the goal, then :n:`elim t` is equivalent to
    :n:`elimtype I; only 2:` :tacn:`exact` `t.`
+
+   .. deprecated:: 8.18
 
 .. tacn:: simple induction {| @ident | @natural }
 
