@@ -1,92 +1,92 @@
 false: bool
 true: bool
 negb: bool -> bool
-implb: bool -> bool -> bool
 xorb: bool -> bool -> bool
 andb: bool -> bool -> bool
 orb: bool -> bool -> bool
+implb: bool -> bool -> bool
 Nat.odd: nat -> bool
 Nat.even: nat -> bool
-Decimal.signed_int_beq: Decimal.signed_int -> Decimal.signed_int -> bool
-Nat.eqb: nat -> nat -> bool
+Number.uint_beq: Number.uint -> Number.uint -> bool
 Nat.testbit: nat -> nat -> bool
-Number.signed_int_beq: Number.signed_int -> Number.signed_int -> bool
+Nat.eqb: nat -> nat -> bool
 Hexadecimal.hexadecimal_beq:
   Hexadecimal.hexadecimal -> Hexadecimal.hexadecimal -> bool
-Number.number_beq: Number.number -> Number.number -> bool
-Nat.leb: nat -> nat -> bool
 Nat.ltb: nat -> nat -> bool
-Decimal.uint_beq: Decimal.uint -> Decimal.uint -> bool
+Nat.leb: nat -> nat -> bool
+Number.number_beq: Number.number -> Number.number -> bool
+Number.signed_int_beq: Number.signed_int -> Number.signed_int -> bool
 Hexadecimal.signed_int_beq:
   Hexadecimal.signed_int -> Hexadecimal.signed_int -> bool
-Number.uint_beq: Number.uint -> Number.uint -> bool
-Decimal.decimal_beq: Decimal.decimal -> Decimal.decimal -> bool
 Hexadecimal.uint_beq: Hexadecimal.uint -> Hexadecimal.uint -> bool
-O: nat
+Decimal.decimal_beq: Decimal.decimal -> Decimal.decimal -> bool
+Decimal.signed_int_beq: Decimal.signed_int -> Decimal.signed_int -> bool
+Decimal.uint_beq: Decimal.uint -> Decimal.uint -> bool
 Nat.two: nat
 Nat.zero: nat
 Nat.one: nat
-Nat.succ: nat -> nat
+O: nat
 Nat.double: nat -> nat
-Nat.log2: nat -> nat
-S: nat -> nat
-Nat.pred: nat -> nat
 Nat.sqrt: nat -> nat
 Nat.div2: nat -> nat
+Nat.log2: nat -> nat
+Nat.pred: nat -> nat
 Nat.square: nat -> nat
-Nat.tail_mul: nat -> nat -> nat
-Nat.div: nat -> nat -> nat
+S: nat -> nat
+Nat.succ: nat -> nat
 Nat.ldiff: nat -> nat -> nat
-Nat.pow: nat -> nat -> nat
+Nat.add: nat -> nat -> nat
+Nat.land: nat -> nat -> nat
+Nat.lxor: nat -> nat -> nat
+Nat.sub: nat -> nat -> nat
 Nat.mul: nat -> nat -> nat
-Nat.tail_add: nat -> nat -> nat
+Nat.tail_mul: nat -> nat -> nat
 Nat.max: nat -> nat -> nat
+Nat.tail_add: nat -> nat -> nat
+Nat.pow: nat -> nat -> nat
+Nat.min: nat -> nat -> nat
+Nat.modulo: nat -> nat -> nat
+Nat.div: nat -> nat -> nat
 Nat.lor: nat -> nat -> nat
 Nat.gcd: nat -> nat -> nat
-Nat.land: nat -> nat -> nat
-Nat.sub: nat -> nat -> nat
-Nat.lxor: nat -> nat -> nat
-Nat.modulo: nat -> nat -> nat
-Nat.min: nat -> nat -> nat
-Nat.add: nat -> nat -> nat
-Nat.of_uint: Decimal.uint -> nat
-Nat.of_num_uint: Number.uint -> nat
 Hexadecimal.nb_digits: Hexadecimal.uint -> nat
-Decimal.nb_digits: Decimal.uint -> nat
 Nat.of_hex_uint: Hexadecimal.uint -> nat
+Nat.of_num_uint: Number.uint -> nat
+Nat.of_uint: Decimal.uint -> nat
+Decimal.nb_digits: Decimal.uint -> nat
 Nat.tail_addmul: nat -> nat -> nat -> nat
-Nat.of_uint_acc: Decimal.uint -> nat -> nat
 Nat.of_hex_uint_acc: Hexadecimal.uint -> nat -> nat
+Nat.of_uint_acc: Decimal.uint -> nat -> nat
 Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
 Nat.log2_iter: nat -> nat -> nat -> nat -> nat
 length: forall [A : Type], list A -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
+Nat.div2: nat -> nat
+Nat.sqrt: nat -> nat
+Nat.log2: nat -> nat
+Nat.double: nat -> nat
 S: nat -> nat
 Nat.square: nat -> nat
-Nat.sqrt: nat -> nat
-Nat.double: nat -> nat
-Nat.log2: nat -> nat
 Nat.succ: nat -> nat
-Nat.div2: nat -> nat
 Nat.pred: nat -> nat
-Nat.max: nat -> nat -> nat
-Nat.lxor: nat -> nat -> nat
-Nat.tail_add: nat -> nat -> nat
 Nat.land: nat -> nat -> nat
-Nat.sub: nat -> nat -> nat
-Nat.tail_mul: nat -> nat -> nat
+Nat.max: nat -> nat -> nat
+Nat.gcd: nat -> nat -> nat
 Nat.modulo: nat -> nat -> nat
 Nat.ldiff: nat -> nat -> nat
-Nat.add: nat -> nat -> nat
-Nat.lor: nat -> nat -> nat
-Nat.gcd: nat -> nat -> nat
-Nat.div: nat -> nat -> nat
-Nat.mul: nat -> nat -> nat
+Nat.tail_add: nat -> nat -> nat
 Nat.pow: nat -> nat -> nat
+Nat.lxor: nat -> nat -> nat
+Nat.div: nat -> nat -> nat
+Nat.lor: nat -> nat -> nat
+Nat.mul: nat -> nat -> nat
 Nat.min: nat -> nat -> nat
+Nat.add: nat -> nat -> nat
+Nat.sub: nat -> nat -> nat
+Nat.tail_mul: nat -> nat -> nat
 Nat.tail_addmul: nat -> nat -> nat -> nat
-Nat.of_hex_uint_acc: Hexadecimal.uint -> nat -> nat
 Nat.of_uint_acc: Decimal.uint -> nat -> nat
+Nat.of_hex_uint_acc: Hexadecimal.uint -> nat -> nat
 Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
 Nat.log2_iter: nat -> nat -> nat -> nat -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat

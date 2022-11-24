@@ -108,6 +108,14 @@ val import_modules : export:Lib.export_flag -> (Libobject.open_filter * ModPath.
 val declare_include : (Constrexpr.module_ast * inline) list -> unit
 
 (** {6 ... } *)
+(** [iter_all_segments] iterate over all segments, the modules'
+    segments first and then the current segment. Modules are presented
+    in an arbitrary order. The given function is applied to all leaves
+    (together with their section path). *)
+
+val iter_all_segments :
+  (Nametab.object_prefix -> Libobject.t -> unit) -> unit
+
 
 val debug_print_modtab : unit -> Pp.t
 
