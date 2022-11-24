@@ -400,6 +400,8 @@ and v_libobjs = List v_libobjt
 
 let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
 
+let v_librarysyntaxobjs = Tuple ("library_syntax_objects",[|v_libobjs;v_libobjs|])
+
 (** STM objects *)
 
 let v_frozen = Tuple ("frozen", [|List (v_pair Int Dyn); Opt Dyn|])
@@ -431,7 +433,7 @@ let v_libsum =
   Tuple ("summary", [|v_dp;v_deps;String|])
 
 let v_lib =
-  Tuple ("library",[|v_compiled_lib;v_libraryobjs|])
+  Tuple ("library",[|v_compiled_lib;v_librarysyntaxobjs;v_libraryobjs|])
 
 let v_delayed_universes =
   Sum ("delayed_universes", 0, [| [| v_unit |]; [| v_context_set |] |])

@@ -63,6 +63,7 @@ let filter_or f1 f2 = match f1, f2 with
 
 type ('a,'b) object_declaration = {
   object_name : string;
+  object_stage : Summary.Stage.t;
   cache_function : 'b -> unit;
   load_function : int -> 'b -> unit;
   open_function : open_filter -> int -> 'b -> unit;
@@ -74,6 +75,7 @@ type ('a,'b) object_declaration = {
 
 let default_object s = {
   object_name = s;
+  object_stage = Summary.Stage.Interp;
   cache_function = (fun _ -> ());
   load_function = (fun _ _ -> ());
   open_function = (fun _ _ _ -> ());
@@ -143,6 +145,7 @@ let declare_named_object_full odecl =
   let odecl =
     let oname = make_oname in
     { object_name = odecl.object_name;
+      object_stage = odecl.object_stage;
       cache_function = (fun (p, (id, o)) -> odecl.cache_function (oname p id, o));
       load_function = (fun i (p, (id, o)) -> odecl.load_function i (oname p id, o));
       open_function = (fun f i (p, (id, o)) -> odecl.open_function f i (oname p id, o));
@@ -209,6 +212,10 @@ let discharge_object (Dyn.Dyn (tag, v)) =
 let rebuild_object (Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
   Dyn.Dyn (tag, decl.rebuild_function v)
+
+let object_stage (Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  decl.object_stage
 
 let dump = Dyn.dump
 

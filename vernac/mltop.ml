@@ -410,6 +410,7 @@ let inMLModule : ml_module_object -> Libobject.obj =
   let open Libobject in
   declare_object
     {(default_object "ML-MODULE") with
+      object_stage = Summary.Stage.Synterp;
       cache_function = (fun _ -> ());
       load_function = load_ml_objects;
       subst_function = (fun (_,o) -> o);
@@ -418,7 +419,7 @@ let inMLModule : ml_module_object -> Libobject.obj =
 
 let declare_ml_modules local l =
   let mnames = List.map PluginSpec.of_declare_ml_format l in
-  if Global.sections_are_opened()
+  if Lib.sections_are_opened()
   then CErrors.user_err Pp.(str "Cannot Declare ML Module while sections are opened.");
   (* List.concat_map only available in 4.10 *)
   let mdigests = List.map PluginSpec.digest mnames |> List.concat in

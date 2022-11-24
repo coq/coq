@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Names
+open Modintern
 
 (** {6 Modules } *)
 
@@ -30,6 +31,60 @@ type inline =
 (** Kinds of modules *)
 
 type module_params = (lident list * (Constrexpr.module_ast * inline)) list
+type module_expr = (module_struct_expr * ModPath.t * module_kind * Entries.inline)
+type module_params_expr = (MBId.t list * module_expr) list
+
+(** {6 Libraries i.e. modules on disk } *)
+
+type library_name = DirPath.t
+
+type library_objects
+
+module Synterp : sig
+
+val declare_module :
+  Id.t ->
+  module_params ->
+  (Constrexpr.module_ast * inline) module_signature ->
+  (Constrexpr.module_ast * inline) list ->
+  ModPath.t * module_params_expr * module_expr list * module_expr module_signature
+
+val start_module :
+  Lib.export -> Id.t ->
+  module_params ->
+  (Constrexpr.module_ast * inline) module_signature ->
+  ModPath.t * module_params_expr * module_expr module_signature
+
+val end_module : unit -> ModPath.t
+
+val declare_include :
+  (Constrexpr.module_ast * inline) list ->
+  module_expr list
+
+val declare_modtype :
+  Id.t ->
+  module_params ->
+  (Constrexpr.module_ast * inline) list ->
+  (Constrexpr.module_ast * inline) list ->
+  ModPath.t * module_params_expr * module_expr list * module_expr list
+
+val start_modtype :
+  Id.t ->
+  module_params ->
+  (Constrexpr.module_ast * inline) list ->
+  ModPath.t * module_params_expr * module_expr list
+
+val end_modtype : unit -> ModPath.t
+
+val import_module : Libobject.open_filter -> export:Lib.export_flag -> ModPath.t -> unit
+
+val import_modules : export:Lib.export_flag -> (Libobject.open_filter * ModPath.t) list -> unit
+
+val register_library : library_name -> library_objects -> unit
+
+end
+
+module Interp : sig
 
 (** [declare_module id fargs typ exprs] declares module [id], from
    functor arguments [fargs], with final type [typ].  [exprs] is
@@ -39,18 +94,18 @@ type module_params = (lident list * (Constrexpr.module_ast * inline)) list
 
 val declare_module :
   Id.t ->
-  module_params ->
-  (Constrexpr.module_ast * inline) module_signature ->
-  (Constrexpr.module_ast * inline) list -> ModPath.t
+  module_params_expr ->
+  module_expr module_signature ->
+  module_expr list ->
+  ModPath.t
 
 val start_module :
   Lib.export -> Id.t ->
-  module_params ->
-  (Constrexpr.module_ast * inline) module_signature -> ModPath.t
+  module_params_expr ->
+  module_expr module_signature ->
+  ModPath.t
 
 val end_module : unit -> ModPath.t
-
-
 
 (** {6 Module types } *)
 
@@ -59,37 +114,24 @@ val end_module : unit -> ModPath.t
 
 val declare_modtype :
   Id.t ->
-  module_params ->
-  (Constrexpr.module_ast * inline) list ->
-  (Constrexpr.module_ast * inline) list ->
+  module_params_expr ->
+  module_expr list ->
+  module_expr list ->
   ModPath.t
 
 val start_modtype :
   Id.t ->
-  module_params ->
-  (Constrexpr.module_ast * inline) list -> ModPath.t
+  module_params_expr ->
+  module_expr list ->
+  ModPath.t
 
 val end_modtype : unit -> ModPath.t
-
-(** {6 Libraries i.e. modules on disk } *)
-
-type library_name = DirPath.t
-
-type library_objects
 
 val register_library :
   library_name ->
   Safe_typing.compiled_library -> library_objects -> Safe_typing.vodigest ->
-  Univ.ContextSet.t -> unit
-
-val start_library : library_name -> unit
-
-val end_library :
-  output_native_objects:bool -> library_name ->
-    Safe_typing.compiled_library * library_objects * Nativelib.native_library
-
-(** append a function to be executed at end_library *)
-val append_end_library_hook : (unit -> unit) -> unit
+  Univ.ContextSet.t ->
+  unit
 
 (** [import_module export mp] imports the module [mp].
    It modifies Nametab and performs the [open_object] function for
@@ -105,7 +147,19 @@ val import_modules : export:Lib.export_flag -> (Libobject.open_filter * ModPath.
 
 (** Include  *)
 
-val declare_include : (Constrexpr.module_ast * inline) list -> unit
+val declare_include : module_expr list -> unit
+
+end
+
+val start_library : library_name -> unit
+
+val end_library :
+  output_native_objects:bool -> library_name ->
+  Safe_typing.compiled_library * library_objects * library_objects * Nativelib.native_library
+
+(** append a function to be executed at end_library *)
+val append_end_library_hook : (unit -> unit) -> unit
+
 
 (** {6 ... } *)
 (** [iter_all_segments] iterate over all segments, the modules'
@@ -126,3 +180,41 @@ val debug_print_modtab : unit -> Pp.t
 
 val process_module_binding :
   MBId.t -> (Constr.t * Univ.AbstractContext.t option) Declarations.module_alg_expr -> unit
+
+(** Compatibility layer *)
+
+val import_module : Libobject.open_filter -> export:Lib.export_flag -> ModPath.t -> unit
+
+val declare_module :
+  Id.t ->
+  module_params ->
+  (Constrexpr.module_ast * inline) module_signature ->
+  (Constrexpr.module_ast * inline) list ->
+  ModPath.t
+
+val start_module :
+  Lib.export -> Id.t ->
+  module_params ->
+  (Constrexpr.module_ast * inline) module_signature ->
+  ModPath.t
+
+val end_module : unit -> ModPath.t
+
+val declare_modtype :
+  Id.t ->
+  module_params ->
+  (Constrexpr.module_ast * inline) list ->
+  (Constrexpr.module_ast * inline) list ->
+  ModPath.t
+
+val start_modtype :
+  Id.t ->
+  module_params ->
+  (Constrexpr.module_ast * inline) list ->
+  ModPath.t
+
+val end_modtype : unit -> ModPath.t
+
+val declare_include :
+  (Constrexpr.module_ast * inline) list ->
+  unit
