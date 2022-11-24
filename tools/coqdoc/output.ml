@@ -69,7 +69,7 @@ let is_keyword =
 let is_tactic =
   build_table
     [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "clear"; "injection";
-      "elimtype"; "progress"; "setoid_rewrite"; "left"; "right"; "constructor";
+      "progress"; "setoid_rewrite"; "left"; "right"; "constructor";
       "econstructor"; "decide equality"; "abstract"; "exists"; "cbv"; "simple destruct";
       "info"; "field"; "specialize"; "evar"; "solve"; "instantiate"; "info_auto"; "info_eauto";
       "quote"; "eexact"; "autorewrite";

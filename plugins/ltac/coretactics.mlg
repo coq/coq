@@ -58,14 +58,6 @@ TACTIC EXTEND native_cast_no_check
 | [ "native_cast_no_check" constr(c) ] -> { Tactics.native_cast_no_check c }
 END
 
-TACTIC EXTEND casetype DEPRECATED { Deprecation.make ~since:"8.18" ~note:"Use [case] instead." () }
-| [ "casetype" constr(c) ] -> { Tactics.case_type c }
-END
-
-TACTIC EXTEND elimtype DEPRECATED { Deprecation.make ~since:"8.18" ~note:"Use [elim] instead." () }
-| [ "elimtype" constr(c) ] -> { Tactics.elim_type c }
-END
-
 TACTIC EXTEND exfalso
 | [ "exfalso" ] -> { Tactics.exfalso }
 END

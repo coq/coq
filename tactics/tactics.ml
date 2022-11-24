@@ -3154,20 +3154,6 @@ let elim_type t =
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false)
   end
 
-let case_type t =
-  assert_before_then_gen false (NamingAvoid Id.Set.empty) t begin fun id ->
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = Proofview.Goal.sigma gl in
-  let env = Tacmach.pf_env gl in
-  let ((ind, u), t) = reduce_to_atomic_ind env sigma t in
-  let dep = default_case_analysis_dependence env ind in
-  tclTHENLIST [
-    Clenv.case_pf ~with_evars:false ~dep (mkVar id, t);
-    clear [id];
-  ]
-  end
-  end
-
 let exfalso =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in

@@ -1317,8 +1317,6 @@ simple_tactic: [
 | "exact_no_check" one_term
 | "vm_cast_no_check" one_term
 | "native_cast_no_check" one_term
-| "casetype" one_type
-| "elimtype" one_type
 | "lapply" one_term
 | "transitivity" one_term
 | "left" OPT ( "with" bindings )
