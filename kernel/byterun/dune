@@ -5,7 +5,7 @@
  (foreign_stubs
   (language c)
   (names coq_fix_code coq_float64 coq_memory coq_values coq_interp)
-  (flags -fPIC (:include %{project_root}/config/dune.c_flags))))
+  (flags :standard (:include %{project_root}/config/dune.c_flags))))
 
 (rule
  (targets coq_instruct.h)
