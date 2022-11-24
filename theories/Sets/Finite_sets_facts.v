@@ -172,7 +172,7 @@ Section Finite_sets_facts.
         elim (classic (In U X0 x)).
         * intro H'6; apply f_equal.
           apply H'0 with (Y := Subtract U (Add U X0 x0) x).
-          -- elimtype (pred (S c2) = c2); auto with sets.
+          -- assert (pred (S c2) = c2) as []; auto with sets.
              apply card_soustr_1; auto with sets.
           -- rewrite <- H'5.
              apply Sub_Add_new; auto with sets.
@@ -243,7 +243,7 @@ Section Finite_sets_facts.
         intros X0 c2 H'2 H'3 x0 H'4 H'5; elim (classic (In U X0 x)).
         * intro H'6; apply -> Nat.succ_lt_mono.
           apply H'0 with (Y := Subtract U (Add U X0 x0) x).
-          -- elimtype (pred (S c2) = c2); [ | reflexivity ].
+          -- assert (pred (S c2) = c2) as []; [ reflexivity | ].
              apply card_soustr_1; auto with sets.
           -- apply incl_st_add_soustr; assumption.
         * elim (classic (x = x0)).

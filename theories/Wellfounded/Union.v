@@ -45,7 +45,7 @@ Section WfUnion.
     apply Acc_intro; intros.
     elim H3; intros; auto with sets.
     cut (clos_trans A R1 y x); auto with sets.
-    elimtype (Acc (clos_trans A R1) y); intros.
+    cut (Acc (clos_trans A R1) y); [ intro H'; elim H' | ]; intros.
     - apply Acc_intro; intros.
       elim H8; intros.
       + apply H6; auto with sets.

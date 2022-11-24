@@ -11,7 +11,7 @@ Section Foo.
 Variable (HFalse : False).
 
 Lemma yeq' : y = y.
-Proof using HFalse. elimtype False. apply HFalse. Qed.
+Proof using HFalse. exfalso. apply HFalse. Qed.
 
 End Foo.
 
