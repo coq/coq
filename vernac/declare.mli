@@ -541,10 +541,6 @@ val solve_obligations :
 
 val solve_all_obligations : pm:OblState.t -> unit Proofview.tactic option -> OblState.t
 
-(** Number of remaining obligations to be solved for this program *)
-val try_solve_obligation :
-  pm:OblState.t -> int -> Names.Id.t option -> unit Proofview.tactic option -> OblState.t
-
 val try_solve_obligations :
   pm:OblState.t -> Names.Id.t option -> unit Proofview.tactic option -> OblState.t
 

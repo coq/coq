@@ -1424,9 +1424,6 @@ command: [
 | DELETE "Solve" "Obligations" "with" tactic
 | DELETE "Solve" "Obligations"
 | "Solve" "Obligations" OPT ( "of" identref ) OPT ( "with" tactic )
-| REPLACE "Solve" "Obligation" natural "of" identref "with" tactic
-| WITH "Solve" "Obligation" natural OPT ( "of" identref ) "with" tactic
-| DELETE "Solve" "Obligation" natural "with" tactic
 | DELETE "Undo"
 | DELETE "Undo" natural
 | REPLACE "Undo" "To" natural
