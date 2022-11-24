@@ -99,6 +99,15 @@ val attribute_of_list : (string * 'a key_parser) list -> 'a option attribute
 (** Make an attribute from a list of key parsers together with their
    associated key. *)
 
+val payload_parser : ?cat:(string -> string -> string) -> name:string -> string key_parser
+(** [payload_parser ?cat ~name] parses attributes like [#[name="payload"]].
+    If the attribute is used multiple times and [cat] is non-None,
+    the payloads are concatenated using it.
+    If [cat] is None, having multiple occurences of the attribute is forbidden. *)
+
+val payload_attribute : ?cat:(string -> string -> string) -> name:string -> string option attribute
+(** This is just [attribute_of_list] for a single [payload_parser]. *)
+
 (** Define boolean attribute [name], of the form [name={yes,no}]. The
    attribute may only be set once for a command. *)
 val bool_attribute : name:string -> bool option attribute

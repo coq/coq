@@ -437,6 +437,43 @@ boldface label "Attribute:".  Attributes are listed in the
       Set Warnings "unsupported-attributes".
       #[ foo ] Comments.
 
+Generic attributes
+^^^^^^^^^^^^^^^^^^
+
+The following attribute is supported by every command:
+
+.. attr:: warnings = @string
+   :name: warnings
+
+   Sets the given warning string locally for the command. After the
+   command finishes the warning state is reset to what it was before
+   the command. For instance if the current warning state is
+   `some-warnings,-other-warning`,
+
+   .. coqdoc::
+
+      #[warnings="+other-warning"] Command.
+
+   is equivalent to
+
+   .. coqdoc::
+
+      Set Warnings "+other-warning".
+      Command.
+      Set Warnings "some-warnings,-other-warning".
+
+   and `other-warning` is an error while executing the command.
+
+   Consequently, using this attribute around an :cmd:`Import` command
+   will prevent it from changing the warning state.
+
+   See also :opt:`Warnings`.
+
+.. attr:: warning = @string
+   :name: warning
+
+   Alias of :attr:`warnings`.
+
 .. _flags-options-tables:
 
 Flags, Options and Tables

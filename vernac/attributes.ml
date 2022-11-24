@@ -308,13 +308,18 @@ let canonical_field =
 let canonical_instance =
   enable_attribute ~key:"canonical" ~default:(fun () -> false)
 
-let uses_parser : string key_parser = fun ?loc orig args ->
-  assert_once ?loc ~name:"using" orig;
+let payload_parser ?cat ~name : string key_parser = fun ?loc orig args ->
   match args with
-  | VernacFlagLeaf (FlagString str) -> str
-  |  _ -> CErrors.user_err ?loc (Pp.str "Ill formed \"using\" attribute")
+  | VernacFlagLeaf (FlagString str) -> begin match orig, cat with
+      | None, _ -> str
+      | Some orig, Some cat -> cat orig str
+      | Some _, None -> error_twice ?loc ~name
+    end
+  |  _ -> CErrors.user_err ?loc Pp.(str "Ill formed \"" ++ str name ++ str"\" attribute")
 
-let using = attribute_of_list ["using",uses_parser]
+let payload_attribute ?cat ~name = attribute_of_list [name, payload_parser ?cat ~name]
+
+let using = payload_attribute ?cat:None ~name:"using"
 
 let process_typing_att ?loc ~typing_flags att disable =
   let enable = not disable in
