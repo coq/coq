@@ -107,7 +107,7 @@ let generic_search env (fn : GlobRef.t -> Decls.logical_kind option -> env -> co
       handle handler o
     | _ -> ()
   in
-  try Declaremods.iter_all_segments iter_obj
+  try Declaremods.iter_all_interp_segments iter_obj
   with Not_found -> ()
 
 (** This module defines a preference on constrs in the form of a

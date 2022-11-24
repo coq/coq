@@ -189,6 +189,12 @@ struct
 
 end
 
+type module_objects =
+  { module_prefix : Nametab.object_prefix;
+    module_substituted_objects : Libobject.t list;
+    module_keep_objects : Libobject.t list;
+  }
+
 (** The [StagedModS] abstraction describes module operations at a given stage. *)
 module type StagedModS = sig
 
@@ -205,8 +211,12 @@ module type StagedModS = sig
   val add_leaf : Libobject.t -> unit
   val add_leaves : Libobject.t list -> unit
 
+  val expand_aobjs : Libobject.algebraic_objects -> Libobject.t list
+
   val get_applications : typexpr module_alg_expr -> ModPath.t * ModPath.t list
   val debug_print_modtab : unit -> Pp.t
+
+  module ModObjs : sig val all : unit -> module_objects MPmap.t end
 
 end
 
@@ -253,12 +263,6 @@ and subst_objects subst seg =
     | KeepObject _ -> assert false
   in
   List.Smart.map subst_one seg
-
-type module_objects =
-  { module_prefix : Nametab.object_prefix;
-    module_substituted_objects : Libobject.t list;
-    module_keep_objects : Libobject.t list;
-  }
 
 (** The [StagedMod] abstraction factors out the code dealing with modules
   that is common to all stages. *)
@@ -1584,10 +1588,10 @@ let end_library ~output_native_objects dir =
 
 (** {6 Iterators} *)
 
-let iter_all_segments f =
+let iter_all_interp_segments f =
   let rec apply_obj prefix obj = match obj with
     | IncludeObject aobjs ->
-      let objs = expand_aobjs aobjs in
+      let objs = InterpVisitor.expand_aobjs aobjs in
       List.iter (apply_obj prefix) objs
     | _ -> f prefix obj
   in
@@ -1597,7 +1601,7 @@ let iter_all_segments f =
     List.iter (apply_obj prefix) modobjs.module_keep_objects
   in
   let apply_nodes (node, os) = List.iter (fun o -> f (Lib.node_prefix node) o) os in
-  MPmap.iter apply_mod_obj (ModObjs.all ());
+  MPmap.iter apply_mod_obj (InterpVisitor.ModObjs.all ());
   List.iter apply_nodes (Lib.contents ())
 
 

@@ -162,12 +162,12 @@ val append_end_library_hook : (unit -> unit) -> unit
 
 
 (** {6 ... } *)
-(** [iter_all_segments] iterate over all segments, the modules'
+(** [iter_all_interp_segments] iterate over all segments, the modules'
     segments first and then the current segment. Modules are presented
     in an arbitrary order. The given function is applied to all leaves
-    (together with their section path). *)
+    (together with their section path). Ignores synterp objects. *)
 
-val iter_all_segments :
+val iter_all_interp_segments :
   (Nametab.object_prefix -> Libobject.t -> unit) -> unit
 
 
