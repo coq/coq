@@ -61,8 +61,6 @@ type stm_init_options =
   (** Injects Require and Set/Unset commands before the initial
      state is ready *)
 
-  ; stm_options  : AsyncOpts.stm_opt
-  (** Low-level STM options *)
   }
 
 (** The type of a STM document *)
