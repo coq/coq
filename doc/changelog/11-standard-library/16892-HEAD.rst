@@ -1,0 +1,9 @@
+- **Deprecated:**
+  :g:`Zmod`,
+  :g:`Zdiv_eucl_POS`,
+  :g:`Zmod_POS_bound`,
+  :g:`Zmod_pos_bound`,
+  and :g:`Zmod_neg_bound`
+  in `ZArith.Zdiv`
+  (`#16892 <https://github.com/coq/coq/pull/16892>`_,
+  by Andres Erbsen).
