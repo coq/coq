@@ -295,9 +295,6 @@ optional tactic is replaced by the default one if not specified.
 
    Start the proof of the next unsolved obligation.
 
-.. cmd:: Solve Obligation @natural {? of @ident } with @ltac_expr
-   :undocumented:
-
 .. cmd:: Solve Obligations {? of @ident } {? with @ltac_expr }
 
    Tries to solve each obligation of :token:`ident` using the given :token:`ltac_expr` or the default one.
