@@ -30,7 +30,8 @@ let warn_vm_disabled =
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env sigma c =
   if (Environ.typing_flags env).enable_VM then
-    let ctyp = Retyping.get_type_of env sigma c in
+    (* Hack: drop the evarmap *)
+    let _sigma, ctyp = Typing.type_of env sigma c in
     Vnorm.cbv_vm env sigma c ctyp
   else begin
     warn_vm_disabled ();
@@ -44,7 +45,8 @@ let warn_native_compute_disabled =
 
 let cbv_native env sigma c =
   if (Environ.typing_flags env).enable_native_compiler then
-    let ctyp = Retyping.get_type_of env sigma c in
+    (* Hack: drop the evarmap *)
+    let _sigma, ctyp = Typing.type_of env sigma c in
     Nativenorm.native_norm env sigma c ctyp
   else
     (warn_native_compute_disabled ();
