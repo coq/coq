@@ -300,7 +300,7 @@ Section extended_euclid_algorithm.
       [u1*a+u2*b=u3] and [v1*a+v2*b=v3] and [gcd(u3,v3)=gcd(a,b)].
       *)
 
-  Lemma euclid_rec :
+  Definition euclid_rec :
     forall v3:Z,
       0 <= v3 ->
       forall u1 u2 u3 v1 v2:Z,
@@ -333,12 +333,12 @@ Section extended_euclid_algorithm.
         * intros; apply H3.
           apply Zis_gcd_for_euclid with q; assumption.
     - assumption.
-  Qed.
+  Defined.
 
   (** We get Euclid's algorithm by applying [euclid_rec] on
       [1,0,a,0,1,b] when [b>=0] and [1,0,a,0,-1,-b] when [b<0]. *)
 
-  Lemma euclid : Euclid.
+  Definition euclid : Euclid.
   Proof.
     case (Z_le_gt_dec 0 b); intro.
     - intros;
@@ -349,7 +349,7 @@ Section extended_euclid_algorithm.
         auto; try ring.
       + now apply Z.opp_nonneg_nonpos, Z.lt_le_incl, Z.gt_lt.
       + auto with zarith.
-  Qed.
+  Defined.
 
 End extended_euclid_algorithm.
 

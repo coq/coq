@@ -10,6 +10,7 @@
 
 Require Import BinInt.
 Require Import Zcompare.
+Require Import ZArith_dec.
 Require Import Zorder.
 Require Import Znat.
 Require Import Zmisc.
@@ -135,6 +136,16 @@ Section Efficient_Rec.
    - now destruct Hz.
   Qed.
 
+  Local Definition transparent_le_lt x y z : (True -> x <= y < z) -> x <= y < z :=
+    match Z_le_dec x y with
+    | left l =>
+         match Z_lt_dec y z with
+         | left r => fun _ => conj l r
+         | right b => fun H => ltac:(abstract intuition idtac)
+         end
+    | right b => fun H => ltac:(abstract intuition idtac)
+    end.
+
   (** A more general induction principle on non-negative numbers using [Z.lt]. *)
 
   Lemma Zlt_0_rec :
@@ -148,7 +159,8 @@ Section Efficient_Rec.
    - apply Hrec; trivial. intros y (Hy,Hy').
      assert (0 < 0) by now apply Z.le_lt_trans with y.
      discriminate.
-   - apply Hrec; trivial. intros y (Hy,Hy').
+   - apply Hrec; trivial. intros y Hy0.
+     case (transparent_le_lt _ _ _ (fun _ => Hy0)) as (Hy,Hy'); clear Hy0.
      apply IH; trivial. now split.
    - now destruct Hx.
   Defined.
