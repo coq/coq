@@ -323,6 +323,7 @@ let solve_remaining_evars ?hook (flags : inference_flags) env ?initial sigma =
     | UseTC -> apply_typeclasses ~program_mode ~fail_evar:false env sigma frozen
     | NoUseTC | UseTCForConv -> sigma
   in
+  let frozen = frozen_and_pending_holes (initial, sigma) in
   let sigma = match hook with
   | None -> sigma
   | Some hook -> apply_inference_hook hook env sigma frozen
