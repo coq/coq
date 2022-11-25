@@ -715,7 +715,7 @@ Coq version 8.15 integrates many bug fixes, deprecations and cleanups as well
 as a few new features. We highlight some of the most impactful changes here:
 
   - The :tacn:`apply with <apply>` tactic :ref:`no longer renames arguments <815ApplyWith>`
-    unless compatibility flag :flag:`Apply With Renaming` is set.
+    unless compatibility flag `Apply With Renaming` is set.
 
   - :ref:`Improvements <815Auto>` to the :tacn:`auto` tactic family,
     fixing the :cmd:`Hint Unfold` behavior, and generalizing the use
@@ -911,7 +911,7 @@ Tactics
   .. _815ApplyWith:
 
 - **Changed:**
-  ``apply with`` does not rename arguments unless using compatibility flag :flag:`Apply With Renaming`
+  ``apply with`` does not rename arguments unless using compatibility flag `Apply With Renaming`
   (`#13837 <https://github.com/coq/coq/pull/13837>`_,
   fixes `#13759 <https://github.com/coq/coq/issues/13759>`_,
   by Gaëtan Gilbert).

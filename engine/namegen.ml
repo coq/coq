@@ -481,21 +481,3 @@ let compute_displayed_name_in_gen f env sigma =
 let compute_displayed_let_name_in env sigma flags avoid na =
   let fresh_id = next_name_for_display env sigma flags na avoid in
   (Name fresh_id, Id.Set.add fresh_id avoid)
-
-let rename_bound_vars_as_displayed env sigma avoid tenv c =
-  let rec rename avoid tenv c =
-    match EConstr.kind sigma c with
-    | Prod (na,c1,c2)  ->
-        let na',avoid' =
-          compute_displayed_name_in env sigma
-            (RenamingElsewhereFor (tenv,c2)) avoid na.binder_name c2 in
-        mkProd ({na with binder_name=na'}, c1, rename avoid' (na' :: tenv) c2)
-    | LetIn (na,c1,t,c2) ->
-        let na',avoid' =
-          compute_displayed_let_name_in env sigma
-            (RenamingElsewhereFor (tenv,c2)) avoid na.binder_name in
-        mkLetIn ({na with binder_name=na'},c1,t, rename avoid' (na' :: tenv) c2)
-    | Cast (c,k,t) -> mkCast (rename avoid tenv c, k,t)
-    | _ -> c
-  in
-  rename avoid tenv c

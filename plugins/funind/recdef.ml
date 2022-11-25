@@ -103,15 +103,6 @@ let pf_get_new_ids idl g =
 let next_ident_away_in_goal ids avoid =
   next_ident_away_in_goal (Global.env ()) ids (Id.Set.of_list avoid)
 
-let compute_renamed_type gls id =
-  let t = Tacmach.pf_get_hyp_typ id gls in
-  if Clenv.rename_with () then
-    rename_bound_vars_as_displayed (Global.env ()) (Proofview.Goal.sigma gls)
-      (*no avoid*) Id.Set.empty (*no rels*) []
-      t
-  else
-    t
-
 let h'_id = Id.of_string "h'"
 let teq_id = Id.of_string "teq"
 let ano_id = Id.of_string "anonymous"
@@ -956,7 +947,7 @@ let rec make_rewrite_list expr_info max = function
             (fun _ _ -> str "rewrite heq on " ++ Id.print p)
             (Proofview.Goal.enter (fun g ->
                  let sigma = Proofview.Goal.sigma g in
-                 let t_eq = compute_renamed_type g hp in
+                 let t_eq = Tacmach.pf_get_hyp_typ hp g in
                  let k, def =
                    let k_na, _, t = destProd sigma t_eq in
                    let _, _, t = destProd sigma t in
@@ -989,7 +980,7 @@ let make_rewrite expr_info l hp max =
        (tclTHENS
           (Proofview.Goal.enter (fun g ->
                let sigma = Proofview.Goal.sigma g in
-               let t_eq = compute_renamed_type g hp in
+               let t_eq = Tacmach.pf_get_hyp_typ hp g in
                let k, def =
                  let k_na, _, t = destProd sigma t_eq in
                  let _, _, t = destProd sigma t in
