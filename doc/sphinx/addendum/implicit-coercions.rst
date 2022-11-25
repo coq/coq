@@ -168,7 +168,7 @@ Declaring Coercions
 
   .. exn:: @qualid not declared.
 
-     :token:`qualid` is not a defined globally.
+     :token:`qualid` is not defined globally.
 
   .. exn:: @qualid is already a coercion.
 
