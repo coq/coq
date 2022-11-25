@@ -520,7 +520,7 @@ Lemma diveucl_spec x y :
   let (q,r) := diveucl x y in
   (φ  q , φ  r ) = Z.div_eucl φ  x  φ  y .
 Proof.
- rewrite diveucl_def_spec; unfold diveucl_def; rewrite div_spec, mod_spec; unfold Z.div, Zmod.
+ rewrite diveucl_def_spec; unfold diveucl_def; rewrite div_spec, mod_spec; unfold Z.div, Z.modulo.
  destruct (Z.div_eucl φ  x  φ  y ); trivial.
 Qed.
 
@@ -702,7 +702,7 @@ Proof.
      replace ((φ m + φ n) mod wB)%Z with ((((φ m + φ n) - wB) + wB) mod wB)%Z.
      - rewrite -> Zplus_mod, Z_mod_same_full, Zplus_0_r, !Zmod_small; auto with zarith.
        rewrite !Zmod_small; auto with zarith.
-     - apply (f_equal2 Zmod); auto with zarith.
+     - apply (f_equal2 Z.modulo); auto with zarith.
    }
    case_eq (n <=? m + n)%uint63; auto.
    rewrite leb_spec, H1; auto with zarith.
@@ -781,7 +781,7 @@ Lemma lsl_add_distr x y n: (x + y) << n = ((x << n) + (y << n))%uint63.
 Proof.
  apply to_Z_inj; rewrite -> !lsl_spec, !add_spec, Zmult_mod_idemp_l.
  rewrite -> !lsl_spec, <-Zplus_mod.
- apply (f_equal2 Zmod); auto with zarith.
+ apply (f_equal2 Z.modulo); auto with zarith.
 Qed.
 
 Lemma lsr_M_r x i (H: (digits <=? i = true)%uint63) : x >> i = 0%uint63.

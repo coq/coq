@@ -257,7 +257,7 @@ Proof.
   unfold Z.quot; simpl; destruct N.pos_div_eucl; simpl; destruct n; simpl; auto with zarith.
 Qed.
 
-(** * Relations between usual operations and Zmod and Zdiv *)
+(** * Relations between usual operations and Z.modulo and Z.div *)
 
 (** First, a result that used to be always valid with Zdiv,
     but must be restricted here.
