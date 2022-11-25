@@ -1,10 +1,27 @@
-Inductive R : nat -> Prop := ER : forall n, R n -> R (S n).
+From Coq Require Import Utf8.
 
-Goal (forall (n : nat), R n -> False) -> True -> False.
-Proof.
-intros H0 H1.
-eapply H0.
-clear H1.
-apply ER.
-simpl.
+Class ElimInv {X Y : Type} (Pout : X → Y) (Pclose : X → option Y) :=
+  elim_inv : False.
+
+Class IntoAcc {X Y : Type} (E1 E2 : nat) (α β : X → Y) :=
+  into_acc : False.
+
+Global Instance elim_inv_acc_with_close {X Y : Type} E1 E2 α β (foo : nat → nat → Y → Y) :
+  IntoAcc E1 E2 α β →
+  ElimInv (X:=X) (Y:=Y) α (λ x, Some (foo E1 E2 (β x))).
+Proof. intros []. Qed.
+
+Lemma tac_inv_elim {X Y : Type} Pout Pclose :
+  ElimInv (X:=X) (Y:=Y) Pout Pclose →
+  False.
+Proof. intros []. Qed.
+
+Global Instance into_acc_na E n :
+  IntoAcc (X:=unit) (Y:=nat) E E (λ _, 0) (λ _, 5 + n).
+Proof. Admitted.
+
+Goal False.
+eapply tac_inv_elim with (Pclose:=(λ xx, Some _)).
+eapply @elim_inv_acc_with_close.
+eapply @into_acc_na. (* EXPLOSION *)
 Abort.
