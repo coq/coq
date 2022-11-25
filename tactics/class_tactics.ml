@@ -62,16 +62,6 @@ let get_typeclasses_iterative_deepening =
     ~key:iterative_deepening_opt_name
     ~value:false
 
-(** [typeclasses_filtered_unif] governs the unification algorithm used by type
-    classes. If enabled, a new algorithm based on pattern filtering and refine
-    will be used. When disabled, the previous algorithm based on apply will be
-    used. *)
-let get_typeclasses_filtered_unification =
-  Goptions.declare_bool_option_and_ref
-    ~depr:true
-    ~key:["Typeclasses";"Filtered";"Unification"]
-    ~value:false
-
 module Debug : sig
   val ppdebug : int -> (unit -> Pp.t) -> unit
 
@@ -181,36 +171,6 @@ let unify_resolve ~with_evars flags h diff = match diff with
   Clenv.res_pf ~with_evars ~with_classes:false ~flags clenv
   end
 
-(** Application of a lemma using [refine] instead of the old [w_unify] *)
-let unify_resolve_refine flags h diff =
-  let len = match diff with None -> None | Some (diff, _) -> Some diff in
-  Proofview.Goal.enter begin fun gls ->
-  let open Clenv in
-  let env = Proofview.Goal.env gls in
-  let concl = Proofview.Goal.concl gls in
-  Refine.refine ~typecheck:false begin fun sigma ->
-    let sigma, term = Hints.fresh_hint env sigma h in
-    let ty = Retyping.get_type_of env sigma term in
-    let sigma, cl = Clenv.make_evar_clause env sigma ?len ty in
-    let term = applist (term, List.map (fun x -> x.hole_evar) cl.cl_holes) in
-    let flags = Evarconv.default_flags_of flags.core_unify_flags.modulo_delta in
-    let sigma = Evarconv.unify_leq_delay ~flags env sigma cl.cl_concl concl in
-    (sigma, term)
-    end
-  end
-
-let unify_resolve_refine flags h diff =
-  Proofview.tclORELSE
-    (unify_resolve_refine flags h diff)
-    (fun (exn,info) ->
-      match exn with
-      | Evarconv.UnableToUnify _ ->
-        Tacticals.tclZEROMSG ~info (str "Unable to unify")
-      | e when CErrors.noncritical e ->
-        Tacticals.tclZEROMSG ~info (str "Unexpected error")
-      | _ ->
-        Exninfo.iraise (exn,info))
-
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
 *)
@@ -229,21 +189,6 @@ let with_prods nprods h f =
          begin fun gl ->
          if Int.equal nprods 0 then f None
          else Tacticals.tclZEROMSG (str"Not enough premisses") end
-
-let matches_pattern concl pat =
-  let matches env sigma =
-    match pat with
-    | None -> Proofview.tclUNIT ()
-    | Some pat ->
-       if Constr_matching.is_matching env sigma pat concl then
-         Proofview.tclUNIT ()
-       else
-         Tacticals.tclZEROMSG (str "pattern does not match")
-  in
-   Proofview.Goal.enter begin fun gl ->
-     let env = Proofview.Goal.env gl in
-     let sigma = Proofview.Goal.sigma gl in
-       matches env sigma end
 
 (** Semantics of type class resolution lemma application:
 
@@ -306,7 +251,6 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   tclSOLVE tacl
 
 and e_my_find_search db_list local_db secvars hdc complete only_classes env sigma concl0 =
-  let open Proofview.Notations in
   let prods, concl = EConstr.decompose_prod_assum sigma concl0 in
   let nprods = List.length prods in
   let allowed_evars =
@@ -324,43 +268,20 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
   in
   let tac_of_hint =
     fun (flags, h) ->
-      let p = FullHint.pattern h in
       let name = FullHint.name h in
       let tac = function
         | Res_pf h ->
-           if get_typeclasses_filtered_unification () then
-             let tac =
-               with_prods nprods h
-                          (fun diff ->
-                             matches_pattern concl p <*>
-                               unify_resolve_refine flags h diff)
-             in Tacticals.tclTHEN tac Proofview.shelve_unifiable
-           else
-             let tac =
-               with_prods nprods h (unify_resolve ~with_evars:false flags h) in
-               Proofview.tclBIND (Proofview.with_shelf tac)
-                  (fun (gls, ()) -> shelve_dependencies gls)
+          let tac =
+            with_prods nprods h (unify_resolve ~with_evars:false flags h) in
+            Proofview.tclBIND (Proofview.with_shelf tac)
+              (fun (gls, ()) -> shelve_dependencies gls)
         | ERes_pf h ->
-           if get_typeclasses_filtered_unification () then
-             let tac = (with_prods nprods h
-                  (fun diff ->
-                             matches_pattern concl p <*>
-                             unify_resolve_refine flags h diff)) in
-             Tacticals.tclTHEN tac Proofview.shelve_unifiable
-           else
-             let tac =
-               with_prods nprods h (unify_resolve ~with_evars:true flags h) in
-               Proofview.tclBIND (Proofview.with_shelf tac)
-                  (fun (gls, ()) -> shelve_dependencies gls)
+          let tac =
+            with_prods nprods h (unify_resolve ~with_evars:true flags h) in
+            Proofview.tclBIND (Proofview.with_shelf tac)
+              (fun (gls, ()) -> shelve_dependencies gls)
         | Give_exact h ->
-           if get_typeclasses_filtered_unification () then
-             let tac =
-               matches_pattern concl p <*>
-                 Proofview.Goal.enter
-                   (fun gl -> unify_resolve_refine flags h None) in
-             Tacticals.tclTHEN tac Proofview.shelve_unifiable
-           else
-             e_give_exact flags h
+          e_give_exact flags h
       | Res_pf_THEN_trivial_fail h ->
          let fst = with_prods nprods h (unify_resolve ~with_evars:true flags h) in
          let snd = if complete then Tacticals.tclIDTAC
@@ -372,17 +293,11 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
       in
       let tac = FullHint.run h tac in
       let tac = if complete then Tacticals.tclCOMPLETE tac else tac in
-      let pp() =
-        match p with
-        | Some pat when get_typeclasses_filtered_unification () ->
-           str " with pattern " ++ Printer.pr_constr_pattern_env env sigma pat
-        | _ -> mt ()
-      in
       let extern = match FullHint.repr h with
         | Extern _ -> true
         | _ -> false
       in
-      (tac, FullHint.priority h, extern, name, lazy (FullHint.print env sigma h ++ pp ()))
+      (tac, FullHint.priority h, extern, name, lazy (FullHint.print env sigma h))
   in
   let hint_of_db = hintmap_of env sigma hdc secvars concl in
   let hintl = List.map_filter (fun db -> match hint_of_db db with

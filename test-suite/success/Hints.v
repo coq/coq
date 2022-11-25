@@ -35,14 +35,6 @@ Create HintDb predconv discriminated.
 #[export] Hint Resolve pred0 | 1 (pred _) : predconv.
 #[export] Hint Resolve predf | 0 : predconv.
 
-Goal exists n, pred n.
-  eexists.
-  Set Typeclasses Filtered Unification.
-  Set Typeclasses Debug Verbosity 2.
-  (* predf is not tried as it doesn't match the goal *)
-  typeclasses eauto with pred.
-Qed.
-
 Parameter predconv : forall n, pred n -> pred (0 + S n).
 
 (* The inferred pattern contains 0 + ?n, syntactic match will fail to see convertible
@@ -61,7 +53,6 @@ Goal pred 3.
   typeclasses eauto with pred2conv.
 Abort.
 
-Set Typeclasses Filtered Unification.
 Set Typeclasses Debug Verbosity 2.
 #[export] Hint Resolve predconv | 1 (pred _) : pred.
 #[export] Hint Resolve predconv | 1 (pred (S _)) : predconv.
@@ -75,14 +66,6 @@ Goal pred 3.
      full unification is allowed *)
   typeclasses eauto with predconv.
 Qed.
-
-(** The other way around: goal contains redexes instead of instances *)
-Goal exists n, pred (0 + n).
-  eexists.
-  (* pred0 (pred _) matches the goal *)
-  typeclasses eauto with predconv.
-Qed.
-
 
 (* Checks that local names are accepted *)
 Section A.
