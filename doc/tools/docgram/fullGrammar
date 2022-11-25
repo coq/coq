@@ -1657,7 +1657,6 @@ simple_tactic: [
 | "evar" constr
 | "instantiate" "(" ident ":=" lglob ")"
 | "instantiate" "(" natural ":=" lglob ")" hloc
-| "instantiate"
 | "stepl" constr "by" tactic
 | "stepl" constr
 | "stepr" constr "by" tactic
