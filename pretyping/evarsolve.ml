@@ -1543,8 +1543,9 @@ let solve_candidates unify flags env evd (evk,argsv) rhs =
           (* solve_candidates might have been called recursively in the mean *)
           (* time and the evar been solved by the filtering process *)
          if Evd.is_undefined evd evk then
-           let evd' = Evd.define evk c evd in
-             check_evar_instance unify flags env evd' evk c
+           let evd = check_evar_instance unify flags env evd evk c in
+           let evd = Evd.define evk c evd in
+           evd
          else evd
       | l, _::_  (* At least one discarded candidate *) ->
           let candidates = List.map fst l in
