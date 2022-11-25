@@ -627,8 +627,6 @@ command: [
 | "Obligation" natural withtac
 | "Next" "Obligation" "of" identref withtac
 | "Next" "Obligation" withtac
-| "Solve" "Obligation" natural "of" identref "with" tactic
-| "Solve" "Obligation" natural "with" tactic
 | "Solve" "Obligations" "of" identref "with" tactic
 | "Solve" "Obligations" "of" identref
 | "Solve" "Obligations" "with" tactic

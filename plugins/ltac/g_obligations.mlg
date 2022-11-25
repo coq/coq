@@ -102,13 +102,6 @@ VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE declare_
 | [ "Next" "Obligation" withtac(tac) ] -> { next_obligation None tac }
 END
 
-VERNAC COMMAND EXTEND Solve_Obligation CLASSIFIED AS SIDEFF STATE program
-| [ "Solve" "Obligation" natural(num) "of" identref(name) "with" tactic(t) ] ->
-    { try_solve_obligation num (Some name.CAst.v) (Some (Tacinterp.interp t)) }
-| [ "Solve" "Obligation" natural(num) "with" tactic(t) ] ->
-    { try_solve_obligation num None (Some (Tacinterp.interp t)) }
-END
-
 VERNAC COMMAND EXTEND Solve_Obligations CLASSIFIED AS SIDEFF STATE program
 | [ "Solve" "Obligations" "of" identref(name) "with" tactic(t) ] ->
     { try_solve_obligations (Some name.CAst.v) (Some (Tacinterp.interp t)) }
