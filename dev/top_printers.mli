@@ -27,6 +27,8 @@ val ppkn : Names.KerName.t -> unit
 val ppmind : Names.MutInd.t -> unit
 val ppind : Names.inductive -> unit
 
+val ppuint63 :  Uint63.t -> unit
+
 val ppsp : Libnames.full_path -> unit
 val ppqualid : Libnames.qualid -> unit
 
@@ -41,6 +43,9 @@ val ppevar : Evar.t -> unit
 (* Multiple printers for Constr.t *)
 val ppconstr : Constr.t -> unit (* by Termops printer *)
 val ppconstr_univ : Constr.t -> unit
+
+val pp_constr_parray : Constr.t Parray.t -> unit
+val pp_fconstr_parray : CClosure.fconstr Parray.t -> unit
 
 (* Extern as type *)
 val pptype : Constr.types -> unit

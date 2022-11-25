@@ -85,6 +85,16 @@ let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
 let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
+let ppuint63 i = pp (str (Uint63.to_string i))
+
+let pp_parray pr a =
+  let a, def = Parray.to_array a in
+  let a = Array.to_list a in
+  pp (str "[|" ++ prlist_with_sep (fun () -> str ";" ++ spc()) pr a ++ spc() ++ str "|" ++ spc() ++ pr def ++ str "|]")
+
+let pp_constr_parray = pp_parray pr_constr
+let pp_fconstr_parray = pp_parray (fun f -> pr_constr (CClosure.term_of_fconstr f))
+
 let ppfsubst s =
   let (s, k) = Esubst.Internal.repr s in
   let sep () = str ";" ++ spc () in
