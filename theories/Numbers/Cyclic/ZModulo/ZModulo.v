@@ -11,6 +11,8 @@
 (** * Type [Z] viewed modulo a particular constant corresponds to [Z/nZ]
       as defined abstractly in CyclicAxioms. *)
 
+(** This library has been deprecated since Coq version 8.17. *)
+
 (** Even if the construction provided here is not reused for building
   the efficient arbitrary precision numbers, it provides a simple
   implementation of CyclicAxioms, hence ensuring its coherence. *)
