@@ -10,7 +10,7 @@ Coq configuration basics
 Describes the basics of Coq configuration that affect
 running and compiling Coq scripts.  It recommends preferred ways to
 install Coq, manage installed packages and structure your project
-directories for maximum ease of use.
+directories for ease of use.
 
 Installing Coq and Coq packages with opam
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,6 +69,9 @@ future the package name to logical name mapping will be more readily available.
 Once you know the logical name of the package, use it to load compiled
 files from the package with the :cmd:`Require` command.
 
+A :gdef:`package` is a group of files in a top directory and its subdirectories
+that's installed as a unit.  Packages are compiled from *projects*.  These terms
+are virtually interchangeable.
 
 Setup for working on your own projects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,71 +84,75 @@ be copied or moved.
 We encourage you to use a source code control system for any non-trivial
 project because it makes it easy to track the history of your changes.
 `git <https://git-scm.com/>`_ is the system most used by Coq projects.
-Typically, each package has its own git repository.
+Typically, each project has its own git repository.
 
-**Single directory projects.**  If your project has a single file (and
-depends only on packages in the Coq installation), put it in any directory
-you like and run Coq from that directory.  If your project has multiple files,
-then you need to compile them in an order that matches their dependencies.
-If B.v depends on A.v, then you should compile A.v before B.v.  You can do this
-with :n:`coqc A.v` followed by :n:`coqc B.v`, but you may find it tedious to manage
-the dependencies.  You may find it easier to treat your project as a
-multi-directory project.
+For a project that has only a single file, you can create the file wherever you like
+and then step through it in one of the IDEs for Coq, such as
+:ref:`coqintegrateddevelopmentenvironment`,
+`ProofGeneral <https://proofgeneral.github.io/>`_,
+`vsCoq <https://github.com/coq-community/vscoq>`_
+and `Coqtail <https://github.com/whonore/Coqtail>`_.
 
-**Multi-directory projects.**  For these, we recommend using `_CoqProject` files
-to define one or more packages for your project.  With that, you can automatically
-generate a makefile that matches the dependencies.
-A :gdef:`package` is a group of files in a top directory and its subdirectories
-that's built and installed as a unit, just like the opam packages mentioned above.
-`_CoqProject` must be in the top directory.
-
-Large projects that have multiple packages (either their own code or dependencies
-on packages that you've not installed as user-contributed packages) need
-additional setup.  The :ref:`COQPATH <COQPATH>` environment variable is good mechanism
-for such projects.
-
+If your project has multiple files in a single directory that depend on each
+other through :cmd:`Require` commands, they must be compiled in an order that
+matches their dependencies.
 Scripts in `.v` files must be compiled to `.vo` files using `coqc` before they
-can be :cmd:`Require`\d in other files.  Currently, each `.vo` file is created in
-the same directory as its `.v` file.  Furthermore, Coq has to know the :term:`logical
-path` to associate with the directories containing your compiled files.
+can be :cmd:`Require`\d in other files.  Currently, the `.vo` file is created in
+the same directory as its `.v` file.  For example,
+if B.v depends on A.v, then you should compile A.v before B.v.  You can do this
+with :n:`coqc A.v` followed by :n:`coqc B.v`, but you may find it tedious to
+manage the dependencies, particularly as the number of files increases.
+
+If your project files are in multiple directories, you would also need to pass
+additional command-line -Q and -R parameters to your IDE.  More details to manage
+and keep track of.
+
+Instead, by creating a `_CoqProject` file, you can automatically generate
+a makefile that applies the correct dependencies when it compiles your project.
+In addition, the IDEs find and interpret `_CoqProject` files, so project files
+spread over multiple directories will work seamlessly.  If you're editing `dir/foo.v`,
+the IDEs apply settings from the `_CoqProject` file in `dir` or the closest
+ancestor directory.
+
+The `_CoqProject` file identifies the :term:`logical path` to associate with the
+directories containing your compiled files.  The `_CoqProject` file is normally
+in the top directory of the project.  Occasionally it may be useful to have
+additional `_CoqProject` files in subdirectories, for example in order to pass
+different startup parameters to Coq for particular scripts.
 
 .. _building_with_coqproject:
 
-Building a package with _CoqProject (overview)
+Building a project with _CoqProject (overview)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Note: building with `dune` is experimental.  See :ref:`building_dune`.
 
 The `_CoqProject` file contains the information needed to generate a makefile
 for building your project.  Your `_CoqProject` file should be in
-the top directory of your package's source tree.  We recommend using the
-:term:`logical name` of the package as the name of the top directory.  Also,
-avoid putting your code into subdirectories such as "src" unless you want
-that to be part of the :term:`logical path` in Coq.
+the top directory of your project's source tree.  We recommend using the
+:term:`logical name` of the project as the name of the top directory.
 
-For example, here's a minimal _CoqProject file for the `MyPackage` package
+For example, here is a minimal `_CoqProject` file for the `MyPackage` project
 (the logical name of the package), which includes all the ``.v`` files (and
-other file types) in the current directory and its subdirectories::
+other file types) in the `theories` directory and its subdirectories::
 
-  -R . MyPackage
-  .
+  -R theories MyPackage
+  theories
 
+:n:`-R theories MyPackage` (see :ref:`here <-Q-option>`) declares that `theories` is a top
+directory of `MyPackage`.  :n:`theories` on the second line declares that all `.v` files
+in `theories` and its subdirectories are indeed included in the project.
+
+In addition, you can list individual files, for example the two script files
+`theories/File1.v` and `theories/SubDir/File2.v` whose logical paths are `MyPackage.File1` and
+`MyPackage.SubDir.File2`::
+
+  -R theories MyPackage
+  theories/File1.v
+  theories/SubDir/File2.v
+
+The generated makefile only processes the specified files.
 You can list multiple directories if you wish.
-
-In addition, you can list individual files, for example for the two script files
-`File1.v` and `SubDir/File2.v` whose logical paths are `MyPackage.File1` and
-`MyPackage.SubDir.File2`.  We recommend naming that directory `MyPackage`, the
-same as the logical name::
-
-  -R . MyPackage
-  File1.v
-  SubDir/File2.v
-
-:n:`-R . MyPackage` (see :ref:`here <-Q-option>`) declares that all `.v` files in the directory containing
-`_CoqProject` or any subdirectory are part of the package `MyPackage`.  We recommend
-using a single `-R` with `.` as the :term:`physical path` for simplicity.  You must also
-identify all the `.v` files in your package.  We recommend using directory names
-where possible for brevity.  The order of the entries doesn't matter.
 
 .. I think dotted names are not useful.  For example, this doesn't produce usable
    .vo files because a.v and b.v are not in an `Abc` subdirectory::
@@ -164,7 +171,7 @@ a bit; it shows the logical names defined in the Coq process.
 
 Then:
 
-- Generate a makefile from _CoqProject with
+- Generate a makefile from `_CoqProject` with
   :n:`coq_makefile -f _CoqProject -o CoqMakefile` and
 
 - Compile your project with :n:`make -f CoqMakefile` as needed.
@@ -173,7 +180,7 @@ If you add more files to your project that are not in directories listed
 in `_CoqProject`, update `_CoqProject` and re-run `coq_makefile` and `make`.
 
 .. todo we should use a standard name for the makefile so IDEs can find it.
-   Maybe you should be allowed to include "-o MAKEFILENAME" in the _CoqProject,
+   Maybe you should be allowed to include "-o MAKEFILENAME" in the `_CoqProject`,
    maybe default to "makefile"; provide a name only if you want to use a wrapper
    Then mandate that the file be called simply "makefile" so IDEs can find it.
 
@@ -184,10 +191,6 @@ to a new version of Coq.
 In CoqIDE, you must explicitly save modified buffers before running `make` and
 restart the Coq interpreter in any buffers in which you're running code.
 More details :ref:`here <coqide_make_note>`.
-
-If you want to build an entire multi-package project at once, you're on your own.
-There's currently no tooling to identify the internal dependencies between the packages
-(and thus the order in which to build the packages).
 
 See :ref:`coq_makefile` for a complete description of `coq_makefile` and the
 files it generates.
@@ -271,76 +274,80 @@ In :cmd:`Require` commands referring to the current package (if `_CoqProject`
 uses `-R`) or Coq's standard library can be referenced with a short name without
 a `From` clause provided that the logical path is unambiguous (as if they are
 available through `-R`).  In contrast, :cmd:`Require` commands that load files from other
-locations such as `user-contrib` or `COQPATH` must either use an exact logical path
+locations such as `user-contrib` must either use an exact logical path
 or include a `From` clause (as if they are available through `-Q`).  This is done
-to reduce the number of ambiguous logical paths.
+to reduce the number of ambiguous logical paths.  We encourage using `From`
+clauses.
 
-The mechanisms for creating logical paths for your multi-directory project are:
+Note that if you use a `_CoqProject` file, the `COQPATH` environment variable is not helpful.
+If you use `COQPATH` without a `_CoqProject`, a file in `MyPackage/theories/SubDir/File.v` will be
+loaded with the logical name `MyPackage/theories/SubDir.File`, which may not be what you want.
 
-- Through command line options passed on the command line to `coqc` and `coqide`,
-  such as :n:`-Q <filesystem path> <logical name>`.  The resulting logical path
-  is the logical name followed by a suffix of the physical path (as for `Coq`
-  above).  Use these options directly if you must.  Command line options are described
-  :ref:`here <command-line-options>`.
+If you associate the same logical name with more than one directory, Coq
+looks for the `.vo` file in the most recently added path first (i.e., the one
+that appears earlier in the :cmd:`Print LoadPath` output).
 
-- Using the command line options given in the `_CoqProject` file.
-  When you compile a file with `coqc` or step through a file with CoqIDE or
-  the other IDEs, they automatically look for a `_CoqProject` file in a
-  parent directory of the script file, and, if found, they apply the parameters from
-  `_CoqProject`.  Note that the `_CoqProject` file is ignored when Coq loads
-  compiled files from the package; every `.vo` file under the package directory is loaded.
+Modifying multiple interdependent projects at the same time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Coq tools are limited to using only one `_CoqProject` at a time, so multi-package
-  projects need another mechanism.
+If you want to modify multiple interdependent projects simultaneously,
+good practice recommends that
+all of them should be uninstalled.  Since the IDEs only apply a single
+`_CoqProject` file for each script, the best way to make them work properly is to
+temporarily edit the `_CoqProject` for each project so it includes the other
+uninstalled projects it depends on, then regenerate the makefile.  This may
+make your `_CoqProject` system dependent.  Such dependencies shouldn't be
+present in published packages.
 
-.. _COQPATH:
+For example, if
+project `A` requires project `B`, add `-Q <directory path of B> B` to the
+`_CoqProject` in `A`.  This will override any installed version of `B` only
+when you're working on scripts in `A`.
 
-- The `COQPATH` environment variable, which contains a list of directories.
-  Each of their subdirectories is a separately-compiled package.  The entire
-  logical path is derived from the directory name (as for `Bignums` above).
-  See :ref:`customization-by-environment-variables`.
+If you want to build all the related projects at once, you're
+on your own.  There's currently no tooling to identify the internal dependencies
+between the projects (and thus the order in which to build them).
 
-  .. todo improve what's written at the hyperlink
-
-- :cmd:`Add LoadPath` adds a new logical path/physical path pair.  We recommend
-  you avoid using :cmd:`Add LoadPath` because embedding physical paths in your scripts
-  makes it harder to install and use them on another computer.
-
-We recommend using `COQPATH`.  For simpler developments, it could have a single
-entry pointing to a directory that contains your various separate projects,
-each in its own subdirectory.  For more advanced
-development work, you may want to set `COQPATH` differently for different projects
-or different versions of a project.  Currently, if you want to change `COQPATH`
-while you're using CoqIDE, you must restart CoqIDE or start another CoqIDE process
-after making the change.  Perhaps in the future CoqIDE will show the current
-setting for and allow changing `COQPATH`.
-
-  .. note ::
-     Packages that have only the directory name ``.`` in ``-R <dirname> <dirpath>``
-     have logical names that map exactly to the directory names.  Including such
-     packages in a directory in `COQPATH` will work fine.
-
-     In contrast, packages that have a directory name other than `.` in `-R`
-     have subdirectories that don't become part of the :term:`logical path`.  If they're
-     installed in the Coq directories, they're fine.  If they're in `COQPATH`,
-     the `_CoqProject` file is essential to getting the correct logical paths within the packages.
-     Since Coq tools currently support only  a single `_CoqProject` file, such packages
-     work correctly only if the IDE is running a script that's part of that package.
-
-     Perhaps Coq will eventually support multiple `_CoqProject` files at once to eliminate
-     this limitation.
-
-Alternatively, if you have a single-package project that depends on external
-packages that were not installed with the Coq binaries or accessible through
-`COQPATH`, you could add `-Q` options to the `_CoqProject` that point to the
-dependencies.  Of course, this makes your `_CoqProject` system dependent.
-Those added options shouldn't appear in published packages.
 
 .. todo I thought @herbelin added code to complain about ambiguous short names
    I made up some stuff below, need to check it:
 
-If you associate the same logical name with more than one directory, Coq
-uses the last one added (i.e., that appears earlier in :cmd:`Print LoadPath`).
+Installed and uninstalled packages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The directory structure of installed packages (i.e., in the `user-contrib` directory
+of the Coq installation) differs from that generally used for the project source tree.
+The installed directory structure omits the pathname given in the `-R` and `-Q`
+parameters that aren't part of the logical name of a script.  For example, the `theories`
+pathname used in this `_CoqProject` file is omitted from the installed pathname::
+
+  -R theories MyPackage
+  theories/File1.v
+  theories/SubDir/File2.v
+
+`theories/File1.v` appears in the directory `user-contrib/MyPackage`and `theories/SubDir/File2.v`
+ is in `user-contrib/MyPackage/SubDir`
+
+Use :n:`make -f CoqMakefile install` to install a project from a directory.
+
+If you try to step through scripts in installed packages (e.g. to understand
+the proofs therein), you may get unexpected failures for two reasons (which
+don't apply to scripts in the standard library, which have logical paths
+beginning with `Coq`):
+
+* `_CoqProject` files often have at least one `-R` parameter, while
+  installed packages are loaded with the less-permissive `-Q` option described in
+  the :cmd:`Require` command, which may cause a :cmd:`Require` to fail.  One workaround is
+  to create a `_CoqProject` file containing the line `-R . <project directory>` in
+  `user-contrib/<project directory>`.  In this case, the `_CoqProject` doesn't
+  need to list all the source files.
+
+* Sometimes, the `_CoqProject` file specifies options that affect the
+  behavior of Coq, such as `-impredicative-set`.  These can similarly be
+  added in `_CoqProject` files in `user-contrib`.
+
+Another way to get around these problems is to download the source tree for the
+project in a new directory and compile it before stepping through its scripts.
 
 Upgrading to a new version of Coq
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
