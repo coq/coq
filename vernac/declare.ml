@@ -2374,16 +2374,6 @@ let solve_all_obligations ~pm tac =
   State.fold pm ~init:pm ~f:(fun k v pm ->
       solve_prg_obligations ~pm v tac |> fst)
 
-let try_solve_obligation ~pm n prg tac =
-  let prg = get_unique_prog ~pm prg in
-  let {obls; remaining} = Internal.get_obligations prg in
-  let obls' = Array.copy obls in
-  match solve_obligation_by_tac prg obls' n tac with
-  | Some prg' ->
-    let pm, _ = update_obls ~pm prg' obls' (pred remaining) in
-    pm
-  | None -> pm
-
 let try_solve_obligations ~pm n tac =
   solve_obligations ~pm n tac |> fst
 
