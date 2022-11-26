@@ -653,6 +653,58 @@ Extraction
   and `#13288 <https://github.com/coq/coq/issues/13288>`_,
   by Hugo Herbelin).
 
+Changes in 8.16.1
+~~~~~~~~~~~~~~~~~
+
+.. contents::
+   :local:
+
+Kernel
+^^^^^^
+
+- **Fixed:**
+  conversion of Prod values in the native compiler.
+  (`#16651 <https://github.com/coq/coq/pull/16651>`_,
+  fixes `#16645 <https://github.com/coq/coq/issues/16645>`_,
+  by Pierre-Marie Pédrot).
+- **Fixed:**
+  Coq 8.16.0 missed `SProp` check for opaque names in conversion
+  (`#16768 <https://github.com/coq/coq/pull/16768>`_,
+  fixes `#16752 <https://github.com/coq/coq/issues/16752>`_,
+  by Hugo Herbelin).
+- **Fixed:**
+  Pass the correct environment to compute η-expansion of cofixpoints
+  in VM and native compilation
+  (`#16845 <https://github.com/coq/coq/pull/16845>`_,
+  fixes `#16831 <https://github.com/coq/coq/issues/16831>`_,
+  by Pierre-Marie Pédrot).
+- **Fixed:**
+  inconsistency with conversion of primitive arrays, and associated incomplete strong normalization of primitive arrays with ``lazy``
+  (`#16850 <https://github.com/coq/coq/pull/16850>`_,
+  fixes `#16829 <https://github.com/coq/coq/issues/16829>`_,
+  by Gaëtan Gilbert,
+  reported by Maxime Buyse and Andres Erbsen).
+
+Commands and options
+^^^^^^^^^^^^^^^^^^^^
+
+- **Fixed:**
+  :cmd:`Print Assumptions` treats opaque definitions with missing proofs (as found in ``.vos`` files, see :ref:`compiled-interfaces`) as axioms instead of ignoring them
+  (`#16434 <https://github.com/coq/coq/pull/16434>`_,
+  fixes `#16411 <https://github.com/coq/coq/issues/16411>`_,
+  by Gaëtan Gilbert).
+
+CoqIDE
+^^^^^^
+
+- **Fixed:**
+  "Interrupt computations" now works correctly on Windows—except
+  if you start CoqIDE as a background process, e.g. with `coqide &` in `bash`,
+  in which case it won't work at all
+  (`#16142 <https://github.com/coq/coq/pull/16142>`_,
+  fixes `#13550 <https://github.com/coq/coq/issues/13550>`_,
+  by Jim Fehrle).
+
 Version 8.15
 ------------
 
