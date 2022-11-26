@@ -1062,9 +1062,6 @@ Qed.
 
 (** ** Filter *)
 
-#[deprecated(since="8.11",note="Lemma filter_app has been moved to module List.")]
-Notation filter_app := List.filter_app.
-
 Lemma filter_aux_elements s f acc :
  filter_aux f s acc = List.filter f (elements s) ++ acc.
 Proof.
