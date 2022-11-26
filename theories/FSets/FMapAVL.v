@@ -1396,7 +1396,7 @@ Proof.
  induction s; simpl; intros; auto.
  rewrite IHs1, IHs2.
  unfold elements; simpl.
- rewrite 2 IHs1, IHs2, !app_nil_r, !app_ass; auto.
+ rewrite 2 IHs1, IHs2, !app_nil_r, <- !app_assoc; auto.
 Qed.
 
 Lemma elements_node :
@@ -1405,7 +1405,7 @@ Lemma elements_node :
  elements (Node t1 x e t2 z) ++ l.
 Proof.
  unfold elements; simpl; intros.
- rewrite !elements_app, !app_nil_r, !app_ass; auto.
+ rewrite !elements_app, !app_nil_r, <- !app_assoc; auto.
 Qed.
 
 (** * Fold *)

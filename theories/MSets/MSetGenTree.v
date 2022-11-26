@@ -739,7 +739,7 @@ Proof.
  induction s; simpl; intros; auto.
  rewrite IHs1, IHs2.
  unfold elements; simpl.
- rewrite 2 IHs1, IHs2, !app_nil_r, !app_ass; auto.
+ rewrite 2 IHs1, IHs2, !app_nil_r, <- !app_assoc; auto.
 Qed.
 
 Lemma elements_node c l x r :
@@ -755,7 +755,7 @@ Proof.
  induction s; simpl; intros; auto.
  rewrite IHs1, IHs2.
  unfold rev_elements; simpl.
- rewrite IHs1, 2 IHs2, !app_nil_r, !app_ass; auto.
+ rewrite IHs1, 2 IHs2, !app_nil_r, <- !app_assoc; auto.
 Qed.
 
 Lemma rev_elements_node c l x r :
@@ -769,7 +769,7 @@ Lemma rev_elements_rev s : rev_elements s = rev (elements s).
 Proof.
  induction s as [|c l IHl x r IHr]; trivial.
  rewrite elements_node, rev_elements_node, IHl, IHr, rev_app_distr.
- simpl. now rewrite !app_ass.
+ simpl. now rewrite <- !app_assoc.
 Qed.
 
 (** The converse of [elements_spec2], used in MSetRBT *)
@@ -1036,7 +1036,7 @@ Lemma flatten_e_elements :
  forall l x r c e,
  elements l ++ flatten_e (More x r e) = elements (Node c l x r) ++ flatten_e e.
 Proof.
- intros. now rewrite elements_node, app_ass.
+ intros. now rewrite elements_node, <- app_assoc.
 Qed.
 
 Lemma cons_1 : forall s e,
@@ -1071,7 +1071,7 @@ Lemma compare_cont_Cmp : forall s1 cont e2 l,
  Cmp (compare_cont s1 cont e2) (elements s1 ++ l) (flatten_e e2).
 Proof.
  induction s1 as [|c1 l1 Hl1 x1 r1 Hr1]; intros; auto.
- rewrite elements_node, app_ass; simpl.
+ rewrite elements_node, <- app_assoc; simpl.
  apply Hl1; auto. clear e2. intros [|x2 r2 e2].
  - simpl; auto.
  - apply compare_more_Cmp.
