@@ -102,11 +102,6 @@ Proof.
   destr_bool; intuition.
 Qed.
 
-#[deprecated(since="8.12",note="Use Bool.le instead.")]
-Notation leb := le (only parsing).
-#[deprecated(since="8.12",note="Use Bool.le_implb instead.")]
-Notation leb_implb := le_implb (only parsing).
-
 #[ local ] Definition lt (b1 b2:bool) :=
   match b1 with
     | true => False
