@@ -167,25 +167,38 @@ Declaring Coercions
      Silence the non uniform inheritance warning.
 
   .. exn:: @qualid not declared.
-     :undocumented:
+
+     :token:`qualid` is not defined globally.
 
   .. exn:: @qualid is already a coercion.
-     :undocumented:
+
+     :token:`qualid` is already registered as a coercion.
 
   .. exn:: Funclass cannot be a source class.
-     :undocumented:
+
+     Funclass as a source class is currently not supported. This may change in
+     the future.
 
   .. exn:: @qualid is not a function.
-     :undocumented:
+
+     :token:`qualid` is not a function, so it cannot be used as a coercion.
 
   .. exn:: Cannot find the source class of @qualid.
-     :undocumented:
+
+     Coq can not infer a valid source class.
 
   .. exn:: Cannot recognize @class as a source class of @qualid.
-     :undocumented:
 
-  .. exn:: Found target class ... instead of ...
-     :undocumented:
+     The inferred source class of the coercion differs from the one specified.
+
+  .. exn:: Cannot find the target class
+
+     The target class of the coercion is not specified and cannot be inferred.
+     Make sure that the target is not a variable.
+
+  .. exn:: Found target class @class instead of @class
+
+     The inferred target class of the coercion differs from the one specified.
 
   .. warn:: @qualid does not respect the uniform inheritance condition.
 
