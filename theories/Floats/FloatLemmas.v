@@ -25,8 +25,6 @@ Theorem Z_frexp_spec : forall f, let (m,e) := Z.frexp f in (Prim2SF m, e) = SFfr
   assert (H' := frshiftexp_spec f).
   now rewrite H in H'.
 Qed.
-#[deprecated(since = "8.15.0", note = "Use Z_frexp_spec instead.")]
-Notation frexp_spec := Z_frexp_spec (only parsing).
 
 Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Prim2SF f) e.
   intros.
@@ -329,5 +327,3 @@ Theorem Z_ldexp_spec : forall f e, Prim2SF (Z.ldexp f e) = SFldexp prec emax (Pr
       reflexivity.
     + exfalso; lia.
 Qed.
-#[deprecated(since = "8.15.0", note = "Use Z_ldexp_spec instead.")]
-Notation ldexp_spec := Z_ldexp_spec (only parsing).
