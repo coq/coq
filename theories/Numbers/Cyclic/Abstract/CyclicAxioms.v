@@ -10,10 +10,9 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-(** * Signature and specification of a bounded integer structure *)
+(** * Signature and specification of bounded integers *)
 
-(** This file specifies how to represent [Z/nZ] when [n=2^d],
-    [d] being the number of digits of these bounded integers. *)
+(** This file specifies [d]-bit integers as [Z/nZ] with [n=2^d] *)
 
 Set Implicit Arguments.
 
