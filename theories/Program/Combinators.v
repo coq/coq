@@ -66,8 +66,3 @@ Proof.
   extensionality x ; extensionality p.
   destruct p ; simpl ; reflexivity.
 Qed.
-
-#[deprecated(since = "8.15", note = "Use curry_uncurry instead.")]
-Notation prod_uncurry_curry := curry_uncurry.
-#[deprecated(since = "8.15", note = "Use uncurry_curry instead.")]
-Notation prod_curry_uncurry := uncurry_curry.
