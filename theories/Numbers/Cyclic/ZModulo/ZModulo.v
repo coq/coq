@@ -8,8 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** * Type [Z] viewed modulo a particular constant corresponds to [Z/nZ]
-      as defined abstractly in CyclicAxioms. *)
+(** * Type [Z] viewed modulo [2^d] implements CyclicAxioms. *)
 
 (** Even if the construction provided here is not reused for building
   the efficient arbitrary precision numbers, it provides a simple
