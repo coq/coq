@@ -17,7 +17,7 @@ open Constr
 open Context
 
 (* Deprecated *)
-type sorts_family = Sorts.family = InSProp | InProp | InSet | InType
+type sorts_family = Sorts.family = InSProp | InProp | InSet | InType | InQSort
 [@@ocaml.deprecated "Alias for Sorts.family"]
 
 type sorts = Sorts.t = private

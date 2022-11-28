@@ -72,7 +72,7 @@ type flag = info * scheme
 
 let info_of_family = function
   | InSProp | InProp -> Logic
-  | InSet | InType -> Info
+  | InSet | InType | InQSort -> Info
 
 let info_of_sort s = info_of_family (Sorts.family s)
 

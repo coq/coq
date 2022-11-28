@@ -645,7 +645,7 @@ let elimination_suffix = function
   | InSProp -> "_sind"
   | InProp -> "_ind"
   | InSet  -> "_rec"
-  | InType -> "_rect"
+  | InType | InQSort -> "_rect"
 
 let case_suffix = "_case"
 

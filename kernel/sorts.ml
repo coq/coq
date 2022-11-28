@@ -10,9 +10,9 @@
 
 open Univ
 
-type family = InSProp | InProp | InSet | InType
+type family = InSProp | InProp | InSet | InType | InQSort
 
-let all_families = [InSProp; InProp; InSet; InType]
+let all_families = [InSProp; InProp; InSet; InType; InQSort]
 
 module QVar =
 struct
@@ -90,7 +90,7 @@ let family = function
   | Prop -> InProp
   | Set -> InSet
   | Type _ -> InType
-  | QSort _ -> assert false (* FIXME ? *)
+  | QSort _ -> InQSort
 
 let family_compare a b = match a,b with
   | InSProp, InSProp -> 0
@@ -103,6 +103,9 @@ let family_compare a b = match a,b with
   | InSet, _ -> -1
   | _, InSet -> 1
   | InType, InType -> 0
+  | InType, _ -> -1
+  | _, InType -> 1
+  | InQSort, InQSort -> 0
 
 let family_equal = (==)
 
@@ -179,3 +182,4 @@ let pr_sort_family = function
   | InProp -> Pp.(str "Prop")
   | InSet -> Pp.(str "Set")
   | InType -> Pp.(str "Type")
+  | InQSort -> Pp.(str "Type") (* FIXME? *)

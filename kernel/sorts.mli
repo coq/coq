@@ -10,7 +10,7 @@
 
 (** {6 The sorts of CCI. } *)
 
-type family = InSProp | InProp | InSet | InType
+type family = InSProp | InProp | InSet | InType | InQSort
 
 val all_families : family list
 

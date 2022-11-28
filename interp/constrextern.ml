@@ -1454,7 +1454,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PSort Sorts.InSProp -> GSort (UNamed [GSProp,0])
   | PSort Sorts.InProp -> GSort (UNamed [GProp,0])
   | PSort Sorts.InSet -> GSort (UNamed [GSet,0])
-  | PSort Sorts.InType -> GSort (UAnonymous {rigid=true})
+  | PSort (Sorts.InType | Sorts.InQSort) -> GSort (UAnonymous {rigid=true})
   | PInt i -> GInt i
   | PFloat f -> GFloat f
   | PArray(t,def,ty) ->

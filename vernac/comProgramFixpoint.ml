@@ -47,7 +47,7 @@ type family = SPropF | PropF | TypeF
 let family_of_sort_family = let open Sorts in function
     | InSProp -> SPropF
     | InProp -> PropF
-    | InSet | InType -> TypeF
+    | InSet | InType | InQSort -> TypeF
 
 let get_sigmatypes sigma ~sort ~predsort =
   let open EConstr in
