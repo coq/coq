@@ -123,7 +123,7 @@ let no_sort_variable () =
 let cons_subst u su subst =
   let su = match su with
   | Sorts.SProp -> assert false (* No template on SProp *)
-  | Sorts.QSort _ -> no_sort_variable ()
+  | Sorts.QSort (_, u) -> [u] (* FIXME *)
   | Sorts.Prop -> []
   | Sorts.Set -> [Universe.type0]
   | Sorts.Type u -> [u]

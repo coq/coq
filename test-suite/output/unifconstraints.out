@@ -59,7 +59,7 @@ unification constraint:
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
-File "./output/unifconstraints.v", line 29, characters 42-43:
+File "./output/unifconstraints.v", line 29, characters 56-57:
 The command has indeed failed with message:
 In environment
 P : nat -> Type

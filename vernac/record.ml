@@ -215,6 +215,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let (sigma, data) = List.fold_left_map fold sigma records in
   let sigma =
     Pretyping.solve_remaining_evars Pretyping.all_and_fail_flags env_ar sigma in
+  let sigma = Evd.minimize_universes sigma in
   let fold sigma (typ, esort) (_, newfs) =
     let sort = EConstr.ESorts.kind sigma esort in
     let univ = ComInductive.Internal.compute_constructor_level env_ar sigma newfs in

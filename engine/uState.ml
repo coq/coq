@@ -34,6 +34,7 @@ module QState : sig
   val add : elt -> t -> t
   val repr : elt -> t -> quality
   val set : elt -> quality -> t -> t option
+  val collapse : t -> t
   val pr : t -> Pp.t
 end =
 struct
@@ -53,7 +54,7 @@ let rec repr q m = match QMap.find q m with
 | Some (QVar q) -> repr q m
 | Some (QProp | QSProp | QType as q) -> q
 | exception Not_found ->
-  let () = assert !Flags.in_debugger in
+(*   let () = assert !Flags.in_debugger in *) (* FIXME *)
   QVar q
 
 let set q qv m =
@@ -68,6 +69,13 @@ let set q qv m =
   | (QSProp, QSProp) | (QProp, QProp) | (QType, QType) -> Some m
   | (QSProp | QProp | QType), (QSProp | QProp | QType) ->
     None
+
+let collapse m =
+  let map q v = match v with
+  | None -> Some QType
+  | Some _ -> v
+  in
+  QMap.mapi map m
 
 let pr qmap =
   let open Pp in
@@ -85,6 +93,7 @@ let pr qmap =
   h (prlist_with_sep fnl (fun (u, v) -> Sorts.QVar.pr u ++ prbody v) (QMap.bindings qmap))
 
 end
+
 module UPairSet = UnivMinim.UPairSet
 
 (* 2nd part used to check consistency on the fly. *)
@@ -242,7 +251,7 @@ let universe_binders uctx =
 
 let nf_qvar uctx q = QState.repr q uctx.sort_variables
 
-let instantiate_variable l b v =
+let instantiate_variable l (b : Universe.t) v =
   try v := Level.Map.set l (Some b) !v
   with Not_found -> assert false
 
@@ -398,20 +407,22 @@ let process_universe_constraints uctx cstrs =
     else sort_inconsistency Eq ls s
   in
   let equalize_variables fo l' r' local =
-    let () =
-      if is_local l' then
-        instantiate_variable l' (Universe.make r') vars
-      else if is_local r' then
-        instantiate_variable r' (Universe.make l') vars
-      else if not (UnivProblem.check_eq_level univs l' r') then
-        (* Two rigid/global levels, none of them being local,
-            one of them being Prop/Set, disallow *)
-        if Level.is_set l' || Level.is_set r' then
-          level_inconsistency Eq l' r'
-        else if fo then
-          raise UniversesDiffer
-    in
-    if Level.equal l' r' then local else add_local (l', Eq, r') local
+    if Level.equal l' r' then local
+    else
+      let () =
+        if is_local l' then
+          instantiate_variable l' (Universe.make r') vars
+        else if is_local r' then
+          instantiate_variable r' (Universe.make l') vars
+        else if not (UnivProblem.check_eq_level univs l' r') then
+          (* Two rigid/global levels, none of them being local,
+              one of them being Prop/Set, disallow *)
+          if Level.is_set l' || Level.is_set r' then
+            level_inconsistency Eq l' r'
+          else if fo then
+            raise UniversesDiffer
+      in
+      add_local (l', Eq, r') local
   in
   let equalize_algebraic l ru local =
     let alg = Level.Set.mem l uctx.univ_algebraic in
@@ -899,13 +910,20 @@ let make_flexible_nonalgebraic uctx =
   { uctx with univ_algebraic = Level.Set.empty }
 
 let is_sort_variable uctx s =
-  match s with
+  match s with (* FIXME: normalize here *)
   | Sorts.Type u ->
     (match Universe.level u with
     | Some l as x ->
         if Level.Set.mem l (ContextSet.levels uctx.local) then x
         else None
     | None -> None)
+  | Sorts.QSort (q, u) ->
+    let q = nf_qvar uctx q in
+    (match q, Universe.level u with
+    | QType, Some l ->
+        if Level.Set.mem l (ContextSet.levels uctx.local) then Some l
+        else None
+    | (_, Some _ | _, None) -> None)
   | _ -> None
 
 let subst_univs_context_with_def def usubst (uctx, cst) =
@@ -949,6 +967,9 @@ let fix_undefined_variables uctx =
   in
   { uctx with univ_variables = vars';
     univ_algebraic = algs' }
+
+let collapse_sort_variables uctx =
+  { uctx with sort_variables = QState.collapse uctx.sort_variables }
 
 let minimize uctx =
   let open UnivMinim in

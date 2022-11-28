@@ -209,6 +209,8 @@ val fix_undefined_variables : t -> t
 (** Universe minimization *)
 val minimize : t -> t
 
+val collapse_sort_variables : t -> t
+
 type ('a, 'b) gen_universe_decl = {
   univdecl_instance : 'a; (* Declared universes *)
   univdecl_extensible_instance : bool; (* Can new universes be added *)

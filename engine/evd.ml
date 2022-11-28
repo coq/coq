@@ -1076,9 +1076,10 @@ let new_univ_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?loc ?name rigid d =
-  let (d', u) = new_univ_variable ?loc rigid ?name d in
-    (d', Sorts.sort_of_univ u)
+let new_sort_variable ?loc ?name rigid sigma =
+  let (sigma, u) = new_univ_variable ?loc rigid ?name sigma in
+  let uctx, q = UState.new_sort_variable sigma.universes in
+  ({ sigma with universes = uctx }, Sorts.qsort q u)
 
 let add_global_univ d u =
   { d with universes = UState.add_global_univ d.universes u }
@@ -1207,9 +1208,13 @@ let nf_univ_variables evd =
   let uctx = UState.normalize_variables evd.universes in
   {evd with universes = uctx}
 
+let collapse_sort_variables evd =
+  let universes = UState.collapse_sort_variables evd.universes in
+  { evd with universes }
 
 let minimize_universes evd =
-  let uctx' = UState.normalize_variables evd.universes in
+  let uctx' = UState.collapse_sort_variables evd.universes in
+  let uctx' = UState.normalize_variables uctx' in
   let uctx' = UState.minimize uctx' in
   {evd with universes = uctx'}
 

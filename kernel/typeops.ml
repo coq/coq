@@ -123,7 +123,8 @@ let type_of_type u =
 
 let type_of_sort = function
   | SProp | Prop | Set -> type1
-  | Type u | QSort (_, u) -> type_of_type u
+  | Type u -> type_of_type u
+  | QSort _ -> anomaly Pp.(str "the kernel does not support sort variables")
 
 (*s Type of a de Bruijn index. *)
 
