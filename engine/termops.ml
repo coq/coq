@@ -245,6 +245,8 @@ let pr_evar_universe_context ctx =
      h (Univ.Level.Set.pr prl (UState.algebraics ctx)) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
      h (UState.pr_universe_opt_subst (UState.subst ctx)) ++ fnl() ++
+     str"SORTS:"++brk(0,1)++
+     h (UState.pr_sort_opt_subst ctx) ++ fnl() ++
      str "WEAK CONSTRAINTS:"++brk(0,1)++
      h (UState.pr_weak prl ctx) ++ fnl ())
 

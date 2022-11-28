@@ -143,6 +143,8 @@ val pproof : Proof.t -> unit
 (* Universes *)
 val ppuni : Univ.Universe.t -> unit
 val ppuni_level : Univ.Level.t -> unit (* raw *)
+val ppqvar : Sorts.QVar.t -> unit
+val ppesorts : EConstr.ESorts.t -> unit
 val prlev : Univ.Level.t -> Pp.t (* with global names (does this work?) *)
 val ppuniverse_set : Univ.Level.Set.t -> unit
 val ppuniverse_instance : Univ.Instance.t -> unit

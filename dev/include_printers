@@ -9,6 +9,7 @@
 #install_printer  (* universe *)  ppuni;;
 #install_printer  (* universes *)  ppuniverses;;
 #install_printer  (* univ level *) ppuni_level;;
+#install_printer  (* sort variable *) ppqvar;;
 #install_printer  (* univ context *) ppuniverse_context;;
 #install_printer  (* univ context *) ppaucontext;;
 #install_printer  (* univ context future *) ppuniverse_context_future;;

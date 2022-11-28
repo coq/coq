@@ -34,6 +34,7 @@ module QState : sig
   val add : elt -> t -> t
   val repr : elt -> t -> quality
   val set : elt -> quality -> t -> t option
+  val pr : t -> Pp.t
 end =
 struct
 
@@ -51,7 +52,9 @@ let rec repr q m = match QMap.find q m with
 | None -> QVar q
 | Some (QVar q) -> repr q m
 | Some (QProp | QSProp | QType as q) -> q
-| exception Not_found -> assert false
+| exception Not_found ->
+  let () = assert !Flags.in_debugger in
+  QVar q
 
 let set q qv m =
   let q = repr q m in
@@ -65,6 +68,21 @@ let set q qv m =
   | (QSProp, QSProp) | (QProp, QProp) | (QType, QType) -> Some m
   | (QSProp | QProp | QType), (QSProp | QProp | QType) ->
     None
+
+let pr qmap =
+  let open Pp in
+  let prbody = function
+  | None -> mt ()
+  | Some q ->
+    let q = match q with
+    | QVar v -> Sorts.QVar.pr v
+    | QProp -> str "Prop"
+    | QSProp -> str "SProp"
+    | QType -> str "Type"
+    in
+    str " := " ++ q
+  in
+  h (prlist_with_sep fnl (fun (u, v) -> Sorts.QVar.pr u ++ prbody v) (QMap.bindings qmap))
 
 end
 module UPairSet = UnivMinim.UPairSet
@@ -965,3 +983,5 @@ let pr_universe_body = function
   | Some x -> Pp.(str " := " ++ Univ.Universe.pr x)
 
 let pr_universe_opt_subst = Univ.Level.Map.pr pr_universe_body
+
+let pr_sort_opt_subst uctx = QState.pr uctx.sort_variables

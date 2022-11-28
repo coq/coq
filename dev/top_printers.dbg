@@ -65,6 +65,8 @@ install_printer Top_printers.ppproofview
 install_printer Top_printers.ppopenconstr
 install_printer Top_printers.pproof
 install_printer Top_printers.ppuni
+install_printer Top_printers.ppesorts
+install_printer Top_printers.ppqvar
 install_printer Top_printers.ppuni_level
 install_printer Top_printers.ppuniverse_set
 install_printer Top_printers.ppuniverse_instance

@@ -21,6 +21,7 @@ sig
   val repr : t -> int
   val equal : t -> t -> bool
   val compare : t -> t -> int
+  val pr : t -> Pp.t
 end
 
 type t = private

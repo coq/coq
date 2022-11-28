@@ -250,6 +250,8 @@ let pproof p = pp(Proof.pr_proof p)
 
 let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
+let ppqvar q = pp (QVar.pr q)
+let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s))
 
 let prlev = UnivNames.pr_with_global_universes Id.Map.empty
 let ppuniverse_set l = pp (Level.Set.pr prlev l)

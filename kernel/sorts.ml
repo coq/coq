@@ -21,6 +21,7 @@ struct
   let repr n = n
   let compare = Int.compare
   let equal = Int.equal
+  let pr q = Pp.(str "α" ++ int q)
 end
 
 type t =
