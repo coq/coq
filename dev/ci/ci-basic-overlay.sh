@@ -127,7 +127,7 @@ project coquelicot 'https://gitlab.inria.fr/coquelicot/coquelicot' '9f6f576844a5
 ########################################################################
 # CompCert
 ########################################################################
-project compcert "https://github.com/AbsInt/CompCert" "17aaad5af629ada4ecaa8bfb75a0c416c937ec70"
+project compcert "https://github.com/AbsInt/CompCert" "5be9ae2235b16239f023a36679b7d515dd774c68"
 
 ########################################################################
 # VST
