@@ -343,7 +343,7 @@ project lean_importer 'https://github.com/SkySkimmer/coq-lean-import' '9e9c13e8b
 ########################################################################
 # SerAPI
 ########################################################################
-project serapi 'https://github.com/ejgallego/coq-serapi' 'cd208a95df7682ff0525e332d5fffb3a0c519dc2'
+project serapi 'https://github.com/ejgallego/coq-serapi' 'f4883a3b7ac08208300fbc45bed10047d1ad9f38'
 
 ########################################################################
 # SMTCoq
