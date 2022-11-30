@@ -76,8 +76,8 @@ let parse_args ~init arglist : Stm.AsyncOpts.stm_opt * string list =
 
     |"-async-proofs-tac-j" ->
       let j = Coqargs.get_int ~opt (next ()) in
-      if j <= 0 then begin
-        Coqargs.error_wrong_arg ("Error: -async-proofs-tac-j only accepts values greater than or equal to 1")
+      if j < 0 then begin
+        Coqargs.error_wrong_arg ("Error: -async-proofs-tac-j only accepts values greater than or equal to 0")
       end;
       { oval with
         Stm.AsyncOpts.async_proofs_n_tacworkers = j
