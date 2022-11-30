@@ -2335,8 +2335,6 @@ type stm_init_options =
   (** Injects Require and Set/Unset commands before the initial
      state is ready *)
 
-  ; stm_options  : AsyncOpts.stm_opt
-  (** Low-level STM options *)
   }
 
   (* fb_handler   : Feedback.feedback -> unit; *)
@@ -2350,19 +2348,16 @@ let doc_type_module_name (std : stm_doc_type) =
 
 let init_process stm_flags =
   Spawned.init_channels ();
-  CoqworkmgrApi.(init stm_flags.AsyncOpts.async_proofs_worker_priority)
-
-let init_core () =
+  cur_opt := stm_flags;
+  CoqworkmgrApi.(init stm_flags.AsyncOpts.async_proofs_worker_priority);
   if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
   if !Flags.async_proofs_worker_id = "master" && !cur_opt.async_proofs_n_tacworkers > 0 then
-    Partac.enable_par ~nworkers:!cur_opt.async_proofs_n_tacworkers;
+    Partac.enable_par ~nworkers:!cur_opt.async_proofs_n_tacworkers
+
+let init_core () =
   State.register_root_state ()
 
-
-let new_doc { doc_type ; injections; stm_options } =
-
-  (* Set the options from the new documents *)
-  AsyncOpts.cur_opt := stm_options;
+let new_doc { doc_type ; injections } =
 
   (* We must reset the whole state before creating a document! *)
   State.restore_root_state ();
@@ -2394,10 +2389,10 @@ let new_doc { doc_type ; injections; stm_options } =
   (* We record the state at this point! *)
   State.define ~doc ~cache:true ~redefine:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
-  Slaves.init stm_options.async_proofs_worker_priority;
+  Slaves.init !cur_opt.async_proofs_worker_priority;
   if async_proofs_is_master !cur_opt then begin
     stm_prerr_endline (fun () -> "Initializing workers");
-    Query.init stm_options.async_proofs_worker_priority;
+    Query.init !cur_opt.async_proofs_worker_priority;
     let opts = match !cur_opt.async_proofs_private_flags with
       | None -> []
       | Some s -> Str.split_delim (Str.regexp ",") s in
