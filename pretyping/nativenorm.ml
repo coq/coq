@@ -528,6 +528,6 @@ let native_norm env sigma c ty =
     EConstr.of_constr res
 
 let native_norm env sigma c ty =
-  if not (Flags.get_native_compiler ()) then
+  if not (Environ.typing_flags env).enable_native_compiler then
     user_err Pp.(str "Native_compute reduction has been disabled.");
   native_norm env sigma c ty
