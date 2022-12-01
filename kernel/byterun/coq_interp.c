@@ -567,9 +567,8 @@ value coq_interprete
       CHECK_STACK(0);
       /* We also check for signals */
 #if OCAML_VERSION >= 50000
-      if (Caml_check_gc_interrupt(Caml_state) || caml_check_for_pending_signals()) {
-        // FIXME: it should be caml_process_pending_actions_exn
-        value res = caml_process_pending_signals_exn();
+      if (Caml_check_gc_interrupt(Caml_state)) {
+        value res = caml_process_pending_actions_exn();
         Handle_potential_exception(res);
       }
 #elif OCAML_VERSION >= 41000
