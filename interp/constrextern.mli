@@ -84,16 +84,8 @@ val with_universes : ('a -> 'b) -> 'a -> 'b
 (** This suppresses printing of primitive tokens and notations *)
 val without_symbols : ('a -> 'b) -> 'a -> 'b
 
-(** This suppresses printing of specific notations only *)
-val without_specific_symbols : Notationextern.interp_rule list -> ('a -> 'b) -> 'a -> 'b
-
 (** This prints metas as anonymous holes *)
 val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b
-
-(** Fine-grained activation and deactivation of notation printing.
- *)
-val toggle_scope_printing :
-  scope:Notation_term.scope_name -> activate:bool -> unit
 
 (** Probably shouldn't be used *)
 val empty_extern_env : extern_env

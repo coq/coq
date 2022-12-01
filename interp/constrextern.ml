@@ -90,70 +90,6 @@ let is_reserved_type na t =
 
 (**********************************************************************)
 (* Turning notations and scopes on and off for printing *)
-module IRuleSet = Set.Make(struct
-    type t = interp_rule
-    let compare x y = match x, y with
-      | AbbrevRule kn, AbbrevRule kn' -> KerName.compare kn kn'
-      | NotationRule (scope,ntn), NotationRule (scope',ntn') -> compare x y
-      | AbbrevRule _, NotationRule _ -> -1
-      | NotationRule _, AbbrevRule _ -> 1
-  end)
-
-let inactive_notations_table =
-  Summary.ref ~name:"inactive_notations_table" (IRuleSet.empty)
-let inactive_scopes_table    =
-  Summary.ref ~name:"inactive_scopes_table" CString.Set.empty
-
-let show_scope inscope =
-  match inscope with
-  | LastLonelyNotation -> str ""
-  | NotationInScope sc -> spc () ++ str "in scope" ++ spc () ++ str sc
-
-let _show_inactive_notations () =
-  begin
-    if CString.Set.is_empty !inactive_scopes_table
-    then
-      Feedback.msg_notice (str "No inactive notation scopes.")
-    else
-      let _ = Feedback.msg_notice (str "Inactive notation scopes:") in
-      CString.Set.iter (fun sc -> Feedback.msg_notice (str "  " ++ str sc))
-        !inactive_scopes_table
-  end;
-  if IRuleSet.is_empty !inactive_notations_table
-  then
-    Feedback.msg_notice (str "No individual inactive notations.")
-  else
-    let _ = Feedback.msg_notice (str "Inactive notations:") in
-    IRuleSet.iter
-      (function
-       | NotationRule (inscope, ntn) ->
-         Feedback.msg_notice (pr_notation ntn ++ show_scope inscope)
-       | AbbrevRule kn -> Feedback.msg_notice (str (string_of_qualid (Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn))))
-      !inactive_notations_table
-
-let deactivate_scope sc =
-  ignore (find_scope sc); (* ensures that the scope exists *)
-  if CString.Set.mem sc !inactive_scopes_table
-  then
-    Feedback.msg_warning (str "Notation Scope" ++ spc () ++ str sc ++ spc ()
-                          ++ str "is already inactive.")
-  else
-    inactive_scopes_table := CString.Set.add sc !inactive_scopes_table
-
-let reactivate_scope sc =
-  try
-    inactive_scopes_table := CString.Set.remove sc !inactive_scopes_table
-  with Not_found ->
-    Feedback.msg_warning (str "Notation Scope" ++ spc () ++ str sc ++ spc ()
-                          ++ str "is already active.")
-
-(* args: notation, scope, activate/deactivate *)
-let toggle_scope_printing ~scope ~activate =
-  if activate then
-    reactivate_scope scope
-  else
-    deactivate_scope scope
-
 (* This governs printing of projections using the dot notation symbols *)
 let print_projections = ref false
 
@@ -162,10 +98,6 @@ let print_meta_as_hole = ref false
 let with_universes f = Flags.with_option print_universes f
 let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
 let without_symbols f = Flags.with_option print_no_symbol f
-
-let without_specific_symbols l =
-  Flags.with_modified_ref inactive_notations_table
-    (fun tbl -> IRuleSet.(union (of_list l) tbl))
 
 (**********************************************************************)
 (* Control printing of records *)
