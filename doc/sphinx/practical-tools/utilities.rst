@@ -132,6 +132,12 @@ for building your project.  Your `_CoqProject` file should be in
 the top directory of your project's source tree.  We recommend using the
 :term:`logical name` of the project as the name of the top directory.
 
+**Note:** Make sure that `_CoqProject` has no file extension.  On Windows, some
+tools such as Notepad invisibly append `.txt` even when you ask to save the file
+as `_CoqProject`.  Also, File Manager doesn't display file extensions.  You may
+be better off using a command line interface and an editor such as `vi` that
+always show file extensions.
+
 For example, here is a minimal `_CoqProject` file for the `MyPackage` project
 (the logical name of the package), which includes all the ``.v`` files (and
 other file types) in the `theories` directory and its subdirectories::
