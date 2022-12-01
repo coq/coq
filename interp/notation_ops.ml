@@ -273,6 +273,9 @@ let rec cases_pattern_fold_map ?loc g e = DAst.with_val (function
       e', List.map (fun patl' -> DAst.make ?loc @@ PatCstr (cstr,patl',na')) disjpatl'
   )
 
+let map_hole_arg f =
+  Option.map (fun (c,(terms,binders)) -> (c,(Id.Map.map f terms,binders)))
+
 let subst_binder_type_vars l = function
   | Evar_kinds.BinderType (Name id) ->
      let id =
@@ -322,6 +325,14 @@ let test_implicit_argument_mark bk =
 let test_pattern_cast = function
   | None -> ()
   | Some t -> user_err ?loc:t.CAst.loc (Pp.str "Unsupported pattern cast.")
+
+let glob_cases_pattern_of_notation_glob_cases_pattern ?loc g pat =
+  let fold (idl,e) na =
+    let (e,disjpat,na,bk,t) = g e na None in
+    test_implicit_argument_mark bk;
+    test_pattern_cast t;
+    ((Name.cons na idl,e),disjpat,na) in
+  cases_pattern_fold_map ?loc fold pat
 
 let protect g e na =
   let e',disjpat,na,bk,t = g e na None in
@@ -387,14 +398,9 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
           e',Some (CAst.make ?loc (ind,nal')) in
         let e',na' = protect g e' na in
         (e',(f e tm,(na',t'))::tml')) tml (e,[]) in
-      let fold (idl,e) na =
-        let (e,disjpat,na,bk,t) = g e na None in
-        test_implicit_argument_mark bk;
-        test_pattern_cast t;
-        ((Name.cons na idl,e),disjpat,na) in
       let eqnl' = List.map (fun (patl,rhs) ->
         let ((idl,e),patl) =
-          List.fold_left_map (cases_pattern_fold_map ?loc fold) ([],e) patl in
+          List.fold_left_map (glob_cases_pattern_of_notation_glob_cases_pattern ?loc g) ([],e) patl in
         let disjpatl = product_of_cases_patterns patl in
         List.map (fun patl -> CAst.make (idl,patl,f e rhs)) disjpatl) eqnl in
       GCases (sty,Option.map (f e') rtntypopt,tml',List.flatten eqnl')
@@ -416,7 +422,7 @@ let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_stat
       GRec (fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
   | NCast (c,k,t) -> GCast (f e c, k, f (h.slide e) t)
   | NSort x -> GSort x
-  | NHole (x, naming, arg)  -> GHole (x, naming, arg)
+  | NHole (x, naming, arg)  -> GHole (x, naming, map_hole_arg (f e) arg)
   | NRef (x,u) -> GRef (x,u)
   | NInt i -> GInt i
   | NFloat f -> GFloat f
@@ -652,7 +658,7 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GFloat f -> NFloat f
   | GHole (w,naming,arg) ->
      if arg != None then has_ltac := true;
-     NHole (w, naming, arg)
+     NHole (w, naming, map_hole_arg aux arg)
   | GRef (r,u) -> NRef (r,u)
   | GArray (_u,t,def,ty) -> NArray (Array.map aux t, aux def, aux ty)
   | GEvar _ | GPatVar _ ->
@@ -861,7 +867,12 @@ let rec subst_notation_constr subst bound raw =
       if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
     | _ -> knd
     in
-    let nsolve = Option.Smart.map (Genintern.generic_substitute subst) solve in
+    let nsolve = Option.Smart.map (smart_map_pair_het
+        (Genintern.generic_substitute subst)
+         (* Use a smart Id.Map.map? *)
+        (smart_map_pair_het
+           (Id.Map.map (subst_notation_constr subst bound))
+           (Id.Map.map (List.Smart.map (subst_pat subst))))) solve in
     if nsolve == solve && nknd == knd then raw
     else NHole (nknd, naming, nsolve)
 

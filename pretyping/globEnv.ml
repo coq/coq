@@ -189,6 +189,7 @@ let interp_ltac_id env id = ltac_interp_id env.lvar id
 
 type 'a obj_interp_fun =
   ?loc:Loc.t -> poly:bool -> t -> Evd.evar_map -> Evardefine.type_constraint ->
+  Glob_term.glob_constr_notation_substitution ->
   'a -> unsafe_judgment * Evd.evar_map
 
 module ConstrInterpObj =
@@ -202,8 +203,8 @@ module ConstrInterp = Genarg.Register(ConstrInterpObj)
 
 let register_constr_interp0 = ConstrInterp.register0
 
-let interp_glob_genarg ?loc ~poly env sigma ty arg =
+let interp_glob_genarg ?loc ~poly env sigma ty (arg, subst) =
   let open Genarg in
   let GenArg (Glbwit tag, arg) = arg in
   let interp = ConstrInterp.obj tag in
-  interp ?loc ~poly env sigma ty arg
+  interp ?loc ~poly env sigma ty subst arg

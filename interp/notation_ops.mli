@@ -65,6 +65,10 @@ val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
 
 val glob_constr_of_notation_constr : ?loc:Loc.t -> notation_constr -> glob_constr
 
+val glob_cases_pattern_of_notation_glob_cases_pattern : ?loc:Loc.t ->
+  ('a -> Name.t -> glob_constr option -> 'a * ((Id.t list * cases_pattern_disjunction) * Id.t) option * Name.t * Glob_term.binding_kind * glob_constr option) ->
+  Names.Id.t list * 'a -> cases_pattern -> (Id.t list * 'a) * cases_pattern list
+
 (** {5 Matching a notation pattern against a [glob_constr]} *)
 
 (** [match_notation_constr] matches a [glob_constr] against a notation

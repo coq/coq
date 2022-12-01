@@ -25,7 +25,7 @@ type notation_constr =
   | NVar of Id.t
   | NApp of notation_constr * notation_constr list
   | NProj of (Constant.t * glob_level list option) * notation_constr list * notation_constr
-  | NHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+  | NHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr * (Genarg.glob_generic_argument * notation_constr_notation_substitution) option
   | NList of Id.t * Id.t * notation_constr * notation_constr * (* associativity: *) bool
   (* Part only in [glob_constr] *)
   | NLambda of Name.t * notation_constr option * notation_constr
@@ -47,6 +47,8 @@ type notation_constr =
   | NInt of Uint63.t
   | NFloat of Float64.t
   | NArray of notation_constr array * notation_constr * notation_constr
+
+and notation_constr_notation_substitution = notation_constr Names.Id.Map.t * cases_pattern list Names.Id.Map.t
 
 (** Note concerning NList: first constr is iterator, second is terminator;
     first id is where each argument of the list has to be substituted

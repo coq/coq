@@ -905,29 +905,10 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       in
       let arg = match arg with
       | None -> None
-      | Some arg ->
-        let mk_env id (c, scopes) map =
-          let nenv = set_env_scopes env scopes in
-          try
-            let gc = intern nenv c in
-            Id.Map.add id (gc, None) map
-          with Nametab.GlobalizationError _ -> map
-        in
-        let mk_env' ((c,_bk), (onlyident,(tmp_scope,subscopes))) =
-          let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
-          let test_kind =
-            if onlyident then test_kind_ident_in_notation
-            else test_kind_pattern_in_notation in
-          let _,((disjpat,_),_),_,_,_ty = intern_pat test_kind ntnvars nenv Explicit c in
-          (* TODO: use cast? *)
-          match disjpat with
-          | [pat] -> (glob_constr_of_cases_pattern (Global.env()) pat, None)
-          | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.loc ()
-        in
-        let terms = Id.Map.fold mk_env terms Id.Map.empty in
-        let binders = Id.Map.map mk_env' binders in
-        let bindings = Id.Map.fold Id.Map.add terms binders in
-        Some (Genintern.generic_substitute_notation bindings arg)
+      | Some (arg, (argterms,argbinders)) ->
+        let f c = aux subst' (renaming,env) c in
+        let g patl = List.flatten (List.map (fun pat -> snd (glob_cases_pattern_of_notation_glob_cases_pattern (traverse_binder intern_pat ntnvars subst avoid) ([],(renaming,env)) pat)) patl) in
+        Some (arg, (Id.Map.map f argterms, Id.Map.map g argbinders))
       in
       DAst.make ?loc @@ GHole (knd, naming, arg)
     | NBinderList (x,y,iter,terminator,revert) ->
@@ -966,7 +947,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       let test_kind =
         if onlyident then test_kind_ident_in_notation
         else test_kind_pattern_in_notation in
-      let env,((disjpat,ids),id),na,bk,_ty = intern_pat test_kind ntnvars env bk pat in
+      let _env,((disjpat,ids),id),na,bk,_ty = intern_pat test_kind ntnvars env bk pat in
       (* TODO: use cast? *)
       match disjpat with
       | [pat] -> glob_constr_of_cases_pattern (Global.env()) pat
@@ -2303,12 +2284,17 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             intern_sign;
           } in
           let (_, glb) = Genintern.generic_intern ist gen in
+          let ntnsubst = Id.Map.fold (fun id (used_as_binder,scopes,_) (terms, binders as map) ->
+              if !used_as_binder then (terms, Id.Map.add id [DAst.make (PatVar (Name id))] binders)
+              else if Option.has_some !scopes then (Id.Map.add id (DAst.make (GVar id)) terms, binders)
+              else map)
+              ntnvars' (Id.Map.empty, Id.Map.empty) in
           (* Merge ntnvars' *)
           Id.Map.iter (fun id (used_as_binder,scopes,_) ->
               if !used_as_binder then set_var_is_binder id ntnvars;
               if Option.has_some !scopes then set_notation_var_scope id (Option.get !scopes) ntnvars)
             ntnvars';
-          Some glb
+          Some (glb, ntnsubst)
         in
         DAst.make ?loc @@
         GHole (k, naming, solve)

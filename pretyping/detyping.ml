@@ -1177,7 +1177,12 @@ let rec subst_glob_constr env subst = DAst.map (function
       if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
     | _ -> knd
     in
-    let nsolve = Option.Smart.map (Hook.get f_subst_genarg subst) solve in
+    let nsolve = Option.Smart.map
+        (smart_map_pair_het
+           (Hook.get f_subst_genarg subst)
+           (smart_map_pair_het
+              (Id.Map.map (subst_glob_constr env subst))
+              (Id.Map.map (List.Smart.map (subst_cases_pattern subst))))) solve in
     if nsolve == solve && nknd == knd then raw
     else GHole (nknd, naming, nsolve)
 

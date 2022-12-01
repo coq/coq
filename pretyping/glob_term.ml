@@ -86,7 +86,7 @@ type 'a glob_constr_r =
   | GRec  of glob_fix_kind * Id.t array * 'a glob_decl_g list array *
              'a glob_constr_g array * 'a glob_constr_g array
   | GSort of glob_sort
-  | GHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option
+  | GHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr * 'a glob_generic_argument_closure_g option
   | GCast of 'a glob_constr_g * Constr.cast_kind * 'a glob_constr_g
   | GProj of (Constant.t * glob_level list option) * 'a glob_constr_g list * 'a glob_constr_g
   | GInt of Uint63.t
@@ -110,6 +110,12 @@ and 'a cases_clause_g = (Id.t list * 'a cases_pattern_g list * 'a glob_constr_g)
 
 and 'a cases_clauses_g = 'a cases_clause_g list
 
+and 'a glob_generic_argument_closure_g = Genarg.glob_generic_argument * 'a glob_constr_notation_substitution_g
+
+and 'a glob_constr_notation_substitution_g =
+  'a glob_constr_g Names.Id.Map.t * (* terms *)
+  'a cases_pattern_g list Names.Id.Map.t (* disjunction of patterns *)
+
 type glob_constr = [ `any ] glob_constr_g
 type tomatch_tuple = [ `any ] tomatch_tuple_g
 type tomatch_tuples = [ `any ] tomatch_tuples_g
@@ -117,6 +123,8 @@ type cases_clause = [ `any ] cases_clause_g
 type cases_clauses = [ `any ] cases_clauses_g
 type glob_decl = [ `any ] glob_decl_g
 type predicate_pattern = [ `any ] predicate_pattern_g
+type glob_generic_argument_closure = [ `any ] glob_generic_argument_closure_g
+type glob_constr_notation_substitution = [ `any ] glob_constr_notation_substitution_g
 
 type any_glob_constr = AnyGlobConstr : 'r glob_constr_g -> any_glob_constr
 

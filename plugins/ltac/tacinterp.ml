@@ -2176,10 +2176,24 @@ let interp_redexp env sigma r =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ =
-  let eval ?loc ~poly env sigma tycon tac =
+  let eval ?loc ~poly env sigma tycon (terms,binders) tac =
     let lfun = GlobEnv.lfun env in
     let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
     let ist = { lfun; poly; extra; } in
+    let fold id c accu =
+        let c = interp_uconstr ist (GlobEnv.env env) sigma (c,None) in
+        Id.Map.add id (Value.of_uconstr c) accu in
+    let fold_pat id patl accu =
+      try match patl with
+        | [pat] ->
+          (match DAst.get pat with
+          | PatVar (Name id') -> Id.Map.add id (Value.of_ident id') accu
+          | _ -> raise Exit)
+        | _ -> raise Exit
+      with Exit -> user_err ?loc (str "Cannot bind complex patterns in tactic expressions.") in
+    let lfun = Id.Map.fold fold terms lfun in
+    let lfun = Id.Map.fold fold_pat binders lfun in
+    let ist = {ist with lfun} in
     let tac = eval_tactic_ist ist tac in
     (* EJGA: We should also pass the proof name if desired, for now
        poly seems like enough to get reasonable behavior in practice

@@ -1581,10 +1581,31 @@ let () =
 
 (** Ltac2 in terms *)
 
+let subs (globs,binders) (ids, tac) =
+  (* Let-bind the notation terms inside the tactic *)
+  let fold id c (rem, accu) =
+    let c = GTacExt (Tac2quote.wit_preterm, c) in
+    let rem = Id.Set.remove id rem in
+    rem, (Name id, c) :: accu
+  in
+  let rem, bnd = Id.Map.fold fold globs (ids, []) in
+  if not (Id.Map.is_empty binders) then
+    CErrors.user_err (str "Binders bound in ltac2 expressions not supported");
+  let () = if not @@ Id.Set.is_empty rem then
+      (* FIXME: provide a reasonable middle-ground with the behaviour
+          introduced by 8d9b66b. We should be able to pass mere syntax to
+          term notation without facing the wrath of the internalization. *)
+      let plural = if Id.Set.cardinal rem <= 1 then " " else "s " in
+      CErrors.user_err (str "Missing notation term for variable" ++ str plural ++
+        pr_sequence Id.print (Id.Set.elements rem) ++
+          str ", probably a notation involving binders")
+  in
+  if List.is_empty bnd then tac else GTacLet (false, bnd, tac)
+
 let () =
-  let interp ?loc ~poly env sigma tycon (ids, tac) =
+  let interp ?loc ~poly env sigma tycon bindings (ids, tac) =
+    let tac = subs bindings (ids, tac) in
     (* Syntax prevents bound notation variables in constr quotations *)
-    let () = assert (Id.Set.is_empty ids) in
     let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
     let name, poly = Id.of_string "ltac2", poly in
@@ -1599,7 +1620,7 @@ let () =
   GlobEnv.register_constr_interp0 wit_ltac2_constr interp
 
 let () =
-  let interp ?loc ~poly env sigma tycon id =
+  let interp ?loc ~poly env sigma tycon _subst id =
     let ist = Tac2interp.get_env @@ GlobEnv.lfun env in
     let env = GlobEnv.renamed_env env in
     let c = Id.Map.find id ist.env_ist in
@@ -1624,29 +1645,6 @@ let () =
   let pr_glb id = Genprint.PrinterBasic (fun _env _sigma -> str "$" ++ Id.print id) in
   let pr_top _ = Genprint.TopPrinterBasic mt in
   Genprint.register_print0 wit_ltac2_quotation pr_raw pr_glb pr_top
-
-let () =
-  let subs globs (ids, tac) =
-    (* Let-bind the notation terms inside the tactic *)
-    let fold id (c, _) (rem, accu) =
-      let c = GTacExt (Tac2quote.wit_preterm, c) in
-      let rem = Id.Set.remove id rem in
-      rem, (Name id, c) :: accu
-    in
-    let rem, bnd = Id.Map.fold fold globs (ids, []) in
-    let () = if not @@ Id.Set.is_empty rem then
-      (* FIXME: provide a reasonable middle-ground with the behaviour
-          introduced by 8d9b66b. We should be able to pass mere syntax to
-          term notation without facing the wrath of the internalization. *)
-      let plural = if Id.Set.cardinal rem <= 1 then " " else "s " in
-      CErrors.user_err (str "Missing notation term for variable" ++ str plural ++
-        pr_sequence Id.print (Id.Set.elements rem) ++
-          str ", probably an ill-typed expression")
-    in
-    let tac = if List.is_empty bnd then tac else GTacLet (false, bnd, tac) in
-    (Id.Set.empty, tac)
-  in
-  Genintern.register_ntn_subst0 wit_ltac2_constr subs
 
 (** Ltac2 in Ltac1 *)
 

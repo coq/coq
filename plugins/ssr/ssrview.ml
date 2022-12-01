@@ -168,8 +168,9 @@ let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
     (* We unravel notations *)
     let g = intern_constr_expr ist sigma body in
     match DAst.get g with
-    | Glob_term.GHole (_,_, Some x)
-      when Genarg.has_type x (Genarg.glbwit Tacarg.wit_tactic)
+    | Glob_term.GHole (_,_, Some (x,(terms,bindings)))
+      when Genarg.has_type x (Genarg.glbwit Tacarg.wit_tactic) && terms = Id.Map.empty && bindings = Id.Map.empty
+        (* TODO: non empty bindings *)
         -> tclUNIT (`Tac (Genarg.out_gen (Genarg.glbwit Tacarg.wit_tactic) x))
     | _ -> tclUNIT (`Term (annotation, interp_env, g))
 end)
