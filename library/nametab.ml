@@ -228,16 +228,13 @@ let push visibility uname o tab =
 
 let rec remove_path uname tree = function
   | modid :: path ->
-      let map =
-        try
-          let submap = ModIdmap.find modid tree.map in
-          let submap = remove_path uname submap path in
-          if is_empty_tree submap then ModIdmap.empty
-          else ModIdmap.add modid submap tree.map
-        with Not_found ->
-          (* The name was actually not here *)
-          tree.map
+      let update = function
+        | None -> (* The name was actually not here *) None
+        | Some mc ->
+          let mc = remove_path uname mc path in
+          if is_empty_tree mc then None else Some mc
       in
+      let map = ModIdmap.update modid update tree.map in
       let this =
         let test = function Relative (uname',_) -> not (U.equal uname uname') | _ -> true in
         List.filter test tree.path
