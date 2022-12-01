@@ -134,8 +134,24 @@ struct
 
   let empty = Id.Map.empty
 
-  (* [push_until] is used to register [Until vis] visibility and
-     [push_exactly] to [Exactly vis] and [push_tree] chooses the right one*)
+  (* [push_until] is used to register [Until vis] visibility.
+
+     Example: [push_until Top.X.Y.t o (Until 1) tree [Y;X;Top]] adds the
+     value [Relative (Top.X.Y.t,o)] to occurrences [Y] and [Y.X] of
+     the tree, and [Absolute (Top.X.Y.t,o)] to occurrence [Y.X.Top] of
+     the tree. In particular, the tree now includes the following shape:
+     { map := Y |-> {map := X |-> {map := Top |-> {map := ...;
+                                                   path := Absolute (Top.X.Y.t,o)::...}
+                                          ...;
+                                   path := Relative (Top.X.Y.t,o)::...}
+                             ...;
+                     path := Relative (Top.X.Y.t,o)::...}
+               ...;
+       path := ...}
+     where ... denotes what was there before.
+
+     [push_exactly] is to register [Exactly vis] and [push] chooses
+     the right one *)
 
   let rec push_until uname o level tree = function
     | modid :: path ->
