@@ -454,9 +454,9 @@ Section first_definitions.
   - destruct 1. now apply set_diff_intro.
   Qed.
 
-  Lemma set_diff_nodup l l' : NoDup l -> NoDup l' -> NoDup (set_diff l l').
+  Lemma set_diff_nodup l l' : NoDup l -> NoDup (set_diff l l').
   Proof.
-   induction 1 as [|x l H H' IH]; intro Hl'; simpl.
+   induction 1 as [|x l H IH]; simpl.
    - constructor.
    - destruct (set_mem x l'); auto using set_add_nodup.
   Qed.
