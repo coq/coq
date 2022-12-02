@@ -23,6 +23,7 @@ val (-) : int -> int -> int
 val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
 val map_pair : ('a -> 'b) -> 'a * 'a -> 'b * 'b
+val smart_map_pair_het : ('a -> 'a) -> ('b -> 'b) -> 'a * 'b -> 'a * 'b
 
 (** Mapping under triplets *)
 

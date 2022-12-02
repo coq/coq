@@ -20,6 +20,10 @@ let (-) = (-)
 let on_fst f (a,b) = (f a,b)
 let on_snd f (a,b) = (a,f b)
 let map_pair f (a,b) = (f a,f b)
+let smart_map_pair_het f g (a, b as p) =
+  let a' = f a in
+  let b' = g b in
+  if a' == a && b' == b then p else (a', b')
 
 (* Mapping under triplets *)
 
