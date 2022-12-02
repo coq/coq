@@ -181,7 +181,7 @@ val get_arity        : env -> inductive_family -> Constr.rel_context * Sorts.fam
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
 val make_arity_signature : env -> evar_map -> bool -> inductive_family -> EConstr.rel_context
-val make_arity : env -> evar_map -> bool -> inductive_family -> Sorts.t -> EConstr.types
+val make_arity : env -> evar_map -> bool -> inductive_family -> EConstr.ESorts.t -> EConstr.types
 val build_branch_type : env -> evar_map -> bool -> constr -> constructor_summary -> types
 
 (** Raise [Not_found] if not given a valid inductive type *)

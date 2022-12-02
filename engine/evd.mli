@@ -30,6 +30,7 @@ open Environ
 
 type econstr
 type etypes = econstr
+type esorts
 
 (** {5 Existential variables and unification states} *)
 
@@ -625,7 +626,7 @@ val universe_of_name : evar_map -> Id.t -> Univ.Level.t
 val universe_binders : evar_map -> UnivNames.universe_binders
 
 val new_univ_level_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Univ.Level.t
-val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * Sorts.t
+val new_sort_variable : ?loc:Loc.t -> ?name:Id.t -> rigid -> evar_map -> evar_map * esorts
 
 val add_global_univ : evar_map -> Univ.Level.t -> evar_map
 
@@ -636,7 +637,7 @@ val make_flexible_variable : evar_map -> algebraic:bool -> Univ.Level.t -> evar_
 val make_nonalgebraic_variable : evar_map -> Univ.Level.t -> evar_map
 (** See [UState.make_nonalgebraic_variable]. *)
 
-val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option
+val is_sort_variable : evar_map -> esorts -> Univ.Level.t option
 (** [is_sort_variable evm s] returns [Some u] or [None] if [s] is
     not a local sort variable declared in [evm] *)
 
@@ -644,15 +645,15 @@ val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
 val normalize_universe_instance : evar_map -> Univ.Instance.t -> Univ.Instance.t
 
-val set_leq_sort : env -> evar_map -> Sorts.t -> Sorts.t -> evar_map
-val set_eq_sort : env -> evar_map -> Sorts.t -> Sorts.t -> evar_map
+val set_leq_sort : env -> evar_map -> esorts -> esorts -> evar_map
+val set_eq_sort : env -> evar_map -> esorts -> esorts -> evar_map
 val set_eq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_eq_instances : ?flex:bool ->
   evar_map -> Univ.Instance.t -> Univ.Instance.t -> evar_map
 
-val check_eq : evar_map -> Sorts.t -> Sorts.t -> bool
-val check_leq : evar_map -> Sorts.t -> Sorts.t -> bool
+val check_eq : evar_map -> esorts -> esorts -> bool
+val check_leq : evar_map -> esorts -> esorts -> bool
 
 val check_constraints : evar_map -> Univ.Constraints.t -> bool
 
@@ -690,7 +691,7 @@ val update_sigma_univs : UGraph.t -> evar_map -> evar_map
 (** Polymorphic universes *)
 
 val fresh_sort_in_family : ?loc:Loc.t -> ?rigid:rigid
-  -> evar_map -> Sorts.family -> evar_map * Sorts.t
+  -> evar_map -> Sorts.family -> evar_map * esorts
 val fresh_constant_instance : ?loc:Loc.t -> ?rigid:rigid
   -> env -> evar_map -> Constant.t -> evar_map * pconstant
 val fresh_inductive_instance : ?loc:Loc.t -> ?rigid:rigid
@@ -730,7 +731,7 @@ val create_evar_defs : evar_map -> evar_map
 (** Use this module only to bootstrap EConstr *)
 module MiniEConstr : sig
   module ESorts : sig
-    type t
+    type t = esorts
     val make : Sorts.t -> t
     val kind : evar_map -> t -> Sorts.t
     val unsafe_to_sorts : t -> Sorts.t

@@ -519,14 +519,14 @@ let id_of_name_with_default id = function
   | Anonymous -> id
   | Name id   -> id
 
-let default_id_of_sort s =
-  if Sorts.is_small s then default_small_ident else default_type_ident
+let default_id_of_sort sigma s =
+  if ESorts.is_small sigma s then default_small_ident else default_type_ident
 
 let default_id env sigma decl =
   let open Context.Rel.Declaration in
   match decl with
   | LocalAssum (name,t) ->
-      let dft = default_id_of_sort (Retyping.get_sort_of env sigma t) in
+      let dft = default_id_of_sort sigma (Retyping.get_sort_of env sigma t) in
       id_of_name_with_default dft name.binder_name
   | LocalDef (name,b,_) -> id_of_name_using_hdchar env sigma b name.binder_name
 
@@ -1472,7 +1472,7 @@ let cut c =
       let _, info = Exninfo.capture e in
       Tacticals.tclZEROMSG ~info (str "Not a proposition or a type.")
     | sigma, s ->
-      let r = Sorts.relevance_of_sort s in
+      let r = ESorts.relevance_of_sort sigma s in
       let id = next_name_away_with_default "H" Anonymous (Tacmach.pf_ids_set_of_hyps gl) in
       Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (Refine.refine ~typecheck:false begin fun h ->

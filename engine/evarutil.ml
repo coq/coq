@@ -757,7 +757,7 @@ let occur_evar_upto sigma n c =
 let judge_of_new_Type evd =
   let open EConstr in
   let (evd', s) = new_sort_variable univ_rigid evd in
-  (evd', { uj_val = mkSort s; uj_type = mkSort (Sorts.super s) })
+  (evd', { uj_val = mkSort s; uj_type = mkSort (ESorts.super evd s) })
 
 let subterm_source evk ?where (loc,k) =
   let evk = match k with

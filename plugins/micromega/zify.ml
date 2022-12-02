@@ -1022,7 +1022,7 @@ let arrow =
 
 let is_prop env sigma term =
   let sort = Retyping.get_sort_of env sigma term in
-  Sorts.is_prop sort
+  EConstr.ESorts.is_prop sigma sort
 
 let is_arrow env evd a p1 p2 =
   is_prop env evd p1

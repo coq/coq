@@ -116,7 +116,7 @@ let combineCG t1 t2 f g = match t1, t2 with
       let _, info = Exninfo.capture e in
       Tacticals.tclZEROMSG ~info (str "Not a proposition or a type.")
     | sigma, s ->
-      let r = Sorts.relevance_of_sort s in
+      let r = ESorts.relevance_of_sort sigma s in
       let sigma, f, glf =
         match k with
         | HaveTransp ->

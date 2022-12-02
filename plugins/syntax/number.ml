@@ -193,6 +193,7 @@ let locate_global_sort_inductive_or_constant sigma qid =
     match Abbreviation.search_abbreviation kn with
     | [], Notation_term.NSort r ->
        let sigma,c = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family r) in
+       let c = EConstr.ESorts.kind sigma c in
        sigma,Constr.mkSort c
     | _ -> raise Not_found in
   try locate_sort qid

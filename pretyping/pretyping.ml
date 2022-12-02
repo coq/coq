@@ -461,12 +461,14 @@ let pretype_ref ?loc sigma env ref us =
 let sort ?loc evd : glob_sort -> _ = function
   | UAnonymous {rigid} ->
     let evd, l = new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd in
-    evd, Sorts.sort_of_univ (Univ.Universe.make l)
-  | UNamed l -> sort_info ?loc evd l
+    evd, ESorts.make (Sorts.sort_of_univ (Univ.Universe.make l))
+  | UNamed l ->
+    let evd, s = sort_info ?loc evd l in
+    evd, ESorts.make s
 
 let judge_of_sort ?loc evd s =
   let judge =
-    { uj_val = mkSort s; uj_type = mkSort (Sorts.super s) }
+    { uj_val = mkSort s; uj_type = mkSort (ESorts.super evd s) }
   in
     evd, judge
 
@@ -689,13 +691,13 @@ struct
       | [] -> sigma, ctxt
       | (na,bk,None,ty)::bl ->
         let sigma, ty' = pretype_type empty_valcon env sigma ty in
-        let rty' = Sorts.relevance_of_sort ty'.utj_type in
+        let rty' = ESorts.relevance_of_sort sigma ty'.utj_type in
         let dcl = LocalAssum (make_annot na rty', ty'.utj_val) in
         let dcl', env = push_rel ~hypnaming sigma dcl env in
         type_bl env sigma (Context.Rel.add dcl' ctxt) bl
       | (na,bk,Some bd,ty)::bl ->
         let sigma, ty' = pretype_type empty_valcon env sigma ty in
-        let rty' = Sorts.relevance_of_sort ty'.utj_type in
+        let rty' = ESorts.relevance_of_sort sigma ty'.utj_type in
         let sigma, bd' = pretype (mk_tycon ty'.utj_val) env sigma bd in
         let dcl = LocalDef (make_annot na rty', bd'.uj_val, ty'.utj_val) in
         let dcl', env = push_rel ~hypnaming sigma dcl env in
@@ -955,8 +957,8 @@ struct
              are impredicative (typically Prop) we want to keep the
              information when typing the body. *)
           let s = Retyping.get_sort_of !!env sigma ty in
-          if Environ.is_impredicative_sort !!env s
-             || Evd.check_leq sigma Sorts.type1 s
+          if Environ.is_impredicative_sort !!env (ESorts.kind sigma s)
+             || Evd.check_leq sigma ESorts.type1 s
           then
             let sigma, prod = define_evar_as_product !!env sigma ev in
             let na,dom,rng = destProd sigma prod in
@@ -972,14 +974,14 @@ struct
     in
     let dom_valcon = valcon_of_tycon dom in
     let sigma, j = eval_type_pretyper self ~flags dom_valcon env sigma c1 in
-    let name = {binder_name=name; binder_relevance=Sorts.relevance_of_sort j.utj_type} in
+    let name = {binder_name=name; binder_relevance=ESorts.relevance_of_sort sigma j.utj_type} in
     let var = LocalAssum (name, j.utj_val) in
     let vars = VarSet.variables (Global.env ()) in
     let hypnaming = if flags.program_mode then ProgramNaming vars else RenameExistingBut vars in
     let var',env' = push_rel ~hypnaming sigma var env in
     let sigma, j' = eval_pretyper self ~flags rng env' sigma c2 in
     let name = get_name var' in
-    let resj = judge_of_abstraction !!env (orelse_name name name') j j' in
+    let resj = judge_of_abstraction !!env sigma (orelse_name name name') j j' in
     discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma resj tycon
 
   let pretype_prod self (name, bk, c1, c2) =
@@ -994,7 +996,7 @@ struct
         let sigma, j = pretype_type empty_valcon env sigma c2 in
         sigma, name, { j with utj_val = lift 1 j.utj_val }
       | Name _ ->
-        let r = Sorts.relevance_of_sort j.utj_type in
+        let r = ESorts.relevance_of_sort sigma j.utj_type in
         let var = LocalAssum (make_annot name r, j.utj_val) in
         let var, env' = push_rel ~hypnaming sigma var env in
         let sigma, c2_j = pretype_type empty_valcon env' sigma c2 in
@@ -1002,7 +1004,7 @@ struct
     in
     let resj =
       try
-        judge_of_product !!env name j j'
+        judge_of_product !!env sigma name j j'
       with TypeError _ as e ->
         let (e, info) = Exninfo.capture e in
         let info = Option.cata (Loc.add_loc info) info loc in
@@ -1250,7 +1252,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
              let t = Retyping.get_type_of !!env sigma v in
                match EConstr.kind sigma (whd_all !!env sigma t) with
                | Sort s ->
-                 sigma, ESorts.kind sigma s
+                 sigma, s
                | Evar ev when is_Type sigma (existential_type sigma ev) ->
                  define_evar_as_sort !!env sigma ev
                | _ -> anomaly (Pp.str "Found a type constraint which is not a type.")
@@ -1321,7 +1323,7 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
     | Some u -> sigma, u
     | None -> Evd.new_univ_level_variable UState.univ_flexible sigma
     in
-    let sigma = Evd.set_leq_sort !!env sigma jty.utj_type (Sorts.sort_of_univ (Univ.Universe.make u)) in
+    let sigma = Evd.set_leq_sort !!env sigma jty.utj_type (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make u))) in
     let sigma, jdef = eval_pretyper self ~flags (mk_tycon jty.utj_val) env sigma def in
     let pretype_elem = eval_pretyper self ~flags (mk_tycon jty.utj_val) env in
     let sigma, jt = Array.fold_left_map pretype_elem sigma t in

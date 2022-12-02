@@ -116,7 +116,6 @@ let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)
   let evdref = ref evd in
   (* direction: true for fresh universes lower than the existing ones *)
   let refresh_sort status ~direction s =
-    let s = ESorts.kind !evdref s in
     let sigma, s' = new_sort_variable status !evdref in
     evdref := sigma;
     let evd =
@@ -1457,8 +1456,6 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
       let evi2 = Evd.find evd evk2 in
       let evi2env = Evd.evar_env env evi2 in
       let ctx2, j = Reductionops.dest_arity evi2env evd (Evd.evar_concl evi2) in
-      let i = ESorts.kind evd i in
-      let j = ESorts.kind evd j in
         if i == j || Evd.check_eq evd i j
         then (* Shortcut, i = j *)
           evd

@@ -1482,7 +1482,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
   let evars = (!evdref, Evar.Set.empty) in
   let evars, cstr =
     let prop, (evars, arrow) =
-      if Sorts.is_prop sort then true, app_poly_sort true env evars impl [||]
+      if ESorts.is_prop sigma sort then true, app_poly_sort true env evars impl [||]
       else false, app_poly_sort false env evars TypeGlobal.arrow [||]
     in
     match is_hyp with

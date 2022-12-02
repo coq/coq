@@ -23,6 +23,7 @@ module NamedDecl = Context.Named.Declaration
 
 type econstr = constr
 type etypes = types
+type esorts = Sorts.t
 
 (** Generic filters *)
 module Filter :

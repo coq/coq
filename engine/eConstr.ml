@@ -21,6 +21,24 @@ module ESorts = struct
 
   let equal sigma s1 s2 =
     Sorts.equal (kind sigma s1) (kind sigma s2)
+
+  let is_small sigma s = Sorts.is_small (kind sigma s)
+  let is_prop sigma s = Sorts.is_prop (kind sigma s)
+  let is_sprop sigma s = Sorts.is_sprop (kind sigma s)
+  let is_set sigma s = Sorts.is_set (kind sigma s)
+
+  let prop = make Sorts.prop
+  let sprop = make Sorts.sprop
+  let set = make Sorts.set
+  let type1 = make Sorts.type1
+
+  let super sigma s =
+    make (Sorts.super (kind sigma s))
+
+  let relevance_of_sort sigma s = Sorts.relevance_of_sort (kind sigma s)
+
+  let family sigma s = Sorts.family (kind sigma s)
+
 end
 
 module EInstance = struct
@@ -44,7 +62,7 @@ type case = (t, t, EInstance.t) pcase
 type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
-type unsafe_type_judgment = types Environ.punsafe_type_judgment
+type unsafe_type_judgment = (types, ESorts.t) Environ.punsafe_type_judgment
 type named_declaration = (constr, types) Context.Named.Declaration.pt
 type rel_declaration = (constr, types) Context.Rel.Declaration.pt
 type named_context = (constr, types) Context.Named.pt
@@ -62,7 +80,7 @@ let mkRel n = of_kind (Rel n)
 let mkVar id = of_kind (Var id)
 let mkMeta n = of_kind (Meta n)
 let mkEvar e = of_kind (Evar e)
-let mkSort s = of_kind (Sort (ESorts.make s))
+let mkSort s = of_kind (Sort s)
 let mkCast (b, k, t) = of_kind (Cast (b, k, t))
 let mkProd (na, t, u) = of_kind (Prod (na, t, u))
 let mkLambda (na, t, c) = of_kind (Lambda (na, t, c))
@@ -93,7 +111,7 @@ let mkRef (gr,u) = let open GlobRef in match gr with
 
 let mkLEvar = Evd.MiniEConstr.mkLEvar
 
-let type1 = mkSort Sorts.type1
+let type1 = mkSort ESorts.type1
 
 let applist (f, arg) = mkApp (f, Array.of_list arg)
 let applistc f arg = mkApp (f, Array.of_list arg)

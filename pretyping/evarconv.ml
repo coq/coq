@@ -1067,8 +1067,6 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 
         | Sort s1, Sort s2 when app_empty ->
             (try
-              let s1 = ESorts.kind evd s1 in
-              let s2 = ESorts.kind evd s2 in
                let evd' =
                  if pbty == CONV
                  then Evd.set_eq_sort env evd s1 s2

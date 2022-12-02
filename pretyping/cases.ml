@@ -1924,7 +1924,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
   (* [pb] is the auxiliary pattern-matching serving as skeleton for the
       return type of the original problem Xi *)
   let s = Retyping.get_sort_of !!env sigma t in
-  let sigma, s = Sorts.(match s with
+  let sigma, s = Sorts.(match ESorts.kind sigma s with
   | SProp | Prop | Set ->
     (* To anticipate a possible restriction on an elimination from
        SProp, Prop or (impredicative) Set we preserve the sort of the

@@ -22,7 +22,7 @@ open Evd
 val type_of : ?refresh:bool -> env -> evar_map -> constr -> evar_map * types
 
 (** Typecheck a type and return its sort *)
-val sort_of : env -> evar_map -> types -> evar_map * Sorts.t
+val sort_of : env -> evar_map -> types -> evar_map * ESorts.t
 
 (** Typecheck a term has a given type (assuming the type is OK) *)
 val check : env -> evar_map -> constr -> types -> evar_map
@@ -57,9 +57,9 @@ val judge_of_set : unsafe_judgment
 val judge_of_variable : env -> Id.t -> unsafe_judgment
 val judge_of_apply : env -> evar_map -> unsafe_judgment -> unsafe_judgment array ->
   evar_map * unsafe_judgment
-val judge_of_abstraction : Environ.env -> Name.t ->
+val judge_of_abstraction : Environ.env -> evar_map -> Name.t ->
   unsafe_type_judgment -> unsafe_judgment -> unsafe_judgment
-val judge_of_product : Environ.env -> Name.t ->
+val judge_of_product : Environ.env -> evar_map -> Name.t ->
   unsafe_type_judgment -> unsafe_type_judgment -> unsafe_judgment
 val judge_of_projection : env -> evar_map -> Projection.t -> unsafe_judgment -> unsafe_judgment
 val judge_of_int : Environ.env -> Uint63.t -> unsafe_judgment

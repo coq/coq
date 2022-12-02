@@ -64,7 +64,7 @@ val new_type_evar :
   ?naming:intro_pattern_naming_expr ->
   ?principal:bool -> ?hypnaming:naming_mode ->
   env -> evar_map -> rigid ->
-  evar_map * (constr * Sorts.t)
+  evar_map * (constr * ESorts.t)
 
 val new_Type : ?rigid:rigid -> evar_map -> evar_map * constr
 
