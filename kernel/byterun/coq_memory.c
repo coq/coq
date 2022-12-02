@@ -78,9 +78,9 @@ static void coq_scan_roots(scanning_action action)
   if (coq_prev_scan_roots_hook != NULL) (*coq_prev_scan_roots_hook)(action);
 }
 #else
-static void (*coq_prev_scan_roots_hook) (scanning_action, void *, caml_domain_state *);
+static void (*coq_prev_scan_roots_hook) (scanning_action, scanning_action_flags, void *, caml_domain_state *);
 
-static void coq_scan_roots(scanning_action action, void *ctx, caml_domain_state *state)
+static void coq_scan_roots(scanning_action action, scanning_action_flags flags, void *ctx, caml_domain_state *state)
 {
   register value * i;
   /* Scan the stack */
@@ -89,7 +89,7 @@ static void coq_scan_roots(scanning_action action, void *ctx, caml_domain_state 
     (*action) (ctx, *i, i);
   };
   /* Hook */
-  if (coq_prev_scan_roots_hook != NULL) (*coq_prev_scan_roots_hook)(action, ctx, state);
+  if (coq_prev_scan_roots_hook != NULL) (*coq_prev_scan_roots_hook)(action, flags, ctx, state);
 }
 #endif
 
