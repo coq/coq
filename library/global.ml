@@ -48,8 +48,6 @@ let is_joined_environment = GlobalSafeEnv.is_joined_environment
 
 let env () = Safe_typing.env_of_safe_env (safe_env ())
 
-let env_is_initial () = Safe_typing.is_initial (safe_env ())
-
 (** Turn ops over the safe_environment state monad to ops on the global env *)
 
 let globalize0 f = GlobalSafeEnv.set_safe_env (f (safe_env ()))

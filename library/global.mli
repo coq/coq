@@ -20,8 +20,6 @@ open Declarations
 val safe_env : unit -> Safe_typing.safe_environment
 val env : unit -> Environ.env
 
-val env_is_initial : unit -> bool
-
 val universes : unit -> UGraph.t
 val universes_lbound : unit -> UGraph.Bound.t
 val named_context_val : unit -> Environ.named_context_val
