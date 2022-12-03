@@ -1208,7 +1208,7 @@ let warn_non_reversible_notation =
          (function
           | APrioriReversible -> assert false
           | HasLtac ->
-             strbrk "This notation contains Ltac expressions: it will not be used for printing."
+             strbrk "This notation contains quotations: it will not be used for printing."
           | NonInjective ids ->
              let n = List.length ids in
              strbrk (String.plural n "Variable") ++ spc () ++ pr_enum Id.print ids ++ spc () ++
