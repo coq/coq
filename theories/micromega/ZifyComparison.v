@@ -41,7 +41,7 @@ Add Zify BinOp BinOp_Zcompare.
 
 #[global]
 Instance Op_eq_comparison : BinRel (@eq comparison) :=
-  {TR := @eq Z ; TRInj := ltac:(destruct n,m; simpl ; intuition congruence) }.
+  {TR := @eq Z ; TRInj := ltac:(intros [] []; simpl ; intuition congruence) }.
 Add Zify BinRel Op_eq_comparison.
 
 #[global]

@@ -1585,7 +1585,7 @@ let command_focus = Proof.new_focus_kind ()
 let focus_command_cond = Proof.no_cond command_focus
 
 let vernac_set_end_tac ~pstate tac =
-  let env = Genintern.empty_glob_sign (Global.env ()) in
+  let env = Genintern.empty_glob_sign ~strict:true (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
   (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
   Declare.Proof.set_endline_tactic tac pstate

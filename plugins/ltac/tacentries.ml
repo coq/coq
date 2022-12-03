@@ -385,7 +385,7 @@ let extend_atomic_tactic name entries =
       let default = epsilon_value inj e in
       match default with
       | None -> raise NonEmptyArgument
-      | Some def -> Tacintern.intern_tactic_or_tacarg (Genintern.empty_glob_sign Environ.empty_env) def
+      | Some def -> Tacintern.intern_tactic_or_tacarg (Genintern.empty_glob_sign ~strict:true Environ.empty_env) def
     in
     try Some (hd, List.map empty_value rem) with NonEmptyArgument -> None
   in
@@ -505,9 +505,9 @@ let register_ltac local ?deprecation tacl =
     in
     List.fold_left fold [] rfun
   in
-  let ist = Tacintern.make_empty_glob_sign () in
+  let ist = Tacintern.make_empty_glob_sign ~strict:true in
   let map (name, body) =
-    let body = Flags.with_option Tacintern.strict_check (Tacintern.intern_tactic_or_tacarg ist) body in
+    let body = Tacintern.intern_tactic_or_tacarg ist body in
     (name, body)
   in
   let defs () =

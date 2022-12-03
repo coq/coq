@@ -585,7 +585,7 @@ let interp_glob_closure ist env sigma ?(kind=WithoutTypeConstraint) ?(pattern_mo
         ltac_bound = Id.Map.domain ist.lfun;
         ltac_extra = Genintern.Store.empty;
       } in
-      { closure ; term = for_grammar (fun () -> intern_gen kind ~pattern_mode ~ltacvars env sigma term_expr) () }
+      { closure ; term = intern_gen kind ~strict_check:false ~pattern_mode ~ltacvars env sigma term_expr }
 
 let interp_uconstr ist env sigma c = interp_glob_closure ist env sigma c
 
@@ -2026,7 +2026,7 @@ let interp_tac_gen lfun avoid_ids debug t =
   let ist = { lfun; poly; extra } in
   let ltacvars = Id.Map.domain lfun in
   eval_tactic_ist ist
-    (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars } t)
+    (intern_pure_tactic { (Genintern.empty_glob_sign ~strict:false env) with ltacvars } t)
   end
 
 let interp t = interp_tac_gen Id.Map.empty Id.Set.empty (get_debug()) t
@@ -2041,7 +2041,7 @@ type ltac_expr = {
 (* [global] means that [t] should be internalized outside of goals. *)
 let hide_interp {global;ast} =
   let hide_interp env =
-    let ist = Genintern.empty_glob_sign env in
+    let ist = Genintern.empty_glob_sign ~strict:false env in
     let te = intern_pure_tactic ist ast in
     let t = eval_tactic te in
     t
@@ -2169,7 +2169,7 @@ let interp_ltac_constr ist c k = Ftactic.run (interp_ltac_constr ist c) k
 
 let interp_redexp env sigma r =
   let ist = default_ist () in
-  let gist = Genintern.empty_glob_sign env in
+  let gist = Genintern.empty_glob_sign ~strict:true env in
   interp_red_expr ist env sigma (intern_red_expr gist r)
 
 (***************************************************************************)

@@ -27,9 +27,10 @@ type glob_sign = {
   genv : Environ.env;
   extra : Store.t;
   intern_sign : intern_variable_status;
+  strict_check : bool;
 }
 
-val empty_glob_sign : Environ.env -> glob_sign
+val empty_glob_sign : strict:bool -> Environ.env -> glob_sign
 
 (** In globalize tactics, we need to keep the initial [constr_expr] to recompute
    in the environment by the effective calls to Intro, Inversion, etc

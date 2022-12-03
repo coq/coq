@@ -81,16 +81,6 @@ type ltac_sign = {
   ltac_extra : Genintern.Store.t;
 }
 
-let interning_grammar = ref false
-
-(* Historically for parsing grammar rules, but in fact used only for
-   translator, v7 parsing, and unstrict tactic internalization *)
-let for_grammar f x =
-  interning_grammar := true;
-  let a = f x in
-    interning_grammar := false;
-    a
-
 (**********************************************************************)
 (* Internalization errors                                             *)
 
@@ -252,7 +242,9 @@ type abstraction_kind = AbsLambda | AbsPi
 
 type intern_env = {
   ids: Id.Set.t;
-  unb: bool;
+  strict_check: bool option;
+    (* None = not passed via ltac yet: works as "true" unless when interpreting
+       ltac:() in which case we assume the default Ltac value, that is "false" *)
   local_univs: local_univs;
   tmp_scope: Notation_term.tmp_scope_name list;
   scopes: Notation_term.scope_name list;
@@ -527,7 +519,7 @@ let intern_generalized_binder intern_type ntnvars
     if t then ty, ids
     else Implicit_quantifiers.implicit_application ids ty
   in
-  let ty' = intern_type {env with ids = ids; unb = true} ty in
+  let ty' = intern_type {env with ids = ids; strict_check = Some false} ty in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:ids ~allowed:ids' ty' in
   let env' = List.fold_left
     (fun env {loc;v=x} -> push_name_env ntnvars [](*?*) env (make ?loc @@ Name x))
@@ -629,7 +621,7 @@ let intern_local_binder_aux intern ntnvars (env,bl) = function
       (env, (DAst.make ?loc:p.CAst.loc @@ GLocalPattern((disjpat,List.map (fun x -> x.v) il),id,bk,t)) :: bl)
 
 let intern_generalization intern env ntnvars loc bk c =
-  let c = intern {env with unb = true} c in
+  let c = intern {env with strict_check = Some false} c in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:env.ids c in
   let env', c' =
     let abs =
@@ -1387,12 +1379,13 @@ let intern_applied_reference ~isproj intern env namedctx (_, ntnvars as lvar) us
       res, args2
     with Not_found as exn ->
       (* Extra allowance for non globalizing functions *)
-      if !interning_grammar || env.unb then
-        (* check_applied_projection ?? *)
-        gvar (loc,qualid_basename qid) us, args
-      else
+      match env.strict_check with
+      | None | Some true ->
         let _, info = Exninfo.capture exn in
         Nametab.error_global_not_found ~info qid
+      | Some false ->
+        (* check_applied_projection ?? *)
+        gvar (loc,qualid_basename qid) us, args
   else
     try
       let res, realref, args2 = intern_qualid qid intern env ntnvars us args in
@@ -1405,7 +1398,7 @@ let intern_applied_reference ~isproj intern env namedctx (_, ntnvars as lvar) us
 let interp_reference vars r =
   let r,_ =
     intern_applied_reference ~isproj:false (fun _ -> error_not_enough_arguments ?loc:None)
-      {ids = Id.Set.empty; unb = false;
+      {ids = Id.Set.empty; strict_check = Some true;
        local_univs = empty_local_univs;(* <- doesn't matter here *)
        tmp_scope = []; scopes = []; impls = empty_internalization_env;
        binder_block_names = None}
@@ -2323,6 +2316,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           ltacvars;
           extra;
           intern_sign;
+          strict_check = match env.strict_check with None -> false | Some b -> b;
         } in
         let (_, glb) = Genintern.generic_intern ist gen in
         DAst.make ?loc @@
@@ -2570,11 +2564,11 @@ let empty_ltac_sign = {
 }
 
 let intern_gen kind env sigma
-               ?(impls=empty_internalization_env) ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
+               ?(impls=empty_internalization_env) ?strict_check ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
                c =
   let tmp_scope = Option.cata (scope_of_type_kind env sigma) [] kind in
   let k = Option.map allowed_binder_kind_of_type_kind kind in
-  internalize env {ids = extract_ids env; unb = false;
+  internalize env {ids = extract_ids env; strict_check;
                    local_univs = { bound = bound_univs sigma; unb_univs = true };
                    tmp_scope = tmp_scope; scopes = [];
                    impls; binder_block_names = Some k}
@@ -2583,8 +2577,8 @@ let intern_gen kind env sigma
 let intern_unknown_if_term_or_type env sigma c =
   intern_gen None env sigma c
 
-let intern_gen kind env sigma ?impls ?pattern_mode ?ltacvars c =
-  intern_gen (Some kind) env sigma ?impls ?pattern_mode ?ltacvars c
+let intern_gen kind env sigma ?impls ?strict_check ?pattern_mode ?ltacvars c =
+  intern_gen (Some kind) env sigma ?impls ?strict_check ?pattern_mode ?ltacvars c
 
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
 let intern_type env sigma c = intern_gen IsType env sigma c
@@ -2653,9 +2647,9 @@ let interp_type_evars ?program_mode env sigma ?(impls=empty_internalization_env)
 
 (* Miscellaneous *)
 
-let intern_constr_pattern env sigma ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
+let intern_constr_pattern env sigma ?(as_type=false) ?strict_check ?(ltacvars=empty_ltac_sign) c =
   let c = intern_gen (if as_type then IsType else WithoutTypeConstraint)
-            ~pattern_mode:true ~ltacvars env sigma c in
+            ?strict_check ~pattern_mode:true ~ltacvars env sigma c in
   pattern_of_glob_constr c
 
 let interp_constr_pattern env sigma ?(expected_type=WithoutTypeConstraint) c =
@@ -2666,13 +2660,13 @@ let interp_constr_pattern env sigma ?(expected_type=WithoutTypeConstraint) c =
      evars in the pretyper. Sometimes they get solved eagerly. *)
   legacy_bad_pattern_of_constr env sigma c
 
-let intern_core kind env sigma ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
+let intern_core kind env sigma ?strict_check ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
       { Genintern.intern_ids = ids; Genintern.notation_variable_status = vl } c =
   let tmp_scope = scope_of_type_kind env sigma kind in
   let impls = empty_internalization_env in
   let k = allowed_binder_kind_of_type_kind kind in
   internalize env
-    {ids; unb = false;
+    {ids; strict_check;
      local_univs = { bound = bound_univs sigma; unb_univs = true };
      tmp_scope; scopes = []; impls;
      binder_block_names = Some (Some k)}
@@ -2688,7 +2682,7 @@ let interp_notation_constr env ?(impls=empty_internalization_env) nenv a =
     ) nenv.ninterp_var_type in
   let impls = Id.Map.fold (fun id _ impls -> Id.Map.remove id impls) nenv.ninterp_var_type impls in
   let c = internalize env
-      {ids; unb = false;
+      {ids; strict_check = Some true;
        local_univs = empty_local_univs;
        tmp_scope = []; scopes = []; impls; binder_block_names = None}
       false (empty_ltac_sign, vl) a
@@ -2729,7 +2723,7 @@ let intern_context env ~bound_univs impl_env binders =
             (fun (lenv, bl) b ->
                let (env, bl) = intern_local_binder_aux (my_intern_constr env lvar) Id.Map.empty (lenv, bl) b in
                (env, bl))
-            ({ids; unb = false;
+            ({ids; strict_check = Some true;
               local_univs = { bound = bound_univs; unb_univs = true };
               tmp_scope = []; scopes = []; impls = impl_env;
               binder_block_names = Some (Some AbsPi)}, []) binders in
@@ -2778,7 +2772,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
     (* We assume all ids around are parts of the prefix of the current
        context being interpreted *)
      extract_ids env in
-  let int_env = {ids; unb = false;
+  let int_env = {ids; strict_check = Some true;
               local_univs = { bound = bound_univs sigma; unb_univs = true };
               tmp_scope = []; scopes = []; impls = impl_env;
               binder_block_names = Some (Some AbsPi)} in

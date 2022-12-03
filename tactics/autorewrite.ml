@@ -544,7 +544,7 @@ let default_hint_rewrite_locality () =
 let add_rew_rules ~locality base lrul =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let ist = Genintern.empty_glob_sign (Global.env ()) in
+  let ist = Genintern.empty_glob_sign ~strict:true (Global.env ()) in
   let intern tac = snd (Genintern.generic_intern ist tac) in
   let map {CAst.loc;v=((c,ctx),b,t)} =
     let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
