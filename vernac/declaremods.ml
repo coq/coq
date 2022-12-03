@@ -696,24 +696,38 @@ type current_module_syntax_info = {
   cur_mbids : MBId.t list;
 }
 
-let default_module_syntax_info = { cur_mp = ModPath.initial; cur_typ = None; cur_mbids = [] }
+let default_module_syntax_info mp = { cur_mp = mp; cur_typ = None; cur_mbids = [] }
 
 let openmod_syntax_info =
-  Summary.ref default_module_syntax_info ~stage:Summary.Stage.Synterp ~name:"MODULE-SYNTAX-INFO"
+  Summary.ref None ~stage:Summary.Stage.Synterp ~name:"MODULE-SYNTAX-INFO"
 
-  (** {6 Current module information}
+(** {6 Current module information}
 
-      This information is stored by each [start_module] for use
-      in a later [end_module]. *)
+    This information is stored by each [start_module] for use
+    in a later [end_module]. *)
 
-  type current_module_info = {
-    cur_typ : (module_struct_entry * int option) option; (** type via ":" *)
-    cur_typs : module_type_body list (** types via "<:" *)
-  }
+type current_module_info = {
+  cur_typ : (module_struct_entry * int option) option; (** type via ":" *)
+  cur_typs : module_type_body list (** types via "<:" *)
+}
 
-  let default_module_info = { cur_typ = None; cur_typs = [] }
+let default_module_info = { cur_typ = None; cur_typs = [] }
 
-  let openmod_info = Summary.ref default_module_info ~name:"MODULE-INFO"
+let openmod_info = Summary.ref default_module_info ~name:"MODULE-INFO"
+
+let start_library dir =
+  let mp = Global.start_library dir in
+  openmod_info := default_module_info;
+  openmod_syntax_info := Some (default_module_syntax_info mp);
+  Lib.start_compilation dir mp
+
+let set_openmod_syntax_info info = match !openmod_syntax_info with
+  | None -> anomaly Pp.(str "bad init of openmod_syntax_info")
+  | Some _ -> openmod_syntax_info := Some info
+
+let openmod_syntax_info () = match !openmod_syntax_info with
+  | None -> anomaly Pp.(str "missing init of openmod_syntax_info")
+  | Some v -> v
 
 module RawModOps = struct
 
@@ -758,12 +772,12 @@ let start_module_core id args res fs =
         Some (mte, inl), Enforce (mte, base, kind, inl)
     | Check resl -> None, Check (build_subtypes resl)
   in
-  let mp = ModPath.MPdot(!openmod_syntax_info.cur_mp, Label.of_id id) in
+  let mp = ModPath.MPdot((openmod_syntax_info ()).cur_mp, Label.of_id id) in
   mp, res_entry_o, mbids, sign, args
 
 let start_module export id args res fs =
   let mp, res_entry_o, mbids, sign, args = start_module_core id args res fs in
-  openmod_syntax_info := { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids };
+  set_openmod_syntax_info { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids };
   let prefix = Lib.Synterp.start_module export id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix.obj_mp));
   mp, args, sign
@@ -806,7 +820,7 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
 
 let end_module () =
   let oldprefix,fs,objects = Lib.Synterp.end_module () in
-  let m_info = !openmod_syntax_info in
+  let m_info = openmod_syntax_info () in
   let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
   let mp,objects = end_module_core id m_info objects fs in
 
@@ -824,7 +838,7 @@ let get_functor_sobjs is_mod inl (mbids,mexpr) =
 let declare_module id args res mexpr_o fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp = ModPath.MPdot(!openmod_syntax_info.cur_mp, Label.of_id id) in
+  let mp = ModPath.MPdot((openmod_syntax_info ()).cur_mp, Label.of_id id) in
   let args = intern_args args in
   let mbids = List.flatten @@ List.map fst args in
   let mty_entry_o = match res with
@@ -1109,8 +1123,8 @@ let start_modtype_core id cur_mp args mtys fs =
   mp, mbids, args, sub_mty_l
 
 let start_modtype id args mtys fs =
-  let mp, mbids, args, sub_mty_l = start_modtype_core id !openmod_syntax_info.cur_mp args mtys fs in
-  openmod_syntax_info := { cur_mp = mp; cur_typ = None; cur_mbids = mbids };
+  let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys fs in
+  set_openmod_syntax_info { cur_mp = mp; cur_typ = None; cur_mbids = mbids };
   let prefix = Lib.Synterp.start_modtype id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype prefix.obj_mp));
   mp, args, sub_mty_l
@@ -1124,15 +1138,15 @@ let end_modtype_core id mbids objects fs =
 let end_modtype () =
   let oldprefix,fs,objects = Lib.Synterp.end_modtype () in
   let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
-  let objects = end_modtype_core id !openmod_syntax_info.cur_mbids objects fs in
+  let objects = end_modtype_core id (openmod_syntax_info ()).cur_mbids objects fs in
   SynterpVisitor.add_leaves objects;
-  !openmod_syntax_info.cur_mp
+  (openmod_syntax_info ()).cur_mp
 
 let declare_modtype id args mtys (mty,ann) fs =
   let inl = inl2intopt ann in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp, mbids, args, sub_mty_l = start_modtype_core id !openmod_syntax_info.cur_mp args mtys fs in
+  let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys fs in
   let mte, base, kind = Modintern.intern_module_ast Modintern.ModType mty in
   let entry = mbids, mte in
   let sobjs = RawModOps.Synterp.get_functor_sobjs false inl entry in
@@ -1260,7 +1274,7 @@ let declare_one_include_core cur_mp (me_ast,annot) =
   (me, base, kind, inl), aobjs
 
 let declare_one_include (me_ast,annot) =
-  let res, aobjs = declare_one_include_core !openmod_syntax_info.cur_mp (me_ast,annot) in
+  let res, aobjs = declare_one_include_core (openmod_syntax_info ()).cur_mp (me_ast,annot) in
   SynterpVisitor.add_leaf (IncludeObject aobjs);
   res
 
@@ -1407,7 +1421,7 @@ let declare_module_includes id args res mexpr_l fs =
 Typically used for `Module Type M := N <+ P`.
 *)
 let declare_modtype_includes id args res mexpr_l fs =
-  let mp, mbids, args, subtyps = RawModTypeOps.Synterp.start_modtype_core id !openmod_syntax_info.cur_mp args res fs in
+  let mp, mbids, args, subtyps = RawModTypeOps.Synterp.start_modtype_core id (openmod_syntax_info ()).cur_mp args res fs in
   let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core mp) mexpr_l in
   let bodies, incl_objs = List.split includes in
   let incl_objs = List.map (fun x -> IncludeObject x) incl_objs in
@@ -1565,12 +1579,6 @@ let import_module f ~export mp =
   import_modules ~export [f,mp]
 
 end
-
-let start_library dir =
-  let mp = Global.start_library dir in
-  openmod_info := default_module_info;
-  openmod_syntax_info := { default_module_syntax_info with cur_mp = mp };
-  Lib.start_compilation dir mp
 
 let end_library_hook = ref ignore
 let append_end_library_hook f =
