@@ -108,7 +108,7 @@ let open_blocks_message es =
    paths based on the library path. *)
 
 let initial_prefix = Nametab.{
-  obj_dir = Libnames.default_library;
+  obj_dir = DirPath.initial;
   obj_mp  = ModPath.initial;
 }
 
@@ -202,7 +202,7 @@ let end_compilation_checks dir =
     Summary.init_summaries ()
 
 let library_dp () =
-  match !synterp_state.comp_name with Some m -> m | None -> Libnames.default_library
+  match !synterp_state.comp_name with Some m -> m | None -> DirPath.initial
 
 (* [path_prefix] is a pair of absolute dirpath and a pair of current
    module path and relative section path *)
