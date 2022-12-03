@@ -166,6 +166,7 @@ type safe_environment =
     required : vodigest DPmap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
+    opaquetab : Opaqueproof.opaquetab;
 }
 
 and modvariant =
@@ -195,6 +196,7 @@ let empty_environment =
     required = DPmap.empty;
     loads = [];
     local_retroknowledge = [];
+    opaquetab = Opaqueproof.empty_opaquetab;
 }
 
 let is_initial senv =
@@ -819,8 +821,8 @@ let export_side_effects senv eff =
     recheck_seff seff Univ.ContextSet.empty [] env
 
 let push_opaque_proof senv =
-  let o, otab = Opaqueproof.create (library_dp_of_senv senv) (Environ.opaque_tables senv.env) in
-  let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
+  let o, otab = Opaqueproof.create (library_dp_of_senv senv) senv.opaquetab in
+  let senv = { senv with opaquetab = otab } in
   senv, o
 
 let export_private_constants eff senv =
@@ -930,7 +932,7 @@ let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
   { senv with future_cst = HandleMap.remove i senv.future_cst }
 
 let is_filled_opaque i senv =
-  let () = assert (Opaqueproof.mem_handle i (Environ.opaque_tables senv.env)) in
+  let () = assert (Opaqueproof.mem_handle i senv.opaquetab) in
   not (HandleMap.mem i senv.future_cst)
 
 let repr_certificate { opq_body = body; opq_univs = ctx; _ } =
@@ -1065,6 +1067,7 @@ let start_mod_modtype ~istype l senv =
     paramresolver = senv.paramresolver;
     univ = senv.univ;
     required = senv.required;
+    opaquetab = senv.opaquetab;
     sections = None; (* checked in check_empty_context *)
 
     (* module local fields *)
@@ -1167,6 +1170,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
       senv.local_retroknowledge@oldsenv.local_retroknowledge;
+    opaquetab = senv.opaquetab;
   }
 
 let end_module l restype senv =
@@ -1176,8 +1180,7 @@ let end_module l restype senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let mb = build_module_body params restype senv in
-  let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
+  let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
   let senv' = propagate_loads { senv with env = newenv } in
   let newenv = Modops.add_module mb newenv in
   let newresolver =
@@ -1201,8 +1204,7 @@ let end_modtype l senv =
   let () = check_current_label l mp in
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
-  let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
+  let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
   let senv' = propagate_loads {senv with env=newenv} in
   let auto_tb = functorize params (NoFunctor (List.rev senv.revstruct)) in
   let mtb = build_mtb mp auto_tb senv.modresolver in
@@ -1285,6 +1287,7 @@ let start_library dir senv =
     univ = Univ.ContextSet.empty;
     loads = [];
     local_retroknowledge = [];
+    opaquetab = Opaqueproof.empty_opaquetab;
   }
 
 let export ~output_native_objects senv dir =
@@ -1372,9 +1375,6 @@ let close_section senv =
      by {!add_constant_aux}. *)
   let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels;
         rev_reimport; rev_revstruct = revstruct } = revert in
-  (* Do not revert the opaque table, the discharged opaque constants are
-     referring to it. *)
-  let env = Environ.set_opaque_tables env (Environ.opaque_tables env0) in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay Requires *)
   let senv = List.fold_left (fun senv (lib,cst,vodigest) -> snd (import lib cst vodigest senv))
