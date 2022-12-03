@@ -2283,8 +2283,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         | None -> None
         | Some gen ->
           let (ltacvars, ntnvars) = lvar in
-          (* Preventively declare notation variables in ltac as non-bindings *)
-          Id.Map.iter (fun x (used_as_binder,_,_) -> used_as_binder := false) ntnvars;
+          (* Use a fresh ntnvars state for interpreting the quotation *)
+          let ntnvars' = Id.Map.map (fun (_,_,t) -> (ref false, ref None, t)) ntnvars in
           let extra = ltacvars.ltac_extra in
           (* We inform ltac that the interning vars and the notation vars are bound *)
           (* but we could instead rely on the "intern_sign" *)
@@ -2294,7 +2294,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           (* Propagating enough information for mutual interning with tac-in-term *)
           let intern_sign = {
             Genintern.intern_ids = env.ids;
-            Genintern.notation_variable_status = ntnvars
+            Genintern.notation_variable_status = ntnvars'
           } in
           let ist = {
             Genintern.genv = globalenv;
@@ -2303,6 +2303,11 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             intern_sign;
           } in
           let (_, glb) = Genintern.generic_intern ist gen in
+          (* Merge ntnvars' *)
+          Id.Map.iter (fun id (used_as_binder,scopes,_) ->
+              if !used_as_binder then set_var_is_binder id ntnvars;
+              if Option.has_some !scopes then set_notation_var_scope id (Option.get !scopes) ntnvars)
+            ntnvars';
           Some glb
         in
         DAst.make ?loc @@

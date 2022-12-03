@@ -1859,9 +1859,10 @@ let () =
     | Some env -> env
     in
     (* Special handling of notation variables *)
-    let fold id _ (ids, env) =
+    let fold id (_,scopes,_) (ids, env) =
       let () = assert (not @@ mem_var id env) in
       let t = monomorphic (GTypRef (Other t_preterm, [])) in
+      (* force being used: *) scopes := Some ([],[]);
       let env = push_name (Name id) t env in
       (Id.Set.add id ids, env)
     in
