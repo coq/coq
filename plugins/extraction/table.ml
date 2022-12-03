@@ -59,8 +59,7 @@ let raw_string_of_modfile = function
   | MPfile f -> String.capitalize_ascii (Id.to_string (List.hd (DirPath.repr f)))
   | _ -> assert false
 
-let is_toplevel mp =
-  ModPath.equal mp ModPath.initial || ModPath.equal mp (Lib.current_mp ())
+let is_toplevel mp = ModPath.equal mp (Lib.current_mp ())
 
 let at_toplevel mp =
   is_modfile mp || is_toplevel mp
