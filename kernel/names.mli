@@ -152,8 +152,8 @@ sig
   val is_empty : t -> bool
   (** Test whether a directory path is empty. *)
 
-  val initial : t
-  (** Initial "seed" of the unique identifier generator *)
+  val dummy : t
+  (** Used in [Safe_typing.empty_environment] and similar *)
 
   val hcons : t -> t
   (** Hashconsing of directory paths. *)
@@ -258,8 +258,8 @@ sig
 
   val is_bound : t -> bool
 
-  val initial : t
-  (** Name of the toplevel structure ([= MPfile initial_dir]) *)
+  val dummy : t
+  (** ([= MPfile DirPath.dummy]) *)
 
   val dp : t -> DirPath.t
 

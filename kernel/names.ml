@@ -150,7 +150,7 @@ module ModIdmap = Id.Map
     The actual representation is reversed to optimise sharing:
     Coq.A.B is ["B";"A";"Coq"] *)
 
-let default_module_name = "If you see this, it's a bug"
+let dummy_module_name = "If you see this, it's a bug"
 
 module DirPath =
 struct
@@ -180,7 +180,7 @@ struct
 
   let print dp = str (to_string dp)
 
-  let initial = [default_module_name]
+  let dummy = [dummy_module_name]
 
   module Hdir = Hashcons.Hlist(Id)
 
@@ -320,7 +320,7 @@ module ModPath = struct
   | MPdot (mp, lbl) ->
     combinesmall 3 (combine (hash mp) (Label.hash lbl))
 
-  let initial = MPfile DirPath.initial
+  let dummy = MPfile DirPath.dummy
 
   let rec dp = function
   | MPfile sl -> sl

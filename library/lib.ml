@@ -107,9 +107,9 @@ let open_blocks_message es =
    sections, but on the contrary there are many constructions of section
    paths based on the library path. *)
 
-let initial_prefix = Nametab.{
-  obj_dir = DirPath.initial;
-  obj_mp  = ModPath.initial;
+let dummy_prefix = Nametab.{
+  obj_dir = DirPath.dummy;
+  obj_mp  = ModPath.dummy;
 }
 
 type synterp_state = {
@@ -118,10 +118,10 @@ type synterp_state = {
   path_prefix : Nametab.object_prefix;
 }
 
-let initial = {
+let dummy = {
   comp_name = None;
   lib_stk = [];
-  path_prefix = initial_prefix;
+  path_prefix = dummy_prefix;
 }
 
 (** The lib state is split in two components:
@@ -129,7 +129,7 @@ let initial = {
   - The interp stage state which manages a recording of regular objects.
 *)
 
-let synterp_state = ref initial
+let synterp_state = ref dummy
 let interp_state = ref []
 
 let contents () = !synterp_state.lib_stk @ !interp_state
@@ -198,11 +198,11 @@ let end_compilation_checks dir =
     { synterp_state; interp_state }
 
   let init () =
-    unfreeze { synterp_state = initial; interp_state = [] };
+    unfreeze { synterp_state = dummy; interp_state = [] };
     Summary.init_summaries ()
 
 let library_dp () =
-  match !synterp_state.comp_name with Some m -> m | None -> DirPath.initial
+  match !synterp_state.comp_name with Some m -> m | None -> DirPath.dummy
 
 (* [path_prefix] is a pair of absolute dirpath and a pair of current
    module path and relative section path *)
@@ -241,10 +241,7 @@ let make_foname id = make_oname !synterp_state.path_prefix id
 
 (* Adding operations. *)
 
-let dummylib = CompilingLibrary
-    {Nametab.obj_dir = DirPath.initial;
-     Nametab.obj_mp = ModPath.MPfile DirPath.initial;
-    }
+let dummylib = CompilingLibrary dummy_prefix
 
 let error_still_opened s oname =
   CErrors.user_err Pp.(str "The " ++ str s ++ str " "

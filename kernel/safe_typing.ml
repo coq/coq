@@ -182,7 +182,7 @@ let rec library_dp_of_senv senv =
 
 let empty_environment =
   { env = Environ.empty_env;
-    modpath = ModPath.initial;
+    modpath = ModPath.dummy;
     modvariant = NONE;
     modresolver = Mod_subst.empty_delta_resolver;
     paramresolver = Mod_subst.empty_delta_resolver;
@@ -199,7 +199,7 @@ let empty_environment =
 
 let is_initial senv =
   match senv.revstruct, senv.modvariant with
-  | [], NONE -> ModPath.equal senv.modpath ModPath.initial
+  | [], NONE -> ModPath.equal senv.modpath ModPath.dummy
   | _ -> false
 
 let sections_are_opened senv = not (Option.is_empty senv.sections)

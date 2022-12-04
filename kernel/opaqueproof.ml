@@ -28,7 +28,7 @@ type opaquetab = {
 }
 let empty_opaquetab = {
   opaque_len = 0;
-  opaque_dir = DirPath.initial;
+  opaque_dir = DirPath.dummy;
 }
 
 let repr (Indirect (s, ci, dp, i)) = (s, ci, dp, i)
@@ -37,7 +37,7 @@ let create dp tab =
   let id = tab.opaque_len in
   let opaque_dir =
     if DirPath.equal dp tab.opaque_dir then tab.opaque_dir
-    else if DirPath.equal tab.opaque_dir DirPath.initial then dp
+    else if DirPath.equal tab.opaque_dir DirPath.dummy then dp
     else CErrors.anomaly
       (Pp.str "Using the same opaque table for multiple dirpaths.") in
   let ntab = { opaque_dir; opaque_len = id + 1 } in
