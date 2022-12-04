@@ -1048,35 +1048,36 @@ let add_module l me inl senv =
 
 (** {6 Starting / ending interactive modules and module types } *)
 
-let start_module l senv =
+let start_mod_modtype ~istype l senv =
   let () = check_modlabel l senv in
   let () = check_empty_context senv in
   let mp = MPdot(senv.modpath, l) in
   mp,
-  { empty_environment with
-    env = senv.env;
-    future_cst = senv.future_cst;
-    modresolver = senv.modresolver;
-    paramresolver = senv.paramresolver;
+  {
+    (* modified fields *)
     modpath = mp;
-    modvariant = STRUCT ([],senv);
-    univ = senv.univ;
-    required = senv.required }
+    modvariant = if istype then SIG ([], senv) else STRUCT ([],senv);
 
-let start_modtype l senv =
-  let () = check_modlabel l senv in
-  let () = check_empty_context senv in
-  let mp = MPdot(senv.modpath, l) in
-  mp,
-  { empty_environment with
+    (* carried over fields *)
     env = senv.env;
     future_cst = senv.future_cst;
     modresolver = senv.modresolver;
     paramresolver = senv.paramresolver;
-    modpath = mp;
-    modvariant = SIG ([], senv);
     univ = senv.univ;
-    required = senv.required }
+    required = senv.required;
+    sections = None; (* checked in check_empty_context *)
+
+    (* module local fields *)
+    revstruct = [];
+    modlabels = Label.Set.empty;
+    objlabels = Label.Set.empty;
+    loads = [];
+    local_retroknowledge = [];
+  }
+
+let start_module l senv = start_mod_modtype ~istype:false l senv
+
+let start_modtype l senv = start_mod_modtype ~istype:true l senv
 
 (** Adding parameters to the current module or module type.
     This module should have been freshly started. *)
@@ -1267,11 +1268,22 @@ let start_library dir senv =
   assert (not (DirPath.is_empty dir));
   let mp = MPfile dir in
   mp,
-  { empty_environment with
-    env = senv.env;
+  { env = senv.env;
     modpath = mp;
     modvariant = LIBRARY;
-    required = senv.required }
+    required = senv.required;
+
+    modresolver = Mod_subst.empty_delta_resolver;
+    paramresolver = Mod_subst.empty_delta_resolver;
+    revstruct = [];
+    modlabels = Label.Set.empty;
+    objlabels = Label.Set.empty;
+    sections = None;
+    future_cst = HandleMap.empty;
+    univ = Univ.ContextSet.empty;
+    loads = [];
+    local_retroknowledge = [];
+  }
 
 let export ~output_native_objects senv dir =
   let () = check_current_library dir senv in
