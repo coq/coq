@@ -42,3 +42,14 @@ Notation "'WITH' ( x1 : t1 ) , x2t2 , .. , xntn  'PRE'  [ ] P 'POST' [ ] Q" :=
 Check WITH (x : nat) , (y : nat) , (z : nat) PRE [] (x, y, z) POST [] (z, y, x).
 
 End ConstrAsPattern.
+
+Module Pattern.
+
+Notation "'WITH' ( x1 : t1 ) , x2t2 , .. , xntn  'PRE'  [ ] P 'POST' [ ] Q" :=
+  ((fun x1 : t1 => (fun x2t2 => .. (fun xntn => (pair .. (pair x1 x2t2) .. xntn)) .. )),
+   (fun x1 : t1 => (fun x2t2 => .. (fun xntn => P) .. )),
+   (fun x1 : t1 => (fun x2t2 => .. (fun xntn => Q) .. )))
+    (at level 200, x1 at level 0, x2t2 pattern, P at level 100, Q at level 100, only parsing).
+Check WITH (x : nat) , (y : nat) , (z : nat) PRE [] (x, y, z) POST [] (z, y, x).
+
+End Pattern.

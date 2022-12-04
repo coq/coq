@@ -62,11 +62,11 @@ type simple_constr_prod_entry_key =
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 
-type binder_entry_kind = ETBinderOpen | ETBinderClosed of (bool * string) list
-
 type binder_target = ForBinder | ForTerm
 
-type constr_prod_entry_key =
+type binder_entry_kind = ETBinderOpen | ETBinderClosed of constr_prod_entry_key option * (bool * string) list
+
+and constr_prod_entry_key =
   | ETProdIdent           (* Parsed as an ident *)
   | ETProdName            (* Parsed as a name (ident or _) *)
   | ETProdGlobal          (* Parsed as a global reference *)

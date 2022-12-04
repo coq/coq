@@ -41,7 +41,10 @@ type unparsing =
   | UnpMetaVar of entry_relative_level * Extend.side option
   | UnpBinderMetaVar of entry_relative_level * pattern_quote_style
   | UnpListMetaVar of entry_relative_level * unparsing list * Extend.side option
-  | UnpBinderListMetaVar of bool * unparsing list
+  | UnpBinderListMetaVar of
+      bool (* true if open binder *) *
+      bool (* true if printed with a quote *) *
+      unparsing list
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut
@@ -52,7 +55,7 @@ let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
   | UnpMetaVar (p1,s1), UnpMetaVar (p2,s2) -> entry_relative_level_eq p1 p2 && s1 = s2
   | UnpBinderMetaVar (p1,s1), UnpBinderMetaVar (p2,s2) -> entry_relative_level_eq p1 p2 && s1 = s2
   | UnpListMetaVar (p1,l1,s1), UnpListMetaVar (p2,l2,s2) -> entry_relative_level_eq p1 p2 && List.for_all2eq unparsing_eq l1 l2 && s1 = s2
-  | UnpBinderListMetaVar (b1,l1), UnpBinderListMetaVar (b2,l2) -> b1 = b2 && List.for_all2eq unparsing_eq l1 l2
+  | UnpBinderListMetaVar (b1,q1,l1), UnpBinderListMetaVar (b2,q2,l2) -> b1 = b2 && q1 = q2 && List.for_all2eq unparsing_eq l1 l2
   | UnpTerminal s1, UnpTerminal s2 -> String.equal s1 s2
   | UnpBox (b1,l1), UnpBox (b2,l2) -> b1 = b2 && List.for_all2eq unparsing_eq (List.map snd l1) (List.map snd l2)
   | UnpCut p1, UnpCut p2 -> p1 = p2
