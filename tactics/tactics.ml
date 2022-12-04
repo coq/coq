@@ -65,7 +65,8 @@ let use_clear_hyp_by_default () = !clear_hyp_by_default
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Default";"Clearing";"Used";"Hypotheses"];
       optread  = (fun () -> !clear_hyp_by_default) ;
       optwrite = (fun b -> clear_hyp_by_default := b) }

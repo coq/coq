@@ -33,6 +33,7 @@ let typeclasses_db = "typeclass_instances"
 let typeclasses_depth_opt_name = ["Typeclasses";"Depth"]
 let get_typeclasses_depth =
   Goptions.declare_intopt_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:typeclasses_depth_opt_name
 
@@ -45,12 +46,14 @@ let set_typeclasses_depth =
     cost (in terms of search depth) can differ. *)
 let get_typeclasses_limit_intros =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Typeclasses";"Limit";"Intros"]
     ~value:true
 
 let get_typeclasses_dependency_order =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Typeclasses";"Dependency";"Order"]
     ~value:false
@@ -58,6 +61,7 @@ let get_typeclasses_dependency_order =
 let iterative_deepening_opt_name = ["Typeclasses";"Iterative";"Deepening"]
 let get_typeclasses_iterative_deepening =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:iterative_deepening_opt_name
     ~value:false
@@ -83,7 +87,8 @@ end = struct
   let () =
     let open Goptions in
     declare_bool_option
-      { optdepr  = false;
+      { optstage = Summary.Stage.Interp;
+        optdepr  = false;
         optkey   = ["Typeclasses";"Debug"];
         optread  = get_typeclasses_debug;
         optwrite = set_typeclasses_debug; }
@@ -91,7 +96,8 @@ end = struct
   let () =
     let open Goptions in
     declare_int_option
-      { optdepr  = false;
+      { optstage = Summary.Stage.Interp;
+        optdepr  = false;
         optkey   = ["Typeclasses";"Debug";"Verbosity"];
         optread  = get_typeclasses_verbose;
         optwrite = set_typeclasses_verbose; }

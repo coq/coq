@@ -44,6 +44,7 @@ module NamedDecl = Context.Named.Declaration
 
 let is_keyed_unification =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Keyed";"Unification"]
     ~value:false

@@ -499,7 +499,11 @@ let info_file f =
    so we register them to coq save/undo mechanism. *)
 
 let my_bool_option name value =
-  declare_bool_option_and_ref ~depr:false ~key:["Extraction"; name] ~value
+  declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Extraction"; name]
+    ~value
 
 (*s Extraction AccessOpaque *)
 
@@ -565,13 +569,15 @@ let chg_flag n = int_flag_ref := n; opt_flag_ref := flag_of_int n
 let optims () = !opt_flag_ref
 
 let () = declare_bool_option
-          {optdepr = false;
+          {optstage = Summary.Stage.Interp;
+           optdepr = false;
            optkey = ["Extraction"; "Optimize"];
            optread = (fun () -> not (Int.equal !int_flag_ref 0));
            optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let () = declare_int_option
-          { optdepr = false;
+          { optstage = Summary.Stage.Interp;
+            optdepr = false;
             optkey = ["Extraction";"Flag"];
             optread = (fun _ -> Some !int_flag_ref);
             optwrite = (function
@@ -582,6 +588,7 @@ let () = declare_int_option
    toplevel constant is defined. *)
 let conservative_types =
   declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Extraction"; "Conservative"; "Types"]
     ~value:false
@@ -589,6 +596,7 @@ let conservative_types =
 (* Allows to print a comment at the beginning of the output files *)
 let file_comment =
   declare_string_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Extraction"; "File"; "Comment"]
     ~value:""

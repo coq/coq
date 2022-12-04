@@ -30,7 +30,7 @@ open Mutils
 (* If set to some [file], arithmetic goals are dumped in [file].v *)
 
 let dump_file =
-  Goptions.declare_stringopt_option_and_ref ~depr:false ~key:["Dump"; "Arith"]
+  Goptions.declare_stringopt_option_and_ref ~stage:Summary.Stage.Interp ~depr:false ~key:["Dump"; "Arith"]
 
 type ('prf, 'model) res = Prf of 'prf | Model of 'model | Unknown
 type zres = (Mc.zArithProof, int * Mc.z list) res

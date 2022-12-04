@@ -2201,7 +2201,8 @@ let vernac_debug b =
 let () =
   let open Goptions in
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Ltac";"Debug"];
       optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
       optwrite = vernac_debug }
@@ -2209,7 +2210,8 @@ let () =
 let () =
   let open Goptions in
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Ltac"; "Backtrace"];
       optread  = (fun () -> !log_trace);
       optwrite = (fun b -> log_trace := b) }

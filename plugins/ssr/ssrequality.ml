@@ -32,7 +32,8 @@ open Proofview.Notations
 let ssroldreworder = Summary.ref ~name:"SSR:oldreworder" false
 let () =
   Goptions.(declare_bool_option
-    { optkey   = ["SsrOldRewriteGoalsOrder"];
+    { optstage = Summary.Stage.Interp;
+      optkey   = ["SsrOldRewriteGoalsOrder"];
       optread  = (fun _ -> !ssroldreworder);
       optdepr  = false;
       optwrite = (fun b -> ssroldreworder := b) })

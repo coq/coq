@@ -302,12 +302,17 @@ let pr_table env sigma = pr_table env sigma !from_function
 (* Debugging *)
 
 let do_rewrite_dependent =
-  Goptions.declare_bool_option_and_ref ~depr:false
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
     ~key:["Functional"; "Induction"; "Rewrite"; "Dependent"]
     ~value:true
 
 let do_observe =
-  Goptions.declare_bool_option_and_ref ~depr:false ~key:["Function_debug"]
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Function_debug"]
     ~value:false
 
 let observe strm = if do_observe () then Feedback.msg_debug strm else ()
@@ -352,7 +357,10 @@ let observe_tac ~header s tac =
   if do_observe () then do_observe_tac ~header s tac else tac
 
 let is_strict_tcc =
-  Goptions.declare_bool_option_and_ref ~depr:false ~key:["Function_raw_tcc"]
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Function_raw_tcc"]
     ~value:false
 
 exception Building_graph of exn

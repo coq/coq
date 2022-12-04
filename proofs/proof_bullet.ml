@@ -176,6 +176,7 @@ end
 (* Current bullet behavior, controlled by the option *)
 let current_behavior =
   Goptions.declare_interpreted_string_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Bullet";"Behavior"]
     ~value:Strict.strict

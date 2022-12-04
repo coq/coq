@@ -143,7 +143,8 @@ let global_info_auto = ref false
 
 let add_option ls refe =
   Goptions.(declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ls;
       optread  = (fun () -> !refe);
       optwrite = (:=) refe })

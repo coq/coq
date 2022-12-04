@@ -39,6 +39,7 @@ let proof_mode_opt_name = ["Default";"Proof";"Mode"]
 
 let get_default_proof_mode =
   Goptions.declare_interpreted_string_option_and_ref
+    ~stage:Summary.Stage.Synterp
     ~depr:false
     ~key:proof_mode_opt_name
     ~value:(Pvernac.register_proof_mode "Noedit" Pvernac.Vernac_.noedit_mode)
@@ -244,7 +245,8 @@ let interp_qed_delayed_control ~proof ~st ~control { CAst.loc; v=pe } =
 (* General interp with management of state *)
 let () = let open Goptions in
   declare_int_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Default";"Timeout"];
       optread  = (fun () -> !default_timeout);
       optwrite = ((:=) default_timeout) }

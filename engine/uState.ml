@@ -56,8 +56,11 @@ let empty =
     minim_extra = UnivMinim.empty_extra; }
 
 let elaboration_sprop_cumul =
-  Goptions.declare_bool_option_and_ref ~depr:false
-    ~key:["Elaboration";"StrictProp";"Cumulativity"] ~value:true
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Elaboration";"StrictProp";"Cumulativity"]
+    ~value:true
 
 let make ~lbound univs =
   let univs = UGraph.set_cumulative_sprop (elaboration_sprop_cumul ()) univs in
@@ -183,6 +186,7 @@ exception UniversesDiffer
 
 let drop_weak_constraints =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Cumulativity";"Weak";"Constraints"]
     ~value:false

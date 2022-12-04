@@ -399,7 +399,10 @@ let top_goal_print ~doc c oldp newp =
 
 let exit_on_error =
   let open Goptions in
-  declare_bool_option_and_ref ~depr:false ~key:["Coqtop";"Exit";"On";"Error"]
+  declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Coqtop";"Exit";"On";"Error"]
     ~value:false
 
 let show_proof_diff_cmd ~state diff_opt =

@@ -39,7 +39,8 @@ let should_auto_template =
   let open Goptions in
   let auto = ref true in
   let () = declare_bool_option
-      { optdepr  = false;
+      { optstage = Summary.Stage.Interp;
+        optdepr  = false;
         optkey   = ["Auto";"Template";"Polymorphism"];
         optread  = (fun () -> !auto);
         optwrite = (fun b -> auto := b); }

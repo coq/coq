@@ -202,7 +202,8 @@ let print_evar_arguments = ref false
 let () =
   let open Goptions in
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Printing";"Existential";"Instances"];
       optread  = (fun () -> !print_evar_arguments);
       optwrite = (:=) print_evar_arguments }
@@ -292,30 +293,35 @@ module PrintingLet = Goptions.MakeRefTable(PrintingCasesLet)
 
 let force_wildcard =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Printing";"Wildcard"]
     ~value:true
 
 let fast_name_generation =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Fast";"Name";"Printing"]
     ~value:false
 
 let synthetize_type =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Printing";"Synth"]
     ~value:true
 
 let reverse_matching =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Printing";"Matching"]
     ~value:true
 
 let print_primproj_params =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Printing";"Primitive";"Projection";"Parameters"]
     ~value:false
@@ -381,6 +387,7 @@ let lookup_index_as_renamed env sigma t n =
 
 let print_factorize_match_patterns =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Printing";"Factorizable";"Match";"Patterns"]
     ~value:true
@@ -389,6 +396,7 @@ let print_allow_match_default_opt_name =
   ["Printing";"Allow";"Match";"Default";"Clause"]
 let print_allow_match_default_clause =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:print_allow_match_default_opt_name
     ~value:true

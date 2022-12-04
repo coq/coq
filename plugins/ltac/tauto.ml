@@ -67,7 +67,8 @@ let negation_unfolding = ref true
 open Goptions
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Intuition";"Negation";"Unfolding"];
       optread  = (fun () -> !negation_unfolding);
       optwrite = (:=) negation_unfolding }

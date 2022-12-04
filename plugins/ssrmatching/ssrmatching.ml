@@ -50,7 +50,8 @@ let debug b =
   if b then pp_ref := ssr_pp else pp_ref := fun _ -> ()
 let _ =
   Goptions.declare_bool_option
-    { Goptions.optkey   = ["Debug";"SsrMatching"];
+    { Goptions.optstage = Summary.Stage.Interp;
+      Goptions.optkey   = ["Debug";"SsrMatching"];
       Goptions.optdepr  = false;
       Goptions.optread  = (fun _ -> !pp_ref == ssr_pp);
       Goptions.optwrite = debug }

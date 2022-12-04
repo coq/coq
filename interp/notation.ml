@@ -967,6 +967,7 @@ let bigint_of_coqpos_neg_int63 c =
   | _ -> raise NotAValidPrimToken
 
 let get_printing_float = Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Printing";"Float"]
     ~value:true

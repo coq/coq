@@ -40,7 +40,8 @@ type internal_flag =
 let elim_flag = ref true
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Elimination";"Schemes"];
       optread  = (fun () -> !elim_flag) ;
       optwrite = (fun b -> elim_flag := b) }
@@ -48,7 +49,8 @@ let () =
 let bifinite_elim_flag = ref false
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Nonrecursive";"Elimination";"Schemes"];
       optread  = (fun () -> !bifinite_elim_flag) ;
       optwrite = (fun b -> bifinite_elim_flag := b) }
@@ -56,7 +58,8 @@ let () =
 let case_flag = ref false
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Case";"Analysis";"Schemes"];
       optread  = (fun () -> !case_flag) ;
       optwrite = (fun b -> case_flag := b) }
@@ -64,7 +67,8 @@ let () =
 let eq_flag = ref false
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Boolean";"Equality";"Schemes"];
       optread  = (fun () -> !eq_flag) ;
       optwrite = (fun b -> eq_flag := b) }
@@ -74,7 +78,8 @@ let is_eq_flag () = !eq_flag
 let eq_dec_flag = ref false
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Decidable";"Equality";"Schemes"];
       optread  = (fun () -> !eq_dec_flag) ;
       optwrite = (fun b -> eq_dec_flag := b) }
@@ -82,7 +87,8 @@ let () =
 let rewriting_flag = ref false
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Rewriting";"Schemes"];
       optread  = (fun () -> !rewriting_flag) ;
       optwrite = (fun b -> rewriting_flag := b) }

@@ -113,6 +113,7 @@ end
    the helper functions declare_*_option_and_ref. *)
 
 type 'a option_sig = {
+  optstage   : Summary.Stage.t;
   optdepr    : bool;
   (** whether the option is DEPRECATED *)
   optkey     : option_name;
@@ -139,7 +140,7 @@ val declare_stringopt_option: ?preprocess:(string option -> string option) ->
 
 (** Helpers to declare a reference controlled by an option. Read-only
    as to avoid races. *)
-type 'a opt_decl = depr:bool -> key:option_name -> 'a
+type 'a opt_decl = stage:Summary.Stage.t -> depr:bool -> key:option_name -> 'a
 
 val declare_int_option_and_ref : (value:int -> (unit -> int)) opt_decl
 val declare_intopt_option_and_ref : (unit -> int option) opt_decl
@@ -166,16 +167,18 @@ val get_string_table :
 val get_ref_table :
   option_name -> Libnames.qualid table_of_A
 
-(** The first argument is a locality flag. *)
-val set_int_option_value_gen    : ?locality:option_locality -> option_name -> int option -> unit
-val set_bool_option_value_gen   : ?locality:option_locality -> option_name -> bool   -> unit
-val set_string_option_value_gen : ?locality:option_locality -> option_name -> string -> unit
-val set_string_option_append_value_gen : ?locality:option_locality -> option_name -> string -> unit
-val unset_option_value_gen : ?locality:option_locality -> option_name -> unit
+(** The first argument is a locality flag.
+    If [stage] is provided, the option is set/unset only if it is declared in the corresponding stage.
+    If omitted, the option is always set/unset. *)
+val set_int_option_value_gen    : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> int option -> unit
+val set_bool_option_value_gen   : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> bool   -> unit
+val set_string_option_value_gen : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> string -> unit
+val set_string_option_append_value_gen : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> string -> unit
+val unset_option_value_gen : ?locality:option_locality -> ?stage:Summary.Stage.t -> option_name -> unit
 
-val set_int_option_value    : option_name -> int option -> unit
-val set_bool_option_value   : option_name -> bool   -> unit
-val set_string_option_value : option_name -> string -> unit
+val set_int_option_value    : ?stage:Summary.Stage.t -> option_name -> int option -> unit
+val set_bool_option_value   : ?stage:Summary.Stage.t -> option_name -> bool   -> unit
+val set_string_option_value : ?stage:Summary.Stage.t -> option_name -> string -> unit
 
 val print_option_value : option_name -> unit
 
@@ -189,7 +192,7 @@ type table_value =
   | StringRefValue of string
   | QualidRefValue of Libnames.qualid
 
-val set_option_value : ?locality:option_locality ->
+val set_option_value : ?locality:option_locality -> ?stage:Summary.Stage.t ->
   ('a -> option_value -> option_value) -> option_name -> 'a -> unit
 (** [set_option_value ?locality f name v] sets [name] to the result of
     applying [f] to [v] and [name]'s current value. Use for behaviour

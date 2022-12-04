@@ -465,7 +465,8 @@ open Goptions
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Ltac";"Batch";"Debug"];
       optread  = (fun () -> !batch);
       optwrite = (fun x -> batch := x) }

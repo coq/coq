@@ -53,7 +53,11 @@ let cbv_native env sigma c =
 let whd_cbn = Cbn.whd_cbn
 
 let simplIsCbn =
-  Goptions.declare_bool_option_and_ref ~depr:false ~key:["SimplIsCbn"] ~value:false
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["SimplIsCbn"]
+    ~value:false
 
 let set_strategy_one ref l  =
   let k =

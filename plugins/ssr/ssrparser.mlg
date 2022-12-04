@@ -1657,7 +1657,8 @@ let ssr_reserved_ids = Summary.ref ~name:"SSR:idents" true
 
 let () =
   Goptions.(declare_bool_option
-    { optkey   = ["SsrIdents"];
+    { optstage = Summary.Stage.Synterp;
+      optkey   = ["SsrIdents"];
       optdepr  = false;
       optread  = (fun _ -> !ssr_reserved_ids);
       optwrite = (fun b -> ssr_reserved_ids := b)
@@ -2405,7 +2406,8 @@ let ssr_rw_syntax = Summary.ref ~name:"SSR:rewrite" true
 
 let () =
   Goptions.(declare_bool_option
-    { optkey   = ["SsrRewrite"];
+    { optstage = Summary.Stage.Synterp;
+      optkey   = ["SsrRewrite"];
       optread  = (fun _ -> !ssr_rw_syntax);
       optdepr  = false;
       optwrite = (fun b -> ssr_rw_syntax := b) })

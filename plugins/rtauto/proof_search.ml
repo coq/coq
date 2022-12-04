@@ -47,6 +47,7 @@ let reset_info () =
 
 let pruning =
   declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Rtauto";"Pruning"]
     ~value:true
