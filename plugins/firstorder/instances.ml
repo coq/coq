@@ -54,9 +54,9 @@ module IS=Set.Make(OrderedInstance)
 
 let make_simple_atoms seq=
   let ratoms=
-    match seq.glatom with
-        Some t->[t]
-      | None->[]
+    match seq.gl with
+    | GoalAtom t -> [t]
+    | GoalTerm _ -> []
   in {negative=seq.latoms;positive=ratoms}
 
 let do_sequent env sigma setref triv id seq i dom atoms=

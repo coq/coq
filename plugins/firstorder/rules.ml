@@ -63,6 +63,7 @@ let clear_global=function
 let axiom_tac t seq =
   Proofview.Goal.enter begin fun gl ->
   try
+    let t = match t with GoalAtom a -> repr_atom a | GoalTerm t -> t in
     pf_constr_of_global (find_left (project gl) t seq) >>= fun c ->
     exact_no_check c
   with Not_found -> tclFAIL (Pp.str "No axiom link")

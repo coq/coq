@@ -94,12 +94,13 @@ let cm_remove sigma typ nam cm=
 
 module HP=Heap.Functional(OrderedFormula)
 
+type seqgoal = GoalTerm of EConstr.t | GoalAtom of atom
+
 type t=
     {redexes:HP.t;
      context:(GlobRef.t list) CM.t;
      latoms:atom list;
-     gl:types;
-     glatom:atom option;
+     gl: seqgoal;
      cnt:counter;
      history:History.t;
      depth:int}
@@ -127,8 +128,7 @@ let add_formula ~flags env sigma side nam t seq =
               Concl ->
                 {seq with
                    redexes=HP.add f seq.redexes;
-                   gl=f.constr;
-                   glatom=None}
+                   gl = GoalTerm f.constr }
             | _ ->
                 {seq with
                    redexes=HP.add f seq.redexes;
@@ -137,7 +137,7 @@ let add_formula ~flags env sigma side nam t seq =
     | Right t->
         match side with
             Concl ->
-              {seq with gl= repr_atom t;glatom=Some t}
+              {seq with gl = GoalAtom t}
           | _ ->
               {seq with
                  context=cm_add sigma (repr_atom t) nam seq.context;
@@ -165,7 +165,7 @@ let rec take_formula sigma seq=
   and hp=HP.remove seq.redexes in
     if hd.id == dummy_id then
       let nseq={seq with redexes=hp} in
-        if seq.gl==hd.constr then
+        if (match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t) == hd.constr then
           hd,nseq
         else
           take_formula sigma nseq (* discarding deprecated goal *)
@@ -178,8 +178,7 @@ let empty_seq depth=
   {redexes=HP.empty;
    context=CM.empty;
    latoms=[];
-   gl=(mkMeta 1);
-   glatom=None;
+   gl= GoalTerm (mkMeta 1);
    cnt=newcnt ();
    history=History.empty;
    depth=depth}

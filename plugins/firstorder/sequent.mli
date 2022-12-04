@@ -19,11 +19,12 @@ type cmap
 
 module HP: Heap.S with type elt=Formula.t
 
+type seqgoal = GoalTerm of EConstr.t | GoalAtom of atom
+
 type t = private {redexes:HP.t;
           context: cmap;
           latoms:atom list;
-          gl:types;
-          glatom:atom option;
+          gl: seqgoal;
           cnt:counter;
           history:history;
           depth:int}
