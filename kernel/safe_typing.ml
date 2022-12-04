@@ -466,11 +466,6 @@ let check_empty_struct senv =
   assert (List.is_empty senv.revstruct
           && List.is_empty senv.loads)
 
-(** When starting a library, the current environment should be initial
-    i.e. only composed of Require's *)
-
-let check_initial senv = assert (is_initial senv)
-
 (** When loading a library, its dependencies should be already there,
     with the correct digests. *)
 
@@ -1266,7 +1261,9 @@ let current_modpath senv = senv.modpath
 let current_dirpath senv = Names.ModPath.dp (current_modpath senv)
 
 let start_library dir senv =
-  check_initial senv;
+  (* When starting a library, the current environment should be initial
+     i.e. only composed of Require's *)
+  assert (is_initial senv);
   assert (not (DirPath.is_empty dir));
   let mp = MPfile dir in
   mp,
