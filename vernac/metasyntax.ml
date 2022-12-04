@@ -331,6 +331,8 @@ let precedence_of_entry_type (from_custom,from_level) = function
   | ETPattern (_,n) -> let n = match n with None -> 0 | Some n -> n in LevelLe n
   | _ -> LevelSome (* should not matter *)
 
+let pattern_entry_level = function None -> 0 | Some n -> n
+
 (** Computing precedences for future insertion of parentheses at
     the time of printing using hard-wired constr levels *)
 let unparsing_precedence_of_entry_type from_level = function
@@ -344,7 +346,7 @@ let unparsing_precedence_of_entry_type from_level = function
        explicit insertion of entry coercions at the time of building
        a [constr_expr] *)
     LevelSome, None
-  | ETPattern (_,n) -> (* in constr *) LevelLe (match n with Some n -> n | None -> 0), None
+  | ETPattern (_,n) -> (* in constr *) LevelLe (pattern_entry_level n), None
   | _ -> LevelSome, None (* should not matter *)
 
 (* Some breaking examples *)
@@ -694,7 +696,7 @@ let prod_entry_type = function
   | ETBigint -> ETProdBigint
   | ETBinder o -> ETProdOneBinder o
   | ETConstr (s,_,p) -> ETProdConstr (s,p)
-  | ETPattern (_,n) -> ETProdPattern (match n with None -> 0 | Some n -> n)
+  | ETPattern (_,n) -> ETProdPattern (pattern_entry_level n)
 
 let keyword_needed need s =
   (* Ensure that IDENT articulation terminal symbols are keywords *)
