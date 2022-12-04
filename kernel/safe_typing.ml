@@ -1264,6 +1264,8 @@ let current_dirpath senv = Names.ModPath.dp (current_modpath senv)
 let start_library dir senv =
   (* When starting a library, the current environment should be initial
      i.e. only composed of Require's *)
+  (* XXX is it really possible / should be allowed to have nonempty Requires?
+     especially if [dir] is in the [senv.required] *)
   assert (is_initial senv);
   assert (not (DirPath.is_empty dir));
   let mp = MPfile dir in
