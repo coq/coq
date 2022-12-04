@@ -114,6 +114,19 @@ let intern_ltac_variable ist qid =
     ArgVar (make ?loc:qid.CAst.loc @@ qualid_basename qid)
   else raise Not_found
 
+let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra; intern_sign; strict_check} c =
+  let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
+  let ltacvars = {
+    Constrintern.ltac_vars = lfun;
+    ltac_bound = Id.Set.empty;
+    ltac_extra = extra;
+  } in
+  let c' = Constrintern.intern_core scope ~strict_check ~pattern_mode ~ltacvars env Evd.(from_env env) intern_sign c in
+  (c',if strict_check then None else Some c)
+
+let intern_constr = intern_constr_gen false false
+let intern_type = intern_constr_gen false true
+
 let intern_constr_reference strict ist qid =
   let id = qualid_basename qid in
   if qualid_is_ident qid && not strict && find_hyp (qualid_basename qid) ist then
@@ -121,8 +134,11 @@ let intern_constr_reference strict ist qid =
   else if qualid_is_ident qid && find_var (qualid_basename qid) ist then
     (DAst.make @@ GVar id), if strict then None else Some (make @@ CRef (qid,None))
   else
-    DAst.make @@ GRef (locate_global_with_alias qid,None),
-    if strict then None else Some (make @@ CRef (qid,None))
+    try
+      let c,_ = intern_constr {ist with strict_check=true} (CAst.make (CRef (qid,None))) in
+      c, if strict then None else Some (make @@ CRef (qid,None))
+    with
+      Nametab.GlobalizationError _ -> raise Not_found
 
 (* Internalize an isolated reference in position of tactic *)
 
@@ -215,19 +231,6 @@ let intern_binding_name ist x =
   (* Todo: consider the body of the lemma to which the binding refer
      and if a term w/o ltac vars, check the name is indeed quantified *)
   x
-
-let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra; intern_sign; strict_check} c =
-  let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
-  let ltacvars = {
-    Constrintern.ltac_vars = lfun;
-    ltac_bound = Id.Set.empty;
-    ltac_extra = extra;
-  } in
-  let c' = Constrintern.intern_core scope ~strict_check ~pattern_mode ~ltacvars env Evd.(from_env env) intern_sign c in
-  (c',if strict_check then None else Some c)
-
-let intern_constr = intern_constr_gen false false
-let intern_type = intern_constr_gen false true
 
 (* Globalize bindings *)
 let intern_binding ist = map (fun (b,c) ->
