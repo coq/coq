@@ -36,7 +36,7 @@ type 'a constr_entry_key_gen =
   | ETGlobal
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
-  | ETConstr of Constrexpr.notation_entry * Notation_term.constr_as_binder_kind option * 'a
+  | ETConstr of Constrexpr.notation_entry * Notation_term.notation_binder_kind option * 'a
   | ETPattern of bool * int option (* true = strict pattern, i.e. not a single variable *)
 
 let constr_entry_key_eq v1 v2 = match v1, v2 with

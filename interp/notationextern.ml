@@ -27,20 +27,25 @@ let notation_entry_level_eq s1 s2 = match (s1,s2) with
 
 let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
+let notation_binder_kind_eq k1 k2 = match k1, k2 with
+| AsIdent, AsIdent -> true
+| AsName, AsName -> true
+| AsNameOrPattern, AsNameOrPattern -> true
+| AsStrictPattern, AsStrictPattern -> true
+| (AsIdent | AsName | AsNameOrPattern | AsStrictPattern), _ -> false
+
 let notation_binder_source_eq s1 s2 = match s1, s2 with
-| NtnParsedAsIdent,  NtnParsedAsIdent -> true
-| NtnParsedAsName,  NtnParsedAsName -> true
-| NtnParsedAsPattern b1, NtnParsedAsPattern b2 -> b1 = b2
-| NtnBinderParsedAsConstr bk1, NtnBinderParsedAsConstr bk2 -> bk1 = bk2
-| NtnParsedAsBinder,  NtnParsedAsBinder -> true
-| (NtnParsedAsIdent | NtnParsedAsName | NtnParsedAsPattern _ | NtnBinderParsedAsConstr _ | NtnParsedAsBinder), _ -> false
+| NtnBinderParsedAsSomeBinderKind bk1, NtnBinderParsedAsSomeBinderKind bk2 -> notation_binder_kind_eq bk1 bk2
+| NtnBinderParsedAsBinder, NtnBinderParsedAsBinder -> true
+| NtnBinderParsedAsConstr bk1, NtnBinderParsedAsConstr bk2 -> notation_binder_kind_eq bk1 bk2
+| (NtnBinderParsedAsSomeBinderKind _ | NtnBinderParsedAsBinder | NtnBinderParsedAsConstr _), _ -> false
 
 let ntpe_eq t1 t2 = match t1, t2 with
 | NtnTypeConstr, NtnTypeConstr -> true
 | NtnTypeBinder s1, NtnTypeBinder s2 -> notation_binder_source_eq s1 s2
 | NtnTypeConstrList, NtnTypeConstrList -> true
-| NtnTypeBinderList, NtnTypeBinderList -> true
-| (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList), _ -> false
+| NtnTypeBinderList s1, NtnTypeBinderList s2 -> notation_binder_source_eq s1 s2
+| (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList _), _ -> false
 
 let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
   notation_entry_level_eq entry1 entry2 &&

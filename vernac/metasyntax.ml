@@ -1092,7 +1092,7 @@ let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
 let has_no_binders_type =
   List.for_all (fun (_,(_,typ)) ->
   match typ with
-  | NtnTypeBinder _ | NtnTypeBinderList -> false
+  | NtnTypeBinder _ | NtnTypeBinderList _ -> false
   | NtnTypeConstr | NtnTypeConstrList -> true)
 
 (* Compute precedences from modifiers (or find default ones) *)
@@ -1141,22 +1141,31 @@ let make_internalization_vars recvars maintyps =
   let extratyps = List.map (fun (x,y) -> (y,List.assoc x maintyps)) recvars in
   maintyps @ extratyps
 
-let make_interpretation_type isrec isonlybinding default_if_binding = function
-  (* Parsed as constr list *)
-  | ETConstr (_,None,_) when isrec -> NtnTypeConstrList
-  (* Parsed as constr, but interpreted as a binder *)
-  | ETConstr (_,Some bk,_) -> NtnTypeBinder (NtnBinderParsedAsConstr bk)
-  | ETConstr (_,None,_) when isonlybinding -> NtnTypeBinder (NtnBinderParsedAsConstr default_if_binding)
+let make_interpretation_type isrec isbinding default_if_binding typ =
+  match typ, isrec with
+  (* Parsed as constr, but interpreted as a specific kind of binder *)
+  | ETConstr (_,Some bk,_), true -> NtnTypeBinderList (NtnBinderParsedAsConstr bk)
+  | ETConstr (_,Some bk,_), false -> NtnTypeBinder (NtnBinderParsedAsConstr bk)
+  (* Parsed as constr list but interpreted as the default kind of binder *)
+  | ETConstr (_,None,_), true when isbinding -> NtnTypeBinderList (NtnBinderParsedAsConstr default_if_binding)
+  | ETConstr (_,None,_), false when isbinding -> NtnTypeBinder (NtnBinderParsedAsConstr default_if_binding)
   (* Parsed as constr, interpreted as constr *)
-  | ETConstr (_,None,_) -> NtnTypeConstr
+  | ETConstr (_,None,_), true -> NtnTypeConstrList
+  | ETConstr (_,None,_), false -> NtnTypeConstr
+  (* Different way of parsing binders, maybe interpreted also as
+     constr, but conventionally internally binders *)
+  | ETIdent, true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind AsIdent)
+  | ETIdent, false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsIdent)
+  | ETName, true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind AsName)
+  | ETName, false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsName)
+  (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
+  | ETPattern (ppstrict,_), true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsNameOrPattern))
+  | ETPattern (ppstrict,_), false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsNameOrPattern))
+  | ETBinder _, true -> NtnTypeBinderList NtnBinderParsedAsBinder
+  | ETBinder _, false -> NtnTypeBinder NtnBinderParsedAsBinder
   (* Others *)
-  | ETIdent -> NtnTypeBinder NtnParsedAsIdent
-  | ETName -> NtnTypeBinder NtnParsedAsName
-  | ETPattern (ppstrict,_) -> NtnTypeBinder (NtnParsedAsPattern ppstrict) (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
-  | ETBigint | ETGlobal -> NtnTypeConstr
-  | ETBinder _ ->
-     if isrec then NtnTypeBinderList
-     else NtnTypeBinder NtnParsedAsBinder
+  | ETBigint, true | ETGlobal, true -> NtnTypeConstrList
+  | ETBigint, false | ETGlobal, false -> NtnTypeConstr
 
 let subentry_of_constr_prod_entry from_level = function
   (* Specific 8.2 approximation *)

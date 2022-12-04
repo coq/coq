@@ -997,7 +997,16 @@ let cases_pattern_of_name {loc;v=na} =
   let atom = match na with Name id -> Some (qualid_of_ident ?loc id) | Anonymous -> None in
   CAst.make ?loc (CPatAtom atom)
 
-let split_by_type ids subst =
+let cases_pattern_of_binder_as_constr a = function
+  | AsNameOrPattern | AsStrictPattern -> coerce_to_cases_pattern_expr a
+  | AsIdent -> cases_pattern_of_id (coerce_to_id a)
+  | AsName -> cases_pattern_of_name (coerce_to_name a)
+
+let is_onlyident = function
+  | AsIdent | AsName -> true
+  | AsNameOrPattern | AsStrictPattern -> false
+
+let split_by_type ids (subst : constr_notation_substitution) =
   let bind id scl l s =
     match l with
     | [] -> assert false
@@ -1008,27 +1017,35 @@ let split_by_type ids subst =
     | NtnTypeConstr ->
        let terms,terms' = bind id scl terms terms' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder NtnBinderParsedAsConstr (AsNameOrPattern | AsStrictPattern) ->
-       let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
-       let binders' = Id.Map.add id ((coerce_to_cases_pattern_expr a,Explicit),(false,scl)) binders' in
-       (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder NtnBinderParsedAsConstr AsIdent ->
-       let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
-       let binders' = Id.Map.add id ((cases_pattern_of_id (coerce_to_id a),Explicit),(true,scl)) binders' in
-       (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder NtnBinderParsedAsConstr AsName ->
-       let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
-       let binders' = Id.Map.add id ((cases_pattern_of_name (coerce_to_name a),Explicit),(true,scl)) binders' in
-       (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsName | NtnParsedAsPattern _ | NtnParsedAsBinder as x) ->
-       let onlyident = (x = NtnParsedAsIdent || x = NtnParsedAsName) in
-       let binders,binders' = bind id (onlyident,scl) binders binders' in
+    | NtnTypeBinder ntn_binder_kind ->
+       let onlyident,a,terms,binders =
+         match ntn_binder_kind with
+         | NtnBinderParsedAsConstr k ->
+           let a,terms = List.sep_first terms in
+           is_onlyident k, (cases_pattern_of_binder_as_constr a k, Explicit), terms, binders
+         | NtnBinderParsedAsBinder ->
+           let a,binders = List.sep_first binders in
+           false, a, terms, binders
+         | NtnBinderParsedAsSomeBinderKind k ->
+           let a,binders = List.sep_first binders in
+           is_onlyident k, a, terms, binders
+       in
+       let binders' = Id.Map.add id (a,(onlyident,scl)) binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
     | NtnTypeConstrList ->
        let termlists,termlists' = bind id scl termlists termlists' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinderList ->
-       let binderlists,binderlists' = bind id scl binderlists binderlists' in
+    | NtnTypeBinderList ntn_binder_kind ->
+       let l,termlists,binderlists =
+         match ntn_binder_kind with
+         | NtnBinderParsedAsConstr k ->
+           let l,termlists = List.sep_first termlists in
+           List.map (fun a -> CLocalPattern (cases_pattern_of_binder_as_constr a k)) l, termlists, binderlists
+         | NtnBinderParsedAsBinder | NtnBinderParsedAsSomeBinderKind _ ->
+           let l,binderlists = List.sep_first binderlists in
+           l, termlists, binderlists
+       in
+       let binderlists' = Id.Map.add id (l,scl) binderlists' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists'))
                    (subst,(Id.Map.empty,Id.Map.empty,Id.Map.empty,Id.Map.empty)) ids in
   assert (terms = [] && termlists = [] && binders = [] && binderlists = []);
@@ -1048,7 +1065,7 @@ let split_by_type_pat ?loc ids subst =
     | NtnTypeConstrList ->
        let termlists,termlists' = bind id scl termlists termlists' in
        (terms,termlists),(terms',termlists')
-    | NtnTypeBinderList -> error_invalid_pattern_notation ?loc ())
+    | NtnTypeBinderList _ -> error_invalid_pattern_notation ?loc ())
                    (subst,(Id.Map.empty,Id.Map.empty)) ids in
   assert (terms = [] && termlists = []);
   subst
