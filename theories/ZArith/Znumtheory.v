@@ -202,6 +202,14 @@ Inductive Zis_gcd (a b g:Z) : Prop :=
   (forall x, (x | a) -> (x | b) -> (x | g)) ->
   Zis_gcd a b g.
 
+Lemma Zgcd_is_gcd : forall a b, Zis_gcd a b (Z.gcd a b).
+Proof.
+ constructor.
+ - apply Z.gcd_divide_l.
+ - apply Z.gcd_divide_r.
+ - apply Z.gcd_greatest.
+Qed.
+
 (** Trivial properties of [gcd] *)
 
 Lemma Zis_gcd_sym : forall a b d, Zis_gcd a b d -> Zis_gcd b a d.
@@ -256,10 +264,7 @@ Qed.
 
 (** * Extended Euclid algorithm. *)
 
-(** Euclid's algorithm to compute the [gcd] mainly relies on
-    the following property. *)
-
-Lemma Zis_gcd_for_euclid :
+Lemma deprecated_Zis_gcd_for_euclid :
   forall a b d q:Z, Zis_gcd b (a - q * b) d -> Zis_gcd a b d.
 Proof.
   intros a b d q; simple induction 1; constructor; intuition.
@@ -267,7 +272,10 @@ Proof.
   - auto with zarith.
   - ring.
 Qed.
+#[deprecated(since="8.17")]
+Notation Zis_gcd_for_euclid := deprecated_Zis_gcd_for_euclid (only parsing).
 
+(* this lemma is still used below and in Zgcd_alt *)
 Lemma Zis_gcd_for_euclid2 :
   forall b d q r:Z, Zis_gcd r b d -> Zis_gcd b (b * q + r) d.
 Proof.
@@ -287,36 +295,39 @@ Section extended_euclid_algorithm.
 
   Variables a b : Z.
 
+  Local Lemma extgcd_rec_helper r1 r2 q :
+    Z.gcd r1 r2 = Z.gcd a b -> Z.gcd (r2 - q * r1) r1 = Z.gcd a b.
+  Proof.
+    intros H; rewrite <-H, Z.gcd_comm.
+    rewrite <-(Z.gcd_add_mult_diag_r r1 r2 (-q)). f_equal; ring.
+  Qed.
+
   Let f := S(S(Z.to_nat(Z.log2_up(Z.log2_up(Z.abs(a*b)))))). (* log2(fuel) *)
 
-  Local Definition extgcd_rec : forall r2 x1 y1 r1 x2 y2,
-    (True -> 0 <= r2 /\ x1 * a + y1 * b = r1 /\ x2 * a + y2 * b = r2 /\
-        (forall d : Z, Zis_gcd r1 r2 d -> Zis_gcd a b d))
-     -> { '(u, v, d) | True -> u * a + v * b = d /\ Zis_gcd a b d }.
+  Local Definition extgcd_rec : forall r1 u1 v1 r2 u2 v2,
+    (True -> 0 <= r1 /\ 0 <= r2 /\ r1 = u1 * a + v1 * b /\ r2 = u2 * a + v2 * b /\
+        Z.gcd r1 r2 = Z.gcd a b)
+     -> { '(u, v, d) | True -> u * a + v * b = d /\ d = Z.gcd a b}.
   Proof.
-    refine (Fix (Acc_intro_generator f (Z.lt_wf 0)) _ (fun r2 rec x1 y1 r1 x2 y2 H =>
-      if Z.eq_dec r2 0
-      then exist (fun '(u, v, d) => _) (x1, y1, r1) (fun _ => _)
-      else let q := r1 / r2 in
-           rec (r1 - q * r2) _ x2 y2 r2 (x1 - q * x2) (y1 - q * y2) (fun _ => _))).
+    refine (Fix (Acc_intro_generator f (Z.lt_wf 0)) _ (fun r1 rec u1 v1  r2 u2 v2 H =>
+      if Z.eq_dec r1 0
+      then exist (fun '(u, v, d) => _) (u2, v2, r2) (fun _ => _)
+      else let q := r2 / r1 in
+           rec (r2 - q * r1) _ (u2 - q * u1) (v2 - q * v1) r1 u1 v1 (fun _ => _))).
     all : abstract (intuition (solve
-      [ subst; eauto using Zis_gcd_0, Zis_gcd_for_euclid; ring
+      [ subst; rewrite ?Z.gcd_0_l_nonneg in *; auto using extgcd_rec_helper; ring
       | subst q; rewrite <-Zmod_eq_full by trivial;
         apply Z.mod_pos_bound, Z.le_neq; intuition congruence ])).
   Defined.
 
   Definition extgcd : Z*Z*Z.
   Proof.
-    refine (proj1_sig (
-      if Z_le_gt_dec 0 b
-      then extgcd_rec b    1 0  a 0   1  (fun _ => _)
-      else extgcd_rec (-b) 1 0  a 0 (-1) (fun _ => _) )).
-    all : abstract (intuition (
-      (apply Z.opp_nonneg_nonpos, Z.lt_le_incl, Z.gt_lt + ring_simplify);
-      auto using Zis_gcd_sym, Zis_gcd_minus)).
+    refine (proj1_sig (extgcd_rec (Z.abs a) (Z.sgn a) 0 (Z.abs b) 0 (Z.sgn b) _)).
+    abstract (intuition (trivial using Z.abs_nonneg;
+      rewrite ?Z.gcd_abs_r, ?Z.gcd_abs_l, <-?Z.sgn_abs; ring)).
   Defined.
 
-  Lemma extgcd_correct [u v d] : extgcd = (u, v, d) -> u * a + v * b = d /\ Zis_gcd a b d.
+  Lemma extgcd_correct [u v d] : extgcd = (u, v, d) -> u * a + v * b = d /\ d = Z.gcd a b.
   Proof.
     pose proof (proj2_sig _ : _ extgcd).
     case extgcd as [[]?] in *; intuition congruence.
@@ -327,7 +338,7 @@ Section extended_euclid_algorithm.
     forall u v d:Z, u * a + v * b = d -> Zis_gcd a b d -> deprecated_Euclid.
 
   Lemma deprecated_euclid : deprecated_Euclid.
-  Proof. case extgcd as [[]?] eqn:H; case (extgcd_correct H); esplit; eassumption. Qed.
+  Proof. case extgcd as [[]?] eqn:H; case (extgcd_correct H); esplit; subst; eauto using Zgcd_is_gcd. Qed.
 
   Lemma deprecated_euclid_rec :
     forall v3:Z,
@@ -369,9 +380,9 @@ Inductive Bezout (a b d:Z) : Prop :=
 Lemma Zis_gcd_bezout : forall a b d:Z, Zis_gcd a b d -> Bezout a b d.
 Proof.
   intros a b d Hgcd.
-  case (extgcd a b) as [[u v] d0] eqn:E, (extgcd_correct _ _ E) as [G g].
-  case (Zis_gcd_uniqueness_apart_sign a b d d0 Hgcd g) as [H|H]; subst;
-    (apply Bezout_intro with u v + apply Bezout_intro with (- u) (- v)); ring.
+  case (extgcd a b) as [[u v] g] eqn:E, (extgcd_correct _ _ E) as [G ?Hg].
+  destruct (Zis_gcd_uniqueness_apart_sign a b d g Hgcd ltac:(rewrite Hg; apply Zgcd_is_gcd));
+    subst; (apply Bezout_intro with u v + apply Bezout_intro with (- u) (- v)); ring.
 Qed.
 
 (** gcd of [ca] and [cb] is [c gcd(a,b)]. *)
@@ -789,18 +800,7 @@ Proof.
       now rewrite Z.opp_involutive; apply Z.lt_le_incl.
 Qed.
 
-(** we now prove that [Z.gcd] is indeed a gcd in
-   the sense of [Zis_gcd]. *)
-
 Notation Zgcd_is_pos := Z.gcd_nonneg (only parsing).
-
-Lemma Zgcd_is_gcd : forall a b, Zis_gcd a b (Z.gcd a b).
-Proof.
- constructor.
- - apply Z.gcd_divide_l.
- - apply Z.gcd_divide_r.
- - apply Z.gcd_greatest.
-Qed.
 
 Theorem Zgcd_spec : forall x y : Z, {z : Z | Zis_gcd x y z /\ 0 <= z}.
 Proof.
