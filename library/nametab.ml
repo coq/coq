@@ -225,6 +225,9 @@ let push visibility uname o tab =
     let ptab = modify () empty_tree in
     Id.Map.add id ptab tab
 
+(** [remove_path uname tree dir] removes all bindings pointing to
+    [uname] along the path [dir] in [tree] (i.e. all such bindings are
+    assumed to be on this path) *)
 
 let rec remove_path uname tree = function
   | modid :: path ->
@@ -246,6 +249,8 @@ let rec remove_path uname tree = function
         List.filter test tree.path
       in
       mktree this tree.map
+
+(** Remove all bindings pointing to [uname] in [tab] *)
 
 let remove uname tab =
   let id,dir = U.repr uname in
