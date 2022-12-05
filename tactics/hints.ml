@@ -1773,10 +1773,6 @@ module FullHint =
 struct
   type t = full_hint
   let priority (h : t) = h.pri
-  let pattern (h : t) = match h.pat with
-  | None -> None
-  | Some (ConstrPattern p) -> Some p
-  | Some DefaultPattern -> None (* does not matter, only used by the deprecated Filtered typeclass option *)
   let database (h : t) = h.db
   let run (h : t) k = run_hint h.code k
   let print env sigma (h : t) = pr_hint env sigma h.code

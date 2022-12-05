@@ -573,22 +573,6 @@ Settings
    the dependent ones previously (Coq 8.5 and below). This can result in
    quite different performance behaviors of proof search.
 
-
-.. flag:: Typeclasses Filtered Unification
-
-   This :term:`flag`, which is off by default, switches the
-   hint application procedure to a filter-then-unify strategy. To apply a
-   hint, we first check that the goal *matches* syntactically the
-   inferred or specified pattern of the hint, and only then try to
-   *unify* the goal with the conclusion of the hint. This can drastically
-   improve performance by calling unification less often, matching
-   syntactic patterns being very quick. This also provides more control
-   on the triggering of instances. For example, forcing a :term:`constant` to
-   explicitly appear in the pattern will make it never apply on a goal
-   where there is a hole in that place.
-
-   .. deprecated:: 8.16
-
 .. flag:: Typeclasses Limit Intros
 
    This :term:`flag` (on by default) controls the ability to apply hints while
