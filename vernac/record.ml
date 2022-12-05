@@ -112,7 +112,7 @@ module DataI = struct
     { name : Id.t
     ; arity : Constrexpr.constr_expr option
     (** declared sort for the record  *)
-    ; nots : Metasyntax.where_decl_notation list list
+    ; nots : Metasyntax.notation_interpretation_decl list list
     (** notations for fields *)
     ; fs : Vernacexpr.local_decl_expr list
     }

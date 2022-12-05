@@ -486,17 +486,20 @@ let pr_syntax_modifiers = function
   | l -> spc() ++
          hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
-let pr_decl_notation prc decl_ntn =
+let pr_notation_declaration ntn_decl =
   let open Vernacexpr in
   let
-    { decl_ntn_string = {CAst.loc;v=ntn};
-      decl_ntn_interp = c;
-      decl_ntn_modifiers = modifiers;
-      decl_ntn_scope = scopt } = decl_ntn in
-  fnl () ++ keyword "where " ++ qs ntn ++ str " := "
-  ++ Flags.without_option Flags.beautify prc c
+    { ntn_decl_string = {CAst.loc;v=ntn};
+      ntn_decl_interp = c;
+      ntn_decl_modifiers = modifiers;
+      ntn_decl_scope = scopt } = ntn_decl in
+  qs ntn ++ spc () ++ str ":=" ++ spc ()
+  ++ Flags.without_option Flags.beautify pr_constr c
   ++ pr_syntax_modifiers modifiers
-  ++ pr_opt (fun sc -> str ": " ++ str sc) scopt
+  ++ pr_opt (fun sc -> spc () ++ str ":" ++ spc () ++ str sc) scopt
+
+let pr_where_notation decl_ntn =
+  fnl () ++ keyword "where " ++ pr_notation_declaration decl_ntn
 
 let pr_rec_definition { fname; univs; rec_order; binders; rtype; body_def; notations } =
   let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
@@ -504,7 +507,7 @@ let pr_rec_definition { fname; univs; rec_order; binders; rtype; body_def; notat
   pr_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
   ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) rtype
   ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr def) body_def
-  ++ prlist (pr_decl_notation @@ pr_constr) notations
+  ++ prlist pr_where_notation notations
 
 let pr_statement head (idpl,(bl,c)) =
   hov 2
@@ -546,7 +549,7 @@ let pr_record_field (x, { rf_coercion = coe ; rf_instance = ins ; rf_priority = 
           hov 1 (pr_lname id ++ str" :=" ++ spc() ++
                  pr_lconstr b)) in
   let prpri = match pri with None -> mt() | Some i -> str "| " ++ int i in
-  prx ++ prpri ++ prlist (pr_decl_notation @@ pr_constr) ntn
+  prx ++ prpri ++ prlist pr_where_notation ntn
 
 let pr_record_decl c fs obinder =
   pr_opt pr_lident c ++ pr_record "{" "}" pr_record_field fs ++
@@ -762,14 +765,10 @@ let pr_vernac_expr v =
       keyword "Bind Scope" ++ spc () ++ str sc ++
       spc() ++ keyword "with" ++ spc () ++ prlist_with_sep spc pr_class_rawexpr cll
     )
-  | VernacNotation (infix,c,({v=s},l),opt) ->
+  | VernacNotation (infix,ntn_decl) ->
     return (
-      hov 2 (hov 0 (keyword (if infix then "Infix" else "Notation") ++ spc() ++ qs s ++
-             str " :=" ++ Flags.without_option Flags.beautify pr_constrarg c) ++
-             pr_syntax_modifiers l ++
-             (match opt with
-              | None -> mt()
-              | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
+      hov 2 (hov 0 (keyword (if infix then "Infix" else "Notation") ++ spc() ++
+      pr_notation_declaration ntn_decl))
     )
   | VernacReservedNotation (_, (s, l)) ->
     return (
@@ -888,7 +887,7 @@ let pr_vernac_expr v =
         pr_opt (fun p -> str "|" ++ spc() ++ pr_and_type_binders_arg p) indpar ++
         pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) s ++
         str" :=") ++ pr_constructor_list lc ++
-      prlist (pr_decl_notation @@ pr_constr) ntn
+      prlist pr_where_notation ntn
     in
     let kind =
       match f with
@@ -921,7 +920,7 @@ let pr_vernac_expr v =
       pr_ident_decl (fname,univs) ++ spc() ++ pr_binders binders ++ spc() ++ str":" ++
       spc() ++ pr_lconstr_expr rtype ++
       pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) body_def ++
-      prlist (pr_decl_notation @@ pr_constr) notations
+      prlist pr_where_notation notations
     in
     return (
       hov 0 (local ++ keyword "CoFixpoint" ++ spc() ++

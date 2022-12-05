@@ -15,10 +15,25 @@ open Constrexpr
 open Notation_term
 open Environ
 
-(** Adding a (constr) notation in the environment*)
+type notation_main_data
+type syntax_rules
 
-val add_notation : local:bool -> infix:bool -> Deprecation.t option -> env -> constr_expr ->
-  (lstring * syntax_modifier CAst.t list) -> scope_name option -> unit
+type notation_interpretation_decl
+(** This data type packages all the necessary information to declare a notation
+    interpretation, once the syntax is declared or recovered from a previous
+    declaration. *)
+
+val add_notation_syntax :
+  local:bool ->
+  infix:bool ->
+  Deprecation.t option ->
+  notation_declaration ->
+  notation_interpretation_decl
+(** Add syntax rules for a (constr) notation in the environment *)
+
+val add_notation_interpretation :
+  local:bool -> env -> notation_interpretation_decl -> unit
+(** Declare the interpretation of a notation *)
 
 (** Declaring scopes, delimiter keys and default scopes *)
 
@@ -33,18 +48,12 @@ val open_close_scope : locality_flag -> to_open:bool -> scope_name -> unit
 
 (** Add a notation interpretation associated to a "where" clause (already has pa/pp rules) *)
 
-type where_decl_notation
-
 val prepare_where_notation :
-  decl_notation -> where_decl_notation
+  notation_declaration -> notation_interpretation_decl
   (** Interpret the modifiers of a where-notation *)
 
-val add_notation_interpretation :
-  local:bool -> env -> where_decl_notation -> unit
-  (** Declare the interpretation of the where-notation *)
-
 val set_notation_for_interpretation :
-  env -> Constrintern.internalization_env -> where_decl_notation -> unit
+  env -> Constrintern.internalization_env -> notation_interpretation_decl -> unit
   (** Set the interpretation of the where-notation for interpreting a mutual block *)
 
 (** Add only the parsing/printing rule of a notation *)

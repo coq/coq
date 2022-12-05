@@ -51,7 +51,7 @@ module Preprocessed_Mind_decl : sig
     typing_flags : Declarations.typing_flags option;
     private_ind : bool;
     uniform : ComInductive.uniform_inductive_flag;
-    inductives : (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list;
+    inductives : (Vernacexpr.one_inductive_expr * Vernacexpr.notation_declaration list) list;
   }
   type t =
     | Record of record
@@ -61,5 +61,5 @@ end
 val preprocess_inductive_decl
   :  atts:Attributes.vernac_flags
   -> Vernacexpr.inductive_kind
-  -> (Vernacexpr.inductive_expr * Vernacexpr.decl_notation list) list
+  -> (Vernacexpr.inductive_expr * Vernacexpr.notation_declaration list) list
   -> Preprocessed_Mind_decl.t
