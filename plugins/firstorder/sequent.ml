@@ -71,10 +71,6 @@ module CM=Map.Make(Constr)
 
 module History=Set.Make(Hitem)
 
-type history = History.t
-
-type cmap = GlobRef.t list CM.t
-
 let cm_add sigma typ nam cm=
   let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   try
@@ -104,6 +100,10 @@ type t=
      cnt:counter;
      history:History.t;
      depth:int}
+
+let has_fuel seq = seq.depth > 0
+
+let iter_redexes f seq = HP.iter f seq.redexes
 
 let deepen seq={seq with depth=seq.depth-1}
 
@@ -156,12 +156,9 @@ let re_add_formula_list sigma lf seq=
 
 let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) seq.context)
 
-(*let rev_left seq=
-  try
-    let lpat=(HP.maximum seq.redexes).pat in
-      left_reversible lpat
-  with Heap.EmptyHeap -> false
-*)
+let find_goal sigma seq =
+  let t = match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t in
+  find_left sigma t seq
 
 let rec take_formula sigma seq=
   let hd=HP.maximum seq.redexes
@@ -186,6 +183,13 @@ let empty_seq depth=
    cnt=newcnt ();
    history=History.empty;
    depth=depth}
+
+let make_simple_atoms seq =
+  let ratoms=
+    match seq.gl with
+    | GoalAtom t -> [t]
+    | GoalTerm _ -> []
+  in {negative=seq.latoms;positive=ratoms}
 
 let expand_constructor_hints =
   List.map_append (function
@@ -229,7 +233,8 @@ let extend_with_auto_hints ~flags env sigma l seq =
   in
   List.fold_left h (seq,sigma) l
 
-let print_cmap map=
+(* For debug *)
+let _print_cmap map=
   let print_entry c l s=
     let env = Global.env () in
     let sigma = Evd.from_env env in
@@ -245,5 +250,3 @@ let print_cmap map=
               cut () ++
               CM.fold print_entry map (mt ()) ++
               str "-----"))
-
-

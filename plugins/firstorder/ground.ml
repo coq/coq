@@ -41,7 +41,7 @@ let ground_tac ~flags solver startseq =
       then
         Feedback.msg_debug (Printer.Debug.pr_goal gl)
     in
-    tclORELSE (axiom_tac seq.gl seq)
+    tclORELSE (axiom_tac seq)
       begin
         try
           let (hd,seq1)=take_formula (project gl) seq
@@ -69,7 +69,7 @@ let ground_tac ~flags solver startseq =
                       | Rexists(i,dom,triv)->
                           let (lfp,seq2)=collect_quantified (project gl) seq in
                           let backtrack2=toptac (lfp@skipped) seq2 in
-                            if flags.qflag && seq.depth>0 then
+                            if flags.qflag && Sequent.has_fuel seq then
                               quantified_tac ~flags lfp backtrack2
                                 continue (re_add seq)
                             else
@@ -89,7 +89,7 @@ let ground_tac ~flags solver startseq =
                       | Lforall (_,_,_)->
                           let (lfp,seq2)=collect_quantified (project gl) seq in
                           let backtrack2=toptac (lfp@skipped) seq2 in
-                            if flags.qflag && seq.depth>0 then
+                            if flags.qflag && Sequent.has_fuel seq then
                               quantified_tac ~flags lfp backtrack2
                                 continue (re_add seq)
                             else
@@ -109,7 +109,7 @@ let ground_tac ~flags solver startseq =
                                     (ll_ind_tac ~flags ind largs backtrack
                                        (get_id hd) continue (re_add seq1))
                                 | LLforall p ->
-                                    if seq.depth>0 && flags.qflag then
+                                    if Sequent.has_fuel seq && flags.qflag then
                                       (ll_forall_tac ~flags p backtrack
                                          (get_id hd) continue (re_add seq1))
                                     else backtrack

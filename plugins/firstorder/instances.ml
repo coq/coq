@@ -52,13 +52,6 @@ end
 
 module IS=Set.Make(OrderedInstance)
 
-let make_simple_atoms seq=
-  let ratoms=
-    match seq.gl with
-    | GoalAtom t -> [t]
-    | GoalTerm _ -> []
-  in {negative=seq.latoms;positive=ratoms}
-
 let do_sequent env sigma setref triv id seq i dom atoms=
   let flag=ref true in
   let phref=ref triv in
@@ -70,8 +63,8 @@ let do_sequent env sigma setref triv id seq i dom atoms=
         | Some c ->flag:=false;setref:=IS.add (c,id) !setref in
       List.iter (fun t->List.iter (do_pair t) a2.negative) a1.positive;
       List.iter (fun t->List.iter (do_pair t) a2.positive) a1.negative in
-    HP.iter (fun lf->do_atoms atoms lf.atoms) seq.redexes;
-    do_atoms atoms (make_simple_atoms seq);
+    Sequent.iter_redexes (fun lf->do_atoms atoms lf.atoms) seq;
+    do_atoms atoms (Sequent.make_simple_atoms seq);
     !flag && !phref
 
 let match_one_quantified_hyp env sigma setref seq lf=

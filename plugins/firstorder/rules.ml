@@ -60,13 +60,11 @@ let clear_global=function
 
 (* connection rules *)
 
-let axiom_tac t seq =
+let axiom_tac seq =
   Proofview.Goal.enter begin fun gl ->
-  try
-    let t = match t with GoalAtom a -> repr_atom a | GoalTerm t -> t in
-    pf_constr_of_global (find_left (project gl) t seq) >>= fun c ->
-    exact_no_check c
-  with Not_found -> tclFAIL (Pp.str "No axiom link")
+  match Sequent.find_goal (project gl) seq with
+  | gr -> pf_constr_of_global gr >>= fun c -> exact_no_check c
+  | exception Not_found -> tclFAIL (Pp.str "No axiom link")
   end
 
 let ll_atom_tac ~flags a backtrack id continue seq =
