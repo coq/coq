@@ -28,7 +28,9 @@ val record: h_item -> t -> t
 
 val lookup: Environ.env -> Evd.evar_map -> h_item -> t -> bool
 
-val add_formula : flags:flags -> Environ.env -> Evd.evar_map -> side -> identifier -> constr -> t -> t
+val add_concl : flags:flags -> Environ.env -> Evd.evar_map -> constr -> t -> t
+
+val add_formula : flags:flags -> hint:bool -> Environ.env -> Evd.evar_map -> GlobRef.t -> constr -> t -> t
 
 val re_add_formula_list : Evd.evar_map -> Formula.t list -> t -> t
 

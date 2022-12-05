@@ -47,11 +47,12 @@ let wrap ~flags n b continue seq =
               List.exists (occur_var_in_decl env sigma id) ctx then
                 (aux (i-1) q (nd::ctx))
             else
-              add_formula ~flags env sigma Hyp (FormulaId (GlobRef.VarRef id)) (NamedDecl.get_type nd) (aux (i-1) q (nd::ctx)) in
+              add_formula ~flags ~hint:false env sigma (GlobRef.VarRef id) (NamedDecl.get_type nd) (aux (i-1) q (nd::ctx)) in
   let seq1=aux n nc [] in
-  let seq2=if b then
-    add_formula ~flags env sigma Concl GoalId (pf_concl gls) seq1 else seq1 in
-    continue seq2
+  let seq2 =
+    if b then add_concl ~flags env sigma (pf_concl gls) seq1 else seq1
+  in
+  continue seq2
   end
 
 let clear_global=function
