@@ -36,15 +36,17 @@ let compare_instance inst1 inst2=
           | Phantom _, Real (i, _)-> if Unify.Item.is_ground i then -1 else 1
           | Real (i, _), Phantom _ -> if Unify.Item.is_ground i then 1 else -1
 
+type any_identifier = AnyId : 'a identifier -> any_identifier
+
 let compare_gr id1 id2 = match id1, id2 with
-| GoalId, GoalId -> 0
-| GoalId, FormulaId _ -> 1
-| FormulaId _, GoalId -> -1
-| FormulaId id1, FormulaId id2 -> GlobRef.CanOrd.compare id1 id2
+| AnyId GoalId, AnyId GoalId -> 0
+| AnyId GoalId, AnyId (FormulaId _) -> 1
+| AnyId (FormulaId _), AnyId GoalId -> -1
+| AnyId (FormulaId id1), AnyId (FormulaId id2) -> GlobRef.CanOrd.compare id1 id2
 
 module OrderedInstance=
 struct
-  type t = Unify.instance * identifier
+  type t = Unify.instance * any_identifier
   let compare (inst1,id1) (inst2,id2)=
     (compare_instance =? compare_gr) inst2 inst1 id2 id1
     (* we want a __decreasing__ total order *)
@@ -63,20 +65,20 @@ let do_sequent env sigma setref triv id seq i dom atoms=
         | Some c ->flag:=false;setref:=IS.add (c,id) !setref in
       List.iter (fun t->List.iter (do_pair t) a2.negative) a1.positive;
       List.iter (fun t->List.iter (do_pair t) a2.positive) a1.negative in
-    Sequent.iter_redexes (fun lf->do_atoms atoms lf.atoms) seq;
+    Sequent.iter_redexes (function AnyFormula lf->do_atoms atoms lf.atoms) seq;
     do_atoms atoms (Sequent.make_simple_atoms seq);
     !flag && !phref
 
-let match_one_quantified_hyp env sigma setref seq lf=
+let match_one_quantified_hyp (type a) env sigma setref seq (lf : a Formula.t) =
   match lf.pat with
-      Left(Lforall(i,dom,triv))|Right(Rexists(i,dom,triv))->
-        if do_sequent env sigma setref triv lf.id seq i dom lf.atoms then
-          setref:=IS.add ((Phantom dom),lf.id) !setref
+      LeftPattern (Lforall(i,dom,triv))|RightPattern(Rexists(i,dom,triv))->
+        if do_sequent env sigma setref triv (AnyId lf.id) seq i dom lf.atoms then
+          setref:=IS.add ((Phantom dom), AnyId lf.id) !setref
     | _ -> anomaly (Pp.str "can't happen.")
 
 let give_instances env sigma lf seq=
   let setref=ref IS.empty in
-    List.iter (match_one_quantified_hyp env sigma setref seq) lf;
+  let () = List.iter (function AnyFormula f -> match_one_quantified_hyp env sigma setref seq f) lf in
     IS.elements !setref
 
 (* collector for the engine *)
@@ -84,8 +86,9 @@ let give_instances env sigma lf seq=
 let rec collect_quantified sigma seq=
   try
     let hd,seq1=take_formula sigma seq in
-      (match hd.pat with
-           Left(Lforall(_,_,_)) | Right(Rexists(_,_,_)) ->
+    let AnyFormula hd0 = hd in
+      (match hd0.pat with
+           LeftPattern(Lforall(_,_,_)) | RightPattern(Rexists(_,_,_)) ->
              let (q,seq2)=collect_quantified sigma seq1 in
                ((hd::q),seq2)
          | _->[],seq)
@@ -192,7 +195,7 @@ let right_instance_tac ~flags inst continue seq=
         tclFAIL (Pp.str "not implemented ... yet")
   end
 
-let instance_tac ~flags (hd, id) = match id with
+let instance_tac ~flags (hd, AnyId id) = match id with
 | GoalId -> right_instance_tac ~flags hd
 | FormulaId id -> left_instance_tac ~flags (hd, id)
 

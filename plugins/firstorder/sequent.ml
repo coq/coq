@@ -20,9 +20,9 @@ let newcnt ()=
   let cnt=ref (-1) in
     fun b->if b then incr cnt;!cnt
 
-let priority = (* pure heuristics, <=0 for non reversible *)
+let priority : type a. a pattern -> int = (* pure heuristics, <=0 for non reversible *)
   function
-      Right rf->
+      RightPattern rf->
         begin
           match rf with
               Rarrow               -> 100
@@ -32,7 +32,7 @@ let priority = (* pure heuristics, <=0 for non reversible *)
             | Rforall              -> 100
             | Rexists (_,_,_)      -> -29
         end
-    | Left lf ->
+    | LeftPattern lf ->
         match lf with
             Lfalse                 -> 999
           | Land _                 ->  90
@@ -51,8 +51,8 @@ let priority = (* pure heuristics, <=0 for non reversible *)
 
 module OrderedFormula=
 struct
-  type t=Formula.t
-  let compare e1 e2=
+  type t=Formula.any_formula
+  let compare (AnyFormula e1) (AnyFormula e2) =
         (priority e1.pat) - (priority e2.pat)
 end
 
@@ -123,16 +123,16 @@ let lookup env sigma item seq=
 let add_concl ~flags env sigma t seq =
   match build_formula ~flags env sigma Concl GoalId t seq.cnt with
   | Left f ->
-    {seq with redexes=HP.add f seq.redexes; gl = GoalTerm f.constr }
+    {seq with redexes=HP.add (AnyFormula f) seq.redexes; gl = GoalTerm f.constr }
   | Right t ->
     {seq with gl = GoalAtom t}
 
 let add_formula ~flags ~hint env sigma id t seq =
-  let side = if hint then Hint else Hyp in
+  let side = Hyp hint in
   match build_formula ~flags env sigma side (FormulaId id) t seq.cnt with
   | Left f ->
     {seq with
-      redexes=HP.add f seq.redexes;
+      redexes=HP.add (AnyFormula f) seq.redexes;
       context=cm_add sigma f.constr id seq.context}
   | Right t ->
     {seq with
@@ -140,7 +140,7 @@ let add_formula ~flags ~hint env sigma id t seq =
       latoms=t::seq.latoms}
 
 let re_add_formula_list sigma lf seq=
-  let do_one f cm = match f.id with
+  let do_one (AnyFormula f) cm = match f.id with
   | GoalId -> cm
   | FormulaId id -> cm_add sigma f.constr id cm
   in
@@ -155,19 +155,20 @@ let find_goal sigma seq =
   find_left sigma t seq
 
 let rec take_formula sigma seq=
-  let hd=HP.maximum seq.redexes
-  and hp=HP.remove seq.redexes in
-  match hd.id with
+  let hd = HP.maximum seq.redexes in
+  let hp = HP.remove seq.redexes in
+  let AnyFormula hd0 = hd in
+  match hd0.id with
   | GoalId ->
       let nseq={seq with redexes=hp} in
-        if (match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t) == hd.constr then
+        if (match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t) == hd0.constr then
           hd,nseq
         else
           take_formula sigma nseq (* discarding deprecated goal *)
   | FormulaId id ->
       hd,{seq with
             redexes=hp;
-            context=cm_remove sigma hd.constr id seq.context}
+            context=cm_remove sigma hd0.constr id seq.context}
 
 let empty_seq depth=
   {redexes=HP.empty;

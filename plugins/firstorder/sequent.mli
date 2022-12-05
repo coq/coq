@@ -20,7 +20,7 @@ val has_fuel : t -> bool
 
 val make_simple_atoms : t -> atoms
 
-val iter_redexes : (Formula.t -> unit) -> t -> unit
+val iter_redexes : (Formula.any_formula -> unit) -> t -> unit
 
 val deepen: t -> t
 
@@ -32,13 +32,13 @@ val add_concl : flags:flags -> Environ.env -> Evd.evar_map -> constr -> t -> t
 
 val add_formula : flags:flags -> hint:bool -> Environ.env -> Evd.evar_map -> GlobRef.t -> constr -> t -> t
 
-val re_add_formula_list : Evd.evar_map -> Formula.t list -> t -> t
+val re_add_formula_list : Evd.evar_map -> Formula.any_formula list -> t -> t
 
 val find_left : Evd.evar_map -> constr -> t -> GlobRef.t
 
 val find_goal : Evd.evar_map -> t -> GlobRef.t
 
-val take_formula : Evd.evar_map -> t -> Formula.t * t
+val take_formula : Evd.evar_map -> t -> Formula.any_formula * t
 
 val empty_seq : int -> t
 

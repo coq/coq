@@ -28,9 +28,7 @@ let get_flags qflag =
       CClosure.all
       flags; qflag }
 
-let get_id hd = match hd.id with
-| GoalId -> assert false (* TODO: should be enforced by typing *)
-| FormulaId id -> id
+let get_id hd = match hd.id with FormulaId id -> id
 
 let ground_tac ~flags solver startseq =
   Proofview.Goal.enter begin fun gl ->
@@ -48,8 +46,9 @@ let ground_tac ~flags solver startseq =
           and re_add s=re_add_formula_list (project gl) skipped s in
           let continue=toptac []
           and backtrack =toptac (hd::skipped) seq1 in
+          let AnyFormula hd = hd in
             match hd.pat with
-                Right rpat->
+                RightPattern rpat->
                   begin
                     match rpat with
                         Rand->
@@ -75,7 +74,7 @@ let ground_tac ~flags solver startseq =
                             else
                               backtrack2 (* need special backtracking *)
                   end
-              | Left lpat->
+              | LeftPattern lpat->
                   begin
                     match lpat with
                         Lfalse->

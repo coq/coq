@@ -124,11 +124,13 @@ let kind_of_formula ~flags env sigma term =
 
 type atoms = {positive:atom list;negative:atom list}
 
-type side = Hyp | Concl | Hint
+type _ side =
+| Hyp : bool -> [ `Hyp ] side (* true if treated as hint *)
+| Concl : [ `Goal ] side
 
 let no_atoms = (false,{positive=[];negative=[]})
 
-let build_atoms ~flags env sigma metagen side cciterm =
+let build_atoms (type a) ~flags env sigma metagen (side : a side) cciterm =
   let trivial =ref false
   and positive=ref []
   and negative=ref [] in
@@ -175,9 +177,9 @@ let build_atoms ~flags env sigma metagen side cciterm =
                 negative:= unsigned :: !negative in
     begin
       match side with
-          Concl    -> build_rec [] true cciterm
-        | Hyp      -> build_rec [] false cciterm
-        | Hint     ->
+          Concl     -> build_rec [] true cciterm
+        | Hyp false -> build_rec [] false cciterm
+        | Hyp true  ->
             let rels,head=decompose_prod sigma cciterm in
             let subst=List.rev_map (fun _->mkMeta (metagen true)) rels in
               build_rec subst false head;trivial:=false (* special for hints *)
@@ -211,14 +213,24 @@ type left_pattern=
   | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
-type identifier = GoalId | FormulaId of GlobRef.t
+type _ identifier =
+| GoalId : [ `Goal ] identifier
+| FormulaId : GlobRef.t -> [ `Hyp ] identifier
 
-type t={id:identifier;
-        constr:constr;
-        pat:(left_pattern,right_pattern) sum;
-        atoms:atoms}
+type _ pattern =
+| LeftPattern : left_pattern -> [ `Hyp ] pattern
+| RightPattern : right_pattern -> [ `Goal ] pattern
 
-let build_formula ~flags env sigma side nam typ metagen=
+type 'a t = {
+  id : 'a identifier;
+  constr : constr;
+  pat : 'a pattern;
+  atoms : atoms;
+}
+
+type any_formula = AnyFormula : 'a t -> any_formula
+
+let build_formula (type a) ~flags env sigma (side : a side) (nam : a identifier) typ metagen : (a t, atom) sum =
   let normalize = special_nf ~flags env sigma in
     try
       let m=meta_succ(metagen false) in
@@ -226,7 +238,7 @@ let build_formula ~flags env sigma side nam typ metagen=
         if flags.qflag then
           build_atoms ~flags env sigma metagen side typ
         else no_atoms in
-      let pattern=
+      let pattern : a pattern =
         match side with
             Concl ->
               let pat=
@@ -240,8 +252,8 @@ let build_formula ~flags env sigma side nam typ metagen=
                         Rexists(m,d,trivial)
                   | Forall (_,a) -> Rforall
                   | Arrow (a,b) -> Rarrow in
-                Right pat
-          | _ ->
+                RightPattern pat
+          | Hyp _ ->
               let pat=
                 match kind_of_formula ~flags env sigma typ with
                     False(i,_)        ->  Lfalse
@@ -268,7 +280,7 @@ let build_formula ~flags env sigma side nam typ metagen=
                               | Arrow(a,c)-> LLarrow(a,c,b)
                               | Exists(i,l)->LLexists(i,l)
                               | Forall(_,_)->LLforall a) in
-                Left pat
+                LeftPattern pat
       in
         Left {id=nam;
               constr=normalize typ;

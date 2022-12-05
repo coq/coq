@@ -38,7 +38,9 @@ val repr_atom : atom -> EConstr.t
 
 type atoms = { positive:atom list; negative:atom list }
 
-type side = Hyp | Concl | Hint
+type _ side =
+| Hyp : bool -> [ `Hyp ] side (* true if treated as hint *)
+| Concl : [ `Goal ] side
 
 type right_pattern =
     Rarrow
@@ -65,13 +67,21 @@ type left_pattern=
   | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
-type identifier = GoalId | FormulaId of GlobRef.t
+type _ identifier =
+| GoalId : [ `Goal ] identifier
+| FormulaId : GlobRef.t -> [ `Hyp ] identifier
 
-type t = private {
-        id: identifier;
+type _ pattern =
+| LeftPattern : left_pattern -> [ `Hyp ] pattern
+| RightPattern : right_pattern -> [ `Goal ] pattern
+
+type 'a t = private {
+        id: 'a identifier;
         constr: constr;
-        pat: (left_pattern,right_pattern) sum;
+        pat: 'a pattern;
         atoms: atoms}
 
-val build_formula : flags:flags -> Environ.env -> Evd.evar_map -> side -> identifier -> types ->
-  counter -> (t, atom) sum
+type any_formula = AnyFormula : 'a t -> any_formula
+
+val build_formula : flags:flags -> Environ.env -> Evd.evar_map -> 'a side -> 'a identifier -> types ->
+  counter -> ('a t, atom) sum
