@@ -160,11 +160,11 @@ let rec take_formula sigma seq=
   let AnyFormula hd0 = hd in
   match hd0.id with
   | GoalId ->
-      let nseq={seq with redexes=hp} in
-        if (match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t) == hd0.constr then
-          hd,nseq
-        else
-          take_formula sigma nseq (* discarding deprecated goal *)
+    let nseq={seq with redexes=hp} in
+    begin match seq.gl with
+    | GoalTerm t when t == hd0.constr -> hd, nseq
+    | GoalAtom _ | GoalTerm _ -> take_formula sigma nseq (* discarding deprecated goal *)
+    end
   | FormulaId id ->
       hd,{seq with
             redexes=hp;
