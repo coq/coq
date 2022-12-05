@@ -73,9 +73,9 @@ sp is a local copy of the global variable extern_sp. */
 #ifdef THREADED_CODE
 #  define Instruct(name) coq_lbl_##name:
 #  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
-#    define coq_Jumptbl_base ((char *) &&coq_lbl_ACC0)
+#    define coq_Jumptbl_base &&coq_lbl_ACC0
 #  else
-#    define coq_Jumptbl_base ((char *) 0)
+#    define coq_Jumptbl_base 0
 #    define coq_jumptbl_base ((char *) 0)
 #  endif
 #  ifdef DEBUG
@@ -297,8 +297,7 @@ value coq_interprete
   if (coq_pc == NULL) {           /* Interpreter is initializing */
     print_instr("Interpreter is initializing");
 #ifdef THREADED_CODE
-    coq_instr_table = (char **) coq_jumptable;
-    coq_instr_base = coq_Jumptbl_base;
+    coq_init_thread_code(coq_jumptable, coq_Jumptbl_base);
 #endif
     CAMLreturn(Val_unit);
   }

@@ -16,8 +16,7 @@
 void * coq_stat_alloc (asize_t sz);
 
 #ifdef THREADED_CODE
-extern char ** coq_instr_table;
-extern char * coq_instr_base;
+void coq_init_thread_code(void ** instr_table, void * instr_base);
 #endif /*  THREADED_CODE */
 
 extern code_t accumulate;

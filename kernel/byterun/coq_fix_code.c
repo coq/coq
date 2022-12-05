@@ -25,9 +25,17 @@
 #include "coq_fix_code.h"
 
 #ifdef THREADED_CODE
-char ** coq_instr_table;
-char * coq_instr_base;
+
+static char ** coq_instr_table;
+static char * coq_instr_base;
 #define VALINSTR(instr) ((opcode_t)(coq_instr_table[instr] - coq_instr_base))
+
+void coq_init_thread_code(void ** instr_table, void * instr_base)
+{
+  coq_instr_table = (char **) instr_table;
+  coq_instr_base = (char *) instr_base;
+}
+
 #else
 #define VALINSTR(instr) instr
 #endif /*  THREADED_CODE */
