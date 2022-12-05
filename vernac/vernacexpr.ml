@@ -356,7 +356,7 @@ type nonrec vernac_expr =
       infix_flag * constr_expr * (lstring * syntax_modifier CAst.t list) *
       scope_name option
   | VernacDeclareCustomEntry of string
-  | VernacEnableNotation of bool * (string, qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_with_optional_scope option
+  | VernacEnableNotation of bool * (string, Id.t list * qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_with_optional_scope option
 
   (* Gallina *)
   | VernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr

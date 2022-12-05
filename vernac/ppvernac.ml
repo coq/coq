@@ -186,6 +186,9 @@ let pr_notation_entry = function
   | InConstrEntry -> keyword "constr"
   | InCustomEntry s -> keyword "custom" ++ spc () ++ str s
 
+let pr_abbreviation pr (ids, c) =
+  pr c ++ spc () ++ prlist_with_sep spc pr_id ids
+
 let pr_at_level = function
   | NumLevel n -> spc () ++ keyword "at" ++ spc () ++ keyword "level" ++ spc () ++ int n
   | NextLevel -> spc () ++ keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
@@ -794,7 +797,7 @@ let pr_vernac_expr v =
     let pr_rule = match rule with
       | None -> mt ()
       | Some (Inl ntn) -> quote (str ntn)
-      | Some (Inr qid) -> pr_qualid qid in
+      | Some (Inr abbrev) -> pr_abbreviation pr_qualid abbrev in
     let pr_opt_scope = function
       | None -> mt ()
       | Some (NotationInScope s) -> spc () ++ str ": " ++ str s
@@ -1129,8 +1132,7 @@ let pr_vernac_expr v =
   | VernacSyntacticDefinition (id,(ids,c),l) ->
     return (
       hov 2
-        (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
-         prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
+        (keyword "Notation" ++ spc () ++ pr_abbreviation pr_lident (ids,id) ++ str":=" ++ pr_constrarg c ++
          pr_syntax_modifiers l)
     )
   | VernacArguments (q, args, more_implicits, mods) ->

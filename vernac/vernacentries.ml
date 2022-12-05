@@ -538,14 +538,14 @@ let vernac_notation ~atts ~infix =
 let vernac_custom_entry ~module_local s =
   Metasyntax.declare_custom_entry module_local s
 
-let interp_enable_notation_rule on rule interp flags scope =
+let interp_enable_notation_rule on ntn interp flags scope =
   let open Notation in
   let rule = Option.map (function
     | Inl ntn -> Inl (interpret_notation_string ntn)
-    | Inr qid ->
+    | Inr (_,qid) ->
       match Nametab.locate_extended qid with
       | Globnames.TrueGlobal _ -> user_err (str "Not an abbreviation.")
-      | Globnames.Abbrev kn -> Inr kn) rule in
+      | Globnames.Abbrev kn -> Inr kn) ntn in
   let rec parse_notation_enable_flags all query = function
     | [] -> all, query
     | EnableNotationEntry entry :: flags ->
@@ -553,14 +553,21 @@ let interp_enable_notation_rule on rule interp flags scope =
     | EnableNotationOnly use :: flags ->
       parse_notation_enable_flags all { query with use_pattern = use } flags
     | EnableNotationAll :: flags -> parse_notation_enable_flags true query flags in
-  (* TODO: get the notation variables when a notation key is given (see metasyntax.ml) *)
-  let nenv = {
-    Notation_term.ninterp_var_type = Id.Map.empty;
-    Notation_term.ninterp_rec_vars = Id.Map.empty;
-  } in
   let interp = Option.map (fun c ->
-    let (acvars, ac, reversibility) = Constrintern.interp_notation_constr (Global.env ()) nenv c in
-    ([], ac)) interp in
+      let vars, recvars =
+        match ntn with
+        | None ->
+          (* We expect the right-hand side to mention "_" in place of proper variables *)
+          (* Or should we instead deactivate the check of free variables? *)
+          ([], [])
+        | Some (Inl ntn) -> let {recvars; mainvars} = decompose_raw_notation ntn in (mainvars, recvars)
+        | Some (Inr (vars,qid)) -> (vars, [])
+      in
+      let ninterp_var_type = Id.Map.of_list (List.map (fun x -> (x, Notation_term.NtnInternTypeAny None)) vars) in
+      let ninterp_rec_vars = Id.Map.of_list recvars in
+      let nenv = Notation_term.{ ninterp_var_type; ninterp_rec_vars } in
+      let (_acvars, ac, _reversibility) = Constrintern.interp_notation_constr (Global.env ()) nenv c in
+      ([], ac)) interp in
   let default_notation_enable_pattern = {
     notation_entry_pattern = [];
     interp_rule_key_pattern = rule;
