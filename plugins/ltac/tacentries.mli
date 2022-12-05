@@ -25,6 +25,8 @@ type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_exp
 | TacTerm of string
 | TacNonTerm of ('a * Names.Id.t option) Loc.located
 
+type tactic_grammar_obj
+
 type raw_argument = string * string option
 (** An argument type as provided in Tactic notations, i.e. a string like
     "ne_foo_list_opt" together with a separator that only makes sense in the
@@ -35,11 +37,16 @@ type argument = Genarg.ArgT.any Extend.user_symbol
     leaves. *)
 
 val add_tactic_notation :
-  locality_flag -> int -> ?deprecation:Deprecation.t -> raw_argument
-  grammar_tactic_prod_item_expr list -> raw_tactic_expr -> unit
+  ?deprecation:Deprecation.t -> tactic_grammar_obj ->
+  raw_tactic_expr -> unit
 (** [add_tactic_notation local level prods expr] adds a tactic notation in the
     environment at level [level] with locality [local] made of the grammar
     productions [prods] and returning the body [expr] *)
+
+val add_tactic_notation_syntax :
+  locality_flag -> int -> ?deprecation:Deprecation.t -> raw_argument
+  grammar_tactic_prod_item_expr list ->
+  tactic_grammar_obj
 
 val register_tactic_notation_entry : string -> ('a, 'b, 'c) Genarg.genarg_type -> unit
 (** Register an argument under a given entry name for tactic notations. When

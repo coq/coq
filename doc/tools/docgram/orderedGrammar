@@ -1118,7 +1118,7 @@ command: [
 | "Ltac2" OPT "mutable" OPT "rec" tac2def_body LIST0 ( "with" tac2def_body )
 | "Ltac2" "Type" OPT "rec" tac2typ_def LIST0 ( "with" tac2typ_def )
 | "Ltac2" "@" "external" ident ":" ltac2_type ":=" string string
-| "Ltac2" "Notation" LIST1 ltac2_scope OPT ( ":" natural ) ":=" ltac2_expr
+| "Ltac2" "Notation" LIST1 ltac2_scope OPT ( ":" natural ) ":=" ltac2_expr      (* ltac2 plugin *)
 | "Ltac2" "Set" qualid OPT [ "as" ident ] ":=" ltac2_expr
 | "Ltac2" "Notation" [ string | lident ] ":=" ltac2_expr      (* Ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr      (* ltac2 plugin *)

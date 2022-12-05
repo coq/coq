@@ -2115,8 +2115,6 @@ ltac2_occs_nums: [
 ltac2_entry: [
 | REPLACE tac2def_typ      (* Ltac2 plugin *)
 | WITH "Ltac2" tac2def_typ
-| REPLACE tac2def_syn      (* Ltac2 plugin *)
-| WITH "Ltac2" tac2def_syn
 | REPLACE tac2def_mut      (* Ltac2 plugin *)
 | WITH "Ltac2" tac2def_mut
 | REPLACE tac2def_val     (* Ltac2 plugin *)
@@ -2145,6 +2143,7 @@ SPLICE: [
 | tac2def_typ
 | tac2def_ext
 | tac2def_syn
+| ltac2def_syn
 | tac2def_mut
 | rec_flag
 | locident

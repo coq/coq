@@ -251,7 +251,6 @@ type tactic_grammar_obj = {
   tacobj_key : KerName.t;
   tacobj_local : locality_flag;
   tacobj_tacgram : tactic_grammar;
-  tacobj_body : Tacenv.alias_tactic;
   tacobj_forml : bool;
 }
 
@@ -265,40 +264,31 @@ let check_key key =
     user_err Pp.(str "Conflicting tactic notations keys. This can happen when including \
     twice the same module.")
 
-let cache_tactic_notation tobj =
+let cache_tactic_notation (tobj, body) =
   let key = tobj.tacobj_key in
   let () = check_key key in
-  Tacenv.register_alias key tobj.tacobj_body;
-  extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram;
-  Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram)
+  Tacenv.register_alias key body
 
-let open_tactic_notation i tobj =
-  let key = tobj.tacobj_key in
-  if Int.equal i 1 && not tobj.tacobj_local then
-    extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
+let open_tactic_notation i _ = ()
 
-let load_tactic_notation i tobj =
+let load_tactic_notation i (tobj, body) =
   let key = tobj.tacobj_key in
   let () = check_key key in
   (* Only add the printing and interpretation rules. *)
-  Tacenv.register_alias key tobj.tacobj_body;
-  Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram);
-  if Int.equal i 1 && not tobj.tacobj_local then
-    extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
+  Tacenv.register_alias key body
 
-let subst_tactic_notation (subst, tobj) =
+let subst_tactic_notation (subst, (tobj, body)) =
   let open Tacenv in
-  let alias = tobj.tacobj_body in
   { tobj with
-    tacobj_key = Mod_subst.subst_kn subst tobj.tacobj_key;
-    tacobj_body = { alias with alias_body = Tacsubst.subst_tactic subst alias.alias_body };
-  }
+    tacobj_key = Mod_subst.subst_kn subst tobj.tacobj_key
+  },
+  { body with alias_body = Tacsubst.subst_tactic subst body.alias_body }
 
 let classify_tactic_notation tacobj = Substitute
 
 let ltac_notation_cat = Libobject.create_category "ltac.notations"
 
-let inTacticGrammar : tactic_grammar_obj -> obj =
+let inTacticGrammar : tactic_grammar_obj * Tacenv.alias_tactic -> obj =
   declare_object {(default_object "TacticGrammar") with
        open_function = simple_open ~cat:ltac_notation_cat open_tactic_notation;
        load_function = load_tactic_notation;
@@ -306,30 +296,71 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
        subst_function = subst_tactic_notation;
        classify_function = classify_tactic_notation}
 
+let cache_tactic_syntax tobj =
+  let key = tobj.tacobj_key in
+  extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram;
+  Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram)
+
+let open_tactic_syntax i tobj =
+  let key = tobj.tacobj_key in
+  if Int.equal i 1 && not tobj.tacobj_local then
+    extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
+
+let load_tactic_syntax i tobj =
+  let key = tobj.tacobj_key in
+  (* Only add the printing and interpretation rules. *)
+  Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram);
+  if Int.equal i 1 && not tobj.tacobj_local then
+    extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
+
+let subst_tactic_syntax (subst, tobj) =
+  { tobj with
+    tacobj_key = Mod_subst.subst_kn subst tobj.tacobj_key
+  }
+
+let classify_tactic_syntax tacobj = Substitute
+
+let inTacticSyntax : tactic_grammar_obj -> obj =
+  declare_object {(default_object "TacticSyntax") with
+       object_stage = Summary.Stage.Synterp;
+       open_function = simple_open ~cat:ltac_notation_cat open_tactic_syntax;
+       load_function = load_tactic_syntax;
+       cache_function = cache_tactic_syntax;
+       subst_function = subst_tactic_syntax;
+       classify_function = classify_tactic_syntax}
+
 let cons_production_parameter = function
 | TacTerm _ -> None
 | TacNonTerm (_, (_, ido)) -> ido
 
-let add_glob_tactic_notation local ~level ?deprecation prods forml ids tac =
+let add_glob_tactic_notation ?deprecation tacobj ids tac =
+  let open Tacenv in
+  let body =
+    { alias_args = ids; alias_body = tac; alias_deprecation = deprecation } in
+  Lib.add_leaf (inTacticGrammar (tacobj, body))
+
+let add_glob_tactic_notation_syntax local ~level ?deprecation prods forml =
   let parule = {
     tacgram_level = level;
     tacgram_prods = prods;
   } in
-  let open Tacenv in
   let tacobj = {
     tacobj_key = make_fresh_key prods;
     tacobj_local = local;
     tacobj_tacgram = parule;
-    tacobj_body = { alias_args = ids; alias_body = tac; alias_deprecation = deprecation };
     tacobj_forml = forml;
   } in
-  Lib.add_leaf (inTacticGrammar tacobj)
+  Lib.add_leaf (inTacticSyntax tacobj);
+  tacobj
 
-let add_tactic_notation local n ?deprecation prods e =
-  let ids = List.map_filter cons_production_parameter prods in
-  let prods = List.map interp_prod_item prods in
+let add_tactic_notation ?deprecation tacobj e =
+  let ids = List.map_filter cons_production_parameter tacobj.tacobj_tacgram.tacgram_prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
-  add_glob_tactic_notation local ~level:n ?deprecation prods false ids tac
+  add_glob_tactic_notation ?deprecation tacobj ids tac
+
+let add_tactic_notation_syntax local n ?deprecation prods =
+  let prods = List.map interp_prod_item prods in
+  add_glob_tactic_notation_syntax local ~level:n ?deprecation prods false
 
 (**********************************************************************)
 (* ML Tactic entries                                                  *)
@@ -381,7 +412,8 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
     let map id = Reference (Locus.ArgVar (CAst.make id)) in
     let tac = CAst.make (TacML (entry, List.map map ids)) in
-    add_glob_tactic_notation false ~level ?deprecation prods true ids tac
+    let tacobj = add_glob_tactic_notation_syntax false ~level ?deprecation prods true in
+    add_glob_tactic_notation ?deprecation tacobj ids tac
   in
   List.iteri iter (List.rev prods);
   (* We call [extend_atomic_tactic] only for "basic tactics" (the ones
