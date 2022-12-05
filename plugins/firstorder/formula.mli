@@ -40,8 +40,6 @@ type atoms = { positive:atom list; negative:atom list }
 
 type side = Hyp | Concl | Hint
 
-val dummy_id: GlobRef.t
-
 type right_pattern =
     Rarrow
   | Rand
@@ -67,10 +65,13 @@ type left_pattern=
   | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
-type t= private {id: GlobRef.t;
+type identifier = GoalId | FormulaId of GlobRef.t
+
+type t = private {
+        id: identifier;
         constr: constr;
         pat: (left_pattern,right_pattern) sum;
         atoms: atoms}
 
-val build_formula : flags:flags -> Environ.env -> Evd.evar_map -> side -> GlobRef.t -> types ->
+val build_formula : flags:flags -> Environ.env -> Evd.evar_map -> side -> identifier -> types ->
   counter -> (t, atom) sum

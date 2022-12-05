@@ -36,15 +36,15 @@ let compare_instance inst1 inst2=
           | Phantom _, Real (i, _)-> if Unify.Item.is_ground i then -1 else 1
           | Real (i, _), Phantom _ -> if Unify.Item.is_ground i then 1 else -1
 
-let compare_gr id1 id2 =
-  if id1==id2 then 0 else
-    if id1==dummy_id then 1
-    else if id2==dummy_id then -1
-    else GlobRef.CanOrd.compare id1 id2
+let compare_gr id1 id2 = match id1, id2 with
+| GoalId, GoalId -> 0
+| GoalId, FormulaId _ -> 1
+| FormulaId _, GoalId -> -1
+| FormulaId id1, FormulaId id2 -> GlobRef.CanOrd.compare id1 id2
 
 module OrderedInstance=
 struct
-  type t = Unify.instance * GlobRef.t
+  type t = Unify.instance * identifier
   let compare (inst1,id1) (inst2,id2)=
     (compare_instance =? compare_gr) inst2 inst1 id2 id1
     (* we want a __decreasing__ total order *)
@@ -105,8 +105,6 @@ let dummy_bvid=Id.of_string "x"
 let mk_open_instance env sigma id idc c =
   let (m, t) = Item.repr c in
   let var_id =
-    (* XXX why physical equality? *)
-    if id == dummy_id then dummy_bvid else
       let typ = Retyping.get_type_of env sigma idc in
         (* since we know we will get a product,
            reduction is not too expensive *)
@@ -201,11 +199,9 @@ let right_instance_tac ~flags inst continue seq=
         tclFAIL (Pp.str "not implemented ... yet")
   end
 
-let instance_tac ~flags inst=
-  if (snd inst)==dummy_id then
-    right_instance_tac ~flags (fst inst)
-  else
-    left_instance_tac ~flags inst
+let instance_tac ~flags (hd, id) = match id with
+| GoalId -> right_instance_tac ~flags hd
+| FormulaId id -> left_instance_tac ~flags (hd, id)
 
 let quantified_tac ~flags lf backtrack continue seq =
   Proofview.Goal.enter begin fun gl ->

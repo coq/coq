@@ -130,6 +130,7 @@ let add_formula ~flags env sigma side nam t seq =
                    redexes=HP.add f seq.redexes;
                    gl = GoalTerm f.constr }
             | _ ->
+              let nam = match nam with GoalId -> assert false | FormulaId id -> id in
                 {seq with
                    redexes=HP.add f seq.redexes;
                    context=cm_add sigma f.constr nam seq.context}
@@ -139,14 +140,16 @@ let add_formula ~flags env sigma side nam t seq =
             Concl ->
               {seq with gl = GoalAtom t}
           | _ ->
+            let nam = match nam with GoalId -> assert false | FormulaId id -> id in
               {seq with
                  context=cm_add sigma (repr_atom t) nam seq.context;
                  latoms=t::seq.latoms}
 
 let re_add_formula_list sigma lf seq=
-  let do_one f cm=
-    if f.id == dummy_id then cm
-    else cm_add sigma f.constr f.id cm in
+  let do_one f cm = match f.id with
+  | GoalId -> cm
+  | FormulaId id -> cm_add sigma f.constr id cm
+  in
   {seq with
      redexes=List.fold_right HP.add lf seq.redexes;
      context=List.fold_right do_one lf seq.context}
@@ -163,16 +166,17 @@ let find_left sigma t seq=List.hd (CM.find (EConstr.to_constr ~abort_on_undefine
 let rec take_formula sigma seq=
   let hd=HP.maximum seq.redexes
   and hp=HP.remove seq.redexes in
-    if hd.id == dummy_id then
+  match hd.id with
+  | GoalId ->
       let nseq={seq with redexes=hp} in
         if (match seq.gl with GoalAtom a -> repr_atom a | GoalTerm t -> t) == hd.constr then
           hd,nseq
         else
           take_formula sigma nseq (* discarding deprecated goal *)
-    else
+  | FormulaId id ->
       hd,{seq with
             redexes=hp;
-            context=cm_remove sigma hd.constr hd.id seq.context}
+            context=cm_remove sigma hd.constr id seq.context}
 
 let empty_seq depth=
   {redexes=HP.empty;
@@ -196,7 +200,7 @@ let extend_with_ref_list ~flags env sigma l seq =
   let f gr (seq, sigma) =
     let sigma, c = Evd.fresh_global env sigma gr in
     let sigma, typ= Typing.type_of env sigma c in
-      (add_formula ~flags env sigma Hyp gr typ seq, sigma) in
+      (add_formula ~flags env sigma Hyp (FormulaId gr) typ seq, sigma) in
     List.fold_right f l (seq, sigma)
 
 open Hints
@@ -211,7 +215,7 @@ let extend_with_auto_hints ~flags env sigma l seq =
        | exception Constr.DestKO -> seq, sigma
        | gr, _ ->
          let sigma, typ = Typing.type_of env sigma c in
-         add_formula ~flags env sigma Hint gr typ seq, sigma)
+         add_formula ~flags env sigma Hint (FormulaId gr) typ seq, sigma)
     | _ -> seq, sigma
   in
   let h acc dbname =

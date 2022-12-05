@@ -128,8 +128,6 @@ type side = Hyp | Concl | Hint
 
 let no_atoms = (false,{positive=[];negative=[]})
 
-let dummy_id=GlobRef.VarRef (Id.of_string "_") (* "_" cannot be parsed *)
-
 let build_atoms ~flags env sigma metagen side cciterm =
   let trivial =ref false
   and positive=ref []
@@ -213,7 +211,9 @@ type left_pattern=
   | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
-type t={id:GlobRef.t;
+type identifier = GoalId | FormulaId of GlobRef.t
+
+type t={id:identifier;
         constr:constr;
         pat:(left_pattern,right_pattern) sum;
         atoms:atoms}
