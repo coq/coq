@@ -1672,10 +1672,6 @@ let make_use reserved onlyparse onlyprint =
 (**********************************************************************)
 (* Main functions about notations                                     *)
 
-let to_map l =
-  let fold accu (x, v) = Id.Map.add x v accu in
-  List.fold_left fold Id.Map.empty l
-
 let make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env ?(impls=empty_internalization_env) c scope =
   let {recvars;mainvars;symbols} = notation_symbols in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
@@ -1693,8 +1689,8 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
   let df' = ntn, (path,df) in
   let i_vars = make_internalization_vars recvars i_typs in
   let nenv = {
-    ninterp_var_type = to_map i_vars;
-    ninterp_rec_vars = to_map recvars;
+    ninterp_var_type = Id.Map.of_list i_vars;
+    ninterp_rec_vars = Id.Map.of_list recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
   let plevel = match level with Some (from,level,l) -> level | None (* numeral: irrelevant )*) -> 0 in
