@@ -36,6 +36,7 @@ sig
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val height : 'a t -> int
   val filter_range : (key -> int) -> 'a t -> 'a t
+  val of_list : (key * 'a) list -> 'a t
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a t -> 'a t
@@ -61,6 +62,7 @@ sig
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val height : 'a map -> int
   val filter_range : (M.t -> int) -> 'a map -> 'a map
+  val of_list : (M.t * 'a) list -> 'a map
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a map -> 'a map
@@ -186,6 +188,10 @@ struct
           let m = aux m (map_prj r) in
           F.add v d m
     in aux F.empty (map_prj m)
+
+  let of_list l =
+    let fold accu (x, v) = F.add x v accu in
+    List.fold_left fold F.empty l
 
   module Smart =
   struct
