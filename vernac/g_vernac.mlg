@@ -1247,7 +1247,7 @@ GRAMMAR EXTEND Gram
   ;
   enable_notation_rule:
     [ [ s = ne_string -> { Some (Inl s) }
-      | qid = global -> { Some (Inr qid) }
+      | qid = global; idl = LIST0 ident -> { Some (Inr (idl,qid)) }
       | -> { None } ] ]
   ;
   enable_notation_interpretation:

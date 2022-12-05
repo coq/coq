@@ -444,7 +444,7 @@ Here are examples:
 Enabling and disabling notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: {| Enable | Disable } Notation {? {| @string | @qualid } } {? := @one_term } {? ( {+, @enable_notation_flag } ) } {? {| : @scope_name | : no scope } }
+.. cmd:: {| Enable | Disable } Notation {? {| @string | @qualid {* @ident__parm } } } {? := @one_term } {? ( {+, @enable_notation_flag } ) } {? {| : @scope_name | : no scope } }
    :name: Enable Notation; Disable Notation
 
    .. insertprodn enable_notation_flag enable_notation_flag
@@ -472,15 +472,19 @@ Enabling and disabling notations
    :n:`@string`
       Notations to enable or disable. :n:`@string` can be a single
       token in the notation such as "`->`" or a pattern that matches
-      the notation. See :ref:`locating-notations`.
+      the notation. See :ref:`locating-notations`. If no :n:`{? :=
+      @one_term }` is given, the variables of the notation can be
+      replaced by :n:`_`.
 
-   :n:`@qualid`
-      :ref:`Abbreviation <Abbreviations>` to enable or disable.
+   :n:`@qualid {* @ident__parm }`
+      :ref:`Abbreviation <Abbreviations>` to enable or disable, where :n:`{* @ident__parm }` are the parameters of the abbreviation. See :cmd:`Notation (abbreviation)`.
 
    :n:`{? := @one_term }`
       Enable or disable notations matching :token:`one_term`.
       :token:`one_term` can be written using notations or not, as well
-      as :n:`_`, just like in the :cmd:`Notation` command.
+      as :n:`_`, just like in the :cmd:`Notation` command. If no
+      :n:`@string` nor :n:`@qualid {* @ident__parm }` is given, the
+      variables of the notation can be replaced by :n:`_`.
 
    :n:`all`
       Enable or disable all notations meeting the given constraints,
