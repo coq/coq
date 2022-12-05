@@ -360,8 +360,8 @@ let rec ise_app_rev_stack2 env f evd revsk1 revsk2 =
 
 (* Add equality constraints for covariant/invariant positions. For
    irrelevant positions, unify universes when flexible. *)
-let compare_cumulative_instances evd variances u u' =
-  match Evarutil.compare_cumulative_instances CONV variances u u' evd with
+let compare_cumulative_instances pbty evd variances u u' =
+  match Evarutil.compare_cumulative_instances pbty variances u u' evd with
   | Inl evd ->
     Success evd
   | Inr p -> UnifFailure (evd, UnifUnivInconsistency p)
@@ -370,7 +370,7 @@ type application = FullyApplied | NumArgs of int
 
 let is_applied o n = match o with FullyApplied -> true | NumArgs m -> Int.equal m n
 
-let compare_heads env evd ~nargs term term' =
+let compare_heads pbty env evd ~nargs term term' =
   let check_strict evd u u' =
     let cstrs = Univ.enforce_eq_instances u u' Univ.Constraints.empty in
     try Success (Evd.add_constraints evd cstrs)
@@ -381,7 +381,7 @@ let compare_heads env evd ~nargs term term' =
     if is_applied nargs 1 && Environ.is_array_type env c
     then
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
-      compare_cumulative_instances evd [|Univ.Variance.Irrelevant|] u u'
+      compare_cumulative_instances pbty evd [|Univ.Variance.Irrelevant|] u u'
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       check_strict evd u u'
@@ -399,7 +399,7 @@ let compare_heads env evd ~nargs term term' =
           if not (is_applied nargs needed)
           then check_strict evd u u'
           else
-            compare_cumulative_instances evd variances u u'
+            compare_cumulative_instances pbty evd variances u u'
       end
   | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
   | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
@@ -450,7 +450,7 @@ let rec ise_stack2 no_app env evd f sk1 sk2 =
       let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in
       begin
         match ise_and i [
-          (fun i -> compare_heads env i ~nargs:FullyApplied hd1 hd2);
+          (fun i -> compare_heads CONV env i ~nargs:FullyApplied hd1 hd2);
           (fun i -> ise_array2 i (fun ii -> f env ii CONV) pms1 pms2);
           (fun i -> fctx i t1 t2);
           (fun i -> ise_array2 i fctx br1 br2);
@@ -495,7 +495,7 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
       let fctx i (ctx1, t1) (_ctx2, t2) = f (push_rel_context ctx1 env) i CONV t1 t2 in
       ise_and i [
         (fun i -> ise_rev_stack2 i q1 q2);
-        (fun i -> compare_heads env i ~nargs:FullyApplied hd1 hd2);
+        (fun i -> compare_heads CONV env i ~nargs:FullyApplied hd1 hd2);
         (fun i -> ise_array2 i (fun ii -> f env ii CONV) pms1 pms2);
         (fun i -> fctx i t1 t2);
         (fun i -> ise_array2 i fctx br1 br2);
@@ -524,8 +524,8 @@ let rec exact_ise_stack2 env evd f sk1 sk2 =
     ise_rev_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
-let compare_heads env evd ~nargs term term' =
-  compare_heads env evd ~nargs:(NumArgs nargs) term term'
+let compare_heads pbty env evd ~nargs term term' =
+  compare_heads pbty env evd ~nargs:(NumArgs nargs) term term'
 
 let conv_fun f flags on_types =
   let typefn env evd pbty term1 term2 =
@@ -665,7 +665,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     if not (Int.equal nargs nargs') then UnifFailure (evd, NotSameArgSize)
     else
       ise_and evd [(fun i ->
-          try compare_heads env i ~nargs term term'
+          try compare_heads pbty env i ~nargs term term'
           with UGraph.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
          (fun i -> exact_ise_stack2 env i (evar_conv_x flags) sk sk')]
   in
@@ -1873,3 +1873,5 @@ let unify ?flags ?(with_ho=true) env evd cv_pb ty1 ty2 =
      solve_unif_constraints_with_heuristics ~flags ~with_ho env evd
   | UnifFailure (evd, reason) ->
      raise (PretypeError (env, evd, CannotUnify (ty1, ty2, Some reason)))
+
+let compare_heads = compare_heads CONV
