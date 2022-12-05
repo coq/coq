@@ -883,20 +883,23 @@ let conv_of_term evd op isid arg =
   Tacred.compute (Global.env ()) evd
     (if isid then arg else EConstr.mkApp (op, [|arg|]))
 
-let app_unop evd src unop arg prf =
+let app_unop env evd src unop arg prf =
   let cunop = unop.EUnOpT.classify_unop in
   let default a' prf' =
     let target = EConstr.mkApp (unop.EUnOpT.tuop, [|a'|]) in
+    let evd, h = Typing.checked_appvect env evd (force mkapp)
+        [| unop.source1
+         ; unop.source2
+         ; unop.target1
+         ; unop.target2 |]
+    in
+    evd,
     EUnOpT.(
       Prf
         ( target
         , EConstr.mkApp
-            ( force mkapp
-            , [| unop.source1
-               ; unop.source2
-               ; unop.target1
-               ; unop.target2
-               ; unop.uop
+            ( h
+            , [| unop.uop
                ; unop.inj1_t.EInjT.inj
                ; unop.inj2_t.EInjT.inj
                ; unop.tuop
@@ -907,19 +910,20 @@ let app_unop evd src unop arg prf =
   in
   match prf with
   | Term -> (
-    if unop.EUnOpT.is_construct then Term (* Keep rebuilding *)
+    if unop.EUnOpT.is_construct then evd, Term (* Keep rebuilding *)
     else
       match cunop with
-      | OpInj -> Conv (conv_of_term evd unop.EUnOpT.uop false arg)
-      | OpSame -> Same
+      | OpInj -> evd, Conv (conv_of_term evd unop.EUnOpT.uop false arg)
+      | OpSame -> evd, Same
       | _ ->
         let a', prf = interp_prf evd unop.EUnOpT.inj1_t arg prf in
         default a' prf )
   | Same -> (
     match cunop with
-    | OpSame -> Same
-    | OpInj -> Same
+    | OpSame -> evd, Same
+    | OpInj -> evd, Same
     | OpConv ->
+      evd,
       Conv
         (EConstr.mkApp
            ( unop.EUnOpT.tuop
@@ -929,24 +933,24 @@ let app_unop evd src unop arg prf =
       default a' prf' )
   | Conv a' -> (
     match cunop with
-    | OpSame | OpConv -> Conv (EConstr.mkApp (unop.EUnOpT.tuop, [|a'|]))
-    | OpInj -> Conv a'
+    | OpSame | OpConv -> evd, Conv (EConstr.mkApp (unop.EUnOpT.tuop, [|a'|]))
+    | OpInj -> evd, Conv a'
     | _ ->
       let a', prf = interp_prf evd unop.EUnOpT.inj1_t arg prf in
       default a' prf )
   | Prf (a', prf') -> default a' prf'
 
-let app_unop evd src unop arg prf =
-  let res = app_unop evd src unop arg prf in
+let app_unop env evd src unop arg prf =
+  let (evd', r) as res = app_unop env evd src unop arg prf in
   debug_zify (fun () ->
       Pp.(
         str "\napp_unop "
         ++ pp_prf evd unop.EUnOpT.inj1_t arg prf
         ++ str " => "
-        ++ pp_prf evd unop.EUnOpT.inj2_t src res));
+        ++ pp_prf evd' unop.EUnOpT.inj2_t src r));
   res
 
-let app_binop evd src binop arg1 prf1 arg2 prf2 =
+let app_binop env evd src binop arg1 prf1 arg2 prf2 =
   EBinOpT.(
     let mkApp a1 a2 = EConstr.mkApp (binop.tbop, [|a1; a2|]) in
     let to_conv inj arg = function
@@ -958,17 +962,19 @@ let app_binop evd src binop arg1 prf1 arg2 prf2 =
     in
     let default a1 prf1 a2 prf2 =
       let res = mkApp a1 a2 in
+      let evd, head = Typing.checked_appvect env evd (force mkapp2)
+          [| binop.source1
+           ; binop.source2
+           ; binop.source3
+           ; binop.target1
+           ; binop.target2
+           ; binop.target3 |]
+      in
       let prf =
         EBinOpT.(
           EConstr.mkApp
-            ( force mkapp2
-            , [| binop.source1
-               ; binop.source2
-               ; binop.source3
-               ; binop.target1
-               ; binop.target2
-               ; binop.target3
-               ; binop.bop
+            ( head
+            , [| binop.bop
                ; binop.inj1.EInjT.inj
                ; binop.inj2.EInjT.inj
                ; binop.inj3.EInjT.inj
@@ -981,15 +987,15 @@ let app_binop evd src binop arg1 prf1 arg2 prf2 =
                ; a2
                ; prf2 |] ))
       in
-      Prf (res, prf)
+      evd, Prf (res, prf)
     in
     match (binop.EBinOpT.classify_binop, prf1, prf2) with
-    | OpSame, Same, Same -> Same
-    | OpSame, Term, Same | OpSame, Same, Term -> Same
+    | OpSame, Same, Same -> evd, Same
+    | OpSame, Term, Same | OpSame, Same, Term -> evd, Same
     | OpSame, (Term | Same | Conv _), (Term | Same | Conv _) ->
       let t1 = to_conv binop.EBinOpT.inj1 arg1 prf1 in
       let t2 = to_conv binop.EBinOpT.inj1 arg2 prf2 in
-      Conv (mkApp t1 t2)
+      evd, Conv (mkApp t1 t2)
     | _, _, _ ->
       let a1, prf1 = interp_prf evd binop.inj1 arg1 prf1 in
       let a2, prf2 = interp_prf evd binop.inj2 arg2 prf2 in
@@ -1125,7 +1131,7 @@ let rec trans_expr env evd e =
   let e = e.constr in
   try
     let c, a, is_constant = get_operator false env evd e in
-    if is_constant then Term
+    if is_constant then evd, Term
     else
       let k, t =
         find_option
@@ -1135,34 +1141,36 @@ let rec trans_expr env evd e =
       let n = Array.length a in
       match k with
       | CstOp {deriv = c'} ->
-        ECstOpT.(if c'.is_construct then Term else Prf (c'.cst, c'.cstinj))
+        ECstOpT.(if c'.is_construct then evd, Term else evd, Prf (c'.cst, c'.cstinj))
       | UnOp {deriv = unop} ->
-        let prf =
+        let evd, prf =
           trans_expr env evd
             { constr = a.(n - 1)
             ; typ = unop.EUnOpT.source1
             ; inj = unop.EUnOpT.inj1_t }
         in
-        app_unop evd e unop a.(n - 1) prf
+        app_unop env evd e unop a.(n - 1) prf
       | BinOp {deriv = binop} ->
-        let prf1 =
+        let evd, prf1 =
           trans_expr env evd
             { constr = a.(n - 2)
             ; typ = binop.EBinOpT.source1
             ; inj = binop.EBinOpT.inj1 }
         in
-        let prf2 =
+        let evd, prf2 =
           trans_expr env evd
             { constr = a.(n - 1)
             ; typ = binop.EBinOpT.source2
             ; inj = binop.EBinOpT.inj2 }
         in
-        app_binop evd e binop a.(n - 2) prf1 a.(n - 1) prf2
-      | d -> mkvar evd inj e
-  with Not_found | DestKO ->    mkvar evd inj e
+        app_binop env evd e binop a.(n - 2) prf1 a.(n - 1) prf2
+      | d -> evd, mkvar evd inj e
+  with Not_found | DestKO -> evd, mkvar evd inj e
 
 let trans_expr env evd e =
-  try pp_trans_expr env evd e (trans_expr env evd e)
+  try
+    let evd, prf = trans_expr env evd e in
+    evd, pp_trans_expr env evd e prf
   with Not_found ->
     raise
       (CErrors.user_err
@@ -1180,26 +1188,27 @@ let pp_prfp = function
   | CProof t -> Pp.str "CProof " ++ gl_pr_constr t
   | IProof -> Pp.str "IProof"
 
-let trans_binrel evd src rop a1 prf1 a2 prf2 =
+let trans_binrel env evd src rop a1 prf1 a2 prf2 =
   EBinRelT.(
     match (rop.classify_rel, prf1, prf2) with
-    | OpSame, Same, Same -> IProof
+    | OpSame, Same, Same -> evd, IProof
     | (OpSame | OpConv), Conv t1, Conv t2 ->
-      CProof (EConstr.mkApp (rop.tbrel, [|t1; t2|]))
+      evd, CProof (EConstr.mkApp (rop.tbrel, [|t1; t2|]))
     | (OpSame | OpConv), (Same | Term | Conv _), (Same | Term | Conv _) ->
       let a1', _ = interp_prf evd rop.inj a1 prf1 in
       let a2', _ = interp_prf evd rop.inj a2 prf2 in
-      CProof (EConstr.mkApp (rop.tbrel, [|a1'; a2'|]))
+      evd, CProof (EConstr.mkApp (rop.tbrel, [|a1'; a2'|]))
     | _, _, _ ->
       let a1', prf1 = interp_prf evd rop.inj a1 prf1 in
       let a2', prf2 = interp_prf evd rop.inj a2 prf2 in
-      TProof
+      (* XXX do we need to check more of this application or check other applications?
+         This one found necessary in #16803 *)
+      let evd, h = Typing.checked_appvect env evd (force mkrel) [| rop.source; rop.target |] in
+      evd, TProof
         ( EConstr.mkApp (rop.EBinRelT.tbrel, [|a1'; a2'|])
         , EConstr.mkApp
-            ( force mkrel
-            , [| rop.source
-               ; rop.target
-               ; rop.brel
+            ( h
+            , [| rop.brel
                ; rop.EBinRelT.inj.EInjT.inj
                ; rop.EBinRelT.tbrel
                ; rop.EBinRelT.brelinj
@@ -1210,10 +1219,10 @@ let trans_binrel evd src rop a1 prf1 a2 prf2 =
                ; a2'
                ; prf2 |] ) ))
 
-let trans_binrel evd src rop a1 prf1 a2 prf2 =
-  let res = trans_binrel evd src rop a1 prf1 a2 prf2 in
+let trans_binrel env evd src rop a1 prf1 a2 prf2 =
+  let evd, res = trans_binrel env evd src rop a1 prf1 a2 prf2 in
   debug_zify (fun () -> Pp.(str "\ntrans_binrel " ++ pp_prfp res));
-  res
+  evd, res
 
 let mkprf t p =
   EConstr.(
@@ -1260,12 +1269,12 @@ let trans_un_prop op_constr op_iff p1 prf1 =
 let rec trans_prop env evd e =
   match classify_prop env evd e with
   | BINOP ({op_constr; op_iff}, p1, p2) ->
-    let prf1 = trans_prop env evd p1 in
-    let prf2 = trans_prop env evd p2 in
-    trans_bin_prop op_constr op_iff p1 prf1 p2 prf2
+    let evd, prf1 = trans_prop env evd p1 in
+    let evd, prf2 = trans_prop env evd p2 in
+    evd, trans_bin_prop op_constr op_iff p1 prf1 p2 prf2
   | UNOP ({op_constr; op_iff}, p1) ->
-    let prf1 = trans_prop env evd p1 in
-    trans_un_prop op_constr op_iff p1 prf1
+    let evd, prf1 = trans_prop env evd p1 in
+    evd, trans_un_prop op_constr op_iff p1 prf1
   | OTHEROP (c, a) -> (
     try
       let k, t =
@@ -1276,24 +1285,27 @@ let rec trans_prop env evd e =
       let n = Array.length a in
       match k with
       | BinRel {decl = br; deriv = rop} ->
-        let a1 =
+        let evd, a1 =
           trans_expr env evd
             { constr = a.(n - 2)
             ; typ = rop.EBinRelT.source
             ; inj = rop.EBinRelT.inj }
         in
-        let a2 =
+        let evd, a2 =
           trans_expr env evd
             { constr = a.(n - 1)
             ; typ = rop.EBinRelT.source
             ; inj = rop.EBinRelT.inj }
         in
-        trans_binrel evd e rop a.(n - 2) a1 a.(n - 1) a2
-      | _ -> IProof
-    with Not_found | DestKO -> IProof )
+        trans_binrel env evd e rop a.(n - 2) a1 a.(n - 1) a2
+      | _ -> evd, IProof
+    with Not_found | DestKO -> evd, IProof )
 
 let trans_check_prop env evd t =
-  if is_prop env evd t then Some (trans_prop env evd t) else None
+  if is_prop env evd t then
+    let evd, p = trans_prop env evd t in
+    evd, Some p
+  else evd, None
 
 let get_hyp_typ = function
   | NamedDecl.LocalDef (h, _, ty) | NamedDecl.LocalAssum (h, ty) ->
@@ -1301,12 +1313,12 @@ let get_hyp_typ = function
 
 let trans_hyps env evd l =
   List.fold_left
-    (fun acc decl ->
+    (fun (evd, acc) decl ->
       let h, ty = get_hyp_typ decl in
       match trans_check_prop env evd ty with
-      | None -> acc
-      | Some p' -> (h, ty, p') :: acc)
-    [] l
+      | evd, None -> evd, acc
+      | evd, Some p' -> evd, (h, ty, p') :: acc)
+    (evd, []) l
 
 let trans_hyp h t0 prfp =
   debug_zify (fun () -> Pp.(str "trans_hyp: " ++ pp_prfp prfp ++ fnl ()));
@@ -1352,8 +1364,7 @@ let trans_concl prfp =
         let typ = get_type_of env evd prf in
         match EConstr.kind evd typ with
         | App (c, a) when Array.length a = 2 ->
-          Tactics.apply
-            (EConstr.mkApp (Lazy.force rew_iff_rev, [|a.(0); a.(1); prf|]))
+          Tactics.apply (EConstr.mkApp (Lazy.force rew_iff_rev, [|a.(0); a.(1); prf|]))
         | _ ->
           raise (CErrors.anomaly Pp.(str "zify cannot transform conclusion")))
 
@@ -1423,14 +1434,15 @@ let zify_tac =
       let evd = Tacmach.project gl in
       let env = Tacmach.pf_env gl in
       let sign = Environ.named_context env in
-      let concl = trans_check_prop env evd (Tacmach.pf_concl gl) in
-      let hyps = trans_hyps env evd sign in
+      let evd, concl = trans_check_prop env evd (Tacmach.pf_concl gl) in
+      let evd, hyps = trans_hyps env evd sign in
       let l = CstrTable.get () in
-      tclTHENOpt concl trans_concl
-        (Tacticals.tclTHEN
-           (Tacticals.tclTHENLIST
-              (List.rev_map (fun (h, p, t) -> trans_hyp h p t) hyps))
-           (CstrTable.gen_cstr l)))
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd)
+        (tclTHENOpt concl trans_concl
+           (Tacticals.tclTHEN
+              (Tacticals.tclTHENLIST
+                 (List.rev_map (fun (h, p, t) -> trans_hyp h p t) hyps))
+              (CstrTable.gen_cstr l))))
 
 type pscript = Set of Names.Id.t * EConstr.t | Pose of Names.Id.t * EConstr.t
 
