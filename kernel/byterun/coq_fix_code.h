@@ -16,9 +16,9 @@
 void * coq_stat_alloc (asize_t sz);
 
 #ifdef THREADED_CODE
-extern char ** coq_instr_table;
-extern char * coq_instr_base;
-#define VALINSTR(instr) ((opcode_t)(coq_instr_table[instr] - coq_instr_base))
+void coq_init_thread_code(void ** instr_table, void * instr_base);
+opcode_t coq_valinstr(int instr);
+#define VALINSTR(instr) (coq_valinstr(instr))
 #else
 #define VALINSTR(instr) instr
 #endif /*  THREADED_CODE */
