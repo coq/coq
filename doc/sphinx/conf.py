@@ -220,8 +220,9 @@ html_context = {
     'versions': [
         ("dev", "https://coq.github.io/doc/master/refman/"),
         ("stable", "https://coq.inria.fr/distrib/current/refman/"),
-        ("8.16", "https://coq.github.io/doc/v8.16/refman/"),
-        ("8.15", "https://coq.github.io/doc/V8.15.2/refman/"),
+        ("8.17", "https://coq.github.io/doc/v8.17/refman/"),
+        ("8.16", "https://coq.inria.fr/distrib/V8.16.1/refman/"),
+        ("8.15", "https://coq.inria.fr/distrib/V8.15.2/refman/"),
         ("8.14", "https://coq.inria.fr/distrib/V8.14.1/refman/"),
         ("8.13", "https://coq.inria.fr/distrib/V8.13.2/refman/"),
         ("8.12", "https://coq.inria.fr/distrib/V8.12.2/refman/"),
