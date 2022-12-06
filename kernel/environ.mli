@@ -391,11 +391,11 @@ val make_judge : 'constr -> 'types -> ('constr, 'types) punsafe_judgment
 val j_val  : ('constr, 'types) punsafe_judgment -> 'constr
 val j_type : ('constr, 'types) punsafe_judgment -> 'types
 
-type 'types punsafe_type_judgment = {
+type ('types, 'sorts) punsafe_type_judgment = {
   utj_val : 'types;
-  utj_type : Sorts.t }
+  utj_type : 'sorts }
 
-type unsafe_type_judgment = types punsafe_type_judgment
+type unsafe_type_judgment = (types, Sorts.t) punsafe_type_judgment
 
 exception Hyp_not_found
 

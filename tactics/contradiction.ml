@@ -32,7 +32,7 @@ let absurd c =
     let j = Retyping.get_judgment_of env sigma c in
     let sigma, j = Coercion.inh_coerce_to_sort env sigma j in
     let t = j.Environ.utj_val in
-    let r = Sorts.relevance_of_sort j.Environ.utj_type in
+    let r = ESorts.relevance_of_sort sigma j.Environ.utj_type in
     Proofview.Unsafe.tclEVARS sigma <*>
     Tacticals.pf_constr_of_global (Coqlib.(lib_ref "core.not.type")) >>= fun coqnot ->
     Tacticals.pf_constr_of_global (Coqlib.(lib_ref "core.False.type")) >>= fun coqfalse ->

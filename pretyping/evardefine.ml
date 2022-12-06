@@ -96,8 +96,8 @@ let define_pure_evar_as_product env evd evk =
         let evd3, (rng, srng) =
           new_type_evar newenv evd1 status ~src ~filter
         in
-        let prods = Typeops.sort_of_product env u1 srng in
-        let evd3 = Evd.set_leq_sort evenv evd3 prods (ESorts.kind evd1 s) in
+        let prods = Typeops.sort_of_product env (ESorts.kind evd3 u1) (ESorts.kind evd3 srng) in
+        let evd3 = Evd.set_leq_sort evenv evd3 (ESorts.make prods) s in
           evd3, rng
   in
   let prod = mkProd (make_annot (Name id) rdom, dom, subst_var evd2 id rng) in
@@ -171,7 +171,7 @@ let define_evar_as_sort env evd (ev,args) =
   let concl = Reductionops.whd_all (evar_env env evi) evd (Evd.evar_concl evi) in
   let sort = destSort evd concl in
   let evd' = Evd.define ev (mkSort s) evd in
-  Evd.set_leq_sort env evd' (Sorts.super s) (ESorts.kind evd' sort), s
+  Evd.set_leq_sort env evd' (ESorts.super evd' s) sort, s
 
 (* Unify with unknown array *)
 
@@ -190,12 +190,12 @@ let define_pure_evar_as_array env sigma evk =
   let evksrc = evar_source evi in
   let src = subterm_source evk ~where:Domain evksrc in
   let sigma, u = new_univ_level_variable univ_flexible sigma in
-  let s' = Sorts.sort_of_univ @@ Univ.Universe.make u in
+  let s' = ESorts.make @@ Sorts.sort_of_univ @@ Univ.Universe.make u in
   let sigma, ty = new_evar evenv sigma ~typeclass_candidate:false ~src ~filter:(evar_filter evi) (mkSort s') in
   let concl = Reductionops.whd_all evenv sigma (Evd.evar_concl evi) in
   let s = destSort sigma concl in
   (* array@{u} ty : Type@{u} <= Type@{s} *)
-  let sigma = Evd.set_leq_sort env sigma s' (ESorts.kind sigma s) in
+  let sigma = Evd.set_leq_sort env sigma s' s in
   let ar = Typeops.type_of_array env (Univ.Instance.of_array [|u|]) in
   let sigma = Evd.define evk (mkApp (EConstr.of_constr ar, [| ty |])) sigma in
   sigma

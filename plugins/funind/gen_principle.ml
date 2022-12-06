@@ -204,7 +204,7 @@ let build_functional_principle env (sigma : Evd.evar_map) old_princ_type sorts f
   let new_principle_type =
     Functional_principles_types.compute_new_princ_type_from_rel (Global.env ())
       (Array.map Constr.mkConstU funs)
-      sorts old_princ_type
+      (Array.map (fun s -> EConstr.ESorts.kind sigma s) sorts) old_princ_type
   in
   let sigma, _ =
     Typing.type_of ~refresh:true env sigma
@@ -223,6 +223,7 @@ let build_functional_principle env (sigma : Evd.evar_map) old_princ_type sorts f
 
 let change_property_sort evd toSort princ princName =
   let open Context.Rel.Declaration in
+  let toSort = EConstr.ESorts.kind evd toSort in
   let princ = EConstr.of_constr princ in
   let princ_info = Tactics.compute_elim_sig evd princ in
   let change_sort_in_predicate decl =
@@ -273,7 +274,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
       | Some id -> (id, id)
       | None ->
         let id_of_f = Label.to_id (Constant.label (fst f)) in
-        (id_of_f, Indrec.make_elimination_ident id_of_f (Sorts.family type_sort))
+        (id_of_f, Indrec.make_elimination_ident id_of_f (EConstr.ESorts.family !evd type_sort))
     in
     let names = ref [new_princ_name] in
     let hook new_principle_type _ =
@@ -1368,6 +1369,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
     let other_fun_princ_types =
       let funs = Array.map Constr.mkConstU this_block_funs in
       let sorts = Array.of_list sorts in
+      let sorts = Array.map (fun s -> EConstr.ESorts.kind sigma s) sorts in
       List.map
         (Functional_principles_types.compute_new_princ_type_from_rel (Global.env ()) funs sorts)
         other_princ_types
@@ -2226,7 +2228,7 @@ let build_case_scheme fa =
   let sigma, scheme, scheme_type =
     Indrec.build_case_analysis_scheme_default env sigma ind sf
   in
-  let sorts = (fun (_, _, x) -> fst @@ UnivGen.fresh_sort_in_family x) fa in
+  let sorts = (fun (_, _, x) -> EConstr.ESorts.make @@ fst @@ UnivGen.fresh_sort_in_family x) fa in
   let princ_name = (fun (x, _, _) -> x) fa in
   let (_ : unit) =
     (* Pp.msgnl (str "Generating " ++ Ppconstr.pr_id princ_name ++str " with " ++

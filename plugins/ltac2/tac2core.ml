@@ -651,7 +651,7 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     EConstr.mkLEvar sigma (evk, Array.to_list args)
   | (4, [|s|]) ->
     let s = Value.to_ext Value.val_sort s in
-    EConstr.mkSort (EConstr.Unsafe.to_sorts s)
+    EConstr.mkSort s
   | (5, [|c; k; t|]) ->
     let c = Value.to_constr c in
     let k = Value.to_ext Value.val_cast k in
@@ -803,7 +803,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
         let t_ty = Retyping.get_type_of env sigma t in
         (* If the user passed eg ['_] for the type we force it to indeed be a type *)
         let sigma, j = Typing.type_judgment env sigma {uj_val=t; uj_type=t_ty} in
-        sigma, Sorts.relevance_of_sort j.utj_type
+        sigma, EConstr.ESorts.relevance_of_sort sigma j.utj_type
       in
       let nenv = EConstr.push_named (LocalAssum (Context.make_annot id t_rel, t)) env in
       let (sigma, (evt, _)) = Evarutil.new_type_evar nenv sigma Evd.univ_flexible in

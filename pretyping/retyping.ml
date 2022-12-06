@@ -99,7 +99,7 @@ let sort_of_atomic_type env sigma ft args =
     match EConstr.kind sigma (whd_all env sigma ar), args with
     | Prod (na, t, b), h::l ->
       concl_of_arity (push_rel (LocalDef (na, lift n h, t)) env) (n + 1) b l
-    | Sort s, [] -> ESorts.kind sigma s
+    | Sort s, [] -> s
     | _ -> retype_error NotASort
   in concl_of_arity env 0 ft (Array.to_list args)
 
@@ -109,10 +109,8 @@ let type_of_var env id =
 
 let decomp_sort env sigma t =
   match EConstr.kind sigma (whd_all env sigma t) with
-  | Sort s -> ESorts.kind sigma s
+  | Sort s -> s
   | _ -> retype_error NotASort
-
-let destSort sigma s = ESorts.kind sigma (destSort sigma s)
 
 let betazetaevar_applist sigma n c l =
   let rec stacklam n env t stack =
@@ -181,21 +179,21 @@ let retype ?(polyprop=true) sigma =
       let arr = EConstr.of_constr @@ Typeops.type_of_array env (EInstance.kind sigma u) in
       mkApp(arr, [|ty|])
 
-  and sort_of env t =
+  and sort_of env t : ESorts.t =
     match EConstr.kind sigma t with
     | Cast (c,_, s) when isSort sigma s -> destSort sigma s
     | Sort s ->
       begin match ESorts.kind sigma s with
-      | SProp | Prop | Set -> Sorts.type1
-      | Type u -> Sorts.sort_of_univ (Univ.Universe.super u)
+      | SProp | Prop | Set -> ESorts.type1
+      | Type u -> ESorts.make (Sorts.sort_of_univ (Univ.Universe.super u))
       end
     | Prod (name,t,c2) ->
       let dom = sort_of env t in
       let rang = sort_of (push_rel (LocalAssum (name,t)) env) c2 in
-      Typeops.sort_of_product env dom rang
+      ESorts.make (Typeops.sort_of_product env (ESorts.kind sigma dom) (ESorts.kind sigma rang))
     | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
       let t = type_of_global_reference_knowing_parameters env f args in
-        sort_of_atomic_type env sigma t args
+      sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ -> decomp_sort env sigma (type_of env t)
@@ -225,7 +223,7 @@ let get_sort_family_of ?(polyprop=true) env sigma t =
   let type_of,_,type_of_global_reference_knowing_parameters = retype ~polyprop sigma in
   let rec sort_family_of env t =
     match EConstr.kind sigma t with
-    | Cast (c,_, s) when isSort sigma s -> Sorts.family (destSort sigma s)
+    | Cast (c,_, s) when isSort sigma s -> ESorts.family sigma (destSort sigma s)
     | Sort _ -> InType
     | Prod (name,t,c2) ->
         let s2 = sort_family_of (push_rel (LocalAssum (name,t)) env) c2 in
@@ -233,12 +231,12 @@ let get_sort_family_of ?(polyprop=true) env sigma t =
            s2 == InSet && sort_family_of env t == InType then InType else s2
     | App(f,args) when Termops.is_template_polymorphic_ind env sigma f ->
         let t = type_of_global_reference_knowing_parameters env f args in
-        Sorts.family (sort_of_atomic_type env sigma t args)
+        ESorts.family sigma (sort_of_atomic_type env sigma t args)
     | App(f,args) ->
-        Sorts.family (sort_of_atomic_type env sigma (type_of env f) args)
+        ESorts.family sigma (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ ->
-      Sorts.family (decomp_sort env sigma (type_of env t))
+      ESorts.family sigma (decomp_sort env sigma (type_of env t))
   in sort_family_of env t
 
 let get_sort_of ?(polyprop=true) env sigma t =

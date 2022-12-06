@@ -25,7 +25,7 @@ type case_branch = t pcase_branch
 type fixpoint = (t, t) pfixpoint
 type cofixpoint = (t, t) pcofixpoint
 type unsafe_judgment = (constr, types) Environ.punsafe_judgment
-type unsafe_type_judgment = types Environ.punsafe_type_judgment
+type unsafe_type_judgment = (types, Evd.esorts) Environ.punsafe_type_judgment
 type named_declaration = (constr, types) Context.Named.Declaration.pt
 type rel_declaration = (constr, types) Context.Rel.Declaration.pt
 type named_context = (constr, types) Context.Named.pt
@@ -35,7 +35,7 @@ type rel_context = (constr, types) Context.Rel.pt
 
 module ESorts :
 sig
-  type t
+  type t = Evd.esorts
   (** Type of sorts up-to universe unification. Essentially a wrapper around
       Sorts.t so that normalization is ensured statically. *)
 
@@ -45,6 +45,24 @@ sig
   val kind : Evd.evar_map -> t -> Sorts.t
   (** Returns the view into the current sort. Note that the kind of a variable
       may change if the unification state of the evar map changes. *)
+
+  val equal : Evd.evar_map -> t -> t -> bool
+
+  val is_small : Evd.evar_map -> t -> bool
+  val is_prop : Evd.evar_map -> t -> bool
+  val is_sprop : Evd.evar_map -> t -> bool
+  val is_set : Evd.evar_map -> t -> bool
+
+  val prop : t
+  val sprop : t
+  val set : t
+  val type1 : t
+
+  val super : Evd.evar_map -> t -> t
+
+  val relevance_of_sort : Evd.evar_map -> t -> Sorts.relevance
+
+  val family : Evd.evar_map -> t -> Sorts.family
 
 end
 
@@ -115,7 +133,7 @@ val mkRel : int -> t
 val mkVar : Id.t -> t
 val mkMeta : metavariable -> t
 val mkEvar : t pexistential -> t
-val mkSort : Sorts.t -> t
+val mkSort : ESorts.t -> t
 val mkSProp : t
 val mkProp : t
 val mkSet  : t

@@ -783,11 +783,11 @@ let make_judge v tj =
 let j_val j = j.uj_val
 let j_type j = j.uj_type
 
-type 'types punsafe_type_judgment = {
+type ('types, 'sorts) punsafe_type_judgment = {
   utj_val : 'types;
-  utj_type : Sorts.t }
+  utj_type : 'sorts }
 
-type unsafe_type_judgment = types punsafe_type_judgment
+type unsafe_type_judgment = (types, Sorts.t) punsafe_type_judgment
 
 exception Hyp_not_found
 

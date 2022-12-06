@@ -938,7 +938,7 @@ let mkformula_binary b g term f1 f2 =
 
 let is_prop env sigma term =
   let sort = Retyping.get_sort_of env sigma term in
-  Sorts.is_prop sort
+  EConstr.ESorts.is_prop sigma sort
 
 type formula_op =
   { op_impl : EConstr.t option (* only for booleans *)

@@ -46,7 +46,7 @@ let inductive_type_knowing_parameters env sigma (ind,u) jl =
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
-    | Sort s -> sigma, {utj_val = j.uj_val; utj_type = ESorts.kind sigma s }
+    | Sort s -> sigma, {utj_val = j.uj_val; utj_type = s }
     | Evar ev ->
         let (sigma,s) = Evardefine.define_evar_as_sort env sigma ev in
         sigma, { utj_val = j.uj_val; utj_type = s }
@@ -136,8 +136,7 @@ let is_correct_arity env sigma c pj ind specif params =
           srec (push_rel (LocalAssum (na1,a1)) env) sigma t ar'
       end
     | Sort s, [] ->
-        let s = ESorts.kind sigma s in
-        if not (List.mem_f Sorts.family_equal (Sorts.family s) allowed_sorts)
+        if not (List.mem_f Sorts.family_equal (ESorts.family sigma s) allowed_sorts)
         then error ()
         else sigma, s
     | Evar (ev,_), [] ->
@@ -173,7 +172,7 @@ let type_case_branches env sigma (ind,largs) pj c =
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
   let ty = whd_betaiota env sigma (lambda_applist_assum sigma (n+1) p (realargs@[c])) in
-  sigma, (lc, ty, Sorts.relevance_of_sort ps)
+  sigma, (lc, ty, ESorts.relevance_of_sort sigma ps)
 
 let judge_of_case env sigma case ci pj iv cj lfj =
   let ((ind, u), spec) =
@@ -208,7 +207,7 @@ let check_allowed_sort env sigma ind c p =
   let pj = Retyping.get_judgment_of env sigma p in
   let _, s = splay_prod env sigma pj.uj_type in
   let ksort = match EConstr.kind sigma s with
-  | Sort s -> Sorts.family (ESorts.kind sigma s)
+  | Sort s -> ESorts.family sigma s
   | _ -> error_elim_arity env sigma ind c None in
   if not (Sorts.family_leq ksort sorts) then
     let s = inductive_sort_family (snd specif) in
@@ -244,11 +243,11 @@ let judge_of_sprop =
 
 let judge_of_prop =
   { uj_val = EConstr.mkProp;
-    uj_type = EConstr.mkSort Sorts.type1 }
+    uj_type = EConstr.mkSort (ESorts.type1) }
 
 let judge_of_set =
   { uj_val = EConstr.mkSet;
-    uj_type = EConstr.mkSort Sorts.type1 }
+    uj_type = EConstr.mkSort (ESorts.type1) }
 
 let judge_of_type u =
   let uu = Univ.Universe.super u in
@@ -276,19 +275,21 @@ let judge_of_projection env sigma p cj =
   {uj_val = EConstr.mkProj (p,cj.uj_val);
    uj_type = ty}
 
-let judge_of_abstraction env name var j =
-  let r = Sorts.relevance_of_sort var.utj_type in
+let judge_of_abstraction env sigma name var j =
+  let r = ESorts.relevance_of_sort sigma var.utj_type in
   { uj_val = mkLambda (make_annot name r, var.utj_val, j.uj_val);
     uj_type = mkProd (make_annot name r, var.utj_val, j.uj_type) }
 
-let judge_of_product env name t1 t2 =
-  let r = Sorts.relevance_of_sort t1.utj_type in
-  let s = sort_of_product env t1.utj_type t2.utj_type in
+let judge_of_product env sigma name t1 t2 =
+  let s1 = ESorts.kind sigma t1.utj_type in
+  let s2 = ESorts.kind sigma t2.utj_type in
+  let r = Sorts.relevance_of_sort s1 in
+  let s = ESorts.make (sort_of_product env s1 s2) in
   { uj_val = mkProd (make_annot name r, t1.utj_val, t2.utj_val);
     uj_type = mkSort s }
 
-let judge_of_letin env name defj typj j =
-  let r = Sorts.relevance_of_sort typj.utj_type in
+let judge_of_letin env sigma name defj typj j =
+  let r = ESorts.relevance_of_sort sigma typj.utj_type in
   { uj_val = mkLetIn (make_annot name r, defj.uj_val, typj.utj_val, j.uj_val) ;
     uj_type = subst1 defj.uj_val j.uj_type }
 
@@ -336,7 +337,7 @@ let judge_of_array env sigma u tj defj tyj =
     | _ -> assert false
   in
   let sigma = Evd.set_leq_sort env sigma tyj.utj_type
-      (Sorts.sort_of_univ (Univ.Universe.make ulev))
+      (ESorts.make (Sorts.sort_of_univ (Univ.Universe.make ulev)))
   in
   let check_one sigma j = check_actual_type env sigma j tyj.utj_val in
   let sigma = check_one sigma defj in
@@ -346,6 +347,9 @@ let judge_of_array env sigma u tj defj tyj =
       (mkApp (arr, [|tyj.utj_val|]))
   in
   sigma, j
+
+let check_binder_annot sigma s n =
+  check_binder_annot (ESorts.kind sigma s) n
 
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
@@ -437,29 +441,29 @@ let rec execute env sigma cstr =
     | Lambda (name,c1,c2) ->
         let sigma, j = execute env sigma c1 in
         let sigma, var = type_judgment env sigma j in
-        let name = check_binder_annot var.utj_type name in
+        let name = check_binder_annot sigma var.utj_type name in
         let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
         let sigma, j' = execute env1 sigma c2 in
-        sigma, judge_of_abstraction env1 name.binder_name var j'
+        sigma, judge_of_abstraction env1 sigma name.binder_name var j'
 
     | Prod (name,c1,c2) ->
         let sigma, j = execute env sigma c1 in
         let sigma, varj = type_judgment env sigma j in
-        let name = check_binder_annot varj.utj_type name in
+        let name = check_binder_annot sigma varj.utj_type name in
         let env1 = push_rel (LocalAssum (name, varj.utj_val)) env in
         let sigma, j' = execute env1 sigma c2 in
         let sigma, varj' = type_judgment env1 sigma j' in
-        sigma, judge_of_product env name.binder_name varj varj'
+        sigma, judge_of_product env sigma name.binder_name varj varj'
 
      | LetIn (name,c1,c2,c3) ->
         let sigma, j1 = execute env sigma c1 in
         let sigma, j2 = execute env sigma c2 in
         let sigma, j2 = type_judgment env sigma j2 in
         let sigma, _ =  judge_of_cast env sigma j1 DEFAULTcast j2 in
-        let name = check_binder_annot j2.utj_type name in
+        let name = check_binder_annot sigma j2.utj_type name in
         let env1 = push_rel (LocalDef (name, j1.uj_val, j2.utj_val)) env in
         let sigma, j3 = execute env1 sigma c3 in
-        sigma, judge_of_letin env name.binder_name j1 j2 j3
+        sigma, judge_of_letin env sigma name.binder_name j1 j2 j3
 
     | Cast (c,k,t) ->
         let sigma, cj = execute env sigma c in
@@ -692,26 +696,26 @@ let rec recheck_against env sigma good c =
       Lambda (name, c1, c2) ->
       let sigma, changedj, j = recheck_against env sigma gc1 c1 in
       let sigma, var = type_judgment env sigma j in
-      let name = check_binder_annot var.utj_type name in
+      let name = check_binder_annot sigma var.utj_type name in
       let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
       let sigma, changedj', j' = if unchanged changedj then recheck_against env1 sigma gc2 c2
         else let sigma, j' = execute env1 sigma c2 in
           sigma, Changed {bodyonly=lazy false}, j'
       in
-      sigma, merge_changes changedj' changedj, judge_of_abstraction env1 name.binder_name var j'
+      sigma, merge_changes changedj' changedj, judge_of_abstraction env1 sigma name.binder_name var j'
 
     | Prod (_, gc1, gc2),
       Prod (name, c1, c2) ->
       let sigma, changedj, j = recheck_against env sigma gc1 c1 in
       let sigma, var = type_judgment env sigma j in
-      let name = check_binder_annot var.utj_type name in
+      let name = check_binder_annot sigma var.utj_type name in
       let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
       let sigma, changedj', j' = if unchanged changedj then recheck_against env1 sigma gc2 c2
         else let sigma, j' = execute env1 sigma c2 in
           sigma, Changed {bodyonly=lazy false}, j'
       in
       let sigma, j' = type_judgment env1 sigma j' in
-      sigma, merge_changes changedj' changedj, judge_of_product env1 name.binder_name var j'
+      sigma, merge_changes changedj' changedj, judge_of_product env1 sigma name.binder_name var j'
 
     | Cast (gc, _, gt),
       Cast (c, k, t) ->

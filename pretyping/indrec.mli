@@ -57,7 +57,7 @@ val build_mutual_induction_scheme :
    scheme quantified on sort [s]. [set] asks for [s] be declared equal to [i],
   otherwise just less or equal to [i]. *)
 
-val weaken_sort_scheme : env -> evar_map -> bool -> Sorts.t -> int -> constr -> types ->
+val weaken_sort_scheme : env -> evar_map -> bool -> EConstr.ESorts.t -> int -> constr -> types ->
   evar_map * types * constr
 
 (** Recursor names utilities *)

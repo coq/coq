@@ -576,8 +576,8 @@ let weaken_sort_scheme env evd set sort npars term ty =
       | Prod (n,t,c) ->
           let ctx = LocalAssum (n, t) :: ctx in
           if Int.equal np 0 then
-            let osort, t' = change_sort_arity sort t in
-              evdref := (if set then Evd.set_eq_sort else Evd.set_leq_sort) env !evdref sort osort;
+            let osort, t' = change_sort_arity (EConstr.ESorts.kind !evdref sort) t in
+              evdref := (if set then Evd.set_eq_sort else Evd.set_leq_sort) env !evdref sort (EConstr.ESorts.make osort);
               mkProd (n, t', c),
               mkLambda (n, t', mkApp(term, Context.Rel.instance mkRel 0 ctx))
           else

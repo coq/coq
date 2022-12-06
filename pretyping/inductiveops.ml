@@ -699,9 +699,10 @@ let rec instantiate_universes env evdref scl is = function
         else
           (* unconstrained sort: replace by fresh universe *)
           let evm, s = Evd.new_sort_variable Evd.univ_flexible !evdref in
-          let evm = Evd.set_leq_sort env evm s (Sorts.sort_of_univ u) in
+          let evm = Evd.set_leq_sort env evm s (EConstr.ESorts.make (Sorts.sort_of_univ u)) in
             evdref := evm; s
       in
+      let s = EConstr.ESorts.kind !evdref s in
       (LocalAssum (na,mkArity(ctx,s))) :: instantiate_universes env evdref scl is (sign, exp)
   | sign, [] -> sign (* Uniform parameters are exhausted *)
   | [], _ -> assert false
@@ -715,12 +716,12 @@ let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
     | Some t -> t
     in
     let _,scl = splay_arity env sigma conclty in
-    let scl = EConstr.ESorts.kind sigma scl in
     let ctx = List.rev mip.mind_arity_ctxt in
     let evdref = ref sigma in
     let ctx =
       instantiate_universes
         env evdref scl ar.template_level (ctx,templ.template_param_levels) in
+    let scl = EConstr.ESorts.kind !evdref scl in
       !evdref, EConstr.of_constr (mkArity (List.rev ctx,scl))
 
 let type_of_projection_constant env (p,u) =

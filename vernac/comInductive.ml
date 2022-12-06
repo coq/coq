@@ -190,6 +190,7 @@ let compute_constructor_level env evd sign =
       | LocalDef _ -> lev, EConstr.push_rel d env
       | LocalAssum _ ->
         let s = Retyping.get_sort_of env evd (RelDecl.get_type d) in
+        let s = EConstr.ESorts.kind evd s in
           (max_sort s lev, EConstr.push_rel d env))
     sign (Sorts.sprop,env))
 
@@ -316,6 +317,7 @@ let inductive_levels env evd arities inds =
   in
   let evd, arities =
     CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
+      let cu = EConstr.ESorts.make cu in
       if is_impredicative_sort env du then
         (* Any product is allowed here. *)
         evd, arity :: arities
@@ -328,22 +330,22 @@ let inductive_levels env evd arities inds =
         (* Constructors contribute. *)
         let evd =
           if Sorts.is_set du then
-            if not (Evd.check_leq evd cu Sorts.set) then
+            if not (Evd.check_leq evd cu (EConstr.ESorts.make Sorts.set)) then
               raise (InductiveError LargeNonPropInductiveNotInType)
             else evd
           else evd
         in
         let evd =
-          if len >= 2 && Sorts.is_prop cu then
+          if len >= 2 && EConstr.ESorts.is_prop evd cu then
            (* "Polymorphic" type constraint and more than one constructor,
                should not land in Prop. Add constraint only if it would
                land in Prop directly (no informative arguments as well). *)
-            Evd.set_leq_sort env evd Sorts.set du
+            Evd.set_leq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du)
           else evd
         in
         let evd, arity =
-          if not (Sorts.is_small du) && Sorts.equal cu du then
-            if is_flexible_sort evd du && not (Evd.check_leq evd Sorts.set du)
+          if not (Sorts.is_small du) && EConstr.ESorts.equal evd cu (EConstr.ESorts.make du) then
+            if is_flexible_sort evd du && not (Evd.check_leq evd EConstr.ESorts.set (EConstr.ESorts.make du))
             then if Term.isArity arity
             (* If not a syntactic arity, the universe may be used in a
                polymorphic instance and so cannot be lowered to Prop.
@@ -353,11 +355,11 @@ let inductive_levels env evd arities inds =
                    arities. In this situation we have no constraints from the
                    constructor so we cook up a new type and unify the unbound
                    universe to a dummy value. *)
-                let evd = Evd.set_eq_sort env evd Sorts.set du in
+                let evd = Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du) in
                 evd, Term.mkArity (ctx, Sorts.prop)
-              else Evd.set_eq_sort env evd Sorts.set du, arity
+              else Evd.set_eq_sort env evd EConstr.ESorts.set (EConstr.ESorts.make du), arity
             else evd, arity
-          else Evd.set_eq_sort env evd cu du, arity
+          else Evd.set_eq_sort env evd cu (EConstr.ESorts.make du), arity
         in
           (evd, arity :: arities))
     (evd,[]) (Array.to_list levels') destarities sizes

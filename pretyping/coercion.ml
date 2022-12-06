@@ -555,7 +555,7 @@ let inh_app_fun ~program_mode ~resolve_tc ?use_coercions env sigma body typ =
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
-    | Sort s -> {utj_val = j.uj_val; utj_type = ESorts.kind sigma s }
+    | Sort s -> {utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_a_type env sigma j
 
 let inh_tosort_force ?loc env sigma ({ uj_val; uj_type } as j) =
@@ -570,7 +570,7 @@ let inh_tosort_force ?loc env sigma ({ uj_val; uj_type } as j) =
 let inh_coerce_to_sort ?loc ?(use_coercions=true) env sigma j =
   let typ = whd_all env sigma j.uj_type in
     match EConstr.kind sigma typ with
-    | Sort s -> (sigma,{ utj_val = j.uj_val; utj_type = ESorts.kind sigma s })
+    | Sort s -> (sigma,{ utj_val = j.uj_val; utj_type = s })
     | Evar ev ->
         let (sigma,s) = Evardefine.define_evar_as_sort env sigma ev in
           (sigma,{ utj_val = j.uj_val; utj_type = s })

@@ -49,7 +49,7 @@ let whd_in_concl =
 (* decompose member of equality in an applicative format *)
 
 (** FIXME: evar leak *)
-let sf_of env sigma c = snd (sort_of env sigma c)
+let sf_of env sigma c = ESorts.kind sigma (snd (sort_of env sigma c))
 
 let rec decompose_term env sigma t =
     match EConstr.kind sigma (whd env sigma t) with
