@@ -122,20 +122,22 @@ let ret_accu = Obj.repr (ref ())
 
 type accu_val = { mutable acc_atm : atom; acc_arg : Obj.t list }
 
+external set_tag : Obj.t -> int -> unit = "coq_obj_set_tag"
+
 let mk_accu (a : atom) : t =
   let rec accumulate data x =
     if x == ret_accu then Obj.repr data
     else
       let data = { data with acc_arg = x :: data.acc_arg } in
       let ans = Obj.repr (accumulate data) in
-      let () = Obj.set_tag ans accumulate_tag [@ocaml.warning "-3"] in
+      let () = set_tag ans accumulate_tag in
       ans
   in
   let acc = { acc_atm = a; acc_arg = [] } in
   let ans = Obj.repr (accumulate acc) in
   (** FIXME: use another representation for accumulators, this causes naked
       pointers. *)
-  let () = Obj.set_tag ans accumulate_tag [@ocaml.warning "-3"] in
+  let () = set_tag ans accumulate_tag in
   (Obj.obj ans : t)
 
 let get_accu (k : accumulator) =
