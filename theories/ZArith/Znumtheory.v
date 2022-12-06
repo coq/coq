@@ -328,10 +328,7 @@ Section extended_euclid_algorithm.
   Defined.
 
   Lemma extgcd_correct [u v d] : extgcd = (u, v, d) -> u * a + v * b = d /\ d = Z.gcd a b.
-  Proof.
-    pose proof (proj2_sig _ : _ extgcd).
-    case extgcd as [[]?] in *; intuition congruence.
-  Qed.
+  Proof. cbv [extgcd proj1_sig]. case extgcd_rec as (([],?),?). intuition congruence. Qed.
 
   Inductive deprecated_Euclid : Set :=
     deprecated_Euclid_intro :
