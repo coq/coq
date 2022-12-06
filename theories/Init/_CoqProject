@@ -1,2 +1,3 @@
 -R .. Coq
+-arg -w -arg +default
 -arg -noinit

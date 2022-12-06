@@ -1,1 +1,2 @@
 -R . Coq
+-arg -w -arg +default
