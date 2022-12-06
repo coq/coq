@@ -111,11 +111,17 @@ git_download()
   if [ -d "$dest" ]; then
     echo "Warning: download and unpacking of $project skipped because $dest already exists."
   elif [[ $ov_url ]] || [ "$WITH_SUBMODULES" = "1" ] || [ "$CI" = "" ]; then
-    git clone "$giturl" "$dest"
+    if [[ ! "$ref" =~ ^[a-f0-9]{40}$ ]]; then
+        git clone --depth 1 --branch "$ref" "$giturl" "$dest"
+    else
+       mkdir "$dest"
+       git -C "$dest" init -b pinned
+       git -C "$dest" pull --depth 1 "$giturl" "$ref"
+    fi
     pushd "$dest"
-    git checkout "$ref"
     git log -n 1
     if [[ $ov_url ]]; then
+        git fetch --unshallow
         # In CI we merge into the upstream branch to stay synchronized
         # Locally checkout the overlay and rebase on upstream
         # We act differently because merging is what will happen when the PR is merged
@@ -133,7 +139,7 @@ git_download()
         fi
     fi
     if [ "$WITH_SUBMODULES" = 1 ]; then
-        git submodule update --init --recursive
+        git submodule update --depth 1 --init --recursive
     fi
     popd
   else # When possible, we download tarballs to reduce bandwidth and latency
