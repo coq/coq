@@ -1,4 +1,4 @@
-(* Euclidian algorithm degined by fuel-assistend well-founded recrsion on Z *)
+(* Euclidian algorithm defined by fuel-assisted well-founded recrsion on Z *)
 (* Expected time < 1.00s *)
 
 Require Import ZArith Znumtheory. Local Open Scope Z_scope.
