@@ -443,6 +443,8 @@ let evars_of_evar_map sigma =
   { Genlambda.evars_val = Evd.evar_handler sigma }
 
 let cbv_vm env sigma c t  =
+  if not (Environ.typing_flags env).enable_VM then
+    CErrors.user_err Pp.(str "vm_compute reduction has been disabled.");
   if Termops.occur_meta sigma c then
     CErrors.user_err Pp.(str "vm_compute does not support metas.");
   (* This evar-normalizes terms beforehand *)
