@@ -12,7 +12,6 @@ open CErrors
 open Util
 open Names
 open Univ
-open Sorts
 open Term
 open Constr
 open Context
@@ -54,7 +53,7 @@ let check_type env c t =
 let infer_assumption env t ty =
   try
     let s = check_type env t ty in
-    (match s with Sorts.SProp -> Irrelevant | _ -> Relevant)
+    Sorts.relevance_of_sort s
   with TypeError _ ->
     error_assumption env (make_judge t ty)
 
