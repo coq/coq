@@ -152,9 +152,6 @@ val solve_evar_clause : env -> evar_map -> bool -> clause -> EConstr.constr bind
     not in the conclusion. This boolean is only used when [bl] is of the form
     [ImplicitBindings _]. *)
 
-val rename_with : unit -> bool
-(** For funind *)
-
 module Internal :
 sig
 

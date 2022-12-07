@@ -814,15 +814,6 @@ Applying theorems
    .. todo: we should be listing things like "Debug tactic-unification" in
       in the options index.  Maybe we should add ":debug:" as a new tag.
 
-   .. flag:: Apply With Renaming
-
-      When on, this flag causes the names in the :n:`@term`'s type to be renamed for uniqueness.
-      By default no renaming is done.
-
-      .. deprecated:: 8.15
-
-         Provided for compatibility with versions prior to 8.15.
-
    .. _apply_backward:
    .. example:: Backward reasoning in the goal with `apply`
 
