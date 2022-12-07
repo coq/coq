@@ -28,7 +28,7 @@ Module Test1.
   Theorem lia_refl_ex : forall (a b : Z2), a = a.
   Proof.
     lia.
-  Qed.
+  Defined.
 
   Fail Constraint mkrel.u0 < unZ2.u.
 
@@ -63,7 +63,7 @@ Module Test2.
   Proof.
     zify.
     exact I.
-  Qed.
+  Defined.
 
   Fail Constraint mkrel.u0 < unZ2.u.
 
