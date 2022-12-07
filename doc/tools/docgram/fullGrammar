@@ -921,8 +921,8 @@ reduce: [
 |
 ]
 
-decl_notation: [
-| ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
+notation_declaration: [
+| lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 ]
 
 decl_sep: [
@@ -930,7 +930,7 @@ decl_sep: [
 ]
 
 decl_notations: [
-| "where" LIST1 decl_notation SEP decl_sep
+| "where" LIST1 notation_declaration SEP decl_sep
 |
 ]
 
@@ -1425,9 +1425,9 @@ syntax: [
 | "Delimit" "Scope" IDENT; "with" IDENT
 | "Undelimit" "Scope" IDENT
 | "Bind" "Scope" IDENT; "with" LIST1 class_rawexpr
-| "Infix" ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
+| "Infix" notation_declaration
 | "Notation" identref LIST0 ident ":=" constr syntax_modifiers
-| "Notation" lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
+| "Notation" notation_declaration
 | "Reserved" "Infix" ne_lstring syntax_modifiers
 | "Reserved" "Notation" ne_lstring syntax_modifiers
 | enable_enable_disable "Notation" enable_notation_rule enable_notation_interpretation enable_notation_flags opt_scope
