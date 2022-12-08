@@ -1637,7 +1637,7 @@ let pr_applicable_hint pf =
   match goals with
   | [] -> CErrors.user_err Pp.(str "No focused goal.")
   | g::_ ->
-    pr_hint_term env sigma (Evd.evar_concl (Evd.find sigma g))
+    pr_hint_term env sigma (Evd.evar_concl (Evd.find_undefined sigma g))
 
 let pp_hint_mode = function
   | ModeInput -> str"+"

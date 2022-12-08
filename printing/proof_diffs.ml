@@ -545,7 +545,7 @@ let match_goals ot nt =
 
 let get_proof_context (p : Proof.t) =
   let Proof.{goals; sigma} = Proof.data p in
-  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma (List.hd goals)) in
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find_undefined sigma (List.hd goals)) in
   sigma, env
 
 let to_constr pf =

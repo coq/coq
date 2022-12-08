@@ -715,7 +715,7 @@ let universes_of_constr sigma c =
       else
         Level.Set.fold Level.Set.add (Sorts.levels sort) s
     | Evar (k, args) ->
-      let concl = Evd.evar_concl (Evd.find sigma k) in
+      let concl = Evd.evar_concl (Evd.find_undefined sigma k) in
       fold sigma aux (aux s concl) c
     | Array (u,_,_,_) ->
       let s = Level.Set.fold Level.Set.add (Instance.levels (EInstance.kind sigma u)) s in

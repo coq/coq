@@ -459,7 +459,7 @@ let add_unification_pb ?(tail=false) pb evd =
    the de Bruijn part of the context *)
 let generalize_evar_over_rels sigma (ev,args) =
   let open EConstr in
-  let evi = Evd.find sigma ev in
+  let evi = Evd.find_undefined sigma ev in
   let args = Evd.expand_existential sigma (ev, args) in
   let sign = named_context_of_val (Evd.evar_hyps evi) in
   List.fold_left2
@@ -678,15 +678,6 @@ let undefined_evars_of_named_context evd nc =
     (NamedDecl.fold_constr (fun c s -> Evar.Set.union s (undefined_evars_of_term evd (EConstr.of_constr c))))
     nc
     ~init:Evar.Set.empty
-
-let undefined_evars_of_evar_info evd evi =
-  Evar.Set.union (undefined_evars_of_term evd (Evd.evar_concl evi))
-    (Evar.Set.union
-       (match Evd.evar_body evi with
-         | Evar_empty -> Evar.Set.empty
-         | Evar_defined b -> undefined_evars_of_term evd b)
-       (undefined_evars_of_named_context evd
-          (named_context_of_val (Evd.evar_hyps evi))))
 
 type undefined_evars_cache = {
   mutable cache : (EConstr.named_declaration * Evar.Set.t) ref Id.Map.t;

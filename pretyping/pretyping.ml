@@ -286,7 +286,7 @@ let check_extra_evars_are_solved env current_sigma frozen = match frozen with
   Evar.Set.iter
     (fun evk ->
       if not (Evd.is_defined current_sigma evk) then
-        let (loc,k) = evar_source (Evd.find current_sigma evk) in
+        let (loc,k) = evar_source (Evd.find_undefined current_sigma evk) in
         match k with
         | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
         | _ ->

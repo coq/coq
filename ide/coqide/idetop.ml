@@ -185,7 +185,7 @@ let concl_next_tac =
   ])
 
 let process_goal short sigma g =
-  let evi = Evd.find sigma g in
+  let evi = Evd.find_undefined sigma g in
   let env = Evd.evar_filtered_env (Global.env ()) evi in
   let min_env = Environ.reset_context env in
   let name = if Printer.print_goal_names () then Some (Names.Id.to_string (Termops.evar_suggested_name env sigma g)) else None in
@@ -285,7 +285,7 @@ let hints () =
     match goals with
     | [] -> None
     | g :: _ ->
-      let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma g) in
+      let env = Evd.evar_filtered_env (Global.env ()) (Evd.find_undefined sigma g) in
       let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
       Some (hint_hyps, concl_next_tac)

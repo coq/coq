@@ -63,7 +63,7 @@ let check_par_applicable pstate =
     (Proof.data p).Proof.goals |> List.iter (fun goal ->
     let is_ground =
       let { Proof.sigma = sigma0 } = Declare.Proof.fold pstate ~f:Proof.data in
-      let g = Evd.find sigma0 goal in
+      let g = Evd.find_undefined sigma0 goal in
       let concl, hyps = Evd.evar_concl g, Evd.evar_context g in
       Evarutil.is_ground_term sigma0 concl &&
       List.for_all (Context.Named.Declaration.for_all (Evarutil.is_ground_term sigma0)) hyps in

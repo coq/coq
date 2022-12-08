@@ -100,7 +100,6 @@ val reachable_from_evars : evar_map -> Evar.Set.t -> Evar.Set.t
 
 val undefined_evars_of_term : evar_map -> constr -> Evar.Set.t
 val undefined_evars_of_named_context : evar_map -> Constr.named_context -> Evar.Set.t
-val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 type undefined_evars_cache
 

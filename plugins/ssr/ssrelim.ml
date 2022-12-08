@@ -307,7 +307,7 @@ let check_pattern_instantiated env sigma patterns =
   let ev = List.fold_left Evar.Set.union Evar.Set.empty patterns_ev in
   let ty_ev = Evar.Set.fold (fun i e ->
         let ex = i in
-        let i_ty = Evd.evar_concl (Evd.find sigma ex) in
+        let i_ty = Evd.evar_concl (Evd.find_undefined sigma ex) in
         Evar.Set.union e (evars_of_term i_ty))
     ev Evar.Set.empty in
   let inter = Evar.Set.inter ev ty_ev in
@@ -374,7 +374,7 @@ let generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n
         let erefl_ty = Retyping.get_type_of env sigma erefl in
         let eq_ty = Retyping.get_type_of env sigma erefl_ty in
         let ucst = Evd.evar_universe_context sigma in
-        let evds = Evar.Map.bind (Evd.find sigma) @@
+        let evds = Evar.Map.bind (Evd.find_undefined sigma) @@
           Evd.evars_of_term sigma new_concl in
         let gen_eq_tac =
           let open Proofview.Notations in

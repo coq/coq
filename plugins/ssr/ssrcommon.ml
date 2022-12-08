@@ -404,7 +404,7 @@ let abs_evars env sigma0 ?(rigid = []) (sigma, c0) =
   let nenv = env_size env in
   let abs_evar n k =
     let open EConstr in
-    let evi = Evd.find sigma k in
+    let evi = Evd.find_undefined sigma k in
     let concl = Evd.evar_concl evi in
     let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
@@ -474,7 +474,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
   let nenv = env_size env in
   let abs_evar n k =
     let open EConstr in
-    let evi = Evd.find sigma k in
+    let evi = Evd.find_undefined sigma k in
     let concl = Evd.evar_concl evi in
     let dc = CList.firstn n (evar_filtered_context evi) in
     let abs_dc c = function
@@ -488,7 +488,7 @@ let abs_evars_pirrel env sigma0 (sigma, c0) =
     let n = max 0 (SList.length a - nenv) in
     let k_ty =
       Retyping.get_sort_family_of
-        env sigma (Evd.evar_concl (Evd.find sigma k)) in
+        env sigma (Evd.evar_concl (Evd.find_undefined sigma k)) in
     let is_prop = k_ty = InProp in
     let t = abs_evar n k in (k, (n, t, is_prop)) :: put evlist t
   | _ -> EConstr.fold sigma put evlist c in

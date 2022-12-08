@@ -1472,7 +1472,7 @@ exception UnsolvedConstraints of Environ.env * Evd.evar_map * Evar.t
 let () = CErrors.register_handler begin function
 | UnsolvedConstraints (env, evars, ev) ->
   Some (str "Unsolved constraint remaining: " ++ spc () ++
-    Termops.pr_evar_info env evars (Evd.find evars ev) ++ str ".")
+    Termops.pr_evar_info env evars (Evd.find_undefined evars ev) ++ str ".")
 | _ -> None
 end
 

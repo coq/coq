@@ -557,7 +557,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
 let get_goal_context_gen pf i =
   let { sigma; goals } = data pf in
   let goal = try List.nth goals (i-1) with Failure _ -> raise (NoSuchGoal None) in
-  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find sigma goal) in
+  let env = Evd.evar_filtered_env (Global.env ()) (Evd.find_undefined sigma goal) in
   (sigma, env)
 
 let get_proof_context p =
