@@ -120,7 +120,6 @@ end
 (** This data type is stored in vo files. *)
 type patches = {
   reloc_infos : reloc_info array;
-  reloc_positions : Positions.t;
 }
 
 let patch_int buff reloc positions =
@@ -133,10 +132,10 @@ let patch_int buff reloc positions =
   let () = Positions.iter iter positions in
   buff
 
-let patch (buff, pl) f =
+let patch ((buff, fv, pos), pl) f =
   let reloc = CArray.map_left f pl.reloc_infos in
-  let buff = patch_int buff reloc pl.reloc_positions in
-  tcode_of_code buff
+  let buff = patch_int buff reloc pos in
+  tcode_of_code buff, fv
 
 (* Buffering of bytecode *)
 
@@ -470,7 +469,7 @@ let rec emit env insns remaining = match insns with
 
 (* Initialization *)
 
-type to_patch = emitcodes * patches
+type to_patch = emitcodes * fv * Positions.t
 
 (* Substitution *)
 let subst_strcst s sc =
@@ -490,22 +489,21 @@ let subst_reloc s ri =
 
 let subst_patches subst p =
   let infos = CArray.Smart.map (fun r -> subst_reloc subst r) p.reloc_infos in
-  { reloc_infos = infos; reloc_positions = p.reloc_positions }
+  { reloc_infos = infos }
 
-let subst_to_patch s (code, pl) =
-  (code, subst_patches s pl)
-
-type body_code =
-  | BCdefined of to_patch * fv
+type 'a pbody_code =
+  | BCdefined of ('a * patches)
   | BCalias of Names.Constant.t
   | BCconstant
 
+type body_code = to_patch pbody_code
+
 let subst_body_code s = function
-| BCdefined (tp, fv) -> BCdefined (subst_to_patch s tp, fv)
+| BCdefined (x, tp) -> BCdefined (x, subst_patches s tp)
 | BCalias cu -> BCalias (subst_constant s cu)
 | BCconstant -> BCconstant
 
-let to_memory code =
+let to_memory fv code =
   let env = {
     out_buffer = Bytes.create 1024;
     out_position = 0;
@@ -522,11 +520,11 @@ let to_memory code =
   let reloc = RelocTable.fold fold env.reloc_info [] in
   let reloc = List.sort (fun (id1, _) (id2, _) -> Int.compare id1 id2) reloc in
   let reloc_infos = CArray.map_of_list snd reloc in
-  let reloc_positions = Positions.of_list (List.rev env.reloc_pos) in
-  let reloc = { reloc_infos; reloc_positions } in
+  let positions = Positions.of_list (List.rev env.reloc_pos) in
+  let reloc = { reloc_infos } in
   Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true
     | Label_undefined patchlist ->
         assert (patchlist = []))) env.label_table;
-  (code, reloc)
+  ((code, fv, positions), reloc)

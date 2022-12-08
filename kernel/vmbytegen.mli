@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Vmbytecodes
 open Vmemitcodes
 open Constr
 open Declarations
@@ -18,8 +17,7 @@ open Environ
 val compile :
   fail_on_error:bool -> ?universes:int*int ->
   env -> Genlambda.evars -> constr ->
-  (to_patch * fv) option
-(** init, fun, fv *)
+  (to_patch * patches) option
 
 val compile_constant_body : fail_on_error:bool ->
   env -> universes -> (Constr.t, 'opaque, 'symb) constant_def ->
