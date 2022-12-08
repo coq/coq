@@ -254,12 +254,14 @@ let build_env gamma=
 
 let verbose =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Rtauto";"Verbose"]
     ~value:false
 
 let check =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Rtauto";"Check"]
     ~value:false

@@ -83,7 +83,7 @@ module MakeTable =
 
     module MySet = A.Set
 
-    let t = Summary.ref MySet.empty ~name:nick
+    let t = Summary.ref ~stage:Summary.Stage.Synterp MySet.empty ~name:nick
 
     let (add_option,remove_option) =
         let cache_options (f,p) = match f with
@@ -97,6 +97,7 @@ module MakeTable =
         in
         let inGo : option_mark * A.t -> Libobject.obj =
           Libobject.declare_object {(Libobject.default_object nick) with
+                Libobject.object_stage = Summary.Stage.Synterp;
                 Libobject.load_function = load_options;
                 Libobject.open_function = Libobject.simple_open load_options;
                 Libobject.cache_function = cache_options;
@@ -214,6 +215,7 @@ let iter_table f key lv =
 (* 2- Flags.                                                              *)
 
 type 'a option_sig = {
+  optstage : Summary.Stage.t;
   optdepr  : bool;
   optkey   : option_name;
   optread  : unit -> 'a;
@@ -254,12 +256,12 @@ let warn_deprecated_option =
     Pp.(str "Option" ++ spc () ++ str (nickname key) ++ strbrk " is deprecated"))
 
 let declare_option cast uncast append ?(preprocess = fun x -> x)
-  { optdepr=depr; optkey=key; optread=read; optwrite=write } =
+  { optstage=stage; optdepr=depr; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
   let change =
       let _ = Summary.declare_summary (nickname key)
-        { stage = Summary.Stage.Interp;
+        { stage;
           Summary.freeze_function = (fun ~marshallable -> read ());
           Summary.unfreeze_function = write;
           Summary.init_function = (fun () -> write default) } in
@@ -289,6 +291,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
       let options : option_locality * option_mod * _ -> obj =
         declare_object
           { (default_object (nickname key)) with
+            object_stage = stage;
             load_function = load_options;
             open_function = simple_open open_options;
             cache_function = cache_options;
@@ -301,7 +304,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
   let cread () = cast (read ()) in
   let cwrite l v = warn (); change l OptSet (uncast v) in
   let cappend l v = warn (); change l OptAppend (uncast v) in
-  value_tab := OptionMap.add key (depr, (cread,cwrite,cappend)) !value_tab
+  value_tab := OptionMap.add key (depr, stage, (cread,cwrite,cappend)) !value_tab
 
 let declare_int_option =
   declare_option
@@ -318,6 +321,7 @@ let declare_string_option =
     (fun v -> StringValue v)
     (function StringValue v -> v | _ -> CErrors.anomaly (Pp.str "async_option."))
     (fun x y -> x^","^y)
+
 let declare_stringopt_option =
   declare_option
     (fun v -> StringOptValue v)
@@ -325,31 +329,33 @@ let declare_stringopt_option =
     (fun _ _ -> CErrors.anomaly (Pp.str "async_option."))
 
 
-type 'a opt_decl = depr:bool -> key:option_name -> 'a
+type 'a opt_decl = stage:Summary.Stage.t -> depr:bool -> key:option_name -> 'a
 
-let declare_int_option_and_ref ~depr ~key ~(value:int) =
+let declare_int_option_and_ref ~stage ~depr ~key ~(value:int) =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value v in
   let optread () = Some !r_opt in
   let _ = declare_int_option {
+      optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
   fun () -> !r_opt
 
-let declare_intopt_option_and_ref ~depr ~key =
+let declare_intopt_option_and_ref ~stage ~depr ~key =
   let r_opt = ref None in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
   let _ = declare_int_option {
+      optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
   optread
 
-let declare_nat_option_and_ref ~depr ~key ~(value:int) =
+let declare_nat_option_and_ref ~stage ~depr ~key ~(value:int) =
   assert (value >= 0);
   let r_opt = ref value in
   let optwrite v =
@@ -360,50 +366,55 @@ let declare_nat_option_and_ref ~depr ~key ~(value:int) =
   in
   let optread () = Some !r_opt in
   let _ = declare_int_option {
+      optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
   fun () -> !r_opt
 
-let declare_bool_option_and_ref ~depr ~key ~(value:bool) =
+let declare_bool_option_and_ref ~stage ~depr ~key ~(value:bool) =
   let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
   let _ = declare_bool_option {
+      optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
   optread
 
-let declare_string_option_and_ref ~depr ~key ~(value:string) =
+let declare_string_option_and_ref ~stage ~depr ~key ~(value:string) =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value v in
   let optread () = Some !r_opt in
   let _ = declare_stringopt_option {
+      optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
   fun () -> !r_opt
 
-let declare_stringopt_option_and_ref ~depr ~key =
+let declare_stringopt_option_and_ref ~stage ~depr ~key =
   let r_opt = ref None in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
   let _ = declare_stringopt_option {
+      optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
     } in
   optread
 
-let declare_interpreted_string_option_and_ref ~depr ~key ~(value:'a) from_string to_string =
+let declare_interpreted_string_option_and_ref ~stage ~depr ~key ~(value:'a) from_string to_string =
   let r_opt = ref value in
   let optwrite v = r_opt := Option.default value @@ Option.map from_string v in
   let optread () = Some (to_string !r_opt) in
   let _ = declare_stringopt_option {
+      optstage = stage;
       optdepr = depr;
       optkey = key;
       optread; optwrite
@@ -420,12 +431,16 @@ let warn_unknown_option =
     Pp.(fun key -> strbrk "There is no flag or option with this name: \"" ++
                   str (nickname key) ++ str "\".")
 
-let set_option_value ?(locality = OptDefault) check_and_cast key v =
+(** Sets the option only if [stage] matches the option declaration or if [stage]
+  is omitted. If the option is not found, a warning is emitted only if the stage
+  is [Interp] or omitted. *)
+let set_option_value ?(locality = OptDefault) ?stage check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
-  | None -> warn_unknown_option key
-  | Some (depr, (read,write,append)) ->
-    write locality (check_and_cast v (read ()))
+  | None -> begin match stage with None | Some Summary.Stage.Interp -> warn_unknown_option key | _ -> () end
+  | Some (depr, option_stage, (read,write,append)) ->
+    if Option.cata (fun s -> s = option_stage) true stage then
+      write locality (check_and_cast v (read ()))
 
 let bad_type_error ~expected ~got =
   CErrors.user_err Pp.(strbrk "Bad type of value for this option:" ++ spc()
@@ -464,25 +479,26 @@ let check_unset_value v = function
    warnings. This allows a script to refer to an option that doesn't
    exist anymore *)
 
-let set_int_option_value_gen ?locality =
-  set_option_value ?locality check_int_value
-let set_bool_option_value_gen ?locality key v =
-  set_option_value ?locality check_bool_value key v
-let set_string_option_value_gen ?locality =
-  set_option_value ?locality check_string_value
-let unset_option_value_gen ?locality key =
-  set_option_value ?locality check_unset_value key ()
+let set_int_option_value_gen ?locality ?stage =
+  set_option_value ?locality ?stage check_int_value
+let set_bool_option_value_gen ?locality ?stage key v =
+  set_option_value ?locality ?stage check_bool_value key v
+let set_string_option_value_gen ?locality ?stage =
+  set_option_value ?locality ?stage check_string_value
+let unset_option_value_gen ?locality ?stage key =
+  set_option_value ?locality ?stage check_unset_value key ()
 
-let set_string_option_append_value_gen ?(locality = OptDefault) key v =
+let set_string_option_append_value_gen ?(locality = OptDefault) ?stage key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (depr, (read,write,append)) ->
-    append locality (check_string_value v (read ()))
+  | Some (depr, option_stage, (read,write,append)) ->
+    if Option.cata (fun s -> s = option_stage) true stage then
+      append locality (check_string_value v (read ()))
 
-let set_int_option_value opt v = set_int_option_value_gen opt v
-let set_bool_option_value opt v = set_bool_option_value_gen opt v
-let set_string_option_value opt v = set_string_option_value_gen opt v
+let set_int_option_value ?stage opt v = set_int_option_value_gen ?stage opt v
+let set_bool_option_value ?stage opt v = set_bool_option_value_gen ?stage opt v
+let set_string_option_value ?stage opt v = set_string_option_value_gen ?stage opt v
 
 (* Printing options/tables *)
 
@@ -496,7 +512,7 @@ let msg_option_value = Pp.(function
   | StringOptValue (Some s) -> quote (str s))
 
 let print_option_value key =
-  let (depr, (read,_,_)) = get_option key in
+  let (depr, _stage, (read,_,_)) = get_option key in
   let s = read () in
   match s with
     | BoolValue b ->
@@ -508,7 +524,7 @@ let print_option_value key =
 
 let get_tables () =
   let tables = !value_tab in
-  let fold key (depr, (read,_,_)) accu =
+  let fold key (depr, _stage, (read,_,_)) accu =
     let state = {
       opt_depr = depr;
       opt_value = read ();
@@ -526,7 +542,7 @@ let print_tables () =
   in
   str "Options:" ++ fnl () ++
     OptionMap.fold
-      (fun key (depr, (read,_,_)) p ->
+      (fun key (depr, _stage, (read,_,_)) p ->
         p ++ print_option key (read ()) depr)
       !value_tab (mt ()) ++
   str "Tables:" ++ fnl () ++

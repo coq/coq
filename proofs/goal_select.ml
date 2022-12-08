@@ -52,6 +52,7 @@ let parse_goal_selector = function
    without an explicit selector. *)
 let get_default_goal_selector =
   Goptions.declare_interpreted_string_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Default";"Goal";"Selector"]
     ~value:(SelectNth 1)

@@ -63,7 +63,10 @@ let use_injection_pattern_l2r_order = function
 
 let injection_in_context_flag =
   declare_bool_option_and_ref
-    ~depr:false ~key:["Structural";"Injection"] ~value:false
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Structural";"Injection"]
+    ~value:false
 
 (* Rewriting tactics *)
 
@@ -715,7 +718,8 @@ let keep_proof_equalities_for_injection = ref false
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Keep";"Proof";"Equalities"];
       optread  = (fun () -> !keep_proof_equalities_for_injection) ;
       optwrite = (fun b -> keep_proof_equalities_for_injection := b) }

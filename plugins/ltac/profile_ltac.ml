@@ -458,7 +458,8 @@ let _ = Declaremods.append_end_library_hook do_print_results_at_close
 let () =
   let open Goptions in
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Ltac"; "Profiling"];
       optread  = get_profiling;
       optwrite = set_profiling }

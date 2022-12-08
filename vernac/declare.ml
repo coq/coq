@@ -1607,6 +1607,7 @@ let get_po_name { name } = name
 
 let private_poly_univs =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Private";"Polymorphic";"Universes"]
     ~value:true
@@ -1984,6 +1985,7 @@ end
 (* Admitted *)
 let get_keep_admitted_vars =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Keep"; "Admitted"; "Variables"]
     ~value:true

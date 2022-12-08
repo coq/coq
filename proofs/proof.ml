@@ -469,6 +469,7 @@ let pr_proof p =
 
 let use_unification_heuristics =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Solve";"Unification";"Constraints"]
     ~value:true

@@ -202,6 +202,7 @@ let string_to_warn_hint = function
 
 let warn_hint =
   Goptions.declare_interpreted_string_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Loose"; "Hint"; "Behavior"]
     ~value:HintLax

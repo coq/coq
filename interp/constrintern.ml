@@ -1665,6 +1665,7 @@ let is_non_zero_pat c = match c with
   | _ -> false
 
 let get_asymmetric_patterns = Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Asymmetric";"Patterns"]
     ~value:false

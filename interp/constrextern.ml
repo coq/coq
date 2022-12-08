@@ -66,6 +66,7 @@ let print_no_symbol = ref false
 (* This tells to skip types if a variable has this type by default *)
 let print_use_implicit_types =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Printing";"Use";"Implicit";"Types"]
     ~value:true
@@ -105,6 +106,7 @@ let without_symbols f = Flags.with_option print_no_symbol f
 (* Set Record Printing flag *)
 let get_record_print =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Printing";"Records"]
     ~value:true

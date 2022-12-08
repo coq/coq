@@ -915,6 +915,7 @@ let register_struct atts str = match str with
 (** Toplevel exception *)
 
 let _ = Goptions.declare_bool_option {
+  Goptions.optstage = Summary.Stage.Interp;
   Goptions.optdepr = false;
   Goptions.optkey = ["Ltac2"; "Backtrace"];
   Goptions.optread = (fun () -> !Tac2interp.print_ltac2_backtrace);

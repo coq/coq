@@ -217,18 +217,21 @@ let it_mkLambda_or_LetIn_name env sigma b hyps =
 
 let get_mangle_names =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Mangle";"Names"]
     ~value:false
 
 let get_mangle_names_light =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Mangle";"Names";"Light"]
     ~value:false
 
 let mangle_names_prefix =
   Goptions.declare_interpreted_string_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Mangle";"Names";"Prefix"]
     ~value:("_")

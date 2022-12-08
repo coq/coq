@@ -30,12 +30,14 @@ module RelDecl = Context.Rel.Declaration
 
 let typeclasses_strict =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Typeclasses";"Strict";"Resolution"]
     ~value:false
 
 let typeclasses_unique =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Typeclasses";"Unique";"Instances"]
     ~value:false

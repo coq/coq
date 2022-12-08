@@ -37,7 +37,10 @@ type parallel_solver =
   Declare.Proof.t
 
 let print_info_trace =
-  declare_intopt_option_and_ref ~depr:false ~key:["Info" ; "Level"]
+  declare_intopt_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Info" ; "Level"]
 
 let solve_core ~pstate n ~info t ~with_end_tac:b =
   let pstate, status = Declare.Proof.map_fold_endline ~f:(fun etac p ->

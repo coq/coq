@@ -31,6 +31,7 @@ exception Find_at of int
 
 let get_timing_enabled =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["NativeCompute"; "Timing"]
     ~value:false
@@ -39,6 +40,7 @@ let get_timing_enabled =
 
 let get_profiling_enabled =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["NativeCompute"; "Profiling"]
     ~value:false
@@ -57,6 +59,7 @@ let profiler_platform () =
 
 let get_profile_filename =
   Goptions.declare_string_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["NativeCompute"; "Profile"; "Filename"]
     ~value:"native_compute_profile.data"

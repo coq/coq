@@ -42,7 +42,8 @@ let short = ref false
 
 let () =
   declare_bool_option
-    { optdepr  = false;
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Short";"Module";"Printing"];
       optread  = (fun () -> !short) ;
       optwrite = ((:=) short) }

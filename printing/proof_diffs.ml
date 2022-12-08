@@ -69,6 +69,7 @@ let opt_name = ["Diffs"]
 
 let diff_option =
   Goptions.declare_interpreted_string_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:opt_name
     ~value:DiffOff

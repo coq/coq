@@ -29,6 +29,7 @@ type hint_info = (Pattern.patvar list * Pattern.constr_pattern) hint_info_gen
 
 let get_typeclasses_unique_solutions =
   Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
     ~depr:false
     ~key:["Typeclasses";"Unique";"Solutions"]
     ~value:false
