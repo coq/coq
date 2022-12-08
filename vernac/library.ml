@@ -153,7 +153,7 @@ let register_loaded_library m =
   let libname = m.libsum_name in
   let rec aux = function
     | [] ->
-        if Flags.get_native_compiler () then begin
+        if (Global.typing_flags ()).enable_native_compiler then begin
             let dirname = Filename.dirname (library_full_filename libname) in
             Nativelib.enable_library dirname libname
           end;

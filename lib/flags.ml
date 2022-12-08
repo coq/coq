@@ -80,11 +80,3 @@ let get_inline_level () = !inline_level
 
 let profile_ltac = ref false
 let profile_ltac_cutoff = ref 2.0
-
-let native_compiler = ref None
-let get_native_compiler () = match !native_compiler with
-| None -> assert false
-| Some b -> b
-let set_native_compiler b =
-  let () = assert (!native_compiler == None) in
-  native_compiler := Some b

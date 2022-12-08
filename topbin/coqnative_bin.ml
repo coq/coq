@@ -264,7 +264,6 @@ let fb_handler = function
 
 let init_coq () =
   let senv = Safe_typing.empty_environment in
-  let () = Flags.set_native_compiler true in
   let senv = Safe_typing.set_native_compiler true senv in
   let () = Safe_typing.allow_delayed_constants := false in
   let dummy = Names.DirPath.make [Names.Id.of_string_soft "@native"] in

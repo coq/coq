@@ -88,11 +88,6 @@ val without_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 (** Temporarily extends the reference to a list *)
 val with_extra_values : 'c list ref -> 'c list -> ('a -> 'b) -> 'a -> 'b
 
-(** Native compilation flag *)
-val get_native_compiler : unit -> bool
-val set_native_compiler : bool -> unit
-(** Must be set exactly once at initialization time. *)
-
 (** Level of inlining during a functor application *)
 val set_inline_level : int -> unit
 val get_inline_level : unit -> int
