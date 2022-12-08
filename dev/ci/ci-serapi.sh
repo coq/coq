@@ -11,4 +11,5 @@ if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/serapi"
   make
+  dune install -p coq-serapi --prefix="$CI_INSTALL_DIR"
 )
