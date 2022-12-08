@@ -51,18 +51,6 @@ let is_keyed_unification =
 
 let debug_tactic_unification = CDebug.create ~name:"tactic-unification" ()
 
-(** Making this unification algorithm correct w.r.t. the evar-map abstraction
-    breaks too much stuff. So we redefine incorrect functions here. *)
-
-let unsafe_occur_meta_or_existential c =
-  let c = EConstr.Unsafe.to_constr c in
-  let rec occrec c = match Constr.kind c with
-    | Evar _ -> raise Occur
-    | Meta _ -> raise Occur
-    | _ -> Constr.iter occrec c
-  in try occrec c; false with Occur -> true
-
-
 let occur_meta_or_undefined_evar evd c =
   (* This is performance-critical. Using the evar-insensitive API changes the
      resulting heuristic. *)
@@ -2092,8 +2080,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
       else
         let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
         let flags =
-          (* NB: unsafe needed to make bug_16960.v work, see explanation in comment there *)
-          if unsafe_occur_meta_or_existential op || is_keyed_unification () then
+          if is_keyed_unification () || occur_meta_or_existential evd op then
             (* This is up to delta for subterms w/o metas ... *)
             flags
           else
