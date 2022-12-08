@@ -542,13 +542,11 @@ let interp_enable_notation_rule on ntn interp flags scope =
   let open Notation in
   let rule = Option.map (function
     | Inl ntn -> Inl (interpret_notation_string ntn)
-    | Inr (_,qid) ->
-      match Nametab.locate_extended qid with
-      | Globnames.TrueGlobal _ -> user_err (str "Not an abbreviation.")
-      | Globnames.Abbrev kn -> Inr kn) ntn in
+    | Inr (vars,qid) -> Inr qid) ntn in
   let rec parse_notation_enable_flags all query = function
     | [] -> all, query
-    | EnableNotationEntry entry :: flags ->
+    | EnableNotationEntry CAst.{loc;v=entry} :: flags ->
+      (match entry with InCustomEntry s when not (Egramcoq.exists_custom_entry s) -> user_err ?loc (str "Unknown custom entry.") | _ -> ());
       parse_notation_enable_flags all { query with notation_entry_pattern = entry :: query.notation_entry_pattern } flags
     | EnableNotationOnly use :: flags ->
       parse_notation_enable_flags all { query with use_pattern = use } flags

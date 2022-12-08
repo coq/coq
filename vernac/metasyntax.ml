@@ -1922,7 +1922,7 @@ let subst_notation_toggle (subst,(local,(on,all,pat))) =
   let {notation_entry_pattern; interp_rule_key_pattern; use_pattern;
        scope_pattern; interpretation_pattern} = pat in
   let interpretation_pattern = Option.map (subst_interpretation subst) interpretation_pattern in
-  let interp_rule_key_pattern = Option.map (Union.map (fun x -> x) (Mod_subst.subst_kn subst)) interp_rule_key_pattern in
+  let interp_rule_key_pattern = interp_rule_key_pattern in
   (local,(on,all,{notation_entry_pattern; interp_rule_key_pattern; use_pattern;
                   scope_pattern; interpretation_pattern}))
 

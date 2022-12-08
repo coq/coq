@@ -785,8 +785,8 @@ let pr_vernac_expr v =
     )
   | VernacEnableNotation (on,rule,interp,flags,scope) ->
     let pr_flag = function
-      | EnableNotationEntry InConstrEntry -> str "in constr"
-      | EnableNotationEntry (InCustomEntry s) -> str "in custom " ++ str s
+      | EnableNotationEntry CAst.{v=InConstrEntry} -> str "in constr"
+      | EnableNotationEntry CAst.{v=InCustomEntry s} -> str "in custom " ++ str s
       | EnableNotationOnly OnlyParsing -> str "only parsing"
       | EnableNotationOnly OnlyPrinting -> str "only printing"
       | EnableNotationOnly ParsingAndPrinting -> assert false

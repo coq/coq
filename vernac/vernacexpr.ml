@@ -158,7 +158,7 @@ type syntax_modifier =
   | SetFormat of notation_format
 
 type notation_enable_modifier =
-  | EnableNotationEntry of notation_entry
+  | EnableNotationEntry of notation_entry CAst.t
   | EnableNotationOnly of Notationextern.notation_use
   | EnableNotationAll
 

@@ -44,7 +44,7 @@ let is_keyword =
       "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem";
       "Search"; "SearchPattern"; "SearchRewrite";
       "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
-      "Notation"; "Reserved Notation"; "Tactic Notation";
+      "Notation"; "Reserved Notation"; "Tactic Notation"; "Number Notation"; "String Notation"; "Enable Notation"; "Disable Notation";
       "Delimit"; "Bind"; "Open"; "Scope"; "Inline";
       "Implicit Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
