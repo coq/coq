@@ -28,12 +28,6 @@ open Declarations
    - a set of universe constraints
    - a flag telling if Set is, can be, or cannot be set impredicative *)
 
-type lazy_val
-
-val build_lazy_val : lazy_val -> (Vmvalues.values * Id.Set.t) -> unit
-val force_lazy_val : lazy_val -> (Vmvalues.values * Id.Set.t) option
-val dummy_lazy_val : unit -> lazy_val
-
 (** Linking information for the native compiler *)
 type link_info =
   | Linked of string
@@ -60,7 +54,7 @@ end
 
 type named_context_val = private {
   env_named_ctx : Constr.named_context;
-  env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
+  env_named_map : Constr.named_declaration Id.Map.t;
   (** Identifier-indexed version of [env_named_ctx] *)
   env_named_idx : Constr.named_declaration Range.t;
   (** Same as env_named_ctx but with a fast-access list. *)
@@ -68,7 +62,7 @@ type named_context_val = private {
 
 type rel_context_val = private {
   env_rel_ctx : Constr.rel_context;
-  env_rel_map : (Constr.rel_declaration * lazy_val) Range.t;
+  env_rel_map : Constr.rel_declaration Range.t;
 }
 
 type env = private {
@@ -127,7 +121,6 @@ val push_rec_types   : rec_declaration -> env -> env
 (** Looks up in the context of local vars referred by indice ([rel_context])
    raises [Not_found] if the index points out of the context *)
 val lookup_rel    : int -> env -> Constr.rel_declaration
-val lookup_rel_val : int -> env -> lazy_val
 val evaluable_rel : int -> env -> bool
 val env_of_rel     : int -> env -> env
 
@@ -161,7 +154,6 @@ val push_named_context_val  :
    raises [Not_found] if the Id.t is not found *)
 
 val lookup_named     : variable -> env -> Constr.named_declaration
-val lookup_named_val : variable -> env -> lazy_val
 val lookup_named_ctxt : variable -> named_context_val -> Constr.named_declaration
 val evaluable_named  : variable -> env -> bool
 val named_type : variable -> env -> types
@@ -172,7 +164,7 @@ val named_body : variable -> env -> constr option
 val fold_named_context :
   (env -> Constr.named_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
 
-val match_named_context_val : named_context_val -> (named_declaration * lazy_val * named_context_val) option
+val match_named_context_val : named_context_val -> (named_declaration * named_context_val) option
 
 (** Recurrence on [named_context] starting from younger decl *)
 val fold_named_context_reverse :
@@ -406,7 +398,7 @@ val apply_to_hyp : named_context_val -> variable ->
   (Constr.named_context -> Constr.named_declaration -> Constr.named_context -> Constr.named_declaration) ->
     named_context_val
 
-val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declaration) -> (lazy_val -> lazy_val) -> named_context_val -> named_context_val
+val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declaration) -> named_context_val -> named_context_val
 
 val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool

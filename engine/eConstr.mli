@@ -374,7 +374,7 @@ val map_rel_context_in_env :
   (env -> constr -> constr) -> env -> rel_context -> rel_context
 
 val match_named_context_val :
-  named_context_val -> (named_declaration * lazy_val * named_context_val) option
+  named_context_val -> (named_declaration * named_context_val) option
 
 val identity_subst_val : named_context_val -> t SList.t
 

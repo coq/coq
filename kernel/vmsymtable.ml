@@ -239,7 +239,21 @@ let make_static_prim table =
 let slot_for_caml_prim op table =
   !table.glob_prim.(fst (eval_caml_prim op))
 
-let rec slot_for_getglobal env sigma kn table =
+type envcache = {
+  named_cache : values Id.Map.t ref;
+  rel_cache : values Int.Map.t ref;
+  rel_adjust : int;
+}
+
+let cache_named envcache x v = envcache.named_cache := Id.Map.add x v !(envcache.named_cache)
+let cache_rel envcache i v = envcache.rel_cache := Int.Map.add (i + envcache.rel_adjust) v !(envcache.rel_cache)
+
+let envcache_of_rel i envcache = {
+  envcache with
+  rel_adjust = envcache.rel_adjust + i
+}
+
+let rec slot_for_getglobal env sigma kn envcache table =
   let (cb,(_,rk)) = lookup_constant_key kn env in
   try key rk
   with NotEvaluated ->
@@ -250,51 +264,49 @@ let rec slot_for_getglobal env sigma kn table =
       | Some code ->
         match code with
         | BCdefined (code, fv) ->
-           let v = eval_to_patch env sigma (code, fv) table in
+           let v = eval_to_patch env sigma (code, fv) envcache table in
            set_global v table
-        | BCalias kn' -> slot_for_getglobal env sigma kn' table
+        | BCalias kn' -> slot_for_getglobal env sigma kn' envcache table
         | BCconstant -> set_global (val_of_constant kn) table
     in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (CEphemeron.create pos);
     pos
 
-and slot_for_fv env sigma fv table =
-  let fill_fv_cache cache id v_of_id env_of_id b =
-    let v, d =
-      match b with
-      | None -> v_of_id id, Id.Set.empty
-      | Some c ->
-        let v = val_of_constr (env_of_id id env) sigma c table in
-        v, Environ.global_vars_set env c
-    in
-    build_lazy_val cache (v, d); v in
+and slot_for_fv env sigma fv envcache table =
   let val_of_rel i = val_of_rel (nb_rel env - i) in
-  let idfun _ x = x in
   match fv with
   | FVnamed id ->
-      let nv = lookup_named_val id env in
-      begin match force_lazy_val nv with
+      let nv = Id.Map.find_opt id !(envcache.named_cache) in
+      begin match nv with
       | None ->
-         env |> lookup_named id |> NamedDecl.get_value |> fill_fv_cache nv id val_of_named idfun
-      | Some (v, _) -> v
+        let v = match env |> lookup_named id |> NamedDecl.get_value with
+          | None -> val_of_named id
+          | Some c -> val_of_constr env sigma c envcache table
+        in
+        cache_named envcache id v; v
+      | Some v -> v
       end
   | FVrel i ->
-      let rv = lookup_rel_val i env in
-      begin match force_lazy_val rv with
+      let rv = Int.Map.find_opt (i + envcache.rel_adjust) !(envcache.rel_cache) in
+      begin match rv with
       | None ->
-        env |> lookup_rel i |> RelDecl.get_value |> fill_fv_cache rv i val_of_rel env_of_rel
-      | Some (v, _) -> v
+        let v = match env |> lookup_rel i |> RelDecl.get_value with
+          | None -> val_of_rel i
+          | Some c -> val_of_constr (env_of_rel i env) sigma c (envcache_of_rel i envcache) table
+        in
+        cache_rel envcache i v; v
+      | Some v -> v
       end
   | FVevar evk -> val_of_evar evk
   | FVuniv_var _idu ->
     assert false
 
-and eval_to_patch env sigma (code, fv) table =
+and eval_to_patch env sigma (code, fv) envcache table =
   let slots = function
     | Reloc_annot a -> slot_for_annot a table
     | Reloc_const sc -> slot_for_str_cst sc table
-    | Reloc_getglobal kn -> slot_for_getglobal env sigma kn table
+    | Reloc_getglobal kn -> slot_for_getglobal env sigma kn envcache table
     | Reloc_caml_prim op -> slot_for_caml_prim op table
   in
   let tc = patch code slots in
@@ -303,7 +315,7 @@ and eval_to_patch env sigma (code, fv) table =
     let a = Array.make (Array.length fv + 2) crazy_val in
     a.(1) <- Obj.magic 2;
     let iter i fv =
-      let v = slot_for_fv env sigma fv table in
+      let v = slot_for_fv env sigma fv envcache table in
       a.(i + 2) <- v
     in
     let () = Array.iteri iter fv in
@@ -313,9 +325,9 @@ and eval_to_patch env sigma (code, fv) table =
   let v = coq_interprete tc crazy_val (get_atom_rel ()) global (inj_env vm_env) 0 in
   v
 
-and val_of_constr env sigma c table =
+and val_of_constr env sigma c envcache table =
   match compile ~fail_on_error:true env sigma c with
-  | Some v -> eval_to_patch env sigma v table
+  | Some v -> eval_to_patch env sigma v envcache table
   | None -> assert false
 
 let global_table =
@@ -328,8 +340,14 @@ let global_table =
     glob_annot = AnnotTable.empty;
   }
 
+let fresh_envcache () = {
+  named_cache = ref Id.Map.empty;
+  rel_cache = ref Int.Map.empty;
+  rel_adjust = 0;
+}
+
 let val_of_constr env sigma c =
-  let v = val_of_constr env sigma c global_table in
+  let v = val_of_constr env sigma c (fresh_envcache ()) global_table in
   v
 
 let vm_interp code v env k =
