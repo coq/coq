@@ -423,8 +423,7 @@ Effects
 ~~~~~~~
 
 Effects in Ltac2 are straightforward, except that instead of using the
-standard IO monad as the ambient effectful world, Ltac2 is has a
-tactic monad.
+standard IO monad as the ambient effectful world, Ltac2 has a tactic monad.
 
 Note that the order of evaluation of application is *not* specified and is
 implementation-dependent, as in OCaml.
