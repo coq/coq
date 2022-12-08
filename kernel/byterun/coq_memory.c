@@ -80,38 +80,32 @@ static void coq_scan_roots(scanning_action action, scanning_action_flags flags, 
 }
 #endif
 
-void init_coq_stack()
-{
-  coq_stack_low = (value *) coq_stat_alloc(Coq_stack_size);
-  coq_stack_high = coq_stack_low + Coq_stack_size / sizeof (value);
-  coq_stack_threshold = coq_stack_low + Coq_stack_threshold / sizeof(value);
-  coq_max_stack_size = Coq_max_stack_size;
-}
-
-void init_coq_interpreter()
-{
-  coq_sp = coq_stack_high;
-  coq_interprete(NULL, Val_unit, Atom(0), Atom(0), Val_unit, 0);
-}
-
 static int coq_vm_initialized = 0;
 
 value init_coq_vm(value unit) /* ML */
 {
-  if (coq_vm_initialized == 1) {
-    fprintf(stderr,"already open \n");fflush(stderr);}
-  else {
-    /* Allocate the table of global and the stack */
-    init_coq_stack();
-    /* Initialing the interpreter */
-    init_coq_interpreter();
+  if (coq_vm_initialized) {
+    fprintf(stderr, "already open\n");
+    fflush(stderr);
+    return Val_unit;
+  }
+
+  /* Allocate the table of global and the stack */
+  coq_stack_low = (value *) coq_stat_alloc(Coq_stack_size);
+  coq_stack_high = coq_stack_low + Coq_stack_size / sizeof (value);
+  coq_stack_threshold = coq_stack_low + Coq_stack_threshold / sizeof(value);
+  coq_max_stack_size = Coq_max_stack_size;
+
+  /* Initialize the interpreter */
+  coq_sp = coq_stack_high;
+  coq_interprete(NULL, Val_unit, Atom(0), Atom(0), Val_unit, 0);
 
   /* Initialize GC */
-    if (coq_prev_scan_roots_hook == NULL)
-      coq_prev_scan_roots_hook = caml_scan_roots_hook;
-    caml_scan_roots_hook = coq_scan_roots;
-    coq_vm_initialized = 1;
-  }
+  if (coq_prev_scan_roots_hook == NULL)
+    coq_prev_scan_roots_hook = caml_scan_roots_hook;
+  caml_scan_roots_hook = coq_scan_roots;
+  coq_vm_initialized = 1;
+
   return Val_unit;;
 }
 
