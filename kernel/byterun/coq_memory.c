@@ -32,9 +32,7 @@ value * coq_stack_low;
 value * coq_stack_high;
 value * coq_stack_threshold;
 asize_t coq_max_stack_size = Coq_max_stack_size;
-/* global_data */
 
-int drawinstr;
 /* interp state */
 
 long coq_saved_sp_offset;
@@ -103,7 +101,6 @@ value init_coq_vm(value unit) /* ML */
   if (coq_vm_initialized == 1) {
     fprintf(stderr,"already open \n");fflush(stderr);}
   else {
-    drawinstr=0;
     /* Allocate the table of global and the stack */
     init_coq_stack();
     /* Initialing the interpreter */
@@ -144,10 +141,3 @@ void realloc_coq_stack(asize_t required_space)
   coq_sp = new_sp;
 #undef shift
 }
-
-value coq_set_drawinstr(value unit)
-{
-  drawinstr = 1;
-  return Val_unit;
-}
-

@@ -91,9 +91,9 @@ sp is a local copy of the global variable extern_sp. */
 /* #define _COQ_DEBUG_ */
 
 #ifdef _COQ_DEBUG_
-#   define print_instr(s) /*if (drawinstr)*/ printf("%s\n",s)
-#   define print_int(i)   /*if (drawinstr)*/ printf("%d\n",i)
-#   define print_lint(i)  /*if (drawinstr)*/ printf("%ld\n",i)
+#   define print_instr(s) printf("%s\n",s)
+#   define print_int(i)   printf("%d\n",i)
+#   define print_lint(i)  printf("%ld\n",i)
 # else
 #   define print_instr(s)
 #   define print_int(i)

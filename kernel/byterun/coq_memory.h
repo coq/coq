@@ -35,7 +35,6 @@ extern value * coq_stack_threshold;
 
 extern int coq_all_transp;
 
-extern int drawinstr;
 /* interp state */
 
 extern value * coq_sp;
@@ -51,6 +50,3 @@ void  realloc_coq_stack(asize_t required_space);
 value coq_set_transp_value(value transp); /* ML */
 value get_coq_transp_value(value unit); /* ML */
 #endif /* _COQ_MEMORY_ */
-
-
-value coq_set_drawinstr(value unit);

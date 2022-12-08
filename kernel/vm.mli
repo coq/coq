@@ -10,10 +10,6 @@
 
 open Vmvalues
 
-(** Debug printing *)
-
-val set_drawinstr : unit -> unit
-
 val reduce_fix : int -> vfix -> vfun array * values array
                               (** bodies ,  types *)
 
