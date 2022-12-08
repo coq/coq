@@ -509,7 +509,7 @@ let ref_value_cache env flags mode tab ref =
           | RelKey n ->
             let open! Context.Rel.Declaration in
             let i = n - 1 in
-            let (d, _) =
+            let d =
               try Range.get env.env_rel_context.env_rel_map i
               with Invalid_argument _ -> raise Not_found
             in
