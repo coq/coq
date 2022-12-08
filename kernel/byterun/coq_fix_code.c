@@ -29,6 +29,10 @@ char ** coq_instr_table;
 char * coq_instr_base;
 #endif /*  THREADED_CODE */
 
+int coq_is_instruction(opcode_t instr1, opcode_t instr2)
+{
+  return instr1 == VALINSTR(instr2);
+}
 
 void * coq_stat_alloc (asize_t sz)
 {
@@ -68,13 +72,6 @@ value coq_pushpop (value i) {
     *q = VALINSTR(STOP);
     CAMLreturn(res);
   }
-}
-
-value coq_is_accumulate_code(value code){
-  code_t q = Code_val(code);
-  int res;
-  res = Is_instruction(q,ACCUMULATE);
-  return Val_bool(res);
 }
 
 #ifdef ARCH_BIG_ENDIAN
