@@ -39,8 +39,6 @@ int drawinstr;
 
 long coq_saved_sp_offset;
 value * coq_sp;
-/* Some predefined pointer code */
-code_t accumulate;
 
 /* functions over global environment */
 
@@ -52,15 +50,6 @@ void coq_stat_free (void * blk)
 value coq_static_alloc(value size) /* ML */
 {
   return (value) coq_stat_alloc((asize_t) Long_val(size));
-}
-
-value accumulate_code(value unit) /* ML */
-{
-  CAMLparam1(unit);
-  CAMLlocal1(res);
-  res = caml_alloc_small(1, Abstract_tag);
-  Code_val(res) = accumulate;
-  CAMLreturn(res);
 }
 
 #if OCAML_VERSION < 50000
@@ -119,18 +108,6 @@ value init_coq_vm(value unit) /* ML */
     init_coq_stack();
     /* Initialing the interpreter */
     init_coq_interpreter();
-
-    /* Some predefined pointer code.
-     * It is typically contained in accumulator blocks and thus might be
-     * scanned by the GC, so make it look like an OCaml block. */
-    value accu_block = (value) coq_stat_alloc(2 * sizeof(value));
-#if OCAML_VERSION < 50000
-    Hd_hp (accu_block) = Make_header (1, Abstract_tag, Caml_black);
-#else
-    Hd_hp (accu_block) = Make_header (1, Abstract_tag, NOT_MARKABLE);
-#endif
-    accumulate = (code_t) Val_hp(accu_block);
-    *accumulate = VALINSTR(ACCUMULATE);
 
   /* Initialize GC */
     if (coq_prev_scan_roots_hook == NULL)

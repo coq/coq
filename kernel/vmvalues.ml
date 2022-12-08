@@ -355,7 +355,7 @@ type vm_closure_kind =
 external kind_of_closure : Obj.t -> vm_closure_kind = "coq_kind_of_closure"
 external is_accumulate : tcode -> bool = "coq_is_accumulate_code"
 external int_tcode : tcode -> int -> int = "coq_int_tcode"
-external accumulate : unit -> tcode = "accumulate_code"
+external accumulate : unit -> tcode = "coq_accumulate"
 external set_bytecode_field : Obj.t -> int -> tcode -> unit = "coq_set_bytecode_field"
 let accumulate = accumulate ()
 

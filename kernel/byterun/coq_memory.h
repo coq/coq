@@ -39,8 +39,6 @@ extern int drawinstr;
 /* interp state */
 
 extern value * coq_sp;
-/* Some predefined pointer code */
-extern code_t accumulate;
 
 /* functions over global environment */
 
