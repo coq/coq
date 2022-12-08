@@ -81,20 +81,6 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       Dumpglob.end_dump_glob ()
 
   | BuildVio | BuildVos ->
-      (* We need to disable error resiliency, otherwise some errors
-         will be ignored in batch mode. c.f. #6707
-
-         This is not necessary in the vo case as it fully checks the
-         document anyways. *)
-      let stm_options = let open Stm.AsyncOpts in
-        { stm_options with
-          async_proofs_mode = APon;
-          async_proofs_n_workers = 0;
-          async_proofs_cmd_error_resilience = false;
-          async_proofs_tac_error_resilience = FNone;
-        } in
-      Stm.init_process stm_options;
-
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
           Stm.{ doc_type = VioDoc long_f_dot_out; injections;
