@@ -134,6 +134,12 @@ let repr_qualid {CAst.v=qid} = repr_path qid
 
 let qualid_eq qid1 qid2 = eq_full_path qid1.CAst.v qid2.CAst.v
 
+let is_qualid_suffix_of_full_path
+    CAst.{v={dirpath=dirpath1;basename=basename1}} {dirpath=dirpath2;basename=basename2} =
+  let dir1 = DirPath.repr dirpath1 in
+  let dir2 = DirPath.repr dirpath2 in
+  Id.equal basename1 basename2 && List.prefix_of Id.equal dir1 dir2
+
 let string_of_qualid qid = string_of_path qid.CAst.v
 let pr_qualid qid = pr_path qid.CAst.v
 

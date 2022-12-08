@@ -1458,7 +1458,7 @@ enable_notation_flag: [
 | "all"
 | "only" "parsing"
 | "only" "printing"
-| "in" "custom" IDENT
+| "in" "custom" identref
 | "in" "constr"
 ]
 

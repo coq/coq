@@ -2367,8 +2367,8 @@ let pr_visibility prglob = function
 
 (* Enabling/disabling notations *)
 
-let toggle_main_notation ~on ~use found test ntn_rule main =
-  let found d = found := (d.not_location, Some d.not_interp) :: !found in
+let toggle_main_notation ~on ~use found test ntn_data main =
+  let found d = found := (Inl (d.not_location, ntn_data), d.not_interp) :: !found in
   match main, use with
   | OnlyParsingData (is_on,d), OnlyPrinting when test d.not_interp ->
     user_err (strbrk "Unexpected only printing for an only parsing notation.")
@@ -2388,8 +2388,8 @@ let toggle_main_notation ~on ~use found test ntn_rule main =
        x
   | (NoParsingData | OnlyParsingData _ | ParsingAndPrintingData _), _ -> main
 
-let toggle_extra_only_printing_notation ~on ~use found test ntn_rule (is_on,d as x) =
-  let found d = found := (d.not_location, Some d.not_interp) :: !found in
+let toggle_extra_only_printing_notation ~on ~use found test ntn_data (is_on,d as x) =
+  let found d = found := (Inl (d.not_location, ntn_data), d.not_interp) :: !found in
   match use with
   | OnlyParsing ->
     user_err (strbrk "Unexpected only parsing for an only printing notation.")
@@ -2399,9 +2399,9 @@ let toggle_extra_only_printing_notation ~on ~use found test ntn_rule (is_on,d as
     else
       x
 
-let toggle_notation_data ~on ~use found test ntn_rule (main,extra as data) =
-  let main' = toggle_main_notation ~on ~use found test ntn_rule main in
-  let extra' = List.Smart.map (toggle_extra_only_printing_notation ~on ~use found test ntn_rule) extra in
+let toggle_notation_data ~on ~use found test ntn_data (main,extra as data) =
+  let main' = toggle_main_notation ~on ~use found test ntn_data main in
+  let extra' = List.Smart.map (toggle_extra_only_printing_notation ~on ~use found test ntn_data) extra in
   if main' == main && extra' == extra then data else (main',extra')
 
 type 'a notation_query_pattern_gen = {
@@ -2412,7 +2412,7 @@ type 'a notation_query_pattern_gen = {
     interpretation_pattern : interpretation option;
   }
 
-type notation_query_pattern = Globnames.abbreviation notation_query_pattern_gen
+type notation_query_pattern = qualid notation_query_pattern_gen
 
 let match_notation_interpretation notation_interpretation pat =
   match notation_interpretation with
@@ -2429,10 +2429,10 @@ let match_notation_rule interp_rule_key_pattern notation_key =
   | Some (Inl ntn) -> match_notation_key false ntn notation_key
   | Some (Inr _) -> false
 
-let toggle_notations_by_interpretation ~on found ntn_pattern ntn_rule (main,extra as data) =
+let toggle_notations_by_interpretation ~on found ntn_pattern ntn_data (main,extra as data) =
   let use = ntn_pattern.use_pattern in
   let test = match_notation_interpretation ntn_pattern.interpretation_pattern in
-  toggle_notation_data ~on ~use found test ntn_rule data
+  toggle_notation_data ~on ~use found test ntn_data data
 
 let toggle_notations_in_scope ~on found inscope ntn_pattern ntns =
   match ntn_pattern.notation_entry_pattern, ntn_pattern.interp_rule_key_pattern with
@@ -2442,7 +2442,7 @@ let toggle_notations_in_scope ~on found inscope ntn_pattern ntns =
     List.fold_right (fun ntn_entry ntns ->
       NotationMap.add (ntn_entry, ntn)
         (toggle_notations_by_interpretation ~on found ntn_pattern
-           (NotationRule (inscope,(ntn_entry,ntn)))
+           (inscope,(ntn_entry,ntn))
            (NotationMap.find (ntn_entry, ntn) ntns))
         ntns) ntn_entries ntns
     (* Deal with full notations *)
@@ -2450,7 +2450,7 @@ let toggle_notations_in_scope ~on found inscope ntn_pattern ntns =
     NotationMap.mapi (fun (ntn_entry,ntn_key' as ntn') data ->
         if match_notation_entry ntn_entries ntn_entry && match_notation_rule ntn_rule ntn_key' then
           toggle_notations_by_interpretation ~on found ntn_pattern
-            (NotationRule (inscope,ntn'))
+            (inscope,ntn')
             data
         else
           data) ntns
@@ -2466,22 +2466,26 @@ let warn_abbreviation_not_bound_to_scope =
                     strbrk "Activation of abbreviations does not expect mentioning a scope.")
 
 let toggle_abbreviations ~on found ntn_pattern =
-  let data_of_interp kn i =
-    let q = Nametab.shortest_qualid_of_abbreviation Id.Set.empty kn in
-    ((DirPath.empty, DirPath.empty), string_of_qualid q), i in
-  match ntn_pattern.interp_rule_key_pattern, ntn_pattern.notation_entry_pattern, ntn_pattern.scope_pattern with
-  | Some (Inr kn), [], None ->
-    found := data_of_interp kn ntn_pattern.interpretation_pattern :: !found;
-    Abbreviation.toggle_abbreviation ~on ~use:ntn_pattern.use_pattern kn
-  | Some (Inr kn), entries, inscope ->
-    if not (List.is_empty entries) then warn_abbreviation_not_bound_to_entry ();
-    if Option.has_some inscope then warn_abbreviation_not_bound_to_scope ()
-  | Some (Inl _), _, _ | None, _::_, _ | None, _, Some _ -> () (* Not about abbreviation *)
-  | None, [], None ->
-    let test kn a =
+  try
+    let qid =
+      match ntn_pattern.interp_rule_key_pattern, ntn_pattern.notation_entry_pattern, ntn_pattern.scope_pattern with
+      | Some (Inr qid), [], None -> Some qid
+      | Some (Inr qid), entries, inscope ->
+        if not (List.is_empty entries) then warn_abbreviation_not_bound_to_entry ();
+        if Option.has_some inscope then warn_abbreviation_not_bound_to_scope ();
+        raise Exit
+      | Some (Inl _), _, _ | None, _::_, _ | None, _, Some _ -> raise Exit (* Not about abbreviation, shortcut *)
+      | None, [], None -> None
+    in
+    let test sp a =
       let res = match_notation_interpretation ntn_pattern.interpretation_pattern a in
-      if res then found := data_of_interp kn (Some a) :: !found; res in
+      let res' = match qid with
+        | Some qid -> Libnames.is_qualid_suffix_of_full_path qid sp
+        | None -> true in
+      let res'' = res && res' in
+      if res'' then found := (Inr sp, a) :: !found; res'' in
     Abbreviation.toggle_abbreviations ~on ~use:ntn_pattern.use_pattern test
+  with Exit -> ()
 
 let toggle_notations ~on ~all prglob ntn_pattern =
   let found = ref [] in
@@ -2513,11 +2517,17 @@ let toggle_notations ~on ~all prglob ntn_pattern =
            | OnlyPrinting -> str " for printing"
            | ParsingAndPrinting -> mt ()) ++
           str ":" ++ fnl () ++
-          prlist_with_sep fnl (function
-              | (_, s), None -> str "Notation " ++ str s
-              | l, Some i ->
-                 let data = { not_interp = i; not_location = l; not_deprecation = None } in
-                 str "Notation " ++ pr_notation_data prglob (Some true,Some true,data))
+          prlist_with_sep fnl (fun (kind, (vars,a as i)) ->
+            match kind with
+            | Inl (l, (sc, (entry, _))) ->
+              let sc = match sc with NotationInScope sc -> sc | LastLonelyNotation -> default_scope in
+              let data = { not_interp = i; not_location = l; not_deprecation = None } in
+              hov 0 (str "Notation " ++ pr_notation_data prglob (Some true,Some true,data) ++
+              (match entry with InCustomEntry s -> str " (in custom " ++ str s ++ str ")" | _ -> mt ()) ++
+              (if String.equal sc default_scope then mt () else (brk (1,2) ++ str ": " ++ str sc)))
+            | Inr sp ->
+              hov 0 (str "Notation " ++ Libnames.pr_path sp ++ prlist (fun (a,_) -> spc () ++ Id.print a) vars ++
+              spc () ++ str ":=" ++ spc () ++ prglob (Notation_ops.glob_constr_of_notation_constr a)))
             !found)
 
 (**********************************************************************)

@@ -472,12 +472,14 @@ Enabling and disabling notations
    :n:`@string`
       Notations to enable or disable. :n:`@string` can be a single
       token in the notation such as "`->`" or a pattern that matches
-      the notation. See :ref:`locating-notations`. If no :n:`{? :=
-      @one_term }` is given, the variables of the notation can be
+      the notation. See :ref:`locating-notations`. If no
+      :n:`{? := @one_term }` is given, the variables of the notation can be
       replaced by :n:`_`.
 
    :n:`@qualid {* @ident__parm }`
-      :ref:`Abbreviation <Abbreviations>` to enable or disable, where :n:`{* @ident__parm }` are the parameters of the abbreviation. See :cmd:`Notation (abbreviation)`.
+      Enable or disable :ref:`abbreviations <Abbreviations>` whose
+      absolute name has :n:`@qualid` as a suffix. The :n:`{* @ident__parm }`
+      are the parameters of the abbreviation.
 
    :n:`{? := @one_term }`
       Enable or disable notations matching :token:`one_term`.
@@ -528,9 +530,9 @@ Enabling and disabling notations
       Use :n:`all` to allow enabling or disabling multiple
       notations in a single command.
 
-   .. exn:: Not an abbreviation.
+   .. exn:: Unknown custom entry.
 
-      No abbreviation matches the given :token:`qualid`.
+      In :n:`in custom @ident`, :token:`ident` is not a valid custom entry name.
 
    .. exn:: No notation provided.
 
@@ -545,6 +547,14 @@ Enabling and disabling notations
    .. warn:: Activation of abbreviations does not expect mentioning a scope.
 
       Scopes are not compatible with :ref:`abbreviations <Abbreviations>`.
+
+   .. example:: Enabling and disabling notations
+
+      .. coqtop:: all
+
+         Disable Notation "+" (all).
+         Enable Notation "_ + _" (all) : type_scope.
+         Disable Notation "x + y" := (sum x y).
 
 Displaying information about notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

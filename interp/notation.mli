@@ -276,7 +276,7 @@ type 'a notation_query_pattern_gen = {
     interpretation_pattern : interpretation option;
   }
 
-type notation_query_pattern = Globnames.abbreviation notation_query_pattern_gen
+type notation_query_pattern = qualid notation_query_pattern_gen
 
 val toggle_notations : on:bool -> all:bool -> (glob_constr -> Pp.t) -> notation_query_pattern -> unit
 

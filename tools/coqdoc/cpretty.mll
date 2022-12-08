@@ -410,6 +410,10 @@ let notation_kw =
   | "Infix"
   | "Reserved" space+ "Notation"
   | "Reserved" space+ "Infix"
+  | "Number" space+ "Notation"
+  | "String" space+ "Notation"
+  | "Enable" space+ "Notation"
+  | "Disable" space+ "Notation"
 
 let commands =
   "Pwd"
