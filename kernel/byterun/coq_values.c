@@ -8,6 +8,7 @@
 /*                                                                     */
 /***********************************************************************/
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <caml/memory.h>
 #include "coq_fix_code.h"
@@ -95,4 +96,15 @@ value coq_tcode_array(value tcodes) {
     Store_field(res, i, tmp);
   }
   CAMLreturn(res);
+}
+
+CAMLprim value coq_obj_set_tag (value arg, value new_tag)
+{
+#if OCAML_VERSION >= 50000
+// Placeholder used by native_compute
+  abort();
+#else
+  Tag_val (arg) = Int_val (new_tag);
+#endif
+  return Val_unit;
 }
