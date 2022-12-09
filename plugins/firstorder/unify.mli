@@ -13,10 +13,18 @@ open EConstr
 
 exception UFAIL of constr*constr
 
+module Item :
+sig
+  type t
+  val compare : t -> t -> int
+  val is_ground : t -> bool
+  val repr : t -> int * constr (* nb trous * terme *)
+end
+
 type instance=
-    Real of (int*constr)*int (* nb trous*terme*valeur heuristique *)
+    Real of Item.t * int (* terme * valeur heuristique *)
   | Phantom of constr        (* domaine de quantification *)
 
 val unif_atoms : Environ.env -> Evd.evar_map -> metavariable -> constr -> Formula.atom -> Formula.atom -> instance option
 
-val more_general : Environ.env -> Evd.evar_map -> (int*constr) -> (int*constr) -> bool
+val more_general : Environ.env -> Evd.evar_map -> Item.t -> Item.t -> bool

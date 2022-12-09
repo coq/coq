@@ -29,33 +29,30 @@ let compare_instance inst1 inst2=
         match inst1,inst2 with
             Phantom(d1),Phantom(d2)->
               (cmp d1 d2)
-          | Real((m1,c1),n1),Real((m2,c2),n2)->
+          | Real(i1, n1), Real(i2, n2)->
+            let (m1, c1) = Unify.Item.repr i1 in
+            let (m2, c2) = Unify.Item.repr i2 in
               ((-) =? (-) ==? cmp) m2 m1 n1 n2 c1 c2
-          | Phantom(_),Real((m,_),_)-> if Int.equal m 0 then -1 else 1
-          | Real((m,_),_),Phantom(_)-> if Int.equal m 0 then 1 else -1
+          | Phantom _, Real (i, _)-> if Unify.Item.is_ground i then -1 else 1
+          | Real (i, _), Phantom _ -> if Unify.Item.is_ground i then 1 else -1
 
-let compare_gr id1 id2 =
-  if id1==id2 then 0 else
-    if id1==dummy_id then 1
-    else if id2==dummy_id then -1
-    else GlobRef.CanOrd.compare id1 id2
+type any_identifier = AnyId : 'a identifier -> any_identifier
+
+let compare_gr id1 id2 = match id1, id2 with
+| AnyId GoalId, AnyId GoalId -> 0
+| AnyId GoalId, AnyId (FormulaId _) -> 1
+| AnyId (FormulaId _), AnyId GoalId -> -1
+| AnyId (FormulaId id1), AnyId (FormulaId id2) -> GlobRef.CanOrd.compare id1 id2
 
 module OrderedInstance=
 struct
-  type t = Unify.instance * GlobRef.t
+  type t = Unify.instance * any_identifier
   let compare (inst1,id1) (inst2,id2)=
     (compare_instance =? compare_gr) inst2 inst1 id2 id1
     (* we want a __decreasing__ total order *)
 end
 
 module IS=Set.Make(OrderedInstance)
-
-let make_simple_atoms seq=
-  let ratoms=
-    match seq.glatom with
-        Some t->[t]
-      | None->[]
-  in {negative=seq.latoms;positive=ratoms}
 
 let do_sequent env sigma setref triv id seq i dom atoms=
   let flag=ref true in
@@ -68,20 +65,20 @@ let do_sequent env sigma setref triv id seq i dom atoms=
         | Some c ->flag:=false;setref:=IS.add (c,id) !setref in
       List.iter (fun t->List.iter (do_pair t) a2.negative) a1.positive;
       List.iter (fun t->List.iter (do_pair t) a2.positive) a1.negative in
-    HP.iter (fun lf->do_atoms atoms lf.atoms) seq.redexes;
-    do_atoms atoms (make_simple_atoms seq);
+    Sequent.iter_redexes (function AnyFormula lf->do_atoms atoms lf.atoms) seq;
+    do_atoms atoms (Sequent.make_simple_atoms seq);
     !flag && !phref
 
-let match_one_quantified_hyp env sigma setref seq lf=
+let match_one_quantified_hyp (type a) env sigma setref seq (lf : a Formula.t) =
   match lf.pat with
-      Left(Lforall(i,dom,triv))|Right(Rexists(i,dom,triv))->
-        if do_sequent env sigma setref triv lf.id seq i dom lf.atoms then
-          setref:=IS.add ((Phantom dom),lf.id) !setref
+      LeftPattern (Lforall(i,dom,triv))|RightPattern(Rexists(i,dom,triv))->
+        if do_sequent env sigma setref triv (AnyId lf.id) seq i dom lf.atoms then
+          setref:=IS.add ((Phantom dom), AnyId lf.id) !setref
     | _ -> anomaly (Pp.str "can't happen.")
 
 let give_instances env sigma lf seq=
   let setref=ref IS.empty in
-    List.iter (match_one_quantified_hyp env sigma setref seq) lf;
+  let () = List.iter (function AnyFormula f -> match_one_quantified_hyp env sigma setref seq f) lf in
     IS.elements !setref
 
 (* collector for the engine *)
@@ -89,8 +86,9 @@ let give_instances env sigma lf seq=
 let rec collect_quantified sigma seq=
   try
     let hd,seq1=take_formula sigma seq in
-      (match hd.pat with
-           Left(Lforall(_,_,_)) | Right(Rexists(_,_,_)) ->
+    let AnyFormula hd0 = hd in
+      (match hd0.pat with
+           LeftPattern(Lforall(_,_,_)) | RightPattern(Rexists(_,_,_)) ->
              let (q,seq2)=collect_quantified sigma seq1 in
                ((hd::q),seq2)
          | _->[],seq)
@@ -100,10 +98,9 @@ let rec collect_quantified sigma seq=
 
 let dummy_bvid=Id.of_string "x"
 
-let mk_open_instance env sigma id idc m t =
+let mk_open_instance env sigma id idc c =
+  let (m, t) = Item.repr c in
   let var_id =
-    (* XXX why physical equality? *)
-    if id == dummy_id then dummy_bvid else
       let typ = Retyping.get_type_of env sigma idc in
         (* since we know we will get a product,
            reduction is not too expensive *)
@@ -147,16 +144,15 @@ let left_instance_tac ~flags (inst,id) continue seq=
                 tclSOLVE [wrap ~flags 1 false continue
                             (deepen (record (id,None) seq))]];
             tclTRY assumption]
-    | Real((m,t),_)->
-        let c = (m, EConstr.to_constr ~abort_on_undefined_evars:false sigma t) in
+    | Real (c, _)->
         if lookup env sigma (id,Some c) seq then
           tclFAIL (Pp.str "already done")
         else
           let special_generalize=
-            if m>0 then
+            if not @@ Unify.Item.is_ground c then
               (pf_constr_of_global id >>= fun idc ->
                 Proofview.Goal.enter begin fun gl->
-                  let (evmap, rc, ot) = mk_open_instance (pf_env gl) (project gl) id idc m t in
+                  let (evmap, rc, ot) = mk_open_instance (pf_env gl) (project gl) id idc c in
                   let gt=
                     it_mkLambda_or_LetIn
                       (mkApp(idc,[|ot|])) rc in
@@ -168,7 +164,7 @@ let left_instance_tac ~flags (inst,id) continue seq=
                     (generalize [gt])
                 end)
             else
-              pf_constr_of_global id >>= fun idc -> generalize [mkApp(idc,[|t|])]
+              pf_constr_of_global id >>= fun idc -> generalize [mkApp(idc,[|snd @@ Item.repr c|])]
           in
             tclTHENLIST
               [special_generalize;
@@ -191,18 +187,17 @@ let right_instance_tac ~flags inst continue seq=
             end;
             tclSOLVE [wrap ~flags 0 true continue (deepen seq)]];
          tclTRY assumption]
-    | Real ((0,t),_) ->
-        (tclTHEN (split (Tactypes.ImplicitBindings [t]))
+    | Real (c,_) ->
+      if Item.is_ground c then
+        (tclTHEN (split (Tactypes.ImplicitBindings [snd @@ Item.repr c]))
            (tclSOLVE [wrap ~flags 0 true continue (deepen seq)]))
-    | Real ((m,t),_) ->
+      else
         tclFAIL (Pp.str "not implemented ... yet")
   end
 
-let instance_tac ~flags inst=
-  if (snd inst)==dummy_id then
-    right_instance_tac ~flags (fst inst)
-  else
-    left_instance_tac ~flags inst
+let instance_tac ~flags (hd, AnyId id) = match id with
+| GoalId -> right_instance_tac ~flags hd
+| FormulaId id -> left_instance_tac ~flags (hd, id)
 
 let quantified_tac ~flags lf backtrack continue seq =
   Proofview.Goal.enter begin fun gl ->

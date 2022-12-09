@@ -47,11 +47,12 @@ let wrap ~flags n b continue seq =
               List.exists (occur_var_in_decl env sigma id) ctx then
                 (aux (i-1) q (nd::ctx))
             else
-              add_formula ~flags env sigma Hyp (GlobRef.VarRef id) (NamedDecl.get_type nd) (aux (i-1) q (nd::ctx)) in
+              add_formula ~flags ~hint:false env sigma (GlobRef.VarRef id) (NamedDecl.get_type nd) (aux (i-1) q (nd::ctx)) in
   let seq1=aux n nc [] in
-  let seq2=if b then
-    add_formula ~flags env sigma Concl dummy_id (pf_concl gls) seq1 else seq1 in
-    continue seq2
+  let seq2 =
+    if b then add_concl ~flags env sigma (pf_concl gls) seq1 else seq1
+  in
+  continue seq2
   end
 
 let clear_global=function
@@ -60,12 +61,11 @@ let clear_global=function
 
 (* connection rules *)
 
-let axiom_tac t seq =
+let axiom_tac seq =
   Proofview.Goal.enter begin fun gl ->
-  try
-    pf_constr_of_global (find_left (project gl) t seq) >>= fun c ->
-    exact_no_check c
-  with Not_found -> tclFAIL (Pp.str "No axiom link")
+  match Sequent.find_goal (project gl) seq with
+  | gr -> pf_constr_of_global gr >>= fun c -> exact_no_check c
+  | exception Not_found -> tclFAIL (Pp.str "No axiom link")
   end
 
 let ll_atom_tac ~flags a backtrack id continue seq =
