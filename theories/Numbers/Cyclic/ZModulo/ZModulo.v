@@ -10,6 +10,8 @@
 
 (** * Type [Z] viewed modulo [2^d] implements CyclicAxioms. *)
 
+(** This library has been deprecated since Coq version 8.17. *)
+
 (** Even if the construction provided here is not reused for building
   the efficient arbitrary precision numbers, it provides a simple
   implementation of CyclicAxioms, hence ensuring its coherence. *)
