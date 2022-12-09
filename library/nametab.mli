@@ -258,3 +258,5 @@ module Modules : sig
   val unfreeze : t -> unit
   val summary_tag : t Summary.Dyn.tag
 end
+
+val check_loading : Pp.t Lazy.t -> unit

@@ -41,6 +41,16 @@ let error_global_not_found ~info qid =
   let info = Option.cata (Loc.add_loc info) info qid.CAst.loc in
   Exninfo.iraise (GlobalizationError qid, info)
 
+let warn_loading_ref = CWarnings.create ~name:"dynlink-name-lookup" ~category:"async"
+    Pp.(fun s ->
+        str "Looking up reference during plugin linking time" ++ spc() ++
+        str"(reference: " ++ (Lazy.force s) ++ str")." ++ fnl() ++
+        str "This will cause asynchronous proofs to fail.")
+
+let check_loading s =
+  if !Flags.loading_plugin then
+    warn_loading_ref s
+
 (* The visibility can be registered either
    - for all suffixes not shorter then a given int - when the object
      is loaded inside a module
@@ -267,6 +277,7 @@ let find_node qid tab =
     search (Id.Map.find id tab) (DirPath.repr dir)
 
 let locate qid tab =
+  let () = check_loading (lazy (Libnames.pr_qualid qid)) in
   let o = match find_node qid tab with
     | (Absolute (uname,o) | Relative (uname,o)) :: _ -> o
     | [] -> raise Not_found
@@ -274,6 +285,7 @@ let locate qid tab =
     o
 
 let user_name qid tab =
+  let () = check_loading (lazy (Libnames.pr_qualid qid)) in
   let uname = match find_node qid tab with
     | (Absolute (uname,o) | Relative (uname,o)) :: _ -> uname
     | [] -> raise Not_found
@@ -281,12 +293,14 @@ let user_name qid tab =
     uname
 
 let find uname tab =
+  let () = check_loading (lazy (Pp.str (U.to_string uname))) in
   let id,l = U.repr uname in
     match search (Id.Map.find id tab) l with
         Absolute (_,o) :: _ -> o
       | _ -> raise Not_found
 
 let exists uname tab =
+  let () = check_loading (lazy (Pp.str (U.to_string uname))) in
   try
     let _ = find uname tab in
       true
@@ -328,6 +342,7 @@ let rec search_prefixes tree = function
   | [] -> List.rev (flatten_idmap tree.map (push_node tree.path []))
 
 let find_prefixes qid tab =
+  let () = check_loading (lazy (Libnames.pr_qualid qid)) in
   try
     let (dir,id) = repr_qualid qid in
     search_prefixes (Id.Map.find id tab) (DirPath.repr dir)

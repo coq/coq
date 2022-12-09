@@ -80,3 +80,5 @@ let get_inline_level () = !inline_level
 
 let profile_ltac = ref false
 let profile_ltac_cutoff = ref 2.0
+
+let loading_plugin = ref false

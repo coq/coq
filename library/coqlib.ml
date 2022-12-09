@@ -47,6 +47,7 @@ let check_ind_ref s ind =
   | exception Not_found -> false
 
 let lib_ref s =
+  let () = Nametab.check_loading (lazy (Pp.str s)) in
   try CString.Map.find s !table
   with Not_found ->
     CErrors.user_err Pp.(str "not found in table: " ++ str s)

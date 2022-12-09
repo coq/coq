@@ -168,6 +168,8 @@ end = struct
       Dynlink.loadfile gname;
       Findlib.(record_package Record_load) lib
 
+  let load l : unit = Flags.with_option Flags.loading_plugin load l
+
   let digest s =
     match s with
     | { file = Some file; _ } ->
