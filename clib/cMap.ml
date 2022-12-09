@@ -37,6 +37,7 @@ sig
   val height : 'a t -> int
   val filter_range : (key -> int) -> 'a t -> 'a t
   val of_list : (key * 'a) list -> 'a t
+  val find_and_key : key -> 'a t -> (key * 'a) option
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a t -> 'a t
@@ -55,6 +56,7 @@ sig
   type 'a map = 'a Map.Make(M).t
   val set : M.t -> 'a -> 'a map -> 'a map
   val get : M.t -> 'a map -> 'a
+  val find_and_key : M.t -> 'a map -> (M.t * 'a) option
   val modify : M.t -> (M.t -> 'a -> 'a) -> 'a map -> 'a map
   val domain : 'a map -> Set.Make(M).t
   val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a map
@@ -124,6 +126,14 @@ struct
       if c < 0 then get k l
       else if c = 0 then v
       else get k r
+
+  let rec find_and_key k (s:'a map) : (M.t * 'a) option = match map_prj s with
+    | MEmpty -> None
+    | MNode {l; v=k'; d=v; r; h} ->
+      let c = M.compare k k' in
+      if c < 0 then find_and_key k l
+      else if c = 0 then Some (k', v)
+      else find_and_key k r
 
   let rec modify k f (s : 'a map) : 'a map = match map_prj s with
   | MEmpty -> raise Not_found

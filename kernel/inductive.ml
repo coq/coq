@@ -22,8 +22,8 @@ open Type_errors
 open Context.Rel.Declaration
 
 (* raises an anomaly if not an inductive type *)
-let lookup_mind_specif env (kn,tyi) =
-  let mib = Environ.lookup_mind kn env in
+let lookup_mind_specif ?check_can env (kn,tyi) =
+  let mib = Environ.lookup_mind ?check_can kn env in
   if tyi >= Array.length mib.mind_packets then
     user_err Pp.(str "Inductive.lookup_mind_specif: invalid inductive index");
   (mib, mib.mind_packets.(tyi))

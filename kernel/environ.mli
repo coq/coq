@@ -188,11 +188,11 @@ val fold_inductives : (MutInd.t -> Declarations.mutual_inductive_body -> 'a -> '
 val add_constant : Constant.t -> constant_body -> env -> env
 val add_constant_key : Constant.t -> constant_body -> link_info ->
   env -> env
-val lookup_constant_key :  Constant.t -> env -> constant_key
+val lookup_constant_key : ?check_can:bool -> Constant.t -> env -> constant_key
 
 (** Looks up in the context of global constant names
    raises an anomaly if the required path is not found *)
-val lookup_constant    : Constant.t -> env -> constant_body
+val lookup_constant : ?check_can:bool -> Constant.t -> env -> constant_body
 val evaluable_constant : Constant.t -> env -> bool
 
 val mem_constant : Constant.t -> env -> bool
@@ -250,13 +250,13 @@ val get_projection : env -> inductive -> proj_arg:int -> Names.Projection.Repr.t
 val get_projections : env -> inductive -> Names.Projection.Repr.t array option
 
 (** {5 Inductive types } *)
-val lookup_mind_key : MutInd.t -> env -> mind_key
+val lookup_mind_key : ?check_can:bool -> MutInd.t -> env -> mind_key
 val add_mind_key : MutInd.t -> mind_key -> env -> env
 val add_mind : MutInd.t -> mutual_inductive_body -> env -> env
 
 (** Looks up in the context of global inductive names
    raises an anomaly if the required path is not found *)
-val lookup_mind : MutInd.t -> env -> mutual_inductive_body
+val lookup_mind : ?check_can:bool -> MutInd.t -> env -> mutual_inductive_body
 
 val mem_mind : MutInd.t -> env -> bool
 

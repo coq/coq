@@ -368,6 +368,12 @@ struct
     let m = Int.Map.get h s in
     Map.get k m
 
+  let find_and_key k s =
+    let h = M.hash k in
+    match Int.Map.find_opt h s with
+    | None -> None
+    | Some m -> Map.find_and_key k m
+
   let split k s = assert false (** Cannot be implemented efficiently *)
 
   let map f s =

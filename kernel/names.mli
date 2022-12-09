@@ -392,6 +392,9 @@ sig
   val label : t -> Label.t
   (** Shortcut for [KerName.label (user ...)] *)
 
+  val check_can : t -> t -> bool
+  (** [check_can x y] checks [CanOrd.equal x y] assuming [UserOrd.equal x y]. *)
+
   (** Comparisons *)
 
   include QNameS with type t := t
@@ -462,6 +465,9 @@ sig
 
   val label : t -> Label.t
   (** Shortcut for [KerName.label (user ...)] *)
+
+  val check_can : t -> t -> bool
+  (** [check_can x y] checks [CanOrd.equal x y] assuming [UserOrd.equal x y]. *)
 
   (** Comparisons *)
 

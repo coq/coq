@@ -29,7 +29,7 @@ val find_coinductive : env -> types -> pinductive * constr list
 (** {6 ... } *)
 (** Fetching information in the environment about an inductive type.
     Raises an anomaly if the inductive type is not found. *)
-val lookup_mind_specif : env -> inductive -> mind_specif
+val lookup_mind_specif : ?check_can:bool -> env -> inductive -> mind_specif
 
 (** {6 Functions to build standard types related to inductive } *)
 

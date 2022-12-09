@@ -69,6 +69,11 @@ sig
   val of_list : (key * 'a) list -> 'a t
   (** Turns an association list into a map *)
 
+  val find_and_key : key -> 'a t -> (key * 'a) option
+  (** [find_and_key k m] returns [Some (k',v)] where [v] is the
+      current value of [k] in [m] and [k'] is the key that was used to
+      add it if it exists, or [None] if no binding for [k] exists. *)
+
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a t -> 'a t

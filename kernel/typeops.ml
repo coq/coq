@@ -196,7 +196,7 @@ let check_hyps_inclusion env ?evars c sign =
 
 
 let type_of_constant env (kn,_u as cst) =
-  let cb = lookup_constant kn env in
+  let cb = lookup_constant ~check_can:true kn env in
   let () = check_hyps_inclusion env (GlobRef.ConstRef kn) cb.const_hyps in
   let ty, cu = constant_type env cst in
   let () = check_constraints cu env in
@@ -420,7 +420,7 @@ let make_param_univs env indu spec args argtys =
     argtys
 
 let type_of_inductive_knowing_parameters env (ind,u as indu) args argst =
-  let (mib,_mip) as spec = lookup_mind_specif env ind in
+  let (mib,_mip) as spec = lookup_mind_specif ~check_can:true env ind in
   check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters
       (spec,u) (make_param_univs env indu spec args argst)
@@ -429,7 +429,7 @@ let type_of_inductive_knowing_parameters env (ind,u as indu) args argst =
   t
 
 let type_of_inductive env (ind,u) =
-  let (mib,mip) = lookup_mind_specif env ind in
+  let (mib,mip) = lookup_mind_specif ~check_can:true env ind in
   check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive ((mib,mip),u) in
   check_constraints cst env;
@@ -438,7 +438,7 @@ let type_of_inductive env (ind,u) =
 (* Constructors. *)
 
 let type_of_constructor env (c,_u as cu) =
-  let (mib, _ as specif) = lookup_mind_specif env (inductive_of_constructor c) in
+  let (mib, _ as specif) = lookup_mind_specif ~check_can:true env (inductive_of_constructor c) in
   let () = check_hyps_inclusion env (GlobRef.ConstructRef c) mib.mind_hyps in
   let t,cst = constrained_type_of_constructor cu specif in
   let () = check_constraints cst env in
@@ -728,7 +728,7 @@ let rec execute env cstr =
             if args == args' then iv
             else CaseInvert {indices=Array.sub args' (Array.length pms) (Array.length indices)}
         in
-        let mib, mip = Inductive.lookup_mind_specif env ci.ci_ind in
+        let mib, mip = Inductive.lookup_mind_specif ~check_can:true env ci.ci_ind in
         let cst = Inductive.instantiate_inductive_constraints mib u in
         let () = check_constraints cst env in
         let pms', pmst = execute_array env pms in
