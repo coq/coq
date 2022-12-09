@@ -33,6 +33,8 @@ install_printer Top_printers.ppidset
 install_printer Top_printers.ppidmapgen
 install_printer Top_printers.ppintmapgen
 install_printer Top_printers.ppmpmapgen
+install_printer Top_printers.ppconmapenvgen
+install_printer Top_printers.ppmindmapenvgen
 install_printer Top_printers.ppididmap
 install_printer Top_printers.ppmodidmapgen
 install_printer Top_printers.ppconstrunderbindersidmap
