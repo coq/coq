@@ -18,7 +18,7 @@ open Miniml
 
 val extract_constant : env -> Constant.t -> constant_body -> ml_decl
 
-val extract_constant_spec : env -> Constant.t -> 'a pconstant_body -> ml_spec
+val extract_constant_spec : env -> Constant.t -> ('a, 'b) pconstant_body -> ml_spec
 
 (** For extracting "module ... with ..." declaration *)
 

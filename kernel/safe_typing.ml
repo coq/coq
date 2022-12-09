@@ -333,7 +333,7 @@ end
 type side_effect = {
   seff_certif : Certificate.t CEphemeron.key;
   seff_constant : Constant.t;
-  seff_body : Constr.t Declarations.pconstant_body;
+  seff_body : (Constr.t, Vmemitcodes.body_code option) Declarations.pconstant_body;
   seff_univs : Univ.ContextSet.t;
 }
 (* Invariant: For any senv, if [Certificate.check senv seff_certif] then
