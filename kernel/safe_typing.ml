@@ -1242,13 +1242,13 @@ let add_include me is_module inl senv =
   let resolver, str = compute_sign sign resolver in
   let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv in
   let add senv ((l,elem) as field) =
-    let new_name = match elem with
+    let field, new_name = match elem with
       | SFBconst _ ->
-        C (Mod_subst.constant_of_delta_kn resolver (KerName.make mp_sup l))
+        field, C (Mod_subst.constant_of_delta_kn resolver (KerName.make mp_sup l))
       | SFBmind _ ->
-        I (Mod_subst.mind_of_delta_kn resolver (KerName.make mp_sup l))
-      | SFBmodule _ -> M
-      | SFBmodtype _ -> MT
+        field, I (Mod_subst.mind_of_delta_kn resolver (KerName.make mp_sup l))
+      | SFBmodule mb -> (l, SFBmodule {mb with mod_delta = Mod_subst.add_delta_resolver resolver mb.mod_delta}), M
+      | SFBmodtype mb -> (l, SFBmodtype {mb with mod_delta = Mod_subst.add_delta_resolver resolver mb.mod_delta}), MT
     in
     add_field field new_name senv
   in
