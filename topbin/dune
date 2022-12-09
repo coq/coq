@@ -39,6 +39,7 @@
  (package coq-core)
  (modules coqnative_bin)
  (libraries coq-core.kernel)
+ (modes native byte)
  (link_flags -linkall))
 
 ; Workers
