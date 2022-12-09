@@ -648,7 +648,7 @@ library:ci-fiat_crypto:
   - library:ci-coqprime
   - plugin:ci-bignums
   - plugin:ci-rewriter
-  timeout: 3h
+  timeout: 4h
 
 library:ci-fiat_crypto_legacy:
   extends: .ci-template-flambda
