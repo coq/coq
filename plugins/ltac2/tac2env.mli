@@ -83,6 +83,11 @@ type alias_data = {
 val define_alias : ?deprecation:Deprecation.t -> ltac_constant -> raw_tacexpr -> unit
 val interp_alias : ltac_constant -> alias_data
 
+(** {5 Toplevel definition of notations} *)
+
+val define_notation : ltac_notation -> raw_tacexpr -> unit
+val interp_notation : ltac_notation -> raw_tacexpr
+
 (** {5 Name management} *)
 
 val push_ltac : visibility -> full_path -> tacref -> unit

@@ -697,6 +697,7 @@ command: [
 | "Number" "Notation" reference reference reference OPT number_options ":" preident
 | "String" "Notation" reference reference reference OPT string_option ":" preident
 | "Ltac2" ltac2_entry      (* ltac2 plugin *)
+| "Ltac2" "Notation" ltac2def_syn      (* ltac2 plugin *)
 | "Ltac2" "Eval" ltac2_expr6      (* ltac2 plugin *)
 | "Print" "Ltac2" reference      (* ltac2 plugin *)
 | "Locate" "Ltac2" reference      (* ltac2 plugin *)
@@ -3561,7 +3562,7 @@ syn_level: [
 ]
 
 tac2def_syn: [
-| "Notation" LIST1 ltac2_scope syn_level ":=" ltac2_expr6      (* ltac2 plugin *)
+| LIST1 ltac2_scope syn_level ":=" ltac2_expr6      (* ltac2 plugin *)
 ]
 
 lident: [
@@ -3938,8 +3939,11 @@ ltac2_entry: [
 | tac2def_val      (* ltac2 plugin *)
 | tac2def_typ      (* ltac2 plugin *)
 | tac2def_ext      (* ltac2 plugin *)
-| tac2def_syn      (* ltac2 plugin *)
 | tac2def_mut      (* ltac2 plugin *)
+]
+
+ltac2def_syn: [
+| tac2def_syn      (* ltac2 plugin *)
 ]
 
 ltac2_expr: [

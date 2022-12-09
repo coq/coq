@@ -25,8 +25,12 @@ val register_primitive : ?deprecation:Deprecation.t -> ?local:bool ->
 
 val register_struct : Attributes.vernac_flags -> strexpr -> unit
 
-val register_notation : ?deprecation:Deprecation.t -> ?local:bool -> sexpr list ->
-  int option -> raw_tacexpr -> unit
+type notation_interpretation_data
+
+val register_notation : Attributes.vernac_flags -> sexpr list ->
+  int option -> raw_tacexpr -> notation_interpretation_data
+
+val register_notation_interpretation : notation_interpretation_data -> unit
 
 val perform_eval : pstate:Declare.Proof.t option -> raw_tacexpr -> unit
 

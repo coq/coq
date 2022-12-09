@@ -19,6 +19,7 @@ type uid = Id.t
 
 type ltac_constant = KerName.t
 type ltac_alias = KerName.t
+type ltac_notation = KerName.t
 type ltac_constructor = KerName.t
 type ltac_projection = KerName.t
 type type_constant = KerName.t
@@ -106,6 +107,7 @@ type raw_tacexpr_r =
 | CTacCst of ltac_constructor or_tuple or_relid
 | CTacFun of raw_patexpr list * raw_tacexpr
 | CTacApp of raw_tacexpr * raw_tacexpr list
+| CTacSyn of (raw_patexpr * raw_tacexpr) list * KerName.t
 | CTacLet of rec_flag * (raw_patexpr * raw_tacexpr) list * raw_tacexpr
 | CTacCnv of raw_tacexpr * raw_typexpr
 | CTacSeq of raw_tacexpr * raw_tacexpr
@@ -202,8 +204,6 @@ type strexpr =
   (** Type definition *)
 | StrPrm of Names.lident * raw_typexpr * ml_tactic_name
   (** External definition *)
-| StrSyn of sexpr list * int option * raw_tacexpr
-  (** Syntactic extensions *)
 | StrMut of qualid * Names.lident option * raw_tacexpr
   (** Redefinition of mutable globals *)
 
