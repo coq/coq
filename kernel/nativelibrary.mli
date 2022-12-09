@@ -15,5 +15,5 @@ open Nativecode
 (** This file implements separate compilation for libraries in the native
 compiler *)
 
-val dump_library : ModPath.t -> env -> module_signature ->
+val dump_library : ModPath.t -> env -> Mod_subst.delta_resolver -> module_signature ->
   global list * Nativevalues.symbols

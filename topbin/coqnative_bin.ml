@@ -178,9 +178,9 @@ let register_library senv m =
   in
   register_loaded_library senv m.library_name m.library_file
 
-let save_library_to env dir f lib =
+let save_library_to env dir f delta lib =
   let mp = MPfile dir in
-  let ast = Nativelibrary.dump_library mp env lib in
+  let ast = Nativelibrary.dump_library mp env delta lib in
   let fn = Filename.dirname f ^"/"^ Nativecode.mod_uid_of_dirpath dir in
   Nativelib.compile_library ast fn
 
@@ -278,9 +278,9 @@ let compile senv ~in_file =
   let fold senv dep = Library.register_library senv (DPmap.find dep contents) in
   let senv = List.fold_left fold senv (List.rev deps) in
   (* Extract the native code and compile it *)
-  let modl = (Safe_typing.module_of_library lib.Library.library_data).Declarations.mod_type in
+  let modl = Safe_typing.module_of_library lib.Library.library_data in
   let out_vo = Filename.(remove_extension in_file) ^ ".vo" in
-  Library.save_library_to (Safe_typing.env_of_safe_env senv) dir out_vo modl
+  Library.save_library_to (Safe_typing.env_of_safe_env senv) dir out_vo modl.mod_delta modl.mod_type
 
 module Usage :
 sig
