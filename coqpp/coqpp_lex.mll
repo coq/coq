@@ -115,6 +115,7 @@ rule extend = parse
 | "ARGUMENT" { ARGUMENT }
 | "RAW_PRINTED" { RAW_PRINTED }
 | "GLOB_PRINTED" { GLOB_PRINTED }
+| "SYNTERP" { SYNTERP }
 | "BY" { BY }
 | "AS" { AS }
 (** Camlp5 specific keywords *)

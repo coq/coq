@@ -977,10 +977,11 @@ VERNAC COMMAND EXTEND VernacDeclareTactic2Definition
 | #[ raw_attributes ] [ "Ltac2" ltac2_entry(e) ] => { Vernacextend.classify_as_sideeff } -> {
   Tac2entries.register_struct raw_attributes e
   }
-| #[ raw_attributes ] [ "Ltac2" "Notation" ltac2def_syn(e) ] => { Vernacextend.(VtSideff ([], VtNow)) } ->
-  {
+| #[ raw_attributes ] [ "Ltac2" "Notation" ltac2def_syn(e) ] => { Vernacextend.(VtSideff ([], VtNow)) } SYNTERP AS synterpv {
     let (toks, n, body) = e in
-    let synterpv = Tac2entries.register_notation raw_attributes toks n body in
+    Tac2entries.register_notation raw_attributes toks n body
+  } ->
+  {
     Tac2entries.register_notation_interpretation synterpv
   }
 | ![proof_opt_query] [ "Ltac2" "Eval" ltac2_expr(e) ] => { Vernacextend.classify_as_query } -> {

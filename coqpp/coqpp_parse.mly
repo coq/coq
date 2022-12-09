@@ -68,7 +68,7 @@ let no_code = { code = ""; loc = { loc_start=Lexing.dummy_pos; loc_end=Lexing.du
 %token <int> INT
 %token VERNAC TACTIC GRAMMAR DOC_GRAMMAR EXTEND END DECLARE PLUGIN DEPRECATED ARGUMENT
 %token RAW_PRINTED GLOB_PRINTED
-%token COMMAND CLASSIFIED STATE PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
+%token SYNTERP COMMAND CLASSIFIED STATE PRINTED TYPED INTERPRETED GLOBALIZED SUBSTITUTED BY AS
 %token BANGBRACKET HASHBRACKET LBRACKET RBRACKET PIPE ARROW FUN COMMA EQUAL STAR
 %token LPAREN RPAREN COLON SEMICOLON
 %token GLOBAL TOP FIRST LAST BEFORE AFTER LEVEL LEFTA RIGHTA NONA
@@ -225,14 +225,15 @@ vernac_rules:
 ;
 
 vernac_rule:
-| PIPE vernac_attributes_opt rule_state LBRACKET ext_tokens RBRACKET rule_deprecation rule_classifier ARROW CODE
+| PIPE vernac_attributes_opt rule_state LBRACKET ext_tokens RBRACKET rule_deprecation rule_classifier synterp_fun ARROW CODE
   { {
       vernac_atts = $2;
       vernac_state = $3;
       vernac_toks = $5;
       vernac_depr = $7;
       vernac_class= $8;
-      vernac_body = $10;
+      vernac_synterp = $9;
+      vernac_body = $11;
   } }
 ;
 
@@ -266,6 +267,10 @@ rule_classifier:
 | { None }
 | FUN CODE { Some $2 }
 ;
+
+synterp_fun:
+| { None }
+| SYNTERP AS IDENT CODE { Some ($3,$4) }
 
 tactic_extend:
 | TACTIC EXTEND IDENT tactic_deprecated tactic_level tactic_rules END
