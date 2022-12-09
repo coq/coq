@@ -867,9 +867,13 @@ plugin:ci-rewriter:
 
 plugin:ci-serapi:
   extends: .ci-template-flambda
+
+plugin:ci-serapi_test:
+  extends: .ci-template-flambda
   needs:
   - build:edge+flambda
   - library:ci-mathcomp
+  - plugin:ci-serapi
 
 plugin:ci-vscoq:
   extends: .ci-template
