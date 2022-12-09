@@ -11,17 +11,16 @@
 open Names
 open Declarations
 open Mod_declarations
-open Mod_subst
 open Modops
 open Nativecode
 
 (** This file implements separate compilation for libraries in the native
 compiler *)
 
-let rec translate_mod mp env mod_expr acc =
+let rec translate_mod delta mp env mod_expr acc =
   match mod_expr with
   | NoFunctor struc ->
-      let env' = add_structure mp struc (empty_delta_resolver mp) env in
+      let env' = add_structure mp struc delta env in
       List.fold_left (translate_field mp env') acc struc
   | MoreFunctor _ -> acc
 
@@ -51,7 +50,7 @@ and translate_field mp env acc (l,x) =
           Printf.sprintf "Compiling module %s..." (ModPath.to_string mp)
         in
         Pp.str msg));
-     translate_mod mp env (mod_type md) acc
+     translate_mod (mod_delta md) mp env (mod_type md) acc
   | SFBmodtype mdtyp ->
      let mp = MPdot (mp, l) in
      (debug_native_compiler (fun () ->
@@ -59,13 +58,13 @@ and translate_field mp env acc (l,x) =
           Printf.sprintf "Compiling module type %s..." (ModPath.to_string mp)
         in
         Pp.str msg));
-     translate_mod mp env (mod_type mdtyp) acc
+     translate_mod (mod_delta mdtyp) mp env (mod_type mdtyp) acc
 
-let dump_library mp env mod_expr =
+let dump_library mp env delta mod_expr =
   debug_native_compiler (fun () -> Pp.str "Compiling library...");
   match mod_expr with
   | NoFunctor struc ->
-      let env = add_structure mp struc (empty_delta_resolver mp) env in
+      let env = add_structure mp struc delta env in
       let t0 = Sys.time () in
       clear_global_tbl ();
       clear_symbols ();
