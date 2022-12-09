@@ -282,7 +282,7 @@ Proof.
   induction d; [reflexivity|..];
   simpl_of_lu; rewrite Nadd_alt; simpl_to_nat;
   rewrite ?nat_iter_S, nat_iter_0, ?to_lu_succ, to_of_lu_tenfold by assumption;
-  unfold lnorm; simpl; destruct nztail; auto.
+  unfold lnorm; simpl nztail; destruct nztail; reflexivity.
 Qed.
 
 (** Second bijection result *)
