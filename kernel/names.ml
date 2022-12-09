@@ -502,6 +502,10 @@ module KerPair = struct
   let label kp = KerName.label (user kp)
   let modpath kp = KerName.modpath (user kp)
 
+  let check_can x y = match x, y with
+    | Same _, Same _ -> true
+    | _ -> KerName.equal (canonical x) (canonical y)
+
   let change_label kp lbl =
     let (mp1,l1) = KerName.repr (user kp)
     and (mp2,l2) = KerName.repr (canonical kp) in
@@ -518,7 +522,7 @@ module KerPair = struct
   let debug_to_string = function
     | Same kn -> "(" ^ KerName.debug_to_string kn ^ ")"
     | Dual (knu,knc) ->
-      "(" ^ KerName.debug_to_string knu ^ "," ^ KerName.debug_to_string knc ^ ")"
+      "(" ^ KerName.debug_to_string knu ^ ", " ^ KerName.debug_to_string knc ^ ")"
 
   let debug_print kp = str (debug_to_string kp)
 

@@ -331,7 +331,7 @@ let check_hyps_inclusion env sigma x hyps =
 
 let type_of_constant env sigma (c,u) =
   let open Declarations in
-  let cb = Environ.lookup_constant c env in
+  let cb = Environ.lookup_constant ~check_can:true c env in
   let () = check_hyps_inclusion env sigma (GR.ConstRef c) cb.const_hyps in
   let u = EInstance.kind sigma u in
   let ty, csts = Environ.constant_type env (c,u) in
@@ -340,7 +340,7 @@ let type_of_constant env sigma (c,u) =
 
 let type_of_inductive env sigma (ind,u) =
   let open Declarations in
-  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
+  let (mib,_ as specif) = Inductive.lookup_mind_specif ~check_can:true env ind in
   let () = check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
   let u = EInstance.kind sigma u in
   let ty, csts = Inductive.constrained_type_of_inductive (specif,u) in
@@ -349,7 +349,7 @@ let type_of_inductive env sigma (ind,u) =
 
 let type_of_constructor env sigma ((ind,_ as ctor),u) =
   let open Declarations in
-  let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
+  let (mib,_ as specif) = Inductive.lookup_mind_specif ~check_can:true env ind in
   let () = check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
   let u = EInstance.kind sigma u in
   let ty, csts = Inductive.constrained_type_of_constructor (ctor,u) specif in

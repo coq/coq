@@ -200,26 +200,40 @@ let fold_inductives f env acc =
 
 (* Global constants *)
 
-let lookup_constant_key kn env =
-  match Cmap_env.find_opt kn env.env_globals.Globals.constants with
-  | Some v -> v
+let lookup_constant_key ?(check_can=false) kn env =
+  match Cmap_env.find_and_key kn env.env_globals.Globals.constants with
+  | Some (kn', v) ->
+    let () = if check_can && not (Constant.check_can kn kn') then
+        CErrors.anomaly Pp.(
+            str "Bad constant pair:" ++ fnl()
+            ++ str "expected " ++ Constant.debug_print kn' ++ fnl()
+            ++ str "but got  " ++ Constant.debug_print kn)
+    in
+    v
   | None ->
     anomaly Pp.(str "Constant " ++ Constant.print kn ++ str" does not appear in the environment.")
 
-let lookup_constant kn env =
-  fst (lookup_constant_key kn env)
+let lookup_constant ?check_can kn env =
+  fst (lookup_constant_key ?check_can kn env)
 
 let mem_constant kn env = Cmap_env.mem kn env.env_globals.Globals.constants
 
 (* Mutual Inductives *)
-let lookup_mind_key kn env =
-  match Mindmap_env.find_opt kn env.env_globals.Globals.inductives with
-  | Some v -> v
+let lookup_mind_key ?(check_can=false) kn env =
+  match Mindmap_env.find_and_key kn env.env_globals.Globals.inductives with
+  | Some (kn', v) ->
+    let () = if check_can && not (MutInd.check_can kn kn') then
+        CErrors.anomaly Pp.(
+            str "Bad inductive pair:" ++ fnl()
+            ++ str "expected " ++ MutInd.debug_print kn' ++ fnl()
+            ++ str "but got  " ++ MutInd.debug_print kn)
+    in
+    v
   | None ->
     anomaly Pp.(str "Inductive " ++ MutInd.print kn ++ str" does not appear in the environment.")
 
-let lookup_mind kn env =
-  fst (lookup_mind_key kn env)
+let lookup_mind ?check_can kn env =
+  fst (lookup_mind_key ?check_can kn env)
 
 let mem_mind kn env = Mindmap_env.mem kn env.env_globals.Globals.inductives
 
