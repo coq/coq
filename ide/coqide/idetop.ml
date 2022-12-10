@@ -87,18 +87,13 @@ let ide_doc = ref None
 let get_doc () = Option.get !ide_doc
 let set_doc doc = ide_doc := Some doc
 
-(* Adds n spaces at the beggining of the string *)
-let wrap_string n s = String.make n ' ' ^ s
-
 let add ((((s,eid),(sid,verbose)),off),(line_nb,bol_pos)) =
   let doc = get_doc () in
   let open Loc in
   (* note: this won't yield correct values for bol_pos_last,
      but the debugger doesn't use that *)
   let loc = { (initial ToplevelInput) with bp=off; line_nb } in
-  let s_wrapped = wrap_string off s in
-  let r_stream = Gramlib.Stream.of_string s_wrapped in
-  let () = Gramlib.Stream.njunk off r_stream in
+  let r_stream = Gramlib.Stream.of_string ~offset:off s in
   let pa = Pcoq.Parsable.make ~loc r_stream in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s may not be empty *)
