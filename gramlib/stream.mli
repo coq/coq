@@ -30,19 +30,22 @@ exception Error of string
 
 (** {1 Stream builders} *)
 
-val from : ('e -> 'a option) -> ('e, 'a) t
+val from : ?offset:int -> ('e -> 'a option) -> ('e, 'a) t
 (** [Stream.from f] returns a stream built from the function [f]. To
     create a new stream element, the function [f] is called. The user
     function [f] must return either [Some <value>] for a value or
-    [None] to specify the end of the stream.
+    [None] to specify the end of the stream. [offset] will initialize
+    the stream [count] to start with [offset] consumed items, which is
+    useful for some uses cases such as parsing resumption.
 *)
 
 val empty : unit -> ('e,'a) t
 (** Return the stream holding the elements of the list in the same
    order. *)
 
-val of_string : string -> (unit,char) t
-(** Return the stream of the characters of the string parameter. *)
+val of_string : ?offset:int -> string -> (unit,char) t
+(** Return the stream of the characters of the string parameter. If
+    set. [offset] parameter is similar to [from]. *)
 
 val of_channel : in_channel -> (unit,char) t
 (** Return the stream of the characters read from the input channel. *)
