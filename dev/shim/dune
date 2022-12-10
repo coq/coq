@@ -42,7 +42,7 @@
   (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
-    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
+    (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} -nI \"$(dirname \"$0\")\"/%{project_root}/kernel/.kernel.objs/byte \"$@\"'")
     (run chmod +x %{targets})))))
 
 ; TODO remove

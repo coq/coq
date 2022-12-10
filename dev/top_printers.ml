@@ -128,6 +128,21 @@ let ppintmapgen l = pp (printmapgen l)
 let prmodidmapgen l = prmapgen Id.print (ModIdset.elements (ModIdmap.domain l))
 let ppmodidmapgen l = pp (prmodidmapgen l)
 
+let ppmpmapgen l =
+  pp (prmapgen
+        (fun mp -> str (ModPath.debug_to_string mp))
+        (MPset.elements (MPmap.domain l)))
+
+let ppconmapenvgen l =
+  pp (prmapgen
+        (fun mp -> str (Constant.debug_to_string mp))
+        (Cset_env.elements (Cmap_env.domain l)))
+
+let ppmindmapenvgen l =
+  pp (prmapgen
+        (fun mp -> str (MutInd.debug_to_string mp))
+        (Mindmap_env.Set.elements (Mindmap_env.domain l)))
+
 let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
   hov 0
   (pr_constr c ++
