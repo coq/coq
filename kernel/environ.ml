@@ -63,28 +63,15 @@ module Globals = struct
   let view x = x
 end
 
-type val_kind =
-    | VKvalue of (Vmvalues.values * Id.Set.t) CEphemeron.key
-    | VKnone
-
-type lazy_val = val_kind ref
-
-let force_lazy_val vk = match !vk with
-| VKnone -> None
-| VKvalue v -> try Some (CEphemeron.get v) with CEphemeron.InvalidKey -> None
-
-let dummy_lazy_val () = ref VKnone
-let build_lazy_val vk key = vk := VKvalue (CEphemeron.create key)
-
 type named_context_val = {
   env_named_ctx : Constr.named_context;
-  env_named_map : (Constr.named_declaration * lazy_val) Id.Map.t;
+  env_named_map : Constr.named_declaration Id.Map.t;
   env_named_idx : Constr.named_declaration Range.t;
 }
 
 type rel_context_val = {
   env_rel_ctx : Constr.rel_context;
-  env_rel_map : (Constr.rel_declaration * lazy_val) Range.t;
+  env_rel_map : Constr.rel_declaration Range.t;
 }
 
 type env = {
@@ -136,15 +123,14 @@ let empty_env = {
 
 let push_rel_context_val d ctx = {
   env_rel_ctx = Context.Rel.add d ctx.env_rel_ctx;
-  env_rel_map = Range.cons (d, ref VKnone) ctx.env_rel_map;
+  env_rel_map = Range.cons d ctx.env_rel_map;
 }
 
 let match_rel_context_val ctx = match ctx.env_rel_ctx with
 | [] -> None
 | decl :: rem ->
-  let (_, lval) = Range.hd ctx.env_rel_map in
   let ctx = { env_rel_ctx = rem; env_rel_map = Range.tl ctx.env_rel_map } in
-  Some (decl, lval, ctx)
+  Some (decl, ctx)
 
 let push_rel d env =
     { env with
@@ -152,11 +138,7 @@ let push_rel d env =
       env_nb_rel = env.env_nb_rel + 1 }
 
 let lookup_rel n env =
-  try fst (Range.get env.env_rel_context.env_rel_map (n - 1))
-  with Invalid_argument _ -> raise Not_found
-
-let lookup_rel_val n env =
-  try snd (Range.get env.env_rel_context.env_rel_map (n - 1))
+  try Range.get env.env_rel_context.env_rel_map (n - 1)
   with Invalid_argument _ -> raise Not_found
 
 let rel_skipn n ctx = {
@@ -172,24 +154,20 @@ let env_of_rel n env =
 
 (* Named context *)
 
-let push_named_context_val_val d rval ctxt =
+let push_named_context_val d ctxt =
 (*   assert (not (Id.Map.mem (NamedDecl.get_id d) ctxt.env_named_map)); *)
   {
     env_named_ctx = Context.Named.add d ctxt.env_named_ctx;
-    env_named_map = Id.Map.add (NamedDecl.get_id d) (d, rval) ctxt.env_named_map;
+    env_named_map = Id.Map.add (NamedDecl.get_id d) d ctxt.env_named_map;
     env_named_idx = Range.cons d ctxt.env_named_idx;
   }
-
-let push_named_context_val d ctxt =
-  push_named_context_val_val d (ref VKnone) ctxt
 
 let match_named_context_val c = match c.env_named_ctx with
 | [] -> None
 | decl :: ctx ->
-  let (_, v) = Id.Map.find (NamedDecl.get_id decl) c.env_named_map in
   let map = Id.Map.remove (NamedDecl.get_id decl) c.env_named_map in
   let cval = { env_named_ctx = ctx; env_named_map = map; env_named_idx = Range.tl c.env_named_idx } in
-  Some (decl, v, cval)
+  Some (decl, cval)
 
 let map_named_val f ctxt =
   let open Context.Named.Declaration in
@@ -197,7 +175,7 @@ let map_named_val f ctxt =
     let d' = f d in
     let accu =
       if d == d' then accu
-      else Id.Map.modify (get_id d) (fun _ (_, v) -> (d', v)) accu
+      else Id.Map.set (get_id d) d' accu
     in
     (accu, d')
   in
@@ -211,13 +189,10 @@ let push_named d env =
   {env with env_named_context = push_named_context_val d env.env_named_context}
 
 let lookup_named id env =
-  fst (Id.Map.find id env.env_named_context.env_named_map)
-
-let lookup_named_val id env =
-  snd(Id.Map.find id env.env_named_context.env_named_map)
+  Id.Map.find id env.env_named_context.env_named_map
 
 let lookup_named_ctxt id ctxt =
-  fst (Id.Map.find id ctxt.env_named_map)
+  Id.Map.find id ctxt.env_named_map
 
 let fold_constants f env acc =
   Cmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.Globals.constants acc
@@ -313,7 +288,7 @@ let fold_rel_context f env ~init =
   let rec fold_right env =
     match match_rel_context_val env.env_rel_context with
     | None -> init
-    | Some (rd, _, rc) ->
+    | Some (rd, rc) ->
         let env =
           { env with
             env_rel_context = rc;
@@ -366,7 +341,7 @@ let pop_rel_context n env =
     if Int.equal n 0 then ctx
     else match match_rel_context_val ctx with
     | None -> invalid_arg "List.skipn"
-    | Some (_, _, ctx) -> skip (pred n) ctx
+    | Some (_, ctx) -> skip (pred n) ctx
   in
   let ctxt = env.env_rel_context in
   { env with
@@ -377,7 +352,7 @@ let fold_named_context f env ~init =
   let rec fold_right env =
     match match_named_context_val env.env_named_context with
     | None -> init
-    | Some (d, _v, rem) ->
+    | Some (d, rem) ->
         let env =
           reset_with_named_context rem env in
         f env d (fold_right env)
@@ -795,22 +770,22 @@ let apply_to_hyp ctxt id f =
   let open Context.Named.Declaration in
   let rec aux rtail ctxt =
     match match_named_context_val ctxt with
-    | Some (d, v, ctxt) ->
+    | Some (d, ctxt) ->
         if Id.equal (get_id d) id then
-          push_named_context_val_val (f ctxt.env_named_ctx d rtail) v ctxt
+          push_named_context_val (f ctxt.env_named_ctx d rtail) ctxt
         else
           let ctxt' = aux (d::rtail) ctxt in
-          push_named_context_val_val d v ctxt'
+          push_named_context_val d ctxt'
     | None -> raise Hyp_not_found
   in aux [] ctxt
 
 (* To be used in Logic.clear_hyps *)
-let remove_hyps ids check_context check_value ctxt =
+let remove_hyps ids check_context ctxt =
   let rec remove_hyps ids ctxt =
     if Id.Set.is_empty ids then ctxt, false
     else match match_named_context_val ctxt with
     | None -> empty_named_context_val, false
-    | Some (d, v, rctxt) ->
+    | Some (d, rctxt) ->
       let id0 = Context.Named.Declaration.get_id d in
       let removed = Id.Set.mem id0 ids in
       let ids = if removed then Id.Set.remove id0 ids else ids in
@@ -820,10 +795,9 @@ let remove_hyps ids check_context check_value ctxt =
       else
         let rctxt' = ans in
         let d' = check_context d in
-        let v' = check_value v in
-        if d == d' && v == v' && rctxt == rctxt' then
+        if d == d' && rctxt == rctxt' then
           ctxt, true
-        else push_named_context_val_val d' v' rctxt', true
+        else push_named_context_val d' rctxt', true
   in
   fst (remove_hyps ids ctxt)
 
