@@ -278,7 +278,5 @@ val create_meta_instance_subst : Evd.evar_map -> meta_instance_subst
 
 val meta_instance : env -> meta_instance_subst -> constr freelisted -> constr
 
-exception AnomalyInConversion of exn
-
 (* inferred_universes just gathers the constraints. *)
 val inferred_universes : (UGraph.t * Univ.Constraints.t) Reduction.universe_compare

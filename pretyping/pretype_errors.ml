@@ -68,7 +68,6 @@ exception PretypeError of env * Evd.evar_map * pretype_error
 
 let precatchable_exception = function
   | CErrors.UserError _ | TypeError _ | PretypeError _
-  | Reductionops.AnomalyInConversion _
   | Nametab.GlobalizationError _ -> true
   | _ -> false
 
