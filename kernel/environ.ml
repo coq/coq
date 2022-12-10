@@ -85,7 +85,6 @@ type env = {
   irr_inds : Indset_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
-  indirect_pterms : Opaqueproof.opaquetab;
 }
 
 let empty_named_context_val = {
@@ -115,7 +114,6 @@ let empty_env = {
   irr_inds = Indset_env.empty;
   env_typing_flags = Declareops.safe_flags Conv_oracle.empty;
   retroknowledge = Retroknowledge.empty;
-  indirect_pterms = Opaqueproof.empty_opaquetab;
 }
 
 
@@ -264,8 +262,6 @@ let set_universes_lbound env lbound = { env with env_universes_lbound = lbound }
 let named_context env = env.env_named_context.env_named_ctx
 let named_context_val env = env.env_named_context
 let rel_context env = env.env_rel_context.env_rel_ctx
-let opaque_tables env = env.indirect_pterms
-let set_opaque_tables env indirect_pterms = { env with indirect_pterms }
 
 let empty_context env =
   match env.env_rel_context.env_rel_ctx, env.env_named_context.env_named_ctx with

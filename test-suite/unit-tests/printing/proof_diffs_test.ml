@@ -6,7 +6,7 @@ open Proof_diffs
 (* Needed to be able to set through goptions *)
 let () =
   let open Names in
-  Lib.start_compilation DirPath.initial (ModPath.MPfile DirPath.initial)
+  Lib.start_compilation DirPath.dummy (ModPath.MPfile DirPath.dummy)
 
 let tokenize_string = Proof_diffs.tokenize_string
 let diff_pp = diff_pp ~tokenize_string

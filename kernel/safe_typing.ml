@@ -166,6 +166,7 @@ type safe_environment =
     required : vodigest DPmap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
+    opaquetab : Opaqueproof.opaquetab;
 }
 
 and modvariant =
@@ -182,7 +183,7 @@ let rec library_dp_of_senv senv =
 
 let empty_environment =
   { env = Environ.empty_env;
-    modpath = ModPath.initial;
+    modpath = ModPath.dummy;
     modvariant = NONE;
     modresolver = Mod_subst.empty_delta_resolver;
     paramresolver = Mod_subst.empty_delta_resolver;
@@ -195,11 +196,12 @@ let empty_environment =
     required = DPmap.empty;
     loads = [];
     local_retroknowledge = [];
+    opaquetab = Opaqueproof.empty_opaquetab;
 }
 
 let is_initial senv =
   match senv.revstruct, senv.modvariant with
-  | [], NONE -> ModPath.equal senv.modpath ModPath.initial
+  | [], NONE -> ModPath.equal senv.modpath ModPath.dummy
   | _ -> false
 
 let sections_are_opened senv = not (Option.is_empty senv.sections)
@@ -465,11 +467,6 @@ let check_empty_context senv =
 let check_empty_struct senv =
   assert (List.is_empty senv.revstruct
           && List.is_empty senv.loads)
-
-(** When starting a library, the current environment should be initial
-    i.e. only composed of Require's *)
-
-let check_initial senv = assert (is_initial senv)
 
 (** When loading a library, its dependencies should be already there,
     with the correct digests. *)
@@ -824,8 +821,8 @@ let export_side_effects senv eff =
     recheck_seff seff Univ.ContextSet.empty [] env
 
 let push_opaque_proof senv =
-  let o, otab = Opaqueproof.create (library_dp_of_senv senv) (Environ.opaque_tables senv.env) in
-  let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
+  let o, otab = Opaqueproof.create (library_dp_of_senv senv) senv.opaquetab in
+  let senv = { senv with opaquetab = otab } in
   senv, o
 
 let export_private_constants eff senv =
@@ -935,7 +932,7 @@ let fill_opaque { opq_univs = ctx; opq_handle = i; opq_nonce = n; _ } senv =
   { senv with future_cst = HandleMap.remove i senv.future_cst }
 
 let is_filled_opaque i senv =
-  let () = assert (Opaqueproof.mem_handle i (Environ.opaque_tables senv.env)) in
+  let () = assert (Opaqueproof.mem_handle i senv.opaquetab) in
   not (HandleMap.mem i senv.future_cst)
 
 let repr_certificate { opq_body = body; opq_univs = ctx; _ } =
@@ -1053,35 +1050,37 @@ let add_module l me inl senv =
 
 (** {6 Starting / ending interactive modules and module types } *)
 
-let start_module l senv =
+let start_mod_modtype ~istype l senv =
   let () = check_modlabel l senv in
   let () = check_empty_context senv in
   let mp = MPdot(senv.modpath, l) in
   mp,
-  { empty_environment with
-    env = senv.env;
-    future_cst = senv.future_cst;
-    modresolver = senv.modresolver;
-    paramresolver = senv.paramresolver;
+  {
+    (* modified fields *)
     modpath = mp;
-    modvariant = STRUCT ([],senv);
-    univ = senv.univ;
-    required = senv.required }
+    modvariant = if istype then SIG ([], senv) else STRUCT ([],senv);
 
-let start_modtype l senv =
-  let () = check_modlabel l senv in
-  let () = check_empty_context senv in
-  let mp = MPdot(senv.modpath, l) in
-  mp,
-  { empty_environment with
+    (* carried over fields *)
     env = senv.env;
     future_cst = senv.future_cst;
     modresolver = senv.modresolver;
     paramresolver = senv.paramresolver;
-    modpath = mp;
-    modvariant = SIG ([], senv);
     univ = senv.univ;
-    required = senv.required }
+    required = senv.required;
+    opaquetab = senv.opaquetab;
+    sections = None; (* checked in check_empty_context *)
+
+    (* module local fields *)
+    revstruct = [];
+    modlabels = Label.Set.empty;
+    objlabels = Label.Set.empty;
+    loads = [];
+    local_retroknowledge = [];
+  }
+
+let start_module l senv = start_mod_modtype ~istype:false l senv
+
+let start_modtype l senv = start_mod_modtype ~istype:true l senv
 
 (** Adding parameters to the current module or module type.
     This module should have been freshly started. *)
@@ -1171,6 +1170,7 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
       senv.local_retroknowledge@oldsenv.local_retroknowledge;
+    opaquetab = senv.opaquetab;
   }
 
 let end_module l restype senv =
@@ -1180,8 +1180,7 @@ let end_module l restype senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let mb = build_module_body params restype senv in
-  let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
+  let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
   let senv' = propagate_loads { senv with env = newenv } in
   let newenv = Modops.add_module mb newenv in
   let newresolver =
@@ -1205,8 +1204,7 @@ let end_modtype l senv =
   let () = check_current_label l mp in
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
-  let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
-  let newenv = Environ.set_universes (Environ.universes senv.env) newenv in
+  let newenv = Environ.set_universes (Environ.universes senv.env) oldsenv.env in
   let senv' = propagate_loads {senv with env=newenv} in
   let auto_tb = functorize params (NoFunctor (List.rev senv.revstruct)) in
   let mtb = build_mtb mp auto_tb senv.modresolver in
@@ -1266,15 +1264,31 @@ let current_modpath senv = senv.modpath
 let current_dirpath senv = Names.ModPath.dp (current_modpath senv)
 
 let start_library dir senv =
-  check_initial senv;
+  (* When starting a library, the current environment should be initial
+     i.e. only composed of Require's *)
+  (* XXX is it really possible / should be allowed to have nonempty Requires?
+     especially if [dir] is in the [senv.required] *)
+  assert (is_initial senv);
   assert (not (DirPath.is_empty dir));
   let mp = MPfile dir in
   mp,
-  { empty_environment with
-    env = senv.env;
+  { env = senv.env;
     modpath = mp;
     modvariant = LIBRARY;
-    required = senv.required }
+    required = senv.required;
+
+    modresolver = Mod_subst.empty_delta_resolver;
+    paramresolver = Mod_subst.empty_delta_resolver;
+    revstruct = [];
+    modlabels = Label.Set.empty;
+    objlabels = Label.Set.empty;
+    sections = None;
+    future_cst = HandleMap.empty;
+    univ = Univ.ContextSet.empty;
+    loads = [];
+    local_retroknowledge = [];
+    opaquetab = Opaqueproof.empty_opaquetab;
+  }
 
 let export ~output_native_objects senv dir =
   let () = check_current_library dir senv in
@@ -1361,9 +1375,6 @@ let close_section senv =
      by {!add_constant_aux}. *)
   let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels;
         rev_reimport; rev_revstruct = revstruct } = revert in
-  (* Do not revert the opaque table, the discharged opaque constants are
-     referring to it. *)
-  let env = Environ.set_opaque_tables env (Environ.opaque_tables env0) in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay Requires *)
   let senv = List.fold_left (fun senv (lib,cst,vodigest) -> snd (import lib cst vodigest senv))

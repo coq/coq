@@ -160,8 +160,6 @@ let idset_mem_qualid qid s =
   qualid_is_ident qid && Id.Set.mem (qualid_basename qid) s
 
 (* Default paths *)
-(* todo: contrary to the comment, this does not give "Top" *)
-let default_library = Names.DirPath.initial (* = ["Top"] *)
 
 (*s Roots of the space of absolute names *)
 let coq_string = "Coq"

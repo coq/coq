@@ -31,8 +31,6 @@ type section_data
 
 val empty_environment : safe_environment
 
-val is_initial : safe_environment -> bool
-
 val env_of_safe_env : safe_environment -> Environ.env
 
 val sections_of_safe_env : safe_environment -> section_data Section.t option

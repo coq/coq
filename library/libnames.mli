@@ -88,9 +88,6 @@ val idset_mem_qualid : qualid -> Id.Set.t -> bool
 
 (** {6 ... } *)
 
-(** some preset paths *)
-val default_library : DirPath.t
-
 (** This is the root of the standard library of Coq *)
 val coq_root : module_ident (* "Coq" *)
 val coq_string : string (* "Coq" *)

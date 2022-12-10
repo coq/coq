@@ -76,7 +76,6 @@ type env = private {
   irr_inds : Indset_env.t;
   env_typing_flags  : typing_flags;
   retroknowledge : Retroknowledge.retroknowledge;
-  indirect_pterms : Opaqueproof.opaquetab;
 }
 
 val oracle : env -> Conv_oracle.oracle
@@ -94,10 +93,6 @@ val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
 
 val set_universes : UGraph.t -> env -> env
-
-val opaque_tables : env -> Opaqueproof.opaquetab
-val set_opaque_tables : env -> Opaqueproof.opaquetab -> env
-
 
 val typing_flags    : env -> typing_flags
 val is_impredicative_set : env -> bool
