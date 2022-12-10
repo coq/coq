@@ -28,7 +28,12 @@ module type S = sig
 
   module Parsable : sig
     type t
-    val make : ?loc:Loc.t -> char Stream.t -> t
+    val make : ?loc:Loc.t -> ?fix_loc:(Loc.t -> Loc.t) -> char Stream.t -> t
+    (** [make ?loc ?fix_loc stream] builds a parsable starting at pos
+        [loc], and will apply [fix_loc] to each token. The use of the
+        [fix_loc] parameter is internal and will be removed in the
+        future as it is reserved to the XML protocol. *)
+
     val comments : t -> ((int * int) * string) list
     val loc : t -> Loc.t
     val consume : t -> int -> unit
