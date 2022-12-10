@@ -54,13 +54,120 @@ module RelocTable = Hashtbl.Make(struct
   let hash = hash_reloc_info
 end)
 
+module Positions :
+sig
+  type t
+  val of_list : int list -> t
+  val iter : (int -> unit) -> t -> unit
+end =
+struct
+
+type t = string
+(* Represent an ordered set of 32-bit integers as an array of successive diffs.
+   We use furthermore a tagged approach where smaller integers use less bytes.
+   The leading 1s in the first byte indicates the number of remaining bytes.
+   This is a cheap way to compact this data. *)
+
+let check_size =
+  if Sys.int_size <= 32 then ignore
+  else fun n -> assert (n < 1 lsl 32)
+
+let output buf n =
+  if n < 0x80 then
+    (* 7 bits, 1 byte *)
+    Buffer.add_uint8 buf n
+  else if n < 0x80 + 0x4000 then
+    (* 6 + 8 bits, 2 bytes *)
+    let n = n - 0x80 in
+    let () = Buffer.add_uint8 buf (0b10000000 lor (n lsr 8)) in
+    Buffer.add_uint8 buf (0xFF land n)
+  else if n < 0x80 + 0x4000 + 0x200000 then
+    let n = n - (0x80 + 0x4000) in
+    (* 5 + 8 + 8 bits, 3 bytes *)
+    let () = Buffer.add_uint8 buf (0b11000000 lor (n lsr 16)) in
+    let () = Buffer.add_uint8 buf (0xFF land (n lsr 8)) in
+    Buffer.add_uint8 buf (0xFF land n)
+  else if n < 0x80 + 0x4000 + 0x200000 + 0x10000000 then
+    let n = n - (0x80 + 0x4000 + 0x200000) in
+    (* 4 + 8 + 8 + 8 bits, 4 bytes *)
+    let () = Buffer.add_uint8 buf (0b11100000 lor (n lsr 24)) in
+    let () = Buffer.add_uint8 buf (0xFF land (n lsr 16)) in
+    let () = Buffer.add_uint8 buf (0xFF land (n lsr 8)) in
+    Buffer.add_uint8 buf (0xFF land n)
+  else
+    (* Already bigger than 32-bit integer *)
+    let () = check_size n in
+    (* 3 + 8 + 8 + 8 + 8 bits, 5 bytes *)
+    (* Since we only consider 32-bit integers and we have 35 bits at hand, we
+       cap the input and store it as-is in the next 4 bytes. *)
+    let () = Buffer.add_uint8 buf 0b11110000 in
+    let () = Buffer.add_uint8 buf (0xFF land (n lsr 24)) in
+    let () = Buffer.add_uint8 buf (0xFF land (n lsr 16)) in
+    let () = Buffer.add_uint8 buf (0xFF land (n lsr 8)) in
+    Buffer.add_uint8 buf (0xFF land n)
+
+let input s pos =
+  let c = Char.code s.[!pos] in
+  if c < 0x80 then
+    let () = pos := !pos + 1 in
+    c
+  else if c < 0b11000000 then
+    let c1 = Char.code s.[!pos + 1] in
+    let () = pos := !pos + 2 in
+    0x80 + ((c land 0b00111111) lsl 8) + c1
+  else if c < 0b11100000 then
+    let c1 = Char.code s.[!pos + 1] in
+    let c2 = Char.code s.[!pos + 2] in
+    let () = pos := !pos + 3 in
+    (0x80 + 0x4000) + ((c land 0b00011111) lsl 16) + (c1 lsl 8) + c2
+  else if c < 0b11110000 then
+    let c1 = Char.code s.[!pos + 1] in
+    let c2 = Char.code s.[!pos + 2] in
+    let c3 = Char.code s.[!pos + 3] in
+    let () = pos := !pos + 4 in
+    (0x80 + 0x4000 + 0x200000) + ((c land 0b00001111) lsl 24) + (c1 lsl 16) + (c2 lsl 8) + c3
+  else
+    let c1 = Char.code s.[!pos + 1] in
+    let c2 = Char.code s.[!pos + 2] in
+    let c3 = Char.code s.[!pos + 3] in
+    let c4 = Char.code s.[!pos + 4] in
+    let () = pos := !pos + 5 in
+    (c1 lsl 24) lor (c2 lsl 16) lor (c3 lsl 8) lor c4
+
+let of_list l = match l with
+| [] -> ""
+| n :: l ->
+  let buf = Buffer.create 16 in
+  let () = output buf n in
+  let rec aux cur l = match l with
+  | [] -> ()
+  | n :: l ->
+    let () = assert (cur < n) in
+    let () = output buf (n - cur) in
+    aux n l
+  in
+  let () = aux n l in
+  Buffer.contents buf
+
+let iter f s =
+  let pos = ref 0 in
+  let len = String.length s in
+  let cur = ref 0 in
+  while !pos < len do
+    let n = input s pos in
+    let () = cur := n + !cur in
+    f !cur
+  done
+
+end
+
 (** We use arrays for on-disk representation. On 32-bit machines, this means we
     can only have a maximum amount of about 4.10^6 relocations, which seems
     quite a lot, but potentially reachable if e.g. compiling big proofs. This
     would prevent VM computing with these terms on 32-bit architectures. Maybe
     we should use a more robust data structure? *)
 type patches = {
-  reloc_infos : (reloc_info * int array) array;
+  reloc_infos : (reloc_info * Positions.t) array;
 }
 
 let patch_char4 buff pos c1 c2 c3 c4 =
@@ -76,7 +183,7 @@ let patch1 buff pos n =
 
 let patch_int buff reloc =
   let buff = Bytes.of_string buff in
-  let iter (reloc, npos) = Array.iter (fun pos -> patch1 buff pos reloc) npos in
+  let iter (reloc, npos) = Positions.iter (fun pos -> patch1 buff pos reloc) npos in
   let () = CArray.iter iter reloc in
   buff
 
@@ -471,7 +578,7 @@ let to_memory code =
   (** Later uses of this string are all purely functional *)
   let code = Bytes.sub_string env.out_buffer 0 env.out_position in
   let code = CString.hcons code in
-  let fold reloc npos accu = (reloc, Array.of_list npos) :: accu in
+  let fold reloc npos accu = (reloc, Positions.of_list (List.rev npos)) :: accu in
   let reloc = RelocTable.fold fold env.reloc_info [] in
   let reloc = { reloc_infos = CArray.of_list reloc } in
   Array.iter (fun lbl ->
