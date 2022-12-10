@@ -18,7 +18,7 @@ module type S = sig
   val tok_pattern_strings : 'c pattern -> string * string option
 
   (** Returning a stream equipped with a location function *)
-  val tok_func : ?loc:Loc.t -> (unit,char) Stream.t -> (keyword_state,te) LStream.t
+  val tok_func : ?loc:Loc.t -> ?fix_loc:(Loc.t -> Loc.t) -> (unit,char) Stream.t -> (keyword_state,te) LStream.t
 
   val tok_match : 'c pattern -> te -> 'c
   val tok_text : 'c pattern -> string

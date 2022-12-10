@@ -36,7 +36,7 @@ module type S = sig
     type t
     (** [Parsable.t] Stream tokenizers with Coq-specific funcitonality *)
 
-    val make : ?loc:Loc.t -> (unit,char) Stream.t -> t
+    val make : ?loc:Loc.t -> ?fix_loc:(Loc.t -> Loc.t) -> (unit,char) Stream.t -> t
     (** [make ?loc strm] Build a parsable from stream [strm], resuming
        at position [?loc] *)
 
@@ -1681,10 +1681,10 @@ module Parsable = struct
       L.State.drop ();
       Exninfo.iraise (exn,info)
 
-  let make ?loc cs =
+  let make ?loc ?fix_loc cs =
     let lexer_state = ref (L.State.init ()) in
     L.State.set !lexer_state;
-    let ts = L.tok_func ?loc cs in
+    let ts = L.tok_func ?loc ?fix_loc cs in
     lexer_state := L.State.get ();
     {pa_tok_strm = ts; lexer_state}
 
