@@ -2701,9 +2701,8 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
               VCS.set_parsing_state id parsing_state) new_ids;
           Ok
 
-      | VtProofMode pm ->
-        let proof_mode = Pvernac.lookup_proof_mode pm in
-        let id = VCS.new_node ~id:newtip proof_mode () in
+      | VtProofMode proof_mode ->
+        let id = VCS.new_node ~id:newtip (Some proof_mode) () in
         VCS.commit id (mkTransCmd x [] false MainQueue);
         VCS.set_parsing_state id head_parsing;
         Backtrack.record (); Ok
