@@ -850,9 +850,17 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
                and not a constructor. *)
             is_eta_constructor_app curenv sigma flags.modulo_delta f1 l1 cN ->
           (try
-             let l1', l2' = eta_constructor_app curenv sigma f1 l1 cN in
              let opt' = {opt with at_top = true; with_cs = false} in
-               Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
+             let substn =
+               let tM, tN =
+                 try get_type_of ~lax:true env sigma cM
+                   , get_type_of ~lax:true env sigma cN
+                 with Retyping.RetypeError _ -> error_cannot_unify env sigma (cM, cN)
+               in
+               unirec_rec curenvnb CONV opt' ~nargs:0 substn tM tN
+             in
+             let l1', l2' = eta_constructor_app curenv sigma f1 l1 cN in
+             Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
            with ex when precatchable_exception ex ->
              match EConstr.kind sigma cN with
              | App(f2,l2) when
@@ -864,8 +872,16 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
         | _, App (f2, l2) when flags.modulo_eta &&
             is_eta_constructor_app curenv sigma flags.modulo_delta f2 l2 cM ->
           (try
-             let l2', l1' = eta_constructor_app curenv sigma f2 l2 cM in
              let opt' = {opt with at_top = true; with_cs = false} in
+             let substn =
+               let tM, tN =
+                 try get_type_of ~lax:true env sigma cM
+                   , get_type_of ~lax:true env sigma cN
+                 with Retyping.RetypeError _ -> error_cannot_unify env sigma (cM, cN)
+               in
+               unirec_rec curenvnb CONV opt' ~nargs:0 substn tM tN
+             in
+             let l2', l1' = eta_constructor_app curenv sigma f2 l2 cM in
                Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
            with ex when precatchable_exception ex ->
              match EConstr.kind sigma cM with
