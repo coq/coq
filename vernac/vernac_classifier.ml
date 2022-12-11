@@ -175,7 +175,11 @@ let classify_vernac e =
     | VernacRequire _ | VernacImport _ | VernacInclude _
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *) -> VtSideff ([], VtNow)
-    | VernacProofMode pm -> VtProofMode pm
+    | VernacProofMode pm ->
+      (match Pvernac.lookup_proof_mode pm with
+      | None ->
+        CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." pm))
+      | Some proof_mode -> VtProofMode proof_mode)
     | VernacInstance ((name,_),_,_,props,_) ->
       let program, refine =
         Attributes.(parse_drop_extra Notations.(program ++ Classes.refine_att) atts)

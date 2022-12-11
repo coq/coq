@@ -1831,9 +1831,10 @@ unspecified dummy Ltac1 closure and should not be further used.
 Switching between Ltac languages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We recommend using the :opt:`Default Proof Mode` option to switch between tactic
-languages with a proof-based granularity. This allows to incrementally port
-the proof scripts.
+We recommend using the :opt:`Default Proof Mode` option or the :cmd:`Proof Mode`
+command to switch between tactic languages.  The option has proof-level
+granularity while the command has :term:`sentence`-level granularity. This
+allows incrementally porting proof scripts.
 
 Transition from Ltac1
 ---------------------
