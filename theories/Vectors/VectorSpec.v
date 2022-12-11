@@ -418,6 +418,23 @@ Lemma to_list_cons A h n (v : t A n):
   to_list (cons A h n v) = List.cons h (to_list v).
 Proof. reflexivity. Qed.
 
+Lemma to_list_nil_iff A v:
+  to_list v = List.nil <-> v = nil A.
+Proof.
+split; intro H.
+- now apply case0 with (P := fun v => v = []).
+- subst. apply to_list_nil.
+Qed.
+
+Lemma to_list_inj A n (v w : t A n):
+  to_list v = to_list w -> v = w.
+Proof.
+revert v. induction w as [| w0 n w IHw].
+- apply to_list_nil_iff.
+- intros v H. rewrite (eta v) in H.
+  injection H as [=H0 H1%IHw]. subst. apply eta.
+Qed.
+
 Lemma to_list_hd A n (v : t A (S n)) d:
   hd v = List.hd d (to_list v).
 Proof. now rewrite (eta v). Qed.
