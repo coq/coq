@@ -1040,43 +1040,83 @@ let report_anomaly (e, info) =
   in
   Exninfo.iraise (e, info)
 
-let f_conv ?l2r ?reds env ?evars x y =
-  let inj = EConstr.Unsafe.to_constr in
-  Reduction.conv ?l2r ?reds env ?evars (inj x) (inj y)
+module CheckUnivs =
+struct
 
-let f_conv_leq ?l2r ?reds env ?evars x y =
-  let inj = EConstr.Unsafe.to_constr in
-  Reduction.conv_leq ?l2r ?reds env ?evars (inj x) (inj y)
+open Reduction
 
-let test_trans_conversion (f: constr Reduction.extended_conversion_function) reds env sigma x y =
-  try
+let check_eq univs u u' =
+  if not (Evd.check_eq univs u u') then raise NotConvertible
+
+let check_leq univs u u' =
+  if not (Evd.check_leq univs u u') then raise NotConvertible
+
+let check_sort_cmp_universes pb s0 s1 univs =
+  let s0 = ESorts.make s0 in
+  let s1 = ESorts.make s1 in
+  match pb with
+  | CUMUL -> check_leq univs s0 s1
+  | CONV -> check_eq univs s0 s1
+
+let checked_sort_cmp_universes _env pb s0 s1 univs =
+  check_sort_cmp_universes pb s0 s1 univs; univs
+
+let check_convert_instances ~flex:_ u u' univs =
+  let u = Instance.to_array u in
+  let u' = Instance.to_array u' in
+  let fold accu l1 l2 = Constraints.add (l1, Eq, l2) accu in
+  let cst = Array.fold_left2 fold Constraints.empty u u' in
+  if Evd.check_constraints univs cst then univs else raise NotConvertible
+
+(* general conversion and inference functions *)
+let check_inductive_instances cv_pb variance u1 u2 univs =
+  let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
+  if (Evd.check_constraints univs csts) then univs
+  else raise NotConvertible
+
+let checked_universes =
+  { compare_sorts = checked_sort_cmp_universes;
+    compare_instances = check_convert_instances;
+    compare_cumul_instances = check_inductive_instances; }
+
+end
+
+let generic_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env sigma t1 t2 =
+  let univs = Evd.universes sigma in
+  let t1 = EConstr.Unsafe.to_constr t1 in
+  let t2 = EConstr.Unsafe.to_constr t2 in
+  let b = match cv_pb with
+  | Reduction.CUMUL -> leq_constr_univs univs t1 t2
+  | Reduction.CONV -> eq_constr_univs univs t1 t2
+  in
+  if b then ()
+  else
     let evars = Evd.evar_handler sigma in
-    let env = Environ.set_universes (Evd.universes sigma) env in
-    let _ = f ~reds env ~evars x y in
+    let _ = Reduction.generic_conv ~l2r cv_pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
+    ()
+
+let test_trans_conversion pb reds env sigma x y =
+  try
+    let () = generic_conv pb ~reds env sigma x y in
     true
   with Reduction.NotConvertible -> false
     | e ->
       let e = Exninfo.capture e in
       report_anomaly e
 
-let is_conv ?(reds=TransparentState.full) env sigma = test_trans_conversion f_conv reds env sigma
-let is_conv_leq ?(reds=TransparentState.full) env sigma = test_trans_conversion f_conv_leq reds env sigma
+let is_conv ?(reds=TransparentState.full) env sigma = test_trans_conversion Reduction.CONV reds env sigma
+let is_conv_leq ?(reds=TransparentState.full) env sigma = test_trans_conversion Reduction.CUMUL reds env sigma
 let is_fconv ?(reds=TransparentState.full) = function
   | Reduction.CONV -> is_conv ~reds
   | Reduction.CUMUL -> is_conv_leq ~reds
 
 let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
-  let f = match pb with
-    | Reduction.CONV -> f_conv
-    | Reduction.CUMUL -> f_conv_leq
-  in
-    let env = Environ.set_universes (Evd.universes sigma) env in
-    try f ~reds:ts env ~evars:(Evd.evar_handler sigma) x y; true
-    with Reduction.NotConvertible -> false
-    | UGraph.UniverseInconsistency _ -> false
-    | e ->
-      let e = Exninfo.capture e in
-      report_anomaly e
+  try generic_conv pb ~reds:ts env sigma x y; true
+  with Reduction.NotConvertible -> false
+  | UGraph.UniverseInconsistency _ -> false
+  | e ->
+    let e = Exninfo.capture e in
+    report_anomaly e
 
 let sigma_compare_sorts env pb s0 s1 sigma =
   match pb with
