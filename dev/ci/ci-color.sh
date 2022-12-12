@@ -9,9 +9,7 @@ git_download color
 
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
-ulimit -s
-ulimit -s 65536
-ulimit -s
+export COQEXTRAFLAGS='-native-compiler no'
 ( cd "${CI_BUILD_DIR}/color"
   make
 )
