@@ -110,7 +110,7 @@ let debug_string_of_subst subst =
   "{" ^ String.concat "; " l ^ "}"
 
 let debug_pr_delta resolve =
-  str (debug_string_of_delta resolve)
+  strbrk (debug_string_of_delta resolve)
 
 let debug_pr_subst subst =
   let l = list_contents subst in
