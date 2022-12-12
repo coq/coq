@@ -10,24 +10,8 @@
 
 open Util
 open Coq
-open Ideutils
 open Interface
 open Feedback
-
-let b2c = byte_offset_to_char_offset
-
-(** variant of buffer_off_to_byte_off: convert unicode offset (used by GTK buffer)
-    to UTF-8 byte offset (used by Coq) with size caching for performance *)
-let c2b (buffer : GText.buffer) (s_byte, s_uni) uni_off =
-  if s_uni < 0 then
-    raise (invalid_arg "c2b: s_uni must be >= 0");
-  let rec cvt iter rv =
-    if iter#offset <= s_uni then
-      rv
-    else
-      cvt iter#backward_char (rv + (ulen iter#char))
-  in
-  cvt (buffer#get_iter (`OFFSET uni_off)) s_byte
 
 type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string Loc.located | `WARNING of string Loc.located ]
 type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR | `WARNING ]
@@ -50,10 +34,9 @@ end
 
 module SentenceId : sig
 
-  type sentence = {
+  type sentence = private {
     start : GText.mark;
     stop : GText.mark;
-    mutable byte_start : int;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
@@ -73,6 +56,10 @@ module SentenceId : sig
 
   val connect : sentence -> signals
 
+  val start_iter : GText.buffer -> sentence -> GText.iter
+  val start_stop_iters : GText.buffer -> sentence -> GText.iter * GText.iter
+  val phrase : GText.buffer -> sentence -> string
+
   val dbg_to_string :
     GText.buffer -> bool -> Stateid.t option -> sentence -> Pp.t
 
@@ -81,7 +68,6 @@ end = struct
   type sentence = {
     start : GText.mark;
     stop : GText.mark;
-    mutable byte_start : int;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
@@ -97,10 +83,9 @@ end = struct
 
   let id = ref 0
   let mk_sentence ~start ~stop flags = decr id; {
-    start = start;
-    stop = stop;
-    byte_start = 0;
-    flags = flags;
+    start;
+    stop;
+    flags;
     edit_id = !id;
     tooltips = [];
     index = -1;
@@ -122,6 +107,13 @@ end = struct
   let add_tooltip s a b t = s.tooltips <- (a,b,t) :: s.tooltips
 
   let set_index s i = s.index <- i
+
+  let start_iter buffer sentence = buffer#get_iter_at_mark sentence.start
+  let stop_iter buffer sentence = buffer#get_iter_at_mark sentence.stop
+  let start_stop_iters buffer sentence = start_iter buffer sentence, stop_iter buffer sentence
+  let phrase buffer sentence =
+    let start, stop = start_stop_iters buffer sentence in
+    start#get_slice ~stop
 
   let dbg_to_string (b : GText.buffer) focused id s =
     let ellipsize s =
@@ -145,6 +137,54 @@ end = struct
 
 end
 open SentenceId
+
+(* Given a Coq loc, convert it to a pair of iterators start / end in
+   the buffer. *)
+let coq_loc_to_gtk_offset (buffer : GText.buffer) loc =
+  buffer#get_iter_at_byte ~line:loc.Loc.line_nb (loc.bp - loc.bol_pos),
+  buffer#get_iter_at_byte ~line:loc.Loc.line_nb_last (loc.ep - loc.bol_pos_last)
+
+(** increase [uni_off] by the number of bytes until [s_uni] This can
+    be used to convert a character offset to byte offset if we know a
+    previous point denoted by the pair [s_byte, s_uni] *)
+let c2b (buffer : GText.buffer) (s_byte, s_uni) uni_off =
+  if s_uni < 0 then
+    raise (invalid_arg "c2b: s_uni must be >= 0");
+  let rec cvt iter rv =
+    if iter#offset <= s_uni then
+      rv
+    else
+      cvt iter#backward_char (rv + (Ideutils.ulen iter#char))
+  in
+  cvt (buffer#get_iter (`OFFSET uni_off)) s_byte
+
+(* Given [sentence], returns [bp, line, bol] where [bp] is the
+   absolute offset in _bytes_ for the start of [sentence], [line] is
+   the line number for the start of sentence and [bol] is the line
+   ofsset of [sentence] in _bytes_.
+
+   This is meant to be used in the resumption of parsing, to tell Coq
+   where the input stream was left at. In this case, these 3 points
+   uniquely determine the position where to restart
+   from. [CLexer.after] can compute this from the position of the last
+   parsed token.
+
+   However, for CoqIDE, we have a huge problem in the sense that
+   CoqIDE will do its own parsing and the locations may not start at
+   the same point. Thus, we need to perform potentially very costly
+   char to offset conversion, for that we need the whole buffer.
+*)
+let coq_loc_from_gtk_offset cached buffer sentence =
+  let start = start_iter buffer sentence in
+  (* This is in chars not in bytes, thus needs conversion *)
+  let bp = c2b buffer cached start#offset in
+  (* Coq lines start at 1, GTK lines at 0 *)
+  let line = start#line + 1 in
+  (* [line_index] already returns byte offsets *)
+  let bol = start#line_index in
+  (*  *)
+  let new_cached = bp, start#offset in
+  bp, line, bol, new_cached
 
 let log msg : unit task =
   Coq.lift (fun () -> Minilib.log msg)
@@ -493,17 +533,11 @@ object(self)
    end
 
   method private attach_tooltip ?loc sentence text =
-    let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
     let start, stop = match loc with
-      | None -> start_sentence, stop_sentence
+      | None ->
+        start_stop_iters buffer sentence
       | Some loc ->
-        (* This needs to call the char to byte conversion functions,
-           or even better directly [buffer#get_iter_at_byte], but that
-           requires the [line] parameter, we can likely get it from
-           [loc]. *)
-        let start = buffer#get_iter_at_char loc.Loc.bp in
-        let stop = buffer#get_iter_at_char loc.ep in
-        start, stop
+        coq_loc_to_gtk_offset buffer loc
     in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
@@ -634,14 +668,12 @@ object(self)
     buffer#move_mark ~where:stop (`NAME "start_of_input");
 
   method private apply_tag_in_sentence ?loc tag sentence =
-    let start, stop, phrase = self#get_sentence sentence in
     match loc with
     | None ->
+      let start, stop = start_stop_iters buffer sentence in
       buffer#apply_tag tag ~start ~stop
     | Some loc ->
-      let start_bytes, stop_bytes = Loc.unloc loc in
-      let stop = start#forward_chars (b2c phrase (stop_bytes - (sentence.byte_start))) in
-      let start = start#forward_chars (b2c phrase (start_bytes - (sentence.byte_start))) in
+      let start, stop = coq_loc_to_gtk_offset buffer loc in
       buffer#apply_tag tag ~start ~stop
 
   method private position_tag_at_sentence ?loc tag sentence =
@@ -649,10 +681,10 @@ object(self)
 
   method private process_interp_error ?loc queue sentence msg tip id =
     Coq.bind (Coq.return ()) (function () ->
-    let start, stop, _ = self#get_sentence sentence in
+    let start, stop = start_stop_iters buffer sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
-    pop_info ();
+    Ideutils.pop_info ();
     if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
       self#apply_tag_in_sentence ?loc Tags.Script.error sentence;
       buffer#place_cursor ~where:stop;
@@ -662,12 +694,6 @@ object(self)
     end else
       self#show_goals_aux ~move_insert:true ()
     )
-
-  method private get_sentence sentence =
-    let start = buffer#get_iter_at_mark sentence.start in
-    let stop = buffer#get_iter_at_mark sentence.stop in
-    let phrase = start#get_slice ~stop in
-    start, stop, phrase
 
   (** [fill_command_queue until q] fills a command queue until the [until]
       condition returns true; it is fed with the number of phrases read and the
@@ -692,10 +718,10 @@ object(self)
         end else begin
           buffer#apply_tag Tags.Script.to_process ~start ~stop;
           let sentence =
-            mk_sentence
-              ~start:(`MARK (buffer#create_mark start))
-              ~stop:(`MARK (buffer#create_mark stop))
-              [] in
+            let start = `MARK (buffer#create_mark start) in
+            let stop = `MARK (buffer#create_mark stop) in
+            mk_sentence ~start ~stop []
+          in
           Queue.push (`Sentence sentence) queue;
           if start#offset <> prev_start && not stop#is_end then loop (succ n) stop start#offset
         end
@@ -720,7 +746,7 @@ object(self)
     let fill_queue = Coq.lift (fun () ->
       let queue = Queue.create () in
       (* Lock everything and fill the waiting queue *)
-      push_info "Coq is computing";
+      Ideutils.push_info "Coq is computing";
       messages#default_route#clear;
       script#set_editable false;
       self#fill_command_queue until queue;
@@ -730,7 +756,7 @@ object(self)
       Minilib.log "Begin command processing";
       queue) in
     let conclude topstack =
-      pop_info ();
+      Ideutils.pop_info ();
       script#recenter_insert;
       match topstack with
       | [] -> self#show_goals_aux ?move_insert ()
@@ -751,16 +777,9 @@ object(self)
         | `Sentence ({ edit_id } as sentence), [] ->
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
-            let start, _, phrase = self#get_sentence sentence in
-            (* script before last_offsets is not editable because Coq is processing *)
-            let s_offs = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
-            let bp = c2b buffer s_offs start#offset in
-            sentence.byte_start <- bp;
-            let line_nb = start#line + 1 in
-            let bol_uni = start#offset - start#line_offset in
-            let bol_byte = c2b buffer s_offs bol_uni in
-            let bol_pos = bp - bol_byte in
-            last_offsets <- (bol_byte, bol_uni);
+            let phrase = phrase buffer sentence in
+            let bp, line_nb, bol_pos, new_cached = coq_loc_from_gtk_offset last_offsets buffer sentence in
+            last_offsets <- new_cached;
             let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
@@ -812,9 +831,7 @@ object(self)
          let iter = begin match loc with
            | None      -> buffer#get_iter_at_mark s.start
            | Some loc ->
-             let (iter, _, phrase) = self#get_sentence s in
-             let (start, _) = Loc.unloc loc in
-             buffer#get_iter (`OFFSET (b2c phrase start))
+             fst (coq_loc_to_gtk_offset buffer loc)
          end in iter#line + 1, msg
       | _ -> assert false in
     List.rev
@@ -887,9 +904,9 @@ object(self)
     Minilib.log("backtrack_to_id "^Stateid.to_string to_id^
       " (unfocus_needed="^string_of_bool unfocus_needed^")");
     let opening () =
-      push_info "Coq is undoing" in
+      Ideutils.push_info "Coq is undoing" in
     let conclusion () =
-      pop_info ();
+      Ideutils.pop_info ();
       if move_insert then begin
         buffer#place_cursor ~where:self#get_start_of_input;
         script#recenter_insert;
@@ -993,10 +1010,10 @@ object(self)
       (* clear the views *)
       messages#default_route#clear;
       proof#clear ();
-      clear_info ();
+      Ideutils.clear_info ();
       processed <- 0;
       to_process <- 0;
-      push_info "Restarted";
+      Ideutils.push_info "Restarted";
       (* apply the initial commands to coq *)
     in
     Coq.seq (Coq.lift action) self#initialize
