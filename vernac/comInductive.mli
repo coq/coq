@@ -22,7 +22,7 @@ type uniform_inductive_flag =
 val do_mutual_inductive
   :  template:bool option
   -> cumul_univ_decl_expr option
-  -> (one_inductive_expr * decl_notation list) list
+  -> (one_inductive_expr * notation_declaration list) list
   -> cumulative:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags
@@ -50,7 +50,7 @@ type t = {
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;
   uctx : Univ.ContextSet.t;
-  where_notations : Metasyntax.where_decl_notation list;
+  where_notations : Metasyntax.notation_interpretation_decl list;
   coercions : Libnames.qualid list;
 }
 
@@ -61,7 +61,7 @@ val interp_mutual_inductive
   :  env:Environ.env
   -> template:bool option
   -> cumul_univ_decl_expr option
-  -> (one_inductive_expr * decl_notation list) list
+  -> (one_inductive_expr * notation_declaration list) list
   -> cumulative:bool
   -> poly:bool
   -> ?typing_flags:Declarations.typing_flags

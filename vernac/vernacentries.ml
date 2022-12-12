@@ -531,9 +531,10 @@ let vernac_bind_scope ~atts sc cll =
 let vernac_open_close_scope ~section_local (to_open,s) =
   Metasyntax.open_close_scope section_local ~to_open s
 
-let vernac_notation ~atts ~infix =
+let vernac_notation ~atts ~infix ntn_decl =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
-  Metasyntax.add_notation ~local:module_local ~infix deprecation (Global.env())
+  let notation_interpretation = Metasyntax.add_notation_syntax ~local:module_local ~infix deprecation ntn_decl in
+  Metasyntax.add_notation_interpretation ~local:module_local (Global.env()) notation_interpretation
 
 let vernac_custom_entry ~module_local s =
   Metasyntax.declare_custom_entry module_local s
@@ -858,7 +859,7 @@ let vernac_record ~template udecl ~cumulative k ~poly ?typing_flags ~primitive_p
     CErrors.user_err (Pp.str "Typing flags are not yet supported for records.")
   | None -> records
 
-let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
+let extract_inductive_udecl (indl:(inductive_expr * notation_declaration list) list) =
   match indl with
   | [] -> assert false
   | (((coe,(id,udecl)),b,c,d),e) :: rest ->
@@ -922,7 +923,7 @@ module Preprocessed_Mind_decl = struct
     typing_flags : Declarations.typing_flags option;
     private_ind : bool;
     uniform : ComInductive.uniform_inductive_flag;
-    inductives : (Vernacexpr.one_inductive_expr * Vernacexpr.decl_notation list) list;
+    inductives : (Vernacexpr.one_inductive_expr * Vernacexpr.notation_declaration list) list;
   }
   type t =
     | Record of record
@@ -2387,8 +2388,8 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtdefault(fun () -> vernac_bind_scope ~atts sc rl)
   | VernacOpenCloseScope (b, s) ->
     vtdefault(fun () -> with_section_locality ~atts vernac_open_close_scope (b,s))
-  | VernacNotation (infix,c,infpl,sc) ->
-    vtdefault(fun () -> vernac_notation ~atts ~infix c infpl sc)
+  | VernacNotation (infix,ntn_decl) ->
+    vtdefault(fun () -> vernac_notation ~atts ~infix ntn_decl)
   | VernacDeclareCustomEntry s ->
     vtdefault(fun () -> with_module_locality ~atts vernac_custom_entry s)
   | VernacEnableNotation (on,rule,interp,flags,scope) ->

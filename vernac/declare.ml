@@ -836,7 +836,7 @@ module ProgramDecl = struct
     ; prg_obligations : obligations
     ; prg_deps : Id.t list
     ; prg_fixkind : fixpoint_kind option
-    ; prg_notations : Metasyntax.where_decl_notation list
+    ; prg_notations : Metasyntax.notation_interpretation_decl list
     ; prg_reduce : constr -> constr
     }
 

@@ -758,7 +758,7 @@ type t = {
   univ_binders : UnivNames.universe_binders;
   implicits : DeclareInd.one_inductive_impls list;
   uctx : Univ.ContextSet.t;
-  where_notations : Metasyntax.where_decl_notation list;
+  where_notations : Metasyntax.notation_interpretation_decl list;
   coercions : Libnames.qualid list;
 }
 

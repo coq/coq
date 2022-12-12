@@ -1485,10 +1485,6 @@ syntax: [
 | WITH "Undelimit" "Scope" scope_name
 | REPLACE "Bind" "Scope" IDENT; "with" LIST1 class_rawexpr
 | WITH "Bind" "Scope" scope_name; "with" LIST1 class_rawexpr
-| REPLACE "Infix" ne_lstring ":=" constr syntax_modifiers   OPT [ ":" IDENT ]
-| WITH    "Infix" ne_lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
-| REPLACE "Notation" lstring ":=" constr syntax_modifiers   OPT [ ":" IDENT ]
-| WITH    "Notation" lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
 ]
 
 opt_scope: [
@@ -1735,8 +1731,8 @@ ltac2_in_clause: [
 ]
 
 decl_notations: [
-| REPLACE "where" LIST1 decl_notation SEP decl_sep
-| WITH "where" decl_notation LIST0 (decl_sep decl_notation )
+| REPLACE "where" LIST1 notation_declaration SEP decl_sep
+| WITH "where" notation_declaration LIST0 (decl_sep notation_declaration )
 ]
 
 module_expr: [
@@ -1793,9 +1789,9 @@ by_notation: [
 | WITH ne_string OPT [ "%" scope_key ]
 ]
 
-decl_notation: [
-| REPLACE ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
-| WITH ne_lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
+notation_declaration: [
+| REPLACE lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
+| WITH lstring ":=" constr syntax_modifiers OPT [ ":" scope_name ]
 ]
 
 ltac_production_item: [

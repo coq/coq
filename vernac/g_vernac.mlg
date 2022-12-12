@@ -47,6 +47,7 @@ let thm_token = Entry.create "thm_token"
 let def_token = Entry.create "def_token"
 let assumption_token = Entry.create "assumption_token"
 let def_body = Entry.create "def_body"
+let notation_declaration = Entry.create "notation_declaration"
 let decl_notations = Entry.create "decl_notations"
 let record_field = Entry.create "record_field"
 let of_type = Entry.create "of_type"
@@ -209,7 +210,7 @@ let test_variance_ident =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_token assumption_token def_body of_type of_type_inst
-    record_field decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
+    record_field notation_declaration decl_notations fix_definition ident_decl univ_decl inductive_or_record_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -371,20 +372,20 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "Eval"; r = red_expr; "in" -> { Some r }
       | -> { None } ] ]
   ;
-  decl_notation:
-    [ [ ntn = ne_lstring; ":="; c = constr;
+  notation_declaration:
+    [ [ ntn = lstring; ":="; c = constr;
         modl = syntax_modifiers;
         scopt = OPT [ ":"; sc = IDENT -> { sc } ] ->
-      { { decl_ntn_string = ntn; decl_ntn_interp = c;
-          decl_ntn_scope = scopt;
-          decl_ntn_modifiers = modl;
+      { { ntn_decl_string = ntn; ntn_decl_interp = c;
+          ntn_decl_scope = scopt;
+          ntn_decl_modifiers = modl;
       } } ] ]
   ;
   decl_sep:
     [ [ IDENT "and" -> { () } ] ]
   ;
   decl_notations:
-    [ [ "where"; l = LIST1 decl_notation SEP decl_sep -> { l }
+    [ [ "where"; l = LIST1 notation_declaration SEP decl_sep -> { l }
     | -> { [] } ] ]
   ;
   (* Inductives and records *)
@@ -1214,18 +1215,13 @@ GRAMMAR EXTEND Gram
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
        refl = LIST1 class_rawexpr -> { VernacBindScope (sc,refl) }
 
-     | IDENT "Infix"; op = ne_lstring; ":="; p = constr;
-         modl = syntax_modifiers;
-         sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
-         { VernacNotation (true,p,(op,modl),sc) }
+     | IDENT "Infix"; ntn_decl = notation_declaration ->
+         { VernacNotation (true,ntn_decl) }
      | IDENT "Notation"; id = identref; idl = LIST0 ident;
          ":="; c = constr; modl = syntax_modifiers ->
            { VernacSyntacticDefinition (id,(idl,c), modl) }
-     | IDENT "Notation"; s = lstring; ":=";
-         c = constr;
-         modl = syntax_modifiers;
-         sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
-           { VernacNotation (false,c,(s,modl),sc) }
+     | IDENT "Notation"; ntn_decl = notation_declaration ->
+           { VernacNotation (false,ntn_decl) }
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring; l = syntax_modifiers ->
            { VernacReservedNotation (true,(s,l)) }

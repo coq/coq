@@ -162,11 +162,11 @@ type notation_enable_modifier =
   | EnableNotationOnly of Notationextern.notation_use
   | EnableNotationAll
 
-type decl_notation =
-  { decl_ntn_string : lstring
-  ; decl_ntn_interp : constr_expr
-  ; decl_ntn_scope : scope_name option
-  ; decl_ntn_modifiers : syntax_modifier CAst.t list
+type notation_declaration =
+  { ntn_decl_string : lstring
+  ; ntn_decl_interp : constr_expr
+  ; ntn_decl_scope : scope_name option
+  ; ntn_decl_modifiers : syntax_modifier CAst.t list
   }
 
 type 'a fix_expr_gen =
@@ -176,7 +176,7 @@ type 'a fix_expr_gen =
   ; binders : local_binder_expr list
   ; rtype : constr_expr
   ; body_def : constr_expr option
-  ; notations : decl_notation list
+  ; notations : notation_declaration list
   }
 
 type fixpoint_expr = recursion_order_expr option fix_expr_gen
@@ -198,7 +198,7 @@ type record_field_attr = {
   rf_instance: instance_flag; (* the projection is an instance *)
   rf_priority: int option; (* priority of the instance, if relevant *)
   rf_locality: Goptions.option_locality; (* locality of coercion and instance *)
-  rf_notation: decl_notation list;
+  rf_notation: notation_declaration list;
   rf_canonical: bool; (* use this projection in the search for canonical instances *)
   }
 type constructor_expr = (lident * constr_expr) with_coercion_instance
@@ -352,9 +352,7 @@ type nonrec vernac_expr =
   | VernacDeclareScope of scope_name
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * class_rawexpr list
-  | VernacNotation of
-      infix_flag * constr_expr * (lstring * syntax_modifier CAst.t list) *
-      scope_name option
+  | VernacNotation of infix_flag * notation_declaration
   | VernacDeclareCustomEntry of string
   | VernacEnableNotation of bool * (string, qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_with_optional_scope option
 
@@ -365,7 +363,7 @@ type nonrec vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacInductive of inductive_kind * (inductive_expr * decl_notation list) list
+  | VernacInductive of inductive_kind * (inductive_expr * notation_declaration list) list
   | VernacFixpoint of discharge * fixpoint_expr list
   | VernacCoFixpoint of discharge * cofixpoint_expr list
   | VernacScheme of (lident option * scheme) list

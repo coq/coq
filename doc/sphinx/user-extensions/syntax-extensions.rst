@@ -30,7 +30,12 @@ Notations
 Basic notations
 ~~~~~~~~~~~~~~~
 
-.. cmd:: Notation @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
+.. cmd:: Notation @notation_declaration
+
+   .. insertprodn notation_declaration notation_declaration
+
+   .. prodn::
+      notation_declaration ::= @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
 
    Defines a *notation*, an alternate syntax for entering or displaying
    a specific term or term pattern.
@@ -351,9 +356,13 @@ The Infix command
 The :cmd:`Infix` command is a shortcut for declaring notations for infix
 symbols.
 
-.. cmd:: Infix @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
+.. cmd:: Infix @notation_declaration
 
-   This command is equivalent to
+   The command
+
+       :n:`Infix @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }`
+
+   is equivalent to
 
        :n:`Notation "x @string y" := (@one_term x y) {? ( {+, @syntax_modifier } ) } {? : @scope_name }`
 
@@ -401,20 +410,17 @@ Reserving notations
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Thanks to reserved notations, inductive, coinductive, record, recursive and
+Thanks to reserved notations, inductive and coinductive type declarations, recursive and
 corecursive definitions can use customized notations. To do this, insert
 a :token:`decl_notations` clause after the definition of the (co)inductive type or
 (co)recursive term (or after the definition of each of them in case of mutual
-definitions). The exact syntax is given by :n:`@decl_notation` for inductive,
-coinductive, recursive and corecursive definitions and in :ref:`record-types`
-for records. Note that only syntax modifiers that do not require adding or
+definitions). Note that only syntax modifiers that do not require adding or
 changing a parsing rule are accepted.
 
-   .. insertprodn decl_notations decl_notation
+   .. insertprodn decl_notations decl_notations
 
    .. prodn::
-      decl_notations ::= where @decl_notation {* and @decl_notation }
-      decl_notation ::= @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @scope_name }
+      decl_notations ::= where @notation_declaration {* and @notation_declaration }
 
 Here are examples:
 
