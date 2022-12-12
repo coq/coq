@@ -242,7 +242,7 @@ let has_dynlink = Coq_config.has_natdynlink || not Sys.(backend_type = Native)
 (* Runs the toplevel loop of Ocaml *)
 let ocaml_toploop () =
   match !load with
-    | WithTop t -> Printexc.catch t.ml_loop ()
+    | WithTop t -> t.ml_loop ()
     | _ -> ()
 
 let ml_load p =
