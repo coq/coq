@@ -253,5 +253,5 @@ let main () =
   mllib_dependencies ();
   mlpack_dependencies ()
 
-let _ = Printexc.catch main ()
+let _ = main ()
 }
