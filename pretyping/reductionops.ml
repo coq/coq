@@ -1081,42 +1081,31 @@ let checked_universes =
 
 end
 
-let generic_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env sigma t1 t2 =
+let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
   let univs = Evd.universes sigma in
   let t1 = EConstr.Unsafe.to_constr t1 in
   let t2 = EConstr.Unsafe.to_constr t2 in
-  let b = match cv_pb with
+  let b = match pb with
   | Reduction.CUMUL -> leq_constr_univs univs t1 t2
   | Reduction.CONV -> eq_constr_univs univs t1 t2
   in
-  if b then ()
+  if b then true
   else
     let evars = Evd.evar_handler sigma in
-    let _ = Reduction.generic_conv ~l2r cv_pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
-    ()
-
-let test_trans_conversion pb reds env sigma x y =
-  try
-    let () = generic_conv pb ~reds env sigma x y in
-    true
-  with Reduction.NotConvertible -> false
+    try
+      let _ = Reduction.generic_conv ~l2r:false pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
+      true
+    with Reduction.NotConvertible -> false
     | e ->
       let e = Exninfo.capture e in
       report_anomaly e
 
-let is_conv ?(reds=TransparentState.full) env sigma = test_trans_conversion Reduction.CONV reds env sigma
-let is_conv_leq ?(reds=TransparentState.full) env sigma = test_trans_conversion Reduction.CUMUL reds env sigma
-let is_fconv ?(reds=TransparentState.full) = function
-  | Reduction.CONV -> is_conv ~reds
-  | Reduction.CUMUL -> is_conv_leq ~reds
-
+let is_conv ?(reds=TransparentState.full) env sigma x y =
+  is_fconv ~reds Reduction.CONV env sigma x y
+let is_conv_leq ?(reds=TransparentState.full) env sigma x y =
+  is_fconv ~reds Reduction.CUMUL env sigma x y
 let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
-  try generic_conv pb ~reds:ts env sigma x y; true
-  with Reduction.NotConvertible -> false
-  | UGraph.UniverseInconsistency _ -> false
-  | e ->
-    let e = Exninfo.capture e in
-    report_anomaly e
+  is_fconv ~reds:ts pb env sigma x y
 
 let sigma_compare_sorts env pb s0 s1 sigma =
   match pb with
