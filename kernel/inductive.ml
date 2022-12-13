@@ -117,16 +117,17 @@ let max_template_universe u v = u @ v
 let no_sort_variable () =
   CErrors.anomaly (Pp.str "A sort variable was sent to the kernel")
 
+type template_univ =
+  | TemplateProp
+  | TemplateUniv of Universe.t
+
 (* cons_subst add the mapping [u |-> su] in subst if [u] is not *)
 (* in the domain or add [u |-> sup x su] if [u] is already mapped *)
 (* to [x]. *)
 let cons_subst u su subst =
   let su = match su with
-  | Sorts.SProp -> assert false (* No template on SProp *)
-  | Sorts.QSort (_, u) -> [u] (* FIXME *)
-  | Sorts.Prop -> []
-  | Sorts.Set -> [Universe.type0]
-  | Sorts.Type u -> [u]
+  | TemplateProp -> []
+  | TemplateUniv u -> [u]
   in
   try
     Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
@@ -140,10 +141,7 @@ let remember_subst u subst =
     Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
   with Not_found -> subst
 
-type param_univs = (unit -> Sorts.t) list
-
-let make_param_univs env argtys =
-  Array.map_to_list (fun arg () -> (snd (Reduction.dest_arity env arg))) argtys
+type param_univs = (expected:Univ.Level.t -> template_univ) list
 
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
@@ -160,7 +158,7 @@ let make_subst =
         (* arity is a global level which, at typing time, will be enforce *)
         (* to be greater than the level of the argument; this is probably *)
         (* a useless extra constraint *)
-        let s = a () in
+        let s = a ~expected:u in
         make (cons_subst u s subst) (sign, exp, args)
     | LocalAssum (_na,_t) :: sign, Some u::exp, [] ->
         (* No more argument here: we add the remaining universes to the *)

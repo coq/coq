@@ -203,12 +203,7 @@ let retype ?(polyprop=true) sigma =
     | Ind (ind, u) ->
       let u = EInstance.kind sigma u in
       let mip = lookup_mind_specif env ind in
-      let paramtyps = Array.map_to_list (fun arg () ->
-          let t = type_of env arg in
-          let s = sort_of_arity_with_constraints env sigma t in
-          ESorts.kind sigma s)
-          args
-      in
+      let paramtyps = make_param_univs env sigma (ind,u) args in
       EConstr.of_constr
         (Inductive.type_of_inductive_knowing_parameters
            ~polyprop (mip, u) paramtyps)
@@ -216,6 +211,17 @@ let retype ?(polyprop=true) sigma =
       let u = EInstance.kind sigma u in
       EConstr.of_constr (type_of_constructor env (cstr, u))
     | _ -> assert false
+
+  and make_param_univs env sigma indu args =
+    Array.map_to_list (fun arg ~expected ->
+          let t = type_of env arg in
+          let s = sort_of_arity_with_constraints env sigma t in
+          match ESorts.kind sigma s with
+          | Sorts.SProp -> TemplateUniv (Univ.Universe.make expected)
+          | Sorts.Prop -> TemplateProp
+          | Sorts.Set -> TemplateUniv Univ.Universe.type0
+          | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u)
+      args
 
   in type_of, sort_of, type_of_global_reference_knowing_parameters
 
