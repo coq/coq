@@ -1011,12 +1011,6 @@ let is_transparent e k =
 
 type conversion_test = Constraints.t -> Constraints.t
 
-let pb_is_equal pb = pb == Reduction.CONV
-
-let pb_equal = function
-  | Reduction.CUMUL -> Reduction.CONV
-  | Reduction.CONV -> Reduction.CONV
-
 module CheckUnivs =
 struct
 
