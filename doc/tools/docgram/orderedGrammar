@@ -1107,7 +1107,7 @@ command: [
 | "Notation" notation_declaration
 | "Reserved" "Infix" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
 | "Reserved" "Notation" string OPT ( "(" LIST1 syntax_modifier SEP "," ")" )
-| [ "Enable" | "Disable" ] "Notation" OPT [ string | qualid ] OPT ( ":=" one_term ) OPT ( "(" LIST1 enable_notation_flag SEP "," ")" ) OPT [ ":" scope_name | ":" "no" "scope" ]
+| [ "Enable" | "Disable" ] "Notation" OPT [ string | qualid LIST0 ident ] OPT ( ":=" one_term ) OPT ( "(" LIST1 enable_notation_flag SEP "," ")" ) OPT [ ":" scope_name | ":" "no" "scope" ]
 | "Eval" red_expr "in" term
 | "Compute" term
 | "Check" term

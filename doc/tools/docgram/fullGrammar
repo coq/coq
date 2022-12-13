@@ -1441,7 +1441,7 @@ enable_enable_disable: [
 
 enable_notation_rule: [
 | ne_string
-| global
+| global LIST0 ident
 |
 ]
 
@@ -1459,7 +1459,7 @@ enable_notation_flag: [
 | "all"
 | "only" "parsing"
 | "only" "printing"
-| "in" "custom" IDENT
+| "in" "custom" identref
 | "in" "constr"
 ]
 

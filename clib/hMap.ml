@@ -415,6 +415,10 @@ struct
   let filter_range f s =
     filter (fun x _ -> f x = 0) s
 
+  let of_list l =
+    let fold accu (x, v) = add x v accu in
+    List.fold_left fold empty l
+
   let update k f m =
     let aux = function
       | None -> (match f None with

@@ -25,6 +25,8 @@ val search_filtered_abbreviation : ?loc:Loc.t ->
 
 val import_abbreviation : int -> Libnames.full_path -> KerName.t -> unit
 
+(** Activate (if on:true) or deactivate (if on:false) an abbreviation assumed to exist *)
 val toggle_abbreviation : on:bool -> use:notation_use -> abbreviation -> unit
 
-val toggle_abbreviations : on:bool -> use:notation_use -> (KerName.t -> interpretation -> bool) -> unit
+(** Activate (if on:true) or deactivate (if on:false) all abbreviations satisfying a criterion *)
+val toggle_abbreviations : on:bool -> use:notation_use -> (Libnames.full_path -> interpretation -> bool) -> unit

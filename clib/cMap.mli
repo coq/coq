@@ -66,6 +66,9 @@ sig
       [filter_range] returns the submap of [m] whose keys are in
       range. Note that [in_range] has to define a continouous range. *)
 
+  val of_list : (key * 'a) list -> 'a t
+  (** Turns an association list into a map *)
+
   module Smart :
   sig
     val map : ('a -> 'a) -> 'a t -> 'a t
