@@ -227,6 +227,7 @@ val is_fconv : ?reds:TransparentState.t -> conv_pb -> env ->  evar_map -> constr
     pb defaults to CUMUL and ts to a full transparent state.
  *)
 val check_conv : ?pb:conv_pb -> ?ts:TransparentState.t -> env ->  evar_map -> constr -> constr -> bool
+[@@ocaml.deprecated "Use Reductionops.is_fconv instead"]
 
 (** [infer_conv] Adds necessary universe constraints to the evar map.
     pb defaults to CUMUL and ts to a full transparent state.
