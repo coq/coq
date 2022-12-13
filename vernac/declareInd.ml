@@ -130,7 +130,7 @@ let is_recursive mie =
   List.exists (fun ind -> List.exists (fun t -> is_recursive_constructor (nparams+1) nind t) ind.mind_entry_lc) mie.mind_entry_inds
 
 let warn_non_primitive_record =
-  CWarnings.create ~name:"non-primitive-record" ~category:"record"
+  CWarnings.create ~name:"non-primitive-record" ~category:"records"
     (fun indsp ->
        Pp.(hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef indsp) ++
                   strbrk" could not be defined as a primitive record.")))
