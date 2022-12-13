@@ -167,7 +167,8 @@ end
     would prevent VM computing with these terms on 32-bit architectures. Maybe
     we should use a more robust data structure? *)
 type patches = {
-  reloc_infos : (reloc_info * Positions.t) array;
+  reloc_infos : reloc_info array;
+  reloc_positions : Positions.t;
 }
 
 let patch_char4 buff pos c1 c2 c3 c4 =
@@ -181,19 +182,19 @@ let patch1 buff pos n =
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
 
-let patch_int buff reloc =
+let patch_int buff reloc positions =
   let buff = Bytes.of_string buff in
-  let iter (reloc, npos) = Positions.iter (fun pos -> patch1 buff pos reloc) npos in
-  let () = CArray.iter iter reloc in
+  let iter pos =
+    let id = Bytes.get_int32_le buff pos in
+    let reloc = reloc.(Int32.to_int id) in
+    patch1 buff pos reloc
+  in
+  let () = Positions.iter iter positions in
   buff
 
 let patch (buff, pl) f =
-  let map (r, pos) =
-    let r = f r in
-    (r, pos)
-  in
-  let reloc = CArray.map_left map pl.reloc_infos in
-  let buff = patch_int buff reloc in
+  let reloc = CArray.map_left f pl.reloc_infos in
+  let buff = patch_int buff reloc pl.reloc_positions in
   tcode_of_code buff
 
 (* Buffering of bytecode *)
@@ -205,13 +206,15 @@ type label_definition =
 type env = {
   mutable out_buffer : Bytes.t;
   mutable out_position : int;
+  mutable reloc_pos : int list;
+  mutable reloc_id : int;
   mutable label_table : label_definition array;
   (* i-th table element = Label_defined n means that label i was already
      encountered and lives at offset n
      i-th table element = Label_undefined l means that the label was not
      encountered yet, first integer is the location of the value to be patched
      in the string, seconed one is its origin *)
-  reloc_info : int list RelocTable.t;
+  reloc_info : int RelocTable.t;
 }
 
 let out_word env b1 b2 b3 b4 =
@@ -292,24 +295,20 @@ let out_label env l = out_label_with_orig env env.out_position l
 
 let enter env info =
   let pos = env.out_position in
-  let old = try RelocTable.find env.reloc_info info with Not_found -> [] in
-  RelocTable.replace env.reloc_info info (pos :: old)
+  let () = env.reloc_pos <- pos :: env.reloc_pos in
+  try RelocTable.find env.reloc_info info
+  with Not_found ->
+    let id = env.reloc_id in
+    let () = env.reloc_id <- id + 1 in
+    let () = RelocTable.add env.reloc_info info id in
+    id
 
-let slot_for_const env c =
-  enter env (Reloc_const c);
-  out_int env 0
+let slot_for env r = out_int env (enter env r)
 
-let slot_for_annot env a =
-  enter env (Reloc_annot a);
-  out_int env 0
-
-let slot_for_getglobal env p =
-  enter env (Reloc_getglobal p);
-  out_int env 0
-
-let slot_for_caml_prim env op =
-  enter env (Reloc_caml_prim op);
-  out_int env 0
+let slot_for_const env c = slot_for env (Reloc_const c)
+let slot_for_annot env a = slot_for env (Reloc_annot a)
+let slot_for_getglobal env p = slot_for env (Reloc_getglobal p)
+let slot_for_caml_prim env op = slot_for env (Reloc_caml_prim op)
 
 (* Emission of one instruction *)
 
@@ -551,8 +550,8 @@ let subst_reloc s ri =
   | Reloc_caml_prim _ -> ri
 
 let subst_patches subst p =
-  let infos = CArray.map (fun (r, pos) -> (subst_reloc subst r, pos)) p.reloc_infos in
-  { reloc_infos = infos; }
+  let infos = CArray.Smart.map (fun r -> subst_reloc subst r) p.reloc_infos in
+  { reloc_infos = infos; reloc_positions = p.reloc_positions }
 
 let subst_to_patch s (code, pl) =
   (code, subst_patches s pl)
@@ -571,6 +570,8 @@ let to_memory code =
   let env = {
     out_buffer = Bytes.create 1024;
     out_position = 0;
+    reloc_id = 0;
+    reloc_pos = [];
     label_table = Array.make 16 (Label_undefined []);
     reloc_info = RelocTable.create 91;
   } in
@@ -578,9 +579,12 @@ let to_memory code =
   (** Later uses of this string are all purely functional *)
   let code = Bytes.sub_string env.out_buffer 0 env.out_position in
   let code = CString.hcons code in
-  let fold reloc npos accu = (reloc, Positions.of_list (List.rev npos)) :: accu in
+  let fold reloc id accu = (id, reloc) :: accu in
   let reloc = RelocTable.fold fold env.reloc_info [] in
-  let reloc = { reloc_infos = CArray.of_list reloc } in
+  let reloc = List.sort (fun (id1, _) (id2, _) -> Int.compare id1 id2) reloc in
+  let reloc_infos = CArray.map_of_list snd reloc in
+  let reloc_positions = Positions.of_list (List.rev env.reloc_pos) in
+  let reloc = { reloc_infos; reloc_positions } in
   Array.iter (fun lbl ->
     (match lbl with
       Label_defined _ -> assert true
