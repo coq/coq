@@ -22,13 +22,20 @@ open CClosure
 open RedFlags
 open Libobject
 
+let warn_vm_disabled =
+  CWarnings.create ~name:"vm-compute-disabled" ~category:"bytecode-compiler"
+  (fun () ->
+   strbrk "vm_compute disabled at configure time; falling back to cbv.")
+
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env sigma c =
-  if Coq_config.bytecode_compiler then
+  if (Environ.typing_flags env).enable_VM then
     let ctyp = Retyping.get_type_of env sigma c in
     Vnorm.cbv_vm env sigma c ctyp
-  else
+  else begin
+    warn_vm_disabled ();
     compute env sigma c
+  end
 
 let warn_native_compute_disabled =
   CWarnings.create ~name:"native-compute-disabled" ~category:"native-compiler"
