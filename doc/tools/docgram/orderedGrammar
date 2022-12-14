@@ -554,6 +554,7 @@ term_cast: [
 | term10 ":" type
 | term10 "<:" type
 | term10 "<<:" type
+| term10 ":>" type
 ]
 
 term_match: [

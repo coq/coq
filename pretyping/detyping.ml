@@ -594,7 +594,7 @@ let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params
     | CaseInvert {indices} ->
       (* XXX use holes instead of params? *)
       let t = mkApp (mkIndU (ci.ci_ind,univs), Array.append params indices) in
-      DAst.make @@ GCast (tomatch, DEFAULTcast, detype t)
+      DAst.make @@ GCast (tomatch, None, detype t)
   in
   let alias, aliastyp, pred =
     if (not !Flags.raw_print) && synth_type && computable && not (Int.equal (Array.length bl) 0)
@@ -819,7 +819,7 @@ and detype_r d flags avoid env sigma t =
     | Cast (c1,k,c2) ->
       let d1 = detype d flags avoid env sigma c1 in
       let d2 = detype d flags avoid env sigma c2 in
-      GCast(d1,k,d2)
+      GCast(d1,Some k,d2)
     | Prod (na,ty,c) -> detype_binder d flags BProd avoid env sigma (LocalAssum (na,ty)) c
     | Lambda (na,ty,c) -> detype_binder d flags BLambda avoid env sigma (LocalAssum (na,ty)) c
     | LetIn (na,b,ty,c) -> detype_binder d flags BLetIn avoid env sigma (LocalDef (na,b,ty)) c

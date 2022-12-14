@@ -121,7 +121,7 @@ let rec isRHoles cl = match cl with
 let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
 let mkRVar id = DAst.make @@ GRef (GlobRef.VarRef id,None)
 let mkRltacVar id = DAst.make @@ GVar (id)
-let mkRCast rc rt =  DAst.make @@ GCast (rc, DEFAULTcast, rt)
+let mkRCast rc rt =  DAst.make @@ GCast (rc, Some DEFAULTcast, rt)
 let mkRType =  DAst.make @@ GSort (UAnonymous {rigid=true})
 let mkRProp =  DAst.make @@ GSort (UNamed (None, [GProp, 0]))
 let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
@@ -728,7 +728,7 @@ let mkCLambda ?loc name ty t =  CAst.make ?loc @@
    CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
 let mkCArrow ?loc ty t = CAst.make ?loc @@
    CProdN ([CLocalAssum([CAst.make Anonymous], Default Explicit, ty)], t)
-let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, DEFAULTcast, ty)
+let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, Some DEFAULTcast, ty)
 
 let rec isCHoles = function { CAst.v = CHole _ } :: cl -> isCHoles cl | cl -> cl = []
 let rec isCxHoles = function ({ CAst.v = CHole _ }, None) :: ch -> isCxHoles ch | _ -> false

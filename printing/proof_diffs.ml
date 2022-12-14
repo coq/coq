@@ -524,7 +524,7 @@ let match_goals ot nt =
     | CSort s, CSort s2 -> ()
     | CCast (c,k,t), CCast (c2,k2,t2) ->
       constr_expr ogname c c2;
-      if not (Glob_ops.cast_kind_eq k k2)
+      if not (Option.equal Glob_ops.cast_kind_eq k k2)
       then raise (Diff_Failure "Unable to match goals between old and new proof states (4)");
       constr_expr ogname t t2
     | CNotation (_,ntn,args), CNotation (_,ntn2,args2) ->

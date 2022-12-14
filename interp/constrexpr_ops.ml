@@ -238,7 +238,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
       | CSort s1, CSort s2 ->
         sort_expr_eq s1 s2
       | CCast(c1,k1,t1), CCast(c2,k2,t2) ->
-        constr_expr_eq c1 c2 && Glob_ops.cast_kind_eq k1 k2 && constr_expr_eq t1 t2
+        constr_expr_eq c1 c2 && Option.equal Glob_ops.cast_kind_eq k1 k2 && constr_expr_eq t1 t2
       | CNotation(inscope1, n1, s1), CNotation(inscope2, n2, s2) ->
         Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
         notation_eq n1 n2 &&
@@ -667,7 +667,7 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      CPatRecord (List.map (fun (r,p) -> (r,coerce_to_cases_pattern_expr p)) l)
   | CDelimiters (s,p) ->
      CPatDelimiters (s,coerce_to_cases_pattern_expr p)
-  | CCast (p,Constr.DEFAULTcast, t) ->
+  | CCast (p,Some Constr.DEFAULTcast, t) ->
      CPatCast (coerce_to_cases_pattern_expr p,t)
   | _ ->
      CErrors.user_err ?loc

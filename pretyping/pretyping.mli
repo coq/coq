@@ -170,7 +170,7 @@ type pretyper = {
   pretype_sort : pretyper -> glob_sort -> unsafe_judgment pretype_fun;
   pretype_hole : pretyper -> Evar_kinds.t * Namegen.intro_pattern_naming_expr -> unsafe_judgment pretype_fun;
   pretype_genarg : pretyper -> Genarg.glob_generic_argument -> unsafe_judgment pretype_fun;
-  pretype_cast : pretyper -> glob_constr * Constr.cast_kind * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_cast : pretyper -> glob_constr * Constr.cast_kind option * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_level list option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;

@@ -26,7 +26,7 @@ let q_list () = qualid_of_ref "core.list.type"
 let q_byte () = qualid_of_ref "core.byte.type"
 
 let has_type env sigma f ty =
-  let c = mkCastC (mkRefC f, Constr.DEFAULTcast, ty) in
+  let c = mkCastC (mkRefC f, Some Constr.DEFAULTcast, ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
   with Pretype_errors.PretypeError _ -> false
 

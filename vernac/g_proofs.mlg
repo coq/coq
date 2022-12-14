@@ -128,7 +128,7 @@ GRAMMAR EXTEND Gram
     ;
   constr_body:
     [ [ ":="; c = lconstr -> { c }
-      | ":"; t = lconstr; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,C.DEFAULTcast, t) } ] ]
+      | ":"; t = lconstr; ":="; c = lconstr -> { CAst.make ~loc @@ CCast(c,Some C.DEFAULTcast, t) } ] ]
   ;
   mode:
     [ [ l = LIST1 [ "+" -> { ModeInput }

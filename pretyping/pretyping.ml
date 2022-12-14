@@ -525,7 +525,7 @@ type pretyper = {
   pretype_sort : pretyper -> glob_sort -> unsafe_judgment pretype_fun;
   pretype_hole : pretyper -> Evar_kinds.t * Namegen.intro_pattern_naming_expr -> unsafe_judgment pretype_fun;
   pretype_genarg : pretyper -> Genarg.glob_generic_argument -> unsafe_judgment pretype_fun;
-  pretype_cast : pretyper -> glob_constr * cast_kind * glob_constr -> unsafe_judgment pretype_fun;
+  pretype_cast : pretyper -> glob_constr * cast_kind option * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
   pretype_array : pretyper -> glob_level list option * glob_constr array * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
@@ -1221,7 +1221,7 @@ struct
           ~onlyalg:true ~status:Evd.univ_flexible (Some false) !!env sigma tj.utj_val in
       let tval = nf_evar sigma tval in
       let (sigma, cj), tval = match k with
-        | VMcast ->
+        | Some VMcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
           let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
           begin match Reductionops.vm_infer_conv !!env sigma cty tval with
@@ -1230,7 +1230,7 @@ struct
               error_actual_type ?loc !!env sigma cj tval
                 (ConversionFailed (!!env,cty,tval))
           end
-        | NATIVEcast ->
+        | Some NATIVEcast ->
           let sigma, cj = pretype empty_tycon env sigma c in
           let cty = nf_evar sigma cj.uj_type and tval = nf_evar sigma tval in
           begin
@@ -1240,10 +1240,13 @@ struct
               error_actual_type ?loc !!env sigma cj tval
                 (ConversionFailed (!!env,cty,tval))
           end
-        | _ ->
+        | None | Some DEFAULTcast ->
           pretype (mk_tycon tval) env sigma c, tval
       in
-      let v = mkCast (cj.uj_val, k, tval) in
+      let v = match k with
+        | None -> cj.uj_val
+        | Some k -> mkCast (cj.uj_val, k, tval)
+      in
       sigma, { uj_val = v; uj_type = tval }
     in discard_trace @@ inh_conv_coerce_to_tycon ?loc ~flags env sigma cj tycon
 

@@ -830,7 +830,7 @@ GRAMMAR EXTEND Gram
         { (na, Some bod, pat) }
       | na = Prim.name; ":="; bod = match_pattern ->
         { let bod, ty = match bod.CAst.v with
-              | QConstrMatchPattern { CAst.v = CCast (t, DEFAULTcast, ty) } ->
+              | QConstrMatchPattern { CAst.v = CCast (t, Some DEFAULTcast, ty) } ->
                 let t = CAst.make ?loc:t.loc @@ QConstrMatchPattern t in
                 let ty = CAst.make ?loc:ty.loc @@ QConstrMatchPattern ty in
                 t, ty

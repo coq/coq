@@ -155,13 +155,13 @@ let make_ct t =
   let mkt t = mk_term NoFlag t in
   let mkl t = (NoFlag, (t, None)) in
   match Ssrcommon.ssrterm_of_ast_closure_term t with
-  | _, (_, Some { loc; v = CCast (ct, DEFAULTcast, cty)}) ->
+  | _, (_, Some { loc; v = CCast (ct, Some DEFAULTcast, cty)}) ->
     mkt ct, mkt cty, mkt (mkCHole None), loc
   | _, (_, Some ct) ->
     mkt ct, mkt (mkCHole None), mkt (mkCHole None), None
   | _, (t, None) ->
     begin match DAst.get t with
-    | GCast (ct, DEFAULTcast, cty) ->
+    | GCast (ct, Some DEFAULTcast, cty) ->
       mkl ct, mkl cty, mkl mkRHole, t.CAst.loc
     | _ -> mkl t, mkl mkRHole, mkl mkRHole, None
     end
@@ -303,12 +303,12 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave =
   let ct = match Ssrcommon.ssrterm_of_ast_closure_term ct with
   | (a, (b, Some ct)) ->
     begin match ct.CAst.v with
-    | CCast (_, DEFAULTcast, cty) -> a, (b, Some cty)
+    | CCast (_, Some DEFAULTcast, cty) -> a, (b, Some cty)
     | _ -> anomaly "wlog: ssr cast hole deleted by typecheck"
     end
   | (a, (t, None)) ->
     begin match DAst.get t with
-    | GCast (_, DEFAULTcast, cty) -> a, (cty, None)
+    | GCast (_, Some DEFAULTcast, cty) -> a, (cty, None)
     | _ -> anomaly "wlog: ssr cast hole deleted by typecheck"
     end
   in
@@ -392,12 +392,12 @@ let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
   let c = match Ssrcommon.ssrterm_of_ast_closure_term c with
   | (a, (b, Some ct)) ->
     begin match ct.CAst.v with
-    | CCast (_, DEFAULTcast, cty) -> a, (b, Some cty)
+    | CCast (_, Some DEFAULTcast, cty) -> a, (b, Some cty)
     | _ -> anomaly "suff: ssr cast hole deleted by typecheck"
     end
   | (a, (t, None)) ->
     begin match DAst.get t with
-    | GCast (_, DEFAULTcast, cty) -> a, (cty, None)
+    | GCast (_, Some DEFAULTcast, cty) -> a, (cty, None)
     | _ -> anomaly "suff: ssr cast hole deleted by typecheck"
     end
   in

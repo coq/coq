@@ -524,9 +524,10 @@ let tag_var = tag Tag.variable
         pr sep inherited a
 
   let pr_cast = let open Constr in function
-    | DEFAULTcast -> str ":"
-    | VMcast-> str "<:"
-    | NATIVEcast -> str "<<:"
+    | Some DEFAULTcast -> str ":"
+    | Some VMcast-> str "<:"
+    | Some NATIVEcast -> str "<<:"
+    | None -> str ":>"
 
   type raw_or_glob_genarg =
   | Rawarg of Genarg.raw_generic_argument

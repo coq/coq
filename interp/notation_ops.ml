@@ -230,7 +230,7 @@ let compare_notation_constr lt var_eq_hole (vars1,vars2) t1 t2 =
   | NSort s1, NSort s2 when glob_sort_eq s1 s2 -> ()
   | NCast (c1, k1, t1), NCast (c2, k2, t2) ->
     aux vars renaming c1 c2;
-    if not (cast_kind_eq k1 k2) then raise_notrace Exit;
+    if not (Option.equal cast_kind_eq k1 k2) then raise_notrace Exit;
     aux vars renaming t1 t2
   | NInt i1, NInt i2 when Uint63.equal i1 i2 -> ()
   | NFloat f1, NFloat f2 when Float64.equal f1 f2 -> ()
@@ -1504,7 +1504,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
       Array.fold_left2 (match_in u alp metas) sigma bl1 bl2
   | GCast(c1, k1, t1), NCast(c2, k2, t2) ->
     let sigma = match_in u alp metas sigma c1 c2 in
-    if not (cast_kind_eq k1 k2) then raise No_match;
+    if not (Option.equal cast_kind_eq k1 k2) then raise No_match;
     match_in u alp metas sigma t1 t2
 
   (* Next pair of lines useful only if not coming from detyping *)
@@ -1640,9 +1640,13 @@ let group_by_type ids (terms,termlists,binders,binderlists) =
        (* binder list -> term list *)
        let vars,patl = try Id.List.assoc x binderlists with Not_found -> raise No_match in
        let v = List.map (fun pat -> match DAst.get pat with
-           | GLocalPattern ((disjpat,_),_,_,_) -> List.map (glob_constr_of_cases_pattern (Global.env())) disjpat
-           | GLocalAssum (Anonymous,bk,t) -> [DAst.make (GCast (DAst.make (GHole (Evar_kinds.BinderType Anonymous,IntroAnonymous)), DEFAULTcast, t))]
-           | GLocalAssum (Name id,bk,t) -> [DAst.make (GCast (DAst.make (GVar id), DEFAULTcast, t))]
+           | GLocalPattern ((disjpat,_),_,_,_) ->
+             List.map (glob_constr_of_cases_pattern (Global.env())) disjpat
+           | GLocalAssum (Anonymous,bk,t) ->
+             let hole = DAst.make (GHole (Evar_kinds.BinderType Anonymous,IntroAnonymous)) in
+             [DAst.make (GCast (hole, Some DEFAULTcast, t))]
+           | GLocalAssum (Name id,bk,t) ->
+             [DAst.make (GCast (DAst.make (GVar id), Some DEFAULTcast, t))]
            | GLocalDef _ -> raise No_match) patl in
        (terms',((vars,List.flatten v),scl)::termlists',binders',binderlists')
     | NtnTypeBinderList (NtnBinderParsedAsBinder | NtnBinderParsedAsSomeBinderKind _) ->
