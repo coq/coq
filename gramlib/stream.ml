@@ -23,14 +23,8 @@ and 'a gen = { mutable curr : 'a option option; func : unit -> 'a option }
 and buffio =
   { ic : in_channel; buff : bytes; mutable len : int; mutable ind : int }
 
-(* We use exception Foo = Stdlib.Stream.Foo to make it easier for
-   plugins since they won't be getting type errors when using them. *)
-
-exception Failure = Stdlib.Stream.Failure
-[@@ocaml.warning "-3"]
-
-exception Error = Stdlib.Stream.Error
-[@@ocaml.warning "-3"]
+exception Failure
+exception Error of string
 
 let count { count } = count
 
