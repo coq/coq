@@ -187,3 +187,8 @@ let pr_sort_family = function
   | InSet -> Pp.(str "Set")
   | InType -> Pp.(str "Type")
   | InQSort -> Pp.(str "Type") (* FIXME? *)
+
+let subst_instance_sort u = function
+  | SProp | Prop | Set as s -> s
+  | Type v -> sort_of_univ (subst_instance_universe u v)
+  | QSort (q, v) -> QSort (q, subst_instance_universe u v)

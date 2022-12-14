@@ -353,9 +353,81 @@ let irr_flex env = function
   | VarKey x -> Context.Named.Declaration.get_relevance (Environ.lookup_named x env) == Sorts.Irrelevant
   | RelKey x -> Context.Rel.Declaration.get_relevance (Environ.lookup_rel x env) == Sorts.Irrelevant
 
+let eq_universes (_,e1) (_,e2) u1 u2 =
+  let subst e u = if Univ.Instance.is_empty e then u else Univ.subst_instance_instance e u in
+  Univ.Instance.equal (subst e1 u1) (subst e2 u2)
+
+let rec compare_under e1 c1 e2 c2 =
+  match Constr.kind c1, Constr.kind c2 with
+  | Cast (c1, _, _), _ -> compare_under e1 c1 e2 c2
+  | _, Cast (c2, _, _) -> compare_under e1 c1 e2 c2
+  | Rel i, Rel j -> begin match Esubst.expand_rel i (fst e1) with
+      | Inl _ -> false
+      | Inr (k, _) -> begin match Esubst.expand_rel j (fst e2) with
+          | Inl _ -> false
+          | Inr (k', _) -> Int.equal k k'
+        end
+    end
+  | Meta m1, Meta m2 -> Int.equal m1 m2
+  | Var id1, Var id2 -> Id.equal id1 id2
+  | Int i1, Int i2 -> Uint63.equal i1 i2
+  | Float f1, Float f2 -> Float64.equal f1 f2
+  | Sort s1, Sort s2 ->
+    let subst_instance_sort u s =
+      if Univ.Instance.is_empty u then s else Sorts.subst_instance_sort u s
+    in
+    let s1 = subst_instance_sort (snd e1) s1
+    and s2 = subst_instance_sort (snd e2) s2 in
+    Sorts.equal s1 s2
+  | Prod (_,t1,c1), Prod (_,t2,c2) ->
+    compare_under e1 t1 e2 t2
+    && compare_under (usubs_lift e1) c1 (usubs_lift e2) c2
+  | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
+    compare_under e1 t1 e2 t2
+    && compare_under (usubs_lift e1) c1 (usubs_lift e2) c2
+  | LetIn (_,b1,_,c1), LetIn (_,b2,_,c2) ->
+    (* don't care about types when bodies are equal *)
+    compare_under e1 b1 e2 b2
+    && compare_under (usubs_lift e1) c1 (usubs_lift e2) c2
+  | App (c1, l1), App (c2, l2) ->
+    let len = Array.length l1 in
+    Int.equal len (Array.length l2)
+    && compare_under e1 c1 e2 c2
+    && Array.equal_norefl (fun c1 c2 -> compare_under e1 c1 e2 c2) l1 l2
+  | Proj (p1,c1), Proj (p2,c2) ->
+    Projection.CanOrd.equal p1 p2 && compare_under e1 c1 e2 c2
+  | Evar _, Evar _ -> false
+  | Const (c1,u1), Const (c2,u2) ->
+    (* The args length currently isn't used but may as well pass it. *)
+    Constant.CanOrd.equal c1 c2 && eq_universes e1 e2 u1 u2
+  | Ind (c1,u1), Ind (c2,u2) -> Ind.CanOrd.equal c1 c2 && eq_universes e1 e2 u1 u2
+  | Construct (c1,u1), Construct (c2,u2) ->
+    Construct.CanOrd.equal c1 c2 && eq_universes e1 e2 u1 u2
+  | Case _, Case _ | Fix _, Fix _ | CoFix _, CoFix _ -> false (* todo some other time *)
+  | Array(u1,t1,def1,ty1), Array(u2,t2,def2,ty2) ->
+    eq_universes e1 e2 u1 u2 &&
+    Array.equal_norefl (fun c1 c2 -> compare_under e1 c1 e2 c2) t1 t2
+    && compare_under e1 def1 e2 def2
+    && compare_under e1 ty1 e2 ty2
+  | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
+    | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
+    | CoFix _ | Int _ | Float _| Array _), _ -> false
+
+
+let rec fast_test lft1 term1 lft2 term2 = match fterm_of term1, fterm_of term2 with
+  | FLIFT (i, term1), (FLIFT _ | FCLOS _) -> fast_test (el_shft i lft1) term1 lft2 term2
+  | FCLOS _, FLIFT (j, term2) -> fast_test lft1 term1 (el_shft j lft2) term2
+  | FCLOS (c1, (e1,u1)), FCLOS (c2, (e2,u2)) ->
+    eq_lift lft1 lft2 &&
+    compare_under (e1, u1) c1 (e2, u2) c2
+  | _ -> false
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
-  eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+  let fast = fast_test lft1 term1 lft2 term2 in
+  if fast then cuniv
+  else
+    eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
