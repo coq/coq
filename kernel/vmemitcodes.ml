@@ -64,80 +64,36 @@ struct
 
 type t = string
 (* Represent an ordered set of 32-bit integers as an array of successive diffs.
-   We use furthermore a tagged approach where smaller integers use less bytes.
-   The leading 1s in the first byte indicates the number of remaining bytes.
-   This is a cheap way to compact this data. *)
-
-let check_size =
-  if Sys.int_size <= 32 then ignore
-  else fun n -> assert (n < 1 lsl 32)
+   We use furthermore an approach where smaller integers use less bytes. Numbers
+   smaller than 255 are stored into one byte. Otherwise we use the byte 0x00 to
+   signal that we store the integer in the next 4 bytes. This is a cheap way to
+   compact this data. *)
 
 let output buf n =
-  if n < 0x80 then
-    (* 7 bits, 1 byte *)
-    Buffer.add_uint8 buf n
-  else if n < 0x80 + 0x4000 then
-    (* 6 + 8 bits, 2 bytes *)
-    let n = n - 0x80 in
-    let () = Buffer.add_uint8 buf (0b10000000 lor (n lsr 8)) in
-    Buffer.add_uint8 buf (0xFF land n)
-  else if n < 0x80 + 0x4000 + 0x200000 then
-    let n = n - (0x80 + 0x4000) in
-    (* 5 + 8 + 8 bits, 3 bytes *)
-    let () = Buffer.add_uint8 buf (0b11000000 lor (n lsr 16)) in
-    let () = Buffer.add_uint8 buf (0xFF land (n lsr 8)) in
-    Buffer.add_uint8 buf (0xFF land n)
-  else if n < 0x80 + 0x4000 + 0x200000 + 0x10000000 then
-    let n = n - (0x80 + 0x4000 + 0x200000) in
-    (* 4 + 8 + 8 + 8 bits, 4 bytes *)
-    let () = Buffer.add_uint8 buf (0b11100000 lor (n lsr 24)) in
-    let () = Buffer.add_uint8 buf (0xFF land (n lsr 16)) in
-    let () = Buffer.add_uint8 buf (0xFF land (n lsr 8)) in
-    Buffer.add_uint8 buf (0xFF land n)
+  if n <= 0xFF then Buffer.add_uint8 buf n
   else
-    (* Already bigger than 32-bit integer *)
-    let () = check_size n in
-    (* 3 + 8 + 8 + 8 + 8 bits, 5 bytes *)
-    (* Since we only consider 32-bit integers and we have 35 bits at hand, we
-       cap the input and store it as-is in the next 4 bytes. *)
-    let () = Buffer.add_uint8 buf 0b11110000 in
-    let () = Buffer.add_uint8 buf (0xFF land (n lsr 24)) in
-    let () = Buffer.add_uint8 buf (0xFF land (n lsr 16)) in
-    let () = Buffer.add_uint8 buf (0xFF land (n lsr 8)) in
-    Buffer.add_uint8 buf (0xFF land n)
+    let () = Buffer.add_uint8 buf 0x00 in
+    Buffer.add_int32_be buf (Int32.of_int n)
 
 let input s pos =
   let c = Char.code s.[!pos] in
-  if c < 0x80 then
-    let () = pos := !pos + 1 in
-    c
-  else if c < 0b11000000 then
-    let c1 = Char.code s.[!pos + 1] in
-    let () = pos := !pos + 2 in
-    0x80 + ((c land 0b00111111) lsl 8) + c1
-  else if c < 0b11100000 then
-    let c1 = Char.code s.[!pos + 1] in
-    let c2 = Char.code s.[!pos + 2] in
-    let () = pos := !pos + 3 in
-    (0x80 + 0x4000) + ((c land 0b00011111) lsl 16) + (c1 lsl 8) + c2
-  else if c < 0b11110000 then
-    let c1 = Char.code s.[!pos + 1] in
-    let c2 = Char.code s.[!pos + 2] in
-    let c3 = Char.code s.[!pos + 3] in
-    let () = pos := !pos + 4 in
-    (0x80 + 0x4000 + 0x200000) + ((c land 0b00001111) lsl 24) + (c1 lsl 16) + (c2 lsl 8) + c3
-  else
+  if Int.equal c 0x00 then
+    (* TODO: use String.get_int32_be when available in OCaml 4.13.0 *)
     let c1 = Char.code s.[!pos + 1] in
     let c2 = Char.code s.[!pos + 2] in
     let c3 = Char.code s.[!pos + 3] in
     let c4 = Char.code s.[!pos + 4] in
     let () = pos := !pos + 5 in
     (c1 lsl 24) lor (c2 lsl 16) lor (c3 lsl 8) lor c4
+  else
+    let () = pos := !pos + 1 in
+    c
 
 let of_list l = match l with
 | [] -> ""
 | n :: l ->
   let buf = Buffer.create 16 in
+  let () = assert (0 < n) in
   let () = output buf n in
   let rec aux cur l = match l with
   | [] -> ()
