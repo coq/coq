@@ -417,9 +417,9 @@ the :attr:`projections(primitive)` :term:`attribute`  must be supplied.
 
 .. flag:: Printing Primitive Projection Parameters
 
-   This compatibility :term:`flag` reconstructs internally omitted parameters at
-   printing time (even though they are absent in the actual AST manipulated
-   by the kernel).
+   This compatibility :term:`flag` (off by default) reconstructs
+   internally omitted parameters at printing time (even though they
+   are absent in the actual AST manipulated by the kernel).
 
 Reduction
 +++++++++
@@ -432,27 +432,12 @@ above, while the folded version delta-reduces to the unfolded version. This
 allows to precisely mimic the usual unfolding rules of :term:`constants <constant>`.
 Projections obey the usual ``simpl`` flags of the :cmd:`Arguments`
 command in particular.
-There is currently no way to input unfolded primitive projections at the
-user-level, and there is no way to display unfolded projections differently
-from folded ones.
 
+Unfolded primitive projections can be built using the compatibility
+match syntax for primitive records, or by reducing the compatibility constant.
 
-Compatibility Projections and :g:`match`
-++++++++++++++++++++++++++++++++++++++++
-
-To ease compatibility with ordinary record types, each primitive projection is
-also defined as an ordinary :term:`constant` taking parameters and an object of
-the record type as arguments, and whose :term:`body` is an application of the
-unfolded primitive projection of the same name. These constants are used when
-elaborating partial applications of the projection. One can distinguish them
-from applications of the primitive projection if the :flag:`Printing Primitive
-Projection Parameters` flag is off: For a primitive projection application,
-parameters are printed as underscores while for the compatibility projections
-they are printed as usual.
-
-Additionally, user-written :g:`match` constructs on primitive records are
-desugared into substitution of the projections, they cannot be printed back as
-:g:`match` constructs.
+User-written :g:`match` constructs on primitive records are
+desugared using the unfolded primitive projections and `let` bindings.
 
 .. example::
 
@@ -476,3 +461,23 @@ desugared into substitution of the projections, they cannot be printed back as
       Arguments p1 {_ _} _.
       Check fun x : Sigma nat (fun x => x = 0) =>
         match x return x.(p1) = 0 with sigma v e => e end.
+
+.. flag:: Printing Unfolded Projection As Match
+
+   By default this flag is off and unfolded primitive projections are
+   printed the same as folded primitive projections. By setting this
+   flag, unfolded primitive projections are instead printed as
+   let-style matches in the form ``let '{| p := p |} := c in p``.
+
+Compatibility Constants for Projections
++++++++++++++++++++++++++++++++++++++++
+
+To ease compatibility with ordinary record types, each primitive projection is
+also defined as an ordinary :term:`constant` taking parameters and an object of
+the record type as arguments, and whose :term:`body` is an application of the
+unfolded primitive projection of the same name. These constants are used when
+elaborating partial applications of the projection. One can distinguish them
+from applications of the primitive projection if the :flag:`Printing Primitive
+Projection Parameters` flag is off: For a primitive projection application,
+parameters are printed as underscores while for the compatibility projections
+they are printed as usual. They cannot be distinguished if the record has no parameters.
