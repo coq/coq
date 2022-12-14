@@ -342,6 +342,13 @@ let print_unfolded_primproj_asmatch =
     ~key:["Printing";"Unfolded";"Projection";"As";"Match"]
     ~value:false
 
+let print_match_paramunivs =
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Printing";"Match";"All";"Subterms"]
+    ~value:false
+
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
 
@@ -589,12 +596,21 @@ let it_destRLambda_or_LetIn_names l c =
 let detype_case computable detype detype_eqns avoid env sigma (ci, univs, params, p, iv, c, bl) =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
-  let tomatch = match iv with
-    | NoInvert -> tomatch
-    | CaseInvert {indices} ->
-      (* XXX use holes instead of params? *)
-      let t = mkApp (mkIndU (ci.ci_ind,univs), Array.append params indices) in
-      DAst.make @@ GCast (tomatch, None, detype t)
+  let tomatch =
+    if not (print_match_paramunivs ()) then tomatch
+    else match iv with
+      | NoInvert ->
+        if Array.is_empty params && EInstance.is_empty univs
+        then tomatch
+        else
+          let _, mip = Global.lookup_inductive ci.ci_ind in
+          let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous) in
+          let indices = List.make mip.mind_nrealargs hole in
+          let t = mkApp (mkIndU (ci.ci_ind,univs), params) in
+          DAst.make @@ GCast (tomatch, None, mkGApp (detype t) indices)
+      | CaseInvert {indices} ->
+        let t = mkApp (mkIndU (ci.ci_ind,univs), Array.append params indices) in
+        DAst.make @@ GCast (tomatch, None, detype t)
   in
   let alias, aliastyp, pred =
     if (not !Flags.raw_print) && synth_type && computable && not (Int.equal (Array.length bl) 0)
