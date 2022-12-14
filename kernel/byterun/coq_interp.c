@@ -115,8 +115,12 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 #define Restore_after_caml_call coq_env = *sp++;
 
 #if OCAML_VERSION >= 50000
-#define Coq_alloc_small(result, wosize, tag) Alloc_small(result, wosize, tag, \
-  { Setup_for_gc; caml_process_pending_actions(); Restore_after_gc; })
+#define Enter_gc(dom_st, wosize) do {        \
+    Setup_for_gc;                            \
+    Alloc_small_enter_GC(dom_st, wosize);    \
+    Restore_after_gc;                        \
+  } while (0)
+#define Coq_alloc_small(result, wosize, tag) Alloc_small(result, wosize, tag, Enter_gc)
 #else
 #define Coq_alloc_small(result, wosize, tag) Alloc_small(result, wosize, tag)
 #endif
