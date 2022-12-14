@@ -371,8 +371,13 @@ let print_body_state state fmt r =
       print_code r.vernac_body
 
 let print_body_fun state fmt r =
-  fprintf fmt "let coqpp_body %a%a = @[%a@] in "
-    print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state state) r
+  match r.vernac_synterp with
+  | None ->
+    fprintf fmt "let coqpp_body %a%a = @[%a@] in "
+      print_binders r.vernac_toks print_atts_left r.vernac_atts (print_body_state state) r
+  | Some (id,pe) ->
+    fprintf fmt "let coqpp_body %a%a = @[(let %s = %a in %a)@] in "
+      print_binders r.vernac_toks print_atts_left r.vernac_atts id print_code pe  (print_body_state state) r
 
 let print_body state fmt r =
   fprintf fmt "@[(%afun %a?loc ~atts ()@ -> coqpp_body %a%a)@]"
