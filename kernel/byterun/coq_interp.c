@@ -73,9 +73,9 @@ sp is a local copy of the global variable extern_sp. */
 #ifdef THREADED_CODE
 #  define Instruct(name) coq_lbl_##name:
 #  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
-#    define coq_Jumptbl_base ((char *) &&coq_lbl_ACC0)
+#    define coq_Jumptbl_base &&coq_lbl_ACC0
 #  else
-#    define coq_Jumptbl_base ((char *) 0)
+#    define coq_Jumptbl_base 0
 #    define coq_jumptbl_base ((char *) 0)
 #  endif
 #  ifdef DEBUG
@@ -91,9 +91,9 @@ sp is a local copy of the global variable extern_sp. */
 /* #define _COQ_DEBUG_ */
 
 #ifdef _COQ_DEBUG_
-#   define print_instr(s) /*if (drawinstr)*/ printf("%s\n",s)
-#   define print_int(i)   /*if (drawinstr)*/ printf("%d\n",i)
-#   define print_lint(i)  /*if (drawinstr)*/ printf("%ld\n",i)
+#   define print_instr(s) printf("%s\n",s)
+#   define print_int(i)   printf("%d\n",i)
+#   define print_lint(i)  printf("%ld\n",i)
 # else
 #   define print_instr(s)
 #   define print_int(i)
@@ -301,8 +301,7 @@ value coq_interprete
   if (coq_pc == NULL) {           /* Interpreter is initializing */
     print_instr("Interpreter is initializing");
 #ifdef THREADED_CODE
-    coq_instr_table = (char **) coq_jumptable;
-    coq_instr_base = coq_Jumptbl_base;
+    coq_init_thread_code(coq_jumptable, coq_Jumptbl_base);
 #endif
     CAMLreturn(Val_unit);
   }

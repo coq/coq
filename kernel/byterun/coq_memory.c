@@ -32,15 +32,11 @@ value * coq_stack_low;
 value * coq_stack_high;
 value * coq_stack_threshold;
 asize_t coq_max_stack_size = Coq_max_stack_size;
-/* global_data */
 
-int drawinstr;
 /* interp state */
 
 long coq_saved_sp_offset;
 value * coq_sp;
-/* Some predefined pointer code */
-code_t accumulate;
 
 /* functions over global environment */
 
@@ -52,15 +48,6 @@ void coq_stat_free (void * blk)
 value coq_static_alloc(value size) /* ML */
 {
   return (value) coq_stat_alloc((asize_t) Long_val(size));
-}
-
-value accumulate_code(value unit) /* ML */
-{
-  CAMLparam1(unit);
-  CAMLlocal1(res);
-  res = caml_alloc_small(1, Abstract_tag);
-  Code_val(res) = accumulate;
-  CAMLreturn(res);
 }
 
 #if OCAML_VERSION < 50000
@@ -93,51 +80,32 @@ static void coq_scan_roots(scanning_action action, scanning_action_flags flags, 
 }
 #endif
 
-void init_coq_stack()
-{
-  coq_stack_low = (value *) coq_stat_alloc(Coq_stack_size);
-  coq_stack_high = coq_stack_low + Coq_stack_size / sizeof (value);
-  coq_stack_threshold = coq_stack_low + Coq_stack_threshold / sizeof(value);
-  coq_max_stack_size = Coq_max_stack_size;
-}
-
-void init_coq_interpreter()
-{
-  coq_sp = coq_stack_high;
-  coq_interprete(NULL, Val_unit, Atom(0), Atom(0), Val_unit, 0);
-}
-
 static int coq_vm_initialized = 0;
 
 value init_coq_vm(value unit) /* ML */
 {
-  if (coq_vm_initialized == 1) {
-    fprintf(stderr,"already open \n");fflush(stderr);}
-  else {
-    drawinstr=0;
-    /* Allocate the table of global and the stack */
-    init_coq_stack();
-    /* Initialing the interpreter */
-    init_coq_interpreter();
+  if (coq_vm_initialized) {
+    fprintf(stderr, "already open\n");
+    fflush(stderr);
+    return Val_unit;
+  }
 
-    /* Some predefined pointer code.
-     * It is typically contained in accumulator blocks and thus might be
-     * scanned by the GC, so make it look like an OCaml block. */
-    value accu_block = (value) coq_stat_alloc(2 * sizeof(value));
-#if OCAML_VERSION < 50000
-    Hd_hp (accu_block) = Make_header (1, Abstract_tag, Caml_black);
-#else
-    Hd_hp (accu_block) = Make_header (1, Abstract_tag, NOT_MARKABLE);
-#endif
-    accumulate = (code_t) Val_hp(accu_block);
-    *accumulate = VALINSTR(ACCUMULATE);
+  /* Allocate the table of global and the stack */
+  coq_stack_low = (value *) coq_stat_alloc(Coq_stack_size);
+  coq_stack_high = coq_stack_low + Coq_stack_size / sizeof (value);
+  coq_stack_threshold = coq_stack_low + Coq_stack_threshold / sizeof(value);
+  coq_max_stack_size = Coq_max_stack_size;
+
+  /* Initialize the interpreter */
+  coq_sp = coq_stack_high;
+  coq_interprete(NULL, Val_unit, Atom(0), Atom(0), Val_unit, 0);
 
   /* Initialize GC */
-    if (coq_prev_scan_roots_hook == NULL)
-      coq_prev_scan_roots_hook = caml_scan_roots_hook;
-    caml_scan_roots_hook = coq_scan_roots;
-    coq_vm_initialized = 1;
-  }
+  if (coq_prev_scan_roots_hook == NULL)
+    coq_prev_scan_roots_hook = caml_scan_roots_hook;
+  caml_scan_roots_hook = coq_scan_roots;
+  coq_vm_initialized = 1;
+
   return Val_unit;;
 }
 
@@ -167,10 +135,3 @@ void realloc_coq_stack(asize_t required_space)
   coq_sp = new_sp;
 #undef shift
 }
-
-value coq_set_drawinstr(value unit)
-{
-  drawinstr = 1;
-  return Val_unit;
-}
-

@@ -11,8 +11,6 @@
 open Values
 open Vmvalues
 
-external set_drawinstr : unit -> unit = "coq_set_drawinstr"
-
 external mkPopStopCode : int -> tcode = "coq_pushpop"
 
 let popstop_tbl =  ref (Array.init 30 mkPopStopCode)

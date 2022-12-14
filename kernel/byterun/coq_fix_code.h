@@ -16,19 +16,16 @@
 void * coq_stat_alloc (asize_t sz);
 
 #ifdef THREADED_CODE
-extern char ** coq_instr_table;
-extern char * coq_instr_base;
-#define VALINSTR(instr) ((opcode_t)(coq_instr_table[instr] - coq_instr_base))
-#else
-#define VALINSTR(instr) instr
+void coq_init_thread_code(void ** instr_table, void * instr_base);
 #endif /*  THREADED_CODE */
 
-#define Is_instruction(pc,instr) (*pc == VALINSTR(instr))
+extern code_t accumulate;
 
+int coq_is_instruction(opcode_t, opcode_t);
 value coq_tcode_of_code(value code);
+value coq_accumulate(value);
 value coq_makeaccu (value i);
 value coq_pushpop (value i);
 value coq_accucond (value i);
-value coq_is_accumulate_code(value code);
 
 #endif /* _COQ_FIX_CODE_ */

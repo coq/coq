@@ -25,16 +25,44 @@
 #include "coq_fix_code.h"
 
 #ifdef THREADED_CODE
-char ** coq_instr_table;
-char * coq_instr_base;
+
+static char ** coq_instr_table;
+static char * coq_instr_base;
+#define VALINSTR(instr) ((opcode_t)(coq_instr_table[instr] - coq_instr_base))
+
+void coq_init_thread_code(void ** instr_table, void * instr_base)
+{
+  coq_instr_table = (char **) instr_table;
+  coq_instr_base = (char *) instr_base;
+}
+
+#else
+#define VALINSTR(instr) instr
 #endif /*  THREADED_CODE */
 
+int coq_is_instruction(opcode_t instr1, opcode_t instr2)
+{
+  return instr1 == VALINSTR(instr2);
+}
 
 void * coq_stat_alloc (asize_t sz)
 {
   void * result = malloc (sz);
   if (result == NULL) caml_raise_out_of_memory ();
   return result;
+}
+
+static opcode_t accu_instr;
+code_t accumulate = &accu_instr;
+
+value coq_accumulate(value unit)
+{
+  CAMLparam1(unit);
+  CAMLlocal1(res);
+  accu_instr = VALINSTR(ACCUMULATE);
+  res = caml_alloc_small(1, Abstract_tag);
+  Code_val(res) = accumulate;
+  CAMLreturn(res);
 }
 
 value coq_makeaccu (value i) {
@@ -68,13 +96,6 @@ value coq_pushpop (value i) {
     *q = VALINSTR(STOP);
     CAMLreturn(res);
   }
-}
-
-value coq_is_accumulate_code(value code){
-  code_t q = Code_val(code);
-  int res;
-  res = Is_instruction(q,ACCUMULATE);
-  return Val_bool(res);
 }
 
 #ifdef ARCH_BIG_ENDIAN

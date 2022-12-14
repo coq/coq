@@ -21,6 +21,8 @@
 #define Setup_for_gc
 #define Restore_after_gc
 
+#define Is_instruction(c, i) coq_is_instruction(*c, i)
+
 value coq_kind_of_closure(value v) {
   opcode_t * c;
   int is_app = 0;
@@ -32,6 +34,13 @@ value coq_kind_of_closure(value v) {
   return Val_int(0);
 }
 
+value coq_is_accumulate_code(value code)
+{
+  code_t q = Code_val(code);
+  int res;
+  res = Is_instruction(q,ACCUMULATE);
+  return Val_bool(res);
+}
 
 /* DESTRUCT ACCU */
 
