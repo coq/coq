@@ -334,6 +334,7 @@ let add_vo_path lp =
   let recursive = lp.recursive in
   if System.exists_dir unix_path then
     let dirs = if recursive then System.all_subdirs ~unix_path else [] in
+    let dirs = List.sort (fun a b -> String.compare (fst a) (fst b)) dirs in
     let prefix = DP.repr lp.coq_path in
     let convert_dirs (lp, cp) =
       try
