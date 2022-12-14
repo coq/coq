@@ -1017,29 +1017,6 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
-(* NOTE: We absorb anomalies happening in the conversion tactic, which
-   is a bit ugly. This is mostly due to efficiency both in tactics and
-   in the conversion machinery itself. It is not uncommon for a tactic
-   to send some ill-typed term to the engine.
-
-   We would usually say that a tactic that converts ill-typed terms is
-   buggy, but fixing the tactic could have a very large runtime cost
-   *)
-exception AnomalyInConversion of exn
-
-let _ = CErrors.register_handler (function
-    | AnomalyInConversion e ->
-      Some Pp.(str "Conversion test raised an anomaly:" ++
-               spc () ++ CErrors.print e)
-    | _ -> None)
-
-let report_anomaly (e, info) =
-  let e =
-    if is_anomaly e then AnomalyInConversion e
-    else e
-  in
-  Exninfo.iraise (e, info)
-
 module CheckUnivs =
 struct
 
@@ -1096,9 +1073,6 @@ let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
       let _ = Reduction.generic_conv ~l2r:false pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
       true
     with Reduction.NotConvertible -> false
-    | e ->
-      let e = Exninfo.capture e in
-      report_anomaly e
 
 let is_conv ?(reds=TransparentState.full) env sigma x y =
   is_fconv ~reds Reduction.CONV env sigma x y
@@ -1185,9 +1159,6 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
   with
   | Reduction.NotConvertible -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
-  | e ->
-    let e = Exninfo.capture e in
-    report_anomaly e
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
       Reduction.generic_conv pb ~l2r (Evd.evar_handler sigma))
@@ -1214,9 +1185,6 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
   with
   | Reduction.NotConvertible -> None
   | UGraph.UniverseInconsistency _ when catch_incon -> None
-  | e ->
-    let e = Exninfo.capture e in
-    report_anomaly e
 
 let evars_of_evar_map sigma =
   { Genlambda.evars_val = Evd.evar_handler sigma }
