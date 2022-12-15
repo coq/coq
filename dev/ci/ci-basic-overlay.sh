@@ -152,7 +152,7 @@ project fiat_parsers 'https://github.com/mit-plv/fiat' 'ddb9d1c56c47e684f52272a2
 ########################################################################
 # fiat_crypto
 ########################################################################
-project fiat_crypto "https://github.com/mit-plv/fiat-crypto" "5433d725e52b6adecca5dc5d6d3fe46335e52730"
+project fiat_crypto "https://github.com/mit-plv/fiat-crypto" "671cf2894c3d72a145d4cc9193f8108b61a8d402"
 
 ########################################################################
 # fiat_crypto_legacy
@@ -343,7 +343,7 @@ project lean_importer 'https://github.com/SkySkimmer/coq-lean-import' '9e9c13e8b
 ########################################################################
 # SerAPI
 ########################################################################
-project serapi 'https://github.com/ejgallego/coq-serapi' 'f4883a3b7ac08208300fbc45bed10047d1ad9f38'
+project serapi 'https://github.com/ejgallego/coq-serapi' 'acb183d1a5023a14025cf4b3fcc5430a6194a250'
 
 ########################################################################
 # SMTCoq
