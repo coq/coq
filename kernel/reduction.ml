@@ -415,9 +415,10 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FFlex fl1, FFlex fl2) ->
       (try
          let nargs = same_args_size v1 v2 in
+         let () = if not (compare_stack_shape v1 v2) then raise NotConvertible in
          let cuniv = conv_table_key infos.cnv_inf ~nargs fl1 fl2 cuniv in
          let () = if irr_flex (info_env infos.cnv_inf) fl1 then raise NotConvertible (* trigger the fallback *) in
-         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+         convert_stacks ~checked:true l2r infos lft1 lft2 v1 v2 cuniv
        with NotConvertible | UGraph.UniverseInconsistency _ ->
         let r1 = unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 in
         let r2 = unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 in
@@ -730,7 +731,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
      | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _ | FCaseInvert _
        | FProd _ | FEvar _ | FInt _ | FFloat _ | FArray _ | FIrrelevant), _ -> raise NotConvertible
 
-and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
+and convert_stacks ?(checked=false) l2r infos lft1 lft2 stk1 stk2 cuniv =
   let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in
   let rec cmp_rec pstk1 pstk2 cuniv =
     match (pstk1,pstk2) with
@@ -776,7 +777,7 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
                 List.fold_right2 fk kargs1 kargs2 cu2
             | ((Zlapp _ | Zlproj _ | Zlfix _| Zlcase _| Zlprimitive _), _) -> assert false)
       | _ -> cuniv in
-  if compare_stack_shape stk1 stk2 then
+  if checked || compare_stack_shape stk1 stk2 then
     cmp_rec (pure_stack lft1 stk1) (pure_stack lft2 stk2) cuniv
   else raise NotConvertible
 
