@@ -134,8 +134,24 @@ struct
 
   let empty = Id.Map.empty
 
-  (* [push_until] is used to register [Until vis] visibility and
-     [push_exactly] to [Exactly vis] and [push_tree] chooses the right one*)
+  (* [push_until] is used to register [Until vis] visibility.
+
+     Example: [push_until Top.X.Y.t o (Until 1) tree [Y;X;Top]] adds the
+     value [Relative (Top.X.Y.t,o)] to occurrences [Y] and [Y.X] of
+     the tree, and [Absolute (Top.X.Y.t,o)] to occurrence [Y.X.Top] of
+     the tree. In particular, the tree now includes the following shape:
+     { map := Y |-> {map := X |-> {map := Top |-> {map := ...;
+                                                   path := Absolute (Top.X.Y.t,o)::...}
+                                          ...;
+                                   path := Relative (Top.X.Y.t,o)::...}
+                             ...;
+                     path := Relative (Top.X.Y.t,o)::...}
+               ...;
+       path := ...}
+     where ... denotes what was there before.
+
+     [push_exactly] is to register [Exactly vis] and [push] chooses
+     the right one *)
 
   let rec push_until uname o level tree = function
     | modid :: path ->
@@ -212,16 +228,13 @@ let push visibility uname o tab =
 
 let rec remove_path uname tree = function
   | modid :: path ->
-      let map =
-        try
-          let submap = ModIdmap.find modid tree.map in
-          let submap = remove_path uname submap path in
-          if is_empty_tree submap then ModIdmap.empty
-          else ModIdmap.add modid submap tree.map
-        with Not_found ->
-          (* The name was actually not here *)
-          tree.map
+      let update = function
+        | None -> (* The name was actually not here *) None
+        | Some mc ->
+          let mc = remove_path uname mc path in
+          if is_empty_tree mc then None else Some mc
       in
+      let map = ModIdmap.update modid update tree.map in
       let this =
         let test = function Relative (uname',_) -> not (U.equal uname uname') | _ -> true in
         List.filter test tree.path

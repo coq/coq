@@ -115,6 +115,8 @@ let pridmapgen l = prmapgen Id.print (Id.Set.elements (Id.Map.domain l))
 let ppidmapgen l = pp (pridmapgen l)
 let printmapgen l = prmapgen int (Int.Set.elements (Int.Map.domain l))
 let ppintmapgen l = pp (printmapgen l)
+let prmodidmapgen l = prmapgen Id.print (ModIdset.elements (ModIdmap.domain l))
+let ppmodidmapgen l = pp (prmodidmapgen l)
 
 let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
   hov 0
