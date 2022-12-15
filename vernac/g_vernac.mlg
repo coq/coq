@@ -1247,7 +1247,7 @@ GRAMMAR EXTEND Gram
   ;
   enable_notation_rule:
     [ [ s = ne_string -> { Some (Inl s) }
-      | qid = global -> { Some (Inr qid) }
+      | qid = global; idl = LIST0 ident -> { Some (Inr (idl,qid)) }
       | -> { None } ] ]
   ;
   enable_notation_interpretation:
@@ -1262,8 +1262,8 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "all" -> { EnableNotationAll }
       | IDENT "only"; IDENT "parsing" -> { EnableNotationOnly Notationextern.OnlyParsing }
       | IDENT "only"; IDENT "printing" -> { EnableNotationOnly Notationextern.OnlyPrinting }
-      | "in"; IDENT "custom"; x = IDENT -> { EnableNotationEntry (InCustomEntry x) }
-      | "in"; IDENT "constr" -> { EnableNotationEntry InConstrEntry } ] ]
+      | "in"; IDENT "custom"; x = identref -> { EnableNotationEntry CAst.(make ?loc:x.loc (InCustomEntry (Id.to_string x.v))) }
+      | "in"; IDENT "constr" -> { EnableNotationEntry (CAst.make ~loc InConstrEntry) } ] ]
   ;
   opt_scope:
     [ [ ":"; sc = IDENT -> { Some (NotationInScope sc) }

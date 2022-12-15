@@ -28,18 +28,17 @@ type abbreviation =
   }
 
 let abbrev_table =
-  Summary.ref (KNmap.empty : abbreviation KNmap.t)
+  Summary.ref (KNmap.empty : (full_path * abbreviation) KNmap.t)
     ~name:"ABBREVIATIONS"
 
-let add_abbreviation kn abbrev =
-  abbrev_table := KNmap.add kn abbrev !abbrev_table
+let add_abbreviation kn sp abbrev =
+  abbrev_table := KNmap.add kn (sp,abbrev) !abbrev_table
 
 let toggle_abbreviation ~on ~use kn =
-  let data = KNmap.find kn !abbrev_table in
+  let sp, data = KNmap.find kn !abbrev_table in
   if data.abbrev_activated != on then
     begin
-      abbrev_table := KNmap.add kn {data with abbrev_activated = on} !abbrev_table;
-      let sp = Nametab.path_of_abbreviation kn in
+      abbrev_table := KNmap.add kn (sp, {data with abbrev_activated = on}) !abbrev_table;
       match use with
       | OnlyPrinting -> ()
       | OnlyParsing | ParsingAndPrinting ->
@@ -53,15 +52,15 @@ let toggle_abbreviation ~on ~use kn =
     end
 
 let toggle_abbreviations ~on ~use filter =
-  KNmap.fold (fun kn abbrev () ->
-      if filter kn abbrev.abbrev_pattern then toggle_abbreviation ~on ~use kn)
+  KNmap.fold (fun kn (sp,abbrev) () ->
+      if abbrev.abbrev_activated != on && filter sp abbrev.abbrev_pattern then toggle_abbreviation ~on ~use kn)
   !abbrev_table ()
 
 let load_abbreviation i ((sp,kn),(_local,abbrev)) =
   if Nametab.exists_cci sp then
     user_err
       (Id.print (basename sp) ++ str " already exists.");
-  add_abbreviation kn abbrev;
+  add_abbreviation kn sp abbrev;
   Nametab.push_abbreviation (Nametab.Until i) sp kn
 
 let is_alias_of_already_visible_name sp = function
@@ -82,7 +81,7 @@ let open_abbreviation i ((sp,kn),(_local,abbrev)) =
   end
 
 let import_abbreviation i sp kn =
-  let abbrev = KNmap.get kn !abbrev_table in
+  let _,abbrev = KNmap.get kn !abbrev_table in
   open_abbreviation i ((sp,kn),(false,abbrev))
 
 let cache_abbreviation d =
@@ -123,12 +122,12 @@ let warn_deprecated_abbreviation =
 
 (* Remark: do not check for activation (if not activated, it is already not supposed to be located) *)
 let search_abbreviation ?loc kn =
-  let abbrev = KNmap.find kn !abbrev_table in
+  let _,abbrev = KNmap.find kn !abbrev_table in
   Option.iter (fun d -> warn_deprecated_abbreviation ?loc (kn,d)) abbrev.abbrev_deprecation;
   abbrev.abbrev_pattern
 
 let search_filtered_abbreviation ?loc filter kn =
-  let abbrev = KNmap.find kn !abbrev_table in
+  let _,abbrev = KNmap.find kn !abbrev_table in
   let res = filter abbrev.abbrev_pattern in
   if Option.has_some res then
     Option.iter (fun d -> warn_deprecated_abbreviation ?loc (kn,d)) abbrev.abbrev_deprecation;
