@@ -278,6 +278,7 @@ There is dedicated syntax for list and array literals.
    ltac2_expr0 ::= ( @ltac2_expr )
    | ( @ltac2_expr : @ltac2_type )
    | ()
+   | [ %| {*; @ltac2_expr5 } %| ]
    | [ {*; @ltac2_expr5 } ]
    | %{ @ltac2_expr0 with {? {+; @tac2rec_fieldexpr } {? ; } } %}
    | %{ {? {+; @tac2rec_fieldexpr } {? ; } } %}

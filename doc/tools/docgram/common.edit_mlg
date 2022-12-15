@@ -2147,6 +2147,8 @@ SPLICE: [
 | ltac2_binder
 | branch
 | anti
+| array_literal
+| list_literal
 ]
 
 ltac2_expr5: [

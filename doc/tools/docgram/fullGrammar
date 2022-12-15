@@ -3353,10 +3353,19 @@ ltac2_expr0: [
 | "(" ltac2_expr6 ":" ltac2_type5 ")"      (* ltac2 plugin *)
 | "()"      (* ltac2 plugin *)
 | "(" ")"      (* ltac2 plugin *)
-| "[" LIST0 ltac2_expr5 SEP ";" "]"      (* ltac2 plugin *)
+| array_literal      (* ltac2 plugin *)
+| list_literal      (* ltac2 plugin *)
 | "{" test_ident_with_or_lpar_or_rbrac ltac2_expr0 "with" tac2rec_fieldexprs "}"      (* ltac2 plugin *)
 | "{" tac2rec_fieldexprs "}"      (* ltac2 plugin *)
 | G_LTAC2_tactic_atom      (* ltac2 plugin *)
+]
+
+array_literal: [
+| test_array_opening "[" "|" LIST0 ltac2_expr5 SEP ";" test_array_closing "|" "]"      (* ltac2 plugin *)
+]
+
+list_literal: [
+| "[" LIST0 ltac2_expr5 SEP ";" "]"      (* ltac2 plugin *)
 ]
 
 G_LTAC2_branches: [

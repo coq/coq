@@ -77,6 +77,18 @@ let test_ident_with_or_lpar_or_rbrac =
     (lk_ident >> lk_kw "with") <+> lk_kw "(" <+> lk_kw "{"
   end
 
+let test_array_opening =
+  let open Pcoq.Lookahead in
+  to_entry "test_array_opening" begin
+    lk_kw "[" >> lk_kw "|" >> check_no_space
+  end
+
+let test_array_closing =
+  let open Pcoq.Lookahead in
+  to_entry "test_array_closing" begin
+    lk_kw "|" >> lk_kw "]" >> check_no_space
+  end
+
 let ltac2_expr = Tac2entries.Pltac.ltac2_expr
 let _ltac2_expr = ltac2_expr
 let ltac2_type = Entry.create "ltac2_type"
@@ -200,14 +212,22 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CTacCst (AbsKn (Tuple 0)) }
       | "("; ")" ->
         { CAst.make ~loc @@ CTacCst (AbsKn (Tuple 0)) }
-      | "["; a = LIST0 ltac2_expr LEVEL "5" SEP ";"; "]" ->
-        { Tac2quote.of_list ~loc (fun x -> x) a }
+      | a = array_literal -> { a }
+      | a = list_literal -> { a }
       | "{"; test_ident_with_or_lpar_or_rbrac; e = ltac2_expr LEVEL "0"; "with"; a = tac2rec_fieldexprs; "}" ->
         { CAst.make ~loc @@ CTacRec (Some e, a) }
       | "{"; a = tac2rec_fieldexprs; "}" ->
         { CAst.make ~loc @@ CTacRec (None, a) }
       | a = tactic_atom -> { a } ]
     ]
+  ;
+  array_literal:
+  [ [ test_array_opening; "["; "|"; a = LIST0 ltac2_expr LEVEL "5" SEP ";"; test_array_closing; "|"; "]" ->
+      { Tac2quote.array_of_list (Tac2quote.of_list ~loc (fun x -> x) a) } ] ]
+  ;
+  list_literal:
+  [ [ "["; a = LIST0 ltac2_expr LEVEL "5" SEP ";"; "]" ->
+       { Tac2quote.of_list ~loc (fun x -> x) a } ] ]
   ;
   branches:
   [ [ -> { [] }
