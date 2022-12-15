@@ -36,7 +36,7 @@ ENV NJOBS="2" \
     OPAMYES="true"
 
 # Edge opam is the set of edge packages required by Coq
-ENV COMPILER="4.14.1" \
+ENV COMPILER="5.2.0+trunk" \
     BASE_OPAM="zarith.1.13 ounit2.2.2.6" \
     CI_OPAM="ocamlgraph.2.0.0 cppo.1.6.9" \
     BASE_OPAM_EDGE="dune.3.12.1 dune-build-info.3.12.1 dune-release.2.0.0 ocamlfind.1.9.6 odoc.2.3.1" \
@@ -47,7 +47,6 @@ ENV COMPILER="4.14.1" \
 # `ci-template-flambda` with everything.
 RUN opam init -a --disable-sandboxing --bare && eval $(opam env) && opam update && \
     opam switch create "${COMPILER}+flambda" \
-      --repositories default,ocaml-beta=git+https://github.com/ocaml/ocaml-beta-repository.git \
       --packages="ocaml-variants.${COMPILER}+options,ocaml-option-flambda" && eval $(opam env) && \
     opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM $CI_OPAM_EDGE && \
     opam clean -a -c && \
