@@ -963,7 +963,7 @@ let map_rel_context_in_env f env sign =
   aux env [] (List.rev sign)
 
 let match_named_context_val :
-  named_context_val -> (named_declaration * lazy_val * named_context_val) option =
+  named_context_val -> (named_declaration * named_context_val) option =
   match unsafe_eq with
   | Refl -> match_named_context_val
 

@@ -165,7 +165,7 @@ let split_sign env sigma hfrom l =
   let () = if not (mem_id_context hfrom l) then error_no_such_hypothesis env sigma hfrom in
   let rec splitrec left sign = match EConstr.match_named_context_val sign with
   | None -> assert false
-  | Some (d, _, right) ->
+  | Some (d, right) ->
     let hyp = NamedDecl.get_id d in
     if Id.equal hyp hfrom then (left, right, d)
     else splitrec (d :: left) right
@@ -209,9 +209,9 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
   in
   let rec moverec_toright first middle depvars right = match EConstr.match_named_context_val right with
     | None -> push_rev first @@ push_rev middle right
-    | Some (d, _, _) when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
+    | Some (d, _) when move_location_eq hto (MoveBefore (NamedDecl.get_id d)) ->
         push_rev first @@ push_rev middle @@ right
-    | Some (d, _, right) ->
+    | Some (d, right) ->
         let hyp = NamedDecl.get_id d in
         let (first', middle', depvars') =
           if Id.Set.mem hyp depvars then

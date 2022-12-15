@@ -417,6 +417,17 @@ Conversion machines
   GH issue number: #16829
   risk: some if using primitive arrays
 
+  component: "virtual" reduction machine
+  summary: tactic code could mutate a global cache of values for section variables
+  introduced: V8.1
+  impacted released versions: V8.1-V8.16.1
+  impacted coqchk versions: none (no tactics in coqchk, VM only sees checked terms)
+  fixed in: V8.17.0
+  found by: Gaëtan Gilbert with hint from Pierre-Marie Pédrot
+  GH issue number: #16957
+  risk: the full exploitation seems to require "Definition := ltac:()"
+        with change_no_check on a section variable in the ltac
+
 Side-effects
 
   component: side-effects

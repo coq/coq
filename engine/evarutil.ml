@@ -318,7 +318,7 @@ let push_rel_decl_to_named_context
   in
   let rec replace_var_named_declaration id0 id nc = match match_named_context_val nc with
   | None -> empty_named_context_val
-  | Some (decl, _, nc) ->
+  | Some (decl, nc) ->
     if Id.equal id0 (NamedDecl.get_id decl) then
       (* Stop here, the variable cannot occur before its definition *)
       push_named_context_val (NamedDecl.set_id id decl) nc
@@ -592,18 +592,7 @@ let clear_hyps_in_evi_main env sigma hyps terms ids =
       let err = OccurHypInSimpleClause (Some (NamedDecl.get_id decl)) in
       NamedDecl.map_constr (check_and_clear_in_constr ~is_section_variable env evdref err ids ~global) decl
     in
-    let check_value vk = match force_lazy_val vk with
-    | None -> vk
-    | Some (_, d) ->
-      if (Id.Set.for_all (fun e -> not (Id.Set.mem e d)) ids) then
-        (* v does depend on any of ids, it's ok *)
-        vk
-      else
-        (* v depends on one of the cleared hyps:
-            we forget the computed value *)
-        dummy_lazy_val ()
-    in
-      remove_hyps ids check_context check_value hyps
+    remove_hyps ids check_context hyps
   in
   (!evdref, nhyps,List.map EConstr.of_constr terms)
 

@@ -791,7 +791,7 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
     let sigma = Proofview.Goal.sigma gl in
     let has_var =
       try
-        let _ = Environ.lookup_named_val id env in
+        let _ = Environ.lookup_named id env in
         true
       with Not_found -> false
     in
