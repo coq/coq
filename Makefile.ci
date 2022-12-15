@@ -65,6 +65,7 @@ CI_TARGETS= \
     ci-relation_algebra \
     ci-rewriter \
     ci-serapi \
+    ci-serapi_test \
     ci-sf \
     ci-simple_io \
     ci-smtcoq \
@@ -128,7 +129,7 @@ ci-compcert: ci-menhir ci-flocq
 
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
-ci-serapi: ci-mathcomp
+ci-serapi_test: ci-mathcomp ci-serapi
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
