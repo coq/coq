@@ -13,7 +13,9 @@
 Require Export Coq.Compat.Coq818.
 
 Require Coq.Lists.ListSet.
-Global Set Warnings "-masking-absolute-name".
+
+Local Set Warnings "-masking-absolute-name".
+
 Module Export Coq.
   Module Export Lists.
     Module Export ListSet.
@@ -27,4 +29,3 @@ Module Export Coq.
     End ListSet.
   End Lists.
 End Coq.
-Global Set Warnings "masking-absolute-name".
