@@ -117,33 +117,18 @@ let iter f s =
 
 end
 
-(** We use arrays for on-disk representation. On 32-bit machines, this means we
-    can only have a maximum amount of about 4.10^6 relocations, which seems
-    quite a lot, but potentially reachable if e.g. compiling big proofs. This
-    would prevent VM computing with these terms on 32-bit architectures. Maybe
-    we should use a more robust data structure? *)
+(** This data type is stored in vo files. *)
 type patches = {
   reloc_infos : reloc_info array;
   reloc_positions : Positions.t;
 }
-
-let patch_char4 buff pos c1 c2 c3 c4 =
-  Bytes.unsafe_set buff pos       c1;
-  Bytes.unsafe_set buff (pos + 1) c2;
-  Bytes.unsafe_set buff (pos + 2) c3;
-  Bytes.unsafe_set buff (pos + 3) c4
-
-let patch1 buff pos n =
-  patch_char4 buff pos
-    (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
-    (Char.unsafe_chr (n asr 24))
 
 let patch_int buff reloc positions =
   let buff = Bytes.of_string buff in
   let iter pos =
     let id = Bytes.get_int32_le buff pos in
     let reloc = reloc.(Int32.to_int id) in
-    patch1 buff pos reloc
+    Bytes.set_int32_le buff pos (Int32.of_int reloc)
   in
   let () = Positions.iter iter positions in
   buff
@@ -175,21 +160,22 @@ type env = {
 
 let out_word env b1 b2 b3 b4 =
   let p = env.out_position in
-  if p >= Bytes.length env.out_buffer then begin
+  let buf =
     let len = Bytes.length env.out_buffer in
-    let new_len =
-      if len <= Sys.max_string_length / 2
-      then 2 * len
-      else
-        if len = Sys.max_string_length
-        then invalid_arg "String.create"  (* Not the right exception... *)
-        else Sys.max_string_length in
-    let new_buffer = Bytes.create new_len in
-    Bytes.blit env.out_buffer 0 new_buffer 0 len;
-    env.out_buffer <- new_buffer
-  end;
-  patch_char4 env.out_buffer p (Char.unsafe_chr b1)
-   (Char.unsafe_chr b2) (Char.unsafe_chr b3) (Char.unsafe_chr b4);
+    if p + 3 < len then env.out_buffer
+    else
+      let new_len = min (Sys.max_string_length) (2 * len) in
+      (* Not the right exception... *)
+      let () = if not (p + 3 < new_len) then invalid_arg "String.create" in
+      let new_buffer = Bytes.create new_len in
+      let () = Bytes.blit env.out_buffer 0 new_buffer 0 len in
+      let () = env.out_buffer <- new_buffer in
+      new_buffer
+  in
+  let () = Bytes.set_uint8 buf p b1 in
+  let () = Bytes.set_uint8 buf (p + 1) b2 in
+  let () = Bytes.set_uint8 buf (p + 2) b3 in
+  let () = Bytes.set_uint8 buf (p + 3) b4 in
   env.out_position <- p + 4
 
 let out env opcode =
@@ -221,10 +207,7 @@ let extend_label_table env needed =
 
 let backpatch env (pos, orig) =
   let displ = (env.out_position - orig) asr 2 in
-  Bytes.set env.out_buffer  pos    @@ Char.unsafe_chr displ;
-  Bytes.set env.out_buffer (pos+1) @@ Char.unsafe_chr (displ asr 8);
-  Bytes.set env.out_buffer (pos+2) @@ Char.unsafe_chr (displ asr 16);
-  Bytes.set env.out_buffer (pos+3) @@ Char.unsafe_chr (displ asr 24)
+  Bytes.set_int32_le env.out_buffer pos (Int32.of_int displ)
 
 let define_label env lbl =
   if lbl >= Array.length env.label_table then extend_label_table env lbl;
