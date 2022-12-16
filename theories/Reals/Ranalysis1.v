@@ -83,7 +83,7 @@ Arguments continuity_pt f%F x0%R.
 Arguments continuity f%F.
 
 Lemma continuity_pt_locally_ext :
-  forall f g a x, 0 < a -> (forall y, R_dist y x < a -> f y = g y) ->
+  forall f g a x, 0 < a -> (forall y, Rdist y x < a -> f y = g y) ->
   continuity_pt f x -> continuity_pt g x.
 intros f g a x a0 q cf eps ep.
 destruct (cf eps ep) as [a' [a'p Pa']].
@@ -94,7 +94,7 @@ exists (Rmin a a'); split.
 - intros y cy; rewrite <- !q.
   + apply Pa'.
     split;[| apply Rlt_le_trans with (Rmin a a');[ | apply Rmin_r]];tauto.
-  + rewrite R_dist_eq; assumption.
+  + rewrite Rdist_eq; assumption.
   + apply Rlt_le_trans with (Rmin a a');[ | apply Rmin_l]; tauto.
 Qed.
 
@@ -138,7 +138,7 @@ Proof.
       intros; exists 1; split;
         [ apply Rlt_0_1
           | intros; generalize (H x x0); intro; rewrite H2; simpl;
-            rewrite R_dist_eq; assumption ].
+            rewrite Rdist_eq; assumption ].
 Qed.
 
 Lemma continuity_pt_scal :
@@ -149,7 +149,7 @@ Proof.
     intros; apply (limit_mul (fun x:R => a) f (D_x no_cond x0) a (f x0) x0).
   - unfold limit1_in; unfold limit_in; intros; exists 1; split.
     + apply Rlt_0_1.
-    + intros; rewrite R_dist_eq; assumption.
+    + intros; rewrite Rdist_eq; assumption.
   - assumption.
 Qed.
 
@@ -193,7 +193,7 @@ Proof.
     + apply H.
     + apply H0.
   - unfold limit1_in; unfold limit_in; unfold dist;
-      simpl; unfold R_dist; intros.
+      simpl; unfold Rdist; intros.
     assert (H3 := H1 eps H2).
     elim H3; intros.
     exists x0.
@@ -334,7 +334,7 @@ Proof.
   - unfold Rdiv; apply prod_neq_R0.
     + red; intro; rewrite H2 in H1; elim (Rlt_irrefl _ H1).
     + apply Rinv_neq_0_compat; discrR.
-  - unfold R_dist; unfold Rminus; rewrite Ropp_0;
+  - unfold Rdist; unfold Rminus; rewrite Ropp_0;
       rewrite Rplus_0_r; unfold Rdiv; rewrite Rabs_mult.
     replace (Rabs (/ 2)) with (/ 2).
     + replace (Rabs alp) with alp.
@@ -361,7 +361,7 @@ Proof.
   exists (pos x0).
   split.
   - apply (cond_pos x0).
-  - simpl; unfold R_dist; intros.
+  - simpl; unfold Rdist; intros.
     elim H3; intros.
     apply H2;
       [ assumption
@@ -379,7 +379,7 @@ Proof.
   elim (H eps H0).
   intros; elim H1; intros.
   exists (mkposreal x0 H2).
-  simpl; intros; unfold R_dist in H3; apply (H3 h).
+  simpl; intros; unfold Rdist in H3; apply (H3 h).
   split;
     [ assumption
       | unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r; assumption ].
@@ -437,7 +437,7 @@ Lemma derive_pt_D_in :
 Proof.
   intros; split.
   - unfold D_in; unfold limit1_in; unfold limit_in;
-      simpl; unfold R_dist; intros.
+      simpl; unfold Rdist; intros.
     apply derive_pt_eq_0.
     unfold derivable_pt_lim.
     intros; elim (H eps H0); intros alpha H1; elim H1; intros;
@@ -454,7 +454,7 @@ Proof.
   - intro.
     assert (H0 := derive_pt_eq_1 f x (df x) pr H).
     unfold D_in; unfold limit1_in; unfold limit_in;
-      unfold dist; simpl; unfold R_dist;
+      unfold dist; simpl; unfold Rdist;
       intros.
     elim (H0 eps H1); intros alpha H2; exists (pos alpha); split.
     + apply (cond_pos alpha).
@@ -471,7 +471,7 @@ Lemma derivable_pt_lim_D_in :
 Proof.
   intros; split.
   - unfold D_in; unfold limit1_in; unfold limit_in;
-      simpl; unfold R_dist; intros.
+      simpl; unfold Rdist; intros.
     unfold derivable_pt_lim.
     intros; elim (H eps H0); intros alpha H1; elim H1; intros;
       exists (mkposreal alpha H2); intros; generalize (H3 (x + h));
@@ -487,7 +487,7 @@ Proof.
   - intro.
     unfold derivable_pt_lim in H.
     unfold D_in; unfold limit1_in; unfold limit_in;
-      unfold dist; simpl; unfold R_dist;
+      unfold dist; simpl; unfold Rdist;
       intros.
     elim (H eps H0); intros alpha H2; exists (pos alpha); split.
     + apply (cond_pos alpha).
@@ -623,7 +623,7 @@ Proof.
       assumption.
   - unfold Dgf, D_in, no_cond; unfold limit1_in;
       unfold limit_in; unfold dist; simpl;
-      unfold R_dist; intros.
+      unfold Rdist; intros.
     elim (H1 eps H3); intros.
     exists x0; intros; split.
     + elim H5; intros; assumption.
@@ -639,9 +639,9 @@ Lemma derivable_pt_lim_opp :
 Proof.
   intros f x l H.
   apply uniqueness_step3.
-  unfold opp_fct, limit1_in, limit_in, dist; simpl; unfold R_dist.
+  unfold opp_fct, limit1_in, limit_in, dist; simpl; unfold Rdist.
   apply uniqueness_step2 in H.
-  unfold limit1_in, limit_in, dist in H; simpl in H; unfold R_dist in H.
+  unfold limit1_in, limit_in, dist in H; simpl in H; unfold Rdist in H.
   intros eps Heps; specialize (H eps Heps).
   destruct H as [alp [Halp H]]; exists alp.
   split; [assumption|].
@@ -656,9 +656,9 @@ Lemma derivable_pt_lim_opp_fwd :
 Proof.
   intros f x l H.
   apply uniqueness_step3.
-  unfold opp_fct, limit1_in, limit_in, dist; simpl; unfold R_dist.
+  unfold opp_fct, limit1_in, limit_in, dist; simpl; unfold Rdist.
   apply uniqueness_step2 in H.
-  unfold limit1_in, limit_in, dist in H; simpl in H; unfold R_dist in H.
+  unfold limit1_in, limit_in, dist in H; simpl in H; unfold Rdist in H.
   intros eps Heps; specialize (H eps Heps).
   destruct H as [alp [Halp H]]; exists alp.
   split; [assumption|].
@@ -715,7 +715,7 @@ Lemma derivable_pt_lim_plus :
       (limit_plus (fun h':R => (f1 (x + h') - f1 x) / h')
                   (fun h':R => (f2 (x + h') - f2 x) / h') (fun h:R => h <> 0) l1 l2 0 H1 H2).
     unfold limit1_in; unfold limit_in; unfold dist;
-      simpl; unfold R_dist; intros.
+      simpl; unfold Rdist; intros.
     elim (H4 eps H5); intros.
     exists x0.
     elim H6; intros.
@@ -744,7 +744,7 @@ Proof.
       (limit_minus (fun h':R => (f1 (x + h') - f1 x) / h')
                    (fun h':R => (f2 (x + h') - f2 x) / h') (fun h:R => h <> 0) l1 l2 0 H1 H2).
     unfold limit1_in; unfold limit_in; unfold dist;
-      simpl; unfold R_dist; intros.
+      simpl; unfold Rdist; intros.
     elim (H4 eps H5); intros.
     exists x0.
     elim H6; intros.

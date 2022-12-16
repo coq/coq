@@ -23,7 +23,7 @@ Lemma Alembert_exp :
   Un_cv (fun n:nat => Rabs (/ INR (fact (S n)) * / / INR (fact n))) 0.
 Proof.
   unfold Un_cv; intros; destruct (Rgt_dec eps 1) as [Hgt|Hnotgt].
-  - split with 0%nat; intros; rewrite (simpl_fact n); unfold R_dist;
+  - split with 0%nat; intros; rewrite (simpl_fact n); unfold Rdist;
       rewrite (Rminus_0_r (Rabs (/ INR (S n))));
       rewrite (Rabs_Rabsolu (/ INR (S n))); cut (/ INR (S n) > 0).
     + intro; rewrite (Rabs_pos_eq (/ INR (S n))).
@@ -52,7 +52,7 @@ Proof.
     + unfold Rgt; apply Rinv_0_lt_compat; apply lt_INR_0; apply Nat.lt_0_succ.
   - cut (0 <= up (/ eps - 1))%Z.
     + intro; elim (IZN (up (/ eps - 1)) H0); intros; split with x; intros;
-        rewrite (simpl_fact n); unfold R_dist;
+        rewrite (simpl_fact n); unfold Rdist;
         rewrite (Rminus_0_r (Rabs (/ INR (S n))));
         rewrite (Rabs_Rabsolu (/ INR (S n))); cut (/ INR (S n) > 0).
       * intro; rewrite (Rabs_pos_eq (/ INR (S n))).

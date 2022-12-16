@@ -75,8 +75,8 @@ Proof.
   }
   elim (H0 _ H2); intros N0 H3.
   exists N0; intros.
-  unfold R_dist in |- *; assert (H5 := H3 _ H4).
-  unfold R_dist in H5;
+  unfold Rdist in |- *; assert (H5 := H3 _ H4).
+  unfold Rdist in H5;
     replace
     (Rabs
       (Rabs (/ INR (fact (2 * S n)) * r ^ (2 * S n)) /
@@ -130,7 +130,7 @@ Proof.
     apply SFL_continuity; assumption.
   - unfold continuity in |- *; unfold continuity_pt in |- *;
       unfold continue_in in |- *; unfold limit1_in in |- *;
-      unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *;
+      unfold limit_in in |- *; simpl in |- *; unfold Rdist in |- *;
       intros.
     elim (H1 x _ H2); intros.
     exists x0; intros.
@@ -145,7 +145,7 @@ Proof.
     + unfold cos_in, infinite_sum in Hcos; unfold Un_cv in |- *; intros.
       elim (Hcos _ H0); intros N0 H1.
       exists N0; intros.
-      unfold R_dist in H1; unfold R_dist, SP in |- *.
+      unfold Rdist in H1; unfold Rdist, SP in |- *.
       replace (sum_f_R0 (fun k:nat => fn k x) n) with
         (sum_f_R0 (fun i:nat => cos_n i * Rsqr x ^ i) n).
       * apply H1; assumption.

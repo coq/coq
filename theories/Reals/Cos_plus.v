@@ -32,8 +32,8 @@ Proof.
       apply RmaxLess1. }
   assert (0 < C0) by (unfold C0; apply pow_lt; assumption).
   assert (H1 := cv_speed_pow_fact C0).
-  unfold Un_cv in H1; unfold R_dist in H1.
-  unfold Un_cv; unfold R_dist; intros.
+  unfold Un_cv in H1; unfold Rdist in H1.
+  unfold Un_cv; unfold Rdist; intros.
   cut (0 < eps / C0);
     [ intro
       | unfold Rdiv; apply Rmult_lt_0_compat;
@@ -569,8 +569,8 @@ Lemma reste1_cv_R0 : forall x y:R, Un_cv (Reste1 x y) 0.
 Proof.
   intros.
   assert (H := Majxy_cv_R0 x y).
-  unfold Un_cv in H; unfold R_dist in H.
-  unfold Un_cv; unfold R_dist; intros.
+  unfold Un_cv in H; unfold Rdist in H.
+  unfold Un_cv; unfold Rdist; intros.
   elim (H eps H0); intros N0 H1.
   exists (S N0); intros.
   unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r.
@@ -601,8 +601,8 @@ Lemma reste2_cv_R0 : forall x y:R, Un_cv (Reste2 x y) 0.
 Proof.
   intros.
   assert (H := Majxy_cv_R0 x y).
-  unfold Un_cv in H; unfold R_dist in H.
-  unfold Un_cv; unfold R_dist; intros.
+  unfold Un_cv in H; unfold Rdist in H.
+  unfold Un_cv; unfold Rdist; intros.
   elim (H eps H0); intros N0 H1.
   exists (S N0); intros.
   unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r.
@@ -645,8 +645,8 @@ Proof.
       * reflexivity.
     + unfold Bn.
       assert (H0 := reste1_cv_R0 x y).
-      unfold Un_cv in H0; unfold R_dist in H0.
-      unfold Un_cv; unfold R_dist; intros.
+      unfold Un_cv in H0; unfold Rdist in H0.
+      unfold Un_cv; unfold Rdist; intros.
       elim (H0 eps H1); intros N0 H2.
       exists N0; intros.
       apply H2.
@@ -666,7 +666,7 @@ Proof.
   { assert (Un_cv (C1 x y) (cos (x + y))) by apply C1_cvg.
     intros.
     apply UL_sequence with (C1 x y); assumption. }
-  unfold Un_cv; unfold R_dist.
+  unfold Un_cv; unfold Rdist.
   intros.
   assert (H0 := A1_cvg x).
   assert (H1 := A1_cvg y).
@@ -676,7 +676,7 @@ Proof.
   assert (H5 := CV_mult _ _ _ _ H2 H3).
   assert (H6 := reste_cv_R0 x y).
   unfold Un_cv in H4; unfold Un_cv in H5; unfold Un_cv in H6.
-  unfold R_dist in H4; unfold R_dist in H5; unfold R_dist in H6.
+  unfold Rdist in H4; unfold Rdist in H5; unfold Rdist in H6.
   cut (0 < eps / 3);
     [ intro
       | unfold Rdiv; apply Rmult_lt_0_compat;

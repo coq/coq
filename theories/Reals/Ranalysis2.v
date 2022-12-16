@@ -380,7 +380,7 @@ Proof.
     (dist R_met (x0 + h) x0 < x ->
       dist R_met (f (x0 + h)) (f x0) < Rabs (f x0 / 2)).
   2:{ assert (H6 := Req_dec x0 (x0 + h)); elim H6; intro.
-      - intro; rewrite <- H7. unfold R_met, dist; unfold R_dist;
+      - intro; rewrite <- H7. unfold R_met, dist; unfold Rdist;
           unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
           apply Rabs_pos_lt.
         unfold Rdiv; apply prod_neq_R0;
@@ -391,7 +391,7 @@ Proof.
           split; trivial || assumption.
         + assumption.
   }
-  unfold dist; simpl; unfold R_dist;
+  unfold dist; simpl; unfold Rdist;
     replace (x0 + h - x0) with h by ring.
   intros; assert (H7 := H6 H4).
   red; intro.

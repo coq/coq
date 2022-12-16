@@ -64,7 +64,7 @@ Lemma Alt_first_term_bound : forall f l N n,
     Un_decreasing f -> Un_cv f 0 ->
     Un_cv (sum_f_R0 (tg_alt f)) l ->
     (N <= n)%nat ->
-    R_dist (sum_f_R0 (tg_alt f) n) l <= f N.
+    Rdist (sum_f_R0 (tg_alt f) n) l <= f N.
 Proof.
   intros f l.
   assert (WLOG :
@@ -75,7 +75,7 @@ Proof.
   intros N; pattern N; apply WLOG; clear N.
   2:{ clear WLOG; intros Hyp [ | n] decr to0 cv _.
       { generalize (alternated_series_ineq f l 0 decr to0 cv).
-        unfold R_dist, tg_alt; simpl; rewrite !Rmult_1_l, !Rmult_1_r.
+        unfold Rdist, tg_alt; simpl; rewrite !Rmult_1_l, !Rmult_1_r.
         assert (f 1%nat <= f 0%nat) by apply decr.
         intros [A B]; rewrite Rabs_pos_eq; lra. }
       apply Rle_trans with (f 1%nat).
@@ -97,11 +97,11 @@ Proof.
     intros n' nM.
     match goal with |- ?C => set (U := C) end.
     assert (nM' : (n' + S N >= M)%nat) by lia.
-    generalize (PM _ nM'); unfold R_dist.
+    generalize (PM _ nM'); unfold Rdist.
     rewrite (tech2 (tg_alt f) N (n' + S N)).
     2:lia.
     assert (t : forall a b c, (a + b) - c = b - (c - a)) by (intros; ring).
-    rewrite t; clear t; unfold U, R_dist; clear U.
+    rewrite t; clear t; unfold U, Rdist; clear U.
     replace (n' + S N - S N)%nat with n' by lia.
     rewrite <- (sum_eq (tg_alt (fun i => (-1) ^ S N * f(S N + i)%nat))).
     { tauto. }
@@ -117,14 +117,14 @@ Proof.
       rewrite <- pow_mult, Nat.mul_comm, pow_mult; replace ((-1) ^2) with 1 by ring.
       rewrite pow1; reflexivity. }
     apply CV_mult.
-    { solve[intros eps ep; exists 0%nat; intros; rewrite R_dist_eq; auto]. }
+    { solve[intros eps ep; exists 0%nat; intros; rewrite Rdist_eq; auto]. }
     assumption. }
   destruct (even_odd_cor N) as [p [Neven | Nodd]].
   - rewrite Neven; destruct (alternated_series_ineq _ _ p decr to0 cv) as [B C].
     case (even_odd_cor n) as [p' [neven | nodd]].
     + rewrite neven.
       destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
-      unfold R_dist; rewrite Rabs_pos_eq;[ | lra].
+      unfold Rdist; rewrite Rabs_pos_eq;[ | lra].
       assert (dist : (p <= p')%nat) by lia.
       assert (t := decreasing_prop _ _ _ (CV_ALT_step1 f decr) dist).
       apply Rle_trans with (sum_f_R0 (tg_alt f) (2 * p) - l).
@@ -135,7 +135,7 @@ Proof.
           (rewrite tech5; unfold tg_alt; rewrite pow_1_odd; ring); lra
       end.
     + rewrite nodd; destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
-      unfold R_dist; rewrite <- Rabs_Ropp, Rabs_pos_eq, Ropp_minus_distr;
+      unfold Rdist; rewrite <- Rabs_Ropp, Rabs_pos_eq, Ropp_minus_distr;
         [ | lra].
       assert (dist : (p <= p')%nat) by lia.
       apply Rle_trans with (l - sum_f_R0 (tg_alt f) (S (2 * p))).
@@ -149,7 +149,7 @@ Proof.
     case (even_odd_cor n) as [p' [neven | nodd]].
     + rewrite neven;
         destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
-      unfold R_dist; rewrite Rabs_pos_eq;[ | lra].
+      unfold Rdist; rewrite Rabs_pos_eq;[ | lra].
       assert (dist : (S p < S p')%nat) by lia.
       apply Rle_trans with (sum_f_R0 (tg_alt f) (2 * S p) - l).
       { unfold Rminus; apply Rplus_le_compat_r,
@@ -158,7 +158,7 @@ Proof.
       rewrite keep, tech5; unfold tg_alt at 2; rewrite <- keep, pow_1_even.
       lra.
     + rewrite nodd; destruct (alternated_series_ineq _ _ p' decr to0 cv) as [D E].
-      unfold R_dist; rewrite <- Rabs_Ropp, Rabs_pos_eq;[ | lra].
+      unfold Rdist; rewrite <- Rabs_Ropp, Rabs_pos_eq;[ | lra].
       rewrite Ropp_minus_distr.
       apply Rle_trans with (l - sum_f_R0 (tg_alt f) (S (2 * p))).
       { unfold Rminus; apply Rplus_le_compat_l, Ropp_le_contravar, Rge_le,
@@ -186,7 +186,7 @@ Proof.
   apply Rle_lt_trans with (h n).
   { apply bound; assumption. }
   clear - nN Pn.
-  generalize (Pn _ nN); unfold R_dist; rewrite Rminus_0_r; intros t.
+  generalize (Pn _ nN); unfold Rdist; rewrite Rminus_0_r; intros t.
   apply Rabs_def2 in t; tauto.
 Qed.
 
@@ -379,7 +379,7 @@ assert (f_cont : forall a : R, lb <= a <= ub -> continuity_pt tan a).
   - apply Rlt_le_trans with (r2:=lb) ; intuition.
   - apply Rle_lt_trans with (r2:=ub) ; intuition. }
 assert (Cont : forall a : R, lb <= a <= ub -> continuity_pt (fun x => tan x - y) a).
-{ intros a a_encad. unfold continuity_pt, continue_in, limit1_in, limit_in ; simpl ; unfold R_dist.
+{ intros a a_encad. unfold continuity_pt, continue_in, limit1_in, limit_in ; simpl ; unfold Rdist.
   intros eps eps_pos. elim (f_cont a a_encad eps eps_pos).
   intros alpha alpha_pos. destruct alpha_pos as (alpha_pos,Temp).
   exists alpha. split.
@@ -837,7 +837,7 @@ fold N in HN.
 clear H H0.
 exists N.
 intros n Hn.
-unfold R_dist.
+unfold Rdist.
 rewrite Rminus_0_r.
 unfold Ratan_seq.
 rewrite Rabs_right.
@@ -925,7 +925,7 @@ apply (Un_cv_ext (fun n => (- 1) * sum_f_R0 (tg_alt (Ratan_seq (- x))) n)).
 { intros n; rewrite sum_Ratan_seq_opp; ring. }
 replace (-v) with (-1 * v) by ring.
 apply CV_mult;[ | assumption].
-solve[intros; exists 0%nat; intros; rewrite R_dist_eq; auto].
+solve[intros; exists 0%nat; intros; rewrite Rdist_eq; auto].
 Qed.
 
 Definition in_int (x : R) : {-1 <= x <= 1}+{~ -1 <= x <= 1}.
@@ -955,7 +955,7 @@ destruct (in_int 0) as [h1 | h2].
   { symmetry;apply sum_eq_R0.
     intros i _; unfold tg_alt, Ratan_seq; rewrite Nat.add_comm; simpl.
     unfold Rdiv; rewrite !Rmult_0_l, Rmult_0_r; reflexivity. }
-  intros eps ep; exists 0%nat; intros n _; unfold R_dist.
+  intros eps ep; exists 0%nat; intros n _; unfold Rdist.
   rewrite Rminus_0_r, Rabs_pos_eq; auto with real. }
 case h2; split; lra.
 Qed.
@@ -967,7 +967,7 @@ intros x h h'; destruct (ps_atan_exists_1 (-x) h) as [v Pv].
 destruct (ps_atan_exists_1 x h') as [u Pu]; simpl.
 assert (Pu' : Un_cv (fun N => (-1) * sum_f_R0 (tg_alt (Ratan_seq x)) N) (-1 * u)).
 { apply CV_mult;[ | assumption].
-  intros eps ep; exists 0%nat; intros; rewrite R_dist_eq; assumption. }
+  intros eps ep; exists 0%nat; intros; rewrite Rdist_eq; assumption. }
 assert (Pv' : Un_cv
                 (fun N : nat => -1 * sum_f_R0 (tg_alt (Ratan_seq x)) N) v).
 { apply Un_cv_ext with (2 := Pv); intros n; rewrite sum_Ratan_seq_opp; ring. }
@@ -1156,7 +1156,7 @@ assert (x_ub2 : Rabs (x^2) < 1).
     by (split;[apply Rabs_pos | apply Rabs_def1; auto]).
   apply (pow_lt_1_compat _ 2) in H;[tauto | lia]. }
 elim (pow_lt_1_zero (x^2) x_ub2 eps eps_pos) ; intros N HN ; exists N ; intros n Hn.
-unfold R_dist, Datan_seq.
+unfold Rdist, Datan_seq.
 replace (x ^ (2 * n) - 0) with ((x ^ 2) ^ n). { apply HN ; assumption. }
 rewrite pow_mult ; field.
 Qed.
@@ -1183,7 +1183,7 @@ assert (H1 : - x^2 <> 1).
 { apply Rlt_not_eq; apply Rle_lt_trans with (2 := Rlt_0_1).
   assert (t := pow2_ge_0 x); lra. }
 rewrite Datan_sum_eq.
-unfold R_dist.
+unfold Rdist.
 assert (tool : forall a b, a / b - /b = (-1 + a) /b).
 { intros a b; rewrite <- (Rmult_1_l (/b)); unfold Rdiv, Rminus.
   rewrite <- Ropp_mult_distr_l_reverse, Rmult_plus_distr_r, Rplus_comm.
@@ -1462,7 +1462,7 @@ Qed.
 
 Lemma ps_atan_continuity_pt_1 : forall eps : R,
   eps > 0 ->
-  exists alp : R, alp > 0 /\ (forall x, x < 1 -> 0 < x -> R_dist x 1 < alp ->
+  exists alp : R, alp > 0 /\ (forall x, x < 1 -> 0 < x -> Rdist x 1 < alp ->
   dist R_met (ps_atan x) (Alt_PI/4) < eps).
 Proof.
 intros eps eps_pos.
@@ -1480,7 +1480,7 @@ assert (O_lb : 0 <= 1) by intuition ; assert (O_ub : 1 <= 1) by intuition ;
   clear -HN1 HN2 Halpha eps_3_pos; destruct Halpha as (alpha_pos, Halpha).
 exists alpha ; split;[assumption | ].
 intros x x_ub x_lb x_bounds.
-simpl ; unfold R_dist.
+simpl ; unfold Rdist.
 replace (ps_atan x - v) with
   ((ps_atan x - sum_f_R0 (tg_alt (Ratan_seq x)) N)
    + (sum_f_R0 (tg_alt (Ratan_seq x)) N - sum_f_R0 (tg_alt (Ratan_seq 1)) N)
@@ -1500,7 +1500,7 @@ apply Rplus_lt_compat.
   { apply Rabs_triang. }
   apply Rlt_le_trans with (r2:= eps / 3 + eps / 3).
   { apply Rplus_lt_compat.
-    { simpl in Halpha ; unfold R_dist in Halpha.
+    { simpl in Halpha ; unfold Rdist in Halpha.
       apply Halpha ; split.
       { unfold D_x, no_cond ; split ; [ | apply Rgt_not_eq ] ; intuition. }
       intuition. }
@@ -1609,7 +1609,7 @@ assert (t2 := PI_4).
 assert (m := Alt_PI_RGT_0).
 assert (-PI/2 < 1 < PI/2) by (rewrite Ropp_div; split; lra).
 apply cond_eq; intros eps ep.
-change (R_dist (Alt_PI/4) (PI/4) < eps).
+change (Rdist (Alt_PI/4) (PI/4) < eps).
 assert (ca : continuity_pt atan 1).
 { apply derivable_continuous_pt, derivable_pt_atan. }
 assert (Xe : exists eps', exists eps'',
@@ -1618,8 +1618,8 @@ assert (Xe : exists eps', exists eps'',
 destruct Xe as [eps' [eps'' [eps_ineq [ep' ep'']]]].
 destruct (ps_atan_continuity_pt_1 _ ep') as [alpha [a0 Palpha]].
 destruct (ca _ ep'') as [beta [b0 Pbeta]].
-assert (Xa : exists a, 0 < a < 1 /\ R_dist a 1 < alpha /\
-                    R_dist a 1 < beta).
+assert (Xa : exists a, 0 < a < 1 /\ Rdist a 1 < alpha /\
+                    Rdist a 1 < beta).
 { exists (Rmax (/2) (Rmax (1 - alpha /2) (1 - beta /2))).
   assert (/2 <= Rmax (/2) (Rmax (1 - alpha /2) (1 - beta /2))) by apply Rmax_l.
   assert (Rmax (1 - alpha /2) (1 - beta /2) <=
@@ -1633,13 +1633,13 @@ assert (Xa : exists a, 0 < a < 1 /\ R_dist a 1 < alpha /\
   { assert (Rmax (/2) (Rmax (1 - alpha / 2)
                             (1 - beta /2)) <= 1) by (apply Rmax_lub; lra).
     lra. }
-  split; unfold R_dist; rewrite <-Rabs_Ropp, Ropp_minus_distr,
+  split; unfold Rdist; rewrite <-Rabs_Ropp, Ropp_minus_distr,
     Rabs_pos_eq;lra. }
 destruct Xa as [a [[Pa0 Pa1] [P1 P2]]].
-apply Rle_lt_trans with (1 := R_dist_tri _ _ (ps_atan a)).
+apply Rle_lt_trans with (1 := Rdist_tri _ _ (ps_atan a)).
 apply Rlt_le_trans with (2 := eps_ineq).
 apply Rplus_lt_compat.
-{ rewrite R_dist_sym; apply Palpha; assumption. }
+{ rewrite Rdist_sym; apply Palpha; assumption. }
 rewrite <- atan_eq_ps_atan.
 { rewrite <- atan_1; apply (Pbeta a); auto.
   split; [ | exact P2].
