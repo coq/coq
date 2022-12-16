@@ -850,21 +850,21 @@ Qed.
 (*******************************)
 
 (*********)
-Definition R_dist (x y:R) : R := Rabs (x - y).
+Definition Rdist (x y:R) : R := Rabs (x - y).
 
 (*********)
-Lemma R_dist_pos : forall x y:R, R_dist x y >= 0.
+Lemma Rdist_pos : forall x y:R, Rdist x y >= 0.
 Proof.
-  intros; unfold R_dist; unfold Rabs; case (Rcase_abs (x - y));
+  intros; unfold Rdist; unfold Rabs; case (Rcase_abs (x - y));
     intro l.
   - unfold Rge; left; apply (Ropp_gt_lt_0_contravar (x - y) l).
   - trivial.
 Qed.
 
 (*********)
-Lemma R_dist_sym : forall x y:R, R_dist x y = R_dist y x.
+Lemma Rdist_sym : forall x y:R, Rdist x y = Rdist y x.
 Proof.
-  unfold R_dist; intros; split_Rabs; try ring.
+  unfold Rdist; intros; split_Rabs; try ring.
   - generalize (Ropp_gt_lt_0_contravar (y - x) Hlt0); intro;
       rewrite (Ropp_minus_distr y x) in H; generalize (Rlt_asym (x - y) 0 Hlt);
       intro; unfold Rgt in H; exfalso; auto.
@@ -874,9 +874,9 @@ Proof.
 Qed.
 
 (*********)
-Lemma R_dist_refl : forall x y:R, R_dist x y = 0 <-> x = y.
+Lemma Rdist_refl : forall x y:R, Rdist x y = 0 <-> x = y.
 Proof.
-  unfold R_dist; intros; split_Rabs; split; intros.
+  unfold Rdist; intros; split_Rabs; split; intros.
   - rewrite (Ropp_minus_distr x y) in H; symmetry;
       apply (Rminus_diag_uniq y x H).
   - rewrite (Ropp_minus_distr x y); generalize (eq_sym H); intro;
@@ -885,34 +885,43 @@ Proof.
   - apply (Rminus_diag_eq x y H).
 Qed.
 
-Lemma R_dist_eq : forall x:R, R_dist x x = 0.
+Lemma Rdist_eq : forall x:R, Rdist x x = 0.
 Proof.
-  unfold R_dist; intros; split_Rabs; intros; ring.
+  unfold Rdist; intros; split_Rabs; intros; ring.
 Qed.
 
 (***********)
-Lemma R_dist_tri : forall x y z:R, R_dist x y <= R_dist x z + R_dist z y.
+Lemma Rdist_tri : forall x y z:R, Rdist x y <= Rdist x z + Rdist z y.
 Proof.
-  intros; unfold R_dist; replace (x - y) with (x - z + (z - y));
+  intros; unfold Rdist; replace (x - y) with (x - z + (z - y));
     [ apply (Rabs_triang (x - z) (z - y)) | ring ].
 Qed.
 
 (*********)
-Lemma R_dist_plus :
-  forall a b c d:R, R_dist (a + c) (b + d) <= R_dist a b + R_dist c d.
+Lemma Rdist_plus :
+  forall a b c d:R, Rdist (a + c) (b + d) <= Rdist a b + Rdist c d.
 Proof.
-  intros; unfold R_dist;
+  intros; unfold Rdist;
     replace (a + c - (b + d)) with (a - b + (c - d)).
   - exact (Rabs_triang (a - b) (c - d)).
   - ring.
 Qed.
 
-Lemma R_dist_mult_l : forall a b c,
-  R_dist (a * b) (a * c) = Rabs a * R_dist b c.
+Lemma Rdist_mult_l : forall a b c,
+  Rdist (a * b) (a * c) = Rabs a * Rdist b c.
 Proof.
-unfold R_dist. 
+unfold Rdist.
 intros a b c; rewrite <- Rmult_minus_distr_l, Rabs_mult; reflexivity.
 Qed.
+
+Notation R_dist := Rdist (only parsing).
+Notation R_dist_pos := Rdist_pos (only parsing).
+Notation R_dist_sym := Rdist_sym (only parsing).
+Notation R_dist_refl := Rdist_refl (only parsing).
+Notation R_dist_eq := Rdist_eq (only parsing).
+Notation R_dist_tri := Rdist_tri (only parsing).
+Notation R_dist_plus := Rdist_plus (only parsing).
+Notation R_dist_mult_l := Rdist_mult_l (only parsing).
 
 (*******************************)
 (** *     Infinite Sum          *)
@@ -922,7 +931,7 @@ Definition infinite_sum (s:nat -> R) (l:R) : Prop :=
   forall eps:R,
     eps > 0 ->
     exists N : nat,
-      (forall n:nat, (n >= N)%nat -> R_dist (sum_f_R0 s n) l < eps).
+      (forall n:nat, (n >= N)%nat -> Rdist (sum_f_R0 s n) l < eps).
 
 (** Compatibility with previous versions *)
 Notation infinit_sum := infinite_sum (only parsing).

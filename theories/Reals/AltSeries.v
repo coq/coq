@@ -160,8 +160,8 @@ Proof.
   assert (H3 := CV_ALT_step4 _ H H0).
   destruct (growing_cv _ H2 H3) as (x,p).
   exists x.
-  unfold Un_cv; unfold R_dist; unfold Un_cv in H1;
-    unfold R_dist in H1; unfold Un_cv in p; unfold R_dist in p.
+  unfold Un_cv; unfold Rdist; unfold Un_cv in H1;
+    unfold Rdist in H1; unfold Un_cv in p; unfold Rdist in p.
   intros; cut (0 < eps / 2);
     [ intro
       | unfold Rdiv; apply Rmult_lt_0_compat;
@@ -238,8 +238,8 @@ Theorem alternated_series_ineq :
 Proof.
   intros.
   assert (Un_cv (fun N:nat => sum_f_R0 (tg_alt Un) (2 * N)) l). {
-    unfold Un_cv; unfold R_dist; unfold Un_cv in H1;
-      unfold R_dist in H1; intros.
+    unfold Un_cv; unfold Rdist; unfold Un_cv in H1;
+      unfold Rdist in H1; intros.
     elim (H1 eps H2); intros.
     exists x; intros.
     apply H3.
@@ -247,8 +247,8 @@ Proof.
     rewrite <- Nat.double_twice; apply Nat.le_add_r.
   }
   assert (Un_cv (fun N:nat => sum_f_R0 (tg_alt Un) (S (2 * N))) l). {
-    unfold Un_cv; unfold R_dist; unfold Un_cv in H1;
-      unfold R_dist in H1; intros.
+    unfold Un_cv; unfold Rdist; unfold Un_cv in H1;
+      unfold Rdist in H1; intros.
     elim (H1 eps H3); intros.
     exists x; intros.
     apply H4.
@@ -300,7 +300,7 @@ Qed.
 
 Lemma PI_tg_cv : Un_cv PI_tg 0.
 Proof.
-  unfold Un_cv; unfold R_dist; intros.
+  unfold Un_cv; unfold Rdist; intros.
   assert (0 < 2 * eps) by lra.
   assert (H1 := archimed (/ (2 * eps))).
   assert (0 <= up (/ (2 * eps)))%Z. {

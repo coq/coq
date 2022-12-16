@@ -52,7 +52,7 @@ Proof.
   - unfold exp_in; unfold infinite_sum; intros.
     exists 0%nat.
     intros; replace (sum_f_R0 (fun i:nat => / INR (fact i) * 0 ^ i) n) with 1.
-    + unfold R_dist; replace (1 - 1) with 0;
+    + unfold Rdist; replace (1 - 1) with 0;
         [ rewrite Rabs_R0; assumption | ring ].
     + induction  n as [| n Hrecn].
       * simpl; rewrite Rinv_1; ring.
@@ -158,7 +158,7 @@ Proof.
   unfold Un_cv; intros.
   assert (H0 := archimed_cor1 eps H).
   elim H0; intros; exists x.
-  intros; rewrite simpl_cos_n; unfold R_dist; unfold Rminus;
+  intros; rewrite simpl_cos_n; unfold Rdist; unfold Rminus;
     rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       rewrite Rabs_Ropp; rewrite Rabs_right.
   2:{ apply Rle_ge; left; apply Rinv_0_lt_compat.
@@ -250,7 +250,7 @@ Lemma Alembert_sin : Un_cv (fun n:nat => Rabs (sin_n (S n) / sin_n n)) 0.
 Proof.
   unfold Un_cv; intros; assert (H0 := archimed_cor1 eps H).
   elim H0; intros; exists x.
-  intros; rewrite simpl_sin_n; unfold R_dist; unfold Rminus;
+  intros; rewrite simpl_sin_n; unfold Rdist; unfold Rminus;
     rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       rewrite Rabs_Ropp; rewrite Rabs_right.
   2:{ left; apply Rinv_0_lt_compat.
@@ -335,7 +335,7 @@ Proof.
       exact (proj2_sig (exist_cos (Rsqr 0))).
   - unfold cos_in; unfold infinite_sum; intros; exists 0%nat.
     intros.
-    unfold R_dist.
+    unfold Rdist.
     induction  n as [| n Hrecn].
     + unfold cos_n; simpl.
       unfold Rdiv; rewrite Rinv_1.

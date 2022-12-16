@@ -231,8 +231,8 @@ Lemma A1_cvg : forall x:R, Un_cv (A1 x) (cos x).
 Proof.
 intro.
 unfold cos; destruct (exist_cos (Rsqr x)) as (x0,p).
-unfold cos_in, cos_n, infinite_sum, R_dist in p.
-unfold Un_cv, R_dist; intros.
+unfold cos_in, cos_n, infinite_sum, Rdist in p.
+unfold Un_cv, Rdist; intros.
 destruct (p eps H) as (x1,H0).
 exists x1; intros.
 unfold A1.
@@ -252,8 +252,8 @@ Proof.
 intros.
 unfold cos.
 destruct (exist_cos (Rsqr (x + y))) as (x0,p).
-unfold cos_in, cos_n, infinite_sum, R_dist in p.
-unfold Un_cv, R_dist; intros.
+unfold cos_in, cos_n, infinite_sum, Rdist in p.
+unfold Un_cv, Rdist; intros.
 destruct (p eps H) as (x1,H0).
 exists x1; intros.
 unfold C1.
@@ -277,7 +277,7 @@ case (Req_dec x 0); intro.
 { rewrite H.
   rewrite sin_0.
   unfold B1.
-  unfold Un_cv; unfold R_dist; intros; exists 0%nat; intros.
+  unfold Un_cv; unfold Rdist; intros; exists 0%nat; intros.
   replace (sum_f_R0 (fun k:nat => (-1) ^ k / INR (fact (2 * k + 1)) * 0 ^ (2 * k + 1)) n) with 0.
   { unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0; assumption. }
   - induction  n as [| n Hrecn].
@@ -286,8 +286,8 @@ case (Req_dec x 0); intro.
     { simpl; ring. }
     unfold ge; apply Nat.le_0_l. }
 unfold sin. destruct (exist_sin (Rsqr x)) as (x0,p).
-unfold sin_in, sin_n, infinite_sum, R_dist in p.
-unfold Un_cv, R_dist; intros.
+unfold sin_in, sin_n, infinite_sum, Rdist in p.
+unfold Un_cv, Rdist; intros.
 cut (0 < eps / Rabs x);
  [ intro
  | unfold Rdiv; apply Rmult_lt_0_compat;

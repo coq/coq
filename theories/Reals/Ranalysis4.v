@@ -61,9 +61,9 @@ Proof.
   - intro H2; assert (H3 := uniqueness_step1 _ _ _ _ H0 H2).
     assumption.
   - unfold limit1_in; unfold limit_in; unfold dist;
-      simpl; unfold R_dist; unfold limit1_in in H1;
+      simpl; unfold Rdist; unfold limit1_in in H1;
       unfold limit_in in H1; unfold dist in H1; simpl in H1;
-      unfold R_dist in H1.
+      unfold Rdist in H1.
     intros; elim (H1 eps H2); intros.
     elim H3; intros.
     exists x2.
@@ -166,7 +166,7 @@ Proof.
   case (Req_dec x 0); intro.
   - unfold continuity_pt; unfold continue_in;
       unfold limit1_in; unfold limit_in;
-      simpl; unfold R_dist; intros; exists eps;
+      simpl; unfold Rdist; intros; exists eps;
       split.
     + apply H0.
     + intros; rewrite H; rewrite Rabs_R0; unfold Rminus; rewrite Ropp_0;

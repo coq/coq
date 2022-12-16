@@ -84,7 +84,7 @@ Lemma sqrt_continuity_pt_R1 : continuity_pt sqrt 1.
 Proof.
   unfold continuity_pt; unfold continue_in;
     unfold limit1_in; unfold limit_in;
-      unfold dist; simpl; unfold R_dist;
+      unfold dist; simpl; unfold Rdist;
         intros.
   set (alpha := Rmin eps 1).
   exists alpha; intros.
@@ -109,7 +109,7 @@ Proof.
   intros; generalize sqrt_continuity_pt_R1.
   unfold continuity_pt; unfold continue_in;
     unfold limit1_in; unfold limit_in;
-      unfold dist; simpl; unfold R_dist;
+      unfold dist; simpl; unfold Rdist;
         intros.
   assert (0 < eps / sqrt x). {
     unfold Rdiv; apply Rmult_lt_0_compat.
@@ -228,7 +228,7 @@ Proof.
   intro; assert (H2 := continuity_pt_inv g 0 H0 H1).
   unfold derivable_pt_lim; intros; unfold continuity_pt in H2;
     unfold continue_in in H2; unfold limit1_in in H2;
-      unfold limit_in in H2; simpl in H2; unfold R_dist in H2.
+      unfold limit_in in H2; simpl in H2; unfold Rdist in H2.
   elim (H2 eps H3); intros alpha H4.
   elim H4; intros.
   set (alpha1 := Rmin alpha x).
@@ -304,7 +304,7 @@ Proof.
   2:exfalso;lra.
   unfold continuity_pt; unfold continue_in;
     unfold limit1_in; unfold limit_in;
-    simpl; unfold R_dist; intros.
+    simpl; unfold Rdist; intros.
   exists (Rsqr eps); intros.
   split.
   { change (0 < Rsqr eps); apply Rsqr_pos_lt;lra. }

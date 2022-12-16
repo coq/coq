@@ -32,7 +32,7 @@ Proof.
   assert (H3 := derivable_continuous_pt _ _ X).
   unfold continuity_pt in H3; unfold continue_in in H3; unfold limit1_in in H3;
     unfold limit_in in H3; unfold dist in H3.
-  simpl in H3; unfold R_dist in H3.
+  simpl in H3; unfold Rdist in H3.
   elim (H3 (Rabs (f2 x) / 2));
     [ idtac
       | unfold Rdiv; change (0 < Rabs (f2 x) * / 2);
@@ -180,7 +180,7 @@ Proof.
   unfold limit_in in H10.
   unfold dist in H10.
   simpl in H10.
-  unfold R_dist in H10.
+  unfold Rdist in H10.
   elim (H10 (Rabs (eps * Rsqr (f2 x) / (8 * l1)))).
   2:{ change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
       apply Rabs_pos_lt; unfold Rdiv, Rsqr; repeat rewrite Rmult_assoc;
@@ -352,7 +352,7 @@ Proof.
   unfold limit_in in H12.
   unfold dist in H12.
   simpl in H12.
-  unfold R_dist in H12.
+  unfold Rdist in H12.
   elim (H12 (Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2)))).
   2:{ change (0 < Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2))).
       apply Rabs_pos_lt.
@@ -455,7 +455,7 @@ Proof.
   unfold limit_in in H11.
   unfold dist in H11.
   simpl in H11.
-  unfold R_dist in H11.
+  unfold Rdist in H11.
   elim (H11 (Rabs (eps * Rsqr (f2 x) / (8 * l1)))).
   2:{ change (0 < Rabs (eps * Rsqr (f2 x) / (8 * l1))).
       apply Rabs_pos_lt.
@@ -557,7 +557,7 @@ Proof.
   unfold limit_in in H12.
   unfold dist in H12.
   simpl in H12.
-  unfold R_dist in H12.
+  unfold Rdist in H12.
   elim (H12 (Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2)))).
   2:{ change (0 < Rabs (Rsqr (f2 x) * f2 x * eps / (8 * f1 x * l2)));
       apply Rabs_pos_lt.

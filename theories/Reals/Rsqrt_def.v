@@ -335,7 +335,7 @@ Proof.
   { intro.
     assert (H4 := UL_sequence _ _ _ H2 H3).
     symmetry ; apply Rminus_diag_uniq_sym; assumption. }
-  unfold Un_cv; unfold R_dist.
+  unfold Un_cv; unfold Rdist.
   intros.
   assert (H4 := cv_infty_cv_0 pow_2_n pow_2_n_infty).
   destruct (total_order_T x y) as [[ Hlt | -> ]|Hgt].
@@ -349,7 +349,7 @@ Proof.
         rewrite Rabs_R0; assumption.
       - assumption. }
   2:{ elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H Hgt)). }
-  unfold Un_cv in H4; unfold R_dist in H4.
+  unfold Un_cv in H4; unfold Rdist in H4.
   assert (Hyp:0 < y - x) by lra.
   assert (0 < eps / (y - x)). {
     unfold Rdiv; apply Rmult_lt_0_compat;
@@ -393,7 +393,7 @@ Proof.
   unfold limit_in.
   unfold dist.
   simpl.
-  unfold R_dist.
+  unfold Rdist.
   intros.
   elim (H eps H1); intros alp H2.
   elim H2; intros.
@@ -447,7 +447,7 @@ Qed.
 Lemma cv_pow_half : forall a, Un_cv (fun n => a/2^n) 0.
 intros a; unfold Rdiv; replace 0 with (a * 0) by ring.
 apply CV_mult.
-- intros eps ep; exists 0%nat; rewrite R_dist_eq; intros n _; assumption.
+- intros eps ep; exists 0%nat; rewrite Rdist_eq; intros n _; assumption.
 - exact (cv_infty_cv_0 pow_2_n pow_2_n_infty).
 Qed.
 
@@ -532,7 +532,7 @@ Proof.
       destruct (total_order_T 0 (f x0)) as [[Hlt|<-]|Hgt].
       { left; assumption. }
       { right; reflexivity. }
-      unfold Un_cv in H7; unfold R_dist in H7.
+      unfold Un_cv in H7; unfold Rdist in H7.
       assert (0 < - f x0) by (apply Ropp_0_gt_lt_contravar; assumption).
       elim (H7 (- f x0) H8); intros.
       cut (x2 >= x2)%nat; [ intro | unfold ge; apply le_n ].
@@ -552,7 +552,7 @@ Proof.
       destruct (total_order_T 0 (f x0)) as [[Hlt|<-]|Hgt].
       2:{ right; reflexivity. }
       2:{ left; assumption. }
-      unfold Un_cv in H7; unfold R_dist in H7.
+      unfold Un_cv in H7; unfold Rdist in H7.
       elim (H7 (f x0) Hlt); intros.
       cut (x2 >= x2)%nat; [ intro | unfold ge; apply le_n ].
       assert (H10 := H8 x2 H9).
