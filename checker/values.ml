@@ -354,8 +354,8 @@ and v_sign =
     [|v_uid;v_modtype;v_sign|]|])  (* MoreFunctor *)
 and v_mexpr =
   Sum ("module_expr",0,
-  [|[|v_mae|];                     (* NoFunctor *)
-    [|v_uid;v_modtype;v_mexpr|]|]) (* MoreFunctor *)
+  [|[|v_mae|];                     (* MENoFunctor *)
+    [|v_mexpr|]|])                 (* MEMoreFunctor *)
 and v_impl =
   Sum ("module_impl",2, (* Abstract, FullStruct *)
   [|[|v_mexpr|];  (* Algebraic *)

@@ -120,7 +120,7 @@ let rec check_module env opac mp mb opacify =
       let opacify = collect_constants_without_body sign mb.mod_mp opacify in
       let sign, opac = check_signature env opac sign_struct mb.mod_mp mb.mod_delta opacify in
       Some (sign, mb.mod_delta), opac
-    | Algebraic me -> Some (check_mexpression env opac me mb.mod_mp mb.mod_delta), opac
+    | Algebraic me -> Some (check_mexpression env opac me mb.mod_type mb.mod_mp mb.mod_delta), opac
     | Abstract|FullStruct -> None, opac
   in
   let () = match optsign with
@@ -172,13 +172,13 @@ and check_mexpr env opac mse mp_mse res = match mse with
   | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
 
 
-and check_mexpression env opac sign mp_mse res = match sign with
-  | MoreFunctor (arg_id, mtb, body) ->
-      check_module_type env mtb;
+and check_mexpression env opac sign mbtyp mp_mse res = match sign with
+  | MEMoreFunctor body ->
+      let arg_id, mtb, mbtyp = Modops.destr_functor mbtyp in
       let env' = Modops.add_module_type (MPbound arg_id) mtb env in
-      let body, delta = check_mexpression env' opac body mp_mse res in
+      let body, delta = check_mexpression env' opac body mbtyp mp_mse res in
       MoreFunctor(arg_id,mtb,body), delta
-  | NoFunctor me -> check_mexpr env opac me mp_mse res
+  | MENoFunctor me -> check_mexpr env opac me mp_mse res
 
 and check_signature env opac sign mp_mse res opacify = match sign with
   | MoreFunctor (arg_id, mtb, body) ->

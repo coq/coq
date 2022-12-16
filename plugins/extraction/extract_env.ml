@@ -248,16 +248,16 @@ and extract_mexpr_spec env mp1 (me_struct_o,me_alg) = match me_alg with
      extract_msignature_spec env mp1 delta me_struct
 
 and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
-  | MoreFunctor (mbid, mtb, me_alg') ->
-      let me_struct' = match me_struct with
-        | MoreFunctor (mbid',_,me') when MBId.equal mbid' mbid -> me'
-        | _ -> assert false
+  | MEMoreFunctor me_alg' ->
+      let mbid, mtb, me_struct' = match me_struct with
+      | MoreFunctor (mbid, mtb, me') -> (mbid, mtb, me')
+      | _ -> assert false
       in
       let mp = MPbound mbid in
       let env' = Modops.add_module_type mp mtb env in
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
                 extract_mexpression_spec env' mp1 (me_struct',me_alg'))
-  | NoFunctor m -> extract_mexpr_spec env mp1 (Some me_struct,m)
+  | MENoFunctor m -> extract_mexpr_spec env mp1 (Some me_struct,m)
 
 and extract_msignature_spec env mp1 reso = function
   | NoFunctor struc ->
@@ -344,15 +344,19 @@ and extract_mexpr env mp = function
       Miniml.MEapply (extract_mexpr env mp me,
                       extract_mexpr env mp (MEident arg))
 
-and extract_mexpression env mp = function
-  | NoFunctor me -> extract_mexpr env mp me
-  | MoreFunctor (mbid, mtb, me) ->
+and extract_mexpression env mp mty = function
+  | MENoFunctor me -> extract_mexpr env mp me
+  | MEMoreFunctor me ->
+      let (mbid, mtb, mty) = match mty with
+      | MoreFunctor (mbid, mtb, mty) -> (mbid, mtb, mty)
+      | NoFunctor _ -> assert false
+      in
       let mp1 = MPbound mbid in
       let env' = Modops.add_module_type mp1 mtb	env in
       Miniml.MEfunctor
         (mbid,
          extract_mbody_spec env mp1 mtb,
-         extract_mexpression env' mp me)
+         extract_mexpression env' mp mty me)
 
 and extract_msignature env mp reso ~all = function
   | NoFunctor struc ->
@@ -375,7 +379,7 @@ and extract_module env mp ~all mb =
      moment we don't support this situation. *)
   let impl = match mb.mod_expr with
     | Abstract -> error_no_module_expr mp
-    | Algebraic me -> extract_mexpression env mp me
+    | Algebraic me -> extract_mexpression env mp mb.mod_type me
     | Struct sign ->
       (* This module has a signature, otherwise it would be FullStruct.
          We extract just the elements required by this signature. *)

@@ -153,6 +153,13 @@ let implem_smart_map fs fa impl = match impl with
   | Algebraic a -> let a' = fa a in if a==a' then impl else Algebraic a'
   | Abstract | FullStruct -> impl
 
+let rec annotate_module_expression me mty = match me, mty with
+| MENoFunctor me, (NoFunctor _ | MoreFunctor _) -> NoFunctor me
+| MEMoreFunctor me, MoreFunctor (mbid, arg, mty) ->
+  let me = annotate_module_expression me mty in
+  MoreFunctor (mbid, arg, me)
+| MEMoreFunctor _, NoFunctor _ -> assert false
+
 (** {6 Substitutions of modular structures } *)
 
 let id_delta x _y = x
@@ -239,10 +246,13 @@ and subst_expr subst do_delta seb = match seb with
     let wdb' = subst_with_body subst wdb in
     if meb==meb' && wdb==wdb' then seb else MEwith(meb',wdb')
 
-and subst_expression subst do_delta =
-  functor_smart_map
-    (subst_modtype subst do_delta)
-    (subst_expr subst do_delta)
+and subst_expression subst do_delta me = match me with
+| MENoFunctor malg ->
+  let malg' = subst_expr subst do_delta malg in
+  if malg == malg' then me else MENoFunctor malg'
+| MEMoreFunctor mf ->
+  let mf' = subst_expression subst do_delta mf in
+  if mf == mf' then me else MEMoreFunctor mf'
 
 and subst_signature subst do_delta =
   functor_smart_map
@@ -321,7 +331,7 @@ let rec strengthen_module mp_from mp_to mb =
   | NoFunctor struc ->
     let reso,struc' = strengthen_signature mp_from struc mp_to mb.mod_delta in
     { mb with
-      mod_expr = Algebraic (NoFunctor (MEident mp_to));
+      mod_expr = Algebraic (MENoFunctor (MEident mp_to));
       mod_type = NoFunctor struc';
       mod_delta =
         add_mp_delta_resolver mp_from mp_to
@@ -375,7 +385,7 @@ let rec strengthen_and_subst_module mb subst mp_from mp_to =
       in
       { mb with
         mod_mp = mp_to;
-        mod_expr = Algebraic (NoFunctor (MEident mp_from));
+        mod_expr = Algebraic (MENoFunctor (MEident mp_from));
         mod_type = NoFunctor struc';
         mod_delta = add_mp_delta_resolver mp_to mp_from reso' }
   | MoreFunctor _ ->
@@ -480,7 +490,7 @@ let strengthen_and_subst_module_body mb mp include_b = match mb.mod_type with
     { mb with
       mod_mp = mp;
       mod_type = NoFunctor struc';
-      mod_expr = Algebraic (NoFunctor (MEident mb.mod_mp));
+      mod_expr = Algebraic (MENoFunctor (MEident mb.mod_mp));
       mod_delta =
         if include_b then reso'
         else add_delta_resolver new_resolver reso' }
@@ -510,7 +520,7 @@ let rec clean_module_body l mb =
   let impl, typ = mb.mod_expr, mb.mod_type in
   let typ' = clean_signature l typ in
   let impl' = match impl with
-    | Algebraic (NoFunctor m) when is_bounded_expr l m -> FullStruct
+    | Algebraic (MENoFunctor m) when is_bounded_expr l m -> FullStruct
     | _ -> implem_smart_map (clean_signature l) (clean_expression l) impl
   in
   if typ==typ' && impl==impl' then mb
@@ -533,8 +543,7 @@ and clean_structure l = List.Smart.map (clean_field l)
 and clean_signature l =
   functor_smart_map (clean_module_type l) (clean_structure l)
 
-and clean_expression l =
-  functor_smart_map (clean_module_type l) (fun me -> me)
+and clean_expression _ me = me
 
 let rec collect_mbid l sign =  match sign with
   | MoreFunctor (mbid,ty,m) ->
