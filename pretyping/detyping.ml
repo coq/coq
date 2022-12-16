@@ -834,19 +834,15 @@ and detype_r d flags avoid env sigma t =
         GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
               (args @ [detype d flags avoid env sigma c]))
       in
-      if !Flags.in_debugger || !Flags.in_toplevel then
-        try noparams ()
-        with _ ->
-            (* lax mode, used by debug printers only *)
-          GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
-                [detype d flags avoid env sigma c])
-      else
-        if print_primproj_params () then
-          try
-            let c = Retyping.expand_projection (snd env) sigma p c [] in
-            DAst.get (detype d flags avoid env sigma c)
-          with Retyping.RetypeError _ -> noparams ()
-        else noparams ()
+      if !Flags.in_debugger || !Flags.in_toplevel
+         || not (print_primproj_params ())
+      then noparams ()
+      else begin
+        try
+          let c = Retyping.expand_projection (snd env) sigma p c [] in
+          DAst.get (detype d flags avoid env sigma c)
+        with Retyping.RetypeError _ -> noparams ()
+      end
 
     | Evar (evk,cl) ->
         let open Context.Named.Declaration in
