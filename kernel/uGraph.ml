@@ -33,19 +33,7 @@ type t = {
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-(** Type explanation is used to decorate error messages to provide
-  useful explanation why a given constraint is rejected. It is composed
-  of a path of universes and relation kinds [(r1,u1);..;(rn,un)] means
-   .. <(r1) u1 <(r2) ... <(rn) un (where <(ri) is the relation symbol
-  denoted by ri, currently only < and <=). The lowest end of the chain
-  is supposed known (see UniverseInconsistency exn). The upper end may
-  differ from the second univ of UniverseInconsistency because all
-  universes in the path are canonical. Note that each step does not
-  necessarily correspond to an actual constraint, but reflect how the
-  system stores the graph and may result from combination of several
-  Constraints.t...
-*)
-type explanation = (constraint_type * Level.t) list Lazy.t
+type explanation = G.explanation Lazy.t
 
 type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation option
 
@@ -293,14 +281,11 @@ let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
   let reason = match p with
     | None -> mt()
     | Some p ->
-      let p = Lazy.force p in
+      let pstart, p = Lazy.force p in
       if p = [] then mt ()
       else
-        str " because" ++ spc() ++ pr_uni v ++
-        prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v)
-          p ++
-        (if Sorts.equal (Sorts.sort_of_univ (Universe.make (snd (CList.last p)))) u then mt() else
-           (spc() ++ str "= " ++ pr_uni u))
+        str " because" ++ spc() ++ prl pstart ++
+        prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v) p
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason
