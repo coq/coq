@@ -453,3 +453,26 @@ they are printed as usual.
 Additionally, user-written :g:`match` constructs on primitive records are
 desugared into substitution of the projections, they cannot be printed back as
 :g:`match` constructs.
+
+.. example::
+
+   .. coqtop:: reset all
+
+      #[projections(primitive)] Record Sigma A B := sigma { p1 : A; p2 : B p1 }.
+      Arguments sigma {_ _} _ _.
+
+      Check fun x : Sigma nat (fun _ => nat) =>
+        match x with sigma v _ => v + v end.
+
+      Check fun x : Sigma nat (fun x => x = 0) =>
+        match x return exists y, y = 0 with
+          sigma v e => ex_intro _ v e
+        end.
+
+   Matches which are equivalent to just a projection have adhoc handling to avoid generating useless ``let``:
+
+   .. coqtop:: all
+
+      Arguments p1 {_ _} _.
+      Check fun x : Sigma nat (fun x => x = 0) =>
+        match x return x.(p1) = 0 with sigma v e => e end.

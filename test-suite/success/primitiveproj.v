@@ -202,11 +202,23 @@ Qed.
 Abort.
 
 (* Primitive projection match compilation *)
-Require Import List.
+
 Set Primitive Projections.
 
 Record prod (A B : Type) := pair { fst : A ; snd : B }.
 Arguments pair {_ _} _ _.
+
+Definition snd' := @snd.
+
+(* a match which is just a projection doesn't produce a bunch of letins *)
+Goal True.
+  assert (v : prod nat bool) by admit.
+
+  let unfolded_snd := eval cbv beta delta [snd' snd] in (snd' v) in
+  let matched_snd := constr:(let 'pair _ x := v in x) in
+  constr_eq unfolded_snd matched_snd.
+
+Abort.
 
 Fixpoint split_at {A} (l : list A) (n : nat) : prod (list A) (list A) :=
   match n with
@@ -214,9 +226,20 @@ Fixpoint split_at {A} (l : list A) (n : nat) : prod (list A) (list A) :=
   | S n =>
     match l with
     | nil => pair nil nil
-    | x :: l => let 'pair l1 l2 := split_at l n in pair (x :: l1) l2
+    | cons x l => let 'pair l1 l2 := split_at l n in pair (cons x l1) l2
     end
   end.
+
+Section Repeat.
+
+  Variable A : Type.
+  Fixpoint repeat (x : A) (n: nat ) :=
+    match n with
+      | O => nil
+      | S k => cons x (repeat x k)
+    end.
+
+End Repeat.
 
 Time Eval vm_compute in split_at (repeat 0 20) 10. (* Takes 0s *)
 Time Eval vm_compute in split_at (repeat 0 40) 20. (* Takes 0.001s *)

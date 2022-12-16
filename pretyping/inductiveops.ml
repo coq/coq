@@ -361,14 +361,34 @@ let make_project env sigma ind pred c branches ps =
   in
   let branch = branches.(0) in
   let ctx, br = decompose_lambda_n_decls sigma mip.mind_consnrealdecls.(0) branch in
+  let proj = match EConstr.destRel sigma br with
+    | exception DestKO -> None
+    | i ->
+      begin match List.skipn (i-1) ctx with
+      | exception Failure _ -> None
+      | ctx -> match ctx with
+        | [] -> None
+        | LocalDef _ :: _ ->
+          (* XXX Maybe we should produce the applied constant for this letin pseudoprojection?
+             We would have to get the params etc*)
+          None
+        | LocalAssum _ :: ctx ->
+          (* This match is just a projection *)
+          let p = ps.(Context.Rel.nhyps ctx) in
+          Some (mkProj (Projection.make p true, c))
+      end
+  in
+  match proj with
+  | Some proj -> proj
+  | None ->
   let n, len, ctx =
     List.fold_right
       (fun decl (i, j, ctx) ->
-        match decl with
-        | LocalAssum (na, ty) ->
+         match decl with
+         | LocalAssum (na, ty) ->
            let t = mkProj (Projection.make ps.(i) true, mkRel j) in
            (i + 1, j + 1, LocalDef (na, t, Vars.liftn 1 j ty) :: ctx)
-        | LocalDef (na, b, ty) ->
+         | LocalDef (na, b, ty) ->
            (i, j + 1, LocalDef (na, Vars.liftn 1 j b, Vars.liftn 1 j ty) :: ctx))
       ctx (0, 1, [])
   in
