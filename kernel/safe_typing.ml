@@ -1142,7 +1142,7 @@ let build_module_body params restype senv =
   let state = check_state senv in
   let mb, _ =
     Mod_typing.finalize_module state senv.env senv.modpath
-      (struc,None,senv.modresolver) restype'
+      (struc, senv.modresolver) restype'
   in
   let mb' = functorize_module params mb in
   { mb' with mod_retroknowledge = ModBodyRK senv.local_retroknowledge }

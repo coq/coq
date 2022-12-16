@@ -53,7 +53,7 @@ val translate_mse :
 
 val finalize_module :
   'a Reduction.universe_state ->
-  env -> ModPath.t -> module_signature * module_expression option * delta_resolver ->
+  env -> ModPath.t -> module_signature * delta_resolver ->
   (module_type_entry * inline) option ->
   module_body * 'a
 

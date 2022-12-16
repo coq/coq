@@ -314,7 +314,7 @@ and translate_modtype state env mp inl (params,mte) =
     from an already-translated (or interactive) implementation and
     an (optional) signature entry, produces a final [module_body] *)
 
-let finalize_module (cst, ustate) env mp (sign,alg,reso) restype = match restype with
+let finalize_module_alg (cst, ustate) env mp (sign,alg,reso) restype = match restype with
   | None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
     mk_mod mp impl sign reso, cst
@@ -331,6 +331,9 @@ let finalize_module (cst, ustate) env mp (sign,alg,reso) restype = match restype
     (** constraints from module body typing + subtyping + module type. *)
     cst
 
+let finalize_module univs env mp (sign, reso) typ =
+  finalize_module_alg univs env mp (sign, None, reso) typ
+
 let translate_module (cst, ustate) env mp inl = function
   | MType (params,ty) ->
     let mtb, cst = translate_modtype (cst, ustate) env mp inl (params,ty) in
@@ -338,7 +341,7 @@ let translate_module (cst, ustate) env mp inl = function
   |MExpr (params,mse,oty) ->
     let (sg,alg,reso,cst) = translate_mse_funct (cst, ustate) env ~is_mod:true mp inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
-    finalize_module (cst, ustate) env mp (sg,Some alg,reso) restype
+    finalize_module_alg (cst, ustate) env mp (sg,Some alg,reso) restype
 
 (** We now forbid any Include of functors with restricted signatures.
     Otherwise, we could end with the creation of undesired axioms
