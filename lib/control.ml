@@ -70,7 +70,7 @@ let windows_timeout n f x =
       if n <= cur -. init then begin
         interrupt := true;
         exited := true;
-        Thread.exit ()
+        Thread.exit () [@ocaml.warning "-3"]
       end;
       Thread.delay 0.5
     done
