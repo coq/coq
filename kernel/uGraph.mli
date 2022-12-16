@@ -47,7 +47,9 @@ val check_eq_instances : Instance.t check_function
   universes graph. It raises the exception [UniverseInconsistency] if the
   constraints are not satisfiable. *)
 
-type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation Lazy.t option
+type explanation
+
+type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation option
 
 exception UniverseInconsistency of univ_inconsistency
 

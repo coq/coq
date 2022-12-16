@@ -476,8 +476,6 @@ end
 
 type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
 
-type explanation = (constraint_type * Level.t) list
-
 let constraint_type_ord c1 c2 = match c1, c2 with
 | Lt, Lt -> 0
 | Lt, _ -> -1
