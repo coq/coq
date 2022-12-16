@@ -1,6 +1,17 @@
 Functional induction
 ====================
 
+.. note::
+
+   The functional induction (FunInd) plugin is legacy functionality. For
+   new code and new projects, we recommend `Equations <http://mattam82.github.io/Coq-Equations/>`_,
+   a more powerful plugin that provides most of FunInd's features. It can
+   be installed through the `Coq Platform <https://github.com/coq/platform/releases>`_.
+   Refer to the `Equations documentation <https://raw.githubusercontent.com/mattam82/Coq-Equations/master/doc/equations.pdf>`_
+   to learn more. FunInd is not deprecated and not planned for removal
+   yet because porting code from FunInd to Equations can be difficult
+   (due to differences in the generated induction principles).
+
 .. _advanced-recursive-functions:
 
 Advanced recursive functions
