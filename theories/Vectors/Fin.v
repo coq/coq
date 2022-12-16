@@ -119,9 +119,9 @@ Qed.
 
 Lemma to_nat_of_nat {p}{n} (h : p < n) : to_nat (of_nat_lt h) = exist _ p h.
 Proof.
- revert n h.
- induction p as [|p IHp]; (intro n; destruct n as [|n]; intros h; [ destruct (Nat.nlt_0_r _ h) | cbn]);
- [ | rewrite (IHp _ (proj2 (Nat.succ_lt_mono p n) h))]; f_equal; apply Peano_dec.le_unique.
+revert p h. induction n as [|n IHn].
+- intros p h. destruct (Nat.nlt_0_r p h).
+- intros [|p] h; cbn; [|rewrite IHn]; f_equal; apply Peano_dec.le_unique.
 Qed.
 
 Lemma to_nat_inj {n} (p q : t n) :
@@ -158,7 +158,13 @@ induction p as [|? p IHp].
 - reflexivity.
 - simpl; destruct (to_nat (L n p)); simpl in *; rewrite IHp. now destruct (to_nat p).
 Qed.
- 
+
+Lemma L_inj {m} n (p q : t m) : L n p = L n q -> p = q.
+Proof.
+induction p as [m|m p IH]; apply (caseS' q); [easy..|].
+intros ??. f_equal. now apply IH, FS_inj.
+Qed.
+
 (** The p{^ th} element of [fin m] viewed as the p{^ th} element of
 [fin (n + m)]
 Really really inefficient !!! *)
@@ -183,6 +189,40 @@ Proof.
 induction n as [|n IHn].
 - reflexivity.
 - simpl; destruct (to_nat (R n p)); simpl in *; rewrite IHn. now destruct (to_nat p).
+Qed.
+
+Lemma R_inj {m} n (p q : t m) : R n p = R n q -> p = q.
+Proof.
+induction n as [|n IH].
+- easy.
+- intros ?. now apply IH, FS_inj.
+Qed.
+
+Lemma L_R_neq n m (p : t n) (q : t m) : L m p <> R n q.
+Proof.
+induction p as [n|n p IH].
+- discriminate.
+- intros ?. now apply IH, FS_inj.
+Qed.
+
+Lemma case_L_R' {n m} (P : t (n + m) -> Type) (p : t (n + m)) :
+  (forall q, P (L m q)) -> (forall q, P (R n q)) -> P p.
+Proof.
+induction n as [|n IH]; intros IHL IHR.
+- apply IHR.
+- apply caseS'.
+  + apply (IHL F1).
+  + intros p'. apply (IH (fun _ => _) p'); intros q.
+    * apply (IHL (FS q)).
+    * apply (IHR q).
+Qed.
+
+Lemma case_L_R (P : forall n m, t (n + m) -> Type) {n m} (p : t (n + m)) :
+  (forall n m (q : t n), P n m (L m q)) -> (forall n m (q : t m), P n m (R n q)) -> P n m p.
+Proof.
+intros HL HR. apply case_L_R'; intros q.
+- apply HL.
+- apply HR.
 Qed.
 
 Fixpoint depair {m n} (o : t m) (p : t n) : t (m * n) :=

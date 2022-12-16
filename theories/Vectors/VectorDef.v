@@ -177,10 +177,8 @@ Proof.
   - apply shiftout.
 
     rewrite <- Nat.sub_succ_l.
-    + apply f.
-      * auto with *.
-      * exact v.
-    + auto with *.
+    + exact (f (Nat.lt_le_incl _ _ H) v).
+    + exact (Nat.lt_le_incl _ _ H).
 Defined.
 
 (** Concatenation of two vectors *)
