@@ -494,11 +494,17 @@ object(self)
 
   method private attach_tooltip ?loc sentence text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
-    let pre_bytes, post_bytes = Option.cata Loc.unloc (0, String.length phrase) loc in
-    let pre = b2c phrase (pre_bytes - (sentence.byte_start)) in
-    let post = b2c phrase (post_bytes - (sentence.byte_start)) in
-    let start = start_sentence#forward_chars pre in
-    let stop = start_sentence#forward_chars post in
+    let start, stop = match loc with
+      | None -> start_sentence, stop_sentence
+      | Some loc ->
+        (* FIXME: tooltips don't show correctly for this case *)
+        let pre_bytes, post_bytes = Loc.unloc loc in
+        let pre = b2c phrase (pre_bytes - (sentence.byte_start)) in
+        let post = b2c phrase (post_bytes - (sentence.byte_start)) in
+        let start = start_sentence#forward_chars pre in
+        let stop = start_sentence#forward_chars post in
+        start, stop
+    in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
     add_tooltip sentence start#offset stop#offset markup
