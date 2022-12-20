@@ -14,13 +14,17 @@ open Values
 
 let max_string_length = 1024
 
+type command =
+| CmdParent
+| CmdChild of int
+
 let rec read_num max =
   let quit () =
     Printf.printf "\nGoodbye!\n%!";
     exit 0 in
   Printf.printf "# %!";
   let l = try read_line () with End_of_file -> quit () in
-  if l = "u" then None
+  if l = "u" then CmdParent
   else if l = "x" then quit ()
   else
     match int_of_string l with
@@ -29,7 +33,7 @@ let rec read_num max =
         let () =
           Printf.printf "Out-of-range input! (only %d children)\n%!" max in
         read_num max
-      else Some v
+      else CmdChild v
     | exception Failure _ ->
       Printf.printf "Unrecognized input! <n> enters the <n>-th child, u goes up 1 level, x exits\n%!";
       read_num max
@@ -306,8 +310,8 @@ let rec visit v o pos =
   Printf.printf "-------------\n";
   try
     match read_num (Array.length children) with
-    | None -> let info = pop () in visit info.typ info.obj info.pos
-    | Some child ->
+    | CmdParent -> let info = pop () in visit info.typ info.obj info.pos
+    | CmdChild child ->
        let v',o',pos' = children.(child) in
        push (get_name v) v o pos;
        visit v' o' pos'
@@ -437,7 +441,7 @@ let visit_vo f =
       Printf.printf "  %d: %s, starting at byte %Ld (size %iw)\n" i name pos size)
       segments;
     match read_num (Array.length segments) with
-    | Some seg ->
+    | CmdChild seg ->
        let seg = segments.(seg) in
        let open ObjFile in
        LargeFile.seek_in ch seg.pos;
@@ -445,7 +449,7 @@ let visit_vo f =
        let () = Visit.init () in
        let typ = try List.assoc seg.name known_segments with Not_found -> Any in
        Visit.visit typ o []
-    | None -> ()
+    | CmdParent -> ()
   done
 
 let () =
