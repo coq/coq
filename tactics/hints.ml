@@ -580,9 +580,8 @@ struct
     hintdb_max_id : int;
     use_dn : bool;
     hintdb_map : search_entry GlobRef.Map.t;
-    (* A list of unindexed entries starting with an unfoldable constant
-       or with no associated pattern. *)
-    hintdb_nopat : (GlobRef.t option * stored_data) list;
+    (* A list of unindexed entries with no associated pattern. *)
+    hintdb_nopat : stored_data list;
     hintdb_name : string option;
   }
 
@@ -640,7 +639,7 @@ struct
       with Not_found -> None
 
   let merge_entry secvars db nopat pat =
-    let h = List.sort pri_order_int (List.map snd db.hintdb_nopat) in
+    let h = List.sort pri_order_int db.hintdb_nopat in
     let h = List.merge pri_order_int h nopat in
     let h = List.merge pri_order_int h pat in
     List.map_filter (realize_tac secvars) h
@@ -675,10 +674,10 @@ struct
     let idv = id, { v with db = db.hintdb_name } in
       match gr with
       | None ->
-          let is_present (_, (_, v')) = KerName.equal v.code.uid v'.code.uid in
+          let is_present (_, v') = KerName.equal v.code.uid v'.code.uid in
           if not (List.exists is_present db.hintdb_nopat) then
             (* FIXME *)
-            { db with hintdb_nopat = (gr,idv) :: db.hintdb_nopat }
+            { db with hintdb_nopat = idv :: db.hintdb_nopat }
           else db
       | Some gr ->
         let pat =
@@ -693,7 +692,7 @@ struct
       { db with hintdb_map = GlobRef.Map.map (rebuild_dn (Some st')) db.hintdb_map;
         hintdb_state = st'; hintdb_nopat = [] }
     in
-      List.fold_left (fun db (gr,(id,v)) -> addkv gr id v db) db' db.hintdb_nopat
+      List.fold_left (fun db (id, v) -> addkv None id v db) db' db.hintdb_nopat
 
   let add_one env sigma (k, v) db =
     let v = instantiate_hint env sigma v in
@@ -730,7 +729,7 @@ struct
     let filter (_, h) =
       match h.name with PathHints [gr] -> not (List.mem_f GlobRef.equal gr grs) | _ -> true in
     let hintmap = GlobRef.Map.map (remove_he (dn_ts db) filter) db.hintdb_map in
-    let hintnopat = List.filter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
+    let hintnopat = List.filter filter db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
   let remove_one env gr db = remove_list env [gr] db
@@ -741,11 +740,11 @@ struct
 
   let iter f db =
     let iter_se k se = f (Some k) se.sentry_mode (get_entry se) in
-    f None [] (List.map (fun x -> snd (snd x)) db.hintdb_nopat);
+    f None [] (List.map snd db.hintdb_nopat);
     GlobRef.Map.iter iter_se db.hintdb_map
 
   let fold f db accu =
-    let accu = f None [] (List.map (fun x -> snd (snd x)) db.hintdb_nopat) accu in
+    let accu = f None [] (List.map snd db.hintdb_nopat) accu in
     GlobRef.Map.fold (fun k se -> f (Some k) se.sentry_mode (get_entry se)) db.hintdb_map accu
 
   let transparent_state db = db.hintdb_state
