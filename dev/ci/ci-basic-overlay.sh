@@ -66,7 +66,7 @@ project unimath 'https://github.com/UniMath/UniMath' '0df0949b951e198c461e168661
 ########################################################################
 project unicoq 'https://github.com/unicoq/unicoq' '0c33033e921c8f7f9dcc47078f0de7a4a0c99999'
 
-project mtac2 'https://github.com/Mtac2/Mtac2' '81d4090d4f1100b003132cf550e639c06b1b9429'
+project mtac2 'https://github.com/Mtac2/Mtac2' 'c7ae44d4d2af65e9d57bb80b8b70ac0b30c3fe93'
 
 ########################################################################
 # Mathclasses + Corn
