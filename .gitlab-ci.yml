@@ -27,7 +27,7 @@ variables:
   # $DATE is so we can tell what's what in the image list
   # The $hash is the first 10 characters of the md5 of the Dockerfile. e.g.
   # echo $(md5sum dev/ci/docker/bionic_coq/Dockerfile | head -c 10)
-  CACHEKEY: "bionic_coq-V2022-10-13-2c0347368a"
+  CACHEKEY: "bionic_coq-V2022-01-08-05a43dce12"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
 
   # By default, jobs run in the base switch; override to select another switch

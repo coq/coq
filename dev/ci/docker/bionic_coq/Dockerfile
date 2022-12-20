@@ -44,8 +44,8 @@ ENV NJOBS="2" \
 ENV COMPILER="4.09.0"
 
 # Common OPAM packages
-ENV BASE_OPAM="zarith.1.11 ounit2.2.2.3" \
-    CI_OPAM="ocamlgraph.1.8.8 cppo.1.6.8" \
+ENV BASE_OPAM="zarith.1.11 ounit2.2.2.6" \
+    CI_OPAM="ocamlgraph.2.0.0 cppo.1.6.9" \
     BASE_ONLY_OPAM="dune.2.9.1 stdlib-shims.0.1.0 ocamlfind.1.8.1 odoc.1.5.3 yojson.1.7.0 num.1.4"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
@@ -64,10 +64,10 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
         opam install $BASE_OPAM
 
 # EDGE switch
-ENV COMPILER_EDGE="4.14.0" \
-    BASE_OPAM_EDGE="dune.2.9.3 dune-release.1.6.1 ocamlfind.1.9.1 odoc.2.0.2" \
+ENV COMPILER_EDGE="4.14.1" \
+    BASE_OPAM_EDGE="dune.3.6.1 dune-release.1.6.2 ocamlfind.1.9.5 odoc.2.1.1" \
     CI_OPAM_EDGE="elpi.1.16.5 ppx_import.1.10.0 cmdliner.1.1.1 sexplib.v0.15.1 ppx_sexp_conv.v0.15.1 ppx_hash.v0.15.0 ppx_compare.v0.15.0 ppx_deriving_yojson.3.7.0 yojson.1.7.0" \
-    COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.2"
+    COQIDE_OPAM_EDGE="lablgtk3-sourceview3.3.1.3"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
