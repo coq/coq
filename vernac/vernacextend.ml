@@ -36,7 +36,7 @@ type vernac_classification =
      don't modify the interpretation state. *)
   | VtQuery
   (* Commands that change the current proof mode *)
-  | VtProofMode of string
+  | VtProofMode of Pvernac.proof_mode
   (* To be removed *)
   | VtMeta
 and vernac_start = opacity_guarantee * Names.Id.t list
