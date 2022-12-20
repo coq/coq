@@ -17,6 +17,7 @@ let max_string_length = 1024
 type command =
 | CmdParent
 | CmdChild of int
+| CmdSort
 
 let rec read_num max =
   let quit () =
@@ -24,9 +25,11 @@ let rec read_num max =
     exit 0 in
   Printf.printf "# %!";
   let l = try read_line () with End_of_file -> quit () in
-  if l = "u" then CmdParent
-  else if l = "x" then quit ()
-  else
+  match l with
+  | "u" -> CmdParent
+  | "s" -> CmdSort
+  | "x" -> quit ()
+  | _ ->
     match int_of_string l with
     | v ->
       if v < 0 || v >= max then
@@ -294,27 +297,44 @@ let pop () = match !stk with
   | i::s -> stk := s; i
   | _ -> raise EmptyStack
 
-let rec visit v o pos =
+let print_state v o pos children =
   Printf.printf "\nDepth %d Pos %s Context %s\n"
     (List.length !stk)
     (String.concat "." (List.rev_map string_of_int pos))
     (String.concat "/" (List.rev_map (fun i -> i.nam) !stk));
   Printf.printf "-------------\n";
-  let children = get_children v o pos in
   let nchild = Array.length children in
   Printf.printf "Here: %s, %d child%s\n"
     (node_info (v,o,pos)) nchild (if nchild = 0 then "" else "ren:");
-  Array.iteri
-    (fun i vop -> Printf.printf "  %d: %s\n" i (node_info vop))
+  Array.iter
+    (fun (i, vop) -> Printf.printf "  %d: %s\n" i (node_info vop))
     children;
-  Printf.printf "-------------\n";
+  Printf.printf "-------------\n"
+
+let rec visit v o pos =
+  let children = get_children v o pos in
+  let children = Array.mapi (fun i vop -> (i, vop)) children in
+  let () = print_state v o pos children in
+  read_command v o pos children
+
+and read_command v o pos children =
   try
     match read_num (Array.length children) with
     | CmdParent -> let info = pop () in visit info.typ info.obj info.pos
     | CmdChild child ->
-       let v',o',pos' = children.(child) in
+       let _, (v',o',pos') = children.(child) in
        push (get_name v) v o pos;
        visit v' o' pos'
+    | CmdSort ->
+      let children = get_children v o pos in
+      let children = Array.mapi (fun i vop -> (i, vop)) children in
+      let sort (_, (_, o, _)) (_, (_, o', _)) =
+        Int.compare (Repr.size o) (Repr.size o')
+      in
+      let sorted = Array.copy children in
+      let () = Array.sort sort sorted in
+      let () = print_state v o pos sorted in
+      read_command v o pos children
   with
   | EmptyStack -> ()
   | Forbidden -> let info = pop () in visit info.typ info.obj info.pos
@@ -416,7 +436,7 @@ let visit_vo f =
   Printf.printf "Enjoy your guided tour of a Coq .vo or .vi file\n";
   Printf.printf "Object sizes are in words (%d bits)\n" Sys.word_size;
   Printf.printf
-    "At prompt, <n> enters the <n>-th child, u goes up 1 level, x exits\n\n%!";
+    "At prompt, <n> enters the <n>-th child, u goes up 1 level, s sorts, x exits\n\n%!";
   let known_segments = [
     "summary", Values.v_libsum;
     "library", Values.v_lib;
@@ -449,7 +469,7 @@ let visit_vo f =
        let () = Visit.init () in
        let typ = try List.assoc seg.name known_segments with Not_found -> Any in
        Visit.visit typ o []
-    | CmdParent -> ()
+    | CmdParent | CmdSort -> ()
   done
 
 let () =
