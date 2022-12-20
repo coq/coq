@@ -1133,7 +1133,7 @@ let functorize_module params mb =
   let f x = functorize params x in
   let fe x = iterate (fun e -> MEMoreFunctor e) (List.length params) x in
   { mb with
-    mod_expr = Modops.implem_smart_map f fe mb.mod_expr;
+    mod_expr = Modops.implem_smart_map (fun x -> x) fe mb.mod_expr;
     mod_type = f mb.mod_type;
     mod_type_alg = Option.map fe mb.mod_type_alg }
 

@@ -322,7 +322,15 @@ let finalize_module_alg (cst, ustate) env mp (sign,alg,reso) restype = match res
     let res_mtb, cst = translate_modtype (cst, ustate) env mp inl params_mte in
     let auto_mtb = mk_modtype mp sign reso in
     let cst = Subtyping.check_subtypes (cst, ustate) env auto_mtb res_mtb in
-    let impl = match alg with Some e -> Algebraic e | None -> Struct sign in
+    let impl = match alg with
+    | Some e -> Algebraic e
+    | None ->
+      let sign = match sign with
+      | NoFunctor s -> s
+      | MoreFunctor _ -> assert false (* All non-algebraic callers enforce this *)
+      in
+      Struct sign
+    in
     { res_mtb with
       mod_mp = mp;
       mod_expr = impl;

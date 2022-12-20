@@ -384,6 +384,7 @@ and extract_module env mp ~all mb =
       (* This module has a signature, otherwise it would be FullStruct.
          We extract just the elements required by this signature. *)
       let () = add_labels mp mb.mod_type in
+      let sign = Modops.annotate_struct_body sign mb.mod_type in
       extract_msignature env mp mb.mod_delta ~all:false sign
     | FullStruct -> extract_msignature env mp mb.mod_delta ~all mb.mod_type
   in

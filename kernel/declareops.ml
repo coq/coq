@@ -429,7 +429,7 @@ and hcons_module_implementation mip = match mip with
   let me' = hcons_module_expression me in
   if me == me' then mip else Algebraic me'
 | Struct ms ->
-  let ms' = hcons_module_signature ms in
+  let ms' = hcons_structure_body ms in
   if ms == ms' then mip else Struct ms
 | FullStruct -> FullStruct
 

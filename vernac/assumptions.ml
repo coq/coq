@@ -92,7 +92,9 @@ and fields_of_mp mp =
 
 and fields_of_mb subs mb args = match mb.mod_expr with
   | Algebraic expr -> fields_of_expression subs mb.mod_mp args mb.mod_type expr
-  | Struct sign -> fields_of_signature subs mb.mod_mp args sign
+  | Struct sign ->
+    let sign = Modops.annotate_struct_body sign mb.mod_type in
+    fields_of_signature subs mb.mod_mp args sign
   | Abstract|FullStruct -> fields_of_signature subs mb.mod_mp args mb.mod_type
 
 (** The Abstract case above corresponds to [Declare Module] *)

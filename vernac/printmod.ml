@@ -388,7 +388,9 @@ let unsafe_print_module extent env mp with_body mb =
     | _, Algebraic me ->
       let me = Modops.annotate_module_expression me mb.mod_type in
       pr_equals ++ print_expression' false extent env mp me
-    | _, Struct sign -> pr_equals ++ print_signature' false extent env mp sign
+    | _, Struct sign ->
+      let sign = Modops.annotate_struct_body sign mb.mod_type in
+      pr_equals ++ print_signature' false extent env mp sign
     | _, FullStruct -> pr_equals ++ print_signature' false extent env mp mb.mod_type
   in
   let modtype = match mb.mod_expr, mb.mod_type_alg with
