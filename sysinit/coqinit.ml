@@ -61,7 +61,7 @@ let set_gc_best_fit () =
          ; Gc.space_overhead = 200
          }
 
-let init_gc () =
+let _init_gc () =
   try
     (* OCAMLRUNPARAM environment variable is set.
      * In that case, we let ocamlrun to use the values provided by the user.
@@ -77,7 +77,7 @@ let init_gc () =
 
 let init_ocaml () =
   CProfile.init_profile ();
-  init_gc ();
+  (* init_gc (); *)
   Sys.catch_break false (* Ctrl-C is fatal during the initialisation *)
 
 let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
