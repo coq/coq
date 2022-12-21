@@ -117,7 +117,7 @@ let lookup env sigma item seq=
         let p (id2,o)=
           match o with
               None -> false
-            | Some i2 -> GlobRef.CanOrd.equal id id2 && more_general env sigma i2 i1 in
+            | Some i2 -> Environ.QGlobRef.equal env id id2 && more_general env sigma i2 i1 in
           History.exists p seq.history
 
 let add_concl ~flags env sigma t seq =

@@ -185,10 +185,11 @@ let general_decompose recognizer c =
   end
 
 let head_in indl t gl =
+  let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
   try
     let ity,_ = extract_mrectype sigma t in
-    List.exists (fun i -> Ind.CanOrd.equal (fst i) (fst ity)) indl
+    List.exists (fun i -> Environ.QInd.equal env (fst i) (fst ity)) indl
   with Not_found -> false
 
 let decompose_these c l =

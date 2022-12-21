@@ -824,7 +824,7 @@ struct
             try
               let IndType (indf, args) = find_rectype !!env sigma ty in
               let ((ind',u'),pars) = dest_ind_family indf in
-              if Ind.CanOrd.equal ind ind' then List.map EConstr.of_constr pars
+              if QInd.equal !!env ind ind' then List.map EConstr.of_constr pars
               else (* Let the usual code throw an error *) []
             with Not_found -> []
       else []

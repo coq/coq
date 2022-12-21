@@ -850,7 +850,7 @@ let occur_var_indirectly env sigma id c =
   let var = GlobRef.VarRef id in
   let rec occur_rec c =
     match EConstr.destRef sigma c with
-    | gr, _ -> if not (GlobRef.CanOrd.equal gr var) && occur_in_global env id gr then raise (OccurInGlobal gr)
+    | gr, _ -> if not (QGlobRef.equal env gr var) && occur_in_global env id gr then raise (OccurInGlobal gr)
     | exception DestKO -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; None with OccurInGlobal gr -> Some gr

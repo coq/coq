@@ -494,11 +494,11 @@ let constr_of_globref ?(allow_constant=true) env sigma = function
     or raises [NotAValidPrimToken]. *)
 let rec check_glob env sigma g c = match DAst.get g, Constr.kind c with
   | Glob_term.GRef (GlobRef.ConstructRef c as g, _), Constr.Construct (c', _)
-       when Construct.CanOrd.equal c c' -> constr_of_globref env sigma g
+       when Environ.QConstruct.equal env c c' -> constr_of_globref env sigma g
   | Glob_term.GRef (GlobRef.IndRef c as g, _), Constr.Ind (c', _)
-       when Ind.CanOrd.equal c c' -> constr_of_globref env sigma g
+       when Environ.QInd.equal env c c' -> constr_of_globref env sigma g
   | Glob_term.GRef (GlobRef.ConstRef c as g, _), Constr.Const (c', _)
-       when Constant.CanOrd.equal c c' -> constr_of_globref env sigma g
+       when Environ.QConstant.equal env c c' -> constr_of_globref env sigma g
   | Glob_term.GApp (gc, gcl), Constr.App (gc', gc'a) ->
      let sigma,c = check_glob env sigma gc gc' in
      let sigma,cl =
@@ -524,7 +524,7 @@ let rec check_glob env sigma g c = match DAst.get g, Constr.kind c with
 
 let rec constr_of_glob to_post post env sigma g = match DAst.get g with
   | Glob_term.GRef (r, _) ->
-      let o = List.find_opt (fun (_,r',_) -> GlobRef.CanOrd.equal r r') post in
+      let o = List.find_opt (fun (_,r',_) -> Environ.QGlobRef.equal env r r') post in
       begin match o with
       | None -> constr_of_globref ~allow_constant:false env sigma r
       | Some (r, _, a) ->
@@ -536,7 +536,7 @@ let rec constr_of_glob to_post post env sigma g = match DAst.get g with
       end
   | Glob_term.GApp (gc, gcl) ->
       let o = match DAst.get gc with
-        | Glob_term.GRef (r, _) -> List.find_opt (fun (_,r',_) -> GlobRef.CanOrd.equal r r') post
+        | Glob_term.GRef (r, _) -> List.find_opt (fun (_,r',_) -> Environ.QGlobRef.equal env r r') post
         | _ -> None in
       begin match o with
       | None ->

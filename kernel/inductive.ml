@@ -382,7 +382,7 @@ let contract_case env (ci, p, iv, c, br) =
     (** Last binder is the self binder for the term being eliminated *)
     let (ind, args) = decompose_appvect ty in
     let (ind, u) = destInd ind in
-    let () = assert (Ind.CanOrd.equal ind ci.ci_ind) in
+    let () = assert (QInd.equal env ind ci.ci_ind) in
     let pms = Array.sub args 0 mib.mind_nparams in
     (** Unlift the parameters from under the index binders *)
     let dummy = List.make mip.mind_nrealdecls mkProp in
@@ -428,7 +428,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
 let check_case_info env (indsp,u) r ci =
   let (mib,mip as spec) = lookup_mind_specif env indsp in
   if
-    not (Ind.CanOrd.equal indsp ci.ci_ind) ||
+    not (QInd.equal env indsp ci.ci_ind) ||
     not (Int.equal mib.mind_nparams ci.ci_npar) ||
     not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
     not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
@@ -778,7 +778,7 @@ let get_recargs_approx env tree ind args =
        (* When the inferred tree allows it, we consider that we have a potential
        nested inductive type *)
        begin match dest_recarg tree with
-             | Nested (NestedInd kn') | Mrec kn' when Ind.CanOrd.equal (fst ind_kn) kn' ->
+             | Nested (NestedInd kn') | Mrec kn' when QInd.equal env (fst ind_kn) kn' ->
                build_recargs_nested ienv tree (ind_kn, largs)
              | _ -> mk_norec
        end

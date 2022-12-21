@@ -781,7 +781,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
           in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
-          if Construct.CanOrd.equal sp1 sp2 then
+          if Environ.QConstruct.equal env sp1 sp2 then
             let nparams = inductive_nparams env ind1 in
             let params1,rargs1 = List.chop nparams args1 in
             let _,rargs2 = List.chop nparams args2 in
