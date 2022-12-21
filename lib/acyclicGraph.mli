@@ -52,7 +52,21 @@ module Make (Point:Point) : sig
   val enforce_leq : Point.t -> Point.t -> t -> t option
   val enforce_lt : Point.t -> Point.t -> t -> t option
 
-  val get_explanation : (Point.t * constraint_type * Point.t) -> t -> (constraint_type * Point.t) list
+  (** Type explanation is used to decorate error messages to provide a
+      useful explanation why a given constraint is rejected. It is composed
+      of a starting universe [u0] and a path of universes and relation kinds
+      [(r1,u1);..;(rn,un)] meaning [u0 <(r1) u1 <(r2) ... <(rn) un]
+      (where [<(ri)] is the relation symbol denoted by ri).
+      When the rejected constraint is a [a <= b] or [a < b] then the path is from[b] to [a],
+      ie [u0 == b] and [un == a].
+      when the rejected constraint is an equality the path may go in either direction.
+      Note that each step does not necessarily correspond to an actual constraint,
+      but reflect how the system stores the graph
+      and may result from combination of several Constraints.t...
+  *)
+  type explanation = Point.t * (constraint_type * Point.t) list
+
+  val get_explanation : (Point.t * constraint_type * Point.t) -> t -> explanation
   (** Assuming that the corresponding call to [enforce_*] returned [None], this
       will give a trace for the failure. *)
 

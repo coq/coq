@@ -523,9 +523,10 @@ module Make (Point:Point) = struct
 
   exception Found_explanation of (constraint_type * Point.t) list
 
-  let get_explanation strict u v g =
-    let u = Index.find u g.table in
-    let v = repr_node g v in
+  type explanation = Point.t * (constraint_type * Point.t) list
+
+  let get_explanation strict pu pv g =
+    let v = repr_node g pv in
     let visited_strict = ref PMap.empty in
     let rec traverse strict u =
       if u == v then
@@ -545,16 +546,21 @@ module Make (Point:Point) = struct
                 | None -> ()
                 | Some exp ->
                   let typ = if strictu' then Lt else Le in
-                  let u' = Index.repr u' g.table in
-                  raise_notrace (Found_explanation ((typ, u') :: exp)))
+                  let exp = if CList.is_empty exp then [typ, pv] else
+                      let u' = Index.repr u' g.table in
+                      (typ, u') :: exp
+                  in
+                  raise_notrace (Found_explanation exp))
               u.ltle;
             None
           with Found_explanation exp -> Some exp
         end
     in
-    let u = repr g u in
-    if u == v then [(Eq, Index.repr v.canon g.table)]
+    let u = repr_node g pu in
+    if u == v then begin assert (not strict); [(Eq, pv)] end
     else match traverse strict u with Some exp -> exp | None -> assert false
+
+  let get_explanation strict u v g = u, get_explanation strict u v g
 
   (* To compare two nodes, we simply do a forward search.
      We implement two improvements:
