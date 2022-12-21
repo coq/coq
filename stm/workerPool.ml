@@ -78,7 +78,11 @@ let rec create_worker extra pool priority id =
   let cancel = ref false in
   let name, process, ic, oc as worker = Model.spawn id priority in
   master_handshake name ic oc;
-  let exit () = cancel := true; cleanup pool priority; Thread.exit () in
+  let exit () =
+    cancel := true;
+    cleanup pool priority;
+    (Thread.exit [@warning "-3"]) ()
+  in
   let cancelled () = !cancel in
   let cpanel = { exit; cancelled; extra } in
   let manager = CThread.create (Model.manager cpanel) worker in
