@@ -1051,3 +1051,5 @@ let hcons_universe_context_set (v, c) =
   (hcons_universe_set v, hcons_constraints c)
 
 let hcons_univ x = Universe.hcons x
+
+type explanation = Level.t * (constraint_type * Level.t) list
