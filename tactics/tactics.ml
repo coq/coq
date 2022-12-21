@@ -642,12 +642,12 @@ let replace_error_option err tac =
     | Some (e, info) ->
       Proofview.tclORELSE tac (fun _ -> Proofview.tclZERO ~info e)
 
-let assert_after_then_gen ?err b naming t tac =
+let assert_after_then_gen b naming t tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
     let id = find_name b (LocalAssum (make_annot Anonymous Sorts.Relevant,t)) naming gl in
     Tacticals.tclTHENFIRST
-      (replace_error_option err (internal_cut b id t <*> Proofview.cycle 1))
+      (internal_cut b id t <*> Proofview.cycle 1)
       (tac id)
   end
 
