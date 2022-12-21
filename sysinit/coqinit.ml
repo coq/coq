@@ -51,33 +51,26 @@ let gc_set : Gc.control -> unit =
 
 let set_gc_policy () =
   gc_set { (Gc.get ()) with
-           Gc.minor_heap_size = 32*1024*1024 (* 32Mwords x 8 bytes/word = 256Mb *)
+           Gc.allocation_policy = 0 (* next-fit *)
+         ; Gc.minor_heap_size = 32*1024*1024 (* 32Mwords x 8 bytes/word = 256Mb *)
          ; Gc.space_overhead = 120
          }
 
-let set_gc_best_fit () =
-  gc_set { (Gc.get ()) with
-           Gc.allocation_policy = 2      (* best-fit *)
-         ; Gc.space_overhead = 200
-         }
-
-let _init_gc () =
+let init_gc () =
   try
     (* OCAMLRUNPARAM environment variable is set.
      * In that case, we let ocamlrun to use the values provided by the user.
      *)
     ignore (Sys.getenv "OCAMLRUNPARAM")
-
   with Not_found ->
     (* OCAMLRUNPARAM environment variable is not set.
      * In this case, we put in place our preferred configuration.
      *)
-    set_gc_policy ();
-    if Coq_config.caml_version_nums >= [4;10;0] then set_gc_best_fit () else ()
+    set_gc_policy ()
 
 let init_ocaml () =
   CProfile.init_profile ();
-  (* init_gc (); *)
+  init_gc ();
   Sys.catch_break false (* Ctrl-C is fatal during the initialisation *)
 
 let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
