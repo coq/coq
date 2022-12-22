@@ -485,6 +485,76 @@ Qed.
 Lemma log2_nonpos n : n<=0 -> log2 n = 0.
 Proof. inversion 1; now subst. Qed.
 
+(** ** Properties of [iter] *)
+
+Lemma iter_swap_gen A B (f:A -> B) (g:A -> A) (h:B -> B) :
+ (forall a, f (g a) = h (f a)) -> forall n a,
+ f (iter n g a) = iter n h (f a).
+Proof.
+  intros H n a.
+  induction n as [|n Hn].
+  - reflexivity.
+  - simpl. rewrite H, Hn. reflexivity.
+Qed.
+
+Lemma iter_swap :
+  forall n (A:Type) (f:A -> A) (x:A),
+    iter n f (f x) = f (iter n f x).
+Proof.
+ intros. symmetry. now apply iter_swap_gen.
+Qed.
+
+Lemma iter_succ :
+  forall n (A:Type) (f:A -> A) (x:A),
+    iter (S n) f x = f (iter n f x).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma iter_succ_r :
+  forall n (A:Type) (f:A -> A) (x:A),
+    iter (S n) f x = iter n f (f x).
+Proof.
+ intros; now rewrite iter_succ, iter_swap.
+Qed.
+
+Lemma iter_add :
+  forall p q (A:Type) (f:A -> A) (x:A),
+    iter (p+q) f x = iter p f (iter q f x).
+Proof.
+  intro p. induction p as [|p IHp].
+  - reflexivity.
+  - intros q A f x. simpl. now rewrite IHp.
+Qed.
+
+Lemma iter_ind (A:Type) (f:A -> A) (a:A) (P:nat -> A -> Prop) :
+    P 0 a ->
+    (forall n a', P n a' -> P (S n) (f a')) ->
+    forall n, P n (iter n f a).
+Proof.
+  intros H0 HS n. induction n as [|n Hn].
+  - exact H0.
+  - apply HS. exact Hn.
+Qed.
+
+Lemma iter_rect (A:Type) (f:A -> A) (a:A) (P:nat -> A -> Type) :
+    P 0 a ->
+    (forall n a', P n a' -> P (S n) (f a')) ->
+    forall n, P n (iter n f a).
+Proof.
+  intros H0 HS n. induction n as [|n Hn].
+  - exact H0.
+  - apply HS. exact Hn.
+Defined.
+
+Lemma iter_invariant :
+  forall (n:nat) (A:Type) (f:A -> A) (Inv:A -> Prop),
+    (forall x:A, Inv x -> Inv (f x)) ->
+    forall x:A, Inv x -> Inv (iter n f x).
+Proof.
+ intros; apply iter_ind; trivial.
+Qed.
+
 (** ** Gcd *)
 
 Definition divide x y := exists z, y=z*x.
