@@ -115,7 +115,7 @@ let local_lookup_scheme eff kind ind = match lookup_scheme kind ind with
   let exception Found of Constant.t in
   let iter c role = match role with
   | Evd.Schema (i, k) ->
-    if String.equal k kind && Ind.CanOrd.equal i ind then raise (Found c)
+    if String.equal k kind && Ind.UserOrd.equal i ind then raise (Found c)
   in
   (* Inefficient O(n), but the number of locally declared schemes is small and
      this is very rarely called *)
