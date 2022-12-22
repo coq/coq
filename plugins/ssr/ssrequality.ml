@@ -256,9 +256,9 @@ let strip_unfold_term _ ((sigma, t) as p) kt = match EConstr.kind sigma t with
   | Proj _ -> p, true
   | _ -> p, false
 
-let same_proj sigma t1 t2 =
+let same_proj env sigma t1 t2 =
   match EConstr.kind sigma t1, EConstr.kind sigma t2 with
-  | Proj(c1,_), Proj(c2, _) -> Projection.CanOrd.equal c1 c2
+  | Proj(c1,_), Proj(c2, _) -> Environ.QProjection.equal env c1 c2
   | _ -> false
 
 let classify_pattern p = match p with
@@ -297,13 +297,13 @@ let unfoldintac occ rdx t (kt,_) =
           match EConstr.kind sigma0 c with
           | Const _ when EConstr.eq_constr sigma0 c t -> body env t t
           | App (f,a) when EConstr.eq_constr sigma0 f t -> EConstr.mkApp (body env f f,a)
-          | Proj _ when same_proj sigma0 c t -> body env t c
+          | Proj _ when same_proj env sigma0 c t -> body env t c
           | _ ->
             let c = Reductionops.whd_betaiotazeta env sigma0 c in
             match EConstr.kind sigma0 c with
             | Const _ when EConstr.eq_constr sigma0 c t -> body env t t
             | App (f,a) when EConstr.eq_constr sigma0 f t -> EConstr.mkApp (body env f f,a)
-            | Proj _ when same_proj sigma0 c t -> body env t c
+            | Proj _ when same_proj env sigma0 c t -> body env t c
             | Const f -> aux (body env c c)
             | App (f, a) -> aux (EConstr.mkApp (body env f f, a))
             | _ -> errorstrm Pp.(str "The term "++ pr_econstr_env env sigma orig_c ++
@@ -477,7 +477,7 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
       let () = debug_ssr (fun () -> Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty)) in
       let open EConstr in
       match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
-      | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
+      | AtomicType(e, a) when Ssrcommon.is_ind_ref env sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
           pirrel_rewrite ?under ?map_redex cl rdx a.(0) new_rdx dir (sigma, r) c_ty, Tacticals.tclIDTAC, sigma0
       | _ ->
@@ -569,10 +569,10 @@ let rwprocess_rule env dir rule =
         let sigma = Evd.create_evar_defs sigma in
         let (sigma, x) = Evarutil.new_evar env sigma xt in
         loop d sigma EConstr.(mkApp (r, [|x|])) (EConstr.Vars.subst1 x at) rs 0
-      | App (pr, a) when is_ind_ref sigma pr coq_prod.Coqlib.typ ->
+      | App (pr, a) when is_ind_ref env sigma pr coq_prod.Coqlib.typ ->
         let r0 = Reductionops.clos_whd_flags CClosure.all env sigma r in
         let sigma, pL, pR = match EConstr.kind sigma r0 with
-        | App (c, ra) when is_construct_ref sigma c coq_prod.Coqlib.intro ->
+        | App (c, ra) when is_construct_ref env sigma c coq_prod.Coqlib.intro ->
           (sigma, ra.(2), ra.(3))
         | _ ->
           let ra = Array.append a [|r|] in

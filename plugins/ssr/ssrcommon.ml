@@ -1394,10 +1394,10 @@ let get g =
 
 end
 
-let is_construct_ref sigma c r =
-  EConstr.isConstruct sigma c && GlobRef.CanOrd.equal (GlobRef.ConstructRef (fst(EConstr.destConstruct sigma c))) r
-let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.CanOrd.equal (GlobRef.IndRef (fst(EConstr.destInd sigma c))) r
-let is_const_ref sigma c r =
-  EConstr.isConst sigma c && GlobRef.CanOrd.equal (GlobRef.ConstRef (fst(EConstr.destConst sigma c))) r
+let is_construct_ref env sigma c r =
+  EConstr.isConstruct sigma c && Environ.QGlobRef.equal env (GlobRef.ConstructRef (fst(EConstr.destConstruct sigma c))) r
+let is_ind_ref env sigma c r = EConstr.isInd sigma c && Environ.QGlobRef.equal env (GlobRef.IndRef (fst(EConstr.destInd sigma c))) r
+let is_const_ref env sigma c r =
+  EConstr.isConst sigma c && Environ.QGlobRef.equal env (GlobRef.ConstRef (fst(EConstr.destConst sigma c))) r
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

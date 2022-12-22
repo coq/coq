@@ -426,13 +426,13 @@ let ungen_upat lhs (c, sigma, uc, t) u =
   | _ -> KpatRigid in
   c, sigma, uc, {u with up_k = k; up_FO = (Metamap.empty, lhs); up_f = f; up_a = a; up_t = t}
 
-let nb_cs_proj_args ise pc f u =
+let nb_cs_proj_args env ise pc f u =
   let open EConstr in
   let open Structures in
   let open ValuePattern in
   let na k =
     let open CanonicalSolution in
-    let _, { cvalue_arguments } = find (Global.env()) ise (GlobRef.ConstRef pc, k) in
+    let _, { cvalue_arguments } = find env ise (GlobRef.ConstRef pc, k) in
     List.length cvalue_arguments in
   let nargs_of_proj t = match EConstr.kind ise t with
       | App(_,args) -> Array.length args
@@ -442,8 +442,8 @@ let nb_cs_proj_args ise pc f u =
   try match EConstr.kind ise f with
   | Prod _ -> na Prod_cs
   | Sort s -> na (Sort_cs (Sorts.family (ESorts.kind ise s)))
-  | Const (c',_) when Constant.CanOrd.equal c' pc -> nargs_of_proj u.up_f
-  | Proj (c',_) when Constant.CanOrd.equal (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
+  | Const (c',_) when Environ.QConstant.equal env c' pc -> nargs_of_proj u.up_f
+  | Proj (c',_) when Environ.QConstant.equal env (Names.Projection.constant c') pc -> nargs_of_proj u.up_f
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef ise f))
   | _ -> -1
   with Not_found -> -1
@@ -470,7 +470,7 @@ let splay_app ise =
   | Cast _ | Evar _ -> loop c [| |]
   | _ -> c, [| |]
 
-let filter_upat sigma i0 f n u fpats =
+let filter_upat env sigma i0 f n u fpats =
   let open EConstr in
   let na = Array.length u.up_a in
   if n < na then fpats else
@@ -483,16 +483,16 @@ let filter_upat sigma i0 f n u fpats =
   | KpatRigid when isRigid sigma f -> na
   | KpatFlex -> na
   | KpatProj pc ->
-    let np = na + nb_cs_proj_args sigma pc f u in if n < np then -1 else np
+    let np = na + nb_cs_proj_args env sigma pc f u in if n < np then -1 else np
   | _ -> -1 in
   if np < na then fpats else
   let () = if !i0 < np then i0 := n in (u, np) :: fpats
 
-let eq_prim_proj sigma c t = match EConstr.kind sigma t with
-  | Proj(p,_) -> Constant.CanOrd.equal (Projection.constant p) c
+let eq_prim_proj env sigma c t = match EConstr.kind sigma t with
+  | Proj(p,_) -> Environ.QConstant.equal env (Projection.constant p) c
   | _ -> false
 
-let filter_upat_FO sigma i0 f n u fpats =
+let filter_upat_FO env sigma i0 f n u fpats =
   let open EConstr in
   let np = nb_args sigma (snd u.up_FO) in
   if n < np then fpats else
@@ -503,7 +503,7 @@ let filter_upat_FO sigma i0 f n u fpats =
   | KpatLet -> isLetIn sigma f
   | KpatLam -> isLambda sigma f
   | KpatRigid -> isRigid sigma f
-  | KpatProj pc -> eq_constr sigma f (mkConst pc) || eq_prim_proj sigma pc f
+  | KpatProj pc -> eq_constr sigma f (mkConst pc) || eq_prim_proj env sigma pc f
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 
@@ -530,7 +530,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
   let rec loop c =
     let f, a = splay_app ise c in let i0 = ref (-1) in
     let fpats =
-      List.fold_right (filter_upat_FO ise i0 f (Array.length a)) upats [] in
+      List.fold_right (filter_upat_FO env ise i0 f (Array.length a)) upats [] in
     while !i0 >= 0 do
       let i = !i0 in i0 := -1;
       let c' = mkSubApp f i a in
@@ -580,7 +580,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
  let rec aux upats env sigma0 ise c =
   let f, a = splay_app ise c in let i0 = ref (-1) in
   let fpats =
-    List.fold_right (filter_upat ise i0 f (Array.length a)) upats []
+    List.fold_right (filter_upat env ise i0 f (Array.length a)) upats []
   in
   while !i0 >= 0 do
     let i = !i0 in i0 := -1;
