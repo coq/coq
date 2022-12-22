@@ -912,7 +912,7 @@ let examine_abstract env sigma id =
         Printer.pr_econstr_env env sigma id) in
   if not (EConstr.isApp sigma tid) then err ();
   let hd, args_id = EConstr.destApp sigma tid in
-  if not (EConstr.isRefX sigma abstract hd) then err ();
+  if not (EConstr.isRefX env sigma abstract hd) then err ();
   if Array.length args_id <> 3 then err ();
   if not (is_Evar_or_CastedMeta sigma args_id.(2)) then
     Ssrcommon.errorstrm Pp.(strbrk"abstract constant "++
@@ -934,7 +934,7 @@ let find_abstract_proof env sigma check_lock abstract_n =
         when (not check_lock ||
                    (occur_existential_or_casted_meta sigma ty &&
                     is_Evar_or_CastedMeta sigma lock)) &&
-             EConstr.isRefX sigma abstract hd &&
+             EConstr.isRefX env sigma abstract hd &&
              EConstr.eq_constr_nounivs sigma n abstract_n -> e :: l
       | _ -> l) sigma [] in
     match l with

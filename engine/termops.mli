@@ -263,7 +263,7 @@ val is_section_variable : env -> Id.t -> bool
 val global_of_constr : Evd.evar_map -> constr -> GlobRef.t * EInstance.t
 [@@ocaml.deprecated "Use [EConstr.destRef] instead (throws DestKO instead of Not_found)."]
 
-val is_global : Evd.evar_map -> GlobRef.t -> constr -> bool
+val is_global : Environ.env -> Evd.evar_map -> GlobRef.t -> constr -> bool
 [@@ocaml.deprecated "Use [EConstr.isRefX] instead."]
 
 val isGlobalRef : Evd.evar_map -> constr -> bool

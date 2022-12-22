@@ -373,23 +373,23 @@ end) = struct
       else (* None in Prop, use arrow *)
         (app_poly env evd arrow [| a; b |]), unfold_impl n
 
-  let rec decomp_pointwise sigma n c =
+  let rec decomp_pointwise env sigma n c =
     if Int.equal n 0 then c
     else
       match EConstr.kind sigma c with
-      | App (f, [| a; b; relb |]) when isRefX sigma (pointwise_relation_ref ()) f ->
-        decomp_pointwise sigma (pred n) relb
-      | App (f, [| a; b; arelb |]) when isRefX sigma (forall_relation_ref ()) f ->
-        decomp_pointwise sigma (pred n) (Reductionops.beta_applist sigma (arelb, [mkRel 1]))
+      | App (f, [| a; b; relb |]) when isRefX env sigma (pointwise_relation_ref ()) f ->
+        decomp_pointwise env sigma (pred n) relb
+      | App (f, [| a; b; arelb |]) when isRefX env sigma (forall_relation_ref ()) f ->
+        decomp_pointwise env sigma (pred n) (Reductionops.beta_applist sigma (arelb, [mkRel 1]))
       | _ -> invalid_arg "decomp_pointwise"
 
-  let rec apply_pointwise sigma rel = function
+  let rec apply_pointwise env sigma rel = function
     | arg :: args ->
       (match EConstr.kind sigma rel with
-      | App (f, [| a; b; relb |]) when isRefX sigma (pointwise_relation_ref ()) f ->
-        apply_pointwise sigma relb args
-      | App (f, [| a; b; arelb |]) when isRefX sigma (forall_relation_ref ()) f ->
-        apply_pointwise sigma (Reductionops.beta_applist sigma (arelb, [arg])) args
+      | App (f, [| a; b; relb |]) when isRefX env sigma (pointwise_relation_ref ()) f ->
+        apply_pointwise env sigma relb args
+      | App (f, [| a; b; arelb |]) when isRefX env sigma (forall_relation_ref ()) f ->
+        apply_pointwise env sigma (Reductionops.beta_applist sigma (arelb, [arg])) args
       | _ -> invalid_arg "apply_pointwise")
     | [] -> rel
 
@@ -444,14 +444,14 @@ end) = struct
 
   let unlift_cstr env sigma = function
     | None -> None
-    | Some codom -> Some (decomp_pointwise (goalevars sigma) 1 codom)
+    | Some codom -> Some (decomp_pointwise env (goalevars sigma) 1 codom)
 
   (** Looking up declared rewrite relations (instances of [RewriteRelation]) *)
   let is_applied_rewrite_relation env sigma rels t =
     match EConstr.kind sigma t with
     | App (c, args) when Array.length args >= 2 ->
       let head = if isApp sigma c then fst (destApp sigma c) else c in
-        if isRefX sigma (coq_eq_ref ()) head then None
+        if isRefX env sigma (coq_eq_ref ()) head then None
         else
           (try
             let env' = push_rel_context rels env in
@@ -1067,7 +1067,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
                         let app = if prop then PropGlobal.apply_pointwise
                           else TypeGlobal.apply_pointwise
                         in
-                          RewPrf (app (goalevars evars) rel argsl, mkApp (prf, args))
+                          RewPrf (app env (goalevars evars) rel argsl, mkApp (prf, args))
                       | x -> x
                     in
                     let res =

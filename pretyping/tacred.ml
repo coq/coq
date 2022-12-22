@@ -1383,7 +1383,7 @@ let reduce_to_ref_gen allow_failure allow_product env sigma ref t =
         else
           error_cannot_recognize ref
       | _ ->
-        if isRefX sigma ref c
+        if isRefX env sigma ref c
         then it_mkProd_or_LetIn t l
         else
           try

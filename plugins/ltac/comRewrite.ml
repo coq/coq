@@ -166,13 +166,13 @@ let declare_projection name instance_id r =
       let rec aux t =
         match EConstr.kind sigma t with
         | App (f, [| a ; a' ; rel; rel' |])
-            when isRefX sigma (PropGlobal.respectful_ref ()) f ->
+            when isRefX env sigma (PropGlobal.respectful_ref ()) f ->
           succ (aux rel')
         | _ -> 0
       in
       let init =
         match EConstr.kind sigma typ with
-            App (f, args) when isRefX sigma (PropGlobal.respectful_ref ()) f  ->
+            App (f, args) when isRefX env sigma (PropGlobal.respectful_ref ()) f  ->
               mkApp (f, fst (Array.chop (Array.length args - 2) args))
           | _ -> typ
       in aux init

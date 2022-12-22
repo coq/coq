@@ -1066,7 +1066,7 @@ let interp_gen env sigma ~concl to_ind gen =
 
 let is_protect hd env sigma =
   let protectC = mkSsrRef "protect_term" in
-  EConstr.isRefX sigma protectC hd
+  EConstr.isRefX env sigma protectC hd
 
 let abs_wgen env sigma keep_let f gen (args,c) =
   let evar_closed t p =

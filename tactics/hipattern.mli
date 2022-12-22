@@ -130,7 +130,7 @@ val find_this_eq_data_decompose : Environ.env -> evar_map -> constr ->
       coq_eq_data * EInstance.t * (types * constr * constr)
 
 (** A variant that returns more informative structure on the equality found *)
-val find_eq_data : evar_map -> constr -> coq_eq_data * EInstance.t * equation_kind
+val find_eq_data : Environ.env -> evar_map -> constr -> coq_eq_data * EInstance.t * equation_kind
 
 (** Match a term of the form [(existT A P t p)]
    Returns associated lemmas and [A,P,t,p] *)

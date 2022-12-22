@@ -582,7 +582,7 @@ let rwprocess_rule env dir rule =
           let pR = EConstr.mkApp (pi2, ra) in
           (sigma, pL, pR)
         in
-        if EConstr.isRefX sigma Coqlib.(lib_ref "core.True.type") a.(0) then
+        if EConstr.isRefX env sigma Coqlib.(lib_ref "core.True.type") a.(0) then
          loop (converse_dir d) sigma pR a.(1) rs 0
         else
          let sigma, rs2 = loop d sigma pR a.(1) rs 0 in

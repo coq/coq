@@ -903,6 +903,7 @@ let equation_case next_step case expr_info continuation_tac infos =
 let rec prove_le () =
   let open Tacticals in
   Proofview.Goal.enter (fun g ->
+      let env = Proofview.Goal.env g in
       let sigma = Proofview.Goal.sigma g in
       let x, z =
         let _, args = decompose_app sigma (Proofview.Goal.concl g) in
@@ -918,7 +919,7 @@ let rec prove_le () =
                 | App (c, [|x0; _|]) ->
                   EConstr.isVar sigma x0
                   && Id.equal (destVar sigma x0) (destVar sigma x)
-                  && EConstr.isRefX sigma (le ()) c
+                  && EConstr.isRefX env sigma (le ()) c
                 | _ -> false
               in
               let h, t =
