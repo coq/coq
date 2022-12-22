@@ -255,7 +255,7 @@ module Make(T : Task) () = struct
     let cleaner queue =
       while true do
         try ignore(TQueue.pop ~picky:(fun (_,cancelled) -> !cancelled) queue)
-        with TQueue.BeingDestroyed -> Thread.exit ()
+        with TQueue.BeingDestroyed -> (Thread.exit [@warning "-3"]) ()
       done in
     let queue = TQueue.create () in
     {
