@@ -65,7 +65,7 @@ check_variable () {
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
 : "${new_ocaml_version:=5.2.0+trunk}"
-: "${old_ocaml_version:=4.14.1}"
+: "${old_ocaml_version:=4.09.1}"
 : "${new_coq_repository:=$CI_REPOSITORY_URL}"
 : "${old_coq_repository:=$CI_REPOSITORY_URL}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
@@ -428,7 +428,7 @@ create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" "$ne
 new_coq_commit_long="$COQ_HASH_LONG"
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
-create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" "$old_coq_opam_archive_dir" "--packages=ocaml-variants.$old_ocaml_version+options,ocaml-option-nnp"
+create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" "$old_coq_opam_archive_dir" "--packages=ocaml-base-compiler.$old_ocaml_version"
 old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
