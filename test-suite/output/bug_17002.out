@@ -1,0 +1,12 @@
+File "./output/bug_17002.v", line 7, characters 2-24:
+The command has indeed failed with message:
+Universe inconsistency. Cannot enforce u < v because v = u.
+File "./output/bug_17002.v", line 8, characters 2-24:
+The command has indeed failed with message:
+Universe inconsistency. Cannot enforce v < u because u = v.
+File "./output/bug_17002.v", line 15, characters 2-24:
+The command has indeed failed with message:
+Universe inconsistency. Cannot enforce u = v because u < v.
+File "./output/bug_17002.v", line 16, characters 2-24:
+The command has indeed failed with message:
+Universe inconsistency. Cannot enforce v = u because u < v.

@@ -476,8 +476,6 @@ end
 
 type constraint_type = AcyclicGraph.constraint_type = Lt | Le | Eq
 
-type explanation = (constraint_type * Level.t) list
-
 let constraint_type_ord c1 c2 = match c1, c2 with
 | Lt, Lt -> 0
 | Lt, _ -> -1
@@ -1053,3 +1051,5 @@ let hcons_universe_context_set (v, c) =
   (hcons_universe_set v, hcons_constraints c)
 
 let hcons_univ x = Universe.hcons x
+
+type explanation = Level.t * (constraint_type * Level.t) list

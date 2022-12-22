@@ -33,6 +33,8 @@ type t = {
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
+type explanation = G.explanation
+
 type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation Lazy.t option
 
 exception UniverseInconsistency of univ_inconsistency
@@ -279,14 +281,11 @@ let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
   let reason = match p with
     | None -> mt()
     | Some p ->
-      let p = Lazy.force p in
+      let pstart, p = Lazy.force p in
       if p = [] then mt ()
       else
-        str " because" ++ spc() ++ pr_uni v ++
-        prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v)
-          p ++
-        (if Sorts.equal (Sorts.sort_of_univ (Universe.make (snd (CList.last p)))) u then mt() else
-           (spc() ++ str "= " ++ pr_uni u))
+        str " because" ++ spc() ++ prl pstart ++
+        prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ prl v) p
   in
     str "Cannot enforce" ++ spc() ++ pr_uni u ++ spc() ++
       pr_rel o ++ spc() ++ pr_uni v ++ reason
