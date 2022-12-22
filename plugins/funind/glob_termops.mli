@@ -87,8 +87,8 @@ val replace_var_by_term :
    [is_free_in id rt] checks if [id] is a free variable in [rt]
 *)
 val is_free_in : Id.t -> glob_constr -> bool
-val are_unifiable : cases_pattern -> cases_pattern -> bool
-val eq_cases_pattern : cases_pattern -> cases_pattern -> bool
+val are_unifiable : Environ.env -> cases_pattern -> cases_pattern -> bool
+val eq_cases_pattern : Environ.env -> cases_pattern -> cases_pattern -> bool
 
 (*
    ids_of_pat : cases_pattern -> Id.Set.t

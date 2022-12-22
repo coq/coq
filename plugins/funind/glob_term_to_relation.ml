@@ -332,7 +332,7 @@ let add_pat_variables sigma pat typ env : Environ.env =
       let constructors = Inductiveops.get_constructors env indf in
       let constructor : Inductiveops.constructor_summary =
         List.find
-          (fun cs -> Construct.CanOrd.equal c (fst cs.Inductiveops.cs_cstr))
+          (fun cs -> Environ.QConstruct.equal env c (fst cs.Inductiveops.cs_cstr))
           (Array.to_list constructors)
       in
       let cs_args_types : types list =
@@ -403,7 +403,7 @@ let rec pattern_to_term_and_type env typ =
       let constructor =
         List.find
           (fun cs ->
-            Construct.CanOrd.equal (fst cs.Inductiveops.cs_cstr) constr)
+            Environ.QConstruct.equal env (fst cs.Inductiveops.cs_cstr) constr)
           (Array.to_list constructors)
       in
       let cs_args_types : types list =
@@ -776,7 +776,7 @@ and build_entry_lc_from_case_term env sigma types funname make_discr
     *)
     let unify_with_those_patterns : (cases_pattern -> bool * bool) list =
       List.map
-        (fun pat pat' -> (are_unifiable pat pat', eq_cases_pattern pat pat'))
+        (fun pat pat' -> (are_unifiable env pat pat', eq_cases_pattern env pat pat'))
         patl
     in
     (*
@@ -863,14 +863,14 @@ let is_res r =
     with Invalid_argument _ -> false )
   | _ -> false
 
-let is_gr c gr =
-  match DAst.get c with GRef (r, _) -> GlobRef.CanOrd.equal r gr | _ -> false
+let is_gr env c gr =
+  match DAst.get c with GRef (r, _) -> Environ.QGlobRef.equal env r gr | _ -> false
 
 let is_gvar c = match DAst.get c with GVar id -> true | _ -> false
 
-let same_raw_term rt1 rt2 =
+let same_raw_term env rt1 rt2 =
   match (DAst.get rt1, DAst.get rt2) with
-  | GRef (r1, _), GRef (r2, _) -> GlobRef.CanOrd.equal r1 r2
+  | GRef (r1, _), GRef (r2, _) -> Environ.QGlobRef.equal env r1 r2
   | GHole _, GHole _ -> true
   | _ -> false
 
@@ -887,7 +887,7 @@ let decompose_raw_eq env lhs rhs =
     observe (str "lrhs := " ++ int (List.length lrhs));
     let sllhs = List.length llhs in
     let slrhs = List.length lrhs in
-    if same_raw_term lhd rhd && Int.equal sllhs slrhs then
+    if same_raw_term env lhd rhd && Int.equal sllhs slrhs then
       (* let _ = assert false in  *)
       List.fold_right2 decompose_raw_eq llhs lrhs acc
     else (lhs, rhs) :: acc
@@ -935,7 +935,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
         assert false )
     | GApp (eq_as_ref, [ty; id; rt])
       when is_gvar id
-           && is_gr eq_as_ref Coqlib.(lib_ref "core.eq.type")
+           && is_gr env eq_as_ref Coqlib.(lib_ref "core.eq.type")
            && n == Anonymous -> (
       let loc1 = rt.CAst.loc in
       let loc2 = eq_as_ref.CAst.loc in
@@ -1054,7 +1054,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
          else new_b, Id.Set.add id id_to_exclude
       *) )
     | GApp (eq_as_ref, [ty; rt1; rt2])
-      when is_gr eq_as_ref Coqlib.(lib_ref "core.eq.type") && n == Anonymous
+      when is_gr env eq_as_ref Coqlib.(lib_ref "core.eq.type") && n == Anonymous
       -> (
       try
         let l = decompose_raw_eq env rt1 rt2 in

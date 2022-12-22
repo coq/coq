@@ -440,46 +440,46 @@ let replace_var_by_term x_id term =
 (* checking unifiability of patterns *)
 exception NotUnifiable
 
-let rec are_unifiable_aux = function
+let rec are_unifiable_aux env = function
   | [] -> ()
   | (l, r) :: eqs -> (
     match (DAst.get l, DAst.get r) with
-    | PatVar _, _ | _, PatVar _ -> are_unifiable_aux eqs
+    | PatVar _, _ | _, PatVar _ -> are_unifiable_aux env eqs
     | PatCstr (constructor1, cpl1, _), PatCstr (constructor2, cpl2, _) ->
-      if not (Construct.CanOrd.equal constructor2 constructor1) then
+      if not (Environ.QConstruct.equal env constructor2 constructor1) then
         raise NotUnifiable
       else
         let eqs' =
           try List.combine cpl1 cpl2 @ eqs
           with Invalid_argument _ -> anomaly (Pp.str "are_unifiable_aux.")
         in
-        are_unifiable_aux eqs' )
+        are_unifiable_aux env eqs' )
 
-let are_unifiable pat1 pat2 =
+let are_unifiable env pat1 pat2 =
   try
-    are_unifiable_aux [(pat1, pat2)];
+    are_unifiable_aux env [(pat1, pat2)];
     true
   with NotUnifiable -> false
 
-let rec eq_cases_pattern_aux = function
+let rec eq_cases_pattern_aux env = function
   | [] -> ()
   | (l, r) :: eqs -> (
     match (DAst.get l, DAst.get r) with
-    | PatVar _, PatVar _ -> eq_cases_pattern_aux eqs
+    | PatVar _, PatVar _ -> eq_cases_pattern_aux env eqs
     | PatCstr (constructor1, cpl1, _), PatCstr (constructor2, cpl2, _) ->
-      if not (Construct.CanOrd.equal constructor2 constructor1) then
+      if not (Environ.QConstruct.equal env constructor2 constructor1) then
         raise NotUnifiable
       else
         let eqs' =
           try List.combine cpl1 cpl2 @ eqs
           with Invalid_argument _ -> anomaly (Pp.str "eq_cases_pattern_aux.")
         in
-        eq_cases_pattern_aux eqs'
+        eq_cases_pattern_aux env eqs'
     | _ -> raise NotUnifiable )
 
-let eq_cases_pattern pat1 pat2 =
+let eq_cases_pattern env pat1 pat2 =
   try
-    eq_cases_pattern_aux [(pat1, pat2)];
+    eq_cases_pattern_aux env [(pat1, pat2)];
     true
   with NotUnifiable -> false
 
@@ -578,7 +578,7 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
             match Evd.evar_source evi with
             | loc_evi, ImplicitArg (gr_evi, p_evi, b_evi) ->
               if
-                GlobRef.CanOrd.equal grk gr_evi && pk = p_evi && bk = b_evi
+                Environ.QGlobRef.equal env grk gr_evi && pk = p_evi && bk = b_evi
                 && rt.CAst.loc = loc_evi
               then raise (Found (EvarInfo evi))
             | _ -> ())
