@@ -326,8 +326,10 @@ initial_opam_packages="num ocamlfind dune"
 # $1 = root_name {ex: NEW / OLD}
 # $2 = compiler name
 # $3 = git hash of Coq to be installed
-# $4 = directory of coq opam archive
-# $5 = use flambda if nonempty
+# $4 = coq version
+# $5 = directory of coq opam archive
+# $6 = packages to install
+# $7 = use flambda if nonempty
 create_opam() {
 
     local RUNNER="$1"
@@ -336,7 +338,8 @@ create_opam() {
     local COQ_HASH="$3"
     local COQ_VER="$4"
     local OPAM_COQ_DIR="$5"
-    local USE_FLAMBDA="$6"
+    local EXTRA_PACKAGES="$6"
+    local USE_FLAMBDA="$7"
 
     local OPAM_COMP=ocaml-base-compiler.$OCAML_VER
 
@@ -356,7 +359,8 @@ create_opam() {
     else flambda=
     fi
 
-    opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" "$OPAM_COMP" $flambda
+    echo opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" "$OPAM_COMP" $EXTRA_PACKAGES $flambda
+    opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" "$OPAM_COMP" $EXTRA_PACKAGES $flambda
     eval $(opam env)
 
     # For some reason opam guesses an incorrect upper bound on the
@@ -420,11 +424,11 @@ create_opam() {
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
-create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" "$new_coq_opam_archive_dir"
+create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_version" "$new_coq_opam_archive_dir" "--packages=ocaml-base-compiler.$new_ocaml_version"
 new_coq_commit_long="$COQ_HASH_LONG"
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
-create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" "$old_coq_opam_archive_dir"
+create_opam "OLD" "$old_ocaml_version" "$old_coq_commit" "$old_coq_version" "$old_coq_opam_archive_dir" "--packages=ocaml-variants.$old_ocaml_version+options,ocaml-option-nnp"
 old_coq_commit_long="$COQ_HASH_LONG"
 
 # Packages which appear in the rendered table
