@@ -1600,9 +1600,6 @@ succeeds, and results in an error otherwise.
 
    Like :tacn:`constr_eq_strict`, but all universes are considered equal.
 
-.. tacn:: head_of_constr @ident @one_term
-   :undocumented:
-
 .. tacn:: unify @one_term @one_term {? with @ident }
 
    Succeeds if the arguments are unifiable, potentially
