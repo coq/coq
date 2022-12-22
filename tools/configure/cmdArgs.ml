@@ -50,8 +50,7 @@ let default_prefs = {
   natdynlink = true;
   browser = None;
   bytecodecompiler = true;
-  nativecompiler =
-    if os_type_win32 || os_type_cygwin then NativeNo else NativeOndemand;
+  nativecompiler = NativeNo;
   coqwebsite = "http://coq.inria.fr/";
   warn_error = false;
   debug = false;
@@ -114,8 +113,8 @@ let args_options = Arg.align [
   "-native-compiler", arg_native (fun p nativecompiler -> { p with nativecompiler }),
     "(yes|no|ondemand) Compilation to native code for conversion and normalization
      yes: -native-compiler option of coqc will default to 'yes', stdlib will be precompiled
-     no: no native compilation available at all
-     ondemand (default): -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
+     no (default): no native compilation available at all
+     ondemand: -native-compiler option of coqc will default to 'ondemand', stdlib will not be precompiled";
   "-coqwebsite", arg_string (fun p coqwebsite -> { p with coqwebsite }),
     " URL of the coq website";
   "-warn-error", arg_bool (fun p warn_error -> { p with warn_error }),
