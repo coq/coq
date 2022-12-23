@@ -1632,6 +1632,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   end
 
 let general_elim_clause with_evars flags where (c, ty) elim =
+  pf_constr_of_global (ConstRef elim) >>= fun elim ->
   general_elim_clause0 with_evars flags where (c, ty) (ElimTerm elim)
 
 (* Case analysis tactics *)

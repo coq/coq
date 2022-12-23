@@ -379,7 +379,7 @@ let find_elim lft2rgt dep cls ((_, hdcncl, _) as t) =
              Logic.eq or Jmeq just before *)
         assert false
     in
-        pf_constr_of_global (GlobRef.ConstRef c)
+    Proofview.tclUNIT c
   else
   let scheme_name = match dep, lft2rgt, inccl with
     (* Non dependent case *)
@@ -394,10 +394,7 @@ let find_elim lft2rgt dep cls ((_, hdcncl, _) as t) =
     | true, _, false -> rew_r2l_forward_dep_scheme_kind
   in
   match EConstr.kind sigma hdcncl with
-  | Ind (ind,u) ->
-
-      find_scheme scheme_name ind >>= fun c ->
-        pf_constr_of_global (GlobRef.ConstRef c)
+  | Ind (ind,u) -> find_scheme scheme_name ind
   | _ -> assert false
   end
 
