@@ -4339,25 +4339,33 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
 let guess_elim env sigma isrec dep s hyp0 =
   let tmptyp0 = Typing.type_of_variable env hyp0 in
   let (mind, u) = Tacred.eval_to_quantified_ind env sigma tmptyp0 in
-  let sigma, elimc, elimt =
+  let sigma, elimc, elimt, scheme =
     if isrec && not (is_nonrec env mind)
     then
       let sigma, ind = find_ind_eliminator env sigma mind s in
-      (sigma, ElimConstant ind, Retyping.get_type_of env sigma (mkConstU ind))
+      (* FIXME: we should store this instead of recomputing it *)
+      let elimt = Retyping.get_type_of env sigma (mkConstU ind) in
+      let scheme = compute_elim_sig sigma elimt in
+      let scheme = compute_scheme_signature sigma scheme hyp0 (mkIndU (mind, u)) in
+      (sigma, ElimConstant ind, elimt, scheme)
     else
       let u = EInstance.kind sigma u in
       if dep then
         let (sigma, case) = build_case_analysis_scheme env sigma (mind, u) true s in
         let ind, indty = eval_case_analysis case in
-        (sigma, ElimCase case, EConstr.of_constr indty)
+        (* FIXME: be more clever *)
+        let scheme = compute_elim_sig sigma (EConstr.of_constr indty) in
+        let scheme = compute_scheme_signature sigma scheme hyp0 (mkIndU (mind, EInstance.make u)) in
+        (sigma, ElimCase case, EConstr.of_constr indty, scheme)
       else
         let (sigma, case) = build_case_analysis_scheme_default env sigma (mind, u) s in
         let ind, indty = eval_case_analysis case in
-        (sigma, ElimCase case, EConstr.of_constr indty)
+        (* FIXME: be more clever *)
+        let scheme = compute_elim_sig sigma (EConstr.of_constr indty) in
+        let scheme = compute_scheme_signature sigma scheme hyp0 (mkIndU (mind, EInstance.make u)) in
+        (sigma, ElimCase case, EConstr.of_constr indty, scheme)
   in
-  (* FIXME: be more clever *)
-  let scheme = compute_elim_sig sigma elimt in
-  sigma, (elimc, elimt), mkIndU (mind, u), scheme
+  sigma, (elimc, elimt), scheme
 
 let guess_elim_shape env sigma isrec s hyp0 =
   let tmptyp0 = Typing.type_of_variable env hyp0 in
@@ -4425,8 +4433,7 @@ let get_eliminator env sigma elim dep s =
   | ElimUsing (elim,indsign) ->
       sigma, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
-      let evd, (elimc, elimt), ind_type_guess, scheme = guess_elim env sigma isrec dep s id in
-      let l = compute_scheme_signature evd scheme id ind_type_guess in
+      let evd, (elimc, elimt), l = guess_elim env sigma isrec dep s id in
       evd, isrec, (elimc, elimt), l
 
 (* Instantiate all meta variables of elimclause using lid, some elts
