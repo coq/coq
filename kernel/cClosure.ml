@@ -1311,7 +1311,7 @@ module FNativeEntries =
 
     let mkArray env u t ty =
       check_array env;
-      { mark = Whnf; term = FArray (u,t,ty)}
+      { mark = Cstr; term = FArray (u,t,ty)}
 
   end
 
@@ -1498,8 +1498,8 @@ let rec knr info tab m stk =
              | Some m ->
              kni info tab m s
              | None ->
-               let f = {mark = Whnf; term = FFlex (ConstKey c)} in
-               let m = {mark = Whnf; term = FApp(f,args)} in
+               let f = {mark = Cstr; term = FFlex (ConstKey c)} in
+               let m = {mark = Cstr; term = FApp(f,args)} in
                (m,s)
            end
          | (kd,a)::nargs ->
