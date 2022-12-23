@@ -550,6 +550,7 @@ The purpose of this feature is to allow users to benefit from the ``-vos``
 option even if they depend on libraries that were compiled in the traditional
 manner (i.e., never compiled using the ``-vos`` option).
 
+.. _coqchk:
 
 Compiled libraries checker (coqchk)
 ----------------------------------------
