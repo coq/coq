@@ -279,12 +279,8 @@ let mk_red f = {mark=Red;term=f}
 
 (* Could issue a warning if no is still Red, pointing out that we loose
    sharing. *)
-let update ~share v1 mark t =
-  if share then
-    (v1.mark <- mark;
-     v1.term <- t;
-     v1)
-  else {mark;term=t;}
+let update v1 mark t =
+  v1.mark <- mark; v1.term <- t
 
 (** Reduction cache *)
 type infos_cache = {
@@ -393,7 +389,7 @@ let compact_stack head stk =
            lost by the update operation *)
         let h' = lft_fconstr depth head in
         (** The stack contains [Zupdate] marks only if in sharing mode *)
-        let _ = update ~share:true m h'.mark h'.term in
+        let () = update m h'.mark h'.term in
         strip_rec depth s
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zapp _ | Zprimitive _) :: _ | []) as stk -> zshift depth stk
   in
@@ -698,7 +694,8 @@ let rec zip m stk =
         zip (lift_fconstr n m) s
     | Zupdate(rf)::s ->
       (** The stack contains [Zupdate] marks only if in sharing mode *)
-        zip (update ~share:true rf m.mark m.term) s
+        let () = update rf m.mark m.term in
+        zip rf s
     | Zprimitive(_op,c,rargs,kargs)::s ->
       let args = List.rev_append rargs (m::List.map snd kargs) in
       let f = {mark = Red; term = FFlex (ConstKey c)} in
@@ -725,7 +722,8 @@ let strip_update_shift_app_red head stk =
           {mark=h.mark;term=FApp(h,args)} depth s
     | Zupdate(m)::s ->
       (** The stack contains [Zupdate] marks only if in sharing mode *)
-        strip_rec rstk (update ~share:true m h.mark h.term) depth s
+        let () = update m h.mark h.term in
+        strip_rec rstk m depth s
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as stk ->
       (depth,List.rev rstk, stk)
   in
@@ -753,7 +751,8 @@ let get_nth_arg head n stk =
           (Some (stk', args.(n)), append_stack aft s')
     | Zupdate(m)::s ->
         (** The stack contains [Zupdate] mark only if in sharing mode *)
-        strip_rec rstk (update ~share:true m h.mark h.term) n s
+        let () = update m h.mark h.term in
+        strip_rec rstk m n s
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as s -> (None, List.rev rstk @ s) in
   strip_rec [] head n stk
 
@@ -773,7 +772,7 @@ let usubs_consv v s =
 let rec get_args n tys f e = function
     | Zupdate r :: s ->
         (** The stack contains [Zupdate] mark only if in sharing mode *)
-        let _hd = update ~share:true r Cstr (FLambda(n,tys,f,e)) in
+        let () = update r Cstr (FLambda(n,tys,f,e)) in
         get_args n tys f e s
     | Zshift k :: s ->
         get_args n tys f (usubs_shft (k,e)) s
@@ -830,7 +829,8 @@ let get_native_args op c stk =
           strip_rec rnargs {mark = h.mark;term=FApp(h, args)} depth kargs s'
       end
     | Zupdate(m) :: s ->
-      strip_rec rnargs (update ~share:true m h.mark h.term) depth  kargs s
+      let () = update m h.mark h.term in
+      strip_rec rnargs m depth  kargs s
     | (Zprimitive _ | ZcaseT _ | Zproj _ | Zfix _) :: _ | [] -> assert false
   in strip_rec [] {mark = Red; term = FFlex(ConstKey c)} 0 kargs stk
 
@@ -1331,7 +1331,7 @@ let rec skip_irrelevant_stack stk = match stk with
 | Zprimitive _ :: _ -> assert false (* no irrelevant primitives so far *)
 | Zupdate m :: s ->
   (** The stack contains [Zupdate] marks only if in sharing mode *)
-  let _ = update ~share:true m mk_irrelevant.mark mk_irrelevant.term in
+  let () = update m mk_irrelevant.mark mk_irrelevant.term in
   skip_irrelevant_stack s
 
 let is_irrelevant_constructor infos (ind,_) = match infos.i_cache.i_mode with
