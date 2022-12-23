@@ -83,6 +83,28 @@ let check_privacy_block mib =
 (* Building case analysis schemes *)
 (* Christine Paulin, 1996 *)
 
+type case_analysis = {
+  case_params : Constr.rel_context;
+  case_pred : Name.t Context.binder_annot * Constr.types;
+  case_branches : Constr.rel_context;
+  case_arity : Constr.rel_context;
+  case_body : Constr.t;
+  case_type : Constr.t;
+}
+
+let eval_case_analysis case =
+  let body = it_mkLambda_or_LetIn case.case_body case.case_arity in
+  (* Expand let bindings in the type for backwards compatibility *)
+  let bodyT = it_mkProd_wo_LetIn case.case_type case.case_arity in
+  let body = it_mkLambda_or_LetIn body case.case_branches in
+  let bodyT = it_mkProd_or_LetIn bodyT case.case_branches in
+  let (nameP, typP) = case.case_pred in
+  let body = mkLambda (nameP, typP, body) in
+  let bodyT = mkProd (nameP, typP, bodyT) in
+  let c = it_mkLambda_or_LetIn body case.case_params in
+  let cT = it_mkProd_or_LetIn bodyT case.case_params in
+  (c, cT)
+
 let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
@@ -120,7 +142,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 
   let branches = get_branches (push_rel (LocalAssum (nameP,typP)) env') 0 [] in
 
-  let sigma, body, bodyT =
+  let sigma, arity, body, bodyT =
     let env = push_rel_context branches (push_rel (LocalAssum (nameP,typP)) env') in
     let nbprod = Array.length mip.mind_consnames + 1 in
 
@@ -174,17 +196,18 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
         else
           sigma, term, mkRel 3
     in
-    let body = it_mkLambda_or_LetIn obj deparsign in
-    (* Expand let bindings in the type for backwards compatibility *)
-    let bodyT = it_mkProd_wo_LetIn objT deparsign in
-    (sigma, body, bodyT)
+    (sigma, deparsign, obj, objT)
   in
-  let body = it_mkLambda_or_LetIn body branches in
-  let bodyT = it_mkProd_or_LetIn bodyT branches in
   let params = set_names env env lnamespar in
-  let c = it_mkLambda_or_LetIn (mkLambda (nameP, typP, body)) params in
-  let cT = it_mkProd_or_LetIn (mkProd (nameP, typP, bodyT)) params in
-  (sigma, c, cT)
+  let case = {
+    case_params = params;
+    case_pred = (nameP, typP);
+    case_branches = branches;
+    case_arity = arity;
+    case_body = body;
+    case_type = bodyT;
+  } in
+  (sigma, case)
 
 (* check if the type depends recursively on one of the inductive scheme *)
 
@@ -528,7 +551,8 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
             lnamesparrec
       else
         let evd = !evdref in
-        let (evd, c, _) = mis_make_case_com dep env evd (indi,u) (mibi,mipi) kind in
+        let (evd, c) = mis_make_case_com dep env evd (indi,u) (mibi,mipi) kind in
+        let (c, _) = eval_case_analysis c in
           evdref := evd; c
   in
     (* Body of mis_make_indrec *)

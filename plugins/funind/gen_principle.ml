@@ -2225,9 +2225,10 @@ let build_case_scheme fa =
     let ind = (first_fun_kn, funs_indexes) in
     ((ind, Univ.Instance.empty) (*FIXME*), prop_sort)
   in
-  let sigma, scheme, scheme_type =
+  let sigma, scheme =
     Indrec.build_case_analysis_scheme_default env sigma ind sf
   in
+  let scheme, scheme_type = Indrec.eval_case_analysis scheme in
   let sorts = (fun (_, _, x) -> EConstr.ESorts.make @@ fst @@ UnivGen.fresh_sort_in_family x) fa in
   let princ_name = (fun (x, _, _) -> x) fa in
   let (_ : unit) =
