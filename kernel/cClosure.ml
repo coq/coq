@@ -224,19 +224,17 @@ type mode = Conversion | Reduction
  *    before the term is computed.
  *)
 
-(* Ntrl means the term is fully normalized and cannot create a redex
+(* Ntrl means the term is in βιδζ head normal form and cannot create a redex
      when substituted
-   Cstr means the term is in head normal form and that it can
+   Cstr means the term is in βιδζ head normal form and that it can
      create a redex when substituted (i.e. constructor, fix, lambda)
-   Whnf means we reached the head normal form and that it cannot
-     create a redex when substituted
    Red is used for terms that might be reduced
 *)
-type red_state = Ntrl | Cstr | Whnf | Red
+type red_state = Ntrl | Cstr | Red
 
 let neutr = function
-  | Whnf|Ntrl -> Whnf
-  | Red|Cstr -> Red
+| Ntrl -> Ntrl
+| Red | Cstr -> Red
 
 type 'a usubs = 'a subs Univ.puniverses
 
@@ -275,7 +273,6 @@ and finvert = fconstr array
 
 let fterm_of v = v.term
 let set_ntrl v = v.mark <- Ntrl
-let is_val v = match v.mark with Ntrl -> true | Cstr | Whnf | Red -> false
 
 let mk_atom c = {mark=Ntrl;term=FAtom c}
 let mk_red f = {mark=Red;term=f}
@@ -405,7 +402,7 @@ let compact_stack head stk =
 (* Put an update mark in the stack, only if needed *)
 let zupdate info m s =
   let share = info.i_cache.i_share in
-  if share && begin match m.mark with Red -> true  | Ntrl | Whnf | Cstr -> false end
+  if share && begin match m.mark with Red -> true  | Ntrl | Cstr -> false end
   then
     let s' = compact_stack m s in
     let _ = m.term <- FLOCKED in
@@ -735,11 +732,11 @@ let strip_update_shift_app_red head stk =
   strip_rec [] head 0 stk
 
 let strip_update_shift_app head stack =
-  assert (match head.mark with Red -> false | Ntrl | Cstr | Whnf -> true);
+  assert (match head.mark with Red -> false | Ntrl | Cstr -> true);
   strip_update_shift_app_red head stack
 
 let get_nth_arg head n stk =
-  assert (match head.mark with Red -> false | Ntrl | Cstr | Whnf -> true);
+  assert (match head.mark with Red -> false | Ntrl | Cstr -> true);
   let rec strip_rec rstk h n = function
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) n s
@@ -1409,7 +1406,7 @@ and knht info e t stk =
     | CoFix cfx -> { mark = Cstr; term = FCoFix (cfx,e) }, stk
     | Lambda _ -> { mark = Cstr ; term = mk_lambda e t }, stk
     | Prod (n, t, c) ->
-      { mark = Whnf; term = FProd (n, mk_clos e t, c, e) }, stk
+      { mark = Ntrl; term = FProd (n, mk_clos e t, c, e) }, stk
     | LetIn (n,b,t,c) ->
       { mark = Red; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
     | Evar ev ->
@@ -1420,7 +1417,7 @@ and knht info e t stk =
           (mk_irrelevant, skip_irrelevant_stack stk)
         else
           let repack = info.i_cache.i_sigma.evar_repack in
-          { mark = Whnf; term = FEvar (evk, args, e, repack) }, stk
+          { mark = Ntrl; term = FEvar (evk, args, e, repack) }, stk
       end
     | Array(u,t,def,ty) ->
       let len = Array.length t in
@@ -1568,6 +1565,14 @@ let kh info tab v stk = fapp_stack(kni info tab v stk)
    1- Calls kni
    2- tries to rebuild the term. If a closure still has to be computed,
       calls itself recursively. *)
+
+let is_val v = match v.term with
+| FAtom _ | FRel _   | FInd _ | FConstruct _ | FInt _ | FFloat _ -> true
+| FFlex _ -> v.mark == Ntrl
+| FApp _ | FProj _ | FFix _ | FCoFix _ | FCaseT _ | FCaseInvert _ | FLambda _
+| FProd _ | FLetIn _ | FEvar _ | FArray _ | FLIFT _ | FCLOS _ -> false
+| FIrrelevant | FLOCKED -> assert false
+
 let rec kl info tab m =
   let share = info.i_cache.i_share in
   if is_val m then term_of_fconstr m
@@ -1701,9 +1706,9 @@ let norm_val info tab v = kl info tab v
 let norm_term info tab e t = klt info tab e t
 
 let whd_stack infos tab m stk = match m.mark with
-| Whnf | Ntrl ->
+| Ntrl ->
   (** No need to perform [kni] nor to unlock updates because
-      every head subterm of [m] is [Whnf] or [Ntrl] *)
+      every head subterm of [m] is [Ntrl] *)
   knh infos m stk
 | Red | Cstr ->
   let k = kni infos tab m stk in
