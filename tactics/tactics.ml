@@ -4336,32 +4336,30 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
-let compute_case_sig mind case =
-  let elimc_, elimt = eval_case_analysis case in
-  let arity, concl =
-    (* Expand let bindings in the type for backwards compatibility *)
-    Term.decompose_prod_decls (Term.it_mkProd_wo_LetIn case.case_type case.case_arity)
+let compute_case_signature evd mind case names_info =
+  let open Context.Rel.Declaration in
+  let indref = GlobRef.IndRef mind in
+  let branches = EConstr.of_rel_context case.case_branches in
+  let rec check_branch c = match EConstr.kind evd c with
+  | Prod (_,t,c) ->
+    let hd, _ = decompose_app evd t in
+    (* no recursive call in case analysis *)
+    let arg = if EConstr.isRefX evd indref hd then RecArg else OtherArg in
+    (arg, true, not (Vars.noccurn evd 1 c)) :: check_branch c
+  | LetIn (_,_,_,c) ->
+    (OtherArg, false, not (Vars.noccurn evd 1 c)) :: check_branch c
+  | _ -> []
   in
-  let indarg, arity = match arity with
-  | [] -> assert false
-  | hd :: tl -> (hd, tl)
+  let find_branches lbrch = match lbrch with
+  | LocalAssum (_, t) ->
+    let lchck_brch = check_branch t in
+    let n = List.fold_left (fun n (b,_,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
+    let recvarname, hyprecname, avoid = make_up_names n (Some indref) names_info in
+    let namesign = List.map (fun (b,is_assum,dep) -> (b,is_assum,dep,recvarname)) lchck_brch in
+    (avoid, namesign)
+  | LocalDef _ -> assert false
   in
-  {
-    elimt = EConstr.of_constr elimt;
-    indref = Some (IndRef mind);
-    params = EConstr.of_rel_context case.case_params;
-    nparams = List.length case.case_params;
-    predicates = EConstr.of_rel_context [LocalAssum (fst case.case_pred, snd case.case_pred)];
-    npredicates = 1;
-    branches = EConstr.of_rel_context case.case_branches;
-    nbranches = List.length case.case_branches;
-    args = EConstr.of_rel_context arity;
-    nargs = List.length arity;
-    indarg = Some (EConstr.of_rel_decl indarg);
-    concl = EConstr.of_constr concl;
-    indarg_in_concl = true;
-    farg_in_concl = false;
-  }
+  Array.of_list (List.rev_map find_branches branches)
 
 let guess_elim env sigma isrec dep s hyp0 =
   let tmptyp0 = Typing.type_of_variable env hyp0 in
@@ -4377,18 +4375,13 @@ let guess_elim env sigma isrec dep s hyp0 =
       (sigma, ElimConstant ind, elimt, scheme)
     else
       let u = EInstance.kind sigma u in
-      if dep then
-        let (sigma, case) = build_case_analysis_scheme env sigma (mind, u) true s in
-        let scheme = compute_case_sig mind case in
-        let indty = scheme.elimt in
-        let scheme = compute_scheme_signature sigma scheme hyp0 (mkIndU (mind, EInstance.make u)) in
-        (sigma, ElimCase case, indty, scheme)
-      else
-        let (sigma, case) = build_case_analysis_scheme_default env sigma (mind, u) s in
-        let scheme = compute_case_sig mind case in
-        let indty = scheme.elimt in
-        let scheme = compute_scheme_signature sigma scheme hyp0 (mkIndU (mind, EInstance.make u)) in
-        (sigma, ElimCase case, indty, scheme)
+      let (sigma, case) =
+        if dep then build_case_analysis_scheme env sigma (mind, u) true s
+        else build_case_analysis_scheme_default env sigma (mind, u) s
+      in
+      let _, indty = eval_case_analysis case in
+      let scheme = compute_case_signature sigma mind case hyp0 in
+      (sigma, ElimCase case, EConstr.of_constr indty, scheme)
   in
   sigma, (elimc, elimt), scheme
 
