@@ -437,5 +437,3 @@ val hcons_universe_set : Level.Set.t -> Level.Set.t
 val hcons_universe_context : UContext.t -> UContext.t
 val hcons_abstract_universe_context : AbstractContext.t -> AbstractContext.t
 val hcons_universe_context_set : ContextSet.t -> ContextSet.t
-
-type explanation = Level.t * (constraint_type * Level.t) list

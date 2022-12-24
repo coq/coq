@@ -33,9 +33,9 @@ type t = {
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-type explanation = G.explanation
+type explanation = G.explanation Lazy.t
 
-type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation Lazy.t option
+type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation option
 
 exception UniverseInconsistency of univ_inconsistency
 
