@@ -1571,7 +1571,7 @@ type eliminator =
 | ElimClause of EConstr.constr with_bindings
   (* Arbitrary expression provided by the user *)
 
-let general_elim_clause0 with_evars flags where (c, ty) elim =
+let general_elim_clause0 with_evars flags (c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
@@ -1602,29 +1602,43 @@ let general_elim_clause0 with_evars flags where (c, ty) elim =
   in
   (* Assumes that the metas of [c] are part of [sigma] already *)
   let elimclause = Clenv.update_clenv_evd elimclause (meta_merge (Evd.meta_list sigma) elimclause.Clenv.evd) in
-  match where with
-  | None ->
-    let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
-    Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
-  | Some id ->
-    let hypmv =
-      match List.remove Int.equal indmv (clenv_independent elimclause) with
-      | [a] -> a
-      | _ -> error IllFormedEliminationType
-    in
-    let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
-    let hyp = mkVar id in
-    let hyp_typ = Retyping.get_type_of env sigma hyp in
-    let elimclause =
-      try clenv_instantiate ~flags hypmv elimclause (hyp, hyp_typ)
-      with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
-        (* Set the hypothesis name in the message *)
-        raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
-    in
-    let new_hyp_typ  = clenv_type elimclause in
-    if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
-      error (NothingToRewrite id);
-    clenv_refine_in with_evars id true sigma elimclause
+  let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
+  Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
+  end
+
+let general_elim_clause_in0 with_evars flags id (c, ty) elim =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Tacmach.project gl in
+  let elimc = mkConstU elim in
+  let elimt = Retyping.get_type_of env sigma elimc in
+  let i = index_of_ind_arg sigma elimt in
+  let elimclause = mk_clenv_from env sigma (elimc, elimt) in
+  let indmv =
+    (match EConstr.kind sigma (nth_arg sigma (Some i) elimclause.templval.rebus) with
+       | Meta mv -> mv
+       | _  -> error IllFormedEliminationType)
+  in
+  (* Assumes that the metas of [c] are part of [sigma] already *)
+  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge (Evd.meta_list sigma) elimclause.Clenv.evd) in
+  let hypmv =
+    match List.remove Int.equal indmv (clenv_independent elimclause) with
+    | [a] -> a
+    | _ -> error IllFormedEliminationType
+  in
+  let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
+  let hyp = mkVar id in
+  let hyp_typ = Retyping.get_type_of env sigma hyp in
+  let elimclause =
+    try clenv_instantiate ~flags hypmv elimclause (hyp, hyp_typ)
+    with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
+      (* Set the hypothesis name in the message *)
+      raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
+  in
+  let new_hyp_typ  = clenv_type elimclause in
+  if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
+    error (NothingToRewrite id);
+  clenv_refine_in with_evars id true sigma elimclause
   end
 
 let general_elim with_evars clear_flag (c, lbindc) elim =
@@ -1638,7 +1652,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let flags = elim_flags () in
   Proofview.Unsafe.tclEVARS indclause.evd <*>
   Tacticals.tclTHEN
-    (general_elim_clause0 with_evars flags None (clenv_value indclause, clenv_type indclause) elim)
+    (general_elim_clause0 with_evars flags (clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
@@ -1647,7 +1661,9 @@ let general_elim_clause with_evars flags where (c, ty) elim =
   Proofview.tclEVARMAP >>= fun sigma ->
   let (sigma, (elim, u)) = Evd.fresh_constant_instance env sigma elim in
   Proofview.Unsafe.tclEVARS sigma <*>
-  general_elim_clause0 with_evars flags where (c, ty) (ElimConstant (elim, EInstance.make u))
+  match where with
+  | None -> general_elim_clause0 with_evars flags (c, ty) (ElimConstant (elim, EInstance.make u))
+  | Some id -> general_elim_clause_in0 with_evars flags id (c, ty) (elim, EInstance.make u)
 
 (* Case analysis tactics *)
 
