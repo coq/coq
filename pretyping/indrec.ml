@@ -84,15 +84,16 @@ let check_privacy_block mib =
 (* Christine Paulin, 1996 *)
 
 type case_analysis = {
-  case_params : Constr.rel_context;
-  case_pred : Name.t Context.binder_annot * Constr.types;
-  case_branches : Constr.rel_context;
-  case_arity : Constr.rel_context;
-  case_body : Constr.t;
-  case_type : Constr.t;
+  case_params : EConstr.rel_context;
+  case_pred : Name.t Context.binder_annot * EConstr.types;
+  case_branches : EConstr.rel_context;
+  case_arity : EConstr.rel_context;
+  case_body : EConstr.t;
+  case_type : EConstr.t;
 }
 
 let eval_case_analysis case =
+  let open EConstr in
   let body = it_mkLambda_or_LetIn case.case_body case.case_arity in
   (* Expand let bindings in the type for backwards compatibility *)
   let bodyT = it_mkProd_wo_LetIn case.case_type case.case_arity in
@@ -200,12 +201,12 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   in
   let params = set_names env env lnamespar in
   let case = {
-    case_params = params;
-    case_pred = (nameP, typP);
-    case_branches = branches;
-    case_arity = arity;
-    case_body = body;
-    case_type = bodyT;
+    case_params = EConstr.of_rel_context params;
+    case_pred = (nameP, EConstr.of_constr typP);
+    case_branches = EConstr.of_rel_context branches;
+    case_arity = EConstr.of_rel_context arity;
+    case_body = EConstr.of_constr body;
+    case_type = EConstr.of_constr bodyT;
   } in
   (sigma, case)
 
@@ -553,7 +554,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
         let evd = !evdref in
         let (evd, c) = mis_make_case_com dep env evd (indi,u) (mibi,mipi) kind in
         let (c, _) = eval_case_analysis c in
-          evdref := evd; c
+          evdref := evd; EConstr.Unsafe.to_constr c
   in
     (* Body of mis_make_indrec *)
     !evdref, List.init nrec make_one_rec

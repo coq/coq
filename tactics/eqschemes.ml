@@ -689,7 +689,7 @@ let build_r2l_rew_scheme dep env ind k =
   let (sigma, indu) = Evd.fresh_inductive_instance env sigma ind in
   let (sigma, c) = build_case_analysis_scheme env sigma indu dep k in
   let (c, _) = Indrec.eval_case_analysis c in
-    c, Evd.evar_universe_context sigma
+  EConstr.Unsafe.to_constr c, Evd.evar_universe_context sigma
 
 (**********************************************************************)
 (* Register the rewriting schemes                                     *)

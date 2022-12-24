@@ -2238,7 +2238,7 @@ let build_case_scheme fa =
     *)
     generate_functional_principle
       (ref (Evd.from_env (Global.env ())))
-      scheme_type
+      (EConstr.Unsafe.to_constr scheme_type)
       (Some [|sorts|])
       (Some princ_name) this_block_funs 0
       (Functional_principles_proofs.prove_princ_for_struct

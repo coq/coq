@@ -126,7 +126,7 @@ let build_case_analysis_scheme_in_type env dep sort ind =
   let (sigma, indu) = Evd.fresh_inductive_instance env sigma ind in
   let (sigma, c) = build_case_analysis_scheme env sigma indu dep sort in
   let (c, _) = Indrec.eval_case_analysis c in
-    c, Evd.evar_universe_context sigma
+  EConstr.Unsafe.to_constr c, Evd.evar_universe_context sigma
 
 let case_scheme_kind_from_type =
   declare_individual_scheme_object "_case_nodep"

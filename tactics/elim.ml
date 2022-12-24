@@ -43,7 +43,7 @@ let general_elim_then_using mk_elim
       let u = EInstance.kind sigma u in
       let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u) dep sort in
       let r, t = Indrec.eval_case_analysis c in
-      (sigma, EConstr.of_constr r, EConstr.of_constr t)
+      (sigma, r, t)
     | Elim ->
       let gr = Indrec.lookup_eliminator env ind sort in
       let sigma, r = Evd.fresh_global env sigma gr in

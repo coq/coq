@@ -1585,8 +1585,6 @@ let general_elim_clause0 with_evars flags where (c, ty) elim =
   | ElimCase elim ->
     (* FIXME: be more clever *)
     let elimc, elimt = eval_case_analysis elim in
-    let elimc = EConstr.of_constr elimc in
-    let elimt = EConstr.of_constr elimt in
     let i = index_of_ind_arg sigma elimt in
     let elimc = contract_letin_in_lam_header sigma elimc in
     let elimclause = mk_clenv_from env sigma (elimc, elimt) in
@@ -1770,7 +1768,7 @@ let make_projection env sigma params cstr sign elim i n c u =
       then
         let t = lift (i+1-n) t in
         let (elim, _) = eval_case_analysis elim in
-        let abselim = beta_applist sigma (EConstr.of_constr elim, params@[t;branch]) in
+        let abselim = beta_applist sigma (elim, params@[t;branch]) in
         let args = Context.Rel.instance mkRel 0 sign in
         let c = beta_applist sigma (abselim, [mkApp (c, args)]) in
           Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
@@ -4339,7 +4337,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
 let compute_case_signature evd mind case names_info =
   let open Context.Rel.Declaration in
   let indref = GlobRef.IndRef mind in
-  let branches = EConstr.of_rel_context case.case_branches in
+  let branches = case.case_branches in
   let rec check_branch c = match EConstr.kind evd c with
   | Prod (_,t,c) ->
     let hd, _ = decompose_app evd t in
@@ -4381,7 +4379,7 @@ let guess_elim env sigma isrec dep s hyp0 =
       in
       let _, indty = eval_case_analysis case in
       let scheme = compute_case_signature sigma mind case hyp0 in
-      (sigma, ElimCase case, EConstr.of_constr indty, scheme)
+      (sigma, ElimCase case, indty, scheme)
   in
   sigma, (elimc, elimt), scheme
 
@@ -4501,8 +4499,6 @@ let induction_tac with_evars params indvars (elim, elimt) =
   | ElimCase elim ->
     (* FIXME: be more clever *)
     let elimc, elimt = eval_case_analysis elim in
-    let elimc = EConstr.of_constr elimc in
-    let elimt = EConstr.of_constr elimt in
     let i = index_of_ind_arg sigma elimt in
     (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
     let elimc = contract_letin_in_lam_header sigma elimc in
@@ -4997,8 +4993,6 @@ let case_type t =
   let s = Tacticals.elimination_sort_of_goal gl in
   let (evd, elim) = build_case_analysis_scheme_default env sigma (ind, u) s in
   let elimc, elimt = eval_case_analysis elim in
-  let elimc = EConstr.of_constr elimc in
-  let elimt = EConstr.of_constr elimt in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type (elimc, elimt) t)
   end
 

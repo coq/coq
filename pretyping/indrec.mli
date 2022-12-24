@@ -29,15 +29,15 @@ type dep_flag = bool
 (** Build a case analysis elimination scheme in some sort family *)
 
 type case_analysis = private {
-  case_params : Constr.rel_context;
-  case_pred : Name.t Context.binder_annot * Constr.types;
-  case_branches : Constr.rel_context;
-  case_arity : Constr.rel_context;
-  case_body : Constr.t;
-  case_type : Constr.t;
+  case_params : EConstr.rel_context;
+  case_pred : Name.t Context.binder_annot * EConstr.types;
+  case_branches : EConstr.rel_context;
+  case_arity : EConstr.rel_context;
+  case_body : EConstr.t;
+  case_type : EConstr.t;
 }
 
-val eval_case_analysis : case_analysis -> Constr.t * Constr.types
+val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 
 val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
       dep_flag -> Sorts.family -> evar_map * case_analysis
