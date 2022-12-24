@@ -50,17 +50,17 @@ Proof.
     + unfold Rdiv; apply Rmult_le_reg_l with 2.
       * prove_sup0.
       * pattern 2 at 1; rewrite Rmult_comm.
-        rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
+        rewrite Rmult_assoc; rewrite Rinv_l; [ idtac | discrR ].
         rewrite Rmult_1_r.
-        rewrite double.
+        rewrite <-Rplus_diag.
         apply Rplus_le_compat_l.
         assumption.
     + unfold Rdiv; apply Rmult_le_reg_l with 2.
       * prove_sup0.
       * rewrite Rmult_comm.
-        rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
+        rewrite Rmult_assoc; rewrite Rinv_l; [ idtac | discrR ].
         rewrite Rmult_1_r.
-        rewrite double.
+        rewrite <-Rplus_diag.
         rewrite <- (Rplus_comm (Dichotomy_ub x y P n)).
         apply Rplus_le_compat_l.
         assumption.
@@ -78,9 +78,9 @@ Proof.
   - unfold Rdiv; apply Rmult_le_reg_l with 2.
     + prove_sup0.
     + pattern 2 at 1; rewrite Rmult_comm.
-      rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
+      rewrite Rmult_assoc; rewrite Rinv_l; [ idtac | discrR ].
       rewrite Rmult_1_r.
-      rewrite double.
+      rewrite <-Rplus_diag.
       apply Rplus_le_compat_l.
       replace (Dichotomy_ub x y P n) with (dicho_up x y P n);
         [ apply dicho_comp; assumption | reflexivity ].
@@ -97,9 +97,9 @@ Proof.
   - unfold Rdiv; apply Rmult_le_reg_l with 2.
     + prove_sup0.
     + rewrite Rmult_comm.
-      rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
+      rewrite Rmult_assoc; rewrite Rinv_l; [ idtac | discrR ].
       rewrite Rmult_1_r.
-      rewrite double.
+      rewrite <-Rplus_diag.
       replace (Dichotomy_ub x y P n) with (dicho_up x y P n);
         [ idtac | reflexivity ].
       replace (Dichotomy_lb x y P n) with (dicho_lb x y P n);
@@ -122,8 +122,8 @@ Proof.
     + unfold Rdiv; apply Rmult_le_reg_l with 2.
       * prove_sup0.
       * rewrite Rmult_comm.
-        rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ rewrite Rmult_1_r | discrR ].
-        rewrite double; apply Rplus_le_compat.
+        rewrite Rmult_assoc; rewrite Rinv_l; [ rewrite Rmult_1_r | discrR ].
+        rewrite <-Rplus_diag; apply Rplus_le_compat.
         -- assumption.
         -- pattern y at 2; replace y with (Dichotomy_ub x y P 0);
              [ idtac | reflexivity ].
@@ -160,8 +160,8 @@ Proof.
     + unfold Rdiv; apply Rmult_le_reg_l with 2.
       * prove_sup0.
       * pattern 2 at 1; rewrite Rmult_comm.
-        rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ rewrite Rmult_1_r | discrR ].
-        rewrite double; apply Rplus_le_compat.
+        rewrite Rmult_assoc; rewrite Rinv_l; [ rewrite Rmult_1_r | discrR ].
+        rewrite <-Rplus_diag; apply Rplus_le_compat.
         -- pattern x at 1; replace x with (Dichotomy_lb x y P 0);
              [ idtac | reflexivity ].
            apply tech9.
@@ -230,7 +230,7 @@ Proof.
         field.
         apply pow_nonzero; discrR.
       * pattern (Dichotomy_lb x y P n) at 2;
-          rewrite (double_var (Dichotomy_lb x y P n));
+          rewrite <-(Rplus_half_diag (Dichotomy_lb x y P n));
           unfold dicho_up, dicho_lb, Rminus, Rdiv; ring.
     + replace
         (Dichotomy_ub x y P n - (Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)
@@ -239,7 +239,7 @@ Proof.
         field.
         apply pow_nonzero; discrR.
       * pattern (Dichotomy_ub x y P n) at 1;
-          rewrite (double_var (Dichotomy_ub x y P n));
+          rewrite <-(Rplus_half_diag (Dichotomy_ub x y P n));
           unfold dicho_up, dicho_lb, Rminus, Rdiv; ring.
 Qed.
 
@@ -286,7 +286,7 @@ Proof.
         apply Rlt_0_1.
       + pattern (2 ^ n) at 1; rewrite <- Rplus_0_r.
         rewrite <- (Rmult_comm 2).
-        rewrite double.
+        rewrite <-Rplus_diag.
         apply Rplus_le_compat_l.
         left; apply pow_lt; prove_sup0.
   }
@@ -334,7 +334,7 @@ Proof.
   cut (Un_cv (fun i:nat => dicho_lb x y P i - dicho_up x y P i) 0).
   { intro.
     assert (H4 := UL_sequence _ _ _ H2 H3).
-    symmetry ; apply Rminus_diag_uniq_sym; assumption. }
+    apply Rminus_diag_uniq; assumption. }
   unfold Un_cv; unfold Rdist.
   intros.
   assert (H4 := cv_infty_cv_0 pow_2_n pow_2_n_infty).
@@ -343,7 +343,7 @@ Proof.
       replace (dicho_lb y y P n - dicho_up y y P n - 0) with
         (dicho_lb y y P n - dicho_up y y P n); [ idtac | ring ].
       rewrite <- Rabs_Ropp.
-      rewrite Ropp_minus_distr'.
+      rewrite Ropp_minus_distr.
       rewrite dicho_lb_dicho_up.
       - unfold Rminus, Rdiv; rewrite Rplus_opp_r; rewrite Rmult_0_l;
         rewrite Rabs_R0; assumption.
@@ -360,7 +360,7 @@ Proof.
   replace (dicho_lb x y P n - dicho_up x y P n - 0) with
   (dicho_lb x y P n - dicho_up x y P n); [ idtac | ring ].
   rewrite <- Rabs_Ropp.
-  rewrite Ropp_minus_distr'.
+  rewrite Ropp_minus_distr.
   rewrite dicho_lb_dicho_up.
   2:lra.
   unfold Rdiv; rewrite Rabs_mult.
@@ -368,7 +368,7 @@ Proof.
   2:lra.
   apply Rmult_lt_reg_l with (/ (y - x)).
   { apply Rinv_0_lt_compat; assumption. }
-  rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+  rewrite <- Rmult_assoc; rewrite Rinv_l.
   2:lra.
   rewrite Rmult_1_l.
   replace (/ 2 ^ n) with (/ 2 ^ n - 0);
@@ -563,7 +563,7 @@ Proof.
           - assumption.
           - apply Ropp_0_ge_le_contravar; apply Rle_ge; apply H6. }
       pattern (f x0) at 2 in H10; rewrite <- Rplus_0_r in H10.
-      rewrite Ropp_minus_distr' in H10.
+      rewrite Ropp_minus_distr in H10.
       unfold Rminus in H10.
       assert (H11 := Rplus_lt_reg_l _ _ _ H10).
       assert (H12 := H6 x2).
@@ -671,7 +671,7 @@ Proof.
     split.
     + elim H5; intros; assumption.
     + unfold f in H6.
-      apply Rminus_diag_uniq_sym; exact H6.
+      symmetry; apply Rminus_diag_uniq; exact H6.
   - exists 1.
     split.
     + left; apply Rlt_0_1.
@@ -697,7 +697,7 @@ Proof.
     split.
     + elim H5; intros; assumption.
     + unfold f in H6.
-      apply Rminus_diag_uniq_sym; exact H6.
+      symmetry; apply Rminus_diag_uniq; exact H6.
 Qed.
 
 (* Definition of the square root: R+->R *)

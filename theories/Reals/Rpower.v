@@ -40,18 +40,18 @@ Proof.
   }
   apply Rmult_le_reg_l with (/ exp 1).
   { apply Rinv_0_lt_compat; apply exp_pos. }
-  rewrite <- Rinv_l_sym.
+  rewrite Rinv_l.
   2:assumption.
   apply Rmult_le_reg_l with (/ 3).
   { lra. }
   rewrite Rmult_1_r; rewrite <- (Rmult_comm 3); rewrite <- Rmult_assoc;
-    rewrite <- Rinv_l_sym.
+    rewrite Rinv_l.
   2:lra.
   rewrite Rmult_1_l; replace (/ exp 1) with (exp (-1)).
   2:{ apply Rmult_eq_reg_l with (exp 1).
       2:assumption.
       rewrite <- exp_plus; rewrite Rplus_opp_r; rewrite exp_0;
-      rewrite <- Rinv_r_sym;trivial. }
+      rewrite Rinv_r;trivial. }
   unfold exp; case (exist_exp (-1)) as (?,e); simpl in |- *;
     unfold exp_in in e;
       assert (H := alternated_series_ineq (fun i:nat => / INR (fact i)) x 1).
@@ -70,10 +70,10 @@ Proof.
     { apply INR_fact_lt_0. }
     apply Rmult_le_reg_l with (INR (fact (S n))).
     { apply INR_fact_lt_0. }
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     2:{ apply INR_fact_neq_0. }
     rewrite Rmult_1_r; rewrite Rmult_comm; rewrite Rmult_assoc;
-      rewrite <- Rinv_l_sym.
+      rewrite Rinv_l.
     2:{ apply INR_fact_neq_0. }
     rewrite Rmult_1_r; apply le_INR; apply fact_le; apply Nat.le_succ_diag_r.
   - assert (H0 := cv_speed_pow_fact 1); unfold Un_cv; unfold Un_cv in H0;
@@ -151,7 +151,7 @@ Qed.
 
 Lemma exp_ineq1_le (x : R) : 1 + x <= exp x.
 Proof.
-  destruct (Req_EM_T x 0) as [xeq|?].
+  destruct (Req_dec x 0) as [xeq|?].
   - rewrite xeq, exp_0; lra.
   - left.
     now apply exp_ineq1.
@@ -166,7 +166,7 @@ Proof.
     + cut (0 <= f y); [intro H3|].
       * cut (f 0 * f y <= 0); [intro H4|].
         -- pose proof (IVT_cor f 0 y H2 (Rlt_le _ _ H0) H4) as (t,(_,H7));
-             exists t; unfold f in H7; apply Rminus_diag_uniq_sym; exact H7.
+             exists t; unfold f in H7; symmetry; apply Rminus_diag_uniq; exact H7.
         -- pattern 0 at 2; rewrite <- (Rmult_0_r (f y));
              rewrite (Rmult_comm (f 0)); apply Rmult_le_compat_l;
              assumption.
@@ -190,12 +190,12 @@ Proof.
   - assert (H0 : 1 <= / y).
     + apply Rmult_le_reg_l with y.
       * apply H.
-      * rewrite <- Rinv_r_sym.
+      * rewrite Rinv_r.
         -- rewrite Rmult_1_r; left; apply (Rnot_le_lt _ _ Hnle).
         -- red; intro; rewrite H0 in H; elim (Rlt_irrefl _ H).
     + destruct (ln_exists1 _ H0) as (x,p); exists (- x);
         apply Rmult_eq_reg_l with (exp x / y).
-      * unfold Rdiv; rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+      * unfold Rdiv; rewrite Rmult_assoc; rewrite Rinv_l.
         -- rewrite Rmult_1_r; rewrite <- (Rmult_comm (/ y)); rewrite Rmult_assoc;
              rewrite <- exp_plus; rewrite Rplus_opp_r; rewrite exp_0;
              rewrite Rmult_1_r; symmetry ; apply p.
@@ -242,7 +242,7 @@ Proof.
       elim (Rlt_irrefl _ H).
   - apply Rmult_eq_reg_l with (r := exp x).
     + rewrite <- exp_plus; rewrite Rplus_opp_r; rewrite exp_0.
-      apply Rinv_r_sym.
+      symmetry; apply Rinv_r.
       apply H.
     + apply H.
 Qed.

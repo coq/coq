@@ -397,8 +397,8 @@ Definition sumboolb {A B : Prop} (x : @sumbool A B) : bool :=
 
 Definition Reval_bop2 (o : Op2) : R -> R -> bool :=
   match o with
-  | OpEq  => fun x y => sumboolb (Req_EM_T x y)
-  | OpNEq => fun x y => negb (sumboolb (Req_EM_T x y))
+  | OpEq  => fun x y => sumboolb (Req_dec_T x y)
+  | OpNEq => fun x y => negb (sumboolb (Req_dec_T x y))
   | OpLe  => fun x y => (sumboolb (Rle_lt_dec x y))
   | OpGe  => fun x y => (sumboolb (Rge_gt_dec x y))
   | OpLt  => fun x y => (sumboolb (Rlt_le_dec x y))

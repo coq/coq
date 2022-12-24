@@ -90,14 +90,14 @@ Proof.
       - apply Rmult_lt_reg_l with 2.
         + prove_sup0.
         + unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-            rewrite <- Rinv_r_sym.
-          * rewrite Rmult_1_l; rewrite double; apply Rplus_lt_compat_l; apply H.
+            rewrite Rinv_r.
+          * rewrite Rmult_1_l; rewrite <-Rplus_diag; apply Rplus_lt_compat_l; apply H.
           * discrR.
       - apply Rmult_lt_reg_l with 2.
         + prove_sup0.
         + unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-            rewrite <- Rinv_r_sym.
-          * rewrite Rmult_1_l; rewrite Rplus_comm; rewrite double;
+            rewrite Rinv_r.
+          * rewrite Rmult_1_l; rewrite Rplus_comm; rewrite <-Rplus_diag;
               apply Rplus_lt_compat_l; apply H.
           * discrR.
     }
@@ -285,9 +285,9 @@ Proof.
     - rewrite Rabs_right.
       + unfold Rdiv; apply Rmult_lt_reg_l with 2.
         { prove_sup0. }
-        rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
+        rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc; rewrite Rinv_r.
         2:{ discrR. }
-        rewrite Rmult_1_l; rewrite double; pattern (pos delta) at 1;
+        rewrite Rmult_1_l; rewrite <-Rplus_diag; pattern (pos delta) at 1;
           rewrite <- Rplus_0_r.
         apply Rplus_lt_compat_l; apply (cond_pos delta).
       + apply Rle_ge; unfold Rdiv; left; apply Rmult_lt_0_compat.

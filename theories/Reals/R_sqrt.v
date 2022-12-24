@@ -454,7 +454,7 @@ Proof.
       (Rmult_eq_compat_l (/ a) (a * Rsqr (x + b / (2 * a)))
         (Delta a b c / (4 * a)) H2);
     replace (/ a * (a * Rsqr (x + b / (2 * a)))) with (Rsqr (x + b / (2 * a))).
-  2:{ rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+  2:{ rewrite <- Rmult_assoc; rewrite Rinv_l.
       - symmetry ; apply Rmult_1_l.
       - apply (cond_nonzero a). }
   replace (/ a * (Delta a b c / (4 * a))) with

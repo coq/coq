@@ -32,7 +32,7 @@ Ltac discrR :=
          rewrite <- plus_IZR ||
            rewrite <- mult_IZR ||
            rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
-       apply IZR_neq; try discriminate
+       apply eq_IZR_contrapositive; try discriminate
    end.
 
 Ltac prove_sup0 :=

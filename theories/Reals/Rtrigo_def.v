@@ -73,7 +73,7 @@ Definition tanh (x:R) : R := sinh x / cosh x.
 Lemma cosh_0 : cosh 0 = 1.
 Proof.
   unfold cosh; rewrite Ropp_0; rewrite exp_0.
-  unfold Rdiv; rewrite <- Rinv_r_sym; [ reflexivity | discrR ].
+  unfold Rdiv; rewrite Rinv_r; [ reflexivity | discrR ].
 Qed.
 
 Lemma sinh_0 : sinh 0 = 0.
@@ -95,13 +95,13 @@ Proof.
     (/ (-1) ^ n * INR (fact (2 * n)))) with
   ((-1) ^ n * / (-1) ^ n * / INR (fact (2 * (n + 1))) * INR (fact (2 * n)) *
     (-1) ^ 1); [ idtac | ring ].
-  rewrite <- Rinv_r_sym.
+  rewrite Rinv_r.
   - rewrite Rmult_1_l; unfold pow; rewrite Rmult_1_r.
     replace (2 * (n + 1))%nat with (S (S (2 * n))) by ring.
     do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
     repeat rewrite Rinv_mult.
     rewrite <- (Rmult_comm (-1)).
-    repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+    repeat rewrite Rmult_assoc; rewrite Rinv_l.
     + rewrite Rmult_1_r.
       replace (S (2 * n)) with (2 * n + 1)%nat by ring.
       rewrite mult_INR; rewrite Rinv_mult.
@@ -132,14 +132,14 @@ Proof.
     rewrite INR_IZR_INZ; apply Rle_lt_trans with (/ IZR (Z.of_nat x)).
     + apply Rmult_le_reg_l with (IZR (Z.of_nat x)).
       { assumption. }
-      rewrite <- Rinv_r_sym;
+      rewrite Rinv_r;
         [ idtac | red; intro; rewrite H5 in H4; elim (Rlt_irrefl _ H4) ].
       apply Rmult_le_reg_l with (IZR (Z.of_nat (max x 1))).
       * apply Rlt_le_trans with (IZR (Z.of_nat x)).
         -- assumption.
         -- repeat rewrite <- INR_IZR_INZ; apply le_INR; apply Nat.le_max_l.
       * rewrite Rmult_1_r; rewrite (Rmult_comm (IZR (Z.of_nat (max x 1))));
-          rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+          rewrite Rmult_assoc; rewrite Rinv_l.
         -- rewrite Rmult_1_r; repeat rewrite <- INR_IZR_INZ; apply le_INR;
              apply Nat.le_max_l.
         -- rewrite <- INR_IZR_INZ; apply not_O_INR.
@@ -172,7 +172,7 @@ Proof.
       + apply Nat.lt_0_succ.
       + replace (S n) with (n + 1)%nat by ring.
         ring.
-    - rewrite <- Rinv_r_sym.
+    - rewrite Rinv_r.
       + rewrite Rmult_1_r.
         apply (lt_INR 1).
         nia.
@@ -232,14 +232,14 @@ Proof.
     (/ (-1) ^ n * INR (fact (2 * n + 1)))) with
   ((-1) ^ n * / (-1) ^ n * / INR (fact (2 * (n + 1) + 1)) *
     INR (fact (2 * n + 1)) * (-1) ^ 1); [ idtac | ring ].
-  rewrite <- Rinv_r_sym.
+  rewrite Rinv_r.
   2:{ apply pow_nonzero; discrR. }
   rewrite Rmult_1_l; unfold pow; rewrite Rmult_1_r;
     replace (2 * (n + 1) + 1)%nat with (S (S (2 * n + 1))) by nia.
   do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
   repeat rewrite Rinv_mult.
   rewrite <- (Rmult_comm (-1)); repeat rewrite Rmult_assoc;
-    rewrite <- Rinv_l_sym.
+    rewrite Rinv_l.
   - rewrite Rmult_1_r; replace (S (2 * n + 1)) with (2 * (n + 1))%nat by nia.
     repeat rewrite mult_INR; repeat rewrite Rinv_mult.
     ring.
@@ -260,7 +260,7 @@ Proof.
     apply Rmult_lt_reg_l with (INR (2 * S n)).
     - apply lt_INR_0; replace (2 * S n)%nat with (S (S (2 * n)));
       [ apply Nat.lt_0_succ | ring ].
-    - rewrite <- Rinv_r_sym.
+    - rewrite Rinv_r.
       + rewrite Rmult_1_r.
         apply (lt_INR 1). nia.
       + apply not_O_INR; discriminate.

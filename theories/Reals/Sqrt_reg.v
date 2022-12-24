@@ -132,7 +132,7 @@ Proof.
       rewrite Ropp_mult_distr_r_reverse; repeat rewrite <- sqrt_mult.
       - rewrite Rmult_1_r; rewrite Rmult_plus_distr_l; rewrite Rmult_1_r;
           unfold Rdiv; rewrite Rmult_comm; rewrite Rmult_assoc;
-          rewrite <- Rinv_l_sym.
+          rewrite Rinv_l.
         + rewrite Rmult_1_r; reflexivity.
         + red; intro; rewrite H7 in H; elim (Rlt_irrefl _ H).
       - left; apply H.
@@ -148,7 +148,7 @@ Proof.
           apply Rmult_le_reg_l with x.
           * apply H.
           * rewrite Rmult_1_r; rewrite Rmult_comm; rewrite Rmult_assoc;
-              rewrite <- Rinv_l_sym.
+              rewrite Rinv_l.
             -- rewrite Rmult_1_r; left; apply Rlt_le_trans with (Rmin alpha x).
                ++ apply H8.
                ++ apply Rmin_r.
@@ -163,7 +163,7 @@ Proof.
       left; apply H. }
   apply Rmult_lt_reg_l with (/ sqrt x).
   { apply Rinv_0_lt_compat; apply sqrt_lt_R0; assumption. }
-  rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+  rewrite <- Rmult_assoc; rewrite Rinv_l.
   2:{ assert (H7 := sqrt_lt_R0 x H). lra. }
   rewrite Rmult_1_l; rewrite Rmult_comm.
   unfold Rdiv in H5.
@@ -184,7 +184,7 @@ Proof.
       elim (Rmult_integral _ _ H9); intro.
       { lra. }
       assert (H11 := Rmult_eq_0_compat_r _ x H10).
-      rewrite <- Rinv_l_sym in H11;lra.
+      rewrite Rinv_l in H11;lra.
   - unfold Rminus; rewrite Rplus_comm; rewrite <- Rplus_assoc;
       rewrite Rplus_opp_l; rewrite Rplus_0_l; elim H6; intros.
     unfold Rdiv; rewrite Rabs_mult.
@@ -192,7 +192,7 @@ Proof.
     rewrite (Rabs_right x).
     + rewrite Rmult_comm; apply Rmult_lt_reg_l with x.
       { apply H. }
-      rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
+      rewrite <- Rmult_assoc; rewrite Rinv_r.
       2:{ lra. }
       rewrite Rmult_1_l; rewrite Rmult_comm; fold alpha.
       apply Rlt_le_trans with (Rmin alpha x).
@@ -266,13 +266,13 @@ Proof.
   }
   apply Rmult_eq_reg_l with (sqrt x + sqrt (x + h)).
   2:lra.
-  rewrite <- Rinv_r_sym.
+  rewrite Rinv_r.
   2:lra.
   rewrite Rplus_comm; unfold Rdiv; rewrite <- Rmult_assoc;
     rewrite Rsqr_plus_minus; repeat rewrite Rsqr_sqrt.
   2,3: lra.
   rewrite Rplus_comm; unfold Rminus; rewrite Rplus_assoc;
-    rewrite Rplus_opp_r; rewrite Rplus_0_r; rewrite <- Rinv_r_sym;lra.
+    rewrite Rplus_opp_r; rewrite Rplus_0_r; rewrite Rinv_r;lra.
 Qed.
 
 (**********)

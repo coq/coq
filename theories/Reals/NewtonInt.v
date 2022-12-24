@@ -261,7 +261,7 @@ intros x (H3,H4); destruct (total_order_T x b) as [[Hlt|Heq]|Hgt].
     assert (H11 : 0 < D).
     { unfold D, Rmin; case (Rle_dec x1 (b - x)); intro.
       { apply (cond_pos x1). }
-      apply Rlt_Rminus; assumption. }
+      apply Rlt_0_minus; assumption. }
     exists (mkposreal _ H11); intros h H12 H13. case (Rle_dec x b) as [|[]].
     2:left;assumption.
     case (Rle_dec (x + h) b) as [|[]].
@@ -348,7 +348,7 @@ intros x (H3,H4); destruct (total_order_T x b) as [[Hlt|Heq]|Hgt].
       assert (H11 : 0 < D).
     { unfold D; unfold Rmin; case (Rle_dec x1 (x - b)); intro.
       { apply (cond_pos x1). }
-      apply Rlt_Rminus; assumption. }
+      apply Rlt_0_minus; assumption. }
     exists (mkposreal _ H11); intros; destruct (Rle_dec x b) as [Hle|Hnle].
     { elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ Hle Hgt)). }
     destruct (Rle_dec (x + h) b) as [Hle'|Hnle'].

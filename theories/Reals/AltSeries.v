@@ -192,7 +192,7 @@ Proof.
     + apply Rle_lt_trans with
         (Rabs (sum_f_R0 (tg_alt Un) (S n) - x) + Rabs (- tg_alt Un (S n))).
       * apply Rabs_triang.
-      * rewrite (double_var eps); apply Rplus_lt_compat.
+      * rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
         -- rewrite H12; apply H7; assumption.
         -- rewrite Rabs_Ropp; unfold tg_alt; rewrite Rabs_mult;
              rewrite pow_1_abs; rewrite Rmult_1_l; unfold Rminus in H6;
@@ -206,9 +206,9 @@ Proof.
     + apply H7; assumption.
     + unfold Rdiv; apply Rmult_lt_reg_l with 2.
       * prove_sup0.
-      * rewrite (Rmult_comm 2); rewrite Rmult_assoc; rewrite <- Rinv_l_sym;
+      * rewrite (Rmult_comm 2); rewrite Rmult_assoc; rewrite Rinv_l;
           [ rewrite Rmult_1_r | discrR ].
-        rewrite double.
+        rewrite <-Rplus_diag.
         pattern eps at 1; rewrite <- (Rplus_0_r eps); apply Rplus_lt_compat_l;
           assumption.
 
@@ -283,12 +283,12 @@ Proof.
   apply Rmult_le_reg_l with (INR (2 * n + 1)).
   - apply lt_INR_0.
     replace (2 * n + 1)%nat with (S (2 * n)); [ apply Nat.lt_0_succ | ring ].
-  - rewrite <- Rinv_r_sym.
+  - rewrite Rinv_r.
     + apply Rmult_le_reg_l with (INR (2 * S n + 1)).
       * apply lt_INR_0.
         replace (2 * S n + 1)%nat with (S (2 * S n)); [ apply Nat.lt_0_succ | ring ].
       * rewrite (Rmult_comm (INR (2 * S n + 1))); rewrite Rmult_assoc;
-          rewrite <- Rinv_l_sym.
+          rewrite Rinv_l.
         -- do 2 rewrite Rmult_1_r; apply le_INR.
            replace (2 * S n + 1)%nat with (S (S (2 * n + 1))).
            ++ apply Nat.le_trans with (S (2 * n + 1)); apply Nat.le_succ_diag_r.
@@ -329,7 +329,7 @@ Proof.
   unfold PI_tg; apply Rlt_trans with (/ INR (2 * n)).
   - apply Rmult_lt_reg_l with (INR (2 * n)).
     { apply lt_INR_0. auto with zarith. }
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     2:{ replace n with (S (pred n)).
         - apply not_O_INR; discriminate.
         - apply Nat.lt_succ_pred with 0%nat.
@@ -338,7 +338,7 @@ Proof.
     { apply lt_INR_0.
       replace (2 * n + 1)%nat with (S (2 * n)) by ring; apply Nat.lt_0_succ. }
     rewrite (Rmult_comm (INR (2 * n + 1))).
-    rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+    rewrite Rmult_assoc; rewrite Rinv_l.
     2:{ apply not_O_INR; replace (2 * n + 1)%nat with (S (2 * n));
         [ discriminate | ring ]. }
     do 2 rewrite Rmult_1_r; apply lt_INR.
@@ -390,7 +390,7 @@ Proof.
     replace (4 * x / 4) with x.
     + trivial.
     + unfold Rdiv; rewrite (Rmult_comm 4); rewrite Rmult_assoc;
-        rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r; reflexivity | discrR ].
+        rewrite Rinv_r; [ rewrite Rmult_1_r; reflexivity | discrR ].
 Qed.
 
 Lemma Alt_PI_RGT_0 : 0 < Alt_PI.

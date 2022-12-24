@@ -119,7 +119,7 @@ replace
         ring. }
     unfold C.
     unfold Rdiv; repeat rewrite <- Rmult_assoc.
-    rewrite <- Rinv_l_sym.
+    rewrite Rinv_l.
     2:apply INR_fact_neq_0.
     rewrite Rmult_1_l.
     rewrite Rinv_mult.
@@ -210,7 +210,7 @@ replace
     ring. }
   unfold C.
   unfold Rdiv; repeat rewrite <- Rmult_assoc.
-  rewrite <- Rinv_l_sym.
+  rewrite Rinv_l.
   2:apply INR_fact_neq_0.
   rewrite Rmult_1_l.
   rewrite Rinv_mult.
@@ -317,7 +317,7 @@ replace
 rewrite Rabs_mult.
 apply Rmult_lt_reg_l with (/ Rabs x).
 { apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption. }
-rewrite <- Rmult_assoc, <- Rinv_l_sym, Rmult_1_l, <- (Rmult_comm eps).
+rewrite <- Rmult_assoc, Rinv_l, Rmult_1_l, <- (Rmult_comm eps).
 - apply H2; assumption.
 - apply Rabs_no_R0; assumption.
 Qed.

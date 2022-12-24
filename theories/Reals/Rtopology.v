@@ -373,7 +373,7 @@ Proof.
         -- change (Rabs (x - y) < D);
              apply Rle_lt_trans with (Rabs (x - x0) + Rabs (x0 - y)).
            ++ replace (x - y) with (x - x0 + (x0 - y)); [ apply Rabs_triang | ring ].
-           ++ rewrite (double_var D); apply Rplus_lt_compat.
+           ++ rewrite <-(Rplus_half_diag D); apply Rplus_lt_compat.
               ** rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H2.
               ** apply H3.
   - unfold Rdiv; apply Rmult_lt_0_compat.
@@ -549,7 +549,7 @@ Proof.
   - intro; elim (Rlt_irrefl _ H19).
   - apply Rle_lt_trans with (Rabs (y0 - y) + Rabs (y - x)).
     + replace (y0 - x) with (y0 - y + (y - x)); [ apply Rabs_triang | ring ].
-    + rewrite (double_var (Rabs (y0 - x))); apply Rplus_lt_compat; assumption.
+    + rewrite <-(Rplus_half_diag (Rabs (y0 - x))); apply Rplus_lt_compat; assumption.
   - apply (MinRlist_P1 (AbsList l x) (Rabs (y0 - x) / 2)); apply AbsList_P1;
       elim (H8 y0); clear H8; intros; apply H8; unfold intersection_domain;
       split; assumption.
@@ -735,9 +735,9 @@ Proof.
                        apply Rplus_lt_compat_l; apply Rmult_lt_reg_l with 2.
                        { prove_sup0. }
                        unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-                         rewrite <- Rinv_r_sym.
+                         rewrite Rinv_r.
                        { rewrite Rmult_1_l; pattern (pos eps) at 1; rewrite <- Rplus_0_r;
-                           rewrite double; apply Rplus_lt_compat_l; apply (cond_pos eps). }
+                           rewrite <-Rplus_diag; apply Rplus_lt_compat_l; apply (cond_pos eps). }
                        discrR.
                  }
                  unfold Db; right; reflexivity.
@@ -988,7 +988,7 @@ Proof.
                end
            end).
     assert (H2 : 0 < b - a). {
-      apply Rlt_Rminus; assumption.
+      apply Rlt_0_minus; assumption.
     }
     exists h; split.
     + unfold continuity; intro; case (Rtotal_order x a); intro.
@@ -996,7 +996,7 @@ Proof.
           unfold limit1_in; unfold limit_in;
           simpl; unfold Rdist; intros; exists (a - x);
           split.
-        -- change (0 < a - x); apply Rlt_Rminus; assumption.
+        -- change (0 < a - x); apply Rlt_0_minus; assumption.
         -- intros; elim H5; clear H5; intros _ H5; unfold h.
            case (Rle_dec x a) as [|[]].
            ++ case (Rle_dec x0 a) as [|[]].
@@ -1019,7 +1019,7 @@ Proof.
              split.
            ++ unfold Rmin; case (Rle_dec x0 (b - a)); intro.
               ** elim H8; intros; assumption.
-              ** change (0 < b - a); apply Rlt_Rminus; assumption.
+              ** change (0 < b - a); apply Rlt_0_minus; assumption.
            ++ intros; elim H9; clear H9; intros _ H9; cut (x1 < b).
               ** intro; unfold h; case (Rle_dec x a) as [|[]].
                  { case (Rle_dec x1 a) as [Hlta|Hnlea].
@@ -1053,9 +1053,9 @@ Proof.
                 intros; elim (H7 _ H8); intros; elim H9; clear H9;
                 intros.
               assert (H11 : 0 < x - a).
-              { apply Rlt_Rminus; assumption. }
+              { apply Rlt_0_minus; assumption. }
               assert (H12 : 0 < b - x).
-              { apply Rlt_Rminus; assumption. }
+              { apply Rlt_0_minus; assumption. }
               exists (Rmin x0 (Rmin (x - a) (b - x))); split.
               ** unfold Rmin; case (Rle_dec (x - a) (b - x)) as [Hle|Hnle].
                  { case (Rle_dec x0 (x - a)) as [Hlea|Hnlea]; assumption. }
@@ -1104,7 +1104,7 @@ Proof.
                    split.
                  { unfold Rmin; case (Rle_dec x0 (b - a)); intro.
                    - elim H10; intros; assumption.
-                   - change (0 < b - a); apply Rlt_Rminus; assumption.
+                   - change (0 < b - a); apply Rlt_0_minus; assumption.
                  }
                  intros; elim H11; clear H11; intros _ H11; cut (a < x1).
                  { intro; unfold h; case (Rle_dec x a) as [Hlea|Hnlea].
@@ -1137,7 +1137,7 @@ Proof.
                    unfold limit1_in; unfold limit_in;
                    simpl; unfold Rdist; intros; exists (x - b);
                    split.
-                 { change (0 < x - b); apply Rlt_Rminus; assumption. }
+                 { change (0 < x - b); apply Rlt_0_minus; assumption. }
                  intros; elim H8; clear H8; intros.
                  assert (H10 : b < x0). {
                    apply Ropp_lt_cancel; apply Rplus_lt_reg_l with x;
@@ -1656,7 +1656,7 @@ Proof.
                    split;[ split|].
                    - unfold Rmin; case (Rle_dec x0 (M - m)); intro.
                      + apply H5.
-                     + apply Rlt_Rminus; apply Hyp.
+                     + apply Rlt_0_minus; apply Hyp.
                    - apply Rmin_r.
                    - intros; case (Req_dec x z); intro.
                      + rewrite H9; unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
@@ -1712,7 +1712,7 @@ Proof.
                             ++ elim H5; intros; apply H8.
                             ++ apply H7.
                      + set (d := x1 / 2 - Rabs (x0 - x)); assert (H7 : 0 < d).
-                       * unfold d; apply Rlt_Rminus; elim H5; clear H5; intros;
+                       * unfold d; apply Rlt_0_minus; elim H5; clear H5; intros;
                            unfold disc in H7; apply H7.
                        * exists (mkposreal _ H7); unfold included; intros; split.
                          { assumption. }
@@ -1762,7 +1762,7 @@ Proof.
                          intros; apply Rle_lt_trans with (Rabs (f0 x - f0 xi) + Rabs (f0 xi - f0 y)).
                        * replace (f0 x - f0 y) with (f0 x - f0 xi + (f0 xi - f0 y));
                            [ apply Rabs_triang | ring ].
-                       * rewrite (double_var eps); apply Rplus_lt_compat.
+                       * rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
                          -- assert (H19 := H8 i H17); elim H19; clear H19; intros; rewrite <- H18 in H20;
                               elim H20; clear H20; intros; apply H20; unfold included in H21;
                               apply Rlt_trans with (pos_Rl l' i / 2).
@@ -1770,9 +1770,9 @@ Proof.
                                elim H13; clear H13; intros; assumption.
                             ++ unfold Rdiv; apply Rmult_lt_reg_l with 2.
                                { prove_sup0. }
-                               rewrite Rmult_comm; rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+                               rewrite Rmult_comm; rewrite Rmult_assoc; rewrite Rinv_l.
                                { rewrite Rmult_1_r; pattern (pos_Rl l' i) at 1; rewrite <- Rplus_0_r;
-                                 rewrite double; apply Rplus_lt_compat_l; apply H19. }
+                                 rewrite <-Rplus_diag; apply Rplus_lt_compat_l; apply H19. }
                                discrR.
                          -- assert (H19 := H8 i H17); elim H19; clear H19; intros; rewrite <- H18 in H20;
                               elim H20; clear H20; intros; rewrite <- Rabs_Ropp;
@@ -1780,7 +1780,7 @@ Proof.
                               elim H13; intros; assert (H24 := H21 x H22);
                               apply Rle_lt_trans with (Rabs (y - x) + Rabs (x - xi)).
                             ++ replace (y - xi) with (y - x + (x - xi)); [ apply Rabs_triang | ring ].
-                            ++ rewrite (double_var (pos_Rl l' i)); apply Rplus_lt_compat.
+                            ++ rewrite <-(Rplus_half_diag (pos_Rl l' i)); apply Rplus_lt_compat.
                                ** apply Rlt_le_trans with (D / 2).
                                   { rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H12. }
                                   unfold Rdiv; do 2 rewrite <- (Rmult_comm (/ 2));
@@ -1816,7 +1816,7 @@ Proof.
                          intros; split.
                        - split;
                          [ unfold Rmin; case (Rle_dec x0 (M - m)); intro;
-                           [ apply H12 | apply Rlt_Rminus; apply Hyp ]
+                           [ apply H12 | apply Rlt_0_minus; apply Hyp ]
                          | apply Rmin_r ].
                        - intros; case (Req_dec x z); intro.
                          + rewrite H16; unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;

@@ -31,7 +31,7 @@ Lemma sig_forall_dec : {n | ~P n} + {forall n, P n}.
 Proof.
 assert (Hi: (forall n, 0 < INR n + 1)%R). {
   intros n.
-  apply Rle_lt_0_plus_1, pos_INR.
+  apply Rplus_le_lt_0_compat with (1 := (pos_INR n)); apply Rlt_0_1.
 }
 set (u n := (if HP n then 0 else / (INR n + 1))%R).
 assert (Bu: forall n, (u n <= 1)%R). {
@@ -93,7 +93,7 @@ destruct (completeness E) as [l [ub lub]].
     }
     assert (Hl': (/ (INR (S N) + 1) < l)%R). {
       rewrite <- (Rinv_inv l).
-      apply Rinv_1_lt_contravar with (1 := H1l).
+      apply Rinv_0_lt_contravar. now apply Rinv_0_lt_compat.
       rewrite S_INR.
       rewrite HN.
       ring_simplify.
@@ -119,9 +119,8 @@ destruct (completeness E) as [l [ub lub]].
          2: now apply Hp.
          apply Rlt_not_le with (2 := Hnp _ Hp).
          rewrite <- (Rinv_inv l).
-         apply Rinv_1_lt_contravar.
-         ++ rewrite <- S_INR.
-            apply (le_INR 1); apply -> Nat.succ_le_mono; apply Nat.le_0_l.
+         apply Rinv_0_lt_contravar.
+         ++ apply Rplus_le_lt_0_compat. apply pos_INR. apply Rlt_0_1.
          ++ apply Rlt_le_trans with (INR N + 1)%R.
             ** apply Rplus_lt_compat_r.
                now apply lt_INR.
@@ -163,7 +162,7 @@ assert (H2 : ~ is_upper_bound E M'). {
     rewrite <- (Rplus_opp_r 1).
     apply Rplus_lt_compat_l.
     rewrite Rplus_comm.
-    apply Rlt_plus_1.
+    apply Rplus_pos_gt, Rlt_0_1.
   }
   assumption.
 }

@@ -32,7 +32,7 @@ Proof.
     + right. intro H. destruct H. destruct H0. apply Rlt_asym in H0. contradiction.
     + subst. right. intro H. destruct H. destruct H0.
       pose proof (Rlt_asym (u n) (u n) H0). contradiction.
-    + destruct (Req_EM_T h (u n)).
+    + destruct (Req_dec_T h (u n)).
       * subst. right. intro H. destruct H. destruct H0.
         exact (H1 eq_refl).
       * left. split.
@@ -46,7 +46,7 @@ Proof.
 Qed.
 
 Definition point_in_holed_interval (a b h : R) : R :=
-  if Req_EM_T h (Rdiv (Rplus a b) (INR 2)) then (Rdiv (Rplus a h) (INR 2))
+  if Req_dec_T h (Rdiv (Rplus a b) (INR 2)) then (Rdiv (Rplus a h) (INR 2))
   else (Rdiv (Rplus a b) (INR 2)).
 
 Lemma middle_in_interval : forall a b : R, Rlt a b -> (a < (a + b) / INR 2 < b)%R.
@@ -56,9 +56,8 @@ Proof.
   { apply not_0_INR. intro abs. inversion abs. }
   assert (twoAboveZero : (0 < / INR 2)%R).
   { apply Rinv_0_lt_compat. apply lt_0_INR. apply le_n_S. apply le_S. apply le_n. }
-  assert (double : forall x : R, Rplus x x = ((INR 2) * x)%R).
-  { intro x. rewrite -> S_O_plus_INR. rewrite -> Rmult_plus_distr_r.
-    rewrite -> Rmult_1_l. reflexivity. }
+  assert (double : forall x : R, Rplus x x = ((INR 2) * x)%R) by
+    now intros x; rewrite S_INR, INR_1, Rmult_plus_distr_r, Rmult_1_l.
   split.
   - assert (a + a < a + b)%R. { apply (Rplus_lt_compat_l a a b). assumption. }
     rewrite -> double in H0. apply (Rmult_lt_compat_l (/ (INR 2))) in H0.
@@ -83,7 +82,7 @@ Lemma point_in_holed_interval_works (a b h : R) :
 Proof.
   intros. unfold point_in_holed_interval in p.
   pose proof (middle_in_interval a b H). destruct H0.
-  destruct (Req_EM_T h ((a + b) / INR 2)).
+  destruct (Req_dec_T h ((a + b) / INR 2)).
   - (* middle hole, p is quarter *) subst.
     pose proof (middle_in_interval a ((a + b) / INR 2) H0). destruct H2.
     split.

@@ -63,7 +63,7 @@ Proof.
     assert (H7 := Rle_lt_trans _ _ _ (Rabs_triang_inv _ _) H6).
     apply Rplus_lt_reg_l with (- Rabs (f2 a) + Rabs (f2 x) / 2).
     rewrite Rplus_assoc.
-    rewrite <- double_var.
+    rewrite Rplus_half_diag.
     do 2 rewrite (Rplus_comm (- Rabs (f2 a))).
     rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r.
     unfold Rminus in H7; assumption.
@@ -78,20 +78,20 @@ Proof.
       apply Rlt_le_trans with (Rmin eps_f2 alp_f2).
       + assumption.
       + apply Rmin_l.
-    - rewrite <- Rinv_r_sym.
+    - rewrite Rinv_r.
       + apply Rmult_lt_reg_l with (Rabs (f2 x)).
         { apply Rabs_pos_lt; assumption. }
         rewrite Rmult_1_r.
         rewrite (Rmult_comm (Rabs (f2 x))).
         repeat rewrite Rmult_assoc.
-        rewrite <- Rinv_l_sym.
+        rewrite Rinv_l.
         2:{ apply Rabs_no_R0; assumption. }
         rewrite Rmult_1_r.
         apply Rmult_lt_reg_l with (/ 2).
         { apply Rinv_0_lt_compat; prove_sup0. }
         repeat rewrite (Rmult_comm (/ 2)).
         repeat rewrite Rmult_assoc.
-        rewrite <- Rinv_r_sym.
+        rewrite Rinv_r.
         2:{ discrR. }
         rewrite Rmult_1_r.
         unfold Rdiv in H5; apply H5.
@@ -613,7 +613,7 @@ Proof.
         split.
         + unfold D_x, no_cond; split.
           * trivial.
-          * apply Rminus_not_eq_right.
+          * symmetry; apply Rminus_not_eq.
             replace (x + a - x) with a; [ assumption | ring ].
         + replace (x + a - x) with a; [ assumption | ring ]. }
   cut

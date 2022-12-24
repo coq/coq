@@ -44,7 +44,7 @@ Proof.
           apply Ropp_eq_compat; apply Rplus_eq_reg_l with (PI / 2);
           apply H7.
     + replace (PI / 2 - x1 - (PI / 2 - x)) with (x - x1); [ idtac | ring ];
-        rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr'; apply H6.
+        rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H6.
 Qed.
 
 Lemma CVN_R_sin :
@@ -110,7 +110,7 @@ Proof.
     2:{ apply Rle_ge; left; apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption. }
     rewrite <- Rabs_mult.
     rewrite Rmult_minus_distr_l.
-    rewrite Rmult_0_r; rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+    rewrite Rmult_0_r; rewrite <- Rmult_assoc; rewrite Rinv_l.
     2:{ unfold Rsqr; apply prod_neq_R0; assumption. }
     rewrite Rmult_1_l; rewrite <- (Rmult_comm eps).
     apply H6. }
@@ -137,7 +137,7 @@ Proof.
   replace (r ^ (2 * S n)) with (r ^ (2 * n) * r * r).
   2:{ replace (2 * S n)%nat with (S (S (2 * n)));simpl;ring. }
   do 2 rewrite <- Rmult_assoc.
-  rewrite <- Rinv_l_sym.
+  rewrite Rinv_l.
   2:{ apply pow_nonzero; assumption. }
   unfold Rsqr; ring.
 Qed.
@@ -209,7 +209,7 @@ Proof.
   unfold SFL, sin.
   case (cv h) as (x,HUn).
   case (exist_sin (Rsqr h)) as (x0,Hsin).
-  unfold Rdiv; rewrite (Rinv_r_simpl_m h x0 H6).
+  unfold Rdiv; rewrite (Rmult_inv_r_id_m h x0 H6).
   eapply UL_sequence.
   - apply HUn.
   - unfold sin_in in Hsin; unfold sin_n, infinite_sum in Hsin;
@@ -265,7 +265,7 @@ Proof.
   apply Rle_lt_trans with
     (Rabs (sin (h / 2) * (sin (h / 2) / (h / 2) - 1)) + Rabs (sin (h / 2))).
   { apply Rabs_triang. }
-  rewrite (double_var eps); apply Rplus_lt_compat.
+  rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
   - apply Rle_lt_trans with (Rabs (sin (h / 2) / (h / 2) - 1)).
     { rewrite Rabs_mult; rewrite Rmult_comm;
       pattern (Rabs (sin (h / 2) / (h / 2) - 1)) at 2;
@@ -331,7 +331,7 @@ Proof.
   2:{ rewrite sin_plus; now field. }
   eapply Rle_lt_trans.
   { apply Rabs_triang. }
-  rewrite (double_var eps); apply Rplus_lt_compat.
+  rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
   - apply Rle_lt_trans with (Rabs ((cos h - 1) / h)).
     + rewrite Rabs_mult; rewrite Rmult_comm;
         pattern (Rabs ((cos h - 1) / h)) at 2; rewrite <- Rmult_1_r;

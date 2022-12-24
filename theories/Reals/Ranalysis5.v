@@ -82,7 +82,7 @@ Proof.
       elim (Hyp eps eps_pos) ; intros delta Hyp2.
       assert (Pos_cond : Rmin delta (Rmin (ub - a) (a - lb)) > 0).
       { clear-a lb ub a_encad delta.
-        apply Rmin_pos ; [exact ((cond_pos delta)) | apply Rmin_pos ] ; apply Rlt_Rminus ; intuition. }
+        apply Rmin_pos ; [exact ((cond_pos delta)) | apply Rmin_pos ] ; apply Rlt_0_minus ; intuition. }
       exists (mkposreal (Rmin delta (Rmin (ub - a) (a - lb))) Pos_cond).
       intros h h_neq h_encad.
       replace (g (a + h) - g a) with (f (a + h) - f a).
@@ -120,7 +120,7 @@ Proof.
     elim (Hyp eps eps_pos) ; intros delta Hyp2.
     assert (Pos_cond : Rmin delta (Rmin (ub - a) (a - lb)) > 0).
     { clear-a lb ub a_encad delta.
-      apply Rmin_pos ; [exact ((cond_pos delta)) | apply Rmin_pos ] ; apply Rlt_Rminus ; intuition. }
+      apply Rmin_pos ; [exact ((cond_pos delta)) | apply Rmin_pos ] ; apply Rlt_0_minus ; intuition. }
     exists (mkposreal (Rmin delta (Rmin (ub - a) (a - lb))) Pos_cond).
     intros h h_neq h_encad.
     replace (f (a + h) - f a) with (g (a + h) - g a).
@@ -373,7 +373,7 @@ Proof.
     assert (H10 := H8 x2 H9).
     rewrite Rabs_left in H10.
     { pattern (f x0) at 2 in H10; rewrite <- Rplus_0_r in H10.
-      rewrite Ropp_minus_distr' in H10.
+      rewrite Ropp_minus_distr in H10.
       unfold Rminus in H10.
       assert (H11 := Rplus_lt_reg_l _ _ _ H10).
       assert (H12 := H6 x2).

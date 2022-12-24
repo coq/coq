@@ -281,7 +281,7 @@ Proof.
         { apply RRle_abs. }
         unfold Rdiv; rewrite Rabs_mult; apply Rmult_lt_reg_l with (/ Rabs C).
         { apply Rinv_0_lt_compat; apply Rabs_pos_lt;assumption. }
-        rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+        rewrite <- Rmult_assoc; rewrite Rinv_l.
         * rewrite Rmult_1_l; replace (/ Rabs C * (eps * / 2)) with (eps / (2 * Rabs C)).
           { trivial. }
           field.
@@ -308,7 +308,7 @@ Proof.
        Rabs (sum_f_R0 (fun i:nat => An (S N1 + i)%nat * (Bn (S N1 + i)%nat - l))
                       (n - S N1) / sum_f_R0 An n)).
   { apply Rabs_triang. }
-  rewrite (double_var eps); apply Rplus_lt_compat.
+  rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
   { unfold Rdiv; rewrite Rabs_mult; fold C; rewrite Rabs_right.
     - apply (H7 n); apply Nat.le_trans with (S N).
       + apply Nat.le_trans with N; [ unfold N; apply Nat.le_max_r | apply Nat.le_succ_diag_r ].
@@ -344,7 +344,7 @@ Proof.
     + apply Rinv_0_lt_compat; prove_sup.
     + rewrite Rmult_comm; apply Rmult_lt_reg_l with (sum_f_R0 An n).
       { trivial. }
-      rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
+      rewrite <- Rmult_assoc; rewrite Rinv_r.
       2:{ trivial. }
       rewrite Rmult_1_l; rewrite Rmult_1_r; rewrite (tech2 An N1 n).
       2:{ trivial. }
