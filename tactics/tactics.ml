@@ -1571,7 +1571,7 @@ type eliminator =
 | ElimClause of EConstr.constr with_bindings
   (* Arbitrary expression provided by the user *)
 
-let general_elim_clause0 with_evars flags (c, ty) elim =
+let general_elim_clause0 with_evars flags (metas, c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
@@ -1600,13 +1600,12 @@ let general_elim_clause0 with_evars flags (c, ty) elim =
        | Meta mv -> mv
        | _  -> error IllFormedEliminationType)
   in
-  (* Assumes that the metas of [c] are part of [sigma] already *)
-  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge (Evd.meta_list sigma) elimclause.Clenv.evd) in
+  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas elimclause.Clenv.evd) in
   let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
   Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
   end
 
-let general_elim_clause_in0 with_evars flags id (c, ty) elim =
+let general_elim_clause_in0 with_evars flags id (metas, c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
@@ -1620,7 +1619,7 @@ let general_elim_clause_in0 with_evars flags id (c, ty) elim =
        | _  -> error IllFormedEliminationType)
   in
   (* Assumes that the metas of [c] are part of [sigma] already *)
-  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge (Evd.meta_list sigma) elimclause.Clenv.evd) in
+  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas elimclause.Clenv.evd) in
   let hypmv =
     match List.remove Int.equal indmv (clenv_independent elimclause) with
     | [a] -> a
@@ -1650,20 +1649,20 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
-  Proofview.Unsafe.tclEVARS indclause.evd <*>
+  Proofview.Unsafe.tclEVARS (Evd.clear_metas indclause.evd) <*>
   Tacticals.tclTHEN
-    (general_elim_clause0 with_evars flags (clenv_value indclause, clenv_type indclause) elim)
+    (general_elim_clause0 with_evars flags (Evd.meta_list indclause.evd, clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
-let general_elim_clause with_evars flags where (c, ty) elim =
+let general_elim_clause with_evars flags where arg elim =
   Proofview.tclENV >>= fun env ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let (sigma, (elim, u)) = Evd.fresh_constant_instance env sigma elim in
   Proofview.Unsafe.tclEVARS sigma <*>
   match where with
-  | None -> general_elim_clause0 with_evars flags (c, ty) (ElimConstant (elim, EInstance.make u))
-  | Some id -> general_elim_clause_in0 with_evars flags id (c, ty) (elim, EInstance.make u)
+  | None -> general_elim_clause0 with_evars flags arg (ElimConstant (elim, EInstance.make u))
+  | Some id -> general_elim_clause_in0 with_evars flags id arg (elim, EInstance.make u)
 
 (* Case analysis tactics *)
 
