@@ -4336,6 +4336,33 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
+let compute_case_sig mind case =
+  let elimc_, elimt = eval_case_analysis case in
+  let arity, concl =
+    (* Expand let bindings in the type for backwards compatibility *)
+    Term.decompose_prod_decls (Term.it_mkProd_wo_LetIn case.case_type case.case_arity)
+  in
+  let indarg, arity = match arity with
+  | [] -> assert false
+  | hd :: tl -> (hd, tl)
+  in
+  {
+    elimt = EConstr.of_constr elimt;
+    indref = Some (IndRef mind);
+    params = EConstr.of_rel_context case.case_params;
+    nparams = List.length case.case_params;
+    predicates = EConstr.of_rel_context [LocalAssum (fst case.case_pred, snd case.case_pred)];
+    npredicates = 1;
+    branches = EConstr.of_rel_context case.case_branches;
+    nbranches = List.length case.case_branches;
+    args = EConstr.of_rel_context arity;
+    nargs = List.length arity;
+    indarg = Some (EConstr.of_rel_decl indarg);
+    concl = EConstr.of_constr concl;
+    indarg_in_concl = true;
+    farg_in_concl = false;
+  }
+
 let guess_elim env sigma isrec dep s hyp0 =
   let tmptyp0 = Typing.type_of_variable env hyp0 in
   let (mind, u) = Tacred.eval_to_quantified_ind env sigma tmptyp0 in
@@ -4352,18 +4379,16 @@ let guess_elim env sigma isrec dep s hyp0 =
       let u = EInstance.kind sigma u in
       if dep then
         let (sigma, case) = build_case_analysis_scheme env sigma (mind, u) true s in
-        let ind, indty = eval_case_analysis case in
-        (* FIXME: be more clever *)
-        let scheme = compute_elim_sig sigma (EConstr.of_constr indty) in
+        let scheme = compute_case_sig mind case in
+        let indty = scheme.elimt in
         let scheme = compute_scheme_signature sigma scheme hyp0 (mkIndU (mind, EInstance.make u)) in
-        (sigma, ElimCase case, EConstr.of_constr indty, scheme)
+        (sigma, ElimCase case, indty, scheme)
       else
         let (sigma, case) = build_case_analysis_scheme_default env sigma (mind, u) s in
-        let ind, indty = eval_case_analysis case in
-        (* FIXME: be more clever *)
-        let scheme = compute_elim_sig sigma (EConstr.of_constr indty) in
+        let scheme = compute_case_sig mind case in
+        let indty = scheme.elimt in
         let scheme = compute_scheme_signature sigma scheme hyp0 (mkIndU (mind, EInstance.make u)) in
-        (sigma, ElimCase case, EConstr.of_constr indty, scheme)
+        (sigma, ElimCase case, indty, scheme)
   in
   sigma, (elimc, elimt), scheme
 
