@@ -703,6 +703,11 @@ Proof.
   destr_bool.
 Qed.
 
+Lemma negb_xorb a b : negb (xorb a b) = Bool.eqb a b.
+Proof.
+  destruct a, b; trivial.
+Qed.
+
 Lemma negb_xorb_l : forall b b', negb (xorb b b') = xorb (negb b) b'.
 Proof.
   intros b b'; destruct b,b'; trivial.
