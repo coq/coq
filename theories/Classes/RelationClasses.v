@@ -182,6 +182,11 @@ Section Defs.
     Global Program Instance eq_equivalence : Equivalence (@eq A) | 10.
   End Leibniz.
   
+  (** Leibniz disequality. *)
+  Section LeibnizNot.
+    (** Disequality is symmetric. *)
+    Global Instance neq_Symmetric : Symmetric (fun x y : A => x <> y) := (@not_eq_sym A).
+  End LeibnizNot.
 End Defs.
 
 (** Default rewrite relations handled by [setoid_rewrite] on Prop. *)
