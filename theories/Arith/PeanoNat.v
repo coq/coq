@@ -10,7 +10,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import NAxioms NProperties OrdersFacts.
+Require Import NAxioms NProperties OrdersFacts DecidableClass.
 
 (** Implementation of [NAxiomsSig] by [nat] *)
 
@@ -148,6 +148,11 @@ Proof.
   - now injection 1.
 Qed.
 
+#[global]
+Instance Decidable_eq_nat : forall (x y : nat), Decidable (eq x y) := {
+  Decidable_spec := Nat.eqb_eq x y
+}.
+
 Lemma leb_le n m : (n <=? m) = true <-> n <= m.
 Proof.
   revert m.
@@ -161,8 +166,17 @@ Proof.
     + apply Peano.le_S_n.
 Qed.
 
+#[global]
+Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y) := {
+  Decidable_spec := Nat.leb_le x y
+}.
+
 Lemma ltb_lt n m : (n <? m) = true <-> n < m.
 Proof. apply leb_le. Qed.
+
+(* Note: Decidable_lt_nat, Decidable_ge_nat, Decidable_gt_nat are not required,
+   because lt, ge and gt are defined based on le in a way which type class
+   resolution seems to understand. *)
 
 (** ** Decidability of equality over [nat]. *)
 

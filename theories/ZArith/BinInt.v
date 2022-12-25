@@ -11,7 +11,7 @@
 
 Require Export BinNums BinPos Pnat.
 Require Import BinNat Bool Equalities GenericMinMax
- OrdersFacts ZAxioms ZProperties.
+ OrdersFacts ZAxioms ZProperties DecidableClass.
 Require BinIntDef.
 
 (***********************************************************)
@@ -388,25 +388,50 @@ Proof.
  split; (now injection 1) || (intros; now f_equal).
 Qed.
 
+#[global]
+Instance Decidable_eq_Z : forall (x y : Z), Decidable (eq x y) := {
+  Decidable_spec := Z.eqb_eq x y
+}.
+
 Lemma ltb_lt n m : (n <? m) = true <-> n < m.
 Proof.
  unfold ltb, lt. destruct compare; easy'.
 Qed.
+
+#[global]
+Instance Decidable_lt_Z : forall (x y : Z), DecidableClass.Decidable (x < y)%Z := {
+  Decidable_spec := Z.ltb_lt x y
+}.
 
 Lemma leb_le n m : (n <=? m) = true <-> n <= m.
 Proof.
  unfold leb, le. destruct compare; easy'.
 Qed.
 
+#[global]
+Instance Decidable_le_Z : forall (x y : Z), DecidableClass.Decidable (x <= y)%Z := {
+  Decidable_spec := Z.leb_le x y
+}.
+
 Lemma gtb_gt n m : (n >? m) = true <-> n > m.
 Proof.
   unfold gtb, gt. destruct compare; easy'.
 Qed.
 
+#[global]
+Instance Decidable_gt_Z : forall (x y : Z), DecidableClass.Decidable (x > y)%Z := {
+  Decidable_spec := Z.gtb_gt x y
+}.
+
 Lemma geb_ge n m : (n >=? m) = true <-> n >= m.
 Proof.
   unfold geb, ge. destruct compare; easy'.
 Qed.
+
+#[global]
+Instance Decidable_ge_Z : forall (x y : Z), DecidableClass.Decidable (x >= y)%Z := {
+  Decidable_spec := Z.geb_ge x y
+}.
 
 Lemma compare_eq_iff n m : (n ?= m) = Eq <-> n = m.
 Proof.
