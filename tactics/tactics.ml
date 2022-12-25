@@ -4423,7 +4423,7 @@ type scheme_signature =
     (Id.Set.t * (elim_arg_kind * bool * bool * Id.t) list) array
 
 type eliminator_source =
-  | ElimUsing of (eliminator * EConstr.types) * scheme_signature
+  | ElimUsing of Evd.econstr with_bindings * EConstr.types * scheme_signature
   | ElimOver of bool * Id.t
 
 let find_induction_type isrec elim hyp0 gl =
@@ -4442,8 +4442,7 @@ let find_induction_type isrec elim hyp0 gl =
         let scheme = compute_elim_sig sigma elimt in
         if Option.is_empty scheme.indarg then error CannotFindInductiveArgument;
         let indsign = compute_scheme_signature sigma scheme hyp0 ind_guess in
-        let elim = (ElimClause elimc, elimt) in
-        sigma, scheme.indref, scheme.nparams, ElimUsing (elim,indsign)
+        sigma, scheme.indref, scheme.nparams, ElimUsing (elimc, elimt, indsign)
   in
   match indref with
   | None -> error_ind_scheme ""
@@ -4461,8 +4460,8 @@ let is_functional_induction elimc gl =
 
 let get_eliminator env sigma elim dep s =
   match elim with
-  | ElimUsing (elim,indsign) ->
-      sigma, (* bugged, should be computed *) true, elim, indsign
+  | ElimUsing (elim, elimt, indsign) ->
+      sigma, (* bugged, should be computed *) true, (ElimClause elim, elimt), indsign
   | ElimOver (isrec,id) ->
       let evd, (elimc, elimt), l = guess_elim env sigma isrec dep s id in
       evd, isrec, (elimc, elimt), l
@@ -4637,7 +4636,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     (* FIXME: Tester ca avec un principe dependant et non-dependant *)
     induction_tac with_evars params realindvars elim;
   ] in
-  let elim = ElimUsing ((ElimClause elimc, scheme.elimt), indsign) in
+  let elim = ElimUsing (elimc, scheme.elimt, indsign) in
   apply_induction_in_context with_evars None [] elim indvars names induct_tac
   end
 
