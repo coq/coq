@@ -784,7 +784,7 @@ let poly_subrelation sort =
   if sort then PropGlobal.subrelation else TypeGlobal.subrelation
 
 let resolve_subrelation env car rel sort prf rel' res =
-  if Termops.eq_constr (fst res.rew_evars) rel rel' then res
+  if Termops.eq_constr env (fst res.rew_evars) rel rel' then res
   else
     let evars, app = app_poly_check env res.rew_evars (poly_subrelation sort) [|car; rel; rel'|] in
     let evars, subrel = new_cstr_evar evars env app in
@@ -880,7 +880,7 @@ let apply_rule unify : occurrences_count pure_strategy =
         | Some rew ->
           let b, occs = update_occurrence_counter occs in
             if not b then (occs, Fail)
-            else if Termops.eq_constr (fst rew.rew_evars) t rew.rew_to then (occs, Identity)
+            else if Termops.eq_constr env (fst rew.rew_evars) t rew.rew_to then (occs, Identity)
             else
               let res = { rew with rew_car = ty } in
               let res = Success (coerce env cstr res) in
@@ -1381,9 +1381,9 @@ module Strategies =
                                   Autorewrite.RewRule.rew_tac hint)) rules)
 
     let hints (db : string) : 'a pure_strategy = { strategy =
-      fun ({ term1 = t } as input) ->
+      fun ({ term1 = t; env } as input) ->
       let t = EConstr.Unsafe.to_constr t in
-      let rules = Autorewrite.find_matches db t in
+      let rules = Autorewrite.find_matches env db t in
       let lemma hint = (inj_open hint, Autorewrite.RewRule.rew_l2r hint,
                         Autorewrite.RewRule.rew_tac hint) in
       let lems = List.map lemma rules in
@@ -1395,7 +1395,7 @@ module Strategies =
           let rfn, ckind = Redexpr.reduction_of_red_expr env r in
           let sigma = goalevars evars in
           let (sigma, t') = rfn env sigma t in
-            if Termops.eq_constr sigma t' t then
+            if Termops.eq_constr env sigma t' t then
               state, Identity
             else
               state, Success { rew_car = ty; rew_from = t; rew_to = t';

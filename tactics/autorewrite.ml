@@ -151,7 +151,7 @@ sig
 
   (** [search_pattern dn c] returns all terms/patterns in dn
      matching/matched by c *)
-  val search_pattern : t -> constr -> ident list
+  val search_pattern : Environ.env -> t -> constr -> ident list
 
   (** [find_all dn] returns all idents contained in dn *)
   val find_all : t -> ident list
@@ -236,40 +236,40 @@ let split_app sigma c = match EConstr.kind sigma c with
 
 exception CannotFilter
 
-let filtering env sigma cv_pb c1 c2 =
+let filtering env sigma ctx cv_pb c1 c2 =
   let open EConstr in
   let open Vars in
   let evm = ref Evar.Map.empty in
   let define cv_pb e1 ev c1 =
     try let (e2,c2) = Evar.Map.find ev !evm in
     let shift = e1 - e2 in
-    if Termops.constr_cmp sigma cv_pb c1 (lift shift c2) then () else raise CannotFilter
+    if Termops.constr_cmp env sigma cv_pb c1 (lift shift c2) then () else raise CannotFilter
     with Not_found ->
       evm := Evar.Map.add ev (e1,c1) !evm
   in
-  let rec aux env cv_pb c1 c2 =
+  let rec aux ctx cv_pb c1 c2 =
     match EConstr.kind sigma c1, EConstr.kind sigma c2 with
       | App _, App _ ->
         let ((p1,l1),(p2,l2)) = (split_app sigma c1),(split_app sigma c2) in
-        let () = aux env cv_pb l1 l2 in
+        let () = aux ctx cv_pb l1 l2 in
         begin match p1, p2 with
         | [], [] -> ()
         | (h1 :: p1), (h2 :: p2) ->
-          aux env cv_pb (applist (h1, p1)) (applist (h2, p2))
+          aux ctx cv_pb (applist (h1, p1)) (applist (h2, p2))
         | _ -> assert false
         end
       | Prod (n,t1,c1), Prod (_,t2,c2) ->
-          aux env cv_pb t1 t2;
-          aux (env + 1) cv_pb c1 c2
-      | _, Evar (ev,_) -> define cv_pb env ev c1
-      | Evar (ev,_), _ -> define cv_pb env ev c2
+          aux ctx cv_pb t1 t2;
+          aux (ctx + 1) cv_pb c1 c2
+      | _, Evar (ev,_) -> define cv_pb ctx ev c1
+      | Evar (ev,_), _ -> define cv_pb ctx ev c2
       | _ ->
-          if Termops.compare_constr_univ sigma
-          (fun pb c1 c2 -> aux env pb c1 c2; true) cv_pb c1 c2 then ()
+          if Termops.compare_constr_univ env sigma
+          (fun pb c1 c2 -> aux ctx pb c1 c2; true) cv_pb c1 c2 then ()
           else raise CannotFilter
           (* TODO: le reste des binders *)
   in
-  try let () = aux env cv_pb c1 c2 in true with CannotFilter -> false
+  try let () = aux ctx cv_pb c1 c2 in true with CannotFilter -> false
 
 let align_prod_letin sigma c a =
   let (lc,_) = EConstr.decompose_prod_decls sigma c in
@@ -284,7 +284,7 @@ let align_prod_letin sigma c a =
   | None -> Dn.Everything
   | Some (lbl, args) -> Dn.Label (lbl, args)
 
-  let search_pattern dn cpat =
+  let search_pattern env dn cpat =
     let _dctx, dpat = Term.decompose_prod_decls cpat in
     let whole_c = EConstr.of_constr cpat in
     List.fold_left
@@ -293,7 +293,7 @@ let align_prod_letin sigma c a =
          let (ctx,wc) =
            try align_prod_letin Evd.empty whole_c c_id (* FIXME *)
            with Invalid_argument _ -> 0, c_id in
-        if filtering ctx Evd.empty Reduction.CUMUL whole_c wc then id :: acc
+        if filtering env Evd.empty ctx Reduction.CUMUL whole_c wc then id :: acc
         else acc
       ) (TDnet.lookup dn decomp dpat) []
 
@@ -330,9 +330,9 @@ let find_rewrites bas =
   let sort r1 r2 = Int.compare (KNmap.find r2.rew_id db.rdb_order) (KNmap.find r1.rew_id db.rdb_order) in
   List.sort sort (HintDN.find_all db.rdb_hintdn)
 
-let find_matches bas pat =
+let find_matches env bas pat =
   let base = find_base bas in
-  let res = HintDN.search_pattern base.rdb_hintdn pat in
+  let res = HintDN.search_pattern env base.rdb_hintdn pat in
   let sort r1 r2 = Int.compare (KNmap.find r2.rew_id base.rdb_order) (KNmap.find r1.rew_id base.rdb_order) in
   List.sort sort res
 

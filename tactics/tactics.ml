@@ -3977,7 +3977,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     let sigma, ty = Evarsolve.refresh_universes (Some true) env sigma ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
-    let leq = constr_cmp sigma Reduction.CUMUL liftargty ty in
+    let leq = constr_cmp ctxenv sigma Reduction.CUMUL liftargty ty in
       match EConstr.kind sigma arg with
       | Var id when not (is_defined_variable env id) && leq && not (Id.Set.mem id nongenvars) ->
           (sigma, subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,

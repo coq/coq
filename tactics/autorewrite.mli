@@ -37,7 +37,7 @@ end
 
 val find_rewrites : string -> RewRule.t list
 
-val find_matches : string -> constr -> RewRule.t list
+val find_matches : Environ.env -> string -> constr -> RewRule.t list
 
 val auto_multi_rewrite : ?conds:conditions -> string list -> Locus.clause -> unit Proofview.tactic
 
