@@ -1546,7 +1546,7 @@ let check_duplicate ?loc fields =
     (in a pattern, we may match on some fields only), and we call the
     function [completer] to fill the missing fields; the returned
     field assignment list is always complete. *)
-let sort_fields ~complete loc fields completer =
+let sort_fields genv ~complete loc fields completer =
   match fields with
     | [] -> None
     | (first_field_ref, _):: _ ->
@@ -1572,7 +1572,7 @@ let sort_fields ~complete loc fields completer =
                let field_glob_ref,this_field_record = intern_field_ref field_ref in
                let remaining_projs, (field_index, _, regular) =
                  let the_proj = function
-                   | (idx, Some glob_id, _) -> GlobRef.CanOrd.equal field_glob_ref (GlobRef.ConstRef glob_id)
+                   | (idx, Some glob_id, _) -> Environ.QGlobRef.equal genv field_glob_ref (GlobRef.ConstRef glob_id)
                    | (idx, None, _) -> false in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
@@ -1736,7 +1736,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
     | CPatAlias (p, id) -> DAst.make ?loc @@ RCPatAlias (in_pat test_kind scopes p, id)
     | CPatRecord l ->
       let sorted_fields =
-        sort_fields ~complete:false loc l (fun _idx fieldname constructor -> CAst.make ?loc @@ CPatAtom None) in
+        sort_fields genv ~complete:false loc l (fun _idx fieldname constructor -> CAst.make ?loc @@ CPatAtom None) in
       begin match sorted_fields with
         | None -> DAst.make ?loc @@ RCPatAtom None
         | Some (n, head, pl) ->
@@ -2185,7 +2185,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     | CRecord fs ->
        let st = Evar_kinds.Define (not (Program.get_proofs_transparency ())) in
        let fields =
-         sort_fields ~complete:true loc fs
+         sort_fields globalenv ~complete:true loc fs
                      (fun _idx fieldname constructorname ->
                          let open Evar_kinds in
                          let fieldinfo : Evar_kinds.record_field =
