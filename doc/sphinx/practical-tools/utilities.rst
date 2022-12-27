@@ -4,6 +4,8 @@
  Building Coq Projects
 ----------------------
 
+.. _configuration_basics:
+
 Coq configuration basics
 ------------------------
 
