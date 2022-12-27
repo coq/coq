@@ -984,9 +984,6 @@ simple_occurrences: [
 ]
 
 simple_tactic: [
-(* TODO: REMOVE NEXT 2 LINES IN NEXT PR: *)
-| REPLACE "contradiction" OPT constr_with_bindings
-| WITH "contradiction"
 | REPLACE "assert" "(" identref ":" lconstr ")" by_tactic
 | WITH "assert" "(" identref ":" type ")" by_tactic
 | REPLACE "assert" constr as_ipat by_tactic
@@ -1332,8 +1329,6 @@ command: [
 | REPLACE "Load" [ "Verbose" | ] [ ne_string | IDENT ]
 | WITH "Load" OPT "Verbose" [ ne_string | IDENT ]
 | DELETE "Unset" setting_name
-| REPLACE "Set" setting_name option_setting
-| WITH OPT "Export" "Set" setting_name   (* set flag *)
 | REPLACE "Test" setting_name "for" LIST1 table_value
 | WITH "Test" setting_name OPT ( "for" LIST1 table_value )
 | DELETE "Test" setting_name
