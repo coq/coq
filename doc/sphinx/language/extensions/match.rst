@@ -304,6 +304,7 @@ result from an undetected misspelled constant constructor. By default,
 a warning is issued in such situations.
 
 .. warn:: Unused variable @ident might be a misspelled constructor. Use _ or _@ident to silence this warning.
+   :name: Unused variable ‘ident’ might be a misspelled constructor. Use _ or _‘ident’ to silence this warning.
 
    This indicates that an unused pattern variable :token:`ident`
    occurs in a pattern-matching clause.
@@ -316,20 +317,12 @@ a warning is issued in such situations.
 
    .. example::
 
-      .. coqtop:: none
-
-         Set Warnings "-unused-pattern-matching-variable".
-
-      .. coqtop:: all
+      .. coqtop:: all warn
 
          Definition is_zero (o : option nat) := match o with
-         | Some 0 => true
+         | Some _ => true
          | x => false
          end.
-
-      .. coqtop:: none
-
-         Set Warnings "+unused-pattern-matching-variable".
 
 Patterns
 --------
