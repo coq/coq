@@ -1483,6 +1483,22 @@ End Fold_Right_Recursor.
       simpl. rewrite IHl. rewrite filter_app. reflexivity.
     Qed.
 
+    Lemma forallb_filter l: forallb (filter l) = true.
+    Proof.
+      induction l as [|x l IH]; [reflexivity|].
+      cbn. remember (f x) as y. destruct y.
+      - apply andb_true_intro. auto.
+      - exact IH.
+    Qed.
+
+    Lemma forallb_filter_id l: forallb l = true -> filter l = l.
+    Proof.
+      induction l as [|x l IH]; [easy|].
+      cbn. intro H. destruct (f x).
+      - f_equal. apply IH, H.
+      - discriminate H.
+    Qed.
+
   (** [find] *)
 
     Fixpoint find (l:list A) : option A :=
@@ -1611,6 +1627,29 @@ End Fold_Right_Recursor.
       (forall a, f a = g a) -> forall l, filter f l = filter g l.
     Proof.
       intros f g H l. rewrite filter_map. apply map_ext. assumption.
+    Qed.
+
+    Lemma partition_as_filter f (l : list A) : partition f l = (filter f l, filter (fun x => negb (f x)) l).
+    Proof.
+      induction l as [|x l IH].
+      - reflexivity.
+      - cbn. rewrite IH. destruct (f x); reflexivity.
+    Qed.
+
+    Corollary filter_length f (l : list A) : length (filter f l) + length (filter (fun x => negb (f x)) l) = length l.
+    Proof. symmetry. apply (partition_length f), partition_as_filter. Qed.
+
+    Corollary filter_length_le f (l : list A): length (filter f l) <= length l.
+    Proof. rewrite <- (filter_length f l). apply Nat.le_add_r. Qed.
+
+    Lemma filter_length_forallb f (l : list A): length (filter f l) = length l -> forallb f l = true.
+    Proof.
+      intro H. induction l as [|x l IH]; [reflexivity |].
+      cbn in *. destruct (f x).
+      - apply IH. now injection H.
+      - exfalso. assert (length l < length (filter f l)) as E.
+        + symmetry in H. apply Nat.eq_le_incl in H. exact H.
+        + eapply Nat.le_ngt; [apply filter_length_le | exact E].
     Qed.
 
     (** Remove by filtering *)
