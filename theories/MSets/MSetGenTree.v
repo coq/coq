@@ -29,7 +29,7 @@
      - min_elt max_elt choose
 *)
 
-Require Import FunInd Orders OrdersFacts MSetInterface PeanoNat.
+Require Import Orders OrdersFacts MSetInterface PeanoNat.
 Require Arith. (* contains deprecated dependencies *)
 Local Open Scope list_scope.
 Local Open Scope lazy_bool_scope.
@@ -575,71 +575,69 @@ Qed.
 
 (** ** Minimal and maximal elements *)
 
-Functional Scheme min_elt_ind := Induction for min_elt Sort Prop.
-Functional Scheme max_elt_ind := Induction for max_elt Sort Prop.
-
 Lemma min_elt_spec1 s x : min_elt s = Some x -> InT x s.
 Proof.
- functional induction (min_elt s); auto; inversion 1; auto.
+induction s as [|t1 [|] IHs1 y s2 IHs2]; simpl; auto; inversion 1; auto.
 Qed.
 
 Lemma min_elt_spec2 s x y `{Ok s} :
  min_elt s = Some x -> InT y s -> ~ X.lt y x.
 Proof.
- revert y.
- functional induction (min_elt s);
- try rename _x0 into r; try rename _x2 into l1, _x3 into x1, _x4 into r1.
- - discriminate.
- - intros y V W.
-   inversion V; clear V; subst.
-   inv; order.
- - intros; inv; auto.
-   * assert (X.lt x x0) by (apply H8; apply min_elt_spec1; auto).
-     order.
-   * assert (X.lt x1 x0) by auto.
-     assert (~X.lt x1 x) by auto.
-     order.
+revert x y; induction H as [|? z l r Hl IHl Hr IHr Hlt Hgt]; simpl in *; [discriminate|].
+intros x y He Hi; apply In_node_iff in Hi.
+destruct l as [|t l1 w l2].
++ intros; replace z with x in * by congruence.
+  destruct Hi as [Hi|[Hi|Hi]]; try order.
+  apply In_leaf_iff in Hi; contradiction.
++ destruct Hi as [Hi|[Hi|Hi]].
+  - apply IHl; assumption.
+  - intros H; eapply lt_tree_trans in Hlt; [|rewrite <- Hi; eassumption].
+    apply min_elt_spec1 in He; apply lt_tree_not_in in Hlt; contradiction.
+  - intros H.
+    apply min_elt_spec1, Hlt in He.
+    elim (gt_tree_not_in y r); [|assumption].
+    eapply gt_tree_trans; [|exact Hgt]; order.
 Qed.
 
 Lemma min_elt_spec3 s : min_elt s = None -> Empty s.
 Proof.
- functional induction (min_elt s).
- - red; red; inversion 2.
- - inversion 1.
- - intro H0.
-   destruct (IHo H0 _x3); auto.
+induction s as [|t1 s1 IHs1 x s2 IHs2]; simpl in *; intros H.
++ inversion 1.
++ destruct s1 as [|? ? y]; [congruence|].
+  destruct (IHs1 H y); auto.
 Qed.
 
 Lemma max_elt_spec1 s x : max_elt s = Some x -> InT x s.
 Proof.
- functional induction (max_elt s); auto; inversion 1; auto.
+induction s as [|t1 s1 IHs1 y [|] IHs2]; simpl in *; intros H; [congruence| |auto].
+replace y with x by congruence; auto.
 Qed.
 
 Lemma max_elt_spec2 s x y `{Ok s} :
  max_elt s = Some x -> InT y s -> ~ X.lt x y.
 Proof.
- revert y.
- functional induction (max_elt s);
- try rename _x0 into r; try rename _x2 into l1, _x3 into x1, _x4 into r1.
- - discriminate.
- - intros y V W.
-   inversion V; clear V; subst.
-   inv; order.
- - intros; inv; auto.
-   * assert (X.lt x0 x) by (apply H9; apply max_elt_spec1; auto).
-     order.
-   * assert (X.lt x0 x1) by auto.
-     assert (~X.lt x x1) by auto.
-     order.
+revert x y; induction H as [|? z l r Hl IHl Hr IHr Hlt Hgt]; simpl in *; [discriminate|].
+intros x y He Hi; apply In_node_iff in Hi.
+destruct r as [|t l1 w l2].
++ intros; replace z with x in * by congruence.
+  destruct Hi as [Hi|[Hi|Hi]]; try order.
+  apply In_leaf_iff in Hi; contradiction.
++ destruct Hi as [Hi|[Hi|Hi]].
+  - intros H.
+    apply max_elt_spec1, Hgt in He.
+    elim (lt_tree_not_in y l); [|assumption].
+    eapply lt_tree_trans; [|exact Hlt]; order.
+  - intros H; eapply gt_tree_trans in Hgt; [|rewrite <- Hi; eassumption].
+    apply max_elt_spec1 in He; apply gt_tree_not_in in Hgt; contradiction.
+  - apply IHr; assumption.
 Qed.
 
 Lemma max_elt_spec3 s : max_elt s = None -> Empty s.
 Proof.
- functional induction (max_elt s).
- - red; red; inversion 2.
- - inversion 1.
- - intro H0.
-   destruct (IHo H0 _x3); auto.
+induction s as [|t1 s1 IHs1 x s2 IHs2]; simpl in *; intros H.
++ inversion 1.
++ destruct s2 as [|? ? y]; [congruence|].
+  destruct (IHs2 H y); auto.
 Qed.
 
 Lemma choose_spec1 : forall s x, choose s = Some x -> InT x s.
