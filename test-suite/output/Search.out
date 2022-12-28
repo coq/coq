@@ -452,18 +452,19 @@ iff_Reflexive: Reflexive iff
 impl_Reflexive: Reflexive Basics.impl
 eq_Symmetric: forall {A : Type}, Symmetric eq
 eq_Reflexive: forall {A : Type}, Reflexive eq
-Equivalence_Symmetric:
-  forall {A : Type} {R : Relation_Definitions.relation A},
-  Equivalence R -> Symmetric R
 Equivalence_Reflexive:
   forall {A : Type} {R : Relation_Definitions.relation A},
   Equivalence R -> Reflexive R
-PER_Symmetric:
+Equivalence_Symmetric:
   forall {A : Type} {R : Relation_Definitions.relation A},
-  PER R -> Symmetric R
+  Equivalence R -> Symmetric R
 PreOrder_Reflexive:
   forall {A : Type} {R : Relation_Definitions.relation A},
   PreOrder R -> Reflexive R
+PER_Symmetric:
+  forall {A : Type} {R : Relation_Definitions.relation A},
+  PER R -> Symmetric R
+neq_Symmetric: forall {A : Type}, Symmetric (fun x y : A => x <> y)
 reflexive_eq_dom_reflexive:
   forall {A B : Type} {R' : Relation_Definitions.relation B},
   Reflexive R' -> Reflexive (eq ==> R')%signature
