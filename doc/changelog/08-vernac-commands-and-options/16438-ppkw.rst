@@ -1,5 +1,0 @@
-- **Added:**
-  The :cmd:`Print Keywords` command, which prints all the currently-defined parser keywords and tokens
-  (`#16438 <https://github.com//pull/16438>`_,
-  fixes `#16375 <https://github.com/coq/coq/issues/16375>`_,
-  by Gaëtan Gilbert).
