@@ -484,11 +484,6 @@ TACTIC EXTEND specialize_eqs
 | [ "specialize_eqs" hyp(id) ] -> { specialize_eqs id }
 END
 
-TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" nat_or_var(occ) "in" constr(t) ] -> { Internals.hResolve id c occ t }
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> { Internals.hResolve_auto id c t }
-END
-
 (**
    hget_evar
 *)

@@ -16,7 +16,6 @@ open Tacexpr
 open CErrors
 open Util
 open Termops
-open Namegen
 open Tactypes
 open Tactics
 open Proofview.Notations
@@ -105,96 +104,6 @@ let refine_tac ist ~simple ~with_classes c =
            Tactics.reduce_after_refine <*>
            Proofview.shelve_unifiable
   end
-
-(**********************************************************************)
-(* A tactic that considers a given occurrence of [c] in [t] and       *)
-(* abstract the minimal set of all the occurrences of [c] so that the *)
-(* abstraction [fun x -> t[x/c]] is well-typed                        *)
-(*                                                                    *)
-(* Contributed by Chung-Kil Hur (Winter 2009)                         *)
-(**********************************************************************)
-
-let subst_var_with_hole occ tid t =
-  let open Glob_term in
-  let open Glob_ops in
-  let occref = if occ > 0 then ref occ else Locusops.error_invalid_occurrence [occ] in
-  let locref = ref 0 in
-  let rec substrec x = match DAst.get x with
-    | GVar id ->
-        if Id.equal id tid
-        then
-          (decr occref;
-           if Int.equal !occref 0 then x
-           else
-             (incr locref;
-              DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
-              GHole (Evar_kinds.QuestionMark {
-                  Evar_kinds.qm_obligation=Evar_kinds.Define true;
-                  Evar_kinds.qm_name=Anonymous;
-                  Evar_kinds.qm_record_field=None;
-             }, IntroAnonymous, None)))
-        else x
-    | _ -> map_glob_constr_left_to_right substrec x in
-  let t' = substrec t
-  in
-  if !occref > 0 then Locusops.error_invalid_occurrence [occ] else t'
-
-let subst_hole_with_term occ tc t =
-  let open Glob_term in
-  let open Glob_ops in
-  let locref = ref 0 in
-  let occref = ref occ in
-  let rec substrec c = match DAst.get c with
-    | GHole (Evar_kinds.QuestionMark {
-                Evar_kinds.qm_obligation=Evar_kinds.Define true;
-                Evar_kinds.qm_name=Anonymous;
-                Evar_kinds.qm_record_field=None;
-           }, IntroAnonymous, s) ->
-        decr occref;
-        if Int.equal !occref 0 then tc
-        else
-          (incr locref;
-           DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
-           GHole (Evar_kinds.QuestionMark {
-               Evar_kinds.qm_obligation=Evar_kinds.Define true;
-               Evar_kinds.qm_name=Anonymous;
-               Evar_kinds.qm_record_field=None;
-          },IntroAnonymous,s))
-    | _ -> map_glob_constr_left_to_right substrec c
-  in
-  substrec t
-
-let hResolve id c occ t =
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = Proofview.Goal.sigma gl in
-  let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
-  let concl = Proofview.Goal.concl gl in
-  let env_ids = Termops.vars_of_env env in
-  let c_raw = Detyping.detype Detyping.Now true env_ids env sigma c in
-  let t_raw = Detyping.detype Detyping.Now true env_ids env sigma t in
-  let rec resolve_hole t_hole =
-    try
-      Pretyping.understand_tcc_ty ~flags:Pretyping.all_and_fail_flags env sigma t_hole
-    with
-      | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
-          let (e, info) = Exninfo.capture e in
-          let loc_begin = Option.cata (fun l -> fst (Loc.unloc l)) 0 (Loc.get_loc info) in
-          resolve_hole (subst_hole_with_term loc_begin c_raw t_hole)
-  in
-  let sigma, t_constr, t_constr_type = resolve_hole (subst_var_with_hole occ id t_raw) in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-    (change_concl (mkLetIn (Context.make_annot Name.Anonymous Sorts.Relevant,t_constr,t_constr_type,concl)))
-  end
-
-let hResolve_auto id c t =
-  let rec resolve_auto n =
-    try
-      hResolve id c n t
-    with
-    | UserError _ as e -> raise e
-    | e when CErrors.noncritical e -> resolve_auto (n+1)
-  in
-  resolve_auto 1
 
 (**********************************************************************)
 

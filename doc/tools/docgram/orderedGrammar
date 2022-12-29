@@ -1705,7 +1705,6 @@ simple_tactic: [
 | "generalize_eqs_vars" ident
 | "dependent" "generalize_eqs_vars" ident
 | "specialize_eqs" ident
-| "hresolve_core" "(" ident ":=" one_term ")" OPT ( "at" nat_or_var ) "in" one_term
 | "hget_evar" nat_or_var
 | "destauto" OPT ( "in" ident )
 | "transparent_abstract" ltac_expr3 OPT ( "using" ident )

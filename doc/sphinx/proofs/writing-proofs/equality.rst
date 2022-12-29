@@ -799,19 +799,6 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
    See the example :ref:`here <example_apply_pattern>`.
 
-.. tacn:: hresolve_core ( @ident := @one_term ) {? at @nat_or_var } in @one_term
-   :undocumented:
-
-   .. From Théo Zimmermann: resolve_core and hget_evar were added in
-      https://github.com/coq/coq/commit/028cbb32785b559c637f77864ce5172e0255d0d0
-      https://sf.snu.ac.kr/gil.hur/Hpattern/readme.txt explains their purpose.
-
-      These seem to be internal tactics for a library implementing a
-      generalization of pattern that is distributed on a website. We should
-      investigate whether this library is actively maintained, still useful,
-      and justifies keeping these tactics / whether it should be integrated
-      into Coq or Coq-community and distributed more widely.
-
 .. tacn:: hget_evar @nat_or_var
    :undocumented:
 

@@ -1190,9 +1190,6 @@ simple_tactic: [
 | DELETE "finish_timing" OPT string
 | REPLACE "finish_timing" "(" string ")" OPT string
 | WITH "finish_timing" OPT ( "(" string ")" ) OPT string
-| REPLACE "hresolve_core" "(" ident ":=" constr ")" "at" nat_or_var "in" constr
-| WITH "hresolve_core" "(" ident ":=" constr ")" OPT ( "at" nat_or_var ) "in" constr
-| DELETE "hresolve_core" "(" ident ":=" constr ")" "in" constr
 | REPLACE "subst" LIST1 hyp
 | WITH "subst" LIST0 hyp
 | DELETE "subst"
