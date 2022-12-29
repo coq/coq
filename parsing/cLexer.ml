@@ -100,41 +100,6 @@ let bad_token str = raise (Error.E (Bad_token str))
 let set_loc_pos loc bp ep =
   Loc.sub loc (bp - loc.Loc.bp) (ep - bp)
 
-(* Increase line number by 1 and update position of beginning of line *)
-let bump_loc_line loc bol_pos =
-  Loc.{ loc with
-        line_nb      = loc.line_nb + 1;
-        line_nb_last = loc.line_nb + 1;
-        bol_pos;
-        bol_pos_last = bol_pos;
-      }
-
-(* Same as [bump_loc_line], but for the last line in location *)
-(* For an obscure reason, camlp5 does not give an easy way to set line_nb_stop,
-   so we have to resort to a hack merging two locations. *)
-(* Warning: [bump_loc_line_last] changes the end position. You may need to call
-   [set_loc_pos] to fix it. *)
-let bump_loc_line_last loc bol_pos =
-  let open Loc in
-  let loc' = { loc with
-               line_nb      = loc.line_nb_last + 1;
-               line_nb_last = loc.line_nb_last + 1;
-               bol_pos;
-               bol_pos_last = bol_pos;
-               bp = loc.bp + 1;
-               ep = loc.ep + 1;
-             } in
-  Loc.merge loc loc'
-
-(* For some reason, the [Ploc.after] function of Camlp5 does not update line
-   numbers, so we define our own function that does it. *)
-let after loc =
-  Loc.{ loc with
-        line_nb = loc.line_nb_last;
-        bol_pos = loc.bol_pos_last;
-        bp      = loc.ep;
-      }
-
 (** Lexer conventions on tokens *)
 
 type token_kind =
@@ -345,8 +310,8 @@ let rec string loc ~comm_level bp len s = match Stream.peek () s with
      update the first line of the location. Otherwise, we update the last
      line. *)
      let loc =
-       if Option.has_some comm_level then bump_loc_line loc ep
-       else bump_loc_line_last loc ep
+       if Option.has_some comm_level then Loc.incr_line loc ~line_offset:ep
+       else Loc.bump_loc_line_last loc ~line_offset:ep
      in
      string loc ~comm_level bp (store len c) s
   | Some c ->
@@ -445,7 +410,7 @@ let rec comment loc bp s =
             Some ('\n' as z) ->
               Stream.junk () s;
               let ep = Stream.count s in
-              real_push_char z; comment (bump_loc_line loc ep) bp s
+              real_push_char z; comment (Loc.incr_line loc ~line_offset:ep) bp s
           | Some z ->
               Stream.junk () s;
               real_push_char z; comment loc bp s
@@ -543,7 +508,7 @@ let parse_quotation loc bp s =
               if depth > 1 then quotation loc (depth - 1) else loc
         | '\n' :: cs ->
               commit1 '\n';
-              let loc = bump_loc_line_last loc (Stream.count s) in
+              let loc = Loc.bump_loc_line_last loc ~line_offset:(Stream.count s) in
               quotation loc depth
         | '.' :: _ ->
               commit1 '.';
@@ -643,7 +608,7 @@ let rec next_token ~diff_mode ttree loc s =
   | Some ('\n' as c) ->
       Stream.junk () s;
       let ep = Stream.count s in
-      comm_loc bp; push_char c; next_token ~diff_mode ttree (bump_loc_line loc ep) s
+      comm_loc bp; push_char c; next_token ~diff_mode ttree (Loc.incr_line loc ~line_offset:ep) s
   | Some (' ' | '\t' | '\r' as c) ->
       Stream.junk () s;
       comm_loc bp; push_char c; next_token ~diff_mode ttree loc s
@@ -766,7 +731,7 @@ module MakeLexer (Diff : sig val mode : bool end)
     Gramlib.LStream.from ~loc
       (fun ttree ->
          let (tok, loc) = next_token ~diff_mode:Diff.mode ttree !cur_loc cs in
-         cur_loc := after loc;
+         cur_loc := Loc.next loc;
          Some (tok,loc))
   let tok_match = Tok.match_pattern
   let tok_text = Tok.token_text

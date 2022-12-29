@@ -14,7 +14,7 @@ type source =
   | InFile of { dirpath : string option; file : string }
   | ToplevelInput
 
-type t = {
+type t = private {
   fname : source; (** filename or toplevel input *)
   line_nb : int; (** start line number *)
   bol_pos : int; (** position of the beginning of start line *)
@@ -62,6 +62,25 @@ val shift_loc : int -> int -> t -> t
 (** [shift_loc loc n p] shifts the beginning of location by [n] and
     the end by [p]; it is assumed that the shifts do not change the
     lines at which the location starts and ends *)
+
+(** Increase the line number, with newline starting at location [offset] *)
+val incr_line : t -> line_offset:int -> t
+
+(**   *)
+val bump_loc_line_last : t -> line_offset:int -> t
+
+(** [next loc] will advance a lexing location as the lexer does; this
+    can be used to implement parsing resumption from a given position:
+{[
+  let loc = Pcoq.Parsable.loc pa |> next in
+  let str = Gramlib.Stream.of_string ~offset:loc.ep text in
+  let pa = Pcoq.Parsable.make ~loc str in
+  (* ready to resume parsing *)
+]}
+*)
+
+
+val next : t -> t
 
 (** {5 Located exceptions} *)
 

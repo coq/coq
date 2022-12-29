@@ -122,8 +122,8 @@ let blanch_utf8_string s bp ep = let open Bytes in
   done;
   Bytes.sub_string s' 0 !j
 
-let adjust_loc_buf ib loc = let open Loc in
-  { loc with ep = loc.ep - ib.start; bp = loc.bp - ib.start }
+let adjust_loc_buf ib loc =
+  Loc.shift_loc (-ib.start) (-ib.start) loc
 
 let print_highlight_location ib loc =
   let (bp,ep) = Loc.unloc loc in

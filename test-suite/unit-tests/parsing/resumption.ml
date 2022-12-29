@@ -37,7 +37,7 @@ let parse_whole () =
 let parse_n n =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string doc) in
   let res1 = parse pa n in
-  let loc = Pcoq.Parsable.loc pa |> CLexer.after in
+  let loc = Pcoq.Parsable.loc pa |> Loc.next in
   let str = Gramlib.Stream.of_string doc in
   Gramlib.Stream.njunk () loc.bp str;
   let pa = Pcoq.Parsable.make ~loc str in
@@ -48,7 +48,7 @@ let parse_n n =
 let parse_n_offset n =
   let pa = Pcoq.Parsable.make (Gramlib.Stream.of_string doc) in
   let res1 = parse pa n in
-  let loc = Pcoq.Parsable.loc pa |> CLexer.after in
+  let loc = Pcoq.Parsable.loc pa |> Loc.next in
   let doc = String.sub doc loc.bp (String.length doc - loc.bp) in
   let str = Gramlib.Stream.of_string ~offset:loc.bp doc in
   let pa = Pcoq.Parsable.make ~loc str in

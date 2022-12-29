@@ -114,3 +114,39 @@ let pr loc =
     (str"File " ++ str "\"" ++ str file ++ str "\"" ++
      str", line " ++ int loc.line_nb ++ str", characters " ++
      int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos))
+
+(* Increase line number by 1 and update position of beginning of line *)
+let incr_line loc ~line_offset =
+  let bol_pos = line_offset in
+  { loc with
+    line_nb      = loc.line_nb + 1
+  ; line_nb_last = loc.line_nb + 1
+  ; bol_pos
+  ; bol_pos_last = bol_pos
+  }
+
+(* Same as [bump_loc_line], but for the last line in location *)
+(* For an obscure reason, camlp5 does not give an easy way to set line_nb_stop,
+   so we have to resort to a hack merging two locations. *)
+(* Warning: [bump_loc_line_last] changes the end position. You may need to call
+   [set_loc_pos] to fix it. *)
+let bump_loc_line_last loc ~line_offset =
+  let bol_pos = line_offset in
+  let loc' = { loc with
+               line_nb      = loc.line_nb_last + 1;
+               line_nb_last = loc.line_nb_last + 1;
+               bol_pos;
+               bol_pos_last = bol_pos;
+               bp = loc.bp + 1;
+               ep = loc.ep + 1;
+             } in
+  merge loc loc'
+
+(* For some reason, the [Ploc.after] function of Camlp5 does not update line
+   numbers, so we define our own function that does it. *)
+let next loc =
+  { loc with
+        line_nb = loc.line_nb_last;
+        bol_pos = loc.bol_pos_last;
+        bp      = loc.ep;
+  }
