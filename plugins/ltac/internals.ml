@@ -118,7 +118,6 @@ let subst_var_with_hole occ tid t =
   let open Glob_term in
   let open Glob_ops in
   let occref = if occ > 0 then ref occ else Locusops.error_invalid_occurrence [occ] in
-  let locref = ref 0 in
   let rec substrec x = match DAst.get x with
     | GVar id ->
         if Id.equal id tid
@@ -126,8 +125,7 @@ let subst_var_with_hole occ tid t =
           (decr occref;
            if Int.equal !occref 0 then x
            else
-             (incr locref;
-              DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+             (DAst.make @@
               GHole (Evar_kinds.QuestionMark {
                   Evar_kinds.qm_obligation=Evar_kinds.Define true;
                   Evar_kinds.qm_name=Anonymous;
@@ -142,7 +140,6 @@ let subst_var_with_hole occ tid t =
 let subst_hole_with_term occ tc t =
   let open Glob_term in
   let open Glob_ops in
-  let locref = ref 0 in
   let occref = ref occ in
   let rec substrec c = match DAst.get c with
     | GHole (Evar_kinds.QuestionMark {
@@ -153,8 +150,7 @@ let subst_hole_with_term occ tc t =
         decr occref;
         if Int.equal !occref 0 then tc
         else
-          (incr locref;
-           DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
+          (DAst.make @@
            GHole (Evar_kinds.QuestionMark {
                Evar_kinds.qm_obligation=Evar_kinds.Define true;
                Evar_kinds.qm_name=Anonymous;
