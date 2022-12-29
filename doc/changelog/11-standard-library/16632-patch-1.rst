@@ -1,4 +1,0 @@
-- **Added:**
-  the `skipn_skipn` lemma in `Lists/List.v`
-  (`#16632 <https://github.com/coq/coq/pull/16632>`_,
-  by Stephan Boyer).

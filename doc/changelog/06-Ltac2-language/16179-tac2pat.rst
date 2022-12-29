@@ -1,4 +1,0 @@
-- **Added:**
-  patterns for Ltac2 matches: ``as``, records and literal integers and strings
-  (`#16179 <https://github.com/coq/coq/pull/16179>`_,
-  by Gaëtan Gilbert).
