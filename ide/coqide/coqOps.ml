@@ -778,7 +778,10 @@ object(self)
             add_flag sentence `PROCESSING;
             Doc.push document sentence;
             let phrase = phrase buffer sentence in
-            let bp, line_nb, bol_pos, new_cached = coq_loc_from_gtk_offset last_offsets buffer sentence in
+            (* When we retract, the cached offsets are invalid, thus we need to reset the cache *)
+            let start = start_iter buffer sentence in
+            let cached_offset = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
+            let bp, line_nb, bol_pos, new_cached = coq_loc_from_gtk_offset cached_offset buffer sentence in
             last_offsets <- new_cached;
             let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             let handle_answer = function
