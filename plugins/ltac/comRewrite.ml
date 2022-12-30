@@ -36,7 +36,7 @@ type rewrite_attributes = { polymorphic : bool; global : bool }
 
 let rewrite_attributes =
   let open Attributes.Notations in
-  Attributes.(polymorphic ++ program ++ locality) >>= fun ((polymorphic, program), locality) ->
+  Attributes.(polymorphic ++ locality) >>= fun (polymorphic, locality) ->
   let global = not (Locality.make_section_locality locality) in
   Attributes.Notations.return { polymorphic; global }
 
