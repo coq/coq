@@ -8,8 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val compile :
-     otypes:Common.otype list
-  -> produce_document:(Common.file_t list -> unit)
-  -> Common.file_t list
-  -> unit
+(* Command-line parser with side-effects *)
+val parse_args : unit -> unit

@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Printf
-open Cdglobals
+open Common
 
 let locally dir f x =
   let cwd = Sys.getcwd () in
@@ -41,23 +41,20 @@ let cat file =
     done
   with End_of_file -> close_in c
 
-type otype = Dvi | Ps | Pdf
-
 let compile ~otypes ~produce_document fl =
   let texfile = Filename.temp_file "coqdoc" ".tex" in
   let basefile = Filename.chop_suffix texfile ".tex" in
-  let final_out_to = !out_to in
-  out_to := File texfile;
-  output_dir := Filename.dirname texfile;
-  produce_document fl;
+  let final_out_to = !prefs.out_to in
+  prefs := { !prefs with out_to = File texfile };
+  prefs := { !prefs with output_dir = Filename.dirname texfile };  produce_document fl;
   let latexexe = if List.mem Pdf otypes then "pdflatex" else "latex" in
   let latexcmd =
     let file = Filename.basename texfile in
     let file =
-      if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file
+      if !prefs.quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file
     in
     sprintf "%s %s && %s %s 1>&2 %s" latexexe file latexexe file
-      (if !quiet then "> /dev/null" else "")
+      (if !prefs.quiet then "> /dev/null" else "")
   in
   let res = locally (Filename.dirname texfile) Sys.command latexcmd in
   if res <> 0 then begin
@@ -78,7 +75,7 @@ let compile ~otypes ~produce_document fl =
     let psfile = basefile ^ ".ps" in
     let command =
       sprintf "dvips %s -o %s %s" dvifile psfile
-        (if !quiet then "> /dev/null 2>&1" else "")
+        (if !prefs.quiet then "> /dev/null 2>&1" else "")
     in
     let res = Sys.command command in
     if res <> 0 then begin

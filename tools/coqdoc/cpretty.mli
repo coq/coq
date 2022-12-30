@@ -8,5 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val coq_file : string -> Cdglobals.coq_module -> unit
-val detect_subtitle : string -> Cdglobals.coq_module -> string option
+val coq_file : string -> Common.coq_module -> unit
+val detect_subtitle : string -> Common.coq_module -> string option

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Cdglobals
+open Common
 open Index
 
 val initialize : unit -> unit
