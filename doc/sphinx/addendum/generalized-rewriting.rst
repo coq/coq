@@ -502,7 +502,7 @@ is equivalent to an instance declaration:
 
 .. coqdoc::
 
-   Instance (x1 : T1) ... (xn : Tn) => id : @Equivalence (A t1 ... tn) (Aeq t′1 ... t′m) :=
+   Instance id (x1 : T1) ... (xn : Tn) : @Equivalence (A t1 ... tn) (Aeq t′1 ... t′m) :=
      [Equivalence_Reflexive := refl]
      [Equivalence_Symmetric := sym]
      [Equivalence_Transitive := trans].
