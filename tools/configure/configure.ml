@@ -144,7 +144,7 @@ let coq_warn_error prefs =
 
 (* Flags used to compile Coq and plugins (via coq_makefile) *)
 let caml_flags =
-  Printf.sprintf "-thread -rectypes -bin-annot -strict-sequence %s" coq_warnings
+  Printf.sprintf "-thread -bin-annot -strict-sequence %s" coq_warnings
 
 (* Flags used to compile Coq but _not_ plugins (via coq_makefile) *)
 let coq_caml_flags = coq_warn_error
