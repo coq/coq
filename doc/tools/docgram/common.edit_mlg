@@ -1915,7 +1915,6 @@ ltac_defined_tactics: [
 | "contradict" ident
 | "discrR"
 | "easy"
-| "exfalso"
 | "inversion_sigma" OPT ( ident OPT ( "as" simple_intropattern ) )
 | "lia"
 | "lra"
