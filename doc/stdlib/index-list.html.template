@@ -471,6 +471,14 @@ through the <tt>Require Import</tt> command.</p>
     theories/Wellfounded/Well_Ordering.v
   </dd>
 
+  <dt> <b>EMaps</b>:
+    Extensional finite maps using binary tries or sorted lists.
+    This is a modernization of FMaps.
+  </dt>
+  <dd>
+    theories/EMaps/Trie.v
+  </dd>
+
   <dt> <b>MSets</b>:
     Modular implementation of finite sets using lists or
     efficient trees. This is a modernization of FSets.
