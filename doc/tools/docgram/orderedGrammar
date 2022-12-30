@@ -1692,7 +1692,7 @@ simple_tactic: [
 | "simple" "subst"
 | "evar" "(" ident ":" type ")"
 | "evar" one_type
-| "instantiate" OPT ( "(" ident ":=" term ")" )
+| "instantiate" "(" ident ":=" term ")"
 | "instantiate" "(" natural ":=" term ")" OPT hloc
 | "stepl" one_term OPT ( "by" ltac_expr )
 | "stepr" one_term OPT ( "by" ltac_expr )
