@@ -241,6 +241,13 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/HexadecimalString.v
     </dd>
 
+    <dt> <b>&nbsp;&nbsp;Zmod</b>:
+       Modular arithmetic.
+    </dt>
+    <dd>
+    theories/Numbers/Zmod.v
+    </dd>
+
     <dt> <b>&nbsp;&nbsp;NatInt</b>:
        Abstract mixed natural/integer/cyclic arithmetic
     </dt>
