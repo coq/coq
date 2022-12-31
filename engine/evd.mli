@@ -95,12 +95,12 @@ end
 
 (** {6 Evar infos} *)
 
-type evar_body =
-  | Evar_empty
-  | Evar_defined of econstr
-
 type defined = [ `defined ]
 type undefined = [ `undefined ]
+
+type _ evar_body =
+  | Evar_empty : undefined evar_body
+  | Evar_defined : econstr -> defined evar_body
 
 type 'a evar_info
 
@@ -117,7 +117,7 @@ val evar_context : 'a evar_info -> (econstr, etypes) Context.Named.pt
 val evar_hyps : 'a evar_info -> named_context_val
 (** Context of the evar. *)
 
-val evar_body : 'a evar_info -> evar_body
+val evar_body : 'a evar_info -> 'a evar_body
 (** Optional content of the evar. *)
 
 val evar_candidates : 'a evar_info -> econstr list option
@@ -146,7 +146,7 @@ val evar_env : env -> 'a evar_info -> env
 val evar_filtered_env : env -> 'a evar_info -> env
 val evar_identity_subst : 'a evar_info -> econstr SList.t
 
-val map_evar_body : (econstr -> econstr) -> evar_body -> evar_body
+val map_evar_body : (econstr -> econstr) -> 'a evar_body -> 'a evar_body
 val map_evar_info : (econstr -> econstr) -> 'a evar_info -> 'a evar_info
 
 (** {6 Unification state} **)

@@ -307,7 +307,7 @@ Goal.enter_one ~__LOC__ begin fun g ->
   let sigma = Typeclasses.resolve_typeclasses ~fail:false ~filter env sigma in
   let _, sigma = Evd.pop_shelf sigma in
   let p = Reductionops.nf_evar sigma p in
-  let get_body = function Evd.Evar_defined x -> x | _ -> assert false in
+  let get_body : type a. a Evd.evar_body -> EConstr.t = function Evd.Evar_defined x -> x | Evd.Evar_empty -> assert false in
   let evars_of_econstr sigma t =
     Evarutil.undefined_evars_of_term sigma t in
   let rigid_of s =

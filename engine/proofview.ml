@@ -884,7 +884,7 @@ module Progress = struct
     (* NB: can't use List.equal because it shortcuts on physical equality *)
     List.for_all2eq eq_named_declaration c1 c2
 
-  let eq_evar_body sigma1 sigma2 b1 b2 =
+  let eq_evar_body (type a1 a2) sigma1 sigma2 (b1 : a1 Evd.evar_body) (b2 : a2 Evd.evar_body) =
     let open Evd in
     match b1, b2 with
     | Evar_empty, Evar_empty -> true

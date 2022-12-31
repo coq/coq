@@ -205,25 +205,23 @@ module Store = Store.Make ()
 
 let string_of_existential evk = "?X" ^ string_of_int (Evar.repr evk)
 
-type evar_body =
-  | Evar_empty
-  | Evar_defined of constr
-
 type defined = [ `defined ]
 type undefined = [ `undefined ]
 
-type evar_info0 = {
+type _ evar_body =
+  | Evar_empty : undefined evar_body
+  | Evar_defined : econstr -> defined evar_body
+
+type 'a evar_info = {
   evar_concl : constr;
   evar_hyps : named_context_val;
-  evar_body : evar_body;
+  evar_body : 'a evar_body;
   evar_filter : Filter.t;
   evar_abstract_arguments : Abstraction.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_relevance: Sorts.relevance;
 }
-
-type 'a evar_info = evar_info0
 
 type any_evar_info = EvarInfo : 'a evar_info -> any_evar_info
 
@@ -274,7 +272,7 @@ let evar_identity_subst evi =
   in
   SList.defaultn len SList.empty
 
-let map_evar_body f = function
+let map_evar_body (type a) f : a evar_body -> a evar_body = function
   | Evar_empty -> Evar_empty
   | Evar_defined d -> Evar_defined (f d)
 
@@ -733,7 +731,7 @@ let is_maybe_typeclass sigma c = Hook.get get_is_maybe_typeclass sigma c
 let rename evk id evd =
   { evd with evar_names = EvNames.rename evk id evd.evar_names }
 
-let add_with_name ?name ?(typeclass_candidate = true) d e i = match i.evar_body with
+let add_with_name (type a) ?name ?(typeclass_candidate = true) d e (i : a evar_info) = match i.evar_body with
 | Evar_empty ->
   let evar_names = EvNames.add_name_undefined name e i d.evar_names in
   let evar_flags =
@@ -843,30 +841,11 @@ let fold_undefined f d a = EvMap.fold f d.undf_evars a
 type map = { map : 'r. Evar.t -> 'r evar_info -> 'r evar_info }
 
 let raw_map f d =
-  let f evk info =
-    let ans = f.map evk info in
-    let () = match info.evar_body, ans.evar_body with
-    | Evar_defined _, Evar_empty
-    | Evar_empty, Evar_defined _ ->
-      anomaly (str "Unrespectful mapping function.")
-    | _ -> ()
-    in
-    ans
-  in
-  let defn_evars = EvMap.Smart.mapi f d.defn_evars in
-  let undf_evars = EvMap.Smart.mapi f d.undf_evars in
+  let defn_evars = EvMap.Smart.mapi f.map d.defn_evars in
+  let undf_evars = EvMap.Smart.mapi f.map d.undf_evars in
   { d with defn_evars; undf_evars; }
 
 let raw_map_undefined f d =
-  let f evk info =
-    let ans = f evk info in
-    let () = match ans.evar_body with
-    | Evar_defined _ ->
-      anomaly (str "Unrespectful mapping function.")
-    | _ -> ()
-    in
-    ans
-  in
   { d with undf_evars = EvMap.Smart.mapi f d.undf_evars; }
 
 let is_evar = mem
@@ -879,9 +858,8 @@ let existential_opt_value d (n, args) =
   match EvMap.find_opt n d.defn_evars with
   | None -> None
   | Some info ->
-    match evar_body info with
-    | Evar_defined c -> Some (instantiate_evar_array d info c args)
-    | Evar_empty -> None (* impossible but w/e *)
+    let Evar_defined c = evar_body info in
+    Some (instantiate_evar_array d info c args)
 
 let existential_value d ev = match existential_opt_value d ev with
   | None -> raise NotInstantiatedEvar
@@ -1672,9 +1650,8 @@ module MiniEConstr = struct
         Some (mkEvar (evk, SList.of_full_list args))
       else None
     | Some info ->
-      match evar_body info with
-      | Evar_defined c -> Some (instantiate_evar_array sigma info c args)
-      | Evar_empty -> assert false
+      let Evar_defined c = evar_body info in
+      Some (instantiate_evar_array sigma info c args)
     in
     let lsubst = universe_subst sigma in
     let level_value l =
@@ -1753,7 +1730,7 @@ let evars_of_named_context evd nc =
     nc
     ~init:Evar.Set.empty
 
-let evars_of_filtered_evar_info evd evi =
+let evars_of_filtered_evar_info (type a) evd (evi : a evar_info) =
   Evar.Set.union (evars_of_term evd evi.evar_concl)
     (Evar.Set.union
        (match evi.evar_body with

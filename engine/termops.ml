@@ -151,7 +151,7 @@ let pr_evar_source env sigma = function
      | Some Evar_kinds.Domain -> str "domain of "
      | Some Evar_kinds.Codomain -> str "codomain of ") ++ Evar.print evk
 
-let pr_evar_info env sigma evi =
+let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
   let open Evd in
   let print_constr = print_kconstr in
   let phyps =
@@ -328,9 +328,10 @@ let pr_evar_list env sigma l =
     h (Evar.print ev ++
       str "==" ++ pr_evar_info env sigma evi ++
       pr_alias ev ++
-      (if Evd.evar_body evi == Evar_empty
-       then str " {" ++ pr_existential_key env sigma ev ++ str "}"
-       else mt ()))
+      begin match Evd.evar_body evi with
+      | Evar_empty -> str " {" ++ pr_existential_key env sigma ev ++ str "}"
+      | Evar_defined _ -> mt ()
+      end)
   in
   hv 0 (prlist_with_sep fnl pr l)
 

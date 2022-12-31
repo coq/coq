@@ -710,7 +710,7 @@ let cached_evar_of_hyp cache sigma decl accu = match cache with
   in
   Evar.Set.fold Evar.Set.add evs accu
 
-let filtered_undefined_evars_of_evar_info ?cache sigma evi =
+let filtered_undefined_evars_of_evar_info (type a) ?cache sigma (evi : a evar_info) =
   let evars_of_named_context cache accu nc =
     let fold decl accu = cached_evar_of_hyp cache sigma (EConstr.of_named_decl decl) accu in
     Context.Named.fold_outside fold nc ~init:accu

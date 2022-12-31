@@ -526,7 +526,7 @@ let pr_concl n ?diffs sigma g =
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
-let pr_evgl_sign env sigma evi =
+let pr_evgl_sign (type a) env sigma (evi : a evar_info) =
   let env = evar_env env evi in
   let ps = pr_named_context_of env sigma in
   let _, l = match Filter.repr (evar_filter evi) with
