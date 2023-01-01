@@ -34,9 +34,11 @@ end
 
 module SentenceId : sig
 
-  type sentence = private {
+  type sentence = {
     start : GText.mark;
     stop : GText.mark;
+    mutable bp : int;
+    mutable ep : int;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
@@ -68,6 +70,8 @@ end = struct
   type sentence = {
     start : GText.mark;
     stop : GText.mark;
+    mutable bp : int;
+    mutable ep : int;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
     edit_id : int;
@@ -85,6 +89,8 @@ end = struct
   let mk_sentence ~start ~stop flags = decr id; {
     start;
     stop;
+    bp = -1;
+    ep = -1;
     flags;
     edit_id = !id;
     tooltips = [];
@@ -138,11 +144,27 @@ end = struct
 end
 open SentenceId
 
+(** move iter by the number of chars used to represent the following
+    n_bytes.  Used to adjust locations in case the sentence is moved after it's
+    sent to Coq in an "add" call. *)
+let b2c (buffer : GText.buffer) n_bytes iter0 =
+  let rec cvt iter len =
+    if len <= 0 then
+      iter
+    else
+      cvt iter#forward_char (len - (Ideutils.ulen iter#char))
+  in
+  cvt iter0 n_bytes
+
 (* Given a Coq loc, convert it to a pair of iterators start / end in
    the buffer. *)
-let coq_loc_to_gtk_offset (buffer : GText.buffer) loc =
-  buffer#get_iter_at_byte ~line:loc.Loc.line_nb (loc.bp - loc.bol_pos),
-  buffer#get_iter_at_byte ~line:loc.Loc.line_nb_last (loc.ep - loc.bol_pos_last)
+let coq_loc_to_gtk_offset (buffer : GText.buffer) loc sentence =
+  (* n_bytes is invariant even if the sentence was moved though the
+     buffer offset will differ *)
+  let adjust byte_off =
+    let n_bytes = byte_off - sentence.bp in
+    b2c buffer n_bytes (buffer#get_iter_at_mark sentence.start) in
+  Loc.(adjust loc.bp, adjust loc.ep)
 
 (** increase [uni_off] by the number of bytes until [s_uni] This can
     be used to convert a character offset to byte offset if we know a
@@ -537,7 +559,7 @@ object(self)
       | None ->
         start_stop_iters buffer sentence
       | Some loc ->
-        coq_loc_to_gtk_offset buffer loc
+        coq_loc_to_gtk_offset buffer loc sentence
     in
     let markup = Glib.Markup.escape_text text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
@@ -673,7 +695,7 @@ object(self)
       let start, stop = start_stop_iters buffer sentence in
       buffer#apply_tag tag ~start ~stop
     | Some loc ->
-      let start, stop = coq_loc_to_gtk_offset buffer loc in
+      let start, stop = coq_loc_to_gtk_offset buffer loc sentence in
       buffer#apply_tag tag ~start ~stop
 
   method private position_tag_at_sentence ?loc tag sentence =
@@ -783,6 +805,8 @@ object(self)
             let cached_offset = if start#offset > (snd last_offsets) then last_offsets else (0,0) in
             let bp, line_nb, bol_pos, new_cached = coq_loc_from_gtk_offset cached_offset buffer sentence in
             last_offsets <- new_cached;
+            sentence.bp <- bp;
+            sentence.ep <- bp + (String.length phrase);
             let coq_query = Coq.add ((((phrase,edit_id),(tip,verbose)),bp),(line_nb,bol_pos)) in
             let handle_answer = function
               | Good (id, Util.Inl (* NewTip *) ()) ->
@@ -834,7 +858,7 @@ object(self)
          let iter = begin match loc with
            | None      -> buffer#get_iter_at_mark s.start
            | Some loc ->
-             fst (coq_loc_to_gtk_offset buffer loc)
+             fst (coq_loc_to_gtk_offset buffer loc s)
          end in iter#line + 1, msg
       | _ -> assert false in
     List.rev
