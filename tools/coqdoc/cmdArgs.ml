@@ -146,6 +146,8 @@ let args_options = Arg.align [
   "<file> append <file> as html footer";
   "--no-index", arg_set (fun p -> { p with index = false }),
   " Do not output the index";
+  "--binder-index", arg_set (fun p -> { p with binder_index = true }),
+  " Include variable binders in index";
   "--multi-index", arg_set (fun p -> { p with multi_index = true }),
   " Index split in multiple files";
   "--index <string>", arg_string (fun p s -> { p with index_name = s }),

@@ -44,6 +44,7 @@ type t = {
   footer_file_spec : bool;
   footer_file : string;
   index : bool;
+  binder_index : bool;
   multi_index : bool;
   index_name : string;
   toc : bool;

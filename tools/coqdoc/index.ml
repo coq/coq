@@ -232,6 +232,10 @@ let prepare_entry s = function
   | _ ->
       s
 
+let include_entry = function
+| Binder -> !prefs.binder_index
+| _ -> true
+
 let all_entries () =
   let gl = ref [] in
   let add_g s m t = gl := (s,(m,t)) :: !gl in
@@ -240,7 +244,11 @@ let all_entries () =
     let l = try Hashtbl.find bt t with Not_found -> [] in
       Hashtbl.replace bt t ((s,m) :: l)
   in
-  let classify m (s,t) = (add_g s m t; add_bt t s m) in
+  let classify m (s,t) =
+    if include_entry t then begin
+      add_g s m t; add_bt t s m
+    end
+  in
     Hashtbl.iter classify deftable;
     Hashtbl.iter (fun id m -> add_g id m Library; add_bt Library id m) modules;
     { idx_name = "global";
