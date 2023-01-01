@@ -589,6 +589,15 @@ object(self)
           | _ -> None in
         try Some (Doc.find_map document finder)
         with Not_found -> None in
+      (* When a command generates a warning or error, the warning/error
+         message is returned before the Processed message that provides the
+         sentence id.  There can only be a single sentence in the document
+         with an id of None, which must be at the tip.  A protocol design
+         weakness.  Not an issue for tactics. *)
+      let sentence = match sentence with
+        | None -> (try Some (None, Doc.tip_data document) with Doc.Empty -> None)
+        | Some (sid, sent) -> sentence
+      in
       let log_pp ?id s =
         Minilib.log_pp Pp.(seq
                 [str "Feedback "; s; pr_opt (fun id -> str " on " ++ str (Stateid.to_string id)) id])
@@ -600,6 +609,19 @@ object(self)
           Minilib.log ("Unsupported feedback message " ^ mtype ^ " with a sentence")
       in
       let log ?id s = log_pp ?id (Pp.str s) in
+      (* When a command generates a warning or error, the message sent has an
+         incorrect sentence id.  If bp..ep is out of range for the specified
+         sentence, assume is it is from the last-sent "add" request *)
+      let handle_bad_loc loc id sentence =
+        match loc with
+        | Some loc ->
+          if loc.Loc.bp < sentence.bp || loc.Loc.ep > sentence.ep then begin
+              log_pp ?id Pp.(str "WarningMsg/ErrorMsg with bad loc, using tip instead");
+              Doc.tip_data document
+          end else
+            sentence
+        | None -> sentence
+      in
       begin match msg.contents, sentence with
       | AddedAxiom, Some (id,sentence) ->
           log ?id "AddedAxiom";
@@ -635,6 +657,7 @@ object(self)
             (Printf.sprintf "%s %s %s" filepath ident ty)
       | GlobRef (_, _, _, _, _), None -> msg_wo_sent "GlobRef"
       | Message(Error, loc, msg), Some (id,sentence) ->
+          let sentence = handle_bad_loc loc id sentence in
           log_pp ?id Pp.(str "ErrorMsg " ++ msg);
           remove_flag sentence `PROCESSING;
           let rmsg = Pp.string_of_ppcmds msg in
@@ -643,6 +666,7 @@ object(self)
           self#attach_tooltip ?loc sentence rmsg;
           self#position_tag_at_sentence ?loc Tags.Script.error sentence
       | Message(Warning, loc, message), Some (id,sentence) ->
+          let sentence = handle_bad_loc loc id sentence in
           log_pp ?id Pp.(str "WarningMsg " ++ message);
           let rmsg = Pp.string_of_ppcmds message in
           add_flag sentence (`WARNING (loc, rmsg));
