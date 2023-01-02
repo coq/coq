@@ -346,6 +346,8 @@ Command line options
   into ``index.html``.
 
   :--no-index: Do not output the index.
+  :--binder-index: Include variable binders in the index. Not recommended
+    with large source files, where binder information may dominate the index.
   :--multi-index: Generate one page for each category and each letter in
     the index, together with a top page ``index.html``.
   :--index string: Make the filename of the index string instead of

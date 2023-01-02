@@ -39,6 +39,7 @@ type t = {
   footer_file_spec : bool;
   footer_file : string;
   index: bool;
+  binder_index : bool;
   multi_index : bool;
   index_name : string;
   toc: bool;
@@ -76,6 +77,7 @@ let default : t = {
   index = true;
   multi_index = false;
   index_name = "index";
+  binder_index = false;
   toc = false;
   files = [];
   glob_source = DotGlob;
