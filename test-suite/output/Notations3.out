@@ -129,13 +129,9 @@ return (1, 2, 3, 4)
      : (nat -> Prop) * ((nat -> Prop) * Prop)
 ! '{{x, y}}, x.y = 0
      : Prop
-exists x : nat,
-  nat -> exists y : nat, nat -> exists_mixed '{{u, t}}, x.y = 0 /\ u.t = 0
+exists_mixed (x y : nat) '{{u, t}}, x.y = 0 /\ u.t = 0
      : Prop
-exists x : nat,
-  nat ->
-  exists y : nat,
-    nat -> exists '{{z, t}}, forall z0 : nat, z0 = 0 /\ x.y = 0 /\ z.t = 0
+exists_mixed (x y : nat) '{{z, t}}, x.y = 0 /\ z.t = 0
      : Prop
 exists_true '{{x, y}} (u := 0) '{{z, t}}, x.y = 0 /\ z.t = 0
      : Prop
