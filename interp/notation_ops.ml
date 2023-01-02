@@ -1538,7 +1538,8 @@ and match_extended_binders ?loc isprod u alp metas na1 na2 bk t sigma b1 b2 =
      let alp,sigma = bind_binding_env alp sigma id disjpat in
      match_in u alp metas sigma b1 b2
      | _ -> assert false)
-  | _, _, Name id when is_bindinglist_meta id metas && (not isprod || na1 != Anonymous)->
+  | _, _, Name id when is_bindinglist_meta id metas ->
+      if (isprod && na1 = Anonymous) then raise No_match (* prefer using "A -> B" for anonymous forall *);
       let alp,sigma = bind_bindinglist_env alp sigma id [DAst.make ?loc @@ GLocalAssum (na1,bk,t)] in
       match_in u alp metas sigma b1 b2
   | _, _, _ ->
