@@ -145,7 +145,7 @@ exists_true (A : Type) (R : A -> A -> Prop) (_ : Reflexive R),
 exists_true (x : nat) (A : Type) (R : A -> A -> Prop) 
 (_ : Reflexive R) (y : nat), x.y = 0 -> forall z : A, R z z
      : Prop
-{{{{True, nat -> True}}, nat -> True}}
+!! _ _ : nat # True #
      : Prop * Prop * Prop
 {{D 1, 2}}
      : nat * nat * (nat * nat * (nat * nat))

@@ -1283,11 +1283,11 @@ let glue_trailing_letin_with_decls = false
 
 exception OnlyTrailingLetIns
 
-let match_binderlist match_fun alp metas sigma rest x y iter termin revert =
+let match_binderlist match_iter_fun match_termin_fun alp metas sigma rest x y iter termin revert =
   let rec aux trailing_letins sigma bl rest =
     try
       let metas = add_ldots_var (add_meta_bindinglist y metas) in
-      let (terms,_,_,binderlists as sigma) = match_fun alp metas sigma rest iter in
+      let (terms,_,_,binderlists as sigma) = match_iter_fun alp metas sigma rest iter in
       let _,rest = Id.List.assoc ldots_var terms in
       let b =
         match Id.List.assoc y binderlists with _,[b] -> b | _ ->assert false
@@ -1314,7 +1314,7 @@ let match_binderlist match_fun alp metas sigma rest x y iter termin revert =
   let bl,rest,sigma = aux false sigma [] rest in
   let bl = if revert then List.rev bl else bl in
   let alp,sigma = bind_bindinglist_env alp sigma x bl in
-  match_fun alp metas sigma rest termin
+  match_termin_fun alp metas sigma rest termin
 
 let add_meta_term x metas = (x,((Constrexpr.InConstrEntrySomeLevel,([],[])),NtnTypeConstr))::metas (* Should reuse the scope of the partner of x! *)
 
@@ -1377,7 +1377,11 @@ let rec match_ inner u alp metas sigma a1 a2 =
 
   (* Matching recursive notations for binders: general case *)
   | _r, NBinderList (x,y,iter,termin,revert) ->
-      match_binderlist (match_hd u) alp metas sigma a1 x y iter termin revert
+    (* When revert=true, binders are considered "inner" and thus not cumulative, as e.g. in
+       Notation "!! x .. y # A #" := (.. (A,(forall x, True)) ..,(forall y, True)) (at level 200, x binder).
+       This has an impact on the heuristic of preferring using "A -> B" where
+       a recursive Prod binder on a anonymous would otherwise also be possible *)
+      match_binderlist (match_ revert u) (match_hd u) alp metas sigma a1 x y iter termin revert
 
   (* Matching compositionally *)
   | GVar id1, NVar id2 when alpha_var id1 id2 (fst (snd alp)) -> sigma
@@ -1404,7 +1408,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | GLambda (na1,bk1,t1,b1), NLambda (na2,t2,b2) ->
      match_extended_binders false u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
   | GProd (na1,bk1,t1,b1), NProd (na2,t2,b2) ->
-     match_extended_binders true u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
+     match_extended_binders (not inner) u alp metas na1 na2 bk1 t1 (match_in_type u alp metas sigma t1 t2) b1 b2
   | GLetIn (na1,b1,_,c1), NLetIn (na2,b2,None,c2)
   | GLetIn (na1,b1,None,c1), NLetIn (na2,b2,_,c2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma b1 b2) c1 c2
