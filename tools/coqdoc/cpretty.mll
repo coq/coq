@@ -370,7 +370,6 @@ let def_token =
   | "Instance"
   | "Existing" space+ ("Instance" | "Instances" | "Class")
   | "Declare" space+ "Instance"
-  | "Global" space+ "Instance"
   | "Functional" space+ "Scheme"
 
 let decl_token =
@@ -453,8 +452,17 @@ let extraction =
 
 let gallina_kw = thm_token | def_token | decl_token | gallina_ext | commands | extraction
 
+let legacy_attr_kw =
+  "Local"
+  | "Global"
+  | "Polymorphic"
+  | "Monomorphic"
+  | "Cumulative"
+  | "NonCumulative"
+  | "Private"
+
 let prog_kw =
-  "Program" space+ gallina_kw
+  "Program" space+ (legacy_attr_kw space+)* gallina_kw
   | "Obligation"
   | "Obligations"
   | "Solve"
@@ -470,7 +478,7 @@ let set_kw =
 let gallina_kw_to_hide =
     "Implicit" space+ "Arguments"
   | "Arguments"
-  | ("Local" space+)? "Ltac"
+  | "Ltac"
   | "From"
   | "Require"
   | "Import"
@@ -546,7 +554,7 @@ rule coq_bol = parse
   | space* end_details nl
       { new_lines 1 lexbuf;
         Output.end_coq (); end_details (); Output.start_coq (); coq_bol lexbuf }
-  | space* (("Local"|"Global") space+)? gallina_kw_to_hide
+  | space* (legacy_attr_kw space+)* gallina_kw_to_hide
       { let s = lexeme lexbuf in
 	  if !Cdglobals.light && section_or_end s then
 	    let eol = skip_to_dot lexbuf in
@@ -557,7 +565,7 @@ rule coq_bol = parse
 	      let eol = body lexbuf in
 	      if eol then coq_bol lexbuf else coq lexbuf
 	    end }
-  | space* thm_token
+  | space* (legacy_attr_kw space+)* thm_token
       { let s = lexeme lexbuf in
         output_indented_keyword s lexbuf;
         let eol = body lexbuf in
@@ -581,21 +589,21 @@ rule coq_bol = parse
       in
 	in_proof := None;
 	if eol then coq_bol lexbuf else coq lexbuf }
-  | space* gallina_kw
+  | space* (legacy_attr_kw space+)* gallina_kw
       {
 	in_proof := None;
 	let s = lexeme lexbuf in
 	output_indented_keyword s lexbuf;
 	let eol= body lexbuf in
 	if eol then coq_bol lexbuf else coq lexbuf }
-  | space* prog_kw
+  | space* (legacy_attr_kw space+)* prog_kw
       {
 	in_proof := None;
 	let s = lexeme lexbuf in
 	output_indented_keyword s lexbuf;
 	let eol= body lexbuf in
 	if eol then coq_bol lexbuf else coq lexbuf }
-  | space* notation_kw
+  | space* (legacy_attr_kw space+)* notation_kw
       {	let s = lexeme lexbuf in
 	output_indented_keyword s lexbuf;
 	let eol= start_notation_string lexbuf in
@@ -680,7 +688,7 @@ and coq = parse
 	end }
   | eof
       { () }
-  | (("Local"|"Global") space+)? gallina_kw_to_hide
+  | (legacy_attr_kw space+)* gallina_kw_to_hide
       { let s = lexeme lexbuf in
 	  if !Cdglobals.light && section_or_end s then
 	    begin
@@ -717,17 +725,17 @@ and coq = parse
       in
 	in_proof := None;
 	if eol then coq_bol lexbuf else coq lexbuf }
-  | gallina_kw
+  | (legacy_attr_kw space+)* gallina_kw
       { let s = lexeme lexbuf in
 	  Output.ident s None;
 	let eol = body lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
-  | notation_kw
+  | (legacy_attr_kw space+)* notation_kw
       { let s = lexeme lexbuf in
 	Output.ident s None;
 	let eol= start_notation_string lexbuf in
 	if eol then coq_bol lexbuf else coq lexbuf }
-  | prog_kw
+  | (legacy_attr_kw space+)* prog_kw
       { let s = lexeme lexbuf in
 	  Output.ident s None;
 	let eol = body lexbuf in
