@@ -112,14 +112,14 @@ let rec collect_constants_without_body sign mp accu =
 let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let env = Modops.add_retroknowledge mb.mod_retroknowledge env in
-  let sign, opac =
+  let opac =
     check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta opacify
   in
   let optsign, opac = match mb.mod_expr with
     | Struct sign_struct ->
-      let opacify = collect_constants_without_body sign mb.mod_mp opacify in
-      let sign, opac = check_signature env opac sign_struct mb.mod_mp mb.mod_delta opacify in
-      Some (sign, mb.mod_delta), opac
+      let opacify = collect_constants_without_body mb.mod_type mb.mod_mp opacify in
+      let opac = check_signature env opac sign_struct mb.mod_mp mb.mod_delta opacify in
+      Some (sign_struct, mb.mod_delta), opac
     | Algebraic me -> Some (check_mexpression env opac me mb.mod_type mb.mod_mp mb.mod_delta), opac
     | Abstract|FullStruct -> None, opac
   in
@@ -137,7 +137,7 @@ let rec check_module env opac mp mb opacify =
 
 and check_module_type env mty =
   Flags.if_verbose Feedback.msg_notice (str "  checking module type: " ++ str (ModPath.to_string mty.mod_mp));
-  let (_:module_signature), _ =
+  let _ : _ Cmap.t =
     check_signature env Cmap.empty mty.mod_type mty.mod_mp mty.mod_delta Cset.empty in
   ()
 
@@ -184,12 +184,12 @@ and check_signature env opac sign mp_mse res opacify = match sign with
   | MoreFunctor (arg_id, mtb, body) ->
       check_module_type env mtb;
       let env' = Modops.add_module_type (MPbound arg_id) mtb env in
-      let body, opac = check_signature env' opac body mp_mse res Cset.empty in
-      MoreFunctor(arg_id,mtb,body), opac
+      let opac = check_signature env' opac body mp_mse res Cset.empty in
+      opac
   | NoFunctor struc ->
       let (_:env), opac = List.fold_left (fun (env, opac) (lab,mb) ->
         check_structure_field env opac mp_mse lab res opacify mb) (env, opac) struc
       in
-      NoFunctor struc, opac
+      opac
 
 let check_module env opac mp mb = check_module env opac mp mb Cset.empty
