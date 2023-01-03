@@ -49,7 +49,7 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let mind_entry_inds = Array.map_to_list (fun ind ->
       let mind_entry_arity = match ind.mind_arity with
         | RegularArity ar ->
-          let ctx, arity = Term.decompose_prod_n_assum nparams ar.mind_user_arity in
+          let ctx, arity = Term.decompose_prod_n_decls nparams ar.mind_user_arity in
           ignore ctx; (* we will check that the produced user_arity is equal to the input *)
           arity
         | TemplateArity ar ->
@@ -63,7 +63,7 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
         mind_entry_consnames = Array.to_list ind.mind_consnames;
         mind_entry_lc = Array.map_to_list (fun c ->
             let c = Inductive.abstract_constructor_type_relatively_to_inductive_types_context ntyps mind c in
-            let ctx, c = Term.decompose_prod_n_assum nparams c in
+            let ctx, c = Term.decompose_prod_n_decls nparams c in
             ignore ctx; (* we will check that the produced user_lc is equal to the input *)
             c
           ) ind.mind_user_lc;

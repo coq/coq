@@ -76,7 +76,7 @@ let print_ref reduce ref udecl =
   let sigma = Evd.from_ctx (UState.of_names bl) in
   let typ =
     if reduce then
-      let ctx,ccl = Reductionops.splay_prod_assum env sigma (EConstr.of_constr typ)
+      let ctx,ccl = Reductionops.hnf_decompose_prod_decls env sigma (EConstr.of_constr typ)
       in EConstr.to_constr sigma (EConstr.it_mkProd_or_LetIn ccl ctx)
     else typ in
   let typ = Arguments_renaming.rename_type typ ref in
@@ -140,7 +140,7 @@ let print_impargs_list prefix l =
 
 let need_expansion impl ref =
   let typ, _ = Typeops.type_of_global_in_context (Global.env ()) ref in
-  let ctx = Term.prod_assum typ in
+  let ctx = Term.prod_decls typ in
   let nprods = List.count is_local_assum ctx in
   not (List.is_empty impl) && List.length impl >= nprods &&
     let _,lastimpl = List.chop nprods impl in

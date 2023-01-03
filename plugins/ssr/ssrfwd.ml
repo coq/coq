@@ -244,7 +244,7 @@ let havetac ist
      let cty = combineCG cty hole (mkCArrow ?loc) mkRArrow in
      let sigma, t, _ = interp sigma false (combineCG ct cty (mkCCast ?loc) mkRCast) in
      let sigma, ty = Typing.type_of env sigma t in
-     let ctx, _ = EConstr.decompose_prod_n_assum sigma 1 ty in
+     let ctx, _ = EConstr.decompose_prod_n_decls sigma 1 ty in
      sigma, ty, assert_is_conv (ctx, concl) <*> Tactics.apply t, itac_c
    | FwdHave, false, false ->
      let skols = List.flatten (List.map (function

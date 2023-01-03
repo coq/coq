@@ -257,21 +257,23 @@ val destRef : Evd.evar_map -> t -> GlobRef.t * EInstance.t
 val decompose_app : Evd.evar_map -> t -> t * t list
 
 (** Pops lambda abstractions until there are no more, skipping casts. *)
-val decompose_lam : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t
+val decompose_lambda : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t
 
 (** Pops lambda abstractions and letins until there are no more, skipping casts. *)
-val decompose_lam_assum : Evd.evar_map -> t -> rel_context * t
+val decompose_lambda_decls : Evd.evar_map -> t -> rel_context * t
 
 (** Pops [n] lambda abstractions, and pop letins only if needed to
    expose enough lambdas, skipping casts.
 
     @raise UserError if the term doesn't have enough lambdas. *)
-val decompose_lam_n_assum : Evd.evar_map -> int -> t -> rel_context * t
+val decompose_lambda_n_assum : Evd.evar_map -> int -> t -> rel_context * t
 
 (** Pops [n] lambda abstractions and letins, skipping casts.
 
      @raise UserError if the term doesn't have enough lambdas/letins. *)
-val decompose_lam_n_decls : Evd.evar_map -> int -> t -> rel_context * t
+val decompose_lambda_n_decls : Evd.evar_map -> int -> t -> rel_context * t
+
+val prod_decls : Evd.evar_map -> t -> rel_context
 
 val compose_lam : (Name.t Context.binder_annot * t) list -> t -> t
 [@@ocaml.deprecated "Use [it_mkLambda] instead."]
@@ -279,8 +281,8 @@ val compose_lam : (Name.t Context.binder_annot * t) list -> t -> t
 val to_lambda : Evd.evar_map -> int -> t -> t
 
 val decompose_prod : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t
-val decompose_prod_assum : Evd.evar_map -> t -> rel_context * t
-val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
+val decompose_prod_decls : Evd.evar_map -> t -> rel_context * t
+val decompose_prod_n_decls : Evd.evar_map -> int -> t -> rel_context * t
 
 val existential_type : Evd.evar_map -> existential -> types
 val whd_evar : Evd.evar_map -> constr -> constr
@@ -465,3 +467,23 @@ sig
   val eq : (t, Constr.t) eq
   (** Use for transparent cast between types. *)
 end
+
+(** Deprecated *)
+
+val decompose_lambda_assum : Evd.evar_map -> t -> rel_context * t
+[@@ocaml.deprecated "Use [decompose_lambda_decls] instead."]
+val decompose_prod_assum : Evd.evar_map -> t -> rel_context * t
+[@@ocaml.deprecated "Use [decompose_prod_decls] instead."]
+val decompose_prod_n_assum : Evd.evar_map -> int -> t -> rel_context * t
+[@@ocaml.deprecated "Use [decompose_prod_n_decls] instead."]
+val prod_assum : Evd.evar_map -> t -> rel_context
+[@@ocaml.deprecated "Use [prod_decls] instead."]
+
+val decompose_lam : Evd.evar_map -> t -> (Name.t Context.binder_annot * t) list * t
+[@@ocaml.deprecated "Use [decompose_lambda] instead."]
+val decompose_lam_n_assum : Evd.evar_map -> int -> t -> rel_context * t
+[@@ocaml.deprecated "Use [decompose_lambda_n_assum] instead."]
+val decompose_lam_n_decls : Evd.evar_map -> int -> t -> rel_context * t
+[@@ocaml.deprecated "Use [decompose_lambda_n_decls] instead."]
+val decompose_lam_assum : Evd.evar_map -> t -> rel_context * t
+[@@ocaml.deprecated "Use [decompose_lambda_assum] instead."]

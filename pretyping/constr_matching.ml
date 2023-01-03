@@ -579,12 +579,12 @@ let sub_match ?(closed=true) env sigma pat c =
       let (mib, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
       let (_, hd, _, _, br) = expand_case env sigma (ci, u, pms, hd0, iv, c1, lc0) in
       let hd =
-        let (ctx, hd) = decompose_lam_assum sigma hd in
+        let (ctx, hd) = decompose_lambda_decls sigma hd in
         (push_rel_context ctx env, hd)
       in
       let map i br =
         let decls = mip.Declarations.mind_consnrealdecls.(i) in
-        let (ctx, c) = decompose_lam_n_decls sigma decls br in
+        let (ctx, c) = decompose_lambda_n_decls sigma decls br in
         (push_rel_context ctx env, c)
       in
       let lc = Array.to_list (Array.mapi map br) in

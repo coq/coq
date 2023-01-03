@@ -1341,7 +1341,7 @@ let prod_applist sigma c l =
     | _ -> anomaly (Pp.str "Not enough prod's.") in
   app [] c l
 
-let prod_applist_assum sigma n c l =
+let prod_applist_decls sigma n c l =
   let open EConstr in
   let rec app n subst c l =
     if Int.equal n 0 then

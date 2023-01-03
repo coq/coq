@@ -511,7 +511,7 @@ let rec norm_head info env t stack =
 
   (* non-neutral cases *)
   | Lambda _ ->
-      let ctxt,b = Term.decompose_lam t in
+      let ctxt,b = Term.decompose_lambda t in
       (LAM(List.length ctxt, List.rev ctxt,b,env), stack)
   | Fix fix -> (FIXP(fix,env,[||]), stack)
   | CoFix cofix -> (COFIXP(cofix,env,[||]), stack)
@@ -690,9 +690,9 @@ let rec apply_stack info t = function
     let (_, ty, _, _, br) = Inductive.expand_case info.env (ci, u, pms, ty, iv, mkProp, br) in
     let ty =
       let (_, mip) = Inductive.lookup_mind_specif info.env ci.ci_ind in
-      Term.decompose_lam_n_decls (mip.Declarations.mind_nrealdecls + 1) ty
+      Term.decompose_lambda_n_decls (mip.Declarations.mind_nrealdecls + 1) ty
     in
-    let mk_br c n = Term.decompose_lam_n_decls n c in
+    let mk_br c n = Term.decompose_lambda_n_decls n c in
     let br = Array.map2 mk_br br ci.ci_cstr_ndecls in
     let map_ctx (nas, c) =
       let open Context.Rel.Declaration in

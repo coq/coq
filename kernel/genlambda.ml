@@ -612,7 +612,7 @@ let rec lambda_of_constr cache env sigma c =
       Lprod(ld,  Llam([|id|], lc))
 
   | Lambda _ ->
-      let params, body = Term.decompose_lam c in
+      let params, body = Term.decompose_lambda c in
       let fold (na, t) env = Environ.push_rel (RelDecl.LocalAssum (na, t)) env in
       let env = List.fold_right fold params env in
       let lb = lambda_of_constr cache env sigma body in

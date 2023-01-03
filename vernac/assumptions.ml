@@ -287,7 +287,7 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
              label param_ctx accu arity_wo_param
          in
          Array.fold_left (fun accu cst_typ ->
-            let param_ctx, cst_typ_wo_param = Term.decompose_prod_n_assum nparam cst_typ in
+            let param_ctx, cst_typ_wo_param = Term.decompose_prod_n_decls nparam cst_typ in
             traverse label param_ctx accu cst_typ_wo_param)
           accu oib.mind_user_lc)
        accu mib.mind_packets

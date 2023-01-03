@@ -945,7 +945,7 @@ let shrink_body c ty =
   let ctx, b, ty =
     match ty with
     | None ->
-      let ctx, b = Term.decompose_lam_assum c in
+      let ctx, b = Term.decompose_lambda_decls c in
       (ctx, b, None)
     | Some ty ->
       let ctx, b, ty = decompose_lam_prod c ty in
@@ -1163,7 +1163,7 @@ let compute_possible_guardness_evidences n fixbody fixtype =
          doesn't seem to worth the effort (except for huge mutual
          fixpoints ?) *)
     let m = Termops.nb_prod Evd.empty (EConstr.of_constr fixtype) (* FIXME *) in
-    let ctx = fst (Term.decompose_prod_n_assum m fixtype) in
+    let ctx = fst (Term.decompose_prod_n_decls m fixtype) in
     List.map_i (fun i _ -> i) 0 ctx
 
 let declare_mutual_definition ~pm l =
@@ -1176,10 +1176,10 @@ let declare_mutual_definition ~pm l =
     let sigma = Evd.from_ctx x.prg_uctx in
     let r = Retyping.relevance_of_type env sigma (EConstr.of_constr typ) in
     let term =
-      snd (Reductionops.splay_lam_n env sigma len (EConstr.of_constr subs))
+      snd (Reductionops.hnf_decompose_lambda_n_assum env sigma len (EConstr.of_constr subs))
     in
     let typ =
-      snd (Reductionops.splay_prod_n env sigma len (EConstr.of_constr typ))
+      snd (Reductionops.hnf_decompose_prod_n_decls env sigma len (EConstr.of_constr typ))
     in
     let term = EConstr.to_constr sigma term in
     let typ = EConstr.to_constr sigma typ in

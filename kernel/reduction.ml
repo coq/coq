@@ -943,7 +943,7 @@ let beta_appvect c v = beta_applist c (Array.to_list v)
 let beta_app c a = beta_applist c [a]
 
 (* Compatibility *)
-let betazeta_appvect = Term.lambda_appvect_assum
+let betazeta_appvect = Term.lambda_appvect_decls
 
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
@@ -963,7 +963,7 @@ let hnf_prod_app env t n =
 let hnf_prod_applist env t nl =
   List.fold_left (hnf_prod_app env) t nl
 
-let hnf_prod_applist_assum env n c l =
+let hnf_prod_applist_decls env n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
@@ -977,7 +977,7 @@ let hnf_prod_applist_assum env n c l =
 
 (* Dealing with arities *)
 
-let dest_prod env =
+let hnf_decompose_prod env =
   let rec decrec env m c =
     let t = whd_all env c in
     match kind t with
@@ -988,7 +988,7 @@ let dest_prod env =
   in
   decrec env Context.Rel.empty
 
-let dest_lam env =
+let hnf_decompose_lambda env =
   let rec decrec env m c =
     let t = whd_all env c in
     match kind t with
@@ -1000,7 +1000,7 @@ let dest_lam env =
   decrec env Context.Rel.empty
 
 (* The same but preserving lets in the context, not internal ones. *)
-let dest_prod_assum env =
+let hnf_decompose_prod_decls env =
   let rec prodec_rec env l ty =
     let rty = whd_allnolet env ty in
     match kind rty with
@@ -1017,7 +1017,7 @@ let dest_prod_assum env =
   in
   prodec_rec env Context.Rel.empty
 
-let dest_lam_assum env =
+let hnf_decompose_lambda_decls env =
   let rec lamec_rec env l ty =
     let rty = whd_allnolet env ty in
     match kind rty with
@@ -1031,7 +1031,7 @@ let dest_lam_assum env =
   in
   lamec_rec env Context.Rel.empty
 
-let dest_lam_n_assum env n =
+let hnf_decompose_lambda_n_decls env n =
   let rec lamec_rec env n l c =
     if Int.equal n 0 then l,c
     else
@@ -1050,7 +1050,7 @@ let dest_lam_n_assum env n =
 exception NotArity
 
 let dest_arity env c =
-  let l, c = dest_prod_assum env c in
+  let l, c = hnf_decompose_prod_decls env c in
   match kind c with
     | Sort s -> l,s
     | _ -> raise NotArity
@@ -1062,10 +1062,17 @@ let is_arity env c =
   with NotArity -> false
 
 let eta_expand env t ty =
-  let ctxt, _codom = dest_prod env ty in
-  let ctxt',t = dest_lam env t in
+  let ctxt, _codom = hnf_decompose_prod env ty in
+  let ctxt',t = hnf_decompose_lambda env t in
   let d = Context.Rel.nhyps ctxt - Context.Rel.nhyps ctxt' in
   let eta_args = List.rev_map mkRel (List.interval 1 d) in
   let t = Term.applistc (Vars.lift d t) eta_args in
   let t = Term.it_mkLambda_or_LetIn t (List.firstn d ctxt) in
   Term.it_mkLambda_or_LetIn t ctxt'
+
+(* Deprecated *)
+
+let dest_prod       = hnf_decompose_prod
+let dest_prod_assum = hnf_decompose_prod_decls
+let dest_lam        = hnf_decompose_lambda
+let dest_lam_assum  = hnf_decompose_lambda_decls

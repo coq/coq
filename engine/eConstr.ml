@@ -240,7 +240,7 @@ let decompose_app sigma c =
     | App (f,cl) -> (f, Array.to_list cl)
     | _ -> (c,[])
 
-let decompose_lam sigma c =
+let decompose_lambda sigma c =
   let rec lamdec_rec l c = match kind sigma c with
     | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) c
     | Cast (c,_,_)     -> lamdec_rec l c
@@ -248,7 +248,7 @@ let decompose_lam sigma c =
   in
   lamdec_rec [] c
 
-let decompose_lam_assum sigma c =
+let decompose_lambda_decls sigma c =
   let open Rel.Declaration in
   let rec lamdec_rec l c =
     match kind sigma c with
@@ -259,10 +259,10 @@ let decompose_lam_assum sigma c =
   in
   lamdec_rec Context.Rel.empty c
 
-let decompose_lam_n_assum sigma n c =
+let decompose_lambda_n_assum sigma n c =
   let open Rel.Declaration in
   if n < 0 then
-    anomaly Pp.(str "decompose_lam_n_assum: integer parameter must be positive.");
+    anomaly Pp.(str "decompose_lambda_n_assum: integer parameter must be positive.");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
@@ -270,14 +270,14 @@ let decompose_lam_n_assum sigma n c =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) n c
       | Cast (c,_,_)    -> lamdec_rec l n c
-      | c -> anomaly Pp.(str "decompose_lam_n_assum: not enough abstractions.")
+      | c -> anomaly Pp.(str "decompose_lambda_n_assum: not enough abstractions.")
   in
   lamdec_rec Context.Rel.empty n c
 
-let decompose_lam_n_decls sigma n =
+let decompose_lambda_n_decls sigma n =
   let open Rel.Declaration in
   if n < 0 then
-    anomaly Pp.(str "decompose_lam_n_decls: integer parameter must be positive.");
+    anomaly Pp.(str "decompose_lambda_n_decls: integer parameter must be positive.");
   let rec lamdec_rec l n c =
     if Int.equal n 0 then l,c
     else
@@ -285,7 +285,7 @@ let decompose_lam_n_decls sigma n =
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> lamdec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)    -> lamdec_rec l n c
-      | c -> anomaly Pp.(str "decompose_lam_n_decls: not enough abstractions.")
+      | c -> anomaly Pp.(str "decompose_lambda_n_decls: not enough abstractions.")
   in
   lamdec_rec Context.Rel.empty n
 
@@ -306,7 +306,7 @@ let decompose_prod sigma c =
   in
   proddec_rec [] c
 
-let decompose_prod_assum sigma c =
+let decompose_prod_decls sigma c =
   let open Rel.Declaration in
   let rec proddec_rec l c =
     match kind sigma c with
@@ -317,10 +317,10 @@ let decompose_prod_assum sigma c =
   in
   proddec_rec Context.Rel.empty c
 
-let decompose_prod_n_assum sigma n c =
+let decompose_prod_n_decls sigma n c =
   let open Rel.Declaration in
   if n < 0 then
-    anomaly Pp.(str "decompose_prod_n_assum: integer parameter must be positive.");
+    anomaly Pp.(str "decompose_prod_n_decls: integer parameter must be positive.");
   let rec prodec_rec l n c =
     if Int.equal n 0 then l,c
     else
@@ -328,9 +328,11 @@ let decompose_prod_n_assum sigma n c =
       | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
       | LetIn (x,b,t,c) -> prodec_rec (Context.Rel.add (LocalDef (x,b,t)) l) (n-1) c
       | Cast (c,_,_)    -> prodec_rec l n c
-      | c -> anomaly Pp.(str "decompose_prod_n_assum: not enough declarations.")
+      | c -> anomaly Pp.(str "decompose_prod_n_decls: not enough assumptions.")
   in
   prodec_rec Context.Rel.empty n c
+
+let prod_decls sigma t = fst (decompose_prod_decls sigma t)
 
 let existential_type = Evd.existential_type
 
@@ -435,9 +437,9 @@ let annotate_case env sigma (ci, u, pms, p, iv, c, bl as case) =
     (* Too bad we need to fetch this data in the environment, should be in the
       case_info instead. *)
     let (_, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
-    decompose_lam_n_decls sigma (mip.Declarations.mind_nrealdecls + 1) p
+    decompose_lambda_n_decls sigma (mip.Declarations.mind_nrealdecls + 1) p
   in
-  let mk_br c n = decompose_lam_n_decls sigma n c in
+  let mk_br c n = decompose_lambda_n_decls sigma n c in
   let bl = Array.map2 mk_br bl ci.ci_cstr_ndecls in
   (ci, u, pms, p, iv, c, bl)
 
@@ -1036,3 +1038,14 @@ let to_case_invert = unsafe_to_case_invert
 
 let eq = unsafe_eq
 end
+
+(* deprecated *)
+
+let decompose_lambda_assum = decompose_lambda_decls
+let decompose_prod_assum = decompose_prod_decls
+let decompose_prod_n_assum = decompose_prod_n_decls
+let prod_assum = prod_decls
+let decompose_lam = decompose_lambda
+let decompose_lam_n_assum = decompose_lambda_n_assum
+let decompose_lam_n_decls = decompose_lambda_n_decls
+let decompose_lam_assum = decompose_lambda_assum

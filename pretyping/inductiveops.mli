@@ -194,7 +194,7 @@ val find_coinductive : env -> evar_map -> EConstr.types -> (inductive * EConstr.
 
 (** [instantiate_constructor_params cstr mind params] instantiates the
     type of the given constructor with parameters [params] *)
-val instantiate_constructor_params : pconstructor -> Inductive.mind_specif -> constr list -> constr
+val instantiate_constructor_params : pconstructor -> mind_specif -> constr list -> constr
 
 (********************)
 
@@ -236,7 +236,7 @@ val compute_projections : Environ.env -> inductive -> (constr * types) array
 (********************)
 
 val type_of_inductive_knowing_conclusion :
-  env -> evar_map -> Inductive.mind_specif Univ.puniverses -> EConstr.types -> evar_map * EConstr.types
+  env -> evar_map -> mind_specif Univ.puniverses -> EConstr.types -> evar_map * EConstr.types
 
 (********************)
 val control_only_guard : env -> Evd.evar_map -> EConstr.types -> unit

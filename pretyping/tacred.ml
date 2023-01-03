@@ -264,7 +264,7 @@ let invert_name labs l {binder_name=na0} env sigma ref na =
               try match unsafe_reference_opt_value env sigma ref with
                 | None -> None
                 | Some c ->
-                    let labs',ccl = decompose_lam sigma c in
+                    let labs',ccl = decompose_lambda sigma c in
                     let _, l' = whd_betalet_stack env sigma ccl in
                     let labs' = List.map snd labs' in
                     (* ppedrot: there used to be generic equality on terms here *)
@@ -1015,7 +1015,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
     let (constr, stack as s') = whd_simpl_stack env sigma s in
     match match_eval_ref_value env sigma constr stack with
     | Some c ->
-      (match EConstr.kind sigma (snd (decompose_lam sigma c)) with
+      (match EConstr.kind sigma (snd (decompose_lambda sigma c)) with
       | CoFix _ | Fix _ -> s'
       | Proj (p,t) when
           (match EConstr.kind sigma constr with

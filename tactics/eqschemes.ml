@@ -649,7 +649,7 @@ let fix_r2l_forward_rew_scheme env (c, ctx') =
   let sigma = Evd.from_env env in
   let t = Retyping.get_type_of env sigma (EConstr.of_constr c) in
   let t = EConstr.Unsafe.to_constr t in
-  let ctx,_ = decompose_prod_assum t in
+  let ctx,_ = decompose_prod_decls t in
   match ctx with
   | hp :: p :: ind :: indargs ->
      let c' =

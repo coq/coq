@@ -738,7 +738,7 @@ struct
            (* we lift nbfix times the type in tycon, because of
             * the nbfix variables pushed to newenv *)
            let (ctxt,ty) =
-             decompose_prod_n_assum sigma (Context.Rel.length ctxt)
+             decompose_prod_n_decls sigma (Context.Rel.length ctxt)
                (lift nbfix ftys.(i)) in
            let ctxt,nenv = push_rel_context ~hypnaming sigma ctxt newenv in
            let sigma, j = pretype (mk_tycon ty) nenv sigma def in

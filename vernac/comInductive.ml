@@ -156,7 +156,7 @@ let interp_cstrs env (sigma, ind_rel) impls params ind arity =
                   solve_unification_constraints = false }
     in
     let sigma, (ctyp, cimpl) = interp_type_evars_impls ~flags env sigma ~impls ctyp in
-    let ctx, concl = Reductionops.splay_prod_assum env sigma ctyp in
+    let ctx, concl = Reductionops.hnf_decompose_prod_decls env sigma ctyp in
     let concl_env = EConstr.push_rel_context ctx env in
     let sigma_with_model_evars, model =
       model_conclusion concl_env sigma ind_rel params (Context.Rel.length ctx) arity_indices
@@ -202,7 +202,7 @@ let sup_list min = List.fold_left max_sort min
 
 let extract_level env evd min tys =
   let sorts = List.map (fun ty ->
-    let ctx, concl = Reduction.dest_prod_assum env ty in
+    let ctx, concl = Reduction.hnf_decompose_prod_decls env ty in
       sign_level env evd (LocalAssum (make_annot Anonymous Sorts.Relevant, concl) :: ctx)) tys
   in sup_list min sorts
 
@@ -388,7 +388,7 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt u =
   in
   let fold_params accu decl = match decl with
   | LocalAssum (_, p) ->
-    let c = Term.strip_prod_assum p in
+    let c = Term.strip_prod_decls p in
     begin match Constr.kind c with
     | Constr.Sort (Type u) ->
       begin match Univ.Universe.level u with
@@ -638,7 +638,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let lift_ctx n ctx =
     let t = EConstr.it_mkProd_or_LetIn EConstr.mkProp ctx in
     let t = EConstr.Vars.lift n t in
-    let ctx, _ = EConstr.decompose_prod_assum sigma t in
+    let ctx, _ = EConstr.decompose_prod_decls sigma t in
     ctx
   in
   let ctx_params_lifted, fullarities =
@@ -818,7 +818,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
 
   The Show Match could also be made more robust, for instance in the
   presence of let in the branch of a constructor. A
-  decompose_prod_assum would probably suffice for that, but then, it
+  decompose_prod_decls would probably suffice for that, but then, it
   is a Context.Rel.Declaration.t which needs to be matched and not
   just a pair (name,type).
 

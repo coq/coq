@@ -208,7 +208,7 @@ let pattern_of_constr ~broken env sigma t =
     | Case (ci, u, pms, p0, iv, a, br0) ->
         let (ci, p, iv, a, br) = Inductive.expand_case env (ci, u, pms, p0, iv, a, br0) in
         let pattern_of_ctx c (nas, c0) =
-          let ctx, c = Term.decompose_lam_n_decls (Array.length nas) c in
+          let ctx, c = Term.decompose_lambda_n_decls (Array.length nas) c in
           let env = push_rel_context ctx env in
           let c = pattern_of_constr env c in
           (Array.map Context.binder_name nas, c)

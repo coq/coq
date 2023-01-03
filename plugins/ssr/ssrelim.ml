@@ -229,13 +229,13 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
           tys
         in
         let drop_params x =
-          snd @@ EConstr.decompose_prod_n_assum sigma
+          snd @@ EConstr.decompose_prod_n_decls sigma
             mind.Declarations.mind_nparams (EConstr.of_constr x) in
         Array.map drop_params renamed_tys
       else
         subgoals_tys sigma ctx_concl
     in
-    let rctx = fst (EConstr.decompose_prod_assum sigma unfolded_c_ty) in
+    let rctx = fst (EConstr.decompose_prod_decls sigma unfolded_c_ty) in
     let n_c_args = Context.Rel.length rctx in
     let c, c_ty, t_args, sigma = saturate env sigma c ~ty:c_ty n_c_args in
     let elim, elimty, elim_args, sigma =
@@ -358,7 +358,7 @@ let generate_pred env sigma0 ~concl patterns predty eqid is_rec deps elim_args n
         str"the defined ones matched")
     else match_all concl sigma postponed in
   let concl, sigma = match_all concl sigma patterns in
-  let pred_rctx, _ = EConstr.decompose_prod_assum sigma (fire_subst sigma predty) in
+  let pred_rctx, _ = EConstr.decompose_prod_decls sigma (fire_subst sigma predty) in
   let sigma, concl, gen_eq_tac, clr = match eqid with
   | Some (IPatId _) when not is_rec ->
       let k = List.length deps in
@@ -499,7 +499,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
   let elim = sigma, elim in
   let seed =
     Array.map (fun ty ->
-    let ctx,_ = EConstr.decompose_prod_assum sigma ty in
+    let ctx,_ = EConstr.decompose_prod_decls sigma ty in
     CList.rev_map Context.Rel.Declaration.get_name ctx) seed in
 
   let elim_tac =
@@ -526,7 +526,7 @@ let revtoptac n0 =
   let concl = Proofview.Goal.concl gl in
   let env = Proofview.Goal.env gl in
   let n = nb_prod sigma concl - n0 in
-  let dc, cl = EConstr.decompose_prod_n_assum sigma n concl in
+  let dc, cl = EConstr.decompose_prod_n_decls sigma n concl in
   let ty = EConstr.it_mkProd_or_LetIn cl (List.rev dc) in
   let dc' = dc @ [Context.Rel.Declaration.LocalAssum(make_annot (Name rev_id) Sorts.Relevant, ty)] in
   Refine.refine ~typecheck:true begin fun sigma ->

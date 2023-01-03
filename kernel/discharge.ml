@@ -104,7 +104,7 @@ let cook_rel_context cache ctx =
      we reify [ctx] into a big [forall] term and work on that. *)
   let t = it_mkProd_or_LetIn mkProp ctx in
   let t = abstract_as_type cache t in
-  let ctx, t = decompose_prod_assum t in
+  let ctx, t = decompose_prod_decls t in
   assert (Constr.equal t mkProp);
   ctx
 
@@ -121,7 +121,7 @@ let cook_projection cache ~params t =
   let t = it_mkProd_or_LetIn t params in
   let t = abstract_as_type cache t in
   let nrels = Context.Rel.nhyps (rel_context_of_cooking_cache cache) in
-  let _, t = decompose_prod_n_assum (Context.Rel.length params + 1 + nrels) t in
+  let _, t = decompose_prod_n_decls (Context.Rel.length params + 1 + nrels) t in
   t
 
 let cook_one_ind cache ~ntypes mip =
@@ -138,7 +138,7 @@ let cook_one_ind cache ~ntypes mip =
   let mind_nf_lc = Array.map (fun (ctx,t) ->
       let lc = it_mkProd_or_LetIn t ctx in
       let lc = cook_lc cache ~ntypes lc in
-      decompose_prod_assum lc)
+      decompose_prod_decls lc)
       mip.mind_nf_lc
   in
   { mind_typename = mip.mind_typename;

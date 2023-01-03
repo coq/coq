@@ -1168,7 +1168,7 @@ let rec ungeneralize sigma n ng body =
       (* We traverse a split *)
       let p =
         let (nas, p) = p in
-        let sign2,p = decompose_prod_n_assum sigma ng p in
+        let sign2,p = decompose_prod_n_decls sigma ng p in
         let p = prod_applist sigma p [mkRel (n+Array.length nas+ng)] in
         nas, it_mkProd_or_LetIn p sign2
       in
@@ -2428,7 +2428,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
              | Some ineqs ->
                  [LocalAssum (make_annot Anonymous r, ineqs)], lift 1 arity
            in
-           let eqs_rels, arity = decompose_prod_n_assum sigma neqs arity in
+           let eqs_rels, arity = decompose_prod_n_decls sigma neqs arity in
              eqs_rels @ neqs_rels @ rhs_rels', arity
          in
          let _,rhs_env = push_rel_context ~hypnaming sigma rhs_rels' env in

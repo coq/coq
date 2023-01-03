@@ -150,7 +150,7 @@ let is_correct_arity env sigma c pj ind specif params =
   in
   srec env sigma pj.uj_type (List.rev arsign)
 
-let lambda_applist_assum sigma n c l =
+let lambda_applist_decls sigma n c l =
   let rec app n subst t l =
     if Int.equal n 0 then
       if l == [] then substl subst t
@@ -171,7 +171,7 @@ let type_case_branches env sigma (ind,largs) pj c =
   let lc = build_branches_type ind specif params (EConstr.to_constr ~abort_on_undefined_evars:false sigma p) in
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
-  let ty = whd_betaiota env sigma (lambda_applist_assum sigma (n+1) p (realargs@[c])) in
+  let ty = whd_betaiota env sigma (lambda_applist_decls sigma (n+1) p (realargs@[c])) in
   sigma, (lc, ty, ESorts.relevance_of_sort sigma ps)
 
 let judge_of_case env sigma case ci pj iv cj lfj =
@@ -205,7 +205,7 @@ let check_allowed_sort env sigma ind c p =
   let specif = lookup_mind_specif env (fst ind) in
   let sorts = elim_sort specif in
   let pj = Retyping.get_judgment_of env sigma p in
-  let _, s = splay_prod env sigma pj.uj_type in
+  let _, s = hnf_decompose_prod env sigma pj.uj_type in
   let ksort = match EConstr.kind sigma s with
   | Sort s -> ESorts.family sigma s
   | _ -> error_elim_arity env sigma ind c None in

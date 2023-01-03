@@ -26,8 +26,6 @@ val find_rectype     : env -> types -> pinductive * constr list
 val find_inductive   : env -> types -> pinductive * constr list
 val find_coinductive : env -> types -> pinductive * constr list
 
-type mind_specif = mutual_inductive_body * one_inductive_body
-
 (** {6 ... } *)
 (** Fetching information in the environment about an inductive type.
     Raises an anomaly if the inductive type is not found. *)

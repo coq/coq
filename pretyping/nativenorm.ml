@@ -145,7 +145,7 @@ let build_branches_type env sigma mib mip (ind,u) params (pctx, p) =
   let p = it_mkLambda_or_LetIn p pctx in (* TODO: prevent useless cut? *)
   let build_one_branch i (ctx, _) =
     let typi = Inductiveops.instantiate_constructor_params ((ind,i+1),u) (mib,mip) paramsl in
-    let decl,indapp = Reductionops.splay_prod env sigma (EConstr.of_constr typi) in
+    let decl,indapp = Reductionops.hnf_decompose_prod env sigma (EConstr.of_constr typi) in
     let decl = List.map (on_snd EConstr.Unsafe.to_constr) decl in
     let ind,cargs = find_rectype_a env sigma indapp in
     let nparams = Array.length params in
@@ -327,7 +327,7 @@ and nf_atom_type env sigma atom =
       in
       let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
       let pT =
-        hnf_prod_applist_assum env nparamdecls
+        hnf_prod_applist_decls env nparamdecls
           (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
       let pctx, p = nf_predicate env sigma ind mip params [] p pT in
       (* Calcul du type des branches *)

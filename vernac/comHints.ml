@@ -25,7 +25,7 @@ let project_hint ~poly pri l2r r =
   let t =
     Tacred.reduce_to_quantified_ref env sigma (lib_ref "core.iff.type") t
   in
-  let sign, ccl = decompose_prod_assum sigma t in
+  let sign, ccl = decompose_prod_decls sigma t in
   let a, b =
     match snd (decompose_app sigma ccl) with
     | [a; b] -> (a, b)

@@ -359,10 +359,10 @@ let rw_progress rhs lhs ise = not (EConstr.eq_constr ise lhs (Evarutil.nf_evar i
 (* such a generic Leibniz equation -- short of inspecting the type   *)
 (* of the elimination lemmas.                                        *)
 
-let rec strip_prod_assum c = match Constr.kind c with
-  | Prod (_, _, c') -> strip_prod_assum c'
-  | LetIn (_, v, _, c') -> strip_prod_assum (subst1 v c)
-  | Cast (c', _, _) -> strip_prod_assum c'
+let rec strip_prod_expand_let c = match Constr.kind c with
+  | Prod (_, _, c') -> strip_prod_expand_let c'
+  | LetIn (_, v, _, c') -> strip_prod_expand_let (subst1 v c)
+  | Cast (c', _, _) -> strip_prod_expand_let c'
   | _ -> c
 
 let rule_id = mk_internal_id "rewrite rule"
@@ -486,7 +486,7 @@ let rwcltac ?under ?map_redex cl rdx dir (sigma, r) =
           let sigma0 = pf_merge_uc_of sigma sigma0 in
           convert_concl ~check:true cl', rewritetac ?under dir r', sigma0
     else
-      let dc, r2 = EConstr.decompose_lam_n_assum sigma0 n r' in
+      let dc, r2 = EConstr.decompose_lambda_n_assum sigma0 n r' in
       let r3, _, r3t  =
         try EConstr.destCast sigma0 r2 with _ ->
         errorstrm Pp.(str "no cast from " ++ pr_econstr_pat env sigma0 r
@@ -592,7 +592,7 @@ let rwprocess_rule env dir rule =
         let np = Inductiveops.inductive_nparamdecls env ind in
         let indu = (ind, EConstr.EInstance.kind sigma u) in
         let ind_ct = Inductiveops.type_of_constructors env indu in
-        let lhs0 = last_arg sigma (EConstr.of_constr (strip_prod_assum ind_ct.(0))) in
+        let lhs0 = last_arg sigma (EConstr.of_constr (strip_prod_expand_let ind_ct.(0))) in
         let rdesc = match EConstr.kind sigma lhs0 with
         | Rel i ->
           let lhs = a.(np - i) in

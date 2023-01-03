@@ -183,7 +183,7 @@ let build_id_coercion idf_opt source poly =
   let c = match constant_opt_value_in env (destConst vs) with
     | Some c -> c
     | None -> error_not_transparent source in
-  let lams,t = decompose_lam_assum c in
+  let lams,t = decompose_lambda_decls c in
   let val_f =
     Term.it_mkLambda_or_LetIn
       (mkLambda (make_annot (Name Namegen.default_dependent_ident) Sorts.Relevant,
@@ -306,7 +306,7 @@ let add_new_coercion_core coef stre poly ~nonuniform ~reversible source target i
   let env = Global.env () in
   let t, _ = Typeops.type_of_global_in_context env coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
-  let lp,tg = decompose_prod_assum t in
+  let lp,tg = decompose_prod_decls t in
   let llp = List.length lp in
   if Int.equal llp 0 then raise (CoercionError NotAFunction);
   let (cls,ctx,lvs,ind) =

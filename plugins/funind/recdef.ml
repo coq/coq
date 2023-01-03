@@ -380,7 +380,7 @@ let add_vars sigma forbidden e =
 let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos :
     unit Proofview.tactic =
   Proofview.Goal.enter (fun g ->
-      let rev_context, b = decompose_lam_n (Proofview.Goal.sigma g) nb_lam e in
+      let rev_context, b = decompose_lambda_n (Proofview.Goal.sigma g) nb_lam e in
       let ids =
         List.fold_left
           (fun acc (na, _) ->
@@ -1274,7 +1274,7 @@ let whole_start concl_tac nb_args is_mes func input_type relation rec_arg_num :
         | Name f_id -> next_ident_away_in_goal f_id ids
         | Anonymous -> anomaly (Pp.str "Anonymous function.")
       in
-      let n_names_types, _ = decompose_lam_n sigma nb_args body1 in
+      let n_names_types, _ = decompose_lambda_n sigma nb_args body1 in
       let n_ids, ids =
         List.fold_left
           (fun (n_ids, ids) (n_name, _) ->

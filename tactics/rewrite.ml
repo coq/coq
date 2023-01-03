@@ -210,7 +210,7 @@ let decompose_applied_relation env sigma (c,l) =
     match find_rel ctype with
     | Some c -> c
     | None ->
-      let ctx,t' = Reductionops.splay_prod env sigma ctype in (* Search for underlying eq *)
+      let ctx,t' = Reductionops.hnf_decompose_prod env sigma ctype in (* Search for underlying eq *)
       let t' = it_mkProd_or_LetIn t' (List.map (fun (n,t) -> LocalAssum (n, t)) ctx) in
       match find_rel t' with
       | Some c -> c
@@ -935,7 +935,7 @@ let fold_match ?(force=false) env sigma c =
   let cty = Retyping.get_type_of env sigma c in
   let dep, pred, sk =
     let env', ctx, body =
-      let ctx, pred = decompose_lam_assum sigma p in
+      let ctx, pred = decompose_lambda_decls sigma p in
       let env' = push_rel_context ctx env in
         env', ctx, pred
     in
@@ -1788,7 +1788,7 @@ let rec strategy_of_ast = function
 
 let proper_projection env sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
-  let ctx, inst = decompose_prod_assum sigma ty in
+  let ctx, inst = decompose_prod_decls sigma ty in
   let mor, args = destApp sigma inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
   let app = mkApp (PropGlobal.proper_proj env sigma,
@@ -1928,7 +1928,7 @@ let setoid_proof ty fn fallback =
         try
           let rel, ty1, ty2, concl, _, _ = decompose_app_rel_error env sigma concl in
           let (sigma, t) = Typing.type_of env sigma rel in
-          let car = snd (List.hd (fst (Reductionops.splay_prod env sigma t))) in
+          let car = snd (List.hd (fst (Reductionops.hnf_decompose_prod env sigma t))) in
             (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel
         with e when CErrors.noncritical e ->
@@ -1993,7 +1993,7 @@ let setoid_symmetry_in id =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let ctype = Retyping.get_type_of env sigma (mkVar id) in
-  let binders,concl = decompose_prod_assum sigma ctype in
+  let binders,concl = decompose_prod_decls sigma ctype in
   let (equiv, args) = decompose_app sigma concl in
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)

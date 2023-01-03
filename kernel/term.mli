@@ -87,12 +87,12 @@ val it_mkProd_or_LetIn : types -> Constr.rel_context -> types
 val lambda_applist : constr -> constr list -> constr
 val lambda_appvect : constr -> constr array -> constr
 
-(** In [lambda_applist_assum n c args], [c] is supposed to have the
+(** In [lambda_applist_decls n c args], [c] is supposed to have the
     form [λΓ.c] with [Γ] of length [n] and possibly with let-ins; it
     returns [c] with the assumptions of [Γ] instantiated by [args] and
     the local definitions of [Γ] expanded. *)
-val lambda_applist_assum : int -> constr -> constr list -> constr
-val lambda_appvect_assum : int -> constr -> constr array -> constr
+val lambda_applist_decls : int -> constr -> constr list -> constr
+val lambda_appvect_decls : int -> constr -> constr array -> constr
 
 (** pseudo-reduction rule *)
 
@@ -101,12 +101,12 @@ val lambda_appvect_assum : int -> constr -> constr array -> constr
 val prod_appvect : types -> constr array -> types
 val prod_applist : types -> constr list -> types
 
-(** In [prod_appvect_assum n c args], [c] is supposed to have the
+(** In [prod_appvect_decls n c args], [c] is supposed to have the
     form [∀Γ.c] with [Γ] of length [n] and possibly with let-ins; it
     returns [c] with the assumptions of [Γ] instantiated by [args] and
     the local definitions of [Γ] expanded. *)
-val prod_appvect_assum : int -> types -> constr array -> types
-val prod_applist_assum : int -> types -> constr list -> types
+val prod_appvect_decls : int -> types -> constr array -> types
+val prod_applist_decls : int -> types -> constr list -> types
 
 (** {5 Other term destructors. } *)
 
@@ -116,7 +116,7 @@ val decompose_prod : constr -> (Name.t Context.binder_annot * constr) list * con
 
 (** Transforms a lambda term {% $ %}[x_1:T_1]..[x_n:T_n]T{% $ %} into the pair
    {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %}, where {% $ %}T{% $ %} is not a lambda. *)
-val decompose_lam : constr -> (Name.t Context.binder_annot * constr) list * constr
+val decompose_lambda : constr -> (Name.t Context.binder_annot * constr) list * constr
 
 (** Given a positive integer n, decompose a product term
    {% $ %}(x_1:T_1)..(x_n:T_n)T{% $ %}
@@ -127,30 +127,30 @@ val decompose_prod_n : int -> constr -> (Name.t Context.binder_annot * constr) l
 (** Given a positive integer {% $ %}n{% $ %}, decompose a lambda term
    {% $ %}[x_1:T_1]..[x_n:T_n]T{% $ %} into the pair {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %}.
    Raise a user error if not enough lambdas. *)
-val decompose_lam_n : int -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val decompose_lambda_n : int -> constr -> (Name.t Context.binder_annot * constr) list * constr
 
 (** Extract the premisses and the conclusion of a term of the form
    "(xi:Ti) ... (xj:=cj:Tj) ..., T" where T is not a product nor a let *)
-val decompose_prod_assum : types -> Constr.rel_context * types
+val decompose_prod_decls : types -> Constr.rel_context * types
 
 (** Idem with lambda's and let's *)
-val decompose_lam_assum : constr -> Constr.rel_context * constr
+val decompose_lambda_decls : constr -> Constr.rel_context * constr
 
 (** Idem but extract the first [n] premisses, counting let-ins. *)
-val decompose_prod_n_assum : int -> types -> Constr.rel_context * types
+val decompose_prod_n_decls : int -> types -> Constr.rel_context * types
 
 (** Idem for lambdas, _not_ counting let-ins *)
-val decompose_lam_n_assum : int -> constr -> Constr.rel_context * constr
+val decompose_lambda_n_assum : int -> constr -> Constr.rel_context * constr
 
 (** Idem, counting let-ins *)
-val decompose_lam_n_decls : int -> constr -> Constr.rel_context * constr
+val decompose_lambda_n_decls : int -> constr -> Constr.rel_context * constr
 
 (** Return the premisses/parameters of a type/term (let-in included) *)
-val prod_assum : types -> Constr.rel_context
-val lam_assum : constr -> Constr.rel_context
+val prod_decls : types -> Constr.rel_context
+val lambda_decls : constr -> Constr.rel_context
 
 (** Return the first n-th premisses/parameters of a type (let included and counted) *)
-val prod_n_assum : int -> types -> Constr.rel_context
+val prod_n_decls : int -> types -> Constr.rel_context
 
 (** Return the first n-th premisses/parameters of a term (let included but not counted) *)
 val lam_n_assum : int -> constr -> Constr.rel_context
@@ -164,8 +164,8 @@ val strip_prod_n : int -> types -> types
 val strip_lam_n : int -> constr -> constr
 
 (** Remove the premisses/parameters of a type/term (including let-in) *)
-val strip_prod_assum : types -> types
-val strip_lam_assum : constr -> constr
+val strip_prod_decls : types -> types
+val strip_lambda_decls : constr -> constr
 
 (** {5 ... } *)
 (** An "arity" is a term of the form [[x1:T1]...[xn:Tn]s] with [s] a sort.
@@ -191,3 +191,29 @@ type sorts = Sorts.t = private
   | SProp | Prop | Set
   | Type of Univ.Universe.t  (** Type *)
 [@@ocaml.deprecated "Alias for Sorts.t"]
+
+val decompose_prod_assum : types -> Constr.rel_context * types
+[@@ocaml.deprecated "Use [decompose_prod_decls] instead."]
+val decompose_lam_assum : constr -> Constr.rel_context * constr
+[@@ocaml.deprecated "Use [decompose_lambda_decls] instead."]
+val decompose_prod_n_assum : int -> types -> Constr.rel_context * types
+[@@ocaml.deprecated "Use [decompose_prod_n_decls] instead."]
+val prod_assum : types -> Constr.rel_context
+[@@ocaml.deprecated "Use [prod_decls] instead."]
+val lam_assum : constr -> Constr.rel_context
+[@@ocaml.deprecated "Use [lambda_decls] instead."]
+val prod_n_assum : int -> types -> Constr.rel_context
+[@@ocaml.deprecated "Use [prod_n_decls] instead."]
+val strip_prod_assum : types -> types
+[@@ocaml.deprecated "Use [strip_prod_decls] instead."]
+val strip_lam_assum : constr -> constr
+[@@ocaml.deprecated "Use [strip_lambda_decls] instead."]
+
+val decompose_lam : t -> (Name.t Context.binder_annot * t) list * t
+[@@ocaml.deprecated "Use [decompose_lambda] instead."]
+val decompose_lam_n : int -> t -> (Name.t Context.binder_annot * t) list * t
+[@@ocaml.deprecated "Use [decompose_lambda_n] instead."]
+val decompose_lam_n_assum : int -> t -> rel_context * t
+[@@ocaml.deprecated "Use [decompose_lambda_n_assum] instead."]
+val decompose_lam_n_decls : int -> t -> rel_context * t
+[@@ocaml.deprecated "Use [decompose_lambda_n_decls] instead."]

@@ -95,7 +95,7 @@ let endclausestac id_map clseq gl_id cl0 =
   Proofview.Goal.enter begin fun gl ->
   let not_hyp' id = not (List.mem_assoc id id_map) in
   let orig_id id = try List.assoc id id_map with Not_found -> id in
-  let dc, c = EConstr.decompose_prod_assum (project gl) (pf_concl gl) in
+  let dc, c = EConstr.decompose_prod_decls (project gl) (pf_concl gl) in
   let hide_goal = hidden_clseq clseq in
   let c_hidden =
     hide_goal && EConstr.eq_constr (project gl) c (EConstr.mkVar gl_id) in

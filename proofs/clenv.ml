@@ -853,7 +853,7 @@ and treat_case env sigma ci lbrty lf acc' =
            CAUTION: it does not deal with the general case of eta-zeta
            reduced branches having a form different from Meta, as it
            would be theoretically the case with third-party code *)
-        let ctx, body = Term.decompose_lam_n_decls n fi in
+        let ctx, body = Term.decompose_lambda_n_decls n fi in
         let head, args = decompose_app_vect body in
         (* Strip cast because clenv_cast_meta adds a cast when the branch is
            eta-expanded but when not when the branch has the single-meta

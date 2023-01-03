@@ -181,9 +181,9 @@ val hnf_lam_app      : env ->  evar_map -> constr -> constr -> constr
 val hnf_lam_appvect  : env ->  evar_map -> constr -> constr array -> constr
 val hnf_lam_applist  : env ->  evar_map -> constr -> constr list -> constr
 
-val splay_prod : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
-val splay_lam : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
-val splay_prod_assum : env ->  evar_map -> constr -> rel_context * constr
+val hnf_decompose_prod : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val hnf_decompose_lambda : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+val hnf_decompose_prod_decls : env ->  evar_map -> constr -> rel_context * constr
 
 val splay_arity : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * ESorts.t
 (** Raises [Reduction.NotArity] *)
@@ -191,10 +191,10 @@ val splay_arity : env ->  evar_map -> constr -> (Name.t Context.binder_annot * c
 val sort_of_arity : env -> evar_map -> constr -> ESorts.t
 (** Raises [Reduction.NotArity] *)
 
-val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
+val hnf_decompose_prod_n_decls : env ->  evar_map -> int -> constr -> rel_context * constr
 (** Raises [Invalid_argument] *)
 
-val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
+val hnf_decompose_lambda_n_assum : env ->  evar_map -> int -> constr -> rel_context * constr
 (** Raises [Invalid_argument] *)
 
 val dest_arity : env -> evar_map -> constr -> rel_context * ESorts.t
@@ -280,3 +280,16 @@ val meta_instance : env -> meta_instance_subst -> constr freelisted -> constr
 
 (* inferred_universes just gathers the constraints. *)
 val inferred_universes : (UGraph.t * Univ.Constraints.t) Reduction.universe_compare
+
+(** Deprecated *)
+
+val splay_prod : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+[@@ocaml.deprecated "Use [hnf_decompose_prod] instead."]
+val splay_lam : env ->  evar_map -> constr -> (Name.t Context.binder_annot * constr) list * constr
+[@@ocaml.deprecated "Use [hnf_decompose_lambda] instead."]
+val splay_prod_assum : env ->  evar_map -> constr -> rel_context * constr
+[@@ocaml.deprecated "Use [hnf_decompose_prod_decls] instead."]
+val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
+[@@ocaml.deprecated "Use [hnf_decompose_prod_n_decls] instead."]
+val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
+[@@ocaml.deprecated "Use [hnf_decompose_lambda_n_assum] instead."]

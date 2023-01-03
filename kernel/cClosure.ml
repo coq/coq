@@ -413,7 +413,7 @@ let zupdate info m s =
   else s
 
 let mk_lambda env t =
-  let (rvars,t') = Term.decompose_lam t in
+  let (rvars,t') = Term.decompose_lambda t in
   FLambda(List.length rvars, List.rev rvars, t', env)
 
 let usubs_lift (e,u) = subs_lift e, u

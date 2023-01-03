@@ -21,8 +21,6 @@ open Reduction
 open Type_errors
 open Context.Rel.Declaration
 
-type mind_specif = mutual_inductive_body * one_inductive_body
-
 (* raises an anomaly if not an inductive type *)
 let lookup_mind_specif env (kn,tyi) =
   let mib = Environ.lookup_mind kn env in
@@ -378,7 +376,7 @@ let expand_case env (ci, _, _, _, _, _, _ as case) =
 
 let contract_case env (ci, p, iv, c, br) =
   let (mib, mip) = lookup_mind_specif env ci.ci_ind in
-  let (arity, p) = Term.decompose_lam_n_decls (mip.mind_nrealdecls + 1) p in
+  let (arity, p) = Term.decompose_lambda_n_decls (mip.mind_nrealdecls + 1) p in
   let (u, pms) = match arity with
   | LocalAssum (_, ty) :: _ ->
     (** Last binder is the self binder for the term being eliminated *)
@@ -397,7 +395,7 @@ let contract_case env (ci, p, iv, c, br) =
     (nas, p)
   in
   let map i br =
-    let (ctx, br) = Term.decompose_lam_n_decls mip.mind_consnrealdecls.(i) br in
+    let (ctx, br) = Term.decompose_lambda_n_decls mip.mind_consnrealdecls.(i) br in
     let nas = Array.of_list (List.rev_map get_annot ctx) in
     (nas, br)
   in
@@ -412,7 +410,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
   let build_one_branch i (ctx, c) =
     let cty = Term.it_mkProd_or_LetIn c ctx in
     let typi = full_constructor_instantiate (ind,u,specif,params) cty in
-    let (cstrsign,ccl) = Term.decompose_prod_assum typi in
+    let (cstrsign,ccl) = Term.decompose_prod_decls typi in
     let nargs = Context.Rel.length cstrsign in
     let (_,allargs) = decompose_app ccl in
     let (lparams,vargs) = List.chop (inductive_params specif) allargs in
@@ -420,7 +418,7 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
       let cstr = ith_constructor_of_inductive ind (i+1) in
       let dep_cstr = Term.applist (mkConstructU (cstr,u),lparams@(Context.Rel.instance_list mkRel 0 cstrsign)) in
       vargs @ [dep_cstr] in
-    let base = Term.lambda_appvect_assum (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
+    let base = Term.lambda_appvect_decls (mip.mind_nrealdecls+1) (lift nargs p) (Array.of_list cargs) in
     Term.it_mkProd_or_LetIn base cstrsign in
   Array.mapi build_one_branch mip.mind_nf_lc
 
@@ -445,7 +443,7 @@ let check_case_info env (indsp,u) r ci =
 let apply_branch ((_, i), _u) args ci lf =
   let args = List.skipn ci.ci_npar args in
   let br = lf.(i - 1) in
-  let ctx, br = Term.decompose_lam_n_decls ci.ci_cstr_ndecls.(i - 1) br in
+  let ctx, br = Term.decompose_lambda_n_decls ci.ci_cstr_ndecls.(i - 1) br in
   let subst = subst_of_rel_context_instance_list ctx args in
   Vars.substl subst br
 
@@ -695,9 +693,9 @@ let branches_specif renv c_spec ci =
       car
 
 let check_inductive_codomain env p =
-  let absctx, ar = dest_lam_assum env p in
+  let absctx, ar = hnf_decompose_lambda_decls env p in
   let env = push_rel_context absctx env in
-  let arctx, s = dest_prod_assum env ar in
+  let arctx, s = hnf_decompose_prod_decls env ar in
   let env = push_rel_context arctx env in
   let i,_l' = decompose_app (whd_all env s) in
   isInd i
@@ -865,13 +863,13 @@ let restrict_spec env spec p =
   match spec with
   | Not_subterm | Internally_bound_subterm _ -> spec
   | _ ->
-  let absctx, ar = dest_lam_assum env p in
+  let absctx, ar = hnf_decompose_lambda_decls env p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
   if noccur_with_meta 1 (Context.Rel.length absctx) ar then spec
   else
   let env = push_rel_context absctx env in
-  let arctx, s = dest_prod_assum env ar in
+  let arctx, s = hnf_decompose_prod_decls env ar in
   let env = push_rel_context arctx env in
   let i,args = decompose_app (whd_all env s) in
   match kind i with
@@ -919,7 +917,7 @@ let rec subterm_specif renv stack t =
       *)
     if not (check_inductive_codomain renv.env typarray.(i)) then Not_subterm
     else
-      let (ctxt,clfix) = dest_prod renv.env typarray.(i) in
+      let (ctxt,clfix) = hnf_decompose_prod renv.env typarray.(i) in
       let oind =
         let env' = push_rel_context ctxt renv.env in
           try Some(fst(find_inductive env' clfix))
@@ -939,7 +937,7 @@ let rec subterm_specif renv stack t =
         let decrArg = recindxs.(i) in
         let theBody = bodies.(i)   in
         let nbOfAbst = decrArg+1 in
-        let sign,strippedBody = dest_lam_n_assum renv.env nbOfAbst theBody in
+        let sign,strippedBody = hnf_decompose_lambda_n_decls renv.env nbOfAbst theBody in
                    (* pushing the fix parameters *)
         let stack' = push_stack_closures renv l stack in
         let renv'' = push_ctxt_renv renv' sign in
@@ -1070,7 +1068,7 @@ let check_is_subterm x tree =
   | Internally_bound_subterm l -> NeedReduceSubterm l
 
 let filter_stack_domain env nr p stack =
-  let absctx, ar = Term.decompose_lam_assum p in
+  let absctx, ar = Term.decompose_lambda_decls p in
   (* Optimization: if the predicate is not dependent, no restriction is needed
      and we avoid building the recargs tree. *)
   if noccur_with_meta 1 (Context.Rel.length absctx) ar then stack
@@ -1083,7 +1081,7 @@ let filter_stack_domain env nr p stack =
     match kind t with
     | Prod (n,a,c0) ->
       let d = LocalAssum (n,a) in
-      let ctx, a = dest_prod_assum env a in
+      let ctx, a = hnf_decompose_prod_decls env a in
       let env = push_rel_context ctx env in
       let ty, args = decompose_app (whd_all env a) in
       let elt = match kind ty with
