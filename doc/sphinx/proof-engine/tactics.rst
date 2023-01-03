@@ -1860,7 +1860,7 @@ Controlling the proof flow
    Implements the “ex falso quodlibet” logical principle: an
    elimination of False is performed on the current goal, and the user is
    then required to prove that False is indeed provable in the current
-   context. This tactic is equivalent to :tacn:`elimtype` :n:`False`.
+   context.
 
 Classical tactics
 -----------------

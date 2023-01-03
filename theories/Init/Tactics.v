@@ -16,10 +16,9 @@ Require Import Specif.
 (** * Useful tactics *)
 
 (** Ex falso quodlibet : a tactic for proving False instead of the current goal.
-    This is just a nicer name for tactics such as [elimtype False]
-    and other [cut False]. *)
+    This is just a nicer name for tactics such as [cut False]. *)
 
-Ltac exfalso := elimtype False.
+Ltac exfalso := Coq.Init.Ltac.exfalso.
 
 (** A tactic for proof by contradiction. With contradict H,
     -   H:~A |-  B    gives       |-  A

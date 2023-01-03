@@ -397,7 +397,7 @@ Ltac case_le H :=
    let h' := fresh in
       match t with ?x <= ?y => case (total_order_T x y);
          [intros h'; case h'; clear h' |
-          intros h'; clear -H h'; elimtype False; lra ] end.
+          intros h'; clear -H h'; exfalso; lra ] end.
 (* end hide *)
 
 

@@ -1548,6 +1548,7 @@ simple_tactic: [
 | "native_cast_no_check" constr
 | "casetype" constr
 | "elimtype" constr
+| "exfalso"
 | "lapply" constr
 | "transitivity" constr
 | "left"

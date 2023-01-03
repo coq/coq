@@ -111,8 +111,8 @@ Section Infinite_sets.
     intros A X H' n H'0 H'1; try assumption.
     elim H'1.
     intros H'2 H'3.
-    elimtype (exists Y : _, cardinal U Y (S n) /\ Included U Y A).
-    - intros x H'4; elim H'4; intros H'5 H'6; try exact H'5; clear H'4.
+    cut (exists Y : _, cardinal U Y (S n) /\ Included U Y A).
+    - intros [x H'4]; elim H'4; intros H'5 H'6; try exact H'5; clear H'4.
       exists x; auto with sets.
       split; [ auto with sets | idtac ].
       apply Defn_of_Approximant; auto with sets.

@@ -2432,7 +2432,7 @@ let exfalso_if_concl_not_Prop =
       Tacmach.(
         if is_prop (pf_env gl) (project gl) (pf_concl gl) then
           Tacticals.tclIDTAC
-        else Tactics.elim_type (Lazy.force coq_False)))
+        else Tactics.exfalso))
 
 let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
   Tacticals.tclTHEN exfalso_if_concl_not_Prop
