@@ -484,14 +484,6 @@ TACTIC EXTEND specialize_eqs
 | [ "specialize_eqs" hyp(id) ] -> { specialize_eqs id }
 END
 
-(**
-   hget_evar
-*)
-
-TACTIC EXTEND hget_evar
-| [ "hget_evar" nat_or_var(n) ] -> { Evar_tactics.hget_evar n }
-END
-
 TACTIC EXTEND destauto
 | [ "destauto" ] -> { Internals.destauto }
 | [ "destauto" "in" hyp(id) ] -> { Internals.destauto_in id }

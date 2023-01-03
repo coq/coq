@@ -11,7 +11,6 @@
 open Util
 open Names
 open Constr
-open Context
 open CErrors
 open Evd
 open Evarutil
@@ -146,19 +145,4 @@ let let_evar name typ =
     let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Namegen.IntroFresh id) typ in
     Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Tactics.pose_tac (Name.Name id) evar)
-  end
-
-let hget_evar n =
-  let open EConstr in
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = Tacmach.project gl in
-  let concl = Proofview.Goal.concl gl in
-  let evl = evar_list sigma concl in
-  if List.length evl < n then
-    user_err Pp.(str "Not enough uninstantiated existential variables.");
-  if n <= 0 then user_err Pp.(str "Incorrect existential variable index.");
-  let ev = List.nth evl (n-1) in
-  let ev_type = EConstr.existential_type sigma ev in
-  let r = Retyping.relevance_of_type (Proofview.Goal.env gl) sigma ev_type in
-  Tactics.change_concl (mkLetIn (make_annot Name.Anonymous r,mkEvar ev,ev_type,concl))
   end

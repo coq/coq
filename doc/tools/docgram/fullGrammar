@@ -1665,7 +1665,6 @@ simple_tactic: [
 | "generalize_eqs_vars" hyp
 | "dependent" "generalize_eqs_vars" hyp
 | "specialize_eqs" hyp
-| "hget_evar" nat_or_var
 | "destauto"
 | "destauto" "in" hyp
 | "transparent_abstract" tactic3

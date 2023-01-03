@@ -799,9 +799,6 @@ which reduction engine to use.  See :ref:`type-cast`.)  For example:
 
    See the example :ref:`here <example_apply_pattern>`.
 
-.. tacn:: hget_evar @nat_or_var
-   :undocumented:
-
 Fast reduction tactics: vm_compute and native_compute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
