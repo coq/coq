@@ -244,25 +244,22 @@ let get_filtered_typeclass_evars filter evd =
   let check ev = filter ev (lazy (snd (Evd.evar_source (Evd.find evd ev)))) in
   Evar.Set.filter check tcs
 
-let solve_all_instances_hook = ref (fun env evd filter unique split fail -> assert false)
+let solve_all_instances_hook = ref (fun env evd filter unique fail -> assert false)
 
-let solve_all_instances env evd filter unique split fail =
-  !solve_all_instances_hook env evd filter unique split fail
+let solve_all_instances env evd filter unique fail =
+  !solve_all_instances_hook env evd filter unique fail
 
 let set_solve_all_instances f = solve_all_instances_hook := f
 
 let resolve_typeclasses ?(filter=no_goals) ?(unique=get_typeclasses_unique_solutions ())
-    ?(split=true) ?(fail=true) env evd =
+    ?(fail=true) env evd =
   if not (has_typeclasses filter evd) then evd
-  else solve_all_instances env evd filter unique split fail
+  else solve_all_instances env evd filter unique fail
 
 (** In case of unsatisfiable constraints, build a nice error message *)
 
 let error_unresolvable env evd comp =
-  let is_part ev = match comp with
-  | None -> true
-  | Some s -> Evar.Set.mem ev s
-  in
+  let is_part ev = Evar.Set.mem ev comp in
   let fold ev evi (found, accu) =
     let ev_class = class_of_constr env evd (Evd.evar_concl evi) in
     if not (Option.is_empty ev_class) && is_part ev then

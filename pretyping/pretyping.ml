@@ -245,10 +245,10 @@ let typeclasses_filter ~program_mode frozen =
 let apply_typeclasses ~program_mode ~fail_evar env sigma frozen =
   let sigma = Typeclasses.resolve_typeclasses
       ~filter:(typeclasses_filter ~program_mode frozen)
-      ~split:true ~fail:fail_evar env sigma in
+      ~fail:fail_evar env sigma in
   let sigma = if program_mode then (* Try optionally solving the obligations *)
       Typeclasses.resolve_typeclasses
-        ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && not (filter_frozen frozen evk)) ~split:true ~fail:false env sigma
+        ~filter:(fun evk evi -> Typeclasses.all_evars evk evi && not (filter_frozen frozen evk)) ~fail:false env sigma
     else sigma in
   sigma
 
@@ -277,7 +277,7 @@ let check_typeclasses_instances_are_solved ~program_mode env sigma frozen =
       sigma
   in
   if not (Evar.Set.is_empty tcs) then begin
-    Typeclasses.error_unresolvable env sigma (Some tcs)
+    Typeclasses.error_unresolvable env sigma tcs
   end
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with

@@ -1168,21 +1168,19 @@ exception Unresolved of evar_map
 
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
-let resolve_all_evars depth unique env p oevd do_split fail =
+let resolve_all_evars depth unique env p oevd fail =
   let () =
     ppdebug 0 (fun () ->
         str"Calling typeclass resolution with flags: "++
         str"depth = " ++ (match depth with None -> str "∞" | Some d -> int d) ++ str"," ++
         str"unique = " ++ bool unique ++ str"," ++
-        str"do_split = " ++ bool do_split ++ str"," ++
         str"fail = " ++ bool fail);
     ppdebug 2 (fun () ->
         str"Initial evar map: " ++
         Termops.pr_evar_map ~with_univs:!Detyping.print_universes None env oevd)
   in
-  let tcs = Evd.get_typeclass_evars oevd in
-  let split = if do_split then split_evars p oevd else [tcs] in
-  let in_comp comp ev = if do_split then Evar.Set.mem ev comp else true in
+  let split = split_evars p oevd in
+  let in_comp comp ev = Evar.Set.mem ev comp in
   let rec docomp evd = function
     | [] ->
       let () = ppdebug 2 (fun () ->
@@ -1211,9 +1209,8 @@ let resolve_all_evars depth unique env p oevd do_split fail =
           (* Typeclass resolution failed *)
           raise (Unresolved evd))
       with Unresolved evd' ->
-        if fail && (not do_split || is_mandatory (p evd') comp evd')
+        if fail && is_mandatory (p evd') comp evd'
         then (* Unable to satisfy the constraints. *)
-          let comp = if do_split then Some comp else None in
           error_unresolvable env evd' comp
         else (* Best effort: use the best found solution on this component *)
           docomp evd' comps
@@ -1231,20 +1228,20 @@ let classes_transparent_state () =
   try Hint_db.transparent_state (searchtable_map typeclasses_db)
   with Not_found -> TransparentState.empty
 
-let resolve_typeclass_evars depth unique env evd filter split fail =
+let resolve_typeclass_evars depth unique env evd filter fail =
   let evd =
     try Evarconv.solve_unif_constraints_with_heuristics
       ~flags:(Evarconv.default_flags_of (classes_transparent_state())) env evd
     with e when CErrors.noncritical e -> evd
   in
     resolve_all_evars depth unique env
-                      (initial_select_evars filter) evd split fail
+      (initial_select_evars filter) evd fail
 
-let solve_inst env evd filter unique split fail =
+let solve_inst env evd filter unique fail =
   let ((), sigma) = Hints.wrap_hint_warning_fun env evd begin fun evd ->
     (), resolve_typeclass_evars
     (get_typeclasses_depth ())
-    unique env evd filter split fail
+    unique env evd filter fail
   end in
   sigma
 
