@@ -227,7 +227,7 @@ let nametab_register_module_body mp struc =
     List.iter (nametab_register_body mp DirPath.empty) struc
 
 let get_typ_expr_alg mtb = match mtb.mod_type_alg with
-  | Some (NoFunctor me) -> me
+  | Some (MENoFunctor me) -> me
   | _ -> raise Not_found
 
 let nametab_register_modparam mbid mtb =
@@ -363,7 +363,9 @@ and print_signature x =
   print_functor print_modtype print_structure x
 
 and print_modtype extent env mp locals mtb = match mtb.mod_type_alg with
-  | Some me -> print_expression true extent env mp locals me
+  | Some me ->
+    let me = Modops.annotate_module_expression me mtb.mod_type in
+    print_expression true extent env mp locals me
   | None -> print_signature true extent env mp locals mtb.mod_type
 
 (** Since we might play with nametab above, we should reset to prior
@@ -383,13 +385,17 @@ let unsafe_print_module extent env mp with_body mb =
   let body = match with_body, mb.mod_expr with
     | false, _
     | true, Abstract -> mt()
-    | _, Algebraic me -> pr_equals ++ print_expression' false extent env mp me
+    | _, Algebraic me ->
+      let me = Modops.annotate_module_expression me mb.mod_type in
+      pr_equals ++ print_expression' false extent env mp me
     | _, Struct sign -> pr_equals ++ print_signature' false extent env mp sign
     | _, FullStruct -> pr_equals ++ print_signature' false extent env mp mb.mod_type
   in
   let modtype = match mb.mod_expr, mb.mod_type_alg with
     | FullStruct, _ -> mt ()
-    | _, Some ty -> brk (1,1) ++ str": " ++ print_expression' true extent env mp ty
+    | _, Some ty ->
+      let ty = Modops.annotate_module_expression ty mb.mod_type in
+      brk (1,1) ++ str": " ++ print_expression' true extent env mp ty
     | _, _ -> brk (1,1) ++ str": " ++ print_signature' true extent env mp mb.mod_type
   in
   hv 0 (keyword "Module" ++ spc () ++ name ++ modtype ++ body)

@@ -389,6 +389,14 @@ let hcons_functorize hty he hself f = match f with
 
 let hcons_module_alg_expr me = me
 
+let rec hcons_module_expression me = match me with
+| MENoFunctor malg ->
+  let malg' = hcons_module_alg_expr malg in
+  if malg == malg' then me else MENoFunctor malg'
+| MEMoreFunctor mf ->
+  let mf' = hcons_module_expression mf in
+  if mf' == mf then me else MEMoreFunctor mf'
+
 let rec hcons_structure_field_body sb = match sb with
 | SFBconst cb ->
   let cb' = hcons_const_body cb in
@@ -414,9 +422,6 @@ and hcons_structure_body sb =
 
 and hcons_module_signature ms =
   hcons_functorize hcons_module_type hcons_structure_body hcons_module_signature ms
-
-and hcons_module_expression me =
-  hcons_functorize hcons_module_type hcons_module_alg_expr hcons_module_expression me
 
 and hcons_module_implementation mip = match mip with
 | Abstract -> Abstract

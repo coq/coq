@@ -175,7 +175,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
           let mtb_old = module_type_of_module old in
           let cst = Subtyping.check_subtypes (cst, ustate) env' new_mtb mtb_old in
           cst
-        | Algebraic (NoFunctor (MEident(mp'))) ->
+        | Algebraic (MENoFunctor (MEident(mp'))) ->
           check_modpath_equiv env' new_mp mp';
           cst
         | _ -> error_generative_module_expected lab
@@ -185,7 +185,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       let new_mb' =
         { new_mb with
           mod_mp = mp';
-          mod_expr = Algebraic (NoFunctor (MEident new_mp));
+          mod_expr = Algebraic (MENoFunctor (MEident new_mp));
         }
       in
       let new_reso = add_delta_resolver reso new_mb.mod_delta in
@@ -217,7 +217,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
         let id_subst = map_mp mp' mp' reso' in
         let new_after = subst_structure id_subst after in
         before@(lab,SFBmodule new_mb)::new_after, new_reso, cst
-      | Algebraic (NoFunctor (MEident mp0)) ->
+      | Algebraic (MENoFunctor (MEident mp0)) ->
         let mpnew = rebuild_mp mp0 idl in
         check_modpath_equiv env' mpnew mp;
         before@(lab,spec)::after, reso, cst
@@ -296,13 +296,13 @@ let rec translate_mse_funct (cst, ustate) env ~is_mod mp inl mse = function
     let sign,reso =
       if is_mod then sign,reso
       else subst_modtype_signature_and_resolver (mp_from_mexpr mse) mp sign reso in
-    sign, NoFunctor alg, reso, cst
+    sign, MENoFunctor alg, reso, cst
   |(mbid, ty, ty_inl) :: params ->
     let mp_id = MPbound mbid in
     let mtb, cst = translate_modtype (cst, ustate) env mp_id ty_inl ([],ty) in
     let env' = add_module_type mp_id mtb env in
     let sign,alg,reso,cst = translate_mse_funct (cst, ustate) env' ~is_mod mp inl mse params in
-    let alg' = MoreFunctor (mbid,mtb,alg) in
+    let alg' = MEMoreFunctor alg in
     MoreFunctor (mbid, mtb, sign), alg',reso, cst
 
 and translate_modtype state env mp inl (params,mte) =
@@ -314,7 +314,7 @@ and translate_modtype state env mp inl (params,mte) =
     from an already-translated (or interactive) implementation and
     an (optional) signature entry, produces a final [module_body] *)
 
-let finalize_module (cst, ustate) env mp (sign,alg,reso) restype = match restype with
+let finalize_module_alg (cst, ustate) env mp (sign,alg,reso) restype = match restype with
   | None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
     mk_mod mp impl sign reso, cst
@@ -331,6 +331,9 @@ let finalize_module (cst, ustate) env mp (sign,alg,reso) restype = match restype
     (** constraints from module body typing + subtyping + module type. *)
     cst
 
+let finalize_module univs env mp (sign, reso) typ =
+  finalize_module_alg univs env mp (sign, None, reso) typ
+
 let translate_module (cst, ustate) env mp inl = function
   | MType (params,ty) ->
     let mtb, cst = translate_modtype (cst, ustate) env mp inl (params,ty) in
@@ -338,7 +341,7 @@ let translate_module (cst, ustate) env mp inl = function
   |MExpr (params,mse,oty) ->
     let (sg,alg,reso,cst) = translate_mse_funct (cst, ustate) env ~is_mod:true mp inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
-    finalize_module (cst, ustate) env mp (sg,Some alg,reso) restype
+    finalize_module_alg (cst, ustate) env mp (sg,Some alg,reso) restype
 
 (** We now forbid any Include of functors with restricted signatures.
     Otherwise, we could end with the creation of undesired axioms
@@ -346,8 +349,8 @@ let translate_module (cst, ustate) env mp inl = function
     thanks to strengthening. *)
 
 let rec unfunct = function
-  | NoFunctor me -> me
-  | MoreFunctor(_,_,me) -> unfunct me
+  | MENoFunctor me -> me
+  | MEMoreFunctor me -> unfunct me
 
 let rec forbid_incl_signed_functor env = function
   | MEapply(fe,_) -> forbid_incl_signed_functor env fe

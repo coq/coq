@@ -303,6 +303,14 @@ type 'uconstr module_alg_expr =
   | MEapply of 'uconstr module_alg_expr * ModPath.t
   | MEwith of 'uconstr module_alg_expr * 'uconstr with_declaration
 
+type 'uconstr functor_alg_expr =
+| MENoFunctor of 'uconstr module_alg_expr
+| MEMoreFunctor of 'uconstr functor_alg_expr
+
+(** A module expression is an algebraic expression, possibly functorized. *)
+
+type module_expression = (constr * Univ.AbstractContext.t option) functor_alg_expr
+
 (** A component of a module structure *)
 
 type structure_field_body =
@@ -322,10 +330,6 @@ and structure_body = (Label.t * structure_field_body) list
 (** A module signature is a structure, with possibly functors on top of it *)
 
 and module_signature = (module_type_body,structure_body) functorize
-
-(** A module expression is an algebraic expression, possibly functorized. *)
-
-and module_expression = (module_type_body, (constr * Univ.AbstractContext.t option) module_alg_expr) functorize
 
 and module_implementation =
   | Abstract (** no accessible implementation *)

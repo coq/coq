@@ -1015,7 +1015,7 @@ let end_module_core id m_info objects fs =
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
   let _, (_, cst) =
     Mod_typing.finalize_module state (Global.env ()) (Global.current_modpath ())
-      (struc, None, current_modresolver ()) restype'
+      (struc, current_modresolver ()) restype'
   in
   let () = Global.add_constraints cst in
 

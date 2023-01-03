@@ -37,6 +37,9 @@ val implem_smart_map :
   (module_expression -> module_expression) ->
   (module_implementation -> module_implementation)
 
+val annotate_module_expression : module_expression -> module_signature ->
+  (module_type_body, (constr * Univ.AbstractContext.t option) module_alg_expr) functorize
+
 (** {6 Substitutions } *)
 
 val subst_signature : substitution -> module_signature -> module_signature
