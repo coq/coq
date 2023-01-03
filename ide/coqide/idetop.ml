@@ -239,7 +239,7 @@ let export_pre_goals flags Proof.{ sigma; goals; stack } process =
 
 let subgoals flags =
   let doc = get_doc () in
-  set_doc @@ fst @@ Stm.finish ~doc;
+  ignore (Stm.finish ~doc : Vernacstate.t);
   let short = match flags.Interface.gf_mode with
   | "short" -> true
   | _ -> false
@@ -270,7 +270,7 @@ let goals () =
 let evars () =
   try
     let doc = get_doc () in
-    set_doc @@ fst @@ Stm.finish ~doc;
+    ignore (Stm.finish ~doc : Vernacstate.t);
     let pfts = Vernacstate.Declare.give_me_the_proof () in
     let Proof.{ sigma } = Proof.data pfts in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
@@ -298,15 +298,15 @@ let hints () =
 
 let wait () =
   let doc = get_doc () in
-  set_doc (Stm.wait ~doc)
+  Stm.wait ~doc
 
 let status force =
   (* We remove the initial part of the current [DirPath.t]
      (usually Top in an interactive session, cf "coqtop -top"),
      and display the other parts (opened sections and modules) *)
-  set_doc (fst @@ Stm.finish ~doc:(get_doc ()));
+  ignore (Stm.finish ~doc:(get_doc ()) : Vernacstate.t);
   if force then
-    set_doc (fst @@ Stm.join ~doc:(get_doc ()));
+    ignore (Stm.join ~doc:(get_doc ()) : Vernacstate.t);
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
@@ -480,7 +480,7 @@ let init =
            get_doc (), init_sid, `NewTip in
          if Filename.check_suffix file ".v" then
            Stm.set_compilation_hints file;
-         set_doc (fst @@ Stm.finish ~doc);
+         ignore (Stm.finish ~doc : Vernacstate.t);
          initial_id
    end
 

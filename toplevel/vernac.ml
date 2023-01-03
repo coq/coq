@@ -65,9 +65,9 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
         anomaly (str "vernac.ml: We got an unfocus operation on the toplevel!");
 
       (* Force the command  *)
-      let ndoc = if check then Stm.observe ~doc nsid else doc in
+      let () = if check then Stm.observe ~doc nsid in
       let new_proof = Vernacstate.Declare.give_me_the_proof_opt () [@ocaml.warning "-3"] in
-      { state with doc = ndoc; sid = nsid; proof = new_proof; }
+      { state with doc; sid = nsid; proof = new_proof; }
     with reraise ->
       let (reraise, info) = Exninfo.capture reraise in
       (* XXX: In non-interactive mode edit_at seems to do very weird

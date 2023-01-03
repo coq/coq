@@ -125,18 +125,18 @@ type edit_focus = NewTip | Focus of focus
 val edit_at : doc:doc -> Stateid.t -> doc * edit_focus
 
 (* [observe doc sid]] Check / execute span [sid] *)
-val observe : doc:doc -> Stateid.t -> doc
+val observe : doc:doc -> Stateid.t -> unit
 
 (* [finish doc] Fully checks a document up to the "current" tip. *)
-val finish : doc:doc -> doc * Vernacstate.t
+val finish : doc:doc -> Vernacstate.t
 
 (* Internal use (fake_ide) only, do not use *)
-val wait : doc:doc -> doc
+val wait : doc:doc -> unit
 
 val stop_worker : string -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
-val join : doc:doc -> doc * Vernacstate.t
+val join : doc:doc -> Vernacstate.t
 
 (* Saves on the disk a .vio corresponding to the current status:
    - if the worker pool is empty, all tasks are saved
@@ -145,7 +145,7 @@ val join : doc:doc -> doc * Vernacstate.t
      of the completed tasks is a failure).
    Note: the create_vos argument is used in the "-vos" mode, where the
    proof tasks are not dumped into the output file. *)
-val snapshot_vio : create_vos:bool -> doc:doc -> output_native_objects:bool -> DirPath.t -> string -> doc
+val snapshot_vio : create_vos:bool -> doc:doc -> output_native_objects:bool -> DirPath.t -> string -> unit
 
 (* Empties the task queue, can be used only if the worker pool is empty (E.g.
  * after having built a .vio in batch mode *)

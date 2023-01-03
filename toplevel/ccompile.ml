@@ -62,7 +62,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
       let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state ~ldir long_f_dot_in in
-      let doc, state = Stm.join ~doc:state.doc in
+      let state = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       ensure_no_pending_proofs ~filename:long_f_dot_in state;
       (* In .vo production, dump a complete .vo file. *)
@@ -104,12 +104,12 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_in in
-      let doc, state = Stm.finish ~doc:state.doc in
+      let state = Stm.finish ~doc:state.doc in
       ensure_no_pending_proofs state ~filename:long_f_dot_in;
       let create_vos = (mode = BuildVos) in
       (* In .vos production, the output .vos file contains compiled statements.
          In .vio production, the output .vio file contains compiled statements and suspended proofs. *)
-      let () = ignore (Stm.snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_out) in
+      let () = Stm.snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_out in
       Stm.reset_task_queue ();
       (* In .vio production, dump an empty .vos file to indicate that the .vio should be loaded. *)
       (* EJGA: This is problematic in a vio + vio2vo run, as there is
