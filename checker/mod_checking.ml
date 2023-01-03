@@ -109,6 +109,29 @@ let rec collect_constants_without_body sign mp accu =
   | NoFunctor struc ->
      List.fold_left (fun s (lab,mb) -> collect_field s lab mb) accu struc
 
+let rec check_mexpr env opac mse mp_mse res = match mse with
+  | MEident mp ->
+    let mb = lookup_module mp env in
+    let mb = Modops.strengthen_and_subst_module_body mb mp_mse false in
+    mb.mod_type, mb.mod_delta
+  | MEapply (f,mp) ->
+    let sign, delta = check_mexpr env opac f mp_mse res in
+    let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
+    let mtb = Modops.module_type_of_module (lookup_module mp env) in
+    let state = (Environ.universes env, Reduction.checked_universes) in
+    let _ : UGraph.t = Subtyping.check_subtypes state env mtb farg_b in
+    let subst = Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver in
+    Modops.subst_signature subst fbody_b, Mod_subst.subst_codom_delta_resolver subst delta
+  | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
+
+let rec check_mexpression env opac sign mbtyp mp_mse res = match sign with
+  | MEMoreFunctor body ->
+    let arg_id, mtb, mbtyp = Modops.destr_functor mbtyp in
+    let env' = Modops.add_module_type (MPbound arg_id) mtb env in
+    let body, delta = check_mexpression env' opac body mbtyp mp_mse res in
+    MoreFunctor(arg_id,mtb,body), delta
+  | MENoFunctor me -> check_mexpr env opac me mp_mse res
+
 let rec check_module env opac mp mb opacify =
   Flags.if_verbose Feedback.msg_notice (str "  checking module: " ++ str (ModPath.to_string mp));
   let env = Modops.add_retroknowledge mb.mod_retroknowledge env in
@@ -155,30 +178,6 @@ and check_structure_field env opac mp lab res opacify = function
   | SFBmodtype mty ->
       check_module_type env mty;
       add_modtype mty env, opac
-
-and check_mexpr env opac mse mp_mse res = match mse with
-  | MEident mp ->
-      let mb = lookup_module mp env in
-      let mb = Modops.strengthen_and_subst_module_body mb mp_mse false in
-      mb.mod_type, mb.mod_delta
-  | MEapply (f,mp) ->
-      let sign, delta = check_mexpr env opac f mp_mse res in
-      let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
-      let mtb = Modops.module_type_of_module (lookup_module mp env) in
-      let state = (Environ.universes env, Reduction.checked_universes) in
-      let _ : UGraph.t = Subtyping.check_subtypes state env mtb farg_b in
-      let subst = Mod_subst.map_mbid farg_id mp Mod_subst.empty_delta_resolver in
-      Modops.subst_signature subst fbody_b, Mod_subst.subst_codom_delta_resolver subst delta
-  | MEwith _ -> CErrors.user_err Pp.(str "Unsupported 'with' constraint in module implementation")
-
-
-and check_mexpression env opac sign mbtyp mp_mse res = match sign with
-  | MEMoreFunctor body ->
-      let arg_id, mtb, mbtyp = Modops.destr_functor mbtyp in
-      let env' = Modops.add_module_type (MPbound arg_id) mtb env in
-      let body, delta = check_mexpression env' opac body mbtyp mp_mse res in
-      MoreFunctor(arg_id,mtb,body), delta
-  | MENoFunctor me -> check_mexpr env opac me mp_mse res
 
 and check_signature env opac sign mp_mse res opacify = match sign with
   | MoreFunctor (arg_id, mtb, body) ->
