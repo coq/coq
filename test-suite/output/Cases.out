@@ -214,7 +214,7 @@ fun x : J' bool (true, true) =>
 match x with
 | D' _ _ _ m _ e => existT (fun x0 : nat => x0 = x0) m e
 end
-     : J' bool (true, true) -> {x0 : nat & x0 = x0}
+     : J' bool (true, true) -> {x : nat & x = x}
 fun x : J' bool (true, true) =>
 match x with
 | @D' _ _ _ _ n _ p _ => n + p
@@ -245,7 +245,7 @@ fun x : J' bool (true, true) =>
 match x with
 | @D' _ _ _ _ _ m _ e => existT (fun x0 : nat => x0 = x0) m e
 end
-     : J' bool (true, true) -> {x0 : nat & x0 = x0}
+     : J' bool (true, true) -> {x : nat & x = x}
 fun x : J' bool (true, true) =>
 match x with
 | @D' _ _ _ _ n _ p _ => (n, p)

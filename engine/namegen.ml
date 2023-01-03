@@ -466,13 +466,10 @@ let next_name_for_display env sigma flags =
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
 let compute_displayed_name_in_gen_poly noccurn_fun env sigma flags avoid na c =
-  match na with
-  | Anonymous when noccurn_fun sigma 1 c ->
-    (Anonymous,avoid)
-  | _ ->
+  if noccurn_fun sigma 1 c then Anonymous, avoid
+  else
     let fresh_id = next_name_for_display env sigma flags na avoid in
-    let idopt = if noccurn_fun sigma 1 c then Anonymous else Name fresh_id in
-    (idopt, Id.Set.add fresh_id avoid)
+    Name fresh_id, Id.Set.add fresh_id avoid
 
 let compute_displayed_name_in = compute_displayed_name_in_gen_poly noccurn
 
