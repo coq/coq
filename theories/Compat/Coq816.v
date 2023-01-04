@@ -10,4 +10,6 @@
 
 (** Compatibility file for making Coq act similar to Coq v8.16 *)
 
+Local Set Warnings "-masking-absolute-name".
+
 Require Export Coq.Compat.Coq817.
