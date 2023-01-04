@@ -34,27 +34,27 @@ open Attributes
 (* Rem: do not join the different GEXTEND into one, it breaks native *)
 (* compilation on PowerPC and Sun architectures *)
 
-let query_command = Entry.create "query_command"
+let query_command = Entry.make "query_command"
 
-let search_query = Entry.create "search_query"
-let search_queries = Entry.create "search_queries"
+let search_query = Entry.make "search_query"
+let search_queries = Entry.make "search_queries"
 
-let subprf = Entry.create "subprf"
+let subprf = Entry.make "subprf"
 
-let quoted_attributes = Entry.create "quoted_attributes"
-let coercion_class = Entry.create "coercion_class"
-let thm_token = Entry.create "thm_token"
-let def_token = Entry.create "def_token"
-let assumption_token = Entry.create "assumption_token"
-let def_body = Entry.create "def_body"
-let notation_declaration = Entry.create "notation_declaration"
-let decl_notations = Entry.create "decl_notations"
-let record_field = Entry.create "record_field"
-let of_type = Entry.create "of_type"
-let of_type_inst = Entry.create "of_type_inst"
-let section_subset_expr = Entry.create "section_subset_expr"
-let scope_delimiter = Entry.create "scope_delimiter"
-let syntax_modifiers = Entry.create "syntax_modifiers"
+let quoted_attributes = Entry.make "quoted_attributes"
+let coercion_class = Entry.make "coercion_class"
+let thm_token = Entry.make "thm_token"
+let def_token = Entry.make "def_token"
+let assumption_token = Entry.make "assumption_token"
+let def_body = Entry.make "def_body"
+let notation_declaration = Entry.make "notation_declaration"
+let decl_notations = Entry.make "decl_notations"
+let record_field = Entry.make "record_field"
+let of_type = Entry.make "of_type"
+let of_type_inst = Entry.make "of_type_inst"
+let section_subset_expr = Entry.make "section_subset_expr"
+let scope_delimiter = Entry.make "scope_delimiter"
+let syntax_modifiers = Entry.make "syntax_modifiers"
 
 let make_bullet s =
   let open Proof_bullet in

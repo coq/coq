@@ -53,7 +53,6 @@ module type S = sig
   module Entry : sig
     type 'a t
     val make : string -> 'a t mod_estate
-    val create : string -> 'a t mod_estate (* compat *)
     val parse : 'a t -> Parsable.t -> 'a with_gstate
     val name : 'a t -> string
     type 'a parser_fun = { parser_fun : keyword_state -> (keyword_state,te) LStream.t -> 'a }

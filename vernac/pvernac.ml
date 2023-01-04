@@ -34,18 +34,18 @@ let command_entry_ref = ref None
 module Vernac_ =
   struct
     (* The different kinds of vernacular commands *)
-    let gallina = Entry.create "gallina"
-    let gallina_ext = Entry.create "gallina_ext"
-    let command = Entry.create "command"
-    let syntax = Entry.create "syntax_command"
-    let vernac_control = Entry.create "vernac_control"
-    let inductive_or_record_definition = Entry.create "inductive_or_record_definition"
-    let fix_definition = Entry.create "fix_definition"
-    let red_expr = Entry.create "red_expr"
-    let hint_info = Entry.create "hint_info"
+    let gallina = Entry.make "gallina"
+    let gallina_ext = Entry.make "gallina_ext"
+    let command = Entry.make "command"
+    let syntax = Entry.make "syntax_command"
+    let vernac_control = Entry.make "vernac_control"
+    let inductive_or_record_definition = Entry.make "inductive_or_record_definition"
+    let fix_definition = Entry.make "fix_definition"
+    let red_expr = Entry.make "red_expr"
+    let hint_info = Entry.make "hint_info"
     (* Main vernac entry *)
-    let main_entry = Entry.create "vernac"
-    let noedit_mode = Entry.create "noedit_command"
+    let main_entry = Entry.make "vernac"
+    let noedit_mode = Entry.make "noedit_command"
 
     let () =
       let act_vernac v loc = Some v in

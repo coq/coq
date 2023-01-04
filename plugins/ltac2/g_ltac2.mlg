@@ -91,13 +91,13 @@ let test_array_closing =
 
 let ltac2_expr = Tac2entries.Pltac.ltac2_expr
 let _ltac2_expr = ltac2_expr
-let ltac2_type = Entry.create "ltac2_type"
-let tac2def_val = Entry.create "tac2def_val"
-let tac2def_typ = Entry.create "tac2def_typ"
-let tac2def_ext = Entry.create "tac2def_ext"
-let tac2def_syn = Entry.create "tac2def_syn"
-let tac2def_mut = Entry.create "tac2def_mut"
-let tac2mode = Entry.create "ltac2_command"
+let ltac2_type = Entry.make "ltac2_type"
+let tac2def_val = Entry.make "tac2def_val"
+let tac2def_typ = Entry.make "tac2def_typ"
+let tac2def_ext = Entry.make "tac2def_ext"
+let tac2def_syn = Entry.make "tac2def_syn"
+let tac2def_mut = Entry.make "tac2def_mut"
+let tac2mode = Entry.make "ltac2_command"
 
 let ltac_expr = Pltac.ltac_expr
 let tac2expr_in_env = Tac2entries.Pltac.tac2expr_in_env
