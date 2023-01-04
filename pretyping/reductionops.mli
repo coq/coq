@@ -216,9 +216,6 @@ val is_transparent : Environ.env -> Constant.t tableKey -> bool
 
 type conversion_test = Constraints.t -> Constraints.t
 
-val pb_is_equal : conv_pb -> bool
-val pb_equal : conv_pb -> conv_pb
-
 val is_conv : ?reds:TransparentState.t -> env -> evar_map -> constr -> constr -> bool
 val is_conv_leq : ?reds:TransparentState.t -> env ->  evar_map -> constr -> constr -> bool
 val is_fconv : ?reds:TransparentState.t -> conv_pb -> env ->  evar_map -> constr -> constr -> bool
