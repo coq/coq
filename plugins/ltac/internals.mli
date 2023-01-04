@@ -42,9 +42,6 @@ val injHyp : Names.Id.t -> unit tactic
 val refine_tac : Tacinterp.interp_sign -> simple:bool -> with_classes:bool ->
   closed_glob_constr -> unit tactic
 
-val hResolve : Id.t -> EConstr.t -> int -> EConstr.t -> unit tactic
-val hResolve_auto : Id.t -> EConstr.t -> EConstr.t -> unit tactic
-
 val destauto : unit tactic
 val destauto_in : Id.t -> unit tactic
 
