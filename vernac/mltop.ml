@@ -278,18 +278,6 @@ let add_known_module mname =
 let module_is_known mname = PluginSpec.Set.mem mname !known_loaded_modules
 let plugin_is_known mname = PluginSpec.Set.mem mname !known_loaded_modules
 
-(** A plugin is just an ML module with an initialization function. *)
-
-let known_loaded_plugins : (unit -> unit) PluginSpec.Map.t ref = ref PluginSpec.Map.empty
-
-let add_known_plugin init name =
-  let name = PluginSpec.of_declare_ml_format name in
-  add_known_module name;
-  known_loaded_plugins := PluginSpec.Map.add name init !known_loaded_plugins
-
-let init_known_plugins () =
-  PluginSpec.Map.iter (fun _ f -> f()) !known_loaded_plugins
-
 (** Registering functions to be used at caching time, that is when the Declare
     ML module command is issued. *)
 
@@ -309,15 +297,9 @@ let perform_cache_obj x = perform_cache_obj x
 
 (** ml object = ml module or plugin *)
 
-let init_ml_object mname =
-  try PluginSpec.Map.find mname !known_loaded_plugins ()
-  with Not_found -> ()
-let init_ml_object x = init_ml_object x
-
 let load_ml_object mname =
   ml_load mname;
-  add_known_module mname;
-  init_ml_object mname
+  add_known_module mname
 
 let add_known_module name =
   let name = PluginSpec.of_declare_ml_format name in
@@ -357,10 +339,10 @@ let if_verbose_load verb f name =
     or simulate its reload (i.e. doing nothing except maybe
     an initialization function). *)
 
-let trigger_ml_object ~verbose ~cache ~reinit plugin =
+let trigger_ml_object ~verbose ~cache plugin =
   let () =
     if plugin_is_known plugin then
-      (if reinit then init_ml_object plugin)
+      ()
     else
       begin
         if not has_dynlink then
@@ -378,7 +360,7 @@ let unfreeze_ml_modules x =
   List.iter
     (fun name ->
        let name = PluginSpec.unrepr name in
-       trigger_ml_object ~verbose:false ~cache:false ~reinit:false name) x
+       trigger_ml_object ~verbose:false ~cache:false name) x
 
 let () =
   Summary.declare_ml_modules_summary
@@ -396,11 +378,11 @@ type ml_module_object =
   }
 
 let cache_ml_objects mnames =
-  let iter obj = trigger_ml_object ~verbose:true ~cache:true ~reinit:true obj in
+  let iter obj = trigger_ml_object ~verbose:true ~cache:true obj in
   List.iter iter mnames
 
 let load_ml_objects _ {mnames; _} =
-  let iter obj = trigger_ml_object ~verbose:true ~cache:false ~reinit:true obj in
+  let iter obj = trigger_ml_object ~verbose:true ~cache:false obj in
   List.iter iter mnames
 
 let classify_ml_objects {mlocal=mlocal} =

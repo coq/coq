@@ -73,14 +73,6 @@ val module_is_known : string -> bool
 val add_known_module : string -> unit
 (* EJGA: Todo, this could take a PluginSpec.t at some point *)
 
-(** Declare a plugin plus a Coq-specific initialization function.
-    The initialization function is granted to be called after Coq is fully
-    bootstrapped, even if the plugin is statically linked with the toplevel *)
-val add_known_plugin : (unit -> unit) -> string -> unit
-
-(** Calls all initialization functions in a non-specified order *)
-val init_known_plugins : unit -> unit
-
 (** Register a callback that will be called when the module is declared with
     the Declare ML Module command. This is useful to define Coq objects at that
     time only. Several functions can be defined for one module; they will be
