@@ -2,9 +2,6 @@
 open Ltac_plugin
 }
 DECLARE PLUGIN "coq-test-suite.test"
-{
-let () = Mltop.add_known_plugin (fun () -> ()) "coq-test-suite.test";;
-}
 
 VERNAC COMMAND EXTEND Test CLASSIFIED AS SIDEFF
   | [ "TestCommand" ] -> { () }

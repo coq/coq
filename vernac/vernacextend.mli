@@ -158,6 +158,7 @@ type ty_ml = TyML : bool (* deprecated *) * ('r, 's) ty_sig * 'r * 's option -> 
 
 (** Wrapper to dynamically extend vernacular commands. *)
 val vernac_extend :
+  ?plugin:string ->
   command:string ->
   ?classifier:(string -> vernac_classification) ->
   ?entry:Vernacexpr.vernac_expr Pcoq.Entry.t ->
@@ -178,7 +179,7 @@ type 'a vernac_argument = {
   arg_parsing : 'a argument_rule;
 }
 
-val vernac_argument_extend : name:string -> 'a vernac_argument ->
+val vernac_argument_extend : plugin:string -> name:string -> 'a vernac_argument ->
   ('a, unit, unit) Genarg.genarg_type * 'a Pcoq.Entry.t
 
 (** {5 STM classifiers} *)

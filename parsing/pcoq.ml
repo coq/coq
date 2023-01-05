@@ -98,7 +98,7 @@ module EntryDataMap = EntryCommand.Map(EntryData)
 
 type ext_kind =
   | ByGrammar of extend_rule
-  | ByEXTEND of (unit -> unit) * (unit -> unit)
+  | ByEXTEND of string * (unit -> unit) * (unit -> unit)
   | ByEntry : ('a * 'b) EntryCommand.tag * string * 'b Entry.t -> ext_kind
 
 (** The list of extensions *)
@@ -134,7 +134,7 @@ let grammar_delete_reinit e reinit d =
 let grammar_extend e ext =
   let undo () = grammar_delete e ext in
   let redo () = safe_extend e ext in
-  camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
+  camlp5_state := ByEXTEND (Entry.name e, undo, redo) :: !camlp5_state;
   redo ()
 
 let grammar_extend_sync e ext =
@@ -159,15 +159,18 @@ let rec remove_grammars n =
            camlp5_state := t;
            remove_grammars (n-1)
        | ByGrammar (ExtendRule (g, ext)) :: t ->
-           grammar_delete g ext;
-           camlp5_state := t;
-           remove_grammars (n-1)
-       | ByEXTEND (undo,redo)::t ->
+         (try grammar_delete g ext
+          with Not_found -> Feedback.msg_info Pp.(str "failed on " ++ str (Entry.name g));
+            raise Not_found);
+         camlp5_state := t;
+         remove_grammars (n-1)
+       | ByEXTEND (name, undo,redo)::t ->
+         Feedback.msg_info Pp.(str "backtracking and redoing byextend on " ++ str name);
            undo();
            camlp5_state := t;
            remove_grammars n;
            redo();
-           camlp5_state := ByEXTEND (undo,redo) :: !camlp5_state
+           camlp5_state := ByEXTEND (name, undo,redo) :: !camlp5_state
        | ByEntry (tag, name, e) :: t ->
            Unsafe.clear_entry e;
            camlp5_state := t;
