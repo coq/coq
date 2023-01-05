@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+DECLARE PLUGIN "coq-core.plugins.ltac"
+
 {
 
 open Pp
@@ -24,7 +26,7 @@ open Locus
 
 let create_generic_quotation name e wit =
   let inject (loc, v) = Tacexpr.TacGeneric (Some name, Genarg.in_gen (Genarg.rawwit wit) v) in
-  Tacentries.create_ltac_quotation name inject (e, None)
+  Tacentries.create_ltac_quotation ~plugin:"coq-core.plugins.ltac" name inject (e, None)
 
 let () = create_generic_quotation "integer" Pcoq.Prim.integer Stdarg.wit_int
 let () = create_generic_quotation "string" Pcoq.Prim.string Stdarg.wit_string
@@ -39,7 +41,7 @@ let () = create_generic_quotation "ipattern" Pltac.simple_intropattern wit_simpl
 let () = create_generic_quotation "open_constr" Pcoq.Constr.lconstr Stdarg.wit_open_constr
 let () =
   let inject (loc, v) = Tacexpr.Tacexp v in
-  Tacentries.create_ltac_quotation "ltac" inject (Pltac.ltac_expr, Some 5)
+  Tacentries.create_ltac_quotation ~plugin:"coq-core.plugins.ltac" "ltac" inject (Pltac.ltac_expr, Some 5)
 
 (** Backward-compatible tactic notation entry names *)
 

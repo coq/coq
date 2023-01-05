@@ -20,9 +20,17 @@ type 's grammar_prod_item =
   | GramNonTerminal : ('a Genarg.raw_abstract_argument_type *
       ('s, _, 'a) Pcoq.Symbol.t) Loc.located -> 's grammar_prod_item
 
-val extend_vernac_command_grammar :
+val declare_vernac_command_grammar :
   extend_name -> vernac_expr Pcoq.Entry.t option ->
     vernac_expr grammar_prod_item list -> unit
+
+val extend_vernac_command_grammar : undoable:bool -> extend_name -> unit
+
+val grammar_extend
+  : ?plugin_uid:(string * string)
+  -> 'a Pcoq.Entry.t
+  -> 'a Pcoq.extend_statement
+  -> unit
 
 val get_extend_vernac_rule : extend_name -> vernac_expr grammar_prod_item list
 

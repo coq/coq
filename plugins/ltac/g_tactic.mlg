@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+DECLARE PLUGIN "coq-core.plugins.ltac"
+
 {
 
 open Pp
