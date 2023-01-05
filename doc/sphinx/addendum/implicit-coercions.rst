@@ -236,12 +236,12 @@ Use :n:`:>` instead of :n:`:` before the
 :n:`@type` of the assumption to do so.  See :n:`@of_type`.
 
 
-.. cmd:: Identity Coercion @ident : @coercion_class >-> @coercion_class
+.. cmd:: Identity Coercion @ident : @coercion_class__src >-> @coercion_class__dest
 
-   If ``C`` is the source `coercion_class` and ``D`` the destination, we check
-   that ``C`` is a :term:`constant` with a :term:`body` of the form
-   :g:`fun (x₁:T₁)..(xₙ:Tₙ) => D t₁..tₘ` where `m` is the
-   number of parameters of ``D``.  Then we define an identity
+
+   Checks that :n:`@coercion_class__src` is a :term:`constant` with a :term:`body` of the form
+   :n:`fun (x₁:T₁)..(xₙ:Tₙ) => @coercion_class__dest t₁..tₘ` where `m` is the
+   number of parameters of :n:`@coercion_class__dest`.  Then we define an identity
    function with type :g:`forall (x₁:T₁)..(xₙ:Tₙ)(y:C x₁..xₙ),D t₁..tₘ`,
    and we declare it as an identity coercion between ``C`` and ``D``.
    See below for an :ref:`example <example-identity-coercion>`.
@@ -256,7 +256,7 @@ Use :n:`:>` instead of :n:`:` before the
       If :n:`@type` is a coercion class :n:`@ident'` applied to some arguments then
       :n:`@ident` is defined and an identity coercion of name
       :n:`Id_@ident_@ident'` is
-      declared. Otherwise said, this is an abbreviation for
+      declared. In other words, this is an abbreviation for
 
       :n:`Definition @ident := @type.`
       :n:`Identity Coercion Id_@ident_@ident' : @ident >-> @ident'`.

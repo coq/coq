@@ -341,13 +341,15 @@ Command summary
 
    .. warn:: A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17).
 
-      In future versions, :g:`:>` will declare a :ref:`coercion<coercions>`, as
+      In future versions, :g:`:>` in the :n:`@record_definition` or
+      :n:`@constructor` will declare a :ref:`coercion<coercions>`, as
       it does for other :cmd:`Record` commands. To eliminate the warning, use
       :g:`::` instead.
 
    .. warn:: Ignored instance declaration for “@ident”: “@term” is not a class
 
-      Using the ``::`` (or deprecated ``:>``) syntax with a right-hand-side that
+      Using the ``::`` (or deprecated ``:>``) syntax in the :n:`@record_definition`
+      or :n:`@constructor` with a right-hand-side that
       is not itself a Class has no effect (apart from emitting this warning).
 
 .. cmd:: Instance {? @ident_decl {* @binder } } : @type {? @hint_info } {? {| := %{ {* @field_val } %} | := @term } }
