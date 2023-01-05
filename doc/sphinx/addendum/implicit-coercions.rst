@@ -26,18 +26,18 @@ typed modulo insertion of appropriate coercions. We allow to write:
 Coercion Classes
 ----------------
 
-A class with :math:`n` parameters is any defined name with a type :n:`forall
-(@ident__1 : @type__1)..(@ident__n:@type__n), @sort`.  Thus a class with
-parameters is considered as a single class and not as a family of classes.  An
-object of a coercion class is any term of type :n:`@coercion_class @term__1 ..
-@term__n`. In addition to these user-defined classes, we have two built-in
-classes:
+A class with :math:`n` parameters is any defined name with a type
+:n:`forall (@ident__1 : @type__1)..(@ident__n:@type__n), @sort`.  Thus a class with
+parameters is considered as a single class and not as a family of
+classes.  An object of a coercion class is any term of type
+:n:`@coercion_class @term__1 .. @term__n`.
+In addition to these user-defined classes, we have two built-in classes:
 
 
   * ``Sortclass``, the class of sorts; its objects are the terms whose type is a
     sort (e.g. :g:`Prop` or :g:`Type`).
-  * ``Funclass``, the class of functions; its objects are all the terms with a
-    functional type, i.e. of form :g:`forall x:A,B`.
+  * ``Funclass``, the class of functions; its objects are all the terms with a functional
+    type, i.e. of form :g:`forall x:A,B`.
 
 Formally, the syntax of classes is defined as:
 
@@ -72,13 +72,13 @@ We then write :g:`f : C >-> D`.
 
 .. _ambiguous-paths:
 
-When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion paths
-with the same classes as existing ones are ignored. Coq will generate a warning
-when the two paths may be non convertible. When the :g:`x₁..xₖ` are exactly the
-:g:`v₁..vₙ` (in the same order), the coercion is said to satisfy the
-:gdef:`uniform inheritance condition`. When possible, we recommend using
-coercions that satisfy this condition. This guarantees that no spurious warning
-will be generated.
+When you declare a new coercion (e.g. with :cmd:`Coercion`), new coercion
+paths with the same classes as existing ones are ignored. Coq will generate
+a warning when the two paths may be non convertible. When the :g:`x₁..xₖ` are exactly
+the :g:`v₁..vₙ` (in the same order), the coercion is said to satisfy
+the :gdef:`uniform inheritance condition`. When possible, we recommend
+using coercions that satisfy this condition. This guarantees that
+no spurious warning will be generated.
 
 .. note:: The built-in class ``Sortclass`` can be used as a source class, but
           the built-in class ``Funclass`` cannot.
@@ -253,10 +253,10 @@ Use :n:`:>` instead of :n:`:` before the
 
    .. cmd:: SubClass @ident_decl @def_body
 
-      If :n:`@type` is a coercion class :n:`@ident'` applied to some arguments
-      then :n:`@ident` is defined and an identity coercion of name
-      :n:`Id_@ident_@ident'` is declared. Otherwise said, this is an
-      abbreviation for
+      If :n:`@type` is a coercion class :n:`@ident'` applied to some arguments then
+      :n:`@ident` is defined and an identity coercion of name
+      :n:`Id_@ident_@ident'` is
+      declared. Otherwise said, this is an abbreviation for
 
       :n:`Definition @ident := @type.`
       :n:`Identity Coercion Id_@ident_@ident' : @ident >-> @ident'`.
