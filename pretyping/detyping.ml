@@ -196,6 +196,14 @@ type _ delay =
 (** Should we keep details of universes during detyping ? *)
 let print_universes = ref false
 
+(** Should we print hidden sort quality variables? *)
+let print_sort_quality =
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Printing";"Sort";"Qualities"]
+    ~value:false
+
 (** If true, prints local context of evars, whatever print_arguments *)
 let print_evar_arguments = ref false
 
@@ -741,13 +749,18 @@ let detype_universe sigma u =
   List.map (on_fst (detype_level_name sigma)) (Univ.Universe.repr u)
 
 let detype_sort sigma = function
-  | SProp -> UNamed [GSProp,0]
-  | Prop -> UNamed [GProp,0]
-  | Set -> UNamed [GSet,0]
-  | Type u | QSort (_, u) (* FIXME? *) ->
+  | SProp -> UNamed (None, [GSProp,0])
+  | Prop -> UNamed (None, [GProp,0])
+  | Set -> UNamed (None, [GSet,0])
+  | Type u ->
       (if !print_universes
-       then UNamed (detype_universe sigma u)
+       then UNamed (None, detype_universe sigma u)
        else UAnonymous {rigid=true})
+  | QSort (q, u) ->
+    if !print_universes then
+      let q = if print_sort_quality () then Some q else None in
+      UNamed (q, detype_universe sigma u)
+    else UAnonymous {rigid=true}
 
 type binder_kind = BProd | BLambda | BLetIn
 

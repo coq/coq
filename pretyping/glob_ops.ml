@@ -57,9 +57,9 @@ exception ComplexSort
 
 let glob_sort_family = let open Sorts in function
   | UAnonymous {rigid=true} -> InType
-  | UNamed [GSProp,0] -> InSProp
-  | UNamed [GProp,0] -> InProp
-  | UNamed [GSet,0] -> InSet
+  | UNamed (None, [GSProp, 0]) -> InSProp
+  | UNamed (None, [GProp, 0]) -> InProp
+  | UNamed (None, [GSet, 0]) -> InSet
   | _ -> raise ComplexSort
 
 let map_glob_sort_gen f = function
@@ -73,9 +73,11 @@ let glob_sort_gen_eq f u1 u2 =
   | (UNamed _ | UAnonymous _), _ -> false
 
 let glob_sort_eq u1 u2 =
-  glob_sort_gen_eq
-    (List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n))
-    u1 u2
+  let eq (q1, l1) (q2, l2) =
+    Option.equal Sorts.QVar.equal q1 q2 &&
+    List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n) l1 l2
+  in
+  glob_sort_gen_eq eq u1 u2
 
 let glob_level_eq u1 u2 =
   glob_sort_gen_eq glob_sort_name_eq u1 u2

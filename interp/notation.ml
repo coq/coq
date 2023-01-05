@@ -600,9 +600,9 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
       and t' = Array.map (glob_of_constr token_kind ?loc env sigma) t
       and ty' = glob_of_constr token_kind ?loc env sigma ty in
       DAst.make ?loc (Glob_term.GArray (None,t',def',ty'))
-  | Sort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed [Glob_term.GSProp, 0]))
-  | Sort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed [Glob_term.GProp, 0]))
-  | Sort Sorts.Set -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed [Glob_term.GSet, 0]))
+  | Sort Sorts.SProp -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSProp, 0])))
+  | Sort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GProp, 0])))
+  | Sort Sorts.Set -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSet, 0])))
   | Sort (Sorts.Type _) -> DAst.make ?loc (Glob_term.GSort (Glob_term.UAnonymous {rigid=true}))
   | _ -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
 

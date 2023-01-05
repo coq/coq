@@ -828,13 +828,16 @@ let extern_glob_sort_name uvars = function
       | None -> CRawType u
     end
 
-let extern_glob_sort uvars =
-  map_glob_sort_gen (List.map (on_fst (extern_glob_sort_name uvars)))
+let extern_glob_sort uvars u =
+  let map (q, l) =
+    q, List.map (on_fst (extern_glob_sort_name uvars)) l
+  in
+  map_glob_sort_gen map u
 
 (** wrapper to handle print_universes: don't forget small univs *)
 let extern_glob_sort uvars = function
   (* In case we print a glob_constr w/o having passed through detyping *)
-  | UNamed [(GSProp,0) | (GProp,0) | (GSet,0)] as u -> extern_glob_sort uvars u
+  | UNamed (None, [(GSProp, 0) | (GProp, 0) | (GSet, 0)]) as u -> extern_glob_sort uvars u
   | UNamed _ when not !print_universes -> UAnonymous {rigid=true}
   | UNamed _ | UAnonymous _ as u -> extern_glob_sort uvars u
 
@@ -1451,9 +1454,9 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
           Array.map (fun (bl,_,_) -> bl) v,
           Array.map (fun (_,_,ty) -> ty) v,
           Array.map (fun (_,bd,_) -> bd) v)
-  | PSort Sorts.InSProp -> GSort (UNamed [GSProp,0])
-  | PSort Sorts.InProp -> GSort (UNamed [GProp,0])
-  | PSort Sorts.InSet -> GSort (UNamed [GSet,0])
+  | PSort Sorts.InSProp -> GSort (UNamed (None, [GSProp,0]))
+  | PSort Sorts.InProp -> GSort (UNamed (None, [GProp,0]))
+  | PSort Sorts.InSet -> GSort (UNamed (None, [GSet,0]))
   | PSort (Sorts.InType | Sorts.InQSort) -> GSort (UAnonymous {rigid=true})
   | PInt i -> GInt i
   | PFloat f -> GFloat f

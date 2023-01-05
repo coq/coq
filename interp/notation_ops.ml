@@ -1460,7 +1460,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
     match_in u alp metas sigma t1 t2
 
   (* Next pair of lines useful only if not coming from detyping *)
-  | GSort (UNamed [(GProp|GSet),0]), NSort (UAnonymous _) -> raise No_match
+  | GSort (UNamed (None, [(GProp|GSet),0])), NSort (UAnonymous _) -> raise No_match
   | GSort _, NSort (UAnonymous _) when not u -> sigma
 
   | GSort s1, NSort s2 when glob_sort_eq s1 s2 -> sigma

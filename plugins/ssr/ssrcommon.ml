@@ -127,7 +127,7 @@ let mkRVar id = DAst.make @@ GRef (GlobRef.VarRef id,None)
 let mkRltacVar id = DAst.make @@ GVar (id)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, DEFAULTcast, rt)
 let mkRType =  DAst.make @@ GSort (UAnonymous {rigid=true})
-let mkRProp =  DAst.make @@ GSort (UNamed [GProp,0])
+let mkRProp =  DAst.make @@ GSort (UNamed (None, [GProp, 0]))
 let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
 let mkRConstruct c = DAst.make @@ GRef (GlobRef.ConstructRef c,None)
 let mkRInd mind = DAst.make @@ GRef (GlobRef.IndRef mind,None)
@@ -722,7 +722,7 @@ open Constrexpr
 open Util
 
 (** Constructors for constr_expr *)
-let mkCProp loc = CAst.make ?loc @@ CSort (UNamed [CProp,0])
+let mkCProp loc = CAst.make ?loc @@ CSort (UNamed (None, [CProp, 0]))
 let mkCType loc = CAst.make ?loc @@ CSort (UAnonymous {rigid=true})
 let mkCVar ?loc id = CAst.make ?loc @@ CRef (qualid_of_ident ?loc id, None)
 let rec mkCHoles ?loc n =

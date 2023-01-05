@@ -20,7 +20,7 @@ type sort_name_expr =
   | CRawType of Univ.Level.t (** Universes like "foo.1" have no qualid form *)
 
 type univ_level_expr  = sort_name_expr Glob_term.glob_sort_gen
-type sort_expr = (sort_name_expr * int) list Glob_term.glob_sort_gen
+type sort_expr = (Sorts.QVar.t option * (sort_name_expr * int) list) Glob_term.glob_sort_gen
 
 type instance_expr = univ_level_expr list
 
