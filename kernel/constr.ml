@@ -1471,13 +1471,15 @@ type 'a evar_expansion =
 type 'constr evar_handler = {
   evar_expand : 'constr pexistential -> 'constr evar_expansion;
   evar_repack : Evar.t * 'constr list -> 'constr;
-  evar_relevance : 'constr pexistential -> Sorts.relevance;
+  evar_relevant : 'constr pexistential -> bool;
+  qvar_relevant : Sorts.QVar.t -> bool;
 }
 
 let default_evar_handler = {
   evar_expand = (fun _ -> assert false);
   evar_repack = (fun _ -> assert false);
-  evar_relevance = (fun _ -> assert false);
+  evar_relevant = (fun _ -> assert false);
+  qvar_relevant = (fun _ -> assert false);
 }
 
 (** Minimalistic constr printer, typically for debugging *)

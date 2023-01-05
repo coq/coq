@@ -367,7 +367,11 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
       (* [ccl] is defined in context [params;x:rp] *)
       (* [ccl'] is defined in context [params;x:rp;x:rp] *)
       if primitive then
-        let proj_relevant = match rci with Sorts.Irrelevant -> false | Sorts.Relevant -> true in
+        let proj_relevant = match rci with
+        | Sorts.Irrelevant -> false
+        | Sorts.Relevant -> true
+        | Sorts.RelevanceVar _ -> assert false
+        in
         let p = Projection.Repr.make indsp
             ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg:i (Label.of_id fid) in
         mkProj (Projection.make p true, mkRel 1), Some p

@@ -1064,7 +1064,11 @@ let fake_match_projection env p =
       let ty = Vars.substl subst (liftn 1 j ty) in
       if arg != proj_arg then
         let lab = match na.binder_name with Name id -> Label.of_id id | Anonymous -> assert false in
-        let proj_relevant = match na.binder_relevance with Sorts.Irrelevant -> false | Sorts.Relevant -> true in
+        let proj_relevant = match na.binder_relevance with
+        | Sorts.Irrelevant -> false
+        | Sorts.Relevant -> true
+        | Sorts.RelevanceVar _ -> assert false
+        in
         let kn = Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg:arg lab in
         fold (arg+1) (j+1) (mkProj (Projection.make kn false, mkRel 1)::subst) rem
       else

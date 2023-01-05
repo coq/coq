@@ -403,8 +403,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let rn = Range.get (info_relevances infos.cnv_inf) (n - 1) in
         let rm = Range.get (info_relevances infos.cnv_inf) (m - 1) in
         if rn == Sorts.Irrelevant && rm == Sorts.Irrelevant then
-          let v1 = CClosure.skip_irrelevant_stack v2 in
-          let v2 = CClosure.skip_irrelevant_stack v2 in
+          let v1 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
+          let v2 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else if Int.equal n m then
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
@@ -526,7 +526,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let (x1,_ty1,bd1) = destFLambda mk_clos hd1 in
         let infos = push_relevance infos x1 in
         eqappr CONV l2r infos
-          (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack x1 v2)) cuniv
+          (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack infos.cnv_inf x1 v2)) cuniv
     | (_, FLambda _) ->
         let () = match v2 with
         | [] -> ()
@@ -536,7 +536,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let (x2,_ty2,bd2) = destFLambda mk_clos hd2 in
         let infos = push_relevance infos x2 in
         eqappr CONV l2r infos
-          (el_lift lft1, (hd1, eta_expand_stack x2 v1)) (el_lift lft2, (bd2, [])) cuniv
+          (el_lift lft1, (hd1, eta_expand_stack infos.cnv_inf x2 v1)) (el_lift lft2, (bd2, [])) cuniv
 
     (* only one constant, defined var or defined rel *)
     | (FFlex fl1, c2)      ->
@@ -707,7 +707,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       let n1 = reloc_rel n1 (el_stack lft1 v1) in
       let r1 = Range.get (info_relevances infos.cnv_inf) (n1 - 1) in
       if r1 == Sorts.Irrelevant then
-        let v1 = CClosure.skip_irrelevant_stack v1 in
+        let v1 = CClosure.skip_irrelevant_stack infos.cnv_inf v1 in
         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 
@@ -715,7 +715,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       let n2 = reloc_rel n2 (el_stack lft2 v2) in
       let r2 = Range.get (info_relevances infos.cnv_inf) (n2 - 1) in
       if r2 == Sorts.Irrelevant then
-        let v2 = CClosure.skip_irrelevant_stack v2 in
+        let v2 = CClosure.skip_irrelevant_stack infos.cnv_inf v2 in
         convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 

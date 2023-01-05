@@ -315,13 +315,22 @@ let nf_sort uctx s =
   let qnormalize q = QState.repr q uctx.sort_variables in
   subst_univs_sort normalize qnormalize s
 
+let nf_relevance uctx r = match r with
+| Sorts.Relevant | Sorts.Irrelevant -> r
+| Sorts.RelevanceVar q ->
+  match nf_qvar uctx q with
+  | QSProp -> Sorts.Irrelevant
+  | QProp | QType -> Sorts.Relevant
+  | QVar q' -> if Sorts.QVar.equal q q' then r else Sorts.RelevanceVar q'
+
 let nf_universes uctx c =
   let lsubst = uctx.univ_variables in
   let level_value l =
     UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
   in
   let sort_value s = nf_sort uctx s in
-  UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) level_value sort_value c
+  let rel_value r = nf_relevance uctx r in
+  UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) level_value sort_value rel_value c
 
 type small_universe = USet | UProp | USProp
 

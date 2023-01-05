@@ -39,6 +39,7 @@ val nf_evars_and_universes_opt_subst :
   (existential -> constr option) ->
   (Level.t -> Level.t) ->
   (Sorts.t -> Sorts.t) ->
+  (Sorts.relevance -> Sorts.relevance) ->
   constr -> constr
 
 val subst_univs_universe : (Level.t -> Universe.t) -> Universe.t -> Universe.t
