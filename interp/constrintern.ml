@@ -2847,8 +2847,7 @@ let interp_univ_constraints env evd cstrs =
       evd, Univ.Constraints.add cstr cstrs
     with UGraph.UniverseInconsistency e as exn ->
       let _, info = Exninfo.capture exn in
-      CErrors.user_err ~info
-        (UGraph.explain_universe_inconsistency (Termops.pr_evd_level evd) e)
+      Exninfo.iraise (Pretype_errors.PretypeError (env, evd, UnivInconsistency e), info)
   in
   List.fold_left interp (evd,Univ.Constraints.empty) cstrs
 

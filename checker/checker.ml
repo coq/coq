@@ -242,10 +242,17 @@ let explain_exn = function
   | Sys.Break ->
     hov 0 (fnl () ++ str "User interrupt.")
   | UGraph.UniverseInconsistency i ->
+    let prs u = match u with
+    | Sorts.Set -> str "Set"
+    | Sorts.Prop -> str "Prop"
+    | Sorts.SProp -> str "SProp"
+    | Sorts.Type u -> Univ.Universe.pr_with Univ.Level.pr u
+    | Sorts.QSort _ -> assert false
+    in
     let msg =
       if CDebug.(get_flag misc) then
         str "." ++ spc() ++
-          UGraph.explain_universe_inconsistency Univ.Level.pr i
+          UGraph.explain_universe_inconsistency Univ.Level.pr prs i
       else
         mt() in
       hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")

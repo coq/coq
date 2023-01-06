@@ -120,7 +120,7 @@ val repr : t -> node Level.Map.t
 
 val pr_universes : (Level.t -> Pp.t) -> node Level.Map.t -> Pp.t
 
-val explain_universe_inconsistency : (Level.t -> Pp.t) ->
+val explain_universe_inconsistency : (Level.t -> Pp.t) -> (Sorts.t -> Pp.t) ->
   univ_inconsistency -> Pp.t
 
 (** {6 Debugging} *)

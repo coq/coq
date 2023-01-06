@@ -70,6 +70,7 @@ type pretype_error =
     (Evar.t * Evar_kinds.t) option * Evar.Set.t option
     (** unresolvable evar, connex component *)
   | DisallowedSProp
+  | UnivInconsistency of UGraph.univ_inconsistency
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 
@@ -162,6 +163,9 @@ val error_var_not_found : ?loc:Loc.t -> env -> Evd.evar_map -> Id.t -> 'b
 val error_evar_not_found : ?loc:Loc.t -> env -> Evd.evar_map -> Id.t -> 'b
 
 val error_disallowed_sprop : env -> Evd.evar_map -> 'a
+
+val error_universe_inconsistency : ?loc:Loc.t ->
+  env -> Evd.evar_map -> UGraph.univ_inconsistency -> 'a
 
 (** {6 Typeclass errors } *)
 

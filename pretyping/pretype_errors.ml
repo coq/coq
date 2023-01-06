@@ -63,6 +63,7 @@ type pretype_error =
   | UnsatisfiableConstraints of
     (Evar.t * Evar_kinds.t) option * Evar.Set.t option
   | DisallowedSProp
+  | UnivInconsistency of UGraph.univ_inconsistency
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 
@@ -178,6 +179,9 @@ let error_evar_not_found ?loc env sigma id =
 
 let error_disallowed_sprop env sigma  =
   raise (PretypeError (env, sigma, DisallowedSProp))
+
+let error_universe_inconsistency ?loc env sigma p =
+  raise_pretype_error ?loc (env, sigma, UnivInconsistency p)
 
 (*s Typeclass errors *)
 

@@ -362,7 +362,7 @@ let explain_unification_error env sigma p1 p2 = function
         strbrk " is expected to have a functional type but it has type " ++ u]
      | UnifUnivInconsistency p ->
        [str "universe inconsistency: " ++
-        UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
+        UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) (Printer.pr_sort sigma) p]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let env = make_all_name_different env sigma in
         (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
@@ -908,6 +908,10 @@ let explain_unsatisfiable_constraints env sigma constr comp =
     let info = Evar.Map.find ev undef in
     explain_typeclass_resolution env sigma info k ++ fnl () ++ cstr
 
+let explain_universe_inconsistency env sigma p =
+  str "Universe inconsistency: " ++
+    UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) (Printer.pr_sort sigma) p
+
 let rec explain_pretype_error env sigma err =
   let env = Evardefine.env_nf_betaiotaevar sigma env in
   let env = make_all_name_different env sigma in
@@ -944,6 +948,7 @@ let rec explain_pretype_error env sigma err =
   | CannotUnifyOccurrences (b,c1,c2,e) -> explain_cannot_unify_occurrences env sigma b c1 c2 e
   | UnsatisfiableConstraints (c,comp) -> explain_unsatisfiable_constraints env sigma c comp
   | DisallowedSProp -> explain_disallowed_sprop ()
+  | UnivInconsistency p -> explain_universe_inconsistency env sigma p
 
 (* Module errors *)
 
@@ -1017,7 +1022,7 @@ let explain_not_match_error = function
         status (not b) ++ str" declaration was found"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
-      UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) incon
+      UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) (Printer.pr_sort Evd.empty) incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     str "conversion of polymorphic values generates additional constraints: " ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
@@ -1467,7 +1472,7 @@ let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
 let rec vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
-    UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) i ++ str "."
+    UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) (Printer.pr_sort Evd.empty) i ++ str "."
   | TypeError(ctx,te) ->
     let te = map_ptype_error EConstr.of_constr te in
     explain_type_error ctx Evd.empty te

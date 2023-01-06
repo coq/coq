@@ -275,14 +275,7 @@ let pr_universes prl g = pr_pmap Pp.mt (pr_arc prl) g
 
 open Pp
 
-let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
-  let pr_uni u = match u with
-  | Sorts.Set -> str "Set"
-  | Sorts.Prop -> str "Prop"
-  | Sorts.SProp -> str "SProp"
-  | Sorts.Type u -> Universe.pr_with prl u
-  | Sorts.QSort (_q, u) -> Universe.pr_with prl u (* FIXME? *)
-  in
+let explain_universe_inconsistency prl pr_uni (o,u,v,p : univ_inconsistency) =
   let pr_rel = function
     | Eq -> str"=" | Lt -> str"<" | Le -> str"<="
   in
