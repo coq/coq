@@ -91,13 +91,10 @@ let pr_tacname t =
 
 let tac_tab = ref MLTacMap.empty
 
-let register_ml_tactic ?(overwrite = false) s (t : ml_tactic array) =
+let register_ml_tactic s (t : ml_tactic array) =
   let () =
     if MLTacMap.mem s !tac_tab then
-      if overwrite then
-        tac_tab := MLTacMap.remove s !tac_tab
-      else
-        CErrors.anomaly (str "Cannot redeclare tactic " ++ pr_tacname s ++ str ".")
+      CErrors.anomaly (str "Cannot redeclare tactic " ++ pr_tacname s ++ str ".")
   in
   tac_tab := MLTacMap.add s t !tac_tab
 
