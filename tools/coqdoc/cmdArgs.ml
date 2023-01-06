@@ -150,8 +150,8 @@ let args_options = Arg.align [
   " Include variable binders in index";
   "--multi-index", arg_set (fun p -> { p with multi_index = true }),
   " Index split in multiple files";
-  "--index <string>", arg_string (fun p s -> { p with index_name = s }),
-  " Set index name (default is index)";
+  "--index", arg_string (fun p s -> { p with index_name = s }),
+  "<string> Set index name to <string> (default is index)";
   "--toc", arg_set (fun p -> { p with toc = true }),
   " Output a table of contents";
   "--table-of-contents", arg_set (fun p -> { p with toc = true }),
