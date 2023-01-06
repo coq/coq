@@ -665,5 +665,6 @@ let () =
   let fmt = formatter_of_out_channel chan in
   let iter ast = Format.fprintf fmt "@[%a@]%!"pr_ast ast in
   let () = List.iter iter ast in
+  let () = Format.fprintf fmt "@[let %s = ()@\n@]%!" plugin_name in
   let () = close_out chan in
   exit 0
