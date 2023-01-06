@@ -1286,6 +1286,22 @@ type obligation_resolver =
 
 type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
 
+let obligation_uctx_terminator prg uctx ~poly ~defined =
+  if poly then
+    (* Polymorphic *)
+    (* We merge the new universes and constraints of the
+       polymorphic obligation with the existing ones *)
+    UState.union prg.prg_uctx uctx
+  else if
+    (* The first obligation, if defined,
+       declares the univs of the constant,
+       each subsequent obligation declares its own additional
+       universes and constraints if any *)
+    defined
+  then
+    UState.Internal.reboot (Global.env ()) uctx
+  else uctx
+
 let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto} =
   let env = Global.env () in
   let ty = entry.proof_entry_type in
@@ -1309,22 +1325,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto} =
   let poly = prg.prg_info.Info.poly in
   let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
   let defined, obl, cst = declare_obligation prg obl ~body ~types:ty ~uctx in
-  let prg_ctx =
-    if poly then
-      (* Polymorphic *)
-      (* We merge the new universes and constraints of the
-         polymorphic obligation with the existing ones *)
-      UState.union prg.prg_uctx uctx
-    else if
-      (* The first obligation, if defined,
-         declares the univs of the constant,
-         each subsequent obligation declares its own additional
-         universes and constraints if any *)
-      defined
-    then
-      UState.Internal.reboot (Global.env ()) uctx
-    else uctx
-  in
+  let prg_ctx = obligation_uctx_terminator prg uctx ~poly ~defined in
   let pm =
     update_program_decl_on_defined ~pm prg obls num obl ~uctx:prg_ctx rem ~auto in
   pm, cst
@@ -2273,14 +2274,12 @@ let solve_and_declare_by_tac prg obls i tac =
   | Some (t, ty, uctx) ->
     let obl = obls.(i) in
     let poly = Internal.get_poly prg in
-    let prg = ProgramDecl.Internal.set_uctx ~uctx prg in
+    let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
     let def, obl', _cst = declare_obligation prg obl ~body:t ~types:ty ~uctx in
     obls.(i) <- obl';
-    if def && not poly then (
-      (* Declare the term constraints with the first obligation only *)
-      let uctx = UState.Internal.reboot (Global.env ()) uctx in
-      Some (ProgramDecl.Internal.set_uctx ~uctx prg))
-    else Some prg
+    let uctx = obligation_uctx_terminator prg uctx ~poly ~defined:def in
+    let prg = ProgramDecl.Internal.set_uctx ~uctx prg in
+    Some prg
 
 let solve_obligation_by_tac prg obls i tac =
   let obl = obls.(i) in
@@ -2299,7 +2298,39 @@ let get_unique_prog ~pm prg =
   | Error ((id :: _) as ids) ->
     Error.ambiguous_program id ids
 
-let rec solve_obligation prg num tac =
+let solve_prg_obligations ~pm prg ?oblset tac =
+  let { obls; remaining } = Internal.get_obligations prg in
+  let rem = ref remaining in
+  let obls' = Array.copy obls in
+  let set = ref Int.Set.empty in
+  let p = match oblset with
+    | None -> (fun _ -> true)
+    | Some s -> set := s;
+      (fun i -> Int.Set.mem i !set)
+  in
+  let prg =
+    Array.fold_left_i
+      (fun i prg x ->
+        if p i then (
+          match solve_obligation_by_tac prg obls' i tac with
+          | None -> prg
+          | Some prg ->
+            let deps = dependencies obls i in
+            set := Int.Set.union !set deps;
+            decr rem;
+            prg)
+        else prg)
+      prg obls'
+  in
+  update_obls ~pm prg obls' !rem
+
+let auto_solve_obligations ~pm n ?oblset tac : State.t * progress =
+  Flags.if_verbose Feedback.msg_info
+    (str "Solving obligations automatically...");
+  let prg = get_unique_prog ~pm n in
+  solve_prg_obligations ~pm prg ?oblset tac
+
+let solve_obligation prg num tac =
   let user_num = succ num in
   let { obls; remaining=rem } = Internal.get_obligations prg in
   let obl = obls.(num) in
@@ -2327,38 +2358,6 @@ let rec solve_obligation prg num tac =
   let lemma = fst @@ Proof.by !default_tactic lemma in
   let lemma = Option.cata (fun tac -> Proof.set_endline_tactic tac lemma) lemma tac in
   lemma
-
-and solve_prg_obligations ~pm prg ?oblset tac =
-  let { obls; remaining } = Internal.get_obligations prg in
-  let rem = ref remaining in
-  let obls' = Array.copy obls in
-  let set = ref Int.Set.empty in
-  let p = match oblset with
-    | None -> (fun _ -> true)
-    | Some s -> set := s;
-      (fun i -> Int.Set.mem i !set)
-  in
-  let prg =
-    Array.fold_left_i
-      (fun i prg x ->
-        if p i then (
-          match solve_obligation_by_tac prg obls' i tac with
-          | None -> prg
-          | Some prg ->
-            let deps = dependencies obls i in
-            set := Int.Set.union !set deps;
-            decr rem;
-            prg)
-        else prg)
-      prg obls'
-  in
-  update_obls ~pm prg obls' !rem
-
-and auto_solve_obligations ~pm n ?oblset tac : State.t * progress =
-  Flags.if_verbose Feedback.msg_info
-    (str "Solving obligations automatically...");
-  let prg = get_unique_prog ~pm n in
-  solve_prg_obligations ~pm prg ?oblset tac
 
 let solve_obligations ~pm n tac =
   let prg = get_unique_prog ~pm n in
