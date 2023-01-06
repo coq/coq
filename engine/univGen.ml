@@ -39,6 +39,13 @@ let new_univ_global () =
 let fresh_level () =
   Univ.Level.make (new_univ_global ())
 
+let new_sort_id =
+  let cnt = ref 0 in
+  fun () -> incr cnt; !cnt
+
+let new_sort_global () =
+  Sorts.QVar.make (new_sort_id ())
+
 let fresh_instance auctx =
   let inst = Array.init (AbstractContext.size auctx) (fun _ -> fresh_level()) in
   let ctx = Array.fold_right Level.Set.add inst Level.Set.empty in
@@ -98,7 +105,7 @@ let fresh_sort_in_family = function
   | InSProp -> Sorts.sprop, ContextSet.empty
   | InProp -> Sorts.prop, ContextSet.empty
   | InSet -> Sorts.set, ContextSet.empty
-  | InType ->
+  | InType | InQSort (* Treat as Type *) ->
     let u = fresh_level () in
       sort_of_univ (Univ.Universe.make u), ContextSet.singleton u
 

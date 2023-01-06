@@ -250,6 +250,8 @@ let pproof p = pp(Proof.pr_proof p)
 
 let ppuni u = pp(Universe.pr u)
 let ppuni_level u = pp (Level.pr u)
+let ppqvar q = pp (QVar.pr q)
+let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s))
 
 let prlev = UnivNames.pr_with_global_universes Id.Map.empty
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
@@ -375,6 +377,7 @@ let constr_display csr =
     | Prop -> "Prop"
     | Type u -> univ_display u;
         "Type("^(string_of_int !cnt)^")"
+    | QSort (q, u) -> univ_display u; Printf.sprintf "QSort(%i, %i)" (Sorts.QVar.repr q) !cnt
 
   and universes_display l =
     Array.fold_right (fun x i -> level_display x; (string_of_int !cnt)^(if not(i="")
@@ -525,6 +528,8 @@ let print_pure_constr csr =
     | Prop -> print_string "Prop"
     | Type u -> open_hbox();
         print_string "Type("; pp (Universe.pr u); print_string ")"; close_box()
+    | QSort (q, u) -> open_hbox();
+        print_string "QSort("; pp (int @@ QVar.repr q); print_string ", "; pp (Universe.pr u); print_string ")"; close_box()
 
   and name_display x = match x.binder_name with
     | Name id -> print_string (Id.to_string id)

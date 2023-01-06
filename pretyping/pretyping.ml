@@ -463,7 +463,9 @@ let sort ?loc evd : glob_sort -> _ = function
   | UAnonymous {rigid} ->
     let evd, l = new_univ_level_variable ?loc (if rigid then univ_rigid else univ_flexible) evd in
     evd, ESorts.make (Sorts.sort_of_univ (Univ.Universe.make l))
-  | UNamed l ->
+  | UNamed (q, l) ->
+    (* No user-facing syntax for qualities *)
+    let () = assert (Option.is_empty q) in
     let evd, s = sort_info ?loc evd l in
     evd, ESorts.make s
 
@@ -475,9 +477,9 @@ let judge_of_sort ?loc evd s =
 
 let pretype_sort ?loc sigma s =
   match s with
-  | UNamed [GSProp,0] -> sigma, judge_of_sprop
-  | UNamed [GProp,0] -> sigma, judge_of_prop
-  | UNamed [GSet,0] -> sigma, judge_of_set
+  | UNamed (None, [GSProp, 0]) -> sigma, judge_of_sprop
+  | UNamed (None, [GProp, 0]) -> sigma, judge_of_prop
+  | UNamed (None, [GSet, 0]) -> sigma, judge_of_set
   | _ ->
   let sigma, s = sort ?loc sigma s in
   judge_of_sort ?loc sigma s

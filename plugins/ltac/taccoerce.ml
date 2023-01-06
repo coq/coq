@@ -220,7 +220,7 @@ let id_of_name = function
             | Sorts.SProp -> Label.to_id (Label.make "SProp")
             | Sorts.Prop -> Label.to_id (Label.make "Prop")
             | Sorts.Set -> Label.to_id (Label.make "Set")
-            | Sorts.Type _ -> Label.to_id (Label.make "Type")
+            | Sorts.Type _ | Sorts.QSort _ -> Label.to_id (Label.make "Type")
           end
        | _ -> fail()
 

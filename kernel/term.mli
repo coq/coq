@@ -184,12 +184,13 @@ val destArity : types -> arity
 val isArity : types -> bool
 
 (* Deprecated *)
-type sorts_family = Sorts.family = InSProp | InProp | InSet | InType
+type sorts_family = Sorts.family = InSProp | InProp | InSet | InType | InQSort
 [@@ocaml.deprecated "Alias for Sorts.family"]
 
 type sorts = Sorts.t = private
   | SProp | Prop | Set
   | Type of Univ.Universe.t  (** Type *)
+  | QSort of Sorts.QVar.t * Univ.Universe.t
 [@@ocaml.deprecated "Alias for Sorts.t"]
 
 val decompose_prod_assum : types -> Constr.rel_context * types

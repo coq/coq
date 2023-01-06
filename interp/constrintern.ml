@@ -1172,7 +1172,12 @@ let intern_sort_name ~local_univs = function
           CErrors.user_err Pp.(str "Undeclared universe " ++ pr_qualid qid ++ str".")
 
 let intern_sort ~local_univs s =
-  map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) s
+  let map (q, l) =
+    (* No user-facing syntax for qualities *)
+    let () = assert (Option.is_empty q) in
+    None, List.map (on_fst (intern_sort_name ~local_univs)) l
+  in
+  map_glob_sort_gen map s
 
 let intern_instance ~local_univs us =
   Option.map (List.map (map_glob_sort_gen (intern_sort_name ~local_univs))) us
@@ -1258,7 +1263,7 @@ let find_projection_data c =
 let glob_sort_of_level (level: glob_level) : glob_sort =
   match level with
   | UAnonymous {rigid} -> UAnonymous {rigid}
-  | UNamed id -> UNamed [id,0]
+  | UNamed id -> UNamed (None, [id, 0])
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =

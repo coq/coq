@@ -92,7 +92,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
 
   let () = if Option.is_empty projs then check_privacy_block mib in
   let () =
-    if not (Sorts.family_leq kind (elim_sort specif)) then
+    if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
       raise
         (RecursionSchemeError
            (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
@@ -645,7 +645,7 @@ let elimination_suffix = function
   | InSProp -> "_sind"
   | InProp -> "_ind"
   | InSet  -> "_rec"
-  | InType -> "_rect"
+  | InType | InQSort -> "_rect"
 
 let case_suffix = "_case"
 

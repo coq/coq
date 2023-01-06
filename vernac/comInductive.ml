@@ -183,6 +183,7 @@ let max_sort s1 s2 = match s1, s2 with
 | (Prop, (Set | Type _ as s)) | ((Set | Type _) as s, Prop) -> s
 | (Set, Type u) | (Type u, Set) -> Sorts.sort_of_univ (Univ.Universe.sup Univ.Universe.type0 u)
 | (Type u, Type v) -> Sorts.sort_of_univ (Univ.Universe.sup u v)
+| (QSort _, _) | (_, QSort _) -> assert false
 
 let compute_constructor_level env evd sign =
   fst (List.fold_right
@@ -207,6 +208,7 @@ let extract_level env evd min tys =
   in sup_list min sorts
 
 let is_flexible_sort evd s = match s with
+| QSort _ -> assert false
 | Set | Prop | SProp -> false
 | Type u ->
   match Univ.Universe.level u with
@@ -239,6 +241,7 @@ let is_direct_sort_constraint s v = match s with
   match v with
   | Sorts.Prop | Sorts.Set | Sorts.SProp -> false
   | Sorts.Type v -> Univ.univ_level_mem u v
+  | Sorts.QSort _ -> assert false
 
 let solve_constraints_system levels level_bounds =
   let open Univ in
@@ -288,6 +291,7 @@ let inductive_levels env evd arities inds =
   | Prop | SProp -> None
   | Set -> Some Univ.Universe.type0
   | Type u -> Some u
+  | QSort _ -> assert false
   in
   let levels = List.map map destarities in
   let cstrs_levels, sizes =
@@ -428,6 +432,7 @@ let template_polymorphism_candidate uctx params entry concl = match concl with
   in
   let univs = template_polymorphic_univs ~ctor_levels uctx params u in
   univs
+| Some (QSort _) -> assert false
 
 let split_universe_context subset (univs, csts) =
   let subfilter (l, _, r) =
@@ -470,7 +475,7 @@ match user_template, univ_entry with
       if Sorts.is_prop s then match concl with
       | None | Some (Type _ | Set)-> true
       | Some Prop -> false
-      | Some SProp -> assert false
+      | Some SProp | Some (QSort _) -> assert false
       else false
     else false
   in

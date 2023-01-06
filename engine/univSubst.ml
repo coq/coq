@@ -81,38 +81,53 @@ let enforce_leq u v c =
   else enforce_leq (Universe.repr u) (Universe.repr v) c
 
 let get_algebraic = function
-| Prop | SProp -> assert false
+| Prop | SProp | QSort _ -> assert false
 | Set -> Universe.type0
 | Type u -> u
 
 let enforce_eq_sort s1 s2 cst = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((Prop | SProp as s1), ((Prop | Set | Type _) as s2)) ->
+| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
+| ((Prop | SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
   raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   enforce_eq (get_algebraic s1) (get_algebraic s2) cst
+| QSort (q1, u1), QSort (q2, u2) ->
+  if QVar.equal q1 q2 then enforce_eq u1 u2 cst
+  else raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
+| (QSort _, (Set | Type _)) | ((Set | Type _), QSort _) ->
+  raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
 
 let enforce_leq_sort s1 s2 cst = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> cst
 | (Prop, (Set | Type _)) -> cst
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
   raise (UGraph.UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   enforce_leq (get_algebraic s1) (get_algebraic s2) cst
+| QSort (q1, u1), QSort (q2, u2) ->
+  if QVar.equal q1 q2 then enforce_leq u1 u2 cst
+  else raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
+| (QSort _, (Set | Type _)) | ((Prop | Set | Type _), QSort _) ->
+  raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
 
 let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> Constraints.empty, g
 | (Prop, (Set | Type _)) -> Constraints.empty, g
-| (((Prop | Set | Type _) as s1), (Prop | SProp as s2))
-| ((SProp as s1), ((Prop | Set | Type _) as s2)) ->
+| (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
+| ((SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
   if UGraph.cumulative_sprop g && is_sprop s1 then
     Constraints.empty, g
   else
     raise (UGraph.UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   UGraph.enforce_leq_alg (get_algebraic s1) (get_algebraic s2) g
+| QSort (q1, u1), QSort (q2, u2) ->
+  if QVar.equal q1 q2 then UGraph.enforce_leq_alg u1 u2 g
+  else raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
+| (QSort _, (Set | Type _)) | ((Prop | Set | Type _), QSort _) ->
+  raise (UGraph.UniverseInconsistency (Eq, s1, s2, None))
 
 let enforce_univ_constraint (u,d,v) =
   match d with
@@ -188,41 +203,40 @@ let subst_univs_fn_puniverses f (c, u as cu) =
   let u' = subst_instance f u in
     if u' == u then cu else (c, u')
 
-let nf_evars_and_universes_opt_subst f subst =
-  let subst = normalize_univ_variable_opt_subst subst in
-  let lsubst = level_subst_of subst in
+let nf_evars_and_universes_opt_subst fevar flevel fsort c =
   let rec aux c =
     match kind c with
     | Evar (evk, args) ->
       let args' = SList.Smart.map aux args in
-      (match try f (evk, args') with Not_found -> None with
+      (match try fevar (evk, args') with Not_found -> None with
       | None -> if args == args' then c else mkEvar (evk, args')
       | Some c -> aux c)
     | Const pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
+      let pu' = subst_univs_fn_puniverses flevel pu in
         if pu' == pu then c else mkConstU pu'
     | Ind pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
+      let pu' = subst_univs_fn_puniverses flevel pu in
         if pu' == pu then c else mkIndU pu'
     | Construct pu ->
-      let pu' = subst_univs_fn_puniverses lsubst pu in
+      let pu' = subst_univs_fn_puniverses flevel pu in
         if pu' == pu then c else mkConstructU pu'
-    | Sort (Type u) ->
-      let u' = subst_univs_universe subst u in
-      if u' == u then c else mkSort (sort_of_univ u')
+    | Sort s ->
+      let s' = fsort s in
+      if s' == s then c else mkSort s'
     | Case (ci,u,pms,p,iv,t,br) ->
-      let u' = subst_instance lsubst u in
+      let u' = subst_instance flevel u in
       if u' == u then Constr.map aux c
       else Constr.map aux (mkCase (ci,u',pms,p,iv,t,br))
     | Array (u,elems,def,ty) ->
-      let u' = subst_instance lsubst u in
+      let u' = subst_instance flevel u in
       let elems' = CArray.Smart.map aux elems in
       let def' = aux def in
       let ty' = aux ty in
       if u == u' && elems == elems' && def == def' && ty == ty' then c
       else mkArray (u',elems',def',ty')
     | _ -> Constr.map aux c
-  in aux
+  in
+  aux c
 
 let pr_universe_subst =
   let open Pp in

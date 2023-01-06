@@ -185,7 +185,7 @@ let retype ?(polyprop=true) sigma =
     | Sort s ->
       begin match ESorts.kind sigma s with
       | SProp | Prop | Set -> ESorts.type1
-      | Type u -> ESorts.make (Sorts.sort_of_univ (Univ.Universe.super u))
+      | Type u | QSort (_, u) -> ESorts.make (Sorts.sort_of_univ (Univ.Universe.super u))
       end
     | Prod (name,t,c2) ->
       let dom = sort_of env t in

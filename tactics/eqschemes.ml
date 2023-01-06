@@ -67,7 +67,7 @@ module RelDecl = Context.Rel.Declaration
 
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
-let default_id_of_sort = function InSProp | InProp | InSet -> hid | InType -> xid
+let default_id_of_sort = function InSProp | InProp | InSet -> hid | InType | InQSort -> xid
 let fresh env id avoid =
   let freshid = next_global_ident_away id avoid in
   freshid, Id.Set.add freshid avoid

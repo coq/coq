@@ -10,20 +10,32 @@
 
 (** {6 The sorts of CCI. } *)
 
-type family = InSProp | InProp | InSet | InType
+type family = InSProp | InProp | InSet | InType | InQSort
 
 val all_families : family list
+
+module QVar :
+sig
+  type t
+  val make : int -> t
+  val repr : t -> int
+  val equal : t -> t -> bool
+  val compare : t -> t -> int
+  val pr : t -> Pp.t
+end
 
 type t = private
   | SProp
   | Prop
   | Set
   | Type of Univ.Universe.t
+  | QSort of QVar.t * Univ.Universe.t
 
 val sprop : t
 val set  : t
 val prop : t
 val type1  : t
+val qsort : QVar.t -> Univ.Universe.t -> t
 
 val equal : t -> t -> bool
 val compare : t -> t -> int

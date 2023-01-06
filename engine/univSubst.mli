@@ -35,8 +35,11 @@ val normalize_opt_subst : universe_opt_subst -> universe_opt_subst
 
 (** Full universes substitutions into terms *)
 
-val nf_evars_and_universes_opt_subst : (existential -> constr option) ->
-  universe_opt_subst -> constr -> constr
+val nf_evars_and_universes_opt_subst :
+  (existential -> constr option) ->
+  (Level.t -> Level.t) ->
+  (Sorts.t -> Sorts.t) ->
+  constr -> constr
 
 val subst_univs_universe : (Level.t -> Universe.t) -> Universe.t -> Universe.t
 

@@ -114,12 +114,16 @@ Remark: Set (predicative) is encoded as Type(0)
 
 let max_template_universe u v = u @ v
 
+let no_sort_variable () =
+  CErrors.anomaly (Pp.str "A sort variable was sent to the kernel")
+
 (* cons_subst add the mapping [u |-> su] in subst if [u] is not *)
 (* in the domain or add [u |-> sup x su] if [u] is already mapped *)
 (* to [x]. *)
 let cons_subst u su subst =
   let su = match su with
   | Sorts.SProp -> assert false (* No template on SProp *)
+  | Sorts.QSort (_, u) -> [u] (* FIXME *)
   | Sorts.Prop -> []
   | Sorts.Set -> [Universe.type0]
   | Sorts.Type u -> [u]
@@ -177,6 +181,7 @@ let make_subst =
 exception SingletonInductiveBecomesProp of Id.t
 
 let subst_univs_sort subs = function
+| Sorts.QSort _ -> no_sort_variable ()
 | Sorts.Prop | Sorts.Set | Sorts.SProp as s -> s
 | Sorts.Type u ->
   (* We implement by hand a max on universes that handles Prop *)

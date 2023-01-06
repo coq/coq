@@ -136,6 +136,12 @@ let is_correct_arity env sigma c pj ind specif params =
           srec (push_rel (LocalAssum (na1,a1)) env) sigma t ar'
       end
     | Sort s, [] ->
+        let sigma = match ESorts.kind sigma s with
+        | QSort (_, u) ->
+          (* Arbitrarily set the return sort to Type *)
+          Evd.set_eq_sort env sigma s (ESorts.make (Sorts.sort_of_univ u))
+        | Set | Type _ | Prop | SProp -> sigma
+        in
         if not (List.mem_f Sorts.family_equal (ESorts.family sigma s) allowed_sorts)
         then error ()
         else sigma, s
@@ -207,7 +213,11 @@ let check_allowed_sort env sigma ind c p =
   let pj = Retyping.get_judgment_of env sigma p in
   let _, s = hnf_decompose_prod env sigma pj.uj_type in
   let ksort = match EConstr.kind sigma s with
-  | Sort s -> ESorts.family sigma s
+  | Sort s ->
+    begin match ESorts.family sigma s with
+    | InType | InSProp | InSet | InProp as f -> f
+    | InQSort -> InType (* FIXME *)
+    end
   | _ -> error_elim_arity env sigma ind c None in
   if not (Sorts.family_leq ksort sorts) then
     let s = inductive_sort_family (snd specif) in
@@ -253,6 +263,14 @@ let judge_of_type u =
   let uu = Univ.Universe.super u in
     { uj_val = EConstr.mkType u;
       uj_type = EConstr.mkType uu }
+
+let judge_of_sort s =
+  let open Sorts in
+  let u = match s with
+  | Prop | SProp | Set -> Univ.Universe.type1
+  | Type u | QSort (_, u) -> Univ.Universe.super u
+  in
+  { uj_val = EConstr.mkSort (ESorts.make s); uj_type = EConstr.mkType u }
 
 let judge_of_relative env v =
   Environ.on_judgment EConstr.of_constr (judge_of_relative env v)
@@ -421,6 +439,7 @@ let rec execute env sigma cstr =
         | Prop -> sigma, judge_of_prop
         | Set -> sigma, judge_of_set
         | Type u -> sigma, judge_of_type u
+        | QSort _ as s -> sigma, judge_of_sort s
       end
 
     | Proj (p, c) ->

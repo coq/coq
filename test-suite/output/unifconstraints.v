@@ -26,4 +26,4 @@ Unset Printing Existential Instances.
 (* Check non regression of error message (the example can eventually
    improve though and succeed) *)
 
-Fail Check fun P (x:nat) (h:P x) => exist _ x (h : P x).
+Fail Check fun (P : _ -> Type) (x:nat) (h:P x) => exist _ x (h : P x).

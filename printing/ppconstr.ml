@@ -167,15 +167,19 @@ let tag_var = tag Tag.variable
       | [x] -> pr_univ_expr x
       | l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
 
+  let pr_quality_univ (q, l) = match q with
+  | None -> pr_univ l
+  | Some q -> str "(* " ++ Sorts.QVar.pr q ++ str " *)" ++ spc () ++ pr_univ l
+
   let pr_univ_annot pr x = str "@{" ++ pr x ++ str "}"
 
   let pr_sort_expr = function
-    | UNamed [CSProp,0] -> tag_type (str "SProp")
-    | UNamed [CProp,0] -> tag_type (str "Prop")
-    | UNamed [CSet,0] -> tag_type (str "Set")
+    | UNamed (None, [CSProp, 0]) -> tag_type (str "SProp")
+    | UNamed (None, [CProp, 0]) -> tag_type (str "Prop")
+    | UNamed (None, [CSet, 0]) -> tag_type (str "Set")
     | UAnonymous {rigid=true} -> tag_type (str "Type")
     | UAnonymous {rigid=false} -> tag_type (str "Type") ++ pr_univ_annot (fun _ -> str "_") ()
-    | UNamed u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ u)
+    | UNamed u -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_quality_univ u)
 
   let pr_univ_level_expr = function
     | UNamed CSProp -> tag_type (str "SProp")

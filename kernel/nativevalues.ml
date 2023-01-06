@@ -184,6 +184,10 @@ let mk_sort_accu s u =
      let u = Univ.Instance.of_array u in
      let s = Sorts.sort_of_univ (Univ.subst_instance_universe u s) in
      mk_accu (Asort s)
+  | QSort (q, s) ->
+     let u = Univ.Instance.of_array u in
+     let s = Sorts.qsort q (Univ.subst_instance_universe u s) in
+     mk_accu (Asort s)
 
 let mk_var_accu id =
   mk_accu (Avar id)

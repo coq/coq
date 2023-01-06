@@ -220,7 +220,7 @@ open Sorts
 let get_algebraic = function
 | Prop | SProp -> assert false
 | Set -> Universe.type0
-| Type u -> u
+| Type u | QSort (_, u) -> u
 
 let check_eq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
@@ -228,15 +228,22 @@ let check_eq_sort ugraph s1 s2 = match s1, s2 with
   type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
   check_eq ugraph (get_algebraic s1) (get_algebraic s2)
+| QSort (q1, u1), QSort (q2, u2) ->
+  QVar.equal q1 q2 && check_eq ugraph u1 u2
+| (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
 
 let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
 | (SProp, _) -> cumulative_sprop ugraph || type_in_type ugraph
 | (Prop, SProp) -> type_in_type ugraph
 | (Prop, (Set | Type _)) -> true
+| (Prop, QSort _) -> false
 | (_, (SProp | Prop)) -> type_in_type ugraph
 | (Type _ | Set), (Type _ | Set) ->
   check_leq ugraph (get_algebraic s1) (get_algebraic s2)
+| QSort (q1, u1), QSort (q2, u2) ->
+  QVar.equal q1 q2 && check_leq ugraph u1 u2
+| (QSort _, (Type _ | Set)) | ((Type _ | Set), QSort _) -> false
 
 (** Pretty-printing *)
 
@@ -274,6 +281,7 @@ let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
   | Sorts.Prop -> str "Prop"
   | Sorts.SProp -> str "SProp"
   | Sorts.Type u -> Universe.pr_with prl u
+  | Sorts.QSort (_q, u) -> Universe.pr_with prl u (* FIXME? *)
   in
   let pr_rel = function
     | Eq -> str"=" | Lt -> str"<" | Le -> str"<="

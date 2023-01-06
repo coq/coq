@@ -113,11 +113,11 @@ let nondep_elim_scheme from_kind to_kind =
   | InProp, InProp  -> ind_scheme_kind_from_prop
   | InProp, InSProp -> sind_scheme_kind_from_prop
   | InProp, InSet   -> rec_scheme_kind_from_prop
-  | InProp, InType  -> rect_scheme_kind_from_prop
+  | InProp, (InType | InQSort) -> rect_scheme_kind_from_prop
   | _     , InProp  -> ind_scheme_kind_from_type
   | _     , InSProp -> sind_scheme_kind_from_type
   | _     , InSet   -> rec_scheme_kind_from_type
-  | _     , InType  -> rect_scheme_kind_from_type
+  | _     , (InType | InQSort) -> rect_scheme_kind_from_type
 
 (* Case analysis *)
 

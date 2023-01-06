@@ -24,6 +24,76 @@ type uinfo = {
   uloc : Loc.t option;
 }
 
+type quality = QVar of Sorts.QVar.t | QProp | QSProp | QType
+
+module QState : sig
+  type t
+  type elt = Sorts.QVar.t
+  val empty : t
+  val union : t -> t -> t
+  val add : elt -> t -> t
+  val repr : elt -> t -> quality
+  val set : elt -> quality -> t -> t option
+  val collapse : t -> t
+  val pr : t -> Pp.t
+end =
+struct
+
+module QMap = Map.Make(Sorts.QVar)
+
+type t = quality option QMap.t
+(* TODO: use a persistent union-find structure *)
+
+type elt = Sorts.QVar.t
+let empty = QMap.empty
+let union s1 s2 = QMap.fold QMap.add s1 s2
+let add q m = QMap.add q None m
+
+let rec repr q m = match QMap.find q m with
+| None -> QVar q
+| Some (QVar q) -> repr q m
+| Some (QProp | QSProp | QType as q) -> q
+| exception Not_found ->
+(*   let () = assert !Flags.in_debugger in *) (* FIXME *)
+  QVar q
+
+let set q qv m =
+  let q = repr q m in
+  let qv = match qv with QVar qv -> repr qv m | (QSProp | QProp | QType as qv) -> qv in
+  match q, qv with
+  | QVar q, QVar qv ->
+    if Sorts.QVar.equal q qv then Some m
+    else Some (QMap.add q (Some (QVar qv)) m)
+  | QVar q, (QProp | QSProp | QType as qv) | (QProp | QSProp | QType as qv), QVar q ->
+    Some (QMap.add q (Some qv) m)
+  | (QSProp, QSProp) | (QProp, QProp) | (QType, QType) -> Some m
+  | (QSProp | QProp | QType), (QSProp | QProp | QType) ->
+    None
+
+let collapse m =
+  let map q v = match v with
+  | None -> Some QType
+  | Some _ -> v
+  in
+  QMap.mapi map m
+
+let pr qmap =
+  let open Pp in
+  let prbody = function
+  | None -> mt ()
+  | Some q ->
+    let q = match q with
+    | QVar v -> Sorts.QVar.pr v
+    | QProp -> str "Prop"
+    | QSProp -> str "SProp"
+    | QType -> str "Type"
+    in
+    str " := " ++ q
+  in
+  h (prlist_with_sep fnl (fun (u, v) -> Sorts.QVar.pr u ++ prbody v) (QMap.bindings qmap))
+
+end
+
 module UPairSet = UnivMinim.UPairSet
 
 (* 2nd part used to check consistency on the fly. *)
@@ -36,6 +106,8 @@ type t =
    univ_algebraic : Level.Set.t;
    (** The subset of unification variables that can be instantiated with
         algebraic universes as they appear in inferred types only. *)
+   sort_variables : QState.t;
+   (** Local quality variables. *)
    universes : UGraph.t; (** The current graph extended with the local constraints *)
    universes_lbound : UGraph.Bound.t; (** The lower bound on universes (e.g. Set or Prop) *)
    initial_universes : UGraph.t; (** The graph at the creation of the evar_map *)
@@ -50,6 +122,7 @@ let empty =
     seff_univs = Level.Set.empty;
     univ_variables = Level.Map.empty;
     univ_algebraic = Level.Set.empty;
+    sort_variables = QState.empty;
     universes = initial_sprop_cumulative;
     universes_lbound = UGraph.Bound.Set;
     initial_universes = initial_sprop_cumulative;
@@ -103,6 +176,7 @@ let union uctx uctx' =
           Level.Map.subst_union uctx.univ_variables uctx'.univ_variables;
         univ_algebraic =
           Level.Set.union uctx.univ_algebraic uctx'.univ_algebraic;
+        sort_variables = QState.union uctx.sort_variables uctx'.sort_variables;
         initial_universes = declarenew uctx.initial_universes;
         universes =
           (if local == uctx.local then uctx.universes
@@ -142,9 +216,6 @@ type universe_opt_subst = UnivSubst.universe_opt_subst
 
 let subst uctx = uctx.univ_variables
 
-let nf_universes uctx c =
-  UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (subst uctx) c
-
 let ugraph uctx = uctx.universes
 
 let initial_graph uctx = uctx.initial_universes
@@ -178,7 +249,9 @@ let universe_binders uctx =
   let named, _ = uctx.names in
   named
 
-let instantiate_variable l b v =
+let nf_qvar uctx q = QState.repr q uctx.sort_variables
+
+let instantiate_variable l (b : Universe.t) v =
   try v := Level.Map.set l (Some b) !v
   with Not_found -> assert false
 
@@ -198,9 +271,28 @@ let level_inconsistency cst l r =
   let mk u = Sorts.sort_of_univ @@ Universe.make u in
   raise (UGraph.UniverseInconsistency (cst, mk l, mk r, None))
 
-let subst_univs_sort normalize s = match s with
+let subst_univs_sort normalize qnormalize s = match s with
 | Sorts.Set | Sorts.Prop | Sorts.SProp -> s
 | Sorts.Type u -> Sorts.sort_of_univ (UnivSubst.subst_univs_universe normalize u)
+| Sorts.QSort (q, u) ->
+  match qnormalize q with
+  | QSProp -> Sorts.sprop
+  | QProp -> Sorts.prop
+  | QType -> Sorts.sort_of_univ (UnivSubst.subst_univs_universe normalize u)
+  | QVar q -> Sorts.qsort q (UnivSubst.subst_univs_universe normalize u)
+
+let nf_sort uctx s =
+  let normalize u = UnivSubst.normalize_univ_variable_opt_subst uctx.univ_variables u in
+  let qnormalize q = QState.repr q uctx.sort_variables in
+  subst_univs_sort normalize qnormalize s
+
+let nf_universes uctx c =
+  let lsubst = uctx.univ_variables in
+  let level_value l =
+    UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
+  in
+  let sort_value s = nf_sort uctx s in
+  UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) level_value sort_value c
 
 type small_universe = USet | UProp | USProp
 
@@ -216,7 +308,7 @@ let classify s = match s with
 | Sorts.Prop -> USmall UProp
 | Sorts.SProp -> USmall USProp
 | Sorts.Set -> USmall USet
-| Sorts.Type u ->
+| Sorts.Type u | Sorts.QSort (_, u) ->
   if Universe.is_levels u then match Universe.level u with
   | None -> UMax (u, Universe.levels u)
   | Some u -> ULevel u
@@ -226,6 +318,7 @@ type local = {
   local_cst : Constraints.t;
   local_above_prop : Level.Set.t;
   local_weak : UPairSet.t;
+  local_sorts : QState.t;
 }
 
 let add_local cst local =
@@ -235,6 +328,43 @@ let add_local cst local =
 let enforce_leq_up u v local =
   { local with local_cst = UnivSubst.enforce_leq u (Universe.make v) local.local_cst }
 
+let quality_of_sort = function
+| Sorts.Set | Sorts.Type _ -> QType
+| Sorts.Prop -> QProp
+| Sorts.SProp -> QSProp
+| Sorts.QSort (q, _) -> QVar q
+
+let get_constraint = function
+| Reduction.CONV -> Eq
+| Reduction.CUMUL -> Le
+
+let unify_quality univs c s1 s2 local = match quality_of_sort s1, quality_of_sort s2 with
+| QType, QType | QProp, QProp | QSProp, QSProp -> local
+| QVar q, (QType | QProp | QSProp | QVar _ as qv)
+| (QType | QProp | QSProp as qv), QVar q ->
+  begin match QState.set q qv local.local_sorts with
+  | Some local_sorts -> { local with local_sorts }
+  | None ->
+    if UGraph.type_in_type univs then local
+    else sort_inconsistency (get_constraint c) s1 s2
+  end
+| (QType, (QProp | QSProp)) ->
+  if UGraph.type_in_type univs then local
+  else sort_inconsistency (get_constraint c) s1 s2
+| (QProp, QType) ->
+  if UGraph.type_in_type univs then local
+  else begin match c with
+  | Reduction.CONV -> sort_inconsistency Eq s1 s2
+  | Reduction.CUMUL -> local
+  end
+| (QSProp, (QType | QProp)) ->
+  if UGraph.type_in_type univs then local
+  else if c == Reduction.CUMUL && UGraph.cumulative_sprop univs then local
+  else sort_inconsistency (get_constraint c) s1 s2
+| (QProp, QSProp) ->
+  if UGraph.type_in_type univs then local
+  else sort_inconsistency (get_constraint c) s1 s2
+
 let process_universe_constraints uctx cstrs =
   let open UnivSubst in
   let open UnivProblem in
@@ -242,11 +372,15 @@ let process_universe_constraints uctx cstrs =
   let vars = ref uctx.univ_variables in
   let cumulative_sprop = UGraph.cumulative_sprop univs in
   let normalize u = normalize_univ_variable_opt_subst !vars u in
-  let nf_constraint = function
+  let normalize_sort sorts s =
+    let qnormalize q = QState.repr q sorts in
+    subst_univs_sort normalize qnormalize s
+  in
+  let nf_constraint sorts = function
     | ULub (u, v) -> ULub (level_subst_of normalize u, level_subst_of normalize v)
     | UWeak (u, v) -> UWeak (level_subst_of normalize u, level_subst_of normalize v)
-    | UEq (u, v) -> UEq (subst_univs_sort normalize u, subst_univs_sort normalize v)
-    | ULe (u, v) -> ULe (subst_univs_sort normalize u, subst_univs_sort normalize v)
+    | UEq (u, v) -> UEq (normalize_sort sorts u, normalize_sort sorts v)
+    | ULe (u, v) -> ULe (normalize_sort sorts u, normalize_sort sorts v)
   in
   let is_local l = Level.Map.mem l !vars in
   let equalize_small l s local =
@@ -273,20 +407,22 @@ let process_universe_constraints uctx cstrs =
     else sort_inconsistency Eq ls s
   in
   let equalize_variables fo l' r' local =
-    let () =
-      if is_local l' then
-        instantiate_variable l' (Universe.make r') vars
-      else if is_local r' then
-        instantiate_variable r' (Universe.make l') vars
-      else if not (UnivProblem.check_eq_level univs l' r') then
-        (* Two rigid/global levels, none of them being local,
-            one of them being Prop/Set, disallow *)
-        if Level.is_set l' || Level.is_set r' then
-          level_inconsistency Eq l' r'
-        else if fo then
-          raise UniversesDiffer
-    in
-    if Level.equal l' r' then local else add_local (l', Eq, r') local
+    if Level.equal l' r' then local
+    else
+      let () =
+        if is_local l' then
+          instantiate_variable l' (Universe.make r') vars
+        else if is_local r' then
+          instantiate_variable r' (Universe.make l') vars
+        else if not (UnivProblem.check_eq_level univs l' r') then
+          (* Two rigid/global levels, none of them being local,
+              one of them being Prop/Set, disallow *)
+          if Level.is_set l' || Level.is_set r' then
+            level_inconsistency Eq l' r'
+          else if fo then
+            raise UniversesDiffer
+      in
+      add_local (l', Eq, r') local
   in
   let equalize_algebraic l ru local =
     let alg = Level.Set.mem l uctx.univ_algebraic in
@@ -314,10 +450,13 @@ let process_universe_constraints uctx cstrs =
     else sort_inconsistency Eq l r
   in
   let unify_universes cst local =
-    let cst = nf_constraint cst in
+    let cst = nf_constraint local.local_sorts cst in
     if UnivProblem.is_trivial cst then local
     else match cst with
     | ULe (l, r) ->
+      let local = unify_quality univs Reduction.CUMUL l r local in
+      let l = normalize_sort local.local_sorts l in
+      let r = normalize_sort local.local_sorts r in
       begin match classify r with
       | UAlgebraic _ | UMax _ ->
         if UGraph.check_leq_sort univs l r then local
@@ -383,7 +522,11 @@ let process_universe_constraints uctx cstrs =
       if not (drop_weak_constraints ())
       then { local with local_weak = UPairSet.add (l, r) local.local_weak }
       else local
-    | UEq (l, r) -> equalize_universes l r local
+    | UEq (l, r) ->
+      let local = unify_quality univs Reduction.CONV l r local in
+      let l = normalize_sort local.local_sorts l in
+      let r = normalize_sort local.local_sorts r in
+      equalize_universes l r local
   in
   let unify_universes cst local =
     if not (UGraph.type_in_type univs) then unify_universes cst local
@@ -393,10 +536,11 @@ let process_universe_constraints uctx cstrs =
     local_cst = Constraints.empty;
     local_weak = uctx.minim_extra.UnivMinim.weak_constraints;
     local_above_prop = uctx.minim_extra.UnivMinim.above_prop;
+    local_sorts = uctx.sort_variables;
   } in
   let local = UnivProblem.Set.fold unify_universes cstrs local in
   let extra = { UnivMinim.above_prop = local.local_above_prop; UnivMinim.weak_constraints = local.local_weak } in
-  !vars, extra, local.local_cst
+  !vars, extra, local.local_cst, local.local_sorts
 
 let add_constraints uctx cstrs =
   let univs, old_cstrs = uctx.local in
@@ -411,20 +555,22 @@ let add_constraints uctx cstrs =
     in UnivProblem.Set.add cstr' acc)
     cstrs UnivProblem.Set.empty
   in
-  let vars, extra, cstrs' = process_universe_constraints uctx cstrs' in
+  let vars, extra, cstrs', sorts = process_universe_constraints uctx cstrs' in
   { uctx with
     local = (univs, Constraints.union old_cstrs cstrs');
     univ_variables = vars;
     universes = UGraph.merge_constraints cstrs' uctx.universes;
+    sort_variables = sorts;
     minim_extra = extra; }
 
 let add_universe_constraints uctx cstrs =
   let univs, local = uctx.local in
-  let vars, extra, local' = process_universe_constraints uctx cstrs in
+  let vars, extra, local', sorts = process_universe_constraints uctx cstrs in
   { uctx with
     local = (univs, Constraints.union local local');
     univ_variables = vars;
     universes = UGraph.merge_constraints local' uctx.universes;
+    sort_variables = sorts;
     minim_extra = extra; }
 
 let constrain_variables diff uctx =
@@ -696,6 +842,11 @@ let add_universe ?loc name strict lbound uctx u =
   in
   { uctx with names; local; initial_universes; universes }
 
+let new_sort_variable uctx =
+  let q = UnivGen.new_sort_global () in
+  let sort_variables = QState.add q uctx.sort_variables in
+  { uctx with sort_variables }, q
+
 let new_univ_variable ?loc rigid name uctx =
   let u = UnivGen.fresh_level () in
   let uctx =
@@ -759,13 +910,20 @@ let make_flexible_nonalgebraic uctx =
   { uctx with univ_algebraic = Level.Set.empty }
 
 let is_sort_variable uctx s =
-  match s with
+  match s with (* FIXME: normalize here *)
   | Sorts.Type u ->
     (match Universe.level u with
     | Some l as x ->
         if Level.Set.mem l (ContextSet.levels uctx.local) then x
         else None
     | None -> None)
+  | Sorts.QSort (q, u) ->
+    let q = nf_qvar uctx q in
+    (match q, Universe.level u with
+    | QType, Some l ->
+        if Level.Set.mem l (ContextSet.levels uctx.local) then Some l
+        else None
+    | (_, Some _ | _, None) -> None)
   | _ -> None
 
 let subst_univs_context_with_def def usubst (uctx, cst) =
@@ -810,6 +968,9 @@ let fix_undefined_variables uctx =
   { uctx with univ_variables = vars';
     univ_algebraic = algs' }
 
+let collapse_sort_variables uctx =
+  { uctx with sort_variables = QState.collapse uctx.sort_variables }
+
 let minimize uctx =
   let open UnivMinim in
   let lbound = uctx.universes_lbound in
@@ -827,6 +988,7 @@ let minimize uctx =
         seff_univs = uctx.seff_univs; (* not sure about this *)
         univ_variables = vars';
         univ_algebraic = algs';
+        sort_variables = uctx.sort_variables;
         universes = universes;
         universes_lbound = lbound;
         initial_universes = uctx.initial_universes;
@@ -842,3 +1004,5 @@ let pr_universe_body = function
   | Some x -> Pp.(str " := " ++ Univ.Universe.pr x)
 
 let pr_universe_opt_subst = Univ.Level.Map.pr pr_universe_body
+
+let pr_sort_opt_subst uctx = QState.pr uctx.sort_variables

@@ -1076,9 +1076,10 @@ let new_univ_variable ?loc ?name rigid evd =
   let uctx', u = UState.new_univ_variable ?loc rigid name evd.universes in
     ({evd with universes = uctx'}, Univ.Universe.make u)
 
-let new_sort_variable ?loc ?name rigid d =
-  let (d', u) = new_univ_variable ?loc rigid ?name d in
-    (d', Sorts.sort_of_univ u)
+let new_sort_variable ?loc ?name rigid sigma =
+  let (sigma, u) = new_univ_variable ?loc rigid ?name sigma in
+  let uctx, q = UState.new_sort_variable sigma.universes in
+  ({ sigma with universes = uctx }, Sorts.qsort q u)
 
 let add_global_univ d u =
   { d with universes = UState.add_global_univ d.universes u }
@@ -1145,6 +1146,17 @@ let normalize_sort evars s =
   | Type u ->
     let u' = normalize_universe evars u in
     if u' == u then s else Sorts.sort_of_univ u'
+  | QSort (q, u) ->
+    begin match UState.nf_qvar evars.universes q with
+    | QProp -> Sorts.prop
+    | QSProp -> Sorts.sprop
+    | QType ->
+      let u' = normalize_universe evars u in
+      Sorts.sort_of_univ u'
+    | QVar q' ->
+      let u' = normalize_universe evars u in
+      if q' == q && u' == u then s else Sorts.qsort q' u'
+    end
 
 (* FIXME inefficient *)
 let set_eq_sort env d s1 s2 =
@@ -1179,10 +1191,12 @@ let set_leq_sort env evd s1 s2 =
      else evd
 
 let check_eq evd s s' =
-  UGraph.check_eq_sort (UState.ugraph evd.universes) s s'
+  let ustate = evd.universes in
+  UGraph.check_eq_sort (UState.ugraph ustate) (UState.nf_sort ustate s) (UState.nf_sort ustate s')
 
 let check_leq evd s s' =
-  UGraph.check_leq_sort (UState.ugraph evd.universes) s s'
+  let ustate = evd.universes in
+  UGraph.check_leq_sort (UState.ugraph ustate) (UState.nf_sort ustate s) (UState.nf_sort ustate s')
 
 let check_constraints evd csts =
   UGraph.check_constraints csts (UState.ugraph evd.universes)
@@ -1194,9 +1208,13 @@ let nf_univ_variables evd =
   let uctx = UState.normalize_variables evd.universes in
   {evd with universes = uctx}
 
+let collapse_sort_variables evd =
+  let universes = UState.collapse_sort_variables evd.universes in
+  { evd with universes }
 
 let minimize_universes evd =
-  let uctx' = UState.normalize_variables evd.universes in
+  let uctx' = UState.collapse_sort_variables evd.universes in
+  let uctx' = UState.normalize_variables uctx' in
   let uctx' = UState.minimize uctx' in
   {evd with universes = uctx'}
 
@@ -1574,9 +1592,7 @@ module MiniEConstr = struct
   struct
     type t = Sorts.t
     let make s = s
-    let kind sigma = function
-      | Sorts.Type u -> Sorts.sort_of_univ (normalize_universe sigma u)
-      | s -> s
+    let kind = normalize_sort
     let unsafe_to_sorts s = s
   end
 
@@ -1646,7 +1662,12 @@ module MiniEConstr = struct
       | Evar_defined c -> Some (instantiate_evar_array sigma info c args)
       | Evar_empty -> assert false
     in
-    UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
+    let lsubst = universe_subst sigma in
+    let level_value l =
+      UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
+    in
+    let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
+    UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value c
 
   let to_constr_gen sigma c =
     let saw_evar = ref false in
@@ -1655,7 +1676,12 @@ module MiniEConstr = struct
       saw_evar := !saw_evar || Option.is_empty v;
       v
     in
-    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c in
+    let lsubst = universe_subst sigma in
+    let level_value l =
+      UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
+    in
+    let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
+    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value c in
     let saw_evar = if not !saw_evar then false
       else
         let exception SawEvar in

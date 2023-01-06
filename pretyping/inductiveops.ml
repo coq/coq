@@ -679,6 +679,7 @@ let arity_of_case_predicate env (ind,params) dep k =
 let univ_level_mem l s = match s with
 | Prop | Set | SProp -> false
 | Type u -> univ_level_mem l u
+| QSort (_, u) -> assert false (* template cannot contain sort variables *)
 
 (* Compute the inductive argument types: replace the sorts
    that appear in the type of the inductive by the sort of the

@@ -139,7 +139,7 @@ let sort_hdchar = function
   | SProp -> "P"
   | Prop -> "P"
   | Set -> "S"
-  | Type _ -> "T"
+  | Type _ | QSort _ -> "T"
 
 let hdchar env sigma c =
   let rec hdrec k c =

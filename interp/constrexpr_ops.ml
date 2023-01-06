@@ -33,9 +33,11 @@ let univ_level_expr_eq u1 u2 =
   Glob_ops.glob_sort_gen_eq sort_name_expr_eq u1 u2
 
 let sort_expr_eq u1 u2 =
-  Glob_ops.glob_sort_gen_eq
-    (List.equal (fun (x,m) (y,n) -> sort_name_expr_eq x y && Int.equal m n))
-    u1 u2
+  let eq (q1, l1) (q2, l2) =
+    Option.equal Sorts.QVar.equal q1 q2 &&
+    List.equal (fun (x,m) (y,n) -> sort_name_expr_eq x y && Int.equal m n) l1 l2
+  in
+  Glob_ops.glob_sort_gen_eq eq u1 u2
 
 (***********************)
 (* For binders parsing *)

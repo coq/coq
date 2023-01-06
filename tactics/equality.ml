@@ -325,12 +325,12 @@ let eq_elimination_ref l2r sort =
       match sort with
       | InProp -> "core.eq.ind_r"
       | InSProp -> "core.eq.sind_r"
-      | InSet | InType -> "core.eq.rect_r"
+      | InSet | InType | InQSort -> "core.eq.rect_r"
     else
       match sort with
       | InProp -> "core.eq.ind"
       | InSProp -> "core.eq.sind"
-      | InSet | InType -> "core.eq.rect"
+      | InSet | InType | InQSort -> "core.eq.rect"
   in
   if Coqlib.has_ref name then Some (Coqlib.lib_ref name) else None
 

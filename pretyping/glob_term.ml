@@ -42,7 +42,7 @@ type 'a glob_sort_gen =
 type glob_level = glob_sort_name glob_sort_gen
 
 (** sort expressions *)
-type glob_sort = (glob_sort_name * int) list glob_sort_gen
+type glob_sort = (Sorts.QVar.t option * (glob_sort_name * int) list) glob_sort_gen
 
 type glob_constraint = glob_sort_name * Univ.constraint_type * glob_sort_name
 

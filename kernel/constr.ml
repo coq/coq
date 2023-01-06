@@ -191,7 +191,7 @@ let mkSort   = function
   | Sorts.SProp -> mkSProp
   | Sorts.Prop -> mkProp (* Easy sharing *)
   | Sorts.Set -> mkSet
-  | Sorts.Type _ as s -> of_kind @@ Sort s
+  | (Sorts.Type _ | Sorts.QSort _) as s -> of_kind @@ Sort s
 
 (* Constructs the product (x:t1)t2 *)
 let mkProd (x,t1,t2) = of_kind @@ Prod (x,t1,t2)

@@ -442,6 +442,9 @@ let usubst_sort (_,u) s = match s with
   | Sorts.Type su ->
     if Univ.Instance.is_empty u then s
     else Sorts.(sort_of_univ (Univ.subst_instance_universe u su))
+  | Sorts.QSort (q, v) ->
+    if Univ.Instance.is_empty u then s
+    else Sorts.qsort q (Univ.subst_instance_universe u v)
   | Sorts.(SProp | Prop | Set) -> s
 
 (* Optimization: do not enclose variables in a closure.

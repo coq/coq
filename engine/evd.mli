@@ -680,6 +680,8 @@ val with_context_set : ?loc:Loc.t -> rigid -> evar_map -> 'a Univ.in_universe_co
 
 val nf_univ_variables : evar_map -> evar_map
 
+val collapse_sort_variables : evar_map -> evar_map
+
 val fix_undefined_variables : evar_map -> evar_map
 
 (** Universe minimization *)
