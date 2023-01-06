@@ -197,7 +197,7 @@ Otherwise return `nil'."
 This does not enable `bug-reference-mode'."
   (let ((dir (coqdev-default-directory)))
     (when dir
-      (setq-local bug-reference-bug-regexp "#\\(?2:[0-9]+\\)")
+      (setq-local bug-reference-bug-regexp "\\(#\\(?2:[0-9]+\\)\\)")
       (setq-local bug-reference-url-format "https://github.com/coq/coq/issues/%s")
       (when (derived-mode-p 'prog-mode) (bug-reference-prog-mode 1)))))
 (add-hook 'hack-local-variables-hook #'coqdev-setup-bug-reference-mode)
