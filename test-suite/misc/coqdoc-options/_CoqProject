@@ -1,0 +1,5 @@
+-R theories Coqdoc
+
+COQDOCFLAGS = "--index indexpage -g"
+
+theories/test.v
