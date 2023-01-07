@@ -470,3 +470,10 @@ Abort.
 Fail Ltac bad := exact x. (* was wrongly accepted *)
 
 End StrictModeConfusion.
+
+Module StrictCheck.
+
+Fail Definition a : forall n : nat, n = n := ltac:(destruct n; auto).
+Fail Notation f := ltac:(exact n).
+
+End StrictCheck.
