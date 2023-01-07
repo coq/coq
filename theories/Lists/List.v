@@ -3420,6 +3420,38 @@ simpl; rewrite IHl1.
 apply Nat.add_assoc.
 Qed.
 
+Lemma concat_length A l:
+  length (concat l) = list_sum (map (@length A) l).
+Proof.
+  induction l; [reflexivity|].
+  simpl. rewrite app_length.
+  f_equal. assumption.
+Qed.
+
+Lemma flat_map_length A B (f: A -> list B) l:
+  length (flat_map f l) = list_sum (map (fun x => length (f x)) l).
+Proof.
+  rewrite flat_map_concat_map, concat_length, map_map. reflexivity.
+Qed.
+
+Corollary flat_map_constant_length A B c (f: A -> list B) l:
+  (forall x, In x l -> length (f x) = c) -> length (flat_map f l) = (length l) * c.
+Proof.
+  intro H. rewrite flat_map_length.
+  induction l as [ | a l IHl ]; [reflexivity|].
+  simpl. rewrite IHl, H; [reflexivity | left; reflexivity | ].
+  intros x Hx. apply H. right. assumption.
+Qed.
+
+Lemma list_power_length (A B:Type)(l:list A) (l':list B):
+    length (list_power l l') = (length l')^(length l).
+Proof.
+  induction l as [ | a m IH ]; [reflexivity|].
+  cbn. rewrite flat_map_constant_length with (c := length l').
+  - rewrite IH. apply Nat.mul_comm.
+  - intros x H. apply map_length.
+Qed.
+
 (** Max of elements of a list of [nat]: [list_max] *)
 
 Definition list_max l := fold_right max 0 l.
