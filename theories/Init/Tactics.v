@@ -339,3 +339,11 @@ Create HintDb rewrite discriminated.
 #[global]
 Hint Variables Opaque : rewrite.
 Create HintDb typeclass_instances discriminated.
+
+(** Show as a tactic *)
+
+Ltac show :=
+  try match reverse goal with
+  | H:?T |- _ => idtac H ":" T; fail
+  | |- ?X => idtac "============================"; idtac X; idtac ""; fail
+  end.
