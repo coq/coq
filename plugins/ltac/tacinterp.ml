@@ -806,7 +806,7 @@ let interp_may_eval f ist env sigma = function
 let interp_constr_may_eval ist env sigma c =
   let (sigma,csr) =
     try
-      interp_may_eval interp_constr ist env sigma c
+      interp_may_eval interp_open_constr_with_classes ist env sigma c
     with reraise ->
       let reraise = Exninfo.capture reraise in
       (* spiwack: to avoid unnecessary modifications of tacinterp, as this
