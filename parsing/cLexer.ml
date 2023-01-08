@@ -57,24 +57,6 @@ let ttree_find ttree str =
   in
   proc_rec ttree 0
 
-(* Removes a string from a dictionary: returns an equal dictionary
-   if the word not present. *)
-let ttree_remove ttree str =
-  let rec remove tt i =
-    if i == String.length str then
-      {node = None; branch = tt.branch}
-    else
-      let c = str.[i] in
-      let br =
-        match try Some (CharMap.find c tt.branch) with Not_found -> None with
-          | Some tt' ->
-              CharMap.add c (remove tt' (i + 1)) (CharMap.remove c tt.branch)
-          | None -> tt.branch
-      in
-      { node = tt.node; branch = br }
-  in
-  remove ttree 0
-
 let ttree_elements ttree =
   let rec elts tt accu =
     let accu = match tt.node with
@@ -270,9 +252,6 @@ let add_keyword ?(quotation=NoQuotation) str =
       check_keyword str;
       token_tree := ttree_add !token_tree (str,quotation)
     end
-
-let remove_keyword str =
-  token_tree := ttree_remove !token_tree str
 
 let keywords () = ttree_elements !token_tree
 
@@ -789,12 +768,6 @@ module MakeLexer (Diff : sig val mode : bool end) = struct
   let tok_using : type c. c pattern -> unit = function
     | PKEYWORD s -> add_keyword ~quotation:NoQuotation s
     | PQUOTATION s -> add_keyword ~quotation:Quotation s
-    | _ -> ()
-  let tok_removing : type c. c pattern -> unit = function
-    (* Normally useless because backtracking relies on state freezing *)
-    (* Nevertheless consistent with tok_using *)
-    | PKEYWORD s -> remove_keyword s
-    | PQUOTATION s -> remove_keyword s
     | _ -> ()
   let tok_match = Tok.match_pattern
   let tok_text = Tok.token_text

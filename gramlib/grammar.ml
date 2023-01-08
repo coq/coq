@@ -131,12 +131,6 @@ type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
 type 'a parser_t = L.te LStream.t -> 'a
 
-type grammar =
-  { gtokens : (string * string option, int ref) Hashtbl.t }
-
-let egram =
-  { gtokens = Hashtbl.create 301 }
-
 (** Used to propagate possible presence of SELF/NEXT in a rule (binary and) *)
 type ('a, 'b, 'c) ty_and_rec =
 | NoRec2 : (norec, norec, norec) ty_and_rec
@@ -594,16 +588,10 @@ let rec change_to_self : type s trec a r. s ty_entry -> (s, trec, a, r) ty_rule 
   let MayRecSymbol t = change_to_self0 e t in
   MayRecRule (TNext (MayRec2, r, t))
 
-let insert_token gram tok =
-  L.tok_using tok;
-  let r =
-    let tok = L.tok_pattern_strings tok in
-    try Hashtbl.find gram.gtokens tok with
-      Not_found -> let r = ref 0 in Hashtbl.add gram.gtokens tok r; r
-  in
-  incr r
+let insert_token tok =
+  L.tok_using tok
 
-let insert_tokens gram symbols =
+let insert_tokens symbols =
   let rec insert : type s trec a. (s, trec, a) ty_symbol -> unit =
     function
     | Slist0 s -> insert s
@@ -612,8 +600,8 @@ let insert_tokens gram symbols =
     | Slist1sep (s, t, _) -> insert s; insert t
     | Sopt s -> insert s
     | Stree t -> tinsert t
-    | Stoken tok -> insert_token gram tok
-    | Stokens (TPattern tok::_) -> insert_token gram tok (* Only the first token is liable to trigger a keyword effect *)
+    | Stoken tok -> insert_token tok
+    | Stokens (TPattern tok::_) -> insert_token tok (* Only the first token is liable to trigger a keyword effect *)
     | Stokens [] -> assert false
     | Snterm _ -> () | Snterml (_, _) -> ()
     | Snext -> ()
@@ -639,7 +627,7 @@ type 'a extend_statement =
 let add_prod entry lev (TProd (symbols, action)) =
   let MayRecRule symbols = change_to_self entry symbols in
   let AnyS (symbols, pf) = get_symbols symbols in
-  insert_tokens egram symbols;
+  insert_tokens symbols;
   insert_level entry.ename symbols pf action lev
 
 let levels_of_rules entry st =
@@ -748,51 +736,11 @@ let delete_rule_in_tree entry =
   in
   delete_in_tree
 
-let decr_keyw_use_in_token gram tok =
-  let tok' = L.tok_pattern_strings tok in
-  let r = Hashtbl.find gram.gtokens tok' in
-  decr r;
-  if !r == 0 then
-    begin
-      Hashtbl.remove gram.gtokens tok';
-      L.tok_removing tok
-    end
-
-let rec decr_keyw_use : type s tr a. _ -> (s, tr, a) ty_symbol -> unit = fun gram ->
-  function
-    Stoken tok -> decr_keyw_use_in_token gram tok
-  | Stokens (TPattern tok :: _) -> decr_keyw_use_in_token gram tok
-  | Stokens [] -> assert false
-  | Slist0 s -> decr_keyw_use gram s
-  | Slist1 s -> decr_keyw_use gram s
-  | Slist0sep (s1, s2, _) -> decr_keyw_use gram s1; decr_keyw_use gram s2
-  | Slist1sep (s1, s2, _) -> decr_keyw_use gram s1; decr_keyw_use gram s2
-  | Sopt s -> decr_keyw_use gram s
-  | Stree t -> decr_keyw_use_in_tree gram t
-  | Sself -> ()
-  | Snext -> ()
-  | Snterm _ -> () | Snterml (_, _) -> ()
-and decr_keyw_use_in_tree : type s tr a. _ -> (s, tr, a) ty_tree -> unit = fun gram ->
-  function
-    DeadEnd -> () | LocAct (_, _) -> ()
-  | Node (_, n) ->
-      decr_keyw_use gram n.node;
-      decr_keyw_use_in_tree gram n.son;
-      decr_keyw_use_in_tree gram n.brother
-and decr_keyw_use_in_list : type s tr p. _ -> (s, tr, p) ty_symbols -> unit = fun gram ->
-  function
-  | TNil -> ()
-  | TCns (_, s, l) -> decr_keyw_use gram s; decr_keyw_use_in_list gram l
-
 let rec delete_rule_in_suffix entry symbols =
   function
     Level lev :: levs ->
       begin match delete_rule_in_tree entry symbols lev.lsuffix with
         Some (dsl, MayRecTree t) ->
-          begin match dsl with
-            Some (ExS dsl) -> decr_keyw_use_in_list egram dsl
-          | None -> ()
-          end;
           begin match t, lev.lprefix with
             DeadEnd, DeadEnd -> levs
           | _ ->
@@ -813,10 +761,6 @@ let rec delete_rule_in_prefix entry symbols =
     Level lev :: levs ->
       begin match delete_rule_in_tree entry symbols lev.lprefix with
         Some (dsl, MayRecTree t) ->
-          begin match dsl with
-            Some (ExS dsl) -> decr_keyw_use_in_list egram dsl
-          | None -> ()
-          end;
           begin match t, lev.lsuffix with
             DeadEnd, DeadEnd -> levs
           | _ ->
