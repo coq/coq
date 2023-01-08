@@ -1548,9 +1548,10 @@ in a scope stack locally extended with a given scope by using the modifier
 Binding types or coercion classes to notation scopes
 ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. cmd:: Bind Scope @scope_name with {+ @class }
+.. cmd:: Bind Scope @scope_name with {+ @coercion_class }
 
-   Binds the notation scope :token:`scope_name` to the type or coercion class :token:`class`.
+   Binds the notation scope :token:`scope_name` to the type or coercion class
+   :token:`coercion_class`.
    When bound, arguments of that type for any function will be interpreted in
    that scope by default.  This default can be overridden for individual functions
    with the :cmd:`Arguments` command. See :ref:`binding_to_scope` for details.
@@ -1576,7 +1577,7 @@ Binding types or coercion classes to notation scopes
       bindings at the top or bottom of the stack of already declared
       bindings. In absence of such attributes, any new binding clears
       the previous ones. This makes it possible to bind multiple scopes
-      to the same :token:`class`.
+      to the same :token:`coercion_class`.
 
    .. example:: Binding scopes to a type
 

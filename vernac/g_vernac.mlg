@@ -42,7 +42,7 @@ let search_queries = Entry.create "search_queries"
 let subprf = Entry.create "subprf"
 
 let quoted_attributes = Entry.create "quoted_attributes"
-let class_rawexpr = Entry.create "class_rawexpr"
+let coercion_class = Entry.create "coercion_class"
 let thm_token = Entry.create "thm_token"
 let def_token = Entry.create "def_token"
 let assumption_token = Entry.create "assumption_token"
@@ -761,13 +761,13 @@ GRAMMAR EXTEND Gram
           VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d)
           | None -> VernacCoercion (CAst.make ~loc @@ AN qid, None) }
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
-         s = class_rawexpr; ">->"; t = class_rawexpr ->
+         s = coercion_class; ">->"; t = coercion_class ->
            { VernacIdentityCoercion (f, s, t) }
-      | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
-         t = class_rawexpr ->
+      | IDENT "Coercion"; qid = global; ":"; s = coercion_class; ">->";
+         t = coercion_class ->
           { VernacCoercion (CAst.make ~loc @@ AN qid, Some(s, t)) }
-      | IDENT "Coercion"; ntn = by_notation; ":"; s = class_rawexpr; ">->";
-         t = class_rawexpr ->
+      | IDENT "Coercion"; ntn = by_notation; ":"; s = coercion_class; ">->";
+         t = coercion_class ->
           { VernacCoercion (CAst.make ~loc @@ ByNotation ntn, Some (s, t)) }
 
       | IDENT "Context"; c = LIST1 binder ->
@@ -904,7 +904,7 @@ GRAMMAR EXTEND Gram
 END
 
 GRAMMAR EXTEND Gram
-  GLOBAL: command query_command class_rawexpr gallina_ext search_query search_queries;
+  GLOBAL: command query_command coercion_class gallina_ext search_query search_queries;
 
   gallina_ext: TOP
     [ [ IDENT "Export"; "Set"; table = setting_name; v = option_setting ->
@@ -1039,7 +1039,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Typeclasses" -> { PrintTypeclasses }
       | IDENT "Instances"; qid = smart_global -> { PrintInstances qid }
       | IDENT "Coercions" -> { PrintCoercions }
-      | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr ->
+      | IDENT "Coercion"; IDENT "Paths"; s = coercion_class; t = coercion_class ->
           { PrintCoercionPaths (s,t) }
       | IDENT "Canonical"; IDENT "Projections"; qids = LIST0 smart_global ->
           { PrintCanonicalConversions qids }
@@ -1069,7 +1069,7 @@ GRAMMAR EXTEND Gram
   printunivs_subgraph:
     [ [ IDENT "Subgraph"; "("; l = LIST0 reference; ")" -> { l } ] ]
   ;
-  class_rawexpr:
+  coercion_class:
     [ [ IDENT "Funclass" -> { FunClass }
       | IDENT "Sortclass" -> { SortClass }
       | qid = smart_global -> { RefClass qid } ] ]
@@ -1213,7 +1213,7 @@ GRAMMAR EXTEND Gram
          { VernacDelimiters (sc, None) }
 
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
-       refl = LIST1 class_rawexpr -> { VernacBindScope (sc,refl) }
+       refl = LIST1 coercion_class -> { VernacBindScope (sc,refl) }
 
      | IDENT "Infix"; ntn_decl = notation_declaration ->
          { VernacNotation (true,ntn_decl) }
