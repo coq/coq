@@ -20,7 +20,6 @@ module type S = sig
   val tok_pattern_strings : 'c pattern -> string * string option
   val tok_func : te lexer_func
   val tok_using : 'c pattern -> unit
-  val tok_removing : 'c pattern -> unit
   val tok_match : 'c pattern -> te -> 'c
   val tok_text : 'c pattern -> string
 
