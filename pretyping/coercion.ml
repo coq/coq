@@ -354,7 +354,7 @@ let coerce_itf ?loc env sigma v t c1 =
 
 let saturate_evd env sigma =
   Typeclasses.resolve_typeclasses
-    ~filter:Typeclasses.no_goals ~split:true ~fail:false env sigma
+    ~filter:Typeclasses.no_goals ~fail:false env sigma
 
 type coercion_trace =
   | IdCoe

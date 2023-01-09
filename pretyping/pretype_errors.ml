@@ -61,7 +61,7 @@ type pretype_error =
   | TypingError of type_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
-    (Evar.t * Evar_kinds.t) option * Evar.Set.t option
+    (Evar.t * Evar_kinds.t) option * Evar.Set.t
   | DisallowedSProp
 
 exception PretypeError of env * Evd.evar_map * pretype_error

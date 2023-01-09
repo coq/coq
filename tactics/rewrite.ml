@@ -1457,7 +1457,7 @@ let apply_strategy (s : strategy) env unfresh concl (prop, cstr) evars =
 let solve_constraints env (evars,cstrs) =
   let oldtcs = Evd.get_typeclass_evars evars in
   let evars' = Evd.set_typeclass_evars evars cstrs in
-  let evars' = TC.resolve_typeclasses env ~filter:TC.all_evars ~split:false ~fail:true evars' in
+  let evars' = TC.resolve_typeclasses env ~filter:TC.all_evars ~fail:true evars' in
   Evd.set_typeclass_evars evars' oldtcs
 
 let nf_zeta =
