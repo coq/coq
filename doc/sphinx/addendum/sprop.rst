@@ -289,32 +289,13 @@ This means that some errors will be delayed until ``Qed``:
 The implementation of proof irrelevance uses inferred "relevance"
 marks on binders to determine which variables are irrelevant. Together
 with non-cumulativity this allows us to avoid retyping during
-conversion. However during elaboration cumulativity is allowed and so
-the algorithm may miss some irrelevance:
-
-.. coqtop:: all
-
-  Fail Definition late_mark := fun (A:SProp) (P:A -> Prop) x y (v:P x) => v : P y.
-
-The binders for ``x`` and ``y`` are created before their type is known
-to be ``A``, so they're not marked irrelevant. This can be avoided
-with sufficient annotation of binders (see ``irrelevance`` at the
-beginning of this chapter) or by bypassing the conversion check in
-tactics.
-
-.. coqdoc::
-
-   Definition late_mark := fun (A:SProp) (P:A -> Prop) x y (v:P x) =>
-     ltac:(exact_no_check v) : P y.
-
-The kernel will re-infer the marks on the fully elaborated term, and
-so correctly converts ``x`` and ``y``.
+conversion.
 
 .. warn:: Bad relevance
 
   This is a developer warning, disabled by default. It is emitted by
   the kernel when it is passed a term with incorrect relevance marks.
-  To avoid conversion issues as in ``late_mark`` you may wish to use
+  To avoid conversion issues you may wish to use
   it to find when your tactics are producing incorrect marks.
 
 .. flag:: Cumulative StrictProp
