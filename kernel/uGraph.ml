@@ -26,7 +26,6 @@ module G = AcyclicGraph.Make(struct
 
 type t = {
   graph: G.t;
-  sprop_cumulative : bool;
   type_in_type : bool;
 }
 
@@ -41,12 +40,9 @@ exception UniverseInconsistency of univ_inconsistency
 
 type 'a check_function = t -> 'a -> 'a -> bool
 
-let set_cumulative_sprop b g = {g with sprop_cumulative=b}
-
 let set_type_in_type b g = {g with type_in_type=b}
 
 let type_in_type g = g.type_in_type
-let cumulative_sprop g = g.sprop_cumulative
 
 let check_smaller_expr g (u,n) (v,m) =
   let diff = n - m in
@@ -73,7 +69,7 @@ let check_eq g u v =
 let check_eq_level g u v =
   u == v || type_in_type g || G.check_eq g.graph u v
 
-let empty_universes = {graph=G.empty; sprop_cumulative=false; type_in_type=false}
+let empty_universes = {graph=G.empty; type_in_type=false}
 
 let initial_universes =
   let big_rank = 1000000 in
@@ -234,7 +230,7 @@ let check_eq_sort ugraph s1 s2 = match s1, s2 with
 
 let check_leq_sort ugraph s1 s2 = match s1, s2 with
 | (SProp, SProp) | (Prop, Prop) | (Set, Set) -> true
-| (SProp, _) -> cumulative_sprop ugraph || type_in_type ugraph
+| (SProp, _) -> type_in_type ugraph
 | (Prop, SProp) -> type_in_type ugraph
 | (Prop, (Set | Type _)) -> true
 | (Prop, QSort _) -> false

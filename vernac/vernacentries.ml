@@ -1708,7 +1708,6 @@ let vernac_generalizable ~local =
   Implicit_quantifiers.declare_generalizable ~local
 
 let allow_sprop_opt_name = ["Allow";"StrictProp"]
-let cumul_sprop_opt_name = ["Cumulative";"StrictProp"]
 
 let () =
   declare_bool_option
@@ -1717,14 +1716,6 @@ let () =
       optkey   = allow_sprop_opt_name;
       optread  = (fun () -> Global.sprop_allowed());
       optwrite = Global.set_allow_sprop }
-
-let () =
-  declare_bool_option
-    { optstage = Summary.Stage.Interp;
-      optdepr  = false;
-      optkey   = cumul_sprop_opt_name;
-      optread  = Global.is_cumulative_sprop;
-      optwrite = Global.set_cumulative_sprop }
 
 let () =
   declare_bool_option

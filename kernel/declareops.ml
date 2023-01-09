@@ -28,7 +28,6 @@ let safe_flags oracle = {
   indices_matter = true;
   impredicative_set = false;
   sprop_allowed = true;
-  cumulative_sprop = false;
   allow_uip = false;
 }
 

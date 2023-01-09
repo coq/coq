@@ -143,8 +143,6 @@ type t =
    minim_extra : UnivMinim.extra;
  }
 
-let initial_sprop_cumulative = UGraph.set_cumulative_sprop true UGraph.initial_universes
-
 let empty =
   { names = UNameMap.empty, Level.Map.empty;
     local = ContextSet.empty;
@@ -152,20 +150,12 @@ let empty =
     univ_variables = Level.Map.empty;
     univ_algebraic = Level.Set.empty;
     sort_variables = QState.empty;
-    universes = initial_sprop_cumulative;
+    universes = UGraph.initial_universes;
     universes_lbound = UGraph.Bound.Set;
-    initial_universes = initial_sprop_cumulative;
+    initial_universes = UGraph.initial_universes;
     minim_extra = UnivMinim.empty_extra; }
 
-let elaboration_sprop_cumul =
-  Goptions.declare_bool_option_and_ref
-    ~stage:Summary.Stage.Interp
-    ~depr:false
-    ~key:["Elaboration";"StrictProp";"Cumulativity"]
-    ~value:true
-
 let make ~lbound univs =
-  let univs = UGraph.set_cumulative_sprop (elaboration_sprop_cumul ()) univs in
   { empty with
     universes = univs;
     universes_lbound = lbound;
@@ -399,7 +389,6 @@ let unify_quality univs c s1 s2 local = match quality_of_sort s1, quality_of_sor
   end
 | (QSProp, (QType | QProp)) ->
   if UGraph.type_in_type univs then local
-  else if c == Reduction.CUMUL && UGraph.cumulative_sprop univs then local
   else sort_inconsistency (get_constraint c) s1 s2
 | (QProp, QSProp) ->
   if UGraph.type_in_type univs then local
@@ -410,7 +399,6 @@ let process_universe_constraints uctx cstrs =
   let open UnivProblem in
   let univs = uctx.universes in
   let vars = ref uctx.univ_variables in
-  let cumulative_sprop = UGraph.cumulative_sprop univs in
   let normalize u = normalize_univ_variable_opt_subst !vars u in
   let normalize_sort sorts s =
     let qnormalize q = QState.repr q sorts in
@@ -545,7 +533,7 @@ let process_universe_constraints uctx cstrs =
         | USmall UProp ->
           { local with local_above_prop = Level.Set.add r' local.local_above_prop }
         | USmall USProp ->
-          if UGraph.type_in_type univs || cumulative_sprop then local
+          if UGraph.type_in_type univs then local
           else sort_inconsistency Le l r
         | USmall USet ->
           add_local (Level.set, Le, r') local
@@ -859,8 +847,7 @@ let emit_side_effects eff u =
   let u = demote_seff_univs (fst uctx) u in
   merge_seff u uctx
 
-let update_sigma_univs uctx ugraph =
-  let univs = UGraph.set_cumulative_sprop (elaboration_sprop_cumul()) ugraph in
+let update_sigma_univs uctx univs =
   let eunivs =
     { uctx with
       initial_universes = univs;

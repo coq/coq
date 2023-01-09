@@ -1,6 +1,6 @@
 Inductive SFalse : SProp := .
 Definition adjust_of_sprop {A} {x y : A} (pf : x <> y) : x <> y
-  := fun e : x = y => SFalse_ind (fun _ => False) (match pf e return SFalse with end).
+  := fun e : x = y => SFalse_ind (fun _ => False) (match pf e with end).
 
 Definition adjust_of_sprop_idempotent {A x y pf} : @adjust_of_sprop A x y (@adjust_of_sprop A x y pf) = @adjust_of_sprop A x y pf.
 Proof. cbv [adjust_of_sprop]; reflexivity. Defined.
