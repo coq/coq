@@ -112,22 +112,21 @@ Remark: Set (predicative) is encoded as Type(0)
 
 (* Template polymorphism *)
 
-let max_template_universe u v = u @ v
-
 let no_sort_variable () =
   CErrors.anomaly (Pp.str "A sort variable was sent to the kernel")
+
+type template_univ =
+  | TemplateProp
+  | TemplateUniv of Universe.t
+
+let max_template_universe u v = match u, v with
+  | TemplateProp, x | x, TemplateProp -> x
+  | TemplateUniv u, TemplateUniv v -> TemplateUniv (Universe.sup u v)
 
 (* cons_subst add the mapping [u |-> su] in subst if [u] is not *)
 (* in the domain or add [u |-> sup x su] if [u] is already mapped *)
 (* to [x]. *)
 let cons_subst u su subst =
-  let su = match su with
-  | Sorts.SProp -> assert false (* No template on SProp *)
-  | Sorts.QSort (_, u) -> [u] (* FIXME *)
-  | Sorts.Prop -> []
-  | Sorts.Set -> [Universe.type0]
-  | Sorts.Type u -> [u]
-  in
   try
     Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
   with Not_found -> Univ.Level.Map.add u su subst
@@ -136,14 +135,11 @@ let cons_subst u su subst =
 (* if it is presents and returns the substitution unchanged if not.*)
 let remember_subst u subst =
   try
-    let su = [Universe.make u] in
+    let su = TemplateUniv (Universe.make u) in
     Univ.Level.Map.add u (max_template_universe su (Univ.Level.Map.find u subst)) subst
   with Not_found -> subst
 
-type param_univs = (unit -> Sorts.t) list
-
-let make_param_univs env argtys =
-  Array.map_to_list (fun arg () -> (snd (Reduction.dest_arity env arg))) argtys
+type param_univs = (expected:Univ.Level.t -> template_univ) list
 
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
@@ -160,7 +156,7 @@ let make_subst =
         (* arity is a global level which, at typing time, will be enforce *)
         (* to be greater than the level of the argument; this is probably *)
         (* a useless extra constraint *)
-        let s = a () in
+        let s = a ~expected:u in
         make (cons_subst u s subst) (sign, exp, args)
     | LocalAssum (_na,_t) :: sign, Some u::exp, [] ->
         (* No more argument here: we add the remaining universes to the *)
@@ -188,23 +184,22 @@ let subst_univs_sort subs = function
   let u = Universe.repr u in
   let supern u n = iterate Universe.super n u in
   let map (u, n) =
-    if Level.is_set u then [Universe.type0, n]
+    if Level.is_set u then Some (Universe.type0, n)
     else match Level.Map.find u subs with
-    | [] ->
+    | TemplateProp ->
       if Int.equal n 0 then
         (* This is an instantiation of a template universe by Prop, ignore it *)
-        []
+        None
       else
         (* Prop + S n actually means Set + S n *)
-        [Universe.type0, n]
-    | _ :: _ as vs ->
-      List.map (fun v -> (v, n)) vs
+        Some (Universe.type0, n)
+    | TemplateUniv v -> Some (v,n)
     | exception Not_found ->
       (* Either an unbound template universe due to missing arguments, or a
          global one appearing in the inductive arity. *)
-      [Universe.make u, n]
+      Some (Universe.make u, n)
   in
-  let u = List.map_append map u in
+  let u = List.filter_map map u in
   match u with
   | [] ->
     (* No constraints, fall in Prop *)

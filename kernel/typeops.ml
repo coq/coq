@@ -383,11 +383,25 @@ let judge_of_array env u tj defj =
    the App case of execute; from this constraints, the expected
    dynamic constraints of the form u<=v are enforced *)
 
-let type_of_inductive_knowing_parameters env (ind,u) args =
+let make_param_univs env indu spec args argtys =
+  Array.to_list @@ Array.mapi (fun i argt ~expected ->
+      match (snd (Reduction.dest_arity env argt)) with
+      | SProp | exception Reduction.NotArity ->
+        Type_errors.error_cant_apply_bad_type env
+          (i+1, mkType (Universe.make expected), argt)
+          (make_judge (mkIndU indu) (Inductive.type_of_inductive (spec, snd indu)))
+          (make_judgev args argtys)
+      | Prop -> TemplateProp
+      | Set -> TemplateUniv Universe.type0
+      | Type u -> TemplateUniv u
+      | QSort _ -> assert false)
+    argtys
+
+let type_of_inductive_knowing_parameters env (ind,u as indu) args argst =
   let (mib,_mip) as spec = lookup_mind_specif env ind in
   check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters
-      (spec,u) (Inductive.make_param_univs env args)
+      (spec,u) (make_param_univs env indu spec args argst)
   in
   check_constraints cst env;
   t
@@ -600,7 +614,7 @@ let rec execute env cstr =
         let f', ft =
           match kind f with
           | Ind ind when Environ.template_polymorphic_pind ind env ->
-            f, type_of_inductive_knowing_parameters env ind argst
+            f, type_of_inductive_knowing_parameters env ind args' argst
           | _ ->
             (* No template polymorphism *)
             execute env f

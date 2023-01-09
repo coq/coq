@@ -35,13 +35,26 @@ let meta_type env evd mv =
     with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   meta_instance env (create_meta_instance_subst evd) ty
 
-let inductive_type_knowing_parameters env sigma (ind,u) jl =
+let make_param_univs env sigma indu spec jl =
+  Array.to_list @@ Array.mapi (fun i j ~expected ->
+      match ESorts.kind sigma @@ Reductionops.sort_of_arity env sigma j.uj_type with
+      | Sorts.SProp | exception Reduction.NotArity ->
+        let indty = EConstr.of_constr @@
+          Inductive.type_of_inductive (spec, Unsafe.to_instance @@ snd indu)
+        in
+        error_cant_apply_bad_type env sigma
+          (i+1, mkType (Univ.Universe.make expected), j.uj_type)
+          (make_judge (mkIndU indu) indty)
+          jl
+      | Sorts.Prop -> TemplateProp
+      | Sorts.Set -> TemplateUniv Univ.Universe.type0
+      | Sorts.Type u | Sorts.QSort (_, u) -> TemplateUniv u)
+    jl
+
+let inductive_type_knowing_parameters env sigma (ind,u as indu) jl =
   let u = Unsafe.to_instance u in
   let mspec = lookup_mind_specif env ind in
-  let paramstyp = Array.map_to_list (fun j () ->
-      let s = Reductionops.sort_of_arity env sigma j.uj_type in
-      EConstr.ESorts.kind sigma s) jl
-  in
+  let paramstyp = make_param_univs env sigma indu mspec jl in
   Inductive.type_of_inductive_knowing_parameters (mspec,u) paramstyp
 
 let type_judgment env sigma j =
