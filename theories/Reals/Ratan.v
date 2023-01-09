@@ -230,7 +230,7 @@ Lemma derive_pt_tan : forall x,
 Proof.
 intros x pr.
 assert (cos x <> 0).
-{ apply Rgt_not_eq, cos_gt_0; rewrite <- ?Ropp_div; tauto. }
+{ apply Rgt_not_eq, cos_gt_0; rewrite <- ?Rdiv_opp_l; tauto. }
 unfold tan; reg; unfold pow, Rsqr; field; assumption.
 Qed.
 
@@ -397,18 +397,16 @@ destruct Hx as (Hyp,Result).
 intuition.
 - assert (Temp2 : x <> lb).
   { intro Hfalse. rewrite Hfalse in Result.
-    assert (Temp2 : y <> tan lb).
-    { apply Rgt_not_eq ; assumption. }
-    clear - Temp2 Result. apply Temp2.
-    intuition. }
-  clear -Temp2 H3.
-  case H3 ; intuition. apply False_ind ; apply Temp2 ; symmetry ; assumption.
+    assert (Temp2 : y <> tan lb) by (now apply Rgt_not_eq, Rlt_minus_0).
+    rewrite Result in H1. now apply (Rlt_irrefl 0).
+  }
+  now case H3; intros hyp; [assumption |]; rewrite hyp in Temp2.
 - assert (Temp : x <> ub).
   { intro Hfalse. rewrite Hfalse in Result.
     assert (Temp2 : y <> tan ub).
     { apply Rlt_not_eq ; assumption. }
     clear - Temp2 Result. apply Temp2.
-    intuition. }
+    symmetry; intuition. }
   case H4 ; intuition.
 Qed.
 
@@ -470,14 +468,14 @@ assert (vlt1 : / (Rabs y + 1) < 1).
   rewrite Rinv_l; [rewrite Rmult_1_l | apply Rgt_not_eq]; lra. }
 assert (vlt2 : u < 1).
 { apply Rlt_trans with (/ (Rabs y + 1)).
-  { rewrite double_var.
+  { rewrite <-Rplus_half_diag.
     assert (t : forall x, 0 < x -> x < x + x) by (clear; intros; lra).
     unfold u; rewrite Rmult_comm; apply t.
     unfold Rdiv; rewrite Rmult_comm; assumption. }
   assumption. }
 assert(int : 0 < PI / 2 - u < PI / 2).
 { split.
-  { assert (t := PI2_1); apply Rlt_Rminus, Rlt_trans with (2 := t); assumption. }
+  { assert (t := PI2_1); apply Rlt_0_minus, Rlt_trans with (2 := t); assumption. }
   assert (dumb : forall x y, 0 < y -> x - y < x) by (clear; intros; lra).
   apply dumb; clear dumb; assumption. }
 exists (PI/2 - u).
@@ -525,7 +523,7 @@ Qed.
 
 Lemma ub_opp : forall x, x < PI/2 -> -PI/2 < -x.
 Proof.
-intros x h; rewrite Ropp_div; apply Ropp_lt_contravar; assumption.
+intros x h; rewrite Rdiv_opp_l; apply Ropp_lt_contravar; assumption.
 Qed.
 
 Lemma pos_opp_lt : forall x, 0 < x -> -x < x.
@@ -544,7 +542,7 @@ set (pr := (conj (tech_opp_tan _ _ (proj2 (Rabs_def2 _ _ Ptan_ub)))
 destruct (exists_atan_in_frame (-ub) ub y (pos_opp_lt _ ub0) (ub_opp _ ubpi2)
              ubpi2 pr) as [v [[vl vu] vq]].
 exists v; clear pr.
-split;[rewrite Ropp_div; split; lra | assumption].
+split;[rewrite Rdiv_opp_l; split; lra | assumption].
 Qed.
 
 Definition atan x := let (v, _) := pre_atan x in v.
@@ -566,9 +564,9 @@ Notation atan_right_inv := tan_atan (only parsing). (* compat *)
 Lemma atan_opp : forall x,
   atan (- x) = - atan x.
 Proof.
-intros x; generalize (atan_bound (-x)); rewrite Ropp_div;intros [a b].
-generalize (atan_bound x); rewrite Ropp_div; intros [c d].
-apply tan_inj; try rewrite Ropp_div; try split; try lra.
+intros x; generalize (atan_bound (-x)); rewrite Rdiv_opp_l;intros [a b].
+generalize (atan_bound x); rewrite Rdiv_opp_l; intros [c d].
+apply tan_inj; try rewrite Rdiv_opp_l; try split; try lra.
 rewrite tan_neg, !tan_atan; reflexivity.
 Qed.
 
@@ -597,18 +595,18 @@ assert (int_tan : forall y, tan (- ub) <= y -> y <= tan ub ->
   destruct (Rle_lt_dec (atan y) ub) as [h | abs]; auto.
   assert (tan ub < y).
   { rewrite <- (tan_atan y); apply tan_increasing.
-    - rewrite Ropp_div; lra.
+    - rewrite Rdiv_opp_l; lra.
     - assumption.
     - destruct (atan_bound y); assumption. }
   lra. }
 assert (incr : forall x y, -ub <= x -> x < y -> y <= ub -> tan x < tan y).
 { intros y z l yz u; apply tan_increasing.
-  - rewrite Ropp_div; lra.
+  - rewrite Rdiv_opp_l; lra.
   - assumption.
   - lra. }
 assert (der : forall a, -ub <= a <= ub -> derivable_pt tan a).
 { intros a [la ua]; apply derivable_pt_tan.
-  rewrite Ropp_div; split; lra. }
+  rewrite Rdiv_opp_l; split; lra. }
 assert (df_neq : derive_pt
                    tan (atan x)
                    (derivable_pt_recip_interv_prelim1 tan atan (- ub) ub x lb_lt_ub xint int_tan der)
@@ -641,7 +639,7 @@ Qed.
 Lemma atan_0 : atan 0 = 0.
 Proof.
 apply tan_inj; try (apply atan_bound).
-{ assert (t := PI_RGT_0); rewrite Ropp_div; split; lra. }
+{ assert (t := PI_RGT_0); rewrite Rdiv_opp_l; split; lra. }
 rewrite tan_atan, tan_0.
 reflexivity.
 Qed.
@@ -658,7 +656,7 @@ Qed.
 Lemma atan_1 : atan 1 = PI/4.
 Proof.
 assert (ut := PI_RGT_0).
-assert (-PI/2 < PI/4 < PI/2) by (rewrite Ropp_div; split; lra).
+assert (-PI/2 < PI/4 < PI/2) by (rewrite Rdiv_opp_l; split; lra).
 assert (t := atan_bound 1).
 apply tan_inj; auto.
 rewrite tan_PI4, tan_atan; reflexivity.
@@ -727,18 +725,18 @@ assert (int_tan : forall y, tan (- ub) <= y -> y <= tan ub ->
   destruct (Rle_lt_dec (atan y) ub) as [h | abs]; auto.
   assert (tan ub < y).
   { rewrite <- (tan_atan y); apply tan_increasing.
-    - rewrite Ropp_div; lra.
+    - rewrite Rdiv_opp_l; lra.
     - assumption.
     - destruct (atan_bound y); assumption. }
   lra. }
 assert (incr : forall x y, -ub <= x -> x < y -> y <= ub -> tan x < tan y).
 { intros y z l yz u; apply tan_increasing.
-  - rewrite Ropp_div; lra.
+  - rewrite Rdiv_opp_l; lra.
   - assumption.
   - lra. }
 assert (der : forall a, -ub <= a <= ub -> derivable_pt tan a).
 { intros a [la ua]; apply derivable_pt_tan.
-  rewrite Ropp_div; split; lra. }
+  rewrite Rdiv_opp_l; split; lra. }
 assert (df_neq : derive_pt tan (atan x)
                            (derivable_pt_recip_interv_prelim1
                               tan atan
@@ -1294,7 +1292,7 @@ assert (Main : derivable_pt_lim (fun x =>tg_alt (Ratan_seq x) (S N)) x ((tg_alt 
     { apply Rabs_pos_lt ; assumption. }
     rewrite Rabs_right.
     { replace 1 with (/1) by field.
-      apply Rinv_1_lt_contravar. { lra. } apply lt_1_INR; lia. }
+      apply Rinv_0_lt_contravar. { lra. } apply lt_1_INR; lia. }
     apply Rgt_ge ; replace (INR (2 * S N + 1)) with (INR (2*S N) + 1) ;
       [apply RiemannInt.RinvN_pos | ].
     replace (2 * S N + 1)%nat with (S (2 * S N))%nat by lia.
@@ -1585,7 +1583,7 @@ assert (Temp : forall (pr: derivable_pt (atan - ps_atan) d), derive_pt (atan - p
 assert (iatan0 : atan 0 = 0).
 { apply tan_inj.
   - apply atan_bound.
-  - rewrite Ropp_div; assert (t := PI2_RGT_0); split; lra.
+  - rewrite Rdiv_opp_l; assert (t := PI2_RGT_0); split; lra.
   - rewrite tan_0, tan_atan; reflexivity. }
 generalize Main; rewrite Temp, Rmult_0_r.
 replace ((atan - ps_atan)%F x) with (atan x - ps_atan x) by intuition.
@@ -1607,7 +1605,7 @@ assert (0 < PI/6) by (apply PI6_RGT_0).
 assert (t1:= PI2_1).
 assert (t2 := PI_4).
 assert (m := Alt_PI_RGT_0).
-assert (-PI/2 < 1 < PI/2) by (rewrite Ropp_div; split; lra).
+assert (-PI/2 < 1 < PI/2) by (rewrite Rdiv_opp_l; split; lra).
 apply cond_eq; intros eps ep.
 change (Rdist (Alt_PI/4) (PI/4) < eps).
 assert (ca : continuity_pt atan 1).
@@ -1728,7 +1726,7 @@ split.
 { apply (Rlt_trans _ 0); try lra.
   apply Rinv_0_lt_compat; apply sqrt_lt_R0; lra. }
 replace 1 with (/ sqrt 1).
-{ apply Rinv_1_lt_contravar.
+{ apply Rinv_0_lt_contravar.
   {  rewrite sqrt_1; lra. }
   apply sqrt_lt_1; lra. }
 rewrite sqrt_1; lra.
@@ -1740,7 +1738,7 @@ Proof.
 intros x.
 unfold asin; repeat case Rle_dec; intros; try lra.
 rewrite <- Rsqr_neg.
-rewrite Ropp_div.
+rewrite Rdiv_opp_l.
 rewrite atan_opp.
 reflexivity.
 Qed.
@@ -1846,14 +1844,14 @@ Proof.
 
   Unshelve.
   - pose proof PI_RGT_0 as HPi; lra.
-  - rewrite Ropp_div,sin_antisym,sin_PI2; lra.
+  - rewrite Rdiv_opp_l,sin_antisym,sin_PI2; lra.
   - clear x H; intros x Ha Hb.
-    rewrite Ropp_div; apply asin_bound.
+    rewrite Rdiv_opp_l; apply asin_bound.
   - intros a Ha; reg.
   - intros x0 Ha Hb.
     unfold comp,id.
     apply sin_asin.
-    rewrite Ropp_div,sin_antisym,sin_PI2 in Ha; rewrite sin_PI2 in Hb; lra.
+    rewrite Rdiv_opp_l,sin_antisym,sin_PI2 in Ha; rewrite sin_PI2 in Hb; lra.
   - intros x1 x2 Ha Hb Hc.
     apply sin_increasing_1; lra.
 Qed.
@@ -1873,7 +1871,7 @@ Proof.
 
   Unshelve.
   - pose proof PI_RGT_0. lra.
-  - rewrite Ropp_div,sin_antisym,sin_PI2; lra.
+  - rewrite Rdiv_opp_l,sin_antisym,sin_PI2; lra.
   - intros x1 x2 Ha Hb Hc.
     apply sin_increasing_1; lra.
   - intros x0 Ha Hb.
@@ -1882,7 +1880,7 @@ Proof.
   - intros x0 Ha Hb.
     unfold comp,id.
     apply sin_asin.
-    rewrite Ropp_div,sin_antisym,sin_PI2 in Ha; rewrite sin_PI2 in Hb; lra.
+    rewrite Rdiv_opp_l,sin_antisym,sin_PI2 in Ha; rewrite sin_PI2 in Hb; lra.
   - rewrite <- (pr_nu sin (asin x) (derivable_pt_sin (asin x))).
     rewrite derive_pt_sin.
     rewrite cos_asin by lra.
@@ -1967,7 +1965,7 @@ Proof.
   intros x.
   unfold acos; repeat case Rle_dec; try lra.
   intros Hx1 Hx2 Hx3 Hx4.
-  rewrite <- Rsqr_neg, Ropp_div, atan_opp.
+  rewrite <- Rsqr_neg, Rdiv_opp_l, atan_opp.
   lra.
 Qed.
 
@@ -1983,7 +1981,7 @@ Proof.
     apply Rlt_sqrt2_0. }
   replace 1 with (/ sqrt 1).
   { apply Rlt_le.
-    apply Rinv_1_lt_contravar.
+    apply Rinv_0_lt_contravar.
     { rewrite sqrt_1; lra. }
     apply sqrt_lt_1; lra. }
   rewrite sqrt_1; lra.

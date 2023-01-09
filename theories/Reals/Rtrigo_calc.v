@@ -25,7 +25,7 @@ Lemma sin_3PI2 : sin (3 * (PI / 2)) = -1.
 Proof.
   replace (3 * (PI / 2)) with (PI + PI / 2).
   - rewrite sin_plus; rewrite sin_PI; rewrite cos_PI; rewrite sin_PI2; ring.
-  - pattern PI at 1; rewrite (double_var PI); ring.
+  - pattern PI at 1; rewrite <-(Rplus_half_diag PI); ring.
 Qed.
 
 Lemma tan_2PI : tan (2 * PI) = 0.
@@ -215,7 +215,7 @@ Proof.
   unfold tan; rewrite sin_PI6; rewrite cos_PI6; unfold Rdiv;
     repeat rewrite Rmult_1_l; rewrite Rinv_mult.
   rewrite Rinv_inv.
-  rewrite (Rmult_comm (/ 2)); rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
+  rewrite (Rmult_comm (/ 2)); rewrite Rmult_assoc; rewrite Rinv_r.
   - apply Rmult_1_r.
   - discrR.
 Qed.
@@ -234,16 +234,16 @@ Lemma tan_PI3 : tan (PI / 3) = sqrt 3.
 Proof.
   unfold tan; rewrite sin_PI3; rewrite cos_PI3; unfold Rdiv;
     rewrite Rmult_1_l; rewrite Rinv_inv.
-  rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+  rewrite Rmult_assoc; rewrite Rinv_l.
   - apply Rmult_1_r.
   - discrR.
 Qed.
 
 Lemma sin_2PI3 : sin (2 * (PI / 3)) = sqrt 3 / 2.
 Proof.
-  rewrite double; rewrite sin_plus; rewrite sin_PI3; rewrite cos_PI3;
+  rewrite <-Rplus_diag; rewrite sin_plus; rewrite sin_PI3; rewrite cos_PI3;
     unfold Rdiv; repeat rewrite Rmult_1_l; rewrite (Rmult_comm (/ 2));
-      repeat rewrite <- Rmult_assoc; rewrite double_var;
+      repeat rewrite <- Rmult_assoc; rewrite <-Rplus_half_diag;
         reflexivity.
 Qed.
 
@@ -300,7 +300,7 @@ Proof.
     generalize (Rplus_lt_compat_l PI 0 (PI / 2) H1);
       replace (PI + PI / 2) with (3 * (PI / 2)).
   - rewrite Rplus_0_r; intro H2; assumption.
-  - pattern PI at 2; rewrite double_var; ring.
+  - pattern PI at 2; rewrite <-Rplus_half_diag; ring.
 Qed.
 
 Lemma Rlt_3PI2_2PI : 3 * (PI / 2) < 2 * PI.
@@ -309,7 +309,7 @@ Proof.
     generalize (Rplus_lt_compat_l (3 * (PI / 2)) 0 (PI / 2) H1);
       replace (3 * (PI / 2) + PI / 2) with (2 * PI).
   - rewrite Rplus_0_r; intro H2; assumption.
-  - rewrite double; pattern PI at 1 2; rewrite double_var; ring.
+  - rewrite <-Rplus_diag; pattern PI at 1 2; rewrite <-Rplus_half_diag; ring.
 Qed.
 
 (***************************************************************)
@@ -325,7 +325,7 @@ Proof.
   intro; unfold toRad, toDeg;
     replace (x * plat * / PI * PI * / plat) with
     (x * (plat * / plat) * (PI * / PI)); [ idtac | ring ].
-  repeat rewrite <- Rinv_r_sym.
+  repeat rewrite Rinv_r.
   - ring.
   - apply PI_neq0.
   - unfold plat; discrR.

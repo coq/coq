@@ -39,7 +39,7 @@ Proof.
   rewrite Rinv_1 in H0; rewrite Rmult_1_r in H0; unfold Rdiv in H0.
   apply Rmult_le_reg_l with (/ 4).
   apply Rinv_0_lt_compat; prove_sup0.
-  rewrite <- Rinv_l_sym; [ rewrite Rmult_comm; assumption | discrR ].
+  rewrite Rinv_l; [ rewrite Rmult_comm; assumption | discrR ].
 Qed.
 *)
 (**********)
@@ -102,10 +102,10 @@ Proof.
     { rewrite <- H3; apply lt_INR_0; apply Nat.neq_0_lt_0; red; intro;
       elim (fact_neq_0 _ H4). }
     rewrite <- H3; rewrite (Rmult_comm (INR (fact (2 * S (S n0) + 1))));
-      rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+      rewrite Rmult_assoc; rewrite Rinv_l.
     2:{ apply INR_fact_neq_0. }
     rewrite Rmult_1_r; rewrite H3; do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
-      repeat rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
+      repeat rewrite Rmult_assoc; rewrite Rinv_r.
     2:{ apply INR_fact_neq_0. }
     rewrite Rmult_1_r.
     do 2 rewrite S_INR; rewrite plus_INR; rewrite mult_INR; repeat rewrite S_INR;
@@ -148,7 +148,7 @@ Proof.
       rewrite Rplus_opp_l; rewrite Rplus_0_r; apply Rmult_lt_reg_l with (/ Rabs a).
       { apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption. }
       pattern (/ Rabs a) at 1; rewrite <- (Rabs_inv a).
-      rewrite <- Rabs_mult, Rmult_plus_distr_l, <- 2!Rmult_assoc, <- Rinv_l_sym;
+      rewrite <- Rabs_mult, Rmult_plus_distr_l, <- 2!Rmult_assoc, Rinv_l;
       [ rewrite Rmult_1_l | assumption ];
       rewrite (Rmult_comm (/ Rabs a)), <- Rabs_Ropp, Ropp_plus_distr, Ropp_involutive, Rmult_1_l.
       unfold Rminus, Rdiv in H6. apply H6; unfold ge;
@@ -246,10 +246,10 @@ Proof.
     apply Rmult_le_reg_l with (INR (fact (S (S (2 * S n1))))).
     { apply INR_fact_lt_0. }
     rewrite <- H4; rewrite (Rmult_comm (INR (fact (2 * S (S n1)))));
-      rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+      rewrite Rmult_assoc; rewrite Rinv_l.
     2:(pose proof (INR_fact_lt_0  (2 * S (S n1)));lra).
     rewrite Rmult_1_r; rewrite H4; do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
-      repeat rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
+      repeat rewrite Rmult_assoc; rewrite Rinv_r.
     2:(pose proof (INR_fact_lt_0  (2 * S n1));lra).
     rewrite Rmult_1_r; do 2 rewrite S_INR; rewrite mult_INR; repeat rewrite S_INR;
       simpl;

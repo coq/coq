@@ -340,8 +340,8 @@ Proof.
     + replace (Rabs alp) with alp.
       * apply Rmult_lt_reg_l with 2.
         -- prove_sup0.
-        -- rewrite (Rmult_comm 2); rewrite Rmult_assoc; rewrite <- Rinv_l_sym;
-             [ idtac | discrR ]; rewrite Rmult_1_r; rewrite double;
+        -- rewrite (Rmult_comm 2); rewrite Rmult_assoc; rewrite Rinv_l;
+             [ idtac | discrR ]; rewrite Rmult_1_r; rewrite <-Rplus_diag;
              pattern alp at 1; replace alp with (alp + 0);
              [ idtac | ring ]; apply Rplus_lt_compat_l; assumption.
       * symmetry ; apply Rabs_right; left; assumption.
@@ -448,7 +448,7 @@ Proof.
         | split;
           [ unfold D_x; split;
             [ unfold no_cond; trivial
-            | apply Rminus_not_eq_right; rewrite H7; assumption ]
+            | symmetry; apply Rminus_not_eq; rewrite H7; assumption ]
           | rewrite H7; assumption ] ]
       | ring ].
   - intro.
@@ -481,7 +481,7 @@ Proof.
         | split;
           [ unfold D_x; split;
             [ unfold no_cond; trivial
-            | apply Rminus_not_eq_right; rewrite H7; assumption ]
+            | symmetry; apply Rminus_not_eq; rewrite H7; assumption ]
           | rewrite H7; assumption ] ]
       | ring ].
   - intro.
@@ -516,7 +516,7 @@ Lemma derivable_pt_lim_locally_ext : forall f g x a b l,
 intros f g x a b l axb fg df e ep.
 destruct (df e ep) as [d pd].
 assert (d'h : 0 < Rmin d (Rmin (b - x) (x - a))).
-- apply Rmin_pos;[apply cond_pos | apply Rmin_pos; apply Rlt_Rminus; tauto].
+- apply Rmin_pos;[apply cond_pos | apply Rmin_pos; apply Rlt_0_minus; tauto].
 - exists (mkposreal _ d'h); simpl; intros h hn0 cmp.
   rewrite <- !fg;[ |assumption | ].
   + apply pd;[assumption |].
@@ -592,7 +592,7 @@ Proof.
   - unfold Rminus; rewrite Rplus_assoc; rewrite (Rplus_comm x);
       rewrite Rplus_assoc.
     rewrite Rplus_opp_l; rewrite Rplus_0_r; unfold Rdiv;
-      rewrite <- Rinv_r_sym.
+      rewrite Rinv_r.
     + symmetry ; apply Rplus_opp_r.
     + assumption.
 Qed.
@@ -826,7 +826,7 @@ Proof.
       [ idtac | ring ].
     unfold Rdiv; rewrite Rmult_plus_distr_r.
     repeat rewrite Rmult_assoc.
-    repeat rewrite <- Rinv_r_sym; [ idtac | assumption ].
+    repeat rewrite Rinv_r; [ idtac | assumption ].
     ring.
 Qed.
 
@@ -1367,7 +1367,7 @@ Proof.
                        0
                        (Rlt_le_trans 0 ((f (c + Rmin (delta / 2) ((b + - c) / 2)) + - f c)
                                           / Rmin (delta / 2) ((b + - c) / 2)) 0 H22 H16)).
-             ++ pattern l at 2; rewrite double_var.
+             ++ pattern l at 2; rewrite <-Rplus_half_diag.
                 ring.
           -- ring.
         * intro.
@@ -1416,7 +1416,7 @@ Proof.
           repeat rewrite <- (Rmult_comm (/ Rmin (delta * / 2) ((b - c) * / 2))).
           apply Rmult_eq_reg_l with (Rmin (delta * / 2) ((b - c) * / 2)).
           -- repeat rewrite <- Rmult_assoc.
-             rewrite <- Rinv_r_sym.
+             rewrite Rinv_r.
              ++ repeat rewrite Rmult_1_l.
                 ring.
              ++ red; intro.
@@ -1437,7 +1437,7 @@ Proof.
                 ** ring.
              ++ unfold Rdiv; rewrite Rmult_plus_distr_l.
                 repeat rewrite (Rmult_comm 2).
-                rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+                rewrite Rmult_assoc; rewrite Rinv_l.
                 ** rewrite Rmult_1_r.
                    ring.
                 ** discrR.
@@ -1465,13 +1465,13 @@ Proof.
         * apply Rmin_l.
         * unfold Rdiv; apply Rmult_lt_reg_l with 2.
           -- prove_sup0.
-          -- rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
+          -- rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc; rewrite Rinv_r.
              ++ rewrite Rmult_1_l.
                 replace (2 * delta) with (delta + delta).
                 ** pattern delta at 2; rewrite <- (Rplus_0_r delta);
                      apply Rplus_lt_compat_l.
                    rewrite Rplus_0_r; apply (cond_pos delta).
-                ** symmetry ; apply double.
+                ** apply Rplus_diag.
              ++ discrR.
     - cut (0 < delta / 2).
       + intro;
@@ -1545,7 +1545,7 @@ Proof.
                                                / Rmax (- (delta / 2)) ((a - c) / 2)) 0 H17 H23)).
            ++ rewrite <- (Ropp_involutive (l / 2)); rewrite <- Ropp_0;
                 apply Ropp_lt_gt_contravar; assumption.
-        -- pattern l at 3; rewrite double_var.
+        -- pattern l at 3; rewrite <-Rplus_half_diag.
            ring.
     + assumption.
     + apply Rplus_le_lt_0_compat; assumption.
@@ -1581,7 +1581,7 @@ Proof.
       * apply Rmult_lt_reg_l with 2.
         -- prove_sup0.
         -- replace (2 * (c + (a - c) / 2)) with (a + c).
-           ++ rewrite double.
+           ++ rewrite <-Rplus_diag.
               apply Rplus_lt_compat_l; assumption.
            ++ field; discrR.
       * assumption.
@@ -1596,8 +1596,8 @@ Proof.
         -- apply Rmult_lt_reg_l with 2.
            ++ prove_sup0.
            ++ unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-                rewrite <- Rinv_r_sym.
-              ** rewrite Rmult_1_l; rewrite double.
+                rewrite Rinv_r.
+              ** rewrite Rmult_1_l; rewrite <-Rplus_diag.
                  pattern delta at 2; rewrite <- (Rplus_0_r delta);
                    apply Rplus_lt_compat_l; rewrite Rplus_0_r; apply (cond_pos delta).
               ** discrR.
@@ -1716,7 +1716,7 @@ Proof.
               ** rewrite <- Ropp_0 in H5;
                    generalize (Ropp_lt_gt_contravar (-0) (- (l / 2)) H5);
                    repeat rewrite Ropp_involutive; intro; assumption.
-           ++ pattern l at 3; rewrite double_var.
+           ++ pattern l at 3; rewrite <-Rplus_half_diag.
               ring.
       * unfold Rminus; apply Rplus_le_le_0_compat.
         -- unfold Rdiv; apply Rmult_le_pos.
@@ -1748,9 +1748,9 @@ Proof.
               ** unfold Rdiv; apply Rmult_lt_reg_l with 2.
                  { prove_sup0. }
                  rewrite (Rmult_comm 2).
-                 rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
+                 rewrite Rmult_assoc; rewrite Rinv_l; [ idtac | discrR ].
                  rewrite Rmult_1_r.
-                 rewrite double.
+                 rewrite <-Rplus_diag.
                  pattern (pos delta) at 1; rewrite <- Rplus_0_r.
                  apply Rplus_lt_compat_l; apply (cond_pos delta).
               ** symmetry ; apply Rabs_right.

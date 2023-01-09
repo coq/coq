@@ -50,7 +50,7 @@ Proof.
         repeat rewrite Rinv_mult.
       rewrite <- H1; rewrite (Rmult_comm (/ INR (n - i)));
         repeat rewrite Rmult_assoc; rewrite (Rmult_comm (INR (n - i)));
-        repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+        repeat rewrite Rmult_assoc; rewrite Rinv_l.
       * ring.
       * apply not_O_INR; apply minus_neq_O; assumption.
     + rewrite <- Nat.sub_succ_l.
@@ -95,7 +95,7 @@ Proof.
         rewrite Rmult_1_r.
         do 2 rewrite (Rmult_comm (INR i + 1)).
         repeat rewrite Rmult_assoc.
-        rewrite <- Rinv_l_sym; [ idtac | assumption ].
+        rewrite Rinv_l; [ idtac | assumption ].
         ring.
       * rewrite <- S_INR.
         apply not_O_INR; discriminate.
@@ -181,11 +181,11 @@ Proof.
     + intro; unfold C.
       replace (INR (fact 0)) with 1; [ idtac | reflexivity ].
       replace (p - 0)%nat with p; [ idtac | symmetry; apply Nat.sub_0_r ].
-      rewrite Rmult_1_l; unfold Rdiv; rewrite <- Rinv_r_sym;
+      rewrite Rmult_1_l; unfold Rdiv; rewrite Rinv_r;
         [ reflexivity | apply INR_fact_neq_0 ].
     + intro; unfold C.
       replace (p - p)%nat with 0%nat; [ idtac | symmetry; apply Nat.sub_diag ].
       replace (INR (fact 0)) with 1; [ idtac | reflexivity ].
-      rewrite Rmult_1_r; unfold Rdiv; rewrite <- Rinv_r_sym;
+      rewrite Rmult_1_r; unfold Rdiv; rewrite Rinv_r;
         [ reflexivity | apply INR_fact_neq_0 ].
 Qed.

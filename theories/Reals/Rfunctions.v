@@ -106,9 +106,11 @@ Hint Resolve pow_O pow_1 pow_add pow_nonzero: real.
 Lemma pow_RN_plus :
   forall (x:R) (n m:nat), x <> 0 -> x ^ n = x ^ (n + m) * / x ^ m.
 Proof.
-  intros x n; elim n; simpl; auto with real.
-  intros n0 H' m H'0.
-  rewrite Rmult_assoc; rewrite <- H'; auto.
+  intros x n m H.
+  apply (Rmult_eq_reg_r (x ^ m)); cycle 1.
+    now apply pow_nonzero.
+  rewrite Rmult_assoc, Rmult_inv_l, Rmult_1_r by (now apply pow_nonzero).
+  now rewrite pow_add.
 Qed.
 
 Lemma pow_lt : forall (x:R) (n:nat), 0 < x -> 0 < x ^ n.
@@ -196,7 +198,8 @@ Proof.
       * rewrite (S_INR n0); ring.
     + unfold Rle in H0; elim H0; intro.
       * unfold Rle; left; apply Rmult_lt_compat_l.
-        -- rewrite Rplus_comm; apply (Rle_lt_0_plus_1 x (Rlt_le 0 x H)).
+        -- rewrite Rplus_comm; apply (Rplus_le_lt_0_compat _ _ (Rlt_le 0 x H));
+           apply Rlt_0_1.
         -- assumption.
       * rewrite H1; unfold Rle; right; trivial.
 Qed.
@@ -595,7 +598,7 @@ Proof.
  intro Hx.
  rewrite Z.pos_sub_spec.
  case Pos.compare_spec; intro H; simpl.
- - subst; auto with real.
+ - subst; symmetry; auto with real.
  - rewrite Pos2Nat.inj_sub by trivial.
    rewrite Pos2Nat.inj_lt in H.
    rewrite (pow_RN_plus x _ (Pos.to_nat n)) by auto with real.

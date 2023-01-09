@@ -102,7 +102,7 @@ Proof.
            ++ right.
               pattern eps at 4; replace eps with (3 * (eps / 3)).
               ** ring.
-              ** unfold Rdiv; rewrite <- Rmult_assoc; apply Rinv_r_simpl_m; discrR.
+              ** unfold Rdiv; rewrite <- Rmult_assoc; apply Rmult_inv_r_id_m; discrR.
     + unfold Rdiv; apply Rmult_lt_0_compat;
         [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
    - apply cond_eq.
@@ -184,7 +184,7 @@ Proof.
                ** unfold N; apply Nat.le_max_l.
          -- pattern eps at 4; replace eps with (5 * (eps / 5)).
             ++ ring.
-            ++ unfold Rdiv; rewrite <- Rmult_assoc; apply Rinv_r_simpl_m.
+            ++ unfold Rdiv; rewrite <- Rmult_assoc; apply Rmult_inv_r_id_m.
                discrR.
      + unfold Rdiv; apply Rmult_lt_0_compat.
        * assumption.

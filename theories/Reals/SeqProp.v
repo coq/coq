@@ -600,7 +600,7 @@ Proof.
   apply Rle_lt_trans with (Rabs (l1 - Un N) + Rabs (Un N - l2)).
   - replace (l1 - l2) with (l1 - Un N + (Un N - l2));
       [ apply Rabs_triang | ring ].
-  - rewrite (double_var eps); apply Rplus_lt_compat.
+  - rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
     + rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H3;
         unfold ge, N; apply Nat.le_max_l.
     + apply H4; unfold ge, N; apply Nat.le_max_r.
@@ -624,7 +624,7 @@ Proof.
   [ idtac | ring ].
   apply Rle_lt_trans with (Rabs (An n - l1) + Rabs (Bn n - l2)).
   - apply Rabs_triang.
-  - rewrite (double_var eps); apply Rplus_lt_compat.
+  - rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
     + apply H3; unfold ge; apply Nat.le_trans with N;
         [ unfold N; apply Nat.le_max_l | assumption ].
     + apply H4; unfold ge; apply Nat.le_trans with N;
@@ -661,7 +661,7 @@ Proof.
     apply Rle_lt_trans with (Rabs (Un n - x) + Rabs (x - Un m)).
   - replace (Un n - Un m) with (Un n - x + (x - Un m));
       [ apply Rabs_triang | ring ].
-  - rewrite (double_var eps); apply Rplus_lt_compat.
+  - rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
     + apply H1; assumption.
     + rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H1; assumption.
 Qed.
@@ -732,7 +732,7 @@ Proof.
             * apply H4.
           + apply Rmult_lt_reg_l with (/ M).
             { apply Rinv_0_lt_compat; apply H3. }
-            rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+            rewrite <- Rmult_assoc; rewrite Rinv_l.
             * rewrite Rmult_1_l; rewrite (Rmult_comm (/ M)).
               apply Rlt_trans with (eps / (2 * M)).
               { apply H8; assumption. }
@@ -741,8 +741,8 @@ Proof.
               { prove_sup0. }
               replace (2 * (eps * (/ 2 * / M))) with (2 * / 2 * (eps * / M));
                 [ idtac | ring ].
-              rewrite <- Rinv_r_sym.
-              -- rewrite Rmult_1_l; rewrite double.
+              rewrite Rinv_r.
+              -- rewrite Rmult_1_l; rewrite <-Rplus_diag.
                  pattern (eps * / M) at 1; rewrite <- Rplus_0_r.
                  apply Rplus_lt_compat_l; apply Rmult_lt_0_compat;
                    [ assumption | apply Rinv_0_lt_compat; assumption ].
@@ -773,7 +773,7 @@ Proof.
       replace (Rabs (An n * Bn n - An n * l2)) with
         (Rabs (An n) * Rabs (Bn n - l2)).
       1:replace (Rabs (An n * l2 - l1 * l2)) with (Rabs l2 * Rabs (An n - l1)).
-      * rewrite (double_var eps); apply Rplus_lt_compat.
+      * rewrite <-(Rplus_half_diag eps); apply Rplus_lt_compat.
         -- apply Rle_lt_trans with (M * Rabs (Bn n - l2)).
            { do 2 rewrite <- (Rmult_comm (Rabs (Bn n - l2))).
              apply Rmult_le_compat_l.
@@ -781,7 +781,7 @@ Proof.
              - apply H4. }
            apply Rmult_lt_reg_l with (/ M).
            { apply Rinv_0_lt_compat; apply H3. }
-           rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+           rewrite <- Rmult_assoc; rewrite Rinv_l.
            ++ rewrite Rmult_1_l; rewrite (Rmult_comm (/ M)).
               apply Rlt_le_trans with (eps / (2 * M)).
               ** apply H10.
@@ -793,7 +793,7 @@ Proof.
            ++ red; intro; rewrite H12 in H3; elim (Rlt_irrefl _ H3).
         -- apply Rmult_lt_reg_l with (/ Rabs l2).
            { apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption. }
-           rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+           rewrite <- Rmult_assoc; rewrite Rinv_l.
            ++ rewrite Rmult_1_l; apply Rlt_le_trans with (eps / (2 * Rabs l2)).
               ** apply H9.
                  unfold ge; apply Nat.le_trans with N.
@@ -853,7 +853,7 @@ Proof.
     + prove_sup0.
     + unfold Rdiv; rewrite Rmult_1_r; rewrite Rmult_plus_distr_l;
         pattern 2 at 1; rewrite Rmult_comm; rewrite Rmult_assoc;
-        rewrite <- Rinv_l_sym; [ idtac | discrR ]; rewrite Rmult_1_r;
+        rewrite Rinv_l; [ idtac | discrR ]; rewrite Rmult_1_r;
         replace (2 * k + (1 - k)) with (1 + k); [ idtac | ring ].
       elim H; intros.
       apply Rplus_lt_compat_l; assumption.
@@ -962,11 +962,11 @@ Proof.
   { now rewrite Rabs_R0, Rinv_0. }
   apply Rmult_lt_reg_l with (Rabs (Un n)).
   - apply Rabs_pos_lt; apply H.
-  - rewrite <- Rinv_r_sym.
+  - rewrite Rinv_r.
     + apply Rmult_lt_reg_l with (/ eps).
       * apply Rinv_0_lt_compat; assumption.
       * rewrite Rmult_1_r; rewrite (Rmult_comm (/ eps)); rewrite Rmult_assoc;
-          rewrite <- Rinv_r_sym.
+          rewrite Rinv_r.
         -- rewrite Rmult_1_r; apply Rlt_le_trans with (Un n).
            ++ apply H2; assumption.
            ++ apply RRle_abs.
@@ -1078,7 +1078,7 @@ Proof.
                    { apply Rabs_no_R0; assumption. }
                    assert (H16 := H7 0%nat); red; intro; rewrite H17 in H16;
                      elim (Rlt_irrefl _ H16).
-                ** rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+                ** rewrite <- Rmult_assoc; rewrite Rinv_l.
                    { rewrite Rmult_1_l.
                      replace (/ Rabs (Rabs x * Un 0%nat) * eps1) with (eps1 / (Rabs x * Un 0%nat)).
                      - apply H14; assumption.
@@ -1155,10 +1155,10 @@ Proof.
              apply Rmult_le_reg_l with (INR (fact (S (M_nat + n)))).
              ++ apply lt_INR_0; apply Nat.neq_0_lt_0; red; intro;
                   elim (fact_neq_0 _ H8).
-             ++ rewrite (Rmult_comm (Rabs x)); rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
+             ++ rewrite (Rmult_comm (Rabs x)); rewrite <- Rmult_assoc; rewrite Rinv_r.
                 ** rewrite Rmult_1_l.
                    rewrite fact_simpl; rewrite mult_INR; rewrite Rmult_assoc;
-                     rewrite <- Rinv_r_sym.
+                     rewrite Rinv_r.
                    { rewrite Rmult_1_r; apply Rle_trans with (INR M_nat).
                      - left; rewrite INR_IZR_INZ.
                        rewrite <- H4; assert (H8 := archimed (Rabs x)); elim H8; intros; assumption.

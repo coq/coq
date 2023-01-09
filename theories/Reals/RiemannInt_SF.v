@@ -1512,7 +1512,7 @@ Proof.
   { apply Rmult_lt_reg_l with 2.
     { prove_sup0. }
     unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-      rewrite <- Rinv_r_sym.
+      rewrite Rinv_r.
     2:discrR.
     simpl in H1.
     assert (H6 := H0 0%nat (Nat.lt_0_succ _)).
@@ -1521,9 +1521,9 @@ Proof.
   apply Rmult_lt_reg_l with 2.
   { prove_sup0. }
   unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
   2:discrR.
-  rewrite Rmult_1_l; rewrite double; assert (H5 : r0 <= b).
+  rewrite Rmult_1_l; rewrite <-Rplus_diag; assert (H5 : r0 <= b).
   { replace b with
       (pos_Rl (cons r (cons r0 r1)) (pred (length (cons r (cons r0 r1))))).
     replace r0 with (pos_Rl (cons r (cons r0 r1)) 1).
@@ -1804,14 +1804,14 @@ Proof.
               { rewrite H17; simpl; apply Rmult_lt_reg_l with 2;
                   [ prove_sup0
                   | unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-                    rewrite <- Rinv_r_sym;
-                    [ rewrite Rmult_1_l; rewrite double; apply Rplus_lt_compat_l; assumption
+                    rewrite Rinv_r;
+                    [ rewrite Rmult_1_l; rewrite <-Rplus_diag; apply Rplus_lt_compat_l; assumption
                     | discrR ] ]. }
               rewrite H17; simpl; apply Rmult_lt_reg_l with 2;
                 [ prove_sup0
                 | unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-                  rewrite <- Rinv_r_sym;
-                  [ rewrite Rmult_1_l; rewrite (Rplus_comm r1); rewrite double;
+                  rewrite Rinv_r;
+                  [ rewrite Rmult_1_l; rewrite (Rplus_comm r1); rewrite <-Rplus_diag;
                     apply Rplus_lt_compat_l; assumption
                   | discrR ] ]. }
             elim H2; intros; rewrite H17 in H23; rewrite H17 in H24; simpl in H24;
@@ -1839,15 +1839,15 @@ Proof.
               { apply Rmult_lt_reg_l with 2;
                   [ prove_sup0
                   | unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-                    rewrite <- Rinv_r_sym;
-                    [ rewrite Rmult_1_l; rewrite double; apply Rplus_lt_compat_l; assumption
+                    rewrite Rinv_r;
+                    [ rewrite Rmult_1_l; rewrite <-Rplus_diag; apply Rplus_lt_compat_l; assumption
                     | discrR ] ]. }
               apply Rmult_lt_reg_l with 2;
                 [ prove_sup0
                 | unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-                  rewrite <- Rinv_r_sym;
+                  rewrite Rinv_r;
                   [ rewrite Rmult_1_l; rewrite (Rplus_comm (pos_Rl l1 (S i)));
-                    rewrite double; apply Rplus_lt_compat_l; assumption
+                  rewrite <-Rplus_diag; apply Rplus_lt_compat_l; assumption
                   | discrR ] ]. }
             elim H2; intros; rewrite H22 in H23;
               elim (Rlt_irrefl _ (Rlt_trans _ _ _ H23 H24)). }
@@ -1940,15 +1940,15 @@ Proof.
           { apply Rmult_lt_reg_l with 2;
               [ prove_sup0
               | unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-                rewrite <- Rinv_r_sym;
-                [ rewrite Rmult_1_l; rewrite double; apply Rplus_lt_compat_l; assumption
+                rewrite Rinv_r;
+                [ rewrite Rmult_1_l; rewrite <-Rplus_diag; apply Rplus_lt_compat_l; assumption
                 | discrR ] ]. }
           apply Rmult_lt_reg_l with 2;
             [ prove_sup0
             | unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
-              rewrite <- Rinv_r_sym;
+              rewrite Rinv_r;
               [ rewrite Rmult_1_l; rewrite (Rplus_comm (pos_Rl l2 (S i - length l1)));
-                rewrite double; apply Rplus_lt_compat_l; assumption
+              rewrite <-Rplus_diag; apply Rplus_lt_compat_l; assumption
               | discrR ] ]. }
         rewrite <- H19 in H16; rewrite <- H19 in H17; elim H2; intros;
           rewrite H19 in H25; rewrite H19 in H26; simpl in H25;

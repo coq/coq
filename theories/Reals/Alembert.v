@@ -96,7 +96,7 @@ Proof.
     intros; unfold Rdist in H2; apply Rmult_lt_reg_l with (/ An n).
     { apply Rinv_0_lt_compat; apply H. }
     do 2 rewrite (Rmult_comm (/ An n)); rewrite Rmult_assoc;
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     2:{ intro H5; assert (H8 := H n); rewrite H5 in H8;
         elim (Rlt_irrefl _ H8). }
     rewrite Rmult_1_r;
@@ -123,7 +123,7 @@ Proof.
       rewrite Rplus_opp_r; rewrite Rplus_0_r;
       apply Rle_lt_trans with (Rabs (Xn n)).
     + rewrite <- Rabs_Ropp; apply RRle_abs.
-    + rewrite double; pattern (Rabs (Xn n)) at 1; rewrite <- Rplus_0_r;
+    + rewrite <-Rplus_diag; pattern (Rabs (Xn n)) at 1; rewrite <- Rplus_0_r;
         apply Rplus_lt_compat_l; apply Rabs_pos_lt; apply H.
 Qed.
 
@@ -158,12 +158,12 @@ Proof.
     { apply H5. }
     apply Rmult_lt_reg_l with (/ 3).
     { apply Rinv_0_lt_compat; prove_sup0. }
-    rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ];
+    rewrite <- Rmult_assoc; rewrite Rinv_l; [ idtac | discrR ];
       rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); unfold Rdiv in H10;
       exact H10.
   + intro; unfold Rdiv; rewrite Rabs_mult; rewrite <- Rmult_assoc;
       replace 3 with (2 * (3 * / 2));
-      [ idtac | rewrite <- Rmult_assoc; apply Rinv_r_simpl_m; discrR ];
+      [ idtac | rewrite <- Rmult_assoc; apply Rmult_inv_r_id_m; discrR ];
       apply Rle_trans with (Vn (S n) * 2 * / Rabs (An n)).
     { rewrite Rmult_assoc; apply Rmult_le_compat_l.
       - left; apply H1.
@@ -179,7 +179,7 @@ Proof.
     elim (H3 (S n)); intros; assumption.
   + intro; apply Rmult_le_reg_l with (Vn n).
     { apply H1. }
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     2:{ red; intro; assert (H5 := H1 n); rewrite H4 in H5;
         elim (Rlt_irrefl _ H5). }
     apply Rmult_le_reg_l with (Rabs (An n)).
@@ -187,18 +187,18 @@ Proof.
     rewrite Rmult_1_r;
       replace (Rabs (An n) * (Vn n * (2 * / Rabs (An n)))) with
       (2 * Vn n * (Rabs (An n) * / Rabs (An n))); [ idtac | ring ];
-      rewrite <- Rinv_r_sym.
+      rewrite Rinv_r.
     2:{ apply Rabs_no_R0; apply H. }
     rewrite Rmult_1_r; apply Rmult_le_reg_l with (/ 2).
     { apply Rinv_0_lt_compat; prove_sup0. }
-    rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+    rewrite <- Rmult_assoc; rewrite Rinv_l.
     * rewrite Rmult_1_l; elim (H3 n); intros; assumption.
     * discrR.
   + intro; split.
     * unfold Vn; unfold Rdiv; rewrite <- (Rmult_comm (/ 2));
         apply Rmult_le_compat_l.
       { left; apply Rinv_0_lt_compat; prove_sup0. }
-      pattern (Rabs (An n)) at 1; rewrite <- Rplus_0_r; rewrite double;
+      pattern (Rabs (An n)) at 1; rewrite <- Rplus_0_r; rewrite <-Rplus_diag;
         rewrite Rplus_assoc; apply Rplus_le_compat_l.
       apply Rplus_le_reg_l with (- An n); rewrite Rplus_0_r;
         rewrite <- (Rplus_comm (An n)); rewrite <- Rplus_assoc;
@@ -207,7 +207,7 @@ Proof.
     * unfold Vn; unfold Rdiv; repeat rewrite <- (Rmult_comm (/ 2));
         repeat rewrite Rmult_assoc; apply Rmult_le_compat_l.
       { left; apply Rinv_0_lt_compat; prove_sup0. }
-      unfold Rminus; rewrite double;
+      unfold Rminus; rewrite <-Rplus_diag;
         replace (3 * Rabs (An n)) with (Rabs (An n) + Rabs (An n) + Rabs (An n));
         [ idtac | ring ]; repeat rewrite Rplus_assoc; repeat apply Rplus_le_compat_l;
         apply RRle_abs.
@@ -256,7 +256,7 @@ Proof.
       unfold Rdiv; do 2 rewrite <- (Rmult_comm (/ 2));
       apply Rmult_eq_reg_l with 2.
       - rewrite Rmult_minus_distr_l; repeat rewrite <- Rmult_assoc;
-          rewrite <- Rinv_r_sym.
+          rewrite Rinv_r.
         + ring.
         + discrR.
       - discrR. }
@@ -272,7 +272,7 @@ Proof.
         [ unfold N; apply Nat.le_max_l | assumption ].
     * unfold Rdist in H9; apply H9; unfold ge; apply Nat.le_trans with N;
         [ unfold N; apply Nat.le_max_r | assumption ].
-  + right; symmetry ; apply double_var.
+  + right; apply Rplus_half_diag.
 Qed.
 
 Lemma AlembertC3_step1 :
@@ -302,13 +302,13 @@ Proof.
       unfold Rdiv; rewrite Rinv_mult.
       replace (An (n + 1)%nat * (x ^ n * x ^ 1) * (/ An n * / x ^ n)) with
         (An (n + 1)%nat * x ^ 1 * / An n * (x ^ n * / x ^ n)) by ring;
-      rewrite <- Rinv_r_sym.
+      rewrite Rinv_r.
       - simpl; ring.
       - apply pow_nonzero; assumption. }
   rewrite Rabs_mult; apply Rmult_lt_reg_l with (/ Rabs x).
   { apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption. }
   rewrite <- (Rmult_comm (Rabs x)); rewrite <- Rmult_assoc;
-    rewrite <- Rinv_l_sym.
+    rewrite Rinv_l.
   2:{ apply Rabs_no_R0; assumption. }
   rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); unfold Rdiv in H5;
     replace (Rabs (An (S n) / An n)) with (Rdist (Rabs (An (S n) * / An n)) 0).
@@ -414,7 +414,7 @@ Proof.
       unfold Rdiv; apply Rmult_le_reg_l with (1 - x).
       { lra. }
       do 2 rewrite (Rmult_comm (1 - x)).
-      rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+      rewrite Rmult_assoc; rewrite Rinv_l.
       2:{ lra. }
       rewrite Rmult_1_r; apply Rplus_le_reg_l with (x ^ S (x2 - S x0)).
       replace (x ^ S (x2 - S x0) + (1 - x ^ S (x2 - S x0))) with 1 by ring.
@@ -438,7 +438,7 @@ Proof.
     { apply Rinv_0_lt_compat; apply H. }
     do 2 rewrite (Rmult_comm (/ An n)).
     rewrite Rmult_assoc.
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     2:{ assert (H11 := H n). lra. }
     rewrite Rmult_1_r.
     replace (An (S n) * / An n) with (Rabs (An (S n) / An n)).
@@ -518,7 +518,7 @@ Proof.
       * apply Rmult_lt_reg_l with (/ k).
         { apply Rinv_0_lt_compat; assumption. }
         rewrite <- Rmult_assoc.
-        rewrite <- Rinv_l_sym.
+        rewrite Rinv_l.
         2:{ lra. }
         rewrite Rmult_1_l.
         rewrite Rmult_1_r; assumption.
@@ -544,7 +544,7 @@ Proof.
           rewrite Rinv_mult.
           replace (An (n + 1)%nat * (x ^ n * x) * (/ An n * / x ^ n)) with
             (An (n + 1)%nat * / An n * x * (x ^ n * / x ^ n)) by ring.
-          rewrite <- Rinv_r_sym.
+          rewrite Rinv_r.
           { lra. }
           apply pow_nonzero;lra. }
       unfold Rdist.
@@ -556,7 +556,7 @@ Proof.
       apply Rmult_lt_reg_l with (/ Rabs x).
       { apply Rinv_0_lt_compat; apply Rabs_pos_lt. lra. }
       rewrite <- Rmult_assoc.
-      rewrite <- Rinv_l_sym.
+      rewrite Rinv_l.
       2:{ apply Rabs_no_R0; lra. }
       rewrite Rmult_1_l.
       rewrite <- (Rmult_comm eps).
@@ -584,7 +584,7 @@ Proof.
       * apply Rmult_lt_reg_l with (/ k).
         { apply Rinv_0_lt_compat; assumption. }
         rewrite <- Rmult_assoc.
-        rewrite <- Rinv_l_sym.
+        rewrite Rinv_l.
         2:{ lra. }
         rewrite Rmult_1_l.
         rewrite Rmult_1_r; assumption.
@@ -610,7 +610,7 @@ Proof.
           rewrite Rinv_mult.
           replace (An (n + 1)%nat * (x ^ n * x) * (/ An n * / x ^ n)) with
             (An (n + 1)%nat * / An n * x * (x ^ n * / x ^ n)) by ring.
-          rewrite <- Rinv_r_sym.
+          rewrite Rinv_r.
           { lra. }
           apply pow_nonzero;lra. }
       unfold Rdist.
@@ -623,7 +623,7 @@ Proof.
       { apply Rinv_0_lt_compat; apply Rabs_pos_lt.
         lra. }
       rewrite <- Rmult_assoc.
-      rewrite <- Rinv_l_sym.
+      rewrite Rinv_l.
       2:{ apply Rabs_no_R0. lra. }
       rewrite Rmult_1_l.
       rewrite <- (Rmult_comm eps).

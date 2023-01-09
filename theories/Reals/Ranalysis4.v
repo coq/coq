@@ -110,7 +110,7 @@ Proof.
   - rewrite (Rabs_right (x + h)).
     + rewrite Rplus_comm.
       unfold Rminus; rewrite Rplus_assoc; rewrite Rplus_opp_r.
-      rewrite Rplus_0_r; unfold Rdiv; rewrite <- Rinv_r_sym.
+      rewrite Rplus_0_r; unfold Rdiv; rewrite Rinv_r.
       * rewrite Rplus_opp_r; rewrite Rabs_R0; apply H0.
       * apply H1.
     + apply Rle_ge.
@@ -390,5 +390,5 @@ intros x y xy; destruct (MVT_cor2 sinh cosh x y xy) as [c [Pc _]].
   unfold Rminus at 1 in Pc; rewrite Pc; apply Rmult_lt_0_compat;[ | ].
   + unfold cosh; apply Rmult_lt_0_compat;[|apply Rinv_0_lt_compat, Rlt_0_2].
     now apply Rplus_lt_0_compat; apply exp_pos.
-  + now apply Rlt_Rminus; assumption.
+  + now apply Rlt_0_minus; assumption.
 Qed.

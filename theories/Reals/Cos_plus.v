@@ -53,7 +53,7 @@ Proof.
   unfold Rminus; rewrite Rmult_plus_distr_l.
   rewrite Ropp_0; rewrite Rmult_0_r.
   unfold Rdiv; repeat rewrite <- Rmult_assoc.
-  rewrite <- Rinv_l_sym.
+  rewrite Rinv_l.
   2:nra.
   rewrite Rmult_1_l.
   rewrite (Rabs_right (/ C0)).
@@ -193,7 +193,7 @@ Proof.
     2:{ unfold Rdiv; rewrite Rmult_comm.
         unfold Binomial.C.
         unfold Rdiv; repeat rewrite <- Rmult_assoc.
-        rewrite <- Rinv_l_sym.
+        rewrite Rinv_l.
         { rewrite Rmult_1_l.
           replace (2 * S (N + n) - 2 * S (n0 + n))%nat with (2 * (N - n0))%nat by lia.
           rewrite mult_INR.
@@ -211,7 +211,7 @@ Proof.
     unfold Rdiv; rewrite Rmult_comm.
     unfold Binomial.C.
     unfold Rdiv; repeat rewrite <- Rmult_assoc.
-    rewrite <- Rinv_l_sym.
+    rewrite Rinv_l.
     2:apply INR_fact_neq_0.
     rewrite Rmult_1_l.
     replace (2 * S (N + n) - S (N + n))%nat with (S (N + n)) by lia.
@@ -246,7 +246,7 @@ Proof.
       { left; apply Rinv_0_lt_compat; apply INR_fact_lt_0. }
       apply Rmult_le_reg_l with (INR (fact (S (N + n)))).
       { apply INR_fact_lt_0. }
-      rewrite <- Rinv_r_sym.
+      rewrite Rinv_r.
       { rewrite Rmult_1_r.
         apply (le_INR 1).
         apply Nat.le_succ_l.
@@ -254,14 +254,14 @@ Proof.
       apply INR_fact_neq_0. }
     apply Rmult_le_reg_l with (INR (fact (S (N + n)))).
     { apply INR_fact_lt_0. }
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     2:apply INR_fact_neq_0.
     apply Rmult_le_reg_l with (INR (fact (S N))).
     { apply INR_fact_lt_0. }
     rewrite Rmult_1_r.
     rewrite (Rmult_comm (INR (fact (S N)))).
     rewrite Rmult_assoc.
-    rewrite <- Rinv_l_sym.
+    rewrite Rinv_l.
     2:apply INR_fact_neq_0.
     rewrite Rmult_1_r.
     apply le_INR.
@@ -291,7 +291,7 @@ Proof.
   repeat rewrite Rinv_mult.
   rewrite (Rmult_comm (/ INR (S N))).
   repeat rewrite <- Rmult_assoc.
-  rewrite <- Rinv_r_sym.
+  rewrite Rinv_r.
   2:apply not_O_INR;lia.
   rewrite Rmult_1_l.
   pattern (/ INR (fact (pred N))) at 2; rewrite <- Rmult_1_r.
@@ -300,7 +300,7 @@ Proof.
   { left; apply Rinv_0_lt_compat; apply INR_fact_lt_0. }
   apply Rmult_le_reg_l with (INR (S N)).
   { apply lt_INR_0; apply Nat.lt_0_succ. }
-  rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
+  rewrite <- Rmult_assoc; rewrite Rinv_r.
   { rewrite Rmult_1_r; rewrite Rmult_1_l.
     apply le_INR; apply Nat.le_succ_diag_r. }
   apply not_O_INR; discriminate.
@@ -444,7 +444,7 @@ Proof.
     2:{ unfold Rdiv; rewrite Rmult_comm.
         unfold Binomial.C.
         unfold Rdiv; repeat rewrite <- Rmult_assoc.
-        rewrite <- Rinv_l_sym.
+        rewrite Rinv_l.
         2:{ apply INR_fact_neq_0. }
         rewrite Rmult_1_l.
         replace (2 * S (S (N + n)) - (2 * S (n0 + n) + 1))%nat with
@@ -464,7 +464,7 @@ Proof.
     unfold Rdiv; rewrite Rmult_comm.
     unfold Binomial.C.
     unfold Rdiv; repeat rewrite <- Rmult_assoc.
-    rewrite <- Rinv_l_sym.
+    rewrite Rinv_l.
     2:{ apply INR_fact_neq_0. }
     rewrite Rmult_1_l.
     replace (2 * S (S (N + n)) - S (S (N + n)))%nat with (S (S (N + n))) by lia.
@@ -500,7 +500,7 @@ Proof.
       { left; apply Rinv_0_lt_compat; apply INR_fact_lt_0. }
       apply Rmult_le_reg_l with (INR (fact (S (S (N + n))))).
       { apply INR_fact_lt_0. }
-      rewrite <- Rinv_r_sym.
+      rewrite Rinv_r.
       { rewrite Rmult_1_r.
         apply (le_INR 1).
         apply Nat.le_succ_l.
@@ -508,14 +508,14 @@ Proof.
       apply INR_fact_neq_0. }
     apply Rmult_le_reg_l with (INR (fact (S (S (N + n))))).
     { apply INR_fact_lt_0. }
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     2:{ apply INR_fact_neq_0. }
     apply Rmult_le_reg_l with (INR (fact (S (S N)))).
     { apply INR_fact_lt_0. }
     rewrite Rmult_1_r.
     rewrite (Rmult_comm (INR (fact (S (S N))))).
     rewrite Rmult_assoc.
-    rewrite <- Rinv_l_sym.
+    rewrite Rinv_l.
     2:{ apply INR_fact_neq_0. }
     rewrite Rmult_1_r.
     apply le_INR.
@@ -548,7 +548,7 @@ Proof.
     repeat apply Rmult_le_pos;
     left; try apply Rinv_0_lt_compat; try apply INR_fact_lt_0; apply lt_INR_0; try lia. }
   repeat rewrite <- Rmult_assoc.
-  rewrite <- Rinv_r_sym.
+  rewrite Rinv_r.
   2:{ apply not_O_INR; discriminate. }
   rewrite Rmult_1_l.
   apply Rle_trans with (/ INR (S N) * / INR (fact N) * INR (S N)).
@@ -560,7 +560,7 @@ Proof.
     apply INR_fact_lt_0. }
   rewrite (Rmult_comm (/ INR (S N))).
   rewrite Rmult_assoc.
-  rewrite <- Rinv_l_sym.
+  rewrite Rinv_l.
   2:{ apply not_O_INR; discriminate. }
   rewrite Rmult_1_r; right; reflexivity.
 Qed.

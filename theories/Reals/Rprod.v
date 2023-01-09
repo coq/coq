@@ -177,12 +177,12 @@ Proof.
   replace (2 * N - N)%nat with N.
   - apply Rmult_le_reg_l with (INR (fact N) * INR (fact N)).
     { apply Rmult_lt_0_compat; apply INR_fact_lt_0. }
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     + rewrite Rmult_comm;
         apply Rmult_le_reg_l with (INR (fact k) * INR (fact (2 * N - k))).
       { apply Rmult_lt_0_compat; apply INR_fact_lt_0. }
       rewrite Rmult_1_r; rewrite <- mult_INR; rewrite <- Rmult_assoc;
-        rewrite <- Rinv_r_sym.
+        rewrite Rinv_r.
       * rewrite Rmult_1_l; rewrite mult_INR; rewrite (Rmult_comm (INR (fact k)));
           replace (INR (fact N) * INR (fact N)) with (Rsqr (INR (fact N))).
         -- apply RfactN_fact2N_factk.

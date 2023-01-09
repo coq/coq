@@ -48,7 +48,7 @@ Proof.
   replace (l2 * f1 x * (/ f2 x * / f2 x * / f2 (x + h)) * - f2 x) with
   (- (l2 * f1 x * / f2 x * / f2 (x + h) * (f2 x * / f2 x)));
   [ idtac | ring ].
-  repeat rewrite <- Rinv_r_sym; try assumption || ring.
+  repeat rewrite Rinv_r; try assumption || ring.
 Qed.
 
 (* begin hide *)
@@ -159,7 +159,7 @@ Proof.
        (eps * (Rabs (f2 x) * Rabs (f2 x)) * (/ 4 * / 2 * / Rabs l1))) with
     (eps * / 4 * (Rabs l1 * / Rabs l1) * (Rabs (f2 x) * / Rabs (f2 x)) *
        (Rabs (f2 x) * / Rabs (f2 x)) * (2 * / 2)); [ idtac | ring ].
-  repeat rewrite <- Rinv_r_sym; try (apply Rabs_no_R0; assumption) || discrR.
+  repeat rewrite Rinv_r; try (apply Rabs_no_R0; assumption) || discrR.
   ring.
 Qed.
 
@@ -228,7 +228,7 @@ Proof.
          (Rabs (f2 x) * Rabs (f2 x) * eps * (/ 4 * / 2 * / Rabs (f1 x)))) with
       (eps * / 4 * (Rabs (f2 x) * / Rabs (f2 x)) * (Rabs (f2 x) * / Rabs (f2 x)) *
          (Rabs (f1 x) * / Rabs (f1 x)) * (2 * / 2)); [ idtac | ring ].
-    repeat rewrite <- Rinv_r_sym; try discrR || (apply Rabs_no_R0; assumption).
+    repeat rewrite Rinv_r; try discrR || (apply Rabs_no_R0; assumption).
     ring.
 Qed.
 
@@ -309,7 +309,7 @@ Proof.
   (eps * / 4 * (Rabs l2 * / Rabs l2) * (Rabs (f1 x) * / Rabs (f1 x)) *
     (Rabs (f2 x) * / Rabs (f2 x)) * (Rabs (f2 x) * / Rabs (f2 x)) *
     (Rabs (f2 x) * / Rabs (f2 x)) * (2 * / 2)); [ idtac | ring ].
-  repeat rewrite <- Rinv_r_sym; try discrR || (apply Rabs_no_R0; assumption).
+  repeat rewrite Rinv_r; try discrR || (apply Rabs_no_R0; assumption).
   ring.
 Qed.
 
@@ -403,7 +403,7 @@ Proof.
   assert (Rabs (/ 2) = / 2) by (apply Rabs_pos_eq;lra).
   assert (Hyp : 0 < 2) by prove_sup0.
   rewrite H11 in H10; assert (H12 := Rmult_lt_compat_l 2 _ _ Hyp H10);
-    rewrite Rmult_1_r in H12; rewrite <- Rinv_r_sym in H12;
+    rewrite Rmult_1_r in H12; rewrite Rinv_r in H12;
     [ idtac | discrR ].
   now apply lt_IZR in H12.
 Qed.

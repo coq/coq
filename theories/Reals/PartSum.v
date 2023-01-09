@@ -1,3 +1,4 @@
+
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
 (*  v      *         Copyright INRIA, CNRS and contributors             *)
@@ -67,7 +68,7 @@ Lemma tech3 :
 Proof.
   intros; cut (1 - k <> 0).
   - intro; induction  N as [| N HrecN].
-    + simpl; rewrite Rmult_1_r; unfold Rdiv; rewrite <- Rinv_r_sym.
+    + simpl; rewrite Rmult_1_r; unfold Rdiv; rewrite Rinv_r.
       * reflexivity.
       * apply H0.
     + replace (sum_f_R0 (fun i:nat => k ^ i) (S N)) with
@@ -77,11 +78,11 @@ Proof.
         ((1 - k ^ S N + (1 - k) * k ^ S N) / (1 - k)).
       * apply Rmult_eq_reg_l with (1 - k).
         -- unfold Rdiv; do 2 rewrite <- (Rmult_comm (/ (1 - k)));
-             repeat rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym;
+             repeat rewrite <- Rmult_assoc; rewrite Rinv_r;
              [ do 2 rewrite Rmult_1_l; simpl; ring | apply H0 ].
         -- apply H0.
       * unfold Rdiv; rewrite Rmult_plus_distr_r; rewrite (Rmult_comm (1 - k));
-          repeat rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
+          repeat rewrite Rmult_assoc; rewrite Rinv_r.
         -- rewrite Rmult_1_r; reflexivity.
         -- apply H0.
   - apply Rminus_eq_contra; red; intro; elim H; symmetry ;
@@ -130,10 +131,10 @@ Lemma tech7 : forall r1 r2:R, r1 <> 0 -> r2 <> 0 -> r1 <> r2 -> / r1 <> / r2.
 Proof.
   intros; red; intro.
   assert (H3 := Rmult_eq_compat_l r1 _ _ H2).
-  rewrite <- Rinv_r_sym in H3; [ idtac | assumption ].
+  rewrite Rinv_r in H3; [ idtac | assumption ].
   assert (H4 := Rmult_eq_compat_l r2 _ _ H3).
   rewrite Rmult_1_r in H4; rewrite <- Rmult_assoc in H4.
-  rewrite Rinv_r_simpl_m in H4; [ idtac | assumption ].
+  rewrite Rmult_inv_r_id_m in H4; [ idtac | assumption ].
   elim H1; symmetry ; assumption.
 Qed.
 
@@ -230,8 +231,8 @@ Proof.
                 assert (H11 := Rle_lt_trans _ _ _ H9 H10); unfold Rdiv in H11;
                 rewrite Rabs_mult in H11.
               cut (Rabs (/ 2) = / 2).
-              ** intro; rewrite H12 in H11; assert (H13 := double_var); unfold Rdiv in H13;
-                   rewrite <- H13 in H11.
+              ** intro; rewrite H12 in H11; assert (H13 := Rplus_half_diag); unfold Rdiv in H13;
+                   rewrite H13 in H11.
                  elim (Rlt_irrefl _ H11).
               ** apply Rabs_right; left; change (0 < / 2); apply Rinv_0_lt_compat;
                    cut (0%nat <> 2%nat);
@@ -239,7 +240,7 @@ Proof.
                      intro; assumption
                    | discriminate ].
            ++ unfold Rdist; rewrite <- (Rabs_Ropp (sum_f_R0 An N - l1));
-                rewrite Ropp_minus_distr'.
+                rewrite Ropp_minus_distr.
               replace (l1 - l2) with (l1 - sum_f_R0 An N + (sum_f_R0 An N - l2));
                 [ idtac | ring ].
               apply Rabs_triang.
@@ -465,7 +466,7 @@ Proof.
       * apply Rplus_lt_compat.
         -- apply H1; assumption.
         -- apply H1; assumption.
-      * right; symmetry ; apply double_var.
+      * right; apply Rplus_half_diag.
   - unfold Rdiv; apply Rmult_lt_0_compat;
       [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
 Qed.
@@ -565,8 +566,8 @@ Proof.
             -- apply Rmult_lt_reg_l with 2.
                ++ prove_sup0.
                ++ unfold Rdiv; rewrite (Rmult_comm 2); rewrite Rmult_assoc;
-                    rewrite <- Rinv_l_sym.
-                  ** rewrite Rmult_1_r; rewrite double; apply Rplus_lt_compat_l; apply Hgt.
+                    rewrite Rinv_l.
+                  ** rewrite Rmult_1_r; rewrite <-Rplus_diag; apply Rplus_lt_compat_l; apply Hgt.
                   ** discrR.
             -- apply (Rminus_lt _ _ Hlt).
           * rewrite (Rabs_right _ Hge) in H7.
@@ -578,14 +579,14 @@ Proof.
             -- unfold Rdiv; rewrite Rmult_plus_distr_r;
                  rewrite <- (Rmult_comm (/ 2)); rewrite Rmult_minus_distr_l;
                  repeat rewrite (Rmult_comm (/ 2)); pattern (Rabs l1) at 1;
-                 rewrite double_var; unfold Rdiv in |- *; ring.
+                 rewrite <-Rplus_half_diag; unfold Rdiv in |- *; ring.
         + destruct (Rcase_abs (sum_f_R0 An N - l2)) as [Hlt|Hge].
           * apply Rlt_trans with l2.
             -- apply (Rminus_lt _ _ Hlt).
             -- apply Rmult_lt_reg_l with 2.
                ++ prove_sup0.
-               ++ rewrite (double l2); unfold Rdiv; rewrite (Rmult_comm 2);
-                    rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
+               ++ rewrite <-(Rplus_diag l2); unfold Rdiv; rewrite (Rmult_comm 2);
+                    rewrite Rmult_assoc; rewrite Rinv_l.
                   ** rewrite Rmult_1_r; rewrite (Rplus_comm (Rabs l1)); apply Rplus_lt_compat_l;
                        apply Hgt.
                   ** discrR.
@@ -594,11 +595,11 @@ Proof.
             -- rewrite Rplus_comm; apply H6.
             -- unfold Rdiv; rewrite <- (Rmult_comm (/ 2));
                  rewrite Rmult_minus_distr_l; rewrite Rmult_plus_distr_r;
-                 pattern l2 at 2; rewrite double_var;
+                 pattern l2 at 2; rewrite <-Rplus_half_diag;
                  repeat rewrite (Rmult_comm (/ 2)); rewrite Ropp_plus_distr;
                  unfold Rdiv; ring.
         + apply Rle_lt_trans with (Rabs (SP fn N x - l1)).
-          * rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr'; apply Rabs_triang_inv2.
+          * rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply Rabs_triang_inv2.
           * apply H4; unfold ge, N; apply Nat.le_max_l.
         + apply H5; unfold ge, N; apply Nat.le_max_r.
       - unfold Rdiv; apply Rmult_lt_0_compat.

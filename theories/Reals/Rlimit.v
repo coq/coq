@@ -31,7 +31,7 @@ Qed.
 Lemma eps2 : forall eps:R, eps * / 2 + eps * / 2 = eps.
 Proof.
   intro esp.
-  apply eq_sym, double_var.
+  apply Rplus_half_diag.
 Qed.
 
 (*********)
@@ -72,7 +72,7 @@ Definition mul_factor (l l':R) := / (1 + (Rabs l + Rabs l')).
 (*********)
 Lemma mul_factor_wd : forall l l':R, 1 + (Rabs l + Rabs l') <> 0.
 Proof.
-  intros; rewrite (Rplus_comm 1 (Rabs l + Rabs l')); apply tech_Rplus.
+  intros; rewrite (Rplus_comm 1 (Rabs l + Rabs l')); apply Rplus_le_lt_0_neq_0.
   - cut (Rabs (l + l') <= Rabs l + Rabs l').
     + cut (0 <= Rabs (l + l')).
       * exact (Rle_trans _ _ _).
@@ -282,8 +282,9 @@ Proof.
       * apply Rmult_ge_0_gt_0_lt_compat.
         -- apply Rle_ge.
            exact (Rabs_pos (g x2 - l')).
-        -- rewrite (Rplus_comm 1 (Rabs l)); unfold Rgt; apply Rle_lt_0_plus_1;
-             exact (Rabs_pos l).
+        -- rewrite (Rplus_comm 1 (Rabs l)); unfold Rgt;
+           apply Rplus_le_lt_0_compat with (1 := (Rabs_pos l));
+           exact Rlt_0_1.
         -- unfold Rdist in H9;
              apply (Rplus_lt_reg_l (- Rabs l) (Rabs (f x2)) (1 + Rabs l)).
            rewrite <- (Rplus_assoc (- Rabs l) 1 (Rabs l));
@@ -478,7 +479,7 @@ Proof.
                    [ intro H17; generalize (lt_INR_0 2 (proj1 (Nat.neq_0_lt_0 2) (Nat.neq_sym 0 2 H17))); unfold INR;
                      intro; assumption
                    | discriminate ].
-           ++ pattern (Rabs l) at 3; rewrite double_var.
+           ++ pattern (Rabs l) at 3; rewrite <-Rplus_half_diag.
               ring.
         -- split;
              [ assumption

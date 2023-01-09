@@ -50,7 +50,7 @@ Proof.
     rewrite scal_sum; apply sum_eq; intros.
     unfold C; unfold Rdiv; repeat rewrite Rmult_assoc;
       rewrite (Rmult_comm (INR (fact i))); repeat rewrite Rmult_assoc;
-      rewrite <- Rinv_l_sym.
+      rewrite Rinv_l.
     + rewrite Rmult_1_r; rewrite Rinv_mult.
       ring.
     + apply INR_fact_neq_0.
@@ -214,7 +214,7 @@ Proof.
         2:{ unfold C, Rdiv.
             rewrite (Rmult_comm (INR (fact N))).
             repeat rewrite Rmult_assoc.
-            rewrite <- Rinv_r_sym.
+            rewrite Rinv_r.
             2:{ apply INR_fact_neq_0. }
             rewrite Rinv_mult.
             rewrite Rmult_1_r; ring. }
@@ -232,7 +232,7 @@ Proof.
         repeat rewrite Rinv_mult.
         rewrite (Rmult_comm (INR (fact N))).
         repeat rewrite Rmult_assoc.
-        rewrite <- Rinv_r_sym.
+        rewrite Rinv_r.
         2:apply INR_fact_neq_0.
         replace (N - N0)%nat with N0 by lia.
         ring.
@@ -240,7 +240,7 @@ Proof.
           (C (S N) (S n0) / INR (fact (S N))).
         2:{ unfold C, Rdiv.
             rewrite (Rmult_comm (INR (fact (S N)))).
-            rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
+            rewrite Rmult_assoc; rewrite Rinv_r.
             2:{ apply INR_fact_neq_0. }
             rewrite Rmult_1_r; rewrite Rinv_mult.
             reflexivity. }
@@ -254,7 +254,7 @@ Proof.
             replace (S N - S N0)%nat with (S N0) by lia.
             rewrite (Rmult_comm (INR (fact (S N)))).
             repeat rewrite Rmult_assoc.
-            rewrite <- Rinv_r_sym.
+            rewrite Rinv_r.
             2:apply INR_fact_neq_0.
             ring. }
         unfold Rdiv; do 2 rewrite <- (Rmult_comm (/ INR (fact (S N)))).
@@ -326,7 +326,7 @@ Proof.
       apply not_O_INR; red; intro.
       lia. }
     repeat rewrite <- Rmult_assoc.
-    rewrite <- Rinv_r_sym.
+    rewrite Rinv_r.
     2:{ unfold Rsqr; apply prod_neq_R0; apply not_O_INR;lia. }
     rewrite Rmult_1_l.
     change 4 with (Rsqr 2).
@@ -384,7 +384,7 @@ Proof.
       { apply pow_le; lra. }
       apply Rmult_le_reg_l with (INR (fact (Nat.div2 (pred n)))).
       { apply INR_fact_lt_0. }
-      rewrite Rmult_1_r; rewrite <- Rinv_r_sym.
+      rewrite Rmult_1_r; rewrite Rinv_r.
       { apply (le_INR 1).
         apply Nat.le_succ_l.
         apply INR_lt.
@@ -406,7 +406,7 @@ Proof.
     lia.
   - apply Rmult_lt_reg_l with (/ 4).
     { apply Rinv_0_lt_compat; prove_sup0. }
-    rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+    rewrite <- Rmult_assoc; rewrite Rinv_l.
     2:discrR.
     rewrite Rmult_1_l; rewrite Rmult_comm.
     replace
@@ -528,7 +528,7 @@ Proof.
         apply (Ropp_0_gt_lt_contravar _ Hgt).
     + cut (exp (- x) <> 0).
       * intro; unfold Rdiv; apply Rmult_eq_reg_l with (exp (- x)).
-        -- rewrite Rmult_1_l; rewrite <- Rinv_r_sym.
+        -- rewrite Rmult_1_l; rewrite Rinv_r.
            ++ rewrite <- exp_plus.
               rewrite Rplus_opp_l; rewrite exp_0; reflexivity.
            ++ apply H.
@@ -697,7 +697,7 @@ Proof.
       2:{ apply Rle_ge; left; apply (cond_pos r). }
       apply Rmult_lt_reg_l with (/ r).
       { apply Rinv_0_lt_compat; apply (cond_pos r). }
-      rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+      rewrite <- Rmult_assoc; rewrite Rinv_l.
       2:assumption.
       rewrite Rmult_1_l; rewrite <- (Rmult_comm eps0).
       apply H6. }
@@ -717,7 +717,7 @@ Proof.
     rewrite <- Rmult_assoc; rewrite <- (Rmult_comm (INR (fact (S n)))).
     apply Rmult_eq_compat_l.
     simpl.
-    rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
+    rewrite Rmult_assoc; rewrite Rinv_r.
     2:{ apply pow_nonzero; assumption. }
     ring.
 Qed.
@@ -740,7 +740,7 @@ Proof.
   - rewrite Rabs_mult; rewrite (Rabs_right (exp x)).
     + apply Rmult_lt_reg_l with (/ exp x).
       * apply Rinv_0_lt_compat; apply exp_pos.
-      * rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+      * rewrite <- Rmult_assoc; rewrite Rinv_l.
         -- rewrite Rmult_1_l; rewrite <- (Rmult_comm eps).
            apply H5.
         -- assert (H6 := exp_pos x); red; intro; rewrite H7 in H6;
