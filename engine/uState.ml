@@ -1037,3 +1037,12 @@ let pr_universe_body = function
 let pr_universe_opt_subst = Univ.Level.Map.pr pr_universe_body
 
 let pr_sort_opt_subst uctx = QState.pr uctx.sort_variables
+
+module Internal =
+struct
+
+let reboot env uctx =
+  let uctx_global = from_env env in
+  { uctx_global with univ_variables = uctx.univ_variables; sort_variables = uctx.sort_variables }
+
+end

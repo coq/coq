@@ -253,3 +253,12 @@ val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 
 val pr_universe_opt_subst : universe_opt_subst -> Pp.t
 val pr_sort_opt_subst : t -> Pp.t
+
+module Internal :
+sig
+
+val reboot : Environ.env -> t -> t
+(** Madness-inducing hack dedicated to the handling of universes of Program.
+    DO NOT USE OUTSIDE OF DEDICATED AREA. *)
+
+end
