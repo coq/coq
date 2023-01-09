@@ -34,22 +34,40 @@ module QState : sig
   val add : elt -> t -> t
   val repr : elt -> t -> quality
   val set : elt -> quality -> t -> t option
+  val set_above_prop : elt -> t -> t
   val collapse : t -> t
   val pr : t -> Pp.t
 end =
 struct
 
+module QSet = Set.Make(Sorts.QVar)
 module QMap = Map.Make(Sorts.QVar)
 
-type t = quality option QMap.t
-(* TODO: use a persistent union-find structure *)
+type t = {
+  qmap : quality option QMap.t;
+  (* TODO: use a persistent union-find structure *)
+  above : QSet.t;
+  (** Set of quality variables known to be either in Prop or Type.
+      If q ∈ above then it must map to None in qmap. *)
+}
 
 type elt = Sorts.QVar.t
-let empty = QMap.empty
-let union s1 s2 = QMap.fold QMap.add s1 s2
-let add q m = QMap.add q None m
 
-let rec repr q m = match QMap.find q m with
+let empty = { qmap = QMap.empty; above = QSet.empty }
+
+let union s1 s2 =
+  let qmap = QMap.fold QMap.add s1.qmap s2.qmap in
+  let filter q = match QMap.find q qmap with
+  | None -> true
+  | Some _ -> false
+  | exception Not_found -> false
+  in
+  let above = QSet.filter filter @@ QSet.union s1.above s2.above in
+  { qmap; above }
+
+let add q m = { qmap = QMap.add q None m.qmap; above = m.above }
+
+let rec repr q m = match QMap.find q m.qmap with
 | None -> QVar q
 | Some (QVar q) -> repr q m
 | Some (QProp | QSProp | QType as q) -> q
@@ -59,28 +77,39 @@ let rec repr q m = match QMap.find q m with
 
 let set q qv m =
   let q = repr q m in
+  let q = match q with QVar q -> q | QProp | QSProp | QType -> assert false in
   let qv = match qv with QVar qv -> repr qv m | (QSProp | QProp | QType as qv) -> qv in
   match q, qv with
-  | QVar q, QVar qv ->
+  | q, QVar qv ->
     if Sorts.QVar.equal q qv then Some m
-    else Some (QMap.add q (Some (QVar qv)) m)
-  | QVar q, (QProp | QSProp | QType as qv) | (QProp | QSProp | QType as qv), QVar q ->
-    Some (QMap.add q (Some qv) m)
-  | (QSProp, QSProp) | (QProp, QProp) | (QType, QType) -> Some m
-  | (QSProp | QProp | QType), (QSProp | QProp | QType) ->
-    None
+    else
+      let above =
+        if QSet.mem q m.above then QSet.add qv (QSet.remove q m.above)
+        else m.above
+      in
+      Some { qmap = QMap.add q (Some (QVar qv)) m.qmap; above }
+  | q, (QProp | QSProp | QType as qv) ->
+    if qv == QSProp && QSet.mem q m.above then None
+    else Some { qmap = QMap.add q (Some qv) m.qmap; above = QSet.remove q m.above }
+
+let set_above_prop q m =
+  let q = repr q m in
+  let q = match q with QVar q -> q | QProp | QSProp | QType -> assert false in
+  { qmap = m.qmap; above = QSet.add q m.above }
 
 let collapse m =
   let map q v = match v with
   | None -> Some QType
   | Some _ -> v
   in
-  QMap.mapi map m
+  { qmap = QMap.mapi map m.qmap; above = QSet.empty }
 
-let pr qmap =
+let pr { qmap; above } =
   let open Pp in
-  let prbody = function
-  | None -> mt ()
+  let prbody u = function
+  | None ->
+    if QSet.mem u above then str " >= Prop"
+    else mt ()
   | Some q ->
     let q = match q with
     | QVar v -> Sorts.QVar.pr v
@@ -90,7 +119,7 @@ let pr qmap =
     in
     str " := " ++ q
   in
-  h (prlist_with_sep fnl (fun (u, v) -> Sorts.QVar.pr u ++ prbody v) (QMap.bindings qmap))
+  h (prlist_with_sep fnl (fun (u, v) -> Sorts.QVar.pr u ++ prbody u v) (QMap.bindings qmap))
 
 end
 
@@ -340,6 +369,8 @@ let get_constraint = function
 
 let unify_quality univs c s1 s2 local = match quality_of_sort s1, quality_of_sort s2 with
 | QType, QType | QProp, QProp | QSProp, QSProp -> local
+| QProp, QVar q when c == Reduction.CUMUL ->
+  { local with local_sorts = QState.set_above_prop q local.local_sorts }
 | QVar q, (QType | QProp | QSProp | QVar _ as qv)
 | (QType | QProp | QSProp as qv), QVar q ->
   begin match QState.set q qv local.local_sorts with
