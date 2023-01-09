@@ -354,7 +354,14 @@ let vernac_extend ?plugin ~command ?classifier ?entry ext =
     let f = untype_command ty f in
     let r = untype_grammar ty in
     let () = vinterp_add depr (command, i) f in
-    let () = Egramml.declare_vernac_command_grammar (command, i) entry r in
+    let () =
+      (* allow_override is a hack for Elpi Command, since it takes
+         effect at Import time it gets called multiple times.
+         Eventually we will need a better API to support this and also
+         to support backtracking over it. *)
+      Egramml.declare_vernac_command_grammar ~allow_override:(Option.is_empty plugin)
+        (command, i) entry r
+    in
     let () = match plugin with
       | None -> Egramml.extend_vernac_command_grammar ~undoable:false (command, i)
       | Some plugin ->
