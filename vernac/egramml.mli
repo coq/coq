@@ -21,7 +21,7 @@ type 's grammar_prod_item =
       ('s, _, 'a) Pcoq.Symbol.t) Loc.located -> 's grammar_prod_item
 
 val declare_vernac_command_grammar :
-  extend_name -> vernac_expr Pcoq.Entry.t option ->
+  allow_override:bool -> extend_name -> vernac_expr Pcoq.Entry.t option ->
     vernac_expr grammar_prod_item list -> unit
 
 val extend_vernac_command_grammar : undoable:bool -> extend_name -> unit
