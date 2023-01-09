@@ -280,10 +280,13 @@ let plugin_is_known mname = PluginSpec.Set.mem mname !known_loaded_modules
 
 (** Init time functions *)
 
+let initialized_plugins = Summary.ref ~stage:Synterp ~name:"inited-plugins" PluginSpec.Set.empty
+
 let plugin_init_functions : (unit -> unit) list PluginSpec.Map.t ref = ref PluginSpec.Map.empty
 
 let add_init_function name f =
   let name = PluginSpec.of_declare_ml_format name in
+  if PluginSpec.Set.mem name !initialized_plugins then CErrors.anomaly Pp.(str "Not allowed to add init function for already initialized plugin " ++ str (PluginSpec.pp name));
   plugin_init_functions := PluginSpec.Map.update name (function
       | None -> Some [f]
       | Some g -> Some (f::g))
@@ -306,12 +309,20 @@ let perform_cache_obj name =
   List.iter (fun f -> f ()) objs
 
 (** ml object = ml module or plugin *)
+let dinit = CDebug.create ~name:"mltop-init" ()
 
 let init_ml_object mname =
-  (* Feedback.msg_info Pp.(str "initing " ++ str (PluginSpec.pp mname)); *)
-  match PluginSpec.Map.find mname !plugin_init_functions with
-  | l -> List.iter (fun f -> f()) (List.rev l)
-  | exception Not_found -> ()
+  if PluginSpec.Set.mem mname !initialized_plugins
+  then dinit Pp.(fun () -> str "already initialized " ++ str (PluginSpec.pp mname))
+  else  begin
+    dinit Pp.(fun () -> str "initing " ++ str (PluginSpec.pp mname));
+    let n = match PluginSpec.Map.find mname !plugin_init_functions with
+      | l -> List.iter (fun f -> f()) (List.rev l); List.length l
+      | exception Not_found -> 0
+    in
+    initialized_plugins := PluginSpec.Set.add mname !initialized_plugins;
+    dinit Pp.(fun () -> str "finished initing " ++ str (PluginSpec.pp mname) ++ str " (" ++ int n ++ str " init functions)")
+  end
 
 let load_ml_object mname =
   ml_load mname;
