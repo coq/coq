@@ -1,4 +1,4 @@
-DECLARE PLUGIN "coq-core.plugins.good"
+DECLARE PLUGIN "coq-test-suite.good"
 
 {
 
