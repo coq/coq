@@ -124,7 +124,7 @@ let type_of_type u =
 let type_of_sort = function
   | SProp | Prop | Set -> type1
   | Type u -> type_of_type u
-  | QSort _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  | QSort (_, u) -> type_of_type u
 
 (*s Type of a de Bruijn index. *)
 
@@ -589,9 +589,11 @@ let rec execute env cstr =
   match kind cstr with
     (* Atomic terms *)
     | Sort s ->
-      (match s with
-       | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
-       | _ -> ());
+      let () = match s with
+      | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
+      | QSort _ -> anomaly Pp.(str "the kernel does not support sort variables")
+      | Prop | Set | Type _ -> ()
+      in
       cstr, type_of_sort s
 
     | Rel n ->
