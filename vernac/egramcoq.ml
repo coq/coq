@@ -371,6 +371,7 @@ let rec symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symb
   | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false)
   | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false) end
 | TTPattern p -> MayRecNo (Pcoq.Symbol.nterml Constr.pattern (string_of_int p))
+| TTOpenBinderList -> MayRecNo (Pcoq.Symbol.nterm Constr.open_binders)
 | TTClosedBinderListPure [] -> MayRecNo (Pcoq.Symbol.list1 (Pcoq.Symbol.nterm Constr.binder))
 | TTClosedBinderListPure tkl -> MayRecNo (Pcoq.Symbol.list1sep (Pcoq.Symbol.nterm Constr.binder) (make_sep_rules tkl) false)
 | TTClosedBinderListOther (typ,[]) ->
@@ -385,7 +386,6 @@ let rec symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symb
 | TTName -> MayRecNo (Pcoq.Symbol.nterm Prim.name)
 | TTBinder true -> MayRecNo (Pcoq.Symbol.nterm Constr.one_open_binder)
 | TTBinder false -> MayRecNo (Pcoq.Symbol.nterm Constr.one_closed_binder)
-| TTOpenBinderList -> MayRecNo (Pcoq.Symbol.nterm Constr.open_binders)
 | TTBigint -> MayRecNo (Pcoq.Symbol.nterm Prim.bignat)
 | TTGlobal -> MayRecNo (Pcoq.Symbol.nterm Constr.global)
 
