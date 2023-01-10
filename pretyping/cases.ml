@@ -2154,12 +2154,40 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
       (* We extract the signature of the arity *)
       let hypnaming = RenameExistingBut (VarSet.variables (Global.env ())) in
       let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming sigma) arsign env in
-      (* We put a type constraint on the predicate so that one
-         branch type-checked first does not lead to a lower type than
-         another branch; we take into account the possible elimination
-         constraints on the predicate *)
-      let sigma, rtnsort = fresh_sort_in_family sigma (expected_elimination_sort !!env tomatchs) in
+      let sigma, rtnsort = Evd.new_sort_variable univ_flexible sigma in
       let sigma, predcclj = typing_fun (Some (mkSort rtnsort)) envar sigma rtntyp in
+      (* We take into account the elimination constraints coming from the terms
+        to match. When there is an elimination constraint and the predicate is
+        underspecified, i.e. a QSort, we make a non-canonical choice for the
+        return type. Incompatible constraints are ignored and handled later
+        when typing the pattern-matching. *)
+      let sigma = match expected_elimination_sort !!env tomatchs with
+      | InType ->
+        (* Not squashed, no constraints *)
+        sigma
+      | InProp ->
+        (* Squashed inductive in Prop, return sort must be Prop or SProp *)
+        begin match ESorts.kind sigma rtnsort with
+        | Sorts.QSort _ ->
+          Evd.set_eq_sort !!env sigma rtnsort ESorts.prop
+        | Sorts.Type _ | Sorts.Set | Sorts.SProp | Sorts.Prop -> sigma
+        end
+      | InSProp ->
+        (* Squashed inductive in SProp, return sort must be SProp. *)
+        begin match ESorts.kind sigma rtnsort with
+        | Sorts.QSort _ ->
+          Evd.set_eq_sort !!env sigma rtnsort ESorts.sprop
+        | Sorts.Type _ | Sorts.Set | Sorts.Prop | Sorts.SProp -> sigma
+        end
+      | InSet ->
+        (* Squashed inductive in Set, only happens with impredicative Set *)
+        begin match ESorts.kind sigma rtnsort with
+        | Sorts.QSort _ ->
+          Evd.set_eq_sort !!env sigma rtnsort ESorts.set
+        | Sorts.Type _ | Sorts.Set | Sorts.SProp | Sorts.Prop -> sigma
+        end
+      | InQSort -> assert false
+      in
       let predccl = nf_evar sigma predcclj.uj_val in
       [sigma, predccl, building_arsign]
   in
