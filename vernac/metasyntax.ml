@@ -1151,8 +1151,8 @@ let join_auxiliary_recursive_types recvars etyps =
     recvars etyps
 
 let internalization_type_of_entry_type = function
-  | ETBinder _ -> NtnInternTypeOnlyBinder
-  | ETConstr _ | ETBigint | ETGlobal
+  | ETBinder _ | ETConstr (_,Some _,_) -> NtnInternTypeOnlyBinder
+  | ETConstr (_,None,_) | ETBigint | ETGlobal
   | ETIdent | ETName | ETPattern _ -> NtnInternTypeAny None
 
 let make_internalization_vars recvars maintyps =

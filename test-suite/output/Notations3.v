@@ -437,3 +437,13 @@ Show.
 Abort.
 
 End GoalConclBox.
+
+Module PartOfIssue17094.
+
+Notation "'FORALL' x .. y , P" := (forall x , .. (forall y , P) .. )
+  (at level 200, x constr at level 8 as pattern, right associativity,
+      format "'[  ' '[  ' 'FORALL'  x  ..  y ']' ,  '/' P ']'") : type_scope.
+Notation "[[ x , y ]]" := (x, y).
+Check FORALL [[a , b]], a - b = 0.
+
+End PartOfIssue17094.

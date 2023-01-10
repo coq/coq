@@ -255,3 +255,5 @@ myfoo01 tt
   |-_0
    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx *
    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+FORALL [[a, b]], a - b = 0
+     : Prop

@@ -53,3 +53,12 @@ Notation "'WITH' ( x1 : t1 ) , x2t2 , .. , xntn  'PRE'  [ ] P 'POST' [ ] Q" :=
 Check WITH (x : nat) , (y : nat) , (z : nat) PRE [] (x, y, z) POST [] (z, y, x).
 
 End Pattern.
+
+Module OnlyRecursiveBinderPartOfIssue17904.
+
+Notation "∀ x .. y , P" := (forall x , .. (forall y , P) .. )
+  (at level 200, x constr at level 8 as pattern, right associativity,
+      format "'[  ' '[  ' ∀  x  ..  y ']' ,  '/' P ']'") : type_scope.
+Check ∀ a b, a + b = 0.
+
+End OnlyRecursiveBinderPartOfIssue17904.
