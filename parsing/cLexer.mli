@@ -75,14 +75,15 @@ module Error : sig
   val to_string : t -> string
 end
 
-(** Create a lexer.  true enables alternate handling for computing diffs.
-It ensures that, ignoring white space, the concatenated tokens equal the input
-string.  Specifically:
-- for strings, return the enclosing quotes as tokens and treat the quoted value
-as if it was unquoted, possibly becoming multiple tokens
-- for comments, return the "(*" as a token and treat the contents of the comment as if
-it was not in a comment, possibly becoming multiple tokens
-- return any unrecognized Ascii or UTF-8 character as a string
+(** LexerDiff ensures that, ignoring white space, the concatenated
+    tokens equal the input string. Specifically:
+    - for strings, return the enclosing quotes as tokens and treat the
+      quoted value as if it was unquoted, possibly becoming multiple
+      tokens.
+    - for comments, return the "(\*" (\ to be kind to syntax
+      highlighters) as a token and treat the contents of the comment as
+      if it was not in a comment, possibly becoming multiple tokens.
+    - return any unrecognized Ascii or UTF-8 character as a string.
 *)
 
 module LexerDiff :

@@ -759,7 +759,9 @@ let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
       cur_loc := after loc;
       Some (tok,loc))
 
-module MakeLexer (Diff : sig val mode : bool end) = struct
+module MakeLexer (Diff : sig val mode : bool end)
+  : Gramlib.Plexing.S with type te = Tok.t and type 'c pattern = 'c Tok.p
+= struct
   type te = Tok.t
   type 'c pattern = 'c Tok.p
   let tok_pattern_eq = Tok.equal_p
