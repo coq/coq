@@ -160,6 +160,11 @@ let rec annotate_module_expression me mty = match me, mty with
   MoreFunctor (mbid, arg, me)
 | MEMoreFunctor _, NoFunctor _ -> assert false
 
+let rec annotate_struct_body body sign = match sign with
+| NoFunctor _ -> NoFunctor body
+| MoreFunctor (mbid, mty, sign) ->
+  MoreFunctor (mbid, mty, annotate_struct_body body sign)
+
 (** {6 Substitutions of modular structures } *)
 
 let id_delta x _y = x
@@ -229,7 +234,7 @@ and subst_module subst do_delta mb =
 
 and subst_impl subst me =
   implem_smart_map
-    (subst_signature subst id_delta) (subst_expression subst id_delta) me
+    (subst_structure subst id_delta) (subst_expression subst id_delta) me
 
 and subst_modtype subst do_delta mtb = subst_module_body false subst (fun _ () -> ()) do_delta mtb
 
@@ -521,7 +526,7 @@ let rec clean_module_body l mb =
   let typ' = clean_signature l typ in
   let impl' = match impl with
     | Algebraic (MENoFunctor m) when is_bounded_expr l m -> FullStruct
-    | _ -> implem_smart_map (clean_signature l) (clean_expression l) impl
+    | _ -> implem_smart_map (clean_structure l) (clean_expression l) impl
   in
   if typ==typ' && impl==impl' then mb
   else { mb with mod_type=typ'; mod_expr=impl' }

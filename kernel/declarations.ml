@@ -334,7 +334,7 @@ and module_signature = (module_type_body,structure_body) functorize
 and module_implementation =
   | Abstract (** no accessible implementation *)
   | Algebraic of module_expression (** non-interactive algebraic expression *)
-  | Struct of module_signature (** interactive body *)
+  | Struct of structure_body (** interactive body living in the parameter context of [mod_type] *)
   | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 and 'a generic_module_body =
