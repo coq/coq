@@ -1009,7 +1009,7 @@ let detype_rel_context d flags where avoid env sigma sign =
       (na',Explicit,b',t') :: aux avoid' (add_name (set_name na' decl) env) rest
   in aux avoid env (List.rev sign)
 
-let detype d ?(lax=false) isgoal avoid env sigma t =
+let detype d ?(lax=false) ?(isgoal=false) avoid env sigma t =
   let flags = { flg_isgoal = isgoal; flg_lax = lax } in
   let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype d flags avoid (names_of_rel_context env, env) sigma t
@@ -1019,7 +1019,7 @@ let detype_rel_context d ?(lax = false) where avoid env sigma sign =
   let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype_rel_context d flags where avoid env sigma sign
 
-let detype_closed_glob ?lax isgoal avoid env sigma t =
+let detype_closed_glob ?lax ?isgoal avoid env sigma t =
   let convert_id cl id =
     try Id.Map.find id cl.idents
     with Not_found -> id
@@ -1042,7 +1042,7 @@ let detype_closed_glob ?lax isgoal avoid env sigma t =
              [Printer.pr_constr_under_binders_env] does. *)
           let assums = List.map (fun id -> LocalAssum (make_annot (Name id) Sorts.Relevant,(* dummy *) mkProp)) b in
           let env = push_rel_context assums env in
-          DAst.get (detype Now ?lax isgoal avoid env sigma c)
+          DAst.get (detype Now ?lax ?isgoal avoid env sigma c)
         (* if [id] is bound to a [closed_glob_constr]. *)
         with Not_found -> try
           let {closure;term} = Id.Map.find id cl.untyped in
@@ -1100,7 +1100,7 @@ let rec subst_glob_constr env subst = DAst.map (function
         | Some t ->
           let evd = Evd.from_env env in
           let t = t.Univ.univ_abstracted_value in (* XXX This seems dangerous *)
-          DAst.get (detype Now false Id.Set.empty env evd (EConstr.of_constr t)))
+          DAst.get (detype Now Id.Set.empty env evd (EConstr.of_constr t)))
 
   | GSort _
   | GVar _

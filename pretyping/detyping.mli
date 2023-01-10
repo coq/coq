@@ -47,7 +47,7 @@ val factorize_eqns : 'a cases_clauses_g -> 'a disjunctive_cases_clauses_g
    [isgoal] tells if naming must avoid global-level synonyms as intro does
    [ctx] gives the names of the free variables *)
 
-val detype : 'a delay -> ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> constr -> 'a glob_constr_g
+val detype : 'a delay -> ?lax:bool -> ?isgoal:bool -> Id.Set.t -> env -> evar_map -> constr -> 'a glob_constr_g
 
 val detype_sort : evar_map -> Sorts.t -> glob_sort
 
@@ -61,7 +61,7 @@ val share_pattern_names :
   Pattern.constr_pattern ->
   (Name.t * binding_kind * 'b option * 'a) list * 'a * 'a
 
-val detype_closed_glob : ?lax:bool -> bool -> Id.Set.t -> env -> evar_map -> closed_glob_constr -> glob_constr
+val detype_closed_glob : ?lax:bool -> ?isgoal:bool -> Id.Set.t -> env -> evar_map -> closed_glob_constr -> glob_constr
 
 (** look for the index of a named var or a nondep var as it is renamed *)
 val lookup_name_as_displayed  : env -> evar_map -> constr -> Id.t -> int option
