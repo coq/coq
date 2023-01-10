@@ -1172,12 +1172,7 @@ let do_recover parser_of_tree entry nlevn alevn bp a symb son
 let recover parser_of_tree entry nlevn alevn bp a symb son strm =
   do_recover parser_of_tree entry nlevn alevn bp a symb son strm
 
-let item_skipped = ref false
-
-let call_and_push ps al strm =
-  item_skipped := false;
-  let a = ps strm in
-  let al = if !item_skipped then al else a :: al in item_skipped := false; al
+let call_and_push ps al strm = ps strm :: al
 
 let token_ematch tok =
   let tematch = L.tok_match tok in
