@@ -850,8 +850,6 @@ let rec flatten_tree : type s tr a. (s, tr, a) ty_tree -> s ex_symbols list =
   | Node (_, {node = n; brother = b; son = s}) ->
       List.map (fun (ExS l) -> ExS (TCns (MayRec2, n, l))) (flatten_tree s) @ flatten_tree b
 
-let utf8_print = ref true
-
 let utf8_string_escaped s =
   let b = Buffer.create (String.length s) in
   let rec loop i =
@@ -872,8 +870,7 @@ let utf8_string_escaped s =
   in
   loop 0
 
-let string_escaped s =
-  if !utf8_print then utf8_string_escaped s else String.escaped s
+let string_escaped s = utf8_string_escaped s
 
 let print_str ppf s = fprintf ppf "\"%s\"" (string_escaped s)
 
