@@ -819,9 +819,6 @@ let merge ?loc ~sideff rigid uctx uctx' =
   { uctx with names; local; universes;
               initial_universes = initial }
 
-let merge_subst uctx s =
-  { uctx with univ_variables = Level.Map.subst_union uctx.univ_variables s }
-
 (* Check bug_4363 and bug_6323 when changing this code *)
 let demote_seff_univs univs uctx =
   let seff = Level.Set.union uctx.seff_univs univs in
