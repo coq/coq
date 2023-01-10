@@ -276,7 +276,7 @@ type elim_scheme = {
 val compute_elim_sig : evar_map -> types -> elim_scheme
 
 val general_elim_clause : evars_flag -> unify_flags -> Id.t option ->
-  (EConstr.t * EConstr.types) -> EConstr.t -> unit Proofview.tactic
+  (Evd.clbinding Evd.Metamap.t * EConstr.t * EConstr.types) -> Constant.t -> unit Proofview.tactic
 
 val default_elim  : evars_flag -> clear_flag -> constr with_bindings ->
   unit Proofview.tactic

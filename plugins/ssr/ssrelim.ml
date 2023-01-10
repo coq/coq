@@ -209,8 +209,9 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
         sigma, elim, elimty
       else
         let indu = (fst indu, EConstr.EInstance.kind sigma (snd indu)) in
-        let (sigma, ind, indty) = Indrec.build_case_analysis_scheme env sigma indu true sort in
-        (sigma, EConstr.of_constr ind, EConstr.of_constr indty)
+        let sigma, case = Indrec.build_case_analysis_scheme env sigma indu true sort in
+        let (ind, indty) = Indrec.eval_case_analysis case in
+        (sigma, ind, indty)
     in
     let pred_id,n_elim_args,is_rec,elim_is_dep,n_pred_args,ctx_concl =
       analyze_eliminator elimty env sigma in

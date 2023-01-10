@@ -28,14 +28,25 @@ type dep_flag = bool
 
 (** Build a case analysis elimination scheme in some sort family *)
 
+type case_analysis = private {
+  case_params : EConstr.rel_context;
+  case_pred : Name.t Context.binder_annot * EConstr.types;
+  case_branches : EConstr.rel_context;
+  case_arity : EConstr.rel_context;
+  case_body : EConstr.t;
+  case_type : EConstr.t;
+}
+
+val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
+
 val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
-      dep_flag -> Sorts.family -> evar_map * Constr.t * Constr.types
+      dep_flag -> Sorts.family -> evar_map * case_analysis
 
 (** Build a dependent case elimination predicate unless type is in Prop
    or is a recursive record with primitive projections. *)
 
 val build_case_analysis_scheme_default : env -> evar_map -> pinductive ->
-      Sorts.family -> evar_map * Constr.t * Constr.types
+      Sorts.family -> evar_map * case_analysis
 
 (** Builds a recursive induction scheme (Peano-induction style) in the same
    sort family as the inductive family; it is dependent if not in Prop
