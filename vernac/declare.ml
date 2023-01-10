@@ -1322,7 +1322,7 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto} =
          universes and constraints if any *)
       defined
     then
-      UState.from_env (Global.env ())
+      UState.Internal.reboot (Global.env ()) uctx
     else uctx
   in
   let pm =
@@ -1350,8 +1350,7 @@ let obligation_admitted_terminator ~pm {name; num; auto} uctx' dref =
     if not prg.prg_info.Info.poly (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
-      let uctx = UState.from_env (Global.env ()) in
-      let uctx' = UState.merge_subst uctx (UState.subst uctx') in
+      let uctx' = UState.Internal.reboot (Global.env ()) uctx' in
       (Univ.Instance.empty, uctx')
     else
       (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
@@ -2285,8 +2284,7 @@ let solve_and_declare_by_tac prg obls i tac =
     obls.(i) <- obl';
     if def && not poly then (
       (* Declare the term constraints with the first obligation only *)
-      let uctx_global = UState.from_env (Global.env ()) in
-      let uctx = UState.merge_subst uctx_global (UState.subst uctx) in
+      let uctx = UState.Internal.reboot (Global.env ()) uctx in
       Some (ProgramDecl.Internal.set_uctx ~uctx prg))
     else Some prg
 

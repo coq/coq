@@ -819,9 +819,6 @@ let merge ?loc ~sideff rigid uctx uctx' =
   { uctx with names; local; universes;
               initial_universes = initial }
 
-let merge_subst uctx s =
-  { uctx with univ_variables = Level.Map.subst_union uctx.univ_variables s }
-
 (* Check bug_4363 and bug_6323 when changing this code *)
 let demote_seff_univs univs uctx =
   let seff = Level.Set.union uctx.seff_univs univs in
@@ -1037,3 +1034,12 @@ let pr_universe_body = function
 let pr_universe_opt_subst = Univ.Level.Map.pr pr_universe_body
 
 let pr_sort_opt_subst uctx = QState.pr uctx.sort_variables
+
+module Internal =
+struct
+
+let reboot env uctx =
+  let uctx_global = from_env env in
+  { uctx_global with univ_variables = uctx.univ_variables; sort_variables = uctx.sort_variables }
+
+end

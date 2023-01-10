@@ -153,7 +153,6 @@ val univ_flexible : rigid
 val univ_flexible_alg : rigid
 
 val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> Univ.ContextSet.t -> t
-val merge_subst : t -> UnivSubst.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
 val demote_global_univs : Environ.env -> t -> t
@@ -253,3 +252,12 @@ val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 
 val pr_universe_opt_subst : universe_opt_subst -> Pp.t
 val pr_sort_opt_subst : t -> Pp.t
+
+module Internal :
+sig
+
+val reboot : Environ.env -> t -> t
+(** Madness-inducing hack dedicated to the handling of universes of Program.
+    DO NOT USE OUTSIDE OF DEDICATED AREA. *)
+
+end
