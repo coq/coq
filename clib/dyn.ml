@@ -23,6 +23,7 @@ sig
   val remove : 'a key -> t -> t
   val find : 'a key -> t -> 'a value
   val mem : 'a key -> t -> bool
+  val modify : 'a key -> ('a value -> 'a value) -> t -> t
 
   type map = { map : 'a. 'a key -> 'a value -> 'a value }
   val map : map -> t -> t
@@ -137,6 +138,7 @@ module Self : PreS = struct
     let remove tag m = Int.Map.remove tag m
     let find tag m = cast (Int.Map.find tag m)
     let mem = Int.Map.mem
+    let modify tag f m = Int.Map.modify tag (fun _ v -> cast (f (cast v))) m
 
     type map = { map : 'a. 'a tag -> 'a value -> 'a value }
     let map f m = Int.Map.mapi f.map m

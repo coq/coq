@@ -6,6 +6,8 @@ open Gramext
 open Format
 open Util
 
+module Dyn = Dyn.Make()
+
 (* Functorial interface *)
 
 type norec
@@ -143,9 +145,8 @@ type ('a, 'b, 'c, 'd) ty_and_rec3 =
 
 type 'a ty_entry = {
   ename : string;
-  mutable estart : int -> 'a parser_t;
-  mutable econtinue : int -> int -> 'a -> 'a parser_t;
-  mutable edesc : 'a ty_desc;
+  euid : int; (* not sure if useful *)
+  etag : 'a Dyn.tag;
 }
 
 and 'a ty_desc =
@@ -190,6 +191,22 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
   son : ('self, 'trecs, 'a -> 'r) ty_tree;
   brother : ('self, 'trecb, 'r) ty_tree;
 }
+
+type 'a entry_data = {
+  estart : int -> 'a parser_t;
+  econtinue : int -> int -> 'a -> 'a parser_t;
+  edesc : 'a ty_desc;
+}
+
+module EState = Dyn.Map(struct type 'a t = 'a entry_data end)
+
+let estate = ref EState.empty
+
+let get_entry e = try EState.find e.etag !estate with Not_found -> assert false
+
+let modify_entry e f = try estate := EState.modify e.etag f !estate with Not_found -> assert false
+
+let add_entry e v = assert (not (EState.mem e.etag !estate)); estate := EState.add e.etag v !estate
 
 type 'a ty_rules =
 | TRules : (_, norec, 'act, Loc.t -> 'a) ty_rule * 'act -> 'a ty_rules
@@ -630,9 +647,9 @@ let add_prod entry lev (TProd (symbols, action)) =
   insert_tokens symbols;
   insert_level entry.ename symbols pf action lev
 
-let levels_of_rules entry st =
+let levels_of_rules entry edata st =
   let elev =
-    match entry.edesc with
+    match edata.edesc with
       Dlevels elev -> elev
     | Dparser _ ->
         let msg = sprintf "Grammar.extend: entry not extensible: \"%s\"" entry.ename in
@@ -909,7 +926,7 @@ let print_levels ppf elev =
 
 let print_entry ppf e =
   fprintf ppf "@[<v 0>[ ";
-  begin match e.edesc with
+  begin match (get_entry e).edesc with
     Dlevels elev -> print_levels ppf elev
   | Dparser _ -> fprintf ppf "<parser>"
   end;
@@ -1071,7 +1088,7 @@ let skip_if_empty bp p strm =
   else raise Stream.Failure
 
 let continue entry bp a symb son p1 (strm__ : _ LStream.t) =
-  let a = (entry_of_symb entry symb).econtinue 0 bp a strm__ in
+  let a = (get_entry (entry_of_symb entry symb)).econtinue 0 bp a strm__ in
   let act =
     try p1 strm__ with
       Stream.Failure -> raise (Stream.Error (tree_failed entry a symb son))
@@ -1135,13 +1152,13 @@ let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_
   | Node (_, {node = Sself; son = LocAct (act, _); brother = DeadEnd}) ->
       (* SELF on the right-hand side of the last rule *)
       (fun (strm__ : _ LStream.t) ->
-         let a = entry.estart alevn strm__ in act a)
+         let a = (get_entry entry).estart alevn strm__ in act a)
   | Node (_, {node = Sself; son = LocAct (act, _); brother = bro}) ->
       (* SELF on the right-hand side of a rule *)
       let p2 = parser_of_tree entry nlevn alevn bro in
       (fun (strm__ : _ LStream.t) ->
          match
-           try Some (entry.estart alevn strm__) with Stream.Failure -> None
+           try Some ((get_entry entry).estart alevn strm__) with Stream.Failure -> None
          with
            Some a -> act a
          | _ -> p2 strm__)
@@ -1355,11 +1372,13 @@ and parser_of_symbol : type s tr a.
          let a = pt strm__ in
          let ep = LStream.count strm__ in
          let loc = LStream.interval_loc bp ep strm__ in a loc)
-  | Snterm e -> (fun (strm__ : _ LStream.t) -> e.estart 0 strm__)
+  | Snterm e -> (fun (strm__ : _ LStream.t) -> (get_entry e).estart 0 strm__)
   | Snterml (e, l) ->
-      (fun (strm__ : _ LStream.t) -> e.estart (level_number e l) strm__)
-  | Sself -> (fun (strm__ : _ LStream.t) -> entry.estart 0 strm__)
-  | Snext -> (fun (strm__ : _ LStream.t) -> entry.estart nlevn strm__)
+    (fun (strm__ : _ LStream.t) ->
+       let edata = get_entry e in
+       edata.estart (level_number edata l) strm__)
+  | Sself -> (fun (strm__ : _ LStream.t) -> (get_entry entry).estart 0 strm__)
+  | Snext -> (fun (strm__ : _ LStream.t) -> (get_entry entry).estart nlevn strm__)
   | Stoken tok -> parser_of_token entry tok
   | Stokens tokl -> parser_of_tokens entry tokl
 and parser_of_token : type s a.
@@ -1441,7 +1460,7 @@ let rec start_parser_of_levels entry clevn =
                  let act = p2 strm__ in
                  let ep = LStream.count strm__ in
                  let a = act (LStream.interval_loc bp ep strm__) in
-                 entry.econtinue levn bp a strm)
+                 (get_entry entry).econtinue levn bp a strm)
           | _ ->
               fun levn strm ->
                 if levn > clevn then
@@ -1454,7 +1473,7 @@ let rec start_parser_of_levels entry clevn =
                     Some act ->
                       let ep = LStream.count strm__ in
                       let a = act (LStream.interval_loc bp ep strm__) in
-                      entry.econtinue levn bp a strm
+                      (get_entry entry).econtinue levn bp a strm
                   | _ -> p1 levn strm__
 
 (** [continue_parser_of_levels entry clevn levels levn bp a strm] goes
@@ -1494,10 +1513,10 @@ let rec continue_parser_of_levels entry clevn =
                   let act = p2 strm__ in
                   let ep = LStream.count strm__ in
                   let a = act a (LStream.interval_loc bp ep strm__) in
-                  entry.econtinue levn bp a strm
+                  (get_entry entry).econtinue levn bp a strm
 
 let continue_parser_of_entry entry =
-  match entry.edesc with
+  match (get_entry entry).edesc with
     Dlevels elev ->
       let p = continue_parser_of_levels entry 0 elev in
       (fun levn bp a (strm__ : _ LStream.t) ->
@@ -1508,42 +1527,52 @@ let empty_entry ename levn strm =
   raise (Stream.Error ("entry [" ^ ename ^ "] is empty"))
 
 let start_parser_of_entry entry =
-  match entry.edesc with
+  match (get_entry entry).edesc with
     Dlevels [] -> empty_entry entry.ename
   | Dlevels elev -> start_parser_of_levels entry 0 elev
   | Dparser p -> fun levn strm -> p strm
 
 (* Extend syntax *)
 
-let init_entry_functions entry =
-  entry.estart <-
-    (fun lev strm ->
-       let f = start_parser_of_entry entry in entry.estart <- f; f lev strm);
-  entry.econtinue <-
-    (fun lev bp a strm ->
-       let f = continue_parser_of_entry entry in
-       entry.econtinue <- f; f lev bp a strm)
-
 let extend_entry entry statement =
-    let elev = levels_of_rules entry statement in
-    entry.edesc <- Dlevels elev; init_entry_functions entry
+  modify_entry entry (fun edata ->
+      let elev = levels_of_rules entry edata statement in
+      {
+        edesc = Dlevels elev;
+        estart =
+          (fun lev strm ->
+             let f = start_parser_of_entry entry in
+             modify_entry entry (fun edata -> { edata with estart = f });
+             f lev strm);
+        econtinue =
+          (fun lev bp a strm ->
+             let f = continue_parser_of_entry entry in
+             modify_entry entry (fun edata -> { edata with econtinue = f });
+             f lev bp a strm);
+      })
+
 
 (* Deleting a rule *)
 
 let delete_rule entry sl =
-  match entry.edesc with
-    Dlevels levs ->
-      let levs = delete_rule_in_level_list entry sl levs in
-      entry.edesc <- Dlevels levs;
-      entry.estart <-
-        (fun lev strm ->
-           let f = start_parser_of_entry entry in
-           entry.estart <- f; f lev strm);
-      entry.econtinue <-
-        (fun lev bp a strm ->
-           let f = continue_parser_of_entry entry in
-           entry.econtinue <- f; f lev bp a strm)
-  | Dparser _ -> ()
+  modify_entry entry (fun edata ->
+      match edata.edesc with
+      | Dlevels levs ->
+        let levs = delete_rule_in_level_list entry sl levs in
+        {
+          edesc = Dlevels levs;
+          estart =
+            (fun lev strm ->
+               let f = start_parser_of_entry entry in
+               modify_entry entry (fun edata -> { edata with estart = f });
+               f lev strm);
+          econtinue =
+            (fun lev bp a strm ->
+               let f = continue_parser_of_entry entry in
+               modify_entry entry (fun edata -> { edata with econtinue = f });
+               f lev bp a strm);
+        }
+      | Dparser _ -> edata)
 
 (* Normal interface *)
 
@@ -1554,7 +1583,7 @@ module Parsable = struct
     ; lexer_state : L.State.t ref }
 
   let parse_parsable entry p =
-    let efun = entry.estart 0 in
+    let efun = (get_entry entry).estart 0 in
     let ts = p.pa_tok_strm in
     let get_parsing_loc () =
       (* Build the loc spanning from just after what is consumed (count)
@@ -1609,44 +1638,44 @@ end
 
 module Entry = struct
   type 'a t = 'a ty_entry
+
+  let cnt = ref 0
+
   let make n =
-    { ename = n; estart = empty_entry n;
+    incr cnt;
+    let e = { ename = n; euid = !cnt; etag = Dyn.anonymous !cnt } in
+    add_entry e {
+      estart = empty_entry n;
       econtinue =
         (fun _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-      edesc = Dlevels []}
+      edesc = Dlevels []};
+    e
+
   let create = make
   let parse (e : 'a t) p : 'a =
     Parsable.parse_parsable e p
   let parse_token_stream (e : 'a t) ts : 'a =
-    e.estart 0 ts
+    (get_entry e).estart 0 ts
   let name e = e.ename
   type 'a parser_fun = { parser_fun : te LStream.t -> 'a }
   let of_parser n { parser_fun = (p : te LStream.t -> 'a) } : 'a t =
-    { ename = n;
+    incr cnt;
+    let e = { ename = n; euid = !cnt; etag = Dyn.anonymous !cnt } in
+    add_entry e {
       estart = (fun _ -> p);
       econtinue =
         (fun _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-      edesc = Dparser p}
+      edesc = Dparser p};
+    e
   let print ppf e = fprintf ppf "%a@." print_entry e
 
-  let is_empty e = match e.edesc with
+  let is_empty e = match (get_entry e).edesc with
   | Dparser _ -> failwith "Arbitrary parser entry"
   | Dlevels elev -> List.is_empty elev
 
   type any_t = Any : 'a t -> any_t
 
-  let rec iter_in f e = match e.edesc with
-    | Dparser _ -> ()
-    | Dlevels elev ->
-      List.iter (fun (Level lev) ->
-          let rules =
-            List.map (fun (ExS t) -> ExS (TCns (MayRec2, Sself, t))) (flatten_tree lev.lsuffix) @
-            flatten_tree lev.lprefix
-          in
-          List.iter (fun (ExS rule) -> iter_in_symbols f rule) rules)
-        elev
-
-  and iter_in_symbols : type s tr p. _ -> (s, tr, p) ty_symbols -> unit = fun f symbols ->
+  let rec iter_in_symbols : type s tr p. _ -> (s, tr, p) ty_symbols -> unit = fun f symbols ->
     match symbols with
     | TNil -> ()
     | TCns (_, symbol, symbols) ->
@@ -1664,6 +1693,17 @@ module Entry = struct
     | Stoken _ | Stokens _ -> ()
     | Sself | Snext -> ()
     | Stree t -> List.iter (fun (ExS rule) -> iter_in_symbols f rule) (flatten_tree t)
+
+  let iter_in f e = match (get_entry e).edesc with
+    | Dparser _ -> ()
+    | Dlevels elev ->
+      List.iter (fun (Level lev) ->
+          let rules =
+            List.map (fun (ExS t) -> ExS (TCns (MayRec2, Sself, t))) (flatten_tree lev.lsuffix) @
+            flatten_tree lev.lprefix
+          in
+          List.iter (fun (ExS rule) -> iter_in_symbols f rule) rules)
+        elev
 
   let same_entry (Any e) (Any e') = (Obj.magic e) == (Obj.magic e')
 
@@ -1770,11 +1810,13 @@ end
 module Unsafe = struct
 
   let clear_entry e =
-    e.estart <- (fun _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-    e.econtinue <- (fun _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-    match e.edesc with
-      Dlevels _ -> e.edesc <- Dlevels []
-    | Dparser _ -> ()
+    modify_entry e (fun data -> {
+          estart = (fun _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+          econtinue = (fun _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+          edesc = match data.edesc with
+              Dlevels _ -> Dlevels []
+            | Dparser _ -> data.edesc;
+        })
 
 end
 

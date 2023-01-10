@@ -25,6 +25,7 @@ sig
   val remove : 'a key -> t -> t
   val find : 'a key -> t -> 'a value
   val mem : 'a key -> t -> bool
+  val modify : 'a key -> ('a value -> 'a value) -> t -> t
 
   type map = { map : 'a. 'a key -> 'a value -> 'a value }
   val map : map -> t -> t
