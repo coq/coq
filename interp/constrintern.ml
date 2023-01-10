@@ -811,7 +811,7 @@ let flatten_generalized_binders_if_any y l =
   match List.rev l with
   | [] -> assert false
   | l ->
-     (* if l not empty, this means we had a generalized binder *)
+     (* if l has more than one element, this means we had a generalized binder *)
      let select_iter a =
        match DAst.get a with
        | GLocalAssum (Name id,_,_) when Id.equal id ldots_var -> AddNList
@@ -846,6 +846,8 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
     let subinfos = renaming,{env with tmp_scope = []} in
     match c with
     | NVar id when Id.equal id ldots_var ->
+        (* apply the pending sequence of letin, term iterator instances,
+           binder iterator instances, and eventually terminator *)
         let rec aux_letin env = function
         | [],terminator,_ -> aux (terms,None,None) (renaming,env) terminator
         | AddPreBinderIter (y,binder)::rest,terminator,iter ->
@@ -853,8 +855,10 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
            let binders = flatten_generalized_binders_if_any y binders in
            aux_letin env (binders@rest,terminator,iter)
         | AddBinderIter (y,binder)::rest,terminator,iter ->
+           (* [y] is the placeholder for the [binder] in [iter] *)
            aux (terms,Some (y,binder),Some (rest,terminator,iter)) (renaming,env) iter
         | AddTermIter nterms::rest,terminator,iter ->
+           (* This time, the variable [y] is the placeholder for the [binder] in [iter] *)
            aux (nterms,None,Some (rest,terminator,iter)) (renaming,env) iter
         | AddLetIn (na,c,t)::rest,terminator,iter ->
            let env,(na,c,t) = intern_letin_binder intern ntnvars (adjust_env env iter) (na,c,t) in
