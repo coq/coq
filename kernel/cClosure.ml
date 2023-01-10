@@ -1034,17 +1034,17 @@ module FNativeEntries =
     let get_int () e =
       match [@ocaml.warning "-4"] e.term with
       | FInt i -> i
-      | _ -> raise Primred.NativeDestKO
+      | _ -> assert false
 
     let get_float () e =
       match [@ocaml.warning "-4"] e.term with
       | FFloat f -> f
-      | _ -> raise Primred.NativeDestKO
+      | _ -> assert false
 
     let get_parray () e =
       match [@ocaml.warning "-4"] e.term with
       | FArray (_u,t,_ty) -> t
-      | _ -> raise Not_found
+      | _ -> assert false
 
     let dummy = {mark = Ntrl; term = FRel 0}
 
@@ -1495,12 +1495,8 @@ let rec knr info tab m stk =
          | [] ->
            let args = Array.of_list (List.rev rargs) in
            begin match FredNative.red_prim (info_env info) () op u args with
-             | Some m ->
-             kni info tab m s
-             | None ->
-               let f = {mark = Cstr; term = FFlex (ConstKey c)} in
-               let m = {mark = Cstr; term = FApp(f,args)} in
-               (m,s)
+            | Some m -> kni info tab m s
+            | None -> assert false
            end
          | (kd,a)::nargs ->
            assert (kd = CPrimitives.Kwhnf);
