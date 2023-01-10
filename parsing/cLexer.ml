@@ -27,7 +27,7 @@ type ttree = {
   branch : ttree CharMap.t;
 }
 
-let empty_ttree = { node = None; branch = CharMap.empty }
+let empty_keyword_state = { node = None; branch = CharMap.empty }
 
 let ttree_add ttree (str,quot) =
   let rec insert tt i =
@@ -239,27 +239,22 @@ let check_ident str =
 let is_ident str =
   try let _ = check_ident str in true with Error.E _ -> false
 
-(* Keyword and symbol dictionary *)
-let token_tree = ref empty_ttree
-
-let is_keyword s =
-  try match (ttree_find !token_tree s).node with None -> false | Some _ -> true
+let is_keyword ttree s =
+  try match (ttree_find ttree s).node with None -> false | Some _ -> true
   with Not_found -> false
 
-let add_keyword ?(quotation=NoQuotation) str =
-  if not (is_keyword str) then
+let add_keyword ?(quotation=NoQuotation) ttree str =
+  if not (is_keyword ttree str) then
     begin
       check_keyword str;
-      token_tree := ttree_add !token_tree (str,quotation)
+      ttree_add ttree (str,quotation)
     end
+  else ttree
 
-let keywords () = ttree_elements !token_tree
+let keywords = ttree_elements
 
 (* Freeze and unfreeze the state of the lexer *)
 type keyword_state = ttree
-
-let get_keyword_state () = !token_tree
-let set_keyword_state tt = (token_tree := tt)
 
 (* The string buffering machinery *)
 
@@ -569,7 +564,7 @@ let peek_string v s =
       | exception _ -> false (* EOF *) in
   aux 0
 
-let find_keyword loc id bp s =
+let find_keyword ttree loc id bp s =
   if peek_string ":{{" s then
     begin
       (* "xxx:{{" always starts a sentence-gobbling quotation, whether registered or not *)
@@ -578,7 +573,7 @@ let find_keyword loc id bp s =
       QUOTATION (id ^ ":", txt), loc
     end
   else
-  let tt = ttree_find !token_tree id in
+  let tt = ttree_find ttree id in
   match progress_further loc tt.node 0 true tt s with
   | None -> raise Not_found
   | Some (c,NoQuotation) ->
@@ -597,8 +592,8 @@ let process_sequence loc bp c cs =
   aux 1 cs
 
 (* Must be a special token *)
-let process_chars ~diff_mode loc bp l cs =
-  let t = progress_utf8 loc None (- (List.length l)) false !token_tree cs l in
+let process_chars ~diff_mode ttree loc bp l cs =
+  let t = progress_utf8 loc None (- (List.length l)) false ttree cs l in
   let ep = Stream.count cs in
   match t with
     | Some (t,NoQuotation) -> (KEYWORD t, set_loc_pos loc bp ep)
@@ -616,42 +611,42 @@ let process_chars ~diff_mode loc bp l cs =
 
 (* Parse what follows a dot *)
 
-let parse_after_dot ~diff_mode loc c bp s =
+let parse_after_dot ~diff_mode ttree loc c bp s =
   match lookup_utf8 loc s with
   | Utf8Token (st, n) when Unicode.is_valid_ident_initial st ->
       let len = ident_tail loc (nstore n 0 s) s in
       let field = get_buff len in
-      begin try find_keyword loc ("."^field) bp s
+      begin try find_keyword ttree loc ("."^field) bp s
             with Not_found ->
               let ep = Stream.count s in
               FIELD field, set_loc_pos loc bp ep end
   | Utf8Token _ | EmptyStream ->
-      process_chars ~diff_mode loc bp [c] s
+      process_chars ~diff_mode ttree loc bp [c] s
 
 (* Parse what follows a question mark *)
 
-let parse_after_qmark ~diff_mode loc bp s =
+let parse_after_qmark ~diff_mode ttree loc bp s =
   match lookup_utf8 loc s with
   | Utf8Token (st, _) when Unicode.is_valid_ident_initial st -> LEFTQMARK
   | EmptyStream -> KEYWORD "?"
-  | Utf8Token _ -> fst (process_chars ~diff_mode loc bp ['?'] s)
+  | Utf8Token _ -> fst (process_chars ~diff_mode ttree loc bp ['?'] s)
 
 (* Parse a token in a char stream *)
 
-let rec next_token ~diff_mode loc s =
+let rec next_token ~diff_mode ttree loc s =
   let bp = Stream.count s in
   match Stream.peek s with
   | Some ('\n' as c) ->
       Stream.junk s;
       let ep = Stream.count s in
-      comm_loc bp; push_char c; next_token ~diff_mode (bump_loc_line loc ep) s
+      comm_loc bp; push_char c; next_token ~diff_mode ttree (bump_loc_line loc ep) s
   | Some (' ' | '\t' | '\r' as c) ->
       Stream.junk s;
-      comm_loc bp; push_char c; next_token ~diff_mode loc s
+      comm_loc bp; push_char c; next_token ~diff_mode ttree loc s
   | Some ('.' as c) ->
       Stream.junk s;
       let t, newloc =
-        try parse_after_dot ~diff_mode loc c bp s with
+        try parse_after_dot ~diff_mode ttree loc c bp s with
           Stream.Failure -> raise (Stream.Error "")
       in
       comment_stop bp;
@@ -671,13 +666,13 @@ let rec next_token ~diff_mode loc s =
       Stream.junk s;
       let t,new_between_commands =
         if !between_commands then process_sequence loc bp c s, true
-        else process_chars ~diff_mode loc bp [c] s,false
+        else process_chars ~diff_mode ttree loc bp [c] s,false
       in
       comment_stop bp; between_commands := new_between_commands; t
   | Some '?' ->
       Stream.junk s;
       let ep = Stream.count s in
-      let t = parse_after_qmark ~diff_mode loc bp s in
+      let t = parse_after_qmark ~diff_mode ttree loc bp s in
       comment_stop bp; (t, set_loc_pos loc bp ep)
   | Some ('a'..'z' | 'A'..'Z' | '_' as c) ->
       Stream.junk s;
@@ -687,14 +682,14 @@ let rec next_token ~diff_mode loc s =
       in
       let id = get_buff len in
       comment_stop bp;
-      begin try find_keyword loc id bp s
+      begin try find_keyword ttree loc id bp s
       with Not_found ->
         let ep = Stream.count s in
         IDENT id, set_loc_pos loc bp ep end
   | Some ('0'..'9') ->
       let n = NumTok.Unsigned.parse s in
       comment_stop bp;
-      begin try find_keyword loc (NumTok.Unsigned.sprint n) bp s
+      begin try find_keyword ttree loc (NumTok.Unsigned.sprint n) bp s
       with Not_found ->
         let ep = Stream.count s in
         NUMBER n, set_loc_pos loc bp ep end
@@ -719,8 +714,8 @@ let rec next_token ~diff_mode loc s =
             Stream.junk s;
             comm_loc bp;
             push_string "(*";
-            let loc = comment loc bp s in next_token ~diff_mode loc s
-        | _ -> let t = process_chars ~diff_mode loc bp [c] s in comment_stop bp; t
+            let loc = comment loc bp s in next_token ~diff_mode ttree loc s
+        | _ -> let t = process_chars ~diff_mode ttree loc bp [c] s in comment_stop bp; t
       with Stream.Failure -> raise (Stream.Error "")
       end
   | Some ('{' | '}' as c) ->
@@ -728,7 +723,7 @@ let rec next_token ~diff_mode loc s =
       let ep = Stream.count s in
       let t,new_between_commands =
         if !between_commands then (KEYWORD (String.make 1 c), set_loc_pos loc bp ep), true
-        else process_chars ~diff_mode loc bp [c] s, false
+        else process_chars ~diff_mode ttree loc bp [c] s, false
       in
       comment_stop bp; between_commands := new_between_commands; t
   | _ ->
@@ -738,39 +733,41 @@ let rec next_token ~diff_mode loc s =
             let len = ident_tail loc (nstore n 0 s) s in
             let id = get_buff len in
             comment_stop bp;
-            begin try find_keyword loc id bp s
+            begin try find_keyword ttree loc id bp s
             with Not_found ->
               let ep = Stream.count s in
               IDENT id, set_loc_pos loc bp ep end
         | Utf8Token (_, n) ->
             Stream.njunk n s;
-            let t = process_chars ~diff_mode loc bp l s in
+            let t = process_chars ~diff_mode ttree loc bp l s in
             comment_stop bp; t
         | EmptyStream ->
             comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
 
 (** {6 The lexer of Coq} *)
 
-let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
-  let cur_loc = ref loc in
-  Gramlib.LStream.from ~loc
-    (fun () ->
-      let (tok, loc) = next_token !cur_loc cs in
-      cur_loc := after loc;
-      Some (tok,loc))
-
 module MakeLexer (Diff : sig val mode : bool end)
-  : Gramlib.Plexing.S with type te = Tok.t and type 'c pattern = 'c Tok.p
+  : Gramlib.Plexing.S
+    with type keyword_state = keyword_state
+     and type te = Tok.t
+     and type 'c pattern = 'c Tok.p
 = struct
+  type nonrec keyword_state = keyword_state
   type te = Tok.t
   type 'c pattern = 'c Tok.p
   let tok_pattern_eq = Tok.equal_p
   let tok_pattern_strings = Tok.pattern_strings
-  let tok_func = func (next_token ~diff_mode:Diff.mode)
-  let tok_using : type c. c pattern -> unit = function
-    | PKEYWORD s -> add_keyword ~quotation:NoQuotation s
-    | PQUOTATION s -> add_keyword ~quotation:Quotation s
-    | _ -> ()
+  let tok_func ttree ?(loc=Loc.(initial ToplevelInput)) cs =
+    let cur_loc = ref loc in
+    Gramlib.LStream.from ~loc
+      (fun () ->
+         let (tok, loc) = next_token ~diff_mode:Diff.mode !ttree !cur_loc cs in
+         cur_loc := after loc;
+         Some (tok,loc))
+  let tok_using : type c. _ -> c pattern -> _ = fun ttree -> function
+    | PKEYWORD s -> add_keyword ~quotation:NoQuotation ttree s
+    | PQUOTATION s -> add_keyword ~quotation:Quotation ttree s
+    | _ -> ttree
   let tok_match = Tok.match_pattern
   let tok_text = Tok.token_text
 
@@ -799,8 +796,8 @@ module LexerDiff = MakeLexer (struct let mode = true end)
 
 (** Terminal symbols interpretation *)
 
-let is_ident_not_keyword s =
-  is_ident s && not (is_keyword s)
+let is_ident_not_keyword ttree s =
+  is_ident s && not (is_keyword ttree s)
 
 let strip s =
   let len =
@@ -821,10 +818,10 @@ let strip s =
     in
     Bytes.to_string (loop 0 0)
 
-let terminal s =
+let terminal ttree s =
   let s = strip s in
   let () = match s with "" -> failwith "empty token." | _ -> () in
-  if is_ident_not_keyword s then PIDENT (Some s)
+  if is_ident_not_keyword ttree s then PIDENT (Some s)
   else PKEYWORD s
 
 (* Precondition: the input is a number (c.f. [NumTok.t]) *)

@@ -33,7 +33,7 @@ module NamedDecl = Context.Named.Declaration
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
-let frozen_lexer = CLexer.get_keyword_state () ;;
+let frozen_lexer = Pcoq.get_keyword_state () ;;
 
 let errorstrm x = CErrors.user_err x
 
@@ -901,7 +901,7 @@ let refine_with ?(first_goes_last=false) ?beta ?(with_evars=true) oc =
 (* The user is supposed to Require Import ssreflect or Require ssreflect   *)
 (* and Import ssreflect.SsrSyntax to obtain these keywords and as a         *)
 (* consequence the extended ssreflect grammar.                             *)
-let () = CLexer.set_keyword_state frozen_lexer ;;
+let () = Pcoq.set_keyword_state frozen_lexer ;;
 
 (** Basic tactics *)
 

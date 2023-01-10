@@ -126,7 +126,7 @@ let pr_grammar = function
 let pr_custom_grammar name = pr_registered_grammar ("custom:"^name)
 
 let pr_keywords () =
-  Pp.prlist_with_sep Pp.fnl Pp.str (CString.Set.elements (CLexer.keywords ()))
+  Pp.prlist_with_sep Pp.fnl Pp.str (CString.Set.elements (CLexer.keywords (Pcoq.get_keyword_state())))
 
 (**********************************************************************)
 (* Parse a format (every terminal starting with a letter or a single
@@ -698,7 +698,7 @@ let prod_entry_type = function
 
 let keyword_needed need s =
   (* Ensure that IDENT articulation terminal symbols are keywords *)
-  match CLexer.terminal s with
+  match Pcoq.terminal s with
   | Tok.PIDENT (Some k) ->
     if need then
       Flags.if_verbose Feedback.msg_info (str "Identifier '" ++ str k ++ str "' now a keyword");

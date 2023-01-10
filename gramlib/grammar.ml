@@ -23,7 +23,9 @@ module type S = sig
     type t
     (** [Parsable.t] Stream tokenizers with Coq-specific funcitonality *)
 
-    val make : ?loc:Loc.t -> char Stream.t -> t
+    type 'a mk
+
+    val make : (?loc:Loc.t -> char Stream.t -> t) mk
     (** [make ?loc strm] Build a parsable from stream [strm], resuming
        at position [?loc] *)
 
@@ -115,7 +117,9 @@ module type ExtS = sig
 
   include S
 
-  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
+  type keyword_state
+
+  val safe_extend : keyword_state -> 'a Entry.t -> 'a extend_statement -> keyword_state
   val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
 
   module Unsafe : sig
@@ -126,8 +130,14 @@ end
 
 (* Implementation *)
 
-module GMake (L : Plexing.S) = struct
+module GMake (L : Plexing.S) : ExtS
+  with type keyword_state = L.keyword_state
+   and type te = L.te
+   and type 'c pattern = 'c L.pattern
+   and type 'a Parsable.mk := L.keyword_state ref -> 'a
+= struct
 
+type keyword_state = L.keyword_state
 type te = L.te
 type 'c pattern = 'c L.pattern
 type ty_pattern = TPattern : 'a pattern -> ty_pattern
@@ -610,34 +620,39 @@ let rec change_to_self : type s trec a r. s ty_entry -> (s, trec, a, r) ty_rule 
   let MayRecSymbol t = change_to_self0 e t in
   MayRecRule (TNext (MayRec2, r, t))
 
-let insert_token tok =
-  L.tok_using tok
+let insert_token = L.tok_using
 
-let insert_tokens symbols =
-  let rec insert : type s trec a. (s, trec, a) ty_symbol -> unit =
-    function
-    | Slist0 s -> insert s
-    | Slist1 s -> insert s
-    | Slist0sep (s, t, _) -> insert s; insert t
-    | Slist1sep (s, t, _) -> insert s; insert t
-    | Sopt s -> insert s
-    | Stree t -> tinsert t
-    | Stoken tok -> insert_token tok
-    | Stokens (TPattern tok::_) -> insert_token tok (* Only the first token is liable to trigger a keyword effect *)
+let insert_tokens lstate symbols =
+  let rec insert : type s trec a. L.keyword_state -> (s, trec, a) ty_symbol -> L.keyword_state =
+    fun lstate -> function
+    | Slist0 s -> insert lstate s
+    | Slist1 s -> insert lstate s
+    | Slist0sep (s, t, _) -> let lstate = insert lstate s in insert lstate t
+    | Slist1sep (s, t, _) -> let lstate = insert lstate s in insert lstate t
+    | Sopt s -> insert lstate s
+    | Stree t -> tinsert lstate t
+    | Stoken tok -> insert_token lstate tok
+    | Stokens (TPattern tok::_) ->
+      (* Only the first token is liable to trigger a keyword effect *)
+      insert_token lstate tok
     | Stokens [] -> assert false
-    | Snterm _ -> () | Snterml (_, _) -> ()
-    | Snext -> ()
-    | Sself -> ()
-  and tinsert : type s tr a. (s, tr, a) ty_tree -> unit =
-    function
+    | Snterm _
+    | Snterml _
+    | Snext
+    | Sself -> lstate
+  and tinsert : type s tr a. L.keyword_state -> (s, tr, a) ty_tree -> L.keyword_state =
+    fun lstate -> function
       Node (_, {node = s; brother = bro; son = son}) ->
-        insert s; tinsert bro; tinsert son
-    | LocAct (_, _) -> () | DeadEnd -> ()
-  and linsert : type s tr p. (s, tr, p) ty_symbols -> unit = function
-  | TNil -> ()
-  | TCns (_, s, r) -> insert s; linsert r
+      let lstate = insert lstate s in
+      let lstate = tinsert lstate bro in
+      tinsert lstate son
+    | LocAct _ | DeadEnd -> lstate
+  and linsert : type s tr p. L.keyword_state -> (s, tr, p) ty_symbols -> L.keyword_state =
+    fun lstate -> function
+      | TNil -> lstate
+      | TCns (_, s, r) -> let lstate = insert lstate s in linsert lstate r
   in
-  linsert symbols
+  linsert lstate symbols
 
 type 'a single_extend_statement =
   string option * Gramext.g_assoc option * 'a ty_production list
@@ -646,13 +661,13 @@ type 'a extend_statement =
 | Reuse of string option * 'a ty_production list
 | Fresh of Gramext.position * 'a single_extend_statement list
 
-let add_prod entry lev (TProd (symbols, action)) =
+let add_prod entry (lstate, lev) (TProd (symbols, action)) =
   let MayRecRule symbols = change_to_self entry symbols in
   let AnyS (symbols, pf) = get_symbols symbols in
-  insert_tokens symbols;
-  insert_level entry.ename symbols pf action lev
+  let lstate = insert_tokens lstate symbols in
+  lstate, insert_level entry.ename symbols pf action lev
 
-let levels_of_rules entry edata st =
+let levels_of_rules lstate entry edata st =
   let elev =
     match edata.edesc with
       Dlevels elev -> elev
@@ -661,20 +676,20 @@ let levels_of_rules entry edata st =
         failwith msg
   in
   match st with
-  | Reuse (name, []) -> elev
+  | Reuse (name, []) -> lstate, elev
   | Reuse (name, prods) ->
     let (levs1, lev, levs2) = get_level entry name elev in
-    let lev = List.fold_left (fun lev prod -> add_prod entry lev prod) lev prods in
-    levs1 @ [lev] @ levs2
+    let lstate, lev = List.fold_left (fun lev prod -> add_prod entry lev prod) (lstate, lev) prods in
+    lstate, levs1 @ [lev] @ levs2
   | Fresh (position, rules) ->
     let (levs1, levs2) = get_position entry position elev in
-    let fold levs (lname, assoc, prods) =
+    let fold (lstate, levs) (lname, assoc, prods) =
       let lev = empty_lev lname assoc in
-      let lev = List.fold_left (fun lev prod -> add_prod entry lev prod) lev prods in
-      lev :: levs
+      let lstate, lev = List.fold_left (fun lev prod -> add_prod entry lev prod) (lstate, lev) prods in
+      lstate, lev :: levs
     in
-    let levs = List.fold_left fold [] rules in
-    levs1 @ List.rev levs @ levs2
+    let lstate, levs = List.fold_left fold (lstate, []) rules in
+    lstate, levs1 @ List.rev levs @ levs2
 
 let logically_eq_symbols entry =
   let rec eq_symbols : type s1 s2 trec1 trec2 a1 a2. (s1, trec1, a1) ty_symbol -> (s2, trec2, a2) ty_symbol -> bool = fun s1 s2 ->
@@ -1543,10 +1558,13 @@ let modify_entry e f = try gestate := EState.modify e.etag f !gestate with Not_f
 
 let add_entry e v = assert (not (EState.mem e.etag !gestate)); gestate := EState.add e.etag v !gestate
 
-let extend_entry entry statement =
+let extend_entry lstate entry statement =
+  let lstate = ref lstate in
   modify_entry entry (fun edata ->
-      let elev = levels_of_rules entry edata statement in
-      make_entry_data entry (Dlevels elev))
+      let lstate', elev = levels_of_rules !lstate entry edata statement in
+      lstate := lstate';
+      make_entry_data entry (Dlevels elev));
+  !lstate
 
 (* Deleting a rule *)
 
@@ -1607,10 +1625,10 @@ module Parsable = struct
       L.State.drop ();
       Exninfo.iraise (exn,info)
 
-  let make ?loc cs =
+  let make lstate ?loc cs =
     let lexer_state = ref (L.State.init ()) in
     L.State.set !lexer_state;
-    let ts = L.tok_func ?loc cs in
+    let ts = L.tok_func lstate ?loc cs in
     lexer_state := L.State.get ();
     {pa_tok_strm = ts; lexer_state}
 
@@ -1804,8 +1822,7 @@ module Unsafe = struct
 
 end
 
-let safe_extend (e : 'a Entry.t) data =
-  extend_entry e data
+let safe_extend = extend_entry
 
 let safe_delete_rule e (TProd (r,_act)) =
   let AnyS (symbols, _) = get_symbols r in

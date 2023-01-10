@@ -39,7 +39,7 @@ DECLARE PLUGIN "coq-core.plugins.ssreflect"
 
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
-let frozen_lexer = CLexer.get_keyword_state () ;;
+let frozen_lexer = Pcoq.get_keyword_state () ;;
 
 (* global syntactic changes and vernacular commands *)
 
@@ -359,7 +359,7 @@ END
 (* consequence the extended ssreflect grammar.                             *)
 {
 
-let () = CLexer.set_keyword_state frozen_lexer ;;
+let () = Pcoq.set_keyword_state frozen_lexer ;;
 
 }
 

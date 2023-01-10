@@ -101,7 +101,7 @@ let tokenize_string s =
   let st = CLexer.Lexer.State.get () in
   try
     let istr = Gramlib.Stream.of_string s in
-    let lex = CLexer.LexerDiff.tok_func istr in
+    let lex = CLexer.LexerDiff.tok_func (ref (Pcoq.get_keyword_state())) istr in
     let toks = stream_tok [] lex in
     CLexer.Lexer.State.set st;
     toks

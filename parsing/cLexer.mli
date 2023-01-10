@@ -32,21 +32,25 @@
   Keywords don't need to end in ':' *)
 type starts_quotation = NoQuotation | Quotation
 
-(** This should be functional but it is not due to the interface *)
-val add_keyword : ?quotation:starts_quotation -> string -> unit
-val is_keyword : string -> bool
-val keywords : unit -> CString.Set.t
-
 type keyword_state
-val set_keyword_state : keyword_state -> unit
-val get_keyword_state : unit -> keyword_state
+
+val empty_keyword_state : keyword_state
+
+val add_keyword : ?quotation:starts_quotation -> keyword_state -> string -> keyword_state
+
+(* val set_keyword_state : keyword_state -> unit *)
+(* val get_keyword_state : unit -> keyword_state *)
+
+(** This should be functional but it is not due to the interface *)
+val is_keyword : keyword_state -> string -> bool
+val keywords : keyword_state -> CString.Set.t
 
 val check_ident : string -> unit
 val is_ident : string -> bool
 val check_keyword : string -> unit
 
 (** When string is not an ident, returns a keyword. *)
-val terminal : string -> string Tok.p
+val terminal : keyword_state -> string -> string Tok.p
 
 (** Precondition: the input is a number (c.f. [NumTok.t]) *)
 val terminal_number : string -> NumTok.Unsigned.t Tok.p
@@ -67,7 +71,11 @@ val after : Loc.t -> Loc.t
 (** The lexer of Coq: *)
 
 module Lexer :
-  Gramlib.Plexing.S with type te = Tok.t and type 'c pattern = 'c Tok.p
+  Gramlib.Plexing.S
+  with type keyword_state = keyword_state
+   and type te = Tok.t
+   and type 'c pattern = 'c Tok.p
+
 
 module Error : sig
   type t
@@ -87,4 +95,7 @@ end
 *)
 
 module LexerDiff :
-  Gramlib.Plexing.S with type te = Tok.t and type 'c pattern = 'c Tok.p
+  Gramlib.Plexing.S
+  with type keyword_state = keyword_state
+   and type te = Tok.t
+   and type 'c pattern = 'c Tok.p

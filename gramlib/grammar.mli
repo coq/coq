@@ -28,7 +28,8 @@ module type S = sig
 
   module Parsable : sig
     type t
-    val make : ?loc:Loc.t -> char Stream.t -> t
+    type 'a mk
+    val make : (?loc:Loc.t -> char Stream.t -> t) mk
     val comments : t -> ((int * int) * string) list
     val loc : t -> Loc.t
     val consume : t -> int -> unit
@@ -114,8 +115,9 @@ end
 module type ExtS = sig
 
   include S
+  type keyword_state
 
-  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
+  val safe_extend : keyword_state -> 'a Entry.t -> 'a extend_statement -> keyword_state
   val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
 
   module Unsafe : sig
@@ -134,4 +136,8 @@ end
       type (instead of (string * string)); the module parameter
       must specify a way to show them as (string * string) *)
 
-module GMake (L : Plexing.S) : ExtS with type te = L.te and type 'c pattern = 'c L.pattern
+module GMake (L : Plexing.S) : ExtS
+  with type keyword_state = L.keyword_state
+   and type te = L.te
+   and type 'c pattern = 'c L.pattern
+   and type 'a Parsable.mk := L.keyword_state ref -> 'a

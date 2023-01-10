@@ -103,6 +103,12 @@ type ext_kind =
 
 (** The list of extensions *)
 
+let keyword_state = ref CLexer.empty_keyword_state
+let get_keyword_state () = !keyword_state
+let set_keyword_state s = keyword_state := s
+
+let terminal s = CLexer.terminal !keyword_state s
+
 let camlp5_state = ref []
 
 let camlp5_entries = ref EntryDataMap.empty
@@ -127,23 +133,23 @@ let grammar_delete_reinit e reinit d =
   | _ -> assert false
   in
   let ext = Fresh (ext, [Some lev,Some a,[]]) in
-  safe_extend e ext
+  keyword_state := safe_extend !keyword_state e ext
 
 (** Extension *)
 
 let grammar_extend e ext =
   let undo () = grammar_delete e ext in
-  let redo () = safe_extend e ext in
+  let redo () = keyword_state := safe_extend !keyword_state e ext in
   camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
   redo ()
 
 let grammar_extend_sync e ext =
   camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
-  safe_extend e ext
+  keyword_state := safe_extend !keyword_state e ext
 
 let grammar_extend_sync_reinit e reinit ext =
   camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
-  safe_extend e ext
+  keyword_state := safe_extend !keyword_state e ext
 
 (** Remove extensions
 
@@ -189,8 +195,13 @@ let eoi_entry en =
   let symbs = Rule.next (Rule.next Rule.stop (Symbol.nterm en)) (Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
   let ext = Fresh (Gramlib.Gramext.First, make_rule [Production.make symbs act]) in
-  safe_extend e ext;
+  keyword_state := safe_extend !keyword_state e ext;
   e
+
+module Parsable = struct
+  include Parsable
+  let make ?loc cs = make keyword_state ?loc cs
+end
 
 (* Parse a string, does NOT check if the entire string was read
    (use eoi_entry) *)
@@ -315,7 +326,7 @@ let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
   let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
   let entry = Entry.make "epsilon" in
   let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
-  let () = safe_extend entry ext in
+  keyword_state := safe_extend !keyword_state entry ext;
   try Some (parse_string entry "") with _ -> None
 
 (** Synchronized grammar extensions *)
@@ -434,7 +445,7 @@ type frozen_t =
   CLexer.keyword_state
 
 let freeze ~marshallable : frozen_t =
-  (!grammar_stack, CLexer.get_keyword_state ())
+  (!grammar_stack, !keyword_state)
 
 let eq_grams (g1, _) (g2, _) = match g1, g2 with
 | GramExt (_, GrammarCommand.Dyn (t1, v1)), GramExt (_, GrammarCommand.Dyn (t2, v2)) ->
@@ -468,7 +479,7 @@ let unfreeze (grams, lex) =
   let n = number_of_entries 0 undo in
   remove_grammars n;
   grammar_stack := common;
-  CLexer.set_keyword_state lex;
+  keyword_state := lex;
   List.iter extend_dyn_grammar (List.rev redo)
 
 (** No need to provide an init function : the grammar state is
