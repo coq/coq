@@ -651,7 +651,7 @@ let free_evars sigma l =
   (* Computes the set of evars appearing in the hypotheses, the conclusion or
      the body of the evar_info [evi]. Note: since we want to use it on goals,
      the body is actually supposed to be empty. *)
-    let evi = Evd.find sigma ev in
+    let EvarInfo evi = Evd.find sigma ev in
     let fevs = lazy (Evarutil.filtered_undefined_evars_of_evar_info ~cache sigma evi) in
     (ev, fevs)
   in
@@ -664,7 +664,7 @@ let free_evars_with_state sigma l =
      the body of the evar_info [evi]. Note: since we want to use it on goals,
      the body is actually supposed to be empty. *)
     let ev = drop_state ev in
-    let evi = Evd.find sigma ev in
+    let EvarInfo evi = Evd.find sigma ev in
     let fevs = lazy (Evarutil.filtered_undefined_evars_of_evar_info ~cache sigma evi) in
     (ev, fevs)
   in
@@ -736,7 +736,7 @@ let mark_in_evm ~goal evd evars =
   let evd =
     if goal then
       let mark evd content =
-        let info = Evd.find evd content in
+        let EvarInfo info = Evd.find evd content in
         let source = match Evd.evar_source info with
         (* Two kinds for goal evars:
             - GoalEvar (morally not dependent)
@@ -884,7 +884,7 @@ module Progress = struct
     (* NB: can't use List.equal because it shortcuts on physical equality *)
     List.for_all2eq eq_named_declaration c1 c2
 
-  let eq_evar_body sigma1 sigma2 b1 b2 =
+  let eq_evar_body (type a1 a2) sigma1 sigma2 (b1 : a1 Evd.evar_body) (b2 : a2 Evd.evar_body) =
     let open Evd in
     match b1, b2 with
     | Evar_empty, Evar_empty -> true
@@ -898,8 +898,8 @@ module Progress = struct
 
   (** Equality function on goals *)
   let goal_equal ~evd ~extended_evd evar extended_evar =
-    let evi = Evd.find evd evar in
-    let extended_evi = Evd.find extended_evd extended_evar in
+    let EvarInfo evi = Evd.find evd evar in
+    let EvarInfo extended_evi = Evd.find extended_evd extended_evar in
     eq_evar_info evd extended_evd evi extended_evi
 
 end
@@ -1087,7 +1087,7 @@ module Goal = struct
   let gmake env sigma goal =
     let state = get_state goal in
     let goal = drop_state goal in
-    let info = Evd.find sigma goal in
+    let EvarInfo info = Evd.find sigma goal in
     gmake_with info env sigma goal state
 
   let enter f =

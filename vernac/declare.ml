@@ -1377,7 +1377,7 @@ module Proof_ending = struct
     | End_equations of
         { hook : pm:Obls_.State.t -> Constant.t list -> Evd.evar_map -> Obls_.State.t
         ; i : Id.t
-        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+        ; types : (Environ.env * Evar.t * Evd.undefined Evd.evar_info * EConstr.named_context * Evd.econstr) list
         ; sigma : Evd.evar_map
         }
 

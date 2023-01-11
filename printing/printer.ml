@@ -470,7 +470,7 @@ let pr_transparent_state ts =
         str"CONSTANTS: " ++ pr_cpred ts.TransparentState.tr_cst ++ fnl ())
 
 let goal_repr sigma g =
-  let evi = Evd.find sigma g in
+  let EvarInfo evi = Evd.find sigma g in
   Evd.evar_filtered_env (Global.env ()) evi, Evd.evar_concl evi
 
 (* display complete goal
@@ -526,7 +526,7 @@ let pr_concl n ?diffs sigma g =
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
-let pr_evgl_sign env sigma evi =
+let pr_evgl_sign (type a) env sigma (evi : a evar_info) =
   let env = evar_env env evi in
   let ps = pr_named_context_of env sigma in
   let _, l = match Filter.repr (evar_filter evi) with
@@ -576,13 +576,14 @@ let pr_evars_int sigma ~shelf ~given_up i evs =
     sigma i (Evar.Map.bindings evs)
 
 let pr_evars sigma evs =
-  pr_evars_int_hd (fun i evk evi -> pr_evar sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
+  pr_evars_int_hd (fun i evk (EvarInfo evi) -> pr_evar sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
 
 (* Display a list of evars given by their name, with a prefix *)
 let pr_ne_evar_set hd tl sigma l =
   if l != Evar.Set.empty then
     let l = Evar.Set.fold (fun ev ->
-      Evar.Map.add ev (Evarutil.nf_evar_info sigma (Evd.find sigma ev)))
+      let EvarInfo evi = Evd.find sigma ev in
+      Evar.Map.add ev (EvarInfo (Evarutil.nf_evar_info sigma evi)))
       l Evar.Map.empty in
     hd ++ pr_evars sigma l ++ tl
   else
@@ -677,7 +678,7 @@ let queue_term q is_dependent c =
   queue_set q is_dependent (evar_nodes_of_term c)
 
 let process_dependent_evar q acc evm is_dependent e =
-  let evi = Evd.find evm e in
+  let EvarInfo evi = Evd.find evm e in
   (* Queues evars appearing in the types of the goal (conclusion, then
      hypotheses), they are all dependent. *)
   queue_term q true (Evd.evar_concl evi);
@@ -726,7 +727,7 @@ let gather_dependent_evars evm l =
 
 let gather_dependent_evars_goal sigma goals =
   let map evk =
-    let evi = Evd.find sigma evk in
+    let EvarInfo evi = Evd.find sigma evk in
     EConstr.mkEvar (evk, Evd.evar_identity_subst evi)
   in
   gather_dependent_evars sigma (List.map map goals)

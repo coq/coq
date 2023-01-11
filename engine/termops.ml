@@ -151,7 +151,7 @@ let pr_evar_source env sigma = function
      | Some Evar_kinds.Domain -> str "domain of "
      | Some Evar_kinds.Codomain -> str "codomain of ") ++ Evar.print evk
 
-let pr_evar_info env sigma evi =
+let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
   let open Evd in
   let print_constr = print_kconstr in
   let phyps =
@@ -184,7 +184,7 @@ let pr_evar_info env sigma evi =
 let compute_evar_dependency_graph sigma =
   let open Evd in
   (* Compute the map binding ev to the evars whose body depends on ev *)
-  let fold evk evi acc =
+  let fold evk (EvarInfo evi) acc =
     let fold_ev evk' acc =
       let tab =
         try EvMap.find evk' acc
@@ -324,13 +324,14 @@ let pr_evar_list env sigma l =
     | None -> mt ()
     | Some ev' -> str " (aliased to " ++ Evar.print ev' ++ str ")"
   in
-  let pr (ev, evi) =
+  let pr (ev, EvarInfo evi) =
     h (Evar.print ev ++
       str "==" ++ pr_evar_info env sigma evi ++
       pr_alias ev ++
-      (if Evd.evar_body evi == Evar_empty
-       then str " {" ++ pr_existential_key env sigma ev ++ str "}"
-       else mt ()))
+      begin match Evd.evar_body evi with
+      | Evar_empty -> str " {" ++ pr_existential_key env sigma ev ++ str "}"
+      | Evar_defined _ -> mt ()
+      end)
   in
   hv 0 (prlist_with_sep fnl pr l)
 
@@ -338,12 +339,12 @@ let to_list d =
   let open Evd in
   (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)
   let l = ref [] in
-  let fold_def evk evi () = match Evd.evar_body evi with
-    | Evar_defined _ -> l := (evk, evi) :: !l
+  let fold_def evk (EvarInfo evi) () = match Evd.evar_body evi with
+    | Evar_defined _ -> l := (evk, EvarInfo evi) :: !l
     | Evar_empty -> ()
   in
-  let fold_undef evk evi () = match Evd.evar_body evi with
-    | Evar_empty -> l := (evk, evi) :: !l
+  let fold_undef evk (EvarInfo evi) () = match Evd.evar_body evi with
+    | Evar_empty -> l := (evk, EvarInfo evi) :: !l
     | Evar_defined _ -> ()
   in
   Evd.fold fold_def d ();
@@ -365,7 +366,7 @@ let pr_evar_by_filter filter env sigma =
   let open Evd in
   let elts = Evd.fold (fun evk evi accu -> (evk, evi) :: accu) sigma [] in
   let elts = List.rev elts in
-  let is_def (_, evi) = match Evd.evar_body evi with
+  let is_def (_, EvarInfo evi) = match Evd.evar_body evi with
   | Evar_defined _ -> true
   | Evar_empty -> false
   in

@@ -116,7 +116,8 @@ end = struct (* {{{ *)
             ComTactic.solve ~pstate
               Goal_select.SelectAll ~info:None tactic ~with_end_tac:false in
           let { Proof.sigma } = Declare.Proof.fold pstate ~f:Proof.data in
-          match Evd.(evar_body (find sigma r_goal)) with
+          let EvarInfo evi = Evd.find sigma r_goal in
+          match Evd.(evar_body evi) with
           | Evd.Evar_empty -> RespNoProgress
           | Evd.Evar_defined t ->
               let t = Evarutil.nf_evar sigma t in

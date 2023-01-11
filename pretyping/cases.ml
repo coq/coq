@@ -1060,7 +1060,9 @@ let adjust_impossible_cases sigma pb pred tomatch submat =
        evar. See e.g. first definition of test for bug #3388. *)
     let pred = EConstr.Unsafe.to_constr pred in
     begin match Constr.kind pred with
-    | Evar (evk,_) when snd (Evd.evar_source (Evd.find sigma evk)) == Evar_kinds.ImpossibleCase ->
+    | Evar (evk, _) ->
+      let EvarInfo evi = Evd.find sigma evk in
+      if snd (Evd.evar_source evi) == Evar_kinds.ImpossibleCase then
         let sigma =
           if not (Evd.is_defined sigma evk) then
             let sigma, default = coq_unit_judge !!(pb.env) sigma in
@@ -1069,6 +1071,8 @@ let adjust_impossible_cases sigma pb pred tomatch submat =
           else sigma
         in
         sigma, add_assert_false_case pb tomatch
+      else
+        sigma, submat
     | _ ->
         sigma, submat
     end

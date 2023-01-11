@@ -95,7 +95,7 @@ let nf_env_evar sigma env =
 let nf_evar_info evc info = map_evar_info (nf_evar evc) info
 
 let nf_evar_map evm =
-  Evd.raw_map (fun _ evi -> nf_evar_info evm evi) evm
+  Evd.raw_map { map = fun _ evi -> nf_evar_info evm evi } evm
 
 let nf_evar_map_undefined evm =
   Evd.raw_map_undefined (fun _ evi -> nf_evar_info evm evi) evm
@@ -250,7 +250,7 @@ let csubst_subst sigma { csubst_len = k; csubst_var = v; csubst_rel = s } c =
   | Var id ->
     begin try Id.Map.find id v with Not_found -> c end
   | Evar (evk, args) ->
-    let evi = Evd.find sigma evk in
+    let EvarInfo evi = Evd.find sigma evk in
     let args' = subst_instance n (evar_filtered_context evi) args in
     if args' == args then c else Constr.mkEvar (evk, args') (* FIXME: preserve sharing *)
   | _ -> Constr.map_with_binders succ subst n c
@@ -632,7 +632,7 @@ let clear_hyps2_in_evi env sigma hyps t concl ids =
    goal ([advance] is used to figure if a side effect has modified the
    goal) it terminates quickly. *)
 let rec advance sigma evk =
-  let evi = Evd.find sigma evk in
+  let EvarInfo evi = Evd.find sigma evk in
   match Evd.evar_body evi with
   | Evar_empty -> Some evk
   | Evar_defined v ->
@@ -710,7 +710,7 @@ let cached_evar_of_hyp cache sigma decl accu = match cache with
   in
   Evar.Set.fold Evar.Set.add evs accu
 
-let filtered_undefined_evars_of_evar_info ?cache sigma evi =
+let filtered_undefined_evars_of_evar_info (type a) ?cache sigma (evi : a evar_info) =
   let evars_of_named_context cache accu nc =
     let fold decl accu = cached_evar_of_hyp cache sigma (EConstr.of_named_decl decl) accu in
     Context.Named.fold_outside fold nc ~init:accu

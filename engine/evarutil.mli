@@ -105,7 +105,7 @@ type undefined_evars_cache
 
 val create_undefined_evars_cache : unit -> undefined_evars_cache
 
-val filtered_undefined_evars_of_evar_info : ?cache:undefined_evars_cache -> evar_map -> evar_info -> Evar.Set.t
+val filtered_undefined_evars_of_evar_info : ?cache:undefined_evars_cache -> evar_map -> 'a evar_info -> Evar.Set.t
 
 (** [occur_evar_upto sigma k c] returns [true] if [k] appears in
     [c]. It looks up recursively in [sigma] for the value of existential
@@ -137,7 +137,7 @@ val nf_named_context_evar : evar_map -> Constr.named_context -> Constr.named_con
 val nf_rel_context_evar : evar_map -> rel_context -> rel_context
 val nf_env_evar : evar_map -> env -> env
 
-val nf_evar_info : evar_map -> evar_info -> evar_info
+val nf_evar_info : evar_map -> 'a evar_info -> 'a evar_info
 val nf_evar_map : evar_map -> evar_map
 val nf_evar_map_undefined : evar_map -> evar_map
 

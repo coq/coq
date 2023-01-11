@@ -307,20 +307,21 @@ Goal.enter_one ~__LOC__ begin fun g ->
   let sigma = Typeclasses.resolve_typeclasses ~fail:false ~filter env sigma in
   let _, sigma = Evd.pop_shelf sigma in
   let p = Reductionops.nf_evar sigma p in
-  let get_body = function Evd.Evar_defined x -> x | _ -> assert false in
+  let get_body : type a. a Evd.evar_body -> EConstr.t = function Evd.Evar_defined x -> x | Evd.Evar_empty -> assert false in
   let evars_of_econstr sigma t =
     Evarutil.undefined_evars_of_term sigma t in
   let rigid_of s =
     List.fold_left (fun l k ->
       if Evd.is_defined sigma k then
-        let bo = get_body Evd.(evar_body (find sigma k)) in
+        let EvarInfo evi = Evd.find sigma k in
+        let bo = get_body (Evd.evar_body evi) in
           k :: l @ Evar.Set.elements (evars_of_econstr sigma bo)
       else l
     ) [] s in
   let env0 = Proofview.Goal.env s0 in
   let sigma0 = Proofview.Goal.sigma s0 in
   let und0 = (* Unassigned evars in the initial goal *)
-    let g0info = Evd.find sigma0 (Proofview.Goal.goal s0) in
+    let EvarInfo g0info = Evd.find sigma0 (Proofview.Goal.goal s0) in
     let g0 = Evd.evars_of_filtered_evar_info sigma0 g0info in
     List.filter (fun k -> Evar.Set.mem k g0)
       (List.map fst (Evar.Map.bindings (Evd.undefined_map sigma0))) in

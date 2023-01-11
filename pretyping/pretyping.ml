@@ -209,7 +209,7 @@ type pretype_flags = {
    [sigma] by restriction, and the evars properly created in [sigma'] *)
 
 type frozen =
-| FrozenId of evar_info Evar.Map.t
+| FrozenId of undefined evar_info Evar.Map.t
   (** No pending evars. We do not put a set here not to reallocate like crazy,
       but the actual data of the map is not used, only keys matter. All
       functions operating on this type must have the same behaviour on
@@ -301,7 +301,8 @@ let check_evars env ?initial sigma c =
       (match initial with
        | Some initial when Evd.mem initial evk -> ()
        | _ ->
-         let (loc,k) = evar_source (Evd.find sigma evk) in
+        let EvarInfo evi = Evd.find sigma evk in
+         let (loc,k) = evar_source evi in
          begin match k with
            | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
            | _ -> Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
@@ -348,7 +349,7 @@ let process_inference_flags flags env initial (sigma,c,cty) =
 let adjust_evar_source sigma na c =
   match na, kind sigma c with
   | Name id, Evar (evk,args) ->
-     let evi = Evd.find sigma evk in
+     let EvarInfo evi = Evd.find sigma evk in
      begin match Evd.evar_source evi with
      | loc, Evar_kinds.QuestionMark {
          Evar_kinds.qm_obligation=b;
@@ -655,7 +656,8 @@ struct
       let evk =
         try Evd.evar_key id sigma
         with Not_found -> error_evar_not_found ?loc:locid !!env sigma id in
-      let hyps = evar_filtered_context (Evd.find sigma evk) in
+      let EvarInfo evi = Evd.find sigma evk in
+      let hyps = evar_filtered_context evi in
       let sigma, args = pretype_instance self ~flags env sigma loc hyps evk inst in
       let c = mkLEvar sigma (evk, args) in
       let j = Retyping.get_judgment_of !!env sigma c in

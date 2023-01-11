@@ -196,8 +196,8 @@ val pr_transparent_state   : TransparentState.t -> Pp.t
 *)
 val pr_open_subgoals       : ?quiet:bool -> ?diffs:Proof.t option -> Proof.t -> Pp.t
 val pr_nth_open_subgoal    : proof:Proof.t -> int -> Pp.t
-val pr_evar                : evar_map -> (Evar.t * evar_info) -> Pp.t
-val pr_evars_int           : evar_map -> shelf:Evar.t list -> given_up:Evar.t list -> int -> evar_info Evar.Map.t -> Pp.t
+val pr_evar                : evar_map -> (Evar.t * 'a evar_info) -> Pp.t
+val pr_evars_int           : evar_map -> shelf:Evar.t list -> given_up:Evar.t list -> int -> 'a evar_info Evar.Map.t -> Pp.t
 val pr_ne_evar_set         : Pp.t -> Pp.t -> evar_map ->
   Evar.Set.t -> Pp.t
 

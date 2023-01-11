@@ -214,7 +214,7 @@ and nf_univ_args ~nb_univs mk env sigma stk =
   nf_stk ~from:nb_univs env sigma t ty stk
 
 and nf_evar env sigma evk stk =
-  let evi = try Evd.find sigma evk with Not_found -> assert false in
+  let EvarInfo evi = try Evd.find sigma evk with Not_found -> assert false in
   let hyps = EConstr.named_context_of_val (Evd.evar_filtered_hyps evi) in
   if List.is_empty hyps then
     let concl = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
