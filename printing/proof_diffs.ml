@@ -89,10 +89,11 @@ let cprintf s = cfprintf !log_out_ch s
 
 let tokenize_string s =
   (* todo: cLexer changes buff as it proceeds.  Seems like that should be saved, too.
-  But I don't understand how it's used--it looks like things get appended to it but
-  it never gets cleared. *)
+     But I don't understand how it's used--it looks like things get appended to it but
+     it never gets cleared. *)
+  let kwstate = Pcoq.get_keyword_state() in
   let rec stream_tok acc str =
-    let e = Gramlib.LStream.next str in
+    let e = Gramlib.LStream.next kwstate str in
     if Tok.(equal e EOI) then
       List.rev acc
     else
@@ -101,7 +102,7 @@ let tokenize_string s =
   let st = CLexer.Lexer.State.get () in
   try
     let istr = Gramlib.Stream.of_string s in
-    let lex = CLexer.LexerDiff.tok_func (ref (Pcoq.get_keyword_state())) istr in
+    let lex = CLexer.LexerDiff.tok_func istr in
     let toks = stream_tok [] lex in
     CLexer.Lexer.State.set st;
     toks

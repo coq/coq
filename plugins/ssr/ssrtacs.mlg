@@ -754,10 +754,10 @@ let lbrace = Char.chr 123
 (** Workaround to a limitation of coqpp *)
 
 let test_ssr_rw_syntax =
-  let test strm =
+  let test kwstate strm =
     if not !ssr_rw_syntax then raise Stream.Failure else
     if is_ssr_loaded () then () else
-    match LStream.peek_nth 0 strm with
+    match LStream.peek_nth kwstate 0 strm with
     | Tok.KEYWORD key when List.mem key.[0] [lbrace; '['; '/'] -> ()
     | _ -> raise Stream.Failure in
   Pcoq.Entry.(of_parser "test_ssr_rw_syntax" { parser_fun = test })

@@ -22,12 +22,19 @@ type norec
 type mayrec
 
 module type S = sig
+  type keyword_state
   type te
   type 'c pattern
   type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
   (** Type combinators to factor the module type between explicit
       state passing in Grammar and global state in Pcoq *)
+
+  type 'a with_gstate
+  (** Reader of grammar state *)
+
+  type 'a with_kwstate
+  (** Read keyword state *)
 
   type 'a with_estate
   (** Read entry state *)
@@ -37,22 +44,21 @@ module type S = sig
 
   module Parsable : sig
     type t
-    type 'a mk
-    val make : (?loc:Loc.t -> char Stream.t -> t) mk
+    val make : ?loc:Loc.t -> (unit,char) Stream.t -> t
     val comments : t -> ((int * int) * string) list
     val loc : t -> Loc.t
-    val consume : t -> int -> unit
+    val consume : t -> int -> unit with_kwstate
   end
 
   module Entry : sig
     type 'a t
     val make : string -> 'a t mod_estate
     val create : string -> 'a t mod_estate (* compat *)
-    val parse : 'a t -> Parsable.t -> 'a with_estate
+    val parse : 'a t -> Parsable.t -> 'a with_gstate
     val name : 'a t -> string
-    type 'a parser_fun = { parser_fun : te LStream.t -> 'a }
+    type 'a parser_fun = { parser_fun : keyword_state -> (keyword_state,te) LStream.t -> 'a }
     val of_parser : string -> 'a parser_fun -> 'a t mod_estate
-    val parse_token_stream : 'a t -> te LStream.t -> 'a with_estate
+    val parse_token_stream : 'a t -> (keyword_state,te) LStream.t -> 'a with_gstate
     val print : Format.formatter -> 'a t -> unit with_estate
     val is_empty : 'a t -> bool with_estate
 
@@ -123,20 +129,27 @@ end
 (* Interface private to clients  *)
 module type ExtS = sig
 
+  type keyword_state
+
   module EState : sig
     type t
     val empty : t
   end
+  module GState : sig
+    type t = {
+      estate : EState.t;
+      kwstate : keyword_state;
+    }
+  end
 
   include S
-    with type 'a with_estate := EState.t -> 'a
+    with type keyword_state := keyword_state
+     and type 'a with_gstate := GState.t -> 'a
+     and type 'a with_kwstate := keyword_state -> 'a
+     and type 'a with_estate := EState.t -> 'a
      and type 'a mod_estate := EState.t -> EState.t * 'a
 
-  type keyword_state
-
-
-  val safe_extend : EState.t -> keyword_state -> 'a Entry.t -> 'a extend_statement
-    -> EState.t * keyword_state
+  val safe_extend : GState.t -> 'a Entry.t -> 'a extend_statement -> GState.t
   val safe_delete_rule : EState.t -> 'a Entry.t -> 'a Production.t -> EState.t
 
   module Unsafe : sig
@@ -159,4 +172,3 @@ module GMake (L : Plexing.S) : ExtS
   with type keyword_state := L.keyword_state
    and type te := L.te
    and type 'c pattern := 'c L.pattern
-   and type 'a Parsable.mk := L.keyword_state ref -> 'a

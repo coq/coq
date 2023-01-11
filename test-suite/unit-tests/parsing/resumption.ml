@@ -39,7 +39,7 @@ let parse_n n =
   let res1 = parse pa n in
   let loc = Pcoq.Parsable.loc pa |> CLexer.after in
   let str = Gramlib.Stream.of_string doc in
-  Gramlib.Stream.njunk loc.bp str;
+  Gramlib.Stream.njunk () loc.bp str;
   let pa = Pcoq.Parsable.make ~loc str in
   let res2 = parse pa 10 in
   res1 @ res2

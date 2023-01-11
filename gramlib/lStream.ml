@@ -10,8 +10,8 @@
 
 (** Streams equipped with a (non-canonical) location function *)
 
-type 'a t = {
-  strm : 'a Stream.t;
+type ('e,'a) t = {
+  strm : ('e,'a) Stream.t;
   (* Give the loc of i-th element (counting from 1) and the empty initial interval if 0 *)
   fun_loc : int -> Loc.t;
   (* Remember max token peeked *)
@@ -25,8 +25,8 @@ let from ?(loc=Loc.(initial ToplevelInput)) f =
   let strm =
     let i = ref 0 in
     Stream.from
-      (fun () ->
-        match f () with
+      (fun e ->
+        match f e with
         | None -> None
         | Some (a,loc) ->
         loct_add loct !i loc; incr i; Some a) in
@@ -54,18 +54,18 @@ let interval_loc bp ep strm =
 let get_loc n strm =
   strm.fun_loc (n + 1)
 
-let peek strm =
-  let a = Stream.peek strm.strm in
-  if Option.has_some (Stream.peek strm.strm) then strm.max_peek <- max (Stream.count strm.strm + 1) strm.max_peek;
+let peek e strm =
+  let a = Stream.peek e strm.strm in
+  if Option.has_some a then strm.max_peek <- max (Stream.count strm.strm + 1) strm.max_peek;
   a
 
-let npeek n strm =
-  let l = Stream.npeek n strm.strm in
+let npeek e n strm =
+  let l = Stream.npeek e n strm.strm in
   strm.max_peek <- max (Stream.count strm.strm + List.length l) strm.max_peek;
   l
 
-let peek_nth n strm =
-  let list = Stream.npeek (n + 1) strm.strm in
+let peek_nth e n strm =
+  let list = Stream.npeek e (n + 1) strm.strm in
   let rec loop list p =
     match list, p with
       x :: _, 0 -> strm.max_peek <- Stream.count strm.strm + n + 1; x
@@ -74,7 +74,7 @@ let peek_nth n strm =
   in
   loop list n
 
-let junk strm = Stream.junk strm.strm
-let njunk len strm = Stream.njunk len strm.strm
+let junk e strm = Stream.junk e strm.strm
+let njunk e len strm = Stream.njunk e len strm.strm
 
-let next strm = Stream.next strm.strm
+let next e strm = Stream.next e strm.strm

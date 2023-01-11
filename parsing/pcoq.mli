@@ -16,11 +16,13 @@ open Libnames
 (** The parser of Coq *)
 
 include Gramlib.Grammar.S
-  with type te := Tok.t
+  with type keyword_state := CLexer.keyword_state
+   and type te := Tok.t
    and type 'a pattern := 'a Tok.p
+   and type 'a with_gstate := 'a
+   and type 'a with_kwstate := 'a
    and type 'a with_estate := 'a
    and type 'a mod_estate := 'a
-   and type 'a Parsable.mk := 'a
 
 module Lookahead : sig
   type t

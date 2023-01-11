@@ -63,7 +63,7 @@ module Vernac_ =
 
     let command_entry =
       Pcoq.Entry.(of_parser "command_entry"
-        { parser_fun = (fun strm -> Pcoq.Entry.parse_token_stream (select_tactic_entry !command_entry_ref) strm) })
+        { parser_fun = (fun _kwstate strm -> Pcoq.Entry.parse_token_stream (select_tactic_entry !command_entry_ref) strm) })
 
   end
 
