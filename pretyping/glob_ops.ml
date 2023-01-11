@@ -454,7 +454,7 @@ let update_subst na l =
 let rename_var l id =
   try
     let id' = Id.List.assoc id l in
-    (* Check that no other earlier binding hide the one found *)
+    (* Check that no other earlier binding hides the one found *)
     let _,(id'',_) = List.extract_first (fun (_,id) -> Id.equal id id') l in
     if Id.equal id id'' then id' else raise UnsoundRenaming
   with Not_found ->
