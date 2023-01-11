@@ -73,7 +73,12 @@ module AsyncOpts = struct
     async_proofs_worker_priority = CoqworkmgrApi.Low;
   }
 
-  let cur_opt = ref default_opts
+  let cur_opt : stm_opt option ref = ref None
+  let set_cur_opt o = assert (Option.is_empty !cur_opt); cur_opt := Some o
+  let cur_opt () = match !cur_opt with
+    | Some o -> o
+    | None ->
+      anomaly Pp.(str "Incorrect stm init: accessing options before they are set.")
 end
 
 open AsyncOpts
@@ -580,7 +585,7 @@ end = struct (* {{{ *)
       | FullState _ -> true
       | EmptyState | ErrorState _ | ParsingState _ -> false
     in
-    if async_proofs_is_master !cur_opt && is_full_state_valid then
+    if async_proofs_is_master (cur_opt()) && is_full_state_valid then
       !Hooks.state_ready ~doc:dummy_doc (* XXX should be taken in input *) id
 
   let get_state id = (get_info id).state
@@ -1124,7 +1129,7 @@ end = struct (* {{{ *)
     | _ -> None
 
   let undo_vernac_classifier v ~doc =
-    if not (VCS.is_interactive ()) && !cur_opt.async_proofs_cache <> Some Force
+    if not (VCS.is_interactive ()) && (cur_opt()).async_proofs_cache <> Some Force
     then undo_costly_in_batch_mode v;
     try
       match v.CAst.v.expr with
@@ -1274,7 +1279,7 @@ let prev_node { id } =
 let cur_node id = mk_doc_node id (VCS.visit id)
 
 let is_block_name_enabled name =
-  match !cur_opt.async_proofs_tac_error_resilience with
+  match (cur_opt()).async_proofs_tac_error_resilience with
   | FNone -> false
   | FAll -> true
   | FOnly l -> List.mem name l
@@ -1282,7 +1287,7 @@ let is_block_name_enabled name =
 let detect_proof_block id name =
   let name = match name with None -> "indent" | Some x -> x in
   if is_block_name_enabled name &&
-     (async_proofs_is_master !cur_opt || Flags.async_proofs_is_worker ())
+     (async_proofs_is_master (cur_opt()) || Flags.async_proofs_is_worker ())
   then (
   match cur_node id with
   | None -> ()
@@ -1617,8 +1622,8 @@ end = struct (* {{{ *)
 
   let queue = ref None
   let init priority =
-    if async_proofs_is_master !cur_opt then
-      queue := Some (TaskQueue.create !cur_opt.async_proofs_n_workers priority)
+    if async_proofs_is_master (cur_opt()) then
+      queue := Some (TaskQueue.create (cur_opt()).async_proofs_n_workers priority)
     else
       queue := Some (TaskQueue.create 0 priority)
 
@@ -1881,12 +1886,12 @@ end = struct (* {{{ *)
 let async_policy () =
   if Attributes.is_universe_polymorphism () then false (* FIXME this makes no sense, it is the default value of the attribute *)
   else if VCS.is_interactive () then
-    (async_proofs_is_master !cur_opt || !cur_opt.async_proofs_mode = APonLazy)
+    (async_proofs_is_master (cur_opt()) || (cur_opt()).async_proofs_mode = APonLazy)
   else
-    (VCS.is_vio_doc () || !cur_opt.async_proofs_mode <> APoff)
+    (VCS.is_vio_doc () || (cur_opt()).async_proofs_mode <> APoff)
 
 let delegate name =
-     get_hint_bp_time name >= !cur_opt.async_proofs_delegation_threshold
+     get_hint_bp_time name >= (cur_opt()).async_proofs_delegation_threshold
   || VCS.is_vio_doc ()
 
 type reason =
@@ -2098,9 +2103,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
 
   (* Absorb tactic errors from f () *)
   let resilient_tactic id blockname f =
-    if !cur_opt.async_proofs_tac_error_resilience = FNone ||
-       (async_proofs_is_master !cur_opt &&
-        !cur_opt.async_proofs_mode = APoff)
+    if (cur_opt()).async_proofs_tac_error_resilience = FNone ||
+       (async_proofs_is_master (cur_opt()) &&
+        (cur_opt()).async_proofs_mode = APoff)
     then f ()
     else
       try f ()
@@ -2109,9 +2114,9 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
         error_absorbing_tactic id blockname ie in
   (* Absorb errors from f x *)
   let resilient_command f x =
-    if not !cur_opt.async_proofs_cmd_error_resilience ||
-       (async_proofs_is_master !cur_opt &&
-        !cur_opt.async_proofs_mode = APoff)
+    if not (cur_opt()).async_proofs_cmd_error_resilience ||
+       (async_proofs_is_master (cur_opt()) &&
+        (cur_opt()).async_proofs_mode = APoff)
     then f x
     else
       try f x
@@ -2165,7 +2170,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
             )
           ), eff || cache, true
       | SCmd { cast = x; ceff = eff } -> (fun () ->
-          (match !cur_opt.async_proofs_mode with
+          (match (cur_opt()).async_proofs_mode with
            | APon | APonLazy ->
              resilient_command reach view.next
            | APoff -> reach view.next);
@@ -2310,7 +2315,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
           ), cache, true
     in
     let cache_step =
-      !cur_opt.async_proofs_cache = Some Force || cache_step
+      (cur_opt()).async_proofs_cache = Some Force || cache_step
     in
     State.define ~doc ?safe_id
       ~cache:cache_step ~redefine:redefine_qed ~feedback_processed step id;
@@ -2348,11 +2353,11 @@ let doc_type_module_name (std : stm_doc_type) =
 
 let init_process stm_flags =
   Spawned.init_channels ();
-  cur_opt := stm_flags;
+  set_cur_opt stm_flags;
   CoqworkmgrApi.(init stm_flags.AsyncOpts.async_proofs_worker_priority);
-  if !cur_opt.async_proofs_mode = APon then Control.enable_thread_delay := true;
-  if !Flags.async_proofs_worker_id = "master" && !cur_opt.async_proofs_n_tacworkers > 0 then
-    Partac.enable_par ~nworkers:!cur_opt.async_proofs_n_tacworkers
+  if (cur_opt()).async_proofs_mode = APon then Control.enable_thread_delay := true;
+  if !Flags.async_proofs_worker_id = "master" && (cur_opt()).async_proofs_n_tacworkers > 0 then
+    Partac.enable_par ~nworkers:(cur_opt()).async_proofs_n_tacworkers
 
 let init_core () =
   State.register_root_state ()
@@ -2364,7 +2369,7 @@ let new_doc { doc_type ; injections } =
 
   let doc = VCS.init doc_type Stateid.initial (Vernacstate.Parser.init ()) in
 
-  Safe_typing.allow_delayed_constants := !cur_opt.async_proofs_mode <> APoff;
+  Safe_typing.allow_delayed_constants := (cur_opt()).async_proofs_mode <> APoff;
 
   let top =
     match doc_type with
@@ -2389,11 +2394,11 @@ let new_doc { doc_type ; injections } =
   (* We record the state at this point! *)
   State.define ~doc ~cache:true ~redefine:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
-  Slaves.init !cur_opt.async_proofs_worker_priority;
-  if async_proofs_is_master !cur_opt then begin
+  Slaves.init (cur_opt()).async_proofs_worker_priority;
+  if async_proofs_is_master (cur_opt()) then begin
     stm_prerr_endline (fun () -> "Initializing workers");
-    Query.init !cur_opt.async_proofs_worker_priority;
-    let opts = match !cur_opt.async_proofs_private_flags with
+    Query.init (cur_opt()).async_proofs_worker_priority;
+    let opts = match (cur_opt()).async_proofs_private_flags with
       | None -> []
       | Some s -> Str.split_delim (Str.regexp ",") s in
     begin try
@@ -2903,7 +2908,7 @@ let edit_at ~doc id =
       | _, Some _, None -> assert false
       | false, Some { qed = qed_id ; lemma = start }, Some bn ->
           let tip = VCS.cur_tip () in
-          if has_failed qed_id && is_pure qed_id && not !cur_opt.async_proofs_never_reopen_branch
+          if has_failed qed_id && is_pure qed_id && not (cur_opt()).async_proofs_never_reopen_branch
           then reopen_branch start id qed_id tip bn
           else backto id (Some bn)
       | true, Some { qed = qed_id }, Some bn ->

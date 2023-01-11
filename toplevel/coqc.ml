@@ -73,12 +73,29 @@ let coqc_run copts ~opts injections =
     let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
     exit exit_code
 
+let fix_stm_opts opts stm_opts = match opts.Coqcargs.compilation_mode with
+  | BuildVio | BuildVos ->
+    (* We need to disable error resiliency, otherwise some errors
+       will be ignored in batch mode. c.f. #6707
+
+       This is not necessary in the vo case as it fully checks the
+       document anyways. *)
+    let open Stm.AsyncOpts in
+    { stm_opts with
+      async_proofs_mode = APon;
+      async_proofs_n_workers = 0;
+      async_proofs_cmd_error_resilience = false;
+      async_proofs_tac_error_resilience = FNone;
+    }
+  | BuildVo | BuildVok | Vio2Vo -> stm_opts
+
 let custom_coqc : ((Coqcargs.t * Colors.color) * Stm.AsyncOpts.stm_opt, 'b) Coqtop.custom_toplevel
  = Coqtop.{
   parse_extra = (fun extras ->
     let color_mode, extras = Colors.parse_extra_colors extras in
     let stm_opts, extras = Stmargs.parse_args ~init:Stm.AsyncOpts.default_opts extras in
     let coqc_opts = Coqcargs.parse extras in
+    let stm_opts = fix_stm_opts coqc_opts stm_opts in
     ((coqc_opts, color_mode), stm_opts), []);
   usage = coqc_specific_usage;
   init_extra = coqc_init;
