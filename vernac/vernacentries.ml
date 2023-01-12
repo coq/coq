@@ -2187,59 +2187,9 @@ let vernac_check_guard ~pstate =
       (str ("Condition violated: ") ++ s ++ str ".")
   in message
 
-(* We interpret vernacular commands to a DSL that specifies their
-   allowed actions on proof states *)
-let translate_vernac ?loc ~atts v =
-  let open Vernacextend in match v with
-  | EVernacAbortAll
-  | EVernacRestart
-  | EVernacUndo _
-  | EVernacUndoTo _
-  | EVernacResetName _
-  | EVernacResetInitial
-  | EVernacBack _ ->
-    anomaly (str "type_vernac")
-  | EVernacLoad _ ->
-    anomaly (str "Load is not supported recursively")
-
-  (* Syntax *)
-  | EVernacReservedNotation (infix, sl) ->
-    vtdefault(fun () -> ())
-  | EVernacDeclareScope sc ->
-    vtdefault(fun () -> with_module_locality ~atts vernac_declare_scope sc)
-  | EVernacDelimiters (sc,lr) ->
-    vtdefault(fun () -> with_module_locality ~atts vernac_delimiters sc lr)
-  | EVernacBindScope (sc,rl) ->
-    vtdefault(fun () -> vernac_bind_scope ~atts sc rl)
-  | EVernacOpenCloseScope (b, s) ->
-    vtdefault(fun () -> with_section_locality ~atts vernac_open_close_scope (b,s))
+let translate_vernac_synterp ?loc ~atts v = let open Vernacextend in match v with
   | EVernacNotation (c, main_data, notation_symbols, ntn, syntax_rules, df, sc) ->
     vtdefault(fun () -> vernac_notation_interp ~atts c main_data notation_symbols ntn syntax_rules df sc)
-  | EVernacDeclareCustomEntry s ->
-    vtdefault(fun () -> ())
-  | EVernacEnableNotation (on,rule,interp,flags,scope) ->
-    vtdefault(fun () -> with_module_locality ~atts vernac_enable_notation on rule interp flags scope)
-
-
-  (* Gallina *)
-
-  | EVernacDefinition (discharge,lid,DefineBody (bl,red_option,c,typ)) ->
-    let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
-    vtmodifyprogram (fun ~pm ->
-      with_def_attributes ~coercion ~atts
-       vernac_definition ~pm discharge lid bl red_option c typ)
-  | EVernacDefinition (discharge,lid,ProveBody(bl,typ)) ->
-    let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
-    vtopenproof(fun () ->
-      with_def_attributes ~coercion ~atts
-       vernac_definition_interactive discharge lid bl typ)
-
-  | EVernacStartTheoremProof (k,l) ->
-    vtopenproof(fun () -> with_def_attributes ~atts vernac_start_proof k l)
-  | EVernacExactProof c ->
-    vtcloseproof (fun ~lemma ->
-        unsupported_attributes atts;
-        vernac_exact_proof ~lemma c)
 
   | EVernacDefineModule (export,lid,bl,argsexport,mtys,mexprl) ->
     let i () =
@@ -2253,47 +2203,6 @@ let translate_vernac ?loc ~atts v =
     vernac_begin_segment ~interactive:(List.is_empty exprl) (fun () ->
         unsupported_attributes atts;
         vernac_declare_module_type lid bl argsexport mtys exprl)
-
-  | EVernacAssumption ((discharge,kind),nl,l) ->
-    vtdefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)
-
-  | EVernacInductive (finite, l) ->
-    vtdefault(fun () -> vernac_inductive ~atts finite l)
-
-  | EVernacFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
-    (if opens then
-      vtopenproof (fun () ->
-        with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
-    else
-      vtmodifyprogram (fun ~pm ->
-        with_def_attributes ~atts (vernac_fixpoint ~pm) discharge l))
-
-  | EVernacCoFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
-    (if opens then
-      vtopenproof(fun () -> with_def_attributes ~atts vernac_cofixpoint_interactive discharge l)
-    else
-      vtmodifyprogram(fun ~pm -> with_def_attributes ~atts (vernac_cofixpoint ~pm) discharge l))
-
-  | EVernacScheme l ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_scheme l)
-  | EVernacSchemeEquality (sch,id) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_scheme_equality sch id)
-  | EVernacCombinedScheme (id, l) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_combined_scheme id l)
-
-  | EVernacUniverse l ->
-    vtdefault(fun () -> vernac_universe ~poly:(only_polymorphism atts) l)
-
-  | EVernacConstraint l ->
-    vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)
 
   (* Modules *)
   | EVernacDeclareModule (export,lid,bl,mty) ->
@@ -2315,14 +2224,6 @@ let translate_vernac ?loc ~atts v =
     unsupported_attributes atts;
     vernac_end_segment lid
 
-  | EVernacNameSectionHypSet (lid, set) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_name_sec_hyp lid set)
-  | EVernacExtraDependency(from,file,id) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_extra_dep ?loc from file id) (* FIXME is this a parsing time or interp time dependency? *)
   | EVernacRequire (from, export, qidl) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
@@ -2332,18 +2233,125 @@ let translate_vernac ?loc ~atts v =
         unsupported_attributes atts;
         vernac_import export mpl)
 
-  | EVernacCanonical qid ->
+  | EVernacSetOption (export,key,v) ->
+    vtdefault(fun () ->
+    let atts = if export then CAst.make ?loc ("export", VernacFlagEmpty) :: atts else atts in
+    vernac_set_option ~locality:(parse option_locality atts) ~stage:Summary.Stage.Interp key v)
+
+  | EVernacNoop ->
+    vtdefault(fun () -> ())
+
+  (* Extensions *)
+  | EVernacExtend f -> f
+
+let translate_pure_vernac ?loc ~atts v = let open Vernacextend in match v with
+  | VernacAbortAll
+  | VernacRestart
+  | VernacUndo _
+  | VernacUndoTo _
+  | VernacResetName _
+  | VernacResetInitial
+  | VernacBack _ ->
+    anomaly (str "type_vernac")
+  | VernacLoad _ ->
+    anomaly (str "Load is not supported recursively")
+
+  (* Syntax *)
+  | VernacDeclareScope sc ->
+    vtdefault(fun () -> with_module_locality ~atts vernac_declare_scope sc)
+  | VernacDelimiters (sc,lr) ->
+    vtdefault(fun () -> with_module_locality ~atts vernac_delimiters sc lr)
+  | VernacBindScope (sc,rl) ->
+    vtdefault(fun () -> vernac_bind_scope ~atts sc rl)
+  | VernacOpenCloseScope (b, s) ->
+    vtdefault(fun () -> with_section_locality ~atts vernac_open_close_scope (b,s))
+  | VernacEnableNotation (on,rule,interp,flags,scope) ->
+    vtdefault(fun () -> with_module_locality ~atts vernac_enable_notation on rule interp flags scope)
+
+  (* Gallina *)
+
+  | VernacDefinition (discharge,lid,DefineBody (bl,red_option,c,typ)) ->
+    let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
+    vtmodifyprogram (fun ~pm ->
+      with_def_attributes ~coercion ~atts
+       vernac_definition ~pm discharge lid bl red_option c typ)
+  | VernacDefinition (discharge,lid,ProveBody(bl,typ)) ->
+    let coercion = match discharge with _, Decls.Coercion -> true | _ -> false in
+    vtopenproof(fun () ->
+      with_def_attributes ~coercion ~atts
+       vernac_definition_interactive discharge lid bl typ)
+
+  | VernacStartTheoremProof (k,l) ->
+    vtopenproof(fun () -> with_def_attributes ~atts vernac_start_proof k l)
+  | VernacExactProof c ->
+    vtcloseproof (fun ~lemma ->
+        unsupported_attributes atts;
+        vernac_exact_proof ~lemma c)
+
+  | VernacAssumption ((discharge,kind),nl,l) ->
+    vtdefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)
+
+  | VernacInductive (finite, l) ->
+    vtdefault(fun () -> vernac_inductive ~atts finite l)
+
+  | VernacFixpoint (discharge, l) ->
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    (if opens then
+      vtopenproof (fun () ->
+        with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
+    else
+      vtmodifyprogram (fun ~pm ->
+        with_def_attributes ~atts (vernac_fixpoint ~pm) discharge l))
+
+  | VernacCoFixpoint (discharge, l) ->
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    (if opens then
+      vtopenproof(fun () -> with_def_attributes ~atts vernac_cofixpoint_interactive discharge l)
+    else
+      vtmodifyprogram(fun ~pm -> with_def_attributes ~atts (vernac_cofixpoint ~pm) discharge l))
+
+  | VernacScheme l ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_scheme l)
+  | VernacSchemeEquality (sch,id) ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_scheme_equality sch id)
+  | VernacCombinedScheme (id, l) ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_combined_scheme id l)
+
+  | VernacUniverse l ->
+    vtdefault(fun () -> vernac_universe ~poly:(only_polymorphism atts) l)
+
+  | VernacConstraint l ->
+    vtdefault(fun () -> vernac_constraint ~poly:(only_polymorphism atts) l)
+
+  (* Gallina extensions *)
+
+  | VernacNameSectionHypSet (lid, set) ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_name_sec_hyp lid set)
+  | VernacExtraDependency(from,file,id) ->
+    vtdefault(fun () ->
+        unsupported_attributes atts;
+        vernac_extra_dep ?loc from file id) (* FIXME is this a parsing time or interp time dependency? *)
+
+  | VernacCanonical qid ->
     vtdefault(fun () ->
         vernac_canonical ~local:(only_locality atts) qid)
 
-  | EVernacCoercion (r,st) ->
+  | VernacCoercion (r,st) ->
     vtdefault(fun () -> vernac_coercion ~atts r st)
 
-  | EVernacIdentityCoercion ({v=id},s,t) ->
+  | VernacIdentityCoercion ({v=id},s,t) ->
     vtdefault(fun () -> vernac_identity_coercion ~atts id s t)
 
   (* Type classes *)
-  | EVernacInstance (name, bl, t, props, info) ->
+  | VernacInstance (name, bl, t, props, info) ->
     let atts, program = Attributes.(parse_with_extra program) atts in
     (if program then
       vtmodifyprogram (vernac_instance_program ~atts name bl t props info)
@@ -2361,175 +2369,153 @@ let translate_vernac ?loc ~atts v =
           vernac_instance ~atts name bl t props info)
     end)
 
-  | EVernacDeclareInstance (id, bl, inst, info) ->
+  | VernacDeclareInstance (id, bl, inst, info) ->
     vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
-  | EVernacContext sup ->
+  | VernacContext sup ->
     vtdefault(fun () -> ComAssumption.do_context ~poly:(only_polymorphism atts) sup)
 
-  | EVernacExistingInstance insts ->
+  | VernacExistingInstance insts ->
     vtdefault(fun () -> vernac_existing_instance ~atts insts)
 
-  | EVernacExistingClass id ->
+  | VernacExistingClass id ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_existing_class id)
 
-  (* Auxiliary file and library management *)
-  | EVernacAddLoadPath { implicit; physical_path; logical_path } ->
-    vtdefault(fun () ->
-        unsupported_attributes atts)
-
-  | EVernacRemoveLoadPath s ->
-    vtdefault(fun () ->
-        unsupported_attributes atts;
-        vernac_remove_loadpath s)
-
-  | EVernacAddMLPath (s) ->
-    vtdefault(fun () ->
-        unsupported_attributes atts)
-
-  | EVernacDeclareMLModule l ->
-    vtdefault(fun () -> ())
-
-  | EVernacChdir s ->
+  | VernacChdir s ->
     vtdefault(fun () -> unsupported_attributes atts; vernac_chdir s)
 
   (* Commands *)
-  | EVernacCreateHintDb (dbname,b) ->
+  | VernacCreateHintDb (dbname,b) ->
     vtdefault(fun () ->
         with_module_locality ~atts vernac_create_hintdb dbname b)
 
-  | EVernacRemoveHints (dbnames,ids) ->
+  | VernacRemoveHints (dbnames,ids) ->
     vtdefault(fun () ->
         vernac_remove_hints ~atts dbnames ids)
 
-  | EVernacHints (dbnames,hints) ->
+  | VernacHints (dbnames,hints) ->
     vtdefault(fun () ->
         vernac_hints ~atts dbnames hints)
 
-  | EVernacSyntacticDefinition (id,c,b) ->
+  | VernacSyntacticDefinition (id,c,b) ->
      vtdefault(fun () -> vernac_abbreviation ~atts id c b)
 
-  | EVernacArguments (qid, args, more_implicits, flags) ->
+  | VernacArguments (qid, args, more_implicits, flags) ->
     vtdefault(fun () ->
         with_section_locality ~atts
           (ComArguments.vernac_arguments qid args more_implicits flags))
 
-  | EVernacReserve bl ->
+  | VernacReserve bl ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_reserve bl)
 
-  | EVernacGeneralizable gen ->
+  | VernacGeneralizable gen ->
     vtdefault(fun () -> with_locality ~atts vernac_generalizable gen)
 
-  | EVernacSetOpacity qidl ->
+  | VernacSetOpacity qidl ->
     vtdefault(fun () -> with_locality ~atts vernac_set_opacity qidl)
 
-  | EVernacSetStrategy l ->
+  | VernacSetStrategy l ->
     vtdefault(fun () -> with_locality ~atts vernac_set_strategy l)
 
-  | EVernacSetOption (export,key,v) ->
-    vtdefault(fun () ->
-    let atts = if export then CAst.make ?loc ("export", VernacFlagEmpty) :: atts else atts in
-    vernac_set_option ~locality:(parse option_locality atts) ~stage:Summary.Stage.Interp key v)
-
-  | EVernacRemoveOption (key,v) ->
+  | VernacRemoveOption (key,v) ->
     vtdefault(fun () ->
       unsupported_attributes atts;
       vernac_remove_option key v)
 
-  | EVernacAddOption (key,v) ->
+  | VernacAddOption (key,v) ->
     vtdefault(fun () ->
       unsupported_attributes atts;
       vernac_add_option key v)
 
-  | EVernacMemOption (key,v) ->
+  | VernacMemOption (key,v) ->
     vtdefault(fun () ->
     unsupported_attributes atts;
     vernac_mem_option key v)
 
-  | EVernacPrintOption key ->
+  | VernacPrintOption key ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         vernac_print_option key)
 
-  | EVernacCheckMayEval (r,g,c) ->
+  | VernacCheckMayEval (r,g,c) ->
     vtreadproofopt(fun ~pstate ->
         unsupported_attributes atts;
         Feedback.msg_notice @@
         vernac_check_may_eval ~pstate r g c)
 
-  | EVernacDeclareReduction (s,r) ->
+  | VernacDeclareReduction (s,r) ->
     vtdefault(fun () ->
         with_locality ~atts vernac_declare_reduction s r)
 
-  | EVernacGlobalCheck c ->
+  | VernacGlobalCheck c ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_global_check c)
 
-  | EVernacPrint p ->
+  | VernacPrint p ->
     vtreadproofopt(fun ~pstate ->
         unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_print ~pstate p)
 
-  | EVernacSearch (s,g,r) ->
+  | VernacSearch (s,g,r) ->
     vtreadproofopt(
         unsupported_attributes atts;
         vernac_search ~atts s g r)
 
-  | EVernacLocate l ->
+  | VernacLocate l ->
     vtreadproofopt(fun ~pstate ->
         unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_locate ~pstate l)
 
-  | EVernacRegister (qid, r) ->
+  | VernacRegister (qid, r) ->
     vtnoproof(fun () ->
         unsupported_attributes atts;
         vernac_register qid r)
 
-  | EVernacPrimitive ((id, udecl), prim, typopt) ->
+  | VernacPrimitive ((id, udecl), prim, typopt) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         ComPrimitive.do_primitive id udecl prim typopt)
 
-  | EVernacComments l ->
+  | VernacComments l ->
     vtdefault(fun () ->
         unsupported_attributes atts;
         forward_compat_extra_dependency ?loc l;
         Flags.if_verbose Feedback.msg_info (str "Comments ok\n"))
 
   (* Proof management *)
-  | EVernacFocus n ->
+  | VernacFocus n ->
     vtmodifyproof(unsupported_attributes atts;vernac_focus n)
-  | EVernacUnfocus ->
+  | VernacUnfocus ->
     vtmodifyproof(unsupported_attributes atts;vernac_unfocus)
-  | EVernacUnfocused ->
+  | VernacUnfocused ->
     vtreadproof(fun ~pstate ->
       unsupported_attributes atts;
       Feedback.msg_notice @@ vernac_unfocused ~pstate)
-  | EVernacBullet b ->
+  | VernacBullet b ->
     vtmodifyproof(
       unsupported_attributes atts;
       vernac_bullet b)
-  | EVernacSubproof n ->
+  | VernacSubproof n ->
     vtmodifyproof(
       unsupported_attributes atts;
       vernac_subproof n)
-  | EVernacEndSubproof ->
+  | VernacEndSubproof ->
     vtmodifyproof(
       unsupported_attributes atts;
       vernac_end_subproof)
-  | EVernacShow s ->
+  | VernacShow s ->
     vtreadproofopt(fun ~pstate ->
       unsupported_attributes atts;
       Feedback.msg_notice @@ vernac_show ~pstate s)
-  | EVernacCheckGuard ->
+  | VernacCheckGuard ->
     vtreadproof(fun ~pstate ->
         unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_check_guard ~pstate)
-  | EVernacProof (tac, using) ->
+  | VernacProof (tac, using) ->
     vtmodifyproof(fun ~pstate ->
     unsupported_attributes atts;
     let using = Option.append using (Proof_using.get_default_proof_using ()) in
@@ -2539,16 +2525,15 @@ let translate_vernac ?loc ~atts v =
     let pstate = Option.cata (vernac_set_end_tac ~pstate) pstate tac in
     Option.cata (vernac_set_used_variables ~pstate) pstate using)
 
-  | EVernacEndProof pe ->
+  | VernacEndProof pe ->
     unsupported_attributes atts;
     vtcloseproof (vernac_end_proof pe)
 
-  | EVernacAbort ->
+  | VernacAbort ->
     unsupported_attributes atts;
     vtcloseproof vernac_abort
 
-  | EVernacNoop ->
-    vtdefault(fun () -> ())
-
-  (* Extensions *)
-  | EVernacExtend f -> f
+let translate_vernac ?loc ~atts v =
+  match v with
+  | VernacSynterp e -> translate_vernac_synterp ?loc ~atts e
+  | VernacPure e -> translate_pure_vernac ?loc ~atts e

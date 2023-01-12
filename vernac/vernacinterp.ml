@@ -147,8 +147,8 @@ let rec interp_expr ~only_parsing ?loc ~atts ~st c =
   match c with
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
-  | VernacAbortAll    -> CErrors.user_err (Pp.str "AbortAll cannot be used through the Load command")
-  | VernacRestart     -> CErrors.user_err (Pp.str "Restart cannot be used through the Load command")
+  | PureVernac VernacAbortAll    -> CErrors.user_err (Pp.str "AbortAll cannot be used through the Load command")
+  | PureVernac VernacRestart     -> CErrors.user_err (Pp.str "Restart cannot be used through the Load command")
   | VernacUndo _      -> CErrors.user_err (Pp.str "Undo cannot be used through the Load command")
   | VernacUndoTo _    -> CErrors.user_err (Pp.str "UndoTo cannot be used through the Load command")
 

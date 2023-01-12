@@ -16,6 +16,12 @@ val interp
   -> Vernacexpr.vernac_control
   -> Vernacstate.t
 
+val interp_entry
+  : ?verbosely:bool
+  -> st:Vernacstate.t
+  -> Synterp.vernac_entry_control
+  -> Vernacstate.Interp.t
+
 (** Execute a Qed but with a proof_object which may contain a delayed
    proof and won't be forced *)
 val interp_qed_delayed_proof

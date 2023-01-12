@@ -24,6 +24,18 @@ module Parser = struct
 
 end
 
+module Synterp = struct
+  type t = Lib.frozen * Summary.frozen
+
+  let freeze ~marshallable =
+    (Lib.Synterp.freeze (), Summary.freeze_staged_summaries Summary.Stage.Synterp ~marshallable)
+
+  let unfreeze (fl,fs) =
+    Lib.unfreeze fl;
+    Summary.unfreeze_summaries fs
+
+end
+
 module System : sig
   type t
   val protect : ('a -> 'b) -> 'a -> 'b
@@ -91,6 +103,7 @@ end
 
 type t = {
   parsing : Parser.t;
+  synterp : Synterp.t;
   system  : System.t;              (* summary + libstack *)
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
   program : Declare.OblState.t NeList.t;    (* obligations table *)

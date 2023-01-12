@@ -375,6 +375,10 @@ module type LibActions = sig
   val pop_path_prefix : unit -> unit
   val recalc_path_prefix : unit -> unit
 
+  type frozen
+  val freeze : unit -> frozen
+  val unfreeze : frozen -> unit
+
 end
 
 module SynterpActions : LibActions = struct
@@ -439,6 +443,13 @@ module SynterpActions : LibActions = struct
   let pop_path_prefix () = pop_path_prefix ()
   let recalc_path_prefix () = recalc_path_prefix ()
 
+  type frozen = synterp_state
+
+  let freeze () = !synterp_state
+
+  let unfreeze st =
+    synterp_state := st;
+
 end
 
 module InterpActions : LibActions = struct
@@ -483,6 +494,13 @@ module InterpActions : LibActions = struct
 
   let pop_path_prefix () = ()
   let recalc_path_prefix () = ()
+
+  type frozen = library_segment
+
+  let freeze () = !interp_state
+
+  let unfreeze st =
+    interp_state := st;
 
 end
 
@@ -537,6 +555,11 @@ module type StagedLibS = sig
   val end_modtype :
     unit ->
     Nametab.object_prefix * Summary.frozen * classified_objects
+
+  type frozen
+
+  val freeze : unit -> frozen
+  val unfreeze : frozen -> unit
 
 end
 
@@ -606,6 +629,12 @@ let close_section () =
   let newdecls = List.map discharge_item secdecls in
   Actions.close_section fs;
   List.iter (Option.iter add_discharged_leaf) newdecls
+
+type frozen = Actions.frozen
+
+let freeze () = Actions.freeze ()
+
+let unfreeze st = Actions.unfreeze st
 
 end
 

@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Constrexpr
 open Pp
 open CErrors
 open CAst
@@ -70,72 +69,21 @@ let with_def_attributes ?coercion ~atts f =
 type module_entry = Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * Entries.inline
 type module_binder_entry = Declaremods.module_params_expr * (Lib.export * Names.Id.t)
 
+(*
 type vernac_entry =
 
-  | EVernacLoad of verbose_flag * string
-  (* Syntax *)
-  | EVernacReservedNotation of infix_flag * (lstring * syntax_modifier CAst.t list)
-  | EVernacOpenCloseScope of bool * scope_name
-  | EVernacDeclareScope of scope_name
-  | EVernacDelimiters of scope_name * string option
-  | EVernacBindScope of scope_name * class_rawexpr list
   | EVernacNotation of
       Constrexpr.constr_expr * Metasyntax.notation_main_data * Notation.notation_symbols * Constrexpr.notation CAst.t *
       Metasyntax.syntax_rules * Notation.delimiters * Notation_term.scope_name option
   | EVernacDeclareCustomEntry of string
-  | EVernacEnableNotation of bool * (string, Libnames.qualid) Util.union option * Constrexpr.constr_expr option * Vernacexpr.notation_enable_modifier list * Constrexpr.notation_with_optional_scope option
 
-  (* Gallina *)
-  | EVernacDefinition of (discharge * Decls.definition_object_kind) * name_decl * definition_expr
-  | EVernacStartTheoremProof of Decls.theorem_kind * proof_expr list
-  | EVernacEndProof of proof_end
-  | EVernacExactProof of constr_expr
-  | EVernacAssumption of (discharge * Decls.assumption_object_kind) *
-      Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | EVernacInductive of inductive_kind * (inductive_expr * decl_notation list) list
-  | EVernacFixpoint of discharge * fixpoint_expr list
-  | EVernacCoFixpoint of discharge * cofixpoint_expr list
-  | EVernacScheme of (lident option * scheme) list
-  | EVernacSchemeEquality of equality_scheme_type * Libnames.qualid Constrexpr.or_by_notation
-  | EVernacCombinedScheme of lident * lident list
-  | EVernacUniverse of lident list
-  | EVernacConstraint of univ_constraint_expr list
-
-  (* Gallina extensions *)
   | EVernacBeginSection of lident
   | EVernacEndSegment of lident
-  | EVernacExtraDependency of qualid * string * Id.t option
   | EVernacRequire of
       qualid option * export_with_cats option * (qualid * Vernacexpr.import_filter_expr) list
   | EVernacImport of (Vernacexpr.export_flag *
       Libobject.open_filter) *
       (Names.ModPath.t CAst.t * Vernacexpr.import_filter_expr) list
-  | EVernacCanonical of qualid or_by_notation
-  | EVernacCoercion of qualid or_by_notation *
-      (class_rawexpr * class_rawexpr) option
-  | EVernacIdentityCoercion of lident * class_rawexpr * class_rawexpr
-  | EVernacNameSectionHypSet of lident * section_subset_expr
-
-  (* Type classes *)
-  | EVernacInstance of
-      name_decl * (* name *)
-      local_binder_expr list * (* binders *)
-      constr_expr * (* type *)
-      (bool * constr_expr) option * (* body (bool=true when using {}) *)
-      hint_info_expr
-
-  | EVernacDeclareInstance of
-      ident_decl * (* name *)
-      local_binder_expr list * (* binders *)
-      constr_expr * (* type *)
-      hint_info_expr
-
-  | EVernacContext of local_binder_expr list
-
-  | EVernacExistingInstance of
-    (qualid * hint_info_expr) list (* instances names, priorities and patterns *)
-
-  | EVernacExistingClass of qualid (* inductive or definition name *)
 
   (* Modules and Module Types *)
   | EVernacDeclareModule of Lib.export * lident *
@@ -161,7 +109,6 @@ type vernac_entry =
 
   | EVernacRemoveLoadPath of string
   | EVernacAddMLPath of string
-  | EVernacDeclareMLModule of string list
   | EVernacChdir of string option
 
   (* Resetting *)
@@ -225,7 +172,46 @@ type vernac_entry_control_r =
   ; attrs : Attributes.vernac_flags
   ; entry : vernac_entry
   }
-and vernac_entry_control = vernac_control_r CAst.t
+and vernac_entry_control = vernac_entry_control_r CAst.t
+*)
+
+type synterp_entry =
+  | EVernacNoop
+  | EVernacNotation of
+      Constrexpr.constr_expr * Metasyntax.notation_main_data * Notation.notation_symbols * Constrexpr.notation CAst.t *
+      Metasyntax.syntax_rules * Notation.delimiters * Notation_term.scope_name option
+  | EVernacBeginSection of lident
+  | EVernacEndSegment of lident
+  | EVernacRequire of
+      qualid option * export_with_cats option * (qualid * import_filter_expr) list
+  | EVernacImport of (export_flag *
+      Libobject.open_filter) *
+      (Names.ModPath.t CAst.t * import_filter_expr) list
+  | EVernacDeclareModule of Lib.export * lident *
+      Declaremods.module_params_expr *
+      module_entry
+  | EVernacDefineModule of Lib.export * lident *
+      Declaremods.module_params_expr *
+      ((export_flag * Libobject.open_filter) * Names.ModPath.t) list *
+      module_entry Declaremods.module_signature *
+      module_entry list
+  | EVernacDeclareModuleType of lident *
+      Declaremods.module_params_expr *
+      ((export_flag * Libobject.open_filter) * Names.ModPath.t) list *
+      module_entry list *
+      module_entry list
+  | EVernacInclude of Declaremods.module_expr list
+  | EVernacSetOption of bool (* Export modifier? *) * Goptions.option_name * option_setting
+  | EVernacExtend of Vernacextend.typed_vernac
+
+type vernac_entry = synterp_entry Vernacexpr.vernac_expr_gen
+
+type vernac_entry_control_r =
+  { control : control_flag list
+  ; attrs : Attributes.vernac_flags
+  ; entry : vernac_entry
+  }
+and vernac_entry_control = vernac_entry_control_r CAst.t
 
 let vernac_reserved_notation ~module_local ~infix l =
   Metasyntax.add_reserved_notation ~local:module_local ~infix l
@@ -446,207 +432,69 @@ let vernac_declare_ml_module ~local l =
 
 let synterp ?loc ~atts v =
   match v with
-  | VernacAbortAll
-  | VernacRestart
-  | VernacUndo _
-  | VernacUndoTo _
-  | VernacResetName _
-  | VernacResetInitial
-  | VernacBack _ ->
-    anomaly (str "synterp")
-  | VernacLoad _ ->
-    anomaly (str "Load is not supported recursively")
-
-  (* Syntax *)
-  | VernacReservedNotation (infix, sl) ->
-    with_module_locality ~atts vernac_reserved_notation ~infix sl;
-    true,  EVernacReservedNotation(infix, sl)
-  | VernacDeclareScope sc -> false, EVernacDeclareScope sc
-  | VernacDelimiters (sc,lr) -> false, EVernacDelimiters (sc,lr)
-  | VernacBindScope (sc,rl) -> false, EVernacBindScope (sc,rl)
-  | VernacOpenCloseScope (b, s) -> false, EVernacOpenCloseScope (b, s)
-  | VernacNotation (infix,c,infpl,sc) ->
-    let (c, main_data, notation_symbols, ntn, syntax_rules, df) = vernac_notation_syntax ~atts ~infix c infpl in
-    true, EVernacNotation (c, main_data, notation_symbols, ntn, syntax_rules, df, sc)
-  | VernacDeclareCustomEntry s ->
-    with_module_locality ~atts vernac_custom_entry s;
-    true, EVernacDeclareCustomEntry s
-  | VernacEnableNotation (on,rule,interp,flags,scope) ->
-    false, EVernacEnableNotation (on,rule,interp,flags,scope)
-
-  (* Gallina *)
-
-  | VernacDefinition (discharge,lid,DefineBody (bl,red_option,c,typ)) ->
-    false, EVernacDefinition (discharge,lid,DefineBody (bl,red_option,c,typ))
-  | VernacDefinition (discharge,lid,ProveBody(bl,typ)) ->
-    false, EVernacDefinition (discharge,lid,ProveBody(bl,typ))
-
-  | VernacStartTheoremProof (k,l) -> false, EVernacStartTheoremProof (k,l)
-  | VernacExactProof c -> false, EVernacExactProof c
-
-  | VernacDefineModule (export,lid,bl,mtys,mexprl) ->
-    let export, args, argsexport, expr, sign = vernac_define_module_syntax export lid bl mtys mexprl in
-    true, EVernacDefineModule (export,lid,args,argsexport,sign,expr)
-
-  | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
-    let args, argsexport, expr, sign = vernac_declare_module_type_syntax lid bl mtys mtyo in
-    true, EVernacDeclareModuleType (lid,args,argsexport,sign,expr)
-
-  | VernacAssumption ((discharge,kind),nl,l) ->
-    false, EVernacAssumption ((discharge,kind),nl,l)
-
-  | VernacInductive (finite, l) -> false, EVernacInductive (finite, l)
-
-  | VernacFixpoint (discharge, l) -> false, EVernacFixpoint (discharge, l)
-
-  | VernacCoFixpoint (discharge, l) -> false, EVernacCoFixpoint (discharge, l)
-
-  | VernacScheme l -> false, EVernacScheme l
-  | VernacSchemeEquality (sch,id) -> false, EVernacSchemeEquality (sch,id)
-  | VernacCombinedScheme (id, l) -> false, EVernacCombinedScheme (id, l)
-
-  | VernacUniverse l -> false, EVernacUniverse l
-
-  | VernacConstraint l -> false, EVernacConstraint l
-
-  (* Modules *)
-  | VernacDeclareModule (export,lid,bl,mtyo) ->
-    let mp, export, args, sign =
-      vernac_declare_module_syntax export lid bl mtyo
-    in
-    true, EVernacDeclareModule (export,lid,args,sign)
-
-  | VernacInclude in_asts ->
-    true, EVernacInclude (vernac_include_syntax in_asts)
-
-  (* Gallina extensions *)
-  | VernacBeginSection lid ->
-    Lib.Synterp.open_section lid.CAst.v;
-    true, EVernacBeginSection lid
-
-  | VernacEndSegment lid ->
-    vernac_end_segment_syntax lid;
-    true, EVernacEndSegment lid
-
-  | VernacNameSectionHypSet (lid, set) -> false, EVernacNameSectionHypSet (lid, set)
-
-  | VernacExtraDependency(from,file,id) ->
-    false, EVernacExtraDependency(from,file,id)
-
-  | VernacRequire (from, export, qidl) ->
-    vernac_require_syntax from export qidl;
-    true, EVernacRequire (from, export, qidl)
-
-  | VernacImport (export,qidl) ->
-    let export, mpl = vernac_import_syntax export qidl in
-    true, EVernacImport (export,mpl)
-
-  | VernacCanonical qid -> false, EVernacCanonical qid
-
-  | VernacCoercion (r,s) -> false, EVernacCoercion (r,s)
-
-  | VernacIdentityCoercion (id,s,t) -> false, EVernacIdentityCoercion (id,s,t)
-
-  (* Type classes *)
-  | VernacInstance (name, bl, t, props, info) -> false, EVernacInstance (name, bl, t, props, info)
-
-  | VernacDeclareInstance (id, bl, inst, info) -> false, EVernacDeclareInstance (id, bl, inst, info)
-
-  | VernacContext sup -> false, EVernacContext sup
-
-  | VernacExistingInstance insts -> false, EVernacExistingInstance insts
-
-  | VernacExistingClass id -> false, EVernacExistingClass id
-
-  (* Auxiliary file and library management *)
-  | VernacAddLoadPath { implicit; physical_path; logical_path } ->
-    vernac_add_loadpath ~implicit physical_path logical_path;
-    true, EVernacAddLoadPath { implicit; physical_path; logical_path }
-
-  | VernacRemoveLoadPath s -> false, EVernacRemoveLoadPath s
-
-  | VernacAddMLPath (s) ->
-    vernac_add_ml_path s;
-    true, EVernacAddMLPath (s)
-
-  | VernacDeclareMLModule l ->
-    with_locality ~atts vernac_declare_ml_module l;
-    true, EVernacDeclareMLModule l
-
-  | VernacChdir s -> false, EVernacChdir s
-
-  (* Commands *)
-  | VernacCreateHintDb (dbname,b) -> false, EVernacCreateHintDb (dbname,b)
-
-  | VernacRemoveHints (dbnames,ids) -> false, EVernacRemoveHints (dbnames,ids)
-
-  | VernacHints (dbnames,hints) -> false, EVernacHints (dbnames,hints)
-
-  | VernacSyntacticDefinition (id,c,b) -> false, EVernacSyntacticDefinition (id,c,b)
-
-  | VernacArguments (qid, args, more_implicits, flags) -> false, EVernacArguments (qid, args, more_implicits, flags)
-
-  | VernacReserve bl -> false, EVernacReserve bl
-
-  | VernacGeneralizable gen -> false, EVernacGeneralizable gen
-
-  | VernacSetOpacity qidl -> false, EVernacSetOpacity qidl
-
-  | VernacSetStrategy l -> false, EVernacSetStrategy l
-
-  | VernacSetOption (export,key,v) ->
-    let atts = if export then CAst.make ?loc ("export", VernacFlagEmpty) :: atts else atts in
-    Vernacoptions.vernac_set_option ~locality:(parse option_locality atts) ~stage:Summary.Stage.Synterp key v;
-    false (* FIXME *), EVernacSetOption (export,key,v)
-
-  | VernacRemoveOption (key,v) ->
-    false, EVernacRemoveOption (key,v)
-
-  | VernacAddOption (key,v) ->
-    false, EVernacAddOption (key,v)
-
-  | VernacMemOption (key,v) ->
-    false, EVernacMemOption (key,v)
-
-  | VernacPrintOption key -> false, EVernacPrintOption key
-
-  | VernacCheckMayEval (r,g,c) -> false, EVernacCheckMayEval (r,g,c)
-
-  | VernacDeclareReduction (s,r) -> false, EVernacDeclareReduction (s,r)
-
-  | VernacGlobalCheck c -> false, EVernacGlobalCheck c
-
-  | VernacPrint p -> false, EVernacPrint p
-
-  | VernacSearch (s,g,r) -> false, EVernacSearch (s,g,r)
-
-  | VernacLocate l -> false, EVernacLocate l
-
-  | VernacRegister (qid, r) -> false, EVernacRegister (qid, r)
-
-  | VernacPrimitive ((id, udecl), prim, typopt) -> false, EVernacPrimitive ((id, udecl), prim, typopt)
-
-  | VernacComments l -> false, EVernacComments l
-
-  (* Proof management *)
-  | VernacFocus n -> false, EVernacFocus n
-  | VernacUnfocus -> false, EVernacUnfocus
-  | VernacUnfocused -> false, EVernacUnfocused
-  | VernacBullet b -> false, EVernacBullet b
-  | VernacSubproof n -> false, EVernacSubproof n
-  | VernacEndSubproof -> false, EVernacEndSubproof
-  | VernacShow s -> false, EVernacShow s
-  | VernacCheckGuard -> false, EVernacCheckGuard
-  | VernacProof (tac, using) -> false, EVernacProof (tac, using)
-  | VernacProofMode mn ->
-    unsupported_attributes atts;
-    true, EVernacNoop
-
-  | VernacEndProof pe -> false, EVernacEndProof pe
-
-  | VernacAbort -> false, EVernacAbort
+  | VernacSynterp v0 ->
+    let parseff, e = begin match v0 with
+    | VernacReservedNotation (infix, sl) ->
+      with_module_locality ~atts vernac_reserved_notation ~infix sl;
+      true, EVernacNoop
+    | VernacNotation (infix,c,infpl,sc) ->
+      let (c, main_data, notation_symbols, ntn, syntax_rules, df) = vernac_notation_syntax ~atts ~infix c infpl in
+      true, EVernacNotation (c, main_data, notation_symbols, ntn, syntax_rules, df, sc)
+    | VernacDeclareCustomEntry s ->
+      with_module_locality ~atts vernac_custom_entry s;
+      true, EVernacNoop
+    | VernacDefineModule (export,lid,bl,mtys,mexprl) ->
+      let export, args, argsexport, expr, sign = vernac_define_module_syntax export lid bl mtys mexprl in
+      true, EVernacDefineModule (export,lid,args,argsexport,sign,expr)
+    | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
+      let args, argsexport, expr, sign = vernac_declare_module_type_syntax lid bl mtys mtyo in
+      true, EVernacDeclareModuleType (lid,args,argsexport,sign,expr)
+    | VernacDeclareModule (export,lid,bl,mtyo) ->
+      let mp, export, args, sign =
+        vernac_declare_module_syntax export lid bl mtyo
+      in
+      true, EVernacDeclareModule (export,lid,args,sign)
+    | VernacInclude in_asts ->
+      true, EVernacInclude (vernac_include_syntax in_asts)
+    | VernacBeginSection lid ->
+      Lib.Synterp.open_section lid.CAst.v;
+      true, EVernacBeginSection lid
+    | VernacEndSegment lid ->
+      vernac_end_segment_syntax lid;
+      true, EVernacEndSegment lid
+    | VernacRequire (from, export, qidl) ->
+      vernac_require_syntax from export qidl;
+      true, EVernacRequire (from, export, qidl)
+    | VernacImport (export,qidl) ->
+      let export, mpl = vernac_import_syntax export qidl in
+      true, EVernacImport (export,mpl)
+    | VernacAddLoadPath { implicit; physical_path; logical_path } ->
+      unsupported_attributes atts;
+      vernac_add_loadpath ~implicit physical_path logical_path;
+      true, EVernacNoop
+    | VernacRemoveLoadPath s ->
+      unsupported_attributes atts;
+      vernac_remove_loadpath s;
+      true, EVernacNoop
+    | VernacAddMLPath (s) ->
+      unsupported_attributes atts;
+      vernac_add_ml_path s;
+      true, EVernacNoop
+    | VernacDeclareMLModule l ->
+      with_locality ~atts vernac_declare_ml_module l;
+      true, EVernacNoop
+    | VernacSetOption (export,key,v) ->
+      let atts = if export then CAst.make ?loc ("export", VernacFlagEmpty) :: atts else atts in
+      Vernacoptions.vernac_set_option ~locality:(parse option_locality atts) ~stage:Summary.Stage.Synterp key v;
+      true, EVernacSetOption (export,key,v)
+    | VernacProofMode mn ->
+      unsupported_attributes atts;
+      true, EVernacNoop
+    | VernacExtend (opn,args) ->
+      let parseff, f = Vernacextend.type_vernac ?loc ~atts opn args () in
+      parseff, EVernacExtend(f)
+    end in
+    parseff, VernacSynterp e
+  | VernacPure x -> false, VernacPure x
 
   (* Extensions *)
-  | VernacExtend (opn,args) ->
-    let parseff, f = Vernacextend.type_vernac ?loc ~atts opn args () in
-    parseff, EVernacExtend(f)

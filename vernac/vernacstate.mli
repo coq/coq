@@ -18,6 +18,11 @@ module Parser : sig
 
 end
 
+module Synterp : sig
+  type t
+
+end
+
 (** System State *)
 module System : sig
 
@@ -47,6 +52,8 @@ end
 type t =
   { parsing : Parser.t
   (** parsing state [parsing state may not behave 100% functionally yet, beware] *)
+  ; synterp : Synterp.t
+  (** state needed for the synterp phase *)
   ; system  : System.t
   (** summary + libstack *)
   ; lemmas  : LemmaStack.t option
