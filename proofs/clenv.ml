@@ -48,6 +48,24 @@ let mk_clausenv env evd templval templtyp = {
 let update_clenv_evd clenv evd =
   mk_clausenv clenv.env evd clenv.templval clenv.templtyp
 
+let clenv_convert_val f clenv =
+  let templval = Evd.map_fl (fun c -> f clenv.env clenv.evd c) clenv.templval in
+  mk_clausenv clenv.env clenv.evd templval clenv.templtyp
+
+let clenv_refresh env sigma ctx clenv =
+  let evd = Evd.meta_merge (Evd.meta_list clenv.evd) (Evd.clear_metas sigma) in
+  match ctx with
+  | Some ctx ->
+    let (subst, ctx) = UnivGen.fresh_universe_context_set_instance ctx in
+    let emap c = Vars.subst_univs_level_constr subst c in
+    let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
+    (* Only metas are mentioning the old universes. *)
+    mk_clausenv env (Evd.map_metas emap evd)
+      (Evd.map_fl emap clenv.templval)
+      (Evd.map_fl emap clenv.templtyp)
+  | None ->
+    mk_clausenv env evd clenv.templval clenv.templtyp
+
 let cl_env ce = ce.env
 let clenv_evd ce =  ce.evd
 let clenv_templval c = c.templval

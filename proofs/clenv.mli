@@ -28,8 +28,10 @@ val clenv_evd : clausenv -> Evd.evar_map
 val clenv_templval : clausenv -> constr freelisted
 val clenv_templtyp : clausenv -> constr freelisted
 
-val mk_clausenv : env -> evar_map -> constr freelisted -> types freelisted -> clausenv
+(* Ad-hoc primitives *)
 val update_clenv_evd : clausenv -> evar_map -> clausenv
+val clenv_convert_val : (env -> evar_map -> econstr -> econstr) -> clausenv -> clausenv
+val clenv_refresh : env -> evar_map -> Univ.ContextSet.t option -> clausenv -> clausenv
 
 (** subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr
