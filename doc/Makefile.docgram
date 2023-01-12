@@ -29,7 +29,7 @@ DOC_MLGS := \
 	plugins/nsatz/g_nsatz.mlg \
 	plugins/ring/g_ring.mlg \
 	plugins/rtauto/g_rtauto.mlg \
-	plugins/ssr/ssrparser.mlg  plugins/ssr/ssrvernac.mlg \
+	plugins/ssr/ssrparser.mlg plugins/ssr/ssrtacs.mlg plugins/ssr/ssrvernac.mlg \
 	plugins/ssrmatching/g_ssrmatching.mlg \
 	plugins/syntax/g_number_string.mlg \
 	plugins/ltac2/g_ltac2.mlg
