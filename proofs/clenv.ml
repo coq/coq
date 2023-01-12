@@ -49,7 +49,9 @@ let update_clenv_evd clenv evd =
   mk_clausenv clenv.env evd clenv.templval clenv.templtyp
 
 let cl_env ce = ce.env
-let cl_sigma ce =  ce.evd
+let clenv_evd ce =  ce.evd
+let clenv_templval c = c.templval
+let clenv_templtyp c = c.templtyp
 
 let clenv_meta_type clenv mv =
   let ty =
@@ -59,17 +61,17 @@ let clenv_meta_type clenv mv =
 let clenv_value clenv = meta_instance clenv.env clenv.cache clenv.templval
 let clenv_type clenv = meta_instance clenv.env clenv.cache clenv.templtyp
 
-let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
+let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (clenv_evd ce) t
 
-let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
+let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (clenv_evd ce) c
 
 let clenv_push_prod cl =
-  let typ = whd_all (cl_env cl) (cl_sigma cl) (clenv_type cl) in
+  let typ = whd_all (cl_env cl) (clenv_evd cl) (clenv_type cl) in
   let rec clrec typ = match EConstr.kind cl.evd typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
         let mv = new_meta () in
-        let dep = not (noccurn (cl_sigma cl) 1 u) in
+        let dep = not (noccurn (clenv_evd cl) 1 u) in
         let na' = if dep then na.binder_name else Anonymous in
         let e' = meta_declare mv t ~name:na' cl.evd in
         let concl = if dep then subst1 (mkMeta mv) u else u in

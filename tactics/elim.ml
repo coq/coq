@@ -52,13 +52,13 @@ let general_elim_then_using mk_elim
     (* applying elimination_scheme just a little modified *)
     let elimclause = mk_clenv_from env sigma (elim, elimt) in
     let indmv =
-      match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
+      match EConstr.kind sigma (last_arg sigma (clenv_templval elimclause).Evd.rebus) with
       | Meta mv -> mv
       | _         -> CErrors.anomaly (str"elimination.")
     in
     let pmv =
-      let p, _ = decompose_app elimclause.evd elimclause.templtyp.Evd.rebus in
-      match EConstr.kind elimclause.evd p with
+      let p, _ = decompose_app sigma (clenv_templtyp elimclause).Evd.rebus in
+      match EConstr.kind sigma p with
       | Meta p -> p
       | _ ->
           let name_elim =

@@ -133,12 +133,12 @@ let side_tac tac sidetac =
   | Some sidetac -> tclTHENSFIRSTn tac [|Proofview.tclUNIT ()|] sidetac
 
 let instantiate_lemma_all env flags eqclause l2r concl =
-  let (_, args) = decompose_app_vect eqclause.Clenv.evd (Clenv.clenv_type eqclause) in
+  let (_, args) = decompose_app_vect (Clenv.clenv_evd eqclause) (Clenv.clenv_type eqclause) in
   let arglen = Array.length args in
   let () = if arglen < 2 then user_err Pp.(str "The term provided is not an applied relation.") in
   let c1 = args.(arglen - 2) in
   let c2 = args.(arglen - 1) in
-  w_unify_to_subterm_all ~flags env eqclause.Clenv.evd
+  w_unify_to_subterm_all ~flags env (Clenv.clenv_evd eqclause)
     ((if l2r then c1 else c2),concl)
 
 let rewrite_conv_closed_core_unif_flags = {
@@ -262,10 +262,10 @@ let general_elim_clause with_evars frzevars tac cls c (ctx, eqn, args) l l2r eli
       (* we would have to take the clenv_value *)
       let newevars = lazy (Evarutil.undefined_evars_of_term sigma (Clenv.clenv_type rew)) in
       let flags = make_flags frzevars sigma flags newevars in
-      general_elim_clause with_evars flags cls (Evd.meta_list rew.evd, Clenv.clenv_value rew, Clenv.clenv_type rew) elim
+      general_elim_clause with_evars flags cls (Evd.meta_list (Clenv.clenv_evd rew), Clenv.clenv_value rew, Clenv.clenv_type rew) elim
       end
     in
-    Proofview.Unsafe.tclEVARS (Evd.clear_metas rew.Clenv.evd) <*>
+    Proofview.Unsafe.tclEVARS (Evd.clear_metas (Clenv.clenv_evd rew)) <*>
     elim_wrapper cls rewrite_elim
   in
   let strat, tac =

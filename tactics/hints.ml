@@ -360,8 +360,8 @@ let instantiate_hint env sigma p =
   let mk_clenv { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = ar } =
     let sigma = merge_context_set_opt sigma ctx in
     let cl = mk_clenv_from env sigma (c,cty) in
-    let templval = { cl.templval with rebus = strip_params env sigma cl.templval.rebus } in
-    let cl = mk_clausenv empty_env cl.evd templval cl.templtyp in
+    let templval = { (clenv_templval cl) with rebus = strip_params env sigma (clenv_templval cl).rebus } in
+    let cl = mk_clausenv empty_env (clenv_evd cl) templval (clenv_templtyp cl) in
     { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; hint_arty = ar }
   in
   let code = match p.code.obj with
@@ -851,7 +851,7 @@ let make_apply_entry env sigma hnf info ?(name=PathAny) (c, cty, ctx) =
     let ce = mk_clenv_from env sigma' (c,cty) in
     let c' = clenv_type (* ~reduce:false *) ce in
     let hd =
-      try head_bound ce.evd c'
+      try head_bound (clenv_evd ce) c'
       with Bound -> failwith "make_apply_entry" in
     let miss = clenv_missing ce in
     let nmiss = List.length miss in
@@ -860,7 +860,7 @@ let make_apply_entry env sigma hnf info ?(name=PathAny) (c, cty, ctx) =
     let pri = match info.hint_priority with None -> hyps + nmiss | Some p -> p in
     let pat = match info.hint_pattern with
     | Some p -> ConstrPattern (snd p)
-    | None -> ConstrPattern (Patternops.pattern_of_constr env ce.evd c')
+    | None -> ConstrPattern (Patternops.pattern_of_constr env (clenv_evd ce) c')
     in
     let h = { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = hyps; } in
     if Int.equal nmiss 0 then
@@ -971,7 +971,7 @@ let make_trivial env sigma ?(name=PathAny) r =
   let h = { rhint_term = c; rhint_type = t; rhint_uctx = ctx; rhint_arty = 0 } in
   (Some hd,
    { pri=1;
-     pat = Some (ConstrPattern (Patternops.pattern_of_constr env ce.evd (clenv_type ce)));
+     pat = Some (ConstrPattern (Patternops.pattern_of_constr env (clenv_evd ce) (clenv_type ce)));
      name = name;
      db = None;
      secvars = secvars_of_constr env sigma c;
@@ -1347,7 +1347,7 @@ let add_resolves env sigma clist ~locality dbnames =
           strbrk " will only be used by eauto, because applying " ++
           pr_leconstr_env env sigma' c ++
           strbrk " would leave " ++ variables ++ Pp.spc () ++
-          Pp.prlist_with_sep Pp.pr_comma Name.print (List.map (Evd.meta_name ce.evd) miss) ++
+          Pp.prlist_with_sep Pp.pr_comma Name.print (List.map (Evd.meta_name (clenv_evd ce)) miss) ++
           strbrk " as unresolved existential " ++ variables ++ str "."
         )
       | _ -> ()
@@ -1792,7 +1792,7 @@ let connect_hint_clenv h gl =
      data in its evarmap is the set of metas. The function
      below just replaces the metas of sigma by those coming from the clenv. *)
   let sigma = Tacmach.project gl in
-  let evd = Evd.meta_merge (Evd.meta_list clenv.evd) (Evd.clear_metas sigma) in
+  let evd = Evd.meta_merge (Evd.meta_list (clenv_evd clenv)) (Evd.clear_metas sigma) in
   (* Still, we need to update the universes *)
   match h.hint_uctx with
   | Some ctx ->
@@ -1804,14 +1804,14 @@ let connect_hint_clenv h gl =
     Clenv.mk_clausenv
       (Proofview.Goal.env gl)
       (Evd.map_metas emap evd)
-      (Evd.map_fl emap clenv.templval)
-      (Evd.map_fl emap clenv.templtyp)
+      (Evd.map_fl emap (clenv_templval clenv))
+      (Evd.map_fl emap (clenv_templtyp clenv))
   | None ->
     Clenv.mk_clausenv
       (Proofview.Goal.env gl)
       evd
-      clenv.templval
-      clenv.templtyp
+      (clenv_templval clenv)
+      (clenv_templtyp clenv)
 
 let fresh_hint env sigma h =
   let { hint_term = c; hint_uctx = ctx } = h in
