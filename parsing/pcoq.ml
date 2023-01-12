@@ -24,9 +24,6 @@ let set_keyword_state s = keyword_state := s
 let estate = ref EState.empty
 
 let gstate () = { GState.estate = !estate; kwstate = !keyword_state; }
-let set_gstate { GState.estate=e; kwstate } =
-  estate := e;
-  keyword_state := kwstate
 
 module Parsable = struct
   include Parsable
@@ -156,8 +153,20 @@ let grammar_delete e r =
       List.iter (fun pil -> estate := safe_delete_rule !estate e pil) (List.rev lev))
     (List.rev data)
 
+let no_add_kw = { add_kw = fun () _ -> () }
+
+(* TODO use this for ssr instead of messing with set_keyword_state
+   (needs some API design) *)
+let _safe_extend_no_kw e ext =
+  let estate', () = safe_extend no_add_kw !estate () e ext in
+  estate := estate'
+
+let add_kw = { add_kw = CLexer.add_keyword_tok }
+
 let safe_extend e ext =
-  set_gstate (safe_extend (gstate()) e ext)
+  let estate', kwstate' = safe_extend add_kw !estate !keyword_state e ext in
+  estate := estate';
+  keyword_state := kwstate'
 
 let grammar_delete_reinit e reinit d =
   grammar_delete e d;

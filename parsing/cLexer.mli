@@ -38,16 +38,14 @@ val empty_keyword_state : keyword_state
 
 val add_keyword : ?quotation:starts_quotation -> keyword_state -> string -> keyword_state
 
-(* val set_keyword_state : keyword_state -> unit *)
-(* val get_keyword_state : unit -> keyword_state *)
-
-(** This should be functional but it is not due to the interface *)
 val is_keyword : keyword_state -> string -> bool
 val keywords : keyword_state -> CString.Set.t
 
 val check_ident : string -> unit
 val is_ident : string -> bool
 val check_keyword : string -> unit
+
+val add_keyword_tok : keyword_state -> 'c Tok.p -> keyword_state
 
 (** When string is not an ident, returns a keyword. *)
 val terminal : keyword_state -> string -> string Tok.p

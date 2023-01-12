@@ -149,7 +149,9 @@ module type ExtS = sig
      and type 'a with_estate := EState.t -> 'a
      and type 'a mod_estate := EState.t -> EState.t * 'a
 
-  val safe_extend : GState.t -> 'a Entry.t -> 'a extend_statement -> GState.t
+  type 's add_kw = { add_kw : 'c. 's -> 'c pattern -> 's }
+
+  val safe_extend : 's add_kw -> EState.t -> 's -> 'a Entry.t -> 'a extend_statement -> EState.t * 's
   val safe_delete_rule : EState.t -> 'a Entry.t -> 'a Production.t -> EState.t
 
   module Unsafe : sig

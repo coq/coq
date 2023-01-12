@@ -250,6 +250,11 @@ let add_keyword ?(quotation=NoQuotation) ttree str =
     end
   else ttree
 
+let add_keyword_tok : type c. _ -> c Tok.p -> _ = fun ttree -> function
+  | PKEYWORD s -> add_keyword ~quotation:NoQuotation ttree s
+  | PQUOTATION s -> add_keyword ~quotation:Quotation ttree s
+  | _ -> ttree
+
 let keywords = ttree_elements
 
 (* Freeze and unfreeze the state of the lexer *)
@@ -763,10 +768,6 @@ module MakeLexer (Diff : sig val mode : bool end)
          let (tok, loc) = next_token ~diff_mode:Diff.mode ttree !cur_loc cs in
          cur_loc := after loc;
          Some (tok,loc))
-  let tok_using : type c. _ -> c pattern -> _ = fun ttree -> function
-    | PKEYWORD s -> add_keyword ~quotation:NoQuotation ttree s
-    | PQUOTATION s -> add_keyword ~quotation:Quotation ttree s
-    | _ -> ttree
   let tok_match = Tok.match_pattern
   let tok_text = Tok.token_text
 
