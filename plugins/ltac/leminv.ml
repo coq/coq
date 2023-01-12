@@ -256,15 +256,14 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
 
 let lemInv id c =
   Proofview.Goal.enter begin fun gls ->
+  let env = Proofview.Goal.env gls in
   try
-    let clause = mk_clenv_from (pf_env gls) (project gls) (c, pf_get_type_of gls c) in
-    let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
+    let clause = mk_clenv_from env (project gls) (c, pf_get_type_of gls c) in
+    let mv = List.last (clenv_arguments clause) in
+    let clause = clenv_instantiate mv clause (EConstr.mkVar id, Typing.type_of_variable env id) in
     Clenv.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
-    | NoSuchBinding ->
-        user_err
-          (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
-    | UserError _ ->
+    | Failure _ | UserError _ ->
          user_err
            (str "Cannot refine current goal with the lemma " ++
               pr_leconstr_env (pf_env gls) (project gls) c ++ str ".")

@@ -63,10 +63,6 @@ val clenv_unify :
 val clenv_independent : clausenv -> metavariable list
 val clenv_missing : clausenv -> metavariable list
 
-(** for the purpose of inversion tactics *)
-exception NoSuchBinding
-val clenv_constrain_last_binding : constr -> clausenv -> clausenv
-
 val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 
 (** start with a clenv to refine with a given term with bindings *)

@@ -577,13 +577,6 @@ let clenv_match_args bl clenv =
           clenv_assign_binding clenv k c)
       clenv bl
 
-exception NoSuchBinding
-
-let clenv_constrain_last_binding c clenv =
-  let all_mvs = collect_metas clenv.evd clenv.templval.rebus in
-  let k = try List.last all_mvs with Failure _ -> raise NoSuchBinding in
-  clenv_assign_binding clenv k c
-
 let error_not_right_number_missing_arguments n =
   user_err
     Pp.(strbrk "Not the right number of missing arguments (expected " ++
