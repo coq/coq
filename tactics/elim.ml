@@ -27,27 +27,20 @@ type branch_args = {
                                true=assumption, false=let-in *)
   branchnames : Tactypes.intro_patterns}
 
-type elim_kind = Case of bool | Elim
-
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
-let general_elim_then_using mk_elim
+let general_elim_then_using dep
     rec_flag allnames tac predicate (ind, u, args) id =
   let open Pp in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sort = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
-    let sigma, elim, elimt = match mk_elim with
-    | Case dep ->
+    let sigma, elim, elimt =
       let u = EInstance.kind sigma u in
       let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u) dep sort in
       let r, t = Indrec.eval_case_analysis c in
       (sigma, r, t)
-    | Elim ->
-      let gr = Indrec.lookup_eliminator env ind sort in
-      let sigma, r = Evd.fresh_global env sigma gr in
-      (sigma, r, Retyping.get_type_of env sigma r)
     in
     (* applying elimination_scheme just a little modified *)
     let elimclause = mk_clenv_from env sigma (elim, elimt) in
@@ -108,12 +101,12 @@ let elimination_then tac id =
   let env = Proofview.Goal.env gl in
   let ((ind, u), t) = pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl (mkVar id)) in
   let _, args = decompose_app_vect (Proofview.Goal.sigma gl) t in
-  let isrec,mkelim =
+  let isrec =
     match (Environ.lookup_mind (fst ind) env).mind_record with
-    | NotRecord -> true, Elim
-    | FakeRecord | PrimRecord _ -> false, Case true
+    | NotRecord -> true
+    | FakeRecord | PrimRecord _ -> false
   in
-  general_elim_then_using mkelim isrec None tac None (ind, u, args) id
+  general_elim_then_using true isrec None tac None (ind, u, args) id
   end
 
 (* Supposed to be called without as clause *)
@@ -135,7 +128,7 @@ let introCaseAssumsThen with_evars tac ba =
 
 let case_tac dep names tac elim ind c =
   let tac = introCaseAssumsThen false (* ApplyOn not supported by inversion *) tac in
-  general_elim_then_using (Case dep) false names tac (Some elim) ind c
+  general_elim_then_using dep false names tac (Some elim) ind c
 
 (* The following tactic Decompose repeatedly applies the
    elimination(s) rule(s) of the types satisfying the predicate
