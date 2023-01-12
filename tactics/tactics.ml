@@ -1526,17 +1526,9 @@ let clenv_refine_in with_evars targetid replace env sigma0 clenv =
 (*       Elimination tactics                *)
 (********************************************)
 
-let last_arg sigma c = match EConstr.kind sigma c with
-  | App (f,cl) ->
-      Array.last cl
-  | _ -> anomaly (Pp.str "last_arg.")
-
-let nth_arg sigma i c = match i with
-| None -> last_arg sigma c
-| Some i ->
-  match EConstr.kind sigma c with
-  | App (f,cl) -> cl.(i)
-  | _ -> anomaly (Pp.str "nth_arg.")
+let nth_arg i c = match i with
+| None -> List.last c
+| Some i -> List.nth c i
 
 let index_of_ind_arg sigma t =
   let rec aux i j t = match EConstr.kind sigma t with
@@ -1596,9 +1588,8 @@ let general_elim_clause0 with_evars flags (metas, c, ty) elim =
     elimclause, None
   in
   let indmv =
-    (match EConstr.kind sigma (nth_arg sigma i (clenv_templval elimclause).rebus) with
-       | Meta mv -> mv
-       | _  -> error IllFormedEliminationType)
+    try nth_arg i (clenv_arguments elimclause)
+    with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
   in
   let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas (clenv_evd elimclause)) in
   let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
@@ -1614,9 +1605,8 @@ let general_elim_clause_in0 with_evars flags id (metas, c, ty) elim =
   let i = index_of_ind_arg sigma elimt in
   let elimclause = mk_clenv_from env sigma (elimc, elimt) in
   let indmv =
-    (match EConstr.kind sigma (nth_arg sigma (Some i) (clenv_templval elimclause).rebus) with
-       | Meta mv -> mv
-       | _  -> error IllFormedEliminationType)
+    try nth_arg (Some i) (clenv_arguments elimclause)
+    with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
   in
   (* Assumes that the metas of [c] are part of [sigma] already *)
   let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas (clenv_evd elimclause)) in
@@ -4470,14 +4460,7 @@ let get_eliminator env sigma elim dep s =
    of lid are parameters (first ones), the other are
    arguments. Returns the clause obtained.  *)
 let recolle_clenv i params args elimclause gl =
-  let _,arr = destApp (clenv_evd elimclause) (clenv_templval elimclause).rebus in
-  let lindmv =
-    Array.map
-      (fun x ->
-        match EConstr.kind (clenv_evd elimclause) x with
-          | Meta mv -> mv
-          | _  -> error IllFormedEliminationType)
-      arr in
+  let lindmv = Array.of_list (clenv_arguments elimclause) in
   let k = match i with None -> Array.length lindmv - List.length args | Some i -> i in
   (* parameters correspond to first elts of lid. *)
   let clauses_params = List.mapi (fun i id -> id, lindmv.(i)) params in
@@ -4976,14 +4959,12 @@ let elim_scheme_type (elim, elimt) t =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let clause = mk_clenv_from env sigma (elim,elimt) in
-  match EConstr.kind sigma (last_arg sigma (clenv_templval clause).rebus) with
-    | Meta mv ->
-        let clause' =
-          (* t is inductive, then CUMUL or CONV is irrelevant *)
-          clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
-            (clenv_meta_type clause mv) clause in
-        Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
-    | _ -> anomaly (Pp.str "elim_scheme_type.")
+  let mv = List.last (clenv_arguments clause) in
+  let clause' =
+    (* t is inductive, then CUMUL or CONV is irrelevant *)
+    clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
+      (clenv_meta_type clause mv) clause in
+  Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
   end
 
 let elim_type t =

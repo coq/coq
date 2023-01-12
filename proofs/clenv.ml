@@ -36,21 +36,22 @@ open Logic
 type clausenv = {
   env      : env;
   evd      : evar_map;
+  metas    : metavariable list;
   templval : constr freelisted;
   templtyp : constr freelisted;
   cache : Reductionops.meta_instance_subst;
 }
 
-let mk_clausenv env evd templval templtyp = {
-  env; evd; templval; templtyp; cache = create_meta_instance_subst evd;
+let mk_clausenv env evd metas templval templtyp = {
+  env; evd; metas; templval; templtyp; cache = create_meta_instance_subst evd;
 }
 
 let update_clenv_evd clenv evd =
-  mk_clausenv clenv.env evd clenv.templval clenv.templtyp
+  mk_clausenv clenv.env evd clenv.metas clenv.templval clenv.templtyp
 
 let clenv_convert_val f clenv =
   let templval = Evd.map_fl (fun c -> f clenv.env clenv.evd c) clenv.templval in
-  mk_clausenv clenv.env clenv.evd templval clenv.templtyp
+  mk_clausenv clenv.env clenv.evd clenv.metas templval clenv.templtyp
 
 let clenv_refresh env sigma ctx clenv =
   let evd = Evd.meta_merge (Evd.meta_list clenv.evd) (Evd.clear_metas sigma) in
@@ -60,16 +61,16 @@ let clenv_refresh env sigma ctx clenv =
     let emap c = Vars.subst_univs_level_constr subst c in
     let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
     (* Only metas are mentioning the old universes. *)
-    mk_clausenv env (Evd.map_metas emap evd)
+    mk_clausenv env (Evd.map_metas emap evd) clenv.metas
       (Evd.map_fl emap clenv.templval)
       (Evd.map_fl emap clenv.templtyp)
   | None ->
-    mk_clausenv env evd clenv.templval clenv.templtyp
+    mk_clausenv env evd clenv.metas clenv.templval clenv.templtyp
 
 let cl_env ce = ce.env
 let clenv_evd ce =  ce.evd
-let clenv_templval c = c.templval
 let clenv_templtyp c = c.templtyp
+let clenv_arguments c = c.metas
 
 let clenv_meta_type clenv mv =
   let ty =
@@ -98,6 +99,7 @@ let clenv_push_prod cl =
           templtyp = mk_freelisted concl;
           evd = e';
           env = cl.env;
+          metas = cl.metas @ [mv];
           cache = create_meta_instance_subst e' })
     | _ -> None
   in clrec typ
@@ -127,7 +129,7 @@ let clenv_environments evd bound t =
           let dep = not (noccurn evd 1 t2) in
           let na' = if dep then na.binder_name else Anonymous in
           let e' = meta_declare mv t1 ~name:na' e in
-          clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
+          clrec (e', (mv)::metas) (Option.map ((+) (-1)) n)
             (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
       | (n, _) -> (e, List.rev metas, t)
@@ -137,10 +139,11 @@ let clenv_environments evd bound t =
 let mk_clenv_from_env env sigma n (c,cty) =
   let evd = clear_metas sigma in
   let (evd,args,concl) = clenv_environments evd n cty in
-  { templval = mk_freelisted (applist (c,args));
+  { templval = mk_freelisted (mkApp (c,Array.map_of_list mkMeta args));
     templtyp = mk_freelisted concl;
     evd = evd;
     env = env;
+    metas = args;
     cache = create_meta_instance_subst evd }
 
 let mk_clenv_from env sigma c = mk_clenv_from_env env sigma None c
