@@ -335,23 +335,6 @@ let lookup_tacs env sigma concl se =
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
-let strip_params env sigma c =
-  match EConstr.kind sigma c with
-  | App (f, args) ->
-    (match EConstr.kind sigma f with
-    | Const (cst,_) ->
-      (match Structures.PrimitiveProjections.find_opt cst with
-       | Some p ->
-         let p = Projection.make p false in
-         let npars = Projection.npars p in
-         if Array.length args > npars then
-           mkApp (mkProj (p, args.(npars)),
-                  Array.sub args (npars+1) (Array.length args - (npars + 1)))
-         else c
-       | None -> c)
-    | _ -> c)
-  | _ -> c
-
 let merge_context_set_opt sigma ctx = match ctx with
 | None -> sigma
 | Some ctx -> Evd.merge_context_set Evd.univ_flexible sigma ctx
@@ -360,8 +343,6 @@ let instantiate_hint env sigma p =
   let mk_clenv { rhint_term = c; rhint_type = cty; rhint_uctx = ctx; rhint_arty = ar } =
     let sigma = merge_context_set_opt sigma ctx in
     let cl = mk_clenv_from env sigma (c,cty) in
-    let templval = { cl.templval with rebus = strip_params env sigma cl.templval.rebus } in
-    let cl = mk_clausenv empty_env cl.evd templval cl.templtyp in
     { hint_term = c; hint_type = cty; hint_uctx = ctx; hint_clnv = cl; hint_arty = ar }
   in
   let code = match p.code.obj with
