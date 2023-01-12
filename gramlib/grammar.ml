@@ -19,6 +19,15 @@ module type S = sig
   type 'c pattern
   type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
+  (** Type combinators to factor the module type between explicit
+      state passing in Grammar and global state in Pcoq *)
+
+  type 'a with_estate
+  (** Read entry state *)
+
+  type 'a mod_estate
+  (** Read/write entry state *)
+
   module Parsable : sig
     type t
     (** [Parsable.t] Stream tokenizers with Coq-specific funcitonality *)
@@ -42,17 +51,17 @@ module type S = sig
 
   module Entry : sig
     type 'a t
-    val make : string -> 'a t
-    val create : string -> 'a t
-    val parse : 'a t -> Parsable.t -> 'a
+    val make : string -> 'a t mod_estate
+    val create : string -> 'a t mod_estate
+    val parse : 'a t -> Parsable.t -> 'a with_estate
     val name : 'a t -> string
     type 'a parser_fun = { parser_fun : te LStream.t -> 'a }
-    val of_parser : string -> 'a parser_fun -> 'a t
-    val parse_token_stream : 'a t -> te LStream.t -> 'a
-    val print : Format.formatter -> 'a t -> unit
-    val is_empty : 'a t -> bool
+    val of_parser : string -> 'a parser_fun -> 'a t mod_estate
+    val parse_token_stream : 'a t -> te LStream.t -> 'a with_estate
+    val print : Format.formatter -> 'a t -> unit with_estate
+    val is_empty : 'a t -> bool with_estate
     type any_t = Any : 'a t -> any_t
-    val accumulate_in : 'a t -> any_t list CString.Map.t
+    val accumulate_in : 'a t -> any_t list CString.Map.t with_estate
   end
 
   module rec Symbol : sig
@@ -115,15 +124,24 @@ end
 
 module type ExtS = sig
 
+  module EState : sig
+    type t
+    val empty : t
+  end
+
   include S
+    with type 'a with_estate := EState.t -> 'a
+     and type 'a mod_estate := EState.t -> EState.t * 'a
 
   type keyword_state
 
-  val safe_extend : keyword_state -> 'a Entry.t -> 'a extend_statement -> keyword_state
-  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
+
+  val safe_extend : EState.t -> keyword_state -> 'a Entry.t -> 'a extend_statement
+    -> EState.t * keyword_state
+  val safe_delete_rule : EState.t -> 'a Entry.t -> 'a Production.t -> EState.t
 
   module Unsafe : sig
-    val clear_entry : 'a Entry.t -> unit
+    val clear_entry : EState.t -> 'a Entry.t -> EState.t
   end
 
 end
@@ -131,13 +149,12 @@ end
 (* Implementation *)
 
 module GMake (L : Plexing.S) : ExtS
-  with type keyword_state = L.keyword_state
-   and type te = L.te
-   and type 'c pattern = 'c L.pattern
+  with type keyword_state := L.keyword_state
+   and type te := L.te
+   and type 'c pattern := 'c L.pattern
    and type 'a Parsable.mk := L.keyword_state ref -> 'a
 = struct
 
-type keyword_state = L.keyword_state
 type te = L.te
 type 'c pattern = 'c L.pattern
 type ty_pattern = TPattern : 'a pattern -> ty_pattern
@@ -1552,24 +1569,23 @@ let make_entry_data entry desc = {
 
 (* Extend syntax *)
 
-let gestate = ref EState.empty
+let modify_entry estate e f = try EState.modify e.etag f estate with Not_found -> assert false
 
-let modify_entry e f = try gestate := EState.modify e.etag f !gestate with Not_found -> assert false
+let add_entry estate e v = assert (not (EState.mem e.etag estate)); EState.add e.etag v estate
 
-let add_entry e v = assert (not (EState.mem e.etag !gestate)); gestate := EState.add e.etag v !gestate
-
-let extend_entry lstate entry statement =
+let extend_entry estate lstate entry statement =
   let lstate = ref lstate in
-  modify_entry entry (fun edata ->
+  let estate = modify_entry estate entry (fun edata ->
       let lstate', elev = levels_of_rules !lstate entry edata statement in
       lstate := lstate';
-      make_entry_data entry (Dlevels elev));
-  !lstate
+      make_entry_data entry (Dlevels elev))
+  in
+  estate, !lstate
 
 (* Deleting a rule *)
 
-let delete_rule entry sl =
-  modify_entry entry (fun edata ->
+let delete_rule estate entry sl =
+  modify_entry estate entry (fun edata ->
       match edata.edesc with
       | Dlevels levs ->
         let levs = delete_rule_in_level_list entry sl levs in
@@ -1584,8 +1600,8 @@ module Parsable = struct
     { pa_tok_strm : L.te LStream.t
     ; lexer_state : L.State.t ref }
 
-  let parse_parsable entry p =
-    let efun = start_parser_of_entry !gestate entry 0 in
+  let parse_parsable estate entry p =
+    let efun = start_parser_of_entry estate entry 0 in
     let ts = p.pa_tok_strm in
     let get_parsing_loc () =
       (* Build the loc spanning from just after what is consumed (count)
@@ -1614,10 +1630,10 @@ module Parsable = struct
       let exc,info = Exninfo.capture exc in
       Exninfo.iraise (exc,info)
 
-  let parse_parsable e p =
+  let parse_parsable estate e p =
     L.State.set !(p.lexer_state);
     try
-      let c = parse_parsable e p in
+      let c = parse_parsable estate e p in
       p.lexer_state := L.State.get ();
       c
     with exn ->
@@ -1643,35 +1659,38 @@ module Entry = struct
 
   let cnt = ref 0
 
-  let make n =
+  let make n estate =
     incr cnt;
     let e = { ename = n; euid = !cnt; etag = Dyn.anonymous !cnt } in
-    add_entry e {
-      edesc = Dlevels [];
-      estart = empty_entry n;
-      econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-    };
-    e
+    let estate = add_entry estate e {
+        edesc = Dlevels [];
+        estart = empty_entry n;
+        econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+      }
+    in
+    estate, e
 
   let create = make
-  let parse (e : 'a t) p : 'a =
-    Parsable.parse_parsable e p
-  let parse_token_stream (e : 'a t) ts : 'a =
-    start_parser_of_entry !gestate e 0 ts
+  let parse (e : 'a t) p estate : 'a =
+    Parsable.parse_parsable estate e p
+  let parse_token_stream (e : 'a t) ts estate : 'a =
+    start_parser_of_entry estate e 0 ts
   let name e = e.ename
   type 'a parser_fun = { parser_fun : te LStream.t -> 'a }
-  let of_parser n { parser_fun = (p : te LStream.t -> 'a) } : 'a t =
+  let of_parser n { parser_fun = (p : te LStream.t -> 'a) } estate =
     incr cnt;
     let e = { ename = n; euid = !cnt; etag = Dyn.anonymous !cnt } in
-    add_entry e {
-      estart = (fun _ _ -> p);
-      econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-      edesc = Dparser p;
-    };
-    e
-  let print ppf e = fprintf ppf "%a@." (print_entry !gestate) e
+    let estate = add_entry estate e {
+        estart = (fun _ _ -> p);
+        econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+        edesc = Dparser p;
+      }
+    in
+    estate, e
 
-  let is_empty e = match (get_entry !gestate e).edesc with
+  let print ppf e estate = fprintf ppf "%a@." (print_entry estate) e
+
+  let is_empty e estate = match (get_entry estate e).edesc with
   | Dparser _ -> failwith "Arbitrary parser entry"
   | Dlevels elev -> List.is_empty elev
 
@@ -1696,7 +1715,7 @@ module Entry = struct
     | Sself | Snext -> ()
     | Stree t -> List.iter (fun (ExS rule) -> iter_in_symbols f rule) (flatten_tree t)
 
-  let iter_in f e = match (get_entry !gestate e).edesc with
+  let iter_in estate f e = match (get_entry estate e).edesc with
     | Dparser _ -> ()
     | Dlevels elev ->
       List.iter (fun (Level lev) ->
@@ -1709,14 +1728,14 @@ module Entry = struct
 
   let same_entry (Any e) (Any e') = (Obj.magic e) == (Obj.magic e')
 
-  let accumulate_in e =
+  let accumulate_in e estate =
     let initial = Any e in
     let todo = ref [initial] in
     let visited = ref (String.Map.singleton (name e) [initial]) in
     while not (List.is_empty !todo) do
       let Any e = List.hd !todo in
       todo := List.tl !todo;
-      iter_in (fun (Any e as any) ->
+      iter_in estate (fun (Any e as any) ->
           let visited' = String.Map.update e.ename (function
               | None -> Some [any]
               | Some vl as v ->
@@ -1811,8 +1830,8 @@ end
 
 module Unsafe = struct
 
-  let clear_entry e =
-    modify_entry e (fun data -> {
+  let clear_entry estate e =
+    modify_entry estate e (fun data -> {
           estart = (fun _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
           econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
           edesc = match data.edesc with
@@ -1824,9 +1843,9 @@ end
 
 let safe_extend = extend_entry
 
-let safe_delete_rule e (TProd (r,_act)) =
+let safe_delete_rule estate e (TProd (r,_act)) =
   let AnyS (symbols, _) = get_symbols r in
-  delete_rule e symbols
+  delete_rule estate e symbols
 
 let level_of_nonterm sym = match sym with
   | Snterml (_,l) -> Some l

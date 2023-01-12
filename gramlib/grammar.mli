@@ -26,6 +26,15 @@ module type S = sig
   type 'c pattern
   type ty_pattern = TPattern : 'a pattern -> ty_pattern
 
+  (** Type combinators to factor the module type between explicit
+      state passing in Grammar and global state in Pcoq *)
+
+  type 'a with_estate
+  (** Read entry state *)
+
+  type 'a mod_estate
+  (** Read/write entry state *)
+
   module Parsable : sig
     type t
     type 'a mk
@@ -37,18 +46,18 @@ module type S = sig
 
   module Entry : sig
     type 'a t
-    val make : string -> 'a t
-    val create : string -> 'a t (* compat *)
-    val parse : 'a t -> Parsable.t -> 'a
+    val make : string -> 'a t mod_estate
+    val create : string -> 'a t mod_estate (* compat *)
+    val parse : 'a t -> Parsable.t -> 'a with_estate
     val name : 'a t -> string
     type 'a parser_fun = { parser_fun : te LStream.t -> 'a }
-    val of_parser : string -> 'a parser_fun -> 'a t
-    val parse_token_stream : 'a t -> te LStream.t -> 'a
-    val print : Format.formatter -> 'a t -> unit
-    val is_empty : 'a t -> bool
+    val of_parser : string -> 'a parser_fun -> 'a t mod_estate
+    val parse_token_stream : 'a t -> te LStream.t -> 'a with_estate
+    val print : Format.formatter -> 'a t -> unit with_estate
+    val is_empty : 'a t -> bool with_estate
 
     type any_t = Any : 'a t -> any_t
-    val accumulate_in : 'a t -> any_t list CString.Map.t
+    val accumulate_in : 'a t -> any_t list CString.Map.t with_estate
   end
 
   module rec Symbol : sig
@@ -114,14 +123,24 @@ end
 (* Interface private to clients  *)
 module type ExtS = sig
 
+  module EState : sig
+    type t
+    val empty : t
+  end
+
   include S
+    with type 'a with_estate := EState.t -> 'a
+     and type 'a mod_estate := EState.t -> EState.t * 'a
+
   type keyword_state
 
-  val safe_extend : keyword_state -> 'a Entry.t -> 'a extend_statement -> keyword_state
-  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
+
+  val safe_extend : EState.t -> keyword_state -> 'a Entry.t -> 'a extend_statement
+    -> EState.t * keyword_state
+  val safe_delete_rule : EState.t -> 'a Entry.t -> 'a Production.t -> EState.t
 
   module Unsafe : sig
-    val clear_entry : 'a Entry.t -> unit
+    val clear_entry : EState.t -> 'a Entry.t -> EState.t
   end
 
 end
@@ -137,7 +156,7 @@ end
       must specify a way to show them as (string * string) *)
 
 module GMake (L : Plexing.S) : ExtS
-  with type keyword_state = L.keyword_state
-   and type te = L.te
-   and type 'c pattern = 'c L.pattern
+  with type keyword_state := L.keyword_state
+   and type te := L.te
+   and type 'c pattern := 'c L.pattern
    and type 'a Parsable.mk := L.keyword_state ref -> 'a

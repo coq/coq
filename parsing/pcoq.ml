@@ -16,6 +16,27 @@ open Gramlib
 (** The parser of Coq *)
 include Grammar.GMake(CLexer.Lexer)
 
+(** Not marshallable! *)
+let estate = ref EState.empty
+
+module Entry = struct
+  include Entry
+  let make na =
+    let estate', e = make na !estate in
+    estate := estate';
+    e
+  let create = make
+  let parse e p = parse e p !estate
+  let of_parser na p =
+    let estate', e = of_parser na p !estate in
+    estate := estate';
+    e
+  let parse_token_stream e strm = parse_token_stream e strm !estate
+  let print fmt e = print fmt e !estate
+  let is_empty e = is_empty e !estate
+  let accumulate_in e = accumulate_in e !estate
+end
+
 module Lookahead =
 struct
 
@@ -122,8 +143,13 @@ let grammar_delete e r =
   in
   List.iter
     (fun lev ->
-      List.iter (fun pil -> safe_delete_rule e pil) (List.rev lev))
+      List.iter (fun pil -> estate := safe_delete_rule !estate e pil) (List.rev lev))
     (List.rev data)
+
+let safe_extend e ext =
+  let estate', kwstate = safe_extend !estate !keyword_state e ext in
+  estate := estate';
+  keyword_state := kwstate
 
 let grammar_delete_reinit e reinit d =
   grammar_delete e d;
@@ -133,23 +159,23 @@ let grammar_delete_reinit e reinit d =
   | _ -> assert false
   in
   let ext = Fresh (ext, [Some lev,Some a,[]]) in
-  keyword_state := safe_extend !keyword_state e ext
+  safe_extend e ext
 
 (** Extension *)
 
 let grammar_extend e ext =
   let undo () = grammar_delete e ext in
-  let redo () = keyword_state := safe_extend !keyword_state e ext in
+  let redo () = safe_extend e ext in
   camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
   redo ()
 
 let grammar_extend_sync e ext =
   camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
-  keyword_state := safe_extend !keyword_state e ext
+  safe_extend e ext
 
 let grammar_extend_sync_reinit e reinit ext =
   camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
-  keyword_state := safe_extend !keyword_state e ext
+  safe_extend e ext
 
 (** Remove extensions
 
@@ -175,7 +201,7 @@ let rec remove_grammars n =
            redo();
            camlp5_state := ByEXTEND (undo,redo) :: !camlp5_state
        | ByEntry (tag, name, e) :: t ->
-           Unsafe.clear_entry e;
+           estate := Unsafe.clear_entry !estate e;
            camlp5_state := t;
            let EntryData.Ex entries =
              try EntryDataMap.find tag !camlp5_entries
@@ -195,7 +221,7 @@ let eoi_entry en =
   let symbs = Rule.next (Rule.next Rule.stop (Symbol.nterm en)) (Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
   let ext = Fresh (Gramlib.Gramext.First, make_rule [Production.make symbs act]) in
-  keyword_state := safe_extend !keyword_state e ext;
+  safe_extend e ext;
   e
 
 module Parsable = struct
@@ -326,7 +352,7 @@ let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
   let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
   let entry = Entry.make "epsilon" in
   let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
-  keyword_state := safe_extend !keyword_state entry ext;
+  safe_extend entry ext;
   try Some (parse_string entry "") with _ -> None
 
 (** Synchronized grammar extensions *)
