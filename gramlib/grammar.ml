@@ -1571,19 +1571,21 @@ let rec continue_parser_of_levels entry clevn =
                   continue_parser_of_entry gstate entry levn bp a strm
 
 let make_continue_parser_of_entry entry desc =
-    match desc with
-    | Dlevels [] -> (fun _ _ _ _ (_ : _ LStream.t) -> raise Stream.Failure)
-    | Dlevels elev ->
-      let p = continue_parser_of_levels entry 0 elev in
-      (fun gstate levn bp a (strm__ : _ LStream.t) ->
-         try p gstate levn bp a strm__ with Stream.Failure -> a)
-    | Dparser p -> fun gstate levn bp a (strm__ : _ LStream.t) -> raise Stream.Failure
+  match desc with
+  | Dlevels [] -> (fun _ _ _ _ (_ : _ LStream.t) -> raise Stream.Failure)
+  | Dlevels elev ->
+    let p = lazy (continue_parser_of_levels entry 0 elev) in
+    (fun gstate levn bp a (strm__ : _ LStream.t) ->
+       try Lazy.force p gstate levn bp a strm__ with Stream.Failure -> a)
+  | Dparser p -> fun gstate levn bp a (strm__ : _ LStream.t) -> raise Stream.Failure
 
 let make_start_parser_of_entry entry desc =
-    match desc with
-      Dlevels [] -> empty_entry entry.ename
-    | Dlevels elev -> start_parser_of_levels entry 0 elev
-    | Dparser p -> fun gstate levn strm -> p gstate.kwstate strm
+  match desc with
+  | Dlevels [] -> empty_entry entry.ename
+  | Dlevels elev ->
+    let p = lazy (start_parser_of_levels entry 0 elev) in
+    (fun gstate levn (strm:_ LStream.t) -> Lazy.force p gstate levn strm)
+  | Dparser p -> fun gstate levn strm -> p gstate.kwstate strm
 
 let make_entry_data entry desc = {
   edesc = desc;
