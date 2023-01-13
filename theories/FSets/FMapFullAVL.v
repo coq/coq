@@ -142,7 +142,7 @@ Qed.
 Lemma bal_avl : forall l x e r, avl l -> avl r ->
  -(3) <= height l - height r <= 3 -> avl (bal l x e r).
 Proof.
- intros l x e r; functional induction (bal l x e r); intros; clearf;
+ intros l x e r; induction elt, l, x, e, r, (bal l x e r) using bal_ind; intros; clearf;
  inv avl; simpl in *;
  match goal with |- avl (assert_false _ _ _ _) => avl_nns
   | _ => repeat apply create_avl; simpl in *; auto
@@ -153,7 +153,7 @@ Lemma bal_height_1 : forall l x e r, avl l -> avl r ->
  -(3) <= height l - height r <= 3 ->
  0 <= height (bal l x e r) - max (height l) (height r) <= 1.
 Proof.
- intros l x e r; functional induction (bal l x e r); intros; clearf;
+ intros l x e r; induction elt, l, x, e, r, (bal l x e r) using bal_ind; intros; clearf;
  inv avl; avl_nns; simpl in *; omega_max.
 Qed.
 
@@ -161,7 +161,7 @@ Lemma bal_height_2 :
  forall l x e r, avl l -> avl r -> -(2) <= height l - height r <= 2 ->
  height (bal l x e r) == max (height l) (height r) +1.
 Proof.
- intros l x e r; functional induction (bal l x e r); intros; clearf;
+ intros l x e r; induction elt, l, x, e, r, (bal l x e r) using bal_ind; intros; clearf;
  inv avl; avl_nns; simpl in *; omega_max.
 Qed.
 
@@ -176,7 +176,7 @@ Ltac omega_bal := match goal with
 Lemma add_avl_1 :  forall m x e, avl m ->
  avl (add x e m) /\ 0 <= height (add x e m) - height m <= 1.
 Proof.
- intros m x e; functional induction (add x e m); intros; inv avl; simpl in *.
+ intros m x e; induction elt, x, e, m, (add x e m) using add_ind; clearf; intros; inv avl; simpl in *.
  - intuition; try constructor; simpl; auto; try omega_max.
  - (* LT *)
    destruct IHt; auto.
@@ -205,7 +205,7 @@ Lemma remove_min_avl_1 : forall l x e r h, avl (Node l x e r h) ->
  avl (remove_min l x e r)#1 /\
  0 <= height (Node l x e r h) - height (remove_min l x e r)#1 <= 1.
 Proof.
- intros l x e r; functional induction (remove_min l x e r); simpl in *; intros.
+ intros l x e r; induction elt, l, x, e, r, (remove_min l x e r) using remove_min_ind; clearf; simpl in *; intros.
  - inv avl; simpl in *; split; auto.
    avl_nns; omega_max.
  - inversion_clear H.
@@ -228,7 +228,7 @@ Lemma merge_avl_1 : forall m1 m2, avl m1 -> avl m2 ->
  avl (merge m1 m2) /\
  0<= height (merge m1 m2) - max (height m1) (height m2) <=1.
 Proof.
- intros m1 m2; functional induction (merge m1 m2); intros;
+ intros m1 m2; induction elt, m1, m2, (merge m1 m2) using merge_ind; clearf; intros;
  try factornode _x _x0 _x1 _x2 _x3 as m1.
  - simpl; split; auto; avl_nns; omega_max.
  - simpl; split; auto; avl_nns; omega_max.
@@ -252,7 +252,7 @@ Qed.
 Lemma remove_avl_1 : forall m x, avl m ->
  avl (remove x m) /\ 0 <= height m - height (remove x m) <= 1.
 Proof.
- intros m x; functional induction (remove x m); intros.
+ intros m x; induction elt, x, m, (remove x m) using remove_ind; clearf; intros.
  - split; auto; omega_max.
  - (* LT *)
    inv avl.
@@ -343,7 +343,7 @@ Hint Resolve join_avl : core.
 
 Lemma concat_avl : forall m1 m2, avl m1 -> avl m2 -> avl (concat m1 m2).
 Proof.
- intros m1 m2; functional induction (concat m1 m2); auto.
+ intros m1 m2; induction elt, m1, m2, (concat m1 m2) using concat_ind; clearf; auto.
  intros; apply join_avl; auto.
  generalize (remove_min_avl H0); rewrite e1; simpl; auto.
 Qed.
@@ -355,7 +355,7 @@ Hint Resolve concat_avl : core.
 Lemma split_avl : forall m x, avl m ->
   avl (split x m)#l /\ avl (split x m)#r.
 Proof.
- intros m x; functional induction (split x m); simpl; auto.
+ intros m x; induction elt, x, m, (split x m) using split_ind; clearf; simpl; auto.
  - rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
  - simpl; inversion_clear 1; auto.
  - rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
@@ -424,7 +424,7 @@ Notation map2_opt := (map2_opt f mapl mapr).
 Lemma map2_opt_avl : forall m1 m2, avl m1 -> avl m2 ->
  avl (map2_opt m1 m2).
 Proof.
-intros m1 m2; functional induction (map2_opt m1 m2); auto;
+intros m1 m2; induction elt, elt', elt'', f, mapl, mapr, m1, m2, (map2_opt m1 m2) using map2_opt_ind; clearf; auto;
 factornode _x0 _x1 _x2 _x3 _x4 as r2; intros;
 destruct (split_avl x1 H0); rewrite e1 in *; simpl in *; inv avl;
 auto using join_avl, concat_avl.
@@ -728,7 +728,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Lemma compare_aux_Cmp : forall e,
    Cmp (compare_aux e) (flatten_e (fst e)) (flatten_e (snd e)).
   Proof.
-  intros e; functional induction (compare_aux e); simpl in *;
+  intros e; induction e, (compare_aux e) using compare_aux_ind; clearf; simpl in *;
    auto; intros; try clear e0; try clear e3; try MX.elim_comp; auto.
   rewrite 2 cons_1 in IHc; auto.
   Qed.

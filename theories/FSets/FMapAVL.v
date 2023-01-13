@@ -509,6 +509,7 @@ Tactic Notation "factornode" ident(l) ident(x) ident(d) ident(r) ident(h)
 
 Ltac clearf :=
  match goal with
+  | H := _ |- _ => subst; subst H; clearf
   | H : (@Logic.eq (Compare _ _ _ _) _ _) |- _ => clear H; clearf
   | H : (@Logic.eq (sumbool _ _) _ _) |- _ => clear H; clearf
   | _ => idtac
@@ -727,25 +728,25 @@ Qed.
 
 Lemma mem_1 : forall m x, bst m -> In x m -> mem x m = true.
 Proof.
- intros m x; functional induction (mem x m); auto; intros; clearf;
-  inv bst; intuition_in; order.
+intros m x; induction elt, x, m, (mem x m) using mem_ind; auto; intros; clearf;
+inv bst; intuition_in; order.
 Qed.
 
 Lemma mem_2 : forall m x, mem x m = true -> In x m.
 Proof.
- intros m x; functional induction (mem x m); auto; intros; discriminate.
+ intros m x; induction elt, x, m, (mem x m) using mem_ind; auto; intros; discriminate.
 Qed.
 
 Lemma find_1 : forall m x e, bst m -> MapsTo x e m -> find x m = Some e.
 Proof.
- intros m x; functional induction (find x m); auto; intros; clearf;
+ intros m x; induction elt, x, m, (find x m) using find_ind; auto; intros; clearf;
   inv bst; intuition_in; simpl; auto;
  try solve [order | absurd (X.lt x y); eauto with ordered_type | absurd (X.lt y x); eauto with ordered_type].
 Qed.
 
 Lemma find_2 : forall m x e, find x m = Some e -> MapsTo x e m.
 Proof.
- intros m x; functional induction (find x m); subst; intros; clearf;
+ intros m x; induction elt, x, m, (find x m) using find_ind; subst; intros; clearf;
   try discriminate.
  - constructor 2; auto.
  - inversion H; auto.
@@ -839,7 +840,7 @@ Qed.
 Lemma bal_bst : forall l x e r, bst l -> bst r ->
  lt_tree x l -> gt_tree x r -> bst (bal l x e r).
 Proof.
- intros l x e r; functional induction (bal l x e r); intros; clearf;
+ intros l x e r; induction elt, l, x, e, r, (bal l x e r) using bal_ind; subst; intros; clearf;
  inv bst; repeat apply create_bst; auto; unfold create; try constructor;
  (apply lt_tree_node || apply gt_tree_node); auto with ordered_type;
  (eapply lt_tree_trans || eapply gt_tree_trans); eauto with ordered_type.
@@ -850,14 +851,14 @@ Hint Resolve bal_bst : core.
 Lemma bal_in : forall l x e r y,
  In y (bal l x e r) <-> X.eq y x \/ In y l \/ In y r.
 Proof.
- intros l x e r; functional induction (bal l x e r); intros; clearf;
+ intros l x e r; induction elt, l, x, e, r, (bal l x e r) using bal_ind; subst; intros; clearf;
  rewrite !create_in; intuition_in.
 Qed.
 
 Lemma bal_mapsto : forall l x e r y e',
  MapsTo y e' (bal l x e r) <-> MapsTo y e' (create l x e r).
 Proof.
- intros l x e r; functional induction (bal l x e r); intros; clearf;
+ intros l x e r; induction elt, l, x, e, r, (bal l x e r) using bal_ind; subst; intros; clearf;
  unfold assert_false, create; intuition_in.
 Qed.
 
@@ -873,14 +874,14 @@ Qed.
 Lemma add_in : forall m x y e,
  In y (add x e m) <-> X.eq y x \/ In y m.
 Proof.
- intros m x y e; functional induction (add x e m); auto; intros;
+ intros m x y e; induction elt, x, e, m, (add x e m) using add_ind; clearf; auto; intros;
  try (rewrite bal_in, IHt); intuition_in.
  apply In_1 with x; auto with ordered_type.
 Qed.
 
 Lemma add_bst : forall m x e, bst m -> bst (add x e m).
 Proof.
- intros m x e; functional induction (add x e m); intros;
+ intros m x e; induction elt, x, e, m, (add x e m) using add_ind; clearf; intros;
   inv bst; try apply bal_bst; auto;
   intro z; rewrite add_in; intuition.
  - apply MX.eq_lt with x; auto.
@@ -891,7 +892,7 @@ Hint Resolve add_bst : core.
 
 Lemma add_1 : forall m x y e, X.eq x y -> MapsTo y e (add x e m).
 Proof.
- intros m x y e; functional induction (add x e m);
+ intros m x y e; induction elt, x, e, m, (add x e m) using add_ind; clearf;
    intros; inv bst; try rewrite bal_mapsto; unfold create; eauto with ordered_type.
 Qed.
 
@@ -932,7 +933,7 @@ Lemma remove_min_in : forall l x e r h y,
  In y (Node l x e r h) <->
   X.eq y (remove_min l x e r)#2#1 \/ In y (remove_min l x e r)#1.
 Proof.
- intros l x e r; functional induction (remove_min l x e r); simpl in *; intros.
+ intros l x e r; induction elt, l, x, e, r, (remove_min l x e r) using remove_min_ind; clearf; simpl in *; intros.
  - intuition_in.
  - rewrite e0 in *; simpl; intros.
    rewrite bal_in, In_node_iff, IHp; intuition.
@@ -943,7 +944,7 @@ Lemma remove_min_mapsto : forall l x e r h y e',
    ((X.eq y (remove_min l x e r)#2#1) /\ e' = (remove_min l x e r)#2#2)
     \/ MapsTo y e' (remove_min l x e r)#1.
 Proof.
- intros l x e r; functional induction (remove_min l x e r); simpl in *; intros.
+ intros l x e r; induction elt, l, x, e, r, (remove_min l x e r) using remove_min_ind; clearf; simpl in *; intros.
  - intuition_in; subst; auto.
  - rewrite e0 in *; simpl; intros.
    rewrite bal_mapsto; auto; unfold create.
@@ -956,7 +957,7 @@ Qed.
 Lemma remove_min_bst : forall l x e r h,
  bst (Node l x e r h) -> bst (remove_min l x e r)#1.
 Proof.
- intros l x e r; functional induction (remove_min l x e r); simpl in *; intros.
+ intros l x e r; induction elt, l, x, e, r, (remove_min l x e r) using remove_min_ind; clearf; simpl in *; intros.
  - inv bst; auto.
  - inversion_clear H; inversion_clear H0.
    apply bal_bst; auto.
@@ -974,7 +975,7 @@ Lemma remove_min_gt_tree : forall l x e r h,
  bst (Node l x e r h) ->
  gt_tree (remove_min l x e r)#2#1 (remove_min l x e r)#1.
 Proof.
- intros l x e r; functional induction (remove_min l x e r); simpl in *; intros.
+ intros l x e r; induction elt, l, x, e, r, (remove_min l x e r) using remove_min_ind; clearf; simpl in *; intros.
  - inv bst; auto.
  - inversion_clear H.
    intro; intro.
@@ -1015,7 +1016,7 @@ Qed.
 Lemma merge_in : forall m1 m2 y, bst m1 -> bst m2 ->
  (In y (merge m1 m2) <-> In y m1 \/ In y m2).
 Proof.
- intros m1 m2; functional induction (merge m1 m2);intros;
+ intros m1 m2; induction elt, m1, m2, (merge m1 m2) using merge_ind; clearf; intros;
   try factornode _x _x0 _x1 _x2 _x3 as m1.
  - intuition_in.
  - intuition_in.
@@ -1025,7 +1026,7 @@ Qed.
 Lemma merge_mapsto : forall m1 m2 y e, bst m1 -> bst m2 ->
   (MapsTo y e (merge m1 m2) <-> MapsTo y e m1 \/ MapsTo y e m2).
 Proof.
- intros m1 m2; functional induction (merge m1 m2); intros;
+ intros m1 m2; induction elt, m1, m2, (merge m1 m2) using merge_ind; clearf; intros;
   try factornode _x _x0 _x1 _x2 _x3 as m1.
  - intuition_in.
  - intuition_in.
@@ -1039,7 +1040,7 @@ Lemma merge_bst : forall m1 m2, bst m1 -> bst m2 ->
  (forall y1 y2 : key, In y1 m1 -> In y2 m2 -> X.lt y1 y2) ->
  bst (merge m1 m2).
 Proof.
- intros m1 m2; functional induction (merge m1 m2); intros; auto;
+ intros m1 m2; induction elt, m1, m2, (merge m1 m2) using merge_ind; clearf; intros; auto;
  try factornode _x _x0 _x1 _x2 _x3 as m1.
  apply bal_bst; auto.
  - generalize (remove_min_bst H0); rewrite e1; simpl in *; auto.
@@ -1054,7 +1055,7 @@ Qed.
 Lemma remove_in : forall m x y, bst m ->
  (In y (remove x m) <-> ~ X.eq y x /\ In y m).
 Proof.
- intros m x; functional induction (remove x m); simpl; intros.
+ intros m x; induction elt, x, m, (remove x m) using remove_ind; subst T; simpl; intros.
  - intuition_in.
  - (* LT *)
    inv bst; clear e0.
@@ -1072,7 +1073,7 @@ Qed.
 
 Lemma remove_bst : forall m x, bst m -> bst (remove x m).
 Proof.
- intros m x; functional induction (remove x m); simpl; intros.
+ intros m x; induction elt, x, m, (remove x m) using remove_ind; subst T; simpl; intros.
  - auto.
  - (* LT *)
    inv bst.
@@ -1176,7 +1177,7 @@ Qed.
 Lemma split_in_1 : forall m x, bst m -> forall y,
  (In y (split x m)#l <-> In y m /\ X.lt y x).
 Proof.
- intros m x; functional induction (split x m); simpl; intros;
+ intros m x; induction elt, x, m, (split x m) using split_ind; clearf; simpl; intros;
   inv bst; try clear e0.
  - intuition_in.
  - rewrite e1 in IHt; simpl in IHt; rewrite IHt; intuition_in; order.
@@ -1188,7 +1189,7 @@ Qed.
 Lemma split_in_2 : forall m x, bst m -> forall y,
  (In y (split x m)#r <-> In y m /\ X.lt x y).
 Proof.
- intros m x; functional induction (split x m); subst; simpl; intros;
+ intros m x; induction elt, x, m, (split x m) using split_ind; clearf; subst; simpl; intros;
   inv bst; try clear e0.
  - intuition_in.
  - rewrite join_in.
@@ -1200,7 +1201,7 @@ Qed.
 Lemma split_in_3 : forall m x, bst m ->
  (split x m)#o = find x m.
 Proof.
- intros m x; functional induction (split x m); subst; simpl; auto;
+ intros m x; induction elt, x, m, (split x m) using split_ind; clearf; subst; simpl; auto;
   intros; inv bst; try clear e0;
   destruct X.compare; try order; trivial; rewrite <- IHt, e1; auto.
 Qed.
@@ -1208,7 +1209,7 @@ Qed.
 Lemma split_bst : forall m x, bst m ->
  bst (split x m)#l /\ bst (split x m)#r.
 Proof.
- intros m x; functional induction (split x m); subst; simpl; intros;
+ intros m x; induction elt, x, m, (split x m) using split_ind; clearf; subst; simpl; intros;
   inv bst; try clear e0; try rewrite e1 in *; simpl in *; intuition;
   apply join_bst; auto.
  - intros y0.
@@ -1234,7 +1235,7 @@ Lemma split_find : forall m x y, bst m ->
               | GT _ => find y (split x m)#r
             end.
 Proof.
- intros m x; functional induction (split x m); subst; simpl; intros;
+ intros m x; induction elt, x, m, (split x m) using split_ind; clearf; subst; simpl; intros;
   inv bst; try clear e0; try rewrite e1 in *; simpl in *;
   [ destruct X.compare; auto | .. ];
   try match goal with E:split ?x ?t = _, B:bst ?t |- _ =>
@@ -1257,7 +1258,7 @@ Qed.
 Lemma concat_in : forall m1 m2 y,
  In y (concat m1 m2) <-> In y m1 \/ In y m2.
 Proof.
- intros m1 m2; functional induction (concat m1 m2); intros;
+ intros m1 m2; induction elt, m1, m2, (concat m1 m2) using concat_ind; clearf; intros;
   try factornode _x _x0 _x1 _x2 _x3 as m1.
  - intuition_in.
  - intuition_in.
@@ -1268,7 +1269,7 @@ Lemma concat_bst : forall m1 m2, bst m1 -> bst m2 ->
  (forall y1 y2, In y1 m1 -> In y2 m2 -> X.lt y1 y2) ->
  bst (concat m1 m2).
 Proof.
- intros m1 m2; functional induction (concat m1 m2); intros; auto;
+ intros m1 m2; induction elt, m1, m2, (concat m1 m2) using concat_ind; clearf; intros; auto;
  try factornode _x _x0 _x1 _x2 _x3 as m1.
  apply join_bst; auto.
  - change (bst (m2',xd)#1). rewrite <-e1; eauto.
@@ -1285,7 +1286,7 @@ Lemma concat_find : forall m1 m2 y, bst m1 -> bst m2 ->
  find y (concat m1 m2) =
   match find y m2 with Some d => Some d | None => find y m1 end.
 Proof.
- intros m1 m2; functional induction (concat m1 m2); intros; auto;
+ intros m1 m2; induction elt, m1, m2, (concat m1 m2) using concat_ind; clearf; intros; auto;
  try factornode _x _x0 _x1 _x2 _x3 as m1.
  - simpl; destruct (find y m2); auto.
 
@@ -1616,7 +1617,7 @@ Hypothesis f_compat : forall x x' d, X.eq x x' -> f x d = f x' d.
 Lemma map_option_2 : forall (m:t elt)(x:key),
  In x (map_option f m) -> exists d, MapsTo x d m /\ f x d <> None.
 Proof.
-intros m; functional induction (map_option f m); simpl; auto; intros.
+intros m; induction elt, elt', f, m, (map_option f m) using map_option_ind; clearf; simpl; auto; intros.
 - inversion H.
 - rewrite join_in in H; destruct H as [H|[H|H]].
   + exists d; split; auto; rewrite (f_compat d H), e0; discriminate.
@@ -1629,7 +1630,7 @@ Qed.
 
 Lemma map_option_bst : forall m, bst m -> bst (map_option f m).
 Proof.
-intros m; functional induction (map_option f m); simpl; auto; intros;
+intros m; induction elt, elt', f, m, (map_option f m) using map_option_ind; clearf; simpl; auto; intros;
  inv bst.
 - apply join_bst; auto; intros y H;
     destruct (map_option_2 H) as (d0 & ? & ?); eauto using MapsTo_In.
@@ -1650,7 +1651,7 @@ Lemma map_option_find : forall (m:t elt)(x:key),
  find x (map_option f m) =
   match (find x m) with Some d => f x d | None => None end.
 Proof.
-intros m; functional induction (map_option f m); simpl; auto; intros;
+intros m; induction elt, elt', f, m, (map_option f m) using map_option_ind; clearf; simpl; auto; intros;
  inv bst; rewrite join_find || rewrite concat_find; auto; simpl;
  try destruct X.compare as [Hlt|Heq|Hlt]; simpl; auto.
 - rewrite (f_compat d Heq); auto.
@@ -1695,7 +1696,7 @@ Notation map2_opt := (map2_opt f mapl mapr).
 Lemma map2_opt_2 : forall m m' y, bst m -> bst m' ->
   In y (map2_opt m m') -> In y m \/ In y m'.
 Proof.
-intros m m'; functional induction (map2_opt m m'); intros;
+intros m m'; induction elt, elt', elt'', f, mapl, mapr, m, m', (map2_opt m m') using map2_opt_ind; clearf; intros;
  auto; try factornode _x0 _x1 _x2 _x3 _x4 as m2;
  try (generalize (split_in_1 x1 H0 y)(split_in_2 x1 H0 y)
       (split_bst x1 H0); rewrite e1; simpl; destruct 3; inv bst).
@@ -1721,7 +1722,7 @@ Qed.
 Lemma map2_opt_bst : forall m m', bst m -> bst m' ->
  bst (map2_opt m m').
 Proof.
-intros m m'; functional induction (map2_opt m m'); intros;
+intros m m'; induction elt, elt', elt'', f, mapl, mapr, m, m', (map2_opt m m') using map2_opt_ind; clearf; intros;
  auto; try factornode _x0 _x1 _x2 _x3 _x4 as m2; inv bst;
  generalize (split_in_1 x1 H0)(split_in_2 x1 H0)(split_bst x1 H0);
   rewrite e1; simpl in *; destruct 3.
@@ -1760,7 +1761,7 @@ Lemma map2_opt_1 : forall m m' y, bst m -> bst m' ->
  In y m \/ In y m' ->
  find y (map2_opt m m') = f0 y (find y m) (find y m').
 Proof.
-intros m m'; functional induction (map2_opt m m'); intros;
+intros m m'; induction elt, elt', elt'', f, mapl, mapr, m, m', (map2_opt m m') using map2_opt_ind; clearf; intros;
  auto; try factornode _x0 _x1 _x2 _x3 _x4 as m2;
  try (generalize (split_in_1 x1 H0)(split_in_2 x1 H0)
        (split_in_3 x1 H0)(split_bst x1 H0)(split_find x1 y H0)
@@ -2025,6 +2026,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  - apply (is_bst m).
  - apply (is_bst m').
  Qed.
+
 
 End IntMake.
 
