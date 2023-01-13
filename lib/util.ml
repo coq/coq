@@ -126,12 +126,16 @@ type 'a delayed = unit -> 'a
 
 let delayed_force f = f ()
 
-(* finalize - Credit X.Leroy, D.Remy. *)
+(* finalize - Credit X.Leroy, D.Remy. , adapted to Coq's exn handling *)
 let try_finally f x finally y =
-  let res = try f x with exn -> finally y; raise exn in
+  let res = try f x
+    with exn ->
+      let exn, info = Exninfo.capture exn in
+      finally y;
+      Exninfo.iraise (exn, info)
+  in
   finally y;
   res
-
 
 (* Misc *)
 
