@@ -1154,7 +1154,7 @@ end
 let tacEVAL_TO_QUANTIFIED_IND ty =
   pf_apply begin fun env sigma ->
   try tclUNIT (Tacred.eval_to_quantified_ind env sigma ty)
-  with e -> tclZERO e
+  with e when CErrors.noncritical e -> tclZERO e
   end
 
 let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
