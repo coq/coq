@@ -60,7 +60,7 @@ val levels : t -> Univ.Level.Set.t
 val super : t -> t
 
 (** On binders: is this variable proof relevant *)
-type relevance = Relevant | Irrelevant
+type relevance = Relevant | Irrelevant | RelevanceVar of QVar.t
 
 val relevance_hash : relevance -> int
 

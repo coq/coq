@@ -380,7 +380,10 @@ let judge_of_array env sigma u tj defj tyj =
   sigma, j
 
 let check_binder_annot sigma s n =
-  check_binder_annot (ESorts.kind sigma s) n
+  (* TODO: get rid of this *)
+  let r = n.binder_relevance in
+  let r' = Sorts.relevance_of_sort (ESorts.kind sigma s) in
+  if r' == r then n else { n with binder_relevance = r' }
 
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)

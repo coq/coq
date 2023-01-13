@@ -153,11 +153,12 @@ module Hsorts =
 let hcons = Hashcons.simple_hcons Hsorts.generate Hsorts.hcons hcons_univ
 
 (** On binders: is this variable proof relevant *)
-type relevance = Relevant | Irrelevant
+type relevance = Relevant | Irrelevant | RelevanceVar of QVar.t
 
 let relevance_equal r1 r2 = match r1,r2 with
   | Relevant, Relevant | Irrelevant, Irrelevant -> true
-  | (Relevant | Irrelevant), _ -> false
+  | RelevanceVar q1, RelevanceVar q2 -> QVar.equal q1 q2
+  | (Relevant | Irrelevant | RelevanceVar _), _ -> false
 
 let relevance_of_sort_family = function
   | InSProp -> Irrelevant
@@ -166,10 +167,12 @@ let relevance_of_sort_family = function
 let relevance_hash = function
   | Relevant -> 0
   | Irrelevant -> 1
+  | RelevanceVar q -> Hashset.Combine.combinesmall 2 (Int.hash (QVar.repr q))
 
 let relevance_of_sort = function
   | SProp -> Irrelevant
-  | _ -> Relevant
+  | Prop | Set | Type _ -> Relevant
+  | QSort (q, _) -> RelevanceVar q
 
 let debug_print = function
   | SProp -> Pp.(str "SProp")

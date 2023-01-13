@@ -886,12 +886,21 @@ let mkLEvar sigma (evk, args) =
 
 let evar_handler sigma =
   let evar_expand ev = existential_expand_value0 sigma ev in
-  let evar_relevance (evk, _) = match find sigma evk with
-  | EvarInfo evi -> evi.evar_relevance
-  | exception Not_found -> Sorts.Relevant
+  let qvar_relevant q = match UState.nf_qvar sigma.universes q with
+  | QSProp -> false
+  | QProp | QType | QVar _ -> true
+  in
+  let evar_relevant (evk, _) = match find sigma evk with
+  | EvarInfo evi ->
+    begin match evi.evar_relevance with
+    | Sorts.Relevant -> true
+    | Sorts.Irrelevant -> false
+    | Sorts.RelevanceVar q -> qvar_relevant q
+    end
+  | exception Not_found -> true
   in
   let evar_repack ev = mkLEvar sigma ev in
-  { evar_expand; evar_relevance; evar_repack }
+  { evar_expand; evar_relevant; evar_repack; qvar_relevant }
 
 let existential_type d (n, args) =
   let EvarInfo info =
@@ -1658,7 +1667,8 @@ module MiniEConstr = struct
       UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
     in
     let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
-    UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value c
+    let rel_value r = UState.nf_relevance (evar_universe_context sigma) r in
+    UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value rel_value c
 
   let to_constr_gen sigma c =
     let saw_evar = ref false in
@@ -1672,7 +1682,8 @@ module MiniEConstr = struct
       UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
     in
     let sort_value s = UState.nf_sort (evar_universe_context sigma) s in
-    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value c in
+    let rel_value r = UState.nf_relevance (evar_universe_context sigma) r in
+    let c = UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value rel_value c in
     let saw_evar = if not !saw_evar then false
       else
         let exception SawEvar in

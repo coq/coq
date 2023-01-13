@@ -499,6 +499,10 @@ let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
   let ci = if ci.ci_relevance == rp then ci
     else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
   in
+  let () = match ci.ci_relevance with
+  | Sorts.Relevant | Sorts.Irrelevant -> ()
+  | Sorts.RelevanceVar _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  in
   let () = check_case_info env (ind, u') rp ci in
   let () =
     let is_inversion = match iv with
@@ -575,6 +579,10 @@ let type_of_global_in_context env r =
 
 let check_binder_annot s x =
   let r = x.binder_relevance in
+  let () = match r with
+  | Sorts.Relevant | Sorts.Irrelevant -> ()
+  | Sorts.RelevanceVar _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  in
   let r' = Sorts.relevance_of_sort s in
   if r' == r
   then x

@@ -515,7 +515,11 @@ let compute_projections env (kn, i as ind) =
       match na.binder_name with
       | Name id ->
         let lab = Label.of_id id in
-        let proj_relevant = match na.binder_relevance with Sorts.Irrelevant -> false | Sorts.Relevant -> true in
+        let proj_relevant = match na.binder_relevance with
+        | Sorts.Irrelevant -> false
+        | Sorts.Relevant -> true
+        | Sorts.RelevanceVar _ -> assert false
+        in
         let kn = Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg lab in
         (* from [params, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj] *)

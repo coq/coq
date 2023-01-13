@@ -91,6 +91,7 @@ let v_blk = Valexpr.make_block
 let of_relevance = function
   | Sorts.Relevant -> ValInt 0
   | Sorts.Irrelevant -> ValInt 1
+  | Sorts.RelevanceVar q -> ValInt 0 (* FIXME ? *)
 
 let to_relevance = function
   | ValInt 0 -> Sorts.Relevant

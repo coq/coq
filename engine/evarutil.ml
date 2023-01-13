@@ -71,7 +71,8 @@ let nf_evar sigma c =
     UnivSubst.level_subst_of (fun l -> UnivSubst.normalize_univ_variable_opt_subst lsubst l) l
   in
   let sort_value s = UState.nf_sort (Evd.evar_universe_context sigma) s in
-  EConstr.of_constr @@ UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value (EConstr.Unsafe.to_constr c)
+  let rel_value r = UState.nf_relevance (Evd.evar_universe_context sigma) r in
+  EConstr.of_constr @@ UnivSubst.nf_evars_and_universes_opt_subst evar_value level_value sort_value rel_value (EConstr.Unsafe.to_constr c)
 
 let j_nf_evar sigma j =
   { uj_val = nf_evar sigma j.uj_val;

@@ -10,7 +10,6 @@
 
 open Names
 open Constr
-open Declarations
 open Environ
 open Esubst
 
@@ -145,8 +144,6 @@ val get_native_args1 : CPrimitives.t -> pconstant -> stack ->
   fconstr list * fconstr * fconstr next_native_args * stack
 
 val stack_args_size : stack -> int
-val eta_expand_stack : Name.t Context.binder_annot -> stack -> stack
-val skip_irrelevant_stack : stack -> stack
 
 val inductive_subst : Declarations.mutual_inductive_body
   -> Univ.Instance.t
@@ -217,6 +214,10 @@ val whd_val : clos_infos -> clos_tab -> fconstr -> constr
 val whd_stack :
   clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
 
+val skip_irrelevant_stack : clos_infos -> stack -> stack
+
+val eta_expand_stack : clos_infos -> Name.t Context.binder_annot -> stack -> stack
+
 (** [eta_expand_ind_stack env ind c s t] computes stacks corresponding
     to the conversion of the eta expansion of t, considered as an inhabitant
     of ind, and the Constructor c of this inductive type applied to arguments
@@ -230,11 +231,6 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
    (fconstr * stack) -> stack * stack
 
 (** Conversion auxiliary functions to do step by step normalisation *)
-
-(** [unfold_reference] unfolds references in a [fconstr]. Produces a
-    [FIrrelevant] when the reference is irrelevant. *)
-val unfold_reference : Environ.env -> TransparentState.t ->
-  clos_tab -> table_key -> (fconstr, Util.Empty.t) constant_def
 
 (** Like [unfold_reference], but handles primitives: if there are not
     enough arguments, return [None]. Otherwise return [Some] with

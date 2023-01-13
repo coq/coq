@@ -308,6 +308,7 @@ let inductive_make_projection ind mib ~proj_arg =
     let proj_relevant = match relevances.(proj_arg) with
     | Sorts.Irrelevant -> false
     | Sorts.Relevant -> true
+    | Sorts.RelevanceVar _ -> assert false
     in
     if proj_arg < 0 || Array.length labs <= proj_arg
     then CErrors.anomaly Pp.(str "inductive_make_projection: invalid proj_arg.");
@@ -326,6 +327,7 @@ let inductive_make_projections ind mib =
         let proj_relevant = match relevances.(proj_arg) with
         | Sorts.Irrelevant -> false
         | Sorts.Relevant -> true
+        | Sorts.RelevanceVar _ -> assert false
         in
         Names.Projection.Repr.make ind ~proj_relevant ~proj_npars:mib.mind_nparams ~proj_arg lab)
         labs

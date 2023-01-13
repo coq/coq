@@ -101,6 +101,9 @@ val nf_qvar : t -> Sorts.QVar.t -> quality
 val nf_sort : t -> Sorts.t -> Sorts.t
 (** Returns the normal form of the sort. *)
 
+val nf_relevance : t -> Sorts.relevance -> Sorts.relevance
+(** Returns the normal form of the relevance. *)
+
 (** {5 Constraints handling} *)
 
 val add_constraints : t -> Univ.Constraints.t -> t

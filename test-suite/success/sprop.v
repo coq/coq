@@ -169,7 +169,11 @@ End sFix.
 
 (** Relevance repairs *)
 
-Fail Definition fix_relevance : _ -> nat := fun _ : iUnit => 0.
+Definition fix_relevance : _ -> nat := fun _ : iUnit => 0.
+Definition relevance_unfixed := fun (A:SProp) (P:A -> Prop) x y (v:P x) => v : P y.
+(* The kernel is fine *)
+Definition relevance_unfixed_bypass := fun (A:SProp) (P:A -> Prop) x y (v:P x) =>
+                                  ltac:(exact_no_check v) : P y.
 
 (* Check that VM/native properly keep the relevance of the predicate in the case info
    (bad-relevance warning as error otherwise) *)
@@ -182,13 +186,3 @@ Proof.
   move=> T +.
   intros X;exact I.
 Qed.
-
-Set Warnings "-bad-relevance".
-Definition fix_relevance : _ -> nat := fun _ : iUnit => 0.
-
-(* relevance isn't fixed when checking P x == P y *)
-Fail Definition relevance_unfixed := fun (A:SProp) (P:A -> Prop) x y (v:P x) => v : P y.
-
-(* but the kernel is fine *)
-Definition relevance_unfixed := fun (A:SProp) (P:A -> Prop) x y (v:P x) =>
-                                  ltac:(exact_no_check v) : P y.
