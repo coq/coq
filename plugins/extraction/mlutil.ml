@@ -1371,8 +1371,7 @@ let normalize a =
 (*S Special treatment of fixpoint for pretty-printing purpose. *)
 
 let general_optimize_fix f ids n args m c =
-  let v = Array.make n 0 in
-  for i=0 to (n-1) do v.(i)<-i done;
+  let v = Array.init n (fun i -> i) in
   let aux i = function
     | MLrel j when v.(j-1)>=0 ->
         if ast_occurs (j+1) c then raise Impossible else v.(j-1)<-(-i-1)

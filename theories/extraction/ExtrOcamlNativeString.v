@@ -58,15 +58,13 @@ Extract Inlined Constant String.string_of_list_ascii =>
       let a = Array.of_list l in
       String.init (Array.length a) (fun i -> a.(i)))".
 Extract Inlined Constant String.list_ascii_of_string =>
-  "(fun s ->
-      Array.to_list (Array.init (String.length s) (fun i -> s.[i])))".
+  "(fun s -> List.init (String.length s) (fun i -> s.[i]))".
 Extract Inlined Constant String.string_of_list_byte =>
   "(fun l ->
       let a = Array.of_list l in
       String.init (Array.length a) (fun i -> a.(i)))".
 Extract Inlined Constant String.list_byte_of_string =>
-  "(fun s ->
-      Array.to_list (Array.init (String.length s) (fun i -> s.[i])))".
+  "(fun s -> List.init (String.length s) (fun i -> s.[i]))".
 
 (* Other operations in module String (at the time of this writing):
       String.length
