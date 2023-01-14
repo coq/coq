@@ -1641,7 +1641,9 @@ let group_by_type ids (terms,termlists,binders,binderlists) =
        let vars,patl = try Id.List.assoc x binderlists with Not_found -> raise No_match in
        let v = List.map (fun pat -> match DAst.get pat with
            | GLocalPattern ((disjpat,_),_,_,_) -> List.map (glob_constr_of_cases_pattern (Global.env())) disjpat
-           | _ -> raise No_match) patl in
+           | GLocalAssum (Anonymous,bk,t) -> [DAst.make (GCast (DAst.make (GHole (Evar_kinds.BinderType Anonymous,IntroAnonymous)), DEFAULTcast, t))]
+           | GLocalAssum (Name id,bk,t) -> [DAst.make (GCast (DAst.make (GVar id), DEFAULTcast, t))]
+           | GLocalDef _ -> raise No_match) patl in
        (terms',((vars,List.flatten v),scl)::termlists',binders',binderlists')
     | NtnTypeBinderList (NtnBinderParsedAsBinder | NtnBinderParsedAsSomeBinderKind _) ->
       (* binder list -> binder list *)

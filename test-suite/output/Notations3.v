@@ -447,3 +447,28 @@ Notation "[[ x , y ]]" := (x, y).
 Check FORALL [[a , b]], a - b = 0.
 
 End PartOfIssue17094.
+
+Module PartOfIssue17094PrintingAssumption.
+
+Declare Custom Entry quoted.
+Notation "( x )" := x (in custom quoted at level 0, x at level 200).
+Notation "x" := x (in custom quoted at level 0, x global).
+Notation "{ A }" := A (in custom quoted at level 0, A constr at level 200).
+
+Axiom TypTerm : Type.
+Axiom qType : Type -> TypTerm.
+Axiom ValTerm : TypTerm -> Type.
+Notation "◻ A" := (ValTerm A) (at level 9, right associativity, A custom quoted at level 9).
+Notation "◻ A" := (qType (ValTerm A))
+  (in custom quoted at level 9, right associativity, A custom quoted at level 9).
+
+Declare Custom Entry quoted_binder.
+Notation "{ x }" := x (in custom quoted_binder at level 0, x constr).
+
+Axiom FORALL : forall {A : TypTerm} (B : ValTerm A -> TypTerm), TypTerm.
+Notation "∀' x .. y , P" := (FORALL (fun x => .. (FORALL (fun y => P)) .. ))
+  (in custom quoted at level 200, x custom quoted_binder as pattern, right associativity,
+      format "'[  ' '[  ' ∀'  x  ..  y ']' ,  '/' P ']'") : type_scope.
+Check ∀ A (B : ValTerm A -> TypTerm), (∀ (a : ◻A), ◻{B a}) -> ◻(∀' {a}, {B a}).
+
+End PartOfIssue17094PrintingAssumption.
