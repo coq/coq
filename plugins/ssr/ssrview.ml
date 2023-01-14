@@ -201,8 +201,7 @@ let interp_glob ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
     Ssrprinters.debug_ssr (fun () ->
       Pp.(str"interp-out: " ++ Printer.pr_econstr_env env sigma term));
     tclUNIT (env,sigma,term)
-  with e ->
-    (* XXX this is another catch all! *)
+  with e when CErrors.noncritical e ->
     let e, info = Exninfo.capture e in
     Ssrprinters.debug_ssr (fun () ->
     Pp.(str"interp-err: " ++ Printer.pr_glob_constr_env env sigma glob));

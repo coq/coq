@@ -176,8 +176,8 @@ let newssrcongrtac arg ist =
                   ; Tactics.apply a
                   ; congrtac (arg, mkRType) ist ])
     (fun _ -> Tacticals.tclZEROMSG Pp.(str"Conclusion is not an equality nor an arrow"))
-    with e -> Proofview.tclZERO e (* FIXME *)
-    )
+    with e when CErrors.noncritical e -> Proofview.tclZERO e
+  )
   end
 
 (** 7. Rewriting tactics (rewrite, unlock) *)
