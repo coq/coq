@@ -528,9 +528,7 @@ let check_pair_matching ?loc x y x' y' revert revert' =
        strbrk " while " ++ Id.print x' ++ strbrk " matching " ++ Id.print y' ++
        strbrk " was first found.")
 
-let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
-
-let mem_recursive_pair (x,y) l = List.mem_f (pair_equal Id.equal Id.equal) (x,y) l
+let mem_recursive_pair (x,y) l = List.mem_f (eq_pair Id.equal Id.equal) (x,y) l
 
 type recursive_pattern_kind =
 | RecursiveTerms of bool (* in reverse order *)
@@ -608,14 +606,14 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
           f' (if revert then iterator else subst_glob_vars [x, DAst.make @@ GVar y] iterator) in
         (* found variables have been collected by compare_constr *)
         found := { !found with vars = List.remove Id.equal y (!found).vars;
-                               recursive_term_vars = List.add_set (pair_equal Id.equal Id.equal) (x,y) (!found).recursive_term_vars };
+                               recursive_term_vars = List.add_set (eq_pair Id.equal Id.equal) (x,y) (!found).recursive_term_vars };
         NList (x,y,iterator,f (Option.get !terminator),revert)
     | Some (x,y,RecursiveBinders revert) ->
         let iterator =
           f' (if revert then iterator else subst_glob_vars [x, DAst.make @@ GVar y] iterator) in
         (* found have been collected by compare_constr *)
         found := { !found with vars = List.remove Id.equal y (!found).vars;
-                               recursive_binders_vars = List.add_set (pair_equal Id.equal Id.equal) (x,y) (!found).recursive_binders_vars };
+                               recursive_binders_vars = List.add_set (eq_pair Id.equal Id.equal) (x,y) (!found).recursive_binders_vars };
         NBinderList (x,y,iterator,f (Option.get !terminator),revert)
   else
     raise Not_found

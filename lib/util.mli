@@ -24,6 +24,15 @@ val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
 val map_pair : ('a -> 'b) -> 'a * 'a -> 'b * 'b
 
+(** Folding under pairs *)
+
+val fold_fst : ('c -> 'a -> 'c * 'a) -> 'c -> 'a * 'b -> 'c * ('a * 'b)
+val fold_snd : ('c -> 'b -> 'c * 'b) -> 'c -> 'a * 'b -> 'c * ('a * 'b)
+
+(** Equality on pairs *)
+
+val eq_pair : ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> ('a * 'b -> 'a * 'b -> bool)
+
 (** Mapping under triplets *)
 
 val on_pi1 : ('a -> 'b) -> 'a * 'c * 'd -> 'b * 'c * 'd
