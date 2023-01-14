@@ -264,3 +264,8 @@ FORALL [[a, b]], a - b = 0
      : Prop
 ∀ a b : nat, a - b = 0
      : Prop
+fun x : option unit => match x with
+                       | # tt & => # tt &
+                       | None => None
+                       end
+     : option unit -> option unit

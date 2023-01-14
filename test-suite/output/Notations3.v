@@ -499,3 +499,11 @@ Notation "'FORALL' x .. y , P" := (forall x , .. (forall y , P) .. )
 Check FORALL a b, a - b = 0.
 
 End PartOfIssue17094Ident.
+
+Module BetterFix13078.
+
+(* We now support referring to ident and pattern in notations for pattern *)
+Notation "# x &" := (Some x) (at level 0, x pattern).
+Check fun (x : option unit) => match x with | None => None | # tt & => # tt & end.
+
+End BetterFix13078.
