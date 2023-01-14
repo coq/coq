@@ -132,29 +132,22 @@ before_script:
     name: "$CI_JOB_NAME"
     expire_in: 2 months
 
-# The used Coq must be set explicitly for each job with "needs:".
-# We add a spurious dependency `not-a-real-job` that must be
-# overridden otherwise the CI will fail (to help debugging missing needs).
-
 # set "needs" when using
 .test-suite-template:
   stage: build
   interruptible: true
-  needs:
-    - not-a-real-job
   script:
-    - cd test-suite
-    - make clean
-    # careful with the ending /
-    - BIN=$(readlink -f ../_install_ci/bin)/
-    - LIB=$(readlink -f ../_install_ci/lib/coq)/
-    - export OCAMLPATH=$(readlink -f ../_install_ci/lib/):"$OCAMLPATH"
-    - COQEXTRAFLAGS="${COQEXTRAFLAGS}" make -j "$NJOBS" BIN="$BIN" COQLIB="$LIB" all
+    - COQEXTRAFLAGS="${COQEXTRAFLAGS}" make test || exit_code=$?
+    - if [ "$exit_code" -ne 0 ]; then
+        echo "Job has failed, finding errors...";
+        make test-replay;
+      fi
   artifacts:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
     paths:
-      - test-suite/logs
+      - _build/log
+      - _build/default/test-suite/**/*.log
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
 
@@ -162,8 +155,6 @@ before_script:
 .validate-template:
   stage: build
   interruptible: true
-  needs:
-    - not-a-real-job
   script:
     # exit 0: workaround for https://gitlab.com/gitlab-org/gitlab/issues/202505
     # the validate:vio job is sometimes started before build:vio, without artifacts
@@ -317,12 +308,6 @@ build:base+async:
     when: always
     paths:
       - _install_ci
-      # All those are for the test-suite jobs, to be discarded once we have dune for the test-suite
-      - config/Makefile
-      - config/coq_config.py
-      - config/coq_config.ml
-      - config/dune.c_flags
-      - dmesg.txt
   timeout: 1h 30min
 
 build:vio:
@@ -471,21 +456,15 @@ doc:ml-api:odoc:
 
 test-suite:base:
   extends: .test-suite-template
-  needs:
-    - build:base
 
 test-suite:base+32bit:
   extends: .test-suite-template
-  needs:
-    - build:base+32bit
   variables:
     OPAM_VARIANT: "+32bit"
   only: *full-ci
 
 test-suite:edge+flambda:
   extends: .test-suite-template
-  needs:
-    - build:edge+flambda
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
@@ -494,11 +473,12 @@ test-suite:edge+flambda:
 test-suite:edge:dev:
   stage: build
   interruptible: true
-  needs:
-    - build:edge+flambda:dev
   script:
-    - tar xfj _build.tar.bz2
-    - make test-suite
+    - make test || exit_code=$?
+    - if [ "$exit_code" -ne 0 ]; then
+        echo "Job has failed, finding errors...";
+        make test-replay;
+      fi
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
@@ -506,38 +486,13 @@ test-suite:edge:dev:
     name: "$CI_JOB_NAME.logs"
     when: on_failure
     paths:
-      - _build/default/test-suite/logs
+      - _build/log
+      - _build/default/test-suite/**/*.log
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
 
-.test-suite:ocaml+beta+dune-template:
-  stage: build
-  interruptible: true
-  script:
-    - opam switch create $OCAMLVER --empty
-    - eval $(opam env)
-    - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
-    - opam update
-    - opam install ocaml-variants=$OCAMLVER
-    - opam install dune zarith
-    - eval $(opam env)
-    - export COQ_UNIT_TEST=noop
-    - make test-suite
-  variables:
-    OPAM_SWITCH: base
-  artifacts:
-    name: "$CI_JOB_NAME.logs"
-    when: always
-    paths:
-      - _build/log
-      - _build/default/test-suite/logs
-    expire_in: 2 week
-  allow_failure: true
-
 test-suite:base+async:
   extends: .test-suite-template
-  needs:
-    - build:base
   variables:
     COQEXTRAFLAGS: "-async-proofs on -async-proofs-cache force"
   allow_failure: true

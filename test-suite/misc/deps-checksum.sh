@@ -1,6 +1,6 @@
 #!/bin/sh
-rm -f misc/deps/A/*.vo misc/deps/B/*.vo
-$coqc -R misc/deps/A A misc/deps/A/A.v
-$coqc -R misc/deps/B A misc/deps/B/A.v
-$coqc -R misc/deps/B A misc/deps/B/B.v
-$coqc -R misc/deps/B A -R misc/deps/A A misc/deps/checksum.v
+rm -f deps/A/*.vo deps/B/*.vo
+coqc -R deps/A A deps/A/A.v
+coqc -R deps/B A deps/B/A.v
+coqc -R deps/B A deps/B/B.v
+coqc -R deps/B A -R deps/A A deps/checksum.v

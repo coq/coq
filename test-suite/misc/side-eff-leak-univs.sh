@@ -5,7 +5,7 @@ set -e
 export COQBIN=$BIN
 export PATH=$COQBIN:$PATH
 
-cd misc/side-eff-leak-univs/
+cd side-eff-leak-univs/
 
 coq_makefile -f _CoqProject -o Makefile
 

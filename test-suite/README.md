@@ -99,3 +99,29 @@ Don't forget to check the updated `.out` files into git!
 Note that `output/MExtraction.out` is special: it is copied from
 [`micromega/micromega.ml`](../plugins/micromega/micromega.ml) in the plugin
 source directory. Automatic approval will incorrectly update the copy.
+
+## Environment variables [draft/ongoing work]
+
+For miscellaneous scripts part of the test suite, it is natural that
+they need to access different binaries and files. As of today, the
+handling of those has been done a bit in an ad-hoc way, but the below
+guidelines should be implemented.
+
+### Initial environment
+
+- All scripts in the test suite will be called with the following in PATH:
+  + a working OCaml toolchain + `ocamlfind` / `OCAMLPATH` properly set
+  + a working Coq installation, with binaries and libraries
+
+- Some scripts need to access additional files, for example the timing
+  tests, to that purpose, we provide the following variables:
+  + `COQ_TS_CORELIB`: absolute path where `lib/coq-core` lives
+  + `COQ_TS_COQLIB`: absolute path where `lib/coq` lives
+
+  [note: these variables are not yet implemented]
+
+### TODO
+
+- Main TODO stems from the fact that regular `make test-suite` won't
+  setup the right initial environment due to make limitations. `make
+  -f Makefile.dune test-suite` does setup it properly.

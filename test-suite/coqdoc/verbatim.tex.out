@@ -16,7 +16,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{url}
 \begin{document}
-\coqlibrary{Coqdoc.verbatim}{Library }{Coqdoc.verbatim}
+\coqlibrary{verbatim}{Library }{verbatim}
 
 \begin{coqdoccode}
 \end{coqdoccode}

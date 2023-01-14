@@ -36,6 +36,7 @@
 
 ; bootstrap for theories/dune
 (rule
+ (alias dune-gen)
  (targets theories_dune)
  (deps
   (source_tree theories)
@@ -45,6 +46,7 @@
    (run tools/dune_rule_gen/gen_rules.exe Coq theories %{env:COQ_DUNE_EXTRA_OPT=}))))
 
 (rule
+ (alias dune-gen)
  (targets ltac2_dune)
  (deps
   (source_tree theories)
@@ -54,11 +56,29 @@
   (with-stdout-to %{targets}
    (run tools/dune_rule_gen/gen_rules.exe Ltac2 user-contrib/Ltac2 %{env:COQ_DUNE_EXTRA_OPT=}))))
 
-; Use summary.log as the target
-(alias
- (name runtest)
- (package coqide-server)
- (deps test-suite/summary.log))
+; bootstrap for test-suite rules
+(rule
+ (alias dune-test-gen)
+ (targets test_suite_dune)
+ (deps
+  (source_tree test-suite)
+  (source_tree theories)
+  (source_tree user-contrib))
+ (action
+  (chdir
+   test-suite
+   (run ./tools/gen_rules/gen_rules.exe))))
+
+; bootstrap for unit tests
+(rule
+ (alias dune-test-gen)
+ (targets utest_dune)
+ (deps
+  (source_tree test-suite/unit-tests))
+ (action
+  (chdir
+   test-suite/unit-tests
+   (run ./tools/utest_rules.exe))))
 
 ; For make compat
 (alias

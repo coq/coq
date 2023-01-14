@@ -20,6 +20,13 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Set Warnings "-undeclared-scope".
+Set Warnings "-implicit-core-hint-db".
+Set Warnings "-deprecated-hint-without-locality".
+Set Warnings "-ambiguous-paths".
+Set Warnings "-notation-overridden".
+Set Warnings "-redundant-canonical-projection".
+
 (* eqtype ---------------------------------------------------------- *)
 
 Module Equality.

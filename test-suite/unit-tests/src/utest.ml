@@ -14,6 +14,7 @@ let cfprintf oc = Printf.(kfprintf (fun oc -> fprintf oc "\n%!") oc)
 
 (* given test result, print message, return success boolean *)
 let logger out_ch result =
+  let ceprintf s = cfprintf stderr s in
   let cprintf s = cfprintf out_ch s in
   match result with
   | RSuccess path ->
@@ -22,6 +23,7 @@ let logger out_ch result =
   | RError (path,msg)
   | RFailure (path,msg) ->
      cprintf "TEST FAILED: %s (%s)" (string_of_path path) msg;
+     ceprintf "TEST FAILED: %s (%s)" (string_of_path path) msg;
      false
   | RSkip (path,msg)
   | RTodo (path,msg) ->
@@ -43,6 +45,7 @@ let run_one logit test =
   process_results results
 
 let open_log_out_ch ml_fn =
+  let ml_fn = Filename.basename ml_fn in
   let log_fn = ml_fn ^ ".log" in
   open_out log_fn
 
@@ -65,12 +68,15 @@ let run_tests ml_fn out_ch tests =
   cprintf
       "*** Ran %d tests, with %d successes and %d failures ***"
       tot succ (tot - succ);
-  if succ = tot then
+  if succ = tot then begin
     cprintf
-      "==========> SUCCESS <==========\n    %s...Ok" ml_fn
+      "==========> SUCCESS <==========\n    _build/default/%s...Ok" ml_fn;
+    close_out out_ch
+  end
   else begin
     cprintf
-      "==========> FAILURE <==========\n    %s...Error!" ml_fn;
-    ceprintf "FAILED    %s.log" ml_fn
-  end;
-  close_out out_ch
+      "==========> FAILURE <==========\n    _build/default/%s...Error!" ml_fn;
+    ceprintf "FAILED    _build/default/%s.log" ml_fn;
+    close_out out_ch;
+    exit 1
+  end

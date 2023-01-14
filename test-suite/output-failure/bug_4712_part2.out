@@ -4,5 +4,4 @@ The reference foobarA was not found in the current environment.
 File "./output/bug_4712_part2.v", line 8, characters 21-22:
 Error: Syntax Error: Lexer: Undefined token
 
-
-coqc exited with code 1
+exit status: 1

@@ -12,7 +12,7 @@
 
 .PHONY: help help-install states world watch check    # Main developer targets
 .PHONY: refman-html refman-pdf stdlib-html apidoc     # Documentation targets
-.PHONY: test-suite dev-targets
+.PHONY: test test-suite dev-targets
 .PHONY: fmt ocheck obuild ireport clean               # Maintenance targets
 .PHONY: dunestrap vio release install                 # Miscellaneous
 
@@ -39,10 +39,9 @@ help:
 	@echo "make help-install for installation instructions. Common developer targets are:"
 	@echo ""
 	@echo "  - states: build a minimal functional coqtop"
-	@echo "  - world:  build all public binaries and libraries in developer mode"
-	@echo "  - watch:  build all public binaries and libraries [continuous build]"
-	@echo "  - check:  build all ML files as fast as possible"
-	@echo "  - test-suite: run Coq's test suite [env NJOBS=N to set job parallelism]"
+	@echo "  - world:  build all public binaries and libraries [watch for continuous]"
+	@echo "  - check:  build all ML files as fast as possible [watch-check for continuous]"
+	@echo "  - test:   run Coq's test suite [watch-test for continuous]"
 	@echo "  - dunestrap: Generate the dune rules for vo files"
 	@echo ""
 	@echo "  use 'COQ_DUNE_EXTRA_OPT=\"-vio\" make target' to do a vio build"
@@ -117,11 +116,27 @@ help-install:
 	@echo " Note that building a package in release mode ignores other packages present in"
 	@echo " the worktree. See Dune documentation for more information."
 
+# Generated Dune files for the test suite
+DUNE_TEST_GEN=\
+	_build/default/test_suite_dune\
+	_build/default/utest_dune\
+
+# Generated Dune files for the stdlib
+DUNE_GEN=\
+	_build/default/theories_dune\
+	_build/default/ltac2_dune\
+
 # We regenerate always as to correctly track deps, can do better
 # We do a single call to dune as to avoid races and locking
-_build/default/theories_dune _build/default/ltac2_dune .dune-stamp: FORCE
-	dune build $(DUNEOPT) --root . theories_dune ltac2_dune
-	touch .dune-stamp
+$(DUNE_GEN) .dune-stamp: FORCE
+	dune build $(DUNEOPT) --root . @dune-gen
+	@touch .dune-stamp
+
+# This target is called by testing targets. This will run the test suite rule
+# generator as awell as the stdlib one
+$(DUNE_TEST_GEN) .dune-test-stamp: FORCE
+	dune build $(DUNEOPT) --root . @dune-test-gen
+	@touch .dune-test-stamp
 
 theories/dune: .dune-stamp
 	cp -a _build/default/theories_dune $@ && chmod +w $@
@@ -129,11 +144,25 @@ theories/dune: .dune-stamp
 user-contrib/Ltac2/dune: .dune-stamp
 	cp -a _build/default/ltac2_dune $@ && chmod +w $@
 
+test-suite/dune: .dune-test-stamp
+	cp -a _build/default/test_suite_dune $@ && chmod +w $@
+
+test-suite/unit-tests/dune: .dune-test-stamp
+	cp -a _build/default/utest_dune $@ && chmod +w $@
+
 FORCE: ;
 
-DUNE_FILES=theories/dune user-contrib/Ltac2/dune
+DUNE_FILES=\
+	theories/dune\
+	user-contrib/Ltac2/dune\
+
+DUNE_TEST_FILES=\
+	test-suite/dune\
+	test-suite/unit-tests/dune\
 
 dunestrap: $(DUNE_FILES)
+
+duneteststrap: $(DUNE_FILES) $(DUNE_TEST_FILES)
 
 states: dunestrap
 	dune build $(DUNEOPT) dev/shim/coqtop
@@ -147,28 +176,37 @@ world: dunestrap
 vio: dunestrap
 	dune build $(DUNEOPT) @vio
 
-watch:
+watch: dunestrap
 	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS) -w
 
-check:
+check: dunestrap
 	dune build $(DUNEOPT) @check
 
-test-suite: dunestrap
-	dune runtest --no-buffer $(DUNEOPT)
+watch-check: dunestrap
+	dune build $(DUNEOPT) @check -w
+
+test test-suite: duneteststrap
+	dune build $(DUNEOPT) @runtest
+
+watch-test: duneteststrap
+	dune build $(DUNEOPT) @runtest -w
+
+test-replay:
+	./test-suite/tools/replay_errors.sh
 
 refman-html: dunestrap
-	dune build --no-buffer @refman-html
+	dune build $(DUNEOPT) --no-buffer @refman-html
 
 refman-pdf: dunestrap
-	dune build --no-buffer @refman-pdf
+	dune build $(DUNEOPT) --no-buffer @refman-pdf
 
 stdlib-html: dunestrap
-	dune build @stdlib-html
+	dune build $(DUNEOPT) @stdlib-html
 
-apidoc:
+apidoc: dunestrap
 	dune build $(DUNEOPT) @doc
 
-release: theories/dune
+release: dunestrap
 	@echo "release target is deprecated, use dune directly"
 	dune build $(DUNEOPT) -p coq
 
@@ -178,16 +216,19 @@ install:
 	@echo "where P is any of the packages defined by opam files in the root dir"
 	@false
 
-fmt:
-	dune build @fmt --auto-promote
+promote: dunestrap
+	dune promote $(DUNEOPT)
 
-ocheck:
+fmt: dunestrap
+	dune fmt $(DUNEOPT)
+
+ocheck: dunestrap
 	dune build $(DUNEOPT) @check --workspace=dev/dune-workspace.all
 
 obuild: dunestrap
 	dune build $(DUNEOPT) @default --workspace=dev/dune-workspace.all
 
-ireport:
+ireport: dunestrap
 	dune clean
 	dune build $(DUNEOPT) @install --profile=ireport
 
@@ -201,7 +242,7 @@ DOC_GRAM:=_build/default/doc/tools/docgram/doc_grammar.exe
 
 # not worth figuring out dependencies, just leave it to dune
 .PHONY: $(DOC_GRAM)
-$(DOC_GRAM):
+$(DOC_GRAM): dunestrap
 	dune build $(DUNEOPT) $@
 
 include doc/Makefile.docgram
@@ -213,7 +254,7 @@ CONTEXT=_build/install/default
 # XXX: Port this to a dune alias so the build is hygienic!
 .PHONY: plugin-tutorial
 plugin-tutorial: dunestrap
-	dune build $(CONTEXT)/lib/coq-core/META coq-core.install theories/Init/Prelude.vo
+	dune build $(DUNEOPT) $(CONTEXT)/lib/coq-core/META coq-core.install theories/Init/Prelude.vo
 	+$(MAKE) OCAMLPATH=$(shell pwd)/$(CONTEXT)/lib/ COQBIN=$(shell pwd)/$(CONTEXT)/bin/ COQCORELIB=$(shell pwd)/$(CONTEXT)/lib/coq-core COQLIB=$(shell pwd)/_build/default/ -C doc/plugin_tutorial
 
 # This is broken in a very weird way with a permission error... see
@@ -250,7 +291,7 @@ define subtarget =
 
   theories-$(2):
 	@echo "DUNE $(1)*.vo"
-	@dune build $$($(2)_FILES_PATH)
+	@dune build $(DUNEOPT) $$($(2)_FILES_PATH)
 endef
 
 $(foreach subdir,$(wildcard theories/*/),$(eval $(call subtarget,$(subdir),$(shell echo $(subst /,,$(subst theories/,,$(subdir))) | tr A-Z a-z))))

@@ -16,19 +16,19 @@
 \usepackage{amsmath,amssymb}
 \usepackage{url}
 \begin{document}
-\coqlibrary{Coqdoc.bug11353}{Library }{Coqdoc.bug11353}
+\coqlibrary{bug11353}{Library }{bug11353}
 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Definition} \coqdef{Coqdoc.bug11353.a}{a}{\coqdocdefinition{a}} := 0. \#[   \coqdocvar{universes}( \coqdocvar{template}) ]\coqdoceol
+\coqdockw{Definition} \coqdef{bug11353.a}{a}{\coqdocdefinition{a}} := 0. \#[   \coqdocvar{universes}( \coqdocvar{template}) ]\coqdoceol
 \coqdocnoindent
-\coqdockw{Inductive} \coqdef{Coqdoc.bug11353.mysum}{mysum}{\coqdocinductive{mysum}} (\coqdef{Coqdoc.bug11353.A:1}{A}{\coqdocbinder{A}} \coqdef{Coqdoc.bug11353.B:2}{B}{\coqdocbinder{B}}:\coqdockw{Type}) : \coqdockw{Type} :=\coqdoceol
+\coqdockw{Inductive} \coqdef{bug11353.mysum}{mysum}{\coqdocinductive{mysum}} (\coqdef{bug11353.A:1}{A}{\coqdocbinder{A}} \coqdef{bug11353.B:2}{B}{\coqdocbinder{B}}:\coqdockw{Type}) : \coqdockw{Type} :=\coqdoceol
 \coqdocindent{1.00em}
-\ensuremath{|} \coqdef{Coqdoc.bug11353.myinl}{myinl}{\coqdocconstructor{myinl}} : \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.bug11353.mysum:3}{\coqdocinductive{mysum}} \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}}\coqdoceol
+\ensuremath{|} \coqdef{bug11353.myinl}{myinl}{\coqdocconstructor{myinl}} : \coqref{bug11353.A:1}{\coqdocvariable{A}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{bug11353.mysum:3}{\coqdocinductive{mysum}} \coqref{bug11353.A:1}{\coqdocvariable{A}} \coqref{bug11353.B:2}{\coqdocvariable{B}}\coqdoceol
 \coqdocindent{1.00em}
-\ensuremath{|} \coqdef{Coqdoc.bug11353.myinr}{myinr}{\coqdocconstructor{myinr}} : \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.bug11353.mysum:3}{\coqdocinductive{mysum}} \coqref{Coqdoc.bug11353.A:1}{\coqdocvariable{A}} \coqref{Coqdoc.bug11353.B:2}{\coqdocvariable{B}}.\coqdoceol
+\ensuremath{|} \coqdef{bug11353.myinr}{myinr}{\coqdocconstructor{myinr}} : \coqref{bug11353.B:2}{\coqdocvariable{B}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{bug11353.mysum:3}{\coqdocinductive{mysum}} \coqref{bug11353.A:1}{\coqdocvariable{A}} \coqref{bug11353.B:2}{\coqdocvariable{B}}.\coqdoceol
 \coqdocemptyline
 \coqdocnoindent
-\#[\coqdocvar{local}]\coqdockw{Definition} \coqdef{Coqdoc.bug11353.b}{b}{\coqdocdefinition{b}} := 1.\coqdoceol
+\#[\coqdocvar{local}]\coqdockw{Definition} \coqdef{bug11353.b}{b}{\coqdocdefinition{b}} := 1.\coqdoceol
 \end{coqdoccode}
 \end{document}

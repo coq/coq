@@ -48,7 +48,7 @@ End Pair.
 
 
 
-Require Nat.
+From Mods Require Nat.
 
 Module NN := Pair Nat Nat.
 

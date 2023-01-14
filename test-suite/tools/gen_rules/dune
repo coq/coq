@@ -1,0 +1,4 @@
+(executable
+ (name gen_rules)
+ (modules :standard)
+ (libraries str unix coqdeplib))

@@ -1,0 +1,3 @@
+(executable
+ (name fake_ide)
+ (libraries coqide-server.protocol coqide-server.core))

@@ -149,5 +149,8 @@ bin
 .merlin
 
 .dune-stamp
+.dune-test-stamp
 theories/dune
 user-contrib/Ltac2/dune
+test-suite/dune
+test-suite/unit-tests/dune

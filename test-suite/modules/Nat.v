@@ -8,7 +8,7 @@ Lemma le_refl : forall n : nat, le n n.
   auto.
 Qed.
 
-Require Import Le.
+From Coq Require Import Le.
 
 Lemma le_trans : forall n m k : nat, le n m -> le m k -> le n k.
    eauto with arith.

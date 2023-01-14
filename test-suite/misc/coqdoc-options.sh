@@ -2,10 +2,7 @@
 
 set -e
 
-export COQBIN=$BIN
-export PATH=$COQBIN:$PATH
-
-cd misc/coqdoc-options/
+cd coqdoc-options/
 
 coq_makefile -f _CoqProject -o Makefile
 

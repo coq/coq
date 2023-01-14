@@ -1,1 +1,1 @@
-Load "bugs/bug_16278_load.v".
+Load "bug_16278_load.v".

@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-export COQBIN=$BIN
-export PATH=$COQBIN:$PATH
+# Make
+CoqMakefile_in="$(realpath "../../tools/CoqMakefile.in")"
 
-TMP=`mktemp -d`
+# Careful with this, some distros mount /tmp as noexec, so we cannot
+# use mktmp and place binaries there.
+# This does not work on Mac! Solution is to move to cram tests.
+TMP=`mktemp -p $(pwd) -d`
 cd $TMP
 
 cat > coq_environment.txt <<EOT
@@ -14,10 +17,10 @@ OCAMLFIND="$TMP/overridden"
 FOOBAR="one more"
 EOT
 
-cp $BIN/coqc .
-cp $BIN/coq_makefile .
+cp $(which coqc) ./coqc
+cp $(which coq_makefile) ./coq_makefile
 mkdir -p overridden/tools/
-cp $COQLIB/../coq-core/tools/CoqMakefile.in overridden/tools/
+cp $CoqMakefile_in overridden/tools/CoqMakefile.in
 
 unset COQLIB
 N=`./coqc -config | grep COQLIB | grep /overridden | wc -l`

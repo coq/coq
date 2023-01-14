@@ -1,0 +1,11 @@
+; the expected output for the MExtraction test is plugins/micromega/micromega.ml
+; except with additional newline
+
+(rule
+ (targets MExtraction.out)
+ (action
+  (with-stdout-to
+   %{targets}
+   (progn
+    (cat ../../plugins/micromega/micromega.ml)
+    (echo "\n")))))

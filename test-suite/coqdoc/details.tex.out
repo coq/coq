@@ -16,24 +16,24 @@
 \usepackage{amsmath,amssymb}
 \usepackage{url}
 \begin{document}
-\coqlibrary{Coqdoc.details}{Library }{Coqdoc.details}
+\coqlibrary{details}{Library }{details}
 
 \begin{coqdoccode}
 \end{coqdoccode}
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Definition} \coqdef{Coqdoc.details.foo}{foo}{\coqdocdefinition{foo}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}} := 3.\coqdoceol
+\coqdockw{Definition} \coqdef{details.foo}{foo}{\coqdocdefinition{foo}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}} := 3.\coqdoceol
 \end{coqdoccode}
 \begin{coqdoccode}
 \coqdocemptyline
 \end{coqdoccode}
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Fixpoint} \coqdef{Coqdoc.details.idnat}{idnat}{\coqdocdefinition{idnat}} (\coqdef{Coqdoc.details.x:1}{x}{\coqdocbinder{x}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}) : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}} :=\coqdoceol
+\coqdockw{Fixpoint} \coqdef{details.idnat}{idnat}{\coqdocdefinition{idnat}} (\coqdef{details.x:1}{x}{\coqdocbinder{x}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}}) : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}} :=\coqdoceol
 \coqdocindent{1.00em}
-\coqdockw{match} \coqref{Coqdoc.details.x:1}{\coqdocvariable{x}} \coqdockw{with}\coqdoceol
+\coqdockw{match} \coqref{details.x:1}{\coqdocvariable{x}} \coqdockw{with}\coqdoceol
 \coqdocindent{1.00em}
-\ensuremath{|} \coqexternalref{S}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocconstructor{S}} \coqdocvar{x} \ensuremath{\Rightarrow} \coqexternalref{S}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocconstructor{S}} (\coqref{Coqdoc.details.idnat:2}{\coqdocdefinition{idnat}} \coqref{Coqdoc.details.x:1}{\coqdocvariable{x}})\coqdoceol
+\ensuremath{|} \coqexternalref{S}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocconstructor{S}} \coqdocvar{x} \ensuremath{\Rightarrow} \coqexternalref{S}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocconstructor{S}} (\coqref{details.idnat:2}{\coqdocdefinition{idnat}} \coqref{details.x:1}{\coqdocvariable{x}})\coqdoceol
 \coqdocindent{1.00em}
 \ensuremath{|} 0 \ensuremath{\Rightarrow} 0\coqdoceol
 \coqdocindent{1.00em}

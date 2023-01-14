@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link href="coqdoc.css" rel="stylesheet" type="text/css" />
-<title>Coqdoc.binder</title>
+<title>binder</title>
 </head>
 
 <body>
@@ -16,7 +16,7 @@
 
 <div id="main">
 
-<h1 class="libtitle">Library Coqdoc.binder</h1>
+<h1 class="libtitle">Library binder</h1>
 
 <div class="code">
 </div>
@@ -27,7 +27,7 @@ Link binders
 <div class="code">
 
 <br/>
-<span class="id" title="keyword">Definition</span> <a id="foo" class="idref" href="#foo"><span class="id" title="definition">foo</span></a> <a id="alpha:1" class="idref" href="#alpha:1"><span class="id" title="binder">alpha</span></a> <a id="beta:2" class="idref" href="#beta:2"><span class="id" title="binder">beta</span></a> := <a class="idref" href="Coqdoc.binder.html#alpha:1"><span class="id" title="variable">alpha</span></a> <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Peano.html#0dacc1786c5ba797d47dd85006231633"><span class="id" title="notation">+</span></a> <a class="idref" href="Coqdoc.binder.html#beta:2"><span class="id" title="variable">beta</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="foo" class="idref" href="#foo"><span class="id" title="definition">foo</span></a> <a id="alpha:1" class="idref" href="#alpha:1"><span class="id" title="binder">alpha</span></a> <a id="beta:2" class="idref" href="#beta:2"><span class="id" title="binder">beta</span></a> := <a class="idref" href="binder.html#alpha:1"><span class="id" title="variable">alpha</span></a> <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Peano.html#0dacc1786c5ba797d47dd85006231633"><span class="id" title="notation">+</span></a> <a class="idref" href="binder.html#beta:2"><span class="id" title="variable">beta</span></a>.<br/>
 </div>
 </div>
 

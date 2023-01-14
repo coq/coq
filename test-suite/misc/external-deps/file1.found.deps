@@ -1,2 +1,2 @@
-misc/external-deps/file1.vo misc/external-deps/file1.glob misc/external-deps/file1.v.beautified misc/external-deps/file1.required_vo: misc/external-deps/file1.v misc/external-deps/deps/d1
-misc/external-deps/file1.vio: misc/external-deps/file1.v misc/external-deps/deps/d1
+external-deps/file1.vo external-deps/file1.glob external-deps/file1.v.beautified external-deps/file1.required_vo: external-deps/file1.v external-deps/deps/d1
+external-deps/file1.vio: external-deps/file1.v external-deps/deps/d1

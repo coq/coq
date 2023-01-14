@@ -1,5 +1,4 @@
 File "./output/bug_15334.v", line 4, characters 11-12:
 Error: Syntax error: [custom:ent] expected after 'ent:(' (in [term]).
 
-
-coqc exited with code 1
+exit status: 1

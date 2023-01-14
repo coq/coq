@@ -1,3 +1,3 @@
-(* coq-prog-args: ("-ri" "Extraction" "-unset" "Extraction Optimize") *)
-
+Require Import Extraction.
+Unset Extraction Optimize.
 Test Extraction Optimize.

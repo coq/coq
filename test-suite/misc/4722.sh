@@ -2,14 +2,14 @@
 set -e
 
 # create test files
-mkdir -p misc/4722
-ln -sf toto misc/4722/tata
-touch misc/bug_4722.v
+mkdir -p 4722
+ln -sf toto 4722/tata
+touch bug_4722.v
 
 # run test
-$coqc "-R" "misc/4722" "Foo" -top Top misc/bug_4722.v
+coqc "-R" "4722" "Foo" -top Top bug_4722.v
 
 # clean up test files
-rm misc/4722/tata
-rmdir misc/4722
-rm misc/bug_4722.v
+rm 4722/tata
+rmdir 4722
+rm bug_4722.v

@@ -14,7 +14,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2
+          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2 coreutils
           pip3 install macpack
 
       - name: Install OCaml dependencies
@@ -36,7 +36,6 @@ jobs:
       - name: Build Coq
         run: |
           eval $(opam env)
-          ./configure -prefix "$(pwd)/_install_ci" -warn-error yes -native-compiler no
           make dunestrap
           dune build -p coq-core,coq-stdlib,coqide-server,coqide,coq
         env:
@@ -51,11 +50,8 @@ jobs:
       - name: Run Coq Test Suite
         run: |
           eval $(opam env)
-          cd test-suite
-          make clean
-          export OCAMLPATH="$(pwd)/../_install_ci/lib":"$OCAMLPATH"
-          BIN="$(pwd)/../_install_ci/bin/"
-          LIB="$(pwd)/../_install_ci/lib/coq/"
-          make -j "$NJOBS" BIN="$BIN" COQLIB="$LIB" PRINT_LOGS=1 all
-        env:
-          NJOBS: "2"
+          make test || exit_code=$?
+          if [ "$exit_code" -ne 0 ]; then
+            echo "Job has failed, finding errors...";
+            make test-replay
+          fi

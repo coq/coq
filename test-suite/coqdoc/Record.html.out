@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link href="coqdoc.css" rel="stylesheet" type="text/css" />
-<title>Coqdoc.Record</title>
+<title>Record</title>
 </head>
 
 <body>
@@ -16,11 +16,11 @@
 
 <div id="main">
 
-<h1 class="libtitle">Library Coqdoc.Record</h1>
+<h1 class="libtitle">Library Record</h1>
 
 <div class="code">
 <span class="id" title="keyword">Record</span> <a id="a" class="idref" href="#a"><span class="id" title="record">a</span></a> := { <a id="b" class="idref" href="#b"><span class="id" title="projection">b</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> ; <a id="c" class="idref" href="#c"><span class="id" title="projection">c</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> }.<br/>
-<span class="id" title="keyword">Definition</span> <a id="d" class="idref" href="#d"><span class="id" title="definition">d</span></a> := {| <a class="idref" href="Coqdoc.Record.html#b"><span class="id" title="projection">b</span></a> := 0 ; <a class="idref" href="Coqdoc.Record.html#c"><span class="id" title="projection">c</span></a> := <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a> |}.<br/>
+<span class="id" title="keyword">Definition</span> <a id="d" class="idref" href="#d"><span class="id" title="definition">d</span></a> := {| <a class="idref" href="Record.html#b"><span class="id" title="projection">b</span></a> := 0 ; <a class="idref" href="Record.html#c"><span class="id" title="projection">c</span></a> := <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a> |}.<br/>
 </div>
 </div>
 

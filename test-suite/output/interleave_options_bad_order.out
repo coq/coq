@@ -1,4 +1,4 @@
-While loading initial state:
+File "./output/interleave_options_bad_order.v", line 1, characters 0-26:
 Warning: There is no flag or option with this name: "Extraction Optimize".
 [unknown-option,option]
 Extraction Optimize is on

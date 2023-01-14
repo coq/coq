@@ -1,4 +1,3 @@
 Error: The section Baz, module type Bar and module Foo need to be closed.
 
-
-coqc exited with code 1
+exit status: 1

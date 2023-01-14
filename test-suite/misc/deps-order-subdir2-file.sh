@@ -6,23 +6,23 @@
 # This test is platform-dependent, we renounce to it
 dotest=true
 if [ $dotest = false ]; then exit 0; fi
-rm -f misc/deps/Theory2/*.vo misc/deps/Theory2/Subtheory?/*.vo misc/deps/Theory2/Subtheory?/Subsubtheory?/*.vo
+rm -f deps/Theory2/*.vo deps/Theory2/Subtheory?/*.vo deps/Theory2/Subtheory?/Subsubtheory?/*.vo
 tmpoutput=$(mktemp /tmp/coqcheck.XXXXXX)
-(cd misc/deps; $coqdep -f _CoqTheory2Project) > "$tmpoutput" 2>&1
-diff -u --strip-trailing-cr misc/deps/Theory2Deps.out $tmpoutput
+(cd deps; coqdep -f _CoqTheory2Project) > "$tmpoutput" 2>&1
+diff -u --strip-trailing-cr deps/Theory2Deps.out $tmpoutput
 R=$?
 if [ $R != 0 ]; then
     printf "Unexpected coqdep result.\n"
     exit 1
 fi
 times
-$coqc -Q misc/deps/Theory2 Theory misc/deps/Theory2/Subtheory1/File1.v
-$coqc -Q misc/deps/Theory2 Theory misc/deps/Theory2/Subtheory1/Subsubtheory2/File1.v
-$coqc -Q misc/deps/Theory2 Theory misc/deps/Theory2/Subtheory1/Subsubtheory2/File1.v
-$coqc -Q misc/deps/Theory2 Theory misc/deps/Theory2/Subtheory2/File1.v
-$coqc -Q misc/deps/Theory2 Theory misc/deps/Theory2/Subtheory2/Subsubtheory2/File1.v
-$coqc -Q misc/deps/Theory2 Theory misc/deps/Theory2/Subtheory2/Subsubtheory2/File1.v
-$coqc -Q misc/deps/Theory2 Theory misc/deps/Theory2/File2.v
+coqc -Q deps/Theory2 Theory deps/Theory2/Subtheory1/File1.v
+coqc -Q deps/Theory2 Theory deps/Theory2/Subtheory1/Subsubtheory2/File1.v
+coqc -Q deps/Theory2 Theory deps/Theory2/Subtheory1/Subsubtheory2/File1.v
+coqc -Q deps/Theory2 Theory deps/Theory2/Subtheory2/File1.v
+coqc -Q deps/Theory2 Theory deps/Theory2/Subtheory2/Subsubtheory2/File1.v
+coqc -Q deps/Theory2 Theory deps/Theory2/Subtheory2/Subsubtheory2/File1.v
+coqc -Q deps/Theory2 Theory deps/Theory2/File2.v
 S=$?
 if [ $S = 0 ]; then
     printf "Unexpected coqc success.\n"

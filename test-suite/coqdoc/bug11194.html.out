@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link href="coqdoc.css" rel="stylesheet" type="text/css" />
-<title>Coqdoc.bug11194</title>
+<title>bug11194</title>
 </head>
 
 <body>
@@ -16,14 +16,14 @@
 
 <div id="main">
 
-<h1 class="libtitle">Library Coqdoc.bug11194</h1>
+<h1 class="libtitle">Library bug11194</h1>
 
 <div class="code">
 <span class="id" title="keyword">Record</span> <a id="a_struct" class="idref" href="#a_struct"><span class="id" title="record">a_struct</span></a> := { <a id="anum" class="idref" href="#anum"><span class="id" title="projection">anum</span></a> : <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a> }.<br/>
-<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <a id="a_struct_0" class="idref" href="#a_struct_0"><span class="id" title="definition">a_struct_0</span></a> := {| <a class="idref" href="Coqdoc.bug11194.html#anum"><span class="id" title="projection">anum</span></a> := 0|}.<br/>
-<span class="id" title="keyword">Definition</span> <a id="rename_a_s_0" class="idref" href="#rename_a_s_0"><span class="id" title="definition">rename_a_s_0</span></a> := <a class="idref" href="Coqdoc.bug11194.html#a_struct_0"><span class="id" title="definition">a_struct_0</span></a>.<br/>
+<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <a id="a_struct_0" class="idref" href="#a_struct_0"><span class="id" title="definition">a_struct_0</span></a> := {| <a class="idref" href="bug11194.html#anum"><span class="id" title="projection">anum</span></a> := 0|}.<br/>
+<span class="id" title="keyword">Definition</span> <a id="rename_a_s_0" class="idref" href="#rename_a_s_0"><span class="id" title="definition">rename_a_s_0</span></a> := <a class="idref" href="bug11194.html#a_struct_0"><span class="id" title="definition">a_struct_0</span></a>.<br/>
 <span class="id" title="keyword">Coercion</span> <a id="some_nat" class="idref" href="#some_nat"><span class="id" title="definition">some_nat</span></a> := (@<a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#Some"><span class="id" title="constructor">Some</span></a> <a class="idref" href="http://coq.inria.fr/stdlib/Coq.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>).<br/>
-<span class="id" title="keyword">Definition</span> <a id="rename_some_nat" class="idref" href="#rename_some_nat"><span class="id" title="definition">rename_some_nat</span></a> := <a class="idref" href="Coqdoc.bug11194.html#some_nat"><span class="id" title="definition">some_nat</span></a>.<br/>
+<span class="id" title="keyword">Definition</span> <a id="rename_some_nat" class="idref" href="#rename_some_nat"><span class="id" title="definition">rename_some_nat</span></a> := <a class="idref" href="bug11194.html#some_nat"><span class="id" title="definition">some_nat</span></a>.<br/>
 </div>
 </div>
 

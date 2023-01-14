@@ -2,11 +2,6 @@
 
 set -ex
 
-export COQBIN=$BIN
-export PATH=$COQBIN:$PATH
-
-cd misc
-
 rm -f vio_checking{,bad}.{vo,vio}
 
 coqc -vio vio_checking.v
