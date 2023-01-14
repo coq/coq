@@ -1729,12 +1729,14 @@ let match_ind_pattern metas sigma ind pats a2 =
   |_ -> raise No_match
 
 let reorder_canonically_substitution terms termlists metas =
-  List.fold_right (fun (x,(scl,typ)) (terms',termlists') ->
+  List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders') ->
     match typ with
-      | NtnTypeConstr -> ((Id.List.assoc x terms, scl)::terms',termlists')
-      | NtnTypeConstrList -> (terms',(Id.List.assoc x termlists,scl)::termlists')
-      | NtnTypeBinder _ | NtnTypeBinderList _ -> anomaly (str "Unexpected binder in pattern notation."))
-    metas ([],[])
+      | NtnTypeConstr | NtnTypeBinder (NtnBinderParsedAsConstr _) -> ((Id.List.assoc x terms, scl)::terms',termlists',binders')
+      | NtnTypeConstrList -> (terms',(Id.List.assoc x termlists,scl)::termlists',binders')
+      | NtnTypeBinder (NtnBinderParsedAsBinder | NtnBinderParsedAsSomeBinderKind _) ->
+         (terms',termlists',(Id.List.assoc x terms, scl)::binders')
+      | NtnTypeBinderList _ -> anomaly (str "Unexpected binder in pattern notation."))
+    metas ([],[],[])
 
 let match_notation_constr_cases_pattern c (metas,pat) =
   let (terms,termlists,(),()),more_args = match_cases_pattern metas ([],[],(),()) c pat in

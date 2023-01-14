@@ -1640,7 +1640,7 @@ type entry_coercion_kind =
   | IsEntryGlobal of string * int
   | IsEntryIdent of string * int
 
-let declare_notation (scopt,ntn) pat df ~use ~also_in_cases_pattern coe deprecation =
+let declare_notation (scopt,ntn) pat df ~use coe deprecation =
   (* Register the interpretation *)
   let scope = match scopt with NotationInScope s -> s | LastLonelyNotation -> default_scope in
   let sc = find_scope scope in
@@ -1668,7 +1668,7 @@ let declare_notation (scopt,ntn) pat df ~use ~also_in_cases_pattern coe deprecat
      | Some pat -> remove_uninterpretation (NotationRule (scopt,ntn)) pat
      | None -> ()
      end;
-     declare_uninterpretation ~also_in_cases_pattern (NotationRule (scopt,ntn)) pat
+     declare_uninterpretation (NotationRule (scopt,ntn)) pat
   end
 
 let availability_of_prim_token n printer_scope local_scopes =

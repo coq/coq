@@ -375,7 +375,7 @@ GRAMMAR EXTEND Gram
              collapse -(3) into the number -3. *)
           match p.CAst.v with
           | CPatPrim (Number (NumTok.SPlus,n)) ->
-              CAst.make ~loc @@ CPatNotation(None,(InConstrEntry,"( _ )"),([p],[]),[])
+              CAst.make ~loc @@ CPatNotation(None,(InConstrEntry,"( _ )"),([p],[],[]),[])
           | _ -> p }
       | "("; p = pattern LEVEL "200"; "|" ; pl = LIST1 pattern LEVEL "200" SEP "|"; ")" ->
         { CAst.make ~loc @@ CPatOr (p::pl) }

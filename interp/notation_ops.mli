@@ -82,10 +82,14 @@ val match_notation_constr : print_univ:bool -> 'a glob_constr_g -> vars:Id.Set.t
 
 val match_notation_constr_cases_pattern :
   'a cases_pattern_g -> interpretation ->
-  (('a cases_pattern_g * extended_subscopes) list * ('a cases_pattern_g list * extended_subscopes) list) *
+  (('a cases_pattern_g * extended_subscopes) list *
+   ('a cases_pattern_g list * extended_subscopes) list *
+   ('a cases_pattern_g * extended_subscopes) list) *
     (bool * int * 'a cases_pattern_g list)
 
 val match_notation_constr_ind_pattern :
   inductive -> 'a cases_pattern_g list -> interpretation ->
-  (('a cases_pattern_g * extended_subscopes) list * ('a cases_pattern_g list * extended_subscopes) list) *
+  (('a cases_pattern_g * extended_subscopes) list *
+   ('a cases_pattern_g list * extended_subscopes) list *
+   ('a cases_pattern_g * extended_subscopes) list) *
     (bool * int * 'a cases_pattern_g list)

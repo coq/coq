@@ -104,8 +104,9 @@ and cases_pattern_expr = cases_pattern_expr_r CAst.t
 and kinded_cases_pattern_expr = cases_pattern_expr * Glob_term.binding_kind
 
 and cases_pattern_notation_substitution =
-    cases_pattern_expr list *     (* for constr subterms *)
-    cases_pattern_expr list list  (* for recursive notations *)
+    cases_pattern_expr list *      (* for cases_pattern subterms parsed as terms *)
+    cases_pattern_expr list list * (* for recursive notations parsed as terms*)
+    kinded_cases_pattern_expr list (* for cases_pattern subterms parsed as binders *)
 
 and constr_expr_r =
   | CRef     of qualid * instance_expr option

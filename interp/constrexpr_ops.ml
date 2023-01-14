@@ -102,9 +102,10 @@ let rec cases_pattern_expr_eq p1 p2 =
     String.equal s1 s2 && cases_pattern_expr_eq e1 e2
   | _ -> false
 
-and cases_pattern_notation_substitution_eq (s1, n1) (s2, n2) =
+and cases_pattern_notation_substitution_eq (s1, n1, b1) (s2, n2, b2) =
   List.equal cases_pattern_expr_eq s1 s2 &&
-  List.equal (List.equal cases_pattern_expr_eq) n1 n2
+  List.equal (List.equal cases_pattern_expr_eq) n1 n2 &&
+  List.equal (eq_pair cases_pattern_expr_eq Glob_ops.binding_kind_eq) b1 b2
 
 let kinded_cases_pattern_expr_eq (p1,bk1) (p2,bk2) =
   cases_pattern_expr_eq p1 p2 && Glob_ops.binding_kind_eq bk1 bk2
@@ -305,9 +306,10 @@ let rec cases_pattern_fold_names f h nacc pt = match CAst.(pt.v) with
   | CPatCstr (_,patl1,patl2) ->
     List.fold_left (cases_pattern_fold_names f h)
       (Option.fold_left (List.fold_left (cases_pattern_fold_names f h)) nacc patl1) patl2
-  | CPatNotation (_,_,(patl,patll),patl') ->
+  | CPatNotation (_,_,(patl,patll,binderl),patl') ->
     List.fold_left (cases_pattern_fold_names f h)
-      (List.fold_left (cases_pattern_fold_names f h) nacc (patl@List.flatten patll)) patl'
+      (List.fold_left (cases_pattern_fold_names f h) nacc
+         (patl@List.flatten patll@List.map fst binderl)) patl'
   | CPatDelimiters (_,pat) -> cases_pattern_fold_names f h nacc pat
   | CPatAtom (Some qid)
       when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
@@ -419,11 +421,12 @@ let rec fold_map_cases_pattern f h acc (CAst.{v=pt;loc} as p) = match pt with
     let acc, patl1 = Option.fold_left_map (List.fold_left_map (fold_map_cases_pattern f h)) acc patl1 in
     let acc, patl2 = List.fold_left_map (fold_map_cases_pattern f h) acc patl2 in
     acc, CAst.make ?loc (CPatCstr (c,patl1,patl2))
-  | CPatNotation (sc,ntn,(patl,patll),patl') ->
+  | CPatNotation (sc,ntn,(patl,patll,binderl),patl') ->
     let acc, patl = List.fold_left_map (fold_map_cases_pattern f h) acc patl in
     let acc, patll = List.fold_left_map (List.fold_left_map (fold_map_cases_pattern f h)) acc patll in
+    let acc, binderl' = List.fold_left_map (fold_fst (fold_map_cases_pattern f h)) acc binderl in
     let acc, patl' = List.fold_left_map (fold_map_cases_pattern f h) acc patl' in
-    acc, CAst.make ?loc (CPatNotation (sc,ntn,(patl,patll),patl'))
+    acc, CAst.make ?loc (CPatNotation (sc,ntn,(patl,patll,binderl'),patl'))
   | CPatDelimiters (d,pat) ->
     let acc, p = fold_map_cases_pattern f h acc pat in
     acc, CAst.make ?loc (CPatDelimiters (d,pat))
@@ -535,9 +538,9 @@ let ntn_loc ?loc (args,argslist,binders,binderslist) =
      List.map (fun (x,_) -> cases_pattern_expr_loc x) binders@
      List.map local_binders_loc binderslist)
 
-let patntn_loc ?loc (args,argslist) =
+let patntn_loc ?loc (args,argslist,binders) =
   locs_of_notation ?loc
-    (List.map cases_pattern_expr_loc (args@List.flatten argslist))
+    (List.map cases_pattern_expr_loc (args@List.flatten argslist@List.map fst binders))
 
 let error_invalid_pattern_notation ?loc () =
   CErrors.user_err ?loc  (str "Invalid notation for pattern.")
@@ -658,9 +661,10 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v
   | CAppExpl ((r,i),args) ->
      CPatCstr (r,Some (List.map coerce_to_cases_pattern_expr args),[])
-  | CNotation (inscope,ntn,(c,cl,[],[])) ->
+  | CNotation (inscope,ntn,(c,cl,b,[])) ->
      CPatNotation (inscope,ntn,(List.map coerce_to_cases_pattern_expr c,
-                        List.map (List.map coerce_to_cases_pattern_expr) cl),[])
+                                List.map (List.map coerce_to_cases_pattern_expr) cl,
+                                b),[])
   | CPrim p ->
      CPatPrim p
   | CRecord l ->
@@ -668,7 +672,15 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CDelimiters (s,p) ->
      CPatDelimiters (s,coerce_to_cases_pattern_expr p)
   | CCast (p,Some Constr.DEFAULTcast, t) ->
-     CPatCast (coerce_to_cases_pattern_expr p,t)
-  | _ ->
-     CErrors.user_err ?loc
-                      (str "This expression should be coercible to a pattern.")) c
+    CPatCast (coerce_to_cases_pattern_expr p,t)
+  | CLambdaN _ | CProdN _ | CSort _ | CLetIn _ | CGeneralization _
+  | CRef (_, Some _) | CCast (_, (Some (VMcast|NATIVEcast) | None), _)
+  | CFix _ | CCoFix _ | CApp _ | CProj _ | CCases _ | CLetTuple _ | CIf _
+  | CPatVar _ | CEvar _ | CHole (_, (IntroIdentifier _|IntroFresh _))
+  | CNotation (_,_,(_,_,_,_::_))
+  | CHole (Some _, _) | CGenarg _ | CGenargGlob _ ->
+    CErrors.user_err ?loc
+                      (str "This expression should be coercible to a pattern.")
+  | CArray _ ->
+    CErrors.user_err ?loc
+                      (str "Arrays in patterns not supported.")) c

@@ -260,3 +260,7 @@ FORALL [[a, b]], a - b = 0
 ∀ (A : TypTerm) (B : ◻ A -> TypTerm),
 (∀ a : ◻ A, ◻ {B a}) -> ◻ (∀' {a : ◻ A}, {B a})
      : Type
+FORALL [[a, b]], a - b = 0
+     : Prop
+∀ a b : nat, a - b = 0
+     : Prop

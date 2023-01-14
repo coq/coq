@@ -218,21 +218,21 @@ let contract_curly_brackets ntn (l,ll,bl,bll) =
   (* side effect; don't inline *)
   (InConstrEntry,!ntn'),(l,ll,bl,bll)
 
-let contract_curly_brackets_pat ntn (l,ll) =
+let contract_curly_brackets_pat ntn (l,ll,bl) =
   match ntn with
-  | InCustomEntry _,_ -> ntn,(l,ll)
+  | InCustomEntry _,_ -> ntn,(l,ll,bl)
   | InConstrEntry, ntn ->
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | { CAst.v = CPatNotation (None,(InConstrEntry,"{ _ }"),([a],[]),[]) } :: l ->
+    | { CAst.v = CPatNotation (None,(InConstrEntry,"{ _ }"),([a],[],[]),[]) } :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
         a::contract_squash (n+1) l in
   let l = contract_squash 0 l in
   (* side effect; don't inline *)
-  (InConstrEntry,!ntn'),(l,ll)
+  (InConstrEntry,!ntn'),(l,ll,bl)
 
 type local_univs = { bound : Univ.Level.t Id.Map.t; unb_univs : bool }
 
@@ -1052,18 +1052,27 @@ let split_by_type_pat ?loc ids subst =
     match l with
     | [] -> assert false
     | a::l -> l, Id.Map.add id (a,scopes) s in
-  let (terms,termlists),subst =
-    List.fold_left (fun ((terms,termlists),(terms',termlists')) (id,(scl,typ)) ->
+  let bind_binders id (_,scopes) l s =
+    match l with
+    | [] -> assert false
+    | (a,Explicit)::l -> l, Id.Map.add id (a,scopes) s
+    | (a,(MaxImplicit|NonMaxImplicit))::l -> user_err (str "Implicit arguments not supported.") (* shouldn't arrive *)
+  in
+  let (terms,termlists,binders),subst =
+    List.fold_left (fun ((terms,termlists,binders),(terms',termlists')) (id,(scl,typ)) ->
     match typ with
-    | NtnTypeConstr | NtnTypeBinder _ ->
+    | NtnTypeConstr | NtnTypeBinder (NtnBinderParsedAsConstr _) ->
        let terms,terms' = bind id scl terms terms' in
-       (terms,termlists),(terms',termlists')
+       (terms,termlists,binders),(terms',termlists')
     | NtnTypeConstrList ->
        let termlists,termlists' = bind id scl termlists termlists' in
-       (terms,termlists),(terms',termlists')
+       (terms,termlists,binders),(terms',termlists')
+    | NtnTypeBinder (NtnBinderParsedAsBinder | NtnBinderParsedAsSomeBinderKind _) ->
+       let binders,terms' = bind_binders id scl binders terms' in
+       (terms,termlists,binders),(terms',termlists')
     | NtnTypeBinderList _ -> error_invalid_pattern_notation ?loc ())
                    (subst,(Id.Map.empty,Id.Map.empty)) ids in
-  assert (terms = [] && termlists = []);
+  assert (terms = [] && termlists = [] && binders = []);
   subst
 
 let intern_notation intern env ntnvars loc ntn fullargs =
@@ -1342,7 +1351,7 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
         let nvars = List.length vars in
         if List.length pats < nvars then error_not_enough_arguments ?loc:qid.loc;
         let pats1,pats2 = List.chop nvars pats in
-        let subst = split_by_type_pat vars (pats1,[]) in
+        let subst = split_by_type_pat vars (pats1,[],[]) in
         let args = List.map (intern_not subst) args in
         Some (g, Some args, pats2)
       | _ -> None in
@@ -1773,16 +1782,16 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
         | Some (g,pl) -> DAst.make ?loc @@ RCPatCstr (g, pl)
         | None -> Loc.raise ?loc (InternalizationError (NotAConstructor qid))
       end
-    | CPatNotation (_,(InConstrEntry,"- _"),([a],[]),[]) when is_non_zero_pat a ->
+    | CPatNotation (_,(InConstrEntry,"- _"),([a],[],[]),[]) when is_non_zero_pat a ->
       let p = match a.CAst.v with CPatPrim (Number (_, p)) -> p | _ -> assert false in
       let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind test_kind_inner) (Number (SMinus,p)) scopes in
       rcp_of_glob scopes pat
-    | CPatNotation (_,(InConstrEntry,"( _ )"),([a],[]),[]) ->
+    | CPatNotation (_,(InConstrEntry,"( _ )"),([a],[],[]),[]) ->
       in_pat test_kind scopes a
     | CPatNotation (_,ntn,fullargs,extrargs) ->
-      let ntn,(terms,termlists) = contract_curly_brackets_pat ntn fullargs in
+      let ntn,(terms,termlists,binders) = contract_curly_brackets_pat ntn fullargs in
       let ((ids',c),df) = Notation.interp_notation ?loc ntn scopes in
-      let subst = split_by_type_pat ?loc ids' (terms,termlists) in
+      let subst = split_by_type_pat ?loc ids' (terms,termlists,binders) in
       Dumpglob.dump_notation_location (patntn_loc ?loc fullargs ntn) ntn df;
       in_not test_kind loc scopes subst extrargs c
     | CPatDelimiters (key, e) ->
@@ -1850,13 +1859,13 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
     | _, _, [], [] -> []
     | _ -> assert false in
     ntnpats_with_letin @ aux imps subscopes tags pats
-  and in_not test_kind loc scopes (subst,substlist as fullsubst) args = function
+  and in_not test_kind loc scopes (terms,termlists as fullsubst) args = function
     | NVar id ->
       begin
         (* subst remembers the delimiters stack in the interpretation *)
         (* of the notations *)
         try
-          let (a,(scopt,subscopes)) = Id.Map.find id subst in
+          let (a,(scopt,subscopes)) = Id.Map.find id terms in
           in_pat test_kind (scopt,subscopes@snd scopes) (mkAppPattern ?loc a args)
         with Not_found ->
           if Id.equal id ldots_var then
@@ -1885,11 +1894,11 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
         (strbrk "Application of arguments to a recursive notation not supported in patterns.");
       (try
          (* All elements of the list are in scopes (scopt,subscopes) *)
-         let (l,(scopt,subscopes)) = Id.Map.find x substlist in
+         let (l,(scopt,subscopes)) = Id.Map.find x termlists in
          let termin = in_not test_kind_inner loc scopes fullsubst [] terminator in
          List.fold_right (fun a t ->
-           let nsubst = Id.Map.add y (a, (scopt, subscopes)) subst in
-           let u = in_not test_kind_inner loc scopes (nsubst, substlist) [] iter in
+           let nterms = Id.Map.add y (a, (scopt, subscopes)) terms in
+           let u = in_not test_kind_inner loc scopes (nterms, termlists) [] iter in
            subst_pat_iterator ldots_var t u)
            (if revert then List.rev l else l) termin
        with Not_found ->

@@ -1485,10 +1485,9 @@ let open_notation i nobj =
     let pat = nobj.notobj_interp in
     let deprecation = nobj.notobj_deprecation in
     let scope = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
-    let also_in_cases_pattern = nobj.notobj_also_in_cases_pattern in
     (* Declare the notation *)
     (match nobj.notobj_use with
-    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use ~also_in_cases_pattern nobj.notobj_coercion deprecation
+    | Some use -> Notation.declare_notation (scope,ntn) pat df ~use nobj.notobj_coercion deprecation
     | None -> ());
     (* Declare specific format if any *)
     (match nobj.notobj_specific_pp_rules with
@@ -1925,9 +1924,8 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
   let level = (InConstrEntry,0,[]) in
   let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] acvars level (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
-  let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in
-  Abbreviation.declare_abbreviation ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
+  Abbreviation.declare_abbreviation ~local deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
 (* Activating/deactivating notations                                  *)
