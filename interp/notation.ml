@@ -2028,7 +2028,7 @@ let pr_scope_classes sc =
       spc() ++ prlist_with_sep spc pr_scope_class l)
 
 let pr_notation_info prglob ntn c =
-  str "\"" ++ str ntn ++ str "\" :=" ++ brk (1,2) ++
+  str (String.quote_coq_string ntn) ++ str " :=" ++ brk (1,2) ++
   prglob (Notation_ops.glob_constr_of_notation_constr c)
 
 let pr_notation_status on_parsing on_printing =

@@ -139,17 +139,7 @@ let hov n s = Ppcmd_box(Pp_hovbox n,s)
 (* Opening and closing of tags *)
 let tag t s = Ppcmd_tag(t,s)
 
-(* In new syntax only double quote char is escaped by repeating it *)
-let escape_string s =
-  let rec escape_at s i =
-    if i<0 then s
-    else if s.[i] == '"' then
-      let s' = String.sub s 0 i^"\""^String.sub s i (String.length s - i) in
-      escape_at s' (i-1)
-    else escape_at s (i-1) in
-  escape_at s (String.length s - 1)
-
-let qstring s = str "\"" ++ str (escape_string s) ++ str "\""
+let qstring s = str (CString.quote_coq_string s)
 let qs = qstring
 let quote s = h (str "\"" ++ s ++ str "\"")
 
