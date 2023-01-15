@@ -2065,7 +2065,7 @@ let pr_named_scope prglob (scope,sc) =
  (if String.equal scope default_scope then
    match NotationMap.cardinal sc.notations with
      | 0 -> str "No lonely notation"
-     | n -> str "Lonely notation" ++ (if Int.equal n 1 then mt() else str"s")
+     | n -> str (String.plural n "Lonely notation")
   else
     str "Scope " ++ str scope ++ fnl () ++ pr_delimiters_info sc.delimiters)
   ++ pr_non_empty (fnl ()) (pr_scope_classes scope)
@@ -2365,7 +2365,7 @@ let pr_visible_in_scope prglob (scope,ntns) =
       (fun d strm -> pr_notation_data prglob d ++ fnl () ++ strm)
       ntns (mt ()) in
   (if String.equal scope default_scope then
-     str "Lonely notation" ++ (match ntns with [_] -> mt () | _ -> str "s")
+     str (String.plural (List.length ntns) "Lonely notation")
    else
      str "Visible in scope " ++ str scope)
   ++ fnl () ++ strm
