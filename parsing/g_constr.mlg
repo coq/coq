@@ -182,6 +182,7 @@ GRAMMAR EXTEND Gram
       | id = ident; i = univ_annot ->
         { CAst.make ~loc @@ CRef (qualid_of_ident ~loc id, i) }
       | n = NUMBER-> { CAst.make ~loc @@ CPrim (Number (NumTok.SPlus,n)) }
+      | s = string -> { CAst.make ~loc @@ CPrim (String s) }
       | "("; c = term LEVEL "200"; ")" ->
         { (* Preserve parentheses around numbers so that constrintern does not
              collapse -(3) into the number -3. *)
@@ -268,7 +269,6 @@ GRAMMAR EXTEND Gram
   ;
   atomic_constr:
     [ [ s = sort   -> { CAst.make ~loc @@ CSort s }
-      | s = string -> { CAst.make ~loc @@ CPrim (String s) }
       | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous) }
       | "?"; "["; id = identref; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id.CAst.v) }
       | "?"; "["; id = pattern_ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroFresh id.CAst.v) }

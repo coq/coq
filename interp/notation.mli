@@ -335,6 +335,9 @@ type notation_symbols = {
   symbols : symbol list; (* the decomposition of the notation into terminals and nonterminals *)
 }
 
+val is_prim_token_constant_in_constr :
+  notation_entry * symbol list -> bool
+
 (** Decompose a notation of the form "a 'U' b" together with the lists
     of pairs of recursive variables and the list of all variables
     binding in the notation *)

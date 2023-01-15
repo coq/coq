@@ -1409,7 +1409,7 @@ let find_notation ntn sc =
 let notation_of_prim_token = function
   | Constrexpr.Number (SPlus,n) -> InConstrEntry, NumTok.Unsigned.sprint n
   | Constrexpr.Number (SMinus,n) -> InConstrEntry, "- "^NumTok.Unsigned.sprint n
-  | String _ -> raise Not_found
+  | String s -> InConstrEntry, String.quote_coq_string s
 
 let find_prim_token check_allowed ?loc p sc =
   (* Try for a user-defined numerical notation *)
@@ -1964,6 +1964,8 @@ let rec symbol_eq s1 s2 = match s1, s2 with
 let rec string_of_symbol = function
   | NonTerminal _ -> ["_"]
   | Terminal "_" -> ["'_'"]
+  (* Symbols starting with a double quote without denoting a string are single quoted *)
+  | Terminal s when s.[0] = '"' && (String.length s = 1 || s.[String.length s - 1] <> '"') -> ["'" ^ s ^ "'"]
   | Terminal s -> [s]
   | SProdList (_,l) ->
      let l = List.flatten (List.map string_of_symbol l) in "_"::l@".."::l@["_"]
@@ -1974,9 +1976,19 @@ let make_notation_key from symbols =
 
 let decompose_notation_pure_key s =
   let len = String.length s in
+  let rec find_string_end n =
+    let next =
+      try String.index_from s (n+1) '"'
+      with Not_found -> assert false
+    in
+    if next = len - 1 then next+1
+    else if s.[next+1] = '"' then (* skip doubled double quotes: *) find_string_end (next+2)
+    else next+1 in
   let rec decomp_ntn dirs n =
     if n>=len then List.rev dirs else
     let pos =
+      if s.[n] = '"' then find_string_end n
+      else
       try
         String.index_from s n ' '
       with Not_found -> len
@@ -1992,15 +2004,16 @@ let decompose_notation_pure_key s =
 let decompose_notation_key (from,s) =
   from, decompose_notation_pure_key s
 
-let is_numeral_in_constr (entry,symbs) =
+let is_prim_token_constant_in_constr (entry, symbs) =
   match entry, List.filter (function Break _ -> false | _ -> true) symbs with
-  | InConstrEntry, ([Terminal "-"; Terminal x] | [Terminal x]) ->
-      NumTok.Unsigned.parse_string x <> None
-  | _ ->
-      false
+  (* Is this a numeral? *)
+  | InConstrEntry, ([Terminal "-"; Terminal x] | [Terminal x]) when NumTok.Unsigned.parse_string x <> None -> true
+  (* Is this a string constant? *)
+  | InConstrEntry, [Terminal x] when let n = String.length x in n > 1 && x.[0] = '"' && x.[n-1] = '"' -> true
+  | _ -> false
 
 let level_of_notation ntn =
-  if is_numeral_in_constr (decompose_notation_key ntn) then
+  if is_prim_token_constant_in_constr (decompose_notation_key ntn) then
     (* A primitive notation *)
     (fst ntn, 0, []) (* TODO: string notations*)
   else
@@ -2112,6 +2125,8 @@ let split_notation_string str =
     if i < String.length str then
       if str.[i] == ' ' then
         push_token beg i (loop_on_whitespace (i+1) (i+1))
+      else if beg = i && str.[i] = '"' then
+        loop_on_string i (i+1)
       else
         loop beg (i+1)
     else
@@ -2119,11 +2134,31 @@ let split_notation_string str =
   and loop_on_whitespace beg i =
     if i < String.length str then
       if str.[i] != ' ' then
-        push_whitespace beg i (loop i (i+1))
+        push_whitespace beg i (loop i i)
       else
         loop_on_whitespace beg (i+1)
     else
       push_whitespace beg i []
+  and loop_on_string beg i =
+    (* we accept any string, possibly with spaces, single quotes, and
+       doubled double quotes inside, but necessarily ended with a unique
+       double quote followed either by a space or the end of the
+       notation string *)
+    if i < String.length str then
+      if str.[i] = '"' then
+        if i+1 < String.length str then
+          if str.[i+1] = '"' then (* double quote in the string: *) loop_on_string beg (i+2)
+          else if str.[i+1] = ' ' then (* end of the string: *) push_token beg (i+1) (loop_on_whitespace (i+2) (i+2))
+          else user_err (Pp.str "End of quoted string not followed by a space in notation.")
+        else push_token beg (i+1) []
+      else loop_on_string beg (i+1)
+    else user_err (Pp.str "Unterminated string in notation.")
+    (* we accept any sequences of non-space symbols starting with a
+       single quote, up to the next space or end of notation string;
+       double quotes and single quotes not followed by a space or the
+       end of notation string are allowed;
+       note that if the resulting sequence ends with a single quote,
+       the two extreme single quotes will eventually be removed *)
   in
   loop 0 0
 

@@ -265,13 +265,16 @@ let make_notation_gen loc ntn mknot mkprim destprim l bl =
         mknot (loc,ntn,([mknot (loc,(InConstrEntry,"( _ )"),l,[])]),[])
     | _ ->
         match decompose_notation_key ntn, l with
+        | (InConstrEntry,[Terminal x]), [] ->
+           begin match String.unquote_coq_string x with
+           | Some s -> mkprim (loc, String s)
+           | None ->
+           match NumTok.Unsigned.parse_string x with
+           | Some n -> mkprim (loc, Number (NumTok.SPlus,n))
+           | None -> mknot (loc,ntn,l,bl) end
         | (InConstrEntry,[Terminal "-"; Terminal x]), [] ->
            begin match NumTok.Unsigned.parse_string x with
            | Some n -> mkprim (loc, Number (NumTok.SMinus,n))
-           | None -> mknot (loc,ntn,l,bl) end
-        | (InConstrEntry,[Terminal x]), [] ->
-           begin match NumTok.Unsigned.parse_string x with
-           | Some n -> mkprim (loc, Number (NumTok.SPlus,n))
            | None -> mknot (loc,ntn,l,bl) end
         | _ -> mknot (loc,ntn,l,bl)
 

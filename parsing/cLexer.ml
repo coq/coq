@@ -212,7 +212,7 @@ let unlocated f x =
 
 let check_keyword str =
   let rec loop_symb s = match Stream.peek () s with
-    | Some (' ' | '\n' | '\r' | '\t' | '"') ->
+    | Some (' ' | '\n' | '\r' | '\t') ->
         Stream.junk () s;
         bad_token str
     | _ ->
@@ -705,7 +705,10 @@ let rec next_token ~diff_mode ttree loc s =
       in
       let ep = Stream.count s in
       comment_stop bp;
-      (STRING (get_buff len), set_loc_pos loc bp ep)
+      let str = get_buff len in
+      begin try find_keyword ttree loc (CString.quote_coq_string str) bp s
+      with Not_found ->
+      (STRING str, set_loc_pos loc bp ep) end
   | Some ('(' as c) ->
       Stream.junk () s;
       begin try

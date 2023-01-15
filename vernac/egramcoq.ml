@@ -337,6 +337,9 @@ let make_pattern (keyword,s) =
    if keyword then TPattern (Tok.PKEYWORD s) else
      match NumTok.Unsigned.parse_string s with
      | Some n -> TPattern (Tok.PNUMBER (Some n))
+     | None ->
+     match String.unquote_coq_string s with
+     | Some s -> TPattern (Tok.PSTRING (Some s))
      | None -> TPattern (Tok.PIDENT (Some s))
 
 let make_sep_rules tkl =

@@ -244,13 +244,6 @@ let quote_notation_token x =
   if (n > 0 && norm) || (n > 2 && x.[0] == '\'') then "'"^x^"'"
   else x
 
-let is_numeral_in_constr entry symbs =
-  match entry, List.filter (function Break _ -> false | _ -> true) symbs with
-  | InConstrEntry, ([Terminal "-"; Terminal x] | [Terminal x]) ->
-      NumTok.Unsigned.parse_string x <> None
-  | _ ->
-      false
-
 let analyze_notation_tokens ~onlyprinting ~infix entry df =
   let df = if infix then quote_notation_token df else df in
   let { recvars; mainvars; symbols } as res = decompose_raw_notation df in
@@ -261,8 +254,8 @@ let analyze_notation_tokens ~onlyprinting ~infix entry df =
         user_err
           (str "Variable " ++ Id.print id ++ str " occurs more than once.")
     | _ -> ());
-  let isnumeral = is_numeral_in_constr entry symbols in
-  res, isnumeral
+  let is_prim_token = is_prim_token_constant_in_constr (entry, symbols) in
+  res, is_prim_token
 
 let adjust_symbols vars notation_symbols =
   let x = Namegen.next_ident_away (Id.of_string "x") vars in
@@ -289,7 +282,7 @@ let adjust_infix_notation df notation_symbols c =
 
 let warn_unexpected_primitive_token_modifier =
   CWarnings.create ~name:"primitive-token-modifier" ~category:CWarnings.CoreCategories.parsing
-         (fun () -> str "Notations for numbers are primitive; skipping this modifier.")
+         (fun () -> str "Notations for numbers or strings are primitive; skipping this modifier.")
 
 let check_no_syntax_modifiers_for_numeral = function
   | [] -> ()
@@ -718,6 +711,12 @@ let keyword_needed need s =
   | Some n ->
     if need then
       Flags.if_verbose Feedback.msg_info (str "Number '" ++ NumTok.Unsigned.print n ++ str "' now a keyword");
+    need
+  | None ->
+  match String.unquote_coq_string s with
+  | Some _ ->
+    if need then
+      Flags.if_verbose Feedback.msg_info (str "String '" ++ str s ++ str "' now a keyword");
     need
   | _ -> true
 
@@ -1743,10 +1742,10 @@ let add_reserved_notation ~local ~infix ({CAst.loc;v=df},mods) =
   let open SynData in
   let (main_data,mods) = interp_non_syntax_modifiers ~reserved:true ~infix ~abbrev:false None mods in
   let mods = interp_modifiers main_data.entry mods in
-  let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
+  let notation_symbols, is_prim_token = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
   let notation_symbols = if infix then adjust_reserved_infix_notation notation_symbols else notation_symbols in
   let ntn = make_notation_key main_data.entry notation_symbols.symbols in
-  if isnumeral then user_err ?loc (str "Notations for numbers are primitive and need not be reserved.");
+  if is_prim_token then user_err ?loc (str "Notations for numbers or strings are primitive and need not be reserved.");
   let sd = compute_syntax_data ~local main_data notation_symbols ntn mods in
   let synext = make_syntax_rules true main_data ntn sd in
   List.iter (fun f -> f ()) sd.msgs;
@@ -1768,10 +1767,10 @@ let prepare_where_notation ntn_decl =
   match mods with
   | _::_ -> CErrors.user_err (str"Only modifiers not affecting parsing are supported here.")
   | [] ->
-    let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix:false main_data.entry df in
+    let notation_symbols, is_prim_token = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix:false main_data.entry df in
     let ntn = make_notation_key main_data.entry notation_symbols.symbols in
     let syntax_rules =
-      if isnumeral then PrimTokenSyntax else
+      if is_prim_token then PrimTokenSyntax else
       try SpecificSyntax (recover_notation_syntax ntn)
       with NoSyntaxRule ->
         user_err Pp.(str "Parsing rule for this notation has to be previously declared.") in
@@ -1795,12 +1794,12 @@ let build_notation_syntax ~local ~infix deprecation ntn_decl =
   (* Extract the modifiers not affecting the parsing rule *)
   let (main_data,syntax_modifiers) = interp_non_syntax_modifiers ~reserved:false ~infix ~abbrev:false deprecation modifiers in
   (* Extract the modifiers not affecting the parsing rule *)
-  let notation_symbols, isnumeral = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
+  let notation_symbols, is_prim_token = analyze_notation_tokens ~onlyprinting:main_data.onlyprinting ~infix main_data.entry df in
   (* Add variables on both sides if an infix notation *)
   let df, notation_symbols, c = if infix then adjust_infix_notation df notation_symbols c else df, notation_symbols, c in
   (* Build the canonical identifier of the syntactic part of the notation *)
   let ntn = make_notation_key main_data.entry notation_symbols.symbols in
-  let syntax_rules = if isnumeral then (check_no_syntax_modifiers_for_numeral syntax_modifiers; PrimTokenSyntax) else
+  let syntax_rules = if is_prim_token then (check_no_syntax_modifiers_for_numeral syntax_modifiers; PrimTokenSyntax) else
   match syntax_modifiers with
   | [] ->
     (* No syntax data: try to rely on a previously declared rule *)
