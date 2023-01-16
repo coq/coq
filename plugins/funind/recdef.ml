@@ -502,7 +502,10 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) =
               ++ str
                    " can not contain an applied match (See Limitation in \
                     Section 2.3 of refman)." )
-          | _ ->
+          | Fix _ -> user_err Pp.(str "Function cannot treat local fixpoint or cofixpoint")
+          | Proj _ -> user_err Pp.(str "Function cannot treat projections")
+          | Lambda _ | Cast _ | LetIn _
+          | CoFix _ | Array _ | Int _ | Float _ ->
             anomaly
               ( Pp.str "travel_aux : unexpected "
               ++ Printer.pr_leconstr_env env sigma expr_info.info
