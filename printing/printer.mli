@@ -46,14 +46,13 @@ val print_goal_tag_opt_name : string list
     [~impargs:some_list_of_binding_kind] indicates the implicit arguments
     of the external quatification. Only used for printing types (not
     terms), and at toplevel (only "l" versions). It defaults to [None].
+*)
 
-    [~lax:true] is for debugging purpose. It defaults to [~lax:false]. *)
 
+val pr_constr_env          : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
+val pr_lconstr_env         : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
 
-val pr_constr_env          : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
-val pr_lconstr_env         : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
-
-val pr_constr_n_env        : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Constrexpr.entry_relative_level -> constr -> Pp.t
+val pr_constr_n_env        : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Constrexpr.entry_relative_level -> constr -> Pp.t
 
 (** Same, but resilient to [Nametab] errors. Prints fully-qualified
     names when [shortest_qualid_of_global] has failed. Prints "??"
@@ -62,16 +61,16 @@ val pr_constr_n_env        : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> en
 val safe_pr_constr_env  : env -> evar_map -> constr -> Pp.t
 val safe_pr_lconstr_env : env -> evar_map -> constr -> Pp.t
 
-val pr_econstr_env      : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
-val pr_leconstr_env     : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
+val pr_econstr_env      : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
+val pr_leconstr_env     : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
 
-val pr_econstr_n_env    : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Constrexpr.entry_relative_level -> EConstr.t -> Pp.t
+val pr_econstr_n_env    : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Constrexpr.entry_relative_level -> EConstr.t -> Pp.t
 
-val pr_etype_env        : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> EConstr.types -> Pp.t
-val pr_letype_env       : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> ?impargs:Glob_term.binding_kind list -> EConstr.types -> Pp.t
+val pr_etype_env        : ?goal_concl_style:bool -> env -> evar_map -> EConstr.types -> Pp.t
+val pr_letype_env       : ?goal_concl_style:bool -> env -> evar_map -> ?impargs:Glob_term.binding_kind list -> EConstr.types -> Pp.t
 
-val pr_open_constr_env  : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
-val pr_open_lconstr_env : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
+val pr_open_constr_env  : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
+val pr_open_lconstr_env : ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
 
 val pr_constr_under_binders_env  : env -> evar_map -> constr_under_binders -> Pp.t
 
@@ -96,14 +95,13 @@ val pr_lconstr_under_binders_env : env -> evar_map -> constr_under_binders -> Pp
     names of global definitions are printed qualified and only names
     of goal/section variables and rel names that do _not_ occur in the
     scope of the binder to be printed are avoided.
+*)
 
-    [~lax:true] is for debugging purpose. *)
+val pr_ltype_env           : ?goal_concl_style:bool -> env -> evar_map -> ?impargs:Glob_term.binding_kind list -> types -> Pp.t
+val pr_type_env            : ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
 
-val pr_ltype_env           : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> ?impargs:Glob_term.binding_kind list -> types -> Pp.t
-val pr_type_env            : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
-
-val pr_closed_glob_n_env   : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Constrexpr.entry_relative_level -> closed_glob_constr -> Pp.t
-val pr_closed_glob_env     : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> closed_glob_constr -> Pp.t
+val pr_closed_glob_n_env   : ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Constrexpr.entry_relative_level -> closed_glob_constr -> Pp.t
+val pr_closed_glob_env     : ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> closed_glob_constr -> Pp.t
 
 val pr_ljudge_env          : env -> evar_map -> EConstr.unsafe_judgment -> Pp.t * Pp.t
 

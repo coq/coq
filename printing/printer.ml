@@ -61,24 +61,24 @@ let print_goal_names = should_gname (* for export *)
    and only names of goal/section variables and rel names that do
    _not_ occur in the scope of the binder to be printed are avoided. *)
 
-let pr_econstr_n_env ?lax ?inctx ?scope env sigma n t =
-  pr_constr_expr_n env sigma n (extern_constr ?lax ?inctx ?scope env sigma t)
-let pr_econstr_env ?lax ?inctx ?scope env sigma t =
-  pr_constr_expr env sigma (extern_constr ?lax ?inctx ?scope env sigma t)
-let pr_leconstr_env ?lax ?inctx ?scope env sigma t =
-  Ppconstr.pr_lconstr_expr env sigma (extern_constr ?lax ?inctx ?scope env sigma t)
+let pr_econstr_n_env ?inctx ?scope env sigma n t =
+  pr_constr_expr_n env sigma n (extern_constr ?inctx ?scope env sigma t)
+let pr_econstr_env ?inctx ?scope env sigma t =
+  pr_constr_expr env sigma (extern_constr ?inctx ?scope env sigma t)
+let pr_leconstr_env ?inctx ?scope env sigma t =
+  Ppconstr.pr_lconstr_expr env sigma (extern_constr ?inctx ?scope env sigma t)
 
-let pr_constr_n_env ?lax ?inctx ?scope env sigma n c =
-  pr_econstr_n_env ?lax ?inctx ?scope env sigma n (EConstr.of_constr c)
-let pr_constr_env ?lax ?inctx ?scope env sigma c =
-  pr_econstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
-let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
-  pr_leconstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
+let pr_constr_n_env ?inctx ?scope env sigma n c =
+  pr_econstr_n_env ?inctx ?scope env sigma n (EConstr.of_constr c)
+let pr_constr_env ?inctx ?scope env sigma c =
+  pr_econstr_env ?inctx ?scope env sigma (EConstr.of_constr c)
+let pr_lconstr_env ?inctx ?scope env sigma c =
+  pr_leconstr_env ?inctx ?scope env sigma (EConstr.of_constr c)
 
-let pr_open_lconstr_env ?lax ?inctx ?scope env sigma (_,c) =
-  pr_leconstr_env ?lax ?inctx ?scope env sigma c
-let pr_open_constr_env ?lax ?inctx ?scope env sigma (_,c) =
-  pr_econstr_env ?lax ?inctx ?scope env sigma c
+let pr_open_lconstr_env ?inctx ?scope env sigma (_,c) =
+  pr_leconstr_env ?inctx ?scope env sigma c
+let pr_open_constr_env ?inctx ?scope env sigma (_,c) =
+  pr_econstr_env ?inctx ?scope env sigma c
 
 let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
   (* Warning: clashes can occur with variables of same name in env but *)
@@ -90,15 +90,15 @@ let pr_constr_under_binders_env_gen pr env sigma (ids,c) =
 let pr_constr_under_binders_env = pr_constr_under_binders_env_gen pr_econstr_env
 let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_leconstr_env
 
-let pr_etype_env ?lax ?goal_concl_style env sigma t =
-  pr_constr_expr env sigma (extern_type ?lax ?goal_concl_style env sigma t)
-let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
-  pr_lconstr_expr env sigma (extern_type ?lax ?goal_concl_style env sigma ?impargs t)
+let pr_etype_env ?goal_concl_style env sigma t =
+  pr_constr_expr env sigma (extern_type ?goal_concl_style env sigma t)
+let pr_letype_env ?goal_concl_style env sigma ?impargs t =
+  pr_lconstr_expr env sigma (extern_type ?goal_concl_style env sigma ?impargs t)
 
-let pr_type_env ?lax ?goal_concl_style env sigma c =
-  pr_etype_env ?lax ?goal_concl_style env sigma (EConstr.of_constr c)
-let pr_ltype_env ?lax ?goal_concl_style env sigma ?impargs c =
-  pr_letype_env ?lax ?goal_concl_style env sigma ?impargs (EConstr.of_constr c)
+let pr_type_env ?goal_concl_style env sigma c =
+  pr_etype_env ?goal_concl_style env sigma (EConstr.of_constr c)
+let pr_ltype_env ?goal_concl_style env sigma ?impargs c =
+  pr_letype_env ?goal_concl_style env sigma ?impargs (EConstr.of_constr c)
 
 let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)
@@ -108,10 +108,10 @@ let pr_lglob_constr_env env sigma c =
 let pr_glob_constr_env env sigma c =
   pr_constr_expr env sigma (extern_glob_constr (extern_env env sigma) c)
 
-let pr_closed_glob_n_env ?lax ?goal_concl_style ?inctx ?scope env sigma n c =
-  pr_constr_expr_n env sigma n (extern_closed_glob ?lax ?goal_concl_style ?inctx ?scope env sigma c)
-let pr_closed_glob_env ?lax ?goal_concl_style ?inctx ?scope env sigma c =
-  pr_constr_expr env sigma (extern_closed_glob ?lax ?goal_concl_style ?inctx ?scope env sigma c)
+let pr_closed_glob_n_env ?goal_concl_style ?inctx ?scope env sigma n c =
+  pr_constr_expr_n env sigma n (extern_closed_glob ?goal_concl_style ?inctx ?scope env sigma c)
+let pr_closed_glob_env ?goal_concl_style ?inctx ?scope env sigma c =
+  pr_constr_expr env sigma (extern_closed_glob ?goal_concl_style ?inctx ?scope env sigma c)
 
 let pr_lconstr_pattern_env env sigma c =
   pr_lconstr_pattern_expr env sigma (extern_constr_pattern (Termops.names_of_rel_context env) sigma c)
@@ -124,7 +124,7 @@ let pr_cases_pattern t =
 let pr_sort sigma s = pr_sort_expr (extern_sort sigma s)
 
 let () = Termops.Internal.set_print_constr
-  (fun env sigma t -> pr_lconstr_expr env sigma (extern_constr ~lax:true env sigma t))
+  (fun env sigma t -> pr_lconstr_expr env sigma (extern_constr env sigma t))
 
 let pr_in_comment x = str "(* " ++ x ++ str " *)"
 

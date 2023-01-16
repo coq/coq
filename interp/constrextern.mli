@@ -30,7 +30,7 @@ val extern_glob_constr : extern_env -> 'a glob_constr_g -> constr_expr
 val extern_glob_type : ?impargs:Glob_term.binding_kind list -> extern_env -> 'a glob_constr_g -> constr_expr
 val extern_constr_pattern : names_context -> Evd.evar_map ->
   constr_pattern -> constr_expr
-val extern_closed_glob : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name ->
+val extern_closed_glob : ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name ->
   env -> Evd.evar_map -> closed_glob_constr -> constr_expr
 
 (** If [b=true] in [extern_constr b env c] then the variables in the first
@@ -39,12 +39,12 @@ val extern_closed_glob : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?
     env, sigma
 *)
 
-val extern_constr : ?lax:bool -> ?inctx:bool -> ?scope:scope_name ->
+val extern_constr : ?inctx:bool -> ?scope:scope_name ->
   env -> Evd.evar_map -> constr -> constr_expr
-val extern_constr_in_scope : ?lax:bool -> ?inctx:bool -> scope_name ->
+val extern_constr_in_scope : ?inctx:bool -> scope_name ->
   env -> Evd.evar_map -> constr -> constr_expr
 val extern_reference : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
-val extern_type : ?lax:bool -> ?goal_concl_style:bool -> env -> Evd.evar_map -> ?impargs:Glob_term.binding_kind list -> types -> constr_expr
+val extern_type : ?goal_concl_style:bool -> env -> Evd.evar_map -> ?impargs:Glob_term.binding_kind list -> types -> constr_expr
 val extern_sort : Evd.evar_map -> Sorts.t -> sort_expr
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
   rel_context -> local_binder_expr list

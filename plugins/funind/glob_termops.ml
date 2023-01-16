@@ -590,7 +590,7 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
         match Evd.evar_body evi with
         | Evar_defined c ->
           (* we just have to lift the solution in glob_term *)
-          Detyping.detype Detyping.Now false Id.Set.empty env ctx (f c)
+          Detyping.detype Detyping.Now Id.Set.empty env ctx (f c)
         | Evar_empty -> rt (* the hole was not solved : we do nothing *) ) )
     | GHole (BinderType na, _, _) ->
       (* we only want to deal with implicit arguments *)
@@ -612,7 +612,7 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
           match Evd.evar_body evi with
           | Evar_defined c ->
             (* we just have to lift the solution in glob_term *)
-            Detyping.detype Detyping.Now false Id.Set.empty env ctx (f c)
+            Detyping.detype Detyping.Now Id.Set.empty env ctx (f c)
           | Evar_empty -> rt )
         (* the hole was not solved : we d when falseo nothing *)
       in

@@ -248,18 +248,18 @@ let make_goal env sigma g =
   let ty  = Evd.evar_concl evi in
   { ty; env; sigma }
 
-let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
+let pr_letype_env ?goal_concl_style env sigma ?impargs t =
   Ppconstr.pr_lconstr_expr env sigma
-    (Constrextern.extern_type ?lax ?goal_concl_style env sigma ?impargs t)
+    (Constrextern.extern_type ?goal_concl_style env sigma ?impargs t)
 
 let pp_of_type env sigma ty =
   pr_letype_env ~goal_concl_style:true env sigma ty
 
-let pr_leconstr_env ?lax ?inctx ?scope env sigma t =
-  Ppconstr.pr_lconstr_expr env sigma (Constrextern.extern_constr ?lax ?inctx ?scope env sigma t)
+let pr_leconstr_env ?inctx ?scope env sigma t =
+  Ppconstr.pr_lconstr_expr env sigma (Constrextern.extern_constr ?inctx ?scope env sigma t)
 
-let pr_econstr_env ?lax ?inctx ?scope env sigma t =
-  Ppconstr.pr_constr_expr env sigma (Constrextern.extern_constr ?lax ?inctx ?scope env sigma t)
+let pr_econstr_env ?inctx ?scope env sigma t =
+  Ppconstr.pr_constr_expr env sigma (Constrextern.extern_constr ?inctx ?scope env sigma t)
 
 let diff_concl ?og_s ng =
   let o_concl_pp = match og_s with

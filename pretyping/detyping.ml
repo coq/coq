@@ -31,9 +31,10 @@ open Context.Rel.Declaration
 open Ltac_pretype
 
 type detyping_flags = {
-  flg_lax : bool;
   flg_isgoal : bool;
 }
+
+let nongoal (_:detyping_flags) = { flg_isgoal = false }
 
 (** Reimplementation of kernel case expansion functions in more lenient way *)
 module RobustExpand :
@@ -833,7 +834,7 @@ and detype_r d flags avoid env sigma t =
         GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
               (args @ [detype d flags avoid env sigma c]))
       in
-      if flags.flg_lax || !Flags.in_debugger || !Flags.in_toplevel then
+      if !Flags.in_debugger || !Flags.in_toplevel then
         try noparams ()
         with _ ->
             (* lax mode, used by debug printers only *)
@@ -971,10 +972,10 @@ and detype_binder d flags bk avoid env sigma decl c =
   | _ -> compute_name sigma ~let_in:false ~pattern:false flags avoid env na c in
   let r =  detype d flags avoid' (add_name (set_name na' decl) env) sigma c in
   match bk with
-  | BProd   -> GProd (na',Explicit,detype d { flags with flg_isgoal = false } avoid env sigma ty, r)
-  | BLambda -> GLambda (na',Explicit,detype d { flags with flg_isgoal = false } avoid env sigma ty, r)
+  | BProd   -> GProd (na',Explicit,detype d (nongoal flags) avoid env sigma ty, r)
+  | BLambda -> GLambda (na',Explicit,detype d (nongoal flags) avoid env sigma ty, r)
   | BLetIn ->
-      let c = detype d { flags with flg_isgoal = false } avoid env sigma (Option.get body) in
+      let c = detype d { flg_isgoal = false } avoid env sigma (Option.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s =
         if !Flags.in_debugger then InType
@@ -984,7 +985,7 @@ and detype_binder d flags bk avoid env sigma decl c =
           try Retyping.get_sort_family_of (snd env) sigma ty
           with Retyping.RetypeError _ -> InType
       in
-      let t = if s != InProp  && not !Flags.raw_print then None else Some (detype d { flags with flg_isgoal = false } avoid env sigma ty) in
+      let t = if s != InProp  && not !Flags.raw_print then None else Some (detype d (nongoal flags) avoid env sigma ty) in
       GLetIn (na', c, t, r)
 
 let detype_rel_context d flags where avoid env sigma sign =
@@ -1009,17 +1010,17 @@ let detype_rel_context d flags where avoid env sigma sign =
       (na',Explicit,b',t') :: aux avoid' (add_name (set_name na' decl) env) rest
   in aux avoid env (List.rev sign)
 
-let detype d ?(lax=false) isgoal avoid env sigma t =
-  let flags = { flg_isgoal = isgoal; flg_lax = lax } in
+let detype d ?(isgoal=false) avoid env sigma t =
+  let flags = { flg_isgoal = isgoal; } in
   let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype d flags avoid (names_of_rel_context env, env) sigma t
 
-let detype_rel_context d ?(lax = false) where avoid env sigma sign =
-  let flags = { flg_isgoal = false; flg_lax = lax } in
+let detype_rel_context d where avoid env sigma sign =
+  let flags = { flg_isgoal = false; } in
   let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype_rel_context d flags where avoid env sigma sign
 
-let detype_closed_glob ?lax isgoal avoid env sigma t =
+let detype_closed_glob ?isgoal avoid env sigma t =
   let convert_id cl id =
     try Id.Map.find id cl.idents
     with Not_found -> id
@@ -1042,7 +1043,7 @@ let detype_closed_glob ?lax isgoal avoid env sigma t =
              [Printer.pr_constr_under_binders_env] does. *)
           let assums = List.map (fun id -> LocalAssum (make_annot (Name id) Sorts.Relevant,(* dummy *) mkProp)) b in
           let env = push_rel_context assums env in
-          DAst.get (detype Now ?lax isgoal avoid env sigma c)
+          DAst.get (detype Now ?isgoal avoid env sigma c)
         (* if [id] is bound to a [closed_glob_constr]. *)
         with Not_found -> try
           let {closure;term} = Id.Map.find id cl.untyped in
@@ -1100,7 +1101,7 @@ let rec subst_glob_constr env subst = DAst.map (function
         | Some t ->
           let evd = Evd.from_env env in
           let t = t.Univ.univ_abstracted_value in (* XXX This seems dangerous *)
-          DAst.get (detype Now false Id.Set.empty env evd (EConstr.of_constr t)))
+          DAst.get (detype Now Id.Set.empty env evd (EConstr.of_constr t)))
 
   | GSort _
   | GVar _

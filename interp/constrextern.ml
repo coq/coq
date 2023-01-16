@@ -1306,16 +1306,16 @@ let extern_glob_type ?impargs vars c =
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
 
-let extern_constr ?lax ?(inctx=false) ?scope env sigma t =
-  let r = Detyping.detype Detyping.Later ?lax false Id.Set.empty env sigma t in
+let extern_constr ?(inctx=false) ?scope env sigma t =
+  let r = Detyping.detype Detyping.Later Id.Set.empty env sigma t in
   let vars = extern_env env sigma in
   let scope = Option.cata (fun x -> [x]) [] scope in
   extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
 
-let extern_constr_in_scope ?lax ?inctx scope env sigma t =
-  extern_constr ?lax ?inctx ~scope env sigma t
+let extern_constr_in_scope ?inctx scope env sigma t =
+  extern_constr ?inctx ~scope env sigma t
 
-let extern_type ?lax ?(goal_concl_style=false) env sigma ?impargs t =
+let extern_type ?(goal_concl_style=false) env sigma ?impargs t =
   (* "goal_concl_style" means do alpha-conversion using the "goal" convention *)
   (* i.e.: avoid using the names of goal/section/rel variables and the short *)
   (* names of global definitions of current module when computing names for *)
@@ -1324,15 +1324,15 @@ let extern_type ?lax ?(goal_concl_style=false) env sigma ?impargs t =
   (* those goal/section/rel variables that occurs in the subterm under *)
   (* consideration; see namegen.ml for further details *)
   let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
-  let r = Detyping.detype Detyping.Later ?lax goal_concl_style avoid env sigma t in
+  let r = Detyping.detype Detyping.Later ~isgoal:goal_concl_style avoid env sigma t in
   extern_glob_type ?impargs (extern_env env sigma) r
 
 let extern_sort sigma s = extern_glob_sort (Evd.universe_binders sigma) (detype_sort sigma s)
 
-let extern_closed_glob ?lax ?(goal_concl_style=false) ?(inctx=false) ?scope env sigma t =
+let extern_closed_glob ?(goal_concl_style=false) ?(inctx=false) ?scope env sigma t =
   let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r =
-    Detyping.detype_closed_glob ?lax goal_concl_style avoid env sigma t
+    Detyping.detype_closed_glob ~isgoal:goal_concl_style avoid env sigma t
   in
   let vars = extern_env env sigma in
   let scope = Option.cata (fun x -> [x]) [] scope in
