@@ -1761,18 +1761,17 @@ let simplest_elim c = default_elim false None (c,NoBindings)
 
 type conjunction_status =
   | DefinedRecord of Constant.t option list
-  | NotADefinedRecordUseScheme of case_analysis
+  | NotADefinedRecordUseScheme
 
-let make_projection env sigma params cstr sign elim i n c u =
+let make_projection env sigma params cstr sign elim i n c (ind, u) =
   let open Context.Rel.Declaration in
   let elim = match elim with
-  | NotADefinedRecordUseScheme elim ->
+  | NotADefinedRecordUseScheme ->
       (* bugs: goes from right to left when i increases! *)
       let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstr.cs_args in
       let decl = List.nth cs_args i in
       let t = RelDecl.get_type decl in
       let b = match decl with LocalAssum _ -> mkRel (i+1) | LocalDef (_,b,_) -> b in
-      let branch = it_mkLambda_or_LetIn b cs_args in
       if
         (* excludes dependent projection types *)
         noccur_between sigma 1 (n-i-1) t
@@ -1781,12 +1780,20 @@ let make_projection env sigma params cstr sign elim i n c u =
         && not (isEvar sigma (fst (whd_betaiota_stack env sigma t)))
         && (not (isRel sigma t))
       then
-        let t = lift (i+1-n) t in
-        let (elim, _) = eval_case_analysis elim in
-        let abselim = beta_applist sigma (elim, params@[t;branch]) in
-        let args = Context.Rel.instance mkRel 0 sign in
-        let c = beta_applist sigma (abselim, [mkApp (c, args)]) in
+        let (_, mip) = Inductive.lookup_mind_specif env ind in
+        let t = lift (i + 1 - n) t in
+        let ksort = Retyping.get_sort_family_of (push_rel_context sign env) sigma t in
+        if Sorts.family_leq ksort mip.mind_kelim then
+          let arity = List.firstn mip.mind_nrealdecls mip.mind_arity_ctxt in
+          let mknas ctx = Array.of_list (List.rev_map get_annot ctx) in
+          let ci = Inductiveops.make_case_info env ind (get_relevance decl) RegularStyle in
+          let br = [| mknas cs_args, b |] in
+          let args = Context.Rel.instance mkRel 0 sign in
+          let pnas = Array.append (mknas arity) [|make_annot Anonymous mip.mind_relevance|] in
+          let p = (pnas, lift (Array.length pnas) t) in
+          let c = mkCase (ci, u, Array.of_list params, p, NoInvert, mkApp (c, args), br) in
           Some (it_mkLambda_or_LetIn c sign, it_mkProd_or_LetIn t sign)
+        else None
       else
         None
   | DefinedRecord l ->
@@ -1818,25 +1825,24 @@ let descend_in_conjunctions avoid tac (err, info) c =
     let sign,ccl = EConstr.decompose_prod_decls sigma t in
     match match_with_tuple env sigma ccl with
     | Some (_,_,isrec) ->
+        (* At this point, ind is known to be an index-free one-constructor
+           inductive type, potentially recursive. *)
         let n = (constructors_nrealargs env ind).(0) in
-        let sort = Tacticals.elimination_sort_of_goal gl in
         let IndType (indf,_) = find_rectype env sigma ccl in
         let (_,inst), params = dest_ind_family indf in
         let params = List.map EConstr.of_constr params in
         let cstr = (get_constructors env indf).(0) in
         let elim =
           try DefinedRecord (Structures.Structure.find_projections ind)
-          with Not_found ->
-            let u = EInstance.kind sigma u in
-            let (_, elim) = build_case_analysis_scheme env sigma (ind,u) false sort in
-            NotADefinedRecordUseScheme elim in
+          with Not_found -> NotADefinedRecordUseScheme
+        in
         let or_tac t1 t2 e = Proofview.tclORELSE (t1 e) t2 in
         List.fold_right or_tac
           (List.init n (fun i (err, info) ->
             Proofview.Goal.enter begin fun gl ->
             let env = Proofview.Goal.env gl in
             let sigma = Tacmach.project gl in
-            match make_projection env sigma params cstr sign elim i n c u with
+            match make_projection env sigma params cstr sign elim i n c (ind, u) with
             | None ->
               Proofview.tclZERO ~info err
             | Some (p,pt) ->
