@@ -1448,7 +1448,7 @@ let rewrite_with l2r flags c occs : strategy = { strategy =
                                                }
 
 let apply_strategy (s : strategy) env unfresh concl (prop, cstr) evars =
-  let ty = Retyping.get_type_of env (goalevars evars) concl in
+  let evars, ty = get_type_of_refresh env evars concl in
   let _, res = s.strategy { state = () ; env ; unfresh ;
                             term1 = concl ; ty1 = ty ;
                             cstr = (prop, Some cstr) ; evars } in
