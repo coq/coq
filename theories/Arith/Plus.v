@@ -32,7 +32,7 @@ Notation plus_permute := Nat.add_shuffle3 (only parsing).
 #[local]
 Definition plus_Snm_nSm_stt : forall n m, S n + m = n + S m := Peano.plus_n_Sm.
 Opaque plus_Snm_nSm_stt.
-#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_succ_r (and symmetry of equality) instead.")]
+#[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_succ_comm instead.")]
 Notation plus_Snm_nSm := plus_Snm_nSm_stt.
 #[deprecated(since="8.16",note="The Arith.Plus file is obsolete. Use Nat.add_assoc (and symmetry of equality) instead.")]
 Notation plus_assoc_reverse := Arith_prebase.plus_assoc_reverse_stt.
