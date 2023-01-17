@@ -536,22 +536,9 @@ let find_applied_relation ?loc env sigma c left2right =
                     (str"The type" ++ spc () ++ Printer.pr_econstr_env env sigma ctype ++
                        spc () ++ str"of this term does not end with an applied relation.")
 
-let warn_deprecated_hint_rewrite_without_locality =
-  CWarnings.create ~name:"deprecated-hint-rewrite-without-locality" ~category:"deprecated"
-    ~default:CWarnings.AsError
-    (fun () -> strbrk "The default value for rewriting hint locality is currently \
-    \"local\" in a section and \"global\" otherwise, but is scheduled to change \
-    in a future release. For the time being, adding rewriting hints outside of sections \
-    without specifying an explicit locality attribute is therefore deprecated. It is \
-    recommended to use \"export\" whenever possible. Use the attributes \
-    #[local], #[global] and #[export] depending on your choice. For example: \
-    \"#[export] Hint Rewrite foo : bar.\" This is supported since Coq 8.14.")
-
 let default_hint_rewrite_locality () =
   if Global.sections_are_opened () then Hints.Local
-  else
-    let () = warn_deprecated_hint_rewrite_without_locality () in
-    Hints.SuperGlobal
+  else Hints.Export
 
 (* To add rewriting rules to a base *)
 let add_rew_rules ~locality base lrul =

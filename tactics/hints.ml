@@ -1296,21 +1296,8 @@ let make_hint ~locality name action =
   hint_action = action;
 }
 
-let warn_deprecated_hint_without_locality =
-  CWarnings.create ~name:"deprecated-hint-without-locality" ~category:"deprecated"
-    ~default:CWarnings.AsError
-    (fun () -> strbrk "The default value for hint locality is currently \
-    \"local\" in a section and \"global\" otherwise, but is scheduled to change \
-    in a future release. For the time being, adding hints outside of sections \
-    without specifying an explicit locality attribute is therefore deprecated. It is \
-    recommended to use \"export\" whenever possible. Use the attributes \
-    #[local], #[global] and #[export] depending on your choice. For example: \
-    \"#[export] Hint Unfold foo : bar.\"")
-
 let default_hint_locality () =
-  if Global.sections_are_opened () then Local else
-    let () = warn_deprecated_hint_without_locality () in
-    SuperGlobal
+  if Global.sections_are_opened () then Local else Export
 
 let remove_hints ~locality dbnames grs =
   let () = check_locality locality in
