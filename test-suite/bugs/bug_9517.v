@@ -8,7 +8,7 @@ Notation "1" := 1 (in custom expr).
 
 Notation "! x = y !" := (pair x y) (in custom stmt at level 0, x custom expr, y custom expr).
 Notation "? x = y" := (pair x y) (in custom stmt at level 0, x custom expr, y custom expr).
-Notation "x = y" := (pair x y) (in custom stmt at level 0, x custom expr, y custom expr).
+Notation "x = y" := (pair x y) (in custom stmt at level 1, x custom expr, y custom expr).
 
 Notation "stmt:( s )" := s (s custom stmt).
 Check stmt:(! _ = _ !).

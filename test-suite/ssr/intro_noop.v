@@ -16,10 +16,10 @@ Axiom daemon : False. Ltac myadmit := case: daemon.
 
 Lemma v : True -> bool -> bool. Proof. by []. Qed.
 
-Reserved Notation " a -/ b " (at level 0).
-Reserved Notation " a -// b " (at level 0).
-Reserved Notation " a -/= b " (at level 0).
-Reserved Notation " a -//= b " (at level 0).
+Reserved Notation " a -/ b " (at level 1).
+Reserved Notation " a -// b " (at level 1).
+Reserved Notation " a -/= b " (at level 1).
+Reserved Notation " a -//= b " (at level 1).
 
 Lemma test : forall a b c, a || b || c.
 Proof.

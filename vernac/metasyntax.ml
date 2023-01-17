@@ -1121,25 +1121,82 @@ let has_no_binders_type =
   | NtnTypeBinder _ | NtnTypeBinderList _ -> false
   | NtnTypeConstr | NtnTypeConstrList -> true)
 
+(* Checks *)
+
+let error_left_assoc_level_0 () =
+  user_err (strbrk "Notations at level 0 opened on the left are unsupported.")
+
+let warn_0_minimal_level =
+  CWarnings.create ~name:"level-0-sublevels" ~category:CWarnings.CoreCategories.parsing
+    (fun (id,because_of_right_assoc) ->
+       (match because_of_right_assoc with
+       | Some side ->
+         let s = match side with Left -> "left" | Right -> "right" in
+         strbrk "Level 0 is minimal, thus, a notation at level 0 opened on the " ++ str s ++
+         strbrk " must be " ++ str s ++ strbrk " associative (use \"" ++ str s ++ strbrk " associativity\"" ++
+         strbrk " or set the notation at a higher level)."
+       | None ->
+         strbrk "A notation at minimal level 0 has no next level. Set it at level 0 or higher.") ++
+       strbrk " In the meantime, forcing automatically subentry " ++ Id.print id ++ strbrk " at level 0.")
+
+let warn_left_recursive_level_0 =
+  CWarnings.create ~name:"level-0-left-recursive" ~category:CWarnings.CoreCategories.parsing
+    (fun () ->
+       strbrk "Level 0 is minimal and right associative. Automatically moving this " ++
+       strbrk "notation opened on the left from level 0 to 1, so that its left-hand " ++
+       strbrk "side argument can itself be set at level 0, consistently with right associativity.")
+
+let warn_open_both_side_level_0 =
+  CWarnings.create ~name:"level-0-both-side-recursive" ~category:CWarnings.CoreCategories.parsing
+    (fun () ->
+       strbrk "Level 0 is minimal. Automatically moving this notation opened on both sides " ++
+       strbrk "from level 0 to 1, so that at least one of the arguments at its borders can " ++
+       strbrk "be set at level 0, as required for setting an associativity.")
+
+let check_next_level_0 fromlev id n =
+  match fromlev, n with
+  | 0, NextLevel -> warn_0_minimal_level (id,None); NumLevel 0
+  | _ -> n
+
+let check_assoc_level_0 from fromlev entry id default typ =
+  if not (notation_entry_eq from entry) then
+    default, typ
+  else match fromlev, typ with
+  | 0, BorderProd (Right, (Some (LeftA | NonA) | None)) ->
+    warn_0_minimal_level (id,Some Right);
+    NumLevel 0, BorderProd (Right, Some RightA)
+  | 0, BorderProd (Left, _) when notation_entry_eq from InConstrEntry ->
+    (* Anticipated in find_precedence which moved the level to 1 *)
+    error_left_assoc_level_0 ()
+  | 0, BorderProd (Left, (Some (RightA | NonA) | None)) ->
+    warn_0_minimal_level (id,Some Left);
+    NumLevel 0, BorderProd (Left, Some LeftA)
+  | _ -> default, typ
+
 (* Compute precedences from modifiers (or find default ones) *)
 
-let set_entry_type from n etyps (x,typ) =
+let set_entry_type from fromlev etyps (x,typ) =
   let make_lev n s = match typ with
     | BorderProd _ -> NumLevel n
     | InternalProd -> DefaultLevel in
   let typ = try
     match List.assoc x etyps, typ with
       | ETConstr (s,bko,DefaultLevel), _ ->
-         if notation_entry_eq from s then ETConstr (s,bko,(make_lev n s,typ))
-         else ETConstr (s,bko,(DefaultLevel,typ))
-      | ETConstr (s,bko,n), BorderProd (left,_) ->
-          ETConstr (s,bko,(n,BorderProd (left,None)))
+         let lev = if notation_entry_eq from s then make_lev fromlev s else DefaultLevel in
+         let n,typ = check_assoc_level_0 from fromlev s x lev typ in
+         ETConstr (s,bko,(n,typ))
+      | ETConstr (s,bko,n), BorderProd (side,_) ->
+          (* An explicit level at the border overrides the default associativity *)
+          let n = check_next_level_0 fromlev x n in
+          ETConstr (s,bko,(n,BorderProd (side,None)))
       | ETConstr (s,bko,n), InternalProd ->
+          let n = check_next_level_0 fromlev x n in
           ETConstr (s,bko,(n,InternalProd))
       | ETPattern (b,n), _ -> ETPattern (b,n)
       | (ETIdent | ETName | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
     with Not_found ->
-      ETConstr (from,None,(make_lev n from,typ))
+      let n,typ = check_assoc_level_0 from fromlev from x (make_lev fromlev from) typ in
+      ETConstr (from,None,(n,typ))
   in (x,typ)
 
 let join_auxiliary_recursive_types recvars etyps =
@@ -1196,13 +1253,9 @@ let make_interpretation_type isrec isbinding default_if_binding typ =
 let entry_relative_level_of_constr_prod_entry id from_level = function
   | ETConstr (entry,_,(_,y)) as x ->
     let side = match y with BorderProd (side,_) -> Some side | _ -> None in
-    (match precedence_of_entry_type from_level x with
-    | LevelLt 0 ->
-      let why = match y with
-        | BorderProd _ -> "To respect expected associativity, "
-        | _ -> if Int.equal from_level.notation_level 0 then "The notation being at level 0, " else "" in
-      user_err (strbrk why ++ Id.print id ++ strbrk " would need to be set at level strictly less than 0.")
-    | lev -> { notation_subentry = entry; notation_relative_level = lev; notation_position = side })
+    { notation_subentry = entry;
+      notation_relative_level = precedence_of_entry_type from_level x;
+      notation_position = side }
   | _ -> constr_some_level
 
 let make_interpretation_vars
@@ -1256,7 +1309,7 @@ let is_coercion level typs =
      (match e, custom with
      | ETConstr _, _ ->
          let entry_relative = entry_relative_level_of_constr_prod_entry x entry e in
-         if is_coercion entry entry_relative then
+         if Notation.is_coercion entry entry_relative then
            Some (IsEntryCoercion (entry,entry_relative))
          else
            None
@@ -1326,7 +1379,13 @@ let find_precedence custom lev etyps symbols onlyprint =
       with Not_found ->
         if Option.is_empty lev then
           user_err Pp.(str "A left-recursive notation must have an explicit level.")
-        else [],Option.get lev)
+        else
+          let lev = Option.get lev in
+          if lev = 0 then
+            if notation_entry_eq custom InConstrEntry then (warn_left_recursive_level_0 (); [],1)
+            else if not (last_is_terminal ()) then (warn_open_both_side_level_0 (); [], 1)
+            else [],lev
+          else [],lev)
   | Some (Terminal _) when last_is_terminal () ->
       if Option.is_empty lev then
         ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")], 0)

@@ -270,9 +270,26 @@ End Bug12691.
 
 Module Issue15336.
 
-Fail Notation "a ; b" := (prod a b) (at level 0).
+Notation "a ; b" := (prod a b) (at level 0).
+Notation "#### a" := (S a) (at level 0).
+Notation "[ a ; b ]" := (prod a b) (at level 0, a at next level).
+Notation "[ a ; b ]" := (prod a b) (a at next level).
+
+Set Warnings "+level-0-sublevels".
+Fail Notation "### a" := (S a) (at level 0).
 Fail Notation "[ a ; b ]" := (prod a b) (at level 0, a at next level).
 Fail Notation "[ a ; b ]" := (prod a b) (a at next level).
+Set Warnings "-level-0-sublevels".
+
+Notation "a !!!!" := (S a) (at level 0).
+
+Declare Custom Entry foo1.
+Notation "x" := (@cons nat x nil) (in custom foo1 at level 0, x constr at level 10).
+Notation "x , y , .. , z" := (@cons nat x (@cons nat y .. (@cons nat z (@nil nat)) ..))
+  (in custom foo1 at level 0, x constr at level 10, y constr at level 10, z constr at level 10).
+Notation "x ; y ; .. ; z" := (@cons nat x (@cons nat y .. (@cons nat z (@nil nat)) ..))
+  (in custom foo1 at level 0).
+Print Custom Grammar foo1.
 
 End Issue15336.
 
