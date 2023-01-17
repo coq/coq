@@ -642,12 +642,12 @@ let replace_error_option err tac =
     | Some (e, info) ->
       Proofview.tclORELSE tac (fun _ -> Proofview.tclZERO ~info e)
 
-let assert_after_then_gen ?err b naming t tac =
+let assert_after_then_gen b naming t tac =
   let open Context.Rel.Declaration in
   Proofview.Goal.enter begin fun gl ->
     let id = find_name b (LocalAssum (make_annot Anonymous Sorts.Relevant,t)) naming gl in
     Tacticals.tclTHENFIRST
-      (replace_error_option err (internal_cut b id t <*> Proofview.cycle 1))
+      (internal_cut b id t <*> Proofview.cycle 1)
       (tac id)
   end
 
@@ -2730,13 +2730,6 @@ let head_ident sigma c =
    let c = fst (decompose_app sigma (snd (decompose_lambda_decls sigma c))) in
    if isVar sigma c then Some (destVar sigma c) else None
 
-let assert_as first hd ipat t =
-  let naming,tac = prepare_intros_opt false IntroAnonymous MoveLast ipat in
-  let repl = do_replace hd naming in
-  let tac = if repl then (fun id -> Proofview.tclUNIT ()) else tac in
-  if first then assert_before_then_gen repl naming t tac
-  else assert_after_then_gen repl naming t tac
-
 (* apply in as *)
 
 let general_apply_in ?(respect_opaque=false) with_delta
@@ -2957,17 +2950,24 @@ let forward b usetac ipat c =
       let t = Tacmach.pf_get_type_of gl c in
       let sigma = Tacmach.project gl in
       let hd = head_ident sigma c in
-      Tacticals.tclTHENFIRST (assert_as true hd ipat t) (exact_no_check c)
+      let assert_as =
+        let naming,tac = prepare_intros_opt false IntroAnonymous MoveLast ipat in
+        let repl = do_replace hd naming in
+        if repl then assert_before_gen true naming t
+        else assert_before_then_gen false naming t tac
+      in
+      Tacticals.tclTHENFIRST assert_as (exact_no_check c)
       end
   | Some tac ->
       let tac = match tac with
         | None -> Tacticals.tclIDTAC
         | Some tac -> Tacticals.tclCOMPLETE tac in
+      let naming, assert_tac = prepare_intros_opt false IntroAnonymous MoveLast ipat in
       if b then
-        Tacticals.tclTHENFIRST (assert_as b None ipat c) tac
+        Tacticals.tclTHENFIRST (assert_before_then_gen false naming c assert_tac) tac
       else
         Tacticals.tclTHENS3PARTS
-          (assert_as b None ipat c) [||] tac [|Tacticals.tclIDTAC|]
+          (assert_after_then_gen false naming c assert_tac) [||] tac [|Tacticals.tclIDTAC|]
 
 let pose_proof na c = forward true None (ipat_of_name na) c
 let assert_by na t tac = forward true (Some (Some tac)) (ipat_of_name na) t
