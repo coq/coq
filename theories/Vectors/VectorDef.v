@@ -225,7 +225,7 @@ Definition rev {A n} (v : t A n) : t A n :=
  rew <- (plus_n_O _) in (rev_append v []).
 
 End BASES.
-Local Notation "v [@ p ]" := (nth v p) (at level 1).
+Local Notation "v [@ p ]" := (nth v p) (at level 1, left associativity).
 
 Section ITERATORS.
 (** * Here are special non dependent useful instantiation of induction schemes *)
@@ -331,7 +331,7 @@ Notation "h :: t" := (h :: t) (at level 60, right associativity)
   : vector_scope.
 Notation "[ x ]" := (x :: []) : vector_scope.
 Notation "[ x ; y ; .. ; z ]" := (cons _ x _ (cons _ y _ .. (cons _ z _ (nil _)) ..)) : vector_scope.
-Notation "v [@ p ]" := (nth v p) (at level 1, format "v [@ p ]") : vector_scope.
+Notation "v [@ p ]" := (nth v p) (at level 1, left associativity, format "v [@ p ]") : vector_scope.
 Infix "++" := append : vector_scope.
 Open Scope vector_scope.
 End VectorNotations.
