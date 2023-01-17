@@ -82,6 +82,9 @@ let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
 let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
+let nf_relevance sigma r =
+  UState.nf_relevance (Evd.evar_universe_context sigma) r
+
 let nf_named_context_evar sigma ctx =
   Context.Named.map (nf_evars_universes sigma) ctx
 
