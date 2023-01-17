@@ -166,7 +166,7 @@ let msg_quantified_hypothesis = function
       str " non dependent hypothesis"
 
 let msg_uninstantiated_metas t clenv =
-  let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
+  let na = meta_name (clenv_evd clenv) (List.hd (Metaset.elements (metavars_of t))) in
   let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta.") in
   str "Cannot find an instance for " ++ Id.print id ++ str"."
 
@@ -1490,12 +1490,12 @@ let check_unresolved_evars_of_metas sigma clenv =
   Metamap.iter (fun mv b -> match b with
   | Clval (_,(c,_),_) ->
     (match Constr.kind (EConstr.Unsafe.to_constr c.rebus) with
-    | Evar (evk,_) when Evd.is_undefined clenv.evd evk
+    | Evar (evk,_) when Evd.is_undefined (clenv_evd clenv) evk
                      && not (Evd.mem sigma evk) ->
       error (CannotFindInstance(mkMeta mv,clenv))
     | _ -> ())
   | _ -> ())
-  (meta_list clenv.evd)
+  (meta_list (clenv_evd clenv))
 
 let do_replace id = function
   | NamingMustBe {CAst.v=id'} when Option.equal Id.equal id (Some id') -> true
@@ -1507,9 +1507,9 @@ let do_replace id = function
    [Ti] and the first one (resp last one) being [G] whose hypothesis
    [id] is replaced by P using the proof given by [tac] *)
 
-let clenv_refine_in with_evars targetid replace sigma0 clenv =
+let clenv_refine_in with_evars targetid replace env sigma0 clenv =
   let clenv = Clenv.clenv_pose_dependent_evars ~with_evars clenv in
-  let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd in
+  let evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) env (clenv_evd clenv) in
   let clenv = Clenv.update_clenv_evd clenv evd in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars then check_unresolved_evars_of_metas sigma0 clenv;
@@ -1526,17 +1526,9 @@ let clenv_refine_in with_evars targetid replace sigma0 clenv =
 (*       Elimination tactics                *)
 (********************************************)
 
-let last_arg sigma c = match EConstr.kind sigma c with
-  | App (f,cl) ->
-      Array.last cl
-  | _ -> anomaly (Pp.str "last_arg.")
-
-let nth_arg sigma i c = match i with
-| None -> last_arg sigma c
-| Some i ->
-  match EConstr.kind sigma c with
-  | App (f,cl) -> cl.(i)
-  | _ -> anomaly (Pp.str "nth_arg.")
+let nth_arg i c = match i with
+| None -> List.last c
+| Some i -> List.nth c i
 
 let index_of_ind_arg sigma t =
   let rec aux i j t = match EConstr.kind sigma t with
@@ -1596,11 +1588,10 @@ let general_elim_clause0 with_evars flags (metas, c, ty) elim =
     elimclause, None
   in
   let indmv =
-    (match EConstr.kind sigma (nth_arg sigma i elimclause.templval.rebus) with
-       | Meta mv -> mv
-       | _  -> error IllFormedEliminationType)
+    try nth_arg i (clenv_arguments elimclause)
+    with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
   in
-  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas elimclause.Clenv.evd) in
+  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas (clenv_evd elimclause)) in
   let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
   Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
   end
@@ -1614,12 +1605,11 @@ let general_elim_clause_in0 with_evars flags id (metas, c, ty) elim =
   let i = index_of_ind_arg sigma elimt in
   let elimclause = mk_clenv_from env sigma (elimc, elimt) in
   let indmv =
-    (match EConstr.kind sigma (nth_arg sigma (Some i) elimclause.templval.rebus) with
-       | Meta mv -> mv
-       | _  -> error IllFormedEliminationType)
+    try nth_arg (Some i) (clenv_arguments elimclause)
+    with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
   in
   (* Assumes that the metas of [c] are part of [sigma] already *)
-  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas elimclause.Clenv.evd) in
+  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas (clenv_evd elimclause)) in
   let hypmv =
     match List.remove Int.equal indmv (clenv_independent elimclause) with
     | [a] -> a
@@ -1637,7 +1627,7 @@ let general_elim_clause_in0 with_evars flags id (metas, c, ty) elim =
   let new_hyp_typ  = clenv_type elimclause in
   if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
     error (NothingToRewrite id);
-  clenv_refine_in with_evars id true sigma elimclause
+  clenv_refine_in with_evars id true env sigma elimclause
   end
 
 let general_elim with_evars clear_flag (c, lbindc) elim =
@@ -1649,9 +1639,9 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
-  Proofview.Unsafe.tclEVARS (Evd.clear_metas indclause.evd) <*>
+  Proofview.Unsafe.tclEVARS (Evd.clear_metas (clenv_evd indclause)) <*>
   Tacticals.tclTHEN
-    (general_elim_clause0 with_evars flags (Evd.meta_list indclause.evd, clenv_value indclause, clenv_type indclause) elim)
+    (general_elim_clause0 with_evars flags (Evd.meta_list (clenv_evd indclause), clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
@@ -1988,15 +1978,15 @@ let apply_list = function
 
 exception UnableToApply
 
-let progress_with_clause flags (id, t) clause mvs =
-  let innerclause = mk_clenv_from_n clause.env clause.evd 0 (mkVar id, t) in
+let progress_with_clause env flags (id, t) clause mvs =
+  let innerclause = mk_clenv_from_n env (clenv_evd clause) 0 (mkVar id, t) in
   if List.is_empty mvs then raise UnableToApply;
   let f mv =
     let rec find innerclause =
       try
         let clause =
           Clenv.update_clenv_evd clause
-            (meta_merge (Evd.meta_list innerclause.Clenv.evd) clause.Clenv.evd)
+            (meta_merge (Evd.meta_list (clenv_evd innerclause)) (clenv_evd clause))
         in
         Some (clenv_instantiate mv ~flags clause (clenv_value innerclause, clenv_type innerclause))
       with e when noncritical e ->
@@ -2012,7 +2002,7 @@ let progress_with_clause flags (id, t) clause mvs =
 let apply_in_once_main flags (id, t) env sigma (loc,d,lbind) =
   let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in
   let rec aux clause mvs =
-    try progress_with_clause flags (id, t) clause mvs
+    try progress_with_clause env flags (id, t) clause mvs
     with e when CErrors.noncritical e ->
     let e' = Exninfo.capture e in
     match clenv_push_prod clause with
@@ -2047,7 +2037,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
     try
       let clause = apply_in_once_main flags (id, t') env sigma (loc,c,lbind) in
       let cleartac = apply_clear_request clear_flag false idc <*> clear idstoclear in
-      let refine = Tacticals.tclTHENFIRST (clenv_refine_in with_evars targetid replace sigma clause) cleartac in
+      let refine = Tacticals.tclTHENFIRST (clenv_refine_in with_evars targetid replace env sigma clause) cleartac in
       Tacticals.tclTHENFIRST (replace_error_option err refine) (tac targetid)
     with e when with_destruct && CErrors.noncritical e ->
       let err = Option.default (Exninfo.capture e) err in
@@ -3187,7 +3177,7 @@ let specialize (c,lbind) ipat =
       let clause = make_clenv_binding env sigma (c,typ_of_c) lbind in
       let flags = { (default_unify_flags ()) with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
-      let sigma = clause.evd in
+      let sigma = clenv_evd clause in
       let (thd,tstack) = whd_nored_stack env sigma (clenv_value clause) in
       (* The completely applied term is (thd tstack), but tstack may
          contain unsolved metas, so now we must reabstract them
@@ -3217,7 +3207,7 @@ let specialize (c,lbind) ipat =
         | (LocalAssum(nme,_) as assum)::lp' , t::l' when occur_meta sigma t ->
           (* nme has not been resolved, let us re-abstract it. Same
              name but type updated by instantiation of other args. *)
-          let sigma,new_typ_of_t = Typing.type_of clause.env sigma t in
+          let sigma,new_typ_of_t = Typing.type_of env sigma t in
           let r = Retyping.relevance_of_type env sigma new_typ_of_t in
           (* lifting rels in the accumulator args *)
           let liftedargs = List.map liftrel accargs in
@@ -4476,14 +4466,7 @@ let get_eliminator env sigma elim dep s =
    of lid are parameters (first ones), the other are
    arguments. Returns the clause obtained.  *)
 let recolle_clenv i params args elimclause gl =
-  let _,arr = destApp elimclause.evd elimclause.templval.rebus in
-  let lindmv =
-    Array.map
-      (fun x ->
-        match EConstr.kind elimclause.evd x with
-          | Meta mv -> mv
-          | _  -> error IllFormedEliminationType)
-      arr in
+  let lindmv = Array.of_list (clenv_arguments elimclause) in
   let k = match i with None -> Array.length lindmv - List.length args | Some i -> i in
   (* parameters correspond to first elts of lid. *)
   let clauses_params = List.mapi (fun i id -> id, lindmv.(i)) params in
@@ -4690,10 +4673,10 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
   let rec find_clause typ =
     try
       let indclause = make_clenv_binding env sigma (c,typ) lbind in
-      if must_be_closed && occur_meta indclause.evd (clenv_value indclause) then
+      if must_be_closed && occur_meta (clenv_evd indclause) (clenv_value indclause) then
         error NeedFullyAppliedArgument;
       (* We lose the possibility of coercions in with-bindings *)
-      let sigma, term = pose_all_metas_as_evars env indclause.evd (clenv_value indclause) in
+      let sigma, term = pose_all_metas_as_evars env (clenv_evd indclause) (clenv_value indclause) in
       let sigma, typ = pose_all_metas_as_evars env sigma (clenv_type indclause) in
       sigma, term, typ
     with e when noncritical e ->
@@ -4982,14 +4965,12 @@ let elim_scheme_type (elim, elimt) t =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let clause = mk_clenv_from env sigma (elim,elimt) in
-  match EConstr.kind clause.evd (last_arg clause.evd clause.templval.rebus) with
-    | Meta mv ->
-        let clause' =
-          (* t is inductive, then CUMUL or CONV is irrelevant *)
-          clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
-            (clenv_meta_type clause mv) clause in
-        Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
-    | _ -> anomaly (Pp.str "elim_scheme_type.")
+  let mv = List.last (clenv_arguments clause) in
+  let clause' =
+    (* t is inductive, then CUMUL or CONV is irrelevant *)
+    clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
+      (clenv_meta_type clause mv) clause in
+  Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
   end
 
 let elim_type t =

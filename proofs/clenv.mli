@@ -22,18 +22,16 @@ open Tactypes
 
 (** {6 The Type of Constructions clausale environments.} *)
 
-type clausenv = private {
-  env      : env; (** the typing context *)
-  evd      : evar_map; (** the mapping from metavar and evar numbers to their
-                           types and values *)
-  templval : constr freelisted; (** the template which we are trying to fill
-                                    out *)
-  templtyp : constr freelisted; (** its type *)
-  cache : Reductionops.meta_instance_subst; (* Reductionops.create_meta_instance_subst evd) *)
-}
+type clausenv
 
-val mk_clausenv : env -> evar_map -> constr freelisted -> types freelisted -> clausenv
+val clenv_evd : clausenv -> Evd.evar_map
+val clenv_templtyp : clausenv -> constr freelisted
+
+(* Ad-hoc primitives *)
 val update_clenv_evd : clausenv -> evar_map -> clausenv
+val clenv_convert_val : (env -> evar_map -> econstr -> econstr) -> clausenv -> clausenv
+val clenv_refresh : env -> evar_map -> Univ.ContextSet.t option -> clausenv -> clausenv
+val clenv_arguments : clausenv -> metavariable list
 
 (** subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr
@@ -64,10 +62,6 @@ val clenv_unify :
    start from the rightmost argument of the template. *)
 val clenv_independent : clausenv -> metavariable list
 val clenv_missing : clausenv -> metavariable list
-
-(** for the purpose of inversion tactics *)
-exception NoSuchBinding
-val clenv_constrain_last_binding : constr -> clausenv -> clausenv
 
 val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 
