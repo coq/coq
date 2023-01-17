@@ -69,6 +69,10 @@ let warn_bad_relevance ?loc x = warn_bad_relevance ?loc (Some x)
 
 let check_assumption env x t ty =
   let r = x.binder_relevance in
+  let () = match r with
+  | Sorts.Relevant | Sorts.Irrelevant -> ()
+  | Sorts.RelevanceVar _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  in
   let r' = infer_assumption env t ty in
   let x = if Sorts.relevance_equal r r'
     then x
