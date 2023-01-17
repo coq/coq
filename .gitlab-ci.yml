@@ -881,6 +881,12 @@ plugin:ci-serapi_test:
   - library:ci-mathcomp
   - plugin:ci-serapi
 
+plugin:ci-coq_lsp:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - plugin:ci-serapi
+
 plugin:ci-vscoq:
   extends: .ci-template
 

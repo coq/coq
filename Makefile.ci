@@ -24,6 +24,7 @@ CI_TARGETS= \
     ci-coquelicot \
     ci-corn \
     ci-cross_crypto \
+    ci-coq_lsp \
     ci-coq_performance_tests \
     ci-coq_tools \
     ci-coqprime \
@@ -130,6 +131,8 @@ ci-compcert: ci-menhir ci-flocq
 ci-relation_algebra: ci-aac_tactics ci-mathcomp
 
 ci-serapi_test: ci-mathcomp ci-serapi
+
+ci-coq_lsp: ci-serapi
 
 # Generic rule, we use make to ease CI integration
 $(CI_TARGETS): ci-%:
