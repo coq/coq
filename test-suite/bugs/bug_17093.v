@@ -1,5 +1,3 @@
-Unset Elaboration StrictProp Cumulativity.
-
 Inductive sTrue : SProp := sI.
 
 (* Singleton Prop to SProp *)

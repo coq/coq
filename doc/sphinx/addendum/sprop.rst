@@ -53,18 +53,11 @@ values is impredicative, and so is :math:`\SProp`:
    Check fun (A:Type) (B:A -> SProp) => (forall x:A, B x) : SProp.
 
 In order to keep conversion tractable, cumulativity for :math:`\SProp`
-is forbidden, unless the :flag:`Cumulative StrictProp` flag is turned
-on:
+is forbidden.
 
 .. coqtop:: all
 
    Fail Check (fun (A:SProp) => A : Type).
-   Set Cumulative StrictProp.
-   Check (fun (A:SProp) => A : Type).
-
-.. coqtop:: none
-
-   Unset Cumulative StrictProp.
 
 We can explicitly lift strict propositions into the relevant world by
 using a wrapping inductive type. The inductive stops definitional
@@ -245,51 +238,12 @@ breaks termination of reduction
 
 The term :g:`c (top -> top) (fun x => x) c` infinitely reduces to itself.
 
-Issues with non-cumulativity
-----------------------------
+Lack of tactic support
+----------------------
 
-During normal term elaboration, we don't always know that a type is a
-strict proposition early enough. For instance:
-
-.. coqdoc::
-
-   Definition constant_0 : ?[T] -> nat := fun _ : sUnit => 0.
-
-While checking the type of the constant, we only know that ``?[T]``
-must inhabit some sort. Putting it in some floating universe ``u``
-would disallow instantiating it by ``sUnit : SProp``.
-
-In order to make the system usable without having to annotate every
-instance of :math:`\SProp`, we consider :math:`\SProp` to be a subtype
-of every universe during elaboration (i.e. outside the kernel). Then
-once we have a fully elaborated term it is sent to the kernel which
-will check that we didn't actually need cumulativity of :math:`\SProp`
-(in the example above, ``u`` doesn't appear in the final term).
-
-This means that some errors will be delayed until ``Qed``:
-
-.. coqtop:: in
-
-   Lemma foo : Prop.
-   Proof. pose (fun A : SProp => A : Type); exact True.
-
-.. coqtop:: all
-
-   Fail Qed.
-
-.. coqtop:: in
-
-   Abort.
-
-.. flag:: Elaboration StrictProp Cumulativity
-
-   Unset this :term:`flag` (it is on by default) to be strict with regard to
-   :math:`\SProp` cumulativity during elaboration.
-
-The implementation of proof irrelevance uses inferred "relevance"
-marks on binders to determine which variables are irrelevant. Together
-with non-cumulativity this allows us to avoid retyping during
-conversion.
+Some tactics do not handle |SProp| as they were not correctly ported. While in
+most of the cases they will just fail, in some cases this can result in sending
+ill-typed terms to the kernel, which will fail with anomalies at `Qed`.
 
 .. warn:: Bad relevance
 
@@ -297,9 +251,3 @@ conversion.
   the kernel when it is passed a term with incorrect relevance marks.
   To avoid conversion issues you may wish to use
   it to find when your tactics are producing incorrect marks.
-
-.. flag:: Cumulative StrictProp
-
-   Set this :term:`flag` (it is off by default) to make the kernel accept
-   cumulativity between |SProp| and other universes. This makes
-   typechecking incomplete.

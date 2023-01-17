@@ -1102,8 +1102,6 @@ Controlling Typing Flags
    Print the status of the three typing flags: guard checking, positivity checking
    and universe checking.
 
-See also :flag:`Cumulative StrictProp` in the |SProp| chapter.
-
 .. example::
 
    .. coqtop:: all reset

@@ -20,7 +20,4 @@ Definition sProdᶠ@{i}
 
 Definition Falseᶠ : El SPropᶠ := fun p => False.
 
-Definition EMᶠ : sEl (sProdᶠ SPropᶠ (fun p A => ((sProdᶠ A (fun p _ => Falseᶠ p))) p)).
-Proof.
-Fail Admitted.
-Abort.
+Fail Definition EMᶠ : sEl (sProdᶠ SPropᶠ (fun p A => ((sProdᶠ A (fun p _ => Falseᶠ p))) p)).

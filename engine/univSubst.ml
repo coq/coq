@@ -117,10 +117,7 @@ let enforce_leq_alg_sort s1 s2 g = match s1, s2 with
 | (Prop, (Set | Type _)) -> Constraints.empty, g
 | (((Prop | Set | Type _ | QSort _) as s1), (Prop | SProp as s2))
 | ((SProp as s1), ((Prop | Set | Type _ | QSort _) as s2)) ->
-  if UGraph.cumulative_sprop g && is_sprop s1 then
-    Constraints.empty, g
-  else
-    raise (UGraph.UniverseInconsistency (Le, s1, s2, None))
+  raise (UGraph.UniverseInconsistency (Le, s1, s2, None))
 | (Set | Type _), (Set | Type _) ->
   UGraph.enforce_leq_alg (get_algebraic s1) (get_algebraic s2) g
 | QSort (q1, u1), QSort (q2, u2) ->

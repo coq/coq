@@ -24,7 +24,7 @@ Definition iSquash_rect A (P : iSquash A -> SProp) (H : forall x : A, P (isquash
 Fail Check (fun A : SProp => A : Type).
 
 Lemma foo : Prop.
-Proof. pose (fun A : SProp => A : Type); exact True. Fail Qed. Abort.
+Proof. pose (fun A : SProp => ltac:(exact_no_check A): Type); exact True. Fail Qed. Abort.
 
 (* define evar as product *)
 Check (fun (f:(_:SProp)) => f _).

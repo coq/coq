@@ -4305,7 +4305,7 @@ Flags, options and attributes
   (`#11812 <https://github.com/coq/coq/pull/11812>`_,
   by Pierre-Marie Pédrot).
 - **Added:**
-  :flag:`Cumulative StrictProp` to control cumulativity of |SProp|
+  `Cumulative StrictProp` to control cumulativity of |SProp|
   (`#12034 <https://github.com/coq/coq/pull/12034>`_, by Gaëtan
   Gilbert).
 
@@ -4446,7 +4446,7 @@ Tools
   by Théo Zimmermann).
 - **Deprecated:**
   ``-cumulative-sprop`` command-line flag in favor of the new
-  :flag:`Cumulative StrictProp` flag (`#12034
+  `Cumulative StrictProp` flag (`#12034
   <https://github.com/coq/coq/pull/12034>`_, by Gaëtan Gilbert).
 - **Added:**
   A new documentation environment ``details`` to make certain portion

@@ -20,7 +20,6 @@ let set_local_flags flags env =
     check_universes = flags.check_universes;
     conv_oracle = flags.conv_oracle;
     share_reduction = flags.share_reduction;
-    cumulative_sprop = flags.cumulative_sprop;
     allow_uip = flags.allow_uip;
     (* These flags may not *)
     enable_VM = envflags.enable_VM;
