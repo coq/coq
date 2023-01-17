@@ -69,7 +69,8 @@ type ('constr, 'types) ptype_error =
   | UnsatisfiedConstraints of Constraints.t
   | UndeclaredUniverse of Level.t
   | DisallowedSProp
-  | BadRelevance
+  | BadBinderRelevance of Sorts.relevance * ('constr, 'types) Context.Rel.Declaration.pt
+  | BadCaseRelevance of Sorts.relevance * 'constr
   | BadInvert
   | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
 
@@ -149,8 +150,11 @@ let error_undeclared_universe env l =
 let error_disallowed_sprop env =
   raise (TypeError (env, DisallowedSProp))
 
-let error_bad_relevance env =
-  raise (TypeError (env, BadRelevance))
+let error_bad_binder_relevance env rlv decl =
+  raise (TypeError (env, BadBinderRelevance (rlv, decl)))
+
+let error_bad_case_relevance env rlv case =
+  raise (TypeError (env, BadCaseRelevance (rlv, mkCase case)))
 
 let error_bad_invert env =
   raise (TypeError (env, BadInvert))
@@ -207,6 +211,7 @@ let map_ptype_error f = function
 | UnsatisfiedConstraints g -> UnsatisfiedConstraints g
 | UndeclaredUniverse l -> UndeclaredUniverse l
 | DisallowedSProp -> DisallowedSProp
-| BadRelevance -> BadRelevance
+| BadBinderRelevance (rlv, decl) -> BadBinderRelevance (rlv, Context.Rel.Declaration.map_constr_het f decl)
+| BadCaseRelevance (rlv, case) -> BadCaseRelevance (rlv, f case)
 | BadInvert -> BadInvert
 | BadVariance u -> BadVariance u
