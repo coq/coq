@@ -540,7 +540,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   let nf = Evarutil.nf_evars_universes sigma in
   let arities = List.map nf arities in
   let constructors = List.map (on_snd (List.map nf)) constructors in
-  let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
+  let ctx_params = List.map (fun d -> EConstr.to_rel_decl sigma d) ctx_params in
   let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
   let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in

@@ -33,6 +33,9 @@ val normalize_universe_opt_subst : universe_opt_subst ->
 
 val normalize_opt_subst : universe_opt_subst -> universe_opt_subst
 
+val nf_binder_annot : (Sorts.relevance -> Sorts.relevance) ->
+  'a Context.binder_annot -> 'a Context.binder_annot
+
 (** Full universes substitutions into terms *)
 
 val nf_evars_and_universes_opt_subst :
