@@ -99,14 +99,10 @@ let rec process_extra args = match args with
   | r :: rem ->
     let file, extra = process_extra rem in
     file, r :: extra
-  | [] -> None,[]
+  | [] -> None, []
 
-let compile_files ~args ~injections ~extra =
-  let out_file, extra = process_extra extra in
-  let in_file = match extra with
-    | [] -> exit 0
-    | x :: _ -> x
-  in
+let compile_file ~args ~injections ~root_st ~out_file in_file =
+  let () = Vernacstate.unfreeze_full_state root_st in
   let f_in = open_in in_file in
   let () = start_glob ~in_file in
   let libname = Util.dirpath_of_file in_file in
@@ -121,6 +117,16 @@ let compile_files ~args ~injections ~extra =
   let () = touch_vos ~in_file in
   Dumpglob.end_dump_glob ();
   ()
+
+let compile_files ~args ~injections ~extra =
+  let root_st = Vernacstate.freeze_full_state () in
+  match process_extra extra with
+  | None, in_files ->
+    List.iter (compile_file ~args ~injections ~root_st ~out_file:None) in_files
+  | Some _ as out_file, [in_file] ->
+    compile_file ~args ~injections ~root_st ~out_file in_file
+  | Some _, _ ->
+    CErrors.user_err (Pp.str "Can't use -o on multiple or empty file list")
 
 let () =
   Flags.quiet := true;
