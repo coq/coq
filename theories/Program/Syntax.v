@@ -29,5 +29,3 @@ Arguments snd {A B} _.
 
 Arguments nil {A}.
 Arguments cons {A} _ _.
-
-Require Import Bvector.
