@@ -143,10 +143,10 @@ let rec prod_item_of_symbol lev = function
   EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0 e)
 | Extend.Ulist1sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list1sep e (Pcoq.Symbol.tokens [Pcoq.TPattern (CLexer.terminal sep)]) false)
+  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list1sep e (Pcoq.Symbol.tokens [Pcoq.TPattern (Pcoq.terminal sep)]) false)
 | Extend.Ulist0sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0sep e (Pcoq.Symbol.tokens [Pcoq.TPattern (CLexer.terminal sep)]) false)
+  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0sep e (Pcoq.Symbol.tokens [Pcoq.TPattern (Pcoq.terminal sep)]) false)
 | Extend.Uopt s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
   EntryName (Rawwit (OptArg typ), Pcoq.Symbol.opt e)
@@ -446,11 +446,11 @@ let create_ltac_quotation name cast (e, l) =
               (Rule.next
                  (Rule.next
                     Rule.stop
-                    (Symbol.token (CLexer.terminal name)))
-                 (Symbol.token (CLexer.terminal ":")))
-              (Symbol.token (CLexer.terminal "(")))
+                    (Symbol.token (Pcoq.terminal name)))
+                 (Symbol.token (Pcoq.terminal ":")))
+              (Symbol.token (Pcoq.terminal "(")))
            entry)
-        (Symbol.token (CLexer.terminal ")")))
+        (Symbol.token (Pcoq.terminal ")")))
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = [Pcoq.Production.make rule action] in

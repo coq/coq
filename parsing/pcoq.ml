@@ -16,12 +16,44 @@ open Gramlib
 (** The parser of Coq *)
 include Grammar.GMake(CLexer.Lexer)
 
+let keyword_state = ref CLexer.empty_keyword_state
+let get_keyword_state () = !keyword_state
+let set_keyword_state s = keyword_state := s
+
+(** Not marshallable! *)
+let estate = ref EState.empty
+
+let gstate () = { GState.estate = !estate; kwstate = !keyword_state; }
+
+module Parsable = struct
+  include Parsable
+  let consume x len = consume x len !keyword_state
+end
+
+module Entry = struct
+  include Entry
+  let make na =
+    let estate', e = make na !estate in
+    estate := estate';
+    e
+  let create = make
+  let parse e p = parse e p (gstate())
+  let of_parser na p =
+    let estate', e = of_parser na p !estate in
+    estate := estate';
+    e
+  let parse_token_stream e strm = parse_token_stream e strm (gstate())
+  let print fmt e = print fmt e !estate
+  let is_empty e = is_empty e !estate
+  let accumulate_in e = accumulate_in e !estate
+end
+
 module Lookahead =
 struct
 
   let err () = raise Stream.Failure
 
-  type t = int -> Tok.t LStream.t -> int option
+  type t = int -> CLexer.keyword_state -> (CLexer.keyword_state,Tok.t) LStream.t -> int option
 
   let rec contiguous n m strm =
     n == m ||
@@ -29,46 +61,46 @@ struct
     let (bp, _) = Loc.unloc (LStream.get_loc (n + 1) strm) in
     Int.equal ep bp && contiguous (succ n) m strm
 
-  let check_no_space m strm =
+  let check_no_space m _kwstate strm =
     let n = LStream.count strm in
     if contiguous n (n+m-1) strm then Some m else None
 
   let to_entry s (lk : t) =
-    let run strm = match lk 0 strm with None -> err () | Some _ -> () in
+    let run kwstate strm = match lk 0 kwstate strm with None -> err () | Some _ -> () in
     Entry.(of_parser s { parser_fun = run })
 
-  let (>>) (lk1 : t) lk2 n strm = match lk1 n strm with
+  let (>>) (lk1 : t) lk2 n kwstate strm = match lk1 n kwstate strm with
   | None -> None
-  | Some n -> lk2 n strm
+  | Some n -> lk2 n kwstate strm
 
-  let (<+>) (lk1 : t) lk2 n strm = match lk1 n strm with
-  | None -> lk2 n strm
+  let (<+>) (lk1 : t) lk2 n kwstate strm = match lk1 n kwstate strm with
+  | None -> lk2 n kwstate strm
   | Some n -> Some n
 
-  let lk_empty n strm = Some n
+  let lk_empty n kwstate strm = Some n
 
-  let lk_kw kw n strm = match LStream.peek_nth n strm with
+  let lk_kw kw n kwstate strm = match LStream.peek_nth kwstate n strm with
   | Tok.KEYWORD kw' | Tok.IDENT kw' -> if String.equal kw kw' then Some (n + 1) else None
   | _ -> None
 
-  let lk_kws kws n strm = match LStream.peek_nth n strm with
+  let lk_kws kws n kwstate strm = match LStream.peek_nth kwstate n strm with
   | Tok.KEYWORD kw | Tok.IDENT kw -> if List.mem_f String.equal kw kws then Some (n + 1) else None
   | _ -> None
 
-  let lk_ident n strm = match LStream.peek_nth n strm with
+  let lk_ident n kwstate strm = match LStream.peek_nth kwstate n strm with
   | Tok.IDENT _ -> Some (n + 1)
   | _ -> None
 
-  let lk_ident_except idents n strm = match LStream.peek_nth n strm with
+  let lk_ident_except idents n kwstate strm = match LStream.peek_nth kwstate n strm with
   | Tok.IDENT ident when not (List.mem_f String.equal ident idents) -> Some (n + 1)
   | _ -> None
 
-  let lk_nat n strm = match LStream.peek_nth n strm with
+  let lk_nat n kwstate strm = match LStream.peek_nth kwstate n strm with
   | Tok.NUMBER p when NumTok.Unsigned.is_nat p -> Some (n + 1)
   | _ -> None
 
-  let rec lk_list lk_elem n strm =
-    ((lk_elem >> lk_list lk_elem) <+> lk_empty) n strm
+  let rec lk_list lk_elem n kwstate strm =
+    ((lk_elem >> lk_list lk_elem) <+> lk_empty) n kwstate strm
 
   let lk_ident_list = lk_list lk_ident
 
@@ -103,6 +135,8 @@ type ext_kind =
 
 (** The list of extensions *)
 
+let terminal s = CLexer.terminal !keyword_state s
+
 let camlp5_state = ref []
 
 let camlp5_entries = ref EntryDataMap.empty
@@ -116,8 +150,23 @@ let grammar_delete e r =
   in
   List.iter
     (fun lev ->
-      List.iter (fun pil -> safe_delete_rule e pil) (List.rev lev))
+      List.iter (fun pil -> estate := safe_delete_rule !estate e pil) (List.rev lev))
     (List.rev data)
+
+let no_add_kw = { add_kw = fun () _ -> () }
+
+(* TODO use this for ssr instead of messing with set_keyword_state
+   (needs some API design) *)
+let _safe_extend_no_kw e ext =
+  let estate', () = safe_extend no_add_kw !estate () e ext in
+  estate := estate'
+
+let add_kw = { add_kw = CLexer.add_keyword_tok }
+
+let safe_extend e ext =
+  let estate', kwstate' = safe_extend add_kw !estate !keyword_state e ext in
+  estate := estate';
+  keyword_state := kwstate'
 
 let grammar_delete_reinit e reinit d =
   grammar_delete e d;
@@ -169,7 +218,7 @@ let rec remove_grammars n =
            redo();
            camlp5_state := ByEXTEND (undo,redo) :: !camlp5_state
        | ByEntry (tag, name, e) :: t ->
-           Unsafe.clear_entry e;
+           estate := Unsafe.clear_entry !estate e;
            camlp5_state := t;
            let EntryData.Ex entries =
              try EntryDataMap.find tag !camlp5_entries
@@ -315,7 +364,7 @@ let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
   let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
   let entry = Entry.make "epsilon" in
   let ext = Fresh (Gramlib.Gramext.First, [None, None, [r]]) in
-  let () = safe_extend entry ext in
+  safe_extend entry ext;
   try Some (parse_string entry "") with _ -> None
 
 (** Synchronized grammar extensions *)
@@ -434,7 +483,7 @@ type frozen_t =
   CLexer.keyword_state
 
 let freeze ~marshallable : frozen_t =
-  (!grammar_stack, CLexer.get_keyword_state ())
+  (!grammar_stack, !keyword_state)
 
 let eq_grams (g1, _) (g2, _) = match g1, g2 with
 | GramExt (_, GrammarCommand.Dyn (t1, v1)), GramExt (_, GrammarCommand.Dyn (t2, v2)) ->
@@ -468,7 +517,7 @@ let unfreeze (grams, lex) =
   let n = number_of_entries 0 undo in
   remove_grammars n;
   grammar_stack := common;
-  CLexer.set_keyword_state lex;
+  keyword_state := lex;
   List.iter extend_dyn_grammar (List.rev redo)
 
 (** No need to provide an init function : the grammar state is

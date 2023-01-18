@@ -558,11 +558,10 @@ let plugin_regex = Str.regexp "^plugins/\\([a-zA-Z0-9_]+\\)/"
 let level_regex = Str.regexp "[a-zA-Z0-9_]*$"
 
 let get_plugin_name file =
-  if List.mem file ["plugins/ssr/ssrparser.mlg"; "plugins/ssr/ssrvernac.mlg";
-      "plugins/ssrmatching/g_ssrmatching.mlg"] then
-    "SSR"
-  else if Str.string_match plugin_regex file 0 then
-    Str.matched_group 1 file
+  if Str.string_match plugin_regex file 0 then
+    let s = Str.matched_group 1 file in
+    if List.mem s ["ssr"; "ssrmatching"] then "SSR"
+    else s
   else
     ""
 

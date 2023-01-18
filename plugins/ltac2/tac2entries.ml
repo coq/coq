@@ -649,7 +649,7 @@ let rec get_rule (tok : scope_rule token list) : krule = match tok with
   KRule (rule, act)
 | TacTerm t :: tok ->
   let KRule (rule, act) = get_rule tok in
-  let rule = Pcoq.(Rule.next rule (Symbol.token (CLexer.terminal t))) in
+  let rule = Pcoq.(Rule.next rule (Symbol.token (Pcoq.terminal t))) in
   let act k _ = act k in
   KRule (rule, act)
 

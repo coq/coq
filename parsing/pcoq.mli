@@ -15,7 +15,14 @@ open Libnames
 
 (** The parser of Coq *)
 
-include Gramlib.Grammar.S with type te = Tok.t and type 'a pattern = 'a Tok.p
+include Gramlib.Grammar.S
+  with type keyword_state := CLexer.keyword_state
+   and type te := Tok.t
+   and type 'a pattern := 'a Tok.p
+   and type 'a with_gstate := 'a
+   and type 'a with_kwstate := 'a
+   and type 'a with_estate := 'a
+   and type 'a mod_estate := 'a
 
 module Lookahead : sig
   type t
@@ -31,6 +38,9 @@ module Lookahead : sig
   val lk_ident_except : string list -> t
   val lk_ident_list : t
 end
+
+(** When string is not an ident, returns a keyword. *)
+val terminal : string -> string Tok.p
 
 (** The parser of Coq is built from three kinds of rule declarations:
 
@@ -282,3 +292,6 @@ val find_grammars_by_name : string -> Entry.any_t list
 (** Parsing state handling *)
 val freeze : marshallable:bool -> frozen_t
 val unfreeze : frozen_t -> unit
+
+val get_keyword_state : unit -> CLexer.keyword_state
+val set_keyword_state : CLexer.keyword_state -> unit

@@ -60,25 +60,25 @@ open Extraargs
 (* idem for (x1..xn:t) [n^2 complexity but exceptional use] *)
 let check_for_coloneq =
   Pcoq.Entry.(of_parser "lpar_id_colon"
-    { parser_fun = fun strm ->
+    { parser_fun = fun kwstate strm ->
       let rec skip_to_rpar p n =
-        match List.last (Gramlib.LStream.npeek n strm) with
+        match List.last (Gramlib.LStream.npeek kwstate n strm) with
         | KEYWORD "(" -> skip_to_rpar (p+1) (n+1)
         | KEYWORD ")" -> if Int.equal p 0 then n+1 else skip_to_rpar (p-1) (n+1)
         | KEYWORD "." -> err ()
         | _ -> skip_to_rpar p (n+1) in
       let rec skip_names n =
-        match List.last (Gramlib.LStream.npeek n strm) with
+        match List.last (Gramlib.LStream.npeek kwstate n strm) with
         | IDENT _ | KEYWORD "_" -> skip_names (n+1)
         | KEYWORD ":" -> skip_to_rpar 0 (n+1) (* skip a constr *)
         | _ -> err () in
       let rec skip_binders n =
-        match List.last (Gramlib.LStream.npeek n strm) with
+        match List.last (Gramlib.LStream.npeek kwstate n strm) with
         | KEYWORD "(" -> skip_binders (skip_names (n+1))
         | IDENT _ | KEYWORD "_" -> skip_binders (n+1)
         | KEYWORD ":=" -> ()
         | _ -> err () in
-      match Gramlib.LStream.peek_nth 0 strm with
+      match Gramlib.LStream.peek_nth kwstate 0 strm with
       | KEYWORD "(" -> skip_binders 2
       | _ -> err () })
 

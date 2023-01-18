@@ -6,4 +6,4 @@
  (flags :standard -open Gramlib)
  (libraries coq-core.plugins.ssrmatching))
 
-(coq.pp (modules ssrvernac ssrparser))
+(coq.pp (modules ssrvernac ssrparser ssrtacs))

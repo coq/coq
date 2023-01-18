@@ -82,7 +82,7 @@ sig
   val print : t -> Pp.t
     (** [sprint] and [print] returns the number as it was parsed, for printing *)
 
-  val parse : char Gramlib.Stream.t -> t
+  val parse : (unit,char) Gramlib.Stream.t -> t
     (** Parse a positive Coq number.
         Precondition: the first char on the stream is already known to be a digit (\[0-9\]).
         Precondition: at least two extra chars after the number to parse.

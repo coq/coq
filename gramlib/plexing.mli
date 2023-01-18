@@ -10,17 +10,16 @@
 
 (** Lexer type *)
 
-(** Returning a stream equipped with a location function *)
-type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te LStream.t
-
 module type S = sig
+  type keyword_state
   type te
   type 'c pattern
   val tok_pattern_eq : 'a pattern -> 'b pattern -> ('a, 'b) Util.eq option
   val tok_pattern_strings : 'c pattern -> string * string option
-  val tok_func : te lexer_func
-  val tok_using : 'c pattern -> unit
-  val tok_removing : 'c pattern -> unit
+
+  (** Returning a stream equipped with a location function *)
+  val tok_func : ?loc:Loc.t -> (unit,char) Stream.t -> (keyword_state,te) LStream.t
+
   val tok_match : 'c pattern -> te -> 'c
   val tok_text : 'c pattern -> string
 

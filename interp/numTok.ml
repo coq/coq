@@ -123,42 +123,42 @@ struct
       succ len in
     let get_buff len = Bytes.sub_string !buff 0 len in
     (* reads [0-9_]* *)
-    let rec number len s = match Stream.peek s with
-      | Some ('0'..'9' as c) -> Stream.junk s; number (store len c) s
-      | Some ('_' as c) when len > 0 -> Stream.junk s; number (store len c) s
+    let rec number len s = match Stream.peek () s with
+      | Some ('0'..'9' as c) -> Stream.junk () s; number (store len c) s
+      | Some ('_' as c) when len > 0 -> Stream.junk () s; number (store len c) s
       | _ -> len in
     (* reads [0-9a-fA-F_]* *)
-    let rec hex_number len s = match Stream.peek s with
+    let rec hex_number len s = match Stream.peek () s with
       | Some (('0'..'9' | 'a'..'f' | 'A'..'F') as c) ->
-         Stream.junk s; hex_number (store len c) s
+         Stream.junk () s; hex_number (store len c) s
       | Some ('_' as c) when len > 0 ->
-         Stream.junk s; hex_number (store len c) s
+         Stream.junk () s; hex_number (store len c) s
       | _ -> len in
     fun s ->
     let hex, i =
-      match Stream.npeek 3 s with
+      match Stream.npeek () 3 s with
       | '0' :: (('x' | 'X') as x) :: (('0'..'9' | 'a'..'f' | 'A'..'F') as c) :: _ ->
-         Stream.junk s; Stream.junk s; Stream.junk s;
+         Stream.junk () s; Stream.junk () s; Stream.junk () s;
          true, get_buff (hex_number (store (store (store 0 '0') x) c) s)
       | _ -> false, get_buff (number 0 s) in
     assert (i <> "");
     let f =
-      match hex, Stream.npeek 2 s with
+      match hex, Stream.npeek () 2 s with
       | true, '.' :: (('0'..'9' | 'a'..'f' | 'A'..'F' | '_') as c) :: _ ->
-         Stream.junk s; Stream.junk s; get_buff (hex_number (store 0 c) s)
+         Stream.junk () s; Stream.junk () s; get_buff (hex_number (store 0 c) s)
       | false, '.' :: (('0'..'9' | '_') as c) :: _ ->
-         Stream.junk s; Stream.junk s; get_buff (number (store 0 c) s)
+         Stream.junk () s; Stream.junk () s; get_buff (number (store 0 c) s)
       | _ -> "" in
     let e =
-      match hex, Stream.npeek 2 s with
+      match hex, Stream.npeek () 2 s with
       | true, (('p'|'P') as e) :: ('0'..'9' as c) :: _
       | false, (('e'|'E') as e) :: ('0'..'9' as c) :: _ ->
-         Stream.junk s; Stream.junk s; get_buff (number (store (store 0 e) c) s)
+         Stream.junk () s; Stream.junk () s; get_buff (number (store (store 0 e) c) s)
       | true, (('p'|'P') as e) :: (('+'|'-') as sign) :: _
       | false, (('e'|'E') as e) :: (('+'|'-') as sign) :: _ ->
-         begin match Stream.npeek 3 s with
+         begin match Stream.npeek () 3 s with
          | _ :: _ :: ('0'..'9' as c) :: _ ->
-            Stream.junk s; Stream.junk s; Stream.junk s;
+            Stream.junk () s; Stream.junk () s; Stream.junk () s;
             get_buff (number (store (store (store 0 e) sign) c) s)
          | _ -> ""
          end
@@ -261,8 +261,8 @@ struct
        (s.[0] < '0' || s.[0] > '9') && ((s.[0] <> '-' && s.[0] <> '+') || s.[1] < '0' || s.[1] > '9') then None else
       let strm = Stream.of_string (s ^ "  ") in
       let sign = match s.[0] with
-        | '-' -> (Stream.junk strm; SMinus)
-        | '+' -> (Stream.junk strm; SPlus)
+        | '-' -> (Stream.junk () strm; SMinus)
+        | '+' -> (Stream.junk () strm; SPlus)
         | _ -> SPlus in
       let n = parse strm in
       if Stream.count strm >= String.length s then Some (sign,n) else None
