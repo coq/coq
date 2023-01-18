@@ -431,7 +431,7 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
   | GHole _ | GGenarg _ ->
       PMeta None
   | GCast (c,_,_) ->
-      warn_cast_in_pattern ();
+      warn_cast_in_pattern ?loc ();
       pat_of_raw metas vars c
   | GIf (c,(_,None),b1,b2) ->
       PIf (pat_of_raw metas vars c,
