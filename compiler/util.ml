@@ -13,13 +13,17 @@ let dirpath_of_file f =
   let ldir = Libnames.add_dirpath_suffix ldir0 id in
   ldir
 
-let fb_handler = let open Feedback in function
+let print_message (lvl, _loc, msg) =
+  let open Feedback in match lvl with
+  | Debug -> ()
+  | Info -> ()
+  | Notice
+  | Warning
+  | Error ->
+    Format.printf "%s@\n%!" Pp.(string_of_ppcmds msg)
+
+let fb_handler = function
   | Feedback.{ contents; _ } ->
     match contents with
-    | Feedback.Message(Debug,_,_) -> ()
-    | Feedback.Message(Info,_loc,msg) -> ()
-    | Feedback.Message(Notice,_loc,msg)
-    | Feedback.Message(Warning,_loc,msg)
-    | Feedback.Message(Error,_loc,msg) ->
-      Format.printf "%s@\n%!" Pp.(string_of_ppcmds msg)
+    | Message (l,r,m) -> print_message (l,r,m)
     | _ -> ()
