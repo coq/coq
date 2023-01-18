@@ -451,10 +451,10 @@ Module MatchCastInPattern.
 
     Set Warnings "+cast-in-pattern".
     Fail lazymatch goal with
-    | [ H := ?v <: ?T |- _ ] => idtac
+    | [ H := ?v <: _ |- _ ] => idtac
     end.
     Fail lazymatch goal with
-    | [ H := [ ?v : ?T ] : _ |- _ ] => idtac
+    | [ H := [ ?v : _ ] : _ |- _ ] => idtac
     end.
   Abort.
 
