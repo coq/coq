@@ -649,7 +649,14 @@ Definition string_test2 (x: string) : unit :=
   | _ => tt
   end.
 
-Definition string_test := (string_test1, string_test2).
+Definition string_test3 (x : string) : string :=
+  String.string_of_list_ascii (String.list_ascii_of_string x).
+
+Definition string_test4 (x : string) : string :=
+  String.string_of_list_byte (String.list_byte_of_string x).
+
+Definition string_test :=
+  (string_test1, string_test2, string_test3, string_test4).
 
 (* Raw extraction of strings *)
 Extraction TestCompile string_test.
