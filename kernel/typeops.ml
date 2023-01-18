@@ -67,11 +67,14 @@ let warn_bad_relevance =
 let warn_bad_relevance_ci ?loc () = warn_bad_relevance ?loc None
 let warn_bad_relevance ?loc x = warn_bad_relevance ?loc (Some x)
 
+let anomaly_sort_variable q =
+  anomaly Pp.(str "The kernel received a sort variable " ++ Sorts.QVar.pr q)
+
 let check_assumption env x t ty =
   let r = x.binder_relevance in
   let () = match r with
   | Sorts.Relevant | Sorts.Irrelevant -> ()
-  | Sorts.RelevanceVar _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  | Sorts.RelevanceVar q -> anomaly_sort_variable q
   in
   let r' = infer_assumption env t ty in
   let x = if Sorts.relevance_equal r r'
@@ -502,7 +505,7 @@ let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
   let rp = Sorts.relevance_of_sort sp in
   let () = match ci.ci_relevance with
   | Sorts.Relevant | Sorts.Irrelevant -> ()
-  | Sorts.RelevanceVar _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  | Sorts.RelevanceVar q -> anomaly_sort_variable q
   in
   let ci = if ci.ci_relevance == rp then ci
     else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
@@ -585,7 +588,7 @@ let check_binder_annot s x =
   let r = x.binder_relevance in
   let () = match r with
   | Sorts.Relevant | Sorts.Irrelevant -> ()
-  | Sorts.RelevanceVar _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  | Sorts.RelevanceVar q -> anomaly_sort_variable q
   in
   let r' = Sorts.relevance_of_sort s in
   if r' == r
@@ -603,7 +606,7 @@ let rec execute env cstr =
     | Sort s ->
       let () = match s with
       | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
-      | QSort _ -> anomaly Pp.(str "the kernel does not support sort variables")
+      | QSort (q, _) -> anomaly_sort_variable q
       | Prop | Set | Type _ -> ()
       in
       cstr, type_of_sort s
