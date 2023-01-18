@@ -393,10 +393,6 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
 
 let ltac_quotations = ref String.Set.empty
 
-let () =
-  Egramml.grammar_extend ~plugin_uid:("coq-core.plugins.ltac","tacentries:0")
-    Pltac.tactic_value (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, []]))
-
 let create_ltac_quotation ~plugin name cast (e, l) =
   let () =
     if String.Set.mem name !ltac_quotations then
