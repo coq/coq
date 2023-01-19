@@ -140,6 +140,7 @@ val nf_env_evar : evar_map -> env -> env
 val nf_evar_info : evar_map -> 'a evar_info -> 'a evar_info
 val nf_evar_map : evar_map -> evar_map
 val nf_evar_map_undefined : evar_map -> evar_map
+val nf_relevance : evar_map -> Sorts.relevance -> Sorts.relevance
 
 (** Presenting terms without solved evars *)
 

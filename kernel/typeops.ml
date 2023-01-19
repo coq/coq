@@ -69,6 +69,10 @@ let warn_bad_relevance ?loc x = warn_bad_relevance ?loc (Some x)
 
 let check_assumption env x t ty =
   let r = x.binder_relevance in
+  let () = match r with
+  | Sorts.Relevant | Sorts.Irrelevant -> ()
+  | Sorts.RelevanceVar _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  in
   let r' = infer_assumption env t ty in
   let x = if Sorts.relevance_equal r r'
     then x
@@ -496,12 +500,12 @@ let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
     error_elim_arity env (ind, u') c None
   in
   let rp = Sorts.relevance_of_sort sp in
-  let ci = if ci.ci_relevance == rp then ci
-    else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
-  in
   let () = match ci.ci_relevance with
   | Sorts.Relevant | Sorts.Irrelevant -> ()
   | Sorts.RelevanceVar _ -> anomaly Pp.(str "the kernel does not support sort variables")
+  in
+  let ci = if ci.ci_relevance == rp then ci
+    else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
   in
   let () = check_case_info env (ind, u') rp ci in
   let () =
