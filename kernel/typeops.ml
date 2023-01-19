@@ -57,15 +57,28 @@ let infer_assumption env t ty =
   with TypeError _ ->
     error_assumption env (make_judge t ty)
 
+type bad_relevance =
+| BadRelevanceBinder of Sorts.relevance * rel_declaration
+| BadRelevanceCase of Sorts.relevance * Constr.t
+
 let warn_bad_relevance_name = "bad-relevance"
 let warn_bad_relevance =
   CWarnings.create ~name:warn_bad_relevance_name ~category:"debug" ~default:CWarnings.Disabled
     Pp.(function
-        | None ->  str "Bad relevance in case annotation."
-        | Some x -> str "Bad relevance for binder " ++ Name.print x.binder_name ++ str ".")
+        | BadRelevanceCase _ ->  str "Bad relevance in case annotation."
+        | BadRelevanceBinder (_, na) -> str "Bad relevance for binder " ++ Name.print (RelDecl.get_name na) ++ str ".")
 
-let warn_bad_relevance_ci ?loc () = warn_bad_relevance ?loc None
-let warn_bad_relevance ?loc x = warn_bad_relevance ?loc (Some x)
+let warn_bad_relevance_case ?loc env rlv case = match CWarnings.get_status ~name:warn_bad_relevance_name with
+| CWarnings.Disabled | CWarnings.Enabled ->
+  warn_bad_relevance ?loc (BadRelevanceCase (rlv, mkCase case))
+| CWarnings.AsError ->
+  error_bad_case_relevance env rlv case
+
+let warn_bad_relevance_binder ?loc env rlv bnd = match CWarnings.get_status ~name:warn_bad_relevance_name with
+| CWarnings.Disabled | CWarnings.Enabled ->
+  warn_bad_relevance ?loc (BadRelevanceBinder (rlv, bnd))
+| CWarnings.AsError ->
+  error_bad_binder_relevance env rlv bnd
 
 let anomaly_sort_variable q =
   anomaly Pp.(str "The kernel received a sort variable " ++ Sorts.QVar.pr q)
@@ -77,9 +90,11 @@ let check_assumption env x t ty =
   | Sorts.RelevanceVar q -> anomaly_sort_variable q
   in
   let r' = infer_assumption env t ty in
-  let x = if Sorts.relevance_equal r r'
-    then x
-    else (warn_bad_relevance x; {x with binder_relevance = r'})
+  let x =
+    if Sorts.relevance_equal r r' then x
+    else
+      let () = warn_bad_relevance_binder env r' (RelDecl.LocalAssum (x, t)) in
+      {x with binder_relevance = r'}
   in
   x
 
@@ -466,9 +481,9 @@ let check_branch_types env (_mib, mip) ci u pms c _ct lft (pctx, p) =
     error_ill_formed_branch env c ((ci.ci_ind, i + 1), u) brt expbrt
 
 let should_invert_case env ci =
-  ci.ci_relevance == Sorts.Relevant &&
+  Sorts.relevance_equal ci.ci_relevance Sorts.Relevant &&
   let mib,mip = lookup_mind_specif env ci.ci_ind in
-  mip.mind_relevance == Sorts.Irrelevant &&
+  Sorts.relevance_equal mip.mind_relevance Sorts.Irrelevant &&
   (* NB: it's possible to have 2 ctors or arguments to 1 ctor by unsetting univ checks
      but we don't do special reduction in such cases
 
@@ -492,7 +507,7 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
   Vars.substl subst p
 
-let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
+let type_of_case env (mib, mip) ci u pms (pctx, pnas, p, pt) iv c ct lf lft =
   let ((ind, u'), largs) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
@@ -507,8 +522,11 @@ let type_of_case env (mib, mip) ci u pms (pctx, p, pt) iv c ct _lf lft =
   | Sorts.Relevant | Sorts.Irrelevant -> ()
   | Sorts.RelevanceVar q -> anomaly_sort_variable q
   in
-  let ci = if ci.ci_relevance == rp then ci
-    else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
+  let ci =
+    if Sorts.relevance_equal ci.ci_relevance rp then ci
+    else
+      let () = warn_bad_relevance_case env rp (ci, u, pms, (pnas, p), iv, c, lf) in
+      {ci with ci_relevance=rp}
   in
   let () = check_case_info env (ind, u') rp ci in
   let () =
@@ -584,16 +602,31 @@ let type_of_global_in_context env r =
 (************************************************************************)
 (************************************************************************)
 
-let check_binder_annot s x =
+let check_assum_annot env s x t =
   let r = x.binder_relevance in
   let () = match r with
   | Sorts.Relevant | Sorts.Irrelevant -> ()
   | Sorts.RelevanceVar q -> anomaly_sort_variable q
   in
   let r' = Sorts.relevance_of_sort s in
-  if r' == r
+  if Sorts.relevance_equal r' r
   then x
-  else (warn_bad_relevance x; {x with binder_relevance = r'})
+  else
+    let () = warn_bad_relevance_binder env r' (RelDecl.LocalAssum (x, t)) in
+    {x with binder_relevance = r'}
+
+let check_let_annot env s x c t =
+  let r = x.binder_relevance in
+  let () = match r with
+  | Sorts.Relevant | Sorts.Irrelevant -> ()
+  | Sorts.RelevanceVar q -> anomaly_sort_variable q
+  in
+  let r' = Sorts.relevance_of_sort s in
+  if Sorts.relevance_equal r' r
+  then x
+  else
+    let () = warn_bad_relevance_binder env r' (RelDecl.LocalDef (x, c, t)) in
+    {x with binder_relevance = r'}
 
 (* The typing machine. *)
     (* ATTENTION : faudra faire le typage du contexte des Const,
@@ -641,7 +674,7 @@ let rec execute env cstr =
 
     | Lambda (name,c1,c2) ->
       let c1', s = execute_is_type env c1 in
-      let name' = check_binder_annot s name in
+      let name' = check_assum_annot env s name c1' in
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let c2', c2t = execute env1 c2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name',c1',c2') in
@@ -649,7 +682,7 @@ let rec execute env cstr =
 
     | Prod (name,c1,c2) ->
       let c1', vars = execute_is_type env c1 in
-      let name' = check_binder_annot vars name in
+      let name' = check_assum_annot env vars name c1' in
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let c2', vars' = execute_is_type env1 c2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkProd(name',c1',c2') in
@@ -658,7 +691,7 @@ let rec execute env cstr =
     | LetIn (name,c1,c2,c3) ->
       let c1', c1t = execute env c1 in
       let c2', c2s = execute_is_type env c2 in
-      let name' = check_binder_annot c2s name in
+      let name' = check_let_annot env c2s name c1' c2' in
       let () = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
       let c3', c3t = execute env1 c3 in
@@ -741,7 +774,7 @@ let rec execute env cstr =
           if br == br' then b else (nas, br')
         in
         let lf' = Array.Smart.map_i build_one_branch lf in
-        let ci', t = type_of_case env (mib, mip) ci u pms' (pctx, p', pt) iv' c' ct lf' lft in
+        let ci', t = type_of_case env (mib, mip) ci u pms' (pctx, fst p, p', pt) iv' c' ct lf' lft in
         let eqbr (_, br1) (_, br2) = br1 == br2 in
         let cstr = if ci == ci' && pms == pms' && c == c' && snd p == p' && iv == iv' && Array.equal eqbr lf lf' then cstr
           else mkCase (ci', u, pms', (fst p, p'), iv', c', lf')
@@ -842,13 +875,13 @@ let check_context env rels =
     match d with
       | LocalAssum (x,ty) ->
         let jty = infer_type env ty in
-        let x = check_binder_annot jty.utj_type x in
+        let x = check_assum_annot env jty.utj_type x jty.utj_val in
         push_rel d env, LocalAssum (x,jty.utj_val) :: rels
       | LocalDef (x,bd,ty) ->
         let j1 = infer env bd in
         let jty = infer_type env ty in
         conv_leq env j1.uj_type ty;
-        let x = check_binder_annot jty.utj_type x in
+        let x = check_let_annot env jty.utj_type x j1.uj_val jty.utj_val in
         push_rel d env, LocalDef (x,j1.uj_val,jty.utj_val) :: rels)
     rels ~init:(env,[])
 
