@@ -14,6 +14,85 @@ Version 8.17
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
+Coq version 8.17 integrate a soudness fix to the Coq kernel along
+with a few new features and a host of improvements to the Ltac2 language
+and libraries. We highlight some of the most impactful changes here:
+
+  - :ref:`Fixed <817VmCompute>` a logical inconsistency due to :tacn:`vm_compute` in
+    presence of side-effects in the enviroment (e.g. using `Back` or `Fail`).
+
+  - It is now possible to dynamically :ref:`enable or disable <817Notations>` notations.
+
+  - Support :ref:`multiple scopes <817Scopes>`` in :cmd:`Arguments` and :cmd:`Bind Scope`.
+
+  - The tactics chapter of the manual has seen :ref:`many improvements <817TacticsRefman>`
+    in presentation and wording and is semi-automatically checked for coherence with the implementation.
+
+  - :ref:`Fixes <817Eauto>` to the `auto` and `eauto` tactics, to respect hint priorities and the documented use
+    of :tacn:`simple apply`. Potentially breaking change.
+
+  - :ref:`New LTac2 <817Ltac2>` APIs, deep pattern-matching with ``as`` clauses and handling of literals,
+    support for record types and preterms.
+
+  - :ref:`Move <817ClassFieldSyntax>` from :g:`:>`: to :g:`::` syntax for declaring typeclass fields as instances, fixing
+    a confusion with declaration of coercions.
+
+  - :ref:`Standard library <817Stdlib>` improvements.
+
+See the `Changes in 8.17.0`_ section below for the detailed list of changes,
+including potentially breaking changes marked with **Changed**.
+Coq's `reference manual for 8.17 <https://coq.github.io/doc/v8.17/refman>`_,
+`documentation of the 8.17 standard library <https://coq.github.io/doc/v8.17/stdlib>`_
+and `developer documentation of the 8.17 ML API <https://coq.github.io/doc/v8.17/api>`_
+are also available.
+
+Ali Caglayan, Emilio Jesús Gallego Arias, Gaëtan Gilbert
+and Théo Zimmermann worked on maintaining and improving the
+continuous integration system and package building infrastructure.
+
+Erik Martin-Dorel has maintained the `Coq Docker images
+<https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
+projects for continuous integration.
+
+Maxime Dénès, Paulo G. Giarrusso, Huỳnh Trần Khanh, and Laurent Théry have
+maintained the VsCoq extension for VS Code.
+
+The OPAM repository for Coq packages has been maintained by
+Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
+contributions from many users. A list of packages is available at
+https://coq.inria.fr/opam/www/.
+
+The `Coq Platform <https://github.com/coq/platform>`_ has been maintained
+by Michael Soegtrop, with help from Karl Palmskog, Enrico Tassi and
+Théo Zimmermann.
+
+Our current maintainers are Yves Bertot, Frédéric Besson, Ana Borges,
+Ali Caglayan, Tej Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès,
+Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert,
+Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin,
+Vincent Laporte, Olivier Laurent, Assia Mahboubi, Kenji Maillard,
+Guillaume Melquiond, Pierre-Marie Pédrot, Clément Pit-Claudel, Pierre Roux,
+Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop, Arnaud Spiwack,
+Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov, Li-yao Xia
+and Théo Zimmermann. See the `Coq Team face book <https://coq.inria.fr/coq-team.html>`_
+page for more details.
+
+The 45 contributors to the 8.17 versions are:
+Reynald Affeldt, Tanaka Akira, Lasse Blaauwbroek, Stephan Boyer, Ali Caglayan, Cyril Cohen, Maxime Dénès, Andrej Dudenhefner, Andres Erbsen, František Farka, Jim Fehrle, Paolo G. Giarrusso, Gaëtan Gilbert, Jason Gross, Alban Gruin, Stefan Haan, Hugo Herbelin, Wolf Honore, Bodo Igler, Jerry James, Emilio Jesús Gallego Arias, Ralf Jung, Jan-Oliver Kaiser, Wojciech Karpiel, Chantal Keller, Thomas Klausner, Olivier Laurent, Olivier Laurent and Andrej Dudenhefner, Yishuai Li, Guillaume Melquiond, Karl Palmskog, Sudha Parimala, Pierre-Marie Pédrot, Valentin Robert, Pierre Roux, Julin S, Dmitry Shachnev, Michael Soegtrop, Matthieu Sozeau, Naveen Srinivasan, Sergei Stepanenko, Karolina Surma, Enrico Tassi, Li-yao Xia
+and Théo Zimmermann.
+
+The Coq community at large helped improve this new version via
+the GitHub issue and pull request system, the coq-club@inria.fr mailing list,
+the `Discourse forum <https://coq.discourse.group/>`_ and the
+`Coq Zulip chat <https://coq.zulipchat.com>`_.
+
+Version 8.17's development spanned 4 months from the release of
+Coq 8.17.0. Théo Zimmermann is the release manager of Coq 8.17.
+This release is the result of ?? merged PRs, closing ?? issues.
+
+| Nantes, January 2023,
+| Matthieu Sozeau for the Coq development team
+
 Changes in 8.17.0
 ~~~~~~~~~~~~~~~~~
 
@@ -22,6 +101,8 @@ Changes in 8.17.0
 
 Kernel
 ^^^^^^
+
+ .. _817VmCompute:
 
 - **Fixed:**
   inconsistency linked to :tacn:`vm_compute`. The fix removes a vulnerable cache, thus it may result in slowdowns when :tacn:`vm_compute` is used repeatedly, if you encounter such slowdowns please report your use case
@@ -51,12 +132,18 @@ Notations
   (`#16322 <https://github.com/coq/coq/pull/16322>`_,
   fixes `#4712 <https://github.com/coq/coq/issues/4712>`_,
   by Hugo Herbelin).
+
+  .. _817Notations:
+
 - **Added:**
   :cmd:`Enable Notation` and :cmd:`Disable Notation` commands
   to enable or disable previously defined notations
   (`#12324 <https://github.com/coq/coq/pull/12324>`_ and `#16945 <https://github.com/coq/coq/pull/16945>`_,
   by Hugo Herbelin and Pierre Roux, extending previous work by Lionel Rieg,
   review by Jim Fehrle).
+
+  .. _817Scopes:
+
 - **Added:**
   Support for multiple scopes in the :cmd:`Arguments` command
   (`#16472 <https://github.com/coq/coq/pull/16472>`_,
@@ -70,6 +157,8 @@ Notations
 Tactics
 ^^^^^^^
 
+ .. _817TacticsRefman:
+
 - **Changed:**
   Documentation in the tactics chapter to give the current correct syntax,
   consolidate tactic variants for each tactic into a single,
@@ -81,6 +170,9 @@ Tactics
   `#16498 <https://github.com/coq/coq/pull/16498>`_, and
   `#16659 <https://github.com/coq/coq/pull/16659>`_,
   by Jim Fehrle, reviewed by Théo Zimmermann, with help from many others).
+
+  .. _817Eauto:
+
 - **Changed:**
   :tacn:`eauto` respects priorities of :cmd:`Extern <Hint Extern>` hints
   (`#16289 <https://github.com/coq/coq/pull/16289>`_,
@@ -157,6 +249,8 @@ Ltac language
   and is now done only for default casts ``:``
   (`#16764 <https://github.com/coq/coq/pull/16764>`_,
   by Gaëtan Gilbert).
+
+ .. _817Ltac2:
 
 Ltac2 language
 ^^^^^^^^^^^^^^
@@ -306,6 +400,9 @@ Commands and options
   (the :cmd:`Solve Obligations` command is untouched)
   (`#16842 <https://github.com/coq/coq/pull/16842>`_,
   by Théo Zimmermann).
+
+  .. _817ClassFieldSyntax:
+
 - **Deprecated**
   :g:`:>` syntax, to declare fields of :ref:`typeclasses` as instances,
   since it is now replaced by :g:`::` (see :n:`@of_type_inst`).
@@ -373,6 +470,8 @@ Command-line tools
   the same source file with racy behaviour (only fixed when using a
   ``make`` supporting "grouped targets" such as GNU Make 4.3) (`#16757
   <https://github.com/coq/coq/pull/16757>`_, by Gaëtan Gilbert).
+
+ .. _817Stdlib:
 
 Standard library
 ^^^^^^^^^^^^^^^^
