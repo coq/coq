@@ -6,9 +6,6 @@ open Gramext
 open Format
 open Util
 
-module type DMapS = Dyn.MapS
-module Dyn = Dyn.Make()
-
 (* Functorial interface *)
 
 type norec
@@ -184,9 +181,11 @@ type ('a, 'b, 'c, 'd) ty_and_rec3 =
 | NoRec3 : (norec, norec, norec, norec) ty_and_rec3
 | MayRec3 : ('a, 'b, 'c, mayrec) ty_and_rec3
 
+type 'a tag = ..
+
 type 'a ty_entry = {
   ename : string;
-  etag : 'a Dyn.tag;
+  etag : 'a tag;
 }
 
 and 'a ty_desc =
@@ -232,6 +231,9 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
   brother : ('self, 'trecb, 'r) ty_tree;
 }
 
+(** Used to get polymorphic maps *)
+type 'a self = { self : 'b. 'b tag -> ('a, 'b) Util.eq option } [@@unboxed]
+
 (** The closures are built by partially applying the parsing functions
     to [edesc] but without depending on the state (so when we update
     an entry we don't need to update closures in unrelated entries).
@@ -239,24 +241,49 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
     (+40% on mathcomp-ssreflect, +15% on stdlib without this,
      significant slowdowns on most developments)
 *)
-type ('t,'a) entry_data = {
+type ('t,'a) entry_data_g = {
   edesc : 'a ty_desc;
   estart : 't -> int -> 'a parser_t;
   econtinue : 't -> int -> int -> 'a -> 'a parser_t;
+  eself : 'a self;
 }
 
-module rec EState : DMapS
-  with type 'a key = 'a Dyn.tag
-   and type 'a value = (GState.t, 'a) entry_data
-  = Dyn.Map(struct type 'a t = (GState.t, 'a) entry_data end)
+module EKey = struct
+  type t = Key : 'a tag -> t [@@unboxed]
+  let compare : t -> t -> int = compare
+end
+module EMap = Map.Make(EKey)
 
-and GState : sig
-  type t = {
-    estate : EState.t;
+module EState = struct
+  (* NB can't use [@@unboxed] with ocaml < 4.11 and mutual recursive types *)
+  type 't v = V : ('t,'a) entry_data_g -> 't v [@@unboxed]
+
+  type t = gstate v EMap.t
+  and gstate = {
+    estate : t;
     kwstate : L.keyword_state;
   }
-end = struct
-  type t = {
+  and 'a data = (gstate, 'a) entry_data_g
+
+  let find (type a) (tag:a tag) m : a data =
+    let V v = EMap.find (Key tag) m in
+    match v.eself.self tag with
+    | Some Refl -> v
+    | None -> assert false
+
+  let modify (type a) (tag:a tag) (f:a data -> a data) m =
+    EMap.modify (Key tag) (fun _ (V v) ->
+        match v.eself.self tag with
+        | Some Refl -> V (f v)
+        | None -> assert false) m
+
+  let mem tag m = EMap.mem (Key tag) m
+  let add tag v m = EMap.add (Key tag) (V v) m
+  let empty = EMap.empty
+end
+
+module GState = struct
+  type t = EState.gstate = {
     estate : EState.t;
     kwstate : L.keyword_state;
   }
@@ -1588,10 +1615,11 @@ let make_start_parser_of_entry entry desc =
     (fun gstate levn (strm:_ LStream.t) -> Lazy.force p gstate levn strm)
   | Dparser p -> fun gstate levn strm -> p gstate.kwstate strm
 
-let make_entry_data entry desc = {
+let make_entry_data entry desc eself = {
   edesc = desc;
   estart = make_start_parser_of_entry entry desc;
   econtinue = make_continue_parser_of_entry entry desc;
+  eself;
 }
 
 (* Extend syntax *)
@@ -1605,7 +1633,7 @@ let extend_entry add_kw estate kwstate entry statement =
   let estate = modify_entry estate entry (fun edata ->
       let kwstate', elev = levels_of_rules add_kw !kwstate entry edata statement in
       kwstate := kwstate';
-      make_entry_data entry (Dlevels elev))
+      make_entry_data entry (Dlevels elev) edata.eself)
   in
   estate, !kwstate
 
@@ -1616,7 +1644,7 @@ let delete_rule estate entry sl =
       match edata.edesc with
       | Dlevels levs ->
         let levs = delete_rule_in_level_list entry sl levs in
-        make_entry_data entry (Dlevels levs)
+        make_entry_data entry (Dlevels levs) edata.eself
       | Dparser _ -> edata)
 
 (* Normal interface *)
@@ -1684,15 +1712,22 @@ end
 module Entry = struct
   type 'a t = 'a ty_entry
 
-  let cnt = ref 0
+  let fresh (type a) n =
+    let module M = struct type _ tag += T : a tag end in
+    let e = { ename = n; etag = M.T } in
+    let self : type b. b tag -> (a,b) Util.eq option = function
+      | M.T -> Some Refl
+      | _ -> None
+    in
+    e, { self }
 
   let make n estate =
-    incr cnt;
-    let e = { ename = n; etag = Dyn.anonymous !cnt } in
+    let e, self = fresh n in
     let estate = add_entry estate e {
         edesc = Dlevels [];
         estart = empty_entry n;
         econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
+        eself = self;
       }
     in
     estate, e
@@ -1705,12 +1740,12 @@ module Entry = struct
   let name e = e.ename
   type 'a parser_fun = { parser_fun : L.keyword_state -> (L.keyword_state,te) LStream.t -> 'a }
   let of_parser n { parser_fun = p } estate =
-    incr cnt;
-    let e = { ename = n; etag = Dyn.anonymous !cnt } in
+    let e, self = fresh n in
     let estate = add_entry estate e {
         estart = (fun gstate _ (strm:_ LStream.t) -> p gstate.kwstate strm);
         econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
         edesc = Dparser p;
+        eself = self;
       }
     in
     estate, e
@@ -1860,9 +1895,10 @@ module Unsafe = struct
     modify_entry estate e (fun data -> {
           estart = (fun _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
           econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
-          edesc = match data.edesc with
+          edesc = (match data.edesc with
             | Dlevels _ -> Dlevels []
-            | Dparser _ -> data.edesc;
+            | Dparser _ -> data.edesc);
+          eself = data.eself;
         })
 
 end
