@@ -20,13 +20,7 @@ type ('e,'a) t
     Producing a new value needs an environment ['e]. *)
 
 exception Failure
-(** Raised by parsers when none of the first components of the stream
-   patterns is accepted. *)
-
-exception Error of string
-(** Raised by parsers when the first component of a stream pattern is
-   accepted, but one of the following components is rejected. *)
-
+(** Raised by streams when trying to access beyond their end. *)
 
 (** {1 Stream builders} *)
 

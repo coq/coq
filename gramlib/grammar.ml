@@ -6,6 +6,10 @@ open Gramext
 open Format
 open Util
 
+exception Error of string
+(** Raised by parsers when the first component of a stream pattern is
+   accepted, but one of the following components is rejected. *)
+
 (* Functorial interface *)
 
 type norec
@@ -1155,7 +1159,7 @@ let token_ematch tok =
   fun tok -> tematch tok
 
 let empty_entry ename levn strm =
-  raise (Stream.Error ("entry [" ^ ename ^ "] is empty"))
+  raise (Error ("entry [" ^ ename ^ "] is empty"))
 
 let start_parser_of_entry gstate entry levn (strm:_ LStream.t) =
   (get_entry gstate.estate entry).estart gstate levn strm
@@ -1202,7 +1206,7 @@ let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_
              let act =
                try p1 gstate bp a strm__ with
                  Stream.Failure ->
-                   raise (Stream.Error (tree_failed entry a s son))
+                   raise (Error (tree_failed entry a s son))
              in
              act a)
   | Node (_, {node = s; son = son; brother = bro}) ->
@@ -1218,7 +1222,7 @@ let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_
                    (try Some (p1 gstate bp a strm) with Stream.Failure -> None)
                  with
                    Some act -> act a
-                 | None -> raise (Stream.Error (tree_failed entry a s son))
+                 | None -> raise (Error (tree_failed entry a s son))
                  end
              | None -> p2 gstate strm)
 and parser_cont : type s tr tr' a r.
@@ -1260,7 +1264,7 @@ and parser_cont : type s tr tr' a r.
         let a = continue_parser_of_entry gstate (entry_of_symb entry s) 0 bp a strm__ in
         let act =
           try p1 gstate strm__ with
-            Stream.Failure -> raise (Stream.Error (tree_failed entry a s son))
+            Stream.Failure -> raise (Error (tree_failed entry a s son))
         in
         fun _ -> act a
 
@@ -1318,8 +1322,12 @@ and parser_of_token_list : type s tr lt r.
     match LStream.peek gstate.kwstate strm with
     | Some tok' ->
       let a = tematch tok' in
-      begin try let act = ps gstate a strm in act a
-      with TokenListFailed (entry, a, tok, tree) -> raise (Stream.Error (tree_failed entry a tok tree)) end
+      begin
+        try let act = ps gstate a strm in act a
+        with
+        | TokenListFailed (entry, a, tok, tree) ->
+          raise (Error (tree_failed entry a tok tree))
+      end
     | None -> raise Stream.Failure
 and parser_of_symbol : type s tr a.
   s ty_entry -> int -> (s, tr, a) ty_symbol -> GState.t -> a parser_t =
@@ -1343,7 +1351,7 @@ and parser_of_symbol : type s tr a.
             let al =
               try ps gstate strm__ :: al with
                 Stream.Failure ->
-                  raise (Stream.Error (symb_failed entry v sep symb))
+                  raise (Error (symb_failed entry v sep symb))
             in
             kont gstate al strm__
         | _ -> al
@@ -1392,7 +1400,7 @@ and parser_of_symbol : type s tr a.
                   let a =
                     try parse_top_symb entry symb gstate strm__ with
                       Stream.Failure ->
-                        raise (Stream.Error (symb_failed entry v sep symb))
+                        raise (Error (symb_failed entry v sep symb))
                   in
                   a :: al
             in
@@ -1656,9 +1664,9 @@ module Parsable = struct
       let exn, info = Exninfo.capture exn in
       let loc = get_parsing_loc () in
       let info = Loc.add_loc info loc in
-      let exn = Stream.Error ("illegal begin of " ^ entry.ename) in
+      let exn = Error ("illegal begin of " ^ entry.ename) in
       Exninfo.iraise (exn, info)
-    | Stream.Error _ as exn ->
+    | Error _ as exn ->
       let exn, info = Exninfo.capture exn in
       let loc = get_parsing_loc () in
       let info = Loc.add_loc info loc in

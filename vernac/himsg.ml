@@ -1556,7 +1556,7 @@ let wrap_unhandled f e =
 
 let explain_exn_default = function
   (* Basic interaction exceptions *)
-  | Gramlib.Stream.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
+  | Gramlib.Grammar.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
   | CLexer.Error.E err -> hov 0 (str (CLexer.Error.to_string err))
   | Sys_error msg -> hov 0 (str "System error: " ++ quote (str msg))
   | Out_of_memory -> hov 0 (str "Out of memory.")

@@ -418,7 +418,7 @@ let rec comment loc bp s =
               Stream.junk () s;
               push_string "(*"; comment loc bp s
           | _ -> push_string "("; loc
-        with Stream.Failure -> raise (Stream.Error "")
+        with Stream.Failure -> raise (Gramlib.Grammar.Error "")
       in
       comment loc bp s
   | Some '*' ->
@@ -427,7 +427,7 @@ let rec comment loc bp s =
         match Stream.peek () s with
           Some ')' -> Stream.junk () s; push_string "*)"; loc
         | _ -> real_push_char '*'; comment loc bp s
-      with Stream.Failure -> raise (Stream.Error "")
+      with Stream.Failure -> raise (Gramlib.Grammar.Error "")
       end
   | Some '"' ->
       Stream.junk () s;
@@ -521,7 +521,7 @@ let parse_quotation loc bp s =
       let c = Stream.next () s in
       let len =
         try ident_tail loc (store 0 c) s with
-          Stream.Failure -> raise (Stream.Error "")
+          Stream.Failure -> raise (Gramlib.Grammar.Error "")
       in
       get_buff len, set_loc_pos loc bp (Stream.count s)
   | Delimited (lenmarker, bmarker, emarker) ->
@@ -651,7 +651,7 @@ let rec next_token ~diff_mode ttree loc s =
       Stream.junk () s;
       let t, newloc =
         try parse_after_dot ~diff_mode ttree loc c bp s with
-          Stream.Failure -> raise (Stream.Error "")
+          Stream.Failure -> raise (Gramlib.Grammar.Error "")
       in
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
@@ -682,7 +682,7 @@ let rec next_token ~diff_mode ttree loc s =
       Stream.junk () s;
       let len =
         try ident_tail loc (store 0 c) s with
-          Stream.Failure -> raise (Stream.Error "")
+          Stream.Failure -> raise (Gramlib.Grammar.Error "")
       in
       let id = get_buff len in
       comment_stop bp;
@@ -701,7 +701,7 @@ let rec next_token ~diff_mode ttree loc s =
       Stream.junk () s;
       let (loc, len) =
         try string loc ~comm_level:None bp 0 s with
-          Stream.Failure -> raise (Stream.Error "")
+          Stream.Failure -> raise (Gramlib.Grammar.Error "")
       in
       let ep = Stream.count s in
       comment_stop bp;
@@ -723,7 +723,7 @@ let rec next_token ~diff_mode ttree loc s =
             push_string "(*";
             let loc = comment loc bp s in next_token ~diff_mode ttree loc s
         | _ -> let t = process_chars ~diff_mode ttree loc bp [c] s in comment_stop bp; t
-      with Stream.Failure -> raise (Stream.Error "")
+      with Stream.Failure -> raise (Gramlib.Grammar.Error "")
       end
   | Some ('{' | '}' as c) ->
       Stream.junk () s;
