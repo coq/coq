@@ -17,19 +17,19 @@ type t = {
   status : status;
 }
 
-type w = ..
+type _ tag = ..
+
+type w = W : 'a tag * 'a -> w
 exception WarnError of w
 
-let printers = ref []
+module DMap = PolyMap.Make (struct type nonrec 'a tag = 'a tag = .. end)
+module PrintMap = DMap.Map(struct type 'a t = 'a -> Pp.t end)
 
-let print w =
-  let rec fold = function
-    | [] -> CErrors.anomaly Pp.(str "Cannot print unknown warning")
-    | pp :: rest -> match pp w with
-      | Some pp -> pp
-      | None -> fold rest
-  in
-  fold !printers
+let printers = ref PrintMap.empty
+
+let print (W (tag, w)) =
+  let pp = try PrintMap.find tag !printers with Not_found -> assert false in
+  pp w
 
 let () = CErrors.register_handler (function
     | WarnError w -> Some (print w)
@@ -178,12 +178,8 @@ let create (type a) ~name ~category ?(default=Enabled) (pp:a -> Pp.t) =
     pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
     str category ++ str "]"
   in
-  let module M = struct type w += W of a end in
-  let ppthis = function
-    | M.W x -> Some (pp x)
-    | _ -> None
-  in
-  printers := ppthis :: !printers;
+  let tag = DMap.make () in
+  printers := PrintMap.add tag pp !printers;
   Hashtbl.replace warnings name { default; category; status = default };
   add_warning_in_category ~name ~category;
   if default <> Disabled then
@@ -195,7 +191,7 @@ let create (type a) ~name ~category ?(default=Enabled) (pp:a -> Pp.t) =
     let w = Hashtbl.find warnings name in
     match w.status with
     | Disabled -> ()
-    | AsError -> Loc.raise ?loc (WarnError (M.W x))
+    | AsError -> Loc.raise ?loc (WarnError (W (DMap.tag_of_onetag tag, x)))
     | Enabled -> Feedback.msg_warning ?loc (pp x)
 
 (* Remark: [warn] does not need to start with a comma, but if present
