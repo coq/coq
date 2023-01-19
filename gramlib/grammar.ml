@@ -186,7 +186,6 @@ type ('a, 'b, 'c, 'd) ty_and_rec3 =
 
 type 'a ty_entry = {
   ename : string;
-  euid : int; (* not sure if useful *)
   etag : 'a Dyn.tag;
 }
 
@@ -1689,7 +1688,7 @@ module Entry = struct
 
   let make n estate =
     incr cnt;
-    let e = { ename = n; euid = !cnt; etag = Dyn.anonymous !cnt } in
+    let e = { ename = n; etag = Dyn.anonymous !cnt } in
     let estate = add_entry estate e {
         edesc = Dlevels [];
         estart = empty_entry n;
@@ -1707,7 +1706,7 @@ module Entry = struct
   type 'a parser_fun = { parser_fun : L.keyword_state -> (L.keyword_state,te) LStream.t -> 'a }
   let of_parser n { parser_fun = p } estate =
     incr cnt;
-    let e = { ename = n; euid = !cnt; etag = Dyn.anonymous !cnt } in
+    let e = { ename = n; etag = Dyn.anonymous !cnt } in
     let estate = add_entry estate e {
         estart = (fun gstate _ (strm:_ LStream.t) -> p gstate.kwstate strm);
         econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
