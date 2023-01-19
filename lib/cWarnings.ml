@@ -17,6 +17,24 @@ type t = {
   status : status;
 }
 
+type w = ..
+exception WarnError of w
+
+let printers = ref []
+
+let print w =
+  let rec fold = function
+    | [] -> CErrors.anomaly Pp.(str "Cannot print unknown warning")
+    | pp :: rest -> match pp w with
+      | Some pp -> pp
+      | None -> fold rest
+  in
+  fold !printers
+
+let () = CErrors.register_handler (function
+    | WarnError w -> Some (print w)
+    | _ -> None)
+
 let warnings : (string, t) Hashtbl.t = Hashtbl.create 97
 let categories : (string, string list) Hashtbl.t = Hashtbl.create 97
 
@@ -155,11 +173,17 @@ let set_flags s =
 (* Adds a warning to the [warnings] and [category] tables. We then reparse the
    warning flags string, because the warning being created might have been set
    already. *)
-let create ~name ~category ?(default=Enabled) pp =
+let create (type a) ~name ~category ?(default=Enabled) (pp:a -> Pp.t) =
   let pp x = let open Pp in
     pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
     str category ++ str "]"
   in
+  let module M = struct type w += W of a end in
+  let ppthis = function
+    | M.W x -> Some (pp x)
+    | _ -> None
+  in
+  printers := ppthis :: !printers;
   Hashtbl.replace warnings name { default; category; status = default };
   add_warning_in_category ~name ~category;
   if default <> Disabled then
@@ -171,7 +195,7 @@ let create ~name ~category ?(default=Enabled) pp =
     let w = Hashtbl.find warnings name in
     match w.status with
     | Disabled -> ()
-    | AsError -> CErrors.user_err ?loc (pp x)
+    | AsError -> Loc.raise ?loc (WarnError (M.W x))
     | Enabled -> Feedback.msg_warning ?loc (pp x)
 
 (* Remark: [warn] does not need to start with a comma, but if present
