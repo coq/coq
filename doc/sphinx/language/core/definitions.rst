@@ -55,6 +55,7 @@ to type check that :n:`@term10` has type :n:`@type` (see :tacn:`native_compute`)
 
 :n:`@term10 :> @type` enforces the type of :n:`@term10` to be
 :n:`@type` without leaving a trace in the produced value.
+This is a :gdef:`volatile cast`.
 
 .. _gallina-definitions:
 

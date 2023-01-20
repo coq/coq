@@ -253,24 +253,31 @@ Printing of hidden subterms
    variables bound by `in` and `as`, `match` terms contain the
    polymorphic universe instance and the parameters of the inductive
    which is being matched. When this flag is on (it is off by
-   default), this information is displayed as a volatile cast around
+   default), this information is displayed as a :term:`volatile cast` around
    the match discriminee.
 
-   When the match relies on :flag:`Definitional UIP` the indices are also subterms of the `match` term and are displayed when this flag is on.
-   Otherwise they are not subterms and are displaye as holes `_` when this flag is on.
+   When the match relies on :flag:`Definitional UIP`,
+   the indices are also subterms of the `match` term and are displayed when this flag is on.
+   Otherwise they are not subterms and are displayed as holes (`_`) when this flag is on.
 
-   .. coqtop:: all
+   .. example::
 
-      Set Printing Match All Subterms.
-      Set Printing Universes.
+      .. coqtop:: in
 
-      Polymorphic Inductive eqT@{u} {A:Type@{u}} (a:A) : A -> Type@{u} := reflT : eqT a a.
-      Print eqT_rect.
+         Polymorphic Inductive eqT@{u} {A:Type@{u}} (a:A) : A -> Type@{u} := reflT : eqT a a.
+         Set Definitional UIP.
+         Inductive seq {A} (a:A) : A -> SProp := srefl : seq a a.
 
-      Set Definitional UIP.
-      Inductive seq {A} (a:A) : A -> SProp := srefl : seq a a.
-      Print seq_rect.
+      .. coqtop:: all
 
+         Print eqT_rect.
+         Print seq_rect.
+
+         Set Printing Match All Subterms.
+         Set Printing Universes.
+
+         Print eqT_rect.
+         Print seq_rect.
 
 Printing matching on irrefutable patterns
 ++++++++++++++++++++++++++++++++++++++++++
