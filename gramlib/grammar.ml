@@ -1104,6 +1104,8 @@ let symb_failed entry prev_symb_result prev_symb symb =
   let tree = Node (MayRec3, {node = symb; brother = DeadEnd; son = DeadEnd}) in
   tree_failed entry prev_symb_result prev_symb tree
 
+exception TokenListFailed : 's ty_entry * 'a * ('s, 'tr, 'a) ty_symbol * ('s, 'b, 'c) ty_tree -> exn
+
 let level_number entry lab =
   let rec lookup levn =
     function
@@ -1289,8 +1291,12 @@ and parser_of_token_list : type s tr lt r.
          | Some a ->
            (match try Some (p1 gstate a strm) with Stream.Failure -> None with
             | Some act -> act a
-            | None -> p2 gstate last_a strm)
-         | None -> p2 gstate last_a strm)
+            | None ->
+              (try p2 gstate last_a strm
+               with TokenListFailed _ -> raise (TokenListFailed (entry, a, Stoken tok, son))))
+         | None ->
+            (try p2 gstate last_a strm
+             with TokenListFailed _ -> raise (TokenListFailed (entry, last_a, Stoken last_tok, tree))))
     | DeadEnd -> fun gstate last_a strm -> raise Stream.Failure
     | _ ->
        let ps = parser_of_tree entry nlevn alevn tree in
@@ -1302,13 +1308,16 @@ and parser_of_token_list : type s tr lt r.
            try Some (parser_of_tree entry nlevn alevn (top_tree entry tree) gstate strm) with Stream.Failure -> None
          with
          | Some act -> act
-         | None -> raise (Stream.Error (tree_failed entry last_a (Stoken last_tok) tree))
+         | None -> raise (TokenListFailed (entry, last_a, (Stoken last_tok), tree))
   in
   let ps = loop 1 tok tree in
   let tematch = token_ematch tok in
   fun gstate strm ->
     match LStream.peek gstate.kwstate strm with
-    | Some tok -> let a = tematch tok in let act = ps gstate a strm in act a
+    | Some tok' ->
+      let a = tematch tok' in
+      begin try let act = ps gstate a strm in act a
+      with TokenListFailed (entry, a, tok, tree) -> raise (Stream.Error (tree_failed entry a tok tree)) end
     | None -> raise Stream.Failure
 and parser_of_symbol : type s tr a.
   s ty_entry -> int -> (s, tr, a) ty_symbol -> GState.t -> a parser_t =
