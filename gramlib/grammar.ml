@@ -1037,34 +1037,35 @@ let rec name_of_symbol_failed : type s tr a. s ty_entry -> (s, tr, a) ty_symbol 
 and name_of_tree_failed : type s tr a. s ty_entry -> (s, tr, a) ty_tree -> _ =
   fun entry ->
   function
-    Node (_, {node = s; brother = bro; son = son}) ->
+    Node (_, {node = s; son = son; brother = bro}) ->
       let tokl =
         match s with
           Stoken tok -> get_token_list entry tok TokNil son
         | _ -> None
       in
-      begin match tokl with
-        None ->
+      let txt =
+        match tokl with
+        | None ->
           let txt = name_of_symbol_failed entry s in
           let txt =
             match s, son with
               Sopt _, Node _ -> txt ^ " or " ^ name_of_tree_failed entry son
             | _ -> txt
           in
-          let txt =
-            match bro with
-              DeadEnd -> txt | LocAct (_, _) -> txt
-            | Node _ -> txt ^ " or " ^ name_of_tree_failed entry bro
-          in
           txt
-      | Some (TokTree (last_tok, _, rev_tokl)) ->
-         let rec build_str : type a b. string -> (a, b) tok_list -> string =
+        | Some (TokTree (last_tok, _, rev_tokl)) ->
+          let rec build_str : type a b. string -> (a, b) tok_list -> string =
            fun s -> function
            | TokNil -> s
            | TokCns (tok, t) -> build_str (L.tok_text tok ^ " " ^ s) t in
-         build_str (L.tok_text last_tok) rev_tokl
+          build_str (L.tok_text last_tok) rev_tokl
+      in
+      begin match bro with
+      | DeadEnd -> txt
+      | LocAct (_, _) -> "nothing else"
+      | Node _ -> txt ^ " or " ^ name_of_tree_failed entry bro
       end
-  | DeadEnd -> "???" | LocAct (_, _) -> "action"
+  | DeadEnd -> "???" | LocAct (_, _) -> "nothing else"
 
 let tree_failed (type s tr a) (entry : s ty_entry) (prev_symb_result : a) (prev_symb : (s, tr, a) ty_symbol) tree =
   let txt = name_of_tree_failed entry tree in
@@ -1096,7 +1097,8 @@ let tree_failed (type s tr a) (entry : s ty_entry) (prev_symb_result : a) (prev_
         end
     | Sopt _ -> txt ^ " expected"
     | Stree _ -> txt ^ " expected"
-    | _ -> txt ^ " expected after " ^ name_of_symbol_failed entry prev_symb
+    | Snterm _ | Snterml _ | Sself | Snext
+    | Stoken _ | Stokens _ -> txt ^ " expected after " ^ name_of_symbol_failed entry prev_symb
   in
   txt ^ " (in [" ^ entry.ename ^ "])"
 
