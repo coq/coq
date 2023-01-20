@@ -1228,9 +1228,10 @@ let compute = cbv_betadeltaiota
 
 let abstract_scheme env (locc,a) (c, sigma) =
   let ta = Retyping.get_type_of env sigma a in
+  let r = Retyping.relevance_of_term env sigma a in
   let sigma, ta = Evarsolve.refresh_universes ~onlyalg:true (Some false) env sigma ta in
   let na = Namegen.named_hd env sigma ta Anonymous in
-  let na = make_annot na Sorts.Relevant in (* TODO relevance *)
+  let na = make_annot na r in
   if occur_meta sigma ta then user_err Pp.(str "Cannot find a type for the generalisation.");
   if occur_meta sigma a then
     mkLambda (na,ta,c), sigma
