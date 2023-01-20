@@ -774,8 +774,31 @@ let explain_disallowed_sprop () =
       ++ str "\"Allow StrictProp\""
       ++ strbrk " flag is off.")
 
-let explain_bad_relevance env =
-  strbrk "Bad relevance (maybe a bugged tactic)."
+let pr_relevance = function
+| Sorts.Relevant -> str "relevant"
+| Sorts.Irrelevant -> str "irrelevant"
+| Sorts.RelevanceVar q -> str "a variable " ++ Sorts.QVar.pr q
+
+let pr_binder env sigma = function
+| LocalAssum (na, t) ->
+  Pp.hov 2 (str "(" ++ (Name.print @@ na.binder_name) ++ str " : " ++
+    pr_leconstr_env env sigma t ++ str ")")
+| LocalDef (na, b, t) ->
+  Pp.hov 2 (str "(" ++ (Name.print @@ na.binder_name) ++ str " : " ++
+    pr_leconstr_env env sigma t ++ str " := " ++ pr_leconstr_env env sigma b ++ str ")")
+
+let explain_bad_binder_relevance env sigma rlv decl =
+  strbrk "Binder" ++ spc () ++ pr_binder env sigma decl ++
+    strbrk " has relevance mark set to " ++ pr_relevance (RelDecl.get_relevance decl) ++
+    strbrk " but was expected to be " ++ pr_relevance rlv ++
+    spc () ++ str "(maybe a bugged tactic)."
+
+let explain_bad_case_relevance env sigma rlv case =
+  let (ci, _, _, _, _, _, _) = EConstr.destCase sigma case in
+  strbrk "Pattern-matching" ++ spc () ++ pr_leconstr_env env sigma case ++
+    strbrk " has relevance mark set to " ++ pr_relevance ci.ci_relevance ++
+    strbrk " but was expected to be " ++ pr_relevance rlv ++
+    spc () ++ str "(maybe a bugged tactic)."
 
 let explain_bad_invert env =
   strbrk "Bad case inversion (maybe a bugged tactic)."
@@ -827,7 +850,8 @@ let explain_type_error env sigma err =
   | UndeclaredUniverse l ->
      explain_undeclared_universe env sigma l
   | DisallowedSProp -> explain_disallowed_sprop ()
-  | BadRelevance -> explain_bad_relevance env
+  | BadBinderRelevance (rlv, decl) -> explain_bad_binder_relevance env sigma rlv decl
+  | BadCaseRelevance (rlv, case) -> explain_bad_case_relevance env sigma rlv case
   | BadInvert -> explain_bad_invert env
   | BadVariance {lev;expected;actual} -> explain_bad_variance env sigma ~lev ~expected ~actual
 

@@ -16,6 +16,8 @@ val create : name:string -> category:string -> ?default:status ->
 val get_flags : unit -> string
 val set_flags : string -> unit
 
+val get_status : name:string -> status
+
 (** Cleans up a user provided warnings status string, e.g. removing unknown
     warnings (in which case a warning is emitted) or subsumed warnings . *)
 val normalize_flags_string : string -> string

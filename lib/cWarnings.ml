@@ -174,6 +174,8 @@ let create ~name ~category ?(default=Enabled) pp =
     | AsError -> CErrors.user_err ?loc (pp x)
     | Enabled -> Feedback.msg_warning ?loc (pp x)
 
+let get_status ~name = (Hashtbl.find warnings name).status
+
 (* Remark: [warn] does not need to start with a comma, but if present
    it won't hurt (",," is normalized into ","). *)
 let with_warn warn (f:'b -> 'a) x =

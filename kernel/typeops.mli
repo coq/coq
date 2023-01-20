@@ -37,8 +37,6 @@ val check_context :
 val assumption_of_judgment :  env -> unsafe_judgment -> Sorts.relevance
 val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
 
-val check_binder_annot : Sorts.t -> Name.t Context.binder_annot -> Name.t Context.binder_annot
-
 (** {6 Type of sorts. } *)
 val type1 : types
 val type_of_sort : Sorts.t -> types
