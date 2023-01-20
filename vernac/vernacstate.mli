@@ -21,6 +21,7 @@ end
 module Synterp : sig
   type t
 
+  val init : unit -> t
   val freeze : marshallable:bool -> t
   val unfreeze : t -> unit
 

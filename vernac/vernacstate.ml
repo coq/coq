@@ -29,6 +29,8 @@ module Synterp = struct
 
   let freeze ~marshallable =
     (Lib.Synterp.freeze (), Summary.freeze_staged_summaries Summary.Stage.Synterp ~marshallable)
+  
+  let init () = freeze ~marshallable:false
 
   let unfreeze (fl,fs) =
     Lib.Synterp.unfreeze fl;
