@@ -21,6 +21,9 @@ end
 module Synterp : sig
   type t
 
+  val freeze : marshallable:bool -> t
+  val unfreeze : t -> unit
+
 end
 
 (** System State *)

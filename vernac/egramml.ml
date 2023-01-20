@@ -88,7 +88,7 @@ let get_extend_vernac_rule (s, i) =
 let extend_vernac_command_grammar s nt gl =
   let nt = Option.default Pvernac.Vernac_.command nt in
   vernac_exts := (s,gl) :: !vernac_exts;
-  let mkact loc l = VernacExtend (s, l) in
+  let mkact loc l = VernacSynterp (VernacExtend (s, l)) in
   let rules = [make_rule mkact gl] in
   if Pcoq.Entry.is_empty nt then
     (* Small hack to tolerate empty entries in VERNAC { ... } EXTEND *)

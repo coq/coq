@@ -356,7 +356,7 @@ let print_anyway_opts = [
 let print_anyway c =
   let open Vernacexpr in
   match c.expr with
-  | VernacSetOption (_, opt, _) -> List.mem opt print_anyway_opts
+  | VernacSynterp (VernacSetOption (_, opt, _)) -> List.mem opt print_anyway_opts
   | _ -> false
 
 (* print the proof step, possibly with diffs highlighted, *)

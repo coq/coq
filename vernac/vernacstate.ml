@@ -25,14 +25,14 @@ module Parser = struct
 end
 
 module Synterp = struct
-  type t = Lib.frozen * Summary.frozen
+  type t = Lib.Synterp.frozen * Summary.frozen
 
   let freeze ~marshallable =
     (Lib.Synterp.freeze (), Summary.freeze_staged_summaries Summary.Stage.Synterp ~marshallable)
 
   let unfreeze (fl,fs) =
-    Lib.unfreeze fl;
-    Summary.unfreeze_summaries fs
+    Lib.Synterp.unfreeze fl;
+    Summary.unfreeze_summaries ~partial:true fs
 
 end
 
@@ -137,6 +137,7 @@ let freeze_interp_state ~marshallable =
     opaques = Opaques.Summary.freeze ~marshallable;
     shallow = false;
     parsing = Parser.cur_state ();
+    synterp = Synterp.freeze ~marshallable;
   }
 
 let unfreeze_interp_state { system; lemmas; program; parsing; opaques } =

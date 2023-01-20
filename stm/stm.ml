@@ -166,14 +166,14 @@ let pr_ast { expr; indentation } = Pp.(int indentation ++ str " " ++ Ppvernac.pr
 
 (* Commands piercing opaque *)
 let may_pierce_opaque = function
-  | VernacPrint _
-  | VernacExtend (("Extraction",_), _)
-  | VernacExtend (("SeparateExtraction",_), _)
-  | VernacExtend (("ExtractionLibrary",_), _)
-  | VernacExtend (("RecursiveExtractionLibrary",_), _)
-  | VernacExtend (("ExtractionConstant",_), _)
-  | VernacExtend (("ExtractionInlinedConstant",_), _)
-  | VernacExtend (("ExtractionInductive",_), _) -> true
+  | VernacPure (VernacPrint _) -> true
+  | VernacSynterp (VernacExtend (("Extraction",_), _)
+    | VernacExtend (("SeparateExtraction",_), _)
+    | VernacExtend (("ExtractionLibrary",_), _)
+    | VernacExtend (("RecursiveExtractionLibrary",_), _)
+    | VernacExtend (("ExtractionConstant",_), _)
+    | VernacExtend (("ExtractionInlinedConstant",_), _)
+    | VernacExtend (("ExtractionInductive",_), _)) -> true
   | _ -> false
 
 type depth = int
@@ -609,9 +609,9 @@ end = struct (* {{{ *)
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
     (match x.CAst.v.Vernacexpr.expr with
-    | VernacDefinition (_,({CAst.v=Name i},_),_) -> Id.to_string i
-    | VernacStartTheoremProof (_,[({CAst.v=i},_),_]) -> Id.to_string i
-    | VernacInstance (({CAst.v=Name i},_),_,_,_,_) -> Id.to_string i
+    | VernacPure (VernacDefinition (_,({CAst.v=Name i},_),_)) -> Id.to_string i
+    | VernacPure (VernacStartTheoremProof (_,[({CAst.v=i},_),_])) -> Id.to_string i
+    | VernacPure (VernacInstance (({CAst.v=Name i},_),_,_,_,_)) -> Id.to_string i
     | _ -> "branch")
   let edit_branch = Branch.make "edit"
   let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
@@ -1072,9 +1072,9 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
    * future refactorings.
   *)
   let is_filtered_command = function
-    | VernacResetName _ | VernacResetInitial | VernacBack _
+    VernacPure (VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacRestart | VernacUndo _ | VernacUndoTo _
-    | VernacAbortAll -> true
+    | VernacAbortAll) -> true
     | _ -> false
   in
   (* XXX unsupported attributes *)
@@ -1144,7 +1144,7 @@ end = struct (* {{{ *)
           | { step = SCmd { cids = l; ctac } } -> l, ctac,0
           | { step = SAlias (_,{ expr }) } when not (Vernacprop.has_query_control expr) ->
           begin match expr.CAst.v.expr with
-                | VernacUndo n -> [], false, n
+                | VernacPure (VernacUndo n) -> [], false, n
                 | _ -> [],false,0
           end
           | _ -> [],false,0 in
@@ -1175,9 +1175,9 @@ end = struct (* {{{ *)
     then undo_costly_in_batch_mode v;
     try
       match v.CAst.v.expr with
-      | VernacResetInitial ->
+      | VernacPure VernacResetInitial ->
           Stateid.initial
-      | VernacResetName {CAst.v=name} ->
+      | VernacPure (VernacResetName {CAst.v=name}) ->
           let id = VCS.cur_tip () in
           (try
             let oid =
@@ -1187,17 +1187,17 @@ end = struct (* {{{ *)
             oid
           with Not_found ->
             id)
-      | VernacBack n ->
+      | VernacPure (VernacBack n) ->
           let id = VCS.cur_tip () in
           let oid = fold_until (fun n (id,_,_,_,_) ->
             if Int.equal n 0 then Stop id else Cont (n-1)) n id in
           oid
-      | VernacUndo n ->
+      | VernacPure (VernacUndo n) ->
           let id = VCS.cur_tip () in
           let oid = fold_until back_tactic n id in
           oid
-      | VernacUndoTo _
-      | VernacRestart as e ->
+      | VernacPure (VernacUndoTo _
+        | VernacRestart as e) ->
           let m = match e with VernacUndoTo m -> m | _ -> 0 in
           let id = VCS.cur_tip () in
           let vcs =
@@ -1213,7 +1213,7 @@ end = struct (* {{{ *)
           let oid = fold_until (fun n (id,_,_,_,_) ->
             if Int.equal n 0 then Stop id else Cont (n-1)) (n-m-1) id in
           oid
-      | VernacAbortAll ->
+      | VernacPure VernacAbortAll ->
           let id = VCS.cur_tip () in
           let oid = fold_until (fun () (id,vcs,_,_,_) ->
             match Vcs_.branches vcs with [_] -> Stop id | _ -> Cont ())
@@ -1964,15 +1964,15 @@ let collect_proof keep cur hd brkind id =
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).expr.CAst.loc in
  let is_defined_expr = function
-   | VernacEndProof (Proved (Transparent,_)) -> true
+   | VernacPure (VernacEndProof (Proved (Transparent,_))) -> true
    | _ -> false in
  let is_defined = function
    | _, { expr = e } -> is_defined_expr e.CAst.v.expr
                         && (not (Vernacprop.has_query_control e)) in
  let has_default_proof_using = Option.has_some (Proof_using.get_default_proof_using ()) in
  let proof_using_ast = function
-   | VernacProof(_,Some _) -> true
-   | VernacProof(_,None) -> has_default_proof_using
+   | VernacPure(VernacProof(_,Some _)) -> true
+   | VernacPure(VernacProof(_,None)) -> has_default_proof_using
    | _ -> false
  in
  let proof_using_ast = function
@@ -1981,14 +1981,14 @@ let collect_proof keep cur hd brkind id =
    | _ -> None in
  let has_proof_using x = proof_using_ast x <> None in
  let proof_no_using = function
-   | VernacProof(t,None) -> if has_default_proof_using then None else t
+   | VernacPure (VernacProof(t,None)) -> if has_default_proof_using then None else t
    | _ -> assert false
  in
  let proof_no_using = function
    | Some (_, v) -> proof_no_using v.expr.CAst.v.expr, v
    | _ -> assert false in
  let has_proof_no_using = function
-   | VernacProof(_,None) -> not has_default_proof_using
+   | VernacPure (VernacProof(_,None)) -> not has_default_proof_using
    | _ -> false
  in
  let has_proof_no_using = function
@@ -1996,12 +1996,12 @@ let collect_proof keep cur hd brkind id =
                     && (not (Vernacprop.has_query_control v.expr))
    | _ -> false in
  let too_complex_to_delegate = function
-   | VernacDeclareModule _
-   | VernacDefineModule _
-   | VernacDeclareModuleType _
-   | VernacInclude _
-   | VernacRequire _
-   | VernacImport _ -> true
+   VernacSynterp (VernacDeclareModule _
+    | VernacDefineModule _
+    | VernacDeclareModuleType _
+    | VernacInclude _
+    | VernacRequire _
+    | VernacImport _) -> true
    | ast -> may_pierce_opaque ast in
  let parent = function Some (p, _) -> p | None -> assert false in
  let is_empty = function ASync(_,[],_,_) | MaybeASync(_,[],_,_) -> true | _ -> false in
@@ -2030,7 +2030,7 @@ let collect_proof keep cur hd brkind id =
         (try
           let name, hint = name ids, get_hint_ctx loc  in
           let t, v = proof_no_using last in
-          v.expr <- CAst.map (fun _ -> { control = []; attrs = []; expr = VernacProof(t, Some hint)}) v.expr;
+          v.expr <- CAst.map (fun _ -> { control = []; attrs = []; expr = VernacPure (VernacProof(t, Some hint))}) v.expr;
           ASync (parent last,accn,name,delegate name)
         with Not_found ->
           let name = name ids in
@@ -2050,7 +2050,7 @@ let collect_proof keep cur hd brkind id =
 
  let check_policy rc = if async_policy () then rc else make_sync Policy rc in
  let is_vernac_exact = function
-   | VernacExactProof _ -> true
+   | VernacPure (VernacExactProof _) -> true
    | _ -> false
  in
  match cur, (VCS.visit id).step, brkind with
@@ -2170,7 +2170,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
      believe as proof injection shouldn't happen here. *)
   let extract_pe (x : aast) =
     match x.expr.CAst.v.expr with
-    | VernacEndProof pe -> x.expr.CAst.v.control, pe
+    | VernacPure (VernacEndProof pe) -> x.expr.CAst.v.control, pe
     | _ -> CErrors.anomaly Pp.(str "Non-qed command classified incorrectly") in
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
@@ -2729,7 +2729,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
               (* We can't replay a Definition since universes may be differently
                * inferred.  This holds in Coq >= 8.5 *)
               let action = match x.expr.CAst.v.expr with
-                | VernacDefinition(_, _, DefineBody _) -> CherryPickEnv
+                | VernacPure (VernacDefinition(_, _, DefineBody _)) -> CherryPickEnv
                 | _ -> ReplayCommand x in
               VCS.propagate_sideff ~action
           in

@@ -345,7 +345,7 @@ let print_arguments ref =
     let open Constrexpr in
     let open Vernacexpr in
     [Ppvernac.pr_vernac_expr
-       (VernacArguments (CAst.make (AN qid), impls, moreimpls, flags)) ++
+       (VernacPure (VernacArguments (CAst.make (AN qid), impls, moreimpls, flags))) ++
      (if not_renamed then mt () else
       fnl () ++ str "  (where some original arguments have been renamed)")]
 

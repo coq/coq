@@ -10,7 +10,7 @@
 
 open Vernacexpr
 
-let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" ()
+(* FIXME let vernac_pperr_endline = CDebug.create ~name:"vernacinterp" () *)
 
 let interp_typed_vernac (Vernacextend.TypedVernac { inprog; outprog; inproof; outproof; run })
     ~pm ~stack =
@@ -85,13 +85,13 @@ let real_error_loc ~cmdloc ~eloc =
   else cmdloc
 
 (* We restore the state always *)
-let with_fail ~only_parsing ~loc ~st f =
+let with_fail ~loc ~st f =
   let res = with_fail f in
   Vernacstate.invalidate_cache ();
   Vernacstate.unfreeze_interp_state st;
   match res with
   | Error () ->
-    if not only_parsing then CErrors.user_err (Pp.str "The command has not failed!")
+    CErrors.user_err (Pp.str "The command has not failed!")
   | Ok (eloc, msg) ->
     let loc = if !test_mode then real_error_loc ~cmdloc:loc ~eloc else None in
     if not !Flags.quiet || !test_mode
@@ -112,20 +112,21 @@ let mk_time_header =
      different mechanism to `-time` commands than the current hack of
      adding a time control to the AST. *)
   let pr_time_header vernac =
-    let vernac = match vernac with
+    let _vernac = match vernac with
       | { CAst.v = { control = ControlTime _ :: control; attrs; expr }; loc } ->
         CAst.make ?loc { control; attrs; expr }
       | _ -> vernac
     in
-    Topfmt.pr_cmd_header vernac
+    Pp.mt ()
+    (* FIXME Topfmt.pr_cmd_header vernac *)
   in
   fun vernac -> Lazy.from_fun (fun () -> pr_time_header vernac)
 
-let interp_control_flag ~only_parsing ~loc ~time_header (f : control_flag) ~st
+let interp_control_flag ~loc ~time_header (f : control_flag) ~st
     (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option * Declare.OblState.t NeList.t) =
   match f with
   | ControlFail ->
-    with_fail ~only_parsing ~loc ~st (fun () -> fn ~st);
+    with_fail ~loc ~st (fun () -> fn ~st);
     st.Vernacstate.lemmas, st.Vernacstate.program
   | ControlSucceed ->
     with_succeed ~st (fun () -> fn ~st);
@@ -142,39 +143,32 @@ let interp_control_flag ~only_parsing ~loc ~time_header (f : control_flag) ~st
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let rec interp_expr ~only_parsing ?loc ~atts ~st c =
-  vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
+let rec interp_expr ?loc ~atts ~st c =
+  (* FIXME vernac_pperr_endline Pp.(fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c); *)
   match c with
 
   (* The STM should handle that, but LOAD bypasses the STM... *)
-  | PureVernac VernacAbortAll    -> CErrors.user_err (Pp.str "AbortAll cannot be used through the Load command")
-  | PureVernac VernacRestart     -> CErrors.user_err (Pp.str "Restart cannot be used through the Load command")
-  | VernacUndo _      -> CErrors.user_err (Pp.str "Undo cannot be used through the Load command")
-  | VernacUndoTo _    -> CErrors.user_err (Pp.str "UndoTo cannot be used through the Load command")
+  | VernacPure VernacAbortAll    -> CErrors.user_err (Pp.str "AbortAll cannot be used through the Load command")
+  | VernacPure VernacRestart     -> CErrors.user_err (Pp.str "Restart cannot be used through the Load command")
+  | VernacPure VernacUndo _      -> CErrors.user_err (Pp.str "Undo cannot be used through the Load command")
+  | VernacPure VernacUndoTo _    -> CErrors.user_err (Pp.str "UndoTo cannot be used through the Load command")
 
   (* Resetting *)
-  | VernacResetName _  -> CErrors.anomaly (Pp.str "VernacResetName not handled by Stm.")
-  | VernacResetInitial -> CErrors.anomaly (Pp.str "VernacResetInitial not handled by Stm.")
-  | VernacBack _       -> CErrors.anomaly (Pp.str "VernacBack not handled by Stm.")
+  | VernacPure VernacResetName _  -> CErrors.anomaly (Pp.str "VernacResetName not handled by Stm.")
+  | VernacPure VernacResetInitial -> CErrors.anomaly (Pp.str "VernacResetInitial not handled by Stm.")
+  | VernacPure VernacBack _       -> CErrors.anomaly (Pp.str "VernacBack not handled by Stm.")
 
-  | VernacLoad (verbosely, fname) ->
+  | VernacPure VernacLoad (verbosely, fname) ->
     Attributes.unsupported_attributes atts;
-    vernac_load ~only_parsing ~verbosely fname
+    vernac_load ~verbosely fname
 
   | v ->
-    if only_parsing then
-      let _parseff, _expr = Synterp.synterp ?loc ~atts v in
-      let stack = st.Vernacstate.lemmas in
-      let program = st.Vernacstate.program in
-      stack, program
-    else
-      let parseff, expr = Synterp.synterp ?loc ~atts v in
-      let fv = Vernacentries.translate_vernac ?loc ~atts expr in
-      let stack = st.Vernacstate.lemmas in
-      let program = st.Vernacstate.program in
-      interp_typed_vernac ~pm:program ~stack fv
+    let fv = Vernacentries.translate_vernac ?loc ~atts v in
+    let stack = st.Vernacstate.lemmas in
+    let program = st.Vernacstate.program in
+    interp_typed_vernac ~pm:program ~stack fv
 
-and vernac_load ~only_parsing ~verbosely fname =
+and vernac_load ~verbosely fname =
   (* Note that no proof should be open here, so the state here is just token for now *)
   let st = Vernacstate.freeze_interp_state ~marshallable:false in
   let fname =
@@ -194,8 +188,10 @@ and vernac_load ~only_parsing ~verbosely fname =
     let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
     match parse_sentence proof_mode input with
     | None -> stack, pm
-    | Some stm ->
-      let stack, pm = v_mod (interp_control ~only_parsing ~st:{ st with Vernacstate.lemmas = stack; program = pm }) stm in
+    | Some { CAst.v = stm; loc } ->
+      let _parseff,e = Synterp.synterp ?loc ~atts:stm.attrs stm.expr in
+      let stm = CAst.make ?loc { control = stm.control; attrs = stm.attrs; expr = e } in
+      let stack, pm = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack; program = pm }) stm in
       (load_loop [@ocaml.tailcall]) ~stack ~pm
   in
   let stack, pm =
@@ -207,13 +203,13 @@ and vernac_load ~only_parsing ~verbosely fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   stack, pm
 
-and interp_control ~only_parsing ~st ({ CAst.v = cmd; loc } as vernac) =
+and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
   let time_header = mk_time_header vernac in
-  List.fold_right (fun flag fn -> interp_control_flag ~only_parsing ~loc ~time_header flag fn)
+  List.fold_right (fun flag fn -> interp_control_flag ~loc ~time_header flag fn)
     cmd.control
     (fun ~st ->
        let before_univs = Global.universes () in
-       let pstack, pm = interp_expr ~only_parsing ?loc ~atts:cmd.attrs ~st cmd.expr in
+       let pstack, pm = interp_expr ?loc ~atts:cmd.attrs ~st cmd.expr in
        let after_univs = Global.universes () in
        if before_univs == after_univs then pstack, pm
        else
@@ -244,8 +240,8 @@ let interp_qed_delayed ~proof ~st pe =
   stack, pm
 
 let interp_qed_delayed_control ~proof ~st ~control { CAst.loc; v=pe } =
-  let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in
-  List.fold_right (fun flag fn -> interp_control_flag ~only_parsing:false ~loc ~time_header flag fn)
+  let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacPure (VernacEndProof pe) }) in
+  List.fold_right (fun flag fn -> interp_control_flag ~loc ~time_header flag fn)
     control
     (fun ~st -> interp_qed_delayed ~proof ~st pe)
     ~st
@@ -261,7 +257,6 @@ let () = let open Goptions in
 
 (* Be careful with the cache here in case of an exception. *)
 let interp_gen ~verbosely ~st ~interp_fn cmd =
-  Vernacstate.unfreeze_interp_state st;
   try vernac_timeout (fun st ->
       let v_mod = if verbosely then Flags.verbosely else Flags.silently in
       let ontop = v_mod (interp_fn ~st) cmd in
@@ -275,9 +270,17 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
     Exninfo.iraise exn
 
 (* Regular interp *)
-let interp ~only_parsing ?(verbosely=true) ~st cmd =
-  interp_gen ~verbosely ~st ~interp_fn:(interp_control ~only_parsing) cmd
+let interp ~only_parsing ?(verbosely=true) ~st { CAst.v = cmd; loc } =
+  Vernacstate.unfreeze_interp_state st;
+  let _parseff,e = Synterp.synterp ?loc ~atts:cmd.attrs cmd.expr in
+  let cmd = CAst.make ?loc { control = cmd.control; attrs = cmd.attrs; expr = e } in
+  interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
+
+let interp_entry ?(verbosely=true) ~st cmd =
+  Vernacstate.unfreeze_interp_state st;
+  interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
 
 let interp_qed_delayed_proof ~proof ~st ~control pe : Vernacstate.t =
+  Vernacstate.unfreeze_interp_state st;
   interp_gen ~verbosely:false ~st
     ~interp_fn:(interp_qed_delayed_control ~proof ~control) pe

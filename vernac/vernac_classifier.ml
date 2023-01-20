@@ -51,7 +51,7 @@ let options_affecting_stm_scheduling =
   ]
 
 let classify_vernac e =
-  let static_classifier ~atts e = match e with
+  let static_synterp_classifier ~atts e = match e with
     (* Univ poly compatibility: we run it now, so that we can just
      * look at Flags in stm.ml.  Would be nicer to have the stm
      * look at the entire dag to detect this option. *)
@@ -59,6 +59,29 @@ let classify_vernac e =
       when CList.exists (CList.equal String.equal l)
         options_affecting_stm_scheduling ->
        VtSideff ([], VtNow)
+    | VernacBeginSection {v=id} -> VtSideff ([id], VtLater)
+    | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
+    | VernacSetOption _ -> VtSideff ([], VtLater)
+    (* (Local) Notations have to disappear *)
+    | VernacEndSegment _ -> VtSideff ([], VtNow)
+    (* Modules with parameters have to be executed: can import notations *)
+    | VernacDeclareModule (exp,{v=id},bl,_)
+    | VernacDefineModule (exp,{v=id},bl,_,_) ->
+        VtSideff ([id], if bl = [] && exp = None then VtLater else VtNow)
+    | VernacDeclareModuleType ({v=id},bl,_,_) ->
+        VtSideff ([id], if bl = [] then VtLater else VtNow)
+    (* These commands alter the parser *)
+    | VernacDeclareCustomEntry _
+    | VernacNotation _ | VernacReservedNotation _
+    | VernacRequire _ | VernacImport _ | VernacInclude _
+    | VernacDeclareMLModule _ -> VtSideff ([], VtNow)
+    | VernacProofMode pm -> VtProofMode pm
+    (* Plugins should classify their commands *)
+    | VernacExtend (s,l) ->
+        try Vernacextend.get_vernac_classifier s l
+        with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
+  in
+  let static_pure_classifier ~atts e = match e with
     (* Qed *)
     | VernacAbort -> VtQed VtDrop
     | VernacEndProof Admitted -> VtQed (VtKeep VtKeepAxiom)
@@ -134,17 +157,14 @@ let classify_vernac e =
         let ids = List.map (fun {v}->v) (CList.map_filter (fun (x,_) -> x) l) in
         VtSideff (ids, VtLater)
     | VernacCombinedScheme ({v=id},_) -> VtSideff ([id], VtLater)
-    | VernacBeginSection {v=id} -> VtSideff ([id], VtLater)
     | VernacUniverse _ | VernacConstraint _
     | VernacCanonical _ | VernacCoercion _ | VernacIdentityCoercion _
-    | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
     | VernacChdir _
     | VernacCreateHintDb _ | VernacRemoveHints _ | VernacHints _
     | VernacArguments _
     | VernacReserve _
     | VernacGeneralizable _
     | VernacSetOpacity _ | VernacSetStrategy _
-    | VernacSetOption _
     | VernacAddOption _ | VernacRemoveOption _
     | VernacMemOption _ | VernacPrintOption _
     | VernacDeclareReduction _
@@ -157,25 +177,11 @@ let classify_vernac e =
     | VernacExtraDependency _ -> VtSideff ([], VtLater)
     (* Who knows *)
     | VernacLoad _ -> VtSideff ([], VtNow)
-    (* (Local) Notations have to disappear *)
-    | VernacEndSegment _ -> VtSideff ([], VtNow)
-    (* Modules with parameters have to be executed: can import notations *)
-    | VernacDeclareModule (exp,{v=id},bl,_)
-    | VernacDefineModule (exp,{v=id},bl,_,_) ->
-        VtSideff ([id], if bl = [] && exp = None then VtLater else VtNow)
-    | VernacDeclareModuleType ({v=id},bl,_,_) ->
-        VtSideff ([id], if bl = [] then VtLater else VtNow)
-    (* These commands alter the parser *)
-    | VernacDeclareCustomEntry _
     | VernacOpenCloseScope _ | VernacDeclareScope _
-    | VernacEnableNotation _
     | VernacDelimiters _ | VernacBindScope _
-    | VernacNotation _ | VernacReservedNotation _
+    | VernacEnableNotation _
     | VernacSyntacticDefinition _
-    | VernacRequire _ | VernacImport _ | VernacInclude _
-    | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *) -> VtSideff ([], VtNow)
-    | VernacProofMode pm -> VtProofMode pm
     | VernacInstance ((name,_),_,_,props,_) ->
       let program, refine =
         Attributes.(parse_drop_extra Notations.(program ++ Classes.refine_att) atts)
@@ -191,10 +197,10 @@ let classify_vernac e =
     | VernacUndoTo _ | VernacUndo _
     | VernacResetName _ | VernacResetInitial
     | VernacRestart -> VtMeta
-    (* Plugins should classify their commands *)
-    | VernacExtend (s,l) ->
-        try Vernacextend.get_vernac_classifier s l
-        with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
+  in
+  let static_classifier ~atts e = match e with
+    | VernacPure e -> static_pure_classifier ~atts e
+    | VernacSynterp e -> static_synterp_classifier ~atts e
   in
   let static_control_classifier ({ CAst.v ; _ } as cmd) =
     (* Fail Qed or Fail Lemma must not join/fork the DAG *)

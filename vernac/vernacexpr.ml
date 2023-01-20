@@ -502,9 +502,11 @@ type control_flag =
   | ControlFail
   | ControlSucceed
 
-type vernac_control_r =
+type 'a vernac_control_gen_r =
   { control : control_flag list
   ; attrs : Attributes.vernac_flags
-  ; expr : vernac_expr
+  ; expr : 'a vernac_expr_gen
   }
-and vernac_control = vernac_control_r CAst.t
+and 'a vernac_control_gen = 'a vernac_control_gen_r CAst.t
+
+type vernac_control = synterp_vernac_expr vernac_control_gen

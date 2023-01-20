@@ -55,54 +55,54 @@ GRAMMAR EXTEND Gram
   ;
   command: TOP
     [ [ IDENT "Goal"; c = lconstr ->
-        { VernacDefinition (Decls.(NoDischarge, Definition), ((CAst.make ~loc Names.Anonymous), None), ProveBody ([], c)) }
-      | IDENT "Proof" -> { VernacProof (None,None) }
+        { VernacPure (VernacDefinition (Decls.(NoDischarge, Definition), ((CAst.make ~loc Names.Anonymous), None), ProveBody ([], c))) }
+      | IDENT "Proof" -> { VernacPure (VernacProof (None,None)) }
       | IDENT "Proof"; IDENT "using"; l = G_vernac.section_subset_expr ->
-          { VernacProof (None,Some l) }
-      | IDENT "Proof" ; IDENT "Mode" ; mn = string -> { VernacProofMode mn }
-      | IDENT "Proof"; c = lconstr -> { VernacExactProof c }
-      | IDENT "Abort" -> { VernacAbort }
-      | IDENT "Abort"; IDENT "All" -> { VernacAbortAll }
-      | IDENT "Admitted" -> { VernacEndProof Admitted }
-      | IDENT "Qed" -> { VernacEndProof (Proved (Opaque,None)) }
+          { VernacPure (VernacProof (None,Some l)) }
+      | IDENT "Proof" ; IDENT "Mode" ; mn = string -> { VernacSynterp (VernacProofMode mn) }
+      | IDENT "Proof"; c = lconstr -> { VernacPure (VernacExactProof c) }
+      | IDENT "Abort" -> { VernacPure VernacAbort }
+      | IDENT "Abort"; IDENT "All" -> { VernacPure VernacAbortAll }
+      | IDENT "Admitted" -> { VernacPure (VernacEndProof Admitted) }
+      | IDENT "Qed" -> { VernacPure (VernacEndProof (Proved (Opaque,None))) }
       | IDENT "Save"; id = identref ->
-          { VernacEndProof (Proved (Opaque, Some id)) }
-      | IDENT "Defined" -> { VernacEndProof (Proved (Transparent,None)) }
+          { VernacPure (VernacEndProof (Proved (Opaque, Some id))) }
+      | IDENT "Defined" -> { VernacPure (VernacEndProof (Proved (Transparent,None))) }
       |	IDENT "Defined"; id=identref ->
-          { VernacEndProof (Proved (Transparent,Some id)) }
-      | IDENT "Restart" -> { VernacRestart }
-      | IDENT "Undo" -> { VernacUndo 1 }
-      | IDENT "Undo"; n = natural -> { VernacUndo n }
-      | IDENT "Undo"; IDENT "To"; n = natural -> { VernacUndoTo n }
+          { VernacPure (VernacEndProof (Proved (Transparent,Some id))) }
+      | IDENT "Restart" -> { VernacPure VernacRestart }
+      | IDENT "Undo" -> { VernacPure (VernacUndo 1) }
+      | IDENT "Undo"; n = natural -> { VernacPure (VernacUndo n) }
+      | IDENT "Undo"; IDENT "To"; n = natural -> { VernacPure (VernacUndoTo n) }
       | IDENT "Focus" ->
          { warn_deprecated_focus ~loc ();
-         VernacFocus None }
+         VernacPure (VernacFocus None) }
       | IDENT "Focus"; n = natural ->
          { warn_deprecated_focus_n n ~loc ();
-         VernacFocus (Some n) }
+         VernacPure (VernacFocus (Some n)) }
       | IDENT "Unfocus" ->
          { warn_deprecated_unfocus ~loc ();
-         VernacUnfocus }
-      | IDENT "Unfocused" -> { VernacUnfocused }
-      | IDENT "Show" -> { VernacShow (ShowGoal OpenSubgoals) }
-      | IDENT "Show"; n = natural -> { VernacShow (ShowGoal (NthGoal n)) }
-      | IDENT "Show"; id = ident -> { VernacShow (ShowGoal (GoalId id)) }
-      | IDENT "Show"; IDENT "Existentials" -> { VernacShow ShowExistentials }
-      | IDENT "Show"; IDENT "Universes" -> { VernacShow ShowUniverses }
-      | IDENT "Show"; IDENT "Conjectures" -> { VernacShow ShowProofNames }
-      | IDENT "Show"; IDENT "Proof" -> { VernacShow ShowProof }
-      | IDENT "Show"; IDENT "Intro" -> { VernacShow (ShowIntros false) }
-      | IDENT "Show"; IDENT "Intros" -> { VernacShow (ShowIntros true) }
-      | IDENT "Show"; IDENT "Match"; id = reference -> { VernacShow (ShowMatch id) }
-      | IDENT "Guarded" -> { VernacCheckGuard }
+         VernacPure VernacUnfocus }
+      | IDENT "Unfocused" -> { VernacPure VernacUnfocused }
+      | IDENT "Show" -> { VernacPure (VernacShow (ShowGoal OpenSubgoals)) }
+      | IDENT "Show"; n = natural -> { VernacPure (VernacShow (ShowGoal (NthGoal n))) }
+      | IDENT "Show"; id = ident -> { VernacPure (VernacShow (ShowGoal (GoalId id))) }
+      | IDENT "Show"; IDENT "Existentials" -> { VernacPure (VernacShow ShowExistentials) }
+      | IDENT "Show"; IDENT "Universes" -> { VernacPure (VernacShow ShowUniverses) }
+      | IDENT "Show"; IDENT "Conjectures" -> { VernacPure (VernacShow ShowProofNames) }
+      | IDENT "Show"; IDENT "Proof" -> { VernacPure (VernacShow ShowProof) }
+      | IDENT "Show"; IDENT "Intro" -> { VernacPure (VernacShow (ShowIntros false)) }
+      | IDENT "Show"; IDENT "Intros" -> { VernacPure (VernacShow (ShowIntros true)) }
+      | IDENT "Show"; IDENT "Match"; id = reference -> { VernacPure (VernacShow (ShowMatch id)) }
+      | IDENT "Guarded" -> { VernacPure VernacCheckGuard }
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
           id = IDENT ; b = [ IDENT "discriminated" -> { true } | -> { false } ] ->
-            { VernacCreateHintDb (id, b) }
+            { VernacPure (VernacCreateHintDb (id, b)) }
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
-          { VernacRemoveHints (dbnames, ids) }
+          { VernacPure (VernacRemoveHints (dbnames, ids)) }
       | IDENT "Hint"; h = hint; dbnames = opt_hintbases ->
-          { VernacHints (dbnames, h) }
+          { VernacPure (VernacHints (dbnames, h)) }
       ] ];
   reference_or_constr:
    [ [ r = global -> { HintsReference r }

@@ -70,12 +70,7 @@ type synterp_entry =
 
 type vernac_entry = synterp_entry Vernacexpr.vernac_expr_gen
 
-type vernac_entry_control_r =
-  { control : Vernacexpr.control_flag list
-  ; attrs : Attributes.vernac_flags
-  ; entry : vernac_entry
-  }
-and vernac_entry_control = vernac_entry_control_r CAst.t
+type vernac_entry_control = synterp_entry Vernacexpr.vernac_control_gen_r CAst.t
 
 val err_unmapped_library : ?from:Names.DirPath.t -> Libnames.qualid -> Pp.t
 val err_notfound_library : ?from:Names.DirPath.t -> Libnames.qualid -> Pp.t

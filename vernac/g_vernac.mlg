@@ -153,18 +153,18 @@ GRAMMAR EXTEND Gram
   vernac_aux:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
     (* "." is still in the stream and discard_to_dot works correctly         *)
-    [ [ g = gallina; "." -> { g }
+    [ [ g = gallina; "." -> { VernacPure g }
       | g = gallina_ext; "." -> { g }
       | c = command; "." -> { c }
       | c = syntax; "." -> { c }
-      | c = subprf -> { c }
+      | c = subprf -> { VernacPure c }
     ] ]
   ;
   vernac_aux: LAST
     [ [ prfcom = command_entry -> { prfcom } ] ]
   ;
   noedit_mode:
-    [ [ c = query_command -> { c None } ] ]
+    [ [ c = query_command -> { VernacPure (c None) } ] ]
   ;
 
   subprf:
@@ -573,45 +573,45 @@ GRAMMAR EXTEND Gram
         IDENT "Module"; export = export_token; id = identref;
         bl = LIST0 module_binder; sign = of_module_type;
         body = is_module_expr ->
-          { VernacDefineModule (export, id, bl, sign, body) }
+          { VernacSynterp (VernacDefineModule (export, id, bl, sign, body)) }
       | IDENT "Module"; "Type"; id = identref;
         bl = LIST0 module_binder; sign = check_module_types;
         body = is_module_type ->
-          { VernacDeclareModuleType (id, bl, sign, body) }
+          { VernacSynterp (VernacDeclareModuleType (id, bl, sign, body)) }
       | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref;
         bl = LIST0 module_binder; ":"; mty = module_type_inl ->
-          { VernacDeclareModule (export, id, bl, mty) }
+          { VernacSynterp (VernacDeclareModule (export, id, bl, mty)) }
       (* Section beginning *)
-      | IDENT "Section"; id = identref -> { VernacBeginSection id }
+      | IDENT "Section"; id = identref -> { VernacSynterp (VernacBeginSection id) }
 
       (* This end a Section a Module or a Module Type *)
-      | IDENT "End"; id = identref -> { VernacEndSegment id }
+      | IDENT "End"; id = identref -> { VernacSynterp (VernacEndSegment id) }
 
       (* Naming a set of section hyps *)
       | IDENT "Collection"; id = identref; ":="; expr = section_subset_expr ->
-          { VernacNameSectionHypSet (id, expr) }
+          { VernacPure (VernacNameSectionHypSet (id, expr)) }
 
       (* Requiring an external file *)
       | IDENT "From" ; ns = global ;
         IDENT "Extra"; IDENT "Dependency"; f = ne_string ;
         id = OPT [ "as"; id = IDENT -> { id } ] ->
-          { VernacExtraDependency (ns, f, Option.map Id.of_string id) }
+          { VernacPure (VernacExtraDependency (ns, f, Option.map Id.of_string id)) }
 
       (* Requiring an already compiled module *)
       | IDENT "Require"; export = export_token; qidl = LIST1 filtered_import ->
-          { VernacRequire (None, export, qidl) }
+          { VernacSynterp (VernacRequire (None, export, qidl)) }
       | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
         ; qidl = LIST1 filtered_import ->
-        { VernacRequire (Some ns, export, qidl) }
+        { VernacSynterp (VernacRequire (Some ns, export, qidl)) }
       | IDENT "Import"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
-        { VernacImport ((Import,cats),qidl) }
+        { VernacSynterp (VernacImport ((Import,cats),qidl)) }
       | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
-        { VernacImport ((Export,cats),qidl) }
+        { VernacSynterp (VernacImport ((Export,cats),qidl)) }
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
-          { VernacInclude(e::l) }
+          { VernacSynterp (VernacInclude(e::l)) }
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
          { warn_deprecated_include_type ~loc ();
-        VernacInclude(e::l) } ] ]
+        VernacSynterp (VernacInclude(e::l)) } ] ]
   ;
   import_categories:
   [ [ negative = OPT "-"; "("; cats = LIST1 qualid SEP ","; ")" ->
@@ -737,59 +737,59 @@ GRAMMAR EXTEND Gram
   gallina_ext: TOP
     [ [ (* Transparent and Opaque *)
         IDENT "Transparent"; l = LIST1 smart_global ->
-          { VernacSetOpacity (Conv_oracle.transparent, l) }
+          { VernacPure (VernacSetOpacity (Conv_oracle.transparent, l)) }
       | IDENT "Opaque"; l = LIST1 smart_global ->
-          { VernacSetOpacity (Conv_oracle.Opaque, l) }
+          { VernacPure (VernacSetOpacity (Conv_oracle.Opaque, l)) }
       | IDENT "Strategy"; l =
           LIST1 [ v=strategy_level; "["; q=LIST1 smart_global; "]" -> { (v,q) } ] ->
-            { VernacSetStrategy l }
+            { VernacPure (VernacSetStrategy l) }
       (* Canonical structure *)
       | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { (u,d) } ] ->
           { match ud with
            | None ->
-             VernacCanonical CAst.(make ?loc:qid.CAst.loc @@ AN qid)
+             VernacPure (VernacCanonical CAst.(make ?loc:qid.CAst.loc @@ AN qid))
            | Some (u,d) ->
              let s = coerce_reference_to_id qid in
-             VernacDefinition ((NoDischarge,CanonicalStructure),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d) }
+             VernacPure (VernacDefinition ((NoDischarge,CanonicalStructure),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d)) }
       | IDENT "Canonical"; OPT [ IDENT "Structure" -> {()} ]; ntn = by_notation ->
-          { VernacCanonical CAst.(make ~loc @@ ByNotation ntn) }
+          { VernacPure (VernacCanonical CAst.(make ~loc @@ ByNotation ntn)) }
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; ud = OPT [ u = OPT univ_decl; d = def_body -> { u, d } ] ->
           { match ud with Some (u, d) -> let s = coerce_reference_to_id qid in
-          VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d)
-          | None -> VernacCoercion (CAst.make ~loc @@ AN qid, None) }
+          VernacPure (VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d))
+          | None -> VernacPure (VernacCoercion (CAst.make ~loc @@ AN qid, None)) }
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
-           { VernacIdentityCoercion (f, s, t) }
+           { VernacPure (VernacIdentityCoercion (f, s, t)) }
       | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-          { VernacCoercion (CAst.make ~loc @@ AN qid, Some(s, t)) }
+          { VernacPure (VernacCoercion (CAst.make ~loc @@ AN qid, Some(s, t))) }
       | IDENT "Coercion"; ntn = by_notation; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-          { VernacCoercion (CAst.make ~loc @@ ByNotation ntn, Some (s, t)) }
+          { VernacPure (VernacCoercion (CAst.make ~loc @@ ByNotation ntn, Some (s, t))) }
 
       | IDENT "Context"; c = LIST1 binder ->
-          { VernacContext (List.flatten c) }
+          { VernacPure (VernacContext (List.flatten c)) }
 
       | IDENT "Instance"; namesup = instance_name; ":";
          t = term LEVEL "200";
          info = hint_info ;
          props = [ ":="; "{"; r = record_declaration; "}" -> { Some (true,r) } |
              ":="; c = lconstr -> { Some (false,c) } | -> { None } ] ->
-           { VernacInstance (fst namesup,snd namesup,t,props,info) }
+           { VernacPure (VernacInstance (fst namesup,snd namesup,t,props,info)) }
 
       | IDENT "Existing"; IDENT "Instance"; id = global;
           info = hint_info ->
-          { VernacExistingInstance [id, info] }
+          { VernacPure (VernacExistingInstance [id, info]) }
 
       | IDENT "Existing"; IDENT "Instances"; ids = LIST1 global;
         pri = OPT [ "|"; i = natural -> { i } ] ->
          { let info = { Typeclasses.hint_priority = pri; hint_pattern = None } in
          let insts = List.map (fun i -> (i, info)) ids in
-          VernacExistingInstance insts }
+          VernacPure (VernacExistingInstance insts) }
 
-      | IDENT "Existing"; IDENT "Class"; is = global -> { VernacExistingClass is }
+      | IDENT "Existing"; IDENT "Class"; is = global -> { VernacPure (VernacExistingClass is) }
 
       (* Arguments *)
       | IDENT "Arguments"; qid = smart_global;
@@ -802,21 +802,21 @@ GRAMMAR EXTEND Gram
         mods = OPT [ ":"; l = LIST1 args_modifier SEP "," -> { l } ] ->
          { let mods = match mods with None -> [] | Some l -> List.flatten l in
          let more_implicits = Option.default [] more_implicits in
-         VernacArguments (qid, List.flatten args, more_implicits, mods) }
+         VernacPure (VernacArguments (qid, List.flatten args, more_implicits, mods)) }
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
-           { VernacReserve bl }
+           { VernacPure (VernacReserve bl) }
 
       | IDENT "Implicit"; IDENT "Types"; bl = reserv_list ->
           { test_plural_form_types loc "Implicit Types" bl;
-           VernacReserve bl }
+           VernacPure (VernacReserve bl) }
 
       | IDENT "Generalizable";
            gen = [IDENT "All"; IDENT "Variables" -> { Some [] }
              | IDENT "No"; IDENT "Variables" -> { None }
              | ["Variable" -> { () } | IDENT "Variables" -> { () } ];
                   idl = LIST1 identref -> { Some idl } ] ->
-             { VernacGeneralizable gen } ] ]
+             { VernacPure (VernacGeneralizable gen) } ] ]
   ;
   args_modifier:
     [ [ IDENT "simpl"; IDENT "nomatch" -> { [`ReductionDontExposeCase] }
@@ -907,90 +907,90 @@ GRAMMAR EXTEND Gram
 
   gallina_ext: TOP
     [ [ IDENT "Export"; "Set"; table = setting_name; v = option_setting ->
-        { VernacSetOption (true, table, v) }
+        { VernacSynterp (VernacSetOption (true, table, v)) }
       | IDENT "Export"; IDENT "Unset"; table = setting_name ->
-          { VernacSetOption (true, table, OptionUnset) }
+          { VernacSynterp (VernacSetOption (true, table, OptionUnset)) }
     ] ];
 
   command:
-    [ [ IDENT "Comments"; l = LIST0 comment -> { VernacComments l }
+    [ [ IDENT "Comments"; l = LIST0 comment -> { VernacPure (VernacComments l) }
 
       (* Hack! Should be in grammar_ext, but camlp5 factorizes badly *)
       | IDENT "Declare"; IDENT "Instance"; id = ident_decl; bl = binders; ":";
          t = term LEVEL "200";
          info = hint_info ->
-           { VernacDeclareInstance (id, bl, t, info) }
+           { VernacPure (VernacDeclareInstance (id, bl, t, info)) }
 
       (* Should be in syntax, but camlp5 would not factorize *)
       | IDENT "Declare"; IDENT "Scope"; sc = IDENT ->
-          { VernacDeclareScope sc }
+          { VernacPure (VernacDeclareScope sc) }
 
       (* System directory *)
-      | IDENT "Pwd" -> { VernacChdir None }
-      | IDENT "Cd" -> { VernacChdir None }
-      | IDENT "Cd"; dir = ne_string -> { VernacChdir (Some dir) }
+      | IDENT "Pwd" -> { VernacPure (VernacChdir None) }
+      | IDENT "Cd" -> { VernacPure (VernacChdir None) }
+      | IDENT "Cd"; dir = ne_string -> { VernacPure (VernacChdir (Some dir)) }
 
       | IDENT "Load"; verbosely = [ IDENT "Verbose" -> { true } | -> { false } ];
         s = [ s = ne_string -> { s } | s = IDENT -> { s } ] ->
-          { VernacLoad (verbosely, s) }
+          { VernacPure (VernacLoad (verbosely, s)) }
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
-          { VernacDeclareMLModule l }
+          { VernacSynterp (VernacDeclareMLModule l) }
 
-      | IDENT "Locate"; l = locatable -> { VernacLocate l }
+      | IDENT "Locate"; l = locatable -> { VernacPure (VernacLocate l) }
 
       (* Managing load paths *)
       | IDENT "Add"; IDENT "LoadPath"; physical_path = ne_string; "as"; logical_path = dirpath ->
-          { VernacAddLoadPath { implicit = false; logical_path; physical_path } }
+          { VernacSynterp (VernacAddLoadPath { implicit = false; logical_path; physical_path }) }
       | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; physical_path = ne_string; "as"; logical_path = dirpath ->
-          { VernacAddLoadPath { implicit = true; logical_path; physical_path } }
+          { VernacSynterp (VernacAddLoadPath { implicit = true; logical_path; physical_path }) }
 
       | IDENT "Remove"; IDENT "LoadPath"; dir = ne_string ->
-          { VernacRemoveLoadPath dir }
+          { VernacSynterp (VernacRemoveLoadPath dir) }
 
       (* Type-Checking *)
-      | "Type"; c = lconstr -> { VernacGlobalCheck c }
+      | "Type"; c = lconstr -> { VernacPure (VernacGlobalCheck c) }
 
       (* Printing (careful factorization of entries) *)
-      | IDENT "Print"; p = printable -> { VernacPrint p }
-      | IDENT "Print"; qid = smart_global; l = OPT univ_name_list -> { VernacPrint (PrintName (qid,l)) }
+      | IDENT "Print"; p = printable -> { VernacPure (VernacPrint p) }
+      | IDENT "Print"; qid = smart_global; l = OPT univ_name_list -> { VernacPure (VernacPrint (PrintName (qid,l))) }
       | IDENT "Print"; IDENT "Module"; "Type"; qid = global ->
-          { VernacPrint (PrintModuleType qid) }
+          { VernacPure (VernacPrint (PrintModuleType qid)) }
       | IDENT "Print"; IDENT "Module"; qid = global ->
-          { VernacPrint (PrintModule qid) }
+          { VernacPure (VernacPrint (PrintModule qid)) }
       | IDENT "Print"; IDENT "Namespace" ; ns = dirpath ->
-          { VernacPrint (PrintNamespace ns) }
-      | IDENT "Inspect"; n = natural -> { VernacPrint (PrintInspect n) }
+          { VernacPure (VernacPrint (PrintNamespace ns)) }
+      | IDENT "Inspect"; n = natural -> { VernacPure (VernacPrint (PrintInspect n)) }
 
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
-          { VernacAddMLPath dir }
+          { VernacSynterp (VernacAddMLPath dir) }
 
       (* For acting on parameter tables *)
       | "Set"; table = setting_name; v = option_setting ->
-          { VernacSetOption (false, table, v) }
+          { VernacSynterp (VernacSetOption (false, table, v)) }
       | IDENT "Unset"; table = setting_name ->
-          { VernacSetOption (false, table, OptionUnset) }
+          { VernacSynterp (VernacSetOption (false, table, OptionUnset)) }
 
       | IDENT "Print"; IDENT "Table"; table = setting_name ->
-          { VernacPrintOption table }
+          { VernacPure (VernacPrintOption table) }
 
       | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 table_value
-        -> { VernacAddOption ([table;field], v) }
+        -> { VernacPure (VernacAddOption ([table;field], v)) }
       (* A global value below will be hidden by a field above! *)
       (* In fact, we give priority to secondary tables *)
       (* No syntax for tertiary tables due to conflict *)
       (* (but they are unused anyway) *)
       | IDENT "Add"; table = IDENT; v = LIST1 table_value ->
-          { VernacAddOption ([table], v) }
+          { VernacPure (VernacAddOption ([table], v)) }
 
       | IDENT "Test"; table = setting_name; "for"; v = LIST1 table_value
-        -> { VernacMemOption (table, v) }
+        -> { VernacPure (VernacMemOption (table, v)) }
       | IDENT "Test"; table = setting_name ->
-          { VernacPrintOption table }
+          { VernacPure (VernacPrintOption table) }
 
       | IDENT "Remove"; table = IDENT; field = IDENT; v= LIST1 table_value
-        -> { VernacRemoveOption ([table;field], v) }
+        -> { VernacPure (VernacRemoveOption ([table;field], v)) }
       | IDENT "Remove"; table = IDENT; v = LIST1 table_value ->
-          { VernacRemoveOption ([table], v) } ]]
+          { VernacPure (VernacRemoveOption ([table], v)) } ]]
   ;
   query_command: (* TODO: rapprocher Eval et Check *)
     [ [ IDENT "Eval"; r = red_expr; "in"; c = lconstr; "." ->
@@ -1168,28 +1168,28 @@ GRAMMAR EXTEND Gram
   command: TOP
     [ [
 (* Resetting *)
-        IDENT "Reset"; IDENT "Initial" -> { VernacResetInitial }
-      | IDENT "Reset"; id = identref -> { VernacResetName id }
-      | IDENT "Back" -> { VernacBack 1 }
-      | IDENT "Back"; n = natural -> { VernacBack n }
+        IDENT "Reset"; IDENT "Initial" -> { VernacPure (VernacResetInitial) }
+      | IDENT "Reset"; id = identref -> { VernacPure (VernacResetName id) }
+      | IDENT "Back" -> { VernacPure (VernacBack 1) }
+      | IDENT "Back"; n = natural -> { VernacPure (VernacBack n) }
 
 (* Tactic Debugger *)
       |	IDENT "Debug"; IDENT "On" ->
-          { VernacSetOption (false, ["Ltac";"Debug"], OptionSetTrue) }
+          { VernacSynterp (VernacSetOption (false, ["Ltac";"Debug"], OptionSetTrue)) }
 
       |	IDENT "Debug"; IDENT "Off" ->
-          { VernacSetOption (false, ["Ltac";"Debug"], OptionUnset) }
+          { VernacSynterp (VernacSetOption (false, ["Ltac";"Debug"], OptionUnset)) }
 
 (* registration of a custom reduction *)
 
       | IDENT "Declare"; IDENT "Reduction"; s = IDENT; ":=";
          r = red_expr ->
-           { VernacDeclareReduction (s,r) }
+           { VernacPure (VernacDeclareReduction (s,r)) }
 
 (* factorized here, though relevant for syntax extensions *)
 
       | IDENT "Declare"; IDENT "Custom"; IDENT "Entry"; s = IDENT ->
-           { VernacDeclareCustomEntry s }
+           { VernacSynterp (VernacDeclareCustomEntry s) }
 
  ] ];
     END
@@ -1201,41 +1201,41 @@ GRAMMAR EXTEND Gram
 
   syntax:
    [ [ IDENT "Open"; IDENT "Scope"; sc = IDENT ->
-         { VernacOpenCloseScope (true,sc) }
+         { VernacPure (VernacOpenCloseScope (true,sc)) }
 
      | IDENT "Close"; IDENT "Scope"; sc = IDENT ->
-         { VernacOpenCloseScope (false,sc) }
+         { VernacPure (VernacOpenCloseScope (false,sc)) }
 
      | IDENT "Delimit"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
-         { VernacDelimiters (sc, Some key) }
+         { VernacPure(VernacDelimiters (sc, Some key)) }
      | IDENT "Undelimit"; IDENT "Scope"; sc = IDENT ->
-         { VernacDelimiters (sc, None) }
+         { VernacPure(VernacDelimiters (sc, None)) }
 
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
-       refl = LIST1 class_rawexpr -> { VernacBindScope (sc,refl) }
+       refl = LIST1 class_rawexpr -> { VernacPure(VernacBindScope (sc,refl)) }
 
      | IDENT "Infix"; op = ne_lstring; ":="; p = constr;
          modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
-         { VernacNotation (true,p,(op,modl),sc) }
+         { VernacSynterp (VernacNotation (true,p,(op,modl),sc)) }
      | IDENT "Notation"; id = identref; idl = LIST0 ident;
          ":="; c = constr; modl = syntax_modifiers ->
-           { VernacSyntacticDefinition (id,(idl,c), modl) }
+           { VernacPure (VernacSyntacticDefinition (id,(idl,c), modl)) }
      | IDENT "Notation"; s = lstring; ":=";
          c = constr;
          modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
-           { VernacNotation (false,c,(s,modl),sc) }
+           { VernacSynterp (VernacNotation (false,c,(s,modl),sc)) }
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring; l = syntax_modifiers ->
-           { VernacReservedNotation (true,(s,l)) }
+           { VernacSynterp (VernacReservedNotation (true,(s,l))) }
      | IDENT "Reserved"; IDENT "Notation"; s = ne_lstring; l = syntax_modifiers ->
-           { VernacReservedNotation (false,(s,l)) }
+           { VernacSynterp (VernacReservedNotation (false,(s,l))) }
 
      | on = enable_enable_disable; IDENT "Notation";
        rule = enable_notation_rule; interp = enable_notation_interpretation;
        flags = enable_notation_flags; scope = opt_scope ->
-           { VernacEnableNotation (on, rule, interp, flags, scope) }
+           { VernacPure (VernacEnableNotation (on, rule, interp, flags, scope)) }
 
      (* "Print" "Grammar" and "Declare" "Scope" should be here but are in "command" entry in order
         to factorize with other "Print"-based or "Declare"-based vernac entries *)

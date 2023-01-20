@@ -206,12 +206,7 @@ type synterp_entry =
 
 type vernac_entry = synterp_entry Vernacexpr.vernac_expr_gen
 
-type vernac_entry_control_r =
-  { control : control_flag list
-  ; attrs : Attributes.vernac_flags
-  ; entry : vernac_entry
-  }
-and vernac_entry_control = vernac_entry_control_r CAst.t
+type vernac_entry_control = synterp_entry vernac_control_gen_r CAst.t
 
 let vernac_reserved_notation ~module_local ~infix l =
   Metasyntax.add_reserved_notation ~local:module_local ~infix l

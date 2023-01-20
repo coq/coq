@@ -1543,7 +1543,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                 { control = []
                 ; attrs = []
                 ; expr =
-                    VernacInductive (Vernacexpr.Inductive_kw, repacked_rel_inds)
+                    VernacPure (VernacInductive (Vernacexpr.Inductive_kw, repacked_rel_inds))
                 })
       ++ fnl () ++ msg
     in
@@ -1566,7 +1566,7 @@ let do_build_inductive evd (funconstants : pconstant list)
                 { control = []
                 ; attrs = []
                 ; expr =
-                    VernacInductive (Vernacexpr.Inductive_kw, repacked_rel_inds)
+                    VernacPure (VernacInductive (Vernacexpr.Inductive_kw, repacked_rel_inds))
                 } )
       ++ fnl () ++ CErrors.print reraise
     in

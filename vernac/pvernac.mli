@@ -16,7 +16,7 @@ type proof_mode
 
 module Vernac_ :
   sig
-    val gallina : vernac_expr Entry.t
+    val gallina : pure_vernac_expr Entry.t
     val gallina_ext : vernac_expr Entry.t
     val command : vernac_expr Entry.t
     val syntax : vernac_expr Entry.t
