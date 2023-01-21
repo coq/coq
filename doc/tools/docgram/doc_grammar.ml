@@ -851,18 +851,6 @@ let create_edit_map g op edits =
       | "RENAME" ->
         if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
           error "Unused/undefined  nt `%s` in RENAME\n" key;
-      | "MERGE" ->
-        if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
-          error "Unused/undefined  nt `%s` in MERGE\n" key;
-        if not (StringSet.mem binding all_nts_ref || (StringSet.mem binding all_nts_def)) then
-          error "Unused/undefined  nt `%s` in MERGE\n" key;
-(*      todo: could not get the following code to type check
-        (match binding with
-        | _ :: Snterm new_nt :: _ ->
-          if not (StringSet.mem new_nt all_nts_ref) then
-            error "nt `%s` already exists in %s\n" new_nt op
-        | _ -> ())
-*)
       | _ -> ());
       aux tl (StringMap.add key binding map)
   in
@@ -1149,7 +1137,6 @@ let edit_all_prods g op eprods =
   | "RENAME" -> do_it op eprods 2; true
   | "DELETE" -> do_it op eprods 1; true
   | "SPLICE" -> do_it op eprods 1; true
-  | "MERGE" -> do_it op eprods 2; true
   | "OPTINREF" ->
       List.iter (fun nt ->
         let prods = NTMap.find nt !g.map in

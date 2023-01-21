@@ -325,6 +325,7 @@ qualid_annotated: [
 atomic_constr: [
 | qualid_annotated
 | MOVETO primitive_notations string
+| DELETE primitive_notations
 | MOVETO term_evar "_"
 | REPLACE "?" "[" identref "]"
 | WITH "?[" identref "]"
@@ -748,8 +749,7 @@ gallina_ext: [
 | WITH "Generalizable" [  [ "Variable" | "Variables" ] LIST1 identref | "All" "Variables" | "No" "Variables" ]
 
 (* don't show Export for Set, Unset *)
-| REPLACE "Export" "Set" setting_name option_setting
-| WITH "Set" setting_name option_setting
+| DELETE "Export" "Set" setting_name option_setting
 | REPLACE "Export" "Unset" setting_name
 | WITH "Unset" setting_name
 | REPLACE "Instance" instance_name ":" term200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
@@ -1878,7 +1878,6 @@ command: [
 | query_command
 | vernac_control
 | vernac_toplevel
-| command_entry
 ]
 
 SPLICE: [
@@ -1925,7 +1924,6 @@ ltac_defined_tactics: [
 (* todo: need careful review; assume that "[" ... "]" are literals *)
 tactic_notation_tactics: [
 | "assert_fails" ltac_expr3
-| "assert_succeeds" ltac_expr3
 | "clear" "dependent" hyp
 | "decide" constr "with" constr
 | "dependent" "destruction" ident OPT ( "generalizing" LIST1 hyp )  OPT ( "using" constr )
@@ -2670,7 +2668,6 @@ SPLICE: [
 | ssripats
 | ssrintros
 | ssrrule
-| ssrpattern_squarep
 | ssrcongrarg
 | ssrdotac
 | ssrunlockarg
@@ -2812,7 +2809,6 @@ SPLICE: [
 | syn_level
 | firstorder_rhs
 | firstorder_using
-| hints_path_atom
 | ref_or_pattern_occ
 | cumul_ident_decl
 | variance
