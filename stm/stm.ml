@@ -2415,8 +2415,7 @@ let observe ~doc id =
   let vcs = VCS.backup () in
   try
     Reach.known_state ~doc ~cache:(VCS.is_interactive ()) id;
-    VCS.print ();
-    doc
+    VCS.print ()
   with e ->
     let e = Exninfo.capture e in
     VCS.print ();
@@ -2425,18 +2424,17 @@ let observe ~doc id =
 
 let finish ~doc =
   let head = VCS.current_branch () in
-  let doc = observe ~doc (VCS.get_branch_pos head) in
+  let () = observe ~doc (VCS.get_branch_pos head) in
   let tip = VCS.cur_tip () in
   if not (State.is_cached ~cache:true tip) then
     CErrors.anomaly Pp.(str "Stm.join: tip not cached");
   VCS.print ();
-  doc, State.get_cached tip
+  State.get_cached tip
 
 let wait ~doc =
-  let doc = observe ~doc (VCS.get_branch_pos VCS.Branch.master) in
+  let () = observe ~doc (VCS.get_branch_pos VCS.Branch.master) in
   Slaves.wait_all_done ();
-  VCS.print ();
-  doc
+  VCS.print ()
 
 let rec join_admitted_proofs id =
   if Stateid.equal id Stateid.initial then () else
@@ -2462,7 +2460,7 @@ let rec check_no_err_states ~doc visited id =
      | _ -> check_no_err_states ~doc (Set.add id visited) view.next
 
 let join ~doc =
-  let doc = wait ~doc in
+  let () = wait ~doc in
   stm_prerr_endline (fun () -> "Joining the environment");
   let () = Opaques.Summary.join () in
   stm_prerr_endline (fun () -> "Joining Admitted proofs");
@@ -2474,7 +2472,7 @@ let join ~doc =
   if not (State.is_cached ~cache:true tip) then
     CErrors.anomaly Pp.(str "Stm.join: tip not cached");
   VCS.print ();
-  doc, State.get_cached tip
+  State.get_cached tip
 
 type tasks = Opaqueproof.opaque_handle option Slaves.tasks
 let check_task name tasks i =
@@ -2538,7 +2536,7 @@ let handle_failure (e, info) vcs =
   Exninfo.iraise (e, info)
 
 let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
-  let doc, _ = finish ~doc in
+  let _ : Vernacstate.t = finish ~doc in
   if List.length (VCS.branches ()) > 1 then
     CErrors.user_err (str"Cannot dump a vio with open proofs.");
   (* LATER: when create_vos is true, it could be more efficient to not allocate the futures; but for now it seems useful for synchronization of the workers,
@@ -2551,8 +2549,7 @@ let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
       then Library.ProofsTodoSomeEmpty except
       else Library.ProofsTodoSome (except,tasks)
     in
-  Library.save_library_to todo_proofs ~output_native_objects ldir long_f_dot_vo;
-  doc
+  Library.save_library_to todo_proofs ~output_native_objects ldir long_f_dot_vo
 
 let reset_task_queue = Slaves.reset_task_queue
 
