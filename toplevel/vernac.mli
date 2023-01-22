@@ -34,4 +34,8 @@ val process_expr : state:State.t -> Vernacexpr.vernac_control -> State.t
     echo the commands if [echo] is set. Callers are expected to handle
     and print errors in form of exceptions. *)
 val load_vernac : echo:bool -> check:bool -> interactive:bool ->
-  state:State.t -> ?source:Loc.source -> string -> State.t
+  state:State.t -> ?source:Loc.source -> string -> State.t * Loc.t
+
+(** [emit_time st cmd before after] Prints timing information *)
+val emit_time :
+  State.t -> Vernacexpr.vernac_control -> System.time -> System.time -> unit

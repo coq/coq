@@ -126,7 +126,7 @@ let load_vernac_core ~echo ~check ~interactive ~state ?source file =
     with
     | None ->
       input_cleanup ();
-      state, ids, Pcoq.Parsable.comments in_pa
+      state, ids, Pcoq.Parsable.comments in_pa, Pcoq.Parsable.loc in_pa
     | Some ast ->
       (* Printing of AST for -compile-verbose *)
       Option.iter (vernac_echo ?loc:ast.CAst.loc) in_echo;
@@ -194,8 +194,8 @@ let beautify_pass ~doc ~comments ~ids ~filename =
 (* Main driver for file loading. For now, we only do one beautify
    pass. *)
 let load_vernac ~echo ~check ~interactive ~state ?source filename =
-  let ostate, ids, comments = load_vernac_core ~echo ~check ~interactive ~state ?source filename in
+  let ostate, ids, comments, loc = load_vernac_core ~echo ~check ~interactive ~state filename in
   (* Pass for beautify *)
   if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:(List.rev ids) ~filename;
   (* End pass *)
-  ostate
+  ostate, loc

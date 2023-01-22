@@ -25,6 +25,13 @@ let source copts ldir file = Loc.InFile {
     file = Option.default file copts.fake_source;
   }
 
+let make_comment ~loc str =
+  CAst.make ~loc Vernacexpr.{
+      control = []
+    ; attrs = []
+    ; expr = VernacSynPure (VernacComments [CommentString str])
+    }
+
 (* Compile a vernac file *)
 let compile opts stm_options injections copts ~echo ~f_in ~f_out =
   let open Vernac.State in
@@ -50,6 +57,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
     create_empty_file long_f_dot_vok in
   match mode with
   | BuildVo | BuildVok ->
+      let ts = System.get_time () in
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
           Stm.{ doc_type = VoDoc long_f_dot_out; injections; } in
@@ -66,14 +74,24 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
 
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
+      (* Timing for the start process of the document *)
+      let te = System.get_time () in
+      let loc = Loc.(initial (InFile { dirpath = None; file = long_f_dot_in})) in
+      let start_cmd = make_comment ~loc "Document Start" in
+      Vernac.emit_time state start_cmd ts te;
       let source = source copts ldir long_f_dot_in in
-      let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state ~source long_f_dot_in in
-      let state = Stm.join ~doc:state.doc in
+      let state, loc = Vernac.load_vernac ~echo ~check ~interactive:false ~state ~source long_f_dot_in in
+      (* File ending / saving routine *)
+      let ts = System.get_time () in
+      let vstate = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
-      ensure_no_pending_proofs ~filename:long_f_dot_in state;
+      ensure_no_pending_proofs ~filename:long_f_dot_in vstate;
       (* In .vo production, dump a complete .vo file. *)
       if mode = BuildVo
         then Library.save_library_to ~output_native_objects Library.ProofsTodoNone ldir long_f_dot_out;
+      let te = System.get_time () in
+      let end_cmd = make_comment ~loc "Document End" in
+      Vernac.emit_time state end_cmd ts te;
       Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
@@ -96,7 +114,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       let source = source copts ldir long_f_dot_in in
-      let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~source ~state long_f_dot_in in
+      let state, _ = Vernac.load_vernac ~echo ~check:false ~interactive:false ~source ~state long_f_dot_in in
       let state = Stm.finish ~doc:state.doc in
       ensure_no_pending_proofs state ~filename:long_f_dot_in;
       let create_vos = (mode = BuildVos) in
