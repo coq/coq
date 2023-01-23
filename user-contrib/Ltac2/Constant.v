@@ -11,3 +11,5 @@
 Require Import Ltac2.Init.
 
 Ltac2 @ external equal : constant -> constant -> bool := "ltac2" "constant_equal".
+(** Constants obtained through module aliases or Include are not
+    considered equal by this function. *)

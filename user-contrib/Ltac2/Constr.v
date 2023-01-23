@@ -93,7 +93,12 @@ Ltac2 @ external constructor : inductive -> int -> constructor := "ltac2" "const
     at 0. Panics if there is no such constructor. *)
 
 Module Case.
-Ltac2 @ external equal : case -> case -> bool := "ltac2" "constr_case_equal".
+  Ltac2 @ external equal : case -> case -> bool := "ltac2" "constr_case_equal".
+  (** Checks equality of the inductive and relevance components of the
+      case info. When comparing the inductives, those obtained through
+      module aliases or Include are not considered equal by this
+      function. *)
+
 End Case.
 
 End Unsafe.

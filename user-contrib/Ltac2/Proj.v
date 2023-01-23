@@ -13,3 +13,5 @@ Require Import Ltac2.Init.
 Ltac2 Type t := projection.
 
 Ltac2 @ external equal : t -> t -> bool := "ltac2" "projection_equal".
+(** Projections obtained through module aliases or Include are not
+    considered equal by this function. The unfolding boolean is not ignored. *)

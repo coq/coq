@@ -13,3 +13,5 @@ Require Import Ltac2.Init.
 Ltac2 Type t := constructor.
 
 Ltac2 @ external equal : t -> t -> bool := "ltac2" "constructor_equal".
+(** Constructors obtained through module aliases or Include are not
+    considered equal by this function. *)
