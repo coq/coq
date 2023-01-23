@@ -212,8 +212,12 @@ type _ evar_body =
   | Evar_empty : undefined evar_body
   | Evar_defined : econstr -> defined evar_body
 
+type (_, 'a) when_undefined =
+| Defined : (defined, 'a) when_undefined
+| Undefined : 'a -> (undefined, 'a) when_undefined
+
 type 'a evar_info = {
-  evar_concl : constr;
+  evar_concl : ('a, constr) when_undefined;
   evar_hyps : named_context_val;
   evar_body : 'a evar_body;
   evar_filter : Filter.t;
@@ -228,7 +232,8 @@ type any_evar_info = EvarInfo : 'a evar_info -> any_evar_info
 let instance_mismatch () =
   anomaly (Pp.str "Signature and its instance do not match.")
 
-let evar_concl evi = evi.evar_concl
+let evar_concl evi = match evi.evar_concl with
+| Undefined c -> c
 
 let evar_filter evi = evi.evar_filter
 
@@ -276,11 +281,15 @@ let map_evar_body (type a) f : a evar_body -> a evar_body = function
   | Evar_empty -> Evar_empty
   | Evar_defined d -> Evar_defined (f d)
 
+let map_when_undefined (type a b) f : (a, b) when_undefined -> (a, b) when_undefined = function
+| Defined -> Defined
+| Undefined x -> Undefined (f x)
+
 let map_evar_info f evi =
   {evi with
     evar_body = map_evar_body f evi.evar_body;
     evar_hyps = map_named_val (fun d -> NamedDecl.map_constr f d) evi.evar_hyps;
-    evar_concl = f evi.evar_concl;
+    evar_concl = map_when_undefined f evi.evar_concl;
     evar_candidates = Option.map (List.map f) evi.evar_candidates }
 
 (* This exception is raised by *.existential_value *)
@@ -735,7 +744,7 @@ let add_with_name (type a) ?name ?(typeclass_candidate = true) d e (i : a evar_i
 | Evar_empty ->
   let evar_names = EvNames.add_name_undefined name e i d.evar_names in
   let evar_flags =
-    if typeclass_candidate && is_maybe_typeclass d i.evar_concl then
+    if typeclass_candidate && is_maybe_typeclass d (evar_concl i) then
       let flags = d.evar_flags in
       { flags with typeclass_evars = Evar.Set.add e flags.typeclass_evars }
     else d.evar_flags
@@ -818,9 +827,9 @@ let remove d e =
   { d with undf_evars; defn_evars; future_goals;
            evar_flags }
 
-let undefine sigma e =
+let undefine sigma e concl =
   let EvarInfo evi = find sigma e in
-  add (remove sigma e) e { evi with evar_body = Evar_empty }
+  add (remove sigma e) e { evi with evar_body = Evar_empty; evar_concl = Undefined concl }
 
 let find_undefined d e = EvMap.find e d.undf_evars
 
@@ -903,11 +912,11 @@ let evar_handler sigma =
   { evar_expand; evar_relevant; evar_repack; qvar_relevant }
 
 let existential_type d (n, args) =
-  let EvarInfo info =
-    try find d n
+  let info =
+    try find_undefined d n
     with Not_found ->
       anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared.") in
-  instantiate_evar_array d info info.evar_concl args
+  instantiate_evar_array d info (evar_concl info) args
 
 let existential_type0 = existential_type
 
@@ -999,7 +1008,7 @@ let is_aliased_evar evd evk =
 
 let downcast evk ccl evd =
   let evar_info = EvMap.find evk evd.undf_evars in
-  let evar_info' = { evar_info with evar_concl = ccl } in
+  let evar_info' = { evar_info with evar_concl = Undefined ccl } in
   { evd with undf_evars = EvMap.add evk evar_info' evd.undf_evars }
 
 (* extracts conversion problems that satisfy predicate p *)
@@ -1310,7 +1319,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance 
   ?name ?typeclass_candidate ?(principal=false) sign evd typ =
   let evi = {
     evar_hyps = sign;
-    evar_concl = typ;
+    evar_concl = Undefined typ;
     evar_body = Evar_empty;
     evar_filter = filter;
     evar_abstract_arguments = abstract_arguments;
@@ -1338,7 +1347,7 @@ let define_aux def undef evk body =
         anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
   in
   let () = assert (oldinfo.evar_body == Evar_empty) in
-  let newinfo = { oldinfo with evar_body = Evar_defined body } in
+  let newinfo = { oldinfo with evar_body = Evar_defined body; evar_concl = Defined } in
   EvMap.add evk newinfo def, EvMap.remove evk undef
 
 (* define the existential of section path sp as the constr body *)
@@ -1748,7 +1757,11 @@ let evars_of_named_context evd nc =
     ~init:Evar.Set.empty
 
 let evars_of_filtered_evar_info (type a) evd (evi : a evar_info) =
-  Evar.Set.union (evars_of_term evd evi.evar_concl)
+  let concl = match evi.evar_concl with
+  | Undefined c -> evars_of_term evd c
+  | Defined -> Evar.Set.empty
+  in
+  Evar.Set.union concl
     (Evar.Set.union
        (match evi.evar_body with
        | Evar_empty -> Evar.Set.empty
