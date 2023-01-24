@@ -11,6 +11,11 @@
 open Tac2expr
 open Tac2ffi
 
+val pr_tacref : ltac_constant -> Pp.t
+(** Prints the shortest name for the constant. Also works for
+    constants not in the nametab (because they're local to another
+    module). *)
+
 (** {5 Printing types} *)
 
 type typ_level =
