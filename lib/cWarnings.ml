@@ -17,6 +17,24 @@ type t = {
   status : status;
 }
 
+type _ tag = ..
+
+type w = W : 'a tag * 'a -> w
+exception WarnError of w
+
+module DMap = PolyMap.Make (struct type nonrec 'a tag = 'a tag = .. end)
+module PrintMap = DMap.Map(struct type 'a t = 'a -> Pp.t end)
+
+let printers = ref PrintMap.empty
+
+let print (W (tag, w)) =
+  let pp = try PrintMap.find tag !printers with Not_found -> assert false in
+  pp w
+
+let () = CErrors.register_handler (function
+    | WarnError w -> Some (print w)
+    | _ -> None)
+
 let warnings : (string, t) Hashtbl.t = Hashtbl.create 97
 let categories : (string, string list) Hashtbl.t = Hashtbl.create 97
 
@@ -155,11 +173,13 @@ let set_flags s =
 (* Adds a warning to the [warnings] and [category] tables. We then reparse the
    warning flags string, because the warning being created might have been set
    already. *)
-let create ~name ~category ?(default=Enabled) pp =
+let create (type a) ~name ~category ?(default=Enabled) (pp:a -> Pp.t) =
   let pp x = let open Pp in
     pp x ++ spc () ++ str "[" ++ str name ++ str "," ++
     str category ++ str "]"
   in
+  let tag = DMap.make () in
+  printers := PrintMap.add tag pp !printers;
   Hashtbl.replace warnings name { default; category; status = default };
   add_warning_in_category ~name ~category;
   if default <> Disabled then
@@ -171,7 +191,7 @@ let create ~name ~category ?(default=Enabled) pp =
     let w = Hashtbl.find warnings name in
     match w.status with
     | Disabled -> ()
-    | AsError -> CErrors.user_err ?loc (pp x)
+    | AsError -> Loc.raise ?loc (WarnError (W (DMap.tag_of_onetag tag, x)))
     | Enabled -> Feedback.msg_warning ?loc (pp x)
 
 let get_status ~name = (Hashtbl.find warnings name).status

@@ -6,9 +6,6 @@ open Gramext
 open Format
 open Util
 
-module type DMapS = Dyn.MapS
-module Dyn = Dyn.Make()
-
 (* Functorial interface *)
 
 type norec
@@ -161,7 +158,6 @@ module type ExtS = sig
 end
 
 (* Implementation *)
-
 module GMake (L : Plexing.S) : ExtS
   with type keyword_state := L.keyword_state
    and type te := L.te
@@ -184,10 +180,10 @@ type ('a, 'b, 'c, 'd) ty_and_rec3 =
 | NoRec3 : (norec, norec, norec, norec) ty_and_rec3
 | MayRec3 : ('a, 'b, 'c, mayrec) ty_and_rec3
 
+type _ tag = ..
 type 'a ty_entry = {
   ename : string;
-  euid : int; (* not sure if useful *)
-  etag : 'a Dyn.tag;
+  etag : 'a tag;
 }
 
 and 'a ty_desc =
@@ -246,10 +242,11 @@ type ('t,'a) entry_data = {
   econtinue : 't -> int -> int -> 'a -> 'a parser_t;
 }
 
-module rec EState : DMapS
-  with type 'a key = 'a Dyn.tag
-   and type 'a value = (GState.t, 'a) entry_data
-  = Dyn.Map(struct type 'a t = (GState.t, 'a) entry_data end)
+module DMap = PolyMap.Make (struct type nonrec 'a tag = 'a tag = .. end)
+
+module rec EState : DMap.MapS
+  with type 'a value := (GState.t, 'a) entry_data
+  = DMap.Map(struct type 'a t = (GState.t, 'a) entry_data end)
 
 and GState : sig
   type t = {
@@ -1599,7 +1596,7 @@ let make_entry_data entry desc = {
 
 let modify_entry estate e f = try EState.modify e.etag f estate with Not_found -> assert false
 
-let add_entry estate e v = assert (not (EState.mem e.etag estate)); EState.add e.etag v estate
+let add_entry otag estate e v = assert (not (EState.mem e.etag estate)); EState.add otag v estate
 
 let extend_entry add_kw estate kwstate entry statement =
   let kwstate = ref kwstate in
@@ -1685,12 +1682,13 @@ end
 module Entry = struct
   type 'a t = 'a ty_entry
 
-  let cnt = ref 0
+  let fresh n =
+    let otag = DMap.make () in
+    { ename = n; etag = DMap.tag_of_onetag otag }, otag
 
   let make n estate =
-    incr cnt;
-    let e = { ename = n; euid = !cnt; etag = Dyn.anonymous !cnt } in
-    let estate = add_entry estate e {
+    let e, otag = fresh n in
+    let estate = add_entry otag estate e {
         edesc = Dlevels [];
         estart = empty_entry n;
         econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
@@ -1706,9 +1704,8 @@ module Entry = struct
   let name e = e.ename
   type 'a parser_fun = { parser_fun : L.keyword_state -> (L.keyword_state,te) LStream.t -> 'a }
   let of_parser n { parser_fun = p } estate =
-    incr cnt;
-    let e = { ename = n; euid = !cnt; etag = Dyn.anonymous !cnt } in
-    let estate = add_entry estate e {
+    let e, otag = fresh n in
+    let estate = add_entry otag estate e {
         estart = (fun gstate _ (strm:_ LStream.t) -> p gstate.kwstate strm);
         econtinue = (fun _ _ _ _ (strm__ : _ LStream.t) -> raise Stream.Failure);
         edesc = Dparser p;
