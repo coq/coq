@@ -983,7 +983,7 @@ let backtrace : backtrace Exninfo.t = Exninfo.make ()
 let pr_frame = function
 | FrAnon e -> str "Call {" ++ pr_glbexpr e ++ str "}"
 | FrLtac kn ->
-  str "Call " ++ Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
+  str "Call " ++ pr_tacref kn
 | FrPrim ml ->
   str "Prim <" ++ str ml.mltac_plugin ++ str ":" ++ str ml.mltac_tactic ++ str ">"
 | FrExtn (tag, arg) ->
