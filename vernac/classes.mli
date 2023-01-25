@@ -16,8 +16,14 @@ open Libnames
 
 (** Instance declaration *)
 
-val declare_instance : ?warn:bool -> env -> Evd.evar_map ->
-                       hint_info option -> Hints.hint_locality -> GlobRef.t -> unit
+val declare_instance
+  : ?warn:bool
+  -> env
+  -> Evd.evar_map
+  -> hint_info option
+  -> Hints.hint_locality
+  -> GlobRef.t
+  -> unit
 (** Declares the given global reference as an instance of its type.
     Does nothing — or emit a “not-a-class” warning if the [warn] argument is set —
     when said type is not a registered type class. *)
@@ -95,9 +101,3 @@ val id_of_class : typeclass -> Id.t
 val refine_att : bool Attributes.attribute
 
 val instance_locality : Hints.hint_locality Attributes.attribute
-
-(** {6 Low level interface used by Add Morphism, do not use } *)
-module Internal :
-sig
-val add_instance : typeclass -> hint_info -> bool -> GlobRef.t -> unit
-end

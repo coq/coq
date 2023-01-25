@@ -590,10 +590,3 @@ let refine_att =
   attribute_of_list ["refine",single_key_parser ~name:"refine" ~key:"refine" ()] >>= function
   | None -> return false
   | Some () -> return true
-
-module Internal =
-struct
-let add_instance cl info glob r =
-  let glob = if glob then SuperGlobal else Local in
-  add_instance cl info glob r
-end
