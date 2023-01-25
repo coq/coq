@@ -99,5 +99,5 @@ val instance_locality : Hints.hint_locality Attributes.attribute
 (** {6 Low level interface used by Add Morphism, do not use } *)
 module Internal :
 sig
-val add_instance : typeclass -> hint_info -> bool -> GlobRef.t -> unit
+val add_instance : typeclass -> hint_info -> Hints.hint_locality -> GlobRef.t -> unit
 end
