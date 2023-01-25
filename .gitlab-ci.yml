@@ -67,7 +67,9 @@ before_script:
       - config/coq_config.py
       - config/coq_config.ml
       - config/dune.c_flags
+      - filelist
     expire_in: 1 month
+    when: always
   script:
     - PKGS=coq-core,coq-stdlib,coqide-server,coq
     - if [ "$COQIDE" != "no" ]; then PKGS=${PKGS},coqide; fi
@@ -87,6 +89,11 @@ before_script:
     - dev/ci/gitlab-section.sh start coq.install coq.install
     - dune install --prefix="$(pwd)/_install_ci" $(sed -e 's/,/ /g' <<< ${PKGS})
     - dev/ci/gitlab-section.sh end coq.install
+
+    - dev/ci/gitlab-section.sh start coq.checkinstall coq.checkinstall
+    # NB: use LC_ALL=C when generating expected-filelist
+    - (cd _install_ci; find . | sort > ../filelist) && diff -u dev/expected-filelist filelist
+    - dev/ci/gitlab-section.sh end coq.checkinstall
 
 # Developer build, with build layout. Faster and useful for those
 # jobs needing _build
