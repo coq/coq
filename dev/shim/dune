@@ -21,11 +21,6 @@
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")/%{project_root}\" \"$@\"'")
     (run chmod +x %{targets})))))
 
-; TODO remove
-(rule
- (targets coqtop-prelude)
- (action (echo "*** Error: shim coqtop-prelude has been renamed to coqtop")))
-
 ; coqc
 
 (alias
@@ -44,11 +39,6 @@
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqc} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} -nI \"$(dirname \"$0\")\"/%{project_root}/kernel/.kernel.objs/byte \"$@\"'")
     (run chmod +x %{targets})))))
-
-; TODO remove
-(rule
- (targets coqc-prelude)
- (action (echo "*** Error: shim coqc-prelude has been renamed to coqc")))
 
 ; coqbyte
 
@@ -92,11 +82,6 @@
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqtop.byte} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
 
-; TODO remove
-(rule
- (targets coqbyte-prelude)
- (action (echo "*** Error: shim coqbyte-prelude has been renamed to coqbyte")))
-
 ; coqide
 
 (alias
@@ -120,8 +105,3 @@
     (echo "#!/usr/bin/env bash\n")
     (bash "echo '\"$(dirname \"$0\")\"/%{bin:coqide} -I \"$(dirname \"$0\")/%{project_root}/../install/default/lib\" -coqlib \"$(dirname \"$0\")\"/%{project_root} \"$@\"'")
     (run chmod +x %{targets})))))
-
-; TODO remove
-(rule
- (targets coqide-prelude)
- (action (echo "*** Error: shim coqide-prelude has been renamed to coqide")))
