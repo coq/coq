@@ -79,7 +79,3 @@ val interp_fixpoint
   -> (Constr.t, Constr.types) recursive_preentry *
      UState.universe_decl * UState.t *
      (EConstr.rel_context * Impargs.manual_implicits * int option) list
-
-(** Very private function, do not use *)
-val compute_possible_guardness_evidences :
-  ('a, 'b) Context.Rel.pt * 'c * int option -> int list

@@ -303,26 +303,6 @@ let do_program_recursive ~pm ~scope ~poly ?typing_flags ?using fixkind fixl =
   let fiximps = List.map pi2 info in
   let fixdefs = List.map out_def fixdefs in
   let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
-  let () = if not cofix then begin
-      let possible_indexes = List.map ComFixpoint.compute_possible_guardness_evidences info in
-      (* XXX: are we allowed to have evars here? *)
-      let fixtypes = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixtypes in
-      let fixdefs = List.map (EConstr.Vars.subst_vars evd (List.rev fixnames)) fixdefs in
-      let fixdefs = List.map (EConstr.to_constr ~abort_on_undefined_evars:false evd) fixdefs in
-      let fixdecls = Array.of_list (List.map2 (fun x r -> make_annot (Name x) r) fixnames fixrs),
-        Array.of_list fixtypes,
-        Array.of_list fixdefs
-      in
-      let indexes =
-        let env = Global.env () in
-        let env = Environ.update_typing_flags ?typing_flags env in
-        Pretyping.search_guard env possible_indexes fixdecls in
-      let env = Environ.update_typing_flags ?typing_flags env in
-      List.iteri (fun i _ ->
-          Inductive.check_fix env
-            ((indexes,i),fixdecls))
-        fixl
-  end in
   let uctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
   | Declare.Obls.IsFixpoint _ -> Decls.(IsDefinition Fixpoint)
