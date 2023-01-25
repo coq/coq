@@ -80,7 +80,8 @@ let native_install_files ~tname ~rule coq_module =
 (* quick/vio woes... it does produce a different set of targets than
    regular compilation *)
 let base_install_files ~rule coq_module =
-  match rule with
+  [ mod_to_obj coq_module ~ext:".v" ]
+    @ match rule with
   | Rule_type.Quick ->
     [ mod_to_obj coq_module ~ext:".vo"
     ; mod_to_obj coq_module ~ext:".vos"
