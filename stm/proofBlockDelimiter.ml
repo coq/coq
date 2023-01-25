@@ -49,7 +49,7 @@ let simple_goal sigma g gs =
 let is_focused_goal_simple ~doc id =
   match state_of_id ~doc id with
   | Expired | Error _ | Valid None -> `Not
-  | Valid (Some { Vernacstate.lemmas }) ->
+  | Valid (Some { interp = { Vernacstate.Interp.lemmas } }) ->
     Option.cata (Vernacstate.LemmaStack.with_top ~f:(fun proof ->
         let proof = Declare.Proof.get proof in
         let Proof.{ goals=focused; stack=r1; sigma } = Proof.data proof in

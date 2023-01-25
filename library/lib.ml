@@ -183,20 +183,6 @@ let end_compilation_checks dir =
   synterp_state := st.synterp_state;
   interp_state := st.interp_state
 
-  let drop_objects st =
-    let drop_node = function
-      | CompilingLibrary _ as x -> x
-      | OpenedModule (it,e,op,_) ->
-        OpenedModule(it,e,op,Summary.empty_frozen)
-      | OpenedSection (op, _) ->
-        OpenedSection(op,Summary.empty_frozen)
-    in
-    let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.synterp_state.lib_stk in
-    let synterp_state = { st.synterp_state with lib_stk = lib_synterp_stk } in
-    let lib_interp_stk = List.map (fun (node,_) -> drop_node node, []) st.interp_state in
-    let interp_state = lib_interp_stk in
-    { synterp_state; interp_state }
-
   let init () =
     unfreeze { synterp_state = initial; interp_state = [] };
     Summary.init_summaries ()
@@ -379,6 +365,8 @@ module type LibActions = sig
   val freeze : unit -> frozen
   val unfreeze : frozen -> unit
 
+  val drop_objects : frozen -> frozen
+
 end
 
 module SynterpActions : LibActions = struct
@@ -448,7 +436,18 @@ module SynterpActions : LibActions = struct
   let freeze () = !synterp_state
 
   let unfreeze st =
-    synterp_state := st;
+    synterp_state := st
+
+  let drop_objects st =
+    let drop_node = function
+      | CompilingLibrary _ as x -> x
+      | OpenedModule (it,e,op,_) ->
+        OpenedModule(it,e,op,Summary.empty_frozen)
+      | OpenedSection (op, _) ->
+        OpenedSection(op,Summary.empty_frozen)
+    in
+    let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.lib_stk in
+    { st with lib_stk = lib_synterp_stk }
 
 end
 
@@ -500,7 +499,17 @@ module InterpActions : LibActions = struct
   let freeze () = !interp_state
 
   let unfreeze st =
-    interp_state := st;
+    interp_state := st
+
+  let drop_objects interp_state =
+    let drop_node = function
+      | CompilingLibrary _ as x -> x
+      | OpenedModule (it,e,op,_) ->
+        OpenedModule(it,e,op,Summary.empty_frozen)
+      | OpenedSection (op, _) ->
+        OpenedSection(op,Summary.empty_frozen)
+    in
+    List.map (fun (node,_) -> drop_node node, []) interp_state
 
 end
 
@@ -560,6 +569,8 @@ module type StagedLibS = sig
 
   val freeze : unit -> frozen
   val unfreeze : frozen -> unit
+
+  val drop_objects : frozen -> frozen
 
 end
 
@@ -635,6 +646,8 @@ type frozen = Actions.frozen
 let freeze () = Actions.freeze ()
 
 let unfreeze st = Actions.unfreeze st
+
+let drop_objects st = Actions.drop_objects st
 
 end
 

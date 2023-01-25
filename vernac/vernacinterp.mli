@@ -20,7 +20,7 @@ val interp_entry
   : ?verbosely:bool
   -> st:Vernacstate.t
   -> Synterp.vernac_entry_control
-  -> Vernacstate.t
+  -> Vernacstate.Interp.t
 
 (** Execute a Qed but with a proof_object which may contain a delayed
    proof and won't be forced *)
@@ -29,7 +29,7 @@ val interp_qed_delayed_proof
   -> st:Vernacstate.t
   -> control:Vernacexpr.control_flag list
   -> Vernacexpr.proof_end CAst.t
-  -> Vernacstate.t
+  -> Vernacstate.Interp.t
 
 (** Flag set when the test-suite is called. Its only effect to display
     verbose information for [Fail] *)

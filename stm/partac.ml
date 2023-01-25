@@ -107,9 +107,9 @@ end = struct (* {{{ *)
 
   let perform { r_state = st; r_ast = tactic; r_goal; r_goalno } =
     receive_state st;
-    Vernacstate.unfreeze_interp_state (Option.get !state);
+    Vernacstate.unfreeze_full_state (Option.get !state);
     try
-      Vernacstate.LemmaStack.with_top (Option.get (Option.get !state).Vernacstate.lemmas) ~f:(fun pstate ->
+      Vernacstate.LemmaStack.with_top (Option.get (Option.get !state).Vernacstate.interp.lemmas) ~f:(fun pstate ->
           let pstate =
             Declare.Proof.map pstate ~f:(Proof.focus focus_cond () r_goalno) in
           let pstate =
@@ -184,7 +184,7 @@ let get_results res =
 
 let enable_par ~nworkers = ComTactic.set_par_implementation
   (fun ~pstate ~info t_ast ~abstract ~with_end_tac ->
-    let t_state = Vernacstate.freeze_interp_state ~marshallable:true in
+    let t_state = Vernacstate.freeze_full_state ~marshallable:true in
     TaskQueue.with_n_workers nworkers CoqworkmgrApi.High (fun queue ->
     Declare.Proof.map pstate ~f:(fun p ->
     let open TacTask in
