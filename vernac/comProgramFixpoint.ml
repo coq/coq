@@ -106,7 +106,13 @@ let telescope env sigma l =
   telescope sigma l
 
 let nf_evar_context sigma ctx =
-  List.map (map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
+  let nf c = Evarutil.nf_evar sigma c in
+  let nfa na = UnivSubst.nf_binder_annot (fun r -> Evarutil.nf_relevance sigma r) na in
+  let map = function
+  | RelDecl.LocalAssum (na, t) -> RelDecl.LocalAssum (nfa na, nf t)
+  | RelDecl.LocalDef (na, c, t) -> RelDecl.LocalDef (nfa na, nf c, nf t)
+  in
+  List.map map ctx
 
 let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r measure notation =
   let open EConstr in
@@ -217,6 +223,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
     sigma, mkApp (h_a_term, [| argtyp ; wf_rel ; h_e_term; prop |])
   in
   let sigma, def = Typing.solve_evars env sigma def in
+  let sigma = Evd.collapse_sort_variables sigma in
   let sigma = Evarutil.nf_evar_map sigma in
   let def = mkApp (def, [|intern_body_lam|]) in
   let binders_rel = nf_evar_context sigma binders_rel in

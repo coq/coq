@@ -234,9 +234,14 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
   let (sigma, typs) = List.fold_left2_map fold sigma typs data in
   (* TODO: Have this use Declaredef.prepare_definition *)
   let sigma, (newps, ans) = Evarutil.finalize sigma (fun nf ->
-      let newps = List.map (RelDecl.map_constr_het nf) newps in
+      let nf_rel r = Evarutil.nf_relevance sigma r in
+      let map_decl = function
+      | LocalAssum (na, t) -> LocalAssum (UnivSubst.nf_binder_annot nf_rel na, nf t)
+      | LocalDef (na, c, t) -> LocalDef (UnivSubst.nf_binder_annot nf_rel na, nf c, nf t)
+      in
+      let newps = List.map map_decl newps in
       let map (implfs, fields) (min_univ, typ) =
-        let fields = List.map (RelDecl.map_constr_het nf) fields in
+        let fields = List.map map_decl fields in
         let arity = nf typ in
         { DataR.min_univ; arity; implfs; fields }
       in
