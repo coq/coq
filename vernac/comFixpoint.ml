@@ -283,13 +283,13 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ?typing_flags ((f
   List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
   lemma
 
-let declare_fixpoint_generic ?indexes ?scope ~poly ?typing_flags ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
+let declare_fixpoint_generic ?indexes ~scope ~poly ?typing_flags ?using ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
   (* We shortcut the proof process *)
   let fix_kind, cofix, fixitems = build_recthms ~indexes ?using fixnames fixtypes fiximps in
   let fixdefs = List.map Option.get fixdefs in
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
   let fix_kind = Decls.IsDefinition fix_kind in
-  let info = Declare.Info.make ?scope ~kind:fix_kind ~poly ~udecl ?typing_flags () in
+  let info = Declare.Info.make ~scope ~kind:fix_kind ~poly ~udecl ?typing_flags () in
   let cinfo = fixitems in
   let _ : GlobRef.t list =
     Declare.declare_mutually_recursive ~cinfo ~info ~opaque:false ~uctx
@@ -334,9 +334,9 @@ let do_fixpoint_interactive ~scope ~poly ?typing_flags l : Declare.Proof.t =
   let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ~poly ?typing_flags fix ntns in
   lemma
 
-let do_fixpoint ?scope ~poly ?typing_flags ?using l =
+let do_fixpoint ~scope ~poly ?typing_flags ?using l =
   let fixl, ntns, fix, possible_indexes = do_fixpoint_common ?typing_flags l in
-  declare_fixpoint_generic ~indexes:possible_indexes ?scope ~poly ?typing_flags ?using fix ntns
+  declare_fixpoint_generic ~indexes:possible_indexes ~scope ~poly ?typing_flags ?using fix ntns
 
 let do_cofixpoint_common (fixl : Vernacexpr.cofixpoint_expr list) =
   let fixl = List.map (fun fix -> {fix with Vernacexpr.rec_order = None}) fixl in
