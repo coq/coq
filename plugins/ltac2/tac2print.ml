@@ -15,6 +15,13 @@ open Tac2expr
 open Tac2env
 open Tac2ffi
 
+let pr_tacref kn =
+  try Libnames.pr_qualid (Tac2env.shortest_qualid_of_ltac (TacConstant kn))
+  with Not_found when KNmap.mem kn (Tac2env.globals()) ->
+    str (ModPath.to_string (KerName.modpath kn))
+    ++ str"." ++ Label.print (KerName.label kn)
+    ++ str " (* local *)"
+
 (** Utils *)
 
 let change_kn_label kn id =
@@ -271,9 +278,7 @@ let pr_glbexpr_gen lvl c =
   let rec pr_glbexpr lvl = function
   | GTacAtm atm -> pr_atom atm
   | GTacVar id -> Id.print id
-  | GTacRef gr ->
-    let qid = shortest_qualid_of_ltac (TacConstant gr) in
-    Libnames.pr_qualid qid
+  | GTacRef gr -> pr_tacref gr
   | GTacFun (nas, c) ->
     let nas = pr_sequence pr_name nas in
     let paren = match lvl with
