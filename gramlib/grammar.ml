@@ -1642,12 +1642,17 @@ module Parsable = struct
       Loc.merge loc loc'
     in
     try efun ts with
-      Stream.Failure ->
+    | Stream.Failure as exn ->
+      let exn, info = Exninfo.capture exn in
       let loc = get_parsing_loc () in
-      Loc.raise ~loc (Stream.Error ("illegal begin of " ^ entry.ename))
-    | Stream.Error _ as exc ->
+      let info = Loc.add_loc info loc in
+      let exn = Stream.Error ("illegal begin of " ^ entry.ename) in
+      Exninfo.iraise (exn, info)
+    | Stream.Error _ as exn ->
+      let exn, info = Exninfo.capture exn in
       let loc = get_parsing_loc () in
-      Loc.raise ~loc exc
+      let info = Loc.add_loc info loc in
+      Exninfo.iraise (exn, info)
     | exc ->
       (* An error produced by the evaluation of the right-hand side *)
       (* of a rule, or a signal such as Sys.Break; we leave to the *)
