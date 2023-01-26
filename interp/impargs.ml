@@ -772,6 +772,12 @@ let rec drop_first_implicits p l =
       let n = if is_status_implicit imp then n-1 else n in
       drop_first_implicits (p-1) (LessArgsThan n,impls)
 
+let rec chop_and_adjust n l1 l2 =
+  if n = 0 then (List.rev l1, l2) else
+    match l2 with
+    | [] -> chop_and_adjust (n-1) (None :: l1) []
+    | a::l2 -> chop_and_adjust (n-1) (a :: l1) l2
+
 let rec select_impargs_size n = function
   | [] -> [] (* Tolerance for (DefaultImpArgs,[]) *)
   | [_, impls] | (DefaultImpArgs, impls)::_ -> impls
@@ -785,7 +791,7 @@ let select_stronger_impargs = function
 let select_impargs_size_for_proj ~nexpectedparams ~ngivenparams ~nextraargs impls =
   let split_implicit_params imps =
     if List.is_empty imps then (nexpectedparams, [], []) else
-    let imps1, imps2 = List.chop nexpectedparams imps in
+    let imps1, imps2 = chop_and_adjust nexpectedparams [] imps in
     let imp, imps2 = match imps2 with imp :: imps2 -> [imp],imps2 | _ -> [], [] in
     let nimps1 = nexpectedparams - List.count is_status_implicit imps1 in
     (* Force the main argument to be explicit *)
