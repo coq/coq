@@ -33,11 +33,6 @@ exception InternalDependencies
 
 val beq_scheme_kind : mutual scheme_kind
 
-(** {6 Build equivalence between boolean equality and Leibniz equality } *)
-
-val lb_scheme_kind : mutual scheme_kind
-val bl_scheme_kind : mutual scheme_kind
-
 (** {6 Build decidability of equality } *)
 
 val eq_dec_scheme_kind : mutual scheme_kind
