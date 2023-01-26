@@ -323,8 +323,8 @@ let relevance_of_term env sigma c =
   else Sorts.Relevant
 
 let relevance_of_type env sigma t =
-  let s = get_sort_family_of env sigma t in
-  Sorts.relevance_of_sort_family s
+  let s = get_sort_of env sigma t in
+  Sorts.relevance_of_sort (ESorts.kind sigma s)
 
 let relevance_of_sort s = Sorts.relevance_of_sort (EConstr.Unsafe.to_sorts s)
 
