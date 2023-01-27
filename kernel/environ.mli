@@ -113,6 +113,10 @@ val push_rel         : Constr.rel_declaration -> env -> env
 val push_rel_context : Constr.rel_context -> env -> env
 val push_rec_types   : rec_declaration -> env -> env
 
+val push_rel_context_val : Constr.rel_declaration -> rel_context_val -> rel_context_val
+val set_rel_context_val : rel_context_val -> env -> env
+val empty_rel_context_val : rel_context_val
+
 (** Looks up in the context of local vars referred by indice ([rel_context])
    raises [Not_found] if the index points out of the context *)
 val lookup_rel    : int -> env -> Constr.rel_declaration
