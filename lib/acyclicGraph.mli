@@ -21,7 +21,7 @@ module type Point = sig
   val equal : t -> t -> bool
   val compare : t -> t -> int
 
-  val pr : t -> Pp.t
+  val raw_pr : t -> Pp.t
 end
 
 module Make (Point:Point) : sig

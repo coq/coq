@@ -22,7 +22,7 @@ let qualid_of_level ctx l =
 let pr_with_global_universes ctx l =
   match qualid_of_level ctx l with
   | Some qid  -> Libnames.pr_qualid qid
-  | None -> Level.pr l
+  | None -> Level.raw_pr l
 
 (** Global universe information outside the kernel, to handle
     polymorphic universe names in sections that have to be discharged. *)

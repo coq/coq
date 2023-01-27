@@ -47,8 +47,9 @@ sig
 
   val make : UGlobal.t -> t
 
-  val pr : t -> Pp.t
-  (** Pretty-printing *)
+  val raw_pr : t -> Pp.t
+  (** Pretty-printing.
+      When possible you should use name-aware printing. *)
 
   val to_string : t -> string
   (** Debug printing *)
@@ -81,7 +82,7 @@ sig
     (** [subst_union x y] favors the bindings of the first map that are [Some],
         otherwise takes y's bindings. *)
 
-    val pr : ('a -> Pp.t) -> 'a t -> Pp.t
+    val pr : (key -> Pp.t) -> ('a -> Pp.t) -> 'a t -> Pp.t
     (** Pretty-printing *)
   end
 
@@ -111,10 +112,10 @@ sig
   val make : Level.t -> t
   (** Create a universe representing the given level. *)
 
-  val pr : t -> Pp.t
+  val pr : (Level.t -> Pp.t) -> t -> Pp.t
   (** Pretty-printing *)
 
-  val pr_with : (Level.t -> Pp.t) -> t -> Pp.t
+  val raw_pr : t -> Pp.t
 
   val is_level : t -> bool
   (** Test if the universe is a level or an algebraic universe. *)
@@ -427,7 +428,7 @@ val pr_abstract_universe_context : (Level.t -> Pp.t) -> ?variance:Variance.t arr
   AbstractContext.t -> Pp.t
 val pr_universe_context_set : (Level.t -> Pp.t) -> ContextSet.t -> Pp.t
 
-val pr_universe_level_subst : universe_level_subst -> Pp.t
+val pr_universe_level_subst : (Level.t -> Pp.t) -> universe_level_subst -> Pp.t
 
 (** {6 Hash-consing } *)
 

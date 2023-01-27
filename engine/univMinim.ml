@@ -148,8 +148,8 @@ type constraints_map = (Univ.constraint_type * Univ.Level.Map.key) list Univ.Lev
 let _pr_constraints_map (cmap:constraints_map) =
   let open Pp in
   Level.Map.fold (fun l cstrs acc ->
-    Level.pr l ++ str " => " ++
-      prlist_with_sep spc (fun (d,r) -> pr_constraint_type d ++ Level.pr r) cstrs ++
+    Level.raw_pr l ++ str " => " ++
+      prlist_with_sep spc (fun (d,r) -> pr_constraint_type d ++ Level.raw_pr r) cstrs ++
       fnl () ++ acc)
     cmap (mt ())
 

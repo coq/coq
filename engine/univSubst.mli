@@ -47,7 +47,7 @@ val nf_evars_and_universes_opt_subst :
 
 val subst_univs_universe : (Level.t -> Universe.t) -> Universe.t -> Universe.t
 
-val pr_universe_subst : universe_subst -> Pp.t
+val pr_universe_subst : (Level.t -> Pp.t) -> universe_subst -> Pp.t
 
 val enforce_eq : Universe.t constraint_function
 val enforce_leq : Universe.t constraint_function

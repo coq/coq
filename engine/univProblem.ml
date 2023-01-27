@@ -71,8 +71,8 @@ module Set = struct
   let pr_one = let open Pp in function
     | ULe (u, v) -> Sorts.debug_print u ++ str " <= " ++ Sorts.debug_print v
     | UEq (u, v) -> Sorts.debug_print u ++ str " = " ++ Sorts.debug_print v
-    | ULub (u, v) -> Level.pr u ++ str " /\\ " ++ Level.pr v
-    | UWeak (u, v) -> Level.pr u ++ str " ~ " ++ Level.pr v
+    | ULub (u, v) -> Level.raw_pr u ++ str " /\\ " ++ Level.raw_pr v
+    | UWeak (u, v) -> Level.raw_pr u ++ str " ~ " ++ Level.raw_pr v
 
   let pr c =
     let open Pp in

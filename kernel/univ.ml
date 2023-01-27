@@ -179,7 +179,7 @@ module Level = struct
       "." ^ string_of_int n
     | Var n -> "Var(" ^ string_of_int n ^ ")"
 
-  let pr u = str (to_string u)
+  let raw_pr u = str (to_string u)
 
   let vars = Array.init 20 (fun i -> make (Var i))
 
@@ -221,9 +221,9 @@ module Level = struct
         else add u v acc)
         ext empty
 
-    let pr f m =
+    let pr prl f m =
       h (prlist_with_sep fnl (fun (u, v) ->
-        pr u ++ f v) (bindings m))
+        prl u ++ f v) (bindings m))
 
   end
 
@@ -330,12 +330,6 @@ struct
         if Int.equal cmp 0 then SuperSame (n < n')
         else SuperDiff cmp
 
-    let to_string (v, n) =
-      if Int.equal n 0 then Level.to_string v
-      else Level.to_string v ^ "+" ^ string_of_int n
-
-    let pr x = str(to_string x)
-
     let pr_with f (v, n) =
       if Int.equal n 0 then f v
       else f v ++ str"+" ++ int n
@@ -381,19 +375,14 @@ struct
   let make l = tip (Expr.make l)
   let tip x = tip x
 
-  let pr l = match l with
-    | [u] -> Expr.pr u
-    | _ ->
-      str "max(" ++ hov 0
-        (prlist_with_sep pr_comma Expr.pr l) ++
-        str ")"
-
-  let pr_with f l = match l with
+  let pr f l = match l with
     | [u] -> Expr.pr_with f u
     | _ ->
       str "max(" ++ hov 0
         (prlist_with_sep pr_comma (Expr.pr_with f) l) ++
         str ")"
+
+  let raw_pr l = pr Level.raw_pr l
 
   let is_level l = match l with
     | [l] -> Expr.is_level l
@@ -1029,8 +1018,8 @@ let pr_abstract_universe_context = AbstractContext.pr
 
 let pr_universe_context_set = ContextSet.pr
 
-let pr_universe_level_subst =
-  Level.Map.pr (fun u -> str" := " ++ Level.pr u ++ spc ())
+let pr_universe_level_subst prl =
+  Level.Map.pr prl (fun u -> str" := " ++ prl u ++ spc ())
 
 module Huniverse_set =
   Hashcons.Make(

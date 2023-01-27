@@ -19,7 +19,7 @@ module type Point = sig
   val equal : t -> t -> bool
   val compare : t -> t -> int
 
-  val pr : t -> Pp.t
+  val raw_pr : t -> Pp.t
 end
 
 module Make (Point:Point) = struct
@@ -185,7 +185,7 @@ module Make (Point:Point) = struct
     try repr g (Index.find u g.table)
     with Not_found ->
       CErrors.anomaly ~label:"Univ.repr"
-        Pp.(str"Universe " ++ Point.pr u ++ str" undefined.")
+        Pp.(str"Universe " ++ Point.raw_pr u ++ str" undefined.")
 
   exception AlreadyDeclared
 

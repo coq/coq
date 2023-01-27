@@ -215,7 +215,7 @@ struct
       | Cst_const (c, u) ->
         if Univ.Instance.is_empty u then Constant.debug_print c
         else str"(" ++ Constant.debug_print c ++ str ", " ++
-          Univ.Instance.pr Univ.Level.pr u ++ str")"
+          Univ.Instance.pr Univ.Level.raw_pr u ++ str")"
       | Cst_proj p ->
         str".(" ++ Constant.debug_print (Projection.constant p) ++ str")"
 
