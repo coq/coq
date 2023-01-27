@@ -318,7 +318,7 @@ let rec untype_grammar : type r s. (r, s) ty_sig -> 'a Egramml.grammar_prod_item
   let symb = untype_user_symbol tu in
   Egramml.GramNonTerminal (Loc.tag (t, symb)) :: untype_grammar ty
 
-let vernac_extend ~command ?classifier ?entry ext =
+let vernac_extend ?plugin ~command ?classifier ?entry ext =
   let get_classifier (TyML (_, ty, _, cl)) = match cl with
   | Some cl -> untype_classifier ty cl
   | None ->
@@ -354,10 +354,25 @@ let vernac_extend ~command ?classifier ?entry ext =
     let f = untype_command ty f in
     let r = untype_grammar ty in
     let () = vinterp_add depr (command, i) f in
-    Egramml.extend_vernac_command_grammar (command, i) entry r
+    let () =
+      (* allow_override is a hack for Elpi Command, since it takes
+         effect at Import time it gets called multiple times.
+         Eventually we will need a better API to support this and also
+         to support backtracking over it. *)
+      Egramml.declare_vernac_command_grammar ~allow_override:(Option.is_empty plugin)
+        (command, i) entry r
+    in
+    let () = match plugin with
+      | None -> Egramml.extend_vernac_command_grammar ~undoable:false (command, i)
+      | Some plugin ->
+        Mltop.add_init_function plugin (fun () ->
+            Egramml.extend_vernac_command_grammar ~undoable:true (command, i))
+    in
+    ()
   in
   let () = declare_vernac_classifier command cl in
-  List.iteri iter ext
+  let () = List.iteri iter ext in
+  ()
 
 (** VERNAC ARGUMENT EXTEND registering *)
 
@@ -370,7 +385,7 @@ type 'a vernac_argument = {
   arg_parsing : 'a argument_rule;
 }
 
-let vernac_argument_extend ~name arg =
+let vernac_argument_extend ~plugin ~name arg =
   let wit = Genarg.create_arg name in
   let entry = match arg.arg_parsing with
   | Arg_alias e ->
@@ -378,7 +393,10 @@ let vernac_argument_extend ~name arg =
     e
   | Arg_rules rules ->
     let e = Pcoq.create_generic_entry2 name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules])) in
+    let plugin_uid = (plugin, "vernacargextend:"^name) in
+    let () = Egramml.grammar_extend ~plugin_uid e
+        (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules]))
+    in
     e
   in
   let pr = arg.arg_printer in

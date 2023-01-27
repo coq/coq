@@ -67,25 +67,35 @@ val module_is_known : string -> bool
 
 (** {5 Initialization functions} *)
 
-(** Declare a plugin without an initialization function.  A plugin is
-   a findlib library name. Usually, this will be called automatically
-   when use do [DECLARE PLUGIN "pkg.lib"] in the .mlg file. *)
+(** Declare a plugin which has been linked.  A plugin is
+    a findlib library name. Usually, this will be called automatically
+    when use do [DECLARE PLUGIN "pkg.lib"] in the .mlg file.
+
+    The main effect is that dynlink will not be attempted for this
+    plugin, so eg if it was statically linked Coq will not try and
+    fail to find the cmxs.
+*)
 val add_known_module : string -> unit
 (* EJGA: Todo, this could take a PluginSpec.t at some point *)
 
-(** Declare a plugin plus a Coq-specific initialization function.
-    The initialization function is granted to be called after Coq is fully
-    bootstrapped, even if the plugin is statically linked with the toplevel *)
-val add_known_plugin : (unit -> unit) -> string -> unit
-
-(** Calls all initialization functions in a non-specified order *)
-val init_known_plugins : unit -> unit
+(** Declare a initialization function. The initialization function is
+    called in Declare ML Module, including reruns after backtracking
+    over it (either interactive backtrack, module closing backtrack,
+    Require of a file with Declare ML Module).
+*)
+val add_init_function : string -> (unit -> unit) -> unit
 
 (** Register a callback that will be called when the module is declared with
     the Declare ML Module command. This is useful to define Coq objects at that
     time only. Several functions can be defined for one module; they will be
     called in the order of declaration, and after the ML module has been
-    properly initialized. *)
+    properly initialized.
+
+    Unlike the init functions it does not run after closing a module
+    or Requiring a file which contains the Declare ML Module.
+    This allows to have effects which depend on the module when
+    command was run in, eg add a named libobject which will use it for the prefix.
+*)
 val declare_cache_obj : (unit -> unit) -> string -> unit
 
 (** {5 Declaring modules} *)

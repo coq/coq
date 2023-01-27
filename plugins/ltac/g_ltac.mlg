@@ -70,6 +70,8 @@ let test_bracket_ident =
 
 let hint = G_proofs.hint
 
+let for_extraargs = ()
+
 }
 
 GRAMMAR EXTEND Gram
@@ -182,7 +184,7 @@ GRAMMAR EXTEND Gram
       | "()" -> { TacGeneric (None, genarg_of_unit ()) } ] ]
   ;
   (* Can be used as argument and at toplevel in tactic expressions. *)
-  tactic_value: TOP
+  tactic_value:
     [ [ c = constr_eval -> { ConstrMayEval c }
       | IDENT "fresh"; l = LIST0 fresh_id -> { TacFreshId l }
       | IDENT "type_term"; c=uconstr -> { TacPretype c }

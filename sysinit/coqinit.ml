@@ -151,7 +151,6 @@ let init_runtime opts =
   Lib.init ();
   init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;
-  Mltop.init_known_plugins ();
 
   (* Configuration *)
   Global.set_impredicative_set opts.config.logic.impredicative_set;
