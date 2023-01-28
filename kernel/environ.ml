@@ -150,6 +150,11 @@ let env_of_rel n env =
     env_nb_rel = env.env_nb_rel - n
   }
 
+let set_rel_context_val v env =
+  { env with
+    env_rel_context = v;
+    env_nb_rel = Range.length v.env_rel_map; }
+
 (* Named context *)
 
 let push_named_context_val d ctxt =
