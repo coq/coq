@@ -13,19 +13,13 @@
 
 (** The converse of functional extensionality. *)
 
-Lemma equal_f : forall {A B : Type} {f g : A -> B},
-  f = g -> forall x, f x = g x.
-Proof.
-  intros A B f g H x.
-  rewrite H.
-  auto.
-Qed.
+Definition equal_f {A B : Type} {f g : A -> B} :
+  f = g -> forall x, f x = g x
+  := fun H x => f_equal (fun h => h x) H.
 
-Lemma equal_f_dep : forall {A B} {f g : forall (x : A), B x},
-  f = g -> forall x, f x = g x.
-Proof.
-intros A B f g <- H; reflexivity.
-Qed.
+Definition equal_f_dep {A B} {f g : forall (x : A), B x} :
+  f = g -> forall x, f x = g x
+  := fun H x => f_equal (fun h => h x) H.
 
 (** Statements of functional extensionality for simple and dependent functions. *)
 
@@ -128,6 +122,36 @@ Definition f_equal__functional_extensionality_dep_good__fun
   : (fun a => f_equal (fun h => h a) (@functional_extensionality_dep_good A B f g H)) = H.
 Proof.
   apply functional_extensionality_dep_good; intro a; apply f_equal__functional_extensionality_dep_good.
+Defined.
+
+(* Expressing that [equal_f_dep] and [functional_extensionality_dep_good] form an equivalence *)
+
+Definition equal_f_dep__functional_extensionality_dep_good
+           {A B} {f g : forall x : A, B x} (H : forall x, f x = g x)
+  : equal_f_dep (functional_extensionality_dep_good f g H) = H.
+Proof.
+  apply f_equal__functional_extensionality_dep_good__fun.
+Defined.
+
+Definition equal_f__functional_extensionality_dep_good
+           {A B} {f g : A -> B} (H : forall x, f x = g x)
+  : equal_f (functional_extensionality_dep_good f g H) = H.
+Proof.
+  apply f_equal__functional_extensionality_dep_good__fun.
+Defined.
+
+Lemma functional_extensionality_dep_good__equal_f_dep
+           {A B} {f g : forall x : A, B x} (H : f = g)
+  : functional_extensionality_dep_good _ _ (equal_f_dep H) = H.
+Proof.
+  destruct H; simpl; apply functional_extensionality_dep_good_refl.
+Defined.
+
+Lemma functional_extensionality_dep_good__equal_f
+           {A B} {f g : A -> B} (H : f = g)
+   : functional_extensionality_dep_good _ _ (equal_f H) = H.
+Proof.
+  destruct H; simpl; apply functional_extensionality_dep_good_refl.
 Defined.
 
 (** Apply [functional_extensionality], introducing variable x. *)
