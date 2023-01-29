@@ -1025,7 +1025,7 @@ type equality = {
   (* equality data + A : Type, t1 : A, t2 : A *)
   eq_term : EConstr.t;
   (* term [M : R A t1 t2] where [R] is the equality from above *)
-  eq_evar : Evar.t list;
+  eq_evar : Proofview_monad.goal_with_state list;
   (* List of implicit hypotheses on which the data above depends. *)
 }
 
@@ -1051,9 +1051,8 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v; eq_evar
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
     (* pf : eq t t1 t2 -> False *)
     let pf = EConstr.mkApp (pf, [|v|]) in
-    let ng = List.map Proofview.with_empty_state evs in
     tclTHENS (assert_after Anonymous false_0)
-      [onLastHypId gen_absurdity; Tactics.exact_check pf <*> Proofview.Unsafe.tclNEWGOALS ng]
+      [onLastHypId gen_absurdity; Tactics.exact_check pf <*> Proofview.Unsafe.tclNEWGOALS evs]
 
 let discrEq eq =
   let { eq_data = (_, (_, t1, t2)) } = eq in
@@ -1072,6 +1071,7 @@ let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
+  let state = Proofview.Goal.state gl in
   let t = Retyping.get_type_of env sigma c in
   let t' = try snd (Tacred.reduce_to_quantified_ind env sigma t) with UserError _ -> t in
   let sigma, eq_clause = Clenv.make_evar_clause env sigma t' in
@@ -1083,7 +1083,9 @@ let onEquality with_evars tac (c,lbindc) =
   else
   let filter h =
     if h.Clenv.hole_deps then None
-    else try Some (fst @@ destEvar sigma h.Clenv.hole_evar) with DestKO -> None
+    else
+      try Some (Proofview_monad.goal_with_state (fst @@ destEvar sigma h.Clenv.hole_evar) state)
+      with DestKO -> None
   in
   let goals = List.map_filter filter eq_clause.Clenv.cl_holes in
   let cl_args = Array.map_of_list (fun h -> h.Clenv.hole_evar) eq_clause.Clenv.cl_holes in
@@ -1430,11 +1432,10 @@ let inject_at_positions env sigma l2r eq posns tac =
   if List.is_empty injectors then
     tclZEROMSG (str "Failed to decompose the equality.")
   else
-    let ng = List.map Proofview.with_empty_state evs in
     let map (pf, ty) =
       tclTHENS (cut ty) [
         inject_if_homogenous_dependent_pair ty;
-        Tactics.exact_check pf <*> Proofview.Unsafe.tclNEWGOALS ng;
+        Tactics.exact_check pf <*> Proofview.Unsafe.tclNEWGOALS evs;
     ] in
     Proofview.Unsafe.tclEVARS !evdref <*>
     Tacticals.tclTHENFIRST
