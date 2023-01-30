@@ -223,7 +223,7 @@ type 'a evar_info = {
   evar_filter : Filter.t;
   evar_abstract_arguments : Abstraction.t;
   evar_source : Evar_kinds.t Loc.located;
-  evar_candidates : constr list option; (* if not None, list of allowed instances *)
+  evar_candidates : ('a, constr list option) when_undefined; (* if not None, list of allowed instances *)
   evar_relevance: Sorts.relevance;
 }
 
@@ -244,7 +244,8 @@ let evar_context evi = named_context_of_val evi.evar_hyps
 let evar_filtered_context evi =
   Filter.filter_list (evar_filter evi) (evar_context evi)
 
-let evar_candidates evi = evi.evar_candidates
+let evar_candidates evi = match evi.evar_candidates with
+| Undefined c -> c
 
 let evar_abstract_arguments evi = evi.evar_abstract_arguments
 
@@ -290,7 +291,7 @@ let map_evar_info f evi =
     evar_body = map_evar_body f evi.evar_body;
     evar_hyps = map_named_val (fun d -> NamedDecl.map_constr f d) evi.evar_hyps;
     evar_concl = map_when_undefined f evi.evar_concl;
-    evar_candidates = Option.map (List.map f) evi.evar_candidates }
+    evar_candidates = map_when_undefined (fun c -> Option.map (List.map f) c) evi.evar_candidates }
 
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
@@ -829,7 +830,12 @@ let remove d e =
 
 let undefine sigma e concl =
   let EvarInfo evi = find sigma e in
-  add (remove sigma e) e { evi with evar_body = Evar_empty; evar_concl = Undefined concl }
+  let evi = { evi with
+    evar_body = Evar_empty;
+    evar_concl = Undefined concl;
+    evar_candidates = Undefined None;
+  } in
+  add (remove sigma e) e evi
 
 let find_undefined d e = EvMap.find e d.undf_evars
 
@@ -1324,7 +1330,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance 
     evar_filter = filter;
     evar_abstract_arguments = abstract_arguments;
     evar_source = src;
-    evar_candidates = candidates;
+    evar_candidates = Undefined candidates;
     evar_relevance = relevance;
   }
   in
@@ -1347,7 +1353,11 @@ let define_aux def undef evk body =
         anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar.")
   in
   let () = assert (oldinfo.evar_body == Evar_empty) in
-  let newinfo = { oldinfo with evar_body = Evar_defined body; evar_concl = Defined } in
+  let newinfo = { oldinfo with
+    evar_body = Evar_defined body;
+    evar_concl = Defined;
+    evar_candidates = Defined;
+  } in
   EvMap.add evk newinfo def, EvMap.remove evk undef
 
 (* define the existential of section path sp as the constr body *)
@@ -1384,7 +1394,7 @@ let restrict evk filter ?candidates ?src evd =
   let id_inst = Filter.filter_slist filter (SList.defaultn len SList.empty) in
   let evar_info' =
     { evar_info with evar_filter = filter;
-      evar_candidates = candidates;
+      evar_candidates = Undefined candidates;
       evar_source = (match src with None -> evar_info.evar_source | Some src -> src);
     } in
   let last_mods = match evd.conv_pbs with
