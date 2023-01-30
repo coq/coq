@@ -120,7 +120,7 @@ val evar_hyps : 'a evar_info -> named_context_val
 val evar_body : 'a evar_info -> 'a evar_body
 (** Optional content of the evar. *)
 
-val evar_candidates : 'a evar_info -> econstr list option
+val evar_candidates : undefined evar_info -> econstr list option
 (** List of possible solutions when known that it is a finite list *)
 
 val evar_source : 'a evar_info -> Evar_kinds.t located

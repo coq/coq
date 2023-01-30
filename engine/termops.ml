@@ -170,10 +170,14 @@ let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
       | Evar_defined c -> spc() ++ str"=> "  ++ print_constr env sigma c
   in
   let candidates =
-    match Evd.evar_body evi, Evd.evar_candidates evi with
-      | Evar_empty, Some l ->
+    match Evd.evar_body evi with
+      | Evar_empty ->
+        begin match evar_candidates evi with
+        | None -> mt ()
+        | Some l ->
            spc () ++ str "{" ++
            prlist_with_sep (fun () -> str "|") (print_constr env sigma) l ++ str "}"
+        end
       | _ ->
           mt ()
   in

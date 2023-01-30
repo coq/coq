@@ -1572,7 +1572,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
          let candidates = [inst; vid] in
            try
              let evd, ev = Evarutil.restrict_evar evd evk (Evd.evar_filter evi) (Some candidates) in
-             let EvarInfo evi = Evd.find evd ev in
+             let evi = Evd.find_undefined evd ev in
                (match evar_candidates evi with
                | Some [t] ->
                  if not (noccur_evar env_rhs evd ev t) then
