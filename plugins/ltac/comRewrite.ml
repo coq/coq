@@ -32,13 +32,18 @@ let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
   else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
 
-type rewrite_attributes = { polymorphic : bool; global : bool }
+type rewrite_attributes = {
+  polymorphic : bool;
+  locality : Hints.hint_locality;
+}
 
 let rewrite_attributes =
   let open Attributes.Notations in
   Attributes.(polymorphic ++ locality) >>= fun (polymorphic, locality) ->
-  let global = not (Locality.make_section_locality locality) in
-  Attributes.Notations.return { polymorphic; global }
+  let locality =
+    if Locality.make_section_locality locality then Hints.Local else SuperGlobal
+  in
+  Attributes.Notations.return { polymorphic; locality }
 
 (** Utility functions *)
 
@@ -63,7 +68,6 @@ module PropGlobal = struct
   let proper_proj env sigma =
     mkConst (Option.get (List.hd (proper_class env sigma).TC.cl_projs).TC.meth_const)
 
-
 end
 
 (* By default the strategy for "rewrite_db" is top-down *)
@@ -76,13 +80,10 @@ let declare_an_instance n s args =
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
-let get_locality b = if b then Hints.SuperGlobal else Hints.Local
-
 let anew_instance atts binders (name,t) fields =
-  let locality = get_locality atts.global in
   let _id = Classes.new_instance ~poly:atts.polymorphic
       name binders t (true, CAst.make @@ CRecord (fields))
-      ~locality Hints.empty_hint_info
+      ~locality:atts.locality Hints.empty_hint_info
   in
   ()
 
@@ -213,7 +214,7 @@ let add_morphism_as_parameter atts m n : unit =
   let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
   let cst = GlobRef.ConstRef cst in
   Classes.Internal.add_instance
-    (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.global cst;
+    (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.locality cst;
   declare_projection n instance_id cst
 
 let add_morphism_interactive atts ~tactic m n : Declare.Proof.t =
@@ -227,7 +228,7 @@ let add_morphism_interactive atts ~tactic m n : Declare.Proof.t =
   let hook { Declare.Hook.S.dref; _ } = dref |> function
     | GlobRef.ConstRef cst ->
       Classes.Internal.add_instance (PropGlobal.proper_class env evd) Hints.empty_hint_info
-        atts.global (GlobRef.ConstRef cst);
+        atts.locality (GlobRef.ConstRef cst);
       declare_projection n instance_id (GlobRef.ConstRef cst)
     | _ -> assert false
   in
@@ -248,9 +249,8 @@ let add_morphism atts ~tactic binders m s n =
       ((Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper",None),
        [cHole; s; m])
   in
-  let locality = get_locality atts.global in
   let _id, lemma = Classes.new_instance_interactive
-      ~locality ~poly:atts.polymorphic
+      ~locality:atts.locality ~poly:atts.polymorphic
       instance_name binders instance_t
       ~tac:tactic ~hook:(declare_projection n instance_id)
       Hints.empty_hint_info None
