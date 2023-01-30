@@ -247,7 +247,9 @@ ill-typed terms to the kernel, which will fail with anomalies at `Qed`.
 
 .. warn:: Bad relevance
 
-  This is a developer warning, disabled by default. It is emitted by
-  the kernel when it is passed a term with incorrect relevance marks.
-  To avoid conversion issues you may wish to use
-  it to find when your tactics are producing incorrect marks.
+  This is a developer warning, which is treated as an error by default. It is
+  emitted by the kernel when it is passed a term with incorrect relevance marks.
+  This is always caused by a bug in Coq, which should thus be reported and
+  fixed. In order to allow the user to work around such bugs, we leave the
+  ability to unset the ``bad-relevance`` warning for the time being, so that the
+  kernel will silently repair the proof term instead of failing.

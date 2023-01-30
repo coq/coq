@@ -31,9 +31,6 @@ functions from `Context` (eg `annotR x = make_annot x Relevant`), also
 `mkArrowR` from `Constr`/`EConstr` which has the signature of the old
 `mkArrow`.
 
-You can enable the debug warning `bad-relevance` to help find places
-where you generate incorrect annotations.
-
 Relevance can be inferred from a well-typed term using functions in
 `Retypeops` (for `Constr`) and `Retyping` (for `EConstr`). For `x` a
 term, note the difference between its relevance as a term (is `x :
