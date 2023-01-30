@@ -425,33 +425,33 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
   let proof = EConstr.mkApp (elim, [| rdx_ty; new_rdx; pred; p; rdx; c |]) in
   debug_ssr (fun () -> Pp.(str"pirrel_rewrite: proof term: " ++ pr_econstr_env env sigma proof));
   Proofview.tclORELSE (refine_with
-    ~first_goes_last:(not !ssroldreworder || under) ~with_evars:under (sigma, proof))
-  (fun e ->
-    (* we generate a msg like: "Unable to find an instance for the variable" *)
-    let hd_ty, miss = match EConstr.kind sigma c with
-    | App (hd, args) ->
-        let hd_ty = Retyping.get_type_of env sigma hd in
-        let names = let rec aux env t = function 0 -> [] | n ->
-          let t = Reductionops.whd_all env sigma t in
-          let open EConstr in
-          match kind_of_type sigma t with
-          | ProdType (name, ty, t) ->
-              name.binder_name ::
-                aux (EConstr.push_rel (Context.Rel.Declaration.LocalAssum (name,ty)) env) t (n-1)
-          | _ ->
-              (* In the case the head is an HO constant it may accept more arguments *)
-              CList.init n (fun _ -> Names.Name.Anonymous) in aux env hd_ty (Array.length args) in
-        hd_ty, Util.List.map_filter (fun (t, name) ->
-          let evs = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma t) in
-          let open_evs = List.filter (fun k ->
-            Sorts.InProp <> Retyping.get_sort_family_of
-              env sigma (Evd.evar_concl (Evd.find_undefined sigma k)))
-            evs in
-          if open_evs <> [] then Some name else None)
-          (List.combine (Array.to_list args) names)
-    | _ -> anomaly "rewrite rule not an application" in
-      tclZEROMSG Pp.(Himsg.explain_refiner_error env sigma (Logic.UnresolvedBindings miss)++
-      (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty)))
+                         ~first_goes_last:(not !ssroldreworder || under) ~with_evars:under (sigma, proof))
+    (fun (e, i) ->
+       (* we generate a msg like: "Unable to find an instance for the variable" *)
+       match EConstr.kind sigma c with
+       | App (hd, args) ->
+         let hd_ty = Retyping.get_type_of env sigma hd in
+         let names = let rec aux env t = function 0 -> [] | n ->
+             let t = Reductionops.whd_all env sigma t in
+             let open EConstr in
+             match kind_of_type sigma t with
+             | ProdType (name, ty, t) ->
+               name.binder_name ::
+               aux (EConstr.push_rel (Context.Rel.Declaration.LocalAssum (name,ty)) env) t (n-1)
+             | _ ->
+               (* In the case the head is an HO constant it may accept more arguments *)
+               CList.init n (fun _ -> Names.Name.Anonymous) in aux env hd_ty (Array.length args) in
+         let miss = Util.List.map_filter (fun (t, name) ->
+             let evs = Evar.Set.elements (Evarutil.undefined_evars_of_term sigma t) in
+             let open_evs = List.filter (fun k ->
+                 Sorts.InProp <> Retyping.get_sort_family_of
+                   env sigma (Evd.evar_concl (Evd.find_undefined sigma k)))
+                 evs in
+             if open_evs <> [] then Some name else None)
+             (List.combine (Array.to_list args) names) in
+         tclZEROMSG Pp.(Himsg.explain_refiner_error env sigma (Logic.UnresolvedBindings miss)++
+                        (Pp.fnl()++str"Rule's type:" ++ spc() ++ pr_econstr_env env sigma hd_ty))
+       | _ -> Proofview.tclZERO ~info:i e)
   end
 
 let pf_merge_uc_of s sigma =
