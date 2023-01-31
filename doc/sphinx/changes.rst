@@ -14,7 +14,7 @@ Version 8.17
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
-Coq version 8.17 integrate a soudness fix to the Coq kernel along
+Coq version 8.17 integrates a soundness fix to the Coq kernel along
 with a few new features and a host of improvements to the Ltac2 language
 and libraries. We highlight some of the most impactful changes here:
 
@@ -23,18 +23,19 @@ and libraries. We highlight some of the most impactful changes here:
 
   - It is now possible to dynamically :ref:`enable or disable <817Notations>` notations.
 
-  - Support :ref:`multiple scopes <817Scopes>`` in :cmd:`Arguments` and :cmd:`Bind Scope`.
+  - Support :ref:`multiple scopes <817Scopes>` in :cmd:`Arguments` and :cmd:`Bind Scope`.
 
-  - The tactics chapter of the manual has seen :ref:`many improvements <817TacticsRefman>`
-    in presentation and wording and is semi-automatically checked for coherence with the implementation.
+  - The tactics chapter of the manual has :ref:`many improvements <817TacticsRefman>`
+    in presentation and wording.  The documented grammar is semi-automatically checked
+    for consistency with the implementation.
 
-  - :ref:`Fixes <817Eauto>` to the `auto` and `eauto` tactics, to respect hint priorities and the documented use
-    of :tacn:`simple apply`. Potentially breaking change.
+  - :ref:`Fixes <817Eauto>` to the :tacn:`auto` and :tacn:`eauto` tactics, to respect hint priorities and the documented use
+    of :tacn:`simple apply`. This is a potentially breaking change.
 
   - :ref:`New LTac2 <817Ltac2>` APIs, deep pattern-matching with ``as`` clauses and handling of literals,
     support for record types and preterms.
 
-  - :ref:`Move <817ClassFieldSyntax>` from :g:`:>`: to :g:`::` syntax for declaring typeclass fields as instances, fixing
+  - :ref:`Move <817ClassFieldSyntax>` from :g:`:>` to :g:`::` syntax for declaring typeclass fields as instances, fixing
     a confusion with declaration of coercions.
 
   - :ref:`Standard library <817Stdlib>` improvements.
@@ -57,7 +58,7 @@ projects for continuous integration.
 Maxime Dénès, Paulo G. Giarrusso, Huỳnh Trần Khanh, and Laurent Théry have
 maintained the VsCoq extension for VS Code.
 
-The OPAM repository for Coq packages has been maintained by
+The opam repository for Coq packages has been maintained by
 Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
