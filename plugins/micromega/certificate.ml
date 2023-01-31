@@ -708,10 +708,11 @@ open Polynomial
 let pivot v (a, c1, p1) (c2, p2) =
   let {coeffs = v1; op = op1; cst = n1} = c1
   and {coeffs = v2; op = op2; cst = n2} = c2 in
+  let () = assert (op1 == Eq) in
   (* Could factorise gcd... *)
   let xpivot cv1 cv2 =
     ( { coeffs = Vect.add (Vect.mul cv1 v1) (Vect.mul cv2 v2)
-      ; op = opAdd op1 op2
+      ; op = opAdd Eq op2
       ; cst = (n1 */ cv1) +/ (n2 */ cv2) }
     , ProofFormat.add_proof
         (ProofFormat.mul_cst_proof cv1 p1)
@@ -722,13 +723,9 @@ let pivot v (a, c1, p1) (c2, p2) =
   else if Int.equal (Q.sign a * Q.sign b) (-1) then
     let cv1 = Q.abs b and cv2 = Q.abs a in
     Some (xpivot cv1 cv2)
-  else if op1 == Eq then
+  else
     let cv1 = Q.neg (b */ Q.of_int (Q.sign a)) and cv2 = Q.abs a in
     Some (xpivot cv1 cv2)
-  else if op2 == Eq then
-    let cv1 = Q.abs b and cv2 = Q.neg (a */ Q.of_int (Q.sign b)) in
-    Some (xpivot cv1 cv2)
-  else None
 
 let pivot v c1 c2 =
   let res = pivot v c1 c2 in
@@ -809,7 +806,9 @@ let reduce_unary psys =
   let oeq, sys = extract is_unary_equation psys in
   match oeq with
   | None -> None (* Nothing to do *)
-  | Some (v, pc) -> Some (pivot_sys v pc sys)
+  | Some (v, (cstr, prf)) ->
+    let () = assert (cstr.op == Eq) in
+    Some (pivot_sys v (cstr, prf) sys)
 
 let reduce_var_change psys =
   let rec rel_prime vect =
