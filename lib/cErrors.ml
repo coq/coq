@@ -18,7 +18,7 @@ let push = Exninfo.capture
 
 exception Anomaly of string option * Pp.t (* System errors *)
 
-let _ =
+let () =
   let pr = function
   | Anomaly (s, pp) -> Some ("\"Anomaly: " ^ string_of_ppcmds pp ^ "\"")
   | _ -> None
@@ -29,22 +29,6 @@ let anomaly ?loc ?info ?label pp =
   let info = Option.default Exninfo.null info in
   let info = Option.cata (Loc.add_loc info) info loc in
   Exninfo.iraise (Anomaly (label, pp), info)
-
-exception UserError of Pp.t (* User errors *)
-
-(* We register Coq Errors with the global printer here as they will be
-   printed if Dynlink.loadfile raises UserError in the module
-   intializers, and in some other cases. We should make this more
-   principled. *)
-let _ = Printexc.register_printer (function
-    | UserError msg ->
-      Some (Format.asprintf "@[Coq Error: %a@]" Pp.pp_with msg)
-    | _ -> None)
-
-let user_err ?loc ?info strm =
-  let info = Option.default Exninfo.null info in
-  let info = Option.cata (Loc.add_loc info) info loc in
-  Exninfo.iraise (UserError strm, info)
 
 exception Timeout = Control.Timeout
 
@@ -139,7 +123,23 @@ let print_no_report e = iprint_no_report (e, Exninfo.info e)
 
 (** Predefined handlers **)
 
-let _ = register_handler begin function
+exception UserError of Pp.t (* User errors *)
+
+(* We register Coq Errors with the global printer here as they will be
+   printed if Dynlink.loadfile raises UserError in the module
+   intializers, and in some other cases. We should make this more
+   principled. *)
+let () = Printexc.register_printer (function
+    | UserError msg ->
+      Some (Format.asprintf "@[Coq Error: %a@]" Pp.pp_with msg)
+    | _ -> None)
+
+let user_err ?loc ?info strm =
+  let info = Option.default Exninfo.null info in
+  let info = Option.cata (Loc.add_loc info) info loc in
+  Exninfo.iraise (UserError strm, info)
+
+let () = register_handler begin function
   | UserError pps ->
     Some pps
   | _ -> None
