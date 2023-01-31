@@ -40,6 +40,9 @@ and libraries. We highlight some of the most impactful changes here:
 
   - :ref:`Standard library <817Stdlib>` improvements.
 
+  - While Coq supports OCaml 5, users are likely to experience slowdowns ranging from +10% to +50% compared to OCaml 4.
+    Moreover, the :tacn:`native_compute` machinery is not available when Coq is compiled with OCaml 5.
+
 See the `Changes in 8.17.0`_ section below for the detailed list of changes,
 including potentially breaking changes marked with **Changed**.
 Coq's `reference manual for 8.17 <https://coq.github.io/doc/v8.17/refman>`_,
@@ -89,7 +92,7 @@ the `Discourse forum <https://coq.discourse.group/>`_ and the
 
 Version 8.17's development spanned 4 months from the release of
 Coq 8.17.0. Théo Zimmermann is the release manager of Coq 8.17.
-This release is the result of ?? merged PRs, closing ?? issues.
+This release is the result of 414 merged PRs, closing 105 issues.
 
 | Nantes, January 2023,
 | Matthieu Sozeau for the Coq development team
@@ -691,7 +694,7 @@ Erik Martin-Dorel has maintained the `Coq Docker images
 <https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
 projects for continuous integration.
 
-The OPAM repository for Coq packages has been maintained by
+The opam repository for Coq packages has been maintained by
 Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
@@ -1384,7 +1387,7 @@ Erik Martin-Dorel has maintained the `Coq Docker images
 <https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
 projects for continuous integration.
 
-The OPAM repository for Coq packages has been maintained by
+The opam repository for Coq packages has been maintained by
 Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
@@ -2290,7 +2293,7 @@ Erik Martin-Dorel has maintained the `Coq Docker images
 <https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
 projects for continuous integration.
 
-The OPAM repository for Coq packages has been maintained by
+The opam repository for Coq packages has been maintained by
 Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
@@ -3176,7 +3179,7 @@ Erik Martin-Dorel has maintained the `Coq Docker images
 <https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
 projects for continuous integration.
 
-The OPAM repository for Coq packages has been maintained by
+The opam repository for Coq packages has been maintained by
 Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
@@ -3908,7 +3911,7 @@ Erik Martin-Dorel has maintained the `Coq Docker images
 <https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
 projects for continuous integration.
 
-The OPAM repository for Coq packages has been maintained by
+The opam repository for Coq packages has been maintained by
 Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
@@ -5255,7 +5258,7 @@ Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
 Soegtrop and Théo Zimmermann worked on maintaining and improving the
 continuous integration system and package building infrastructure.
 
-The OPAM repository for Coq packages has been maintained by
+The opam repository for Coq packages has been maintained by
 Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
@@ -6124,7 +6127,7 @@ the ML API), https://coq.github.io/doc/master/refman (reference
 manual), and https://coq.github.io/doc/master/stdlib (documentation of
 the standard library). Similar links exist for the `v8.10` branch.
 
-The OPAM repository for Coq packages has been maintained by Guillaume
+The opam repository for Coq packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi (who migrated it to opam 2)
 with contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
@@ -6851,7 +6854,7 @@ Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
 Soegtrop, Théo Zimmermann worked on maintaining and improving the
 continuous integration system.
 
-The OPAM repository for Coq packages has been maintained by Guillaume
+The opam repository for Coq packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi with contributions from many
 users. A list of packages is available at https://coq.inria.fr/opam/www/.
 
@@ -7187,7 +7190,7 @@ platform, thanks to the work of Pierre Letouzey and Théo
 Zimmermann. Gaëtan Gilbert, Emilio Jesús Gallego Arias worked on
 maintaining and improving the continuous integration system.
 
-The OPAM repository for Coq packages has been maintained by Guillaume
+The opam repository for Coq packages has been maintained by Guillaume
 Melquiond, Matthieu Sozeau, Enrico Tassi with contributions from many
 users. A list of packages is available at https://coq.inria.fr/opam/www/.
 
@@ -7540,7 +7543,7 @@ others, documented in the next subsection file.
 The mathematical proof language/declarative mode plugin was removed from the
 archive.
 
-The OPAM repository for Coq packages has been maintained by Guillaume Melquiond,
+The opam repository for Coq packages has been maintained by Guillaume Melquiond,
 Matthieu Sozeau, Enrico Tassi with contributions from many users. A list of
 packages is available at https://coq.inria.fr/opam/www/.
 
@@ -7929,7 +7932,7 @@ the pretty-printing and user interface communication components.
 
 Frédéric Besson maintained the micromega tactic.
 
-The OPAM repository for Coq packages has been maintained by Guillaume
+The opam repository for Coq packages has been maintained by Guillaume
 Claret, Guillaume Melquiond, Matthieu Sozeau, Enrico Tassi and others. A
 list of packages is now available at https://coq.inria.fr/opam/www/.
 
@@ -8326,7 +8329,7 @@ General and for better interactive experience (bullets, Search, etc).
 The efficiency of the whole system has been significantly improved
 thanks to contributions from Pierre-Marie Pédrot.
 
-A distribution channel for Coq packages using the OPAM tool has been
+A distribution channel for Coq packages using the opam tool has been
 initiated by Thomas Braibant and developed by Guillaume Claret, with
 contributions by Enrico Tassi and feedback from Hugo Herbelin.
 
