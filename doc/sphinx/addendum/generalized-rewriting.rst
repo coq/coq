@@ -170,6 +170,10 @@ compatibility constraints.
 Adding new relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+These commands support the :attr:`local` and :attr:`global` locality attributes.
+The default is :attr:`local` if the command is used inside a section, :attr:`global` otherwise.
+They also support the :attr:`universes(polymorphic)` attributes.
+
 .. cmd::  Add Parametric Relation {* @binder } : @one_term__A @one_term__Aeq {? reflexivity proved by @one_term } {? symmetry proved by @one_term } {? transitivity proved by @one_term } as @ident
 
    Declares a parametric relation of :n:`@one_term__A`, which is a `Type`, say `T`, with
@@ -498,7 +502,7 @@ is equivalent to an instance declaration:
 
 .. coqdoc::
 
-   Instance (x1 : T1) ... (xn : Tn) => id : @Equivalence (A t1 ... tn) (Aeq t′1 ... t′m) :=
+   Instance id (x1 : T1) ... (xn : Tn) : @Equivalence (A t1 ... tn) (Aeq t′1 ... t′m) :=
      [Equivalence_Reflexive := refl]
      [Equivalence_Symmetric := sym]
      [Equivalence_Transitive := trans].
