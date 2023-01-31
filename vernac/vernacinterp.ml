@@ -59,7 +59,7 @@ let vernac_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
   | _, Some n
   | Some n, None ->
     (match Control.timeout (float_of_int n) f x with
-    | None -> Exninfo.iraise (Exninfo.capture CErrors.Timeout)
+    | None -> Exninfo.iraise (Exninfo.capture Control.Timeout)
     | Some x -> x)
   | None, None ->
     f x
@@ -77,7 +77,7 @@ let with_fail f : (Loc.t option * Pp.t, unit) result =
   | e ->
     (* The error has to be printed in the failing state *)
     let _, info as exn = Exninfo.capture e in
-    if CErrors.is_anomaly e && e != CErrors.Timeout then Exninfo.iraise exn;
+    if CErrors.is_anomaly e && e != Control.Timeout then Exninfo.iraise exn;
     Ok (Loc.get_loc info, CErrors.iprint exn)
 
 let real_error_loc ~cmdloc ~eloc =

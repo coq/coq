@@ -38,8 +38,6 @@ val user_err : ?loc:Loc.t -> ?info:Exninfo.info -> Pp.t -> 'a
 (** Main error raising primitive. [user_err ?loc pp] signals an
     error [pp] with optional header and location [loc] *)
 
-exception Timeout
-
 (** [register_handler h] registers [h] as a handler.
     When an expression is printed with [print e], it
     goes through all registered handles (the most
