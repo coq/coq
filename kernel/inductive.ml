@@ -1258,7 +1258,9 @@ let check_one_fix renv recpos trees def =
             end
 
         | Prod (x,a,u) ->
-            let () = assert (List.is_empty stack) in
+            (* Note: we cannot ensure that the stack is empty because
+               non-accessible branches of "match" expressions can have
+               arbitrary types (see #17073) *)
             let rs = check_inert_subterm_rec_call renv rs a in
             (* Note: can recursive calls on [x] be else than inert "dead code"? *)
             check_rec_call_stack (push_var_renv renv (redex_level rs) (x,a)) [] rs u
@@ -1320,10 +1322,11 @@ let check_one_fix renv recpos trees def =
             rs
 
         | Sort _ | Int _ | Float _ ->
-            assert (List.is_empty stack); rs
+            (* See [Prod]: we cannot ensure that the stack is empty *)
+            rs
 
         | Array (_u,t,def,ty) ->
-            assert (List.is_empty stack);
+            (* See [Prod]: we cannot ensure that the stack is empty *)
             let rs = Array.fold_left (check_inert_subterm_rec_call renv) rs t in
             let rs = check_inert_subterm_rec_call renv rs def in
             let rs = check_inert_subterm_rec_call renv rs ty in
