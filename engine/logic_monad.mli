@@ -37,6 +37,8 @@ type _ CErrors.tag += TacticFailure : exn CErrors.tag
 (** This exception is used to signal abortion in [timeout] functions. *)
 type _ CErrors.tag += Tac_Timeout : unit CErrors.tag
 
+val tac_timeout_msg : Pp.t
+
 (** {6 Non-logical layer} *)
 
 (** The non-logical monad is a simple [unit -> 'a] (i/o) monad. The

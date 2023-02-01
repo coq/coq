@@ -15,7 +15,7 @@ open Locus
 open Tactypes
 
 (** A special exception for levels for the Fail tactic *)
-exception FailError of int * Pp.t Lazy.t
+exception FailError of int * Pp.t
 
 (** Tacticals defined directly in term of Proofview *)
 

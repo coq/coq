@@ -24,7 +24,7 @@ module NamedDecl = Context.Named.Declaration
 (*   Tacticals       *)
 (*********************)
 
-exception FailError of int * Pp.t Lazy.t
+exception FailError of int * Pp.t
 
 let catch_failerror (e, info) =
   match e with
@@ -143,7 +143,7 @@ let tclFAILn ?info lvl msg =
     | None -> Exninfo.reify ()
     | Some info -> info
   in
-  tclZERO ~info (FailError (lvl,lazy msg))
+  tclZERO ~info (FailError (lvl, msg))
 
 let tclFAIL ?info msg = tclFAILn ?info 0 msg
 
@@ -193,7 +193,7 @@ let tclORD t1 t2 =
 
 let tclONCE = Proofview.tclONCE
 
-let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (FailError(0,lazy (assert false))) t
+let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (FailError(0, Pp.str "should not be seen")) t
 
 let tclIFCATCH t tt te =
   tclINDEPENDENT begin
@@ -467,9 +467,9 @@ let tclTIMEOUT n t =
   Proofview.tclOR
     (Proofview.tclTIMEOUT n t)
     begin function (e, info) -> match e with
-      | CErrors.CoqError (Logic_monad.Tac_Timeout, ()) as e ->
+      | CErrors.CoqError (Logic_monad.Tac_Timeout, ()) ->
         let info = Exninfo.reify () in
-        Proofview.tclZERO ~info (FailError (0,lazy (CErrors.print e)))
+        Proofview.tclZERO ~info (FailError (0, Logic_monad.tac_timeout_msg))
       | e -> Proofview.tclZERO ~info e
     end
 

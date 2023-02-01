@@ -1505,7 +1505,6 @@ let vernac_interp_error_handler = function
     spc () ++ str "was not found" ++
     spc () ++ str "in the current" ++ spc () ++ str "environment."
   | Tacticals.FailError (i,s) ->
-    let s = Lazy.force s in
     str "Tactic failure" ++
     (if Pp.ismt s then s else str ": " ++ s) ++
     if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."

@@ -51,10 +51,12 @@ let () = CErrors.register (module struct
     let pp e = CErrors.print e
   end)
 
+let tac_timeout_msg = Pp.str "[Proofview.tclTIMEOUT] Tactic timeout!"
+
 let () = CErrors.register (module struct
     type e = unit
     type _ CErrors.tag += T = Tac_Timeout
-    let pp () = Pp.str "[Proofview.tclTIMEOUT] Tactic timeout!"
+    let pp () = tac_timeout_msg
   end)
 
 (** {6 Non-logical layer} *)

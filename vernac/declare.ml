@@ -2257,7 +2257,7 @@ let solve_by_tac prg obls i tac =
   | Tacticals.FailError (_, s) as exn ->
     let _ = Exninfo.capture exn in
     let loc = fst obl.obl_location in
-    CErrors.user_err ?loc (Lazy.force s)
+    CErrors.user_err ?loc s
   (* If the proof is open we absorb the error and leave the obligation open *)
   | CErrors.CoqError (Proof_.OpenProof, _) ->
     None
