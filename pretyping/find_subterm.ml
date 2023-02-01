@@ -135,7 +135,10 @@ let make_eq_univs_test env evd c =
     | None -> raise (NotUnifiable None)
     | Some cst ->
         try Evd.add_universe_constraints evd cst
-        with Evd.UniversesDiffer | UGraph.UniverseInconsistency _ -> raise (NotUnifiable None)
+        with
+        | Evd.UniversesDiffer
+        | CErrors.CoqError (UGraph.UniverseInconsistency, _) ->
+          raise (NotUnifiable None)
     );
   merge_fun = (fun evd _ -> evd);
   testing_state = evd;

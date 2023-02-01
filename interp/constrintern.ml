@@ -912,7 +912,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           try
             let gc = intern nenv c in
             Id.Map.add id (gc, None) map
-          with Nametab.GlobalizationError _ -> map
+          with CoqError (Nametab.GlobalizationError, _) -> map
         in
         let mk_env' ((c,_bk), (onlyident,(tmp_scope,subscopes))) =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
@@ -2846,7 +2846,7 @@ let interp_univ_constraints env evd cstrs =
     try
       let evd = Evd.add_constraints evd (Univ.Constraints.singleton cstr) in
       evd, Univ.Constraints.add cstr cstrs
-    with UGraph.UniverseInconsistency e as exn ->
+    with CoqError (UGraph.UniverseInconsistency, e) as exn ->
       let _, info = Exninfo.capture exn in
       CErrors.user_err ~info
         (UGraph.explain_universe_inconsistency (Termops.pr_evd_level evd) e)

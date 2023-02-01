@@ -35,11 +35,21 @@ module GlobDirRef = struct
 
 end
 
-exception GlobalizationError of qualid
+type _ CErrors.tag += GlobalizationError : qualid CErrors.tag
+
+let () = CErrors.register (module struct
+    type e = qualid
+    type _ CErrors.tag += T = GlobalizationError
+    let pp q =
+      let open Pp in
+      str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
+      spc () ++ str "was not found" ++
+      spc () ++ str "in the current" ++ spc () ++ str "environment."
+  end)
 
 let error_global_not_found ~info qid =
   let info = Option.cata (Loc.add_loc info) info qid.CAst.loc in
-  Exninfo.iraise (GlobalizationError qid, info)
+  Exninfo.iraise (CErrors.CoqError (GlobalizationError, qid), info)
 
 (* The visibility can be registered either
    - for all suffixes not shorter then a given int - when the object

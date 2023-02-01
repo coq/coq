@@ -1507,8 +1507,8 @@ and interp_match_successes lz ist s =
    let general =
      let open Tacticals in
      let break (e, info) = match e with
-       | FailError (0, _) -> None
-       | FailError (n, s) -> Some (FailError (pred n, s), info)
+       | CoqError (FailError, (0, _)) -> None
+       | CoqError (FailError, (n, s)) -> Some (CoqError (FailError, (pred n, s)), info)
        | _ -> None
      in
      Proofview.tclBREAK break s >>= fun ans -> interp_match_success ist ans

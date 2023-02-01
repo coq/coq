@@ -5223,7 +5223,7 @@ let constr_eq ~strict x y =
         let csts = UnivProblem.Set.force csts in
         begin match Evd.add_universe_constraints evd csts with
            | evd -> Proofview.Unsafe.tclEVARS evd
-           | exception (UGraph.UniverseInconsistency _ as e) ->
+           | exception (CoqError (UGraph.UniverseInconsistency, _) as e) ->
              let _, info = Exninfo.capture e in
              fail_universes ~info
         end

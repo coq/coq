@@ -667,7 +667,7 @@ module Env = struct
       let csts = UnivProblem.Set.force csts in
       match Evd.add_universe_constraints sigma csts with
       | sigma -> Some (env, sigma)
-      | exception UGraph.UniverseInconsistency _ -> None )
+      | exception CErrors.CoqError (UGraph.UniverseInconsistency, _) -> None )
     | None -> None
 
   let compute_rank_add env v is_prop =

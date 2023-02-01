@@ -36,7 +36,7 @@ type explanation = G.explanation Lazy.t
 
 type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation option
 
-exception UniverseInconsistency of univ_inconsistency
+type _ CErrors.tag += UniverseInconsistency : univ_inconsistency CErrors.tag
 
 type 'a check_function = t -> 'a -> 'a -> bool
 
@@ -97,7 +97,7 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
     let (u, c, v) = cst in
     let e = lazy (G.get_explanation cst g.graph) in
     let mk u = Sorts.sort_of_univ @@ Universe.make u in
-    raise (UniverseInconsistency (c, mk u, mk v, Some e))
+    CErrors.coq_error UniverseInconsistency (c, mk u, mk v, Some e)
   else g
 | Some g -> g
 
@@ -146,8 +146,7 @@ let enforce_leq_alg u v g =
   | Inr ((u, c, v), g) ->
     let e = lazy (G.get_explanation (u, c, v) g.graph) in
     let mk u = Sorts.sort_of_univ @@ Universe.make u in
-    let e = UniverseInconsistency (c, mk u, mk v, Some e) in
-    raise e
+    CErrors.coq_error UniverseInconsistency (c, mk u, mk v, Some e)
 
 module Bound =
 struct

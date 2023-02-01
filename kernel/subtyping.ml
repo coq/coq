@@ -92,7 +92,7 @@ let check_conv_error error why state poly pb env a1 a2 =
     else
       Reduction.generic_conv pb ~l2r:false default_evar_handler TransparentState.full env state a1 a2
   with NotConvertible -> error why
-     | UGraph.UniverseInconsistency e -> error (IncompatibleUniverses e)
+     | CErrors.CoqError (UGraph.UniverseInconsistency, e) -> error (IncompatibleUniverses e)
 
 let check_universes error env u1 u2 =
   match u1, u2 with

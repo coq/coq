@@ -1257,7 +1257,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
     let name = Names.Id.of_string "legacy_pe" in
     match Proofview.apply ~name ~poly:false (Global.env ()) tac pv with
     | (_, final, _, _) -> final
-    | exception CErrors.CoqError (Logic_monad.TacticFailure, (Tacticals.FailError _)) ->
+    | exception CErrors.(CoqError (Logic_monad.TacticFailure, (CoqError (Tacticals.FailError, _)))) ->
       raise Not_found
   in
   let evd = Proofview.return pv in

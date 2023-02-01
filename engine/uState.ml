@@ -284,11 +284,11 @@ let drop_weak_constraints =
     ~value:false
 
 let sort_inconsistency cst l r =
-  raise (UGraph.UniverseInconsistency (cst, l, r, None))
+  CErrors.coq_error UGraph.UniverseInconsistency (cst, l, r, None)
 
 let level_inconsistency cst l r =
   let mk u = Sorts.sort_of_univ @@ Universe.make u in
-  raise (UGraph.UniverseInconsistency (cst, mk l, mk r, None))
+  CErrors.coq_error UGraph.UniverseInconsistency (cst, mk l, mk r, None)
 
 let subst_univs_sort normalize qnormalize s = match s with
 | Sorts.Set | Sorts.Prop | Sorts.SProp -> s
@@ -558,7 +558,7 @@ let process_universe_constraints uctx cstrs =
   in
   let unify_universes cst local =
     if not (UGraph.type_in_type univs) then unify_universes cst local
-    else try unify_universes cst local with UGraph.UniverseInconsistency _ -> local
+    else try unify_universes cst local with CoqError (UGraph.UniverseInconsistency, _) -> local
   in
   let local = {
     local_cst = Constraints.empty;

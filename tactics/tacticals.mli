@@ -15,7 +15,7 @@ open Locus
 open Tactypes
 
 (** A special exception for levels for the Fail tactic *)
-exception FailError of int * Pp.t
+type _ CErrors.tag += FailError : (int * Pp.t) CErrors.tag
 
 (** Tacticals defined directly in term of Proofview *)
 

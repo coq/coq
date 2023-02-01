@@ -586,7 +586,7 @@ let rec locate_ref = function
       let mpo = try Some (Nametab.locate_module qid) with Not_found -> None
       and ro =
         try Some (Smartlocate.global_with_alias qid)
-        with Nametab.GlobalizationError _ | CoqError (UserError, _) -> None
+        with CoqError ((Nametab.GlobalizationError | UserError), _) -> None
       in
       match mpo, ro with
         | None, None -> Nametab.error_global_not_found ~info:Exninfo.null qid

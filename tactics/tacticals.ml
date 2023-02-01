@@ -24,12 +24,21 @@ module NamedDecl = Context.Named.Declaration
 (*   Tacticals       *)
 (*********************)
 
-exception FailError of int * Pp.t
+type _ CErrors.tag += FailError : (int * Pp.t) CErrors.tag
+
+let () = CErrors.register (module struct
+    type e = int * Pp.t
+    type _ CErrors.tag += T = FailError
+    let pp (i,s) =
+      str "Tactic failure" ++
+      (if Pp.ismt s then s else str ": " ++ s) ++
+      if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
+  end)
 
 let catch_failerror (e, info) =
   match e with
-  | FailError (lvl,s) when lvl > 0 ->
-    Exninfo.iraise (FailError (lvl - 1, s), info)
+  | CoqError (FailError, (lvl,s)) when lvl > 0 ->
+    Exninfo.iraise (CoqError (FailError, (lvl - 1, s)), info)
   | e -> Control.check_for_interrupt ()
 
 (************************************************************************)
@@ -143,7 +152,7 @@ let tclFAILn ?info lvl msg =
     | None -> Exninfo.reify ()
     | Some info -> info
   in
-  tclZERO ~info (FailError (lvl, msg))
+  tclERROR ~info FailError (lvl, msg)
 
 let tclFAIL ?info msg = tclFAILn ?info 0 msg
 
@@ -193,7 +202,8 @@ let tclORD t1 t2 =
 
 let tclONCE = Proofview.tclONCE
 
-let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (FailError(0, Pp.str "should not be seen")) t
+let tclEXACTLY_ONCE t =
+  Proofview.tclEXACTLY_ONCE (CoqError (FailError, (0, Pp.str "should not be seen"))) t
 
 let tclIFCATCH t tt te =
   tclINDEPENDENT begin
@@ -469,7 +479,7 @@ let tclTIMEOUT n t =
     begin function (e, info) -> match e with
       | CErrors.CoqError (Logic_monad.Tac_Timeout, ()) ->
         let info = Exninfo.reify () in
-        Proofview.tclZERO ~info (FailError (0, Logic_monad.tac_timeout_msg))
+        Proofview.tclERROR ~info FailError (0, Logic_monad.tac_timeout_msg)
       | e -> Proofview.tclZERO ~info e
     end
 

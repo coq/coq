@@ -110,11 +110,13 @@ val register_string_interpretation :
 
 (** * Number notation *)
 
-type prim_token_notation_error =
-  | UnexpectedTerm of Constr.t
-  | UnexpectedNonOptionTerm of Constr.t
+type prim_token_notation_error
 
-exception PrimTokenNotationError of string * Environ.env * Evd.evar_map * prim_token_notation_error
+val explain_prim_token_notation_error
+  : (Environ.env -> Evd.evar_map -> Constr.t -> Pp.t)
+  -> prim_token_notation_error -> Pp.t
+
+type _ CErrors.tag += PrimTokenNotationError : prim_token_notation_error CErrors.tag
 
 type numnot_option =
   | Nop

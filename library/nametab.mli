@@ -85,7 +85,7 @@ module GlobDirRef : sig
   val equal : t -> t -> bool
 end
 
-exception GlobalizationError of qualid
+type _ CErrors.tag += GlobalizationError : qualid CErrors.tag
 
 (** Raises a globalization error *)
 val error_global_not_found : info:Exninfo.info -> qualid -> 'a

@@ -1451,16 +1451,6 @@ let explain_reduction_tactic_error = function
       spc () ++ str "is not well typed." ++ fnl () ++
       explain_type_error env' (Evd.from_env env') e
 
-let explain_prim_token_notation_error kind env sigma = function
-  | Notation.UnexpectedTerm c ->
-    (strbrk "Unexpected term " ++
-     pr_constr_env env sigma c ++
-     strbrk (" while parsing a "^kind^" notation."))
-  | Notation.UnexpectedNonOptionTerm c ->
-    (strbrk "Unexpected non-option term " ++
-     pr_constr_env env sigma c ++
-     strbrk (" while parsing a "^kind^" notation."))
-
 (** Registration of generic errors
     Nota: explain_exn does NOT end with a newline anymore!
 *)
@@ -1472,16 +1462,11 @@ let wrap_unhandled f e =
   with Unhandled -> None
 
 let vernac_interp_error_handler = function
-  | UGraph.UniverseInconsistency i ->
-    str "Universe inconsistency." ++ spc() ++
-    UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) i ++ str "."
   | TypeError(ctx,te) ->
     let te = map_ptype_error EConstr.of_constr te in
     explain_type_error ctx Evd.empty te
   | PretypeError(ctx,sigma,te) ->
     explain_pretype_error ctx sigma te
-  | Notation.PrimTokenNotationError(kind,ctx,sigma,te) ->
-    explain_prim_token_notation_error kind ctx sigma te
   | Typeclasses_errors.TypeClassError(env, sigma, te) ->
     explain_typeclass_error env sigma te
   | InductiveError e ->
@@ -1500,14 +1485,6 @@ let vernac_interp_error_handler = function
     explain_reduction_tactic_error e
   | Logic.RefinerError (env, sigma, e) ->
     explain_refiner_error env sigma e
-  | Nametab.GlobalizationError q ->
-    str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
-    spc () ++ str "was not found" ++
-    spc () ++ str "in the current" ++ spc () ++ str "environment."
-  | Tacticals.FailError (i,s) ->
-    str "Tactic failure" ++
-    (if Pp.ismt s then s else str ": " ++ s) ++
-    if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
   | _ ->
     raise Unhandled
 
@@ -1519,4 +1496,19 @@ let () = CErrors.register (module struct
     let pp (env, sigma, e) =
       let e = explain_pretype_error env sigma e in
       Pp.(str"setoid rewrite failed: " ++ e)
+  end)
+
+let () = CErrors.register (module struct
+    type e = UGraph.univ_inconsistency
+    type _ CErrors.tag += T = UGraph.UniverseInconsistency
+    let pp i =
+      let prl = UnivNames.(pr_with_global_universes empty_binders) in
+      str "Universe inconsistency." ++ spc() ++
+      UGraph.explain_universe_inconsistency prl i ++ str "."
+  end)
+
+let () = CErrors.register (module struct
+    type e = Notation.prim_token_notation_error
+    type _ CErrors.tag += T = Notation.PrimTokenNotationError
+    let pp e = Notation.explain_prim_token_notation_error pr_constr_env e
   end)

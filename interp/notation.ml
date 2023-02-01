@@ -361,11 +361,30 @@ let prim_token_uninterpreters =
 
 (*******************************************************)
 (* Number notation interpretation                      *)
-type prim_token_notation_error =
+type prim_token_notation_error_reason =
   | UnexpectedTerm of Constr.t
   | UnexpectedNonOptionTerm of Constr.t
 
-exception PrimTokenNotationError of string * Environ.env * Evd.evar_map * prim_token_notation_error
+type token_kind = Number | String
+
+let pr_token_kind = function
+  | Number -> Pp.str "number"
+  | String -> Pp.str "string"
+
+type prim_token_notation_error =
+  (token_kind * Environ.env * Evd.evar_map * prim_token_notation_error_reason)
+
+type _ CErrors.tag += PrimTokenNotationError : prim_token_notation_error CErrors.tag
+
+let explain_prim_token_notation_error pr_constr_env (kind, env, sigma, r) = match r with
+  | UnexpectedTerm c ->
+    (strbrk "Unexpected term " ++
+     pr_constr_env env sigma c ++
+     strbrk " while parsing a " ++ pr_token_kind kind ++ str " notation.")
+  | UnexpectedNonOptionTerm c ->
+    (strbrk "Unexpected non-option term " ++
+     pr_constr_env env sigma c ++
+     strbrk " while parsing a " ++ pr_token_kind kind ++ str " notation.")
 
 type numnot_option =
   | Nop
@@ -604,12 +623,12 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
   | Sort Sorts.Prop -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GProp, 0])))
   | Sort Sorts.Set -> DAst.make ?loc (Glob_term.GSort (Glob_term.UNamed (None, [Glob_term.GSet, 0])))
   | Sort (Sorts.Type _) -> DAst.make ?loc (Glob_term.GSort (Glob_term.UAnonymous {rigid=true}))
-  | _ -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
+  | _ -> CErrors.coq_error ?loc PrimTokenNotationError (token_kind,env,sigma,UnexpectedTerm c)
 
 let no_such_prim_token uninterpreted_token_kind ?loc ty =
   CErrors.user_err ?loc
-   (str ("Cannot interpret this "^uninterpreted_token_kind^" as a value of type ") ++
-    pr_qualid ty)
+    (str "Cannot interpret this " ++ pr_token_kind uninterpreted_token_kind
+     ++ str " as a value of type " ++ pr_qualid ty)
 
 let rec postprocess token_kind ?loc ty to_post post g =
   let g', gl = match DAst.get g with Glob_term.GApp (g, gl) -> g, gl | _ -> g, [] in
@@ -644,7 +663,7 @@ let interp_option uninterpreted_token_kind token_kind ty ?loc env sigma to_post 
   match Constr.kind c with
   | App (_Some, [| _; c |]) -> glob_of_constr token_kind ty ?loc env sigma to_post c
   | App (_None, [| _ |]) -> no_such_prim_token uninterpreted_token_kind ?loc ty
-  | x -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedNonOptionTerm c))
+  | x -> CErrors.coq_error ?loc PrimTokenNotationError (token_kind,env,sigma,UnexpectedNonOptionTerm c)
 
 let uninterp_option c =
   match Constr.kind c with
@@ -995,7 +1014,7 @@ let interp o ?loc n =
     | Int63 pos_neg_int63_ty, Some n ->
        interp_int63 ?loc pos_neg_int63_ty.pos_neg_int63_ty (NumTok.SignedNat.to_bigint n)
     | (Int _ | UInt _ | Z _ | Int63 _), _ ->
-       no_such_prim_token "number" ?loc o.ty_name
+       no_such_prim_token Number ?loc o.ty_name
     | Float64, _ -> interp_float64 ?loc n
     | Number number_ty, _ -> coqnumber_of_rawnum number_ty n
   in
@@ -1007,12 +1026,12 @@ let interp o ?loc n =
   | Abstract threshold, Direct when NumTok.Signed.is_bigger_int_than n threshold ->
      warn_abstract_large_num (o.ty_name,o.to_ty);
      assert (Array.length o.to_post = 0);
-     glob_of_constr "number" o.ty_name ?loc env sigma o.to_post (mkApp (to_ty,[|c|]))
+     glob_of_constr Number o.ty_name ?loc env sigma o.to_post (mkApp (to_ty,[|c|]))
   | _ ->
      let res = eval_constr_app env sigma to_ty c in
      match snd o.to_kind with
-     | Direct -> glob_of_constr "number" o.ty_name ?loc env sigma o.to_post res
-     | Option -> interp_option "number" "number" o.ty_name ?loc env sigma o.to_post res
+     | Direct -> glob_of_constr Number o.ty_name ?loc env sigma o.to_post res
+     | Option -> interp_option Number Number o.ty_name ?loc env sigma o.to_post res
 
 let uninterp o n =
   PrimTokenNotation.uninterp
@@ -1115,8 +1134,8 @@ let interp o ?loc n =
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   let res = eval_constr_app env sigma to_ty c in
   match snd o.to_kind with
-  | Direct -> glob_of_constr "string" o.ty_name ?loc env sigma o.to_post res
-  | Option -> interp_option "string" "string" o.ty_name ?loc env sigma o.to_post res
+  | Direct -> glob_of_constr String o.ty_name ?loc env sigma o.to_post res
+  | Option -> interp_option String String o.ty_name ?loc env sigma o.to_post res
 
 let uninterp o n =
   PrimTokenNotation.uninterp

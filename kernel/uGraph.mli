@@ -47,7 +47,7 @@ type explanation
 
 type univ_inconsistency = constraint_type * Sorts.t * Sorts.t * explanation option
 
-exception UniverseInconsistency of univ_inconsistency
+type _ CErrors.tag += UniverseInconsistency : univ_inconsistency CErrors.tag
 
 val enforce_constraint : univ_constraint -> t -> t
 

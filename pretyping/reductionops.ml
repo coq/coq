@@ -1083,7 +1083,7 @@ let sigma_compare_sorts env pb s0 s1 sigma =
 let sigma_compare_instances ~flex i0 i1 sigma =
   try Evd.set_eq_instances ~flex sigma i0 i1
   with Evd.UniversesDiffer
-     | UGraph.UniverseInconsistency _ ->
+     | CoqError (UGraph.UniverseInconsistency, _) ->
         raise Reduction.NotConvertible
 
 let sigma_check_inductive_instances cv_pb variance u1 u2 sigma =
@@ -1138,7 +1138,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
       | None -> None
       | Some cstr ->
         try Some (Evd.add_universe_constraints sigma cstr)
-        with UGraph.UniverseInconsistency _ | Evd.UniversesDiffer -> None
+        with CoqError (UGraph.UniverseInconsistency, _) | Evd.UniversesDiffer -> None
       in
       match ans with
       | Some sigma -> ans
@@ -1152,7 +1152,7 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
         Some sigma'
   with
   | Reduction.NotConvertible -> None
-  | UGraph.UniverseInconsistency _ when catch_incon -> None
+  | CoqError (UGraph.UniverseInconsistency, _) when catch_incon -> None
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
       Reduction.generic_conv pb ~l2r (Evd.evar_handler sigma))
@@ -1178,7 +1178,7 @@ let infer_conv_ustate ?(catch_incon=true) ?(pb=Reduction.CUMUL)
         Some cstr
   with
   | Reduction.NotConvertible -> None
-  | UGraph.UniverseInconsistency _ when catch_incon -> None
+  | CoqError (UGraph.UniverseInconsistency, _) when catch_incon -> None
 
 let evars_of_evar_map sigma =
   { Genlambda.evars_val = Evd.evar_handler sigma }

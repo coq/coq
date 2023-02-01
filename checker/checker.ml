@@ -241,7 +241,7 @@ let explain_exn = function
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ guill s ++ report ())
   | Sys.Break ->
     hov 0 (fnl () ++ str "User interrupt.")
-  | UGraph.UniverseInconsistency i ->
+  | CoqError (UGraph.UniverseInconsistency, i) ->
     let msg =
       if CDebug.(get_flag misc) then
         str "." ++ spc() ++

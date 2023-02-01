@@ -2254,7 +2254,7 @@ let solve_by_tac prg obls i tac =
     Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
     Some (body, types, uctx)
   with
-  | Tacticals.FailError (_, s) as exn ->
+  | CErrors.CoqError (Tacticals.FailError, (_, s)) as exn ->
     let _ = Exninfo.capture exn in
     let loc = fst obl.obl_location in
     CErrors.user_err ?loc s
