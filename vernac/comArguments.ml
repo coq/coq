@@ -267,7 +267,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   if scopes_specified || clear_scopes_flag then begin
     let scopes = List.map (List.map (fun {loc;v=k} ->
         try ignore (Notation.find_scope k); k
-        with CErrors.UserError _ ->
+        with CErrors.(CoqError (UserError, _)) ->
           Notation.find_delimiters_scope ?loc k)) scopes
     in
     Notation.declare_arguments_scope section_local (smart_global reference) scopes

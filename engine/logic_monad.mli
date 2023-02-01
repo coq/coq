@@ -27,16 +27,15 @@
     interrupts. Also used in [Proofview] to avoid capturing exception
     from the IO monad ([Proofview] catches errors in its compatibility
     layer, and when lifting goal-level expressions). *)
-exception Exception of exn
-
-(** This exception is used to signal abortion in [timeout] functions. *)
-exception Tac_Timeout
+type _ CErrors.tag += Exception : exn CErrors.tag
 
 (** This exception is used by the tactics to signal failure by lack of
     successes, rather than some other exceptions (like system
     interrupts). *)
-exception TacticFailure of exn
+type _ CErrors.tag += TacticFailure : exn CErrors.tag
 
+(** This exception is used to signal abortion in [timeout] functions. *)
+type _ CErrors.tag += Tac_Timeout : unit CErrors.tag
 
 (** {6 Non-logical layer} *)
 

@@ -88,7 +88,7 @@ end
 (* Compatibility module: Do Not Use *)
 module Declare : sig
 
-  exception NoCurrentProof
+  type _ CErrors.tag += NoCurrentProof : unit CErrors.tag
 
   val there_are_pending_proofs : unit -> bool
   val get_open_goals : unit -> int

@@ -53,15 +53,18 @@ let subst_evaluable_reference subst = function
   | EvalVarRef id -> EvalVarRef id
   | EvalConstRef kn -> EvalConstRef (Mod_subst.subst_constant subst kn)
 
-exception NotEvaluableRef of GlobRef.t
+type _ CErrors.tag += NotEvaluableRef : GlobRef.t CErrors.tag
 
-let () = CErrors.register_handler (function
-    | NotEvaluableRef r ->
-      Some Pp.(str "Cannot coerce" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r ++
-               spc () ++ str "to an evaluable reference.")
-    | _ -> None)
+let () = CErrors.register (module struct
+    type e = GlobRef.t
+    type _ CErrors.tag += T = NotEvaluableRef
+    let pp r =
+      let open Pp in
+      str "Cannot coerce" ++ spc () ++ Nametab.pr_global_env Id.Set.empty r ++
+      spc () ++ str "to an evaluable reference."
+  end)
 
-let error_not_evaluable r = raise (NotEvaluableRef r)
+let error_not_evaluable r = CErrors.coq_error NotEvaluableRef r
 
 let is_evaluable_const env cst =
   is_transparent env (ConstKey cst) && evaluable_constant cst env

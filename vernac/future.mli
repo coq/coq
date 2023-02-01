@@ -35,8 +35,6 @@ end
 module UUIDMap : Map.S with type key = UUID.t
 module UUIDSet : Set.S with type elt = UUID.t
 
-exception NotReady of string
-
 type 'a computation
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn ]
 

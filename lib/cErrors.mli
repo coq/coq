@@ -30,19 +30,19 @@ val is_anomaly : exn -> bool
     This is mostly provided for compatibility. Please avoid doing specific
     tricks with anomalies thanks to it. See rather [noncritical] below. *)
 
-exception UserError of Pp.t
-
 type _ tag = ..
 
 type exn += CoqError : 'e tag * 'e -> exn
+
+type _ tag += UserError : Pp.t tag
+(** Main error signaling exception.*)
 
 val coq_error : ?loc:Loc.t -> ?info:Exninfo.info -> 'e tag -> 'e -> 'a
 (** Main error raising primitive. [coq_error ?loc e v] signals an
     error [e] with payload [v] and location [loc]. *)
 
 val user_err : ?loc:Loc.t -> ?info:Exninfo.info -> Pp.t -> 'a
-(** Main error raising primitive. [user_err ?loc pp] signals an
-    error [pp] with optional header and location [loc] *)
+(** Raise a generic UserError. *)
 
 (** [register_handler h] registers [h] as a handler.
     When an expression is printed with [print e], it

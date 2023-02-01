@@ -931,7 +931,7 @@ let perform_eval ~pstate e =
   in
   let nosuchgoal =
     let info = Exninfo.reify () in
-    Proofview.tclZERO ~info (Proof.SuggestNoSuchGoals (1,proof))
+    Proofview.tclERROR ~info Proof.SuggestNoSuchGoals (1,proof)
   in
   let v = Goal_select.tclSELECT ~nosuchgoal selector v in
   let (proof, _, ans) = Proof.run_tactic (Global.env ()) v proof in
@@ -970,7 +970,7 @@ let register_struct atts str = match str with
 
 (** Toplevel exception *)
 
-let _ = Goptions.declare_bool_option {
+let () = Goptions.declare_bool_option {
   Goptions.optstage = Summary.Stage.Interp;
   Goptions.optdepr = false;
   Goptions.optkey = ["Ltac2"; "Backtrace"];
@@ -993,15 +993,16 @@ let pr_frame = function
   str "Extn " ++ str (Tac2dyn.Arg.repr tag) ++ str ":" ++ spc () ++
     obj.Tac2env.ml_print env sigma arg
 
-let () = register_handler begin function
-| Tac2interp.LtacError (kn, args) ->
-  let t_exn = KerName.make Tac2env.coq_prefix (Label.make "exn") in
-  let v = Tac2ffi.of_open (kn, args) in
-  let t = GTypRef (Other t_exn, []) in
-  let c = Tac2print.pr_valexpr (Global.env ()) Evd.empty v t in
-  Some (hov 0 (str "Uncaught Ltac2 exception:" ++ spc () ++ hov 0 c))
-| _ -> None
-end
+let () = CErrors.register (module struct
+    type e = KerName.t * Tac2ffi.valexpr array
+    type _ CErrors.tag += T = Tac2ffi.LtacError
+    let pp (kn, args) =
+      let t_exn = KerName.make Tac2env.coq_prefix (Label.make "exn") in
+      let v = Tac2ffi.of_open (kn, args) in
+      let t = GTypRef (Other t_exn, []) in
+      let c = Tac2print.pr_valexpr (Global.env ()) Evd.empty v t in
+      (hov 0 (str "Uncaught Ltac2 exception:" ++ spc () ++ hov 0 c))
+  end)
 
 let () = CErrors.register_additional_error_info begin fun info ->
   if !Tac2interp.print_ltac2_backtrace then

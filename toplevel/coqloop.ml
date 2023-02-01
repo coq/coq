@@ -192,7 +192,7 @@ end
 let make_prompt () =
   try
     (Names.Id.to_string (Vernacstate.Declare.get_current_proof_name ())) ^ " < "
-  with Vernacstate.Declare.NoCurrentProof ->
+  with CErrors.CoqError (Vernacstate.Declare.NoCurrentProof, ()) ->
     "Coq < "
   [@@ocaml.warning "-3"]
 
@@ -257,7 +257,7 @@ let rec discard_to_dot () =
   try
     Pcoq.Entry.parse parse_to_dot top_buffer.tokens
   with
-    | CLexer.Error.E _ -> (* Lexer failed *) discard_to_dot ()
+    | CErrors.CoqError (CLexer.Error.E, _) -> (* Lexer failed *) discard_to_dot ()
     | e when CErrors.noncritical e -> ()
 
 let read_sentence ~state input =

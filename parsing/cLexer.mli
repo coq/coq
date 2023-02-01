@@ -77,8 +77,7 @@ module Lexer :
 
 module Error : sig
   type t
-  exception E of t
-  val to_string : t -> string
+  type _ CErrors.tag += E : t CErrors.tag
 end
 
 (** LexerDiff ensures that, ignoring white space, the concatenated

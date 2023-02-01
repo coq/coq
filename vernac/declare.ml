@@ -169,7 +169,7 @@ type constant_obj = {
 
 let load_constant i ((sp,kn), obj) =
   if Nametab.exists_cci sp then
-    raise (DeclareUniv.AlreadyDeclared (None, Libnames.basename sp));
+    CErrors.coq_error DeclareUniv.AlreadyDeclared {kind = None; id = Libnames.basename sp};
   let con = Global.constant_of_delta_kn kn in
   Nametab.push (Nametab.Until i) sp (GlobRef.ConstRef con);
   Dumpglob.add_constant_kind con obj.cst_kind;
@@ -192,7 +192,7 @@ let exists_name id =
 
 let check_exists id =
   if exists_name id then
-    raise (DeclareUniv.AlreadyDeclared (None, id))
+    CErrors.coq_error DeclareUniv.AlreadyDeclared {kind = None; id}
 
 let cache_constant ((sp,kn), obj) =
   let kn = Global.constant_of_delta_kn kn in
@@ -486,7 +486,7 @@ let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 let declare_variable_core ~name ~kind d =
   (* Variables are distinguished by only short names *)
   if Decls.variable_exists name then
-    raise (DeclareUniv.AlreadyDeclared (None, name));
+    CErrors.coq_error DeclareUniv.AlreadyDeclared {kind = None; id = name};
 
   let impl,opaque,univs = match d with (* Fails if not well-typed *)
     | SectionLocalAssum {typ;impl;univs} ->
@@ -1816,7 +1816,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
   let uctx = Evd.evar_universe_context sigma in
   let (const, safe, uctx) =
     try build_constant_by_tactic ~name ~opaque:Vernacexpr.Transparent ~poly ~uctx ~sign:secsign concl solve_tac
-    with Logic_monad.TacticFailure e as src ->
+    with CErrors.CoqError (Logic_monad.TacticFailure, e) as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
        means that [e] comes from [tac] failing to yield enough
@@ -1865,7 +1865,7 @@ let get_current_goal_context pf =
   let p = get pf in
   try Proof.get_goal_context_gen p 1
   with
-  | Proof.NoSuchGoal _ ->
+  | CErrors.CoqError (Proof.NoSuchGoal, _) ->
     (* spiwack: returning empty evar_map, since if there is no goal,
        under focus, there is no accessible evar either. EJGA: this
        seems strange, as we have pf *)
@@ -2259,7 +2259,7 @@ let solve_by_tac prg obls i tac =
     let loc = fst obl.obl_location in
     CErrors.user_err ?loc (Lazy.force s)
   (* If the proof is open we absorb the error and leave the obligation open *)
-  | Proof_.OpenProof _ ->
+  | CErrors.CoqError (Proof_.OpenProof, _) ->
     None
   | e when CErrors.noncritical e ->
     let err = CErrors.print e in

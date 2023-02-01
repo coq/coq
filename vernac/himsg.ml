@@ -1471,15 +1471,6 @@ let wrap_unhandled f e =
   try Some (f e)
   with Unhandled -> None
 
-let explain_exn_default = function
-  (* Basic interaction exceptions *)
-  | Gramlib.Stream.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
-  | CLexer.Error.E err -> hov 0 (str (CLexer.Error.to_string err))
-  (* Otherwise, not handled here *)
-  | _ -> raise Unhandled
-
-let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
-
 let vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
@@ -1522,3 +1513,11 @@ let vernac_interp_error_handler = function
     raise Unhandled
 
 let _ = CErrors.register_handler (wrap_unhandled vernac_interp_error_handler)
+
+let () = CErrors.register (module struct
+    type e = Rewrite.rewrite_failure
+    type _ CErrors.tag += T = Rewrite.RewriteFailure
+    let pp (env, sigma, e) =
+      let e = explain_pretype_error env sigma e in
+      Pp.(str"setoid rewrite failed: " ++ e)
+  end)

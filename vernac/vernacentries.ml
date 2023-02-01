@@ -116,7 +116,7 @@ let show_proof ~pstate =
     Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
   (* We print nothing if there are no goals left *)
   with
-  | Proof.NoSuchGoal _
+  | CErrors.CoqError (Proof.NoSuchGoal, _)
   | Option.IsNone ->
     user_err (str "No goals to show.")
 
@@ -462,43 +462,50 @@ let msg_found_library (fulldir, file) =
   else
     hov 0 (DirPath.print fulldir ++ strbrk " is bound to file " ++ str file)
 
-let err_unmapped_library ?from qid =
+type library_request = { from : DirPath.t option; qid : qualid }
+
+let pp_library_request { from; qid } =
   let prefix = match from with
   | None -> mt ()
   | Some from ->
     str " with prefix " ++ DirPath.print from
   in
-  strbrk "Cannot find a physical path bound to logical path "
-    ++ pr_qualid qid ++ prefix ++ str "."
+  pr_qualid qid ++ prefix
 
-let err_notfound_library ?from qid =
-  let prefix = match from with
-  | None -> mt ()
-  | Some from -> str " with prefix " ++ DirPath.print from
-  in
+let err_unmapped_library lib =
+  strbrk "Cannot find a physical path bound to logical path "
+    ++ pp_library_request lib ++ str "."
+
+let err_notfound_library lib =
   let bonus =
     if !Flags.load_vos_libraries then mt ()
     else str " (while searching for a .vos file)"
   in
-  strbrk "Unable to locate library " ++ pr_qualid qid ++ prefix ++ bonus
+  strbrk "Unable to locate library " ++ pp_library_request lib ++ bonus
     ++ str "."
 
-exception UnmappedLibrary of Names.DirPath.t option * Libnames.qualid
-exception NotFoundLibrary of Names.DirPath.t option * Libnames.qualid
+type _ CErrors.tag +=
+  | UnmappedLibrary : library_request CErrors.tag
+  | NotFoundLibrary : library_request CErrors.tag
 
+let () = CErrors.register (module struct
+    type e = library_request
+    type _ CErrors.tag += T = UnmappedLibrary
+    let pp = err_unmapped_library
+  end)
 
-let _ = CErrors.register_handler begin function
-  | UnmappedLibrary (from, qid) -> Some (err_unmapped_library ?from qid)
-  | NotFoundLibrary (from, qid) -> Some (err_notfound_library ?from qid)
-  | _ -> None
-end
+let () = CErrors.register (module struct
+    type e = library_request
+    type _ CErrors.tag += T = NotFoundLibrary
+    let pp = err_notfound_library
+  end)
 
 let print_located_library qid =
   let open Loadpath in
   match locate_qualified_library qid with
   | Ok lib -> msg_found_library lib
-  | Error LibUnmappedDir -> raise (UnmappedLibrary (None, qid))
-  | Error LibNotFound    -> raise (NotFoundLibrary (None, qid))
+  | Error LibUnmappedDir -> CErrors.coq_error UnmappedLibrary {from=None; qid}
+  | Error LibNotFound -> CErrors.coq_error NotFoundLibrary {from=None; qid}
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
@@ -611,7 +618,8 @@ let program_inference_hook env sigma ev =
       in
       Some (Evd.set_universe_context sigma ctx, EConstr.of_constr c)
   with
-  | Logic_monad.TacticFailure e when noncritical e ->
+  (* XXX can this ever be critical? *)
+  | CErrors.CoqError (Logic_monad.TacticFailure, e) when noncritical e ->
     user_err Pp.(str "The statement obligations could not be resolved \
                       automatically, write a statement definition first.")
 
@@ -1508,8 +1516,8 @@ let vernac_require from export qidl =
     let open Loadpath in
     match locate_qualified_library ?root qid with
     | Ok (dir,f) -> dir, f
-    | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
-    | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
+    | Error LibUnmappedDir -> CErrors.coq_error UnmappedLibrary {from=root; qid}
+    | Error LibNotFound -> CErrors.coq_error NotFoundLibrary {from=root; qid}
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
@@ -2215,7 +2223,7 @@ let vernac_search ~pstate ~atts s gopt r =
     (* 1st goal by default if it exists, otherwise no goal at all *)
     | None -> begin
         try get_goal_or_global_context ~pstate 1
-        with Proof.NoSuchGoal _ -> let env = Global.env () in Evd.from_env env, env
+        with CErrors.CoqError (Proof.NoSuchGoal, _) -> let env = Global.env () in Evd.from_env env, env
       end
     (* if goal selector is given and wrong, then let exceptions be raised. *)
     | Some g -> get_goal_or_global_context ~pstate g
@@ -2357,7 +2365,7 @@ let vernac_check_guard ~pstate =
       let env = Environ.reset_with_named_context hyps (Global.env ()) in
       Inductiveops.control_only_guard env sigma pfterm;
       (str "The condition holds up to here")
-    with UserError s ->
+    with CErrors.CoqError (UserError, s) ->
       (str ("Condition violated: ") ++ s ++ str ".")
   in message
 

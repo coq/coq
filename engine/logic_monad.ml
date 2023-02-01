@@ -27,21 +27,35 @@
     interrupts. Also used in [Proofview] to avoid capturing exception
     from the IO monad ([Proofview] catches errors in its compatibility
     layer, and when lifting goal-level expressions). *)
-exception Exception of exn
+type _ CErrors.tag += Exception : exn CErrors.tag
 
-(** This exception is used to signal abortion in [timeout] functions. *)
-exception Tac_Timeout
 
 (** This exception is used by the tactics to signal failure by lack of
     successes, rather than some other exceptions (like system
     interrupts). *)
-exception TacticFailure of exn
+type _ CErrors.tag += TacticFailure : exn CErrors.tag
 
-let _ = CErrors.register_handler begin function
-  | Exception e -> Some (CErrors.print e)
-  | TacticFailure e -> Some (CErrors.print e)
-  | _ -> None
-end
+(** This exception is used to signal abortion in [timeout] functions. *)
+type _ CErrors.tag += Tac_Timeout : unit CErrors.tag
+
+let () = CErrors.register (module struct
+    type e = exn
+    type _ CErrors.tag += T = Exception
+    let pp e = CErrors.print e
+  end)
+
+let () = CErrors.register (module struct
+    type e = exn
+    type _ CErrors.tag += T = TacticFailure
+    (* NB was also handled in himsg, todo see if observable differences *)
+    let pp e = CErrors.print e
+  end)
+
+let () = CErrors.register (module struct
+    type e = unit
+    type _ CErrors.tag += T = Tac_Timeout
+    let pp () = Pp.str "[Proofview.tclTIMEOUT] Tactic timeout!"
+  end)
 
 (** {6 Non-logical layer} *)
 
@@ -83,12 +97,12 @@ struct
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)
-  let raise (e, info) () = Exninfo.iraise (Exception e, info)
+  let raise (e, info) () = CErrors.coq_error ~info Exception e
 
   (** [try ... with ...] but restricted to {!Exception}. *)
   let catch = fun s h -> ();
     fun () -> try s ()
-      with Exception e as src ->
+      with CErrors.CoqError (Exception, (e:exn)) as src ->
         let (src, info) = Exninfo.capture src in
         h (e, info) ()
 
@@ -105,7 +119,7 @@ struct
     try f ()
     with e when CErrors.noncritical e ->
       let (e, info) = Exninfo.capture e in
-      Exninfo.iraise (Exception e, info)
+      raise (e, info) ()
 
   (** Use the current logger. The buffer is also flushed. *)
   let print_debug   s = make (fun _ -> Feedback.msg_debug s)
@@ -114,7 +128,7 @@ struct
   let print_notice  s = make (fun _ -> Feedback.msg_notice s)
 
   let run = fun x ->
-    try x () with Exception e as src ->
+    try x () with CErrors.CoqError (Exception, e) as src ->
       let (src, info) = Exninfo.capture src in
       Exninfo.iraise (e, info)
 end

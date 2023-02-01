@@ -936,15 +936,17 @@ let default = {
 
 end
 
-exception UnknownCustomEntry of string
+type _ CErrors.tag += UnknownCustomEntry : string CErrors.tag
 
-let () = CErrors.register_handler @@ function
-  | UnknownCustomEntry entry -> Some Pp.(str "Unknown custom entry: " ++ str entry ++ str ".")
-  | _ -> None
+let () = CErrors.register (module struct
+    type e = string
+    type _ CErrors.tag += T = UnknownCustomEntry
+    let pp entry = Pp.(str "Unknown custom entry: " ++ str entry ++ str ".")
+  end)
 
 let check_custom_entry entry =
   if not (Egramcoq.exists_custom_entry entry) then
-    raise @@ UnknownCustomEntry entry
+    CErrors.coq_error UnknownCustomEntry entry
 
 let check_entry_type = function
   | ETConstr (InCustomEntry entry,_,_) -> check_custom_entry entry

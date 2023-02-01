@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
 open Tac2expr
 open Tac2ffi
 
@@ -27,11 +26,6 @@ val interp_value : environment -> glb_tacexpr -> valexpr
 
 val get_env : Ltac_pretype.unbound_ltac_var_map -> environment
 val set_env : environment -> Ltac_pretype.unbound_ltac_var_map -> Ltac_pretype.unbound_ltac_var_map
-
-(** {5 Exceptions} *)
-
-exception LtacError of KerName.t * valexpr array
-(** Ltac2-defined exceptions seen from OCaml side *)
 
 (** {5 Backtrace} *)
 

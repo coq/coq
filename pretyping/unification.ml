@@ -129,7 +129,7 @@ let abstract_list_all env evd typ c l =
       let c = EConstr.it_mkLambda_or_LetIn (EConstr.Vars.lift (List.length ctxt) c) ctxt in
       Typing.recheck_against env evd c p
     with
-    | UserError _ ->
+    | CoqError (UserError, _) ->
         error_cannot_find_well_typed_abstraction env evd p l None
     | Type_errors.TypeError (env',x) ->
         (* FIXME: plug back the typing information *)

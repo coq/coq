@@ -952,7 +952,7 @@ module Search = struct
         Tacticals.tclFAIL ~info (str"Proof search failed" ++
                                     (if Option.is_empty depth then mt()
                                      else str" without reaching its limit"))
-      | Proofview.MoreThanOneSuccess ->
+      | CErrors.CoqError (Proofview.MoreThanOneSuccess, ()) ->
         Tacticals.tclFAIL ~info (str"Proof search failed: " ++
                                        str"more than one success found")
       | e -> Proofview.tclZERO ~info e
@@ -960,7 +960,7 @@ module Search = struct
     let tac = Proofview.tclOR tac error in
     let tac =
       if unique then
-        Proofview.tclEXACTLY_ONCE Proofview.MoreThanOneSuccess tac
+        Proofview.tclEXACTLY_ONCE (CErrors.CoqError (Proofview.MoreThanOneSuccess, ())) tac
       else tac
     in
     with_shelf numgoals >>= fun (initshelf, i) ->
@@ -1006,7 +1006,7 @@ module Search = struct
     in
     let (), pv', unsafe, info =
       try Proofview.apply ~name ~poly env tac pv
-      with Logic_monad.TacticFailure _ -> raise Not_found
+      with CErrors.CoqError (Logic_monad.TacticFailure, _) -> raise Not_found
     in
     let () =
       ppdebug 1 (fun () ->
@@ -1257,7 +1257,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) concl unique =
     let name = Names.Id.of_string "legacy_pe" in
     match Proofview.apply ~name ~poly:false (Global.env ()) tac pv with
     | (_, final, _, _) -> final
-    | exception (Logic_monad.TacticFailure (Tacticals.FailError _)) ->
+    | exception CErrors.CoqError (Logic_monad.TacticFailure, (Tacticals.FailError _)) ->
       raise Not_found
   in
   let evd = Proofview.return pv in

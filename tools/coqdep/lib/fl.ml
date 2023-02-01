@@ -10,30 +10,39 @@
 
 module Error = struct
 
-  exception CannotFindMeta of string * string
-  exception CannotParseMetaFile of string * string
-  exception DeclaredMLModuleNotFound of string * string * string
-  exception MetaLacksFieldForPackage of string * string * string
+  type t =
+    | CannotFindMeta of string * string
+    | CannotParseMetaFile of string * string
+    | DeclaredMLModuleNotFound of string * string * string
+    | MetaLacksFieldForPackage of string * string * string
+
+  type _ CErrors.tag += FlError : t CErrors.tag
+
+  open struct let raise e = CErrors.coq_error FlError e end
 
   let no_meta f package = raise @@ CannotFindMeta (f, package)
   let cannot_parse_meta_file file msg = raise @@ CannotParseMetaFile (file,msg)
   let declare_in_META f s m = raise @@ DeclaredMLModuleNotFound (f, s, m)
   let meta_file_lacks_field meta_file package field = raise @@ MetaLacksFieldForPackage (meta_file, package, field)
 
-  let _ = CErrors.register_handler @@ function
-    | CannotFindMeta (f, package) ->
-      Some Pp.(str "in file" ++ spc () ++ str f ++ str "," ++ spc ()
-               ++ str "could not find META." ++ str package ++ str ".")
-    | CannotParseMetaFile (file, msg) ->
-      Some Pp.(str "META file \"" ++ str file ++ str "\":" ++ spc ()
-               ++ str "Syntax error:" ++ spc () ++ str msg)
-    | DeclaredMLModuleNotFound (f, s, m) ->
-      Some Pp.(str "in file " ++ str f ++ str "," ++ spc() ++ str "declared ML module" ++ spc ()
-               ++ str s ++ spc () ++ str "has not been found in" ++ spc () ++ str m ++ str ".")
-    | MetaLacksFieldForPackage (meta_file, package, field) ->
-      Some Pp.(str "META file \"" ++ str meta_file ++ str "\"" ++ spc () ++ str "lacks field" ++ spc ()
-               ++ str field ++ spc () ++ str "for package" ++ spc () ++ str package ++ str ".")
-    | _ -> None
+  let () = CErrors.register (module struct
+      type e = t
+      type _ CErrors.tag += T = FlError
+
+      let pp = let open Pp in function
+        | CannotFindMeta (f, package) ->
+          str "in file" ++ spc () ++ str f ++ str "," ++ spc ()
+          ++ str "could not find META." ++ str package ++ str "."
+        | CannotParseMetaFile (file, msg) ->
+          str "META file \"" ++ str file ++ str "\":" ++ spc ()
+          ++ str "Syntax error:" ++ spc () ++ str msg
+        | DeclaredMLModuleNotFound (f, s, m) ->
+          str "in file " ++ str f ++ str "," ++ spc() ++ str "declared ML module" ++ spc ()
+          ++ str s ++ spc () ++ str "has not been found in" ++ spc () ++ str m ++ str "."
+        | MetaLacksFieldForPackage (meta_file, package, field) ->
+          str "META file \"" ++ str meta_file ++ str "\"" ++ spc () ++ str "lacks field" ++ spc ()
+          ++ str field ++ spc () ++ str "for package" ++ spc () ++ str package ++ str "."
+    end)
 end
 
 (* Platform build is doing something weird with META, hence we parse

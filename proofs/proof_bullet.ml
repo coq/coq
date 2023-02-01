@@ -72,15 +72,18 @@ module Strict = struct
     | Suggest b -> Pp.(str"Expecting " ++ pr_bullet b ++ str".")
     | Unfinished b -> Pp.(str"Current bullet " ++ pr_bullet b ++ str" is not finished.")
 
-  exception FailedBullet of t * suggestion
+  type _ CErrors.tag += FailedBullet : (t * suggestion) CErrors.tag
 
-  let _ =
-    CErrors.register_handler
-      (function
-      | FailedBullet (b,sugg) ->
-        let prefix = Pp.(str"Wrong bullet " ++ pr_bullet b ++ str": ") in
-        Some Pp.(str "[Focus]" ++ spc () ++ prefix ++ suggest_on_error sugg)
-      | _ -> None)
+  let () =
+    CErrors.register (module struct
+      type e = t * suggestion
+      type _ CErrors.tag += T = FailedBullet
+      let pp (b,sugg) =
+        let open Pp in
+        str "[Focus]" ++ spc ()
+        ++ str"Wrong bullet " ++ pr_bullet b
+        ++ str": " ++ suggest_on_error sugg
+    end)
 
 
   (* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
@@ -160,9 +163,9 @@ module Strict = struct
           let p' = pop_until p bul in
           push bul p'
       (* the bullet you gave is in use but not the right one *)
-        | sugg -> raise (FailedBullet (bul,sugg))
-    with NoSuchGoals _ -> (* push went bad *)
-      raise (FailedBullet (bul,suggest_bullet p))
+        | sugg -> CErrors.coq_error FailedBullet (bul,sugg)
+    with CErrors.CoqError (NoSuchGoals, _) -> (* push went bad *)
+      CErrors.coq_error FailedBullet (bul,suggest_bullet p)
 
   let strict = {
     name = "Strict Subproofs";
@@ -192,10 +195,12 @@ let put p b =
 let suggest p =
   (current_behavior ()).suggest p
 
-let _ = CErrors.register_handler begin function
-    | Proof.SuggestNoSuchGoals(n,proof) ->
+let () = CErrors.register (module struct
+    type e = (int * Proof.t)
+    type _ CErrors.tag += T = Proof.SuggestNoSuchGoals
+    let pp (n,proof) =
       let suffix = suggest proof in
-      Some (Pp.(str "No such " ++ str (CString.plural n "goal") ++ str "." ++
-                pr_non_empty_arg (fun x -> x) suffix))
-    | _ -> None
-  end
+      let open Pp in
+      str "No such " ++ str (CString.plural n "goal") ++ str "." ++
+      pr_non_empty_arg (fun x -> x) suffix
+  end)

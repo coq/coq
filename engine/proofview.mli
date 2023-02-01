@@ -190,6 +190,8 @@ module Monad : Monad.S with type +'a t = 'a tactic
     Exception is supposed to be non critical *)
 val tclZERO : ?info:Exninfo.info -> exn -> 'a tactic
 
+val tclERROR : ?info:Exninfo.info -> 'e CErrors.tag -> 'e -> 'a tactic
+
 (** [tclOR t1 t2] behaves like [t1] as long as [t1] succeeds. Whenever
     the successes of [t1] have been depleted and it failed with [e],
     then it behaves as [t2 e]. In other words, [tclOR] inserts a
@@ -222,7 +224,7 @@ val tclONCE : 'a tactic -> 'a tactic
     [tclEXACTLY_ONCE e t] succeeds with the first success of
     [t]. Notice that the choice of [e] is relevant, as the presence of
     further successes may depend on [e] (see {!tclOR}). *)
-exception MoreThanOneSuccess
+type _ CErrors.tag += MoreThanOneSuccess : unit CErrors.tag
 val tclEXACTLY_ONCE : exn -> 'a tactic -> 'a tactic
 
 (** [tclCASE t] splits [t] into its first success and a
@@ -249,7 +251,7 @@ val tclBREAK : (Exninfo.iexn -> Exninfo.iexn option) -> 'a tactic -> 'a tactic
     existing goals, fails with the [nosuchgoal] argument, by default
     raising [NoSuchGoals] (a user error). This exception is caught at
     toplevel with a default message. *)
-exception NoSuchGoals of int
+type _ CErrors.tag += NoSuchGoals : int CErrors.tag
 
 val tclFOCUS : ?nosuchgoal:'a tactic -> int -> int -> 'a tactic -> 'a tactic
 
@@ -291,7 +293,7 @@ val tclTRYFOCUS : int -> int -> unit tactic -> unit tactic
     When the length of the tactic list is not the number of goal,
     raises [SizeMismatch (g,t)] where [g] is the number of available
     goals, and [t] the number of tactics passed. *)
-exception SizeMismatch of int*int
+type _ CErrors.tag += SizeMismatch : (int*int) CErrors.tag
 val tclDISPATCH : unit tactic list -> unit tactic
 val tclDISPATCHL : 'a tactic list -> 'a list tactic
 

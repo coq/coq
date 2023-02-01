@@ -222,4 +222,4 @@ module MakeWorker(T : Task) () : sig
 end
 
 (** convenience exception to marshall to master *)
-exception RemoteException of Pp.t
+type _ CErrors.tag += RemoteException : Pp.t CErrors.tag

@@ -259,7 +259,7 @@ let subgoals flags =
          Some (export_pre_goals flags Proof.(data newp) (process_goal short)))
     end else
       Some (export_pre_goals flags Proof.(data newp) (process_goal short))
-  with Vernacstate.Declare.NoCurrentProof -> None
+  with CErrors.CoqError (Vernacstate.Declare.NoCurrentProof, ()) -> None
   [@@ocaml.warning "-3"]
 
 let goals () =
@@ -277,7 +277,7 @@ let evars () =
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
     Some el
-  with Vernacstate.Declare.NoCurrentProof -> None
+  with CErrors.CoqError (Vernacstate.Declare.NoCurrentProof, ()) -> None
   [@@ocaml.warning "-3"]
 
 let hints () =
@@ -291,7 +291,7 @@ let hints () =
       let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
       Some (hint_hyps, concl_next_tac)
-  with Vernacstate.Declare.NoCurrentProof -> None
+  with CErrors.CoqError (Vernacstate.Declare.NoCurrentProof, ()) -> None
   [@@ocaml.warning "-3"]
 
 (** Other API calls *)
@@ -313,7 +313,7 @@ let status force =
   in
   let proof =
     try Some (Names.Id.to_string (Vernacstate.Declare.get_current_proof_name ()))
-    with Vernacstate.Declare.NoCurrentProof -> None
+    with CErrors.CoqError (Vernacstate.Declare.NoCurrentProof, ()) -> None
   in
   let allproofs =
     let l = Vernacstate.Declare.get_all_proof_names () in

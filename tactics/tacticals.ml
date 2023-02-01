@@ -158,8 +158,7 @@ let tclZEROMSG ?info ?loc msg =
   | None -> info
   | Some loc -> Loc.add_loc info loc
   in
-  let err = UserError msg in
-  tclZERO ~info err
+  tclERROR ~info UserError msg
 
 let catch_failerror e =
   try
@@ -230,7 +229,7 @@ let tclTHENS3PARTS t1 l1 repeat l2 =
       Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
         begin tclEXTEND (Array.to_list l1) repeat (Array.to_list l2) end
         begin function (e, info) -> match e with
-          | SizeMismatch (i,_)->
+          | CErrors.CoqError (SizeMismatch, (i,_))->
               let errmsg =
                 str"Incorrect number of goals" ++ spc() ++
                 str"(expected "++int i++str(String.plural i " tactic") ++ str")"
@@ -283,7 +282,7 @@ let tclTHENS t l =
     t <*>Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
         begin tclDISPATCH l end
         begin function (e, info) -> match e with
-          | SizeMismatch (i,_)->
+          | CErrors.CoqError (SizeMismatch, (i,_))->
               let errmsg =
                 str"Incorrect number of goals" ++ spc() ++
                 str"(expected "++int i++str(String.plural i " tactic") ++ str")"
@@ -468,7 +467,7 @@ let tclTIMEOUT n t =
   Proofview.tclOR
     (Proofview.tclTIMEOUT n t)
     begin function (e, info) -> match e with
-      | Logic_monad.Tac_Timeout as e ->
+      | CErrors.CoqError (Logic_monad.Tac_Timeout, ()) as e ->
         let info = Exninfo.reify () in
         Proofview.tclZERO ~info (FailError (0,lazy (CErrors.print e)))
       | e -> Proofview.tclZERO ~info e

@@ -24,13 +24,21 @@ let not_here_msg = ref (fun name ->
 let customize_not_ready_msg f = not_ready_msg := f
 let customize_not_here_msg f = not_here_msg := f
 
-exception NotReady of string
-exception NotHere of string
+type _ CErrors.tag +=
+  | NotReady : string CErrors.tag
+  | NotHere : string CErrors.tag
 
-let _ = CErrors.register_handler (function
-  | NotReady name -> Some (!not_ready_msg name)
-  | NotHere name -> Some (!not_here_msg name)
-  | _ -> None)
+let () = CErrors.register (module struct
+    type e = string
+    type _ CErrors.tag += T = NotReady
+    let pp name = !not_ready_msg name
+  end)
+
+let () = CErrors.register (module struct
+    type e = string
+    type _ CErrors.tag += T = NotHere
+    let pp name = !not_here_msg name
+  end)
 
 type fix_exn = Stateid.exn_info option
 
@@ -81,7 +89,7 @@ let get x =
   | Ongoing (name, x) ->
       try let uuid, fix, c = CEphemeron.get x in name, uuid, fix, c
       with CEphemeron.InvalidKey ->
-        name, UUID.invalid, None, ref (Exn (NotHere name, Exninfo.null))
+        name, UUID.invalid, None, ref (Exn (CErrors.CoqError (NotHere, name), Exninfo.null))
 
 type 'a value = [ `Val of 'a | `Exn of Exninfo.iexn  ]
 
@@ -125,7 +133,7 @@ let rec compute ck : 'a value =
   match !c with
   | Val x -> `Val x
   | Exn (e, info) -> `Exn (e, info)
-  | Delegated None -> raise (NotReady name)
+  | Delegated None -> CErrors.coq_error NotReady name
   | Delegated (Some (lock, cond)) ->
     CThread.with_lock lock ~scope:(fun () -> Condition.wait cond lock); compute ck
   | Closure f ->
@@ -136,7 +144,7 @@ let rec compute ck : 'a value =
         let e = Exninfo.capture e in
         let e = eval_fix_exn fix_exn e in
         match e with
-        | (NotReady _, _) -> `Exn e
+        | (CErrors.CoqError (NotReady, _), _) -> `Exn e
         | _ -> c := Exn e; `Exn e
 
 let force x = match compute x with

@@ -639,9 +639,9 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   | Some evd ->
     let e,sym =
       try lib_ref "core.eq.type", lib_ref "core.eq.sym"
-      with UserError _ ->
+      with CoqError (UserError, _) ->
       try lib_ref "core.identity.type", lib_ref "core.identity.sym"
-      with UserError _ ->
+      with CoqError (UserError, _) ->
         user_err (strbrk "Need a registration for either core.eq.type and core.eq.sym or core.identity.type and core.identity.sym.") in
     Tacticals.pf_constr_of_global sym >>= fun sym ->
     Tacticals.pf_constr_of_global e >>= fun e ->
@@ -1043,7 +1043,7 @@ let discr_positions env sigma { eq_data = (lbeq,(t,t1,t2)); eq_term = v; eq_evar
       Proofview.tclUNIT
         (build_discriminator e_env sigma true_0 (false_0,false_ty) dirn (mkVar e) cpath)
     with
-      UserError _ as ex ->
+      CoqError (UserError, _) as ex ->
       let _, info = Exninfo.capture ex in
       Proofview.tclZERO ~info ex
   in
@@ -1073,7 +1073,7 @@ let onEquality with_evars tac (c,lbindc) =
   let sigma = Proofview.Goal.sigma gl in
   let state = Proofview.Goal.state gl in
   let t = Retyping.get_type_of env sigma c in
-  let t' = try snd (Tacred.reduce_to_quantified_ind env sigma t) with UserError _ -> t in
+  let t' = try snd (Tacred.reduce_to_quantified_ind env sigma t) with CoqError (UserError, _) -> t in
   let sigma, eq_clause = Clenv.make_evar_clause env sigma t' in
   let sigma = Clenv.solve_evar_clause env sigma false eq_clause lbindc in
   if not with_evars && List.exists (fun h -> h.Clenv.hole_deps) eq_clause.Clenv.cl_holes then
@@ -1342,8 +1342,7 @@ let rec build_injrec env sigma dflt c = function
       let sigma, (subval,tuplety,dfltval) = build_injrec cnum_env sigma dflt newc l in
       let res = kont sigma subval (dfltval,tuplety) in
       sigma, (res, tuplety,dfltval)
-    with
-        UserError _ -> failwith "caught"
+    with CoqError (UserError, _) -> failwith "caught"
 
 let build_injector env sigma dflt c cpath =
   let sigma, (injcode,resty,_) = build_injrec env sigma dflt c cpath in
@@ -1442,10 +1441,12 @@ let inject_at_positions env sigma l2r eq posns tac =
       (Tacticals.tclMAP map (if l2r then List.rev injectors else injectors))
       (tac (List.length injectors))
 
-exception NothingToInject
-let () = CErrors.register_handler (function
-  | NothingToInject -> Some (Pp.str "Nothing to inject.")
-  | _ -> None)
+type _ CErrors.tag += NothingToInject : unit CErrors.tag
+let () = CErrors.register (module struct
+    type e = unit
+    type _ CErrors.tag += T = NothingToInject
+    let pp () = Pp.str "Nothing to inject."
+  end)
 
 let injEqThen keep_proofs tac l2r eql =
   Proofview.Goal.enter begin fun gl ->
@@ -1463,7 +1464,7 @@ let injEqThen keep_proofs tac l2r eql =
             " You can try to use option Set Keep Proof Equalities." in
      tclZEROMSG (strbrk("No information can be deduced from this equality and the injectivity of constructors. This may be because the terms are convertible, or due to pattern matching restrictions in the sort Prop." ^ suggestion))
   | Inr [([],_,_)] ->
-     Proofview.tclZERO NothingToInject
+     Proofview.tclERROR NothingToInject ()
   | Inr posns ->
       inject_at_positions env sigma l2r eql posns
         (tac id)
@@ -1929,7 +1930,7 @@ let rewrite_assumption_cond cond_eq_term cl =
           try
             let dir = cond_eq_term (NamedDecl.get_type hyp) gl in
             general_rewrite_clause dir false (mkVar id,NoBindings) cl
-          with | Failure _ | UserError _ -> arec rest gl
+          with | Failure _ | CoqError (UserError, _) -> arec rest gl
         end
   in
   Proofview.Goal.enter begin fun gl ->

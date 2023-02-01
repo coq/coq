@@ -323,7 +323,7 @@ let warn_cannot_use_directory =
 let convert_string d =
   try Names.Id.of_string d
   with
-  | CErrors.UserError _ ->
+  | CErrors.(CoqError (UserError, _)) ->
     let d = Unicode.escaped_if_non_utf8 d in
     warn_cannot_use_directory d;
     raise_notrace Exit

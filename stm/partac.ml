@@ -170,7 +170,7 @@ let get_results res =
       | Some RespNoProgress -> None
       | Some (RespKilled goalno) -> killed := goalno :: !killed; None
       | Some (RespError (noncrt, msg)) ->
-        if noncrt then raise (AsyncTaskQueue.RemoteException msg)
+        if noncrt then CErrors.coq_error AsyncTaskQueue.RemoteException msg
         else CErrors.anomaly msg)
       res
   in

@@ -17,9 +17,8 @@ type univ_length_mismatch = {
   actual : int ;
   expect : int ;
 }
-(* Due to an OCaml bug ocaml/ocaml#10027 inlining this record will cause
-compliation with -rectypes to crash. *)
-exception UniverseLengthMismatch of univ_length_mismatch
+
+type _ CErrors.tag += UniverseLengthMismatch : univ_length_mismatch CErrors.tag
 
 (** Side-effecting functions creating new universe levels. *)
 

@@ -69,7 +69,7 @@ let verify_metas_coherence env sigma s1 s2 =
   Id.Map.merge merge s1 s2
 
 let matching_error =
-  CErrors.UserError Pp.(str "No matching clauses for match.")
+  CErrors.(CoqError (UserError, Pp.str "No matching clauses for match."))
 
 let imatching_error = (matching_error, Exninfo.null)
 

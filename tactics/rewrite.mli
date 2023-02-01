@@ -16,7 +16,8 @@ open Tactypes
 
 (** TODO: document and clean me! *)
 
-exception RewriteFailure of Environ.env * Evd.evar_map * Pretype_errors.pretype_error
+type rewrite_failure = Environ.env * Evd.evar_map * Pretype_errors.pretype_error
+type _ CErrors.tag += RewriteFailure : rewrite_failure CErrors.tag
 
 type unary_strategy =
     Subterms | Subterm | Innermost | Outermost

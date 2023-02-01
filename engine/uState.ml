@@ -663,15 +663,17 @@ let pr_error_unbound_universes left uctx =
       (prlist_with_sep spc prlev (Level.Set.elements left)) ++
       spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound."))
 
-exception UnboundUnivs of Level.Set.t * t
+type _ CErrors.tag += UnboundUnivs : (Level.Set.t * t) CErrors.tag
 
 (* Deliberately using no location as the location of the univs
    doesn't correspond to the failing command. *)
-let error_unbound_universes left uctx = raise (UnboundUnivs (left,uctx))
+let error_unbound_universes left uctx = CErrors.coq_error UnboundUnivs (left,uctx)
 
-let _ = CErrors.register_handler (function
-    | UnboundUnivs (left,uctx) -> Some (pr_error_unbound_universes left uctx)
-    | _ -> None)
+let () = CErrors.register (module struct
+    type e = Level.Set.t * t
+    type _ CErrors.tag += T = UnboundUnivs
+    let pp (left,uctx) = pr_error_unbound_universes left uctx
+  end)
 
 let universe_context ~prefix ~extensible uctx =
   let levels = ContextSet.levels uctx.local in

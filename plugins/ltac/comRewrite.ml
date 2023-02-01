@@ -16,13 +16,6 @@ open Constrexpr
 open EConstr
 open Libnames
 
-let () = CErrors.register_handler begin function
-| Rewrite.RewriteFailure (env, sigma, e) ->
-  let e = Himsg.explain_pretype_error env sigma e in
-  Some Pp.(str"setoid rewrite failed: " ++ e)
-| _ -> None
-end
-
 module TC = Typeclasses
 
 let classes_dirpath =

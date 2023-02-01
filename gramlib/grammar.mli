@@ -173,3 +173,5 @@ module GMake (L : Plexing.S) : ExtS
   with type keyword_state := L.keyword_state
    and type te := L.te
    and type 'c pattern := 'c L.pattern
+
+type _ CErrors.tag += Error : string CErrors.tag

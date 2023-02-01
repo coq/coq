@@ -146,19 +146,19 @@ let of_result f = function
 (** Stdlib exceptions *)
 
 let err_notfocussed =
-  Tac2interp.LtacError (coq_core "Not_focussed", [||])
+  CErrors.CoqError (Tac2ffi.LtacError, (coq_core "Not_focussed", [||]))
 
 let err_outofbounds =
-  Tac2interp.LtacError (coq_core "Out_of_bounds", [||])
+  CErrors.CoqError (Tac2ffi.LtacError, (coq_core "Out_of_bounds", [||]))
 
 let err_notfound =
-  Tac2interp.LtacError (coq_core "Not_found", [||])
+  CErrors.CoqError (Tac2ffi.LtacError, (coq_core "Not_found", [||]))
 
 let err_matchfailure =
-  Tac2interp.LtacError (coq_core "Match_failure", [||])
+  CErrors.CoqError (Tac2ffi.LtacError, (coq_core "Match_failure", [||]))
 
 let err_division_by_zero =
-  Tac2interp.LtacError (coq_core "Division_by_zero", [||])
+  CErrors.CoqError (Tac2ffi.LtacError, (coq_core "Division_by_zero", [||]))
 
 (** Helper functions *)
 
@@ -195,7 +195,7 @@ let wrap_unit f =
   return () >>= fun () -> f (); return v_unit
 
 let catchable_exception = function
-  | Logic_monad.Exception _ -> false
+  | CErrors.CoqError (Logic_monad.Exception, _) -> false
   | e -> CErrors.noncritical e
 
 (* Adds ltac2 backtrace
@@ -855,7 +855,7 @@ let () = define2 "constr_binder_make" (option ident) constr begin fun na ty ->
       return (Value.of_ext val_binder (Context.make_annot na rel, ty))
     | exception (Retyping.RetypeError _ as e) ->
       let e, info = Exninfo.capture e in
-      fail ~info (CErrors.UserError Pp.(str "Not a type."))
+      fail ~info (CErrors.(CoqError (UserError, Pp.(str "Not a type."))))
   end
 end
 

@@ -967,21 +967,24 @@ let print_notation_grammar env sigma ntn =
   let prdf () = Pp.str "no associativity" in
   Pp.(pr_opt_no_spc_default prdf Gramlib.Gramext.pr_assoc assoc)
 
-exception PrintNotationNotFound of Constrexpr.notation_entry * string
+type _ CErrors.tag += PrintNotationNotFound : (Constrexpr.notation_entry * string) CErrors.tag
 
-let () = CErrors.register_handler @@ function
-  | PrintNotationNotFound (entry, ntn_str) ->
+let () = CErrors.register (module struct
+    type e = Constrexpr.notation_entry * string
+    type _ CErrors.tag += T = PrintNotationNotFound
+    let pp (entry, ntn_str) =
       let entry_string = match entry with
       | Constrexpr.InConstrEntry -> "."
       | Constrexpr.InCustomEntry e -> " in " ^ e ^ " entry."
       in
-      Some Pp.(str "\"" ++ str ntn_str ++ str "\"" ++ spc ()
-        ++ str "cannot be interpreted as a known notation" ++ str entry_string ++ spc ()
-        ++ strbrk "Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by \"_\".")
-  | _ -> None
+      let open Pp in
+      str "\"" ++ str ntn_str ++ str "\"" ++ spc ()
+      ++ str "cannot be interpreted as a known notation" ++ str entry_string ++ spc ()
+      ++ strbrk "Make sure that symbols are surrounded by spaces and that holes are explicitly denoted by \"_\"."
+  end)
 
 let error_print_notation_not_found e s =
-  raise @@ PrintNotationNotFound (e, s)
+  CErrors.coq_error PrintNotationNotFound (e, s)
 
 let print_notation env sigma entry raw_ntn =
   (* make sure entry exists *)

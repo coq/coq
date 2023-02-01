@@ -10,9 +10,9 @@
 
 open Names
 
-(** Also used by [Declare] for constants, [DeclareInd] for inductives, etc.
-    Containts [object_kind , id]. *)
-exception AlreadyDeclared of (string option * Id.t)
+(** Also used by [Declare] for constants, [DeclareInd] for inductives, etc. *)
+type already_declared = { kind : string option; id : Id.t }
+type _ CErrors.tag += AlreadyDeclared : already_declared CErrors.tag
 
 (** Internally used to declare names of universes from monomorphic
    constants/inductives. Noop on polymorphic references. *)

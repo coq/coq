@@ -442,15 +442,17 @@ let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
   let () = Genprint.register_val_print0 (base_val_typ wit) pr in
   wit
 
-exception CoercionError of Id.t * (Environ.env * Evd.evar_map) option * Val.t * string
+type coercion_error = Id.t * (Environ.env * Evd.evar_map) option * Val.t * string
+type _ CErrors.tag += TacCoercionError : coercion_error CErrors.tag
 
-let () = CErrors.register_handler begin function
-| CoercionError (id, env, v, s) ->
-  Some (str "Ltac variable " ++ Id.print id ++
-   strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
-   strbrk "which cannot be coerced to " ++ str s ++ str".")
-| _ -> None
-end
+let () = CErrors.register (module struct
+    type e = coercion_error
+    type _ CErrors.tag += T = TacCoercionError
+    let pp (id, env, v, s) =
+      str "Ltac variable " ++ Id.print id ++
+      strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
+      strbrk "which cannot be coerced to " ++ str s ++ str"."
+  end)
 
 let error_ltac_variable ?loc id env v s =
-  Loc.raise ?loc (CoercionError (id, env, v, s))
+  CErrors.coq_error ?loc TacCoercionError (id, env, v, s)

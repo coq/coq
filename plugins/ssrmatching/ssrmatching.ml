@@ -743,17 +743,20 @@ let pr_ssrmatching_failure env sigma upats_origin upats = function
       ws 4 ++ pr_econstr_pat env sigma p' ++ fnl () ++
       str"of " ++ pr_econstr_pat env sigma rule
 
-exception SsrMatchingFailure of
+type matching_failure =
   Environ.env * Evd.evar_map * (ssrdir * EConstr.t) option * tpattern list * ssrmatching_failure
 
-let _ = CErrors.register_handler begin function
-| SsrMatchingFailure (env, sigma, upats_origin, upats, e) ->
-  Some (pr_ssrmatching_failure env sigma upats_origin upats  e)
-| _ -> None
-end
+type _ CErrors.tag += SsrMatchingFailure : matching_failure CErrors.tag
+
+let () = CErrors.register (module struct
+    type e = matching_failure
+    type _ CErrors.tag += T = SsrMatchingFailure
+    let pp (env, sigma, upats_origin, upats, e) =
+      (pr_ssrmatching_failure env sigma upats_origin upats  e)
+  end)
 
 let ssrfail env sigma upats_origin upats e =
-  raise (SsrMatchingFailure (env, sigma, upats_origin, upats, e))
+  CErrors.coq_error SsrMatchingFailure (env, sigma, upats_origin, upats, e)
 
 let has_instances = function
 | None -> false

@@ -20,7 +20,7 @@ type t = {
 type _ tag = ..
 
 type w = W : 'a tag * 'a -> w
-exception WarnError of w
+type _ CErrors.tag += WarnError : w CErrors.tag
 
 module DMap = PolyMap.Make (struct type nonrec 'a tag = 'a tag = .. end)
 module PrintMap = DMap.Map(struct type 'a t = 'a -> Pp.t end)
@@ -31,9 +31,11 @@ let print (W (tag, w)) =
   let pp = try PrintMap.find tag !printers with Not_found -> assert false in
   pp w
 
-let () = CErrors.register_handler (function
-    | WarnError w -> Some (print w)
-    | _ -> None)
+let () = CErrors.register (module struct
+    type e = w
+    type _ CErrors.tag += T = WarnError
+    let pp = print
+  end)
 
 let warnings : (string, t) Hashtbl.t = Hashtbl.create 97
 let categories : (string, string list) Hashtbl.t = Hashtbl.create 97
@@ -191,7 +193,7 @@ let create (type a) ~name ~category ?(default=Enabled) (pp:a -> Pp.t) =
     let w = Hashtbl.find warnings name in
     match w.status with
     | Disabled -> ()
-    | AsError -> Loc.raise ?loc (WarnError (W (DMap.tag_of_onetag tag, x)))
+    | AsError -> CErrors.coq_error ?loc WarnError (W (DMap.tag_of_onetag tag, x))
     | Enabled -> Feedback.msg_warning ?loc (pp x)
 
 let get_status ~name = (Hashtbl.find warnings name).status

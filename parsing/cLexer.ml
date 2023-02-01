@@ -78,7 +78,7 @@ module Error = struct
     | Undefined_token
     | Bad_token of string
 
-  exception E of t
+  type _ CErrors.tag += E : t CErrors.tag
 
   let to_string x =
     "Syntax Error: Lexer: " ^
@@ -89,12 +89,18 @@ module Error = struct
          | Undefined_token -> "Undefined token"
          | Bad_token tok -> Format.sprintf "Bad token %S" tok)
 
+  let () = CErrors.register (module struct
+      type e = t
+      type _ CErrors.tag += T = E
+      let pp v = hov 0 (str (to_string v))
+    end)
+
 end
 open Error
 
-let err loc str = Loc.raise ~loc (Error.E str)
+let err loc str = CErrors.coq_error ~loc Error.E str
 
-let bad_token str = raise (Error.E (Bad_token str))
+let bad_token str = CErrors.coq_error Error.E (Bad_token str)
 
 (* Update a loc without allocating an intermediate pair *)
 let set_loc_pos loc bp ep =
@@ -236,7 +242,7 @@ let check_ident str =
   loop_id false (Stream.of_string str)
 
 let is_ident str =
-  try let _ = check_ident str in true with Error.E _ -> false
+  try let _ = check_ident str in true with CErrors.CoqError (Error.E, _) -> false
 
 let is_keyword ttree s =
   try match (ttree_find ttree s).node with None -> false | Some _ -> true
@@ -418,7 +424,7 @@ let rec comment loc bp s =
               Stream.junk () s;
               push_string "(*"; comment loc bp s
           | _ -> push_string "("; loc
-        with Stream.Failure -> raise (Stream.Error "")
+        with Stream.Failure -> CErrors.coq_error Gramlib.Grammar.Error ""
       in
       comment loc bp s
   | Some '*' ->
@@ -427,7 +433,7 @@ let rec comment loc bp s =
         match Stream.peek () s with
           Some ')' -> Stream.junk () s; push_string "*)"; loc
         | _ -> real_push_char '*'; comment loc bp s
-      with Stream.Failure -> raise (Stream.Error "")
+      with Stream.Failure -> CErrors.coq_error Gramlib.Grammar.Error ""
       end
   | Some '"' ->
       Stream.junk () s;
@@ -521,7 +527,7 @@ let parse_quotation loc bp s =
       let c = Stream.next () s in
       let len =
         try ident_tail loc (store 0 c) s with
-          Stream.Failure -> raise (Stream.Error "")
+          Stream.Failure -> CErrors.coq_error Gramlib.Grammar.Error ""
       in
       get_buff len, set_loc_pos loc bp (Stream.count s)
   | Delimited (lenmarker, bmarker, emarker) ->
@@ -651,7 +657,7 @@ let rec next_token ~diff_mode ttree loc s =
       Stream.junk () s;
       let t, newloc =
         try parse_after_dot ~diff_mode ttree loc c bp s with
-          Stream.Failure -> raise (Stream.Error "")
+          Stream.Failure -> CErrors.coq_error Gramlib.Grammar.Error ""
       in
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
@@ -682,7 +688,7 @@ let rec next_token ~diff_mode ttree loc s =
       Stream.junk () s;
       let len =
         try ident_tail loc (store 0 c) s with
-          Stream.Failure -> raise (Stream.Error "")
+          Stream.Failure -> CErrors.coq_error Gramlib.Grammar.Error ""
       in
       let id = get_buff len in
       comment_stop bp;
@@ -701,7 +707,7 @@ let rec next_token ~diff_mode ttree loc s =
       Stream.junk () s;
       let (loc, len) =
         try string loc ~comm_level:None bp 0 s with
-          Stream.Failure -> raise (Stream.Error "")
+          Stream.Failure -> CErrors.coq_error Gramlib.Grammar.Error ""
       in
       let ep = Stream.count s in
       comment_stop bp;
@@ -720,7 +726,7 @@ let rec next_token ~diff_mode ttree loc s =
             push_string "(*";
             let loc = comment loc bp s in next_token ~diff_mode ttree loc s
         | _ -> let t = process_chars ~diff_mode ttree loc bp [c] s in comment_stop bp; t
-      with Stream.Failure -> raise (Stream.Error "")
+      with Stream.Failure -> CErrors.coq_error Gramlib.Grammar.Error ""
       end
   | Some ('{' | '}' as c) ->
       Stream.junk () s;

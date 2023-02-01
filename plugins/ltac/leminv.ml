@@ -269,7 +269,7 @@ let lemInv id c =
     let clause = clenv_instantiate mv clause (EConstr.mkVar id, Typing.type_of_variable env id) in
     Clenv.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
-    | Failure _ | UserError _ ->
+    | Failure _ | CoqError (UserError, _) ->
          user_err
            (str "Cannot refine current goal with the lemma " ++
               pr_leconstr_env (pf_env gls) (project gls) c ++ str ".")

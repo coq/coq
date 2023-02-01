@@ -1463,18 +1463,22 @@ let solve_constraints env (evars,cstrs) =
 let nf_zeta =
   Reductionops.clos_norm_flags (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
 
-exception RewriteFailure of Environ.env * Evd.evar_map * pretype_error
+type rewrite_failure = Environ.env * Evd.evar_map * pretype_error
+type _ CErrors.tag += RewriteFailure : rewrite_failure CErrors.tag
+(* registered in himsg for pretype_error printing *)
 
 type result = (evar_map * constr option * types) option option
 
-exception UnsolvedConstraints of Environ.env * Evd.evar_map * Evar.t
+type unsolved_constraints = Environ.env * Evd.evar_map * Evar.t
+type _ CErrors.tag += UnsolvedConstraints : unsolved_constraints CErrors.tag
 
-let () = CErrors.register_handler begin function
-| UnsolvedConstraints (env, evars, ev) ->
-  Some (str "Unsolved constraint remaining: " ++ spc () ++
-    Termops.pr_evar_info env evars (Evd.find_undefined evars ev) ++ str ".")
-| _ -> None
-end
+let () = CErrors.register (module struct
+    type e = unsolved_constraints
+    type _ CErrors.tag += T = UnsolvedConstraints
+    let pp (env, evars, ev) =
+      str "Unsolved constraint remaining: " ++ spc () ++
+      Termops.pr_evar_info env evars (Evd.find_undefined evars ev) ++ str "."
+  end)
 
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
   let sigma, sort = Typing.sort_of env sigma concl in
@@ -1498,7 +1502,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
   | Success res ->
     let (_, cstrs) = res.rew_evars in
     let evars = solve_constraints env res.rew_evars in
-    let iter ev = if not (Evd.is_defined evars ev) then raise (UnsolvedConstraints (env, evars, ev)) in
+    let iter ev = if not (Evd.is_defined evars ev) then CErrors.coq_error UnsolvedConstraints (env, evars, ev) in
     let () = Evar.Set.iter iter cstrs in
     let newt = res.rew_to in
     let res = match res.rew_prf with
@@ -1631,7 +1635,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       beta <*> Proofview.shelve_unifiable
     with
     | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
-      raise (RewriteFailure (env, evd, e))
+      CErrors.coq_error RewriteFailure (env, evd, e)
   end
 
 let tactic_init_setoid () =
@@ -1905,18 +1909,20 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
-exception RelationNotDeclared of Environ.env * Evd.evar_map * string * EConstr.types
+type relation_not_declared = Environ.env * Evd.evar_map * string * EConstr.types
+type _ CErrors.tag += RelationNotDeclared : relation_not_declared CErrors.tag
 
-let () = CErrors.register_handler begin function
-| RelationNotDeclared (env, sigma, ty, concl) ->
-  let rel, _, _, _, _, _ = decompose_app_rel_error env sigma concl in
-  Some (str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
-    str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
-| _ -> None
-end
+let () = CErrors.register (module struct
+    type e = relation_not_declared
+    type _ CErrors.tag += T = RelationNotDeclared
+    let pp (env, sigma, ty, concl) =
+      let rel, _, _, _, _, _ = decompose_app_rel_error env sigma concl in
+      str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
+      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library"
+  end)
 
 let not_declared ~info env sigma ty concl =
-  Proofview.tclZERO ~info (RelationNotDeclared (env, sigma, ty, concl))
+  Proofview.tclERROR ~info RelationNotDeclared (env, sigma, ty, concl)
 
 let setoid_proof ty fn fallback =
   Proofview.Goal.enter begin fun gl ->

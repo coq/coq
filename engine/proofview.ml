@@ -238,7 +238,7 @@ let apply ~name ~poly env t sp =
   let ans = Proof.repr (Proof.run t P.{trace=false; name; poly} (sp,env)) in
   let ans = Logic_monad.NonLogical.run ans in
   match ans with
-  | Nil (e, info) -> Exninfo.iraise (TacticFailure e, info)
+  | Nil (e, info) -> CErrors.coq_error ~info TacticFailure e
   | Cons ((r, (state, _), status, info), _) ->
     r, state, status, Trace.to_tree info
 
@@ -273,6 +273,8 @@ let tclZERO ?(info=Exninfo.null) e =
     CErrors.anomaly (Pp.str "tclZERO receiving critical error: " ++ CErrors.print e);
   Proof.zero (e, info)
 
+let tclERROR ?info e v = tclZERO ?info (CErrors.CoqError (e, v))
+
 (** [tclOR t1 t2] behaves like [t1] as long as [t1] succeeds. Whenever
     the successes of [t1] have been depleted and it failed with [e],
     then it behaves as [t2 e]. In other words, [tclOR] inserts a
@@ -305,12 +307,12 @@ let tclIFCATCH a s f =
     with [e], [tclONCE t] also fails with [e]. *)
 let tclONCE = Proof.once
 
-exception MoreThanOneSuccess
-let _ = CErrors.register_handler begin function
-  | MoreThanOneSuccess ->
-    Some (Pp.str "This tactic has more than one success.")
-  | _ -> None
-end
+type _ CErrors.tag += MoreThanOneSuccess : unit CErrors.tag
+let () = CErrors.register (module struct
+    type e = unit
+    type _ CErrors.tag += T = MoreThanOneSuccess
+    let pp () = Pp.str "This tactic has more than one success."
+  end)
 
 (** [tclEXACTLY_ONCE e t] succeeds as [t] if [t] has exactly one
     success. Otherwise it fails. The tactic [t] is run until its first
@@ -329,7 +331,7 @@ let tclEXACTLY_ONCE e t =
       let info = Exninfo.null in
       Proof.split (k (e, Exninfo.null)) >>= function
       | Nil _ -> tclUNIT x
-      | _ -> tclZERO ~info MoreThanOneSuccess
+      | _ -> tclERROR ~info MoreThanOneSuccess ()
 
 
 (** [tclCASE t] wraps the {!Proofview_monad.Logical.split} primitive. *)
@@ -350,20 +352,20 @@ let tclBREAK = Proof.break
 
 (** {7 Focusing tactics} *)
 
-exception NoSuchGoals of int
+type _ CErrors.tag += NoSuchGoals : int CErrors.tag
 
-let _ = CErrors.register_handler begin function
-  | NoSuchGoals n ->
-    Some (str "No such " ++ str (String.plural n "goal") ++ str ".")
-  | _ -> None
-end
+let () = CErrors.register (module struct
+    type e = int
+    type _ CErrors.tag += T = NoSuchGoals
+    let pp n = str "No such " ++ str (String.plural n "goal") ++ str "."
+  end)
 
 (** [tclFOCUS ?nosuchgoal i j t] applies [t] in a context where
     only the goals numbered [i] to [j] are focused (the rest of the goals
     is restored at the end of the tactic). If the range [i]-[j] is not
     valid, then it [tclFOCUS_gen nosuchgoal i j t] is [nosuchgoal]. *)
 let tclFOCUS ?nosuchgoal i j t =
-  let nosuchgoal ~info = Option.default (tclZERO ~info (NoSuchGoals (j+1-i))) nosuchgoal in
+  let nosuchgoal ~info = Option.default (tclERROR ~info NoSuchGoals (j+1-i)) nosuchgoal in
   let open Proof in
   Pv.get >>= fun initial ->
   try
@@ -378,7 +380,7 @@ let tclFOCUS ?nosuchgoal i j t =
 
 let tclTRYFOCUS i j t = tclFOCUS ~nosuchgoal:(tclUNIT ()) i j t
 
-let tclFOCUSLIST ?(nosuchgoal=tclZERO (NoSuchGoals 0)) l t =
+let tclFOCUSLIST ?(nosuchgoal=tclERROR NoSuchGoals 0) l t =
   let open Proof in
   Comb.get >>= fun comb ->
   let n = CList.length comb in
@@ -401,7 +403,7 @@ let tclFOCUSLIST ?(nosuchgoal=tclZERO (NoSuchGoals 0)) l t =
       tclFOCUS mi mj t
 
 (** Like {!tclFOCUS} but selects a single goal by name. *)
-let tclFOCUSID ?(nosuchgoal=tclZERO (NoSuchGoals 1)) id t =
+let tclFOCUSID ?(nosuchgoal=tclERROR NoSuchGoals 1) id t =
   let open Proof in
   Pv.get >>= fun initial ->
   try
@@ -425,15 +427,16 @@ let tclFOCUSID ?(nosuchgoal=tclZERO (NoSuchGoals 1)) id t =
 
 (** {7 Dispatching on goals} *)
 
-exception SizeMismatch of int*int
-let _ = CErrors.register_handler begin function
-  | SizeMismatch (i,j) ->
-    let open Pp in
-    Some (
+type _ CErrors.tag += SizeMismatch : (int*int) CErrors.tag
+
+let () = CErrors.register (module struct
+    type e = int * int
+    type _ CErrors.tag += T = SizeMismatch
+    let pp (i,j) =
+      let open Pp in
       str"Incorrect number of goals" ++ spc() ++
-      str"(expected "++int i++str(String.plural i " tactic") ++ str", was given "++ int j++str").")
-  | _ -> None
-end
+      str"(expected "++int i++str(String.plural i " tactic") ++ str", was given "++ int j++str")."
+  end)
 
 (** A variant of [Monad.List.iter] where we iter over the focused list
     of goals. The argument tactic is executed in a focus comprising
@@ -484,7 +487,7 @@ let fold_left2_goal i s l =
   Pv.get >>= fun initial ->
   let err =
     return () >>= fun () -> (* Delay the computation of list lengths. *)
-    tclZERO (SizeMismatch (CList.length initial.comb,CList.length l))
+    tclERROR SizeMismatch (CList.length initial.comb,CList.length l)
   in
   Proof.List.fold_left2 err begin fun ((r,subgoals) as cur) goal a ->
     Solution.get >>= fun step ->
@@ -525,7 +528,7 @@ let tclDISPATCHGEN0 join tacs =
         let open Proof in
         Comb.get >>= function
         | [] -> tclUNIT (join [])
-        | comb -> tclZERO (SizeMismatch (CList.length comb,0))
+        | comb -> tclERROR SizeMismatch (CList.length comb,0)
       end
   | [tac] ->
       begin
@@ -536,7 +539,7 @@ let tclDISPATCHGEN0 join tacs =
             | None -> tclUNIT (join [])
             | Some _ -> Proof.map (fun res -> join [res]) tac
             end
-        | {comb} -> tclZERO (SizeMismatch(CList.length comb,1))
+        | {comb} -> tclERROR SizeMismatch (CList.length comb,1)
       end
   | _ ->
       let iter _ t cur = Proof.map (fun y -> y :: cur) t in
@@ -564,13 +567,13 @@ let extend_to_list startxs rx endxs l =
   in
   let rec tail to_match rest =
     match rest, to_match with
-    | [] , _::_ -> raise (SizeMismatch(0,0)) (* placeholder *)
+    | [] , _::_ -> CErrors.coq_error SizeMismatch (0,0) (* placeholder *)
     | _::rest , _::to_match -> tail to_match rest
     | _ , [] -> duplicate endxs rest
   in
   let rec copy pref rest =
     match rest,pref with
-    | [] , _::_ -> raise (SizeMismatch(0,0)) (* placeholder *)
+    | [] , _::_ -> CErrors.coq_error SizeMismatch (0,0) (* placeholder *)
     | _::rest, a::pref -> a::(copy pref rest)
     | _ , [] -> tail endxs rest
   in
@@ -587,10 +590,9 @@ let tclEXTEND tacs1 rtac tacs2 =
   try
     let tacs = extend_to_list tacs1 rtac tacs2 comb in
     tclDISPATCH tacs
-  with SizeMismatch _ ->
-    tclZERO (SizeMismatch(
-      CList.length comb,
-      (CList.length tacs1)+(CList.length tacs2)))
+  with CErrors.CoqError (SizeMismatch, _) ->
+    tclERROR SizeMismatch
+      (CList.length comb, (CList.length tacs1)+(CList.length tacs2))
 (* spiwack: failure occurs only when the number of goals is too
    small. Hence we can assume that [rtac] is replicated 0 times for
    any error message. *)
@@ -926,13 +928,7 @@ let tclPROGRESS t =
     tclUNIT res
   else
     let info = Exninfo.reify () in
-    tclZERO ~info (CErrors.UserError Pp.(str "Failed to progress."))
-
-let _ = CErrors.register_handler begin function
-  | Logic_monad.Tac_Timeout ->
-    Some (Pp.str "[Proofview.tclTIMEOUT] Tactic timeout!")
-  | _ -> None
-end
+    tclERROR ~info CErrors.UserError Pp.(str "Failed to progress.")
 
 let tclTIMEOUTF n t =
   let open Proof in
@@ -948,7 +944,7 @@ let tclTIMEOUTF n t =
     let open Logic_monad.NonLogical in
     timeout n (Proof.repr (Proof.run t envvar initial)) >>= fun r ->
     match r with
-    | None -> return (Util.Inr (Logic_monad.Tac_Timeout, Exninfo.null))
+    | None -> return (Util.Inr (CErrors.CoqError (Logic_monad.Tac_Timeout, ()), Exninfo.null))
     | Some (Logic_monad.Nil e) -> return (Util.Inr e)
     | Some (Logic_monad.Cons (r, _)) -> return (Util.Inl r)
   end >>= function
@@ -1056,7 +1052,7 @@ let (>>=) = tclBIND
 (** {6 Goal-dependent tactics} *)
 
 let catchable_exception = function
-  | Logic_monad.Exception _ -> false
+  | CErrors.CoqError (Logic_monad.Exception, _) -> false
   | e -> CErrors.noncritical e
 
 

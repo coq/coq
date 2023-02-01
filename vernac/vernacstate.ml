@@ -147,25 +147,28 @@ module Declare_ = struct
 
   let unfreeze x = s_lemmas := Some x
 
-  exception NoCurrentProof
+  type _ CErrors.tag += NoCurrentProof : unit CErrors.tag
 
   let () =
-    CErrors.register_handler begin function
-      | NoCurrentProof ->
-        Some (Pp.(str "No focused proof (No proof-editing in progress)."))
-      | _ -> None
-    end
+    CErrors.register (module struct
+      type e = unit
+      type _ CErrors.tag += T = NoCurrentProof
+      let pp () =
+        Pp.str "No focused proof (No proof-editing in progress)."
+    end)
+
+  let nocurrentproof () = CErrors.coq_error NoCurrentProof ()
 
   let cc f = match !s_lemmas with
-    | None -> raise NoCurrentProof
+    | None -> nocurrentproof ()
     | Some x -> LemmaStack.with_top ~f x
 
   let cc_stack f = match !s_lemmas with
-    | None -> raise NoCurrentProof
+    | None -> nocurrentproof ()
     | Some x -> f x
 
   let dd f = match !s_lemmas with
-    | None -> raise NoCurrentProof
+    | None -> nocurrentproof ()
     | Some x -> s_lemmas := Some (LemmaStack.map_top ~f x)
 
   let there_are_pending_proofs () = !s_lemmas <> None
@@ -178,7 +181,7 @@ module Declare_ = struct
   let map_proof f = dd (Declare.Proof.map ~f)
   let with_current_proof f =
     match !s_lemmas with
-    | None -> raise NoCurrentProof
+    | None -> nocurrentproof ()
     | Some stack ->
       let pf, res = LemmaStack.with_top stack ~f:(Declare.Proof.map_fold_endline ~f) in
       let stack = LemmaStack.map_top stack ~f:(fun _ -> pf) in
@@ -201,7 +204,7 @@ module Declare_ = struct
 
   let get_all_proof_names () =
     try cc_stack LemmaStack.get_all_proof_names
-    with NoCurrentProof -> []
+    with CErrors.CoqError (NoCurrentProof, ()) -> []
 
   let copy_terminators ~src ~tgt =
     match src, tgt with

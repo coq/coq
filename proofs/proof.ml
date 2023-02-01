@@ -55,30 +55,42 @@ let new_focus_kind () =
 (* spiwack: we could consider having a list of authorized focus_kind instead
     of just one, if anyone needs it *)
 
-exception CannotUnfocusThisWay
+type _ CErrors.tag += CannotUnfocusThisWay : unit CErrors.tag
 
 (* Cannot focus on non-existing subgoals *)
-exception NoSuchGoals of int * int
+type _ CErrors.tag += NoSuchGoals : (int * int) CErrors.tag
 
-exception NoSuchGoal of Names.Id.t option
+type _ CErrors.tag += NoSuchGoal : Names.Id.t option CErrors.tag
 
-exception FullyUnfocused
+type _ CErrors.tag += FullyUnfocused : unit CErrors.tag
 
-let _ = CErrors.register_handler begin function
-  | CannotUnfocusThisWay ->
-    Some (Pp.str "This proof is focused, but cannot be unfocused this way")
-  | NoSuchGoals (i,j) when Int.equal i j ->
-    Some Pp.(str "[Focus] No such goal (" ++ int i ++ str").")
-  | NoSuchGoals (i,j) ->
-    Some Pp.(str "[Focus] Not every goal in range ["++ int i ++ str","++int j++str"] exist.")
-  | NoSuchGoal (Some id) ->
-    Some Pp.(str "[Focus] No such goal: " ++ str (Names.Id.to_string id) ++ str ".")
-  | NoSuchGoal None ->
-    Some Pp.(str "[Focus] No such goal.")
-  | FullyUnfocused ->
-    Some (Pp.str "The proof is not focused")
-  | _ -> None
-end
+let () = CErrors.register (module struct
+    type e = unit
+    type _ CErrors.tag += T = CannotUnfocusThisWay
+    let pp () = Pp.str "This proof is focused, but cannot be unfocused this way"
+  end)
+
+let () = CErrors.register (module struct
+    type e = int * int
+    type _ CErrors.tag += T = NoSuchGoals
+    let pp (i, j) = let open Pp in
+      if Int.equal i j then str "[Focus] No such goal (" ++ int i ++ str")."
+      else str "[Focus] Not every goal in range ["++ int i ++ str","++int j++str"] exist."
+  end)
+
+let () = CErrors.register (module struct
+    type e = Names.Id.t option
+    type _ CErrors.tag += T = NoSuchGoal
+    let pp = function
+      | None -> Pp.(str "[Focus] No such goal.")
+      | Some id -> Pp.(str "[Focus] No such goal: " ++ str (Names.Id.to_string id) ++ str ".")
+  end)
+
+let () = CErrors.register (module struct
+    type e = unit
+    type _ CErrors.tag += T = FullyUnfocused
+    let pp () = Pp.str "The proof is not focused"
+  end)
 
 let check_cond_kind c k =
   let kind_of_cond = function
@@ -179,7 +191,7 @@ type any_focus_condition = AnyFocusCond : 'a focus_condition -> any_focus_condit
 let cond_of_focus pr =
   match pr.focus_stack with
   | FocusElt (cond,_,_)::_ -> AnyFocusCond cond
-  | _ -> raise FullyUnfocused
+  | _ -> CErrors.coq_error FullyUnfocused ()
 
 (* An auxiliary function to pop and read the last {!Proofview.focus_context}
    on the focus stack. *)
@@ -187,8 +199,7 @@ let pop_focus pr =
   match pr.focus_stack with
   | focus::other_focuses ->
       { pr with focus_stack = other_focuses }, focus
-  | _ ->
-      raise FullyUnfocused
+  | _ -> CErrors.coq_error FullyUnfocused ()
 
 (* This function focuses the proof [pr] between indices [i] and [j] *)
 let _focus cond inf i j pr =
@@ -208,7 +219,7 @@ let _unfocus pr =
    a need for it? *)
 let focus cond inf i pr =
   try _focus cond inf i i pr
-  with CList.IndexOutOfRange -> raise (NoSuchGoals (i,i))
+  with CList.IndexOutOfRange -> CErrors.coq_error NoSuchGoals (i,i)
 
 (* Focus on the goal named id *)
 let focus_id cond inf id pr =
@@ -232,17 +243,17 @@ let focus_id cond inf id pr =
           in
           _focus cond inf i i pr
         else
-          raise CannotUnfocusThisWay
+          CErrors.coq_error CannotUnfocusThisWay ()
      end
   | None ->
-     raise (NoSuchGoal (Some id))
+     CErrors.coq_error NoSuchGoal (Some id)
   end
 
 let rec unfocus kind pr () =
   let AnyFocusCond cond = cond_of_focus pr in
   match test_cond cond kind pr.proofview with
-  | Cannot NotThisWay -> raise CannotUnfocusThisWay
-  | Cannot AlreadyNoFocus -> raise FullyUnfocused
+  | Cannot NotThisWay -> CErrors.coq_error CannotUnfocusThisWay ()
+  | Cannot AlreadyNoFocus -> CErrors.coq_error FullyUnfocused ()
   | Strict ->
      let pr = _unfocus pr in
      pr
@@ -250,7 +261,7 @@ let rec unfocus kind pr () =
     begin try
             let pr = _unfocus pr in
             unfocus kind pr ()
-      with FullyUnfocused -> raise CannotUnfocusThisWay
+      with CErrors.CoqError (FullyUnfocused, ()) -> CErrors.coq_error CannotUnfocusThisWay ()
     end
 
 exception NoSuchFocus
@@ -276,7 +287,7 @@ let no_focused_goal p =
 let rec maximal_unfocus k p =
   if no_focused_goal p then
     try maximal_unfocus k (unfocus k p ())
-    with FullyUnfocused | CannotUnfocusThisWay -> p
+    with CErrors.CoqError ((FullyUnfocused | CannotUnfocusThisWay), _) -> p
   else p
 
 (*** Proof Creation/Termination ***)
@@ -322,15 +333,18 @@ let print_open_error_reason er = let open Pp in match er with
   | HasGivenUpGoals ->
     strbrk "Attempt to save a proof with given up goals. If this is really what you want to do, use Admitted in place of Qed."
 
-exception OpenProof of Names.Id.t option * open_error_reason
+type _ CErrors.tag += OpenProof : (Names.Id.t option * open_error_reason) CErrors.tag
 
-let _ = CErrors.register_handler begin function
-    | OpenProof (pid, reason) ->
+let () = CErrors.register (module struct
+    type e = Names.Id.t option * open_error_reason
+    type _ CErrors.tag += T = OpenProof
+    let pp (pid, reason) =
       let open Pp in
-      Some (Option.cata (fun pid ->
-          str " (in proof " ++ Names.Id.print pid ++ str "): ") (mt()) pid ++ print_open_error_reason reason)
-    | _ -> None
-  end
+      let reason = print_open_error_reason reason in
+      match pid with
+      | None -> reason
+      | Some pid -> str " (in proof " ++ Names.Id.print pid ++ str "): " ++ reason
+  end)
 
 let warn_remaining_shelved_goals =
   CWarnings.create ~name:"remaining-shelved-goals" ~category:"tactics"
@@ -342,9 +356,9 @@ let warn_remaining_unresolved_evars =
 
 let return ?pid (p : t) =
   if not (is_done p) then
-    raise (OpenProof(pid, UnfinishedProof))
+    CErrors.coq_error OpenProof (pid, UnfinishedProof)
   else if has_given_up_goals p then
-    raise (OpenProof(pid, HasGivenUpGoals))
+    CErrors.coq_error OpenProof (pid, HasGivenUpGoals)
   else begin
     if has_shelved_goals p then warn_remaining_shelved_goals ()
     else if has_unresolved_evar p then warn_remaining_unresolved_evars ();
@@ -474,7 +488,8 @@ let use_unification_heuristics =
     ~key:["Solve";"Unification";"Constraints"]
     ~value:true
 
-exception SuggestNoSuchGoals of int * t
+(* registered printer in proof_bullet *)
+type _ CErrors.tag += SuggestNoSuchGoals : (int * t) CErrors.tag
 
 let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match with_end_tac with
@@ -486,7 +501,7 @@ let solve ?with_end_tac gi info_lvl tac pr =
     in
     let nosuchgoal =
       let info = Exninfo.reify () in
-      Proofview.tclZERO ~info (SuggestNoSuchGoals (1,pr))
+      Proofview.tclERROR ~info SuggestNoSuchGoals (1,pr)
     in
     let tac = Goal_select.tclSELECT ~nosuchgoal gi tac in
     let tac =
@@ -521,7 +536,7 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let prf = start ~name ~poly sigma [env, ty] in
   let (prf, _, ()) =
     try run_tactic env tac prf
-    with Logic_monad.TacticFailure e as src ->
+    with CErrors.CoqError (Logic_monad.TacticFailure, e) as src ->
       (* Catch the inner error of the monad tactic *)
       let (_, info) = Exninfo.capture src in
       Exninfo.iraise (e, info)
@@ -556,14 +571,14 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
 
 let get_goal_context_gen pf i =
   let { sigma; goals } = data pf in
-  let goal = try List.nth goals (i-1) with Failure _ -> raise (NoSuchGoal None) in
+  let goal = try List.nth goals (i-1) with Failure _ -> CErrors.coq_error NoSuchGoal None in
   let env = Evd.evar_filtered_env (Global.env ()) (Evd.find_undefined sigma goal) in
   (sigma, env)
 
 let get_proof_context p =
   try get_goal_context_gen p 1
   with
-  | NoSuchGoal _ ->
+  | CErrors.CoqError (NoSuchGoal, _) ->
     (* No more focused goals *)
     let { sigma } = data p in
     sigma, Global.env ()

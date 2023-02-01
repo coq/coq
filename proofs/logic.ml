@@ -174,15 +174,17 @@ let split_sign env sigma hfrom l =
 
 (* ocaml/ocaml#10027 triggered if inline record *)
 type cannot_move_hyp = { from : Id.t; hto : Id.t move_location; hyp : Id.t }
-exception CannotMoveHyp of cannot_move_hyp
+type _ CErrors.tag += CannotMoveHyp : cannot_move_hyp CErrors.tag
 
-let () = CErrors.register_handler (function
-    | CannotMoveHyp { from; hto; hyp } ->
-      Some Pp.(str "Cannot move " ++ Id.print from ++
-               pr_move_location Id.print hto ++
-               str ": it occurs in the declaration of " ++
-               Id.print hyp ++ str ".")
-    | _ -> None)
+let () = CErrors.register (module struct
+    type e = cannot_move_hyp
+    type _ CErrors.tag += T = CannotMoveHyp
+    let pp { from; hto; hyp } =
+      Pp.(str "Cannot move " ++ Id.print from ++
+          pr_move_location Id.print hto ++
+          str ": it occurs in the declaration of " ++
+          Id.print hyp ++ str ".")
+  end)
 
 let move_hyp env sigma toleft (left,declfrom,right) hto =
   let open EConstr in
@@ -198,7 +200,7 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
           if occur_vars_in_decl env sigma midvars d then
             if not (move_location_eq hto (MoveAfter hyp)) then
               (first, d :: middle, Id.Set.add hyp midvars)
-            else raise (CannotMoveHyp {from = NamedDecl.get_id declfrom; hto; hyp})
+            else CErrors.coq_error CannotMoveHyp {from = NamedDecl.get_id declfrom; hto; hyp}
           else
             (d::first, middle, midvars)
         in
@@ -219,7 +221,7 @@ let move_hyp env sigma toleft (left,declfrom,right) hto =
               let vars = global_vars_set_of_decl env sigma d in
               let depvars = Id.Set.union vars depvars in
               (first, d::middle, depvars)
-            else raise (CannotMoveHyp {from = NamedDecl.get_id declfrom; hto; hyp})
+            else CErrors.coq_error CannotMoveHyp {from = NamedDecl.get_id declfrom; hto; hyp}
           else
             (d::first, middle, depvars)
         in

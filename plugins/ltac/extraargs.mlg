@@ -341,7 +341,7 @@ let interp_strategy ist env sigma = function
   in
   let v =
     try Tacinterp.Value.cast (Genarg.topwit wit_strategy_level) v
-    with CErrors.UserError _ -> Taccoerce.error_ltac_variable ?loc id None v "a strategy_level"
+    with CErrors.(CoqError (UserError, _)) -> Taccoerce.error_ltac_variable ?loc id None v "a strategy_level"
   in
   v
 

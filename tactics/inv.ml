@@ -119,9 +119,9 @@ let make_inv_predicate env evd indf realargs id status concl =
    In any case, we carry along the rest of pairs *)
   let eqdata =
     try Coqlib.build_coq_eq_data ()
-    with UserError _ ->
+    with CoqError (UserError, _) ->
     try Coqlib.build_coq_identity_data ()
-    with UserError _ -> user_err (str "No registered equality.") in
+    with CoqError (UserError, _) -> user_err (str "No registered equality.") in
   let rec build_concl eqns args n = function
     | [] -> it_mkProd concl eqns, Array.rev_of_list args
     | ai :: restlist ->
@@ -473,7 +473,7 @@ let raw_inversion inv_kind id status names =
     let c = mkVar id in
     let ((ind, u), t) =
       try pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl c)
-      with UserError _ ->
+      with CoqError (UserError, _) ->
         let msg = str "The type of " ++ Id.print id ++ str " is not inductive." in
         CErrors.user_err  msg
     in

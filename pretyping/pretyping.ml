@@ -445,10 +445,10 @@ let pretype_ref ?loc sigma env ref us =
         | None | Some [] -> ()
         | Some us ->
             let open UnivGen in
-            Loc.raise ?loc (UniverseLengthMismatch {
+            CErrors.coq_error ?loc UniverseLengthMismatch {
               actual = List.length us;
               expect = 0;
-            }));
+            });
        sigma, make_judge (mkVar id) ty
        with Not_found ->
          (* This may happen if env is a goal env and section variables have
@@ -1317,10 +1317,10 @@ let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.
         sigma, Some u
       | Some u ->
           let open UnivGen in
-          Loc.raise ?loc (UniverseLengthMismatch {
+          CErrors.coq_error ?loc UniverseLengthMismatch {
             actual = List.length u;
             expect = 1;
-          })
+          }
     in
     let sigma, tycon' = split_as_array !!env sigma tycon in
     let sigma, jty = eval_type_pretyper self ~flags tycon' env sigma ty in

@@ -75,51 +75,54 @@ let () =
 (*                 Errors                    *)
 (*********************************************)
 
-exception IntroAlreadyDeclared of Id.t
-exception ClearDependency of env * evar_map * Id.t option * Evarutil.clear_dependency_error * GlobRef.t option
-exception ReplacingDependency of env * evar_map * Id.t * Evarutil.clear_dependency_error * GlobRef.t option
-exception AlreadyUsed of Id.t
-exception UsedTwice of Id.t
-exception VariableHasNoValue of Id.t
-exception ConvertIncompatibleTypes of env * evar_map * constr * constr
-exception ConvertNotAType
-exception NotConvertible
-exception NotUnfoldable
-exception NoQuantifiedHypothesis of quantified_hypothesis * bool
-exception CannotFindInstance of constr * clausenv
-exception NothingToRewrite of Id.t
-exception IllFormedEliminationType
-exception SchemeDontApply
-exception UnableToApplyLemma of env * evar_map * constr * constr
-exception DependsOnBody of Id.t list * Id.Set.t * Id.t option
-exception NeedFullyAppliedArgument
-exception NotRightNumberConstructors of int
-exception NotEnoughConstructors
-exception ConstructorNumberedFromOne
-exception NoConstructors
-exception UnexpectedExtraPattern of int option * delayed_open_constr intro_pattern_expr
-exception NotAnInductionScheme of string
-exception NotAnInductionSchemeLetIn
-exception CannotFindInductiveArgument
-exception MentionConclusionDependentOn of Id.t
-exception DontKnowWhatToDoWith of intro_pattern_naming_expr
-exception OneIntroPatternExpected
-exception KeepAndClearModifierOnlyForHypotheses
-exception FixpointOnNonInductiveType
-exception NotEnoughProducts
-exception FixpointSameMutualInductiveType
-exception AllMethodsInCoinductiveType
-exception ReplacementIllTyped of exn
-exception UnsupportedWithClause
-exception UnsupportedEqnClause
-exception UnsupportedInClause of bool
-exception DontKnowWhereToFindArgument
-exception MultipleAsAndUsingClauseOnlyList
-exception NotEnoughPremises
-exception NeedDependentProduct
+type tacerror =
+| IntroAlreadyDeclared of Id.t
+| ClearDependency of env * evar_map * Id.t option * Evarutil.clear_dependency_error * GlobRef.t option
+| ReplacingDependency of env * evar_map * Id.t * Evarutil.clear_dependency_error * GlobRef.t option
+| AlreadyUsed of Id.t
+| UsedTwice of Id.t
+| VariableHasNoValue of Id.t
+| ConvertIncompatibleTypes of env * evar_map * constr * constr
+| ConvertNotAType
+| NotConvertible
+| NotUnfoldable
+| NoQuantifiedHypothesis of quantified_hypothesis * bool
+| CannotFindInstance of constr * clausenv
+| NothingToRewrite of Id.t
+| IllFormedEliminationType
+| SchemeDontApply
+| UnableToApplyLemma of env * evar_map * constr * constr
+| DependsOnBody of Id.t list * Id.Set.t * Id.t option
+| NeedFullyAppliedArgument
+| NotRightNumberConstructors of int
+| NotEnoughConstructors
+| ConstructorNumberedFromOne
+| NoConstructors
+| UnexpectedExtraPattern of int option * delayed_open_constr intro_pattern_expr
+| NotAnInductionScheme of string
+| NotAnInductionSchemeLetIn
+| CannotFindInductiveArgument
+| MentionConclusionDependentOn of Id.t
+| DontKnowWhatToDoWith of intro_pattern_naming_expr
+| OneIntroPatternExpected
+| KeepAndClearModifierOnlyForHypotheses
+| FixpointOnNonInductiveType
+| NotEnoughProducts
+| FixpointSameMutualInductiveType
+| AllMethodsInCoinductiveType
+| ReplacementIllTyped of exn
+| UnsupportedWithClause
+| UnsupportedEqnClause
+| UnsupportedInClause of bool
+| DontKnowWhereToFindArgument
+| MultipleAsAndUsingClauseOnlyList
+| NotEnoughPremises
+| NeedDependentProduct
+
+type _ CErrors.tag += TacError : tacerror CErrors.tag
 
 let error ?loc e =
-  Loc.raise ?loc e
+  CErrors.coq_error ?loc TacError e
 
 let clear_in_global_msg = function
   | None -> mt ()
@@ -181,12 +184,6 @@ let explain_unexpected_extra_pattern bound pat =
    (str "at most " ++ int nb ++ str s2)) ++ spc () ++
   str (if Int.equal nb 1 then "was" else "were") ++
   strbrk " expected in the branch)."
-
-exception Unhandled
-
-let wrap_unhandled f e =
-  try Some (f e)
-  with Unhandled -> None
 
 let tactic_interp_error_handler = function
   | IntroAlreadyDeclared id ->
@@ -292,9 +289,12 @@ let tactic_interp_error_handler = function
       str "Applied theorem does not have enough premises."
   | NeedDependentProduct ->
       str "Needs a non-dependent product."
-  | _ -> raise Unhandled
 
-let _ = CErrors.register_handler (wrap_unhandled tactic_interp_error_handler)
+let () = CErrors.register (module struct
+    type e = tacerror
+    type _ CErrors.tag += T = TacError
+    let pp = tactic_interp_error_handler
+  end)
 
 let error_clear_dependency env sigma id err inglobal =
   error (ClearDependency (env,sigma,Some id,err,inglobal))
@@ -1636,7 +1636,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let sigma = Tacmach.project gl in
   let ct = Retyping.get_type_of env sigma c in
   let id = try Some (destVar sigma c) with DestKO -> None in
-  let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
+  let t = try snd (reduce_to_quantified_ind env sigma ct) with CoqError (UserError, _) -> ct in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
   Proofview.Unsafe.tclEVARS (Evd.clear_metas (clenv_evd indclause)) <*>
@@ -1849,7 +1849,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
           (fun (err, info) -> Proofview.tclZERO ~info err)
           (err, info)
     | None -> Proofview.tclZERO ~info err
-  with RefinerError _|UserError _ -> Proofview.tclZERO ~info err
+  with RefinerError _ | CoqError (UserError, _) -> Proofview.tclZERO ~info err
   end
 
 (****************************************************)
@@ -2175,7 +2175,7 @@ let check_is_type env sigma idl ids ty =
     let sigma, _ = Typing.sort_of env sigma ty in
     sigma
   with e when CErrors.noncritical e ->
-    raise (DependsOnBody (idl, ids, None))
+    error (DependsOnBody (idl, ids, None))
 
 let check_decl env sigma idl ids decl =
   let open Context.Named.Declaration in
@@ -2189,7 +2189,7 @@ let check_decl env sigma idl ids decl =
     sigma
   with e when CErrors.noncritical e ->
     let id = NamedDecl.get_id decl in
-    raise (DependsOnBody (idl, ids, Some id))
+    error (DependsOnBody (idl, ids, Some id))
 
 let clear_body idl =
   let open Context.Named.Declaration in
@@ -2241,7 +2241,7 @@ let clear_body idl =
       Refine.refine ~typecheck:false begin fun sigma ->
         Evarutil.new_evar env sigma ~principal:true concl
         end
-    with DependsOnBody _ as exn ->
+    with CErrors.CoqError (TacError, DependsOnBody _) as exn ->
       let _, info = Exninfo.capture exn in
       Proofview.tclZERO ~info exn
     end
@@ -3399,7 +3399,7 @@ let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
   Proofview.tclORELSE
     (dest_intro_patterns with_evars avoid thin dest pat tac)
     begin function (e, info) -> match e with
-      | CannotMoveHyp _ ->
+      | CErrors.CoqError (CannotMoveHyp, _) ->
        (* May happen e.g. with "destruct x using s" with an hypothesis
           which is morally an induction hypothesis to be "MoveLast" if
           known as such but which is considered instead as a subterm of

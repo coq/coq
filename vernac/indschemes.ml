@@ -120,7 +120,7 @@ let try_declare_scheme what f internal names kn =
   try f names kn
   with e ->
   let e = Exninfo.capture e in
-  let rec extract_exn = function Logic_monad.TacticFailure e -> extract_exn e | e -> e in
+  let rec extract_exn = function CErrors.CoqError (Logic_monad.TacticFailure, e) -> extract_exn e | e -> e in
   let msg = match extract_exn (fst e) with
     | ParameterWithoutEquality cst ->
         alarm what internal
@@ -144,7 +144,7 @@ let try_declare_scheme what f internal names kn =
     | UndefinedCst s ->
         alarm what internal
           (strbrk "Required constant " ++ str s ++ str " undefined.")
-    | DeclareUniv.AlreadyDeclared (kind, id) as exn ->
+    | CErrors.CoqError (DeclareUniv.AlreadyDeclared, _) as exn ->
       let msg = CErrors.print exn in
       alarm what internal msg
     | DecidabilityMutualNotSupported ->
@@ -174,7 +174,7 @@ let try_declare_scheme what f internal names kn =
   in
   match msg with
   | None -> ()
-  | Some msg -> Exninfo.iraise (CErrors.UserError msg, snd e)
+  | Some msg -> CErrors.user_err ~info:(snd e) msg
 
 let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in

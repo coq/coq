@@ -217,7 +217,7 @@ let map_pattern_with_occs (pat, occ) = match pat with
 let get_evaluable_reference = function
 | GlobRef.VarRef id -> Proofview.tclUNIT (Tacred.EvalVarRef id)
 | GlobRef.ConstRef cst -> Proofview.tclUNIT (Tacred.EvalConstRef cst)
-| r -> Proofview.tclZERO (Tacred.NotEvaluableRef r)
+| r -> Proofview.tclERROR Tacred.NotEvaluableRef r
 
 let reduce r cl =
   let cl = mk_clause cl in

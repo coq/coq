@@ -301,7 +301,7 @@ let check_not_nested env sigma forbidden e =
     | CoFix _ -> user_err Pp.(str "check_not_nested : Fix")
   in
   try check_not_nested e
-  with UserError p ->
+  with CoqError (UserError, p) ->
     user_err
       (str "on expr : " ++ Printer.pr_leconstr_env env sigma e ++ str " " ++ p ++ str ".")
 

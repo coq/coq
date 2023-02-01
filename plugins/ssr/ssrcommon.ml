@@ -455,7 +455,7 @@ let call_on_evar env sigma tac e =
     let (gs, final) = Proofview.proofview final in
     let () = if (gs <> []) then errorstrm (str "Should we tell the user?") in
     final
-  with Logic_monad.TacticFailure e as src ->
+  with CErrors.CoqError (Logic_monad.TacticFailure, e) as src ->
     let (_, info) = Exninfo.capture src in
     Exninfo.iraise (e, info)
 
@@ -970,8 +970,8 @@ let tclDO n tac =
   let tac_err_at i =
     Proofview.Goal.enter begin fun gl ->
       Proofview.tclORELSE tac begin function
-      | (CErrors.UserError s, info) ->
-        let e' = CErrors.UserError (prefix i ++ s) in
+      | (CErrors.(CoqError (UserError, s)), info) ->
+        let e' = CErrors.(CoqError (UserError, (prefix i ++ s))) in
         Proofview.tclZERO ~info e'
       | (e, info) -> Proofview.tclZERO ~info e
       end

@@ -315,7 +315,7 @@ let match_with_equation env sigma t =
              None, hdapp, HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
            else raise NoEquationFound
          else raise NoEquationFound
-     with UserError _ ->
+     with CoqError (UserError, _) ->
        raise NoEquationFound)
   | _ -> raise NoEquationFound
 

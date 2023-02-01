@@ -1164,7 +1164,7 @@ end = struct (* {{{ *)
             | Some vcs, _ -> vcs in
           let cb, _ =
             try Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs)
-            with Failure _ -> raise PG_compat.NoCurrentProof in
+            with Failure _ -> CErrors.coq_error PG_compat.NoCurrentProof () in
           let n = fold_until (fun n (_,vcs,_,_,_) ->
             if List.mem cb (Vcs_.branches vcs) then Cont (n+1) else Stop n)
             0 id in
@@ -1200,7 +1200,7 @@ end = struct (* {{{ *)
             | None -> true
         done;
         !rv
-    with Not_found | PG_compat.NoCurrentProof -> None
+    with Not_found | CErrors.CoqError (PG_compat.NoCurrentProof, ()) -> None
 
 end (* }}} *)
 
@@ -1436,7 +1436,7 @@ end = struct (* {{{ *)
             RespError { e_error_at; e_safe_id = valid; e_msg; e_safe_states } ->
         feedback (InProgress ~-1);
         let info = Stateid.add ~valid Exninfo.null e_error_at in
-        let e = (AsyncTaskQueue.RemoteException e_msg, info) in
+        let e = (CErrors.CoqError (AsyncTaskQueue.RemoteException, e_msg), info) in
         t_assign (`Exn e);
         `Stay(t_states,[States e_safe_states])
     | _ -> assert false
@@ -1447,7 +1447,7 @@ end = struct (* {{{ *)
     | Some (BuildProof { t_start = start; t_assign }) ->
         let s = "Worker dies or task expired" in
         let info = Stateid.add ~valid:start Exninfo.null start in
-        let e = (AsyncTaskQueue.RemoteException (Pp.strbrk s), info) in
+        let e = (CErrors.CoqError (AsyncTaskQueue.RemoteException, Pp.strbrk s), info) in
         t_assign (`Exn e);
         execution_error start (Pp.strbrk s);
         feedback (InProgress ~-1)
@@ -2526,7 +2526,8 @@ let merge_proof_branch ~valid ?id qast keep brname =
       VCS.checkout VCS.Branch.master;
       Unfocus qed_id
   | { VCS.kind = Master } ->
-       Exninfo.iraise (State.exn_on ~valid Stateid.dummy (PG_compat.NoCurrentProof, Exninfo.null))
+    let exn = CErrors.CoqError (PG_compat.NoCurrentProof, ()) in
+    Exninfo.iraise (State.exn_on ~valid Stateid.dummy (exn, Exninfo.null))
 
 (* When tty is true, this code also does some of the job of the user interface:
    jump back to a state that is valid *)
@@ -2629,7 +2630,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ()) x c =
            This error probably means that you forgot to close the last \"Proof.\" with \"Qed.\" or \"Defined.\". \
            If you really intended to use nested proofs, you can do so by turning the \"Nested Proofs Allowed\" flag on."
            |> Pp.strbrk
-           |> (fun s -> (UserError s, Exninfo.null))
+           |> (fun s -> (CoqError (UserError, s), Exninfo.null))
            |> State.exn_on ~valid:Stateid.dummy newtip
            |> Exninfo.iraise
          else

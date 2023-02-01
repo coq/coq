@@ -196,10 +196,10 @@ let universe_binders_with_opt_names orig names =
           | Name id -> Name id) orig udecl
     with Invalid_argument _ ->
       let open UnivGen in
-      raise (UniverseLengthMismatch {
-          actual = List.length orig;
-          expect = List.length udecl;
-        })
+      CErrors.coq_error UniverseLengthMismatch {
+        actual = List.length orig;
+        expect = List.length udecl;
+      }
   in
   let fold_named i (ubind,revubind as o) = function
     | Name id -> let ui = Level.var i in

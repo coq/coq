@@ -219,5 +219,5 @@ val abstract : int -> (valexpr list -> valexpr Proofview.tactic) -> closure
 
 (** Exception *)
 
-exception LtacError of KerName.t * valexpr array
+type _ CErrors.tag += LtacError : (KerName.t * valexpr array) CErrors.tag
 (** Ltac2-defined exceptions seen from OCaml side *)

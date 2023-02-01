@@ -171,27 +171,25 @@ let print_no_report e = iprint_no_report (e, Exninfo.info e)
 
 (** Predefined handlers **)
 
-exception UserError of Pp.t (* User errors *)
+type _ tag += UserError : Pp.t tag (* User errors *)
+
+let () = register (module struct
+    type e = Pp.t
+    type _ tag += T = UserError
+    let pp x = x
+  end)
 
 (* We register Coq Errors with the global printer here as they will be
    printed if Dynlink.loadfile raises UserError in the module
    intializers, and in some other cases. We should make this more
    principled. *)
 let () = Printexc.register_printer (function
-    | UserError msg ->
+    | CoqError (UserError, msg) ->
       Some (Format.asprintf "@[Coq Error: %a@]" Pp.pp_with msg)
     | _ -> None)
 
 let user_err ?loc ?info strm =
-  let info = Option.default Exninfo.null info in
-  let info = Option.cata (Loc.add_loc info) info loc in
-  Exninfo.iraise (UserError strm, info)
-
-let () = register_handler begin function
-  | UserError pps ->
-    Some pps
-  | _ -> None
-  end
+  coq_error ?loc ?info UserError strm
 
 (** Critical exceptions should not be caught and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled

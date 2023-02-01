@@ -80,7 +80,7 @@ let list_try_compile f l =
   | [] -> if errors = [] then anomaly (str "try_find_f.") else Exninfo.iraise (List.last errors)
   | h::t ->
       try f h
-      with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _ as e ->
+      with CoqError (UserError, _) | TypeError _ | PretypeError _ | PatternMatchingError _ as e ->
             let e = Exninfo.capture e in
             aux (e::errors) t in
   aux [] l

@@ -16,8 +16,6 @@ open Proofview.Notations
 open Tac2expr
 open Tac2ffi
 
-exception LtacError = Tac2ffi.LtacError
-
 let backtrace : backtrace Evd.Store.field = Evd.Store.field ()
 
 let print_ltac2_backtrace = ref false

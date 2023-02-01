@@ -240,7 +240,7 @@ let mangle_names_prefix =
       (try
          Id.of_string x
        with
-       | CErrors.UserError _ ->
+       | CErrors.(CoqError (UserError, _)) ->
          CErrors.user_err Pp.(str ("Not a valid identifier: \"" ^ x ^ "\"."))
       )
     )

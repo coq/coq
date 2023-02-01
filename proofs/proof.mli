@@ -87,7 +87,7 @@ type open_error_reason =
   | UnfinishedProof
   | HasGivenUpGoals
 
-exception OpenProof of Names.Id.t option * open_error_reason
+type _ CErrors.tag += OpenProof : (Names.Id.t option * open_error_reason) CErrors.tag
 
 val return : ?pid:Names.Id.t -> t -> Evd.evar_map
 
@@ -134,17 +134,17 @@ val focus : 'a focus_condition -> 'a -> int -> t -> t
 (* focus on goal named id *)
 val focus_id : 'a focus_condition -> 'a -> Names.Id.t -> t -> t
 
-exception FullyUnfocused
-exception CannotUnfocusThisWay
+type _ CErrors.tag += FullyUnfocused : unit CErrors.tag
+type _ CErrors.tag += CannotUnfocusThisWay : unit CErrors.tag
 
 (* This is raised when trying to focus on non-existing subgoals. It is
    handled by an error message but one may need to catch it and
    settle a better error message in some case (suggesting a better
    bullet for example), see proof_global.ml function Bullet.pop and
    Bullet.push. *)
-exception NoSuchGoals of int * int
+type _ CErrors.tag += NoSuchGoals : (int * int) CErrors.tag
 
-exception NoSuchGoal of Names.Id.t option
+type _ CErrors.tag += NoSuchGoal : Names.Id.t option CErrors.tag
 
 (* Unfocusing command.
    Raises [FullyUnfocused] if the proof is not focused.
@@ -224,7 +224,7 @@ val refine_by_tactic
     occur. Ideally all code using this function should be rewritten in the
     monad. *)
 
-exception SuggestNoSuchGoals of int * t
+type _ CErrors.tag += SuggestNoSuchGoals : (int * t) CErrors.tag
 
 (** {6 Helpers to obtain proof state when in an interactive proof } *)
 val get_goal_context_gen : t -> int -> Evd.evar_map * Environ.env

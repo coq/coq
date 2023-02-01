@@ -204,7 +204,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 
 let convert_string d =
   try Id.of_string d
-  with CErrors.UserError _ ->
+  with CErrors.(CoqError (UserError, _)) ->
     Flags.if_verbose Feedback.msg_warning
       (str "Directory " ++ str d ++ str " cannot be used as a Coq identifier (skipped)");
     raise_notrace Exit

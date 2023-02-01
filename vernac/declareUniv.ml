@@ -11,16 +11,17 @@
 open Names
 open Univ
 
-(* object_kind , id *)
-exception AlreadyDeclared of (string option * Id.t)
+type already_declared = { kind : string option; id : Id.t }
+type _ CErrors.tag += AlreadyDeclared : already_declared CErrors.tag
 
-let _ = CErrors.register_handler (function
-    | AlreadyDeclared (kind, id) ->
-      Some
-        Pp.(seq [ Pp.pr_opt_no_spc (fun s -> str s ++ spc ()) kind
-                ; Id.print id; str " already exists."])
-    | _ ->
-      None)
+let () = CErrors.register (module struct
+    type e = already_declared
+    type _ CErrors.tag += T = AlreadyDeclared
+    let pp {kind; id} =
+      let open Pp in
+      seq [ pr_opt_no_spc (fun s -> str s ++ spc ()) kind
+          ; Id.print id; str " already exists."]
+  end)
 
 type universe_source =
   | BoundUniv (* polymorphic universe, bound in a function (this will go away someday) *)
@@ -31,7 +32,7 @@ type universe_name_decl = universe_source * (Id.t * Univ.UGlobal.t) list
 
 let check_exists_universe sp =
   if Nametab.exists_universe sp then
-    raise (AlreadyDeclared (Some "Universe", Libnames.basename sp))
+    CErrors.coq_error AlreadyDeclared {kind = Some "Universe"; id = Libnames.basename sp}
   else ()
 
 let qualify_univ i dp src id =

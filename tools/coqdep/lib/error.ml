@@ -8,42 +8,48 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-exception CannotParseFile of string * (int * int)
-exception CannotParseProjectFile of string * string
+type e =
+  | CannotParseFile of string * (int * int)
+  | CannotParseProjectFile of string * string
+  | CannotOpenFile of string * string
+  | CannotOpenProjectFile of string
+  | InvalidFindlibPluginName of string * string
 
-exception CannotOpenFile of string * string
-exception CannotOpenProjectFile of string
+type _ CErrors.tag += CoqdepError : e CErrors.tag
 
-exception InvalidFindlibPluginName of string * string
+let () = CErrors.register (module struct
+    type nonrec e = e
+    type _ CErrors.tag += T = CoqdepError
 
-let _ = CErrors.register_handler @@ function
-  | CannotParseFile (s,(i,j)) ->
-    Some Pp.(str "File \"" ++ str s ++ str "\"," ++ str "characters" ++ spc ()
-      ++ int i ++ str "-" ++ int j ++ str ":" ++ spc () ++ str "Syntax error")
+    let pp = let open Pp in function
+      | CannotParseFile (s,(i,j)) ->
+        str "File \"" ++ str s ++ str "\"," ++ str "characters" ++ spc ()
+                 ++ int i ++ str "-" ++ int j ++ str ":" ++ spc () ++ str "Syntax error"
 
-  | CannotParseProjectFile (file, msg) ->
-    Some Pp.(str "Project file" ++ spc () ++ str  "\"" ++ str file ++ str "\":" ++ spc ()
-      ++ str "Syntax error:" ++ str msg)
+      | CannotParseProjectFile (file, msg) ->
+        str "Project file" ++ spc () ++ str  "\"" ++ str file ++ str "\":" ++ spc ()
+                 ++ str "Syntax error:" ++ str msg
 
-  | CannotOpenFile (s, msg) ->
-    Some Pp.(str s ++ str ":" ++ spc () ++ str msg)
+      | CannotOpenFile (s, msg) ->
+        str s ++ str ":" ++ spc () ++ str msg
 
-  | CannotOpenProjectFile msg ->
-    (* TODO: more info? *)
-    Some Pp.(str msg)
+      | CannotOpenProjectFile msg ->
+        (* TODO: more info? *)
+        str msg
 
-  | InvalidFindlibPluginName (f, s) ->
-    Some Pp.(str "in file " ++ quote (str f) ++ str "." ++ spc () ++ str "The name "
-      ++ quote (str s) ++ strbrk " is no longer a valid plugin name." ++ spc ()
-      ++ strbrk "Plugins should be loaded using their public name according to \
-      findlib, for example " ++ quote (str "package-name.foo") ++ str " and not "
-      ++ quote (str "foo_plugin") ++ str "." ++ spc () ++ strbrk "If you are \
-      using a build system that does not yet support the new loading method \
-      (such as Dune) you must specify both the legacy and the findlib plugin \
-      name as in:" ++ spc ()
-      ++ str "      Declare ML Module \"foo_plugin:package-name.foo\".")
+      | InvalidFindlibPluginName (f, s) ->
+        str "in file " ++ quote (str f) ++ str "." ++ spc () ++ str "The name "
+        ++ quote (str s) ++ strbrk " is no longer a valid plugin name." ++ spc ()
+        ++ strbrk "Plugins should be loaded using their public name according to \
+        findlib, for example " ++ quote (str "package-name.foo") ++ str " and not "
+        ++ quote (str "foo_plugin") ++ str "." ++ spc () ++ strbrk "If you are \
+        using a build system that does not yet support the new loading method \
+        (such as Dune) you must specify both the legacy and the findlib plugin \
+        name as in:" ++ spc ()
+        ++ str "      Declare ML Module \"foo_plugin:package-name.foo\"."
+end)
 
-  | _ -> None
+open struct let raise e = CErrors.coq_error CoqdepError e end
 
 let cannot_parse s ij = raise @@ CannotParseFile (s, ij)
 let cannot_open_project_file msg = raise @@ CannotOpenProjectFile msg

@@ -61,7 +61,7 @@ let ppwf_paths x = pp (Declareops.pp_wf_paths x)
 
 let get_current_context () =
   try Vernacstate.Declare.get_current_context ()
-  with Vernacstate.Declare.NoCurrentProof ->
+  with CErrors.CoqError (Vernacstate.Declare.NoCurrentProof, ()) ->
     let env = Global.env() in
     Evd.from_env env, env
   [@@ocaml.warning "-3"]

@@ -104,7 +104,7 @@ type internalization_error =
   | NotAProjection of qualid
   | ProjectionsOfDifferentRecords of Structure.t * Structure.t
 
-exception InternalizationError of internalization_error
+type _ CErrors.tag += InternalizationError : internalization_error CErrors.tag
 
 let explain_variable_capture id id' =
   Id.print id ++ str " is dependent in the type of " ++ Id.print id' ++
@@ -154,10 +154,11 @@ let explain_internalization_error e =
     explain_projections_of_diff_records inductive1_id inductive2_id
   in pp ++ str "."
 
-let _ = CErrors.register_handler (function
-    | InternalizationError e ->
-      Some (explain_internalization_error e)
-    | _ -> None)
+let () = CErrors.register (module struct
+    type e = internalization_error
+    type _ CErrors.tag += T = InternalizationError
+    let pp = explain_internalization_error
+  end)
 
 let error_bad_inductive_type ?loc ?info () =
   user_err ?loc ?info (str
@@ -390,7 +391,7 @@ let impls_term_list n ?(args = []) =
 (* Check if in binder "(x1 x2 .. xn : t)", none of x1 .. xn-1 occurs in t *)
 let rec check_capture ty = let open CAst in function
   | { loc; v = Name id } :: { v = Name id' } :: _ when occur_glob_constr id ty ->
-    Loc.raise ?loc (InternalizationError (VariableCapture (id,id')))
+    CErrors.coq_error ?loc InternalizationError (VariableCapture (id,id'))
   | _::nal ->
       check_capture ty nal
   | [] ->
@@ -581,7 +582,7 @@ let glob_local_binder_of_extended = DAst.with_loc_val (fun ?loc -> function
       let t = DAst.make ?loc @@ GHole(Evar_kinds.BinderType na,IntroAnonymous,None) in
       (na,Explicit,Some c,t)
   | GLocalPattern (_,_,_,_) ->
-      Loc.raise ?loc (Gramlib.Stream.Error "pattern with quote not allowed here")
+      CErrors.coq_error ?loc Gramlib.Grammar.Error "pattern with quote not allowed here"
   )
 
 let intern_cases_pattern_fwd = ref (fun _ -> failwith "intern_cases_pattern_fwd")
@@ -1200,9 +1201,9 @@ let intern_field_ref qid =
      | _ -> raise Not_found)
   with
   | exception Not_found ->
-     Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+     CErrors.coq_error ?loc:qid.loc InternalizationError (NotAProjection qid)
   | None ->
-     Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+     CErrors.coq_error ?loc:qid.loc InternalizationError (NotAProjection qid)
   | Some x -> x
 
 (**********************************************************************)
@@ -1456,7 +1457,7 @@ let check_linearity lhs ids =
   match has_duplicate ids with
     | Some id ->
       let loc = loc_of_lhs lhs in
-      Loc.raise ?loc (InternalizationError (NonLinearPattern id))
+      CErrors.coq_error ?loc InternalizationError (NonLinearPattern id)
     | None ->
         ()
 
@@ -1464,7 +1465,7 @@ let check_linearity lhs ids =
 let check_number_of_pattern loc n l =
   let p = List.length l in
   if not (Int.equal n p) then
-    Loc.raise ?loc (InternalizationError (BadPatternsNumber (n,p)))
+    CErrors.coq_error ?loc InternalizationError (BadPatternsNumber (n,p))
 
 let check_or_pat_variables loc ids idsl =
   let eq_id {v=id} {v=id'} = Id.equal id id' in
@@ -1522,7 +1523,7 @@ let find_inductive_head ?loc ref =
 
 let find_pattern_variable qid =
   if qualid_is_ident qid then qualid_basename qid
-  else Loc.raise ?loc:qid.CAst.loc (InternalizationError(NotAConstructor qid))
+  else CErrors.coq_error ?loc:qid.CAst.loc InternalizationError(NotAConstructor qid)
 
 let check_duplicate ?loc fields =
   let eq (ref1, _) (ref2, _) = qualid_eq ref1 ref2 in
@@ -1576,7 +1577,7 @@ let sort_fields ~complete loc fields completer =
                    | (idx, None, _) -> false in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
-                   Loc.raise ?loc (InternalizationError(ProjectionsOfDifferentRecords (record, this_field_record)))
+                   CErrors.coq_error ?loc InternalizationError(ProjectionsOfDifferentRecords (record, this_field_record))
                in
                if not regular && complete then
                  (* "regular" is false when the field is defined
@@ -1748,13 +1749,13 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       begin
         match drop_abbrev test_kind ?loc scopes head add_par_if_no_ntn_with_par no_impl pl with
         | Some (g,pl) -> DAst.make ?loc @@ RCPatCstr(g, pl)
-        | None -> Loc.raise ?loc (InternalizationError (NotAConstructor head))
+        | None -> CErrors.coq_error ?loc InternalizationError (NotAConstructor head)
       end
     | CPatCstr (qid, Some expl_pl, pl) ->
       begin
         match drop_abbrev test_kind ?loc scopes qid false true (expl_pl@pl) with
         | Some (g,pl) -> DAst.make ?loc @@ RCPatCstr (g, pl)
-        | None -> Loc.raise ?loc (InternalizationError (NotAConstructor qid))
+        | None -> CErrors.coq_error ?loc InternalizationError (NotAConstructor qid)
       end
     | CPatNotation (_,(InConstrEntry,"- _"),([a],[]),[]) when is_non_zero_pat a ->
       let p = match a.CAst.v with CPatPrim (Number (_, p)) -> p | _ -> assert false in
@@ -1941,7 +1942,7 @@ let intern_ind_pattern genv ntnvars env pat =
       let test_top = {for_ind=true;test_kind=test_kind_top} in
       let test_inner = {for_ind=false;test_kind=test_kind_inner} in
       drop_notations_pattern (test_top,test_inner) genv env pat
-    with InternalizationError (NotAConstructor _) as exn ->
+    with CoqError (InternalizationError, (NotAConstructor _)) as exn ->
       let _, info = Exninfo.capture exn in
       error_bad_inductive_type ~info ()
   in
@@ -2051,7 +2052,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           with Not_found as exn ->
             let _, info = Exninfo.capture exn in
             let info = Option.cata (Loc.add_loc info) info locid in
-            Exninfo.iraise (InternalizationError (UnboundFixName (false,iddef)),info)
+            Exninfo.iraise (CoqError (InternalizationError, (UnboundFixName (false,iddef))),info)
         in
         let env = restart_lambda_binders env in
         let idl_temp = Array.map
@@ -2098,7 +2099,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           with Not_found as exn ->
             let _, info = Exninfo.capture exn in
             let info = Option.cata (Loc.add_loc info) info locid in
-            Exninfo.iraise (InternalizationError (UnboundFixName (true,iddef)), info)
+            Exninfo.iraise (CoqError (InternalizationError, (UnboundFixName (true,iddef))), info)
         in
         let env = restart_lambda_binders env in
         let idl_tmp = Array.map
@@ -2326,7 +2327,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         DAst.make ?loc @@
         GEvar (n, List.map (on_snd (intern_no_implicit env)) l)
     | CPatVar _ ->
-      Loc.raise ?loc (InternalizationError IllegalMetavariable)
+      CErrors.coq_error ?loc InternalizationError IllegalMetavariable
     (* end *)
     | CSort s ->
         DAst.make ?loc @@
