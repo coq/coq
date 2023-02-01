@@ -25,7 +25,7 @@ type vernac_toplevel =
 module Toplevel_ : sig
   val vernac_toplevel : vernac_toplevel option Entry.t
 end = struct
-  let gec_vernac s = Entry.create ("toplevel:" ^ s)
+  let gec_vernac s = Entry.make ("toplevel:" ^ s)
   let vernac_toplevel = gec_vernac "vernac_toplevel"
 end
 

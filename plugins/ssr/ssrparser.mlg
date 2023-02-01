@@ -1595,7 +1595,7 @@ let test_ssrseqvar =
 
 let swaptacarg (loc, b) = (b, []), Some (CAst.make ~loc (TacId []))
 
-let ssrorelse = Entry.create "ssrorelse"
+let ssrorelse = Entry.make "ssrorelse"
 
 }
 

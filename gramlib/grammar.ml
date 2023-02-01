@@ -54,7 +54,6 @@ module type S = sig
   module Entry : sig
     type 'a t
     val make : string -> 'a t mod_estate
-    val create : string -> 'a t mod_estate
     val parse : 'a t -> Parsable.t -> 'a with_gstate
     val name : 'a t -> string
     type 'a parser_fun = { parser_fun : keyword_state -> (keyword_state,te) LStream.t -> 'a }
@@ -1701,7 +1700,6 @@ module Entry = struct
     in
     estate, e
 
-  let create = make
   let parse (e : 'a t) p gstate : 'a =
     Parsable.parse_parsable gstate e p
   let parse_token_stream (e : 'a t) ts gstate : 'a =

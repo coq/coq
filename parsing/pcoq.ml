@@ -36,7 +36,6 @@ module Entry = struct
     let estate', e = make na !estate in
     estate := estate';
     e
-  let create = make
   let parse e p = parse e p (gstate())
   let of_parser na p =
     let estate', e = of_parser na p !estate in
@@ -277,7 +276,7 @@ let genarg_grammar x =
   Grammar.obj x
 
 let create_generic_entry2 (type a) s (etyp : a raw_abstract_argument_type) : a Entry.t =
-  let e = Entry.create s in
+  let e = Entry.make s in
   let Rawwit t = etyp in
   let () = Grammar.register0 t e in
   e
@@ -288,41 +287,41 @@ module Prim =
 
     (* Entries that can be referred via the string -> Entry.t table *)
     (* Typically for tactic or vernac extensions *)
-    let preident = Entry.create "preident"
-    let ident = Entry.create "ident"
-    let natural = Entry.create "natural"
-    let integer = Entry.create "integer"
-    let bignat = Entry.create "bignat"
-    let bigint = Entry.create "bigint"
-    let string = Entry.create "string"
-    let lstring = Entry.create "lstring"
-    let reference = Entry.create "reference"
-    let fields = Entry.create "fields"
-    let by_notation = Entry.create "by_notation"
-    let smart_global = Entry.create "smart_global"
-    let strategy_level = Entry.create "strategy_level"
+    let preident = Entry.make "preident"
+    let ident = Entry.make "ident"
+    let natural = Entry.make "natural"
+    let integer = Entry.make "integer"
+    let bignat = Entry.make "bignat"
+    let bigint = Entry.make "bigint"
+    let string = Entry.make "string"
+    let lstring = Entry.make "lstring"
+    let reference = Entry.make "reference"
+    let fields = Entry.make "fields"
+    let by_notation = Entry.make "by_notation"
+    let smart_global = Entry.make "smart_global"
+    let strategy_level = Entry.make "strategy_level"
 
     (* parsed like ident but interpreted as a term *)
-    let hyp = Entry.create "hyp"
+    let hyp = Entry.make "hyp"
     let var = hyp
 
-    let name = Entry.create "name"
-    let identref = Entry.create "identref"
-    let univ_decl = Entry.create "univ_decl"
-    let ident_decl = Entry.create "ident_decl"
-    let pattern_ident = Entry.create "pattern_ident"
+    let name = Entry.make "name"
+    let identref = Entry.make "identref"
+    let univ_decl = Entry.make "univ_decl"
+    let ident_decl = Entry.make "ident_decl"
+    let pattern_ident = Entry.make "pattern_ident"
 
     (* A synonym of ident - maybe ident will be located one day *)
-    let base_ident = Entry.create "base_ident"
+    let base_ident = Entry.make "base_ident"
 
-    let qualid = Entry.create "qualid"
-    let fullyqualid = Entry.create "fullyqualid"
-    let dirpath = Entry.create "dirpath"
+    let qualid = Entry.make "qualid"
+    let fullyqualid = Entry.make "fullyqualid"
+    let dirpath = Entry.make "dirpath"
 
-    let ne_string = Entry.create "ne_string"
-    let ne_lstring = Entry.create "ne_lstring"
+    let ne_string = Entry.make "ne_string"
+    let ne_lstring = Entry.make "ne_lstring"
 
-    let bar_cbrace = Entry.create "'|}'"
+    let bar_cbrace = Entry.make "'|}'"
 
   end
 
@@ -330,37 +329,37 @@ module Constr =
   struct
 
     (* Entries that can be referred via the string -> Entry.t table *)
-    let constr = Entry.create "constr"
-    let term = Entry.create "term"
+    let constr = Entry.make "constr"
+    let term = Entry.make "term"
     let constr_eoi = eoi_entry constr
-    let lconstr = Entry.create "lconstr"
-    let binder_constr = Entry.create "binder_constr"
-    let ident = Entry.create "ident"
-    let global = Entry.create "global"
-    let universe_name = Entry.create "universe_name"
-    let universe_level = Entry.create "universe_level"
-    let sort = Entry.create "sort"
-    let sort_family = Entry.create "sort_family"
-    let pattern = Entry.create "pattern"
-    let constr_pattern = Entry.create "constr_pattern"
-    let cpattern = Entry.create "cpattern"
-    let closed_binder = Entry.create "closed_binder"
-    let binder = Entry.create "binder"
-    let binders = Entry.create "binders"
-    let open_binders = Entry.create "open_binders"
-    let one_open_binder = Entry.create "one_open_binder"
-    let one_closed_binder = Entry.create "one_closed_binder"
-    let binders_fixannot = Entry.create "binders_fixannot"
-    let typeclass_constraint = Entry.create "typeclass_constraint"
-    let record_declaration = Entry.create "record_declaration"
-    let arg = Entry.create "arg"
-    let type_cstr = Entry.create "type_cstr"
+    let lconstr = Entry.make "lconstr"
+    let binder_constr = Entry.make "binder_constr"
+    let ident = Entry.make "ident"
+    let global = Entry.make "global"
+    let universe_name = Entry.make "universe_name"
+    let universe_level = Entry.make "universe_level"
+    let sort = Entry.make "sort"
+    let sort_family = Entry.make "sort_family"
+    let pattern = Entry.make "pattern"
+    let constr_pattern = Entry.make "constr_pattern"
+    let cpattern = Entry.make "cpattern"
+    let closed_binder = Entry.make "closed_binder"
+    let binder = Entry.make "binder"
+    let binders = Entry.make "binders"
+    let open_binders = Entry.make "open_binders"
+    let one_open_binder = Entry.make "one_open_binder"
+    let one_closed_binder = Entry.make "one_closed_binder"
+    let binders_fixannot = Entry.make "binders_fixannot"
+    let typeclass_constraint = Entry.make "typeclass_constraint"
+    let record_declaration = Entry.make "record_declaration"
+    let arg = Entry.make "arg"
+    let type_cstr = Entry.make "type_cstr"
   end
 
 module Module =
   struct
-    let module_expr = Entry.create "module_expr"
-    let module_type = Entry.create "module_type"
+    let module_expr = Entry.make "module_expr"
+    let module_type = Entry.make "module_type"
   end
 
 let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
