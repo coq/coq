@@ -1480,7 +1480,7 @@ let explain_exn_default = function
 
 let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
 
-let rec vernac_interp_error_handler = function
+let vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
     UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) i ++ str "."
@@ -1518,8 +1518,6 @@ let rec vernac_interp_error_handler = function
     str "Tactic failure" ++
     (if Pp.ismt s then s else str ": " ++ s) ++
     if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
-  | Logic_monad.TacticFailure e ->
-    vernac_interp_error_handler e
   | _ ->
     raise Unhandled
 
