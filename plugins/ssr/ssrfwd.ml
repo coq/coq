@@ -112,6 +112,7 @@ let combineCG t1 t2 f g = match t1, t2 with
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.project gl in
     let concl = Proofview.Goal.concl gl in
+    let state = Proofview.Goal.state gl in
     match Typing.sort_of env sigma c with
     | exception e when CErrors.noncritical e ->
       let _, info = Exninfo.capture e in
@@ -124,12 +125,12 @@ let combineCG t1 t2 f g = match t1, t2 with
             let name = Context.make_annot Name.Anonymous r in
             let sigma, p = Evarutil.new_evar env sigma c in
             let sigma, f = Evarutil.new_evar env sigma (mkLetIn (name,p,c,Vars.lift 1 concl)) in
-            let gp = Proofview_monad.with_empty_state (fst @@ destEvar sigma p) in
-            let gf = Proofview_monad.with_empty_state (fst @@ destEvar sigma f) in
+            let gp = Proofview_monad.goal_with_state (fst @@ destEvar sigma p) state in
+            let gf = Proofview_monad.goal_with_state (fst @@ destEvar sigma f) state in
             sigma, f, [gp;gf]
         | Have | Suff ->
             let sigma, f = Evarutil.new_evar env sigma (mkArrow c r concl) in
-            let gf = Proofview_monad.with_empty_state (fst @@ destEvar sigma f) in
+            let gf = Proofview_monad.goal_with_state (fst @@ destEvar sigma f) state in
             sigma, f, [gf] in
       Proofview.Unsafe.tclEVARS sigma <*> Tactics.eapply ~with_classes:false f
       <*>
