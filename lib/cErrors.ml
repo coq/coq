@@ -60,36 +60,86 @@ let print_anomaly askreport e =
   else
     hov 0 (raw_anomaly e)
 
+type _ tag = ..
+
+module E = PolyMap.Make(struct type nonrec 'e tag = 'e tag = .. end)
+module EMap = E.Map(struct type 'a t = 'a -> Pp.t end)
+
+type exn += CoqError : 'e tag * 'e -> exn
+
+let coq_error ?loc ?info e v =
+  let info = Option.default Exninfo.null info in
+  let info = Option.cata (Loc.add_loc info) info loc in
+  Exninfo.iraise (CoqError (e, v), info)
+
+let handlers = ref EMap.empty
+
+module type Register = sig
+  type e
+  type _ tag += T : e tag
+  val pp : e -> Pp.t
+end
+
+let register (module M : Register) =
+  handlers :=
+    EMap.add
+      (module struct
+        type a = M.e
+        type _ tag += T = M.T
+      end)
+      M.pp
+      !handlers
+
 let handle_stack = ref []
 
 let register_handler h = handle_stack := h::!handle_stack
 
+(* Keep in sync with print_gen below *)
 let is_handled e =
-  let is_handled_by h = Option.has_some (h e) in
-  List.exists is_handled_by !handle_stack
+  match e with
+  | CoqError (e, _) -> EMap.mem e !handlers
+
+  (* Exceptions not defined by Coq *)
+  | Sys_error _ -> true
+  | Out_of_memory -> true
+  | Stack_overflow -> true
+  | Sys.Break -> true
+
+  (* This is a handled error defined by coq, but special because critical.
+     Not sure if can/should be turned into a CoqError. *)
+  | Control.Timeout -> true
+
+  | _ ->
+    let is_handled_by h = Option.has_some (h e) in
+    List.exists is_handled_by !handle_stack
 
 let is_anomaly = function
 | Anomaly _ -> true
 | exn -> not (is_handled exn)
+
+(* keep in sync with is_handled above *)
+let print_gen ~anomaly = function
+  | CoqError (t, v) as e ->
+    begin match EMap.find t !handlers with
+    | pp -> pp v
+    | exception Not_found -> print_anomaly anomaly e
+    end
+  | Sys_error msg -> hov 0 (str "System error: " ++ quote (str msg))
+  | Out_of_memory -> hov 0 (str "Out of memory.")
+  | Stack_overflow -> hov 0 (str "Stack overflow.")
+  | Sys.Break -> hov 0 (str "User interrupt.")
+  | Control.Timeout -> hov 0 (str "Timeout!")
+  | e ->
+    match CList.find_map (fun h -> h e) !handle_stack with
+    | pp -> pp
+    | exception Not_found ->
+      print_anomaly anomaly e
 
 (** Printing of additional error info, from Exninfo *)
 let additional_error_info_handler = ref []
 
 let register_additional_error_info (f : Exninfo.info -> Pp.t option) =
   additional_error_info_handler := f :: !additional_error_info_handler
-
-(** [print_gen] is a general exception printer which tries successively
-    all the handlers of a list, and finally a [bottom] handler if all
-    others have failed *)
-
-let rec print_gen ~anomaly stk e =
-  match stk with
-  | [] ->
-    print_anomaly anomaly e
-  | h::stk' ->
-    match h e with
-    | Some err_msg -> err_msg
-    | None -> print_gen ~anomaly stk' e
 
 let print_gen ~anomaly (e, info) =
   let extra_msg =
@@ -98,7 +148,7 @@ let print_gen ~anomaly (e, info) =
     |> Pp.seq
   in
   try
-    extra_msg ++ print_gen ~anomaly !handle_stack e
+    extra_msg ++ print_gen ~anomaly e
   with exn ->
     let exn, info = Exninfo.capture exn in
     (* exception in error printer *)

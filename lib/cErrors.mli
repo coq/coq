@@ -31,8 +31,14 @@ val is_anomaly : exn -> bool
     tricks with anomalies thanks to it. See rather [noncritical] below. *)
 
 exception UserError of Pp.t
-(** Main error signaling exception. It carries a header plus a pretty printing
-    doc *)
+
+type _ tag = ..
+
+type exn += CoqError : 'e tag * 'e -> exn
+
+val coq_error : ?loc:Loc.t -> ?info:Exninfo.info -> 'e tag -> 'e -> 'a
+(** Main error raising primitive. [coq_error ?loc e v] signals an
+    error [e] with payload [v] and location [loc]. *)
 
 val user_err : ?loc:Loc.t -> ?info:Exninfo.info -> Pp.t -> 'a
 (** Main error raising primitive. [user_err ?loc pp] signals an
@@ -50,6 +56,15 @@ val user_err : ?loc:Loc.t -> ?info:Exninfo.info -> Pp.t -> 'a
     Exceptions that are considered anomalies should not be
     handled by registered handlers.
 *)
+
+module type Register = sig
+  type e
+  type _ tag += T : e tag
+  val pp : e -> Pp.t
+end
+
+
+val register : (module Register) -> unit
 
 val register_handler : (exn -> Pp.t option) -> unit
 
