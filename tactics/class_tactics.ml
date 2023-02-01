@@ -530,12 +530,6 @@ module Search = struct
     else
       tclUNIT ()
 
-  let _ = CErrors.register_handler begin function
-    | NonStuckFailure -> Some (str "NonStuckFailure")
-    | NoApplicableHint -> Some (str "NoApplicableHint")
-    | _ -> None
-    end
-
   (**
     For each success of tac1 try tac2.
     If tac2 raises NonStuckFailure, try the next success of tac1 until depleted.
