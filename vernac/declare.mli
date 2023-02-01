@@ -408,8 +408,7 @@ val check_exists : Id.t -> unit
 
 (** Semantics of this function is a bit dubious, use with care *)
 val build_by_tactic
-  :  ?side_eff:bool
-  -> Environ.env
+  :  Environ.env
   -> uctx:UState.t
   -> poly:bool
   -> typ:EConstr.types
