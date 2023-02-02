@@ -73,15 +73,15 @@ let check_all_names_different indl =
   let cstr_names = List.map_append (fun ind -> List.map fst ind.ind_lc) indl in
   let ind_names = match elements ind_names with
   | s -> s
-  | exception (Same t) -> raise (InductiveError (SameNamesTypes t))
+  | exception (Same t) -> CErrors.coq_error InductiveError (SameNamesTypes t)
   in
   let cstr_names = match elements cstr_names with
   | s -> s
-  | exception (Same c) -> raise (InductiveError (SameNamesConstructors c))
+  | exception (Same c) -> CErrors.coq_error InductiveError (SameNamesConstructors c)
   in
   let l = Id.Set.inter ind_names cstr_names in
   if not (Id.Set.is_empty l) then
-    raise (InductiveError (SameNamesOverlap (Id.Set.elements l)))
+    CErrors.coq_error InductiveError (SameNamesOverlap (Id.Set.elements l))
 
 (** Make the arity conclusion flexible to avoid generating an upper bound universe now,
     only if the universe does not appear anywhere else.
@@ -336,7 +336,7 @@ let inductive_levels env evd arities inds =
         let evd =
           if Sorts.is_set du then
             if not (Evd.check_leq evd cu (EConstr.ESorts.make Sorts.set)) then
-              raise (InductiveError LargeNonPropInductiveNotInType)
+              CErrors.coq_error InductiveError LargeNonPropInductiveNotInType
             else evd
           else evd
         in

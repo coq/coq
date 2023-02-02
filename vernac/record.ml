@@ -399,7 +399,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   let kind = Decls.IsDefinition kind in
   let kn =
     try Declare.declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry)
-    with Type_errors.TypeError (ctx,te) as exn when not primitive ->
+    with CoqError (Type_errors.TypeError, (ctx,te)) as exn when not primitive ->
       let _, info = Exninfo.capture exn in
       Exninfo.iraise (NotDefinable (BadTypedProj (fid,ctx,te)),info)
   in

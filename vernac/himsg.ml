@@ -1462,15 +1462,10 @@ let wrap_unhandled f e =
   with Unhandled -> None
 
 let vernac_interp_error_handler = function
-  | TypeError(ctx,te) ->
-    let te = map_ptype_error EConstr.of_constr te in
-    explain_type_error ctx Evd.empty te
   | PretypeError(ctx,sigma,te) ->
     explain_pretype_error ctx sigma te
   | Typeclasses_errors.TypeClassError(env, sigma, te) ->
     explain_typeclass_error env sigma te
-  | InductiveError e ->
-    explain_inductive_error e
   | Primred.IncompatibleDeclarations (act,x,y) ->
     explain_incompatible_prim_declarations act x y
   | Modops.ModuleTypingError e ->
@@ -1511,4 +1506,18 @@ let () = CErrors.register (module struct
     type e = Notation.prim_token_notation_error
     type _ CErrors.tag += T = Notation.PrimTokenNotationError
     let pp e = Notation.explain_prim_token_notation_error pr_constr_env e
+  end)
+
+let () = CErrors.register (module struct
+    type e = Environ.env * Type_errors.type_error
+    type _ CErrors.tag += T = Type_errors.TypeError
+    let pp (env,te) =
+      let te = map_ptype_error EConstr.of_constr te in
+      explain_type_error env (Evd.from_env env) te
+  end)
+
+let () = CErrors.register (module struct
+    type e = Type_errors.inductive_error
+    type _ CErrors.tag += T = Type_errors.InductiveError
+    let pp = explain_inductive_error
   end)

@@ -1252,7 +1252,7 @@ let pattern_occs loccs_trm = begin fun env sigma c ->
   try
     let sigma, _ = Typing.type_of env sigma abstr_trm in
     (sigma, applist(abstr_trm, List.map snd loccs_trm))
-  with Type_errors.TypeError (env',t) ->
+  with CoqError (Type_errors.TypeError, (env',t)) ->
     raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
   end
 

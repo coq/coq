@@ -434,7 +434,7 @@ let check_case_info env (indsp,u) r ci =
     not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
     not (ci.ci_relevance == r) ||
     is_primitive_record spec
-  then raise (TypeError(env,WrongCaseInfo((indsp,u),ci)))
+  then CErrors.coq_error TypeError (env,WrongCaseInfo((indsp,u),ci))
 
 
 (************************************************************************)

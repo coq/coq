@@ -78,7 +78,7 @@ type ('constr, 'types) ptype_error =
 
 type type_error = (constr, types) ptype_error
 
-exception TypeError of env * type_error
+type _ CErrors.tag += TypeError : (env * type_error) CErrors.tag
 
 (** The different kinds of errors that may result of a malformed inductive
     definition. *)
@@ -96,7 +96,7 @@ type inductive_error =
   | MissingConstraints of (Sorts.t list * Sorts.t)
   (* each universe in the set should have been <= the other one *)
 
-exception InductiveError of inductive_error
+type _ CErrors.tag += InductiveError : inductive_error CErrors.tag
 
 (** Raising functions *)
 

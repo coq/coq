@@ -108,7 +108,7 @@ let search_guard ?loc env possible_indexes fixdefs =
               let flags = { (typing_flags env) with Declarations.check_guarded = true } in
               let env = Environ.set_typing_flags flags env in
               check_fix env fix; raise (Found indexes)
-            with TypeError _ -> ())
+            with CoqError (TypeError, _) -> ())
          (List.combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
          user_err ?loc (Pp.str errmsg)
@@ -117,7 +117,7 @@ let search_guard ?loc env possible_indexes fixdefs =
 let esearch_guard ?loc env sigma indexes fix =
   let fix = nf_fix sigma fix in
   try search_guard ?loc env indexes fix
-  with TypeError (env,err) ->
+  with CoqError (TypeError, (env,err)) ->
     raise (PretypeError (env,sigma,TypingError (map_ptype_error of_constr err)))
 
 (* To force universe name declaration before use *)
@@ -1010,7 +1010,7 @@ struct
     let resj =
       try
         judge_of_product !!env sigma name j j'
-      with TypeError _ as e ->
+      with CoqError (TypeError, _) as e ->
         let (e, info) = Exninfo.capture e in
         let info = Option.cata (Loc.add_loc info) info loc in
         Exninfo.iraise (e, info) in

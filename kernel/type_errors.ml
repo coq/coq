@@ -76,7 +76,7 @@ type ('constr, 'types) ptype_error =
 
 type type_error = (constr, types) ptype_error
 
-exception TypeError of env * type_error
+type _ CErrors.tag += TypeError : (env * type_error) CErrors.tag
 
 type inductive_error =
   | NonPos of env * constr * constr
@@ -91,76 +91,78 @@ type inductive_error =
   | LargeNonPropInductiveNotInType
   | MissingConstraints of (Sorts.t list * Sorts.t)
 
-exception InductiveError of inductive_error
+type _ CErrors.tag += InductiveError : inductive_error CErrors.tag
+
+let raise e = raise (CErrors.CoqError (TypeError, e))
 
 let error_unbound_rel env n =
-  raise (TypeError (env, UnboundRel n))
+  raise (env, UnboundRel n)
 
 let error_unbound_var env v =
-  raise (TypeError (env, UnboundVar v))
+  raise (env, UnboundVar v)
 
 let error_not_type env j =
-  raise (TypeError (env, NotAType j))
+  raise (env, NotAType j)
 
 let error_assumption env j =
-  raise (TypeError (env, BadAssumption j))
+  raise (env, BadAssumption j)
 
 let error_reference_variables env id c =
-  raise (TypeError (env, ReferenceVariables (id,c)))
+  raise (env, ReferenceVariables (id,c))
 
 let error_elim_arity env ind c okinds =
-  raise (TypeError (env, ElimArity (ind, c, okinds)))
+  raise (env, ElimArity (ind, c, okinds))
 
 let error_case_not_inductive env j =
-  raise (TypeError (env, CaseNotInductive j))
+  raise (env, CaseNotInductive j)
 
 let error_number_branches env cj expn =
-  raise (TypeError (env, NumberBranches (cj, expn)))
+  raise (env, NumberBranches (cj, expn))
 
 let error_ill_formed_branch env c i actty expty =
-  raise (TypeError (env, IllFormedBranch (c, i, actty, expty)))
+  raise (env, IllFormedBranch (c, i, actty, expty))
 
 let error_generalization env nvar c =
-  raise (TypeError (env, Generalization (nvar,c)))
+  raise (env, Generalization (nvar,c))
 
 let error_actual_type env j expty =
-  raise (TypeError (env, ActualType (j,expty)))
+  raise (env, ActualType (j,expty))
 
 let error_incorrect_primitive env p t =
-  raise (TypeError (env, IncorrectPrimitive (p, t)))
+  raise (env, IncorrectPrimitive (p, t))
 
 let error_cant_apply_not_functional env rator randl =
-  raise (TypeError (env, CantApplyNonFunctional (rator,randl)))
+  raise (env, CantApplyNonFunctional (rator,randl))
 
 let error_cant_apply_bad_type env t rator randl =
-  raise (TypeError (env, CantApplyBadType (t,rator,randl)))
+  raise (env, CantApplyBadType (t,rator,randl))
 
 let error_ill_formed_rec_body env why lna i fixenv vdefj =
-  raise (TypeError (env, IllFormedRecBody (why,lna,i,fixenv,vdefj)))
+  raise (env, IllFormedRecBody (why,lna,i,fixenv,vdefj))
 
 let error_ill_typed_rec_body env i lna vdefj vargs =
-  raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))
+  raise (env, IllTypedRecBody (i,lna,vdefj,vargs))
 
 let error_unsatisfied_constraints env c =
-  raise (TypeError (env, UnsatisfiedConstraints c))
+  raise (env, UnsatisfiedConstraints c)
 
 let error_undeclared_universe env l =
-  raise (TypeError (env, UndeclaredUniverse l))
+  raise (env, UndeclaredUniverse l)
 
 let error_disallowed_sprop env =
-  raise (TypeError (env, DisallowedSProp))
+  raise (env, DisallowedSProp)
 
 let error_bad_binder_relevance env rlv decl =
-  raise (TypeError (env, BadBinderRelevance (rlv, decl)))
+  raise (env, BadBinderRelevance (rlv, decl))
 
 let error_bad_case_relevance env rlv case =
-  raise (TypeError (env, BadCaseRelevance (rlv, mkCase case)))
+  raise (env, BadCaseRelevance (rlv, mkCase case))
 
 let error_bad_invert env =
-  raise (TypeError (env, BadInvert))
+  raise (env, BadInvert)
 
 let error_bad_variance env ~lev ~expected ~actual =
-  raise (TypeError (env, BadVariance {lev;expected;actual}))
+  raise (env, BadVariance {lev;expected;actual})
 
 let map_pfix_guard_error f = function
 | NotEnoughAbstractionInFixBody -> NotEnoughAbstractionInFixBody

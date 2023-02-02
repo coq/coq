@@ -54,7 +54,7 @@ let infer_assumption env t ty =
   try
     let s = check_type env t ty in
     Sorts.relevance_of_sort s
-  with TypeError _ ->
+  with CoqError (TypeError, _) ->
     error_assumption env (make_judge t ty)
 
 type bad_relevance =

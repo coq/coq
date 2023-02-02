@@ -32,7 +32,7 @@ let check_constructors_names =
     | [] -> idset
     | c::cl ->
         if Id.Set.mem c idset then
-          raise (InductiveError (SameNamesConstructors c))
+          CErrors.coq_error InductiveError (SameNamesConstructors c)
         else
           check (Id.Set.add c idset) cl
   in
@@ -49,7 +49,7 @@ let mind_check_names mie =
         let id = ind.mind_entry_typename in
         let cl = ind.mind_entry_consnames in
         if Id.Set.mem id indset then
-          raise (InductiveError (SameNamesTypes id))
+          CErrors.coq_error InductiveError (SameNamesTypes id)
         else
           let cstset' = check_constructors_names cstset cl in
           check (Id.Set.add id indset) cstset' inds
@@ -248,7 +248,7 @@ let get_template univs ~env_params ~env_ar_par ~params entries =
 
 let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (List.is_empty univ_info.missing)
-  then raise (InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ)));
+  then CErrors.coq_error InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ));
   let arity = Vars.subst_univs_level_constr usubst arity in
   let lc = Array.map (Vars.subst_univs_level_constr usubst) lc in
   let indices = Vars.subst_univs_level_context usubst indices in

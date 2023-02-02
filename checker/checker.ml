@@ -249,7 +249,7 @@ let explain_exn = function
       else
         mt() in
       hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")
-  | TypeError(ctx,te) ->
+  | CoqError (TypeError, (ctx,te)) ->
       hov 0 (str "Type error: " ++
       (match te with
       | UnboundRel i -> str"UnboundRel " ++ int i
@@ -295,7 +295,7 @@ let explain_exn = function
       | BadVariance _ -> str "BadVariance"
       ))
 
-  | InductiveError e ->
+  | CoqError (InductiveError, e) ->
       hov 0 (str "Error related to inductive types")
 (*      let ctx = Check.get_env() in
       hov 0
