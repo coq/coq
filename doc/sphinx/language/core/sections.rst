@@ -1,10 +1,7 @@
-Section Mechanism
-====================================
-
 .. _section-mechanism:
 
-Section mechanism
------------------
+Sections
+====================================
 
 Sections are naming scopes that permit creating section-local declarations that can
 be used by other declarations in the section.  Declarations made
@@ -121,7 +118,7 @@ usable outside the section as shown in this :ref:`example <section_local_declara
 
 .. _Admissible-rules-for-global-environments:
 
-Admissible rules for global environments
+Typing rules used at the end of a section
 --------------------------------------------
 
 From the original rules of the type system, one can show the
