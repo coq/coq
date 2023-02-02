@@ -34,7 +34,7 @@ type coercion_error_kind =
   | ForbiddenSourceClass of cl_typ
   | NoTarget
   | WrongTarget of cl_typ * cl_typ
-  | NotAClass of GlobRef.t
+  | NotACoercionClass of GlobRef.t
 
 exception CoercionError of coercion_error_kind
 
@@ -55,7 +55,7 @@ let explain_coercion_error g = function
   | WrongTarget (clt,cl) ->
       (str"Found target class " ++ pr_class cl ++
        str " instead of " ++ pr_class clt)
-  | NotAClass ref ->
+  | NotACoercionClass ref ->
       (str "Type of " ++ Printer.pr_global ref ++
          str " does not end with a sort")
 
@@ -65,7 +65,7 @@ let check_reference_arity ref =
   let env = Global.env () in
   let c, _ = Typeops.type_of_global_in_context env ref in
   if not (Reductionops.is_arity env (Evd.from_env env) (EConstr.of_constr c)) (* FIXME *) then
-    raise (CoercionError (NotAClass ref))
+    raise (CoercionError (NotACoercionClass ref))
 
 let check_arity = function
   | CL_FUN | CL_SORT -> ()

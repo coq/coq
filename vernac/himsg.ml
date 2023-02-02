@@ -1173,7 +1173,7 @@ let explain_unbound_method env sigma cid { CAst.v = id } =
   str"of class" ++ spc () ++ pr_global cid ++ str "."
 
 let explain_typeclass_error env sigma = function
-  | NotAClass c -> explain_not_a_class env sigma c
+  | NotATypeclass c -> explain_not_a_class env sigma c
   | UnboundMethod (cid, id) -> explain_unbound_method env sigma cid id
 
 (* Refiner errors *)

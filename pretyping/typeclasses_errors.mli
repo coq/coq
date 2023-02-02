@@ -13,7 +13,7 @@ open EConstr
 open Environ
 
 type typeclass_error =
-  | NotAClass of constr
+  | NotATypeclass of constr
   | UnboundMethod of GlobRef.t * lident (** Class name, method *)
 
 exception TypeClassError of env * Evd.evar_map * typeclass_error
