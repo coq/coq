@@ -336,7 +336,7 @@ let introduction id =
     match EConstr.kind sigma concl with
     | Prod (id0, t, b) -> unsafe_intro env (LocalAssum ({id0 with binder_name=id}, t)) b
     | LetIn (id0, c, t, b) -> unsafe_intro env (LocalDef ({id0 with binder_name=id}, c, t)) b
-    | _ -> raise (RefinerError (env, sigma, IntroNeedsProduct))
+    | _ -> CErrors.coq_error RefinerError (env, sigma, IntroNeedsProduct)
   end
 
 (* Not sure if being able to disable [cast] is useful. Uses seem picked somewhat randomly. *)
@@ -472,7 +472,7 @@ let rename_hyp repl =
       let () =
         if not (Id.Set.subset src vars) then
           let hyp = Id.Set.choose (Id.Set.diff src vars) in
-          raise (RefinerError (env, sigma, NoSuchHyp hyp))
+          CErrors.coq_error RefinerError (env, sigma, NoSuchHyp hyp)
       in
       let mods = Id.Set.diff vars src in
       let () =
@@ -857,7 +857,7 @@ let e_change_in_hyps ~check ~reorder f args = match args with
         let hyp =
           try lookup_named id env
           with Not_found ->
-            raise (RefinerError (env, sigma, NoSuchHyp id))
+            CErrors.coq_error RefinerError (env, sigma, NoSuchHyp id)
         in
         let (sigma, d) = redfun env sigma hyp in
         let sign = Logic.convert_hyp ~check ~reorder env sigma d in
@@ -1122,7 +1122,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
         begin if not force_flag
           then
             let info = Exninfo.reify () in
-            Proofview.tclZERO ~info (RefinerError (env, sigma, IntroNeedsProduct))
+            Proofview.tclERROR ~info RefinerError (env, sigma, IntroNeedsProduct)
             (* Note: red_in_concl includes betaiotazeta and this was like *)
             (* this since at least V6.3 (a pity *)
             (* that intro do betaiotazeta only when reduction is needed; and *)
@@ -1133,7 +1133,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
           (Tacticals.tclTHEN hnf_in_concl
              (intro_then_gen name_flag move_flag false dep_flag tac))
           begin function (e, info) -> match e with
-            | RefinerError (env, sigma, IntroNeedsProduct) ->
+            | CoqError (RefinerError, (env, sigma, IntroNeedsProduct)) ->
               Tacticals.tclZEROMSG ~info (str "No product even after head-reduction.")
             | e -> Proofview.tclZERO ~info e
           end
@@ -1237,7 +1237,7 @@ let intro_forthcoming_then_gen avoid move_flag dep_flag bound n tac = match move
          (fun id -> aux (n+1) (id::ids))
       end
       begin function (e, info) -> match e with
-      | RefinerError (env, sigma, IntroNeedsProduct) ->
+      | CoqError (RefinerError, (env, sigma, IntroNeedsProduct)) ->
           tac ids
       | e -> Proofview.tclZERO ~info e
       end
@@ -1620,9 +1620,10 @@ let general_elim_clause_in0 with_evars flags id (metas, c, ty) elim =
   let hyp_typ = Retyping.get_type_of env sigma hyp in
   let elimclause =
     try clenv_instantiate ~flags hypmv elimclause (hyp, hyp_typ)
-    with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
+    with CoqError (PretypeError, (env,evd,NoOccurrenceFound (op,_))) as exn ->
+      let _, info = Exninfo.capture exn in
       (* Set the hypothesis name in the message *)
-      raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
+      CErrors.coq_error ~info PretypeError (env,evd,NoOccurrenceFound (op,Some id))
   in
   let new_hyp_typ  = clenv_type elimclause in
   if EConstr.eq_constr sigma hyp_typ new_hyp_typ then
@@ -1849,7 +1850,7 @@ let descend_in_conjunctions avoid tac (err, info) c =
           (fun (err, info) -> Proofview.tclZERO ~info err)
           (err, info)
     | None -> Proofview.tclZERO ~info err
-  with RefinerError _ | CoqError (UserError, _) -> Proofview.tclZERO ~info err
+  with CoqError ((UserError | RefinerError), _) -> Proofview.tclZERO ~info err
   end
 
 (****************************************************)
@@ -4722,7 +4723,7 @@ let guard_no_unifiable = Proofview.guard_no_unifiable >>= function
     Proofview.tclENV     >>= function env ->
     Proofview.tclEVARMAP >>= function sigma ->
     let info = Exninfo.reify () in
-    Proofview.tclZERO ~info (RefinerError (env, sigma, UnresolvedBindings l))
+    Proofview.tclERROR ~info RefinerError (env, sigma, UnresolvedBindings l)
 
 let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
@@ -5251,7 +5252,7 @@ let unify ?(state=TransparentState.full) x y =
     Proofview.Unsafe.tclEVARS sigma
   with e when noncritical e ->
     let e, info = Exninfo.capture e in
-    Proofview.tclZERO ~info (PretypeError (env, sigma, CannotUnify (x, y, None)))
+    Proofview.tclERROR ~info PretypeError (env, sigma, CannotUnify (x, y, None))
   end
 
 (** [tclWRAPFINALLY before tac finally] runs [before] before each

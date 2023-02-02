@@ -31,7 +31,7 @@ type pattern_matching_error =
   | NonExhaustive of cases_pattern list
   | CannotInferPredicate of (constr * types) array
 
-exception PatternMatchingError of env * evar_map * pattern_matching_error
+type _ CErrors.tag += PatternMatchingError : (env * evar_map * pattern_matching_error) CErrors.tag
 
 val error_wrong_numarg_constructor :
   ?loc:Loc.t -> env -> cstr:constructor -> expanded:bool -> nargs:int -> expected_nassums:int -> expected_ndecls:int -> 'a

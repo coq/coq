@@ -1002,7 +1002,7 @@ let cleartac clr = Proofview.tclTHEN (pf_check_hyps_uniq [] clr) (Tactics.clear 
 
 let get_hyp env sigma id =
   try EConstr.of_named_decl (Environ.lookup_named id env)
-  with Not_found -> raise (Logic.RefinerError (env, sigma, Logic.NoSuchHyp id))
+  with Not_found -> CErrors.coq_error Logic.RefinerError (env, sigma, Logic.NoSuchHyp id)
 
 (** Generalize tactic *)
 

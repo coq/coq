@@ -419,7 +419,9 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
       let sigma = Typing.check env sigma pred tP in
       sigma
     with
-    | Pretype_errors.PretypeError (env, sigma, te) -> raise (PRtype_error (Some (env, sigma, te)))
+    | CErrors.CoqError (Pretype_errors.PretypeError, (env, sigma, te)) as exn ->
+      let _, info = Exninfo.capture exn in
+      Exninfo.iraise (PRtype_error (Some (env, sigma, te)), info)
     | e when CErrors.noncritical e -> raise (PRtype_error None)
   in
   let proof = EConstr.mkApp (elim, [| rdx_ty; new_rdx; pred; p; rdx; c |]) in

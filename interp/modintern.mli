@@ -23,7 +23,7 @@ type module_internalization_error =
   | IncorrectWithInModule
   | IncorrectModuleApplication
 
-exception ModuleInternalizationError of module_internalization_error
+type _ CErrors.tag += ModuleInternalizationError : module_internalization_error CErrors.tag
 
 (** Module expressions and module types are interpreted relatively to
    possible functor or functor signature arguments. When the input kind

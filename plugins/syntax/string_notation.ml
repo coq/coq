@@ -28,7 +28,7 @@ let q_byte () = qualid_of_ref "core.byte.type"
 let has_type env sigma f ty =
   let c = mkCastC (mkRefC f, Constr.DEFAULTcast, ty) in
   try let _ = Constrintern.interp_constr env sigma c in true
-  with Pretype_errors.PretypeError _ -> false
+  with CErrors.CoqError (Pretype_errors.PretypeError, _) -> false
 
 let type_error_to f ty =
   CErrors.user_err

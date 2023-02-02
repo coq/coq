@@ -181,8 +181,9 @@ let unif_EQ_args env sigma pa a =
 
 let unif_HO env ise p c =
   try Evarconv.unify_delay env ise p c
-  with Evarconv.UnableToUnify(ise, err) ->
-    raise Pretype_errors.(PretypeError(env,ise,CannotUnify(p,c,Some err)))
+  with Evarconv.UnableToUnify(ise, err) as exn ->
+    let _, info = Exninfo.capture exn in
+    CErrors.coq_error ~info Pretype_errors.PretypeError (env,ise,CannotUnify(p,c,Some err))
 
 let unif_HO_args env ise0 pa i ca =
   let n = Array.length pa in
@@ -615,9 +616,9 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
         on_instance (ungen_upat lhs pt' u)
       with FoundUnif (_,s,_,_) as sig_u when dont_impact_evars s -> raise sig_u
       | NoProgress -> it_did_match := true
-      | Pretype_errors.PretypeError
-         (_,_,Pretype_errors.UnsatisfiableConstraints _) ->
-          failed_because_of_TC:=true
+      | CErrors.CoqError
+          (Pretype_errors.PretypeError, (_,_,UnsatisfiableConstraints _)) ->
+        failed_because_of_TC:=true
       | e when CErrors.noncritical e -> () in
     List.iter one_match fpats
   done;

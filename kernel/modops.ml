@@ -67,46 +67,48 @@ type module_typing_error =
   | LabelMissing of Label.t * string
   | IncludeRestrictedFunctor of ModPath.t
 
-exception ModuleTypingError of module_typing_error
+type _ CErrors.tag += ModuleTypingError : module_typing_error CErrors.tag
+
+let raise e = CErrors.coq_error ModuleTypingError e
 
 let error_existing_label l =
-  raise (ModuleTypingError (LabelAlreadyDeclared l))
+  raise (LabelAlreadyDeclared l)
 
 let error_not_a_functor () =
-  raise (ModuleTypingError NotAFunctor)
+  raise NotAFunctor
 
 let error_is_a_functor mp =
-  raise (ModuleTypingError (IsAFunctor mp))
+  raise (IsAFunctor mp)
 
 let error_incompatible_modtypes mexpr1 mexpr2 =
-  raise (ModuleTypingError (IncompatibleModuleTypes (mexpr1,mexpr2)))
+  raise (IncompatibleModuleTypes (mexpr1,mexpr2))
 
 let error_not_equal_modpaths mp1 mp2 =
-  raise (ModuleTypingError (NotEqualModulePaths (mp1,mp2)))
+  raise (NotEqualModulePaths (mp1,mp2))
 
 let error_signature_mismatch l spec why =
-  raise (ModuleTypingError (SignatureMismatch (l,spec,why)))
+  raise (SignatureMismatch (l,spec,why))
 
 let error_no_such_label l mp =
-  raise (ModuleTypingError (NoSuchLabel (l,mp)))
+  raise (NoSuchLabel (l,mp))
 
 let error_not_a_module_label s =
-  raise (ModuleTypingError (NotAModuleLabel s))
+  raise (NotAModuleLabel s)
 
 let error_not_a_constant l =
-  raise (ModuleTypingError (NotAConstant l))
+  raise (NotAConstant l)
 
 let error_incorrect_with_constraint l =
-  raise (ModuleTypingError (IncorrectWithConstraint l))
+  raise (IncorrectWithConstraint l)
 
 let error_generative_module_expected l =
-  raise (ModuleTypingError (GenerativeModuleExpected l))
+  raise (GenerativeModuleExpected l)
 
 let error_no_such_label_sub l l1 =
-  raise (ModuleTypingError (LabelMissing (l,l1)))
+  raise (LabelMissing (l,l1))
 
 let error_include_restricted_functor mp =
-  raise (ModuleTypingError (IncludeRestrictedFunctor mp))
+  raise (IncludeRestrictedFunctor mp)
 
 (** {6 Operations on functors } *)
 

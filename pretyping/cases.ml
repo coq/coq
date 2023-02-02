@@ -54,10 +54,10 @@ type pattern_matching_error =
   | NonExhaustive of cases_pattern list
   | CannotInferPredicate of (constr * types) array
 
-exception PatternMatchingError of env * evar_map * pattern_matching_error
+type _ CErrors.tag += PatternMatchingError : (env * evar_map * pattern_matching_error) CErrors.tag
 
 let raise_pattern_matching_error ?loc (env,sigma,te) =
-  Loc.raise ?loc (PatternMatchingError(env,sigma,te))
+  CErrors.coq_error ?loc PatternMatchingError(env,sigma,te)
 
 let error_bad_pattern ?loc env sigma cstr ind =
   raise_pattern_matching_error ?loc
@@ -80,7 +80,7 @@ let list_try_compile f l =
   | [] -> if errors = [] then anomaly (str "try_find_f.") else Exninfo.iraise (List.last errors)
   | h::t ->
       try f h
-      with CoqError ((UserError | TypeError), _) | PretypeError _ | PatternMatchingError _ as e ->
+      with CoqError ((UserError | TypeError | PatternMatchingError | PretypeError), _) as e ->
             let e = Exninfo.capture e in
             aux (e::errors) t in
   aux [] l

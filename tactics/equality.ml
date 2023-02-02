@@ -243,8 +243,8 @@ let elim_wrapper cls rwtac =
     | Some _ -> rwtac
     end
     begin function (e, info) -> match e with
-    | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
-      Proofview.tclZERO ~info (PretypeError (env, evd, NoOccurrenceFound (c', cls)))
+    | CoqError (PretypeError, (env, evd, NoOccurrenceFound (c', _))) ->
+      Proofview.tclERROR ~info PretypeError (env, evd, NoOccurrenceFound (c', cls))
     | e ->
       Proofview.tclZERO ~info e
     end
@@ -1079,7 +1079,7 @@ let onEquality with_evars tac (c,lbindc) =
   if not with_evars && List.exists (fun h -> h.Clenv.hole_deps) eq_clause.Clenv.cl_holes then
     let filter h = if h.Clenv.hole_deps then Some h.Clenv.hole_name else None in
     let bindings = List.map_filter filter eq_clause.Clenv.cl_holes in
-    Proofview.tclZERO  (RefinerError (env, sigma, UnresolvedBindings bindings))
+    Proofview.tclERROR RefinerError (env, sigma, UnresolvedBindings bindings)
   else
   let filter h =
     if h.Clenv.hole_deps then None
@@ -1473,7 +1473,7 @@ let injEqThen keep_proofs tac l2r eql =
 let get_previous_hyp_position id gl =
   let env, sigma = Proofview.Goal.(env gl, sigma gl) in
   let rec aux dest = function
-  | [] -> raise (RefinerError (env, sigma, NoSuchHyp id))
+  | [] -> CErrors.coq_error RefinerError (env, sigma, NoSuchHyp id)
   | d :: right ->
     let hyp = Context.Named.Declaration.get_id d in
     if Id.equal hyp id then dest else aux (MoveAfter hyp) right

@@ -71,7 +71,7 @@ type pretype_error =
     (** unresolvable evar, connex component *)
   | DisallowedSProp
 
-exception PretypeError of env * Evd.evar_map * pretype_error
+type _ CErrors.tag += PretypeError : (env * Evd.evar_map * pretype_error) CErrors.tag
 
 val precatchable_exception : exn -> bool
 

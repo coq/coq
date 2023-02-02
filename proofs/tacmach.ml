@@ -54,7 +54,7 @@ let pf_get_hyp id gl =
   let sigma = project gl in
   let sign =
     try EConstr.lookup_named id hyps
-    with Not_found -> raise (RefinerError (hyps, sigma, NoSuchHyp id))
+    with Not_found -> CErrors.coq_error RefinerError (hyps, sigma, NoSuchHyp id)
   in
   sign
 

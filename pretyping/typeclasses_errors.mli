@@ -16,10 +16,14 @@ type typeclass_error =
   | NotATypeclass of constr
   | UnboundMethod of GlobRef.t * lident (** Class name, method *)
 
-exception TypeClassError of env * Evd.evar_map * typeclass_error
+type _ CErrors.tag += TypeClassError : (env * Evd.evar_map * typeclass_error) CErrors.tag
 
 val typeclass_error : env -> Evd.evar_map -> typeclass_error -> 'a
 
 val not_a_class : env -> Evd.evar_map -> constr -> 'a
 
 val unbound_method : env -> Evd.evar_map -> GlobRef.t -> lident -> 'a
+
+val explain_typeclass_error
+  : (env -> Evd.evar_map -> EConstr.constr -> Pp.t)
+  -> env -> Evd.evar_map -> typeclass_error -> Pp.t

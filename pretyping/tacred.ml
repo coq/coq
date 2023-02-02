@@ -27,7 +27,7 @@ module NamedDecl = Context.Named.Declaration
 type reduction_tactic_error =
     InvalidAbstraction of env * Evd.evar_map * EConstr.constr * (env * Type_errors.type_error)
 
-exception ReductionTacticError of reduction_tactic_error
+type _ CErrors.tag += ReductionTacticError : reduction_tactic_error CErrors.tag
 
 (* Evaluable reference *)
 
@@ -1253,7 +1253,7 @@ let pattern_occs loccs_trm = begin fun env sigma c ->
     let sigma, _ = Typing.type_of env sigma abstr_trm in
     (sigma, applist(abstr_trm, List.map snd loccs_trm))
   with CoqError (Type_errors.TypeError, (env',t)) ->
-    raise (ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t))))
+    CErrors.coq_error ReductionTacticError (InvalidAbstraction (env,sigma,abstr_trm,(env',t)))
   end
 
 (* Used in several tactics. *)

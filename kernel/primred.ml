@@ -9,15 +9,17 @@ type _ action_kind =
   | IncompatTypes : _ prim_type -> Constant.t action_kind
   | IncompatInd : _ prim_ind -> inductive action_kind
 
-type exn += IncompatibleDeclarations : 'a action_kind * 'a * 'a -> exn
+type incompatible_decl_error = Incompatible : 'a action_kind * 'a * 'a -> incompatible_decl_error
+
+type _ CErrors.tag += IncompatibleDeclarations : incompatible_decl_error CErrors.tag
 
 let check_same_types typ c1 c2 =
   if not (Constant.CanOrd.equal c1 c2)
-  then raise (IncompatibleDeclarations (IncompatTypes typ, c1, c2))
+  then CErrors.coq_error IncompatibleDeclarations (Incompatible (IncompatTypes typ, c1, c2))
 
 let check_same_inds ind i1 i2 =
   if not (Ind.CanOrd.equal i1 i2)
-  then raise (IncompatibleDeclarations (IncompatInd ind, i1, i2))
+  then CErrors.coq_error IncompatibleDeclarations (Incompatible (IncompatInd ind, i1, i2))
 
 let add_retroknowledge retro action =
   match action with

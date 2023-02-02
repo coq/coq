@@ -19,7 +19,6 @@ open Termops
 open Environ
 open Pretype_errors
 open Type_errors
-open Typeclasses_errors
 open Cases
 open Logic
 open Printer
@@ -1163,19 +1162,6 @@ let explain_module_internalization_error = let open Modintern in function
   | IncorrectWithInModule -> explain_incorrect_with_in_module ()
   | IncorrectModuleApplication -> explain_incorrect_module_application ()
 
-(* Typeclass errors *)
-
-let explain_not_a_class env sigma c =
-  pr_econstr_env env sigma c ++ str" is not a declared type class."
-
-let explain_unbound_method env sigma cid { CAst.v = id } =
-  str "Unbound method name " ++ Id.print (id) ++ spc () ++
-  str"of class" ++ spc () ++ pr_global cid ++ str "."
-
-let explain_typeclass_error env sigma = function
-  | NotATypeclass c -> explain_not_a_class env sigma c
-  | UnboundMethod (cid, id) -> explain_unbound_method env sigma cid id
-
 (* Refiner errors *)
 
 let explain_refiner_bad_type env sigma arg ty conclty =
@@ -1332,7 +1318,7 @@ let explain_inductive_error = function
 
 (* Primitive errors *)
 
-let explain_incompatible_prim_declarations (type a) (act:a Primred.action_kind) (x:a) (y:a) =
+let explain_incompatible_prim_declarations (Primred.Incompatible (act, x, y)) =
   let open Primred in
   let env = Global.env() in
   (* The newer constant/inductive (either coming from Primitive or a
@@ -1441,38 +1427,6 @@ let explain_reduction_tactic_error = function
       spc () ++ str "is not well typed." ++ fnl () ++
       explain_type_error env' (Evd.from_env env') e
 
-(** Registration of generic errors
-    Nota: explain_exn does NOT end with a newline anymore!
-*)
-
-exception Unhandled
-
-let wrap_unhandled f e =
-  try Some (f e)
-  with Unhandled -> None
-
-let vernac_interp_error_handler = function
-  | PretypeError(ctx,sigma,te) ->
-    explain_pretype_error ctx sigma te
-  | Typeclasses_errors.TypeClassError(env, sigma, te) ->
-    explain_typeclass_error env sigma te
-  | Primred.IncompatibleDeclarations (act,x,y) ->
-    explain_incompatible_prim_declarations act x y
-  | Modops.ModuleTypingError e ->
-    explain_module_error e
-  | Modintern.ModuleInternalizationError e ->
-    explain_module_internalization_error e
-  | Cases.PatternMatchingError (env,sigma,e) ->
-    explain_pattern_matching_error env sigma e
-  | Tacred.ReductionTacticError e ->
-    explain_reduction_tactic_error e
-  | Logic.RefinerError (env, sigma, e) ->
-    explain_refiner_error env sigma e
-  | _ ->
-    raise Unhandled
-
-let _ = CErrors.register_handler (wrap_unhandled vernac_interp_error_handler)
-
 let () = CErrors.register (module struct
     type e = Rewrite.rewrite_failure
     type _ CErrors.tag += T = Rewrite.RewriteFailure
@@ -1520,4 +1474,60 @@ let () = CErrors.register (module struct
       | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme env ind ind'
       | NotAllowedDependentAnalysis (isrec, i) ->
         error_not_allowed_dependent_analysis env isrec i
+  end)
+
+let () = CErrors.register (module struct
+    open Typeclasses_errors
+    type e = env * Evd.evar_map * typeclass_error
+    type _ CErrors.tag += T = TypeClassError
+    let pp (env,sigma,e) = explain_typeclass_error pr_econstr_env env sigma e
+  end)
+
+let () = CErrors.register (module struct
+    open Tacred
+    type e = reduction_tactic_error
+    type _ CErrors.tag += T = ReductionTacticError
+    let pp = explain_reduction_tactic_error
+  end)
+
+let () = CErrors.register (module struct
+    open Cases
+    type e = env * Evd.evar_map * pattern_matching_error
+    type _ CErrors.tag += T = PatternMatchingError
+    let pp (env,sigma,e) = explain_pattern_matching_error env sigma e
+  end)
+
+let () = CErrors.register (module struct
+    open Modops
+    type e = module_typing_error
+    type _ CErrors.tag += T = ModuleTypingError
+    let pp = explain_module_error
+  end)
+
+let () = CErrors.register (module struct
+    open Modintern
+    type e = module_internalization_error
+    type _ CErrors.tag += T = ModuleInternalizationError
+    let pp = explain_module_internalization_error
+  end)
+
+let () = CErrors.register (module struct
+    open Primred
+    type e = incompatible_decl_error
+    type _ CErrors.tag += T = IncompatibleDeclarations
+    let pp = explain_incompatible_prim_declarations
+  end)
+
+let () = CErrors.register (module struct
+    open Pretype_errors
+    type e = env * Evd.evar_map * pretype_error
+    type _ CErrors.tag += T = PretypeError
+    let pp (env,sigma,e) = explain_pretype_error env sigma e
+  end)
+
+let () = CErrors.register (module struct
+    open Logic
+    type e = env * Evd.evar_map * refiner_error
+    type _ CErrors.tag += T = RefinerError
+    let pp (env,sigma,e) = explain_refiner_error env sigma e
   end)

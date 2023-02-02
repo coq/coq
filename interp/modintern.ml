@@ -20,7 +20,7 @@ type module_internalization_error =
   | IncorrectWithInModule
   | IncorrectModuleApplication
 
-exception ModuleInternalizationError of module_internalization_error
+type _ CErrors.tag += ModuleInternalizationError : module_internalization_error CErrors.tag
 
 type module_kind = Module | ModType | ModAny
 
@@ -33,13 +33,13 @@ let error_not_a_module_loc ~info kind loc qid =
     | ModAny -> NotAModuleNorModtype qid
   in
   let info = Option.cata (Loc.add_loc info) info loc in
-  Exninfo.iraise (ModuleInternalizationError e,info)
+  Exninfo.iraise (CErrors.CoqError (ModuleInternalizationError, e),info)
 
 let error_incorrect_with_in_module loc =
-  Loc.raise ?loc (ModuleInternalizationError IncorrectWithInModule)
+  CErrors.coq_error ?loc ModuleInternalizationError IncorrectWithInModule
 
 let error_application_to_module_type loc =
-  Loc.raise ?loc (ModuleInternalizationError IncorrectModuleApplication)
+  CErrors.coq_error ?loc ModuleInternalizationError IncorrectModuleApplication
 
 (** Searching for a module name in the Nametab.
 

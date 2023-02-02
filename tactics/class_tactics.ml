@@ -707,7 +707,7 @@ module Search = struct
             in
             let msg =
               match fst ie with
-              | Pretype_errors.PretypeError (env, evd, Pretype_errors.CannotUnify (x,y,_)) ->
+              | CErrors.CoqError (Pretype_errors.PretypeError, (env, evd, CannotUnify (x,y,_))) ->
                 str"Cannot unify " ++
                 Printer.pr_econstr_env env evd x ++ str" and " ++
                 Printer.pr_econstr_env env evd y

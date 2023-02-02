@@ -33,10 +33,9 @@ type refiner_error =
   | IntroNeedsProduct
   | NoSuchHyp of Id.t
 
-exception RefinerError of Environ.env * Evd.evar_map * refiner_error
+type _ CErrors.tag += RefinerError : (Environ.env * Evd.evar_map * refiner_error) CErrors.tag
 
-
-let error_no_such_hypothesis env sigma id = raise (RefinerError (env, sigma, NoSuchHyp id))
+let error_no_such_hypothesis env sigma id = CErrors.coq_error RefinerError (env, sigma, NoSuchHyp id)
 
 (************************************************************************)
 (************************************************************************)

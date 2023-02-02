@@ -42,8 +42,8 @@ let do_primitive id udecl prim typopt =
     let evd = try Evarconv.unify_delay env evd typ expected_typ
       with Evarconv.UnableToUnify (evd,e) as exn ->
         let _, info = Exninfo.capture exn in
-        Exninfo.iraise (Pretype_errors.(
-            PretypeError (env,evd,CannotUnify (typ,expected_typ,Some e)),info))
+        CErrors.coq_error ~info Pretype_errors.PretypeError
+          (env,evd,CannotUnify (typ,expected_typ,Some e))
     in
     Pretyping.check_evars_are_solved ~program_mode:false env evd;
     let evd = Evd.minimize_universes evd in

@@ -123,7 +123,7 @@ let has_type env sigma f ty =
   let c = mkCastC (mkRefC f, Constr.DEFAULTcast, ty) in
   let flags = Pretyping.{ all_and_fail_flags with use_coercions = false } in
   try let _ = Constrintern.interp_constr ~flags env sigma c in true
-  with Pretype_errors.PretypeError _ -> false
+  with CErrors.CoqError (Pretype_errors.PretypeError, _) -> false
 
 let type_error_to f ty =
   CErrors.user_err

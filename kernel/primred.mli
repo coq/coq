@@ -6,9 +6,11 @@ type _ action_kind =
   | IncompatTypes : _ CPrimitives.prim_type -> Constant.t action_kind
   | IncompatInd : _ CPrimitives.prim_ind -> inductive action_kind
 
-type exn += IncompatibleDeclarations : 'a action_kind * 'a * 'a -> exn
+type incompatible_decl_error = Incompatible : 'a action_kind * 'a * 'a -> incompatible_decl_error
 
-(** May raise [IncomtibleDeclarations] *)
+type _ CErrors.tag += IncompatibleDeclarations : incompatible_decl_error CErrors.tag
+
+(** May raise [IncompatibleDeclarations] *)
 val add_retroknowledge : env -> Retroknowledge.action -> env
 
 val get_int_type : env -> Constant.t

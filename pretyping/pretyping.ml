@@ -117,8 +117,9 @@ let search_guard ?loc env possible_indexes fixdefs =
 let esearch_guard ?loc env sigma indexes fix =
   let fix = nf_fix sigma fix in
   try search_guard ?loc env indexes fix
-  with CoqError (TypeError, (env,err)) ->
-    raise (PretypeError (env,sigma,TypingError (map_ptype_error of_constr err)))
+  with CoqError (TypeError, (env,err)) as e ->
+    let _, info = Exninfo.capture e in
+    CErrors.coq_error ~info PretypeError (env,sigma,TypingError (map_ptype_error of_constr err))
 
 (* To force universe name declaration before use *)
 
@@ -886,10 +887,11 @@ struct
           | [] -> sigma, [], j_val hj
           | arg :: args ->
             begin match Evarconv.unify_delay !!env sigma (j_val hj) arg with
-              | exception Evarconv.UnableToUnify (sigma,e) ->
-                raise (PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e)))
-              | sigma ->
-                sigma, args, nf_evar sigma (j_val hj)
+            | exception (Evarconv.UnableToUnify (sigma,e) as exn) ->
+              let _, info = Exninfo.capture exn in
+              CErrors.coq_error ~info PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e))
+            | sigma ->
+              sigma, args, nf_evar sigma (j_val hj)
             end
         in
         let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
@@ -913,8 +915,9 @@ struct
       (* Unify the (possibly refined) existential variable with the
          (typechecked) original value *)
       let sigma = try Evarconv.unify_delay !!env sigma newarg (j_val j)
-        with Evarconv.UnableToUnify (sigma,e) ->
-          raise (PretypeError (!!env,sigma,CannotUnify (newarg,j_val j,Some e)))
+        with Evarconv.UnableToUnify (sigma,e) as exn ->
+          let _, info = Exninfo.capture exn in
+          CErrors.coq_error ~info PretypeError (!!env,sigma,CannotUnify (newarg,j_val j,Some e))
       in
       sigma, Coercion.push_arg (Coercion.reapply_coercions_body sigma trace t) (j_val j)
     in
@@ -1512,6 +1515,6 @@ let path_convertible env sigma cl p q =
       false
     else
       let _ = Evarconv.unify_delay env sigma tp tq in true
-  with Evarconv.UnableToUnify _ | PretypeError _ -> false
+  with Evarconv.UnableToUnify _ | CoqError (PretypeError, _) -> false
 
 let _ = Coercionops.install_path_comparator path_convertible

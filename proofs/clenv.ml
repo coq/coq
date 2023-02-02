@@ -548,11 +548,13 @@ let clenv_unify_binding_type clenv c t u =
       let evd,c = w_coerce_to_type (cl_env clenv) clenv.evd c t u in
       TypeProcessed, { clenv with evd = evd }, c
     with
-      | PretypeError (_,_,ActualTypeNotCoercible (_,_,
-          (NotClean _ | ConversionFailed _))) as e ->
-          raise e
-      | e when precatchable_exception e ->
-          TypeNotProcessed, clenv, c
+    | CoqError (PretypeError,
+                (_,_, ActualTypeNotCoercible
+                   (_,_, (NotClean _ | ConversionFailed _))))
+      as e ->
+      raise e
+    | e when precatchable_exception e ->
+      TypeNotProcessed, clenv, c
 
 let clenv_assign_binding clenv k c =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
@@ -638,8 +640,8 @@ let clenv_pose_dependent_evars ?(with_evars=false) clenv =
   let dep_mvs = clenv_dependent clenv in
   let env, sigma = clenv.env, clenv.evd in
   if not (List.is_empty dep_mvs) && not with_evars then
-    raise
-      (RefinerError (env, sigma, UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
+    CErrors.coq_error RefinerError
+      (env, sigma, UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs));
   clenv_pose_metas_as_evars clenv dep_mvs
 
 module Internal =
@@ -674,7 +676,7 @@ let collect_meta_variables c =
 
 let check_meta_variables env sigma c =
   if not (List.distinct_f Int.compare (collect_meta_variables c)) then
-    raise (RefinerError (env, sigma, NonLinearProof c))
+    CErrors.coq_error RefinerError (env, sigma, NonLinearProof c)
 
 exception Stop of EConstr.t list
 let meta_free_prefix sigma a =
@@ -837,7 +839,7 @@ and mk_arggoals env sigma goalacc funty allargs =
       let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (EConstr.of_constr c1) harg in
       (acc, subst1 harg b, sigma), arg
     | _ ->
-      raise (RefinerError (env,sigma,CannotApply (t, harg)))
+      CErrors.coq_error RefinerError (env,sigma,CannotApply (t, harg))
   in
   Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
 

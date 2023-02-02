@@ -35,7 +35,7 @@ val subst_evaluable_reference :
 type reduction_tactic_error =
     InvalidAbstraction of env * evar_map * constr * (env * Type_errors.type_error)
 
-exception ReductionTacticError of reduction_tactic_error
+type _ CErrors.tag += ReductionTacticError : reduction_tactic_error CErrors.tag
 
 (** {6 Reduction functions associated to tactics. } *)
 

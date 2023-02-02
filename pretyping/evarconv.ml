@@ -1404,9 +1404,10 @@ let check_selected_occs env sigma c occ occs =
        | Locus.OnlyOccurrences l -> List.last l > occ
        | Locus.NoOccurrences -> false)
     | Unspecified abstract -> false
-  in if notfound then
-     raise (PretypeError (env,sigma,NoOccurrenceFound (c,None)))
-     else ()
+  in
+  if notfound then
+    CErrors.coq_error PretypeError (env,sigma,NoOccurrenceFound (c,None))
+  else ()
 
 (* Error local to the module *)
 exception TypingFailed of evar_map
@@ -1649,7 +1650,7 @@ let second_order_matching_with_args flags env evd with_ho pbty ev l t =
     let test = default_occurrence_test ~allowed_evars:flags.allowed_evars flags.subterm_ts in
     let evd, b =
       try second_order_matching flags env evd ev (test,argoccs) t
-      with PretypeError (_, _, NoOccurrenceFound _) -> evd, false
+      with CoqError (PretypeError, (_, _, NoOccurrenceFound _)) -> evd, false
     in
     if b then Success evd
     else
@@ -1870,8 +1871,8 @@ let unify ?flags ?(with_ho=true) env evd cv_pb ty1 ty2 =
   let res = evar_conv_x flags env evd cv_pb ty1 ty2 in
   match res with
   | Success evd ->
-     solve_unif_constraints_with_heuristics ~flags ~with_ho env evd
+    solve_unif_constraints_with_heuristics ~flags ~with_ho env evd
   | UnifFailure (evd, reason) ->
-     raise (PretypeError (env, evd, CannotUnify (ty1, ty2, Some reason)))
+    CErrors.coq_error PretypeError (env, evd, CannotUnify (ty1, ty2, Some reason))
 
 let compare_heads = compare_heads CONV

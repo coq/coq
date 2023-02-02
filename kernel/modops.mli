@@ -131,7 +131,7 @@ type module_typing_error =
   | LabelMissing of Label.t * string
   | IncludeRestrictedFunctor of ModPath.t
 
-exception ModuleTypingError of module_typing_error
+type _ CErrors.tag += ModuleTypingError : module_typing_error CErrors.tag
 
 val error_existing_label : Label.t -> 'a
 

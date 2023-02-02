@@ -681,7 +681,7 @@ let uninterp to_raw o n =
     let c = if snd o.of_kind == Direct then c else uninterp_option c in
     Some (to_raw (fst o.of_kind, c))
   with
-  | CoqError (Type_errors.TypeError, _) | Pretype_errors.PretypeError _ -> None (* cf. eval_constr_app *)
+  | CoqError ((Type_errors.TypeError | Pretype_errors.PretypeError), _) -> None (* cf. eval_constr_app *)
   | NotAValidPrimToken -> None (* all other functions except NumTok.Signed.of_bigint *)
 
 end

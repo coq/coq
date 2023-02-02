@@ -1634,8 +1634,9 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
       (* For compatibility *)
       beta <*> Proofview.shelve_unifiable
     with
-    | PretypeError (env, evd, (UnsatisfiableConstraints _ as e)) ->
-      CErrors.coq_error RewriteFailure (env, evd, e)
+    | CoqError (PretypeError, (env, evd, (UnsatisfiableConstraints _ as e))) as exn ->
+      let _, info = Exninfo.capture exn in
+      CErrors.coq_error ~info RewriteFailure (env, evd, e)
   end
 
 let tactic_init_setoid () =

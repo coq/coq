@@ -134,7 +134,7 @@ let abstract_list_all env evd typ c l =
     | CoqError (Type_errors.TypeError, (env',x)) ->
         (* FIXME: plug back the typing information *)
         error_cannot_find_well_typed_abstraction env evd p l None
-    | Pretype_errors.PretypeError (env',evd,e) ->
+    | CoqError (Pretype_errors.PretypeError, (env',evd,e)) ->
         error_cannot_find_well_typed_abstraction env evd p l (Some (env',e)) in
   evd,(p,typp)
 
@@ -1692,7 +1692,7 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
       if not (is_correct_type ty) then raise (NotUnifiable None);
       Some(sigma, t, l2)
     with
-    | PretypeError (_,_,CannotUnify (c1,c2,Some e)) ->
+    | CoqError (PretypeError, (_,_,CannotUnify (c1,c2,Some e))) ->
         raise (NotUnifiable (Some (c1,c2,e)))
     (* MS: This is pretty bad, it catches Not_found for example *)
     | e when CErrors.noncritical e -> raise (NotUnifiable None) in
@@ -1753,7 +1753,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
            && not (indirectly_dependent sigma c d depdecls)
         then
           if check_occs && not (in_every_hyp occs)
-          then raise (PretypeError (env,sigma,NoOccurrenceFound (c,Some hyp)))
+          then CErrors.coq_error PretypeError (env,sigma,NoOccurrenceFound (c,Some hyp))
           else (push_named_context_val d sign, depdecls)
         else
           (push_named_context_val newdecl sign, newdecl :: depdecls)
@@ -1779,8 +1779,9 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
     in
     (id,sign,depdecls,lastlhyp,ccl,res)
   with
-    SubtermUnificationError e ->
-      raise (PretypeError (env,sigma,CannotUnifyOccurrences e))
+    SubtermUnificationError e as exn ->
+    let _, info = Exninfo.capture exn in
+    CErrors.coq_error ~info PretypeError (env,sigma,CannotUnifyOccurrences e)
 
 (** [make_abstraction] is the main entry point to abstract over a term
     or pattern at some occurrences; it returns:
@@ -1976,8 +1977,9 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
            let f2, l2 = decompose_app_vect evd cl in
            w_typed_unify_array env evd flags f1 l1 f2 l2,cl
          else w_typed_unify env evd CONV flags (op, opgnd) (cl, Unknown),cl
-       with ex when Pretype_errors.unsatisfiable_exception ex ->
-            bestexn := Some ex; user_err Pp.(str "Unsat"))
+        with ex when Pretype_errors.unsatisfiable_exception ex ->
+          let ex = Exninfo.capture ex in
+          bestexn := Some ex; user_err Pp.(str "Unsat"))
        else user_err Pp.(str "Bound 1")
      with ex when precatchable_exception ex ->
        (match AConstr.kind cl with
@@ -1996,8 +1998,8 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
   try matchrec cl
   with ex when precatchable_exception ex ->
     match !bestexn with
-    | None -> raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
-    | Some e -> raise e
+    | None -> CErrors.coq_error PretypeError (env,evd,NoOccurrenceFound (op, None))
+    | Some e -> Exninfo.iraise e
 
 (* Tries to find all instances of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] and return all the matches.
@@ -2070,7 +2072,7 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
   let res = matchrec cl [] in
   match res with
   | [] ->
-    raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
+    CErrors.coq_error PretypeError (env,evd,NoOccurrenceFound (op, None))
   | _ ->
     List.map fst res
 
@@ -2104,7 +2106,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
                 (* If this fails, try with full conversion *)
                 w_unify_to_subterm env evd ~flags t'
             else w_unify_to_subterm env evd ~flags t'
-          with PretypeError (env,_,NoOccurrenceFound _) when
+          with CoqError (PretypeError, (env,_,NoOccurrenceFound _)) when
               allow_K ||
                 (* w_unify_to_subterm does not go through evars, so
                    the next step, which was already in <= 8.4, is
@@ -2196,17 +2198,19 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
       | (Meta _, true, _, _ | _, _, Meta _, true) ->
           (try
               w_unify2 env evd flags false cv_pb ty1 ty2
-            with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e
-              | ex when precatchable_exception ex ->
-                  try
-                    w_typed_unify_array env evd flags hd1 l1 hd2 l2
-                  with ex' when precatchable_exception ex' ->
-                    (* Last chance, use pattern-matching with typed
-                       dependencies (done late for compatibility) *)
-                    try
-                      w_unify2 env evd flags true cv_pb ty1 ty2
-                    with ex' when precatchable_exception ex' ->
-                      raise ex)
+           with
+           | CoqError (PretypeError, (env,_,NoOccurrenceFound _)) as e ->
+             Exninfo.(iraise (capture e))
+           | ex when precatchable_exception ex ->
+             try
+               w_typed_unify_array env evd flags hd1 l1 hd2 l2
+             with ex' when precatchable_exception ex' ->
+             (* Last chance, use pattern-matching with typed
+                dependencies (done late for compatibility) *)
+             try
+               w_unify2 env evd flags true cv_pb ty1 ty2
+             with ex' when precatchable_exception ex' ->
+               raise ex)
 
       (* General case: try first order *)
       | _ -> w_typed_unify env evd cv_pb flags (ty1, Unknown) (ty2, Unknown)

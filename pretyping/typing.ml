@@ -69,7 +69,7 @@ let assumption_of_judgment env sigma j =
   try
     let sigma, j = type_judgment env sigma j in
     sigma, j.utj_val
-  with CoqError (Type_errors.TypeError, _) | PretypeError _ ->
+  with CoqError ((Type_errors.TypeError | PretypeError), _) ->
     error_assumption env sigma j
 
 let judge_of_apply env sigma funj argjv =

@@ -582,7 +582,7 @@ let f_equal =
       | _ -> Proofview.tclUNIT ()
       end
       begin function (e, info) -> match e with
-        | Pretype_errors.PretypeError _ | CErrors.CoqError (Type_errors.TypeError, _) ->
+        | CErrors.CoqError ((Pretype_errors.PretypeError | Type_errors.TypeError), _) ->
           Proofview.tclUNIT ()
         | e -> Proofview.tclZERO ~info e
       end
