@@ -97,7 +97,7 @@ let register_handler h = handle_stack := h::!handle_stack
 (* Keep in sync with print_gen below *)
 let is_handled e =
   match e with
-  | CoqError (e, _) -> EMap.mem e !handlers
+  | CoqError (e, _) -> true
 
   (* Exceptions not defined by Coq *)
   | Sys_error _ -> true
