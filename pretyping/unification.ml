@@ -2190,9 +2190,7 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
           (try
               w_typed_unify_array env evd flags hd1 l1 hd2 l2
             with ex when precatchable_exception ex ->
-              try
-                w_unify2 env evd flags false cv_pb ty1 ty2
-              with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e)
+              w_unify2 env evd flags false cv_pb ty1 ty2)
 
       (* Second order case *)
       | (Meta _, true, _, _ | _, _, Meta _, true) ->
