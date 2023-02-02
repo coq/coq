@@ -12,7 +12,6 @@ open Pp
 open CErrors
 open Util
 open Names
-open Term
 open Termops
 open Constr
 open Context
@@ -505,8 +504,9 @@ let raw_inversion inv_kind id status names =
 
 (* Error messages of the inversion tactics *)
 let wrap_inv_error id = function (e, info) -> match e with
-  | Indrec.RecursionSchemeError
-      (_, Indrec.NotAllowedCaseAnalysis (_,(Type _ | Set as k),i)) ->
+  | CoqError
+      (Indrec.RecursionSchemeError,
+       (_, Indrec.NotAllowedCaseAnalysis (_,k,i))) ->
       Proofview.tclENV >>= fun env ->
       Proofview.tclEVARMAP >>= fun sigma ->
       tclZEROMSG (

@@ -20,7 +20,7 @@ type recursion_scheme_error =
   | NotMutualInScheme of inductive * inductive
   | NotAllowedDependentAnalysis of (*isrec:*) bool * inductive
 
-exception RecursionSchemeError of env * recursion_scheme_error
+type _ CErrors.tag += RecursionSchemeError : (env * recursion_scheme_error) CErrors.tag
 
 (** Eliminations *)
 

@@ -20,7 +20,6 @@ open Environ
 open Pretype_errors
 open Type_errors
 open Typeclasses_errors
-open Indrec
 open Cases
 open Logic
 open Printer
@@ -1354,15 +1353,6 @@ let explain_incompatible_prim_declarations (type a) (act:a Primred.action_kind) 
     str "Cannot declare " ++ px ++ str " as primitive " ++ str (CPrimitives.prim_ind_to_string ind) ++
     str ": " ++ pr_inductive env y ++ str " is already declared."
 
-(* Recursion schemes errors *)
-
-let explain_recursion_scheme_error env = function
-  | NotAllowedCaseAnalysis (isrec,k,i) ->
-      error_not_allowed_case_analysis env isrec k i
-  | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme env ind ind'
-  | NotAllowedDependentAnalysis (isrec, i) ->
-     error_not_allowed_dependent_analysis env isrec i
-
 (* Pattern-matching errors *)
 
 let explain_bad_pattern env sigma cstr ty =
@@ -1472,8 +1462,6 @@ let vernac_interp_error_handler = function
     explain_module_error e
   | Modintern.ModuleInternalizationError e ->
     explain_module_internalization_error e
-  | RecursionSchemeError (env,e) ->
-    explain_recursion_scheme_error env e
   | Cases.PatternMatchingError (env,sigma,e) ->
     explain_pattern_matching_error env sigma e
   | Tacred.ReductionTacticError e ->
@@ -1520,4 +1508,16 @@ let () = CErrors.register (module struct
     type e = Type_errors.inductive_error
     type _ CErrors.tag += T = Type_errors.InductiveError
     let pp = explain_inductive_error
+  end)
+
+let () = CErrors.register (module struct
+    open Indrec
+    type e = env * recursion_scheme_error
+    type _ CErrors.tag += T = RecursionSchemeError
+    let pp (env,e) = match e with
+      | NotAllowedCaseAnalysis (isrec,k,i) ->
+        error_not_allowed_case_analysis env isrec k i
+      | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme env ind ind'
+      | NotAllowedDependentAnalysis (isrec, i) ->
+        error_not_allowed_dependent_analysis env isrec i
   end)
