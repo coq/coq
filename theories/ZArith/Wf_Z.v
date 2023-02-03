@@ -91,11 +91,11 @@ Section Efficient_Rec.
 
   Let R (a b:Z) := 0 <= a /\ a < b.
 
-  Let R_wf : well_founded R.
+  Local Definition R_wf : well_founded R.
   Proof.
    apply well_founded_lt_compat with Z.to_nat.
    intros x y (Hx,H). apply Z2Nat.inj_lt; Z.order.
-  Qed.
+  Defined.
 
   Lemma natlike_rec2 :
     forall P:Z -> Type,

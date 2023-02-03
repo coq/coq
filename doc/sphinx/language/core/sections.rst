@@ -66,6 +66,13 @@ usable outside the section as shown in this :ref:`example <section_local_declara
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
+.. warn:: @ident is declared opaque but this is not fully respected inside the section and not at all outside the section.
+
+   Terminating the proof for a :cmd:`Let` with :cmd:`Qed` with `Let` is not recommended.
+   The variable will appear to have no body inside proofs but the kernel will still use
+   the body when checking, and it will be treated the same as a
+   :cmd:`Defined` `Let` when the section is closed.
+
 .. cmd:: Context {+ @binder }
 
    Declare variables in the context of the current section, like :cmd:`Variable`,

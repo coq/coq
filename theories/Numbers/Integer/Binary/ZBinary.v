@@ -33,7 +33,7 @@ Section TestOrder.
  Let test : forall x y, x<=y -> y<=x -> x=y.
  Proof.
  z_order.
- Qed.
+ Defined.
 End TestOrder.
 
 (** Z forms a ring *)

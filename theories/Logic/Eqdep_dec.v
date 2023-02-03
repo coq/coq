@@ -61,7 +61,7 @@ Section EqdepDec.
       | or_intror neqxy => False_ind _ (neqxy u)
     end.
 
-  Let nu_constant (y:A) (u v:x = y) : nu u = nu v.
+  Local Definition nu_constant (y:A) (u v:x = y) : nu u = nu v.
     unfold nu.
     destruct (eq_dec y) as [Heq|Hneq].
     - reflexivity.

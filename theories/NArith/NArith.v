@@ -31,5 +31,5 @@ Section TestOrder.
  Let test : forall x y, x<=y -> y<=x -> x=y.
  Proof.
  N.order.
- Qed.
+ Defined.
 End TestOrder.

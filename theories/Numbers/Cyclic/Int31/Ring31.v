@@ -103,5 +103,5 @@ Add Ring Int31Ring : Int31Ring
 Section TestRing.
 Let test : forall x y, 1 + x*y + x*x + 1 = 1*1 + 1 + y*x + 1*x*x.
 intros. ring.
-Qed.
+Defined.
 End TestRing.

@@ -1265,5 +1265,5 @@ Register Nat.nlt_0_r as num.nat.nlt_0_r.
 
 Section TestOrder.
   Let test : forall x y, x<=y -> y<=x -> x=y.
-  Proof. Nat.order. Qed.
+  Proof. Nat.order. Defined.
 End TestOrder.

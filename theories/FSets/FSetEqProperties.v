@@ -596,10 +596,13 @@ Section Bool.
 Variable f:elt->bool.
 Variable Comp: Proper (E.eq==>Logic.eq) f.
 
-Let Comp' : Proper (E.eq==>Logic.eq) (fun x =>negb (f x)).
+Local Definition Comp' : Proper (E.eq==>Logic.eq) (fun x =>negb (f x)).
 Proof.
 repeat red; intros; f_equal; auto.
-Qed.
+Defined.
+
+Local Hint Resolve Comp' : core.
+Local Hint Unfold compat_bool : core.
 
 Lemma filter_mem: forall s x, mem x (filter f s)=mem x s && f x.
 Proof.
@@ -694,7 +697,7 @@ Qed.
 Lemma union_filter: forall f g, (compat_bool E.eq f) -> (compat_bool E.eq g) ->
   forall s, union (filter f s) (filter g s) [=] filter (fun x=>orb (f x) (g x)) s.
 Proof.
-clear Comp' Comp f.
+clear Comp f.
 intros.
 assert (compat_bool E.eq (fun x => orb (f x) (g x))).
 - unfold compat_bool, Proper, respectful; intros.
@@ -785,10 +788,7 @@ Section Bool'.
 Variable f:elt->bool.
 Variable Comp: compat_bool E.eq f.
 
-Let Comp' : compat_bool E.eq (fun x =>negb (f x)).
-Proof.
-unfold compat_bool, Proper, respectful in *; intros; f_equal; auto.
-Qed.
+Hint Resolve Comp' : core.
 
 Lemma exists_mem_1:
  forall s, (forall x, mem x s=true->f x=false) -> exists_ f s=false.
@@ -826,7 +826,7 @@ Proof.
 intros.
 rewrite for_all_exists in H; auto.
 rewrite negb_true_iff in H.
-destruct (for_all_mem_4 (fun x =>negb (f x)) Comp' s) as (x,p); auto.
+destruct (for_all_mem_4 (fun x =>negb (f x)) (Comp' f Comp) s) as (x,p); auto.
 elim p;intros.
 exists x;split;auto.
 rewrite <-negb_false_iff; auto.
