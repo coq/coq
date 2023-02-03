@@ -35,6 +35,14 @@ type lift =
 
 let el_id = ELID
 
+let rec eq_lift a b = match a, b with
+  | ELID, ELID -> true
+  | ELID, (ELSHFT _ | ELLFT _) -> false
+  | ELSHFT (a, i), ELSHFT (b, j) -> Int.equal i j && eq_lift a b
+  | ELSHFT _, (ELID | ELLFT _) -> false
+  | ELLFT (i, a), ELLFT (j, b) -> Int.equal i j && eq_lift a b
+  | ELLFT _, (ELID | ELSHFT _) -> false
+
 (* compose a relocation of magnitude n *)
 let el_shft_rec n = function
   | ELSHFT(el,k) -> ELSHFT(el,k+n)

@@ -106,6 +106,9 @@ val is_lift_id : lift -> bool
 *)
 val lift_subst : (lift -> 'a -> 'b) -> lift -> 'a subs -> 'b subs
 
+val eq_lift : lift -> lift -> bool
+(** Equality for lifts *)
+
 (** Debugging utilities *)
 module Internal :
 sig

@@ -1064,6 +1064,7 @@ let is_fconv ?(reds=TransparentState.full) pb env sigma t1 t2 =
   else
     let evars = Evd.evar_handler sigma in
     try
+      let env = Environ.set_universes (Evd.universes sigma) env in
       let _ = Reduction.generic_conv ~l2r:false pb evars reds env (sigma, CheckUnivs.checked_universes) t1 t2 in
       true
     with Reduction.NotConvertible -> false
