@@ -168,8 +168,9 @@ and check_module_type env mty =
 
 and check_structure_field env opac mp lab res opacify = function
   | SFBconst cb ->
-      let c = Constant.make2 mp lab in
-      check_constant_declaration env opac c cb (Cset.mem c opacify)
+      let kn = KerName.make mp lab in
+      let kn = Mod_subst.constant_of_delta_kn res kn in
+      check_constant_declaration env opac kn cb (Cset.mem kn opacify)
   | SFBmind mib ->
       let kn = KerName.make mp lab in
       let kn = Mod_subst.mind_of_delta_kn res kn in
