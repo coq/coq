@@ -1653,7 +1653,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
 .. prodn::
    q_occurrences ::= {? @ltac2_occs }
    ltac2_occs ::= at @ltac2_occs_nums
-   ltac2_occs_nums ::= {? - } {+ {| @natural  | $ @ident } }
+   ltac2_occs_nums ::= {? - } {+ {| @natural | $ @ident } }
    ltac2_concl_occ ::= * {? @ltac2_occs }
    ltac2_hypident_occ ::= @ltac2_hypident {? @ltac2_occs }
    ltac2_hypident ::= @ident_or_anti
