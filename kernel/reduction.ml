@@ -132,20 +132,6 @@ let whd_betaiota env t =
       end
     | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
 
-let whd_betaiotazeta env x =
-  match kind x with
-  | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _|Int _|Float _|Array _) -> x
-    | App (c, _) ->
-      begin match kind c with
-      | Ind _ | Construct _ | Evar _ | Meta _ | Const _ | Int _ | Float _ | Array _ -> x
-      | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
-        | Case _ | Fix _ | CoFix _ | Proj _ ->
-         whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject x)
-      end
-    | Rel _ | Cast _ | LetIn _ | Case _ | Proj _ ->
-        whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject x)
-
 let whd_all env t =
   match kind t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
