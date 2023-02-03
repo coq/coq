@@ -19,8 +19,6 @@ open Environ
 val whd_all                 : env -> constr -> constr
 val whd_allnolet : env -> constr -> constr
 
-val whd_betaiota     : env -> constr -> constr
-
 (***********************************************************************
   s conversion functions *)
 

@@ -121,17 +121,6 @@ let pure_stack lfts stk =
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
 
-let whd_betaiota env t =
-  match kind t with
-    | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _) -> t
-    | App (c, _) ->
-      begin match kind c with
-      | Ind _ | Construct _ | Evar _ | Meta _ | Const _ | LetIn _ -> t
-      | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
-      end
-    | _ -> whd_val (create_clos_infos betaiota env) (create_tab ()) (inject t)
-
 let whd_all env t =
   match kind t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
