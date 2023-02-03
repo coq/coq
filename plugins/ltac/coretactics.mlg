@@ -36,6 +36,7 @@ END
 
 TACTIC EXTEND assumption
 | [ "assumption" ] -> { Tactics.assumption }
+| [ "assumption" ident(id) ] -> { Tactics.exact_check (EConstr.mkVar id) }
 END
 
 TACTIC EXTEND etransitivity
