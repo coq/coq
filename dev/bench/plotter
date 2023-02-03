@@ -94,7 +94,7 @@ print ('Parsing job logs.')
 
 # captures package name and OLD time
 # the numerals are to avoid matching the table header
-packre = re.compile('│[ ]+([^ ]+) │[ ]+[^ ]+[ ]+([0-9][^ ]*) ')
+packre = re.compile('│[ ]+([^ ]+) │[ ]+[^ ]+[ ]+([0-9][^ ]*)[ ]+([^ ]+)')
 
 parsed=[]
 for date, job in benches:
@@ -106,22 +106,33 @@ for date, job in benches:
             if match:
                 # the table appears multiple times in the log so this may be overriding the value
                 # that is OK (it's not worth bothering to find the last table)
-                cur[match[1]] = match[2]
+                cur[match[1]] = (match[2], match[3])
     if cur:
         parsed += [(date, job, cur)]
 
 def filter_to(packname):
     dates=[]
-    hotbenches=[]
-    for date, _, packs in parsed:
+    jobs=[]
+    times=[]
+    changes=[]
+    for date, job, packs in parsed:
         if packname in packs:
             dates += [date]
-            hotbenches += [float(packs[packname])]
-    return dates, hotbenches
+            jobs += [job]
+            time, change = packs[packname]
+            times += [float(time)]
+            changes += [float(change)]
+    return dates, jobs, times, changes
 
 def plot(packname):
-    dates, hotbenches = filter_to(packname)
-    plt.plot(hotbenches)
+    dates, jobs, times, changes = filter_to(packname)
+    # alternatively you can use dates for x axis, times for y axis
+    # with x = jobs, if you find an interesting point, hover the mouse on it
+    # pyplot will say somewhere in the window "x=..., y=..."
+    # now if you don't want to read and type the whole 10 digit number
+    # export as svg and search for the last 3 digits followed by a space
+    # it should be easy to find a xml comment with the job number eg "<!-- 2100592270 -->"
+    plt.plot(jobs, changes)
     plt.ylabel(packname)
     plt.show()
 
@@ -136,7 +147,3 @@ def list_packs():
     return known
 
 plot(sys.argv[1])
-
-# dates is only useful if you want to zoom, there are too many to read otherwise
-# plt.plot(dates, hotbenches)
-# plt.show()
