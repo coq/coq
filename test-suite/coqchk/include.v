@@ -2,6 +2,10 @@
 Module Type S.
 End S.
 
+Module Type S'.
+  Inductive I := .
+End S'.
+
 Module N.
 Inductive I := .
 End N.
@@ -9,3 +13,7 @@ End N.
 Module M : S.
   Include N.
 End M.
+
+Module M' : S'.
+  Include N.
+End M'.

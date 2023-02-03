@@ -152,7 +152,8 @@ let check_modpath_equiv env mp1 mp2 =
     else error_not_equal_modpaths mp1 mp2
 
 let implem_smart_map fs fa impl = match impl with
-  | Struct e -> let e' = fs e in if e==e' then impl else Struct e'
+  (* XXX reso?? *)
+  | Struct (reso,e) -> let e' = fs e in if e==e' then impl else Struct (reso,e')
   | Algebraic a -> let a' = fa a in if a==a' then impl else Algebraic a'
   | Abstract | FullStruct -> impl
 

@@ -329,7 +329,7 @@ let finalize_module_alg (cst, ustate) env mp (sign,alg,reso) restype = match res
       | NoFunctor s -> s
       | MoreFunctor _ -> assert false (* All non-algebraic callers enforce this *)
       in
-      Struct sign
+      Struct (reso,sign)
     in
     { res_mtb with
       mod_mp = mp;

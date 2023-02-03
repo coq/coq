@@ -359,7 +359,7 @@ and v_mexpr =
 and v_impl =
   Sum ("module_impl",2, (* Abstract, FullStruct *)
   [|[|v_mexpr|];  (* Algebraic *)
-    [|v_struc|]|])  (* Struct *)
+    [|v_resolver;v_struc|]|])  (* Struct *)
 and v_noimpl = v_unit
 and v_module =
   Tuple ("module_body",

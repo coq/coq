@@ -139,12 +139,12 @@ let rec check_module env opac mp mb opacify =
     check_signature env opac mb.mod_type mb.mod_mp mb.mod_delta opacify
   in
   let optsign, opac = match mb.mod_expr with
-    | Struct sign_struct ->
+    | Struct (reso,sign_struct) ->
       let opacify = collect_constants_without_body mb.mod_type mb.mod_mp opacify in
       (* TODO: a bit wasteful, we recheck the types of parameters twice *)
       let sign_struct = Modops.annotate_struct_body sign_struct mb.mod_type in
-      let opac = check_signature env opac sign_struct mb.mod_mp mb.mod_delta opacify in
-      Some (sign_struct, mb.mod_delta), opac
+      let opac = check_signature env opac sign_struct mb.mod_mp reso opacify in
+      Some (sign_struct, reso), opac
     | Algebraic me -> Some (check_mexpression env opac me mb.mod_type mb.mod_mp mb.mod_delta), opac
     | Abstract|FullStruct -> None, opac
   in

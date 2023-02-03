@@ -380,7 +380,7 @@ and extract_module env mp ~all mb =
   let impl = match mb.mod_expr with
     | Abstract -> error_no_module_expr mp
     | Algebraic me -> extract_mexpression env mp mb.mod_type me
-    | Struct sign ->
+    | Struct (_,sign) ->
       (* This module has a signature, otherwise it would be FullStruct.
          We extract just the elements required by this signature. *)
       let () = add_labels mp mb.mod_type in
