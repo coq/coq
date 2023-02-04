@@ -1343,7 +1343,7 @@ Managing the local context
       notions are the
       same: for hypotheses `A B C`, `move A after B` gives `B A C`, whereas if :n:`@ident__from`
       is after :n:`@ident` in the context, they are the opposite: `move C after A` gives
-      `C B A` because the direction of movement is reversed.
+      `C A B` because the direction of movement is reversed.
 
       .. todo This is dreadful behavior
 
