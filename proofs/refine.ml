@@ -54,7 +54,7 @@ let generic_refine ~typecheck f gl =
   let sigma = Evd.push_future_goals sigma in
   (* Create the refinement term *)
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-  f >>= fun (v, c) ->
+  f >>= fun (v, to_shelve, c) ->
   Proofview.tclEVARMAP >>= fun sigma' ->
   Proofview.wrap_exceptions begin fun () ->
   (* Redo the effects in sigma in the monad's env *)
@@ -75,7 +75,9 @@ let generic_refine ~typecheck f gl =
   let future_goals, sigma = Evd.pop_future_goals sigma in
   (* Select the goals *)
   let future_goals = Evd.FutureGoals.map_filter (Proofview.Unsafe.advance sigma) future_goals in
-  let shelf = Evd.shelf sigma in
+  let to_shelve = List.map_filter (Proofview.Unsafe.advance sigma) to_shelve in
+  let to_shelve = List.filter (fun ev -> List.mem ev @@ Evd.FutureGoals.comb future_goals) to_shelve in
+  let shelf = to_shelve @ Evd.shelf sigma in
   let future_goals = Evd.FutureGoals.filter (fun ev -> not @@ List.mem ev shelf) future_goals in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
@@ -101,6 +103,7 @@ let generic_refine ~typecheck f gl =
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
+  Proofview.Unsafe.tclNEWSHELVED to_shelve <*>
   Proofview.tclUNIT v
   end
 
@@ -116,7 +119,13 @@ let make_refine_enter ~typecheck f gl = generic_refine ~typecheck (lift f) gl
 
 let refine ~typecheck f =
   let f evd =
-    let (evd,c) = f evd in (evd,((), c))
+    let (evd,c) = f evd in (evd,((), [], c))
+  in
+  Proofview.Goal.enter (make_refine_enter ~typecheck f)
+
+let refine_with_shelf ~typecheck f =
+  let f evd =
+    let (evd,to_shelf,c) = f evd in (evd,((), to_shelf, c))
   in
   Proofview.Goal.enter (make_refine_enter ~typecheck f)
 

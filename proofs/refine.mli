@@ -28,7 +28,9 @@ val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> uni
     tactic failures. If [typecheck] is [true] [t] is type-checked beforehand.
     Shelved evars and goals are all marked as unresolvable for typeclasses. *)
 
-val generic_refine : typecheck:bool -> ('a * EConstr.t) tactic ->
+val refine_with_shelf : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * Evar.t list * EConstr.t) -> unit tactic
+
+val generic_refine : typecheck:bool -> ('a * Evar.t list * EConstr.t) tactic ->
   Proofview.Goal.t -> 'a tactic
 (** The general version of refine. *)
 
