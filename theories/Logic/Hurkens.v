@@ -210,11 +210,11 @@ Definition I (x:El1 U) : U0 :=
 
 Lemma Omega : El0 (∀₀¹ i:U⟶₁u0, induct i ⟶₀ i ·₁ WF).
 Proof.
-  refine (λ₀¹ i, λ₀ y, _).
-  refine (y·₀[_]·₀_).
+  simple refine (λ₀¹ i, λ₀ y, _).
+  simple refine (y·₀[_]·₀_).
   unfold le,WF,induct. simplify.
   refine (λ₀¹ x, λ₀ h0, _). simplify.
-  refine (y·₀[_]·₀_).
+  simple refine (y·₀[_]·₀_).
   unfold le. simplify.
   unfold sb at 1. simplify.
   unfold le' at 1. simplify.
@@ -230,12 +230,12 @@ Proof.
   { generalize (q·₀[λ₁ u, I u]·₀p). simplify.
     intros q'.
     exact q'. }
-  refine (h·₀_).
+  simple refine (h·₀_).
   refine (λ₀¹ i,_).
   refine (λ₀ h', _).
   generalize (q·₀[λ₁ y, i ·₁ (λ₁ v, (sb v)·₁[U] ·₁ le' ·₁ y)]). simplify.
   intros q'.
-  refine (q'·₀_). clear q'.
+  simple refine (q'·₀_). clear q'.
   unfold le at 1 in h'. simplify_in h'.
   unfold sb at 1 in h'. simplify_in h'.
   unfold le' at 1 in h'. simplify_in h'.
@@ -244,16 +244,16 @@ Qed.
 
 Lemma lemma2 : El0 ((∀₀¹i:U⟶₁u0, induct i ⟶₀ i·₁WF) ⟶₀ F).
 Proof.
-  refine (λ₀ x, _).
+  simple refine (λ₀ x, _).
   assert (El0 (I WF)) as h.
   { generalize (x·₀[λ₁ u, I u]·₀lemma1). simplify.
     intros q.
     exact q. }
-  refine (h·₀_). clear h.
+  simple refine (h·₀_). clear h.
   refine (λ₀¹ i, λ₀ h0, _).
   generalize (x·₀[λ₁ y, i·₁(λ₁ v, (sb v)·₁[U]·₁le'·₁y)]). simplify.
   intros q.
-  refine (q·₀_). clear q.
+  simple refine (q·₀_). clear q.
   unfold le in h0. simplify_in h0.
   unfold WF in h0. simplify_in h0.
   exact h0.
