@@ -1,61 +1,65 @@
-3 focused goals (shelved: 1)
+2 focused goals (shelved: 2)
   
   ============================
-  ?Goal 0
+  ?P 0
 
 goal 2 is:
- forall n : nat, ?Goal n -> ?Goal (S n)
-goal 3 is:
- nat
+ forall n : nat, ?P n -> ?P (S n)
 unification constraint:
- ?Goal ?Goal2 <=
+ ?P ?n <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
-3 focused goals (shelved: 1)
+4 goals
   
   n, m : nat
   ============================
-  ?Goal@{n:=n; m:=m} 0
+  nat -> Type
 
 goal 2 is:
- forall n0 : nat, ?Goal@{n:=n; m:=m} n0 -> ?Goal@{n:=n; m:=m} (S n0)
+ ?P@{n:=n; m:=m} 0
 goal 3 is:
+ forall n0 : nat, ?P@{n:=n; m:=m} n0 -> ?P@{n:=n; m:=m} (S n0)
+goal 4 is:
  nat
 unification constraint:
- ?Goal@{n:=n; m:=m} ?Goal2@{n:=n; m:=m} <=
+ ?P@{n:=n; m:=m} ?n@{n:=n; m:=m} <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
-3 focused goals (shelved: 1)
+4 focused goals (shelved: 1)
   
   m : nat
   ============================
-  ?Goal1@{m:=m} 0
+  nat -> Type
 
 goal 2 is:
- forall n0 : nat, ?Goal1@{m:=m} n0 -> ?Goal1@{m:=m} (S n0)
+ ?P@{m:=m} 0
 goal 3 is:
+ forall n0 : nat, ?P@{m:=m} n0 -> ?P@{m:=m} (S n0)
+goal 4 is:
  nat
 unification constraint:
  
- n, m : nat |- ?Goal1@{m:=m} ?Goal0@{n:=n; m:=m} <=
+ n, m : nat |- ?P@{m:=m} ?n@{n:=n; m:=m} <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier
-3 focused goals (shelved: 1)
+4 focused goals (shelved: 1)
   
   m : nat
   ============================
-  ?Goal0@{m:=m} 0
+  nat -> Type
 
 goal 2 is:
- forall n0 : nat, ?Goal0@{m:=m} n0 -> ?Goal0@{m:=m} (S n0)
+ ?P@{m:=m} 0
 goal 3 is:
+ forall n0 : nat, ?P@{m:=m} n0 -> ?P@{m:=m} (S n0)
+goal 4 is:
  nat
 unification constraint:
  
- n, m : nat |- ?Goal0@{m:=m} ?Goal2@{n:=n} <=
+ n, m : nat |- ?P@{m:=m} ?Goal0@{n:=n} <=
    True /\ True /\ True \/
    veeryyyyyyyyyyyyloooooooooooooonggidentifier =
    veeryyyyyyyyyyyyloooooooooooooonggidentifier

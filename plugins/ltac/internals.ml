@@ -95,12 +95,19 @@ let refine_tac ist ~simple ~with_classes c =
       { (constr_flags ()) with Pretyping.use_typeclasses = with_classes } in
     let expected_type = Pretyping.OfType concl in
     let c = Tacinterp.type_uconstr ~flags ~expected_type ist c in
-    let update = begin fun sigma ->
-      c env sigma
-    end in
+    let update = begin fun sigma -> c env sigma end in
     let refine = Refine.refine ~typecheck:false update in
+    let update_with_shelf = begin fun sigma ->
+      let sigma, c = c env sigma in
+      let privates_csts = Evd.eval_side_effects sigma in
+      let env = Safe_typing.push_private_constants env privates_csts.Evd.seff_private in
+      let t = Retyping.get_type_of env sigma c in
+      let evars = Evar.Set.elements (Evd.evars_of_term sigma t) in
+      (sigma, evars, c)
+    end in
+    let refine_with_shelf = Refine.refine_with_shelf ~typecheck:false update_with_shelf in
     if simple then refine
-    else refine <*>
+    else refine_with_shelf <*>
            Tactics.reduce_after_refine <*>
            Proofview.shelve_unifiable
   end

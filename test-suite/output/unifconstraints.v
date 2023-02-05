@@ -14,11 +14,11 @@ Goal forall n m : nat, True /\ True /\ True \/
                         veeryyyyyyyyyyyyloooooooooooooonggidentifier =
                         veeryyyyyyyyyyyyloooooooooooooonggidentifier.
   intros.
-  refine (nat_rect _ _ _ _).
+  simple refine (nat_rect _ _ _ _).
   Show.
-  clear n. 
+  2:clear n.
   Show.
-  3:clear m.
+  4:clear m.
   Show.
 Admitted.
 Unset Printing Existential Instances.
