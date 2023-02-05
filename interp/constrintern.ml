@@ -910,7 +910,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           let nenv = set_env_scopes env scopes in
           try
             let gc = intern nenv c in
-            Id.Map.add id (gc, None) map
+            Id.Map.add id gc map
           with Nametab.GlobalizationError _ -> map
         in
         let mk_env' ((c,_bk), (onlyident,(tmp_scope,subscopes))) =
@@ -921,7 +921,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
           let _,((disjpat,_),_),_,_,_ty = intern_pat test_kind ntnvars nenv Explicit c in
           (* TODO: use cast? *)
           match disjpat with
-          | [pat] -> (glob_constr_of_cases_pattern (Global.env()) pat, None)
+          | [pat] -> (glob_constr_of_cases_pattern (Global.env()) pat)
           | _ -> error_cannot_coerce_disjunctive_pattern_term ?loc:c.loc ()
         in
         let terms = Id.Map.fold mk_env terms Id.Map.empty in

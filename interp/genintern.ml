@@ -49,7 +49,7 @@ type glob_constr_pattern_and_expr = Id.Set.t * glob_constr_and_expr * Pattern.co
 
 type ('raw, 'glb) intern_fun = glob_sign -> 'raw -> glob_sign * 'glb
 type 'glb subst_fun = substitution -> 'glb -> 'glb
-type 'glb ntn_subst_fun = glob_constr_and_expr Id.Map.t -> 'glb -> 'glb
+type 'glb ntn_subst_fun = Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
 
 module InternObj =
 struct
