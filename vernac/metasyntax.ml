@@ -1231,8 +1231,8 @@ let is_coercion level typs =
   | Some _, _ -> assert false
   | None, _ -> None
 
-let printability level typs onlyparsing reversibility = function
-| NVar _ when reversibility = APrioriReversible ->
+let printability level typs vars onlyparsing reversibility = function
+| NVar id when reversibility = APrioriReversible && List.mem_assoc_f Id.equal id vars ->
   let coe = is_coercion level typs in
   let onlyparsing =
     if not onlyparsing && Option.is_empty coe then
@@ -1699,7 +1699,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
   let also_in_cases_pattern = has_no_binders_type vars in
-  let onlyparsing,coe = printability level i_typs main_data.onlyparsing reversibility ac in
+  let onlyparsing,coe = printability level i_typs vars main_data.onlyparsing reversibility ac in
   let main_data = { main_data with onlyparsing } in
   let use = make_use false onlyparsing main_data.onlyprinting in
   {
@@ -1901,7 +1901,7 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
   let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] 0 acvars (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
-  let onlyparsing = only_parsing || fst (printability None [] false reversibility pat) in
+  let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in
   Abbreviation.declare_abbreviation ~local ~also_in_cases_pattern deprecation ident ~onlyparsing (vars,pat)
 
 (**********************************************************************)
