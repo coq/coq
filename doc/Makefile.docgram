@@ -29,17 +29,23 @@ DOC_MLGS := \
 	plugins/nsatz/g_nsatz.mlg \
 	plugins/ring/g_ring.mlg \
 	plugins/rtauto/g_rtauto.mlg \
-	plugins/ssr/ssrparser.mlg plugins/ssr/ssrtacs.mlg plugins/ssr/ssrvernac.mlg \
-	plugins/ssrmatching/g_ssrmatching.mlg \
 	plugins/syntax/g_number_string.mlg \
 	plugins/ltac2/g_ltac2.mlg
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
 DOC_RSTS := $(wildcard doc/sphinx/*/*.rst) $(wildcard doc/sphinx/*/*/*.rst)
 
 REAL_DOC_MLGS := $(wildcard */*.mlg plugins/*/*.mlg)
+# omit SSR MLGS and chapter for now
+SSR_MLGS := \
+	plugins/ssr/ssrparser.mlg plugins/ssr/ssrtacs.mlg plugins/ssr/ssrvernac.mlg \
+  plugins/ssrmatching/g_ssrmatching.mlg
+REAL_DOC_MLGS := $(filter-out $(SSR_MLGS),$(REAL_DOC_MLGS))
+SSR_RSTS := doc/sphinx/proof-engine/ssreflect-proof-language.rst
+DOC_RSTS := $(filter-out $(SSR_RSTS),$(DOC_RSTS))
+
 ifneq ($(sort $(DOC_MLGS)),$(sort $(REAL_DOC_MLGS)))
 missing_mlgs := $(filter-out $(REAL_DOC_MLGS),$(DOC_MLGS))
-extra_mlgs := $(filter-out $(DOC_MLGS),$(REAL_DOC_MLGS))
+extra_mlgs := $(filter-out $(DOC_MLGS),$(SSR_MLGS),$(REAL_DOC_MLGS))
 $(error mlg file list mismatch in Makefile.doc: $(if $(missing_mlgs),$(missing_mlgs) not found) $(if $(extra_mlgs),$(extra_mlgs) not listed))
 endif
 
