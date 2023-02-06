@@ -1024,7 +1024,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
       | CoFix _ | Fix _ -> s'
       | Proj (p,t) when
           (match EConstr.kind sigma constr with
-          | Const (c', _) -> Constant.CanOrd.equal (Projection.constant p) c'
+          | Const (c', _) -> QConstant.equal env (Projection.constant p) c'
           | _ -> false) ->
         let npars = Projection.npars p in
           if List.length stack <= npars then
@@ -1368,7 +1368,7 @@ let reduce_to_ref_gen allow_failure allow_product env sigma ref t =
     let (i,t) = reduce_to_ind_gen allow_product env sigma t in
     if allow_failure then t else
       (match i with
-       | Some (mind,u) when Ind.CanOrd.equal mind mind' -> t
+       | Some (mind,u) when QInd.equal env mind mind' -> t
        | _ -> error_cannot_recognize ref)
   | _ -> (* lazily reduces to match the head of [t] with the expected [ref] *)
     let rec elimrec env t l =
@@ -1383,7 +1383,7 @@ let reduce_to_ref_gen allow_failure allow_product env sigma ref t =
         else
           error_cannot_recognize ref
       | _ ->
-        if isRefX sigma ref c
+        if isRefX env sigma ref c
         then it_mkProd_or_LetIn t l
         else
           try

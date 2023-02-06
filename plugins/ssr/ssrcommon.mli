@@ -368,6 +368,6 @@ module MakeState(S : StateType) : sig
 
 end
 
-val is_ind_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
-val is_construct_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
-val is_const_ref : Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
+val is_ind_ref : Environ.env -> Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
+val is_construct_ref : Environ.env -> Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool
+val is_const_ref : Environ.env -> Evd.evar_map -> EConstr.t -> Names.GlobRef.t -> bool

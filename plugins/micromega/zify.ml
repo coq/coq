@@ -641,7 +641,7 @@ module MakeTable (E : Elt) : S = struct
     let c = EConstr.of_constr c in
     let t = get_type_of env evd c in
     match EConstr.kind evd t with
-    | App (intyp, args) when EConstr.isRefX evd (Lazy.force E.gref) intyp ->
+    | App (intyp, args) when EConstr.isRefX env evd (Lazy.force E.gref) intyp ->
       let styp = args.(E.get_key) in
       let elt = {decl = c; deriv = make_elt (evd, c)} in
       register_hint evd styp elt

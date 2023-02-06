@@ -457,14 +457,14 @@ let intro_lock ipats =
             ||
             (* if this is not the case, the tactic can still succeed
             when the considered relation is [Coq.Init.Logic.iff] *)
-            Ssrcommon.is_const_ref sigma hd (Coqlib.lib_ref "core.iff.type") &&
+            Ssrcommon.is_const_ref env sigma hd (Coqlib.lib_ref "core.iff.type") &&
             Array.length args = 2 && is_app_evar sigma args.(1) ->
           protect_subgoal env sigma hd args
         | _ ->
         let t = Reductionops.whd_all env sigma c in
         match kind_of_type sigma t with
         | AtomicType(hd, args) when
-            Ssrcommon.is_ind_ref sigma hd (Coqlib.lib_ref "core.eq.type") &&
+            Ssrcommon.is_ind_ref env sigma hd (Coqlib.lib_ref "core.eq.type") &&
             Array.length args = 3 && is_app_evar sigma args.(2) ->
           protect_subgoal env sigma hd args
         | _ ->

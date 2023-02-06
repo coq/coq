@@ -516,7 +516,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
   | na::nal ->
     match EConstr.kind sigma c with
     | Case (ci,u,pms,p,iv,c,cl) when
-        eq_constr sigma c (mkRel (List.index Name.equal na (fst (snd e))))
+        eq_constr (snd (snd e)) sigma c (mkRel (List.index Name.equal na (fst (snd e))))
         && not (Int.equal (Array.length cl) 0)
         && (* don't contract if p dependent *)
         computable sigma p (* FIXME: can do better *) ->

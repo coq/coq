@@ -695,7 +695,7 @@ let explain_evar_not_found env sigma id =
 
 let explain_wrong_case_info env (ind,u) ci =
   let pi = pr_inductive env ind in
-  if Ind.CanOrd.equal ci.ci_ind ind then
+  if QInd.equal env ci.ci_ind ind then
     str "Pattern-matching expression on an object of inductive type" ++
     spc () ++ pi ++ spc () ++ str "has invalid information."
   else
@@ -1309,7 +1309,7 @@ let error_not_allowed_dependent_analysis env isrec i =
   pr_inductive env i ++ str "."
 
 let error_not_mutual_in_scheme env ind ind' =
-  if Ind.CanOrd.equal ind ind' then
+  if QInd.equal env ind ind' then
     str "The inductive type " ++ pr_inductive env ind ++
     str " occurs twice."
   else

@@ -1066,7 +1066,7 @@ let interp_gen env sigma ~concl to_ind gen =
 
 let is_protect hd env sigma =
   let protectC = mkSsrRef "protect_term" in
-  EConstr.isRefX sigma protectC hd
+  EConstr.isRefX env sigma protectC hd
 
 let abs_wgen env sigma keep_let f gen (args,c) =
   let evar_closed t p =
@@ -1394,10 +1394,10 @@ let get g =
 
 end
 
-let is_construct_ref sigma c r =
-  EConstr.isConstruct sigma c && GlobRef.equal (GlobRef.ConstructRef (fst(EConstr.destConstruct sigma c))) r
-let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (GlobRef.IndRef (fst(EConstr.destInd sigma c))) r
-let is_const_ref sigma c r =
-  EConstr.isConst sigma c && GlobRef.equal (GlobRef.ConstRef (fst(EConstr.destConst sigma c))) r
+let is_construct_ref env sigma c r =
+  EConstr.isConstruct sigma c && Environ.QGlobRef.equal env (GlobRef.ConstructRef (fst(EConstr.destConstruct sigma c))) r
+let is_ind_ref env sigma c r = EConstr.isInd sigma c && Environ.QGlobRef.equal env (GlobRef.IndRef (fst(EConstr.destInd sigma c))) r
+let is_const_ref env sigma c r =
+  EConstr.isConst sigma c && Environ.QGlobRef.equal env (GlobRef.ConstRef (fst(EConstr.destConst sigma c))) r
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

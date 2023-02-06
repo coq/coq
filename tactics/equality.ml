@@ -339,12 +339,12 @@ let eq_elimination_ref l2r sort =
 
 let find_elim lft2rgt dep cls ((_, hdcncl, _) as t) =
   Proofview.Goal.enter_one begin fun gl ->
+  let env = Proofview.Goal.env gl in
   let sigma = project gl in
   let is_global_exists gr c =
-    Coqlib.has_ref gr && isRefX sigma (Coqlib.lib_ref gr) c
+    Coqlib.has_ref gr && isRefX env sigma (Coqlib.lib_ref gr) c
   in
   let inccl = Option.is_empty cls in
-  let env = Proofview.Goal.env gl in
   let is_eq = is_global_exists "core.eq.type" hdcncl in
   let is_jmeq = is_global_exists "core.JMeq.type" hdcncl && jmeq_same_dom env sigma t in
   if (is_eq || is_jmeq) && not dep
@@ -781,7 +781,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
           in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
-          if Construct.CanOrd.equal sp1 sp2 then
+          if Environ.QConstruct.equal env sp1 sp2 then
             let nparams = inductive_nparams env ind1 in
             let params1,rargs1 = List.chop nparams args1 in
             let _,rargs2 = List.chop nparams args2 in
@@ -1355,6 +1355,7 @@ let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 let inject_if_homogenous_dependent_pair ty =
   Proofview.Goal.enter begin fun gl ->
   try
+    let env = Proofview.Goal.env gl in
     let sigma = Tacmach.project gl in
     let eq,u,(t,t1,t2) = pf_apply find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
@@ -1362,11 +1363,11 @@ let inject_if_homogenous_dependent_pair ty =
     let existTconstr = Coqlib.lib_ref    "core.sigT.intro" in
     (* check whether the equality deals with dep pairs or not *)
     let eqTypeDest = fst (decompose_app sigma t) in
-    if not (isRefX sigma sigTconstr eqTypeDest) then raise_notrace Exit;
+    if not (isRefX env sigma sigTconstr eqTypeDest) then raise_notrace Exit;
     let hd1,ar1 = decompose_app_vect sigma t1 and
         hd2,ar2 = decompose_app_vect sigma t2 in
-    if not (isRefX sigma existTconstr hd1) then raise_notrace Exit;
-    if not (isRefX sigma existTconstr hd2) then raise_notrace Exit;
+    if not (isRefX env sigma existTconstr hd1) then raise_notrace Exit;
+    if not (isRefX env sigma existTconstr hd2) then raise_notrace Exit;
     let (ind, _), _ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise_notrace Exit in
     (* check if the user has declared the dec principle *)
     (* and compare the fst arguments of the dep pair *)

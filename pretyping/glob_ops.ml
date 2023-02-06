@@ -139,7 +139,7 @@ let instance_eq f (x1,c1) (x2,c2) =
 
 let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GRef (gr1, u1), GRef (gr2, u2) ->
-    GlobRef.equal gr1 gr2 &&
+    GlobRef.CanOrd.equal gr1 gr2 &&
     Option.equal (List.equal glob_level_eq) u1 u2
   | GVar id1, GVar id2 -> Id.equal id1 id2
   | GEvar (id1, arg1), GEvar (id2, arg2) ->
@@ -174,7 +174,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GCast (c1, k1, t1), GCast (c2, k2, t2) ->
     f c1 c2 && cast_kind_eq k1 k2 && f t1 t2
   | GProj ((cst1, u1), args1, c1), GProj ((cst2, u2), args2, c2) ->
-    GlobRef.(equal (ConstRef cst1) (ConstRef cst2)) &&
+    GlobRef.(CanOrd.equal (ConstRef cst1) (ConstRef cst2)) &&
     Option.equal (List.equal glob_level_eq) u1 u2 &&
     List.equal f args1 args2 && f c1 c2
   | GInt i1, GInt i2 -> Uint63.equal i1 i2

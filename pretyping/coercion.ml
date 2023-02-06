@@ -110,14 +110,14 @@ let app_opt env sigma f t =
 
 let pair_of_array a = (a.(0), a.(1))
 
-let disc_subset sigma x =
+let disc_subset env sigma x =
   match EConstr.kind sigma x with
   | App (c, l) ->
       (match EConstr.kind sigma c with
        Ind (i,_) ->
          let len = Array.length l in
          let sigty = delayed_force sig_typ in
-           if Int.equal len 2 && Ind.CanOrd.equal i (Globnames.destIndRef sigty)
+           if Int.equal len 2 && QInd.equal env i (Globnames.destIndRef sigty)
            then
              let (a, b) = pair_of_array l in
                Some (a, b)
@@ -238,10 +238,10 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
          let sigT = delayed_force sigT_typ in
          let prod = delayed_force prod_typ in
          (* Sigma types *)
-         if Int.equal len (Array.length l') && Int.equal len 2 && Ind.CanOrd.equal i i'
-            && (Ind.CanOrd.equal i (destIndRef sigT) || Ind.CanOrd.equal i (destIndRef prod))
+         if Int.equal len (Array.length l') && Int.equal len 2 && QInd.equal env i i'
+            && (QInd.equal env i (destIndRef sigT) || QInd.equal env i (destIndRef prod))
          then
-           if Ind.CanOrd.equal i (destIndRef sigT)
+           if QInd.equal env i (destIndRef sigT)
            then
              begin
                let (a, pb), (a', pb') =
@@ -301,7 +301,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
                      papp env sigma prod_intro [| a'; b'; x ; y |])
              end
          else
-         if Ind.CanOrd.equal i i' && Int.equal len (Array.length l') then
+         if QInd.equal env i i' && Int.equal len (Array.length l') then
            (try subco sigma
             with NoSubtacCoercion ->
               let sigma, typ = Typing.type_of env sigma c in
@@ -319,7 +319,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
     | _, _ ->  subco sigma
 
   and subset_inferred env sigma x y =
-    match disc_subset sigma x with
+    match disc_subset env sigma x with
       Some (u, p) ->
       let sigma, c = coerce_unify env sigma u y in
       let f sigma x =
@@ -327,7 +327,7 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
         app_opt env sigma c t
       in sigma, Some f
     | None ->
-      match disc_subset sigma y with
+      match disc_subset env sigma y with
         Some (u, p) ->
         let sigma, c = coerce_unify env sigma x u in
         sigma, Some
@@ -423,7 +423,7 @@ let apply_coercion env sigma p h hty =
 let remove_subset env sigma t =
   let rec aux v =
     let v' = hnf env sigma v in
-    match disc_subset sigma v' with
+    match disc_subset env sigma v' with
     | Some (u, p) ->
       aux u
     | None -> v
@@ -433,7 +433,7 @@ let remove_subset env sigma t =
 let mu env sigma t =
   let rec aux v =
     let v' = hnf env sigma v in
-      match disc_subset sigma v' with
+      match disc_subset env sigma v' with
       | Some (u, p) ->
         let sigma, (f, ct, trace) = aux u in
         let p = hnf_nodelta env sigma p in

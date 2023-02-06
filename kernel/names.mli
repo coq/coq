@@ -686,7 +686,6 @@ end
 
 (** {6 Global reference is a kernel side type for all references together } *)
 
-(* XXX: Should we define GlobRefCan GlobRefUser? *)
 module GlobRef : sig
 
   type t =
@@ -696,6 +695,7 @@ module GlobRef : sig
     | ConstructRef of constructor  (** A reference to a constructor of an inductive type. *)
 
   val equal : t -> t -> bool
+  [@@ocaml.deprecated "Use QGlobRef.equal"]
 
   val is_bound : t -> bool
 

@@ -423,17 +423,17 @@ let rec first_match matcher = function
 
 (*** Equality *)
 
-let match_eq sigma eqn (ref, hetero) =
+let match_eq env sigma eqn (ref, hetero) =
   let ref =
     try Lazy.force ref
     with e when CErrors.noncritical e -> raise PatternMatchingFailure
   in
   match EConstr.kind sigma eqn with
   | App (c, [|t; x; y|]) ->
-    if not hetero && isRefX sigma ref c then PolymorphicLeibnizEq (t, x, y)
+    if not hetero && isRefX env sigma ref c then PolymorphicLeibnizEq (t, x, y)
     else raise PatternMatchingFailure
   | App (c, [|t; x; t'; x'|]) ->
-    if hetero && isRefX sigma ref c then HeterogenousEq (t, x, t', x')
+    if hetero && isRefX env sigma ref c then HeterogenousEq (t, x, t', x')
     else raise PatternMatchingFailure
   | _ -> raise PatternMatchingFailure
 
@@ -445,8 +445,8 @@ let equalities =
    (lazy(lib_ref "core.JMeq.type"), true), check_jmeq_loaded, build_coq_jmeq_data;
    (lazy(lib_ref "core.identity.type"), false), no_check, build_coq_identity_data]
 
-let find_eq_data sigma eqn = (* fails with PatternMatchingFailure *)
-  let d,k = first_match (match_eq sigma eqn) equalities in
+let find_eq_data env sigma eqn = (* fails with PatternMatchingFailure *)
+  let d,k = first_match (match_eq env sigma eqn) equalities in
   let hd,u = destInd sigma (fst (destApp sigma eqn)) in
     d,u,k
 
@@ -459,13 +459,13 @@ let extract_eq_args env sigma = function
       else raise PatternMatchingFailure
 
 let find_eq_data_decompose env sigma eqn =
-  let (lbeq,u,eq_args) = find_eq_data sigma eqn in
+  let (lbeq,u,eq_args) = find_eq_data env sigma eqn in
   (lbeq,u,extract_eq_args env sigma eq_args)
 
 let find_this_eq_data_decompose env sigma eqn =
   let (lbeq,u,eq_args) =
     try (*first_match (match_eq eqn) inversible_equalities*)
-      find_eq_data sigma eqn
+      find_eq_data env sigma eqn
     with PatternMatchingFailure ->
       user_err  (str "No primitive equality found.") in
   let eq_args =
@@ -478,9 +478,9 @@ let find_this_eq_data_decompose env sigma eqn =
 
 let match_sigma env sigma ex =
   match EConstr.kind sigma ex with
-  | App (f, [| a; p; car; cdr |]) when isRefX sigma (lib_ref "core.sig.intro") f ->
+  | App (f, [| a; p; car; cdr |]) when isRefX env sigma (lib_ref "core.sig.intro") f ->
       build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)
-  | App (f, [| a; p; car; cdr |]) when isRefX sigma (lib_ref "core.sigT.intro") f ->
+  | App (f, [| a; p; car; cdr |]) when isRefX env sigma (lib_ref "core.sigT.intro") f ->
     build_sigma_type (), (snd (destConstruct sigma f), a, p, car, cdr)
   | _ -> raise PatternMatchingFailure
 

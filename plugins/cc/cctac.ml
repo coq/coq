@@ -99,7 +99,7 @@ let atom_of_constr b env sigma term =
   let kot = EConstr.kind sigma wh in
     match kot with
       App (f,args)->
-        if isRefX sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
+        if isRefX env sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
           then `Eq (args.(0),
                    decompose_term env sigma args.(1),
                    decompose_term env sigma args.(2))
@@ -145,7 +145,7 @@ let rec has_open_head = function
 let patterns_of_constr b env sigma nrels term =
   let f,args=
     try destApp sigma ((if b then whd else whd_delta) env sigma term) with DestKO -> raise Not_found in
-        if isRefX sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
+        if isRefX env sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
         then
           let patt1,rels1 = pattern_of_constr env sigma args.(1)
           and patt2,rels2 = pattern_of_constr env sigma args.(2) in
@@ -168,12 +168,12 @@ let patterns_of_constr b env sigma nrels term =
 let rec quantified_atom_of_constr b env sigma nrels term =
   match EConstr.kind sigma ((if b then whd else whd_delta) env sigma term) with
       Prod (id,atom,ff) ->
-        if isRefX sigma (Lazy.force _False) ff then
+        if isRefX env sigma (Lazy.force _False) ff then
           let patts=patterns_of_constr b env sigma nrels atom in
               `Nrule patts
         else
           quantified_atom_of_constr b (EConstr.push_rel (RelDecl.LocalAssum (id,atom)) env) sigma (succ nrels) ff
-    | App (f,[|atom|]) when isRefX sigma (Lazy.force _not) f ->
+    | App (f,[|atom|]) when isRefX env sigma (Lazy.force _not) f ->
         let patts=patterns_of_constr b env sigma nrels atom in
               `Nrule patts
     | _ ->
@@ -183,7 +183,7 @@ let rec quantified_atom_of_constr b env sigma nrels term =
 let litteral_of_constr b env sigma term =
   match EConstr.kind sigma ((if b then whd else whd_delta) env sigma term) with
     | Prod (id,atom,ff) ->
-        if isRefX sigma (Lazy.force _False) ff then
+        if isRefX env sigma (Lazy.force _False) ff then
           match (atom_of_constr b env sigma atom) with
               `Eq(t,a,b) -> `Neq(t,a,b)
             | `Other(p) -> `Nother(p)
@@ -194,7 +194,7 @@ let litteral_of_constr b env sigma term =
             with Not_found ->
               `Other (decompose_term env sigma term)
           end
-    | App (f,[|atom|]) when isRefX sigma (Lazy.force _not) f ->
+    | App (f,[|atom|]) when isRefX env sigma (Lazy.force _not) f ->
           begin match (atom_of_constr b env sigma atom) with
               `Eq(t,a,b) -> `Neq(t,a,b)
             | `Other(p) -> `Nother(p)
@@ -516,8 +516,8 @@ let negative_concl_introf =
     let concl = Proofview.Goal.concl gl in
     let nt = whd env sigma concl in
     match EConstr.kind sigma nt with
-      Prod (_,_,ff) when isRefX sigma (Lazy.force _False) ff -> introf
-    | App (f,[|t|]) when isRefX sigma (Lazy.force _not) f ->
+      Prod (_,_,ff) when isRefX env sigma (Lazy.force _False) ff -> introf
+    | App (f,[|t|]) when isRefX env sigma (Lazy.force _not) f ->
         Tacticals.pf_constr_of_global (Lazy.force _False) >>= fun ff ->
         Refine.refine ~typecheck:true begin fun sigma ->
           let sigma, e = Evarutil.new_evar env sigma (mk_neg_ty ff t nt) in sigma, (mkApp (mk_neg_tm ff t nt, [|e|]))
@@ -562,6 +562,7 @@ let mk_eq f c1 c2 k =
 let f_equal =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
+    let env = Proofview.Goal.env gl in
     let sigma = Tacmach.project gl in
     let cut_eq c1 c2 =
         Tacticals.tclTHENS
@@ -570,7 +571,7 @@ let f_equal =
     in
     Proofview.tclORELSE
       begin match EConstr.kind sigma concl with
-      | App (r,[|_;t;t'|]) when isRefX sigma (Lazy.force _eq) r ->
+      | App (r,[|_;t;t'|]) when isRefX env sigma (Lazy.force _eq) r ->
           begin match EConstr.kind sigma t, EConstr.kind sigma t' with
           | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
               let rec cuts i =

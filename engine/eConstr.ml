@@ -150,12 +150,12 @@ let isRef sigma c = match kind sigma c with
   | Const _ | Ind _ | Construct _ | Var _ -> true
   | _ -> false
 
-let isRefX sigma x c =
+let isRefX env sigma x c =
   let open GlobRef in
   match x, kind sigma c with
-  | ConstRef c, Const (c', _) -> Constant.CanOrd.equal c c'
-  | IndRef i, Ind (i', _) -> Ind.CanOrd.equal i i'
-  | ConstructRef i, Construct (i', _) -> Construct.CanOrd.equal i i'
+  | ConstRef c, Const (c', _) -> Environ.QConstant.equal env c c'
+  | IndRef i, Ind (i', _) -> Environ.QInd.equal env i i'
+  | ConstructRef i, Construct (i', _) -> Environ.QConstruct.equal env i i'
   | VarRef id, Var id' -> Id.equal id id'
   | _ -> false
 

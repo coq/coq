@@ -894,7 +894,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 
         | Case (ci1, u1, pms1, p1, iv1, c1, cl1), Case (ci2, u2, pms2, p2, iv2, c2, cl2) ->
             (try
-             let () = if not (Ind.CanOrd.equal ci1.ci_ind ci2.ci_ind) then error_cannot_unify curenv sigma (cM,cN) in
+             let () = if not (QInd.equal curenv ci1.ci_ind ci2.ci_ind) then error_cannot_unify curenv sigma (cM,cN) in
              let opt' = {opt with at_top = true; with_types = false} in
              let substn = Array.fold_left2 (unirec_rec curenvnb CONV ~nargs:0 opt') substn pms1 pms2 in
              let (ci1, _, _, p1, _, c1, cl1) = EConstr.annotate_case env sigma (ci1, u1, pms1, p1, iv1, c1, cl1) in

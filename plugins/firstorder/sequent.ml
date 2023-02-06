@@ -82,7 +82,7 @@ let cm_remove sigma typ nam cm=
   let typ = EConstr.to_constr ~abort_on_undefined_evars:false sigma typ in
   try
     let l=CM.find typ cm in
-    let l0=List.filter (fun id-> not (GlobRef.equal id nam)) l in
+    let l0=List.filter (fun id-> not (GlobRef.CanOrd.equal id nam)) l in
       match l0 with
           []->CM.remove typ cm
         | _ ->CM.add typ l0 cm
@@ -117,7 +117,7 @@ let lookup env sigma item seq=
         let p (id2,o)=
           match o with
               None -> false
-            | Some i2 -> GlobRef.equal id id2 && more_general env sigma i2 i1 in
+            | Some i2 -> Environ.QGlobRef.equal env id id2 && more_general env sigma i2 i1 in
           History.exists p seq.history
 
 let add_concl ~flags env sigma t seq =

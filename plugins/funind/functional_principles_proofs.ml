@@ -674,7 +674,7 @@ let build_proof (interactive_proof : bool) (fnames : Constant.t list) ptes_infos
            |Prod _ ->
             let new_infos = {dyn_infos with info = (f, args)} in
             build_proof_args env sigma do_finalize new_infos
-          | Const (c, _) when not (List.mem_f Constant.CanOrd.equal c fnames) ->
+          | Const (c, _) when not (List.exists (fun kn -> Environ.QConstant.equal env c kn) fnames) ->
             let new_infos = {dyn_infos with info = (f, args)} in
             (*                    Pp.msgnl (str "proving in " ++ pr_lconstr_env (pf_env g) dyn_infos.info); *)
             build_proof_args env sigma do_finalize new_infos

@@ -357,7 +357,7 @@ let dest_nf_eq env sigma t = match EConstr.kind sigma t with
 | App (r, [| t; x; y |]) ->
   let open Reductionops in
   let is_global_exists gr c =
-    Coqlib.has_ref gr && isRefX sigma (Coqlib.lib_ref gr) c
+    Coqlib.has_ref gr && isRefX env sigma (Coqlib.lib_ref gr) c
   in
   let is_eq = is_global_exists "core.eq.type" r in
   let is_identity = is_global_exists "core.identity.type" r in

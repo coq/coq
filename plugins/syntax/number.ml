@@ -292,7 +292,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
           Impargs.(select_stronger_impargs (implicits_of_global cnst)) in
       lcnst, cnst, tcnst, lindc, indc, tindc, impls in
     List.map read l in
-  let eq_indc indc (_, _, _, _, indc', _, _) = GlobRef.equal indc indc' in
+  let eq_indc indc (_, _, _, _, indc', _, _) = Environ.QGlobRef.equal env indc indc' in
   (* Collect all inductive types involved.
      That is [ty_ind] and all final codomains of [tindc] above. *)
   let inds =
@@ -309,7 +309,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
   let _ = (* check_for duplicate constructor and error *)
     List.fold_left (fun already_seen (_, cnst, _, loc, indc, _, _) ->
         try
-          let cnst' = List.assoc_f GlobRef.equal indc already_seen in
+          let cnst' = List.assoc_f (fun c1 c2 -> Environ.QGlobRef.equal env c1 c2) indc already_seen in
           remapping_error ?loc indc cnst' cnst
         with Not_found -> (indc, cnst) :: already_seen)
     [] l in
@@ -410,7 +410,7 @@ let locate_global_inductive allow_params qid =
   try locate_global_inductive_with_params allow_params qid
   with Not_found -> Smartlocate.global_inductive_with_alias qid, []
 
-let locate_global_inductive_or_int63_or_float allow_params qid =
+let locate_global_inductive_or_int63_or_float env allow_params qid =
   try TargetInd (locate_global_inductive_with_params allow_params qid)
   with Not_found ->
     let int63n = "num.int63.type" in
@@ -420,11 +420,11 @@ let locate_global_inductive_or_int63_or_float allow_params qid =
     let floatc = "num.float.wrap_float" in
     let floatw = "Coq.Floats.PrimFloat.float_wrapper" in
     if allow_params && Coqlib.has_ref int63n
-       && GlobRef.equal (Smartlocate.global_with_alias qid) (Coqlib.lib_ref int63n)
+       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref int63n)
     then TargetPrim (mkRefC (qualid_of_string int63w), [Coqlib.lib_ref int63c],
                      (Nametab.path_of_global (Coqlib.lib_ref int63n), []))
     else if allow_params && Coqlib.has_ref floatn
-       && GlobRef.equal (Smartlocate.global_with_alias qid) (Coqlib.lib_ref floatn)
+       && Environ.QGlobRef.equal env (Smartlocate.global_with_alias qid) (Coqlib.lib_ref floatn)
     then TargetPrim (mkRefC (qualid_of_string floatw), [Coqlib.lib_ref floatc],
                      (Nametab.path_of_global (Coqlib.lib_ref floatn), []))
     else TargetInd (Smartlocate.global_inductive_with_alias qid, [])
@@ -454,7 +454,7 @@ let vernac_number_notation local ty f g opts scope =
   let ty_name = ty in
   let ty, via =
     match via with None -> ty, via | Some (ty', a) -> ty', Some (ty, a) in
-  let tyc_params = locate_global_inductive_or_int63_or_float (via = None) ty in
+  let tyc_params = locate_global_inductive_or_int63_or_float env (via = None) ty in
   let to_ty = Smartlocate.global_with_alias f in
   let of_ty = Smartlocate.global_with_alias g in
   let cty = mkRefC ty in

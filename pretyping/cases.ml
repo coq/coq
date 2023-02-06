@@ -520,7 +520,7 @@ let check_and_adjust_constructor env ind cstrs pat = match DAst.get pat with
       let loc = pat.CAst.loc in
       (* Check it is constructor of the right type *)
       let ind' = inductive_of_constructor cstr in
-      if Ind.CanOrd.equal ind' ind then
+      if QInd.equal env ind' ind then
         (* Check the constructor has the right number of args *)
         let ci = cstrs.(i-1) in
         let nb_args_constr = ci.cs_nargs in
@@ -1992,7 +1992,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
           let realnal =
             match t with
               | Some {CAst.loc;v=(ind',realnal)} ->
-                  if not (Ind.CanOrd.equal ind ind') then
+                  if not (QInd.equal env0 ind ind') then
                     user_err ?loc  (str "Wrong inductive type.");
                   if not (Int.equal nrealargs_ctxt (List.length realnal)) then
                       anomaly (Pp.str "Ill-formed 'in' clause in cases.");
@@ -2263,7 +2263,7 @@ let constr_of_pat env sigma arsign pat avoid =
         in
         let (ind,u), params = dest_ind_family indf in
         let params = List.map EConstr.of_constr params in
-        if not (Ind.CanOrd.equal ind cind) then error_bad_constructor ?loc env cstr ind;
+        if not (QInd.equal env ind cind) then error_bad_constructor ?loc env cstr ind;
         let cstrs = get_constructors env indf in
         let ci = cstrs.(i-1) in
         let nb_args_constr = ci.cs_nargs in

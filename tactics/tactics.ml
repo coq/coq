@@ -3977,7 +3977,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     let sigma, ty = Evarsolve.refresh_universes (Some true) env sigma ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
-    let leq = constr_cmp sigma Reduction.CUMUL liftargty ty in
+    let leq = constr_cmp ctxenv sigma Reduction.CUMUL liftargty ty in
       match EConstr.kind sigma arg with
       | Var id when not (is_defined_variable env id) && leq && not (Id.Set.mem id nongenvars) ->
           (sigma, subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
@@ -4101,7 +4101,7 @@ let specialize_eqs id =
     match EConstr.kind !evars ty with
     | Prod (na, t, b) ->
         (match EConstr.kind !evars t with
-        | App (eq, [| eqty; x; y |]) when isRefX !evars Coqlib.(lib_ref "core.eq.type") eq ->
+        | App (eq, [| eqty; x; y |]) when isRefX env !evars Coqlib.(lib_ref "core.eq.type") eq ->
             let c = if noccur_between !evars 1 (List.length ctx) x then y else x in
             let pt = mkApp (eq, [| eqty; c; c |]) in
             let ind = destInd !evars eq in
@@ -4109,7 +4109,7 @@ let specialize_eqs id =
               if unif (push_rel_context ctx env) evars pt t then
                 aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
               else acc, in_eqs, ctx, ty
-        | App (heq, [| eqty; x; eqty'; y |]) when isRefX !evars (Lazy.force coq_heq_ref) heq ->
+        | App (heq, [| eqty; x; eqty'; y |]) when isRefX env !evars (Lazy.force coq_heq_ref) heq ->
             let eqt, c = if noccur_between !evars 1 (List.length ctx) x then eqty', y else eqty, x in
             let pt = mkApp (heq, [| eqt; c; eqt; c |]) in
             let ind = destInd !evars heq in
@@ -4345,7 +4345,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
-let compute_case_signature evd mind case names_info =
+let compute_case_signature env evd mind case names_info =
   let open Context.Rel.Declaration in
   let indref = GlobRef.IndRef mind in
   let branches = case.case_branches in
@@ -4353,7 +4353,7 @@ let compute_case_signature evd mind case names_info =
   | Prod (_,t,c) ->
     let hd, _ = decompose_app evd t in
     (* no recursive call in case analysis *)
-    let arg = if EConstr.isRefX evd indref hd then RecArg else OtherArg in
+    let arg = if EConstr.isRefX env evd indref hd then RecArg else OtherArg in
     (arg, true, not (Vars.noccurn evd 1 c)) :: check_branch c
   | LetIn (_,_,_,c) ->
     (OtherArg, false, not (Vars.noccurn evd 1 c)) :: check_branch c
@@ -4389,7 +4389,7 @@ let guess_elim env sigma isrec dep s hyp0 =
         else build_case_analysis_scheme_default env sigma (mind, u) s
       in
       let _, indty = eval_case_analysis case in
-      let scheme = compute_case_signature sigma mind case hyp0 in
+      let scheme = compute_case_signature env sigma mind case hyp0 in
       (sigma, ElimCase case, indty, scheme)
   in
   sigma, (elimc, elimt), scheme

@@ -386,7 +386,7 @@ let compare_heads pbty env evd ~nargs term term' =
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
       check_strict evd u u'
   | Const _, Const _ -> UnifFailure (evd, NotSameHead)
-  | Ind ((mi,i) as ind , u), Ind (ind', u') when Names.Ind.CanOrd.equal ind ind' ->
+  | Ind ((mi,i) as ind , u), Ind (ind', u') when QInd.equal env ind ind' ->
     if EInstance.is_empty u && EInstance.is_empty u' then Success evd
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
@@ -403,7 +403,7 @@ let compare_heads pbty env evd ~nargs term term' =
       end
   | Ind _, Ind _ -> UnifFailure (evd, NotSameHead)
   | Construct (((mi,ind),ctor as cons), u), Construct (cons', u')
-    when Names.Construct.CanOrd.equal cons cons' ->
+    when QConstruct.equal env cons cons' ->
     if EInstance.is_empty u && EInstance.is_empty u' then Success evd
     else
       let u = EInstance.kind evd u and u' = EInstance.kind evd u' in

@@ -851,7 +851,7 @@ let occur_var_indirectly env sigma id c =
   let var = GlobRef.VarRef id in
   let rec occur_rec c =
     match EConstr.destRef sigma c with
-    | gr, _ -> if not (GlobRef.equal gr var) && occur_in_global env id gr then raise (OccurInGlobal gr)
+    | gr, _ -> if not (QGlobRef.equal env gr var) && occur_in_global env id gr then raise (OccurInGlobal gr)
     | exception DestKO -> EConstr.iter sigma occur_rec c
   in
   try occur_rec c; None with OccurInGlobal gr -> Some gr
@@ -1156,22 +1156,22 @@ let rec is_Type sigma c = match EConstr.kind sigma c with
   | _ -> false
 
 (* eq_constr extended with universe erasure *)
-let compare_constr_univ sigma f cv_pb t1 t2 =
+let compare_constr_univ env sigma f cv_pb t1 t2 =
   let open EConstr in
   match EConstr.kind sigma t1, EConstr.kind sigma t2 with
       Sort s1, Sort s2 -> base_sort_cmp cv_pb (ESorts.kind sigma s1) (ESorts.kind sigma s2)
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
         f Reduction.CONV t1 t2 && f cv_pb c1 c2
-    | Const (c, u), Const (c', u') -> Constant.CanOrd.equal c c'
-    | Ind (i, _), Ind (i', _) -> Ind.CanOrd.equal i i'
-    | Construct (i, _), Construct (i', _) -> Construct.CanOrd.equal i i'
+    | Const (c, u), Const (c', u') -> QConstant.equal env c c'
+    | Ind (i, _), Ind (i', _) -> QInd.equal env i i'
+    | Construct (i, _), Construct (i', _) -> QConstruct.equal env i i'
     | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
 
-let constr_cmp sigma cv_pb t1 t2 =
-  let rec compare cv_pb t1 t2 = compare_constr_univ sigma compare cv_pb t1 t2 in
+let constr_cmp env sigma cv_pb t1 t2 =
+  let rec compare cv_pb t1 t2 = compare_constr_univ env sigma compare cv_pb t1 t2 in
   compare cv_pb t1 t2
 
-let eq_constr sigma t1 t2 = constr_cmp sigma Reduction.CONV t1 t2
+let eq_constr env sigma t1 t2 = constr_cmp env sigma Reduction.CONV t1 t2
 
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
  * gives n (casts are ignored) *)

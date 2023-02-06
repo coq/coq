@@ -232,7 +232,7 @@ val isArity : Evd.evar_map -> t -> bool
 
 val isVarId  : Evd.evar_map -> Id.t -> t -> bool
 val isRelN : Evd.evar_map -> int -> t -> bool
-val isRefX : Evd.evar_map -> GlobRef.t -> t -> bool
+val isRefX : Environ.env -> Evd.evar_map -> GlobRef.t -> t -> bool
 
 val destRel : Evd.evar_map -> t -> int
 val destMeta : Evd.evar_map -> t -> metavariable
@@ -403,7 +403,7 @@ val fresh_global :
   ?loc:Loc.t -> ?rigid:Evd.rigid -> ?names:Univ.Instance.t -> Environ.env ->
   Evd.evar_map -> GlobRef.t -> Evd.evar_map * t
 
-val is_global : Evd.evar_map -> GlobRef.t -> t -> bool
+val is_global : Environ.env -> Evd.evar_map -> GlobRef.t -> t -> bool
 [@@ocaml.deprecated "Use [EConstr.isRefX] instead."]
 
 val expand_case : Environ.env -> Evd.evar_map ->
