@@ -1432,21 +1432,34 @@ let () =
 let () =
   let intern self ist c =
     let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
-    (GlbVal c, gtypref t_preterm)
+    (GlbVal (Id.Set.empty,c), gtypref t_preterm)
   in
-  let interp _ c =
+  let interp {env_ist=env} (ids,c) =
     let open Ltac_pretype in
+    let get_preterm id = match Id.Map.find_opt id env with
+      | Some (ValExt (tag, v)) ->
+        begin match Tac2dyn.Val.eq tag val_preterm with
+          | Some Refl -> (v:closed_glob_constr)
+          | None -> assert false
+        end
+      | _ -> assert false
+    in
     let closure = {
       idents = Id.Map.empty;
       typed = Id.Map.empty;
-      untyped = Id.Map.empty;
+      untyped = Id.Map.bind get_preterm ids;
       genargs = Id.Map.empty;
     } in
     let c = { closure; term = c } in
     return (Value.of_ext val_preterm c)
   in
-  let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
-  let print env sigma c = str "preterm:(" ++ Printer.pr_lglob_constr_env env sigma c ++ str ")" in
+  let subst subst (ids,c) = ids, Detyping.subst_glob_constr (Global.env()) subst c in
+  let print env sigma (ids,c) =
+    let ppids = if Id.Set.is_empty ids then mt()
+      else prlist_with_sep spc Id.print (Id.Set.elements ids) ++ spc() ++ str "|-" ++ spc()
+    in
+    str "preterm:(" ++ ppids ++ Printer.pr_lglob_constr_env env sigma c ++ str ")"
+  in
   let obj = {
     ml_intern = intern;
     ml_interp = interp;
@@ -1632,7 +1645,7 @@ let () =
   let subs avoid globs (ids, tac) =
     (* Let-bind the notation terms inside the tactic *)
     let fold id c (rem, accu) =
-      let c = GTacExt (Tac2quote.wit_preterm, c) in
+      let c = GTacExt (Tac2quote.wit_preterm, (avoid, c)) in
       let rem = Id.Set.remove id rem in
       rem, (Name id, c) :: accu
     in
