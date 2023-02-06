@@ -18,9 +18,10 @@ type one_inductive_impls =
 val declare_mutual_inductive_with_eliminations
   : ?primitive_expected:bool
   -> ?typing_flags:Declarations.typing_flags
-  -> Entries.mutual_inductive_entry
+  -> ?indlocs:Loc.t option list (* Inductive type locs, for .glob *)
+  -> Entries.mutual_inductive_entry (* Inductive types declaration *)
   -> UState.named_universes_entry
-  -> one_inductive_impls list
+  -> one_inductive_impls list (* Implicit arguments *)
   -> Names.MutInd.t
 
 (** {6 For legacy support, do not use}  *)

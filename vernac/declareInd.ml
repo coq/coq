@@ -145,7 +145,7 @@ type one_inductive_impls =
   Impargs.manual_implicits (* for inds *) *
   Impargs.manual_implicits list (* for constrs *)
 
-let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags mie ubinders impls =
+let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typing_flags ?(indlocs=[]) mie ubinders impls =
   (* spiwack: raises an error if the structure is supposed to be non-recursive,
         but isn't *)
   begin match mie.mind_entry_finite with
@@ -180,8 +180,9 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
   Flags.if_verbose Feedback.msg_info (minductive_message names);
   if is_template then
     List.iteri (fun i _ -> Equality.set_keep_equality (mind, i) true) mie.mind_entry_inds;
+  let locmap = Ind_tables.Locmap.make mind indlocs in
   if mie.mind_entry_private == None
-  then Indschemes.declare_default_schemes mind;
+  then Indschemes.declare_default_schemes mind ~locmap;
   mind
 
 module Internal =

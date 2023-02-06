@@ -48,10 +48,22 @@ val declare_individual_scheme_object : string ->
 
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
-val define_individual_scheme : individual scheme_kind ->
+val define_individual_scheme : ?loc:Loc.t -> individual scheme_kind ->
   Id.t option -> inductive -> unit
 
-val define_mutual_scheme : mutual scheme_kind ->
+module Locmap : sig
+  type t
+
+  val default : Loc.t option -> t
+  val make
+     : ?default:Loc.t (* The default is the loc of the first inductive, if passed *)
+    -> Names.MutInd.t
+    -> Loc.t option list (* order must match the one of the inductives block *)
+    -> t
+  val lookup : locmap:t -> Names.inductive -> Loc.t option
+end
+
+val define_mutual_scheme : ?locmap:Locmap.t -> mutual scheme_kind ->
   (int * Id.t) list -> MutInd.t -> unit
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
@@ -70,5 +82,6 @@ val declare_definition_scheme :
    -> univs:UState.named_universes_entry
    -> role:Evd.side_effect_role
    -> name:Id.t
+   -> ?loc:Loc.t
    -> Constr.t
    -> Constant.t * Evd.side_effects) ref

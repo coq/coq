@@ -553,6 +553,7 @@ module Record_decl = struct
     ubinders : UnivNames.universe_binders;
     projections_kind : Decls.definition_object_kind;
     poly : bool;
+    indlocs : Loc.t option list;
   }
 end
 
@@ -582,12 +583,15 @@ let check_unique_names records =
       Vernacexpr.AssumExpr({CAst.v=Name id},_,_) -> id::acc
     | Vernacexpr.DefExpr ({CAst.v=Name id},_,_,_) -> id::acc
     | _ -> acc in
+  let indlocs =
+    records |> List.map (fun { Ast.name; _ } -> name ) in
+  let fields_names =
+    records |> List.fold_left (fun acc { Ast.cfs; _ } ->
+      List.fold_left extract_name acc cfs) [] in
   let allnames =
-    List.fold_left (fun acc { Ast.name; cfs; _ } ->
-      name.CAst.v :: (List.fold_left extract_name acc cfs)) [] records
-  in
+    fields_names @ (indlocs |> List.map (fun x -> x.CAst.v)) in
   match List.duplicates Id.equal allnames with
-  | [] -> ()
+  | [] -> List.map (fun x -> x.CAst.loc) indlocs
   | id :: _ -> user_err (str "Two objects have the same name" ++ spc () ++ quote (Id.print id) ++ str ".")
 
 type kind_class = NotClass | RecordClass | DefClass
@@ -680,7 +684,7 @@ let check_proj_flags kind rf =
   Data.{ pf_coercion; pf_reversible; pf_instance; pf_priority; pf_locality; pf_canonical }
 
 let pre_process_structure udecl kind ~poly (records : Ast.t list) =
-  let () = check_unique_names records in
+  let indlocs = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
   let impargs, univs, variances, params, data =
@@ -715,9 +719,9 @@ let pre_process_structure udecl kind ~poly (records : Ast.t list) =
   let data = List.map2 map data records in
   let projections_kind =
     Decls.(match kind_class kind with NotClass -> StructureComponent | _ -> Method) in
-  impargs, params, univs, variances, projections_kind, data
+  impargs, params, univs, variances, projections_kind, data, indlocs
 
-let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind data =
+let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data =
   let nparams = List.length params in
   let (univs, ubinders) = univs in
   let poly, projunivs =
@@ -775,18 +779,21 @@ let interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj i
   in
   let impls = List.map (fun _ -> impargs, []) data in
   let open Record_decl in
-  { mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records = data }
+  { mie; primitive_proj; impls; globnames; global_univ_decls; projunivs;
+    ubinders; projections_kind; poly; records = data;
+    indlocs;
+  }
 
 
 let interp_structure udecl kind ~template ~cumulative ~poly ~primitive_proj finite records =
-  let impargs, params, univs, variances, projections_kind, data =
+  let impargs, params, univs, variances, projections_kind, data, indlocs =
     pre_process_structure udecl kind ~poly records in
-  interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind data
+  interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind ~indlocs data
 
-let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records } =
+let declare_structure { Record_decl.mie; primitive_proj; impls; globnames; global_univ_decls; projunivs; ubinders; projections_kind; poly; records; indlocs } =
   Option.iter (DeclareUctx.declare_universe_context ~poly:false) global_univ_decls;
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
-      ~primitive_expected:primitive_proj
+      ~primitive_expected:primitive_proj ~indlocs
   in
   let map i { Data.is_coercion; proj_flags; rdata = { DataR.implfs; fields; _}; inhabitant_id; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
@@ -982,7 +989,7 @@ let declare_existing_class g =
 
 let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
     finite (records : Ast.t list) : GlobRef.t list =
-  let impargs, params, univs, variances, projections_kind, data =
+  let impargs, params, univs, variances, projections_kind, data, indlocs =
     pre_process_structure udecl kind ~poly records
   in
   let inds, def = match kind_class kind with
@@ -992,7 +999,10 @@ let definition_structure udecl kind ~template ~cumulative ~poly ~primitive_proj
          (started in 8.16, c.f., https://github.com/coq/coq/pull/15802 ) *)
       let data = if kind_class kind = NotClass then data else
           List.map (fun d -> { d with Data.is_coercion = false }) data in
-      let structure = interp_structure_core ~cumulative finite ~univs ~variances ~primitive_proj impargs params template ~projections_kind data in
+      let structure =
+        interp_structure_core
+          ~cumulative finite ~univs ~variances ~primitive_proj
+          impargs params template ~projections_kind ~indlocs data in
       declare_structure structure
   in
   if kind_class kind <> NotClass then declare_class ~univs params inds def data;

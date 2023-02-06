@@ -1129,12 +1129,12 @@ let vernac_scheme l =
       dump_global sch.sch_qualid) l;
   Indschemes.do_scheme (Global.env ()) l
 
-let vernac_scheme_equality sch id =
+let vernac_scheme_equality ?locmap sch id =
   if Dumpglob.dump () then
     dump_global id;
-  Indschemes.do_scheme_equality sch id
+  Indschemes.do_scheme_equality ?locmap sch id
 
-let vernac_combined_scheme lid l =
+let vernac_combined_scheme lid l ~locmap =
   if Dumpglob.dump () then
     (Dumpglob.dump_definition lid false "def";
      List.iter (fun {loc;v=id} -> dump_qualid (qualid_of_ident ?loc id)) l);
@@ -2435,11 +2435,11 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacSchemeEquality (sch,id) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
-        vernac_scheme_equality sch id)
+        vernac_scheme_equality sch id ~locmap:(Ind_tables.Locmap.default loc))
   | VernacCombinedScheme (id, l) ->
     vtdefault(fun () ->
         unsupported_attributes atts;
-        vernac_combined_scheme id l)
+        vernac_combined_scheme id l ~locmap:(Ind_tables.Locmap.default loc))
   | VernacUniverse l ->
     vtdefault(fun () -> vernac_universe ~poly:(only_polymorphism atts) l)
   | VernacConstraint l ->

@@ -86,7 +86,7 @@ let compute_name internal id =
     Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
   else id
 
-let declare_definition_scheme = ref (fun ~internal ~univs ~role ~name c ->
+let declare_definition_scheme = ref (fun ~internal ~univs ~role ~name ?loc c ->
     CErrors.anomaly (Pp.str "scheme declaration not registered"))
 
 let lookup_scheme kind ind =
@@ -124,15 +124,49 @@ let local_lookup_scheme eff kind ind = match lookup_scheme kind ind with
 let local_check_scheme kind ind eff =
   Option.has_some (local_lookup_scheme eff kind ind)
 
-let define internal role id c poly univs =
+let define ?loc internal role id c poly univs =
   let id = compute_name internal id in
   let uctx = UState.minimize univs in
   let c = UState.nf_universes uctx c in
   let univs = UState.univ_entry ~poly uctx in
-  !declare_definition_scheme ~internal ~univs ~role ~name:id c
+  !declare_definition_scheme ~internal ~univs ~role ~name:id ?loc c
+
+  module Locmap : sig
+
+    type t
+
+    val default : Loc.t option -> t
+    val make : ?default:Loc.t -> MutInd.t -> Loc.t option list -> t
+    val lookup : locmap:t -> Names.inductive -> Loc.t option
+
+end = struct
+
+    type t = {
+      default : Loc.t option;
+      ind_to_loc : Loc.t Names.Indmap.t;
+    }
+    let lookup ~locmap:{ ind_to_loc; default } x =
+      Names.Indmap.find_opt x ind_to_loc |> fun loc ->
+      Option.append loc default
+
+    let default default = { default; ind_to_loc = Names.Indmap.empty }
+
+    let make ?default mind locs =
+      let default, ind_to_loc =
+        CList.fold_left_i (fun i (default,m) loc ->
+          let m = match loc with
+            | None -> m
+            | Some loc -> Indmap.add (mind, i) loc m
+          in
+          let default = if Option.has_some default then default else loc in
+          default, m)
+          0 (default,Names.Indmap.empty) locs in
+      { default; ind_to_loc }
+
+  end
 
 (* Assumes that dependencies are already defined *)
-let rec define_individual_scheme_base kind suff f ~internal idopt (mind,i as ind) eff =
+let rec define_individual_scheme_base ?loc kind suff f ~internal idopt (mind,i as ind) eff =
   (* FIXME: do not rely on the imperative modification of the global environment *)
   let (c, ctx) = f (Global.env ()) eff ind in
   let mib = Global.lookup_mind mind in
@@ -140,20 +174,20 @@ let rec define_individual_scheme_base kind suff f ~internal idopt (mind,i as ind
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let role = Evd.Schema (ind, kind) in
-  let const, neff = define internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
+  let const, neff = define ?loc internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
   let eff = Evd.concat_side_effects neff eff in
   const, eff
 
-and define_individual_scheme kind ~internal names (mind,i as ind) =
+and define_individual_scheme ?loc kind ~internal names (mind,i as ind) =
   match Hashtbl.find scheme_object_table kind with
   | _,MutualSchemeFunction _ -> assert false
   | s,IndividualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) ind in
     let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
-    define_individual_scheme_base kind s f ~internal names ind eff
+    define_individual_scheme_base ?loc kind s f ~internal names ind eff
 
 (* Assumes that dependencies are already defined *)
-and define_mutual_scheme_base kind suff f ~internal names mind eff =
+and define_mutual_scheme_base ?(locmap=Locmap.default None) kind suff f ~internal names mind eff =
   (* FIXME: do not rely on the imperative modification of the global environment *)
   let (cl, ctx) = f (Global.env ()) eff mind in
   let mib = Global.lookup_mind mind in
@@ -162,21 +196,23 @@ and define_mutual_scheme_base kind suff f ~internal names mind eff =
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in
-    let cst, neff = define internal role id cl (Declareops.inductive_is_polymorphic mib) ctx in
+    let loc = Locmap.lookup ~locmap (mind,i) in
+    let cst, neff = define ?loc internal role id cl (Declareops.inductive_is_polymorphic mib) ctx in
     (Evd.concat_side_effects neff effs, cst)
   in
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in
   consts, eff
 
-and define_mutual_scheme kind ~internal names mind =
+and define_mutual_scheme ?locmap kind ~internal names mind =
   match Hashtbl.find scheme_object_table kind with
   | _,IndividualSchemeFunction _ -> assert false
   | s,MutualSchemeFunction (f, deps) ->
     let deps = match deps with None -> [] | Some deps -> deps (Global.env ()) mind in
     let eff = List.fold_left (fun eff dep -> declare_scheme_dependence eff dep) Evd.empty_side_effects deps in
-    define_mutual_scheme_base kind s f ~internal names mind eff
+    define_mutual_scheme_base ?locmap kind s f ~internal names mind eff
 
-and declare_scheme_dependence eff = function
+and declare_scheme_dependence eff sd =
+match sd with
 | SchemeIndividualDep (ind, kind) ->
   if local_check_scheme kind ind eff then eff
   else
@@ -207,10 +243,10 @@ let find_scheme kind (mind,i as ind) =
     let ca, eff = define_mutual_scheme_base kind s f ~internal:true [] mind eff in
     Proofview.tclEFFECTS eff <*> Proofview.tclUNIT ca.(i)
 
-let define_individual_scheme kind names ind =
-  let _ , eff = define_individual_scheme kind ~internal:false names ind in
+let define_individual_scheme ?loc kind names ind =
+  let _ , eff = define_individual_scheme ?loc kind ~internal:false names ind in
   redeclare_schemes eff
 
-let define_mutual_scheme kind names mind =
-  let _, eff = define_mutual_scheme kind ~internal:false names mind in
+let define_mutual_scheme ?locmap kind names mind =
+  let _, eff = define_mutual_scheme ?locmap kind ~internal:false names mind in
   redeclare_schemes eff

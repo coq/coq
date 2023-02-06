@@ -52,6 +52,7 @@ type t = {
   uctx : Univ.ContextSet.t;
   where_notations : Metasyntax.notation_interpretation_decl list;
   coercions : Libnames.qualid list;
+  indlocs : Loc.t option list;
 }
 
 end

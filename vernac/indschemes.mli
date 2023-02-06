@@ -24,17 +24,17 @@ val name_and_process_schemes : Environ.env
 
 (** Build and register the boolean equalities associated to an inductive type *)
 
-val declare_beq_scheme : MutInd.t -> unit
+val declare_beq_scheme : ?locmap:Ind_tables.Locmap.t -> MutInd.t -> unit
 
-val declare_eq_decidability : MutInd.t -> unit
+val declare_eq_decidability : ?locmap:Ind_tables.Locmap.t -> MutInd.t -> unit
 
 (** Build and register a congruence scheme for an equality-like inductive type *)
 
-val declare_congr_scheme : inductive -> unit
+val declare_congr_scheme : ?loc:Loc.t -> inductive -> unit
 
 (** Build and register rewriting schemes for an equality-like inductive type *)
 
-val declare_rewriting_schemes : inductive -> unit
+val declare_rewriting_schemes : ?loc:Loc.t -> inductive -> unit
 
 (** Mutual Minimality/Induction scheme.
     [force_mutual] forces the construction of eliminators having the same predicates and
@@ -51,7 +51,7 @@ val do_scheme : Environ.env -> (Names.Id.t CAst.t option * Vernacexpr.scheme) li
 
 (** Main call to Scheme Equality command *)
 
-val do_scheme_equality : Vernacexpr.equality_scheme_type -> Libnames.qualid Constrexpr.or_by_notation -> unit
+val do_scheme_equality : ?locmap:Ind_tables.Locmap.t -> Vernacexpr.equality_scheme_type -> Libnames.qualid Constrexpr.or_by_notation -> unit
 
 (** Combine a list of schemes into a conjunction of them *)
 
@@ -61,4 +61,4 @@ val do_combined_scheme : lident -> lident list -> unit
 
 (** Hook called at each inductive type definition *)
 
-val declare_default_schemes : MutInd.t -> unit
+val declare_default_schemes : ?locmap:Ind_tables.Locmap.t -> MutInd.t -> unit

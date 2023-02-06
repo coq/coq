@@ -1,0 +1,30 @@
+\documentclass[12pt]{report}
+\usepackage[utf8x]{inputenc}
+
+%Warning: tipa declares many non-standard macros used by utf8x to
+%interpret utf8 characters but extra packages might have to be added
+%such as "textgreek" for Greek letters not already in tipa
+%or "stmaryrd" for mathematical symbols.
+%Utf8 codes missing a LaTeX interpretation can be defined by using
+%\DeclareUnicodeCharacter{code}{interpretation}.
+%Use coqdoc's option -p to add new packages or declarations.
+\usepackage{tipa}
+
+\usepackage[T1]{fontenc}
+\usepackage{fullpage}
+\usepackage{coqdoc}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+\begin{document}
+\coqlibrary{Coqdoc.multiple links}{Library }{Coqdoc.multiple\_links}
+
+\begin{coqdoccode}
+\coqdocnoindent
+\coqdockw{Inductive} \coqdef{Coqdoc.multiple links.t}{t}{\coqdocinductive{t}} := \coqdef{Coqdoc.multiple links.X}{X}{\coqdocconstructor{X}} \ensuremath{|} \coqdef{Coqdoc.multiple links.T}{T}{\coqdocconstructor{T}} : \coqref{Coqdoc.multiple links.t:1}{\coqdocinductive{t}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.multiple links.t:1}{\coqdocinductive{t}}.\coqdoceol
+\coqdocnoindent
+\coqdockw{Check} \coqref{Coqdoc.multiple links.X}{\coqdocconstructor{X}}.\coqdoceol
+\coqdocnoindent
+\coqdockw{Check} \coqref{Coqdoc.multiple links.t}{\coqdocinductive{t}}.\coqdoceol
+\coqdocnoindent
+\coqdockw{Check} \coqref{Coqdoc.multiple links.t ind}{\coqdocdefinition{t\_ind}}. \end{coqdoccode}
+\end{document}

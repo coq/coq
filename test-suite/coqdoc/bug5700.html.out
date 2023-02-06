@@ -25,7 +25,7 @@
 <code> foo (* {bar_bar} *) </code> 
 </div>
 <div class="code">
-<span class="id" title="keyword">Definition</span> <a id="const1" class="id" title="definition" href="#const1">const1</a> := 1.<br/>
+<span class="id" title="keyword">Definition</span> <a id="const1" class="idref" href="#const1"><span class="id" title="definition">const1</span></a> := 1.<br/>
 
 <br/>
 </div>
@@ -34,7 +34,7 @@
 <code> more (* nested (* comments *) within verbatim *) </code> 
 </div>
 <div class="code">
-<span class="id" title="keyword">Definition</span> <a id="const2" class="id" title="definition" href="#const2">const2</a> := 2.<br/>
+<span class="id" title="keyword">Definition</span> <a id="const2" class="idref" href="#const2"><span class="id" title="definition">const2</span></a> := 2.<br/>
 </div>
 </div>
 

@@ -70,6 +70,7 @@ val definition_structure
       ubinders : UnivNames.universe_binders;
       projections_kind : Decls.definition_object_kind;
       poly : bool;
+      indlocs : Loc.t option list;
     }
 end
 
