@@ -523,7 +523,8 @@ type pretyper = {
   pretype_if : pretyper -> glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr -> unsafe_judgment pretype_fun;
   pretype_rec : pretyper -> glob_fix_kind * Id.t array * glob_decl list array * glob_constr array * glob_constr array -> unsafe_judgment pretype_fun;
   pretype_sort : pretyper -> glob_sort -> unsafe_judgment pretype_fun;
-  pretype_hole : pretyper -> Evar_kinds.t * Namegen.intro_pattern_naming_expr * Genarg.glob_generic_argument option -> unsafe_judgment pretype_fun;
+  pretype_hole : pretyper -> Evar_kinds.t * Namegen.intro_pattern_naming_expr -> unsafe_judgment pretype_fun;
+  pretype_genarg : pretyper -> Genarg.glob_generic_argument -> unsafe_judgment pretype_fun;
   pretype_cast : pretyper -> glob_constr * cast_kind * glob_constr -> unsafe_judgment pretype_fun;
   pretype_int : pretyper -> Uint63.t -> unsafe_judgment pretype_fun;
   pretype_float : pretyper -> Float64.t -> unsafe_judgment pretype_fun;
@@ -563,8 +564,10 @@ let eval_pretyper self ~flags tycon env sigma t =
     self.pretype_rec self (knd, nas, decl, c, t) ?loc ~flags tycon env sigma
   | GSort s ->
     self.pretype_sort self s ?loc ~flags tycon env sigma
-  | GHole (knd, nam, arg) ->
-    self.pretype_hole self (knd, nam, arg) ?loc ~flags tycon env sigma
+  | GHole (knd, nam) ->
+    self.pretype_hole self (knd, nam) ?loc ~flags tycon env sigma
+  | GGenarg arg ->
+    self.pretype_genarg self arg ?loc ~flags tycon env sigma
   | GCast (c, k, t) ->
     self.pretype_cast self (c, k, t) ?loc ~flags tycon env sigma
   | GInt n ->
@@ -668,22 +671,19 @@ struct
     let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) tycon in
     sigma, { uj_val; uj_type }
 
-  let pretype_hole self (k, naming, ext) =
-    fun ?loc ~flags tycon env sigma ->
-    match ext with
-    | None ->
-      let open Namegen in
-      let naming = match naming with
-        | IntroIdentifier id -> IntroIdentifier (interp_ltac_id env id)
-        | IntroAnonymous -> IntroAnonymous
-        | IntroFresh id -> IntroFresh (interp_ltac_id env id) in
-      let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) ~naming tycon in
-      let sigma = if flags.program_mode then mark_obligation_evar sigma k uj_val else sigma in
-      sigma, { uj_val; uj_type }
+  let pretype_hole self (k, naming) ?loc ~flags tycon env sigma =
+    let open Namegen in
+    let naming = match naming with
+      | IntroIdentifier id -> IntroIdentifier (interp_ltac_id env id)
+      | IntroAnonymous -> IntroAnonymous
+      | IntroFresh id -> IntroFresh (interp_ltac_id env id) in
+    let sigma, uj_val, uj_type = new_typed_evar env sigma ~src:(loc,k) ~naming tycon in
+    let sigma = if flags.program_mode then mark_obligation_evar sigma k uj_val else sigma in
+    sigma, { uj_val; uj_type }
 
-    | Some arg ->
-      let j, sigma = GlobEnv.interp_glob_genarg ?loc ~poly:flags.poly env sigma tycon arg in
-      sigma, j
+  let pretype_genarg self arg ?loc ~flags tycon env sigma =
+    let j, sigma = GlobEnv.interp_glob_genarg ?loc ~poly:flags.poly env sigma tycon arg in
+    sigma, j
 
   let pretype_rec self (fixkind, names, bl, lar, vdef) =
     fun ?loc ~flags tycon env sigma ->
@@ -1249,7 +1249,7 @@ struct
 
 (* [pretype_type valcon env sigma c] coerces [c] into a type *)
 let pretype_type self c ?loc ~flags valcon (env : GlobEnv.t) sigma = match DAst.get c with
-  | GHole (knd, naming, None) ->
+  | GHole (knd, naming) ->
       let loc = loc_of_glob_constr c in
       (match valcon with
        | Some v ->
@@ -1364,6 +1364,7 @@ let default_pretyper =
     pretype_rec = pretype_rec;
     pretype_sort = pretype_sort;
     pretype_hole = pretype_hole;
+    pretype_genarg = pretype_genarg;
     pretype_cast = pretype_cast;
     pretype_int = pretype_int;
     pretype_float = pretype_float;
@@ -1468,7 +1469,7 @@ let path_convertible env sigma cl p q =
   let mkGApp(rt,rtl)      = DAst.make @@ Glob_term.GApp(rt,rtl) in
   let mkGLambda(n,t,b)    = DAst.make @@ Glob_term.GLambda(n,Explicit,t,b) in
   let mkGSort u           = DAst.make @@ Glob_term.GSort u in
-  let mkGHole ()          = DAst.make @@ Glob_term.GHole(Evar_kinds.BinderType Anonymous,Namegen.IntroAnonymous,None) in
+  let mkGHole ()          = DAst.make @@ Glob_term.GHole(Evar_kinds.BinderType Anonymous,Namegen.IntroAnonymous) in
   let path_to_gterm p =
     match p with
     | ic :: p' ->

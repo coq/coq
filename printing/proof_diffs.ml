@@ -511,7 +511,8 @@ let match_goals ot nt =
       constr_expr_opt ogname po po2;
       constr_expr ogname b1 b12;
       constr_expr ogname b2 b22
-    | CHole (k,naming,solve), CHole (k2,naming2,solve2) -> ()
+    | CHole _, CHole _ -> ()
+    | CGenarg _, CGenarg _ -> ()
     | CPatVar _, CPatVar _ -> ()
     | CEvar (n,l), CEvar (n2,l2) ->
       let oevar = if ogname = "" then Id.to_string n.CAst.v else ogname in

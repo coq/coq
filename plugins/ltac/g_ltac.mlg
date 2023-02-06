@@ -247,7 +247,7 @@ GRAMMAR EXTEND Gram
               | { CAst.v = CCast (t, DEFAULTcast, ty) } -> Term t, Some (Term ty)
               | _ -> mpv, None)
             | _ -> mpv, None
-          in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty) }
+          in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous))) ty) }
     ] ]
   ;
   match_context_rule:
@@ -344,7 +344,7 @@ GRAMMAR EXTEND Gram
   term: LEVEL "0"
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.ltac_expr; ")" ->
         { let arg = Genarg.in_gen (Genarg.rawwit Tacarg.wit_tactic) tac in
-          CAst.make ~loc @@ CHole (None, IntroAnonymous, Some arg) } ] ]
+          CAst.make ~loc @@ CGenarg arg } ] ]
   ;
   END
 

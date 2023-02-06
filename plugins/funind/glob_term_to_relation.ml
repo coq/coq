@@ -465,7 +465,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
   observe (str " Entering : " ++ pr_glob_constr_env env rt);
   let open CAst in
   match DAst.get rt with
-  | GRef _ | GVar _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GInt _
+  | GRef _ | GVar _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _
    |GFloat _ ->
     (* do nothing (except changing type of course) *)
     mk_result [] rt avoid
@@ -523,7 +523,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
           args_res.result
       in
       {result = new_result; to_avoid = new_avoid}
-    | GVar _ | GEvar _ | GPatVar _ | GHole _ | GSort _ | GRef _ ->
+    | GVar _ | GEvar _ | GPatVar _ | GHole _ | GGenarg _ | GSort _ | GRef _ ->
       (* if have [g t1 ... tn] with [g] not appearing in [funnames]
          then
          foreach [ctxt,v1 ... vn] in [args_res] we return
@@ -1216,6 +1216,7 @@ let rec compute_cst_params relnames params gt =
            discrimination ones *)
       | GSort _ -> params
       | GHole _ -> params
+      | GGenarg _ -> params
       | GIf _ | GRec _ | GCast _ | GArray _ ->
         CErrors.user_err (str "Unhandled case."))
     gt

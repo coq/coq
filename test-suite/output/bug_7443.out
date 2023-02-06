@@ -1,7 +1,13 @@
 Literal 1
      : Type
+File "./output/bug_7443.v", line 21, characters 2-46:
+Warning: Notation "[ _ ]" was already used in scope foo_scope.
+[notation-overridden,parsing]
 [1]
      : Type
+File "./output/bug_7443.v", line 23, characters 2-82:
+Warning: Notation "[ _ ]" was already used in scope foo_scope.
+[notation-overridden,parsing]
 Literal 1
      : Type
 [1]
@@ -10,5 +16,8 @@ File "./output/bug_7443.v", line 30, characters 14-15:
 The command has indeed failed with message:
 The term "1" has type "Datatypes.nat" while it is expected to have type
  "denote ?t".
+File "./output/bug_7443.v", line 33, characters 2-82:
+Warning: Notation "[ _ ]" was already used in scope foo_scope.
+[notation-overridden,parsing]
 Literal 1
      : Type
