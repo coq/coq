@@ -1518,11 +1518,6 @@ ssrhavefwd: [
 | ":" term ":=" OPT term      (* SSR plugin *)
 ]
 
-deprecated_number_modifier: [
-| "(" "warning" "after" bignat ")"
-| "(" "abstract" "after" bignat ")"
-]
-
 number_modifier: [
 | "warning" "after" bignat
 | "abstract" "after" bignat

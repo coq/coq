@@ -3256,12 +3256,6 @@ ssrpatternarg: [
 | rpattern      (* SSR plugin *)
 ]
 
-deprecated_number_modifier: [
-|
-| "(" "warning" "after" bignat ")"
-| "(" "abstract" "after" bignat ")"
-]
-
 number_string_mapping: [
 | reference "=>" reference
 | "[" reference "]" "=>" reference
