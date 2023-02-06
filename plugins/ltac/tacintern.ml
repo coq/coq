@@ -823,8 +823,8 @@ let () =
 
 let notation_subst bindings tac =
   let fold id c accu =
-    let loc = Glob_ops.loc_of_glob_constr (fst c) in
-    let c = ConstrMayEval (ConstrTerm c) in
+    let loc = Glob_ops.loc_of_glob_constr c in
+    let c = ConstrMayEval (ConstrTerm (c, None)) in
     (make ?loc @@ Name id, c) :: accu
   in
   let bindings = Id.Map.fold fold bindings [] in

@@ -1631,7 +1631,7 @@ let () =
 let () =
   let subs globs (ids, tac) =
     (* Let-bind the notation terms inside the tactic *)
-    let fold id (c, _) (rem, accu) =
+    let fold id c (rem, accu) =
       let c = GTacExt (Tac2quote.wit_preterm, c) in
       let rem = Id.Set.remove id rem in
       rem, (Name id, c) :: accu
