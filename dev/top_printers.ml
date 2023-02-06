@@ -253,7 +253,7 @@ let ppuni_level u = pp (Level.raw_pr u)
 let ppqvar q = pp (QVar.pr q)
 let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s))
 
-let prlev = UnivNames.pr_with_global_universes Id.Map.empty
+let prlev l = UnivNames.pr_with_global_universes l
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)

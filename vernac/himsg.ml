@@ -1038,7 +1038,7 @@ let explain_not_match_error = function
         status (not b) ++ str" declaration was found"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
-      UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) incon
+      UGraph.explain_universe_inconsistency UnivNames.pr_with_global_universes incon
   | IncompatiblePolymorphism (env, t1, t2) ->
     str "conversion of polymorphic values generates additional constraints: " ++
       quote (Printer.safe_pr_lconstr_env env (Evd.from_env env) t1) ++ spc () ++
@@ -1488,7 +1488,7 @@ let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
 let rec vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
-    UGraph.explain_universe_inconsistency UnivNames.(pr_with_global_universes empty_binders) i ++ str "."
+    UGraph.explain_universe_inconsistency UnivNames.pr_with_global_universes i ++ str "."
   | TypeError(ctx,te) ->
     let te = map_ptype_error EConstr.of_constr te in
     explain_type_error ctx Evd.empty te

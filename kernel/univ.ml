@@ -181,6 +181,8 @@ module Level = struct
 
   let raw_pr u = str (to_string u)
 
+  let pr = raw_pr
+
   let vars = Array.init 20 (fun i -> make (Var i))
 
   let var n =
