@@ -1629,7 +1629,7 @@ let () =
   Genprint.register_print0 wit_ltac2_quotation pr_raw pr_glb pr_top
 
 let () =
-  let subs globs (ids, tac) =
+  let subs avoid globs (ids, tac) =
     (* Let-bind the notation terms inside the tactic *)
     let fold id c (rem, accu) =
       let c = GTacExt (Tac2quote.wit_preterm, c) in
@@ -1647,7 +1647,7 @@ let () =
           str ", probably an ill-typed expression")
     in
     let tac = if List.is_empty bnd then tac else GTacLet (false, bnd, tac) in
-    (Id.Set.empty, tac)
+    (avoid, tac)
   in
   Genintern.register_ntn_subst0 wit_ltac2_constr subs
 

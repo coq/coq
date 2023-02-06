@@ -57,7 +57,7 @@ val generic_substitute : glob_generic_argument subst_fun
 
 (** {5 Notation functions} *)
 
-type 'glb ntn_subst_fun = Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
+type 'glb ntn_subst_fun = Id.Set.t -> Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
 
 val substitute_notation : ('raw, 'glb, 'top) genarg_type -> 'glb ntn_subst_fun
 

@@ -821,7 +821,7 @@ let () =
 
 (** Substitution for notations containing tactic-in-terms *)
 
-let notation_subst bindings tac =
+let notation_subst _avoid bindings tac =
   let fold id c accu =
     let loc = Glob_ops.loc_of_glob_constr c in
     let c = ConstrMayEval (ConstrTerm (c, None)) in
