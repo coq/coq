@@ -1248,7 +1248,7 @@ let rec irrefutable env pat = match DAst.get pat with
       one_constr && List.for_all (irrefutable env) args
 
 let first_clause_irrefutable env = function
-  | eqn::mat -> List.for_all (irrefutable env) eqn.patterns
+  | {patterns=pat::patl}::mat -> (match DAst.get pat with PatVar _ -> List.for_all (irrefutable env) patl | _ -> false)
   | _ -> false
 
 let group_equations pb ind current cstrs mat =
