@@ -24,8 +24,6 @@ let pr_number_after = function
   | Warning n -> str "warning after " ++ NumTok.UnsignedNat.print n
   | Abstract n -> str "abstract after " ++ NumTok.UnsignedNat.print n
 
-let pr_deprecated_number_modifier m = str "(" ++ pr_number_after m ++ str ")"
-
 let pr_number_string_mapping (b, n, n') =
   if b then
     str "[" ++ Libnames.pr_qualid n ++ str "]" ++ spc () ++ str "=>" ++ spc ()
@@ -49,13 +47,6 @@ let pr_string_option l =
   str "(" ++ pr_number_string_via l ++ str ")"
 
 }
-
-VERNAC ARGUMENT EXTEND deprecated_number_modifier
-  PRINTED BY { pr_deprecated_number_modifier }
-| [ ] -> { Nop }
-| [ "(" "warning" "after" bignat(waft) ")" ] -> { Warning (NumTok.UnsignedNat.of_string waft) }
-| [ "(" "abstract" "after" bignat(n) ")" ] -> { Abstract (NumTok.UnsignedNat.of_string n) }
-END
 
 VERNAC ARGUMENT EXTEND number_string_mapping
   PRINTED BY { pr_number_string_mapping }
