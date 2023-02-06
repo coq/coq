@@ -656,7 +656,25 @@ let tag_var = tag Tag.variable
       | CHole (_,IntroFresh id) ->
         return (str "?[?" ++ pr_id id ++ str "]", latom)
       | CHole _ -> return (str "_", latom)
-      | CGenarg _ -> return (str "_", latom) (* TODO *)
+      | CGenarg arg ->
+        (* In principle this may use the env/sigma, in practice not sure if it
+           does except through pr_constr_expr in beautify mode. *)
+        let env = Global.env() in
+        let sigma = Evd.from_env env in
+        let name = let open Genarg in
+          let GenArg (Rawwit tag, _) = arg in
+          match tag with
+          | ExtraArg tag -> ArgT.repr tag
+          | _ -> assert false
+        in
+        let name =
+          (* cheat the name system
+             there should be a better way to handle this *)
+          if String.equal name "tactic" then "ltac"
+          else if String.equal name "ltac2:in-constr" then "ltac2"
+          else name
+        in
+        return (str name ++ str ":" ++ surround (Pputils.pr_raw_generic env sigma arg), latom)
       | CEvar (n,l) ->
         return (pr_evar (pr mt) n l, latom)
       | CPatVar p ->
