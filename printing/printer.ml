@@ -531,7 +531,7 @@ let pr_concl n ?diffs sigma g =
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
-let pr_evgl_sign (type a) env sigma (evi : a evar_info) =
+let pr_evgl_sign env sigma (evi : undefined evar_info) =
   let env = evar_env env evi in
   let ps = pr_named_context_of env sigma in
   let _, l = match Filter.repr (evar_filter evi) with
@@ -543,22 +543,15 @@ let pr_evgl_sign (type a) env sigma (evi : a evar_info) =
     if List.is_empty ids then mt () else
       (str " (" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
-  let concl = match Evd.evar_body evi with
-  | Evar_empty -> Evd.evar_concl evi
-  | Evar_defined b -> Retyping.get_type_of env sigma b (* FIXME ? *)
-  in
+  let concl = Evd.evar_concl evi in
   let pc = pr_leconstr_env env sigma concl in
   let candidates =
-    match Evd.evar_body evi with
-    | Evar_empty ->
-      begin match Evd.evar_candidates evi with
-      | None -> mt ()
-      | Some l ->
-       spc () ++ str "= {" ++
-         prlist_with_sep (fun () -> str "|") (pr_leconstr_env env sigma) l ++ str "}"
-      end
-    | _ ->
-       mt ()
+    begin match Evd.evar_candidates evi with
+    | None -> mt ()
+    | Some l ->
+      spc () ++ str "= {" ++
+      prlist_with_sep (fun () -> str "|") (pr_leconstr_env env sigma) l ++ str "}"
+    end
   in
   hov 0 (str"[" ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" ++
            candidates ++ warn)
@@ -589,15 +582,16 @@ let pr_evars_int sigma ~shelf ~given_up i evs =
     sigma i (Evar.Map.bindings evs)
 
 let pr_evars sigma evs =
-  pr_evars_int_hd (fun i evk (EvarInfo evi) -> pr_evar sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
+  pr_evars_int_hd (fun i evk evi -> pr_evar sigma (evk,evi)) sigma 1 (Evar.Map.bindings evs)
 
 (* Display a list of evars given by their name, with a prefix *)
 let pr_ne_evar_set hd tl sigma l =
   if l != Evar.Set.empty then
-    let l = Evar.Set.fold (fun ev ->
-      let EvarInfo evi = Evd.find sigma ev in
-      Evar.Map.add ev (EvarInfo (Evarutil.nf_evar_info sigma evi)))
-      l Evar.Map.empty in
+    let l = Evar.Map.bind (fun ev ->
+        let evi = Evd.find_undefined sigma ev in
+        Evarutil.nf_evar_info sigma evi)
+        l
+    in
     hd ++ pr_evars sigma l ++ tl
   else
     mt ()
