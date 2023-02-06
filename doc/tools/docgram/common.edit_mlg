@@ -469,6 +469,15 @@ closed_binder: [
 | MOVETO generalizing_binder "`[" LIST1 typeclass_constraint SEP "," "]"
 ]
 
+(* next two used internally  for declaring notations *)
+one_closed_binder: [
+| DELETENT
+]
+
+one_open_binder: [
+| DELETENT
+]
+
 name_colon: [
 | name ":"
 ]
@@ -583,6 +592,14 @@ finite_token: [
 ]
 
 inductive_token: [
+| DELETENT
+]
+
+inductive_or_record_definition: [
+| DELETENT
+]
+
+constructors_or_record: [
 | DELETENT
 ]
 
@@ -758,11 +775,6 @@ hexnat: [
 bignat: [
 | REPLACE NUMBER
 | WITH [ decnat | hexnat ]
-]
-
-integer: [
-| REPLACE bigint
-| WITH OPT "-" natural
 ]
 
 number: [
@@ -1508,17 +1520,6 @@ type_cstr: [
 | WITH ":" type
 ]
 
-(* note that constructor -> identref constructor_type *)
-constructors_or_record: [
-| DELETE "|" LIST1 constructor SEP "|"
-| REPLACE identref constructor_type "|" LIST1 constructor SEP "|"
-| WITH OPT "|" LIST1 constructor SEP "|"
-| DELETE identref constructor_type
-| REPLACE identref "{" record_fields "}" default_inhabitant_ident
-| WITH OPT identref "{" record_fields "}" default_inhabitant_ident
-| DELETE "{" record_fields "}" default_inhabitant_ident
-]
-
 record_binder: [
 | REPLACE name field_body
 | WITH name OPT field_body
@@ -1745,9 +1746,8 @@ tactic_mode: [
 | WITH OPT ( [ natural | "[" ident "]" ] ":" ) "{"
 | MOVETO simple_tactic OPT ( [ natural | "[" ident "]" ] ":" ) "{"
 | DELETE simple_tactic
+| DELETENT
 ]
-
-tactic_mode: [ | DELETENT ]
 
 ltac2_scope: [
 | REPLACE syn_node      (* Ltac2 plugin *)
@@ -1757,7 +1757,12 @@ ltac2_scope: [
 ]
 
 tac2mode: [
-| DELETE "par" ":" ltac2_expr6 ltac_use_default
+| DELETENT
+]
+
+(* not sure how this is used *)
+tac2expr_in_env: [
+| DELETENT
 ]
 
 syn_node: [ | DELETENT ]
@@ -1795,6 +1800,8 @@ vernac_aux: [
 | DELETE gallina_ext "."
 | DELETE syntax "."
 | DELETE command_entry
+| DELETE subprf
+| DELETENT
 ]
 
 command: [
@@ -2147,6 +2154,10 @@ subprf: [
 | "{" (* should be removed.  See https://github.com/coq/coq/issues/12004 *)
 ]
 
+subprf: [
+| DELETENT
+]
+
 ltac2_expr: [
 | DELETE _ltac2_expr
 ]
@@ -2432,6 +2443,7 @@ SPLICE: [
 | enable_notation_interpretation
 | enable_notation_flags
 | opt_scope
+| lident
 ] (* end SPLICE *)
 
 RENAME: [
@@ -2504,6 +2516,7 @@ SPLICE: [
 | ltac2_constructs
 | ltac_defined_tactics
 | tactic_notation_tactics
+| bullet
 ]
 
 REACHABLE: [
@@ -2512,7 +2525,11 @@ REACHABLE: [
 ]
 
 NOTINRSTS: [
+| command
+| control_command
+| query_command
 | simple_tactic
+| hints_regexp (* manually inserted *)
 | REACHABLE
 | NOTINRSTS
 | l1_tactic
@@ -2542,8 +2559,6 @@ NOTINRSTS: [
 | q_assert
 | q_constr_matching
 | q_goal_matching
-
-
 ]
 
 REACHABLE: [

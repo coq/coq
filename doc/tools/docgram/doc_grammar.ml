@@ -303,6 +303,8 @@ module DocGram = struct
 end
 open DocGram
 
+let remove_Sedit2 p =
+  List.filter (fun sym -> match sym with | Sedit2 _ -> false | _ -> true) p
 
 let rec output_prodn = function
   | Sterm s ->
@@ -356,7 +358,7 @@ and prod_to_prodn_r prod =
   | p :: tl -> (output_prodn p) :: (prod_to_prodn_r tl)
   | [] -> []
 
-and prod_to_prodn prod = String.concat " " (prod_to_prodn_r prod)
+and prod_to_prodn prod = String.concat " " (prod_to_prodn_r (remove_Sedit2 prod))
 
 let get_tag file prod =
   List.fold_left (fun rv sym ->
@@ -925,6 +927,7 @@ let global_repl g pat repl =
 (*** splice: replace a reference to a nonterminal with its definition ***)
 
 (* todo: create a better splice routine *)
+(* todo: remove extraneous "(* ltac2 plugin *)" in Ltac2 Notation cmd *)
 let apply_splice g edit_map =
   List.iter (fun b ->
       let (nt0, prods0) = b in

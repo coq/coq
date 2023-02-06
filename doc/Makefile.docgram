@@ -68,7 +68,7 @@ doc_gram: doc/tools/docgram/fullGrammar
 
 doc_gram_verify: $(DOC_GRAM) $(DOC_MLGS)
 	$(SHOW)'DOC_GRAM_VERIFY'
-	$(HIDE)$(DOC_GRAM) -no-warn -verify $(DOC_MLGS) $(DOC_RSTS)
+	$(HIDE)$(DOC_GRAM) -no-warn -verify -check-cmds -check-tacs $(DOC_MLGS) $(DOC_RSTS)
 
 doc_gram_rsts: doc/tools/docgram/updated_rsts
 

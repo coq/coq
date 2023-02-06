@@ -285,7 +285,7 @@ There is dedicated syntax for list and array literals.
    | @string
    | @qualid
    | @ @ident
-   | & @lident
+   | & @ident
    | ' @term
    | @ltac2_quotations
 
@@ -571,7 +571,7 @@ Built-in quotations
 .. insertprodn ltac2_quotations ltac1_expr_in_env
 
 .. prodn::
-   ltac2_quotations ::= ident : ( @lident )
+   ltac2_quotations ::= ident : ( @ident )
    | constr : ( @term )
    | open_constr : ( @term )
    | preterm : ( @term )
@@ -1161,7 +1161,7 @@ Match on values
       | @qualid
       | @tac2pat0 :: @tac2pat0
       | @tac2pat0 %| {+| @tac2pat1 }
-      | @tac2pat0 as @lident
+      | @tac2pat0 as @ident
       | @tac2pat0
       tac2pat0 ::= _
       | ()
@@ -1283,7 +1283,7 @@ Notations
 Abbreviations
 ~~~~~~~~~~~~~
 
-.. cmd:: Ltac2 Notation {| @string | @lident } := @ltac2_expr
+.. cmd:: Ltac2 Notation {| @string | @ident } := @ltac2_expr
    :name: Ltac2 Notation (abbreviation)
 
    Introduces a special kind of notation, called an abbreviation,
@@ -1577,8 +1577,8 @@ Here is the syntax for the :n:`q_*` nonterminals:
    | _
    | @ltac2_or_and_intropattern
    | @ltac2_equality_intropattern
-   ltac2_naming_intropattern ::= ? @lident
-   | ?$ @lident
+   ltac2_naming_intropattern ::= ?@ident
+   | ?$ @ident
    | ?
    | @ident_or_anti
    ltac2_or_and_intropattern ::= [ {+| @ltac2_intropatterns } ]
@@ -1592,14 +1592,14 @@ Here is the syntax for the :n:`q_*` nonterminals:
 .. insertprodn ident_or_anti ident_or_anti
 
 .. prodn::
-   ident_or_anti ::= @lident
+   ident_or_anti ::= @ident
    | $ @ident
 
 .. insertprodn 	ltac2_destruction_arg ltac2_constr_with_bindings
 
 .. prodn::
    ltac2_destruction_arg ::= @natural
-   | @lident
+   | @ident
    | @ltac2_constr_with_bindings
    ltac2_constr_with_bindings ::= @term {? with @ltac2_bindings }
 
@@ -1612,7 +1612,7 @@ Here is the syntax for the :n:`q_*` nonterminals:
    ltac2_simple_binding ::= ( @qhyp := @term )
    qhyp ::= $ @ident
    | @natural
-   | @lident
+   | @ident
 
 .. insertprodn ltac2_reductions ltac2_delta_reductions
 
