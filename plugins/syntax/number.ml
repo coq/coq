@@ -153,14 +153,10 @@ let error_missing c =
   CErrors.user_err
     (str "Missing mapping for constructor " ++ Printer.pr_global c ++ str ".")
 
-let pr_constr env sigma c =
-  let c = Constrextern.extern_constr env sigma (EConstr.of_constr c) in
-  Ppconstr.pr_constr_expr env sigma c
-
 let warn_via_remapping =
   CWarnings.create ~name:"via-type-remapping" ~category:"numbers"
     (fun (env, sigma, ty, ty', ty'') ->
-      let constr = pr_constr env sigma in
+      let constr = Printer.pr_constr_env env sigma in
       constr ty ++ str " was already mapped to" ++ spc () ++ constr ty'
       ++ str ", mapping it also to" ++ spc () ++ constr ty''
       ++ str " might yield ill typed terms when using the notation.")
@@ -168,7 +164,7 @@ let warn_via_remapping =
 let warn_via_type_mismatch =
   CWarnings.create ~name:"via-type-mismatch" ~category:"numbers"
     (fun (env, sigma, g, g', exp, actual) ->
-      let constr = pr_constr env sigma in
+      let constr = Printer.pr_constr_env env sigma in
       str "Type of" ++ spc() ++ Printer.pr_global g
       ++ str " seems incompatible with the type of" ++ spc ()
       ++ Printer.pr_global g' ++ str "." ++ spc ()
