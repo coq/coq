@@ -165,8 +165,13 @@ val wit_ltac2in1_val : (Id.t CAst.t list * raw_tacexpr, glb_tacexpr, Util.Empty.
 val wit_ltac2_constr : (raw_tacexpr, Id.Set.t * glb_tacexpr, Util.Empty.t) genarg_type
 (** Ltac2 quotations in Gallina terms *)
 
-val wit_ltac2_quotation : (Id.t Loc.located, Id.t, Util.Empty.t) genarg_type
-(** Ltac2 quotations for variables "$x" in Gallina terms *)
+type var_quotation_kind =
+  | ConstrVar
+  | PretermVar
+
+val wit_ltac2_var_quotation : (lident option * lident, var_quotation_kind * Id.t, Util.Empty.t) genarg_type
+(** Ltac2 quotations for variables "$x" or "$kind:foo" in Gallina terms.
+    NB: "$x" means "$constr:x" *)
 
 val wit_ltac2_val : (Util.Empty.t, unit, Util.Empty.t) genarg_type
 (** Embedding Ltac2 closures of type [Ltac1.t -> Ltac1.t] inside Ltac1. There is

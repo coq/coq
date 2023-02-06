@@ -745,9 +745,19 @@ the notation section.
 
 .. prodn:: term += $@lident
 
+or equivalently
+
+.. prodn:: term += $constr:@lident
+
 In a Coq term, writing :g:`$x` is semantically equivalent to
 :g:`ltac2:(Control.refine (fun () => x))`, up to re-typechecking. It allows to
 insert in a concise way an Ltac2 variable of type :n:`constr` into a Coq term.
+
+Similarly variables of type `preterm` have an antiquotation
+
+.. prodn:: term += $preterm:@lident
+
+It is equivalent to pretyping the preterm with the appropriate typing constraint.
 
 Match over terms
 ~~~~~~~~~~~~~~~~
