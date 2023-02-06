@@ -162,7 +162,8 @@ let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
       in
       prlist_with_sep spc (pr_decl env sigma) (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
-  let pty = print_constr env sigma (Evd.evar_concl evi) in
+(*   let pty = print_constr env sigma (Evd.evar_concl evi) in *)
+  let pty = mt () in (* FIXME *)
   let pb =
     match Evd.evar_body evi with
       | Evar_empty -> mt ()

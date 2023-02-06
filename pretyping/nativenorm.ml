@@ -412,7 +412,7 @@ and nf_predicate env sigma ind mip params pctx v pT =
     | _ -> assert false
 
 and nf_evar env sigma evk args =
-  let EvarInfo evi = try Evd.find sigma evk with Not_found -> assert false in
+  let evi = try Evd.find_undefined sigma evk with Not_found -> assert false in
   let hyps = EConstr.named_context_of_val (Evd.evar_filtered_hyps evi) in
   if List.is_empty hyps then begin
     assert (Array.is_empty args);

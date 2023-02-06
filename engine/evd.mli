@@ -108,7 +108,7 @@ type any_evar_info = EvarInfo : 'a evar_info -> any_evar_info
 
 (** {6 Projections from evar infos} *)
 
-val evar_concl : 'a evar_info -> econstr
+val evar_concl : undefined evar_info -> econstr
 (** Type of the evar. *)
 
 val evar_context : 'a evar_info -> (econstr, etypes) Context.Named.pt
@@ -217,7 +217,7 @@ val find_undefined : evar_map -> Evar.t -> undefined evar_info
 val remove : evar_map -> Evar.t -> evar_map
 (** Remove an evar from an evar map. Use with caution. *)
 
-val undefine : evar_map -> Evar.t -> evar_map [@@ocaml.deprecated]
+val undefine : evar_map -> Evar.t -> etypes -> evar_map [@@ocaml.deprecated]
 (** Remove the body of an evar. Only there for backward compat, do not use. *)
 
 val mem : evar_map -> Evar.t -> bool
