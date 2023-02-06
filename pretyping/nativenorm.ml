@@ -317,21 +317,27 @@ and nf_atom_type env sigma atom =
       mkVar id, Typeops.type_of_variable env id
   | Acase(ans,accu,p,bs) ->
       let a,ta = nf_accu_type env sigma accu in
-      let ((mind,_),u as ind),allargs = find_rectype_a env sigma (EConstr.of_constr ta) in
-      let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
+      let ((mind, _ as ind), u),allargs = find_rectype_a env sigma (EConstr.of_constr ta) in
+      let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
       let params,realargs = Array.chop nparams allargs in
-      let iv = if Typeops.should_invert_case env ans.asw_ci then
-          CaseInvert {indices=realargs}
-        else NoInvert
+      let pctx =
+        let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+        let params = Vars.subst_of_rel_context_instance paramdecl params in
+        let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+        let self =
+          let u = Univ.(Instance.of_array (Array.init (Instance.length u) Level.var)) in
+          let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
+          mkApp (mkIndU (ind, u), args)
+        in
+        let na = Context.make_annot (Name (Id.of_string "c")) mip.mind_relevance in
+        let realdecls = LocalAssum (na, self) :: realdecls in
+        let nas = Array.of_list @@ List.rev_map get_annot realdecls in
+        instantiate_context u params nas realdecls
       in
-      let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
-      let pT =
-        hnf_prod_applist_decls env nparamdecls
-          (Inductiveops.type_of_inductive env ind) (Array.to_list params) in
-      let pctx, p = nf_predicate env sigma ind mip params [] p pT in
+      let p = nf_predicate env sigma ind mip params p pctx in
       (* Calcul du type des branches *)
-      let btypes = build_branches_type env sigma mib mip ind params (pctx, p) in
+      let btypes = build_branches_type env sigma mib mip (ind, u) params (pctx, p) in
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) ans bs in
       let mkbranch i v =
@@ -343,6 +349,10 @@ and nf_atom_type env sigma atom =
       let tcase = build_case_type (pctx, p) realargs a in
       let p = (get_case_annot pctx, p) in
       let ci = ans.asw_ci in
+      let iv = if Typeops.should_invert_case env ans.asw_ci then
+          CaseInvert {indices=realargs}
+        else NoInvert
+      in
       mkCase (ci, u, params, p, iv, a, branchs), tcase
   | Afix(tt,ft,rp,s) ->
       let tt = Array.map (fun t -> nf_type_sort env sigma t) tt in
@@ -379,37 +389,18 @@ and nf_atom_type env sigma atom =
       uj.uj_val, uj.uj_type
 
 
-and nf_predicate env sigma ind mip params pctx v pT =
-  match kind (whd_allnolet env pT) with
-  | LetIn (name,b,t,pT) ->
-    let decl = LocalDef (name, b, t) in
-    nf_predicate (push_rel decl env) sigma ind mip params (decl :: pctx) v pT
-  | Prod (name,dom,codom) -> begin
+and nf_predicate env sigma ind mip params v pctx =
+  let fold decl (k, v) = match decl with
+  | LocalDef _ -> (k + 1, v)
+  | LocalAssum _ ->
     match kind_of_value v with
-    | Vfun f ->
-      let k = nb_rel env in
-      let vb = f (mk_rel_accu k) in
-      let decl = LocalAssum (name, dom) in
-      nf_predicate (push_rel decl env) sigma ind mip params (decl :: pctx) vb codom
+    | Vfun f -> (k + 1, f (mk_rel_accu k))
     | _ -> assert false
-    end
-  | _ ->
-    match kind_of_value v with
-    | Vfun f ->
-      let k = nb_rel env in
-      let vb = f (mk_rel_accu k) in
-      let name = Name (Id.of_string "c") in
-      let n = mip.mind_nrealargs in
-      let rargs = Array.init n (fun i -> mkRel (n-i)) in
-      let params = if Int.equal n 0 then params else Array.map (lift n) params in
-      let dom = mkApp(mkIndU ind,Array.append params rargs) in
-      let r = Inductive.relevance_of_inductive env (fst ind) in
-      let name = make_annot name r in
-      let decl = LocalAssum (name, dom) in
-      let env = push_rel decl env in
-      let body = nf_type env sigma vb in
-      decl :: pctx, body
-    | _ -> assert false
+  in
+  let (_, v) = List.fold_right fold pctx (nb_rel env, v) in
+  let env = push_rel_context pctx env in
+  let body = nf_type env sigma v in
+  body
 
 and nf_evar env sigma evk args =
   let evi = try Evd.find_undefined sigma evk with Not_found -> assert false in
