@@ -64,6 +64,10 @@ let constr_entry_key_gen_eq f v1 v2 = match v1, v2 with
 let constr_entry_key_eq =
   constr_entry_key_gen_eq (Util.eq_pair production_level_eq production_position_eq)
 
+let constr_entry_key_visible_eq =
+  constr_entry_key_gen_eq (fun _ _ -> true)
+
+
 (** Entries level (left-hand side of grammar rules) *)
 
 type constr_entry_key =
@@ -73,6 +77,9 @@ type constr_entry_key =
 
 type simple_constr_prod_entry_key =
     production_level constr_entry_key_gen
+
+let simple_constr_entry_key_eq =
+  constr_entry_key_gen_eq production_level_eq
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 

@@ -99,47 +99,69 @@ let explicitation_eq pos1 pos2 = match pos1, pos2 with
 | ExplByPos n1, ExplByPos n2 -> Int.equal n1 n2
 | (ExplByName _ | ExplByPos _), _ -> false
 
-let rec cases_pattern_expr_eq p1 p2 =
-  if CAst.(p1.v == p2.v) then true
-  else match CAst.(p1.v, p2.v) with
-  | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
-      CAst.eq Name.equal i1 i2 && cases_pattern_expr_eq a1 a2
-  | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
-      qualid_eq c1 c2 &&
-      Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
-      List.equal cases_pattern_expr_eq b1 b2
-  | CPatAtom(r1), CPatAtom(r2) ->
-    Option.equal qualid_eq r1 r2
-  | CPatOr a1, CPatOr a2 ->
-    List.equal cases_pattern_expr_eq a1 a2
-  | CPatNotation (inscope1, n1, s1, l1), CPatNotation (inscope2, n2, s2, l2) ->
-    Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
-    notation_eq n1 n2 &&
-    cases_pattern_notation_substitution_eq s1 s2 &&
-    List.equal cases_pattern_expr_eq l1 l2
-  | CPatPrim i1, CPatPrim i2 ->
-    prim_token_eq i1 i2
-  | CPatRecord l1, CPatRecord l2 ->
-    let equal (r1, e1) (r2, e2) =
-      qualid_eq r1 r2 && cases_pattern_expr_eq e1 e2
-    in
-    List.equal equal l1 l2
-  | CPatDelimiters(depth1,s1,e1), CPatDelimiters(depth2,s2,e2) ->
-    depth1 = depth2 && String.equal s1 s2 && cases_pattern_expr_eq e1 e2
-  | _ -> false
-
-and cases_pattern_notation_substitution_eq (s1, n1, b1) (s2, n2, b2) =
-  List.equal cases_pattern_expr_eq s1 s2 &&
-  List.equal (List.equal cases_pattern_expr_eq) n1 n2 &&
-  List.equal (eq_pair cases_pattern_expr_eq Glob_ops.binding_kind_eq) b1 b2
-
-let kinded_cases_pattern_expr_eq (p1,bk1) (p2,bk2) =
-  cases_pattern_expr_eq p1 p2 && Glob_ops.binding_kind_eq bk1 bk2
-
 (* We use a functor to avoid passing the recursion all over the place *)
-module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end) = struct
+module EqGen (A:sig
+    val constr_expr_eq : constr_expr -> constr_expr -> bool
+    val cases_pattern_expr_eq : cases_pattern_expr -> cases_pattern_expr -> bool
+  end) = struct
 
   open A
+
+  let local_binder_eq l1 l2 = match l1, l2 with
+    | CLocalDef (n1, _, e1, t1), CLocalDef (n2, _, e2, t2) ->
+      CAst.eq Name.equal n1 n2 && constr_expr_eq e1 e2 && Option.equal constr_expr_eq t1 t2
+    | CLocalAssum (n1, _, _, e1), CLocalAssum (n2, _, _, e2) ->
+      (* Don't care about the metadata *)
+      List.equal (CAst.eq Name.equal) n1 n2 && constr_expr_eq e1 e2
+    | _ -> false
+
+  let kinded_cases_pattern_expr_eq (p1,bk1) (p2,bk2) =
+    cases_pattern_expr_eq p1 p2 && Glob_ops.binding_kind_eq bk1 bk2
+
+  let notation_arg_kind_eq a1 a2 = match a1, a2 with
+    | NtnTypeArgConstr a1, NtnTypeArgConstr a2 -> constr_expr_eq a1 a2
+    | NtnTypeArgPattern b1, NtnTypeArgPattern b2 -> kinded_cases_pattern_expr_eq b1 b2
+    | NtnTypeArgBinders bll1, NtnTypeArgBinders bll2 -> List.equal local_binder_eq bll1 bll2
+    | (NtnTypeArgConstr _ | NtnTypeArgPattern _ | NtnTypeArgBinders _), _ -> false
+
+  let rec notation_arg_type_eq a1 a2 = match a1, a2 with
+    | NtnTypeArg v1, NtnTypeArg v2 -> notation_arg_kind_eq v1 v2
+    | NtnTypeArgList l1, NtnTypeArgList l2 -> List.equal notation_arg_type_eq l1 l2
+    | NtnTypeArgTuple l1, NtnTypeArgTuple l2 -> List.equal notation_arg_type_eq l1 l2
+    | (NtnTypeArg _ | NtnTypeArgList _ | NtnTypeArgTuple _), _ -> false
+
+  let notation_substitution_eq s1 s2 =
+    List.equal notation_arg_type_eq s1 s2
+
+  let rec cases_pattern_expr_eq p1 p2 =
+    if CAst.(p1.v == p2.v) then true
+    else match CAst.(p1.v, p2.v) with
+    | CPatAlias(a1,i1), CPatAlias(a2,i2) ->
+        CAst.eq Name.equal i1 i2 && cases_pattern_expr_eq a1 a2
+    | CPatCstr(c1,a1,b1), CPatCstr(c2,a2,b2) ->
+        qualid_eq c1 c2 &&
+        Option.equal (List.equal cases_pattern_expr_eq) a1 a2 &&
+        List.equal cases_pattern_expr_eq b1 b2
+    | CPatAtom(r1), CPatAtom(r2) ->
+      Option.equal qualid_eq r1 r2
+    | CPatOr a1, CPatOr a2 ->
+      List.equal cases_pattern_expr_eq a1 a2
+    | CPatNotation (inscope1, n1, s1, l1), CPatNotation (inscope2, n2, s2, l2) ->
+      Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
+      notation_eq n1 n2 &&
+      notation_substitution_eq s1 s2 &&
+      List.equal cases_pattern_expr_eq l1 l2
+    | CPatPrim i1, CPatPrim i2 ->
+      prim_token_eq i1 i2
+    | CPatRecord l1, CPatRecord l2 ->
+      let equal (r1, e1) (r2, e2) =
+        qualid_eq r1 r2 && cases_pattern_expr_eq e1 e2
+      in
+      List.equal equal l1 l2
+    | CPatDelimiters(depth1,s1,e1), CPatDelimiters(depth2,s2,e2) ->
+      depth1 = depth2 && String.equal s1 s2 && cases_pattern_expr_eq e1 e2
+    | _ -> false
+
   let args_eq (a1,e1) (a2,e2) =
     Option.equal (CAst.eq explicitation_eq) e1 e2 &&
     constr_expr_eq a1 a2
@@ -164,14 +186,6 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
 
   let recursion_order_expr_eq r1 r2 = CAst.eq recursion_order_expr_eq_r r1 r2
 
-  let local_binder_eq l1 l2 = match l1, l2 with
-    | CLocalDef (n1, _, e1, t1), CLocalDef (n2, _, e2, t2) ->
-      CAst.eq Name.equal n1 n2 && constr_expr_eq e1 e2 && Option.equal constr_expr_eq t1 t2
-    | CLocalAssum (n1, _, _, e1), CLocalAssum (n2, _, _, e2) ->
-      (* Don't care about the metadata *)
-      List.equal (CAst.eq Name.equal) n1 n2 && constr_expr_eq e1 e2
-    | _ -> false
-
   let fix_expr_eq (id1,_,r1,bl1,a1,b1) (id2,_,r2,bl2,a2,b2) =
     (lident_eq id1 id2) &&
     Option.equal recursion_order_expr_eq r1 r2 &&
@@ -184,12 +198,6 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
     List.equal local_binder_eq bl1 bl2 &&
     constr_expr_eq a1 a2 &&
     constr_expr_eq b1 b2
-
-  let constr_notation_substitution_eq (e1, el1, b1, bl1) (e2, el2, b2, bl2) =
-    List.equal constr_expr_eq e1 e2 &&
-    List.equal (List.equal constr_expr_eq) el1 el2 &&
-    List.equal kinded_cases_pattern_expr_eq b1 b2 &&
-    List.equal (List.equal local_binder_eq) bl1 bl2
 
   let instance_eq (x1,c1) (x2,c2) =
     Id.equal x1.CAst.v x2.CAst.v && constr_expr_eq c1 c2
@@ -263,7 +271,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
       | CNotation(inscope1, n1, s1), CNotation(inscope2, n2, s2) ->
         Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
         notation_eq n1 n2 &&
-        constr_notation_substitution_eq s1 s2
+        notation_substitution_eq s1 s2
       | CPrim i1, CPrim i2 ->
         prim_token_eq i1 i2
       | CGeneralization (bk1, e1), CGeneralization (bk2, e2) ->
@@ -285,14 +293,23 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
 
 end
 
-let constr_expr_eq_gen eq =
-  let module Eq = EqGen(struct let constr_expr_eq = eq end) in
+let constr_expr_eq_gen eq_constr eq_cases_pattern =
+  let module Eq = EqGen(struct let constr_expr_eq = eq_constr let cases_pattern_expr_eq = eq_cases_pattern end) in
   Eq.constr_expr_eq
 
+let cases_pattern_expr_eq_gen eq_constr eq_cases_pattern =
+  let module Eq = EqGen(struct let constr_expr_eq = eq_constr let cases_pattern_expr_eq = eq_cases_pattern end) in
+  Eq.cases_pattern_expr_eq
+
 module Eq = EqGen(struct
-    let rec constr_expr_eq c1 c2 = constr_expr_eq_gen constr_expr_eq c1 c2
+    let rec constr_expr_eq c1 c2 = constr_expr_eq_gen constr_expr_eq cases_pattern_expr_eq c1 c2
+    and cases_pattern_expr_eq c1 c2 = cases_pattern_expr_eq_gen constr_expr_eq cases_pattern_expr_eq c1 c2
   end)
 include Eq
+
+let rec cases_pattern_expr_eq_gen' eq_constr c = cases_pattern_expr_eq_gen eq_constr (cases_pattern_expr_eq_gen eq_constr (cases_pattern_expr_eq_gen' eq_constr)) c
+
+let constr_expr_eq_gen eq_constr = constr_expr_eq_gen eq_constr (cases_pattern_expr_eq_gen' eq_constr)
 
 let constr_loc c = CAst.(c.loc)
 let cases_pattern_expr_loc cp = CAst.(cp.loc)
@@ -318,6 +335,36 @@ let is_constructor id =
   | None -> false
   | Some gref -> Globnames.isConstructRef gref
 
+let notation_arg_kind_fold k1 k2 k3 acc = function
+  | NtnTypeArgConstr a -> k1 acc a
+  | NtnTypeArgPattern (pat,_) -> k2 acc pat
+  | NtnTypeArgBinders binder -> k3 acc binder
+
+let rec notation_arg_type_fold k1 k2 k3 acc = function
+  | NtnTypeArg a -> notation_arg_kind_fold k1 k2 k3 acc a
+  | NtnTypeArgList l -> List.fold_left (notation_arg_type_fold k1 k2 k3) acc l
+  | NtnTypeArgTuple l -> List.fold_left (notation_arg_type_fold k1 k2 k3) acc l
+
+let notation_arg_kind_fold_map k1 k2 k3 acc = function
+  | NtnTypeArgConstr a -> let acc, a = k1 acc a in acc, NtnTypeArgConstr a
+  | NtnTypeArgPattern (pat,kd) -> let acc, pat = k2 acc pat in acc, NtnTypeArgPattern (pat,kd)
+  | NtnTypeArgBinders binder -> let acc, binder = k3 acc binder in acc, NtnTypeArgBinders binder
+
+let rec notation_arg_type_fold_map k1 k2 k3 acc = function
+  | NtnTypeArg a -> let acc, a = notation_arg_kind_fold_map k1 k2 k3 acc a in acc, NtnTypeArg a
+  | NtnTypeArgList l -> let acc, l = List.fold_left_map (notation_arg_type_fold_map k1 k2 k3) acc l in acc, NtnTypeArgList l
+  | NtnTypeArgTuple l -> let acc, l = List.fold_left_map (notation_arg_type_fold_map k1 k2 k3) acc l in acc, NtnTypeArgTuple l
+
+let notation_arg_kind_map k1 k2 k3 = function
+  | NtnTypeArgConstr a -> NtnTypeArgConstr (k1 a)
+  | NtnTypeArgPattern (pat,kd) -> NtnTypeArgPattern (k2 pat,kd)
+  | NtnTypeArgBinders binder -> NtnTypeArgBinders (k3 binder)
+
+let rec notation_arg_type_map k1 k2 k3 = function
+  | NtnTypeArg a -> NtnTypeArg (notation_arg_kind_map k1 k2 k3 a)
+  | NtnTypeArgList l -> NtnTypeArgList (List.map (notation_arg_type_map k1 k2 k3) l)
+  | NtnTypeArgTuple l -> NtnTypeArgTuple (List.map (notation_arg_type_map k1 k2 k3) l)
+
 let rec cases_pattern_fold_names f h nacc pt = match CAst.(pt.v) with
   | CPatRecord l ->
     List.fold_left (fun nacc (r, cp) -> cases_pattern_fold_names f h nacc cp) nacc l
@@ -327,10 +374,13 @@ let rec cases_pattern_fold_names f h nacc pt = match CAst.(pt.v) with
   | CPatCstr (_,patl1,patl2) ->
     List.fold_left (cases_pattern_fold_names f h)
       (Option.fold_left (List.fold_left (cases_pattern_fold_names f h)) nacc patl1) patl2
-  | CPatNotation (_,_,(patl,patll,binderl),patl') ->
+  | CPatNotation (_,_,subst,patl') ->
     List.fold_left (cases_pattern_fold_names f h)
-      (List.fold_left (cases_pattern_fold_names f h) nacc
-         (patl@List.flatten patll@List.map fst binderl)) patl'
+      (List.fold_right (fun a x ->
+           notation_arg_type_fold h
+             (cases_pattern_fold_names f h)
+             (fun nacc _ -> nacc) x a)
+           subst nacc) patl'
   | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f h nacc pat
   | CPatAtom (Some qid)
       when qualid_is_ident qid && not (is_constructor @@ qualid_basename qid) ->
@@ -382,11 +432,12 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
     | CLetIn (na,a,t,b) ->
       f (Name.fold_right g (na.CAst.v) n) (Option.fold_left (f n) (f n acc a) t) b
     | CCast (a,_,b) -> f n (f n acc a) b
-    | CNotation (_,_,(l,ll,bl,bll)) ->
-      (* The following is an approximation: we don't know exactly if
-         an ident is binding nor to which subterms bindings apply *)
-      let acc = List.fold_left (f n) acc (l@List.flatten ll) in
-      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CAst.make @@ CHole (None)) bl) acc bll
+    | CNotation (_,_,subst) ->
+      List.fold_left (notation_arg_type_fold
+             (f n)
+             (fun acc a -> snd (cases_pattern_fold_names g (fun (n,acc) t -> (n,f n acc t)) (n,acc) a))
+             (fun acc a -> fold_local_binders g f n acc (CAst.make @@ CHole None) a))
+        acc subst
     | CGeneralization (_,c) -> f n acc c
     | CDelimiters (_,_,a) -> f n acc a
     | CRecord l -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
@@ -460,12 +511,15 @@ let rec fold_map_cases_pattern f h acc (CAst.{v=pt;loc} as p) = match pt with
     let acc, patl1 = Option.fold_left_map (List.fold_left_map (fold_map_cases_pattern f h)) acc patl1 in
     let acc, patl2 = List.fold_left_map (fold_map_cases_pattern f h) acc patl2 in
     acc, CAst.make ?loc (CPatCstr (c,patl1,patl2))
-  | CPatNotation (sc,ntn,(patl,patll,binderl),patl') ->
-    let acc, patl = List.fold_left_map (fold_map_cases_pattern f h) acc patl in
-    let acc, patll = List.fold_left_map (List.fold_left_map (fold_map_cases_pattern f h)) acc patll in
-    let acc, binderl' = List.fold_left_map (fold_fst (fold_map_cases_pattern f h)) acc binderl in
+  | CPatNotation (sc,ntn,subst,patl') ->
+    let acc, subst = List.fold_left_map
+        (notation_arg_type_fold_map
+          (fun acc c -> (acc, h acc c))
+          (fold_map_cases_pattern f h)
+          (fun _ _ -> assert false))
+        acc subst in
     let acc, patl' = List.fold_left_map (fold_map_cases_pattern f h) acc patl' in
-    acc, CAst.make ?loc (CPatNotation (sc,ntn,(patl,patll,binderl'),patl'))
+    acc, CAst.make ?loc (CPatNotation (sc,ntn,subst,patl'))
   | CPatDelimiters (depth,d,pat) ->
     let acc, p = fold_map_cases_pattern f h acc pat in
     acc, CAst.make ?loc (CPatDelimiters (depth,d,pat))
@@ -509,10 +563,12 @@ let map_constr_expr_with_binders g f e = CAst.map (function
     | CLetIn (na,a,t,b) ->
       CLetIn (na,f e a,Option.map (f e) t,f (Name.fold_right g (na.CAst.v) e) b)
     | CCast (a,k,c) -> CCast (f e a, k, f e c)
-    | CNotation (inscope,n,(l,ll,bl,bll)) ->
+    | CNotation (inscope,n,subst) ->
       (* This is an approximation because we don't know what binds what *)
-      CNotation (inscope,n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
-                    List.map (fun bl -> snd (fold_map_local_binders f g e bl)) bll))
+      CNotation (inscope,n,
+                 List.map (notation_arg_type_map (f e)
+                             (fun a -> snd (fold_map_cases_pattern g f e a))
+                             (fun a -> snd (fold_map_local_binders f g e a))) subst)
     | CGeneralization (b,c) -> CGeneralization (b,f e c)
     | CDelimiters (depth,s,a) -> CDelimiters (depth,s,f e a)
     | CRecord l -> CRecord (List.map (fun (id, c) -> (id, f e c)) l)
@@ -572,15 +628,11 @@ let locs_of_notation ?loc locs ntn =
     | (ba,ea)::l -> if Int.equal pos ba then aux ea l else (pos,ba)::aux ea l
   in aux bl (List.sort (fun l1 l2 -> fst l1 - fst l2) locs)
 
-let ntn_loc ?loc (args,argslist,binders,binderslist) =
+let ntn_loc ?loc subst =
   locs_of_notation ?loc
-    (List.map constr_loc (args@List.flatten argslist)@
-     List.map (fun (x,_) -> cases_pattern_expr_loc x) binders@
-     List.map local_binders_loc binderslist)
-
-let patntn_loc ?loc (args,argslist,binders) =
-  locs_of_notation ?loc
-    (List.map cases_pattern_expr_loc (args@List.flatten argslist@List.map fst binders))
+    (List.fold_left (notation_arg_type_fold (fun acc c -> constr_loc c :: acc)
+                        (fun acc x -> cases_pattern_expr_loc x :: acc)
+                        (fun acc bl -> local_binders_loc bl :: acc)) [] subst)
 
 let error_invalid_pattern_notation ?loc () =
   CErrors.user_err ?loc  (str "Invalid notation for pattern.")
@@ -649,6 +701,16 @@ let mkAppPattern ?loc p lp =
   | CPatNotation (inscope, n, s, l) -> CPatNotation (inscope, n , s, l@lp)
   | _ -> CErrors.user_err ?loc:p.loc (Pp.str "Such pattern cannot have arguments."))
 
+let notation_arg_kind_map_coerce k1 k2 k3 = function
+  | NtnTypeArgConstr a -> NtnTypeArgPattern (k1 a)
+  | NtnTypeArgPattern (pat,kd) -> NtnTypeArgPattern (k2 pat,kd)
+  | NtnTypeArgBinders binder -> NtnTypeArgBinders (k3 binder)
+
+let rec notation_arg_type_map_coerce k1 k2 k3 = function
+  | NtnTypeArg a -> NtnTypeArg (notation_arg_kind_map_coerce k1 k2 k3 a)
+  | NtnTypeArgList l -> NtnTypeArgList (List.map (notation_arg_type_map_coerce k1 k2 k3) l)
+  | NtnTypeArgTuple l -> NtnTypeArgTuple (List.map (notation_arg_type_map_coerce k1 k2 k3) l)
+
 let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CRef (r,None) ->
      CPatAtom (Some r)
@@ -661,10 +723,11 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v
   | CAppExpl ((r,i),args) ->
      CPatCstr (r,Some (List.map coerce_to_cases_pattern_expr args),[])
-  | CNotation (inscope,ntn,(c,cl,b,[])) ->
-     CPatNotation (inscope,ntn,(List.map coerce_to_cases_pattern_expr c,
-                                List.map (List.map coerce_to_cases_pattern_expr) cl,
-                                b),[])
+  | CNotation (inscope,ntn,subst) ->
+     CPatNotation (inscope,ntn,List.map (notation_arg_type_map_coerce
+                                           (fun c -> (coerce_to_cases_pattern_expr c, Explicit))
+                                           (fun c -> c)
+                                           (fun _ -> assert false)) subst, [])
   | CPrim p ->
      CPatPrim p
   | CRecord l ->
@@ -677,7 +740,6 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CRef (_, Some _) | CCast (_, (Some (VMcast|NATIVEcast) | None), _)
   | CFix _ | CCoFix _ | CApp _ | CProj _ | CCases _ | CLetTuple _ | CIf _
   | CPatVar _ | CEvar _
-  | CNotation (_,_,(_,_,_,_::_))
   | CHole (Some _) | CGenarg _ | CGenargGlob _ ->
     CErrors.user_err ?loc
                       (str "This expression should be coercible to a pattern.")
