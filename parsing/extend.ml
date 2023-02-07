@@ -79,6 +79,11 @@ type constr_entry_key =
 type 'custom simple_constr_prod_entry_key =
     ('custom, production_level) constr_entry_key_gen
 
+let simple_constr_entry_key_eq =
+  constr_entry_key_eq_gen
+    (Option.equal Notationextern.notation_binder_kind_eq)
+    production_level_eq
+
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 
 type binder_target = ForBinder | ForTerm

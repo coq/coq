@@ -108,7 +108,7 @@ module Interner : sig
   ; evar : t -> (Glob_term.existential_name CAst.t * (lident * constr_expr) list) fn
   ; sort : t -> sort_expr fn
   ; cast : t -> (constr_expr * Constr.cast_kind option * constr_expr) fn
-  ; notation : t -> (notation_with_optional_scope option * notation * constr_notation_substitution) fn
+  ; notation : t -> (notation_with_optional_scope option * notation * notation_substitution) fn
   ; generalization : t -> (Glob_term.binding_kind * constr_expr) fn
   ; prim : t -> prim_token fn
   ; delimiters : t -> (delimiter_depth * string * constr_expr) fn

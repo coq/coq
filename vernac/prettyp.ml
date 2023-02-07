@@ -1061,10 +1061,11 @@ let print_about_global_reference ?loc env ref udecl =
 let print_abbreviation_argument_scopes kn =
   let vars, _ = Abbreviation.find_interp kn in
   let scoped =
-    List.filter_map (fun (id,((_, scopes),_,_)) ->
-        match scopes with
-        | [] -> None
-        | l -> Some (id, l))
+    List.filter_map (fun (id,typ) ->
+        match typ with
+        | Notation_term.NtnTypeVar (((_, []),_),_) -> None
+        | Notation_term.NtnTypeVar (((_, l),_),_) -> Some (id, l)
+        | Notation_term.(NtnTypeVarList _ | NtnTypeVarTuple _) -> None)
       vars in
   if List.is_empty scoped then mt () else
     fnl () ++

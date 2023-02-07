@@ -83,13 +83,6 @@ let notation_binder_source_eq s1 s2 = match s1, s2 with
 | NtnBinderParsedAsConstr bk1, NtnBinderParsedAsConstr bk2 -> notation_binder_kind_eq bk1 bk2
 | (NtnBinderParsedAsSomeBinderKind _ | NtnBinderParsedAsBinder | NtnBinderParsedAsConstr _), _ -> false
 
-let ntpe_eq t1 t2 = match t1, t2 with
-| NtnTypeConstr, NtnTypeConstr -> true
-| NtnTypeBinder s1, NtnTypeBinder s2 -> notation_binder_source_eq s1 s2
-| NtnTypeConstrList, NtnTypeConstrList -> true
-| NtnTypeBinderList s1, NtnTypeBinderList s2 -> notation_binder_source_eq s1 s2
-| (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList _), _ -> false
-
 let delimiter_depth_eq d1 d2 = match d1, d2 with
 | DelimOnlyTmpScope, DelimOnlyTmpScope -> true
 | DelimUnboundedScope, DelimUnboundedScope -> true
@@ -101,15 +94,34 @@ let scope_delimiter_eq (d1, sc1) (d2, sc2) =
 let subscopes_eq sc1 sc2 =
   List.equal scope_delimiter_eq sc1 sc2
 
-let var_attributes_eq (_, ((entry1, sc1), binders1, tp1)) (_, ((entry2, sc2), binders2, tp2)) =
+let notation_var_constr_kind s1 s2 = match s1, s2 with
+| NtnAlwaysConstr, NtnAlwaysConstr -> true
+| NtnConstrForConstrAndPatternForPattern, NtnConstrForConstrAndPatternForPattern -> true
+| (NtnAlwaysConstr | NtnConstrForConstrAndPatternForPattern), _ -> false
+
+let ntpe_eq t1 t2 = match t1, t2 with
+| NtnTypeVarConstr s1, NtnTypeVarConstr s2 -> notation_var_constr_kind s1 s2
+| NtnTypeVarPattern s1, NtnTypeVarPattern s2 -> notation_binder_source_eq s1 s2
+| NtnTypeVarBinders s1, NtnTypeVarBinders s2 -> notation_binder_source_eq s1 s2
+| (NtnTypeVarConstr _ | NtnTypeVarPattern _ | NtnTypeVarBinders _), _ -> false
+
+let var_attributes_eq ((entry1, sc1), binders1) ((entry2, sc2), binders2) =
   notation_entry_relative_level_eq entry1 entry2 &&
   subscopes_eq sc1 sc2 &&
-  Id.Set.equal binders1 binders2 &&
-  ntpe_eq tp1 tp2
+  Id.Set.equal binders1 binders2
+
+let rec notation_var_kind_eq t1 t2 = match t1, t2 with
+| NtnTypeVar (attr1,t1), NtnTypeVar (attr2,t2) -> var_attributes_eq attr1 attr2 && ntpe_eq t1 t2
+| NtnTypeVarList t1, NtnTypeVarList t2 -> notation_var_kind_eq t1 t2
+| NtnTypeVarTuple l1, NtnTypeVarTuple l2 -> List.equal notation_var_kind_eq l1 l2
+| (NtnTypeVar _ | NtnTypeVarList _ | NtnTypeVarTuple _), _ -> false
+
+let vars_notation_type_eq (id1,t1) (id2,t2) =
+(*  Id.equal id1 id2 && *) notation_var_kind_eq t1 t2
 
 let interpretation_eq (vars1, t1 as x1) (vars2, t2 as x2) =
   x1 == x2 ||
-  List.equal var_attributes_eq vars1 vars2 &&
+  List.equal vars_notation_type_eq vars1 vars2 &&
   Notation_ops.eq_notation_constr (List.map fst vars1, List.map fst vars2) t1 t2
 
 let subscopes_mk_tmp = List.map (fun sc -> DelimOnlyTmpScope, sc)
