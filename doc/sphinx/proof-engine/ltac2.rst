@@ -1500,7 +1500,7 @@ Other nonterminals that have syntactic classes are listed here.
 
       * - :n:`destruction_arg`
         - :token:`ltac2_destruction_arg`
-        - :token:`destruction_arg`
+        - :token:`induction_arg`
 
       * - :n:`with_bindings`
         - :token:`q_with_bindings`

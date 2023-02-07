@@ -186,13 +186,6 @@ todo_include_todos = False
 # Extra warnings, including undefined references
 nitpicky = True
 
-nitpick_ignore = [ ('token', token) for token in [
-    'induction_clause',
-    'where',
-    'bindings_with_parameters',
-    'destruction_arg'
-]]
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
