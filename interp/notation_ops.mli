@@ -11,6 +11,7 @@
 open Names
 open Notation_term
 open Glob_term
+open Constrexpr
 
 (** Constr default entries *)
 
@@ -76,6 +77,8 @@ val glob_constr_of_notation_constr : ?loc:Loc.t -> notation_constr -> glob_const
 val pr_notation_info :
   (Glob_term.glob_constr -> Pp.t) -> Constrexpr.notation_key -> Notation_term.notation_constr -> Pp.t
 
+val dummy_subscopes : extended_subscopes * notation_var_binders
+
 (** {5 Matching a notation pattern against a [glob_constr]} *)
 
 (** [match_notation_constr] matches a [glob_constr] against a notation
@@ -85,22 +88,28 @@ exception No_match
 
 val print_parentheses : bool ref
 
+type 'a with_vars = Id.Set.t * (Name.t * Id.t) list * 'a
+
+(** Instances of notation variables, with their type as interpreted in
+    a term; also, when a variable is used both as term and binder, it
+    is represented as a a pattern *)
+type 'a glob_constr_notation_substitution =
+  ('a glob_constr_g with_vars, 'a cases_pattern_disjunction_g with_vars, 'a extended_glob_local_binder_g list with_vars) notation_arg_type
+    Id.Map.t
+
 val match_notation_constr : print_univ:bool -> 'a glob_constr_g -> vars:Id.Set.t -> interpretation ->
-      ((Id.Set.t * 'a glob_constr_g) * extended_subscopes) list *
-      ((Id.Set.t * 'a glob_constr_g list) * extended_subscopes) list *
-      ((Id.Set.t * 'a cases_pattern_disjunction_g) * extended_subscopes) list *
-      ((Id.Set.t * 'a extended_glob_local_binder_g list) * extended_subscopes) list
+  'a glob_constr_notation_substitution
+
+(** Instances of notation variables, with their type as interpreted in
+    a pattern *)
+type 'a glob_cases_pattern_notation_substitution =
+  ('a glob_constr_g, 'a cases_pattern_g, unit) notation_arg_type
+    Id.Map.t
 
 val match_notation_constr_cases_pattern :
   'a cases_pattern_g -> interpretation ->
-  (('a cases_pattern_g * extended_subscopes) list *
-   ('a cases_pattern_g list * extended_subscopes) list *
-   ('a cases_pattern_g * extended_subscopes) list) *
-    (bool * int * 'a cases_pattern_g list)
+  'a glob_cases_pattern_notation_substitution * (bool * int * 'a cases_pattern_g list)
 
 val match_notation_constr_ind_pattern :
   inductive -> 'a cases_pattern_g list -> interpretation ->
-  (('a cases_pattern_g * extended_subscopes) list *
-   ('a cases_pattern_g list * extended_subscopes) list *
-   ('a cases_pattern_g * extended_subscopes) list) *
-    (bool * int * 'a cases_pattern_g list)
+  'a glob_cases_pattern_notation_substitution * (bool * int * 'a cases_pattern_g list)

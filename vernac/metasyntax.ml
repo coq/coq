@@ -251,12 +251,21 @@ let quote_notation_token x =
   if (n > 0 && norm) || (n > 2 && x.[0] == '\'') then "'"^x^"'"
   else x
 
+let rec notation_variables : type s. (s -> Id.t list) -> s notation_raw_type -> Id.t list =
+  fun f -> function
+  | NtnRawTypeVar x -> f x
+  | NtnRawTypeVarList typ -> notation_variables (fun (x,y) -> f x @ f y) typ
+  | NtnRawTypeVarTuple typs -> List.map_append (notation_variables f) typs
+
+let all_notation_variables =
+  List.map_append (notation_variables (fun x -> [x]))
+
 let analyze_notation_tokens ~onlyprinting ~infix entry df =
   let df = if infix then quote_notation_token df else df in
-  let { recvars; mainvars; symbols } as res = decompose_raw_notation df in
+  let { maintypes; symbols } as res = decompose_raw_notation df in
     (* don't check for nonlinearity if printing only, see Bug 5526 *)
   (if not onlyprinting then
-    match List.duplicates Id.equal (mainvars @ List.map snd recvars) with
+    match List.duplicates Id.equal (all_notation_variables maintypes) with
     | id :: _ ->
         user_err
           (str "Variable " ++ Id.print id ++ str " occurs more than once.")
@@ -268,7 +277,8 @@ let adjust_symbols vars notation_symbols =
   let x = Namegen.next_ident_away (Id.of_string "x") vars in
   let y = Namegen.next_ident_away (Id.of_string "y") (Id.Set.add x vars) in
   let notation_symbols = {
-      recvars = notation_symbols.recvars; mainvars = x::notation_symbols.mainvars@[y];
+      mainvars = x :: notation_symbols.mainvars @ [y];
+      maintypes = NtnRawTypeVar x :: notation_symbols.maintypes @ [NtnRawTypeVar y];
       symbols = NonTerminal x :: notation_symbols.symbols @ [NonTerminal y];
     } in
   x, y, notation_symbols
@@ -844,7 +854,7 @@ let warn_incompatible_format =
 
 type syntax_extension = {
   synext_level : level;
-  synext_nottyps : constr_entry_key list;
+  synext_nottyps : Notgram_ops.entry_types;
   synext_notgram : notation_grammar option;
   synext_notprint : generic_notation_printing_rules option;
 }
@@ -921,7 +931,7 @@ let check_prefix_incompatible_level ntn prec nottyps =
        let pref_nottyps = Notgram_ops.non_terminals_of_notation pref in
        let pref_nottyps = CList.firstn k pref_nottyps in
        let nottyps = CList.firstn k nottyps in
-       if not (level_eq prec pref_prec && List.for_all2 Extend.constr_entry_key_eq nottyps pref_nottyps) then
+       if not (level_eq prec pref_prec && List.for_all2 Extend.constr_entry_key_visible_eq nottyps pref_nottyps) then
          warn_prefix_incompatible_level (pref, ntn, pref_prec, pref_nottyps, prec, nottyps);
      with Not_found | Failure _ -> ()
 
@@ -937,9 +947,10 @@ let cache_one_syntax_extension (ntn,synext) =
         with Not_found -> None
       in
       let oldtyps = Notgram_ops.non_terminals_of_notation ntn in
-      if not (level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_eq synext.synext_nottyps oldtyps) &&
+      let nottyps = synext.synext_nottyps in
+      if not (level_eq prec oldprec && List.for_all2 Extend.constr_entry_key_visible_eq nottyps oldtyps) &&
          (oldparsing <> None || synext.synext_notgram = None) then
-        error_incompatible_level ntn oldprec oldtyps prec synext.synext_nottyps;
+        error_incompatible_level ntn oldprec oldtyps prec nottyps;
       oldparsing
     with Not_found ->
       check_prefix_incompatible_level ntn prec synext.synext_nottyps;
@@ -1066,8 +1077,8 @@ let interp_modifiers entry modl = let open NotationMods in
   in
   interp default modl
 
-let check_useless_entry_types recvars mainvars etyps =
-  let vars = let (l1,l2) = List.split recvars in l1@l2@mainvars in
+let check_useless_entry_types mainvars etyps =
+  let vars = all_notation_variables mainvars in
   match List.filter (fun (x,etyp) -> not (List.mem x vars)) etyps with
   | (x,_)::_ -> user_err
                   (Id.print x ++ str " is unbound in the notation.")
@@ -1174,56 +1185,75 @@ let set_entry_type from n etyps (x,typ) =
       ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)
 
-let join_auxiliary_recursive_types recvars etyps =
-  List.fold_right (fun (x,y) typs ->
-    let xtyp = try Some (List.assoc x etyps) with Not_found -> None in
-    let ytyp = try Some (List.assoc y etyps) with Not_found -> None in
-    match xtyp,ytyp with
-    | None, None -> typs
-    | Some _, None -> typs
-    | None, Some ytyp -> (x,ytyp)::typs
-    | Some xtyp, Some ytyp when (=) xtyp ytyp -> typs (* FIXME *)
-    | Some xtyp, Some ytyp ->
-        user_err
-          (strbrk "In " ++ Id.print x ++ str " .. " ++ Id.print y ++
-           strbrk ", both ends have incompatible types."))
-    recvars etyps
-
 let internalization_type_of_entry_type = function
   | ETBinder _ | ETConstr (_,Some _,_) -> NtnInternTypeOnlyBinder
   | ETConstr (_,None,_) | ETBigint | ETGlobal
   | ETIdent | ETName | ETPattern _ -> NtnInternTypeAny None
 
-let make_internalization_vars recvars maintyps =
-  let maintyps = List.map (on_snd internalization_type_of_entry_type) maintyps in
-  let extratyps = List.map (fun (x,y) -> (y,List.assoc x maintyps)) recvars in
-  maintyps @ extratyps
+let default_interp_type = NtnInternTypeAny None
 
-let make_interpretation_type isrec isbinding default_if_binding typ =
-  match typ, isrec with
-  (* Parsed as constr, but interpreted as a specific kind of binder *)
-  | ETConstr (_,Some bk,_), true -> NtnTypeBinderList (NtnBinderParsedAsConstr bk)
-  | ETConstr (_,Some bk,_), false -> NtnTypeBinder (NtnBinderParsedAsConstr bk)
-  (* Parsed as constr list but interpreted as the default kind of binder *)
-  | ETConstr (_,None,_), true when isbinding -> NtnTypeBinderList (NtnBinderParsedAsConstr default_if_binding)
-  | ETConstr (_,None,_), false when isbinding -> NtnTypeBinder (NtnBinderParsedAsConstr default_if_binding)
+let join_variable_types etyps vars =
+  let typs = List.map (fun x -> (x, try Some (List.assoc x etyps) with Not_found -> None)) vars in
+  let check_and_remove x typ typs etyps =
+    List.fold_left (fun etyps (x',typ') ->
+        match typ' with
+        | None -> etyps
+        | Some typ' ->
+          if not (simple_constr_entry_key_eq typ typ') then
+            user_err
+              (strbrk "In " ++ Id.print x ++ str " .. " ++ Id.print x' ++
+               strbrk ", both ends have incompatible types.");
+          List.remove_assoc x' etyps)
+      etyps typs in
+  match typs with
+  | [] -> etyps
+  | (x, Some typ) :: typs -> (* First name is the key: it already has a type *)
+    check_and_remove x typ typs etyps
+  | (x, None) :: typs ->
+    let rec aux = function
+      | [] -> etyps
+      | (_, None) :: typs -> aux typs
+      | (x', Some typ) :: typs ->
+        (x,typ) :: check_and_remove x' typ typs (List.remove_assoc x' etyps)
+    in aux typs
+
+let join_types maintypes etyps =
+  let allvars = List.map (notation_variables (fun x -> [x])) maintypes in
+  List.fold_left join_variable_types etyps allvars
+
+let make_interp_atom_type_rec used_as_binder default_if_binding scl = function
+  (* Parsed as constr, but intended to denote a specific kind of binder, independently of the interpretation *)
+  | ETConstr (_,Some bk,_) -> NtnTypeVar (scl, NtnTypeVarBinders (NtnBinderParsedAsConstr bk))
+  (* Parsed as constr list but known to be used as binder (and maybe also as constr) in the interpretation *)
+  | ETConstr (_,None,_) when used_as_binder -> NtnTypeVar (scl, NtnTypeVarBinders (NtnBinderParsedAsConstr default_if_binding))
   (* Parsed as constr, interpreted as constr *)
-  | ETConstr (_,None,_), true -> NtnTypeConstrList
-  | ETConstr (_,None,_), false -> NtnTypeConstr
+  | ETConstr (_,None,_) -> NtnTypeVarList (NtnTypeVar (scl, NtnTypeVarConstr NtnConstrForConstrAndPatternForPattern))
   (* Different way of parsing binders, maybe interpreted also as
      constr, but conventionally internally binders *)
-  | ETIdent, true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind AsIdent)
-  | ETIdent, false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsIdent)
-  | ETName, true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind AsName)
-  | ETName, false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsName)
+  | ETIdent -> NtnTypeVar (scl, NtnTypeVarBinders (NtnBinderParsedAsSomeBinderKind AsIdent))
+  | ETName -> NtnTypeVar (scl, NtnTypeVarBinders (NtnBinderParsedAsSomeBinderKind AsName))
   (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
-  | ETPattern (ppstrict,_), true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsAnyPattern))
-  | ETPattern (ppstrict,_), false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsAnyPattern))
-  | ETBinder _, true -> NtnTypeBinderList NtnBinderParsedAsBinder
-  | ETBinder _, false -> NtnTypeBinder NtnBinderParsedAsBinder
+  | ETPattern (ppstrict,_) -> NtnTypeVar (scl, NtnTypeVarBinders (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsAnyPattern)))
+  | ETBinder _ -> NtnTypeVar (scl, NtnTypeVarBinders NtnBinderParsedAsBinder)
   (* Others *)
-  | ETBigint, true | ETGlobal, true -> NtnTypeConstrList
-  | ETBigint, false | ETGlobal, false -> NtnTypeConstr
+  | ETBigint | ETGlobal -> NtnTypeVarList (NtnTypeVar (scl, NtnTypeVarConstr NtnConstrForConstrAndPatternForPattern))
+
+let make_interp_atom_type used_as_binder default_if_binding scl = function
+  (* Parsed as constr, but intended to denote a specific kind of binder, independently of the interpretation *)
+  | ETConstr (_,Some bk,_) -> NtnTypeVar (scl, NtnTypeVarPattern (NtnBinderParsedAsConstr bk))
+  (* Parsed as constr list but known to be used as binder (and maybe also as constr) in the interpretation *)
+  | ETConstr (_,None,_) when used_as_binder -> NtnTypeVar (scl, NtnTypeVarPattern (NtnBinderParsedAsConstr default_if_binding))
+  (* Parsed as constr, interpreted as constr *)
+  | ETConstr (_,None,_) -> NtnTypeVar (scl, NtnTypeVarConstr NtnConstrForConstrAndPatternForPattern)
+  (* Different way of parsing binders, maybe interpreted also as
+     constr, but conventionally internally binders *)
+  | ETIdent -> NtnTypeVar (scl, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind AsIdent))
+  | ETName -> NtnTypeVar (scl, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind AsName))
+  (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
+  | ETPattern (ppstrict,_) -> NtnTypeVar (scl, NtnTypeVarPattern (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsAnyPattern)))
+  | ETBinder _ -> NtnTypeVar (scl, NtnTypeVarPattern NtnBinderParsedAsBinder)
+  (* Others *)
+  | ETBigint | ETGlobal -> NtnTypeVar (scl, NtnTypeVarConstr NtnConstrForConstrAndPatternForPattern)
 
 let entry_relative_level_of_constr_prod_entry from_level = function
   | ETConstr (entry,_,(_,y)) as x ->
@@ -1231,30 +1261,56 @@ let entry_relative_level_of_constr_prod_entry from_level = function
      { notation_subentry = entry; notation_relative_level = precedence_of_entry_type from_level x; notation_position = side }
   | _ -> constr_some_level
 
+let rec make_internalization_var : type s. (s -> Id.t list) -> _ -> _ -> s notation_raw_type -> _ =
+  fun f etyps typs typ -> match typ with
+  | NtnRawTypeVar x ->
+    (match f x with
+    | [] -> assert false
+    | mainname :: _ as allnames ->
+    let t = try internalization_type_of_entry_type (Id.List.assoc mainname etyps) with Not_found -> default_interp_type in
+    List.fold_left (fun typs x -> Id.Map.add x t typs) typs allnames)
+  | NtnRawTypeVarList typ -> make_internalization_var (fun (x,y) -> f x @ f y) etyps typs typ
+  | NtnRawTypeVarTuple typl -> List.fold_left (make_internalization_var f etyps) typs typl
+
+let make_internalization_vars maintyps etyps =
+  List.fold_left (make_internalization_var (fun x -> [x]) etyps) Id.Map.empty maintyps
+
 let make_interpretation_vars
   (* For binders, default is to parse only as an ident *) ?(default_if_binding=AsName)
-   recvars allvars (entry,_) typs =
-  let eq_subscope (sc1, l1) (sc2, l2) =
-    List.equal String.equal sc1 sc2 &&
-    List.equal String.equal l1 l2
+    maintypes (entry,_) i_varscopes sy_typs =
+  let rec aux = function
+    | NtnRawTypeVar x ->
+      let (used_as_binder, xscope, ntn_binding_ids) = Id.Map.find x i_varscopes in
+      let sy_typ = Id.List.assoc x sy_typs in
+      let entry = entry_relative_level_of_constr_prod_entry entry sy_typ in
+      make_interp_atom_type used_as_binder default_if_binding ((entry, xscope), ntn_binding_ids) sy_typ
+    | NtnRawTypeVarTuple typl -> NtnTypeVarTuple (List.map aux typl)
+    | NtnRawTypeVarList (NtnRawTypeVar (x,y)) ->
+      (* Maybe binders *)
+      let (used_as_binder_x, xscope, _ntn_binding_ids1) = Id.Map.find x i_varscopes in
+      let (used_as_binder_y, yscope, ntn_binding_ids2) = Id.Map.find y i_varscopes in
+      let () =
+        if used_as_binder_x <> used_as_binder_y then
+          user_err Pp.(str "The two ends " ++ Id.print x ++ str " and " ++ Id.print y ++
+                        strbrk " of a recursive notation are not both used consistently in binding position.") in
+      let () =
+        if not (eq_pair (List.equal String.equal) (List.equal String.equal) xscope yscope) then
+          user_err Pp.(str "The two ends " ++ Id.print x ++ str " and " ++ Id.print y ++
+                        strbrk " of a recursive notation are not both used consistently in the same scope.") in
+      let eq_subscope (sc1, l1) (sc2, l2) =
+        List.equal String.equal sc1 sc2 &&
+        List.equal String.equal l1 l2 in
+      if not (eq_subscope xscope yscope) then error_not_same_scope x y;
+      (* Note: binding_ids should currently be the same, and even with
+         eventually more complex notations, such as e.g.
+          Notation "!! x .. y , P .. Q" := (fun x => (P, .. (fun y => (Q, True)) ..)).
+         each occurrence of the recursive notation variables may have its own binders *)
+      let sy_typ = Id.List.assoc x sy_typs in
+      let entry = entry_relative_level_of_constr_prod_entry entry sy_typ in
+      make_interp_atom_type_rec used_as_binder_y default_if_binding ((entry,yscope),ntn_binding_ids2) sy_typ
+    | NtnRawTypeVarList typ1 -> failwith "TODO: nested recursive patterns"
   in
-  let check (x, y) =
-    let (_,scope1,_ntn_binding_ids1) = Id.Map.find x allvars in
-    let (_,scope2,_ntn_binding_ids2) = Id.Map.find y allvars in
-    if not (eq_subscope scope1 scope2) then error_not_same_scope x y
-    (* Note: binding_ids should currently be the same, and even with
-      eventually more complex notations, such as e.g.
-        Notation "!! x .. y , P .. Q" := (fun x => (P, .. (fun y => (Q, True)) ..)).
-      each occurrence of the recursive notation variables may have its own binders *)
-  in
-  let () = List.iter check recvars in
-  let useless_recvars = List.map snd recvars in
-  let mainvars =
-    Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
-  Id.Map.mapi (fun x (isonlybinding, sc, ntn_binding_ids) ->
-    let typ = Id.List.assoc x typs in
-    ((entry_relative_level_of_constr_prod_entry entry typ, sc), ntn_binding_ids,
-     make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding default_if_binding typ)) mainvars
+  List.map aux maintypes
 
 let check_rule_productivity l =
   if List.for_all (function NonTerminal _ | Break _ -> true | _ -> false) l then
@@ -1465,9 +1521,9 @@ let find_subentry_types from n assoc etyps symbols =
   let prec = List.map (assoc_of_type from n) sy_typs in
   sy_typs, prec
 
-let check_locality_compatibility local custom i_typs =
+let check_locality_compatibility local custom sy_typs =
   if not local then
-    let subcustom = List.map_filter (function _,ETConstr (InCustomEntry s,_,_) -> Some s | _ -> None) i_typs in
+    let subcustom = List.map_filter (function _,ETConstr (InCustomEntry s,_,_) -> Some s | _ -> None) sy_typs in
     let allcustoms = match custom with InCustomEntry s -> s::subcustom | _ -> subcustom in
     List.iter (fun s ->
         if Egramcoq.locality_of_custom_entry s then
@@ -1527,9 +1583,9 @@ let compute_syntax_data ~local main_data notation_symbols ntn mods =
   let open SynData in
   let open NotationMods in
   if main_data.itemscopes <> [] then user_err (str "General notations don't support 'in scope'.");
-  let {recvars;mainvars;symbols} = notation_symbols in
+  let {maintypes;symbols} = notation_symbols in
   let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
-  let _ = check_useless_entry_types recvars mainvars mods.etyps in
+  let _ = check_useless_entry_types maintypes mods.etyps in
 
   (* Notations for interp and grammar  *)
   let ntn_prefix = longest_common_prefix_level ntn in
@@ -1542,7 +1598,7 @@ let compute_syntax_data ~local main_data notation_symbols ntn mods =
   if main_data.entry = InConstrEntry && not main_data.onlyprinting then check_rule_productivity symbols_for_grammar;
   (* To globalize... *)
   let etyps = default_prefix_level_subentries ntn ntn_prefix symbols mods.etyps in
-  let etyps = join_auxiliary_recursive_types recvars etyps in
+  let etyps = join_types maintypes etyps in
   let sy_typs, prec =
     find_subentry_types main_data.entry n assoc etyps symbols in
   let sy_typs_for_grammar, prec_for_grammar =
@@ -1822,31 +1878,28 @@ let make_use reserved onlyparse onlyprint =
 (* Main functions about notations                                     *)
 
 let make_notation_interpretation ~local main_data notation_symbols ntn syntax_rules df env ?(impls=empty_internalization_env) c scope =
-  let {recvars;mainvars;symbols} = notation_symbols in
+  let {mainvars;maintypes;symbols} = notation_symbols in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
-  let level, i_typs, main_data, sy_pp_rules =
+  let level, sy_typs, main_data, sy_pp_rules =
     match syntax_rules with
     | PrimTokenSyntax -> None, [], main_data, None
     | SpecificSyntax sy ->
     (* If the only printing flag has been explicitly requested, put it back *)
     let main_data = { main_data with onlyprinting = main_data.onlyprinting || (sy.synext_notgram = None && not main_data.onlyparsing) } in
-    Some sy.synext_level, List.combine mainvars sy.synext_nottyps, main_data, sy.synext_notprint
+    Some sy.synext_level, sy.synext_nottyps, main_data, sy.synext_notprint
   in
   (* Declare interpretation *)
-  let sy_pp_rules = make_specific_printing_rules i_typs symbols level sy_pp_rules main_data.format in
+  let sy_typs = List.combine mainvars sy_typs in
+  let interp_types = make_internalization_vars maintypes sy_typs in
+  let sy_pp_rules = make_specific_printing_rules sy_typs symbols level sy_pp_rules main_data.format in
   let path = (Lib.library_dp(), Lib.current_dirpath true) in
   let df' = ntn, (path,df) in
-  let i_vars = make_internalization_vars recvars i_typs in
-  let nenv = {
-    ninterp_var_type = Id.Map.of_list i_vars;
-    ninterp_rec_vars = Id.Map.of_list recvars;
-  } in
-  let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
+  let nenv = { ninterp_var_type = interp_types; ninterp_raw_types = maintypes } in
+  let (i_varscopes, ac, reversibility) = interp_notation_constr env ~impls nenv c in
   let plevel = match level with Some (entry,l) -> (entry,l) | None (* numeral: irrelevant )*) -> (constr_lowest_level,[]) in
-  let interp = make_interpretation_vars recvars acvars plevel i_typs in
-  let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let vars = List.map_filter map i_vars in (* Order of elements is important here! *)
-  let onlyparsing,coe = printability level i_typs vars main_data.onlyparsing reversibility ac in
+  let interp = make_interpretation_vars maintypes plevel i_varscopes sy_typs in
+  let vars = List.combine mainvars interp in
+  let onlyparsing,coe = printability level sy_typs vars main_data.onlyparsing reversibility ac in
   let main_data = { main_data with onlyparsing } in
   let use = make_use false onlyparsing main_data.onlyprinting in
   {
@@ -2030,7 +2083,8 @@ let interp_abbreviation_modifiers user_warns modl =
 
 let add_abbreviation ~local user_warns env ident (vars,c) modl =
   let (only_parsing, scopes) = interp_abbreviation_modifiers user_warns modl in
-  let vars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
+  let maintypes = List.map (fun v -> NtnRawTypeVar v) vars in
+  let scvars = List.map (fun v -> v, List.assoc_opt v scopes) vars in
   let acvars,pat,reversibility =
     match vars, intern_name_alias c with
     | [], Some(r,u) ->
@@ -2039,18 +2093,18 @@ let add_abbreviation ~local user_warns env ident (vars,c) modl =
       Id.Map.empty, NRef(r, u), APrioriReversible
     | _ ->
       let fold accu (id,scope) = Id.Map.add id (NtnInternTypeAny scope) accu in
-      let i_vars = List.fold_left fold Id.Map.empty vars in
+      let i_vars = List.fold_left fold Id.Map.empty scvars in
       let nenv = {
         ninterp_var_type = i_vars;
-        ninterp_rec_vars = Id.Map.empty;
+        ninterp_raw_types = [];
       } in
       interp_notation_constr env nenv c
   in
   let level_arg = NumLevel 9 (* level of arguments of an application *) in
-  let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(level_arg,InternalProd))) in
+  let sy_typs = List.map (fun id -> (id,ETConstr (Constrexpr.InConstrEntry,None,(level_arg,InternalProd)))) vars in
   let level = (* not relevant *) (constr_lowest_level,[]) in
-  let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] acvars level (List.map in_pat vars) in
-  let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
+  let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern maintypes level acvars sy_typs in
+  let vars = List.combine vars interp in
   let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in
   Abbreviation.declare_abbreviation ~local user_warns ident ~onlyparsing (vars,pat)
 

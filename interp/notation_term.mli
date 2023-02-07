@@ -65,6 +65,13 @@ type subscopes = tmp_scope_name list * scope_name list
 
 type extended_subscopes = Constrexpr.notation_entry_relative_level * subscopes
 
+(** The set of other notation variables that are bound to a binder or
+    binder list and that bind the given notation variable, for
+    instance, in ["{ x | P }" := (sigT (fun x => P)], "x" is under an
+    empty set of binders and "P" is under the binders bound to "x",
+    that is, its notation_var_binders set is "x" *)
+type notation_var_binders = Id.Set.t
+
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
 
@@ -86,11 +93,21 @@ type notation_binder_source =
   (* Parsed as open or closed binder: This accepts ident, _, quoted pattern, etc. *)
   | NtnBinderParsedAsBinder
 
-type notation_var_instance_type =
-  | NtnTypeConstr
-  | NtnTypeConstrList
-  | NtnTypeBinder of notation_binder_source
-  | NtnTypeBinderList of notation_binder_source
+type notation_var_constr_kind =
+  | NtnAlwaysConstr (* In anticipation of supporting PatCast in pattern *)
+  | NtnConstrForConstrAndPatternForPattern
+
+(** Type of variables in notation interpretations, remembering how it is parsed;
+    Note: when a notation variable appears both as term and as binder, its type is Pattern *)
+type notation_var_kind =
+  | NtnTypeVarConstr of notation_var_constr_kind
+  | NtnTypeVarPattern of notation_binder_source
+  | NtnTypeVarBinders of notation_binder_source
+
+type notation_var_type =
+  | NtnTypeVar of (extended_subscopes * notation_var_binders) * notation_var_kind
+  | NtnTypeVarList of notation_var_type (* list A *)
+  | NtnTypeVarTuple of notation_var_type list (* A1 * ... * An *)
 
 (** Type of variables when interpreting a constr_expr as a notation_constr:
     in a recursive pattern x..y, both x and y carry the individual type
@@ -99,17 +116,8 @@ type notation_var_internalization_type =
   | NtnInternTypeAny of scope_name option
   | NtnInternTypeOnlyBinder
 
-(** The set of other notation variables that are bound to a binder or
-    binder list and that bind the given notation variable, for
-    instance, in ["{ x | P }" := (sigT (fun x => P)], "x" is under an
-    empty set of binders and "P" is under the binders bound to "x",
-    that is, its notation_var_binders set is "x" *)
-type notation_var_binders = Id.Set.t
-
 (** This characterizes to what a notation is interpreted to *)
-type interpretation =
-    (Id.t * (extended_subscopes * notation_var_binders * notation_var_instance_type)) list *
-    notation_constr
+type interpretation = (Id.t * notation_var_type) list * notation_constr
 
 type forgetfulness = { forget_ltac : bool; forget_volatile_cast : bool }
 
@@ -118,7 +126,14 @@ type reversibility_status =
   | Forgetful of forgetfulness
   | NonInjective of Id.t list
 
+type notation_interp_var_types = notation_var_internalization_type Names.Id.Map.t
+
+type 'a notation_raw_type =
+  | NtnRawTypeVar of 'a
+  | NtnRawTypeVarList of ('a * 'a) notation_raw_type (* A .. A *)
+  | NtnRawTypeVarTuple of 'a notation_raw_type list (* A1 * ... * An *)
+
 type notation_interp_env = {
-  ninterp_var_type : notation_var_internalization_type Id.Map.t;
-  ninterp_rec_vars : Id.t Id.Map.t;
+  ninterp_var_type : notation_interp_var_types;
+  ninterp_raw_types : Id.t notation_raw_type list;
 }

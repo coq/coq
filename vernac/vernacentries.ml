@@ -583,18 +583,17 @@ let interp_enable_notation_rule on ntn interp flags scope =
       parse_notation_enable_flags all { query with use_pattern = use } flags
     | EnableNotationAll :: flags -> parse_notation_enable_flags true query flags in
   let interp = Option.map (fun c ->
-      let vars, recvars =
+      let vars, typs =
         match ntn with
         | None ->
           (* We expect the right-hand side to mention "_" in place of proper variables *)
           (* Or should we instead deactivate the check of free variables? *)
-          ([], [])
-        | Some (Inl ntn) -> let {recvars; mainvars} = decompose_raw_notation ntn in (mainvars, recvars)
-        | Some (Inr (vars,qid)) -> (vars, [])
+          [], []
+        | Some (Inl ntn) -> let {mainvars; maintypes} = decompose_raw_notation ntn in (mainvars, maintypes)
+        | Some (Inr (vars,qid)) -> vars, List.map (fun x -> Notation_term.NtnRawTypeVar x) vars
       in
       let ninterp_var_type = Id.Map.of_list (List.map (fun x -> (x, Notation_term.NtnInternTypeAny None)) vars) in
-      let ninterp_rec_vars = Id.Map.of_list recvars in
-      let nenv = Notation_term.{ ninterp_var_type; ninterp_rec_vars } in
+      let nenv = Notation_term.{ ninterp_var_type; ninterp_raw_types = typs } in
       let (_acvars, ac, _reversibility) = Constrintern.interp_notation_constr (Global.env ()) nenv c in
       ([], ac)) interp in
   let default_notation_enable_pattern = {
@@ -1549,7 +1548,7 @@ let vernac_abbreviation ~atts lid x only_parsing =
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;
-  ninterp_rec_vars = Id.Map.empty;
+  ninterp_raw_types = [];
 }
 
 let vernac_reserve bl =

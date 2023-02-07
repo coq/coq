@@ -949,7 +949,7 @@ let glob_cpattern gs p =
   | {kind=k; pattern=(v, Some t); _} as orig ->
      if k = Cpattern then glob_ssrterm gs {kind=InParens; pattern=(v, Some t); interpretation=None} else
      match t.CAst.v with
-     | CNotation(_,(InConstrEntry,"( _ in _ )"), ([t1; t2], [], [], [])) ->
+     | CNotation(_,(InConstrEntry,"( _ in _ )"), [NtnTypeArg (NtnTypeArgConstr t1); NtnTypeArg (NtnTypeArgConstr t2)]) ->
        (try match glob t1, glob t2 with
           | (r1, None), (r2, None) -> encode k "In" [r1;r2]
           | (r1, Some _), (r2, Some _) when isCVar t1 ->
@@ -957,11 +957,11 @@ let glob_cpattern gs p =
           | (r1, Some _), (r2, Some _) -> encode k "In" [r1; r2]
           | _ -> CErrors.anomaly (str"where are we?.")
         with e when CErrors.noncritical e && isCVar t1 -> encode k "In" [bind_in t1 t2])
-     | CNotation(_,(InConstrEntry,"( _ in _ in _ )"), ([t1; t2; t3], [], [], [])) ->
+     | CNotation(_,(InConstrEntry,"( _ in _ in _ )"), [NtnTypeArg (NtnTypeArgConstr t1); NtnTypeArg (NtnTypeArgConstr t2); NtnTypeArg (NtnTypeArgConstr t3)]) ->
          check_var t2; encode k "In" [fst (glob t1); bind_in t2 t3]
-     | CNotation(_,(InConstrEntry,"( _ as _ )"), ([t1; t2], [], [], [])) ->
+     | CNotation(_,(InConstrEntry,"( _ as _ )"), [NtnTypeArg (NtnTypeArgConstr t1); NtnTypeArg (NtnTypeArgConstr t2)]) ->
          encode k "As" [fst (glob t1); fst (glob t2)]
-     | CNotation(_,(InConstrEntry,"( _ as _ in _ )"), ([t1; t2; t3], [], [], [])) ->
+     | CNotation(_,(InConstrEntry,"( _ as _ in _ )"), [NtnTypeArg (NtnTypeArgConstr t1); NtnTypeArg (NtnTypeArgConstr t2); NtnTypeArg (NtnTypeArgConstr t3)]) ->
          check_var t2; encode k "As" [fst (glob t1); bind_in t2 t3]
      | _ -> glob_ssrterm gs orig
 ;;

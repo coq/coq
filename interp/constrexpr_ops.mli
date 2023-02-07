@@ -133,10 +133,28 @@ val free_vars_of_local_binders : local_binder_expr list -> Id.Set.t
 (** Return all (non-qualified) names treating binders as names *)
 val names_of_constr_expr : constr_expr -> Id.Set.t
 
-val ntn_loc : ?loc:Loc.t -> constr_notation_substitution -> notation -> (int * int) list
-val patntn_loc : ?loc:Loc.t -> cases_pattern_notation_substitution -> notation -> (int * int) list
+val ntn_loc : ?loc:Loc.t -> notation_substitution -> notation -> (int * int) list
 
 val isCSort : constr_expr -> bool
 
 (** For cases pattern parsing errors *)
 val error_invalid_pattern_notation : ?loc:Loc.t -> unit -> 'a
+
+val notation_arg_type_fold_map :
+  ('a -> 'b -> 'a * 'c) ->
+  ('a -> 'd -> 'a * 'e) ->
+  ('a -> 'f -> 'a * 'g) ->
+  'a ->
+  ('b, 'd * 'h, 'f) Constrexpr.notation_arg_type ->
+  'a * ('c, 'e * 'h, 'g) Constrexpr.notation_arg_type
+val notation_arg_type_fold :
+  ('a -> 'b -> 'a) ->
+  ('a -> 'c -> 'a) ->
+  ('a -> 'd -> 'a) ->
+  'a -> ('b, 'c * 'e, 'd) Constrexpr.notation_arg_type -> 'a
+val notation_arg_type_map :
+  ('a -> 'b) ->
+  ('c -> 'd) ->
+  ('e -> 'f) ->
+  ('a, 'c * 'g, 'e) Constrexpr.notation_arg_type ->
+  ('b, 'd * 'g, 'f) Constrexpr.notation_arg_type
