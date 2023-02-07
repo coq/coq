@@ -1431,6 +1431,8 @@ let () =
 
 let () =
   let intern self ist c =
+    let extra = Tac2intern.drop_ltac2_env ist.Genintern.extra in
+    let ist = { ist with extra } in
     let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
     (GlbVal c, gtypref t_preterm)
   in
