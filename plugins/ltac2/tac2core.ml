@@ -1623,9 +1623,9 @@ let () =
   GlobEnv.register_constr_interp0 wit_ltac2_quotation interp
 
 let () =
-  let pr_raw id = Genprint.PrinterBasic (fun _env _sigma -> mt ()) in
+  let pr_raw id = Genprint.PrinterBasic (fun _env _sigma -> assert false) in
   let pr_glb id = Genprint.PrinterBasic (fun _env _sigma -> str "$" ++ Id.print id) in
-  let pr_top _ = Genprint.TopPrinterBasic mt in
+  let pr_top x = Util.Empty.abort x in
   Genprint.register_print0 wit_ltac2_quotation pr_raw pr_glb pr_top
 
 let () =
@@ -1744,7 +1744,7 @@ let () =
   Geninterp.register_interp0 wit_ltac2 interp
 
 let () =
-  let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> mt ()) in
+  let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> assert false) in
   let pr_glb (ids, e) =
     let ids =
       if List.is_empty ids then mt ()
@@ -1752,7 +1752,7 @@ let () =
     in
     Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr e)
   in
-  let pr_top _ = Genprint.TopPrinterBasic mt in
+  let pr_top x = Util.Empty.abort x in
   Genprint.register_print0 wit_ltac2 pr_raw pr_glb pr_top
 
 (** Built-in notation scopes *)
