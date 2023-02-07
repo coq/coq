@@ -1283,8 +1283,8 @@ let filter_compatible_candidates unify flags env evd evi args rhs c =
 exception DoesNotPreserveCandidateRestriction
 
 let restrict_candidates unify flags env evd filter1 (evk1,argsv1) (evk2,argsv2) =
-  let EvarInfo evi1 = Evd.find evd evk1 in
-  let EvarInfo evi2 = Evd.find evd evk2 in
+  let evi1 = Evd.find_undefined evd evk1 in
+  let evi2 = Evd.find_undefined evd evk2 in
   match Evd.evar_candidates evi1, Evd.evar_candidates evi2 with
   | _, None -> filter_candidates evd evk1 filter1 NoUpdate
   | None, Some _ -> raise DoesNotPreserveCandidateRestriction
@@ -1368,7 +1368,7 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
        from [env]. In particular its filter must be trivial. *)
     Int.equal (SList.length argsv2) (Range.length (Environ.named_context_val env).env_named_idx) &&
     SList.Skip.for_all (fun arg -> noccur_evar env evd evk2 arg && closed0 evd arg) argsv1 &&
-    let EvarInfo evi2 = Evd.find evd evk2 in Option.is_empty (Evd.evar_candidates evi2)
+    let evi2 = Evd.find_undefined evd evk2 in Option.is_empty (Evd.evar_candidates evi2)
   then
     evd, EConstr.mkEvar ev1
   else
@@ -1531,7 +1531,7 @@ exception NoCandidates
 exception IncompatibleCandidates of EConstr.t
 
 let solve_candidates unify flags env evd (evk,argsv) rhs =
-  let EvarInfo evi = Evd.find evd evk in
+  let evi = Evd.find_undefined evd evk in
   match Evd.evar_candidates evi with
   | None -> raise NoCandidates
   | Some l ->

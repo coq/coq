@@ -549,10 +549,14 @@ let pr_evgl_sign (type a) env sigma (evi : a evar_info) =
   in
   let pc = pr_leconstr_env env sigma concl in
   let candidates =
-    match Evd.evar_body evi, Evd.evar_candidates evi with
-    | Evar_empty, Some l ->
+    match Evd.evar_body evi with
+    | Evar_empty ->
+      begin match Evd.evar_candidates evi with
+      | None -> mt ()
+      | Some l ->
        spc () ++ str "= {" ++
          prlist_with_sep (fun () -> str "|") (pr_leconstr_env env sigma) l ++ str "}"
+      end
     | _ ->
        mt ()
   in
