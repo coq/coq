@@ -712,13 +712,6 @@ Structure element subtyping rules:
    --------------------------
    \WS{E}{(c:=t:T_1)}{(c:T_2)}
 
-.. inference:: ASSUM-DEF
-
-   E[] ⊢ T_1 ≤_{βδιζη} T_2
-   E[] ⊢ c =_{βδιζη} t_2
-   --------------------------
-   \WS{E}{(c:T_1)}{(c:=t_2:T_2)}
-
 .. inference:: DEF-DEF
 
    E[] ⊢ T_1 ≤_{βδιζη} T_2
