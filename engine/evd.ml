@@ -221,7 +221,7 @@ type 'a evar_info = {
   evar_hyps : named_context_val;
   evar_body : 'a evar_body;
   evar_filter : Filter.t;
-  evar_abstract_arguments : Abstraction.t;
+  evar_abstract_arguments : ('a, Abstraction.t) when_undefined;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : ('a, constr list option) when_undefined; (* if not None, list of allowed instances *)
   evar_relevance: Sorts.relevance;
@@ -247,7 +247,8 @@ let evar_filtered_context evi =
 let evar_candidates evi = match evi.evar_candidates with
 | Undefined c -> c
 
-let evar_abstract_arguments evi = evi.evar_abstract_arguments
+let evar_abstract_arguments evi = match evi.evar_abstract_arguments with
+| Undefined c -> c
 
 let evar_relevance evi = evi.evar_relevance
 
@@ -834,6 +835,7 @@ let undefine sigma e concl =
     evar_body = Evar_empty;
     evar_concl = Undefined concl;
     evar_candidates = Undefined None;
+    evar_abstract_arguments = Undefined Abstraction.identity;
   } in
   add (remove sigma e) e evi
 
@@ -1328,7 +1330,7 @@ let new_pure_evar ?(src=default_source) ?(filter = Filter.identity) ?(relevance 
     evar_concl = Undefined typ;
     evar_body = Evar_empty;
     evar_filter = filter;
-    evar_abstract_arguments = abstract_arguments;
+    evar_abstract_arguments = Undefined abstract_arguments;
     evar_source = src;
     evar_candidates = Undefined candidates;
     evar_relevance = relevance;
@@ -1357,6 +1359,7 @@ let define_aux def undef evk body =
     evar_body = Evar_defined body;
     evar_concl = Defined;
     evar_candidates = Defined;
+    evar_abstract_arguments = Defined;
   } in
   EvMap.add evk newinfo def, EvMap.remove evk undef
 
