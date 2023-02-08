@@ -444,7 +444,8 @@ let new_evar ?src ?filter ?relevance ?abstract_arguments ?candidates ?(naming = 
 
 let new_type_evar ?src ?filter ?naming ?principal ?hypnaming env evd rigid =
   let (evd', s) = new_sort_variable rigid evd in
-  let (evd', e) = new_evar env evd' ?src ?filter ?naming ~typeclass_candidate:false ?principal ?hypnaming (EConstr.mkSort s) in
+  let relevance = Sorts.relevance_of_sort (EConstr.ESorts.kind evd s) in
+  let (evd', e) = new_evar env evd' ?src ?filter ~relevance ?naming ~typeclass_candidate:false ?principal ?hypnaming (EConstr.mkSort s) in
   evd', (e, s)
 
 let new_Type ?(rigid=Evd.univ_flexible) evd =
