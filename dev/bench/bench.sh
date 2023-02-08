@@ -74,8 +74,8 @@ check_variable () {
 new_ocaml_switch=ocaml-base-compiler.$new_ocaml_version
 old_ocaml_switch=ocaml-base-compiler.$old_ocaml_version
 
-new_coq_commit=$(git rev-parse HEAD^2)
-old_coq_commit=$(git merge-base HEAD^1 $new_coq_commit)
+new_coq_commit=7eccc646c2863c68858b77fae526435561d6f4fe
+old_coq_commit=7eccc646c2863c68858b77fae526435561d6f4fe
 
 if echo "$num_of_iterations" | grep '^[1-9][0-9]*$' 2> /dev/null > /dev/null; then
     :
