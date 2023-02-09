@@ -59,7 +59,7 @@ project analysis 'https://github.com/math-comp/analysis' 'bfa6d4bc2fa548644b8776
 ########################################################################
 # UniMath
 ########################################################################
-project unimath 'https://github.com/UniMath/UniMath' '8529067b81f245fbfc6cb2c58b8f47651543aaed'
+project unimath 'https://github.com/UniMath/UniMath' '75c3a38920088c3c5293ec3c1302cc67b3b8770e'
 
 ########################################################################
 # Unicoq + Mtac2
