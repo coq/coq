@@ -75,7 +75,7 @@ Add a new `ci-mydev.sh` script to [`dev/ci`](.); set the corresponding
 variables in [`ci-basic-overlay.sh`](ci-basic-overlay.sh); add the
 corresponding target to [`Makefile.ci`](../../Makefile.ci) and a new job to
 [`.gitlab-ci.yml`](../../.gitlab-ci.yml) so that this new target is run.
-Have a look at [#7656](https://github.com/coq/coq/pull/7656/files) for an
+Have a look at [#17241](https://github.com/coq/coq/pull/17241/files) for an
 example. **Do not hesitate to submit an incomplete pull request if you need
 help to finish it.**
 
