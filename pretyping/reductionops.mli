@@ -33,6 +33,7 @@ module ReductionBehaviour : sig
 
   val set : local:bool -> GlobRef.t -> t -> unit
   val get : GlobRef.t -> t option
+  val all_tagged : t -> GlobRef.Set.t
   val print : GlobRef.t -> Pp.t
 end
 
@@ -169,6 +170,8 @@ val whd_zeta_stack : stack_reduction_function
 val whd_zeta : reduction_function
 
 val shrink_eta : evar_map -> constr -> constr
+
+val whd_stack_gen : CClosure.RedFlags.reds -> stack_reduction_function
 
 (** Various reduction functions *)
 

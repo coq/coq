@@ -79,6 +79,21 @@ module ReductionBehaviour = struct
   type t = NeverUnfold | UnfoldWhen of when_flags | UnfoldWhenNoMatch of when_flags
   and when_flags = { recargs : int list ; nargs : int option }
 
+  let equal t1 t2 =
+    match t1, t2 with
+      NeverUnfold, NeverUnfold -> true
+    | (UnfoldWhen {recargs = r1; nargs = n1}),
+      (UnfoldWhen {recargs = r2; nargs = n2}) ->
+       List.length r1 = List.length r2 &&
+         List.for_all2 Int.equal r1 r2 &&
+           Option.equal Int.equal n1 n2
+    | UnfoldWhenNoMatch {recargs = r1; nargs = n1},
+      UnfoldWhenNoMatch {recargs = r2; nargs = n2} ->
+       List.length r1 = List.length r2 &&
+         List.for_all2 Int.equal r1 r2 &&
+           Option.equal Int.equal n1 n2
+    | _, _ -> false
+
   let more_args_when k { recargs; nargs } =
     { nargs = Option.map ((+) k) nargs;
       recargs = List.map ((+) k) recargs;
@@ -89,11 +104,17 @@ module ReductionBehaviour = struct
     | UnfoldWhen x -> UnfoldWhen (more_args_when k x)
     | UnfoldWhenNoMatch x -> UnfoldWhenNoMatch (more_args_when k x)
 
+(* We need to have a fast way to know the set of all constants that
+  have the NeverUnfold flag.  Therefore, the table has a distinct subpart
+  that is this set. *)
   let table =
-    Summary.ref (GlobRef.Map.empty : t GlobRef.Map.t) ~name:"reductionbehaviour"
+    Summary.ref ((GlobRef.Set.empty, GlobRef.Map.empty) :
+                   GlobRef.Set.t * t GlobRef.Map.t) ~name:"reductionbehaviour"
 
   let load _ (_,(r, b)) =
-    table := GlobRef.Map.add r b !table
+    table := (match b with
+                | NeverUnfold -> GlobRef.Set.add r (fst !table), GlobRef.Map.remove r (snd !table)
+                | _ -> GlobRef.Set.remove r (fst !table), GlobRef.Map.add r b (snd !table))
 
   let cache o = load 1 o
 
@@ -132,7 +153,22 @@ module ReductionBehaviour = struct
   let set ~local r b =
     Lib.add_leaf (inRedBehaviour (local, (r, b)))
 
-  let get r = GlobRef.Map.find_opt r !table
+  let get r =
+    if GlobRef.Set.mem r (fst !table) then
+      Some NeverUnfold
+    else
+      GlobRef.Map.find_opt r (snd !table)
+
+  let all_tagged t =
+    match t with
+      NeverUnfold -> fst !table
+    | _ ->
+       GlobRef.Map.fold
+         (fun a u s ->
+           if equal t u then
+             GlobRef.Set.add a s
+           else
+             s) (snd !table) GlobRef.Set.empty
 
   let print ref =
     let open Pp in
@@ -926,6 +962,8 @@ let whd_all = red_of_state_red whd_all_state
 let whd_allnolet_state = raw_whd_state_gen CClosure.allnolet
 let whd_allnolet_stack = stack_red_of_state_red whd_allnolet_state
 let whd_allnolet = red_of_state_red whd_allnolet_state
+
+let whd_stack_gen reds = stack_red_of_state_red (whd_state_gen reds)
 
 let is_head_evar env sigma c =
   let head, _ = whd_all_state env sigma (c,Stack.empty) in
