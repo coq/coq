@@ -808,11 +808,12 @@ let pr_vernac_expr v =
 
   (* Gallina *)
   | VernacDefinition ((discharge,kind),id,b) -> (* A verifier... *)
-    let pr_def_token dk =
+    let isgoal = Name.is_anonymous (fst id).v in
+    let pr_def_token =
       keyword (
-        if Name.is_anonymous (fst id).v
+        if isgoal
         then "Goal"
-        else string_of_definition_object_kind dk)
+        else string_of_definition_object_kind kind)
     in
     let pr_reduce = function
       | None -> mt()
@@ -821,24 +822,22 @@ let pr_vernac_expr v =
         pr_red_expr r ++
         keyword " in" ++ spc()
     in
-    let pr_def_body = function
+    let pr_def_body = match b with
       | DefineBody (bl,red,body,d) ->
         let ty = match d with
           | None -> mt()
           | Some ty -> spc() ++ str":" ++ pr_spc_lconstr ty
         in
-        (pr_binders_arg bl,ty,Some (pr_reduce red ++ pr_lconstr body))
+        pr_binders_arg bl  ++ ty ++ str " :=" ++ spc() ++ pr_reduce red ++ pr_lconstr body
       | ProveBody (bl,t) ->
-        let typ u = if (fst id).v = Anonymous then (assert (bl = []); u) else (str" :" ++ u) in
-        (pr_binders_arg bl, typ (pr_spc_lconstr t), None) in
-    let (binds,typ,c) = pr_def_body b in
+        let typ u = if isgoal then (assert (bl = []); u) else (str" :" ++ u) in
+        pr_binders_arg bl ++ typ (pr_spc_lconstr t)
+    in
     return (
       hov 2 (
-        pr_def_token kind ++ spc()
-        ++ pr_lname_decl id ++ binds ++ typ
-        ++ (match c with
-            | None -> mt()
-            | Some cc -> str" :=" ++ spc() ++ cc))
+        pr_def_token
+        ++ (if isgoal then mt() else spc() ++ pr_lname_decl id)
+        ++ pr_def_body)
     )
 
   | VernacStartTheoremProof (ki,l) ->
