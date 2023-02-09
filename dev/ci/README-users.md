@@ -79,8 +79,60 @@ Have a look at [#17241](https://github.com/coq/coq/pull/17241/files) for an
 example. **Do not hesitate to submit an incomplete pull request if you need
 help to finish it.**
 
+Some important points:
+
+- Let `$job` be the name of the new job as used for the name of
+  the added script file `dev/ci/ci-$job.sh`. Then the added target
+  in `Makefile.ci` must be named `ci-$job` and the added job in
+  `.gitlab-ci.yml` must be named `library:$job` or
+  `plugin:$job`. `$job` must be a valid shell variable name,
+  typically this means replacing dashs (`-`) with underscores (`_`).
+
+- Let `$project` be the name of your project as used for the first
+  argument to `project` in `ci-basic-overlay.sh`. Usually this is the
+  same as `$job` in the above bullet. It must also be a valid
+  shell variable name. In some cases a script will handle multiple
+  source repositories and so will need multiple `$project`, see for
+  instance script `verdi_raft`.
+
+- If you wish to run a test suite for your project which takes
+  non-negligible time, it may be useful to run the test suite in a
+  separate `Makefile.ci` target and GitLab job, using a separate shell
+  script. In terms of the above bullet points this means a `$project`
+  used in multiple `$job`s. See for instance `mathcomp` and `mathcomp_test`.
+
+- When declaring the job in `.gitlab-ci.yml` you must choose the opam
+  switch by using `extends: .ci-template` or `extends: .ci-template-flambda`.
+
+  The first one uses the minimum version of OCaml supported by Coq.
+  The second one uses the highest version of OCaml supported by Coq,
+  with flambda enabled (currently it actually uses OCaml 4.14.1 as 5.0
+  has significant performance issues). See also the
+  [`Dockerfile`](docker/bionic_coq/Dockerfile) to find out what
+  specific packages are available in each switch.
+
+  If your job depends on other jobs, you must use the same opam
+  switch. If you wish to depend on jobs currently declared in separate
+  switches, please open a draft pull request and the Coq developers
+  will decide which jobs should change switches. If you need an
+  exception to this rule for some other reason, please discuss with
+  the Coq developers.
+
+- Job dependencies are declared in 2 places: `Makefile.ci` using the
+  usual Makefile syntax, and `.gitlab-ci.yml` using `needs`. If you
+  only depend on Coq itself the implicit `needs` from the template
+  suffices. Otherwise the `needs` list must include all transitive
+  dependencies including `build:base` or `build:edge+flambda`
+  depending on the switch you chose. See for instance the declaration
+  for `library:ci-analysis`.
+
+- If needed you can disable native compilation by doing `export
+  COQEXTRAFLAGS='-native-compiler no'` before the build commands in
+  the script file. If any of your dependencies disable native
+  compilation you must do the same.
+
 You may also be interested in having your project tested in our
-performance benchmark. Currently this is done by providing an OPAM package
+performance benchmark. Currently this is done by providing a `.dev` OPAM package
 in https://github.com/coq/opam-coq-archive and opening an issue at
 https://github.com/coq/coq/issues.
 
