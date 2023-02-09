@@ -42,6 +42,7 @@ and libraries. We highlight some of the most impactful changes here:
 
   - While Coq supports OCaml 5, users are likely to experience slowdowns ranging from +10% to +50% compared to OCaml 4.
     Moreover, the :tacn:`native_compute` machinery is not available when Coq is compiled with OCaml 5.
+    Therefore, OCaml 5 support should still be considered experimental and not production-ready.
 
 See the `Changes in 8.17.0`_ section below for the detailed list of changes,
 including potentially breaking changes marked with **Changed**.
@@ -72,7 +73,7 @@ Théo Zimmermann.
 
 Our current maintainers are Yves Bertot, Frédéric Besson, Ana Borges,
 Ali Caglayan, Tej Chajed, Cyril Cohen, Pierre Corbineau, Pierre Courtieu, Maxime Dénès,
-Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert,
+Andres Erbsen, Jim Fehrle, Julien Forest, Emilio Jesús Gallego Arias, Gaëtan Gilbert,
 Georges Gonthier, Benjamin Grégoire, Jason Gross, Hugo Herbelin,
 Vincent Laporte, Olivier Laurent, Assia Mahboubi, Kenji Maillard,
 Guillaume Melquiond, Pierre-Marie Pédrot, Clément Pit-Claudel, Pierre Roux,
