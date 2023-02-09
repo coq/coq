@@ -209,7 +209,7 @@ let print_if_is_coercion ref =
 
 let pr_template_variables = function
   | [] -> mt ()
-  | vars -> str " on " ++ prlist_with_sep spc UnivNames.(pr_with_global_universes empty_binders) vars
+  | vars -> str " on " ++ prlist_with_sep spc UnivNames.pr_with_global_universes vars
 
 let print_polymorphism ref =
   let poly = Global.is_polymorphic ref in

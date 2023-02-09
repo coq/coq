@@ -288,6 +288,6 @@ let nf_evars_and_universes_opt_subst fevar flevel fsort frel c =
   in
   aux c
 
-let pr_universe_subst =
+let pr_universe_subst prl =
   let open Pp in
-  Level.Map.pr (fun u -> str" := " ++ Universe.pr u ++ spc ())
+  Level.Map.pr prl (fun u -> str" := " ++ Universe.pr prl u ++ spc ())

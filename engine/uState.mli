@@ -253,7 +253,7 @@ val id_of_level : t -> Univ.Level.t -> Id.t option
 
 val pr_weak : (Univ.Level.t -> Pp.t) -> t -> Pp.t
 
-val pr_universe_opt_subst : universe_opt_subst -> Pp.t
+val pr_universe_opt_subst : (Level.t -> Pp.t) -> universe_opt_subst -> Pp.t
 val pr_sort_opt_subst : t -> Pp.t
 
 module Internal :

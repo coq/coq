@@ -248,26 +248,26 @@ let pppftreestate p = pp(print_pftreestate p)
 
 let pproof p = pp(Proof.pr_proof p)
 
-let ppuni u = pp(Universe.pr u)
-let ppuni_level u = pp (Level.pr u)
+let ppuni u = pp(Universe.raw_pr u)
+let ppuni_level u = pp (Level.raw_pr u)
 let ppqvar q = pp (QVar.pr q)
 let ppesorts s = pp (Sorts.debug_print (Evd.MiniEConstr.ESorts.unsafe_to_sorts s))
 
-let prlev = UnivNames.pr_with_global_universes Id.Map.empty
+let prlev l = UnivNames.pr_with_global_universes l
 let ppuniverse_set l = pp (Level.Set.pr prlev l)
 let ppuniverse_instance l = pp (Instance.pr prlev l)
 let ppuniverse_context l = pp (pr_universe_context prlev l)
 let ppuniverse_context_set l = pp (pr_universe_context_set prlev l)
-let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst l)
-let ppuniverse_opt_subst l = pp (UState.pr_universe_opt_subst l)
-let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst l)
+let ppuniverse_subst l = pp (UnivSubst.pr_universe_subst Level.raw_pr l)
+let ppuniverse_opt_subst l = pp (UState.pr_universe_opt_subst Level.raw_pr l)
+let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst Level.raw_pr l)
 let ppevar_universe_context l = pp (Termops.pr_evar_universe_context l)
-let ppconstraints c = pp (pr_constraints Level.pr c)
+let ppconstraints c = pp (pr_constraints Level.raw_pr c)
 let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
 let ppuniverse_context_future c =
   let ctx = Future.force c in
     ppuniverse_context ctx
-let ppuniverses u = pp (UGraph.pr_universes Level.pr (UGraph.repr u))
+let ppuniverses u = pp (UGraph.pr_universes Level.raw_pr (UGraph.repr u))
 let ppnamedcontextval e =
   let env = Global.env () in
   let sigma = Evd.from_env env in
@@ -366,10 +366,10 @@ let constr_display csr =
        v "")^"|]"
 
   and univ_display u =
-    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Universe.pr u ++ fnl ())
+    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Universe.raw_pr u ++ fnl ())
 
   and level_display u =
-    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Level.pr u ++ fnl ())
+    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Level.raw_pr u ++ fnl ())
 
   and sort_display = function
     | SProp -> "SProp"
@@ -520,16 +520,16 @@ let print_pure_constr csr =
   and box_display c = open_hovbox 1; term_display c; close_box()
 
   and universes_display u =
-    Array.iter (fun u -> print_space (); pp (Level.pr u)) (Instance.to_array u)
+    Array.iter (fun u -> print_space (); pp (Level.raw_pr u)) (Instance.to_array u)
 
   and sort_display = function
     | SProp -> print_string "SProp"
     | Set -> print_string "Set"
     | Prop -> print_string "Prop"
     | Type u -> open_hbox();
-        print_string "Type("; pp (Universe.pr u); print_string ")"; close_box()
+        print_string "Type("; pp (Universe.raw_pr u); print_string ")"; close_box()
     | QSort (q, u) -> open_hbox();
-        print_string "QSort("; pp (int @@ QVar.repr q); print_string ", "; pp (Universe.pr u); print_string ")"; close_box()
+        print_string "QSort("; pp (int @@ QVar.repr q); print_string ", "; pp (Universe.raw_pr u); print_string ")"; close_box()
 
   and name_display x = match x.binder_name with
     | Name id -> print_string (Id.to_string id)

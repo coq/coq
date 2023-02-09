@@ -139,14 +139,14 @@ let pp_sort s =
   | SProp -> Pp.str "SProp"
   | Prop -> Pp.str "Prop"
   | Set -> Pp.str "Set"
-  | Type u -> Pp.(str "Type@{" ++ Univ.Universe.pr u ++ str "}")
-  | QSort (q, u) -> Pp.(str "QSort@{" ++ (int @@ Sorts.QVar.repr q) ++ str ", " ++ Univ.Universe.pr u ++ str "}")
+  | Type u -> Pp.(str "Type@{" ++ Univ.Universe.raw_pr u ++ str "}")
+  | QSort (q, u) -> Pp.(str "QSort@{" ++ (int @@ Sorts.QVar.repr q) ++ str ", " ++ Univ.Universe.raw_pr u ++ str "}")
 
 let pp_struct_const = function
   | Const_sort s -> pp_sort s
   | Const_ind (mind, i) -> Pp.(MutInd.print mind ++ str"#" ++ int i)
   | Const_b0 i -> Pp.int i
-  | Const_univ_level l -> Univ.Level.pr l
+  | Const_univ_level l -> Univ.Level.raw_pr l
   | Const_val _ -> Pp.str "(value)"
   | Const_uint i -> Pp.str (Uint63.to_string i)
   | Const_float f -> Pp.str (Float64.to_string f)

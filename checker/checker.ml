@@ -245,7 +245,7 @@ let explain_exn = function
     let msg =
       if CDebug.(get_flag misc) then
         str "." ++ spc() ++
-          UGraph.explain_universe_inconsistency Univ.Level.pr i
+          UGraph.explain_universe_inconsistency Univ.Level.raw_pr i
       else
         mt() in
       hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")
@@ -280,7 +280,7 @@ let explain_exn = function
                              str"is not convertible with" ++ fnl () ++
                              Constr.debug_print a ++ fnl ());
         Feedback.msg_notice (str"====== universes ====" ++ fnl () ++
-                             (UGraph.pr_universes Univ.Level.pr
+                             (UGraph.pr_universes Univ.Level.raw_pr
                                 (UGraph.repr (ctx.Environ.env_universes))));
         str "CantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"

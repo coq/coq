@@ -178,8 +178,9 @@ let debug_print = function
   | SProp -> Pp.(str "SProp")
   | Prop -> Pp.(str "Prop")
   | Set -> Pp.(str "Set")
-  | Type u -> Pp.(str "Type(" ++ Univ.Universe.pr u ++ str ")")
-  | QSort (q, u) -> Pp.(str "QSort(" ++ int (QVar.repr q) ++ str ", " ++ Univ.Universe.pr u ++ str ")")
+  | Type u -> Pp.(str "Type(" ++ Univ.Universe.raw_pr u ++ str ")")
+  | QSort (q, u) -> Pp.(str "QSort(" ++ int (QVar.repr q) ++ str ","
+                        ++ spc() ++ Univ.Universe.raw_pr u ++ str ")")
 
 let pr_sort_family = function
   | InSProp -> Pp.(str "SProp")

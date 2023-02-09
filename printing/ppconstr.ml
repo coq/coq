@@ -157,7 +157,7 @@ let tag_var = tag Tag.variable
     | CProp -> str "Prop"
     | CSet -> str "Set"
     | CType qid -> pr_qualid qid
-    | CRawType s -> Univ.Level.pr s
+    | CRawType s -> Univ.Level.raw_pr s
 
   let pr_univ_expr (u,n) =
     pr_sort_name_expr u ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
@@ -188,7 +188,7 @@ let tag_var = tag Tag.variable
     | UAnonymous {rigid=true} -> tag_type (str "Type")
     | UAnonymous {rigid=false} -> tag_type (str "_")
     | UNamed (CType u) -> tag_type (pr_qualid u)
-    | UNamed (CRawType s) -> tag_type (Univ.Level.pr s)
+    | UNamed (CRawType s) -> tag_type (Univ.Level.raw_pr s)
 
   let pr_qualid sp =
     let (sl, id) = repr_qualid sp in

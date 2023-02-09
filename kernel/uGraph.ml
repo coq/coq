@@ -18,7 +18,7 @@ module G = AcyclicGraph.Make(struct
     let equal = Level.equal
     let compare = Level.compare
 
-    let pr = Level.pr
+    let raw_pr = Level.raw_pr
   end) [@@inlined] (* without inline, +1% ish on HoTT, compcert. See jenkins 594 vs 596 *)
 (* Do not include G to make it easier to control universe specific
    code (eg add_universe with a constraint vs G.add with no
@@ -276,8 +276,8 @@ let explain_universe_inconsistency prl (o,u,v,p : univ_inconsistency) =
   | Sorts.Set -> str "Set"
   | Sorts.Prop -> str "Prop"
   | Sorts.SProp -> str "SProp"
-  | Sorts.Type u -> Universe.pr_with prl u
-  | Sorts.QSort (_q, u) -> Universe.pr_with prl u (* FIXME? *)
+  | Sorts.Type u -> Universe.pr prl u
+  | Sorts.QSort (_q, u) -> Universe.pr prl u (* FIXME? *)
   in
   let pr_rel = function
     | Eq -> str"=" | Lt -> str"<" | Le -> str"<="

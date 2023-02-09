@@ -632,7 +632,7 @@ let qualid_of_level uctx l =
 let pr_uctx_level uctx l =
   match qualid_of_level uctx l with
   | Some qid -> Libnames.pr_qualid qid
-  | None -> Level.pr l
+  | None -> Level.raw_pr l
 
 type ('a, 'b) gen_universe_decl = {
   univdecl_instance : 'a; (* Declared universes *)
@@ -1023,11 +1023,11 @@ let pr_weak prl {minim_extra={UnivMinim.weak_constraints=weak}} =
   let open Pp in
   prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
 
-let pr_universe_body = function
+let pr_universe_body prl = function
   | None -> Pp.mt ()
-  | Some x -> Pp.(str " := " ++ Univ.Universe.pr x)
+  | Some x -> Pp.(str " := " ++ Univ.Universe.pr prl x)
 
-let pr_universe_opt_subst = Univ.Level.Map.pr pr_universe_body
+let pr_universe_opt_subst prl = Univ.Level.Map.pr prl (pr_universe_body prl)
 
 let pr_sort_opt_subst uctx = QState.pr uctx.sort_variables
 
