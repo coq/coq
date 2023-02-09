@@ -32,7 +32,7 @@ and libraries. We highlight some of the most impactful changes here:
   - :ref:`Fixes <817Eauto>` to the :tacn:`auto` and :tacn:`eauto` tactics, to respect hint priorities and the documented use
     of :tacn:`simple apply`. This is a potentially breaking change.
 
-  - :ref:`New LTac2 <817Ltac2>` APIs, deep pattern-matching with ``as`` clauses and handling of literals,
+  - :ref:`New Ltac2 <817Ltac2>` APIs, deep pattern-matching with ``as`` clauses and handling of literals,
     support for record types and preterms.
 
   - :ref:`Move <817ClassFieldSyntax>` from :g:`:>` to :g:`::` syntax for declaring typeclass fields as instances, fixing
@@ -58,7 +58,7 @@ Erik Martin-Dorel has maintained the `Coq Docker images
 <https://hub.docker.com/r/coqorg/coq>`_ that are used in many Coq
 projects for continuous integration.
 
-Maxime Dénès, Paulo G. Giarrusso, Huỳnh Trần Khanh, and Laurent Théry have
+Maxime Dénès, Paolo G. Giarrusso, Huỳnh Trần Khanh, and Laurent Théry have
 maintained the VsCoq extension for VS Code.
 
 The opam repository for Coq packages has been maintained by
@@ -81,8 +81,8 @@ Matthieu Sozeau, Enrico Tassi, Laurent Théry, Anton Trunov, Li-yao Xia
 and Théo Zimmermann. See the `Coq Team face book <https://coq.inria.fr/coq-team.html>`_
 page for more details.
 
-The 45 contributors to the 8.17 versions are:
-Reynald Affeldt, Tanaka Akira, Lasse Blaauwbroek, Stephan Boyer, Ali Caglayan, Cyril Cohen, Maxime Dénès, Andrej Dudenhefner, Andres Erbsen, František Farka, Jim Fehrle, Paolo G. Giarrusso, Gaëtan Gilbert, Jason Gross, Alban Gruin, Stefan Haan, Hugo Herbelin, Wolf Honore, Bodo Igler, Jerry James, Emilio Jesús Gallego Arias, Ralf Jung, Jan-Oliver Kaiser, Wojciech Karpiel, Chantal Keller, Thomas Klausner, Olivier Laurent, Olivier Laurent and Andrej Dudenhefner, Yishuai Li, Guillaume Melquiond, Karl Palmskog, Sudha Parimala, Pierre-Marie Pédrot, Valentin Robert, Pierre Roux, Julin S, Dmitry Shachnev, Michael Soegtrop, Matthieu Sozeau, Naveen Srinivasan, Sergei Stepanenko, Karolina Surma, Enrico Tassi, Li-yao Xia
+The 45 contributors to the 8.17 version are:
+Reynald Affeldt, Tanaka Akira, Lasse Blaauwbroek, Stephan Boyer, Ali Caglayan, Cyril Cohen, Maxime Dénès, Andrej Dudenhefner, Andres Erbsen, František Farka, Jim Fehrle, Paolo G. Giarrusso, Gaëtan Gilbert, Jason Gross, Alban Gruin, Stefan Haan, Hugo Herbelin, Wolf Honore, Bodo Igler, Jerry James, Emilio Jesús Gallego Arias, Ralf Jung, Jan-Oliver Kaiser, Wojciech Karpiel, Chantal Keller, Thomas Klausner, Olivier Laurent, Yishuai Li, Guillaume Melquiond, Karl Palmskog, Sudha Parimala, Pierre-Marie Pédrot, Valentin Robert, Pierre Roux, Julin S, Dmitry Shachnev, Michael Soegtrop, Matthieu Sozeau, Naveen Srinivasan, Sergei Stepanenko, Karolina Surma, Enrico Tassi, Li-yao Xia
 and Théo Zimmermann.
 
 The Coq community at large helped improve this new version via
@@ -90,11 +90,11 @@ the GitHub issue and pull request system, the coq-club@inria.fr mailing list,
 the `Discourse forum <https://coq.discourse.group/>`_ and the
 `Coq Zulip chat <https://coq.zulipchat.com>`_.
 
-Version 8.17's development spanned 4 months from the release of
-Coq 8.17.0. Théo Zimmermann is the release manager of Coq 8.17.
+Version 8.17's development spanned 5 months from the release of
+Coq 8.16.0. Théo Zimmermann is the release manager of Coq 8.17.
 This release is the result of 414 merged PRs, closing 105 issues.
 
-| Nantes, January 2023,
+| Nantes, February 2023,
 | Matthieu Sozeau for the Coq development team
 
 Changes in 8.17.0
