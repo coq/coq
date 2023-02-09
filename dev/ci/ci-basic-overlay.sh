@@ -359,3 +359,8 @@ project smtcoq "https://github.com/smtcoq/smtcoq" "coq-master"
 # Stalmarck
 ########################################################################
 project stalmarck "https://github.com/coq-community/stalmarck" "master"
+
+########################################################################
+# coq-library-undecidability
+########################################################################
+project coq_library_undecidability "https://github.com/uds-psl/coq-library-undecidability" "master"

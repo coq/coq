@@ -801,6 +801,13 @@ library:ci-jasmin:
   - library:ci-mathcomp
   - library:ci-mathcomp_word
 
+library:ci-coq_library_undecidability:
+  extends: .ci-template
+  needs:
+  - build:base
+  - plugin:ci-equations
+  - plugin:ci-metacoq
+
 # Plugins are by definition the projects that depend on Coq's ML API
 
 plugin:ci-aac_tactics:
