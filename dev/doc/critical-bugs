@@ -2,8 +2,78 @@ Preliminary compilation of critical bugs in stable releases of Coq
 ==================================================================
   WORK IN PROGRESS WITH SEVERAL OPEN QUESTIONS
 
+##################################################################
+##################### Non fixed bugs #############################
+##################################################################
 
-To add: #7723 (vm_compute universe polymorphism), #7695 (modules and algebraic universes), #7615 (lost functor substitutions)
+  component: VM reduction machine
+  summary: Memory corruption
+  introduced: 8.1
+  impacted versions: 8.1-NOW
+  impacted coqchk versions: none (no VM in coqchk)
+  fixed in: NONE
+  found by: Dolan, Roux, Melquiond
+  GH issue number: #13439
+  exploit: ??
+  risk: requires very large number of arguments, fix block size or nested letins
+
+  component: VM and native reduction machines
+  summary: memory corruption by evaluating on ill-typed terms (obtained from unsafe tactics)
+  introduced: 8.1
+  impacted versions: 8.1-NOW
+  impacted coqchk versions: none (no VM or native in coqchk)
+  fixed in: NONE
+  found by: Gaëtan Gilbert, Andres Erbsen
+  GH issue number: #16891
+  exploit: requires a memory corruption to craft something that doesn't just SIGSEV
+  risk: could be activated by chance but unlikely to produce anything
+        other than SIGSEV outside a deliberate attack
+
+  component: name handling / typechecker
+  summary: kernel and checker accept incorrect name aliasing information
+  introduced: a long time ago
+  impacted versions: -NOW
+  impacted coqchk versions: same
+  fixed in: NONE
+  found by: Pierre-Marie Pédrot
+  GH issue number: #7609
+  exploit: see issue (requires a plugin or hand crafted .vo file)
+  risk: low
+
+  component: primitive types and operators
+  summary: coqchk checks too little about primitive declarations
+  introduced: v8.10 (#6914 primitive integers)
+  impacted versions: coqchk only
+  impacted coqchk versions: V8.10-NOW
+  fixed in: NONE
+  found by: Gaëtan Gilbert
+  GH issue number: #12439
+  exploit: not fully worked out, requires crafted .vo file
+  risk: low
+
+  component: Print Assumptions
+  summary:  Print Assumptions + Parameter Inline fails to report some inconsistent flags
+  introduced: #79
+  impacted versions: V8.6-NOW
+  impacted coqchk versions: none
+  found by: Jason Gross
+  GH issue number: #12155
+  exploit: see issue
+  risk: middle if not using coqchk, none if using coqchk (coqchk rejects the produced file)
+
+  component: Print Assumptions
+  summary: Print Assumptions does not report Unset Universe Checking used during functor application
+  introduced: v8.11 (#10291) or earlier 
+  impacted versions: V8.11-NOW
+  impacted coqchk versions: none
+  found by: Gaëtan Gilbert
+  GH issue number: #16646
+  exploit: see issue
+  risk: middle if not using coqchk, none if using coqchk (coqchk rejects the produced file)
+
+##################################################################
+######################### Fixed bugs #############################
+##################################################################
 
 Typing constructions
 
@@ -105,6 +175,17 @@ Module system
   exploit: see GitHub issue
   GH issue number: #15838
   risk: unlikely (caught by coqchk, needs Unset Elimination Schemes in the module type)
+
+  component: Modules
+  summary: Functor inlining drops universe substitution
+  introduced: ?
+  impacted released versions: ??-V8.8.0
+  impacted coqchk versions: same? not sure if coqchk has a this bug
+  fixed in: V8.8.1, V8.9.0 (#7616)
+  found by: Pierre-Marie Pédrot
+  GH issue number: #7615
+  exploit: see issue
+  risk: medium
 
 Universes
 
@@ -227,6 +308,18 @@ Primitive projections
   GH issue number: #4588
   risk: ?
 
+  component: modules and universes
+  summary: incorrect checking of subtyping with algebraic universes
+  introduced: a long time ago
+  impacted released versions: ??-V8.8.0
+  impacted coqchk versions: same
+  fixed in: V8.8.1, V8.9.0 (#7798)
+  found by: Gaëtan Gilbert
+  GH issue number: #7695
+  exploit: see issue
+  risk: needs usage of explicit algebraic universe annotations, coqchk
+        may catch through defunctorialization
+
 Conversion machines
 
   component: "lazy machine" (lazy krivine abstract machine)
@@ -281,9 +374,9 @@ Conversion machines
   summary: primitive integer emulation layer on 32 bits not robust to garbage collection
   introduced: master (before v8.10 in GH pull request #6914)
   impacted released versions: none
-  impacted development branches:
+  impacted development branches: v8.10
   impacted coqchk versions: none (no virtual machine in coqchk)
-  fixed in:
+  fixed in: 5914313 (v8.10)
   found by: Roux, Melquiond
   exploit:
   GH issue number: #9925
@@ -346,11 +439,12 @@ Conversion machines
   component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
   summary: buffer overflow on large records and closures
   introduced: 8.1
-  impacted released versions: 8.1-now
+  impacted released versions: 8.1-8.13
   impacted coqchk versions: none (no virtual machine in coqchk)
-  fixed in:
+  fixed in: v8.13 (#13431)
   found by: Dolan, Roux, Melquiond
   GH issue number: ocaml/ocaml#6385, #11170
+  exploit: ??
   risk: unlikely to be activated by chance, might happen for autogenerated code
 
   component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
@@ -427,6 +521,17 @@ Conversion machines
   GH issue number: #16957
   risk: the full exploitation seems to require "Definition := ltac:()"
         with change_no_check on a section variable in the ltac
+
+  component: VM machine
+  summary: incorrect handling of universe polymorphism
+  introduced: V8.5
+  impacted released versions: V8.5-V8.8.0
+  impacted coqchk versions: none (no VM in coqchk)
+  fixed in: V8.8.1, V8.9.0
+  found by: Jason Gross
+  GH issue number: #7723
+  exploit: see issue
+  risk: ??
 
 Side-effects
 
