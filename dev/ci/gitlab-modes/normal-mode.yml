@@ -2,3 +2,5 @@
 default:
   interruptible: true
   timeout: 1h
+  tags:
+    - not-a-real-tag
