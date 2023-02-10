@@ -1641,7 +1641,7 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
   Proofview.Unsafe.tclEVARS (Evd.clear_metas (clenv_evd indclause)) <*>
   Tacticals.tclTHEN
-    (general_elim_clause0 with_evars flags (submetas, clenv_value indclause, clenv_type indclause) elim)
+    (general_elim_clause0 with_evars flags (submetas, c, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
@@ -1986,7 +1986,7 @@ let progress_with_clause env flags (id, t) clause mvs =
       let metas = Evd.meta_list (clenv_evd innerclause) in
       let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments innerclause) in
       try
-        Some (clenv_instantiate mv ~flags ~submetas clause (clenv_value innerclause, clenv_type innerclause))
+        Some (clenv_instantiate mv ~flags ~submetas clause (mkVar id, clenv_type innerclause))
       with e when noncritical e ->
       match clenv_push_prod innerclause with
       | Some (_, _, innerclause) -> find innerclause

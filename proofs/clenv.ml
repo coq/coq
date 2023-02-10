@@ -456,11 +456,12 @@ let fchain_flags () =
     allow_K_in_toplevel_higher_order_unification = true }
 
 let clenv_instantiate ?(flags=fchain_flags ()) ?submetas mv clenv (c, ty) =
-  let clenv = match submetas with
-  | None -> clenv
+  let clenv, c = match submetas with
+  | None -> clenv, c
   | Some metas ->
     let evd = meta_merge (Metamap.of_list metas) clenv.evd in
     let clenv = update_clenv_evd clenv evd in
+    let c = applist (c, List.map (fun (mv, _) -> mkMeta mv) metas) in
     let map (mv0, submetas0 as arg) =
       if Int.equal mv mv0 then
         (* we never chain more than 2 clenvs *)
@@ -469,7 +470,7 @@ let clenv_instantiate ?(flags=fchain_flags ()) ?submetas mv clenv (c, ty) =
       else arg
     in
     let metas = List.map map clenv.metas in
-    { clenv with metas = metas }
+    { clenv with metas = metas }, c
   in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv = clenv_unify ~flags CUMUL ty (clenv_meta_type clenv mv) clenv in
