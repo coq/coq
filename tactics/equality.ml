@@ -1074,21 +1074,21 @@ let onEquality with_evars tac (c,lbindc) =
   let state = Proofview.Goal.state gl in
   let t = Retyping.get_type_of env sigma c in
   let t' = try snd (Tacred.reduce_to_quantified_ind env sigma t) with UserError _ -> t in
-  let sigma, eq_clause = Clenv.make_evar_clause env sigma t' in
-  let sigma = Clenv.solve_evar_clause env sigma false eq_clause lbindc in
-  if not with_evars && List.exists (fun h -> h.Clenv.hole_deps) eq_clause.Clenv.cl_holes then
-    let filter h = if h.Clenv.hole_deps then Some h.Clenv.hole_name else None in
-    let bindings = List.map_filter filter eq_clause.Clenv.cl_holes in
+  let sigma, eq_clause = EClause.make_evar_clause env sigma t' in
+  let sigma = EClause.solve_evar_clause env sigma false eq_clause lbindc in
+  if not with_evars && List.exists (fun h -> h.EClause.hole_deps) eq_clause.EClause.cl_holes then
+    let filter h = if h.EClause.hole_deps then Some h.EClause.hole_name else None in
+    let bindings = List.map_filter filter eq_clause.EClause.cl_holes in
     Proofview.tclZERO  (RefinerError (env, sigma, UnresolvedBindings bindings))
   else
   let filter h =
-    if h.Clenv.hole_deps then None
+    if h.EClause.hole_deps then None
     else
-      try Some (Proofview_monad.goal_with_state (fst @@ destEvar sigma h.Clenv.hole_evar) state)
+      try Some (Proofview_monad.goal_with_state (fst @@ destEvar sigma h.EClause.hole_evar) state)
       with DestKO -> None
   in
-  let goals = List.map_filter filter eq_clause.Clenv.cl_holes in
-  let cl_args = Array.map_of_list (fun h -> h.Clenv.hole_evar) eq_clause.Clenv.cl_holes in
+  let goals = List.map_filter filter eq_clause.EClause.cl_holes in
+  let cl_args = Array.map_of_list (fun h -> h.EClause.hole_evar) eq_clause.EClause.cl_holes in
   let (eq,u,eq_args) = find_this_eq_data_decompose env sigma eq_clause.cl_concl in
   let eq = { eq_data = (eq, eq_args); eq_term = mkApp (c, cl_args); eq_evar = goals } in
   Proofview.Unsafe.tclEVARS sigma <*> tac eq

@@ -143,7 +143,7 @@ type hypinfo = {
   sort : bool; (* true = Prop; false = Type *)
   c1 : constr;
   c2 : constr;
-  holes : Clenv.hole list;
+  holes : EClause.hole list;
 }
 
 let error_no_relation () = user_err Pp.(str "Cannot find a relation to rewrite.")
@@ -192,16 +192,16 @@ let decompose_applied_relation env sigma (c,l) =
   let open Context.Rel.Declaration in
   let ctype = Retyping.get_type_of env sigma c in
   let find_rel ty =
-    let sigma, cl = Clenv.make_evar_clause env sigma ty in
-    let sigma = Clenv.solve_evar_clause env sigma true cl l in
-    let { Clenv.cl_holes = holes; Clenv.cl_concl = t } = cl in
+    let sigma, cl = EClause.make_evar_clause env sigma ty in
+    let sigma = EClause.solve_evar_clause env sigma true cl l in
+    let { EClause.cl_holes = holes; EClause.cl_concl = t } = cl in
     match decompose_app_rel env sigma t with
     | None -> None
     | Some (equiv, ty1, ty2, concl, c1, c2) ->
       match evd_convertible env sigma ty1 ty2 with
       | None -> None
       | Some sigma ->
-        let args = Array.map_of_list (fun h -> h.Clenv.hole_evar) holes in
+        let args = Array.map_of_list (fun h -> h.EClause.hole_evar) holes in
         let value = mkApp (c, args) in
           Some (sigma, { prf=value;
                   car=ty1; rel = equiv; sort = Sorts.is_prop (ESorts.kind sigma concl);
@@ -622,8 +622,8 @@ let solve_remaining_by env sigma holes by =
   | None -> sigma
   | Some tac ->
     let map h =
-      if h.Clenv.hole_deps then None
-      else match EConstr.kind sigma h.Clenv.hole_evar with
+      if h.EClause.hole_deps then None
+      else match EConstr.kind sigma h.EClause.hole_evar with
       | Evar (evk, _) ->
         Some evk
       | _ -> None

@@ -509,8 +509,8 @@ let decompose_applied_relation env sigma c ctype left2right =
     (* FIXME: this is nonsense, we generate evars and then we drop the
        corresponding evarmap. This sometimes works because [Term_dnet] performs
        evar surgery via [Termops.filtering]. *)
-    let sigma, ty = Clenv.make_evar_clause env sigma ty in
-    let (_, args) = Termops.decompose_app_vect sigma ty.Clenv.cl_concl in
+    let sigma, ty = EClause.make_evar_clause env sigma ty in
+    let (_, args) = Termops.decompose_app_vect sigma ty.EClause.cl_concl in
     let len = Array.length args in
     if 2 <= len then
       let c1 = args.(len - 2) in
