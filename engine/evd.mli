@@ -130,7 +130,7 @@ val evar_filter : 'a evar_info -> Filter.t
     When filtered out, the corresponding variable is not allowed to occur
     in the solution *)
 
-val evar_abstract_arguments : 'a evar_info -> Abstraction.t
+val evar_abstract_arguments : undefined evar_info -> Abstraction.t
 (** Boolean information over {!evar_hyps}, telling if an hypothesis instance
     can be imitated or should stay abstract in HO unification problems
     and inversion (see [second_order_matching_with_args] for its use). *)
