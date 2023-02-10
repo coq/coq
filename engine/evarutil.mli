@@ -41,6 +41,7 @@ type naming_mode =
 
 val new_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->
+  ?relevance:Sorts.relevance ->
   ?abstract_arguments:Abstraction.t -> ?candidates:constr list ->
   ?naming:intro_pattern_naming_expr ->
   ?typeclass_candidate:bool ->
