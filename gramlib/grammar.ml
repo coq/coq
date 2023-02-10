@@ -1037,34 +1037,35 @@ let rec name_of_symbol_failed : type s tr a. s ty_entry -> (s, tr, a) ty_symbol 
 and name_of_tree_failed : type s tr a. s ty_entry -> (s, tr, a) ty_tree -> _ =
   fun entry ->
   function
-    Node (_, {node = s; brother = bro; son = son}) ->
+    Node (_, {node = s; son = son; brother = bro}) ->
       let tokl =
         match s with
           Stoken tok -> get_token_list entry tok TokNil son
         | _ -> None
       in
-      begin match tokl with
-        None ->
+      let txt =
+        match tokl with
+        | None ->
           let txt = name_of_symbol_failed entry s in
           let txt =
             match s, son with
               Sopt _, Node _ -> txt ^ " or " ^ name_of_tree_failed entry son
             | _ -> txt
           in
-          let txt =
-            match bro with
-              DeadEnd -> txt | LocAct (_, _) -> txt
-            | Node _ -> txt ^ " or " ^ name_of_tree_failed entry bro
-          in
           txt
-      | Some (TokTree (last_tok, _, rev_tokl)) ->
-         let rec build_str : type a b. string -> (a, b) tok_list -> string =
+        | Some (TokTree (last_tok, _, rev_tokl)) ->
+          let rec build_str : type a b. string -> (a, b) tok_list -> string =
            fun s -> function
            | TokNil -> s
            | TokCns (tok, t) -> build_str (L.tok_text tok ^ " " ^ s) t in
-         build_str (L.tok_text last_tok) rev_tokl
+          build_str (L.tok_text last_tok) rev_tokl
+      in
+      begin match bro with
+      | DeadEnd -> txt
+      | LocAct (_, _) -> "nothing else"
+      | Node _ -> txt ^ " or " ^ name_of_tree_failed entry bro
       end
-  | DeadEnd -> "???" | LocAct (_, _) -> "action"
+  | DeadEnd -> "???" | LocAct (_, _) -> "nothing else"
 
 let tree_failed (type s tr a) (entry : s ty_entry) (prev_symb_result : a) (prev_symb : (s, tr, a) ty_symbol) tree =
   let txt = name_of_tree_failed entry tree in
@@ -1096,13 +1097,16 @@ let tree_failed (type s tr a) (entry : s ty_entry) (prev_symb_result : a) (prev_
         end
     | Sopt _ -> txt ^ " expected"
     | Stree _ -> txt ^ " expected"
-    | _ -> txt ^ " expected after " ^ name_of_symbol_failed entry prev_symb
+    | Snterm _ | Snterml _ | Sself | Snext
+    | Stoken _ | Stokens _ -> txt ^ " expected after " ^ name_of_symbol_failed entry prev_symb
   in
   txt ^ " (in [" ^ entry.ename ^ "])"
 
 let symb_failed entry prev_symb_result prev_symb symb =
   let tree = Node (MayRec3, {node = symb; brother = DeadEnd; son = DeadEnd}) in
   tree_failed entry prev_symb_result prev_symb tree
+
+exception TokenListFailed : 's ty_entry * 'a * ('s, 'tr, 'a) ty_symbol * ('s, 'b, 'c) ty_tree -> exn
 
 let level_number entry lab =
   let rec lookup levn =
@@ -1289,8 +1293,12 @@ and parser_of_token_list : type s tr lt r.
          | Some a ->
            (match try Some (p1 gstate a strm) with Stream.Failure -> None with
             | Some act -> act a
-            | None -> p2 gstate last_a strm)
-         | None -> p2 gstate last_a strm)
+            | None ->
+              (try p2 gstate last_a strm
+               with TokenListFailed _ -> raise (TokenListFailed (entry, a, Stoken tok, son))))
+         | None ->
+            (try p2 gstate last_a strm
+             with TokenListFailed _ -> raise (TokenListFailed (entry, last_a, Stoken last_tok, tree))))
     | DeadEnd -> fun gstate last_a strm -> raise Stream.Failure
     | _ ->
        let ps = parser_of_tree entry nlevn alevn tree in
@@ -1302,13 +1310,16 @@ and parser_of_token_list : type s tr lt r.
            try Some (parser_of_tree entry nlevn alevn (top_tree entry tree) gstate strm) with Stream.Failure -> None
          with
          | Some act -> act
-         | None -> raise (Stream.Error (tree_failed entry last_a (Stoken last_tok) tree))
+         | None -> raise (TokenListFailed (entry, last_a, (Stoken last_tok), tree))
   in
   let ps = loop 1 tok tree in
   let tematch = token_ematch tok in
   fun gstate strm ->
     match LStream.peek gstate.kwstate strm with
-    | Some tok -> let a = tematch tok in let act = ps gstate a strm in act a
+    | Some tok' ->
+      let a = tematch tok' in
+      begin try let act = ps gstate a strm in act a
+      with TokenListFailed (entry, a, tok, tree) -> raise (Stream.Error (tree_failed entry a tok tree)) end
     | None -> raise Stream.Failure
 and parser_of_symbol : type s tr a.
   s ty_entry -> int -> (s, tr, a) ty_symbol -> GState.t -> a parser_t =
