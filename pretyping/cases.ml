@@ -2238,7 +2238,7 @@ let hole na = DAst.make @@
       Evar_kinds.qm_obligation= Evar_kinds.Define false;
       Evar_kinds.qm_name=na;
       Evar_kinds.qm_record_field=None},
-         IntroAnonymous, None)
+         IntroAnonymous)
 
 let constr_of_pat env sigma arsign pat avoid =
   let rec typ env sigma (ty, realargs) pat avoid =

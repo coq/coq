@@ -388,7 +388,7 @@ let pr_module_binders l pr_c =
   prlist_strict (pr_module_vardecls pr_c) l
 
 let pr_type_option pr_c = function
-  | { v = CHole (k, Namegen.IntroAnonymous, _) } -> mt()
+  | { v = CHole (k, Namegen.IntroAnonymous) } -> mt()
   | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
 let pr_binders_arg =

@@ -122,7 +122,8 @@ and constr_expr_r =
                  constr_expr * constr_expr
   | CIf of constr_expr * (lname option * constr_expr option)
          * constr_expr * constr_expr
-  | CHole   of Evar_kinds.t option * Namegen.intro_pattern_naming_expr * Genarg.raw_generic_argument option
+  | CHole   of Evar_kinds.t option * Namegen.intro_pattern_naming_expr
+  | CGenarg of Genarg.raw_generic_argument
   | CPatVar of Pattern.patvar
   | CEvar   of Glob_term.existential_name CAst.t * (lident * constr_expr) list
   | CSort   of sort_expr

@@ -83,7 +83,7 @@ let is_rec names =
   let rec lookup names gt =
     match DAst.get gt with
     | GVar id -> check_id id names
-    | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GInt _ | GFloat _ ->
+    | GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _ | GFloat _ ->
       false
     | GCast (b, _, _) -> lookup names b
     | GRec _ -> CErrors.user_err (Pp.str "GRec not handled")
@@ -2014,7 +2014,7 @@ let rec add_args id new_args =
         , (na, Option.map (add_args id new_args) b_option)
         , add_args id new_args b2
         , add_args id new_args b3 )
-    | (CHole _ | CPatVar _ | CEvar _ | CPrim _ | CSort _) as b -> b
+    | (CHole _ | CGenarg _ | CPatVar _ | CEvar _ | CPrim _ | CSort _) as b -> b
     | CCast (b1, k, b2) ->
       CCast (add_args id new_args b1, k, add_args id new_args b2)
     | CRecord pars ->

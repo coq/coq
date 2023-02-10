@@ -428,7 +428,7 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
   | GSort gs ->
      (try PSort (Glob_ops.glob_sort_family gs)
       with Glob_ops.ComplexSort -> user_err ?loc (str "Unexpected universe in pattern."))
-  | GHole _ ->
+  | GHole _ | GGenarg _ ->
       PMeta None
   | GCast (c,_,_) ->
       warn_cast_in_pattern ();

@@ -28,7 +28,7 @@ let mkGCases (rto, l, brl) = DAst.make @@ GCases (RegularStyle, rto, l, brl)
 
 let mkGHole () =
   DAst.make
-  @@ GHole (Evar_kinds.BinderType Anonymous, Namegen.IntroAnonymous, None)
+  @@ GHole (Evar_kinds.BinderType Anonymous, Namegen.IntroAnonymous)
 
 (*
   Some basic functions to decompose glob_constrs
@@ -106,7 +106,6 @@ let change_vars =
             , change_vars mapping lhs
             , change_vars mapping rhs )
         | GRec _ -> user_err ?loc Pp.(str "Local (co)fixes are not supported")
-        | GSort _ as x -> x | GHole _ as x -> x | GInt _ as x -> x
         | GFloat _ as x -> x
         | GCast (b, k, c) ->
           GCast (change_vars mapping b, k, change_vars mapping c)
@@ -115,7 +114,8 @@ let change_vars =
             ( u
             , Array.map (change_vars mapping) t
             , change_vars mapping def
-            , change_vars mapping ty ))
+            , change_vars mapping ty )
+        | GSort _ | GHole _ | GGenarg _ | GInt _ as x -> x)
       rt
   and change_vars_br mapping ({CAst.loc; v = idl, patl, res} as br) =
     let new_mapping = List.fold_right Id.Map.remove idl mapping in
@@ -283,7 +283,7 @@ let rec alpha_rt excluded rt =
         , alpha_rt excluded lhs
         , alpha_rt excluded rhs )
     | GRec _ -> user_err Pp.(str "Not handled GRec")
-    | (GSort _ | GInt _ | GFloat _ | GHole _) as rt -> rt
+    | (GSort _ | GInt _ | GFloat _ | GHole _ | GGenarg _) as rt -> rt
     | GCast (b, k, c) ->
       GCast (alpha_rt excluded b, k, alpha_rt excluded c)
     | GApp (f, args) ->
@@ -343,6 +343,7 @@ let is_free_in id =
           is_free_in cond || is_free_in br1 || is_free_in br2
         | GRec _ -> user_err Pp.(str "Not handled GRec") | GSort _ -> false
         | GHole _ -> false
+        | GGenarg _ -> false (* XXX isn't this incorrect? *)
         | GCast (b, _, t) ->
           is_free_in b || is_free_in t
         | GInt _ | GFloat _ -> false
@@ -419,7 +420,7 @@ let replace_var_by_term x_id term =
             , replace_var_by_pattern lhs
             , replace_var_by_pattern rhs )
         | GRec _ -> CErrors.user_err (Pp.str "Not handled GRec")
-        | (GSort _ | GHole _) as rt -> rt
+        | (GSort _ | GHole _ | GGenarg _) as rt -> rt (* is this correct for GGenarg? *)
         | GInt _ as rt -> rt
         | GFloat _ as rt -> rt
         | GArray (u, t, def, ty) ->
@@ -502,7 +503,7 @@ let expand_as =
   in
   let rec expand_as map =
     DAst.map (function
-      | (GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GInt _ | GFloat _)
+      | (GRef _ | GEvar _ | GPatVar _ | GSort _ | GHole _ | GGenarg _ | GInt _ | GFloat _)
         as rt ->
         rt
       | GVar id as rt -> (
@@ -568,7 +569,7 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
   (* then we map [rt] to replace the implicit holes by their values *)
   let rec change rt =
     match DAst.get rt with
-    | GHole (ImplicitArg (grk, pk, bk), _, _) -> (
+    | GHole (ImplicitArg (grk, pk, bk), _) -> (
       try
         (* we only want to deal with implicit arguments *)
 
@@ -592,7 +593,7 @@ let resolve_and_replace_implicits ?(flags = Pretyping.all_and_fail_flags)
           (* we just have to lift the solution in glob_term *)
           Detyping.detype Detyping.Now Id.Set.empty env ctx (f c)
         | Evar_empty -> rt (* the hole was not solved : we do nothing *) ) )
-    | GHole (BinderType na, _, _) ->
+    | GHole (BinderType na, _) ->
       (* we only want to deal with implicit arguments *)
       let res =
         try

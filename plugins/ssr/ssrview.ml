@@ -168,7 +168,7 @@ let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
     (* We unravel notations *)
     let g = intern_constr_expr ist sigma body in
     match DAst.get g with
-    | Glob_term.GHole (_,_, Some x)
+    | Glob_term.GGenarg x
       when Genarg.has_type x (Genarg.glbwit Tacarg.wit_tactic)
         -> tclUNIT (`Tac (Genarg.out_gen (Genarg.glbwit Tacarg.wit_tactic) x))
     | _ -> tclUNIT (`Term (annotation, interp_env, g))
@@ -184,7 +184,7 @@ let tclINJ_CONSTR_IST ist p =
 
 let mkGHole =
   DAst.make
-    (Glob_term.GHole(Evar_kinds.InternalHole, Namegen.IntroAnonymous, None))
+    (Glob_term.GHole(Evar_kinds.InternalHole, Namegen.IntroAnonymous))
 let rec mkGHoles n = if n > 0 then mkGHole :: mkGHoles (n - 1) else []
 let mkGApp f args =
   if args = [] then f

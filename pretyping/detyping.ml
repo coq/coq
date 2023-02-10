@@ -829,7 +829,7 @@ and detype_r d flags avoid env sigma t =
     | Proj (p,c) ->
       let noparams () =
         let pars = Projection.npars p in
-        let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous,None) in
+        let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous) in
         let args = List.make pars hole in
         GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
               (args @ [detype d flags avoid env sigma c]))
@@ -1192,16 +1192,20 @@ let rec subst_glob_constr env subst = DAst.map (function
         if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
           GRec (fix,ida,bl',ra1',ra2')
 
-  | GHole (knd, naming, solve) as raw ->
+  | GHole (knd, naming) as raw ->
     let nknd = match knd with
     | Evar_kinds.ImplicitArg (ref, i, b) ->
       let nref, _ = subst_global subst ref in
       if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
     | _ -> knd
     in
-    let nsolve = Option.Smart.map (Hook.get f_subst_genarg subst) solve in
-    if nsolve == solve && nknd == knd then raw
-    else GHole (nknd, naming, nsolve)
+    if nknd == knd then raw
+    else GHole (nknd, naming)
+
+  | GGenarg arg as raw ->
+    let arg' = Hook.get f_subst_genarg subst arg in
+    if arg' == arg then raw
+    else GGenarg arg'
 
   | GCast (r1,k,r2) as raw ->
       let r1' = subst_glob_constr env subst r1 in

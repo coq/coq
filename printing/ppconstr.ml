@@ -225,7 +225,7 @@ let tag_var = tag Tag.variable
         str "(" ++ pr_pos pos ++ str ":=" ++ pr ltop a ++ str ")"
 
   let pr_opt_type_spc pr = function
-    | { CAst.v = CHole (_,IntroAnonymous,_) } -> mt ()
+    | { CAst.v = CHole (_,IntroAnonymous) } -> mt ()
     | t ->  str " :" ++ pr_sep_com (fun()->brk(1,4)) (pr ltop) t
 
   let pr_prim_token = function
@@ -394,7 +394,7 @@ let tag_var = tag Tag.variable
         end
       | Default b ->
         match t with
-          | { CAst.v = CHole (_,IntroAnonymous,_) } ->
+          | { CAst.v = CHole (_,IntroAnonymous) } ->
             let s = prlist_with_sep spc pr_lname nal in
             hov 1 (surround_implicit b s)
           | _ ->
@@ -485,7 +485,7 @@ let tag_var = tag Tag.variable
 
   let pr_case_type pr po =
     match po with
-      | None | Some { CAst.v = CHole (_,IntroAnonymous,_) } -> mt()
+      | None | Some { CAst.v = CHole (_,IntroAnonymous) } -> mt()
       | Some p ->
         spc() ++ hov 2 (keyword "return" ++ pr_sep_com spc (pr lsimpleconstr) p)
 
@@ -651,12 +651,12 @@ let tag_var = tag Tag.variable
         lif
         )
 
-      | CHole (_,IntroIdentifier id,_) ->
+      | CHole (_,IntroIdentifier id) ->
         return (str "?[" ++ pr_id id ++ str "]", latom)
-      | CHole (_,IntroFresh id,_) ->
+      | CHole (_,IntroFresh id) ->
         return (str "?[?" ++ pr_id id ++ str "]", latom)
-      | CHole (_,_,_) ->
-        return (str "_", latom)
+      | CHole _ -> return (str "_", latom)
+      | CGenarg _ -> return (str "_", latom) (* TODO *)
       | CEvar (n,l) ->
         return (pr_evar (pr mt) n l, latom)
       | CPatVar p ->

@@ -829,7 +829,7 @@ GRAMMAR EXTEND Gram
                 let ty = CAst.make ?loc:ty.loc @@ QConstrMatchPattern ty in
                 t, ty
               | _ ->
-                let ty = CAst.make @@ QConstrMatchPattern (CAst.make @@ CHole (None, IntroAnonymous, None)) in
+                let ty = CAst.make @@ QConstrMatchPattern (CAst.make @@ CHole (None, IntroAnonymous)) in
                 bod, ty
           in
           (na, Some bod, ty) }
@@ -911,15 +911,15 @@ GRAMMAR EXTEND Gram
   Pcoq.Constr.term: LEVEL "0"
     [ [ IDENT "ltac2"; ":"; "("; tac = ltac2_expr; ")" ->
       { let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
-        CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
+        CAst.make ~loc (CGenarg arg) }
       | test_ampersand_ident; "&"; id = Prim.ident ->
       { let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
-        CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
+        CAst.make ~loc (CGenarg arg) }
       | test_dollar_ident; "$"; id = Prim.ident ->
       { let id = Loc.tag ~loc id in
         let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
-        CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
+        CAst.make ~loc (CGenarg arg) }
     ] ]
   ;
 END
@@ -937,7 +937,7 @@ let rules = [
     begin fun id _ _ loc ->
       let id = Loc.tag ~loc id in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
-      CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
+      CAst.make ~loc (CGenarg arg)
     end
   );
 
@@ -947,7 +947,7 @@ let rules = [
     begin fun id _ _ loc ->
       let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
-      CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
+      CAst.make ~loc (CGenarg arg)
     end
   );
 
@@ -957,7 +957,7 @@ let rules = [
        Symbol.token (PKEYWORD "(") ++ Symbol.nterm ltac2_expr ++ Symbol.token (PKEYWORD ")"))
     begin fun _ tac _ _ _ loc ->
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
-      CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
+      CAst.make ~loc (CGenarg arg)
     end
   )
 ] in

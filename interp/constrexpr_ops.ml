@@ -230,6 +230,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         constr_expr_eq t1 t2 &&
         constr_expr_eq f1 f2
       | CHole _, CHole _ -> true
+      | CGenarg _, CGenarg _ -> true
       | CPatVar i1, CPatVar i2 ->
         Id.equal i1 i2
       | CEvar (id1, c1), CEvar (id2, c2) ->
@@ -255,7 +256,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         constr_expr_eq def1 def2 && constr_expr_eq ty1 ty2 &&
         eq_universes u1 u2
       | (CRef _ | CFix _ | CCoFix _ | CProdN _ | CLambdaN _ | CLetIn _ | CAppExpl _
-        | CApp _ | CProj _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _
+        | CApp _ | CProj _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _ | CGenarg _
         | CPatVar _ | CEvar _ | CSort _ | CCast _ | CNotation _ | CPrim _
         | CGeneralization _ | CDelimiters _ | CArray _), _ -> false
 
@@ -354,11 +355,9 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
-      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CAst.make @@ CHole (None,IntroAnonymous,None)) bl) acc bll
+      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CAst.make @@ CHole (None,IntroAnonymous)) bl) acc bll
     | CGeneralization (_,c) -> f n acc c
     | CDelimiters (_,a) -> f n acc a
-    | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
-      acc
     | CRecord l -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
     | CCases (sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
@@ -382,6 +381,8 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
     | CCoFix (_,_) ->
       Feedback.msg_warning (strbrk "Capture check in multiple binders not done"); acc
     | CArray (_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
+    | CHole _ | CGenarg _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
+      acc
   )
 
 let free_vars_of_constr_expr c =
@@ -470,8 +471,6 @@ let map_constr_expr_with_binders g f e = CAst.map (function
                     List.map (fun bl -> snd (fold_map_local_binders f g e bl)) bll))
     | CGeneralization (b,c) -> CGeneralization (b,f e c)
     | CDelimiters (s,a) -> CDelimiters (s,f e a)
-    | CHole _ | CEvar _ | CPatVar _ | CSort _
-    | CPrim _ | CRef _ as x -> x
     | CRecord l -> CRecord (List.map (fun (id, c) -> (id, f e c)) l)
     | CCases (sty,rtnpo,a,bl) ->
       let bl = List.map (fun {CAst.v=(patl,rhs);loc} ->
@@ -504,6 +503,8 @@ let map_constr_expr_with_binders g f e = CAst.map (function
           (id,bl',t',d')) dl)
     | CArray (u, t, def, ty) ->
       CArray (u, Array.map (f e) t, f e def, f e ty)
+    | CHole _ | CGenarg _ | CEvar _ | CPatVar _ | CSort _
+    | CPrim _ | CRef _ as x -> x
   )
 
 (* Used in constrintern *)
@@ -624,7 +625,7 @@ let coerce_to_id = function
 let coerce_to_name = function
   | { CAst.loc; v = CRef (qid,None) } when qualid_is_ident qid ->
     CAst.make ?loc @@ Name (qualid_basename qid)
-  | { CAst.loc; v = CHole (None,IntroAnonymous,None) } -> CAst.make ?loc Anonymous
+  | { CAst.loc; v = CHole (None,IntroAnonymous) } -> CAst.make ?loc Anonymous
   | { CAst.loc; _ } -> CErrors.user_err ?loc
                          (str "This expression should be a name.")
 
@@ -647,7 +648,7 @@ let mkAppPattern ?loc p lp =
 let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
   | CRef (r,None) ->
      CPatAtom (Some r)
-  | CHole (None,IntroAnonymous,None) ->
+  | CHole (None,IntroAnonymous) ->
      CPatAtom None
   | CLetIn ({CAst.loc;v=Name id},b,None,{ CAst.v = CRef (qid,None) })
       when qualid_is_ident qid && Id.equal id (qualid_basename qid) ->

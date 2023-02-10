@@ -168,9 +168,10 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     Array.equal (fun l1 l2 -> List.equal (glob_decl_eq f) l1 l2) decl1 decl2 &&
     Array.equal f c1 c2 && Array.equal f t1 t2
   | GSort s1, GSort s2 -> glob_sort_eq s1 s2
-  | GHole (kn1, nam1, gn1), GHole (kn2, nam2, gn2) ->
-    Option.equal (==) gn1 gn2 (* Only thing sensible *) &&
+  | GHole (_kn1, nam1), GHole (_kn2, nam2) ->
     Namegen.intro_pattern_naming_eq nam1 nam2
+  | GGenarg gn1, GGenarg gn2 ->
+    gn1 == gn2 (* Only thing sensible *)
   | GCast (c1, k1, t1), GCast (c2, k2, t2) ->
     f c1 c2 && cast_kind_eq k1 k2 && f t1 t2
   | GProj ((cst1, u1), args1, c1), GProj ((cst2, u2), args2, c2) ->
@@ -183,7 +184,7 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
     Array.equal f t1 t2 && f def1 def2 && f ty1 ty2 &&
     Option.equal (List.equal glob_level_eq) u1 u2
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _ | GLetIn _ |
-     GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GCast _ | GProj _ |
+     GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _ | GGenarg _ | GCast _ | GProj _ |
      GInt _ | GFloat _ | GArray _), _ -> false
 
 let rec glob_constr_eq c = mk_glob_constr_eq glob_constr_eq c
@@ -239,7 +240,7 @@ let map_glob_constr_left_to_right f = DAst.map (function
       let comp2 = f def in
       let comp3 = f ty in
       GArray (u,comp1,comp2,comp3)
-  | (GVar _ | GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) as x -> x
+  | (GVar _ | GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) as x -> x
   )
 
 let map_glob_constr = map_glob_constr_left_to_right
@@ -273,7 +274,7 @@ let fold_glob_constr f acc = DAst.with_val (function
   | GProj (p,args,c) ->
     f (List.fold_left f acc args) c
   | GArray (_u,t,def,ty) -> f (f (Array.fold_left f acc t) def) ty
-  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc
+  | (GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc
   )
 let fold_return_type_with_binders f g v acc (na,tyopt) =
   (* eta expansion is important if g has effects, eg bound_glob_vars below, see #11959 *)
@@ -318,7 +319,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GProj (p,args,c) ->
     f v (List.fold_left (f v) acc args) c
   | GArray (_u, t, def, ty) -> f v (f v (Array.fold_left (f v) acc t) def) ty
-  | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc))
+  | (GSort _ | GHole _ | GGenarg _ | GRef _ | GEvar _ | GPatVar _ | GInt _ | GFloat _) -> acc))
 
 let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 
@@ -525,7 +526,8 @@ let rec cases_pattern_of_glob_constr env na c =
       raise Not_found
     | Anonymous -> PatVar (Name id)
     end
-  | GHole (_,_,_) -> PatVar na
+  | GHole (_,_) -> PatVar na
+  | GGenarg _ -> PatVar na (* XXX does this really make sense? *)
   | GRef (GlobRef.VarRef id,_) -> PatVar (Name id)
   | GRef (GlobRef.ConstructRef cstr,_) -> PatCstr (cstr,[],na)
   | GApp (c, l) ->
@@ -589,7 +591,7 @@ let rec glob_constr_of_cases_pattern_aux env isclosed x = DAst.map_with_loc (fun
   | PatVar Anonymous when not isclosed ->
       GHole (Evar_kinds.QuestionMark {
         Evar_kinds.default_question_mark with Evar_kinds.qm_obligation=Define false;
-      },Namegen.IntroAnonymous,None)
+      },Namegen.IntroAnonymous)
   | _ -> raise Not_found
   ) x
 
