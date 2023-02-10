@@ -837,7 +837,7 @@ let () = define1 "constr_pretype" (repr_ext val_preterm) begin fun c ->
         ltac_constrs = closure.typed;
         ltac_uconstrs = closure.untyped;
         ltac_idents = closure.idents;
-        ltac_genargs = Id.Map.empty;
+        ltac_genargs = closure.genargs;
       } in
       let flags = constr_flags in
       let sigma, t = understand_ltac flags env sigma vars WithoutTypeConstraint term in
@@ -1434,9 +1434,9 @@ let () =
     let (_, (c, _)) = Genintern.intern Stdarg.wit_constr ist c in
     (GlbVal (Id.Set.empty,c), gtypref t_preterm)
   in
-  let interp {env_ist=env} (ids,c) =
+  let interp env (ids,c) =
     let open Ltac_pretype in
-    let get_preterm id = match Id.Map.find_opt id env with
+    let get_preterm id = match Id.Map.find_opt id env.env_ist with
       | Some (ValExt (tag, v)) ->
         begin match Tac2dyn.Val.eq tag val_preterm with
           | Some Refl -> (v:closed_glob_constr)
@@ -1448,7 +1448,7 @@ let () =
       idents = Id.Map.empty;
       typed = Id.Map.empty;
       untyped = Id.Map.bind get_preterm ids;
-      genargs = Id.Map.empty;
+      genargs = Tac2interp.set_env env Id.Map.empty;
     } in
     let c = { closure; term = c } in
     return (Value.of_ext val_preterm c)
