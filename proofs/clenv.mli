@@ -45,7 +45,8 @@ val mk_clenv_from_n : env -> evar_map -> int -> EConstr.constr * EConstr.types -
 
 (** {6 linking of clenvs } *)
 
-val clenv_instantiate : ?flags:unify_flags -> metavariable -> clausenv -> (constr * types) -> clausenv
+val clenv_instantiate : ?flags:unify_flags -> ?submetas:(metavariable * clbinding) list ->
+  metavariable -> clausenv -> (constr * types) -> clausenv
 
 (** {6 Unification with clenvs } *)
 

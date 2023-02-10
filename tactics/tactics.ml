@@ -1563,7 +1563,7 @@ type eliminator =
 | ElimClause of EConstr.constr with_bindings
   (* Arbitrary expression provided by the user *)
 
-let general_elim_clause0 with_evars flags (metas, c, ty) elim =
+let general_elim_clause0 with_evars flags (submetas, c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
@@ -1591,12 +1591,11 @@ let general_elim_clause0 with_evars flags (metas, c, ty) elim =
     try nth_arg i (clenv_arguments elimclause)
     with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
   in
-  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas (clenv_evd elimclause)) in
-  let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
+  let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
   Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
   end
 
-let general_elim_clause_in0 with_evars flags id (metas, c, ty) elim =
+let general_elim_clause_in0 with_evars flags id (submetas, c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
@@ -1609,13 +1608,12 @@ let general_elim_clause_in0 with_evars flags id (metas, c, ty) elim =
     with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
   in
   (* Assumes that the metas of [c] are part of [sigma] already *)
-  let elimclause = Clenv.update_clenv_evd elimclause (meta_merge metas (clenv_evd elimclause)) in
   let hypmv =
     match List.remove Int.equal indmv (clenv_independent elimclause) with
     | [a] -> a
     | _ -> error IllFormedEliminationType
   in
-  let elimclause = clenv_instantiate ~flags indmv elimclause (c, ty) in
+  let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
   let hyp = mkVar id in
   let hyp_typ = Retyping.get_type_of env sigma hyp in
   let elimclause =
@@ -1639,9 +1637,11 @@ let general_elim with_evars clear_flag (c, lbindc) elim =
   let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
+  let metas = Evd.meta_list (clenv_evd indclause) in
+  let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
   Proofview.Unsafe.tclEVARS (Evd.clear_metas (clenv_evd indclause)) <*>
   Tacticals.tclTHEN
-    (general_elim_clause0 with_evars flags (Evd.meta_list (clenv_evd indclause), clenv_value indclause, clenv_type indclause) elim)
+    (general_elim_clause0 with_evars flags (submetas, clenv_value indclause, clenv_type indclause) elim)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
@@ -1983,12 +1983,10 @@ let progress_with_clause env flags (id, t) clause mvs =
   if List.is_empty mvs then raise UnableToApply;
   let f mv =
     let rec find innerclause =
+      let metas = Evd.meta_list (clenv_evd innerclause) in
+      let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments innerclause) in
       try
-        let clause =
-          Clenv.update_clenv_evd clause
-            (meta_merge (Evd.meta_list (clenv_evd innerclause)) (clenv_evd clause))
-        in
-        Some (clenv_instantiate mv ~flags clause (clenv_value innerclause, clenv_type innerclause))
+        Some (clenv_instantiate mv ~flags ~submetas clause (clenv_value innerclause, clenv_type innerclause))
       with e when noncritical e ->
       match clenv_push_prod innerclause with
       | Some (_, _, innerclause) -> find innerclause

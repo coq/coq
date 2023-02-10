@@ -33,10 +33,15 @@ open Logic
 (******************************************************************)
 (* Clausal environments *)
 
+type meta_arg = metavariable * metavariable list option
+(* List of clenv meta arguments with the submetas of the clenv it has been
+   possibly chained with. We never need to chain more than two clenvs, so there
+   is no need to make the type recursive. *)
+
 type clausenv = {
   env      : env;
   evd      : evar_map;
-  metas    : metavariable list;
+  metas    : meta_arg list;
   templval : constr freelisted;
   templtyp : constr freelisted;
   cache : Reductionops.meta_instance_subst;
@@ -70,7 +75,7 @@ let clenv_refresh env sigma ctx clenv =
 let cl_env ce = ce.env
 let clenv_evd ce =  ce.evd
 let clenv_templtyp c = c.templtyp
-let clenv_arguments c = c.metas
+let clenv_arguments c = List.map fst c.metas
 
 let clenv_meta_type clenv mv =
   let ty =
@@ -99,7 +104,7 @@ let clenv_push_prod cl =
           templtyp = mk_freelisted concl;
           evd = e';
           env = cl.env;
-          metas = cl.metas @ [mv];
+          metas = cl.metas @ [mv, None];
           cache = create_meta_instance_subst e' })
     | _ -> None
   in clrec typ
@@ -143,7 +148,7 @@ let mk_clenv_from_env env sigma n (c,cty) =
     templtyp = mk_freelisted concl;
     evd = evd;
     env = env;
-    metas = args;
+    metas = List.map (fun mv -> mv, None) args;
     cache = create_meta_instance_subst evd }
 
 let mk_clenv_from env sigma c = mk_clenv_from_env env sigma None c
@@ -450,7 +455,22 @@ let fchain_flags () =
   { (default_unify_flags ()) with
     allow_K_in_toplevel_higher_order_unification = true }
 
-let clenv_instantiate ?(flags=fchain_flags ()) mv clenv (c, ty) =
+let clenv_instantiate ?(flags=fchain_flags ()) ?submetas mv clenv (c, ty) =
+  let clenv = match submetas with
+  | None -> clenv
+  | Some metas ->
+    let evd = meta_merge (Metamap.of_list metas) clenv.evd in
+    let clenv = update_clenv_evd clenv evd in
+    let map (mv0, submetas0 as arg) =
+      if Int.equal mv mv0 then
+        (* we never chain more than 2 clenvs *)
+        let () = assert (Option.is_empty submetas0) in
+        (mv, Some (List.map fst metas))
+      else arg
+    in
+    let metas = List.map map clenv.metas in
+    { clenv with metas = metas }
+  in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv = clenv_unify ~flags CUMUL ty (clenv_meta_type clenv mv) clenv in
   clenv_assign mv c clenv
