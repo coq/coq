@@ -568,8 +568,8 @@ Proof. by case/all_tag=> f /all_pair[]; exists f. Qed.
 (**  Refinement types.  **)
 
 (**  Prenex Implicits and renaming.  **)
-Notation sval := (@proj1_sig _ _).
 Notation "@ 'sval'" := (@proj1_sig) (at level 10, format "@ 'sval'").
+Notation sval := (@proj1_sig _ _).
 
 Section Sig.
 
