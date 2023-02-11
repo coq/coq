@@ -319,13 +319,13 @@ let push_node node l =
     when not (Util.List.mem_f E.equal o l) -> o::l
   | _ -> l
 
-let rec flatten_idmap tab l =
-  let f _ tree l = flatten_idmap tree.map (push_node tree.path l) in
-  ModIdmap.fold f tab l
+let rec flatten_tree tree l =
+  let f _ tree l = flatten_tree tree l in
+  ModIdmap.fold f tree.map (push_node tree.path l)
 
 let rec search_prefixes tree = function
   | modid :: path -> search_prefixes (ModIdmap.find modid tree.map) path
-  | [] -> List.rev (flatten_idmap tree.map (push_node tree.path []))
+  | [] -> List.rev (flatten_tree tree [])
 
 let find_prefixes qid tab =
   try
