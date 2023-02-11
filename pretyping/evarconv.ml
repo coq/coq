@@ -279,9 +279,11 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       | None -> raise Not_found
       | Some (l',el,s') -> ((Option.get @@ Stack.list_of_app_stack l') @ [el],s') in
   let h, _ = decompose_app_vect sigma solution.body in
-    sigma,(h, t2),solution.constant,solution.abstractions_ty,(solution.params,params1),
+  let t2 = Stack.zip sigma (t2,sk2) in
+  let h2, _ = decompose_app_vect sigma t2 in
+    sigma,(h, h2),solution.constant,solution.abstractions_ty,(solution.params,params1),
     (solution.cvalue_arguments,us2),(extra_args1,extra_args2),c1,
-    (solution.cvalue_abstraction, Stack.zip sigma (t2,sk2))
+    (solution.cvalue_abstraction, t2)
 
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
