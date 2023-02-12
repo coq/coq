@@ -74,7 +74,12 @@ let clenv_refresh env sigma ctx clenv =
 
 let cl_env ce = ce.env
 let clenv_evd ce =  ce.evd
-let clenv_templtyp c = c.templtyp
+let clenv_type_head_meta c =
+  let hd, _ = decompose_app c.evd c.templtyp.rebus in
+  match EConstr.kind c.evd hd with
+  | Meta p -> Some p
+  | _ -> None
+
 let clenv_arguments c = List.map fst c.metas
 
 let clenv_meta_type clenv mv =
