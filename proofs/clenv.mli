@@ -27,7 +27,7 @@ val clenv_type_head_meta : clausenv -> metavariable option
 
 (* Ad-hoc primitives *)
 val update_clenv_evd : clausenv -> evar_map -> clausenv
-val clenv_convert_val : (env -> evar_map -> econstr -> econstr) -> clausenv -> clausenv
+val clenv_strip_proj_params : clausenv -> clausenv
 val clenv_refresh : env -> evar_map -> Univ.ContextSet.t option -> clausenv -> clausenv
 val clenv_arguments : clausenv -> metavariable list
 

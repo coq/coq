@@ -54,8 +54,25 @@ let mk_clausenv env evd metas templval templtyp = {
 let update_clenv_evd clenv evd =
   mk_clausenv clenv.env evd clenv.metas clenv.templval clenv.templtyp
 
-let clenv_convert_val f clenv =
-  let templval = Evd.map_fl (fun c -> f clenv.env clenv.evd c) clenv.templval in
+let strip_params env sigma c =
+  match EConstr.kind sigma c with
+  | App (f, args) ->
+    (match EConstr.kind sigma f with
+    | Const (cst,_) ->
+      (match Structures.PrimitiveProjections.find_opt cst with
+       | Some p ->
+         let p = Projection.make p false in
+         let npars = Projection.npars p in
+         if Array.length args > npars then
+           mkApp (mkProj (p, args.(npars)),
+                  Array.sub args (npars+1) (Array.length args - (npars + 1)))
+         else c
+       | None -> c)
+    | _ -> c)
+  | _ -> c
+
+let clenv_strip_proj_params clenv =
+  let templval = Evd.map_fl (fun c -> strip_params clenv.env clenv.evd c) clenv.templval in
   mk_clausenv clenv.env clenv.evd clenv.metas templval clenv.templtyp
 
 let clenv_refresh env sigma ctx clenv =
