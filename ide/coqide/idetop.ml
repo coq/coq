@@ -211,7 +211,7 @@ let process_goal short sigma g =
       in
       hyps
   in
-  DebugHook.{ goal_hyp = List.rev hyps; goal_ccl = ccl; goal_id = Proof.goal_uid g; goal_name = name }
+  DebuggerTypes.{ goal_hyp = List.rev hyps; goal_ccl = ccl; goal_id = Proof.goal_uid g; goal_name = name }
 
 let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
   let env = Global.env () in
@@ -225,7 +225,7 @@ let process_goal_diffs ~short diff_goal_map oldp nsigma ng =
     goal_id = Proof.goal_uid ng; goal_name = name }
 
 let export_pre_goals flags Proof.{ sigma; goals; stack } bg_proof process0 =
-  let open DebugHook in
+  let open DebuggerTypes in
   let process x = List.map (process0 sigma) x in
   let fg_goals = if flags.gf_fg then process goals else [] in
   let bg_goals =
@@ -258,7 +258,7 @@ let db_subgoals flags debug_proof =
   let doc = get_doc () in
   if not !DebuggerTypes.in_debug then
     ignore (Stm.finish ~doc : Vernacstate.t);
-  let short = match flags.DebugHook.gf_mode with
+  let short = match flags.DebuggerTypes.gf_mode with
   | "short" -> true
   | _ -> false
   in
@@ -299,7 +299,7 @@ let subgoals flags =
   end
 
 let goals () =
-  let open DebugHook in
+  let open DebuggerTypes in
   let all = { gf_mode = "full"; gf_fg = true; gf_bg = true; gf_shelved = true; gf_given_up = true } in
   subgoals all
 
