@@ -108,10 +108,10 @@ let tag_var = tag Tag.variable
         let pp1 = prlist_with_sep (fun () -> aux sl) (pr (if parens && side <> None then LevelLe 0 else prec)) cl in
         let pp2 = aux l in
         return unp pp1 pp2
-      | UnpBinderListMetaVar (isopen, sl) as unp :: l ->
+      | UnpBinderListMetaVar (isopen, withquote, sl) as unp :: l ->
         let cl = pop bll in
         let pp2 = aux l in
-        let pp1 = pr_binders (fun () -> aux sl) isopen cl in
+        let pp1 = pr_binders (fun () -> aux sl) isopen withquote cl in
         return unp pp1 pp2
       | UnpTerminal s as unp :: l ->
         let pp2 = aux l in
@@ -318,7 +318,7 @@ let tag_var = tag Tag.variable
         pr_patt (fun()->str"(") pr lpattop p ++ str")", latom
 
       | CPatNotation (which,s,(l,ll),args) ->
-        let strm_not, l_not = pr_notation (pr_patt mt pr) (fun _ _ _ _ -> mt ()) (fun _ _ _ -> mt()) which s (l,ll,[],[]) in
+        let strm_not, l_not = pr_notation (pr_patt mt pr) (fun _ _ _ _ -> mt ()) (fun _ _ _ _ -> mt()) which s (l,ll,[],[]) in
         (if List.is_empty args||prec_less l_not (LevelLt lapp) then strm_not else surround strm_not)
         ++ prlist (pr_patt spc pr (LevelLt lapp)) args, if not (List.is_empty args) then lapp else l_not
 
@@ -401,7 +401,7 @@ let tag_var = tag Tag.variable
             let s = prlist_with_sep spc pr_lname nal ++ str " : " ++ pr t in
             hov 1 (if many then surround_impl b s else surround_implicit b s)
 
-  let pr_binder_among_many pr_c = function
+  let pr_binder_among_many withquote pr_c = function
     | CLocalAssum (nal,k,t) ->
       pr_binder true pr_c (nal,k,t)
     | CLocalDef (na,c,topt) ->
@@ -409,29 +409,29 @@ let tag_var = tag Tag.variable
                 pr_opt_no_spc (fun t -> str " :" ++ ws 1 ++ pr_c t) topt ++
                 str" :=" ++ spc() ++ pr_c c)
     | CLocalPattern p ->
-      str "'" ++ pr_patt pr_c lsimplepatt p
+      str (if withquote then "'" else "") ++ pr_patt pr_c lsimplepatt p
 
-  let pr_undelimited_binders sep pr_c =
-    prlist_with_sep sep (pr_binder_among_many pr_c)
+  let pr_undelimited_binders sep withquote pr_c =
+    prlist_with_sep sep (pr_binder_among_many withquote pr_c)
 
-  let pr_delimited_binders kw sep pr_c bl =
+  let pr_delimited_binders kw sep withquote pr_c bl =
     let n = begin_of_binders bl in
     match bl with
       | [CLocalAssum (nal,k,t)] ->
         kw n ++ pr_binder false pr_c (nal,k,t)
       | (CLocalAssum _ | CLocalPattern _ | CLocalDef _) :: _ as bdl ->
-        kw n ++ pr_undelimited_binders sep pr_c bdl
+        kw n ++ pr_undelimited_binders sep withquote pr_c bdl
       | [] -> anomaly (Pp.str "The ast is malformed, found lambda/prod without proper binders.")
 
-  let pr_binders_gen pr_c sep is_open =
-    if is_open then pr_delimited_binders pr_com_at sep pr_c
-    else pr_undelimited_binders sep pr_c
+  let pr_binders_gen pr_c sep is_open withquote =
+    if is_open then pr_delimited_binders pr_com_at sep withquote pr_c
+    else pr_undelimited_binders sep withquote pr_c
 
   let pr_recursive_decl pr pr_dangling kw dangling_with_for id bl annot t c =
     let pr_body =
       if dangling_with_for then pr_dangling else pr in
     hov 0 (str kw ++ brk(1,2) ++ pr_id id ++ (if bl = [] then mt () else brk(1,2)) ++
-      hov 0 (pr_undelimited_binders spc (pr ltop) bl ++ annot) ++
+      hov 0 (pr_undelimited_binders spc true (pr ltop) bl ++ annot) ++
       pr_opt_type_spc pr t ++ str " :=") ++
       pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
 
@@ -548,7 +548,7 @@ let tag_var = tag Tag.variable
       | CProdN (bl,a) ->
         return (
           hov 0 (
-            hov 2 (pr_delimited_binders pr_forall spc
+            hov 2 (pr_delimited_binders pr_forall spc true
                      (pr mt ltop) bl) ++
               str "," ++ pr spc ltop a),
           lprod
@@ -556,7 +556,7 @@ let tag_var = tag Tag.variable
       | CLambdaN (bl,a) ->
         return (
           hov 0 (
-            hov 2 (pr_delimited_binders pr_fun spc
+            hov 2 (pr_delimited_binders pr_fun spc true
                      (pr mt ltop) bl) ++
               pr_fun_sep ++ pr spc ltop a),
           llambda
@@ -738,5 +738,5 @@ let tag_var = tag Tag.variable
 
   let pr_cases_pattern_expr = pr_patt (pr ltop) ltop
 
-  let pr_binders env sigma = pr_undelimited_binders spc (pr_expr env sigma ltop)
+  let pr_binders env sigma = pr_undelimited_binders spc true (pr_expr env sigma ltop)
 

@@ -199,7 +199,7 @@ let level_of_pattern_level = function None -> DefaultLevel | Some n -> NumLevel 
 let pr_constr_as_binder_kind = let open Notation_term in function
     | AsIdent -> spc () ++ keyword "as ident"
     | AsName -> spc () ++ keyword "as name"
-    | AsNameOrPattern -> spc () ++ keyword "as pattern"
+    | AsAnyPattern -> spc () ++ keyword "as pattern"
     | AsStrictPattern -> spc () ++ keyword "as strict pattern"
 
 let pr_strict b = if b then str "strict " else mt ()

@@ -954,7 +954,7 @@ let is_term_meta id metas =
   with Not_found -> false
 
 let is_onlybinding_strict_meta id metas =
-  try match Id.List.assoc id metas with _,NtnTypeBinder (NtnParsedAsPattern true) -> true | _ -> false
+  try match Id.List.assoc id metas with _,NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsStrictPattern) -> true | _ -> false
   with Not_found -> false
 
 let is_onlybinding_meta id metas =
@@ -963,15 +963,16 @@ let is_onlybinding_meta id metas =
 
 let is_onlybinding_pattern_like_meta isvar id metas =
   try match Id.List.assoc id metas with
-      | _,NtnTypeBinder (NtnBinderParsedAsConstr
-                           (AsNameOrPattern | AsStrictPattern)) -> true
-      | _,NtnTypeBinder (NtnParsedAsPattern strict) -> not (strict && isvar)
-      | _,NtnTypeBinder NtnParsedAsBinder -> not isvar
-      | _ -> false
+    | _,NtnTypeBinder (NtnBinderParsedAsConstr (AsAnyPattern | AsStrictPattern)) -> true
+    | _,NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsStrictPattern | NtnBinderParsedAsBinder) -> not isvar
+    | _,NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsAnyPattern) -> true
+    | _,NtnTypeBinder (NtnBinderParsedAsSomeBinderKind (AsIdent | AsName)) -> false
+    | _,NtnTypeBinder (NtnBinderParsedAsConstr (AsIdent | AsName)) -> false
+    | _,NtnTypeBinderList _ | _,NtnTypeConstr | _,NtnTypeConstrList -> false
   with Not_found -> false
 
 let is_bindinglist_meta id metas =
-  try match Id.List.assoc id metas with _,NtnTypeBinderList -> true | _ -> false
+  try match Id.List.assoc id metas with _,NtnTypeBinderList _ -> true | _ -> false
   with Not_found -> false
 
 exception No_match
@@ -1310,7 +1311,7 @@ let remove_bindinglist_sigma x (terms,termlists,binders,binderlists) =
 
 let add_ldots_var metas = (ldots_var,((Constrexpr.InConstrEntrySomeLevel,([],[])),NtnTypeConstr))::metas
 
-let add_meta_bindinglist x metas = (x,((Constrexpr.InConstrEntrySomeLevel,([],[])),NtnTypeBinderList))::metas
+let add_meta_bindinglist x metas = (x,((Constrexpr.InConstrEntrySomeLevel,([],[])),NtnTypeBinderList (*arbitrary:*) NtnBinderParsedAsBinder))::metas
 
 (* This tells if letins in the middle of binders should be included in
    the sequence of binders *)
@@ -1612,30 +1613,47 @@ and match_disjunctive_equations u alp metas sigma {CAst.v=(ids,disjpatl1,rhs1)} 
       (alp,sigma) disjpatl1 disjpatl2 in
   match_in u alp metas sigma rhs1 rhs2
 
-let match_notation_constr ~print_univ c ~vars (metas,pat) =
-  let terms,termlists,binders,binderlists =
-    match_ false print_univ {actualvars=vars;staticbinders=[];renaming=[]} metas ([],[],[],[]) c pat in
-  (* Turning substitution based on binding/constr distinction into a
-     substitution based on entry productions *)
+(* Turning substitution based on binding/term distinction into a
+   substitution based on entry production: indeed some binders may
+   have to be seen as terms from the parsing/printing point of view *)
+let group_by_type ids (terms,termlists,binders,binderlists) =
   List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders',binderlists') ->
     match typ with
     | NtnTypeConstr ->
-      let vars,_alp',term = try Id.List.assoc x terms with Not_found -> raise No_match in
+       (* term -> term *)
+       let vars,_alp',term = try Id.List.assoc x terms with Not_found -> raise No_match in
        (((vars,term),scl)::terms',termlists',binders',binderlists')
     | NtnTypeBinder (NtnBinderParsedAsConstr _) ->
+       (* binder -> term *)
        (match Id.List.assoc x binders with
         | vars,[pat] ->
           let v = glob_constr_of_cases_pattern (Global.env()) pat in
           (((vars,v),scl)::terms',termlists',binders',binderlists')
         | _ -> raise No_match)
-    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsName | NtnParsedAsPattern _ | NtnParsedAsBinder) ->
+    | NtnTypeBinder (NtnBinderParsedAsBinder | NtnBinderParsedAsSomeBinderKind _) ->
+       (* term list -> term list *)
        (terms',termlists',(Id.List.assoc x binders,scl)::binders',binderlists')
     | NtnTypeConstrList ->
+       (* term list -> term list *)
        (terms',(Id.List.assoc x termlists,scl)::termlists',binders',binderlists')
-    | NtnTypeBinderList ->
+    | NtnTypeBinderList (NtnBinderParsedAsConstr _) ->
+       (* binder list -> term list *)
+       let vars,patl = try Id.List.assoc x binderlists with Not_found -> raise No_match in
+       let v = List.map (fun pat -> match DAst.get pat with
+           | GLocalPattern ((disjpat,_),_,_,_) -> List.map (glob_constr_of_cases_pattern (Global.env())) disjpat
+           | GLocalAssum (Anonymous,bk,t) -> [DAst.make (GCast (DAst.make (GHole (Evar_kinds.BinderType Anonymous,IntroAnonymous)), DEFAULTcast, t))]
+           | GLocalAssum (Name id,bk,t) -> [DAst.make (GCast (DAst.make (GVar id), DEFAULTcast, t))]
+           | GLocalDef _ -> raise No_match) patl in
+       (terms',((vars,List.flatten v),scl)::termlists',binders',binderlists')
+    | NtnTypeBinderList (NtnBinderParsedAsBinder | NtnBinderParsedAsSomeBinderKind _) ->
+      (* binder list -> binder list *)
       let bl = try Id.List.assoc x binderlists with Not_found -> raise No_match in
-       (terms',termlists',binders',(bl, scl)::binderlists'))
-    metas ([],[],[],[])
+       (terms',termlists',binders',(bl,scl)::binderlists'))
+    ids ([],[],[],[])
+
+let match_notation_constr ~print_univ c ~vars (metas,pat) =
+  let subst = match_ false print_univ {actualvars=vars;staticbinders=[];renaming=[]} metas ([],[],[],[]) c pat in
+  group_by_type metas subst
 
 (* Matching cases pattern *)
 
@@ -1711,7 +1729,7 @@ let reorder_canonically_substitution terms termlists metas =
     match typ with
       | NtnTypeConstr -> ((Id.List.assoc x terms, scl)::terms',termlists')
       | NtnTypeConstrList -> (terms',(Id.List.assoc x termlists,scl)::termlists')
-      | NtnTypeBinder _ | NtnTypeBinderList -> anomaly (str "Unexpected binder in pattern notation."))
+      | NtnTypeBinder _ | NtnTypeBinderList _ -> anomaly (str "Unexpected binder in pattern notation."))
     metas ([],[])
 
 let match_notation_constr_cases_pattern c (metas,pat) =

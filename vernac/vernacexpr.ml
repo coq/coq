@@ -147,7 +147,7 @@ type notation_format =
   | TextFormat of lstring
 
 type syntax_modifier =
-  | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level
+  | SetItemLevel of string list * Notation_term.notation_binder_kind option * Extend.production_level
   | SetItemScope of string list * scope_name
   | SetLevel of int
   | SetCustomEntry of string * int option

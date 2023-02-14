@@ -67,27 +67,29 @@ type extended_subscopes = Constrexpr.notation_entry_level * subscopes
 (** Type of the meta-variables of an notation_constr: in a recursive pattern x..y,
     x carries the sequence of objects bound to the list x..y  *)
 
-type constr_as_binder_kind =
+type notation_binder_kind =
+  (* This accepts only ident *)
   | AsIdent
+  (* This accepts only name *)
   | AsName
-  | AsNameOrPattern
+  (* This accepts pattern *)
+  | AsAnyPattern
+  (* This accepts only strict pattern (i.e. no single variable) at printing *)
   | AsStrictPattern
 
 type notation_binder_source =
-  (* This accepts only pattern *)
-  (* NtnParsedAsPattern true means only strict pattern (no single variable) at printing *)
-  | NtnParsedAsPattern of bool
-  (* This accepts only ident *)
-  | NtnParsedAsIdent
-  (* This accepts only name *)
-  | NtnParsedAsName
-  (* This accepts ident, or pattern, or both *)
-  | NtnBinderParsedAsConstr of constr_as_binder_kind
-  (* This accepts ident, _, and quoted pattern *)
-  | NtnParsedAsBinder
+  (* Parsed as constr and constrained to be ident, name or pattern, depending on kind *)
+  | NtnBinderParsedAsConstr of notation_binder_kind
+  (* Parsed and interpreted as ident, name or pattern, depending on kind *)
+  | NtnBinderParsedAsSomeBinderKind of notation_binder_kind
+  (* Parsed as open or closed binder: This accepts ident, _, quoted pattern, etc. *)
+  | NtnBinderParsedAsBinder
 
 type notation_var_instance_type =
-  | NtnTypeConstr | NtnTypeBinder of notation_binder_source | NtnTypeConstrList | NtnTypeBinderList
+  | NtnTypeConstr
+  | NtnTypeConstrList
+  | NtnTypeBinder of notation_binder_source
+  | NtnTypeBinderList of notation_binder_source
 
 (** Type of variables when interpreting a constr_expr as a notation_constr:
     in a recursive pattern x..y, both x and y carry the individual type

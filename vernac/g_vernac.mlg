@@ -1320,7 +1320,7 @@ GRAMMAR EXTEND Gram
   binder_interp:
     [ [ "as"; IDENT "ident" -> { warn_deprecated_as_ident_kind (); Notation_term.AsIdent }
       | "as"; IDENT "name" -> { Notation_term.AsName }
-      | "as"; IDENT "pattern" -> { Notation_term.AsNameOrPattern }
+      | "as"; IDENT "pattern" -> { Notation_term.AsAnyPattern }
       | "as"; IDENT "strict"; IDENT "pattern" -> { Notation_term.AsStrictPattern } ] ]
   ;
 END

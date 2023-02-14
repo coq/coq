@@ -260,7 +260,8 @@ type (_, _) entry =
 | TTConstrList : notation_entry * prod_info * (bool * string) list * 'r target -> ('r, 'r list) entry
 | TTPattern : int -> ('self, cases_pattern_expr) entry
 | TTOpenBinderList : ('self, local_binder_expr list) entry
-| TTClosedBinderList : (bool * string) list -> ('self, local_binder_expr list list) entry
+| TTClosedBinderListPure : (bool * string) list -> ('self, local_binder_expr list list) entry
+| TTClosedBinderListOther : ('self, 'a) entry * (bool * string) list -> ('self, 'a list) entry
 
 type _ any_entry = TTAny : ('s, 'r) entry -> 's any_entry
 
@@ -359,7 +360,7 @@ let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_sym
     | NumLevel lev -> MayRecNo (Pcoq.Symbol.nterml g (string_of_int lev))
     end
 
-let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol = fun assoc from typ -> match typ with
+let rec symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol = fun assoc from typ -> match typ with
 | TTConstr (s, p, forpat) -> symbol_of_target s p assoc from forpat
 | TTConstrList (s, typ', [], forpat) ->
   begin match symbol_of_target s typ' assoc from forpat with
@@ -370,17 +371,25 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol =
   | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false)
   | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false) end
 | TTPattern p -> MayRecNo (Pcoq.Symbol.nterml Constr.pattern (string_of_int p))
-| TTClosedBinderList [] -> MayRecNo (Pcoq.Symbol.list1 (Pcoq.Symbol.nterm Constr.binder))
-| TTClosedBinderList tkl -> MayRecNo (Pcoq.Symbol.list1sep (Pcoq.Symbol.nterm Constr.binder) (make_sep_rules tkl) false)
+| TTOpenBinderList -> MayRecNo (Pcoq.Symbol.nterm Constr.open_binders)
+| TTClosedBinderListPure [] -> MayRecNo (Pcoq.Symbol.list1 (Pcoq.Symbol.nterm Constr.binder))
+| TTClosedBinderListPure tkl -> MayRecNo (Pcoq.Symbol.list1sep (Pcoq.Symbol.nterm Constr.binder) (make_sep_rules tkl) false)
+| TTClosedBinderListOther (typ,[]) ->
+  begin match symbol_of_entry assoc from typ with
+  | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1 s)
+  | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1 s) end
+| TTClosedBinderListOther (typ,tkl) ->
+  begin match symbol_of_entry assoc from typ with
+  | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false)
+  | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false) end
 | TTIdent -> MayRecNo (Pcoq.Symbol.nterm Prim.identref)
 | TTName -> MayRecNo (Pcoq.Symbol.nterm Prim.name)
 | TTBinder true -> MayRecNo (Pcoq.Symbol.nterm Constr.one_open_binder)
 | TTBinder false -> MayRecNo (Pcoq.Symbol.nterm Constr.one_closed_binder)
-| TTOpenBinderList -> MayRecNo (Pcoq.Symbol.nterm Constr.open_binders)
 | TTBigint -> MayRecNo (Pcoq.Symbol.nterm Prim.bignat)
 | TTGlobal -> MayRecNo (Pcoq.Symbol.nterm Constr.global)
 
-let interp_entry forpat e = match e with
+let rec interp_entry forpat e = match e with
 | ETProdIdent -> TTAny TTIdent
 | ETProdName -> TTAny TTName
 | ETProdGlobal -> TTAny TTGlobal
@@ -390,7 +399,9 @@ let interp_entry forpat e = match e with
 | ETProdPattern p -> TTAny (TTPattern p)
 | ETProdConstrList (s, p, tkl) -> TTAny (TTConstrList (s, p, tkl, forpat))
 | ETProdBinderList ETBinderOpen -> TTAny TTOpenBinderList
-| ETProdBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
+| ETProdBinderList (ETBinderClosed (None, tkl)) -> TTAny (TTClosedBinderListPure tkl)
+| ETProdBinderList (ETBinderClosed (Some e, tkl)) ->
+  let TTAny e = interp_entry forpat e in TTAny (TTClosedBinderListOther (e, tkl))
 
 let cases_pattern_expr_of_id { CAst.loc; v = id } =
   CAst.make ?loc @@ CPatAtom (Some (qualid_of_ident ?loc id))
@@ -428,7 +439,11 @@ match e with
   end
 | TTBinder o -> { subst with binders = v :: subst.binders }
 | TTOpenBinderList -> { subst with binderlists = v :: subst.binderlists }
-| TTClosedBinderList _ -> { subst with binderlists = List.flatten v :: subst.binderlists }
+| TTClosedBinderListPure _ -> { subst with binderlists = List.flatten v :: subst.binderlists }
+| TTClosedBinderListOther (TTIdent, _) -> { subst with binderlists = List.map (fun a -> CLocalPattern (cases_pattern_expr_of_id a)) v :: subst.binderlists }
+| TTClosedBinderListOther (TTName, _) -> { subst with binderlists = List.map (fun a -> CLocalPattern (cases_pattern_expr_of_name a)) v :: subst.binderlists }
+| TTClosedBinderListOther (TTPattern _, _) -> { subst with binderlists = List.map (fun a -> CLocalPattern a) v :: subst.binderlists }
+| TTClosedBinderListOther _ -> user_err (Pp.str "Invalid binder list entry.")
 | TTBigint ->
   begin match forpat with
   | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Number (NumTok.Signed.of_int_string v)))

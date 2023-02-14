@@ -331,6 +331,8 @@ let precedence_of_entry_type (from_custom,from_level) = function
   | ETPattern (_,n) -> let n = match n with None -> 0 | Some n -> n in LevelLe n
   | _ -> LevelSome (* should not matter *)
 
+let pattern_entry_level = function None -> 0 | Some n -> n
+
 (** Computing precedences for future insertion of parentheses at
     the time of printing using hard-wired constr levels *)
 let unparsing_precedence_of_entry_type from_level = function
@@ -344,7 +346,7 @@ let unparsing_precedence_of_entry_type from_level = function
        explicit insertion of entry coercions at the time of building
        a [constr_expr] *)
     LevelSome, None
-  | ETPattern (_,n) -> (* in constr *) LevelLe (match n with Some n -> n | None -> 0), None
+  | ETPattern (_,n) -> (* in constr *) LevelLe (pattern_entry_level n), None
   | _ -> LevelSome, None (* should not matter *)
 
 (* Some breaking examples *)
@@ -474,7 +476,11 @@ let make_hunks etyps symbols from_level =
           | ETConstr _ -> UnpListMetaVar (prec,List.map snd sl',side)
           | ETBinder isopen ->
               check_open_binder isopen sl m;
-              UnpBinderListMetaVar (isopen,List.map snd sl')
+              UnpBinderListMetaVar (isopen,true,List.map snd sl')
+          | ETName | ETIdent ->
+              UnpBinderListMetaVar (false,true,List.map snd sl')
+          | ETPattern _ ->
+              UnpBinderListMetaVar (false,false,List.map snd sl')
           | _ -> assert false in
         (None, hunk) :: make_with_space b prods
 
@@ -616,7 +622,11 @@ let hunks_of_format (from_level,(vars,typs)) symfmt =
         | ETConstr _ -> UnpListMetaVar (prec,slfmt,side)
         | ETBinder isopen ->
             check_open_binder isopen sl m;
-            UnpBinderListMetaVar (isopen,slfmt)
+            UnpBinderListMetaVar (isopen,true,slfmt)
+        | ETName | ETIdent ->
+            UnpBinderListMetaVar (false,true,slfmt)
+        | ETPattern _ ->
+            UnpBinderListMetaVar (false,false,slfmt)
         | _ -> assert false in
       symbs, hunk :: l
   | symbs, (_,UnpBox (a,b)) :: fmt ->
@@ -694,7 +704,7 @@ let prod_entry_type = function
   | ETBigint -> ETProdBigint
   | ETBinder o -> ETProdOneBinder o
   | ETConstr (s,_,p) -> ETProdConstr (s,p)
-  | ETPattern (_,n) -> ETProdPattern (match n with None -> 0 | Some n -> n)
+  | ETPattern (_,n) -> ETProdPattern (pattern_entry_level n)
 
 let keyword_needed need s =
   (* Ensure that IDENT articulation terminal symbols are keywords *)
@@ -734,9 +744,18 @@ let make_production (_,lev,_) etyps symbols =
             expand_list_rule s typ tkl x 1 p (aux true l')
         | ETBinder o ->
             check_open_binder o sl x;
-            let typ = if o then (assert (tkl = []); ETBinderOpen) else ETBinderClosed tkl in
+            let typ = if o then (assert (tkl = []); ETBinderOpen) else ETBinderClosed (None,tkl) in
             distribute
               [GramConstrNonTerminal (ETProdBinderList typ, Some x)] (aux false l)
+        | ETIdent ->
+            distribute
+              [GramConstrNonTerminal (ETProdBinderList (ETBinderClosed (Some ETProdIdent,tkl)), Some x)] (aux false l)
+        | ETName ->
+            distribute
+              [GramConstrNonTerminal (ETProdBinderList (ETBinderClosed (Some ETProdName,tkl)), Some x)] (aux false l)
+        | ETPattern (st,n) ->
+            distribute
+              [GramConstrNonTerminal (ETProdBinderList (ETBinderClosed (Some (ETProdPattern (pattern_entry_level n)),tkl)), Some x)] (aux false l)
         | _ ->
            user_err Pp.(str "Components of recursive patterns in notation must be terms or binders.") in
   let need = (* a leading ident/number factorizes iff at level 0 *) lev <> 0 in
@@ -1092,7 +1111,7 @@ let interp_non_syntax_modifiers ~reserved ~infix ~abbrev deprecation mods =
 let has_no_binders_type =
   List.for_all (fun (_,(_,typ)) ->
   match typ with
-  | NtnTypeBinder _ | NtnTypeBinderList -> false
+  | NtnTypeBinder _ | NtnTypeBinderList _ -> false
   | NtnTypeConstr | NtnTypeConstrList -> true)
 
 (* Compute precedences from modifiers (or find default ones) *)
@@ -1132,8 +1151,8 @@ let join_auxiliary_recursive_types recvars etyps =
     recvars etyps
 
 let internalization_type_of_entry_type = function
-  | ETBinder _ -> NtnInternTypeOnlyBinder
-  | ETConstr _ | ETBigint | ETGlobal
+  | ETBinder _ | ETConstr (_,Some _,_) -> NtnInternTypeOnlyBinder
+  | ETConstr (_,None,_) | ETBigint | ETGlobal
   | ETIdent | ETName | ETPattern _ -> NtnInternTypeAny None
 
 let make_internalization_vars recvars maintyps =
@@ -1141,22 +1160,31 @@ let make_internalization_vars recvars maintyps =
   let extratyps = List.map (fun (x,y) -> (y,List.assoc x maintyps)) recvars in
   maintyps @ extratyps
 
-let make_interpretation_type isrec isonlybinding default_if_binding = function
-  (* Parsed as constr list *)
-  | ETConstr (_,None,_) when isrec -> NtnTypeConstrList
-  (* Parsed as constr, but interpreted as a binder *)
-  | ETConstr (_,Some bk,_) -> NtnTypeBinder (NtnBinderParsedAsConstr bk)
-  | ETConstr (_,None,_) when isonlybinding -> NtnTypeBinder (NtnBinderParsedAsConstr default_if_binding)
+let make_interpretation_type isrec isbinding default_if_binding typ =
+  match typ, isrec with
+  (* Parsed as constr, but interpreted as a specific kind of binder *)
+  | ETConstr (_,Some bk,_), true -> NtnTypeBinderList (NtnBinderParsedAsConstr bk)
+  | ETConstr (_,Some bk,_), false -> NtnTypeBinder (NtnBinderParsedAsConstr bk)
+  (* Parsed as constr list but interpreted as the default kind of binder *)
+  | ETConstr (_,None,_), true when isbinding -> NtnTypeBinderList (NtnBinderParsedAsConstr default_if_binding)
+  | ETConstr (_,None,_), false when isbinding -> NtnTypeBinder (NtnBinderParsedAsConstr default_if_binding)
   (* Parsed as constr, interpreted as constr *)
-  | ETConstr (_,None,_) -> NtnTypeConstr
+  | ETConstr (_,None,_), true -> NtnTypeConstrList
+  | ETConstr (_,None,_), false -> NtnTypeConstr
+  (* Different way of parsing binders, maybe interpreted also as
+     constr, but conventionally internally binders *)
+  | ETIdent, true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind AsIdent)
+  | ETIdent, false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsIdent)
+  | ETName, true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind AsName)
+  | ETName, false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsName)
+  (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
+  | ETPattern (ppstrict,_), true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsAnyPattern))
+  | ETPattern (ppstrict,_), false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsAnyPattern))
+  | ETBinder _, true -> NtnTypeBinderList NtnBinderParsedAsBinder
+  | ETBinder _, false -> NtnTypeBinder NtnBinderParsedAsBinder
   (* Others *)
-  | ETIdent -> NtnTypeBinder NtnParsedAsIdent
-  | ETName -> NtnTypeBinder NtnParsedAsName
-  | ETPattern (ppstrict,_) -> NtnTypeBinder (NtnParsedAsPattern ppstrict) (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
-  | ETBigint | ETGlobal -> NtnTypeConstr
-  | ETBinder _ ->
-     if isrec then NtnTypeBinderList
-     else NtnTypeBinder NtnParsedAsBinder
+  | ETBigint, true | ETGlobal, true -> NtnTypeConstrList
+  | ETBigint, false | ETGlobal, false -> NtnTypeConstr
 
 let subentry_of_constr_prod_entry from_level = function
   (* Specific 8.2 approximation *)
@@ -1898,7 +1926,7 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
       interp_notation_constr env nenv c
   in
   let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
-  let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] 0 acvars (List.map in_pat vars) in
+  let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] 0 acvars (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in

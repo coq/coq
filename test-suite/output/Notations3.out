@@ -255,3 +255,8 @@ myfoo01 tt
   |-_0
    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx *
    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+FORALL [[a, b]], a - b = 0
+     : Prop
+∀ (A : TypTerm) (B : ◻ A -> TypTerm),
+(∀ a : ◻ A, ◻ {B a}) -> ◻ (∀' {a : ◻ A}, {B a})
+     : Type

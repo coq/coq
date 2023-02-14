@@ -36,7 +36,7 @@ type 'a constr_entry_key_gen =
   | ETGlobal
   | ETBigint
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
-  | ETConstr of Constrexpr.notation_entry * Notation_term.constr_as_binder_kind option * 'a
+  | ETConstr of Constrexpr.notation_entry * Notation_term.notation_binder_kind option * 'a
   | ETPattern of bool * int option (* true = strict pattern, i.e. not a single variable *)
 
 let constr_entry_key_eq v1 v2 = match v1, v2 with
@@ -62,11 +62,11 @@ type simple_constr_prod_entry_key =
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 
-type binder_entry_kind = ETBinderOpen | ETBinderClosed of (bool * string) list
-
 type binder_target = ForBinder | ForTerm
 
-type constr_prod_entry_key =
+type binder_entry_kind = ETBinderOpen | ETBinderClosed of constr_prod_entry_key option * (bool * string) list
+
+and constr_prod_entry_key =
   | ETProdIdent           (* Parsed as an ident *)
   | ETProdName            (* Parsed as a name (ident or _) *)
   | ETProdGlobal          (* Parsed as a global reference *)

@@ -35,7 +35,10 @@ type unparsing =
   | UnpMetaVar of entry_relative_level * Extend.side option
   | UnpBinderMetaVar of entry_relative_level * pattern_quote_style
   | UnpListMetaVar of entry_relative_level * unparsing list * Extend.side option
-  | UnpBinderListMetaVar of bool * unparsing list
+  | UnpBinderListMetaVar of
+      bool (* true if open binder *) *
+      bool (* true if printed with a quote *) *
+      unparsing list
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut
