@@ -325,10 +325,94 @@ Proof.
   pose proof prime_ge_2 _ Hm as Hm'. rewrite Z.mod_divide in H by lia.
   apply invmod_coprime, Zgcd_1_rel_prime, rel_prime_sym, prime_rel_prime; auto.
 Qed.
+
+
+Lemma cong_iff_0 a b m : a mod m = b mod m <-> (a - b) mod m = 0.
+Proof.
+  case (Z.eq_dec m 0) as [->|Hm]; [rewrite ?Zmod_0_r; lia|].
+  split; intros H. { rewrite Zminus_mod, H, Z.sub_diag, Z.mod_0_l; trivial. }
+  apply Zmod_divides in H; trivial; case H as [c H].
+  replace b with (a + (-c) * m) by lia; rewrite Z.mod_add; trivial.
+Qed.
+
+Lemma cong_iff_ex a b m (Hm : m <> 0) : a mod m = b mod m <-> exists n, a - b = n * m.
+Proof. rewrite cong_iff_0, Z.mod_divide by trivial; reflexivity. Qed.
+
+Lemma cong_mul_cancel_r_coprime a b m (Hm : m <> 0) (Hb : Z.gcd b m = 1)
+  (H : (a * b) mod m = 0) : a mod m = 0.
+Proof.
+  apply Zmod_divide in H; trivial; [].
+  rewrite Z.mul_comm in H; apply Gauss, Zdivide_mod in H; trivial.
+  apply rel_prime_sym, Zgcd_1_rel_prime; trivial.
+Qed.
+
+Theorem chinese_remainder a m1 b m2
+  (Hm1 : m1 <> 0) (Hm2 : m2 <> 0) (H : Z.gcd m1 m2 = 1)
+  (H1 : a mod m1 = b mod m1) (H2 : a mod m2 = b mod m2) :
+  a mod (m1 * m2) = b mod (m1 * m2).
+Proof.
+  apply cong_iff_0; apply cong_iff_0 in H2.
+  apply cong_iff_ex in H1; trivial; []; case H1 as [k H1]. rewrite H1 in *.
+  apply cong_mul_cancel_r_coprime in H2; trivial.
+  rewrite Z.mul_comm, Zmult_mod_distr_l. rewrite H2, Z.mul_0_r; trivial.
+Qed.
+
+
+
+Definition solvecong (m1 m2 : Z) :=
+  let '(a, b, d) := extgcd m1 m2 in
+  fun (r1 r2 : Z) => r1 - (r1 - r2)/d*a*m1.
+
+Lemma solvecong_correct m1 m2 r1 r2 (H : (r1 - r2) mod (Z.gcd m1 m2) = 0)
+  (x := solvecong m1 m2 r1 r2) : x mod m1 = r1 mod m1 /\ x mod m2 = r2 mod m2.
+Proof.
+  cbv [solvecong] in *; case (extgcd m1 m2) as [[a b] d] eqn:E.
+  eapply extgcd_correct in E; case E as [E D]; rewrite <-D in *; clear D.
+  replace x with (r2 + (r1 - r2)/d*b*m2) at 2 by (Z.div_mod_to_equations; lia); cbv [x].
+  rewrite <-Zminus_mod_idemp_r, <-Zplus_mod_idemp_r, 2Z_mod_mult, Z.add_0_r, Z.sub_0_r; auto.
+Qed.
+
+Lemma solvecong_coprime m1 m2 r1 r2 (H : Z.gcd m1 m2 = 1)
+  (x := solvecong m1 m2 r1 r2) : x mod m1 = r1 mod m1 /\ x mod m2 = r2 mod m2.
+Proof. apply solvecong_correct. rewrite H, Z.mod_1_r; trivial. Qed.
+
+Lemma chinese_remainder_solvecong a r1 m1 r2 m2
+  (H : Z.gcd m1 m2 = 1) (Hm1 : m1 <> 0) (Hm2 : m2 <> 0)
+  (H1 : a mod m1 = r1 mod m1) (H2 : a mod m2 = r2 mod m2) :
+  a mod (m1 * m2) = solvecong m1 m2 r1 r2 mod (m1 * m2).
+Proof.
+  case (solvecong_coprime m1 m2 r1 r2 H) as [].
+  eapply chinese_remainder; congruence.
+Qed.
+
+Lemma solvecong_comm m1 m2 r1 r2
+  (H : Z.gcd m1 m2 = 1) (Hm1 : m1 <> 0) (Hm2 : m2 <> 0) :
+  solvecong m1 m2 r1 r2 mod (m1 * m2) = solvecong m2 m1 r2 r1 mod (m1 * m2).
+Proof.
+  rewrite Z.mul_comm at 2.
+  case (solvecong_coprime m1 m2 r1 r2 H) as [].
+  erewrite <-(chinese_remainder_solvecong _ r1); try assumption.
+  symmetry; erewrite <-(chinese_remainder_solvecong _ r2); try assumption.
+  { rewrite Z.mul_comm; trivial. }
+  { rewrite Z.gcd_comm; trivial. }
+  instantiate (1:=solvecong m1 m2 r1 r2).
+  all : assumption.
+Qed.
+
 End Znumtheory.
 
+Lemma chinese_remainder_solvecong_Zmod
+  (a b : positive) (H : Z.gcd a b = 1) (x : Zmod a) (y : Zmod b)
+  z (Hx : z mod a = x) (Hy : z mod b = y) :
+  of_Z _ z = of_Z _ (solvecong a b x y) :> Zmod (a*b).
+Proof.
+  apply to_Z_inj; rewrite !to_Z_of_Z, !Pos2Z.inj_mul.
+  apply chinese_remainder_solvecong;
+    rewrite ?Hx, ?Hy, ?mod_to_Z; trivial; inversion 1.
+Qed.
+
 Definition inv {m} (x : Zmod m) : Zmod m := of_Z m (invmod (to_Z x) m).
-Definition div {m} (x y : Zmod m) : Zmod m := of_Z m (invmod (to_Z y) m * x).
+Definition ndiv {m} (x y : Zmod m) : Zmod m := of_Z m (invmod (to_Z y) m * x).
 
 Module Import Notations.
   Declare Scope Zmod_scope.
@@ -337,7 +421,7 @@ Module Import Notations.
   Infix "*" := mul : Zmod_scope.
   Infix "+" := add : Zmod_scope.
   Infix "-" := sub : Zmod_scope.
-  Infix "/" := div : Zmod_scope.
+  Infix "/" := ndiv : Zmod_scope.
   Infix "=?" := eqb : Zmod_scope.
   Notation "- x" := (opp x) : Zmod_scope.
 End Notations.
@@ -363,25 +447,25 @@ Proof. intros X; apply H, to_N_inj. rewrite X; trivial. Qed.
 Lemma to_Z_nz {m} (x : Zmod m) (H : x <> zero) : to_Z x <> 0.
 Proof. intros X; apply H, to_Z_inj. rewrite X; trivial. Qed.
 
-Lemma mul_inv_l {m} (x y : Zmod m) : mul (inv y) x = div x y.
+Lemma mul_inv_l {m} (x y : Zmod m) : mul (inv y) x = ndiv x y.
 Proof.
-  apply to_Z_inj. cbv [div inv].
+  apply to_Z_inj. cbv [ndiv inv].
   rewrite to_Z_mul, !to_Z_of_Z, !Z.mul_mod_idemp_l; auto; inversion 1.
 Qed.
 
-Lemma mul_inv_r {m} (x y : Zmod m) : mul x (inv y) = div x y.
+Lemma mul_inv_r {m} (x y : Zmod m) : mul x (inv y) = ndiv x y.
 Proof. rewrite mul_comm, mul_inv_l; trivial. Qed.
 
-Lemma div_same {m} (a : Zmod m) : div a a = of_Z m (Z.gcd a m).
+Lemma div_same {m} (a : Zmod m) : ndiv a a = of_Z m (Z.gcd a m).
 Proof.
   rewrite <-mul_inv_l. apply to_Z_inj. rewrite to_Z_mul, to_Z_inv,
     Z.mul_mod_idemp_l, to_Z_of_Z, invmod_ok by inversion 1; trivial.
 Qed.
 
-Lemma div_same_coprime {m} (a : Zmod m) (H : Z.gcd a m = 1) : div a a = one.
+Lemma div_same_coprime {m} (a : Zmod m) (H : Z.gcd a m = 1) : ndiv a a = one.
 Proof. rewrite div_same, H, of_Z_1; trivial. Qed.
 
-Lemma div_same_prime {m} (x : Zmod m) (Hm : prime m) (H : x <> zero) : div x x = one.
+Lemma div_same_prime {m} (x : Zmod m) (Hm : prime m) (H : x <> zero) : ndiv x x = one.
 Proof.
   apply to_Z_inj. apply to_Z_nz in H. pose proof to_Z_range x.
   rewrite <-mul_inv_l, to_Z_mul, to_Z_inv, Z.mul_mod_idemp_l, to_Z_one,
@@ -393,7 +477,7 @@ Lemma mul_inv_same_l_prime {m} (x : Zmod m) (Hm : prime m) (H : x <> zero) :
 Proof. intros; rewrite ?mul_inv_r, ?mul_inv_l, ?div_same_prime; trivial. Qed.
 
 Lemma field_theory (m : positive) (Hm : prime m) :
-  @Field_theory.field_theory (Zmod m) zero one add mul sub opp div inv eq.
+  @Field_theory.field_theory (Zmod m) zero one add mul sub opp ndiv inv eq.
 Proof.
   split; auto using ring_theory, one_neq_zero, prime_ge_2, mul_inv_r, mul_inv_same_l_prime.
 Qed.
@@ -461,57 +545,138 @@ Proof.
   rewrite to_Z_inv, to_Z_pow_Z_pos by lia. f_equal.
 Abort.
 
-(* TODO: move all signed operations to their own module? *)
 Module Z.
-  Definition smodulo a b := Z.modulo (a + Z.quot b 2) b - Z.quot b 2.
+  (** Modulo with an offset *)
+  Definition omodulo d a b := Z.modulo (a - d) b + d.
 
-  Lemma smod_0_l m : Z.smodulo 0 m = 0.
+  Lemma omodulo_0 a b : Z.omodulo 0 a b = Z.modulo a b.
+  Proof. cbv [Z.omodulo]. rewrite Z.sub_0_r, Z.add_0_r; trivial. Qed.
+
+  Lemma div_omod d a b : b <> 0 -> a = b * ((a-d)/b) + omodulo d a b.
+  Proof. cbv [omodulo]; pose proof Z.div_mod (a-d) b; lia. Qed.
+
+  Lemma omod_pos_bound d a b : 0 < b -> d <= Z.omodulo d a b < d+b.
+  Proof. cbv [Z.omodulo]. Z.to_euclidean_division_equations; lia. Qed.
+
+  Lemma omod_neg_bound d a b : b < 0 -> d+b < Z.omodulo d a b <= d.
+  Proof. cbv [Z.omodulo]. Z.to_euclidean_division_equations; lia. Qed.
+
+  Lemma omod_small_iff d a b :
+    (d <= a < d+b \/ b = 0 \/ d+b < a <= d) <-> Z.omodulo d a b = a.
   Proof.
-    cbv [Z.smodulo].
-    rewrite Z.add_0_l; apply Z.sub_move_0_r.
-    case (Z.eq_dec m 0) as []; try (Z.to_euclidean_division_equations; lia).
-    apply Z.mod_small_iff; Z.to_euclidean_division_equations; lia.
+    cbv [Z.omodulo]; case (Z.eq_dec b 0) as [->|];
+    rewrite ?Zmod_0_r; try pose proof Z.mod_small_iff (a-d) b; lia.
   Qed.
 
-  Local Ltac t := cbv [Z.smodulo];
-    repeat rewrite  ?Zplus_mod_idemp_l, ?Zplus_mod_idemp_r,
-                    ?Zminus_mod_idemp_l, ?Zminus_mod_idemp_r,
-                    ?Zmult_mod_idemp_l,  ?Zmult_mod_idemp_r;
+  Lemma omod_small d a b : d <= a < d+b -> Z.omodulo d a b = a.
+  Proof. intros; apply omod_small_iff; auto 2. Qed.
+
+  Lemma omod_small_neg d a b : d+b < a <= d -> Z.omodulo d a b = a.
+  Proof. intros; apply omod_small_iff; auto 3. Qed.
+
+  Lemma omod_0_r d a : Z.omodulo d a 0 = a.
+  Proof. intros; apply omod_small_iff; auto 3. Qed.
+
+  Local Ltac t := cbv [Z.omodulo]; repeat rewrite
+    ?Zplus_mod_idemp_l, ?Zplus_mod_idemp_r, ?Zminus_mod_idemp_l, ?Zminus_mod_idemp_r;
     try solve [trivial | lia | f_equal; lia].
 
-  Lemma smod_mod a b : Z.smodulo (Z.modulo a b) b = Z.smodulo a b. Proof. t. Qed.
-  Lemma mod_smod a b : Z.modulo (Z.smodulo a b) b = Z.modulo a b. Proof. t. Qed.
+  Lemma omod_mod d a b : Z.omodulo d (Z.modulo a b) b = Z.omodulo d a b. Proof. t. Qed.
+
+  Lemma mod_omod d a b : Z.modulo (Z.omodulo d a b) b = Z.modulo a b. Proof. t. Qed.
+
+  Lemma omod_inj_mod d x y m : x mod m = y mod m -> Z.omodulo d x m = Z.omodulo d y m.
+  Proof. rewrite <-(omod_mod _ x), <-(omod_mod _ y); congruence. Qed.
+
+  Lemma mod_inj_omod d x y m : Z.omodulo d x m = Z.omodulo d y m -> x mod m = y mod m.
+  Proof. rewrite <-(mod_omod d x), <-(mod_omod d y); congruence. Qed.
+
+  Lemma omod_idemp_add d x y m :
+    Z.omodulo d (Z.omodulo d x m + Z.omodulo d y m) m = Z.omodulo d (x + y) m.
+  Proof. apply omod_inj_mod; rewrite Zplus_mod, !mod_omod, <-Zplus_mod; trivial. Qed.
+
+  Lemma omod_idemp_sub d x y m :
+    Z.omodulo d (Z.omodulo d x m - Z.omodulo d y m) m = Z.omodulo d (x - y) m.
+  Proof. apply omod_inj_mod; rewrite Zminus_mod, !mod_omod, <-Zminus_mod; trivial. Qed.
+
+  Lemma omod_idemp_mul d x y m :
+    Z.omodulo d (Z.omodulo d x m * Z.omodulo d y m) m = Z.omodulo d (x * y) m.
+  Proof. apply omod_inj_mod; rewrite Zmult_mod, !mod_omod, <-Zmult_mod; trivial. Qed.
+
+
+  Definition smodulo a b := Z.omodulo (- Z.quot b 2) a b.
+
+  Lemma div_smod a b : b <> 0 -> a = b * ((a+Z.quot b 2)/b) + Z.smodulo a b.
+  Proof.
+    cbv [Z.smodulo]; pose proof Z.div_omod (- Z.quot b 2) a b.
+    rewrite <-(Z.sub_opp_r a (b ÷ 2)); lia.
+  Qed.
+
+  Lemma smod_pos_bound a b: 0 < b -> -b <= 2*Z.smodulo a b < b.
+  Proof. cbv [Z.omodulo Z.smodulo]; Z.to_euclidean_division_equations; lia. Qed.
+
+  Lemma smod_neg_bound a b: b < 0 -> b < 2*Z.smodulo a b <= -b.
+  Proof. cbv [Z.smodulo Z.omodulo]. Z.to_euclidean_division_equations; lia. Qed.
+
+  Lemma smod_mod a b : Z.smodulo (Z.modulo a b) b = Z.smodulo a b.
+  Proof. apply omod_mod. Qed.
+  Lemma mod_smod a b : Z.modulo (Z.smodulo a b) b = Z.modulo a b.
+  Proof. apply mod_omod. Qed.
 
   Lemma smod_inj_mod x y m : x mod m = y mod m -> Z.smodulo x m = Z.smodulo y m.
-  Proof. rewrite <-(smod_mod x), <-(smod_mod y); congruence. Qed.
+  Proof. apply omod_inj_mod. Qed.
 
   Lemma mod_inj_smod x y m : Z.smodulo x m = Z.smodulo y m -> x mod m = y mod m.
-  Proof. rewrite <-(mod_smod x), <-(mod_smod y); congruence. Qed.
+  Proof. apply mod_inj_omod. Qed.
 
   Lemma smod_idemp_add x y m :
     Z.smodulo (Z.smodulo x m + Z.smodulo y m) m = Z.smodulo (x + y) m.
-  Proof. apply smod_inj_mod; rewrite Zplus_mod, !mod_smod, <-Zplus_mod; trivial. Qed.
+  Proof. apply omod_idemp_add. Qed.
 
   Lemma smod_idemp_sub x y m :
     Z.smodulo (Z.smodulo x m - Z.smodulo y m) m = Z.smodulo (x - y) m.
-  Proof. apply smod_inj_mod; rewrite Zminus_mod, !mod_smod, <-Zminus_mod; trivial. Qed.
+  Proof. apply omod_idemp_sub. Qed.
 
   Lemma smod_idemp_mul x y m :
     Z.smodulo (Z.smodulo x m * Z.smodulo y m) m = Z.smodulo (x * y) m.
-  Proof. apply smod_inj_mod; rewrite Zmult_mod, !mod_smod, <-Zmult_mod; trivial. Qed.
+  Proof. apply omod_idemp_mul. Qed.
+
+  Lemma smod_small_iff a b (d := - Z.quot b 2) :
+    (- b <= 2*a - Z.rem b 2 < b \/ b = 0 \/ b < 2*a - Z.rem b 2 <= - b)
+    <-> smodulo a b = a.
+  Proof.
+    pose proof Z.quot_rem b 2 ltac:(lia).
+    cbv [smodulo]; pose proof omod_small_iff (- Z.quot b 2) a b; lia.
+  Qed.
+
+  Lemma smod_even_small_iff a b (H : Z.rem b 2 = 0) :
+    (-b <= 2*a < b \/ b = 0 \/ b < 2*a <= -b) <-> Z.smodulo a b = a.
+  Proof. rewrite <-smod_small_iff, H; lia. Qed.
+
+  Lemma smod_small a b : -b <= 2*a - Z.rem b 2 < b -> Z.smodulo a b = a.
+  Proof. intros; apply smod_small_iff; auto 2. Qed.
+
+  Lemma smod_even_small a b : Z.rem b 2 = 0 -> -b <= 2*a < b -> Z.smodulo a b = a.
+  Proof. intros; apply smod_even_small_iff; auto 2. Qed.
+
+  Lemma smod_small_neg a b : b < 2*a - Z.rem b 2 <= - b -> Z.smodulo a b = a.
+  Proof. intros; apply smod_small_iff; auto 3. Qed.
+
+  Lemma smod_even_small_neg a b : Z.rem b 2 = 0 -> b < 2*a <= - b -> Z.smodulo a b = a.
+  Proof. intros; apply smod_even_small_iff; auto 3. Qed.
+
+  Lemma smod_0_r a : Z.smodulo a 0 = a.
+  Proof. apply Z.omod_0_r. Qed.
+
+  Lemma smod_0_l m : Z.smodulo 0 m = 0.
+  Proof. apply smod_small_iff; Z.to_euclidean_division_equations; lia. Qed.
 
   Lemma smod_idemp_opp x m :
     Z.smodulo (- Z.smodulo x m) m = Z.smodulo (- x) m.
   Proof.
     rewrite <-(Z.sub_0_l x), <-smod_idemp_sub, smod_0_l.
-    rewrite (Z.sub_0_l (smodulo x m)); trivial.
+    rewrite (Z.sub_0_l (*workaround*) (smodulo x m)); trivial.
   Qed.
-
-  Lemma smod_neg_bound a b: b < 0 -> b < 2*Z.smodulo a b <= -b.
-  Proof. cbv [Z.smodulo]; Z.to_euclidean_division_equations; lia. Qed.
-
-  Lemma smod_pos_bound a b: 0 < b -> -b <= 2*Z.smodulo a b < b.
-  Proof. cbv [Z.smodulo]; Z.to_euclidean_division_equations; lia. Qed.
 End Z.
 
 (** Alternative conversion function for mapping [Zmod m] to [-m/2, m/2) *)
@@ -520,7 +685,7 @@ Definition signed {m} (x : Zmod m) : Z :=
 
 Lemma smod_unsigned {m} (x : Zmod m) : Z.smodulo (unsigned x) m = signed x.
 Proof.
-  pose proof to_Z_range x. cbv [signed unsigned Z.smodulo] in *.
+  pose proof to_Z_range x. cbv [signed unsigned Z.smodulo Z.omodulo] in *.
   case (N.ltb_spec (N.double x) m) as []; cycle 1.
   1: erewrite <-Z.mod_add with (b:=-(1)), Z.mul_opp_l by inversion 1.
   all : rewrite Z.mod_small; Z.to_euclidean_division_equations; try lia.
@@ -573,8 +738,42 @@ Proof. rewrite <-!smod_unsigned, to_Z_mul, Z.smod_mod, Z.smod_idemp_mul; trivial
 
 Module NonuniformDependent.
 (** Operations that change the modulus *)
+
+(* This module provides operations that vary m in [Zmod m], for example
+ * concatenating bitvectors and combining congruences. *)
+
+(* Effective use of the operations defined here with moduli that are not
+   converitble to values requires substantial understanding of dependent types,
+   in particular the equality type, the sigma type, and their eliminators. Even
+   so, many applications are better served by [Z] or by adopting one
+   common-denominator modulus.
+   The next few lemmas will give a taste of the challenges. *)
+
+Goal forall {m} (a : Zmod m) {n} (b : Zmod n), Prop.
+  intros.
+  assert_fails (assert (a = b)). (* type error: need n == m *)
+  assert_fails (pose (add a b)). (* type error: need n == m *)
+Abort.
+
+Lemma to_N_inj_dep {m} (a : Zmod m) {n} (b : Zmod n) :
+  m = n -> to_N a = to_N b -> existT _ _ a = existT _ _ b.
+Proof. destruct 1; auto using f_equal, to_N_inj. Qed.
+
+Lemma to_N_eq_rect {m} (a : Zmod m) n p : to_N (eq_rect _ _ a n p) = to_N a.
+Proof. case p; trivial. Qed.
+
+Lemma to_N_eq_rect_attempt {m} (a : Zmod m) n p : to_N (eq_rect (Zmod m) id a (Zmod n) p) = to_N a.
+Proof. assert_fails (case p). Abort.
+
+Lemma to_Z_eq_rect {m} (a : Zmod m) n p : to_Z (eq_rect _ _ a n p) = to_Z a.
+Proof. case p; trivial. Qed.
+
+Lemma to_Z_inj_dep {m} (a : Zmod m) {n} (b : Zmod n) :
+  m = n -> to_Z a = to_Z b -> existT _ _ a = existT _ _ b.
+Proof. destruct 1; auto using f_equal, to_Z_inj. Qed.
+
 (* TODO: high part first or low part first? *)
-Definition combineM {a b} (hi : Zmod a) (lo : Zmod b) : Zmod (a * b).
+Definition lincombM {a b} (hi : Zmod a) (lo : Zmod b) : Zmod (a * b).
   refine (of_small_N _ (b*hi + lo) (fun _ => _))%N.
   abstract (pose proof to_N_range hi; pose proof to_N_range lo; nia).
 Defined.
@@ -587,29 +786,47 @@ Defined.
 Lemma divM_ok {a b} x : @divM a b x = of_N _ (x / b)%N.
 Proof. apply of_small_N_ok. Qed.
 
-Definition modM a b (x : Zmod (a * b)) : Zmod b := of_N _ (x mod b).
+Definition modM a b (x : Zmod (a * b)) := of_N b x.
 
-Lemma to_N_combineM {a b} hi lo : to_N (@combineM a b hi lo) = (b*hi + lo)%N.
+Definition crtM {a b} (x : Zmod a) (y : Zmod b) := of_Z (a*b) (solvecong a b x y).
+
+Lemma to_N_lincombM {a b} hi lo : to_N (@lincombM a b hi lo) = (b*hi + lo)%N.
 Proof.
-  cbv [combineM]; match goal with |- context[?x] => pose proof x I end.
+  cbv [lincombM]; match goal with |- context[?x] => pose proof x I end.
   rewrite of_small_N_ok, to_N_of_N, N.mod_small; trivial.
 Qed.
 
-Lemma to_Z_combineM {a b} hi lo : to_Z (@combineM a b hi lo) = b*hi + lo.
-Proof. cbv [to_Z]; rewrite to_N_combineM; lia. Qed.
+Lemma to_Z_lincombM {a b} hi lo : to_Z (@lincombM a b hi lo) = b*hi + lo.
+Proof. cbv [to_Z]; rewrite to_N_lincombM; lia. Qed.
 
-Lemma modM_combineM {a b} x y : modM a b (combineM x y) = y.
+Lemma modM_lincombM {a b} x y : modM a b (lincombM x y) = y.
 Proof.
-  apply to_N_inj. cbv [modM]. rewrite to_N_of_N, N.Div0.mod_mod by inversion 1.
-  rewrite to_N_combineM, N.add_comm, N.mul_comm.
+  apply to_N_inj. cbv [modM]. rewrite to_N_of_N.
+  rewrite to_N_lincombM, N.add_comm, N.mul_comm.
   rewrite N.Div0.mod_add, N.mod_small; trivial; apply to_N_range.
 Qed.
 
-Lemma divM_combineM {a b} x y : divM a b (combineM x y) = x.
+Lemma divM_lincombM {a b} x y : divM a b (lincombM x y) = x.
 Proof.
-  apply to_N_inj. rewrite divM_ok, to_N_combineM, to_N_of_N.
+  apply to_N_inj. rewrite divM_ok, to_N_lincombM, to_N_of_N.
   rewrite N.add_comm, N.mul_comm, N.div_add, N.div_small, N.add_0_l, N.mod_small;
     trivial using to_N_range; inversion 1.
+Qed.
+
+Lemma modM_crtM {a b : positive} x y (H : Z.gcd a b = 1) : modM a b (crtM x y) = y.
+Proof.
+  apply to_Z_inj; cbv [crtM modM].
+  rewrite to_N_of_Z, to_Z_of_N, Z2N.id, <-Zmod_div_mod; try lia.
+  { rewrite (proj2 (solvecong_coprime a b x y H)), mod_to_Z; trivial. }
+  { exists a. lia. }
+  { apply Z.mod_pos_bound. lia. }
+Qed.
+
+Lemma crtM_comm {a b} (x : Zmod a) (y : Zmod b) (H : Z.gcd a b = 1) :
+  existT _ _ (crtM x y) = existT _ _ (crtM y x).
+Proof.
+  apply to_Z_inj_dep; try lia; cbv [crtM]; rewrite !to_Z_of_Z.
+  rewrite solvecong_comm; f_equal; try lia.
 Qed.
 
 (* FIXME: cleanup, factor out first proof line, factor out bitlength proof, abstract *)
@@ -626,9 +843,9 @@ Definition concatM {a b} (hi : Zmod (2^a)) (lo : Zmod (2^b)) : Zmod (2^(a+b)).
     rewrite <-(positive_nat_N (Pos.pow _ _)), Pos2Nat.inj_pow, Nat2N.inj_pow, 2positive_nat_N;
     rewrite N.mod_pow2_bits_high, Bool.andb_false_r; trivial.
 Defined.
-Lemma concatM_ok {a b} hi lo : to_N (@concatM a b hi lo) = to_N (combineM hi lo).
+Lemma concatM_ok {a b} hi lo : to_N (@concatM a b hi lo) = to_N (lincombM hi lo).
 Proof.
-  cbv [concatM combineM]; rewrite ?to_N_of_small_N.
+  cbv [concatM lincombM]; rewrite ?to_N_of_small_N.
   rewrite <-N.lxor_lor, <-N.add_nocarry_lxor, N.shiftl_mul_pow2; try lia.
   all : apply N.bits_inj_0; intros i; rewrite ?N.land_spec;
   destruct (N.ltb_spec i b);
@@ -637,11 +854,13 @@ Proof.
     rewrite <-(positive_nat_N (Pos.pow _ _)), Pos2Nat.inj_pow, Nat2N.inj_pow, 2positive_nat_N;
     rewrite N.mod_pow2_bits_high, Bool.andb_false_r; trivial.
 Qed.
+Lemma concatM_ok_dep {a b} hi lo : existT _ _ (@concatM a b hi lo) = existT _ _ (lincombM hi lo).
+Proof. apply to_N_inj_dep; auto using concatM_ok. Admitted.
 
 End NonuniformDependent.
 
 (** Optimized conversions and operations for m=2^w *)
-(* TODO: move to some ZArith rile *)
+(* TODO: move to some ZArith file *)
 Module Import PPos.
 Module Pos.
 Definition ones (p : positive) : positive :=
@@ -709,6 +928,8 @@ Definition mul_pow2 {w} (x y : Zmod (2^w)) : Zmod (2^w) := of_N_pow2 w (x * y).
 Lemma mul_pow2_ok {w} (x y : Zmod (2^w)) : mul_pow2 x y = mul x y.
 Proof. apply of_N_pow2_ok. Qed.
 
+(* TODO: connect to Fin.t *)
+
 (** Tests *)
 
 Goal True. unify (add (of_N_value 4 3 I) (of_Z_pow2 2 1)) (of_Z 4 0). Abort.
@@ -719,4 +940,4 @@ Goal True. assert (one - one = zero :> Zmod 2) as _ by ring. Abort.
 Goal True. assert (of_Z _ 1 - of_Z _ 1 = zero :> Zmod (2^1)) as _ by ring. Abort.
 
 Goal pow_N (of_Z (2^127-1) 2) (2^127-3) =? inv (of_Z (2^127-1) 2) = true.
-Proof. native_cast_no_check (eq_refl true). Qed.
+Proof. vm_cast_no_check (eq_refl true). Qed.
