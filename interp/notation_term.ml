@@ -73,7 +73,7 @@ type notation_binder_kind =
   (* This accepts only name *)
   | AsName
   (* This accepts pattern *)
-  | AsNameOrPattern
+  | AsAnyPattern
   (* This accepts only strict pattern (i.e. no single variable) at printing *)
   | AsStrictPattern
 

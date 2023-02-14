@@ -30,9 +30,9 @@ let pair_eq f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 let notation_binder_kind_eq k1 k2 = match k1, k2 with
 | AsIdent, AsIdent -> true
 | AsName, AsName -> true
-| AsNameOrPattern, AsNameOrPattern -> true
+| AsAnyPattern, AsAnyPattern -> true
 | AsStrictPattern, AsStrictPattern -> true
-| (AsIdent | AsName | AsNameOrPattern | AsStrictPattern), _ -> false
+| (AsIdent | AsName | AsAnyPattern | AsStrictPattern), _ -> false
 
 let notation_binder_source_eq s1 s2 = match s1, s2 with
 | NtnBinderParsedAsSomeBinderKind bk1, NtnBinderParsedAsSomeBinderKind bk2 -> notation_binder_kind_eq bk1 bk2

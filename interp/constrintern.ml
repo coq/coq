@@ -998,13 +998,13 @@ let cases_pattern_of_name {loc;v=na} =
   CAst.make ?loc (CPatAtom atom)
 
 let cases_pattern_of_binder_as_constr a = function
-  | AsNameOrPattern | AsStrictPattern -> coerce_to_cases_pattern_expr a
+  | AsAnyPattern | AsStrictPattern -> coerce_to_cases_pattern_expr a
   | AsIdent -> cases_pattern_of_id (coerce_to_id a)
   | AsName -> cases_pattern_of_name (coerce_to_name a)
 
 let is_onlyident = function
   | AsIdent | AsName -> true
-  | AsNameOrPattern | AsStrictPattern -> false
+  | AsAnyPattern | AsStrictPattern -> false
 
 let split_by_type ids (subst : constr_notation_substitution) =
   let bind id scl l s =

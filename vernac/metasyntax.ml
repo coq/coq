@@ -1178,8 +1178,8 @@ let make_interpretation_type isrec isbinding default_if_binding typ =
   | ETName, true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind AsName)
   | ETName, false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind AsName)
   (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
-  | ETPattern (ppstrict,_), true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsNameOrPattern))
-  | ETPattern (ppstrict,_), false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsNameOrPattern))
+  | ETPattern (ppstrict,_), true -> NtnTypeBinderList (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsAnyPattern))
+  | ETPattern (ppstrict,_), false -> NtnTypeBinder (NtnBinderParsedAsSomeBinderKind (if ppstrict then AsStrictPattern else AsAnyPattern))
   | ETBinder _, true -> NtnTypeBinderList NtnBinderParsedAsBinder
   | ETBinder _, false -> NtnTypeBinder NtnBinderParsedAsBinder
   (* Others *)
@@ -1926,7 +1926,7 @@ let add_abbreviation ~local deprecation env ident (vars,c) modl =
       interp_notation_constr env nenv c
   in
   let in_pat (id,_) = (id,ETConstr (Constrexpr.InConstrEntry,None,(NextLevel,InternalProd))) in
-  let interp = make_interpretation_vars ~default_if_binding:AsNameOrPattern [] 0 acvars (List.map in_pat vars) in
+  let interp = make_interpretation_vars ~default_if_binding:AsAnyPattern [] 0 acvars (List.map in_pat vars) in
   let vars = List.map (fun (x,_) -> (x, Id.Map.find x interp)) vars in
   let also_in_cases_pattern = has_no_binders_type vars in
   let onlyparsing = only_parsing || fst (printability None [] vars false reversibility pat) in
