@@ -791,11 +791,11 @@ $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PR
 	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) -R coqdoc Coqdoc $*; \
+	  $(coqc) -R coqdoc Coqdoc $* 2>&1; \
 	  cd coqdoc; \
 	  f=`basename $*`; \
-	  $(coqdoc) -utf8 -R . Coqdoc -coqlib_url http://coq.inria.fr/stdlib --html $$f.v; \
-	  $(coqdoc) -utf8 -R . Coqdoc -coqlib_url http://coq.inria.fr/stdlib --latex $$f.v; \
+	  $(coqdoc) -utf8 -R . Coqdoc -coqlib_url http://coq.inria.fr/stdlib --html $$f.v 2>&1; \
+	  $(coqdoc) -utf8 -R . Coqdoc -coqlib_url http://coq.inria.fr/stdlib --latex $$f.v 2>&1; \
 	  diff -u --strip-trailing-cr $$f.html.out Coqdoc.$$f.html 2>&1; R=$$?; times; \
 	  grep -v "^%%" Coqdoc.$$f.tex | diff -u --strip-trailing-cr $$f.tex.out - 2>&1; S=$$?; times; \
 	  if [ $$R = 0 -a $$S = 0 ]; then \
@@ -806,7 +806,7 @@ $(addsuffix .log,$(wildcard coqdoc/*.v)): %.v.log: %.v %.html.out %.tex.out $(PR
 	    echo "    $<...Error! (unexpected output)"; \
 	    $(FAIL); \
 	  fi; \
-	} > "$@" 2>&1
+	} > "$@"
 
 # tools/
 
