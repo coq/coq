@@ -1,0 +1,40 @@
+\documentclass[12pt]{report}
+\usepackage[utf8x]{inputenc}
+
+%Warning: tipa declares many non-standard macros used by utf8x to
+%interpret utf8 characters but extra packages might have to be added
+%such as "textgreek" for Greek letters not already in tipa
+%or "stmaryrd" for mathematical symbols.
+%Utf8 codes missing a LaTeX interpretation can be defined by using
+%\DeclareUnicodeCharacter{code}{interpretation}.
+%Use coqdoc's option -p to add new packages or declarations.
+\usepackage{tipa}
+
+\usepackage[T1]{fontenc}
+\usepackage{fullpage}
+\usepackage{coqdoc}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+\begin{document}
+\coqlibrary{Coqdoc.typeclasses}{Library }{Coqdoc.typeclasses}
+
+\begin{coqdoccode}
+\coqdocnoindent
+\coqdockw{Class} \coqdef{Coqdoc.typeclasses.EqDec}{EqDec}{\coqdocrecord{EqDec}} \coqdef{Coqdoc.typeclasses.T:1}{T}{\coqdocbinder{T}} := \{ \coqdef{Coqdoc.typeclasses.eqb}{eqb}{\coqdocprojection{eqb}} : \coqref{Coqdoc.typeclasses.T:1}{\coqdocvariable{T}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.typeclasses.T:1}{\coqdocvariable{T}} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqexternalref{bool}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{bool}} \}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\coqdockw{Section} \coqdef{Coqdoc.typeclasses.TC}{TC}{\coqdocsection{TC}}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\#[\coqdocvar{local}] \coqdockw{Instance} \coqdef{Coqdoc.typeclasses.unit EqDec}{unit\_EqDec}{\coqdocinstance{unit\_EqDec}} : \coqref{Coqdoc.typeclasses.EqDec}{\coqdocclass{EqDec}} \coqexternalref{unit}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{unit}} := \{ \coqref{Coqdoc.typeclasses.eqb}{\coqdocmethod{eqb}} := \coqdockw{fun} \coqdocvar{\_} \coqdocvar{\_} \ensuremath{\Rightarrow} \coqexternalref{true}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocconstructor{true}} \}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\coqdockw{End} \coqref{Coqdoc.typeclasses.TC}{\coqdocsection{TC}}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\#[\coqdocvar{local}] \coqdocvar{Existing} \coqdockw{Instance} \coqref{Coqdoc.typeclasses.unit EqDec}{\coqdocinstance{unit\_EqDec}}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\coqdockw{Existing Class} \coqref{Coqdoc.typeclasses.EqDec}{\coqdocclass{EqDec}}.\coqdoceol
+\end{coqdoccode}
+\end{document}

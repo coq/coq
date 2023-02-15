@@ -510,6 +510,9 @@ let dump_global r =
     let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob ?loc:r.loc gr
   with e when CErrors.noncritical e -> ()
+
+let dump_qualid q = dump_global (make ?loc:q.loc @@ Constrexpr.AN q)
+
 (**********)
 (* Syntax *)
 
@@ -1134,7 +1137,7 @@ let vernac_scheme_equality sch id =
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
     (Dumpglob.dump_definition lid false "def";
-     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ Constrexpr.AN (qualid_of_ident ?loc id))) l);
+     List.iter (fun {loc;v=id} -> dump_qualid (qualid_of_ident ?loc id)) l);
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~poly l =
@@ -1591,9 +1594,12 @@ let vernac_declare_instance ~atts id bl inst pri =
 
 let vernac_existing_instance ~atts insts =
   let locality = Attributes.parse Classes.instance_locality atts in
-  List.iter (fun (id, info) -> Classes.existing_instance locality id (Some info)) insts
+  List.iter (fun (id, info) ->
+      dump_qualid id;
+      Classes.existing_instance locality id (Some info)) insts
 
 let vernac_existing_class id =
+  dump_qualid id;
   Record.declare_existing_class (Nametab.global id)
 
 (***********)
