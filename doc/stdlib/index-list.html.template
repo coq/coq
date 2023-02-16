@@ -280,7 +280,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Cyclic/Int63/Uint63.v
     theories/Numbers/Cyclic/Int63/Sint63.v
     theories/Numbers/Cyclic/Int63/Ring63.v
-    theories/Numbers/Cyclic/ZModulo/ZModulo.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;Natural</b>:
