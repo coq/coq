@@ -1,4 +1,5 @@
 Require Import Program.
+Require Vector.
 
 Inductive T := MkT.
 

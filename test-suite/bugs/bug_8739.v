@@ -1,4 +1,6 @@
 Require Coq.Program.Program.
+Require Coq.Classes.CMorphisms.
+Require Setoid.
 
 Export Coq.Program.Program.
 Delimit Scope category_theory_scope with category_theory.

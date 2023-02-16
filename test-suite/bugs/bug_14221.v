@@ -6,7 +6,8 @@ Set Primitive Projections.
 Set Universe Polymorphism.
 
 Close Scope nat_scope.
-Export Coq.Classes.CMorphisms.
+Require Setoid.
+Require Export Coq.Classes.CMorphisms.
 
 Notation "∀  x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity).
