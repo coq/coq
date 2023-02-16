@@ -7,6 +7,7 @@ Fail Add Zify InjTyp id.
 
 Require Import Coq.ZArith.ZArith. Open Scope Z_scope.
 Require Coq.Init.Byte .
+Require Coq.Strings.Byte .
 Require Import Coq.micromega.ZifyClasses Coq.micromega.Lia.
 
 Notation byte := Coq.Init.Byte.byte.
