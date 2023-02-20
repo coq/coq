@@ -42,17 +42,18 @@ type clausenv = {
   env      : env;
   evd      : evar_map;
   metas    : meta_arg list;
-  templval : constr freelisted;
+  templval : constr;
+  metaset : Metaset.t;
   templtyp : constr freelisted;
   cache : Reductionops.meta_instance_subst;
 }
 
-let mk_clausenv env evd metas templval templtyp = {
-  env; evd; metas; templval; templtyp; cache = create_meta_instance_subst evd;
+let mk_clausenv env evd metas templval metaset templtyp = {
+  env; evd; metas; templval; metaset; templtyp; cache = create_meta_instance_subst evd;
 }
 
 let update_clenv_evd clenv evd =
-  mk_clausenv clenv.env evd clenv.metas clenv.templval clenv.templtyp
+  mk_clausenv clenv.env evd clenv.metas clenv.templval clenv.metaset clenv.templtyp
 
 let strip_params env sigma c =
   match EConstr.kind sigma c with
@@ -72,8 +73,8 @@ let strip_params env sigma c =
   | _ -> c
 
 let clenv_strip_proj_params clenv =
-  let templval = Evd.map_fl (fun c -> strip_params clenv.env clenv.evd c) clenv.templval in
-  mk_clausenv clenv.env clenv.evd clenv.metas templval clenv.templtyp
+  let templval = strip_params clenv.env clenv.evd clenv.templval in
+  mk_clausenv clenv.env clenv.evd clenv.metas templval clenv.metaset clenv.templtyp
 
 let clenv_refresh env sigma ctx clenv =
   let evd = Evd.meta_merge (Evd.meta_list clenv.evd) (Evd.clear_metas sigma) in
@@ -84,10 +85,11 @@ let clenv_refresh env sigma ctx clenv =
     let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
     (* Only metas are mentioning the old universes. *)
     mk_clausenv env (Evd.map_metas emap evd) clenv.metas
-      (Evd.map_fl emap clenv.templval)
+      (emap clenv.templval)
+      clenv.metaset
       (Evd.map_fl emap clenv.templtyp)
   | None ->
-    mk_clausenv env evd clenv.metas clenv.templval clenv.templtyp
+    mk_clausenv env evd clenv.metas clenv.templval clenv.metaset clenv.templtyp
 
 let cl_env ce = ce.env
 let clenv_evd ce =  ce.evd
@@ -104,7 +106,7 @@ let clenv_meta_type clenv mv =
     try Evd.meta_ftype clenv.evd mv
     with Not_found -> anomaly Pp.(str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   meta_instance clenv.env clenv.cache ty
-let clenv_value clenv = meta_instance clenv.env clenv.cache clenv.templval
+let clenv_value clenv = meta_instance clenv.env clenv.cache { rebus = clenv.templval; freemetas = clenv.metaset }
 let clenv_type clenv = meta_instance clenv.env clenv.cache clenv.templtyp
 
 let clenv_push_prod cl =
@@ -117,8 +119,9 @@ let clenv_push_prod cl =
         let na' = if dep then na.binder_name else Anonymous in
         let e' = meta_declare mv t ~name:na' cl.evd in
         let concl = if dep then subst1 (mkMeta mv) u else u in
-        let def = applist (cl.templval.rebus,[mkMeta mv]) in
-        Some (mv, dep, { templval = mk_freelisted def;
+        let templval = applist (cl.templval, [mkMeta mv]) in
+        let metaset = Metaset.add mv cl.metaset in
+        Some (mv, dep, { templval; metaset;
           templtyp = mk_freelisted concl;
           evd = e';
           env = cl.env;
@@ -162,7 +165,9 @@ let clenv_environments evd bound t =
 let mk_clenv_from_env env sigma n (c,cty) =
   let evd = clear_metas sigma in
   let (evd,args,concl) = clenv_environments evd n cty in
-  { templval = mk_freelisted (mkApp (c,Array.map_of_list mkMeta args));
+  let templval = mkApp (c, Array.map_of_list mkMeta args) in
+  let metaset = Metaset.of_list args in
+  { templval; metaset;
     templtyp = mk_freelisted concl;
     evd = evd;
     env = env;
@@ -1039,6 +1044,6 @@ let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 
 let pr_clenv clenv =
   let prc = Termops.Internal.print_constr_env clenv.env clenv.evd in
-  Pp.(h (str"TEMPL: " ++ prc clenv.templval.rebus ++
+  Pp.(h (str"TEMPL: " ++ prc clenv.templval ++
          str" : " ++ prc clenv.templtyp.rebus ++ fnl () ++
          pr_evar_map (Some 2) clenv.env clenv.evd))
