@@ -89,6 +89,12 @@ let test_array_closing =
     lk_kw "|" >> lk_kw "]" >> check_no_space
   end
 
+let test_leftsquarebracket_equal =
+  let open Pcoq.Lookahead in
+  to_entry "test_leftsquarebracket_equal" begin
+    lk_kw "[" >> lk_kw "=" >> check_no_space
+  end
+
 let ltac2_expr = Tac2entries.Pltac.ltac2_expr
 let _ltac2_expr = ltac2_expr
 let ltac2_type = Entry.make "ltac2_type"
@@ -559,7 +565,7 @@ GRAMMAR EXTEND Gram
   equality_intropattern:
     [ [ "->" -> { CAst.make ~loc @@ QIntroRewrite true }
       | "<-" -> { CAst.make ~loc @@ QIntroRewrite false }
-      | "[="; tc = intropatterns; "]" -> { CAst.make ~loc @@ QIntroInjection tc } ] ]
+      | test_leftsquarebracket_equal; "["; "="; tc = intropatterns; "]" -> { CAst.make ~loc @@ QIntroInjection tc } ] ]
   ;
   naming_intropattern:
     [ [ LEFTQMARK; id = lident ->

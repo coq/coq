@@ -2445,7 +2445,7 @@ or_and_intropattern: [
 equality_intropattern: [
 | "->"
 | "<-"
-| "[=" intropatterns "]"
+| test_leftsquarebracket_equal "[" "=" intropatterns "]"
 ]
 
 naming_intropattern: [
@@ -2465,8 +2465,8 @@ simple_intropattern: [
 ]
 
 simple_intropattern_closed: [
-| or_and_intropattern
 | equality_intropattern
+| or_and_intropattern
 | "_"
 | naming_intropattern
 ]
@@ -2614,8 +2614,8 @@ or_and_intropattern_loc: [
 ]
 
 as_or_and_ipat: [
-| "as" or_and_intropattern_loc
 | "as" equality_intropattern
+| "as" or_and_intropattern_loc
 |
 ]
 
@@ -2832,9 +2832,9 @@ ssriorpat: [
 ]
 
 ssrcpat: [
+| test_leftsquarebracket_equal test_nohidden "[" "=" ssriorpat "]"      (* SSR plugin *)
 | test_nohidden "[" hat "]"      (* SSR plugin *)
 | test_nohidden "[" ssriorpat "]"      (* SSR plugin *)
-| test_nohidden "[=" ssriorpat "]"      (* SSR plugin *)
 ]
 
 hat: [
@@ -3630,7 +3630,7 @@ G_LTAC2_or_and_intropattern: [
 G_LTAC2_equality_intropattern: [
 | "->"      (* ltac2 plugin *)
 | "<-"      (* ltac2 plugin *)
-| "[=" G_LTAC2_intropatterns "]"      (* ltac2 plugin *)
+| test_leftsquarebracket_equal "[" "=" G_LTAC2_intropatterns "]"      (* ltac2 plugin *)
 ]
 
 G_LTAC2_naming_intropattern: [

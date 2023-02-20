@@ -830,6 +830,12 @@ END
 
 {
 
+let test_leftsquarebracket_equal =
+  let open Pcoq.Lookahead in
+  to_entry "test_leftsquarebracket_equal" begin
+    lk_kw "[" >> lk_kw "=" >> check_no_space
+  end
+
 let reject_ssrhid kwstate strm =
   match LStream.peek_nth kwstate 0 strm with
   | Tok.KEYWORD "[" ->
@@ -873,12 +879,12 @@ GRAMMAR EXTEND Gram
   | "^~"; n = natural -> { SuffixNum n }
   ]];
   ssrcpat: TOP [
-   [ test_nohidden; "["; hat_id = hat; "]" -> {
+   [ test_leftsquarebracket_equal; test_nohidden; "["; "="; iorpat = ssriorpat; "]" -> {
+      IPatInj iorpat }
+   | test_nohidden; "["; hat_id = hat; "]" -> {
       IPatCase (Block(hat_id)) }
    | test_nohidden; "["; iorpat = ssriorpat; "]" -> {
-      IPatCase (Regular iorpat) }
-   | test_nohidden; "[="; iorpat = ssriorpat; "]" -> {
-      IPatInj iorpat } ]];
+      IPatCase (Regular iorpat) } ]];
 END
 
 GRAMMAR EXTEND Gram

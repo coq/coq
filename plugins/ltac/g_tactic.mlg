@@ -56,6 +56,12 @@ let test_lpar_idnum_coloneq =
     lk_kw "(" >> (lk_ident <+> lk_nat) >> lk_kw ":="
   end
 
+let test_leftsquarebracket_equal =
+  let open Pcoq.Lookahead in
+  to_entry "test_leftsquarebracket_equal" begin
+    lk_kw "[" >> lk_kw "=" >> check_no_space
+  end
+
 (* idem for (x:t) *)
 open Extraargs
 
@@ -292,7 +298,7 @@ GRAMMAR EXTEND Gram
   equality_intropattern:
     [ [ "->" -> { IntroRewrite true }
       | "<-" -> { IntroRewrite false }
-      | "[="; tc = intropatterns; "]" -> { IntroInjection tc } ] ]
+      | test_leftsquarebracket_equal; "["; "="; tc = intropatterns; "]" -> { IntroInjection tc } ] ]
   ;
   naming_intropattern:
     [ [ prefix = pattern_ident -> { IntroFresh prefix.CAst.v }
@@ -315,8 +321,8 @@ GRAMMAR EXTEND Gram
           CAst.make ~loc @@ List.fold_right f l pat } ] ]
   ;
   simple_intropattern_closed:
-    [ [ pat = or_and_intropattern   -> { CAst.make ~loc @@ IntroAction (IntroOrAndPattern pat) }
-      | pat = equality_intropattern -> { CAst.make ~loc @@ IntroAction pat }
+    [ [ pat = equality_intropattern -> { CAst.make ~loc @@ IntroAction pat }
+      | pat = or_and_intropattern   -> { CAst.make ~loc @@ IntroAction (IntroOrAndPattern pat) }
       | "_" -> { CAst.make ~loc @@ IntroAction IntroWildcard }
       | pat = naming_intropattern -> { CAst.make ~loc @@ IntroNaming pat } ] ]
   ;
@@ -466,12 +472,12 @@ GRAMMAR EXTEND Gram
       | locid = identref -> { ArgVar locid } ] ]
   ;
   as_or_and_ipat:
-    [ [ "as"; ipat = or_and_intropattern_loc -> { Some ipat }
-      | "as"; ipat = equality_intropattern ->
+    [ [ "as"; ipat = equality_intropattern ->
         { match ipat with
           | IntroRewrite _ -> user_err ~loc Pp.(str "Disjunctive/conjunctive pattern expected.")
           | IntroInjection _ -> user_err ~loc Pp.(strbrk "Found an injection pattern while a disjunctive/conjunctive pattern was expected; use " ++ str "\"injection as pattern\"" ++ strbrk " instead.")
           | _ -> assert false }
+      | "as"; ipat = or_and_intropattern_loc -> { Some ipat }
       | -> { None } ] ]
   ;
   eqn_ipat:
