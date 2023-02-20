@@ -49,7 +49,7 @@ type glob_constr_pattern_and_expr = Id.Set.t * glob_constr_and_expr * Pattern.co
 
 type ('raw, 'glb) intern_fun = glob_sign -> 'raw -> glob_sign * 'glb
 type 'glb subst_fun = substitution -> 'glb -> 'glb
-type 'glb ntn_subst_fun = Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
+type 'glb ntn_subst_fun = Id.Set.t -> Glob_term.glob_constr Id.Map.t -> 'glb -> 'glb
 
 module InternObj =
 struct
@@ -98,6 +98,6 @@ let () = Hook.set Detyping.subst_genarg_hook generic_substitute
 let substitute_notation = NtnSubst.obj
 let register_ntn_subst0 = NtnSubst.register0
 
-let generic_substitute_notation env (GenArg (Glbwit wit, v)) =
-  let v = substitute_notation wit env v in
+let generic_substitute_notation avoid env (GenArg (Glbwit wit, v)) =
+  let v = substitute_notation wit avoid env v in
   in_gen (glbwit wit) v

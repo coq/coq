@@ -634,6 +634,8 @@ mode is only set when evaluating Ltac2 snippets in interactive proof mode. The
 rationale is that it is cumbersome to explicitly add ``&`` interactively, while it
 is expected that global tactics enforce more invariants on their code.
 
+.. _term-antiquotations:
+
 Term Antiquotations
 ~~~~~~~~~~~~~~~~~~~
 

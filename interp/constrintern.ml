@@ -926,7 +926,7 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
       let terms = Id.Map.fold mk_env terms Id.Map.empty in
       let binders = Id.Map.map mk_env' binders in
       let bindings = Id.Map.fold Id.Map.add terms binders in
-      let arg = Genintern.generic_substitute_notation bindings arg in
+      let arg = Genintern.generic_substitute_notation avoid bindings arg in
       DAst.make ?loc @@ GGenarg arg
     | NBinderList (x,y,iter,terminator,revert) ->
       (try
