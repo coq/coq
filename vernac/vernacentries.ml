@@ -1518,7 +1518,8 @@ let vernac_require from export qidl =
   if Dumpglob.dump () then
     List.iter2 (fun ({CAst.loc},_) (dp,_) -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
   let lib_resolver = Loadpath.try_locate_absolute_library in
-  Library.require_library_from_dirpath ~lib_resolver modrefl;
+  let filenames = Library.require_library_syntax_from_dirpath ~lib_resolver modrefl in
+  Library.require_library_from_dirpath filenames;
   Option.iter (fun (export,cats) ->
       let cats = interp_import_cats cats in
       List.iter2 (fun (m,_) (_,f) ->
