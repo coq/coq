@@ -98,6 +98,8 @@ GRAMMAR EXTEND Gram
         { add_control_flag ~loc ~flag:(ControlRedirect s) c }
       | IDENT "Timeout"; n = natural; c = vernac_control ->
         { add_control_flag ~loc ~flag:(ControlTimeout n) c }
+      | IDENT "AllocLimit"; n = natural; c = vernac_control ->
+        { add_control_flag ~loc ~flag:(ControlAllocLimit n) c }
       | IDENT "Fail"; c = vernac_control ->
         { add_control_flag ~loc ~flag:ControlFail c }
       | IDENT "Succeed"; c = vernac_control ->

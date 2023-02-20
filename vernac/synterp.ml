@@ -79,6 +79,7 @@ type control_entry =
   | ControlTime of { synterp_duration: System.duration }
   | ControlRedirect of string
   | ControlTimeout of { remaining : float }
+  | ControlAllocLimit of { synterp_alloc : Int64.t; limit: int }
   | ControlFail of { st : Vernacstate.Synterp.t }
   | ControlSucceed of { st : Vernacstate.Synterp.t }
 
@@ -359,6 +360,12 @@ let with_timeout ~timeout:n (f : 'a -> 'b) (x : 'a) : 'b =
     else ControlTimeout { remaining } :: ctrl, v
   end
 
+let with_alloc_limit ~limit f x =
+  match Control.alloc_limit limit f x with
+  | None -> raise CErrors.AllocLimit
+  | Some ((ctrl,v), alloc) ->
+    ControlAllocLimit { synterp_alloc = alloc; limit } :: ctrl, v
+
 let test_mode = ref false
 
 (* Restoring the state is the caller's responsibility *)
@@ -410,6 +417,8 @@ let rec synterp_control_flag ~loc (f : control_flag list)
     with_succeed (fun () -> synterp_control_flag ~loc l fn expr)
   | ControlTimeout timeout :: l ->
     with_timeout ~timeout (synterp_control_flag ~loc l fn) expr
+  | ControlAllocLimit limit :: l ->
+    with_alloc_limit ~limit (synterp_control_flag ~loc l fn) expr
   | ControlTime :: l ->
     begin match System.measure_duration (synterp_control_flag ~loc l fn) expr with
     | Ok((ctrl,v), synterp_duration) ->

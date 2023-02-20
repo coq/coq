@@ -126,3 +126,8 @@ let protect_sigalrm f x =
       Exninfo.iraise e
   with Invalid_argument _ -> (* This happens on Windows, as handling SIGALRM does not seem supported *)
     f x
+
+let alloc_limit n f x =
+  match Memprof_limits.limit_allocations ~limit:(Int64.(mul 1000L (of_int n))) (fun () -> f x) with
+  | Ok v -> Some v
+  | Error _ -> None

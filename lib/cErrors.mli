@@ -77,3 +77,5 @@ val noncritical : exn -> bool
 val register_additional_error_info
   :  (Exninfo.info -> Pp.t option)
   -> unit
+
+exception AllocLimit

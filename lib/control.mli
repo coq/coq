@@ -28,6 +28,8 @@ val timeout : float -> ('a -> 'b) -> 'a -> 'b option
 (** [timeout n f x] tries to compute [Some (f x)], and if it fails to do so
     before [n] seconds, returns [None] instead. *)
 
+val alloc_limit : int -> ('a -> 'b) -> 'a -> ('b * Int64.t) option
+
 (** Set a particular timeout function; warning, this is an internal
    API and it is scheduled to go away. *)
 type timeout = { timeout : 'a 'b. float -> ('a -> 'b) -> 'a -> 'b option }

@@ -154,6 +154,7 @@ let init_runtime opts =
   let open Coqargs in
   Vernacextend.static_linking_done ();
   Option.iter (fun file -> init_profile ~file) opts.config.profile;
+  Memprof_limits.start_memprof_limits ();
   Lib.init ();
   init_coqlib opts;
   if opts.post.memory_stat then at_exit print_memory_stat;

@@ -31,6 +31,7 @@ type control_entry =
   | ControlTime of { synterp_duration: System.duration }
   | ControlRedirect of string
   | ControlTimeout of { remaining : float }
+  | ControlAllocLimit of { synterp_alloc : Int64.t; limit: int }
   | ControlFail of { st : Vernacstate.Synterp.t }
   | ControlSucceed of { st : Vernacstate.Synterp.t }
 

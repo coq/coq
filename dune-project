@@ -24,6 +24,7 @@
   (ocaml (>= 4.09.0))
   (ocamlfind (>= 1.8.1))
   (zarith (>= 1.11))
+  (memprof-limits (= 0.2.0))
   (ounit2 :with-test))
  (depopts coq-native)
  (synopsis "The Coq Proof Assistant -- Core Binaries and Tools")

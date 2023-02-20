@@ -704,6 +704,10 @@ TACTIC EXTEND optimize_heap
 | [ "optimize_heap" ] -> { Internals.tclOPTIMIZE_HEAP }
 END
 
+TACTIC EXTEND alloclimit
+| [ "alloc_limit" int(n) tactic(tac) ] -> { Internals.alloc_limit ist n tac }
+END
+
 VERNAC COMMAND EXTEND infoH CLASSIFIED AS QUERY
 | ![ proof_query ] [ "infoH" tactic(tac) ] -> { Internals.infoH tac }
 END

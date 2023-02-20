@@ -506,6 +506,7 @@ type control_flag =
   | ControlTime
   | ControlRedirect of string
   | ControlTimeout of int
+  | ControlAllocLimit of int
   | ControlFail
   | ControlSucceed
 

@@ -101,6 +101,9 @@ struct
   let timeout = fun n t -> (); fun () ->
     Control.timeout n t ()
 
+  let alloc_limit = fun n t -> (); fun () ->
+    Control.alloc_limit n t ()
+
   let make f = (); fun () ->
     try f ()
     with e when CErrors.noncritical e ->

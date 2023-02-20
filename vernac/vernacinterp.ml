@@ -101,6 +101,14 @@ let interp_control_entry ~loc (f : control_entry) ~st
     | Ok (v,_) -> v
     | Error (exn, _) -> Exninfo.iraise exn
     end
+  | ControlAllocLimit { synterp_alloc=alloc; limit } ->
+    let rem = limit - Int64.(to_int (div alloc 1000L)) in
+    (match Control.alloc_limit rem (fun () -> fn ~st) () with
+     | Some (x, n) ->
+       Feedback.msg_info
+         Pp.(str "Allocated " ++ str Int64.(to_string (div (add n alloc) 1000L)) ++ str "Mw.");
+       x
+     | None -> raise CErrors.AllocLimit)
   | ControlRedirect s ->
     Topfmt.with_output_to_file s (fun () -> fn ~st) ()
 

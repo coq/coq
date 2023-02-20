@@ -1352,6 +1352,7 @@ let pr_control_flag (p : control_flag) =
     | ControlTime -> keyword "Time"
     | ControlRedirect s -> keyword "Redirect" ++ spc() ++ qs s
     | ControlTimeout n -> keyword "Timeout " ++ int n
+    | ControlAllocLimit n -> keyword "AllocLimit " ++ int n
     | ControlFail -> keyword "Fail"
     | ControlSucceed -> keyword "Succeed"
   in

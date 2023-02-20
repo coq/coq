@@ -266,6 +266,9 @@ let unshelve ist t =
   Proofview.Unsafe.tclGETGOALS >>= fun ogls ->
   Proofview.Unsafe.tclSETGOALS (gls @ ogls)
 
+let alloc_limit ist n tac =
+  Proofview.tclALLOCLIMIT n (Tacinterp.tactic_of_value ist tac)
+
 (** tactic analogous to "OPTIMIZE HEAP" *)
 
 let tclOPTIMIZE_HEAP =

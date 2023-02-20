@@ -149,11 +149,13 @@ let _ = register_handler begin function
     by inner functions during a [vernacinterp]. They should be handled
     only at the very end of interp, to be displayed to the user. *)
 
+exception AllocLimit
+
 [@@@ocaml.warning "-52"]
 let noncritical = function
   | Sys.Break | Out_of_memory | Stack_overflow
   | Assert_failure _ | Match_failure _ | Anomaly _
-  | Control.Timeout -> false
+  | Control.Timeout | AllocLimit -> false
   | Invalid_argument "equal: functional value" -> false
-  | _ -> true
+  | _ -> not (Memprof_limits.is_interrupted ())
 [@@@ocaml.warning "+52"]

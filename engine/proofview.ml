@@ -978,6 +978,37 @@ let tclTIMEOUTF n t =
 
 let tclTIMEOUT n t = tclTIMEOUTF (float_of_int n) t
 
+exception TacAllocLimit
+
+let () = CErrors.register_handler begin function
+  | TacAllocLimit -> Some (Pp.str "Alloc limit")
+  | _ -> None
+  end
+
+let tclALLOCLIMIT n t =
+  let open Proof in
+  let t = Proof.lift (Logic_monad.NonLogical.return ()) >> t in
+  Proof.get >>= fun initial ->
+  Proof.current >>= fun envvar ->
+  Proof.lift begin
+    let open Logic_monad.NonLogical in
+    alloc_limit n (Proof.repr (Proof.run t envvar initial)) >>= fun r ->
+    let () = match r with
+      | None -> ()
+      | Some (_, n) -> Feedback.msg_info Pp.(str "Allocated " ++ str Int64.(to_string (div n 1000L)) ++ str "Mw.")
+    in
+    match r with
+    | None -> return (Util.Inr (TacAllocLimit, Exninfo.null))
+    | Some (Logic_monad.Nil e, _) -> return (Util.Inr e)
+    | Some (Logic_monad.Cons (r, _), _) -> return (Util.Inl r)
+  end >>= function
+    | Util.Inl (res,s,m,i) ->
+        Proof.set s >>
+        Proof.put m >>
+        Proof.update (fun _ -> i) >>
+        return res
+    | Util.Inr (e, info) -> tclZERO ~info e
+
 let tclTIME s t =
   let pr_time t1 t2 n msg =
     let msg =
