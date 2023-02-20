@@ -36,6 +36,7 @@ CI_TARGETS= \
     ci-engine_bench \
     ci-ext_lib \
     ci-equations \
+    ci-equations_test \
     ci-fcsl_pcm \
     ci-fiat_crypto \
     ci-fiat_crypto_legacy \
@@ -129,6 +130,8 @@ ci-geocoq: ci-mathcomp
 
 ci-simple_io: ci-ext_lib
 ci-quickchick: ci-ext_lib ci-simple_io ci-mathcomp
+
+ci-equations_test: ci-equations
 
 ci-metacoq: ci-equations
 
