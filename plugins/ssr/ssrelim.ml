@@ -162,7 +162,7 @@ let unif_redex env sigma0 nsigma p t = (* t is a hint for the redex of p *)
     with e when CErrors.noncritical e -> p
 
 let get_nth_arg n args =
-  List.find_map (fun (i, x, _) -> if Int.equal i n then Some x else None) args
+  List.find_map_exn (fun (i, x, _) -> if Int.equal i n then Some x else None) args
 
 let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
   match elim with

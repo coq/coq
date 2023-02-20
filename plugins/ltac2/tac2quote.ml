@@ -260,7 +260,7 @@ let abstract_vars loc ?typ vars tac =
   | Name id -> Some (CAst.make ?loc:na.CAst.loc id)
   | Anonymous -> None
   in
-  let def = try Some (List.find_map get_name vars) with Not_found -> None in
+  let def = List.find_map get_name vars in
   let na, tac = match def with
   | None -> (Anonymous, tac)
   | Some id0 ->

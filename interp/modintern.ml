@@ -85,7 +85,7 @@ let lookup_polymorphism env base kind fqid =
         | true, SFBmind mind -> Some (Declareops.inductive_is_polymorphic mind)
         | true, SFBconst const -> Some (Declareops.constant_is_polymorphic const)
       in
-      (try CList.find_map test m with Not_found -> false (* error later *))
+      (match CList.find_map test m with Some v -> v | None -> false (* error later *))
     | id::rem ->
       let next = function
         | MoreFunctor _ -> false (* error later *)
@@ -98,7 +98,7 @@ let lookup_polymorphism env base kind fqid =
         | true, SFBmodtype body ->  (* XXX is this valid? If not error later *)
           Some (next body.mod_type)
       in
-      (try CList.find_map test m with Not_found -> false (* error later *))
+      (match CList.find_map test m with Some v -> v | None -> false (* error later *))
   in
   aux (defunctor m) fqid
 

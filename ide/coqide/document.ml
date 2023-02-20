@@ -120,9 +120,9 @@ let find d f =
 
 let find_map d f =
   let a, s, b = to_lists d in
-  try CList.find_map (flat f false) a with Not_found ->
-  try CList.find_map (flat f true)  s with Not_found ->
-      CList.find_map (flat f false) b
+  try CList.find_map_exn (flat f false) a with Not_found ->
+  try CList.find_map_exn (flat f true)  s with Not_found ->
+      CList.find_map_exn (flat f false) b
 
 let is_empty = function
   | { stack = []; context = None } -> true
@@ -165,9 +165,9 @@ let find_id d f =
   let pred = function
     | { state_id = Some id; data } when f id data -> Some id
     | _ -> None in
-  try CList.find_map pred top, true with Not_found ->
-  try CList.find_map pred focus, false with Not_found ->
-      CList.find_map pred bot, true
+  try CList.find_map_exn pred top, true with Not_found ->
+  try CList.find_map_exn pred focus, false with Not_found ->
+      CList.find_map_exn pred bot, true
 
 let before_tip d =
   let _, focused, rest = to_lists d in

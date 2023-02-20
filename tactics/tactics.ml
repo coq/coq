@@ -1996,8 +1996,9 @@ let progress_with_clause env flags (id, t) clause mvs =
     in
     find innerclause
   in
-  try List.find_map f mvs
-  with Not_found -> raise UnableToApply
+  match List.find_map f mvs with
+  | Some v -> v
+  | None -> raise UnableToApply
 
 let apply_in_once_main flags (id, t) env sigma (loc,d,lbind) =
   let thm = nf_betaiota env sigma (Retyping.get_type_of env sigma d) in

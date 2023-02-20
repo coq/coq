@@ -215,9 +215,16 @@ val extract_first : ('a -> bool) -> 'a list -> 'a list * 'a
 (** Remove and return the first element satisfying a predicate,
     or raise [Not_found] *)
 
-val find_map : ('a -> 'b option) -> 'a list -> 'b
-(** Returns the first element that is mapped to [Some _]. Raise [Not_found] if
-    there is none. *)
+val find_map : ('a -> 'b option) -> 'a list -> 'b option
+(** [find_map f l] applies [f] to the elements of [l] in order,
+    and returns the first result of the form [Some v], or [None]
+    if none exist.
+
+    In stdlib since OCaml 4.10.0
+*)
+
+val find_map_exn : ('a -> 'b option) -> 'a list -> 'b
+(** Like [find_map] but raises [Not_found] instead of returning [None]. *)
 
 exception IndexOutOfRange
 val goto: int -> 'a list -> 'a list * 'a list

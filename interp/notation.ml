@@ -1700,7 +1700,7 @@ let availability_of_prim_token n printer_scope local_scopes =
 
 let rec find_uninterpretation need_delim def find = function
   | [] ->
-      List.find_map
+      CList.find_map_exn
         (fun (sc,_,_) -> try Some (find need_delim sc) with Not_found -> None)
         def
   | OpenScopeItem scope :: scopes ->
