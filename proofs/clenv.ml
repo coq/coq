@@ -107,10 +107,6 @@ let clenv_meta_type clenv mv =
 let clenv_value clenv = meta_instance clenv.env clenv.cache clenv.templval
 let clenv_type clenv = meta_instance clenv.env clenv.cache clenv.templtyp
 
-let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (clenv_evd ce) t
-
-let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (clenv_evd ce) c
-
 let clenv_push_prod cl =
   let typ = whd_all (cl_env cl) (clenv_evd cl) (clenv_type cl) in
   let rec clrec typ = match EConstr.kind cl.evd typ with
@@ -598,8 +594,8 @@ let clenv_unify_binding_type clenv c t u =
           TypeNotProcessed, clenv, c
 
 let clenv_assign_binding clenv k c =
-  let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
-  let c_typ = nf_betaiota clenv.env clenv.evd (clenv_get_type_of clenv c) in
+  let k_typ = hnf_constr clenv.env clenv.evd (clenv_meta_type clenv k) in
+  let c_typ = nf_betaiota clenv.env clenv.evd (Retyping.get_type_of clenv.env clenv.evd c) in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
   update_clenv_evd clenv' (meta_assign k (c,(Conv,status)) clenv'.evd)
 
