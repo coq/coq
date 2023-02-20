@@ -380,7 +380,7 @@ let intern_typed_pattern ist ~as_type ~ltacvars p =
         } in
       Constrintern.intern_constr_pattern ist.genv Evd.(from_env ist.genv) ~as_type ~ltacvars p
     else
-      [], dummy_pat in
+      Id.Set.empty, dummy_pat in
   let (glob,_ as c) = intern_constr_gen true false ist p in
   let bound_names = Glob_ops.bound_glob_vars glob in
   metas,(bound_names,c,pat)
@@ -484,14 +484,14 @@ let rec intern_match_goal_hyps ist ?(as_type=false) lfun = function
       let ido, metas1, pat = intern_pattern ist ~as_type:true lfun mp in
       let lfun, metas2, hyps = intern_match_goal_hyps ist lfun tl in
       let lfun' = name_cons (opt_cons lfun ido) na in
-      lfun', metas1@metas2, Hyp (locna,pat)::hyps
+      lfun', Id.Set.union metas1 metas2, Hyp (locna,pat)::hyps
   | (Def ({v=na} as locna,mv,mp))::tl ->
       let ido, metas1, patv = intern_pattern ist ~as_type:false lfun mv in
       let ido', metas2, patt = intern_pattern ist ~as_type:true lfun mp in
       let lfun, metas3, hyps = intern_match_goal_hyps ist ~as_type lfun tl in
       let lfun' = name_cons (opt_cons (opt_cons lfun ido) ido') na in
-      lfun', metas1@metas2@metas3, Def (locna,patv,patt)::hyps
-  | [] -> lfun, [], []
+      lfun', Id.Set.union metas1 (Id.Set.union metas2 metas3), Def (locna,patv,patt)::hyps
+  | [] -> lfun, Id.Set.empty, []
 
 (* Utilities *)
 let extract_let_names lrc =
@@ -571,8 +571,7 @@ let rec intern_atomic lf ist x =
   | TacChange (check,Some p,c,cl) ->
       let { ltacvars } = ist in
       let metas,pat = intern_typed_pattern ist ~as_type:false ~ltacvars p in
-      let fold accu x = Id.Set.add x accu in
-      let ltacvars = List.fold_left fold ltacvars metas in
+      let ltacvars = Id.Set.union ltacvars metas in
       let ist' = { ist with ltacvars } in
       TacChange (check,Some pat,intern_constr ist' c,
         clause_app (intern_hyp_location ist) cl)
@@ -718,9 +717,8 @@ and intern_match_rule onlytac ist ?(as_type=false) = function
       let {ltacvars=lfun; genv=env} = ist in
       let lfun',metas1,hyps = intern_match_goal_hyps ist ~as_type lfun rl in
       let ido,metas2,pat = intern_pattern ist ~as_type lfun mp in
-      let fold accu x = Id.Set.add x accu in
-      let ltacvars = List.fold_left fold (opt_cons lfun' ido) metas1 in
-      let ltacvars = List.fold_left fold ltacvars metas2 in
+      let ltacvars = Id.Set.union (opt_cons lfun' ido) metas1 in
+      let ltacvars = Id.Set.union ltacvars metas2 in
       let ist' = { ist with ltacvars } in
       Pat (hyps,pat,intern_tactic onlytac ist' tc) :: (intern_match_rule onlytac ist ~as_type tl)
   | [] -> []
