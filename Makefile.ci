@@ -30,7 +30,9 @@ CI_TARGETS= \
     ci-coq_tools \
     ci-coqprime \
     ci-deriving \
-    ci-elpi \
+    ci-elpi_hb \
+    ci-elpi_test \
+    ci-hb_test \
     ci-engine_bench \
     ci-ext_lib \
     ci-equations \
@@ -114,7 +116,10 @@ ci-mathcomp_test: ci-mathcomp
 ci-mathcomp_word: ci-mathcomp
 ci-finmap: ci-mathcomp
 ci-bigenough: ci-mathcomp
-ci-analysis: ci-elpi ci-finmap ci-bigenough
+ci-analysis: ci-elpi_hb ci-finmap ci-bigenough
+
+ci-elpi_test: ci-elpi_hb
+ci-hb_test: ci-elpi_hb
 
 ci-jasmin: ci-mathcomp_word
 

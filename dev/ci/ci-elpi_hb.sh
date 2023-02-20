@@ -11,11 +11,13 @@ git_download hierarchy_builder
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/elpi"
-  make
+  make build-core
+  make build-apps
   make install
 )
 
 ( cd "${CI_BUILD_DIR}/hierarchy_builder"
-  make
+  make config
+  make build
   make install
 )

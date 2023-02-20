@@ -753,7 +753,7 @@ library:ci-analysis:
   - library:ci-mathcomp
   - library:ci-finmap
   - library:ci-bigenough
-  - plugin:ci-elpi  # for Hierarchy Builder
+  - plugin:ci-elpi_hb  # for Hierarchy Builder
 
 library:ci-paco:
   extends: .ci-template
@@ -825,8 +825,20 @@ plugin:ci-coq_dpdgraph:
 plugin:ci-coqhammer:
   extends: .ci-template-flambda
 
-plugin:ci-elpi:
+plugin:ci-elpi_hb:
   extends: .ci-template-flambda
+
+plugin:ci-elpi_test:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - plugin:ci-elpi_hb
+
+plugin:ci-hb_test:
+  extends: .ci-template-flambda
+  needs:
+  - build:edge+flambda
+  - plugin:ci-elpi_hb
 
 plugin:ci-equations:
   extends: .ci-template
