@@ -14,7 +14,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2
+          brew install gnu-time opam gtksourceview3 adwaita-icon-theme expat libxml2 pkg-config
           pip3 install macpack
 
       - name: Install OCaml dependencies
