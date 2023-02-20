@@ -328,17 +328,32 @@ let is_primitive_record (mib,_) =
 let instantiate_context u subst nas ctx =
   let rec instantiate i ctx = match ctx with
   | [] -> assert (Int.equal i (-1)); []
-  | LocalAssum (_, ty) :: ctx ->
+  | LocalAssum (na, ty) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let ty = substnl subst i (subst_instance_constr u ty) in
-    LocalAssum (nas.(i), ty) :: ctx
-  | LocalDef (_, ty, bdy) :: ctx ->
+    let na = Context.map_annot (fun _ -> Context.binder_name nas.(i)) na in
+    LocalAssum (na, ty) :: ctx
+  | LocalDef (na, ty, bdy) :: ctx ->
     let ctx = instantiate (pred i) ctx in
     let ty = substnl subst i (subst_instance_constr u ty) in
     let bdy = substnl subst i (subst_instance_constr u bdy) in
-    LocalDef (nas.(i), ty, bdy) :: ctx
+    let na = Context.map_annot (fun _ -> Context.binder_name nas.(i)) na in
+    LocalDef (na, ty, bdy) :: ctx
   in
   instantiate (Array.length nas - 1) ctx
+
+let expand_arity (mib, mip) (ind, u) params nas =
+  let paramdecl = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let params = Vars.subst_of_rel_context_instance paramdecl params in
+  let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+  let self =
+    let u = Univ.(Instance.of_array (Array.init (Instance.length u) Level.var)) in
+    let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
+    mkApp (mkIndU (ind, u), args)
+  in
+  let na = Context.make_annot Anonymous mip.mind_relevance in
+  let realdecls = LocalAssum (na, self) :: realdecls in
+  instantiate_context u params nas realdecls
 
 let expand_case_specif mib (ci, u, params, p, iv, c, br) =
   (* Γ ⊢ c : I@{u} params args *)
@@ -349,14 +364,7 @@ let expand_case_specif mib (ci, u, params, p, iv, c, br) =
   (* Expand the return clause *)
   let ep =
     let (nas, p) = p in
-    let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
-    let self =
-      let args = Context.Rel.instance mkRel 0 mip.mind_arity_ctxt in
-      let inst = Instance.of_array (Array.init (Instance.length u) Level.var) in
-      mkApp (mkIndU (ci.ci_ind, inst), args)
-    in
-    let realdecls = LocalAssum (Context.anonR, self) :: realdecls in
-    let realdecls = instantiate_context u paramsubst nas realdecls in
+    let realdecls = expand_arity (mib, mip) (ci.ci_ind, u) params nas in
     Term.it_mkLambda_or_LetIn p realdecls
   in
   (* Expand the branches *)

@@ -87,6 +87,13 @@ val abstract_constructor_type_relatively_to_inductive_types_context :
 
 val inductive_params : mind_specif -> int
 
+(** Given an inductive type and its parameters, builds the context of the return
+    clause, including the inductive being eliminated. The additional binder
+    array is only used to set the names of the context variables, we use the
+    less general type to make it easy to use this function on Case nodes. *)
+val expand_arity : mind_specif -> pinductive -> constr array ->
+  Name.t Context.binder_annot array -> rel_context
+
 (** Given a pattern-matching represented compactly, expands it so as to produce
     lambda and let abstractions in front of the return clause and the pattern
     branches. *)

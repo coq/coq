@@ -17,7 +17,6 @@ open Environ
 (* None of these functions do eta reduction *)
 
 val whd_all                 : env -> constr -> constr
-val whd_allnolet : env -> constr -> constr
 
 (***********************************************************************
   s conversion functions *)

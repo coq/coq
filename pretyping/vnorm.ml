@@ -282,10 +282,12 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
       let params,realargs = Util.Array.chop nparams allargs in
-      let nparamdecls = Context.Rel.length (Inductive.inductive_paramdecls (mib,u)) in
-      let pT =
-        hnf_prod_applist_decls env nparamdecls (type_of_ind env (ind,u)) (Array.to_list params) in
-      let pctx, p, relevance = nf_predicate env sigma (ind,u) mip params [] (type_of_switch sw) pT in
+      let pctx =
+        let realdecls, _ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
+        let nas = List.rev_map RelDecl.get_annot realdecls @ [nameR (Id.of_string "c")] in
+        expand_arity (mib, mip) (ind, u) params (Array.of_list nas)
+      in
+      let p, relevance = nf_predicate env sigma (ind,u) mip params (type_of_switch sw) pctx in
       (* Calcul du type des branches *)
       let btypes = build_branches_type env sigma ind mib mip u params (pctx, p) in
       (* calcul des branches *)
@@ -322,38 +324,20 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
     let p = Projection.make p true in
     nf_stk env sigma (mkProj (p, c)) ty stk
 
-and nf_predicate env sigma ind mip params pctx v pT =
-  match kind (whd_allnolet env pT) with
-  | LetIn (name,b,t,pT) ->
-    let decl = LocalDef (name, b, t) in
-    nf_predicate (push_rel decl env) sigma ind mip params (decl :: pctx) v pT
-  | Prod (name,dom,codom) -> begin
+and nf_predicate env sigma ind mip params v pctx =
+  (* TODO: we should expose some variant of Vm.mkrel_vstack *)
+  let fold decl (k, v) = match decl with
+  | LocalDef _ -> (k + 1, v)
+  | LocalAssum _ ->
     match whd_val v with
-    | Vfun f ->
-      let k = nb_rel env in
-      let vb = reduce_fun k f in
-      let decl = LocalAssum (name, dom) in
-      nf_predicate (push_rel decl env) sigma ind mip params (decl :: pctx) vb codom
+    | Vfun f -> (k + 1, reduce_fun k f)
     | _ -> assert false
-    end
-  | _ ->
-    match whd_val v with
-    | Vfun f ->
-      let k = nb_rel env in
-      let vb = reduce_fun k f in
-      let name = Name (Id.of_string "c") in
-      let n = mip.mind_nrealargs in
-      let rargs = Array.init n (fun i -> mkRel (n-i)) in
-      let params = if Int.equal n 0 then params else Array.map (lift n) params in
-      let dom = mkApp(mkIndU ind,Array.append params rargs) in
-      let r = Inductive.relevance_of_inductive env (fst ind) in
-      let name = make_annot name r in
-      let decl = LocalAssum (name, dom) in
-      let env = push_rel decl env in
-      let body = nf_vtype env sigma vb in
-      let rel = Retyping.relevance_of_type env sigma (EConstr.of_constr body) in
-      decl :: pctx, body, rel
-    | _ -> assert false
+  in
+  let (_, v) = List.fold_right fold pctx (nb_rel env, v) in
+  let env = push_rel_context pctx env in
+  let body = nf_vtype env sigma v in
+  let rel = Retyping.relevance_of_type env sigma (EConstr.of_constr body) in
+  body, rel
 
 and nf_args env sigma vargs ?from:(f=0) t =
   let t = ref t in
