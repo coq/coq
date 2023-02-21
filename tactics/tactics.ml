@@ -956,7 +956,7 @@ let change_on_subterm ~check cv_pb deep t where env sigma c =
 
 let change_in_concl ~check occl t =
   (* No need to check in e_change_in_concl, the check is done in change_on_subterm *)
-  e_change_in_concl ~cast:false ~check:false
+  e_change_in_concl ~cast:true ~check:false
     ((change_on_subterm ~check Reduction.CUMUL false t occl),DEFAULTcast)
 
 let change_in_hyp ~check occl t id  =
