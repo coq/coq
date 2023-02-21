@@ -861,16 +861,6 @@ and mk_arggoals env sigma goalacc funty allargs =
   in
   Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
-let mk_casegoals env sigma goalacc p c =
-  let (acc',ct,sigma,c') = mk_hdgoals env sigma goalacc c in
-  let ct = EConstr.of_constr ct in
-  let ((ind, u), spec) =
-    try Tacred.find_hnf_rectype env sigma ct
-    with Not_found -> anomaly (Pp.str "mk_casegoals.") in
-  let indspec = ((ind, EConstr.EInstance.kind sigma u), spec) in
-  let (lbrty,conclty) = Inductiveops.type_case_branches_with_names env sigma indspec p c in
-  (acc', lbrty, conclty, sigma, p, c')
-
 let treat_case env sigma ci lbrty lf acc' =
   let rec strip_outer_cast c = match kind c with
   | Cast (c,_,_) -> strip_outer_cast c
@@ -914,12 +904,18 @@ let case_refine env sigma cl r = match Constr.kind r with
 | Case (ci, u, pms, p, iv, c, lf) ->
   (* XXX Is ignoring iv OK? *)
   let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
-  let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals env sigma [] p c in
+  let (acc',ct,sigma,c') = mk_hdgoals env sigma [] c in
+  let ct = EConstr.of_constr ct in
+  let ((ind, u), spec) =
+    try Tacred.find_hnf_rectype env sigma ct
+    with Not_found -> anomaly (Pp.str "mk_casegoals.") in
+  let indspec = ((ind, EConstr.EInstance.kind sigma u), spec) in
+  let (lbrty, _) = Inductiveops.type_case_branches_with_names env sigma indspec p c in
   let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
   let lf' = Array.rev_of_list rbranches in
   let ans =
-    if p' == p && c' == c && Array.equal (==) lf' lf then r
-    else mkCase (Inductive.contract_case env (ci,p',iv,c',lf'))
+    if c' == c && Array.equal (==) lf' lf then r
+    else mkCase (Inductive.contract_case env (ci,p,iv,c',lf'))
   in
   (sigma, acc'', ans)
 | _ ->
