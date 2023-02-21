@@ -1567,32 +1567,40 @@ let general_elim_clause0 with_evars flags (submetas, c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
-  let elimclause, i = match elim with
-  | ElimConstant c ->
-    let elimc = mkConstU c in
+  match elim with
+  | ElimConstant cst ->
+    let elimc = mkConstU cst in
     let elimt = Retyping.get_type_of env sigma elimc in
     let i = index_of_ind_arg sigma elimt in
     let elimclause = mk_clenv_from env sigma (elimc, elimt) in
-    elimclause, Some i
+    let indmv =
+      try nth_arg (Some i) (clenv_arguments elimclause)
+      with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
+    in
+    let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
+    Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
   | ElimCase elim ->
     (* FIXME: be more clever *)
     let elimc, elimt = eval_case_analysis elim in
     let i = index_of_ind_arg sigma elimt in
     let elimc = contract_letin_in_lam_header sigma elimc in
     let elimclause = mk_clenv_from env sigma (elimc, elimt) in
-    elimclause, Some i
+    let indmv =
+      try nth_arg (Some i) (clenv_arguments elimclause)
+      with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
+    in
+    let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
+    Clenv.case_pf elimclause ~with_evars ~with_classes:true ~flags
   | ElimClause (elimc, lbindelimc) ->
     let elimt = Retyping.get_type_of env sigma elimc in
     let elimc = contract_letin_in_lam_header sigma elimc in
     let elimclause = make_clenv_binding env sigma (elimc, elimt) lbindelimc in
-    elimclause, None
-  in
-  let indmv =
-    try nth_arg i (clenv_arguments elimclause)
-    with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
-  in
-  let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
-  Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
+    let indmv =
+      try nth_arg None (clenv_arguments elimclause)
+      with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
+    in
+    let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
+    Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
   end
 
 let general_elim_clause_in0 with_evars flags id (submetas, c, ty) elim =
@@ -4488,7 +4496,7 @@ let induction_tac with_evars params indvars (elim, elimt) =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Tacmach.project gl in
-  let elimclause' = match elim with
+  match elim with
   | ElimConstant c ->
     let elimc = mkConstU c in
     let i = index_of_ind_arg sigma elimt in
@@ -4496,7 +4504,8 @@ let induction_tac with_evars params indvars (elim, elimt) =
     let elimc = mkCast (elimc, DEFAULTcast, elimt) in
     let elimclause = mk_clenv_from env sigma (elimc, elimt) in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
-    recolle_clenv (Some i) params indvars elimclause gl
+    let elimclause = recolle_clenv (Some i) params indvars elimclause gl in
+    Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause
   | ElimCase elim ->
     (* FIXME: be more clever *)
     let elimc, elimt = eval_case_analysis elim in
@@ -4506,17 +4515,16 @@ let induction_tac with_evars params indvars (elim, elimt) =
     let elimc = mkCast (elimc, DEFAULTcast, elimt) in
     let elimclause = Tacmach.pf_apply mk_clenv_from gl (elimc, elimt) in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
-    recolle_clenv (Some i) params indvars elimclause gl
+    let elimclause = recolle_clenv (Some i) params indvars elimclause gl in
+    Clenv.case_pf ~with_evars ~flags:(elim_flags ()) elimclause
   | ElimClause (elimc, lbindelimc) ->
     (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
     let elimc = contract_letin_in_lam_header sigma elimc in
     let elimc = mkCast (elimc, DEFAULTcast, elimt) in
     let elimclause = Tacmach.pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
-    recolle_clenv None params indvars elimclause gl
-  in
-  (* one last resolution (useless?) *)
-  Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause'
+    let elimclause = recolle_clenv None params indvars elimclause gl in
+    Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause
   end
 
 (* Apply induction "in place" taking into account dependent
@@ -4958,19 +4966,6 @@ let destruct ev clr c l e =
  * May be they should be integrated into Elim ...
  *)
 
-let elim_scheme_type (elim, elimt) t =
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  let clause = mk_clenv_from env sigma (elim,elimt) in
-  let mv = List.last (clenv_arguments clause) in
-  let clause' =
-    (* t is inductive, then CUMUL or CONV is irrelevant *)
-    clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
-      (clenv_meta_type clause mv) clause in
-  Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false
-  end
-
 let elim_type t =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -4980,7 +4975,13 @@ let elim_type t =
   in
   let elimc = mkConstU elimc in
   let elimt = Retyping.get_type_of env evd elimc in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type (elimc, elimt) t)
+  let clause = mk_clenv_from env evd (elimc, elimt) in
+  let mv = List.last (clenv_arguments clause) in
+  let clause' =
+    (* t is inductive, then CUMUL or CONV is irrelevant *)
+    clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
+      (clenv_meta_type clause mv) clause in
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.res_pf clause' ~flags:(elim_flags ()) ~with_evars:false)
   end
 
 let case_type t =
@@ -4992,7 +4993,13 @@ let case_type t =
   let s = Tacticals.elimination_sort_of_goal gl in
   let (evd, elim) = build_case_analysis_scheme_default env sigma (ind, u) s in
   let elimc, elimt = eval_case_analysis elim in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type (elimc, elimt) t)
+  let clause = mk_clenv_from env evd (elimc, elimt) in
+  let mv = List.last (clenv_arguments clause) in
+  let clause' =
+    (* t is inductive, then CUMUL or CONV is irrelevant *)
+    clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
+      (clenv_meta_type clause mv) clause in
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.case_pf clause' ~flags:(elim_flags ()) ~with_evars:false)
   end
 
 let exfalso =

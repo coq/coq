@@ -49,6 +49,7 @@ let general_elim_then_using mk_elim
       let sigma, r = Evd.fresh_global env sigma gr in
       (sigma, r, Retyping.get_type_of env sigma r)
     in
+    let is_case = match mk_elim with Elim -> false | Case _ -> true in
     (* applying elimination_scheme just a little modified *)
     let elimclause = mk_clenv_from env sigma (elim, elimt) in
     let indmv = List.last (clenv_arguments elimclause) in
@@ -82,7 +83,7 @@ let general_elim_then_using mk_elim
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
     Proofview.tclTHEN
-      (Clenv.res_pf ~flags elimclause')
+      (if is_case then Clenv.case_pf ~flags elimclause' else Clenv.res_pf ~flags elimclause')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
   end
 

@@ -748,6 +748,127 @@ let mk_goal evars hyps concl =
   let ev = EConstr.mkEvar (evk,inst) in
   (evk, ev, evars)
 
+module StdRefiner =
+struct
+
+let rec mk_refgoals env sigma goalacc conclty trm =
+  let hyps = Environ.named_context_val env in
+    if not (occur_meta sigma (EConstr.of_constr trm)) then
+      let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
+      let t'ty = EConstr.Unsafe.to_constr t'ty in
+        (goalacc,t'ty,sigma,trm)
+    else
+      match kind trm with
+      | Meta _ ->
+        let conclty = nf_betaiota env sigma conclty in
+          let (gl,ev,sigma) = mk_goal sigma hyps conclty in
+          let ev = EConstr.Unsafe.to_constr ev in
+          let conclty = EConstr.Unsafe.to_constr conclty in
+          gl::goalacc, conclty, sigma, ev
+
+      | Cast (t,k, ty) ->
+        let res = mk_refgoals env sigma goalacc (EConstr.of_constr ty) t in
+        (* we keep the casts (in particular VMcast and NATIVEcast) except
+           when they are annotating metas *)
+        if isMeta t then begin
+          assert (k != VMcast && k != NATIVEcast);
+          res
+        end else
+          let (gls,cty,sigma,ans) = res in
+          let ans = if ans == t then trm else mkCast(ans,k,ty) in
+          (gls,cty,sigma,ans)
+
+      | App (f,l) ->
+        let (acc',hdty,sigma,applicand) =
+          if Termops.is_template_polymorphic_ind env sigma (EConstr.of_constr f) then
+            let ty =
+              (* Template polymorphism of definitions and inductive types *)
+              let firstmeta = Array.findi (fun i x -> occur_meta sigma (EConstr.of_constr x)) l in
+              let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
+                type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) (Array.map EConstr.of_constr args)
+            in
+            let ty = EConstr.Unsafe.to_constr ty in
+              goalacc, ty, sigma, f
+          else
+            mk_hdgoals env sigma goalacc f
+        in
+        let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
+        let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
+        (acc'',conclty',sigma, ans)
+
+      | Proj (p,c) ->
+        let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
+        let c = mkProj (p, c') in
+        let ty = get_type_of env sigma (EConstr.of_constr c) in
+        let ty = EConstr.Unsafe.to_constr ty in
+          (acc',ty,sigma,c)
+
+      | _ ->
+        if occur_meta sigma (EConstr.of_constr trm) then
+          anomaly (Pp.str "refiner called with a meta in non app/case subterm.");
+        let (sigma, t'ty) = goal_type_of env sigma trm in
+          (goalacc,t'ty,sigma, trm)
+
+(* Same as mkREFGOALS but without knowing the type of the term. Therefore,
+ * Metas should be casted. *)
+
+and mk_hdgoals env sigma goalacc trm =
+  let hyps = Environ.named_context_val env in
+  match kind trm with
+    | Cast (c,_, ty) when isMeta c ->
+        let (gl,ev,sigma) = mk_goal sigma hyps (nf_betaiota env sigma (EConstr.of_constr ty)) in
+        let ev = EConstr.Unsafe.to_constr ev in
+        gl::goalacc,ty,sigma,ev
+
+    | Cast (t,_, ty) ->
+        mk_refgoals env sigma goalacc (EConstr.of_constr ty) t
+
+    | App (f,l) ->
+        let (acc',hdty,sigma,applicand) =
+          if Termops.is_template_polymorphic_ind env sigma (EConstr.of_constr f)
+          then
+            let l' = meta_free_prefix sigma l in
+           (goalacc,EConstr.Unsafe.to_constr (type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) l'),sigma,f)
+          else mk_hdgoals env sigma goalacc f
+        in
+        let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
+        let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
+        (acc'',conclty',sigma, ans)
+
+    | Proj (p,c) ->
+         let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
+         let c = mkProj (p, c') in
+         let ty = get_type_of env sigma (EConstr.of_constr c) in
+         let ty = EConstr.Unsafe.to_constr ty in
+           (acc',ty,sigma,c)
+
+    | _ ->
+        let (sigma, ty) = goal_type_of env sigma trm in
+        goalacc, ty, sigma, trm
+
+and mk_arggoals env sigma goalacc funty allargs =
+  let foldmap (goalacc, funty, sigma) harg =
+    let t = whd_all env sigma (EConstr.of_constr funty) in
+    let t = EConstr.Unsafe.to_constr t in
+    let rec collapse t = match kind t with
+    | LetIn (_, c1, _, b) -> collapse (subst1 c1 b)
+    | _ -> t
+    in
+    let t = collapse t in
+    match kind t with
+    | Prod (_, c1, b) ->
+      let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (EConstr.of_constr c1) harg in
+      (acc, subst1 harg b, sigma), arg
+    | _ ->
+      raise (RefinerError (env,sigma,CannotApply (t, harg)))
+  in
+  Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
+
+end
+
+module CaseRefiner =
+struct
+
 let rec mk_refgoals env sigma goalacc conclty trm =
   let hyps = Environ.named_context_val env in
     if not (occur_meta sigma (EConstr.of_constr trm)) then
@@ -931,7 +1052,9 @@ and treat_case env sigma ci lbrty lf acc' =
           (lacc,sigma,fi::bacc))
     (acc',sigma,[]) lbrty lf ci.ci_cstr_ndecls
 
-let refiner clenv =
+end
+
+let refiner_gen is_case clenv =
   let open Proofview.Notations in
   let r = EConstr.Unsafe.to_constr (clenv_cast_meta clenv @@ clenv_value clenv) in
   Proofview.Goal.enter begin fun gl ->
@@ -940,7 +1063,12 @@ let refiner clenv =
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
   check_meta_variables env sigma r;
-  let (sgl,cl',sigma,oterm) = mk_refgoals env sigma [] cl r in
+  let (sgl,cl',sigma,oterm) =
+    if is_case then
+      CaseRefiner.mk_refgoals env sigma [] cl r
+    else
+      StdRefiner.mk_refgoals env sigma [] cl r
+  in
   let map gl = Proofview.goal_with_state gl st in
   let sgl = List.rev_map map sgl in
   let evk = Proofview.Goal.goal gl in
@@ -954,13 +1082,16 @@ let refiner clenv =
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS sgl
   end
+
+let refiner clenv = refiner_gen false clenv
+
 end
 
 open Unification
 
 let dft = default_unify_flags
 
-let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
+let res_pf_gen is_case ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let clenv = clenv_unique_resolver ~flags clenv concl in
@@ -979,8 +1110,14 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
     let clenv = update_clenv_evd clenv evd' in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-      (Internal.refiner clenv)
+      (Internal.refiner_gen is_case clenv)
   end
+
+let res_pf ?with_evars ?with_classes ?flags clenv =
+  res_pf_gen false ?with_evars ?with_classes ?flags clenv
+
+let case_pf ?with_evars ?with_classes ?flags clenv =
+  res_pf_gen true ?with_evars ?with_classes ?flags clenv
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
    particulier ne semblent pas vérifier que des instances différentes
