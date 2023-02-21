@@ -965,18 +965,6 @@ and mk_hdgoals env sigma goalacc trm =
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
-    | Case (ci, u, pms, p, iv, c, lf) ->
-        (* XXX is ignoring iv OK? *)
-        let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
-        let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals env sigma goalacc p c in
-        let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
-        let lf' = Array.rev_of_list rbranches in
-        let ans =
-          if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (Inductive.contract_case env (ci,p',iv,c',lf'))
-        in
-        (acc'',conclty',sigma, ans)
-
     | Proj (p,c) ->
          let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
          let c = mkProj (p, c') in
@@ -1009,13 +997,12 @@ and mk_arggoals env sigma goalacc funty allargs =
 and mk_casegoals env sigma goalacc p c =
   let (acc',ct,sigma,c') = mk_hdgoals env sigma goalacc c in
   let ct = EConstr.of_constr ct in
-  let (acc'',pt,sigma,p') = mk_hdgoals env sigma acc' p in
   let ((ind, u), spec) =
     try Tacred.find_hnf_rectype env sigma ct
     with Not_found -> anomaly (Pp.str "mk_casegoals.") in
   let indspec = ((ind, EConstr.EInstance.kind sigma u), spec) in
   let (lbrty,conclty) = Inductiveops.type_case_branches_with_names env sigma indspec p c in
-  (acc'',lbrty,conclty,sigma,p',c')
+  (acc', lbrty, conclty, sigma, p, c')
 
 and treat_case env sigma ci lbrty lf acc' =
   let rec strip_outer_cast c = match kind c with
