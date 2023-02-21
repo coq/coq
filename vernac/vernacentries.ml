@@ -2098,8 +2098,7 @@ let vernac_global_check c =
   let senv = Safe_typing.push_context_set ~strict:false uctx senv in
   let c = EConstr.to_constr sigma c in
   let j = Safe_typing.typing senv c in
-  let env = Safe_typing.env_of_safe_env senv in
-  Prettyp.print_safe_judgment env sigma j ++
+  Prettyp.print_safe_judgment j ++
   pr_universe_ctx_set sigma uctx
 
 
