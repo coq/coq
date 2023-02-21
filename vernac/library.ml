@@ -262,7 +262,7 @@ let intern_from_file f =
   | Some (_,false) ->
       mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
 
-let rec intern_library ~lib_resolver (filenames, needed, contents as acc) (dir, f) from =
+let rec intern_library ~lib_resolver (needed, contents as acc) (dir, f) from =
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, acc
   with Not_found ->
@@ -282,10 +282,10 @@ let rec intern_library ~lib_resolver (filenames, needed, contents as acc) (dir, 
   m.library_digests, intern_library_deps ~lib_resolver acc dir m f
 
 and intern_library_deps ~lib_resolver libs dir m from =
-  let filenames, needed, contents =
+  let needed, contents =
     Array.fold_left (intern_mandatory_library ~lib_resolver dir from)
       libs m.library_deps in
-  (from :: filenames, dir :: needed, DPmap.add dir m contents )
+  (dir :: needed, DPmap.add dir m contents )
 
 and intern_mandatory_library ~lib_resolver caller from libs (dir,d) =
   let digest, libs = intern_library ~lib_resolver libs (dir, None) (Some from) in
@@ -394,16 +394,15 @@ let warn_require_in_module =
     (fun () -> strbrk "Use of “Require” inside a module is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
-let require_library_from_dirpath filenames =
-  let needed = List.rev_map intern_from_file filenames in
+let require_library_from_dirpath needed =
   if Lib.is_module_or_modtype () then warn_require_in_module ();
   Lib.add_leaf (in_require needed)
 
 let require_library_syntax_from_dirpath ~lib_resolver modrefl =
-  let filenames, needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], [], DPmap.empty) modrefl in
+  let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
   Lib.add_leaf (in_require_syntax needed);
-  filenames
+  needed
 
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
