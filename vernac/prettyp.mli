@@ -10,7 +10,6 @@
 
 open Names
 open Environ
-open Reductionops
 open Libnames
 open Globnames
 
@@ -40,9 +39,6 @@ val print_sec_context : env -> Evd.evar_map -> qualid -> Pp.t
 val print_sec_context_typ : env -> Evd.evar_map -> qualid -> Pp.t
 val print_judgment : env -> Evd.evar_map -> EConstr.unsafe_judgment -> Pp.t
 val print_safe_judgment : Safe_typing.judgment -> Pp.t
-val print_eval :
-  reduction_function -> env -> Evd.evar_map ->
-    Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
 
 val print_name : env -> Evd.evar_map
   -> qualid Constrexpr.or_by_notation
@@ -111,7 +107,6 @@ type object_pr = {
   print_library_leaf       : env -> Evd.evar_map -> bool -> ModPath.t -> Libobject.t -> Pp.t option;
   print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
-  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
 
 val set_object_pr : object_pr -> unit
