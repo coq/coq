@@ -20,15 +20,17 @@ type option_command =
   | OptionUnset
   | OptionAppend of string
 
+type require_injection = { lib: string; prefix: string option; export: Lib.export_flag option; }
+(** Parameters follow [Library], that is to say, [lib,prefix,export]
+    means require library [lib] from optional [prefix] and import or
+    export if [export] is [Some Lib.Import]/[Some Lib.Export]. *)
+
 type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
   (** Set flags or options before the initial state is ready. *)
-  | RequireInjection of (string * string option * Lib.export_flag option)
+  | RequireInjection of require_injection
   (** Require libraries before the initial state is
-     ready. Parameters follow [Library], that is to say,
-     [lib,prefix,import_export] means require library [lib] from
-     optional [prefix] and [import_export] if [Some Lib.Import]/[Some Lib.Export]
-      is used.  *)
+      ready. *)
   | WarnNoNative of string
   (** Used so that "-w -native-compiler-disabled -native-compiler yes"
      does not cause a warning. The native option must be processed
