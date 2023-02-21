@@ -921,18 +921,6 @@ let rec mk_refgoals env sigma goalacc conclty trm =
         let ty = EConstr.Unsafe.to_constr ty in
           (acc',ty,sigma,c)
 
-      | Case (ci, u, pms, p, iv, c, lf) ->
-        (* XXX Is ignoring iv OK? *)
-        let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
-        let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals env sigma goalacc p c in
-        let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
-        let lf' = Array.rev_of_list rbranches in
-        let ans =
-          if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (Inductive.contract_case env (ci,p',iv,c',lf'))
-        in
-        (acc'',conclty',sigma, ans)
-
       | _ ->
         if occur_meta sigma (EConstr.of_constr trm) then
           anomaly (Pp.str "refiner called with a meta in non app/case subterm.");
@@ -994,7 +982,7 @@ and mk_arggoals env sigma goalacc funty allargs =
   in
   Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
-and mk_casegoals env sigma goalacc p c =
+let mk_casegoals env sigma goalacc p c =
   let (acc',ct,sigma,c') = mk_hdgoals env sigma goalacc c in
   let ct = EConstr.of_constr ct in
   let ((ind, u), spec) =
@@ -1004,7 +992,7 @@ and mk_casegoals env sigma goalacc p c =
   let (lbrty,conclty) = Inductiveops.type_case_branches_with_names env sigma indspec p c in
   (acc', lbrty, conclty, sigma, p, c')
 
-and treat_case env sigma ci lbrty lf acc' =
+let treat_case env sigma ci lbrty lf acc' =
   let rec strip_outer_cast c = match kind c with
   | Cast (c,_,_) -> strip_outer_cast c
   | _ -> c in
@@ -1039,6 +1027,24 @@ and treat_case env sigma ci lbrty lf acc' =
           (lacc,sigma,fi::bacc))
     (acc',sigma,[]) lbrty lf ci.ci_cstr_ndecls
 
+let refine env sigma cl r = match Constr.kind r with
+| Case (ci, u, pms, p, iv, c, lf) ->
+  (* XXX Is ignoring iv OK? *)
+  let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
+  let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals env sigma [] p c in
+  let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
+  let lf' = Array.rev_of_list rbranches in
+  let ans =
+    if p' == p && c' == c && Array.equal (==) lf' lf then r
+    else mkCase (Inductive.contract_case env (ci,p',iv,c',lf'))
+  in
+  (acc'',conclty',sigma, ans)
+| _ ->
+  (* This can happen in two cases:
+     - Either when emulating elimination for primitive records
+     - Or when the case node reduced because its scrutinee was a constructor *)
+  mk_refgoals env sigma [] cl r
+
 end
 
 let refiner_gen is_case clenv =
@@ -1050,9 +1056,9 @@ let refiner_gen is_case clenv =
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
   check_meta_variables env sigma r;
-  let (sgl,cl',sigma,oterm) =
+  let (sgl, _ , sigma, oterm) =
     if is_case then
-      CaseRefiner.mk_refgoals env sigma [] cl r
+      CaseRefiner.refine env sigma cl r
     else
       StdRefiner.mk_refgoals env sigma [] cl r
   in
