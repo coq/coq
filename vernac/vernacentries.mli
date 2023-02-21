@@ -8,6 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+val check_may_eval :
+  Environ.env ->
+  Evd.evar_map ->
+  Genredexpr.raw_red_expr option ->
+  Constrexpr.constr_expr ->
+  Pp.t
+
 (** Vernac Translation into the Vernac DSL *)
 val translate_vernac
   : ?loc:Loc.t
