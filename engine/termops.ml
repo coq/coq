@@ -25,9 +25,9 @@ module CompactedDecl = Context.Compacted.Declaration
 
 module Internal = struct
 
-let debug_print_constr c = Constr.debug_print EConstr.Unsafe.(to_constr c)
-let debug_print_constr_env env sigma c = Constr.debug_print EConstr.(to_constr sigma c)
-let term_printer = ref debug_print_constr_env
+let debug_print_constr sigma c = Constr.debug_print (EConstr.to_constr sigma c)
+let fallback_printer _env sigma c = debug_print_constr sigma c
+let term_printer = ref fallback_printer
 
 let print_constr_env env sigma t = !term_printer (env:env) sigma (t:Evd.econstr)
 let set_print_constr f = term_printer := f

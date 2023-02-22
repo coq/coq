@@ -1985,7 +1985,7 @@ end = struct
     | _ ->
       CErrors.anomaly
         Pp.(str "Not a proof by induction: " ++
-            Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
+            Constr.debug_print t ++ str ".")
 
   let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; _} =
     let { Proof_info.info; compute_guard; _ } = pinfo in

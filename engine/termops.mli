@@ -299,10 +299,8 @@ module Internal : sig
 (** NOTE: to print terms you always want to use functions in
    Printer, not these ones which are for very special cases. *)
 
-(** debug printers: print raw form for terms, both with
-   evar-substitution and without.  *)
-val debug_print_constr : constr -> Pp.t
-val debug_print_constr_env : env -> evar_map -> constr -> Pp.t
+(** debug printers: print raw form for terms with evar-substitution.  *)
+val debug_print_constr : evar_map -> constr -> Pp.t
 
 (** Pretty-printer hook: [print_constr_env env sigma c] will pretty
    print c if the pretty printing layer has been linked into the Coq
