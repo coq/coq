@@ -10,7 +10,7 @@ end.
 
 Arguments decide P /H.
 
-#[global]
+#[export]
 Hint Extern 5 => progress bool : core.
 
 Ltac define t x H :=
