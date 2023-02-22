@@ -32,6 +32,71 @@ let term_printer = ref fallback_printer
 let print_constr_env env sigma t = !term_printer (env:env) sigma (t:Evd.econstr)
 let set_print_constr f = term_printer := f
 
+let pr_var_decl env decl =
+  let open NamedDecl in
+  let sigma = Evd.from_env env in
+  let pbody = match decl with
+    | LocalAssum _ ->  mt ()
+    | LocalDef (_,c,_) ->
+        (* Force evaluation *)
+        let c = EConstr.of_constr c in
+        let pb = print_constr_env env sigma c in
+          (str" := " ++ pb ++ cut () ) in
+  let pt = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
+  let ptyp = (str" : " ++ pt) in
+    (Id.print (get_id decl) ++ hov 0 (pbody ++ ptyp))
+
+let pr_rel_decl env decl =
+  let open RelDecl in
+  let sigma = Evd.from_env env in
+  let pbody = match decl with
+    | LocalAssum _ -> mt ()
+    | LocalDef (_,c,_) ->
+        (* Force evaluation *)
+        let c = EConstr.of_constr c in
+        let pb = print_constr_env env sigma c in
+          (str":=" ++ spc () ++ pb ++ spc ()) in
+  let ptyp = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
+    match get_name decl with
+      | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+      | Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+
+let print_named_context env =
+  hv 0 (fold_named_context
+          (fun env d pps ->
+            pps ++ ws 2 ++ pr_var_decl env d)
+          env ~init:(mt ()))
+
+let print_rel_context env =
+  hv 0 (fold_rel_context
+          (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env d)
+          env ~init:(mt ()))
+
+let print_env env =
+  let sign_env =
+    fold_named_context
+      (fun env d pps ->
+         let pidt =  pr_var_decl env d in
+         (pps ++ fnl () ++ pidt))
+      env ~init:(mt ())
+  in
+  let db_env =
+    fold_rel_context
+      (fun env d pps ->
+         let pnat = pr_rel_decl env d in (pps ++ fnl () ++ pnat))
+      env ~init:(mt ())
+  in
+    (sign_env ++ db_env)
+
+let protect f x =
+  try f x
+  with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
+
+let print_kconstr env sigma a =
+  protect (fun c -> print_constr_env env sigma c) a
+
+end
+
 let evar_suggested_name env sigma evk =
   let open Evd in
   let base_id evk' evi =
@@ -78,16 +143,9 @@ let pr_instance_status (sc,typ) =
   | TypeProcessed -> str " [type is checked]"
   end
 
-let protect f x =
-  try f x
-  with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
-
-let print_kconstr env sigma a =
-  protect (fun c -> print_constr_env env sigma c) a
-
 let pr_meta_map env sigma =
   let open Evd in
-  let print_constr = print_kconstr in
+  let print_constr = Internal.print_kconstr in
   let pr_name = function
       Name id -> str"[" ++ Id.print id ++ str"]"
     | _ -> mt() in
@@ -107,7 +165,7 @@ let pr_meta_map env sigma =
 
 let pr_decl env sigma (decl,ok) =
   let open NamedDecl in
-  let print_constr = print_kconstr in
+  let print_constr = Internal.print_kconstr in
   match decl with
   | LocalAssum ({binder_name=id},_) -> if ok then Id.print id else (str "{" ++ Id.print id ++ str "}")
   | LocalDef ({binder_name=id},c,_) -> str (if ok then "(" else "{") ++ Id.print id ++ str ":=" ++
@@ -130,13 +188,13 @@ let pr_evar_source env sigma = function
      str "type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let open Globnames in
-      let print_constr = print_kconstr in
+      let print_constr = Internal.print_kconstr in
       let id = Option.get ido in
       str "parameter " ++ Id.print id ++ spc () ++ str "of" ++
       spc () ++ print_constr env sigma (EConstr.of_constr @@ printable_constr_of_global c)
   | Evar_kinds.InternalHole -> str "internal placeholder"
   | Evar_kinds.TomatchTypeParameter (ind,n) ->
-      let print_constr = print_kconstr in
+      let print_constr = Internal.print_kconstr in
       pr_nth n ++ str " argument of type " ++ print_constr env sigma (EConstr.mkInd ind)
   | Evar_kinds.GoalEvar -> str "goal evar"
   | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
@@ -151,7 +209,7 @@ let pr_evar_source env sigma = function
 
 let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
   let open Evd in
-  let print_constr = print_kconstr in
+  let print_constr = Internal.print_kconstr in
   let phyps =
     try
       let decls = match Filter.repr (evar_filter evi) with
@@ -254,7 +312,7 @@ let pr_evar_universe_context ctx =
      h (UState.pr_weak prl ctx) ++ fnl ())
 
 let print_env_short env sigma =
-  let print_constr = print_kconstr in
+  let print_constr = Internal.print_kconstr in
   let pr_rel_decl = function
     | RelDecl.LocalAssum (n,_) -> Name.print n.binder_name
     | RelDecl.LocalDef (n,b,_) -> str "(" ++ Name.print n.binder_name ++ str " := "
@@ -279,11 +337,12 @@ let pr_evar_constraints sigma pbs =
       Namegen.make_all_name_different env sigma
     in
     print_env_short env sigma ++ spc () ++ str "|-" ++ spc () ++
-      protect (print_constr_env env sigma) t1 ++ spc () ++
+      Internal.print_kconstr env sigma t1 ++ spc () ++
       str (match pbty with
             | Reduction.CONV -> "=="
             | Reduction.CUMUL -> "<=") ++
-      spc () ++ protect (print_constr_env env @@ Evd.from_env env) t2
+      (* Why do we not print using sigma?? *)
+      spc () ++ Internal.print_kconstr env (Evd.from_env env) t2
   in
   prlist_with_sep fnl pr_evconstr pbs
 
@@ -397,62 +456,6 @@ let pr_evar_map_filter ?(with_univs=true) filter env sigma =
 
 let pr_metaset metas =
   str "[" ++ pr_sequence pr_meta (Evd.Metaset.elements metas) ++ str "]"
-
-let pr_var_decl env decl =
-  let open NamedDecl in
-  let sigma = Evd.from_env env in
-  let pbody = match decl with
-    | LocalAssum _ ->  mt ()
-    | LocalDef (_,c,_) ->
-        (* Force evaluation *)
-        let c = EConstr.of_constr c in
-        let pb = print_constr_env env sigma c in
-          (str" := " ++ pb ++ cut () ) in
-  let pt = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
-  let ptyp = (str" : " ++ pt) in
-    (Id.print (get_id decl) ++ hov 0 (pbody ++ ptyp))
-
-let pr_rel_decl env decl =
-  let open RelDecl in
-  let sigma = Evd.from_env env in
-  let pbody = match decl with
-    | LocalAssum _ -> mt ()
-    | LocalDef (_,c,_) ->
-        (* Force evaluation *)
-        let c = EConstr.of_constr c in
-        let pb = print_constr_env env sigma c in
-          (str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
-    match get_name decl with
-      | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-      | Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-
-let print_named_context env =
-  hv 0 (fold_named_context
-          (fun env d pps ->
-            pps ++ ws 2 ++ pr_var_decl env d)
-          env ~init:(mt ()))
-
-let print_rel_context env =
-  hv 0 (fold_rel_context
-          (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env d)
-          env ~init:(mt ()))
-
-let print_env env =
-  let sign_env =
-    fold_named_context
-      (fun env d pps ->
-         let pidt =  pr_var_decl env d in
-         (pps ++ fnl () ++ pidt))
-      env ~init:(mt ())
-  in
-  let db_env =
-    fold_rel_context
-      (fun env d pps ->
-         let pnat = pr_rel_decl env d in (pps ++ fnl () ++ pnat))
-      env ~init:(mt ())
-  in
-    (sign_env ++ db_env)
 
 (* [Rel (n+m);...;Rel(n+1)] *)
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
@@ -1378,6 +1381,3 @@ let env_rel_context_chop k env =
   let ctx1,ctx2 = List.chop k rels in
   push_rel_context ctx2 (reset_with_named_context (named_context_val env) env),
   ctx1
-end
-
-include Internal
