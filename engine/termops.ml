@@ -25,75 +25,75 @@ module CompactedDecl = Context.Compacted.Declaration
 
 module Internal = struct
 
-let debug_print_constr sigma c = Constr.debug_print (EConstr.to_constr sigma c)
-let fallback_printer _env sigma c = debug_print_constr sigma c
-let term_printer = ref fallback_printer
+  let debug_print_constr sigma c = Constr.debug_print (EConstr.to_constr sigma c)
+  let fallback_printer _env sigma c = debug_print_constr sigma c
+  let term_printer = ref fallback_printer
 
-let print_constr_env env sigma t = !term_printer (env:env) sigma (t:Evd.econstr)
-let set_print_constr f = term_printer := f
+  let print_constr_env env sigma t = !term_printer (env:env) sigma (t:Evd.econstr)
+  let set_print_constr f = term_printer := f
 
-let pr_var_decl env decl =
-  let open NamedDecl in
-  let sigma = Evd.from_env env in
-  let pbody = match decl with
-    | LocalAssum _ ->  mt ()
-    | LocalDef (_,c,_) ->
+  let pr_var_decl env decl =
+    let open NamedDecl in
+    let sigma = Evd.from_env env in
+    let pbody = match decl with
+      | LocalAssum _ ->  mt ()
+      | LocalDef (_,c,_) ->
         (* Force evaluation *)
         let c = EConstr.of_constr c in
         let pb = print_constr_env env sigma c in
-          (str" := " ++ pb ++ cut () ) in
-  let pt = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
-  let ptyp = (str" : " ++ pt) in
+        (str" := " ++ pb ++ cut () ) in
+    let pt = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
+    let ptyp = (str" : " ++ pt) in
     (Id.print (get_id decl) ++ hov 0 (pbody ++ ptyp))
 
-let pr_rel_decl env decl =
-  let open RelDecl in
-  let sigma = Evd.from_env env in
-  let pbody = match decl with
-    | LocalAssum _ -> mt ()
-    | LocalDef (_,c,_) ->
+  let pr_rel_decl env decl =
+    let open RelDecl in
+    let sigma = Evd.from_env env in
+    let pbody = match decl with
+      | LocalAssum _ -> mt ()
+      | LocalDef (_,c,_) ->
         (* Force evaluation *)
         let c = EConstr.of_constr c in
         let pb = print_constr_env env sigma c in
-          (str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
+        (str":=" ++ spc () ++ pb ++ spc ()) in
+    let ptyp = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
     match get_name decl with
-      | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-      | Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+    | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+    | Name id -> hov 0 (Id.print id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
-let print_named_context env =
-  hv 0 (fold_named_context
-          (fun env d pps ->
-            pps ++ ws 2 ++ pr_var_decl env d)
-          env ~init:(mt ()))
+  let print_named_context env =
+    hv 0 (fold_named_context
+            (fun env d pps ->
+               pps ++ ws 2 ++ pr_var_decl env d)
+            env ~init:(mt ()))
 
-let print_rel_context env =
-  hv 0 (fold_rel_context
-          (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env d)
-          env ~init:(mt ()))
+  let print_rel_context env =
+    hv 0 (fold_rel_context
+            (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env d)
+            env ~init:(mt ()))
 
-let print_env env =
-  let sign_env =
-    fold_named_context
-      (fun env d pps ->
-         let pidt =  pr_var_decl env d in
-         (pps ++ fnl () ++ pidt))
-      env ~init:(mt ())
-  in
-  let db_env =
-    fold_rel_context
-      (fun env d pps ->
-         let pnat = pr_rel_decl env d in (pps ++ fnl () ++ pnat))
-      env ~init:(mt ())
-  in
+  let print_env env =
+    let sign_env =
+      fold_named_context
+        (fun env d pps ->
+           let pidt =  pr_var_decl env d in
+           (pps ++ fnl () ++ pidt))
+        env ~init:(mt ())
+    in
+    let db_env =
+      fold_rel_context
+        (fun env d pps ->
+           let pnat = pr_rel_decl env d in (pps ++ fnl () ++ pnat))
+        env ~init:(mt ())
+    in
     (sign_env ++ db_env)
 
-let protect f x =
-  try f x
-  with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
+  let protect f x =
+    try f x
+    with e -> str "EXCEPTION: " ++ str (Printexc.to_string e)
 
-let print_kconstr env sigma a =
-  protect (fun c -> print_constr_env env sigma c) a
+  let print_kconstr env sigma a =
+    protect (fun c -> print_constr_env env sigma c) a
 
 end
 
