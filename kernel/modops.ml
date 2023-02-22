@@ -53,7 +53,7 @@ type signature_mismatch_error =
 
 type module_typing_error =
   | SignatureMismatch of
-      Label.t * structure_field_body * signature_mismatch_error
+      Label.t * signature_mismatch_error
   | LabelAlreadyDeclared of Label.t
   | NotAFunctor
   | IsAFunctor of ModPath.t
@@ -84,8 +84,8 @@ let error_incompatible_modtypes mexpr1 mexpr2 =
 let error_not_equal_modpaths mp1 mp2 =
   raise (ModuleTypingError (NotEqualModulePaths (mp1,mp2)))
 
-let error_signature_mismatch l spec why =
-  raise (ModuleTypingError (SignatureMismatch (l,spec,why)))
+let error_signature_mismatch l why =
+  raise (ModuleTypingError (SignatureMismatch (l,why)))
 
 let error_no_such_label l mp =
   raise (ModuleTypingError (NoSuchLabel (l,mp)))

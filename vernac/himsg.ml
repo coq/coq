@@ -1066,7 +1066,7 @@ let explain_not_match_error = function
   | IncompatibleVariance ->
     str "incompatible variance information"
 
-let explain_signature_mismatch l spec why =
+let explain_signature_mismatch l why =
   str "Signature components for field " ++ Label.print l ++
   str " do not match:" ++ spc () ++ explain_not_match_error why ++ str "."
 
@@ -1123,7 +1123,7 @@ let explain_include_restricted_functor mp =
   strbrk "You may name first an instance of this functor, and include it."
 
 let explain_module_error = function
-  | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
+  | SignatureMismatch (l,err) -> explain_signature_mismatch l err
   | LabelAlreadyDeclared l -> explain_label_already_declared l
   | NotAFunctor -> explain_not_a_functor ()
   | IsAFunctor mp -> explain_is_a_functor mp

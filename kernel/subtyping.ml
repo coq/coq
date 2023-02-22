@@ -116,10 +116,10 @@ let check_variance error v1 v2 =
 
 (* for now we do not allow reorderings *)
 
-let check_inductive (cst, ustate) env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2=
+let check_inductive (cst, ustate) env mp1 l info1 mp2 mib2 subst1 subst2 reso1 reso2=
   let kn1 = KerName.make mp1 l in
   let kn2 = KerName.make mp2 l in
-  let error why = error_signature_mismatch l spec2 why in
+  let error why = error_signature_mismatch l why in
   let check_conv why cst poly pb = check_conv_error error why (cst, ustate) poly pb in
   let mib1 =
     match info1 with
@@ -217,8 +217,8 @@ let check_inductive (cst, ustate) env mp1 l info1 mp2 mib2 spec2 subst1 subst2 r
     cst
 
 
-let check_constant (cst, ustate) env l info1 cb2 spec2 subst1 subst2 =
-  let error why = error_signature_mismatch l spec2 why in
+let check_constant (cst, ustate) env l info1 cb2 subst1 subst2 =
+  let error why = error_signature_mismatch l why in
   let check_conv why cst poly pb = check_conv_error error why (cst, ustate) poly pb in
   let check_type poly cst env t1 t2 =
     let err = NotConvertibleTypeField (env, t1, t2) in
@@ -265,19 +265,19 @@ and check_signatures (cst, ustate) env mp1 sig1 mp2 sig2 subst1 subst2 reso1 res
     match spec2 with
         | SFBconst cb2 ->
             check_constant (cst, ustate) env l (get_obj mp1 map1 l)
-              cb2 spec2 subst1 subst2
+              cb2 subst1 subst2
         | SFBmind mib2 ->
             check_inductive (cst, ustate) env mp1 l (get_obj mp1 map1 l)
-              mp2 mib2 spec2 subst1 subst2 reso1 reso2
+              mp2 mib2 subst1 subst2 reso1 reso2
         | SFBmodule msb2 ->
             begin match get_mod mp1 map1 l with
               | Module msb -> check_modules (cst, ustate) env msb msb2 subst1 subst2
-              | _ -> error_signature_mismatch l spec2 ModuleFieldExpected
+              | _ -> error_signature_mismatch l ModuleFieldExpected
             end
         | SFBmodtype mtb2 ->
             let mtb1 = match get_mod mp1 map1 l with
               | Modtype mtb -> mtb
-              | _ -> error_signature_mismatch l spec2 ModuleTypeFieldExpected
+              | _ -> error_signature_mismatch l ModuleTypeFieldExpected
             in
             let env =
               add_module_type mtb2.mod_mp mtb2
