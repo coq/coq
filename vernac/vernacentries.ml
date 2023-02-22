@@ -2044,9 +2044,7 @@ let query_command_selector ?loc = function
   | _ -> user_err ?loc
       (str "Query commands only support the single numbered goal selector.")
 
-let vernac_check_may_eval ~pstate redexp glopt rc =
-  let glopt = query_command_selector glopt in
-  let sigma, env = get_current_context_of_args ~pstate glopt in
+let check_may_eval env sigma redexp rc =
   let gc = Constrintern.intern_unknown_if_term_or_type env sigma rc in
   let sigma, c = Pretyping.understand_tcc env sigma gc in
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
@@ -2079,6 +2077,11 @@ let vernac_check_may_eval ~pstate redexp glopt rc =
         Prettyp.print_eval redfun env sigma rc j
   in
   pp ++ Printer.pr_universe_ctx_set sigma uctx
+
+let vernac_check_may_eval ~pstate redexp glopt rc =
+  let glopt = query_command_selector glopt in
+  let sigma, env = get_current_context_of_args ~pstate glopt in
+  check_may_eval env sigma redexp rc
 
 let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
