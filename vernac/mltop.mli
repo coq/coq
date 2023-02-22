@@ -108,3 +108,7 @@ val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
 val print_ml_path : unit -> Pp.t
 val print_ml_modules : unit -> Pp.t
 val print_gc : unit -> Pp.t
+
+(** Empty shells only for compat with 8.17  *)
+val init_known_plugins : unit -> unit
+val add_known_plugin : (unit -> unit) -> string -> unit

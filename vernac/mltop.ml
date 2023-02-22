@@ -472,3 +472,6 @@ let print_gc () =
     str "stack_size: " ++ int stat.Gc.stack_size
   in
   hv 0 msg
+
+let init_known_plugins () = ()
+let add_known_plugin _ _ = ()
