@@ -1004,10 +1004,10 @@ let end_module_core id m_info objects fs =
   let {Lib.Interp.substobjs = substitute; keepobjs = keep; anticipateobjs = special; } = objects in
 
   (* For sealed modules, we use the substitutive objects of their signatures *)
-  let sobjs0, keep, special = match m_info.cur_typ with
-    | None -> ([], Objs substitute), keep, special
+  let sobjs0, keep = match m_info.cur_typ with
+    | None -> ([], Objs substitute), keep
     | Some (mty, inline) ->
-      InterpVisitor.get_module_sobjs false (Global.env()) inline mty, [], []
+      InterpVisitor.get_module_sobjs false (Global.env()) inline mty, []
   in
 
   let struc = current_struct () in
