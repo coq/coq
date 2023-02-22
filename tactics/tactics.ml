@@ -354,7 +354,7 @@ let convert_concl ~cast ~check ty k =
         end else sigma
       in
       let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ty in
-      let ans = if not cast then x else mkCast(x,k,conclty) in
+      let ans = if not cast || EConstr.eq_constr sigma ty conclty then x else mkCast(x,k,conclty) in
       (sigma, ans)
     end
   end
