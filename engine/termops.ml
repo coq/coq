@@ -32,8 +32,6 @@ let term_printer = ref debug_print_constr_env
 let print_constr_env env sigma t = !term_printer (env:env) sigma (t:Evd.econstr)
 let set_print_constr f = term_printer := f
 
-module EvMap = Evar.Map
-
 let evar_suggested_name env sigma evk =
   let open Evd in
   let base_id evk' evi =
@@ -48,15 +46,15 @@ let evar_suggested_name env sigma evk =
       let env = reset_with_named_context (Evd.evar_hyps evi) env in
       Namegen.id_of_name_using_hdchar env sigma (Evd.evar_concl evi) Anonymous
   in
-  let names = EvMap.mapi base_id (undefined_map sigma) in
-  let id = EvMap.find evk names in
+  let names = Evar.Map.mapi base_id (undefined_map sigma) in
+  let id = Evar.Map.find evk names in
   let fold evk' id' (seen, n) =
     if seen then (seen, n)
     else if Evar.equal evk evk' then (true, n)
     else if Id.equal id id' then (seen, succ n)
     else (seen, n)
   in
-  let (_, n) = EvMap.fold fold names (false, 0) in
+  let (_, n) = Evar.Map.fold fold names (false, 0) in
   if n = 0 then id else Nameops.add_suffix id (string_of_int (pred n))
 
 let pr_existential_key env sigma evk =
@@ -192,16 +190,16 @@ let compute_evar_dependency_graph sigma =
   let fold evk (EvarInfo evi) acc =
     let fold_ev evk' acc =
       let tab =
-        try EvMap.find evk' acc
+        try Evar.Map.find evk' acc
         with Not_found -> Evar.Set.empty
       in
-      EvMap.add evk' (Evar.Set.add evk tab) acc
+      Evar.Map.add evk' (Evar.Set.add evk tab) acc
     in
     match evar_body evi with
     | Evar_empty -> acc
     | Evar_defined c -> Evar.Set.fold fold_ev (evars_of_term sigma c) acc
   in
-  Evd.fold fold sigma EvMap.empty
+  Evd.fold fold sigma Evar.Map.empty
 
 let evar_dependency_closure n sigma =
   let open Evd in
@@ -213,7 +211,7 @@ let evar_dependency_closure n sigma =
     else
       let fold evk accu =
         try
-          let deps = EvMap.find evk graph in
+          let deps = Evar.Map.find evk graph in
           Evar.Set.union deps accu
         with Not_found -> accu
       in
@@ -223,14 +221,14 @@ let evar_dependency_closure n sigma =
       let accu = Evar.Set.union curr accu in
       aux (n - 1) ncurr accu
   in
-  let undef = EvMap.domain (undefined_map sigma) in
+  let undef = Evar.Map.domain (undefined_map sigma) in
   aux n undef Evar.Set.empty
 
 let evar_dependency_closure n sigma =
   let open Evd in
   let deps = evar_dependency_closure n sigma in
-  let map = EvMap.bind (fun ev -> find sigma ev) deps in
-  EvMap.bindings map
+  let map = Evar.Map.bind (fun ev -> find sigma ev) deps in
+  Evar.Map.bindings map
 
 let has_no_evar sigma =
   try let () = Evd.fold (fun _ _ () -> raise_notrace Exit) sigma () in true
