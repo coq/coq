@@ -1066,8 +1066,32 @@ let explain_not_match_error = function
   | IncompatibleVariance ->
     str "incompatible variance information"
 
-let explain_signature_mismatch l why =
-  str "Signature components for field " ++ Label.print l ++
+let rec get_submodules acc = function
+  | [] -> acc, []
+  | Submodule l :: trace -> get_submodules (l::acc) trace
+  | (FunctorArgument _ :: _) as trace -> acc, trace
+
+let get_submodules trace =
+  let submodules, trace = get_submodules [] trace in
+  (String.concat "." (List.map Label.to_string submodules)), trace
+
+let rec print_trace = function
+  | [] -> assert false
+  | (Submodule _ :: _) as trace ->
+    let submodules, trace = get_submodules trace in
+    str submodules ++
+    (if List.is_empty trace then mt() else spc() ++ str "in " ++ print_trace trace)
+  | FunctorArgument n :: trace ->
+    str "the " ++ str (CString.ordinal n) ++ str " functor argument" ++
+    (if List.is_empty trace then mt() else spc() ++ str "of " ++ print_trace trace)
+
+let explain_signature_mismatch trace l why =
+  let submodules, trace = get_submodules trace in
+  let l = if String.is_empty submodules then Label.print l
+    else str submodules ++ str"." ++ Label.print l
+  in
+  str "Signature components for field " ++ l ++
+  (if List.is_empty trace then mt() else str " in " ++ print_trace trace) ++
   str " do not match:" ++ spc () ++ explain_not_match_error why ++ str "."
 
 let explain_label_already_declared l =
@@ -1123,7 +1147,7 @@ let explain_include_restricted_functor mp =
   strbrk "You may name first an instance of this functor, and include it."
 
 let explain_module_error = function
-  | SignatureMismatch (l,err) -> explain_signature_mismatch l err
+  | SignatureMismatch (trace,l,err) -> explain_signature_mismatch trace l err
   | LabelAlreadyDeclared l -> explain_label_already_declared l
   | NotAFunctor -> explain_not_a_functor ()
   | IsAFunctor mp -> explain_is_a_functor mp

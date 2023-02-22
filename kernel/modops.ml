@@ -51,9 +51,12 @@ type signature_mismatch_error =
   | IncompatibleConstraints of { got : Univ.AbstractContext.t; expect : Univ.AbstractContext.t }
   | IncompatibleVariance
 
+type subtyping_trace_elt =
+  | Submodule of Label.t
+  | FunctorArgument of int
+
 type module_typing_error =
-  | SignatureMismatch of
-      Label.t * signature_mismatch_error
+  | SignatureMismatch of subtyping_trace_elt list * Label.t * signature_mismatch_error
   | LabelAlreadyDeclared of Label.t
   | NotAFunctor
   | IsAFunctor of ModPath.t
@@ -84,8 +87,8 @@ let error_incompatible_modtypes mexpr1 mexpr2 =
 let error_not_equal_modpaths mp1 mp2 =
   raise (ModuleTypingError (NotEqualModulePaths (mp1,mp2)))
 
-let error_signature_mismatch l why =
-  raise (ModuleTypingError (SignatureMismatch (l,why)))
+let error_signature_mismatch trace l why =
+  raise (ModuleTypingError (SignatureMismatch (trace,l,why)))
 
 let error_no_such_label l mp =
   raise (ModuleTypingError (NoSuchLabel (l,mp)))
