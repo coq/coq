@@ -2054,7 +2054,7 @@ let make_graph (f_ref : GlobRef.t) =
         CErrors.user_err
           Pp.(
             str "Cannot find "
-            ++ Printer.pr_leconstr_env env sigma (EConstr.mkConst c))
+            ++ Termops.pr_global_env env (ConstRef c))
     | _ -> CErrors.user_err Pp.(str "Not a function reference")
   in
   match Global.body_of_constant_body Library.indirect_accessor c_body with

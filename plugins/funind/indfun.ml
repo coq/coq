@@ -57,7 +57,7 @@ let functional_induction with_clean c princl pat =
               | None ->
                 user_err
                   ( str "Cannot find induction information on "
-                  ++ Printer.pr_leconstr_env (pf_env gl) sigma (mkConst c') )
+                  ++ Termops.pr_global_env (pf_env gl) (ConstRef c') )
             in
             match elimination_sort_of_goal gl with
             | InSProp -> finfo.sprop_lemma
@@ -88,7 +88,7 @@ let functional_induction with_clean c princl pat =
                 | None ->
                   user_err
                     ( str "Cannot find induction principle for "
-                    ++ Printer.pr_leconstr_env (pf_env gl) sigma (mkConst c') )
+                    ++ Termops.pr_global_env (pf_env gl) (ConstRef c') )
               in
               Evd.fresh_global (pf_env gl) (project gl) princ_ref
           in
