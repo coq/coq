@@ -143,12 +143,9 @@ val mkProd : Name.t Context.binder_annot * t * t -> t
 val mkLambda : Name.t Context.binder_annot * t * t -> t
 val mkLetIn : Name.t Context.binder_annot * t * t * t -> t
 val mkApp : t * t array -> t
-val mkConst : Constant.t -> t
 val mkConstU : Constant.t * EInstance.t -> t
 val mkProj : (Projection.t * t) -> t
-val mkInd : inductive -> t
 val mkIndU : inductive * EInstance.t -> t
-val mkConstruct : constructor -> t
 val mkConstructU : constructor * EInstance.t -> t
 val mkConstructUi : (inductive * EInstance.t) * int -> t
 val mkCase : case -> t
@@ -165,6 +162,15 @@ module UnsafeMonomorphic : sig
   val mkInd : inductive -> t
   val mkConstruct : constructor -> t
 end
+
+val mkConst : Constant.t -> t
+[@@deprecated "Use [mkConstU] or if truly needed [UnsafeMonomorphic.mkConst]"]
+
+val mkInd : inductive -> t
+[@@deprecated "Use [mkIndU] or if truly needed [UnsafeMonomorphic.mkInd]"]
+
+val mkConstruct : constructor -> t
+[@@deprecated "Use [mkConstructU] or if truly needed [UnsafeMonomorphic.mkConstruct]"]
 
 val mkRef : GlobRef.t * EInstance.t -> t
 

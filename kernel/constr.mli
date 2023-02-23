@@ -129,7 +129,6 @@ val mkApp : constr * constr array -> constr
 val map_puniverses : ('a -> 'b) -> 'a Univ.puniverses -> 'b Univ.puniverses
 
 (** Constructs a Constant.t *)
-val mkConst : Constant.t -> constr
 val mkConstU : pconstant -> constr
 
 (** Constructs a projection application *)
@@ -138,12 +137,10 @@ val mkProj : (Projection.t * constr) -> constr
 (** Inductive types *)
 
 (** Constructs the ith (co)inductive type of the block named kn *)
-val mkInd : inductive -> constr
 val mkIndU : pinductive -> constr
 
 (** Constructs the jth constructor of the ith (co)inductive type of the
    block named kn. *)
-val mkConstruct : constructor -> constr
 val mkConstructU : pconstructor -> constr
 val mkConstructUi : pinductive * int -> constr
 
@@ -644,3 +641,12 @@ val hcons : constr -> constr
 
 val debug_print : constr -> Pp.t
 val debug_print_fix : ('a -> Pp.t) -> ('a, 'a) pfixpoint -> Pp.t
+
+val mkConst : Constant.t -> constr
+[@@deprecated "Use [mkConstU] or if truly needed [UnsafeMonomorphic.mkConst]"]
+
+val mkInd : inductive -> constr
+[@@deprecated "Use [mkIndU] or if truly needed [UnsafeMonomorphic.mkInd]"]
+
+val mkConstruct : constructor -> constr
+[@@deprecated "Use [mkConstructU] or if truly needed [UnsafeMonomorphic.mkConstruct]"]
