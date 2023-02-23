@@ -33,25 +33,48 @@ open Logic
 (******************************************************************)
 (* Clausal environments *)
 
+type meta_arg = metavariable * metavariable list option
+(* List of clenv meta arguments with the submetas of the clenv it has been
+   possibly chained with. We never need to chain more than two clenvs, so there
+   is no need to make the type recursive. *)
+
 type clausenv = {
   env      : env;
   evd      : evar_map;
-  metas    : metavariable list;
-  templval : constr freelisted;
+  metas    : meta_arg list;
+  templval : constr;
+  metaset : Metaset.t;
   templtyp : constr freelisted;
   cache : Reductionops.meta_instance_subst;
 }
 
-let mk_clausenv env evd metas templval templtyp = {
-  env; evd; metas; templval; templtyp; cache = create_meta_instance_subst evd;
+let mk_clausenv env evd metas templval metaset templtyp = {
+  env; evd; metas; templval; metaset; templtyp; cache = create_meta_instance_subst evd;
 }
 
 let update_clenv_evd clenv evd =
-  mk_clausenv clenv.env evd clenv.metas clenv.templval clenv.templtyp
+  mk_clausenv clenv.env evd clenv.metas clenv.templval clenv.metaset clenv.templtyp
 
-let clenv_convert_val f clenv =
-  let templval = Evd.map_fl (fun c -> f clenv.env clenv.evd c) clenv.templval in
-  mk_clausenv clenv.env clenv.evd clenv.metas templval clenv.templtyp
+let strip_params env sigma c =
+  match EConstr.kind sigma c with
+  | App (f, args) ->
+    (match EConstr.kind sigma f with
+    | Const (cst,_) ->
+      (match Structures.PrimitiveProjections.find_opt cst with
+       | Some p ->
+         let p = Projection.make p false in
+         let npars = Projection.npars p in
+         if Array.length args > npars then
+           mkApp (mkProj (p, args.(npars)),
+                  Array.sub args (npars+1) (Array.length args - (npars + 1)))
+         else c
+       | None -> c)
+    | _ -> c)
+  | _ -> c
+
+let clenv_strip_proj_params clenv =
+  let templval = strip_params clenv.env clenv.evd clenv.templval in
+  mk_clausenv clenv.env clenv.evd clenv.metas templval clenv.metaset clenv.templtyp
 
 let clenv_refresh env sigma ctx clenv =
   let evd = Evd.meta_merge (Evd.meta_list clenv.evd) (Evd.clear_metas sigma) in
@@ -62,27 +85,29 @@ let clenv_refresh env sigma ctx clenv =
     let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
     (* Only metas are mentioning the old universes. *)
     mk_clausenv env (Evd.map_metas emap evd) clenv.metas
-      (Evd.map_fl emap clenv.templval)
+      (emap clenv.templval)
+      clenv.metaset
       (Evd.map_fl emap clenv.templtyp)
   | None ->
-    mk_clausenv env evd clenv.metas clenv.templval clenv.templtyp
+    mk_clausenv env evd clenv.metas clenv.templval clenv.metaset clenv.templtyp
 
 let cl_env ce = ce.env
 let clenv_evd ce =  ce.evd
-let clenv_templtyp c = c.templtyp
-let clenv_arguments c = c.metas
+let clenv_type_head_meta c =
+  let hd, _ = decompose_app c.evd c.templtyp.rebus in
+  match EConstr.kind c.evd hd with
+  | Meta p -> Some p
+  | _ -> None
+
+let clenv_arguments c = List.map fst c.metas
 
 let clenv_meta_type clenv mv =
   let ty =
     try Evd.meta_ftype clenv.evd mv
     with Not_found -> anomaly Pp.(str "unknown meta ?" ++ str (Nameops.string_of_meta mv) ++ str ".") in
   meta_instance clenv.env clenv.cache ty
-let clenv_value clenv = meta_instance clenv.env clenv.cache clenv.templval
+let clenv_value clenv = meta_instance clenv.env clenv.cache { rebus = clenv.templval; freemetas = clenv.metaset }
 let clenv_type clenv = meta_instance clenv.env clenv.cache clenv.templtyp
-
-let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (clenv_evd ce) t
-
-let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (clenv_evd ce) c
 
 let clenv_push_prod cl =
   let typ = whd_all (cl_env cl) (clenv_evd cl) (clenv_type cl) in
@@ -94,12 +119,13 @@ let clenv_push_prod cl =
         let na' = if dep then na.binder_name else Anonymous in
         let e' = meta_declare mv t ~name:na' cl.evd in
         let concl = if dep then subst1 (mkMeta mv) u else u in
-        let def = applist (cl.templval.rebus,[mkMeta mv]) in
-        Some (mv, dep, { templval = mk_freelisted def;
+        let templval = applist (cl.templval, [mkMeta mv]) in
+        let metaset = Metaset.add mv cl.metaset in
+        Some (mv, dep, { templval; metaset;
           templtyp = mk_freelisted concl;
           evd = e';
           env = cl.env;
-          metas = cl.metas @ [mv];
+          metas = cl.metas @ [mv, None];
           cache = create_meta_instance_subst e' })
     | _ -> None
   in clrec typ
@@ -139,11 +165,13 @@ let clenv_environments evd bound t =
 let mk_clenv_from_env env sigma n (c,cty) =
   let evd = clear_metas sigma in
   let (evd,args,concl) = clenv_environments evd n cty in
-  { templval = mk_freelisted (mkApp (c,Array.map_of_list mkMeta args));
+  let templval = mkApp (c, Array.map_of_list mkMeta args) in
+  let metaset = Metaset.of_list args in
+  { templval; metaset;
     templtyp = mk_freelisted concl;
     evd = evd;
     env = env;
-    metas = args;
+    metas = List.map (fun mv -> mv, None) args;
     cache = create_meta_instance_subst evd }
 
 let mk_clenv_from env sigma c = mk_clenv_from_env env sigma None c
@@ -450,7 +478,23 @@ let fchain_flags () =
   { (default_unify_flags ()) with
     allow_K_in_toplevel_higher_order_unification = true }
 
-let clenv_instantiate ?(flags=fchain_flags ()) mv clenv (c, ty) =
+let clenv_instantiate ?(flags=fchain_flags ()) ?submetas mv clenv (c, ty) =
+  let clenv, c = match submetas with
+  | None -> clenv, c
+  | Some metas ->
+    let evd = meta_merge (Metamap.of_list metas) clenv.evd in
+    let clenv = update_clenv_evd clenv evd in
+    let c = applist (c, List.map (fun (mv, _) -> mkMeta mv) metas) in
+    let map (mv0, submetas0 as arg) =
+      if Int.equal mv mv0 then
+        (* we never chain more than 2 clenvs *)
+        let () = assert (Option.is_empty submetas0) in
+        (mv, Some (List.map fst metas))
+      else arg
+    in
+    let metas = List.map map clenv.metas in
+    { clenv with metas = metas }, c
+  in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv = clenv_unify ~flags CUMUL ty (clenv_meta_type clenv mv) clenv in
   clenv_assign mv c clenv
@@ -555,8 +599,8 @@ let clenv_unify_binding_type clenv c t u =
           TypeNotProcessed, clenv, c
 
 let clenv_assign_binding clenv k c =
-  let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
-  let c_typ = nf_betaiota clenv.env clenv.evd (clenv_get_type_of clenv c) in
+  let k_typ = hnf_constr clenv.env clenv.evd (clenv_meta_type clenv k) in
+  let c_typ = nf_betaiota clenv.env clenv.evd (Retyping.get_type_of clenv.env clenv.evd c) in
   let status,clenv',c = clenv_unify_binding_type clenv c c_typ k_typ in
   update_clenv_evd clenv' (meta_assign k (c,(Conv,status)) clenv'.evd)
 
@@ -756,18 +800,6 @@ let rec mk_refgoals env sigma goalacc conclty trm =
         let ty = EConstr.Unsafe.to_constr ty in
           (acc',ty,sigma,c)
 
-      | Case (ci, u, pms, p, iv, c, lf) ->
-        (* XXX Is ignoring iv OK? *)
-        let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
-        let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals env sigma goalacc p c in
-        let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
-        let lf' = Array.rev_of_list rbranches in
-        let ans =
-          if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (Inductive.contract_case env (ci,p',iv,c',lf'))
-        in
-        (acc'',conclty',sigma, ans)
-
       | _ ->
         if occur_meta sigma (EConstr.of_constr trm) then
           anomaly (Pp.str "refiner called with a meta in non app/case subterm.");
@@ -800,18 +832,6 @@ and mk_hdgoals env sigma goalacc trm =
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
-    | Case (ci, u, pms, p, iv, c, lf) ->
-        (* XXX is ignoring iv OK? *)
-        let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
-        let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals env sigma goalacc p c in
-        let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
-        let lf' = Array.rev_of_list rbranches in
-        let ans =
-          if p' == p && c' == c && Array.equal (==) lf' lf then trm
-          else mkCase (Inductive.contract_case env (ci,p',iv,c',lf'))
-        in
-        (acc'',conclty',sigma, ans)
-
     | Proj (p,c) ->
          let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
          let c = mkProj (p, c') in
@@ -841,18 +861,7 @@ and mk_arggoals env sigma goalacc funty allargs =
   in
   Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
-and mk_casegoals env sigma goalacc p c =
-  let (acc',ct,sigma,c') = mk_hdgoals env sigma goalacc c in
-  let ct = EConstr.of_constr ct in
-  let (acc'',pt,sigma,p') = mk_hdgoals env sigma acc' p in
-  let ((ind, u), spec) =
-    try Tacred.find_hnf_rectype env sigma ct
-    with Not_found -> anomaly (Pp.str "mk_casegoals.") in
-  let indspec = ((ind, EConstr.EInstance.kind sigma u), spec) in
-  let (lbrty,conclty) = Inductiveops.type_case_branches_with_names env sigma indspec p c in
-  (acc'',lbrty,conclty,sigma,p',c')
-
-and treat_case env sigma ci lbrty lf acc' =
+let treat_case env sigma ci lbrty lf acc' =
   let rec strip_outer_cast c = match kind c with
   | Cast (c,_,_) -> strip_outer_cast c
   | _ -> c in
@@ -887,7 +896,35 @@ and treat_case env sigma ci lbrty lf acc' =
           (lacc,sigma,fi::bacc))
     (acc',sigma,[]) lbrty lf ci.ci_cstr_ndecls
 
-let refiner clenv =
+let std_refine env sigma cl r =
+  let (sgl, _, sigma, trm) = mk_refgoals env sigma [] cl r in
+  (sigma, sgl, trm)
+
+let case_refine env sigma cl r = match Constr.kind r with
+| Case (ci, u, pms, p, iv, c, lf) ->
+  (* XXX Is ignoring iv OK? *)
+  let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
+  let (acc',ct,sigma,c') = mk_hdgoals env sigma [] c in
+  let ct = EConstr.of_constr ct in
+  let ((ind, u), spec) =
+    try Tacred.find_hnf_rectype env sigma ct
+    with Not_found -> anomaly (Pp.str "mk_casegoals.") in
+  let indspec = ((ind, EConstr.EInstance.kind sigma u), spec) in
+  let (lbrty, _) = Inductiveops.type_case_branches_with_names env sigma indspec p c in
+  let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
+  let lf' = Array.rev_of_list rbranches in
+  let ans =
+    if c' == c && Array.equal (==) lf' lf then r
+    else mkCase (Inductive.contract_case env (ci,p,iv,c',lf'))
+  in
+  (sigma, acc'', ans)
+| _ ->
+  (* This can happen in two cases:
+     - Either when emulating elimination for primitive records
+     - Or when the case node reduced because its scrutinee was a constructor *)
+  std_refine env sigma cl r
+
+let refiner_gen is_case clenv =
   let open Proofview.Notations in
   let r = EConstr.Unsafe.to_constr (clenv_cast_meta clenv @@ clenv_value clenv) in
   Proofview.Goal.enter begin fun gl ->
@@ -896,7 +933,12 @@ let refiner clenv =
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
   check_meta_variables env sigma r;
-  let (sgl,cl',sigma,oterm) = mk_refgoals env sigma [] cl r in
+  let (sigma, sgl, oterm) =
+    if is_case then
+      case_refine env sigma cl r
+    else
+      std_refine env sigma cl r
+  in
   let map gl = Proofview.goal_with_state gl st in
   let sgl = List.rev_map map sgl in
   let evk = Proofview.Goal.goal gl in
@@ -910,13 +952,16 @@ let refiner clenv =
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS sgl
   end
+
+let refiner clenv = refiner_gen false clenv
+
 end
 
 open Unification
 
 let dft = default_unify_flags
 
-let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
+let res_pf_gen is_case ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     let clenv = clenv_unique_resolver ~flags clenv concl in
@@ -935,8 +980,14 @@ let res_pf ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) clenv =
     let clenv = update_clenv_evd clenv evd' in
     Proofview.tclTHEN
       (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
-      (Internal.refiner clenv)
+      (Internal.refiner_gen is_case clenv)
   end
+
+let res_pf ?with_evars ?with_classes ?flags clenv =
+  res_pf_gen false ?with_evars ?with_classes ?flags clenv
+
+let case_pf ?with_evars ?with_classes ?flags clenv =
+  res_pf_gen true ?with_evars ?with_classes ?flags clenv
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
    particulier ne semblent pas vérifier que des instances différentes
@@ -1000,6 +1051,6 @@ let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 
 let pr_clenv clenv =
   let prc = Termops.Internal.print_constr_env clenv.env clenv.evd in
-  Pp.(h (str"TEMPL: " ++ prc clenv.templval.rebus ++
+  Pp.(h (str"TEMPL: " ++ prc clenv.templval ++
          str" : " ++ prc clenv.templtyp.rebus ++ fnl () ++
          pr_evar_map (Some 2) clenv.env clenv.evd))

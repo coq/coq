@@ -49,21 +49,20 @@ let general_elim_then_using mk_elim
       let sigma, r = Evd.fresh_global env sigma gr in
       (sigma, r, Retyping.get_type_of env sigma r)
     in
+    let is_case = match mk_elim with Elim -> false | Case _ -> true in
     (* applying elimination_scheme just a little modified *)
     let elimclause = mk_clenv_from env sigma (elim, elimt) in
     let indmv = List.last (clenv_arguments elimclause) in
-    let pmv =
-      let p, _ = decompose_app sigma (clenv_templtyp elimclause).Evd.rebus in
-      match EConstr.kind sigma p with
-      | Meta p -> p
-      | _ ->
-          let name_elim =
-            match EConstr.kind sigma elim with
-            | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env env sigma elim
-            | _ -> mt ()
-          in
-          CErrors.user_err
-            (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
+    let pmv = match Clenv.clenv_type_head_meta elimclause with
+    | Some p -> p
+    | None ->
+      let name_elim =
+        match EConstr.kind sigma elim with
+        | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env env sigma elim
+        | _ -> mt ()
+      in
+      CErrors.user_err
+        (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
     let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
@@ -84,7 +83,7 @@ let general_elim_then_using mk_elim
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
     Proofview.tclTHEN
-      (Clenv.res_pf ~flags elimclause')
+      (if is_case then Clenv.case_pf ~flags elimclause' else Clenv.res_pf ~flags elimclause')
       (Proofview.tclEXTEND [] tclIDTAC branchtacs)
   end
 

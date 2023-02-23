@@ -23,11 +23,11 @@ open Tactypes
 type clausenv
 
 val clenv_evd : clausenv -> Evd.evar_map
-val clenv_templtyp : clausenv -> constr freelisted
+val clenv_type_head_meta : clausenv -> metavariable option
 
 (* Ad-hoc primitives *)
 val update_clenv_evd : clausenv -> evar_map -> clausenv
-val clenv_convert_val : (env -> evar_map -> econstr -> econstr) -> clausenv -> clausenv
+val clenv_strip_proj_params : clausenv -> clausenv
 val clenv_refresh : env -> evar_map -> Univ.ContextSet.t option -> clausenv -> clausenv
 val clenv_arguments : clausenv -> metavariable list
 
@@ -45,7 +45,8 @@ val mk_clenv_from_n : env -> evar_map -> int -> EConstr.constr * EConstr.types -
 
 (** {6 linking of clenvs } *)
 
-val clenv_instantiate : ?flags:unify_flags -> metavariable -> clausenv -> (constr * types) -> clausenv
+val clenv_instantiate : ?flags:unify_flags -> ?submetas:(metavariable * clbinding) list ->
+  metavariable -> clausenv -> (constr * types) -> clausenv
 
 (** {6 Unification with clenvs } *)
 
@@ -82,6 +83,7 @@ val clenv_push_prod : clausenv -> (metavariable * bool * clausenv) option
 
 val unify : ?flags:unify_flags -> constr -> unit Proofview.tactic
 val res_pf : ?with_evars:bool -> ?with_classes:bool -> ?flags:unify_flags -> clausenv -> unit Proofview.tactic
+val case_pf : ?with_evars:bool -> ?with_classes:bool -> ?flags:unify_flags -> clausenv -> unit Proofview.tactic
 
 val clenv_pose_dependent_evars : ?with_evars:bool -> clausenv -> clausenv
 
