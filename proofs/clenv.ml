@@ -644,40 +644,6 @@ let clenv_constrain_dep_args hyps_only bl clenv =
       else
         error_not_right_number_missing_arguments (List.length occlist)
 
-
-(* This function put casts around metavariables whose type could not be
- * inferred by the refiner, that is head of applications, predicates and
- * subject of Cases.
- * Does check that the casted type is closed. Anyway, the refiner would
- * fail in this case... *)
-
-let clenv_cast_meta clenv =
-  let rec crec u =
-    match EConstr.kind clenv.evd u with
-      | App _ | Case _ -> crec_hd u
-      | Cast (c,_,_) when isMeta clenv.evd c -> u
-      | Proj (p, c) -> mkProj (p, crec_hd c)
-      | _  -> EConstr.map clenv.evd crec u
-
-  and crec_hd u =
-    match EConstr.kind clenv.evd (strip_outer_cast clenv.evd u) with
-      | Meta mv ->
-          (try
-            let b = Typing.meta_type clenv.env clenv.evd mv in
-            assert (not (occur_meta clenv.evd b));
-            if occur_meta clenv.evd b then u
-            else mkCast (mkMeta mv, DEFAULTcast, b)
-          with Not_found -> u)
-      | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
-      | Case(ci,u,pms,p,iv,c,br) ->
-          (* FIXME: we only change c because [p] is always a lambda and [br] is
-             most of the time??? *)
-          mkCase (ci, u, pms, p, iv, crec_hd c, br)
-      | Proj (p, c) -> mkProj (p, crec_hd c)
-      | _ -> u
-  in
-  crec
-
 let clenv_pose_dependent_evars ?(with_evars=false) clenv =
   let dep_mvs = clenv_dependent clenv in
   let env, sigma = clenv.env, clenv.evd in
@@ -812,9 +778,11 @@ let rec mk_refgoals env sigma goalacc conclty trm =
 and mk_hdgoals env sigma goalacc trm =
   let hyps = Environ.named_context_val env in
   match kind trm with
-    | Cast (c,_, ty) when isMeta c ->
-        let (gl,ev,sigma) = mk_goal sigma hyps (nf_betaiota env sigma (EConstr.of_constr ty)) in
+    | Meta mv ->
+        let ty = Typing.meta_type env sigma mv in
+        let (gl,ev,sigma) = mk_goal sigma hyps (nf_betaiota env sigma ty) in
         let ev = EConstr.Unsafe.to_constr ev in
+        let ty = EConstr.Unsafe.to_constr ty in
         gl::goalacc,ty,sigma,ev
 
     | Cast (t,_, ty) ->
@@ -926,19 +894,21 @@ let case_refine env sigma cl r = match Constr.kind r with
 
 let refiner_gen is_case clenv =
   let open Proofview.Notations in
-  let r = EConstr.Unsafe.to_constr (clenv_cast_meta clenv @@ clenv_value clenv) in
+  let r = EConstr.Unsafe.to_constr (clenv_value clenv) in
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
-  check_meta_variables env sigma r;
+  let () = check_meta_variables env sigma r in
+  let sigma = Evd.meta_merge (Evd.meta_list clenv.evd) sigma in
   let (sigma, sgl, oterm) =
     if is_case then
       case_refine env sigma cl r
     else
       std_refine env sigma cl r
   in
+  let sigma = Evd.clear_metas sigma in
   let map gl = Proofview.goal_with_state gl st in
   let sgl = List.rev_map map sgl in
   let evk = Proofview.Goal.goal gl in
