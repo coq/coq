@@ -1196,8 +1196,8 @@ let explain_refiner_unresolved_bindings l =
 
 let explain_refiner_cannot_apply env sigma t harg =
   str "In refiner, a term of type" ++ brk(1,1) ++
-  pr_lconstr_env env sigma t ++ spc () ++ str "could not be applied to" ++ brk(1,1) ++
-  pr_lconstr_env env sigma harg ++ str "."
+  pr_leconstr_env env sigma t ++ spc () ++ str "could not be applied to" ++ brk(1,1) ++
+  pr_leconstr_env env sigma harg ++ str "."
 
 let explain_intro_needs_product () =
   str "Introduction tactics needs products."

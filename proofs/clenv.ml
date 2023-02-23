@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module CVars = Vars
-
 open CErrors
 open Util
 open Names
@@ -657,7 +655,6 @@ struct
 
 open Pp
 open Constr
-open CVars
 open Termops
 open Retyping
 
@@ -697,7 +694,7 @@ let meta_free_prefix sigma a =
   with Stop acc -> Array.rev_of_list acc
 
 let goal_type_of env sigma c =
-  (sigma, EConstr.Unsafe.to_constr (Retyping.get_type_of env sigma (EConstr.of_constr c)))
+  (sigma, Retyping.get_type_of env sigma (EConstr.of_constr c))
 
 (* Old style mk_goal primitive *)
 let mk_goal evars hyps concl =
@@ -718,15 +715,13 @@ let rec mk_refgoals env sigma goalacc conclty trm =
   let hyps = Environ.named_context_val env in
     if not (occur_meta sigma (EConstr.of_constr trm)) then
       let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
-      let t'ty = EConstr.Unsafe.to_constr t'ty in
-        (goalacc,t'ty,sigma,trm)
+      (goalacc,t'ty,sigma,trm)
     else
       match kind trm with
       | Meta _ ->
         let conclty = nf_betaiota env sigma conclty in
           let (gl,ev,sigma) = mk_goal sigma hyps conclty in
           let ev = EConstr.Unsafe.to_constr ev in
-          let conclty = EConstr.Unsafe.to_constr conclty in
           gl::goalacc, conclty, sigma, ev
 
       | Cast (t,k, ty) ->
@@ -750,8 +745,7 @@ let rec mk_refgoals env sigma goalacc conclty trm =
               let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
                 type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) (Array.map EConstr.of_constr args)
             in
-            let ty = EConstr.Unsafe.to_constr ty in
-              goalacc, ty, sigma, f
+            goalacc, ty, sigma, f
           else
             mk_hdgoals env sigma goalacc f
         in
@@ -763,7 +757,6 @@ let rec mk_refgoals env sigma goalacc conclty trm =
         let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
         let c = mkProj (p, c') in
         let ty = get_type_of env sigma (EConstr.of_constr c) in
-        let ty = EConstr.Unsafe.to_constr ty in
           (acc',ty,sigma,c)
 
       | _ ->
@@ -782,7 +775,6 @@ and mk_hdgoals env sigma goalacc trm =
         let ty = Typing.meta_type env sigma mv in
         let (gl,ev,sigma) = mk_goal sigma hyps (nf_betaiota env sigma ty) in
         let ev = EConstr.Unsafe.to_constr ev in
-        let ty = EConstr.Unsafe.to_constr ty in
         gl::goalacc,ty,sigma,ev
 
     | Cast (t,_, ty) ->
@@ -793,7 +785,7 @@ and mk_hdgoals env sigma goalacc trm =
           if Termops.is_template_polymorphic_ind env sigma (EConstr.of_constr f)
           then
             let l' = meta_free_prefix sigma l in
-           (goalacc,EConstr.Unsafe.to_constr (type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) l'),sigma,f)
+           (goalacc, type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) l', sigma, f)
           else mk_hdgoals env sigma goalacc f
         in
         let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
@@ -804,8 +796,7 @@ and mk_hdgoals env sigma goalacc trm =
          let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
          let c = mkProj (p, c') in
          let ty = get_type_of env sigma (EConstr.of_constr c) in
-         let ty = EConstr.Unsafe.to_constr ty in
-           (acc',ty,sigma,c)
+         (acc', ty, sigma, c)
 
     | _ ->
         let (sigma, ty) = goal_type_of env sigma trm in
@@ -813,19 +804,18 @@ and mk_hdgoals env sigma goalacc trm =
 
 and mk_arggoals env sigma goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
-    let t = whd_all env sigma (EConstr.of_constr funty) in
-    let t = EConstr.Unsafe.to_constr t in
-    let rec collapse t = match kind t with
-    | LetIn (_, c1, _, b) -> collapse (subst1 c1 b)
+    let t = whd_all env sigma funty in
+    let rec collapse t = match EConstr.kind sigma t with
+    | LetIn (_, c1, _, b) -> collapse (EConstr.Vars.subst1 c1 b)
     | _ -> t
     in
     let t = collapse t in
-    match kind t with
+    match EConstr.kind sigma t with
     | Prod (_, c1, b) ->
-      let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (EConstr.of_constr c1) harg in
-      (acc, subst1 harg b, sigma), arg
+      let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc c1 harg in
+      (acc, EConstr.Vars.subst1 (EConstr.of_constr harg) b, sigma), arg
     | _ ->
-      raise (RefinerError (env,sigma,CannotApply (t, harg)))
+      raise (RefinerError (env,sigma,CannotApply (t, EConstr.of_constr harg)))
   in
   Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
@@ -873,7 +863,6 @@ let case_refine env sigma cl r = match Constr.kind r with
   (* XXX Is ignoring iv OK? *)
   let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
   let (acc',ct,sigma,c') = mk_hdgoals env sigma [] c in
-  let ct = EConstr.of_constr ct in
   let ((ind, u), spec) =
     try Tacred.find_hnf_rectype env sigma ct
     with Not_found -> anomaly (Pp.str "mk_casegoals.") in
