@@ -160,6 +160,12 @@ val mkInt : Uint63.t -> t
 val mkFloat : Float64.t -> t
 val mkArray : EInstance.t * t array * t * t -> t
 
+module UnsafeMonomorphic : sig
+  val mkConst : Constant.t -> t
+  val mkInd : inductive -> t
+  val mkConstruct : constructor -> t
+end
+
 val mkRef : GlobRef.t * EInstance.t -> t
 
 val type1 : t

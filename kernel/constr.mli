@@ -150,6 +150,12 @@ val mkConstructUi : pinductive * int -> constr
 (** Make a constant, inductive, constructor or variable. *)
 val mkRef : GlobRef.t Univ.puniverses -> constr
 
+module UnsafeMonomorphic : sig
+  val mkConst : Constant.t -> constr
+  val mkInd : inductive -> constr
+  val mkConstruct : constructor -> constr
+end
+
 (** Constructs a destructor of inductive type.
 
     [mkCase ci params p c ac] stand for match [c] as [x] in [I args] return [p] with [ac]

@@ -1040,6 +1040,12 @@ let to_case_invert = unsafe_to_case_invert
 let eq = unsafe_eq
 end
 
+module UnsafeMonomorphic = struct
+  let mkConst c = of_kind (Const (in_punivs c))
+  let mkInd i = of_kind (Ind (in_punivs i))
+  let mkConstruct c = of_kind (Construct (in_punivs c))
+end
+
 (* deprecated *)
 
 let decompose_lambda_assum = decompose_lambda_decls
