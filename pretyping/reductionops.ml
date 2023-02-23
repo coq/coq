@@ -12,7 +12,6 @@ open CErrors
 open Util
 open Names
 open Constr
-open Context
 open Termops
 open Univ
 open Evd
@@ -1238,8 +1237,6 @@ let native_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-let default_plain_instance_ident = Id.of_string "H"
-
 type subst_fun = { sfun : metavariable -> EConstr.t }
 
 (* Try to replace all metas. Does not replace metas in the metas' values
@@ -1249,28 +1246,8 @@ let plain_instance sigma s c = match s with
 | Some s ->
   let rec irec n u = match EConstr.kind sigma u with
     | Meta p -> (try lift n (s.sfun p) with Not_found -> u)
-    | App (f,l) when isCast sigma f ->
-        let (f,_,t) = destCast sigma f in
-        let l' = Array.Fun1.Smart.map irec n l in
-        (match EConstr.kind sigma f with
-        | Meta p ->
-            (* Don't flatten application nodes: this is used to extract a
-               proof-term from a proof-tree and we want to keep the structure
-               of the proof-tree *)
-            (try let g = s.sfun p in
-            match EConstr.kind sigma g with
-            | App _ ->
-                let l' = Array.Fun1.Smart.map lift 1 l' in
-                let r = Sorts.Relevant in (* TODO fix relevance *)
-                let na = make_annot (Name default_plain_instance_ident) r in
-                mkLetIn (na,g,t,mkApp(mkRel 1, l'))
-            | _ -> mkApp (g,l')
-            with Not_found -> mkApp (f,l'))
-        | _ -> mkApp (irec n f,l'))
-    | Cast (m,_,_) when isMeta sigma m ->
-        (try lift n (s.sfun (destMeta sigma m)) with Not_found -> u)
-    | _ ->
-        map_with_binders sigma succ irec n u
+    | Cast (u, _, _) -> irec n u
+    | _ -> map_with_binders sigma succ irec n u
   in
   irec 0 c
 
@@ -1522,6 +1499,7 @@ let eval_subst env subst =
         let res = instance env subst.sigma metas b.rebus in
         let () = subst.cache <- Metamap.add mv res subst.cache in
         res
+      | exception Not_found -> assert false
   in
   { sfun = ans }
 
