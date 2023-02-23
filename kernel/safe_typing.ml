@@ -1427,12 +1427,14 @@ let register_inline kn senv =
 
 let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
   let (mb,ob as spec) = Inductive.lookup_mind_specif env ind in
+  let ind = match mb.mind_universes with
+    | Polymorphic _ -> CErrors.user_err Pp.(str "A universe monomorphic inductive type is expected.")
+    | Monomorphic -> Constr.UnsafeMonomorphic.mkInd ind
+  in
   let check_if b msg =
     if not b then
       CErrors.user_err msg in
   check_if (Int.equal (Array.length mb.mind_packets) 1) Pp.(str "A non mutual inductive is expected.");
-  let is_monomorphic = function Monomorphic -> true | Polymorphic _ -> false in
-  check_if (is_monomorphic mb.mind_universes) Pp.(str "A universe monomorphic inductive type is expected.");
   check_if (not @@ Inductive.is_private spec) Pp.(str "A non-private inductive type is expected");
   let check_nparams n =
     check_if (Int.equal mb.mind_nparams n) Pp.(str "An inductive type with " ++ int n ++ str " parameters is expected")
@@ -1449,7 +1451,7 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
     check_if (Constr.equal t ob.mind_user_lc.(pos))
       Pp.(str"the " ++ int (pos + 1) ++ str
        "th constructor does not have the expected type") in
-  let check_type_cte pos = check_type pos (Constr.mkInd ind) in
+  let check_type_cte pos = check_type pos ind in
   match r with
   | CPrimitives.PIT_bool ->
     check_nparams 0;
@@ -1470,7 +1472,7 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
       check_if (Constr.is_Type d) s;
       check_if
         (Constr.equal
-                (mkProd (Context.anonR,mkRel 1, mkApp (mkInd ind,[|mkRel 2|])))
+                (mkProd (Context.anonR,mkRel 1, mkApp (ind,[|mkRel 2|])))
                 cd)
         s in
     check_name 0 "C0";
@@ -1489,7 +1491,7 @@ let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
         check_if (is_Type _B) s;
         check_if (Constr.equal a (mkRel 2)) s;
         check_if (Constr.equal b (mkRel 2)) s;
-        check_if (Constr.equal codom (mkApp (mkInd ind,[|mkRel 4; mkRel 3|]))) s
+        check_if (Constr.equal codom (mkApp (ind,[|mkRel 4; mkRel 3|]))) s
       | _ -> check_if false s
     end
   | CPrimitives.PIT_cmp ->
