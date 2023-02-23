@@ -281,6 +281,8 @@ val reference_of_level : Evd.evar_map -> Univ.Level.t -> Libnames.qualid option
 
 open Evd
 
+val pr_global_env : env -> GlobRef.t -> Pp.t
+
 val pr_existential_key : env -> evar_map -> Evar.t -> Pp.t
 
 val evar_suggested_name : env -> evar_map -> Evar.t -> Id.t
