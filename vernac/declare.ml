@@ -1004,7 +1004,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
         Some
           (TermObl
              (it_mkLambda_or_LetIn_or_clean
-                (mkApp (mkConst constant, args))
+                (mkApp (UnsafeMonomorphic.mkConst constant, args))
                 ctx))
     in
     (true, {obl with obl_body = body}, [GlobRef.ConstRef constant])
