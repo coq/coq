@@ -2108,7 +2108,9 @@ let finish_derived ~f ~name ~entries =
   let f_kind = Decls.(IsDefinition Definition) in
   let f_def = DefinitionEntry f_def in
   let f_kn = declare_constant ~name:f ~kind:f_kind f_def ~typing_flags:None in
-  let f_kn_term = Constr.mkConst f_kn in
+  (* Derive does not support univ poly *)
+  let () = assert (not (Global.is_polymorphic (ConstRef f_kn))) in
+  let f_kn_term = Constr.UnsafeMonomorphic.mkConst f_kn in
   (* In the type and body of the proof of [suchthat] there can be
      references to the variable [f]. It needs to be replaced by
      references to the constant [f] declared above. This substitution
