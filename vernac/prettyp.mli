@@ -52,7 +52,6 @@ val print_notation : env -> Evd.evar_map
   -> Constrexpr.notation_entry
   -> string
   -> Pp.t
-val print_opaque_name : env -> Evd.evar_map -> qualid -> Pp.t
 val print_about : env -> Evd.evar_map -> qualid Constrexpr.or_by_notation ->
   UnivNames.univ_name_list option -> Pp.t
 val print_impargs : qualid Constrexpr.or_by_notation -> Pp.t
