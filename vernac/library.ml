@@ -110,14 +110,16 @@ type library_summary = {
 
 (* This is a map from names to loaded libraries *)
 let libraries_table : library_summary DPmap.t ref =
-  Summary.ref DPmap.empty ~name:"LIBRARY"
+  Summary.ref DPmap.empty ~stage:Summary.Stage.Synterp ~name:"LIBRARY"
 
 (* This is the map of loaded libraries filename *)
 (* (not synchronized so as not to be caught in the states on disk) *)
 let libraries_filename_table = ref DPmap.empty
 
 (* These are the _ordered_ sets of loaded, imported and exported libraries *)
-let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD"
+let libraries_loaded_list = Summary.ref [] ~stage:Summary.Stage.Synterp ~name:"LIBRARY-LOAD"
+
+let loaded_native_libraries = Summary.ref DPset.empty ~stage:Summary.Stage.Interp ~name:"NATIVE-LIBRARY-LOAD"
 
 (* Opaque proof tables *)
 
@@ -152,16 +154,19 @@ let library_is_loaded dir =
 let register_loaded_library m =
   let libname = m.libsum_name in
   let rec aux = function
-    | [] ->
-        if (Global.typing_flags ()).enable_native_compiler then begin
-            let dirname = Filename.dirname (library_full_filename libname) in
-            Nativelib.enable_library dirname libname
-          end;
-        [libname]
+    | [] -> [libname]
     | m'::_ as l when DirPath.equal m' libname -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
   libraries_table := DPmap.add libname m !libraries_table
+
+let register_native_library libname =
+  if (Global.typing_flags ()).enable_native_compiler
+    && not (DPset.mem libname !loaded_native_libraries) then begin
+      let dirname = Filename.dirname (library_full_filename libname) in
+      loaded_native_libraries := DPset.add libname !loaded_native_libraries;
+      Nativelib.enable_library dirname libname
+  end
 
   let loaded_libraries () = !libraries_loaded_list
 
@@ -257,12 +262,12 @@ let intern_from_file f =
   | Some (_,false) ->
       mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
 
-let rec intern_library ~lib_resolver (needed, contents) (dir, f) from =
+let rec intern_library ~lib_resolver (needed, contents as acc) (dir, f) from =
   (* Look if in the current logical environment *)
-  try (find_library dir).libsum_digests, (needed, contents)
+  try (find_library dir).libsum_digests, acc
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  try (DPmap.find dir contents).library_digests, (needed, contents)
+  try (DPmap.find dir contents).library_digests, acc
   with Not_found ->
   Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
@@ -274,7 +279,7 @@ let rec intern_library ~lib_resolver (needed, contents) (dir, f) from =
        DirPath.print m.library_name ++ spc () ++ str "and not library" ++
        spc() ++ DirPath.print dir ++ str ".");
   Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  m.library_digests, intern_library_deps ~lib_resolver (needed, contents) dir m f
+  m.library_digests, intern_library_deps ~lib_resolver acc dir m f
 
 and intern_library_deps ~lib_resolver libs dir m from =
   let needed, contents =
@@ -318,15 +323,19 @@ let native_name_from_filename f =
 
 let register_library m =
   let l = m.library_data in
-  Declaremods.Synterp.register_library
-    m.library_name
-    l.md_syntax_objects;
   Declaremods.Interp.register_library
     m.library_name
     l.md_compiled
     l.md_objects
     m.library_digests
     m.library_extra_univs;
+  register_native_library m.library_name
+
+let register_library_syntax m =
+  let l = m.library_data in
+  Declaremods.Synterp.register_library
+    m.library_name
+    l.md_syntax_objects;
   register_loaded_library (mk_summary m)
 
 (* Follow the semantics of Anticipate object:
@@ -355,6 +364,28 @@ let in_require : require_obj -> obj =
      discharge_function = discharge_require;
      classify_function = (fun o -> Anticipate) }
 
+let load_require_syntax _ needed =
+  List.iter register_library_syntax needed
+
+let cache_require_syntax o =
+  load_require_syntax 1 o
+
+let discharge_require_syntax o = Some o
+
+(* open_function is never called from here because an Anticipate object *)
+
+type require_obj_syntax = library_t list
+
+let in_require_syntax : require_obj_syntax -> obj =
+  declare_object
+    {(default_object "REQUIRE-SYNTAX") with
+     object_stage = Summary.Stage.Synterp;
+     cache_function = cache_require_syntax;
+     load_function = load_require_syntax;
+     open_function = (fun _ _ -> assert false);
+     discharge_function = discharge_require_syntax;
+     classify_function = (fun o -> Anticipate) }
+
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)
 
@@ -363,11 +394,15 @@ let warn_require_in_module =
     (fun () -> strbrk "Use of “Require” inside a module is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
-let require_library_from_dirpath ~lib_resolver modrefl =
-  let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
-  let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
+let require_library_from_dirpath needed =
   if Lib.is_module_or_modtype () then warn_require_in_module ();
   Lib.add_leaf (in_require needed)
+
+let require_library_syntax_from_dirpath ~lib_resolver modrefl =
+  let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
+  let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
+  Lib.add_leaf (in_require_syntax needed);
+  needed
 
 (************************************************************************)
 (*s Initializing the compilation of a library. *)

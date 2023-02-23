@@ -18,12 +18,17 @@ open Names
   written at various dates.
 *)
 
+(** Type of libraries loaded in memory *)
+type library_t
+
 (** {6 ... }
     Require = load in the environment *)
-val require_library_from_dirpath
+val require_library_from_dirpath : library_t list -> unit
+
+val require_library_syntax_from_dirpath
   :  lib_resolver:(DirPath.t -> CUnix.physical_path)
   -> (DirPath.t * string) list
-  -> unit
+  -> library_t list
 
 (** {6 Start the compilation of a library } *)
 
