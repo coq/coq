@@ -97,6 +97,14 @@ module Internal = struct
 
 end
 
+let vars_of_env env =
+  let s = Environ.ids_of_named_context_val (Environ.named_context_val env) in
+  Context.Rel.fold_outside
+    (fun decl s -> match RelDecl.get_name decl with Name id -> Id.Set.add id s | _ -> s)
+    (rel_context env) ~init:s
+
+let pr_global_env env g = Nametab.pr_global_env (vars_of_env env) g
+
 let evar_suggested_name env sigma evk =
   let open Evd in
   let base_id evk' evi =
@@ -187,15 +195,12 @@ let pr_evar_source env sigma = function
           with (* defined *) Not_found -> str "an internal placeholder" in
      str "type of " ++ pp
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
-      let open Globnames in
-      let print_constr = Internal.print_kconstr in
       let id = Option.get ido in
       str "parameter " ++ Id.print id ++ spc () ++ str "of" ++
-      spc () ++ print_constr env sigma (EConstr.of_constr @@ printable_constr_of_global c)
+      spc () ++ pr_global_env env c
   | Evar_kinds.InternalHole -> str "internal placeholder"
   | Evar_kinds.TomatchTypeParameter (ind,n) ->
-      let print_constr = Internal.print_kconstr in
-      pr_nth n ++ str " argument of type " ++ print_constr env sigma (EConstr.mkInd ind)
+      pr_nth n ++ str " argument of type " ++ pr_global_env env (IndRef ind)
   | Evar_kinds.GoalEvar -> str "goal evar"
   | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
   | Evar_kinds.MatchingVar _ -> str "matching variable"
@@ -1054,14 +1059,6 @@ let replace_term sigma c byc t =
   replace_term_gen sigma eq ar byc t
 
 let subst_term sigma c t = replace_term sigma c (EConstr.mkRel 1) t
-
-let vars_of_env env =
-  let s = Environ.ids_of_named_context_val (Environ.named_context_val env) in
-  if List.is_empty (Environ.rel_context env) then s
-  else
-  Context.Rel.fold_outside
-    (fun decl s -> match RelDecl.get_name decl with Name id -> Id.Set.add id s | _ -> s)
-    (rel_context env) ~init:s
 
 let add_vname vars = function
     Name id -> Id.Set.add id vars
