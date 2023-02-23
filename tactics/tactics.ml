@@ -4502,7 +4502,6 @@ let induction_tac with_evars params indvars (elim, elimt) =
     let elimc = mkConstU c in
     let i = index_of_ind_arg sigma elimt in
     (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
-    let elimc = mkCast (elimc, DEFAULTcast, elimt) in
     let elimclause = mk_clenv_from env sigma (elimc, elimt) in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
     let elimclause = recolle_clenv (Some i) params indvars elimclause gl in
@@ -4513,7 +4512,6 @@ let induction_tac with_evars params indvars (elim, elimt) =
     let i = index_of_ind_arg sigma elimt in
     (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
     let elimc = contract_letin_in_lam_header sigma elimc in
-    let elimc = mkCast (elimc, DEFAULTcast, elimt) in
     let elimclause = Tacmach.pf_apply mk_clenv_from gl (elimc, elimt) in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
     let elimclause = recolle_clenv (Some i) params indvars elimclause gl in
@@ -4521,7 +4519,6 @@ let induction_tac with_evars params indvars (elim, elimt) =
   | ElimClause (elimc, lbindelimc) ->
     (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
     let elimc = contract_letin_in_lam_header sigma elimc in
-    let elimc = mkCast (elimc, DEFAULTcast, elimt) in
     let elimclause = Tacmach.pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
     let elimclause = recolle_clenv None params indvars elimclause gl in
