@@ -844,18 +844,63 @@ let std_refine env sigma cl r =
   let (sgl, _, sigma, trm) = mk_refgoals env sigma [] cl r in
   (sigma, sgl, trm)
 
+(***********************************************)
+(* find appropriate names for pattern variables. Useful in the Case
+   and Inversion (case_then_using et case_nodep_then_using) tactics. *)
+
+let is_predicate_explicitly_dep pnas =
+  (* The following code has an impact on the introduction names
+    given by the tactics "case" and "inversion": when the
+    elimination is not dependent, "case" uses Anonymous for
+    inductive types in Prop and names created by mkProd_name for
+    inductive types in Set/Type while "inversion" uses anonymous
+    for inductive types both in Prop and Set/Type !!
+
+    Previously, whether names were created or not relied on
+    whether the predicate created in Indrec.make_case_com had a
+    dependent arity or not. To avoid different predicates
+    printed the same in v8, all predicates built in indrec.ml
+    got a dependent arity (Aug 2004). The new way to decide
+    whether names have to be created or not is to use an
+    Anonymous or Named variable to enforce the expected
+    dependency status (of course, Anonymous implies non
+    dependent, but not conversely).
+
+    From Coq > 8.2, using or not the effective dependency of
+    the predicate is parametrable! *)
+    let na = Array.last pnas in
+    match na.binder_name with
+    | Anonymous -> false
+    | Name _ -> true
+
+let set_names env sigma n brty =
+  let open EConstr in
+  let (ctxt,cl) = decompose_prod_n_decls sigma n brty in
+  Namegen.it_mkProd_or_LetIn_name env sigma cl ctxt
+
+let set_pattern_names env sigma ind brv =
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let arities =
+    Array.map
+      (fun (d, _) -> List.length d - mib.mind_nparams)
+      mip.mind_nf_lc in
+  Array.map2 (set_names env sigma) arities brv
+
+let type_case_branches_with_names env sigma (ind, u) pms (pnas, p) c =
+  let specif = Inductive.lookup_mind_specif env ind in
+  let pctx = Inductive.expand_arity specif (ind, u) pms pnas in
+  let lbrty = Inductive.build_branches_type (ind, u) specif (Array.to_list pms) (Term.it_mkLambda_or_LetIn p pctx) in
+  let lbrty = Array.map EConstr.of_constr lbrty in
+  (* Adjust names *)
+  if is_predicate_explicitly_dep pnas then
+    (set_pattern_names env sigma ind lbrty)
+  else lbrty
+
 let case_refine env sigma cl r = match Constr.kind r with
 | Case (ci, u, pms, p, iv, c, lf) ->
   let indu = (ci.ci_ind, u) in
-  let (mib, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
-  let pctx = Inductive.expand_arity (mib, mip) indu pms (fst p) in
-  let lp = Term.it_mkLambda_or_LetIn (snd p) pctx in
   let (acc',ct,sigma,c') = mk_hdgoals env sigma [] c in
-  let (_, spec) =
-    try Tacred.find_hnf_rectype env sigma ct
-    with Not_found -> anomaly (Pp.str "mk_casegoals.") in
-  let indspec = (indu, spec) in
-  let lbrty = Inductiveops.type_case_branches_with_names env sigma indspec lp c in
+  let lbrty = type_case_branches_with_names env sigma indu pms p c in
   let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
   let lf' = Array.rev_of_list rbranches in
   let ans = mkCase (ci, u, pms, p, iv, c', lf') in
