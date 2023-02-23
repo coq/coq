@@ -1237,20 +1237,6 @@ let native_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-type subst_fun = { sfun : metavariable -> EConstr.t }
-
-(* Try to replace all metas. Does not replace metas in the metas' values
- * Differs from (strong whd_meta). *)
-let plain_instance sigma s c = match s with
-| None -> c
-| Some s ->
-  let rec irec n u = match EConstr.kind sigma u with
-    | Meta p -> (try lift n (s.sfun p) with Not_found -> u)
-    | Cast (u, _, _) -> irec n u
-    | _ -> map_with_binders sigma succ irec n u
-  in
-  irec 0 c
-
 (* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
    has (unfortunately) different subtle side effects:
 
@@ -1285,11 +1271,11 @@ let plain_instance sigma s c = match s with
      empty map).
  *)
 
-let instance env sigma s c =
+let instance env sigma c =
   (* if s = [] then c else *)
   (* No need to compute contexts under binders as whd_betaiota is local *)
   let rec strongrec t = EConstr.map sigma strongrec (whd_betaiota env sigma t) in
-  strongrec (plain_instance sigma s c)
+  strongrec c
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
@@ -1477,38 +1463,17 @@ let is_arity env sigma c =
 
 type meta_instance_subst = {
   sigma : Evd.evar_map;
-  mutable cache : EConstr.t Metamap.t;
 }
 
 let create_meta_instance_subst sigma = {
   sigma;
-  cache = Metamap.empty;
 }
-
-let eval_subst env subst =
-  let rec ans mv =
-    try Metamap.find mv subst.cache
-    with Not_found ->
-      match meta_opt_fvalue subst.sigma mv with
-      | None -> mkMeta mv
-      | Some (b, _) ->
-        let metas =
-          if Metaset.is_empty b.freemetas then None
-          else Some { sfun = ans }
-        in
-        let res = instance env subst.sigma metas b.rebus in
-        let () = subst.cache <- Metamap.add mv res subst.cache in
-        res
-      | exception Not_found -> assert false
-  in
-  { sfun = ans }
 
 let meta_instance env subst b =
   let fm = b.freemetas in
   if Metaset.is_empty fm then b.rebus
   else
-    let sfun = eval_subst env subst in
-    instance env subst.sigma (Some sfun) b.rebus
+    instance env subst.sigma b.rebus
 
 module Infer = struct
 
