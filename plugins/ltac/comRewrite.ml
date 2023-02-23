@@ -66,7 +66,7 @@ module PropGlobal = struct
     fun () -> Option.get (TC.class_info (Lazy.force r))
 
   let proper_proj () =
-    mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
+    UnsafeMonomorphic.mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
 
 end
 

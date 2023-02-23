@@ -265,7 +265,7 @@ end) = struct
     fun () -> Option.get (TC.class_info (Lazy.force r))
 
   let proper_proj () =
-    mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
+    UnsafeMonomorphic.mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
 
   let proper_type env (sigma,cstrs) =
     let l = (proper_class ()).TC.cl_impl in
@@ -966,10 +966,14 @@ let fold_match ?(force=false) env sigma c =
       raise Not_found
   in
   let app =
+    let sk = if Global.is_polymorphic (ConstRef sk)
+      then CErrors.anomaly Pp.(str "Unexpected univ poly in Rewrite.fold_match")
+      else UnsafeMonomorphic.mkConst sk
+    in
     let ind, args = Inductiveops.find_mrectype env sigma cty in
     let pars, args = List.chop ci.ci_npar args in
     let meths = Array.to_list brs in
-      applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
+      applist (sk, pars @ [pred] @ meths @ args @ [c])
   in
     sk, app
 
