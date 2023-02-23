@@ -180,8 +180,8 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
     | None -> None
     in
     match CList.find_map find lpos with
-    | res -> res
-    | exception Not_found ->
+    | Some res -> res
+    | None ->
       (* Otherwise perform I/O and look at the disk cache *)
       let lpos = List.filter (fun data -> Option.is_empty data.obj) lpos in
       let () = if CList.is_empty lpos then raise Not_found in
@@ -203,7 +203,9 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
       let lookup () = CList.find_map find lpos in
       let res = do_under_lock Read (descr_of_in_channel ch) lookup in
       let () = close_in_noerr ch in
-      try Option.get res with isNone -> raise Not_found
+      match res with
+      | Some (Some v) -> v
+      | None | Some None -> raise Not_found
 
   let memo cache f =
     let tbl = lazy (try Some (open_in cache) with _ -> None) in

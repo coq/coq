@@ -634,8 +634,7 @@ struct
   let matches_modes sigma args modes =
     if List.is_empty modes then Some NoMode
     else
-      try Some (WithMode (List.find_map (matches_mode sigma args) modes))
-      with Not_found -> None
+      Option.map (fun x -> WithMode x) (List.find_map (matches_mode sigma args) modes)
 
   let merge_entry secvars db nopat pat =
     let h = List.sort pri_order_int db.hintdb_nopat in

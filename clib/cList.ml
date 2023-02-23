@@ -553,11 +553,16 @@ let insert p v l =
   insrec l
 
 let rec find_map f = function
-  | [] -> raise Not_found
+  | [] -> None
   | x :: l ->
     match f x with
     | None -> find_map f l
-    | Some y -> y
+    | Some _ as y -> y
+
+let find_map_exn f l =
+  match find_map f l with
+  | Some v -> v
+  | None -> raise Not_found
 
 (* FIXME: again, generic hash function *)
 

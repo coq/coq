@@ -255,7 +255,7 @@ let interp_context env sigma l =
           Some (if max then MaxImplicit else NonMaxImplicit)
         | _ -> None
         in
-        try CList.find_map search impls with Not_found -> Explicit
+        Option.default Explicit (CList.find_map search impls)
       in
       name,b,t,impl)
       ctx

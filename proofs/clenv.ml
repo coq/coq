@@ -372,7 +372,7 @@ let adjust_meta_source evd mv = function
           | None -> None)
         | _ -> None
       else None in
-    let id = try List.find_map f (Evd.Metamap.bindings (Evd.meta_list evd)) with Not_found -> id in
+    let id = Option.default id (List.find_map f (Evd.Metamap.bindings (Evd.meta_list evd))) in
     loc,Evar_kinds.VarInstance id
   | src -> src
 
