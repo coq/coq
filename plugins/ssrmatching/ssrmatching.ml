@@ -503,7 +503,7 @@ let filter_upat_FO env sigma i0 f n u fpats =
   | KpatLet -> isLetIn sigma f
   | KpatLam -> isLambda sigma f
   | KpatRigid -> isRigid sigma f
-  | KpatProj pc -> eq_constr sigma f (mkConst pc) || eq_prim_proj env sigma pc f
+  | KpatProj pc -> isRefX env sigma (ConstRef pc) f || eq_prim_proj env sigma pc f
   | KpatFlex -> i0 := n; true in
   if ok then begin if !i0 < np then i0 := np; (u, np) :: fpats end else fpats
 
