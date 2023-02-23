@@ -201,7 +201,10 @@ struct
       let a = ca.(len - 1) in
       let ca = Array.sub ca 0 (len - 1) in
       Some (DApp, [mkApp (f, ca); a])
-    | Proj (p,c) -> pat_of_constr (mkApp (mkConst (Projection.constant p), [|c|]))
+    | Proj (p,c) ->
+      (* UnsafeMonomorphic is fine because the term will only be used
+         by pat_of_constr which ignores universes *)
+      pat_of_constr (mkApp (UnsafeMonomorphic.mkConst (Projection.constant p), [|c|]))
     | Int i -> Some (DInt i, [])
     | Float f -> Some (DFloat f, [])
     | Array (_u,t,def,ty) ->
