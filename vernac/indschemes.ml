@@ -304,8 +304,7 @@ let warn_cannot_build_congruence =
 
 let declare_congr_scheme ind =
   let env = Global.env () in
-  let sigma = Evd.from_env env in
-  if Hipattern.is_equality_type env sigma (EConstr.of_constr (Constr.mkInd ind)) (* FIXME *) then begin
+  if Hipattern.is_inductive_equality env ind then begin
     if
       try Coqlib.check_required_library Coqlib.logic_module_name; true
       with e when CErrors.noncritical e -> false
