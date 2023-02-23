@@ -257,9 +257,9 @@ module VNativeEntries =
       let (ct,cf) = get_bool_constructors env in
       CONSTR(Univ.in_punivs (if b then ct else cf), [||])
 
-    let int_ty env = VAL(0, mkConst @@ get_int_type env)
+    let int_ty env = VAL(0, UnsafeMonomorphic.mkConst @@ get_int_type env)
 
-    let float_ty env = VAL(0, mkConst @@ get_float_type env)
+    let float_ty env = VAL(0, UnsafeMonomorphic.mkConst @@ get_float_type env)
 
     let mkCarry env b e =
       let (c0,c1) = get_carry_constructors env in
