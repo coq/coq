@@ -678,15 +678,13 @@ let type_case_branches_with_names env sigma indspec p c =
   let args = List.map EConstr.Unsafe.to_constr args in
   let (mib,mip as specif) = Inductive.lookup_mind_specif env (fst ind) in
   let nparams = mib.mind_nparams in
-  let (params,realargs) = List.chop nparams args in
+  let (params, _) = List.chop nparams args in
   let lbrty = Inductive.build_branches_type ind specif params p in
   let lbrty = Array.map EConstr.of_constr lbrty in
-  (* Build case type *)
-  let conclty = lambda_appvect_decls (mip.mind_nrealdecls+1) p (Array.of_list (realargs@[c])) in
   (* Adjust names *)
   if is_elim_predicate_explicitly_dependent env sigma p (ind,params) then
-    (set_pattern_names env sigma (fst ind) lbrty, conclty)
-  else (lbrty, conclty)
+    (set_pattern_names env sigma (fst ind) lbrty)
+  else lbrty
 
 (* Type of Case predicates *)
 let arity_of_case_predicate env (ind,params) dep k =

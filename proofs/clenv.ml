@@ -820,39 +820,25 @@ and mk_arggoals env sigma goalacc funty allargs =
   Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
 let treat_case env sigma ci lbrty lf acc' =
-  let rec strip_outer_cast c = match kind c with
-  | Cast (c,_,_) -> strip_outer_cast c
-  | _ -> c in
-  let decompose_app_vect c = match kind c with
-  | App (f,cl) -> (f, cl)
-  | _ -> (c,[||]) in
-  Array.fold_left3
-    (fun (lacc,sigma,bacc) ty fi n ->
-        (* Deal with a branch in expanded form of the form
-           Case(ci,p,c,[|eta-let-exp(Meta);...;eta-let-exp(Meta)|]) as
-           if it were not so, so as to preserve compatibility with when
-           destruct/case generated schemes of the form
-           Case(ci,p,c,[|Meta;...;Meta|];
-           CAUTION: it does not deal with the general case of eta-zeta
-           reduced branches having a form different from Meta, as it
-           would be theoretically the case with third-party code *)
-        let ctx, body = Term.decompose_lambda_n_decls n fi in
-        let head, args = decompose_app_vect body in
-        (* Strip cast because clenv_cast_meta adds a cast when the branch is
-           eta-expanded but when not when the branch has the single-meta
-           form [Meta] *)
-        let head = strip_outer_cast head in
-        if isMeta head then begin
-          assert (args = Context.Rel.instance mkRel 0 ctx);
-          let (r,_,s,head'') = mk_refgoals env sigma lacc ty head in
-          let fi' = Term.it_mkLambda_or_LetIn (mkApp (head'',args)) ctx in
-          (r,s,fi'::bacc)
-        end
-        else
-          (* Supposed to be meta-free *)
-          let sigma, t'ty = goal_type_of env sigma fi in
-          (lacc,sigma,fi::bacc))
-    (acc',sigma,[]) lbrty lf ci.ci_cstr_ndecls
+  let fold (lacc, sigma, bacc) ty (brctx, br) =
+    let head, args = match kind br with
+    | App (f, cl) -> f, cl
+    | _ -> (br, [||])
+    in
+    let () = assert (isMeta head) in
+    let () = assert (CArray.for_all isRel args) in
+    let (r, s, head'') =
+      (* TODO: tweak this to prevent dummy β-cuts *)
+      let ty = nf_betaiota env sigma ty in
+      let hyps = Environ.named_context_val env in
+      let (gl,ev,sigma) = mk_goal sigma hyps ty in
+      let ev = EConstr.Unsafe.to_constr ev in
+      gl::lacc, sigma, ev
+    in
+    let br' = mkApp (head'', args) in
+    (r,s, (brctx, br') :: bacc)
+  in
+  Array.fold_left2 fold (acc', sigma, []) lbrty lf
 
 let std_refine env sigma cl r =
   let (sgl, _, sigma, trm) = mk_refgoals env sigma [] cl r in
@@ -860,20 +846,19 @@ let std_refine env sigma cl r =
 
 let case_refine env sigma cl r = match Constr.kind r with
 | Case (ci, u, pms, p, iv, c, lf) ->
-  (* XXX Is ignoring iv OK? *)
-  let (ci, p, iv, c, lf) = Inductive.expand_case env (ci, u, pms, p, iv, c, lf) in
+  let indu = (ci.ci_ind, u) in
+  let (mib, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
+  let pctx = Inductive.expand_arity (mib, mip) indu pms (fst p) in
+  let lp = Term.it_mkLambda_or_LetIn (snd p) pctx in
   let (acc',ct,sigma,c') = mk_hdgoals env sigma [] c in
-  let ((ind, u), spec) =
+  let (_, spec) =
     try Tacred.find_hnf_rectype env sigma ct
     with Not_found -> anomaly (Pp.str "mk_casegoals.") in
-  let indspec = ((ind, EConstr.EInstance.kind sigma u), spec) in
-  let (lbrty, _) = Inductiveops.type_case_branches_with_names env sigma indspec p c in
+  let indspec = (indu, spec) in
+  let lbrty = Inductiveops.type_case_branches_with_names env sigma indspec lp c in
   let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
   let lf' = Array.rev_of_list rbranches in
-  let ans =
-    if c' == c && Array.equal (==) lf' lf then r
-    else mkCase (Inductive.contract_case env (ci,p,iv,c',lf'))
-  in
+  let ans = mkCase (ci, u, pms, p, iv, c', lf') in
   (sigma, acc'', ans)
 | _ ->
   (* This can happen in two cases:
