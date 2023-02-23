@@ -63,7 +63,12 @@ type instance = {
   is_impl: GlobRef.t;
 }
 
-val instances : env -> evar_map -> GlobRef.t -> instance list
+val instances : GlobRef.t -> instance list option
+(** [None] if not a class *)
+
+val instances_exn : env -> evar_map -> GlobRef.t -> instance list
+(** raise [TypeClassError] if not a class *)
+
 val typeclasses : unit -> typeclass list
 val all_instances : unit -> instance list
 
@@ -72,8 +77,11 @@ val load_class : typeclass -> unit
 val load_instance : instance -> unit
 val remove_instance : instance -> unit
 
-val class_info : env -> evar_map -> GlobRef.t -> typeclass (** raises a UserError if not a class *)
+val class_info : GlobRef.t -> typeclass option
+(** [None] if not a class *)
 
+val class_info_exn : env -> evar_map -> GlobRef.t -> typeclass
+(** raise [TypeClassError] if not a class *)
 
 (** These raise a UserError if not a class.
     Caution: the typeclass structures is not instantiated w.r.t. the universe instance.

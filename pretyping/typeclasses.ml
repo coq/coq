@@ -10,7 +10,6 @@
 
 (*i*)
 open Names
-open Globnames
 open Constr
 open Vars
 open Evd
@@ -97,10 +96,14 @@ let typeclass_univ_instance (cl, u) =
     { cl with cl_context = subst_ctx cl.cl_context;
       cl_props = subst_ctx cl.cl_props}
 
-let class_info env sigma c =
-  try GlobRef.Map.find c !classes
-  with Not_found ->
-    not_a_class env sigma (EConstr.of_constr (printable_constr_of_global c))
+let class_info c = GlobRef.Map.find_opt c !classes
+
+let class_info_exn env sigma r =
+  match class_info r with
+  | Some v -> v
+  | None ->
+    let sigma, c = Evd.fresh_global env sigma r in
+    not_a_class env sigma c
 
 let global_class_of_constr env sigma c =
   try let gr, u = EConstr.destRef sigma c in
@@ -209,8 +212,15 @@ let all_instances () =
     GlobRef.Map.fold (fun k v acc -> v :: acc) v acc)
     !instances []
 
-let instances env sigma r =
-  let cl = class_info env sigma r in instances_of cl
+let instances r =
+  Option.map instances_of (class_info r)
+
+let instances_exn env sigma r =
+  match instances r with
+  | Some v -> v
+  | None ->
+    let sigma, c = Evd.fresh_global env sigma r in
+    not_a_class env sigma c
 
 let is_class gr =
   GlobRef.Map.mem gr !classes

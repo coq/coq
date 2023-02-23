@@ -189,16 +189,13 @@ let implicit_application env ty =
       if Libnames.idset_mem_qualid qid env then None
       else
         let gr = Nametab.locate qid in
-        if Typeclasses.is_class gr then Some (clapp, gr) else None
+        Option.map (fun cl -> cl, clapp) (Typeclasses.class_info gr)
     with Not_found -> None
   in
   match is_class with
   | None -> ty, env
-  | Some ({CAst.loc;v=(id, par, inst)}, gr) ->
+  | Some (c, {CAst.loc;v=(id, par, inst)}) ->
     let avoid = Id.Set.union env (Id.Set.of_list (free_vars_of_constr_expr ty ~bound:env [])) in
-    let env = Global.env () in
-    let sigma = Evd.from_env env in
-    let c = class_info env sigma gr in
     let args, avoid = combine_params avoid par (List.rev c.cl_context) in
     CAst.make ?loc @@ CAppExpl ((id, inst), args), avoid
 

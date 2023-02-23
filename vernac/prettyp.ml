@@ -1127,6 +1127,5 @@ let print_all_instances () =
 
 let print_instances r =
   let env = Global.env () in
-  let sigma = Evd.from_env env in
-  let inst = instances env sigma r in
-    prlist_with_sep fnl (pr_instance env) inst
+  let inst = instances_exn env (Evd.from_env env) r in
+  prlist_with_sep fnl (pr_instance env) inst
