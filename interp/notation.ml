@@ -26,6 +26,14 @@ open Notationextern
 
 (*i*)
 
+let mkRef (env,sigmaref) r =
+  let sigma, c = Evd.fresh_global env !sigmaref r in
+  sigmaref := sigma;
+  EConstr.Unsafe.to_constr c
+
+let mkConstruct esig c = mkRef esig (ConstructRef c)
+let mkInd esig i = mkRef esig (IndRef i)
+
 let notation_cat = Libobject.create_category "notations"
 
 
@@ -707,9 +715,9 @@ let char_of_digit n =
   if n <= 11 then Char.chr (n-2 + Char.code '0')
   else Char.chr (n-12 + Char.code 'a')
 
-let coquint_of_rawnum inds c n =
+let coquint_of_rawnum esig inds c n =
   let uint = match c with CDec -> inds.dec_uint | CHex -> inds.hex_uint in
-  let nil = mkConstruct (uint,1) in
+  let nil = mkConstruct esig (uint,1) in
   match n with None -> nil | Some n ->
   let str = NumTok.UnsignedNat.to_string n in
   let str = match c with
@@ -718,46 +726,46 @@ let coquint_of_rawnum inds c n =
   let rec do_chars s i acc =
     if i < 0 then acc
     else
-      let dg = mkConstruct (uint, digit_of_char s.[i]) in
+      let dg = mkConstruct esig (uint, digit_of_char s.[i]) in
       do_chars s (i-1) (mkApp(dg,[|acc|]))
   in
   do_chars str (String.length str - 1) nil
 
-let coqint_of_rawnum inds c (sign,n) =
+let coqint_of_rawnum esig inds c (sign,n) =
   let ind = match c with CDec -> inds.dec_int | CHex -> inds.hex_int in
-  let uint = coquint_of_rawnum inds c (Some n) in
+  let uint = coquint_of_rawnum esig inds c (Some n) in
   let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
-  mkApp (mkConstruct (ind, pos_neg), [|uint|])
+  mkApp (mkConstruct esig (ind, pos_neg), [|uint|])
 
-let coqnumber_of_rawnum inds c n =
+let coqnumber_of_rawnum esig inds c n =
   let ind = match c with CDec -> inds.decimal | CHex -> inds.hexadecimal in
   let i, f, e = NumTok.Signed.to_int_frac_and_exponent n in
-  let i = coqint_of_rawnum inds.int c i in
-  let f = coquint_of_rawnum inds.int c f in
+  let i = coqint_of_rawnum esig inds.int c i in
+  let f = coquint_of_rawnum esig inds.int c f in
   match e with
-  | None -> mkApp (mkConstruct (ind, 1), [|i; f|])  (* (D|Hexad)ecimal *)
+  | None -> mkApp (mkConstruct esig (ind, 1), [|i; f|])  (* (D|Hexad)ecimal *)
   | Some e ->
-    let e = coqint_of_rawnum inds.int CDec e in
-    mkApp (mkConstruct (ind, 2), [|i; f; e|])  (* (D|Hexad)ecimalExp *)
+    let e = coqint_of_rawnum esig inds.int CDec e in
+    mkApp (mkConstruct esig (ind, 2), [|i; f; e|])  (* (D|Hexad)ecimalExp *)
 
-let mkDecHex ind c n = match c with
-  | CDec -> mkApp (mkConstruct (ind, 1), [|n|])  (* (UInt|Int|)Decimal *)
-  | CHex -> mkApp (mkConstruct (ind, 2), [|n|])  (* (UInt|Int|)Hexadecimal *)
+let mkDecHex esig ind c n = match c with
+  | CDec -> mkApp (mkConstruct esig (ind, 1), [|n|])  (* (UInt|Int|)Decimal *)
+  | CHex -> mkApp (mkConstruct esig (ind, 2), [|n|])  (* (UInt|Int|)Hexadecimal *)
 
-let coqnumber_of_rawnum inds n =
+let coqnumber_of_rawnum esig inds n =
   let c = NumTok.Signed.classify n in
-  let n = coqnumber_of_rawnum inds c n in
-  mkDecHex inds.number c n
+  let n = coqnumber_of_rawnum esig inds c n in
+  mkDecHex esig inds.number c n
 
-let coquint_of_rawnum inds n =
+let coquint_of_rawnum esig inds n =
   let c = NumTok.UnsignedNat.classify n in
-  let n = coquint_of_rawnum inds c (Some n) in
-  mkDecHex inds.uint c n
+  let n = coquint_of_rawnum esig inds c (Some n) in
+  mkDecHex esig inds.uint c n
 
-let coqint_of_rawnum inds n =
+let coqint_of_rawnum esig inds n =
   let c = NumTok.SignedNat.classify n in
-  let n = coqint_of_rawnum inds c n in
-  mkDecHex inds.int c n
+  let n = coqint_of_rawnum esig inds c n in
+  mkDecHex esig inds.int c n
 
 let rawnum_of_coquint cl c =
   let rec of_uint_loop c buf =
@@ -826,16 +834,16 @@ let rawnum_of_coqint c =
 
 (** First, [positive] from/to bigint *)
 
-let rec pos_of_bigint posty n =
+let rec pos_of_bigint esig posty n =
   match Z.div_rem n z_two with
   | (q, rem) when rem = Z.zero ->
-      let c = mkConstruct (posty, 2) in (* xO *)
-      mkApp (c, [| pos_of_bigint posty q |])
+      let c = mkConstruct esig (posty, 2) in (* xO *)
+      mkApp (c, [| pos_of_bigint esig posty q |])
   | (q, _) when not (Z.equal q Z.zero) ->
-      let c = mkConstruct (posty, 1) in (* xI *)
-      mkApp (c, [| pos_of_bigint posty q |])
+      let c = mkConstruct esig (posty, 1) in (* xI *)
+      mkApp (c, [| pos_of_bigint esig posty q |])
   | (q, _) ->
-      mkConstruct (posty, 3) (* xH *)
+      mkConstruct esig (posty, 3) (* xH *)
 
 let rec bigint_of_pos c = match Constr.kind c with
   | Construct ((_, 3), _) -> (* xH *) Z.one
@@ -853,16 +861,16 @@ let rec bigint_of_pos c = match Constr.kind c with
 
 (** Now, [Z] from/to bigint *)
 
-let z_of_bigint { z_ty; pos_ty } n =
+let z_of_bigint esig { z_ty; pos_ty } n =
   if Z.(equal n zero) then
-    mkConstruct (z_ty, 1) (* Z0 *)
+    mkConstruct esig (z_ty, 1) (* Z0 *)
   else
     let (s, n) =
       if Z.(leq zero n) then (2, n) (* Zpos *)
       else (3, Z.neg n) (* Zneg *)
     in
-    let c = mkConstruct (z_ty, s) in
-    mkApp (c, [| pos_of_bigint pos_ty n |])
+    let c = mkConstruct esig (z_ty, s) in
+    mkApp (c, [| pos_of_bigint esig pos_ty n |])
 
 let bigint_of_z z = match Constr.kind z with
   | Construct ((_, 1), _) -> (* Z0 *) Z.zero
@@ -888,16 +896,16 @@ let error_overflow ?loc n =
   CErrors.user_err ?loc Pp.(str "Overflow in int63 literal: " ++ str (Z.to_string n)
     ++ str ".")
 
-let coqpos_neg_int63_of_bigint ?loc ind (sign,n) =
+let coqpos_neg_int63_of_bigint ?loc esig ind (sign,n) =
   let uint = int63_of_pos_bigint ?loc n in
   let pos_neg = match sign with SPlus -> 1 | SMinus -> 2 in
-  mkApp (mkConstruct (ind, pos_neg), [|uint|])
+  mkApp (mkConstruct esig (ind, pos_neg), [|uint|])
 
-let interp_int63 ?loc ind n =
+let interp_int63 ?loc esig ind n =
   let sign = if Z.(compare n zero >= 0) then SPlus else SMinus in
   let an = Z.abs n in
   if Z.(lt an (pow z_two 63))
-  then coqpos_neg_int63_of_bigint ?loc ind (sign,an)
+  then coqpos_neg_int63_of_bigint ?loc esig ind (sign,an)
   else error_overflow ?loc n
 
 let warn_inexact_float =
@@ -985,22 +993,24 @@ let interp o ?loc n =
      warn_large_num o.ty_name
   | _ -> ()
   end;
+  let env = Global.env () in
+  let sigma = ref (Evd.from_env env) in
+  let esig = env, sigma in
   let c = match fst o.to_kind, NumTok.Signed.to_int n with
     | Int int_ty, Some n ->
-       coqint_of_rawnum int_ty n
+       coqint_of_rawnum esig int_ty n
     | UInt int_ty, Some (SPlus, n) ->
-       coquint_of_rawnum int_ty n
+       coquint_of_rawnum esig int_ty n
     | Z z_pos_ty, Some n ->
-       z_of_bigint z_pos_ty (NumTok.SignedNat.to_bigint n)
+       z_of_bigint esig z_pos_ty (NumTok.SignedNat.to_bigint n)
     | Int63 pos_neg_int63_ty, Some n ->
-       interp_int63 ?loc pos_neg_int63_ty.pos_neg_int63_ty (NumTok.SignedNat.to_bigint n)
+       interp_int63 ?loc esig pos_neg_int63_ty.pos_neg_int63_ty (NumTok.SignedNat.to_bigint n)
     | (Int _ | UInt _ | Z _ | Int63 _), _ ->
        no_such_prim_token "number" ?loc o.ty_name
     | Float64, _ -> interp_float64 ?loc n
-    | Number number_ty, _ -> coqnumber_of_rawnum number_ty n
+    | Number number_ty, _ -> coqnumber_of_rawnum esig number_ty n
   in
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
+  let sigma = !sigma in
   let sigma,to_ty = Evd.fresh_global env sigma o.to_ty in
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   match o.warning, snd o.to_kind with
@@ -1048,10 +1058,10 @@ let locate_byte () = unsafe_locate_ind (q_byte ())
 
 (** ** Conversion between Coq [list Byte.byte] and internal raw string *)
 
-let coqbyte_of_char_code byte c =
-  mkConstruct (byte, 1 + c)
+let coqbyte_of_char_code esig byte c =
+  mkConstruct esig (byte, 1 + c)
 
-let coqbyte_of_string ?loc byte s =
+let coqbyte_of_string ?loc esig byte s =
   let p =
     if Int.equal (String.length s) 1 then int_of_char s.[0]
     else
@@ -1061,9 +1071,9 @@ let coqbyte_of_string ?loc byte s =
       if n < 256 then n else
        user_err ?loc
          (str "Expects a single character or a three-digit ASCII code.") in
-  coqbyte_of_char_code byte p
+  coqbyte_of_char_code esig byte p
 
-let coqbyte_of_char byte c = coqbyte_of_char_code byte (Char.code c)
+let coqbyte_of_char esig byte c = coqbyte_of_char_code esig byte (Char.code c)
 
 let make_ascii_string n =
   if n>=32 && n<=126 then String.make 1 (char_of_int n)
@@ -1076,14 +1086,14 @@ let char_code_of_coqbyte c =
 
 let string_of_coqbyte c = make_ascii_string (char_code_of_coqbyte c)
 
-let coqlist_byte_of_string byte_ty list_ty str =
-  let cbyte = mkInd byte_ty in
-  let nil = mkApp (mkConstruct (list_ty, 1), [|cbyte|]) in
-  let cons x xs = mkApp (mkConstruct (list_ty, 2), [|cbyte; x; xs|]) in
+let coqlist_byte_of_string esig byte_ty list_ty str =
+  let cbyte = mkInd esig byte_ty in
+  let nil = mkApp (mkConstruct esig (list_ty, 1), [|cbyte|]) in
+  let cons x xs = mkApp (mkConstruct esig (list_ty, 2), [|cbyte; x; xs|]) in
   let rec do_chars s i acc =
     if i < 0 then acc
     else
-      let b = coqbyte_of_char byte_ty s.[i] in
+      let b = coqbyte_of_char esig byte_ty s.[i] in
       do_chars s (i-1) (cons b acc)
   in
   do_chars str (String.length str - 1) nil
@@ -1105,12 +1115,14 @@ let string_of_coqlist_byte c =
 let interp o ?loc n =
   let byte_ty = locate_byte () in
   let list_ty = locate_list () in
-  let c = match fst o.to_kind with
-    | ListByte -> coqlist_byte_of_string byte_ty list_ty n
-    | Byte -> coqbyte_of_string ?loc byte_ty n
-  in
   let env = Global.env () in
-  let sigma = Evd.from_env env in
+  let sigma = ref (Evd.from_env env) in
+  let esig = env, sigma in
+  let c = match fst o.to_kind with
+    | ListByte -> coqlist_byte_of_string esig byte_ty list_ty n
+    | Byte -> coqbyte_of_string ?loc esig byte_ty n
+  in
+  let sigma = !sigma in
   let sigma,to_ty = Evd.fresh_global env sigma o.to_ty in
   let to_ty = EConstr.Unsafe.to_constr to_ty in
   let res = eval_constr_app env sigma to_ty c in
