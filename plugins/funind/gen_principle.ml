@@ -1133,7 +1133,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i :
               in
               tclTHENLIST
                 [ tclMAP Simple.intro ids
-                ; Equality.rewriteLR (mkConst eq_lemma)
+                ; Equality.rewriteLR (UnsafeMonomorphic.mkConst eq_lemma)
                 ; (* Don't forget to $\zeta$ normlize the term since the principles
                      have been $\zeta$-normalized *)
                   reduce
@@ -1444,7 +1444,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
     (fun () ->
       let env = Global.env () in
       let evd = ref (Evd.from_env env) in
-      let graphs_constr = Array.map mkInd graphs in
+      let graphs_constr = Array.map UnsafeMonomorphic.mkInd graphs in
       let lemmas_types_infos =
         Util.Array.map2_i
           (fun i f_constr graph ->

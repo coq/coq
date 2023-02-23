@@ -17,6 +17,9 @@ open Tactics
 open Tacticals
 open Indfun_common
 
+(* funind doesn't support univ poly *)
+open UnsafeMonomorphic
+
 (***********************************************)
 
 (* [revert_graph kn post_tac hid] transforme an hypothesis [hid] having type Ind(kn,num) t1 ... tn res
