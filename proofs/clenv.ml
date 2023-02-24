@@ -726,22 +726,6 @@ let rec mk_refgoals env sigma goalacc conclty trm =
           let ev = EConstr.Unsafe.to_constr ev in
           gl::goalacc, conclty, sigma, ev
 
-      | Cast (t,k, ty) ->
-        if Option.is_empty conclty then
-          mk_refgoals env sigma goalacc (Some (EConstr.of_constr ty)) t
-        else
-
-        let res = mk_refgoals env sigma goalacc (Some (EConstr.of_constr ty)) t in
-        (* we keep the casts (in particular VMcast and NATIVEcast) except
-           when they are annotating metas *)
-        if isMeta t then begin
-          assert (k != VMcast && k != NATIVEcast);
-          res
-        end else
-          let (gls,cty,sigma,ans) = res in
-          let ans = if ans == t then trm else mkCast(ans,k,ty) in
-          (gls,cty,sigma,ans)
-
       | App (f,l) ->
         let (acc',hdty,sigma,applicand) =
           if Termops.is_template_polymorphic_ind env sigma (EConstr.of_constr f) then
