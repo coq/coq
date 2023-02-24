@@ -666,13 +666,6 @@ let error_unsupported_deep_meta c =
 let collect_meta_variables c =
   let rec collrec deep acc c = match kind c with
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
-    | Cast(c,_,_) -> collrec deep acc c
-    | Case(ci,u,pms,p,iv,c,br) ->
-      let acc = Array.fold_left (collrec deep) acc pms in
-      let acc = Constr.fold (collrec deep) acc (snd p) in
-      let acc = Constr.fold_invert (collrec deep) acc iv in
-      let acc = Constr.fold (collrec deep) acc c in
-      Array.fold_left (fun accu (_, br) -> collrec deep accu br) acc br
     | App _ -> Constr.fold (collrec deep) acc c
     | Proj (_, c) -> collrec deep acc c
     | _ -> Constr.fold (collrec true) acc c
@@ -785,6 +778,7 @@ let treat_case env sigma ci lbrty lf acc' =
   Array.fold_left2 fold (acc', sigma, []) lbrty lf
 
 let std_refine env sigma cl r =
+  let () = check_meta_variables env sigma r in
   let (sgl, _, sigma, trm) = mk_refgoals env sigma [] (Some cl) r in
   (sigma, sgl, trm)
 
@@ -843,6 +837,8 @@ let type_case_branches_with_names env sigma (ind, u) pms (pnas, p) c =
 let case_refine env sigma cl r = match Constr.kind r with
 | Case (ci, u, pms, p, iv, c, lf) ->
   let indu = (ci.ci_ind, u) in
+  let () = check_meta_variables env sigma c in
+  let () = if Array.exists (fun c -> occur_meta sigma (EConstr.of_constr c)) pms then error_unsupported_deep_meta () in
   let (acc',ct,sigma,c') = mk_refgoals env sigma [] None c in
   let lbrty = type_case_branches_with_names env sigma indu pms p c in
   let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
@@ -863,7 +859,6 @@ let refiner_gen is_case clenv =
   let env = Proofview.Goal.env gl in
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
-  let () = check_meta_variables env sigma r in
   let sigma = Evd.meta_merge (Evd.meta_list clenv.evd) sigma in
   let (sigma, sgl, oterm) =
     if is_case then
