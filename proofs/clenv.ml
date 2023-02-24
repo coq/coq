@@ -754,11 +754,6 @@ let rec mk_refgoals env sigma goalacc conclty trm =
 and mk_arggoals env sigma goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
     let t = whd_all env sigma funty in
-    let rec collapse t = match EConstr.kind sigma t with
-    | LetIn (_, c1, _, b) -> collapse (EConstr.Vars.subst1 c1 b)
-    | _ -> t
-    in
-    let t = collapse t in
     match EConstr.kind sigma t with
     | Prod (_, c1, b) ->
       let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (Some c1) harg in
