@@ -1203,7 +1203,7 @@ let explain_intro_needs_product () =
   str "Introduction tactics needs products."
 
 let explain_non_linear_proof env sigma c =
-  str "Cannot refine with term" ++ brk(1,1) ++ pr_lconstr_env env sigma c ++
+  str "Cannot refine with term" ++ brk(1,1) ++ pr_leconstr_env env sigma c ++
   spc () ++ str "because a metavariable has several occurrences."
 
 let explain_meta_in_type env sigma c =

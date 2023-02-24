@@ -658,33 +658,51 @@ open Constr
 open Termops
 open Retyping
 
-let error_unsupported_deep_meta c =
+let error_unsupported_deep_meta () =
   user_err  (strbrk "Application of lemmas whose beta-iota normal " ++
     strbrk "form contains metavariables deep inside the term is not " ++
     strbrk "supported; try \"refine\" instead.")
 
-let collect_meta_variables c =
-  let rec collrec deep acc c = match kind c with
-    | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
-    | App _ -> Constr.fold (collrec deep) acc c
-    | Proj (_, c) -> collrec deep acc c
-    | _ -> Constr.fold (collrec true) acc c
+type proof =
+| RfHole of metavariable
+| RfGround of EConstr.t
+| RfApp of proof * proof list
+| RfProj of Projection.t * proof
+
+exception NonLinear
+
+let is_ground = function
+| RfGround _ -> true
+| RfHole _ | RfApp _ | RfProj _ -> false
+
+let make_proof env sigma c =
+  let metas = ref Metaset.empty in
+  let rec make c = match EConstr.kind sigma c with
+  | Meta mv ->
+    if Metaset.mem mv !metas then raise NonLinear
+    else
+      let () = metas := Metaset.add mv !metas in
+      RfHole mv
+  | App (f, args) ->
+    let f = make f in
+    let args = Array.map_to_list (fun c -> make c) args in
+    if is_ground f && List.for_all is_ground args then RfGround c
+    else RfApp (f, args)
+  | Proj (p, a) ->
+    let a = make a in
+    if is_ground a then RfGround c else RfProj (p, a)
+  | _ ->
+    if occur_meta sigma c then error_unsupported_deep_meta ()
+    else RfGround c
   in
-  List.rev (collrec false [] c)
+  try make c
+  with NonLinear -> raise (RefinerError (env, sigma, NonLinearProof c))
 
-let check_meta_variables env sigma c =
-  if not (List.distinct_f Int.compare (collect_meta_variables c)) then
-    raise (RefinerError (env, sigma, NonLinearProof c))
-
-exception Stop of EConstr.t list
-let meta_free_prefix sigma a =
-  try
-    let a = Array.map EConstr.of_constr a in
-    let _ = Array.fold_left (fun acc a ->
-      if occur_meta sigma a then raise (Stop acc)
-      else a :: acc) [] a
-    in a
-  with Stop acc -> Array.rev_of_list acc
+let rec as_constr = function
+| RfHole mv -> EConstr.mkMeta mv
+| RfGround c -> c
+| RfApp (f, args) -> EConstr.mkApp (as_constr f, Array.map_of_list as_constr args)
+| RfProj (p, c) -> EConstr.mkProj (p, as_constr c)
 
 (* Old style mk_goal primitive *)
 let mk_goal evars hyps concl =
@@ -701,48 +719,39 @@ let mk_goal evars hyps concl =
   let ev = EConstr.mkEvar (evk,inst) in
   (evk, ev, evars)
 
-let rec mk_refgoals env sigma goalacc conclty trm =
+let rec mk_refgoals env sigma goalacc conclty trm = match trm with
+| RfGround trm ->
+  let ty = Retyping.get_type_of env sigma trm in
+  (goalacc, ty, sigma, trm)
+| RfHole mv ->
+  let conclty = match conclty with
+  | None -> Typing.meta_type env sigma mv
+  | Some conclty -> conclty
+  in
+  let conclty = nf_betaiota env sigma conclty in
   let hyps = Environ.named_context_val env in
-    if not (occur_meta sigma (EConstr.of_constr trm)) then
-      let t'ty = Retyping.get_type_of env sigma (EConstr.of_constr trm) in
-      (goalacc,t'ty,sigma,trm)
-    else
-      match kind trm with
-      | Meta mv ->
-
-        let conclty = match conclty with
-        | None -> Typing.meta_type env sigma mv
-        | Some conclty -> conclty
-        in
-        let conclty = nf_betaiota env sigma conclty in
-          let (gl,ev,sigma) = mk_goal sigma hyps conclty in
-          let ev = EConstr.Unsafe.to_constr ev in
-          gl::goalacc, conclty, sigma, ev
-
-      | App (f,l) ->
-        let (acc',hdty,sigma,applicand) =
-          if Termops.is_template_polymorphic_ind env sigma (EConstr.of_constr f) then
-            let ty =
-              (* Template polymorphism of definitions and inductive types *)
-              let args = meta_free_prefix sigma l in
-              type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) args
-            in
-            goalacc, ty, sigma, f
-          else
-            mk_refgoals env sigma goalacc None f
-        in
-        let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
-        let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
-        (acc'',conclty',sigma, ans)
-
-      | Proj (p,c) ->
-        let (acc',cty,sigma,c') = mk_refgoals env sigma goalacc None c in
-        let c = mkProj (p, c') in
-        let ty = get_type_of env sigma (EConstr.of_constr c) in
-          (acc',ty,sigma,c)
-
-      | _ ->
-        anomaly (Pp.str "refiner called with a meta in non app subterm.")
+  let (gl,ev,sigma) = mk_goal sigma hyps conclty in
+  gl::goalacc, conclty, sigma, ev
+| RfApp (f, l) ->
+  let (acc',hdty,sigma,applicand) = match f with
+  | RfGround f when Termops.is_template_polymorphic_ind env sigma f ->
+    let ty =
+      (* Template polymorphism of definitions and inductive types *)
+      let args, _ = List.split_when (fun p -> not (is_ground p)) l in
+      let args = Array.map_of_list as_constr args in
+      type_of_global_reference_knowing_parameters env sigma f args
+    in
+    goalacc, ty, sigma, f
+  | _ -> mk_refgoals env sigma goalacc None f
+  in
+  let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
+  let ans = EConstr.applist (applicand, args) in
+  (acc'', conclty', sigma, ans)
+| RfProj (p, c) ->
+  let (acc',cty,sigma,c') = mk_refgoals env sigma goalacc None c in
+  let c = EConstr.mkProj (p, c') in
+  let ty = get_type_of env sigma c in
+  (acc',ty,sigma,c)
 
 and mk_arggoals env sigma goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
@@ -750,11 +759,11 @@ and mk_arggoals env sigma goalacc funty allargs =
     match EConstr.kind sigma t with
     | Prod (_, c1, b) ->
       let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (Some c1) harg in
-      (acc, EConstr.Vars.subst1 (EConstr.of_constr harg) b, sigma), arg
+      (acc, EConstr.Vars.subst1 arg b, sigma), arg
     | _ ->
-      raise (RefinerError (env,sigma,CannotApply (t, EConstr.of_constr harg)))
+      raise (RefinerError (env,sigma,CannotApply (t, as_constr harg)))
   in
-  Array.Smart.fold_left_map foldmap (goalacc, funty, sigma) allargs
+  List.fold_left_map foldmap (goalacc, funty, sigma) allargs
 
 let treat_case env sigma ci lbrty lf acc' =
   let fold (lacc, sigma, bacc) ty (brctx, br) =
@@ -778,7 +787,7 @@ let treat_case env sigma ci lbrty lf acc' =
   Array.fold_left2 fold (acc', sigma, []) lbrty lf
 
 let std_refine env sigma cl r =
-  let () = check_meta_variables env sigma r in
+  let r = make_proof env sigma r in
   let (sgl, _, sigma, trm) = mk_refgoals env sigma [] (Some cl) r in
   (sigma, sgl, trm)
 
@@ -824,7 +833,7 @@ let set_pattern_names env sigma ind brv =
       mip.mind_nf_lc in
   Array.map2 (set_names env sigma) arities brv
 
-let type_case_branches_with_names env sigma (ind, u) pms (pnas, p) c =
+let type_case_branches_with_names env sigma (ind, u) pms (pnas, p) =
   let specif = Inductive.lookup_mind_specif env ind in
   let pctx = Inductive.expand_arity specif (ind, u) pms pnas in
   let lbrty = Inductive.build_branches_type (ind, u) specif (Array.to_list pms) (Term.it_mkLambda_or_LetIn p pctx) in
@@ -834,17 +843,17 @@ let type_case_branches_with_names env sigma (ind, u) pms (pnas, p) c =
     (set_pattern_names env sigma ind lbrty)
   else lbrty
 
-let case_refine env sigma cl r = match Constr.kind r with
+let case_refine env sigma cl r = match Constr.kind (EConstr.Unsafe.to_constr r) with
 | Case (ci, u, pms, p, iv, c, lf) ->
   let indu = (ci.ci_ind, u) in
-  let () = check_meta_variables env sigma c in
+  let c = make_proof env sigma (EConstr.of_constr c) in
   let () = if Array.exists (fun c -> occur_meta sigma (EConstr.of_constr c)) pms then error_unsupported_deep_meta () in
   let (acc',ct,sigma,c') = mk_refgoals env sigma [] None c in
-  let lbrty = type_case_branches_with_names env sigma indu pms p c in
+  let lbrty = type_case_branches_with_names env sigma indu pms p in
   let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
   let lf' = Array.rev_of_list rbranches in
-  let ans = mkCase (ci, u, pms, p, iv, c', lf') in
-  (sigma, acc'', ans)
+  let ans = mkCase (ci, u, pms, p, iv, EConstr.Unsafe.to_constr c', lf') in
+  (sigma, acc'', EConstr.of_constr ans)
 | _ ->
   (* This can happen in two cases:
      - Either when emulating elimination for primitive records
@@ -853,14 +862,14 @@ let case_refine env sigma cl r = match Constr.kind r with
 
 let refiner_gen is_case clenv =
   let open Proofview.Notations in
-  let r = EConstr.Unsafe.to_constr (clenv_value clenv) in
+  let r = clenv_value clenv in
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let st = Proofview.Goal.state gl in
   let cl = Proofview.Goal.concl gl in
   let sigma = Evd.meta_merge (Evd.meta_list clenv.evd) sigma in
-  let (sigma, sgl, oterm) =
+  let (sigma, sgl, c) =
     if is_case then
       case_refine env sigma cl r
     else
@@ -870,7 +879,6 @@ let refiner_gen is_case clenv =
   let map gl = Proofview.goal_with_state gl st in
   let sgl = List.rev_map map sgl in
   let evk = Proofview.Goal.goal gl in
-  let c = EConstr.of_constr oterm in
   (* Check that the goal itself does not appear in the refined term *)
   let _ =
     if not (Evarutil.occur_evar_upto sigma evk c) then ()
