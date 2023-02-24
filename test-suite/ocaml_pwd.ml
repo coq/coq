@@ -13,7 +13,7 @@ let set_subject x =
     failwith "only one path";
   subject := Some x
 
-let _ =
+let () =
   Arg.parse arguments set_subject "Usage:";
   let subject =
     match !subject with

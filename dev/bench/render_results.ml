@@ -109,7 +109,6 @@ module CList = struct
       fold_left f h t
 
   let min l = reduce Stdlib.min l
-  let max l = reduce Stdlib.max l
 
 end
 ;;

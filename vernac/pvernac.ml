@@ -76,4 +76,4 @@ let main_entry proof_mode =
   Vernac_.main_entry
 
 let () =
-  register_grammar Genredexpr.wit_red_expr (Vernac_.red_expr);
+  register_grammar Redexpr.wit_red_expr (Vernac_.red_expr);

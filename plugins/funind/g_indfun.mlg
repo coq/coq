@@ -147,7 +147,6 @@ END
 {
 
 module Vernac = Pvernac.Vernac_
-module Tactic = Pltac
 
 let (wit_function_fix_definition : Vernacexpr.fixpoint_expr Loc.located Genarg.uniform_genarg_type) =
   Genarg.create_arg "function_fix_definition"
