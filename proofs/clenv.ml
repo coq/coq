@@ -760,10 +760,7 @@ let rec mk_refgoals env sigma goalacc conclty trm =
           (acc',ty,sigma,c)
 
       | _ ->
-        if occur_meta sigma (EConstr.of_constr trm) then
-          anomaly (Pp.str "refiner called with a meta in non app/case subterm.");
-        let (sigma, t'ty) = goal_type_of env sigma trm in
-          (goalacc,t'ty,sigma, trm)
+        anomaly (Pp.str "refiner called with a meta in non app subterm.")
 
 (* Same as mkREFGOALS but without knowing the type of the term. Therefore,
  * Metas should be casted. *)
