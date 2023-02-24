@@ -789,7 +789,7 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
       loop (EConstr.Vars.subst1 x tgt) ((m - n,x,argty) :: args) sigma (n-1)
   | CastType (t, _) -> loop t args sigma n
   | LetInType (_, v, _, t) -> loop (EConstr.Vars.subst1 v t) args sigma n
-  | SortType _ -> assert false
+  | SortType _ -> raise NotEnoughProducts
   | AtomicType _ ->
       let ty =  (* FIXME *)
         (Reductionops.whd_all env sigma) ty in
