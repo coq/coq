@@ -22,6 +22,8 @@ make_args=(EXTERNAL_REWRITER=1 EXTERNAL_COQPRIME=1)
 
 ( cd "${CI_BUILD_DIR}/fiat_crypto"
   ulimit -s $stacksize
-  make -j 1 "${make_args[@]}" pre-standalone-extracted printlite lite
-  make -j 1 "${make_args[@]}" all-except-compiled
+  make "${make_args[@]}" pre-standalone-extracted printlite lite ||
+    make -j 1 "${make_args[@]}" pre-standalone-extracted printlite lite
+  make "${make_args[@]}" all-except-compiled ||
+    make -j 1 "${make_args[@]}" all-except-compiled
 )
