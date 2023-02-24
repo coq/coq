@@ -54,7 +54,9 @@ module Make (Point:Point) : sig
   val enforce_leq : Point.t -> Point.t -> t -> t option
   val enforce_lt : Point.t -> Point.t -> t -> t option
 
-  val get_explanation : (Point.t * constraint_type * Point.t) -> t -> (constraint_type * Point.t) list
+  type explanation = Point.t * (constraint_type * Point.t) list
+
+  val get_explanation : (Point.t * constraint_type * Point.t) -> t -> explanation
   (** Assuming that the corresponding call to [enforce_*] returned [None], this
       will give a trace for the failure. *)
 

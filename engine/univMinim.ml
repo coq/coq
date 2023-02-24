@@ -287,7 +287,7 @@ let minimize_univ_variables ctx us left right cstrs =
         with UpperBoundedAlg ->
           enforce_uppers (acc, {enforce=true; alg=false; lbound=Universe.make u; lower})
   and aux (ctx, us, seen, cstrs as acc) u =
-    debug Pp.(fun () -> str"Calling minim on " ++ Level.pr u);
+    debug Pp.(fun () -> str"Calling minim on " ++ Level.raw_pr u);
     try acc, Level.Map.find u seen.LBMap.lbmap
     with Not_found -> instance acc u
   in
@@ -348,9 +348,9 @@ let normalize_context_set ~lbound g ctx (us:UnivFlex.t) {weak_constraints=weak;a
     in
     let g = UGraph.merge_constraints csts g in
     let cstrs = UGraph.constraints_of_universes g in
-    debug Pp.(fun () -> str "New universe context: " ++ pr_universe_context_set Level.pr (ctx, fst cstrs));
+    debug Pp.(fun () -> str "New universe context: " ++ pr_universe_context_set Level.raw_pr (ctx, fst cstrs));
     debug Pp.(fun () -> str "Partition: " ++
-      prlist_with_sep fnl (Level.Set.pr Level.pr) (snd cstrs));
+      prlist_with_sep fnl (Level.Set.pr Level.raw_pr) (snd cstrs));
     cstrs
   in
   (* Ignore constraints from lbound:Set *)

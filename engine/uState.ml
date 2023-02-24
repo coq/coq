@@ -784,8 +784,8 @@ let is_bound l lbound = match lbound with
   | UGraph.Bound.Set -> Level.is_set l
 
 let restrict_universe_context ~lbound (univs, csts) keep =
-  debug Pp.(fun () -> str"Restricting universe context: "  ++ pr_universe_context_set Level.pr (univs, csts) ++
-    str " to " ++ Level.Set.pr Level.pr keep);
+  debug Pp.(fun () -> str"Restricting universe context: "  ++ pr_universe_context_set Level.raw_pr (univs, csts) ++
+    str " to " ++ Level.Set.pr Level.raw_pr keep);
   let removed = Level.Set.diff univs keep in
   if Level.Set.is_empty removed then univs, csts
   else
@@ -798,7 +798,7 @@ let restrict_universe_context ~lbound (univs, csts) keep =
   let csts = UGraph.constraints_for ~kept:allkept g in
   let csts = Constraints.filter (fun (l,d,r) -> not (is_bound l lbound && d == Le)) csts in
   let uctx = (Level.Set.inter univs keep, csts) in
-  debug Pp.(fun () -> str"Restricted universe context" ++ pr_universe_context_set Level.pr uctx);
+  debug Pp.(fun () -> str"Restricted universe context" ++ pr_universe_context_set Level.raw_pr uctx);
   uctx
 
 let restrict uctx vars =

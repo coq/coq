@@ -1748,10 +1748,12 @@ let check_declared model us =
   let check l = if not (Index.mem l model.table) then raise (Undeclared l) in
   Point.Set.iter check us
 
-let get_explanation (cstr : Point.t * constraint_type * Point.t) _ : (constraint_type * Point.t) list =
-  let _cstr = cstr in
+type explanation = Point.t * (constraint_type * Point.t) list
+
+let get_explanation (cstr : Point.t * constraint_type * Point.t) _ : explanation =
+  let (l, _, _) = cstr in
   (* TODO *)
-  []
+  (l, [])
 
 let pr_constraint_type k =
   let open Pp in
