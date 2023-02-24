@@ -693,9 +693,6 @@ let meta_free_prefix sigma a =
     in a
   with Stop acc -> Array.rev_of_list acc
 
-let goal_type_of env sigma c =
-  (sigma, Retyping.get_type_of env sigma (EConstr.of_constr c))
-
 (* Old style mk_goal primitive *)
 let mk_goal evars hyps concl =
   (* A goal created that way will not be used by refine and will not
@@ -718,14 +715,23 @@ let rec mk_refgoals env sigma goalacc conclty trm =
       (goalacc,t'ty,sigma,trm)
     else
       match kind trm with
-      | Meta _ ->
+      | Meta mv ->
+
+        let conclty = match conclty with
+        | None -> Typing.meta_type env sigma mv
+        | Some conclty -> conclty
+        in
         let conclty = nf_betaiota env sigma conclty in
           let (gl,ev,sigma) = mk_goal sigma hyps conclty in
           let ev = EConstr.Unsafe.to_constr ev in
           gl::goalacc, conclty, sigma, ev
 
       | Cast (t,k, ty) ->
-        let res = mk_refgoals env sigma goalacc (EConstr.of_constr ty) t in
+        if Option.is_empty conclty then
+          mk_refgoals env sigma goalacc (Some (EConstr.of_constr ty)) t
+        else
+
+        let res = mk_refgoals env sigma goalacc (Some (EConstr.of_constr ty)) t in
         (* we keep the casts (in particular VMcast and NATIVEcast) except
            when they are annotating metas *)
         if isMeta t then begin
@@ -741,63 +747,25 @@ let rec mk_refgoals env sigma goalacc conclty trm =
           if Termops.is_template_polymorphic_ind env sigma (EConstr.of_constr f) then
             let ty =
               (* Template polymorphism of definitions and inductive types *)
-              let firstmeta = Array.findi (fun i x -> occur_meta sigma (EConstr.of_constr x)) l in
-              let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
-                type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) (Array.map EConstr.of_constr args)
+              let args = meta_free_prefix sigma l in
+              type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) args
             in
             goalacc, ty, sigma, f
           else
-            mk_hdgoals env sigma goalacc f
+            mk_refgoals env sigma goalacc None f
         in
         let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
         let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
       | Proj (p,c) ->
-        let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
+        let (acc',cty,sigma,c') = mk_refgoals env sigma goalacc None c in
         let c = mkProj (p, c') in
         let ty = get_type_of env sigma (EConstr.of_constr c) in
           (acc',ty,sigma,c)
 
       | _ ->
         anomaly (Pp.str "refiner called with a meta in non app subterm.")
-
-(* Same as mkREFGOALS but without knowing the type of the term. Therefore,
- * Metas should be casted. *)
-
-and mk_hdgoals env sigma goalacc trm =
-  let hyps = Environ.named_context_val env in
-  match kind trm with
-    | Meta mv ->
-        let ty = Typing.meta_type env sigma mv in
-        let (gl,ev,sigma) = mk_goal sigma hyps (nf_betaiota env sigma ty) in
-        let ev = EConstr.Unsafe.to_constr ev in
-        gl::goalacc,ty,sigma,ev
-
-    | Cast (t,_, ty) ->
-        mk_refgoals env sigma goalacc (EConstr.of_constr ty) t
-
-    | App (f,l) ->
-        let (acc',hdty,sigma,applicand) =
-          if Termops.is_template_polymorphic_ind env sigma (EConstr.of_constr f)
-          then
-            let l' = meta_free_prefix sigma l in
-           (goalacc, type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) l', sigma, f)
-          else mk_hdgoals env sigma goalacc f
-        in
-        let ((acc'',conclty',sigma), args) = mk_arggoals env sigma acc' hdty l in
-        let ans = if applicand == f && args == l then trm else mkApp (applicand, args) in
-        (acc'',conclty',sigma, ans)
-
-    | Proj (p,c) ->
-         let (acc',cty,sigma,c') = mk_hdgoals env sigma goalacc c in
-         let c = mkProj (p, c') in
-         let ty = get_type_of env sigma (EConstr.of_constr c) in
-         (acc', ty, sigma, c)
-
-    | _ ->
-        let (sigma, ty) = goal_type_of env sigma trm in
-        goalacc, ty, sigma, trm
 
 and mk_arggoals env sigma goalacc funty allargs =
   let foldmap (goalacc, funty, sigma) harg =
@@ -809,7 +777,7 @@ and mk_arggoals env sigma goalacc funty allargs =
     let t = collapse t in
     match EConstr.kind sigma t with
     | Prod (_, c1, b) ->
-      let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc c1 harg in
+      let (acc, hargty, sigma, arg) = mk_refgoals env sigma goalacc (Some c1) harg in
       (acc, EConstr.Vars.subst1 (EConstr.of_constr harg) b, sigma), arg
     | _ ->
       raise (RefinerError (env,sigma,CannotApply (t, EConstr.of_constr harg)))
@@ -838,7 +806,7 @@ let treat_case env sigma ci lbrty lf acc' =
   Array.fold_left2 fold (acc', sigma, []) lbrty lf
 
 let std_refine env sigma cl r =
-  let (sgl, _, sigma, trm) = mk_refgoals env sigma [] cl r in
+  let (sgl, _, sigma, trm) = mk_refgoals env sigma [] (Some cl) r in
   (sigma, sgl, trm)
 
 (***********************************************)
@@ -896,7 +864,7 @@ let type_case_branches_with_names env sigma (ind, u) pms (pnas, p) c =
 let case_refine env sigma cl r = match Constr.kind r with
 | Case (ci, u, pms, p, iv, c, lf) ->
   let indu = (ci.ci_ind, u) in
-  let (acc',ct,sigma,c') = mk_hdgoals env sigma [] c in
+  let (acc',ct,sigma,c') = mk_refgoals env sigma [] None c in
   let lbrty = type_case_branches_with_names env sigma indu pms p c in
   let (acc'',sigma,rbranches) = treat_case env sigma ci lbrty lf acc' in
   let lf' = Array.rev_of_list rbranches in
