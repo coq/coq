@@ -230,7 +230,7 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         constr_expr_eq t1 t2 &&
         constr_expr_eq f1 f2
       | CHole _, CHole _ -> true
-      | CGenarg _, CGenarg _ -> true
+      | (CGenarg _ | CGenargGlob _), (CGenarg _ | CGenargGlob _) -> true
       | CPatVar i1, CPatVar i2 ->
         Id.equal i1 i2
       | CEvar (id1, c1), CEvar (id2, c2) ->
@@ -256,7 +256,8 @@ module EqGen (A:sig val constr_expr_eq : constr_expr -> constr_expr -> bool end)
         constr_expr_eq def1 def2 && constr_expr_eq ty1 ty2 &&
         eq_universes u1 u2
       | (CRef _ | CFix _ | CCoFix _ | CProdN _ | CLambdaN _ | CLetIn _ | CAppExpl _
-        | CApp _ | CProj _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _ | CGenarg _
+        | CApp _ | CProj _ | CRecord _ | CCases _ | CLetTuple _ | CIf _ | CHole _
+        | CGenarg _ | CGenargGlob _
         | CPatVar _ | CEvar _ | CSort _ | CCast _ | CNotation _ | CPrim _
         | CGeneralization _ | CDelimiters _ | CArray _), _ -> false
 
@@ -381,7 +382,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
     | CCoFix (_,_) ->
       Feedback.msg_warning (strbrk "Capture check in multiple binders not done"); acc
     | CArray (_u,t,def,ty) -> f n (f n (Array.fold_left (f n) acc t) def) ty
-    | CHole _ | CGenarg _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
+    | CHole _ | CGenarg _ | CGenargGlob _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
   )
 
@@ -503,7 +504,7 @@ let map_constr_expr_with_binders g f e = CAst.map (function
           (id,bl',t',d')) dl)
     | CArray (u, t, def, ty) ->
       CArray (u, Array.map (f e) t, f e def, f e ty)
-    | CHole _ | CGenarg _ | CEvar _ | CPatVar _ | CSort _
+    | CHole _ | CGenarg _ | CGenargGlob _ | CEvar _ | CPatVar _ | CSort _
     | CPrim _ | CRef _ as x -> x
   )
 

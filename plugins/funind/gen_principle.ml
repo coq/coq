@@ -2014,7 +2014,7 @@ let rec add_args id new_args =
         , (na, Option.map (add_args id new_args) b_option)
         , add_args id new_args b2
         , add_args id new_args b3 )
-    | (CHole _ | CGenarg _ | CPatVar _ | CEvar _ | CPrim _ | CSort _) as b -> b
+    | (CHole _ | CGenarg _ | CGenargGlob _ | CPatVar _ | CEvar _ | CPrim _ | CSort _) as b -> b
     | CCast (b1, k, b2) ->
       CCast (add_args id new_args b1, k, add_args id new_args b2)
     | CRecord pars ->

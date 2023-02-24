@@ -2302,6 +2302,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         in
         DAst.make ?loc @@
         GHole (k, naming)
+    | CGenargGlob gen -> DAst.make ?loc @@ GGenarg gen
     | CGenarg gen ->
         let (ltacvars, ntnvars) = lvar in
         (* Preventively declare notation variables in ltac as non-bindings *)

@@ -233,11 +233,10 @@ let _print_cmap map=
   let print_entry c l s=
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    let xc=Constrextern.extern_constr env sigma (EConstr.of_constr c) in
       str "| " ++
       prlist Printer.pr_global l ++
       str " : " ++
-      Ppconstr.pr_constr_expr env sigma xc ++
+      Printer.pr_constr_env env sigma c ++
       cut () ++
       s in
     (v 0

@@ -1768,6 +1768,19 @@ let () =
   let pr_top x = Util.Empty.abort x in
   Genprint.register_print0 wit_ltac2 pr_raw pr_glb pr_top
 
+let () =
+  let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> assert false) in
+  let pr_glb (ids, e) =
+    let ids =
+      let ids = Id.Set.elements ids in
+      if List.is_empty ids then mt ()
+      else pr_sequence Id.print ids ++ str " |- "
+    in
+    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr e)
+  in
+  let pr_top e = Util.Empty.abort e in
+  Genprint.register_print0 wit_ltac2_constr pr_raw pr_glb pr_top
+
 (** Built-in notation scopes *)
 
 let add_scope s f =

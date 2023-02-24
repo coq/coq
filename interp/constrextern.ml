@@ -1032,7 +1032,7 @@ let rec extern inctx ?impargs scopes vars r =
 
   | GHole (e,naming) -> CHole (Some e, naming)
 
-  | GGenarg _ -> CHole (None, IntroAnonymous) (* TODO: extern tactics. *)
+  | GGenarg arg -> CGenargGlob arg
 
   | GCast (c, k, c') ->
     CCast (sub_extern true scopes vars c, k, extern_typ scopes vars c')

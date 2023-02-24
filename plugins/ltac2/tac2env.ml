@@ -308,6 +308,7 @@ let wit_ltac2_val = Genarg.make0 "ltac2:value"
 let wit_ltac2_constr = Genarg.make0 "ltac2:in-constr"
 let wit_ltac2_quotation = Genarg.make0 "ltac2:quotation"
 let () = Geninterp.register_val0 wit_ltac2 None
+let () = Geninterp.register_val0 wit_ltac2_constr None
 let () = Geninterp.register_val0 wit_ltac2_quotation None
 
 let is_constructor_id id =

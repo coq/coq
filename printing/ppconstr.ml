@@ -528,6 +528,41 @@ let tag_var = tag Tag.variable
     | VMcast-> str "<:"
     | NATIVEcast -> str "<<:"
 
+  type raw_or_glob_genarg =
+  | Rawarg of Genarg.raw_generic_argument
+  | Globarg of Genarg.glob_generic_argument
+
+  let pr_genarg return arg =
+    (* In principle this may use the env/sigma, in practice not sure if it
+       does except through pr_constr_expr in beautify mode. *)
+    let env = Global.env() in
+    let sigma = Evd.from_env env in
+    let name, parg = let open Genarg in
+      match arg with
+      | Globarg arg ->
+        let GenArg (Glbwit tag, _) = arg in
+        begin match tag with
+        | ExtraArg tag -> ArgT.repr tag, Pputils.pr_glb_generic env sigma arg
+        | _ -> assert false
+        end
+      | Rawarg arg ->
+        let GenArg (Rawwit tag, _) = arg in
+        begin match tag with
+        | ExtraArg tag -> ArgT.repr tag, Pputils.pr_raw_generic env sigma arg
+        | _ -> assert false
+        end
+    in
+    let name =
+      (* cheat the name system
+         there should be a better way to handle this *)
+      if String.equal name "tactic" then "ltac"
+      else if String.equal name "ltac2:in-constr" then "ltac2"
+      else if String.equal name "ltac2:quotation" then ""
+      else name
+    in
+    let pp = if String.is_empty name then parg else str name ++ str ":" ++ surround parg in
+    return (pp, latom)
+
   let pr pr sep inherited a =
     let return (cmds, prec) = (tag_constr_expr a cmds, prec) in
     let (strm, prec) = match CAst.(a.v) with
@@ -656,7 +691,8 @@ let tag_var = tag Tag.variable
       | CHole (_,IntroFresh id) ->
         return (str "?[?" ++ pr_id id ++ str "]", latom)
       | CHole _ -> return (str "_", latom)
-      | CGenarg _ -> return (str "_", latom) (* TODO *)
+      | CGenarg arg -> pr_genarg return (Rawarg arg)
+      | CGenargGlob arg -> pr_genarg return (Globarg arg)
       | CEvar (n,l) ->
         return (pr_evar (pr mt) n l, latom)
       | CPatVar p ->
