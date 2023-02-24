@@ -241,10 +241,11 @@ val import : compiled_library -> Univ.ContextSet.t -> vodigest ->
 
 (** {6 Safe typing judgments } *)
 
-type judgment
-
-val j_val : judgment -> Constr.constr
-val j_type : judgment -> Constr.constr
+type judgment = private {
+  jdg_env : safe_environment;
+  jdg_val : Constr.constr;
+  jdg_type : Constr.types;
+}
 
 (** The safe typing of a term returns a typing judgment. *)
 val typing : safe_environment -> Constr.constr -> judgment

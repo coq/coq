@@ -817,9 +817,9 @@ let print_eval x = !object_pr.print_eval x
 let print_judgment env sigma {uj_val=trm;uj_type=typ} =
   print_typed_value_in_env env sigma (trm, typ)
 
-let print_safe_judgment env sigma j =
-  let trm = Safe_typing.j_val j in
-  let typ = Safe_typing.j_type j in
+let print_safe_judgment {Safe_typing.jdg_env=senv; jdg_val=trm; jdg_type=typ} =
+  let env = Safe_typing.env_of_safe_env senv in
+  let sigma = Evd.from_env env in
   let trm = EConstr.of_constr trm in
   let typ = EConstr.of_constr typ in
   print_typed_value_in_env env sigma (trm, typ)

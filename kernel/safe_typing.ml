@@ -1401,12 +1401,18 @@ let close_section senv =
 
 (** {6 Safe typing } *)
 
-type judgment = Environ.unsafe_judgment
+type judgment = {
+  jdg_env : safe_environment;
+  jdg_val : constr;
+  jdg_type : types;
+}
 
-let j_val j = j.Environ.uj_val
-let j_type j = j.Environ.uj_type
-
-let typing senv = Typeops.infer (env_of_senv senv)
+let typing senv c =
+  let j = Typeops.infer (env_of_senv senv) c in
+  { jdg_env = senv;
+    jdg_val = j.Environ.uj_val;
+    jdg_type = j.Environ.uj_type;
+  }
 
 (** {6 Retroknowledge / native compiler } *)
 

@@ -39,7 +39,7 @@ val print_full_pure_context : env -> Evd.evar_map -> Pp.t
 val print_sec_context : env -> Evd.evar_map -> qualid -> Pp.t
 val print_sec_context_typ : env -> Evd.evar_map -> qualid -> Pp.t
 val print_judgment : env -> Evd.evar_map -> EConstr.unsafe_judgment -> Pp.t
-val print_safe_judgment : env -> Evd.evar_map -> Safe_typing.judgment -> Pp.t
+val print_safe_judgment : Safe_typing.judgment -> Pp.t
 val print_eval :
   reduction_function -> env -> Evd.evar_map ->
     Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t
