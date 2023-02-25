@@ -699,7 +699,7 @@ let eta_constructor_app env sigma f l1 term =
         let pars, l1' = Array.chop npars l1 in
         let arg = Array.append pars [|term|] in
         let l2 = Array.map (fun p -> mkApp (mkConstU (Projection.Repr.constant p,u), arg)) projs in
-          l1', l2
+        l1', l2
       | _ -> assert false)
   | _ -> assert false
 
@@ -852,14 +852,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             is_eta_constructor_app curenv sigma flags.modulo_delta f1 l1 cN ->
           (try
              let opt' = {opt with at_top = true; with_cs = false} in
-             let substn =
-               let tM, tN =
-                 try get_type_of ~lax:true env sigma cM
-                   , get_type_of ~lax:true env sigma cN
-                 with Retyping.RetypeError _ -> error_cannot_unify env sigma (cM, cN)
-               in
-               unirec_rec curenvnb CONV opt' ~nargs:0 substn tM tN
-             in
+             let (sigma, _, _) as substn = check_type_eta_constructor_app curenvnb opt' substn cM cN in
              let l1', l2' = eta_constructor_app curenv sigma f1 l1 cN in
              Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
            with ex when precatchable_exception ex ->
@@ -874,16 +867,9 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             is_eta_constructor_app curenv sigma flags.modulo_delta f2 l2 cM ->
           (try
              let opt' = {opt with at_top = true; with_cs = false} in
-             let substn =
-               let tM, tN =
-                 try get_type_of ~lax:true env sigma cM
-                   , get_type_of ~lax:true env sigma cN
-                 with Retyping.RetypeError _ -> error_cannot_unify env sigma (cM, cN)
-               in
-               unirec_rec curenvnb CONV opt' ~nargs:0 substn tM tN
-             in
+             let (sigma, _, _) as substn = check_type_eta_constructor_app curenvnb opt' substn cN cM in
              let l2', l1' = eta_constructor_app curenv sigma f2 l2 cM in
-               Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
+             Array.fold_left2 (unirec_rec curenvnb CONV opt' ~nargs:0) substn l1' l2'
            with ex when precatchable_exception ex ->
              match EConstr.kind sigma cM with
              | App(f1,l1) when
@@ -949,6 +935,28 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 
         | _ ->
           unify_not_same_head curenvnb pb opt substn ~nargs cM cN
+
+  and check_type_eta_constructor_app (env,nb as curenvnb) opt ((sigma,metasubst,evarsubst) as substn : subst0) other term =
+    let  (((_, i as ind), j), u) =
+      EConstr.destConstruct sigma (fst (decompose_app_vect sigma other))
+    in
+    (* ensure that we only eta expand if we are at the same inductive
+       (we accept that univs params and indices may be different) *)
+    let fail () =
+      error_cannot_unify env sigma (other, term)
+    in
+    let tterm = try Retyping.get_type_of ~lax:true env sigma term
+      with RetypeError _ -> fail ()
+    in
+    let tterm' = Reductionops.whd_all env sigma tterm in
+     match EConstr.kind sigma (fst (decompose_app_vect sigma tterm')) with
+      | Ind (ind',_) when QInd.equal env ind ind' -> substn
+      | _ ->
+        let tother = try Retyping.get_type_of ~lax:true env sigma other
+          with RetypeError _ ->
+            fail ()
+        in
+        unirec_rec curenvnb CONV opt ~nargs:0 substn tother tterm
 
   and unify_app_pattern dir curenvnb pb opt (sigma, _, _ as substn) cM f1 l1 cN f2 l2 =
     let f, l, t = if dir then f1, l1, cN else f2, l2, cM in
