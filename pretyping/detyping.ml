@@ -335,6 +335,13 @@ let print_primproj_params =
     ~key:["Printing";"Primitive";"Projection";"Parameters"]
     ~value:false
 
+let print_unfolded_primproj_asmatch =
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Printing";"Unfolded";"Projection";"As";"Match"]
+    ~value:false
+
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
 
@@ -827,26 +834,45 @@ and detype_r d flags avoid env sigma t =
         (Array.map_to_list (detype d flags avoid env sigma) args)
     | Const (sp,u) -> GRef (GlobRef.ConstRef sp, detype_instance sigma u)
     | Proj (p,c) ->
-      let noparams () =
-        let pars = Projection.npars p in
-        let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous) in
-        let args = List.make pars hole in
-        GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
-              (args @ [detype d flags avoid env sigma c]))
-      in
-      if !Flags.in_debugger || !Flags.in_toplevel then
-        try noparams ()
-        with _ ->
-            (* lax mode, used by debug printers only *)
-          GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
-                [detype d flags avoid env sigma c])
+      if Projection.unfolded p && print_unfolded_primproj_asmatch () then
+        let c = detype d flags avoid env sigma c in
+        let id = Label.to_id @@ Projection.label p in
+        let nargs, parg =
+          try
+            let _, mip = Global.lookup_inductive (Projection.inductive p) in
+            mip.mind_consnrealargs.(0), Projection.arg p
+          with _ when !Flags.in_debugger ->
+            (* kinda weird printing but the name should be enough to
+               indicate which projection it is *)
+            1, 0
+        in
+        let pathole = DAst.make @@ PatVar Anonymous in
+        let patargs = List.init nargs (fun i ->
+            if Int.equal i parg
+            then DAst.make @@ PatVar (Name id)
+            else pathole)
+        in
+        let pat = DAst.make @@ PatCstr ((Projection.inductive p, 1), patargs, Anonymous) in
+        let br = ([id], [pat], DAst.make @@ GVar id) in
+        (* MatchStyle looks relatively heavy *)
+        GCases (LetPatternStyle, None, [c, (Anonymous, None)], [CAst.make br])
       else
-        if print_primproj_params () then
+        let noparams () =
+          let pars = Projection.npars p in
+          let hole = DAst.make @@ GHole(Evar_kinds.InternalHole,Namegen.IntroAnonymous) in
+          let args = List.make pars hole in
+          GApp (DAst.make @@ GRef (GlobRef.ConstRef (Projection.constant p), None),
+                (args @ [detype d flags avoid env sigma c]))
+        in
+        if !Flags.in_debugger || !Flags.in_toplevel
+           || not (print_primproj_params ())
+        then noparams ()
+        else begin
           try
             let c = Retyping.expand_projection (snd env) sigma p c [] in
             DAst.get (detype d flags avoid env sigma c)
           with Retyping.RetypeError _ -> noparams ()
-        else noparams ()
+        end
 
     | Evar (evk,cl) ->
         let open Context.Named.Declaration in
