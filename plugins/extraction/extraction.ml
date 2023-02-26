@@ -672,11 +672,7 @@ let rec extract_term env sg mle mlt c args =
     | Evar _ | Meta _ -> MLaxiom
     | Var v ->
        (* Only during Show Extraction *)
-       let open Context.Named.Declaration in
-       let ty = match EConstr.lookup_named v env with
-         | LocalAssum (_,ty) -> ty
-         | LocalDef (_,_,ty) -> ty
-       in
+       let ty = Context.Named.Declaration.get_type (EConstr.lookup_named v env) in
        let vty = extract_type env sg [] 0 ty [] in
        let extract_var mlt = put_magic (mlt,vty) (MLglob (GlobRef.VarRef v)) in
        extract_app env sg mle mlt extract_var args
@@ -1186,7 +1182,7 @@ let extract_with_type env sg c =
         let db = db_from_sign s in
         let t = extract_type_scheme env sg db c (List.length s) in
         Some (vl, t)
-    | _ -> None
+    | (Info, Default) | (Logic, _) -> None
   with SingletonInductiveBecomesProp id ->
     error_singleton_become_prop id None
 
