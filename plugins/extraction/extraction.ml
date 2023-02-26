@@ -18,7 +18,6 @@ open Declarations
 open Declareops
 open Environ
 open Reductionops
-open Inductive
 open Inductiveops
 open Namegen
 open Miniml
@@ -31,11 +30,6 @@ exception I of inductive_kind
 
 (* A set of all fixpoint functions currently being extracted *)
 let current_fixpoints = ref ([] : Constant.t list)
-
-(* NB: In OCaml, [type_of] and [get_of] might raise
-   [SingletonInductiveBecomeProp]. This exception will be caught
-   in late wrappers around the exported functions of this file,
-   in order to display the location of the issue. *)
 
 let type_of env sg c =
   Retyping.get_type_of env sg (Termops.strip_outer_cast sg c)
@@ -387,11 +381,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
   match lookup_ind kn mib with
   | Some ml_ind -> ml_ind
   | None ->
-     try
-       extract_really_ind env kn mib
-     with SingletonInductiveBecomesProp id ->
-       (* TODO : which inductive is concerned in the block ? *)
-       error_singleton_become_prop id (Some (GlobRef.IndRef (kn,0)))
+     extract_really_ind env kn mib
 
 (* Then the real function *)
 
@@ -1123,13 +1113,12 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   in
   for i = 0 to n-1 do
     if info_of_family (sort_of env sg ti.(i)) != Logic then
-      try
+      begin
         let e,t = extract_std_constant env sg vkn.(i)
                    (EConstr.Vars.substl sub ci.(i)) ti.(i) in
         terms.(i) <- e;
-        types.(i) <- t;
-      with SingletonInductiveBecomesProp id ->
-        error_singleton_become_prop id (Some (GlobRef.ConstRef vkn.(i)))
+        types.(i) <- t
+      end
   done;
   current_fixpoints := [];
   Dfix (Array.map (fun kn -> GlobRef.ConstRef kn) vkn, terms, types)
@@ -1223,8 +1212,7 @@ let extract_constant env kn cb =
     let e,t = extract_std_constant env sg kn c typ in
     Dterm (r,e,t)
   in
-  try
-    match flag_of_type env sg typ with
+  match flag_of_type env sg typ with
     | (Logic,TypeScheme) -> warn_log ();
         let s,vl = type_sign_vl env sg typ in
         Dtype (r, vl, Tdummy Ktype)
@@ -1255,15 +1243,12 @@ let extract_constant env kn cb =
             add_opaque r;
             if access_opaque () then mk_def (get_opaque env c)
             else mk_ax ())
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id (Some (GlobRef.ConstRef kn))
 
 let extract_constant_spec env kn cb =
   let sg = Evd.from_env env in
   let r = GlobRef.ConstRef kn in
   let typ = EConstr.of_constr cb.const_type in
-  try
-    match flag_of_type env sg typ with
+  match flag_of_type env sg typ with
     | (Logic, TypeScheme) ->
         let s,vl = type_sign_vl env sg typ in
         Stype (r, vl, Some (Tdummy Ktype))
@@ -1280,34 +1265,26 @@ let extract_constant_spec env kn cb =
     | (Info, Default) ->
         let t = snd (record_constant_type env sg kn (Some typ)) in
         Sval (r, type_expunge env t)
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id (Some (GlobRef.ConstRef kn))
 
 let extract_with_type env sg c =
-  try
-    let typ = type_of env sg c in
-    match flag_of_type env sg typ with
+  let typ = type_of env sg c in
+  match flag_of_type env sg typ with
     | (Info, TypeScheme) ->
         let s,vl = type_sign_vl env sg typ in
         let db = db_from_sign s in
         let t = extract_type_scheme env sg db c (List.length s) in
         Some (vl, t)
     | (Info, Default) | (Logic, _) -> None
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id None
 
 let extract_constr env sg c =
   reset_meta_count ();
-  try
-    let typ = type_of env sg c in
-    match flag_of_type env sg typ with
+  let typ = type_of env sg c in
+  match flag_of_type env sg typ with
     | (_,TypeScheme) -> MLdummy Ktype, Tdummy Ktype
     | (Logic,_) -> MLdummy Kprop, Tdummy Kprop
     | (Info,Default) ->
        let mlt = extract_type env sg [] 1 typ [] in
        extract_term env sg Mlenv.empty mlt c [], mlt
-  with SingletonInductiveBecomesProp id ->
-    error_singleton_become_prop id None
 
 let extract_inductive env kn =
   let ind = extract_ind env kn in
