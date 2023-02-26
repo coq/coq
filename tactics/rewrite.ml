@@ -188,9 +188,21 @@ let decompose_app_rel_error env evd t =
   | Some e -> e
   | None -> error_no_relation ()
 
-let decompose_applied_relation env sigma (c,l) =
+let filter_env env sigma clause =
+  match clause with
+  | None -> env
+  | Some id ->
+    (* Only consider variables not depending on [id] *)
+    let ctx = named_context env in
+    let filter decl = (not (Names.Id.equal (Context.Named.Declaration.get_id decl) id)) &&
+                      not (occur_var_in_decl env sigma id decl) in
+    let nctx = List.filter filter ctx in
+    Environ.reset_with_named_context (val_of_named_context nctx) env
+
+let decompose_applied_relation ?clause env sigma (c,l) =
   let open Context.Rel.Declaration in
   let ctype = Retyping.get_type_of env sigma c in
+  let env = filter_env env sigma clause in
   let find_rel ty =
     let sigma, cl = EClause.make_evar_clause env sigma ty in
     let sigma = EClause.solve_evar_clause env sigma true cl l in
@@ -1558,17 +1570,6 @@ let newfail n s =
   let info = Exninfo.reify () in
   Proofview.tclZERO ~info (Tacticals.FailError (n, lazy s))
 
-let filter_env env sigma clause =
-  match clause with
-  | None -> env
-  | Some id ->
-    (* Only consider variables not depending on [id] *)
-    let ctx = named_context env in
-    let filter decl = (not (Names.Id.equal (Context.Named.Declaration.get_id decl) id)) &&
-                      not (occur_var_in_decl env sigma id decl) in
-    let nctx = List.filter filter ctx in
-    Environ.reset_with_named_context (val_of_named_context nctx) env
-
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
   (* For compatibility *)
@@ -1870,8 +1871,7 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
 let get_hyp gl (c,l) clause l2r =
   let evars = Tacmach.project gl in
   let env = Tacmach.pf_env gl in
-  let sigma, hi = decompose_applied_relation env evars (c,l) in
-  let env = filter_env env evars clause in
+  let sigma, hi = decompose_applied_relation ?clause env evars (c,l) in
   let but = match clause with
     | Some id -> Tacmach.pf_get_hyp_typ id gl
     | None -> Reductionops.nf_evar evars (Tacmach.pf_concl gl)
