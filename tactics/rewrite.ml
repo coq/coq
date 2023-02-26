@@ -1558,6 +1558,17 @@ let newfail n s =
   let info = Exninfo.reify () in
   Proofview.tclZERO ~info (Tacticals.FailError (n, lazy s))
 
+let filter_env env sigma clause =
+  match clause with
+  | None -> env
+  | Some id ->
+    (* Only consider variables not depending on [id] *)
+    let ctx = named_context env in
+    let filter decl = (not (Names.Id.equal (Context.Named.Declaration.get_id decl) id)) &&
+                      not (occur_var_in_decl env sigma id decl) in
+    let nctx = List.filter filter ctx in
+    Environ.reset_with_named_context (val_of_named_context nctx) env
+
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
   (* For compatibility *)
@@ -1612,15 +1623,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
     | None -> concl
     | Some id -> EConstr.of_constr (Environ.named_type id env)
     in
-    let env = match clause with
-    | None -> env
-    | Some id ->
-      (* Only consider variables not depending on [id] *)
-      let ctx = named_context env in
-      let filter decl = not (occur_var_in_decl env sigma id decl) in
-      let nctx = List.filter filter ctx in
-      Environ.reset_with_named_context (val_of_named_context nctx) env
-    in
+    let env = filter_env env sigma clause in
     try
       let res =
         cl_rewrite_clause_aux ?abs strat env Id.Set.empty sigma ty clause
@@ -1654,7 +1657,7 @@ let cl_rewrite_clause_strat progress strat clause =
 (** Setoid rewriting when called with "setoid_rewrite" *)
 let cl_rewrite_clause l left2right occs clause =
   let strat = rewrite_with left2right (general_rewrite_unif_flags ()) l occs in
-    cl_rewrite_clause_strat true strat clause
+  cl_rewrite_clause_strat true strat clause
 
 (** Setoid rewriting when called with "rewrite_strat" *)
 let cl_rewrite_clause_strat strat clause =
@@ -1868,6 +1871,7 @@ let get_hyp gl (c,l) clause l2r =
   let evars = Tacmach.project gl in
   let env = Tacmach.pf_env gl in
   let sigma, hi = decompose_applied_relation env evars (c,l) in
+  let env = filter_env env evars clause in
   let but = match clause with
     | Some id -> Tacmach.pf_get_hyp_typ id gl
     | None -> Reductionops.nf_evar evars (Tacmach.pf_concl gl)
@@ -1892,13 +1896,12 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
   in
   let origsigma = Tacmach.project gl in
   tactic_init_setoid () <*>
-    Proofview.tclOR
-      (tclPROGRESS
-        (tclTHEN
-           (Proofview.Unsafe.tclEVARS evd)
-            (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
-    (fun (e, info) -> match e with
-    | e -> Proofview.tclZERO ~info e)
+  Proofview.tclOR
+    (tclPROGRESS
+       (tclTHEN
+          (Proofview.Unsafe.tclEVARS evd)
+          (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
+    (fun (e, info) -> Proofview.tclZERO ~info e)
   end
 
 let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
