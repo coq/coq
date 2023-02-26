@@ -107,21 +107,7 @@ let with_succeed ~st f =
 let locate_if_not_already ?loc (e, info) =
   (e, Option.cata (Loc.add_loc info) info (real_error_loc ~cmdloc:loc ~eloc:(Loc.get_loc info)))
 
-let mk_time_header =
-  (* Drop the time header to print the command, we should indeed use a
-     different mechanism to `-time` commands than the current hack of
-     adding a time control to the AST. *)
-  let pr_time_header vernac =
-    let vernac = match vernac with
-      | { CAst.v = { control = ControlTime _ :: control; attrs; expr }; loc } ->
-        CAst.make ?loc { control; attrs; expr }
-      | _ -> vernac
-    in
-    Topfmt.pr_cmd_header vernac
-  in
-  fun vernac -> Lazy.from_fun (fun () -> pr_time_header vernac)
-
-let interp_control_flag ~loc ~time_header (f : control_flag) ~st
+let interp_control_flag ~loc (f : control_flag) ~st
     (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option * Declare.OblState.t NeList.t) =
   match f with
   | ControlFail ->
@@ -132,9 +118,8 @@ let interp_control_flag ~loc ~time_header (f : control_flag) ~st
     st.Vernacstate.lemmas, st.Vernacstate.program
   | ControlTimeout timeout ->
     vernac_timeout ~timeout (fun () -> fn ~st) ()
-  | ControlTime batch ->
-    let header = if batch then Lazy.force time_header  else Pp.mt () in
-    System.with_time ~batch ~header (fun () -> fn ~st) ()
+  | ControlTime ->
+    System.with_time (fun () -> fn ~st) ()
   | ControlRedirect s ->
     Topfmt.with_output_to_file s (fun () -> fn ~st) ()
 
@@ -212,9 +197,8 @@ and vernac_load ~verbosely fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   stack, pm
 
-and interp_control ~st ({ CAst.v = cmd; loc } as vernac) =
-  let time_header = mk_time_header vernac in
-  List.fold_right (fun flag fn -> interp_control_flag ~loc ~time_header flag fn)
+and interp_control ~st ({ CAst.v = cmd; loc }) =
+  List.fold_right (fun flag fn -> interp_control_flag ~loc flag fn)
     cmd.control
     (fun ~st ->
        let before_univs = Global.universes () in
@@ -251,8 +235,7 @@ let interp_qed_delayed ~proof ~st pe =
   stack, pm
 
 let interp_qed_delayed_control ~proof ~st ~control { CAst.loc; v=pe } =
-  let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in
-  List.fold_right (fun flag fn -> interp_control_flag ~loc ~time_header flag fn)
+  List.fold_right (fun flag fn -> interp_control_flag ~loc flag fn)
     control
     (fun ~st -> interp_qed_delayed ~proof ~st pe)
     ~st

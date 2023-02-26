@@ -49,15 +49,13 @@ module State = struct
 
 end
 
+let emit_time state com tstart tend =
+  if state.State.time then Feedback.msg_notice (Topfmt.pr_cmd_header com ++ System.fmt_time_difference tstart tend)
+
 let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
   let open State in
+    let tstart = System.get_time () in
     try
-      (* The -time option is only supported from console-based clients
-         due to the way it prints. *)
-      let com = if state.time
-        then begin
-          CAst.map (fun cmd -> { cmd with control = ControlTime state.time :: cmd.control }) com
-        end else com in
       let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
 
       (* Main STM interaction *)
@@ -66,10 +64,16 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
 
       (* Force the command  *)
       let () = if check then Stm.observe ~doc nsid in
+      let tend = System.get_time () in
+      (* The -time option is only supported from console-based clients
+         due to the way it prints. *)
+      emit_time state com tstart tend;
       let new_proof = Vernacstate.Declare.give_me_the_proof_opt () [@ocaml.warning "-3"] in
       { state with doc; sid = nsid; proof = new_proof; }
     with reraise ->
       let (reraise, info) = Exninfo.capture reraise in
+      let tend = System.get_time () in
+      emit_time state com tstart tend;
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
       let reraise = if interactive then begin
