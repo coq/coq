@@ -59,7 +59,7 @@ val relevance_of_inductive : env -> inductive -> Sorts.relevance
 val type_of_inductive : mind_specif puniverses -> types
 
 val type_of_inductive_knowing_parameters :
-  ?polyprop:bool -> mind_specif puniverses -> param_univs -> types
+  mind_specif puniverses -> param_univs -> types
 
 val elim_sort : mind_specif -> Sorts.family
 
@@ -139,14 +139,5 @@ val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
 
 (** {6 Support for sort-polymorphic inductive types } *)
-
-(** The "polyprop" optional argument below controls
-    the "Prop-polymorphism". By default, it is allowed.
-    But when "polyprop=false", the following exception is raised
-    when a polymorphic singleton inductive type becomes Prop due to
-    parameter instantiation. This is used by the Ocaml extraction,
-    which cannot handle (yet?) Prop-polymorphism. *)
-
-exception SingletonInductiveBecomesProp of Id.t
 
 val abstract_mind_lc : int -> int -> MutInd.t -> (rel_context * constr) array -> constr array

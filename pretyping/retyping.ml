@@ -132,7 +132,7 @@ let type_of_constant env sigma (c,u) =
   let ty = CVars.subst_instance_constr (EConstr.Unsafe.to_instance u) cb.const_type in
   EConstr.of_constr (rename_type ty (GlobRef.ConstRef c))
 
-let retype ?(polyprop=true) sigma =
+let retype sigma =
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with
     | Meta n ->
@@ -218,8 +218,7 @@ let retype ?(polyprop=true) sigma =
       let mip = lookup_mind_specif env ind in
       let paramtyps = make_param_univs env sigma (ind,u) args in
       EConstr.of_constr
-        (Inductive.type_of_inductive_knowing_parameters
-           ~polyprop (mip, u) paramtyps)
+        (Inductive.type_of_inductive_knowing_parameters (mip, u) paramtyps)
     | Construct (cstr, u) ->
       let u = EInstance.kind sigma u in
       EConstr.of_constr (type_of_constructor env (cstr, u))
@@ -238,8 +237,8 @@ let retype ?(polyprop=true) sigma =
 
   in type_of, sort_of, type_of_global_reference_knowing_parameters
 
-let get_sort_family_of ?(polyprop=true) env sigma t =
-  let type_of,_,type_of_global_reference_knowing_parameters = retype ~polyprop sigma in
+let get_sort_family_of env sigma t =
+  let type_of,_,type_of_global_reference_knowing_parameters = retype sigma in
   let rec sort_family_of env t =
     match EConstr.kind sigma t with
     | Cast (c,_, s) when isSort sigma s -> ESorts.family sigma (destSort sigma s)
@@ -258,8 +257,8 @@ let get_sort_family_of ?(polyprop=true) env sigma t =
       ESorts.family sigma (decomp_sort env sigma (type_of env t))
   in sort_family_of env t
 
-let get_sort_of ?(polyprop=true) env sigma t =
-  let _,f,_ = retype ~polyprop sigma in anomaly_on_error (f env) t
+let get_sort_of env sigma t =
+  let _,f,_ = retype sigma in anomaly_on_error (f env) t
 let type_of_global_reference_knowing_parameters env sigma c args =
   let _,_,f = retype sigma in anomaly_on_error (f env c) args
 
@@ -275,8 +274,8 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
     | Construct (cstr, u) -> sigma, EConstr.of_constr (type_of_constructor env (cstr, EInstance.kind sigma u))
     | _ -> assert false
 
-let get_type_of ?(polyprop=true) ?(lax=false) env sigma c =
-  let f,_,_ = retype ~polyprop sigma in
+let get_type_of ?(lax=false) env sigma c =
+  let f,_,_ = retype sigma in
     if lax then f env c else anomaly_on_error (f env) c
 
 let rec check_named env sigma c =
@@ -304,8 +303,8 @@ let reinterpret_get_type_of ~src env sigma c =
 (* Makes an unsafe judgment from a constr *)
 let get_judgment_of env evc c = { uj_val = c; uj_type = get_type_of env evc c }
 
-let get_type_of_constr ?polyprop ?lax env ?(uctx=UState.from_env env) c =
-  EConstr.Unsafe.to_constr (get_type_of ?polyprop ?lax env (Evd.from_ctx uctx) (EConstr.of_constr c))
+let get_type_of_constr ?lax env ?(uctx=UState.from_env env) c =
+  EConstr.Unsafe.to_constr (get_type_of ?lax env (Evd.from_ctx uctx) (EConstr.of_constr c))
 
 (* Returns sorts of a context *)
 let sorts_of_context env evc ctxt =
