@@ -91,7 +91,7 @@ GRAMMAR EXTEND Gram
   GLOBAL: vernac_control quoted_attributes gallina_ext noedit_mode subprf;
   vernac_control: FIRST
     [ [ IDENT "Time"; c = vernac_control ->
-        { add_control_flag ~loc ~flag:(ControlTime false) c }
+        { add_control_flag ~loc ~flag:ControlTime c }
       | IDENT "Redirect"; s = ne_string; c = vernac_control ->
         { add_control_flag ~loc ~flag:(ControlRedirect s) c }
       | IDENT "Timeout"; n = natural; c = vernac_control ->
