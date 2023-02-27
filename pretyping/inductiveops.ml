@@ -16,7 +16,6 @@ open Term
 open Constr
 open Vars
 open Context
-open Termops
 open Declarations
 open Declareops
 open Environ
@@ -614,79 +613,6 @@ let find_coinductive env sigma c =
         (ind, l)
     | _ -> raise Not_found
 
-
-(***********************************************)
-(* find appropriate names for pattern variables. Useful in the Case
-   and Inversion (case_then_using et case_nodep_then_using) tactics. *)
-
-let is_predicate_explicitly_dep env sigma pred arsign =
-  let rec srec env pval arsign =
-    let pv' = whd_all env sigma pval in
-    match EConstr.kind sigma pv', arsign with
-      | Lambda (na,t,b), (LocalAssum _)::arsign ->
-          srec (push_rel_assum (na, t) env) b arsign
-      | Lambda (na,_,t), _ ->
-
-       (* The following code has an impact on the introduction names
-          given by the tactics "case" and "inversion": when the
-          elimination is not dependent, "case" uses Anonymous for
-          inductive types in Prop and names created by mkProd_name for
-          inductive types in Set/Type while "inversion" uses anonymous
-          for inductive types both in Prop and Set/Type !!
-
-          Previously, whether names were created or not relied on
-          whether the predicate created in Indrec.make_case_com had a
-          dependent arity or not. To avoid different predicates
-          printed the same in v8, all predicates built in indrec.ml
-          got a dependent arity (Aug 2004). The new way to decide
-          whether names have to be created or not is to use an
-          Anonymous or Named variable to enforce the expected
-          dependency status (of course, Anonymous implies non
-          dependent, but not conversely).
-
-          From Coq > 8.2, using or not the effective dependency of
-          the predicate is parametrable! *)
-
-          begin match na.binder_name with
-          | Anonymous -> false
-          | Name _ -> true
-          end
-
-      | _ -> anomaly (Pp.str "Non eta-expanded dep-expanded \"match\" predicate.")
-  in
-  srec env (EConstr.of_constr pred) arsign
-
-let is_elim_predicate_explicitly_dependent env sigma pred indf =
-  let arsign,_ = get_arity env indf in
-  is_predicate_explicitly_dep env sigma pred arsign
-
-let set_names env sigma n brty =
-  let open EConstr in
-  let (ctxt,cl) = decompose_prod_n_decls sigma n brty in
-  Namegen.it_mkProd_or_LetIn_name env sigma cl ctxt
-
-let set_pattern_names env sigma ind brv =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let arities =
-    Array.map
-      (fun (d, _) -> List.length d - mib.mind_nparams)
-      mip.mind_nf_lc in
-  Array.map2 (set_names env sigma) arities brv
-
-let type_case_branches_with_names env sigma indspec p c =
-  let (ind,args) = indspec in
-  let args = List.map EConstr.Unsafe.to_constr args in
-  let (mib,mip as specif) = Inductive.lookup_mind_specif env (fst ind) in
-  let nparams = mib.mind_nparams in
-  let (params,realargs) = List.chop nparams args in
-  let lbrty = Inductive.build_branches_type ind specif params p in
-  let lbrty = Array.map EConstr.of_constr lbrty in
-  (* Build case type *)
-  let conclty = lambda_appvect_decls (mip.mind_nrealdecls+1) p (Array.of_list (realargs@[c])) in
-  (* Adjust names *)
-  if is_elim_predicate_explicitly_dependent env sigma p (ind,params) then
-    (set_pattern_names env sigma (fst ind) lbrty, conclty)
-  else (lbrty, conclty)
 
 (* Type of Case predicates *)
 let arity_of_case_predicate env (ind,params) dep k =
