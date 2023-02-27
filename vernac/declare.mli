@@ -530,9 +530,9 @@ val obligation :
   -> Genarg.glob_generic_argument option
   -> Proof.t
 
-(** Implementation of the [Next Obligation] command *)
+(** Implementation of the [Next Obligation] and [Final Obligation] commands *)
 val next_obligation :
-  pm:OblState.t -> Names.Id.t option -> Genarg.glob_generic_argument option -> Proof.t
+  pm:OblState.t -> ?final:bool -> Names.Id.t option -> Genarg.glob_generic_argument option -> Proof.t
 
 (** Implementation of the [Solve Obligation] command *)
 val solve_obligations :

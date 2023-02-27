@@ -983,6 +983,7 @@ command: [
 | "Declare" "Scope" scope_name
 | "Obligation" natural OPT ( "of" ident ) OPT ( ":" type OPT ( "with" ltac_expr ) )
 | "Next" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
+| "Final" "Obligation" OPT ( "of" ident ) OPT ( "with" ltac_expr )
 | "Solve" "Obligations" OPT ( "of" ident ) OPT ( "with" ltac_expr )
 | "Solve" "All" "Obligations" OPT ( "with" ltac_expr )
 | "Admit" "Obligations" OPT ( "of" ident )
