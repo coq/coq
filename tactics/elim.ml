@@ -26,25 +26,26 @@ type branch_args = {
 
 type elim_kind = Case of bool | Elim
 
+let is_case = function Case _ -> true | Elim -> false
+
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
-let general_elim_then_using mk_elim
-    allnames tac predicate (ind, u, args) id =
+let general_elim_using mk_elim predicate (ind, u, args) id =
   let open Pp in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sort = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
-    let sigma, elim, elimt, rec_flag = match mk_elim with
+    let sigma, elim, elimt = match mk_elim with
     | Case dep ->
       let u = EInstance.kind sigma u in
       let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u) dep sort in
       let r, t = Indrec.eval_case_analysis c in
-      (sigma, r, t, false)
+      (sigma, r, t)
     | Elim ->
       let gr = Indrec.lookup_eliminator env ind sort in
       let sigma, r = Evd.fresh_global env sigma gr in
-      (sigma, r, Retyping.get_type_of env sigma r, true)
+      (sigma, r, Retyping.get_type_of env sigma r)
     in
     let is_case = match mk_elim with Elim -> false | Case _ -> true in
     (* applying elimination_scheme just a little modified *)
@@ -62,24 +63,29 @@ let general_elim_then_using mk_elim
         (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
-    let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
-    let brnames = Tacticals.compute_induction_names false branchsigns allnames in
     let flags = Unification.elim_flags () in
     let elimclause' =
       match predicate with
       | None   -> elimclause'
       | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
     in
+    if is_case then Clenv.case_pf ~flags elimclause' else Clenv.res_pf ~flags elimclause'
+  end
+
+let general_elim_then_using mk_elim allnames tac predicate (ind, u, _ as spec) id =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let rec_flag = not (is_case mk_elim) in
+    let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
+    let brnames = Tacticals.compute_induction_names false branchsigns allnames in
     let after_tac i =
-      let ba = { branchnames = brnames.(i);
-                  nassums = List.length branchsigns.(i); }
-      in
+      let ba = { branchnames = brnames.(i); nassums = List.length branchsigns.(i); } in
       tac ba
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
-    Proofview.tclTHEN
-      (if is_case then Clenv.case_pf ~flags elimclause' else Clenv.res_pf ~flags elimclause')
-      (Proofview.tclEXTEND [] tclIDTAC branchtacs)
+    general_elim_using mk_elim predicate spec id <*>
+    (Proofview.tclEXTEND [] tclIDTAC branchtacs)
   end
 
 (* computing the case/elim combinators *)
