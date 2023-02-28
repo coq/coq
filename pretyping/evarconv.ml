@@ -64,12 +64,12 @@ let unit_judge_fallback =
     (mkProd (na1,mkProp,mkArrow (mkRel 1) Sorts.Relevant (mkRel 2)))
 
 let coq_unit_judge env sigma =
-  match Coqlib.lib_ref "core.IDProp.idProp" with
-  | c ->
+  match Coqlib.lib_ref_opt "core.IDProp.idProp" with
+  | Some c ->
     let sigma, c = Evd.fresh_global env sigma c in
     let t = Retyping.get_type_of env sigma c in
     sigma, make_judge c t
-  | exception _ -> sigma, unit_judge_fallback
+  | None -> sigma, unit_judge_fallback
 
 let unfold_projection env evd ts p c =
   let cst = Projection.constant p in

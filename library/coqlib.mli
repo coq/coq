@@ -31,9 +31,14 @@ open Names
 (** Registers a global reference under the given name. *)
 val register_ref : string -> GlobRef.t -> unit
 
+exception NotFoundRef of string
+
 (** Retrieves the reference bound to the given name (by a previous call to {!register_ref}).
-    Raises an error if no reference is bound to this name. *)
+    Raises [NotFoundRef] if no reference is bound to this name. *)
 val lib_ref : string -> GlobRef.t
+
+(** As [lib_ref] but returns [None] instead of raising. *)
+val lib_ref_opt : string -> GlobRef.t option
 
 (** Checks whether a name refers to a registered constant.
     For any name [n], if [has_ref n] returns [true], [lib_ref n] will succeed. *)
