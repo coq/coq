@@ -375,7 +375,7 @@ let parse_args ~usage ~init arglist : t * string list =
       { oval with config = {oval.config with native_include_dirs = include_dir :: oval.config.native_include_dirs } }
 
     (* Options with zero arg *)
-    |"-test-mode" -> Vernacinterp.test_mode := true; oval
+    |"-test-mode" -> Synterp.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-config"|"--config" -> set_query oval PrintConfig
 

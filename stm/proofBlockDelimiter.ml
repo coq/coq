@@ -49,7 +49,7 @@ let simple_goal sigma g gs =
 let is_focused_goal_simple ~doc id =
   match state_of_id ~doc id with
   | Expired | Error _ | Valid None -> `Not
-  | Valid (Some { Vernacstate.lemmas }) ->
+  | Valid (Some { interp = { Vernacstate.Interp.lemmas } }) ->
     Option.cata (Vernacstate.LemmaStack.with_top ~f:(fun proof ->
         let proof = Declare.Proof.get proof in
         let Proof.{ goals=focused; stack=r1; sigma } = Proof.data proof in
@@ -81,7 +81,7 @@ let static_bullet ({ entry_point; prev_node } as view) =
   let open Vernacexpr in
   assert (not (Vernacprop.has_query_control entry_point.ast));
   match entry_point.ast.CAst.v.expr with
-  | VernacBullet b ->
+  | VernacSynPure (VernacBullet b) ->
       let base = entry_point.indentation in
       let last_tac = prev_node entry_point in
       crawl view ~init:last_tac (fun prev node ->
@@ -89,7 +89,7 @@ let static_bullet ({ entry_point; prev_node } as view) =
         if node.indentation > base then `Cont node else
         if Vernacprop.has_query_control node.ast then `Stop
         else match node.ast.CAst.v.expr with
-        | VernacBullet b' when b = b' ->
+        | VernacSynPure (VernacBullet b') when b = b' ->
           `Found { block_stop = entry_point.id; block_start = prev.id;
                    dynamic_switch = node.id; carry_on_data = of_bullet_val b }
         | _ -> `Stop) entry_point
@@ -101,7 +101,7 @@ let dynamic_bullet doc { dynamic_switch = id; carry_on_data = b } =
       ValidBlock {
          base_state = id;
          goals_to_admit = focused;
-         recovery_command = Some (CAst.make Vernacexpr.{ control = []; attrs = []; expr = VernacBullet (to_bullet_val b)})
+         recovery_command = Some (CAst.make Vernacexpr.{ control = []; attrs = []; expr = VernacSynPure (VernacBullet (to_bullet_val b))})
       }
   | `Not -> Leaks
 
@@ -112,16 +112,16 @@ let () = register_proof_block_delimiter
 
 let static_curly_brace ({ entry_point; prev_node } as view) =
   let open Vernacexpr in
-  assert(entry_point.ast.CAst.v.expr = VernacEndSubproof);
+  assert(entry_point.ast.CAst.v.expr = VernacSynPure VernacEndSubproof);
   crawl view (fun (nesting,prev) node ->
     if Vernacprop.has_query_control node.ast then `Cont (nesting,node)
     else match node.ast.CAst.v.expr with
-    | VernacSubproof _ when nesting = 0 ->
+    | VernacSynPure (VernacSubproof _) when nesting = 0 ->
       `Found { block_stop = entry_point.id; block_start = prev.id;
                dynamic_switch = node.id; carry_on_data = unit_val }
-    | VernacSubproof _ ->
+    | VernacSynPure (VernacSubproof _) ->
       `Cont (nesting - 1,node)
-    | VernacEndSubproof ->
+    | VernacSynPure VernacEndSubproof ->
       `Cont (nesting + 1,node)
     | _ -> `Cont (nesting,node)) (-1, entry_point)
 
@@ -131,7 +131,7 @@ let dynamic_curly_brace doc { dynamic_switch = id } =
       ValidBlock {
          base_state = id;
          goals_to_admit = focused;
-         recovery_command = Some (CAst.make Vernacexpr.{ control = []; attrs = []; expr = VernacEndSubproof })
+         recovery_command = Some (CAst.make Vernacexpr.{ control = []; attrs = []; expr = VernacSynPure VernacEndSubproof })
       }
   | `Not -> Leaks
 

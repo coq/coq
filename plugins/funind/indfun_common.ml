@@ -467,9 +467,9 @@ type tcc_lemma_value = Undefined | Value of constr | Not_needed
 
 (* We only "purify" on exceptions. XXX: What is this doing here? *)
 let funind_purify f x =
-  let st = Vernacstate.freeze_interp_state ~marshallable:false in
+  let st = Vernacstate.freeze_full_state ~marshallable:false in
   try f x
   with e ->
     let e = Exninfo.capture e in
-    Vernacstate.unfreeze_interp_state st;
+    Vernacstate.unfreeze_full_state st;
     Exninfo.iraise e

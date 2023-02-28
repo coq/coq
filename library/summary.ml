@@ -35,7 +35,8 @@ module DynMap = Dyn.Map(Decl)
 type ml_modules = (string option * string) list
 
 let sum_mod : ml_modules summary_declaration option ref = ref None
-let sum_map = ref DynMap.empty
+let sum_map_synterp = ref DynMap.empty
+let sum_map_interp = ref DynMap.empty
 
 let mangle id = id ^ "-SUMMARY"
 
@@ -52,6 +53,7 @@ let check_name sumname = match Dyn.name sumname with
 let declare_summary_tag sumname decl =
   let () = check_name (mangle sumname) in
   let tag = Dyn.create (mangle sumname) in
+  let sum_map = match decl.stage with Synterp -> sum_map_synterp | Interp -> sum_map_interp in
   let () = sum_map := DynMap.add tag decl !sum_map in
   tag
 
@@ -60,35 +62,25 @@ let declare_summary sumname decl =
 
 module ID = struct type 'a t = 'a end
 module Frozen = Dyn.Map(ID)
-
-type frozen = {
-  summaries : Frozen.t;
-  (** Ordered list w.r.t. the first component. *)
-  ml_module : ml_modules option;
-  (** Special handling of the ml_module summary. *)
-}
-
-let empty_frozen = { summaries = Frozen.empty; ml_module = None }
-
 module HMap = Dyn.HMap(Decl)(ID)
 
-let freeze_staged_summaries stage ~marshallable : frozen =
-  let filter = { HMap.filter = fun tag decl -> Stage.equal decl.stage stage } in
-  let map = { HMap.map = fun tag decl -> decl.freeze_function ~marshallable } in
-  { summaries = HMap.map map (HMap.filter filter !sum_map);
-    ml_module =
-      match stage with
-      | Stage.Synterp ->
-        Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod
-      | _ ->
-        None;
-  }
+module type FrozenStage = sig
 
-let freeze_summaries ~marshallable : frozen =
+  (** The type [frozen] is a snapshot of the states of all the registered
+      tables of the system. *)
+
+  type frozen
+
+  val empty_frozen : frozen
+  val freeze_summaries : marshallable:bool -> frozen
+  val unfreeze_summaries : ?partial:bool -> frozen -> unit
+  val init_summaries : unit -> unit
+
+end
+
+let freeze_summaries ~marshallable sum_map =
   let map = { HMap.map = fun tag decl -> decl.freeze_function ~marshallable } in
-  { summaries = HMap.map map !sum_map;
-    ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
-  }
+  HMap.map map sum_map
 
 let warn_summary_out_of_scope =
   let name = "summary-out-of-scope" in
@@ -100,13 +92,7 @@ let warn_summary_out_of_scope =
       name)
     )
 
-let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
-  (* The unfreezing of [ml_modules_summary] has to be anticipated since it
-   * may modify the content of [summaries] by loading new ML modules *)
-  begin match !sum_mod with
-  | None -> CErrors.anomaly Pp.(str "Undeclared ML-MODULES summary.")
-  | Some decl -> Option.iter decl.unfreeze_function ml_module
-  end;
+let unfreeze_summaries ?(partial=false) sum_map summaries =
   (* We must be independent on the order of the map! *)
   let ufz (DynMap.Any (name, decl)) =
     try decl.unfreeze_function Frozen.(find name summaries)
@@ -114,31 +100,76 @@ let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
       if not partial then begin
         warn_summary_out_of_scope (Dyn.repr name);
         decl.init_function ()
-      end;
+      end
   in
-  (* String.Map.iter unfreeze_single !sum_map *)
-  DynMap.iter ufz !sum_map
+  DynMap.iter ufz sum_map
 
-let init_summaries () =
-  DynMap.iter (fun (DynMap.Any (_, decl)) -> decl.init_function ()) !sum_map
+let init_summaries sum_map =
+  DynMap.iter (fun (DynMap.Any (_, decl)) -> decl.init_function ()) sum_map
+
+module Synterp = struct
+
+  type frozen =
+    {
+        summaries : Frozen.t;
+        (** Ordered list w.r.t. the first component. *)
+        ml_module : ml_modules option;
+        (** Special handling of the ml_module summary. *)
+    }
+
+  let empty_frozen = { summaries = Frozen.empty; ml_module = None }
+
+  let freeze_summaries ~marshallable =
+    let summaries = freeze_summaries ~marshallable !sum_map_synterp in
+    { summaries; ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod }
+
+  let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
+    (* The unfreezing of [ml_modules_summary] has to be anticipated since it
+    * may modify the content of [summaries] by loading new ML modules *)
+    begin match !sum_mod with
+    | None -> CErrors.anomaly Pp.(str "Undeclared ML-MODULES summary.")
+    | Some decl -> Option.iter decl.unfreeze_function ml_module
+    end;
+    unfreeze_summaries ~partial !sum_map_synterp summaries
+
+  let init_summaries () =
+    init_summaries !sum_map_synterp
+
+end
+
+module Interp = struct
+
+type frozen = Frozen.t
+
+let empty_frozen = Frozen.empty
+
+  let freeze_summaries ~marshallable =
+    freeze_summaries ~marshallable !sum_map_interp
+
+  let unfreeze_summaries ?(partial=false) summaries =
+    unfreeze_summaries ~partial !sum_map_interp summaries
+
+  let init_summaries () =
+    init_summaries !sum_map_interp
+
+  (** Summary projection *)
+  let project_from_summary summaries tag =
+    Frozen.find tag summaries
+
+  let modify_summary summaries tag v =
+    let () = assert (Frozen.mem tag summaries) in
+    Frozen.add tag v summaries
+
+  let remove_from_summary summaries tag =
+    let () = assert (Frozen.mem tag summaries) in
+    Frozen.remove tag summaries
+
+end
 
 (** For global tables registered statically before the end of coqtop
     launch, the following empty [init_function] could be used. *)
 
 let nop () = ()
-
-(** Summary projection *)
-let project_from_summary { summaries } tag =
-  Frozen.find tag summaries
-
-let modify_summary st tag v =
-  let () = assert (Frozen.mem tag st.summaries) in
-  let summaries = Frozen.add tag v st.summaries in
-  {st with summaries}
-
-let remove_from_summary st tag =
-  let summaries = Frozen.remove tag st.summaries in
-  {st with summaries}
 
 (** All-in-one reference declaration + registration *)
 
@@ -162,7 +193,11 @@ let set (r, tag) v = r := CEphemeron.create v
 let get (key, name) =
   try CEphemeron.get !key
   with CEphemeron.InvalidKey ->
-    let { init_function } = DynMap.find name !sum_map in
+    let { init_function } =
+      try DynMap.find name !sum_map_synterp
+        with Not_found ->
+          DynMap.find name !sum_map_interp
+    in
     init_function ();
     CEphemeron.get !key
 
@@ -170,6 +205,7 @@ let ref (type a) ?(stage=Stage.Interp) ~name (init : a) : a local_ref =
   let () = check_name (mangle name) in
   let tag : a CEphemeron.key Dyn.tag = Dyn.create (mangle name) in
   let r = Util.pervasives_ref (CEphemeron.create init) in
+  let sum_map = match stage with Synterp -> sum_map_synterp | Interp -> sum_map_interp in
   let () = sum_map := DynMap.add tag
     { stage;
       freeze_function = (fun ~marshallable -> !r);

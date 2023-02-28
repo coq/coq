@@ -45,7 +45,7 @@ val in_debugger : bool ref
 val in_toplevel : bool ref
 
 (* development flag to detect race conditions, it should go away. *)
-val we_are_parsing : bool ref
+val in_synterp_phase : bool ref
 
 (* Set Printing All flag. For some reason it is a global flag *)
 val raw_print : bool ref

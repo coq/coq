@@ -225,7 +225,7 @@ let warn_deprecated_command =
 
 (* Interpretation of a vernac command *)
 
-let type_vernac opn converted_args ?loc ~atts () =
+let type_vernac opn converted_args ?loc ~atts =
   let depr, callback = vinterp_map opn in
   let () = if depr then
       let rules = Egramml.get_extend_vernac_rule opn in
@@ -236,8 +236,7 @@ let type_vernac opn converted_args ?loc ~atts () =
       let pr = pr_sequence pr_gram rules in
       warn_deprecated_command pr;
   in
-  let hunk = callback converted_args in
-  hunk ?loc ~atts ()
+  callback converted_args ?loc ~atts
 
 (** VERNAC EXTEND registering *)
 

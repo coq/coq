@@ -108,13 +108,21 @@ val check_caml_version : caml:string -> file:string -> unit
 (** {6 Time stamps.} *)
 
 type time
+type duration
 
 val get_time : unit -> time
 val time_difference : time -> time -> float (** in seconds *)
 
-val fmt_time_difference : time -> time -> Pp.t
+val duration_between : start:time -> stop:time -> duration
+val duration_add : duration -> duration -> duration
+val duration_real : duration -> float
 
-val with_time : ('a -> 'b) -> 'a -> 'b
+val fmt_time_difference : time -> time -> Pp.t
+val fmt_duration : duration -> Pp.t
+
+type 'a transaction_result = (('a * duration), (Exninfo.iexn * duration)) Result.t
+val measure_duration : ('a -> 'b) -> 'a -> 'b transaction_result
+val fmt_transaction_result : 'a transaction_result -> Pp.t
 
 (** [get_toplevel_path program] builds a complete path to the
    executable denoted by [program]. This involves:

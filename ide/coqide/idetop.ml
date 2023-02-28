@@ -70,9 +70,9 @@ let coqide_known_option table = List.mem table [
   ["Diffs"]]
 
 let is_known_option cmd = match cmd with
-  | VernacSetOption (_, o, OptionSetTrue)
-  | VernacSetOption (_, o, OptionSetString _)
-  | VernacSetOption (_, o, OptionUnset) -> coqide_known_option o
+  VernacSynterp (VernacSetOption (_, o, OptionSetTrue)
+    | VernacSetOption (_, o, OptionSetString _)
+    | VernacSetOption (_, o, OptionUnset)) -> coqide_known_option o
   | _ -> false
 
 let ide_cmd_warns ~id { CAst.loc; v } =

@@ -1553,11 +1553,11 @@ let open_close_scope local ~to_open sc =
 (**********************************************************************)
 
 let with_lib_stk_protection f x =
-  let fs = Lib.freeze () in
-  try let a = f x in Lib.unfreeze fs; a
+  let fs = Lib.Interp.freeze () in
+  try let a = f x in Lib.Interp.unfreeze fs; a
   with reraise ->
     let reraise = Exninfo.capture reraise in
-    let () = Lib.unfreeze fs in
+    let () = Lib.Interp.unfreeze fs in
     Exninfo.iraise reraise
 
 let with_syntax_protection f x =

@@ -80,7 +80,7 @@ val add_include :
 val open_section : unit -> unit
 (** [poly] is true when the section should be universe polymorphic *)
 
-val close_section : Summary.frozen -> unit
+val close_section : Summary.Interp.frozen -> unit
 (** Close the section and reset the global state to the one at the time when
     the section what opened. *)
 
@@ -91,11 +91,11 @@ val sections_are_opened : unit -> bool
 val start_module : Id.t -> ModPath.t
 val start_modtype : Id.t -> ModPath.t
 
-val end_module : Summary.frozen -> Id.t ->
+val end_module : Summary.Interp.frozen -> Id.t ->
   (Entries.module_struct_entry * inline) option ->
     ModPath.t * MBId.t list * Mod_subst.delta_resolver
 
-val end_modtype : Summary.frozen -> Id.t -> ModPath.t * MBId.t list
+val end_modtype : Summary.Interp.frozen -> Id.t -> ModPath.t * MBId.t list
 
 val add_module_parameter :
   MBId.t -> Entries.module_struct_entry -> inline ->

@@ -343,17 +343,56 @@ type hints_expr =
   | HintsConstructors of Libnames.qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
-type nonrec vernac_expr =
-
+(** [synterp_vernac_expr] describes the AST of commands which have effects on
+    parsing or parsing extensions *)
+type synterp_vernac_expr =
   | VernacLoad of verbose_flag * string
-  (* Syntax *)
   | VernacReservedNotation of infix_flag * (lstring * syntax_modifier CAst.t list)
+  | VernacNotation of
+      infix_flag * notation_declaration
+  | VernacDeclareCustomEntry of string
+  | VernacBeginSection of lident
+  | VernacEndSegment of lident
+  | VernacRequire of
+      qualid option * export_with_cats option * (qualid * import_filter_expr) list
+  | VernacImport of export_with_cats * (qualid * import_filter_expr) list
+  (* Modules and Module Types *)
+  | VernacDeclareModule of export_with_cats option * lident *
+      module_binder list * module_ast_inl
+  | VernacDefineModule of export_with_cats option * lident * module_binder list *
+      module_ast_inl Declaremods.module_signature * module_ast_inl list
+  | VernacDeclareModuleType of lident *
+      module_binder list * module_ast_inl list * module_ast_inl list
+  | VernacInclude of module_ast_inl list
+
+  (* Auxiliary file and library management *)
+  | VernacAddLoadPath of { implicit : bool
+                         ; physical_path : CUnix.physical_path
+                         ; logical_path : DirPath.t
+                         }
+
+  | VernacRemoveLoadPath of string
+  | VernacAddMLPath of string
+  | VernacDeclareMLModule of string list
+  | VernacChdir of string option
+  | VernacExtraDependency of qualid * string * Id.t option
+
+  | VernacSetOption of bool (* Export modifier? *) * Goptions.option_name * option_setting
+  | VernacProofMode of string
+
+  (* For extension *)
+  | VernacExtend of extend_name * Genarg.raw_generic_argument list
+
+(** [synpure_vernac_expr] describes the AST of commands which have no effect on
+    parsing or parsing extensions. On these ASTs, the syntactic interpretation
+    phase is the identity. *)
+type nonrec synpure_vernac_expr =
+
+  (* Syntax *)
   | VernacOpenCloseScope of bool * scope_name
   | VernacDeclareScope of scope_name
   | VernacDelimiters of scope_name * string option
   | VernacBindScope of scope_name * coercion_class list
-  | VernacNotation of infix_flag * notation_declaration
-  | VernacDeclareCustomEntry of string
   | VernacEnableNotation of bool * (string, Id.t list * qualid) Util.union option * constr_expr option * notation_enable_modifier list * notation_with_optional_scope option
 
   (* Gallina *)
@@ -373,12 +412,6 @@ type nonrec vernac_expr =
   | VernacConstraint of univ_constraint_expr list
 
   (* Gallina extensions *)
-  | VernacBeginSection of lident
-  | VernacEndSegment of lident
-  | VernacExtraDependency of qualid * string * Id.t option
-  | VernacRequire of
-      qualid option * export_with_cats option * (qualid * import_filter_expr) list
-  | VernacImport of export_with_cats * (qualid * import_filter_expr) list
   | VernacCanonical of qualid or_by_notation
   | VernacCoercion of qualid or_by_notation *
       (coercion_class * coercion_class) option
@@ -406,26 +439,6 @@ type nonrec vernac_expr =
 
   | VernacExistingClass of qualid (* inductive or definition name *)
 
-  (* Modules and Module Types *)
-  | VernacDeclareModule of export_with_cats option * lident *
-      module_binder list * module_ast_inl
-  | VernacDefineModule of export_with_cats option * lident * module_binder list *
-      module_ast_inl Declaremods.module_signature * module_ast_inl list
-  | VernacDeclareModuleType of lident *
-      module_binder list * module_ast_inl list * module_ast_inl list
-  | VernacInclude of module_ast_inl list
-
-  (* Auxiliary file and library management *)
-  | VernacAddLoadPath of { implicit : bool
-                         ; physical_path : CUnix.physical_path
-                         ; logical_path : DirPath.t
-                         }
-
-  | VernacRemoveLoadPath of string
-  | VernacAddMLPath of string
-  | VernacDeclareMLModule of string list
-  | VernacChdir of string option
-
   (* Resetting *)
   | VernacResetName of lident
   | VernacResetInitial
@@ -447,9 +460,6 @@ type nonrec vernac_expr =
   | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)
   | VernacSetStrategy of
       (Conv_oracle.level * qualid or_by_notation list) list
-  | VernacSetOption of bool (* Export modifier? *) * Goptions.option_name * option_setting
-  | VernacAddOption of Goptions.option_name * Goptions.table_value list
-  | VernacRemoveOption of Goptions.option_name * Goptions.table_value list
   | VernacMemOption of Goptions.option_name * Goptions.table_value list
   | VernacPrintOption of Goptions.option_name
   | VernacCheckMayEval of Genredexpr.raw_red_expr option * Goal_select.t option * constr_expr
@@ -477,10 +487,18 @@ type nonrec vernac_expr =
   | VernacShow of showable
   | VernacCheckGuard
   | VernacProof of Genarg.raw_generic_argument option * section_subset_expr option
-  | VernacProofMode of string
 
-  (* For extension *)
-  | VernacExtend of extend_name * Genarg.raw_generic_argument list
+  | VernacAddOption of Goptions.option_name * Goptions.table_value list
+  | VernacRemoveOption of Goptions.option_name * Goptions.table_value list
+
+(** We classify vernacular expressions in two categories. [VernacSynterp]
+    represents commands which have an effect on parsing or on parsing extensions.
+    [VernacSynPure] represents commands which have no such effects. *)
+type 'a vernac_expr_gen =
+  | VernacSynterp of 'a
+  | VernacSynPure of synpure_vernac_expr
+
+type vernac_expr = synterp_vernac_expr vernac_expr_gen
 
 type control_flag =
   | ControlTime
@@ -489,9 +507,11 @@ type control_flag =
   | ControlFail
   | ControlSucceed
 
-type vernac_control_r =
-  { control : control_flag list
+type ('a, 'b) vernac_control_gen_r =
+  { control : 'a list
   ; attrs : Attributes.vernac_flags
-  ; expr : vernac_expr
+  ; expr : 'b vernac_expr_gen
   }
-and vernac_control = vernac_control_r CAst.t
+and 'a vernac_control_gen = (control_flag, 'a) vernac_control_gen_r CAst.t
+
+type vernac_control = synterp_vernac_expr vernac_control_gen

@@ -21,10 +21,10 @@ let make_oname Nametab.{ obj_dir; obj_mp } id =
 let oname_prefix (sp, kn) =
   { Nametab.obj_dir = Libnames.dirpath sp; obj_mp = KerName.modpath kn }
 
-type node =
+type 'summary node =
   | CompilingLibrary of Nametab.object_prefix
-  | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
-  | OpenedSection of Nametab.object_prefix * Summary.frozen
+  | OpenedModule of is_type * export * Nametab.object_prefix * 'summary
+  | OpenedSection of Nametab.object_prefix * 'summary
 
 let node_prefix = function
   | CompilingLibrary prefix
@@ -33,7 +33,7 @@ let node_prefix = function
 
 let prefix_id prefix = snd (Libnames.split_dirpath prefix.Nametab.obj_dir)
 
-type library_segment = (node * Libobject.t list) list
+type 'summary library_segment = ('summary node * Libobject.t list) list
 
 let module_kind is_type =
   if is_type then "module type" else "module"
@@ -114,7 +114,7 @@ let dummy_prefix = Nametab.{
 
 type synterp_state = {
   comp_name : DirPath.t option;
-  lib_stk : library_segment;
+  lib_stk : Summary.Synterp.frozen library_segment;
   path_prefix : Nametab.object_prefix;
 }
 
@@ -130,9 +130,9 @@ let dummy = {
 *)
 
 let synterp_state = ref dummy
-let interp_state = ref []
+let interp_state = ref ([] : Summary.Interp.frozen library_segment)
 
-let contents () = !synterp_state.lib_stk @ !interp_state
+let contents () = !interp_state
 
 let start_compilation s mp =
   if !synterp_state.comp_name != None then
@@ -166,40 +166,6 @@ let end_compilation_checks dir =
               ++ spc () ++ DirPath.print m ++ str ".");
   in
   ()
-
-  (* State and initialization. *)
-
-  type frozen = {
-    synterp_state : synterp_state;
-    interp_state : library_segment;
-  }
-
-  let freeze () = {
-    synterp_state = !synterp_state;
-    interp_state = !interp_state;
-  }
-
-  let unfreeze st =
-  synterp_state := st.synterp_state;
-  interp_state := st.interp_state
-
-  let drop_objects st =
-    let drop_node = function
-      | CompilingLibrary _ as x -> x
-      | OpenedModule (it,e,op,_) ->
-        OpenedModule(it,e,op,Summary.empty_frozen)
-      | OpenedSection (op, _) ->
-        OpenedSection(op,Summary.empty_frozen)
-    in
-    let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.synterp_state.lib_stk in
-    let synterp_state = { st.synterp_state with lib_stk = lib_synterp_stk } in
-    let lib_interp_stk = List.map (fun (node,_) -> drop_node node, []) st.interp_state in
-    let interp_state = lib_interp_stk in
-    { synterp_state; interp_state }
-
-  let init () =
-    unfreeze { synterp_state = dummy; interp_state = [] };
-    Summary.init_summaries ()
 
 let library_dp () =
   match !synterp_state.comp_name with Some m -> m | None -> DirPath.dummy
@@ -353,6 +319,7 @@ let discharge_proj_repr p =
     for Synterp and Interp. *)
 module type LibActions = sig
 
+  type summary
   val stage : Summary.Stage.t
   val check_mod_fresh : is_type:bool -> Nametab.object_prefix -> Id.t -> unit
   val check_section_fresh : DirPath.t -> Id.t -> unit
@@ -360,22 +327,30 @@ module type LibActions = sig
 
   val push_section_name : DirPath.t -> unit
 
-  val close_section : Summary.frozen -> unit
+  val close_section : summary -> unit
 
-  val add_entry : node -> unit
+  val add_entry : summary node -> unit
   val add_leaf_entry : Libobject.t -> unit
-  val start_mod : is_type:is_type -> export -> Id.t -> ModPath.t -> Summary.frozen -> Nametab.object_prefix
+  val start_mod : is_type:is_type -> export -> Id.t -> ModPath.t -> summary -> Nametab.object_prefix
 
-  val get_lib_stk : unit -> library_segment
-  val set_lib_stk : library_segment -> unit
+  val get_lib_stk : unit -> summary library_segment
+  val set_lib_stk : summary library_segment -> unit
 
   val pop_path_prefix : unit -> unit
   val recalc_path_prefix : unit -> unit
 
+  type frozen
+  val freeze : unit -> frozen
+  val unfreeze : frozen -> unit
+  val init : unit -> unit
+
+  val drop_objects : frozen -> frozen
+
 end
 
-module SynterpActions : LibActions = struct
+module SynterpActions : LibActions with type summary = Summary.Synterp.frozen = struct
 
+  type summary = Summary.Synterp.frozen
   let stage = Summary.Stage.Synterp
 
   let check_mod_fresh ~is_type prefix id =
@@ -393,7 +368,7 @@ module SynterpActions : LibActions = struct
   let push_section_name obj_dir =
     Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection obj_dir))
 
-  let close_section fs = Summary.unfreeze_summaries ~partial:true fs
+  let close_section fs = Summary.Synterp.unfreeze_summaries ~partial:true fs
 
   let add_entry node =
     synterp_state := { !synterp_state with lib_stk = (node,[]) :: !synterp_state.lib_stk }
@@ -427,7 +402,7 @@ module SynterpActions : LibActions = struct
     let obj_dir = Libnames.add_dirpath_suffix opp.Nametab.obj_dir id in
     let prefix = Nametab.{ obj_dir; obj_mp=opp.obj_mp; } in
     check_section_fresh obj_dir id;
-    let fs = Summary.freeze_staged_summaries stage ~marshallable:false in
+    let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
     add_entry (OpenedSection (prefix, fs));
     (*Pushed for the lifetime of the section: removed by unfreezing the summary*)
     push_section_name obj_dir;
@@ -436,9 +411,32 @@ module SynterpActions : LibActions = struct
   let pop_path_prefix () = pop_path_prefix ()
   let recalc_path_prefix () = recalc_path_prefix ()
 
+  type frozen = synterp_state
+
+  let freeze () = !synterp_state
+
+  let unfreeze st =
+    synterp_state := st
+
+  let init () =
+    synterp_state := dummy
+
+  let drop_objects st =
+    let drop_node = function
+      | CompilingLibrary _ as x -> x
+      | OpenedModule (it,e,op,_) ->
+        OpenedModule(it,e,op,Summary.Synterp.empty_frozen)
+      | OpenedSection (op, _) ->
+        OpenedSection(op,Summary.Synterp.empty_frozen)
+    in
+    let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.lib_stk in
+    { st with lib_stk = lib_synterp_stk }
+
 end
 
-module InterpActions : LibActions = struct
+module InterpActions : LibActions with type summary = Summary.Interp.frozen = struct
+
+  type summary = Summary.Interp.frozen
 
   let stage = Summary.Stage.Interp
 
@@ -475,11 +473,31 @@ module InterpActions : LibActions = struct
   let open_section id =
     Global.open_section ();
     let prefix = !synterp_state.path_prefix in
-    let fs = Summary.freeze_staged_summaries stage ~marshallable:false in
+    let fs = Summary.Interp.freeze_summaries ~marshallable:false in
     add_entry (OpenedSection (prefix, fs))
 
   let pop_path_prefix () = ()
   let recalc_path_prefix () = ()
+
+  type frozen = summary library_segment
+
+  let freeze () = !interp_state
+
+  let unfreeze st =
+    interp_state := st
+
+  let init () =
+    interp_state := []
+
+  let drop_objects interp_state =
+    let drop_node = function
+      | CompilingLibrary _ as x -> x
+      | OpenedModule (it,e,op,_) ->
+        OpenedModule(it,e,op,Summary.Interp.empty_frozen)
+      | OpenedSection (op, _) ->
+        OpenedSection(op,Summary.Interp.empty_frozen)
+    in
+    List.map (fun (node,_) -> drop_node node, []) interp_state
 
 end
 
@@ -502,6 +520,8 @@ let add_leaf obj =
 
 module type StagedLibS = sig
 
+  type summary
+
   type classified_objects = {
     substobjs : Libobject.t list;
     keepobjs : Libobject.t list;
@@ -509,9 +529,9 @@ module type StagedLibS = sig
   }
   val classify_segment : Libobject.t list -> classified_objects
 
-  val find_opening_node : Id.t -> node
+  val find_opening_node : Id.t -> summary node
 
-  val add_entry : node -> unit
+  val add_entry : summary node -> unit
   val add_leaf_entry : Libobject.t -> unit
 
   (** {6 Sections } *)
@@ -521,25 +541,35 @@ module type StagedLibS = sig
   (** {6 Modules and module types } *)
   val start_module :
     export -> module_ident -> ModPath.t ->
-    Summary.frozen -> Nametab.object_prefix
+    summary -> Nametab.object_prefix
 
   val start_modtype :
     module_ident -> ModPath.t ->
-    Summary.frozen -> Nametab.object_prefix
+    summary -> Nametab.object_prefix
 
   val end_module :
     unit ->
-    Nametab.object_prefix * Summary.frozen * classified_objects
+    Nametab.object_prefix * summary * classified_objects
 
   val end_modtype :
     unit ->
-    Nametab.object_prefix * Summary.frozen * classified_objects
+    Nametab.object_prefix * summary * classified_objects
+
+  type frozen
+
+  val freeze : unit -> frozen
+  val unfreeze : frozen -> unit
+  val init : unit -> unit
+
+  val drop_objects : frozen -> frozen
 
 end
 
 (** The [StagedLib] abstraction factors out the code dealing with Lib structure
     that is common to all stages. *)
-module StagedLib(Actions : LibActions) : StagedLibS = struct
+module StagedLib(Actions : LibActions) : StagedLibS with type summary = Actions.summary = struct
+
+type summary = Actions.summary
 
 type classified_objects = {
   substobjs : Libobject.t list;
@@ -604,10 +634,20 @@ let close_section () =
   Actions.close_section fs;
   List.iter (Option.iter add_discharged_leaf) newdecls
 
+type frozen = Actions.frozen
+
+let freeze () = Actions.freeze ()
+
+let unfreeze st = Actions.unfreeze st
+
+let init () = Actions.init ()
+
+let drop_objects st = Actions.drop_objects st
+
 end
 
-module Synterp : StagedLibS = StagedLib(SynterpActions)
-module Interp : StagedLibS = StagedLib(InterpActions)
+module Synterp : StagedLibS with type summary = Summary.Synterp.frozen = StagedLib(SynterpActions)
+module Interp : StagedLibS with type summary = Summary.Interp.frozen = StagedLib(InterpActions)
 
 let end_compilation dir =
   end_compilation_checks dir;
@@ -621,6 +661,12 @@ let end_compilation dir =
   !synterp_state.path_prefix, after, syntax_after
 
 (** Compatibility layer *)
+let init () =
+  Synterp.init ();
+  Interp.init ();
+  Summary.Synterp.init_summaries ();
+  Summary.Interp.init_summaries ()
+
 let open_section id =
   Synterp.open_section id;
   Interp.open_section id

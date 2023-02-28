@@ -17,7 +17,7 @@ let declare id entry =
   Flags.if_verbose Feedback.msg_info Pp.(Id.print id ++ str " is declared")
 
 let do_primitive id udecl prim typopt =
-  if Global.sections_are_opened () then
+  if Lib.sections_are_opened () then
     CErrors.user_err Pp.(str "Declaring a primitive is not allowed in sections.");
   if Dumpglob.dump () then Dumpglob.dump_definition id false "ax";
   let loc = id.CAst.loc in
