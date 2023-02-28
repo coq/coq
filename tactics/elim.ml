@@ -21,10 +21,7 @@ open Clenv
 open Tactics
 
 type branch_args = {
-  branchnum  : int;         (* the branch number *)
   nassums    : int;         (* number of assumptions/letin to be introduced *)
-  branchsign : bool list;   (* the signature of the branch.
-                               true=assumption, false=let-in *)
   branchnames : Tactypes.intro_patterns}
 
 type elim_kind = Case of bool | Elim
@@ -74,10 +71,8 @@ let general_elim_then_using mk_elim
       | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
     in
     let after_tac i =
-      let ba = { branchsign = branchsigns.(i);
-                  branchnames = brnames.(i);
-                  nassums = List.length branchsigns.(i);
-                  branchnum = i+1; }
+      let ba = { branchnames = brnames.(i);
+                  nassums = List.length branchsigns.(i); }
       in
       tac ba
     in
@@ -123,7 +118,7 @@ let introElimAssumsThen tac ba =
 
 (* Supposed to be called with a non-recursive scheme *)
 let introCaseAssumsThen with_evars tac ba =
-  let n1 = List.length ba.branchsign in
+  let n1 = ba.nassums in
   let n2 = List.length ba.branchnames in
   let (l1,l2),l3 =
     if n1 < n2 then List.chop n1 ba.branchnames, []
