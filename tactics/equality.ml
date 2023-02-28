@@ -1731,9 +1731,12 @@ user = raise user error specific to rewrite
 (**********************************************************************)
 (* Substitutions tactics (JCF) *)
 
-let restrict_to_eq_and_identity eq = (* compatibility *)
-  if not (Constr.isRefX (lib_ref "core.eq.type") eq) &&
-    not (Constr.isRefX (lib_ref "core.identity.type") eq)
+let restrict_to_eq_and_identity env eq = (* compatibility *)
+  let is_ref b = match Coqlib.lib_ref_opt b with
+    | None -> false
+    | Some b -> Environ.QGlobRef.equal env eq b
+  in
+  if not (List.exists is_ref ["core.eq.type"; "core.identity.type"])
   then raise Constr_matching.PatternMatchingFailure
 
 exception FoundHyp of (Id.t * constr * bool)
@@ -1877,9 +1880,7 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
     let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
     try
       let lbeq,u,(_,x,y) = pf_apply find_eq_data_decompose gl c in
-      let u = EInstance.kind sigma u in
-      let eq = Constr.mkRef (lbeq.eq,u) in
-      if flags.only_leibniz then restrict_to_eq_and_identity eq;
+      if flags.only_leibniz then restrict_to_eq_and_identity env lbeq.eq;
       match EConstr.kind sigma x, EConstr.kind sigma y with
       | Var x, Var y when Id.equal x y ->
           Proofview.tclUNIT ()

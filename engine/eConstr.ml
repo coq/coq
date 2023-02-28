@@ -159,6 +159,10 @@ let isRefX env sigma x c =
   | VarRef id, Var id' -> Id.equal id id'
   | _ -> false
 
+let is_lib_ref env sigma x c =
+  match Coqlib.lib_ref_opt x with
+  | Some x -> isRefX env sigma x c
+  | None -> false
 
 let destRel sigma c = match kind sigma c with
 | Rel p -> p
