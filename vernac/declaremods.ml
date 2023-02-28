@@ -877,10 +877,10 @@ module Interp = struct
 (** {6 Auxiliary functions concerning subtyping checks} *)
 
 let check_sub mtb sub_mtb_l =
-  let fold sub_mtb (ocst, env) =
-    let state = ((Environ.universes env, Univ.Constraints.empty), Reductionops.inferred_universes) in
-    let _, cst = Subtyping.check_subtypes state env mtb sub_mtb in
-    (Univ.Constraints.union ocst cst, Environ.add_constraints cst env)
+  let fold sub_mtb (cst, env) =
+    let state = ((Environ.universes env, cst), Reductionops.inferred_universes) in
+    let graph, cst = Subtyping.check_subtypes state env mtb sub_mtb in
+    (cst, Environ.set_universes graph env)
   in
   let cst, _ = List.fold_right fold sub_mtb_l (Univ.Constraints.empty, Global.env ()) in
   Global.add_constraints cst
