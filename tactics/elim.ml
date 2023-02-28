@@ -84,15 +84,12 @@ let general_elim_then_using mk_elim
 
 (* computing the case/elim combinators *)
 
-let make_elim_branch_assumptions ba hyps =
-  let assums =
-    try List.rev (List.firstn ba.nassums hyps)
-    with Failure _ -> CErrors.anomaly (Pp.str "make_elim_branch_assumptions.") in
-  assums
-
 let elim_on_ba tac ba =
   Proofview.Goal.enter begin fun gl ->
-  let branches = make_elim_branch_assumptions ba (Proofview.Goal.hyps gl) in
+  let branches =
+    try List.rev (List.firstn ba.nassums (Proofview.Goal.hyps gl))
+    with Failure _ -> CErrors.anomaly (Pp.str "make_elim_branch_assumptions.")
+  in
   tac branches
   end
 
