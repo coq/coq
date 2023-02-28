@@ -13,7 +13,7 @@ open Univ
 
 type 'a universe_map = 'a Level.Map.t
 type universe_subst = Universe.t universe_map
-type universe_subst_fn = Level.t -> Universe.t
+type universe_subst_fn = Level.t -> Universe.t option
 type universe_level_subst_fn = Level.t -> Level.t
 
 val level_subst_of : universe_subst_fn -> universe_level_subst_fn
@@ -26,7 +26,7 @@ val normalize_univ_variables : universe_opt_subst ->
   universe_opt_subst * Level.Set.t * universe_subst
 
 val normalize_univ_variable_opt_subst : universe_opt_subst ->
-  (Level.t -> Universe.t)
+  (Level.t -> Universe.t option)
 
 val normalize_universe_opt_subst : universe_opt_subst ->
   (Universe.t -> Universe.t)
@@ -45,7 +45,7 @@ val nf_evars_and_universes_opt_subst :
   (Sorts.relevance -> Sorts.relevance) ->
   constr -> constr
 
-val subst_univs_universe : (Level.t -> Universe.t) -> Universe.t -> Universe.t
+val subst_univs_universe : (Level.t -> Universe.t option) -> Universe.t -> Universe.t
 
 val pr_universe_subst : (Level.t -> Pp.t) -> universe_subst -> Pp.t
 

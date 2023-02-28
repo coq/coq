@@ -15,7 +15,7 @@ open Univ
 
 type 'a universe_map = 'a Level.Map.t
 type universe_subst = Universe.t universe_map
-type universe_subst_fn = Level.t -> Universe.t
+type universe_subst_fn = Level.t -> Universe.t option
 type universe_level_subst_fn = Level.t -> Level.t
 
 let subst_instance fn i =
@@ -25,9 +25,11 @@ let subst_univs_universe fn ul =
   let addn n u = iterate Universe.super n u in
   let subst, nosubst =
     List.fold_right (fun (u, n) (subst,nosubst) ->
-      try let a' = addn n (fn u) in
-            (a' :: subst, nosubst)
-      with Not_found -> (subst, (u, n) :: nosubst))
+        match fn u with
+        | Some u' ->
+          let a' = addn n u' in
+          (a' :: subst, nosubst)
+        | None -> (subst, (u, n) :: nosubst))
       (Universe.repr ul) ([], [])
   in
   match subst with
@@ -132,13 +134,9 @@ let enforce_univ_constraint (u,d,v) =
   | Le -> enforce_leq u v
   | Lt -> enforce_leq (Universe.super u) v
 
-let subst_univs_level fn l =
-  try Some (fn l)
-  with Not_found -> None
-
 let subst_univs_constraint fn (u,d,v as c) cstrs =
-  let u' = subst_univs_level fn u in
-  let v' = subst_univs_level fn v in
+  let u' = fn u in
+  let v' = fn v in
   match u', v' with
   | None, None -> Constraints.add c cstrs
   | Some u, None -> enforce_univ_constraint (u,d,Universe.make v) cstrs
@@ -152,33 +150,31 @@ let subst_univs_constraints subst csts =
 
 let level_subst_of f =
   fun l ->
-    try let u = f l in
-          match Universe.level u with
-          | None -> l
-          | Some l -> l
-    with Not_found -> l
+  match f l with
+  | None  -> l
+  | Some u ->
+    match Universe.level u with
+    | None -> l
+    | Some l -> l
 
 let normalize_univ_variable ~find =
   let rec aux cur =
-    let b = find cur in
-    let b' = subst_univs_universe aux b in
-      if Universe.equal b' b then b
-      else b'
+    find cur |>
+    Option.map (fun b ->
+        let b' = subst_univs_universe aux b in
+        if Universe.equal b' b then b
+        else b')
   in aux
 
 type universe_opt_subst = Universe.t option universe_map
 
 let normalize_univ_variable_opt_subst ectx =
-  let find l =
-    match Univ.Level.Map.find l ectx with
-    | Some b -> b
-    | None -> raise Not_found
-  in
+  let find l = Option.flatten (Univ.Level.Map.find_opt l ectx) in
   normalize_univ_variable ~find
 
 let normalize_universe_opt_subst subst =
   let normlevel = normalize_univ_variable_opt_subst subst in
-    subst_univs_universe normlevel
+  subst_univs_universe normlevel
 
 let normalize_opt_subst ctx =
   let normalize = normalize_universe_opt_subst ctx in
