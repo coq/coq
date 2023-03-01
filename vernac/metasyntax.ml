@@ -1709,7 +1709,7 @@ let make_notation_interpretation ~local main_data notation_symbols ntn syntax_ru
     | PrimTokenSyntax -> None, [], main_data, None
     | SpecificSyntax sy ->
     (* If the only printing flag has been explicitly requested, put it back *)
-    let main_data = { main_data with onlyprinting = main_data.onlyprinting || sy.synext_notgram = None } in
+    let main_data = { main_data with onlyprinting = main_data.onlyprinting || (sy.synext_notgram = None && not main_data.onlyparsing) } in
     Some sy.synext_level, List.combine mainvars sy.synext_nottyps, main_data, sy.synext_notprint
   in
   (* Declare interpretation *)

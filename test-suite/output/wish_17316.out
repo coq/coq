@@ -1,0 +1,2 @@
+Notation "%" := 0 (default interpretation) (only printing)
+Notation "%" := 0 (default interpretation) (only parsing)
