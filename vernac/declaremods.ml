@@ -1580,13 +1580,15 @@ let import_module f ~export mp =
 
 end
 
-let end_library_hook = ref ignore
+let end_library_hook = ref []
 let append_end_library_hook f =
-  let old_f = !end_library_hook in
-  end_library_hook := fun () -> old_f(); f ()
+  end_library_hook := f :: !end_library_hook
+
+let end_library_hook () =
+  List.iter (fun f -> f ()) (List.rev !end_library_hook)
 
 let end_library ~output_native_objects dir =
-  !end_library_hook();
+  end_library_hook();
   let prefix, lib_stack, lib_stack_syntax = Lib.end_compilation dir in
   let mp,cenv,ast = Global.export ~output_native_objects dir in
   assert (ModPath.equal mp (MPfile dir));

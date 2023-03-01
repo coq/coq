@@ -453,7 +453,7 @@ let print_results_tactic tactic =
 let do_print_results_at_close () =
   if get_profiling () then print_results ~cutoff:!Flags.profile_ltac_cutoff
 
-let _ = Declaremods.append_end_library_hook do_print_results_at_close
+let () = Declaremods.append_end_library_hook do_print_results_at_close
 
 let () =
   let open Goptions in
