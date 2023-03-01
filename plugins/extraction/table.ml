@@ -35,17 +35,19 @@ let occur_kn_in_ref kn = let open GlobRef in function
   | ConstructRef ((kn',_),_) -> MutInd.CanOrd.equal kn kn'
   | ConstRef _ | VarRef _ -> false
 
+(* Return the "canonical" name used for declaring a name *)
+
 let repr_of_r = let open GlobRef in function
-  | ConstRef kn -> KerName.repr (Constant.user kn)
+  | ConstRef kn -> Constant.user kn
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) -> KerName.repr (MutInd.user kn)
-  | VarRef v -> KerName.repr (Lib.make_kn v)
+  | ConstructRef ((kn,_),_) -> MutInd.user kn
+  | VarRef v -> Lib.make_kn v
 
 let modpath_of_r r =
-  let mp,_ = repr_of_r r in mp
+  KerName.modpath (repr_of_r r)
 
 let label_of_r r =
-  let _,l = repr_of_r r in l
+  KerName.label (repr_of_r r)
 
 let rec base_mp = function
   | MPdot (mp,l) -> base_mp mp
@@ -95,7 +97,7 @@ let rec parse_labels2 ll mp1 = function
 
 let labels_of_ref r =
   let mp_top = Lib.current_mp () in
-  let mp,l = repr_of_r r in
+  let mp,l = KerName.repr (repr_of_r r) in
   parse_labels2 [l] mp_top mp
 
 
