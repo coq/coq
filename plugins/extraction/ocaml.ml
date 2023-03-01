@@ -710,7 +710,7 @@ let rec pp_structure_elem = function
      (match Common.get_duplicate (top_visible_mp ()) l with
       | None -> pp_decl d
       | Some ren ->
-         hov 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
+         v 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
          fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
   | (l,SEmodule m) ->
       let typ =
