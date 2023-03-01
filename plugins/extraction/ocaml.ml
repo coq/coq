@@ -94,8 +94,12 @@ let sig_preamble _ comment used_modules usf =
    below should not be altered since they force evaluation order.
 *)
 
-let str_global k r =
-  if is_inline_custom r then find_custom r else Common.pp_global k r
+let str_global_with_key k key r =
+  if is_inline_custom r then find_custom r else Common.pp_global_with_key k key r
+
+let str_global k r = str_global_with_key k (repr_of_r r) r
+
+let pp_global_with_key k key r = str (str_global_with_key k key r)
 
 let pp_global k r = str (str_global k r)
 
@@ -148,8 +152,12 @@ let get_ind = let open GlobRef in function
   | ConstructRef (ind,_) -> IndRef ind
   | _ -> assert false
 
+let kn_of_ind = let open GlobRef in function
+  | IndRef (kn,_) -> MutInd.user kn
+  | _ -> assert false
+
 let pp_one_field r i = function
-  | Some r -> pp_global Term r
+  | Some r' -> pp_global_with_key Term (kn_of_ind (get_ind r)) r'
   | None -> pp_global Type (get_ind r) ++ str "__" ++ int i
 
 let pp_field r fields i = pp_one_field r i (List.nth fields i)
