@@ -1,5 +1,5 @@
 Require Import Program.
-Require Vector.
+Require Import Wf_nat.
 
 Inductive T := MkT.
 
