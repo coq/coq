@@ -1411,7 +1411,21 @@ let () =
     let env = ist.Genintern.genv in
     let sigma = Evd.from_env env in
     let warn = if !Ltac_plugin.Tacintern.strict_check then fun x -> x else Constrintern.for_grammar in
-    let _, pat = warn (fun () ->Constrintern.intern_constr_pattern env sigma ~as_type:false c) () in
+    let expected_vars = Tac2quote.pattern_vars c in
+    let patvars, pat =
+      warn (fun () -> Constrintern.intern_constr_pattern env sigma ~as_type:false c) ()
+    in
+    (* We rely on the non-interned pattern variables in Tac2quote so we need to error if they're forgotten *)
+    let patvars = Id.Map.of_list (List.map (fun v -> v, ()) patvars) in
+    let _ : Util.Empty.t Id.Map.t = Id.Map.merge (fun id expect real ->
+        match expect, real with
+        | None, _ -> assert false
+        | Some _, Some _ -> None
+        | Some loc, None ->
+          CErrors.user_err ?loc Pp.(str "Internalization forgot pattern variable " ++ Id.print id))
+        expected_vars
+        patvars
+    in
     GlbVal pat, gtypref t_pattern
   in
   let subst subst c =
