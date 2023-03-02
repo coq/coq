@@ -713,10 +713,6 @@ module Search = struct
             in
             let msg =
               match fst ie with
-              | Pretype_errors.PretypeError (env, evd, Pretype_errors.CannotUnify (x,y,_)) ->
-                str"Cannot unify " ++
-                Printer.pr_econstr_env env evd x ++ str" and " ++
-                Printer.pr_econstr_env env evd y
               | ReachedLimit -> str "Proof-search reached its limit."
               | NoApplicableHint -> str "Proof-search failed."
               | StuckGoal | NonStuckFailure -> str "Proof-search got stuck."
