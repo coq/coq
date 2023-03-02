@@ -115,9 +115,12 @@ type signature_mismatch_error =
   | IncompatibleConstraints of { got : Univ.AbstractContext.t; expect : Univ.AbstractContext.t }
   | IncompatibleVariance
 
+type subtyping_trace_elt =
+  | Submodule of Label.t
+  | FunctorArgument of int
+
 type module_typing_error =
-  | SignatureMismatch of
-      Label.t * structure_field_body * signature_mismatch_error
+  | SignatureMismatch of subtyping_trace_elt list * Label.t * signature_mismatch_error
   | LabelAlreadyDeclared of Label.t
   | NotAFunctor
   | IsAFunctor of ModPath.t
@@ -139,7 +142,7 @@ val error_incompatible_modtypes :
   module_type_body -> module_type_body -> 'a
 
 val error_signature_mismatch :
-  Label.t -> structure_field_body -> signature_mismatch_error -> 'a
+  subtyping_trace_elt list -> Label.t -> signature_mismatch_error -> 'a
 
 val error_no_such_label : Label.t -> ModPath.t -> 'a
 
