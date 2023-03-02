@@ -268,9 +268,9 @@ let top_allowed_sort env (kn,i as ind) =
 let sorts_below top =
   List.filter (fun s -> Sorts.family_leq s top) Sorts.[InSProp;InProp;InSet;InType]
 
-let has_dependent_elim mib =
+let has_dependent_elim (mib,mip) =
   match mib.mind_record with
-  | PrimRecord _ -> mib.mind_finite == BiFinite
+  | PrimRecord _ -> mib.mind_finite == BiFinite || mip.mind_relevance == Irrelevant
   | NotRecord | FakeRecord -> true
 
 (* Annotation for cases *)
@@ -350,10 +350,10 @@ let make_project env sigma ind pred c branches ps =
   let open EConstr in
   assert(Array.length branches == 1);
   let na, ty, t = destLambda sigma pred in
-  let mib, mip = Inductive.lookup_mind_specif env ind in
+  let mib, mip as specif = Inductive.lookup_mind_specif env ind in
   let () =
     if (* dependent *) not (Vars.noccurn sigma 1 t) &&
-         not (has_dependent_elim mib) then
+         not (has_dependent_elim specif) then
       user_err
         Pp.(str"Dependent case analysis not allowed" ++
               str" on inductive type " ++ Termops.Internal.print_constr_env env sigma (mkInd ind) ++ str ".")

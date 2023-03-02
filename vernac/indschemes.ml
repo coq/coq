@@ -196,11 +196,11 @@ let declare_beq_scheme = declare_beq_scheme_with []
 
 (* Case analysis schemes *)
 let declare_one_case_analysis_scheme ind =
-  let (mib,mip) = Global.lookup_inductive ind in
+  let (mib, mip) as specif = Global.lookup_inductive ind in
   let kind = Inductive.inductive_sort_family mip in
   let dep =
     if kind == InProp then case_scheme_kind_from_prop
-    else if not (Inductiveops.has_dependent_elim mib) then
+    else if not (Inductiveops.has_dependent_elim specif) then
       case_scheme_kind_from_type
     else case_dep_scheme_kind_from_type in
   let kelim = Inductive.elim_sort (mib,mip) in
@@ -231,10 +231,10 @@ let nondep_kinds_from_type =
    InSProp,sind_scheme_kind_from_type]
 
 let declare_one_induction_scheme ind =
-  let (mib,mip) = Global.lookup_inductive ind in
+  let (mib,mip) as specif = Global.lookup_inductive ind in
   let kind = Inductive.inductive_sort_family mip in
   let from_prop = kind == InProp in
-  let depelim = Inductiveops.has_dependent_elim mib in
+  let depelim = Inductiveops.has_dependent_elim specif in
   let kelim = Inductiveops.sorts_below (Inductive.elim_sort (mib,mip)) in
   let kelim = if Global.sprop_allowed () then kelim
     else List.filter (fun s -> s <> InSProp) kelim
