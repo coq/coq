@@ -293,10 +293,6 @@ let is_bound l lbound = match lbound with
 | UGraph.Bound.Prop -> false
 | UGraph.Bound.Set -> Level.is_set l
 
-(* if [is_minimal u] then constraints [u <= v] may be dropped and get
-   used only for set_minimization. *)
-let is_minimal ~lbound u = is_bound u lbound
-
 type extra = {
   weak_constraints : UPairSet.t;
   above_prop : Univ.Level.Set.t;
@@ -317,15 +313,16 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
   let (ctx, csts) = ContextSet.levels ctx, ContextSet.constraints ctx in
   (* Keep the Prop/Set <= i constraints separate for minimization *)
   let smallles, csts =
-    Constraints.partition (fun (l,d,r) -> d == Le && is_minimal ~lbound l) csts
+    Constraints.partition (fun (l,d,r) -> d == Le && Level.is_set l) csts
   in
-  let smallles = if get_set_minimization ()
-    then
+  let smallles = match (lbound : UGraph.Bound.t) with
+    | Prop -> smallles
+    | Set when get_set_minimization () ->
+
       let smallles = Constraints.filter (fun (l,d,r) -> Level.Map.mem r us) smallles in
-      let smallles = Constraints.map (fun (_,_,r) -> Level.set, Le, r) smallles in
       let fold u accu = if Level.Map.mem u us then Constraints.add (Level.set, Le, u) accu else accu in
       Level.Set.fold fold above_prop smallles
-    else Constraints.empty
+    | Set -> Constraints.empty (* constraints Set <= u may be dropped *)
   in
   let csts, partition =
     (* We first put constraints in a normal-form: all self-loops are collapsed
@@ -352,7 +349,7 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
       (fun (l,d,r) -> not (d == Le && is_bound l lbound))
       csts
   in
-  let noneqs = Constraints.union noneqs smallles in
+  let noneqs = if get_set_minimization () then Constraints.union noneqs smallles else noneqs in
   let flex x = Level.Map.mem x us in
   let ctx, us, eqs = List.fold_left (fun (ctx, us, cstrs) s ->
     let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in
@@ -394,11 +391,12 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
      and contains only inequality constraints. *)
   let noneqs =
     let norm = level_subst_of (normalize_univ_variable_opt_subst us) in
-    Constraints.fold (fun (u,d,v) noneqs ->
-        let u = norm u and v = norm v in
-        if d != Lt && Level.equal u v then noneqs
-        else Constraints.add (u,d,v) noneqs)
-      noneqs Constraints.empty
+    let fold (u,d,v) noneqs =
+      let u = norm u and v = norm v in
+      if d != Lt && Level.equal u v then noneqs
+      else Constraints.add (u,d,v) noneqs
+    in
+    Constraints.fold fold noneqs Constraints.empty
   in
   (* Compute the left and right set of flexible variables, constraints
      mentioning other variables remain in noneqs. *)
@@ -420,6 +418,16 @@ let normalize_context_set ~lbound g ctx us algs {weak_constraints=weak;above_pro
   (* Now we construct the instantiation of each variable. *)
   let ctx', us, algs, inst, noneqs =
     minimize_univ_variables ctx us algs ucstrsr ucstrsl noneqs
+  in
+  let noneqs = if get_set_minimization () then noneqs
+    else
+      let fold (u,d,v) noneqs =
+        assert (Level.is_set u && d == Le);
+        let v = normalize_universe_opt_subst us (Universe.make v) in
+        enforce_leq Universe.type0 v noneqs
+      in
+      let smallles = Constraints.fold fold smallles Constraints.empty in
+      Constraints.union noneqs smallles
   in
   let us = normalize_opt_subst us in
     (us, algs), (ctx', Constraints.union noneqs eqs)
