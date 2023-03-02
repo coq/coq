@@ -1459,31 +1459,6 @@ let vernac_extra_dep ?loc from file id =
   let from = Libnames.add_dirpath_suffix hd tl in
   ComExtraDeps.declare_extra_dep ?loc ~from ~file id
 
-let constrexpr_is_string s = function
-  | { CAst.v = Constrexpr.CRef(x,None) } -> string_of_qualid x = s
-  | _ -> false
-
-let warn_comments_extra_dep =
-  CWarnings.create ~name:"extra-dep-in-comments" ~category:"deprecated"
-    (fun () ->
-      strbrk "The command \"From .. Extra Dependency ..\" is "++
-      strbrk "available since Coq 8.16, if you don't need to compile the "++
-      strbrk "file with order version of Coq please remove \"Comments\".")
-
-let forward_compat_extra_dependency ?loc = function
-  | [ CommentConstr from_str;
-      CommentConstr { CAst.v = Constrexpr.CRef(from,None) };
-      CommentConstr extra_str;
-      CommentConstr dependency_str;
-      CommentString file ] when
-        constrexpr_is_string "From" from_str&&
-        constrexpr_is_string "Extra" extra_str &&
-        constrexpr_is_string "Dependency" dependency_str
-      ->
-      warn_comments_extra_dep ();
-      vernac_extra_dep ?loc from file None
-  | _ -> ()
-
 (* Libraries *)
 
 let warn_require_in_section =
@@ -2639,7 +2614,6 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacComments l ->
     vtdefault(fun () ->
         unsupported_attributes atts;
-        forward_compat_extra_dependency ?loc l;
         Flags.if_verbose Feedback.msg_info (str "Comments ok\n"))
   (* Proof management *)
   | VernacFocus n ->
