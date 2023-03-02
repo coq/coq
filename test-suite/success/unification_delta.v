@@ -2,6 +2,7 @@ Require Import Coq.Classes.Equivalence.
 Require Import Coq.Program.Program.
 Import Relation_Definitions.
 Import Morphisms.
+Require Setoid.
 
 Obligation Tactic := program_simpl ; simpl_relation.
 Generalizable Variables A eqA.

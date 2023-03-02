@@ -2,6 +2,7 @@ Require Export Coq.Unicode.Utf8.
 Require Export Coq.Program.Program.
 Require Export Coq.Classes.CEquivalence.
 Require Export Coq.Classes.CMorphisms.
+Require Setoid.
 
 (* Notation "f ≃ g" := (equiv f g) (at level 79, only parsing). *)
 

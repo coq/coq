@@ -1,4 +1,5 @@
 Require Import Program.
+Require Import Wf_nat.
 
 Inductive T := MkT.
 

@@ -1,6 +1,7 @@
 Require Export Coq.Program.Utils.
 Require Export Coq.Program.Basics.
 Require Export Coq.Program.Syntax.
+Require Setoid.
 
 Require Export Coq.Classes.CMorphisms.
 
