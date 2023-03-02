@@ -155,3 +155,60 @@ intros.
 specialize (fun z => H 0 z eq_refl).
 exact (H 0 eq_refl).
 Qed.
+
+Module bug_17322.
+
+Axiom key : Type.
+Axiom value : Type.
+Axiom eqb : key -> key -> bool.
+Axiom remove : list value -> key -> list value.
+Axiom sorted : list value -> bool.
+Axiom lookup : list value -> key -> value.
+
+Goal forall (l : list value) (k : key),
+  (sorted l = true -> forall k' : key, eqb k k' = false ->
+    lookup (remove l k') k = lookup l k) ->
+  sorted l = true -> False
+.
+Proof.
+intros l k IHl ST.
+specialize IHl with (1 := ST).
+Abort.
+
+End bug_17322.
+
+Module bug_17322_2.
+
+Axiom tuple : Type.
+Axiom mem : Type.
+Axiom unchecked_store_bytes : tuple -> mem.
+Axiom load_bytes : mem -> Prop.
+
+Goal forall
+(IHn : forall (m' : mem) (w : tuple),
+  unchecked_store_bytes w = m' -> load_bytes m' -> True),
+True.
+Proof.
+intros.
+Fail specialize IHn with (1 := eq_refl).
+(* After #17322 this fails with
+
+    In environment
+    IHn : forall (m' : mem) (w : tuple), unchecked_store_bytes w = m' -> load_bytes m' -> True
+    m' : mem
+    w : tuple
+    Unable to unify "?t" with "w" (cannot instantiate "?t" because "w" is not in its scope:
+    available arguments are "IHn").
+
+   Previously it was leaving w as an unresolved evar, producing the hypothesis
+
+    IHn : load_bytes (unchecked_store_bytes ?w) -> True
+
+   The correct behaviour should probably to requantify on w as
+
+    IHn : forall w, load_bytes (unchecked_store_bytes w) -> True
+
+*)
+Abort.
+
+End bug_17322_2.
