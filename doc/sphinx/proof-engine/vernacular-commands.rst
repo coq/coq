@@ -806,10 +806,6 @@ When :n:`@ident` is provided, that name can be used by OCaml code, typically
 in a plugin, to access the full path of the external file via the API
 ``ComExtraDeps.query_extra_dep``.
 
-This command has been available through the :cmd:`Comments` command,
-e.g. :n:`Comments From … Dependency …`.  The :n:`Comments` form is deprecated
-in Coq 8.16.
-
    .. warn:: File ... found twice in ...
 
       The file is found in more than once in the top directories
