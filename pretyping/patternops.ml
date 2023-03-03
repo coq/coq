@@ -386,21 +386,39 @@ let err ?loc pp = user_err ?loc pp
 
 let warn_cast_in_pattern =
   CWarnings.create ~name:"cast-in-pattern" ~category:"automation"
-    (fun () -> Pp.strbrk "Casts are ignored in patterns")
+    (fun () -> Pp.strbrk "Cast types are ignored in patterns")
+
+type meta_accu =
+  | Metas of Id.t list ref
+  | InCastType of Loc.t option
+
+let push_meta metas n = match metas with
+  | Metas metas -> metas := n::!metas
+  | InCastType loc ->
+    CErrors.user_err ?loc
+      Pp.(str "Cannot bind pattern variable in cast type:"
+          ++ spc() ++ str "cast types are ignored in patterns.")
+
+let in_cast_type loc = function
+  | Metas _ -> InCastType loc
+  | InCastType _ as v ->
+    (* We report the error with the loc of the outermost cast
+       Alternatively we could use the loc of the meta, or the loc of the innermost cast. *)
+    v
 
 let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
   | GVar id ->
       (try PRel (List.index Name.equal (Name id) vars)
        with Not_found -> PVar id)
   | GPatVar (Evar_kinds.FirstOrderPatVar n) ->
-      metas := n::!metas; PMeta (Some n)
+      push_meta metas n; PMeta (Some n)
   | GRef (gr,_) ->
       PRef (canonical_gr gr)
   (* Hack to avoid rewriting a complete interpretation of patterns *)
   | GApp (c, cl) ->
     begin match DAst.get c with
     | GPatVar (Evar_kinds.SecondOrderPatVar n) ->
-      metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
+      push_meta metas n; PSoApp (n, List.map (pat_of_raw metas vars) cl)
     | _ ->
       PApp (pat_of_raw metas vars c,
             Array.of_list (List.map (pat_of_raw metas vars) cl))
@@ -413,15 +431,15 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
     else
       PApp (PRef (GlobRef.ConstRef p), Array.map_of_list (pat_of_raw metas vars) (cl @ [c]))
   | GLambda (na,bk,c1,c2) ->
-      Name.iter (fun n -> metas := n::!metas) na;
+      Name.iter (fun n -> push_meta metas n) na;
       PLambda (na, pat_of_raw metas vars c1,
                pat_of_raw metas (na::vars) c2)
   | GProd (na,bk,c1,c2) ->
-      Name.iter (fun n -> metas := n::!metas) na;
+      Name.iter (fun n -> push_meta metas n) na;
       PProd (na, pat_of_raw metas vars c1,
                pat_of_raw metas (na::vars) c2)
   | GLetIn (na,c1,t,c2) ->
-      Name.iter (fun n -> metas := n::!metas) na;
+      Name.iter (fun n -> push_meta metas n) na;
       PLetIn (na, pat_of_raw metas vars c1,
                Option.map (pat_of_raw metas vars) t,
                pat_of_raw metas (na::vars) c2)
@@ -430,8 +448,13 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       with Glob_ops.ComplexSort -> user_err ?loc (str "Unexpected universe in pattern."))
   | GHole _ | GGenarg _ ->
       PMeta None
-  | GCast (c,_,_) ->
-      warn_cast_in_pattern ();
+  | GCast (c,_,t) ->
+      let () =
+        (* Checks that there are no pattern variables in the type *)
+        let _ : constr_pattern = pat_of_raw (in_cast_type t.loc metas) vars t in
+        ()
+      in
+      warn_cast_in_pattern ?loc ();
       pat_of_raw metas vars c
   | GIf (c,(_,None),b1,b2) ->
       PIf (pat_of_raw metas vars c,
@@ -522,7 +545,7 @@ and pat_of_glob_in_context metas vars decls c =
 and pats_of_glob_branches loc metas vars ind brs =
   let get_arg p = match DAst.get p with
     | PatVar na ->
-      Name.iter (fun n -> metas := n::!metas) na;
+      Name.iter (fun n -> push_meta metas n) na;
       na
     | PatCstr(_,_,_) -> err ?loc:p.CAst.loc (Pp.str "Non supported pattern.")
   in
@@ -556,5 +579,5 @@ and pats_of_glob_branches loc metas vars ind brs =
 
 let pattern_of_glob_constr c =
   let metas = ref [] in
-  let p = pat_of_raw metas [] c in
+  let p = pat_of_raw (Metas metas) [] c in
   (!metas,p)
