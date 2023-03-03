@@ -58,7 +58,6 @@ val intern_genarg : glob_sign -> raw_generic_argument -> glob_generic_argument
 (** Reduction expressions *)
 
 val intern_red_expr : glob_sign -> raw_red_expr -> glob_red_expr
-val dump_glob_red_expr : raw_red_expr -> unit
 
 (* Hooks *)
 val strict_check : bool ref

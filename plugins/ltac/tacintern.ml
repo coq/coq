@@ -318,6 +318,18 @@ let evalref_of_globref ?loc ?short = function
       Nametab.pr_global_env Id.Set.empty r ++ spc () ++
       str "into an evaluable reference.")
 
+let evalref_of_globref ?loc ?short r =
+  let () =
+    (* only dump section variables not proof context variables
+       (broken if variables got renamed) *)
+    let is_proof_variable = match r with
+      | GlobRef.VarRef x -> (try ignore (Global.lookup_named x); false with Not_found -> true)
+      | _ -> false
+    in
+    if not is_proof_variable then Dumpglob.add_glob ?loc r
+  in
+  evalref_of_globref ?loc ?short r
+
 let intern_evaluable ist = function
   | {v=AN qid} ->
     begin match intern_global_reference ist qid with
@@ -411,22 +423,6 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       interp_ref (make @@ AN r)
   | Inr c ->
       Inr (snd (intern_typed_pattern ist ~as_type:false ~ltacvars:ist.ltacvars c)))
-
-(* This seems fairly hacky, but it's the first way I've found to get proper
-   globalization of [unfold].  --adamc *)
-let dump_glob_red_expr = function
-  | Unfold occs -> List.iter (fun (_, r) ->
-    try
-      Dumpglob.add_glob ?loc:r.loc
-        (Smartlocate.smart_global r)
-    with e when CErrors.noncritical e -> ()) occs
-  | Cbv grf | Lazy grf ->
-    List.iter (fun r ->
-      try
-        Dumpglob.add_glob ?loc:r.loc
-          (Smartlocate.smart_global r)
-      with e when CErrors.noncritical e -> ()) grf.rConst
-  | _ -> ()
 
 let intern_red_expr ist = function
   | Unfold l -> Unfold (List.map (intern_unfold ist) l)
@@ -562,7 +558,6 @@ let rec intern_atomic lf ist x =
                Option.map (intern_constr_with_bindings ist) el))
   (* Conversion *)
   | TacReduce (r,cl) ->
-      dump_glob_red_expr r;
       TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
   | TacChange (check,None,c,cl) ->
       let is_onhyps = match cl.onhyps with
