@@ -421,8 +421,8 @@ let _is_empty_clause ((_, kprem) : clause) = ClausesOf.is_empty kprem
 type canonical_node =
   { canon: Index.t;
     value : int option;
-    clauses_bwd : ClausesOf.t;
-    clauses_fwd : ClausesOf.t PMap.t }
+    clauses_bwd : ClausesOf.t; (* premises -> canon + k *)
+    clauses_fwd : ClausesOf.t PMap.t (* canon + k, ... ->  concl + k' *) }
 
 (* A Point.t is either an alias for another one, or a canonical one,
     for which we know the points that are above *)
@@ -786,7 +786,7 @@ let min_premise (m : model) prem =
 
 module CanSet =
 struct
-  type t = (ClausesOf.t * ClausesBackward.t) PMap.t * int
+  type t = (ClausesOf.t * ClausesBackward.t) PMap.t * int (* cardinal of the PMap.t *)
 
   let fold f (m, _cm)  acc = PMap.fold f m acc
 
@@ -867,7 +867,7 @@ let check_model_clauses_of_aux m can cls =
 
 (** Check a set of forward clauses *)
 let check_model_fwd_clauses_aux (cls : ClausesBackward.t) (acc : bool * (CanSet.t * model)) : bool * (CanSet.t * model) =
-  PMap.fold (fun concl cls (_modified, (w, m) as acc) ->
+  PMap.fold (fun concl cls (* premises -> concl + k *) (_modified, (w, m) as acc) ->
     let can = repr m concl in
     let can', m' = check_model_clauses_of_aux m can cls in
     if can == can' then (* not modifed *) acc
@@ -934,6 +934,7 @@ let partition_clauses_fwd model (w : CanSet.t) : CanSet.t * CanSet.t * CanSet.t 
 
 let partition_clauses_fwd = time2 (Pp.str"partition clauses fwd") partition_clauses_fwd
 
+(* model is a model for the variables outside w and clauses not mentionning w *)
 let check model (w : CanSet.t) =
   let cV = canonical_cardinal model in
   debug_check_invariants model;
@@ -943,6 +944,7 @@ let check model (w : CanSet.t) =
     debug_loop Pp.(fun () -> str "Inner loop on " ++ int cardW ++ str" universes: " ++
       str " Premises and conclusions in w: " ++ pr_w m premconclw ++
       str " Conclusions in w: " ++ pr_w m conclw);
+    (* Warning: m is not necessarily a model for w *)
     let rec inner_loop_partition w m =
       debug_loop Pp.(fun () -> str "w = " ++ pr_w m w);
       match loop cardW w m with
@@ -957,10 +959,10 @@ let check model (w : CanSet.t) =
           debug_loop Pp.(fun () -> str"Inner loop found a model");
           Model (wr, mr))
       in inner_loop_partition premconclw m
-  and loop cV u m =
-    debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr_clauses m u);
-    match check_clauses_with_premises u m with
-    | None -> Model (u, m)
+  and loop cV w m =
+    debug_loop Pp.(fun () -> str"loop iteration on "  ++ CanSet.pr_clauses m w);
+    match check_clauses_with_premises w m with
+    | None -> Model (w, m)
     | Some (w, m) ->
       let cardW = (CanSet.cardinal w) in
       if Int.equal cardW cV
@@ -1419,7 +1421,7 @@ type check_clause_mark = VisitedAt of int
 exception Found
 
 let check_clause_singleton m prem concl k =
-  (* premises -> concl + k ? *)
+  (* premise -> concl + k ? *)
   let premidx = prem.canon in
   let test_idx y kpath = Index.equal y premidx && kpath <= 0 in
   let test_repr y kpath = y == prem && kpath <= 0 in
