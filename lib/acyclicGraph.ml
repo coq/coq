@@ -595,7 +595,6 @@ module Make (Point:Point) = struct
                     let strict = not strictu && strict in
                     let u = repr g u in
                     if u == v && not strict then raise_notrace Found
-                    else if topo_compare u v = 1 then next_todo
                     else (u, strict)::next_todo)
                   u.ltle next_todo
               in
