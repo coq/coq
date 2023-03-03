@@ -207,13 +207,13 @@ module M =
 
   (** val d11 : non_prim_record_two_fields -> bool **)
 
-  let d11 =
-    non_prim_proj1_of_2
+  let d11 x =
+    x.non_prim_proj1_of_2
 
   (** val d12 : (unit0 -> non_prim_record_two_fields) -> bool **)
 
   let d12 x =
-    non_prim_proj1_of_2 (x Tt)
+    (x Tt).non_prim_proj1_of_2
 
   (** val e11 : non_prim_record_one_field -> bool **)
 
