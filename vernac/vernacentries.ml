@@ -2005,6 +2005,10 @@ let vernac_print_option key =
   try print_option_value key
   with Not_found -> error_undeclared_key key
 
+let warn_legacy_export_set =
+  CWarnings.create ~name:"legacy-export-set" ~category:"deprecated"
+    Pp.(fun () -> strbrk "Syntax \"Export Set\" is deprecated, use the attribute syntax \"#[export] Set\" instead.")
+
 let get_current_context_of_args ~pstate =
   match pstate with
   | None -> fun _ ->
@@ -2560,7 +2564,12 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacSetStrategy l ->
     vtdefault(fun () -> with_locality ~atts vernac_set_strategy l)
   | VernacSetOption (export,key,v) ->
-    let atts = if export then CAst.make ?loc ("export", VernacFlagEmpty) :: atts else atts in
+    let atts = if export then begin
+        warn_legacy_export_set ?loc ();
+        CAst.make ?loc ("export", VernacFlagEmpty) :: atts
+      end
+      else atts
+    in
     vtdefault(fun () ->
         vernac_set_option ~locality:(parse option_locality atts) key v)
   | VernacRemoveOption (key,v) ->

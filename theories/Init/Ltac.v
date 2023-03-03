@@ -10,4 +10,4 @@
 
 Declare ML Module "ltac_plugin:coq-core.plugins.ltac".
 
-Export Set Default Proof Mode "Classic".
+#[export] Set Default Proof Mode "Classic".
