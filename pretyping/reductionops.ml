@@ -1482,30 +1482,31 @@ open Reduction
 let infer_eq (univs, cstrs as cuniv) u u' =
   if UGraph.check_eq_sort univs u u' then cuniv
   else
-    univs, (UnivSubst.enforce_eq_sort u u' cstrs)
+    let cstrs' = UnivSubst.enforce_eq_sort u u' Constraints.empty in
+    UGraph.merge_constraints cstrs' univs, Constraints.union cstrs cstrs'
 
 let infer_leq (univs, cstrs as cuniv) u u' =
   if UGraph.check_leq_sort univs u u' then cuniv
   else
-    let cstrs', _ = UnivSubst.enforce_leq_alg_sort u u' univs in
-      univs, Univ.Constraints.union cstrs cstrs'
+    let cstrs', univs = UnivSubst.enforce_leq_alg_sort u u' univs in
+    univs, Univ.Constraints.union cstrs cstrs'
 
 let infer_cmp_universes _env pb s0 s1 univs =
   match pb with
   | CUMUL -> infer_leq univs s0 s1
   | CONV -> infer_eq univs s0 s1
 
-let infer_convert_instances ~flex u u' (univs,cstrs) =
-  let cstrs' =
-    if flex then
-      if UGraph.check_eq_instances univs u u' then cstrs
-      else raise NotConvertible
-    else Univ.enforce_eq_instances u u' cstrs
-  in (univs, cstrs')
+let infer_convert_instances ~flex u u' (univs,cstrs as cuniv) =
+  if flex then
+    if UGraph.check_eq_instances univs u u' then cuniv
+    else raise NotConvertible
+  else
+    let cstrs' = Univ.enforce_eq_instances u u' Constraints.empty in
+    (univs, Constraints.union cstrs cstrs')
 
-let infer_inductive_instances cv_pb variance u1 u2 (univs,csts') =
-  let csts = get_cumulativity_constraints cv_pb variance u1 u2 in
-  (univs, Univ.Constraints.union csts csts')
+let infer_inductive_instances cv_pb variance u1 u2 (univs,csts) =
+  let csts' = get_cumulativity_constraints cv_pb variance u1 u2 in
+  (UGraph.merge_constraints csts' univs, Univ.Constraints.union csts csts')
 
 let inferred_universes : (UGraph.t * Univ.Constraints.t) universe_compare =
   { compare_sorts = infer_cmp_universes;
