@@ -198,6 +198,32 @@ let match_eqdec env sigma c =
 
 (* /spiwack *)
 
+let elim_type dty rectype a1 a2 =
+  let open Clenv in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let t =
+    let { eqonleft; op; eq1; eq2; noteq } = dty in
+    let eq = mkApp (eq1,[|rectype;a1;a2|]) in
+    let neq = mkApp (noteq,[|mkApp (eq2,[|rectype;a1;a2|])|]) in
+    if eqonleft then mkApp (op,[|eq;neq|]) else mkApp (op,[|neq;eq|])
+  in
+  let (ind, t) = Tacred.reduce_to_atomic_ind env sigma t in
+  let s = Tacticals.elimination_sort_of_goal gl in
+  let elimc = Indrec.lookup_eliminator env (fst ind) s in
+  let evd, elimc = EConstr.fresh_global env sigma elimc in
+  let elimt = Retyping.get_type_of env evd elimc in
+  let clause = mk_clenv_from env evd (elimc, elimt) in
+  let mv = List.last (clenv_arguments clause) in
+  let flags = Unification.elim_flags () in
+  let clause' =
+    (* t is inductive, then CUMUL or CONV is irrelevant *)
+    clenv_unify ~flags Reduction.CUMUL t
+      (clenv_meta_type clause mv) clause in
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.res_pf clause' ~flags ~with_evars:false)
+  end
+
 let rec solveArg hyps dty largs rargs = match largs, rargs with
 | [], [] ->
   tclTHENLIST [
@@ -208,12 +234,11 @@ let rec solveArg hyps dty largs rargs = match largs, rargs with
 | a1 :: largs, a2 :: rargs ->
   Proofview.Goal.enter begin fun gl ->
   let sigma, rectype = pf_type_of gl a1 in
-  let decide = mk_dectype dty rectype a1 a2 in
   let tac hyp = solveArg (hyp :: hyps) dty largs rargs in
   let subtacs =
     if dty.eqonleft then [eqCase tac;diseqCase hyps dty.eqonleft;default_auto]
     else [diseqCase hyps dty.eqonleft;eqCase tac;default_auto] in
-  tclTHEN (Proofview.Unsafe.tclEVARS sigma) (tclTHENS (elim_type decide) subtacs)
+  tclTHEN (Proofview.Unsafe.tclEVARS sigma) (tclTHENS (elim_type dty rectype a1 a2) subtacs)
   end
 | _ -> invalid_arg "List.fold_right2"
 
