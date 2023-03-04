@@ -507,9 +507,9 @@ let pp_one_ind prefix ip_equiv pl name cnames ctyps =
   else fnl () ++ v 0 (prvecti pp_constructor ctyps)
 
 let pp_logical_ind packet =
-  pp_comment (Id.print packet.ip_typename ++ str " : logical inductive") ++
+  pp_comment (Id.print packet.ip_typename ++ str ": logical inductive") ++
   fnl () ++
-  pp_comment (str "with constructors : " ++
+  pp_comment (str "with constructors: " ++
               prvect_with_sep spc Id.print packet.ip_consnames) ++
   fnl ()
 

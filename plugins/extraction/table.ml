@@ -334,13 +334,13 @@ let warning_axioms () =
 let warn_extraction_opaque_accessed =
   CWarnings.create ~name:"extraction-opaque-accessed" ~category:CWarnings.CoreCategories.extraction
     (fun lst -> strbrk "The extraction is currently set to bypass opacity, " ++
-                  strbrk "the following opaque constant bodies have been accessed :" ++
+                  strbrk "the following opaque constant bodies have been accessed:" ++
                   lst ++ str "." ++ fnl ())
 
 let warn_extraction_opaque_as_axiom =
   CWarnings.create ~name:"extraction-opaque-as-axiom" ~category:CWarnings.CoreCategories.extraction
     (fun lst -> strbrk "The extraction now honors the opacity constraints by default, " ++
-         strbrk "the following opaque constants have been extracted as axioms :" ++
+         strbrk "the following opaque constants have been extracted as axioms:" ++
          lst ++ str "." ++ fnl () ++
          strbrk "If necessary, use \"Set Extraction AccessOpaque\" to change this."
          ++ fnl ())
@@ -451,14 +451,14 @@ let msg_of_implicit = function
 
 let error_remaining_implicit k =
   let s = msg_of_implicit k in
-  err (str ("An implicit occurs after extraction : "^s^".") ++ fnl () ++
+  err (str ("An implicit occurs after extraction: "^s^".") ++ fnl () ++
        str "Please check your Extraction Implicit declarations." ++ fnl() ++
        str "You might also try Unset Extraction SafeImplicits to force" ++
        fnl() ++ str "the extraction of unsafe code and review it manually.")
 
 let warn_extraction_remaining_implicit =
   CWarnings.create ~name:"extraction-remaining-implicit" ~category:CWarnings.CoreCategories.extraction
-    (fun s -> strbrk ("At least an implicit occurs after extraction : "^s^".") ++ fnl () ++
+    (fun s -> strbrk ("At least an implicit occurs after extraction: "^s^".") ++ fnl () ++
      strbrk "Extraction SafeImplicits is unset, extracting nonetheless,"
      ++ strbrk "but this code is potentially unsafe, please review it manually.")
 
