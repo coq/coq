@@ -77,10 +77,6 @@ let struct_iter do_decl do_spec do_mp s =
 
 type do_ref = GlobRef.t -> unit
 
-let record_iter_references do_term = function
-  | Record l -> List.iter (Option.iter do_term) l
-  | _ -> ()
-
 let type_iter_references do_type t =
   let rec iter = function
     | Tglob (r,l) -> do_type r; List.iter iter l
@@ -121,7 +117,6 @@ let ind_iter_references do_term do_cons do_type kn ind =
          | _ -> ());
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types
   in
-  if lang () == Ocaml then record_iter_references do_term ind.ind_kind;
     Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
 
 let decl_iter_references do_term do_cons do_type =
