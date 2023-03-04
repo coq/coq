@@ -319,13 +319,13 @@ let rec extract_structure env mp reso ~all = function
       let mp = MPdot (mp,l) in
       let all' = all || Visit.needed_mp_all mp in
       if all' || Visit.needed_mp mp then
-        (l,SEmodule (extract_module env mp ~all:all' mb)) :: ms
+        (l,SEmodule (mp, extract_module env mp ~all:all' mb)) :: ms
       else ms
   | (l,SFBmodtype mtb) :: struc ->
       let ms = extract_structure env mp reso ~all struc in
       let mp = MPdot (mp,l) in
       if all || Visit.needed_mp mp then
-        (l,SEmodtype (extract_mbody_spec env mp mtb)) :: ms
+        (l,SEmodtype (mp, extract_mbody_spec env mp mtb)) :: ms
       else ms
 
 (* From [module_expr] and [module_expression] to implementations *)
@@ -691,7 +691,7 @@ let flatten_structure struc =
   let rec flatten_elem (lab,elem) = match elem with
     |SEdecl d -> [d]
     |SEmodtype _ -> []
-    |SEmodule m -> match m.ml_mod_expr with
+    |SEmodule (_,m) -> match m.ml_mod_expr with
       |MEfunctor _ -> []
       |MEident _ | MEapply _ -> assert false (* should be expanded *)
       |MEstruct (_,elems) -> flatten_elems elems

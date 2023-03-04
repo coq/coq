@@ -169,8 +169,8 @@ and ml_module_sig = (Label.t * ml_specif) list
 
 type ml_structure_elem =
   | SEdecl of ml_decl
-  | SEmodule of ml_module
-  | SEmodtype of ml_module_type
+  | SEmodule of ModPath.t * ml_module
+  | SEmodtype of ModPath.t * ml_module_type
 
 and ml_module_expr =
   | MEident of ModPath.t

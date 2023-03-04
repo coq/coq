@@ -377,8 +377,8 @@ let pp_decl = function
 
 let rec pp_structure_elem = function
   | (l,SEdecl d) -> pp_decl d
-  | (l,SEmodule m) -> pp_module_expr m.ml_mod_expr
-  | (l,SEmodtype m) -> mt ()
+  | (l,SEmodule (_,m)) -> pp_module_expr m.ml_mod_expr
+  | (l,SEmodtype (_,m)) -> mt ()
       (* for the moment we simply discard module type *)
 
 and pp_module_expr = function

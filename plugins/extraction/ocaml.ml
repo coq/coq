@@ -712,11 +712,10 @@ let rec pp_structure_elem = function
       | Some ren ->
          v 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
          fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
-  | (l,SEmodule m) ->
+  | (l,SEmodule (_,m)) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
-        if Common.get_phase () == Pre then
-          str ": " ++ pp_module_type [] m.ml_mod_type
+        if Common.get_phase () == Pre then str ": " ++ pp_module_type [] m.ml_mod_type
         else mt ()
       in
       let def = pp_module_expr [] m.ml_mod_expr in
@@ -727,7 +726,7 @@ let rec pp_structure_elem = function
       (match Common.get_duplicate (top_visible_mp ()) l with
        | Some ren -> fnl () ++ str ("module "^ren^" = ") ++ name
        | None -> mt ())
-  | (l,SEmodtype m) ->
+  | (l,SEmodtype (_,m)) ->
       let def = pp_module_type [] m in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1 (str "module type " ++ name ++ str " =" ++ fnl () ++ def) ++

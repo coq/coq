@@ -57,9 +57,9 @@ let se_iter do_decl do_spec do_mp =
   in
   let rec se_iter = function
     | (_,SEdecl d) -> do_decl d
-    | (_,SEmodule m) ->
+    | (_,SEmodule (_,m)) ->
         me_iter m.ml_mod_expr; mt_iter m.ml_mod_type
-    | (_,SEmodtype m) -> mt_iter m
+    | (_,SEmodtype (_,m)) -> mt_iter m
   and me_iter = function
     | MEident mp -> do_mp mp
     | MEfunctor (_,mt,me) -> me_iter me; mt_iter mt
@@ -193,8 +193,8 @@ let rec msig_of_ms = function
         msig := (l,Spec (Sval (rv.(i),tv.(i))))::!msig
       done;
       !msig
-  | (l,SEmodule m) :: ms -> (l,Smodule m.ml_mod_type) :: (msig_of_ms ms)
-  | (l,SEmodtype m) :: ms -> (l,Smodtype m) :: (msig_of_ms ms)
+  | (l,SEmodule (_,m)) :: ms -> (l,Smodule m.ml_mod_type) :: (msig_of_ms ms)
+  | (l,SEmodtype (_,m)) :: ms -> (l,Smodtype m) :: (msig_of_ms ms)
 
 let signature_of_structure s =
   List.map (fun (mp,ms) -> mp,msig_of_ms ms) s
@@ -226,8 +226,8 @@ let get_decl_in_structure r struc =
       | l :: ll ->
           match search_structure l (not (List.is_empty ll)) sel with
             | SEdecl d -> d
-            | SEmodtype m -> assert false
-            | SEmodule m ->
+            | SEmodtype (_,m) -> assert false
+            | SEmodule (_,m) ->
                 let rec aux = function
                   | MEstruct (_,sel) -> go ll sel
                   | MEfunctor (_,_,sel) -> aux sel
@@ -290,9 +290,9 @@ let rec optim_se to_appear s = function
       done;
       let av' = Array.map dump_unused_vars av in
       (l,SEdecl (Dfix (rv, av', tv))) :: (optim_se to_appear s lse)
-  | (l,SEmodule m) :: lse ->
+  | (l,SEmodule (mp,m)) :: lse ->
       let m = { m with ml_mod_expr = optim_me to_appear s m.ml_mod_expr}
-      in (l,SEmodule m) :: (optim_se to_appear s lse)
+      in (l,SEmodule (mp,m)) :: (optim_se to_appear s lse)
   | se :: lse -> se :: (optim_se to_appear s lse)
 
 and optim_me to_appear s = function
