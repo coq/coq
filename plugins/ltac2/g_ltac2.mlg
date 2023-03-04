@@ -968,9 +968,9 @@ let rules = [
   )
 ] in
 
-Hook.set Tac2entries.register_constr_quotations begin fun () ->
-  Pcoq.grammar_extend Pcoq.Constr.term (Pcoq.Reuse (Some"0", rules))
-end
+  Egramml.grammar_extend ~plugin_uid:("coq-core.plugins.ltac2", "g_ltac2.mlg:adhoc1")
+    Pcoq.Constr.term (Pcoq.Reuse (Some"0", rules))
+
 
 }
 

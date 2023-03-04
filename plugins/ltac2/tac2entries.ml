@@ -1169,22 +1169,6 @@ let def_unit = {
 
 let t_list = coq_def "list"
 
-let (f_register_constr_quotations, register_constr_quotations) = Hook.make ()
-
-let cache_ltac2_init () =
-  Hook.get f_register_constr_quotations ()
-
-let load_ltac2_init _ () =
-  Hook.get f_register_constr_quotations ()
-
-(** Dummy object that register global rules when Require is called *)
-let inTac2Init : unit -> obj =
-  declare_object {(default_object "TAC2-INIT") with
-    object_stage = Summary.Stage.Synterp;
-    cache_function = cache_ltac2_init;
-    load_function = load_ltac2_init;
-  }
-
 let () = Mltop.declare_cache_obj begin fun () ->
   let unit = Id.of_string "unit" in
   Lib.add_leaf (inTypDef unit def_unit);
@@ -1192,5 +1176,4 @@ let () = Mltop.declare_cache_obj begin fun () ->
     ("[]", []);
     ("::", [GTypVar 0; GTypRef (Other t_list, [GTypVar 0])]);
   ];
-  Lib.add_leaf (inTac2Init ());
 end "coq-core.plugins.ltac2"

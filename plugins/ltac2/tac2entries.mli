@@ -103,7 +103,3 @@ val q_move_location : move_location Pcoq.Entry.t
 val q_pose : pose Pcoq.Entry.t
 val q_assert : assertion Pcoq.Entry.t
 end
-
-(** {5 Hooks} *)
-
-val register_constr_quotations : (unit -> unit) Hook.t
