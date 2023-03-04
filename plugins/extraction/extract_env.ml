@@ -395,8 +395,8 @@ and extract_module env mp ~all mb =
   let typ = match mb.mod_expr with
     | FullStruct ->
       assert (Option.is_empty mb.mod_type_alg);
-      mtyp_of_mexpr impl
-    | _ -> extract_mbody_spec env mp mb
+      None
+    | _ -> Some (extract_mbody_spec env mp mb)
   in
   { ml_mod_expr = impl;
     ml_mod_type = typ }

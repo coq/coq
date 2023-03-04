@@ -715,7 +715,10 @@ let rec pp_structure_elem = function
   | (l,SEmodule (_,m)) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
-        if Common.get_phase () == Pre then str ": " ++ pp_module_type [] m.ml_mod_type
+        if Common.get_phase () == Pre then
+          match m.ml_mod_type with
+          | None -> mt ()
+          | Some mt -> str ": " ++ pp_module_type [] mt
         else mt ()
       in
       let def = pp_module_expr [] m.ml_mod_expr in

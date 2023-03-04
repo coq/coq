@@ -58,7 +58,7 @@ let se_iter do_decl do_spec do_mp =
   let rec se_iter = function
     | (_,SEdecl d) -> do_decl d
     | (_,SEmodule (_,m)) ->
-        me_iter m.ml_mod_expr; mt_iter m.ml_mod_type
+        me_iter m.ml_mod_expr; Option.iter mt_iter m.ml_mod_type
     | (_,SEmodtype (_,m)) -> mt_iter m
   and me_iter = function
     | MEident mp -> do_mp mp
@@ -193,17 +193,21 @@ let rec msig_of_ms = function
         msig := (l,Spec (Sval (rv.(i),tv.(i))))::!msig
       done;
       !msig
-  | (l,SEmodule (_,m)) :: ms -> (l,Smodule m.ml_mod_type) :: (msig_of_ms ms)
+  | (l,SEmodule (mp,m)) :: ms ->
+    let m = match m.ml_mod_type with
+      | None -> mtyp_of_mexpr m.ml_mod_expr
+      | Some m -> m
+    in
+    (l,Smodule m) :: (msig_of_ms ms)
   | (l,SEmodtype (_,m)) :: ms -> (l,Smodtype m) :: (msig_of_ms ms)
 
-let signature_of_structure s =
-  List.map (fun (mp,ms) -> mp,msig_of_ms ms) s
-
-let rec mtyp_of_mexpr = function
+and mtyp_of_mexpr = function
   | MEfunctor (id,ty,e) -> MTfunsig (id,ty, mtyp_of_mexpr e)
   | MEstruct (mp,str) -> MTsig (mp, msig_of_ms str)
   | _ -> assert false
 
+let signature_of_structure s =
+  List.map (fun (mp,ms) -> mp,msig_of_ms ms) s
 
 (*s Searching one [ml_decl] in a [ml_structure] by its [global_reference] *)
 
