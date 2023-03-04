@@ -273,7 +273,7 @@ let dfix_to_mlfix rv av i =
    order to preserve the global interface, later [depcheck_se] will get
    rid of them if possible *)
 
-let rec optim_se top to_appear s = function
+let rec optim_se to_appear s = function
   | [] -> []
   | (l,SEdecl (Dterm (r,a,t))) :: lse ->
       let a = normalize (ast_glob_subst !s a) in
@@ -284,7 +284,7 @@ let rec optim_se top to_appear s = function
           Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
         | a -> Dterm (r, a, t)
       in
-      (l,SEdecl d) :: (optim_se top to_appear s lse)
+      (l,SEdecl d) :: (optim_se to_appear s lse)
   | (l,SEdecl (Dfix (rv,av,tv))) :: lse ->
       let av = Array.map (fun a -> normalize (ast_glob_subst !s a)) av in
       (* This fake body ensures that no fixpoint will be auto-inlined. *)
@@ -294,14 +294,14 @@ let rec optim_se top to_appear s = function
         then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
       done;
       let av' = Array.map dump_unused_vars av in
-      (l,SEdecl (Dfix (rv, av', tv))) :: (optim_se top to_appear s lse)
+      (l,SEdecl (Dfix (rv, av', tv))) :: (optim_se to_appear s lse)
   | (l,SEmodule m) :: lse ->
       let m = { m with ml_mod_expr = optim_me to_appear s m.ml_mod_expr}
-      in (l,SEmodule m) :: (optim_se top to_appear s lse)
-  | se :: lse -> se :: (optim_se top to_appear s lse)
+      in (l,SEmodule m) :: (optim_se to_appear s lse)
+  | se :: lse -> se :: (optim_se to_appear s lse)
 
 and optim_me to_appear s = function
-  | MEstruct (msid, lse) -> MEstruct (msid, optim_se false to_appear s lse)
+  | MEstruct (msid, lse) -> MEstruct (msid, optim_se to_appear s lse)
   | MEident mp as me -> me
   | MEapply (me, me') ->
       MEapply (optim_me to_appear s me, optim_me to_appear s me')
@@ -403,7 +403,7 @@ let check_for_remaining_implicits struc =
 let optimize_struct to_appear struc =
   let subst = ref (Refmap'.empty : ml_ast Refmap'.t) in
   let opt_struc =
-    List.map (fun (mp,lse) -> (mp, optim_se true (fst to_appear) subst lse))
+    List.map (fun (mp,lse) -> (mp, optim_se (fst to_appear) subst lse))
       struc
   in
   let mini_struc =
