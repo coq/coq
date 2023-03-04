@@ -31,9 +31,9 @@ let rec msid_of_mt = function
 (*s Apply some functions upon all [ml_decl] and [ml_spec] found in a
    [ml_structure]. *)
 
-let se_iter do_decl do_spec do_mp =
+let mt_iter do_decl do_spec do_mp do_mp_type =
   let rec mt_iter = function
-    | MTident mp -> do_mp mp
+    | MTident mp -> do_mp_type mp
     | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
     | MTwith (mt,ML_With_type(idl,l,t))->
         let mp_mt = msid_of_mt mt in
@@ -48,29 +48,38 @@ let se_iter do_decl do_spec do_mp =
         let mp_w =
           List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl
         in
-        mt_iter mt; do_mp mp_w; do_mp mp
+        mt_iter mt; do_mp_type mp_w; do_mp mp
     | MTsig (_, sign) -> List.iter spec_iter sign
   and spec_iter = function
     | (_,Spec s) -> do_spec s
     | (_,Smodule mt) -> mt_iter mt
     | (_,Smodtype mt) -> mt_iter mt
   in
+  mt_iter
+
+let me_se_iter do_decl do_spec do_mp do_mp_type =
   let rec se_iter = function
     | (_,SEdecl d) -> do_decl d
     | (_,SEmodule (_,m)) ->
-        me_iter m.ml_mod_expr; Option.iter mt_iter m.ml_mod_type
-    | (_,SEmodtype (_,m)) -> mt_iter m
+        me_iter m.ml_mod_expr; Option.iter (mt_iter do_decl do_spec do_mp do_mp_type) m.ml_mod_type
+    | (_,SEmodtype (_,m)) -> mt_iter do_decl do_spec do_mp do_mp_type m
   and me_iter = function
     | MEident mp -> do_mp mp
-    | MEfunctor (_,mt,me) -> me_iter me; mt_iter mt
+    | MEfunctor (_,mt,me) -> me_iter me; mt_iter do_decl do_spec do_mp do_mp_type mt
     | MEapply (me,me') -> me_iter me; me_iter me'
     | MEstruct (msid, sel) -> List.iter se_iter sel
   in
-  se_iter
+  me_iter, se_iter
 
-let struct_iter do_decl do_spec do_mp s =
+let me_iter do_decl do_spec do_mp do_mp_type =
+  fst (me_se_iter do_decl do_spec do_mp do_mp_type)
+
+let se_iter do_decl do_spec do_mp do_mp_type=
+  snd (me_se_iter do_decl do_spec do_mp do_mp_type)
+
+let struct_iter do_decl do_spec do_mp do_mp_type s =
   List.iter
-    (function (_,sel) -> List.iter (se_iter do_decl do_spec do_mp) sel) s
+    (function (_,sel) -> List.iter (se_iter do_decl do_spec do_mp do_mp_type) sel) s
 
 (*s Apply some fonctions upon all references in [ml_type], [ml_ast],
   [ml_decl], [ml_spec] and [ml_structure]. *)
@@ -147,7 +156,7 @@ let decl_ast_search f = function
   | _ -> ()
 
 let struct_ast_search f s =
-  try struct_iter (decl_ast_search f) (fun _ -> ()) (fun _ -> ()) s; false
+  try struct_iter (decl_ast_search f) (fun _ -> ()) (fun _ -> ()) (fun _ -> ()) s; false
   with Found -> true
 
 let rec type_search f = function
@@ -172,7 +181,7 @@ let spec_type_search f = function
 
 let struct_type_search f s =
   try
-    struct_iter (decl_type_search f) (spec_type_search f) (fun _ -> ()) s;
+    struct_iter (decl_type_search f) (spec_type_search f) (fun _ -> ()) (fun _ -> ()) s;
     false
   with Found -> true
 
@@ -318,16 +327,42 @@ let base_r = let open GlobRef in function
   | ConstructRef ((kn,_),_) -> IndRef (kn,0)
   | _ -> assert false
 
-let reset_needed, add_needed, add_needed_mp, found_needed, is_needed =
-  let needed = ref Refset'.empty
-  and needed_mps = ref MPset.empty in
-  ((fun () -> needed := Refset'.empty; needed_mps := MPset.empty),
-   (fun r -> needed := Refset'.add (base_r r) !needed),
-   (fun mp -> needed_mps := MPset.add mp !needed_mps),
+(* Modules on the contents of which there is some dependency *)
+let reset_needed_mp, add_needed_mp, is_needed_mp =
+  let needed_mps = ref MPset.empty in
+  ((fun () -> needed_mps := MPset.empty),
+   (fun mp -> needed_mps := MPset.union (prefixes_mp mp) !needed_mps),
+   (fun mp -> MPset.mem mp !needed_mps))
+
+(* Modules to be fully extracted *)
+let reset_needed_mp_full, add_needed_mp_full, is_needed_mp_full =
+  let needed_mps_full = ref MPset.empty in
+  ((fun () -> needed_mps_full := MPset.empty),
+   (fun mp -> needed_mps_full := MPset.add mp !needed_mps_full; add_needed_mp mp),
+   (fun mp -> MPset.mem mp !needed_mps_full))
+
+(* Dependencies on module types *)
+let reset_needed_mp_type, add_needed_mp_type, is_needed_mp_type =
+  let needed_mps_type = ref MPset.empty in
+  ((fun () -> needed_mps_type := MPset.empty),
+   (fun mp -> needed_mps_type := MPset.add mp !needed_mps_type; add_needed_mp mp),
+   (fun mp -> MPset.mem mp !needed_mps_type || is_needed_mp_full mp))
+
+(* Dependencies on a global reference *)
+let reset_needed, add_needed, found_needed, is_needed =
+  let needed = ref Refset'.empty in
+  ((fun () -> needed := Refset'.empty),
+   (fun r -> needed := Refset'.add (base_r r) !needed; add_needed_mp (modpath_of_r r)),
    (fun r -> needed := Refset'.remove (base_r r) !needed),
    (fun r ->
      let r = base_r r in
-     Refset'.mem r !needed || MPset.mem (modpath_of_r r) !needed_mps))
+     Refset'.mem r !needed || is_needed_mp_full (modpath_of_r r)))
+
+let reset_needed_all () =
+  reset_needed_mp_full ();
+  reset_needed_mp ();
+  reset_needed_mp_type ();
+  reset_needed ()
 
 let declared_refs = function
   | Dind (kn,_) -> [GlobRef.IndRef (kn,0)]
@@ -360,35 +395,68 @@ let compute_deps_spec = function
   | Sval (r,t) ->
       type_iter_references add_needed t
 
-let rec depcheck_se = function
+let depcheck_me_iter =
+  me_iter compute_deps_decl compute_deps_spec add_needed_mp_full add_needed_mp_type
+
+let depcheck_mt_iter =
+  mt_iter compute_deps_decl compute_deps_spec add_needed_mp_full add_needed_mp_type
+
+let rec depcheck_se_list = function
   | [] -> []
-  | ((l,SEdecl d) as t) :: se ->
-    let se' = depcheck_se se in
+  | t :: se ->
+    let se' = depcheck_se_list se in
+    match depcheck_se t with
+    | None -> se'
+    | Some t' -> t' :: se'
+
+and depcheck_se = function
+  | (l,SEdecl d) as t ->
     let refs = declared_refs d in
     let refs' = List.filter is_needed refs in
     if List.is_empty refs' then
       (List.iter remove_info_axiom refs;
        List.iter remove_opaque refs;
-       se')
+       None)
     else begin
       List.iter found_needed refs';
       (* Hack to avoid extracting unused part of a Dfix *)
       match d with
         | Dfix (rv,trms,tys) when (List.for_all is_custom refs') ->
           let trms' = Array.map2 (fun r v -> if List.mem r refs' then v else MLexn "UNUSED") rv trms in
-          ((l,SEdecl (Dfix (rv,trms',tys))) :: se')
-        | _ -> (compute_deps_decl d; t::se')
+          Some (l, SEdecl (Dfix (rv,trms',tys)))
+        | _ -> (compute_deps_decl d; Some t)
     end
-  | t :: se ->
-    let se' = depcheck_se se in
-    se_iter compute_deps_decl compute_deps_spec add_needed_mp t;
-    t :: se'
+  | (l,SEmodule (mp,m)) ->
+    if is_needed_mp mp then
+      let mt = m.ml_mod_type in
+      (match mt with
+       | Some mt -> add_needed_mp_full mp; depcheck_mt_iter mt
+       | None -> ());
+      let m' = depcheck_me m.ml_mod_expr in
+      Some (l,SEmodule (mp,{ml_mod_expr = m'; ml_mod_type = mt}))
+    else
+      None
+  | (l,SEmodtype (mp,mt)) as t ->
+    if is_needed_mp_type mp then
+      (depcheck_mt_iter mt;
+       Some t)
+    else
+      None
+
+and depcheck_me = function
+  | MEident mp as t -> add_needed_mp mp; t
+  | MEfunctor (mbid,mt,me) as m ->
+    depcheck_mt_iter mt;
+    depcheck_me_iter me;
+    m
+  | MEapply (me,me') as m -> depcheck_me_iter me; depcheck_me_iter me'; m
+  | MEstruct (msid, sel) -> MEstruct (msid, depcheck_se_list sel)
 
 let rec depcheck_struct = function
   | [] -> []
   | (mp,lse)::struc ->
       let struc' = depcheck_struct struc in
-      let lse' = depcheck_se lse in
+      let lse' = depcheck_se_list lse in
       if List.is_empty lse' then struc' else (mp,lse')::struc'
 
 exception RemainingImplicit of kill_reason
@@ -412,9 +480,9 @@ let optimize_struct to_appear struc =
       List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
     else
       begin
-        reset_needed ();
+        reset_needed_all ();
         List.iter add_needed (fst to_appear);
-        List.iter add_needed_mp (snd to_appear);
+        List.iter add_needed_mp_full (snd to_appear);
         depcheck_struct opt_struc
       end
   in
