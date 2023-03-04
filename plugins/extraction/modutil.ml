@@ -187,10 +187,12 @@ let rec msig_of_ms = function
       (l,Spec (Sval (r,t))) :: (msig_of_ms ms)
   | (l,SEdecl (Dtype (r,v,t))) :: ms ->
       (l,Spec (Stype (r,v,Some t))) :: (msig_of_ms ms)
-  | (l,SEdecl (Dfix (rv,_,tv))) :: ms ->
+  | (l,SEdecl (Dfix (rv,bv,tv))) :: ms ->
       let msig = ref (msig_of_ms ms) in
       for i = Array.length rv - 1 downto 0 do
-        msig := (l,Spec (Sval (rv.(i),tv.(i))))::!msig
+        match bv.(i) with
+        | MLexn "UNUSED" -> ()
+        | _ -> msig := (l,Spec (Sval (rv.(i),tv.(i))))::!msig
       done;
       !msig
   | (l,SEmodule (mp,m)) :: ms ->
@@ -373,7 +375,7 @@ let rec depcheck_se = function
       (* Hack to avoid extracting unused part of a Dfix *)
       match d with
         | Dfix (rv,trms,tys) when (List.for_all is_custom refs') ->
-          let trms' =  Array.make (Array.length rv) (MLexn "UNUSED") in
+          let trms' = Array.map2 (fun r v -> if List.mem r refs' then v else MLexn "UNUSED") rv trms in
           ((l,SEdecl (Dfix (rv,trms',tys))) :: se')
         | _ -> (compute_deps_decl d; t::se')
     end
