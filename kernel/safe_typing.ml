@@ -1399,6 +1399,16 @@ let close_section senv =
   in
   List.fold_right fold entries senv
 
+let flatten_env senv =
+  let label = function MPdot (_,l) -> l | _ -> assert false in
+  let rec close senv =
+    match senv.modvariant with
+    | STRUCT _ -> close (snd (end_module (label senv.modpath) None senv))
+    | SIG (params,env) -> close (snd (end_module (label senv.modpath) None {senv with modvariant = STRUCT (params,env)}))
+    | LIBRARY | NONE -> senv in
+  let senv = close senv in
+  (senv.modpath, senv.revstruct)
+
 (** {6 Safe typing } *)
 
 type judgment = {
