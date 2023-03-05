@@ -1300,11 +1300,13 @@ let make_hint ~locality name action =
 let warn_deprecated_hint_without_locality =
   CWarnings.create ~name:"deprecated-hint-without-locality" ~category:"deprecated"
     ~default:CWarnings.AsError
-    (fun () -> strbrk "The default value for hint locality is currently \
-    \"local\" in a section and \"global\" otherwise, but is scheduled to change \
-    in a future release. For the time being, adding hints outside of sections \
-    without specifying an explicit locality attribute is therefore deprecated. It is \
-    recommended to use \"export\" whenever possible. Use the attributes \
+    (fun () -> strbrk "The default value for hint locality is \
+    currently \"global\" outside sections, but is scheduled to change to \
+    \"export\" in the next release (Coq 8.18). In Coq 8.17, not providing \
+    an explicit locality outside sections triggers a fatal warning, to \
+    ensure that hint localities are made explicit before the upcoming \
+    change in the default value. It is recommended to use \"export\" \
+    whenever possible. Use the attributes \
     #[local], #[global] and #[export] depending on your choice. For example: \
     \"#[export] Hint Unfold foo : bar.\"")
 
