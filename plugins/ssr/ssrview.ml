@@ -157,6 +157,7 @@ let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
         extra = ist.ast_extra;
         intern_sign = ist.ast_intern_sign;
         genv;
+        strict_check = true;
       }
     in
     (* We open extra_scope *)

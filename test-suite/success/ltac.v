@@ -459,3 +459,14 @@ Module MatchCastInPattern.
   Abort.
 
 End MatchCastInPattern.
+
+Module StrictModeConfusion.
+
+Goal True.
+Fail let x := constr:(match _ with x x => _ end) in idtac.
+(* for_grammar does not reset the ref when an exception is raised *)
+Abort.
+
+Fail Ltac bad := exact x. (* was wrongly accepted *)
+
+End StrictModeConfusion.

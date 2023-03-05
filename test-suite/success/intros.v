@@ -147,7 +147,7 @@ unshelve (intros x).
 - auto.
 Qed.
 
-Definition d := ltac:(intro x; exact (x*x)).
+Definition d := ltac:(let x := fresh in intro x; exact (x*x)).
 
 Definition d' : nat -> _ := ltac:(intros;exact 0).
 

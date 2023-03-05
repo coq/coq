@@ -746,7 +746,7 @@ let tag_var = tag Tag.variable
 
   let transf env sigma c =
     if !Flags.beautify_file then
-      let r = Constrintern.for_grammar (Constrintern.intern_constr env sigma) c in
+      let r = Constrintern.intern_gen ~strict_check:false WithoutTypeConstraint env sigma c in
       Constrextern.(extern_glob_constr (extern_env env sigma)) r
     else c
 

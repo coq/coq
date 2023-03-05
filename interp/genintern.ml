@@ -27,6 +27,7 @@ type glob_sign = {
   genv : Environ.env;
   extra : Store.t;
   intern_sign : intern_variable_status;
+  strict_check : bool;
 }
 
 let empty_intern_sign = {
@@ -34,11 +35,12 @@ let empty_intern_sign = {
   notation_variable_status = Id.Map.empty;
 }
 
-let empty_glob_sign env = {
+let empty_glob_sign ~strict env = {
   ltacvars = Id.Set.empty;
   genv = env;
   extra = Store.empty;
   intern_sign = empty_intern_sign;
+  strict_check = strict;
 }
 
 (** In globalize tactics, we need to keep the initial [constr_expr] to recompute

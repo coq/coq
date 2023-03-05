@@ -43,9 +43,10 @@ type glob_sign = Genintern.glob_sign = {
   genv : Environ.env;
   extra : Genintern.Store.t;
   intern_sign : Genintern.intern_variable_status;
+  strict_check : bool;
 }
 
-let make_empty_glob_sign () = Genintern.empty_glob_sign (Global.env ())
+let make_empty_glob_sign ~strict = Genintern.empty_glob_sign ~strict (Global.env ())
 
 (* We have identifier <| global_reference <| constr *)
 
@@ -70,11 +71,9 @@ let intern_name l ist = function
   | Anonymous -> Anonymous
   | Name id -> Name (intern_ident l ist id)
 
-let strict_check = ref false
-
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let intern_hyp ist ({loc;v=id} as locid) =
-  if not !strict_check then
+  if not ist.strict_check then
     locid
   else if find_ident id ist then
     make id
@@ -100,7 +99,7 @@ let intern_global_reference ist qid =
       try locate_global_with_alias ~head:true qid
       with
       | Not_found as exn ->
-        if not !strict_check && qualid_is_ident qid then
+        if not ist.strict_check && qualid_is_ident qid then
           let id = qualid_basename qid in
           GlobRef.VarRef id
         else
@@ -217,18 +216,15 @@ let intern_binding_name ist x =
      and if a term w/o ltac vars, check the name is indeed quantified *)
   x
 
-let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra; intern_sign} c =
-  let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
+let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra; intern_sign; strict_check} c =
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
   let ltacvars = {
     Constrintern.ltac_vars = lfun;
     ltac_bound = Id.Set.empty;
     ltac_extra = extra;
   } in
-  let c' =
-    warn (Constrintern.intern_core scope ~pattern_mode ~ltacvars env Evd.(from_env env) intern_sign) c
-  in
-  (c',if !strict_check then None else Some c)
+  let c' = Constrintern.intern_core scope ~strict_check ~pattern_mode ~ltacvars env Evd.(from_env env) intern_sign c in
+  (c',if strict_check then None else Some c)
 
 let intern_constr = intern_constr_gen false false
 let intern_type = intern_constr_gen false true
@@ -291,7 +287,7 @@ let intern_destruction_arg ist = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (intern_constr_with_bindings ist c)
   | clear,ElimOnAnonHyp n as x -> x
   | clear,ElimOnIdent {loc;v=id} ->
-      if !strict_check then
+      if ist.strict_check then
         (* If in a defined tactic, no intros-until *)
         let c, p = intern_constr ist (make @@ CRef (qualid_of_ident id, None)) in
         match DAst.get c with
@@ -300,8 +296,8 @@ let intern_destruction_arg ist = function
       else
         clear,ElimOnIdent (make ?loc id)
 
-let short_name qid =
-  if qualid_is_ident qid && not !strict_check then
+let short_name strict qid =
+  if qualid_is_ident qid && not strict then
     Some (make ?loc:qid.CAst.loc @@ qualid_basename qid)
   else None
 
@@ -335,7 +331,7 @@ let intern_evaluable ist = function
     begin match intern_global_reference ist qid with
     | ArgVar _ as v -> v
     | ArgArg (loc, r) ->
-      let short = short_name qid in
+      let short = short_name ist.strict_check qid in
       evalref_of_globref ?loc ?short r
     end
   | {v=ByNotation (ntn,sc);loc} ->
@@ -376,7 +372,7 @@ let intern_typed_pattern ist ~as_type ~ltacvars p =
   (* keeping a constr_expr copy is too complicated and we want anyway to *)
   (* type it, so we remember the pattern as a glob_constr only *)
   let metas,pat =
-    if !strict_check then
+    if ist.strict_check then
       let ltacvars = {
           Constrintern.ltac_vars = ltacvars;
           ltac_bound = Id.Set.empty;
@@ -606,7 +602,7 @@ and intern_tactic_seq onlytac ist tac =
       let ltacvars = Id.Set.union (extract_let_names l) ist.ltacvars in
       let ist' = { ist with ltacvars } in
       let l = List.map (fun (n,b) ->
-          (n,intern_tacarg !strict_check false (if isrec then ist' else ist) b)) l in
+          (n,intern_tacarg ist.strict_check false (if isrec then ist' else ist) b)) l in
       ist.ltacvars, CAst.make ?loc (TacLetIn (isrec,l,intern_tactic onlytac ist' u))
 
   | TacMatchGoal (lz,lr,lmr) ->
@@ -676,14 +672,14 @@ and intern_tactic_seq onlytac ist tac =
   | TacAlias (s,l) ->
       let alias = Tacenv.interp_alias s in
       Option.iter (fun o -> warn_deprecated_alias ?loc (s,o)) @@ alias.Tacenv.alias_deprecation;
-      let l = List.map (intern_tacarg !strict_check false ist) l in
+      let l = List.map (intern_tacarg ist.strict_check false ist) l in
       ist.ltacvars, CAst.make ?loc (TacAlias (s,l))
   | TacML (opn,l) ->
       let _ignore = Tacenv.interp_ml_tactic opn in
-      ist.ltacvars, CAst.make ?loc (TacML (opn,List.map (intern_tacarg !strict_check false ist) l))
+      ist.ltacvars, CAst.make ?loc (TacML (opn,List.map (intern_tacarg ist.strict_check false ist) l))
 
 and intern_tactic_as_arg loc onlytac ist a =
-  match intern_tacarg !strict_check onlytac ist a with
+  match intern_tacarg ist.strict_check onlytac ist a with
   | TacCall _ | Reference _
   | TacGeneric _ as a -> CAst.make ?loc (TacArg a)
   | Tacexp a -> a
@@ -705,7 +701,7 @@ and intern_tacarg strict onlytac ist = function
   | TacCall { loc; v=(f,l) } ->
       TacCall (CAst.make ?loc (
         intern_applied_tactic_reference ist f,
-        List.map (intern_tacarg !strict_check false ist) l))
+        List.map (intern_tacarg ist.strict_check false ist) l))
   | TacFreshId x -> TacFreshId (List.map (intern_string_or_var ist) x)
   | TacPretype c -> TacPretype (intern_constr ist c)
   | TacNumgoals -> TacNumgoals
@@ -756,15 +752,12 @@ and intern_genarg ist (GenArg (Rawwit wit, x)) =
 (** Other entry points *)
 
 let glob_tactic x =
-  Flags.with_option strict_check
-    (intern_pure_tactic (make_empty_glob_sign ())) x
+  intern_pure_tactic (make_empty_glob_sign ~strict:true) x
 
 let glob_tactic_env l env x =
   let ltacvars =
     List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
-  Flags.with_option strict_check
-  (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars })
-    x
+  intern_pure_tactic { (Genintern.empty_glob_sign ~strict:true env) with ltacvars } x
 
 (** Registering *)
 
@@ -792,7 +785,7 @@ let intern_ident' ist id =
   (ist, intern_ident lf ist id)
 
 let intern_ltac ist tac =
-  Flags.with_option strict_check (fun () -> intern_pure_tactic ist tac) ()
+  intern_pure_tactic { ist with strict_check = true } tac
 
 let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);

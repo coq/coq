@@ -82,7 +82,7 @@ val intern_constr : env -> evar_map -> constr_expr -> glob_constr
 val intern_type : env -> evar_map -> constr_expr -> glob_constr
 
 val intern_gen : typing_constraint -> env -> evar_map ->
-  ?impls:internalization_env -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
+  ?impls:internalization_env -> ?strict_check:bool -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
   constr_expr -> glob_constr
 
 val intern_unknown_if_term_or_type : env -> evar_map -> constr_expr -> glob_constr
@@ -141,7 +141,7 @@ val interp_type_evars_impls : ?flags:inference_flags -> env -> evar_map ->
 
 (** Without typing *)
 val intern_constr_pattern :
-  env -> evar_map -> ?as_type:bool -> ?ltacvars:ltac_sign ->
+  env -> evar_map -> ?as_type:bool -> ?strict_check:bool -> ?ltacvars:ltac_sign ->
     constr_pattern_expr -> patvar list * constr_pattern
 
 (** With typing *)
@@ -196,15 +196,12 @@ val interp_notation_constr : env -> ?impls:internalization_env ->
 (** Idem but to glob_constr (weaker check of binders) *)
 
 val intern_core : typing_constraint ->
-  env -> evar_map -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
+  env -> evar_map -> ?strict_check:bool -> ?pattern_mode:bool -> ?ltacvars:ltac_sign ->
   Genintern.intern_variable_status -> constr_expr ->
   glob_constr
 
 (** Globalization options *)
 val parsing_explicit : bool ref
-
-(** Globalization leak for Grammar *)
-val for_grammar : ('a -> 'b) -> 'a -> 'b
 
 (** Placeholder for global option, should be moved to a parameter *)
 val get_asymmetric_patterns : unit -> bool

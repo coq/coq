@@ -161,7 +161,7 @@ let interp_hints ~poly h =
     let ltacvars =
       List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l
     in
-    let env = Genintern.{(empty_glob_sign env) with ltacvars} in
+    let env = Genintern.{(empty_glob_sign ~strict:true env) with ltacvars} in
     let _, tacexp = Genintern.generic_intern env tacexp in
     HintsExternEntry
       ({Typeclasses.hint_priority = Some pri; hint_pattern = pat}, tacexp)
