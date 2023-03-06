@@ -47,6 +47,7 @@ sig
     val fold : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
     val fold_left : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
     val fold_right : (key -> 'a -> 'b -> 'b M.t) -> 'a t -> 'b -> 'b M.t
+    val mapi : (key -> 'a -> 'b M.t) -> 'a t -> 'b t M.t
   end
 end
 
@@ -73,6 +74,7 @@ sig
     val fold : (M.t -> 'a -> 'b -> 'b MS.t) -> 'a map -> 'b -> 'b MS.t
     val fold_left : (M.t -> 'a -> 'b -> 'b MS.t) -> 'a map -> 'b -> 'b MS.t
     val fold_right : (M.t -> 'a -> 'b -> 'b MS.t) -> 'a map -> 'b -> 'b MS.t
+    val mapi : (M.t -> 'a -> 'b MS.t) -> 'a map -> 'b map MS.t
   end
 end =
 struct
@@ -236,6 +238,14 @@ struct
       fold_right f l accu
 
     let fold = fold_left
+
+    let rec mapi f s = match map_prj s with
+      | MEmpty -> return (map_inj MEmpty)
+      | MNode {l; v=k; d=v; r; h} ->
+        mapi f l >>= fun l ->
+        mapi f r >>= fun r ->
+        f k v >>= fun v ->
+        return (map_inj (MNode {l; v=k; d=v; r; h}))
 
   end
 

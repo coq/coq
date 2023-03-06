@@ -1345,6 +1345,170 @@ let () = define1 "ltac1_to_list" ltac1 begin fun v ->
   return (Value.of_option (Value.of_list of_ltac1) (Tacinterp.Value.to_list v))
 end
 
+module type ReprType = sig
+  type t
+  val repr : t repr
+  val prefix : string
+end
+
+module DefineMap (X : ReprType)
+    (S : CSig.SetS with type elt = X.t)
+    (M : CMap.ExtS with type key = X.t and module Set := S)
+    () : sig end =
+struct
+  let mext : valexpr M.t Tac2dyn.Val.tag = Tac2dyn.Val.create (X.prefix^"_map")
+  let mrepr = repr_ext mext
+  let sext : S.t Tac2dyn.Val.tag = Tac2dyn.Val.create (X.prefix^"_set")
+  let srepr = repr_ext sext
+
+  module Monadic = M.Monad(Proofview.Monad)
+
+  let () = define0 (X.prefix^"_set_empty") (return (Value.of_ext sext S.empty))
+
+  let () = define0 (X.prefix^"_map_empty") (return (Value.of_ext mext M.empty))
+
+  let () = define1 (X.prefix^"_set_is_empty") srepr begin fun s ->
+      return (Value.of_bool (S.is_empty s))
+    end
+
+  let () = define1 (X.prefix^"_map_is_empty") mrepr begin fun m ->
+      return (Value.of_bool (M.is_empty m))
+    end
+
+  let () = define2 (X.prefix^"_set_mem") X.repr srepr begin fun x s ->
+      return (Value.of_bool (S.mem x s))
+    end
+
+  let () = define2 (X.prefix^"_map_mem") X.repr mrepr begin fun x m ->
+      return (Value.of_bool (M.mem x m))
+    end
+
+  let () = define2 (X.prefix^"_set_add") X.repr srepr begin fun x s ->
+      return (Value.of_ext sext (S.add x s))
+    end
+
+  let () = define3 (X.prefix^"_map_add") X.repr valexpr mrepr begin fun x v m ->
+      return (Value.of_ext mext (M.add x v m))
+    end
+
+  let () = define2 (X.prefix^"_set_remove") X.repr srepr begin fun x s ->
+      return (Value.of_ext sext (S.remove x s))
+    end
+
+  let () = define2 (X.prefix^"_map_remove") X.repr mrepr begin fun x m ->
+      return (Value.of_ext mext (M.remove x m))
+    end
+
+  let () = define2 (X.prefix^"_set_union") srepr srepr begin fun s1 s2 ->
+      return (Value.of_ext sext (S.union s1 s2))
+    end
+
+  let () = define2 (X.prefix^"_set_inter") srepr srepr begin fun s1 s2 ->
+      return (Value.of_ext sext (S.inter s1 s2))
+    end
+
+  let () = define2 (X.prefix^"_set_diff") srepr srepr begin fun s1 s2 ->
+      return (Value.of_ext sext (S.diff s1 s2))
+    end
+
+  let () = define2 (X.prefix^"_set_equal") srepr srepr begin fun s1 s2 ->
+      return (Value.of_bool (S.equal s1 s2))
+    end
+
+  let () = define2 (X.prefix^"_set_subset") srepr srepr begin fun s1 s2 ->
+      return (Value.of_bool (S.subset s1 s2))
+    end
+
+  let () = define2 (X.prefix^"_map_find_opt") X.repr mrepr begin fun x m ->
+      return (Value.of_option identity (M.find_opt x m))
+    end
+
+  let () = define2 (X.prefix^"_map_mapi") closure mrepr begin fun f m ->
+      Monadic.mapi (fun k v -> apply f [Value.repr_of X.repr k;v]) m >>= fun m ->
+      return (Value.repr_of mrepr m)
+    end
+
+  let () = define3 (X.prefix^"_map_fold") closure mrepr valexpr begin fun f m acc ->
+      Monadic.fold (fun x v acc -> apply f [Value.repr_of X.repr x;v;acc]) m acc
+    end
+
+  let () = define1 (X.prefix^"_set_cardinal") srepr begin fun s ->
+      return (Value.of_int (S.cardinal s))
+    end
+
+  let () = define1 (X.prefix^"_map_cardinal") mrepr begin fun m ->
+      return (Value.of_int (M.cardinal m))
+    end
+
+  let () = define1 (X.prefix^"_set_elements") srepr begin fun s ->
+      return Value.(of_list (repr_of X.repr)  (S.elements s))
+    end
+
+  let () = define1 (X.prefix^"_map_bindings") mrepr begin fun m ->
+      return Value.(of_list (of_pair (repr_of X.repr) identity)  (M.bindings m))
+    end
+
+  let () = define1 (X.prefix^"_map_domain") mrepr begin fun m ->
+      return (Value.of_ext sext (M.domain m))
+    end
+
+end
+
+(* NB: use include instead of "module _ =" as the later is not available in ocaml 4.09 *)
+include DefineMap (struct
+    type t = Id.t
+    let repr = Value.ident
+    let prefix = "ident"
+  end)
+    (Id.Set)
+    (Id.Map)
+    ()
+
+include DefineMap (struct
+    type t = int
+    let repr = Value.int
+    let prefix = "int"
+  end)
+    (Int.Set)
+    (Int.Map)
+    ()
+
+include DefineMap (struct
+    type t = string
+    let repr = Value.string
+    let prefix = "string"
+  end)
+    (String.Set)
+    (String.Map)
+    ()
+
+include DefineMap (struct
+    type t = inductive
+    let repr = Value.(repr_ext val_inductive)
+    let prefix = "inductive"
+  end)
+    (Indset_env)
+    (Indmap_env)
+    ()
+
+include DefineMap (struct
+    type t = constructor
+    let repr = Value.(repr_ext val_constructor)
+    let prefix = "constructor"
+  end)
+    (Constrset_env)
+    (Constrmap_env)
+    ()
+
+include DefineMap (struct
+    type t = Constant.t
+    let repr = Value.(repr_ext val_constant)
+    let prefix = "constant"
+  end)
+    (Cset_env)
+    (Cmap_env)
+    ()
+
 (** ML types *)
 
 (** Embed all Ltac2 data into Values *)

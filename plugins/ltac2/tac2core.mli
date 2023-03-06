@@ -30,3 +30,14 @@ val c_false : ltac_constructor
 end
 
 val pf_apply : ?catch_exceptions:bool -> (Environ.env -> Evd.evar_map -> 'a Proofview.tactic) -> 'a Proofview.tactic
+
+module type ReprType = sig
+  type t
+  val repr : t Tac2ffi.repr
+  val prefix : string
+end
+
+module DefineMap (X : ReprType)
+    (S : CSig.SetS with type elt = X.t)
+    (M : CMap.ExtS with type key = X.t and module Set := S)
+    () : sig end

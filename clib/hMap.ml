@@ -442,6 +442,9 @@ struct
 
     let fold_left _ _ _ = assert false
     let fold_right _ _ _ = assert false
+
+    let mapi f s =
+      IntM.mapi (fun _ m -> ExtM.mapi f m) s
   end
 
 end
