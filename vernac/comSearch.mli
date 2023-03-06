@@ -10,5 +10,11 @@
 
 (* Interpretation of search commands *)
 
+val interp_search_request :
+  Environ.env ->
+  Evd.evar_map ->
+  bool * Vernacexpr.search_request ->
+  bool * Search.glob_search_request
+
 val interp_search : Environ.env -> Evd.evar_map ->
   Vernacexpr.searchable -> Vernacexpr.search_restriction -> unit
