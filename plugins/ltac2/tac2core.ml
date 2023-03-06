@@ -26,7 +26,7 @@ let constr_flags =
     use_typeclasses = Pretyping.UseTC;
     solve_unification_constraints = true;
     fail_evar = true;
-    expand_evars = true;
+    expand_evars = false;
     program_mode = false;
     polymorphic = false;
   }
@@ -38,7 +38,7 @@ let open_constr_no_classes_flags =
   use_typeclasses = Pretyping.NoUseTC;
   solve_unification_constraints = true;
   fail_evar = false;
-  expand_evars = true;
+  expand_evars = false;
   program_mode = false;
   polymorphic = false;
   }
