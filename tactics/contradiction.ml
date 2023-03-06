@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Constr
-open Context
 open EConstr
 open Hipattern
 open Tactics
@@ -20,10 +19,13 @@ module NamedDecl = Context.Named.Declaration
 
 (* Absurd *)
 
-let mk_absurd_proof coq_not r t =
-  let id = Namegen.default_dependent_ident in
-  mkLambda (make_annot (Names.Name id) Sorts.Relevant,mkApp(coq_not,[|t|]),
-    mkLambda (make_annot (Names.Name id) r,t,mkApp (mkRel 2,[|mkRel 1|])))
+let mk_absurd_proof env r t =
+  Tacticals.pf_constr_of_global (Coqlib.(lib_ref "core.not.type")) >>= fun coq_not ->
+  Refine.refine ~typecheck:true begin fun sigma ->
+    let sigma, negev = Evarutil.new_evar env sigma (mkApp (coq_not, [|t|])) in
+    let sigma, ev = Evarutil.new_evar ~relevance:r env sigma t in
+    sigma, mkApp (negev, [|ev|])
+  end
 
 let absurd c =
   Proofview.Goal.enter begin fun gl ->
@@ -31,14 +33,10 @@ let absurd c =
     let env = Proofview.Goal.env gl in
     let j = Retyping.get_judgment_of env sigma c in
     let sigma, j = Coercion.inh_coerce_to_sort env sigma j in
-    let t = j.Environ.utj_val in
+    let t = nf_betaiota env sigma j.Environ.utj_val in
     let r = ESorts.relevance_of_sort sigma j.Environ.utj_type in
     Proofview.Unsafe.tclEVARS sigma <*>
-    Tacticals.pf_constr_of_global (Coqlib.(lib_ref "core.not.type")) >>= fun coqnot ->
-    Tacticals.tclTHENLIST [
-      Tactics.exfalso;
-      Simple.apply (mk_absurd_proof coqnot r t)
-    ]
+    Tactics.exfalso <*> mk_absurd_proof env r t
   end
 
 let absurd c = absurd c
