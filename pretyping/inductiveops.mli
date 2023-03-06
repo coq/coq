@@ -152,7 +152,7 @@ val top_allowed_sort : env -> inductive -> Sorts.family
 
 (** (Co)Inductive records with primitive projections do not have eta-conversion,
     hence no dependent elimination. *)
-val has_dependent_elim : mutual_inductive_body -> bool
+val has_dependent_elim : mind_specif -> bool
 
 (** Primitive projections *)
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->

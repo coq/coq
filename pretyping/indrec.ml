@@ -563,10 +563,10 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
 (* This builds elimination predicate for Case tactic *)
 
 let build_case_analysis_scheme env sigma pity dep kind =
-  let (mib,mip) = lookup_mind_specif env (fst pity) in
-  if dep && not (Inductiveops.has_dependent_elim mib) then
+  let specif = lookup_mind_specif env (fst pity) in
+  if dep && not (Inductiveops.has_dependent_elim specif) then
     raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, fst pity)));
-  mis_make_case_com dep env sigma pity (mib,mip) kind
+  mis_make_case_com dep env sigma pity specif kind
 
 let is_in_prop mip =
   match inductive_sort_family mip with
@@ -574,9 +574,9 @@ let is_in_prop mip =
   | _ -> false
 
 let build_case_analysis_scheme_default env sigma pity kind =
-  let (mib,mip) = lookup_mind_specif env (fst pity) in
-  let dep = not (is_in_prop mip || not (Inductiveops.has_dependent_elim mib)) in
-  mis_make_case_com dep env sigma pity (mib,mip) kind
+  let _, mip as specif = lookup_mind_specif env (fst pity) in
+  let dep = not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif)) in
+  mis_make_case_com dep env sigma pity specif kind
 
 (**********************************************************************)
 (* [modify_sort_scheme s rec] replaces the sort of the scheme
@@ -637,8 +637,8 @@ let check_arities env listdepkind =
 
 let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
   | ((mind,u),dep,s)::lrecspec ->
-      let (mib,mip) = lookup_mind_specif env mind in
-      if dep && not (Inductiveops.has_dependent_elim mib) then
+      let mib, mip as specif = lookup_mind_specif env mind in
+      if dep && not (Inductiveops.has_dependent_elim specif) then
         raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (true, mind)));
       let (sp,tyi) = mind in
       let listdepkind =
@@ -658,8 +658,8 @@ let build_mutual_induction_scheme env sigma ?(force_mutual=false) = function
   | _ -> anomaly (Pp.str "build_induction_scheme expects a non empty list of inductive types.")
 
 let build_induction_scheme env sigma pind dep kind =
-  let (mib,mip) = lookup_mind_specif env (fst pind) in
-  if dep && not (Inductiveops.has_dependent_elim mib) then
+  let (mib,mip) as specif = lookup_mind_specif env (fst pind) in
+  if dep && not (Inductiveops.has_dependent_elim specif) then
     raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (true, fst pind)));
   let sigma, l = mis_make_indrec env sigma [(pind,mib,mip,dep,kind)] mib (snd pind) in
     sigma, List.hd l
