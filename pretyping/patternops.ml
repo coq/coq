@@ -143,7 +143,7 @@ let pattern_of_constr ~broken env sigma t =
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
-    | Sort s -> PSort (Sorts.family s)
+    | Sort s -> PSort (EConstr.ESorts.family sigma (EConstr.ESorts.make s))
     | Cast (c,_,_)      -> pattern_of_constr env c
     | LetIn (na,c,t,b) -> PLetIn (na.binder_name,
                                   pattern_of_constr env c,Some (pattern_of_constr env t),
