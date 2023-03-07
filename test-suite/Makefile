@@ -320,7 +320,7 @@ unit-tests: $(UNIT_LOGFILES)
 # Build executable, run it to generate log file
 unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -w -29 -linkpkg -package coq-core.toplevel,ounit2 \
+	$(HIDE)$(OCAMLBEST) -linkpkg -package coq-core.toplevel,ounit2 \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)./$<.test
 

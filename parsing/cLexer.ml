@@ -762,12 +762,18 @@ module MakeLexer (Diff : sig val mode : bool end)
   let tok_pattern_eq = Tok.equal_p
   let tok_pattern_strings = Tok.pattern_strings
   let tok_func ?(loc=Loc.(initial ToplevelInput)) cs =
+    let bp_ = Loc.(loc.bp) in
     let cur_loc = ref loc in
     Gramlib.LStream.from ~loc
       (fun ttree ->
          let (tok, loc) = next_token ~diff_mode:Diff.mode ttree !cur_loc cs in
          cur_loc := after loc;
-         Some (tok,loc))
+         let aloc = Loc.{loc with bol_pos = loc.bol_pos + bp_;
+                                  bp = loc.bp + bp_;
+                                  ep = loc.ep + bp_} in
+         (* Debug: uncomment this for tracing tokens seen by coq...*)
+         (*  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" aloc.line_nb aloc.bp aloc.ep (Tok.extract_string diff_mode t);*)
+         Some (tok,aloc))
   let tok_match = Tok.match_pattern
   let tok_text = Tok.token_text
 

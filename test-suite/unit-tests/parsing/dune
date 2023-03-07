@@ -1,5 +1,0 @@
-(executable
- (name resumption)
- (modules resumption)
- (libraries coq-core.vernac)
- (link_flags -linkall))
