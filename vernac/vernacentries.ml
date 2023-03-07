@@ -1485,19 +1485,19 @@ let vernac_require from export qidl =
   let locate (qid,_) =
     let open Loadpath in
     match locate_qualified_library ?root qid with
-    | Ok (dir,f) -> dir, f
+    | Ok (dir, _) -> dir
     | Error LibUnmappedDir -> raise (UnmappedLibrary (root, qid))
     | Error LibNotFound -> raise (NotFoundLibrary (root, qid))
   in
   let modrefl = List.map locate qidl in
   if Dumpglob.dump () then
-    List.iter2 (fun ({CAst.loc},_) (dp,_) -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
+    List.iter2 (fun ({CAst.loc},_) dp -> Dumpglob.dump_libref ?loc dp "lib") qidl modrefl;
   let lib_resolver = Loadpath.try_locate_absolute_library in
   let needed = Library.require_library_syntax_from_dirpath ~lib_resolver modrefl in
   Library.require_library_from_dirpath needed;
   Option.iter (fun (export,cats) ->
       let cats = interp_import_cats cats in
-      List.iter2 (fun (m,_) (_,f) ->
+      List.iter2 (fun m (_,f) ->
           import_module_with_filter ~export cats (MPfile m) f)
         modrefl qidl)
     export
