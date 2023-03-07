@@ -94,14 +94,14 @@ let is_empty s =
 
 (* Stream building functions *)
 
-let from ?(offset=0) f = {count = offset; data = Sgen {curr = None; func = f}}
+let from f = {count = 0; data = Sgen {curr = None; func = f}}
 
 (* NB we need the thunk for value restriction *)
 let empty () = {count = 0; data = Sempty}
 
-let of_string ?(offset=0) s =
+let of_string s =
   let count = ref 0 in
-  from ~offset (fun () ->
+  from (fun () ->
     let c = !count in
     if c < String.length s
     then (incr count; Some s.[c])
