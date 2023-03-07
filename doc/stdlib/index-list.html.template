@@ -190,6 +190,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Int.v
     theories/ZArith/Zpow_facts.v
     theories/ZArith/Zdigits.v
+    theories/ZArith/Zbitwise.v
   </dd>
 
   <dt> <b>QArith</b>:
