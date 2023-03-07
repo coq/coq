@@ -2181,10 +2181,11 @@ let vernac_print ~pstate =
     dump_global qid;
     Prettyp.print_impargs qid
   | PrintAssumptions (o,t,r) ->
-      (* Prints all the axioms and section variables used by a term *)
+    (* Prints all the axioms and section variables used by a term *)
+      let env = Global.env () in
       let gr = smart_global r in
-      let cstr = Globnames.printable_constr_of_global gr in
-      let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
+      let cstr, _ = UnivGen.fresh_global_instance env gr in
+      let st = Conv_oracle.get_transp_state (Environ.oracle env) in
       let nassums =
         Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
       Printer.pr_assumptionset env sigma nassums

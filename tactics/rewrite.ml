@@ -258,22 +258,22 @@ end) = struct
 
   let proper_class =
     let r = lazy (find_reference morphisms "Proper") in
-    fun env sigma -> TC.class_info env sigma (Lazy.force r)
+    fun () -> Option.get (TC.class_info (Lazy.force r))
 
   let proper_proxy_class =
     let r = lazy (find_reference morphisms "ProperProxy") in
-    fun env sigma -> TC.class_info env sigma (Lazy.force r)
+    fun () -> Option.get (TC.class_info (Lazy.force r))
 
-  let proper_proj env sigma =
-    mkConst (Option.get (List.hd (proper_class env sigma).TC.cl_projs).TC.meth_const)
+  let proper_proj () =
+    UnsafeMonomorphic.mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
 
   let proper_type env (sigma,cstrs) =
-    let l = (proper_class env sigma).TC.cl_impl in
+    let l = (proper_class ()).TC.cl_impl in
     let (sigma, c) = Evd.fresh_global env sigma l in
     (sigma, cstrs), c
 
   let proper_proxy_type env (sigma,cstrs) =
-    let l = (proper_proxy_class env sigma).TC.cl_impl in
+    let l = (proper_proxy_class ()).TC.cl_impl in
     let (sigma, c) = Evd.fresh_global env sigma l in
     (sigma, cstrs), c
 
@@ -966,12 +966,16 @@ let fold_match ?(force=false) env sigma c =
       raise Not_found
   in
   let app =
+    let sk = if Global.is_polymorphic (ConstRef sk)
+      then CErrors.anomaly Pp.(str "Unexpected univ poly in Rewrite.fold_match")
+      else UnsafeMonomorphic.mkConst sk
+    in
     let ind, args = Inductiveops.find_mrectype env sigma cty in
     let pars, args = List.chop ci.ci_npar args in
     let meths = Array.to_list brs in
-      applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
+      applist (sk, pars @ [pred] @ meths @ args @ [c])
   in
-    sk, env, app
+    sk, app
 
 let unfold_match env sigma sk app =
   match EConstr.kind sigma app with
@@ -1205,7 +1209,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
             else
               match try Some (fold_match env (goalevars evars) t) with Not_found -> None with
               | None -> state, c'
-              | Some (cst, _, t') ->
+              | Some (cst, t') ->
                  let state, res = aux { state ; env ; unfresh ;
                                         term1 = t' ; ty1 = ty ;
                                         cstr = (prop,cstr) ; evars } in
@@ -1786,12 +1790,12 @@ let rec strategy_of_ast = function
                                              evars = (sigma,cstrevars evars) }) }
   | StratFold c -> Strategies.fold_glob (fst c)
 
-let proper_projection env sigma r ty =
+let proper_projection sigma r ty =
   let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i)) in
   let ctx, inst = decompose_prod_decls sigma ty in
   let mor, args = destApp sigma inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
-  let app = mkApp (PropGlobal.proper_proj env sigma,
+  let app = mkApp (PropGlobal.proper_proj (),
                   Array.append args [| instarg |]) in
     it_mkLambda_or_LetIn app ctx
 
@@ -1830,7 +1834,7 @@ let default_morphism env sigma sign m =
   in
   let evars, morph = app_poly_check env evars PropGlobal.proper_type [| t; sign; m |] in
   let evars, mor = TC.resolve_one_typeclass env (goalevars evars) morph in
-    mor, proper_projection env sigma mor morph
+    mor, proper_projection sigma mor morph
 
 (** Bind to "rewrite" too *)
 

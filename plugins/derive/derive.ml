@@ -19,7 +19,6 @@ let start_deriving f suchthat name : Declare.Proof.t =
 
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let poly = false in
   let kind = Decls.(IsDefinition Definition) in
 
   (* create a sort variable for the type of [f] *)
@@ -40,7 +39,7 @@ let start_deriving f suchthat name : Declare.Proof.t =
                 TNil sigma))))))
   in
 
-  let info = Declare.Info.make ~poly ~kind () in
+  let info = Declare.Info.make ~poly:false ~kind () in
   let lemma = Declare.Proof.start_derive ~name ~f ~info goals in
   Declare.Proof.map lemma ~f:(fun p ->
       Util.pi1 @@ Proof.run_tactic env Proofview.(tclFOCUS 1 2 shelve) p)

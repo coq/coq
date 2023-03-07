@@ -63,10 +63,10 @@ module PropGlobal = struct
 
   let proper_class =
     let r = lazy (find_reference morphisms "Proper") in
-    fun env sigma -> TC.class_info env sigma (Lazy.force r)
+    fun () -> Option.get (TC.class_info (Lazy.force r))
 
-  let proper_proj env sigma =
-    mkConst (Option.get (List.hd (proper_class env sigma).TC.cl_projs).TC.meth_const)
+  let proper_proj () =
+    UnsafeMonomorphic.mkConst (Option.get (List.hd (proper_class ()).TC.cl_projs).TC.meth_const)
 
 end
 
@@ -148,7 +148,7 @@ let proper_projection env sigma r ty =
   let ctx, inst = decompose_prod_decls sigma ty in
   let mor, args = destApp sigma inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
-  let app = mkApp (PropGlobal.proper_proj env sigma,
+  let app = mkApp (PropGlobal.proper_proj (),
                   Array.append args [| instarg |]) in
     it_mkLambda_or_LetIn app ctx
 
@@ -214,7 +214,7 @@ let add_morphism_as_parameter atts m n : unit =
   let cst = Declare.declare_constant ~name:instance_id ~kind (Declare.ParameterEntry pe) in
   let cst = GlobRef.ConstRef cst in
   Classes.Internal.add_instance
-    (PropGlobal.proper_class env evd) Hints.empty_hint_info atts.locality cst;
+    (PropGlobal.proper_class ()) Hints.empty_hint_info atts.locality cst;
   declare_projection n instance_id cst
 
 let add_morphism_interactive atts ~tactic m n : Declare.Proof.t =
@@ -227,7 +227,7 @@ let add_morphism_interactive atts ~tactic m n : Declare.Proof.t =
   let kind = Decls.(IsDefinition Instance) in
   let hook { Declare.Hook.S.dref; _ } = dref |> function
     | GlobRef.ConstRef cst ->
-      Classes.Internal.add_instance (PropGlobal.proper_class env evd) Hints.empty_hint_info
+      Classes.Internal.add_instance (PropGlobal.proper_class ()) Hints.empty_hint_info
         atts.locality (GlobRef.ConstRef cst);
       declare_projection n instance_id (GlobRef.ConstRef cst)
     | _ -> assert false

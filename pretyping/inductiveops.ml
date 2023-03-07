@@ -356,7 +356,7 @@ let make_project env sigma ind pred c branches ps =
          not (has_dependent_elim specif) then
       user_err
         Pp.(str"Dependent case analysis not allowed" ++
-              str" on inductive type " ++ Termops.Internal.print_constr_env env sigma (mkInd ind) ++ str ".")
+              str" on inductive type " ++ Termops.pr_global_env env (IndRef ind) ++ str ".")
   in
   let branch = branches.(0) in
   let ctx, br = decompose_lambda_n_decls sigma mip.mind_consnrealdecls.(0) branch in

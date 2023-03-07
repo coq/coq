@@ -548,6 +548,8 @@ open Primred
 module CNativeEntries =
 struct
 
+  open UnsafeMonomorphic
+
   type elem = EConstr.t
   type args = EConstr.t array
   type evd = evar_map

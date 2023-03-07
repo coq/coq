@@ -303,12 +303,12 @@ let type_of_prim_type _env u (type a) (prim : a CPrimitives.prim_type) = match p
 
 let type_of_int env =
   match env.retroknowledge.Retroknowledge.retro_int63 with
-  | Some c -> mkConst c
+  | Some c -> UnsafeMonomorphic.mkConst c
   | None -> CErrors.user_err Pp.(str"The type int must be registered before this construction can be typechecked.")
 
 let type_of_float env =
   match env.retroknowledge.Retroknowledge.retro_float64 with
-  | Some c -> mkConst c
+  | Some c -> UnsafeMonomorphic.mkConst c
   | None -> CErrors.user_err Pp.(str"The type float must be registered before this construction can be typechecked.")
 
 let type_of_array env u =
@@ -937,37 +937,38 @@ let type_of_prim_const env _u c =
     int_ty ()
 
 let type_of_prim env u t =
+  let module UM = UnsafeMonomorphic in
   let int_ty () = type_of_int env in
   let float_ty () = type_of_float env in
   let array_ty u a = mkApp(type_of_array env u, [|a|]) in
   let bool_ty () =
     match env.retroknowledge.Retroknowledge.retro_bool with
-    | Some ((ind,_),_) -> Constr.mkInd ind
+    | Some ((ind,_),_) -> UM.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type bool must be registered before this primitive.")
   in
   let compare_ty () =
     match env.retroknowledge.Retroknowledge.retro_cmp with
-    | Some ((ind,_),_,_) -> Constr.mkInd ind
+    | Some ((ind,_),_,_) -> UM.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type compare must be registered before this primitive.")
   in
   let f_compare_ty () =
     match env.retroknowledge.Retroknowledge.retro_f_cmp with
-    | Some ((ind,_),_,_,_) -> Constr.mkInd ind
+    | Some ((ind,_),_,_,_) -> UM.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type float_comparison must be registered before this primitive.")
   in
   let f_class_ty () =
     match env.retroknowledge.Retroknowledge.retro_f_class with
-    | Some ((ind,_),_,_,_,_,_,_,_,_) -> Constr.mkInd ind
+    | Some ((ind,_),_,_,_,_,_,_,_,_) -> UM.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type float_class must be registered before this primitive.")
   in
   let pair_ty fst_ty snd_ty =
     match env.retroknowledge.Retroknowledge.retro_pair with
-    | Some (ind,_) -> Constr.mkApp(Constr.mkInd ind, [|fst_ty;snd_ty|])
+    | Some (ind,_) -> Constr.mkApp(UM.mkInd ind, [|fst_ty;snd_ty|])
     | None -> CErrors.user_err Pp.(str"The type pair must be registered before this primitive.")
   in
   let carry_ty int_ty =
     match env.retroknowledge.Retroknowledge.retro_carry with
-    | Some ((ind,_),_) -> Constr.mkApp(Constr.mkInd ind, [|int_ty|])
+    | Some ((ind,_),_) -> Constr.mkApp(UM.mkInd ind, [|int_ty|])
     | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
   in
   let open CPrimitives in

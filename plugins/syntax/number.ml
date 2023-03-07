@@ -19,6 +19,10 @@ open Notation
 module CSet = CSet.Make (Constr)
 module CMap = CMap.Make (Constr)
 
+let mkRef env sigma g =
+  let sigma, c = Evd.fresh_global env sigma g in
+  sigma, EConstr.Unsafe.to_constr c
+
 (** * Number notation *)
 
 type number_string_via = qualid * (bool * qualid * qualid) list
@@ -181,7 +185,7 @@ let multiple_after_error () =
 let via_abstract_error () =
   CErrors.user_err (Pp.str "'via' and 'abstract' cannot be used together.")
 
-let locate_global_sort_inductive_or_constant sigma qid =
+let locate_global_sort_inductive_or_constant env sigma qid =
   let locate_sort qid =
     match Nametab.locate_extended qid with
     | Globnames.TrueGlobal _ -> raise Not_found
@@ -190,20 +194,26 @@ let locate_global_sort_inductive_or_constant sigma qid =
     | [], Notation_term.NSort r ->
        let sigma,c = Evd.fresh_sort_in_family sigma (Glob_ops.glob_sort_family r) in
        let c = EConstr.ESorts.kind sigma c in
-       sigma,Constr.mkSort c
+       sigma, Constr.mkSort c
     | _ -> raise Not_found in
   try locate_sort qid
   with Not_found ->
-    match Smartlocate.global_with_alias qid with
-    | GlobRef.IndRef i -> sigma, Constr.mkInd i
-    | _ -> sigma, Constr.mkConst (Smartlocate.global_constant_with_alias qid)
+    let g = Smartlocate.global_with_alias qid in
+    let () = match g with
+      | IndRef _ | ConstRef _ -> ()
+      | VarRef _ | ConstructRef _ ->
+        CErrors.user_err Pp.(pr_qualid qid ++ spc() ++ str "is not an inductive type or a constant.")
+    in
+    mkRef env sigma g
 
-let locate_global_constructor_inductive_or_constant qid =
+let locate_global_constructor_inductive_or_constant env sigma qid =
   let g = Smartlocate.global_with_alias qid in
-  match g with
-  | GlobRef.ConstructRef c -> g, Constr.mkConstruct c
-  | GlobRef.IndRef i -> g, Constr.mkInd i
-  | _ -> g, Constr.mkConst (Smartlocate.global_constant_with_alias qid)
+  let () = match g with
+    | ConstructRef _ | IndRef _ | ConstRef _ -> ()
+    | VarRef _ -> CErrors.user_err Pp.(pr_qualid qid ++ spc() ++ str "is a section variable.")
+  in
+  let sigma, c = mkRef env sigma g in
+  sigma, g, c
 
 (* [get_type env sigma c] retrieves the type of [c] and returns a pair
    [l, t] such that [c : l_0 -> ... -> l_n -> t]. *)
@@ -231,9 +241,7 @@ let get_type env sigma c =
 let elaborate_to_post_params env sigma ty_ind params =
   let to_post_for_constructor indc =
     let sigma, c = match indc with
-      | GlobRef.ConstructRef c ->
-         let sigma,c = Evd.fresh_constructor_instance env sigma c in
-         sigma, Constr.mkConstructU c
+      | GlobRef.ConstructRef _ -> mkRef env sigma indc
       | _ -> assert false in  (* c.f. get_constructors *)
     let args, t = get_type env sigma c in
     let params_indc = match Constr.kind t with
@@ -260,21 +268,20 @@ let elaborate_to_post_params env sigma ty_ind params =
    to the pairs [constant, constructor] in the list [l]. *)
 let elaborate_to_post_via env sigma ty_name ty_ind l =
   let sigma, ty_name =
-    locate_global_sort_inductive_or_constant sigma ty_name in
-  let ty_ind = Constr.mkInd ty_ind in
+    locate_global_sort_inductive_or_constant env sigma ty_name in
+  let sigma, ty_ind = mkRef env sigma (IndRef ty_ind) in
   (* Retrieve constants and constructors mappings and their type.
      For each constant [cnst] and inductive constructor [indc] in [l], retrieve:
      * its location: [lcnst] and [lindc]
      * its GlobRef: [cnst] and [indc]
      * its type: [tcnst] and [tindc] (decomposed in product by [get_type] above)
      * [impls] are the implicit arguments of [cnst] *)
-  let l =
-    let read (consider_implicits, cnst, indc) =
+  let sigma, l =
+    let read sigma (consider_implicits, cnst, indc) =
       let lcnst, lindc = cnst.CAst.loc, indc.CAst.loc in
-      let cnst, ccnst = locate_global_constructor_inductive_or_constant cnst in
-      let indc, cindc =
-        let indc = Smartlocate.global_constructor_with_alias indc in
-        GlobRef.ConstructRef indc, Constr.mkConstruct indc in
+      let sigma, cnst, ccnst = locate_global_constructor_inductive_or_constant env sigma cnst in
+      let indc = GlobRef.ConstructRef (Smartlocate.global_constructor_with_alias indc) in
+      let sigma, cindc = mkRef env sigma indc in
       let get_type_wo_params c =
         (* ignore parameters of inductive types *)
         let rm_params c = match Constr.kind c with
@@ -286,8 +293,9 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
       let impls =
         if not consider_implicits then [] else
           Impargs.(select_stronger_impargs (implicits_of_global cnst)) in
-      lcnst, cnst, tcnst, lindc, indc, tindc, impls in
-    List.map read l in
+      sigma, (lcnst, cnst, tcnst, lindc, indc, tindc, impls) in
+    List.fold_left_map read sigma l
+  in
   let eq_indc indc (_, _, _, _, indc', _, _) = Environ.QGlobRef.equal env indc indc' in
   (* Collect all inductive types involved.
      That is [ty_ind] and all final codomains of [tindc] above. *)
@@ -302,7 +310,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
       inds CMap.empty in
   (* Error if one [constructor] in some inductive in [inds]
      doesn't appear exactly once in [l] *)
-  let _ = (* check_for duplicate constructor and error *)
+  let _ : _ list = (* check_for duplicate constructor and error *)
     List.fold_left (fun already_seen (_, cnst, _, loc, indc, _, _) ->
         try
           let cnst' = List.assoc_f (fun c1 c2 -> Environ.QGlobRef.equal env c1 c2) indc already_seen in
@@ -310,9 +318,10 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
         with Not_found -> (indc, cnst) :: already_seen)
     [] l in
   let () = (* check for missing constructor and error *)
-    CMap.iter (fun _ ->
+    CMap.iter (fun _ ctors ->
         List.iter (fun cstr ->
-            if not (List.exists (eq_indc cstr) l) then error_missing cstr))
+            if not (List.exists (eq_indc cstr) l) then error_missing cstr)
+          ctors)
       constructors in
   (* Perform some checks on types and warn if they look strange.
      These checks are neither sound nor complete, so we only warn. *)
@@ -324,7 +333,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
         match CMap.find_opt ckey m with
         | None -> CMap.add ckey cval m
         | Some old_cval ->
-           if not (Constr.equal old_cval cval) then
+           if not (Constr.eq_constr_nounivs old_cval cval) then
              warn_via_remapping ?loc (env, sigma, ckey, old_cval, cval);
            m in
       List.fold_left
@@ -346,7 +355,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
     List.iter (fun (_, cnst, tcnst, loc, indc, tindc, impls) ->
         let tcnst = rm_impls impls tcnst in
         let tcnst' = replace CMap.empty tcnst in
-        if not (Constr.equal tcnst' (replace ind2ty tindc)) then
+        if not (Constr.eq_constr_nounivs tcnst' (replace ind2ty tindc)) then
           let actual = replace CMap.empty tindc in
           let expected = replace ty2ind tcnst in
           warn_via_type_mismatch ?loc (env, sigma, indc, cnst, expected, actual))

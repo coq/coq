@@ -1010,7 +1010,11 @@ let extract_fixpoint env sg vkn (fi,ti,ci) =
   let kns = Array.to_list vkn in
   current_fixpoints := kns;
   (* for replacing recursive calls [Rel ..] by the corresponding [Const]: *)
-  let sub = List.rev_map EConstr.mkConst kns in
+  let sg, sub = CList.fold_left_map (fun sg con ->
+      Evd.fresh_global env sg (ConstRef con))
+      sg
+      (List.rev kns)
+  in
   for i = 0 to n-1 do
     if info_of_family (sort_of env sg ti.(i)) != Logic then
       try

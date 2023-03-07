@@ -87,11 +87,8 @@ let mkLambda (na, t, c) = of_kind (Lambda (na, t, c))
 let mkLetIn (na, b, t, c) = of_kind (LetIn (na, b, t, c))
 let mkApp (f, arg) = of_kind (App (f, arg))
 let mkConstU pc = of_kind (Const pc)
-let mkConst c = of_kind (Const (in_punivs c))
 let mkIndU pi = of_kind (Ind pi)
-let mkInd i = of_kind (Ind (in_punivs i))
 let mkConstructU pc = of_kind (Construct pc)
-let mkConstruct c = of_kind (Construct (in_punivs c))
 let mkConstructUi ((ind,u),i) = of_kind (Construct ((ind,i),u))
 let mkCase (ci, u, pms, c, iv, r, p) = of_kind (Case (ci, u, pms, c, iv, r, p))
 let mkFix f = of_kind (Fix f)
@@ -1040,6 +1037,12 @@ let to_case_invert = unsafe_to_case_invert
 let eq = unsafe_eq
 end
 
+module UnsafeMonomorphic = struct
+  let mkConst c = of_kind (Const (in_punivs c))
+  let mkInd i = of_kind (Ind (in_punivs i))
+  let mkConstruct c = of_kind (Construct (in_punivs c))
+end
+
 (* deprecated *)
 
 let decompose_lambda_assum = decompose_lambda_decls
@@ -1050,3 +1053,5 @@ let decompose_lam = decompose_lambda
 let decompose_lam_n_assum = decompose_lambda_n_assum
 let decompose_lam_n_decls = decompose_lambda_n_decls
 let decompose_lam_assum = decompose_lambda_assum
+
+include UnsafeMonomorphic

@@ -1004,7 +1004,7 @@ let declare_obligation prg obl ~uctx ~types ~body =
         Some
           (TermObl
              (it_mkLambda_or_LetIn_or_clean
-                (mkApp (mkConst constant, args))
+                (mkApp (UnsafeMonomorphic.mkConst constant, args))
                 ctx))
     in
     (true, {obl with obl_body = body}, [GlobRef.ConstRef constant])
@@ -1985,7 +1985,7 @@ end = struct
     | _ ->
       CErrors.anomaly
         Pp.(str "Not a proof by induction: " ++
-            Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
+            Constr.debug_print t ++ str ".")
 
   let declare_mutdef ~uctx ~pinfo pe i CInfo.{ name; impargs; typ; _} =
     let { Proof_info.info; compute_guard; _ } = pinfo in
@@ -2108,7 +2108,9 @@ let finish_derived ~f ~name ~entries =
   let f_kind = Decls.(IsDefinition Definition) in
   let f_def = DefinitionEntry f_def in
   let f_kn = declare_constant ~name:f ~kind:f_kind f_def ~typing_flags:None in
-  let f_kn_term = Constr.mkConst f_kn in
+  (* Derive does not support univ poly *)
+  let () = assert (not (Global.is_polymorphic (ConstRef f_kn))) in
+  let f_kn_term = Constr.UnsafeMonomorphic.mkConst f_kn in
   (* In the type and body of the proof of [suchthat] there can be
      references to the variable [f]. It needs to be replaced by
      references to the constant [f] declared above. This substitution

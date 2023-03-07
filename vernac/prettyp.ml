@@ -1002,25 +1002,6 @@ let print_notation env sigma entry raw_ntn =
       ++ str ".")
   with Not_found -> error_print_notation_not_found entry raw_ntn
 
-let print_opaque_name env sigma qid =
-  let open GlobRef in
-  match Nametab.global qid with
-    | ConstRef cst ->
-      let cb = Global.lookup_constant cst in
-      if Declareops.constant_has_body cb then
-        print_constant_with_infos cst None
-      else
-        user_err Pp.(str "Not a defined constant.")
-    | IndRef (sp,_) ->
-      print_inductive sp None
-    | ConstructRef cstr as gr ->
-      let ty, ctx = Typeops.type_of_global_in_context env gr in
-      let ty = EConstr.of_constr ty in
-      let open EConstr in
-      print_typed_value_in_env env sigma (mkConstruct cstr, ty)
-    | VarRef id ->
-      env |> lookup_named id |> print_named_decl env sigma
-
 let print_about_any ?loc env sigma k udecl =
   maybe_error_reject_univ_decl k udecl;
   match k with
@@ -1146,6 +1127,5 @@ let print_all_instances () =
 
 let print_instances r =
   let env = Global.env () in
-  let sigma = Evd.from_env env in
-  let inst = instances env sigma r in
-    prlist_with_sep fnl (pr_instance env) inst
+  let inst = instances_exn env (Evd.from_env env) r in
+  prlist_with_sep fnl (pr_instance env) inst

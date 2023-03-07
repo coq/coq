@@ -302,7 +302,7 @@ let make env sigma ref =
     try Structure.find indsp
     with Not_found ->
       error_not_structure ref
-        (str "Could not find the record or structure " ++ Termops.Internal.print_constr_env env sigma (EConstr.mkInd indsp)) in
+        (str "Could not find the record or structure " ++ Termops.pr_global_env env (IndRef indsp)) in
   let ntrue_projs = List.count (fun { Structure.proj_true = x } -> x) s.Structure.projections in
   if s.Structure.nparams + ntrue_projs > Array.length args then
     error_not_structure ref (str "Got too few arguments to the record or structure constructor");

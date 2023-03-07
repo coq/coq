@@ -285,6 +285,12 @@ let mkArray (u,t,def,ty) = of_kind @@ Array (u,t,def,ty)
 (* Constructs a primitive float number *)
 let mkFloat f = of_kind @@ Float f
 
+module UnsafeMonomorphic = struct
+  let mkConst = mkConst
+  let mkInd = mkInd
+  let mkConstruct = mkConstruct
+end
+
 (**********************************************************************)
 (*          Non primitive term destructors                            *)
 (**********************************************************************)

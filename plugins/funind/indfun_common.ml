@@ -211,12 +211,12 @@ let discharge_Function finfos = Some finfos
 
 let pr_ocst env sigma c =
   Option.fold_right
-    (fun v acc -> Printer.pr_lconstr_env env sigma (mkConst v))
+    (fun v acc -> Printer.pr_global_env (Termops.vars_of_env env) (ConstRef v))
     c (mt ())
 
 let pr_info env sigma f_info =
   str "function_constant := "
-  ++ Printer.pr_lconstr_env env sigma (mkConst f_info.function_constant)
+  ++ Printer.pr_global_env (Termops.vars_of_env env) (ConstRef f_info.function_constant)
   ++ fnl ()
   ++ str "function_constant_type := "
   ++ ( try
@@ -240,7 +240,7 @@ let pr_info env sigma f_info =
   ++ fnl () ++ str "prop_lemma := "
   ++ pr_ocst env sigma f_info.prop_lemma
   ++ fnl () ++ str "graph_ind := "
-  ++ Printer.pr_lconstr_env env sigma (mkInd f_info.graph_ind)
+  ++ Printer.pr_global_env (Termops.vars_of_env env) (IndRef f_info.graph_ind)
   ++ fnl ()
 
 let pr_table env sigma tb =

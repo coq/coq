@@ -149,9 +149,11 @@ let decl_constant name univs c =
   let () = DeclareUctx.declare_universe_context ~poly:false univs in
   let types = (Typeops.infer (Global.env ()) c).uj_type in
   let univs = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders in
-  mkConst(declare_constant ~name
-            ~kind:Decls.(IsProof Lemma)
-            (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c)))
+  (* UnsafeMonomorphic: we always do poly:false *)
+  UnsafeMonomorphic.mkConst
+    (declare_constant ~name
+       ~kind:Decls.(IsProof Lemma)
+       (DefinitionEntry (definition_entry ~opaque:true ~types ~univs c)))
 
 let decl_constant na suff univs c =
   let na = Namegen.next_global_ident_away (Nameops.add_suffix na suff) Id.Set.empty in

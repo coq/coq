@@ -25,6 +25,9 @@ open Libnames
 open Context.Rel.Declaration
 module RelDecl = Context.Rel.Declaration
 
+(* funind does not support univ poly *)
+open UnsafeMonomorphic
+
 let list_chop ?(msg = "") n l =
   try List.chop n l with Failure msg' -> failwith (msg ^ msg')
 

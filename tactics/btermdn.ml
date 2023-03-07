@@ -73,7 +73,8 @@ let decomp sigma t =
       (* Hack: fake evar to generate [Everything] in the functions below *)
       let hole = mkEvar (Evar.unsafe_of_int (-1), SList.empty) in
       let params = List.make (Projection.npars p) hole in
-      (mkConst (Projection.constant p), params @ c :: acc)
+      (* UnsafeMonomorphic: universes are ignored by the only user *)
+      (UnsafeMonomorphic.mkConst (Projection.constant p), params @ c :: acc)
     | Cast (c1,_,_) -> decrec acc c1
     | _ -> (c,acc)
   in

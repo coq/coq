@@ -27,10 +27,6 @@ val destConstructRef : GlobRef.t -> constructor
 val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr Univ.univ_abstracted option
 val subst_global_reference : substitution -> GlobRef.t -> GlobRef.t
 
-(** This constr is not safe to be typechecked, universe polymorphism is not
-    handled here: just use for printing *)
-val printable_constr_of_global : GlobRef.t -> constr
-
 (** {6 Extended global references } *)
 
 type abbreviation = KerName.t

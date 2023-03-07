@@ -1,0 +1,19 @@
+0
+     : B ?a
+where
+?a : [ |- A]
+1
+     : B ?a
+where
+?a : [ |- A]
+2
+     : B ?a
+where
+?a : [ |- A]
+foo@{v v'} =
+fun (v : A@{v}) (v' : A@{v'}) => (0 : B@{v} v, 1 : B@{v'} v')
+     : forall (v : A@{v}) (v' : A@{v'}), B@{v} v * B@{v'} v'
+(* v v' |= v <= prod.u0
+           v' <= prod.u1 *)
+
+Arguments foo v v'
