@@ -80,27 +80,6 @@ and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
   Array.equal constr_pattern_eq c1 c2 &&
   Array.equal constr_pattern_eq r1 r2
 
-let rec occur_meta_pattern = function
-  | PApp (f,args) ->
-      (occur_meta_pattern f) || (Array.exists occur_meta_pattern args)
-  | PProj (_,arg) -> occur_meta_pattern arg
-  | PLambda (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
-  | PProd (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
-  | PLetIn (na,b,t,c)  ->
-     Option.fold_left (fun b t -> b || occur_meta_pattern t) (occur_meta_pattern b) t || (occur_meta_pattern c)
-  | PIf (c,c1,c2)  ->
-      (occur_meta_pattern c) ||
-      (occur_meta_pattern c1) || (occur_meta_pattern c2)
-  | PCase(_, p,c,br) ->
-      Option.cata (fun (_, p) -> occur_meta_pattern p) false p ||
-      (occur_meta_pattern c) ||
-      (List.exists (fun (_,_,p) -> occur_meta_pattern p) br)
-  | PArray (t,def,ty) ->
-      Array.exists occur_meta_pattern t || occur_meta_pattern def || occur_meta_pattern ty
-  | PMeta _ | PSoApp _ -> true
-  | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _
-    | PInt _ | PFloat _ -> false
-
 let rec occurn_pattern n = function
   | PRel p -> Int.equal n p
   | PApp (f,args) ->
