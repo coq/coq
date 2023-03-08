@@ -103,8 +103,9 @@ let enforce_constraint cst g = match enforce_constraint0 cst g with
 
 let merge_constraints csts g = Constraints.fold enforce_constraint csts g
 
-let check_constraint { graph = g; _ } (u,d,v) =
-  match d with
+let check_constraint { graph = g; type_in_type } (u,d,v) =
+  type_in_type
+  || match d with
   | Le -> G.check_leq g u v
   | Lt -> G.check_lt g u v
   | Eq -> G.check_eq g u v

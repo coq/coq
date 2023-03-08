@@ -125,9 +125,11 @@ end
 
 module UPairSet = UnivMinim.UPairSet
 
+type univ_names = UnivNames.universe_binders * uinfo Level.Map.t
+
 (* 2nd part used to check consistency on the fly. *)
 type t =
- { names : UnivNames.universe_binders * uinfo Level.Map.t; (** Printing/location information *)
+ { names : univ_names; (** Printing/location information *)
    local : ContextSet.t; (** The local graph of universes (variables and constraints) *)
    seff_univs : Level.Set.t; (** Local universes used through private constants *)
    univ_variables : UnivSubst.universe_opt_subst;
@@ -623,16 +625,19 @@ let id_of_level uctx l =
   with Not_found | Option.IsNone ->
     None
 
-let qualid_of_level uctx l =
-  let map, map_rev = uctx.names in
+let qualid_of_level_names (map, map_rev) l =
   try Some (Libnames.qualid_of_ident (Option.get (Level.Map.find l map_rev).uname))
   with Not_found | Option.IsNone ->
     UnivNames.qualid_of_level map l
 
-let pr_uctx_level uctx l =
-  match qualid_of_level uctx l with
+let qualid_of_level uctx l = qualid_of_level_names uctx.names l
+
+let pr_uctx_level_names names l =
+  match qualid_of_level_names names l with
   | Some qid -> Libnames.pr_qualid qid
   | None -> Level.raw_pr l
+
+let pr_uctx_level uctx l = pr_uctx_level_names uctx.names l
 
 type ('a, 'b) gen_universe_decl = {
   univdecl_instance : 'a; (* Declared universes *)
@@ -649,12 +654,12 @@ let default_univ_decl =
     univdecl_constraints = Constraints.empty;
     univdecl_extensible_constraints = true }
 
-let pr_error_unbound_universes left uctx =
+let pr_error_unbound_universes left names =
   let open Pp in
   let n = Level.Set.cardinal left in
   let prlev u =
-    let info = Level.Map.find_opt u (snd uctx.names) in
-    h (pr_uctx_level uctx u ++ (match info with
+    let info = Level.Map.find_opt u (snd names) in
+    h (pr_uctx_level_names names u ++ (match info with
         | None | Some {uloc=None} -> mt ()
         | Some {uloc=Some loc} -> spc() ++ str"(" ++ Loc.pr loc ++ str")"))
   in
@@ -663,7 +668,7 @@ let pr_error_unbound_universes left uctx =
       (prlist_with_sep spc prlev (Level.Set.elements left)) ++
       spc () ++ str (CString.conjugate_verb_to_be n) ++ str" unbound."))
 
-exception UnboundUnivs of Level.Set.t * t
+exception UnboundUnivs of Level.Set.t * univ_names
 
 (* Deliberately using no location as the location of the univs
    doesn't correspond to the failing command. *)
@@ -673,25 +678,23 @@ let _ = CErrors.register_handler (function
     | UnboundUnivs (left,uctx) -> Some (pr_error_unbound_universes left uctx)
     | _ -> None)
 
-let universe_context ~prefix ~extensible uctx =
-  let levels = ContextSet.levels uctx.local in
+let universe_context_inst ~prefix ~extensible levels names =
   let left = List.fold_left (fun acc l -> Level.Set.remove l acc) levels prefix in
   if not extensible && not (Level.Set.is_empty left)
-  then error_unbound_universes left uctx
+  then error_unbound_universes left names
   else
     let left = ContextSet.sort_levels (Array.of_list (Level.Set.elements left)) in
     let inst = Array.append (Array.of_list prefix) left in
     let inst = Instance.of_array inst in
-    (inst, ContextSet.constraints uctx.local)
+    inst
 
-let check_universe_context_set ~prefix ~extensible uctx =
-  if extensible then ()
-  else
-    let left = List.fold_left (fun left l -> Level.Set.remove l left)
-        (ContextSet.levels uctx.local) prefix
-    in
-    if not (Level.Set.is_empty left)
-    then error_unbound_universes left uctx
+let check_universe_context_set ~prefix levels names =
+  let left =
+    List.fold_left (fun left l -> Level.Set.remove l left)
+      levels prefix
+  in
+  if not (Level.Set.is_empty left)
+  then error_unbound_universes left names
 
 let check_implication uctx cstrs cstrs' =
   let gr = initial_graph uctx in
@@ -703,33 +706,47 @@ let check_implication uctx cstrs cstrs' =
           pr_constraints (pr_uctx_level uctx) cstrs')
 
 let check_mono_univ_decl uctx decl =
+  let levels, csts = uctx.local in
   let () =
     let prefix = decl.univdecl_instance in
-    let extensible = decl.univdecl_extensible_instance in
-    check_universe_context_set ~prefix ~extensible uctx
+    if not decl.univdecl_extensible_instance
+    then check_universe_context_set ~prefix levels uctx.names
   in
-  if not decl.univdecl_extensible_constraints then
+  if decl.univdecl_extensible_constraints then uctx.local
+  else begin
     check_implication uctx
       decl.univdecl_constraints
-      (ContextSet.constraints uctx.local);
-  uctx.local
+      csts;
+    levels, decl.univdecl_constraints
+  end
 
-let check_univ_decl ~poly uctx decl =
-  if not decl.univdecl_extensible_constraints then
-    check_implication uctx
-      decl.univdecl_constraints
-      (ContextSet.constraints uctx.local);
+let check_poly_univ_decl uctx decl =
   let prefix = decl.univdecl_instance in
   let extensible = decl.univdecl_extensible_instance in
-  let (binders, rbinders) = uctx.names in
-  if poly then
-    let inst, csts = universe_context ~prefix ~extensible uctx in
-    let nas = compute_instance_binders rbinders inst in
-    let uctx = UContext.make nas (inst, csts) in
-    Polymorphic_entry uctx, binders
-  else
-    let () = check_universe_context_set ~prefix ~extensible uctx in
-    Monomorphic_entry uctx.local, binders
+  let levels, csts = uctx.local in
+  let inst = universe_context_inst ~prefix ~extensible levels uctx.names in
+  let nas = compute_instance_binders (snd uctx.names) inst in
+  let csts = if decl.univdecl_extensible_constraints then csts
+    else begin
+      check_implication uctx
+        decl.univdecl_constraints
+        csts;
+      decl.univdecl_constraints
+    end
+  in
+  let uctx = UContext.make nas (inst, csts) in
+  uctx
+
+let check_univ_decl ~poly uctx decl =
+  let entry =
+    if not poly then
+      let ctx = check_mono_univ_decl uctx decl in
+      Monomorphic_entry ctx
+    else
+      let ctx = check_poly_univ_decl uctx decl in
+      Polymorphic_entry ctx
+  in
+  entry, fst uctx.names
 
 let is_bound l lbound = match lbound with
   | UGraph.Bound.Prop -> false
