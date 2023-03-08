@@ -51,14 +51,14 @@ instead of Top
 start with an empty initial state
 
 .TP
-.BI \-load\-ml\-object \ filename
-load ML object file
-.I filenname
-
-.TP
 .BI \-load\-ml\-source \ filename
 load ML file
 .I filename
+
+.TP
+.BI \-load\-ml\-object \ filename
+load ML object file
+.I filenname
 
 .TP
 .BI \-load\-vernac\-source \ filename, \ \-l \ filename
@@ -73,16 +73,45 @@ load verbosely Coq file
 (Load Verbose filename.)
 
 .TP
-.BI \-load\-vernac\-object \ path
+.BI \-require \ lib, \ \-r \ lib
 load Coq library
-.I path
-(Require path.)
+.I lib
+(Require lib.)
 
 .TP
-.BI \-require-import \ path
+.BI \-require-import \ lib, \ \-ri \ lib
 load Coq library
-.I path
-and import it (Require Import path.)
+.I lib
+and import it (Require Import lib.)
+
+.TP
+.BI \-require-export \ lib, \ \-re \ lib
+load Coq library
+.I lib
+and transitively import it (Require Export lib.)
+
+.TP
+.BI \-require-from \ root\ lib, \ \-rfrom \ root\ lib
+load Coq library
+.I lib
+(From root Require lib.)
+
+.TP
+.BI \-require-import-from \ root\ lib, \ \-rifrom \ root\ lib
+load Coq library
+.I lib
+and import it (From root Require Import lib.)
+
+.TP
+.BI \-require-export-from \ root\ lib, \ \-refrom \ root\ lib
+load Coq library
+.I lib
+and transitively import it (From root Require Export lib.)
+
+.TP
+.BI \-load\-vernac\-object \ lib
+obsolete synonym of
+.BI \-require \ lib
 
 .TP
 .B \-where
