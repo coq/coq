@@ -236,31 +236,31 @@ and ``coqtop``, unless stated otherwise:
 :-lv *file*, -load-vernac-source-verbose *file*: Load and execute the
   Coq script from *file.v*. Write its contents to the standard output as
   it is executed.
-:-load-vernac-object *qualid*: Load Coq compiled library :n:`@qualid`. This
-  is equivalent to running :cmd:`Require` :n:`@qualid`.
+:-r *qualid*, -require *qualid*: Load Coq compiled library :n:`@qualid`.
+  This is equivalent to running :cmd:`Require` :n:`@qualid`.
 
   .. _interleave-command-line:
 
   .. note::
 
      Note that the relative order of this command-line option and its
-     variants (`-rfrom`, `-ri`, `-re`, etc.)  and of the `-set` and
+     variants (`-ri`, `-re`, `-rfrom`, `-refrom`, `-rifrom`)  and of the `-set` and
      `-unset` options matters since the various :cmd:`Require`,
      :cmd:`Require Import`, :cmd:`Require Export`, :cmd:`Set` and
      :cmd:`Unset` commands will be executed in the order specified on
      the command-line.
 
-:-rfrom *dirpath qualid*: Load Coq compiled library :n:`@qualid`.
-  This is equivalent to running :cmd:`From <From … Require>`
-  :n:`@dirpath` :cmd:`Require <From … Require>` :n:`@qualid`.
-  See the :ref:`note above <interleave-command-line>` regarding the order
-  of command-line options.
 :-ri *qualid*, -require-import *qualid*: Load Coq compiled library :n:`@qualid` and import it.
   This is equivalent to running :cmd:`Require Import` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
 :-re *qualid*, -require-export *qualid*: Load Coq compiled library :n:`@qualid` and transitively import it.
   This is equivalent to running :cmd:`Require Export` :n:`@qualid`.
+  See the :ref:`note above <interleave-command-line>` regarding the order
+  of command-line options.
+:-rfrom *dirpath qualid*, -require-from *dirpath qualid*: Load Coq compiled library :n:`@qualid`.
+  This is equivalent to running :cmd:`From <From … Require>`
+  :n:`@dirpath` :cmd:`Require <From … Require>` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the order
   of command-line options.
 :-rifrom *dirpath qualid*, -require-import-from *dirpath qualid*:
@@ -275,6 +275,7 @@ and ``coqtop``, unless stated otherwise:
   :n:`@dirpath` :cmd:`Require Export <From … Require>` :n:`@qualid`.
   See the :ref:`note above <interleave-command-line>` regarding the
   order of command-line options.
+:-load-vernac-object *qualid*: Obsolete synonym of :n:`-require qualid`.
 :-batch: Exit just after argument parsing. Available for ``coqtop`` only.
 :-verbose: Output the content of the input file as it is compiled.
   This option is available for ``coqc`` only.
