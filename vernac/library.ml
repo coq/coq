@@ -281,7 +281,7 @@ let rec intern_library ~intern (needed, contents as acc) dir =
   (* Look if already listed and consequently its dependencies too *)
   try (DPmap.find dir contents).library_digests, acc
   with Not_found ->
-  let lsd, lmd, digest_lmd, univs, digest_u, del_opaque = fst intern dir in
+  let lsd, lmd, digest_lmd, univs, digest_u, del_opaque = intern dir in
   let m = mk_intern_library lsd lmd digest_lmd univs digest_u del_opaque in
   m.library_digests, intern_library_deps ~intern acc dir m
 
@@ -293,15 +293,18 @@ and intern_library_deps ~intern libs dir m =
 
 and intern_mandatory_library ~intern caller libs (dir,d) =
   let digest, libs = intern_library ~intern libs dir in
-  if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    (let from = snd intern dir in
-     user_err (str "Compiled library " ++ DirPath.print caller ++
-     str " (in file " ++ str from ++ str ") makes inconsistent assumptions \
-     over library " ++ DirPath.print dir));
+  let () = if not (Safe_typing.digest_match ~actual:digest ~required:d) then
+    let from = library_full_filename dir in
+    user_err
+      (str "Compiled library " ++ DirPath.print caller ++
+       str " (in file " ++ str from ++
+       str ") makes inconsistent assumptions over library " ++
+       DirPath.print dir)
+  in
   libs
 
 let rec_intern_library ~lib_resolver libs dir =
-  let intern = (intern_from_file lib_resolver, lib_resolver) in
+  let intern dir = intern_from_file lib_resolver dir in
   let _, libs = intern_library ~intern libs dir in
   libs
 
