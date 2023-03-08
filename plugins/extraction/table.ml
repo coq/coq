@@ -532,13 +532,12 @@ let { Goptions.get = output_directory } =
     ~key:output_directory_key ()
 
 let output_directory () =
-  match output_directory () with
-  | Some dir ->
+  match output_directory (), !Flags.output_directory with
+  | Some dir, _ | None, Some dir ->
       (* Ensure that the directory exists *)
       System.mkdir dir;
       dir
-      (* CErrors.user_err Pp.(str "Extraction output directory " ++ str dir ++ str " does not exist.") *)
-  | None ->
+  | None, None ->
     let pwd = Sys.getcwd () in
     warn_using_current_directory pwd;
     (* Note: in case of error in the caller of output_directory, the effect of the setting will be undo *)

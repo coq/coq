@@ -96,3 +96,6 @@ val default_inline_level : int
 (** Global profile_ltac flag  *)
 val profile_ltac : bool ref
 val profile_ltac_cutoff : float ref
+
+(** Default output directory *)
+val output_directory : CUnix.physical_path option ref
