@@ -393,7 +393,7 @@ Command line options
      titles. For example “Chapter” and “Module” are reasonable choices.
   :--no-lib-name: Print just “Foo” instead of “Library Foo” in titles.
   :--lib-subtitles: Look for library subtitles. When enabled, the
-     beginning of each file is checked for a comment of the form:
+     first line of each file is checked for a comment of the form:
 
      ::
 
