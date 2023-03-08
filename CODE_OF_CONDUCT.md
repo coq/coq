@@ -100,6 +100,7 @@ some time to the offender to calm down and think about their actions.
 The members of the team are currently:
 
 - Matthieu Sozeau
+- Nicolas Tabareau
 - Théo Zimmermann
 
 ## Questions? ##
