@@ -199,29 +199,24 @@ let match_eqdec env sigma c =
 (* /spiwack *)
 
 let elim_type dty rectype a1 a2 =
-  let open Clenv in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let t =
-    let { eqonleft; op; eq1; eq2; noteq } = dty in
-    let eq = mkApp (eq1,[|rectype;a1;a2|]) in
-    let neq = mkApp (noteq,[|mkApp (eq2,[|rectype;a1;a2|])|]) in
-    if eqonleft then mkApp (op,[|eq;neq|]) else mkApp (op,[|neq;eq|])
-  in
-  let (ind, t) = Tacred.reduce_to_atomic_ind env sigma t in
+  let (ind, _) = Tacred.reduce_to_atomic_ind env sigma dty.op in
   let s = Tacticals.elimination_sort_of_goal gl in
   let elimc = Indrec.lookup_eliminator env (fst ind) s in
-  let evd, elimc = EConstr.fresh_global env sigma elimc in
-  let elimt = Retyping.get_type_of env evd elimc in
-  let clause = mk_clenv_from env evd (elimc, elimt) in
-  let mv = List.last (clenv_arguments clause) in
-  let flags = Unification.elim_flags () in
-  let clause' =
-    (* t is inductive, then CUMUL or CONV is irrelevant *)
-    clenv_unify ~flags Reduction.CUMUL t
-      (clenv_meta_type clause mv) clause in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.res_pf clause' ~flags ~with_evars:false)
+  (* Eliminator type is expected to have (potentially non-dependent) shape
+      [forall A B (P : I A B -> Type), P _ -> P _ -> forall (s : I A B), P s ] *)
+  let sigma, elimc = EConstr.fresh_global env sigma elimc in
+  let elimc =
+    let { eqonleft; eq1; eq2; noteq } = dty in
+    let eq = mkApp (eq1,[|rectype;a1;a2|]) in
+    let neq = mkApp (noteq,[|mkApp (eq2,[|rectype;a1;a2|])|]) in
+    if eqonleft then mkApp (elimc, [|eq; neq|]) else mkApp (elimc, [|neq; eq|])
+  in
+  let elimt = Retyping.get_type_of env sigma elimc in
+  let clause = Clenv.mk_clenv_from env sigma (elimc, elimt) in
+  Proofview.Unsafe.tclEVARS sigma <*> Clenv.res_pf clause ~with_evars:false
   end
 
 let rec solveArg hyps dty largs rargs = match largs, rargs with
