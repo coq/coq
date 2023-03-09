@@ -55,6 +55,8 @@ type coqargs_logic_config = {
   toplevel_name     : top;
 }
 
+type time_config = ToFeedback | ToFile of string
+
 type coqargs_config = {
   logic       : coqargs_logic_config;
   rcfile      : string option;
@@ -63,7 +65,7 @@ type coqargs_config = {
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
   native_include_dirs : CUnix.physical_path list;
-  time        : bool;
+  time        : time_config option;
   print_emacs : bool;
 }
 
@@ -118,7 +120,7 @@ let default_config = {
   native_compiler = default_native;
   native_output_dir = ".coq-native";
   native_include_dirs = [];
-  time         = false;
+  time         = None;
   print_emacs  = false;
 
   (* Quiet / verbosity options should be here *)
@@ -404,7 +406,8 @@ let parse_args ~usage ~init arglist : t * string list =
       Flags.quiet := true;
       Flags.make_warn false;
       oval
-    |"-time" -> { oval with config = { oval.config with time = true }}
+    |"-time" -> { oval with config = { oval.config with time = Some ToFeedback }}
+    |"-time-file" -> { oval with config = { oval.config with time = Some (ToFile (next())) }}
     |"-type-in-type" -> set_logic (fun o -> { o with type_in_type = true }) oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some Lib.Import)
     |"-where" -> set_query oval PrintWhere

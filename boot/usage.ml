@@ -86,7 +86,8 @@ let print_usage_common co command =
 \n  -set \"Foo Bar\"         enable Foo Bar (as Set Foo Bar. in a file)\
 \n  -set \"Foo Bar=value\"   set Foo Bar to value (value is interpreted according to Foo Bar's type)\
 \n  -unset \"Foo Bar\"       disable Foo Bar (as Unset Foo Bar. in a file)\
-\n  -time                  display the time taken by each command\
+\n  -time                  display the time taken by each command, outputting to the message system (stdout for coqc)\
+\n  -time-file f           display the time taken by each command, outputting to file f\
 \n  -profile-ltac          display the time taken by each (sub)tactic\
 \n  -m, --memory           display total heap size at program exit\
 \n                         (use environment variable\

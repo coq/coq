@@ -47,6 +47,8 @@ type coqargs_logic_config = {
   toplevel_name     : top;
 }
 
+type time_config = ToFeedback | ToFile of string
+
 type coqargs_config = {
   logic       : coqargs_logic_config;
   rcfile      : string option;
@@ -55,7 +57,7 @@ type coqargs_config = {
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
   native_include_dirs : CUnix.physical_path list;
-  time        : bool;
+  time        : time_config option;
   print_emacs : bool;
 }
 

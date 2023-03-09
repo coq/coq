@@ -8,6 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type time_output
+
+val make_time_output : Coqargs.time_config -> time_output
+
 (** Parsing of vernacular. *)
 module State : sig
 
@@ -15,7 +19,7 @@ module State : sig
     doc : Stm.doc;
     sid : Stateid.t;
     proof : Proof.t option;
-    time : bool;
+    time : time_output option;
   }
 
 end

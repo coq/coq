@@ -53,7 +53,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
           Stm.{ doc_type = VoDoc long_f_dot_out; injections; } in
-      let state = { doc; sid; proof = None; time = opts.config.time } in
+      let state = { doc; sid; proof = None; time = Option.map Vernac.make_time_output opts.config.time } in
       let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       Aux_file.(start_aux_file
@@ -92,7 +92,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
           Stm.{ doc_type = VioDoc long_f_dot_out; injections;
               } in
 
-      let state = { doc; sid; proof = None; time = opts.config.time } in
+      let state = { doc; sid; proof = None; time = Option.map Vernac.make_time_output opts.config.time } in
       let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       let source = source copts ldir long_f_dot_in in
