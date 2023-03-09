@@ -85,7 +85,7 @@ let init_coqlib opts = match opts.Coqargs.config.Coqargs.coqlib with
   | Some s ->
     Boot.Env.set_coqlib s
 
-let print_query opts = let open Coqargs in function
+let print_query = let open Coqargs in function
   | PrintVersion -> Boot.Usage.version ()
   | PrintMachineReadableVersion -> Boot.Usage.machine_readable_version ()
   | PrintWhere ->
@@ -94,7 +94,6 @@ let print_query opts = let open Coqargs in function
     print_endline coqlib
   | PrintHelp h -> Boot.Usage.print_usage stderr h
   | PrintConfig ->
-    let () = init_coqlib opts in
     Envars.print_config stdout
 
 let parse_arguments ~parse_extra ~usage ?(initial_args=Coqargs.default) () =
@@ -107,9 +106,7 @@ let parse_arguments ~parse_extra ~usage ?(initial_args=Coqargs.default) () =
     prerr_endline "See -help for the list of supported options";
     exit 1
     end;
-  match opts.Coqargs.main with
-  | Coqargs.Queries q -> List.iter (print_query opts) q; exit 0
-  | Coqargs.Run -> opts, customopts
+  opts, customopts
 
 let print_memory_stat () =
   let open Pp in
@@ -166,7 +163,10 @@ let init_runtime opts =
   (* Paths for loading stuff *)
   init_load_paths opts;
 
-  injection_commands opts
+  match opts.Coqargs.main with
+  | Coqargs.Queries q -> List.iter print_query q; exit 0
+  | Coqargs.Run ->
+      injection_commands opts
 
 let require_file (dir, from, exp) =
   let mp = Libnames.qualid_of_string dir in
