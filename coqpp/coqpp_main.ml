@@ -41,7 +41,27 @@ let string_split s =
   in
   if len == 0 then [] else split 0
 
-let plugin_name = "__coq_plugin_name"
+(* Used to generate unique ids *)
+let file_name = ref ""
+
+(* We used to output __plugin_name = "bla" then refer to __plugin_name in generated code
+   but this is not robust to eg
+
+   DECLARE PLUGIN "bla"
+   open G_ltac
+   use the plugin name
+
+   since g_ltac has no mli its __plugin_name will shadow the local one and wreak havoc
+*)
+let plugin_name = ref None
+
+let force_is_plugin ~what () = match !plugin_name with
+  | Some (Some n) -> n
+  | Some None | None -> fatal ("DECLARE PLUGIN required before "^what)
+
+let check_is_plugin () = match !plugin_name with
+  | Some b -> b
+  | None -> plugin_name := Some None; None
 
 let print_list fmt pr l =
   let rec prl fmt = function
@@ -267,13 +287,25 @@ let print_rule fmt r =
   let pr_prd fmt prd = print_list fmt print_prod prd in
   fprintf fmt "@[(%a,@ %a,@ %a)@]" pr_lvl r.grule_label pr_asc r.grule_assoc pr_prd (List.rev r.grule_prods)
 
+let gramext_count = ref 0
+
+let gramext_plugin_uid name =
+  let cnt = !gramext_count in
+  incr gramext_count;
+  " ~plugin_uid:(\""^name^"\", \""^(!file_name)^":"^string_of_int cnt^"\")"
+
+let grammar_extend () =
+  match check_is_plugin () with
+  | Some name -> "Egramml.grammar_extend"^gramext_plugin_uid name
+  | None -> "Pcoq.grammar_extend"
+
 let print_entry fmt e = match e.gentry_rules with
 | GDataReuse (pos, r) ->
   let rules = List.rev r in
   let pr_pos fmt pos = print_opt fmt print_string pos in
   let pr_prd fmt prd = print_list fmt print_prod prd in
-  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[(Pcoq.Reuse (%a, %a))@]@]@ in@ "
-    e.gentry_name pr_pos pos pr_prd rules
+  fprintf fmt "let () =@ @[%s@ %s@ @[(Pcoq.Reuse (%a, %a))@]@]@ in@ "
+    (grammar_extend ()) e.gentry_name pr_pos pos pr_prd rules
 | GDataFresh (pos, rules) ->
   let print_rules fmt rules = print_list fmt print_rule rules in
   let pr_check fmt () = match pos with
@@ -281,8 +313,8 @@ let print_entry fmt e = match e.gentry_rules with
   | Some _ -> fprintf fmt ""
   in
   let pos = match pos with None -> First | Some pos -> pos in
-  fprintf fmt "%alet () =@ @[Pcoq.grammar_extend@ %s@ @[(Pcoq.Fresh@ (%a, %a))@]@]@ in@ "
-    pr_check () e.gentry_name print_position pos print_rules rules
+  fprintf fmt "%alet () =@ @[%s@ %s@ @[(Pcoq.Fresh@ (%a, %a))@]@]@ in@ "
+    pr_check () (grammar_extend ()) e.gentry_name print_position pos print_rules rules
 
 let print_ast fmt ext =
   let () = fprintf fmt "let _ = @[" in
@@ -409,7 +441,8 @@ let print_entry fmt = function
 
 let print_ast fmt ext =
   let pr fmt () =
-    fprintf fmt "Vernacextend.vernac_extend ~command:\"%s\" %a ?entry:%a %a"
+    fprintf fmt "Vernacextend.vernac_extend %s ~command:\"%s\" %a ?entry:%a %a"
+      (match check_is_plugin () with | Some name -> "~plugin:\""^name^"\"" | None -> "")
       ext.vernacext_name print_classifier ext.vernacext_class
       print_entry ext.vernacext_entry (print_rules ext.vernacext_state) ext.vernacext_rules
   in
@@ -448,8 +481,9 @@ let print_ast fmt ext =
   in
   let pr fmt () =
     let level = match ext.tacext_level with None -> 0 | Some i -> i in
-    fprintf fmt "Tacentries.tactic_extend %s \"%s\" ~level:%i %a%a"
-      plugin_name ext.tacext_name level
+    let name = force_is_plugin ~what:"TACTIC EXTEND" () in
+    fprintf fmt "Tacentries.tactic_extend \"%s\" \"%s\" ~level:%i %a%a"
+      name ext.tacext_name level
       deprecation ext.tacext_deprecated
       print_rules ext.tacext_rules
   in
@@ -517,9 +551,10 @@ let print_printer fmt = function
 let print_ast fmt arg =
   let name = arg.vernacargext_name in
   let pr fmt () =
-    fprintf fmt "Vernacextend.vernac_argument_extend ~name:%a @[{@\n\
+    fprintf fmt "Vernacextend.vernac_argument_extend ~plugin:\"%s\" ~name:%a @[{@\n\
       Vernacextend.arg_parsing = %a;@\n\
       Vernacextend.arg_printer = fun env sigma -> %a;@\n}@]"
+      (force_is_plugin ~what:"VERNAC ARGUMENT EXTEND" ())
       print_string name print_rules (name, arg.vernacargext_rules)
       print_printer arg.vernacargext_printer
   in
@@ -601,13 +636,14 @@ let print_ast fmt arg =
   | None -> default_printer
   in
   let pr fmt () =
-    fprintf fmt "Tacentries.argument_extend ~name:%a @[{@\n\
+    fprintf fmt "Tacentries.argument_extend ~plugin:\"%s\" ~name:%a @[{@\n\
       Tacentries.arg_parsing = %a;@\n\
       Tacentries.arg_tag = @[%a@];@\n\
       Tacentries.arg_intern = @[%a@];@\n\
       Tacentries.arg_subst = @[%a@];@\n\
       Tacentries.arg_interp = @[%a@];@\n\
-      Tacentries.arg_printer = @[((fun env sigma -> %a), (fun env sigma -> %a), (fun env sigma -> %a))@];@\n}@]"
+                 Tacentries.arg_printer = @[((fun env sigma -> %a), (fun env sigma -> %a), (fun env sigma -> %a))@];@\n}@]"
+      (force_is_plugin ~what:"ARGUMENT EXTEND" ())
       print_string name
       VernacArgumentExt.print_rules (name, arg.argext_rules)
       pr_tag arg.argext_type
@@ -619,8 +655,13 @@ let print_ast fmt arg =
 end
 
 let declare_plugin fmt name =
-  fprintf fmt "let %s = \"%s\"@\n" plugin_name name;
-  fprintf fmt "let _ = Mltop.add_known_module %s@\n" plugin_name
+  fprintf fmt "let _ = Mltop.add_known_module \"%s\"@\n" name;
+  let () = match !plugin_name with
+    | None -> plugin_name := Some (Some name)
+    | Some (Some _) -> fatal "Multiple DECLARE PLUGIN not allowed";
+    | Some None -> fatal "DECLARE PLUGIN must be before VERNAC / GRAMMAR EXTEND"
+  in
+  ()
 
 let pr_ast fmt = function
 | Code s -> fprintf fmt "%a@\n" print_code s
@@ -657,8 +698,9 @@ let () =
   let output = output_name file in
   let ast = parse_file file in
   let chan = open_out output in
+  let () = file_name := Filename.basename file in
   let fmt = formatter_of_out_channel chan in
-  let iter ast = Format.fprintf fmt "@[%a@]%!"pr_ast ast in
+  let iter ast = Format.fprintf fmt "@[%a@]%!" pr_ast ast in
   let () = List.iter iter ast in
   let () = close_out chan in
   exit 0

@@ -393,10 +393,7 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
 
 let ltac_quotations = ref String.Set.empty
 
-let () =
-  Pcoq.grammar_extend Pltac.tactic_value (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, []]))
-
-let create_ltac_quotation name cast (e, l) =
+let create_ltac_quotation ~plugin name cast (e, l) =
   let () =
     if String.Set.mem name !ltac_quotations then
       failwith ("Ltac quotation " ^ name ^ " already registered")
@@ -422,7 +419,8 @@ let create_ltac_quotation name cast (e, l) =
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = [Pcoq.Production.make rule action] in
-  Pcoq.grammar_extend Pltac.tactic_value (Pcoq.Reuse (None, gram))
+  let plugin_uid = (plugin, "tacquot:"^name) in
+  Egramml.grammar_extend ~plugin_uid Pltac.tactic_value (Pcoq.Reuse (None, gram))
 
 (** Command *)
 
@@ -890,7 +888,7 @@ match arg.arg_interp with
     Ftactic.return (Geninterp.Val.inject tag v)
   end)
 
-let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
+let argument_extend (type a b c) ~plugin ~name (arg : (a, b, c) tactic_argument) =
   let wit = Genarg.create_arg name in
   let () = Genintern.register_intern0 wit (intern_fun name arg) in
   let () = Genintern.register_subst0 wit (subst_fun arg) in
@@ -909,12 +907,13 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     e
   | Vernacextend.Arg_rules rules ->
     let e = Pcoq.create_generic_entry2 name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules])) in
+    let plugin_uid = (plugin, "argextend:"^name) in
+    let () = Egramml.grammar_extend ~plugin_uid e (Pcoq.Fresh (Gramlib.Gramext.First, [None, None, rules])) in
     e
   in
   let (rpr, gpr, tpr) = arg.arg_printer in
   let () = Pptactic.declare_extra_genarg_pprule wit rpr gpr tpr in
-  let () = create_ltac_quotation name
+  let () = create_ltac_quotation ~plugin name
     (fun (loc, v) -> Tacexpr.TacGeneric (Some name,Genarg.in_gen (Genarg.rawwit wit) v))
     (entry, None)
   in

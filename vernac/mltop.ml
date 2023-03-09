@@ -278,17 +278,19 @@ let add_known_module mname =
 let module_is_known mname = PluginSpec.Set.mem mname !known_loaded_modules
 let plugin_is_known mname = PluginSpec.Set.mem mname !known_loaded_modules
 
-(** A plugin is just an ML module with an initialization function. *)
+(** Init time functions *)
 
-let known_loaded_plugins : (unit -> unit) PluginSpec.Map.t ref = ref PluginSpec.Map.empty
+let initialized_plugins = Summary.ref ~stage:Synterp ~name:"inited-plugins" PluginSpec.Set.empty
 
-let add_known_plugin init name =
+let plugin_init_functions : (unit -> unit) list PluginSpec.Map.t ref = ref PluginSpec.Map.empty
+
+let add_init_function name f =
   let name = PluginSpec.of_declare_ml_format name in
-  add_known_module name;
-  known_loaded_plugins := PluginSpec.Map.add name init !known_loaded_plugins
-
-let init_known_plugins () =
-  PluginSpec.Map.iter (fun _ f -> f()) !known_loaded_plugins
+  if PluginSpec.Set.mem name !initialized_plugins then CErrors.anomaly Pp.(str "Not allowed to add init function for already initialized plugin " ++ str (PluginSpec.pp name));
+  plugin_init_functions := PluginSpec.Map.update name (function
+      | None -> Some [f]
+      | Some g -> Some (f::g))
+      !plugin_init_functions
 
 (** Registering functions to be used at caching time, that is when the Declare
     ML module command is issued. *)
@@ -305,14 +307,22 @@ let perform_cache_obj name =
   let objs = try PluginSpec.Map.find name !cache_objs with Not_found -> [] in
   let objs = List.rev objs in
   List.iter (fun f -> f ()) objs
-let perform_cache_obj x = perform_cache_obj x
 
 (** ml object = ml module or plugin *)
+let dinit = CDebug.create ~name:"mltop-init" ()
 
 let init_ml_object mname =
-  try PluginSpec.Map.find mname !known_loaded_plugins ()
-  with Not_found -> ()
-let init_ml_object x = init_ml_object x
+  if PluginSpec.Set.mem mname !initialized_plugins
+  then dinit Pp.(fun () -> str "already initialized " ++ str (PluginSpec.pp mname))
+  else  begin
+    dinit Pp.(fun () -> str "initing " ++ str (PluginSpec.pp mname));
+    let n = match PluginSpec.Map.find mname !plugin_init_functions with
+      | l -> List.iter (fun f -> f()) (List.rev l); List.length l
+      | exception Not_found -> 0
+    in
+    initialized_plugins := PluginSpec.Set.add mname !initialized_plugins;
+    dinit Pp.(fun () -> str "finished initing " ++ str (PluginSpec.pp mname) ++ str " (" ++ int n ++ str " init functions)")
+  end
 
 let load_ml_object mname =
   ml_load mname;
@@ -332,6 +342,7 @@ let module_is_known mname =
 (* List and not String.Set because order is important: most recent first. *)
 
 let loaded_modules = ref []
+
 let get_loaded_modules () = List.rev !loaded_modules
 
 (* XXX: It seems this should be part of trigger_ml_object, and
@@ -339,6 +350,7 @@ let get_loaded_modules () = List.rev !loaded_modules
 let add_loaded_module md =
   if not (List.mem md !loaded_modules) then
     loaded_modules := md :: !loaded_modules
+
 let reset_loaded_modules () = loaded_modules := []
 
 let if_verbose_load verb f name =
@@ -460,3 +472,6 @@ let print_gc () =
     str "stack_size: " ++ int stat.Gc.stack_size
   in
   hv 0 msg
+
+let init_known_plugins () = ()
+let add_known_plugin _ _ = ()

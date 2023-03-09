@@ -17,6 +17,8 @@ open Tac2expr
 open Tac2entries.Pltac
 open Proofview.Notations
 
+let ltac2_plugin = "coq-core.plugins.ltac2"
+
 let constr_flags =
   let open Pretyping in
   {
@@ -1653,7 +1655,7 @@ let () =
 let () =
   let e = Tac2entries.Pltac.tac2expr_in_env in
   let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (Some "ltac2", in_gen (rawwit wit_ltac2) v) in
-  Ltac_plugin.Tacentries.create_ltac_quotation "ltac2" inject (e, None)
+  Ltac_plugin.Tacentries.create_ltac_quotation ~plugin:ltac2_plugin "ltac2" inject (e, None)
 
 (* Ltac1 runtime representation of Ltac2 closures. *)
 let typ_ltac2 : valexpr Geninterp.Val.typ =
