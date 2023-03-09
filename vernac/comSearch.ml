@@ -50,12 +50,20 @@ let kind_searcher = Decls.(function
     let instances = Typeclasses.all_instances () in
     Inr (fun gr -> List.exists (fun c -> GlobRef.CanOrd.equal c.Typeclasses.is_impl gr) instances))
 
+let interp_constr_pattern env sigma ?(expected_type=Pretyping.WithoutTypeConstraint) c =
+  let c = Constrintern.intern_gen expected_type ~pattern_mode:true env sigma c in
+  let flags = { Pretyping.no_classes_no_fail_inference_flags with expand_evars = false } in
+  let sigma, c = Pretyping.understand_tcc ~flags env sigma ~expected_type c in
+  (* FIXME: it is necessary to be unsafe here because of the way we handle
+     evars in the pretyper. Sometimes they get solved eagerly. *)
+  Patternops.legacy_bad_pattern_of_constr env sigma c
+
 let interp_search_item env sigma =
   function
   | SearchSubPattern ((where,head),pat) ->
       let expected_type = Pretyping.(if head then IsType else WithoutTypeConstraint) in
       let pat =
-        try Constrintern.interp_constr_pattern env sigma ~expected_type pat
+        try interp_constr_pattern env sigma ~expected_type pat
         with e when CErrors.noncritical e ->
           (* We cannot ensure (yet?) that a typable pattern will
              actually be typed, consider e.g. (forall A, A -> A /\ A)

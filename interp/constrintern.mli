@@ -144,11 +144,6 @@ val intern_constr_pattern :
   env -> evar_map -> ?as_type:bool -> ?strict_check:bool -> ?ltacvars:ltac_sign ->
     constr_pattern_expr -> patvar list * constr_pattern
 
-(** With typing *)
-val interp_constr_pattern :
-  env -> evar_map -> ?expected_type:typing_constraint ->
-    constr_pattern_expr -> constr_pattern
-
 (** Returns None if it's an abbreviation not bound to a name, raises an error
     if not existing *)
 val intern_reference : qualid -> GlobRef.t option
