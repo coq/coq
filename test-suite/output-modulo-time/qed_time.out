@@ -1,5 +1,5 @@
-Chars 40 - 57 [Lemma~foo~:~True.] 0. secs (0.u,0.s)
-Chars 58 - 64 [Proof.] 0. secs (0.u,0.s)
-Chars 67 - 81 [Axiom~(X~:~nat).] 0. secs (0.u,0.s)
-Chars 84 - 92 [exact~I.] 0. secs (0.u,0.s)
-Chars 93 - 97 [Qed.] 0. secs (0.u,0.s)
+Chars 40 - 57 [Lemma~foo~:~True.] 0. secs (0.u,0.s) 0. major Mw, 0. minor Mw
+Chars 58 - 64 [Proof.] 0. secs (0.u,0.s) 0. major Mw, 0. minor Mw
+Chars 67 - 81 [Axiom~(X~:~nat).] 0. secs (0.u,0.s) 0. major Mw, 0. minor Mw
+Chars 84 - 92 [exact~I.] 0. secs (0.u,0.s) 0. major Mw, 0. minor Mw
+Chars 93 - 97 [Qed.] 0. secs (0.u,0.s) 0. major Mw, 0. minor Mw

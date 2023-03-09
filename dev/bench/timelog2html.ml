@@ -81,20 +81,30 @@ let same_loc a b = a.start = b.start && a.stop = b.stop
 (* A measurement, with the original printed string and an exact rational representation *)
 type measure = { str: string; q: Q.t; }
 
+type measures = {
+  time: measure;
+  major: measure option;
+  minor: measure option;
+}
+
+let measure_of_string s = { str=s; q = Q.of_string s; }
+
 let dummy = { str="0"; q=Q.zero; }
+
+let dummys = { time=dummy; major=None; minor=None; }
 
 type 'a one_command = {
   loc: loc;
-  time: 'a;
+  measures: 'a;
 }
 
-let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs|}
+let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs [^ ]+\( \([0-9.]+\) major Mw, \([0-9.]+\) minor Mw\)?|}
 
 let count_newlines s = str_fold_left (fun n c -> if c = '\n' then n+1 else n) 0 s
 
 let is_white_char = function ' '|'\n'|'\t' -> true | _ -> false
 
-let rec file_loop filech ~last_end ~lines acc : measure one_command array =
+let rec file_loop filech ~last_end ~lines acc : measures one_command array =
   match input_line filech with
   | exception End_of_file ->
     let acc = if last_end + 1 <= sourcelen then
@@ -102,7 +112,7 @@ let rec file_loop filech ~last_end ~lines acc : measure one_command array =
         if str_for_all is_white_char text then acc
         else
           { loc = { start = last_end+1; stop = sourcelen; line = lines+1; text; };
-            time = dummy;
+            measures = dummys;
           } :: acc
       else acc
     in
@@ -113,7 +123,9 @@ let rec file_loop filech ~last_end ~lines acc : measure one_command array =
     else
       let b = int_of_string @@ Str.matched_group 1 l
       and e = int_of_string @@ Str.matched_group 2 l
-      and t = Str.matched_group 3 l in
+      and t = Str.matched_group 3 l
+      and major = try Some (Str.matched_group 5 l) with Not_found -> None
+      and minor = try Some (Str.matched_group 6 l) with Not_found -> None in
       let acc, lines, last_end = if b > last_end + 1 then
           let text = source_substring (last_end + 1) (b - 1) in
           (* if only spaces since last command, include them in the next command
@@ -122,7 +134,7 @@ let rec file_loop filech ~last_end ~lines acc : measure one_command array =
             let n = count_newlines text in
             let acc =
               { loc = { start = last_end + 1; stop = b-1; line = lines; text };
-                time = dummy;
+                measures = dummys;
               } :: acc
             in
             acc, (lines+n), b-1
@@ -135,7 +147,10 @@ let rec file_loop filech ~last_end ~lines acc : measure one_command array =
       (* lua script has "eoln" but unused *)
       let acc =
         { loc = { start = last_end+1; stop = e; line = lines; text; };
-          time = { str=t; q = Q.of_string t; };
+          measures = {
+            time = measure_of_string t;
+            major = Option.map measure_of_string major;
+            minor = Option.map measure_of_string minor;};
         } :: acc
       in
       let lines = lines + n in
@@ -152,29 +167,39 @@ let () =
       if Array.length all_data.(0) <> Array.length all_data.(fidx)
       then die "Mismatch between %s and %s: different measurement counts\n" data_files.(0) fname)
 
-let all_data : measure array one_command array =
+let all_data : measures array one_command array =
   all_data.(0) |> Array.mapi (fun i d ->
-      let times = data_files |> Array.mapi (fun fidx fname ->
+      let measures = data_files |> Array.mapi (fun fidx fname ->
           let fdata = all_data.(fidx).(i) in
           if same_loc d.loc fdata.loc
-          then fdata.time
+          then fdata.measures
           else die "Mismatch between %s and %s at line %d\n" data_files.(0) fname (i+1))
       in
       { loc = d.loc;
-        time = times; })
+        measures; })
 
 let percentage ~max:m v =
   Q.to_float Q.(v * of_int 100 / m)
 
-let maxq =
+let max_for get all_data =
   Array.fold_left (fun max data ->
       Array.fold_left (fun max d ->
-          let dq = d.q in
-          if Q.lt max dq then dq
-          else max)
+          match get d with
+          | None -> max
+          | Some dq ->
+            if Q.lt max dq then dq
+            else max)
         max
-        data.time)
+        data.measures)
     Q.zero all_data
+
+let timemaxq = max_for (fun d -> Some d.time.q) all_data
+let majormaxq = max_for (fun d -> Option.map (fun d -> d.q) d.major) all_data
+let minormaxq = max_for (fun d -> Option.map (fun d -> d.q) d.minor) all_data
+
+let has_mem_data =
+  Array.exists (fun d -> Array.exists (fun d -> Option.has_some d.major) d.measures)
+    all_data
 
 let vname = Filename.basename vfile
 
@@ -192,15 +217,18 @@ let () =
 let () = data_files |> Array.iteri (fun i _ ->
     let color = colors.(i) in
     out
-{|.time%d {
+{|.time%d, .major%d, .minor%d {
   background-color: %s;
   height: %d%%;
   top: %d%%;
   z-index: -1;
   position: absolute;
-  opacity: 50%%;
+  opacity: 0%%;
 }
-|} (i+1) color (100 / ndata) (100 / ndata * i))
+#time:checked ~ * .time%d { opacity: 50%%; }
+#major:checked ~ * .major%d { opacity: 50%%; }
+#minor:checked ~ * .minor%d { opacity: 50%%; }
+|} (i+1) (i+1) (i+1) color (100 / ndata) (100 / ndata * i) (i+1) (i+1) (i+1))
 
 let () =
   out
@@ -227,6 +255,16 @@ code::before {
 
 let () = out "<h1>Timings for %s</h1>\n" vname
 
+let () = if has_mem_data then
+    out {|
+<input type="radio" name="toggles" checked=true id="time"><label for="time">Time</label>
+<input type="radio" name="toggles" id="major"><label for="major">Major</label>
+<input type="radio" name="toggles" id="minor"><label for="minor">Minor</label>
+|}
+  else
+    (* hidden toggle so that the css still displays the time highlights *)
+    out {|<input type="radio" name="toggles" checked=true id="time" style="display: none">|}
+
 let () = out "<ol>\n"
 
 let () = data_files |> Array.iteri (fun i data_file ->
@@ -244,6 +282,9 @@ let line_id fmt l =
     Printf.fprintf fmt "id=\"L%d\" " l
   end
 
+let pr_one_bg_div kind n v ~max =
+  out {|<div class="%s%d" style="width: %f%%"></div>|}
+    kind n (percentage v ~max)
 
 let () = all_data |> Array.iteri (fun j d ->
     let () = out {|<div class="code" title="File: %s
@@ -251,15 +292,17 @@ Line: %d
 
 |} vname d.loc.line
     in
-    let () = d.time |> Array.iteri (fun k d ->
-        out "Time%d: %ss\n" (k+1) d.str)
+    let () = d.measures |> Array.iteri (fun k m ->
+        out "Time%d: %ss\n" (k+1) m.time.str;
+        Option.iter (fun d -> out "Major%d: %sMw\n" (k+1) d.str) m.major;
+        Option.iter (fun d -> out "Minor%d: %sMw\n" (k+1) d.str) m.minor)
     in
     let () = out {|">|} in
 
-    let () = d.time |> Array.iteri (fun k d ->
-        out {|<div class="time%d" style="width: %f%%"></div>|}
-          (k+1)
-          (percentage d.q ~max:maxq))
+    let () = d.measures |> Array.iteri (fun k m ->
+       pr_one_bg_div "time" (k+1) m.time.q ~max:timemaxq;
+       Option.iter (fun d -> pr_one_bg_div "major" (k+1) d.q ~max:majormaxq) m.major;
+       Option.iter (fun d -> pr_one_bg_div "minor" (k+1) d.q ~max:minormaxq) m.minor)
     in
 
     let text = d.loc.text in

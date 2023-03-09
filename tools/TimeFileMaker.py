@@ -68,7 +68,7 @@ FILE_NAME (...user: NUMBER_IN_SECONDS...mem: NUMBER ko...)
 If --real is passed, then the lines are instead expected in the format:
 FILE_NAME (...real: NUMBER_IN_SECONDS...mem: NUMBER ko...)''' if not single_timing else
 '''The input is expected to contain lines in the format:
-Chars START - END COMMAND NUMBER secs (NUMBERu...)''')))
+Chars START - END COMMAND NUMBER secs (NUMBERu...) NUMBER major Mw, NUMBER minor Mw''')))
 
 def add_user(parser, single_timing=False):
     return parser.add_argument(
@@ -80,7 +80,7 @@ FILE_NAME (...real: NUMBER_IN_SECONDS...mem: NUMBER ko...)
 If --user is passed, then the lines are instead expected in the format:
 FILE_NAME (...user: NUMBER_IN_SECONDS...mem: NUMBER ko...)''' if not single_timing else
 '''The input is expected to contain lines in the format:
-Chars START - END COMMAND NUMBER secs (NUMBERu...)''')))
+Chars START - END COMMAND NUMBER secs (NUMBERu...) NUMBER major Mw, NUMBER minor Mw''')))
 
 def add_include_mem(parser):
     return parser.add_argument(
@@ -192,7 +192,7 @@ def get_single_file_times(file_name, use_real=False):
     to compile durations, as strings.
     '''
     lines = get_file(file_name)
-    reg = re.compile(r'^Chars ([0-9]+) - ([0-9]+) ([^ ]+) ([0-9\.]+) secs \(([0-9\.]+)u(.*)\)$', re.MULTILINE)
+    reg = re.compile(r'^Chars ([0-9]+) - ([0-9]+) ([^ ]+) ([0-9\.]+) secs \(([0-9\.]+)u(.*)\)( [0-9\.]+ major Mw, [0-9\.]+ minor Mw)?$', re.MULTILINE)
     times = reg.findall(lines)
     if len(times) == 0: return dict()
     longest = max(max((len(start), len(stop))) for start, stop, name, real, user, extra in times)

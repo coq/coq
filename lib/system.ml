@@ -330,6 +330,10 @@ let fmt_duration { real = treal; user; system } =
 let fmt_time_difference start stop =
   fmt_duration (duration_between ~start ~stop)
 
+let fmt_mem_difference (start:Gc.stat) (stop:Gc.stat) =
+  real (round ((stop.major_words -. start.major_words) /. 1000000.)) ++ str " major Mw, " ++
+  real (round ((stop.minor_words -. start.minor_words) /. 1000000.)) ++ str " minor Mw"
+
 type 'a transaction_result = (('a * duration), (Exninfo.iexn * duration)) Result.t
 
 let measure_duration f x =

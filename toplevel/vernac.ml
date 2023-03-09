@@ -57,11 +57,12 @@ module State = struct
 
 end
 
-let emit_time state com tstart tend =
+let emit_time state com tstart tend mstart mend =
   match state.State.time with
   | None -> ()
   | Some time ->
-    let pp = Topfmt.pr_cmd_header com ++ System.fmt_time_difference tstart tend in
+    let pp = Topfmt.pr_cmd_header com ++ System.fmt_time_difference tstart tend
+             ++ str " " ++ System.fmt_mem_difference mstart mend in
     match time with
     | ToFeedback -> Feedback.msg_notice pp
     | ToChannel ch -> Pp.pp_with ch (pp ++ fnl())
@@ -104,6 +105,7 @@ let load_vernac_core ~echo ~check ~state ?source file =
   (* ids = For beautify, list of parsed sids *)
   let rec loop state ids =
     let tstart = System.get_time () in
+    let mstart = Gc.quick_stat() in
     match
       Stm.parse_sentence
         ~doc:state.doc ~entry:Pvernac.main_entry state.sid in_pa
@@ -123,9 +125,10 @@ let load_vernac_core ~echo ~check ~state ?source file =
           ()
           (fun () ->
              let tend = System.get_time () in
+             let mend = Gc.quick_stat() in
              (* The -time option is only supported from console-based clients
                 due to the way it prints. *)
-             emit_time state ast tstart tend)
+             emit_time state ast tstart tend mstart mend)
           ()
       in
 
@@ -153,11 +156,13 @@ let process_expr ~state loc_ast =
 
 let process_expr ~state loc_ast =
   let tstart = System.get_time () in
+  let mstart = Gc.quick_stat () in
   try_finally (fun () -> process_expr ~state loc_ast)
     ()
     (fun () ->
        let tend = System.get_time () in
-       emit_time state loc_ast tstart tend)
+       let mend = Gc.quick_stat () in
+       emit_time state loc_ast tstart tend mstart mend)
     ()
 
 (******************************************************************************)

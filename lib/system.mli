@@ -118,6 +118,7 @@ val duration_add : duration -> duration -> duration
 val duration_real : duration -> float
 
 val fmt_time_difference : time -> time -> Pp.t
+val fmt_mem_difference : Gc.stat -> Gc.stat -> Pp.t
 val fmt_duration : duration -> Pp.t
 
 type 'a transaction_result = (('a * duration), (Exninfo.iexn * duration)) Result.t

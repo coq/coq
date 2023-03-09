@@ -44,11 +44,7 @@ code::before {
 </head>
 <body>
 <h1>Timings for foo.v</h1>
-
-<input type="radio" name="toggles" checked=true id="time"><label for="time">Time</label>
-<input type="radio" name="toggles" id="major"><label for="major">Major</label>
-<input type="radio" name="toggles" id="minor"><label for="minor">Minor</label>
-<ol>
+<input type="radio" name="toggles" checked=true id="time" style="display: none"><ol>
 <li style="background-color: #F08080">foo.v.time1</li>
 <li style="background-color: #EEE8AA">foo.v.time2</li>
 </ol>
@@ -69,34 +65,22 @@ Time2: 0s
 Line: 9
 
 Time1: 2.s
-Major1: 0.1Mw
-Minor1: 2.Mw
 Time2: 0.s
-Major2: 0.Mw
-Minor2: 0.Mw
-"><div class="time1" style="width: 100.000000%"></div><div class="major1" style="width: 5.000000%"></div><div class="minor1" style="width: 100.000000%"></div><div class="time2" style="width: 0.000000%"></div><div class="major2" style="width: 0.000000%"></div><div class="minor2" style="width: 0.000000%"></div><code id="L9" data-line="9">Definition a := 1.</code>
+"><div class="time1" style="width: 100.000000%"></div><div class="time2" style="width: 0.000000%"></div><code id="L9" data-line="9">Definition a := 1.</code>
 </div><div class="code" title="File: foo.v
 Line: 10
 
 Time1: 1.s
-Major1: 0.Mw
-Minor1: 1.Mw
 Time2: 1.s
-Major2: 0.1Mw
-Minor2: 1.1Mw
-"><div class="time1" style="width: 50.000000%"></div><div class="major1" style="width: 0.000000%"></div><div class="minor1" style="width: 50.000000%"></div><div class="time2" style="width: 50.000000%"></div><div class="major2" style="width: 5.000000%"></div><div class="minor2" style="width: 55.000000%"></div><code id="L10" data-line="10"></code>
+"><div class="time1" style="width: 50.000000%"></div><div class="time2" style="width: 50.000000%"></div><code id="L10" data-line="10"></code>
 <code id="L11" data-line="11">Definition b :=</code>
 <code id="L12" data-line="12">  2.</code>
 </div><div class="code" title="File: foo.v
 Line: 13
 
 Time1: 0.s
-Major1: 0.Mw
-Minor1: 0.5Mw
 Time2: 1.5s
-Major2: 2.Mw
-Minor2: 0.Mw
-"><div class="time1" style="width: 0.000000%"></div><div class="major1" style="width: 0.000000%"></div><div class="minor1" style="width: 25.000000%"></div><div class="time2" style="width: 75.000000%"></div><div class="major2" style="width: 100.000000%"></div><div class="minor2" style="width: 0.000000%"></div><code id="L13" data-line="13"></code>
+"><div class="time1" style="width: 0.000000%"></div><div class="time2" style="width: 75.000000%"></div><code id="L13" data-line="13"></code>
 <code id="L14" data-line="14">Definition c := 3.</code>
 </div><div class="code" title="File: foo.v
 Line: 14
@@ -108,12 +92,8 @@ Time2: 0s
 Line: 14
 
 Time1: 0.s
-Major1: 0.Mw
-Minor1: 0.Mw
 Time2: 0.s
-Major2: 0.Mw
-Minor2: 0.Mw
-"><div class="time1" style="width: 0.000000%"></div><div class="major1" style="width: 0.000000%"></div><div class="minor1" style="width: 0.000000%"></div><div class="time2" style="width: 0.000000%"></div><div class="major2" style="width: 0.000000%"></div><div class="minor2" style="width: 0.000000%"></div><code data-line="14"> Definition d := 4.</code>
+"><div class="time1" style="width: 0.000000%"></div><div class="time2" style="width: 0.000000%"></div><code data-line="14"> Definition d := 4.</code>
 </div><div class="code" title="File: foo.v
 Line: 15
 

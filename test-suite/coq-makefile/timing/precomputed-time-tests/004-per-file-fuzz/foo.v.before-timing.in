@@ -1,20 +1,20 @@
-Chars 0 - 30 [Require~Import~Coq.Lists.List.] 0.114 secs (0.072u,0.044s)
-Chars 31 - 64 [Require~Import~Coq.ZArith.ZArith.] 0.192 secs (0.156u,0.035s)
-Chars 65 - 75 [Goal~_~True.] 0. secs (0.u,0.s)
-Chars 78 - 90 [constructor.] 0. secs (0.u,0.s)
-Chars 91 - 95 [Qed.] 0. secs (0.u,0.s)
-Chars 96 - 106 [Goal~_~True.] 0. secs (0.u,0.s)
-Chars 109 - 121 [constructor.] 0. secs (0.u,0.s)
-Chars 122 - 126 [Qed.] 0. secs (0.u,0.s)
-Chars 127 - 137 [Goal~_~True.] 0. secs (0.u,0.s)
-Chars 140 - 152 [constructor.] 0. secs (0.u,0.004s)
-Chars 153 - 157 [Qed.] 0. secs (0.u,0.s)
-Chars 158 - 168 [Goal~_~True.] 0. secs (0.u,0.s)
-Chars 171 - 183 [constructor.] 0. secs (0.u,0.s)
-Chars 184 - 188 [Qed.] 0. secs (0.u,0.s)
-Chars 189 - 199 [Goal~_~True.] 0. secs (0.u,0.s)
-Chars 202 - 214 [constructor.] 0. secs (0.u,0.s)
-Chars 215 - 219 [Qed.] 0. secs (0.u,0.s)
-Chars 220 - 277 [Goal~_~List.repeat~Z.div_eucl~...] 0. secs (0.u,0.s)
-Chars 280 - 304 [(vm_compute;~reflexivity).] 0.566 secs (0.528u,0.039s)
-Chars 305 - 309 [Qed.] 0.411 secs (0.4u,0.008s)
+Chars 0 - 30 [Require~Import~Coq.Lists.List.] 0.036 secs (0.036u,0.s) 4.934 major Mw, 4.232 minor Mw
+Chars 31 - 64 [Require~Import~Coq.ZArith.ZArith.] 0.095 secs (0.067u,0.027s) 5.629 major Mw, 15.49 minor Mw
+Chars 65 - 75 [Goal~True.] 0. secs (0.u,0.s) 0. major Mw, 0.008 minor Mw
+Chars 78 - 90 [constructor.] 0. secs (0.u,0.s) 0. major Mw, 0.012 minor Mw
+Chars 91 - 95 [Qed.] 0. secs (0.u,0.s) 0. major Mw, 0.011 minor Mw
+Chars 96 - 106 [Goal~True.] 0. secs (0.u,0.s) 0. major Mw, 0.008 minor Mw
+Chars 109 - 121 [constructor.] 0. secs (0.u,0.s) 0. major Mw, 0.012 minor Mw
+Chars 122 - 126 [Qed.] 0. secs (0.u,0.s) 0. major Mw, 0.011 minor Mw
+Chars 127 - 137 [Goal~True.] 0. secs (0.u,0.s) 0. major Mw, 0.009 minor Mw
+Chars 140 - 152 [constructor.] 0. secs (0.u,0.s) 0. major Mw, 0.012 minor Mw
+Chars 153 - 157 [Qed.] 0. secs (0.u,0.s) 0. major Mw, 0.011 minor Mw
+Chars 158 - 168 [Goal~True.] 0. secs (0.u,0.s) 0. major Mw, 0.009 minor Mw
+Chars 171 - 183 [constructor.] 0. secs (0.u,0.s) 0. major Mw, 0.012 minor Mw
+Chars 184 - 188 [Qed.] 0. secs (0.u,0.s) 0. major Mw, 0.011 minor Mw
+Chars 189 - 199 [Goal~True.] 0. secs (0.u,0.s) 0. major Mw, 0.009 minor Mw
+Chars 202 - 214 [constructor.] 0. secs (0.u,0.s) 0. major Mw, 0.012 minor Mw
+Chars 215 - 219 [Qed.] 0. secs (0.u,0.s) 0. major Mw, 0.011 minor Mw
+Chars 220 - 277 [Goal~List.repeat~Z.div_eucl~5~...] 0. secs (0.u,0.s) 0. major Mw, 0.046 minor Mw
+Chars 280 - 304 [(vm_compute;~reflexivity).] 0.257 secs (0.242u,0.015s) 6.277 major Mw, 85.018 minor Mw
+Chars 305 - 309 [Qed.] 0.185 secs (0.181u,0.004s) 3.424 major Mw, 75.84 minor Mw
