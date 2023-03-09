@@ -57,8 +57,8 @@ check_variable () {
 
 : "${coq_pr_number:=}"
 : "${coq_pr_comment_id:=}"
-: "${new_ocaml_version:=4.09.1}"
-: "${old_ocaml_version:=4.09.1}"
+: "${new_ocaml_version:=4.14.0}"
+: "${old_ocaml_version:=4.14.0}"
 : "${new_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${old_coq_repository:=https://gitlab.com/coq/coq.git}"
 : "${new_coq_opam_archive_git_uri:=https://github.com/coq/opam-coq-archive.git}"
@@ -325,7 +325,7 @@ create_opam() {
     local OCAML_VER="$2"
     local COQ_HASH="$3"
     local OPAM_COQ_DIR="$4"
-    local USE_FLAMBDA="$5"
+    local USE_OPT="$5"
 
     local OPAM_COMP=ocaml-base-compiler.$OCAML_VER
 
@@ -340,12 +340,12 @@ create_opam() {
     # Rest of default switches
     opam repo add -q --set-default iris-dev "https://gitlab.mpi-sws.org/FP/opam-dev.git"
 
-    if [[ $USE_FLAMBDA ]];
-    then flambda=--packages=ocaml-variants.${OCAML_VER}+options,ocaml-option-flambda
-    else flambda=
+    if [[ $USE_OPT ]];
+    then opt=--packages=ocaml-variants.${OCAML_VER}+options,$USE_OPT
+    else opt=--packages=ocaml-variants.${OCAML_VER}+options
     fi
 
-    opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" "$OPAM_COMP" $flambda
+    opam switch create -qy -j$number_of_processors "ocaml-$RUNNER" $opt
     eval $(opam env)
 
     # For some reason opam guesses an incorrect upper bound on the
@@ -401,7 +401,7 @@ create_opam() {
 }
 
 # Create an OPAM-root to which we will install the NEW version of Coq.
-create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_opam_archive_dir"
+create_opam "NEW" "$new_ocaml_version" "$new_coq_commit" "$new_coq_opam_archive_dir" ocaml-option-fp
 new_coq_commit_long="$COQ_HASH_LONG"
 
 # Create an OPAM-root to which we will install the OLD version of Coq.
