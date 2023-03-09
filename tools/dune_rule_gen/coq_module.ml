@@ -7,6 +7,8 @@
 (* Written by: Rudi Grinberg                                            *)
 (************************************************************************)
 
+let with_timing = true
+
 type t =
   { source : Path.t
   ; prefix : string list
@@ -63,7 +65,8 @@ let base_obj_files ~rule coq_module =
 let obj_files ~tname ~rule coq_module =
   let native = Rule_type.native_coqc rule in
   let native_objs = if native then native_obj_files ~tname ~install:false coq_module else [] in
-  native_objs @ base_obj_files ~rule coq_module
+  let timing_objs = if with_timing then [ mod_to_obj coq_module ~ext:".timing" ] else [] in
+  timing_objs @ native_objs @ base_obj_files ~rule coq_module
 
 let prefix_to_dir = String.concat Filename.dir_sep
 

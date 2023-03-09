@@ -230,14 +230,18 @@ let module_rule ~(cctx : Context.t) coq_module =
   let boot_flags, boot_deps = boot_module_setup ~cctx coq_module in
   let coqc_flags = cctx.flags.loadpath @ cctx.flags.user @ cctx.flags.common @ cctx.flags.native_coqc in
   let vfile_deps, flags = boot_deps @ vfile_deps, boot_flags @ coqc_flags in
+  let vfile_base = Path.basename vfile in
+  let timeflags = if Coq_module.with_timing then
+      Arg.[A "-time-file"; Path Path.(replace_ext vfile ~ext:".timing")]
+    else []
+  in
   (* Adjust paths *)
   let lvl = cctx.root_lvl + (Coq_module.prefix coq_module |> List.length) in
-  let flags = (* flags are relative to the root path *) Arg.List.to_string flags in
+  let flags = (* flags are relative to the root path *) Arg.List.to_string (flags @ timeflags) in
   let deps = List.map (Path.adjust ~lvl) vfile_deps |> List.map Path.to_string in
   (* Depend on the workers if async *)
   let deps = cctx.async_deps @ deps in
   (* Build rule *)
-  let vfile_base = Path.basename vfile in
   let updir = Path.(to_string (adjust ~lvl (make "."))) in
   let action = Format.asprintf "(chdir %s (run coqc %s %%{dep:%s}))" updir flags vfile_base in
   let targets = Coq_module.obj_files ~tname ~rule coq_module in

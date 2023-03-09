@@ -46,3 +46,5 @@ val install_files :
   -> (string * string) list
 
 val pp : Format.formatter -> t -> unit
+
+val with_timing : bool
