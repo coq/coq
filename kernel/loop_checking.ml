@@ -420,7 +420,7 @@ let _is_empty_clause ((_, kprem) : clause) = ClausesOf.is_empty kprem
 (* Comparison on this type is pointer equality *)
 type canonical_node =
   { canon: Index.t;
-    value : int;
+    value : int option;
     clauses_bwd : ClausesOf.t;
     clauses_fwd : ClausesOf.t PMap.t }
 
@@ -682,7 +682,7 @@ let check_invariants ~(required_canonical:Point.t -> bool) model =
     | Canonical can ->
       assert (Index.equal idx can.canon);
       assert (Index.mem (Index.repr idx model.table) model.table);
-      assert (can.value >= 0);
+      assert (match can.value with Some v -> v >= 0 | None -> true);
       let cls = can.clauses_bwd in
       ClausesOf.iter
         (fun (k, prems) ->
@@ -703,15 +703,25 @@ let check_invariants ~(required_canonical:Point.t -> bool) model =
       assert (not (required_canonical idx)))
     model.entries
 
-let model_max (m : model) : int =
-  PMap.fold (fun _ k acc ->
-    match k with Equiv _ -> acc | Canonical can -> max can.value acc)
-    m.entries 0
+let lift_opt f x y =
+  match x, y with
+  | Some x', Some y' -> Some (f x' y')
+  | Some _, None -> x
+  | None, Some _ -> y
+  | None, None -> None
 
-let model_min (m : model) : int =
+let max_opt = lift_opt max
+let min_opt = lift_opt min
+
+let model_max (m : model) : int option =
   PMap.fold (fun _ k acc ->
-    match k with Equiv _ -> acc | Canonical can -> min can.value acc)
-    m.entries 0
+    match k with Equiv _ -> acc | Canonical can -> max_opt can.value acc)
+    m.entries None
+
+let model_min (m : model) : int option =
+  PMap.fold (fun _ k acc ->
+    match k with Equiv _ -> acc | Canonical can -> min_opt can.value acc)
+    m.entries None
 
 let clauses_cardinal (m : model) : int =
   PMap.fold (fun _ k acc ->
@@ -750,8 +760,8 @@ let statistics model =
   let open Pp in
   str" " ++ int (PMap.cardinal model.entries) ++ str" universes" ++
   str", " ++ int (canonical_universes model) ++ str" canonical universes" ++
-  str ", maximal value in the model is " ++ int (model_max model) ++
-  str ", minimal value is " ++ int (model_min model) ++
+  str ", maximal value in the model is " ++ pr_opt int (model_max model) ++
+  str ", minimal value is " ++ pr_opt int (model_min model) ++
   str", " ++ int (clauses_cardinal model) ++ str" clauses." ++ spc () ++
   int (without_bound model) ++ str" canonical universes are not bounded above " ++
   str", " ++ int (maximal_path model.entries) ++ str" maximal path length in equiv nodes"
@@ -765,10 +775,12 @@ let debug_check_invariants m =
 
 let model_value m l =
   try (repr m l).value
-  with Not_found -> 0
+  with Not_found -> Some 0
+
+exception VacuouslyTrue
 
 let min_premise (m : model) prem =
-  let g (l, k) = model_value m l - k in
+  let g (l, k) = (match (model_value m l) with None -> raise VacuouslyTrue | Some v -> v) - k in
   let f prem minl = min minl (g prem) in
   Premises.fold_ne f g prem
 
@@ -827,13 +839,15 @@ let pr_w m w = CanSet.pr m w
 
 let update_value (c, m) clause : (canonical_node * model) option =
   let (k, premises) = clause in
-  let k0 = min_premise m premises in
-  if k0 < 0 then None
-  else
+  match min_premise m premises with
+  | exception VacuouslyTrue -> None
+  | k0 when k0 < 0 -> None
+  | k0 ->
     let newk = k + k0 in
-    if newk <= c.value then None
-    else
-      let c' = { c with value = newk } in
+    match c.value with
+    | Some v when newk <= v -> None
+    | _ ->
+      let c' = { c with value = Some newk } in
       Some (c', change_node m c')
 
 let pr_can m can =
@@ -845,7 +859,7 @@ let check_model_clauses_of_aux m can cls =
     match update_value cwm cls with
     | None -> cwm
     | Some (can, _ as cwm') ->
-      debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ int can.value);
+      debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ pr_opt int can.value);
       debug Pp.(fun () -> str" due to clause " ++ pr_clauses_bwd m (ClausesBackward.singleton (can.canon, ClausesOf.singleton cls)));
       cwm')
     cls (can, m)
@@ -988,7 +1002,7 @@ let pr_levelmap (m : model) : Pp.t =
   h (prlist_with_sep fnl (fun (u, v) ->
     let value = entry_value m v in
     let point = Index.repr u m.table in
-    Point.pr point ++ str" -> " ++ int value) (PMap.bindings m.entries))
+    Point.pr point ++ str" -> " ++ pr_opt int value) (PMap.bindings m.entries))
   (* Point.Map.pr Pp.int m  *)
 
 let pr_model model =
@@ -1273,10 +1287,11 @@ let find_to_merge =
 
 let simplify_clauses_between model canv canu =
   if canv == canu then model
-  else if not (Int.equal canu.value canv.value) then
+  else if not (Option.equal Int.equal canu.value canv.value) then
       (* We know v -> u and check for u -> v, this can only be true if both levels
         already have the same value *)
-    (debug Pp.(fun () -> pr_can model canu ++ str"'s value =  " ++ int canu.value ++ str" and " ++ pr_can model canv ++ str "'s value = " ++ int canv.value ++ str", no simplification possible");
+    (debug Pp.(fun () -> pr_can model canu ++ str"'s value =  " ++ pr_opt int canu.value ++ str" and " ++ pr_can model canv ++ str "'s value = "
+      ++ pr_opt int canv.value ++ str", no simplification possible");
       model)
   else
     let status = Status.create model in
@@ -1330,8 +1345,9 @@ let mem_clause m ((l, kprem) : clause) : bool =
 
 type 'a check_function = t -> 'a -> 'a -> bool
 
+(* @raises VacuouslyTrue if there is an undefined level in the premises *)
 let min_can_premise prem =
-  let g (l, k) = l.value - k in
+  let g (l, k) = (match l.value with Some v -> v | None -> raise VacuouslyTrue) - k in
   let f prem minl = min minl (g prem) in
   Premises.fold_ne f g prem
 
@@ -1456,6 +1472,56 @@ let check_clause_singleton m prem concl k =
   try let () = aux [(concl, k)] [] in false
   with Found -> true
 
+
+
+(* A clause premises -> concl + k might hold in the current minimal model without being valid in all
+   its extensions.
+
+   We generate the minimal model starting from the premises. I.e. we make the premises true.
+   Then we check that the conclusion holds in this minimal model.  *)
+
+(* a -> b
+   b -> c
+
+   add x
+
+
+
+*)
+(*
+let check_holds m concl clause =
+  let (k, premises) = clause in
+  let m =
+  let chk = NeList.fold (fun (idx, idxk) m ->
+    let can = repr_model m idx in
+    update_value (can, m) idxk)
+    premises m
+  in
+  chk*)
+
+(* let check_clauses m (cls : ClausesBackward.t) =
+  PMap.for_all (fun concl cls ->
+    let can = repr model concl in
+    ClausesOf.for_all (fun cl ->
+        let bwdc = check_clause_holds model can cl in bwdc)
+      cls)
+    cls *)
+
+      (* check_inv_clause_of m concl cl) *)
+      (* if check_clause_of m can.value cl then *)
+        (* let fwdc = check_clause_holds_fwd m can cl in *)
+        (* if fwdc == bwdc then fwdc *)
+        (* else CErrors.anomaly Pp.(str "check_clause_holds differ in fwd and backward mode: forward" ++ bool fwdc ++ str" backward: " ++ bool bwdc) *)
+      (* else false)  *)
+
+(* let check_clauses m cls =
+  if check_clauses m cls then
+    (debug Pp.(fun () -> str"check_clauses succeeded on: " ++ pr_clauses_bwd model cls ++
+    str" and model " ++ pr_levelmap model); true)
+  else (debug Pp.(fun () -> str"check_clauses failed on: " ++ pr_clauses_bwd model cls ++
+    str" and model " ++ pr_levelmap model); false) *)
+
+
 (* let check_clause = time4 (Pp.str"check_clause") check_clause *)
 
 let check_lt (m : t) u v =
@@ -1536,7 +1602,9 @@ let check_clause_of m conclv clause =
 
 let _check_clause_info m (concl, clause) =
   let v = (repr m concl).value in
-  ClausesOf.for_all (check_clause_of m v) clause
+  match v with
+  | Some v -> ClausesOf.for_all (check_clause_of m v) clause
+  | None -> true (* concl is undefined *)
 
 (* let pr_clauses m cls = Clauses.pr pr_clause m cls.Clauses.clauses_bwd *)
 
@@ -1544,21 +1612,23 @@ let _mem_clause = time2 (Pp.str"mem_clause") mem_clause
 let _add_clauses_of_model = time2 (Pp.str "add_clauses_of_model") add_clauses_of_model
 
 let update_model_value (m : model) can k' : model =
-  let k' = max can.value k' in
-  if Int.equal k' can.value then m
+  let k' = max_opt can.value k' in
+  if Option.equal Int.equal k' can.value then m
   else
-    (debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ int k');
+    (debug Pp.(fun () -> str"Updated value of " ++ pr_can m can ++ str " to " ++ pr_opt int k');
     change_node m { can with value = k' })
 
 let update_model ((prems, (can, k)) : can_clause) (m : model) : CanSet.t * model =
-  let k0 = min_can_premise prems in
-  let m' = update_model_value m can (k + k0) in
-  if m' != m then
-    let canset = CanSet.add can.canon (can.clauses_bwd, can.clauses_fwd) CanSet.empty in
-    match check_clauses_with_premises canset m' with
-    | Some wm -> wm
-    | None -> (CanSet.empty, m')
-  else (CanSet.empty, m)
+  match min_can_premise prems with
+  | exception VacuouslyTrue -> (CanSet.empty, m)
+  | k0 ->
+    let m' = update_model_value m can (Some (k + k0)) in
+    if m' != m then
+      let canset = CanSet.add can.canon (can.clauses_bwd, can.clauses_fwd) CanSet.empty in
+      match check_clauses_with_premises canset m' with
+      | Some wm -> wm
+      | None -> (CanSet.empty, m')
+    else (CanSet.empty, m)
 
 let filter_trivial_can_clause ((prems, (concl, k as conclk) as x) : can_clause) : can_clause option =
   match NeList.filter (fun (prem, k') -> not (prem == concl && k' >= k)) prems with
@@ -1624,13 +1694,21 @@ let enforce_lt u v m =
   let m, canv = repr_compress_node m v in
   infer_extension canu 1 canv m
 
+
+exception Undeclared of Point.t
+
+let get_proper_value m can =
+  match can.value with
+  | Some v -> v
+  | None -> raise (Undeclared (Index.repr can.canon m.table))
+
 let enforce_eq u v m =
   let canu = repr_node m u in
   let canv = repr_node m v in
   if canu == canv then Some m
   else begin
     debug Pp.(fun () -> str"enforce_eq: " ++ pr_can m canu ++ str" = " ++ pr_can m canv);
-    match Int.compare canu.value canv.value with
+    match Int.compare (get_proper_value m canu) (get_proper_value m canv) with
     (* | 0 -> Some (snd (enforce_eq_can m canu canv)) *)
     | x when x <= 0 ->
       (* canu.value <= canv.value, so v <= u is trivial and we cannot have u < v,
@@ -1654,48 +1732,6 @@ let enforce_eq u v m =
           let canv' =  repr m' canv.canon in
           enforce_leq_can canv' canu' m')
   end
-
-
-(* A clause x -> y + 1 might hold in the current minimal model without being valid in all
-   its extensions. We check that the "inverse" clause y + 1 -> x + 1 does *not* hold as
-   well to ensure that x -> y will really hold in all extensions.
-   Both clauses cannot be valid at the same time as this would imply a loop. *)
-(* let _check_inv_clause_of m concl clause =
-  let (k, premises) = clause in
-  let chk = NeList.fold (fun (idx, _idxk) curm ->
-    match curm with
-    | None -> infer_clause_extension (idx, ClausesOf.singleton (1, NeList.tip (concl, k))) m
-    | Some m -> Some m)
-    premises None
-  in
-  let chk = match chk with
-    | Some _ -> false
-    | None -> true
-  in
-  debug Pp.(fun () -> str"check_inv_clause_of: " ++  pr_clause_info model concl clause ++ str " = " ++ bool chk);
-  chk *)
-
-(* let check_clauses m (cls : ClausesBackward.t) =
-  PMap.for_all (fun concl cls ->
-    let can = repr model concl in
-    ClausesOf.for_all (fun cl ->
-        let bwdc = check_clause_holds model can cl in bwdc)
-      cls)
-    cls *)
-
-      (* check_inv_clause_of m concl cl) *)
-      (* if check_clause_of m can.value cl then *)
-        (* let fwdc = check_clause_holds_fwd m can cl in *)
-        (* if fwdc == bwdc then fwdc *)
-        (* else CErrors.anomaly Pp.(str "check_clause_holds differ in fwd and backward mode: forward" ++ bool fwdc ++ str" backward: " ++ bool bwdc) *)
-      (* else false)  *)
-
-(* let check_clauses m cls =
-  if check_clauses m cls then
-    (debug Pp.(fun () -> str"check_clauses succeeded on: " ++ pr_clauses_bwd model cls ++
-    str" and model " ++ pr_levelmap model); true)
-  else (debug Pp.(fun () -> str"check_clauses failed on: " ++ pr_clauses_bwd model cls ++
-    str" and model " ++ pr_levelmap model); false) *)
 
 
 type lub = (Point.t * int) list
@@ -1731,7 +1767,7 @@ let add_model u { entries; table; canonical } =
     raise AlreadyDeclared)
   else
     let idx, table = Index.fresh u table in
-    let can = Canonical { canon = idx; value = 0;
+    let can = Canonical { canon = idx; value = Some 0;
       clauses_fwd = PMap.empty; clauses_bwd = ClausesOf.empty } in
     let entries = PMap.add idx can entries in
     idx, { entries; table; canonical = canonical + 1 }
@@ -1741,8 +1777,6 @@ let add ?(rank:int option) u model =
   debug Pp.(fun () -> str"Declaring level " ++ Point.pr u);
   let _idx, model = add_model u model in
   model
-
-exception Undeclared of Point.t
 
 let check_declared model us =
   let check l = if not (Index.mem l model.table) then raise (Undeclared l) in
@@ -1938,9 +1972,9 @@ let pmap_to_point_map table pmap =
     pmap Point.Map.empty
 
 let valuation_of_model (m : model) =
-  let max = model_max m in
-  let valm = PMap.map (fun e -> max - entry_value m e) m.entries in
-  pmap_to_point_map m.table valm
+  let max = Option.default 0 (model_max m) in
+  let valm = PMap.map (fun e -> max - Option.get (entry_value m e)) m.entries in
+    pmap_to_point_map m.table valm
 
 let valuation model = valuation_of_model model
 
