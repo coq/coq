@@ -329,7 +329,9 @@ let dump_universes output g =
   Univ.Level.Map.iter dump_arc g
 
 let dump_universes_gen prl g s =
-  let output = open_out s in
+  let fulls = System.get_output_path s in
+  System.mkdir (Filename.dirname fulls);
+  let output = open_out fulls in
   let output_constraint, close =
     if Filename.check_suffix s ".dot" || Filename.check_suffix s ".gv" then begin
       (* the lazy unit is to handle errors while printing the first line *)

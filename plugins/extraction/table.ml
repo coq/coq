@@ -523,7 +523,8 @@ let warn_using_current_directory =
        Pp.(strbrk
              "Setting extraction output directory by default to \"" ++ str s ++ strbrk "\". Use \"" ++
            str "Set Extraction Output Directory" ++
-           strbrk "\" to set a different directory for extracted files to appear in."))
+           strbrk "\" or command line option \"-output-directory\" to " ++
+           strbrk "set a different directory for extracted files to appear in."))
 
 let output_directory_key = ["Extraction"; "Output"; "Directory"]
 

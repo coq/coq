@@ -365,6 +365,8 @@ and ``coqtop``, unless stated otherwise:
 
 :-native-output-dir *dir*: Set the directory in which to put the aforementioned
   ``.cmxs`` for :tacn:`native_compute`. Defaults to ``.coq-native``.
+:-output-directory *dir*, -output-dir *dir*: Sets the output directory for commands that
+  write output to files, such as :ref:`extraction` commands, :cmd:`Redirect` and :cmd:`Print Universes`.
 :-vos: Indicate Coq to skip the processing of opaque proofs
   (i.e., proofs ending with :cmd:`Qed` or :cmd:`Admitted`), output a ``.vos`` files
   instead of a ``.vo`` file, and to load ``.vos`` files instead of ``.vo`` files
