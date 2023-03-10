@@ -1379,11 +1379,11 @@ let intern_applied_reference ~isproj intern env namedctx (_, ntnvars as lvar) us
       res, args2
     with Not_found as exn ->
       (* Extra allowance for non globalizing functions *)
-      match env.strict_check with
-      | None | Some true ->
+      if Option.default true env.strict_check || List.exists (fun (_,e) -> Option.has_some e) args
+      then
         let _, info = Exninfo.capture exn in
         Nametab.error_global_not_found ~info qid
-      | Some false ->
+      else
         (* check_applied_projection ?? *)
         gvar (loc,qualid_basename qid) us, args
   else
