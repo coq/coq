@@ -56,6 +56,13 @@ let exists_dir dir =
   let dir = if Sys.os_type = "Win32" then strip_trailing_slash dir else dir in
   try Sys.is_directory dir with Sys_error _ -> false
 
+let rec mkdir dir =
+  if not (exists_dir dir) then
+    begin
+      mkdir (Filename.dirname dir);
+      Unix.mkdir dir 0o755;
+    end
+
 let apply_subdir f path name =
   (* we avoid all files and subdirs starting by '.' (e.g. .svn) *)
   (* as well as skipped files like CVS, ... *)
