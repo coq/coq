@@ -3577,23 +3577,17 @@ let expand_projections env sigma c =
 
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
-let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.project gl in
-  let tmptyp0 = Tacmach.pf_get_hyp_typ hyp0 gl in
-  let reduce_to_atomic_ref = Tacmach.pf_apply reduce_to_atomic_ref gl in
-  let indtyp = reduce_to_atomic_ref indref tmptyp0 in
+let atomize_param_of_ind env sigma (indref,nparams,_) hyp0 =
+  let tmptyp0 = Typing.type_of_variable env hyp0 in
+  let indtyp = reduce_to_atomic_ref env sigma indref tmptyp0 in
   let hd,argl = decompose_app sigma indtyp in
   let params = List.firstn nparams argl in
   let params' = List.map (expand_projections env sigma) params in
   (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one i args args' avoid =
+  let rec atomize_one accu i args args' avoid =
     if Int.equal i nparams then
       let t = applist (hd, params@args) in
-      Tacticals.tclTHEN
-        (change_in_hyp ~check:false None (make_change_arg t) (hyp0,InHypTypeOnly))
-        (tac avoid)
+      (List.rev accu, avoid, t)
     else
       let c = List.nth argl (i-1) in
       match EConstr.kind sigma c with
@@ -3602,7 +3596,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             (* Based on the knowledge given by the user, all
                constraints on the variable are generalizable in the
                current environment so that it is clearable after destruction *)
-            atomize_one (i-1) (c::args) (c::args') (Id.Set.add id avoid)
+            atomize_one accu (i-1) (c::args) (c::args') (Id.Set.add id avoid)
         | _ ->
            let c' = expand_projections env sigma c in
             let dependent t = dependent sigma c t in
@@ -3614,7 +3608,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
                  follow the (old) discipline of not generalizing over
                  this term, since we don't try to invert the
                  constraint anyway. *)
-              atomize_one (i-1) (c::args) (c'::args') avoid
+              atomize_one accu (i-1) (c::args) (c'::args') avoid
             else
             (* We reason blindly on the term and do as if it were
                generalizable, ignoring the constraints coming from
@@ -3622,16 +3616,14 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             let id = match EConstr.kind sigma c with
             | Var id -> id
             | _ ->
-              let type_of = Tacmach.pf_get_type_of gl in
-              id_of_name_using_hdchar env sigma (type_of c) Anonymous
+              let ty = Retyping.get_type_of env sigma c in
+              id_of_name_using_hdchar env sigma ty Anonymous
             in
             let x = fresh_id_in_env avoid id env in
-            Tacticals.tclTHEN
-              (letin_tac None (Name x) c None allHypsAndConcl)
-              (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid))
+            let accu = (x, c) :: accu in
+            atomize_one accu (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid)
   in
-  atomize_one (List.length argl) [] [] Id.Set.empty
-  end
+  atomize_one [] (List.length argl) [] [] Id.Set.empty
 
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
    ind. var.) and [aftertoclear] (coming after the ind. var.)  of hyps
@@ -4479,11 +4471,10 @@ let guess_elim_shape env sigma isrec s hyp0 =
     let mib = Environ.lookup_mind (fst mind) env in
     (Some (IndRef mind), mib.mind_nparams)
 
-let given_elim hyp0 (elimc,lbind as e) gl =
-  let sigma = Tacmach.project gl in
-  let tmptyp0 = Tacmach.pf_get_hyp_typ hyp0 gl in
+let given_elim env sigma hyp0 (elimc,lbind as e) =
+  let tmptyp0 = Typing.type_of_variable env hyp0 in
   let ind_type_guess,_ = decompose_app sigma (snd (decompose_prod sigma tmptyp0)) in
-  let sigma, elimt = Tacmach.pf_type_of gl elimc in
+  let sigma, elimt = Typing.type_of env sigma elimc in
   sigma, (e, elimt), ind_type_guess
 
 type scheme_signature =
@@ -4493,19 +4484,16 @@ type eliminator_source =
   | ElimUsing of Evd.econstr with_bindings * EConstr.types * scheme_signature
   | ElimOver of bool * Id.t
 
-let find_induction_type isrec elim hyp0 gl =
+let find_induction_type env sigma isrec elim hyp0 sort =
   let sigma, indref, nparams, elim =
     match elim with
     | None ->
-       let sort = Tacticals.elimination_sort_of_goal gl in
-       let env = Proofview.Goal.env gl in
-       let sigma = Proofview.Goal.sigma gl in
        let indref, nparams = guess_elim_shape env sigma isrec sort hyp0 in
        (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
           needs no update to sigma at this point. *)
        sigma, indref, nparams, ElimOver (isrec, hyp0)
     | Some e ->
-        let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
+        let sigma, (elimc,elimt), ind_guess = given_elim env sigma hyp0 e in
         let scheme = compute_elim_sig sigma elimt in
         if Option.is_empty scheme.indarg then error CannotFindInductiveArgument;
         let indsign = compute_scheme_signature sigma scheme hyp0 ind_guess in
@@ -4631,11 +4619,19 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.enter begin fun gl ->
-  let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
-  tclEVARSTHEN sigma
-    (atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
-         apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
-           (fun elim -> induction_tac with_evars [] [hyp0] elim)))
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let sort = Tacticals.elimination_sort_of_goal gl in
+  let sigma, elim_info = find_induction_type env sigma isrec elim hyp0 sort in
+  let letins, avoid, t = atomize_param_of_ind env sigma elim_info hyp0 in
+  let letins = tclMAP (fun (na, c) -> letin_tac None (Name na) c None allHypsAndConcl) letins in
+  Tacticals.tclTHENLIST [
+    Proofview.Unsafe.tclEVARS sigma;
+    letins;
+    change_in_hyp ~check:false None (make_change_arg t) (hyp0, InHypTypeOnly);
+    apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) avoid names
+      (fun elim -> induction_tac with_evars [] [hyp0] elim)
+  ]
   end
 
 let msg_not_right_number_induction_arguments scheme =
@@ -4654,6 +4650,8 @@ let msg_not_right_number_induction_arguments scheme =
    by hand before calling induction_tac *)
 let induction_without_atomization isrec with_evars elim names lid =
   Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
   let hyp0 = List.hd lid in
   (* Check that the elimination scheme has a form similar to the
     elimination schemes built by Coq. Schemes may have the standard
@@ -4662,7 +4660,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     extra final argument of the form (f x y ...) in the conclusion. In
     the non standard case, naming of generated hypos is slightly
     different. *)
-  let (sigma, (elimc, elimt), ind_type_guess) = given_elim hyp0 elim gl in
+  let (sigma, (elimc, elimt), ind_type_guess) = given_elim env sigma hyp0 elim in
   let scheme = compute_elim_sig sigma elimt in
   let indsign = compute_scheme_signature sigma scheme hyp0 ind_type_guess in
   let nargs_indarg_farg =
