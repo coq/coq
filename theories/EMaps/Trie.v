@@ -16,18 +16,15 @@ Require Import Coq.PArith.PArith.
 (** Nonempty branches. Each constructor is of the form [NodeXYZ], where the
    bit [X] says whether there is a left subtree, [Y] whether there is a value
    at this node, and [Z] whether there is a right subtree. No [Node000] here! *)
-Inductive branch (A : Type) : Type :=
-| Node001:                  branch A -> branch A
-| Node010:             A ->             branch A
-| Node011:             A -> branch A -> branch A
-| Node100: branch A ->                  branch A
-| Node101: branch A ->      branch A -> branch A
-| Node110: branch A -> A ->             branch A
-| Node111: branch A -> A -> branch A -> branch A.
-Arguments Node001 {A}. Arguments Node010 {A}. Arguments Node011 {A}.
-Arguments Node100 {A}. Arguments Node101 {A}. Arguments Node110 {A}.
-Arguments Node111 {A}.
-
+Inductive branch {A : Type} : Type :=
+| Node001:                branch -> branch
+| Node010:           A ->           branch
+| Node011:           A -> branch -> branch
+| Node100: branch ->                branch
+| Node101: branch ->      branch -> branch
+| Node110: branch -> A ->           branch
+| Node111: branch -> A -> branch -> branch.
+Arguments branch : clear implicits.
 Definition trie A := option (branch A).
 Definition empty A : trie A := None.
 
@@ -74,15 +71,29 @@ Definition trie_branch_ind := Eval cbv [trie_branch_ind' branch_case] in trie_br
 Definition trie_ind : forall m, P m := option_rect P trie_branch_ind empty.
 End Induction.
 
-Local Fixpoint get' {A} (p : positive) (m : branch A) : option A :=
-  match p, m with
-  | xH,   (Node010 x|Node011 x _|Node110 _ x|Node111 _ x _) => Some x
-  | xO q, (Node100 m|Node101 m _|Node110 m _|Node111 m _ _) => get' q m
-  | xI q, (Node001 m|Node011 _ m|Node101 _ m|Node111 _ _ m) => get' q m
-  | _,_ => None
+Section WithContinuations. Context {A} {P} (kSome : A -> P) (kNone : P).
+Local Fixpoint get'_cps (m : branch A) (p : positive) {struct m} : P :=
+  match m, p with
+  | (Node010 x|Node011 x _|Node110 _ x|Node111 _ x _), xH   => kSome x
+  | (Node100 m|Node101 m _|Node110 m _|Node111 m _ _), xO q => get'_cps m q
+  | (Node001 m|Node011 _ m|Node101 _ m|Node111 _ _ m), xI q => get'_cps m q
+  | _,_ => kNone
   end.
 
-Definition get {A} p : trie A -> option A := option_bind (get' p).
+Definition get_cps p : trie A -> P := option_rect _ (fun m => get'_cps m p) kNone.
+End WithContinuations.
+
+Local Definition get' {A} := Eval cbv [get'_cps] in @get'_cps A _ Some None.
+
+Definition get {A} : positive -> trie A -> option A := get_cps Some None.
+
+Lemma get'_cps_ok {A P} kSome kNone m p :
+  @get'_cps A P kSome kNone m p = option_rect _ kSome kNone (get' m p).
+Proof. revert p; induction m, p; cbn; congruence. Qed.
+
+Lemma get_cps_ok {A P} kSome kNone m p :
+  @get_cps A P kSome kNone p m = option_rect _ kSome kNone (get p m).
+Proof. case m as []; trivial. apply get'_cps_ok. Qed.
 
 Lemma get_empty {A} i : get i (empty A) = None.
 Proof. trivial. Qed.
@@ -93,7 +104,7 @@ Proof. case l, x, r; case i; trivial. Qed.
 
 (** ** Extensionality property *)
 
-Local Lemma get'_not_None {A} m : exists i, @get' A i m <> None.
+Local Lemma get'_not_None {A} m : exists i, @get' A m i <> None.
 Proof.
   induction m; try case IHm as [p H]; try case IHm1 as [p H];
     try ((exists xH + exists (xI p) + exists (xO p)); cbn; congruence).
@@ -268,6 +279,26 @@ Proof.
   rewrite ?combine_Node_Node, ?get_Node, ?IHm2_1, ?IHm2_2, ?IHm1_1, ?IHm1_2; auto.
 Qed.
 End Combine.
+
+(** Conversions *)
+
+Require Import Coq.Lists.List.
+(* TODO: move *)
+Module Option.
+  Definition to_list {A} (o : option A) : list A :=
+    match o with
+    | None => nil
+    | Some a => cons a nil
+    end.
+End Option.
+
+Definition keys {A} : trie A -> list positive :=
+  trie_ind _ nil (fun _ l o _ r _ => (match o with None => nil | _ => cons xH nil end) ++ map xO l ++ map xI r).
+
+Definition values {A} : trie A -> list A :=
+  trie_ind _ nil (fun _ l o _ r _ => Option.to_list o ++ (l ++ r)).
+
+Definition to_list {A} (m : trie A) := List.combine (keys m) (values m).
 
 Require Coq.Lists.List OrderedType OrderedTypeEx FMapInterface.
 Module FMap (* <: FMapInterface.S with Module E:=OrderedTypeEx.PositiveOrderedTypeBits *).
