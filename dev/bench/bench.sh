@@ -36,6 +36,7 @@ program_name="$0"
 program_path=$(readlink -f "${program_name%/*}")
 render_results="dune exec --root $program_path/../.. -- dev/bench/render_results.exe"
 render_line_results="dune exec --root $program_path/../.. -- dev/bench/render_line_results.exe"
+timelog2html="dune exec --root $program_path/../.. -- dev/bench/timelog2html.exe"
 
 coqbot_url_prefix="https://coqbot.herokuapp.com/pendulum/"
 
@@ -538,11 +539,11 @@ for coq_opam_package in $sorted_coq_opam_packages; do
                [ -e $new_base_path/${vo%%o}.timing ]; then
             mkdir -p $working_dir/html/$coq_opam_package/$(dirname $vo)/
             # NB: sometimes randomly fails
-            $program_path/timelog2html $new_base_path/${vo%%o} \
+            $timelog2html $new_base_path/${vo%%o} \
                                        $old_base_path/${vo%%o}.timing \
                                        $new_base_path/${vo%%o}.timing > \
                                        $working_dir/html/$coq_opam_package/${vo%%o}.html ||
-                echo "Failed (code $?):" $program_path/timelog2html $new_base_path/${vo%%o} \
+                echo "Failed (code $?):" $timelog2html $new_base_path/${vo%%o} \
                      $old_base_path/${vo%%o}.timing \
                      $new_base_path/${vo%%o}.timing
         fi

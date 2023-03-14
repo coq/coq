@@ -12,3 +12,8 @@
  (name render_line_results)
  (modules render_line_results)
  (libraries unix table str clib))
+
+(executable
+ (name timelog2html)
+ (modules timelog2html)
+ (libraries unix str clib zarith))
