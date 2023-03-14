@@ -244,7 +244,19 @@ let mk_summary m = {
   libsum_digests = m.library_digests;
 }
 
-let intern_from_file f =
+let mk_intern_library sum lib digest_lib univs digest_univs proofs =
+  add_opaque_table sum.md_name (ToFetch proofs);
+  let open Safe_typing in
+  match univs with
+  | None -> mk_library sum lib (Dvo_or_vi digest_lib) Univ.ContextSet.empty
+  | Some (uall,true) ->
+    mk_library sum lib (Dvivo (digest_lib, digest_univs)) uall
+  | Some (_,false) ->
+    mk_library sum lib (Dvo_or_vi digest_lib) Univ.ContextSet.empty
+
+let intern_from_file lib_resolver dir =
+  let f = lib_resolver dir in
+  Feedback.feedback(Feedback.FileDependency (Some f, DirPath.to_string dir));
   let ch = raw_intern_library f in
   let (lsd : seg_sum), digest_lsd = ObjFile.marshal_in_segment ch ~segment:"summary" in
   let ((lmd : seg_lib), digest_lmd) = ObjFile.marshal_in_segment ch ~segment:"library" in
@@ -253,50 +265,47 @@ let intern_from_file f =
   ObjFile.close_in ch;
   System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
   register_library_filename lsd.md_name f;
-  add_opaque_table lsd.md_name (ToFetch del_opaque);
-  let open Safe_typing in
-  match univs with
-  | None -> mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
-  | Some (uall,true) ->
-      mk_library lsd lmd (Dvivo (digest_lmd,digest_u)) uall
-  | Some (_,false) ->
-      mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
+  (* [dir] is an absolute name which matches [f] which must be in loadpath *)
+  if not (DirPath.equal dir lsd.md_name) then
+    user_err
+      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
+       DirPath.print lsd.md_name ++ spc () ++ str "and not library" ++
+       spc() ++ DirPath.print dir ++ str ".");
+  Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
+  lsd, lmd, digest_lmd, univs, digest_u, del_opaque
 
-let rec intern_library ~lib_resolver (needed, contents as acc) (dir, f) from =
+let rec intern_library ~intern (needed, contents as acc) dir =
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, acc
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
   try (DPmap.find dir contents).library_digests, acc
   with Not_found ->
-  Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
-  (* [dir] is an absolute name which matches [f] which must be in loadpath *)
-  let f = match f with Some f -> f | None -> lib_resolver dir in
-  let m = intern_from_file f in
-  if not (DirPath.equal dir m.library_name) then
-    user_err
-      (str "The file " ++ str f ++ str " contains library" ++ spc () ++
-       DirPath.print m.library_name ++ spc () ++ str "and not library" ++
-       spc() ++ DirPath.print dir ++ str ".");
-  Feedback.feedback (Feedback.FileLoaded(DirPath.to_string dir, f));
-  m.library_digests, intern_library_deps ~lib_resolver acc dir m f
+  let lsd, lmd, digest_lmd, univs, digest_u, del_opaque = intern dir in
+  let m = mk_intern_library lsd lmd digest_lmd univs digest_u del_opaque in
+  m.library_digests, intern_library_deps ~intern acc dir m
 
-and intern_library_deps ~lib_resolver libs dir m from =
+and intern_library_deps ~intern libs dir m =
   let needed, contents =
-    Array.fold_left (intern_mandatory_library ~lib_resolver dir from)
+    Array.fold_left (intern_mandatory_library ~intern dir)
       libs m.library_deps in
   (dir :: needed, DPmap.add dir m contents )
 
-and intern_mandatory_library ~lib_resolver caller from libs (dir,d) =
-  let digest, libs = intern_library ~lib_resolver libs (dir, None) (Some from) in
-  if not (Safe_typing.digest_match ~actual:digest ~required:d) then
-    user_err (str "Compiled library " ++ DirPath.print caller ++
-    str " (in file " ++ str from ++ str ") makes inconsistent assumptions \
-    over library " ++ DirPath.print dir);
+and intern_mandatory_library ~intern caller libs (dir,d) =
+  let digest, libs = intern_library ~intern libs dir in
+  let () = if not (Safe_typing.digest_match ~actual:digest ~required:d) then
+    let from = library_full_filename dir in
+    user_err
+      (str "Compiled library " ++ DirPath.print caller ++
+       str " (in file " ++ str from ++
+       str ") makes inconsistent assumptions over library " ++
+       DirPath.print dir)
+  in
   libs
 
-let rec_intern_library ~lib_resolver libs (dir, f) =
-  let _, libs = intern_library ~lib_resolver libs (dir, Some f) None in
+let rec_intern_library ~lib_resolver libs dir =
+  let intern dir = intern_from_file lib_resolver dir in
+  let _, libs = intern_library ~intern libs dir in
   libs
 
 let native_name_from_filename f =
@@ -471,6 +480,24 @@ let save_library_base f sum lib univs tasks proofs =
     Sys.remove f;
     Exninfo.iraise reraise
 
+(* This is the basic vo save structure *)
+let save_library_struct ~output_native_objects dir =
+  let md_compiled, md_objects, md_syntax_objects, ast =
+    Declaremods.end_library ~output_native_objects dir in
+  let sd =
+    { md_name = dir
+    ; md_deps = Array.of_list (current_deps ())
+    ; md_ocaml = Coq_config.caml_version
+    } in
+  let md =
+    { md_compiled
+    ; md_syntax_objects
+    ; md_objects
+    } in
+  if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
+    error_recursively_dependent_library dir;
+  sd, md, ast
+
 let save_library_to todo_proofs ~output_native_objects dir f =
   assert(
     let expected_extension = match todo_proofs with
@@ -490,7 +517,6 @@ let save_library_to todo_proofs ~output_native_objects dir f =
   let () = assert (not (Future.UUIDSet.is_empty except) ||
     Safe_typing.is_joined_environment (Global.safe_env ()))
   in
-  let cenv, seg, syntax_seg, ast = Declaremods.end_library ~output_native_objects dir in
   let tasks, utab =
     match todo_proofs with
     | ProofsTodoNone -> None, None
@@ -504,19 +530,8 @@ let save_library_to todo_proofs ~output_native_objects dir f =
           tasks in
       Some tasks,
       Some (Univ.ContextSet.empty,false)
-    in
-    let sd = {
-    md_name = dir;
-    md_deps = Array.of_list (current_deps ());
-    md_ocaml = Coq_config.caml_version;
-  } in
-  let md = {
-    md_compiled = cenv;
-    md_syntax_objects = syntax_seg;
-    md_objects = seg;
-  } in
-  if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
-    error_recursively_dependent_library dir;
+  in
+  let sd, md, ast = save_library_struct ~output_native_objects dir in
   (* Writing vo payload *)
   save_library_base f sd md utab tasks opaque_table;
   (* Writing native code files *)
