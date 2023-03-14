@@ -478,9 +478,9 @@ let find_this_eq_data_decompose env sigma eqn =
 
 let match_sigma env sigma ex =
   match EConstr.kind sigma ex with
-  | App (f, [| a; p; car; cdr |]) when isRefX env sigma (lib_ref "core.sig.intro") f ->
+  | App (f, [| a; p; car; cdr |]) when is_lib_ref env sigma "core.sig.intro" f ->
       build_sigma (), (snd (destConstruct sigma f), a, p, car, cdr)
-  | App (f, [| a; p; car; cdr |]) when isRefX env sigma (lib_ref "core.sigT.intro") f ->
+  | App (f, [| a; p; car; cdr |]) when is_lib_ref env sigma "core.sigT.intro" f ->
     build_sigma_type (), (snd (destConstruct sigma f), a, p, car, cdr)
   | _ -> raise PatternMatchingFailure
 

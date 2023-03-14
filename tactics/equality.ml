@@ -334,7 +334,7 @@ let eq_elimination_ref l2r sort =
       | InSProp -> "core.eq.sind"
       | InSet | InType | InQSort -> "core.eq.rect"
   in
-  if Coqlib.has_ref name then Some (Coqlib.lib_ref name) else None
+  Coqlib.lib_ref_opt name
 
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
@@ -343,8 +343,9 @@ let find_elim lft2rgt dep cls ((_, hdcncl, _) as t) =
   Proofview.Goal.enter_one begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = project gl in
-  let is_global_exists gr c =
-    Coqlib.has_ref gr && isRefX env sigma (Coqlib.lib_ref gr) c
+  let is_global_exists gr c = match Coqlib.lib_ref_opt gr with
+    | Some gr -> isRefX env sigma gr c
+    | None -> false
   in
   let inccl = Option.is_empty cls in
   let is_eq = is_global_exists "core.eq.type" hdcncl in
@@ -641,9 +642,9 @@ let replace_using_leibniz clause c1 c2 l2r unsafe try_prove_eq_opt =
   | Some evd ->
     let e,sym =
       try lib_ref "core.eq.type", lib_ref "core.eq.sym"
-      with UserError _ ->
+      with NotFoundRef _ ->
       try lib_ref "core.identity.type", lib_ref "core.identity.sym"
-      with UserError _ ->
+      with NotFoundRef _ ->
         user_err (strbrk "Need a registration for either core.eq.type and core.eq.sym or core.identity.type and core.identity.sym.") in
     Tacticals.pf_constr_of_global sym >>= fun sym ->
     Tacticals.pf_constr_of_global e >>= fun e ->
@@ -1734,9 +1735,12 @@ user = raise user error specific to rewrite
 (**********************************************************************)
 (* Substitutions tactics (JCF) *)
 
-let restrict_to_eq_and_identity eq = (* compatibility *)
-  if not (Constr.isRefX (lib_ref "core.eq.type") eq) &&
-    not (Constr.isRefX (lib_ref "core.identity.type") eq)
+let restrict_to_eq_and_identity env eq = (* compatibility *)
+  let is_ref b = match Coqlib.lib_ref_opt b with
+    | None -> false
+    | Some b -> Environ.QGlobRef.equal env eq b
+  in
+  if not (List.exists is_ref ["core.eq.type"; "core.identity.type"])
   then raise Constr_matching.PatternMatchingFailure
 
 exception FoundHyp of (Id.t * constr * bool)
@@ -1880,9 +1884,7 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
     let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
     try
       let lbeq,u,(_,x,y) = pf_apply find_eq_data_decompose gl c in
-      let u = EInstance.kind sigma u in
-      let eq = Constr.mkRef (lbeq.eq,u) in
-      if flags.only_leibniz then restrict_to_eq_and_identity eq;
+      if flags.only_leibniz then restrict_to_eq_and_identity env lbeq.eq;
       match EConstr.kind sigma x, EConstr.kind sigma y with
       | Var x, Var y when Id.equal x y ->
           Proofview.tclUNIT ()

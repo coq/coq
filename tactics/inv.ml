@@ -119,9 +119,9 @@ let make_inv_predicate env evd indf realargs id status concl =
    In any case, we carry along the rest of pairs *)
   let eqdata =
     try Coqlib.build_coq_eq_data ()
-    with UserError _ ->
+    with Coqlib.NotFoundRef _ ->
     try Coqlib.build_coq_identity_data ()
-    with UserError _ -> user_err (str "No registered equality.") in
+    with Coqlib.NotFoundRef _ -> user_err (str "No registered equality.") in
   let rec build_concl eqns args n = function
     | [] -> it_mkProd concl eqns, Array.rev_of_list args
     | ai :: restlist ->
@@ -356,8 +356,9 @@ let remember_first_eq id x = if !x == Logic.MoveLast then x := Logic.MoveAfter i
 let dest_nf_eq env sigma t = match EConstr.kind sigma t with
 | App (r, [| t; x; y |]) ->
   let open Reductionops in
-  let is_global_exists gr c =
-    Coqlib.has_ref gr && isRefX env sigma (Coqlib.lib_ref gr) c
+  let is_global_exists gr c = match Coqlib.lib_ref_opt gr with
+    | Some gr -> isRefX env sigma gr c
+    | None -> false
   in
   let is_eq = is_global_exists "core.eq.type" r in
   let is_identity = is_global_exists "core.identity.type" r in

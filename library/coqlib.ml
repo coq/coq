@@ -46,10 +46,17 @@ let check_ind_ref s ind =
   | _ -> false
   | exception Not_found -> false
 
+exception NotFoundRef of string
+
+let () = CErrors.register_handler (function
+    | NotFoundRef s -> Some Pp.(str "not found in table: " ++ str s)
+    | _ -> None)
+
 let lib_ref s =
   try CString.Map.find s !table
-  with Not_found ->
-    CErrors.user_err Pp.(str "not found in table: " ++ str s)
+  with Not_found -> raise (NotFoundRef s)
+
+let lib_ref_opt s = CString.Map.find_opt s !table
 
 let add_ref s c =
   table := CString.Map.add s c !table

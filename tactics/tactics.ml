@@ -4108,7 +4108,7 @@ let specialize_eqs id =
     match EConstr.kind !evars ty with
     | Prod (na, t, b) ->
         (match EConstr.kind !evars t with
-        | App (eq, [| eqty; x; y |]) when isRefX env !evars Coqlib.(lib_ref "core.eq.type") eq ->
+        | App (eq, [| eqty; x; y |]) when is_lib_ref env !evars "core.eq.type" eq ->
             let c = if noccur_between !evars 1 (List.length ctx) x then y else x in
             let pt = mkApp (eq, [| eqty; c; c |]) in
             let ind = destInd !evars eq in
