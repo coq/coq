@@ -21,17 +21,6 @@ let () = if Array.length Sys.argv < 3 ||
   then  usage ()
 
 module Compat = struct
-  (* stdlib version needs ocaml >= 4.13 *)
-  let str_ends_with ~suffix s =
-    let open String in
-    let len_s = length s
-    and len_suf = length suffix in
-    let diff = len_s - len_suf in
-    let rec aux i =
-      if i = len_suf then true
-      else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
-      else aux (i + 1)
-    in diff >= 0 && aux 0
 
   (* stdlib version needs ocaml >= 4.13 *)
   let str_fold_left f x a =
@@ -122,8 +111,11 @@ let () =
 .code:hover {
   border-color: black;
 }
-pre {
-  display: inline;
+code::before {
+    content:  attr(data-line);
+    right: 0.5em;
+    position: absolute;
+    text-align: right;
 }
 </style>
 </head>
@@ -238,8 +230,10 @@ Line: %d
       then String.sub d.text 1 (String.length d.text  - 1)
       else d.text
     in
-    let () = out "%s" (htmlescape text) in
-    let () = if str_ends_with ~suffix:"\n" text then out "\n" in
+    let sublines = String.split_on_char '\n' text in
+    let () = sublines |> List.iteri (fun i line ->
+        out "<code data-line=\"%d\">%s</code>\n" (d.lines+i) (htmlescape line))
+    in
     let () = out "</div>" in
     ())
 
