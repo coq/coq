@@ -110,16 +110,44 @@ let to_edit_id = function
   | x -> raise (Marshal_error("edit_id",x))
 
 let of_loc loc =
-  let start, stop = Loc.unloc loc in
-  Element ("loc",[("start",string_of_int start);("stop",string_of_int stop)],[])
+  let {
+    Loc.fname
+  ; line_nb
+  ; bol_pos
+  ; line_nb_last
+  ; bol_pos_last
+  ; bp
+  ; ep
+  } = loc in
+  Element ("loc",
+           [ ("line_nb", string_of_int line_nb)
+           ; ("bol_pos", string_of_int bol_pos)
+           ; ("line_nb_last", string_of_int line_nb_last)
+           ; ("bol_pos_last", string_of_int bol_pos_last)
+           ; ("start", string_of_int bp)
+           ; ("stop", string_of_int ep )
+           ],
+           [])
+
 let to_loc xml =
   match xml with
-  | Element ("loc", l,[]) ->
-      let start = massoc "start" l in
-      let stop = massoc "stop" l in
-      (try
-        Loc.make_loc (int_of_string start, int_of_string stop)
-      with Not_found | Invalid_argument _ -> raise (Marshal_error("loc",PCData(start^":"^stop))))
+  | Element ("loc", l,[]) as x ->
+    (try
+       let line_nb = massoc "line_nb" l |> int_of_string in
+       let bol_pos = massoc "bol_pos" l |> int_of_string in
+       let line_nb_last = massoc "line_nb_last" l |> int_of_string in
+       let bol_pos_last = massoc "bol_pos_last" l |> int_of_string in
+       let bp = massoc "start" l |> int_of_string in
+       let ep = massoc "stop" l |> int_of_string in
+       { Loc.fname = ToplevelInput
+       ; line_nb
+       ; bol_pos
+       ; line_nb_last
+       ; bol_pos_last
+       ; bp
+       ; ep }
+     with Not_found | Invalid_argument _ ->
+       raise (Marshal_error("loc",x)))
   | x -> raise (Marshal_error("loc",x))
 
 let of_xml x = Element ("xml", [], [x])
