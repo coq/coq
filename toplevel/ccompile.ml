@@ -20,11 +20,6 @@ let create_empty_file filename =
   let f = open_out filename in
   close_out f
 
-let source copts ldir file = Loc.InFile {
-    dirpath=Some (Names.DirPath.to_string ldir);
-    file = Option.default file copts.fake_source;
-  }
-
 (* Compile a vernac file *)
 let compile opts stm_options injections copts ~echo ~f_in ~f_out =
   let open Vernac.State in
@@ -66,8 +61,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
 
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
-      let source = source copts ldir long_f_dot_in in
-      let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state ~source long_f_dot_in in
+      let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state ~ldir long_f_dot_in in
       let state = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       ensure_no_pending_proofs ~filename:long_f_dot_in state;
@@ -95,8 +89,7 @@ let compile opts stm_options injections copts ~echo ~f_in ~f_out =
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = Load.load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
-      let source = source copts ldir long_f_dot_in in
-      let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~source ~state long_f_dot_in in
+      let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_in in
       let state = Stm.finish ~doc:state.doc in
       ensure_no_pending_proofs state ~filename:long_f_dot_in;
       let create_vos = (mode = BuildVos) in

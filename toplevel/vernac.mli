@@ -30,4 +30,4 @@ val process_expr : state:State.t -> Vernacexpr.vernac_control -> State.t
     echo the commands if [echo] is set. Callers are expected to handle
     and print errors in form of exceptions. *)
 val load_vernac : echo:bool -> check:bool -> interactive:bool ->
-  state:State.t -> ?source:Loc.source -> string -> State.t
+  state:State.t -> ?ldir:Names.DirPath.t -> string -> State.t

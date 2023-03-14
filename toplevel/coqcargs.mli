@@ -29,7 +29,6 @@ type t =
 
   ; compile_file: (string * bool) option  (* bool is verbosity  *)
   ; compilation_output_name : string option
-  ; fake_source : string option
 
   ; vio_checking : bool
   ; vio_tasks    : (int list * string) list

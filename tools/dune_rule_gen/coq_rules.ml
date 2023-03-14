@@ -210,17 +210,6 @@ let boot_module_setup ~cctx coq_module =
     [ Path.relative stdlib prelude_path]
   | Regular None -> [], []
 
-(* in stdlib for ocaml >= 4.13 *)
-let starts_with ~prefix s =
-  let open String in
-  let len_s = length s
-  and len_pre = length prefix in
-  let rec aux i =
-    if i = len_pre then true
-    else if unsafe_get s i <> unsafe_get prefix i then false
-    else aux (i + 1)
-  in len_s >= len_pre && aux 0
-
 (* rule generation for a module *)
 let module_rule ~(cctx : Context.t) coq_module =
   let tname, rule = cctx.tname, cctx.rule in
@@ -240,13 +229,7 @@ let module_rule ~(cctx : Context.t) coq_module =
   let deps = cctx.async_deps @ deps in
   (* Build rule *)
   let vfile_base = Path.basename vfile in
-  let fake_source =
-    let file = Path.to_string vfile in
-    let file = if starts_with ~prefix:"./" file then String.sub file 2 (String.length file - 2)
-      else file
-    in
-    "-fake-source "^cctx.package ^ "/" ^ file in
-  let action = Format.asprintf "(run coqc %s %s %%{dep:%s})" flags fake_source vfile_base in
+  let action = Format.asprintf "(run coqc %s %%{dep:%s})" flags vfile_base in
   let targets = Coq_module.obj_files ~tname ~rule coq_module in
   let alias = if rule = Coq_module.Rule_type.Quick then Some "vio" else None in
   { Dune_file.Rule.targets; deps; action; alias }
