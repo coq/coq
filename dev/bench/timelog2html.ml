@@ -21,17 +21,6 @@ let () = if Array.length Sys.argv < 3 ||
   then  usage ()
 
 module Compat = struct
-  (* stdlib version needs ocaml >= 4.13 *)
-  let str_ends_with ~suffix s =
-    let open String in
-    let len_s = length s
-    and len_suf = length suffix in
-    let diff = len_s - len_suf in
-    let rec aux i =
-      if i = len_suf then true
-      else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
-      else aux (i + 1)
-    in diff >= 0 && aux 0
 
   (* stdlib version needs ocaml >= 4.13 *)
   let str_fold_left f x a =
@@ -232,9 +221,7 @@ Line: %d
           (k+1)
           (percentage d.(j).timeq ~max:maxq))
     in
-    let () = if str_ends_with ~suffix:"\n" d.text then out "<pre>%s\n</pre>\n" (htmlescape d.text)
-      else out "<pre>%s</pre>\n" (htmlescape d.text)
-    in
+    let () = out "<pre>%s\n</pre>\n" (htmlescape d.text) in
     let () = out "</div>\n" in
     ())
 
