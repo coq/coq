@@ -232,8 +232,7 @@ Line: %d
           (k+1)
           (percentage d.(j).timeq ~max:maxq))
     in
-    let () = if d.text = "\n" then out "<pre>\n\n</pre>\n"
-      else if str_ends_with ~suffix:"\n" d.text then out "<pre>%s\n</pre>\n" (htmlescape d.text)
+    let () = if str_ends_with ~suffix:"\n" d.text then out "<pre>%s\n</pre>\n" (htmlescape d.text)
       else out "<pre>%s</pre>\n" (htmlescape d.text)
     in
     let () = out "</div>\n" in
