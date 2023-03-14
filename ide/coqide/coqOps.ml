@@ -141,8 +141,8 @@ open SentenceId
 (* Given a Coq loc, convert it to a pair of iterators start / end in
    the buffer. *)
 let coq_loc_to_gtk_offset (buffer : GText.buffer) loc =
-  buffer#get_iter_at_byte ~line:loc.Loc.line_nb (loc.bp - loc.bol_pos),
-  buffer#get_iter_at_byte ~line:loc.Loc.line_nb_last (loc.ep - loc.bol_pos_last)
+  buffer#get_iter_at_byte ~line:(loc.Loc.line_nb - 1) (loc.bp - loc.bol_pos),
+  buffer#get_iter_at_byte ~line:(loc.Loc.line_nb_last - 1) (loc.ep - loc.bol_pos_last)
 
 (** increase [uni_off] by the number of bytes until [s_uni] This can
     be used to convert a character offset to byte offset if we know a
