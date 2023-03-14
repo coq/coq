@@ -49,11 +49,12 @@ let data_files = Array.sub Sys.argv 2 (Array.length Sys.argv - 2)
 let ndata = Array.length data_files
 
 let htmlescape =
-  let r = Str.regexp "[&<>]" in
+  let r = Str.regexp "[&<>\"]" in
   let subst s = match Str.matched_string s with
     | "&" -> "&amp;"
     | "<" -> "&lt;"
     | ">" -> "&gt;"
+    | "\"" -> "&quot;"
     | _ -> assert false
   in
   fun s -> Str.global_substitute r subst s
