@@ -151,13 +151,17 @@ let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) s
 
 let count_newlines s = str_fold_left (fun n c -> if c = '\n' then n+1 else n) 0 s
 
+let is_white_char = function ' '|'\n'|'\t' -> true | _ -> false
+
 let rec file_loop filech ~last_end ~lines acc =
   match input_line filech with
   | exception End_of_file ->
     let acc = if last_end + 1 <= sourcelen then
         let text = source_substring (last_end+1) sourcelen in
-        { start = last_end+1; stop = sourcelen; time = "0"; timeq = Q.zero;
-          text; lines = lines+1; } :: acc
+        if str_for_all is_white_char text then acc
+        else
+          { start = last_end+1; stop = sourcelen; time = "0"; timeq = Q.zero;
+            text; lines = lines+1; } :: acc
       else acc
     in
     CArray.rev_of_list acc
@@ -172,7 +176,7 @@ let rec file_loop filech ~last_end ~lines acc =
           let text = source_substring (last_end + 1) (b - 1) in
           (* if only spaces since last command, include them in the next command
              typically "Module Foo.\n  Cmd." *)
-          if not (str_for_all (fun c -> c = ' ' || c = '\n') text) then
+          if not (str_for_all is_white_char text) then
             let n = count_newlines text in
             let acc =
               { start = last_end + 1; stop = b-1; time = "0"; timeq = Q.zero;
