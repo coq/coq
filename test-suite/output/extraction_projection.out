@@ -1,0 +1,281 @@
+
+type unit0 =
+| Tt
+
+type bool =
+| True
+| False
+
+type non_prim_record_two_fields = { non_prim_proj1_of_2 : bool;
+                                    non_prim_proj2_of_2 : bool }
+
+type non_prim_record_one_field =
+  bool
+  (* singleton inductive, whose constructor was Build_non_prim_record_one_field *)
+
+(** val non_prim_proj1_of_1 : non_prim_record_one_field -> bool **)
+
+let non_prim_proj1_of_1 n =
+  n
+
+(** val d11 : non_prim_record_two_fields -> bool **)
+
+let d11 x =
+  x.non_prim_proj1_of_2
+
+(** val d12 : (unit0 -> non_prim_record_two_fields) -> bool **)
+
+let d12 x =
+  (x Tt).non_prim_proj1_of_2
+
+(** val e11 : non_prim_record_one_field -> bool **)
+
+let e11 =
+  non_prim_proj1_of_1
+
+(** val e12 : (unit0 -> non_prim_record_one_field) -> bool **)
+
+let e12 x =
+  non_prim_proj1_of_1 (x Tt)
+
+type prim_record_two_fields = { prim_proj1_of_2 : bool; prim_proj2_of_2 : bool }
+
+type prim_record_one_field =
+  bool
+  (* singleton inductive, whose constructor was Build_prim_record_one_field *)
+
+(** val prim_proj1_of_1 : prim_record_one_field -> bool **)
+
+let prim_proj1_of_1 p =
+  p
+
+(** val d21 : prim_record_two_fields -> bool **)
+
+let d21 x =
+  x.prim_proj1_of_2
+
+(** val d22 : (unit0 -> prim_record_two_fields) -> bool **)
+
+let d22 x =
+  (x Tt).prim_proj1_of_2
+
+(** val e21 : prim_record_one_field -> bool **)
+
+let e21 =
+  prim_proj1_of_1
+
+(** val e22 : (unit0 -> prim_record_one_field) -> bool **)
+
+let e22 x =
+  prim_proj1_of_1 (x Tt)
+
+
+type unit0 =
+| Tt
+
+type bool =
+| True
+| False
+
+module A =
+ struct
+  type non_prim_record_two_fields = { non_prim_proj1_of_2 : bool;
+                                      non_prim_proj2_of_2 : bool }
+
+  (** val non_prim_proj1_of_2 : non_prim_record_two_fields -> bool **)
+
+  let non_prim_proj1_of_2 n =
+    n.non_prim_proj1_of_2
+
+  type non_prim_record_one_field =
+    bool
+    (* singleton inductive, whose constructor was Build_non_prim_record_one_field *)
+
+  (** val non_prim_proj1_of_1 : non_prim_record_one_field -> bool **)
+
+  let non_prim_proj1_of_1 n =
+    n
+
+  (** val d11 : non_prim_record_two_fields -> bool **)
+
+  let d11 x =
+    x.non_prim_proj1_of_2
+
+  (** val d12 : (unit0 -> non_prim_record_two_fields) -> bool **)
+
+  let d12 x =
+    (x Tt).non_prim_proj1_of_2
+
+  (** val e11 : non_prim_record_one_field -> bool **)
+
+  let e11 =
+    non_prim_proj1_of_1
+
+  (** val e12 : (unit0 -> non_prim_record_one_field) -> bool **)
+
+  let e12 x =
+    non_prim_proj1_of_1 (x Tt)
+
+  type prim_record_two_fields = { prim_proj1_of_2 : bool;
+                                  prim_proj2_of_2 : bool }
+
+  (** val prim_proj1_of_2 : prim_record_two_fields -> bool **)
+
+  let prim_proj1_of_2 p =
+    p.prim_proj1_of_2
+
+  type prim_record_one_field =
+    bool
+    (* singleton inductive, whose constructor was Build_prim_record_one_field *)
+
+  (** val prim_proj1_of_1 : prim_record_one_field -> bool **)
+
+  let prim_proj1_of_1 p =
+    p
+
+  (** val d21 : prim_record_two_fields -> bool **)
+
+  let d21 x =
+    x.prim_proj1_of_2
+
+  (** val d22 : (unit0 -> prim_record_two_fields) -> bool **)
+
+  let d22 x =
+    (x Tt).prim_proj1_of_2
+
+  (** val e21 : prim_record_one_field -> bool **)
+
+  let e21 =
+    prim_proj1_of_1
+
+  (** val e22 : (unit0 -> prim_record_one_field) -> bool **)
+
+  let e22 x =
+    prim_proj1_of_1 (x Tt)
+ end
+
+
+type unit0 =
+| Tt
+
+type bool =
+| True
+| False
+
+module type Nop =
+ sig
+ end
+
+module Empty =
+ struct
+ end
+
+module M =
+ functor (X:Nop) ->
+ struct
+  type non_prim_record_two_fields = { non_prim_proj1_of_2 : bool;
+                                      non_prim_proj2_of_2 : bool }
+
+  (** val non_prim_proj1_of_2 : non_prim_record_two_fields -> bool **)
+
+  let non_prim_proj1_of_2 n =
+    n.non_prim_proj1_of_2
+
+  (** val non_prim_proj2_of_2 : non_prim_record_two_fields -> bool **)
+
+  let non_prim_proj2_of_2 n =
+    n.non_prim_proj2_of_2
+
+  type non_prim_record_one_field =
+    bool
+    (* singleton inductive, whose constructor was Build_non_prim_record_one_field *)
+
+  (** val non_prim_proj1_of_1 : non_prim_record_one_field -> bool **)
+
+  let non_prim_proj1_of_1 n =
+    n
+
+  type non_prim_record_one_field_unused =
+    bool
+    (* singleton inductive, whose constructor was Build_non_prim_record_one_field_unused *)
+
+  (** val non_prim_proj1_of_1_unused :
+      non_prim_record_one_field_unused -> bool **)
+
+  let non_prim_proj1_of_1_unused n =
+    n
+
+  (** val d11 : non_prim_record_two_fields -> bool **)
+
+  let d11 =
+    non_prim_proj1_of_2
+
+  (** val d12 : (unit0 -> non_prim_record_two_fields) -> bool **)
+
+  let d12 x =
+    non_prim_proj1_of_2 (x Tt)
+
+  (** val e11 : non_prim_record_one_field -> bool **)
+
+  let e11 =
+    non_prim_proj1_of_1
+
+  (** val e12 : (unit0 -> non_prim_record_one_field) -> bool **)
+
+  let e12 x =
+    non_prim_proj1_of_1 (x Tt)
+
+  type prim_record_two_fields = { prim_proj1_of_2 : bool;
+                                  prim_proj2_of_2 : bool }
+
+  (** val prim_proj1_of_2 : prim_record_two_fields -> bool **)
+
+  let prim_proj1_of_2 =
+    prim_proj1_of_2
+
+  (** val prim_proj2_of_2 : prim_record_two_fields -> bool **)
+
+  let prim_proj2_of_2 =
+    prim_proj2_of_2
+
+  type prim_record_one_field =
+    bool
+    (* singleton inductive, whose constructor was Build_prim_record_one_field *)
+
+  (** val prim_proj1_of_1 : prim_record_one_field -> bool **)
+
+  let prim_proj1_of_1 =
+    prim_proj1_of_1
+
+  type prim_record_one_field_unused =
+    bool
+    (* singleton inductive, whose constructor was Build_prim_record_one_field_unused *)
+
+  (** val prim_proj1_of_1_unused : prim_record_one_field_unused -> bool **)
+
+  let prim_proj1_of_1_unused =
+    prim_proj1_of_1_unused
+
+  (** val d21 : prim_record_two_fields -> bool **)
+
+  let d21 =
+    prim_proj1_of_2
+
+  (** val d22 : (unit0 -> prim_record_two_fields) -> bool **)
+
+  let d22 x =
+    prim_proj1_of_2 (x Tt)
+
+  (** val e21 : prim_record_one_field -> bool **)
+
+  let e21 =
+    prim_proj1_of_1
+
+  (** val e22 : (unit0 -> prim_record_one_field) -> bool **)
+
+  let e22 x =
+    prim_proj1_of_1 (x Tt)
+ end
+
+module N = M(Empty)
+
