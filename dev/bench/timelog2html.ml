@@ -21,6 +21,17 @@ let () = if Array.length Sys.argv < 3 ||
   then  usage ()
 
 module Compat = struct
+  (* stdlib version needs ocaml >= 4.13 *)
+  let str_ends_with ~suffix s =
+    let open String in
+    let len_s = length s
+    and len_suf = length suffix in
+    let diff = len_s - len_suf in
+    let rec aux i =
+      if i = len_suf then true
+      else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
+      else aux (i + 1)
+    in diff >= 0 && aux 0
 
   (* stdlib version needs ocaml >= 4.13 *)
   let str_fold_left f x a =
@@ -206,6 +217,8 @@ let maxq =
         data)
     Q.zero all_data
 
+let () = out "<pre>"
+
 let () = all_data.(0) |> Array.iteri (fun j d ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
@@ -217,18 +230,24 @@ Line: %d
     in
     let () = out {|">|} in
     let () = all_data |> Array.iteri (fun k d ->
-        out {|<div class="time%d" style="width: %f%%"></div>
-|}
+        out {|<div class="time%d" style="width: %f%%"></div>|}
           (k+1)
           (percentage d.(j).timeq ~max:maxq))
     in
-    let () = out "<pre>%s\n</pre>\n" (htmlescape d.text) in
-    let () = out "</div>\n" in
+    let text = if d.text <> "" && d.text.[0] = '\n'
+      then String.sub d.text 1 (String.length d.text  - 1)
+      else d.text
+    in
+    let () = out "%s" (htmlescape text) in
+    let () = if str_ends_with ~suffix:"\n" text then out "\n" in
+    let () = out "</div>" in
     ())
 
 let () =
   out
 {|
+</pre>
+
 </body>
 </html>
 |}
