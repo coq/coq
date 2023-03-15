@@ -417,7 +417,8 @@ and bld_sign_env_id env sigma ctxt pps is_start =
 (* compact printing an env (variables and de Bruijn). Separator: three
    spaces between simple hyps, and newline otherwise *)
 let pr_context_limit_compact ?n env sigma =
-  let ctxt = Termops.compact_named_context (named_context env) in
+  let ctxt = Named.map (Evarutil.nf_evars_universes sigma) (named_context env) in
+  let ctxt = Termops.compact_named_context ctxt in
   let lgth = List.length ctxt in
   let n_capped =
     match n with
