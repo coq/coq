@@ -168,10 +168,10 @@ let init_runtime opts =
   | Coqargs.Run ->
       injection_commands opts
 
-let require_file (dir, from, exp) =
-  let mp = Libnames.qualid_of_string dir in
-  let mfrom = Option.map Libnames.qualid_of_string from in
-  let exp = Option.map (fun e -> e, None) exp in
+let require_file ~prefix ~lib ~export =
+  let mp = Libnames.qualid_of_string lib in
+  let mfrom = Option.map Libnames.qualid_of_string prefix in
+  let exp = Option.map (fun e -> e, None) export in
   Flags.silently (Vernacentries.vernac_require mfrom exp) [mp,Vernacexpr.ImportAll]
 
 let warn_no_native_compiler =
@@ -187,7 +187,7 @@ let warn_deprecated_native_compiler =
           files ahead of time, use the coqnative binary instead.")
 
 let handle_injection = let open Coqargs in function
-  | RequireInjection r -> require_file r
+  | RequireInjection {lib;prefix;export} -> require_file ~lib ~prefix ~export
   | OptionInjection o -> set_option o
   | WarnNoNative s -> warn_no_native_compiler s
   | WarnNativeDeprecated -> warn_deprecated_native_compiler ()

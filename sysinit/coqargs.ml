@@ -40,9 +40,11 @@ type option_command =
   | OptionUnset
   | OptionAppend of string
 
+type require_injection = { lib: string; prefix: string option; export: Lib.export_flag option; }
+
 type injection_command =
   | OptionInjection of (Goptions.option_name * option_command)
-  | RequireInjection of (string * string option * Lib.export_flag option)
+  | RequireInjection of require_injection
   | WarnNoNative of string
   | WarnNativeDeprecated
 
@@ -158,7 +160,7 @@ let add_vo_include opts unix_path coq_path implicit =
         unix_path; coq_path; has_ml = false; implicit; recursive = true } :: opts.pre.vo_includes }}
 
 let add_vo_require opts d p export =
-  { opts with pre = { opts.pre with injections = RequireInjection (d, p, export) :: opts.pre.injections }}
+  { opts with pre = { opts.pre with injections = RequireInjection {lib=d; prefix=p; export} :: opts.pre.injections }}
 
 let add_load_vernacular opts verb s =
     { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}
@@ -438,11 +440,12 @@ let parse_args ~usage ~init args =
 (******************************************************************************)
 (* Startup LoadPath and Modules                                               *)
 (******************************************************************************)
+
 (* prelude_data == From Coq Require Import Prelude. *)
-let prelude_data = "Prelude", Some "Coq", Some Lib.Import
+let prelude_data = RequireInjection { lib = "Prelude"; prefix = Some "Coq"; export = Some Lib.Import; }
 
 let injection_commands opts =
-  if opts.pre.load_init then RequireInjection prelude_data :: opts.pre.injections else opts.pre.injections
+  if opts.pre.load_init then prelude_data :: opts.pre.injections else opts.pre.injections
 
 let dirpath_of_file f =
   let ldir0 =
