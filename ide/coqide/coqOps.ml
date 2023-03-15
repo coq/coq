@@ -39,13 +39,14 @@ module SentenceId : sig
     stop : GText.mark;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
+    start_offset : int;
     edit_id : int;
     mutable index : int;
     changed_sig : (int * mem_flag list) GUtil.signal;
   }
 
   val mk_sentence :
-    start:GText.mark -> stop:GText.mark -> flag list -> sentence
+    start:GText.mark -> stop:GText.mark -> start_offset:int -> flag list -> sentence
 
   val add_flag : sentence -> flag -> unit
   val has_flag : sentence -> mem_flag -> bool
@@ -58,6 +59,11 @@ module SentenceId : sig
 
   val start_iter : GText.buffer -> sentence -> GText.iter
   val start_stop_iters : GText.buffer -> sentence -> GText.iter * GText.iter
+
+  (** [ofsset_compensation] Drift of a sentence over its original
+      location, in offset. May be needed to compensage Coq locations. *)
+  val offset_compensation : GText.buffer -> sentence -> int
+
   val phrase : GText.buffer -> sentence -> string
 
   val dbg_to_string :
@@ -70,6 +76,8 @@ end = struct
     stop : GText.mark;
     mutable flags : flag list;
     mutable tooltips : (int * int * string) list;
+    start_offset : int;
+    (* Original start offset of the sentence, to be compared when moved *)
     edit_id : int;
     mutable index : int;
     changed_sig : (int * mem_flag list) GUtil.signal;
@@ -82,12 +90,13 @@ end = struct
     end
 
   let id = ref 0
-  let mk_sentence ~start ~stop flags = decr id; {
+  let mk_sentence ~start ~stop ~start_offset flags = decr id; {
     start;
     stop;
     flags;
     edit_id = !id;
     tooltips = [];
+    start_offset;
     index = -1;
     changed_sig = new GUtil.signal ();
   }
@@ -111,6 +120,10 @@ end = struct
   let start_iter buffer sentence = buffer#get_iter_at_mark sentence.start
   let stop_iter buffer sentence = buffer#get_iter_at_mark sentence.stop
   let start_stop_iters buffer sentence = start_iter buffer sentence, stop_iter buffer sentence
+  let offset_compensation buffer sentence =
+    let s_start = buffer#get_iter_at_mark sentence.start in
+    s_start#offset - sentence.start_offset
+
   let phrase buffer sentence =
     let start, stop = start_stop_iters buffer sentence in
     start#get_slice ~stop
@@ -364,7 +377,7 @@ object(self)
     let x, y = script#window_to_buffer_coords ~tag:`WIDGET ~x ~y in
     let iter = script#get_iter_at_location ~x ~y in
     if iter#has_tag Tags.Script.tooltip then begin
-      let s =
+      let s : SentenceId.sentence =
         let rec aux iter =
           let marks = iter#marks in
           if marks = [] then aux iter#backward_char
@@ -376,7 +389,12 @@ object(self)
             try Doc.find document mem_marks
             with Not_found -> aux iter#backward_char in
         aux iter in
-      let ss = find_all_tooltips s iter#offset in
+      (* The original list of tooltips contains offset that were not
+         set up to date if the sentences moved, however the GTK model
+         has the up-to-date information in the marks, so we can
+         compare and compensate for the shift. *)
+      let offset = offset_compensation script#buffer s in
+      let ss = find_all_tooltips s (iter#offset - offset) in
       let msg = String.concat "\n" (CList.uniquize ss) in
       GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
       script#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
@@ -718,9 +736,10 @@ object(self)
         end else begin
           buffer#apply_tag Tags.Script.to_process ~start ~stop;
           let sentence =
+            let start_offset = start#offset in
             let start = `MARK (buffer#create_mark start) in
             let stop = `MARK (buffer#create_mark stop) in
-            mk_sentence ~start ~stop []
+            mk_sentence ~start ~stop ~start_offset []
           in
           Queue.push (`Sentence sentence) queue;
           if start#offset <> prev_start && not stop#is_end then loop (succ n) stop start#offset
