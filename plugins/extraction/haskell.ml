@@ -277,9 +277,9 @@ and pp_function env f t =
 (*s Pretty-printing of inductive types declaration. *)
 
 let pp_logical_ind packet =
-  pp_comment (Id.print packet.ip_typename ++ str " : logical inductive") ++
-  pp_comment (str "with constructors : " ++
-              prvect_with_sep spc Id.print packet.ip_consnames)
+  pp_bracket_comment
+    (Id.print packet.ip_typename ++ str " : logical inductive" ++ fnl () ++
+     str "with constructors : " ++ prvect_with_sep spc Id.print packet.ip_consnames)
 
 let pp_singleton kn packet =
   let name = pp_global Type (GlobRef.IndRef (kn,0)) in

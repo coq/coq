@@ -1,0 +1,3 @@
+{- my_inductive_prop : logical inductive
+   with constructors : constr_1 constr_2 constr_3 constr_4
+   constr_5 constr_6 constr_7 -}
