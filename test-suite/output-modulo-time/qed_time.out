@@ -1,0 +1,5 @@
+Chars 40 - 57 [Lemma~foo~:~True.] 0. secs (0.u,0.s)
+Chars 58 - 64 [Proof.] 0. secs (0.u,0.s)
+Chars 67 - 81 [Axiom~(X~:~nat).] 0. secs (0.u,0.s)
+Chars 84 - 92 [exact~I.] 0. secs (0.u,0.s)
+Chars 93 - 97 [Qed.] 0. secs (0.u,0.s)
