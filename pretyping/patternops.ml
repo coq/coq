@@ -425,8 +425,8 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
   | GSort gs ->
      (try PSort (Glob_ops.glob_sort_family gs)
       with Glob_ops.ComplexSort -> user_err ?loc (str "Unexpected universe in pattern."))
-  | GHole _ | GGenarg _ ->
-      PMeta None
+  | GHole _ -> PMeta None
+  | GGenarg _ -> CErrors.user_err ?loc Pp.(str "Quotation not supported in pattern.")
   | GCast (c,_,t) ->
       let () =
         (* Checks that there are no pattern variables in the type *)
