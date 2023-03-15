@@ -418,6 +418,28 @@ rendered_results="$($render_results "$log_dir" $num_of_iterations $new_coq_commi
 echo "${rendered_results}"
 zulip_edit "Benching continues..."
 
+# HTML for stdlib
+# NB: unlike coq_makefile packages, stdlib produces foo.timing not foo.v.timing
+new_base_path=$new_opam_root/ocaml-NEW/.opam-switch/build/coq-stdlib.dev/_build/default/theories/
+old_base_path=$old_opam_root/ocaml-OLD/.opam-switch/build/coq-stdlib.dev/_build/default/theories/
+for vo in $(cd $new_base_path/; find . -name '*.vo'); do
+    if [ -e $old_base_path/$vo ]; then
+        echo "$coq_opam_package/$vo $(stat -c%s $old_base_path/$vo) $(stat -c%s $new_base_path/$vo)" >> "$log_dir/vosize.log"
+    fi
+    if [ -e $old_base_path/${vo%%.vo}.timing ] && \
+           [ -e $new_base_path/${vo%%.vo}.timing ]; then
+        mkdir -p $working_dir/html/coq-stdlib/$(dirname $vo)/
+        # NB: sometimes randomly fails
+        $timelog2html $new_base_path/${vo%%o} \
+                      $old_base_path/${vo%%.vo}.timing \
+                      $new_base_path/${vo%%.vo}.timing > \
+                      $working_dir/html/coq-stdlib/${vo%%o}.html ||
+            echo "Failed (code $?):" $timelog2html $new_base_path/${vo%%o} \
+                 $old_base_path/${vo%%.vo}.timing \
+                 $new_base_path/${vo%%.vo}.timing
+    fi
+done
+
 # --------------------------------------------------------------------------------
 # Measure the compilation times of the specified OPAM packages in both switches
 
