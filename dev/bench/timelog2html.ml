@@ -111,8 +111,11 @@ let () =
 .code:hover {
   border-color: black;
 }
-pre {
-  display: inline;
+code::before {
+    content:  attr(data-line);
+    right: 0.5em;
+    position: absolute;
+    text-align: right;
 }
 </style>
 </head>
@@ -206,6 +209,8 @@ let maxq =
         data)
     Q.zero all_data
 
+let () = out "<pre>"
+
 let () = all_data.(0) |> Array.iteri (fun j d ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
@@ -217,18 +222,26 @@ Line: %d
     in
     let () = out {|">|} in
     let () = all_data |> Array.iteri (fun k d ->
-        out {|<div class="time%d" style="width: %f%%"></div>
-|}
+        out {|<div class="time%d" style="width: %f%%"></div>|}
           (k+1)
           (percentage d.(j).timeq ~max:maxq))
     in
-    let () = out "<pre>%s\n</pre>\n" (htmlescape d.text) in
-    let () = out "</div>\n" in
+    let text = if d.text <> "" && d.text.[0] = '\n'
+      then String.sub d.text 1 (String.length d.text  - 1)
+      else d.text
+    in
+    let sublines = String.split_on_char '\n' text in
+    let () = sublines |> List.iteri (fun i line ->
+        out "<code data-line=\"%d\">%s</code>\n" (d.lines+i) (htmlescape line))
+    in
+    let () = out "</div>" in
     ())
 
 let () =
   out
 {|
+</pre>
+
 </body>
 </html>
 |}
