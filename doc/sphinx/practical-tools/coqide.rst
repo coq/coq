@@ -559,7 +559,7 @@ will be stopped at the left hand edge of its range.
 The function keys are listed, for the moment, with one exception, in the `Debug` menu:
 
 Toggle breakpoint (F8)
-  Position the cursor on the first character of the tactic name in an Ltac
+  Position the cursor just before the first character of the tactic name in an Ltac
   construct, then press F8.  Press again to remove the breakpoint.  F8 is
   accepted only when all of the coqtop sessions are idle (i.e. at the debug
   prompt or not processing a tactic or command).
