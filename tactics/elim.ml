@@ -26,8 +26,6 @@ type branch_args = {
 
 type elim_kind = Case of bool * constr option | Elim
 
-let is_case = function Case _ -> true | Elim -> false
-
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
 let general_elim_using mk_elim (ind, u, args) id =
@@ -72,28 +70,12 @@ let general_elim_using mk_elim (ind, u, args) id =
     if is_case then Clenv.case_pf ~flags elimclause' else Clenv.res_pf ~flags elimclause'
   end
 
-let general_elim_then_using mk_elim allnames tac (ind, u, _ as spec) id =
-  let open Proofview.Notations in
-  Proofview.Goal.enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let rec_flag = not (is_case mk_elim) in
-    let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
-    let brnames = Tacticals.compute_induction_names false branchsigns allnames in
-    let after_tac i =
-      let ba = { branchnames = brnames.(i); nassums = List.length branchsigns.(i); } in
-      tac ba
-    in
-    let branchtacs = List.init (Array.length branchsigns) after_tac in
-    general_elim_using mk_elim spec id <*>
-    (Proofview.tclEXTEND [] tclIDTAC branchtacs)
-  end
-
 (* computing the case/elim combinators *)
 
-let elim_on_ba tac ba =
+let elim_on_ba tac nassums =
   Proofview.Goal.enter begin fun gl ->
   let branches =
-    try List.rev (List.firstn ba.nassums (Proofview.Goal.hyps gl))
+    try List.rev (List.firstn nassums (Proofview.Goal.hyps gl))
     with Failure _ -> CErrors.anomaly (Pp.str "make_elim_branch_assumptions.")
   in
   tac branches
@@ -101,23 +83,31 @@ let elim_on_ba tac ba =
 
 let elimination_then tac id =
   let open Declarations in
+  let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let ((ind, u), t) = pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl (mkVar id)) in
   let _, args = decompose_app_vect (Proofview.Goal.sigma gl) t in
-  let isrec,mkelim =
+  let rec_flag, mkelim =
     match (Environ.lookup_mind (fst ind) env).mind_record with
     | NotRecord -> true, Elim
     | FakeRecord | PrimRecord _ -> false, Case (true, None)
   in
-  general_elim_then_using mkelim None tac (ind, u, args) id
+  let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
+  let brnames = Tacticals.compute_induction_names false branchsigns None in
+  let after_tac i =
+    let ba = { branchnames = brnames.(i); nassums = List.length branchsigns.(i); } in
+    tac ba.nassums
+  in
+  let branchtacs = List.init (Array.length branchsigns) after_tac in
+  general_elim_using mkelim (ind, u, args) id <*>
+  (Proofview.tclEXTEND [] tclIDTAC branchtacs)
   end
 
 (* Supposed to be called without as clause *)
-let introElimAssumsThen tac ba =
-  assert (ba.branchnames == []);
-  let introElimAssums = tclDO ba.nassums intro in
-  (tclTHEN introElimAssums (elim_on_ba tac ba))
+let introElimAssumsThen tac nassums =
+  let introElimAssums = tclDO nassums intro in
+  (tclTHEN introElimAssums (elim_on_ba tac nassums))
 
 (* Supposed to be called with a non-recursive scheme *)
 let introCaseAssumsThen with_evars tac ba =
@@ -128,11 +118,22 @@ let introCaseAssumsThen with_evars tac ba =
     else (ba.branchnames, []), List.make (n1-n2) false in
   let introCaseAssums =
     tclTHEN (intro_patterns with_evars l1) (intros_clearing l3) in
-  (tclTHEN introCaseAssums (elim_on_ba (tac l2) ba))
+  (tclTHEN introCaseAssums (elim_on_ba (tac l2) ba.nassums))
 
-let case_tac dep names tac elim ind c =
-  let tac = introCaseAssumsThen false (* ApplyOn not supported by inversion *) tac in
-  general_elim_then_using (Case (dep, Some elim)) names tac ind c
+let case_tac dep names tac elim (ind, u, args as spec) c =
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag:false (ind, u) in
+    let brnames = Tacticals.compute_induction_names false branchsigns names in
+    let after_tac i =
+      let ba = { branchnames = brnames.(i); nassums = List.length branchsigns.(i); } in
+      introCaseAssumsThen false (* ApplyOn not supported by inversion *) tac ba
+    in
+    let branchtacs = List.init (Array.length branchsigns) after_tac in
+    general_elim_using (Case (dep, Some elim)) spec c <*>
+    (Proofview.tclEXTEND [] tclIDTAC branchtacs)
+  end
 
 (* The following tactic Decompose repeatedly applies the
    elimination(s) rule(s) of the types satisfying the predicate
