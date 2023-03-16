@@ -252,7 +252,7 @@ with Not_found ->
 open Libobject
 
 let warn_deprecated_option =
-  CWarnings.create ~name:"deprecated-option" ~category:"deprecated" (fun key ->
+  CWarnings.create ~name:"deprecated-option" ~category:CWarnings.CoreCategories.deprecated (fun key ->
     Pp.(str "Option" ++ spc () ++ str (nickname key) ++ strbrk " is deprecated"))
 
 let declare_option cast uncast append ?(preprocess = fun x -> x)
@@ -427,7 +427,7 @@ let declare_interpreted_string_option_and_ref ~stage ~depr ~key ~(value:'a) from
 
 let warn_unknown_option =
   CWarnings.create
-    ~name:"unknown-option" ~category:"option"
+    ~name:"unknown-option" ~category:CWarnings.CoreCategories.option
     Pp.(fun key -> strbrk "There is no flag or option with this name: \"" ++
                   str (nickname key) ++ str "\".")
 

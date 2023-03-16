@@ -7,13 +7,13 @@
 File "./output/FloatNumberSyntax.v", line 9, characters 6-13:
 Warning: The constant 2.5e123 is not a binary64 floating-point value. A
 closest value 0x1.e412f0f768fadp+409 will be used and unambiguously printed
-2.4999999999999999e+123. [inexact-float,parsing]
+2.4999999999999999e+123. [inexact-float,parsing,default]
 2.4999999999999999e+123%float
      : float
 File "./output/FloatNumberSyntax.v", line 10, characters 7-16:
 Warning: The constant -2.5e-123 is not a binary64 floating-point value. A
 closest value -0x1.a71368f0f3047p-408 will be used and unambiguously printed
--2.5000000000000001e-123. [inexact-float,parsing]
+-2.5000000000000001e-123. [inexact-float,parsing,default]
 (-2.5000000000000001e-123)%float
      : float
 (2 + 2)%float
@@ -29,13 +29,13 @@ closest value -0x1.a71368f0f3047p-408 will be used and unambiguously printed
 File "./output/FloatNumberSyntax.v", line 19, characters 6-13:
 Warning: The constant 2.5e123 is not a binary64 floating-point value. A
 closest value 0x1.e412f0f768fadp+409 will be used and unambiguously printed
-2.4999999999999999e+123. [inexact-float,parsing]
+2.4999999999999999e+123. [inexact-float,parsing,default]
 2.4999999999999999e+123
      : float
 File "./output/FloatNumberSyntax.v", line 20, characters 7-16:
 Warning: The constant -2.5e-123 is not a binary64 floating-point value. A
 closest value -0x1.a71368f0f3047p-408 will be used and unambiguously printed
--2.5000000000000001e-123. [inexact-float,parsing]
+-2.5000000000000001e-123. [inexact-float,parsing,default]
 -2.5000000000000001e-123
      : float
 2 + 2
@@ -57,13 +57,13 @@ closest value -0x1.a71368f0f3047p-408 will be used and unambiguously printed
 File "./output/FloatNumberSyntax.v", line 30, characters 6-11:
 Warning: The constant 1e309 is not a binary64 floating-point value. A closest
 value infinity will be used and unambiguously printed infinity.
-[inexact-float,parsing]
+[inexact-float,parsing,default]
 infinity
      : float
 File "./output/FloatNumberSyntax.v", line 31, characters 6-12:
 Warning: The constant -1e309 is not a binary64 floating-point value. A
 closest value neg_infinity will be used and unambiguously printed
-neg_infinity. [inexact-float,parsing]
+neg_infinity. [inexact-float,parsing,default]
 neg_infinity
      : float
 0x1p-1

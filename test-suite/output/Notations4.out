@@ -85,18 +85,18 @@ fun x : nat => [x]
      : Prop
 File "./output/Notations4.v", line 185, characters 0-160:
 Warning: Notation "∀ _ .. _ , _" was already defined with a different format
-in scope type_scope. [notation-incompatible-format,parsing]
+in scope type_scope. [notation-incompatible-format,parsing,default]
 ∀x : nat,x = x
      : Prop
 File "./output/Notations4.v", line 198, characters 0-60:
 Warning: Notation "_ %%% _" was already defined with a different format.
-[notation-incompatible-format,parsing]
+[notation-incompatible-format,parsing,default]
 File "./output/Notations4.v", line 202, characters 0-64:
 Warning: Notation "_ %%% _" was already defined with a different format.
-[notation-incompatible-format,parsing]
+[notation-incompatible-format,parsing,default]
 File "./output/Notations4.v", line 207, characters 0-62:
 Warning: Lonely notation "_ %%%% _" was already defined with a different
-format. [notation-incompatible-format,parsing]
+format. [notation-incompatible-format,parsing,default]
 3  %%  4
      : nat
 3  %%  4
@@ -105,10 +105,10 @@ format. [notation-incompatible-format,parsing]
      : nat
 File "./output/Notations4.v", line 235, characters 47-59:
 Warning: The format modifier is irrelevant for only-parsing rules.
-[irrelevant-format-only-parsing,parsing]
+[irrelevant-format-only-parsing,parsing,default]
 File "./output/Notations4.v", line 239, characters 36-48:
 Warning: The only parsing modifier has no effect in Reserved Notation.
-[irrelevant-reserved-notation-only-parsing,parsing]
+[irrelevant-reserved-notation-only-parsing,parsing,default]
 fun x : nat => U (S x)
      : nat -> nat
 V tt
@@ -118,7 +118,8 @@ fun x : nat => V x
 where
 ?T : [x : nat  x0 : ?T |- Type] (x0 cannot be used)
 File "./output/Notations4.v", line 256, characters 0-30:
-Warning: Notation "_ :=: _" was already used. [notation-overridden,parsing]
+Warning: Notation "_ :=: _" was already used.
+[notation-overridden,parsing,default]
 0 :=: 0
      : Prop
 fun x : nat => <{ x; (S x) }>

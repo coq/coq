@@ -26,21 +26,20 @@ let thm_token = G_vernac.thm_token
 let hint = Entry.make "hint"
 
 let warn_deprecated_focus =
-  CWarnings.create ~name:"deprecated-focus" ~category:"deprecated"
-         (fun () ->
-           Pp.strbrk
-             "The Focus command is deprecated; use bullets or focusing brackets instead"
-         )
+  CWarnings.create ~name:"deprecated-focus" ~category:CWarnings.CoreCategories.deprecated
+    Pp.(function
+      | None ->
+        strbrk "The Focus command is deprecated; use bullets or focusing brackets instead."
+      | Some n ->
+        str "The Focus command is deprecated;" ++ spc ()
+        ++ str "use '" ++ int n ++ str ": {' instead.")
 
-let warn_deprecated_focus_n n =
-  CWarnings.create ~name:"deprecated-focus" ~category:"deprecated"
-         (fun () ->
-           Pp.(str "The Focus command is deprecated;" ++ spc ()
-               ++ str "use '" ++ int n ++ str ": {' instead")
-         )
+let warn_deprecated_focus_n ?loc n = warn_deprecated_focus ?loc (Some n)
+
+let warn_deprecated_focus ?loc () = warn_deprecated_focus ?loc None
 
 let warn_deprecated_unfocus =
-  CWarnings.create ~name:"deprecated-unfocus" ~category:"deprecated"
+  CWarnings.create ~name:"deprecated-unfocus" ~category:CWarnings.CoreCategories.deprecated
          (fun () -> Pp.strbrk "The Unfocus command is deprecated")
 
 }
@@ -78,7 +77,7 @@ GRAMMAR EXTEND Gram
          { warn_deprecated_focus ~loc ();
          VernacSynPure (VernacFocus None) }
       | IDENT "Focus"; n = natural ->
-         { warn_deprecated_focus_n n ~loc ();
+         { warn_deprecated_focus_n n ~loc;
          VernacSynPure (VernacFocus (Some n)) }
       | IDENT "Unfocus" ->
          { warn_deprecated_unfocus ~loc ();

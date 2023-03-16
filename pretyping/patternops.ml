@@ -364,7 +364,7 @@ let it_mkPLambda_or_LetIn = List.fold_left (fun c d -> mkPLambda_or_LetIn d c)
 let err ?loc pp = user_err ?loc pp
 
 let warn_cast_in_pattern =
-  CWarnings.create ~name:"cast-in-pattern" ~category:"automation"
+  CWarnings.create ~name:"cast-in-pattern" ~category:CWarnings.CoreCategories.automation
     (fun () -> Pp.strbrk "Cast types are ignored in patterns")
 
 type meta_accu =

@@ -84,7 +84,7 @@ let freeze_summaries ~marshallable sum_map =
 
 let warn_summary_out_of_scope =
   let name = "summary-out-of-scope" in
-  let category = "dev" in
+  let category = CWarnings.CoreCategories.dev in
   let default = CWarnings.Disabled in
   CWarnings.create ~name ~category ~default (fun name ->
     Pp.str (Printf.sprintf

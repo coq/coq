@@ -200,7 +200,7 @@ let implicit_application env ty =
     CAst.make ?loc @@ CAppExpl ((id, inst), args), avoid
 
 let warn_ignoring_implicit_status =
-  CWarnings.create ~name:"ignoring_implicit_status" ~category:"implicits"
+  CWarnings.create ~name:"ignoring_implicit_status" ~category:CWarnings.CoreCategories.implicits
     (fun na ->
        strbrk "Ignoring implicit status of product binder " ++
        Name.print na ++ strbrk " and following binders")

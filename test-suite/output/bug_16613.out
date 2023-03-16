@@ -1,3 +1,3 @@
 File "./output/bug_16613.v", line 2, characters 2-10:
 Warning: This command does not support these attributes: bar, foo.
-[unsupported-attributes,parsing]
+[unsupported-attributes,parsing,default]

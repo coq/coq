@@ -63,7 +63,7 @@ type bad_relevance =
 
 let warn_bad_relevance_name = "bad-relevance"
 let warn_bad_relevance =
-  CWarnings.create ~name:warn_bad_relevance_name ~category:"debug" ~default:CWarnings.AsError
+  CWarnings.create ~name:warn_bad_relevance_name ~category:CWarnings.CoreCategories.debug ~default:CWarnings.AsError
     Pp.(function
         | BadRelevanceCase _ ->  str "Bad relevance in case annotation."
         | BadRelevanceBinder (_, na) -> str "Bad relevance for binder " ++ Name.print (RelDecl.get_name na) ++ str ".")

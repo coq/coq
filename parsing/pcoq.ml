@@ -262,7 +262,7 @@ module Grammar = Register(GrammarObj)
 
 let warn_deprecated_intropattern =
   let open CWarnings in
-  create ~name:"deprecated-intropattern-entry" ~category:"deprecated"
+  create ~name:"deprecated-intropattern-entry" ~category:CWarnings.CoreCategories.deprecated
   (fun () -> Pp.strbrk "Entry name intropattern has been renamed in order \
   to be consistent with the documented grammar of tactics. Use \
   \"simple_intropattern\" instead.")

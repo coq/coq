@@ -1,36 +1,36 @@
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ - _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ <= _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ < _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ >= _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ > _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ <= _ <= _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ < _ <= _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ <= _ < _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ < _ < _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ + _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 File "./output/ssr_explain_match.v", line 12, characters 0-61:
 Warning: Notation "_ * _" was already used in scope nat_scope.
-[notation-overridden,parsing]
+[notation-overridden,parsing,default]
 BEGIN INSTANCES
 instance: (x + y + z) matches: (x + y + z)
 instance: (x + y) matches: (x + y)

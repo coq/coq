@@ -1,21 +1,21 @@
 File "./output/ProofUsingClashWarning.v", line 3, characters 2-39:
 Warning:
 clashing_name was already a defined Variable, the name clashing_name will refer to Collection when executing "Proof using" command.
-[variable-shadowing,deprecated]
+[variable-shadowing,deprecated,default]
 File "./output/ProofUsingClashWarning.v", line 6, characters 2-39:
 Warning: New Collection definition of redefined_col shadows the previous one.
-[collection-redefinition,deprecated]
+[collection-redefinition,deprecated,default]
 File "./output/ProofUsingClashWarning.v", line 8, characters 2-34:
 The command has indeed failed with message:
 "All" is a predefined collection containing all variables. It can't be redefined.
 File "./output/ProofUsingClashWarning.v", line 11, characters 2-28:
 Warning:
 clashing_name is both name of a Collection and Variable, Collection clashing_name takes precedence over Variable.
-[collection-precedence,deprecated]
+[collection-precedence,deprecated,default]
 File "./output/ProofUsingClashWarning.v", line 16, characters 2-18:
 Warning:
 Variable All is shadowed by Collection named All containing all variables.
-[all-collection-precedence,deprecated]
+[all-collection-precedence,deprecated,default]
 foo : bool -> True
      : bool -> True
 bar : bool -> nat -> unit -> True

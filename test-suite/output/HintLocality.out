@@ -88,13 +88,16 @@ For S (modes !) ->
 
 File "./output/HintLocality.v", line 92, characters 0-39:
 Warning: This hint is not local but depends on a section variable. It will
-disappear when the section is closed. [non-local-section-hint,automation]
+disappear when the section is closed.
+[non-local-section-hint,automation,default]
 File "./output/HintLocality.v", line 94, characters 0-40:
 Warning: This hint is not local but depends on a section variable. It will
-disappear when the section is closed. [non-local-section-hint,automation]
+disappear when the section is closed.
+[non-local-section-hint,automation,default]
 File "./output/HintLocality.v", line 98, characters 0-39:
 Warning: This hint is not local but depends on a section variable. It will
-disappear when the section is closed. [non-local-section-hint,automation]
+disappear when the section is closed.
+[non-local-section-hint,automation,default]
 Non-discriminated database
 Unfoldable variable definitions: all
 Unfoldable constant definitions: all

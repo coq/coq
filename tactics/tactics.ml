@@ -1327,7 +1327,7 @@ let is_quantified_hypothesis id gl =
     | None -> false
 
 let warn_deprecated_intros_until_0 =
-  CWarnings.create ~name:"deprecated-intros-until-0" ~category:"tactics"
+  CWarnings.create ~name:"deprecated-intros-until-0" ~category:CWarnings.CoreCategories.tactics
     (fun () ->
        strbrk"\"intros until 0\" is deprecated, use \"intros *\"; instead of \"induction 0\" and \"destruct 0\" use explicitly a name.\"")
 
@@ -3365,7 +3365,7 @@ let unfold_body x =
   end
 
 let warn_cannot_remove_as_expected =
-  CWarnings.create ~name:"cannot-remove-as-expected" ~category:"tactics"
+  CWarnings.create ~name:"cannot-remove-as-expected" ~category:CWarnings.CoreCategories.tactics
          (fun (id,inglobal) ->
            let pp = match inglobal with
              | None -> mt ()
@@ -3417,9 +3417,9 @@ let expand_hyp id =
 
  *)
 
-let warn_unused_intro_pattern env sigma =
-  CWarnings.create ~name:"unused-intro-pattern" ~category:"tactics"
-    (fun names ->
+let warn_unused_intro_pattern =
+  CWarnings.create ~name:"unused-intro-pattern" ~category:CWarnings.CoreCategories.tactics
+    (fun (env,sigma,names) ->
        strbrk"Unused introduction " ++ str (String.plural (List.length names) "pattern") ++
        str": " ++ prlist_with_sep spc
          (Miscprint.pr_intro_pattern
@@ -3427,7 +3427,7 @@ let warn_unused_intro_pattern env sigma =
 
 let check_unused_names env sigma names =
   if not (List.is_empty names) then
-    warn_unused_intro_pattern env sigma names
+    warn_unused_intro_pattern (env, sigma, names)
 
 let intropattern_of_name gl avoid = function
   | Anonymous -> IntroNaming IntroAnonymous

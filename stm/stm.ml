@@ -1111,7 +1111,7 @@ end = struct (* {{{ *)
         | Cont acc -> next acc
 
   let undo_costly_in_batch_mode =
-    CWarnings.create ~name:"undo-batch-mode" ~category:"non-interactive" Pp.(fun v ->
+    CWarnings.create ~name:"undo-batch-mode" ~category:CWarnings.CoreCategories.non_interactive Pp.(fun v ->
         str "Command " ++ Ppvernac.pr_vernac v ++
         str (" is not recommended in batch mode. In particular, going back in the document" ^
              " is not efficient in batch mode due to Coq not caching previous states for memory optimization reasons." ^

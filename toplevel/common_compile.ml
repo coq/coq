@@ -16,7 +16,7 @@ let fatal_error msg =
   exit 1
 
 let warn_file_no_extension =
-  CWarnings.create ~name:"file-no-extension" ~category:"filesystem"
+  CWarnings.create ~name:"file-no-extension" ~category:CWarnings.CoreCategories.filesystem
          (fun (f,ext) ->
           str "File \"" ++ str f ++
             strbrk "\" has been implicitly expanded to \"" ++

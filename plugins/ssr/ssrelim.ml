@@ -538,7 +538,7 @@ let revtoptac n0 =
   end
 
 let nothing_to_inject =
-   CWarnings.create ~name:"spurious-ssr-injection" ~category:"ssr"
+   CWarnings.create ~name:"spurious-ssr-injection" ~category:CWarnings.CoreCategories.ssr
      (fun (sigma, env, ty) ->
          Pp.(str "SSReflect: cannot obtain new equations out of" ++ fnl() ++
              str"  " ++ Printer.pr_econstr_env env sigma ty ++ fnl() ++

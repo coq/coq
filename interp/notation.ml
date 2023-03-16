@@ -135,7 +135,7 @@ let init_scope_map () =
 (* Operations on scopes *)
 
 let warn_undeclared_scope =
-  CWarnings.create ~name:"undeclared-scope" ~category:"deprecated"
+  CWarnings.create ~name:"undeclared-scope" ~category:CWarnings.CoreCategories.deprecated
                    (fun (scope) ->
                     strbrk "Declaring a scope implicitly is deprecated; use in advance an explicit "
                     ++ str "\"Declare Scope " ++ str scope ++ str ".\".")
@@ -685,7 +685,7 @@ module Numbers = struct
 open PrimTokenNotation
 
 let warn_large_num =
-  CWarnings.create ~name:"large-number" ~category:"numbers"
+  CWarnings.create ~name:"large-number" ~category:CWarnings.CoreCategories.numbers
     (fun ty ->
       strbrk "Stack overflow or segmentation fault happens when " ++
       strbrk "working with large numbers in " ++ pr_qualid ty ++
@@ -693,7 +693,7 @@ let warn_large_num =
       strbrk " on your system limits and on the command executed).")
 
 let warn_abstract_large_num =
-  CWarnings.create ~name:"abstract-large-number" ~category:"numbers"
+  CWarnings.create ~name:"abstract-large-number" ~category:CWarnings.CoreCategories.numbers
     (fun (ty,f) ->
       strbrk "To avoid stack overflow, large numbers in " ++
       pr_qualid ty ++ strbrk " are interpreted as applications of " ++
@@ -909,7 +909,7 @@ let interp_int63 ?loc esig ind n =
   else error_overflow ?loc n
 
 let warn_inexact_float =
-  CWarnings.create ~name:"inexact-float" ~category:"parsing"
+  CWarnings.create ~name:"inexact-float" ~category:CWarnings.CoreCategories.parsing
     (fun (sn, f) ->
       Pp.strbrk
         (Printf.sprintf
@@ -1335,26 +1335,30 @@ let pr_optional_scope = function
   | LastLonelyNotation -> mt ()
   | NotationInScope scope -> spc () ++ strbrk "in scope" ++ spc () ++ str scope
 
+let w_nota_overridden =
+  CWarnings.create_warning
+    ~from:[CWarnings.CoreCategories.parsing] ~name:"notation-overridden" ()
+
 let warn_notation_overridden =
-  CWarnings.create ~name:"notation-overridden" ~category:"parsing"
-                   (fun (scope,ntn) ->
-                    str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
-                    ++ strbrk "was already used" ++ pr_optional_scope scope ++ str ".")
+  CWarnings.create_in w_nota_overridden
+    (fun (scope,ntn) ->
+       str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
+       ++ strbrk "was already used" ++ pr_optional_scope scope ++ str ".")
 
 let warn_deprecation_overridden =
-  CWarnings.create ~name:"notation-overridden" ~category:"parsing"
-                 (fun ((scope,ntn),old,now) ->
-                  match old, now with
-                  | None, None -> assert false
-                  | None, Some _ ->
-                    (str "Notation" ++ spc () ++ pr_notation ntn ++ pr_optional_scope scope ++ spc ()
-                    ++ strbrk "is now marked as deprecated" ++ str ".")
-                  | Some _, None ->
-                    (str "Cancelling previous deprecation of notation" ++ spc () ++
-                     pr_notation ntn ++ pr_optional_scope scope ++ str ".")
-                  | Some _, Some _ ->
-                    (str "Amending deprecation of notation" ++ spc () ++
-                     pr_notation ntn ++ pr_optional_scope scope ++ str "."))
+  CWarnings.create_in w_nota_overridden
+    (fun ((scope,ntn),old,now) ->
+       match old, now with
+       | None, None -> assert false
+       | None, Some _ ->
+         (str "Notation" ++ spc () ++ pr_notation ntn ++ pr_optional_scope scope ++ spc ()
+          ++ strbrk "is now marked as deprecated" ++ str ".")
+       | Some _, None ->
+         (str "Cancelling previous deprecation of notation" ++ spc () ++
+          pr_notation ntn ++ pr_optional_scope scope ++ str ".")
+       | Some _, Some _ ->
+         (str "Amending deprecation of notation" ++ spc () ++
+          pr_notation ntn ++ pr_optional_scope scope ++ str "."))
 
 let warn_override_if_needed (scopt,ntn) overridden data old_data =
   if overridden then warn_notation_overridden (scopt,ntn)
@@ -2471,12 +2475,12 @@ let toggle_notations_in_scope ~on found inscope ntn_pattern ntns =
           data) ntns
 
 let warn_abbreviation_not_bound_to_entry =
-  CWarnings.create ~name:"conflicting-abbreviation-entry" ~category:"query"
+  CWarnings.create ~name:"conflicting-abbreviation-entry" ~category:CWarnings.CoreCategories.query
                    (fun () ->
                     strbrk "Activation of abbreviations does not expect mentioning a grammar entry.")
 
 let warn_abbreviation_not_bound_to_scope =
-  CWarnings.create ~name:"conflicting-abbreviation-scope" ~category:"query"
+  CWarnings.create ~name:"conflicting-abbreviation-scope" ~category:CWarnings.CoreCategories.query
                    (fun () ->
                     strbrk "Activation of abbreviations does not expect mentioning a scope.")
 

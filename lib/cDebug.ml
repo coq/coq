@@ -52,7 +52,7 @@ let get_flag flag = !flag
 
 let set_flag flag v = flag := v
 
-let warn_unknown_debug = CWarnings.create ~name:"unknown-debug-flag" ~category:"option"
+let warn_unknown_debug = CWarnings.create ~name:"unknown-debug-flag" ~category:CWarnings.CoreCategories.option
     Pp.(fun name -> str "There is no debug flag \"" ++ str name ++ str "\".")
 
 let get_flags () =

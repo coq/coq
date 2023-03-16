@@ -34,7 +34,7 @@ and pr_vernac_flag_r (s, arguments) =
 and pr_vernac_flag {CAst.v} = pr_vernac_flag_r v
 
 let warn_unsupported_attributes =
-  CWarnings.create ~name:"unsupported-attributes" ~category:"parsing" ~default:CWarnings.AsError
+  CWarnings.create ~name:"unsupported-attributes" ~category:CWarnings.CoreCategories.parsing ~default:CWarnings.AsError
     (fun atts ->
        let keys = List.map (fun x -> fst x.CAst.v) atts in
        let keys = List.sort_uniq String.compare keys in

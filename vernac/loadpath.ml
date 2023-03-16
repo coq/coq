@@ -49,7 +49,7 @@ let find_with_logical_path dirpath =
   List.filter (fun p -> Names.DirPath.equal p.path_logical dirpath) !load_paths
 
 let warn_file_found_multiple_times =
-  CWarnings.create ~name:"ambiguous-extra-dep" ~category:"filesystem"
+  CWarnings.create ~name:"ambiguous-extra-dep" ~category:CWarnings.CoreCategories.filesystem
     (fun (file,from,other,extra) ->
       Pp.(str "File " ++ str file ++ str " found twice in " ++
       Names.DirPath.print from ++ str":" ++ spc () ++ str other ++ str " (selected)," ++
@@ -88,7 +88,7 @@ let remove_load_path dir =
   load_paths := List.filter filter !load_paths
 
 let warn_overriding_logical_loadpath =
-  CWarnings.create ~name:"overriding-logical-loadpath" ~category:"loadpath"
+  CWarnings.create ~name:"overriding-logical-loadpath" ~category:CWarnings.CoreCategories.loadpath
     (fun (phys_path, old_path, coq_path) ->
        Pp.(seq [str phys_path; strbrk " was previously bound to "
                ; DP.print old_path; strbrk "; it is remapped to "
@@ -180,7 +180,7 @@ type locate_error = LibUnmappedDir | LibNotFound
 type 'a locate_result = ('a, locate_error) result
 
 let warn_several_object_files =
-  CWarnings.create ~name:"several-object-files" ~category:"require"
+  CWarnings.create ~name:"several-object-files" ~category:CWarnings.CoreCategories.require
     Pp.(fun (vi, vo) ->
         seq [ str "Loading"; spc (); str vi
             ; strbrk " instead of "; str vo
@@ -311,11 +311,11 @@ type vo_path =
   }
 
 let warn_cannot_open_path =
-  CWarnings.create ~name:"cannot-open-path" ~category:"filesystem"
+  CWarnings.create ~name:"cannot-open-path" ~category:CWarnings.CoreCategories.filesystem
     (fun unix_path -> Pp.(str "Cannot open " ++ str unix_path))
 
 let warn_cannot_use_directory =
-  CWarnings.create ~name:"cannot-use-directory" ~category:"filesystem"
+  CWarnings.create ~name:"cannot-use-directory" ~category:CWarnings.CoreCategories.filesystem
     (fun d ->
        Pp.(str "Directory " ++ str d ++
            strbrk " cannot be used as a Coq identifier (skipped)"))

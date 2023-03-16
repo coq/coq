@@ -277,7 +277,7 @@ let pr_scope_stack begin_of_sentence l =
       str "[" ++ prlist_with_sep pr_comma str l ++ str "]"
 
 let warn_inconsistent_scope =
-  CWarnings.create ~name:"inconsistent-scopes" ~category:"syntax"
+  CWarnings.create ~name:"inconsistent-scopes" ~category:CWarnings.CoreCategories.syntax
     (fun (id,scopes1,scopes2) ->
       (str "Argument " ++ Id.print id ++
        strbrk " was previously inferred to be in " ++
@@ -336,7 +336,7 @@ let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, bk, t, body)
 (* Utilities for binders                                              *)
 
 let warn_shadowed_implicit_name =
-  CWarnings.create ~name:"shadowed-implicit-name" ~category:"syntax"
+  CWarnings.create ~name:"shadowed-implicit-name" ~category:CWarnings.CoreCategories.syntax
     Pp.(fun na -> str "Making shadowed name of implicit argument accessible by position.")
 
 let exists_name na l =
@@ -503,7 +503,7 @@ let restore_binders_impargs env l =
   List.fold_right pure_push_name_env l env
 
 let warn_ignoring_unexpected_implicit_binder_declaration =
-  CWarnings.create ~name:"unexpected-implicit-declaration" ~category:"syntax"
+  CWarnings.create ~name:"unexpected-implicit-declaration" ~category:CWarnings.CoreCategories.syntax
     Pp.(fun () -> str "Ignoring implicit binder declaration in unexpected position.")
 
 let check_implicit_meaningful ?loc k env =
@@ -1350,7 +1350,7 @@ let intern_qualid_for_pattern test_global intern_not qid pats =
     | None -> raise Not_found
 
 let warn_nonprimitive_projection =
-  CWarnings.create ~name:"nonprimitive-projection-syntax" ~category:"syntax" ~default:CWarnings.Disabled
+  CWarnings.create ~name:"nonprimitive-projection-syntax" ~category:CWarnings.CoreCategories.syntax ~default:CWarnings.Disabled
     Pp.(fun f -> pr_qualid f ++ str " used as a primitive projection but is not one.")
 
 let error_nonprojection_syntax ?loc qid =

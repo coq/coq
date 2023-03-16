@@ -1,8 +1,8 @@
 File "./output/ltac2_match.v", line 12, characters 41-42:
-Warning: This pattern is redundant. [redundant-pattern,ltac2]
+Warning: This pattern is redundant. [redundant-pattern,ltac2,default]
 File "./output/ltac2_match.v", line 34, characters 5-51:
-Warning: This clause is redundant. [redundant-pattern,ltac2]
+Warning: This clause is redundant. [redundant-pattern,ltac2,default]
 File "./output/ltac2_match.v", line 36, characters 5-51:
-Warning: This clause is redundant. [redundant-pattern,ltac2]
+Warning: This clause is redundant. [redundant-pattern,ltac2,default]
 - : string = "10"
 - : string = "12"

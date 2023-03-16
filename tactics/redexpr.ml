@@ -23,7 +23,7 @@ open RedFlags
 open Libobject
 
 let warn_vm_disabled =
-  CWarnings.create ~name:"vm-compute-disabled" ~category:"bytecode-compiler"
+  CWarnings.create ~name:"vm-compute-disabled" ~category:CWarnings.CoreCategories.bytecode_compiler
   (fun () ->
    strbrk "vm_compute disabled at configure time; falling back to cbv.")
 
@@ -38,7 +38,7 @@ let cbv_vm env sigma c =
   end
 
 let warn_native_compute_disabled =
-  CWarnings.create ~name:"native-compute-disabled" ~category:"native-compiler"
+  CWarnings.create ~name:"native-compute-disabled" ~category:CWarnings.CoreCategories.native_compiler
   (fun () ->
    strbrk "native_compute disabled at configure time; falling back to vm_compute.")
 
@@ -225,7 +225,7 @@ let contextualize f g = function
   | None -> e_red g
 
 let warn_simpl_unfolding_modifiers =
-  CWarnings.create ~name:"simpl-unfolding-modifiers" ~category:"tactics"
+  CWarnings.create ~name:"simpl-unfolding-modifiers" ~category:CWarnings.CoreCategories.tactics
          (fun () ->
           Pp.strbrk "The legacy simpl ignores constant unfolding modifiers.")
 

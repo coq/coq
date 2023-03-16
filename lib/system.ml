@@ -81,7 +81,7 @@ let process_subdirectories f path =
     warns if [root] does not exist *)
 
 let warn_cannot_open_dir =
-  CWarnings.create ~name:"cannot-open-dir" ~category:"filesystem"
+  CWarnings.create ~name:"cannot-open-dir" ~category:CWarnings.CoreCategories.filesystem
   (fun dir -> str ("Cannot open directory " ^ dir))
 
 let all_subdirs ~unix_path:root =
@@ -154,7 +154,7 @@ let rec search paths test =
   | lpe :: rem -> test lpe @ search rem test
 
 let warn_ambiguous_file_name =
-  CWarnings.create ~name:"ambiguous-file-name" ~category:"filesystem"
+  CWarnings.create ~name:"ambiguous-file-name" ~category:CWarnings.CoreCategories.filesystem
     (fun (filename,l,f) -> str filename ++ str " has been found in" ++ spc () ++
                 hov 0 (str "[ " ++
                          hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
@@ -207,7 +207,7 @@ let is_in_path lpath filename =
   with Not_found -> false
 
 let warn_path_not_found =
-  CWarnings.create ~name:"path-not-found" ~category:"filesystem"
+  CWarnings.create ~name:"path-not-found" ~category:CWarnings.CoreCategories.filesystem
   (fun () -> str "system variable PATH not found")
 
 let is_in_system_path filename =

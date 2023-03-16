@@ -633,7 +633,7 @@ let warn_disj_pattern_notation =
   let open Pp in
   let pp ng = str "Use of " ++ Notation.pr_notation ng.notgram_notation ++
               str " Notation is deprecated as it is inconsistent with pattern syntax." in
-  CWarnings.create ~name:"disj-pattern-notation" ~category:"notation" ~default:CWarnings.Disabled pp
+  CWarnings.create ~name:"disj-pattern-notation" ~category:CWarnings.CoreCategories.notation ~default:CWarnings.Disabled pp
 
 let extend_constr_notation ng state =
   let levels = match GramState.get state constr_levels with

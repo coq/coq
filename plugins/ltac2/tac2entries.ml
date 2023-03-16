@@ -932,7 +932,7 @@ let perform_eval ~pstate e =
 
 (** Toplevel entries *)
 
-let warn_modtype = CWarnings.create ~name:"ltac2-in-modtype" ~category:"ltac2" ~default:AsError
+let warn_modtype = CWarnings.create ~name:"ltac2-in-modtype" ~category:CWarnings.CoreCategories.ltac2 ~default:AsError
     Pp.(fun what -> strbrk "Ltac2 " ++ str what ++ strbrk " should not be defined inside module types: functor application to arguments of this module type will be unchecked")
 
 

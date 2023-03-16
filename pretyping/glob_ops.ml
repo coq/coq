@@ -354,7 +354,7 @@ let glob_visible_short_qualid c =
 
 let warn_variable_collision =
   let open Pp in
-  CWarnings.create ~name:"variable-collision" ~category:"ltac"
+  CWarnings.create ~name:"variable-collision" ~category:CWarnings.CoreCategories.ltac
          (fun name ->
           strbrk "Collision between bound variables of name " ++ Id.print name)
 

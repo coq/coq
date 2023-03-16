@@ -1118,7 +1118,7 @@ let vernac_constraint ~poly l =
 (**********************)
 (* Modules            *)
 
-let warn_not_importable = CWarnings.create ~name:"not-importable" ~category:"modules"
+let warn_not_importable = CWarnings.create ~name:"not-importable" ~category:CWarnings.CoreCategories.modules
     Pp.(fun c -> str "Cannot import local constant "
                  ++ Printer.pr_constant (Global.env()) c
                  ++ str ", it will be ignored.")
@@ -1373,7 +1373,7 @@ let vernac_begin_segment ~interactive f =
 (* Libraries *)
 
 let warn_require_in_section =
-  CWarnings.create ~name:"require-in-section" ~category:"fragile"
+  CWarnings.create ~name:"require-in-section" ~category:CWarnings.CoreCategories.fragile
     (fun () -> strbrk "Use of “Require” inside a section is fragile." ++ spc() ++
                strbrk "It is not recommended to use this functionality in finished proof scripts.")
 
@@ -1495,7 +1495,7 @@ let vernac_create_hintdb ~module_local id b =
   Hints.create_hint_db module_local id TransparentState.full b
 
 let warn_implicit_core_hint_db =
-  CWarnings.create ~name:"implicit-core-hint-db" ~category:"deprecated"
+  CWarnings.create ~name:"implicit-core-hint-db" ~category:CWarnings.CoreCategories.deprecated
          (fun () -> strbrk "Adding and removing hints in the core database implicitly is deprecated. "
              ++ strbrk"Please specify a hint database.")
 

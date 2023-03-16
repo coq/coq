@@ -88,7 +88,7 @@ type bound_ident_map = Id.t Id.Map.t
 exception PatternMatchingFailure
 
 let warn_meta_collision =
-  CWarnings.create ~name:"meta-collision" ~category:"ltac"
+  CWarnings.create ~name:"meta-collision" ~category:CWarnings.CoreCategories.ltac
          (fun name ->
           strbrk "Collision between bound variable " ++ Id.print name ++
             strbrk " and a metavariable of same name.")

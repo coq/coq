@@ -181,7 +181,7 @@ and conv_arguments env ?from:(from=0) k args1 args2 cu =
 
 let warn_bytecode_compiler_failed =
   let open Pp in
-  CWarnings.create ~name:"bytecode-compiler-failed" ~category:"bytecode-compiler"
+  CWarnings.create ~name:"bytecode-compiler-failed" ~category:CWarnings.CoreCategories.bytecode_compiler
          (fun () -> strbrk "Bytecode compiler failed, " ++
                       strbrk "falling back to standard conversion")
 

@@ -304,7 +304,7 @@ let install_path_comparator f = path_comparator := f
 let compare_path env sigma cl p q = !path_comparator env sigma cl p q
 
 let warn_ambiguous_path =
-  CWarnings.create ~name:"ambiguous-paths" ~category:"typechecker"
+  CWarnings.create ~name:"ambiguous-paths" ~category:CWarnings.CoreCategories.typechecker
     (fun l -> prlist_with_sep fnl (fun (c,p,q) ->
          str"New coercion path " ++ print_path (c,p) ++
          if List.is_empty q then

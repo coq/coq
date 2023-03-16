@@ -175,13 +175,13 @@ let require_file ~prefix ~lib ~export =
   Flags.silently (Vernacentries.vernac_require mfrom exp) [mp,Vernacexpr.ImportAll]
 
 let warn_no_native_compiler =
-  CWarnings.create ~name:"native-compiler-disabled" ~category:"native-compiler"
+  CWarnings.create_in Nativeconv.w_native_disabled
     Pp.(fun s -> strbrk "Native compiler is disabled," ++
                    strbrk " -native-compiler " ++ strbrk s ++
                    strbrk " option ignored.")
 
 let warn_deprecated_native_compiler =
-  CWarnings.create ~name:"deprecated-native-compiler-option" ~category:"deprecated"
+  CWarnings.create ~name:"deprecated-native-compiler-option" ~category:CWarnings.CoreCategories.deprecated
          (fun () ->
           Pp.strbrk "The native-compiler option is deprecated. To compile native \
           files ahead of time, use the coqnative binary instead.")

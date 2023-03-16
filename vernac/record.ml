@@ -258,7 +258,7 @@ type record_error =
   | BadTypedProj of Id.t * env * Type_errors.type_error
 
 let warn_cannot_define_projection =
-  CWarnings.create ~name:"cannot-define-projection" ~category:"records"
+  CWarnings.create ~name:"cannot-define-projection" ~category:CWarnings.CoreCategories.records
          (fun msg -> hov 0 msg)
 
 (* If a projection is not definable, we throw an error if the user
@@ -636,14 +636,14 @@ let implicits_of_context ctx =
 (* deprecated in 8.16, to be removed at the end of the deprecation phase
    (c.f., https://github.com/coq/coq/pull/15802 ) *)
 let warn_future_coercion_class_constructor =
-  CWarnings.create ~name:"future-coercion-class-constructor" ~category:"records"
+  CWarnings.create ~name:"future-coercion-class-constructor" ~category:CWarnings.CoreCategories.records
     ~default:CWarnings.AsError
     Pp.(fun () -> str "'Class >' currently does nothing. Use 'Class' instead.")
 
 (* deprecated in 8.17, to be removed at the end of the deprecation phase
    (c.f., https://github.com/coq/coq/pull/16230 ) *)
 let warn_future_coercion_class_field =
-  CWarnings.create ~name:"future-coercion-class-field" ~category:"records" Pp.(fun definitional ->
+  CWarnings.create ~name:"future-coercion-class-field" ~category:CWarnings.CoreCategories.records Pp.(fun definitional ->
     strbrk "A coercion will be introduced instead of an instance in future versions when using ':>' in 'Class' declarations. "
     ++ strbrk "Replace ':>' with '::' (or use '#[global] Existing Instance field.' for compatibility with Coq < 8.17). Beware that the default locality for '::' is #[export], as opposed to #[global] for ':>' currently."
     ++ strbrk (if definitional then "" else " Add an explicit #[global] attribute to the field if you need to keep the current behavior. For example: \"Class foo := { #[global] field :: bar }.\""))
@@ -975,7 +975,7 @@ let add_inductive_class ind =
   Classes.add_class k
 
 let warn_already_existing_class =
-  CWarnings.create ~name:"already-existing-class" ~category:"automation" Pp.(fun g ->
+  CWarnings.create ~name:"already-existing-class" ~category:CWarnings.CoreCategories.automation Pp.(fun g ->
       Printer.pr_global g ++ str " is already declared as a typeclass.")
 
 let declare_existing_class g =

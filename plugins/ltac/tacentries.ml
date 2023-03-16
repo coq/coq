@@ -465,7 +465,7 @@ let is_defined_tac kn =
   try ignore (Tacenv.interp_ltac kn); true with Not_found -> false
 
 let warn_unusable_identifier =
-  CWarnings.create ~name:"unusable-identifier" ~category:"parsing"
+  CWarnings.create ~name:"unusable-identifier" ~category:CWarnings.CoreCategories.parsing
       (fun id -> strbrk "The Ltac name" ++ spc () ++ Id.print id ++ spc () ++
         strbrk "may be unusable because of a conflict with a notation.")
 
