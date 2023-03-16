@@ -133,7 +133,6 @@ type db_continue_opt =
 
 (** Calls result *)
 
-type location = (int * int) option (* start and end of the error *)
 type state_id = Stateid.t
 type route_id = Feedback.route_id
 
@@ -144,7 +143,7 @@ type edit_id  = int
    should probably retract to that point *)
 type 'a value =
   | Good of 'a
-  | Fail of (state_id * location * Pp.t)
+  | Fail of (state_id * Loc.t option * Pp.t)
 
 type ('a, 'b) union = ('a, 'b) Util.union
 
@@ -267,7 +266,7 @@ type about_sty = unit
 type about_rty = coq_info
 
 type handle_exn_sty = Exninfo.iexn
-type handle_exn_rty = state_id * location * Pp.t
+type handle_exn_rty = state_id * Loc.t option * Pp.t
 
 (* Retrocompatibility stuff *)
 type interp_sty = (raw * verbose) * string
