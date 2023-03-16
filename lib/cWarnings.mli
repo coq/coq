@@ -13,6 +13,16 @@ type status = Disabled | Enabled | AsError
 val create : name:string -> category:string -> ?default:status ->
              ('a -> Pp.t) -> ?loc:Loc.t -> 'a -> unit
 
+type 'a t
+
+val create_gen
+  : name:string -> category:string -> ?default:status
+  -> unit -> 'a t
+
+val warn : ?loc:Loc.t -> 'a t -> 'a -> unit
+
+val register_printer : 'a t -> ('a -> Pp.t) -> unit
+
 val get_flags : unit -> string
 val set_flags : string -> unit
 
