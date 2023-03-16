@@ -35,7 +35,7 @@ type entry_type =
 val type_name : entry_type -> string
 
 type index_entry =
-  | Def of string * entry_type
+  | Def of (string * entry_type) list
   | Ref of coq_module * string * entry_type
 
 (* Find what symbol coqtop said is located at loc in the source file *)

@@ -34,7 +34,7 @@ type entry_type =
   | Binder
 
 type index_entry =
-  | Def of string * entry_type
+  | Def of (string * entry_type) list
   | Ref of coq_module * string * entry_type
 
 let current_library = ref ""
@@ -58,12 +58,19 @@ let full_ident sp id =
   else if id <> "<>"
   then id
   else ""
+let hashtbl_append_def t k v =
+  try
+    match Hashtbl.find t k with
+    | Def l -> Hashtbl.replace t k (Def (l @ [v]))
+    | Ref _ -> Hashtbl.add t k (Def [v])
+  with Not_found ->
+    Hashtbl.add t k (Def [v])
 
 let add_def loc1 loc2 ty sp id =
   let fullid = full_ident sp id in
-  let def = Def (fullid, ty) in
+  let def = (fullid, ty) in
   for loc = loc1 to loc2 do
-    Hashtbl.add reftable (!current_library, loc) def
+    hashtbl_append_def reftable (!current_library, loc) def
   done;
   Hashtbl.add deftable !current_library (fullid, ty);
   Hashtbl.add byidtable id (!current_library, fullid, ty)

@@ -635,10 +635,12 @@ module Internal = struct
 
 end
 
-let declare_definition_scheme ~internal ~univs ~role ~name c =
+let declare_definition_scheme ~internal ~univs ~role ~name ?loc c =
   let kind = Decls.(IsDefinition Scheme) in
   let entry = pure_definition_entry ~univs c in
   let kn, eff = declare_private_constant ~role ~kind ~name entry in
+  Dumpglob.dump_definition
+    (CAst.make ?loc (Constant.label kn |> Label.to_id)) false "scheme";
   let () = if internal then () else definition_message name in
   kn, eff
 

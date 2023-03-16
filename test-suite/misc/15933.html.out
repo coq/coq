@@ -57,7 +57,7 @@
 <span class="id" title="keyword">Local Polymorphic Definition</span> <a id="x8" class="idref" href="#x8"><span class="id" title="definition">x8</span></a> := 0.<br/>
 
 <br/>
-<span class="id" title="keyword">Polymorphic Inductive</span> <a id="y0" class="idref" href="#y0"><span class="id" title="inductive">y0</span></a> := <a id="z0" class="idref" href="#z0"><span class="id" title="constructor">z0</span></a>.<br/>
+<span class="id" title="keyword">Polymorphic Inductive</span> <a id="y0" class="idref" href="#y0"><span class="id" title="definition, inductive"><span id="y0_rect" class="id"><span id="y0_ind" class="id"><span id="y0_rec" class="id"><span id="y0_sind" class="id">y0</span></span></span></span></span></a> := <a id="z0" class="idref" href="#z0"><span class="id" title="constructor">z0</span></a>.<br/>
 <span class="id" title="keyword">Polymorphic Variant</span> <a id="y1" class="idref" href="#y1"><span class="id" title="inductive">y1</span></a> := <a id="z1" class="idref" href="#z1"><span class="id" title="constructor">z1</span></a>.<br/>
 
 <br/>

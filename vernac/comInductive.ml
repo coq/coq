@@ -765,6 +765,7 @@ type t = {
   uctx : Univ.ContextSet.t;
   where_notations : Metasyntax.notation_interpretation_decl list;
   coercions : Libnames.qualid list;
+  indlocs : Loc.t option list;
 }
 
 end
@@ -777,6 +778,7 @@ let rec count_binder_expr = function
     Loc.raise ?loc (Gramlib.Stream.Error "pattern with quote not allowed here")
 
 let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
+  let indlocs = List.map (fun ((n,_,_,_),_) -> n.CAst.loc) indl in
   let (params,indl),coercions,ntns = extract_mutual_inductive_declaration_components indl in
   let where_notations = List.map Metasyntax.prepare_where_notation ntns in
   (* Interpret the types *)
@@ -789,12 +791,12 @@ let interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_
   let env = Environ.update_typing_flags ?typing_flags env in
   let mie, univ_binders, implicits, uctx = interp_mutual_inductive_gen env ~template udecl indl where_notations ~cumulative ~poly ~private_ind finite in
   let open Mind_decl in
-  { mie; nuparams; univ_binders; implicits; uctx; where_notations; coercions }
+  { mie; nuparams; univ_binders; implicits; uctx; where_notations; coercions; indlocs }
 
 let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite =
   let open Mind_decl in
   let env = Global.env () in
-  let { mie; univ_binders; implicits; uctx; where_notations; coercions } =
+  let { mie; univ_binders; implicits; uctx; where_notations; coercions; indlocs} =
     interp_mutual_inductive ~env ~template udecl indl ~cumulative ~poly ?typing_flags ~private_ind ~uniform finite in
   (* Slightly hackish global universe declaration due to template types. *)
   let binders = match mie.mind_entry_universes with
@@ -805,7 +807,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ?typing_flags ~pr
   (* Declare the global universes *)
   DeclareUctx.declare_universe_context ~poly:false uctx;
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags mie binders implicits);
+  ignore (DeclareInd.declare_mutual_inductive_with_eliminations ?typing_flags ~indlocs mie binders implicits);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation ~local:false (Global.env ())) where_notations;
   (* Declare the coercions *)

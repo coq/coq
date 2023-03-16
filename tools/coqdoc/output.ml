@@ -357,7 +357,8 @@ module Latex = struct
        printf "}{%s}{%s}" s s)
 
   let reference s = function
-    | Def (fullid,typ) ->
+    | Def [] -> assert false
+    | Def ((fullid,typ) :: _) ->
         defref (get_module false) fullid typ s
     | Ref (m,fullid,typ) ->
         ident_ref m fullid typ s
@@ -655,10 +656,25 @@ module Html = struct
 
   let reference s r =
     match r with
-    | Def (fullid,ty) ->
-        let s' = sanitize_name fullid in
-        printf "<a id=\"%s\" class=\"idref\" href=\"#%s\">" s' s';
-        printf "<span class=\"id\" title=\"%s\">%s</span></a>" (type_name ty) s
+    | Def [] -> assert false
+    | Def [fullid,ty] ->
+         let s' = sanitize_name fullid in
+         printf "<a id=\"%s\" class=\"idref\" href=\"#%s\">" s' s';
+         printf "<span class=\"id\" title=\"%s\">%s</span></a>" (type_name ty) s
+    | Def ((hd_id,_) :: tail as all) ->
+        let hd = sanitize_name hd_id in
+        let all_tys = all
+          |> List.map (fun (_,ty) -> type_name ty)
+          |> CList.sort_uniquize String.compare
+          |> String.concat ", " in
+        printf "<a id=\"%s\" class=\"idref\" href=\"#%s\"><span class=\"id\" title=\"%s\">" hd hd all_tys;
+        List.iter (fun (fullid,_) ->
+          let s' = sanitize_name fullid in
+          printf "<span id=\"%s\" class=\"id\">" s')
+        tail;
+        printf "%s" s;
+        List.iter (fun _ -> printf "</span>") tail;
+        printf "</span></a>";
     | Ref (m,fullid,ty) ->
         ident_ref m fullid (type_name ty) s
 
