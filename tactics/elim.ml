@@ -24,28 +24,28 @@ type branch_args = {
   nassums    : int;         (* number of assumptions/letin to be introduced *)
   branchnames : Tactypes.intro_patterns}
 
-type elim_kind = Case of bool | Elim
+type elim_kind = Case of bool * constr option | Elim
 
 let is_case = function Case _ -> true | Elim -> false
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
-let general_elim_using mk_elim predicate (ind, u, args) id =
+let general_elim_using mk_elim (ind, u, args) id =
   let open Pp in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sort = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
-    let sigma, elim, elimt = match mk_elim with
-    | Case dep ->
+    let sigma, elim, elimt, predicate = match mk_elim with
+    | Case (dep, pred) ->
       let u = EInstance.kind sigma u in
       let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u) dep sort in
       let r, t = Indrec.eval_case_analysis c in
-      (sigma, r, t)
+      (sigma, r, t, pred)
     | Elim ->
       let gr = Indrec.lookup_eliminator env ind sort in
       let sigma, r = Evd.fresh_global env sigma gr in
-      (sigma, r, Retyping.get_type_of env sigma r)
+      (sigma, r, Retyping.get_type_of env sigma r, None)
     in
     let is_case = match mk_elim with Elim -> false | Case _ -> true in
     (* applying elimination_scheme just a little modified *)
@@ -72,7 +72,7 @@ let general_elim_using mk_elim predicate (ind, u, args) id =
     if is_case then Clenv.case_pf ~flags elimclause' else Clenv.res_pf ~flags elimclause'
   end
 
-let general_elim_then_using mk_elim allnames tac predicate (ind, u, _ as spec) id =
+let general_elim_then_using mk_elim allnames tac (ind, u, _ as spec) id =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -84,7 +84,7 @@ let general_elim_then_using mk_elim allnames tac predicate (ind, u, _ as spec) i
       tac ba
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
-    general_elim_using mk_elim predicate spec id <*>
+    general_elim_using mk_elim spec id <*>
     (Proofview.tclEXTEND [] tclIDTAC branchtacs)
   end
 
@@ -108,9 +108,9 @@ let elimination_then tac id =
   let isrec,mkelim =
     match (Environ.lookup_mind (fst ind) env).mind_record with
     | NotRecord -> true, Elim
-    | FakeRecord | PrimRecord _ -> false, Case true
+    | FakeRecord | PrimRecord _ -> false, Case (true, None)
   in
-  general_elim_then_using mkelim None tac None (ind, u, args) id
+  general_elim_then_using mkelim None tac (ind, u, args) id
   end
 
 (* Supposed to be called without as clause *)
@@ -132,7 +132,7 @@ let introCaseAssumsThen with_evars tac ba =
 
 let case_tac dep names tac elim ind c =
   let tac = introCaseAssumsThen false (* ApplyOn not supported by inversion *) tac in
-  general_elim_then_using (Case dep) names tac (Some elim) ind c
+  general_elim_then_using (Case (dep, Some elim)) names tac ind c
 
 (* The following tactic Decompose repeatedly applies the
    elimination(s) rule(s) of the types satisfying the predicate
