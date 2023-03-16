@@ -77,28 +77,6 @@ let elim_on_ba tac nassums =
   tac branches
   end
 
-let elimination_then tac id =
-  let open Declarations in
-  let open Proofview.Notations in
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let ((ind, u), t) = pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl (mkVar id)) in
-  let _, args = decompose_app_vect (Proofview.Goal.sigma gl) t in
-  let rec_flag, mkelim =
-    match (Environ.lookup_mind (fst ind) env).mind_record with
-    | NotRecord -> true, Elim
-    | FakeRecord | PrimRecord _ -> false, Case (true, None)
-  in
-  let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
-  let after_tac i =
-    let nassums = List.length branchsigns.(i) in
-    (tclDO nassums intro) <*> (elim_on_ba tac nassums)
-  in
-  let branchtacs = List.init (Array.length branchsigns) after_tac in
-  general_elim_using mkelim (ind, u, args) id <*>
-  (Proofview.tclEXTEND [] tclIDTAC branchtacs)
-  end
-
 let case_tac dep names tac elim (ind, u, args as spec) c =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
@@ -137,16 +115,32 @@ Another example :
    Qed.
 *)
 
-let rec general_decompose_on_hyp recognizer =
-  ifOnHyp recognizer (general_decompose_aux recognizer) (fun _ -> Proofview.tclUNIT())
+let rec general_decompose_aux recognizer id =
+  let open Declarations in
+  let open Proofview.Notations in
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let ((ind, u), t) = pf_apply Tacred.reduce_to_atomic_ind gl (pf_get_type_of gl (mkVar id)) in
+  let _, args = decompose_app_vect (Proofview.Goal.sigma gl) t in
+  let rec_flag, mkelim =
+    match (Environ.lookup_mind (fst ind) env).mind_record with
+    | NotRecord -> true, Elim
+    | FakeRecord | PrimRecord _ -> false, Case (true, None)
+  in
+  let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
+  let next_tac bas =
+    let map id = ifOnHyp recognizer (general_decompose_aux recognizer) (fun _ -> tclIDTAC) id in
+    tclMAP map (ids_of_named_context bas)
+  in
+  let after_tac i =
+    let nassums = List.length branchsigns.(i) in
+    (tclDO nassums intro) <*> (clear [id]) <*> (elim_on_ba next_tac nassums)
+  in
+  let branchtacs = List.init (Array.length branchsigns) after_tac in
+  general_elim_using mkelim (ind, u, args) id <*>
+  (Proofview.tclEXTEND [] tclIDTAC branchtacs)
+  end
 
-and general_decompose_aux recognizer id =
-  elimination_then
-    (fun bas ->
-      tclTHEN (clear [id])
-        (tclMAP (general_decompose_on_hyp recognizer)
-            (ids_of_named_context bas)))
-    id
 
 (* We should add a COMPLETE to be sure that the created hypothesis
    doesn't stay if no elimination is possible *)
