@@ -20,10 +20,6 @@ open Tacticals
 open Clenv
 open Tactics
 
-type branch_args = {
-  nassums    : int;         (* number of assumptions/letin to be introduced *)
-  branchnames : Tactypes.intro_patterns}
-
 type elim_kind = Case of bool * constr option | Elim
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
@@ -94,31 +90,14 @@ let elimination_then tac id =
     | FakeRecord | PrimRecord _ -> false, Case (true, None)
   in
   let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
-  let brnames = Tacticals.compute_induction_names false branchsigns None in
   let after_tac i =
-    let ba = { branchnames = brnames.(i); nassums = List.length branchsigns.(i); } in
-    tac ba.nassums
+    let nassums = List.length branchsigns.(i) in
+    (tclDO nassums intro) <*> (elim_on_ba tac nassums)
   in
   let branchtacs = List.init (Array.length branchsigns) after_tac in
   general_elim_using mkelim (ind, u, args) id <*>
   (Proofview.tclEXTEND [] tclIDTAC branchtacs)
   end
-
-(* Supposed to be called without as clause *)
-let introElimAssumsThen tac nassums =
-  let introElimAssums = tclDO nassums intro in
-  (tclTHEN introElimAssums (elim_on_ba tac nassums))
-
-(* Supposed to be called with a non-recursive scheme *)
-let introCaseAssumsThen with_evars tac ba =
-  let n1 = ba.nassums in
-  let n2 = List.length ba.branchnames in
-  let (l1,l2),l3 =
-    if n1 < n2 then List.chop n1 ba.branchnames, []
-    else (ba.branchnames, []), List.make (n1-n2) false in
-  let introCaseAssums =
-    tclTHEN (intro_patterns with_evars l1) (intros_clearing l3) in
-  (tclTHEN introCaseAssums (elim_on_ba (tac l2) ba.nassums))
 
 let case_tac dep names tac elim (ind, u, args as spec) c =
   let open Proofview.Notations in
@@ -127,8 +106,13 @@ let case_tac dep names tac elim (ind, u, args as spec) c =
     let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag:false (ind, u) in
     let brnames = Tacticals.compute_induction_names false branchsigns names in
     let after_tac i =
-      let ba = { branchnames = brnames.(i); nassums = List.length branchsigns.(i); } in
-      introCaseAssumsThen false (* ApplyOn not supported by inversion *) tac ba
+      let branchnames = brnames.(i) in
+      let n1 = List.length branchsigns.(i) in
+      let n2 = List.length branchnames in
+      let (l1,l2),l3 =
+        if n1 < n2 then List.chop n1 branchnames, []
+        else (branchnames, []), List.make (n1-n2) false in
+      (intro_patterns false l1) <*> (intros_clearing l3) <*> (elim_on_ba (tac l2) n1)
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
     general_elim_using (Case (dep, Some elim)) spec c <*>
@@ -158,11 +142,10 @@ let rec general_decompose_on_hyp recognizer =
 
 and general_decompose_aux recognizer id =
   elimination_then
-    (introElimAssumsThen
-       (fun bas ->
-          tclTHEN (clear [id])
-            (tclMAP (general_decompose_on_hyp recognizer)
-               (ids_of_named_context bas))))
+    (fun bas ->
+      tclTHEN (clear [id])
+        (tclMAP (general_decompose_on_hyp recognizer)
+            (ids_of_named_context bas)))
     id
 
 (* We should add a COMPLETE to be sure that the created hypothesis
