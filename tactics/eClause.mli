@@ -68,3 +68,9 @@ val solve_evar_clause : env -> evar_map -> bool -> clause -> EConstr.constr bind
     consider arguments to be dependent only when they appear in hypotheses and
     not in the conclusion. This boolean is only used when [bl] is of the form
     [ImplicitBindings _]. *)
+
+val check_bindings : 'a explicit_bindings -> unit
+
+val explain_no_such_bound_variable : Id.t list -> Id.t CAst.t -> 'a
+
+val error_not_right_number_missing_arguments : int -> 'a
