@@ -941,15 +941,6 @@ GRAMMAR EXTEND Gram
 
       | IDENT "Locate"; l = locatable -> { VernacSynPure (VernacLocate l) }
 
-      (* Managing load paths *)
-      | IDENT "Add"; IDENT "LoadPath"; physical_path = ne_string; "as"; logical_path = dirpath ->
-          { VernacSynterp (VernacAddLoadPath { implicit = false; logical_path; physical_path }) }
-      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; physical_path = ne_string; "as"; logical_path = dirpath ->
-          { VernacSynterp (VernacAddLoadPath { implicit = true; logical_path; physical_path }) }
-
-      | IDENT "Remove"; IDENT "LoadPath"; dir = ne_string ->
-          { VernacSynterp (VernacRemoveLoadPath dir) }
-
       (* Type-Checking *)
       | "Type"; c = lconstr -> { VernacSynPure (VernacGlobalCheck c) }
 
@@ -963,9 +954,6 @@ GRAMMAR EXTEND Gram
       | IDENT "Print"; IDENT "Namespace" ; ns = dirpath ->
           { VernacSynPure (VernacPrint (PrintNamespace ns)) }
       | IDENT "Inspect"; n = natural -> { VernacSynPure (VernacPrint (PrintInspect n)) }
-
-      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
-          { VernacSynterp (VernacAddMLPath dir) }
 
       (* For acting on parameter tables *)
       | "Set"; table = setting_name; v = option_setting ->

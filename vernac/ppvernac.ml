@@ -1315,21 +1315,6 @@ let pr_synterp_vernac_expr v =
     )
 
   (* Auxiliary file and library management *)
-  | VernacAddLoadPath { implicit; physical_path; logical_path } ->
-    return (
-      hov 2
-        (keyword "Add" ++
-         (if implicit then spc () ++ keyword "Rec" ++ spc () else spc()) ++
-         keyword "LoadPath" ++ spc() ++ qs physical_path ++
-         spc() ++ keyword "as" ++ spc() ++ DirPath.print logical_path))
-  | VernacRemoveLoadPath s ->
-    return (keyword "Remove LoadPath" ++ qs s)
-  | VernacAddMLPath (s) ->
-    return (
-      keyword "Add"
-      ++ keyword "ML Path"
-      ++ qs s
-    )
   | VernacDeclareMLModule (l) ->
     return (
       hov 2 (keyword "Declare ML Module" ++ spc() ++ prlist_with_sep sep qs l)

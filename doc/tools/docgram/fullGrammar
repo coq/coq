@@ -533,9 +533,6 @@ command: [
 | "Load" [ "Verbose" | ] [ ne_string | IDENT ]
 | "Declare" "ML" "Module" LIST1 ne_string
 | "Locate" locatable
-| "Add" "LoadPath" ne_string "as" dirpath
-| "Add" "Rec" "LoadPath" ne_string "as" dirpath
-| "Remove" "LoadPath" ne_string
 | "Type" lconstr
 | "Print" printable
 | "Print" smart_global OPT univ_name_list
@@ -543,7 +540,6 @@ command: [
 | "Print" "Module" global
 | "Print" "Namespace" dirpath
 | "Inspect" natural
-| "Add" "ML" "Path" ne_string
 | "Set" setting_name option_setting
 | "Unset" setting_name
 | "Print" "Table" setting_name

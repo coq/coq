@@ -209,21 +209,18 @@ Moves current tip to `${stateId}`, such that commands may be added to the new st
 ```html
 <call val="Init"><option val="none"/></call>
 ```
-* With options. Looking at
-  [ide_slave.ml](https://github.com/coq/coq/blob/c5d0aa889fa80404f6c291000938e443d6200e5b/ide/ide_slave.ml#L355),
-  it seems that `options` is just the name of a script file, whose path
-  is added via `Add LoadPath` to the initial state.
+* With options:
 ```html
 <call val="Init">
   <option val="some">
-    <string>${options}</string>
+    <string>${v_file}.v</string>
   </option>
 </call>
 ```
-Providing the script file enables Coq to use .aux files created during
-compilation. Those file contain timing information that allow Coq to
-choose smartly between asynchronous and synchronous processing of
-proofs.
+Providing the script file `$v_file.v` enables Coq to use the `.$v_file.aux`
+file created during compilation. Those file contain timing information
+that allow Coq to choose smartly between asynchronous and synchronous
+processing of proofs.
 
 #### *Returns*
 * The initial stateId (not associated with a sentence)

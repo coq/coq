@@ -1072,7 +1072,7 @@ Commands and options
   (`#15690 <https://github.com/coq/coq/pull/15690>`_,
   by Frédéric Besson).
 - **Deprecated:**
-  :cmd:`Add LoadPath` and :cmd:`Add Rec LoadPath`. If this command is an
+  ``Add LoadPath`` and ``Add Rec LoadPath``. If this command is an
   important feature for you, please open an issue on `GitHub <https://github.com/coq/coq/issues>`
   and explain your workflow
   (`#15652 <https://github.com/coq/coq/pull/15652>`_,
@@ -3710,7 +3710,7 @@ Commands and options
   (`#13339 <https://github.com/coq/coq/pull/13339>`_,
   by Théo Zimmermann).
 - **Added:**
-  Clarify in the documentation that :cmd:`Add ML Path` is not exported to compiled files
+  Clarify in the documentation that ``Add ML Path`` is not exported to compiled files
   (`#13345 <https://github.com/coq/coq/pull/13345>`_,
   fixes `#13344 <https://github.com/coq/coq/issues/13344>`_,
   by Hugo Herbelin).
@@ -4478,9 +4478,9 @@ Commands
   by Emilio Jesus Gallego Arias).
 - **Removed:**
   Recursive OCaml loadpaths are not supported anymore; the command
-  ``Add Rec ML Path`` has been removed; :cmd:`Add ML Path` is now the
+  ``Add Rec ML Path`` has been removed; ``Add ML Path`` is now the
   preferred one. We have also dropped support for the non-qualified
-  version of the :cmd:`Add LoadPath` command, that is to say,
+  version of the ``Add LoadPath`` command, that is to say,
   the ``Add LoadPath dir`` version; now,
   you must always specify a prefix now using ``Add Loadpath dir as Prefix``
   (`#11618 <https://github.com/coq/coq/pull/11618>`_,
@@ -5654,8 +5654,8 @@ Changes in 8.11+beta1
   (`#10494 <https://github.com/coq/coq/pull/10494>`_,
   by Jim Fehrle).
 - **Removed:** Legacy commands ``AddPath``, ``AddRecPath``, and ``DelPath``
-  which were undocumented, broken variants of :cmd:`Add LoadPath`,
-  :cmd:`Add Rec LoadPath`, and :cmd:`Remove LoadPath`
+  which were undocumented, broken variants of ``Add LoadPath``,
+  ``Add Rec LoadPath``, and ``Remove LoadPath``
   (`#11187 <https://github.com/coq/coq/pull/11187>`_,
   by Maxime Dénès and Théo Zimmermann).
 

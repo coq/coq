@@ -282,25 +282,6 @@ let synterp_require from export qidl =
 let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
 
-let warn_add_loadpath = CWarnings.create ~name:"add-loadpath-deprecated" ~category:Deprecation.Version.v8_16
-    (fun () -> strbrk "Commands \"Add LoadPath\" and \"Add Rec LoadPath\" are deprecated." ++ spc () ++
-               strbrk "Use command-line \"-Q\" or \"-R\" or put them in your _CoqProject file instead." ++ spc () ++
-               strbrk "If \"Add [Rec] LoadPath\" is an important feature for you, please open an issue at" ++ spc () ++
-               strbrk "https://github.com/coq/coq/issues" ++ spc () ++ strbrk "and explain your workflow.")
-
-let synterp_add_loadpath ~implicit pdir coq_path =
-  let open Loadpath in
-  warn_add_loadpath ();
-  let pdir = expand pdir in
-  add_vo_path { unix_path = pdir; coq_path; has_ml = true; implicit; recursive = true }
-
-let synterp_remove_loadpath path =
-  Loadpath.remove_load_path (expand path)
-  (* Coq syntax for ML or system commands *)
-
-let synterp_add_ml_path path =
-  Mltop.add_ml_dir (expand path)
-
 let synterp_declare_ml_module ~local l =
   let local = Option.default false local in
   let l = List.map expand l in
@@ -454,18 +435,6 @@ let rec synterp ?loc ~atts v =
     | VernacImport (export,qidl) ->
       let export, mpl = synterp_import export qidl in
       EVernacImport (export,mpl)
-    | VernacAddLoadPath { implicit; physical_path; logical_path } ->
-      unsupported_attributes atts;
-      synterp_add_loadpath ~implicit physical_path logical_path;
-      EVernacNoop
-    | VernacRemoveLoadPath s ->
-      unsupported_attributes atts;
-      synterp_remove_loadpath s;
-      EVernacNoop
-    | VernacAddMLPath (s) ->
-      unsupported_attributes atts;
-      synterp_add_ml_path s;
-      EVernacNoop
     | VernacDeclareMLModule l ->
       with_locality ~atts synterp_declare_ml_module l;
       EVernacNoop

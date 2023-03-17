@@ -366,13 +366,6 @@ type synterp_vernac_expr =
   | VernacInclude of module_ast_inl list
 
   (* Auxiliary file and library management *)
-  | VernacAddLoadPath of { implicit : bool
-                         ; physical_path : CUnix.physical_path
-                         ; logical_path : DirPath.t
-                         }
-
-  | VernacRemoveLoadPath of string
-  | VernacAddMLPath of string
   | VernacDeclareMLModule of string list
   | VernacChdir of string option
   | VernacExtraDependency of qualid * string * Id.t option
