@@ -378,10 +378,6 @@ TACTIC EXTEND instantiate
     { instantiate_tac i c hl }
 END
 
-TACTIC EXTEND instantiate_noarg DEPRECATED { Deprecation.make ~since:"8.16" () }
-| [ "instantiate" ] -> { Proofview.tclUNIT () }
-END
-
 (**********************************************************************)
 (** Nijmegen "step" tactic for setoid rewriting                       *)
 

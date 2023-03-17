@@ -1084,9 +1084,6 @@ simple_tactic: [
 | REPLACE "einjection" destruction_arg "as" LIST0 simple_intropattern
 | WITH "einjection" OPT destruction_arg OPT ( "as" LIST0 simple_intropattern )
 | EDIT "simple" "injection" ADD_OPT destruction_arg
-| REPLACE "instantiate" "(" ident ":=" lglob ")"
-| WITH "instantiate" OPT ( "(" ident ":=" lglob ")" )
-| DELETE "instantiate"
 | DELETE "intro"  (* todo: change the mlg to simplify! *)
 | DELETE "intro" ident
 | DELETE "intro" ident "at" "top"

@@ -1705,7 +1705,7 @@ Controlling the proof flow
    The body of this binding is a fresh existential variable.  If the second
    form is used, Coq chooses the name.
 
-.. tacn:: instantiate {? ( @ident := @term ) }
+.. tacn:: instantiate ( @ident := @term )
           instantiate ( @natural := @term ) {? @hloc }
    :name: instantiate; _
 
@@ -1728,11 +1728,6 @@ Controlling the proof flow
              explicitly, be aware that Coq may make a different decision on how to
              name the variable in the current goal and in the context of the
              existential variable. This can lead to surprising behaviors.
-
-   .. deprecated:: 8.16
-
-      The no argument form is equivalent to :tacn:`idtac`.  This form (only)
-      is deprecated in 8.16.
 
    The second form refines an existential variable selected by its position.  The
    :n:`@natural` argument is the position of the existential variable
