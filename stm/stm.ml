@@ -1035,7 +1035,9 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
     (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
   else begin
     stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    Vernacinterp.interp ?verbosely:(Some verbose) ~st expr
+    let lib_resolver = Loadpath.try_locate_absolute_library in
+    let intern = Library.intern_from_file ~lib_resolver in
+    Vernacinterp.interp ~intern ?verbosely:(Some verbose) ~st expr
   end
 
 (****************************** CRUFT *****************************************)

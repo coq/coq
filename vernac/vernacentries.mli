@@ -24,7 +24,8 @@ val translate_vernac
 
 (** Vernacular require command, used by the command line *)
 val vernac_require
-  : Libnames.qualid option
+  : intern:(Names.DirPath.t -> Library.library_t)
+  -> Libnames.qualid option
   -> Vernacexpr.export_with_cats option
   -> (Libnames.qualid * Vernacexpr.import_filter_expr) list
   -> unit

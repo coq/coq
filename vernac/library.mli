@@ -25,8 +25,11 @@ type library_t
     Require = load in the environment *)
 val require_library_from_dirpath : library_t list -> unit
 
+(** Intern from a .vo file located by libresolver *)
+val intern_from_file : lib_resolver:(DirPath.t -> CUnix.physical_path) -> DirPath.t -> library_t
+
 val require_library_syntax_from_dirpath
-  :  lib_resolver:(DirPath.t -> CUnix.physical_path)
+  :  intern:(DirPath.t -> library_t)
   -> DirPath.t list
   -> library_t list
 
@@ -55,6 +58,10 @@ val save_library_to :
   'document todo_proofs ->
   output_native_objects:bool ->
   DirPath.t -> string -> unit
+
+(** Save library to library_t format, that can be used later in
+    [require_library_syntax_from_dirpath] *)
+val save_library : DirPath.t -> library_t
 
 val load_library_todo
   :  CUnix.physical_path

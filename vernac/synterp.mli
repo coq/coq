@@ -75,6 +75,7 @@ exception NotFoundLibrary of Names.DirPath.t option * Libnames.qualid
 (** [synterp_require] performs the syntactic interpretation phase of `Require`
     commands *)
 val synterp_require :
+  intern:(Names.DirPath.t -> Library.library_t) ->
   Libnames.qualid option ->
   Vernacexpr.export_with_cats option ->
   (Libnames.qualid * Vernacexpr.import_filter_expr) list ->
@@ -82,6 +83,7 @@ val synterp_require :
 
 (** [synterp_control] is the main entry point of the syntactic interpretation phase *)
 val synterp_control :
+  intern:(Names.DirPath.t -> Library.library_t) ->
   Vernacexpr.vernac_control ->
   vernac_control_entry
 
