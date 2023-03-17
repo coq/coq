@@ -751,13 +751,14 @@ let rec next_token ~diff_mode loc s =
 
 (** {6 The lexer of Coq} *)
 
-let func next_token ?(loc=Loc.(initial ToplevelInput)) cs =
+let func next_token ?(loc=Loc.(initial ToplevelInput)) ?(fix_loc=(fun l -> l)) cs =
   let cur_loc = ref loc in
   Gramlib.LStream.from ~loc
     (fun () ->
-      let (tok, loc) = next_token !cur_loc cs in
-      cur_loc := after loc;
-      Some (tok,loc))
+       let (tok, loc) = next_token !cur_loc cs in
+       cur_loc := after loc;
+       let loc = fix_loc loc in
+       Some (tok,loc))
 
 module MakeLexer (Diff : sig val mode : bool end) = struct
   type te = Tok.t

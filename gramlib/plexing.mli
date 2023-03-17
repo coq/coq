@@ -11,7 +11,7 @@
 (** Lexer type *)
 
 (** Returning a stream equipped with a location function *)
-type 'te lexer_func = ?loc:Loc.t -> char Stream.t -> 'te LStream.t
+type 'te lexer_func = ?loc:Loc.t -> ?fix_loc:(Loc.t -> Loc.t) -> char Stream.t -> 'te LStream.t
 
 module type S = sig
   type te

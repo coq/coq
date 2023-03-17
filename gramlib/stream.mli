@@ -46,6 +46,9 @@ val of_string : ?offset:int -> string -> char t
 (** Return the stream of the characters of the string parameter. If
     set. [offset] parameter is similar to [from]. *)
 
+(** Return the stream of the characters of the string parameter. If
+    set. [offset] parameter is similar to [from]. *)
+
 val of_channel : in_channel -> char t
 (** Return the stream of the characters read from the input channel. *)
 
