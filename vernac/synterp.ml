@@ -318,9 +318,15 @@ let synterp_declare_ml_module ~local l =
   let l = List.map expand l in
   Mltop.declare_ml_modules local l
 
+let warn_chdir = CWarnings.create ~name:"change-dir-deprecated" ~category:Deprecation.Version.v8_20
+    (fun () -> strbrk "Command \"Cd\" is deprecated." ++ spc () ++
+               strbrk "Use command-line \"-output-directory dir\" instead, or, alternatively, " ++
+               strbrk "for extraction, \"Set Extraction Output Directory\".")
+
 let synterp_chdir = function
   | None -> Feedback.msg_notice (str (Sys.getcwd()))
   | Some path ->
+      warn_chdir ();
       begin
         try Sys.chdir (expand path)
         with Sys_error err ->
