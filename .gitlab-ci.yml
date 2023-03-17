@@ -229,7 +229,7 @@ before_script:
   stage: build
   needs: []
   interruptible: true
-  image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
+  image: nixos/nix:latest
   variables:
     GIT_STRATEGY: none # Required because we don't have git
     USER: root # Variable required by Cachix
