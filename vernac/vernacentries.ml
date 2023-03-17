@@ -1450,8 +1450,8 @@ let vernac_require_interp needed modrefl export qidl =
         modrefl qidl)
     export
 
-let vernac_require from export qidl =
-  let needed, modrefl = Synterp.synterp_require from export qidl in
+let vernac_require ~intern from export qidl =
+  let needed, modrefl = Synterp.synterp_require ~intern from export qidl in
   vernac_require_interp needed modrefl export qidl
 
 (* Coercions and canonical structures *)
