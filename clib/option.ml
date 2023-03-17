@@ -146,30 +146,6 @@ let default a = function
   | Some y -> y
   | _ -> a
 
-(** [lift f x] is the same as [map f x]. *)
-let lift = map
-
-(** [lift_right f a x] is [Some (f a y)] if [x] is [Some y], and
-    [None] otherwise. *)
-let lift_right f a = function
-  | Some y -> Some (f a y)
-  | _ -> None
-
-(** [lift_left f x a] is [Some (f y a)] if [x] is [Some y], and
-    [None] otherwise. *)
-let lift_left f x a =
-  match x with
-  | Some y -> Some (f y a)
-  | _ -> None
-
-(** [lift2 f x y] is [Some (f z w)] if [x] equals [Some z] and [y] equals
-    [Some w]. It is [None] otherwise. *)
-let lift2 f x y =
-  match x,y with
-  | Some z, Some w -> Some (f z w)
-  | _,_ -> None
-
-
 (** {6 Smart operations} *)
 
 module Smart =
@@ -198,12 +174,6 @@ module List =
   let rec flatten = function
     | x::l -> cons x (flatten l)
     | [] -> []
-
-  let rec find f = function
-    | [] -> None
-    | h :: t -> match f h with
-         | None -> find f t
-         | x -> x
 
   let map f l =
     let rec aux f l = match l with

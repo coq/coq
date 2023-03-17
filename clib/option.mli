@@ -103,21 +103,6 @@ val cata : ('a -> 'b) -> 'b -> 'a option -> 'b
 (** [default a x] is [y] if [x] is [Some y] and [a] otherwise. *)
 val default : 'a -> 'a option -> 'a
 
-(** [lift] is the same as {!map}. *)
-val lift : ('a -> 'b) -> 'a option -> 'b option
-
-(** [lift_right f a x] is [Some (f a y)] if [x] is [Some y], and
-    [None] otherwise. *)
-val lift_right : ('a -> 'b -> 'c) -> 'a -> 'b option -> 'c option
-
-(** [lift_left f x a] is [Some (f y a)] if [x] is [Some y], and
-    [None] otherwise. *)
-val lift_left : ('a -> 'b -> 'c) -> 'a option -> 'b -> 'c option
-
-(** [lift2 f x y] is [Some (f z w)] if [x] equals [Some z] and [y] equals
-    [Some w]. It is [None] otherwise. *)
-val lift2 : ('a -> 'b -> 'c) -> 'a option -> 'b option -> 'c option
-
 (** {6 Smart operations} *)
 
 module Smart :
@@ -138,11 +123,6 @@ module List : sig
   (** [List.flatten l] is the list of all the [y]s such that [l] contains
       [Some y] (in the same order). *)
   val flatten : 'a option list -> 'a list
-
-  (** [List.find f l] is the first [f a] different from [None],
-      scrolling through elements [a] of [l] in left-to-right order;
-      it is [None] if no such element exists. *)
-  val find : ('a -> 'b option) -> 'a list -> 'b option
 
   (** [List.map f [a1;...;an]] is the list [Some [b1;...;bn]] if
       for all i, there is a [bi] such that [f ai] is [Some bi]; it is
