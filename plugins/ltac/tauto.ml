@@ -20,6 +20,8 @@ open Util
 open Tacticals
 open Proofview.Notations
 
+module NamedDecl = Context.Named.Declaration
+
 let tauto_plugin = "coq-core.plugins.tauto"
 let () = Mltop.add_known_module tauto_plugin
 
@@ -267,6 +269,43 @@ let warn_auto_with_star_tac _ _ =
       Proofview.tclUNIT()
     end
 
+let val_of_id id =
+  let open Geninterp in
+  let id = CAst.make @@ Tactypes.IntroNaming (IntroIdentifier id) in
+  Val.inject (val_tag @@ Genarg.topwit Tacarg.wit_intro_pattern) id
+
+let find_cut _ ist =
+  let k = Id.Map.find (Names.Id.of_string "k") ist.lfun in
+  Proofview.Goal.enter begin fun gl ->
+  let sigma = Proofview.Goal.sigma gl in
+  let hyps0 = Proofview.Goal.hyps gl in
+  (* Beware of the relative order of hypothesis picking! *)
+  let rec find_arg = function
+  | [] -> Tacticals.tclFAIL (Pp.str ("No matching clause"))
+  | arg :: hyps ->
+    let typ = NamedDecl.get_type arg in
+    let arg = NamedDecl.get_id arg in
+    let rec find_fun = function
+    | [] -> Tacticals.tclFAIL (Pp.str ("No matching clause"))
+    | fnc :: hyps ->
+      match EConstr.kind sigma (NamedDecl.get_type fnc) with
+      | Prod (na, dom, codom) when EConstr.Vars.noccurn sigma 1 codom ->
+        let f = NamedDecl.get_id fnc in
+        if Id.equal f arg then find_fun hyps
+        else
+          Proofview.tclOR
+            (Proofview.tclUNIT () >>= fun () -> find_fun hyps)
+            (fun _ -> Tactics.convert dom typ <*> Proofview.tclUNIT (f, arg, codom))
+      | _ -> find_fun hyps
+    in
+    Proofview.tclOR (Proofview.tclUNIT () >>= fun () -> find_arg hyps) (fun _ -> find_fun hyps0)
+  in
+  let tac =
+    find_arg hyps0 >>= fun (f, arg, t) ->
+    Tacinterp.Value.apply k [val_of_id f; val_of_id arg; Value.of_constr t]
+  in
+  Proofview.tclONCE tac
+  end
 
 let register_tauto_tactic tac name0 args =
   let ids = List.map (fun id -> Id.of_string id) args in
@@ -289,3 +328,4 @@ let () = register_tauto_tactic reduction_not_iff "reduction_not_iff" []
 let () = register_tauto_tactic (with_flags tauto_uniform_unit_flags) "with_uniform_flags" ["f"]
 let () = register_tauto_tactic (with_flags tauto_power_flags) "with_power_flags" ["f"]
 let () = register_tauto_tactic warn_auto_with_star_tac "warn_auto_with_star" []
+let () = register_tauto_tactic find_cut "find_cut" ["k"]
