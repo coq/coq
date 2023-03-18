@@ -168,7 +168,7 @@ type glb_tacexpr =
 | GTacVar of Id.t
 | GTacRef of ltac_constant
 | GTacFun of Name.t list * glb_tacexpr
-| GTacApp of glb_tacexpr * glb_tacexpr list
+| GTacApp of glb_tacexpr * glb_tacexpr list * Loc.t option
 | GTacLet of rec_flag * (Name.t * glb_tacexpr) list * glb_tacexpr
 | GTacCst of case_info * int * glb_tacexpr list
 | GTacCse of glb_tacexpr * case_info * glb_tacexpr array * (Name.t array * glb_tacexpr) array

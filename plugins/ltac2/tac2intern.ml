@@ -1096,6 +1096,7 @@ let rec intern_rec env {loc;v=e} = match e with
   intern_rec env (CAst.make ?loc @@ CTacApp (e.alias_body, args))
 | CTacApp (f, args) ->
   let loc = f.loc in
+  let app_loc = List.fold_left (fun loc arg -> Loc.merge_opt loc arg.loc) loc args in
   let (f, ft) = intern_rec env f in
   let fold arg (args, t) =
     let loc = arg.loc in
@@ -1104,7 +1105,7 @@ let rec intern_rec env {loc;v=e} = match e with
   in
   let (args, t) = List.fold_right fold args ([], []) in
   let ret = unify_arrow ?loc env ft t in
-  (GTacApp (f, args), ret)
+  (GTacApp (f, args, app_loc), ret)
 | CTacLet (is_rec, el, e) ->
   let map (pat, e) =
     let (pat, ty) = extract_pattern_type pat in
@@ -1614,8 +1615,8 @@ let rec subst_expr subst e = match e with
 | GTacAtm _ | GTacVar _ | GTacPrm _ -> e
 | GTacRef kn -> GTacRef (subst_kn subst kn)
 | GTacFun (ids, e) -> GTacFun (ids, subst_expr subst e)
-| GTacApp (f, args) ->
-  GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args)
+| GTacApp (f, args, loc) ->
+  GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args, loc)
 | GTacLet (r, bs, e) ->
   let bs = List.map (fun (na, e) -> (na, subst_expr subst e)) bs in
   GTacLet (r, bs, subst_expr subst e)

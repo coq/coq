@@ -287,7 +287,7 @@ let pr_glbexpr_gen lvl c =
     in
     paren (hov 0 (hov 2 (str "fun" ++ spc () ++ nas) ++ spc () ++ str "=>" ++ spc () ++
       pr_glbexpr E5 c))
-  | GTacApp (c, cl) ->
+  | GTacApp (c, cl, _) ->
     let paren = match lvl with
     | E0 -> paren
     | E1 | E2 | E3 | E4 | E5 -> fun x -> x

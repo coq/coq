@@ -133,7 +133,14 @@ let rec interp (ist : environment) = function
   let cls = { clos_ref = None; clos_env = ist.env_ist; clos_var = ids; clos_exp = e } in
   let f = interp_closure cls in
   return f
-| GTacApp (f, args) ->
+| GTacApp (f, args, loc) ->
+  let v = (try ignore @@ Sys.getenv "TEST";
+    (match loc with
+    | None -> "None"
+    | Some loc -> Pp.string_of_ppcmds (Loc.pr loc))
+   with Not_found -> ""
+  ) in
+  Printf.eprintf "GTacApp loc = %s\n%!" v;
   interp ist f >>= fun f ->
   Proofview.Monad.List.map (fun e -> interp ist e) args >>= fun args ->
   Tac2ffi.apply (Tac2ffi.to_closure f) args
@@ -182,6 +189,7 @@ let rec interp (ist : environment) = function
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   return (Tac2ffi.of_open (kn, Array.of_list el))
 | GTacPrm (ml, el) ->
+  Printf.eprintf "GTacPrm %s.%s\n%!" ml.mltac_plugin ml.mltac_tactic;
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   with_frame (FrPrim ml) (Tac2ffi.apply (Tac2env.interp_primitive ml) el)
 | GTacExt (tag, e) ->
