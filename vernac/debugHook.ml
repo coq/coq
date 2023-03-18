@@ -61,16 +61,38 @@ module Action = struct
     | "x" -> Ok Interrupt
     | "h"| "?" -> Ok Help
     | _ -> parse_complex inst
+
+  let to_string t =
+    match t with
+    | Continue -> "Continue"
+    | StepIn -> "StepIn"
+    | StepOver -> "StepOver"
+    | StepOut -> "StepOut"
+    | Skip -> "Skip"
+    | Interrupt -> "Interrput"
+    | Help -> "Help"
+    | UpdBpts _ -> "UpdBpts"
+    | Configd -> "Configd"
+    | GetStack -> "GetStack"
+    | GetVars _ -> "GetVars"
+    | RunCnt _ -> "RunCnt"
+    | RunBreakpoint _ -> "RunBreakpoint"
+    | Command _ -> "Command"
+    | Failed -> "Failed"
+    | Ignore -> "Ignore"
+
 end
 
 module Answer = struct
+  type stack = (string * (string * int list) option) list
+  type vars = (string * Pp.t) list
   type t =
     | Prompt of Pp.t
     | Goal of Pp.t
     | Output of Pp.t
     | Init
-    | Stack of (string * (string * int list) option) list
-    | Vars of (string * Pp.t) list
+    | Stack of stack
+    | Vars of vars
 end
 
 module Intf = struct

@@ -137,6 +137,9 @@ type ('a, 'b, 'r) intern_fun = Genintern.glob_sign -> 'a -> 'b * 'r glb_typexpr
 
 type environment = {
   env_ist : valexpr Id.Map.t;
+  locs : Loc.t option list;
+  stack : (string * Loc.t option) list option;
+  varmaps : valexpr Id.Map.t list;
 }
 
 type ('a, 'b) ml_object = {

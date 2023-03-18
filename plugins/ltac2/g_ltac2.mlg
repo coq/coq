@@ -138,6 +138,52 @@ let opt_fun ?loc args ty e =
   | [] -> e
   | _ :: _ -> CAst.make ?loc (CTacFun (args, e))
 
+(*
+let rec dump_expr ?(indent=0) e =
+  let printloc item e =
+    let {CAst.loc} = e in
+    let loc = match loc with
+    | None -> "None"
+    | Some loc -> Pp.string_of_ppcmds (Loc.pr loc)
+    in
+    Printf.eprintf "%s  %s\n%!" item loc
+  in
+  Printf.eprintf "%s" (String.make indent ' ');
+  let indent = indent + 2 in
+  let {CAst.v} = e in
+  match v with
+  | CTacAtm _ -> printloc "CTacAtm" e
+  | CTacRef _ -> printloc "CTacRef" e
+  | CTacCst _ -> printloc "CTacCst" e
+  | CTacFun _ -> printloc "CTacFun" e
+  | CTacApp (f, args) -> printloc "CTacApp" e;
+    dump_expr ~indent f
+(*| CTacSyn of (raw_patexpr * raw_tacexpr) list * KerName.t*)
+  | CTacSyn (el, kn) -> printloc "CTacSyn" e;
+    Printf.eprintf "%s> %s\n%!" (String.make indent ' ') (Names.KerName.to_string kn);
+    List.iter (fun i -> let (_, e) = i in dump_expr ~indent e) el
+  | CTacLet (isrec, lc, e) -> printloc "CTacLet" e;
+    dump_expr ~indent e;  (* rhs only *)
+  | CTacCnv _ -> printloc "CTacCnv" e
+  | CTacSeq (e1, e2) ->
+    printloc "CTacSeq" e;
+    dump_expr ~indent e1;
+    dump_expr ~indent e2
+  | CTacIft _ -> printloc "CTacIft" e
+  | CTacCse _ -> printloc "CTacCse" e
+  | CTacRec _ -> printloc "CTacRec" e
+  | CTacPrj _ -> printloc "CTacPrj" e
+  | CTacSet _ -> printloc "CTacSet" e
+  | CTacExt _ -> printloc "CTacExt" e
+
+let dump_info loc e =
+  try ignore @@ Sys.getenv "TEST";
+    Printf.eprintf "loc = %s\n%!" (Pp.string_of_ppcmds (Loc.pr loc));
+    dump_expr e;
+  Printf.eprintf "\n%!"
+  with Not_found -> ()
+*)
+
 }
 
 GRAMMAR EXTEND Gram
@@ -188,7 +234,7 @@ GRAMMAR EXTEND Gram
   ;
   ltac2_expr:
     [ "6" RIGHTA
-        [ e1 = SELF; ";"; e2 = SELF -> { CAst.make ~loc @@ CTacSeq (e1, e2) } ]
+        [ e1 = SELF; ";"; e2 = SELF -> { (* dump_info loc e1; dump_info loc e2;*) CAst.make ~loc @@ CTacSeq (e1, e2) } ]
     | "5"
       [ "fun"; it = LIST1 input_fun; ty = type_cast; "=>"; body = ltac2_expr LEVEL "6" ->
         { opt_fun ~loc it ty body }
@@ -217,7 +263,8 @@ GRAMMAR EXTEND Gram
       | e = SELF; ".("; qid = Prim.qualid; ")"; ":="; r = ltac2_expr LEVEL "5" ->
         { CAst.make ~loc @@ CTacSet (e, RelId qid, r) } ]
     | "0"
-      [ "("; a = SELF; ")" -> { a }
+      [ "("; a = SELF; ")" ->
+        { CAst.make ~loc @@ a.CAst.v }
       | "("; a = SELF; ":"; t = ltac2_type; ")" ->
         { CAst.make ~loc @@ CTacCnv (a, t) }
       | "()" ->

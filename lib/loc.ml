@@ -108,8 +108,9 @@ let pr loc =
   let fname = loc.fname in
   match fname with
   | ToplevelInput ->
-    (str"Toplevel input, characters " ++ int loc.bp ++
-     str"-" ++ int loc.ep)
+    (str"Toplevel input, line " ++ int loc.line_nb ++
+    str", characters " ++
+    int (loc.bp-loc.bol_pos) ++ str"-" ++ int (loc.ep-loc.bol_pos))
   | InFile { file } ->
     (str"File " ++ str "\"" ++ str file ++ str "\"" ++
      str", line " ++ int loc.line_nb ++ str", characters " ++

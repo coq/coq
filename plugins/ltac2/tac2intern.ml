@@ -116,7 +116,7 @@ let is_pure_constructor kn =
 
 let rec is_value = function
 | GTacAtm (AtmInt _) | GTacVar _ | GTacRef _ | GTacFun _ -> true
-| GTacAtm (AtmStr _) | GTacApp _ | GTacLet (true, _, _) -> false
+| GTacAtm (AtmStr _) | GTacApp _ | GTacAls _ | GTacLet (true, _, _) -> false
 | GTacCst (Tuple _, _, el) -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
 | GTacOpn (_, el) -> List.for_all is_value el
@@ -129,7 +129,7 @@ let rec is_value = function
 let is_rec_rhs = function
 | GTacFun _ -> true
 | GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ | GTacPrj _
-| GTacSet _ | GTacExt _ | GTacPrm _ | GTacCst _
+| GTacSet _ | GTacExt _ | GTacPrm _ | GTacCst _ | GTacAls _
 | GTacCse _ | GTacOpn _ | GTacWth _ | GTacFullMatch _-> false
 
 let warn_not_unit =
@@ -1037,6 +1037,85 @@ let to_simple_case env ?loc (e,t) pl =
     let (map, def) = intern_branch KNmap.empty pl in
     GTacWth { opn_match = e; opn_branch = map; opn_default = def }
 
+let rec dump_expr2 ?(indent=0) e =
+  let printloc loc =
+    let loc = match loc with
+    | None -> "None"
+    | Some loc -> Pp.string_of_ppcmds (Loc.pr loc)
+    in
+    Printf.eprintf "loc =  %s\n%!" loc
+  in
+  let print s = Printf.eprintf "%s\n" s in
+  Printf.eprintf "%s" (String.make indent ' ');
+  let indent = indent + 2 in
+  match e with
+  | GTacAtm _ -> print "GTacAtm"
+  | GTacVar _ -> print "GTacVar"
+  | GTacRef kn -> print "GTacRef";
+    Printf.eprintf "%s> %s\n%!" (String.make indent ' ') (Names.KerName.to_string kn);
+  | GTacFun (_, e) -> print "GTacFun";
+    dump_expr2 ~indent e
+  | GTacApp (e, _, loc) -> print "GTacApp";
+    printloc loc;
+    dump_expr2 ~indent e
+  | GTacLet (_,_,e) -> print "GTacLet";
+    dump_expr2 ~indent e
+  | GTacCst _ -> print "GTacCat"
+  | GTacCse _ -> print "GTacCse"
+  | GTacPrj _ -> print "GTacPrj"
+  | GTacSet _ -> print "GTacSet"
+  | GTacOpn _ -> print "GTacOpn"
+  | GTacWth _ -> print "GTacWth"
+  | GTacFullMatch _ -> print "GTacFullMatch"
+  | GTacExt _ -> print "GTacExt"
+  | GTacPrm  _ -> print "GTacPrm"
+  | GTacAls  _ -> print "GTacAls"
+
+(*
+let rec dump_expr ?(indent=0) e =
+  let printloc item e =
+    let {CAst.loc} = e in
+    let loc = match loc with
+    | None -> "None"
+    | Some loc -> Pp.string_of_ppcmds (Loc.pr loc)
+    in
+    Printf.eprintf "%s  %s\n%!" item loc
+  in
+  Printf.eprintf "%s" (String.make indent ' ');
+  let indent = indent + 2 in
+  let {CAst.v} = e in
+  match v with
+  | CTacAtm _ -> printloc "CTacAtm" e
+  | CTacRef _ -> printloc "CTacRef" e
+  | CTacCst _ -> printloc "CTacCst" e
+  | CTacFun _ -> printloc "CTacFun" e
+  | CTacApp (f, args) -> printloc "CTacApp" e;
+    dump_expr ~indent f
+(*| CTacSyn of (raw_patexpr * raw_tacexpr) list * KerName.t*)
+  | CTacSyn (el, kn) -> printloc "CTacSyn" e;
+    Printf.eprintf "%s> %s\n%!" (String.make indent ' ') (Names.KerName.to_string kn);
+    List.iter (fun i -> let (_, e) = i in dump_expr ~indent e) el
+  | CTacLet (isrec, lc, e) -> printloc "CTacLet" e;
+    dump_expr ~indent e;  (* rhs only *)
+  | CTacCnv _ -> printloc "CTacCnv" e
+  | CTacSeq (e1, e2) ->
+    printloc "CTacSeq" e;
+    dump_expr ~indent e1;
+    dump_expr ~indent e2
+  | CTacIft _ -> printloc "CTacIft" e
+  | CTacCse _ -> printloc "CTacCse" e
+  | CTacRec _ -> printloc "CTacRec" e
+  | CTacPrj _ -> printloc "CTacPrj" e
+  | CTacSet _ -> printloc "CTacSet" e
+  | CTacExt _ -> printloc "CTacExt" e
+
+let dump e line =
+  try ignore @@ Sys.getenv "TEST";
+    Printf.eprintf "line %d\n\n%!" line;
+    dump_expr e;
+  with Not_found -> ()
+*)
+
 let check ?loc env tycon (e,t as et) =
   match tycon with
   | None -> et
@@ -1107,7 +1186,8 @@ let rec intern_rec env tycon {loc;v=e} =
         CErrors.anomaly (str "Missing hardwired alias " ++ KerName.print kn)
     in
     let () = check_deprecated_ltac2 ?loc qid (TacAlias kn) in
-    intern_rec env tycon e.alias_body
+    let a,b = intern_rec env tycon e.alias_body in
+    (GTacAls (a, loc), b)
   end
 | CTacCst qid ->
   let kn = get_constructor env qid in
@@ -1149,17 +1229,20 @@ let rec intern_rec env tycon {loc;v=e} =
     CAst.make ?loc @@ CTacFun ([var], arg)
   in
   let args = List.map map args in
-  intern_rec env tycon (CAst.make ?loc @@ CTacApp (e.alias_body, args))
+  let alias_body = CAst.make ?loc:aloc e.alias_body.v in
+  intern_rec env tycon (CAst.make ?loc @@ CTacApp (alias_body, args))
 | CTacApp (f, args) ->
   let loc = f.loc in
+  let app_loc = List.fold_left (fun loc arg -> Loc.merge_opt loc arg.loc) loc args in  
   let (f, ft) = intern_rec env None f in
   let fold t arg =
+    let loc = arg.loc in
     let dom, codom = tycon_app ?loc env ~ft t in
     let (arg, argt) = intern_rec env (Some dom) arg in
     (codom, arg)
   in
   let (t, args) = CList.fold_left_map fold ft args in
-  check (GTacApp (f, args), t)
+  check (GTacApp (f, args, app_loc), t)
 | CTacLet (is_rec, el, e) ->
   let map (pat, e) =
     let (pat, ty) = extract_pattern_type pat in
@@ -1180,7 +1263,15 @@ let rec intern_rec env tycon {loc;v=e} =
   else intern_let env loc ids el tycon e
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
-  intern_rec env tycon @@ CAst.make ?loc @@ CTacLet(false, el, body)
+  let rv = intern_rec env tycon @@ CAst.make ?loc @@ CTacLet(false, el, body) in
+  let rv = match rv with
+  (* apply the correct loc *)
+  | GTacLet (a,b,GTacApp (d,e,f)),g -> GTacLet (a, b, GTacApp (d,e,loc)),g
+  | _ -> Printf.eprintf "Fail\n%!"; rv
+  in
+  let (e2, _) = rv in
+  if false then dump_expr2 e2;
+  rv
 | CTacCnv (e, tc) ->
   let tc = intern_type env tc in
   let e = intern_rec_with_constraint env e tc in
@@ -1560,6 +1651,7 @@ let rec globalize ids ({loc;v=er} as e) = match er with
   CAst.make ?loc @@ CTacLet (isrec, bnd, e)
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
+  (* todo: debugger *)
   globalize ids @@ CAst.make ?loc @@ CTacLet(false, el, body)
 | CTacCnv (e, t) ->
   let e = globalize ids e in
@@ -1670,8 +1762,10 @@ let rec subst_expr subst e = match e with
 | GTacAtm _ | GTacVar _ | GTacPrm _ -> e
 | GTacRef kn -> GTacRef (subst_kn subst kn)
 | GTacFun (ids, e) -> GTacFun (ids, subst_expr subst e)
-| GTacApp (f, args) ->
-  GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args)
+| GTacAls (f, loc) ->
+  GTacAls (subst_expr subst f, loc)
+| GTacApp (f, args, loc) ->
+  GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args, loc)
 | GTacLet (r, bs, e) ->
   let bs = List.map (fun (na, e) -> (na, subst_expr subst e)) bs in
   GTacLet (r, bs, subst_expr subst e)
@@ -1840,6 +1934,7 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
   if bnd' == bnd && e' == e then t else CAst.make ?loc @@ CTacLet (isrec, bnd', e')
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
+  (* todo: debugger *)
   subst_rawexpr subst @@ CAst.make ?loc @@ CTacLet(false, el, body)
 | CTacCnv (e, c) ->
   let e' = subst_rawexpr subst e in
