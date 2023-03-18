@@ -294,12 +294,13 @@ let pr_glbexpr_gen lvl ~avoid c =
     in
     paren (hov 0 (hov 2 (str "fun" ++ spc () ++ nas) ++ spc () ++ str "=>" ++ spc () ++
       pr_glbexpr E5 avoid c))
-  | GTacApp (c, cl) ->
+  | GTacApp (c, cl, _) ->
     let paren = match lvl with
     | E0 -> paren
     | E1 | E2 | E3 | E4 | E5 -> fun x -> x
     in
     paren (hov 2 (pr_glbexpr E1 avoid c ++ spc () ++ (pr_sequence (pr_glbexpr E0 avoid) cl)))
+  | GTacAls (e,_) -> pr_glbexpr lvl avoid e
   | GTacLet (isrec, bnd, e) ->
     let paren = match lvl with
     | E0 | E1 | E2 | E3 | E4 -> paren

@@ -57,11 +57,15 @@ module Action : sig
     | Failed    (* legacy: user command doesn't parse *)
     | Ignore    (* internal: do nothing, read another command *)
 
+  val to_string : t -> string
+
   (* XXX: Should be moved to the clients *)
   val parse : string -> (t, string) result
 end
 
 module Answer : sig
+  type stack = (string * (string * int list) option) list
+  type vars = (string * Pp.t) list
   type t =
     | Prompt of Pp.t (* output signalling the debugger has stopped
                         Should be printed as a prompt for user input,
@@ -69,7 +73,7 @@ module Answer : sig
     | Goal of Pp.t   (* goal for the current proof state *)
     | Output of Pp.t (* general output *)
     | Init           (* signals initialization of the debugger *)
-    | Stack of (string * (string * int list) option) list
+    | Stack of stack
                      (* The call stack, starting from TOS.
                         Values are:
                         - description of the frame
@@ -77,7 +81,7 @@ module Answer : sig
                         - absolute pathname of the file
                         - array containing Loc.bp and Loc.ep of the
                           corresponding code *)
-    | Vars of (string * Pp.t) list
+    | Vars of vars
                      (* The variable values for the specified stack
                         frame.  Values are variable name and variable value *)
 end

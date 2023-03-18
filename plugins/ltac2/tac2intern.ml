@@ -117,7 +117,7 @@ let is_pure_constructor kn =
 
 let rec is_value = function
 | GTacAtm (AtmInt _) | GTacVar _ | GTacFun _ -> true
-| GTacAtm (AtmStr _) | GTacApp _ | GTacLet (true, _, _) -> false
+| GTacAtm (AtmStr _) | GTacApp _ | GTacAls _ | GTacLet (true, _, _) -> false
 | GTacRef kn -> not (Tac2env.interp_global kn).gdata_mutable
 | GTacCst (Tuple _, _, el) -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
@@ -131,7 +131,7 @@ let rec is_value = function
 let is_rec_rhs = function
 | GTacFun _ -> true
 | GTacAtm _ | GTacVar _ | GTacRef _ | GTacApp _ | GTacLet _ | GTacPrj _
-| GTacSet _ | GTacExt _ | GTacPrm _ | GTacCst _
+| GTacSet _ | GTacExt _ | GTacPrm _ | GTacCst _ | GTacAls _
 | GTacCse _ | GTacOpn _ | GTacWth _ | GTacFullMatch _-> false
 
 let warn_not_unit =
@@ -1103,7 +1103,8 @@ let rec intern_rec env tycon {loc;v=e} =
         CErrors.anomaly (str "Missing hardwired alias " ++ KerName.print kn)
     in
     let () = check_deprecated_ltac2 ?loc qid (TacAlias kn) in
-    intern_rec env tycon e.alias_body
+    let a,b = intern_rec env tycon e.alias_body in
+    (GTacAls (a, loc), b)
   end
 | CTacCst qid ->
   let kn = get_constructor env qid in
@@ -1145,17 +1146,20 @@ let rec intern_rec env tycon {loc;v=e} =
     CAst.make ?loc @@ CTacFun ([var], arg)
   in
   let args = List.map map args in
-  intern_rec env tycon (CAst.make ?loc @@ CTacApp (e.alias_body, args))
+  let alias_body = CAst.make ?loc:aloc e.alias_body.v in
+  intern_rec env tycon (CAst.make ?loc @@ CTacApp (alias_body, args))
 | CTacApp (f, args) ->
   let loc = f.loc in
+  let app_loc = List.fold_left (fun loc arg -> Loc.merge_opt loc arg.loc) loc args in
   let (f, ft) = intern_rec env None f in
   let fold t arg =
+    let loc = arg.loc in
     let dom, codom = tycon_app ?loc env ~ft t in
     let arg = intern_rec_with_constraint env arg dom in
     (codom, arg)
   in
   let (t, args) = CList.fold_left_map fold ft args in
-  check (GTacApp (f, args), t)
+  check (GTacApp (f, args, app_loc), t)
 | CTacLet (is_rec, el, e) ->
   let map (pat, e) =
     let (pat, ty) = extract_pattern_type pat in
@@ -1177,8 +1181,11 @@ let rec intern_rec env tycon {loc;v=e} =
 | CTacSyn (el, kn) ->
   let body = Tac2env.interp_notation kn in
   let v = if CList.is_empty el then body else CAst.make ?loc @@ CTacLet(false, el, body) in
-  intern_rec env tycon v
-| CTacCnv (e, tc) ->
+  let ex = intern_rec env tycon v in
+  (match ex with
+  (* apply the correct loc *)
+  | GTacLet (a,b,GTacApp (d,e,f)),g -> GTacLet (a, b, GTacApp (d,e,loc)),g
+  | _ -> ex)| CTacCnv (e, tc) ->
   let tc = intern_type env tc in
   let e = intern_rec_with_constraint env e tc in
   check (e, tc)
@@ -1716,8 +1723,10 @@ let rec subst_expr subst e = match e with
 | GTacAtm _ | GTacVar _ | GTacPrm _ -> e
 | GTacRef kn -> GTacRef (subst_kn subst kn)
 | GTacFun (ids, e) -> GTacFun (ids, subst_expr subst e)
-| GTacApp (f, args) ->
-  GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args)
+| GTacAls (f, loc) ->
+  GTacAls (subst_expr subst f, loc)
+| GTacApp (f, args, loc) ->
+  GTacApp (subst_expr subst f, List.map (fun e -> subst_expr subst e) args, loc)
 | GTacLet (r, bs, e) ->
   let bs = List.map (fun (na, e) -> (na, subst_expr subst e)) bs in
   GTacLet (r, bs, subst_expr subst e)

@@ -35,206 +35,15 @@ let explain_logic_error e = CErrors.print e
 let explain_logic_error_no_anomaly e = CErrors.print_no_report e
 
 
-type breakpoint = {
-  dirpath : string;  (* module dirpath *)
-  offset : int;
-}
+type varmap = Geninterp.Val.t Names.Id.Map.t
 
-module BPSet = CSet.Make(struct
-  type t = breakpoint
-  let compare b1 b2 =
-    let c1 = Int.compare b1.offset b2.offset in
-    if c1 <> 0 then c1 else String.compare b1.dirpath b2.dirpath
-  end)
-
-let breakpoints = ref BPSet.empty
-
-
-(** add or remove a single breakpoint.  Maps the breakpoint from
-  IDE format (absolute path name, offset) to (module dirpath, offset)
-  opt - true to add, false to remove
-  ide_bpt - the breakpoint (absolute path name, offset)
-  *)
-let update_bpt fname offset opt =
+let fmt_vars1 : varmap list -> int -> DebugHook.Answer.vars = fun varmaps framenum ->
+  let varmap = List.nth varmaps framenum in
   let open Names in
-  let dp =
-    if fname = "ToplevelInput" then  (* todo: or None? *)
-      DirPath.make [Id.of_string "Top"]
-    else begin (* find the DirPath matching the absolute pathname of the file *)
-      (* ? check for .v extension? *)
-      let dirname = Filename.dirname fname in
-      let basename = Filename.basename fname in
-      let base_id = Id.of_string (Filename.remove_extension basename) in
-      DirPath.make (base_id ::
-          (try
-            let p = Loadpath.find_load_path (CUnix.physical_path_of_string dirname) in
-            DirPath.repr (Loadpath.logical p)
-          with _ -> []))
-    end
-  in
-  let dirpath = DirPath.to_string dp in
-  let bp = { dirpath; offset } in
-(*  Printf.printf "update_bpt: %s -> %s  %d\n%!" fname dirpath ide_bpt.offset;*)
-  match opt with
-  | true  -> breakpoints := BPSet.add bp !breakpoints
-  | false -> breakpoints := BPSet.remove bp !breakpoints
-
-let upd_bpts updates =
-  List.iter (fun op ->
-    let ((file, offset), opt) = op in
-(*    Printf.printf "Coq upd_bpts %s %d %b\n%!" file offset opt;*)
-    update_bpt file offset opt;
-  ) updates
-
-type debugger_state = {
-  (* location of next code to execute, is not in stack *)
-  mutable cur_loc : Loc.t option;
-  (* yields the call stack *)
-  mutable stack : (string * Loc.t option) list;
-  (* variable value maps for each stack frame *)
-  mutable varmaps : Geninterp.Val.t Names.Id.Map.t list;
-}
-
-let debugger_state = { cur_loc=None; stack=[]; varmaps=[] }
-
-let get_stack () =
-(*  Printf.printf "server: db_stack call\n%!";*)
-  let rec shift s prev_loc res =
-    match s with
-    | (tacn, loc) :: tl ->
-      shift tl loc (((Some tacn), prev_loc) :: res)
-    | [] -> (None, prev_loc) :: res
-  in
-  List.rev (shift debugger_state.stack debugger_state.cur_loc [])
-
-module CSet = CSet.Make (Names.DirPath)
-let bad_dirpaths = ref CSet.empty
-
-(* cvt_loc, format_frame and format_stack belong elsewhere *)
-let cvt_loc loc =
-  let open Loc in
-  match loc with
-  | Some {fname=ToplevelInput; bp; ep} ->
-    Some ("ToplevelInput", [bp; ep])
-  | Some {fname=InFile {dirpath=None; file}; bp; ep} ->
-    Some (file, [bp; ep])  (* for Load command *)
-  | Some {fname=InFile {dirpath=(Some dirpath)}; bp; ep} ->
-    let open Names in
-    let dirpath = DirPath.make (List.rev_map (fun i -> Id.of_string i)
-      (String.split_on_char '.' dirpath)) in
-    let pfx = DirPath.make (List.tl (DirPath.repr dirpath)) in
-    let paths = Loadpath.find_with_logical_path pfx in
-    let basename = match DirPath.repr dirpath with
-    | hd :: tl -> (Id.to_string hd) ^ ".v"
-    | [] -> ""
-    in
-    let vs_files = List.map (fun p -> (Filename.concat (Loadpath.physical p) basename)) paths in
-    let filtered = List.filter (fun p -> Sys.file_exists p) vs_files in
-    begin match filtered with
-    | [] -> (* todo: maybe tweak this later to allow showing a popup dialog in the GUI *)
-      if not (CSet.mem dirpath !bad_dirpaths) then begin
-        bad_dirpaths := CSet.add dirpath !bad_dirpaths;
-        let msg = Pp.(fnl () ++ str "Unable to locate source code for module " ++
-                        str (Names.DirPath.to_string dirpath)) in
-        let msg = if vs_files = [] then msg else
-          (List.fold_left (fun msg f -> msg ++ fnl() ++ str f) (msg ++ str " in:") vs_files) in
-        Feedback.msg_warning msg
-      end;
-      None
-    | [f] -> Some (f, [bp; ep])
-    | f :: tl ->
-      if not (CSet.mem dirpath !bad_dirpaths) then begin
-        bad_dirpaths := CSet.add dirpath !bad_dirpaths;
-        let msg = Pp.(fnl () ++ str "Multiple files found matching module " ++
-            str (Names.DirPath.to_string dirpath) ++ str ":") in
-        let msg = List.fold_left (fun msg f -> msg ++ fnl() ++ str f) msg vs_files in
-        Feedback.msg_warning msg
-      end;
-      Some (f, [bp; ep]) (* be arbitrary unless we can tell which file was loaded *)
-    end
-  | None -> None (* nothing to highlight, e.g. not in a .v file *)
-
- let format_frame text loc =
-   try
-     let open Loc in
-       match loc with
-       | Some { fname=InFile {dirpath=(Some dp)}; line_nb } ->
-         let dplen = String.length dp in
-         let lastdot = String.rindex dp '.' in
-         let file = String.sub dp (lastdot+1) (dplen - (lastdot + 1)) in
-         let module_name = String.sub dp 0 lastdot in
-         let routine =
-           try
-             (* try text as a kername *)
-             assert (CString.is_prefix dp text);
-             let knlen = String.length text in
-             let lastdot = String.rindex text '.' in
-             String.sub text (lastdot+1) (knlen - (lastdot + 1))
-           with _ -> text
-         in
-         Printf.sprintf "%s:%d, %s  (%s)" routine line_nb file module_name;
-       | Some { fname=ToplevelInput; line_nb } ->
-         let items = String.split_on_char '.' text in
-         Printf.sprintf "%s:%d, %s" (List.nth items 1) line_nb (List.hd items);
-       | _ -> text
-   with _ -> text
-
-let format_stack s =
-  List.map (fun (tac, loc) ->
-      let floc = cvt_loc loc in
-      match tac with
-      | Some tacn ->
-        let tacn = if loc = None then
-          tacn ^ " (no location)"
-        else
-          format_frame tacn loc in
-        (tacn, floc)
-      | None ->
-        match loc with
-        | Some { Loc.line_nb } ->
-          (":" ^ (string_of_int line_nb), floc)
-        | None -> (": (no location)", floc)
-    ) s
-
-
-let get_vars framenum =
-  let open Names in
-(*  Printf.printf "server: db_vars call\n%!";*)
-  let vars = List.nth debugger_state.varmaps framenum in
   List.map (fun b ->
       let (id, v) = b in
       (Id.to_string id, Pptactic.pr_value Constrexpr.LevelSome v)
-    ) (Id.Map.bindings vars)
-
-[@@@ocaml.warning "-32"]
-let cmd_to_str cmd =
-  let open DebugHook.Action in
-  match cmd with
-  | Continue -> "Continue"
-  | StepIn -> "StepIn"
-  | StepOver -> "StepOver"
-  | StepOut -> "StepOut"
-  | Skip -> "Skip"
-  | Interrupt -> "Interrput"
-  | Help -> "Help"
-  | UpdBpts _ -> "UpdBpts"
-  | Configd -> "Configd"
-  | GetStack -> "GetStack"
-  | GetVars _ -> "GetVars"
-  | RunCnt _ -> "RunCnt"
-  | RunBreakpoint _ -> "RunBreakpoint"
-  | Command _ -> "Command"
-  | Failed -> "Failed"
-  | Ignore -> "Ignore"
-[@@@ocaml.warning "+32"]
-
-let action = ref DebugHook.Action.StepOver
-
-let break = ref false
-(* causes the debugger to stop at the next step *)
-
-let get_break () = !break
-let set_break b = break := b
+    ) (Id.Map.bindings varmap)
 
 (* Communications with the outside world *)
 module Comm = struct
@@ -246,34 +55,10 @@ module Comm = struct
      initialization is unconditionally done for example in coqc.
      Improving this would require some tweaks in tacinterp which
      are out of scope for the current refactoring. *)
-  let init () =
-    let open DebugHook in
-    match Intf.get () with
-    | Some intf ->
-      if Intf.(intf.isTerminal) then
-        action := Action.StepIn
-      else begin
-        set_break false;
-        breakpoints := BPSet.empty;
-        (hook ()).Intf.submit_answer (Answer.Init);
-        while
-          let cmd = (hook ()).Intf.read_cmd () in
-          let open DebugHook.Action in
-          match cmd with
-          | UpdBpts updates -> upd_bpts updates; true
-          | Configd -> action := Action.Continue; false
-          | _ -> failwith "Action type not allowed"
-        do () done
-      end
-    | None -> ()
-      (* CErrors.user_err
-       *   (Pp.str "Your user interface does not support the Ltac debugger.") *)
-
   open DebugHook.Intf
   open DebugHook.Answer
 
   let prompt g = wrap (fun () -> (hook ()).submit_answer (Prompt g))
-  let goal g = wrap (fun () -> (hook ()).submit_answer (Goal g))
   let output g = wrap (fun () -> (hook ()).submit_answer (Output g))
 
   (* routines for deferring output; output is sent only if
@@ -290,47 +75,12 @@ module Comm = struct
   [@@@ocaml.warning "-32"]
   let print g = (hook ()).submit_answer (Output (str g))
   [@@@ocaml.warning "+32"]
-  let isTerminal () = (hook ()).isTerminal
-  let read = wrap (fun () ->
-    let rec l () =
-      let cmd = (hook ()).read_cmd () in
-      let open DebugHook.Action in
-      match cmd with
-      | Ignore -> l ()
-      | UpdBpts updates -> upd_bpts updates; l ()
-      | GetStack ->
-        ((hook)()).submit_answer (Stack (format_stack (get_stack ())));
-        l ()
-      | GetVars framenum ->
-        ((hook)()).submit_answer (Vars (get_vars framenum));
-        l ()
-      | _ -> action := cmd; cmd
-    in
-    l ())
+  let isTerminal = DebugCommon.isTerminal
+  let read = wrap DebugCommon.(fun () -> read ())
 
 end
 
 let defer_output = Comm.defer_output
-
-(* Prints the goal *)
-
-let db_pr_goal gl =
-  let env = Proofview.Goal.env gl in
-  let concl = Proofview.Goal.concl gl in
-  let penv = Termops.Internal.print_named_context env in
-  let pc = Printer.pr_econstr_env env (Tacmach.project gl) concl in
-    str"  " ++ hv 0 (penv ++ fnl () ++
-                   str "============================" ++ fnl ()  ++
-                   str" "  ++ pc) ++ fnl () ++ fnl ()
-
-let db_pr_goal =
-  let open Proofview in
-  let open Notations in
-  Goal.goals >>= fun gl ->
-  Monad.List.map (fun x -> x) gl >>= fun gls ->
-  let pg = str (CString.plural (List.length gls) "Goal") ++ str ":" ++ fnl () ++
-      Pp.seq (List.map db_pr_goal gls) in
-  Proofview.tclLIFT (Comm.goal pg)
 
 (* Prints the commands *)
 let help () =
@@ -382,26 +132,13 @@ let tac_loc tac =
 (*  Printf.printf "  %s\n%!" (fst rv);*)
   rv, loc
 
-let print_loc desc loc =
-  let open Loc in
-  match loc with
-  | Some loc ->
-    let src = (match loc.fname with
-    | InFile {file} -> file
-    | ToplevelInput -> "ToplevelInput")
-    in
-    Printf.sprintf "%s: %s %d/%d %d:%d\n" desc src loc.bp loc.line_nb
-      (loc.bp - loc.bol_pos_last) (loc.ep - loc.bol_pos_last)
-  | None -> Printf.sprintf "%s: loc is None" desc
-
 let print_loc_tac tac =
   let (desc, loc) = tac_loc tac in
-  print_loc desc loc
+  DebugCommon.print_loc desc loc
 [@@@ocaml.warning "+32"]
 
-let cvt_stack stack =
-  List.map (fun k ->
-    let (loc, k) = k in
+let cvt_frame f =
+    let (loc, k) = f in
     (* todo: compare to explain_ltac_call_trace below *)
     match k with
     | LtacNameCall l -> KerName.to_string l, loc
@@ -418,36 +155,25 @@ let cvt_stack stack =
       in
       fn_name, loc
     | LtacConstrInterp _ -> "", loc
-    ) stack
 
-(* Each list entry contains multiple trace frames. *)
-let trace_chunks : ltac_trace list ref = ref [([], [])]
-let push_chunk trace = trace_chunks := trace :: !trace_chunks
-let pop_chunk trace = trace_chunks := List.tl !trace_chunks
+let fmt_stack1 : ltac_stack -> unit -> string list = fun frames () ->
+  List.map (fun f -> let s, _ = cvt_frame f in s) frames
 
-let prev_stack = ref (Some [])  (* previous stopping point in debugger *)
-let prev_trace_chunks : ltac_trace list ref = ref [([], [])]
-
-
-let save_loc tac varmap trace =
-(*  Comm.print (print_loc_tac tac);*)
-  let stack, varmaps = match trace with
-    | Some (stack, varmaps) -> stack, varmaps
-    | None -> [], []
+let save_top_chunk tac varmap trace =
+  let {locs; stack; varmaps } =  match trace with
+  | Some trace -> trace
+  | None -> { locs=[]; stack=[]; varmaps=[]}
   in
-  debugger_state.cur_loc <- CAst.(tac.loc);
-  let (pstack, pvars) = List.fold_right (fun (s,v) (os, ov) -> (s @ os), (v @ ov))
-    !trace_chunks ([],[]) in
-  debugger_state.stack <- cvt_stack (stack @ pstack);
-  debugger_state.varmaps <- varmap :: (varmaps @ pvars)
+  let chunk = (locs, fmt_stack1 stack, fmt_vars1 (varmap :: varmaps)) in  (* todo: tac? *)
+  DebugCommon.set_top_chunk chunk CAst.(tac.loc)
 
 (* Prints the goal and the command to be executed *)
-let goal_com tac varmap trace =
-  save_loc tac varmap trace;
+let goal_com tac =
+  DebugCommon.new_stop_point ();
   Proofview.tclTHEN
-    db_pr_goal
-    (if Comm.isTerminal () || debugger_state.cur_loc = None then
-      (Proofview.tclLIFT (Comm.output (str "Going to execute:" ++ fnl () ++ prtac tac)))
+    (DebugCommon.db_pr_goals ())
+    (if Comm.isTerminal () then
+      Proofview.tclLIFT (Comm.output (str "Going to execute:" ++ fnl () ++ prtac tac))
     else
       Proofview.tclLIFT (Proofview.NonLogical.return ()))
 
@@ -473,14 +199,11 @@ let () =
 
 (* (Re-)initialize debugger. is_tac controls whether to set the action *)
 let db_initialize is_tac =
-  if Sys.os_type = "Unix" then
-    Sys.set_signal Sys.sigusr1 (Sys.Signal_handle
-      (fun _ -> set_break true));
   let open Proofview.NonLogical in
   let x = (skip:=0) >> (skipped:=0) >> (idtac_breakpt:=None) in
   if is_tac then begin
     idtac_bpt_stop.contents <- false;
-    make Comm.init >> x
+    make DebugCommon.init >> x
   end else x
 
 (* Prints the run counter *)
@@ -528,17 +251,6 @@ let rec prompt level =
     | Failed -> prompt level
     | Ignore -> failwith "Ignore" (* not possible *)
 
-let at_breakpoint tac =
-  let open Loc in
-  let check_bpt dirpath offset =
-(*    Printf.printf "In tactic_debug, dirpath = %s offset = %d\n%!" dirpath offset;*)
-    BPSet.mem { dirpath; offset } !breakpoints
-  in
-  match CAst.(tac.loc) with
-  | Some {fname=InFile {dirpath=Some dirpath}; bp} -> check_bpt dirpath bp
-  | Some {fname=ToplevelInput;                 bp} -> check_bpt "Top"   bp
-  | _ -> false
-
 [@@@ocaml.warning "-32"]
 open Tacexpr
 
@@ -548,7 +260,7 @@ let pr_call_kind n k =
   | LtacMLCall _ -> "LtacMLCall"
   | LtacNotationCall _ -> "LtacNotationCall"
   | LtacNameCall l ->
-    let name = (KerName.to_string l) ^ (print_loc "" loc) in
+    let name = (KerName.to_string l) ^ (DebugCommon.print_loc "" loc) in
     Printf.printf "%s\n%!" name; Feedback.msg_notice (Pp.str name); "LtacNameCall"
   | LtacAtomCall _ -> "LtacAtomCall"
   | LtacVarCall _ -> "LtacVarCall"
@@ -585,42 +297,27 @@ let dump_varmaps msg varmaps =
    that. *)
 let debug_prompt lev tac f varmap trace =
   (* trace omits the currently-running tactic, so add separately *)
-  let stack, varmaps = match trace with
-    | Some (stack, varmaps) -> Some stack, Some (varmap :: varmaps)
-    | None -> None, Some [varmap] in
   let runprint = print_run_ctr true in
   let open Proofview.NonLogical in
   let (>=) = Proofview.tclBIND in
   (* What to print and to do next *)
   let newlevel =
     Proofview.tclLIFT !skip >= fun s ->
+      save_top_chunk tac varmap trace;
       let stop_here () =
+(*
+  let locs, stack, varmaps = match trace with
+    | Some {locs; stack; varmaps} -> locs, Some stack, Some (varmap :: varmaps)
+    | None -> [], None, Some [varmap] in
+*)
 (*        dump_stack "at debug_prompt" stack;*)
 (*        dump_varmaps "at debug_prompt" varmaps;*)
-        prev_stack.contents <- stack;
-        prev_trace_chunks.contents <- trace_chunks.contents;
-        Proofview.tclTHEN (goal_com tac varmap trace) (Proofview.tclLIFT (prompt lev))
+        Proofview.tclTHEN (goal_com tac) (Proofview.tclLIFT (prompt lev))  (* call prompt -> read msg *)
       in
-      let stacks_info stack p_stack =
-        (* performance impact? *)
-        let st_chunks =  StdList.map (fun (s, _) -> s) trace_chunks.contents in
-        let st =      StdList.concat ((Option.default [] stack) :: st_chunks) in
-        let prev_st_chunks = StdList.map (fun (s, _) -> s) prev_trace_chunks.contents in
-        let st_prev = StdList.concat ((Option.default [] p_stack) :: prev_st_chunks) in
-        let l_cur, l_prev = StdList.length st, StdList.length st_prev in
-        st, st_prev, l_cur, l_prev
-      in
-      let p_stack = prev_stack.contents in
-      if action.contents = DebugHook.Action.Continue && at_breakpoint tac then
+      if DebugCommon.breakpoint_stop CAst.(tac.loc) then (* here *)
         (* todo: skip := 0 *)
         stop_here ()
-      else if get_break () then begin
-        set_break false;
-        stop_here ()
-      end else if s = 1 then begin
-        Proofview.tclLIFT ((skip := 0) >> runprint) >=
-        (fun () -> stop_here ())
-      end else if s > 0 then
+      else if s > 0 then
         Proofview.tclLIFT ((skip := s-1) >>
           runprint >>
           !skip >>= fun new_skip ->
@@ -634,28 +331,9 @@ let debug_prompt lev tac f varmap trace =
           if Option.has_some idtac_breakpt then
             Proofview.tclLIFT(runprint >> return (DebugOn (lev+1)))
           else begin
-            let open DebugHook.Action in
-            let stop = match action.contents with
-              | Continue -> false
-              | StepIn   -> true
-              | StepOver -> let st, st_prev, l_cur, l_prev = stacks_info stack p_stack in
-                            if l_cur = 0 || l_cur < l_prev then true (* stepped out *)
-                            else if l_prev = 0 (*&& l_cur > 0*) then false
-                            else
-                              let peq = StdList.nth st (l_cur - l_prev) == (StdList.hd st_prev) in
-                              (l_cur > l_prev && (not peq)) ||  (* stepped out *)
-                              (l_cur = l_prev && peq)  (* stepped over *)
-              | StepOut  -> let st, st_prev, l_cur, l_prev = stacks_info stack p_stack in
-                            if l_cur < l_prev then true
-                            else if l_prev = 0 then false
-                            else
-                              StdList.nth st (l_cur - l_prev) != (StdList.hd st_prev)
-              | Skip | RunCnt _ | RunBreakpoint _ -> false (* handled elsewhere *)
-              | _ -> failwith "action op"
-            in
-            if stop then begin
+            if DebugCommon.stepping_stop () then
               stop_here ()
-            end else
+            else
               Proofview.tclLIFT (Comm.clear_queue () >>
               return (DebugOn (lev+1)))
           end
@@ -672,6 +350,24 @@ let debug_prompt lev tac f varmap trace =
         end)
         (Proofview.tclZERO ~info reraise)
     end
+
+(* for ltac1:(tac) *)
+let entry_stop_check tac =
+  let loc = !DebugCommon.cur_loc in
+  let can_stop = match CAst.(tac.v) with (* avoid double stop for ltac1:(xx) *)
+  | TacArg _ -> false
+  | _ -> true
+  in
+  if can_stop && (DebugCommon.breakpoint_stop loc || DebugCommon.stepping_stop ()) then begin
+    DebugCommon.new_stop_point ();
+    let goal_com () =
+      Proofview.tclTHEN
+        (DebugCommon.db_pr_goals ())
+        (Proofview.tclLIFT (Proofview.NonLogical.return ()))
+    in
+    Proofview.tclTHEN (goal_com ()) (Proofview.tclIGNORE (Proofview.tclLIFT (prompt 0)))
+  end else
+    Proofview.tclLIFT (Proofview.NonLogical.return ())
 
 let is_debug db =
   let open Proofview.NonLogical in

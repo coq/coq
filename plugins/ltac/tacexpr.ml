@@ -362,7 +362,10 @@ type ltac_call_kind =
   | LtacConstrInterp of Environ.env * Evd.evar_map * Glob_term.glob_constr * Ltac_pretype.ltac_var_map
 
 type ltac_stack = ltac_call_kind Loc.located list
-type ltac_trace = ltac_stack * Geninterp.Val.t Id.Map.t list
+type varmap = Geninterp.Val.t Id.Map.t
+type ltac_trace = { locs    : Loc.t option list
+                  ; stack   : ltac_stack
+                  ; varmaps : varmap list }
 
 type tacdef_body =
   | TacticDefinition of lident * raw_tactic_expr (* indicates that user employed ':=' in Ltac body *)
