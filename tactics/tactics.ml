@@ -3577,23 +3577,21 @@ let expand_projections env sigma c =
 
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
-let atomize_param_of_ind env sigma nparams (hd, argl) =
-  let params = List.firstn nparams argl in
+let atomize_param_of_ind env sigma (hd, params, indices) =
   let params' = List.map (expand_projections env sigma) params in
   (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one accu i args args' avoid =
-    if Int.equal i nparams then
+  let rec atomize_one accu args args' avoid = function
+  | [] ->
       let t = applist (hd, params@args) in
       (List.rev accu, avoid, t)
-    else
-      let c = List.nth argl (i-1) in
+  | c :: rem ->
       match EConstr.kind sigma c with
         | Var id when not (List.exists (fun c -> occur_var env sigma id c) args') &&
                       not (List.exists (fun c -> occur_var env sigma id c) params') ->
             (* Based on the knowledge given by the user, all
                constraints on the variable are generalizable in the
                current environment so that it is clearable after destruction *)
-            atomize_one accu (i-1) (c::args) (c::args') (Id.Set.add id avoid)
+            atomize_one accu (c::args) (c::args') (Id.Set.add id avoid) rem
         | _ ->
            let c' = expand_projections env sigma c in
             let dependent t = dependent sigma c t in
@@ -3605,7 +3603,7 @@ let atomize_param_of_ind env sigma nparams (hd, argl) =
                  follow the (old) discipline of not generalizing over
                  this term, since we don't try to invert the
                  constraint anyway. *)
-              atomize_one accu (i-1) (c::args) (c'::args') avoid
+              atomize_one accu (c::args) (c'::args') avoid rem
             else
             (* We reason blindly on the term and do as if it were
                generalizable, ignoring the constraints coming from
@@ -3618,9 +3616,9 @@ let atomize_param_of_ind env sigma nparams (hd, argl) =
             in
             let x = fresh_id_in_env avoid id env in
             let accu = (x, c) :: accu in
-            atomize_one accu (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid)
+            atomize_one accu (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid) rem
   in
-  atomize_one [] (List.length argl) [] [] Id.Set.empty
+  atomize_one [] [] [] Id.Set.empty (List.rev indices)
 
 (* [cook_sign] builds the lists [beforetoclear] (preceding the
    ind. var.) and [aftertoclear] (coming after the ind. var.)  of hyps
@@ -4629,12 +4627,14 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyp
   let sigma = Proofview.Goal.sigma gl in
   let sort = Tacticals.elimination_sort_of_goal gl in
   let sigma, indref, nparams, elim_info = find_induction_type env sigma isrec elim hyp0 sort in
-  let hd, args =
+  let ty =
     let tmptyp0 = Typing.type_of_variable env hyp0 in
     let indtyp = reduce_to_atomic_ref env sigma indref tmptyp0 in
-    decompose_app sigma indtyp
+    let hd, args = decompose_app sigma indtyp in
+    let (params, indices) = List.chop nparams args in
+    hd, params, indices
   in
-  let letins, avoid, t = atomize_param_of_ind env sigma nparams (hd, args) in
+  let letins, avoid, t = atomize_param_of_ind env sigma ty in
   let letins = tclMAP (fun (na, c) -> letin_tac None (Name na) c None allHypsAndConcl) letins in
   Tacticals.tclTHENLIST [
     Proofview.Unsafe.tclEVARS sigma;
