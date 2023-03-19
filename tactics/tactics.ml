@@ -4460,22 +4460,26 @@ let guess_elim env sigma isrec dep s hyp0 =
 let guess_elim_shape env sigma isrec s hyp0 =
   let tmptyp0 = Typing.type_of_variable env hyp0 in
   let (mind, _), typ = Tacred.reduce_to_atomic_ind env sigma tmptyp0 in
-  if isrec && not (is_nonrec env mind)
-  then
-    let gr = lookup_eliminator env mind s in
-    let sigma, ind = Evd.fresh_global env sigma gr in
-    let elimt = Retyping.get_type_of env sigma ind in
-    let scheme = compute_elim_sig sigma elimt in
-    let () = match scheme.indref with
-    | None -> error_cannot_recognize mind
-    | Some ref ->
-      if QGlobRef.equal env ref (IndRef mind) then ()
-      else error_cannot_recognize mind
-    in
-    (mind, scheme.nparams)
-  else
-    let mib = Environ.lookup_mind (fst mind) env in
-    (mind, mib.mind_nparams)
+  let nparams =
+    if isrec && not (is_nonrec env mind) then
+      let gr = lookup_eliminator env mind s in
+      let sigma, ind = Evd.fresh_global env sigma gr in
+      let elimt = Retyping.get_type_of env sigma ind in
+      let scheme = compute_elim_sig sigma elimt in
+      let () = match scheme.indref with
+      | None -> error_cannot_recognize mind
+      | Some ref ->
+        if QGlobRef.equal env ref (IndRef mind) then ()
+        else error_cannot_recognize mind
+      in
+      scheme.nparams
+    else
+      let mib = Environ.lookup_mind (fst mind) env in
+      mib.mind_nparams
+  in
+  let hd, args = decompose_app sigma typ in
+  let (params, indices) = List.chop nparams args in
+  (hd, params, indices)
 
 let given_elim env sigma hyp0 (elimc,lbind as e) =
   let tmptyp0 = Typing.type_of_variable env hyp0 in
@@ -4492,10 +4496,10 @@ type eliminator_source =
 
 let find_induction_type env sigma isrec elim hyp0 sort = match elim with
 | None ->
-  let indref, nparams = guess_elim_shape env sigma isrec sort hyp0 in
+  let typ = guess_elim_shape env sigma isrec sort hyp0 in
   (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
     needs no update to sigma at this point. *)
-  sigma, GlobRef.IndRef indref, nparams, ElimOver (isrec, hyp0)
+  sigma, typ, ElimOver (isrec, hyp0)
 | Some e ->
   let sigma, (elimc,elimt), ind_guess = given_elim env sigma hyp0 e in
   let scheme = compute_elim_sig sigma elimt in
@@ -4505,7 +4509,14 @@ let find_induction_type env sigma isrec elim hyp0 sort = match elim with
   | None -> error_ind_scheme ""
   | Some ref -> ref
   in
-  sigma, ref, scheme.nparams, ElimUsing (elimc, elimt, indsign)
+  let ty =
+    let tmptyp0 = Typing.type_of_variable env hyp0 in
+    let indtyp = reduce_to_atomic_ref env sigma ref tmptyp0 in
+    let hd, args = decompose_app sigma indtyp in
+    let (params, indices) = List.chop scheme.nparams args in
+    hd, params, indices
+  in
+  sigma, ty, ElimUsing (elimc, elimt, indsign)
 
 let is_functional_induction elimc gl =
   let sigma = Tacmach.project gl in
@@ -4626,14 +4637,7 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyp
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let sort = Tacticals.elimination_sort_of_goal gl in
-  let sigma, indref, nparams, elim_info = find_induction_type env sigma isrec elim hyp0 sort in
-  let ty =
-    let tmptyp0 = Typing.type_of_variable env hyp0 in
-    let indtyp = reduce_to_atomic_ref env sigma indref tmptyp0 in
-    let hd, args = decompose_app sigma indtyp in
-    let (params, indices) = List.chop nparams args in
-    hd, params, indices
-  in
+  let sigma, ty, elim_info = find_induction_type env sigma isrec elim hyp0 sort in
   let letins, avoid, t = atomize_param_of_ind env sigma ty in
   let letins = tclMAP (fun (na, c) -> letin_tac None (Name na) c None allHypsAndConcl) letins in
   Tacticals.tclTHENLIST [
