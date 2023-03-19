@@ -4500,23 +4500,20 @@ let find_induction_type env sigma isrec elim hyp0 sort = match elim with
   (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
     needs no update to sigma at this point. *)
   sigma, typ, ElimOver (isrec, hyp0)
-| Some e ->
-  let sigma, (elimc,elimt), ind_guess = given_elim env sigma hyp0 e in
+| Some (elimc, lbind as e) ->
+  let sigma, elimt = Typing.type_of env sigma elimc in
   let scheme = compute_elim_sig sigma elimt in
-  if Option.is_empty scheme.indarg then error CannotFindInductiveArgument;
-  let indsign = compute_scheme_signature sigma scheme hyp0 ind_guess in
+  let () = if Option.is_empty scheme.indarg then error CannotFindInductiveArgument in
   let ref = match scheme.indref with
   | None -> error_ind_scheme ""
   | Some ref -> ref
   in
-  let ty =
-    let tmptyp0 = Typing.type_of_variable env hyp0 in
-    let indtyp = reduce_to_atomic_ref env sigma ref tmptyp0 in
-    let hd, args = decompose_app sigma indtyp in
-    let (params, indices) = List.chop scheme.nparams args in
-    hd, params, indices
-  in
-  sigma, ty, ElimUsing (elimc, elimt, indsign)
+  let tmptyp0 = Typing.type_of_variable env hyp0 in
+  let indtyp = reduce_to_atomic_ref env sigma ref tmptyp0 in
+  let hd, args = decompose_app sigma indtyp in
+  let indsign = compute_scheme_signature sigma scheme hyp0 hd in
+  let (params, indices) = List.chop scheme.nparams args in
+  sigma, (hd, params, indices), ElimUsing (e, elimt, indsign)
 
 let is_functional_induction elimc gl =
   let sigma = Tacmach.project gl in
