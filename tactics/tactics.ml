@@ -4491,8 +4491,9 @@ type scheme_signature =
     (Id.Set.t * (elim_arg_kind * bool * bool * Id.t) list) array
 
 type eliminator_source =
-  | ElimUsing of Evd.econstr with_bindings * EConstr.types * scheme_signature
   | ElimOver of bool * Id.t
+  | ElimUsing of Id.t * (Evd.econstr with_bindings * EConstr.types * scheme_signature)
+  | ElimUsingList of (Evd.econstr with_bindings * EConstr.types * scheme_signature) * Id.t list * Id.t list * EConstr.t list
 
 let find_induction_type env sigma isrec elim hyp0 sort = match elim with
 | None ->
@@ -4513,7 +4514,7 @@ let find_induction_type env sigma isrec elim hyp0 sort = match elim with
   let hd, args = decompose_app sigma indtyp in
   let indsign = compute_scheme_signature sigma scheme hyp0 hd in
   let (params, indices) = List.chop scheme.nparams args in
-  sigma, (hd, params, indices), ElimUsing (e, elimt, indsign)
+  sigma, (hd, params, indices), ElimUsing (hyp0, (e, elimt, indsign))
 
 let is_functional_induction elimc gl =
   let sigma = Tacmach.project gl in
@@ -4527,7 +4528,8 @@ let is_functional_induction elimc gl =
 
 let get_eliminator env sigma elim dep s =
   match elim with
-  | ElimUsing (elim, elimt, indsign) ->
+  | ElimUsing (_, sch) | ElimUsingList (sch, _, _, _) ->
+      let elim, elimt, indsign = sch in
       sigma, (* bugged, should be computed *) true, (ElimClause elim, elimt), indsign
   | ElimOver (isrec,id) ->
       let evd, (elimc, elimt), l = guess_elim env sigma isrec dep s id in
@@ -4593,11 +4595,15 @@ let induction_tac with_evars params indvars (elim, elimt) =
    hypotheses from the context, replacing the main hypothesis on which
    induction applies with the induction hypotheses *)
 
-let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_tac =
+let apply_induction_in_context with_evars inhyps elim indvars names =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.pf_concl gl in
+    let hyp0 = match elim with
+    | ElimUsing (hyp0, _) | ElimOver (_, hyp0) -> Some hyp0
+    | ElimUsingList _ -> None
+    in
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
     let dep_in_concl = Option.cata (fun id -> occur_var env sigma id concl) false hyp0 in
     let dep = dep_in_hyps || dep_in_concl in
@@ -4606,19 +4612,32 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     let deps_cstr =
       List.fold_left
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in
-    let (sigma, isrec, elim, indsign) = get_eliminator env sigma elim dep s in
+    let (sigma, isrec, eliminator, indsign) = get_eliminator env sigma elim dep s in
     let branchletsigns =
       let f (_,is_not_let,_,_) = is_not_let in
       Array.map (fun (_,l) -> List.map f l) indsign in
     let names = compute_induction_names true branchletsigns names in
     Array.iter (check_name_unicity env toclear []) names;
+    let induct_tac = match elim with
+    | ElimUsing _ | ElimOver _ ->
+      induction_tac with_evars [] [Option.get hyp0] eliminator
+    | ElimUsingList (_, params, realindvars, patts) ->
+      Tacticals.tclTHENLIST [
+        (* pattern to make the predicate appear. *)
+        reduce (Pattern (List.map inj_with_occurrences patts)) onConcl;
+        (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
+          possible holes using arguments given by the user (but the
+          functional one). *)
+        (* FIXME: Tester ca avec un principe dependant et non-dependant *)
+        induction_tac with_evars params realindvars eliminator;
+    ] in
     let tac =
     (if isrec then Tacticals.tclTHENFIRSTn else Tacticals.tclTHENLASTn)
       (Tacticals.tclTHENLIST [
         (* Generalize dependent hyps (but not args) *)
         if deps = [] then Proofview.tclUNIT () else apply_type ~typecheck:false tmpcl deps_cstr;
         (* side-conditions in elim (resp case) schemes come last (resp first) *)
-        induct_tac elim;
+        induct_tac;
         Tacticals.tclMAP expand_hyp toclear;
       ])
       (Array.map2
@@ -4641,8 +4660,7 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyp
     Proofview.Unsafe.tclEVARS sigma;
     letins;
     change_in_hyp ~check:false None (make_change_arg t) (hyp0, InHypTypeOnly);
-    apply_induction_in_context with_evars (Some hyp0) inhyps elim_info avoid names
-      (fun elim -> induction_tac with_evars [] [hyp0] elim)
+    apply_induction_in_context with_evars inhyps elim_info avoid names
   ]
   end
 
@@ -4694,17 +4712,8 @@ let induction_without_atomization isrec with_evars elim names lid =
        but by chance, because of the addition of at least hyp0 for
        cook_sign, it behaved as if there was a real induction arg. *)
     if List.is_empty indvars then Id.Set.singleton (List.hd lid_params) else Id.Set.of_list indvars in
-  let induct_tac elim = Tacticals.tclTHENLIST [
-    (* pattern to make the predicate appear. *)
-    reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
-    (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
-       possible holes using arguments given by the user (but the
-       functional one). *)
-    (* FIXME: Tester ca avec un principe dependant et non-dependant *)
-    induction_tac with_evars params realindvars elim;
-  ] in
-  let elim = ElimUsing (elimc, scheme.elimt, indsign) in
-  apply_induction_in_context with_evars None [] elim indvars names induct_tac
+  let elim = ElimUsingList ((elimc, scheme.elimt, indsign), params, realindvars, lidcstr) in
+  apply_induction_in_context with_evars [] elim indvars names
   end
 
 (* assume that no occurrences are selected *)
