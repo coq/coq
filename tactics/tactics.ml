@@ -4591,8 +4591,6 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
     | ElimUsingList _ -> None
     in
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
-    let dep_in_concl = Option.cata (fun id -> occur_var env sigma id concl) false hyp0 in
-    let dep = dep_in_hyps || dep_in_concl in
     let tmpcl = it_mkNamedProd_or_LetIn sigma concl deps in
     let s = Retyping.get_sort_family_of env sigma tmpcl in
     let deps_cstr =
@@ -4602,6 +4600,8 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       need a dependent one or not *)
     let (sigma, isrec, induct_tac, indsign) = match elim with
     | ElimOver (isrec, id, ind) ->
+      let dep_in_concl = occur_var env sigma id concl in
+      let dep = dep_in_hyps || dep_in_concl in
       let sigma, eliminator, l = guess_elim env sigma isrec ind dep s id in
       let tac = induction_tac with_evars [] [id] eliminator in
       sigma, isrec, tac, l
