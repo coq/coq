@@ -133,9 +133,11 @@ Numbers
      hexnat ::= {| 0x | 0X } @hexdigit {* {| @hexdigit | _ } }
      hexdigit ::= {| 0 .. 9 | a .. f | A .. F }
 
-  :n:`@integer` and :n:`@natural` are limited to the range that fits
+  :n:`number`, :n:`@bigint` and :n:`@bignat`, which are used in :token:`term`\s,
+  generally have no range limitation.
+  :n:`@integer` and :n:`@natural`, which are used as arguments in tactics
+  and commands, are limited to the range that fits
   into an OCaml integer (63-bit integers on most architectures).
-  :n:`@bigint` and :n:`@bignat` have no range limitation.
 
   The :ref:`standard library <thecoqlibrary>` provides a few
   :ref:`interpretations <notation-scopes>` for :n:`@number`.
@@ -143,8 +145,30 @@ Numbers
   for decimal numbers, for example ``5.02e-6`` means 5.02×10\ :sup:`-6`;
   and base 2 exponential notation for hexadecimal numbers denoted by
   ``p`` or ``P``, for example ``0xAp12`` means 10×2\ :sup:`12`.
-  The :cmd:`Number Notation` mechanism offers the user
-  a way to define custom parsers and printers for :n:`@number`.
+  The :cmd:`Number Notation` mechanism lets the user
+  define custom parsers and printers for :n:`@number`.
+
+  By default, numbers are interpreted as :n:`nat`\s, which is a unary
+  representation.  For example, :n:`3` is represented as `S (S (S O))`.  While
+  this is a convenient representation for doing proofs, computing with large
+  :n:`nat`\s can lead to stack overflows or running out of memory.  You can
+  explicitly specify a different interpretation to avoid this problem.  For
+  example, :n:`1000000%Z` is a more efficient binary representation of
+  that number as an integer.  See :ref:`Scopes` and :n:`@term_scope`.
+
+   .. example:: Stack overflow with :n:`nat`
+
+      .. coqtop:: all reset
+
+         Fail Eval compute in 100000 + 100000.  (* gives a stack overflow (not shown) *)
+
+      .. coqtop:: in
+
+         Require Import ZArith.  (* for definition of Z *)
+
+      .. coqtop:: all
+
+         Eval compute in (1000000000000000000000000000000000 + 1)%Z.
 
 Strings
   Strings begin and end with ``"`` (double quote).  Use ``""`` to represent
@@ -252,7 +276,7 @@ rest of the Coq manual: :term:`terms <term>` and :term:`types
         | @term0
         term0 ::= @qualid_annotated
         | @sort
-        | @primitive_notations
+        | @number_or_string
         | @term_evar
         | @term_match
         | @term_record
