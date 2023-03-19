@@ -4521,18 +4521,6 @@ let is_functional_induction elimc gl =
      induction scheme, this may fail *)
   Option.is_empty scheme.indarg
 
-(* Wait the last moment to guess the eliminator so as to know if we
-   need a dependent one or not *)
-
-let get_eliminator env sigma elim dep s =
-  match elim with
-  | ElimUsing (_, sch) | ElimUsingList (sch, _, _, _) ->
-      let elim, elimt, indsign = sch in
-      sigma, (* bugged, should be computed *) true, (ElimClause elim, elimt), indsign
-  | ElimOver (isrec, id, ind) ->
-      let evd, (elimc, elimt), l = guess_elim env sigma isrec ind dep s id in
-      evd, isrec, (elimc, elimt), l
-
 (* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
    arguments. Returns the clause obtained.  *)
@@ -4610,25 +4598,33 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
     let deps_cstr =
       List.fold_left
         (fun a decl -> if NamedDecl.is_local_assum decl then (mkVar (NamedDecl.get_id decl))::a else a) [] deps in
-    let (sigma, isrec, eliminator, indsign) = get_eliminator env sigma elim dep s in
-    let branchletsigns =
-      let f (_,is_not_let,_,_) = is_not_let in
-      Array.map (fun (_,l) -> List.map f l) indsign in
-    let names = compute_induction_names true branchletsigns names in
-    Array.iter (check_name_unicity env toclear []) names;
-    let induct_tac = match elim with
-    | ElimUsing _ | ElimOver _ ->
-      induction_tac with_evars [] [Option.get hyp0] eliminator
-    | ElimUsingList (_, params, realindvars, patts) ->
-      Tacticals.tclTHENLIST [
+    (* Wait the last moment to guess the eliminator so as to know if we
+      need a dependent one or not *)
+    let (sigma, isrec, induct_tac, indsign) = match elim with
+    | ElimOver (isrec, id, ind) ->
+      let sigma, eliminator, l = guess_elim env sigma isrec ind dep s id in
+      let tac = induction_tac with_evars [] [id] eliminator in
+      sigma, isrec, tac, l
+    | ElimUsing (hyp0, (elim, elimt, indsign)) ->
+      let tac = induction_tac with_evars [] [hyp0] (ElimClause elim, elimt) in
+      sigma, (* bugged, should be computed *) true, tac, indsign
+    | ElimUsingList ((elim, elimt, indsign), params, realindvars, patts) ->
+      let tac = Tacticals.tclTHENLIST [
         (* pattern to make the predicate appear. *)
         reduce (Pattern (List.map inj_with_occurrences patts)) onConcl;
         (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
           possible holes using arguments given by the user (but the
           functional one). *)
         (* FIXME: Tester ca avec un principe dependant et non-dependant *)
-        induction_tac with_evars params realindvars eliminator;
-    ] in
+        induction_tac with_evars params realindvars (ElimClause elim, elimt);
+      ] in
+      sigma, (* bugged, should be computed *) true, tac, indsign
+    in
+    let branchletsigns =
+      let f (_,is_not_let,_,_) = is_not_let in
+      Array.map (fun (_,l) -> List.map f l) indsign in
+    let names = compute_induction_names true branchletsigns names in
+    let () = Array.iter (check_name_unicity env toclear []) names in
     let tac =
     (if isrec then Tacticals.tclTHENFIRSTn else Tacticals.tclTHENLASTn)
       (Tacticals.tclTHENLIST [
