@@ -73,64 +73,6 @@ let source_substring start stop =
   let len = stop - start + 1 (* +1 for inclusive *) in
   String.sub source (start-1) len
 
-let vname = Filename.basename vfile
-
-let out fmt = Printf.kfprintf (fun _ -> ()) stdout fmt
-
-let () =
-  out
-{|<html>
-<head>
-<title>%s</title>
-<style>
-|} vname
-
-(* NB: lua "ipairs" is 1-based, ocaml "iteri" is 0-based *)
-let () = data_files |> Array.iteri (fun i _ ->
-    let color = colors.(i) in
-    out
-{|.time%d {
-  background-color: %s;
-  height: %d%%;
-  top: %d%%;
-  z-index: -1;
-  position: absolute;
-  opacity: 50%%;
-}
-|} (i+1) color (100 / ndata) (100 / ndata * i))
-
-let () =
-  out
-{|.code {
-  z-index: 0;
-  position: relative;
-  border-style: solid;
-  border-color: transparent;
-  border-width: 1px;
-}
-.code:hover {
-  border-color: black;
-}
-code::before {
-    content:  attr(data-line);
-    right: 0.5em;
-    position: absolute;
-    text-align: right;
-}
-</style>
-</head>
-<body>
-|}
-
-let () = out "<h1>Timings for %s</h1>\n" vname
-
-let () = out "<ol>\n"
-
-let () = data_files |> Array.iteri (fun i data_file ->
-    out "<li style=\"background-color: %s\">%s</li>\n" colors.(i) data_file)
-
-let () = out "</ol>\n"
-
 type one_command = {
   start: int;
   stop: int;
@@ -208,6 +150,64 @@ let maxq =
         max
         data)
     Q.zero all_data
+
+let vname = Filename.basename vfile
+
+let out fmt = Printf.kfprintf (fun _ -> ()) stdout fmt
+
+let () =
+  out
+{|<html>
+<head>
+<title>%s</title>
+<style>
+|} vname
+
+(* NB: lua "ipairs" is 1-based, ocaml "iteri" is 0-based *)
+let () = data_files |> Array.iteri (fun i _ ->
+    let color = colors.(i) in
+    out
+{|.time%d {
+  background-color: %s;
+  height: %d%%;
+  top: %d%%;
+  z-index: -1;
+  position: absolute;
+  opacity: 50%%;
+}
+|} (i+1) color (100 / ndata) (100 / ndata * i))
+
+let () =
+  out
+{|.code {
+  z-index: 0;
+  position: relative;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 1px;
+}
+.code:hover {
+  border-color: black;
+}
+code::before {
+    content:  attr(data-line);
+    right: 0.5em;
+    position: absolute;
+    text-align: right;
+}
+</style>
+</head>
+<body>
+|}
+
+let () = out "<h1>Timings for %s</h1>\n" vname
+
+let () = out "<ol>\n"
+
+let () = data_files |> Array.iteri (fun i data_file ->
+    out "<li style=\"background-color: %s\">%s</li>\n" colors.(i) data_file)
+
+let () = out "</ol>\n"
 
 let () = out "<pre>"
 
