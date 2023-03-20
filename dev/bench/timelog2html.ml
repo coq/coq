@@ -73,13 +73,12 @@ let source_substring start stop =
   let len = stop - start + 1 (* +1 for inclusive *) in
   String.sub source (start-1) len
 
-type loc = { start: int; stop: int; line: int; }
+type loc = { start: int; stop: int; line: int; text: string; }
 
 type one_command = {
   loc: loc;
   time: string; (* not float: no rounding *)
   timeq : Q.t;
-  text: string;
 }
 
 let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs|}
@@ -95,9 +94,9 @@ let rec file_loop filech ~last_end ~lines acc =
         let text = source_substring (last_end+1) sourcelen in
         if str_for_all is_white_char text then acc
         else
-          { loc = { start = last_end+1; stop = sourcelen; line = lines+1; };
+          { loc = { start = last_end+1; stop = sourcelen; line = lines+1; text; };
             time = "0"; timeq = Q.zero;
-            text; } :: acc
+          } :: acc
       else acc
     in
     CArray.rev_of_list acc
@@ -115,10 +114,9 @@ let rec file_loop filech ~last_end ~lines acc =
           if not (str_for_all is_white_char text) then
             let n = count_newlines text in
             let acc =
-              { loc = { start = last_end + 1; stop = b-1; line = lines; };
+              { loc = { start = last_end + 1; stop = b-1; line = lines; text };
                 time = "0"; timeq = Q.zero;
-                text; }
-              :: acc
+              } :: acc
             in
             acc, (lines+n), b
           else acc, lines, last_end
@@ -128,9 +126,9 @@ let rec file_loop filech ~last_end ~lines acc =
       let n = count_newlines text in
       (* lua script has "eoln" but unused *)
       let acc =
-        { loc = { start = b; stop = e; line = lines; };
+        { loc = { start = last_end+1; stop = e; line = lines; text; };
           time = t; timeq = Q.of_string t;
-          text; } :: acc
+        } :: acc
       in
       let lines = lines + n in
       let last_end = e in
@@ -229,9 +227,10 @@ Line: %d
           (k+1)
           (percentage d.(j).timeq ~max:maxq))
     in
-    let text = if d.text <> "" && d.text.[0] = '\n'
-      then String.sub d.text 1 (String.length d.text  - 1)
-      else d.text
+    let text = d.loc.text in
+    let text = if text <> "" && text.[0] = '\n'
+      then String.sub text 1 (String.length text  - 1)
+      else text
     in
     let sublines = String.split_on_char '\n' text in
     let () = sublines |> List.iteri (fun i line ->
