@@ -75,10 +75,14 @@ let source_substring start stop =
 
 type loc = { start: int; stop: int; line: int; text: string; }
 
+(* A measurement, with the original printed string and an exact rational representation *)
+type measure = { str: string; q: Q.t; }
+
+let dummy = { str="0"; q=Q.zero; }
+
 type one_command = {
   loc: loc;
-  time: string; (* not float: no rounding *)
-  timeq : Q.t;
+  time: measure;
 }
 
 let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs|}
@@ -95,7 +99,7 @@ let rec file_loop filech ~last_end ~lines acc =
         if str_for_all is_white_char text then acc
         else
           { loc = { start = last_end+1; stop = sourcelen; line = lines+1; text; };
-            time = "0"; timeq = Q.zero;
+            time = dummy;
           } :: acc
       else acc
     in
@@ -115,7 +119,7 @@ let rec file_loop filech ~last_end ~lines acc =
             let n = count_newlines text in
             let acc =
               { loc = { start = last_end + 1; stop = b-1; line = lines; text };
-                time = "0"; timeq = Q.zero;
+                time = dummy;
               } :: acc
             in
             acc, (lines+n), b
@@ -127,7 +131,7 @@ let rec file_loop filech ~last_end ~lines acc =
       (* lua script has "eoln" but unused *)
       let acc =
         { loc = { start = last_end+1; stop = e; line = lines; text; };
-          time = t; timeq = Q.of_string t;
+          time = { str=t; q = Q.of_string t; };
         } :: acc
       in
       let lines = lines + n in
@@ -145,7 +149,7 @@ let percentage ~max:m v =
 let maxq =
   Array.fold_left (fun max data ->
       Array.fold_left (fun max d ->
-          let dq = d.timeq in
+          let dq = d.time.q in
           if Q.lt max dq then dq
           else max)
         max
@@ -219,13 +223,13 @@ Line: %d
 |} vname d.loc.line
     in
     let () = all_data |> Array.iteri (fun k d ->
-        out "Time%d: %ss\n" (k+1) d.(j).time)
+        out "Time%d: %ss\n" (k+1) d.(j).time.str)
     in
     let () = out {|">|} in
     let () = all_data |> Array.iteri (fun k d ->
         out {|<div class="time%d" style="width: %f%%"></div>|}
           (k+1)
-          (percentage d.(j).timeq ~max:maxq))
+          (percentage d.(j).time.q ~max:maxq))
     in
     let text = d.loc.text in
     let text = if text <> "" && text.[0] = '\n'
