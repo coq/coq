@@ -4476,7 +4476,7 @@ type scheme_signature =
     (Id.Set.t * (elim_arg_kind * bool * bool * Id.t) list) array
 
 type eliminator_source =
-  | CaseOver of bool * Id.t * (inductive * EInstance.t)
+  | CaseOver of Id.t * (inductive * EInstance.t)
   | ElimOver of bool * Id.t * (inductive * EInstance.t)
   | ElimUsing of Id.t * (Evd.econstr with_bindings * EConstr.types * scheme_signature)
   | ElimUsingList of (Evd.econstr with_bindings * EConstr.types * scheme_signature) * Id.t list * Id.t list * EConstr.t list
@@ -4486,7 +4486,7 @@ let find_induction_type env sigma isrec elim hyp0 sort = match elim with
   let is_elim, ind, typ = guess_elim_shape env sigma isrec sort hyp0 in
   (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
     needs no update to sigma at this point. *)
-  let elim = if is_elim then ElimOver (isrec, hyp0, ind) else CaseOver (isrec, hyp0, ind) in
+  let elim = if is_elim then ElimOver (isrec, hyp0, ind) else CaseOver (hyp0, ind) in
   sigma, typ, elim
 | Some (elimc, lbind as e) ->
   let sigma, elimt = Typing.type_of env sigma elimc in
@@ -4577,7 +4577,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.pf_concl gl in
     let hyp0 = match elim with
-    | ElimUsing (hyp0, _) | ElimOver (_, hyp0, _) | CaseOver (_, hyp0, _) -> Some hyp0
+    | ElimUsing (hyp0, _) | ElimOver (_, hyp0, _) | CaseOver (hyp0, _) -> Some hyp0
     | ElimUsingList _ -> None
     in
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
@@ -4589,7 +4589,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
     (* Wait the last moment to guess the eliminator so as to know if we
       need a dependent one or not *)
     let (sigma, isrec, induct_tac, indsign) = match elim with
-    | CaseOver (isrec, id, (mind, u)) ->
+    | CaseOver (id, (mind, u)) ->
       let dep_in_concl = occur_var env sigma id concl in
       let dep = dep_in_hyps || dep_in_concl in
       let u = EInstance.kind sigma u in
@@ -4599,7 +4599,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       in
       let indsign = compute_case_signature env sigma mind case id in
       let tac = destruct_tac with_evars [] [id] case in
-      sigma, isrec, tac, indsign
+      sigma, false, tac, indsign
     | ElimOver (isrec, id, (mind, u)) ->
       let sigma, ind = find_ind_eliminator env sigma mind s in
       (* FIXME: we should store this instead of recomputing it *)
