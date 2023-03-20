@@ -134,10 +134,16 @@ let retype ?(polyprop=true) sigma =
       in
       lift n ty
     | Var id -> type_of_var env id
-    | Const (cst, u) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
+    | Const (cst, u) ->
+      let evars = Evd.evar_handler sigma in
+      EConstr.of_constr (rename_type_of_constant env ~evars (cst, EInstance.kind sigma u))
     | Evar ev -> existential_type sigma ev
-    | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
-    | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
+    | Ind (ind, u) ->
+      let evars = Evd.evar_handler sigma in
+      EConstr.of_constr (rename_type_of_inductive env ~evars (ind, EInstance.kind sigma u))
+    | Construct (cstr, u) ->
+      let evars = Evd.evar_handler sigma in
+      EConstr.of_constr (rename_type_of_constructor env ~evars (cstr, EInstance.kind sigma u))
     | Case (ci,u,pms,p,iv,c,lf) ->
         let (_,p,iv,c,lf) = EConstr.expand_case env sigma (ci,u,pms,p,iv,c,lf) in
         let Inductiveops.IndType(indf,realargs) =

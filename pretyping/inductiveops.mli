@@ -17,10 +17,10 @@ open Evd
 (** The following three functions are similar to the ones defined in
    Inductive, but they expect an env *)
 
-val type_of_inductive    : env -> pinductive -> types
+val type_of_inductive    : env -> ?evars:constr evar_handler -> pinductive -> types
 
 (** Return type as quoted by the user *)
-val type_of_constructor  : env -> pconstructor -> types
+val type_of_constructor  : env -> ?evars:constr evar_handler -> pconstructor -> types
 val type_of_constructors : env -> pinductive -> types array
 
 (** Return constructor types in normal form *)

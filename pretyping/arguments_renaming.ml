@@ -94,16 +94,18 @@ let rename_type ty ref =
   try rename_type_aux ty (arguments_names ref)
   with Not_found -> ty
 
-let rename_type_of_constant env c =
-  let ty = Typeops.type_of_constant_in env c in
-  rename_type ty (GlobRef.ConstRef (fst c))
+let rename_type_of_constant env ?evars (c,u) =
+  let cb = lookup_constant c env in
+  let () = Typeops.check_hyps_inclusion env ?evars (GlobRef.ConstRef c) cb.const_hyps in
+  let ty = Vars.subst_instance_constr u cb.const_type in
+  rename_type ty (GlobRef.ConstRef c)
 
-let rename_type_of_inductive env ind =
-  let ty = Inductiveops.type_of_inductive env ind in
+let rename_type_of_inductive env ?evars ind =
+  let ty = Inductiveops.type_of_inductive env ?evars ind in
   rename_type ty (GlobRef.IndRef (fst ind))
 
-let rename_type_of_constructor env cstruct =
-  let ty = Inductiveops.type_of_constructor env cstruct in
+let rename_type_of_constructor env ?evars cstruct =
+  let ty = Inductiveops.type_of_constructor env ?evars cstruct in
   rename_type ty (GlobRef.ConstructRef (fst cstruct))
 
 let rename_typing env c =
