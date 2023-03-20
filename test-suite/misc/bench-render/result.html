@@ -1,0 +1,103 @@
+<html>
+<head>
+<title>foo.v</title>
+<style>
+.time1 {
+  background-color: #F08080;
+  height: 50%;
+  top: 0%;
+  z-index: -1;
+  position: absolute;
+  opacity: 50%;
+}
+.time2 {
+  background-color: #EEE8AA;
+  height: 50%;
+  top: 50%;
+  z-index: -1;
+  position: absolute;
+  opacity: 50%;
+}
+.code {
+  z-index: 0;
+  position: relative;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 1px;
+}
+.code:hover {
+  border-color: black;
+}
+code::before {
+    content:  attr(data-line);
+    right: 0.5em;
+    position: absolute;
+    text-align: right;
+}
+</style>
+</head>
+<body>
+<h1>Timings for foo.v</h1>
+<ol>
+<li style="background-color: #F08080">foo.v.time1</li>
+<li style="background-color: #EEE8AA">foo.v.time2</li>
+</ol>
+<pre><div class="code" title="File: foo.v
+Line: 1
+
+Time1: 0s
+Time2: 0s
+"><div class="time1" style="width: 0.000000%"></div><div class="time2" style="width: 0.000000%"></div><code data-line="1">(* some comment *)</code>
+<code data-line="2"></code>
+<code data-line="3">(* other comment</code>
+<code data-line="4"></code>
+<code data-line="5">multiline *)</code>
+<code data-line="6"></code>
+<code data-line="7"></code>
+<code data-line="8"></code>
+</div><div class="code" title="File: foo.v
+Line: 8
+
+Time1: 2.s
+Time2: 0.s
+"><div class="time1" style="width: 100.000000%"></div><div class="time2" style="width: 0.000000%"></div><code data-line="8">Definition a := 1.</code>
+</div><div class="code" title="File: foo.v
+Line: 8
+
+Time1: 1.s
+Time2: 1.s
+"><div class="time1" style="width: 50.000000%"></div><div class="time2" style="width: 50.000000%"></div><code data-line="8"></code>
+<code data-line="9">Definition b :=</code>
+<code data-line="10">  2.</code>
+</div><div class="code" title="File: foo.v
+Line: 11
+
+Time1: 0.s
+Time2: 1.5s
+"><div class="time1" style="width: 0.000000%"></div><div class="time2" style="width: 75.000000%"></div><code data-line="11"></code>
+<code data-line="12">Definition c := 3.</code>
+</div><div class="code" title="File: foo.v
+Line: 13
+
+Time1: 0s
+Time2: 0s
+"><div class="time1" style="width: 0.000000%"></div><div class="time2" style="width: 0.000000%"></div><code data-line="13"> (* hello *)</code>
+</div><div class="code" title="File: foo.v
+Line: 13
+
+Time1: 0.s
+Time2: 0.s
+"><div class="time1" style="width: 0.000000%"></div><div class="time2" style="width: 0.000000%"></div><code data-line="13">Definition d := 4.</code>
+</div><div class="code" title="File: foo.v
+Line: 14
+
+Time1: 0s
+Time2: 0s
+"><div class="time1" style="width: 0.000000%"></div><div class="time2" style="width: 0.000000%"></div><code data-line="14"></code>
+<code data-line="15">(* end of file comment *)</code>
+<code data-line="16"></code>
+</div>
+</pre>
+
+</body>
+</html>
