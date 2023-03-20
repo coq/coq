@@ -295,28 +295,28 @@ let rec add_structure mp sign resolver linkinfo env =
         else mib
       in
       Environ.add_mind_key mind (mib,ref linkinfo) env
-    | SFBmodule mb -> add_module mb linkinfo env (* adds components as well *)
+    | SFBmodule mb -> add_module mb resolver linkinfo env (* adds components as well *)
     | SFBmodtype mtb -> Environ.add_modtype mtb env
   in
   List.fold_left add_field env sign
 
-and add_module mb linkinfo env =
+and add_module mb reso linkinfo env =
   let mp = mb.mod_mp in
   let env = Environ.shallow_add_module mb env in
   match mb.mod_type with
   | NoFunctor struc ->
     add_retroknowledge mb.mod_retroknowledge
-      (add_structure mp struc mb.mod_delta linkinfo env)
+      (add_structure mp struc reso linkinfo env)
   | MoreFunctor _ -> env
 
 let add_linked_module mb linkinfo env =
-  add_module mb linkinfo env
+  add_module mb mb.mod_delta linkinfo env
 
 let add_structure mp sign resolver env =
   add_structure mp sign resolver no_link_info env
 
 let add_module mb env =
-  add_module mb no_link_info env
+  add_module mb mb.mod_delta no_link_info env
 
 let add_module_type mp mtb env =
   add_module (module_body_of_type mp mtb) env
