@@ -116,7 +116,6 @@ doc/tools/docgram/prodnGrammar
 doc/tools/docgram/prodnCommands
 doc/tools/docgram/prodnTactics
 doc/tools/docgram/updated_rsts
-doc/unreleased.rst
 
 # other auto-generated files
 
