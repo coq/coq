@@ -10,5 +10,5 @@ git_download tactician
 if [ "$DOWNLOAD_ONLY" ]; then exit 0; fi
 
 ( cd "${CI_BUILD_DIR}/tactician"
-  dune build --root . --only-packages=coq-tactician @install
+  dune build --root . theories/Ltac1.vo
 )
