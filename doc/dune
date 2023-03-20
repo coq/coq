@@ -1,8 +1,5 @@
 (rule
  (targets unreleased.rst)
- ; We need to keep this as the sphinx build still requires this file
- ; in-tree, to be fixed hopefully soon
- (mode promote-until-clean)
  (deps (source_tree changelog))
  (action (with-stdout-to %{targets} (bash "cat changelog/00-title.rst changelog/*/*.rst"))))
 
