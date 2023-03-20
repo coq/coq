@@ -3560,7 +3560,7 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
         Tacticals.tclTHEN (clear_wildcards thin) (tac dests)
         end
   in
-  peel_tac ra dests names []
+  peel_tac ra (dests, None) names []
 
 (* - le recalcul de indtyp à chaque itération de atomize_one est pour ne pas
      s'embêter à regarder si un letin_tac ne fait pas des
@@ -3760,7 +3760,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
       | _ -> assert false in
     let statuslists = (!lstatus,List.rev !rstatus) in
     let recargdests = AfterFixedPosition (if Option.is_empty hyp0_opt then None else lhyp0) in
-    (statuslists, (recargdests,None), !toclear, !decldeps, !avoid, !maindep)
+    (statuslists, recargdests, !toclear, !decldeps, !avoid, !maindep)
 
 (*
    The general form of an induction principle is the following:
