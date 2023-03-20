@@ -157,10 +157,7 @@ let interp_hints ~poly h =
     HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->
     let pat = Option.map (fp sigma) patcom in
-    let l = match pat with None -> [] | Some (l, _) -> l in
-    let ltacvars =
-      List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l
-    in
+    let ltacvars = match pat with None -> Id.Set.empty | Some (l, _) -> l in
     let env = Genintern.{(empty_glob_sign ~strict:true env) with ltacvars} in
     let _, tacexp = Genintern.generic_intern env tacexp in
     HintsExternEntry

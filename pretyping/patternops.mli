@@ -50,7 +50,7 @@ val legacy_bad_pattern_of_constr : Environ.env -> Evd.evar_map -> EConstr.constr
     are bound *)
 
 val pattern_of_glob_constr : glob_constr ->
-      patvar list * constr_pattern
+      Id.Set.t * constr_pattern
 
 val map_pattern_with_binders : (Name.t -> 'a -> 'a) ->
   ('a -> constr_pattern -> constr_pattern) -> 'a -> constr_pattern -> constr_pattern

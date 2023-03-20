@@ -368,11 +368,11 @@ let warn_cast_in_pattern =
     (fun () -> Pp.strbrk "Cast types are ignored in patterns")
 
 type meta_accu =
-  | Metas of Id.t list ref
+  | Metas of Id.Set.t ref
   | InCastType of Loc.t option
 
 let push_meta metas n = match metas with
-  | Metas metas -> metas := n::!metas
+  | Metas metas -> metas := Id.Set.add n !metas
   | InCastType loc ->
     CErrors.user_err ?loc
       Pp.(str "Cannot bind pattern variable in cast type:"
@@ -557,6 +557,6 @@ and pats_of_glob_branches loc metas vars ind brs =
   get_pat Int.Set.empty brs
 
 let pattern_of_glob_constr c =
-  let metas = ref [] in
+  let metas = ref Id.Set.empty in
   let p = pat_of_raw (Metas metas) [] c in
-  (!metas,p)
+  (!metas, p)

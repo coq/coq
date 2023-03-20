@@ -24,7 +24,7 @@ type 'a hint_info_gen =
     { hint_priority : int option;
       hint_pattern : 'a option }
 
-type hint_info = (Pattern.patvar list * Pattern.constr_pattern) hint_info_gen
+type hint_info = (Id.Set.t * Pattern.constr_pattern) hint_info_gen
 
 let get_typeclasses_unique_solutions =
   Goptions.declare_bool_option_and_ref
