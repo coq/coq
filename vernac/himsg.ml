@@ -1206,13 +1206,6 @@ let explain_typeclass_error env sigma = function
 
 (* Refiner errors *)
 
-let explain_refiner_bad_type env sigma arg ty conclty =
-  let pm, pn = with_diffs (pr_lconstr_env env sigma ty) (pr_leconstr_env env sigma conclty) in
-  str "Refiner was given an argument" ++ brk(1,1) ++
-  pr_lconstr_env env sigma arg ++ spc () ++
-  str "of type" ++ brk(1,1) ++ pm ++ spc () ++
-  str "instead of" ++ brk(1,1) ++ pn ++ str "."
-
 let explain_refiner_unresolved_bindings l =
   str "Unable to find an instance for the " ++
   str (String.plural (List.length l) "variable") ++ spc () ++
@@ -1230,20 +1223,14 @@ let explain_non_linear_proof env sigma c =
   str "Cannot refine with term" ++ brk(1,1) ++ pr_leconstr_env env sigma c ++
   spc () ++ str "because a metavariable has several occurrences."
 
-let explain_meta_in_type env sigma c =
-  str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_leconstr_env env sigma c ++
-  str " of another meta"
-
 let explain_no_such_hyp id =
   str "No such hypothesis: " ++ Id.print id
 
 let explain_refiner_error env sigma = function
-  | BadType (arg,ty,conclty) -> explain_refiner_bad_type env sigma arg ty conclty
   | UnresolvedBindings t -> explain_refiner_unresolved_bindings t
   | CannotApply (t,harg) -> explain_refiner_cannot_apply env sigma t harg
   | IntroNeedsProduct -> explain_intro_needs_product ()
   | NonLinearProof c -> explain_non_linear_proof env sigma c
-  | MetaInType c -> explain_meta_in_type env sigma c
   | NoSuchHyp id -> explain_no_such_hyp id
 
 (* Inductive errors *)

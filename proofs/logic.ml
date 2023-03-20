@@ -13,7 +13,6 @@ open CErrors
 open Util
 open Names
 open Nameops
-open Constr
 open Termops
 open Environ
 open Reductionops
@@ -23,11 +22,9 @@ module NamedDecl = Context.Named.Declaration
 type refiner_error =
 
   (* Errors raised by the refiner *)
-  | BadType of constr * constr * EConstr.t
   | UnresolvedBindings of Name.t list
   | CannotApply of EConstr.t * EConstr.t
   | NonLinearProof of EConstr.t
-  | MetaInType of EConstr.constr
 
   (* Errors raised by the tactics *)
   | IntroNeedsProduct
