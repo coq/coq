@@ -125,12 +125,13 @@ let rec file_loop filech ~last_end ~lines acc : measure one_command array =
                 time = dummy;
               } :: acc
             in
-            acc, (lines+n), b
+            acc, (lines+n), b-1
           else acc, lines, last_end
         else acc, lines, last_end
       in
       let text = source_substring (last_end+1) e in
-      let n = count_newlines text in
+      let lines, n = if text <> "" && text.[0] = '\n' then lines+1, 1 else lines, 0 in
+      let n = count_newlines text - n in
       (* lua script has "eoln" but unused *)
       let acc =
         { loc = { start = last_end+1; stop = e; line = lines; text; };
