@@ -73,13 +73,13 @@ let source_substring start stop =
   let len = stop - start + 1 (* +1 for inclusive *) in
   String.sub source (start-1) len
 
+type loc = { start: int; stop: int; line: int; }
+
 type one_command = {
-  start: int;
-  stop: int;
+  loc: loc;
   time: string; (* not float: no rounding *)
   timeq : Q.t;
   text: string;
-  lines: int;
 }
 
 let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs|}
@@ -95,8 +95,9 @@ let rec file_loop filech ~last_end ~lines acc =
         let text = source_substring (last_end+1) sourcelen in
         if str_for_all is_white_char text then acc
         else
-          { start = last_end+1; stop = sourcelen; time = "0"; timeq = Q.zero;
-            text; lines = lines+1; } :: acc
+          { loc = { start = last_end+1; stop = sourcelen; line = lines+1; };
+            time = "0"; timeq = Q.zero;
+            text; } :: acc
       else acc
     in
     CArray.rev_of_list acc
@@ -114,8 +115,9 @@ let rec file_loop filech ~last_end ~lines acc =
           if not (str_for_all is_white_char text) then
             let n = count_newlines text in
             let acc =
-              { start = last_end + 1; stop = b-1; time = "0"; timeq = Q.zero;
-                text; lines; }
+              { loc = { start = last_end + 1; stop = b-1; line = lines; };
+                time = "0"; timeq = Q.zero;
+                text; }
               :: acc
             in
             acc, (lines+n), b
@@ -126,8 +128,9 @@ let rec file_loop filech ~last_end ~lines acc =
       let n = count_newlines text in
       (* lua script has "eoln" but unused *)
       let acc =
-        { start = b; stop = e; time = t; timeq = Q.of_string t;
-          text; lines; } :: acc
+        { loc = { start = b; stop = e; line = lines; };
+          time = t; timeq = Q.of_string t;
+          text; } :: acc
       in
       let lines = lines + n in
       let last_end = e in
@@ -215,7 +218,7 @@ let () = all_data.(0) |> Array.iteri (fun j d ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
 
-|} vname d.lines
+|} vname d.loc.line
     in
     let () = all_data |> Array.iteri (fun k d ->
         out "Time%d: %ss\n" (k+1) d.(j).time)
@@ -232,7 +235,7 @@ Line: %d
     in
     let sublines = String.split_on_char '\n' text in
     let () = sublines |> List.iteri (fun i line ->
-        out "<code data-line=\"%d\">%s</code>\n" (d.lines+i) (htmlescape line))
+        out "<code data-line=\"%d\">%s</code>\n" (d.loc.line+i) (htmlescape line))
     in
     let () = out "</div>" in
     ())
