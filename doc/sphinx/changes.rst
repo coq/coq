@@ -68,7 +68,7 @@ contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
 
 The `Coq Platform <https://github.com/coq/platform>`_ has been maintained
-by Michael Soegtrop, with help from Karl Palmskog, Enrico Tassi and
+by Michael Soegtrop, with help from Karl Palmskog, Pierre Roux, Enrico Tassi and
 Théo Zimmermann.
 
 Our current maintainers are Yves Bertot, Frédéric Besson, Ana Borges,
@@ -114,6 +114,12 @@ Kernel
   (`#16958 <https://github.com/coq/coq/pull/16958>`_,
   fixes `#16957 <https://github.com/coq/coq/issues/16957>`_,
   by Gaëtan Gilbert).
+- **Fixed:**
+  Unexpected anomaly when checking termination of fixpoints
+  containing :g:`match` expressions with inaccessible branches
+  (`#17116 <https://github.com/coq/coq/pull/17116>`_,
+  fixes `#17073 <https://github.com/coq/coq/issues/17073>`_,
+  by Hugo Herbelin).
 
 Specification language, type inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -124,6 +130,17 @@ Specification language, type inference
   triggered only when the unused variable was catching at least
   two cases (`#16135 <https://github.com/coq/coq/pull/16135>`_,
   by Pierre Roux).
+- **Fixed:**
+  Pattern-matching clauses were possibly lost when matching over a
+  constructor from a singleton inductive type in the presence of
+  implicit coercions (`#17138 <https://github.com/coq/coq/pull/17138>`_,
+  fixes `#17137 <https://github.com/coq/coq/issues/17137>`_, by Hugo
+  Herbelin).
+- **Fixed:**
+  Possible anomaly when using syntax :g:`term.(proj)` with projections defined in sections
+  (`#17174 <https://github.com/coq/coq/pull/17174>`_,
+  fixes `#17173 <https://github.com/coq/coq/issues/17173>`_,
+  by Hugo Herbelin).
 
 Notations
 ^^^^^^^^^
@@ -454,6 +471,16 @@ Commands and options
   (`#16981 <https://github.com/coq/coq/pull/16981>`_,
   fixes `#16602 <https://github.com/coq/coq/issues/16602>`_,
   by Jim Fehrle).
+- **Fixed:**
+  Backtracking over grammar modifications from plugins (such as added commands)
+  (`#17069 <https://github.com/coq/coq/pull/17069>`_,
+  fixes `#12575 <https://github.com/coq/coq/issues/12575>`_,
+  by Gaëtan Gilbert).
+- **Fixed:**
+  Anomaly instead of regular error on unsupported applied :g:`fix` in :cmd:`Function`
+  (`#17113 <https://github.com/coq/coq/pull/17113>`_,
+  fixes `#17110 <https://github.com/coq/coq/issues/17110>`_,
+  by Hugo Herbelin).
 
 Command-line tools
 ^^^^^^^^^^^^^^^^^^
