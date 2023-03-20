@@ -21,6 +21,13 @@ new tactics:
   to the ML language family, Mtac2 reuses the language of Coq itself
   as the language to build Coq tactics.
 
+- `Coq-Elpi <https://github.com/LPCIC/coq-elpi>`_ is an external plugin
+  which provides an extension language based on λProlog, a programming
+  language well suited to write code which manipulates syntax trees with
+  binders such as Coq terms.
+  Elpi provides an extensive set of APIs to create commands (i.e. script
+  the vernacular language) and tactics.
+
 - The most traditional way of building new complex tactics is to write
   a Coq plugin in OCaml.  Beware that this also requires much more
   effort and commitment.  A tutorial for writing Coq plugins is
