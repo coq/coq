@@ -1,0 +1,5 @@
+-R theories Coqdoc
+
+COQDOCFLAGS = "--index indexpage -g -coqlib_url http://coq.inria.fr/stdlib --utf8"
+
+theories/test.v
