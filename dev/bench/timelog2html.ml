@@ -75,14 +75,17 @@ let source_substring start stop =
 
 type loc = { start: int; stop: int; line: int; text: string; }
 
+(* [line] and [text] are derived data using the same [source] so no need to check them *)
+let same_loc a b = a.start = b.start && a.stop = b.stop
+
 (* A measurement, with the original printed string and an exact rational representation *)
 type measure = { str: string; q: Q.t; }
 
 let dummy = { str="0"; q=Q.zero; }
 
-type one_command = {
+type 'a one_command = {
   loc: loc;
-  time: measure;
+  time: 'a;
 }
 
 let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs|}
@@ -91,7 +94,7 @@ let count_newlines s = str_fold_left (fun n c -> if c = '\n' then n+1 else n) 0 
 
 let is_white_char = function ' '|'\n'|'\t' -> true | _ -> false
 
-let rec file_loop filech ~last_end ~lines acc =
+let rec file_loop filech ~last_end ~lines acc : measure one_command array =
   match input_line filech with
   | exception End_of_file ->
     let acc = if last_end + 1 <= sourcelen then
@@ -143,17 +146,33 @@ let file_data data_file =
 
 let all_data = Array.map file_data data_files
 
+let () =
+  data_files |> Array.iteri (fun fidx fname ->
+      if Array.length all_data.(0) <> Array.length all_data.(fidx)
+      then die "Mismatch between %s and %s: different measurement counts\n" data_files.(0) fname)
+
+let all_data : measure array one_command array =
+  all_data.(0) |> Array.mapi (fun i d ->
+      let times = data_files |> Array.mapi (fun fidx fname ->
+          let fdata = all_data.(fidx).(i) in
+          if same_loc d.loc fdata.loc
+          then fdata.time
+          else die "Mismatch between %s and %s at line %d\n" data_files.(0) fname (i+1))
+      in
+      { loc = d.loc;
+        time = times; })
+
 let percentage ~max:m v =
   Q.to_float Q.(v * of_int 100 / m)
 
 let maxq =
   Array.fold_left (fun max data ->
       Array.fold_left (fun max d ->
-          let dq = d.time.q in
+          let dq = d.q in
           if Q.lt max dq then dq
           else max)
         max
-        data)
+        data.time)
     Q.zero all_data
 
 let vname = Filename.basename vfile
@@ -216,21 +235,23 @@ let () = out "</ol>\n"
 
 let () = out "<pre>"
 
-let () = all_data.(0) |> Array.iteri (fun j d ->
+let () = all_data |> Array.iteri (fun j d ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
 
 |} vname d.loc.line
     in
-    let () = all_data |> Array.iteri (fun k d ->
-        out "Time%d: %ss\n" (k+1) d.(j).time.str)
+    let () = d.time |> Array.iteri (fun k d ->
+        out "Time%d: %ss\n" (k+1) d.str)
     in
     let () = out {|">|} in
-    let () = all_data |> Array.iteri (fun k d ->
+
+    let () = d.time |> Array.iteri (fun k d ->
         out {|<div class="time%d" style="width: %f%%"></div>|}
           (k+1)
-          (percentage d.(j).time.q ~max:maxq))
+          (percentage d.q ~max:maxq))
     in
+
     let text = d.loc.text in
     let text = if text <> "" && text.[0] = '\n'
       then String.sub text 1 (String.length text  - 1)
@@ -240,6 +261,7 @@ Line: %d
     let () = sublines |> List.iteri (fun i line ->
         out "<code data-line=\"%d\">%s</code>\n" (d.loc.line+i) (htmlescape line))
     in
+
     let () = out "</div>" in
     ())
 
