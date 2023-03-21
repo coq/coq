@@ -502,6 +502,13 @@ Command-line tools
   the same source file with racy behaviour (only fixed when using a
   ``make`` supporting "grouped targets" such as GNU Make 4.3) (`#16757
   <https://github.com/coq/coq/pull/16757>`_, by Gaëtan Gilbert).
+- **Fixed:**
+  properly process legacy attributes such as ``Global``
+  and ``Polymorphic`` in coqdoc to avoid omissions
+  when using the ``-g`` (Gallina only) option
+  (`#17090 <https://github.com/coq/coq/pull/17090>`_,
+  fixes `#15933 <https://github.com/coq/coq/issues/15933>`_,
+  by Karl Palmskog).
 
  .. _817Stdlib:
 
