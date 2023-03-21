@@ -288,23 +288,28 @@ let output_int64 ch n =
 
 (* Time stamps. *)
 
-type time = float * float * float
+type time = {real: float; user: float; system: float; }
 
 let get_time () =
   let t = Unix.times ()  in
-  (Unix.gettimeofday(), t.Unix.tms_utime, t.Unix.tms_stime)
+  { real = Unix.gettimeofday();
+    user = t.Unix.tms_utime;
+    system = t.Unix.tms_stime;
+  }
 
 (* Keep only 3 significant digits *)
 let round f = (floor (f *. 1e3)) *. 1e-3
 
-let time_difference (t1,_,_) (t2,_,_) = round (t2 -. t1)
+let diff1 proj ~start ~stop = round (proj stop -. proj start)
 
-let fmt_time_difference (startreal,ustart,sstart) (stopreal,ustop,sstop) =
-  real (round (stopreal -. startreal)) ++ str " secs " ++
+let time_difference t1 t2 = diff1 (fun t -> t.real) ~start:t1 ~stop:t2
+
+let fmt_time_difference start stop =
+  real (diff1 (fun t -> t.real) ~start ~stop) ++ str " secs " ++
   str "(" ++
-  real (round (ustop -. ustart)) ++ str "u" ++
+  real (diff1 (fun t -> t.user) ~start ~stop) ++ str "u" ++
   str "," ++
-  real (round (sstop -. sstart)) ++ str "s" ++
+  real (diff1 (fun t -> t.system) ~start ~stop) ++ str "s" ++
   str ")"
 
 let with_time f x =

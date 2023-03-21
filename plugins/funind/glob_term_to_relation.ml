@@ -1277,7 +1277,6 @@ let rec rebuild_return_type rt =
 let do_build_inductive evd (funconstants : pconstant list)
     (funsargs : (Name.t * glob_constr * glob_constr option) list list)
     returned_types (rtl : glob_constr list) =
-  let _time1 = System.get_time () in
   let funnames =
     List.map
       (fun c -> Label.to_id (KerName.label (Constant.canonical (fst c))))
@@ -1517,7 +1516,6 @@ let do_build_inductive evd (funconstants : pconstant list)
   (* 	rel_inds *)
   (*     ) *)
   (*   in *)
-  let _time2 = System.get_time () in
   try
     with_full_print
       (Flags.silently
@@ -1527,8 +1525,6 @@ let do_build_inductive evd (funconstants : pconstant list)
       Declarations.Finite
   with
   | UserError msg as e ->
-    let _time3 = System.get_time () in
-    (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
     let repacked_rel_inds =
       List.map
         (fun ((a, b, c, l), ntn) ->
@@ -1550,8 +1546,6 @@ let do_build_inductive evd (funconstants : pconstant list)
     in
     observe msg; raise e
   | reraise ->
-    let _time3 = System.get_time () in
-    (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
     let repacked_rel_inds =
       List.map
         (fun ((a, b, c, l), ntn) ->
