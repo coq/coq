@@ -52,7 +52,7 @@ let protect_pattern_in_binder bl c ctypopt =
       | None -> CAst.make ?loc:c.CAst.loc (Constrexpr.CHole (None,Namegen.IntroAnonymous))
       | Some t -> t in
     let loc = Loc.merge_opt c.CAst.loc t.CAst.loc in
-    let c = CAst.make ?loc @@ Constrexpr.CCast (c, Constr.DEFAULTcast, t) in
+    let c = CAst.make ?loc @@ Constrexpr.CCast (c, Some Constr.DEFAULTcast, t) in
     let loc = match List.hd bl with
       | Constrexpr.CLocalAssum (a::_,_,_) | Constrexpr.CLocalDef (a,_,_) -> a.CAst.loc
       | Constrexpr.CLocalPattern {CAst.loc} -> loc

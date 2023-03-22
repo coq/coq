@@ -133,12 +133,12 @@ let mkCLambda ?loc name ty t = CAst.make ?loc @@
    CLambdaN ([CLocalAssum([CAst.make ?loc name], Default Explicit, ty)], t)
 let mkCLetIn ?loc name bo t = CAst.make ?loc @@
    CLetIn ((CAst.make ?loc name), bo, None, t)
-let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, DEFAULTcast, ty)
+let mkCCast ?loc t ty = CAst.make ?loc @@ CCast (t, Some DEFAULTcast, ty)
 
 (** Constructors for rawconstr *)
 let mkRHole = DAst.make @@ GHole (InternalHole, IntroAnonymous)
 let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
-let mkRCast rc rt =  DAst.make @@ GCast (rc, DEFAULTcast, rt)
+let mkRCast rc rt =  DAst.make @@ GCast (rc, Some DEFAULTcast, rt)
 let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
 
 (* }}} *)
@@ -1061,7 +1061,7 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
   let ist_of x = x.interpretation in
   let decode ({interpretation=ist; _} as t) ?reccall f g =
     try match DAst.get (pf_intern_term env sigma0 t) with
-    | GCast(t, DEFAULTcast, c) when isGHole t && isGLambda c->
+    | GCast(t, Some DEFAULTcast, c) when isGHole t && isGLambda c->
       let (x, c) = destGLambda c in
       f x {kind = NoFlag; pattern = (c,None); interpretation = ist}
     | GVar id
@@ -1108,7 +1108,7 @@ let interp_pattern ?wit_ssrpatternarg env sigma0 red redty =
   let red = let rec decode_red = function
     | T {kind=k; pattern=(t,None); interpretation=ist} ->
       begin match DAst.get t with
-      | GCast (c, DEFAULTcast, t)
+      | GCast (c, Some DEFAULTcast, t)
         when isGHole c &&
           let (id, t) = destGLambda t in
           let id = Id.to_string id in let len = String.length id in

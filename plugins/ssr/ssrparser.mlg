@@ -1272,7 +1272,7 @@ let mkFwdCast fk ?loc ?c t =
     | Some c -> assert (same_ist t c); c.body in
   ((fk, [BFcast]),
    { t with annotation = `None;
-            body = (CAst.make ?loc @@ CCast (c, defaultCast, t.body)) })
+            body = (CAst.make ?loc @@ CCast (c, Some defaultCast, t.body)) })
 
 let mkssrFwdCast fk loc t c = ((fk, [BFcast]), (c, Some t))
 

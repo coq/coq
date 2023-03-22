@@ -372,6 +372,9 @@ term100: [
 | REPLACE term99 "<<:" term200
 | WITH term99 "<<:" type
 | MOVETO term_cast term99 "<<:" type
+| REPLACE term99 ":>" term200
+| WITH term99 ":>" type
+| MOVETO term_cast term99 ":>" type
 | REPLACE term99 ":" term200
 | WITH term99 ":" type
 | MOVETO term_cast term99 ":" type

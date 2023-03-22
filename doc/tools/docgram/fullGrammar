@@ -74,6 +74,7 @@ term200: [
 term100: [
 | term99 "<:" term200
 | term99 "<<:" term200
+| term99 ":>" term200
 | term99 ":" term200
 | term99
 ]

@@ -30,7 +30,7 @@ let mk_cast = function
     (c,(_,None)) -> c
   | (c,(_,Some ty)) ->
     let loc = Loc.merge_opt (constr_loc c) (constr_loc ty)
-    in CAst.make ?loc @@ CCast(c, DEFAULTcast, ty)
+    in CAst.make ?loc @@ CCast(c, Some DEFAULTcast, ty)
 
 let binder_of_name expl { CAst.loc = loc; v = na } =
   CLocalAssum ([CAst.make ?loc na], Default expl,
@@ -155,11 +155,13 @@ GRAMMAR EXTEND Gram
       [ c = binder_constr -> { c } ]
     | "100" RIGHTA
       [ c1 = term; "<:"; c2 = term LEVEL "200" ->
-                 { CAst.make ~loc @@ CCast(c1, VMcast, c2) }
+                 { CAst.make ~loc @@ CCast(c1, Some VMcast, c2) }
       | c1 = term; "<<:"; c2 = term LEVEL "200" ->
-                 { CAst.make ~loc @@ CCast(c1, NATIVEcast, c2) }
+                 { CAst.make ~loc @@ CCast(c1, Some NATIVEcast, c2) }
+      | c1 = term; ":>"; c2 = term LEVEL "200" ->
+                 { CAst.make ~loc @@ CCast(c1, None, c2) }
       | c1 = term; ":"; c2 = term LEVEL "200" ->
-                 { CAst.make ~loc @@ CCast(c1, DEFAULTcast, c2) } ]
+                 { CAst.make ~loc @@ CCast(c1, Some DEFAULTcast, c2) } ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
     | "10" LEFTA
@@ -231,7 +233,7 @@ GRAMMAR EXTEND Gram
       | "let"; id=name; bl = binders; ty = let_type_cstr; ":=";
         c1 = term LEVEL "200"; "in"; c2 = term LEVEL "200" ->
         { let ty,c1 = match ty, c1 with
-          | (_,None), { CAst.v = CCast(c, DEFAULTcast, t) } -> (Loc.tag ?loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
+          | (_,None), { CAst.v = CCast(c, Some DEFAULTcast, t) } -> (Loc.tag ?loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
           | _, _ -> ty, c1 in
           CAst.make ~loc @@ CLetIn(id,mkLambdaCN ?loc:(constr_loc c1) bl c1,
                  Option.map (mkProdCN ?loc:(fst ty) bl) (snd ty), c2) }
@@ -427,7 +429,7 @@ GRAMMAR EXTEND Gram
         { [CLocalAssum ([id],Default Explicit,c)] }
       | "("; id = name; ":="; c = lconstr; ")" ->
         { match c.CAst.v with
-          | CCast(c, DEFAULTcast, t) -> [CLocalDef (id,c,Some t)]
+          | CCast(c, Some DEFAULTcast, t) -> [CLocalDef (id,c,Some t)]
           | _ -> [CLocalDef (id,c,None)] }
       | "("; id = name; ":"; t = lconstr; ":="; c = lconstr; ")" ->
         { [CLocalDef (id,c,Some t)] }

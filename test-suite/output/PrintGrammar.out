@@ -43,6 +43,7 @@ Entry term is
 | "100" RIGHTA
   [ SELF; "<:"; term LEVEL "200"
   | SELF; "<<:"; term LEVEL "200"
+  | SELF; ":>"; term LEVEL "200"
   | SELF; ":"; term LEVEL "200" ]
 | "99" RIGHTA
   [ SELF; "->"; term LEVEL "200" ]

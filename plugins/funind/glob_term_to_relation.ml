@@ -626,7 +626,7 @@ let rec build_entry_lc env sigma funnames avoid rt :
     let v =
       match typ with
       | None -> v
-      | Some t -> DAst.make ?loc:rt.loc @@ GCast (v, DEFAULTcast, t)
+      | Some t -> DAst.make ?loc:rt.loc @@ GCast (v, Some DEFAULTcast, t)
     in
     let v_res = build_entry_lc env sigma funnames avoid v in
     let v_as_constr, ctx = Pretyping.understand env (Evd.from_env env) v in
@@ -1130,7 +1130,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
     let t =
       match t with
       | None -> v
-      | Some t -> DAst.make ?loc:rt.loc @@ GCast (v, DEFAULTcast, t)
+      | Some t -> DAst.make ?loc:rt.loc @@ GCast (v, Some DEFAULTcast, t)
     in
     let not_free_in_t id = not (is_free_in id t) in
     let evd = Evd.from_env env in

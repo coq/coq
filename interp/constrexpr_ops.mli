@@ -49,7 +49,7 @@ val local_binders_loc : local_binder_expr list -> Loc.t option
 
 val mkIdentC : Id.t -> constr_expr
 val mkRefC : qualid -> constr_expr
-val mkCastC : constr_expr * Constr.cast_kind * constr_expr -> constr_expr
+val mkCastC : constr_expr * Constr.cast_kind option * constr_expr -> constr_expr
 val mkLambdaC : lname list * binder_kind * constr_expr * constr_expr -> constr_expr
 val mkLetInC : lname * constr_expr * constr_expr option * constr_expr -> constr_expr
 val mkProdC : lname list * binder_kind * constr_expr * constr_expr -> constr_expr

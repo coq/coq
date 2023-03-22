@@ -244,6 +244,40 @@ Printing of the elimination predicate
    the result type is not printed when Coq knows that it can re-
    synthesize it.
 
+Printing of hidden subterms
++++++++++++++++++++++++++++
+
+.. flag:: Printing Match All Subterms
+
+   In order to be able to cheaply reconstruct the types of the
+   variables bound by `in` and `as`, `match` terms contain the
+   polymorphic universe instance and the parameters of the inductive
+   which is being matched. When this flag is on (it is off by
+   default), this information is displayed as a :term:`volatile cast` around
+   the match discriminee.
+
+   When the match relies on :flag:`Definitional UIP`,
+   the indices are also subterms of the `match` term and are displayed when this flag is on.
+   Otherwise they are not subterms and are displayed as holes (`_`) when this flag is on.
+
+   .. example::
+
+      .. coqtop:: in
+
+         Polymorphic Inductive eqT@{u} {A:Type@{u}} (a:A) : A -> Type@{u} := reflT : eqT a a.
+         Set Definitional UIP.
+         Inductive seq {A} (a:A) : A -> SProp := srefl : seq a a.
+
+      .. coqtop:: all
+
+         Print eqT_rect.
+         Print seq_rect.
+
+         Set Printing Match All Subterms.
+         Set Printing Universes.
+
+         Print eqT_rect.
+         Print seq_rect.
 
 Printing matching on irrefutable patterns
 ++++++++++++++++++++++++++++++++++++++++++

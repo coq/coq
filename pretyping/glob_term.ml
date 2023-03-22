@@ -88,7 +88,7 @@ type 'a glob_constr_r =
   | GSort of glob_sort
   | GHole of Evar_kinds.t * Namegen.intro_pattern_naming_expr
   | GGenarg of Genarg.glob_generic_argument
-  | GCast of 'a glob_constr_g * Constr.cast_kind * 'a glob_constr_g
+  | GCast of 'a glob_constr_g * Constr.cast_kind option * 'a glob_constr_g
   | GProj of (Constant.t * glob_level list option) * 'a glob_constr_g list * 'a glob_constr_g
   | GInt of Uint63.t
   | GFloat of Float64.t
