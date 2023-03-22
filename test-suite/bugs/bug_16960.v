@@ -21,7 +21,8 @@ Axiom Q : forall (n : Z) (Wdecoder : decoder n W), Type.
 Lemma is_Q {n decode }
   : Q (1 * n) (@tuple_decoder n decode 1).
 Proof.
-  apply tuple_decoder_1.
+  Fail apply tuple_decoder_1.
+  refine (tuple_decoder_1 _).
 (* master: no goals remain
 this PR: Error: Found no subterm matching "(Z.of_nat 1 * n)%Z" in the current goal. *)
 Qed.
