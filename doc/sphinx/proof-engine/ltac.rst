@@ -743,10 +743,10 @@ In some cases backtracking may be too expensive.
 
    .. todo the following is not accepted as a regular tactic but it does seem to do something
       see https://github.com/coq/coq/pull/12103#discussion_r422249862.
-      Probably the same thing as for the :tacv:`solve` below.
+      Probably the same thing as for the :tacn:`solve` below.
       The code is in Coretactics.initial_tacticals
 
-   .. tacv:: first @ltac_expr
+   .. tacn:: first [ {*| @ltac_expr } ]
 
       This is an |Ltac| alias that gives a primitive access to the first
       tactical as an |Ltac| definition without going through a parsing rule. It
@@ -782,7 +782,7 @@ in a series of alternative tactics:
 
    :tacn:`solve` is an :token:`l1_tactic`.
 
-   .. tacv:: solve @ltac_expr
+   .. tacn:: solve [ {*| @ltac_expr } ]
 
       This is an |Ltac| alias that gives a primitive access to the :tacn:`solve`
       tactic. See the :tacn:`first` tactic for more information.
