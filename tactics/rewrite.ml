@@ -32,9 +32,6 @@ open Libnames
 open Proofview.Notations
 open Context.Named.Declaration
 
-module NamedDecl = Context.Named.Declaration
-(* module RelDecl = Context.Rel.Declaration *)
-
 module TC = Typeclasses
 
 (** Typeclass-based generalized rewriting. *)
@@ -1523,39 +1520,8 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
     in
     Some (Some (evars, res, newt))
 
-(** Insert a declaration after the last declaration it depends on *)
-let rec insert_dependent env sigma decl accu hyps = match hyps with
-| [] -> List.rev_append accu [decl]
-| ndecl :: rem ->
-  if occur_var_in_decl env sigma (NamedDecl.get_id ndecl) decl then
-    List.rev_append accu (decl :: hyps)
-  else
-    insert_dependent env sigma decl (ndecl :: accu) rem
-
 let assert_replacing id newt tac =
-  let prf = Proofview.Goal.enter begin fun gl ->
-    let concl = Proofview.Goal.concl gl in
-    let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.project gl in
-    let ctx = named_context env in
-    let after, before = List.split_when (NamedDecl.get_id %> Id.equal id) ctx in
-    let nc = match before with
-    | [] -> assert false
-    | d :: rem -> insert_dependent env sigma
-                    (LocalAssum (make_annot (NamedDecl.get_id d) Sorts.Relevant, newt)) [] after @ rem
-    in
-    let env' = Environ.reset_with_named_context (val_of_named_context nc) env in
-    Refine.refine ~typecheck:true begin fun sigma ->
-      let (sigma, ev) = Evarutil.new_evar env' sigma concl in
-      let (sigma, ev') = Evarutil.new_evar env sigma newt in
-      let map d =
-        let n = NamedDecl.get_id d in
-        if Id.equal n id then ev' else mkVar n
-      in
-      let (e, _) = destEvar sigma ev in
-      (sigma, mkLEvar sigma (e, List.map map nc))
-    end
-  end in
+  let prf = Tactics.assert_after_replacing id newt in
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
 
 let newfail n s =
