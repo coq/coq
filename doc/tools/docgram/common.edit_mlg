@@ -1181,6 +1181,9 @@ simple_tactic: [
 | DELETE "typeclasses" "eauto" "best_effort" OPT nat_or_var
 | DELETE "typeclasses" "eauto" OPT nat_or_var "with" LIST1 preident
 | DELETE "typeclasses" "eauto" OPT nat_or_var
+(* first/solve variants defined with register_list_tactical in coretactics.mlg *)
+| "first" ident
+| "solve" ident
 (* in Tactic Notation: *)
 | "setoid_replace" constr "with" constr OPT ( "using" "relation" constr ) OPT ( "in" hyp )
        OPT ( "at" LIST1 int_or_var ) OPT ( "by" ltac_expr3 )

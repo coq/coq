@@ -1371,7 +1371,9 @@ simple_tactic: [
 | "only" selector ":" ltac_expr3
 | "tryif" ltac_expr "then" ltac_expr "else" ltac_expr2
 | "first" "[" LIST0 ltac_expr SEP "|" "]"
+| "first" ident
 | "solve" "[" LIST0 ltac_expr SEP "|" "]"
+| "solve" ident
 | "idtac" LIST0 [ ident | string | natural ]
 | [ "fail" | "gfail" ] OPT nat_or_var LIST0 [ ident | string | natural ]
 | "fun" LIST1 name "=>" ltac_expr
