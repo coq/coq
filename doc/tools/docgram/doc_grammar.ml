@@ -621,9 +621,9 @@ let read_mlg g is_edit ast file level_renames symdef_map =
                 (* Looks like FIRST/LAST can be ignored for documenting the current grammar *)
                 | _ -> "" in
               if len > 1 && level = "" then
-                error "Missing level string for `%s`\n" nt
+                error "Missing level string for '%s'\n" nt
               else if not (Str.string_match level_regex level 0) then
-                error "Invalid level string `%s` for `%s`\n" level nt;
+                error "Invalid level string '%s' for '%s'\n" level nt;
               let cur_level = nt ^ level in
               let next_level = nt ^
                   if i+1 < len then (get_label (List.nth rules (i+1)).grule_label) else "" in
@@ -684,7 +684,7 @@ let add_rule g nt prods file =
   let nodups = List.concat (List.map (fun prod ->
       if has_match prod ent then begin
         if !show_warn then
-          warn "%s: Duplicate production '%s: %s'\n" file nt (prod_to_str prod);
+          warn "%s: Duplicate production '%s -> %s'\n" file nt (prod_to_str prod);
         []
       end else
         [prod])
@@ -694,6 +694,20 @@ let add_rule g nt prods file =
 
 let remove_Sedit2 p =
   List.filter (fun sym -> match sym with | Sedit2 _ -> false | _ -> true) p
+
+let check_for_duplicates cause rule oldrule nt =
+  let prods = List.map (fun p -> prod_to_str p) rule in
+  let sorted = List.sort String.compare prods in
+  let rec aux prev = function
+    | hd :: tl -> if hd = prev then begin
+        if (List.length (List.filter (fun p -> (prod_to_str p) = hd) rule)) <>
+          (List.length (List.filter (fun p -> (prod_to_str p) = hd) oldrule)) then
+          error "Duplicate production '%s -> %s' %s\n%!" nt hd cause
+      end;
+      aux hd tl
+    | [] -> ()
+  in
+  aux " x " sorted
 
 (* edit a production: rename nonterminals, drop nonterminals, substitute nonterminals *)
 let rec edit_prod g top edit_map prod =
@@ -844,25 +858,13 @@ let create_edit_map g op edits =
       (* todo: messages should tell you which edit file causes the error *)
       | "SPLICE" ->
         if not (StringSet.mem key all_nts_def) then
-          error "Undefined nt `%s` in SPLICE\n" key
+          error "Undefined nt '%s' in SPLICE\n" key
       | "DELETE" ->
         if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
-          error "Unused/undefined nt `%s` in DELETE\n" key;
+          error "Unused/undefined nt '%s' in DELETE\n" key;
       | "RENAME" ->
         if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
-          error "Unused/undefined  nt `%s` in RENAME\n" key;
-      | "MERGE" ->
-        if not (StringSet.mem key all_nts_ref || (StringSet.mem key all_nts_def)) then
-          error "Unused/undefined  nt `%s` in MERGE\n" key;
-        if not (StringSet.mem binding all_nts_ref || (StringSet.mem binding all_nts_def)) then
-          error "Unused/undefined  nt `%s` in MERGE\n" key;
-(*      todo: could not get the following code to type check
-        (match binding with
-        | _ :: Snterm new_nt :: _ ->
-          if not (StringSet.mem new_nt all_nts_ref) then
-            error "nt `%s` already exists in %s\n" new_nt op
-        | _ -> ())
-*)
+          error "Unused/undefined  nt '%s' in RENAME\n" key;
       | _ -> ());
       aux tl (StringMap.add key binding map)
   in
@@ -1123,6 +1125,7 @@ let apply_rename_delete g edit_map =
     (NTMap.bindings !g.map)
 
 let edit_all_prods g op eprods =
+  let g_old_map = !g.map in
   let do_it op eprods num =
     let rec aux eprods res =
       match eprods with
@@ -1138,8 +1141,11 @@ let edit_all_prods g op eprods =
     in
     let edit_map = create_edit_map g op (aux eprods []) in
     match op with
-    | "SPLICE" -> apply_splice g edit_map
-    | "MERGE" -> apply_merge g edit_map; apply_rename_delete g edit_map
+    | "SPLICE" ->
+      let rv = apply_splice g edit_map in
+      let cause = Printf.sprintf "from SPLICE of '%s'" (prod_to_str (List.hd eprods)) in
+      NTMap.iter (fun nt rule -> check_for_duplicates cause rule (NTMap.find nt g_old_map) nt) !g.map;
+      rv
     | "RENAME"
     | "DELETE" -> apply_rename_delete g edit_map
     | _ -> ()
@@ -1148,8 +1154,9 @@ let edit_all_prods g op eprods =
   match op with
   | "RENAME" -> do_it op eprods 2; true
   | "DELETE" -> do_it op eprods 1; true
-  | "SPLICE" -> do_it op eprods 1; true
-  | "MERGE" -> do_it op eprods 2; true
+  | "SPLICE" ->
+    (* iterate to give precise error messages *)
+    List.iter (fun prod -> do_it op [ prod ] 1) eprods; true
   | "OPTINREF" ->
       List.iter (fun nt ->
         let prods = NTMap.find nt !g.map in
@@ -1194,7 +1201,7 @@ let report_undef_nts g prod rec_nt =
   let nts = nts_in_prod prod in
   List.iter (fun nt ->
       if not (NTMap.mem nt !g.map) && not (List.mem nt tokens) && nt <> rec_nt then
-        error "Undefined nonterminal `%s` in edit: %s\n" nt (prod_to_str prod))
+        error "Undefined nonterminal '%s' in edit: %s\n" nt (prod_to_str prod))
     nts
 
 let apply_edit_file g edits =
@@ -1206,13 +1213,14 @@ let apply_edit_file g edits =
       let (nt, eprod) = b in
       if not (edit_all_prods g nt eprod) then begin
         let rec aux eprod prods add_nt =
-          match eprod with
+          let g_old_map = !g.map in
+          let rv = match eprod with
           | [] -> prods, add_nt
           | (Snterm "DELETE" :: oprod) :: tl ->
             aux tl (remove_prod oprod prods nt) add_nt
           | (Snterm "DELETENT" :: _) :: tl ->  (* note this doesn't remove references *)
             if not (NTMap.mem nt !g.map) then
-              error "DELETENT for undefined nonterminal `%s`\n" nt;
+              error "DELETENT for undefined nonterminal '%s'\n" nt;
             g_remove g nt;
             aux tl prods false
           | (Snterm "MOVETO" :: Snterm dest_nt :: oprod) :: tl ->
@@ -1225,7 +1233,7 @@ let apply_edit_file g edits =
             aux tl prods' add_nt
           | [Snterm "COPYALL"; Snterm dest_nt] :: tl ->
             if NTMap.mem dest_nt !g.map then
-              error "COPYALL target nonterminal `%s` already exists\n" dest_nt;
+              error "COPYALL target nonterminal '%s' already exists\n" dest_nt;
             g_maybe_add g dest_nt prods;
             aux tl prods add_nt
           | [Snterm "MOVEALLBUT"; Snterm dest_nt] :: tl ->
@@ -1271,9 +1279,17 @@ let apply_edit_file g edits =
           | prod :: tl ->
             (* add a production *)
             if has_match prod prods then
-              error "Duplicate production '%s' for %s\n" (prod_to_str prod) nt;
+              error "Duplicate production '%s -> %s'\n" nt (prod_to_str prod);
             report_undef_nts g prod nt;
             aux tl (prods @ [prod]) add_nt
+          in
+          if eprod <> [] then begin
+            let cause = Printf.sprintf "from '%s'" (prod_to_str (List.hd eprod)) in
+            NTMap.iter (fun nt rule ->
+              let old_rule = try NTMap.find nt g_old_map with Not_found -> [] in
+              check_for_duplicates cause rule old_rule nt) !g.map;
+          end;
+          rv
         in
         let prods, add_nt =
           aux eprod (try NTMap.find nt !g.map with Not_found -> []) true in
@@ -1749,14 +1765,14 @@ let process_rst g file args seen tac_prods cmd_prods =
         if mtch = rhs then
           rhs (* no change *)
         else if mtch = "" then begin
-          error "%s line %d: NO MATCH for `%s`\n" file !linenum rhs;
+          error "%s line %d: NO MATCH for '%s'\n" file !linenum rhs;
           if best <> "" then begin
-            Printf.eprintf "    closest match is: `%s`\n" best;
+            Printf.eprintf "    closest match is: '%s'\n" best;
             Printf.eprintf "    Please update the rst manually while preserving any subscripts, e.g. 'NT__sub'\n"
           end;
           rhs
         end else if multi then begin
-          error "%s line %d: MULTIPLE MATCHES for `%s`\n" file !linenum rhs;
+          error "%s line %d: MULTIPLE MATCHES for '%s'\n" file !linenum rhs;
           Printf.eprintf "    Please update the rst manually while preserving any subscripts, e.g. 'NT__sub'\n";
           rhs
         end else

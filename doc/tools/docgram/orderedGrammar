@@ -2086,7 +2086,7 @@ ltac2_occs: [
 ]
 
 ltac2_occs_nums: [
-| OPT "-" LIST1 [ natural      (* ltac2 plugin *) | "$" ident ]      (* Ltac2 plugin *)
+| OPT "-" LIST1 [ natural | "$" ident ]      (* Ltac2 plugin *)
 ]
 
 ltac2_concl_occ: [
