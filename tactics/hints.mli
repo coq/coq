@@ -56,6 +56,7 @@ module FullHint :
 sig
   type t
   val priority : t -> int
+  val pattern : t -> Pattern.constr_pattern option
   val database : t -> string option
   val run : t -> (hint hint_ast -> 'r Proofview.tactic) -> 'r Proofview.tactic
   val name : t -> hints_path_atom
