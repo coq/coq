@@ -24,7 +24,10 @@ Require Import Rregisternames.
 Declare ML Module "micromega_plugin:coq-core.plugins.micromega".
 
 Ltac rchange :=
-  intros ?__wit ?__varmap ?__ff ;
+  let __wit := fresh "__wit" in
+  let __varmap := fresh "__varmap" in
+  let __ff := fresh "__ff" in
+  intros __wit __varmap __ff ;
   change (Tauto.eval_bf (Reval_formula (@find R 0%R __varmap)) __ff) ;
   apply (RTautoChecker_sound __ff __wit).
 

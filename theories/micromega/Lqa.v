@@ -23,7 +23,10 @@ Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin:coq-core.plugins.micromega".
 
 Ltac rchange :=
-  intros ?__wit ?__varmap ?__ff ;
+  let __wit := fresh "__wit" in
+  let __varmap := fresh "__varmap" in
+  let __ff := fresh "__ff" in
+  intros __wit __varmap __ff ;
   change (Tauto.eval_bf (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
   apply (QTautoChecker_sound __ff __wit).
 
