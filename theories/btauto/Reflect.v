@@ -249,9 +249,6 @@ intros k p Hl Hp; induction Hl; simpl.
 - destruct c; [reflexivity|elim Hp; now constructor].
 - case_decide.
   + rewrite eval_null_zero; [|assumption]; rewrite list_replace_nth_2; simpl.
-    match goal with [ |- (if ?b then true else false) = true ] =>
-                      assert (Hrw : b = true); [|rewrite Hrw; reflexivity]
-    end.
     erewrite eval_suffix_compat; [now eauto| |now apply linear_valid_incl; eauto].
     now intros j Hd; apply list_replace_nth_1; lia.
   + rewrite list_replace_nth_2, xorb_false_r.
