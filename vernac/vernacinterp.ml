@@ -88,7 +88,7 @@ let real_error_loc ~cmdloc ~eloc =
 let with_fail ~loc ~st f =
   let res = with_fail f in
   Vernacstate.invalidate_cache ();
-  Vernacstate.unfreeze_interp_state st;
+  Vernacstate.unfreeze_full_state st;
   match res with
   | Error () ->
     CErrors.user_err (Pp.str "The command has not failed!")
@@ -100,7 +100,7 @@ let with_fail ~loc ~st f =
 let with_succeed ~st f =
   let () = ignore (f ()) in
   Vernacstate.invalidate_cache ();
-  Vernacstate.unfreeze_interp_state st;
+  Vernacstate.unfreeze_full_state st;
   if not !Flags.quiet
   then Feedback.msg_notice Pp.(str "The command has succeeded and its effects have been reverted.")
 
@@ -112,10 +112,10 @@ let interp_control_flag ~loc (f : control_flag) ~st
   match f with
   | ControlFail ->
     with_fail ~loc ~st (fun () -> fn ~st);
-    st.Vernacstate.lemmas, st.Vernacstate.program
+    st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program
   | ControlSucceed ->
     with_succeed ~st (fun () -> fn ~st);
-    st.Vernacstate.lemmas, st.Vernacstate.program
+    st.Vernacstate.interp.lemmas, st.Vernacstate.interp.program
   | ControlTimeout timeout ->
     vernac_timeout ~timeout (fun () -> fn ~st) ()
   | ControlTime ->
@@ -160,13 +160,13 @@ let rec interp_expr ?loc ~atts ~st c =
     vernac_load ~verbosely fname
   | v ->
     let fv = Vernacentries.translate_vernac ?loc ~atts v in
-    let stack = st.Vernacstate.lemmas in
-    let program = st.Vernacstate.program in
+    let stack = st.Vernacstate.interp.lemmas in
+    let program = st.Vernacstate.interp.program in
     interp_typed_vernac ~pm:program ~stack fv
 
 and vernac_load ~verbosely fname =
   (* Note that no proof should be open here, so the state here is just token for now *)
-  let st = Vernacstate.freeze_interp_state ~marshallable:false in
+  let st = Vernacstate.freeze_full_state ~marshallable:false in
   let fname =
     Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (Pp.str x)) fname in
   let fname = CUnix.make_suffix fname ".v" in
@@ -185,12 +185,13 @@ and vernac_load ~verbosely fname =
     match parse_sentence proof_mode input with
     | None -> stack, pm
     | Some stm ->
-      let stack, pm = v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack; program = pm }) stm in
+      let interp = { st.interp with lemmas = stack; program = pm } in
+      let stack, pm = v_mod (interp_control ~st:{ st with interp }) stm in
       (load_loop [@ocaml.tailcall]) ~stack ~pm
   in
   let stack, pm =
     Dumpglob.with_glob_output Dumpglob.NoGlob
-      (fun () -> load_loop ~pm:st.Vernacstate.program ~stack:st.Vernacstate.lemmas) ()
+      (fun () -> load_loop ~pm:st.Vernacstate.interp.program ~stack:st.Vernacstate.interp.lemmas) ()
   in
   (* If Load left a proof open, we fail too. *)
   if Option.has_some stack then
@@ -221,8 +222,8 @@ and interp_control ~st ({ CAst.v = cmd; loc }) =
 
 (* Interpreting a possibly delayed proof *)
 let interp_qed_delayed ~proof ~st pe =
-  let stack = st.Vernacstate.lemmas in
-  let pm = st.Vernacstate.program in
+  let stack = st.Vernacstate.interp.lemmas in
+  let pm = st.Vernacstate.interp.program in
   let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
   let pm = NeList.map_head (fun pm -> match pe with
       | Admitted ->
@@ -251,12 +252,12 @@ let () = let open Goptions in
 
 (* Be careful with the cache here in case of an exception. *)
 let interp_gen ~verbosely ~st ~interp_fn cmd =
-  Vernacstate.unfreeze_interp_state st;
+  Vernacstate.unfreeze_full_state st;
   try vernac_timeout (fun st ->
       let v_mod = if verbosely then Flags.verbosely else Flags.silently in
       let ontop = v_mod (interp_fn ~st) cmd in
       Vernacstate.Declare.set ontop [@ocaml.warning "-3"];
-      Vernacstate.freeze_interp_state ~marshallable:false
+      Vernacstate.freeze_full_state ~marshallable:false
     ) st
   with exn ->
     let exn = Exninfo.capture exn in

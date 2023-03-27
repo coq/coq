@@ -93,9 +93,8 @@ val nop : unit -> unit
 
 type frozen
 
-val empty_frozen : frozen
-val freeze_summaries : marshallable:bool -> frozen
-val freeze_staged_summaries : Stage.t -> marshallable:bool -> frozen
+val empty_frozen : Stage.t -> frozen
+val freeze_summaries : Stage.t -> marshallable:bool -> frozen
 val unfreeze_summaries : ?partial:bool -> frozen -> unit
 val init_summaries : unit -> unit
 

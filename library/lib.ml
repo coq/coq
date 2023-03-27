@@ -183,20 +183,6 @@ let end_compilation_checks dir =
   synterp_state := st.synterp_state;
   interp_state := st.interp_state
 
-  let drop_objects st =
-    let drop_node = function
-      | CompilingLibrary _ as x -> x
-      | OpenedModule (it,e,op,_) ->
-        OpenedModule(it,e,op,Summary.empty_frozen)
-      | OpenedSection (op, _) ->
-        OpenedSection(op,Summary.empty_frozen)
-    in
-    let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.synterp_state.lib_stk in
-    let synterp_state = { st.synterp_state with lib_stk = lib_synterp_stk } in
-    let lib_interp_stk = List.map (fun (node,_) -> drop_node node, []) st.interp_state in
-    let interp_state = lib_interp_stk in
-    { synterp_state; interp_state }
-
   let init () =
     unfreeze { synterp_state = dummy; interp_state = [] };
     Summary.init_summaries ()
@@ -372,6 +358,12 @@ module type LibActions = sig
   val pop_path_prefix : unit -> unit
   val recalc_path_prefix : unit -> unit
 
+  type frozen
+  val freeze : unit -> frozen
+  val unfreeze : frozen -> unit
+
+  val drop_objects : frozen -> frozen
+
 end
 
 module SynterpActions : LibActions = struct
@@ -393,7 +385,7 @@ module SynterpActions : LibActions = struct
   let push_section_name obj_dir =
     Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection obj_dir))
 
-  let close_section fs = Summary.unfreeze_summaries ~partial:true fs
+  let close_section fs = Summary.unfreeze_summaries fs
 
   let add_entry node =
     synterp_state := { !synterp_state with lib_stk = (node,[]) :: !synterp_state.lib_stk }
@@ -427,7 +419,7 @@ module SynterpActions : LibActions = struct
     let obj_dir = Libnames.add_dirpath_suffix opp.Nametab.obj_dir id in
     let prefix = Nametab.{ obj_dir; obj_mp=opp.obj_mp; } in
     check_section_fresh obj_dir id;
-    let fs = Summary.freeze_staged_summaries stage ~marshallable:false in
+    let fs = Summary.freeze_summaries stage ~marshallable:false in
     add_entry (OpenedSection (prefix, fs));
     (*Pushed for the lifetime of the section: removed by unfreezing the summary*)
     push_section_name obj_dir;
@@ -435,6 +427,24 @@ module SynterpActions : LibActions = struct
 
   let pop_path_prefix () = pop_path_prefix ()
   let recalc_path_prefix () = recalc_path_prefix ()
+
+  type frozen = synterp_state
+
+  let freeze () = !synterp_state
+
+  let unfreeze st =
+    synterp_state := st
+
+  let drop_objects st =
+    let drop_node = function
+      | CompilingLibrary _ as x -> x
+      | OpenedModule (it,e,op,_) ->
+        OpenedModule(it,e,op,Summary.(empty_frozen Stage.Synterp))
+      | OpenedSection (op, _) ->
+        OpenedSection(op,Summary.(empty_frozen Stage.Synterp))
+    in
+    let lib_synterp_stk = List.map (fun (node,_) -> drop_node node, []) st.lib_stk in
+    { st with lib_stk = lib_synterp_stk }
 
 end
 
@@ -475,11 +485,28 @@ module InterpActions : LibActions = struct
   let open_section id =
     Global.open_section ();
     let prefix = !synterp_state.path_prefix in
-    let fs = Summary.freeze_staged_summaries stage ~marshallable:false in
+    let fs = Summary.freeze_summaries stage ~marshallable:false in
     add_entry (OpenedSection (prefix, fs))
 
   let pop_path_prefix () = ()
   let recalc_path_prefix () = ()
+
+  type frozen = library_segment
+
+  let freeze () = !interp_state
+
+  let unfreeze st =
+    interp_state := st
+
+  let drop_objects interp_state =
+    let drop_node = function
+      | CompilingLibrary _ as x -> x
+      | OpenedModule (it,e,op,_) ->
+        OpenedModule(it,e,op,Summary.(empty_frozen Stage.Interp))
+      | OpenedSection (op, _) ->
+        OpenedSection(op,Summary.(empty_frozen Stage.Interp))
+    in
+    List.map (fun (node,_) -> drop_node node, []) interp_state
 
 end
 
@@ -534,6 +561,13 @@ module type StagedLibS = sig
   val end_modtype :
     unit ->
     Nametab.object_prefix * Summary.frozen * classified_objects
+
+  type frozen
+
+  val freeze : unit -> frozen
+  val unfreeze : frozen -> unit
+
+  val drop_objects : frozen -> frozen
 
 end
 
@@ -603,6 +637,14 @@ let close_section () =
   let newdecls = List.map discharge_item secdecls in
   Actions.close_section fs;
   List.iter (Option.iter add_discharged_leaf) newdecls
+
+type frozen = Actions.frozen
+
+let freeze () = Actions.freeze ()
+
+let unfreeze st = Actions.unfreeze st
+
+let drop_objects st = Actions.drop_objects st
 
 end
 

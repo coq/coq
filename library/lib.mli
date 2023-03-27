@@ -113,6 +113,13 @@ module type StagedLibS = sig
     unit ->
     Nametab.object_prefix * Summary.frozen * classified_objects
 
+  type frozen
+
+  val freeze : unit -> frozen
+  val unfreeze : frozen -> unit
+
+  val drop_objects : frozen -> frozen
+
 end
 
 (** We provide two instances of [StagedLibS], corresponding to the Synterp and
@@ -146,8 +153,6 @@ val freeze : unit -> frozen
 val unfreeze : frozen -> unit
 
 (** Keep only the libobject structure, not the objects themselves *)
-val drop_objects : frozen -> frozen
-
 val init : unit -> unit
 
 (** {6 Section management for discharge } *)

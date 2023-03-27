@@ -61,34 +61,28 @@ let declare_summary sumname decl =
 module ID = struct type 'a t = 'a end
 module Frozen = Dyn.Map(ID)
 
-type frozen = {
-  summaries : Frozen.t;
-  (** Ordered list w.r.t. the first component. *)
-  ml_module : ml_modules option;
-  (** Special handling of the ml_module summary. *)
-}
+type frozen =
+  | FrozenSynterp of {
+      summaries : Frozen.t;
+      (** Ordered list w.r.t. the first component. *)
+      ml_module : ml_modules option;
+      (** Special handling of the ml_module summary. *)
+    }
+  | FrozenInterp of Frozen.t
 
-let empty_frozen = { summaries = Frozen.empty; ml_module = None }
+let empty_frozen = function
+  | Stage.Synterp -> FrozenSynterp { summaries = Frozen.empty; ml_module = None }
+  | Stage.Interp -> FrozenInterp Frozen.empty
 
 module HMap = Dyn.HMap(Decl)(ID)
 
-let freeze_staged_summaries stage ~marshallable : frozen =
+let freeze_summaries stage ~marshallable : frozen =
   let filter = { HMap.filter = fun tag decl -> Stage.equal decl.stage stage } in
   let map = { HMap.map = fun tag decl -> decl.freeze_function ~marshallable } in
-  { summaries = HMap.map map (HMap.filter filter !sum_map);
-    ml_module =
-      match stage with
-      | Stage.Synterp ->
-        Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod
-      | _ ->
-        None;
-  }
-
-let freeze_summaries ~marshallable : frozen =
-  let map = { HMap.map = fun tag decl -> decl.freeze_function ~marshallable } in
-  { summaries = HMap.map map !sum_map;
-    ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
-  }
+  let summaries = HMap.map map (HMap.filter filter !sum_map) in
+  match stage with
+  | Stage.Synterp -> FrozenSynterp { summaries; ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod }
+  | Stage.Interp -> FrozenInterp summaries
 
 let warn_summary_out_of_scope =
   let name = "summary-out-of-scope" in
@@ -100,7 +94,12 @@ let warn_summary_out_of_scope =
       name)
     )
 
-let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
+let unfreeze_summaries ?(partial=false) frozen =
+  let stage, summaries, ml_module =
+    match frozen with
+    | FrozenSynterp { summaries; ml_module } -> Stage.Synterp, summaries, ml_module
+    | FrozenInterp summaries -> Stage.Interp, summaries, None
+  in
   (* The unfreezing of [ml_modules_summary] has to be anticipated since it
    * may modify the content of [summaries] by loading new ML modules *)
   begin match !sum_mod with
@@ -116,8 +115,8 @@ let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
         decl.init_function ()
       end;
   in
-  (* String.Map.iter unfreeze_single !sum_map *)
-  DynMap.iter ufz !sum_map
+  let filter = { HMap.filter = fun tag decl -> Stage.equal decl.stage stage } in
+  DynMap.iter ufz @@ HMap.filter filter !sum_map
 
 let init_summaries () =
   DynMap.iter (fun (DynMap.Any (_, decl)) -> decl.init_function ()) !sum_map
@@ -128,17 +127,29 @@ let init_summaries () =
 let nop () = ()
 
 (** Summary projection *)
-let project_from_summary { summaries } tag =
+let project_from_summary frozen tag =
+  match frozen with
+    | FrozenSynterp { summaries }
+    | FrozenInterp summaries ->
   Frozen.find tag summaries
 
-let modify_summary st tag v =
-  let () = assert (Frozen.mem tag st.summaries) in
-  let summaries = Frozen.add tag v st.summaries in
-  {st with summaries}
+let modify_summary frozen tag v =
+  let modify summaries =
+    let () = assert (Frozen.mem tag summaries) in
+    Frozen.add tag v summaries
+  in
+  match frozen with
+  | FrozenSynterp { summaries; ml_module } -> FrozenSynterp { summaries = modify summaries; ml_module }
+  | FrozenInterp summaries -> FrozenInterp (modify summaries)
 
-let remove_from_summary st tag =
-  let summaries = Frozen.remove tag st.summaries in
-  {st with summaries}
+let remove_from_summary frozen tag =
+  let remove summaries =
+    let () = assert (Frozen.mem tag summaries) in
+    Frozen.remove tag summaries
+  in
+  match frozen with
+  | FrozenSynterp { summaries; ml_module } -> FrozenSynterp { summaries = remove summaries; ml_module }
+  | FrozenInterp summaries -> FrozenInterp (remove summaries)
 
 (** All-in-one reference declaration + registration *)
 
