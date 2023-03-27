@@ -830,7 +830,6 @@ Lemma lxor_spec a a' n :
 Proof.
  destruct a, a'; simpl; trivial.
  - now destruct Pos.testbit.
- - now destruct Pos.testbit.
  - apply pos_lxor_spec.
 Qed.
 

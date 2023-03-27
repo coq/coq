@@ -59,12 +59,9 @@ Definition orb (b1 b2:bool) : bool := if b1 then true else b2.
 Definition implb (b1 b2:bool) : bool := if b1 then b2 else true.
 
 Definition xorb (b1 b2:bool) : bool :=
-  match b1, b2 with
-    | true, true => false
-    | true, false => true
-    | false, true => true
-    | false, false => false
-  end.
+  if b1 then
+    if b2 then false else true
+  else b2.
 
 Definition negb (b:bool) := if b then false else true.
 

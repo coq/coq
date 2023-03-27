@@ -400,9 +400,7 @@ Lemma poly_mul_mon_compat : forall i p var,
   eval var (poly_mul_mon i p) = (list_nth i var false && eval var p).
 Proof.
 intros i p var; induction p; simpl; case_decide; simpl; try_rewrite; try ring.
-- inversion H; ring.
-- match goal with [ |- ?u = ?t ] => set (x := t); destruct x; reflexivity end.
-- match goal with [ |- ?u = ?t ] => set (x := t); destruct x; reflexivity end.
+inversion H; ring.
 Qed.
 
 Lemma poly_mul_compat : forall pl pr var, eval var (poly_mul pl pr) = andb (eval var pl) (eval var pr).
