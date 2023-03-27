@@ -42,7 +42,6 @@ type object_pr = {
   print_library_leaf       : env -> Evd.evar_map -> bool -> ModPath.t -> Libobject.t -> Pp.t option;
   print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
-  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> EConstr.unsafe_judgment -> Pp.t;
 }
 
 let gallina_print_module mp = print_module ~with_body:true mp
@@ -774,10 +773,6 @@ let print_library_node = function
   | Lib.CompilingLibrary { Nametab.obj_dir; _ } ->
     str " >>>>>>> Library " ++ DirPath.print obj_dir
 
-let gallina_print_eval red_fun env sigma _ {uj_val=trm;uj_type=typ} =
-  let ntrm = red_fun env sigma trm in
-  (str "     = " ++ gallina_print_typed_value_in_env env sigma (ntrm,typ))
-
 (******************************************)
 (**** Printing abstraction layer          *)
 
@@ -792,7 +787,6 @@ let default_object_pr = {
   print_library_leaf        = gallina_print_library_leaf;
   print_context             = gallina_print_context;
   print_typed_value_in_env  = gallina_print_typed_value_in_env;
-  print_eval                = gallina_print_eval;
 }
 
 let object_pr = ref default_object_pr
@@ -808,7 +802,6 @@ let print_named_decl x = !object_pr.print_named_decl x
 let print_library_leaf x = !object_pr.print_library_leaf x
 let print_context x = !object_pr.print_context x
 let print_typed_value_in_env x = !object_pr.print_typed_value_in_env x
-let print_eval x = !object_pr.print_eval x
 
 (******************************************)
 (**** Printing declarations and judgments *)

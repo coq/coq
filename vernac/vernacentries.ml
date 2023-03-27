@@ -2028,7 +2028,7 @@ let check_may_eval env sigma redexp rc =
   let sigma = Evd.minimize_universes sigma in
   let uctx = Evd.universe_context_set sigma in
   let env = Environ.push_context_set uctx (Evarutil.nf_env_evar sigma env) in
-  let j =
+  let { Environ.uj_val=c; uj_type=ty; } =
     if Evarutil.has_undefined_evars sigma c then
       Evarutil.j_nf_evar sigma (Retyping.get_judgment_of env sigma c)
     else
@@ -2036,23 +2036,23 @@ let check_may_eval env sigma redexp rc =
       (* OK to call kernel which does not support evars *)
       Environ.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
   in
-  let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
-  let pp = match redexp with
-    | None ->
-        let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
-        let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
-        Prettyp.print_judgment env sigma j ++
-        pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
+  let sigma, c = match redexp with
+    | None -> sigma, c
     | Some r ->
-        let (sigma,r_interp) = Hook.get f_interp_redexp env sigma r in
-        let redfun env evm c =
-          let (redfun, _) = Redexpr.reduction_of_red_expr env r_interp in
-          let (_, c) = redfun env evm c in
-          c
-        in
-        Prettyp.print_eval redfun env sigma rc j
+      let sigma, r = Hook.get f_interp_redexp env sigma r in
+      let r, _ = Redexpr.reduction_of_red_expr env r in
+      let sigma, c = r env sigma c in
+      sigma, c
   in
-  pp ++ Printer.pr_universe_ctx_set sigma uctx
+  let pp =
+    let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
+    let l = Evar.Set.union (evars_of_term c) (evars_of_term ty) in
+    let j = { Environ.uj_val = c; uj_type = Reductionops.nf_betaiota env sigma ty } in
+    Prettyp.print_judgment env sigma j ++
+    pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
+  in
+  let hdr = if Option.has_some redexp then str "     = " else mt() in
+  hdr ++ pp ++ Printer.pr_universe_ctx_set sigma uctx
 
 let vernac_check_may_eval ~pstate redexp glopt rc =
   let glopt = query_command_selector glopt in
