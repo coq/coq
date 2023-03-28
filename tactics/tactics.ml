@@ -1586,23 +1586,6 @@ let general_elim_clause0 with_evars flags (submetas, c, ty) elim =
   Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
   end
 
-let general_case_clause0 with_evars flags (submetas, c, ty) elim =
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  (* FIXME: be more clever *)
-  let elimc, elimt = eval_case_analysis elim in
-  let i = index_of_ind_arg sigma elimt in
-  let elimc = contract_letin_in_lam_header sigma elimc in
-  let elimclause = mk_clenv_from env sigma (elimc, elimt) in
-  let indmv =
-    try nth_arg (Some i) (clenv_arguments elimclause)
-    with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
-  in
-  let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
-  Clenv.case_pf elimclause ~with_evars ~with_classes:true ~flags
-  end
-
 let general_elim_clause_in0 with_evars flags id (submetas, c, ty) elim =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -1669,8 +1652,8 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
-  let t = Retyping.get_type_of env sigma c in
-  let mind = eval_to_quantified_ind env sigma t in
+  let ct = Retyping.get_type_of env sigma c in
+  let mind, t = reduce_to_quantified_ind env sigma ct in
   let sort = Tacticals.elimination_sort_of_goal gl in
   let mind = on_snd (fun u -> EInstance.kind sigma u) mind in
   let (sigma, case) =
@@ -1678,16 +1661,20 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
       build_case_analysis_scheme env sigma mind true sort
     else
       build_case_analysis_scheme_default env sigma mind sort in
-  let ct = Retyping.get_type_of env sigma c in
   let id = try Some (destVar sigma c) with DestKO -> None in
-  let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
   let flags = elim_flags () in
   let metas = Evd.meta_list (clenv_evd indclause) in
   let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
-  Proofview.Unsafe.tclEVARS (Evd.clear_metas (clenv_evd indclause)) <*>
+  let sigma = Evd.clear_metas (clenv_evd indclause) in
+  (* FIXME: be more clever *)
+  let elimc, elimt = eval_case_analysis case in
+  let elimc = contract_letin_in_lam_header sigma elimc in
+  let elimclause = mk_clenv_from env sigma (elimc, elimt) in
+  let indmv = List.last (clenv_arguments elimclause) in
+  let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, clenv_type indclause) in
   Tacticals.tclTHEN
-    (general_case_clause0 with_evars flags (submetas, c, clenv_type indclause) case)
+    (Clenv.case_pf elimclause ~with_evars ~with_classes:true ~flags)
     (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
   end
 
