@@ -65,6 +65,7 @@ type pretype_error =
   | UnexpectedType of constr * constr * unification_error
   | NotProduct of constr
   | TypingError of type_error
+  | CantApplyBadTypeExplained of (constr,types) pcant_apply_bad_type * unification_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
     (Evar.t * Evar_kinds.t) option * Evar.Set.t
@@ -88,8 +89,9 @@ val error_cant_apply_not_functional :
       unsafe_judgment -> unsafe_judgment array -> 'b
 
 val error_cant_apply_bad_type :
-  ?loc:Loc.t -> env -> Evd.evar_map -> int * constr * constr ->
-      unsafe_judgment -> unsafe_judgment array -> 'b
+  ?loc:Loc.t -> env -> Evd.evar_map -> ?error:unification_error ->
+  int * constr * constr ->
+  unsafe_judgment -> unsafe_judgment array -> 'b
 
 val error_case_not_inductive :
   ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
