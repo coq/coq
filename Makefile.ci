@@ -76,6 +76,7 @@ CI_TARGETS= \
     ci-smtcoq \
     ci-stalmarck \
     ci-stdlib2 \
+    ci-tactician \
     ci-tlc \
     ci-unimath \
     ci-unicoq \
