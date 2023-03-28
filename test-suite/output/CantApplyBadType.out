@@ -17,4 +17,4 @@ The term "idu1" of type "Type -> Type"
 cannot be applied to the term
  "Type" : "Type"
 This term has type "Type@{u+1}" which should be a subtype of 
-"Type@{u1}".
+"Type@{u1}". (universe inconsistency: Cannot enforce u < u1 because u1 <= u)

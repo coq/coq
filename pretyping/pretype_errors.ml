@@ -59,6 +59,7 @@ type pretype_error =
   | UnexpectedType of constr * constr * unification_error
   | NotProduct of constr
   | TypingError of type_error
+  | CantApplyBadTypeExplained of (constr,types) pcant_apply_bad_type * unification_error
   | CannotUnifyOccurrences of subterm_unification_error
   | UnsatisfiableConstraints of
     (Evar.t * Evar_kinds.t) option * Evar.Set.t
@@ -93,10 +94,14 @@ let error_cant_apply_not_functional ?loc env sigma rator randl =
   raise_type_error ?loc
     (env, sigma, CantApplyNonFunctional (rator, randl))
 
-let error_cant_apply_bad_type ?loc env sigma (n,c,t) rator randl =
-  raise_type_error ?loc
-    (env, sigma,
-       CantApplyBadType ((n,c,t), rator, randl))
+let error_cant_apply_bad_type ?loc env sigma ?error (n,c,t) rator randl =
+  let v = ((n,c,t), rator, randl) in
+  match error with
+  | None ->
+    raise_type_error ?loc
+      (env, sigma,
+       CantApplyBadType v)
+  | Some e -> raise_pretype_error ?loc (env,sigma, CantApplyBadTypeExplained (v, e))
 
 let error_ill_formed_branch ?loc env sigma c i actty expty =
   raise_type_error

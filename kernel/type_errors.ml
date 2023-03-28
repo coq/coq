@@ -45,6 +45,9 @@ type fix_guard_error = constr pfix_guard_error
 type cofix_guard_error = constr pcofix_guard_error
 type guard_error = constr pguard_error
 
+type ('constr, 'types) pcant_apply_bad_type =
+  (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+
 type ('constr, 'types) ptype_error =
   | UnboundRel of int
   | UnboundVar of variable
@@ -60,8 +63,7 @@ type ('constr, 'types) ptype_error =
   | Generalization of (Name.t * 'types) * ('constr, 'types) punsafe_judgment
   | ActualType of ('constr, 'types) punsafe_judgment * 'types
   | IncorrectPrimitive of (CPrimitives.op_or_type,'types) punsafe_judgment * 'types
-  | CantApplyBadType of
-      (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+  | CantApplyBadType of ('constr, 'types) pcant_apply_bad_type
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of

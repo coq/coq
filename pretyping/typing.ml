@@ -100,8 +100,8 @@ let judge_of_apply env sigma funj argjv =
     match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
     | sigma ->
       apply_rec sigma (n+1) subs c2 restjl
-    | exception Evarconv.UnableToUnify _ ->
-      error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj argjv
+    | exception Evarconv.UnableToUnify (sigma,error) ->
+      error_cant_apply_bad_type env sigma ~error (n, c1, hj.uj_type) funj argjv
   in
   apply_rec sigma 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
 
@@ -607,15 +607,15 @@ let judge_of_apply_against env sigma changedf funj argjv =
         match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
         | sigma ->
           apply_rec sigma (Changed {bodyonly=lazy false}) (n+1) subs c2 restjl
-        | exception Evarconv.UnableToUnify _ ->
-          error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj (Array.map snd argjv)
+        | exception Evarconv.UnableToUnify (sigma,error) ->
+          error_cant_apply_bad_type env sigma ~error (n, c1, hj.uj_type) funj (Array.map snd argjv)
     end
     else
       match Evarconv.unify_leq_delay env sigma hj.uj_type c1 with
       | sigma ->
         apply_rec sigma changedf (n+1) subs c2 restjl
-      | exception Evarconv.UnableToUnify _ ->
-        error_cant_apply_bad_type env sigma (n, c1, hj.uj_type) funj (Array.map snd argjv)
+      | exception Evarconv.UnableToUnify (sigma,error) ->
+        error_cant_apply_bad_type env sigma ~error (n, c1, hj.uj_type) funj (Array.map snd argjv)
   in
   apply_rec sigma changedf 1 (Esubst.subs_id 0) funj.uj_type (Array.to_list argjv)
 
