@@ -1,0 +1,4 @@
+- **Added:**
+  option `-timef`, like `time` but outputting to a file
+  (`#17430 <https://github.com/coq/coq/pull/17430>`_,
+  by Gaëtan Gilbert).
