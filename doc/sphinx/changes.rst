@@ -4214,7 +4214,7 @@ Tactics
   Improve the efficiency of `PreOmega.elim_let` using an iterator implemented in OCaml
   (`#11370 <https://github.com/coq/coq/pull/11370>`_, by Frédéric Besson).
 - **Changed:**
-  Improve the efficiency of :tacn:`zify` by rewritting the remaining Ltac code in OCaml
+  Improve the efficiency of :tacn:`zify` by rewriting the remaining Ltac code in OCaml
   (`#11429 <https://github.com/coq/coq/pull/11429>`_, by Frédéric Besson).
 - **Changed:**
   Backtrace information for tactics has been improved
