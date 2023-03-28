@@ -432,7 +432,7 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   str "cannot be applied to the " ++ term_string1 ++ fnl () ++
   str " " ++ v 0 appl ++ fnl () ++ term_string2 ++ str " has type" ++
   brk(1,1) ++ actualtyp ++ spc () ++
-  str "which should be coercible to" ++ brk(1,1) ++
+  str "which should be a subtype of" ++ brk(1,1) ++
   exptyp ++ str "."
 
 let explain_cant_apply_not_functional env sigma rator randl =

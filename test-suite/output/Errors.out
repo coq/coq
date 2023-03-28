@@ -36,5 +36,5 @@ cannot be applied to the terms
  "Set" : "Type"
  "n" : "Type"
  "n" : "Type"
-The 2nd term has type "Type" which should be coercible to 
+The 2nd term has type "Type" which should be a subtype of 
 "Set".
