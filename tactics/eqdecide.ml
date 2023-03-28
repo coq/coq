@@ -70,21 +70,34 @@ let choose_noteq eqonleft =
 (* A surgical generalize which selects the right occurrences by hand *)
 (* This prevents issues where c2 is also a subterm of c1 (see e.g. #5449) *)
 
-let generalize_right mk typ c1 c2 =
+type dectype = {
+  eqonleft : bool;
+  op : EConstr.t;
+  eq1 : EConstr.t;
+  eq2 : EConstr.t;
+  noteq : EConstr.t;
+}
+
+let mk_dectype { eqonleft; op; eq1; eq2; noteq } t x y =
+  let eq = mkApp (eq1,[|t;x;y|]) in
+  let neq = mkApp (noteq,[|mkApp (eq2,[|t;x;y|])|]) in
+  if eqonleft then mkApp (op,[|eq;neq|]) else mkApp (op,[|neq;eq|])
+
+let generalize_right dty typ c1 c2 =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
   Refine.refine ~typecheck:false begin fun sigma ->
     let na = Name (next_name_away_with_default "x" Anonymous (Termops.vars_of_env env)) in
     let r = Retyping.relevance_of_type env sigma typ in
-    let newconcl = mkProd (make_annot na r, typ, mk typ c1 (mkRel 1)) in
+    let newconcl = mkProd (make_annot na r, typ, mk_dectype dty typ c1 (mkRel 1)) in
     let (sigma, x) = Evarutil.new_evar env sigma ~principal:true newconcl in
     (sigma, mkApp (x, [|c2|]))
   end
   end
 
-let mkBranches (eqonleft,mk,c1,c2,typ) =
+let mkBranches (dty, c1, c2, typ) =
   tclTHENLIST
-    [generalize_right mk typ c1 c2;
+    [generalize_right dty typ c1 c2;
      Simple.elim c1;
      intros;
      onLastHyp Simple.case;
@@ -177,33 +190,50 @@ let match_eqdec env sigma c =
              | _ -> assert false)
          | _ -> assert false)
       | _ -> assert false in
-    let mk t x y =
-      let eq = mkApp (eq1,[|t;x;y|]) in
-      let neq = mkApp (noteq,[|mkApp (eq2,[|t;x;y|])|]) in
-      if eqonleft then mkApp (op,[|eq;neq|]) else mkApp (op,[|neq;eq|]) in
-    Proofview.tclUNIT (eqonleft,mk,c1,c2,ty)
+    let dty = { eqonleft; op; eq1; eq2; noteq } in
+    Proofview.tclUNIT (dty, c1, c2, ty)
   with PatternMatchingFailure as exn ->
     let _, info = Exninfo.capture exn in
     Proofview.tclZERO ~info PatternMatchingFailure
 
 (* /spiwack *)
 
-let rec solveArg hyps eqonleft mk largs rargs = match largs, rargs with
+let elim_type dty rectype a1 a2 =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let (ind, _) = Tacred.reduce_to_atomic_ind env sigma dty.op in
+  let s = Tacticals.elimination_sort_of_goal gl in
+  let elimc = Indrec.lookup_eliminator env (fst ind) s in
+  (* Eliminator type is expected to have (potentially non-dependent) shape
+      [forall A B (P : I A B -> Type), P _ -> P _ -> forall (s : I A B), P s ] *)
+  let sigma, elimc = EConstr.fresh_global env sigma elimc in
+  let elimc =
+    let { eqonleft; eq1; eq2; noteq } = dty in
+    let eq = mkApp (eq1,[|rectype;a1;a2|]) in
+    let neq = mkApp (noteq,[|mkApp (eq2,[|rectype;a1;a2|])|]) in
+    if eqonleft then mkApp (elimc, [|eq; neq|]) else mkApp (elimc, [|neq; eq|])
+  in
+  let elimt = Retyping.get_type_of env sigma elimc in
+  let clause = Clenv.mk_clenv_from env sigma (elimc, elimt) in
+  Proofview.Unsafe.tclEVARS sigma <*> Clenv.res_pf clause ~with_evars:false
+  end
+
+let rec solveArg hyps dty largs rargs = match largs, rargs with
 | [], [] ->
   tclTHENLIST [
-    choose_eq eqonleft;
+    choose_eq dty.eqonleft;
     rewrite_and_clear (List.rev hyps);
     intros_reflexivity;
   ]
 | a1 :: largs, a2 :: rargs ->
   Proofview.Goal.enter begin fun gl ->
   let sigma, rectype = pf_type_of gl a1 in
-  let decide = mk rectype a1 a2 in
-  let tac hyp = solveArg (hyp :: hyps) eqonleft mk largs rargs in
+  let tac hyp = solveArg (hyp :: hyps) dty largs rargs in
   let subtacs =
-    if eqonleft then [eqCase tac;diseqCase hyps eqonleft;default_auto]
-    else [diseqCase hyps eqonleft;eqCase tac;default_auto] in
-  tclTHEN (Proofview.Unsafe.tclEVARS sigma) (tclTHENS (elim_type decide) subtacs)
+    if dty.eqonleft then [eqCase tac;diseqCase hyps dty.eqonleft;default_auto]
+    else [diseqCase hyps dty.eqonleft;eqCase tac;default_auto] in
+  tclTHEN (Proofview.Unsafe.tclEVARS sigma) (tclTHENS (elim_type dty rectype a1 a2) subtacs)
   end
 | _ -> invalid_arg "List.fold_right2"
 
@@ -214,14 +244,14 @@ let solveEqBranch rectype =
         let concl = pf_concl gl in
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        match_eqdec env sigma concl >>= fun (eqonleft,mk,lhs,rhs,_) ->
+        match_eqdec env sigma concl >>= fun (dty, lhs, rhs,_) ->
           let (mib,mip) = Inductive.lookup_mind_specif env rectype in
           let nparams   = mib.mind_nparams in
           let getargs l = List.skipn nparams (snd (decompose_app sigma l)) in
           let rargs   = getargs rhs
           and largs   = getargs lhs in
 
-          solveArg [] eqonleft mk largs rargs
+          solveArg [] dty largs rargs
       end
     end
     begin function (e, info) -> match e with
@@ -242,7 +272,7 @@ let decideGralEquality =
         let concl = pf_concl gl in
         let env = Proofview.Goal.env gl in
         let sigma = project gl in
-        match_eqdec env sigma concl >>= fun (eqonleft,mk,c1,c2,typ as data) ->
+        match_eqdec env sigma concl >>= fun (dty, c1, c2, typ as data) ->
         let headtyp = hd_app sigma (pf_compute gl typ) in
         begin match EConstr.kind sigma headtyp with
         | Ind (mi,_) -> Proofview.tclUNIT mi
@@ -250,7 +280,7 @@ let decideGralEquality =
         end >>= fun rectype ->
           (tclTHEN
              (mkBranches data)
-             (tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
+             (tclORELSE (solveNoteqBranch dty.eqonleft) (solveEqBranch rectype)))
       end
     end
     begin function (e, info) -> match e with
