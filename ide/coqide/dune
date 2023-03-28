@@ -14,7 +14,7 @@
  (package coqide-server)
  (modules idetop)
  (libraries coq-core.toplevel coqide-server.protocol platform_specific)
- (modes native byte)
+ (modes exe byte)
  (link_flags -linkall))
 
 (install
