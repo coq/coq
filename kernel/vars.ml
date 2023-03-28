@@ -217,11 +217,7 @@ let rec thin_val = function
       else (id, make_substituend c) :: (thin_val tl)
     | _ -> (id, make_substituend c) :: (thin_val tl)
 
-let rec find_var id = function
-| [] -> raise_notrace Not_found
-| (idc, c) :: subst ->
-  if Id.equal id idc then c
-  else find_var id subst
+let find_var id vars = CList.assoc_f Id.equal id vars
 
 (* (replace_vars sigma M) applies substitution sigma to term M *)
 let replace_vars var_alist x =
