@@ -4,15 +4,23 @@ The term "Type" has type "Type@{u+1}" while it is expected to have type
  "Type@{u1}" (universe inconsistency: Cannot enforce u < u1 because u1 <= u).
 File "./output/CantApplyBadType.v", line 15, characters 0-58:
 The command has indeed failed with message:
-Illegal application: 
+Illegal application:
 The term "idu1" of type "Type -> Type"
 cannot be applied to the term
  "Type" : "Type"
 This term has type "Type@{u+1}" which should be a subtype of 
-"Type@{u1}".
-File "./output/CantApplyBadType.v", line 27, characters 2-108:
+"Type@{u1}". (Cannot enforce u < u1 because u1 <= u)
+File "./output/CantApplyBadType.v", line 26, characters 0-54:
 The command has indeed failed with message:
-Illegal application: 
+Illegal application:
+The term "idu1" of type "Type -> Type"
+cannot be applied to the term
+ "Type" : "Type"
+This term has type "Type@{CantApplyBadType.8+1}" which should be a subtype of
+ "Type@{u1}". (missing universe constraints: CantApplyBadType.8 < u1)
+File "./output/CantApplyBadType.v", line 30, characters 2-108:
+The command has indeed failed with message:
+Illegal application:
 The term "idu1" of type "Type -> Type"
 cannot be applied to the term
  "Type" : "Type"

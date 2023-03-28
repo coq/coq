@@ -11,7 +11,7 @@ The term "Type" has type "Type@{u+1}" while it is expected to have type
 "Type@{u1}" (universe inconsistency: Cannot enforce u < u1 because u1 <= u0 = u).
  *)
 
-(* kernel error *)
+(* kernel error because of impossible constraints *)
 Fail Type ltac:(refine (idu1 _); exact_no_check Type@{u}).
 (* The command has indeed failed with message:
 Illegal application:
@@ -21,6 +21,9 @@ cannot be applied to the term
 This term has type "Type@{u+1}" which should be coercible to
 "Type@{u1}".
 *)
+
+(* kernel error because of missing constraints *)
+Fail Type ltac:(refine (idu1 _); exact_no_check Type).
 
 (* typing.ml error *)
 Goal True.

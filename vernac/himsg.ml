@@ -307,8 +307,31 @@ let explain_generalization env sigma (name,var) j =
   str "it has type" ++ spc () ++ pt ++
   spc () ++ str "which should be Set, Prop or Type."
 
-let explain_unification_error env sigma p1 p2 = function
-  | None -> mt()
+let explain_unification_error env sigma ?pb p1 p2 = function
+  | None ->
+    begin match pb with
+    | None -> mt()
+    | Some pb ->
+      (* Re-infer conversion to try to get a universe error *)
+      begin match Reductionops.infer_conv ~catch_incon:false ~pb env sigma p1 p2 with
+      | None -> mt() (* not convertible for non universe reason *)
+      | Some sigma' ->
+        let _, csts = Evd.universe_context_set sigma' in
+        let csts = Univ.Constraints.filter (fun cst ->
+            not (Evd.check_constraints sigma (Univ.Constraints.singleton cst)))
+            csts
+        in
+        if Univ.Constraints.is_empty csts then mt() (* who knows what this means *)
+        else begin
+          spc () ++
+          surround
+            (str "missing universe constraints:" ++ spc() ++
+             Univ.pr_constraints (Termops.pr_evd_level sigma) csts)
+        end
+      | exception UGraph.UniverseInconsistency e ->
+        spc() ++ surround (UGraph.explain_universe_inconsistency (Termops.pr_evd_level sigma) e)
+      end
+    end
   | Some e ->
      let rec aux p1 p2 = function
      | OccurCheck (evk,rhs) ->
@@ -384,7 +407,7 @@ let explain_actual_type env sigma j t reason =
   let pe = pr_ne_context_of (str "In environment") env sigma in
   let pc = pr_leconstr_env env sigma (Environ.j_val j) in
   let (pt, pct) = pr_explicit env sigma t (Environ.j_type j) in
-  let ppreason = explain_unification_error env sigma j.uj_type t reason in
+  let ppreason = explain_unification_error env sigma ~pb:CUMUL j.uj_type t reason in
   pe ++
   hov 0 (
   str "The term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -410,7 +433,7 @@ let explain_cant_apply_bad_type env sigma ?error (n,exptyp,actualtyp) rator rand
   let randl = jv_nf_betaiotaevar env sigma randl in
   let actualtyp = Reductionops.nf_betaiota env sigma actualtyp in
   let env = make_all_name_different env sigma in
-  let error = explain_unification_error env sigma actualtyp exptyp error in
+  let error = explain_unification_error env sigma ~pb:CUMUL actualtyp exptyp error in
   let actualtyp, exptyp = pr_explicit env sigma actualtyp exptyp in
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env sigma in*)
@@ -424,7 +447,7 @@ let explain_cant_apply_bad_type env sigma ?error (n,exptyp,actualtyp) rator rand
                   let pc,pct = pr_ljudge_env env sigma c in
                   hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
   in
-  str "Illegal application: " ++ (* pe ++ *) fnl () ++
+  str "Illegal application:" ++ (* pe ++ *) fnl () ++
   str "The term" ++ brk(1,1) ++ pr ++ spc () ++
   str "of type" ++ brk(1,1) ++ prt ++ spc () ++
   str "cannot be applied to the " ++ term_string1 ++ fnl () ++
@@ -456,7 +479,7 @@ let explain_unexpected_type env sigma actual_type expected_type e =
   let pract, prexp = pr_explicit env sigma actual_type expected_type in
   str "Found type" ++ spc () ++ pract ++ spc () ++
   str "where" ++ spc () ++ prexp ++ str " was expected" ++
-  explain_unification_error env sigma actual_type expected_type (Some e) ++ str"."
+  explain_unification_error env sigma ~pb:CUMUL actual_type expected_type (Some e) ++ str"."
 
 let explain_not_product env sigma c =
   let pr = pr_econstr_env env sigma c in
@@ -1506,9 +1529,9 @@ let rec vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
     UGraph.explain_universe_inconsistency UnivNames.pr_with_global_universes i ++ str "."
-  | TypeError(ctx,te) ->
+  | TypeError(env,te) ->
     let te = map_ptype_error EConstr.of_constr te in
-    explain_type_error ctx Evd.empty te
+    explain_type_error env (Evd.from_env env) te
   | PretypeError(ctx,sigma,te) ->
     explain_pretype_error ctx sigma te
   | Notation.PrimTokenNotationError(kind,ctx,sigma,te) ->

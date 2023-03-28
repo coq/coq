@@ -30,11 +30,11 @@ The first term has type "nat" while the second term has incompatible type
 "bool".
 File "./output/Errors.v", line 49, characters 2-25:
 The command has indeed failed with message:
-Replacement would lead to an ill-typed term: Illegal application: 
+Replacement would lead to an ill-typed term: Illegal application:
 The term "@eq" of type "forall A : Type, A -> A -> Prop"
 cannot be applied to the terms
  "Set" : "Type"
  "n" : "Type"
  "n" : "Type"
-The 2nd term has type "Type" which should be coercible to 
-"Set".
+The 2nd term has type "Type" which should be a subtype of 
+"Set". (universe inconsistency: Cannot enforce Errors.28 <= Set)
