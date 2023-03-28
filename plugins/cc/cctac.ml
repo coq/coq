@@ -300,14 +300,14 @@ let refresh_type env evm ty =
   Evarsolve.refresh_universes ~status:Evd.univ_flexible ~refreshset:true
                               (Some false) env evm ty
 
-let type_and_refresh c k =
-  Proofview.Goal.enter begin fun gl ->
+let type_and_refresh c =
+  Proofview.Goal.enter_one ~__LOC__ begin fun gl ->
     let env = Proofview.Goal.env gl in
     let evm = Tacmach.project gl in
     (* XXX is get_type_of enough? *)
     let evm, ty = Typing.type_of env evm c in
     let evm, ty = refresh_type env evm ty in
-    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (k ty)
+    Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evm) (Proofview.tclUNIT ty)
   end
 
 let constr_of_term c = EConstr.of_constr (ATerm.constr c)
@@ -320,27 +320,27 @@ let rec proof_tac p : unit Proofview.tactic =
         let c = EConstr.of_constr (constr_of_axiom c) in
         let l=constr_of_term p.p_lhs and
             r=constr_of_term p.p_rhs in
-        type_and_refresh l (fun typ ->
-        app_global _sym_eq [|typ;r;l;c|] exact_check)
+        type_and_refresh l >>= fun typ ->
+        app_global _sym_eq [|typ;r;l;c|] exact_check
     | Refl t ->
         let lr = constr_of_term t in
-        type_and_refresh lr (fun typ ->
-        app_global _refl_equal [|typ;constr_of_term t|] exact_check)
+        type_and_refresh lr >>= fun typ ->
+        app_global _refl_equal [|typ;constr_of_term t|] exact_check
     | Trans (p1,p2)->
         let t1 = constr_of_term p1.p_lhs and
             t2 = constr_of_term p1.p_rhs and
             t3 = constr_of_term p2.p_rhs in
-        type_and_refresh t2 (fun typ ->
+        type_and_refresh t2 >>= fun typ ->
         let prf = app_global_with_holes _trans_eq [|typ;t1;t2;t3;|] 2 in
-          Tacticals.tclTHENS prf [(proof_tac p1);(proof_tac p2)])
+          Tacticals.tclTHENS prf [(proof_tac p1);(proof_tac p2)]
     | Congr (p1,p2)->
         let tf1=constr_of_term p1.p_lhs
         and tx1=constr_of_term p2.p_lhs
         and tf2=constr_of_term p1.p_rhs
         and tx2=constr_of_term p2.p_rhs in
-        type_and_refresh tf1 (fun typf ->
-        type_and_refresh tx1 (fun typx ->
-        type_and_refresh (mkApp (tf1,[|tx1|])) (fun typfx ->
+        type_and_refresh tf1 >>= fun typf ->
+        type_and_refresh tx1 >>= fun typx ->
+        type_and_refresh (mkApp (tf1,[|tx1|])) >>= fun typfx ->
         let id = Tacmach.pf_get_new_id (Id.of_string "f") gl in
         let appx1 = mkLambda(make_annot (Name id) Sorts.Relevant,typf,mkApp(mkRel 1,[|tx1|])) in
         let lemma1 = app_global_with_holes _f_equal [|typf;typfx;appx1;tf1;tf2|] 1 in
@@ -358,21 +358,24 @@ let rec proof_tac p : unit Proofview.tactic =
                 reflexivity;
                 Tacticals.tclZEROMSG
                     (Pp.str
-                       "I don't know how to handle dependent equality")]])))
+                       "I don't know how to handle dependent equality")]]
   | Inject (prf,cstr,nargs,argind) ->
          let ti=constr_of_term prf.p_lhs in
          let tj=constr_of_term prf.p_rhs in
          let default=constr_of_term p.p_lhs in
          let special=mkRel (1+nargs-argind) in
-         type_and_refresh ti (fun intype ->
-         type_and_refresh default (fun outtype ->
-         let sigma, proj =
-           build_projection intype cstr special default gl
-         in
-         let injt=
-           app_global_with_holes _f_equal [|intype;outtype;proj;ti;tj|] 1 in
-         Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
-                               (Tacticals.tclTHEN injt (proof_tac prf))))
+         type_and_refresh ti >>= fun intype ->
+         type_and_refresh default >>= fun outtype ->
+         (* the evar map in gl is outdated *)
+         Proofview.Goal.enter begin fun gl ->
+           let sigma, proj =
+             build_projection intype cstr special default gl
+           in
+           let injt=
+             app_global_with_holes _f_equal [|intype;outtype;proj;ti;tj|] 1 in
+           Tacticals.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+             (Tacticals.tclTHEN injt (proof_tac prf))
+         end
   end
 
 let refute_tac c t1 t2 p =
@@ -384,7 +387,7 @@ let refute_tac c t1 t2 p =
     let neweq= app_global _eq [|intype;tt1;tt2|] in
     Tacticals.tclTHENS (neweq (assert_before (Name hid)))
       [proof_tac p; simplest_elim false_t]
-  in type_and_refresh tt1 k
+  in type_and_refresh tt1 >>= k
   end
 
 let refine_exact_check c =
@@ -404,7 +407,7 @@ let convert_to_goal_tac c t1 t2 p =
     let endt = app_global _eq_rect [|sort; tt1; identity; mkVar c; tt2; mkVar e|] in
     Tacticals.tclTHENS (neweq (assert_before (Name e)))
                            [proof_tac p; endt refine_exact_check]
-  in type_and_refresh tt2 k
+  in type_and_refresh tt2 >>= k
   end
 
 let convert_to_hyp_tac c1 t1 c2 t2 p =
