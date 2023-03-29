@@ -474,16 +474,6 @@ let make_arity env sigma dep indf s =
   let open EConstr in
   it_mkProd_or_LetIn (mkSort s) (make_arity_signature env sigma dep indf)
 
-(* [p] is the predicate and [cs] a constructor summary *)
-let build_branch_type env sigma dep p cs =
-  let base = appvect (lift cs.cs_nargs p, cs.cs_concl_realargs) in
-  if dep then
-    EConstr.Unsafe.to_constr (Namegen.it_mkProd_or_LetIn_name env sigma
-      (EConstr.of_constr (applist (base,[build_dependent_constructor cs])))
-      (List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) cs.cs_args))
-  else
-    Term.it_mkProd_or_LetIn base cs.cs_args
-
 (**************************************************)
 
 (** From a rel context describing the constructor arguments,

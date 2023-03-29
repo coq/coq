@@ -106,6 +106,16 @@ let eval_case_analysis case =
   let cT = it_mkProd_or_LetIn bodyT case.case_params in
   (c, cT)
 
+(* [p] is the predicate and [cs] a constructor summary *)
+let build_branch_type env sigma dep p cs =
+  let base = appvect (lift cs.cs_nargs p, cs.cs_concl_realargs) in
+  if dep then
+    EConstr.Unsafe.to_constr (Namegen.it_mkProd_or_LetIn_name env sigma
+      (EConstr.of_constr (applist (base,[build_dependent_constructor cs])))
+      (List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) cs.cs_args))
+  else
+    Term.it_mkProd_or_LetIn base cs.cs_args
+
 let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
