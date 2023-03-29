@@ -19,7 +19,5 @@ val arguments_names : GlobRef.t -> Name.t list
 
 val rename_type : types -> GlobRef.t -> types
 
-val rename_type_of_constant : env -> ?evars:constr evar_handler -> pconstant -> types
-val rename_type_of_inductive : env -> ?evars:constr evar_handler -> pinductive -> types
-val rename_type_of_constructor : env -> ?evars:constr evar_handler -> pconstructor -> types
 val rename_typing : env -> constr -> unsafe_judgment
+(** Typechecks using the kernel [Typeops.infer] *)
