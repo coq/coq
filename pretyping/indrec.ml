@@ -170,31 +170,29 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
         (mkRel (ndepar + nbprod),
           if dep then Context.Rel.instance mkRel 0 deparsign
           else Context.Rel.instance mkRel 1 arsign) in
-    let p =
-      it_mkLambda_or_LetIn_name env
-        ((if dep then mkLambda_name env else mkLambda)
-          (make_annot Anonymous r,depind,pbody))
-        arsign
-    in
+    let pself = LocalAssum (make_annot Anonymous r, depind) in
+    (* FIXME: the environment for pself is clearly wrong *)
+    let pctx = (if dep then name_assumption env pself else pself) :: set_names env env arsign in
     let deparsign = set_names env env deparsign in
     let sigma, obj, objT =
       match projs with
       | None ->
+        let pms = Context.Rel.instance mkRel (ndepar + nbprod) lnamespar in
         let iv = make_case_invert env (find_rectype env sigma (EConstr.of_constr (lift 1 depind))) ci in
         let iv = EConstr.Unsafe.to_case_invert iv in
         let ncons = Array.length mip.mind_consnames in
         let mk_branch i =
-          (* eta-expansion to please branch contraction *)
-          let ft = get_type (lookup_rel (ncons - i) env) in
           (* we need that to get the generated names for the branch *)
+          let ft = get_type (lookup_rel (ncons - i) env) in
           let (ctx, _) = decompose_prod_decls ft in
-          let n = mkRel (List.length ctx + 1) in
+          let brnas = Array.of_list (List.rev_map get_annot ctx) in
+          let n = mkRel (List.length ctx + ndepar + ncons - i) in
           let args = Context.Rel.instance mkRel 0 ctx in
-          let br = it_mkLambda_or_LetIn (mkApp (n, args)) ctx in
-          lift (ndepar + ncons - i - 1) br
+          (brnas, mkApp (n, args))
         in
         let br = Array.init ncons mk_branch in
-        let obj = mkCase (Inductive.contract_case env (ci, lift ndepar p,  iv, mkRel 1, br)) in
+        let pnas = Array.of_list (List.rev_map get_annot pctx) in
+        let obj = mkCase (ci, u, pms, (pnas, liftn ndepar (ndepar + 1) pbody), iv, mkRel 1, br) in
         sigma, obj, pbody
       | Some ps ->
         let term =
