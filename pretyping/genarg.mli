@@ -53,6 +53,7 @@ sig
   val repr : ('a, 'b, 'c) tag -> string
   type any = Any : ('a, 'b, 'c) tag -> any
   val name : string -> any option
+  val dump : unit -> (int * string) list
 end
 
 (** Generic types. The first parameter is the OCaml lowest level, the second one
@@ -176,12 +177,18 @@ end
 
 module Register (M : GenObj) :
 sig
+  (** Warning: although the following APIs use [genarg_type] the
+      values must always be [ExtraArg some_tag]. *)
+
   val register0 : ('raw, 'glb, 'top) genarg_type ->
     ('raw, 'glb, 'top) M.obj -> unit
   (** Register a ground type manipulation function. *)
 
   val obj : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) M.obj
   (** Recover a manipulation function at a given type. *)
+
+  val fold_keys : (ArgT.any -> 'acc -> 'acc) -> 'acc -> 'acc
+  (** Fold over the registered keys. *)
 
 end
 

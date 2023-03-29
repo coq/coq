@@ -20,6 +20,7 @@ struct
   let eq = DYN.eq
   let repr = DYN.repr
   let create = DYN.create
+  let dump = DYN.dump
   let name s = match DYN.name s with
   | None -> None
   | Some (DYN.Any t) ->
@@ -181,6 +182,7 @@ let get_arg_tag = function
 module Register (M : GenObj) =
 struct
   module GenMap = ArgMap(struct type ('r, 'g, 't) t = ('r, 'g, 't) M.obj end)
+
   let arg0_map = ref GenMap.empty
 
   let register0 arg f =
@@ -203,5 +205,9 @@ struct
   (** For now, the following function is quite dummy and should only be applied
       to an extra argument type, otherwise, it will badly fail. *)
   let obj t = get_obj0 @@ get_arg_tag t
+
+  (** NB: we need the [Pack] pattern to get [tag]
+      from [_ ArgT.DYN.tag] to [(_ * _ * _) ArgT.DYN.tag] *)
+  let fold_keys f acc = GenMap.fold (fun (Any (tag,Pack _)) acc -> f (ArgT.Any tag) acc) !arg0_map acc
 
 end
