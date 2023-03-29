@@ -113,7 +113,7 @@ val force_destruction_arg : evars_flag -> env -> evar_map ->
     evar_map * constr with_bindings destruction_arg
 
 val finish_evar_resolution : ?flags:Pretyping.inference_flags ->
-  env -> evar_map -> (evar_map * constr) -> evar_map * constr
+  env -> evar_map -> (evar_map option * constr) -> evar_map * constr
 
 (** Tell if a used hypothesis should be cleared by default or not *)
 
@@ -386,7 +386,7 @@ val letin_tac : (bool * intro_pattern_naming) option ->
 (** Common entry point for user-level "set", "pose" and "remember" *)
 
 val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
-  Name.t -> (evar_map * constr) -> clause -> unit Proofview.tactic
+  Name.t -> (evar_map option * constr) -> clause -> unit Proofview.tactic
 
 (** {6 Generalize tactics. } *)
 

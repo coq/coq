@@ -1661,11 +1661,11 @@ exception PatternNotFound
 let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   let flags =
     if from_prefix_of_ind then
-      let flags = default_matching_flags pending in
+      let flags = default_matching_flags (Option.default Evd.empty pending) in
       { flags with core_unify_flags = { flags.core_unify_flags with
         modulo_conv_on_closed_terms = Some TransparentState.full;
         restrict_conv_on_strict_subterms = true } }
-    else default_matching_flags pending in
+    else default_matching_flags (Option.default Evd.empty pending) in
   let n = Array.length (snd (decompose_app_vect sigma c)) in
   let cgnd = if occur_meta_or_undefined_evar sigma c then NotGround else Ground in
   let matching_fun _ t =
@@ -1792,7 +1792,7 @@ let make_abstraction_core name (test,out) env sigma c ty occs check_occs concl =
 type prefix_of_inductive_support_flag = bool
 
 type abstraction_request =
-| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * (evar_map * constr) * clause * bool
+| AbstractPattern of prefix_of_inductive_support_flag * (types -> bool) * Name.t * (evar_map option * constr) * clause * bool
 | AbstractExact of Name.t * constr * types option * clause * bool
 
 type 'r abstraction_result =
