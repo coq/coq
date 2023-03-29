@@ -172,6 +172,10 @@ val pr_named_decl          : env -> evar_map -> Constr.named_declaration -> Pp.t
 val pr_compacted_decl      : env -> evar_map -> Constr.compacted_declaration -> Pp.t
 val pr_rel_decl            : env -> evar_map -> Constr.rel_declaration -> Pp.t
 
+val pr_enamed_decl          : env -> evar_map -> EConstr.named_declaration -> Pp.t
+val pr_ecompacted_decl      : env -> evar_map -> EConstr.compacted_declaration -> Pp.t
+val pr_erel_decl            : env -> evar_map -> EConstr.rel_declaration -> Pp.t
+
 val pr_named_context       : env -> evar_map -> Constr.named_context -> Pp.t
 val pr_named_context_of    : env -> evar_map -> Pp.t
 val pr_rel_context         : env -> evar_map -> Constr.rel_context -> Pp.t

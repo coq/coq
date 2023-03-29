@@ -238,10 +238,10 @@ type goal = { ty: EConstr.t; env : Environ.env; sigma : Evd.evar_map; }
 (* open Proofview *)
 module CDC = Context.Compacted.Declaration
 
-let to_tuple : Constr.compacted_declaration -> (Names.Id.t Context.binder_annot list * 'pc option * 'pc) =
+let to_tuple : EConstr.compacted_declaration -> (Names.Id.t Context.binder_annot list * 'pc option * 'pc) =
   let open CDC in function
-    | LocalAssum(idl, tm)   -> (idl, None, EConstr.of_constr tm)
-    | LocalDef(idl,tdef,tm) -> (idl, Some (EConstr.of_constr tdef), EConstr.of_constr tm)
+    | LocalAssum(idl, tm)   -> (idl, None, tm)
+    | LocalDef(idl,tdef,tm) -> (idl, Some tdef, tm)
 
 let make_goal env sigma g =
   let evi = Evd.find_undefined sigma g in
@@ -316,7 +316,7 @@ let goal_info goal =
   try
     let { ty=ty; env=env; sigma } = goal in
     (* compaction is usually desired [eg for better display] *)
-    let hyps = Termops.compact_named_context (Environ.named_context env) in
+    let hyps = Termops.compact_named_context sigma (EConstr.named_context env) in
     let () = List.iter (build_hyp_info env sigma) (List.rev hyps) in
     let concl_pp = pp_of_type env sigma ty in
     ( List.rev !line_idents, !map, concl_pp )

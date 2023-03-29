@@ -1273,7 +1273,7 @@ let map_named_decl f = function
 | NamedDecl.LocalAssum (id, t) -> NamedDecl.LocalAssum (id, f t)
 | NamedDecl.LocalDef (id, b, t) -> NamedDecl.LocalDef (id, f b, f t)
 
-let compact_named_context sign =
+let compact_named_context sigma sign =
   let compact l decl =
     match decl, l with
     | NamedDecl.LocalAssum (i,t), [] ->
@@ -1281,11 +1281,11 @@ let compact_named_context sign =
     | NamedDecl.LocalDef (i,c,t), [] ->
        [CompactedDecl.LocalDef ([i],c,t)]
     | NamedDecl.LocalAssum (i1,t1), CompactedDecl.LocalAssum (li,t2) :: q ->
-       if Constr.equal t1 t2
+       if EConstr.eq_constr sigma t1 t2
        then CompactedDecl.LocalAssum (i1::li, t2) :: q
        else CompactedDecl.LocalAssum ([i1],t1) :: CompactedDecl.LocalAssum (li,t2) :: q
     | NamedDecl.LocalDef (i1,c1,t1), CompactedDecl.LocalDef (li,c2,t2) :: q ->
-       if Constr.equal c1 c2 && Constr.equal t1 t2
+       if EConstr.eq_constr sigma c1 c2 && EConstr.eq_constr sigma t1 t2
        then CompactedDecl.LocalDef (i1::li, c2, t2) :: q
        else CompactedDecl.LocalDef ([i1],c1,t1) :: CompactedDecl.LocalDef (li,c2,t2) :: q
     | NamedDecl.LocalAssum (i,t), q ->
