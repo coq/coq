@@ -34,7 +34,7 @@ let find_mutually_recursive_statements sigma thms =
               []) 0 (List.rev (List.filter Context.Rel.Declaration.is_local_assum whnf_hyp_hds))) in
       let ind_ccl =
         let cclenv = EConstr.push_rel_context hyps (Global.env()) in
-        let whnf_ccl,_ = Reductionops.whd_all_stack cclenv Evd.empty ccl in
+        let whnf_ccl,_ = Reductionops.whd_all_stack cclenv sigma ccl in
         match EConstr.kind sigma whnf_ccl with
         | Ind ((kn,_ as ind),u) when
               let mind = Global.lookup_mind kn in
