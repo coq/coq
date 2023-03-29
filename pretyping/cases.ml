@@ -1055,26 +1055,20 @@ let add_assert_false_case pb tomatch =
 let adjust_impossible_cases sigma pb pred tomatch submat =
   match submat with
   | [] ->
-    (* FIXME: This breaks if using evar-insensitive primitives. In particular,
-       this means that the Evd.define below may redefine an already defined
-       evar. See e.g. first definition of test for bug #3388. *)
-    let pred = EConstr.Unsafe.to_constr pred in
-    begin match Constr.kind pred with
+    begin match EConstr.kind sigma pred with
     | Evar (evk, _) ->
-      let EvarInfo evi = Evd.find sigma evk in
+      let evi = Evd.find_undefined sigma evk in
       if snd (Evd.evar_source evi) == Evar_kinds.ImpossibleCase then
-        let sigma =
-          if not (Evd.is_defined sigma evk) then
-            let sigma, default = coq_unit_judge !!(pb.env) sigma in
-            let sigma = Evd.define evk default.uj_type sigma in
-            sigma
-          else sigma
-        in
+        let sigma, default = coq_unit_judge !!(pb.env) sigma in
+        let sigma = Evd.define evk default.uj_type sigma in
         sigma, add_assert_false_case pb tomatch
       else
         sigma, submat
     | _ ->
-        sigma, submat
+      let sigma', default = coq_unit_judge !!(pb.env) sigma in
+      if EConstr.eq_constr_nounivs sigma' pred default.uj_type
+      then sigma, add_assert_false_case pb tomatch
+      else sigma, submat
     end
   | _ ->
     sigma, submat
@@ -1103,7 +1097,7 @@ let adjust_impossible_cases sigma pb pred tomatch submat =
 (*   with .. end                                                             *)
 (*                                                                           *)
 (*****************************************************************************)
-let specialize_predicate env newtomatchs (names,depna) arsign cs tms ccl =
+let specialize_predicate env sigma newtomatchs (names,depna) arsign cs tms ccl =
   (* Assume some gamma st: gamma |- PI [X,x:I(X)]. PI tms. ccl *)
   let nrealargs = List.length names in
   let l = match depna with Anonymous -> 0 | Name _ -> 1 in
@@ -1128,7 +1122,7 @@ let specialize_predicate env newtomatchs (names,depna) arsign cs tms ccl =
   (* We need _parallel_ bindings to get gamma, x1...xn |- PI tms. ccl'' *)
   (* Note: applying the substitution in tms is not important (is it sure?) *)
   let ccl'' =
-    whd_betaiota env Evd.empty (subst_predicate (realargsi, copti) ccl' tms) in
+    whd_betaiota env sigma (subst_predicate (realargsi, copti) ccl' tms) in
   (* We adjust ccl st: gamma, x'1..x'n, x1..xn, tms |- ccl'' *)
   let ccl''' = liftn_predicate n (n+1) ccl'' tms in
   (* We finally get gamma,x'1..x'n,x |- [X1;x1:I(X1)]..[Xn;xn:I(Xn)]pred'''*)
@@ -1387,7 +1381,7 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
 
   (* Do the specialization for the predicate *)
   let pred =
-    specialize_predicate !!(pb.env) typs' (realnames,curname) arsign const_info tomatch pb.pred in
+    specialize_predicate !!(pb.env) sigma typs' (realnames,curname) arsign const_info tomatch pb.pred in
 
   let currents = List.map (fun x -> Pushed (false,x)) typs' in
 
