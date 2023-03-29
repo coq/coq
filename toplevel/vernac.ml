@@ -68,7 +68,6 @@ let emit_time state com tstart tend =
 
 let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
   let open State in
-    let tstart = System.get_time () in
     try
       let doc, nsid, ntip = Stm.add ~doc:state.doc ~ontop:state.sid (not !Flags.quiet) com in
 
@@ -78,16 +77,10 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
 
       (* Force the command  *)
       let () = if check then Stm.observe ~doc nsid in
-      let tend = System.get_time () in
-      (* The -time option is only supported from console-based clients
-         due to the way it prints. *)
-      emit_time state com tstart tend;
       let new_proof = Vernacstate.Declare.give_me_the_proof_opt () [@ocaml.warning "-3"] in
       { state with doc; sid = nsid; proof = new_proof; }
     with reraise ->
       let (reraise, info) = Exninfo.capture reraise in
-      let tend = System.get_time () in
-      emit_time state com tstart tend;
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
       let reraise = if interactive then begin
@@ -120,6 +113,7 @@ let load_vernac_core ~echo ~check ~interactive ~state ?source file =
 
   (* ids = For beautify, list of parsed sids *)
   let rec loop state ids =
+    let tstart = System.get_time () in
     match
       Stm.parse_sentence
         ~doc:state.doc ~entry:Pvernac.main_entry state.sid in_pa
@@ -134,7 +128,16 @@ let load_vernac_core ~echo ~check ~interactive ~state ?source file =
       checknav ast;
 
       let state =
-        Flags.silently (interp_vernac ~check ~interactive ~state) ast in
+        try_finally
+          (fun () -> Flags.silently (interp_vernac ~check ~interactive ~state) ast)
+          ()
+          (fun () ->
+             let tend = System.get_time () in
+             (* The -time option is only supported from console-based clients
+                due to the way it prints. *)
+             emit_time state ast tstart tend)
+          ()
+      in
 
       (loop [@ocaml.tailcall]) state (state.sid :: ids)
   in
