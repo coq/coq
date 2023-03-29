@@ -56,8 +56,11 @@ let mkProd_name env (n,a,b) = mkProd_or_LetIn_name env (LocalAssum (n,a)) b
 
 let set_names env_for_named_hd env_for_next_ident_away l =
   let ids = Id.Set.of_list (Termops.ids_of_rel_context (rel_context env_for_next_ident_away)) in
-  snd (List.fold_right (fun d (ids,l) ->
-      let id = ident_hd env_for_named_hd ids (get_type d) (get_name d) in (Id.Set.add id ids, set_name (Name id) d :: l)) l (ids,[]))
+  let fold d (ids, l) =
+    let id = ident_hd env_for_named_hd ids (get_type d) (get_name d) in
+    (Id.Set.add id ids, set_name (Name id) d :: l)
+  in
+  snd (List.fold_right fold l (ids,[]))
 let it_mkLambda_or_LetIn_name env b l = it_mkLambda_or_LetIn b (set_names env env l)
 let it_mkProd_or_LetIn_name env b l = it_mkProd_or_LetIn b (set_names env env l)
 
