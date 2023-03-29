@@ -173,10 +173,11 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
         (mkRel (ndepar + nbprod),
           if dep then Context.Rel.instance mkRel 0 deparsign
           else Context.Rel.instance mkRel 1 arsign) in
-    let pself = LocalAssum (make_annot Anonymous r, depind) in
-    (* FIXME: the environment for pself is clearly wrong *)
-    let pctx = (if dep then name_assumption env pself else pself) :: set_names env env arsign in
     let deparsign = set_names env env deparsign in
+    let pctx =
+      if dep then deparsign
+      else LocalAssum (make_annot Anonymous r, depind) :: List.tl deparsign
+    in
     let sigma, obj, objT =
       match projs with
       | None ->
