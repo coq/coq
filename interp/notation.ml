@@ -1955,8 +1955,9 @@ let find_arguments_scope r =
       scl'
   with Not_found -> []
 
-let declare_ref_arguments_scope sigma ref =
+let declare_ref_arguments_scope ref =
   let env = Global.env () in (* FIXME? *)
+  let sigma = Evd.from_env env in
   let typ = EConstr.of_constr @@ fst @@ Typeops.type_of_global_in_context env ref in
   let (scs,cls as o) = compute_arguments_scope_full env sigma typ in
   declare_arguments_scope_gen ArgsScopeAuto ref (List.length scs) o

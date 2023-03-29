@@ -217,7 +217,7 @@ let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 
 let update_tables c =
   Impargs.declare_constant_implicits c;
-  Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstRef c)
+  Notation.declare_ref_arguments_scope (GlobRef.ConstRef c)
 
 let register_constant kn kind local =
   let id = Label.to_id (Constant.label kn) in
@@ -522,7 +522,7 @@ let declare_variable_core ~name ~kind d =
   Decls.(add_variable_data name {opaque;kind});
   Lib.add_leaf (inVariable name);
   Impargs.declare_var_implicits ~impl name;
-  Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
+  Notation.declare_ref_arguments_scope (GlobRef.VarRef name)
 
 let declare_variable ~name ~kind ~typ ~impl ~univs =
   declare_variable_core ~name ~kind (SectionLocalAssum { typ; impl; univs })

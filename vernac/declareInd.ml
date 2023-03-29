@@ -14,9 +14,9 @@ open Entries
 (** Declaration of inductive blocks *)
 let declare_inductive_argument_scopes kn mie =
   List.iteri (fun i {mind_entry_consnames=lc} ->
-    Notation.declare_ref_arguments_scope Evd.empty (GlobRef.IndRef (kn,i));
+    Notation.declare_ref_arguments_scope (GlobRef.IndRef (kn,i));
     for j=1 to List.length lc do
-      Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstructRef ((kn,i),j));
+      Notation.declare_ref_arguments_scope (GlobRef.ConstructRef ((kn,i),j));
     done) mie.mind_entry_inds
 
 type inductive_obj = {
