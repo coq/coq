@@ -73,6 +73,109 @@ let source_substring start stop =
   let len = stop - start + 1 (* +1 for inclusive *) in
   String.sub source (start-1) len
 
+type loc = { start: int; stop: int; line: int; text: string; }
+
+(* [line] and [text] are derived data using the same [source] so no need to check them *)
+let same_loc a b = a.start = b.start && a.stop = b.stop
+
+(* A measurement, with the original printed string and an exact rational representation *)
+type measure = { str: string; q: Q.t; }
+
+let dummy = { str="0"; q=Q.zero; }
+
+type 'a one_command = {
+  loc: loc;
+  time: 'a;
+}
+
+let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs|}
+
+let count_newlines s = str_fold_left (fun n c -> if c = '\n' then n+1 else n) 0 s
+
+let is_white_char = function ' '|'\n'|'\t' -> true | _ -> false
+
+let rec file_loop filech ~last_end ~lines acc : measure one_command array =
+  match input_line filech with
+  | exception End_of_file ->
+    let acc = if last_end + 1 <= sourcelen then
+        let text = source_substring (last_end+1) sourcelen in
+        if str_for_all is_white_char text then acc
+        else
+          { loc = { start = last_end+1; stop = sourcelen; line = lines+1; text; };
+            time = dummy;
+          } :: acc
+      else acc
+    in
+    CArray.rev_of_list acc
+  | l ->
+    if not (Str.string_match time_regex l 0) then
+      file_loop filech ~last_end ~lines acc
+    else
+      let b = int_of_string @@ Str.matched_group 1 l
+      and e = int_of_string @@ Str.matched_group 2 l
+      and t = Str.matched_group 3 l in
+      let acc, lines, last_end = if b > last_end + 1 then
+          let text = source_substring (last_end + 1) (b - 1) in
+          (* if only spaces since last command, include them in the next command
+             typically "Module Foo.\n  Cmd." *)
+          if not (str_for_all is_white_char text) then
+            let n = count_newlines text in
+            let acc =
+              { loc = { start = last_end + 1; stop = b-1; line = lines; text };
+                time = dummy;
+              } :: acc
+            in
+            acc, (lines+n), b-1
+          else acc, lines, last_end
+        else acc, lines, last_end
+      in
+      let text = source_substring (last_end+1) e in
+      let lines, n = if text <> "" && text.[0] = '\n' then lines+1, 1 else lines, 0 in
+      let n = count_newlines text - n in
+      (* lua script has "eoln" but unused *)
+      let acc =
+        { loc = { start = last_end+1; stop = e; line = lines; text; };
+          time = { str=t; q = Q.of_string t; };
+        } :: acc
+      in
+      let lines = lines + n in
+      let last_end = e in
+      file_loop filech ~last_end ~lines acc
+
+let file_data data_file =
+  file_loop (open_in data_file) ~last_end:(-1) ~lines:1 []
+
+let all_data = Array.map file_data data_files
+
+let () =
+  data_files |> Array.iteri (fun fidx fname ->
+      if Array.length all_data.(0) <> Array.length all_data.(fidx)
+      then die "Mismatch between %s and %s: different measurement counts\n" data_files.(0) fname)
+
+let all_data : measure array one_command array =
+  all_data.(0) |> Array.mapi (fun i d ->
+      let times = data_files |> Array.mapi (fun fidx fname ->
+          let fdata = all_data.(fidx).(i) in
+          if same_loc d.loc fdata.loc
+          then fdata.time
+          else die "Mismatch between %s and %s at line %d\n" data_files.(0) fname (i+1))
+      in
+      { loc = d.loc;
+        time = times; })
+
+let percentage ~max:m v =
+  Q.to_float Q.(v * of_int 100 / m)
+
+let maxq =
+  Array.fold_left (fun max data ->
+      Array.fold_left (fun max d ->
+          let dq = d.q in
+          if Q.lt max dq then dq
+          else max)
+        max
+        data.time)
+    Q.zero all_data
+
 let vname = Filename.basename vfile
 
 let out fmt = Printf.kfprintf (fun _ -> ()) stdout fmt
@@ -131,109 +234,35 @@ let () = data_files |> Array.iteri (fun i data_file ->
 
 let () = out "</ol>\n"
 
-type one_command = {
-  start: int;
-  stop: int;
-  time: string; (* not float: no rounding *)
-  timeq : Q.t;
-  text: string;
-  lines: int;
-}
-
-let time_regex = Str.regexp {|^Chars \([0-9]+\) - \([0-9]+\) [^ ]+ \([0-9.]+\) secs|}
-
-let count_newlines s = str_fold_left (fun n c -> if c = '\n' then n+1 else n) 0 s
-
-let is_white_char = function ' '|'\n'|'\t' -> true | _ -> false
-
-let rec file_loop filech ~last_end ~lines acc =
-  match input_line filech with
-  | exception End_of_file ->
-    let acc = if last_end + 1 <= sourcelen then
-        let text = source_substring (last_end+1) sourcelen in
-        if str_for_all is_white_char text then acc
-        else
-          { start = last_end+1; stop = sourcelen; time = "0"; timeq = Q.zero;
-            text; lines = lines+1; } :: acc
-      else acc
-    in
-    CArray.rev_of_list acc
-  | l ->
-    if not (Str.string_match time_regex l 0) then
-      file_loop filech ~last_end ~lines acc
-    else
-      let b = int_of_string @@ Str.matched_group 1 l
-      and e = int_of_string @@ Str.matched_group 2 l
-      and t = Str.matched_group 3 l in
-      let acc, lines, last_end = if b > last_end + 1 then
-          let text = source_substring (last_end + 1) (b - 1) in
-          (* if only spaces since last command, include them in the next command
-             typically "Module Foo.\n  Cmd." *)
-          if not (str_for_all is_white_char text) then
-            let n = count_newlines text in
-            let acc =
-              { start = last_end + 1; stop = b-1; time = "0"; timeq = Q.zero;
-                text; lines; }
-              :: acc
-            in
-            acc, (lines+n), b
-          else acc, lines, last_end
-        else acc, lines, last_end
-      in
-      let text = source_substring (last_end+1) e in
-      let n = count_newlines text in
-      (* lua script has "eoln" but unused *)
-      let acc =
-        { start = b; stop = e; time = t; timeq = Q.of_string t;
-          text; lines; } :: acc
-      in
-      let lines = lines + n in
-      let last_end = e in
-      file_loop filech ~last_end ~lines acc
-
-let file_data data_file =
-  file_loop (open_in data_file) ~last_end:(-1) ~lines:1 []
-
-let all_data = Array.map file_data data_files
-
-let percentage ~max:m v =
-  Q.to_float Q.(v * of_int 100 / m)
-
-let maxq =
-  Array.fold_left (fun max data ->
-      Array.fold_left (fun max d ->
-          let dq = d.timeq in
-          if Q.lt max dq then dq
-          else max)
-        max
-        data)
-    Q.zero all_data
-
 let () = out "<pre>"
 
-let () = all_data.(0) |> Array.iteri (fun j d ->
+let () = all_data |> Array.iteri (fun j d ->
     let () = out {|<div class="code" title="File: %s
 Line: %d
 
-|} vname d.lines
+|} vname d.loc.line
     in
-    let () = all_data |> Array.iteri (fun k d ->
-        out "Time%d: %ss\n" (k+1) d.(j).time)
+    let () = d.time |> Array.iteri (fun k d ->
+        out "Time%d: %ss\n" (k+1) d.str)
     in
     let () = out {|">|} in
-    let () = all_data |> Array.iteri (fun k d ->
+
+    let () = d.time |> Array.iteri (fun k d ->
         out {|<div class="time%d" style="width: %f%%"></div>|}
           (k+1)
-          (percentage d.(j).timeq ~max:maxq))
+          (percentage d.q ~max:maxq))
     in
-    let text = if d.text <> "" && d.text.[0] = '\n'
-      then String.sub d.text 1 (String.length d.text  - 1)
-      else d.text
+
+    let text = d.loc.text in
+    let text = if text <> "" && text.[0] = '\n'
+      then String.sub text 1 (String.length text  - 1)
+      else text
     in
     let sublines = String.split_on_char '\n' text in
     let () = sublines |> List.iteri (fun i line ->
-        out "<code data-line=\"%d\">%s</code>\n" (d.lines+i) (htmlescape line))
+        out "<code data-line=\"%d\">%s</code>\n" (d.loc.line+i) (htmlescape line))
     in
+
     let () = out "</div>" in
     ())
 
