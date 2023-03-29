@@ -378,8 +378,13 @@ create_opam() {
     for package in coq-core coq-stdlib coqide-server coq; do
         export COQ_OPAM_PACKAGE=$package
         export COQ_ITERATION=1
+
+        # build stdlib with -j 1 to get nicer timings
+        local this_nproc=$number_of_processors
+        if [ "$package" = coq-stdlib ]; then this_nproc=1; fi
+
         _RES=0
-        opam pin add -y -b -j "$number_of_processors" --kind=path $package.dev . \
+        opam pin add -y -b -j "$this_nproc" --kind=path $package.dev . \
              3>$log_dir/$package.$RUNNER.opam_install.1.stdout.log 1>&3 \
              4>$log_dir/$package.$RUNNER.opam_install.1.stderr.log 2>&4 || \
             _RES=$?
