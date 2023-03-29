@@ -182,8 +182,11 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
       match projs with
       | None ->
         let pms = Context.Rel.instance mkRel (ndepar + nbprod) lnamespar in
-        let iv = make_case_invert env (find_rectype env sigma (EConstr.of_constr (lift 1 depind))) ci in
-        let iv = EConstr.Unsafe.to_case_invert iv in
+        let iv =
+          if Typeops.should_invert_case env ci then
+            CaseInvert { indices = Context.Rel.instance mkRel 1 arsign }
+          else NoInvert
+        in
         let ncons = Array.length mip.mind_consnames in
         let mk_branch i =
           (* we need that to get the generated names for the branch *)
