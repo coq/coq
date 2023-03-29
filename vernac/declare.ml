@@ -1200,9 +1200,8 @@ let compute_possible_guardness_evidences n fixbody fixtype =
          but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
          fixpoints ?) *)
-    let m = Termops.nb_prod Evd.empty (EConstr.of_constr fixtype) (* FIXME *) in
-    let ctx = fst (Term.decompose_prod_n_decls m fixtype) in
-    List.map_i (fun i _ -> i) 0 ctx
+    let ctx, _ = Term.decompose_prod fixtype in
+    List.mapi (fun i _ -> i) ctx
 
 let declare_mutual_definition ~pm l =
   let len = List.length l in
