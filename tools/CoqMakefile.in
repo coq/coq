@@ -293,18 +293,18 @@ CAMLDOCFLAGS:=$(filter-out -annot, $(filter-out -bin-annot, $(CAMLFLAGS)))
 CAMLFLAGS+=$(OCAMLWARN)
 
 ifneq (,$(TIMING))
-TIMING_ARG=-time
-ifeq (after,$(TIMING))
-TIMING_EXT=after-timing
+  ifeq (after,$(TIMING))
+    TIMING_EXT=after-timing
+  else
+    ifeq (before,$(TIMING))
+      TIMING_EXT=before-timing
+    else
+      TIMING_EXT=timing
+    endif
+  endif
+  TIMING_ARG=-time-file $<.$(TIMING_EXT)
 else
-ifeq (before,$(TIMING))
-TIMING_EXT=before-timing
-else
-TIMING_EXT=timing
-endif
-endif
-else
-TIMING_ARG=
+  TIMING_ARG=
 endif
 
 # Files #######################################################################
@@ -784,12 +784,6 @@ $(filter-out $(MLLIBFILES:.mllib=.cmxs) $(MLPACKFILES:.mlpack=.cmxs) $(addsuffix
 	$(HIDE)$(TIMER) $(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(FINDLIBPKGS) \
 		-shared -o $@ $<
 
-ifneq (,$(TIMING))
-TIMING_EXTRA = > $<.$(TIMING_EXT)
-else
-TIMING_EXTRA =
-endif
-
 # can't make
 # https://www.gnu.org/software/make/manual/make.html#Static-Pattern
 # work with multiple target rules
@@ -802,7 +796,7 @@ define globvorule=
 # take care to $$ variables using $< etc
   $(1).vo $(1).glob &: $(1).v | $(VDFILE)
 	$(SHOW)COQC $(1).v
-	$(HIDE)$$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $(1).v $$(TIMING_EXTRA)
+	$(HIDE)$$(TIMER) $(COQC) $(COQDEBUG) $$(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $(1).v
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $(1).vo
 	$(HIDE)$(call TIMER,$(1).vo.native) $(COQNATIVE) $(COQLIBS) $(1).vo
@@ -813,7 +807,7 @@ else
 
 $(VOFILES): %.vo: %.v | $(VDFILE)
 	$(SHOW)COQC $<
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $<
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $@
 	$(HIDE)$(call TIMER,$@.native) $(COQNATIVE) $(COQLIBS) $@

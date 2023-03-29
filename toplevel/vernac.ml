@@ -38,19 +38,33 @@ let vernac_echo ?loc in_chan = let open Loc in
 (*     Stm.End_of_input -> true *)
 (*   | _ -> false *)
 
+type time_output =
+  | ToFeedback
+  | ToChannel of Format.formatter
+
+let make_time_output = function
+  | Coqargs.ToFeedback -> ToFeedback
+  | ToFile f -> ToChannel (Format.formatter_of_out_channel (open_out f))
+
 module State = struct
 
   type t = {
     doc : Stm.doc;
     sid : Stateid.t;
     proof : Proof.t option;
-    time : bool;
+    time : time_output option;
   }
 
 end
 
 let emit_time state com tstart tend =
-  if state.State.time then Feedback.msg_notice (Topfmt.pr_cmd_header com ++ System.fmt_time_difference tstart tend)
+  match state.State.time with
+  | None -> ()
+  | Some time ->
+    let pp = Topfmt.pr_cmd_header com ++ System.fmt_time_difference tstart tend in
+    match time with
+    | ToFeedback -> Feedback.msg_notice pp
+    | ToChannel ch -> Pp.pp_with ch (pp ++ fnl())
 
 let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
   let open State in
