@@ -1532,6 +1532,7 @@ let nth_arg i c = match i with
 
 let index_of_ind_arg sigma t =
   let rec aux i j t = match EConstr.kind sigma t with
+  | LetIn (_, _, _, t) -> aux i j t
   | Prod (_,t,u) ->
       (* heuristic *)
       if isInd sigma (fst (decompose_app sigma t)) then aux (Some j) (j+1) u
