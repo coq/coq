@@ -820,18 +820,14 @@ let is_predicate_explicitly_dep pnas =
     | Anonymous -> false
     | Name _ -> true
 
-let set_names env sigma n brty =
-  let open EConstr in
-  let (ctxt,cl) = decompose_prod_n_decls sigma n brty in
-  Namegen.it_mkProd_or_LetIn_name env sigma cl ctxt
-
 let set_pattern_names env sigma ind brv =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let arities =
-    Array.map
-      (fun (d, _) -> List.length d - mib.mind_nparams)
-      mip.mind_nf_lc in
-  Array.map2 (set_names env sigma) arities brv
+  let set_names i brty =
+    let open EConstr in
+    let (ctxt, cl) = decompose_prod_n_decls sigma mip.mind_consnrealdecls.(i) brty in
+    Namegen.it_mkProd_or_LetIn_name env sigma cl ctxt
+  in
+  Array.mapi set_names brv
 
 let type_case_branches_with_names env sigma (ind, u) pms (pnas, p) =
   let specif = Inductive.lookup_mind_specif env ind in
