@@ -81,7 +81,6 @@ CI_TARGETS= \
     ci-unimath \
     ci-unicoq \
     ci-verdi_raft \
-    ci-vscoq \
     ci-vst
 
 .PHONY: ci-all $(CI_TARGETS)

@@ -912,9 +912,6 @@ plugin:ci-coq_lsp:
   - build:edge+flambda
   - plugin:ci-serapi
 
-plugin:ci-vscoq:
-  extends: .ci-template
-
 plugin:ci-smtcoq:
   extends: .ci-template
 
