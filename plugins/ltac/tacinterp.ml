@@ -600,7 +600,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
     ltac_genargs = ist.lfun;
   } in
   let loc = loc_of_glob_constr term in
-  let trace = push_trace (loc,LtacConstrInterp (term,vars)) ist in
+  let trace = push_trace (loc,LtacConstrInterp (env,sigma,term,vars)) ist in
   let (stack, _) = trace in
   (* save and restore the current trace info because the called routine later starts
      with an empty trace *)
