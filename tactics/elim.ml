@@ -10,7 +10,6 @@
 
 open Util
 open Names
-open Constr
 open Termops
 open EConstr
 open Inductiveops
@@ -25,45 +24,37 @@ type elim_kind = Case of bool * constr option | Elim
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
 let general_elim_using mk_elim (ind, u, args) id =
-  let open Pp in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sort = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
-    let sigma, elim, elimt, predicate = match mk_elim with
+    let flags = Unification.elim_flags () in
+    match mk_elim with
     | Case (dep, pred) ->
-      let u = EInstance.kind sigma u in
-      let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u) dep sort in
-      let r, t = Indrec.eval_case_analysis c in
-      (sigma, r, t, pred)
+      let u_ = EInstance.kind sigma u in
+      let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u_) dep sort in
+      let elim, elimt = Indrec.eval_case_analysis c in
+      (* applying elimination_scheme just a little modified *)
+      let elimclause = mk_clenv_from env sigma (elim, elimt) in
+      let indmv = List.last (clenv_arguments elimclause) in
+      let elimclause = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
+      let elimclause = match pred with
+      | None -> elimclause
+      | Some p ->
+        (* Option.get is statically ensured to succeed *)
+        let pmv = Option.get (Clenv.clenv_type_head_meta elimclause) in
+        clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause
+      in
+      Clenv.case_pf ~flags elimclause
     | Elim ->
       let gr = Indrec.lookup_eliminator env ind sort in
-      let sigma, r = Evd.fresh_global env sigma gr in
-      (sigma, r, Retyping.get_type_of env sigma r, None)
-    in
-    let is_case = match mk_elim with Elim -> false | Case _ -> true in
-    (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from env sigma (elim, elimt) in
-    let indmv = List.last (clenv_arguments elimclause) in
-    let pmv = match Clenv.clenv_type_head_meta elimclause with
-    | Some p -> p
-    | None ->
-      let name_elim =
-        match EConstr.kind sigma elim with
-        | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env env sigma elim
-        | _ -> mt ()
-      in
-      CErrors.user_err
-        (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
-    in
-    let elimclause' = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
-    let flags = Unification.elim_flags () in
-    let elimclause' =
-      match predicate with
-      | None   -> elimclause'
-      | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
-    in
-    if is_case then Clenv.case_pf ~flags elimclause' else Clenv.res_pf ~flags elimclause'
+      let sigma, elim = Evd.fresh_global env sigma gr in
+      let elimt = Retyping.get_type_of env sigma elim in
+      (* applying elimination_scheme just a little modified *)
+      let elimclause = mk_clenv_from env sigma (elim, elimt) in
+      let indmv = List.last (clenv_arguments elimclause) in
+      let elimclause = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
+      Clenv.res_pf ~flags elimclause
   end
 
 (* computing the case/elim combinators *)
