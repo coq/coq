@@ -54,6 +54,7 @@ type ('constr, 'types) ptype_error =
   | ElimArity of pinductive * 'constr *
     (('constr, 'types) punsafe_judgment * Sorts.family * Sorts.family * Sorts.family) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
+  | CaseOnPrivateInd of inductive
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
   | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
@@ -113,6 +114,9 @@ let error_elim_arity env ind c okinds =
 
 let error_case_not_inductive env j =
   raise (TypeError (env, CaseNotInductive j))
+
+let error_case_on_private_ind env ind =
+  raise (TypeError (env, CaseOnPrivateInd ind))
 
 let error_number_branches env cj expn =
   raise (TypeError (env, NumberBranches (cj, expn)))
@@ -187,11 +191,11 @@ let map_pguard_error f = function
 | CoFixGuardError e -> CoFixGuardError (map_pcofix_guard_error f e)
 
 let map_ptype_error f = function
-| UnboundRel n -> UnboundRel n
-| UnboundVar id -> UnboundVar id
+| UnboundRel _ | UnboundVar _ | CaseOnPrivateInd _
+| UndeclaredUniverse _ | DisallowedSProp | UnsatisfiedConstraints _
+| ReferenceVariables _ | BadInvert | BadVariance _ as e -> e
 | NotAType j -> NotAType (on_judgment f j)
 | BadAssumption j -> BadAssumption (on_judgment f j)
-| ReferenceVariables (id, c) -> ReferenceVariables (id, c)
 | ElimArity (pi, c, ar) ->
   ElimArity (pi, f c, Option.map (fun (j, s1, s2, s3) -> (on_judgment f j, s1, s2, s3)) ar)
 | CaseNotInductive j -> CaseNotInductive (on_judgment f j)
@@ -208,10 +212,5 @@ let map_ptype_error f = function
   IllFormedRecBody (map_pguard_error f ge, na, n, env, Array.map (on_judgment f) jv)
 | IllTypedRecBody (n, na, jv, t) ->
   IllTypedRecBody (n, na, Array.map (on_judgment f) jv, Array.map f t)
-| UnsatisfiedConstraints g -> UnsatisfiedConstraints g
-| UndeclaredUniverse l -> UndeclaredUniverse l
-| DisallowedSProp -> DisallowedSProp
 | BadBinderRelevance (rlv, decl) -> BadBinderRelevance (rlv, Context.Rel.Declaration.map_constr_het f decl)
 | BadCaseRelevance (rlv, case) -> BadCaseRelevance (rlv, f case)
-| BadInvert -> BadInvert
-| BadVariance u -> BadVariance u

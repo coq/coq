@@ -507,11 +507,12 @@ let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let subst = Vars.subst_of_rel_context_instance_list pctx (realargs @ [c]) in
   Vars.substl subst p
 
-let type_of_case env (mib, mip) ci u pms (pctx, pnas, p, pt) iv c ct lf lft =
+let type_of_case env (mib, mip as specif) ci u pms (pctx, pnas, p, pt) iv c ct lf lft =
   let ((ind, u'), largs) =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
   (* Various well-formedness conditions *)
+  let () = if Inductive.is_private specif then error_case_on_private_ind env ind in
   let sp = match destSort (whd_all (push_rel_context pctx env) pt) with
   | sp -> sp
   | exception DestKO ->
