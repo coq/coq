@@ -41,7 +41,7 @@ module QState : sig
   val union : fail:(t -> Quality.t -> Quality.t -> t) -> t -> t -> t
   val add : check_fresh:bool -> named:bool -> elt -> t -> t
   val repr : elt -> t -> Quality.t
-  val unify_quality : fail:(unit -> t) -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
+  val unify_quality : fail:(unit -> t) -> cumulative_prop:bool -> Conversion.conv_pb -> Quality.t -> Quality.t -> t -> t
   val is_above_prop : elt -> t -> bool
   val undefined : t -> QVar.Set.t
   val collapse_above_prop : to_prop:bool -> t -> t
@@ -105,11 +105,11 @@ let set_above_prop q m =
   if QSet.mem q m.named then None
   else Some { named = m.named; qmap = m.qmap; above = QSet.add q m.above }
 
-let unify_quality ~fail c q1 q2 local = match q1, q2 with
+let unify_quality ~fail ~cumulative_prop c q1 q2 local = match q1, q2 with
 | QConstant QType, QConstant QType
 | QConstant QProp, QConstant QProp
 | QConstant QSProp, QConstant QSProp -> local
-| QConstant QProp, QVar q when c == Conversion.CUMUL ->
+| QConstant QProp, QVar q when c == Conversion.CUMUL && cumulative_prop ->
   begin match set_above_prop q local with
   | Some local -> local
   | None -> fail ()
@@ -130,7 +130,7 @@ let unify_quality ~fail c q1 q2 local = match q1, q2 with
 | (QConstant QProp, QConstant QType) ->
   begin match c with
   | CONV -> fail ()
-  | CUMUL -> local
+  | CUMUL -> if cumulative_prop then local else fail ()
   end
 | (QConstant QSProp, QConstant (QType | QProp)) -> fail ()
 | (QConstant QProp, QConstant QSProp) -> fail ()
@@ -160,7 +160,8 @@ let union ~fail s1 s2 =
   let s = { named = QSet.union s1.named s2.named; qmap; above } in
   List.fold_left (fun s (q1,q2) ->
       let q1 = nf_quality s q1 and q2 = nf_quality s q2 in
-      unify_quality ~fail:(fun () -> fail s q1 q2) CONV q1 q2 s)
+      (* cumulative_prop doesn't matter with CONV *)
+      unify_quality ~fail:(fun () -> fail s q1 q2) CONV ~cumulative_prop:false q1 q2 s)
     s
     extra
 
@@ -511,7 +512,7 @@ let unify_quality univs c s1 s2 l =
     else sort_inconsistency (get_constraint c) s1 s2
   in
   { l with
-    local_sorts  = QState.unify_quality ~fail
+    local_sorts  = QState.unify_quality ~fail ~cumulative_prop:(UGraph.cumulative_prop univs)
         c (Sorts.quality s1) (Sorts.quality s2) l.local_sorts;
   }
 
