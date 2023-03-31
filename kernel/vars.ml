@@ -99,21 +99,35 @@ let lift_rel_context n =
 
 (* 1st : general case *)
 
-type info = Closed | Open | Unknown
+module IntTbl = Hashtbl.Make(Int)
+
+type info = Closed | Open of Constr.t IntTbl.t | Unknown
 type substituend = { mutable sinfo: info; sit: Constr.t }
 
 let lift_substituend depth s =
   match s.sinfo with
     | Closed -> s.sit
-    | Open -> lift depth s.sit
+    | Open cache ->
+      begin match IntTbl.find_opt cache depth with
+      | Some v -> v
+      | None ->
+        let v = lift depth s.sit in
+        let () = IntTbl.add cache depth v in
+        v
+      end
     | Unknown ->
       let sit = s.sit in
       if closed0 sit then
         let () = s.sinfo <- Closed in
         sit
       else
-        let () = s.sinfo <- Open in
-        lift depth sit
+        let v = lift depth sit in
+        let cache = IntTbl.create 13 in
+        let () = IntTbl.add cache depth v in
+        let () = s.sinfo <- Open cache in
+        v
+
+let lift_substituend depth s = if Int.equal depth 0 then s.sit else lift_substituend depth s
 
 let make_substituend c = { sinfo=Unknown; sit=c }
 
