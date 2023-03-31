@@ -1,8 +1,16 @@
 image: "$IMAGE"
 
-default:
-  interruptible: true
-  timeout: 1h
+include:
+  - local: '/dev/ci/gitlab-modes/protected-mode.yml'
+    rules:
+      - if: $CI_COMMIT_BRANCH == "master"
+      - if: $CI_COMMIT_BRANCH =~ /^v.*\..*$/
+
+  - local: "/dev/ci/gitlab-modes/normal-mode.yml"
+    rules:
+      - if: $CI_COMMIT_BRANCH != "master" && $CI_COMMIT_BRANCH !~ /^v.*\..*$/
+
+  - local: '/dev/bench/gitlab-bench.yml'
 
 stages:
   - docker
@@ -27,9 +35,6 @@ variables:
   # Used to select special compiler switches such as flambda, 32bits, etc...
   OPAM_VARIANT: ""
   GIT_DEPTH: "10"
-
-include:
-  - local: '/dev/bench/gitlab-bench.yml'
 
 before_script:
   - dev/ci/gitlab-section.sh start before_script before_script

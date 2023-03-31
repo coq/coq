@@ -1,0 +1,4 @@
+
+default:
+  interruptible: true
+  timeout: 1h
