@@ -19,7 +19,7 @@ open Tacticals
 open Clenv
 open Tactics
 
-type elim_kind = Case of bool * constr option | Elim
+type elim_kind = Case of bool | Elim
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
@@ -30,7 +30,7 @@ let general_elim_using mk_elim (ind, u, args) id =
     let sort = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
     let flags = Unification.elim_flags () in
     match mk_elim with
-    | Case (dep, pred) ->
+    | Case dep ->
       let u_ = EInstance.kind sigma u in
       let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u_) dep sort in
       let elim, elimt = Indrec.eval_case_analysis c in
@@ -38,13 +38,6 @@ let general_elim_using mk_elim (ind, u, args) id =
       let elimclause = mk_clenv_from env sigma (elim, elimt) in
       let indmv = List.last (clenv_arguments elimclause) in
       let elimclause = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
-      let elimclause = match pred with
-      | None -> elimclause
-      | Some p ->
-        (* Option.get is statically ensured to succeed *)
-        let pmv = Option.get (Clenv.clenv_type_head_meta elimclause) in
-        clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause
-      in
       Clenv.case_pf ~flags elimclause
     | Elim ->
       let gr = Indrec.lookup_eliminator env ind sort in
@@ -68,7 +61,7 @@ let elim_on_ba tac nassums =
   tac branches
   end
 
-let case_tac dep names tac elim (ind, u, args as spec) c =
+let case_tac dep names tac (ind, u, args as spec) c =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -84,7 +77,7 @@ let case_tac dep names tac elim (ind, u, args as spec) c =
       (intro_patterns false l1) <*> (intros_clearing l3) <*> (elim_on_ba (tac l2) n1)
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
-    general_elim_using (Case (dep, Some elim)) spec c <*>
+    general_elim_using (Case dep) spec c <*>
     (Proofview.tclEXTEND [] tclIDTAC branchtacs)
   end
 
@@ -116,7 +109,7 @@ let rec general_decompose_aux recognizer id =
   let rec_flag, mkelim =
     match (Environ.lookup_mind (fst ind) env).mind_record with
     | NotRecord -> true, Elim
-    | FakeRecord | PrimRecord _ -> false, Case (true, None)
+    | FakeRecord | PrimRecord _ -> false, Case true
   in
   let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
   let next_tac bas =
