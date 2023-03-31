@@ -504,6 +504,7 @@ let same_flags {
      enable_native_compiler;
      impredicative_set;
      sprop_allowed;
+     cumulative_prop;
      allow_uip;
   } alt =
   check_guarded == alt.check_guarded &&
@@ -516,16 +517,20 @@ let same_flags {
   enable_native_compiler == alt.enable_native_compiler &&
   impredicative_set == alt.impredicative_set &&
   sprop_allowed == alt.sprop_allowed &&
+  cumulative_prop == alt.cumulative_prop &&
   allow_uip == alt.allow_uip
 [@warning "+9"]
 
 let set_type_in_type b = map_universes (UGraph.set_type_in_type b)
+
+let set_cumulative_prop b = map_universes (UGraph.set_cumulative_prop b)
 
 let set_typing_flags c env =
   if same_flags env.env_typing_flags c then env
   else
     let env = { env with env_typing_flags = c } in
     let env = set_type_in_type (not c.check_universes) env in
+    let env = set_cumulative_prop c.cumulative_prop env in
     env
 
 let update_typing_flags ?typing_flags env =
