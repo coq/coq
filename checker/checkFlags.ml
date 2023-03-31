@@ -27,6 +27,7 @@ let set_local_flags flags env =
     indices_matter = envflags.indices_matter;
     impredicative_set = envflags.impredicative_set;
     sprop_allowed = envflags.sprop_allowed;
+    cumulative_prop = envflags.cumulative_prop;
   }
   in
   Environ.set_typing_flags flags env
