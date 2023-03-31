@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 open Constr
-open Reduction
+open Conversion
 
 (** This module implements the conversion test by compiling to OCaml code *)
 

@@ -461,7 +461,7 @@ let unify_product env sigma typ =
     let sigma, (codomain_hole, _) = Evarutil.new_type_evar env' sigma Evd.univ_flexible in
     let prod = mkProd (Context.anonR, domain_hole, codomain_hole) in
     (* NB: unification needs the un-reduced type to do heuristics like canonical structures *)
-    try Inl (Evarconv.unify env sigma Reduction.CUMUL typ prod)
+    try Inl (Evarconv.unify env sigma Conversion.CUMUL typ prod)
     with PretypeError _ -> Inr t (* return the reduced type to avoid double reducing *)
 
 (* Invariant: if [proj] is [Some] then [args_len < npars]

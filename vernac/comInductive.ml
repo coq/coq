@@ -163,7 +163,7 @@ let interp_cstrs env (sigma, ind_rel) impls params ind arity =
     in
     (* unify the expected with the provided conclusion *)
     let sigma =
-      try Evarconv.unify concl_env sigma_with_model_evars Reduction.CONV concl model
+      try Evarconv.unify concl_env sigma_with_model_evars Conversion.CONV concl model
       with Evarconv.UnableToUnify (sigma,e) ->
         user_err (Himsg.explain_pretype_error concl_env sigma
                     (Pretype_errors.CannotUnify (concl, model, (Some e))))

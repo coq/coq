@@ -207,9 +207,9 @@ let get_type_of_refresh  ?(polyprop=true) ?(lax=false) env evars t =
 
 let add_conv_oriented_pb ?(tail=true) (pbty,env,t1,t2) evd =
   match pbty with
-  | Some true -> add_conv_pb ~tail (Reduction.CUMUL,env,t1,t2) evd
-  | Some false -> add_conv_pb ~tail (Reduction.CUMUL,env,t2,t1) evd
-  | None -> add_conv_pb ~tail (Reduction.CONV,env,t1,t2) evd
+  | Some true -> add_conv_pb ~tail (Conversion.CUMUL,env,t1,t2) evd
+  | Some false -> add_conv_pb ~tail (Conversion.CUMUL,env,t2,t1) evd
+  | None -> add_conv_pb ~tail (Conversion.CONV,env,t1,t2) evd
 
 (* We retype applications to ensure the universe constraints are collected *)
 
@@ -227,7 +227,7 @@ let recheck_applications unify flags env evdref t =
          if i < Array.length argsty then
          match EConstr.kind !evdref (whd_all env !evdref ty) with
          | Prod (na, dom, codom) ->
-            (match unify flags TypeUnification env !evdref Reduction.CUMUL argsty.(i) dom with
+            (match unify flags TypeUnification env !evdref Conversion.CUMUL argsty.(i) dom with
              | Success evd -> evdref := evd;
                              aux (succ i) (subst1 args.(i) codom)
              | UnifFailure (evd, reason) -> raise (IllTypedInstance (env, evd, argsty.(i), dom)))
@@ -903,7 +903,7 @@ let check_evar_instance_evi unify flags env evd evi body =
     with Retyping.RetypeError _ ->
       let loc, _ = Evd.evar_source evi in user_err ?loc (Pp.(str "Ill-typed evar instance"))
   in
-  match unify flags TypeUnification evenv evd Reduction.CUMUL ty (Evd.evar_concl evi) with
+  match unify flags TypeUnification evenv evd Conversion.CUMUL ty (Evd.evar_concl evi) with
   | Success evd -> evd
   | UnifFailure _ -> raise (IllTypedInstance (evenv,evd,ty, Evd.evar_concl evi))
 
@@ -1272,7 +1272,7 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
 
 let filter_compatible_candidates unify flags env evd evi args rhs c =
   let c' = instantiate_evar_array evd evi c args in
-  match unify flags TermUnification env evd Reduction.CONV rhs c' with
+  match unify flags TermUnification env evd Conversion.CONV rhs c' with
   | Success evd -> Inl (c,evd)
   | UnifFailure _ -> Inr c'
 
@@ -1503,7 +1503,7 @@ let solve_refl ?(can_drop=false) unify flags env evd pbty evk argsv1 argsv2 =
   let args = List.map2 (fun a1 a2 -> (a1, a2)) argsv1e argsv2e in
   let untypedfilter =
     restrict_upon_filter evd evk
-      (fun (a1,a2) -> unify flags TermUnification env evd Reduction.CONV a1 a2) args in
+      (fun (a1,a2) -> unify flags TermUnification env evd Conversion.CONV a1 a2) args in
   let candidates = filter_candidates evd evk untypedfilter NoUpdate in
   let filter = closure_of_filter ~can_drop:false evd evk untypedfilter in
   let evd',ev1 = restrict_applied_evar evd (evk, argsv1) filter candidates in

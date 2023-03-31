@@ -55,10 +55,10 @@ let rec rebuild_mp mp l =
   | i::r -> rebuild_mp (MPdot(mp,Label.of_id i)) r
 
 let infer_gen_conv state env c1 c2 =
-  Reduction.generic_conv Reduction.CONV ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
+  Conversion.generic_conv Conversion.CONV ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
 
 let infer_gen_conv_leq state env c1 c2 =
-  Reduction.generic_conv Reduction.CUMUL ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
+  Conversion.generic_conv Conversion.CUMUL ~l2r:false Constr.default_evar_handler TransparentState.full env state c1 c2
 
 let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
   let lab,idl = match idl with
@@ -107,13 +107,13 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
               assert (j.uj_val == c); (* relevances should already be correct here *)
               let typ = cb.const_type in
               begin
-                try Reduction.conv_leq env' j.uj_type typ
-                with Reduction.NotConvertible -> error_incorrect_with_constraint lab
+                try Conversion.conv_leq env' j.uj_type typ
+                with Conversion.NotConvertible -> error_incorrect_with_constraint lab
               end
             | Def c' ->
               begin
-                try Reduction.conv env' c c'
-                with Reduction.NotConvertible -> error_incorrect_with_constraint lab
+                try Conversion.conv env' c c'
+                with Conversion.NotConvertible -> error_incorrect_with_constraint lab
               end
             | Primitive _ ->
               error_incorrect_with_constraint lab
@@ -152,7 +152,7 @@ let rec check_with_def (cst, ustate) env struc (idl,(c,ctx)) mp reso =
       end
   with
   | Not_found -> error_no_such_label lab mp
-  | Reduction.NotConvertible -> error_incorrect_with_constraint lab
+  | Conversion.NotConvertible -> error_incorrect_with_constraint lab
 
 let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
   let lab,idl = match idl with
@@ -225,7 +225,7 @@ let rec check_with_mod (cst, ustate) env struc (idl,new_mp) mp reso =
       end
   with
   | Not_found -> error_no_such_label lab mp
-  | Reduction.NotConvertible -> error_incorrect_with_constraint lab
+  | Conversion.NotConvertible -> error_incorrect_with_constraint lab
 
 let check_with ustate env mp (sign,reso,cst) = function
   | WithDef(idl, (c, ctx)) ->

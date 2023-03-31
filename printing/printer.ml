@@ -655,8 +655,8 @@ let print_evar_constraints gl sigma =
     str" " ++
       hov 2 (pr_env env ++ pr_leconstr_env env sigma t1 ++ spc () ++
              str (match pbty with
-                  | Reduction.CONV -> "=="
-                  | Reduction.CUMUL -> "<=") ++
+                  | Conversion.CONV -> "=="
+                  | Conversion.CUMUL -> "<=") ++
              spc () ++ pr_leconstr_env env sigma t2)
   in
   let pr_candidate ev evi (candidates,acc) =

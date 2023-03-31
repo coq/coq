@@ -73,8 +73,8 @@ let process_universes env = function
 
 let check_primitive_type env op_t u t =
   let inft = Typeops.type_of_prim_or_type env u op_t in
-  try Reduction.default_conv Reduction.CONV env inft t
-  with Reduction.NotConvertible ->
+  try Conversion.default_conv Conversion.CONV env inft t
+  with Conversion.NotConvertible ->
     Type_errors.error_incorrect_primitive env (make_judge op_t inft) t
 
 let adjust_primitive_univ_entry p auctx = function

@@ -1014,7 +1014,7 @@ let add_mind ?typing_flags l mie senv =
 (** Insertion of module types *)
 
 let check_state senv =
-  (Environ.universes senv.env, Reduction.checked_universes)
+  (Environ.universes senv.env, Conversion.checked_universes)
 
 let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in

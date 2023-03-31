@@ -16,7 +16,6 @@ open Constr
 open Context
 open EConstr
 open Vars
-open Reduction
 open Tacticals
 open Tactics
 open Pretype_errors

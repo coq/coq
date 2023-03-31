@@ -577,8 +577,8 @@ let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
          | Irrelevant -> Set.add (UWeak (u,u')) cstrs
          | Covariant ->
            (match cv_pb with
-            | Reduction.CONV -> Set.add (UEq (make u, make u')) cstrs
-            | Reduction.CUMUL -> Set.add (ULe (make u, make u')) cstrs)
+            | Conversion.CONV -> Set.add (UEq (make u, make u')) cstrs
+            | Conversion.CUMUL -> Set.add (ULe (make u, make u')) cstrs)
          | Invariant ->
            Set.add (UEq (make u, make u')) cstrs)
       cstrs variances (Univ.Instance.to_array u) (Univ.Instance.to_array u')
@@ -588,7 +588,7 @@ let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   match mind.Declarations.mind_variance with
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some variances ->
-    let num_param_arity = Reduction.inductive_cumulativity_arguments spec in
+    let num_param_arity = Conversion.inductive_cumulativity_arguments spec in
     compare_cumulative_instances cv_pb (Int.equal num_param_arity nargs) variances u1 u2 cstrs
 
 let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
@@ -596,7 +596,7 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
   match mind.Declarations.mind_variance with
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some _ ->
-    let num_cnstr_args = Reduction.constructor_cumulativity_arguments spec in
+    let num_cnstr_args = Conversion.constructor_cumulativity_arguments spec in
     if not (Int.equal num_cnstr_args nargs)
     then enforce_eq_instances_univs false u1 u2 cstrs
     else
@@ -632,8 +632,8 @@ let test_constr_universes env sigma leq ?(nargs=0) m n =
   if m == n then Some Set.empty
   else
     let cstrs = ref Set.empty in
-    let cv_pb = if leq then Reduction.CUMUL else Reduction.CONV in
-    let eq_universes refargs l l' = eq_universes env sigma cstrs Reduction.CONV refargs l l'
+    let cv_pb = if leq then Conversion.CUMUL else Conversion.CONV in
+    let eq_universes refargs l l' = eq_universes env sigma cstrs Conversion.CONV refargs l l'
     and leq_universes refargs l l' = eq_universes env sigma cstrs cv_pb refargs l l' in
     let eq_sorts s1 s2 =
       let s1 = ESorts.kind sigma s1 in
@@ -690,7 +690,7 @@ let eq_constr_universes_proj env sigma m n =
   if m == n then Some Set.empty
   else
     let cstrs = ref Set.empty in
-    let eq_universes ref l l' = eq_universes env sigma cstrs Reduction.CONV ref l l' in
+    let eq_universes ref l l' = eq_universes env sigma cstrs Conversion.CONV ref l l' in
     let eq_sorts s1 s2 =
       let s1 = ESorts.kind sigma s1 in
       let s2 = ESorts.kind sigma s2 in

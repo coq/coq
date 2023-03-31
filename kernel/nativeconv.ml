@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Names
-open Reduction
+open Conversion
 open Util
 open Values
 open Nativevalues

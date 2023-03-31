@@ -19,7 +19,6 @@ open Environ
 open Evd
 open EConstr
 open Vars
-open Reduction
 open Reductionops
 open Tacred
 open Pretype_errors
