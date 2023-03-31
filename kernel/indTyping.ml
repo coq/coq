@@ -81,6 +81,7 @@ let check_univ_leq ?(is_real_arg=false) env u info =
   in
   (* Inductive types provide explicit lifting from SProp to other universes, so allow SProp <= any. *)
   if Sorts.is_sprop u || UGraph.check_leq_sort (universes env) u ind_univ then info
+  else if Sorts.is_prop u && not (Sorts.is_sprop ind_univ) then info
   else if is_impredicative_sort env ind_univ then { info with ind_squashed = true }
   else {info with missing = u :: info.missing}
 
@@ -289,7 +290,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     | Template_ind_entry ctx ->
         (* For that particular case, we typecheck the inductive in an environment
            where the universes introduced by the definition are only [>= Prop] *)
-        let env = set_universes_lbound env UGraph.Bound.Prop in
+        let env = if env.env_typing_flags.cumulative_prop then set_universes_lbound env UGraph.Bound.Prop else env in
         push_context_set ~strict:false ctx env
     | Monomorphic_ind_entry -> env
     | Polymorphic_ind_entry ctx -> push_context ctx env

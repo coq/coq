@@ -630,7 +630,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
 
   let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, userimpls, useruimpls, impls, udecl, variances) =
     (* In case of template polymorphism, we need to compute more constraints *)
-    let env0 = if poly then env0 else Environ.set_universes_lbound env0 UGraph.Bound.Prop in
+    let env0 = if poly || not env0.env_typing_flags.cumulative_prop then env0 else Environ.set_universes_lbound env0 UGraph.Bound.Prop in
     interp_params env0 udecl uparamsl paramsl
   in
 

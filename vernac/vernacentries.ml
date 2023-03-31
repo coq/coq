@@ -1743,6 +1743,14 @@ let () =
   declare_bool_option
     { optstage = Summary.Stage.Interp;
       optdepr  = false;
+      optkey   = ["Cumulative"; "Prop"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.cumulative_prop);
+      optwrite = (fun b -> Global.set_cumulative_prop b) }
+
+let () =
+  declare_bool_option
+    { optstage = Summary.Stage.Interp;
+      optdepr  = false;
       optkey   = ["Definitional"; "UIP"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.allow_uip);
       optwrite = (fun b -> Global.set_typing_flags

@@ -190,7 +190,7 @@ let typecheck_params_and_fields def poly udecl ps (records : DataI.t list) : tc_
      any Set <= i constraint for universes that might actually be instantiated with Prop. *)
   let is_template =
     List.exists (fun { DataI.arity; _} -> Option.cata check_anonymous_type true arity) records in
-  let env0 = if not poly && not def && is_template then Environ.set_universes_lbound env0 UGraph.Bound.Prop else env0 in
+  let env0 = if not poly && not def && is_template && env0.env_typing_flags.cumulative_prop then Environ.set_universes_lbound env0 UGraph.Bound.Prop else env0 in
   let sigma, decl, variances = Constrintern.interp_cumul_univ_decl_opt env0 udecl in
   let () = List.iter check_parameters_must_be_named ps in
   let sigma, (impls_env, ((_env1,newps), imps)) =
