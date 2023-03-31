@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+
 open Pp
 open CErrors
 open Util
@@ -4395,10 +4396,8 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
-let compute_case_signature env evd mind case names_info =
-  let open Context.Rel.Declaration in
+let compute_case_signature env evd (mind, u) dep names_info =
   let indref = GlobRef.IndRef mind in
-  let branches = case.case_branches in
   let rec check_branch c = match EConstr.kind evd c with
   | Prod (_,t,c) ->
     let hd, _ = decompose_app evd t in
@@ -4409,8 +4408,19 @@ let compute_case_signature env evd mind case names_info =
     (OtherArg, false, not (Vars.noccurn evd 1 c)) :: check_branch c
   | _ -> []
   in
-  let find_branches lbrch = match lbrch with
-  | LocalAssum (_, t) ->
+  let (mib, mip) = Inductive.lookup_mind_specif env mind in
+  let indf = make_ind_family ((mind, u), Context.Rel.instance_list Constr.mkRel 0 mib.mind_params_ctxt) in
+  let constrs = get_constructors env indf in
+  let find_branches k =
+    let t =
+      let cs = constrs.(k) in
+      let base =
+        let dummy = Constr.mkProp in (* only used for rel occurrence *)
+        if dep then Term.appvect (dummy, Array.append [|build_dependent_constructor cs|] cs.cs_concl_realargs)
+        else Term.appvect (dummy, cs.cs_concl_realargs)
+      in
+      EConstr.of_constr @@ Term.it_mkProd_or_LetIn base cs.cs_args
+    in
     let lchck_brch = check_branch t in
     let n = List.count (fun (b, _, _) -> b == RecArg) lchck_brch in
     let recvarname, hyprecname, avoid = make_up_names n (Some indref) names_info in
@@ -4422,9 +4432,8 @@ let compute_case_signature env evd mind case names_info =
     } in
     let namesign = List.map map lchck_brch in
     (avoid, namesign)
-  | LocalDef _ -> assert false
   in
-  Array.of_list (List.rev_map find_branches branches)
+  Array.init (Array.length mip.mind_consnames) find_branches
 
 let error_cannot_recognize ind =
   user_err
@@ -4574,11 +4583,9 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       let dep_in_concl = occur_var env sigma id concl in
       let dep = dep_in_hyps || dep_in_concl in
       let u = EInstance.kind sigma u in
-      let (sigma, case) =
-        if dep then build_case_analysis_scheme env sigma (mind, u) true s
-        else build_case_analysis_scheme_default env sigma (mind, u) s
-      in
-      let indsign = compute_case_signature env sigma mind case id in
+      let dep = dep || default_case_analysis_dependence env mind in
+      let (sigma, case) = build_case_analysis_scheme env sigma (mind, u) dep s in
+      let indsign = compute_case_signature env sigma (mind, u) dep id in
       let tac = destruct_tac with_evars id case in
       sigma, false, tac, indsign
     | ElimOver (isrec, id, (mind, u)) ->

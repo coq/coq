@@ -39,6 +39,8 @@ type case_analysis = private {
 
 val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 
+val default_case_analysis_dependence : env -> inductive -> bool
+
 val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->
       dep_flag -> Sorts.family -> evar_map * case_analysis
 

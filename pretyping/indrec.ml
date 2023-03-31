@@ -610,6 +610,10 @@ let is_in_prop mip =
   | InProp -> true
   | _ -> false
 
+let default_case_analysis_dependence env ind =
+  let _, mip as specif = lookup_mind_specif env ind in
+  not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif))
+
 let build_case_analysis_scheme_default env sigma pity kind =
   let _, mip as specif = lookup_mind_specif env (fst pity) in
   let dep = not (is_in_prop mip || not (Inductiveops.has_dependent_elim specif)) in
