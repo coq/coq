@@ -1434,9 +1434,9 @@ let build_ui () =
     item "Export to" ~label:"E_xport script to";
     item "Html" ~label:"_HTML" ~callback:(File.export "html");
     item "Latex" ~label:"_LaTeX" ~callback:(File.export "latex");
-    item "Dvi" ~label:"_Dvi" ~callback:(File.export "dvi");
-    item "Pdf" ~label:"_Pdf" ~callback:(File.export "pdf");
-    item "Ps" ~label:"_Ps" ~callback:(File.export "ps");
+    item "Dvi" ~label:"_DVI" ~callback:(File.export "dvi");
+    item "Pdf" ~label:"_PDF" ~callback:(File.export "pdf");
+    item "Ps" ~label:"P_ostScript" ~callback:(File.export "ps");
   ];
 
   menu edit_menu [
