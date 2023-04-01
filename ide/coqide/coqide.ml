@@ -1232,11 +1232,12 @@ let zoom_fit sn =
   let cols = script#right_margin_position in
   let pango_ctx = script#misc#pango_context in
   let layout = pango_ctx#create_layout#as_layout in
-  let fsize = Pango.Font.get_size (Pango.Font.from_string text_font#get) in
   Pango.Layout.set_text layout (String.make cols 'X');
   let tlen = fst (Pango.Layout.get_pixel_size layout) in
-  Pango.Font.set_size (Pango.Font.from_string text_font#get)
-    (fsize * space / tlen / Pango.scale * Pango.scale);
+  let ft = Pango.Font.from_string text_font#get in
+  let fsize = Pango.Font.get_size ft in
+  Pango.Font.set_size ft (fsize * space / tlen / Pango.scale * Pango.scale);
+  text_font#set (Pango.Font.to_string ft);
   save_pref ()
 
 end
