@@ -24,10 +24,12 @@ type tag = {
   tag_strikethrough : bool;
 }
 
-class type ['a] repr =
+class virtual ['a] repr :
 object
-  method into : string list -> 'a option
-  method from : 'a -> string list
+  method raw_into : string -> 'a
+  method raw_from : 'a -> string
+  method virtual into : string list -> 'a option
+  method virtual from : 'a -> string list
 end
 
 class ['a] preference_signals : changed:'a GUtil.signal ->
@@ -43,6 +45,7 @@ object
   method set : 'a -> unit
   method reset : unit -> unit
   method default : 'a
+  method repr: 'a repr
 end
 
 val list_tags : unit -> tag preference Util.String.Map.t
@@ -50,7 +53,12 @@ val list_tags : unit -> tag preference Util.String.Map.t
 val get_unicode_bindings_local_file : unit -> string option
 val get_unicode_bindings_default_file : unit -> string option
 
+val str_to_mod_list : string -> Gdk.Tags.modifier list
+val mod_list_to_str : Gdk.Tags.modifier list -> string
+
 val printopts_item_names : string list ref
+
+val select_arch : 'a -> 'a -> 'a
 
 val cmd_coqtop : string option preference
 val cmd_coqc : string preference
@@ -87,8 +95,7 @@ val auto_complete_delay : int preference
 val stop_before : bool preference
 val reset_on_tab_switch : bool preference
 val line_ending : line_ending preference
-val vertical_tabs : bool preference
-val opposite_tabs : bool preference
+val document_tabs_pos : string preference
 (* val background_color : string preference *)
 val processing_color : string preference
 val processed_color : string preference
@@ -112,8 +119,6 @@ val diffs : string preference
 
 val save_pref : unit -> unit
 val load_pref : warn:(delay:int -> string -> unit) -> unit
-
-val configure : ?apply:(unit -> unit) -> GWindow.window -> unit
 
 val stick : 'a preference ->
   < connect : #GObj.widget_signals ; .. > -> ('a -> unit) -> unit

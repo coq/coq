@@ -1247,11 +1247,11 @@ end
 (** Refresh functions *)
 
 let refresh_notebook_pos () =
-  let pos = match vertical_tabs#get, opposite_tabs#get with
-    | false, false -> `TOP
-    | false, true  -> `BOTTOM
-    | true , false -> `LEFT
-    | true , true  -> `RIGHT
+  let pos = match document_tabs_pos#get with
+    | "left" -> `LEFT
+    | "right" -> `RIGHT
+    | "bottom" -> `BOTTOM
+    | _ -> `TOP
   in
   notebook#set_tab_pos pos
 
@@ -1468,7 +1468,7 @@ let build_ui () =
     item "Preferences" ~accel:"<Primary>comma" ~stock:`PREFERENCES
       ~callback:(fun _ ->
         begin
-          try Preferences.configure ~apply:refresh_notebook_pos w
+          try Preferences_ui.configure ~apply:refresh_notebook_pos w
           with e ->
             flash_info ("Editing preferences failed (" ^ Printexc.to_string e ^ ")")
         end;
