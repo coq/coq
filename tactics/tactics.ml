@@ -1663,19 +1663,14 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
       build_case_analysis_scheme_default env sigma mind sort in
   let id = try Some (destVar sigma c) with DestKO -> None in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
-  let flags = elim_flags () in
   let metas = Evd.meta_list (clenv_evd indclause) in
   let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
   let sigma = Evd.clear_metas (clenv_evd indclause) in
-  (* FIXME: be more clever *)
-  let elimc, elimt = eval_case_analysis case in
-  let elimc = contract_letin_in_lam_header sigma elimc in
-  let elimclause = mk_clenv_from env sigma (elimc, elimt) in
-  let indmv = List.last (clenv_arguments elimclause) in
-  let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, clenv_type indclause) in
-  Tacticals.tclTHEN
-    (Clenv.case_pf elimclause ~with_evars ~with_classes:true ~flags)
-    (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
+  Tacticals.tclTHENLIST [
+    Proofview.Unsafe.tclEVARS sigma;
+    Clenv.case_pf ~with_evars ~with_classes:true ~submetas case (c, clenv_type indclause);
+    apply_clear_request clear_flag (use_clear_hyp_by_default ()) id;
+  ]
   end
 
 let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
@@ -4541,18 +4536,11 @@ let induction_tac with_evars params indvars (elim, elimt) =
   Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause
   end
 
-let destruct_tac with_evars params indvars case =
+let destruct_tac with_evars indvar case =
   Proofview.Goal.enter begin fun gl ->
-  let sigma = Proofview.Goal.sigma gl in
-  (* FIXME: be more clever *)
-  let elimc, elimt = eval_case_analysis case in
-  let i = index_of_ind_arg sigma elimt in
-  (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
-  let elimc = contract_letin_in_lam_header sigma elimc in
-  let elimclause = Tacmach.pf_apply mk_clenv_from gl (elimc, elimt) in
-  (* elimclause' is built from elimclause by instantiating all args and params. *)
-  let elimclause = recolle_clenv (Some i) params indvars elimclause gl in
-  Clenv.case_pf ~with_evars ~flags:(elim_flags ()) elimclause
+  let env = Proofview.Goal.env gl in
+  let ty = Typing.type_of_variable env indvar in
+  Clenv.case_pf ~with_evars case (mkVar indvar, ty)
   end
 
 (* Apply induction "in place" taking into account dependent
@@ -4586,7 +4574,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
         else build_case_analysis_scheme_default env sigma (mind, u) s
       in
       let indsign = compute_case_signature env sigma mind case id in
-      let tac = destruct_tac with_evars [] [id] case in
+      let tac = destruct_tac with_evars id case in
       sigma, false, tac, indsign
     | ElimOver (isrec, id, (mind, u)) ->
       let sigma, ind = find_ind_eliminator env sigma mind s in
@@ -5059,13 +5047,9 @@ let case_type t =
   let u = EInstance.kind sigma u in
   let s = Tacticals.elimination_sort_of_goal gl in
   let (evd, elim) = build_case_analysis_scheme_default env sigma (ind, u) s in
-  let elimc, elimt = eval_case_analysis elim in
-  let clause = mk_clenv_from env evd (elimc, elimt) in
-  let mv = List.last (clenv_arguments clause) in
-  let clause' = clenv_instantiate ~flags:(elim_flags ()) mv clause (mkVar id, t) in
   tclTHENLIST [
     Proofview.Unsafe.tclEVARS evd;
-    Clenv.case_pf clause' ~flags:(elim_flags ()) ~with_evars:false;
+    Clenv.case_pf ~with_evars:false elim (mkVar id, t);
     clear [id];
   ]
   end

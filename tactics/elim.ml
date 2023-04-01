@@ -18,6 +18,7 @@ open Tacmach
 open Tacticals
 open Clenv
 open Tactics
+open Proofview.Notations
 
 type elim_kind = Case of bool | Elim
 
@@ -33,12 +34,8 @@ let general_elim_using mk_elim (ind, u, args) id =
     | Case dep ->
       let u_ = EInstance.kind sigma u in
       let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u_) dep sort in
-      let elim, elimt = Indrec.eval_case_analysis c in
-      (* applying elimination_scheme just a little modified *)
-      let elimclause = mk_clenv_from env sigma (elim, elimt) in
-      let indmv = List.last (clenv_arguments elimclause) in
-      let elimclause = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
-      Clenv.case_pf ~flags elimclause
+      Proofview.Unsafe.tclEVARS sigma <*>
+      Clenv.case_pf c (mkVar id, mkApp (mkIndU (ind, u), args))
     | Elim ->
       let gr = Indrec.lookup_eliminator env ind sort in
       let sigma, elim = Evd.fresh_global env sigma gr in
