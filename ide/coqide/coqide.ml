@@ -1605,13 +1605,13 @@ let build_ui () =
 
   menu debug_menu [
     item "Debug" ~label:"_Debug";
-    item "Toggle breakpoint" ~label:"_Toggle breakpoint" ~accel:"F8"
+    item "Toggle breakpoint" ~label:"_Toggle breakpoint" ~accel:"F8" ~stock:`MEDIA_RECORD
       ~callback:MiscMenu.toggle_breakpoint;
-    item "Continue" ~label:"_Continue" ~accel:"F9" ~callback:Nav.continue;
-    item "Step in" ~label:"Step in" ~accel:"F10" ~callback:Nav.step_in;
-    item "Step out" ~label:"Step out" ~accel:"<Shift>F10" ~callback:Nav.step_out;
+    item "Continue" ~label:"_Continue" ~accel:"F9" ~stock:`MEDIA_NEXT ~callback:Nav.continue;
+    item "Step in" ~label:"Step in" ~accel:"F10" ~stock:`MEDIA_PLAY ~callback:Nav.step_in;
+    item "Step out" ~label:"Step out" ~accel:"<Shift>F10" ~stock:`MEDIA_FORWARD ~callback:Nav.step_out;
     (* todo: consider other names for Break and Interrupt to be clearer to users *)
-    item "Break" ~label:"Break" ~accel:"F11" ~callback:Nav.break;
+    item "Break" ~label:"Break" ~accel:"F11" ~stock:`MEDIA_PAUSE ~callback:Nav.break;
     item "Show debug panel" ~label:"Show debug panel" ~callback:Nav.show_debugger;
   ];
 
