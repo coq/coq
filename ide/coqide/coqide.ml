@@ -155,7 +155,7 @@ let clear_db_highlight ?(retn=false) sn () =
       if List.mem osn notebook#pages then  (* in case destroyed *)
         osn.script#clear_debugging_highlight bp ep;
       if retn then
-        notebook#goto_page (notebook#term_num (fun t1 t2 -> t1 == t2) sn);
+        notebook#goto_term sn;
     | None -> ()
   )
 
