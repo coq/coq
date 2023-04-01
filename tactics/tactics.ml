@@ -5051,6 +5051,7 @@ let elim_type t =
   end
 
 let case_type t =
+  assert_before_then_gen false (NamingAvoid Id.Set.empty) t begin fun id ->
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let env = Tacmach.pf_env gl in
@@ -5061,11 +5062,13 @@ let case_type t =
   let elimc, elimt = eval_case_analysis elim in
   let clause = mk_clenv_from env evd (elimc, elimt) in
   let mv = List.last (clenv_arguments clause) in
-  let clause' =
-    (* t is inductive, then CUMUL or CONV is irrelevant *)
-    clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
-      (clenv_meta_type clause mv) clause in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.case_pf clause' ~flags:(elim_flags ()) ~with_evars:false)
+  let clause' = clenv_instantiate ~flags:(elim_flags ()) mv clause (mkVar id, t) in
+  tclTHENLIST [
+    Proofview.Unsafe.tclEVARS evd;
+    Clenv.case_pf clause' ~flags:(elim_flags ()) ~with_evars:false;
+    clear [id];
+  ]
+  end
   end
 
 let exfalso =
