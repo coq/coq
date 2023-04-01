@@ -58,8 +58,8 @@ val cmd_coqmakefile : string preference
 val cmd_coqdoc : string preference
 val source_language : string preference
 val source_style : string preference
-val global_auto_revert : bool preference
-val global_auto_revert_delay : int preference
+val global_auto_reload : bool preference
+val global_auto_reload_delay : int preference
 val auto_save : bool preference
 val auto_save_delay : int preference
 val auto_save_name : (string * string) preference
