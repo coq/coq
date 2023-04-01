@@ -418,7 +418,7 @@ let cvt_stack stack =
         | None -> "" (* anonymous function *)
       in
       fn_name, loc
-    | LtacConstrInterp (c,_) -> "", loc
+    | LtacConstrInterp _ -> "", loc
     ) stack
 
 (* Each list entry contains multiple trace frames. *)
@@ -717,11 +717,7 @@ let explain_ltac_call_trace last trace =
         prtac t ++ str ")"
   | Tacexpr.LtacAtomCall te ->
       quote (prtac (CAst.make (Tacexpr.TacAtom te)))
-  | Tacexpr.LtacConstrInterp (c, { Ltac_pretype.ltac_constrs = vars }) ->
-    (* XXX: This hooks into the CErrors's additional error info API so
-       it is tricky to provide the right env for now. *)
-      let env = Global.env() in
-      let sigma = Evd.from_env env in
+  | Tacexpr.LtacConstrInterp (env, sigma, c, { Ltac_pretype.ltac_constrs = vars }) ->
       quote (Printer.pr_glob_constr_env env sigma c) ++
         (if not (Id.Map.is_empty vars) then
           strbrk " (with " ++
