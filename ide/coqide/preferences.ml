@@ -1063,25 +1063,19 @@ let configure ?(apply=(fun () -> ())) parent =
       "External editor"
       ~f:cmd_editor#set
       ~new_allowed: true
-      (predefined@[if List.mem cmd_editor#get predefined then ""
-                   else cmd_editor#get])
+      (predefined@(if List.mem cmd_editor#get predefined then []
+                   else [cmd_editor#get]))
       cmd_editor#get
   in
   let cmd_browse =
-    let predefined = [
-      Coq_config.browser;
-      "netscape -remote \"openURL(%s)\"";
-      "mozilla -remote \"openURL(%s)\"";
-      "firefox -remote \"openURL(%s,new-windows)\" || firefox %s &";
-      "seamonkey -remote \"openURL(%s)\" || seamonkey %s &"
-    ] in
+    let predefined = [Coq_config.browser; {|firefox "%s" &|}; {|seamonkey "%s" &|}; {|chromium "%s" &|}] in
     combo
       ~help:"(%s for url)"
       "Browser"
       ~f:cmd_browse#set
       ~new_allowed: true
-      (predefined@[if List.mem cmd_browse#get predefined then ""
-                   else cmd_browse#get])
+      (predefined@(if List.mem cmd_browse#get predefined then []
+                   else [cmd_browse#get]))
       cmd_browse#get
   in
 
