@@ -1444,6 +1444,12 @@ let build_ui () =
       ~callback:(cb_on_current_term (fun t -> t.script#undo ()));
     item "Redo" ~accel:"<Primary><Shift>z" ~stock:`REDO
       ~callback:(cb_on_current_term (fun t -> t.script#redo ()));
+    item "Select All" ~accel:"<Primary>a" ~stock:`SELECT_ALL
+      ~callback:(cb_on_current_term (fun t ->
+         t.script#select_all ();
+         t.proof#select_all ();
+         t.messages#select_all ();
+         t.debugger#select_all ()));
     item "Cut" ~stock:`CUT
       ~callback:(fun _ -> emit_to_focus w GtkText.View.S.cut_clipboard);
     item "Copy" ~stock:`COPY
