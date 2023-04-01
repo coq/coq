@@ -310,45 +310,48 @@ let automatic_tactics =
 let cmd_print =
   new preference ~name:["cmd_print"] ~init:"lpr" ~repr:Repr.(string)
 
-let attach_modifiers (pref : string preference) prefix =
+let attach_modifiers (pref : string preference) ?(filter = Fun.const true) prefix =
   let cb mds =
     let mds = str_to_mod_list mds in
     let change ~path ~key ~modi ~changed =
-      if CString.is_sub prefix path 0 then
+      if CString.is_prefix prefix path && filter path then
         ignore (GtkData.AccelMap.change_entry ~key ~modi:mds ~replace:true path)
     in
     GtkData.AccelMap.foreach change
   in
-  pref#connect#changed ~callback:cb
-
-let modifier_for_navigation =
-  new preference ~name:["modifier_for_navigation"]
-    (* Note: on Darwin, this will give "<Control><Meta>", i.e. Ctrl and Command; on other
-    architectures, "<Primary>" binds to "<Control>" so it will give "<Control>" alone *)
-    ~init:"<Control><Primary>" ~repr:Repr.(string)
-
-let modifier_for_templates =
-  new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
+  ignore (pref#connect#changed ~callback:cb)
 
 let select_arch m m_osx =
   if Coq_config.arch = "Darwin" then m_osx else m
 
+let modifier_for_navigation =
+  new preference ~name:["modifier_for_navigation"]
+    ~init:(select_arch "<Alt>" "<Control><Primary>") ~repr:Repr.(string)
+
+let modifier_for_templates =
+  new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
+
 let modifier_for_display =
   new preference ~name:["modifier_for_display"]
-   (* Note: <Primary> (i.e. <Meta>, i.e. "Command") on Darwin, i.e. MacOS X, but <Alt> elsewhere *)
     ~init:(select_arch "<Alt><Shift>" "<Primary><Shift>")~repr:Repr.(string)
 
 let modifier_for_queries =
   new preference ~name:["modifier_for_queries"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
+let printopts_item_names = ref []
+
 let attach_modifiers_callback () =
   (* Tell to propagate changes done in preference menu to accel map *)
   (* To be done after the preferences are loaded *)
-  let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/" in
-  let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/" in
-  let _ = attach_modifiers modifier_for_display "<Actions>/View/" in
-  let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/" in
-  ()
+  let printopts_filter path =
+    let last_slash_pos = String.rindex path '/' in
+    let item_name = String.sub path (last_slash_pos + 1) (String.length path - last_slash_pos - 1) in
+    List.mem item_name !printopts_item_names
+  in
+  attach_modifiers modifier_for_display "<Actions>/View/" ~filter:printopts_filter;
+  attach_modifiers modifier_for_navigation "<Actions>/Navigation/";
+  attach_modifiers modifier_for_templates "<Actions>/Templates/";
+  attach_modifiers modifier_for_queries "<Actions>/Queries/"
 
 let modifiers_valid =
   new preference ~name:["modifiers_valid"]
@@ -558,7 +561,7 @@ let show_line_number =
   new preference ~name:["show_line_number"] ~init:false ~repr:Repr.(bool)
 
 let auto_indent =
-  new preference ~name:["auto_indent"] ~init:false ~repr:Repr.(bool)
+  new preference ~name:["auto_indent"] ~init:true ~repr:Repr.(bool)
 
 let show_spaces =
   new preference ~name:["show_spaces"] ~init:true ~repr:Repr.(bool)
@@ -576,7 +579,7 @@ let tab_length =
   new preference ~name:["tab_length"] ~init:2 ~repr:Repr.(int)
 
 let highlight_current_line =
-  new preference ~name:["highlight_current_line"] ~init:false ~repr:Repr.(bool)
+  new preference ~name:["highlight_current_line"] ~init:true ~repr:Repr.(bool)
 
 let microPG =
   (* Legacy name in preference is "nanoPG" *)
