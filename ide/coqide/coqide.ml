@@ -340,10 +340,10 @@ let check_quit ?parent saveall =
    with e -> flash_info ("Cannot save preferences (" ^ Printexc.to_string e ^ ")"));
   let is_modified sn = sn.buffer#modified in
   if List.exists is_modified notebook#pages then begin
-    let answ = Configwin_ihm.question_box ~title:"Quit"
-      ~buttons:["Save Named Buffers and Quit";
-                "Quit without Saving";
-                "Don't Quit"]
+    let answ = Ui_dialogs.question_box ~title:"Quit"
+      ~buttons:[ButtonWithLabel "Save named buffers and quit";
+                ButtonWithLabel "Quit without saving";
+                ButtonWithLabel "Don't quit"]
       ~default:0
       ~icon:(warn_image ())#coerce
       ?parent
@@ -472,10 +472,10 @@ let close_buffer ?parent sn =
   in
   if not sn.buffer#modified then do_remove ()
   else
-    let answ = Configwin_ihm.question_box ~title:"Close"
-      ~buttons:["Save Buffer and Close";
-                "Close without Saving";
-                "Don't Close"]
+    let answ = Ui_dialogs.question_box ~title:"Close"
+      ~buttons:[ButtonWithLabel "Save buffer and close";
+                ButtonWithLabel "Close without saving";
+                ButtonWithLabel "Don't close"]
       ~default:0
       ~icon:(warn_image ())#coerce
       ?parent
