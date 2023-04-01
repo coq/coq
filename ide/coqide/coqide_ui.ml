@@ -148,6 +148,7 @@ let init () =
 \n    <menuitem action='Step in' />\
 \n    <menuitem action='Step out' />\
 \n    <menuitem action='Break' />\
+\n    <separator/>\
 \n    <menuitem action='Show debug panel' />\
 \n  </menu>\
 \n  <menu action='Windows'>\
