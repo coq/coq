@@ -1622,13 +1622,13 @@ let build_ui () =
 
   menu help_menu [
     item "Help" ~label:"_Help";
-    item "Browse Coq Manual" ~label:"Browse Coq _Manual"
+    item "Browse Coq Manual" ~label:"Browse Coq _Manual" ~accel:"<Shift>F1" ~stock:`HELP
       ~callback:(fun _ ->
         browse notebook#current_term.messages#default_route#add_string Coq_config.wwwrefman);
-    item "Browse Coq Library" ~label:"Browse Coq _Library"
+    item "Browse Coq Library" ~label:"Browse Coq _Library" ~accel:"<Primary><Shift>F1" ~stock:`HELP
       ~callback:(fun _ ->
         browse notebook#current_term.messages#default_route#add_string Coq_config.wwwstdlib);
-    item "Help for keyword" ~label:"Help for _keyword" ~stock:`HELP
+    item "Help for keyword" ~label:"Help for _keyword" ~accel:"F1"
       ~callback:(fun _ -> on_current_term (fun sn ->
         browse_keyword sn.messages#default_route#add_string (get_current_word sn)));
     item "Help for μPG mode" ~label:"Help for μPG mode"
