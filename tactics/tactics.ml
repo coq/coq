@@ -1542,12 +1542,6 @@ let index_of_ind_arg sigma t =
       | None -> error CannotFindInductiveArgument
   in aux None 0 t
 
-let rec contract_letin_in_lam_header sigma c =
-  match EConstr.kind sigma c with
-  | Lambda (x,t,c)  -> mkLambda (x,t,contract_letin_in_lam_header sigma c)
-  | LetIn (x,b,t,c) -> contract_letin_in_lam_header sigma (subst1 b c)
-  | _ -> c
-
 (*
  * Elimination tactic with bindings and using an arbitrary
  * elimination constant called elimc. This constant should end
@@ -1574,7 +1568,6 @@ let general_elim_clause0 with_evars flags (submetas, c, ty) elim =
     (elimc, elimt), NoBindings, Some i
   | ElimClause (elimc, lbindelimc) ->
     let elimt = Retyping.get_type_of env sigma elimc in
-    let elimc = contract_letin_in_lam_header sigma elimc in
     (elimc, elimt), lbindelimc, None
   in
   let elimclause = make_clenv_binding env sigma clause bindings in
@@ -4526,7 +4519,6 @@ let induction_tac with_evars params indvars (elim, elimt) =
     let i = index_of_ind_arg sigma elimt in
     (mkConstU c, elimt), NoBindings, Some i
   | ElimClause (elimc, lbindelimc) ->
-    let elimc = contract_letin_in_lam_header sigma elimc in
     (elimc, elimt), lbindelimc, None
   in
   (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
