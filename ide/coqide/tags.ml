@@ -26,7 +26,7 @@ struct
   let processed = make_tag table ~name:"processed" []
   let debugging = make_tag table ~name:"debugging" []
   let incomplete = make_tag table ~name:"incomplete" [`EDITABLE false]
-  let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold"]
+  let unjustified = make_tag table ~name:"unjustified" []
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
   let ephemere =
     [warning; error; error_bg; to_process; processed; debugging;

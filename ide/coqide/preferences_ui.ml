@@ -542,6 +542,7 @@ let configure ?(apply = fun () -> ()) parent =
       "Processed text", [processed_color];
       "Text being processed", [processing_color];
       "Incompletely processed Qed", [incompletely_processed_color];
+      "Unjustified conclusions", [unjustified_conclusion_color];
       "Breakpoints", [breakpoint_color];
       "Debugger stopping point", [db_stopping_point_color];
       "Errors", [error_color; error_fg_color];

@@ -100,6 +100,7 @@ val document_tabs_pos : string preference
 val processing_color : string preference
 val processed_color : string preference
 val incompletely_processed_color : string preference
+val unjustified_conclusion_color : string preference
 val breakpoint_color : string preference
 val db_stopping_point_color : string preference
 val error_color : string preference

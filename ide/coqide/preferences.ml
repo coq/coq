@@ -498,8 +498,6 @@ let create_tag name default =
   List.iter iter [Tags.Script.table; Tags.Proof.table; Tags.Message.table];
   tags := Util.String.Map.add name pref !tags
 
-(* note these appear to only set the defaults; they don't override
-the user selection from the Edit/Preferences/Tags dialog *)
 let () =
   let iter (name, tag) = create_tag name tag in
   List.iter iter [
@@ -537,8 +535,12 @@ let processing_color =
 let incompletely_processed_color =
   new preference ~name:["incompletely_processed_color"] ~init:"light sky blue" ~repr:Repr.(string)
 
+let unjustified_conclusion_color =
+  new preference ~name:["unjustified_conclusion_color"] ~init:"gold" ~repr:Repr.(string)
+
 let _ = attach_bg processing_color Tags.Script.to_process
 let _ = attach_bg incompletely_processed_color Tags.Script.incomplete
+let _ = attach_bg unjustified_conclusion_color Tags.Script.unjustified
 
 let breakpoint_color =
   new preference ~name:["breakpoint_color"] ~init:"#db5860" ~repr:Repr.(string)
