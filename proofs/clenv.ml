@@ -918,22 +918,63 @@ let res_pf_gen is_case ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) 
 let res_pf ?with_evars ?with_classes ?flags clenv =
   res_pf_gen false ?with_evars ?with_classes ?flags clenv
 
-let case_pf ?with_evars ?with_classes ?submetas case (arg, typ) =
+module RelDecl = Context.Rel.Declaration
+
+let case_pf ?with_evars ?with_classes ?submetas case (indarg, typ) =
+  let open Indrec in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let rec contract_letin_in_lam_header sigma c = match EConstr.kind sigma c with
-  | Lambda (x,t,c)  -> mkLambda (x,t,contract_letin_in_lam_header sigma c)
-  | LetIn (x,b,t,c) -> contract_letin_in_lam_header sigma (subst1 b c)
-  | _ -> c
+  let hd, args = decompose_app_vect sigma typ in
+  let ind, u = destInd sigma hd in
+  let (mib, mip) = Inductive.lookup_mind_specif env ind in
+  let params, indices = Array.chop mib.mind_nparams args in
+  let sigma = clear_metas sigma in
+  let sigma, indarg = match submetas with
+  | None -> sigma, indarg
+  | Some metas ->
+    let sigma = meta_merge (Metamap.of_list metas) sigma in
+    let indarg = applist (indarg, List.map (fun (m, _) -> mkMeta m) metas) in
+    sigma, indarg
   in
-  let elimc, elimt = Indrec.eval_case_analysis case in
-  let elimc = contract_letin_in_lam_header sigma elimc in
-  let clenv = mk_clenv_from env sigma (elimc, elimt) in
-  let indmv = List.last (clenv_arguments clenv) in
-  let flags = elim_flags () in
-  let clenv = clenv_instantiate ~flags ?submetas indmv clenv (arg, typ) in
-  res_pf_gen true ?with_evars ?with_classes ~flags clenv
+  (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
+  let sigma, _ = Typing.checked_appvect env sigma hd args in
+  let paramsubst = subst_of_rel_context_instance case.case_params params in
+  let (_, typP) = case.case_pred in
+  let typP = Vars.substl paramsubst typP in
+  let mv = new_meta () in
+  let sigma = meta_declare mv typP sigma in
+  let rec clrec sigma subst metas = function
+  | [] -> (sigma, subst, metas)
+  | RelDecl.LocalAssum (_, t) :: ctx ->
+    let mv = new_meta () in
+    let t = substl subst t in
+    let sigma = meta_declare mv t sigma in
+    clrec sigma (mkMeta mv :: subst) (mv :: metas) ctx
+  | RelDecl.LocalDef _ :: _ -> assert false
+  in
+  let (evd, subst, args) = clrec sigma (mkMeta mv :: paramsubst) [] (List.rev case.case_branches) in
+  let rec indrec subst ctx args = match ctx, args with
+  | [], [] -> subst
+  | RelDecl.LocalAssum _ :: ctx, a :: args ->
+    indrec (a :: subst) ctx args
+  | RelDecl.LocalDef (_, b, _) :: ctx, args ->
+    indrec (Vars.substl subst b :: subst) ctx args
+  | _ -> assert false
+  in
+  let subst = indrec subst (List.rev case.case_arity) (Array.to_list indices @ [indarg]) in
+  let templval = Vars.substl subst case.case_body in
+  let concl = Vars.substl subst case.case_type in
+  let metaset = Metaset.of_list (mv :: args) in
+  let clenv = {
+    templval; metaset;
+    templtyp = mk_freelisted concl;
+    evd = evd;
+    env = env;
+    metas = [];
+    cache = create_meta_instance_subst evd
+  } in
+  res_pf_gen true ?with_evars ?with_classes ~flags:(elim_flags ()) clenv
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
