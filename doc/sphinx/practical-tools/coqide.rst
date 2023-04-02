@@ -459,9 +459,9 @@ Bindings for input of Unicode symbols
 
 CoqIDE supports a builtin mechanism to input non-ASCII symbols.
 For example, to input ``π``, it suffices to type ``\pi`` then press the
-combination of key ``Ctrl+Space`` (default key binding). Often, it
+combination of key ``Ctrl-Space`` (default key binding). Often, it
 suffices to type a prefix of the LaTeX token, e.g. typing ``\p``
-then ``Ctrl+Space`` suffices to insert a ``π``.
+then ``Ctrl-Space`` suffices to insert a ``π``.
 
 For several symbols, ASCII art is also recognized, e.g. ``\->`` for a
 right arrow, or ``\>=`` for a greater than or equal sign.
@@ -521,7 +521,7 @@ Each of the file tokens provided may consists of one of:
 
    If a filename other than the first one includes a "~" to refer
    to the home directory, it won't be expanded properly. To work around that
-   issue, one should not use comas but instead repeat the flag, in the form:
+   issue, one should not use commas but instead repeat the flag, in the form:
    ``-unicode-bindings file1 .. -unicode-bindings fileN``.
 
 .. note::
