@@ -343,7 +343,7 @@ let on_destruction_arg tac ev arg =
       let lbind = mk_bindings lbind in
       Proofview.tclEVARMAP >>= fun sigma' ->
       let flags = tactic_infer_flags ev in
-      let (sigma', c) = Tactics.finish_evar_resolution ~flags env sigma' (sigma, c) in
+      let (sigma', c) = Tactics.finish_evar_resolution ~flags env sigma' (Some sigma, c) in
       Proofview.tclUNIT (Some sigma', Tactics.ElimOnConstr (c, lbind))
     | ElimOnIdent id -> Proofview.tclUNIT (None, Tactics.ElimOnIdent CAst.(make id))
     | ElimOnAnonHyp n -> Proofview.tclUNIT (None, Tactics.ElimOnAnonHyp n)

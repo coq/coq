@@ -1402,7 +1402,7 @@ let onOpenInductionArg env sigma tac = function
       let (sigma', cbl) = f env sigma in
       Tacticals.tclTHEN
         (Proofview.Unsafe.tclEVARS sigma')
-        (tac clear_flag (sigma,cbl))
+        (tac clear_flag (Some sigma,cbl))
   | clear_flag,ElimOnAnonHyp n ->
       Tacticals.tclTHEN
         (intros_until_n n)
@@ -1410,7 +1410,7 @@ let onOpenInductionArg env sigma tac = function
            (fun c ->
              Proofview.Goal.enter begin fun gl ->
              let sigma = Tacmach.project gl in
-             tac clear_flag (sigma,(c,NoBindings))
+             tac clear_flag (Some sigma,(c,NoBindings))
              end))
   | clear_flag,ElimOnIdent {CAst.v=id} ->
       (* A quantified hypothesis *)
@@ -1418,7 +1418,7 @@ let onOpenInductionArg env sigma tac = function
         (try_intros_until_id_check id)
         (Proofview.Goal.enter begin fun gl ->
          let sigma = Tacmach.project gl in
-         tac clear_flag (sigma,(mkVar id,NoBindings))
+         tac clear_flag (Some sigma,(mkVar id,NoBindings))
         end)
 
 let onInductionArg tac = function
@@ -1441,13 +1441,13 @@ let map_destruction_arg f sigma = function
 
 
 let finish_evar_resolution ?(flags=Pretyping.all_and_fail_flags) env current_sigma (pending,c) =
-  let sigma = Pretyping.solve_remaining_evars flags env current_sigma ~initial:pending in
+  let sigma = Pretyping.solve_remaining_evars flags env current_sigma ?initial:pending in
   (sigma, nf_evar sigma c)
 
 let finish_delayed_evar_resolution with_evars env sigma f =
   let (sigma', (c, lbind)) = f env sigma in
   let flags = tactic_infer_flags with_evars in
-  let (sigma', c) = finish_evar_resolution ~flags env sigma' (sigma,c) in
+  let (sigma', c) = finish_evar_resolution ~flags env sigma' (Some sigma,c) in
   (sigma', (c, lbind))
 
 let with_no_bindings (c, lbind) =
@@ -5032,11 +5032,11 @@ let induction_destruct isrec with_evars (lc,elim) =
 
 let induction ev clr c l e =
   induction_gen clr true ev e
-    ((Evd.empty,(c,NoBindings)),(None,l)) None
+    ((None,(c,NoBindings)),(None,l)) None
 
 let destruct ev clr c l e =
   induction_gen clr false ev e
-    ((Evd.empty,(c,NoBindings)),(None,l)) None
+    ((None,(c,NoBindings)),(None,l)) None
 
 (*
  *  Eliminations giving the type instead of the proof.

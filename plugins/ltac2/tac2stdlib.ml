@@ -279,7 +279,7 @@ end
 let () = define_prim3 "tac_set" bool (thunk (pair name constr)) clause begin fun ev p cl ->
   Proofview.tclEVARMAP >>= fun sigma ->
   thaw (pair name constr) p >>= fun (na, c) ->
-  Tac2tactics.letin_pat_tac ev None na (sigma, c) cl
+  Tac2tactics.letin_pat_tac ev None na (Some sigma, c) cl
 end
 
 let () = define_prim5 "tac_remember" bool name (thunk constr) (option intro_pattern) clause begin fun ev na c eqpat cl ->
@@ -288,7 +288,7 @@ let () = define_prim5 "tac_remember" bool name (thunk constr) (option intro_patt
   | IntroNaming eqpat ->
     Proofview.tclEVARMAP >>= fun sigma ->
     thaw constr c >>= fun c ->
-    Tac2tactics.letin_pat_tac ev (Some (true, eqpat)) na (sigma, c) cl
+    Tac2tactics.letin_pat_tac ev (Some (true, eqpat)) na (Some sigma, c) cl
   | _ ->
     Tacticals.tclZEROMSG (Pp.str "Invalid pattern for remember")
 end

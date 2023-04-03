@@ -1813,7 +1813,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
             (TacLetTac(ev,na,c,clp,b,eqpat))
             (Tacticals.tclWITHHOLES ev
                (let_pat_tac b (interp_name ist env sigma na)
-                  (sigma,c) clp eqpat) sigma')
+                  (Some sigma,c) clp eqpat) sigma')
       end
 
   (* Derived basic tactics *)

@@ -159,7 +159,7 @@ let rec make_hyps env sigma atom_env lenv = function
   | LocalAssum (id,typ)::rest ->
     let hrec=
       make_hyps env sigma atom_env (typ::lenv) rest in
-    if List.exists (fun c -> Termops.local_occur_var Evd.empty (* FIXME *) id.binder_name c) lenv ||
+    if List.exists (fun c -> Termops.local_occur_var sigma id.binder_name c) lenv ||
        (Retyping.get_sort_family_of env sigma typ != InProp)
     then
       hrec

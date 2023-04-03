@@ -54,7 +54,7 @@ val forward : bool -> unit tactic option option ->
 val assert_ : assertion -> unit tactic
 
 val letin_pat_tac : evars_flag -> (bool * intro_pattern_naming) option ->
-  Name.t -> (Evd.evar_map * constr) -> clause -> unit tactic
+  Name.t -> (Evd.evar_map option * constr) -> clause -> unit tactic
 
 val reduce : Redexpr.red_expr -> clause -> unit tactic
 

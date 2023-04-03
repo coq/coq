@@ -1503,9 +1503,9 @@ let rec vernac_interp_error_handler = function
   | UGraph.UniverseInconsistency i ->
     str "Universe inconsistency." ++ spc() ++
     UGraph.explain_universe_inconsistency UnivNames.pr_with_global_universes i ++ str "."
-  | TypeError(ctx,te) ->
+  | TypeError(env,te) ->
     let te = map_ptype_error EConstr.of_constr te in
-    explain_type_error ctx Evd.empty te
+    explain_type_error env (Evd.from_env env) te
   | PretypeError(ctx,sigma,te) ->
     explain_pretype_error ctx sigma te
   | Notation.PrimTokenNotationError(kind,ctx,sigma,te) ->

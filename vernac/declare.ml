@@ -217,7 +217,7 @@ let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 
 let update_tables c =
   Impargs.declare_constant_implicits c;
-  Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstRef c)
+  Notation.declare_ref_arguments_scope (GlobRef.ConstRef c)
 
 let register_constant kn kind local =
   let id = Label.to_id (Constant.label kn) in
@@ -530,7 +530,7 @@ let declare_variable_core ~name ~kind d =
   Decls.(add_variable_data name {opaque;kind});
   Lib.add_leaf (inVariable name);
   Impargs.declare_var_implicits ~impl name;
-  Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
+  Notation.declare_ref_arguments_scope (GlobRef.VarRef name)
 
 let declare_variable ~name ~kind ~typ ~impl ~univs =
   declare_variable_core ~name ~kind (SectionLocalAssum { typ; impl; univs })
@@ -1208,9 +1208,8 @@ let compute_possible_guardness_evidences n fixbody fixtype =
          but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
          fixpoints ?) *)
-    let m = Termops.nb_prod Evd.empty (EConstr.of_constr fixtype) (* FIXME *) in
-    let ctx = fst (Term.decompose_prod_n_decls m fixtype) in
-    List.map_i (fun i _ -> i) 0 ctx
+    let ctx, _ = Term.decompose_prod fixtype in
+    List.mapi (fun i _ -> i) ctx
 
 let declare_mutual_definition ~pm l =
   let len = List.length l in
