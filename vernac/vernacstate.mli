@@ -21,42 +21,13 @@ end
 (** System State *)
 module System : sig
 
-  module Synterp : sig
-
-    type t
-
-  end
-
-  module Interp : sig
-
-    (** The system state includes the summary and the libobject  *)
-    type t
-
-  end
+  (** The system state includes the summary and the libobject  *)
+  type t
 
   (** [protect f x] runs [f x] and discards changes in the system state  *)
   val protect : ('a -> 'b) -> 'a -> 'b
 
 end
-
-module Synterp : sig
-
-  type t =
-    { parsing : Parser.t
-    (** parsing state [parsing state may not behave 100% functionally yet, beware] *)
-    ; system : System.Synterp.t
-    (** system state needed for the synterp phase *)
-    }
-
-  val init : unit -> t
-  val freeze : marshallable:bool -> t
-  val unfreeze : t -> unit
-
-  (* WARNING: Do not use, it will go away in future releases *)
-  val invalidate_cache : unit -> unit
-
-end
-
 
 module LemmaStack : sig
 
@@ -73,10 +44,10 @@ module LemmaStack : sig
 
 end
 
-module Interp : sig
-
 type t =
-  { system  : System.Interp.t
+  { parsing : Parser.t
+  (** parsing state [parsing state may not behave 100% functionally yet, beware] *)
+  ; system  : System.t
   (** summary + libstack *)
   ; lemmas  : LemmaStack.t option
   (** proofs of lemmas currently opened *)
@@ -89,20 +60,12 @@ type t =
   }
 
 val freeze_interp_state : marshallable:bool -> t
+val freeze_full_state : marshallable:bool -> t
 val unfreeze_interp_state : t -> unit
+val unfreeze_full_state : t -> unit
 
 (* WARNING: Do not use, it will go away in future releases *)
 val invalidate_cache : unit -> unit
-
-end
-
-type t =
-  { synterp: Synterp.t
-  ; interp: Interp.t
-  }
-
-val freeze_full_state : marshallable:bool -> t
-val unfreeze_full_state : t -> unit
 
 (** STM-specific state handling *)
 module Stm : sig
@@ -114,7 +77,7 @@ module Stm : sig
   val set_pstate : t -> pstate -> t
 
   (** Rest of the state, unfortunately this is used in low-level so we need to expose it *)
-  type non_pstate = Summary.frozen * Lib.Synterp.frozen * Summary.frozen * Lib.Interp.frozen
+  type non_pstate = Summary.Synterp.frozen * Summary.Interp.frozen * Lib.frozen
   val non_pstate : t -> non_pstate
 
   (** Checks if two states have the same Environ.env (physical eq) *)
@@ -172,5 +135,3 @@ module Declare : sig
 
 end
 [@@ocaml.deprecated "This module is internal and should not be used, instead, thread the proof state"]
-
-val invalidate_cache : unit -> unit

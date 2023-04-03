@@ -18,115 +18,50 @@ module Parser = struct
 
   let parse ps entry pa =
     Pcoq.unfreeze ps;
-    Pcoq.Entry.parse entry pa
+    Flags.with_option Flags.we_are_parsing
+      (fun () -> Pcoq.Entry.parse entry pa)
+      ()
 
 end
 
-module System = struct
+module System : sig
+  type t
+  val protect : ('a -> 'b) -> 'a -> 'b
+  val freeze : marshallable:bool -> t
+  val unfreeze : t -> unit
 
-  module Synterp = struct
-
-    type t = Lib.Synterp.frozen * Summary.frozen
-
-    let freeze ~marshallable =
-      (Lib.Synterp.freeze (), Summary.freeze_summaries Summary.Stage.Synterp ~marshallable)
-
-    let unfreeze (fl,fs) =
-      Lib.Synterp.unfreeze fl;
-      Summary.unfreeze_summaries fs
-
-    module Stm = struct
-      let make_shallow (lib, summary) = Lib.Synterp.drop_objects lib, summary
-      let lib = fst
-      let summary = snd
-    end
-
+  module Stm : sig
+    val make_shallow : t -> t
+    val lib : t -> Lib.frozen
+    val summary : t -> Summary.Synterp.frozen * Summary.Interp.frozen
+    val replace_summary : t -> Summary.Interp.frozen -> t
   end
-
-  module Interp : sig
-    type t
-    val freeze : marshallable:bool -> t
-    val unfreeze : t -> unit
-    module Stm : sig
-      val make_shallow : t -> t
-      val lib : t -> Lib.Interp.frozen
-      val summary : t -> Summary.frozen
-      val replace_summary : t -> Summary.frozen -> t
-    end
-
-  end = struct
-
-    type t = Lib.Interp.frozen * Summary.frozen
-
-    let freeze ~marshallable =
-      (Lib.Interp.freeze (), Summary.freeze_summaries Summary.Stage.Interp ~marshallable)
-
-    let unfreeze (fl,fs) =
-      Lib.Interp.unfreeze fl;
-      Summary.unfreeze_summaries fs
-
-    (* STM-specific state manipulations *)
-    module Stm = struct
-      let make_shallow (lib, summary) = Lib.Interp.drop_objects lib, summary
-      let lib = fst
-      let summary = snd
-      let replace_summary (lib,_) summary = (lib,summary)
-    end
-  end
-
-  let protect f x =
-    let synterp_st = Synterp.freeze ~marshallable:false in
-    let interp_st = Interp.freeze ~marshallable:false in
-    try
-      let a = f x in
-      Synterp.unfreeze synterp_st;
-      Interp.unfreeze interp_st;
-      a
-    with reraise ->
-      let reraise = Exninfo.capture reraise in
-      begin
-        Synterp.unfreeze synterp_st;
-        Interp.unfreeze interp_st;
-        Exninfo.iraise reraise
-      end
-
-end
-
-let update_cache rf v =
-  rf := Some v; v
-
-let do_if_not_cached rf f v =
-  match !rf with
-  | None ->
-    rf := Some v; f v
-  | Some vc when vc != v ->
-    rf := Some v; f v
-  | Some _ ->
-    ()
-
-let s_synterp_cache = ref None
-
-module Synterp = struct
-
-  type t =
-    { parsing : Parser.t
-    ; system : System.Synterp.t
-    }
-
-  let invalidate_cache () =
-    s_synterp_cache := None
+end = struct
+  type t = Lib.frozen * Summary.Synterp.frozen * Summary.Interp.frozen
 
   let freeze ~marshallable =
-    { parsing = Parser.cur_state ();
-      system = update_cache s_synterp_cache (System.Synterp.freeze ~marshallable:false);
-    }
+    (Lib.freeze (), Summary.Synterp.freeze_summaries ~marshallable, Summary.Interp.freeze_summaries ~marshallable)
 
-  let init () = freeze ~marshallable:false
+  let unfreeze (fl,fs1, fs2) =
+    Lib.unfreeze fl;
+    Summary.Synterp.unfreeze_summaries fs1;
+    Summary.Interp.unfreeze_summaries fs2
 
-  let unfreeze st =
-    do_if_not_cached s_synterp_cache System.Synterp.unfreeze st.system;
-    Pcoq.unfreeze st.parsing
+  let protect f x =
+    let st = freeze ~marshallable:false in
+    try
+      let a = f x in unfreeze st; a
+    with reraise ->
+      let reraise = Exninfo.capture reraise in
+      (unfreeze st; Exninfo.iraise reraise)
 
+  (* STM-specific state manipulations *)
+  module Stm = struct
+    let make_shallow (lib, summary1, summary2) = Lib.drop_objects lib, summary1, summary2
+    let lib (lib,_,_) = lib
+    let summary (lib,s1,s2) = (s1,s2)
+    let replace_summary (lib,s1,_) s = (lib,s1,s)
+  end
 end
 
 module LemmaStack = struct
@@ -155,52 +90,53 @@ module LemmaStack = struct
 
 end
 
-let s_interp_cache = ref None
-let s_lemmas = ref None
-let s_program = ref (NeList.singleton Declare.OblState.empty)
-
-module Interp = struct
-
 type t = {
-  system  : System.Interp.t;              (* summary + libstack *)
+  parsing : Parser.t;
+  system  : System.t;              (* summary + libstack *)
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
   program : Declare.OblState.t NeList.t;    (* obligations table *)
   opaques : Opaques.Summary.t;     (* opaque proof terms *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
+let s_cache = ref None
+let s_lemmas = ref None
+let s_program = ref (NeList.singleton Declare.OblState.empty)
+
 let invalidate_cache () =
-  s_interp_cache := None
+  s_cache := None
+
+let update_cache rf v =
+  rf := Some v; v
+
+let do_if_not_cached rf f v =
+  match !rf with
+  | None ->
+    rf := Some v; f v
+  | Some vc when vc != v ->
+    rf := Some v; f v
+  | Some _ ->
+    ()
 
 let freeze_interp_state ~marshallable =
-  { system = update_cache s_interp_cache (System.Interp.freeze ~marshallable);
+  { system = update_cache s_cache (System.freeze ~marshallable);
     lemmas = !s_lemmas;
     program = !s_program;
     opaques = Opaques.Summary.freeze ~marshallable;
     shallow = false;
+    parsing = Parser.cur_state ();
   }
 
-let unfreeze_interp_state { system; lemmas; program; opaques } =
-  do_if_not_cached s_interp_cache System.Interp.unfreeze system;
+let freeze_full_state ~marshallable = freeze_interp_state ~marshallable
+
+let unfreeze_interp_state { system; lemmas; program; parsing; opaques } =
+  do_if_not_cached s_cache System.unfreeze system;
   s_lemmas := lemmas;
   s_program := program;
-  Opaques.Summary.unfreeze opaques
+  Opaques.Summary.unfreeze opaques;
+  Pcoq.unfreeze parsing
 
-end
-
-type t =
-  { synterp: Synterp.t
-  ; interp: Interp.t
-  }
-
-let freeze_full_state ~marshallable =
-  { synterp = Synterp.freeze ~marshallable;
-    interp = Interp.freeze_interp_state ~marshallable;
-  }
-
-let unfreeze_full_state st =
-  Synterp.unfreeze st.synterp;
-  Interp.unfreeze_interp_state st.interp
+let unfreeze_full_state x = unfreeze_interp_state x
 
 (* Compatibility module *)
 module Declare_ = struct
@@ -293,55 +229,45 @@ module Stm = struct
     int                                     (* Evd.evar_counter_summary_tag *)
 
   (* Parts of the system state that are morally part of the proof state *)
-  let pstate { interp = { lemmas; system }} =
-    let st = System.Interp.Stm.summary system in
+  let pstate { lemmas; system } =
+    let (_,st) = System.Stm.summary system in
     lemmas,
-    Summary.project_from_summary st Evarutil.meta_counter_summary_tag,
-    Summary.project_from_summary st Evd.evar_counter_summary_tag
+    Summary.Interp.project_from_summary st Evarutil.meta_counter_summary_tag,
+    Summary.Interp.project_from_summary st Evd.evar_counter_summary_tag
 
-  let set_pstate ({ interp = { lemmas; system } } as s) (pstate,c1,c2) =
-    { s with interp = { s.interp with
+  let set_pstate ({ lemmas; system } as s) (pstate,c1,c2) =
+    { s with
       lemmas =
-        Declare_.copy_terminators ~src:s.interp.lemmas ~tgt:pstate
+        Declare_.copy_terminators ~src:s.lemmas ~tgt:pstate
     ; system =
-        System.Interp.Stm.replace_summary s.interp.system
+        System.Stm.replace_summary s.system
           begin
-            let st = System.Interp.Stm.summary s.interp.system in
-            let st = Summary.modify_summary st Evarutil.meta_counter_summary_tag c1 in
-            let st = Summary.modify_summary st Evd.evar_counter_summary_tag c2 in
+            let (_,st) = System.Stm.summary s.system in
+            let st = Summary.Interp.modify_summary st Evarutil.meta_counter_summary_tag c1 in
+            let st = Summary.Interp.modify_summary st Evd.evar_counter_summary_tag c2 in
             st
           end
       }
-    }
 
-  type non_pstate = Summary.frozen * Lib.Synterp.frozen * Summary.frozen * Lib.Interp.frozen
-  let non_pstate { synterp; interp } =
-    let system = interp.system in
-    let st = System.Interp.Stm.summary system in
-    let st = Summary.remove_from_summary st Evarutil.meta_counter_summary_tag in
-    let st = Summary.remove_from_summary st Evd.evar_counter_summary_tag in
-    System.Synterp.Stm.summary synterp.system, System.Synterp.Stm.lib synterp.system,
-      st, System.Interp.Stm.lib system
+  type non_pstate = Summary.Synterp.frozen * Summary.Interp.frozen * Lib.frozen
+  let non_pstate { system } =
+    let (syn,st) = System.Stm.summary system in
+    let st = Summary.Interp.remove_from_summary st Evarutil.meta_counter_summary_tag in
+    let st = Summary.Interp.remove_from_summary st Evd.evar_counter_summary_tag in
+    syn, st, System.Stm.lib system
 
-  let same_env { interp = { system = s1 } } { interp = { system = s2 } } =
-    let s1 = System.Interp.Stm.summary s1 in
-    let e1 = Summary.project_from_summary s1 Global.global_env_summary_tag in
-    let s2 = System.Interp.Stm.summary s2 in
-    let e2 = Summary.project_from_summary s2 Global.global_env_summary_tag in
+  let same_env { system = s1 } { system = s2 } =
+    let (_,s1) = System.Stm.summary s1 in
+    let e1 = Summary.Interp.project_from_summary s1 Global.global_env_summary_tag in
+    let (_,s2) = System.Stm.summary s2 in
+    let e2 = Summary.Interp.project_from_summary s2 Global.global_env_summary_tag in
     e1 == e2
 
   let make_shallow st =
-    { interp =
-        { st.interp with
-        system = System.Interp.Stm.make_shallow st.interp.system
-        ; shallow = true
-        }
-    ; synterp = { st.synterp with system = System.Synterp.Stm.make_shallow st.synterp.system }
+    { st with
+      system = System.Stm.make_shallow st.system
+    ; shallow = true
     }
 
 end
 module Declare = Declare_
-
-let invalidate_cache () =
-  Synterp.invalidate_cache ();
-  Interp.invalidate_cache ()

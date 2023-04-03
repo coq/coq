@@ -24,17 +24,17 @@ val make_oname : Nametab.object_prefix -> Names.Id.t -> Libobject.object_name
 val make_foname : Names.Id.t -> Libobject.object_name
 val oname_prefix : Libobject.object_name -> Nametab.object_prefix
 
-type node =
+type 'summary node =
   | CompilingLibrary of Nametab.object_prefix
-  | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
-  | OpenedSection of Nametab.object_prefix * Summary.frozen
+  | OpenedModule of is_type * export * Nametab.object_prefix * 'summary
+  | OpenedSection of Nametab.object_prefix * 'summary
 
 (** Extract the [object_prefix] component. Note that it is the prefix
    of the objects *inside* this node, eg in [Module M.] we have
    [OpenedModule] with prefix containing [M]. *)
-val node_prefix : node -> Nametab.object_prefix
+val node_prefix : 'summary node -> Nametab.object_prefix
 
-type library_segment = (node * Libobject.t list) list
+type 'summary library_segment = ('summary node * Libobject.t list) list
 
 (** {6 ... } *)
 (** Adding operations (which call the [cache] method, and getting the
@@ -46,7 +46,7 @@ val add_leaf : Libobject.obj -> unit
 
 (** The function [contents] gives access to the current entire segment *)
 
-val contents : unit -> library_segment
+val contents : unit -> Summary.Interp.frozen library_segment
 
 (** {6 Functions relative to current path } *)
 
@@ -78,6 +78,8 @@ val is_module : unit -> bool
     given stage. *)
 module type StagedLibS = sig
 
+  type summary
+
   type classified_objects = {
     substobjs : Libobject.t list;
     keepobjs : Libobject.t list;
@@ -86,9 +88,9 @@ module type StagedLibS = sig
   val classify_segment : Libobject.t list -> classified_objects
 
   (** Returns the opening node of a given name *)
-  val find_opening_node : Id.t -> node
+  val find_opening_node : Id.t -> summary node
 
-  val add_entry : node -> unit
+  val add_entry : summary node -> unit
   val add_leaf_entry : Libobject.t -> unit
 
   (** {6 Sections } *)
@@ -99,25 +101,27 @@ module type StagedLibS = sig
 
   val start_module :
     export -> module_ident -> ModPath.t ->
-    Summary.frozen -> Nametab.object_prefix
+    summary -> Nametab.object_prefix
 
   val start_modtype :
     module_ident -> ModPath.t ->
-    Summary.frozen -> Nametab.object_prefix
+    summary -> Nametab.object_prefix
 
   val end_module :
     unit ->
-    Nametab.object_prefix * Summary.frozen * classified_objects
+    Nametab.object_prefix * summary * classified_objects
 
   val end_modtype :
     unit ->
-    Nametab.object_prefix * Summary.frozen * classified_objects
+    Nametab.object_prefix * summary * classified_objects
 
   type frozen
 
   val freeze : unit -> frozen
   val unfreeze : frozen -> unit
+  val init : unit -> unit
 
+  (** Keep only the libobject structure, not the objects themselves *)
   val drop_objects : frozen -> frozen
 
 end
@@ -125,8 +129,8 @@ end
 (** We provide two instances of [StagedLibS], corresponding to the Synterp and
     Interp stages. *)
 
-module Synterp : StagedLibS
-module Interp : StagedLibS
+module Synterp : StagedLibS with type summary = Summary.Synterp.frozen
+module Interp : StagedLibS with type summary = Summary.Interp.frozen
 
 (** {6 Compilation units } *)
 
@@ -144,17 +148,6 @@ val library_dp : unit -> DirPath.t
 val split_modpath : ModPath.t -> DirPath.t * Id.t list
 val library_part :  GlobRef.t -> DirPath.t
 
-
-(** {6 We can get and set the state of the operations (used in [States]). } *)
-
-type frozen
-
-val freeze : unit -> frozen
-val unfreeze : frozen -> unit
-
-(** Keep only the libobject structure, not the objects themselves *)
-val init : unit -> unit
-
 (** {6 Section management for discharge } *)
 val section_segment_of_constant : Constant.t -> Cooking.cooking_info
 val section_segment_of_inductive: MutInd.t -> Cooking.cooking_info
@@ -169,5 +162,14 @@ val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
 
 (** Compatibility layer *)
 
+type frozen
+
+val freeze : unit -> frozen
+val unfreeze : frozen -> unit
+
+val init : unit -> unit
+
 val open_section : Id.t -> unit
 val close_section : unit -> unit
+
+val drop_objects : frozen -> frozen

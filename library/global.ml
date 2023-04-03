@@ -57,12 +57,12 @@ let globalize f =
 
 let globalize0_with_summary fs f =
   let env = f (safe_env ()) in
-  Summary.unfreeze_summaries ~partial:true fs;
+  Summary.Interp.unfreeze_summaries ~partial:true fs;
   GlobalSafeEnv.set_safe_env env
 
 let globalize_with_summary fs f =
   let res,env = f (safe_env ()) in
-  Summary.unfreeze_summaries ~partial:true fs;
+  Summary.Interp.unfreeze_summaries ~partial:true fs;
   GlobalSafeEnv.set_safe_env env;
   res
 

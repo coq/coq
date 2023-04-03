@@ -81,6 +81,11 @@ stdenv.mkDerivation rec {
       ocp-index
       utop
       ocamlformat
+      ppx_import
+      ppx_sexp_conv
+      ppx_deriving_yojson
+      ppx_hash
+      ppx_compare
       ])
     ++ [
       # Useful for STM debugging

@@ -791,7 +791,7 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
     | Some (mty, inline) ->
       SynterpVisitor.get_module_sobjs false () inline mty, [], []
   in
-  Summary.unfreeze_summaries fs;
+  Summary.Synterp.unfreeze_summaries ~partial:true fs;
   let sobjs = let (ms,objs) = sobjs0 in (m_info.cur_mbids@ms,objs) in
 
   (* We substitute objects if the module is sealed by a signature *)
@@ -863,7 +863,7 @@ let declare_module id args res mexpr_o fs =
   in
   (* Undo the simulated interactive building of the module
      and declare the module as a whole *)
-  Summary.unfreeze_summaries fs;
+  Summary.Synterp.unfreeze_summaries ~partial:true fs;
 
   (* We can use an empty delta resolver on syntax objects *)
   let sobjs = subst_sobjs (map_mp mp0 mp empty_delta_resolver) sobjs in
@@ -1084,7 +1084,7 @@ let declare_module id args res mexpr_o fs =
   in
   (* Undo the simulated interactive building of the module
      and declare the module as a whole *)
-  Summary.unfreeze_summaries fs;
+  Summary.Interp.unfreeze_summaries ~partial:true fs;
   let inl = match inl_expr with
   | None -> None
   | _ -> inl_res
@@ -1131,7 +1131,7 @@ let start_modtype id args mtys fs =
 
 let end_modtype_core id mbids objects fs =
   let {Lib.Synterp.substobjs = substitute; keepobjs = _; anticipateobjs = special; } = objects in
-  Summary.unfreeze_summaries fs;
+  Summary.Synterp.unfreeze_summaries ~partial:true fs;
   let modtypeobjs = (mbids, Objs substitute) in
   (special@[ModuleTypeObject (id,modtypeobjs)])
 
@@ -1155,7 +1155,7 @@ let declare_modtype id args mtys (mty,ann) fs =
 
   (* Undo the simulated interactive building of the module type
      and declare the module type as a whole *)
-  Summary.unfreeze_summaries fs;
+  Summary.Synterp.unfreeze_summaries ~partial:true fs;
   ignore (SynterpVisitor.add_leaf (ModuleTypeObject (id,sobjs)));
   mp, args, (mte, base, kind, inl), sub_mty_l
 
@@ -1221,7 +1221,7 @@ let declare_modtype id args mtys (mte,base,kind,inl) fs =
 
   (* Undo the simulated interactive building of the module type
      and declare the module type as a whole *)
-  Summary.unfreeze_summaries fs;
+  Summary.Interp.unfreeze_summaries ~partial:true fs;
 
   (* We enrich the global environment *)
   let () = Global.push_context_set ~strict:true ctx in
@@ -1374,13 +1374,22 @@ end
 
 (** {6 Module operations handling summary freeze/unfreeze} *)
 
-let protect_summaries stage f =
-  let fs = Summary.freeze_summaries stage ~marshallable:false in
+let protect_summaries_synterp f =
+  let fs = Summary.Synterp.freeze_summaries ~marshallable:false in
   try f fs
   with reraise ->
     (* Something wrong: undo the whole process *)
     let reraise = Exninfo.capture reraise in
-    let () = Summary.unfreeze_summaries fs in
+    let () = Summary.Synterp.unfreeze_summaries ~partial:true fs in
+    Exninfo.iraise reraise
+
+let protect_summaries_interp f =
+  let fs = Summary.Interp.freeze_summaries ~marshallable:false in
+  try f fs
+  with reraise ->
+    (* Something wrong: undo the whole process *)
+    let reraise = Exninfo.capture reraise in
+    let () = Summary.Interp.unfreeze_summaries ~partial:true fs in
     Exninfo.iraise reraise
 
 (** {6 Libraries} *)
@@ -1395,7 +1404,7 @@ type library_objects = Libobject.t list * Libobject.t list
 module Synterp = struct
 
 let start_module export id args res =
-  protect_summaries Summary.Stage.Synterp (RawModOps.Synterp.start_module export id args res)
+  protect_summaries_synterp (RawModOps.Synterp.start_module export id args res)
 
 let end_module = RawModOps.Synterp.end_module
 
@@ -1445,10 +1454,10 @@ let declare_module id args mtys me_l =
       mp, args, [Option.get body], sign
     | me_l -> declare_module_includes id args mtys me_l fs
   in
-  protect_summaries Summary.Stage.Synterp declare_me
+  protect_summaries_synterp declare_me
 
 let start_modtype id args mtys =
-  protect_summaries Summary.Stage.Synterp (RawModTypeOps.Synterp.start_modtype id args mtys)
+  protect_summaries_synterp (RawModTypeOps.Synterp.start_modtype id args mtys)
 
 let end_modtype = RawModTypeOps.Synterp.end_modtype
 
@@ -1460,10 +1469,10 @@ let declare_modtype id args mtys mty_l =
       mp, args, [body], sign
     | mty_l -> declare_modtype_includes id args mtys mty_l fs
   in
-  protect_summaries Summary.Stage.Synterp declare_mt
+  protect_summaries_synterp declare_mt
 
 let declare_include me_asts =
-  protect_summaries Summary.Stage.Synterp (fun _ -> RawIncludeOps.Synterp.declare_include me_asts)
+  protect_summaries_synterp (fun _ -> RawIncludeOps.Synterp.declare_include me_asts)
 
 let register_library dir (objs:library_objects) =
   let mp = MPfile dir in
@@ -1487,7 +1496,7 @@ end
 module Interp = struct
 
 let start_module export id args sign =
-  protect_summaries Summary.Stage.Interp (RawModOps.Interp.start_module export id args sign)
+  protect_summaries_interp (RawModOps.Interp.start_module export id args sign)
 
 let end_module = RawModOps.Interp.end_module
 
@@ -1528,10 +1537,10 @@ let declare_module id args mtys me_l =
     | [me] -> RawModOps.Interp.declare_module id args mtys (Some me) fs
     | me_l -> declare_module_includes id args mtys me_l fs
   in
-  protect_summaries Summary.Stage.Interp declare_me
+  protect_summaries_interp declare_me
 
 let start_modtype id args mtys =
-  protect_summaries Summary.Stage.Interp (RawModTypeOps.Interp.start_modtype id args mtys)
+  protect_summaries_interp (RawModTypeOps.Interp.start_modtype id args mtys)
 
 let end_modtype = RawModTypeOps.Interp.end_modtype
 
@@ -1541,12 +1550,12 @@ let declare_modtype id args mtys mty_l =
     | [mty] -> RawModTypeOps.Interp.declare_modtype id args mtys mty fs
     | mty_l -> declare_modtype_includes id args mtys mty_l fs
   in
-  protect_summaries Summary.Stage.Interp declare_mt
+  protect_summaries_interp declare_mt
 
 let declare_include me_asts =
   if Lib.sections_are_opened () then
     user_err Pp.(str "Include is not allowed inside sections.");
-  protect_summaries Summary.Stage.Interp (fun _ -> RawIncludeOps.Interp.declare_include me_asts)
+  protect_summaries_interp (fun _ -> RawIncludeOps.Interp.declare_include me_asts)
 
 (** For the native compiler, we cache the library values *)
 let register_library dir cenv (objs:library_objects) digest univ =

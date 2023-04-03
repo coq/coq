@@ -40,7 +40,7 @@ type object_pr = {
   print_modtype             : ModPath.t -> Pp.t;
   print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
   print_library_leaf       : env -> Evd.evar_map -> bool -> ModPath.t -> Libobject.t -> Pp.t option;
-  print_context             : env -> Evd.evar_map -> bool -> int option -> Lib.library_segment -> Pp.t;
+  print_context             : 'a. env -> Evd.evar_map -> bool -> int option -> 'a Lib.library_segment -> Pp.t;
   print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
 }
 

@@ -593,7 +593,7 @@ end = struct (* {{{ *)
   let get_parsing_state id =
     stm_pperr_endline (fun () -> str "retrieve parsing state state " ++ str (Stateid.to_string id) ++ str " }}}");
     match (get_info id).state with
-    | FullState s -> Some s.Vernacstate.synterp.parsing
+    | FullState s -> Some s.Vernacstate.parsing
     | ParsingState s -> Some s
     | ErrorState (s,_) -> s
     | EmptyState -> None
@@ -930,9 +930,8 @@ end = struct (* {{{ *)
             then
               let open Vernacstate in
               { s with
-                interp = { s.interp with
                   lemmas = PG_compat.copy_terminators
-                           ~src:((get_cached prev).interp.lemmas) ~tgt:s.interp.lemmas }
+                           ~src:((get_cached prev).lemmas) ~tgt:s.lemmas
               }
             else s
            with VCS.Expired -> s in
@@ -1127,7 +1126,7 @@ end = struct (* {{{ *)
   let get_proof ~doc id =
     match state_of_id ~doc id with
     | Valid (Some vstate) ->
-      Option.map (Vernacstate.LemmaStack.with_top ~f:Declare.Proof.get) vstate.Vernacstate.interp.lemmas
+      Option.map (Vernacstate.LemmaStack.with_top ~f:Declare.Proof.get) vstate.Vernacstate.lemmas
     | _ -> None
 
   let undo_vernac_classifier v ~doc =
@@ -2081,8 +2080,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
              Proofview.give_up else Proofview.tclUNIT ()
               end in
            match (VCS.get_info base_state).state with
-           | FullState { Vernacstate.interp } ->
-               Option.iter PG_compat.unfreeze interp.lemmas;
+           | FullState { Vernacstate.lemmas } ->
+               Option.iter PG_compat.unfreeze lemmas;
                PG_compat.with_current_proof (fun _ p ->
                  feedback ~id:id Feedback.AddedAxiom;
                  fst (Proof.solve Goal_select.SelectAll None tac p), ());
@@ -2134,11 +2133,10 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
-  let inject_non_pstate (s_synterp,l_synterp,s_interp,l_interp) =
-    Summary.unfreeze_summaries ~partial:true s_synterp;
-    Lib.Synterp.unfreeze l_synterp;
-    Summary.unfreeze_summaries ~partial:true s_interp;
-    Lib.Interp.unfreeze l_interp;
+  let inject_non_pstate (syn_st,interp_st,lib) =
+    Summary.Synterp.unfreeze_summaries ~partial:true syn_st;
+    Summary.Interp.unfreeze_summaries ~partial:true interp_st;
+    Lib.unfreeze lib;
     if PG_compat.there_are_pending_proofs () then
       PG_compat.update_sigma_univs (Global.universes ())
   in

@@ -88,21 +88,32 @@ val declare_ml_modules_summary : (string option * string) list summary_declarati
 
 val nop : unit -> unit
 
-(** The type [frozen] is a snapshot of the states of all the registered
-    tables of the system. *)
+module type FrozenStage = sig
 
-type frozen
+  (** The type [frozen] is a snapshot of the states of all the registered
+      tables of the system. *)
 
-val empty_frozen : Stage.t -> frozen
-val freeze_summaries : Stage.t -> marshallable:bool -> frozen
-val unfreeze_summaries : ?partial:bool -> frozen -> unit
-val init_summaries : unit -> unit
+  type frozen
 
-(** Typed projection of the summary. Experimental API, use with CARE *)
+  val empty_frozen : frozen
+  val freeze_summaries : marshallable:bool -> frozen
+  val unfreeze_summaries : ?partial:bool -> frozen -> unit
+  val init_summaries : unit -> unit
 
-val modify_summary : frozen -> 'a Dyn.tag -> 'a -> frozen
-val project_from_summary : frozen -> 'a Dyn.tag -> 'a
-val remove_from_summary : frozen -> 'a Dyn.tag -> frozen
+end
+
+module Synterp : FrozenStage
+module Interp : sig
+
+  include FrozenStage
+
+  (** Typed projection of the summary. Experimental API, use with CARE *)
+
+  val modify_summary : frozen -> 'a Dyn.tag -> 'a -> frozen
+  val project_from_summary : frozen -> 'a Dyn.tag -> 'a
+  val remove_from_summary : frozen -> 'a Dyn.tag -> frozen
+
+end
 
 (** {6 Debug} *)
 val dump : unit -> (int * string) list

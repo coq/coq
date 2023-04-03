@@ -109,7 +109,7 @@ end = struct (* {{{ *)
     receive_state st;
     Vernacstate.unfreeze_full_state (Option.get !state);
     try
-      Vernacstate.LemmaStack.with_top (Option.get (Option.get !state).Vernacstate.interp.lemmas) ~f:(fun pstate ->
+      Vernacstate.LemmaStack.with_top (Option.get (Option.get !state).Vernacstate.lemmas) ~f:(fun pstate ->
           let pstate =
             Declare.Proof.map pstate ~f:(Proof.focus focus_cond () r_goalno) in
           let pstate =

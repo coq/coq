@@ -49,14 +49,14 @@ let simple_goal sigma g gs =
 let is_focused_goal_simple ~doc id =
   match state_of_id ~doc id with
   | Expired | Error _ | Valid None -> `Not
-  | Valid (Some { Vernacstate.interp }) ->
+  | Valid (Some { Vernacstate.lemmas }) ->
     Option.cata (Vernacstate.LemmaStack.with_top ~f:(fun proof ->
         let proof = Declare.Proof.get proof in
         let Proof.{ goals=focused; stack=r1; sigma } = Proof.data proof in
         let rest = List.(flatten (map (fun (x,y) -> x @ y) r1)) @ (Evd.shelf sigma) @ (Evar.Set.elements @@ Evd.given_up sigma) in
         if List.for_all (fun x -> simple_goal sigma x rest) focused
         then `Simple focused
-        else `Not)) `Not interp.lemmas
+        else `Not)) `Not lemmas
 
 type 'a until = [ `Stop | `Found of static_block_declaration | `Cont of 'a ]
 
