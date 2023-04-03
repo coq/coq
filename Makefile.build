@@ -117,7 +117,7 @@ $(if $(findstring $@,$(PRIVATEBINARIES)),\
 $(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
-CAMLP4DEPS=$(shell LC_ALL=C sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $(1) \#))
+CAMLP4DEPS=${shell LC_ALL=C sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' ${1}}
 ifeq ($(CAMLP4),camlp5)
 CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 else
