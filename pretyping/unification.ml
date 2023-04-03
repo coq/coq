@@ -612,7 +612,9 @@ let subst_defined_metas_evars sigma (bl,el) c =
       let select (_,(evk',args'),_) = Evar.equal evk evk' && SList.equal eq args args' in
       begin match List.find select el with
       | (_, _, c) -> substrec (EConstr.Unsafe.to_constr c)
-      | exception Not_found -> Constr.map substrec c
+      | exception Not_found ->
+        let c = EConstr.(Unsafe.to_constr (whd_evar sigma (of_constr c))) in
+        Constr.map substrec c
       end
     | _ -> Constr.map substrec c
   in try Some (EConstr.of_constr (substrec c)) with Not_found -> None
