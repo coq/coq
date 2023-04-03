@@ -165,20 +165,6 @@ let delta = mkfullflags [fDELTA]
 let zeta = mkflags [fZETA]
 let nored = no_red
 
-(* Flags of reduction and cache of constants: 'a is a type that may be
- * mapped to constr. 'a infos implements a cache for constants and
- * abstractions, storing a representation (of type 'a) of the body of
- * this constant or abstraction.
- *  * i_tab is the cache table of the results
- *
- * ref_value_cache searches in the tab, otherwise uses i_repr to
- * compute the result and store it in the table. If the constant can't
- * be unfolded, returns None, but does not store this failure.  * This
- * doesn't take the RESET into account. You mustn't keep such a table
- * after a Reset.  * This type is not exported. Only its two
- * instantiations (cbv or lazy) are.
- *)
-
 type table_key = Constant.t Univ.puniverses tableKey
 
 let eq_pconstant_key (c,u) (c',u') =
