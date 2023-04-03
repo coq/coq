@@ -483,6 +483,12 @@ let objVariable : Id.t Libobject.Dyn.tag =
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
+let warn_opaque_let = CWarnings.create ~name:"opaque-let" ~category:"fragile"
+  Pp.(fun name ->
+    Id.print name ++
+    strbrk " is declared opaque but this is not fully respected" ++
+    strbrk " inside the section and not at all outside the section.")
+
 let declare_variable_core ~name ~kind d =
   (* Variables are distinguished by only short names *)
   if Decls.variable_exists name then
@@ -516,7 +522,9 @@ let declare_variable_core ~name ~kind d =
         secdef_type = de.proof_entry_type;
       } in
       let () = Global.push_named_def (name, se) in
-      Glob_term.Explicit, de.proof_entry_opaque, de.proof_entry_universes
+      let opaque = de.proof_entry_opaque in
+      let () = if opaque then warn_opaque_let name in
+      Glob_term.Explicit, opaque, de.proof_entry_universes
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   Decls.(add_variable_data name {opaque;kind});

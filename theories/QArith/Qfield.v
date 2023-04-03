@@ -83,53 +83,73 @@ Add Field Qfield : Qsft
 
 Section Examples.
 
+Section Ex1.
 Let ex1 : forall x y z : Q, (x+y)*z ==  (x*z)+(y*z).
   intros.
   ring.
-Qed.
+Defined.
+End Ex1.
 
+Section Ex2.
 Let ex2 : forall x y : Q, x+y == y+x.
   intros.
   ring.
-Qed.
+Defined.
+End Ex2.
 
+Section Ex3.
 Let ex3 : forall x y z : Q, (x+y)+z == x+(y+z).
   intros.
   ring.
-Qed.
+Defined.
+End Ex3.
 
+Section Ex4.
 Let ex4 : (inject_Z 1)+(inject_Z 1)==(inject_Z 2).
   ring.
-Qed.
+Defined.
+End Ex4.
 
+Section Ex5.
 Let ex5 : 1+1 == 2#1.
   ring.
-Qed.
+Defined.
+End Ex5.
 
+Section Ex6.
 Let ex6 : (1#1)+(1#1) == 2#1.
   ring.
-Qed.
+Defined.
+End Ex6.
 
+Section Ex7.
 Let ex7 : forall x : Q, x-x== 0.
   intro.
   ring.
-Qed.
+Defined.
+End Ex7.
 
+Section Ex8.
 Let ex8 : forall x : Q, x^1 == x.
   intro.
   ring.
-Qed.
+Defined.
+End Ex8.
 
+Section Ex9.
 Let ex9 : forall x : Q, x^0 == 1.
   intro.
   ring.
-Qed.
+Defined.
+End Ex9.
 
+Section Ex10.
 Let ex10 : forall x y : Q, ~(y==0) -> (x/y)*y == x.
-intros.
-field.
-auto.
-Qed.
+  intros.
+  field.
+  auto.
+Defined.
+End Ex10.
 
 End Examples.
 

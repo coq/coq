@@ -601,7 +601,7 @@ Variable Comp: Proper (E.eq==>Logic.eq) f.
 Let Comp' : Proper (E.eq==>Logic.eq) (fun x =>negb (f x)).
 Proof.
 repeat red; intros; f_equal; auto.
-Qed.
+Defined.
 
 Lemma filter_mem: forall s x, mem x (filter f s)=mem x s && f x.
 Proof.
@@ -784,10 +784,12 @@ Section Bool'.
 Variable f:elt->bool.
 Variable Comp: Proper (E.eq==>Logic.eq) f.
 
-Let Comp' : Proper (E.eq==>Logic.eq) (fun x => negb (f x)).
+Local Definition Comp' : Proper (E.eq==>Logic.eq) (fun x => negb (f x)).
 Proof.
 repeat red; intros; f_equal; auto.
-Qed.
+Defined.
+
+Local Hint Resolve Comp' : core.
 
 Lemma exists_mem_1:
  forall s, (forall x, mem x s=true->f x=false) -> exists_ f s=false.

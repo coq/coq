@@ -1,6 +1,7 @@
 Require Program.Tactics.
 
 Set Suggest Proof Using.
+Set Warnings "-opaque-let".
 
 Lemma nosec : nat. Proof. exact 0. Qed.
 
