@@ -28,7 +28,9 @@ type unsafe_judgment = (constr, types) Environ.punsafe_judgment
 type unsafe_type_judgment = (types, Evd.esorts) Environ.punsafe_type_judgment
 type named_declaration = (constr, types) Context.Named.Declaration.pt
 type rel_declaration = (constr, types) Context.Rel.Declaration.pt
+type compacted_declaration = (constr, types) Context.Compacted.Declaration.pt
 type named_context = (constr, types) Context.Named.pt
+type compacted_context = compacted_declaration list
 type rel_context = (constr, types) Context.Rel.pt
 
 (** {5 Universe variables} *)

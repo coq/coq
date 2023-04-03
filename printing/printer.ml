@@ -316,8 +316,16 @@ let pr_compacted_decl env sigma decl =
   let ptyp = (str" : " ++ pt) in
   hov 0 (pids ++ pbody ++ ptyp)
 
+let pr_ecompacted_decl env sigma (decl:EConstr.compacted_declaration) =
+  let Refl = EConstr.Unsafe.eq in
+  pr_compacted_decl env sigma decl
+
 let pr_named_decl env sigma decl =
   decl |> CompactedDecl.of_named_decl |> pr_compacted_decl env sigma
+
+let pr_enamed_decl env sigma (decl:EConstr.named_declaration) =
+  let Refl = EConstr.Unsafe.eq in
+  pr_named_decl env sigma decl
 
 let pr_rel_decl env sigma decl =
   let na = RelDecl.get_name decl in
@@ -334,6 +342,11 @@ let pr_rel_decl env sigma decl =
   | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
   | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
 
+let pr_erel_decl env sigma (decl:EConstr.rel_declaration) =
+  let Refl = EConstr.Unsafe.eq in
+  pr_rel_decl env sigma decl
+
+
 
 (* Prints out an "env" in a nice format.  We print out the
  * signature,then a horizontal bar, then the debruijn environment.
@@ -346,7 +359,7 @@ let pr_named_context_of env sigma =
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
 let pr_var_list_decl env sigma decl =
-  hov 0 (pr_compacted_decl env sigma decl)
+  hov 0 (pr_ecompacted_decl env sigma decl)
 
 let pr_named_context env sigma ne_context =
   hv 0 (Context.Named.fold_outside
@@ -365,9 +378,9 @@ let pr_context_unlimited env sigma =
   let sign_env =
     Context.Compacted.fold
       (fun d pps ->
-         let pidt =  pr_compacted_decl env sigma d in
+         let pidt =  pr_ecompacted_decl env sigma d in
          (pps ++ fnl () ++ pidt))
-      (Termops.compact_named_context (named_context env)) ~init:(mt ())
+      (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(mt ())
   in
   let db_env =
     fold_rel_context
@@ -386,8 +399,8 @@ let pr_ne_context_of header env sigma =
    considers as "variables": An hypothesis H:T where T:S and S<>Prop. *)
 let should_compact env sigma typ =
   get_compact_context() &&
-    let type_of_typ = Retyping.get_type_of env sigma (EConstr.of_constr typ) in
-    not (is_Prop (EConstr.to_constr sigma type_of_typ))
+    let type_of_typ = Retyping.get_type_of env sigma typ in
+    not (Termops.is_Prop sigma type_of_typ)
 
 
 (* If option Compact Contexts is set, we pack "simple" hypothesis in a
@@ -417,7 +430,8 @@ and bld_sign_env_id env sigma ctxt pps is_start =
 (* compact printing an env (variables and de Bruijn). Separator: three
    spaces between simple hyps, and newline otherwise *)
 let pr_context_limit_compact ?n env sigma =
-  let ctxt = Termops.compact_named_context (named_context env) in
+  let ctxt = EConstr.named_context env in
+  let ctxt = Termops.compact_named_context sigma ctxt in
   let lgth = List.length ctxt in
   let n_capped =
     match n with

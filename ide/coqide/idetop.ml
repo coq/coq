@@ -196,13 +196,13 @@ let process_goal short sigma g =
   in
   let process_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in
-      (List.fold_right Environ.push_named d' env,
-       (pr_compacted_decl env sigma d) :: l) in
+      (List.fold_right EConstr.push_named d' env,
+       (pr_ecompacted_decl env sigma d) :: l) in
   let hyps =
     if short then [] else
       let (_env, hyps) =
         Context.Compacted.fold process_hyp
-        (Termops.compact_named_context (Environ.named_context env)) ~init:(min_env,[])
+        (Termops.compact_named_context sigma (EConstr.named_context env)) ~init:(min_env,[])
       in
       hyps
   in

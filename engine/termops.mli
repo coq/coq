@@ -242,7 +242,7 @@ val fold_named_context_both_sides :
   ('a -> Constr.named_declaration -> Constr.named_declaration list -> 'a) ->
     Constr.named_context -> init:'a -> 'a
 val mem_named_context_val : Id.t -> named_context_val -> bool
-val compact_named_context : Constr.named_context -> Constr.compacted_context
+val compact_named_context : Evd.evar_map -> EConstr.named_context -> EConstr.compacted_context
 
 val map_rel_decl : ('a -> 'b) -> ('a, 'a) Context.Rel.Declaration.pt -> ('b, 'b) Context.Rel.Declaration.pt
 val map_named_decl : ('a -> 'b) -> ('a, 'a) Context.Named.Declaration.pt -> ('b, 'b) Context.Named.Declaration.pt
