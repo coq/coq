@@ -11,7 +11,6 @@
 open Names
 open Environ
 open Libnames
-open Globnames
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)
 
@@ -94,19 +93,3 @@ val print_located_qualid : qualid -> Pp.t
 val print_located_term : qualid -> Pp.t
 val print_located_module : qualid -> Pp.t
 val print_located_other : string -> qualid -> Pp.t
-
-type object_pr = {
-  print_inductive           : MutInd.t -> UnivNames.univ_name_list option -> Pp.t;
-  print_constant_with_infos : Constant.t -> UnivNames.univ_name_list option -> Pp.t;
-  print_section_variable    : env -> Evd.evar_map -> variable -> Pp.t;
-  print_abbreviation        : env -> abbreviation -> Pp.t;
-  print_module              : ModPath.t -> Pp.t;
-  print_modtype             : ModPath.t -> Pp.t;
-  print_named_decl          : env -> Evd.evar_map -> Constr.named_declaration -> Pp.t;
-  print_library_leaf       : env -> Evd.evar_map -> bool -> ModPath.t -> Libobject.t -> Pp.t option;
-  print_context             : 'summary. env -> Evd.evar_map -> bool -> int option -> 'summary Lib.library_segment -> Pp.t;
-  print_typed_value_in_env  : Environ.env -> Evd.evar_map -> EConstr.constr * EConstr.types -> Pp.t;
-}
-
-val set_object_pr : object_pr -> unit
-val default_object_pr : object_pr
