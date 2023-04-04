@@ -210,11 +210,11 @@ let library_dp () =
 let prefix () = !synterp_state.path_prefix
 let cwd () = !synterp_state.path_prefix.Nametab.obj_dir
 let current_mp () = !synterp_state.path_prefix.Nametab.obj_mp
-let current_sections () = Safe_typing.sections_of_safe_env (Global.safe_env())
 
-let sections_depth () = match current_sections() with
-  | None -> 0
-  | Some sec -> Section.depth sec
+let sections_depth () =
+  !synterp_state.lib_stk |> List.count (function
+      | (OpenedSection _, _) -> true
+      | ((OpenedModule _ | CompilingLibrary _), _) -> false)
 
 let sections_are_opened () =
   match split_lib_at_opening !synterp_state.lib_stk with
