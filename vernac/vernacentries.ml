@@ -2157,6 +2157,45 @@ let vernac_check_guard ~pstate =
   Inductiveops.control_only_guard env sigma pfterm;
   str "The condition holds up to here."
 
+let vernac_validate_proof ~pstate =
+  let pts = Declare.Proof.get pstate in
+  let { Proof.entry; Proof.sigma } = Proof.data pts in
+  let hyps, pfterm, pftyp = List.hd (Proofview.initial_goals entry) in
+  (* XXX can the initial hyps contain something broken? For now assume they're correct.
+     NB: in the "Lemma foo args : bla." case the args are part of the
+     term and intro'd after the proof is opened. Only the section
+     variables are in the hyps. *)
+  let env = Environ.reset_with_named_context hyps (Global.env ()) in
+  let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
+  let sigma' = Typing.check env sigma pfterm pftyp in
+  let evar_issues =
+    (* Use Evar.Map.merge as a kind of for_all2 *)
+    Evar.Map.merge (fun e orig now -> match orig, now with
+        | None, None -> assert false
+        | Some _, Some _ -> None (* assume same *)
+        | Some evi, None ->
+          let EvarInfo evi' = Evd.find sigma' e in
+          let body = match Evd.evar_body evi' with
+            | Evar_empty -> assert false
+            | Evar_defined body -> body
+          in
+          Some
+            Pp.(str "Evar " ++ Printer.pr_evar sigma (e, evi)
+                ++ spc() ++ str "was inferred by unification to be" ++ spc()
+                ++ pr_econstr_env (Evd.evar_env env evi') sigma' body)
+        | None, Some _ -> (* ignore new evar *)
+          assert (not (Evd.is_defined sigma e));
+          None
+      )
+      (Evd.undefined_map sigma)
+      (Evd.undefined_map sigma')
+  in
+  (* TODO check ustate *)
+
+  if Evar.Map.is_empty evar_issues then
+    str "No issues found."
+  else prlist_with_sep fnl snd (Evar.Map.bindings evar_issues)
+
 let translate_vernac_synterp ?loc ~atts v = let open Vernacextend in match v with
   | EVernacNotation { local; decl } ->
     vtdefault(fun () -> Metasyntax.add_notation_interpretation ~local (Global.env()) decl)
@@ -2477,6 +2516,10 @@ let translate_pure_vernac ?loc ~atts v = let open Vernacextend in match v with
     vtreadproof(fun ~pstate ->
         unsupported_attributes atts;
         Feedback.msg_notice @@ vernac_check_guard ~pstate)
+  | VernacValidateProof ->
+    vtreadproof(fun ~pstate ->
+        unsupported_attributes atts;
+        Feedback.msg_notice @@ vernac_validate_proof ~pstate)
   | VernacProof (tac, using) ->
     vtmodifyproof(fun ~pstate ->
     unsupported_attributes atts;

@@ -818,6 +818,7 @@ command: [
 | "Show" "Intros"
 | "Show" "Match" qualid
 | "Guarded"
+| "Validate" "Proof"
 | "Create" "HintDb" ident OPT "discriminated"
 | "Remove" "Hints" LIST1 qualid OPT ( ":" LIST1 ident )
 | "Comments" LIST0 [ one_term | string | natural ]

@@ -724,6 +724,8 @@ let pr_synpure_vernac_expr v =
   | VernacCheckGuard ->
     return (keyword "Guarded")
 
+  | VernacValidateProof -> return (keyword "Validate Proof")
+
   (* Resetting *)
   | VernacResetName id ->
     return (keyword "Reset" ++ spc() ++ pr_lident id)

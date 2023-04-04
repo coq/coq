@@ -95,6 +95,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Show"; IDENT "Intros" -> { VernacSynPure (VernacShow (ShowIntros true)) }
       | IDENT "Show"; IDENT "Match"; id = reference -> { VernacSynPure (VernacShow (ShowMatch id)) }
       | IDENT "Guarded" -> { VernacSynPure VernacCheckGuard }
+      | IDENT "Validate"; IDENT "Proof" -> { VernacSynPure VernacValidateProof }
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
           id = IDENT ; b = [ IDENT "discriminated" -> { true } | -> { false } ] ->
