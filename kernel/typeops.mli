@@ -124,6 +124,13 @@ val type_of_prim_or_type : env -> Univ.Instance.t -> CPrimitives.op_or_type -> t
 val warn_bad_relevance_name : string
 (** Allow the checker to make this warning into an error. *)
 
+val warn_bad_relevance_binder
+  : ?loc:Loc.t
+  -> Environ.env
+  -> Sorts.relevance
+  -> Constr.rel_declaration
+  -> unit
+
 val should_invert_case : env -> case_info -> bool
 (** We have case inversion exactly when going from irrelevant nonempty
    (ie 1 constructor) inductive to relevant type. *)
