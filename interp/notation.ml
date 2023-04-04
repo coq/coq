@@ -1431,10 +1431,9 @@ let find_prim_token check_allowed ?loc p sc =
   try
     let n = find_notation (notation_of_prim_token p) sc in
     let (_,c) = n.not_interp in
-    let df = n.not_location in
     let pat = Notation_ops.glob_constr_of_notation_constr ?loc c in
     check_allowed pat;
-    pat, df
+    pat
   with Not_found ->
   (* Try for a primitive numerical notation *)
   let (spdir,info) = String.Map.find sc !prim_token_interp_infos in
@@ -1446,14 +1445,14 @@ let find_prim_token check_allowed ?loc p sc =
   in
   let pat = InnerPrimToken.do_interp ?loc interp p in
   check_allowed pat;
-  pat, ((dirpath (fst spdir),DirPath.empty),"")
+  pat
 
 let interp_prim_token_gen ?loc g p local_scopes =
   let scopes = make_current_scopes local_scopes in
   let p_as_ntn = try notation_of_prim_token p with Not_found -> InConstrEntry,"" in
   try
-    let (pat,loc), sc = find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes in
-    pat, (loc,sc)
+    let pat, sc = find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes in
+    pat, sc
   with Not_found as exn ->
     let _, info = Exninfo.capture exn in
     user_err ?loc ~info
