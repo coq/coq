@@ -2151,16 +2151,11 @@ let vernac_show ~pstate =
 let vernac_check_guard ~pstate =
   let pts = Declare.Proof.get pstate in
   let pfterm = List.hd (Proof.partial_proof pts) in
-  let message =
-    try
-      let { Proof.entry; Proof.sigma } = Proof.data pts in
-      let hyps, _, _ = List.hd (Proofview.initial_goals entry) in
-      let env = Environ.reset_with_named_context hyps (Global.env ()) in
-      Inductiveops.control_only_guard env sigma pfterm;
-      (str "The condition holds up to here")
-    with UserError s ->
-      (str ("Condition violated: ") ++ s ++ str ".")
-  in message
+  let { Proof.entry; Proof.sigma } = Proof.data pts in
+  let hyps, _, _ = List.hd (Proofview.initial_goals entry) in
+  let env = Environ.reset_with_named_context hyps (Global.env ()) in
+  Inductiveops.control_only_guard env sigma pfterm;
+  str "The condition holds up to here."
 
 let translate_vernac_synterp ?loc ~atts v = let open Vernacextend in match v with
   | EVernacNotation { local; decl } ->
