@@ -595,3 +595,9 @@ Ltac2 Notation f_equal := f_equal0 ().
 
 Ltac2 now0 t := t (); ltac1:(easy).
 Ltac2 Notation "now" t(thunk(self)) : 6 := now0 t.
+
+(** profiling *)
+
+Ltac2 start_profiling () := ltac1:(start ltac profiling).
+Ltac2 stop_profiling () := ltac1:(stop ltac profiling).
+Ltac2 show_profile () := ltac1:(show ltac profile).

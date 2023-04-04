@@ -45,7 +45,7 @@ let encounter_invalid_stack_no_self () =
 (* *************** tree data structure for profiling ****************** *)
 
 type treenode = {
-  name : M.key;
+  name : string;
   total : float;
   local : float;
   ncalls : int;
@@ -175,7 +175,7 @@ and print_table ~filter all_total indent first_level table =
     in
     prlist (fun pr -> pr) (list_iter_is_last iter ls)
 
-let to_string ~filter ?(cutoff=0.0) node =
+let to_string ~filter ~cutoff node =
   let tree = node.children in
   let all_total = M.fold (fun _ { total } a -> total +. a) node.children 0.0 in
   let flat_tree =
@@ -233,23 +233,22 @@ let time () =
   let times = Unix.times () in
   times.Unix.tms_utime +. times.Unix.tms_stime
 
+let pp_ltac_call_kind = function
+  | Tacexpr.LtacNotationCall s -> Pptactic.pr_alias_key s
+  | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
+  (* todo: don't want the KerName instead? *)
+  | Tacexpr.LtacVarCall (_, id, t) -> Names.Id.print id
+  | Tacexpr.LtacAtomCall te ->
+    Pptactic.pr_glob_tactic (Global.env ())
+      (CAst.make (Tacexpr.TacAtom te))
+  | Tacexpr.LtacConstrInterp (env, sigma, c, _) ->
+    pr_glob_constr_env env sigma c
+  | Tacexpr.LtacMLCall te ->
+    (Pptactic.pr_glob_tactic (Global.env ())
+       te)
+
 let string_of_call ck =
-  let s =
-  string_of_ppcmds
-    (match ck with
-       | Tacexpr.LtacNotationCall s -> Pptactic.pr_alias_key s
-       | Tacexpr.LtacNameCall cst -> Pptactic.pr_ltac_constant cst
-       (* todo: don't want the KerName instead? *)
-       | Tacexpr.LtacVarCall (_, id, t) -> Names.Id.print id
-       | Tacexpr.LtacAtomCall te ->
-         Pptactic.pr_glob_tactic (Global.env ())
-            (CAst.make (Tacexpr.TacAtom te))
-       | Tacexpr.LtacConstrInterp (env, sigma, c, _) ->
-         pr_glob_constr_env env sigma c
-       | Tacexpr.LtacMLCall te ->
-         (Pptactic.pr_glob_tactic (Global.env ())
-            te)
-    ) in
+  let s = string_of_ppcmds ck in
   let s = String.map (fun c -> if c = '\n' then ' ' else c) s in
   let s = try String.sub s 0 (CString.string_index_from s 0 "(*") with Not_found -> s in
   String.trim s
@@ -283,7 +282,7 @@ let rec find_in_stack what acc = function
   | { name } as x :: rest when String.equal name what -> Some(acc, x, rest)
   | { name } as x :: rest -> find_in_stack what (x :: acc) rest
 
-let exit_tactic ~count_call start_time c =
+let exit_tactic ~count_call start_time name =
   let diff = time () -. start_time in
   match Local.(!stack) with
   | [] | [_] ->
@@ -291,7 +290,6 @@ let exit_tactic ~count_call start_time c =
     encounter_invalid_stack_no_self ();
     reset_profile_tmp ()
   | node :: (parent :: rest as full_stack) ->
-    let name = string_of_call c in
     if not (String.equal name node.name) then
       (* oops, our stack is invalid *)
       CErrors.anomaly
@@ -348,7 +346,7 @@ let rec tclWRAPFINALLY before tac finally =
                           (finally v >>= fun () -> tclUNIT ret)
                           (fun e -> tclWRAPFINALLY before (tac' e) finally)
 
-let do_profile s call_trace ?(count_call=true) tac =
+let do_profile_gen pp_call call_trace ?(count_call=true) tac =
   let open Proofview.Notations in
   (* We do an early check to [is_profiling] so that we save the
      overhead of [tclWRAPFINALLY] when profiling is not set
@@ -358,23 +356,27 @@ let do_profile s call_trace ?(count_call=true) tac =
   | true ->
     tclWRAPFINALLY
       (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-             match call_trace, Local.(!stack) with
-             | (_, c) :: _, parent :: rest ->
+             match pp_call call_trace, Local.(!stack) with
+             | Some c, parent :: rest ->
                let name = string_of_call c in
                let node = get_child name parent in
                Local.(stack := node :: parent :: rest);
-               Some (time ())
-             | _ :: _, [] -> assert false
+               Some (name, time ())
+             | Some _, [] -> assert false
              | _ -> None
            )))
       tac
       (function
-        | Some start_time ->
+        | Some (name, start_time) ->
           (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
-               (match call_trace with
-                | (_, c) :: _ -> exit_tactic ~count_call start_time c
-                | [] -> ()))))
+               exit_tactic ~count_call start_time name)))
         | None -> Proofview.tclUNIT ())
+
+let do_profile trace ?count_call tac =
+  do_profile_gen (function
+      | (_, c) :: _ -> Some (pp_ltac_call_kind c)
+      | [] -> None)
+    trace ?count_call tac
 
 (* ************** Accumulation of data from workers ************************* *)
 

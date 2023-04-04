@@ -42,8 +42,13 @@
    suspect that fixing this requires a redesign of how the profiler
    hooks into the tactic engine. *)
 val do_profile :
-  string -> ('a * Tacexpr.ltac_call_kind) list ->
-    ?count_call:bool -> 'b Proofview.tactic -> 'b Proofview.tactic
+  ('a * Tacexpr.ltac_call_kind) list ->
+  ?count_call:bool -> 'b Proofview.tactic -> 'b Proofview.tactic
+
+
+val do_profile_gen :
+  ('a -> Pp.t option) -> 'a ->
+  ?count_call:bool -> 'b Proofview.tactic -> 'b Proofview.tactic
 
 val set_profiling : bool -> unit
 
@@ -71,7 +76,7 @@ val do_print_results_at_close : unit -> unit
  * max_total: the greatest running time of a single invocation (seconds)
  *)
 type treenode = {
-  name : CString.Map.key;
+  name : string;
   total : float;
   local : float;
   ncalls : int;
