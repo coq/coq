@@ -74,7 +74,7 @@ let check_eq g u v =
 let check_eq_level g u v =
   u == v || type_in_type g || G.check_eq g.graph u v
 
-let empty_universes = {graph=G.empty; type_in_type=false; cumulative_prop=true}
+let empty_universes = {graph=G.empty; type_in_type=false; cumulative_prop=false}
 
 let initial_universes =
   let big_rank = 1000000 in
