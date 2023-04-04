@@ -82,6 +82,11 @@ struct
 
     let get_relevance x = (get_annot x).binder_relevance
 
+    let set_annot x d =
+      if get_annot d == x then d else match d with
+      | LocalAssum (_,ty) -> LocalAssum (x, ty)
+      | LocalDef (_,v,ty) -> LocalDef (x, v, ty)
+
     (** Set the name that is bound by a given declaration. *)
     let set_name na = function
       | LocalAssum (x,ty) -> LocalAssum ({x with binder_name=na}, ty)

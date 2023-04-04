@@ -375,11 +375,12 @@ let judge_of_array env sigma u tj defj tyj =
   in
   sigma, j
 
-let check_binder_relevance sigma s n =
+let check_binder_relevance sigma s decl =
   (* TODO: get rid of this *)
-  let r = Evarutil.nf_relevance sigma n.binder_relevance in
+  let r = Evarutil.nf_relevance sigma (get_relevance decl) in
   let r' = Sorts.relevance_of_sort (ESorts.kind sigma s) in
-  if Sorts.relevance_equal r' r then n else { n with binder_relevance = r' }
+  if Sorts.relevance_equal r' r then decl
+  else set_annot { (get_annot decl) with binder_relevance = r' } decl
 
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
@@ -472,16 +473,16 @@ let rec execute env sigma cstr =
     | Lambda (name,c1,c2) ->
         let sigma, j = execute env sigma c1 in
         let sigma, var = type_judgment env sigma j in
-        let name = check_binder_relevance sigma var.utj_type name in
-        let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
+        let decl = check_binder_relevance sigma var.utj_type (LocalAssum (name, var.utj_val)) in
+        let env1 = push_rel decl env in
         let sigma, j' = execute env1 sigma c2 in
         sigma, judge_of_abstraction env1 sigma name.binder_name var j'
 
     | Prod (name,c1,c2) ->
         let sigma, j = execute env sigma c1 in
         let sigma, varj = type_judgment env sigma j in
-        let name = check_binder_relevance sigma varj.utj_type name in
-        let env1 = push_rel (LocalAssum (name, varj.utj_val)) env in
+        let decl = check_binder_relevance sigma varj.utj_type (LocalAssum (name, varj.utj_val)) in
+        let env1 = push_rel decl env in
         let sigma, j' = execute env1 sigma c2 in
         let sigma, varj' = type_judgment env1 sigma j' in
         sigma, judge_of_product env sigma name.binder_name varj varj'
@@ -491,8 +492,8 @@ let rec execute env sigma cstr =
         let sigma, j2 = execute env sigma c2 in
         let sigma, j2 = type_judgment env sigma j2 in
         let sigma, _ =  judge_of_cast env sigma j1 DEFAULTcast j2 in
-        let name = check_binder_relevance sigma j2.utj_type name in
-        let env1 = push_rel (LocalDef (name, j1.uj_val, j2.utj_val)) env in
+        let decl = check_binder_relevance sigma j2.utj_type (LocalDef (name, j1.uj_val, j2.utj_val)) in
+        let env1 = push_rel decl env in
         let sigma, j3 = execute env1 sigma c3 in
         sigma, judge_of_letin env sigma name.binder_name j1 j2 j3
 
@@ -727,8 +728,8 @@ let rec recheck_against env sigma good c =
       Lambda (name, c1, c2) ->
       let sigma, changedj, j = recheck_against env sigma gc1 c1 in
       let sigma, var = type_judgment env sigma j in
-      let name = check_binder_relevance sigma var.utj_type name in
-      let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
+      let decl = check_binder_relevance sigma var.utj_type (LocalAssum (name, var.utj_val)) in
+      let env1 = push_rel decl env in
       let sigma, changedj', j' = if unchanged changedj then recheck_against env1 sigma gc2 c2
         else let sigma, j' = execute env1 sigma c2 in
           sigma, Changed {bodyonly=lazy false}, j'
@@ -739,8 +740,8 @@ let rec recheck_against env sigma good c =
       Prod (name, c1, c2) ->
       let sigma, changedj, j = recheck_against env sigma gc1 c1 in
       let sigma, var = type_judgment env sigma j in
-      let name = check_binder_relevance sigma var.utj_type name in
-      let env1 = push_rel (LocalAssum (name, var.utj_val)) env in
+      let decl = check_binder_relevance sigma var.utj_type (LocalAssum (name, var.utj_val)) in
+      let env1 = push_rel decl env in
       let sigma, changedj', j' = if unchanged changedj then recheck_against env1 sigma gc2 c2
         else let sigma, j' = execute env1 sigma c2 in
           sigma, Changed {bodyonly=lazy false}, j'
