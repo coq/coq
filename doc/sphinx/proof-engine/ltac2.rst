@@ -60,12 +60,6 @@ Current limitations include:
          | _ => Control.throw Not_found
          end.
 
-- Missing low-level primitives that are convenient for writing automation, such as:
-
-  - An easy way to get the number of constructors of an inductive type.
-    Currently only way to do this is to destruct a variable of the inductive type
-    and count the number of goals that result.
-
 - Error messages may be cryptic.
 
 .. _ltac2_design:
