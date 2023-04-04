@@ -50,7 +50,22 @@ val contents : unit -> library_segment
 
 (** {6 Functions relative to current path } *)
 
-(** User-side names *)
+(** User-side names
+
+    [cwd()] is [(prefix()).obj_dir]
+    [current_mp()] is [(prefix()).obj_mp]
+
+    Inside a library A.B module M section S, we have
+    - library_dp = A.B
+    - cwd = A.B.M.S
+    - cwd_except_section = A.B.M
+    - current_dirpath true = M.S
+    - current_dirpath false = S
+    - current_mp = MPdot(MPfile A.B, M)
+
+    make_path (resp make_path_except_section) uses cwd (resp cwd_except_section)
+    make_kn uses current_mp
+*)
 val prefix : unit -> Nametab.object_prefix
 val cwd : unit -> DirPath.t
 val cwd_except_section : unit -> DirPath.t
