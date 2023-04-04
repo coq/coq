@@ -780,10 +780,12 @@ let explain_disallowed_sprop () =
       ++ str "\"Allow StrictProp\""
       ++ strbrk " flag is off.")
 
-let pr_relevance = function
-| Sorts.Relevant -> str "relevant"
-| Sorts.Irrelevant -> str "irrelevant"
-| Sorts.RelevanceVar q -> str "a variable " ++ Sorts.QVar.pr q
+let pr_relevance sigma r =
+  let r = Evarutil.nf_relevance sigma r in
+  match r with
+  | Sorts.Relevant -> str "relevant"
+  | Sorts.Irrelevant -> str "irrelevant"
+  | Sorts.RelevanceVar q -> str "a variable " ++ Sorts.QVar.pr q
 
 let pr_binder env sigma = function
 | LocalAssum (na, t) ->
@@ -795,15 +797,15 @@ let pr_binder env sigma = function
 
 let explain_bad_binder_relevance env sigma rlv decl =
   strbrk "Binder" ++ spc () ++ pr_binder env sigma decl ++
-    strbrk " has relevance mark set to " ++ pr_relevance (RelDecl.get_relevance decl) ++
-    strbrk " but was expected to be " ++ pr_relevance rlv ++
+    strbrk " has relevance mark set to " ++ pr_relevance sigma (RelDecl.get_relevance decl) ++
+    strbrk " but was expected to be " ++ pr_relevance sigma rlv ++
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_bad_case_relevance env sigma rlv case =
   let (ci, _, _, _, _, _, _) = EConstr.destCase sigma case in
   strbrk "Pattern-matching" ++ spc () ++ pr_leconstr_env env sigma case ++
-    strbrk " has relevance mark set to " ++ pr_relevance ci.ci_relevance ++
-    strbrk " but was expected to be " ++ pr_relevance rlv ++
+    strbrk " has relevance mark set to " ++ pr_relevance sigma ci.ci_relevance ++
+    strbrk " but was expected to be " ++ pr_relevance sigma rlv ++
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_bad_invert env =
