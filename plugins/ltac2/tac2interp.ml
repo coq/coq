@@ -107,13 +107,13 @@ let match_ctor_against ctor v =
     if Int.equal i i' then vs
     else raise NoMatch
   | { cindx = Closed _ }, ValOpn _ -> assert false
-  | _, (ValStr _ | ValCls _ | ValExt _ | ValUint63 _ | ValFloat _) -> assert false
+  | _, (ValCls _ | ValExt _ | ValUint63 _ | ValFloat _) -> assert false
 
 let check_atom_against atm v =
   match atm, v with
   | AtmInt n, ValInt n' -> if not (Int.equal n n') then raise NoMatch
-  | AtmStr s, ValStr s' -> if not (String.equal s (Bytes.unsafe_to_string s')) then raise NoMatch
-  | (AtmInt _ | AtmStr _), _ -> assert false
+  | AtmStr s, _ -> if not (String.equal s (to_string v)) then raise NoMatch
+  | AtmInt _, _ -> assert false
 
 let rec match_pattern_against ist pat v =
   match pat with

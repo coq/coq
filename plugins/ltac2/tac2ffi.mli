@@ -22,8 +22,6 @@ type valexpr =
   (** Immediate integers *)
 | ValBlk of tag * valexpr array
   (** Structured blocks *)
-| ValStr of Bytes.t
-  (** Strings *)
 | ValCls of closure
   (** Closures *)
 | ValOpn of KerName.t * valexpr array

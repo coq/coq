@@ -23,8 +23,6 @@ type valexpr =
   (** Immediate integers *)
 | ValBlk of tag * valexpr array
   (** Structured blocks *)
-| ValStr of Bytes.t
-  (** Strings *)
 | ValCls of closure
   (** Closures *)
 | ValOpn of KerName.t * valexpr array
@@ -52,21 +50,21 @@ type t = valexpr
 
 let is_int = function
 | ValInt _ -> true
-| ValBlk _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ -> false
+| ValBlk _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ -> false
 
 let tag v = match v with
 | ValBlk (n, _) -> n
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
+| ValInt _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let field v n = match v with
 | ValBlk (_, v) -> v.(n)
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
+| ValInt _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let set_field v n w = match v with
 | ValBlk (_, v) -> v.(n) <- w
-| ValInt _ | ValStr _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
+| ValInt _ | ValCls _ | ValOpn _ | ValExt _ | ValUint63 _ | ValFloat _ ->
   CErrors.anomaly (Pp.str "Unexpected value shape")
 
 let make_block tag v = ValBlk (tag, v)
@@ -113,6 +111,8 @@ let val_univ = Val.create "universe"
 let val_free : Names.Id.Set.t Val.tag = Val.create "free"
 let val_ltac1 : Geninterp.Val.t Val.tag = Val.create "ltac1"
 let val_ind_data : (Names.Ind.t * Declarations.mutual_inductive_body) Val.tag = Val.create "ind_data"
+let val_bytes = Val.create "bytes"
+let val_string = Val.create "string"
 
 let extract_val (type a) (type b) (tag : a Val.tag) (tag' : b Val.tag) (v : b) : a =
 match Val.eq tag tag' with
@@ -178,25 +178,6 @@ let char = {
   r_id = false;
 }
 
-let of_bytes s = ValStr s
-let to_bytes = function
-| ValStr s -> s
-| _ -> assert false
-
-let bytes = {
-  r_of = of_bytes;
-  r_to = to_bytes;
-  r_id = false;
-}
-
-let of_string s = of_bytes (Bytes.of_string s)
-let to_string s = Bytes.to_string (to_bytes s)
-let string = {
-  r_of = of_string;
-  r_to = to_string;
-  r_id = false;
-}
-
 let rec of_list f = function
 | [] -> ValInt 0
 | x :: l -> ValBlk (0, [| f x; of_list f l |])
@@ -216,7 +197,7 @@ let of_closure cls = ValCls cls
 
 let to_closure = function
 | ValCls cls -> cls
-| ValExt _ | ValInt _ | ValBlk _ | ValStr _ | ValOpn _ | ValUint63 _ | ValFloat _ -> assert false
+| ValExt _ | ValInt _ | ValBlk _ | ValOpn _ | ValUint63 _ | ValFloat _ -> assert false
 
 let closure = {
   r_of = of_closure;
@@ -236,6 +217,14 @@ let repr_ext tag = {
   r_to = (fun e -> to_ext tag e);
   r_id = false;
 }
+
+let of_bytes s = of_ext val_bytes s
+let to_bytes s = to_ext val_bytes s
+let bytes = repr_ext val_bytes
+
+let of_string s = of_ext val_string s
+let to_string s = to_ext val_string s
+let string = repr_ext val_string
 
 let of_constr c = of_ext val_constr c
 let to_constr c = to_ext val_constr c
