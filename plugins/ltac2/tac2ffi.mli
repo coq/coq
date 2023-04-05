@@ -50,6 +50,7 @@ val arity_one : (valexpr -> valexpr Proofview.tactic) arity
 val arity_suc : 'a arity -> (valexpr -> 'a) arity
 
 val mk_closure : 'v arity -> 'v -> closure
+val mk_closure_val : 'v arity -> 'v -> valexpr
 
 val annotate_closure : Tac2expr.frame -> closure -> closure
 (** The closure must not be already annotated *)

@@ -157,7 +157,7 @@ let rec interp (ist : environment) = function
   Proofview.Monad.List.map (fun e -> interp ist e) el >>= fun el ->
   return (Tac2ffi.of_open (kn, Array.of_list el))
 | GTacPrm ml ->
-  return (of_closure (Tac2env.interp_primitive ml))
+  return (Tac2env.interp_primitive ml)
 | GTacExt (tag, e) ->
   let tpe = Tac2env.interp_ml_object tag in
   with_frame (FrExtn (tag, e)) (tpe.Tac2env.ml_interp ist e)
@@ -241,7 +241,7 @@ and eval_pure bnd kn = function
   let bnd = List.fold_left fold bnd vals in
   eval_pure bnd kn body
 
-| GTacPrm ml -> of_closure (Tac2env.interp_primitive ml)
+| GTacPrm ml -> Tac2env.interp_primitive ml
 
 | GTacAtm (AtmStr _) | GTacSet _
 | GTacApp _ | GTacCse _ | GTacPrj _

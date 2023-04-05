@@ -219,27 +219,27 @@ let lift tac = tac <*> return v_unit
 
 let define_prim0 name tac =
   let tac _ = lift tac in
-  Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val arity_one tac)
 
 let define_prim1 name r0 f =
   let tac x = lift (f (Value.repr_to r0 x)) in
-  Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val arity_one tac)
 
 let define_prim2 name r0 r1 f =
   let tac x y = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y)) in
-  Tac2env.define_primitive (pname name) (mk_closure (arity_suc arity_one) tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val (arity_suc arity_one) tac)
 
 let define_prim3 name r0 r1 r2 f =
   let tac x y z = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z)) in
-  Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc arity_one)) tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val (arity_suc (arity_suc arity_one)) tac)
 
 let define_prim4 name r0 r1 r2 r3 f =
   let tac x y z u = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z) (Value.repr_to r3 u)) in
-  Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc (arity_suc arity_one))) tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val (arity_suc (arity_suc (arity_suc arity_one))) tac)
 
 let define_prim5 name r0 r1 r2 r3 r4 f =
   let tac x y z u v = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z) (Value.repr_to r3 u) (Value.repr_to r4 v)) in
-  Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc (arity_suc (arity_suc arity_one)))) tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val (arity_suc (arity_suc (arity_suc (arity_suc arity_one)))) tac)
 
 (** Tactics from Tacexpr *)
 
@@ -351,15 +351,15 @@ let lift tac = tac >>= fun c -> Proofview.tclUNIT (Value.of_constr c)
 
 let define_red1 name r0 f =
   let tac x = lift (f (Value.repr_to r0 x)) in
-  Tac2env.define_primitive (pname name) (mk_closure arity_one tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val arity_one tac)
 
 let define_red2 name r0 r1 f =
   let tac x y = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y)) in
-  Tac2env.define_primitive (pname name) (mk_closure (arity_suc arity_one) tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val (arity_suc arity_one) tac)
 
 let define_red3 name r0 r1 r2 f =
   let tac x y z = lift (f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z)) in
-  Tac2env.define_primitive (pname name) (mk_closure (arity_suc (arity_suc arity_one)) tac)
+  Tac2env.define_primitive (pname name) (mk_closure_val (arity_suc (arity_suc arity_one)) tac)
 
 let () = define_red1 "eval_red" constr begin fun c ->
   Tac2tactics.eval_red c
