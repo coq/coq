@@ -1542,12 +1542,6 @@ let index_of_ind_arg sigma t =
       | None -> error CannotFindInductiveArgument
   in aux None 0 t
 
-let rec contract_letin_in_lam_header sigma c =
-  match EConstr.kind sigma c with
-  | Lambda (x,t,c)  -> mkLambda (x,t,contract_letin_in_lam_header sigma c)
-  | LetIn (x,b,t,c) -> contract_letin_in_lam_header sigma (subst1 b c)
-  | _ -> c
-
 (*
  * Elimination tactic with bindings and using an arbitrary
  * elimination constant called elimc. This constant should end
@@ -1574,7 +1568,6 @@ let general_elim_clause0 with_evars flags (submetas, c, ty) elim =
     (elimc, elimt), NoBindings, Some i
   | ElimClause (elimc, lbindelimc) ->
     let elimt = Retyping.get_type_of env sigma elimc in
-    let elimc = contract_letin_in_lam_header sigma elimc in
     (elimc, elimt), lbindelimc, None
   in
   let elimclause = make_clenv_binding env sigma clause bindings in
@@ -1584,23 +1577,6 @@ let general_elim_clause0 with_evars flags (submetas, c, ty) elim =
   in
   let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
   Clenv.res_pf elimclause ~with_evars ~with_classes:true ~flags
-  end
-
-let general_case_clause0 with_evars flags (submetas, c, ty) elim =
-  Proofview.Goal.enter begin fun gl ->
-  let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
-  (* FIXME: be more clever *)
-  let elimc, elimt = eval_case_analysis elim in
-  let i = index_of_ind_arg sigma elimt in
-  let elimc = contract_letin_in_lam_header sigma elimc in
-  let elimclause = mk_clenv_from env sigma (elimc, elimt) in
-  let indmv =
-    try nth_arg (Some i) (clenv_arguments elimclause)
-    with Failure _ | Invalid_argument _ -> error IllFormedEliminationType
-  in
-  let elimclause = clenv_instantiate ~flags ~submetas indmv elimclause (c, ty) in
-  Clenv.case_pf elimclause ~with_evars ~with_classes:true ~flags
   end
 
 let general_elim_clause_in0 with_evars flags id (submetas, c, ty) elim =
@@ -1669,8 +1645,8 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
-  let t = Retyping.get_type_of env sigma c in
-  let mind = eval_to_quantified_ind env sigma t in
+  let ct = Retyping.get_type_of env sigma c in
+  let mind, t = reduce_to_quantified_ind env sigma ct in
   let sort = Tacticals.elimination_sort_of_goal gl in
   let mind = on_snd (fun u -> EInstance.kind sigma u) mind in
   let (sigma, case) =
@@ -1678,17 +1654,16 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
       build_case_analysis_scheme env sigma mind true sort
     else
       build_case_analysis_scheme_default env sigma mind sort in
-  let ct = Retyping.get_type_of env sigma c in
   let id = try Some (destVar sigma c) with DestKO -> None in
-  let t = try snd (reduce_to_quantified_ind env sigma ct) with UserError _ -> ct in
   let indclause = make_clenv_binding env sigma (c, t) lbindc in
-  let flags = elim_flags () in
   let metas = Evd.meta_list (clenv_evd indclause) in
   let submetas = List.map (fun mv -> mv, Metamap.find mv metas) (clenv_arguments indclause) in
-  Proofview.Unsafe.tclEVARS (Evd.clear_metas (clenv_evd indclause)) <*>
-  Tacticals.tclTHEN
-    (general_case_clause0 with_evars flags (submetas, c, clenv_type indclause) case)
-    (apply_clear_request clear_flag (use_clear_hyp_by_default ()) id)
+  let sigma = Evd.clear_metas (clenv_evd indclause) in
+  Tacticals.tclTHENLIST [
+    Proofview.Unsafe.tclEVARS sigma;
+    Clenv.case_pf ~with_evars ~with_classes:true ~submetas case (c, clenv_type indclause);
+    apply_clear_request clear_flag (use_clear_hyp_by_default ()) id;
+  ]
   end
 
 let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
@@ -3490,6 +3465,13 @@ let safe_dest_intro_patterns with_evars avoid thin dest pat tac =
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
+type branch_argument = {
+  ba_kind : elim_arg_kind;
+  ba_assum : bool;
+  ba_dep : bool;
+  ba_name : Id.t;
+}
+
 type recarg_position =
   | AfterFixedPosition of Id.t option (* None = top of context *)
 
@@ -3520,43 +3502,42 @@ let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
   let avoid = Id.Set.union avoid' (Id.Set.union avoid (explicit_intro_names names)) in
   let rec peel_tac ra dests names thin =
     match ra with
-    | (RecArg,_,deprec,recvarname) ::
-        (IndArg,_,depind,hyprecname) :: ra' ->
+    | ({ ba_kind = RecArg } as rarg) :: ({ ba_kind = IndArg } as iarg) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
         let (recpat,names) = match names with
           | [{CAst.loc;v=IntroNaming (IntroIdentifier id)} as pat] ->
               let id' = new_fresh_id avoid (add_prefix "IH" id) gl in
               (pat, [CAst.make @@ IntroNaming (IntroIdentifier id')])
-          | _ -> consume_pattern avoid (Name recvarname) deprec gl names in
+          | _ -> consume_pattern avoid (Name rarg.ba_name) rarg.ba_dep gl names in
         let dest = get_recarg_dest dests in
         dest_intro_patterns with_evars avoid thin dest [recpat] (fun ids thin ->
         Proofview.Goal.enter begin fun gl ->
           let (hyprec,names) =
-            consume_pattern avoid (Name hyprecname) depind gl names
+            consume_pattern avoid (Name iarg.ba_name) iarg.ba_dep gl names
           in
           dest_intro_patterns with_evars avoid thin MoveLast [hyprec] (fun ids' thin ->
             peel_tac ra' (update_dest dests ids') names thin)
                              end)
         end
-    | (IndArg,_,dep,hyprecname) :: ra' ->
+    | ({ ba_kind = IndArg } as iarg) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
         (* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names =
-          consume_pattern avoid (Name hyprecname) dep gl names in
+          consume_pattern avoid (Name iarg.ba_name) iarg.ba_dep gl names in
         dest_intro_patterns with_evars avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin)
         end
-    | (RecArg,_,dep,recvarname) :: ra' ->
+    | ({ ba_kind = RecArg } as rarg) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
         let (pat,names) =
-          consume_pattern avoid (Name recvarname) dep gl names in
+          consume_pattern avoid (Name rarg.ba_name) rarg.ba_dep gl names in
         let dest = get_recarg_dest dests in
         dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
         end
-    | (OtherArg,_,dep,_) :: ra' ->
+    | ({ ba_kind = OtherArg } as oarg) :: ra' ->
         Proofview.Goal.enter begin fun gl ->
-        let (pat,names) = consume_pattern avoid Anonymous dep gl names in
+        let (pat,names) = consume_pattern avoid Anonymous oarg.ba_dep gl names in
         let dest = get_recarg_dest dests in
         safe_dest_intro_patterns with_evars avoid thin dest [pat] (fun ids thin ->
         peel_tac ra' dests names thin)
@@ -4395,18 +4376,20 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   let rec find_branches p lbrch =
     match lbrch with
       | LocalAssum (_,t) :: brs ->
-        (try
-           let lchck_brch = check_branch p t in
-           let n = List.fold_left
-             (fun n (b,_,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
-           let recvarname, hyprecname, avoid =
-             make_up_names n scheme.indref names_info in
-           let namesign =
-             List.map (fun (b,is_assum,dep) ->
-               (b,is_assum,dep,if b == IndArg then hyprecname else recvarname))
-               lchck_brch in
-           (avoid,namesign) :: find_branches (p+1) brs
-         with Exit-> error_ind_scheme "the branches of")
+        begin match check_branch p t with
+        | lchck_brch ->
+          let n = List.count (fun (b, _, _) -> b == RecArg) lchck_brch in
+          let recvarname, hyprecname, avoid = make_up_names n scheme.indref names_info in
+          let map (b, is_assum, dep) = {
+            ba_kind = b;
+            ba_assum = is_assum;
+            ba_dep = dep;
+            ba_name = if b == IndArg then hyprecname else recvarname;
+          } in
+          let namesign = List.map map lchck_brch in
+          (avoid, namesign) :: find_branches (p+1) brs
+        | exception Exit -> error_ind_scheme "the branches of"
+        end
       | LocalDef _ :: _ -> error_ind_scheme "the branches of"
       | [] -> check_concl is_pred p; []
   in
@@ -4429,9 +4412,15 @@ let compute_case_signature env evd mind case names_info =
   let find_branches lbrch = match lbrch with
   | LocalAssum (_, t) ->
     let lchck_brch = check_branch t in
-    let n = List.fold_left (fun n (b,_,_) -> if b == RecArg then n+1 else n) 0 lchck_brch in
+    let n = List.count (fun (b, _, _) -> b == RecArg) lchck_brch in
     let recvarname, hyprecname, avoid = make_up_names n (Some indref) names_info in
-    let namesign = List.map (fun (b,is_assum,dep) -> (b,is_assum,dep,recvarname)) lchck_brch in
+    let map (b, is_assum, dep) = {
+      ba_kind = b;
+      ba_assum = is_assum;
+      ba_dep = dep;
+      ba_name = recvarname;
+    } in
+    let namesign = List.map map lchck_brch in
     (avoid, namesign)
   | LocalDef _ -> assert false
   in
@@ -4473,8 +4462,7 @@ let given_elim env sigma hyp0 (elimc,lbind as e) =
   let sigma, elimt = Typing.type_of env sigma elimc in
   sigma, (e, elimt), ind_type_guess
 
-type scheme_signature =
-    (Id.Set.t * (elim_arg_kind * bool * bool * Id.t) list) array
+type scheme_signature = (Id.Set.t * branch_argument list) array
 
 type eliminator_source =
   | CaseOver of Id.t * (inductive * EInstance.t)
@@ -4544,7 +4532,6 @@ let induction_tac with_evars params indvars (elim, elimt) =
     let i = index_of_ind_arg sigma elimt in
     (mkConstU c, elimt), NoBindings, Some i
   | ElimClause (elimc, lbindelimc) ->
-    let elimc = contract_letin_in_lam_header sigma elimc in
     (elimc, elimt), lbindelimc, None
   in
   (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
@@ -4554,18 +4541,11 @@ let induction_tac with_evars params indvars (elim, elimt) =
   Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause
   end
 
-let destruct_tac with_evars params indvars case =
+let destruct_tac with_evars indvar case =
   Proofview.Goal.enter begin fun gl ->
-  let sigma = Proofview.Goal.sigma gl in
-  (* FIXME: be more clever *)
-  let elimc, elimt = eval_case_analysis case in
-  let i = index_of_ind_arg sigma elimt in
-  (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
-  let elimc = contract_letin_in_lam_header sigma elimc in
-  let elimclause = Tacmach.pf_apply mk_clenv_from gl (elimc, elimt) in
-  (* elimclause' is built from elimclause by instantiating all args and params. *)
-  let elimclause = recolle_clenv (Some i) params indvars elimclause gl in
-  Clenv.case_pf ~with_evars ~flags:(elim_flags ()) elimclause
+  let env = Proofview.Goal.env gl in
+  let ty = Typing.type_of_variable env indvar in
+  Clenv.case_pf ~with_evars case (mkVar indvar, ty)
   end
 
 (* Apply induction "in place" taking into account dependent
@@ -4599,7 +4579,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
         else build_case_analysis_scheme_default env sigma (mind, u) s
       in
       let indsign = compute_case_signature env sigma mind case id in
-      let tac = destruct_tac with_evars [] [id] case in
+      let tac = destruct_tac with_evars id case in
       sigma, false, tac, indsign
     | ElimOver (isrec, id, (mind, u)) ->
       let sigma, ind = find_ind_eliminator env sigma mind s in
@@ -4625,7 +4605,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       sigma, (* bugged, should be computed *) true, tac, indsign
     in
     let branchletsigns =
-      let f (_,is_not_let,_,_) = is_not_let in
+      let f ba = ba.ba_assum in
       Array.map (fun (_,l) -> List.map f l) indsign in
     let names = compute_induction_names true branchletsigns names in
     let () = Array.iter (check_name_unicity env toclear []) names in
@@ -5064,6 +5044,7 @@ let elim_type t =
   end
 
 let case_type t =
+  assert_before_then_gen false (NamingAvoid Id.Set.empty) t begin fun id ->
   Proofview.Goal.enter begin fun gl ->
   let sigma = Proofview.Goal.sigma gl in
   let env = Tacmach.pf_env gl in
@@ -5071,14 +5052,12 @@ let case_type t =
   let u = EInstance.kind sigma u in
   let s = Tacticals.elimination_sort_of_goal gl in
   let (evd, elim) = build_case_analysis_scheme_default env sigma (ind, u) s in
-  let elimc, elimt = eval_case_analysis elim in
-  let clause = mk_clenv_from env evd (elimc, elimt) in
-  let mv = List.last (clenv_arguments clause) in
-  let clause' =
-    (* t is inductive, then CUMUL or CONV is irrelevant *)
-    clenv_unify ~flags:(elim_flags ()) Reduction.CUMUL t
-      (clenv_meta_type clause mv) clause in
-  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (Clenv.case_pf clause' ~flags:(elim_flags ()) ~with_evars:false)
+  tclTHENLIST [
+    Proofview.Unsafe.tclEVARS evd;
+    Clenv.case_pf ~with_evars:false elim (mkVar id, t);
+    clear [id];
+  ]
+  end
   end
 
 let exfalso =

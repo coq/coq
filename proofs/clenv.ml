@@ -918,8 +918,23 @@ let res_pf_gen is_case ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) 
 let res_pf ?with_evars ?with_classes ?flags clenv =
   res_pf_gen false ?with_evars ?with_classes ?flags clenv
 
-let case_pf ?with_evars ?with_classes ?flags clenv =
-  res_pf_gen true ?with_evars ?with_classes ?flags clenv
+let case_pf ?with_evars ?with_classes ?submetas case (arg, typ) =
+  Proofview.Goal.enter begin fun gl ->
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let rec contract_letin_in_lam_header sigma c = match EConstr.kind sigma c with
+  | Lambda (x,t,c)  -> mkLambda (x,t,contract_letin_in_lam_header sigma c)
+  | LetIn (x,b,t,c) -> contract_letin_in_lam_header sigma (subst1 b c)
+  | _ -> c
+  in
+  let elimc, elimt = Indrec.eval_case_analysis case in
+  let elimc = contract_letin_in_lam_header sigma elimc in
+  let clenv = mk_clenv_from env sigma (elimc, elimt) in
+  let indmv = List.last (clenv_arguments clenv) in
+  let flags = elim_flags () in
+  let clenv = clenv_instantiate ~flags ?submetas indmv clenv (arg, typ) in
+  res_pf_gen true ?with_evars ?with_classes ~flags clenv
+  end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
    particulier ne semblent pas vérifier que des instances différentes

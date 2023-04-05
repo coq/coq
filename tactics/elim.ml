@@ -10,7 +10,6 @@
 
 open Util
 open Names
-open Constr
 open Termops
 open EConstr
 open Inductiveops
@@ -19,51 +18,33 @@ open Tacmach
 open Tacticals
 open Clenv
 open Tactics
+open Proofview.Notations
 
-type elim_kind = Case of bool * constr option | Elim
+type elim_kind = Case of bool | Elim
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
 let general_elim_using mk_elim (ind, u, args) id =
-  let open Pp in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let sort = Retyping.get_sort_family_of env sigma (Proofview.Goal.concl gl) in
-    let sigma, elim, elimt, predicate = match mk_elim with
-    | Case (dep, pred) ->
-      let u = EInstance.kind sigma u in
-      let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u) dep sort in
-      let r, t = Indrec.eval_case_analysis c in
-      (sigma, r, t, pred)
+    let flags = Unification.elim_flags () in
+    match mk_elim with
+    | Case dep ->
+      let u_ = EInstance.kind sigma u in
+      let (sigma, c) = Indrec.build_case_analysis_scheme env sigma (ind, u_) dep sort in
+      Proofview.Unsafe.tclEVARS sigma <*>
+      Clenv.case_pf c (mkVar id, mkApp (mkIndU (ind, u), args))
     | Elim ->
       let gr = Indrec.lookup_eliminator env ind sort in
-      let sigma, r = Evd.fresh_global env sigma gr in
-      (sigma, r, Retyping.get_type_of env sigma r, None)
-    in
-    let is_case = match mk_elim with Elim -> false | Case _ -> true in
-    (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from env sigma (elim, elimt) in
-    let indmv = List.last (clenv_arguments elimclause) in
-    let pmv = match Clenv.clenv_type_head_meta elimclause with
-    | Some p -> p
-    | None ->
-      let name_elim =
-        match EConstr.kind sigma elim with
-        | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env env sigma elim
-        | _ -> mt ()
-      in
-      CErrors.user_err
-        (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
-    in
-    let elimclause' = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
-    let flags = Unification.elim_flags () in
-    let elimclause' =
-      match predicate with
-      | None   -> elimclause'
-      | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
-    in
-    if is_case then Clenv.case_pf ~flags elimclause' else Clenv.res_pf ~flags elimclause'
+      let sigma, elim = Evd.fresh_global env sigma gr in
+      let elimt = Retyping.get_type_of env sigma elim in
+      (* applying elimination_scheme just a little modified *)
+      let elimclause = mk_clenv_from env sigma (elim, elimt) in
+      let indmv = List.last (clenv_arguments elimclause) in
+      let elimclause = clenv_instantiate indmv elimclause (mkVar id, mkApp (mkIndU (ind, u), args)) in
+      Clenv.res_pf ~flags elimclause
   end
 
 (* computing the case/elim combinators *)
@@ -77,7 +58,7 @@ let elim_on_ba tac nassums =
   tac branches
   end
 
-let case_tac dep names tac elim (ind, u, args as spec) c =
+let case_tac dep names tac (ind, u, args as spec) c =
   let open Proofview.Notations in
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
@@ -93,7 +74,7 @@ let case_tac dep names tac elim (ind, u, args as spec) c =
       (intro_patterns false l1) <*> (intros_clearing l3) <*> (elim_on_ba (tac l2) n1)
     in
     let branchtacs = List.init (Array.length branchsigns) after_tac in
-    general_elim_using (Case (dep, Some elim)) spec c <*>
+    general_elim_using (Case dep) spec c <*>
     (Proofview.tclEXTEND [] tclIDTAC branchtacs)
   end
 
@@ -125,7 +106,7 @@ let rec general_decompose_aux recognizer id =
   let rec_flag, mkelim =
     match (Environ.lookup_mind (fst ind) env).mind_record with
     | NotRecord -> true, Elim
-    | FakeRecord | PrimRecord _ -> false, Case (true, None)
+    | FakeRecord | PrimRecord _ -> false, Case true
   in
   let branchsigns = Tacticals.compute_constructor_signatures env ~rec_flag (ind, u) in
   let next_tac bas =
