@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module CVars = Vars
+
 open Pp
 open CErrors
 open Util
@@ -122,6 +124,12 @@ let betazetaevar_applist sigma n c l =
     | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   stacklam n [] c l
 
+let type_of_constant env sigma (c,u) =
+  let cb = lookup_constant c env in
+  let () = check_hyps_inclusion env sigma (GlobRef.ConstRef c) cb.const_hyps in
+  let ty = CVars.subst_instance_constr (EConstr.Unsafe.to_instance u) cb.const_type in
+  EConstr.of_constr (rename_type ty (GlobRef.ConstRef c))
+
 let retype ?(polyprop=true) sigma =
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with
@@ -134,10 +142,10 @@ let retype ?(polyprop=true) sigma =
       in
       lift n ty
     | Var id -> type_of_var env id
-    | Const (cst, u) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
+    | Const c -> type_of_constant env sigma c
     | Evar ev -> existential_type sigma ev
-    | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
-    | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
+    | Ind ind -> Inductiveops.e_type_of_inductive env sigma ind
+    | Construct c -> Inductiveops.e_type_of_constructor env sigma c
     | Case (ci,u,pms,p,iv,c,lf) ->
         let (_,p,iv,c,lf) = EConstr.expand_case env sigma (ci,u,pms,p,iv,c,lf) in
         let Inductiveops.IndType(indf,realargs) =

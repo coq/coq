@@ -1235,6 +1235,11 @@ let native_infer_conv ?(pb=Reduction.CUMUL) env sigma t1 t2 =
   infer_conv_gen (fun pb ~l2r sigma ts -> native_conv_generic pb sigma)
     ~catch_incon:true ~pb env sigma t1 t2
 
+let check_hyps_inclusion env sigma x hyps =
+  let env = Environ.set_universes (Evd.universes sigma) env in
+  let evars = Evd.evar_handler sigma in
+  Typeops.check_hyps_inclusion env ~evars x hyps
+
 (********************************************************************)
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
