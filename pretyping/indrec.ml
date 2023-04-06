@@ -159,7 +159,6 @@ let mis_make_case_tac dep env sigma (ind, u as pind) params pred (mib, mip) kind
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family kind in
-  let () = check_valid_elimination env pind kind in
   let ndepar = mip.mind_nrealdecls + 1 in
 
   let pnas, deparsign =

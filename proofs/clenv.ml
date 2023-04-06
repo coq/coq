@@ -921,6 +921,7 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
     let indarg = applist (indarg, List.map (fun (m, _) -> mkMeta m) metas) in
     sigma, indarg
   in
+  (* Extract inductive data from the argument. *)
   let hd, args = decompose_app_vect sigma typ in
   (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
   let sigma, _ = Typing.checked_appvect env sigma hd args in
@@ -929,33 +930,39 @@ let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ
   let s = Retyping.get_sort_family_of env sigma concl in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
-  let sigma, typP =
-    let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma s in
+
+  let () = check_valid_elimination env (ind, u) s in
+
+  (* Extract the return clause using unification with the conclusion *)
+  let (sigma, sort) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma s in
+  let typP =
     let params = EConstr.Unsafe.to_constr_array params in
     let indf = Inductiveops.make_ind_family ((ind, u), Array.to_list params) in
-    let typP = Inductiveops.make_arity env sigma dep indf s in
-    sigma, typP
+    Inductiveops.make_arity env sigma dep indf sort
   in
   let mvP = new_meta () in
   let sigma = meta_declare mvP typP sigma in
-  let case = build_case_analysis env sigma (ind, u) params (mkMeta mvP) dep s in
+  let depargs = Array.append indices [|indarg|] in
+  let templtyp = if dep then mkApp (mkMeta mvP, depargs) else mkApp (mkMeta mvP, indices) in
+  let flags = elim_flags () in
+  let sigma = w_unify_meta_types ~flags env sigma in
+  let sigma = w_unify ~flags env sigma CUMUL templtyp concl in
+  let pred = meta_instance env (create_meta_instance_subst sigma) (mk_freelisted (mkMeta mvP)) in
+
+  (* Build the case node proper *)
+  let case = build_case_analysis env sigma (ind, u) params pred dep s in
   let fold (sigma, subst, metas) t =
     let mv = new_meta () in
     let sigma = meta_declare mv t sigma in
     (sigma, mkMeta mv :: subst, mv :: metas)
   in
   let (sigma, subst, args) = Array.fold_left fold (sigma, [], []) case.case0_branches in
-  let depargs = Array.append indices [|indarg|] in
   let indexsubst = subst_of_rel_context_instance case.case0_arity depargs in
   let subst = indexsubst @ subst in
   let templval = Vars.substl subst case.case0_body in
-  let templtyp = if dep then mkApp (mkMeta mvP, depargs) else mkApp (mkMeta mvP, indices) in
   let metaset = Metaset.of_list (mvP :: args) in
 
-  let flags = elim_flags () in
-  let sigma = w_unify_meta_types ~flags env sigma in
-  let sigma = w_unify ~flags env sigma CUMUL templtyp concl in
-
+  (* Call the legacy refiner on the result *)
   let clenv = {
     templval; metaset;
     templtyp = mk_freelisted templtyp;
