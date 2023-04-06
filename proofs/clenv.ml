@@ -920,13 +920,16 @@ let res_pf ?with_evars ?with_classes ?flags clenv =
 
 module RelDecl = Context.Rel.Declaration
 
-let case_pf ?with_evars ?with_classes ?submetas case (indarg, typ) =
+let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   let open Indrec in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
   let hd, args = decompose_app_vect sigma typ in
   let ind, u = destInd sigma hd in
+  let s = Retyping.get_sort_family_of env sigma concl in
+  let (sigma, case) = build_case_analysis_scheme env sigma (ind, EInstance.kind sigma u) dep s in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
   let sigma = clear_metas sigma in

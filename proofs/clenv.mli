@@ -85,7 +85,7 @@ val unify : ?flags:unify_flags -> constr -> unit Proofview.tactic
 val res_pf : ?with_evars:bool -> ?with_classes:bool -> ?flags:unify_flags -> clausenv -> unit Proofview.tactic
 val case_pf : ?with_evars:bool -> ?with_classes:bool ->
   ?submetas:(metavariable * clbinding) list ->
-  Indrec.case_analysis -> (constr * types) -> unit Proofview.tactic
+  dep:bool -> (constr * types) -> unit Proofview.tactic
 
 val clenv_pose_dependent_evars : ?with_evars:bool -> clausenv -> clausenv
 
