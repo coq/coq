@@ -15,6 +15,9 @@ Require Import Ltac.
 
 Notation "A -> B" := (forall (_ : A), B) : type_scope.
 
+#[projections(primitive)]
+Record PropBox (A:Prop) : Set := propBox { propUnbox : A }.
+
 (** * Propositional connectives *)
 
 (** [True] is the always true proposition *)
@@ -277,20 +280,20 @@ Inductive ex (A:Type) (P:A -> Prop) : Prop :=
 Register ex as core.ex.type.
 Register ex_intro as core.ex.intro.
 
-Section Projections.
+(* Section Projections. *)
 
-  Variables (A:Prop) (P:A->Prop).
+(*   Variables (A:Prop) (P:A->Prop). *)
 
-  Definition ex_proj1 (x:ex P) : A :=
-    match x with ex_intro _ a _ => a end.
+(*   Definition ex_proj1 (x:ex P) : A := *)
+(*     match x with ex_intro _ a _ => a end. *)
 
-  Definition ex_proj2 (x:ex P) : P (ex_proj1 x) :=
-    match x with ex_intro _ _ b => b end.
+(*   Definition ex_proj2 (x:ex P) : P (ex_proj1 x) := *)
+(*     match x with ex_intro _ _ b => b end. *)
 
-  Register ex_proj1 as core.ex.proj1.
-  Register ex_proj2 as core.ex.proj2.
+(*   Register ex_proj1 as core.ex.proj1. *)
+(*   Register ex_proj2 as core.ex.proj2. *)
 
-End Projections.
+(* End Projections. *)
 
 Inductive ex2 (A:Type) (P Q:A -> Prop) : Prop :=
   ex_intro2 : forall x:A, P x -> Q x -> ex2 (A:=A) P Q.
@@ -307,19 +310,19 @@ Inductive ex2 (A:Type) (P Q:A -> Prop) : Prop :=
     under the assumption that there is no reason to turn an [ex2] into
     an [ex] unless it is to project out the components. *)
 
-Definition ex_of_ex2 (A : Prop) (P Q : A -> Prop) (X : ex2 P Q) : ex P
-  := ex_intro P
-              (let (a, _, _) := X in a)
-              (let (x, p, _) as s return (P (let (a, _, _) := s in a)) := X in p).
+(* Definition ex_of_ex2 (A : Prop) (P Q : A -> Prop) (X : ex2 P Q) : ex P *)
+(*   := ex_intro P *)
+(*               (let (a, _, _) := X in a) *)
+(*               (let (x, p, _) as s return (P (let (a, _, _) := s in a)) := X in p). *)
 
-Section ex2_Projections.
+(* Section ex2_Projections. *)
 
-  Variables (A:Prop) (P Q:A->Prop).
+(*   Variables (A:Prop) (P Q:A->Prop). *)
 
-  Definition ex_proj3 (x:ex2 P Q) : Q (ex_proj1 (ex_of_ex2 x)) :=
-    match x with ex_intro2 _ _ _ _ b => b end.
+(*   Definition ex_proj3 (x:ex2 P Q) : Q (ex_proj1 (ex_of_ex2 x)) := *)
+(*     match x with ex_intro2 _ _ _ _ b => b end. *)
 
-End ex2_Projections.
+(* End ex2_Projections. *)
 
 Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
 
@@ -613,44 +616,44 @@ Proof.
   destruct 1; destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
 Qed.
 
-Theorem f_equal_compose A B C (a b:A) (f:A->B) (g:B->C) (e:a=b) :
-  f_equal g (f_equal f e) = f_equal (fun a => g (f a)) e.
-Proof.
-  destruct e. reflexivity.
-Defined.
+(* Theorem f_equal_compose A B C (a b:A) (f:A->B) (g:B->C) (e:a=b) : *)
+(*   f_equal g (f_equal f e) = f_equal (fun a => g (f a)) e. *)
+(* Proof. *)
+(*   destruct e. reflexivity. *)
+(* Defined. *)
 
 (** The groupoid structure of equality *)
 
-Theorem eq_trans_refl_l A (x y:A) (e:x=y) : eq_trans eq_refl e = e.
-Proof.
-  destruct e. reflexivity.
-Defined.
+(* Theorem eq_trans_refl_l A (x y:A) (e:x=y) : eq_trans eq_refl e = e. *)
+(* Proof. *)
+(*   destruct e. reflexivity. *)
+(* Defined. *)
 
-Theorem eq_trans_refl_r A (x y:A) (e:x=y) : eq_trans e eq_refl = e.
-Proof.
-  destruct e. reflexivity.
-Defined.
+(* Theorem eq_trans_refl_r A (x y:A) (e:x=y) : eq_trans e eq_refl = e. *)
+(* Proof. *)
+(*   destruct e. reflexivity. *)
+(* Defined. *)
 
-Theorem eq_sym_involutive A (x y:A) (e:x=y) : eq_sym (eq_sym e) = e.
-Proof.
-  destruct e; reflexivity.
-Defined.
+(* Theorem eq_sym_involutive A (x y:A) (e:x=y) : eq_sym (eq_sym e) = e. *)
+(* Proof. *)
+(*   destruct e; reflexivity. *)
+(* Defined. *)
 
-Theorem eq_trans_sym_inv_l A (x y:A) (e:x=y) : eq_trans (eq_sym e) e = eq_refl.
-Proof.
-  destruct e; reflexivity.
-Defined.
+(* Theorem eq_trans_sym_inv_l A (x y:A) (e:x=y) : eq_trans (eq_sym e) e = eq_refl. *)
+(* Proof. *)
+(*   destruct e; reflexivity. *)
+(* Defined. *)
 
-Theorem eq_trans_sym_inv_r A (x y:A) (e:x=y) : eq_trans e (eq_sym e) = eq_refl.
-Proof.
-  destruct e; reflexivity.
-Defined.
+(* Theorem eq_trans_sym_inv_r A (x y:A) (e:x=y) : eq_trans e (eq_sym e) = eq_refl. *)
+(* Proof. *)
+(*   destruct e; reflexivity. *)
+(* Defined. *)
 
-Theorem eq_trans_assoc A (x y z t:A) (e:x=y) (e':y=z) (e'':z=t) :
-  eq_trans e (eq_trans e' e'') = eq_trans (eq_trans e e') e''.
-Proof.
-  destruct e''; reflexivity.
-Defined.
+(* Theorem eq_trans_assoc A (x y z t:A) (e:x=y) (e':y=z) (e'':z=t) : *)
+(*   eq_trans e (eq_trans e' e'') = eq_trans (eq_trans e e') e''. *)
+(* Proof. *)
+(*   destruct e''; reflexivity. *)
+(* Defined. *)
 
 Theorem rew_map A B (P:B->Type) (f:A->B) x1 x2 (H:x1=x2) (y:P (f x1)) :
   rew [fun x => P (f x)] H in y = rew f_equal f H in y.
@@ -691,64 +694,64 @@ Defined.
 
 (** Extra properties of equality *)
 
-Theorem eq_id_comm_l A (f:A->A) (Hf:forall a, a = f a) a : f_equal f (Hf a) = Hf (f a).
-Proof.
-  unfold f_equal.
-  rewrite <- (eq_trans_sym_inv_l (Hf a)).
-  destruct (Hf a) at 1 2.
-  destruct (Hf a).
-  reflexivity.
-Defined.
+(* Theorem eq_id_comm_l A (f:A->A) (Hf:forall a, a = f a) a : f_equal f (Hf a) = Hf (f a). *)
+(* Proof. *)
+(*   unfold f_equal. *)
+(*   rewrite <- (eq_trans_sym_inv_l (Hf a)). *)
+(*   destruct (Hf a) at 1 2. *)
+(*   destruct (Hf a). *)
+(*   reflexivity. *)
+(* Defined. *)
 
-Theorem eq_id_comm_r A (f:A->A) (Hf:forall a, f a = a) a : f_equal f (Hf a) = Hf (f a).
-Proof.
-  unfold f_equal.
-  rewrite <- (eq_trans_sym_inv_l (Hf (f (f a)))).
-  set (Hfsymf := fun a => eq_sym (Hf a)).
-  change (eq_sym (Hf (f (f a)))) with (Hfsymf (f (f a))).
-  pattern (Hfsymf (f (f a))).
-  destruct (eq_id_comm_l f Hfsymf (f a)).
-  destruct (eq_id_comm_l f Hfsymf a).
-  unfold Hfsymf.
-  destruct (Hf a). simpl.
-  rewrite eq_trans_refl_l.
-  reflexivity.
-Defined.
+(* Theorem eq_id_comm_r A (f:A->A) (Hf:forall a, f a = a) a : f_equal f (Hf a) = Hf (f a). *)
+(* Proof. *)
+(*   unfold f_equal. *)
+(*   rewrite <- (eq_trans_sym_inv_l (Hf (f (f a)))). *)
+(*   set (Hfsymf := fun a => eq_sym (Hf a)). *)
+(*   change (eq_sym (Hf (f (f a)))) with (Hfsymf (f (f a))). *)
+(*   pattern (Hfsymf (f (f a))). *)
+(*   destruct (eq_id_comm_l f Hfsymf (f a)). *)
+(*   destruct (eq_id_comm_l f Hfsymf a). *)
+(*   unfold Hfsymf. *)
+(*   destruct (Hf a). simpl. *)
+(*   rewrite eq_trans_refl_l. *)
+(*   reflexivity. *)
+(* Defined. *)
 
-Lemma eq_refl_map_distr A B x (f:A->B) : f_equal f (eq_refl x) = eq_refl (f x).
-Proof.
-  reflexivity.
-Qed.
+(* Lemma eq_refl_map_distr A B x (f:A->B) : f_equal f (eq_refl x) = eq_refl (f x). *)
+(* Proof. *)
+(*   reflexivity. *)
+(* Qed. *)
 
-Lemma eq_trans_map_distr A B x y z (f:A->B) (e:x=y) (e':y=z) : f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e').
-Proof.
-destruct e'.
-reflexivity.
-Defined.
+(* Lemma eq_trans_map_distr A B x y z (f:A->B) (e:x=y) (e':y=z) : f_equal f (eq_trans e e') = eq_trans (f_equal f e) (f_equal f e'). *)
+(* Proof. *)
+(* destruct e'. *)
+(* reflexivity. *)
+(* Defined. *)
 
-Lemma eq_sym_map_distr A B (x y:A) (f:A->B) (e:x=y) : eq_sym (f_equal f e) = f_equal f (eq_sym e).
-Proof.
-destruct e.
-reflexivity.
-Defined.
+(* Lemma eq_sym_map_distr A B (x y:A) (f:A->B) (e:x=y) : eq_sym (f_equal f e) = f_equal f (eq_sym e). *)
+(* Proof. *)
+(* destruct e. *)
+(* reflexivity. *)
+(* Defined. *)
 
-Lemma eq_trans_sym_distr A (x y z:A) (e:x=y) (e':y=z) : eq_sym (eq_trans e e') = eq_trans (eq_sym e') (eq_sym e).
-Proof.
-destruct e, e'.
-reflexivity.
-Defined.
+(* Lemma eq_trans_sym_distr A (x y z:A) (e:x=y) (e':y=z) : eq_sym (eq_trans e e') = eq_trans (eq_sym e') (eq_sym e). *)
+(* Proof. *)
+(* destruct e, e'. *)
+(* reflexivity. *)
+(* Defined. *)
 
-Lemma eq_trans_rew_distr A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:P x) :
-    rew (eq_trans e e') in k = rew e' in rew e in k.
-Proof.
-  destruct e, e'; reflexivity.
-Qed.
+(* Lemma eq_trans_rew_distr A (P:A -> Type) (x y z:A) (e:x=y) (e':y=z) (k:P x) : *)
+(*     rew (eq_trans e e') in k = rew e' in rew e in k. *)
+(* Proof. *)
+(*   destruct e, e'; reflexivity. *)
+(* Qed. *)
 
-Lemma rew_const A P (x y:A) (e:x=y) (k:P) :
-    rew [fun _ => P] e in k = k.
-Proof.
-  destruct e; reflexivity.
-Qed.
+(* Lemma rew_const A P (x y:A) (e:x=y) (k:P) : *)
+(*     rew [fun _ => P] e in k = k. *)
+(* Proof. *)
+(*   destruct e; reflexivity. *)
+(* Qed. *)
 
 
 (* Aliases *)
@@ -870,329 +873,329 @@ Declare Right Step iff_trans.
     informative *)
 
 (** η Principles *)
-Definition ex_eta {A : Prop} {P} (p : exists a : A, P a)
-  : p = ex_intro _ (ex_proj1 p) (ex_proj2 p).
-Proof. destruct p; reflexivity. Defined.
+(* Definition ex_eta {A : Prop} {P} (p : exists a : A, P a) *)
+(*   : p = ex_intro _ (ex_proj1 p) (ex_proj2 p). *)
+(* Proof. destruct p; reflexivity. Defined. *)
 
-Definition ex2_eta {A : Prop} {P Q} (p : exists2 a : A, P a & Q a)
-  : p = ex_intro2 _ _ (ex_proj1 (ex_of_ex2 p)) (ex_proj2 (ex_of_ex2 p)) (ex_proj3 p).
-Proof. destruct p; reflexivity. Defined.
+(* Definition ex2_eta {A : Prop} {P Q} (p : exists2 a : A, P a & Q a) *)
+(*   : p = ex_intro2 _ _ (ex_proj1 (ex_of_ex2 p)) (ex_proj2 (ex_of_ex2 p)) (ex_proj3 p). *)
+(* Proof. destruct p; reflexivity. Defined. *)
 
-Section ex_Prop.
-  Variables (A:Prop) (P:A->Prop).
+(* Section ex_Prop. *)
+(*   Variables (A:Prop) (P:A->Prop). *)
 
-  Definition ex_rect (P0 : ex P -> Type) (f : forall x p, P0 (ex_intro P x p))
-    : forall e, P0 e
-    := fun e => rew <- ex_eta e in f _ _.
-  Definition ex_rec : forall (P0 : ex P -> Set) (f : forall x p, P0 (ex_intro P x p)),
-      forall e, P0 e
-    := ex_rect.
+(*   Definition ex_rect (P0 : ex P -> Type) (f : forall x p, P0 (ex_intro P x p)) *)
+(*     : forall e, P0 e *)
+(*     := fun e => rew <- ex_eta e in f _ _. *)
+(*   Definition ex_rec : forall (P0 : ex P -> Set) (f : forall x p, P0 (ex_intro P x p)), *)
+(*       forall e, P0 e *)
+(*     := ex_rect. *)
 
-End ex_Prop.
+(* End ex_Prop. *)
 
 (** Equality for [ex] *)
-Section ex.
-  Local Unset Implicit Arguments.
-  (** Projecting an equality of a pair to equality of the first components *)
-  Definition ex_proj1_eq {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (p : u = v)
-    : ex_proj1 u = ex_proj1 v
-    := f_equal (@ex_proj1 _ _) p.
+(* Section ex. *)
+(*   Local Unset Implicit Arguments. *)
+(*   (** Projecting an equality of a pair to equality of the first components *) *)
+(*   Definition ex_proj1_eq {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (p : u = v) *)
+(*     : ex_proj1 u = ex_proj1 v *)
+(*     := f_equal (@ex_proj1 _ _) p. *)
 
-  (** Projecting an equality of a pair to equality of the second components *)
-  Definition ex_proj2_eq {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (p : u = v)
-    : rew ex_proj1_eq p in ex_proj2 u = ex_proj2 v
-    := rew dependent p in eq_refl.
+(*   (** Projecting an equality of a pair to equality of the second components *) *)
+(*   Definition ex_proj2_eq {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (p : u = v) *)
+(*     : rew ex_proj1_eq p in ex_proj2 u = ex_proj2 v *)
+(*     := rew dependent p in eq_refl. *)
 
-  (** Equality of [ex] is itself a [ex] (forwards-reasoning version) *)
-  Definition eq_ex_intro_uncurried {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
-             (pq : exists p : u1 = v1, rew p in u2 = v2)
-    : ex_intro _ u1 u2 = ex_intro _ v1 v2.
-  Proof.
-    destruct pq as [p q].
-    destruct q; simpl in *.
-    destruct p; reflexivity.
-  Defined.
+(*   (** Equality of [ex] is itself a [ex] (forwards-reasoning version) *) *)
+(*   Definition eq_ex_intro_uncurried {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1} *)
+(*              (pq : exists p : u1 = v1, rew p in u2 = v2) *)
+(*     : ex_intro _ u1 u2 = ex_intro _ v1 v2. *)
+(*   Proof. *)
+(*     destruct pq as [p q]. *)
+(*     destruct q; simpl in *. *)
+(*     destruct p; reflexivity. *)
+(*   Defined. *)
 
-  (** Equality of [ex] is itself a [ex] (backwards-reasoning version) *)
-  Definition eq_ex_uncurried {A : Prop} {P : A -> Prop} (u v : exists a : A, P a)
-             (pq : exists p : ex_proj1 u = ex_proj1 v, rew p in ex_proj2 u = ex_proj2 v)
-    : u = v.
-  Proof.
-    destruct u as [u1 u2], v as [v1 v2]; simpl in *.
-    apply eq_ex_intro_uncurried; exact pq.
-  Defined.
+(*   (** Equality of [ex] is itself a [ex] (backwards-reasoning version) *) *)
+(*   Definition eq_ex_uncurried {A : Prop} {P : A -> Prop} (u v : exists a : A, P a) *)
+(*              (pq : exists p : ex_proj1 u = ex_proj1 v, rew p in ex_proj2 u = ex_proj2 v) *)
+(*     : u = v. *)
+(*   Proof. *)
+(*     destruct u as [u1 u2], v as [v1 v2]; simpl in *. *)
+(*     apply eq_ex_intro_uncurried; exact pq. *)
+(*   Defined. *)
 
-  (** Curried version of proving equality of [ex] types *)
-  Definition eq_ex_intro {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1}
-             (p : u1 = v1) (q : rew p in u2 = v2)
-    : ex_intro _ u1 u2 = ex_intro _ v1 v2
-    := eq_ex_intro_uncurried (ex_intro _ p q).
+(*   (** Curried version of proving equality of [ex] types *) *)
+(*   Definition eq_ex_intro {A : Type} {P : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1} *)
+(*              (p : u1 = v1) (q : rew p in u2 = v2) *)
+(*     : ex_intro _ u1 u2 = ex_intro _ v1 v2 *)
+(*     := eq_ex_intro_uncurried (ex_intro _ p q). *)
 
-  (** Curried version of proving equality of [ex] types *)
-  Definition eq_ex {A : Prop} {P : A -> Prop} (u v : exists a : A, P a)
-             (p : ex_proj1 u = ex_proj1 v) (q : rew p in ex_proj2 u = ex_proj2 v)
-    : u = v
-    := eq_ex_uncurried u v (ex_intro _ p q).
+(*   (** Curried version of proving equality of [ex] types *) *)
+(*   Definition eq_ex {A : Prop} {P : A -> Prop} (u v : exists a : A, P a) *)
+(*              (p : ex_proj1 u = ex_proj1 v) (q : rew p in ex_proj2 u = ex_proj2 v) *)
+(*     : u = v *)
+(*     := eq_ex_uncurried u v (ex_intro _ p q). *)
 
-  (** In order to have a performant [inversion_sigma], we define
-      specialized versions for when we have constructors on one or
-      both sides of the equality *)
-  Definition eq_ex_intro_l {A : Prop} {P : A -> Prop} u1 u2 (v : exists a : A, P a)
-             (p : u1 = ex_proj1 v) (q : rew p in u2 = ex_proj2 v)
-    : ex_intro P u1 u2 = v
-    := eq_ex (ex_intro P u1 u2) v p q.
-  Definition eq_ex_intro_r {A : Prop} {P : A -> Prop} (u : exists a : A, P a) v1 v2
-             (p : ex_proj1 u = v1) (q : rew p in ex_proj2 u = v2)
-    : u = ex_intro P v1 v2
-    := eq_ex u (ex_intro P v1 v2) p q.
+(*   (** In order to have a performant [inversion_sigma], we define *)
+(*       specialized versions for when we have constructors on one or *)
+(*       both sides of the equality *) *)
+(*   Definition eq_ex_intro_l {A : Prop} {P : A -> Prop} u1 u2 (v : exists a : A, P a) *)
+(*              (p : u1 = ex_proj1 v) (q : rew p in u2 = ex_proj2 v) *)
+(*     : ex_intro P u1 u2 = v *)
+(*     := eq_ex (ex_intro P u1 u2) v p q. *)
+(*   Definition eq_ex_intro_r {A : Prop} {P : A -> Prop} (u : exists a : A, P a) v1 v2 *)
+(*              (p : ex_proj1 u = v1) (q : rew p in ex_proj2 u = v2) *)
+(*     : u = ex_intro P v1 v2 *)
+(*     := eq_ex u (ex_intro P v1 v2) p q. *)
 
-  (** Induction principle for [@eq (ex _)] *)
-  Definition eq_ex_eta {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (p : u = v) : p = eq_ex u v (ex_proj1_eq p) (ex_proj2_eq p).
-  Proof. destruct p, u; reflexivity. Defined.
-  Definition eq_ex_rect {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (Q : u = v -> Type)
-             (f : forall p q, Q (eq_ex u v p q))
-    : forall p, Q p
-    := fun p => rew <- eq_ex_eta p in f _ _.
-  Definition eq_ex_rec {A : Prop} {P : A -> Prop} {u v} (Q : u = v :> (exists a : A, P a) -> Set) := eq_ex_rect Q.
-  Definition eq_ex_ind {A : Prop} {P : A -> Prop} {u v} (Q : u = v :> (exists a : A, P a) -> Prop) := eq_ex_rec Q.
+(*   (** Induction principle for [@eq (ex _)] *) *)
+(*   Definition eq_ex_eta {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (p : u = v) : p = eq_ex u v (ex_proj1_eq p) (ex_proj2_eq p). *)
+(*   Proof. destruct p, u; reflexivity. Defined. *)
+(*   Definition eq_ex_rect {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (Q : u = v -> Type) *)
+(*              (f : forall p q, Q (eq_ex u v p q)) *)
+(*     : forall p, Q p *)
+(*     := fun p => rew <- eq_ex_eta p in f _ _. *)
+(*   Definition eq_ex_rec {A : Prop} {P : A -> Prop} {u v} (Q : u = v :> (exists a : A, P a) -> Set) := eq_ex_rect Q. *)
+(*   Definition eq_ex_ind {A : Prop} {P : A -> Prop} {u v} (Q : u = v :> (exists a : A, P a) -> Prop) := eq_ex_rec Q. *)
 
-  (** In order to have a performant [inversion_sigma], we define
-      specialized versions for when we have constructors on one or
-      both sides of the equality *)
-  Definition eq_ex_rect_ex_intro_l {A : Prop} {P : A -> Prop} {u1 u2 v} (Q : _ -> Type)
-             (f : forall p q, Q (eq_ex_intro_l (P:=P) u1 u2 v p q))
-    : forall p, Q p
-    := eq_ex_rect Q f.
-  Definition eq_ex_rect_ex_intro_r {A : Prop} {P : A -> Prop} {u v1 v2} (Q : _ -> Type)
-             (f : forall p q, Q (eq_ex_intro_r (P:=P) u v1 v2 p q))
-    : forall p, Q p
-    := eq_ex_rect Q f.
-  Definition eq_ex_rect_ex_intro {A : Prop} {P : A -> Prop} {u1 u2 v1 v2} (Q : _ -> Type)
-             (f : forall p q, Q (@eq_ex_intro A P u1 v1 u2 v2 p q))
-    : forall p, Q p
-    := eq_ex_rect Q f.
+(*   (** In order to have a performant [inversion_sigma], we define *)
+(*       specialized versions for when we have constructors on one or *)
+(*       both sides of the equality *) *)
+(*   Definition eq_ex_rect_ex_intro_l {A : Prop} {P : A -> Prop} {u1 u2 v} (Q : _ -> Type) *)
+(*              (f : forall p q, Q (eq_ex_intro_l (P:=P) u1 u2 v p q)) *)
+(*     : forall p, Q p *)
+(*     := eq_ex_rect Q f. *)
+(*   Definition eq_ex_rect_ex_intro_r {A : Prop} {P : A -> Prop} {u v1 v2} (Q : _ -> Type) *)
+(*              (f : forall p q, Q (eq_ex_intro_r (P:=P) u v1 v2 p q)) *)
+(*     : forall p, Q p *)
+(*     := eq_ex_rect Q f. *)
+(*   Definition eq_ex_rect_ex_intro {A : Prop} {P : A -> Prop} {u1 u2 v1 v2} (Q : _ -> Type) *)
+(*              (f : forall p q, Q (@eq_ex_intro A P u1 v1 u2 v2 p q)) *)
+(*     : forall p, Q p *)
+(*     := eq_ex_rect Q f. *)
 
-  Definition eq_ex_rect_uncurried {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (Q : u = v -> Type)
-             (f : forall pq, Q (eq_ex u v (ex_proj1 pq) (ex_proj2 pq)))
-    : forall p, Q p
-    := eq_ex_rect Q (fun p q => f (ex_intro _ p q)).
-  Definition eq_ex_rec_uncurried {A : Prop} {P : A -> Prop} {u v} (Q : u = v :> (exists a : A, P a) -> Set) := eq_ex_rect_uncurried Q.
-  Definition eq_ex_ind_uncurried {A : Prop} {P : A -> Prop} {u v} (Q : u = v :> (exists a : A, P a) -> Prop) := eq_ex_rec_uncurried Q.
+(*   Definition eq_ex_rect_uncurried {A : Prop} {P : A -> Prop} {u v : exists a : A, P a} (Q : u = v -> Type) *)
+(*              (f : forall pq, Q (eq_ex u v (ex_proj1 pq) (ex_proj2 pq))) *)
+(*     : forall p, Q p *)
+(*     := eq_ex_rect Q (fun p q => f (ex_intro _ p q)). *)
+(*   Definition eq_ex_rec_uncurried {A : Prop} {P : A -> Prop} {u v} (Q : u = v :> (exists a : A, P a) -> Set) := eq_ex_rect_uncurried Q. *)
+(*   Definition eq_ex_ind_uncurried {A : Prop} {P : A -> Prop} {u v} (Q : u = v :> (exists a : A, P a) -> Prop) := eq_ex_rec_uncurried Q. *)
 
-  (** Equality of [ex] when the property is an hProp *)
-  Definition eq_ex_hprop {A : Prop} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
-             (u v : exists a : A, P a)
-             (p : ex_proj1 u = ex_proj1 v)
-    : u = v
-    := eq_ex u v p (P_hprop _ _ _).
+(*   (** Equality of [ex] when the property is an hProp *) *)
+(*   Definition eq_ex_hprop {A : Prop} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q) *)
+(*              (u v : exists a : A, P a) *)
+(*              (p : ex_proj1 u = ex_proj1 v) *)
+(*     : u = v *)
+(*     := eq_ex u v p (P_hprop _ _ _). *)
 
-  Definition eq_ex_intro_hprop {A : Type} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
-             {u1 v1 : A} {u2 : P u1} {v2 : P v1}
-             (p : u1 = v1)
-    : ex_intro P u1 u2 = ex_intro P v1 v2
-    := eq_ex_intro p (P_hprop _ _ _).
+(*   Definition eq_ex_intro_hprop {A : Type} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q) *)
+(*              {u1 v1 : A} {u2 : P u1} {v2 : P v1} *)
+(*              (p : u1 = v1) *)
+(*     : ex_intro P u1 u2 = ex_intro P v1 v2 *)
+(*     := eq_ex_intro p (P_hprop _ _ _). *)
 
-  (** Equivalence of equality of [ex] with a [ex] of equality *)
-  (** We could actually prove an isomorphism here, and not just [<->],
-      but for simplicity, we don't. *)
-  Definition eq_ex_uncurried_iff {A : Prop} {P : A -> Prop} (u v : exists a : A, P a)
-    : u = v <-> exists p : ex_proj1 u = ex_proj1 v, rew p in ex_proj2 u = ex_proj2 v.
-  Proof.
-    split; [ intro; subst; exists eq_refl; reflexivity | apply eq_ex_uncurried ].
-  Defined.
+(*   (** Equivalence of equality of [ex] with a [ex] of equality *) *)
+(*   (** We could actually prove an isomorphism here, and not just [<->], *)
+(*       but for simplicity, we don't. *) *)
+(*   Definition eq_ex_uncurried_iff {A : Prop} {P : A -> Prop} (u v : exists a : A, P a) *)
+(*     : u = v <-> exists p : ex_proj1 u = ex_proj1 v, rew p in ex_proj2 u = ex_proj2 v. *)
+(*   Proof. *)
+(*     split; [ intro; subst; exists eq_refl; reflexivity | apply eq_ex_uncurried ]. *)
+(*   Defined. *)
 
-  (** Equivalence of equality of [ex] involving hProps with equality of the first components *)
-  Definition eq_ex_hprop_iff {A : Prop} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q)
-             (u v : exists a : A, P a)
-    : u = v <-> (ex_proj1 u = ex_proj1 v)
-    := conj (fun p => f_equal (@ex_proj1 _ _) p) (eq_ex_hprop P_hprop u v).
+(*   (** Equivalence of equality of [ex] involving hProps with equality of the first components *) *)
+(*   Definition eq_ex_hprop_iff {A : Prop} {P : A -> Prop} (P_hprop : forall (x : A) (p q : P x), p = q) *)
+(*              (u v : exists a : A, P a) *)
+(*     : u = v <-> (ex_proj1 u = ex_proj1 v) *)
+(*     := conj (fun p => f_equal (@ex_proj1 _ _) p) (eq_ex_hprop P_hprop u v). *)
 
-  Lemma rew_ex {A' : Type} {x} {P : A' -> Prop} (Q : forall a, P a -> Prop) (u : exists p : P x, Q x p) {y} (H : x = y)
-    : rew [fun a => exists p : P a, Q a p] H in u
-      = ex_intro
-          (Q y)
-          (rew H in ex_proj1 u)
-          (rew dependent H in ex_proj2 u).
-  Proof.
-    destruct H, u; reflexivity.
-  Defined.
-End ex.
-Global Arguments eq_ex_intro A P _ _ _ _ !p !q / .
+(*   Lemma rew_ex {A' : Type} {x} {P : A' -> Prop} (Q : forall a, P a -> Prop) (u : exists p : P x, Q x p) {y} (H : x = y) *)
+(*     : rew [fun a => exists p : P a, Q a p] H in u *)
+(*       = ex_intro *)
+(*           (Q y) *)
+(*           (rew H in ex_proj1 u) *)
+(*           (rew dependent H in ex_proj2 u). *)
+(*   Proof. *)
+(*     destruct H, u; reflexivity. *)
+(*   Defined. *)
+(* End ex. *)
+(* Global Arguments eq_ex_intro A P _ _ _ _ !p !q / . *)
 
-Section ex2_Prop.
-  Variables (A:Prop) (P Q:A->Prop).
+(* Section ex2_Prop. *)
+(*   Variables (A:Prop) (P Q:A->Prop). *)
 
-  Definition ex2_rect (P0 : ex2 P Q -> Type) (f : forall x p q, P0 (ex_intro2 P Q x p q))
-    : forall e, P0 e
-    := fun e => rew <- ex2_eta e in f _ _ _.
-  Definition ex2_rec : forall (P0 : ex2 P Q -> Set) (f : forall x p q, P0 (ex_intro2 P Q x p q)),
-      forall e, P0 e
-    := ex2_rect.
+(*   Definition ex2_rect (P0 : ex2 P Q -> Type) (f : forall x p q, P0 (ex_intro2 P Q x p q)) *)
+(*     : forall e, P0 e *)
+(*     := fun e => rew <- ex2_eta e in f _ _ _. *)
+(*   Definition ex2_rec : forall (P0 : ex2 P Q -> Set) (f : forall x p q, P0 (ex_intro2 P Q x p q)), *)
+(*       forall e, P0 e *)
+(*     := ex2_rect. *)
 
-End ex2_Prop.
+(* End ex2_Prop. *)
 
-(** Equality for [ex2] *)
-Section ex2.
-  (* We make [ex_of_ex2] a coercion so we can use [proj1], [proj2] on [ex2] *)
-  Local Coercion ex_of_ex2 : ex2 >-> ex.
-  Local Unset Implicit Arguments.
-  (** Projecting an equality of a pair to equality of the first components *)
-  Definition ex_of_ex2_eq {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v)
-    : u = v :> exists a : A, P a
-    := f_equal _ p.
-  Definition ex_proj1_of_ex2_eq {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v)
-    : ex_proj1 u = ex_proj1 v
-    := ex_proj1_eq (ex_of_ex2_eq p).
+(* (** Equality for [ex2] *) *)
+(* Section ex2. *)
+(*   (* We make [ex_of_ex2] a coercion so we can use [proj1], [proj2] on [ex2] *) *)
+(*   Local Coercion ex_of_ex2 : ex2 >-> ex. *)
+(*   Local Unset Implicit Arguments. *)
+(*   (** Projecting an equality of a pair to equality of the first components *) *)
+(*   Definition ex_of_ex2_eq {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v) *)
+(*     : u = v :> exists a : A, P a *)
+(*     := f_equal _ p. *)
+(*   Definition ex_proj1_of_ex2_eq {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v) *)
+(*     : ex_proj1 u = ex_proj1 v *)
+(*     := ex_proj1_eq (ex_of_ex2_eq p). *)
 
-  (** Projecting an equality of a pair to equality of the second components *)
-  Definition ex_proj2_of_ex2_eq {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v)
-    : rew ex_proj1_of_ex2_eq p in ex_proj2 u = ex_proj2 v
-    := rew dependent p in eq_refl.
+(*   (** Projecting an equality of a pair to equality of the second components *) *)
+(*   Definition ex_proj2_of_ex2_eq {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v) *)
+(*     : rew ex_proj1_of_ex2_eq p in ex_proj2 u = ex_proj2 v *)
+(*     := rew dependent p in eq_refl. *)
 
-  (** Projecting an equality of a pair to equality of the third components *)
-  Definition ex_proj3_eq {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v)
-    : rew ex_proj1_of_ex2_eq p in ex_proj3 u = ex_proj3 v
-    := rew dependent p in eq_refl.
+(*   (** Projecting an equality of a pair to equality of the third components *) *)
+(*   Definition ex_proj3_eq {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v) *)
+(*     : rew ex_proj1_of_ex2_eq p in ex_proj3 u = ex_proj3 v *)
+(*     := rew dependent p in eq_refl. *)
 
-  (** Equality of [ex2] is itself a [ex2] (fowards-reasoning version) *)
-  Definition eq_ex_intro2_uncurried {A : Type} {P Q : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
-             (pqr : exists2 p : u1 = v1, rew p in u2 = v2 & rew p in u3 = v3)
-    : ex_intro2 _ _ u1 u2 u3 = ex_intro2 _ _ v1 v2 v3.
-  Proof.
-    destruct pqr as [p q r].
-    destruct r, q, p; simpl.
-    reflexivity.
-  Defined.
+(*   (** Equality of [ex2] is itself a [ex2] (fowards-reasoning version) *) *)
+(*   Definition eq_ex_intro2_uncurried {A : Type} {P Q : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1} *)
+(*              (pqr : exists2 p : u1 = v1, rew p in u2 = v2 & rew p in u3 = v3) *)
+(*     : ex_intro2 _ _ u1 u2 u3 = ex_intro2 _ _ v1 v2 v3. *)
+(*   Proof. *)
+(*     destruct pqr as [p q r]. *)
+(*     destruct r, q, p; simpl. *)
+(*     reflexivity. *)
+(*   Defined. *)
 
-  (** Equality of [ex2] is itself a [ex2] (backwards-reasoning version) *)
-  Definition eq_ex2_uncurried {A : Prop} {P Q : A -> Prop} (u v : exists2 a : A, P a & Q a)
-             (pqr : exists2 p : ex_proj1 u = ex_proj1 v,
-                                rew p in ex_proj2 u = ex_proj2 v & rew p in ex_proj3 u = ex_proj3 v)
-    : u = v.
-  Proof.
-    destruct u as [u1 u2 u3], v as [v1 v2 v3]; simpl in *.
-    apply eq_ex_intro2_uncurried; exact pqr.
-  Defined.
+(*   (** Equality of [ex2] is itself a [ex2] (backwards-reasoning version) *) *)
+(*   Definition eq_ex2_uncurried {A : Prop} {P Q : A -> Prop} (u v : exists2 a : A, P a & Q a) *)
+(*              (pqr : exists2 p : ex_proj1 u = ex_proj1 v, *)
+(*                                 rew p in ex_proj2 u = ex_proj2 v & rew p in ex_proj3 u = ex_proj3 v) *)
+(*     : u = v. *)
+(*   Proof. *)
+(*     destruct u as [u1 u2 u3], v as [v1 v2 v3]; simpl in *. *)
+(*     apply eq_ex_intro2_uncurried; exact pqr. *)
+(*   Defined. *)
 
-  (** Curried version of proving equality of [ex] types *)
-  Definition eq_ex2 {A : Prop} {P Q : A -> Prop} (u v : exists2 a : A, P a & Q a)
-             (p : ex_proj1 u = ex_proj1 v)
-             (q : rew p in ex_proj2 u = ex_proj2 v)
-             (r : rew p in ex_proj3 u = ex_proj3 v)
-    : u = v
-    := eq_ex2_uncurried u v (ex_intro2 _ _ p q r).
+(*   (** Curried version of proving equality of [ex] types *) *)
+(*   Definition eq_ex2 {A : Prop} {P Q : A -> Prop} (u v : exists2 a : A, P a & Q a) *)
+(*              (p : ex_proj1 u = ex_proj1 v) *)
+(*              (q : rew p in ex_proj2 u = ex_proj2 v) *)
+(*              (r : rew p in ex_proj3 u = ex_proj3 v) *)
+(*     : u = v *)
+(*     := eq_ex2_uncurried u v (ex_intro2 _ _ p q r). *)
 
-  Definition eq_ex_intro2 {A : Type} {P Q : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
-             (p : u1 = v1)
-             (q : rew p in u2 = v2)
-             (r : rew p in u3 = v3)
-    : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
-    := eq_ex_intro2_uncurried (ex_intro2 _ _ p q r).
+(*   Definition eq_ex_intro2 {A : Type} {P Q : A -> Prop} {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1} *)
+(*              (p : u1 = v1) *)
+(*              (q : rew p in u2 = v2) *)
+(*              (r : rew p in u3 = v3) *)
+(*     : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3 *)
+(*     := eq_ex_intro2_uncurried (ex_intro2 _ _ p q r). *)
 
-  (** In order to have a performant [inversion_sigma], we define
-      specialized versions for when we have constructors on one or
-      both sides of the equality *)
-  Definition eq_ex_intro2_l {A : Prop} {P Q : A -> Prop} u1 u2 u3 (v : exists2 a : A, P a & Q a)
-             (p : u1 = ex_proj1 v) (q : rew p in u2 = ex_proj2 v) (r : rew p in u3 = ex_proj3 v)
-    : ex_intro2 P Q u1 u2 u3 = v
-    := eq_ex2 (ex_intro2 P Q u1 u2 u3) v p q r.
-  Definition eq_ex_intro2_r {A : Prop} {P Q : A -> Prop} (u : exists2 a : A, P a & Q a) v1 v2 v3
-             (p : ex_proj1 u = v1) (q : rew p in ex_proj2 u = v2) (r : rew p in ex_proj3 u = v3)
-    : u = ex_intro2 P Q v1 v2 v3
-    := eq_ex2 u (ex_intro2 P Q v1 v2 v3) p q r.
+(*   (** In order to have a performant [inversion_sigma], we define *)
+(*       specialized versions for when we have constructors on one or *)
+(*       both sides of the equality *) *)
+(*   Definition eq_ex_intro2_l {A : Prop} {P Q : A -> Prop} u1 u2 u3 (v : exists2 a : A, P a & Q a) *)
+(*              (p : u1 = ex_proj1 v) (q : rew p in u2 = ex_proj2 v) (r : rew p in u3 = ex_proj3 v) *)
+(*     : ex_intro2 P Q u1 u2 u3 = v *)
+(*     := eq_ex2 (ex_intro2 P Q u1 u2 u3) v p q r. *)
+(*   Definition eq_ex_intro2_r {A : Prop} {P Q : A -> Prop} (u : exists2 a : A, P a & Q a) v1 v2 v3 *)
+(*              (p : ex_proj1 u = v1) (q : rew p in ex_proj2 u = v2) (r : rew p in ex_proj3 u = v3) *)
+(*     : u = ex_intro2 P Q v1 v2 v3 *)
+(*     := eq_ex2 u (ex_intro2 P Q v1 v2 v3) p q r. *)
 
-  (** Equality of [ex2] when the second property is an hProp *)
-  Definition eq_ex2_hprop {A : Prop} {P Q : A -> Prop} (Q_hprop : forall (x : A) (p q : Q x), p = q)
-             (u v : exists2 a : A, P a & Q a)
-             (p : u = v :> exists a : A, P a)
-    : u = v
-    := eq_ex2 u v (ex_proj1_eq p) (ex_proj2_eq p) (Q_hprop _ _ _).
+(*   (** Equality of [ex2] when the second property is an hProp *) *)
+(*   Definition eq_ex2_hprop {A : Prop} {P Q : A -> Prop} (Q_hprop : forall (x : A) (p q : Q x), p = q) *)
+(*              (u v : exists2 a : A, P a & Q a) *)
+(*              (p : u = v :> exists a : A, P a) *)
+(*     : u = v *)
+(*     := eq_ex2 u v (ex_proj1_eq p) (ex_proj2_eq p) (Q_hprop _ _ _). *)
 
-  Definition eq_ex_intro2_hprop_nondep {A : Type} {P : A -> Prop} {Q : Prop} (Q_hprop : forall (p q : Q), p = q)
-             {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 v3 : Q}
-             (p : ex_intro _ u1 u2 = ex_intro _ v1 v2)
-    : ex_intro2 _ _ u1 u2 u3 = ex_intro2 _ _ v1 v2 v3
-    := rew [fun v3 => _ = ex_intro2 _ _ _ _ v3] (Q_hprop u3 v3) in
-        f_equal (fun u => match u with ex_intro _ u1 u2 => ex_intro2 _ _ u1 u2 u3 end) p.
+(*   Definition eq_ex_intro2_hprop_nondep {A : Type} {P : A -> Prop} {Q : Prop} (Q_hprop : forall (p q : Q), p = q) *)
+(*              {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 v3 : Q} *)
+(*              (p : ex_intro _ u1 u2 = ex_intro _ v1 v2) *)
+(*     : ex_intro2 _ _ u1 u2 u3 = ex_intro2 _ _ v1 v2 v3 *)
+(*     := rew [fun v3 => _ = ex_intro2 _ _ _ _ v3] (Q_hprop u3 v3) in *)
+(*         f_equal (fun u => match u with ex_intro _ u1 u2 => ex_intro2 _ _ u1 u2 u3 end) p. *)
 
-  Definition eq_ex_intro2_hprop {A : Type} {P Q : A -> Prop}
-             (P_hprop : forall x (p q : P x), p = q)
-             (Q_hprop : forall x (p q : Q x), p = q)
-             {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1}
-             (p : u1 = v1)
-    : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3
-    := eq_ex_intro2 p (P_hprop _ _ _) (Q_hprop _ _ _).
+(*   Definition eq_ex_intro2_hprop {A : Type} {P Q : A -> Prop} *)
+(*              (P_hprop : forall x (p q : P x), p = q) *)
+(*              (Q_hprop : forall x (p q : Q x), p = q) *)
+(*              {u1 v1 : A} {u2 : P u1} {v2 : P v1} {u3 : Q u1} {v3 : Q v1} *)
+(*              (p : u1 = v1) *)
+(*     : ex_intro2 P Q u1 u2 u3 = ex_intro2 P Q v1 v2 v3 *)
+(*     := eq_ex_intro2 p (P_hprop _ _ _) (Q_hprop _ _ _). *)
 
-  (** Equivalence of equality of [ex2] with a [ex2] of equality *)
-  (** We could actually prove an isomorphism here, and not just [<->],
-      but for simplicity, we don't. *)
-  Definition eq_ex2_uncurried_iff {A : Prop} {P Q : A -> Prop} (u v : exists2 a : A, P a & Q a)
-    : u = v
-      <-> exists2 p : ex_proj1 u = ex_proj1 v,
-                      rew p in ex_proj2 u = ex_proj2 v & rew p in ex_proj3 u = ex_proj3 v.
-  Proof.
-    split; [ intro; subst; exists eq_refl; reflexivity | apply eq_ex2_uncurried ].
-  Defined.
+(*   (** Equivalence of equality of [ex2] with a [ex2] of equality *) *)
+(*   (** We could actually prove an isomorphism here, and not just [<->], *)
+(*       but for simplicity, we don't. *) *)
+(*   Definition eq_ex2_uncurried_iff {A : Prop} {P Q : A -> Prop} (u v : exists2 a : A, P a & Q a) *)
+(*     : u = v *)
+(*       <-> exists2 p : ex_proj1 u = ex_proj1 v, *)
+(*                       rew p in ex_proj2 u = ex_proj2 v & rew p in ex_proj3 u = ex_proj3 v. *)
+(*   Proof. *)
+(*     split; [ intro; subst; exists eq_refl; reflexivity | apply eq_ex2_uncurried ]. *)
+(*   Defined. *)
 
-  (** Induction principle for [@eq (ex2 _ _)] *)
-  Definition eq_ex2_eta {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v)
-    : p = eq_ex2 u v (ex_proj1_of_ex2_eq p) (ex_proj2_of_ex2_eq p) (ex_proj3_eq p).
-  Proof. destruct p, u; reflexivity. Defined.
-  Definition eq_ex2_rect {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (R : u = v -> Type)
-             (f : forall p q r, R (eq_ex2 u v p q r))
-    : forall p, R p
-    := fun p => rew <- eq_ex2_eta p in f _ _ _.
-  Definition eq_ex2_rec {A : Prop} {P Q : A -> Prop} {u v} (R : u = v :> (exists2 a : A, P a & Q a) -> Set) := eq_ex2_rect R.
-  Definition eq_ex2_ind {A : Prop} {P Q : A -> Prop} {u v} (R : u = v :> (exists2 a : A, P a & Q a) -> Prop) := eq_ex2_rec R.
+(*   (** Induction principle for [@eq (ex2 _ _)] *) *)
+(*   Definition eq_ex2_eta {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (p : u = v) *)
+(*     : p = eq_ex2 u v (ex_proj1_of_ex2_eq p) (ex_proj2_of_ex2_eq p) (ex_proj3_eq p). *)
+(*   Proof. destruct p, u; reflexivity. Defined. *)
+(*   Definition eq_ex2_rect {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (R : u = v -> Type) *)
+(*              (f : forall p q r, R (eq_ex2 u v p q r)) *)
+(*     : forall p, R p *)
+(*     := fun p => rew <- eq_ex2_eta p in f _ _ _. *)
+(*   Definition eq_ex2_rec {A : Prop} {P Q : A -> Prop} {u v} (R : u = v :> (exists2 a : A, P a & Q a) -> Set) := eq_ex2_rect R. *)
+(*   Definition eq_ex2_ind {A : Prop} {P Q : A -> Prop} {u v} (R : u = v :> (exists2 a : A, P a & Q a) -> Prop) := eq_ex2_rec R. *)
 
-  (** In order to have a performant [inversion_sigma], we define
-      specialized versions for when we have constructors on one or
-      both sides of the equality *)
-  Definition eq_ex2_rect_ex_intro2_l {A : Prop} {P Q : A -> Prop} {u1 u2 u3 v} (R : _ -> Type)
-             (f : forall p q r, R (eq_ex_intro2_l (P:=P) (Q:=Q) u1 u2 u3 v p q r))
-    : forall p, R p
-    := eq_ex2_rect R f.
-  Definition eq_ex2_rect_ex_intro2_r {A : Prop} {P Q : A -> Prop} {u v1 v2 v3} (R : _ -> Type)
-             (f : forall p q r, R (eq_ex_intro2_r (P:=P) (Q:=Q) u v1 v2 v3 p q r))
-    : forall p, R p
-    := eq_ex2_rect R f.
-  Definition eq_ex2_rect_ex_intro2 {A : Prop} {P Q : A -> Prop} {u1 u2 u3 v1 v2 v3} (R : _ -> Type)
-             (f : forall p q r, R (@eq_ex_intro2 A P Q u1 v1 u2 v2 u3 v3 p q r))
-    : forall p, R p
-    := eq_ex2_rect R f.
+(*   (** In order to have a performant [inversion_sigma], we define *)
+(*       specialized versions for when we have constructors on one or *)
+(*       both sides of the equality *) *)
+(*   Definition eq_ex2_rect_ex_intro2_l {A : Prop} {P Q : A -> Prop} {u1 u2 u3 v} (R : _ -> Type) *)
+(*              (f : forall p q r, R (eq_ex_intro2_l (P:=P) (Q:=Q) u1 u2 u3 v p q r)) *)
+(*     : forall p, R p *)
+(*     := eq_ex2_rect R f. *)
+(*   Definition eq_ex2_rect_ex_intro2_r {A : Prop} {P Q : A -> Prop} {u v1 v2 v3} (R : _ -> Type) *)
+(*              (f : forall p q r, R (eq_ex_intro2_r (P:=P) (Q:=Q) u v1 v2 v3 p q r)) *)
+(*     : forall p, R p *)
+(*     := eq_ex2_rect R f. *)
+(*   Definition eq_ex2_rect_ex_intro2 {A : Prop} {P Q : A -> Prop} {u1 u2 u3 v1 v2 v3} (R : _ -> Type) *)
+(*              (f : forall p q r, R (@eq_ex_intro2 A P Q u1 v1 u2 v2 u3 v3 p q r)) *)
+(*     : forall p, R p *)
+(*     := eq_ex2_rect R f. *)
 
-  Definition eq_ex2_rect_uncurried {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (R : u = v -> Type)
-             (f : forall pqr : exists2 p : _ = _, _ & _, R (eq_ex2 u v (ex_proj1 pqr) (ex_proj2 pqr) (ex_proj3 pqr)))
-    : forall p, R p
-    := eq_ex2_rect R (fun p q r => f (ex_intro2 _ _ p q r)).
-  Definition eq_ex2_rec_uncurried {A : Prop} {P Q : A -> Prop} {u v} (R : u = v :> (exists2 a : A, P a & Q a) -> Set) := eq_ex2_rect_uncurried R.
-  Definition eq_ex2_ind_uncurried {A : Prop} {P Q : A -> Prop} {u v} (R : u = v :> (exists2 a : A, P a & Q a) -> Prop) := eq_ex2_rec_uncurried R.
+(*   Definition eq_ex2_rect_uncurried {A : Prop} {P Q : A -> Prop} {u v : exists2 a : A, P a & Q a} (R : u = v -> Type) *)
+(*              (f : forall pqr : exists2 p : _ = _, _ & _, R (eq_ex2 u v (ex_proj1 pqr) (ex_proj2 pqr) (ex_proj3 pqr))) *)
+(*     : forall p, R p *)
+(*     := eq_ex2_rect R (fun p q r => f (ex_intro2 _ _ p q r)). *)
+(*   Definition eq_ex2_rec_uncurried {A : Prop} {P Q : A -> Prop} {u v} (R : u = v :> (exists2 a : A, P a & Q a) -> Set) := eq_ex2_rect_uncurried R. *)
+(*   Definition eq_ex2_ind_uncurried {A : Prop} {P Q : A -> Prop} {u v} (R : u = v :> (exists2 a : A, P a & Q a) -> Prop) := eq_ex2_rec_uncurried R. *)
 
-  (** Equivalence of equality of [ex2] involving hProps with equality of the first components *)
-  Definition eq_ex2_hprop_iff {A : Prop} {P Q : A -> Prop} (Q_hprop : forall (x : A) (p q : Q x), p = q)
-             (u v : exists2 a : A, P a & Q a)
-    : u = v <-> (u = v :> exists a : A, P a)
-    := conj (fun p => f_equal (@ex_of_ex2 _ _ _) p) (eq_ex2_hprop Q_hprop u v).
+(*   (** Equivalence of equality of [ex2] involving hProps with equality of the first components *) *)
+(*   Definition eq_ex2_hprop_iff {A : Prop} {P Q : A -> Prop} (Q_hprop : forall (x : A) (p q : Q x), p = q) *)
+(*              (u v : exists2 a : A, P a & Q a) *)
+(*     : u = v <-> (u = v :> exists a : A, P a) *)
+(*     := conj (fun p => f_equal (@ex_of_ex2 _ _ _) p) (eq_ex2_hprop Q_hprop u v). *)
 
-  (** Non-dependent classification of equality of [ex] *)
-  Definition eq_ex2_nondep {A : Prop} {B C : Prop} (u v : @ex2 A (fun _ => B) (fun _ => C))
-             (p : ex_proj1 u = ex_proj1 v) (q : ex_proj2 u = ex_proj2 v) (r : ex_proj3 u = ex_proj3 v)
-    : u = v
-    := @eq_ex2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r).
+(*   (** Non-dependent classification of equality of [ex] *) *)
+(*   Definition eq_ex2_nondep {A : Prop} {B C : Prop} (u v : @ex2 A (fun _ => B) (fun _ => C)) *)
+(*              (p : ex_proj1 u = ex_proj1 v) (q : ex_proj2 u = ex_proj2 v) (r : ex_proj3 u = ex_proj3 v) *)
+(*     : u = v *)
+(*     := @eq_ex2 _ _ _ u v p (eq_trans (rew_const _ _) q) (eq_trans (rew_const _ _) r). *)
 
-  (** Classification of transporting across an equality of [ex2]s *)
-  Lemma rew_ex2 {A' : Type} {x} {P : A' -> Prop} (Q R : forall a, P a -> Prop)
-        (u : exists2 p : P x, Q x p & R x p)
-        {y} (H : x = y)
-    : rew [fun a => exists2 p : P a, Q a p & R a p] H in u
-      = ex_intro2
-          (Q y)
-          (R y)
-          (rew H in ex_proj1 u)
-          (rew dependent H in ex_proj2 u)
-          (rew dependent H in ex_proj3 u).
-  Proof.
-    destruct H, u; reflexivity.
-  Defined.
-End ex2.
-Global Arguments eq_ex_intro2 A P Q _ _ _ _ _ _ !p !q !r / .
+(*   (** Classification of transporting across an equality of [ex2]s *) *)
+(*   Lemma rew_ex2 {A' : Type} {x} {P : A' -> Prop} (Q R : forall a, P a -> Prop) *)
+(*         (u : exists2 p : P x, Q x p & R x p) *)
+(*         {y} (H : x = y) *)
+(*     : rew [fun a => exists2 p : P a, Q a p & R a p] H in u *)
+(*       = ex_intro2 *)
+(*           (Q y) *)
+(*           (R y) *)
+(*           (rew H in ex_proj1 u) *)
+(*           (rew dependent H in ex_proj2 u) *)
+(*           (rew dependent H in ex_proj3 u). *)
+(*   Proof. *)
+(*     destruct H, u; reflexivity. *)
+(*   Defined. *)
+(* End ex2. *)
+(* Global Arguments eq_ex_intro2 A P Q _ _ _ _ _ _ !p !q !r / . *)

@@ -70,7 +70,10 @@ Section Well_founded.
   forall P:A -> Prop,
     (forall x:A, (forall y:A, R y x -> P y) -> P x) -> forall a:A, P a.
  Proof.
-  exact (fun P:A -> Prop => well_founded_induction_type P).
+   pose proof (fun P:A -> Prop => well_founded_induction_type (fun A => PropBox (P A))) as X.
+   intros P F a.
+   apply propUnbox. apply X.
+   intros x f. apply propBox,F. intros;apply propUnbox,f;assumption.
  Defined.
 
 (** Well-founded fixpoints *)
