@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+module CVars = Vars
 
 open Pp
 open CErrors
@@ -4396,32 +4397,30 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   in
   Array.of_list (find_branches 0 (List.rev scheme.branches))
 
-let compute_case_signature env evd (mind, u) dep names_info =
+let compute_case_signature env mind dep names_info =
   let indref = GlobRef.IndRef mind in
-  let rec check_branch c = match EConstr.kind evd c with
+  let rec check_branch c = match Constr.kind c with
   | Prod (_,t,c) ->
-    let hd, _ = decompose_app evd t in
+    let hd, _ = Constr.decompose_app t in
     (* no recursive call in case analysis *)
-    let arg = if EConstr.isRefX env evd indref hd then RecArg else OtherArg in
-    (arg, true, not (Vars.noccurn evd 1 c)) :: check_branch c
+    let arg = if Constr.isRefX indref hd then RecArg else OtherArg in
+    (arg, true, not (CVars.noccurn 1 c)) :: check_branch c
   | LetIn (_,_,_,c) ->
-    (OtherArg, false, not (Vars.noccurn evd 1 c)) :: check_branch c
+    (OtherArg, false, not (CVars.noccurn 1 c)) :: check_branch c
   | _ -> []
   in
   let (mib, mip) = Inductive.lookup_mind_specif env mind in
-  let indf = make_ind_family ((mind, u), Context.Rel.instance_list Constr.mkRel 0 mib.mind_params_ctxt) in
-  let constrs = get_constructors env indf in
   let find_branches k =
-    let t =
-      let cs = constrs.(k) in
-      let base =
-        let dummy = Constr.mkProp in (* only used for rel occurrence *)
-        if dep then Term.appvect (dummy, Array.append [|build_dependent_constructor cs|] cs.cs_concl_realargs)
-        else Term.appvect (dummy, cs.cs_concl_realargs)
-      in
-      EConstr.of_constr @@ Term.it_mkProd_or_LetIn base cs.cs_args
+    let (ctx, typ) = mip.mind_nf_lc.(k) in
+    let argctx = List.firstn mip.mind_consnrealdecls.(k) ctx in
+    let _, args = Constr.decompose_appvect typ in
+    let _, indices = Array.chop mib.mind_nparams args in
+    let base =
+      if dep then Array.append indices (Context.Rel.instance Constr.mkRel 0 argctx)
+      else indices
     in
-    let lchck_brch = check_branch t in
+    let base = Constr.mkApp (Constr.mkProp, base) in (* only used for noccurn *)
+    let lchck_brch = check_branch (Term.it_mkProd_or_LetIn base argctx) in
     let n = List.count (fun (b, _, _) -> b == RecArg) lchck_brch in
     let recvarname, hyprecname, avoid = make_up_names n (Some indref) names_info in
     let map (b, is_assum, dep) = {
@@ -4585,7 +4584,7 @@ let apply_induction_in_context with_evars inhyps elim indvars names =
       let u = EInstance.kind sigma u in
       let dep = dep || default_case_analysis_dependence env mind in
       let (sigma, case) = build_case_analysis_scheme env sigma (mind, u) dep s in
-      let indsign = compute_case_signature env sigma (mind, u) dep id in
+      let indsign = compute_case_signature env mind dep id in
       let tac = destruct_tac with_evars id case in
       sigma, false, tac, indsign
     | ElimOver (isrec, id, (mind, u)) ->
