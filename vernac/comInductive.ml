@@ -129,7 +129,7 @@ let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
       | Some b -> Some (b, s)
       | None -> None
     in
-    sigma, (t, Retyping.relevance_of_sort s, concl, impls)
+    sigma, (t, Retyping.relevance_of_sort sigma s, concl, impls)
 
 (* ind_rel is the Rel for this inductive in the context without params.
    n is how many arguments there are in the constructor. *)

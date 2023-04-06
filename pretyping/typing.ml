@@ -378,7 +378,7 @@ let judge_of_array env sigma u tj defj tyj =
 let check_binder_relevance sigma s decl =
   (* TODO: get rid of this *)
   let r = Evarutil.nf_relevance sigma (get_relevance decl) in
-  let r' = Sorts.relevance_of_sort (ESorts.kind sigma s) in
+  let r' = ESorts.relevance_of_sort sigma s in
   if Sorts.relevance_equal r' r then decl
   else set_annot { (get_annot decl) with binder_relevance = r' } decl
 

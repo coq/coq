@@ -35,6 +35,7 @@ module QState : sig
   val repr : elt -> t -> quality
   val set : elt -> quality -> t -> t option
   val set_above_prop : elt -> t -> t
+  val is_above_prop : elt -> t -> bool
   val collapse : t -> t
   val pr : t -> Pp.t
 end =
@@ -74,6 +75,8 @@ let rec repr q m = match QMap.find q m.qmap with
 | exception Not_found ->
 (*   let () = assert !Flags.in_debugger in *) (* FIXME *)
   QVar q
+
+let is_above_prop q m = QSet.mem q m.above
 
 let set q qv m =
   let q = repr q m in
@@ -314,7 +317,10 @@ let nf_relevance uctx r = match r with
   match nf_qvar uctx q with
   | QSProp -> Sorts.Irrelevant
   | QProp | QType -> Sorts.Relevant
-  | QVar q' -> if Sorts.QVar.equal q q' then r else Sorts.RelevanceVar q'
+  | QVar q' ->
+    if QState.is_above_prop q' uctx.sort_variables then Relevant
+    else if Sorts.QVar.equal q q' then r
+    else Sorts.RelevanceVar q'
 
 let nf_universes uctx c =
   let lsubst = uctx.univ_variables in
