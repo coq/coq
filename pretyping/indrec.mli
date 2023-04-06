@@ -38,7 +38,6 @@ type case_analysis = private {
 }
 
 type case_analysis0 = private {
-  case0_params : EConstr.rel_context;
   case0_pred : EConstr.types;
   case0_branches : EConstr.types array;
   case0_arity : EConstr.rel_context;
@@ -49,7 +48,7 @@ val eval_case_analysis : case_analysis -> EConstr.t * EConstr.types
 
 val default_case_analysis_dependence : env -> inductive -> bool
 
-val build_case_analysis : env -> Evd.evar_map -> pinductive ->
+val build_case_analysis : env -> Evd.evar_map -> pinductive -> EConstr.t array ->
   dep_flag -> Sorts.family -> evar_map * case_analysis0
 
 val build_case_analysis_scheme : env -> Evd.evar_map -> pinductive ->

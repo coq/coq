@@ -916,9 +916,9 @@ let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   let hd, args = decompose_app_vect sigma typ in
   let ind, u = destInd sigma hd in
   let s = Retyping.get_sort_family_of env sigma concl in
-  let (sigma, case) = build_case_analysis env sigma (ind, EInstance.kind sigma u) dep s in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
+  let (sigma, case) = build_case_analysis env sigma (ind, EInstance.kind sigma u) params dep s in
   let sigma = clear_metas sigma in
   let sigma, indarg = match submetas with
   | None -> sigma, indarg
@@ -929,11 +929,10 @@ let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   in
   (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
   let sigma, _ = Typing.checked_appvect env sigma hd args in
-  let paramsubst = subst_of_rel_context_instance case.case0_params params in
-  let typP = Vars.substl paramsubst case.case0_pred in
+  let typP = case.case0_pred in
   let mvP = new_meta () in
   let sigma = meta_declare mvP typP sigma in
-  let subst0 = mkMeta mvP :: paramsubst in
+  let subst0 = [mkMeta mvP] in
   let fold (sigma, subst, metas) t =
     let mv = new_meta () in
     let t = substl subst0 t in
@@ -942,7 +941,7 @@ let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   in
   let (sigma, subst, args) = Array.fold_left fold (sigma, subst0, []) case.case0_branches in
   let depargs = Array.append indices [|indarg|] in
-  let indexsubst = subst_of_rel_context_instance (substl_rel_context paramsubst case.case0_arity) depargs in
+  let indexsubst = subst_of_rel_context_instance case.case0_arity depargs in
   let subst = indexsubst @ subst in
   let templval = Vars.substl subst case.case0_body in
   let concl = if dep then mkApp (mkMeta mvP, depargs) else mkApp (mkMeta mvP, indices) in
