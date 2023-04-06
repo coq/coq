@@ -432,7 +432,7 @@ let template_polymorphism_candidate uctx params entry concl = match concl with
   in
   let univs = template_polymorphic_univs ~ctor_levels uctx params u in
   univs
-| Some (QSort _) -> assert false
+| Some (QSort _) -> Univ.Level.Set.empty
 
 let split_universe_context subset (univs, csts) =
   let subfilter (l, _, r) =
