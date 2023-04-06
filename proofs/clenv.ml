@@ -913,12 +913,6 @@ let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
-  let hd, args = decompose_app_vect sigma typ in
-  let ind, u = destInd sigma hd in
-  let s = Retyping.get_sort_family_of env sigma concl in
-  let (mib, mip) = Inductive.lookup_mind_specif env ind in
-  let params, indices = Array.chop mib.mind_nparams args in
-  let (sigma, case) = build_case_analysis env sigma (ind, EInstance.kind sigma u) params dep s in
   let sigma = clear_metas sigma in
   let sigma, indarg = match submetas with
   | None -> sigma, indarg
@@ -927,19 +921,30 @@ let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
     let indarg = applist (indarg, List.map (fun (m, _) -> mkMeta m) metas) in
     sigma, indarg
   in
+  let hd, args = decompose_app_vect sigma typ in
   (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
   let sigma, _ = Typing.checked_appvect env sigma hd args in
-  let typP = case.case0_pred in
+  let ind, u = destInd sigma hd in
+  let u = EInstance.kind sigma u in
+  let s = Retyping.get_sort_family_of env sigma concl in
+  let (mib, mip) = Inductive.lookup_mind_specif env ind in
+  let params, indices = Array.chop mib.mind_nparams args in
+  let sigma, typP =
+    let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma s in
+    let params = EConstr.Unsafe.to_constr_array params in
+    let indf = Inductiveops.make_ind_family ((ind, u), Array.to_list params) in
+    let typP = Inductiveops.make_arity env sigma dep indf s in
+    sigma, typP
+  in
   let mvP = new_meta () in
   let sigma = meta_declare mvP typP sigma in
-  let subst0 = [mkMeta mvP] in
+  let case = build_case_analysis env sigma (ind, u) params (mkMeta mvP) dep s in
   let fold (sigma, subst, metas) t =
     let mv = new_meta () in
-    let t = substl subst0 t in
     let sigma = meta_declare mv t sigma in
     (sigma, mkMeta mv :: subst, mv :: metas)
   in
-  let (sigma, subst, args) = Array.fold_left fold (sigma, subst0, []) case.case0_branches in
+  let (sigma, subst, args) = Array.fold_left fold (sigma, [], []) case.case0_branches in
   let depargs = Array.append indices [|indarg|] in
   let indexsubst = subst_of_rel_context_instance case.case0_arity depargs in
   let subst = indexsubst @ subst in
