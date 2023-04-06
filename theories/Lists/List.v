@@ -2566,7 +2566,7 @@ Section ReDun.
     - intros H i j ? E. assert (j < length l).
       { apply nth_error_Some. rewrite <- E. now apply nth_error_Some. }
       apply H; [assumption ..|].
-      rewrite !(nth_error_nth' l d) in E; congruence.
+      rewrite !(nth_error_nth' l d) in E; [congruence|assumption..].
   Qed.
 
   (** Having [NoDup] hypotheses bring more precise facts about [incl]. *)

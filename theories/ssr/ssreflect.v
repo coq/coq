@@ -362,7 +362,7 @@ Register protect_term as plugins.ssreflect.protect_term.
 Notation unkeyed x := (let flex := x in flex).
 
 (**  Ssreflect converse rewrite rule rule idiom.  **)
-Definition ssr_converse R (r : R) := (Logic.I, r).
+Definition ssr_converse R (r : R) := (tt, r).
 Notation "=^~ r" := (ssr_converse r) : form_scope.
 
 (**
@@ -620,7 +620,7 @@ Definition maybeProp (T : Type) := tt.
 Definition call T := Call (maybeProp T) false T.
 
 Structure test_of (result : bool) := Test {condition :> unit}.
-Definition test_Prop (P : Prop) := Test true (maybeProp P).
+Definition test_Prop (P : Prop) := Test true (maybeProp (PropBox P)).
 Definition test_negative := Test false tt.
 
 Structure type :=

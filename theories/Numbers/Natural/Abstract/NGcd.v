@@ -156,7 +156,7 @@ Proof.
   enough (H : forall nm, 0 < fst nm -> Bezout (fst nm) (snd nm) (gcd (fst nm) (snd nm))).
   { intros n m. apply (H (n, m)). }
   intros nm.
-  induction nm as [[n m] IH] using (measure_induction _ (fun '(n, m) => n + m)).
+  induction nm as [[n m] IH] using (measure_ind _ (fun '(n, m) => n + m)).
   enough (H : forall n' m', n+m == n'+m' -> 0<n'<m' -> Bezout n' m' (gcd n' m')).
   { cbn. intros ?. destruct (lt_trichotomy n m) as [Hnm|[Hnm|Hnm]].
     - now apply H.

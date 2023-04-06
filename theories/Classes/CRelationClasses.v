@@ -44,7 +44,7 @@ Section Defs.
     reflexivity : forall x : A, R x x.
 
   Definition complement (R : crelation A) : crelation A := 
-    fun x y => R x y -> False.
+    fun x y => R x y -> Empty_set.
 
   (** Opaque for proof-search. *)
   Typeclasses Opaque complement iffT.
@@ -181,27 +181,27 @@ Section Defs.
 
   (** Leibniz equality. *)
   Section Leibniz.
-    Global Instance eq_Reflexive : Reflexive (@eq A) := @eq_refl A.
-    Global Instance eq_Symmetric : Symmetric (@eq A) := @eq_sym A.
-    Global Instance eq_Transitive : Transitive (@eq A) := @eq_trans A.
-    
-    (** Leibinz equality [eq] is an equivalence crelation.
-        The instance has low priority as it is always applicable
-        if only the type is constrained. *)
-    
-    Global Program Instance eq_equivalence : Equivalence (@eq A) | 10.
+    (* Global Instance eq_Reflexive : Reflexive (@eq A) := @eq_refl A. *)
+    (* Global Instance eq_Symmetric : Symmetric (@eq A) := @eq_sym A. *)
+    (* Global Instance eq_Transitive : Transitive (@eq A) := @eq_trans A. *)
+
+    (* (** Leibinz equality [eq] is an equivalence crelation. *)
+    (*     The instance has low priority as it is always applicable *)
+    (*     if only the type is constrained. *) *)
+
+    (* Global Program Instance eq_equivalence : Equivalence (@eq A) | 10. *)
   End Leibniz.
   
 End Defs.
 
 (** Default rewrite crelations handled by [setoid_rewrite]. *)
-#[global]
-Instance: RewriteRelation impl.
-Defined.
+(* #[global] *)
+(* Instance: RewriteRelation impl. *)
+(* Defined. *)
 
-#[global]
-Instance: RewriteRelation iff.
-Defined.
+(* #[global] *)
+(* Instance: RewriteRelation iff. *)
+(* Defined. *)
 
 (** Hints to drive the typeclass resolution avoiding loops
  due to the use of full unification. *)
@@ -279,24 +279,24 @@ Local Obligation Tactic := simpl_crelation.
 
 (** Logical implication. *)
 
-#[global]
-Program Instance impl_Reflexive : Reflexive impl.
-#[global]
-Program Instance impl_Transitive : Transitive impl.
+(* #[global] *)
+(* Program Instance impl_Reflexive : Reflexive impl. *)
+(* #[global] *)
+(* Program Instance impl_Transitive : Transitive impl. *)
 
 (** Logical equivalence. *)
 
-#[global]
-Instance iff_Reflexive : Reflexive iff := iff_refl.
-#[global]
-Instance iff_Symmetric : Symmetric iff := iff_sym.
-#[global]
-Instance iff_Transitive : Transitive iff := iff_trans.
+(* #[global] *)
+(* Instance iff_Reflexive : Reflexive iff := iff_refl. *)
+(* #[global] *)
+(* Instance iff_Symmetric : Symmetric iff := iff_sym. *)
+(* #[global] *)
+(* Instance iff_Transitive : Transitive iff := iff_trans. *)
 
 (** Logical equivalence [iff] is an equivalence crelation. *)
 
-#[global]
-Program Instance iff_equivalence : Equivalence iff. 
+(* #[global] *)
+(* Program Instance iff_equivalence : Equivalence iff.  *)
 #[global]
 Program Instance arrow_Reflexive : Reflexive arrow.
 #[global]

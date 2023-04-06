@@ -448,7 +448,7 @@ Let right_step'' := forall n, A' n <-> A' (S n).
 
 Theorem strong_right_induction: right_step' -> forall n, z <= n -> A n.
 Proof.
-intros Hstep. refine (well_founded_induction (lt_wf z) _ _).
+intros Hstep. refine (well_founded_ind (lt_wf z) _ _).
 intros x IH Hzx. apply Hstep; [trivial|].
 intros y ??. apply IH; [split|]; order.
 Qed.
@@ -499,7 +499,7 @@ Let left_step'' := forall n, A' n <-> A' (S n).
 
 Theorem strong_left_induction: left_step' -> forall n, n <= z -> A n.
 Proof.
-intros Hstep. refine (well_founded_induction (gt_wf z) _ _).
+intros Hstep. refine (well_founded_ind (gt_wf z) _ _).
 intros x IH Hzx. apply Hstep; [trivial|].
 intros y ? ?%le_succ_l. apply IH; [split|]; order.
 Qed.

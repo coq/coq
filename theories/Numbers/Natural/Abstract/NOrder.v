@@ -260,4 +260,13 @@ Proof.
   intros y _ IH'. apply IH. intros. apply IH'. now split; [apply le_0_l|].
 Defined.
 
+Lemma measure_ind : forall (X : Type) (f : X -> t) (A : X -> Prop),
+  (forall x, (forall y, f y < f x -> A y) -> A x) ->
+  forall x, A x.
+Proof.
+  intros X f A IH x.
+  apply propUnbox. refine (measure_induction _ f (fun x => PropBox (A x)) _ x).
+  intros y g;apply propBox, IH; intros; apply propUnbox;auto.
+Defined.
+
 End NOrderProp.
