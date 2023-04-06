@@ -2041,7 +2041,7 @@ Number notations
 
       :n:`abstract after @bignat`
          returns :n:`(@qualid__parse m)` when parsing a literal
-         :n:`m` that's greater than or equal to :n:`@bignat` rather than reducing
+         :n:`m` that's greater than :n:`@bignat` rather than reducing
          it to a normal form.  Here :g:`m` will be a
          :g:`Number.int`, :g:`Number.uint`, :g:`Z` or :g:`Number.number`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a

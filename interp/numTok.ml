@@ -307,7 +307,7 @@ struct
     of_int_frac_and_exponent (SignedNat.of_bigint c i) None e
 
   let is_bigger_int_than (s, { int; frac; exp }) i =
-    frac = "" && exp = "" && UnsignedNat.compare int i >= 0
+    frac = "" && exp = "" && UnsignedNat.compare int i > 0
 
   let classify (_, n) = Unsigned.classify n
 end
