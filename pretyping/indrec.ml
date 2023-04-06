@@ -145,19 +145,21 @@ let build_branch_type env sigma dep p cs =
   else
     Term.it_mkProd_or_LetIn base cs.cs_args
 
-let mis_make_case_tac dep env sigma (ind, u as pind) params (mib,mip as specif) kind =
+let check_valid_elimination env (ind, u as pind) kind =
+  let specif = Inductive.lookup_mind_specif env ind in
+  let () = if not (is_primitive_record specif) then check_privacy_block specif in
+  if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
+    raise
+      (RecursionSchemeError
+          (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
+
+let mis_make_case_tac dep env sigma (ind, u as pind) params (mib, mip) kind =
   let params = EConstr.Unsafe.to_constr_array params in
   let indf = make_ind_family (pind, Array.to_list params) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family kind in
-  let () = if Option.is_empty projs then check_privacy_block specif in
-  let () =
-    if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
-      raise
-        (RecursionSchemeError
-           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
-  in
+  let () = check_valid_elimination env pind kind in
   let ndepar = mip.mind_nrealdecls + 1 in
   let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma kind in
 
@@ -236,20 +238,14 @@ let build_case_analysis env sigma pity params dep kind =
     raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, fst pity)));
   mis_make_case_tac dep env sigma pity params specif kind
 
-let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
+let mis_make_case_com dep env sigma (ind, u as pind) (mib, mip) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
   let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
   let constrs = get_constructors env indf in
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family kind in
 
-  let () = if Option.is_empty projs then check_privacy_block specif in
-  let () =
-    if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
-      raise
-        (RecursionSchemeError
-           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
-  in
+  let () = check_valid_elimination env pind kind in
   let ndepar = mip.mind_nrealdecls + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)
