@@ -97,13 +97,8 @@ let make_name env s r =
 (* Building curryfied elimination          *)
 (*******************************************)
 
-let is_private mib =
-  match mib.mind_private with
-  | Some true -> true
-  | _ -> false
-
-let check_privacy_block mib =
-  if is_private mib then
+let check_privacy_block specif =
+  if Inductive.is_private specif then
     user_err (str"case analysis on a private inductive type")
 
 (**********************************************************************)
@@ -150,7 +145,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family kind in
 
-  let () = if Option.is_empty projs then check_privacy_block mib in
+  let () = if Option.is_empty projs then check_privacy_block specif in
   let () =
     if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
       raise

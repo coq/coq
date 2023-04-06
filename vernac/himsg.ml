@@ -279,6 +279,9 @@ let explain_case_not_inductive env sigma cj =
           str "has type" ++ brk(1,1) ++ pct ++ spc () ++
           str "which is not a (co-)inductive type."
 
+let explain_case_on_private_ind env sigma ind =
+  str "Case analysis on private inductive "++pr_inductive env ind
+
 let explain_number_branches env sigma cj expn =
   let env = make_all_name_different env sigma in
   let pc = pr_leconstr_env env sigma cj.uj_val in
@@ -828,6 +831,7 @@ let explain_type_error env sigma err =
       explain_elim_arity env sigma ind c okinds
   | CaseNotInductive cj ->
       explain_case_not_inductive env sigma cj
+  | CaseOnPrivateInd ind -> explain_case_on_private_ind env sigma ind
   | NumberBranches (cj, n) ->
       explain_number_branches env sigma cj n
   | IllFormedBranch (c, i, actty, expty) ->

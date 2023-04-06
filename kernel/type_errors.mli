@@ -56,6 +56,7 @@ type ('constr, 'types) ptype_error =
   | ElimArity of pinductive * 'constr *
       (('constr, 'types) punsafe_judgment * Sorts.family * Sorts.family * Sorts.family) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
+  | CaseOnPrivateInd of inductive
   | WrongCaseInfo of pinductive * case_info
   | NumberBranches of ('constr, 'types) punsafe_judgment * int
   | IllFormedBranch of 'constr * pconstructor * 'constr * 'constr
@@ -115,6 +116,8 @@ val error_elim_arity :
     (unsafe_judgment * Sorts.family * Sorts.family * Sorts.family) option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a
+
+val error_case_on_private_ind : env -> inductive -> 'a
 
 val error_number_branches : env -> unsafe_judgment -> int -> 'a
 

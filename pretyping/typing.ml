@@ -180,8 +180,7 @@ let lambda_applist_decls sigma n c l =
     | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   app n [] c l
 
-let type_case_branches env sigma (ind,largs) pj c =
-  let specif = lookup_mind_specif env (fst ind) in
+let type_case_branches env sigma (ind,largs) specif pj c =
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
@@ -197,8 +196,10 @@ let judge_of_case env sigma case ci pj iv cj lfj =
   let ((ind, u), spec) =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj in
+  let specif = lookup_mind_specif env ind in
+  let () = if Inductive.is_private specif then Type_errors.error_case_on_private_ind env ind in
   let indspec = ((ind, EInstance.kind sigma u), spec) in
-  let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec pj cj.uj_val in
+  let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec specif pj cj.uj_val in
   let () = check_case_info env (fst indspec) rci ci in
   let sigma = check_branch_types env sigma (fst indspec) cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true) != should_invert_case env ci
