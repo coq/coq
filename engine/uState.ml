@@ -370,7 +370,7 @@ let get_constraint = function
 
 let unify_quality univs c s1 s2 local = match quality_of_sort s1, quality_of_sort s2 with
 | QType, QType | QProp, QProp | QSProp, QSProp -> local
-| QProp, QVar q when c == Reduction.CUMUL ->
+| QProp, QVar q when c == Reduction.CUMUL && UGraph.cumulative_prop univs ->
   { local with local_sorts = QState.set_above_prop q local.local_sorts }
 | QVar q, (QType | QProp | QSProp | QVar _ as qv)
 | (QType | QProp | QSProp as qv), QVar q ->
@@ -387,7 +387,7 @@ let unify_quality univs c s1 s2 local = match quality_of_sort s1, quality_of_sor
   if UGraph.type_in_type univs then local
   else begin match c with
   | Reduction.CONV -> sort_inconsistency Eq s1 s2
-  | Reduction.CUMUL -> local
+  | Reduction.CUMUL -> if UGraph.cumulative_prop univs then local else sort_inconsistency Le s1 s2
   end
 | (QSProp, (QType | QProp)) ->
   if UGraph.type_in_type univs then local
