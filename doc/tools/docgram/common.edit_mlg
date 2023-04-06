@@ -325,8 +325,8 @@ qualid_annotated: [
 
 atomic_constr: [
 | qualid_annotated
-| MOVETO primitive_notations string
-| DELETE primitive_notations
+| MOVETO number_or_string string
+| DELETE number_or_string
 | MOVETO term_evar "_"
 | REPLACE "?" "[" identref "]"
 | WITH "?[" identref "]"
@@ -423,7 +423,7 @@ term0: [
 | DELETE "{" binder_constr "}"
 | REPLACE "{|" record_declaration bar_cbrace
 | WITH "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
-| MOVETO primitive_notations NUMBER
+| MOVETO number_or_string NUMBER
 | MOVETO term_record "{|" LIST0 field_def SEP ";" OPT ";" bar_cbrace
 | MOVETO term_generalizing "`{" term200 "}"
 | MOVETO term_generalizing "`(" term200 ")"

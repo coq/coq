@@ -520,7 +520,8 @@ numbers, together with the definitions of predecessor, addition and
 multiplication, in module ``Peano.v``. It also
 provides a scope ``nat_scope`` gathering standard notations for
 common operations (``+``, ``*``) and a decimal notation for
-numbers, allowing for instance to write ``3`` for :g:`S (S (S O)))`. This also works on
+numbers, allowing, for instance, writing ``3`` for :g:`S (S (S O))`.
+This also works on
 the left hand side of a ``match`` expression (see for example
 section :tacn:`refine`). This scope is opened by default.
 

@@ -1898,15 +1898,15 @@ Abbreviations
 Numbers and strings
 -------------------
 
-.. insertprodn primitive_notations primitive_notations
+.. insertprodn number_or_string number_or_string
 
 .. prodn::
-   primitive_notations ::= @number
+   number_or_string ::= @number
    | @string
 
 Numbers and strings have no predefined semantics in the calculus. They are
 merely notations that can be bound to objects through the notation mechanism.
-Initially, numbers are bound to Peano’s representation of natural
+Initially, numbers are bound to :n:`nat`, Peano’s representation of natural
 numbers (see :ref:`datatypes`).
 
 .. note::
@@ -1929,8 +1929,8 @@ Number notations
       | @number_string_via
       number_string_via ::= via @qualid mapping [ {+, {| @qualid => @qualid | [ @qualid ] => @qualid } } ]
 
-   This command allows the user to customize the way number literals
-   are parsed and printed.
+   Customizes the way number literals are parsed and printed within the current
+   :term:`notation scope`.
 
       :n:`@qualid__type`
          the name of an inductive type,
@@ -2041,8 +2041,8 @@ Number notations
 
       :n:`abstract after @bignat`
          returns :n:`(@qualid__parse m)` when parsing a literal
-         :n:`m` that's greater than :n:`@bignat` rather than reducing it to a normal form.
-         Here :g:`m` will be a
+         :n:`m` that's greater than or equal to :n:`@bignat` rather than reducing
+         it to a normal form.  Here :g:`m` will be a
          :g:`Number.int`, :g:`Number.uint`, :g:`Z` or :g:`Number.number`, depending on the
          type of the parsing function :n:`@qualid__parse`. This allows for a
          more compact representation of literals in types such as :g:`nat`,
