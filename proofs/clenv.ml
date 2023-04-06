@@ -907,7 +907,7 @@ let res_pf_gen is_case ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) 
 let res_pf ?with_evars ?with_classes ?flags clenv =
   res_pf_gen Std ?with_evars ?with_classes ?flags clenv
 
-let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
+let case_pf ?(with_evars=false) ?(with_classes=true) ?submetas ~dep (indarg, typ) =
   let open Indrec in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -949,17 +949,38 @@ let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   let indexsubst = subst_of_rel_context_instance case.case0_arity depargs in
   let subst = indexsubst @ subst in
   let templval = Vars.substl subst case.case0_body in
-  let concl = if dep then mkApp (mkMeta mvP, depargs) else mkApp (mkMeta mvP, indices) in
+  let templtyp = if dep then mkApp (mkMeta mvP, depargs) else mkApp (mkMeta mvP, indices) in
   let metaset = Metaset.of_list (mvP :: args) in
+
+  let flags = elim_flags () in
+  let sigma = w_unify_meta_types ~flags env sigma in
+  let sigma = w_unify ~flags env sigma CUMUL templtyp concl in
+
   let clenv = {
     templval; metaset;
-    templtyp = mk_freelisted concl;
+    templtyp = mk_freelisted templtyp;
     evd = sigma;
     env = env;
     metas = [];
     cache = create_meta_instance_subst sigma;
   } in
-  res_pf_gen (Case dep) ?with_evars ?with_classes ~flags:(elim_flags ()) clenv
+
+  let clenv = clenv_pose_dependent_evars ~with_evars clenv in
+  let evd' =
+    if with_classes then
+      let evd' =
+        Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
+          ~fail:(not with_evars) env clenv.evd
+      in
+      (* After an apply, all the subgoals including those dependent shelved ones are in
+        the hands of the user and resolution won't be called implicitely on them. *)
+      Typeclasses.make_unresolvables (fun x -> true) evd'
+    else clenv.evd
+  in
+  let clenv = update_clenv_evd clenv evd' in
+  Proofview.tclTHEN
+    (Proofview.Unsafe.tclEVARS (Evd.clear_metas evd'))
+    (Internal.refiner_gen (Case dep) clenv)
   end
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
