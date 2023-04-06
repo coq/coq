@@ -223,12 +223,10 @@ let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
       in
       prlist_with_sep spc (pr_decl env sigma) (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
-(*   let pty = print_constr env sigma (Evd.evar_concl evi) in *)
-  let pty = mt () in (* FIXME *)
   let pb =
     match Evd.evar_body evi with
-      | Evar_empty -> mt ()
-      | Evar_defined c -> spc() ++ str"=> "  ++ print_constr env sigma c
+      | Evar_empty -> print_constr env sigma (Evd.evar_concl evi)
+      | Evar_defined c -> str"=> "  ++ print_constr env sigma c
   in
   let candidates =
     match Evd.evar_body evi with
@@ -244,7 +242,7 @@ let pr_evar_info (type a) env sigma (evi : a Evd.evar_info) =
   in
   let src = str "(" ++ pr_evar_source env sigma (snd (Evd.evar_source evi)) ++ str ")" in
   hov 2
-    (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]" ++
+    (str"["  ++ phyps ++ spc () ++ str"|-" ++ spc() ++ pb ++ str"]" ++
        candidates ++ spc() ++ src)
 
 let compute_evar_dependency_graph sigma =
