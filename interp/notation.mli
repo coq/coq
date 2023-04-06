@@ -82,6 +82,13 @@ val find_delimiters_scope : ?loc:Loc.t -> delimiters -> scope_name
    must fail with an appropriate error message *)
 
 type notation_location = (DirPath.t * DirPath.t) * string
+(** 1st dirpath: dirpath of the library
+    2nd dirpath: module and section-only dirpath (ie [Lib.current_dirpath true])
+    string: string used to generate the notation
+
+    dirpaths are used for dumpglob, string for printing (pr_notation_info)
+*)
+
 type required_module = full_path * string list
 type rawnum = NumTok.Signed.t
 
@@ -226,10 +233,10 @@ val declare_string_interpreter : ?local:bool -> scope_name -> required_module ->
    given scope context*)
 
 val interp_prim_token : ?loc:Loc.t -> prim_token -> subscopes ->
-  glob_constr * (notation_location * scope_name option)
+  glob_constr * scope_name option
 (* This function returns a glob_const representing a pattern *)
 val interp_prim_token_cases_pattern_expr : ?loc:Loc.t -> (GlobRef.t -> unit) -> prim_token ->
-  subscopes -> glob_constr * (notation_location * scope_name option)
+  subscopes -> glob_constr * scope_name option
 
 (** Return the primitive token associated to a [term]/[cases_pattern];
    raise [No_match] if no such token *)
