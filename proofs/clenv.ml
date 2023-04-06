@@ -918,8 +918,6 @@ let res_pf_gen is_case ?(with_evars=false) ?(with_classes=true) ?(flags=dft ()) 
 let res_pf ?with_evars ?with_classes ?flags clenv =
   res_pf_gen false ?with_evars ?with_classes ?flags clenv
 
-module RelDecl = Context.Rel.Declaration
-
 let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   let open Indrec in
   Proofview.Goal.enter begin fun gl ->
@@ -929,7 +927,7 @@ let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   let hd, args = decompose_app_vect sigma typ in
   let ind, u = destInd sigma hd in
   let s = Retyping.get_sort_family_of env sigma concl in
-  let (sigma, case) = build_case_analysis_scheme env sigma (ind, EInstance.kind sigma u) dep s in
+  let (sigma, case) = build_case_analysis env sigma (ind, EInstance.kind sigma u) dep s in
   let (mib, mip) = Inductive.lookup_mind_specif env ind in
   let params, indices = Array.chop mib.mind_nparams args in
   let sigma = clear_metas sigma in
@@ -942,40 +940,31 @@ let case_pf ?with_evars ?with_classes ?submetas ~dep (indarg, typ) =
   in
   (* Workaround to #5645: reduce_to_atomic_ind produces ill-typed terms *)
   let sigma, _ = Typing.checked_appvect env sigma hd args in
-  let paramsubst = subst_of_rel_context_instance case.case_params params in
-  let (_, typP) = case.case_pred in
-  let typP = Vars.substl paramsubst typP in
-  let mv = new_meta () in
-  let sigma = meta_declare mv typP sigma in
-  let rec clrec sigma subst metas = function
-  | [] -> (sigma, subst, metas)
-  | RelDecl.LocalAssum (_, t) :: ctx ->
+  let paramsubst = subst_of_rel_context_instance case.case0_params params in
+  let typP = Vars.substl paramsubst case.case0_pred in
+  let mvP = new_meta () in
+  let sigma = meta_declare mvP typP sigma in
+  let subst0 = mkMeta mvP :: paramsubst in
+  let fold (sigma, subst, metas) t =
     let mv = new_meta () in
-    let t = substl subst t in
+    let t = substl subst0 t in
     let sigma = meta_declare mv t sigma in
-    clrec sigma (mkMeta mv :: subst) (mv :: metas) ctx
-  | RelDecl.LocalDef _ :: _ -> assert false
+    (sigma, mkMeta mv :: subst, mv :: metas)
   in
-  let (evd, subst, args) = clrec sigma (mkMeta mv :: paramsubst) [] (List.rev case.case_branches) in
-  let rec indrec subst ctx args = match ctx, args with
-  | [], [] -> subst
-  | RelDecl.LocalAssum _ :: ctx, a :: args ->
-    indrec (a :: subst) ctx args
-  | RelDecl.LocalDef (_, b, _) :: ctx, args ->
-    indrec (Vars.substl subst b :: subst) ctx args
-  | _ -> assert false
-  in
-  let subst = indrec subst (List.rev case.case_arity) (Array.to_list indices @ [indarg]) in
-  let templval = Vars.substl subst case.case_body in
-  let concl = Vars.substl subst case.case_type in
-  let metaset = Metaset.of_list (mv :: args) in
+  let (sigma, subst, args) = Array.fold_left fold (sigma, subst0, []) case.case0_branches in
+  let depargs = Array.append indices [|indarg|] in
+  let indexsubst = subst_of_rel_context_instance (substl_rel_context paramsubst case.case0_arity) depargs in
+  let subst = indexsubst @ subst in
+  let templval = Vars.substl subst case.case0_body in
+  let concl = if dep then mkApp (mkMeta mvP, depargs) else mkApp (mkMeta mvP, indices) in
+  let metaset = Metaset.of_list (mvP :: args) in
   let clenv = {
     templval; metaset;
     templtyp = mk_freelisted concl;
-    evd = evd;
+    evd = sigma;
     env = env;
     metas = [];
-    cache = create_meta_instance_subst evd
+    cache = create_meta_instance_subst sigma;
   } in
   res_pf_gen true ?with_evars ?with_classes ~flags:(elim_flags ()) clenv
   end

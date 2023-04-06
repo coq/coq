@@ -114,6 +114,14 @@ type case_analysis = {
   case_type : EConstr.t;
 }
 
+type case_analysis0 = {
+  case0_params : EConstr.rel_context;
+  case0_pred : EConstr.types;
+  case0_branches : EConstr.t array;
+  case0_arity : EConstr.rel_context;
+  case0_body : EConstr.t;
+}
+
 let eval_case_analysis case =
   let open EConstr in
   let body = it_mkLambda_or_LetIn case.case_body case.case_arity in
@@ -137,6 +145,100 @@ let build_branch_type env sigma dep p cs =
       (List.map (fun d -> Termops.map_rel_decl EConstr.of_constr d) cs.cs_args))
   else
     Term.it_mkProd_or_LetIn base cs.cs_args
+
+let mis_make_case_tac dep env sigma (ind, u as pind) (mib,mip as specif) kind =
+  let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
+  let indf = make_ind_family(pind, Context.Rel.instance_list mkRel 0 lnamespar) in
+  let constrs = get_constructors env indf in
+  let projs = get_projections env ind in
+  let relevance = Sorts.relevance_of_sort_family kind in
+  let () = if Option.is_empty projs then check_privacy_block specif in
+  let () =
+    if not (Sorts.family_leq kind (elim_sort specif)) && not (kind == InQSort) then
+      raise
+        (RecursionSchemeError
+           (env, NotAllowedCaseAnalysis (false, fst (UnivGen.fresh_sort_in_family kind), pind)))
+  in
+  let ndepar = mip.mind_nrealdecls + 1 in
+  let env = RelEnv.make env in
+  let env' = RelEnv.push_rel_context lnamespar env in
+  let (sigma, s) = Evd.fresh_sort_in_family ~rigid:Evd.univ_flexible_alg sigma kind in
+
+  let pnas, deparsign =
+    let arsign, sort = get_arity !!env' indf in
+    let r = Sorts.relevance_of_sort_family sort in
+    let depind = build_dependent_inductive !!env indf in
+    let deparsign = LocalAssum (make_annot Anonymous r,depind)::arsign in
+    let pctx =
+      let deparsign = set_names env' deparsign in
+      if dep then deparsign
+      else LocalAssum (make_annot Anonymous r, depind) :: List.tl deparsign
+    in
+    let pnas = Array.of_list (List.rev_map get_annot pctx) in
+    pnas, deparsign
+  in
+
+  let typP = make_arity !!env' sigma dep indf s in
+  let typP = EConstr.Unsafe.to_constr typP in
+  let nameP = make_annot Anonymous Sorts.Relevant in
+  let env' = RelEnv.push_rel (LocalAssum (nameP, typP)) env' in
+
+  let get_branch i =
+    let cs = lift_constructor 1 constrs.(i) in
+    let base = appvect (lift cs.cs_nargs (mkRel 1), cs.cs_concl_realargs) in
+    if dep then
+      let argctx = Namegen.name_context !!env' sigma (EConstr.of_rel_context cs.cs_args) in
+      let argctx = EConstr.Unsafe.to_rel_context argctx in
+      Term.it_mkProd_or_LetIn (applist (base, [build_dependent_constructor cs])) argctx
+    else
+      Term.it_mkProd_or_LetIn base cs.cs_args
+  in
+  let branches = Array.init (Array.length mip.mind_consnames) get_branch in
+
+  let body = match projs with
+  | None ->
+    let nbprod = Array.length mip.mind_consnames + 1 in
+    let ci = make_case_info !!env' (fst pind) relevance RegularStyle in
+    let pbody =
+      appvect
+        (mkRel (ndepar + nbprod),
+          if dep then Context.Rel.instance mkRel 0 deparsign
+          else Context.Rel.instance mkRel 1 (List.tl deparsign)) in
+    let pms = Context.Rel.instance mkRel (ndepar + nbprod) lnamespar in
+    let iv =
+      if Typeops.should_invert_case !!env' ci then
+        CaseInvert { indices = Context.Rel.instance mkRel 1 (List.tl deparsign) }
+      else NoInvert
+    in
+    let ncons = Array.length mip.mind_consnames in
+    let mk_branch i =
+      (* we need that to get the generated names for the branch *)
+      let (ctx, _) = decompose_prod_decls branches.(i) in
+      let brnas = Array.of_list (List.rev_map get_annot ctx) in
+      let n = mkRel (List.length ctx + ndepar + ncons - i) in
+      let args = Context.Rel.instance mkRel 0 ctx in
+      (brnas, mkApp (n, args))
+    in
+    let br = Array.init ncons mk_branch in
+    mkCase (ci, u, pms, (pnas, liftn ndepar (ndepar + 1) pbody), iv, mkRel 1, br)
+  | Some ps ->
+    let args = Array.map (fun p -> mkProj (Projection.make p true, mkRel 1)) ps in
+    mkApp (mkRel 2, args)
+  in
+  let case = {
+    case0_params = EConstr.of_rel_context lnamespar;
+    case0_pred = EConstr.of_constr typP;
+    case0_branches = EConstr.of_constr_array branches;
+    case0_arity = EConstr.of_rel_context deparsign;
+    case0_body = EConstr.of_constr body;
+  } in
+  (sigma, case)
+
+let build_case_analysis env sigma pity dep kind =
+  let specif = lookup_mind_specif env (fst pity) in
+  if dep && not (Inductiveops.has_dependent_elim specif) then
+    raise (RecursionSchemeError (env, NotAllowedDependentAnalysis (false, fst pity)));
+  mis_make_case_tac dep env sigma pity specif kind
 
 let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_instance_context u mib.mind_params_ctxt in
