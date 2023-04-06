@@ -29,3 +29,19 @@ Module Qualification.
 
   Fail Module FXtest <: FXT := FX.
 End Qualification.
+
+Module PrintBound.
+  (* printing an inductive from a bound module in an error from the
+   command where the bound module is introduced *)
+  Module Type E. End E.
+
+  Module Type T. Inductive t : Prop := . Parameter v : t -> t. End T.
+
+  Module Type FE(A:E). Inductive t : Prop :=. Parameter v : t -> Prop. End FE.
+
+  Module Type FT(A:T). End FT.
+
+  Module VE. End VE.
+
+  Fail Module F (A1:FE VE) (A2:FT A1).
+End PrintBound.
